@@ -1264,15 +1264,16 @@ function timelineKey(event) {
   return [Number(event.year)||0,Number(event.month)||0];
 }
 function definitelyBefore(a,b) {
-  const [ay,am]=timelineKey(a),[by,bm]=timelineKey(b);
-  return ay<by || (ay===by && am>0 && bm>0 && am<bm);
+  const [ay]=timelineKey(a),[by]=timelineKey(b);
+  return ay<by;
 }
 function uniqueDateChoices(index) {
-  const correct=MODERN_TIMELINE_EVENTS[index].date;
+  const correct=String(MODERN_TIMELINE_EVENTS[index].year)+'년';
   const out=[correct];
   for(let step=1;out.length<4 && step<MODERN_TIMELINE_EVENTS.length;step++){
     for(const pos of [index-step,index+step]){
-      const value=MODERN_TIMELINE_EVENTS[pos]?.date;
+      const year=MODERN_TIMELINE_EVENTS[pos]?.year;
+      const value=year?String(year)+'년':'';
       if(value&&!out.includes(value))out.push(value);
       if(out.length===4)break;
     }
@@ -1290,14 +1291,14 @@ MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
   const options=uniqueDateChoices(index);
   if(options.length===4)addDirectFact({
     era:modernEraForYear(event.year),type:'연도',term:event.date,
-    clue:`‘${event.name}’이 일어난 시기를 찾는 연표 지식`,
-    q:`‘${event.name}’이 일어난 시기로 알맞은 것은 무엇일까요?`,
+    clue:`‘${event.name}’이 일어난 연도를 찾는 연표 지식`,
+    q:`‘${event.name}’이 일어난 연도로 알맞은 것은 무엇일까요?`,
     o:options,
-    e:`${event.name}: ${event.date}에 일어난 일입니다.`,
+    e:`${event.name}: ${event.year}년에 일어난 일입니다.`,
     family:'date',
     oxStatement:index%2===0
-      ? `‘${event.name}’의 시기는 ${event.date}이다.`
-      : `‘${event.name}’의 시기는 ${options[1]}이다.`,
+      ? `‘${event.name}’은 ${event.year}년에 일어났다.`
+      : `‘${event.name}’은 ${options[1]}에 일어났다.`,
     oxAnswer:index%2===0
   });
 });
@@ -1313,7 +1314,7 @@ for(let distance=1;distance<=8;distance++){
       clue:`${first.name} · ${second.name}의 앞뒤 순서`,
       q:`다음 두 사건 가운데 먼저 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:options,
-      e:`시간순으로 ${first.name}(${first.date}) → ${second.name}(${second.date})입니다.`,
+      e:`시간순으로 ${first.name}(${first.year}년) → ${second.name}(${second.year}년)입니다.`,
       family:'chronology-before',
       oxStatement:(i+distance)%2===0
         ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
@@ -1325,7 +1326,7 @@ for(let distance=1;distance<=8;distance++){
       clue:`${first.name}과(와) ${second.name}의 앞뒤 순서`,
       q:`다음 두 사건 가운데 나중에 일어난 것은 무엇일까요?\n① ${first.name}  ② ${second.name}`,
       o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
-      e:`시간순으로 ${first.name}(${first.date}) → ${second.name}(${second.date})입니다.`,
+      e:`시간순으로 ${first.name}(${first.year}년) → ${second.name}(${second.year}년)입니다.`,
       family:'chronology-after',
       oxStatement:(i+distance)%2!==0
         ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
