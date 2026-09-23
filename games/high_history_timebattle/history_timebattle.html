@@ -170,6 +170,7 @@ let session=null,poller=null,lastState=null,timerRAF=null,answeredFor=-1,serverO
 let soloGame=null,bankModule=null,soloTimeoutHandled=false,roundEditing=false;
 let lastFxState='',lastTimerTick=-1,lastChosenOption=-1,previousRanks=new Map(),audioReady=false;
 let pollInFlight=false,pollFailures=0,terminalFailures=0,pendingReconnectPlayerId='';
+let heartbeatTimer=null,lastPresenceWriteAt=0;
 const $=id=>document.getElementById(id);
 
 function audio(){return window.KidscadeAudio||null}
@@ -215,7 +216,7 @@ function syncEraPicker(id,eras){const set=new Set(Array.isArray(eras)&&eras.leng
 function setEraPreset(id,preset){syncEraPicker(id,ERA_PRESETS[preset]||ERA_PRESETS.all)}
 function eraSummary(eras){const list=Array.isArray(eras)?eras:[];if(list.length>=ERA_PRESETS.all.length)return '전체 시대';if(list.length<=3)return list.join(' · ');return list.slice(0,3).join(' · ')+' 외 '+(list.length-3)+'개 시대'}
 function save(){if(session?.role!=='solo')sessionStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
-function clearSession(){sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;roundEditing=false;clearTimeout(poller);cancelAnimationFrame(timerRAF)}
+function clearSession(){sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF)}
 function authHeaders(){return {'Authorization':'Bearer '+session.token}}
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function requestJson(url,opts={},timeoutMs=6500){
@@ -235,7 +236,7 @@ async function api(path,opts={},retries=0){
   }
   throw last||new Error('server_error');
 }
-function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',stale_question:'이미 다음 문제로 넘어갔어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.',checkpoint_not_ready:'지금은 중간 순위 화면이 아니에요.',round_in_progress:'문제를 푸는 중에는 판 설정을 바꿀 수 없어요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
+function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_closed:'수업 방이 종료되었어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',stale_question:'이미 다음 문제로 넘어갔어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.',checkpoint_not_ready:'지금은 중간 순위 화면이 아니에요.',round_in_progress:'문제를 푸는 중에는 판 설정을 바꿀 수 없어요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
 async function checkHealth(){const el=$('serverStatus');try{const r=await fetch(API+'/health',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error();el.textContent='● LIVE 서버 연결됨 · 핵심 지식 '+Number(d.facts||0).toLocaleString()+'개 · 출제 문항 '+Number(d.questions||0).toLocaleString()+'개';el.style.color='#6ee7b7'}catch(_){el.textContent='● LIVE 서버에 연결되지 않았어요 · 혼자 연습은 그대로 이용할 수 있어요';el.style.color='#ff9aa5'}}
 
 function setConnectionState(kind='',text=''){
@@ -246,10 +247,37 @@ function recoverToJoin(reason=''){
   if(!session)return;
   const code=session.code||'',nickname=session.nickname||'',playerId=session.playerId||'';
   pendingReconnectPlayerId=playerId;
-  sessionStorage.removeItem('kc-history-live-v1');session=null;lastState=null;pollFailures=0;terminalFailures=0;clearTimeout(poller);
+  sessionStorage.removeItem('kc-history-live-v1');session=null;lastState=null;pollFailures=0;terminalFailures=0;clearTimeout(poller);clearTimeout(heartbeatTimer);
   $('joinCode').value=code;$('nickname').value=nickname;showSetup('join');
   setConnectionState('bad','다시 연결 필요');
   toastFx(reason||'연결이 끊겼어요. 같은 이름으로 다시 들어오세요.');
+}
+function scheduleHeartbeat(delay=30000){
+  clearTimeout(heartbeatTimer);
+  if(!session||session.role!=='player')return;
+  heartbeatTimer=setTimeout(sendHeartbeat,delay);
+}
+async function sendHeartbeat(){
+  if(!session||session.role!=='player')return;
+  const status=lastState?.room?.status||'waiting';
+  if(status==='question'){
+    scheduleHeartbeat(30000);
+    return;
+  }
+  const since=Date.now()-lastPresenceWriteAt;
+  if(since<28000){
+    scheduleHeartbeat(Math.max(2000,30000-since));
+    return;
+  }
+  try{
+    await api('/heartbeat',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});
+    lastPresenceWriteAt=Date.now();
+  }catch(e){
+    if(e.status===410||String(e.message)==='room_closed'){
+      clearSession();showOnly('landing');toastFx('수업 방이 종료되었어요.');return;
+    }
+  }
+  scheduleHeartbeat(30000);
 }
 function pollingDelay(){
   if(document.hidden)return 3500;
@@ -322,7 +350,7 @@ async function saveRoundSetup(){
 async function joinRoom(){
   const code=$('joinCode').value.trim().toUpperCase(),nickname=$('nickname').value.trim();
   if(code.length!==6||!nickname)return alert('방 코드와 별명을 입력해 주세요.');
-  try{const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname,playerId:pendingReconnectPlayerId||undefined})});pendingReconnectPlayerId='';session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};save();if(d.reconnected)toastFx('기존 점수로 다시 연결했어요!');startPolling()}catch(e){alert(errorText(e))}
+  try{const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname,playerId:pendingReconnectPlayerId||undefined})});pendingReconnectPlayerId='';session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};lastPresenceWriteAt=Date.now();save();if(d.reconnected)toastFx('기존 점수로 다시 연결했어요!');startPolling()}catch(e){alert(errorText(e))}
 }
 async function hostStart(){lastChosenOption=-1;lastTimerTick=-1;playSfx('ui.confirm',{volume:.35});try{await api('/start',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
 async function hostNext(){lastChosenOption=-1;lastTimerTick=-1;playSfx('ui.click',{volume:.28});if(session?.role==='solo')return soloNext();try{await api('/next',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
@@ -383,12 +411,12 @@ async function submitAnswer(i,btn){
   if(session?.role==='solo'){btn?.classList.add('selected');return submitSoloAnswer(i,false)}
   if(session?.role!=='player'||answeredFor===lastState?.room?.questionNumber)return;
   answeredFor=lastState.room.questionNumber;document.querySelectorAll('#answers .answer').forEach(b=>b.disabled=true);btn.classList.add('selected');
-  try{await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,optionIndex:i,questionIndex:Math.max(0,Number(lastState?.room?.questionNumber||1)-1)})},1);$('submitted').classList.remove('hidden')}catch(e){answeredFor=-1;if(!e.status)setConnectionState('warn','답 전송 재시도 필요');alert(errorText(e))}
+  try{await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,optionIndex:i,questionIndex:Math.max(0,Number(lastState?.room?.questionNumber||1)-1)})},1);lastPresenceWriteAt=Date.now();$('submitted').classList.remove('hidden')}catch(e){answeredFor=-1;if(!e.status)setConnectionState('warn','답 전송 재시도 필요');alert(errorText(e))}
 }
 function startPolling(){
   if(!lastState)showOnly('lobby');
   pollFailures=0;terminalFailures=0;pollInFlight=false;setConnectionState('','');
-  clearTimeout(poller);poll();
+  clearTimeout(poller);poll();scheduleHeartbeat(30000);
 }
 async function poll(){
   if(!session||session.role==='solo')return;
@@ -401,10 +429,11 @@ async function poll(){
     if(!roundEditing)render(d);
   }catch(e){
     pollFailures+=1;
-    const terminal=['room_not_found','unauthorized'].includes(String(e.message));
+    const terminal=['room_not_found','unauthorized','room_closed'].includes(String(e.message));
     terminalFailures=terminal?terminalFailures+1:0;
     if(terminal&&terminalFailures>=3){
-      const msg=e.message==='room_not_found'?'방이 종료되었어요.':'학생 연결 정보가 만료되었어요.';
+      if(e.message==='room_closed'){clearSession();showOnly('landing');toastFx('수업 방이 종료되었어요.');return}
+      const msg=e.message==='room_not_found'?'방을 찾을 수 없어요.':'학생 연결 정보가 만료되었어요.';
       recoverToJoin(msg);return;
     }
     setConnectionState(pollFailures>=3?'bad':'warn',pollFailures>=3?'연결 복구 중…':'잠시 연결 지연');
@@ -502,7 +531,7 @@ document.addEventListener('pointerdown',e=>{const b=e.target.closest('button,.bt
 document.addEventListener('pointercancel',e=>{const b=e.target.closest('button,.btn');if(b)delete b.dataset.touchReady},{passive:true});
 
 window.addEventListener('online',()=>{if(session&&session.role!=='solo'){pollFailures=0;schedulePoll(0)}});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session&&session.role!=='solo')schedulePoll(0)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session&&session.role!=='solo'){schedulePoll(0);if(session.role==='player')scheduleHeartbeat(1000)}});
 
 (function boot(){
   checkHealth();toggleCheckpointCustom();toggleRoundCheckpointCustom();preloadSfx();syncSoundButton();
