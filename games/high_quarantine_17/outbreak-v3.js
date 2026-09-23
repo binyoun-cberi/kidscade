@@ -22,20 +22,20 @@ const css=[
 '.q17-alert.show{display:block}.q17-alert h2{margin:0 0 8px;color:#ff7b7b}.q17-alert p{color:#ccd1d5;line-height:1.55}.q17-alert button{border:0;background:#c2a64c;color:#171717;font-weight:900;padding:10px 16px;cursor:pointer}',
 '.q17-dead{position:fixed;inset:0;z-index:400;background:#050505f7;display:none;align-items:center;justify-content:center;padding:20px}.q17-dead.show{display:flex}',
 '.q17-dead-card{width:min(620px,100%);border:1px solid #65383b;background:#171112;padding:25px;text-align:center;box-shadow:0 20px 80px #000}.q17-dead-card h1{color:#e36b70;margin-top:0}.q17-dead-card p{color:#c8c1c1;line-height:1.65}.q17-dead-card button{border:0;background:#d2b450;color:#171717;font-weight:950;padding:12px 18px;cursor:pointer}',
-'.q17-iso-btn{position:fixed;right:16px;bottom:16px;z-index:95;border:1px solid #6b747d;background:#171c21;color:#e4e8eb;padding:9px 12px;font-size:11px;font-weight:850;box-shadow:0 6px 20px #0008;cursor:pointer}.q17-iso-btn.alert{border-color:#b45151;color:#ff9898;animation:q17pulse .8s ease-in-out 2}',
+'.q17-iso-btn{border:1px solid #6b747d;background:#222a32;color:#eef2f5;padding:6px 10px;font-size:11px;font-weight:900;box-shadow:inset 0 -2px #0005;cursor:pointer;white-space:nowrap}.q17-iso-btn:hover{background:#303a44}.q17-iso-btn.alert{border-color:#d45d64;color:#ff9ba1;background:#321a1d;animation:q17pulse .8s ease-in-out 2}',
 '#q17Isolation{position:fixed;inset:0;z-index:245;background:#050708dc;display:none;align-items:center;justify-content:center;padding:15px}#q17Isolation.show{display:flex}',
 '.q17-iso-card{width:min(900px,100%);max-height:90vh;overflow:auto;background:#11161b;border:1px solid #59636e;box-shadow:0 25px 80px #000}',
-'.q17-iso-head{position:sticky;top:0;z-index:2;background:#20262d;border-bottom:1px solid #47515b;padding:11px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center}.q17-iso-head h2{font-size:15px;margin:0}.q17-iso-close{border:1px solid #59636e;background:#12171c;color:#dde2e5;padding:6px 10px;cursor:pointer}',
+'.q17-iso-head{position:sticky;top:0;z-index:2;background:#20262d;border-bottom:1px solid #47515b;padding:11px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center}.q17-iso-head h2{font-size:15px;margin:0}.q17-iso-head-actions{display:flex;gap:7px;flex-wrap:wrap}.q17-iso-close,.q17-burn-room{border:1px solid #59636e;background:#12171c;color:#dde2e5;padding:6px 10px;cursor:pointer}.q17-burn-room{border-color:#93474c;background:#391b1e;color:#ffb5b8;font-weight:900}',
 '.q17-iso-note{margin:12px 14px;background:#251e18;border-left:4px solid #b99847;padding:9px 11px;color:#c9c0ae;font-size:11px;line-height:1.55}',
-'.q17-iso-room{margin:12px 14px;padding:16px;background:repeating-linear-gradient(90deg,#171d22 0 62px,#232b31 62px 64px);border:9px solid #333c43;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-height:230px}',
+'.q17-iso-room{margin:12px 14px;padding:16px;background:repeating-linear-gradient(90deg,#171d22 0 62px,#232b31 62px 64px);border:9px solid #333c43;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-height:230px}',
 '.q17-detainee{position:relative;background:#0d1115cc;border:1px solid #46515a;min-height:180px;padding:7px;text-align:center;overflow:hidden}.q17-detainee:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 24px,#86919a36 24px 27px);pointer-events:none}',
 '.q17-detainee img{height:105px;max-width:90%;object-fit:contain;filter:drop-shadow(0 6px 5px #0008)}.q17-detainee.zombie{border-color:#873f43;background:#241315cc}.q17-detainee.exposed{border-color:#9c7e3e}',
 '.q17-detainee b{display:block;font-size:11px}.q17-detainee small{display:block;color:#9da7af;font-size:9px;margin-top:2px}.q17-detainee .q17-status{margin-top:5px;font-size:10px;font-weight:900;color:#d8c46b}.q17-detainee.zombie .q17-status{color:#ff7777}',
-'.q17-wrong{display:inline-block;margin-top:4px;background:#71383b;color:#ffd5d5;font-size:8px;font-weight:900;padding:2px 4px}',
+'.q17-wrong{display:inline-block;margin-top:4px;background:#71383b;color:#ffd5d5;font-size:8px;font-weight:900;padding:2px 4px}.q17-detainee-actions{position:relative;z-index:2;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:7px}.q17-detainee-actions button{border:1px solid #56616b;background:#1a2026;color:#e2e7ea;padding:4px 6px;font-size:9px;font-weight:850;cursor:pointer}.q17-detainee-actions .release{border-color:#477b58;background:#183021;color:#9ee0af}.q17-detainee-actions .burn{border-color:#8c4449;background:#33191c;color:#ff9da2}',
 '.q17-iso-log{margin:12px 14px 16px;background:#0b0f12;border:1px solid #343d45;padding:10px;max-height:150px;overflow:auto;font-size:10px;color:#aeb7be;line-height:1.6}.q17-iso-log b{color:#e7c65c}',
 '.q17-camp-label{position:absolute;left:14px;top:14px;color:#c7d0d6;font-size:10px;background:#111a;padding:5px 7px;border:1px solid #4a555e}',
 '@keyframes q17pulse{50%{transform:scale(1.06);box-shadow:0 0 24px #b34b4b88}}',
-'@media(max-width:680px){#q17Outbreak{padding:0}.q17-combat-shell{height:100%;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:1;min-height:0;aspect-ratio:auto}.q17-combat-help{font-size:9px;padding:6px 8px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.q17-iso-btn{right:8px;bottom:8px}}'
+'@media(max-width:680px){#q17Outbreak{padding:0}.q17-combat-shell{height:100%;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:1;min-height:0;aspect-ratio:auto}.q17-combat-help{font-size:9px;padding:6px 8px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.q17-iso-btn{padding:5px 7px;font-size:10px}}'
 ].join('\n');
 const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
 
@@ -47,9 +47,9 @@ const dead=document.createElement('div');dead.className='q17-dead';dead.id='q17D
 dead.innerHTML='<div class="q17-dead-card"><h1 id="q17DeadTitle">검역소 함락</h1><p id="q17DeadText"></p><p><b>검역 단계의 한 번의 판정이 뒤쪽 생존 상황까지 이어집니다.</b></p><button type="button" id="q17Restart">처음부터 다시</button></div>';
 document.body.appendChild(dead);
 
-const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 CCTV · 0';document.body.appendChild(isoBtn);
+const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 0/6 · CCTV';(document.querySelector('.meters')||document.body).appendChild(isoBtn);
 const iso=document.createElement('div');iso.id='q17Isolation';
-iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>공동 격리실 CCTV</h2><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div><div class="q17-iso-note">격리 판정을 받은 사람은 이곳에 머뭅니다. 실제 감염자는 시간이 지나면 상태가 악화되고, 정상인을 잘못 격리하면 같은 공간의 감염자에게 노출될 수 있습니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
+iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>공동 격리실 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-burn-room" id="q17BurnRoom">격리실 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note">정원은 6명입니다. 정상으로 보이는 사람은 충분히 관찰한 뒤 생존자 캠프로 돌려보낼 수 있습니다. <b>비상 소각은 격리실 전체</b>를 태우므로 정상인이 남아 있다면 큰 불이익이 생깁니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
 document.body.appendChild(iso);
 
 const canvas=document.getElementById('q17CombatCanvas'),ctx=canvas.getContext('2d');
@@ -58,7 +58,7 @@ const keys={},mouse={x:canvas.width/2,y:canvas.height/2,down:false};
 
 let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,autoTarget=null;
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
-let isolation=[],isoLog=[],isoSeq=0;
+const ISOLATION_CAPACITY=6;\nlet isolation=[],isoLog=[],isoSeq=0;
 
 function bridge(){return window.Q17Bridge||null}
 function infection(){const b=bridge();return b?b.getState().infection:Number((document.getElementById('infection')||{}).textContent?.replace('%',''))||0}
@@ -73,10 +73,12 @@ function isoStatus(d){
  if(d.status==='turning')return'변이 진행 중';
  if(d.status==='infected')return d.acquired?'격리 중 감염':'증상 악화';
  if(d.status==='exposed')return'감염자에게 노출됨';
- return d.wrong?'정상 · 오판 격리':'관찰 중';
+ if(d.status==='cleared')return'이상 없음 · 퇴실 가능';
+ return d.wrong?'정상 · 관찰 '+Math.min(2,d.stage)+'/2':'관찰 '+Math.min(2,d.stage)+'/2';
 }
 function renderIsolation(){
- isoBtn.textContent='격리실 CCTV · '+isolation.length;
+ isoBtn.textContent='격리실 '+isolation.length+'/'+ISOLATION_CAPACITY+' · CCTV';
+ const cap=document.getElementById('q17IsoCapacity');if(cap)cap.textContent=isolation.length+' / '+ISOLATION_CAPACITY;
  const zombiesHere=isolation.filter(function(d){return d.status==='zombie'}).length;
  isoBtn.classList.toggle('alert',zombiesHere>0||isolation.some(function(d){return d.status==='exposed'||d.acquired}));
  const room=document.getElementById('q17IsoRoom');
@@ -84,22 +86,28 @@ function renderIsolation(){
  else room.innerHTML=isolation.map(function(d){
   const img=d.status==='zombie'?SPRITES.zombie:spriteUrl(d.sprite);
   const cls=d.status==='zombie'?' zombie':(d.status==='exposed'||d.acquired?' exposed':'');
-  return '<div class="q17-detainee'+cls+'"><img src="'+img+'" alt=""><b>'+escapeHtml(d.name)+'</b><small>'+(d.infectedAtEntry?'입실 당시 감염 의심':'입실 당시 정상')+'</small><div class="q17-status">'+escapeHtml(isoStatus(d))+'</div>'+(d.wrong?'<span class="q17-wrong">오판 격리</span>':'')+'</div>';
+  const release=d.status==='cleared'?'<button type="button" class="release" data-iso-action="release" data-id="'+d.id+'">생존자 캠프로 보내기</button>':'';
+  const burn='<button type="button" class="burn" data-iso-action="burn" data-id="'+d.id+'">소각실 이송</button>';
+  return '<div class="q17-detainee'+cls+'"><img src="'+img+'" alt=""><b>'+escapeHtml(d.name)+'</b><small>'+(d.infectedAtEntry?'입실 당시 감염 의심':'입실 당시 정상')+'</small><div class="q17-status">'+escapeHtml(isoStatus(d))+'</div>'+(d.wrong?'<span class="q17-wrong">오판 격리</span>':'')+'<div class="q17-detainee-actions">'+release+burn+'</div></div>';
  }).join('');
  document.getElementById('q17IsoLog').innerHTML=isoLog.length?isoLog.map(function(x){return '• '+x}).join('<br>'):'아직 격리실 기록이 없습니다.';
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
 function addDetainee(p){
+ if(isolation.length>=ISOLATION_CAPACITY){notify('격리실 정원 초과 · 먼저 자리를 확보하세요.');openIsolation();return false}
  const d={id:++isoSeq,name:p.name,sprite:p.sprite||'player',infectedAtEntry:!!p.infected,wrong:!!p.wrongQuarantine,status:p.infected?'infected':'stable',stage:0,exposure:0,acquired:false};
  isolation.push(d);
  addIsoLog('<b>'+escapeHtml(d.name)+'</b> 격리실 입실'+(d.wrong?' · 정상인을 잘못 격리함':''));
- renderIsolation();
+ renderIsolation();return true;
 }
 function advanceIsolation(){
  if(!isolation.length)return;
  let eventText='';
  isolation.forEach(function(d){
-  if(d.status==='infected'){
+  if(d.status==='stable'){
+   d.stage++;
+   if(d.stage>=2){d.status='cleared';eventText=d.name+'의 관찰 결과 이상이 없습니다. 퇴실시킬 수 있습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 관찰 종료 · 이상 없음')}
+  }else if(d.status==='infected'){
    d.stage++;
    if(d.stage>=3){d.status='zombie';eventText=d.name+'이(가) 격리실에서 좀비로 변했습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 좀비화 확인')}
    else if(d.stage>=2){d.status='turning';eventText=d.name+'의 상태가 급격히 악화되고 있습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 변이 징후 발생')}
@@ -120,10 +128,39 @@ function advanceIsolation(){
  renderIsolation();
  if(eventText)notify('격리실 경보 · '+eventText);
 }
+function openIsolation(){renderIsolation();iso.classList.add('show')}
+function releaseDetainee(id){
+ const d=isolation.find(function(x){return x.id===id});if(!d||d.status!=='cleared')return;
+ isolation=isolation.filter(function(x){return x.id!==id});
+ addIsoLog('<b>'+escapeHtml(d.name)+'</b> 관찰 종료 · 생존자 캠프로 이동');
+ const b=bridge();if(b)b.applyOutbreakResult({trustDelta:2,scoreDelta:70});
+ notify(d.name+' · 이상 없음 확인, 생존자 캠프로 이동');renderIsolation();
+}
+function burnDetainee(id){
+ const d=isolation.find(function(x){return x.id===id});if(!d)return;
+ if(!window.confirm(d.name+'을(를) 소각실로 이송하시겠습니까? 되돌릴 수 없습니다.'))return;
+ const infected=!!(d.infectedAtEntry||d.acquired||d.status==='infected'||d.status==='turning'||d.status==='zombie');
+ isolation=isolation.filter(function(x){return x.id!==id});
+ addIsoLog('<b>'+escapeHtml(d.name)+'</b> 소각실 이송'+(infected?' · 감염원 제거':' · 정상인 소각'));
+ const b=bridge();if(b)b.applyOutbreakResult(infected?{infectionDelta:-1,trustDelta:-1,scoreDelta:60}:{trustDelta:-14,scoreDelta:-260});
+ notify(infected?'감염원 소각 완료':'정상인을 소각했습니다 · 시민 신뢰 급락');renderIsolation();
+}
+function burnRoom(){
+ if(!isolation.length){notify('격리실이 비어 있습니다.');return}
+ if(!window.confirm('격리실 전체를 비상 소각하시겠습니까? 정상인도 함께 사망할 수 있습니다.'))return;
+ const healthy=isolation.filter(function(d){return !(d.infectedAtEntry||d.acquired||d.status==='infected'||d.status==='turning'||d.status==='zombie')}).length;
+ const infected=isolation.length-healthy;
+ addIsoLog('<b>비상 소각 실시</b> · 감염 '+infected+'명 / 정상 '+healthy+'명');
+ isolation=[];
+ const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-Math.min(8,infected*2),trustDelta:-(healthy*12+2),scoreDelta:infected*80-healthy*260});
+ notify(healthy?'격리실 소각 · 정상인 '+healthy+'명 희생':'격리실 소각 · 감염원 제거');renderIsolation();
+}
 function resetIsolation(){isolation=[];isoLog=[];isoSeq=0;renderIsolation();iso.classList.remove('show')}
 
-isoBtn.addEventListener('click',function(){renderIsolation();iso.classList.add('show')});
+isoBtn.addEventListener('click',openIsolation);
 document.getElementById('q17IsoClose').addEventListener('click',function(){iso.classList.remove('show')});
+document.getElementById('q17BurnRoom').addEventListener('click',burnRoom);
+document.getElementById('q17IsoRoom').addEventListener('click',function(e){const btn=e.target.closest('button[data-iso-action]');if(!btn)return;const id=Number(btn.dataset.id);if(btn.dataset.isoAction==='release')releaseDetainee(id);else if(btn.dataset.isoAction==='burn')burnDetainee(id)});
 iso.addEventListener('click',function(e){if(e.target===iso)iso.classList.remove('show')});
 renderIsolation();
 
@@ -136,7 +173,7 @@ function resizeCanvas(){
  const w=Math.max(320,Math.round(r.width*dpr)),h=Math.max(240,Math.round(r.height*dpr));
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
 }
-function spawnZombie(x,y,hp,speed,name){zombies.push({x:x,y:y,r:22*(window.devicePixelRatio||1),hp:hp||1,speed:speed||70*(window.devicePixelRatio||1),hit:0,name:name||''})}
+function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,r:22*(window.devicePixelRatio||1),hp:hp||1,speed:speed||70*(window.devicePixelRatio||1),hit:0,name:name||'',attackDelay:attackDelay||0})}
 function setupCombat(kind,payload){
  resizeCanvas();mode=kind;currentIncidentInf=infection();currentIntruder=payload&&payload.name||'';campLosses=0;
  const W=canvas.width,H=canvas.height,dpr=window.devicePixelRatio||1;
@@ -145,8 +182,8 @@ function setupCombat(kind,payload){
  if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer','soldier'];
   const pts=[[.34,.34],[.48,.28],[.62,.36],[.40,.48],[.58,.50],[.47,.60],[.68,.58]];
-  pts.forEach(function(p,i){survivors.push({x:W*p[0],y:H*p[1],r:20*dpr,sprite:survivorSprites[i],alive:true,wander:(i%2?1:-1)*(18+i*2)*dpr})});
-  spawnZombie(W*.08,H*.23,1,78*dpr,currentIntruder);
+  pts.forEach(function(p,i){survivors.push({x:W*p[0],y:H*p[1],r:20*dpr,sprite:survivorSprites[i],alive:true,wander:(i%2?1:-1)*(14+i*1.5)*dpr,bite:0,bitten:false,turnTimer:0})});
+  spawnZombie(W*.10,H*.46,1,58*dpr,currentIntruder,1.5);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
   document.getElementById('q17SurvivorStat').style.display='';
  }else{
@@ -198,14 +235,14 @@ function startReload(){if(!player||reload>0||player.ammo===player.maxAmmo)return
 function nearestZombie(){let best=null,bd=Infinity;zombies.forEach(function(z){const d=(z.x-player.x)*(z.x-player.x)+(z.y-player.y)*(z.y-player.y);if(d<bd){bd=d;best=z}});return best}
 function nearestTargetForZombie(z){
  let target=player,bd=Math.hypot(z.x-player.x,z.y-player.y);
- if(mode==='camp'){
-  survivors.forEach(function(s){if(!s.alive)return;const d=Math.hypot(z.x-s.x,z.y-s.y)*.76;if(d<bd){bd=d;target=s}});
+ if(mode==='camp'&&z.attackDelay<=0){
+  survivors.forEach(function(s){if(!s.alive||s.bitten)return;const d=Math.hypot(z.x-s.x,z.y-s.y)*.86;if(d<bd){bd=d;target=s}});
  }
  return target;
 }
 function convertSurvivor(s){
  if(!s.alive)return;s.alive=false;campLosses++;
- spawnZombie(s.x,s.y,1,82*(window.devicePixelRatio||1),'캠프 감염자');
+ spawnZombie(s.x,s.y,1,68*(window.devicePixelRatio||1),'캠프 감염자',2.0);
  notify('캠프 감염 확산 · 생존자 1명이 좀비로 변했습니다.');
  updateHud();
 }
@@ -219,20 +256,34 @@ function update(dt){
  if(mouse.down)shoot(mouse.x,mouse.y);
  if(autoTarget){const ax=autoTarget.x-player.x,ay=autoTarget.y-player.y,l=Math.hypot(ax,ay);if(l>55*(window.devicePixelRatio||1)){player.x+=ax/l*150*dt*(window.devicePixelRatio||1);player.y+=ay/l*150*dt*(window.devicePixelRatio||1)}const n=nearestZombie();if(n)shoot(n.x,n.y)}
  if(mode==='camp'){
-  survivors.forEach(function(s){if(!s.alive)return;s.x+=s.wander*dt;if(s.x<canvas.width*.28||s.x>canvas.width*.74)s.wander*=-1});
+  survivors.forEach(function(s){
+   if(!s.alive)return;
+   if(s.bitten){s.turnTimer-=dt;if(s.turnTimer<=0){convertSurvivor(s);return}}
+   let nearest=null,nd=Infinity;zombies.forEach(function(z){const d=Math.hypot(z.x-s.x,z.y-s.y);if(d<nd){nd=d;nearest=z}});
+   if(nearest&&nd<155*(window.devicePixelRatio||1)&&!s.bitten){
+    const ax=s.x-nearest.x,ay=s.y-nearest.y,l=Math.hypot(ax,ay)||1;
+    s.x+=ax/l*72*dt*(window.devicePixelRatio||1);s.y+=ay/l*72*dt*(window.devicePixelRatio||1);
+   }else if(!s.bitten){s.x+=s.wander*dt;if(s.x<canvas.width*.28||s.x>canvas.width*.74)s.wander*=-1}
+   s.x=Math.max(canvas.width*.27,Math.min(canvas.width*.76,s.x));s.y=Math.max(canvas.height*.25,Math.min(canvas.height*.66,s.y));
+   if(!s.bitten)s.bite=Math.max(0,s.bite-dt*.35);
+  });
  }
  bullets.forEach(function(b){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt});
  bullets=bullets.filter(function(b){return b.life>0&&b.x>-20&&b.y>-20&&b.x<canvas.width+20&&b.y<canvas.height+20});
  zombies.forEach(function(z){
+  z.attackDelay=Math.max(0,z.attackDelay-dt);
   const target=nearestTargetForZombie(z),ax=target.x-z.x,ay=target.y-z.y,l=Math.hypot(ax,ay)||1;
   z.x+=ax/l*z.speed*dt;z.y+=ay/l*z.speed*dt;z.hit=Math.max(0,z.hit-dt);
   if(target===player){
    if(l<player.r+z.r&&z.hit<=0){player.hp=Math.max(0,player.hp-12);z.hit=.65;updateHud();if(player.hp<=0){lose();return}}
-  }else if(target.alive&&l<target.r+z.r){convertSurvivor(target);z.hit=.4}
+  }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&l<target.r+z.r){
+   target.bite=(target.bite||0)+dt;
+   if(target.bite>=1.35){target.bitten=true;target.turnTimer=4.2;target.bite=0;z.attackDelay=.8;notify('생존자 물림 · 약 4초 뒤 변이 위험');}
+  }
  });
  bullets.forEach(function(b){zombies.forEach(function(z){if(z.hp<=0||b.life<=0)return;if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+5){z.hp--;b.life=0}})});
  zombies=zombies.filter(function(z){return z.hp>0});updateHud();
- if(zombies.length===0)win();
+ if(zombies.length===0&&!survivors.some(function(s){return s.alive&&s.bitten}))win();
 }
 function draw(){
  const W=canvas.width,H=canvas.height,dpr=window.devicePixelRatio||1;ctx.clearRect(0,0,W,H);
@@ -244,7 +295,7 @@ function draw(){
   ctx.fillStyle='#2e3c32';ctx.fillRect(W*.24,H*.18,W*.56,H*.52);
   ctx.strokeStyle='#8a8e76';ctx.lineWidth=5*dpr;ctx.strokeRect(W*.24,H*.18,W*.56,H*.52);
   ctx.fillStyle='#d7c45e';ctx.font=(12*dpr)+'px sans-serif';ctx.fillText('SURVIVOR CAMP',W*.27,H*.23);
-  survivors.forEach(function(s){if(!s.alive)return;const im=images[s.sprite]||images.player,ss=s.r*3;ctx.drawImage(im,s.x-ss/2,s.y-ss*.67,ss,ss)});
+  survivors.forEach(function(s){if(!s.alive)return;const im=images[s.sprite]||images.player,ss=s.r*3;ctx.drawImage(im,s.x-ss/2,s.y-ss*.67,ss,ss);if(s.bitten){ctx.fillStyle='#d6575f';ctx.beginPath();ctx.arc(s.x,s.y-ss*.6,6*dpr,0,Math.PI*2);ctx.fill()}});
  }else{
   ctx.fillStyle='#784047';ctx.fillRect(0,0,W,8*dpr);ctx.fillRect(0,H-8*dpr,W,8*dpr);ctx.fillRect(0,0,8*dpr,H);ctx.fillRect(W-8*dpr,0,8*dpr,H);
  }
@@ -290,6 +341,8 @@ canvas.addEventListener('pointercancel',function(){mouse.down=false;autoTarget=n
 window.addEventListener('resize',function(){if(active)resizeCanvas()});
 
 window.Q17Outbreak={
+ canQuarantine:function(){return isolation.length<ISOLATION_CAPACITY},
+ openIsolation:openIsolation,
  onDecision:function(payload,next){
   advanceIsolation();
   if(payload.action==='quarantine')addDetainee(payload);
