@@ -41,7 +41,7 @@ var LEVELS=[
 ];
 
 var MAT={
- road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:165},
+ road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:170},
  beam:{label:"철제 빔",rate:.8,max:300,stiff:.88,limit:.050,width:7,color:"#4da8ff",weight:.08},
  cable:{label:"케이블",rate:.55,max:380,stiff:.58,limit:.075,width:3,color:"#f5d15e",weight:.03}
 };
