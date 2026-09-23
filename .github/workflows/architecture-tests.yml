@@ -77,6 +77,7 @@ jobs:
             ui-visual-polish.js \
             seed-house-entry.js \
             games/low_cleanup_squad/cleanup-squad.js \
+            games/high_bridge_builder/bridge-builder.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
             scripts/apply-game-classification-overrides.cjs \
@@ -154,6 +155,8 @@ jobs:
         run: node --test tests/word-blaster.test.cjs
       - name: Run Cleanup Squad tests
         run: node --test tests/cleanup-squad.test.cjs
+      - name: Run Bridge Lab tests
+        run: node --test tests/bridge-builder.test.cjs
       - name: Run server stats Worker tests
         run: node --test tests/server-stats-worker.test.mjs
       - name: Run popular game ranking tests
