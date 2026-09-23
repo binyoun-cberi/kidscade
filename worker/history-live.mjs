@@ -324,14 +324,20 @@ async function answerQuestion(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   let room=await roomByCode(env,body.code);
   if(!room)return json({ok:false,error:'room_not_found'},404);
-  room=await autoReveal(env,room);
-  if(room.status!=='question')return json({ok:false,error:'answer_closed'},409);
   const player=await playerByToken(env,room.id,bearer(request));
   if(!player)return json({ok:false,error:'player_required'},403);
+  const qi=Number(room.current_question);
+  if(qi>=0){
+    const prior=await env.DB.prepare('SELECT option_index,is_correct,points FROM history_live_answers WHERE room_id=? AND player_id=? AND question_index=?')
+      .bind(room.id,player.id,qi).first();
+    if(prior)return json({ok:true,submitted:true,duplicate:true,optionIndex:Number(prior.option_index),correct:Number(prior.is_correct)===1,points:Number(prior.points||0)});
+  }
+  room=await autoReveal(env,room);
+  if(room.status!=='question')return json({ok:false,error:'answer_closed'},409);
   const raw=Number(body.optionIndex);
   const now=Date.now(),deadline=new Date(room.question_deadline_at).getTime(),started=new Date(room.question_started_at).getTime();
   if(!Number.isFinite(deadline)||now>deadline)return json({ok:false,error:'answer_closed'},409);
-  const qi=Number(room.current_question),q=currentQuestion(room);
+  const q=currentQuestion(room);
   if(!q)return json({ok:false,error:'question_missing'},500);
   if(!Number.isInteger(raw)||raw<0||raw>=q.o.length)return json({ok:false,error:'invalid_option'},400);
   const display=displayedQuestion(room,q),originalOption=display.order[raw];
@@ -340,10 +346,14 @@ async function answerQuestion(request,env){
   const inserted=await env.DB.prepare(`INSERT OR IGNORE INTO history_live_answers
     (room_id,player_id,question_index,option_index,answered_at,is_correct,points) VALUES (?,?,?,?,?,?,?)`)
     .bind(room.id,player.id,qi,raw,nowIso(now),correct?1:0,points).run();
-  if(!Number(inserted?.meta?.changes||0))return json({ok:true,submitted:true,duplicate:true});
+  if(!Number(inserted?.meta?.changes||0)){
+    const prior=await env.DB.prepare('SELECT option_index,is_correct,points FROM history_live_answers WHERE room_id=? AND player_id=? AND question_index=?')
+      .bind(room.id,player.id,qi).first();
+    return json({ok:true,submitted:true,duplicate:true,optionIndex:Number(prior?.option_index??raw),correct:Number(prior?.is_correct)===1,points:Number(prior?.points||0)});
+  }
   await env.DB.prepare('UPDATE history_live_players SET score=score+?,streak=?,last_seen_at=? WHERE id=?').bind(points,newStreak,nowIso(now),player.id).run();
   await revealIfEveryoneAnswered(env,room,qi,now);
-  return json({ok:true,submitted:true,duplicate:false});
+  return json({ok:true,submitted:true,duplicate:false,correct,points});
 }
 
 export async function handleHistoryLiveRequest(request,env){
