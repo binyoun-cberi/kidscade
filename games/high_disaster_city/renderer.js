@@ -18,7 +18,7 @@ class Renderer{
   this.canvas.width=Math.max(1,Math.round(this.view.w*dpr));this.canvas.height=Math.max(1,Math.round(this.view.h*dpr));this.ctx.setTransform(dpr,0,0,dpr,0,0);this.ctx.imageSmoothingEnabled=false;
  }
  worldTransform(){
-  const sx=this.view.w/D.W,sy=this.view.h/D.H,scale=Math.min(sx,sy),ox=(this.view.w-D.W*scale)/2,oy=(this.view.h-D.H*scale)/2;return{scale,ox,oy}
+  const sx=this.view.w/D.W,sy=this.view.h/D.H,aspect=this.view.w/Math.max(1,this.view.h);let scale,ox,oy;if(aspect>=1.45){scale=sx;ox=0;oy=this.view.h*.5-350*scale}else{scale=Math.min(sx,sy);ox=(this.view.w-D.W*scale)/2;oy=(this.view.h-D.H*scale)/2}return{scale,ox,oy}
  }
  toWorld(clientX,clientY){
   const r=this.canvas.getBoundingClientRect(),t=this.worldTransform();return{x:(clientX-r.left-t.ox)/t.scale,y:(clientY-r.top-t.oy)/t.scale}
