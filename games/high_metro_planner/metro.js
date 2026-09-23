@@ -21,7 +21,7 @@ const ui={
   start:$('startBtn'),tutorial:$('tutorialBtn'),closeHelp:$('closeHelpBtn'),
   retry:$('retryBtn'),menuBtn:$('menuBtn'),pause:$('pauseBtn'),speed:$('speedBtn'),sound:$('soundBtn'),helpBtn:$('helpBtn'),
   week:$('weekLabel'),delivered:$('deliveredLabel'),waiting:$('waitingLabel'),danger:$('dangerLabel'),
-  notice:$('notice'),lineTools:$('lineTools'),trainTool:$('trainTool'),bridgeTool:$('bridgeTool'),undo:$('undoBtn'),
+  notice:$('notice'),lineTools:$('lineTools'),trainTool:$('trainTool'),bridgeTool:$('bridgeTool'),trimTool:$('trimTool'),undo:$('undoBtn'),
   trainStock:$('trainStock'),bridgeStock:$('bridgeStock'),best:$('bestText'),choices:$('upgradeChoices'),
   resultTitle:$('resultTitle'),resultReason:$('resultReason'),resultDelivered:$('resultDelivered'),resultTime:$('resultTime'),resultStations:$('resultStations'),
   tutorialBubble:$('tutorialBubble'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialSkip:$('tutorialSkip')
@@ -108,7 +108,7 @@ function worldPoint(ev){
 function resetState(tutorial){
   const seed=(Date.now()^(Math.random()*0xffffffff))>>>0;rng=mulberry32(seed);
   Object.assign(state,{running:true,paused:false,upgradeOpen:false,gameOver:false,speed:1,time:0,delivered:0,stations:[],lines:[],unlockedLines:2,spareTrains:2,bridges:1,capacity:6,nextStationAt:42,nextUpgradeAt:75,spawnCarry:0,stationSeq:0,tutorialMode:!!tutorial,week:1});
-  selectedLine=0;pendingTrain=false;undoStack=[];drag=null;tutorialStep=0;
+  selectedLine=0;pendingTrain=false;pendingTrim=false;undoStack=[];drag=null;tutorialStep=0;
   state.lines=LINE_DEFS.map((d,i)=>({id:i,name:d.name,color:d.color,stops:[],trains:[]}));
   const base=[
     [165,205,'circle'],[338,168,'triangle'],[270,405,'square'],[695,215,'diamond'],[790,414,'circle']
@@ -163,7 +163,7 @@ function updateLineButtons(){
   ui.lineTools.innerHTML='';
   state.lines.forEach((line,i)=>{
     const b=document.createElement('button');
-    b.type='button';b.className='tool lineTool'+(i===selectedLine&&!pendingTrain?' active':'')+(i>=state.unlockedLines?' locked':'');
+    b.type='button';b.className='tool lineTool'+(i===selectedLine&&!pendingTrain&&!pendingTrim?' active':'')+(i>=state.unlockedLines?' locked':'');
     b.style.setProperty('--line',line.color);
     b.innerHTML='<span>●</span><b>'+line.name+'</b><small>'+line.trains.length+'🚇</small>';
     b.disabled=i>=state.unlockedLines;
@@ -177,7 +177,7 @@ function updateLineButtons(){
   });
   ui.trainStock.textContent=state.spareTrains;
   ui.bridgeStock.textContent=state.bridges;
-  ui.trainTool.classList.toggle('ready',pendingTrain);
+  ui.trainTool.classList.toggle('ready',pendingTrain);ui.trimTool.classList.toggle('ready',pendingTrim);
 }
 function updateHud(){
   state.week=Math.floor(state.time/75)+1;
@@ -223,14 +223,14 @@ ui.tutorialSkip.addEventListener('click',()=>{
 
 function snapshot(){
   return {
-    lines:state.lines.map(l=>({stops:l.stops.slice(),trainCount:l.trains.length})),
+    lines:state.lines.map(l=>({stops:l.stops.slice(),trains:l.trains.map(t=>Object.assign({},t,{passengers:t.passengers.map(p=>Object.assign({},p))}))})),
     spareTrains:state.spareTrains,bridges:state.bridges,unlockedLines:state.unlockedLines,capacity:state.capacity
   };
 }
 function pushUndo(){undoStack.push(snapshot());if(undoStack.length>14)undoStack.shift()}
 function restore(snap){
   state.spareTrains=snap.spareTrains;state.bridges=snap.bridges;state.unlockedLines=snap.unlockedLines;state.capacity=snap.capacity;
-  state.lines.forEach((l,i)=>{l.stops=snap.lines[i].stops.slice();l.trains=[];for(let n=0;n<snap.lines[i].trainCount;n++)l.trains.push(makeTrain(l.id,n*.18))});
+  state.lines.forEach((l,i)=>{l.stops=snap.lines[i].stops.slice();l.trains=snap.lines[i].trains.map(t=>Object.assign({},t,{passengers:t.passengers.map(p=>Object.assign({},p))}))});
   updateLineButtons();showNotice('이전 노선 상태로 되돌렸어요.',1000);play('click');
 }
 ui.undo.addEventListener('click',()=>{if(!state.running||!undoStack.length){play('error');showNotice('되돌릴 변경이 없어요.');return}restore(undoStack.pop())});
@@ -291,6 +291,28 @@ ui.trainTool.addEventListener('click',()=>{
   pendingTrain=!pendingTrain;updateLineButtons();play('click');showNotice(pendingTrain?'열차를 넣을 노선 색을 누르세요.':'열차 배치를 취소했어요.',1200);
 });
 ui.bridgeTool.addEventListener('click',()=>{play('click');showNotice('교량은 강을 건너는 새 구간에 자동으로 사용돼요. · '+state.bridges+'개 남음',1700)});
+ui.trimTool.addEventListener('click',()=>{
+  if(!state.running)return;
+  pendingTrim=!pendingTrim;pendingTrain=false;updateLineButtons();play('click');
+  showNotice(pendingTrim?'선택한 노선의 맨 끝 역을 눌러 구간을 철거하세요.':'노선 철거를 취소했어요.',1400);
+});
+function trimSelectedLineAt(station){
+  const line=lineById(selectedLine);
+  if(!line||line.stops.length<2){play('error');showNotice('줄일 노선이 없어요.');return}
+  const firstId=line.stops[0],lastId=line.stops[line.stops.length-1];
+  if(station.id!==firstId&&station.id!==lastId){play('error');showNotice('선택한 노선의 맨 끝 역을 눌러 주세요.');return}
+  pushUndo();
+  const first=stationById(firstId),last=stationById(lastId);
+  let neighbor;
+  if(station.id===firstId){neighbor=stationById(line.stops[1]);if(first&&neighbor&&segmentCrossesRiver(first,neighbor))state.bridges++;line.stops.shift()}
+  else{neighbor=stationById(line.stops[line.stops.length-2]);if(last&&neighbor&&segmentCrossesRiver(last,neighbor))state.bridges++;line.stops.pop()}
+  if(line.stops.length<2){
+    const home=stationById(line.stops[0]);
+    for(const t of line.trains){if(home&&t.passengers.length)home.queue.push(...t.passengers)}
+    state.spareTrains+=line.trains.length;line.trains=[];line.stops=[];
+  }else resetLineTrains(line);
+  pendingTrim=false;updateLineButtons();play('confirm');showNotice(line.name+'의 끝 구간을 철거했어요.',1200);
+}
 
 function graphEdges(){
   const adj=new Map(state.stations.map(s=>[s.id,[]]));
@@ -461,6 +483,7 @@ canvas.addEventListener('pointerdown',ev=>{
   const p=worldPoint(ev);pointer=p;canvas.setPointerCapture?.(ev.pointerId);
   if(pendingTrain){const line=nearestLineAt(p);if(line)assignTrain(line.id);else{play('error');showNotice('열차를 넣을 노선을 눌러 주세요.')}return}
   const s=nearestStation(p);
+  if(pendingTrim){if(s)trimSelectedLineAt(s);else{play('error');showNotice('노선 끝의 역을 눌러 주세요.')}return}
   if(s){drag={from:s,pointerId:ev.pointerId};play('click',1.06)}
 });
 canvas.addEventListener('pointermove',ev=>{pointer=worldPoint(ev)});
@@ -596,7 +619,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.runn
 addEventListener('keydown',ev=>{
   if(ev.code==='Space'&&state.running&&!state.upgradeOpen){ev.preventDefault();ui.pause.click()}
   if(ev.code==='Digit1'||ev.code==='Digit2'||ev.code==='Digit3'||ev.code==='Digit4'||ev.code==='Digit5'){
-    const i=Number(ev.code.slice(-1))-1;if(i<state.unlockedLines){selectedLine=i;pendingTrain=false;updateLineButtons();play('click')}
+    const i=Number(ev.code.slice(-1))-1;if(i<state.unlockedLines){selectedLine=i;pendingTrain=false;pendingTrim=false;updateLineButtons();play('click')}
   }
 });
 
