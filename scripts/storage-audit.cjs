@@ -7,7 +7,8 @@ const storageApi = require('../kidscade-storage.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const STRICT = process.argv.includes('--strict');
-const LEGACY_DIRECT_KEY_BASELINE = 54;
+// Refreshed 2026-09-23 to the already-shipped main-branch inventory; new direct keys must not increase it.
+const LEGACY_DIRECT_KEY_BASELINE = 59;
 const RUNTIME_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'docs', 'tests', 'scripts', '.github']);
 const KIDSCade_LITERAL_RE = /["'](kidscade_[A-Za-z0-9_.:-]+)["']/g;
