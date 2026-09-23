@@ -305,10 +305,10 @@ function startSoloQuestion(){
 function soloState(status){
   const q=soloGame.questions[soloGame.index],number=soloGame.index+1;
   const player={id:'solo',nickname:session.nickname,score:soloGame.score,streak:soloGame.streak,rank:1,answered:Boolean(soloGame.last),online:true};
-  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[]},players:[player],question:{number,total:soloGame.questions.length,era:q.era,difficulty:q.difficulty,prompt:q.q,options:q.o,kind:q.family==='ox'?'ox':'choice'}};
+  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[]},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:q.o,kind:q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
   if(status==='reveal'){
     const stats=Array.from({length:q.o.length},()=>0); if(soloGame.last?.option>=0)stats[soloGame.last.option]=1;
-    state.reveal={answerIndex:q.a,explanation:q.e,optionStats:stats,answeredCount:soloGame.last?.option>=0?1:0,correctCount:soloGame.last?.correct?1:0};
+    state.reveal={answerIndex:q.a,era:q.era,explanation:q.e,optionStats:stats,answeredCount:soloGame.last?.option>=0?1:0,correctCount:soloGame.last?.correct?1:0};
   }
   if(status==='finished')state.results=[player];
   return state;
@@ -366,7 +366,7 @@ function renderLobby(s){
   $('roster').innerHTML=s.players.map(p=>'<span class="pill '+(p.online?'':'off')+'">'+esc(p.nickname)+'</span>').join('');
 }
 function renderQuestion(s){
-  showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});$('qEra').textContent=q.era;$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
+  showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});$('qEra').textContent='시대 비공개';$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
   $('hostProgress').classList.toggle('hidden',session.role!=='host');
   const n=s.players.filter(p=>p.answered).length;$('answeredCount').textContent=n;$('totalCount').textContent=s.players.length;$('answerBar').style.width=(s.players.length?n/s.players.length*100:0)+'%';
   const self=s.players.find(p=>p.id===session.playerId),alreadySubmitted=session.role==='solo'?Boolean(soloGame?.last):(Boolean(self?.answered)||answeredFor===s.room.questionNumber);
@@ -391,7 +391,7 @@ function renderReveal(s){
     }else if(session.role==='host'){playSfx('ui.confirm',{volume:.22,cooldownMs:300})}
   });
   $('nextQuestionBtn').textContent=session.role==='solo'?'다음 문제로':'다음 문제';
-  $('revealEra').textContent=q.era;$('revealNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('revealQuestion').textContent=q.prompt;
+  $('revealEra').textContent=r.era||q.era||'시대 확인';$('revealNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('revealQuestion').textContent=q.prompt;
   $('revealAnswers').classList.toggle('ox',q.kind==='ox');$('revealAnswers').innerHTML=q.options.map((o,i)=>'<div class="answer '+(i===r.answerIndex?'correct':'wrong')+' '+(i===r.answerIndex?'fx-correct':((i===lastChosenOption&&i!==r.answerIndex)?'fx-wrong':''))+'">'+esc(o)+(session.role==='solo'?'':' <small>('+r.optionStats[i]+'명)</small>')+'</div>').join('');
   $('explanation').textContent=r.explanation;$('hostNext').classList.toggle('hidden',!['host','solo'].includes(session.role));$('studentNext').classList.toggle('hidden',session.role!=='player');
   $('myScore').textContent=me?me.score.toLocaleString()+'점':'';const combo=$('comboChip');const streak=Number(me?.streak||0);combo.textContent=streak>=2?'🔥 '+streak+'연속 정답!':'';combo.classList.toggle('hidden',streak<2);
