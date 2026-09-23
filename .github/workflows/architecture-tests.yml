@@ -42,6 +42,8 @@ jobs:
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
+            wordchain-realtime.js \
+            history-live-realtime.js \
             rhythm-dash-v11.js \
             patience-tower-duel-entry.js \
             teacher-accounts.js \
@@ -56,7 +58,14 @@ jobs:
             worker/game-records.mjs \
             worker/multiplayer.mjs \
             worker/wordchain-match.mjs \
+            worker/wordchain-dictionary.mjs \
+            worker/wordchain-room-model.mjs \
+            worker/wordchain-room.mjs \
+            worker/wordchain-room-router.mjs \
             worker/history-live.mjs \
+            worker/history-room-model.mjs \
+            worker/history-room.mjs \
+            worker/history-room-router.mjs \
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
@@ -120,8 +129,10 @@ jobs:
         run: node --test tests/multiplayer.test.mjs
       - name: Run word-chain dictionary tests
         run: node --test tests/wordchain.test.mjs
+      - name: Run word-chain realtime v2 tests
+        run: node --test tests/wordchain-room.test.mjs tests/wordchain-realtime-client.test.mjs
       - name: Run History Timebattle LIVE tests
-        run: node --test tests/history-live.test.mjs
+        run: node --test tests/history-live.test.mjs tests/history-room.test.mjs tests/history-realtime-client.test.mjs
       - name: Run Rhythm Dash v11 tests
         run: node --test tests/rhythm-dash-v11.test.cjs
       - name: Run Alien Pizza DX2 tests
