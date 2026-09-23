@@ -24,7 +24,6 @@ const AUDIO_EXTRA_HOOK_TITLES = new Set([
   '문방구 사장님',
   '약수 타워 디펜스',
   '넘버 시그널 (룬의 숲)',
-  '역사 로얄',
   '오목 아레나'
 ]);
 
