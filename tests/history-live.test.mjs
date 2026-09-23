@@ -231,3 +231,37 @@ test('history timebattle inline game script parses', () => {
   assert.ok(scripts.length>0);
   for(const script of scripts)new Function(script);
 });
+
+
+test('question phase does not leak the era before reveal', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(worker,/fresh\.status==='reveal'\?\{era:q\.era\}:\{\}/);
+  assert.match(worker,/payload\.reveal=\{answerIndex:display\.answerIndex,era:q\.era/);
+  assert.match(html,/qEra'\)\.textContent='시대 비공개'/);
+  assert.match(html,/revealEra'\)\.textContent=r\.era\|\|q\.era/);
+});
+
+test('generated history text avoids placeholder Korean particles', () => {
+  for (const [index,q] of QUESTION_BANK.entries()) {
+    const text=q.q+' '+q.e;
+    for (const bad of ['은(는)','이(가)','과(와)','을(를)']) {
+      assert.ok(!text.includes(bad),'question '+index+' contains awkward particle '+bad);
+    }
+  }
+});
+
+test('verified modern-history date corrections stay fixed', () => {
+  const bank=fs.readFileSync(new URL('../data/history-live-question-bank.mjs',import.meta.url),'utf8');
+  assert.match(bank,/"name": "통감부 설치",[\s\S]{0,90}"date": "1906년 2월"/);
+  assert.match(bank,/"name": "고종 강제 퇴위",[\s\S]{0,90}"date": "1907년 7월"/);
+  assert.match(bank,/"name": "대한 제국 군대 해산",[\s\S]{0,90}"date": "1907년 8월"/);
+  assert.match(bank,/return ay<by;/);
+});
+
+test('regular false OX uses another concrete fact instead of a neighboring-era guess', () => {
+  const falseOx=QUESTION_BANK.filter(q=>q.family==='ox'&&q.a===1&&!q.id.startsWith('ox-direct-'));
+  assert.ok(falseOx.length>40);
+  assert.ok(falseOx.every(q=>q.q.includes('다음 설명은')));
+  assert.ok(falseOx.every(q=>!q.q.includes('가장 관련 깊다')));
+});
