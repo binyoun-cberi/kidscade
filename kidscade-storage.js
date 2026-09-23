@@ -49,7 +49,15 @@
     byeokrandoSave: 'kidscade_byeokrando_v1',
     musicStudioSave: 'kidscade_music_studio_v2',
     timingExact10Local: 'kidscade_timing_exact10_local_v1',
-    omokArenaSave: 'kidscade_omok_arena_v1'
+    omokArenaSave: 'kidscade_omok_arena_v1',
+    internalMedicineSave: 'kidscade_internal_medicine_v1',
+    schoolSurvivalSave: 'kidscade_school_survival_v2',
+    worldAudioSettings: 'kidscade_world_audio_v1',
+    wordchainRoomId: 'kidscade_wordchain_room_id',
+    wordchainV2Session: 'kidscade_wordchain_v2_session',
+    towerV2Session: 'kidscade_tower_v2_session',
+    quarantineTutorialSeen: 'kidscade_quarantine17_tutorial_seen',
+    quarantineBestV2: 'kidscade_quarantine17_best_v2'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
