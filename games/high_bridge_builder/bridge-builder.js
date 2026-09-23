@@ -18,11 +18,11 @@ var el={
 };
 
 var VEHICLES={
- sedan:{label:"승용차",file:"sedan-blue.png",load:1.0,speed:92,scale:2.8},
- bus:{label:"스쿨버스",file:"bus-school.png",load:1.65,speed:76,scale:2.7},
- ambulance:{label:"구급차",file:"ambulance.png",load:1.35,speed:88,scale:2.8},
- firetruck:{label:"소방차",file:"firetruck.png",load:1.9,speed:72,scale:2.8},
- truck:{label:"대형 화물차",file:"truck.png",load:2.65,speed:60,scale:2.55}
+ sedan:{label:"승용차",file:"sedan-blue.png",load:3.4,speed:92,scale:2.8},
+ bus:{label:"스쿨버스",file:"bus-school.png",load:5.6,speed:76,scale:2.7},
+ ambulance:{label:"구급차",file:"ambulance.png",load:4.6,speed:88,scale:2.8},
+ firetruck:{label:"소방차",file:"firetruck.png",load:6.2,speed:72,scale:2.8},
+ truck:{label:"대형 화물차",file:"truck.png",load:8.8,speed:60,scale:2.55}
 };
 var vehicleImages={};
 Object.keys(VEHICLES).forEach(function(k){
@@ -41,16 +41,16 @@ var LEVELS=[
 ];
 
 var MAT={
- road:{label:"도로",rate:1.4,max:175,stiff:.93,limit:.032,width:11,color:"#68758a"},
- beam:{label:"철제 빔",rate:.8,max:235,stiff:.80,limit:.055,width:7,color:"#4da8ff"},
- cable:{label:"케이블",rate:.55,max:310,stiff:.52,limit:.085,width:3,color:"#f5d15e"}
+ road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:150},
+ beam:{label:"철제 빔",rate:.8,max:235,stiff:.88,limit:.050,width:7,color:"#4da8ff",weight:.08},
+ cable:{label:"케이블",rate:.55,max:310,stiff:.58,limit:.075,width:3,color:"#f5d15e",weight:.03}
 };
 
 var S={
  mode:"campaign",level:0,tool:"road",nodes:[],members:[],history:[],nextNode:1,
  bankL:430,bankR:770,deckY:330,budget:0,spent:0,testing:false,simTime:0,
  pointer:{down:false,start:null,x:0,y:0},route:null,vehicle:null,vehicleIndex:0,
- particles:[],sound:true,resultOpen:false,firstBreak:null,finishDelay:0
+ particles:[],sound:true,resultOpen:false,firstBreak:null,finishDelay:0,maxSag:0,maxSway:0,flexStress:{}
 };
 
 var successAudio=new Audio("../../assets/audio/sfx/success/cheer-yay-01.mp3");
@@ -226,7 +226,58 @@ function findRoadRoute(){
 }
 function resetPhysics(){
  S.nodes.forEach(function(n){n.x=n.bx;n.y=n.by;n.px=n.bx;n.py=n.by;n.ax=0;n.ay=0});
- S.members.forEach(function(m){m.broken=false;m.stress=0;m.peak=0});S.particles=[];S.firstBreak=null;
+ S.members.forEach(function(m){m.broken=false;m.stress=0;m.peak=0});
+ S.particles=[];S.firstBreak=null;S.maxSag=0;S.maxSway=0;S.flexStress={};
+}
+
+function structuralSupportSet(){
+ var adj={},seen={},queue=[];
+ S.nodes.forEach(function(n){adj[n.id]=[];if(n.fixed){seen[n.id]=1;queue.push(n.id)}});
+ S.members.forEach(function(m){
+  if(m.broken||m.type==="road")return;
+  if(!adj[m.a]||!adj[m.b])return;
+  adj[m.a].push(m.b);adj[m.b].push(m.a);
+ });
+ while(queue.length){
+  var u=queue.shift();
+  (adj[u]||[]).forEach(function(v){if(!seen[v]){seen[v]=1;queue.push(v)}});
+ }
+ return seen;
+}
+
+function computeRouteFlexStress(){
+ var out={};if(!S.route||S.route.length<2)return out;
+ var supported=structuralSupportSet(),start=0,i,j,total,m;
+ for(i=1;i<S.route.length;i++){
+  if(!supported[S.route[i]]&&i!==S.route.length-1)continue;
+  total=0;
+  for(j=start;j<i;j++){
+   m=roadMemberFor(S.route[j],S.route[j+1]);if(m)total+=m.rest;
+  }
+  var stress=Math.pow(Math.max(.01,total/MAT.road.freeSpan),1.45)*.72;
+  for(j=start;j<i;j++){
+   m=roadMemberFor(S.route[j],S.route[j+1]);if(m)out[String(m.id)]=Math.max(out[String(m.id)]||0,stress);
+  }
+  start=i;
+ }
+ return out;
+}
+
+function applyMemberWeight(){
+ S.members.forEach(function(m){
+  if(m.broken)return;var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;
+  var load=(MAT[m.type].weight||0)*(m.rest/100);
+  if(!a.fixed)a.ay+=load*.5;if(!b.fixed)b.ay+=load*.5;
+ });
+}
+
+function updateBridgeMotionStats(){
+ if(!S.route)return;
+ S.route.forEach(function(id){
+  var n=nodeById(id);if(!n)return;
+  S.maxSag=Math.max(S.maxSag,n.y-n.by);
+  S.maxSway=Math.max(S.maxSway,Math.abs(n.x-n.bx));
+ });
 }
 function startTest(){
  if(S.testing)return;
@@ -271,9 +322,11 @@ function breakMember(m){
 function physicsStep(dt){
  var lv=currentLevel(),dts=Math.min(1.5,dt*60);
  S.simTime+=dt;
- var wind=lv.storm?Math.sin(S.simTime*3.1)*.16:0;
- S.nodes.forEach(function(n){n.ax=wind;n.ay=.19});
+ var wind=lv.storm?Math.sin(S.simTime*3.1)*.34:0;
+ S.nodes.forEach(function(n){n.ax=wind;n.ay=.28});
+ applyMemberWeight();
  applyVehicleLoad(dts);
+ S.flexStress=computeRouteFlexStress();
  S.nodes.forEach(function(n){
   if(n.fixed)return;
   var vx=(n.x-n.px)*.994,vy=(n.y-n.py)*.994,nx=n.x+vx+n.ax*dts*dts,ny=n.y+vy+n.ay*dts*dts;
@@ -285,6 +338,7 @@ function physicsStep(dt){
    var dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.0001,stretch=(d-m.rest)/m.rest;
    if(m.type==="cable"&&stretch<0){m.stress=Math.max(0,m.stress*.9);return}
    var abs=Math.abs(stretch),mat=MAT[m.type],proxy=abs/mat.limit;
+   if(m.type==="road")proxy=Math.max(proxy,S.flexStress[String(m.id)]||0);
    m.stress=Math.max(proxy,m.stress*.90);m.peak=Math.max(m.peak,m.stress);
    if(S.simTime>.32&&proxy>1.16){breakMember(m);return}
    var diff=(d-m.rest)/d,corr=diff*mat.stiff;
@@ -295,6 +349,7 @@ function physicsStep(dt){
   });
  }
  S.nodes.forEach(function(n){if(!n.fixed&&n.y>waterY+90){n.y=waterY+90}});
+ updateBridgeMotionStats();
  updateVehicle(dt);
  updateParticles(dt);
 }
@@ -302,7 +357,7 @@ function applyVehicleLoad(){
  var v=S.vehicle;if(!v||v.phase!=="bridge"||!S.route)return;
  var a=nodeById(S.route[v.seg]),b=nodeById(S.route[v.seg+1]);if(!a||!b)return;
  var load=VEHICLES[v.key].load*(currentLevel().loadMult||1),t=v.t;
- if(!a.fixed)a.ay+=load*.34*(1-t);if(!b.fixed)b.ay+=load*.34*t;
+ if(!a.fixed)a.ay+=load*.36*(1-t);if(!b.fixed)b.ay+=load*.36*t;
 }
 function updateVehicle(dt){
  var v=S.vehicle;if(!v)return;var meta=VEHICLES[v.key];
@@ -314,7 +369,14 @@ function updateVehicle(dt){
  }
  if(v.phase==="exit"){
   v.x+=meta.speed*dt;v.y=S.deckY-7;if(v.x>S.bankR+145){
-   S.vehicleIndex++;if(S.vehicleIndex<currentLevel().vehicles.length){spawnVehicle();toast("첫 차량 통과! 다음 차량이 출발해요.")}else success();
+   S.vehicleIndex++;
+   if(S.vehicleIndex<currentLevel().vehicles.length){spawnVehicle();toast("첫 차량 통과! 다음 차량이 출발해요.")}
+   else{
+    var lv=currentLevel();
+    if(lv.maxSag&&S.maxSag>lv.maxSag)fail("차는 건넜지만 다리가 너무 많이 처졌어요. 도로 아래를 더 튼튼하게 받쳐 주세요.");
+    else if(lv.maxSway&&S.maxSway>lv.maxSway)fail("다리가 옆으로 너무 크게 흔들렸어요. 대각선 빔으로 흔들림을 잡아 주세요.");
+    else success();
+   }
   }return;
  }
  if(v.phase==="bridge"){
