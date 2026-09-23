@@ -17,9 +17,7 @@ export async function routeHistoryRoom(request, env) {
   }
   // Legacy codes never contained 0. The namespace is unambiguous, even during rollback.
   const code = String(body.code || url.searchParams.get('code') || '').toUpperCase();
-  const percent=Math.max(0,Math.min(100,Number(env.HISTORY_LIVE_V2_PERCENT??100)||0));
-  const creating = action === 'rooms' && request.method === 'POST' && body.transport === 'v2' && env.HISTORY_LIVE_V2 === 'true'
-    && crypto.getRandomValues(new Uint32Array(1))[0]/4294967296*100<percent;
+  const creating = action === 'rooms' && request.method === 'POST' && body.transport === 'v2' && env.HISTORY_LIVE_V2 === 'true';
   if (!creating && !code.startsWith('0')) return null;
   const origin = request.headers.get('origin');
   if ((origin && origin !== url.origin) || (action === 'socket' && origin !== url.origin)) return reply('invalid_origin',403);

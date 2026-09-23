@@ -7,7 +7,9 @@ import { handleMultiplayerRequest } from './multiplayer.mjs';
 import { handleWordchainMatchRequest } from './wordchain-match.mjs';
 import { handleHistoryLiveRequest } from './history-live.mjs';
 import { routeHistoryRoom } from './history-room-router.mjs';
+import { routeWordchainRoom } from './wordchain-room-router.mjs';
 export { HistoryQuizRoom } from './history-room.mjs';
+export { WordchainRoom } from './wordchain-room.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
@@ -40,6 +42,9 @@ export default {
       }
     }
 
+
+    const wordchainRoomResponse = await routeWordchainRoom(request, env);
+    if (wordchainRoomResponse) return wordchainRoomResponse;
 
     const roomResponse = await routeHistoryRoom(request, env);
     if (roomResponse) return roomResponse;

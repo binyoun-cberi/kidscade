@@ -3,20 +3,68 @@
   "name": "kidscade",
   "compatibility_date": "2026-09-15",
   "main": "./worker/main.mjs",
-  "vars": { "HISTORY_LIVE_V2": "true", "HISTORY_LIVE_V2_PERCENT": "10" },
+  "vars": {
+    "HISTORY_LIVE_V2": "true",
+    "WORDCHAIN_LIVE_V2": "true"
+  },
   "ratelimits": [
-    { "name": "HISTORY_CREATE_LIMIT", "namespace_id": "9232601", "simple": { "limit": 20, "period": 60 } },
-    { "name": "HISTORY_REQUEST_LIMIT", "namespace_id": "9232602", "simple": { "limit": 120, "period": 60 } },
-    { "name": "HISTORY_ANON_LIMIT", "namespace_id": "9232603", "simple": { "limit": 600, "period": 60 } }
+    {
+      "name": "HISTORY_CREATE_LIMIT",
+      "namespace_id": "9232601",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "HISTORY_REQUEST_LIMIT",
+      "namespace_id": "9232602",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "HISTORY_ANON_LIMIT",
+      "namespace_id": "9232603",
+      "simple": {
+        "limit": 600,
+        "period": 60
+      }
+    }
   ],
   "durable_objects": {
-    "bindings": [{ "name": "HISTORY_ROOMS", "class_name": "HistoryQuizRoom" }]
+    "bindings": [
+      {
+        "name": "HISTORY_ROOMS",
+        "class_name": "HistoryQuizRoom"
+      },
+      {
+        "name": "WORDCHAIN_ROOMS",
+        "class_name": "WordchainRoom"
+      }
+    ]
   },
-  "migrations": [{ "tag": "history-room-v1", "new_sqlite_classes": ["HistoryQuizRoom"] }],
+  "migrations": [
+    {
+      "tag": "history-room-v1",
+      "new_sqlite_classes": [
+        "HistoryQuizRoom"
+      ]
+    },
+    {
+      "tag": "wordchain-room-v1",
+      "new_sqlite_classes": [
+        "WordchainRoom"
+      ]
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "d1_databases": [
     {

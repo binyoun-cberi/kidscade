@@ -60,7 +60,7 @@ async function parseJson(request) {
   return request.json();
 }
 
-async function requireStudent(request, env) {
+export async function requireStudent(request, env) {
   if (!env.DB) return { response: json({ ok: false, error: 'account_database_not_configured' }, 503) };
   const token = parseCookies(request)[SESSION_COOKIE] || '';
   if (!/^[0-9a-f]{64}$/i.test(token)) return { response: json({ ok: false, error: 'not_authenticated' }, 401) };
@@ -79,7 +79,7 @@ async function requireStudent(request, env) {
   return { row };
 }
 
-function nickname(value) {
+export function nickname(value) {
   return String(value || '새싹 게이머').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 12) || '새싹 게이머';
 }
 
@@ -243,7 +243,7 @@ async function dictionarySetForKey(request, env, key) {
   return byKey.get(key) || new Set();
 }
 
-async function dictionaryLookup(request, env, word) {
+export async function dictionaryLookup(request, env, word) {
   const normalized = normalizeKoreanWord(word);
   const blocked = await blockedWords(request, env);
   if (blocked.has(normalized)) return { exists: false, blocked: true };
@@ -252,7 +252,7 @@ async function dictionaryLookup(request, env, word) {
   return { exists: set.has(normalized), blocked: false };
 }
 
-async function hasContinuation(request, env, word, usedWords) {
+export async function hasContinuation(request, env, word, usedWords) {
   const last = [...word].at(-1);
   const initials = allowedWordchainInitials(last, true);
   for (const initial of initials) {
