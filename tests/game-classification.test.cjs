@@ -33,7 +33,8 @@ const reviewedAges = {
   high_gugudan_stairs: 'low',
   joseon_janggu: 'low',
   burger_master: 'job',
-  tod_puzzle_time: 'low'
+  tod_puzzle_time: 'low',
+  low_cleanup_squad: 'low'
 };
 
 const allowedAges = new Set(['toddler', 'low', 'high', 'job']);
@@ -62,7 +63,7 @@ test('catalog age distribution matches the reviewed inventory', () => {
   }, {});
 
   assert.deepEqual(counts, {
-    low: 29,
+    low: 30,
     high: 55,
     job: 10,
     toddler: 11
