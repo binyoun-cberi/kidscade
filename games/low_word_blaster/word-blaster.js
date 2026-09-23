@@ -28,7 +28,7 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x91d9ff);
 scene.fog=new THREE.Fog(0x91d9ff,28,70);
-const camera=new THREE.PerspectiveCamera(72,1,.08,130);
+const camera=new THREE.PerspectiveCamera(80,1,.08,130);
 camera.rotation.order='YXZ';
 scene.add(camera);
 
@@ -43,8 +43,8 @@ raycaster.far=70;
 
 const state={
   ready:false,running:false,boss:false,round:0,score:0,noHint:0,completed:[],current:null,
-  progress:0,targetSeq:[],targetIndex:0,bossStep:0,bossPicks:[],usedHint:false,time:20,totalTime:20,
-  yaw:0,pitch:-.04,player:new THREE.Vector3(0,1.7,5.5),keys:new Set(),lastShot:0,recoil:0,
+  progress:0,targetSeq:[],targetIndex:0,bossStep:0,bossPicks:[],usedHint:false,time:35,totalTime:35,
+  yaw:0,pitch:.14,player:new THREE.Vector3(0,1.85,5.5),keys:new Set(),lastShot:0,recoil:0,
   targets:[],hitTargets:[],fx:[],gameToken:0,mobileAim:false,lastTouch:null
 };
 const assets={drone:null,blaster:null,cloud:null,platform:null,tree:null,flower:null,rock:null,dragon:null,raygun:null};
@@ -99,7 +99,6 @@ function buildWorld(){
   world.clear();
   const base=new THREE.Mesh(new THREE.CylinderGeometry(19,22,1.55,48),new THREE.MeshStandardMaterial({color:0x77ad55,roughness:.98}));
   base.position.y=-.8;base.receiveShadow=true;world.add(base);
-  if(assets.platform){const p=cloneStatic(assets.platform);p.scale.setScalar(7.2);p.position.y=-.03;world.add(p)}
   const rim=new THREE.Mesh(new THREE.TorusGeometry(18.5,.18,.18,64),new THREE.MeshStandardMaterial({color:0xf1d78c,roughness:.8}));
   rim.rotation.x=Math.PI/2;rim.position.y=.12;world.add(rim);
   for(let i=0;i<12;i++){
@@ -125,12 +124,12 @@ let weapon=null;
 function mountWeapon(){
   if(weapon)camera.remove(weapon);weapon=new THREE.Group();camera.add(weapon);
   if(assets.blaster){
-    const b=normalize(cloneStatic(assets.blaster),1.0);b.rotation.set(-.08,Math.PI,.02);b.position.set(.35,-.34,-.58);weapon.add(b);
+    const b=normalize(cloneStatic(assets.blaster),.56);b.rotation.set(-.08,Math.PI,.02);b.position.set(.48,-.48,-.92);weapon.add(b);
   }else if(assets.raygun){
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:assets.raygun,transparent:true,depthTest:false,depthWrite:false}));
-    s.scale.set(.7,.7,1);s.position.set(.34,-.32,-.72);weapon.add(s);
+    s.scale.set(.46,.46,1);s.position.set(.48,-.48,-.92);weapon.add(s);
   }else{
-    const b=new THREE.Mesh(new THREE.BoxGeometry(.2,.18,.72),new THREE.MeshStandardMaterial({color:0xff784f,roughness:.55}));b.position.set(.34,-.34,-.7);weapon.add(b);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.14,.12,.48),new THREE.MeshStandardMaterial({color:0xff784f,roughness:.55}));b.position.set(.48,-.48,-.92);weapon.add(b);
   }
 }
 
@@ -158,7 +157,7 @@ function makeDrone(label,kind='letter',slot=0){
   const badge=makeLabel(label,kind);badge.position.y=kind==='word'?1.08:.92;g.add(badge);
   const hit=new THREE.Mesh(new THREE.SphereGeometry(kind==='word'?1.85:1.25,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:.001,depthWrite:false}));
   hit.position.y=.62;g.add(hit);
-  const t={group:g,label,kind,hit,slot,phase:Math.random()*Math.PI*2,speed:.16+Math.random()*.12,radius:8.5+Math.random()*7,height:3.2+Math.random()*5,wobble:0,dead:false};
+  const t={group:g,label,kind,hit,badge,slot,phase:Math.random()*Math.PI*2,speed:.075+Math.random()*.055,radius:8+Math.random()*4.5,height:3.4+Math.random()*3.4,wobble:0,dead:false};
   hit.userData.target=t;state.targets.push(t);state.hitTargets.push(hit);targetsRoot.add(g);return t;
 }
 function clearTargets(){
@@ -169,8 +168,10 @@ function positionTargets(time){
   const n=Math.max(1,state.targets.length);
   state.targets.forEach((t,i)=>{
     if(t.dead)return;const a=(i/n)*Math.PI*2+t.phase+time*t.speed*(i%2?1:-1),r=t.radius+Math.sin(time*.45+t.phase)*1.35;
-    t.group.position.set(Math.cos(a)*r,t.height+Math.sin(time*1.35+t.phase)*.65,Math.sin(a)*r);
+    t.group.position.set(Math.cos(a)*r,t.height+Math.sin(time*.9+t.phase)*.42,Math.sin(a)*r);
     t.group.lookAt(camera.position.x,t.group.position.y,camera.position.z);
+    const expected=state.targetSeq[state.boss?state.targetIndex:state.progress];
+    if(t.badge){const pulse=t.label===expected?1.06+Math.sin(time*5+t.phase)*.035:1;t.badge.scale.set((t.kind==='word'?3.8:2.3)*pulse,(t.kind==='word'?1.42:1.7)*pulse,1)}
     if(t.wobble>0){t.wobble=Math.max(0,t.wobble-.035);t.group.rotation.z=Math.sin(time*30)*t.wobble*.35}
   });
 }
@@ -180,13 +181,13 @@ let rounds=[];
 
 function startGame(){
   if(!state.ready)return;state.gameToken++;state.running=true;state.boss=false;state.round=0;state.score=0;state.noHint=0;state.completed=[];state.bossStep=0;
-  state.player.set(0,1.7,5.5);state.yaw=0;state.pitch=-.04;rounds=pickSession();ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.bossTag.classList.remove('show');
+  state.player.set(0,1.85,5.5);state.yaw=0;state.pitch=.14;rounds=pickSession();ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.bossTag.classList.remove('show');
   nextWord();if(!isCoarse())canvas.requestPointerLock?.();
 }
 function nextWord(){
   if(state.round>=rounds.length){startBoss();return}
-  state.boss=false;state.current=rounds[state.round];state.progress=0;state.targetIndex=0;state.targetSeq=[...state.current.en];state.usedHint=false;state.time=state.totalTime=20;clearTargets();
-  const pool=[...state.current.en],letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';while(pool.length<12)pool.push(letters[(Math.random()*letters.length)|0]);
+  state.boss=false;state.current=rounds[state.round];state.progress=0;state.targetIndex=0;state.targetSeq=[...state.current.en];state.usedHint=false;state.time=state.totalTime=35;clearTargets();
+  const pool=[...state.current.en],letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ',targetCount=Math.min(10,Math.max(8,state.current.en.length+2));while(pool.length<targetCount)pool.push(letters[(Math.random()*letters.length)|0]);
   shuffle(pool).forEach((ch,i)=>makeDrone(ch,'letter',i));ui.emoji.textContent=state.current.emoji;ui.meaning.textContent=state.current.ko;ui.round.textContent=(state.round+1)+' / '+rounds.length;ui.hint.textContent=state.current.en;ui.hint.classList.remove('show');ui.bossTag.classList.remove('show');updateSpell();updateScore();showMessage(state.round?'다음 단어!':'철자 순서대로 맞혀요!',700);
 }
 function updateSpell(){
@@ -198,7 +199,7 @@ function showMessage(text,ms=550){ui.message.textContent=text;ui.message.classLi
 
 function acceptTarget(t){
   const idx=state.boss?state.targetIndex:state.progress,expected=state.targetSeq[idx];
-  if(t.label!==expected){state.time=Math.max(.05,state.time-.75);t.wobble=1;sfx('wrong');showMessage('앗! '+expected+'를 찾아봐!',650);return}
+  if(t.label!==expected){state.time=Math.max(.05,state.time-.4);t.wobble=1;sfx('wrong');showMessage('앗! '+expected+'를 찾아봐!',650);return}
   t.dead=true;t.group.visible=false;state.hitTargets=state.hitTargets.filter(h=>h!==t.hit);state.score+=(state.usedHint?100:160)+Math.floor(state.time*4);sfx('hit');burst(t.group.position);updateScore();
   if(state.boss){state.targetIndex++;updateSpell();if(state.targetIndex>=state.targetSeq.length)completeBossSentence();else showMessage('좋아요!',380)}
   else{state.progress++;updateSpell();if(state.progress>=state.targetSeq.length)completeWord();else showMessage(state.targetSeq[state.progress]+'를 찾아요!',430)}
@@ -223,7 +224,7 @@ function pickBossWords(){
 }
 function startBoss(){state.boss=true;state.bossStep=0;state.bossPicks=pickBossWords();clearTargets();mountDragon();showMessage('문장 보스 등장!',1000);setTimeout(()=>{if(state.boss)startBossSentence()},850)}
 function startBossSentence(){
-  state.running=true;const w=state.bossPicks[state.bossStep];state.current=w;state.targetSeq=[...w.boss];state.targetIndex=0;state.usedHint=false;state.time=state.totalTime=25;clearTargets();
+  state.running=true;const w=state.bossPicks[state.bossStep];state.current=w;state.targetSeq=[...w.boss];state.targetIndex=0;state.usedHint=false;state.time=state.totalTime=45;clearTargets();
   const pool=[...state.targetSeq],extra=DISTRACTOR_WORDS.filter(x=>!pool.includes(x));while(pool.length<Math.max(8,state.targetSeq.length+4))pool.push(extra[(Math.random()*extra.length)|0]);
   shuffle(pool).forEach((x,i)=>makeDrone(x,'word',i));ui.emoji.textContent='🐉';ui.meaning.textContent=w.bossKo;ui.round.textContent='BOSS '+(state.bossStep+1)+' / 3';ui.hint.textContent=w.boss.join(' ');ui.hint.classList.remove('show');ui.bossTag.textContent='BOSS · 문장 '+(state.bossStep+1)+' / 3';ui.bossTag.classList.add('show');updateSpell();
 }
@@ -250,7 +251,7 @@ function updateMovement(dt){
   if(state.keys.has('KeyW'))v.add(f);if(state.keys.has('KeyS'))v.sub(f);if(state.keys.has('KeyD'))v.add(r);if(state.keys.has('KeyA'))v.sub(r);
   if(v.lengthSq()){v.normalize().multiplyScalar(3.2*dt);state.player.add(v);const d=Math.hypot(state.player.x,state.player.z);if(d>8.3){state.player.x*=8.3/d;state.player.z*=8.3/d}}
   camera.position.lerp(state.player,.3);camera.rotation.set(state.pitch,state.yaw,0);
-  if(weapon){state.recoil=Math.max(0,state.recoil-dt*7);weapon.position.z=state.recoil*.11;weapon.rotation.x=-state.recoil*.04}
+  if(weapon){state.recoil=Math.max(0,state.recoil-dt*7);weapon.position.z=state.recoil*.055;weapon.rotation.x=-state.recoil*.025}
 }
 function updateWorld(time,dt){
   for(const c of world.children){if(c.userData.cloud){const d=c.userData.cloud;d.phase+=d.speed*dt;c.position.x=Math.cos(d.phase)*d.radius;c.position.z=Math.sin(d.phase)*d.radius}}
@@ -260,7 +261,7 @@ function updateFx(dt){
   for(let i=state.fx.length-1;i>=0;i--){const f=state.fx[i];f.life-=dt;f.v.y-=3*dt;f.obj.position.addScaledVector(f.v,dt);f.obj.scale.setScalar(Math.max(.1,f.life/.45));if(f.life<=0){fxRoot.remove(f.obj);f.obj.geometry.dispose();f.obj.material.dispose();state.fx.splice(i,1)}}
 }
 function updateTimer(dt){
-  if(!state.running)return;state.time-=dt;const reveal=state.boss?7:5;if(state.time<=reveal&&!state.usedHint){state.usedHint=true;ui.hint.classList.add('show');showMessage('힌트 공개!',520)}
+  if(!state.running)return;state.time-=dt;const reveal=state.boss?12:10;if(state.time<=reveal&&!state.usedHint){state.usedHint=true;ui.hint.classList.add('show');showMessage('힌트 공개!',520)}
   ui.timer.style.transform='scaleX('+Math.max(0,state.time/state.totalTime)+')';if(state.time<=0)failGame();
 }
 function loop(){
