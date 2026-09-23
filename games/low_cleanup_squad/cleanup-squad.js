@@ -49,7 +49,7 @@ const dirt=[],hitTargets=[],fx=[],colliders=[];
 const state={
   ready:false,mode:'menu',running:false,time:240,totalTime:240,score:0,cleaned:0,totalSpawned:0,
   combo:1,bestCombo:1,lastCleanAt:0,yaw:0,pitch:.05,player:new THREE.Vector3(0,1.7,6.5),
-  keys:new Set(),lastShot:0,recoil:0,lastTouch:null,mobileAim:false,tutorialStep:0,tutorialStart:new THREE.Vector3(),
+  keys:new Set(),lastShot:0,recoil:0,cameraKick:0,kickSide:0,firing:false,lastTouch:null,mobileAim:false,tutorialStep:0,tutorialStart:new THREE.Vector3(),
   missionToken:0,roomCleanBonus:new Set()
 };
 const zones=[
@@ -61,7 +61,7 @@ const zones=[
 ];
 
 const villain={
-  group:new THREE.Group(),hit:null,route:[],routeIndex:0,stunned:0,dropClock:2.4,speed:2.35
+  group:new THREE.Group(),hit:null,route:[],routeIndex:0,stunned:0,dropClock:1.15,speed:4.15
 };
 villainRoot.add(villain.group);
 
@@ -177,7 +177,7 @@ function buildVillain(){
   resetVillain()
 }
 function resetVillain(){
-  villain.group.visible=true;villain.group.position.set(-13,0,0);villain.routeIndex=1;villain.stunned=0;villain.dropClock=2.3;villain.group.rotation.set(0,0,0)
+  villain.group.visible=true;villain.group.position.set(-13,0,0);villain.routeIndex=1;villain.stunned=0;villain.dropClock=1.05;villain.group.rotation.set(0,0,0)
 }
 
 const trashDefs=[
@@ -212,19 +212,27 @@ function clearDirt(){
 function randomPoint(zone){
   const q=choice(zone==='all'?zones:zones.filter(z=>z.id===zone));return [rand(q.x1+.8,q.x2-.8),rand(q.z1+.7,q.z2-.7)]
 }
+function messBurst(x,z,count=9,spread=2.4,tutorial=false){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*spread;
+    const px=clamp(x+Math.cos(a)*r,-16.2,16.2),pz=clamp(z+Math.sin(a)*r,-10.4,10.4);
+    if(Math.random()<.72)spawnStain(px,pz,tutorial,false);
+    else spawnTrash(px,pz,choice(trashDefs),tutorial)
+  }
+}
 function initialMess(){
   clearDirt();
-  for(let i=0;i<27;i++){const p=randomPoint('all');spawnTrash(p[0],p[1])}
-  for(let i=0;i<18;i++){const p=randomPoint('all');spawnStain(p[0],p[1],false,i%9===0)}
+  for(const z of zones){
+    const cx=(z.x1+z.x2)/2,cz=(z.z1+z.z2)/2;
+    messBurst(cx+rand(-2,2),cz+rand(-1.5,1.5),z.id==='hall'?22:26,z.id==='hall'?5.8:4.4)
+  }
 }
 function dropVillainTrash(){
-  if(state.mode!=='game'||villain.stunned>0||dirt.filter(d=>!d.dead).length>80)return;
-  const p=villain.group.position,ang=villain.group.rotation.y+Math.PI;
-  for(let i=0;i<(Math.random()<.28?2:1);i++){
-    const x=clamp(p.x+Math.sin(ang)*rand(.6,1.2)+rand(-.35,.35),-16,16),z=clamp(p.z+Math.cos(ang)*rand(.6,1.2)+rand(-.35,.35),-10.3,10.3);
-    Math.random()<.68?spawnTrash(x,z):spawnStain(x,z)
-  }
-  showMessage(choice(['또 버렸어요!','악당이 쓰레기를 흘렸어요!','저쪽이 다시 더러워졌어요!']),500)
+  const active=dirt.filter(d=>!d.dead).length;
+  if(state.mode!=='game'||villain.stunned>0||active>240)return;
+  const p=villain.group.position;
+  messBurst(p.x,p.z,(Math.random()*5|0)+7,rand(1.7,2.8));
+  if(Math.random()<.35)showMessage(choice(['우르르 쏟아졌다!','악당이 또 왕창 버렸어요!','저쪽이 순식간에 더러워졌어요!']),420)
 }
 
 function resetStats(){
@@ -234,7 +242,7 @@ function resetStats(){
 function startGame(){
   if(!state.ready)return;state.missionToken++;state.mode='game';state.running=true;resetStats();initialMess();resetVillain();
   state.player.set(0,1.7,1);state.yaw=0;state.pitch=.04;ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.hud.classList.remove('hidden');ui.tutorialCard.classList.add('hidden');
-  ui.mobile.classList.toggle('hidden',!isCoarse());setMission('학교 청소율 90%를 넘기면 작전 성공! 악당을 맞히면 잠시 투기를 막을 수 있어요.');
+  ui.mobile.classList.toggle('hidden',!isCoarse());setMission('청소총을 누른 채 바닥을 넓게 쓸어 주세요! 악당은 계속 오염을 왕창 뿌립니다. 청소율 90%가 목표예요.');
   showMessage('청소 특공대 출동!',900);if(!isCoarse())canvas.requestPointerLock?.()
 }
 function startTutorial(){
@@ -247,8 +255,8 @@ function startTutorial(){
 function renderTutorial(){
   const s=state.tutorialStep;ui.tutorialStep.textContent='연습 '+Math.min(4,s+1)+' / 4';
   if(s===0)ui.tutorialText.textContent='WASD 또는 왼쪽 방향 버튼으로 조금 움직여 보세요.';
-  if(s===1){ui.tutorialText.textContent='가운데 조준점으로 앞의 캔을 겨냥하고 클릭/CLEAN 버튼을 눌러 청소해 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))spawnTrash(0,-3.2,trashDefs[0],true)}
-  if(s===2){ui.tutorialText.textContent='바닥 얼룩은 한 번에 안 지워져요. 같은 얼룩을 몇 번 더 쏴서 완전히 지워 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))spawnStain(0,-3.4,true,false)}
+  if(s===1){ui.tutorialText.textContent='클릭/CLEAN 버튼을 누르고 있으면 청소물이 연속으로 나가요. 앞의 쓰레기 더미를 와구와구 쓸어 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.4,8,1.35,true)}
+  if(s===2){ui.tutorialText.textContent='한 점만 맞힐 필요 없어요. 조준점 주변이 넓게 씻겨 나가니 바닥을 좌우로 훑으며 청소해 보세요.';if(!dirt.some(d=>d.tutorial&&!d.dead))messBurst(0,-3.8,12,1.8,true)}
   if(s===3){ui.tutorialText.textContent='마지막! 쓰레기 악당을 청소총으로 맞혀 보세요. 악당은 잠시 어질어질해져 투기를 멈춰요.';villain.group.visible=true;villain.group.position.set(0,0,-4.8);villain.stunned=0}
   if(s>=4){ui.tutorialStep.textContent='연습 완료!';ui.tutorialText.textContent='준비 끝! 실전에서는 악당을 쫓기보다 학교 전체를 깨끗하게 만드는 것이 목표예요.';ui.tutorialDone.classList.remove('hidden');villain.group.visible=false;sfx('clear')}
 }
@@ -259,16 +267,16 @@ function tutorialCheckMovement(){
   if(state.mode==='tutorial'&&state.tutorialStep===0&&state.player.distanceTo(state.tutorialStart)>1.5){showMessage('좋아요! 이제 청소해 볼까요?',700);advanceTutorial()}
 }
 
-function cleanRecord(rec,point){
+function cleanRecord(rec,point,quiet=false){
   if(!rec||rec.dead)return;
   if(rec.kind==='trash'){
     rec.dead=true;rec.hit.visible=false;const start=rec.group.position.clone(),target=camera.position.clone();rec.suck={t:0,start,target};state.cleaned++;rewardClean(rec,100);sfx('clean');
-    if(state.mode==='tutorial'&&state.tutorialStep===1)setTimeout(()=>advanceTutorial(),350)
+    if(state.mode==='tutorial'&&state.tutorialStep===1&&dirt.filter(d=>d.tutorial&&!d.dead).length<=2)setTimeout(()=>advanceTutorial(),260)
   }else{
     rec.hp--;rec.group.scale.multiplyScalar(rec.kind==='gum'?.88:.82);rec.group.material.opacity=Math.max(.2,.72*(rec.hp/rec.maxHp));burst(point,0x79eeff,4);
     if(rec.hp<=0){rec.dead=true;state.cleaned++;rewardClean(rec,rec.kind==='gum'?180:130);sfx('clean');fadeRemove(rec);
-      if(state.mode==='tutorial'&&state.tutorialStep===2)setTimeout(()=>advanceTutorial(),320)
-    }else showMessage(rec.kind==='gum'?'껌은 조금 더 문질러야 해요!':'얼룩이 옅어지고 있어요!',380)
+      if(state.mode==='tutorial'&&state.tutorialStep===2&&dirt.filter(d=>d.tutorial&&!d.dead).length<=3)setTimeout(()=>advanceTutorial(),260)
+    }else if(!quiet)showMessage(rec.kind==='gum'?'껌은 조금 더 문질러야 해요!':'얼룩이 옅어지고 있어요!',380)
   }
 }
 function rewardClean(rec,base){
@@ -284,12 +292,33 @@ function projectile(to){
   const from=new THREE.Vector3();camera.getWorldPosition(from);const dir=new THREE.Vector3();camera.getWorldDirection(dir);from.add(dir.multiplyScalar(.75)).add(new THREE.Vector3(.25,-.18,0));
   const m=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBasicMaterial({color:0x6ff6ff}));m.position.copy(from);fxRoot.add(m);fx.push({kind:'projectile',obj:m,life:.13,total:.13,from:from.clone(),to:to.clone()})
 }
-function shoot(){
-  if(!state.running)return;const now=performance.now();if(now-state.lastShot<125)return;state.lastShot=now;state.recoil=1;sfx('shot');
+const CLEAN_RADIUS=1.85;
+function aimImpact(){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
   const targets=[...hitTargets.filter(x=>x.visible!==false)];if(villain.group.visible&&villain.hit)targets.push(villain.hit);
-  const hits=raycaster.intersectObjects(targets,false);const end=hits[0]?.point||camera.position.clone().add(new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).multiplyScalar(16));projectile(end);
-  if(hits.length){const o=hits[0].object;if(o.userData.villain)stunVillain();else cleanRecord(o.userData.dirt,hits[0].point)}
+  const hits=raycaster.intersectObjects(targets,false);
+  if(hits.length)return {point:hits[0].point.clone(),object:hits[0].object};
+  const floorPoint=new THREE.Vector3(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),-.02);
+  if(raycaster.ray.intersectPlane(plane,floorPoint)&&floorPoint.distanceTo(camera.position)<=15)return {point:floorPoint,object:null};
+  return {point:camera.position.clone().add(new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).multiplyScalar(11)),object:null}
+}
+function sprayClean(center){
+  let touched=0;
+  const active=dirt.filter(d=>!d.dead);
+  for(const rec of active){
+    const p=rec.group.position,dx=p.x-center.x,dz=p.z-center.z;
+    if(dx*dx+dz*dz<=CLEAN_RADIUS*CLEAN_RADIUS){cleanRecord(rec,center,true);touched++}
+  }
+  if(touched)burst(center,0x79eeff,Math.min(14,4+touched));
+  return touched
+}
+function shoot(){
+  if(!state.running)return;const now=performance.now();if(now-state.lastShot<78)return;state.lastShot=now;
+  state.recoil=Math.min(1.5,state.recoil+.82);state.cameraKick=Math.min(.075,state.cameraKick+.018);state.kickSide+=(Math.random()-.5)*.012;sfx('shot');
+  const impact=aimImpact();projectile(impact.point);
+  const touched=sprayClean(impact.point);
+  if(impact.object?.userData.villain)stunVillain();
+  if(!touched)burst(impact.point,0x79eeff,3)
 }
 function stunVillain(){
   if(villain.stunned>1.2)return;villain.stunned=3.2;sfx('stun');burst(villain.group.position.clone().add(new THREE.Vector3(0,1.4,0)),0xffee72,9);showMessage('악당 멈춤! 3초 동안 투기 금지!',700);
@@ -335,8 +364,9 @@ function updateMovement(dt){
   const f=new THREE.Vector3(-Math.sin(state.yaw),0,-Math.cos(state.yaw)),r=new THREE.Vector3(Math.cos(state.yaw),0,-Math.sin(state.yaw)),v=new THREE.Vector3();
   if(state.keys.has('KeyW'))v.add(f);if(state.keys.has('KeyS'))v.sub(f);if(state.keys.has('KeyD'))v.add(r);if(state.keys.has('KeyA'))v.sub(r);
   if(v.lengthSq()){v.normalize().multiplyScalar(4.2*dt);const nx=state.player.x+v.x,nz=state.player.z+v.z;if(canStand(nx,state.player.z))state.player.x=nx;if(canStand(state.player.x,nz))state.player.z=nz}
-  camera.position.lerp(state.player,.38);camera.rotation.set(state.pitch,state.yaw,0);
-  if(weapon){state.recoil=Math.max(0,state.recoil-dt*9);weapon.position.z=state.recoil*.065;weapon.rotation.x=-state.recoil*.028}
+  state.cameraKick=Math.max(0,state.cameraKick-dt*.22);state.kickSide*=Math.pow(.025,dt);
+  camera.position.lerp(state.player,.38);camera.rotation.set(state.pitch+state.cameraKick,state.yaw+state.kickSide,0);
+  if(weapon){state.recoil=Math.max(0,state.recoil-dt*7.2);weapon.position.z=state.recoil*.12;weapon.position.y=-state.recoil*.025;weapon.rotation.x=-state.recoil*.07;weapon.rotation.z=state.recoil*.018}
   tutorialCheckMovement()
 }
 function updateVillain(dt,time){
@@ -348,7 +378,7 @@ function updateVillain(dt,time){
   if(dir.length()<.45){villain.routeIndex=(villain.routeIndex+1)%villain.route.length}else{
     dir.normalize();pos.addScaledVector(dir,villain.speed*dt);villain.group.rotation.y=Math.atan2(dir.x,dir.z)+Math.PI;villain.group.position.y=Math.abs(Math.sin(time*8))*.035
   }
-  villain.dropClock-=dt;if(villain.dropClock<=0){villain.dropClock=rand(2.8,4.4);dropVillainTrash()}
+  villain.dropClock-=dt;if(villain.dropClock<=0){villain.dropClock=rand(1.05,1.65);dropVillainTrash()}
 }
 function updateDirt(dt){
   for(const d of dirt){if(d.suck){d.suck.t=Math.min(1,d.suck.t+dt*4.5);const t=d.suck.t,e=1-Math.pow(1-t,3);d.group.position.lerpVectors(d.suck.start,camera.position,e);d.group.scale.setScalar(1-e*.9);if(t>=1){dirtRoot.remove(d.group);d.suck=null}}}
@@ -363,12 +393,12 @@ function updateFx(dt){
 }
 function updateGame(dt){
   if(state.mode!=='game'||!state.running)return;state.time-=dt;if(performance.now()-state.lastCleanAt>4200)state.combo=1;
-  if(cleanliness()>=90&&state.cleaned>=30){state.score+=Math.ceil(state.time)*10;updateHud();showMessage('청소율 90% 달성!',750);endGame(true);return}
+  if(cleanliness()>=90&&state.cleaned>=70){state.score+=Math.ceil(state.time)*10;updateHud();showMessage('청소율 90% 달성!',750);endGame(true);return}
   if(state.time<=0){state.time=0;updateHud();endGame(false);return}
 }
 function loop(){
   requestAnimationFrame(loop);const dt=Math.min(.045,clock.getDelta()),time=clock.elapsedTime;
-  if(state.running){updateMovement(dt);updateVillain(dt,time);updateDirt(dt);updateFx(dt);updateGame(dt);updateHud()}
+  if(state.running){if(state.firing)shoot();updateMovement(dt);updateVillain(dt,time);updateDirt(dt);updateFx(dt);updateGame(dt);updateHud()}
   renderer.render(scene,camera)
 }
 
@@ -378,7 +408,8 @@ addEventListener('resize',resize);resize();
 document.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code)){state.keys.add(e.code);e.preventDefault()}});
 document.addEventListener('keyup',e=>state.keys.delete(e.code));
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&state.running){state.yaw-=e.movementX*.0023;state.pitch=clamp(state.pitch-e.movementY*.002,-1.18,1.18)}});
-canvas.addEventListener('mousedown',e=>{if(e.button!==0||!state.running)return;if(!isCoarse()&&document.pointerLockElement!==canvas){canvas.requestPointerLock?.();return}shoot()});
+canvas.addEventListener('mousedown',e=>{if(e.button!==0||!state.running)return;if(!isCoarse()&&document.pointerLockElement!==canvas){canvas.requestPointerLock?.();return}state.firing=true;shoot()});
+document.addEventListener('mouseup',e=>{if(e.button===0)state.firing=false});
 canvas.addEventListener('click',()=>{if(state.running&&!isCoarse()&&document.pointerLockElement!==canvas)canvas.requestPointerLock?.()});
 
 let lookTouch=null;
@@ -387,7 +418,10 @@ canvas.addEventListener('touchmove',e=>{if(!lookTouch)return;for(const t of e.ch
 canvas.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(lookTouch&&t.identifier===lookTouch.id)lookTouch=null});
 
 for(const b of document.querySelectorAll('.padBtn')){const key=b.dataset.key;const on=e=>{e.preventDefault();state.keys.add(key)},off=e=>{e.preventDefault();state.keys.delete(key)};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off)}
-ui.fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot()});
+ui.fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();state.firing=true;shoot()});
+ui.fireBtn.addEventListener('pointerup',e=>{e.preventDefault();state.firing=false});
+ui.fireBtn.addEventListener('pointercancel',()=>state.firing=false);
+ui.fireBtn.addEventListener('pointerleave',()=>state.firing=false);
 ui.startBtn.addEventListener('click',startGame);ui.tutorialBtn.addEventListener('click',startTutorial);ui.tutorialSkip.addEventListener('click',startGame);ui.tutorialDone.addEventListener('click',startGame);
 ui.retryBtn.addEventListener('click',startGame);ui.menuBtn.addEventListener('click',goMenu);
 
