@@ -136,10 +136,7 @@ test('multiplayer database bootstrap uses prepared batch only when the D1 tables
   assert.equal(batchCalls, 1);
   assert.match(prepared[0].sql, /CREATE TABLE IF NOT EXISTS multiplayer_rooms/);
   assert.match(prepared[3].sql, /CREATE TABLE IF NOT EXISTS multiplayer_room_players/);
-  assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_match_state/.test(statement.sql)));
-  assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_used_words/.test(statement.sql)));
-  assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_actions/.test(statement.sql)));
-  assert.ok(prepared.some(statement => /CREATE TABLE IF NOT EXISTS wordchain_turn_claims/.test(statement.sql)));
+  assert.ok(prepared.every(statement => !/wordchain_(?:match_state|used_words|actions|turn_claims)/.test(statement.sql)));
 });
 
 test('multiplayer database bootstrap does not rewrite an already prepared database', async () => {
@@ -179,17 +176,21 @@ test('word-chain multiplayer supports safe room codes and Korean dueum rules', (
   assert.deepEqual(allowedWordchainInitials('녀'), ['녀', '여']);
 });
 
-test('word-chain multiplayer server is authoritative and supports 2 to 8 player rooms', () => {
-  const server = fs.readFileSync(path.join(root, 'worker', 'wordchain-match.mjs'), 'utf8');
-  assert.match(server, /const TURN_MS = 12000/);
-  assert.match(server, /Math\.max\(2, Math\.min\(8/);
-  assert.match(server, /game_id = \?/);
-  assert.match(server, /wordchain_used_words/);
-  assert.match(server, /wordchain_actions/);
-  assert.match(server, /hasContinuation/);
-  assert.match(server, /kind: 'one-shot'/);
-  assert.match(server, /\/api\/multiplayer\/wordchain\/submit/);
-  assert.match(server, /requireStudent/);
+test('word-chain multiplayer server is authoritative in a hibernating Durable Object', () => {
+  const room = fs.readFileSync(path.join(root, 'worker', 'wordchain-room.mjs'), 'utf8');
+  const model = fs.readFileSync(path.join(root, 'worker', 'wordchain-room-model.mjs'), 'utf8');
+  const router = fs.readFileSync(path.join(root, 'worker', 'wordchain-room-router.mjs'), 'utf8');
+  assert.match(model, /TURN_MS = 12000/);
+  assert.match(model, /Math\.max\(2, Math\.min\(8/);
+  assert.match(model, /usedWords/);
+  assert.match(model, /actionOrder/);
+  assert.match(model, /kind: 'one-shot'/);
+  assert.match(room, /acceptWebSocket/);
+  assert.match(room, /setWebSocketAutoResponse/);
+  assert.match(room, /alarm\(\)/);
+  assert.match(router, /requireStudent/);
+  assert.match(router, /WORDCHAIN_ROOMS/);
+  assert.doesNotMatch(router, /wordchain_match_state|wordchain_used_words|wordchain_actions/);
 });
 
 test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and server turns', () => {
@@ -235,13 +236,13 @@ test('word-chain online client exposes 1v1, 3-8 player rooms, ready/start and se
   assert.match(solo, /다대다 온라인/);
 });
 
-test('word-chain multiplayer migration is shipped for remote D1 deploys', () => {
-  const migration = fs.readFileSync(path.join(root, 'migrations', '0007_wordchain_multiplayer.sql'), 'utf8');
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_match_state/);
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_used_words/);
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS wordchain_actions/);
-  const claimMigration = fs.readFileSync(path.join(root, 'migrations', '0008_wordchain_turn_claims.sql'), 'utf8');
-  assert.match(claimMigration, /CREATE TABLE IF NOT EXISTS wordchain_turn_claims/);
+test('word-chain live state no longer depends on legacy D1 tables', () => {
+  const schema = fs.readFileSync(path.join(root, 'worker', 'multiplayer-schema.mjs'), 'utf8');
+  const wrangler = fs.readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8');
+  assert.doesNotMatch(schema, /wordchain_match_state|wordchain_used_words|wordchain_actions|wordchain_turn_claims/);
+  assert.match(wrangler, /WORDCHAIN_ROOMS/);
+  assert.match(wrangler, /wordchain-room-v1/);
+  assert.match(wrangler, /WordchainRoom/);
 });
 
 test('Cloudflare deploy script applies D1 migrations before deploying the Worker', () => {
@@ -251,10 +252,13 @@ test('Cloudflare deploy script applies D1 migrations before deploying the Worker
   assert.ok(pkg.scripts['deploy:cloudflare'].indexOf('db:migrate:remote') < pkg.scripts['deploy:cloudflare'].indexOf('wrangler deploy'));
 });
 
-test('main Worker performs multiplayer schema preflight and exposes a health endpoint', () => {
+test('main Worker bypasses legacy D1 preflight for wordchain but keeps it for other multiplayer games', () => {
   const main = fs.readFileSync(path.join(root, 'worker/main.mjs'), 'utf8');
+  assert.match(main, /routeWordchainRoom/);
+  assert.match(main, /WORDCHAIN_PREFIX/);
   assert.match(main, /ensureMultiplayerSchema/);
   assert.match(main, /\/api\/multiplayer\/health/);
-  assert.match(main, /multiplayer_database_not_ready/);
+  assert.doesNotMatch(main, /handleWordchainMatchRequest/);
+  assert.ok(main.indexOf('routeWordchainRoom') < main.indexOf('ensureMultiplayerSchema(env)'));
 });
 
