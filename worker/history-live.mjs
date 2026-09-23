@@ -393,4 +393,4 @@ export async function handleHistoryLiveRequest(request,env){
   }
 }
 
-export { QUESTIONS, MAX_PLAYERS };
+export { QUESTIONS, MAX_PLAYERS, randomQuestionIndexes, normalizeCheckpoints, displayedQuestion };

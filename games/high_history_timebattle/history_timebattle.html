@@ -164,6 +164,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
   </section>
 </div>
 <script src="../../audio-manager.js?v=20260917-1"></script>
+<script src="../../history-live-realtime.js?v=1"></script>
 <script>
 const API='/api/history-live';
 let session=null,poller=null,lastState=null,timerRAF=null,answeredFor=-1,serverOffset=0;
@@ -171,6 +172,28 @@ let soloGame=null,bankModule=null,soloTimeoutHandled=false,roundEditing=false;
 let lastFxState='',lastTimerTick=-1,lastChosenOption=-1,previousRanks=new Map(),audioReady=false;
 let pollInFlight=false,pollFailures=0,terminalFailures=0,pendingReconnectPlayerId='';
 let heartbeatTimer=null,lastPresenceWriteAt=0;
+let realtime=null;
+function usesRealtime(){return session?.role!=='solo'&&String(session?.code||'').startsWith('0')}
+function stopRealtime(){realtime?.stop();realtime=null}
+function acceptLiveState(d){
+  if(!session||d.room.code!==session.code)return;
+  if(lastState?.room?.code===d.room.code&&Number(d.version)<Number(lastState.version))return;
+  if(lastState?.room?.roundId&&lastState.room.roundId!==d.room.roundId){answeredFor=-1;lastChosenOption=-1;}
+  lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();
+  pollFailures=0;terminalFailures=0;setConnectionState('','');
+  if(d.room.status==='closed'){clearSession();showOnly('landing');toastFx('수업 방이 종료되었어요.');return;}
+  if(!roundEditing)render(d);
+}
+function startRealtime(){
+  stopRealtime();if(!usesRealtime())return;
+  const active=session;
+  realtime=new HistoryLiveRealtime({code:active.code,
+    ticket:()=>requestJson(API+'/ticket',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+active.token},body:JSON.stringify({code:active.code})}),
+    onState:d=>{if(session===active)acceptLiveState(d)},
+    onMode:connected=>{if(session!==active)return;if(connected)clearTimeout(poller);else schedulePoll(0)},
+    onReplaced:()=>{if(session===active){clearSession();showOnly('landing');toastFx('다른 창에서 연결했어요. 이 창의 연결을 종료합니다.')}}
+  });realtime.start();
+}
 const $=id=>document.getElementById(id);
 
 function audio(){return window.KidscadeAudio||null}
@@ -216,19 +239,26 @@ function syncEraPicker(id,eras){const set=new Set(Array.isArray(eras)&&eras.leng
 function setEraPreset(id,preset){syncEraPicker(id,ERA_PRESETS[preset]||ERA_PRESETS.all)}
 function eraSummary(eras){const list=Array.isArray(eras)?eras:[];if(list.length>=ERA_PRESETS.all.length)return '전체 시대';if(list.length<=3)return list.join(' · ');return list.slice(0,3).join(' · ')+' 외 '+(list.length-3)+'개 시대'}
 function save(){if(session?.role!=='solo')sessionStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
-function clearSession(){sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF)}
+function clearSession(){stopRealtime();sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;lastState=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF)}
 function authHeaders(){return {'Authorization':'Bearer '+session.token}}
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+const liveV2Errors={stale_state:'방 상태가 바뀌었어요. 화면을 확인한 뒤 다시 눌러 주세요.',results_pending:'결과를 보관 중이에요. 잠시 뒤 다시 시도해 주세요.',rate_limited:'요청이 잠시 몰렸어요. 조금 기다린 뒤 다시 시도해 주세요.',history_v2_unavailable:'실시간 방 서버에 연결되지 않았어요. 방을 바꾸지 말고 잠시 뒤 다시 시도해 주세요.',round_limit:'이 방의 진행 한도에 도달했어요. 새 방을 만들어 주세요.'};
 async function requestJson(url,opts={},timeoutMs=6500){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const r=await fetch(url,{...opts,signal:controller.signal});
     const d=await r.json().catch(()=>({ok:false,error:'bad_response'}));
-    if(!r.ok){const e=new Error(d.error||'server_error');e.status=r.status;throw e}
+    if(!r.ok){const e=new Error(d.error||'server_error');e.status=r.status;if(liveV2Errors[d.error]){toastFx(liveV2Errors[d.error]);}throw e}
     return d;
   }finally{clearTimeout(timer)}
 }
 async function api(path,opts={},retries=0){
+  // Stable command identity across retries; never infer the round on the server.
+  if(usesRealtime()&&opts.body&&!['/join','/rooms'].includes(path)){
+    const body=JSON.parse(opts.body);
+    opts={...opts,body:JSON.stringify({...body,roundId:lastState?.room?.roundId,version:lastState?.version,requestId:crypto.randomUUID()})};
+    retries=Math.max(retries,1);
+  }
   let last;
   for(let attempt=0;attempt<=retries;attempt++){
     try{return await requestJson(API+path,{...opts,headers:{'content-type':'application/json',...(opts.headers||{})}},6500)}
@@ -244,6 +274,7 @@ function setConnectionState(kind='',text=''){
   el.textContent=text;el.className='connection-pill'+(kind?' '+kind:'')+(text?'':' hidden');
 }
 function recoverToJoin(reason=''){
+  stopRealtime();
   if(!session)return;
   const code=session.code||'',nickname=session.nickname||'',playerId=session.playerId||'';
   pendingReconnectPlayerId=playerId;
@@ -254,6 +285,7 @@ function recoverToJoin(reason=''){
 }
 function scheduleHeartbeat(delay=30000){
   clearTimeout(heartbeatTimer);
+  if(usesRealtime())return;
   if(!session||session.role!=='player')return;
   heartbeatTimer=setTimeout(sendHeartbeat,delay);
 }
@@ -287,6 +319,7 @@ function pollingDelay(){
 }
 function schedulePoll(delay){
   clearTimeout(poller);
+  if(realtime?.ready)return;
   if(!session||session.role==='solo')return;
   poller=setTimeout(poll,Number.isFinite(delay)?delay:pollingDelay());
 }
@@ -303,7 +336,7 @@ function applyHostPreset(kind){
 async function createRoom(){
   try{
     if(!selectedEras('hostEraPicker').length)return alert('가르칠 시대를 하나 이상 선택해 주세요.');
-    const d=await api('/rooms',{method:'POST',body:JSON.stringify({questionCount:+$('questionCount').value,secondsPerQuestion:+$('seconds').value,...checkpointBody(),orderMode:$('orderMode').value,questionMode:$('questionMode').value,eras:selectedEras('hostEraPicker'),scoreMode:'reset'})});
+    const d=await api('/rooms',{method:'POST',body:JSON.stringify({transport:'v2',questionCount:+$('questionCount').value,secondsPerQuestion:+$('seconds').value,...checkpointBody(),orderMode:$('orderMode').value,questionMode:$('questionMode').value,eras:selectedEras('hostEraPicker'),scoreMode:'reset'})});
     session={role:'host',code:d.code,token:d.hostToken}; save(); startPolling();
   }catch(e){alert(errorText(e))}
 }
@@ -411,12 +444,18 @@ async function submitAnswer(i,btn){
   if(session?.role==='solo'){btn?.classList.add('selected');return submitSoloAnswer(i,false)}
   if(session?.role!=='player'||answeredFor===lastState?.room?.questionNumber)return;
   answeredFor=lastState.room.questionNumber;document.querySelectorAll('#answers .answer').forEach(b=>b.disabled=true);btn.classList.add('selected');
-  try{await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,optionIndex:i,questionIndex:Math.max(0,Number(lastState?.room?.questionNumber||1)-1)})},1);lastPresenceWriteAt=Date.now();$('submitted').classList.remove('hidden')}catch(e){answeredFor=-1;if(!e.status)setConnectionState('warn','답 전송 재시도 필요');alert(errorText(e))}
+  const activeSession=session,activeRound=lastState.room.roundId,activeQuestion=lastState.room.questionNumber;
+  try{await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,optionIndex:i,questionIndex:Math.max(0,Number(lastState?.room?.questionNumber||1)-1)})},1);if(session===activeSession){lastPresenceWriteAt=Date.now();$('submitted').classList.remove('hidden')}}catch(e){
+    if(session!==activeSession)return;
+    if(lastState?.room?.roundId===activeRound&&lastState?.room?.questionNumber===activeQuestion){answeredFor=-1;if(lastState?.room?.status==='question')renderQuestion(lastState);}
+    if(!e.status)setConnectionState('warn','답 전송 재시도 필요');alert(errorText(e));
+  }
 }
 function startPolling(){
+  stopRealtime();lastState=null;answeredFor=-1;
   if(!lastState)showOnly('lobby');
   pollFailures=0;terminalFailures=0;pollInFlight=false;setConnectionState('','');
-  clearTimeout(poller);poll();scheduleHeartbeat(30000);
+  clearTimeout(poller);poll();scheduleHeartbeat(30000);startRealtime();
 }
 async function poll(){
   if(!session||session.role==='solo')return;
@@ -426,9 +465,7 @@ async function poll(){
   try{
     const d=await requestJson(API+'/state?code='+encodeURIComponent(session.code),{headers:authHeaders()},6000);
     if(session!==activeSession)return;
-    lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();
-    pollFailures=0;terminalFailures=0;setConnectionState('','');
-    if(!roundEditing)render(d);
+    acceptLiveState(d);
   }catch(e){
     if(session!==activeSession)return;
     pollFailures+=1;
