@@ -41,18 +41,25 @@ test('winner uses current height only and allows a draw', () => {
   ]), null);
 });
 
-test('Patience Tower duel client keeps the three-minute current-height rule and deterministic map transform', () => {
+test('Patience Tower duel uses websocket relay and server-owned three-minute finish', () => {
   const html = fs.readFileSync(path.join(root, 'games/patience-tower-duel/index.html'), 'utf8');
+  const realtime = fs.readFileSync(path.join(root, 'tower-realtime.js'), 'utf8');
+  const room = fs.readFileSync(path.join(root, 'worker', 'tower-room.mjs'), 'utf8');
+
   assert.match(html, /3분 뒤/);
   assert.match(html, /최고 기록이 아니라 타이머가 0이 된 순간의 현재 높이/);
   assert.match(html, /generateUntil\(-30000\)/);
-  assert.match(html, /patience_tower_duel/);
-  assert.match(html, /Math\.random=/);
-  assert.match(html, /KeyP.*KeyR/s);
-  assert.match(html, /room\?\.status==='playing'\?400:2500/);
-  assert.match(html, /readCurrentPose/);
-  assert.match(html, /pose,finished/);
+  assert.match(html, /tower-realtime\.js/);
   assert.match(html, /setOpponentPose/);
+  assert.match(html, /document\.hidden \? 500 : 125/);
+  assert.doesNotMatch(html, /room\?\.status==='playing'\?400:2500/);
+
+  assert.match(realtime, /sendPose/);
+  assert.match(realtime, /WebSocket/);
+  assert.match(room, /DURATION_MS = 180000/);
+  assert.match(room, /setAlarm/);
+  assert.match(room, /broadcastPose/);
+  assert.doesNotMatch(room, /env\.DB\.prepare/);
 
   const marker = '\n<script>\n(() => {';
   const start = html.indexOf(marker);
