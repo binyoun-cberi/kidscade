@@ -10,9 +10,9 @@ const JSON_HEADERS = Object.freeze({
 const PREFIX = '/api/history-live/';
 const MAX_PLAYERS = 26;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
-const ONLINE_WINDOW_MS = 20000;
-const HEARTBEAT_WRITE_MS = 7000;
-const RECONNECT_RECLAIM_MS = 12000;
+const ONLINE_WINDOW_MS = 75000;
+const HEARTBEAT_WRITE_MS = 25000;
+const RECONNECT_RECLAIM_MS = 65000;
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const QUESTIONS = QUESTION_BANK;
@@ -158,7 +158,7 @@ async function revealIfEveryoneAnswered(env,room,questionIndex,now=Date.now()){
   const counts=await env.DB.prepare(`SELECT
     (SELECT COUNT(*) FROM history_live_players WHERE room_id=?) players,
     (SELECT COUNT(*) FROM history_live_answers WHERE room_id=? AND question_index=?) answered`)
-    .bind(room.id,room.id,questionIndex).first();
+    .bind(room.id,room.id,answerSlot(room,questionIndex)).first();
   const players=Number(counts?.players||0),answered=Number(counts?.answered||0);
   if(players>0&&answered>=players){
     await env.DB.prepare("UPDATE history_live_rooms SET status='reveal',updated_at=? WHERE id=? AND status='question'")
@@ -170,7 +170,6 @@ async function revealIfEveryoneAnswered(env,room,questionIndex,now=Date.now()){
 async function createRoom(request,env){
   let body={}; try{body=await parseJson(request)}catch(_){}
   const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random', questionMode=['ox','mixed'].includes(body.questionMode)?body.questionMode:'choice', eras=normalizeEraSelection(body.eras), scoreMode=body.scoreMode==='cumulative'?'cumulative':'reset';
-  await cleanup(env);
   const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras),plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round:1};
   await env.DB.prepare(`INSERT INTO history_live_rooms
     (id,room_code,host_token_hash,status,question_order_json,current_question,question_count,seconds_per_question,created_at,updated_at,expires_at)
@@ -182,6 +181,7 @@ async function reconfigureRoom(request,env){
   let body={}; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   const room=await roomByCode(env,body.code);
   if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
   const auth=await roleFor(env,room,bearer(request));
   if(auth.role!=='host')return json({ok:false,error:'host_required'},403);
   if(!['waiting','finished'].includes(room.status))return json({ok:false,error:'round_in_progress'},409);
@@ -192,10 +192,9 @@ async function reconfigureRoom(request,env){
   const order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras);
   const plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round},now=Date.now();
   const playerReset=scoreMode==='cumulative'
-    ? env.DB.prepare('UPDATE history_live_players SET streak=0,last_seen_at=? WHERE room_id=?').bind(nowIso(now),room.id)
-    : env.DB.prepare('UPDATE history_live_players SET score=0,streak=0,last_seen_at=? WHERE room_id=?').bind(nowIso(now),room.id);
+    ? env.DB.prepare('UPDATE history_live_players SET streak=0 WHERE room_id=?').bind(room.id)
+    : env.DB.prepare('UPDATE history_live_players SET score=0,streak=0 WHERE room_id=?').bind(room.id);
   await env.DB.batch([
-    env.DB.prepare('DELETE FROM history_live_answers WHERE room_id=?').bind(room.id),
     playerReset,
     env.DB.prepare("UPDATE history_live_rooms SET status='waiting',question_order_json=?,current_question=-1,question_count=?,seconds_per_question=?,question_started_at=NULL,question_deadline_at=NULL,updated_at=?,expires_at=? WHERE id=?")
       .bind(JSON.stringify(plan),questionCount,seconds,nowIso(now),nowIso(now+ROOM_TTL_MS),room.id)
@@ -206,6 +205,7 @@ async function joinRoom(request,env){
   let body; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
   const room=await roomByCode(env,body.code);
   if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
   let nick=cleanNickname(body.nickname);
   const now=Date.now(),at=nowIso(now);
   const existingRes=await env.DB.prepare('SELECT id,nickname,last_seen_at FROM history_live_players WHERE room_id=? ORDER BY joined_at ASC').bind(room.id).all();
@@ -236,20 +236,29 @@ function currentQuestion(room){
   const bankIndex=Number(plan.questions[pos]), q=QUESTIONS[bankIndex];
   return q?{...q,bankIndex}:null;
 }
+function answerSlot(room,questionIndex){
+  const round=Math.max(1,Number(readRoomPlan(room).round)||1);
+  return (round-1)*100+Number(questionIndex);
+}
+async function heartbeat(request,env){
+  let body={}; try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
+  const room=await roomByCode(env,body.code);
+  if(!room)return json({ok:false,error:'room_not_found'},404);
+  if(room.status==='closed')return json({ok:false,error:'room_closed'},410);
+  const player=await playerByToken(env,room.id,bearer(request));
+  if(!player)return json({ok:false,error:'player_required'},403);
+  const now=Date.now(),seen=new Date(player.last_seen_at).getTime();
+  if(Number.isFinite(seen)&&now-seen<HEARTBEAT_WRITE_MS)return json({ok:true,wrote:false});
+  await env.DB.prepare('UPDATE history_live_players SET last_seen_at=? WHERE id=?').bind(nowIso(now),player.id).run();
+  return json({ok:true,wrote:true});
+}
 async function state(request,env){
   const url=new URL(request.url), room=await roomByCode(env,url.searchParams.get('code'));
   if(!room)return json({ok:false,error:'room_not_found'},404);
   const auth=await roleFor(env,room,bearer(request));
   if(!auth.role)return json({ok:false,error:'unauthorized'},401);
   const now=Date.now(),fresh=await autoReveal(env,room,now);
-  if(auth.role==='player'){
-    const seen=new Date(auth.player.last_seen_at).getTime();
-    if(!Number.isFinite(seen)||now-seen>=HEARTBEAT_WRITE_MS){
-      await env.DB.prepare('UPDATE history_live_players SET last_seen_at=? WHERE id=?').bind(nowIso(now),auth.player.id).run();
-      auth.player.last_seen_at=nowIso(now);
-    }
-  }
-  const qi=Number(fresh.current_question);
+  const qi=Number(fresh.current_question),slot=qi>=0?answerSlot(fresh,qi):-1;
   const rowsRes=qi>=0
     ? await env.DB.prepare(`SELECT p.id,p.nickname,p.score,p.streak,p.last_seen_at,p.joined_at,
         a.option_index,a.is_correct,a.points
@@ -312,11 +321,8 @@ async function hostAction(request,env,action){
     await env.DB.prepare(`UPDATE history_live_rooms SET status='question',current_question=?,question_started_at=?,question_deadline_at=?,updated_at=? WHERE id=?`)
       .bind(next,nowIso(now),nowIso(deadline),nowIso(now),room.id).run();
   }else if(action==='close'){
-    await env.DB.batch([
-      env.DB.prepare('DELETE FROM history_live_answers WHERE room_id=?').bind(room.id),
-      env.DB.prepare('DELETE FROM history_live_players WHERE room_id=?').bind(room.id),
-      env.DB.prepare('DELETE FROM history_live_rooms WHERE id=?').bind(room.id)
-    ]);
+    await env.DB.prepare("UPDATE history_live_rooms SET status='closed',updated_at=?,expires_at=? WHERE id=?")
+      .bind(nowIso(now),nowIso(now+7*24*60*60*1000),room.id).run();
   }
   return json({ok:true});
 }
@@ -328,15 +334,16 @@ async function answerQuestion(request,env){
   if(!player)return json({ok:false,error:'player_required'},403);
   const currentQi=Number(room.current_question);
   const requestedQi=Number.isInteger(Number(body.questionIndex))?Number(body.questionIndex):currentQi;
+  const requestedSlot=requestedQi>=0?answerSlot(room,requestedQi):-1;
   if(requestedQi>=0){
     const prior=await env.DB.prepare('SELECT option_index,is_correct,points FROM history_live_answers WHERE room_id=? AND player_id=? AND question_index=?')
-      .bind(room.id,player.id,requestedQi).first();
+      .bind(room.id,player.id,requestedSlot).first();
     if(prior)return json({ok:true,submitted:true,duplicate:true,optionIndex:Number(prior.option_index),correct:Number(prior.is_correct)===1,points:Number(prior.points||0)});
   }
   if(requestedQi!==currentQi)return json({ok:false,error:'stale_question'},409);
   room=await autoReveal(env,room);
   if(room.status!=='question')return json({ok:false,error:'answer_closed'},409);
-  const qi=currentQi,raw=Number(body.optionIndex);
+  const qi=currentQi,slot=answerSlot(room,qi),raw=Number(body.optionIndex);
   const now=Date.now(),deadline=new Date(room.question_deadline_at).getTime(),started=new Date(room.question_started_at).getTime();
   if(!Number.isFinite(deadline)||now>deadline)return json({ok:false,error:'answer_closed'},409);
   const q=currentQuestion(room);
@@ -347,10 +354,10 @@ async function answerQuestion(request,env){
   const newStreak=correct?Number(player.streak||0)+1:0,streakBonus=correct&&newStreak>=2?Math.min(300,(newStreak-1)*100):0,points=correct?1000+speed+streakBonus:0;
   const inserted=await env.DB.prepare(`INSERT OR IGNORE INTO history_live_answers
     (room_id,player_id,question_index,option_index,answered_at,is_correct,points) VALUES (?,?,?,?,?,?,?)`)
-    .bind(room.id,player.id,qi,raw,nowIso(now),correct?1:0,points).run();
+    .bind(room.id,player.id,slot,raw,nowIso(now),correct?1:0,points).run();
   if(!Number(inserted?.meta?.changes||0)){
     const prior=await env.DB.prepare('SELECT option_index,is_correct,points FROM history_live_answers WHERE room_id=? AND player_id=? AND question_index=?')
-      .bind(room.id,player.id,qi).first();
+      .bind(room.id,player.id,slot).first();
     return json({ok:true,submitted:true,duplicate:true,optionIndex:Number(prior?.option_index??raw),correct:Number(prior?.is_correct)===1,points:Number(prior?.points||0)});
   }
   await env.DB.prepare('UPDATE history_live_players SET score=score+?,streak=?,last_seen_at=? WHERE id=?').bind(points,newStreak,nowIso(now),player.id).run();
@@ -368,6 +375,7 @@ export async function handleHistoryLiveRequest(request,env){
     if(request.method==='POST'&&url.pathname==='/api/history-live/reconfigure')return reconfigureRoom(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/join')return joinRoom(request,env);
     if(request.method==='GET'&&url.pathname==='/api/history-live/state')return state(request,env);
+    if(request.method==='POST'&&url.pathname==='/api/history-live/heartbeat')return heartbeat(request,env);
     if(request.method==='POST'&&url.pathname==='/api/history-live/start')return hostAction(request,env,'start');
     if(request.method==='POST'&&url.pathname==='/api/history-live/next')return hostAction(request,env,'next');
     if(request.method==='POST'&&url.pathname==='/api/history-live/continue')return hostAction(request,env,'continue');
