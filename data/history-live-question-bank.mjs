@@ -1297,8 +1297,8 @@ MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
     e:`${event.name}: ${event.year}년에 일어난 일입니다.`,
     family:'date',
     oxStatement:index%2===0
-      ? `‘${event.name}’은 ${event.year}년에 일어났다.`
-      : `‘${event.name}’은 ${options[1]}에 일어났다.`,
+      ? `‘${event.name}’: ${event.year}년에 일어났다.`
+      : `‘${event.name}’: ${options[1]}에 일어났다.`,
     oxAnswer:index%2===0
   });
 });
