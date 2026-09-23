@@ -50,7 +50,7 @@ const state={
   ready:false,mode:'menu',running:false,time:240,totalTime:240,score:0,cleaned:0,totalSpawned:0,
   combo:1,bestCombo:1,lastCleanAt:0,yaw:0,pitch:.05,player:new THREE.Vector3(0,1.7,6.5),
   keys:new Set(),lastShot:0,recoil:0,cameraKick:0,kickSide:0,firing:false,lastTouch:null,mobileAim:false,tutorialStep:0,tutorialStart:new THREE.Vector3(),
-  missionToken:0,roomCleanBonus:new Set()
+  missionToken:0,roomCleanBonus:new Set(),tutorialAdvancePending:false
 };
 const zones=[
   {id:'c1',name:'1반 교실',x1:-16,x2:-1,z1:-11,z2:-2.5},
@@ -260,8 +260,13 @@ function renderTutorial(){
   if(s===3){ui.tutorialText.textContent='마지막! 쓰레기 악당을 청소총으로 맞혀 보세요. 악당은 잠시 어질어질해져 투기를 멈춰요.';villain.group.visible=true;villain.group.position.set(0,0,-4.8);villain.stunned=0}
   if(s>=4){ui.tutorialStep.textContent='연습 완료!';ui.tutorialText.textContent='준비 끝! 실전에서는 악당을 쫓기보다 학교 전체를 깨끗하게 만드는 것이 목표예요.';ui.tutorialDone.classList.remove('hidden');villain.group.visible=false;sfx('clear')}
 }
+function queueTutorialAdvance(expectedStep,delay=260){
+  if(state.mode!=='tutorial'||state.tutorialStep!==expectedStep||state.tutorialAdvancePending)return;
+  state.tutorialAdvancePending=true;
+  setTimeout(()=>{if(state.mode==='tutorial'&&state.tutorialStep===expectedStep){state.tutorialStep++;clearDirt();state.tutorialAdvancePending=false;renderTutorial()}else state.tutorialAdvancePending=false},delay)
+}
 function advanceTutorial(){
-  state.tutorialStep++;clearDirt();renderTutorial()
+  state.tutorialAdvancePending=false;state.tutorialStep++;clearDirt();renderTutorial()
 }
 function tutorialCheckMovement(){
   if(state.mode==='tutorial'&&state.tutorialStep===0&&state.player.distanceTo(state.tutorialStart)>1.5){showMessage('좋아요! 이제 청소해 볼까요?',700);advanceTutorial()}
@@ -271,11 +276,11 @@ function cleanRecord(rec,point,quiet=false){
   if(!rec||rec.dead)return;
   if(rec.kind==='trash'){
     rec.dead=true;rec.hit.visible=false;const start=rec.group.position.clone(),target=camera.position.clone();rec.suck={t:0,start,target};state.cleaned++;rewardClean(rec,100);sfx('clean');
-    if(state.mode==='tutorial'&&state.tutorialStep===1&&dirt.filter(d=>d.tutorial&&!d.dead).length<=2)setTimeout(()=>advanceTutorial(),260)
+    if(state.mode==='tutorial'&&state.tutorialStep===1&&dirt.filter(d=>d.tutorial&&!d.dead).length<=2)queueTutorialAdvance(1)
   }else{
     rec.hp--;rec.group.scale.multiplyScalar(rec.kind==='gum'?.88:.82);rec.group.material.opacity=Math.max(.2,.72*(rec.hp/rec.maxHp));burst(point,0x79eeff,4);
     if(rec.hp<=0){rec.dead=true;state.cleaned++;rewardClean(rec,rec.kind==='gum'?180:130);sfx('clean');fadeRemove(rec);
-      if(state.mode==='tutorial'&&state.tutorialStep===2&&dirt.filter(d=>d.tutorial&&!d.dead).length<=3)setTimeout(()=>advanceTutorial(),260)
+      if(state.mode==='tutorial'&&state.tutorialStep===2&&dirt.filter(d=>d.tutorial&&!d.dead).length<=3)queueTutorialAdvance(2)
     }else if(!quiet)showMessage(rec.kind==='gum'?'껌은 조금 더 문질러야 해요!':'얼룩이 옅어지고 있어요!',380)
   }
 }
@@ -323,7 +328,7 @@ function shoot(){
 function stunVillain(){
   if(villain.stunned>1.2)return;villain.stunned=3.2;sfx('stun');burst(villain.group.position.clone().add(new THREE.Vector3(0,1.4,0)),0xffee72,9);showMessage('악당 멈춤! 3초 동안 투기 금지!',700);
   if(state.mode==='game'){state.score+=75;updateHud()}
-  if(state.mode==='tutorial'&&state.tutorialStep===3)setTimeout(()=>advanceTutorial(),450)
+  if(state.mode==='tutorial'&&state.tutorialStep===3)queueTutorialAdvance(3,450)
 }
 
 function cleanliness(){
