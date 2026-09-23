@@ -58,7 +58,8 @@ const keys={},mouse={x:canvas.width/2,y:canvas.height/2,down:false};
 
 let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,autoTarget=null;
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
-const ISOLATION_CAPACITY=6;\nlet isolation=[],isoLog=[],isoSeq=0;
+const ISOLATION_CAPACITY=6;
+let isolation=[],isoLog=[],isoSeq=0;
 
 function bridge(){return window.Q17Bridge||null}
 function infection(){const b=bridge();return b?b.getState().infection:Number((document.getElementById('infection')||{}).textContent?.replace('%',''))||0}
