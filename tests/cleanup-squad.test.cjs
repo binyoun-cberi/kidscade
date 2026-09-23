@@ -15,7 +15,8 @@ test('Cleanup Squad files expose tutorial and local Three runtime',()=>{
   assert.match(runtime,/function startGame\(/);
   assert.match(runtime,/function stunVillain\(/);
   assert.match(runtime,/assets\/game\/3d\/word-blaster\/blaster\.glb/);
-  assert.match(runtime,/assets\/game\/food\/soda-can\.glb/);
+  assert.match(runtime,/const FOOD=ROOT\+'assets\/game\/food\/'/);
+  assert.match(runtime,/soda-can\.glb/);
 });
 
 test('Cleanup Squad is registered in game catalog',()=>{
