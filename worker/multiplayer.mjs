@@ -58,7 +58,7 @@ async function parseJson(request) {
   return request.json();
 }
 
-async function requireStudent(request, env) {
+export async function requireStudent(request, env) {
   if (!env.DB) return { response: json({ ok: false, error: 'account_database_not_configured' }, 503) };
   const token = parseCookies(request)[SESSION_COOKIE] || '';
   if (!/^[0-9a-f]{64}$/i.test(token)) return { response: json({ ok: false, error: 'not_authenticated' }, 401) };
@@ -141,7 +141,7 @@ function randomSeed() {
   return Number(bytes[0] & 0x7fffffff) || 1;
 }
 
-function nickname(value) {
+export function nickname(value) {
   return String(value || '새싹 게이머').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 12) || '새싹 게이머';
 }
 
