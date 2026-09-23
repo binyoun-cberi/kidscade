@@ -50,6 +50,15 @@
       "description": "Kenney 캐릭터 에셋으로 플레이하고, 서브는 버튼 한 번으로 안정적으로 상대 코트에 넘긴 뒤 직접 이동·점프·스매시로 랠리를 이어가는 1:1 아케이드 배구입니다."
     },
     {
+      "id": "high_metro_planner",
+      "title": "메트로 플래너",
+      "href": "games/high_metro_planner/메트로 플래너.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🚇",
+      "description": "도시가 커질수록 생기는 역과 승객을 보며 5개 노선을 직접 그리고, 열차 배치·실제 환승·교량·혼잡 관리를 조합해 오래 버티는 2D 도시철도 전략 게임!"
+    },
+    {
       "id": "high_quarantine_17",
       "title": "격리구역 17",
       "href": "games/high_quarantine_17/격리구역 17.html?v=2",
