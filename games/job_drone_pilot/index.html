@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>드론조종사 시뮬레이터</title>
+<link rel="stylesheet" href="drone-sim.css?v=1">
+<script src="../../audio-manager.js?v=20260917-1"></script>
+</head>
+<body>
+<canvas id="game" aria-label="3D 드론 조종 화면"></canvas>
+<div id="hud" aria-live="polite">
+  <div id="topLeft" class="glass panel">
+    <div class="eyebrow" id="missionKind">훈련</div>
+    <h1 id="missionTitle">비행 준비</h1>
+    <p id="missionText">드론을 이륙시킬 준비를 하세요.</p>
+    <div id="missionMeta"></div>
+    <div id="missionProgress"><i></i></div>
+  </div>
+  <div id="compass" class="glass"><span id="heading">N</span><b id="targetBearing">●</b><small id="targetDistance">-- m</small></div>
+  <div id="telemetry" class="glass panel">
+    <div><span>BAT</span><b id="battery">100%</b></div>
+    <div><span>ALT</span><b id="altitude">0.0 m</b></div>
+    <div><span>SPD</span><b id="speed">0.0 m/s</b></div>
+    <div><span>MODE</span><b id="mode">GPS</b></div>
+  </div>
+  <div id="toast" role="status"></div>
+  <div id="reticle" aria-hidden="true"><span></span></div>
+  <div id="remote" class="glass">
+    <div class="stickWrap left">
+      <div class="stickLabel">고도 · 회전</div>
+      <div class="stick" id="leftStick"><div class="stickGrid"></div><div class="knob" id="leftKnob"></div></div>
+      <div class="stickHint">↑↓ 고도 · ←→ 회전</div>
+    </div>
+    <div id="remoteCenter">
+      <div class="remoteBrand">KIDSCADE DRONE</div>
+      <div class="buttonRow">
+        <button id="cameraBtn" type="button">📷 촬영</button>
+        <button id="fpvBtn" type="button">FPV</button>
+        <button id="rthBtn" type="button">↩ 귀환</button>
+      </div>
+      <div id="keyGuide">WASD 이동 · 방향키 고도/회전 · C 촬영 · V 시점 · R 귀환</div>
+    </div>
+    <div class="stickWrap right">
+      <div class="stickLabel">이동</div>
+      <div class="stick" id="rightStick"><div class="stickGrid"></div><div class="knob" id="rightKnob"></div></div>
+      <div class="stickHint">↑↓ 전후 · ←→ 좌우</div>
+    </div>
+  </div>
+</div>
+<div id="start" class="overlay show">
+  <div class="card">
+    <div class="badge">직업 체험 · 드론조종사</div>
+    <h1>드론조종사 시뮬레이터</h1>
+    <p>두 개의 조종 스틱으로 드론을 띄우고 항공 촬영, 시설 점검, 물품 배송, 수색, 장애물 비행 임무를 해결하세요. 드론은 자동으로 수평을 잡아 주지만 관성이 조금 남습니다.</p>
+    <div class="guideGrid">
+      <div><b>왼쪽 스틱</b><span>고도 · 기체 회전</span></div>
+      <div><b>오른쪽 스틱</b><span>전후 · 좌우 이동</span></div>
+      <div><b>자동 호버</b><span>스틱을 놓으면 천천히 안정화</span></div>
+      <div><b>RTH</b><span>안전 고도로 올라간 뒤 출발점 복귀</span></div>
+    </div>
+    <div class="startActions">
+      <button id="tutorialBtn" class="primary" type="button">기초 훈련부터</button>
+      <button id="workBtn" class="secondary" type="button">바로 임무 시작</button>
+    </div>
+  </div>
+</div>
+<div id="end" class="overlay">
+  <div class="card">
+    <div class="badge">비행 기록</div>
+    <h1 id="endTitle">오늘 비행 완료</h1>
+    <div id="resultGrid" class="resultGrid"></div>
+    <p id="endText"></p>
+    <button id="restartBtn" class="primary" type="button">다시 비행</button>
+  </div>
+</div>
+<div id="loading" class="loading"><div class="spinner"></div><b>비행장을 준비하는 중...</b><small id="loadNote">3D 에셋을 불러오고 있어요.</small></div>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="drone-sim.js?v=1"></script>
+</body>
+</html>
