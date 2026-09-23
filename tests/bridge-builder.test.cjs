@@ -18,8 +18,8 @@ test('Bridge Lab requires structural support instead of road-only ropes', () => 
   assert.match(runtime, /function computeRouteFlexStress\(\)/);
   assert.match(runtime, /m\.type==="road"\)proxy=Math\.max\(proxy,S\.flexStress/);
 
-  const freeSpan = readNumber(/freeSpan:(\d+(?:\.\d+)?)/, 'road free span');
-  const breakThreshold = readNumber(/proxy>(\d+(?:\.\d+)?)/, 'break threshold');
+  const freeSpan = readNumber(/freeSpan:(\d*\.?\d+)/, 'road free span');
+  const breakThreshold = readNumber(/proxy>(\d*\.?\d+)/, 'break threshold');
   const centerFactor = 0.72 + 0.42;
   const flexStress = span => Math.pow(span / freeSpan, 1.45) * 0.72 * centerFactor;
 
@@ -34,9 +34,9 @@ test('Bridge Lab requires structural support instead of road-only ropes', () => 
 });
 
 test('Bridge Lab materials have distinct engineering roles', () => {
-  const roadStiff = readNumber(/road:\{[^}]*stiff:(\d+(?:\.\d+)?)/, 'road stiffness');
-  const beamStiff = readNumber(/beam:\{[^}]*stiff:(\d+(?:\.\d+)?)/, 'beam stiffness');
-  const cableStiff = readNumber(/cable:\{[^}]*stiff:(\d+(?:\.\d+)?)/, 'cable stiffness');
+  const roadStiff = readNumber(/road:\{[^}]*stiff:(\d*\.?\d+)/, 'road stiffness');
+  const beamStiff = readNumber(/beam:\{[^}]*stiff:(\d*\.?\d+)/, 'beam stiffness');
+  const cableStiff = readNumber(/cable:\{[^}]*stiff:(\d*\.?\d+)/, 'cable stiffness');
 
   assert.ok(roadStiff < beamStiff, 'road deck should be more flexible than structural beams');
   assert.ok(cableStiff < beamStiff, 'cables should not behave like compression beams');
