@@ -701,6 +701,16 @@
       "scoreKey": "trash_runner_high_score"
     },
     {
+      "id": "low_cleanup_squad",
+      "title": "청소 특공대",
+      "href": "games/low_cleanup_squad/index.html?v=1",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🧹",
+      "description": "학교를 돌아다니며 캔·봉투·음식물 쓰레기와 바닥 얼룩을 청소 블래스터로 제거하는 3D 1인칭 청소 액션! 쓰레기 악당을 잠시 멈춰 세우고 제한 시간 안에 학교 청소율 90%에 도전해요.",
+      "scoreKey": "cleanupSquadBestScore"
+    },
+    {
       "id": "korea_marble",
       "title": "K-트래블 마블",
       "href": "games/korea_marble/K-트래블 마블.html",
