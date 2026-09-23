@@ -33,17 +33,17 @@ var LEVELS=[
  {title:"1. 작은 개울",goal:"승용차 한 대를 안전하게 통과시키세요",gap:340,budget:920,par:700,vehicles:["sedan"],foundations:[[-105,555],[0,570],[105,555]],tip:"아래 고정점과 철제 빔을 이어 삼각형을 만들어 보세요."},
  {title:"2. 학교 가는 길",goal:"무거운 스쿨버스가 지나갈 다리를 만드세요",gap:440,budget:1280,par:980,vehicles:["bus"],foundations:[[-145,575],[0,590],[145,575]],tip:"버스는 승용차보다 무거워요. 도로 아래 뼈대를 촘촘히 보강해 보세요."},
  {title:"3. 깊은 골짜기",goal:"바닥 기둥 없이 골짜기를 건너세요",gap:500,budget:1450,par:1120,vehicles:["sedan"],foundations:[],tip:"바닥 고정점이 없어요. 위쪽 구조와 케이블을 활용해 보세요.",towerAnchors:[[-250,205],[250,205]]},
- {title:"4. 큰 강",goal:"구급차가 흔들리지 않게 통과해야 해요",gap:560,budget:1640,par:1280,vehicles:["ambulance"],foundations:[[-210,590],[210,590]],tip:"긴 다리는 한 곳에 힘이 몰리지 않게 여러 삼각형으로 나누는 게 좋아요."},
- {title:"5. 비바람 다리",goal:"옆바람 속에서도 다리를 지켜내세요",gap:560,budget:1780,par:1380,vehicles:["bus"],foundations:[[-190,585],[0,600],[190,585]],storm:1,tip:"시험 중 바람이 불어요. 좌우 흔들림을 잡을 대각선 빔을 넣어 보세요."},
+ {title:"4. 큰 강",goal:"구급차가 흔들리지 않게 통과해야 해요",gap:560,budget:1640,par:1280,vehicles:["ambulance"],foundations:[[-210,590],[210,590]],maxSag:48,tip:"긴 다리는 한 곳에 힘이 몰리지 않게 여러 삼각형으로 나누는 게 좋아요."},
+ {title:"5. 비바람 다리",goal:"옆바람 속에서도 다리를 지켜내세요",gap:560,budget:1780,par:1380,vehicles:["bus"],foundations:[[-190,585],[0,600],[190,585]],storm:1,maxSway:46,tip:"시험 중 바람이 불어요. 좌우 흔들림을 잡을 대각선 빔을 넣어 보세요."},
  {title:"6. 절약 공사",goal:"적은 비용으로 튼튼한 다리를 완성하세요",gap:520,budget:1320,par:1040,vehicles:["sedan"],foundations:[[-170,580],[170,580]],tip:"재료를 많이 쓰는 것보다 힘이 흐르는 길을 잘 만드는 게 중요해요."},
  {title:"7. 긴급 출동",goal:"구급차와 소방차를 연달아 통과시키세요",gap:600,budget:2020,par:1580,vehicles:["ambulance","firetruck"],foundations:[[-220,600],[0,610],[220,600]],tip:"첫 차량이 지나간 뒤에도 구조물이 버텨야 해요."},
- {title:"8. 초대형 화물",goal:"가장 무거운 화물차를 반대편까지 보내세요",gap:640,budget:2320,par:1820,vehicles:["truck"],foundations:[[-245,610],[-80,620],[80,620],[245,610]],tip:"도로 바로 아래를 철제 빔으로 받치고 큰 삼각형 안에 작은 삼각형을 넣어 보세요."}
+ {title:"8. 초대형 화물",goal:"가장 무거운 화물차를 반대편까지 보내세요",gap:640,budget:2320,par:1820,vehicles:["truck"],foundations:[[-245,610],[-80,620],[80,620],[245,610]],maxSag:58,tip:"도로 바로 아래를 철제 빔으로 받치고 큰 삼각형 안에 작은 삼각형을 넣어 보세요."}
 ];
 
 var MAT={
- road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:150},
- beam:{label:"철제 빔",rate:.8,max:235,stiff:.88,limit:.050,width:7,color:"#4da8ff",weight:.08},
- cable:{label:"케이블",rate:.55,max:310,stiff:.58,limit:.075,width:3,color:"#f5d15e",weight:.03}
+ road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:165},
+ beam:{label:"철제 빔",rate:.8,max:300,stiff:.88,limit:.050,width:7,color:"#4da8ff",weight:.08},
+ cable:{label:"케이블",rate:.55,max:380,stiff:.58,limit:.075,width:3,color:"#f5d15e",weight:.03}
 };
 
 var S={
