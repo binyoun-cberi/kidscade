@@ -218,7 +218,7 @@ function collidePlayer(me,inp){
  let aimX=nx,aimY=ny;
  if(smash){
    aimX=me.side===0?Math.max(.28,aimX):Math.min(-.28,aimX);
-   if(inp.l)aimX-=.48;if(inp.r)aimX+=.48;aimY+=.34;
+   if(inp.l)aimX-=.48;if(inp.r)aimX+=.48;aimY=Math.max(.18,aimY+.40);
  }else{
    if(me.side===0&&aimX<.08)aimX=.08;if(me.side===1&&aimX>-.08)aimX=-.08;
    aimY=Math.min(aimY,-.08);
