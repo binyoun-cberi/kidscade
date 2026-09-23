@@ -46,19 +46,22 @@ function pollingHarness(tower=false){
  api:()=>new Promise(resolve=>pending.push(resolve)),scheduleSync:d=>scheduled.push(d),render:r=>rendered.push(r),renderRoom:r=>rendered.push(r),pushOpponentPose:()=>{},readCurrentHeight:()=>12,readCurrentPose:()=>null,nowServer:Date.now,freezeGame:()=>{}});
  vm.runInContext(source,ctx);return {ctx,pending,scheduled,rendered,run:()=>tower?ctx.syncTick():ctx.sync()};
 }
-for(const tower of [false,true]){
- test((tower?'tower':'wordchain')+' delayed network never overlaps polls or applies an old room response',async()=>{
+for(const tower of [false]){
+ test('wordchain delayed network never overlaps polls or applies an old room response',async()=>{
   const h=pollingHarness(tower),a=h.run();await h.run();assert.equal(h.pending.length,1);
   h.ctx.room={id:'new'};h.ctx.pollGeneration++;h.pending[0]({room:{id:'old'}});await a;
   assert.equal(h.rendered.length,0);
  });
 }
-test('tower queues final report while another sync is in flight',async()=>{
- const h=pollingHarness(true),a=h.run();await h.ctx.syncTick(true);
- assert.equal(h.pending.length,1);assert.equal(h.ctx.finishPending,true);
- h.pending[0]({room:{id:'old',status:'playing'}});await a;
- assert.equal(h.scheduled.at(-1),0);
-});
 for(const path of ['games/patience-tower-duel/index.html','games/low_wordchain_arena/multiplayer.html','games/high_history_timebattle/history_timebattle.html'])test(path+' inline scripts parse',()=>{
  for(const match of read(path).matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi))if(!/\bsrc=/.test(match[1])&&!/type=["'](?:module|application\/)/.test(match[1]))new vm.Script(match[2]);
+});
+
+test('tower realtime removes D1 pose polling',()=>{
+ const html=read('games/patience-tower-duel/index.html');
+ const room=read('worker/tower-room.mjs');
+ assert.doesNotMatch(html,/\/api\/multiplayer\/sync/);
+ assert.match(html,/tower-realtime\.js/);
+ assert.match(room,/broadcastPose/);
+ assert.doesNotMatch(room,/env\.DB\.prepare/);
 });
