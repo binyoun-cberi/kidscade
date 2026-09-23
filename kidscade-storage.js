@@ -50,6 +50,9 @@
     musicStudioSave: 'kidscade_music_studio_v2',
     timingExact10Local: 'kidscade_timing_exact10_local_v1',
     omokArenaSave: 'kidscade_omok_arena_v1',
+    internalMedicineSave: 'kidscade_internal_medicine_v1',
+    schoolSurvivalSave: 'kidscade_school_survival_v2',
+    worldAudioSettings: 'kidscade_world_audio_v1',
     wordchainRoomV2: 'kidscade_wordchain_room_v2'
   });
 
