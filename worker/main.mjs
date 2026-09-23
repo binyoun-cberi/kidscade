@@ -4,13 +4,14 @@ import { handleTeacherManagementRequest } from './teacher-admin.mjs';
 import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
 import { handleMultiplayerRequest } from './multiplayer.mjs';
-import { handleWordchainMatchRequest } from './wordchain-match.mjs';
-import { handleHistoryLiveRequest } from './history-live.mjs';
 import { routeHistoryRoom } from './history-room-router.mjs';
+import { routeWordchainRoom } from './wordchain-room-router.mjs';
 export { HistoryQuizRoom } from './history-room.mjs';
+export { WordchainRoom } from './wordchain-room.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
+const WORDCHAIN_PREFIX = '/api/multiplayer/wordchain/';
 
 function multiplayerDatabaseError(error) {
   console.error('multiplayer database bootstrap failed', error);
@@ -27,6 +28,13 @@ export default {
 
     const url = new URL(request.url);
 
+    // Wordchain v2 owns its realtime state in Durable Objects and must not touch
+    // the legacy multiplayer D1 bootstrap on ordinary room traffic.
+    if (url.pathname.startsWith(WORDCHAIN_PREFIX)) {
+      const wordchainResponse = await routeWordchainRoom(request, env);
+      if (wordchainResponse) return wordchainResponse;
+    }
+
     if (url.pathname.startsWith(MULTIPLAYER_PREFIX)) {
       try {
         await ensureMultiplayerSchema(env);
@@ -40,14 +48,8 @@ export default {
       }
     }
 
-
-    const roomResponse = await routeHistoryRoom(request, env);
-    if (roomResponse) return roomResponse;
-    const historyLiveResponse = await handleHistoryLiveRequest(request, env);
-    if (historyLiveResponse) return historyLiveResponse;
-
-    const wordchainMatchResponse = await handleWordchainMatchRequest(request, env);
-    if (wordchainMatchResponse) return wordchainMatchResponse;
+    const historyResponse = await routeHistoryRoom(request, env);
+    if (historyResponse) return historyResponse;
 
     const multiplayerResponse = await handleMultiplayerRequest(request, env);
     if (multiplayerResponse) return multiplayerResponse;
