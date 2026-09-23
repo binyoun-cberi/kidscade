@@ -172,7 +172,8 @@ test('live server can reconfigure the same room for later rounds', () => {
   const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
   assert.match(worker,/\/api\/history-live\/reconfigure/);
   assert.match(worker,/async function reconfigureRoom/);
-  assert.match(worker,/DELETE FROM history_live_answers WHERE room_id=\?/);
+  assert.doesNotMatch(worker.slice(worker.indexOf('async function reconfigureRoom'),worker.indexOf('async function joinRoom')),/DELETE FROM history_live_answers/);
+  assert.match(worker,/function answerSlot/);
   assert.match(worker,/status='waiting'/);
   assert.match(worker,/scoreMode==='cumulative'/);
   assert.match(worker,/previous\.round\+1/);
@@ -282,9 +283,9 @@ test('live polling avoids overlapping requests and backs off on bad networks', (
 
 test('live server throttles heartbeat writes and supports active-room reconnects', () => {
   const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
-  assert.match(worker,/ONLINE_WINDOW_MS = 20000/);
-  assert.match(worker,/HEARTBEAT_WRITE_MS = 7000/);
-  assert.match(worker,/RECONNECT_RECLAIM_MS = 12000/);
+  assert.match(worker,/ONLINE_WINDOW_MS = 75000/);
+  assert.match(worker,/HEARTBEAT_WRITE_MS = 25000/);
+  assert.match(worker,/RECONNECT_RECLAIM_MS = 65000/);
   assert.doesNotMatch(worker,/if\(room\.status!=='waiting'\)return json\(\{ok:false,error:'room_already_started'/);
   assert.match(worker,/exactReconnect/);
   assert.match(worker,/reconnected:true/);
@@ -294,7 +295,10 @@ test('live server throttles heartbeat writes and supports active-room reconnects
 test('state polling no longer runs two answer-count queries on every request', () => {
   const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
   assert.match(worker,/LEFT JOIN history_live_answers/);
-  assert.match(worker,/now-seen>=HEARTBEAT_WRITE_MS/);
+  const stateBlock=worker.slice(worker.indexOf('async function state'),worker.indexOf('async function hostAction'));
+  assert.doesNotMatch(stateBlock,/UPDATE history_live_players/);
+  assert.match(worker,/async function heartbeat/);
+  assert.match(worker,/\/api\/history-live\/heartbeat/);
   const auto=worker.slice(worker.indexOf('async function autoReveal'),worker.indexOf('async function revealIfEveryoneAnswered'));
   assert.doesNotMatch(auto,/SELECT COUNT/);
   assert.match(auto,/question_deadline_at/);
@@ -325,4 +329,44 @@ test('answer retries cannot spill into the next question', () => {
   assert.match(worker,/requestedQi!==currentQi/);
   assert.match(worker,/stale_question/);
   assert.match(html,/questionIndex:Math\.max\(0,Number\(lastState\?\.room\?\.questionNumber\|\|1\)-1\)/);
+});
+
+
+test('heartbeat writes are sparse and skipped during active questions', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.match(html,/function scheduleHeartbeat\(delay=30000\)/);
+  assert.match(html,/if\(status==='question'\)/);
+  assert.match(html,/since<28000/);
+  assert.match(html,/api\('\/heartbeat'/);
+  assert.match(html,/lastPresenceWriteAt=Date\.now\(\)/);
+});
+
+test('later rounds keep old answers instead of deleting hundreds of rows', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const reconfigure=worker.slice(worker.indexOf('async function reconfigureRoom'),worker.indexOf('async function joinRoom'));
+  assert.doesNotMatch(reconfigure,/DELETE FROM history_live_answers/);
+  assert.match(worker,/return \(round-1\)\*100\+Number\(questionIndex\)/);
+  assert.match(worker,/answerSlot\(fresh,qi\)/);
+  assert.match(worker,/answerSlot\(room,qi\)/);
+});
+
+test('closing a room is one soft-close write instead of mass deletes', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const host=worker.slice(worker.indexOf('async function hostAction'),worker.indexOf('async function answerQuestion'));
+  assert.match(host,/status='closed'/);
+  assert.doesNotMatch(host,/DELETE FROM history_live_answers/);
+  assert.doesNotMatch(host,/DELETE FROM history_live_players/);
+});
+
+test('room creation no longer triggers destructive expired-room cleanup', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const create=worker.slice(worker.indexOf('async function createRoom'),worker.indexOf('async function reconfigureRoom'));
+  assert.doesNotMatch(create,/await cleanup\(/);
+});
+
+test('state polling reads the current round answer slot', () => {
+  const worker=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const state=worker.slice(worker.indexOf('async function state'),worker.indexOf('async function hostAction'));
+  assert.match(state,/slot=qi>=0\?answerSlot\(fresh,qi\):-1/);
+  assert.match(state,/\.bind\(slot,fresh\.id\)\.all\(\)/);
 });
