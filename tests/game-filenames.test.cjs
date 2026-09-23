@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/games.json')));
 const aliases = JSON.parse(fs.readFileSync(path.join(root, 'data/game-path-aliases.json')));
 const reserved = { ':': '：', '?': '？', '/': '／', '\\': '＼', '*': '＊', '"': '＂', '<': '＜', '>': '＞', '|': '｜' };
+const reviewedEntryFilenames = new Map([['high_byeokrando_voyage', '벽란도 상행기-launch.html']]);
 
 test('renamed games live below games without increasing the root HTML baseline', () => {
   const rootHtml = fs.readdirSync(root).filter(file => /\.html?$/i.test(file));
@@ -33,7 +34,8 @@ test('all game entry filenames match card titles and remain unique', () => {
   const seen = new Set();
   for (const game of catalog.games) {
     const filename = decodeURIComponent(game.href.split(/[?#]/)[0]);
-    assert.equal(path.basename(filename), game.title.replace(/[:?\/\\*"<>|]/g, c => reserved[c]) + '.html', game.id);
+    const expected = reviewedEntryFilenames.get(game.id) || game.title.replace(/[:?\/\\*"<>|]/g, c => reserved[c]) + '.html';
+    assert.equal(path.basename(filename), expected, game.id);
     assert.ok(!seen.has(filename), `duplicate entry: ${filename}`);
     seen.add(filename);
     const html = fs.readFileSync(path.join(root, filename), 'utf8');
