@@ -97,12 +97,14 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 
 <div class="countdown" id="countdown"><div class="countText" id="countText">3</div></div>
 
-<script src="../../audio-manager.js?v=20260917-1"></script>\n<script src="../../wordchain-realtime.js?v=20260923-1"></script>
+<script src="../../audio-manager.js?v=20260917-1"></script>
+<script src="../../wordchain-realtime.js?v=20260923-1"></script>
 <script>
 (() => {
 'use strict';
 const $=id=>document.getElementById(id);
-let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='',roomToken='',realtime=null;\nconst ROOM_STORAGE='kidscadeWordchainRoomId',V2_STORAGE='kidscadeWordchainV2Session';
+let account=null,room=null,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='',roomToken='',realtime=null;
+const ROOM_STORAGE='kidscadeWordchainRoomId',V2_STORAGE='kidscadeWordchainV2Session';
 const requestedMode=new URLSearchParams(location.search).get('mode');
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};
 let bgmHandle=null;
@@ -156,7 +158,8 @@ async function api(path,body={}){
  if(!res.ok||data.ok===false){const e=new Error(errors[data.error]||data.error||'요청 실패');e.code=data.error;e.data=data;throw e}
  return data;
 }
-async function v2api(path,body={},tokenValue=roomToken){const headers={'content-type':'application/json'};if(tokenValue)headers.authorization='Bearer '+tokenValue;const res=await fetch('/api/multiplayer/wordchain/'+path,{method:'POST',credentials:'same-origin',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});let data={};try{data=await res.json()}catch(_){}if(!res.ok||data.ok===false){const e=new Error(errors[data.error]||data.error||'요청 실패');e.code=data.error;e.data=data;throw e}return data}\nfunction setMsg(text,type=''){const el=$('message');el.textContent=text;el.className='message '+type}
+async function v2api(path,body={},tokenValue=roomToken){const headers={'content-type':'application/json'};if(tokenValue)headers.authorization='Bearer '+tokenValue;const res=await fetch('/api/multiplayer/wordchain/'+path,{method:'POST',credentials:'same-origin',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});let data={};try{data=await res.json()}catch(_){}if(!res.ok||data.ok===false){const e=new Error(errors[data.error]||data.error||'요청 실패');e.code=data.error;e.data=data;throw e}return data}
+function setMsg(text,type=''){const el=$('message');el.textContent=text;el.className='message '+type}
 function setServerNow(value){if(value)serverOffset=new Date(value).getTime()-Date.now()}
 function nowServer(){return Date.now()+serverOffset}
 function hearts(n){return n>0?'♥ '.repeat(n).trim():'—'}
@@ -164,7 +167,8 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&
 function actionId(){return crypto.randomUUID?crypto.randomUUID().replaceAll('-',''):(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2))}
 function myTurn(){return room?.status==='playing'&&room?.self&&!room.self.eliminated&&Number(room.match?.currentSlot)===Number(room.self.slot)&&nowServer()>=new Date(room.startAt||0).getTime()}
 let pollEnabled=false,pollBusy=false,pollFailures=0,pollGeneration=0;
-function stopPoll(){pollEnabled=false;pollGeneration++;clearTimeout(pollTimer);pollTimer=null}\nfunction stopRealtime(){if(realtime){realtime.stop();realtime=null}}
+function stopPoll(){pollEnabled=false;pollGeneration++;clearTimeout(pollTimer);pollTimer=null}
+function stopRealtime(){if(realtime){realtime.stop();realtime=null}}
 function scheduleSync(delay){clearTimeout(pollTimer);if(pollEnabled)pollTimer=setTimeout(sync,delay)}
 function startPoll(){stopPoll();pollEnabled=true;pollFailures=0;scheduleSync(0)}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pollEnabled)scheduleSync(0)});
