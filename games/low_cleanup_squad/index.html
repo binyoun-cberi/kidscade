@@ -35,7 +35,13 @@ button{font:inherit}.hidden{display:none!important}
 #movePad{position:absolute;left:14px;bottom:max(16px,env(safe-area-inset-bottom));width:142px;height:142px;pointer-events:auto}
 .padBtn{position:absolute;width:48px;height:48px;border:0;border-radius:15px;background:rgba(8,35,44,.72);color:#fff;font-size:23px;font-weight:1000;border:2px solid rgba(199,248,255,.4)}
 .padBtn[data-key="KeyW"]{left:47px;top:0}.padBtn[data-key="KeyA"]{left:0;top:47px}.padBtn[data-key="KeyS"]{left:47px;top:94px}.padBtn[data-key="KeyD"]{left:94px;top:47px}
-#fireBtn{position:absolute;right:18px;bottom:max(26px,env(safe-area-inset-bottom));width:94px;height:94px;border-radius:50%;border:5px solid rgba(255,255,255,.7);background:rgba(34,204,164,.82);color:#fff;font-weight:1000;font-size:17px;pointer-events:auto;box-shadow:0 7px 24px rgba(0,0,0,.28)}
+#fireBtn{position:absolute;right:18px;bottom:max(26px,env(safe-area-inset-bottom));width:94px;height:94px;border-radius:50%;border:5px solid rgba(255,255,255,.7);background:rgba(34,204,164,.82);color:#fff;font-weight:1000;font-size:14px;pointer-events:auto;box-shadow:0 7px 24px rgba(0,0,0,.28)}
+#weaponBar{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);display:flex;gap:7px;pointer-events:auto;padding:7px;border-radius:18px;background:rgba(7,28,37,.78);border:2px solid rgba(190,244,255,.3);backdrop-filter:blur(7px)}
+.weaponBtn{min-width:78px;border:2px solid rgba(255,255,255,.3);border-radius:13px;background:rgba(20,66,78,.85);color:#eaffff;padding:7px 8px;font-size:11px;font-weight:950;line-height:1.2;cursor:pointer;transition:.12s}
+.weaponBtn b{display:block;font-size:19px;margin-bottom:2px}.weaponBtn.active{transform:translateY(-4px);background:#eaffff;color:#123c47;border-color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.weaponBtn.cooling{opacity:.55}
+#weaponHint{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);padding:5px 10px;border-radius:999px;background:rgba(7,28,37,.74);font-size:11px;font-weight:900;white-space:nowrap}
+@media(max-width:700px){#weaponBar{bottom:max(8px,env(safe-area-inset-bottom));gap:3px;padding:4px;max-width:calc(100% - 118px);overflow-x:auto}.weaponBtn{min-width:62px;padding:6px 5px;font-size:9px}.weaponBtn b{font-size:16px}#weaponHint{display:none}#fireBtn{bottom:max(78px,env(safe-area-inset-bottom));width:82px;height:82px}#movePad{bottom:max(62px,env(safe-area-inset-bottom))}}
 @media(pointer:fine) and (min-width:801px){#mobile{display:none}}
 @media(max-width:600px){.rules{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.panel{padding:18px}.logo{font-size:40px}.panel h1{font-size:40px}.topbar{gap:4px}.pill{padding:7px 9px}#roomPanel{top:58px}}
 </style>
@@ -52,7 +58,14 @@ button{font:inherit}.hidden{display:none!important}
   <div id="roomPanel"></div>
   <div id="crosshair"></div>
   <div id="message"></div>
-  <div id="mission">한 점씩 맞히지 말고 바닥을 넓게 쓸어버리세요! 악당은 계속 왕창 어지릅니다.</div>
+  <div id="weaponHint">1~4 또는 아래 버튼으로 청소 장비 교체</div>
+  <div id="weaponBar">
+    <button class="weaponBtn active" data-weapon="water"><b>💦</b>1 물줄기</button>
+    <button class="weaponBtn" data-weapon="foam"><b>🫧</b>2 거품</button>
+    <button class="weaponBtn" data-weapon="bomb"><b>🧼</b>3 비누폭탄</button>
+    <button class="weaponBtn" data-weapon="vacuum"><b>🌪️</b>4 강력흡입</button>
+  </div>
+  <div id="mission">장비를 바꿔가며 학교 전체를 와구와구 청소하세요!</div>
   <div id="tutorialCard" class="hidden">
     <div class="step" id="tutorialStep">연습 1 / 4</div>
     <div id="tutorialText">WASD 또는 왼쪽 방향 버튼으로 움직여 보세요.</div>
@@ -76,7 +89,7 @@ button{font:inherit}.hidden{display:none!important}
     <div class="rules">
       <div class="rule">🎮 WASD / 방향 버튼<br>학교를 돌아다녀요</div>
       <div class="rule">🎯 마우스 / 화면 드래그<br>가운데 조준점으로 겨냥</div>
-      <div class="rule">💦 누르고 있기<br>넓게 연속 청소해요</div>
+      <div class="rule">💦🫧🧼🌪️ 4종 장비<br>상황에 맞게 바꿔요</div>
     </div>
     <div class="actions">
       <button id="tutorialBtn" class="bigBtn">🎓 튜토리얼부터</button>
@@ -104,6 +117,6 @@ button{font:inherit}.hidden{display:none!important}
 </div>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="./cleanup-squad.js?v=1"></script>
+<script type="module" src="./cleanup-squad.js?v=3"></script>
 </body>
 </html>
