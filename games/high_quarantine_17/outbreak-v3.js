@@ -125,6 +125,7 @@ function playGunshot(){
 
 let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,meleeCd=0,autoTarget=null;let cameraX=0,worldW=0,worldH=0,groundY=0,obstacles=[];
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
+let combatTime=0,muzzle=0,screenShake=0,damageFlash=0,particles=[];
 const ISOLATION_CAPACITY=6;
 let isolation=[],isoLog=[],isoSeq=0;
 
@@ -234,39 +235,42 @@ renderIsolation();
 
 function difficulty(){
  const inf=infection();
- return {inf:inf,count:Math.max(5,Math.min(26,6+Math.floor((inf-18)*.75))),speed:120+Math.max(0,inf-20)*1.15,hp:2+Math.floor(Math.max(0,inf-34)/12)};
+ return {inf:inf,count:Math.max(4,Math.min(14,5+Math.floor((inf-18)*.42))),speed:112+Math.max(0,inf-20)*.8,hp:2+Math.floor(Math.max(0,inf-42)/18)};
 }
 function resizeCanvas(){
  const r=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
- viewScale=r.width<=700?.72:.82;
- const w=Math.max(320,Math.round(r.width*dpr)),h=Math.max(240,Math.round(r.height*dpr));
+ const cssW=Math.max(320,r.width||Math.min(1040,window.innerWidth||960));
+ const cssH=Math.max(180,r.height||cssW*9/16);
+ viewScale=cssW<=700?.82:.90;
+ const w=Math.max(320,Math.round(cssW*dpr)),h=Math.max(180,Math.round(cssH*dpr));
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
 }
-function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,vx:0,vy:0,r:22*(window.devicePixelRatio||1),hp:hp||2,speed:speed||130*(window.devicePixelRatio||1),hit:0,name:name||'',attackDelay:attackDelay||0,onGround:true,knock:0})}
+function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,vx:0,vy:0,r:21*(window.devicePixelRatio||1),hp:hp||2,speed:speed||124*(window.devicePixelRatio||1),hit:0,attack:0,name:name||'',attackDelay:attackDelay||0,onGround:true,knock:0})}
 function makeWorld(kind){
  const dpr=Math.min(2,window.devicePixelRatio||1);
- worldH=canvas.height;worldW=Math.max(canvas.width*2.7,2200*dpr);groundY=worldH-64*dpr;
- obstacles=[
-  {x:420*dpr,y:groundY-80*dpr,w:86*dpr,h:80*dpr,type:'crate'},
-  {x:760*dpr,y:groundY-45*dpr,w:130*dpr,h:45*dpr,type:'barrier'},
-  {x:1060*dpr,y:groundY-125*dpr,w:145*dpr,h:125*dpr,type:'container'},
-  {x:1380*dpr,y:groundY-65*dpr,w:100*dpr,h:65*dpr,type:'crate'},
-  {x:1690*dpr,y:groundY-105*dpr,w:170*dpr,h:105*dpr,type:'container'},
-  {x:2020*dpr,y:groundY-55*dpr,w:115*dpr,h:55*dpr,type:'barrier'}
- ];
+ worldH=canvas.height;
+ const base=kind==='camp'?1450:kind==='isolation'?1320:1760;
+ worldW=Math.max(canvas.width/viewScale+220*dpr,base*dpr);
+ groundY=worldH-54*dpr;
+ const raw=kind==='isolation'
+  ?[[320,58,82,'crate'],[610,95,120,'container'],[930,48,108,'barrier'],[1120,72,80,'crate']]
+  :kind==='camp'
+  ?[[350,58,76,'crate'],[650,44,118,'barrier'],[900,92,128,'container'],[1180,55,88,'crate']]
+  :[[340,58,82,'crate'],[610,44,125,'barrier'],[860,96,132,'container'],[1180,60,92,'crate'],[1440,82,125,'container']];
+ obstacles=raw.map(function(o){return{x:o[0]*dpr,y:groundY-o[1]*dpr,w:o[2]*dpr,h:o[1]*dpr,type:o[3]}});
 }
 function setupCombat(kind,payload){
  resizeCanvas();mode=kind;currentIncidentInf=infection();currentIntruder=payload&&payload.name||'';campLosses=0;makeWorld(kind);
  const dpr=Math.min(2,window.devicePixelRatio||1);
- player={x:110*dpr,y:groundY,r:23*dpr,hp:100,ammo:12,maxAmmo:12,vx:0,vy:0,onGround:true,facing:1};
- zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;meleeCd=0;autoTarget=null;cameraX=0;
+ player={x:150*dpr,y:groundY,r:22*dpr,hp:100,ammo:12,maxAmmo:12,vx:0,vy:0,onGround:true,facing:1,iframes:0,hurt:0,shot:0};
+ zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;meleeCd=0;autoTarget=null;cameraX=0;combatTime=0;muzzle=0;screenShake=0;damageFlash=0;particles=[];
  if(kind==='isolation'){
-  const roomZombies=isolation.filter(function(d){return d.status==='zombie'});roomZombies.forEach(function(d,i){spawnZombie((620+i*260)*dpr,groundY,2,126*dpr,d.name,.8+i*.15)});document.getElementById('q17CombatTitle').textContent='⚠ 격리실 직접 진입 · 좀비 소탕';document.getElementById('q17SurvivorStat').style.display='none';
+  const roomZombies=isolation.filter(function(d){return d.status==='zombie'});roomZombies.forEach(function(d,i){spawnZombie((540+i*210)*dpr,groundY,2,118*dpr,d.name,1+i*.16)});document.getElementById('q17CombatTitle').textContent='⚠ 격리실 직접 진입 · 좀비 소탕';document.getElementById('q17SurvivorStat').style.display='none';
  }else if(kind==='camp'){
-  const survivorSprites=['female','adventurer','soldier','player','female','adventurer','soldier'];
-  const xs=[720,940,1210,1510,1740,1940,2140];
-  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:19*dpr,sprite:survivorSprites[i],alive:true,speed:(96+(i%3)*5)*dpr,dir:i%2?1:-1,bite:0,bitten:false,turnTimer:0})});
-  spawnZombie(560*dpr,groundY,2,132*dpr,currentIntruder,1.7);
+  const survivorSprites=['female','adventurer','soldier','player','female','adventurer'];
+  const xs=[760,900,1030,1160,1280,1380];
+  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,bite:0,bitten:false,turnTimer:0})});
+  spawnZombie(560*dpr,groundY,2,126*dpr,currentIntruder,2.1);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
   document.getElementById('q17SurvivorStat').style.display='';
  }else{
@@ -314,8 +318,8 @@ function shoot(tx,ty){
  if(!started||shootCd>0||reload>0)return;
  if(player.ammo<=0){startReload();return}
  const dx=tx-player.x,dy=ty-(player.y-30*(window.devicePixelRatio||1)),len=Math.hypot(dx,dy)||1;
- bullets.push({x:player.x+player.facing*18*(window.devicePixelRatio||1),y:player.y-30*(window.devicePixelRatio||1),vx:dx/len*720*(window.devicePixelRatio||1),vy:dy/len*720*(window.devicePixelRatio||1),life:1.35});
- player.facing=dx>=0?1:-1;player.ammo--;shootCd=.18;playGunshot();updateHud();if(player.ammo<=0)startReload();
+ bullets.push({x:player.x+player.facing*24*(window.devicePixelRatio||1),y:player.y-29*(window.devicePixelRatio||1),px:player.x,py:player.y-29*(window.devicePixelRatio||1),vx:dx/len*850*(window.devicePixelRatio||1),vy:dy/len*850*(window.devicePixelRatio||1),life:1.1});
+ player.facing=dx>=0?1:-1;player.ammo--;shootCd=.17;player.shot=.12;muzzle=.07;screenShake=Math.max(screenShake,2.8);playGunshot();updateHud();if(player.ammo<=0)startReload();
 }
 function melee(){
  if(!started||meleeCd>0)return;meleeCd=.55;
