@@ -58,28 +58,28 @@
       "music/korea/welcome-to-korea-01.mp3"
     ],
     "ui.click": [
-      "../game/history_royale/audio/ui/kenney_interface/click_002.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/click_004.ogg"
+      "ui/kenney_interface/click_002.ogg",
+      "ui/kenney_interface/click_004.ogg"
     ],
     "ui.confirm": [
-      "../game/history_royale/audio/ui/kenney_interface/confirmation_001.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/confirmation_003.ogg"
+      "ui/kenney_interface/confirmation_001.ogg",
+      "ui/kenney_interface/confirmation_003.ogg"
     ],
     "ui.error": [
-      "../game/history_royale/audio/ui/kenney_interface/error_002.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/error_006.ogg"
+      "ui/kenney_interface/error_002.ogg",
+      "ui/kenney_interface/error_006.ogg"
     ],
     "ui.tick": [
-      "../game/history_royale/audio/ui/kenney_interface/tick_001.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/tick_002.ogg"
+      "ui/kenney_interface/tick_001.ogg",
+      "ui/kenney_interface/tick_002.ogg"
     ],
     "ui.open": [
-      "../game/history_royale/audio/ui/kenney_interface/open_001.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/open_003.ogg"
+      "ui/kenney_interface/open_001.ogg",
+      "ui/kenney_interface/open_003.ogg"
     ],
     "ui.select": [
-      "../game/history_royale/audio/ui/kenney_interface/select_002.ogg",
-      "../game/history_royale/audio/ui/kenney_interface/select_006.ogg"
+      "ui/kenney_interface/select_002.ogg",
+      "ui/kenney_interface/select_006.ogg"
     ]
   }
 }
