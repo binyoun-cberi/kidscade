@@ -22,7 +22,7 @@ class UI{
   if(s.next&&s.next.side===side&&s.next.visible){const name=s.next.type==='wildfire'?'🔥 산불 징조':'🌧️ 홍수 징조',tail=s.disaster?'':' · '+Math.ceil(Math.max(0,s.next.in))+'초';el.className='threatBadge '+side+' '+(s.next.type==='wildfire'?'fire':'flood');el.querySelector('span').textContent=name+tail;return}
   el.querySelector('span').textContent='안정';
  }
- handKey(s){return s.hand.map(c=>c.uid+':'+c.id).join('|')+'#'+s.selectedUid+'#'+Math.floor(s.money)}
+ handKey(s){const dmg=s.slots.some(x=>x.building&&x.building.hp<x.building.maxHp)?1:0;return s.hand.map(c=>c.uid+':'+c.id).join('|')+'#'+s.selectedUid+'#'+Math.floor(s.money)+'#'+(s.disaster?.type||'-')+'#'+dmg}
  renderHand(s,sim){
   const key=this.handKey(s);if(key===this.lastHand)return;this.lastHand=key;
   this.els.hand.innerHTML=s.hand.map(c=>{const d=D.CARDS[c.id],usable=d.kind==='build'?sim.canAfford(d.cost):sim.actionUsable(d),sel=s.selectedUid===c.uid;
