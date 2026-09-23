@@ -29,6 +29,12 @@ export default {
 
     const url = new URL(request.url);
 
+    // Wordchain v2 owns its realtime room state in a Durable Object. Route it
+    // before the legacy multiplayer D1 schema preflight so active v2 rooms do
+    // not consume (or depend on) D1 reads.
+    const wordchainRoomResponse = await routeWordchainRoom(request, env);
+    if (wordchainRoomResponse) return wordchainRoomResponse;
+
     if (url.pathname.startsWith(MULTIPLAYER_PREFIX)) {
       try {
         await ensureMultiplayerSchema(env);
@@ -41,10 +47,6 @@ export default {
         return multiplayerDatabaseError(error);
       }
     }
-
-
-    const wordchainRoomResponse = await routeWordchainRoom(request, env);
-    if (wordchainRoomResponse) return wordchainRoomResponse;
 
     const roomResponse = await routeHistoryRoom(request, env);
     if (roomResponse) return roomResponse;

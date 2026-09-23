@@ -2,7 +2,7 @@ import { requireStudent, nickname } from './wordchain-match.mjs';
 const PREFIX='/api/multiplayer/wordchain/',ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const reply=(error,status)=>Response.json({ok:false,error},{status,headers:{'cache-control':'no-store'}});
 const codeOf=(body,url)=>String(body.code||url.searchParams.get('code')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
-function forwarded(request,code,body,student){const url=new URL(request.url);url.searchParams.set('code',code);const headers=new Headers(request.headers);if(student){headers.set('x-kc-student-id',String(student.student_id));headers.set('x-kc-nickname',nickname(student.nickname))}return new Request(url,{method:request.method,headers,body:request.method==='POST'?JSON.stringify(body):undefined})}
+function forwarded(request,code,body,student){const url=new URL(request.url);url.searchParams.set('code',code);const headers=new Headers(request.headers);headers.delete('content-length');if(student){headers.set('x-kc-student-id',String(student.student_id));headers.set('x-kc-nickname',nickname(student.nickname))}return new Request(url,{method:request.method,headers,body:request.method==='POST'?JSON.stringify(body):undefined})}
 export async function routeWordchainRoom(request,env){
  const url=new URL(request.url);if(!url.pathname.startsWith(PREFIX))return null;const action=url.pathname.slice(PREFIX.length);if(!['rooms','join','state','ticket','socket','heartbeat','ready','start','submit','leave'].includes(action))return null;
  let body={};if(request.method==='POST'){if(!(request.headers.get('content-type')||'').includes('application/json'))return reply('invalid_json',400);try{body=await request.clone().json()}catch{return reply('invalid_json',400)}}
