@@ -97,6 +97,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 
 <div class="countdown" id="countdown"><div class="countText" id="countText">3</div></div>
 
+<script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../wordchain-realtime.js?v=20260923-1"></script>
 <script>
@@ -104,7 +105,7 @@ body{min-height:100dvh;padding:12px;overscroll-behavior:none}button,input,select
 'use strict';
 const $=id=>document.getElementById(id);
 let account=null,room=null,roomToken=null,realtime=null,realtimeReady=false,pollTimer=null,timerRAF=0,serverOffset=0,submitting=false,lastHistoryKey='';
-const ROOM_STORAGE='kidscadeWordchainRoomV2';
+const ROOM_STORAGE='wordchainRoomV2';
 const requestedMode=new URLSearchParams(location.search).get('mode');
 let soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};
 let bgmHandle=null;
@@ -188,7 +189,7 @@ function startPoll(){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pollEnabled){if(realtimeReady)realtime?.sync();else scheduleSync(0)}});
 window.addEventListener('online',()=>{if(pollEnabled){pollFailures=0;if(realtimeReady)realtime?.sync();else scheduleSync(0)}});
 function showOverlay(name){['entryOverlay','lobbyOverlay','resultOverlay'].forEach(id=>$(id).classList.toggle('hidden',id!==name))}
-function resetToEntry(){stopPoll();localStorage.removeItem(ROOM_STORAGE);room=null;roomToken=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
+function resetToEntry(){stopPoll();window.KidscadeStorage?.remove?.(ROOM_STORAGE);room=null;roomToken=null;soundState={historyToken:'',historyPrimed:false,countdown:null,resultRoom:'',lastTurnSlot:null,turnCueToken:'',warningTurn:'',warningSecond:0,playerCount:null};cancelAnimationFrame(timerRAF);$('matchMeta').classList.add('hidden');$('turnCard').classList.remove('myturn');$('timerBar').classList.remove('urgent');$('leaveMatchBtn').disabled=true;$('wordInput').disabled=true;$('submitBtn').disabled=true;$('currentWord').textContent='끝말잇기';$('requiredText').textContent='로그인 사용자끼리 대결';$('turnLabel').textContent='방에 입장하세요';$('chips').innerHTML='';$('playerList').innerHTML='';showOverlay('entryOverlay');setMsg('방을 만들거나 코드로 참가하세요.')}
 function applyRequestedMode(){
  if(requestedMode==='duel'){
    $('createDuel').style.display='block';
@@ -209,15 +210,14 @@ async function checkAccount(){
   const res=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});const data=await res.json();
   if(!res.ok||!data.ok)throw new Error();
   account=data.account;$('accountState').textContent=(account.nickname||'학생')+' 로그인';$('entryContent').style.display='block';$('loginNeeded').style.display='none';
-  const saved=localStorage.getItem(ROOM_STORAGE);
-  if(saved){
+  const session=window.KidscadeStorage?.getJson?.(ROOM_STORAGE,null);
+  if(session){
    try{
-    const session=JSON.parse(saved);
     if(!session?.code||!session?.token)throw new Error();
     roomToken=session.token;
     const restored=await api('state',{code:session.code});
     if(restored?.room){enterRoom(restored.room,roomToken);return}
-   }catch(_){roomToken=null;localStorage.removeItem(ROOM_STORAGE)}
+   }catch(_){roomToken=null;window.KidscadeStorage?.remove?.(ROOM_STORAGE)}
   }
  }catch(_){$('accountState').textContent='로그인 필요';$('entryContent').style.display='none';$('loginNeeded').style.display='block'}
 }
@@ -235,7 +235,7 @@ async function join(){
   const data=await api('join',{code},null);enterRoom(data.room,data.roomToken);
  }catch(e){alert(e.message)}
 }
-function enterRoom(next,token=roomToken){room=next;roomToken=token;localStorage.setItem(ROOM_STORAGE,JSON.stringify({code:next.code,token:roomToken}));setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;$('matchMeta').classList.remove('hidden');sfx('collect.coin_pickup',{volume:.24,rate:1.08,cooldownMs:300});showOverlay('lobbyOverlay');render(next);startPoll()}
+function enterRoom(next,token=roomToken){room=next;roomToken=token;window.KidscadeStorage?.setJson?.(ROOM_STORAGE,{code:next.code,token:roomToken});setServerNow(next.serverNow);$('leaveMatchBtn').disabled=false;$('matchMeta').classList.remove('hidden');sfx('collect.coin_pickup',{volume:.24,rate:1.08,cooldownMs:300});showOverlay('lobbyOverlay');render(next);startPoll()}
 function renderLobby(next){
  soundState.countdown=null;
  if(soundState.playerCount!==null&&next.playerCount!==soundState.playerCount)sfx(next.playerCount>soundState.playerCount?'collect.coin_pickup':'failure.disappointed_voice',{volume:.18,cooldownMs:260});
@@ -361,7 +361,7 @@ async function leave(){
  resetToEntry();
 }
 function showResult(next){
- stopPoll();localStorage.removeItem(ROOM_STORAGE);cancelAnimationFrame(timerRAF);$('countdown').classList.remove('show');showOverlay('resultOverlay');
+ stopPoll();window.KidscadeStorage?.remove?.(ROOM_STORAGE);cancelAnimationFrame(timerRAF);$('countdown').classList.remove('show');showOverlay('resultOverlay');
  const outcome=next.result?.outcome||'draw';$('resultTitle').textContent=outcome==='win'?'🏆 승리!':outcome==='lose'?'대결 종료':'🤝 무승부';
  $('resultSub').textContent=next.result?.winnerNickname?'최후의 생존자: '+next.result.winnerNickname:'승자가 정해지지 않았습니다.';
  $('resultPlayers').innerHTML=next.players.map(p=>'<div class="resultP"><b>'+esc(p.nickname)+'</b><div style="color:'+(p.eliminated?'#fda4af':'#86efac')+'">'+(p.eliminated?'탈락':'생존')+' · '+hearts(p.lives)+'</div></div>').join('');
