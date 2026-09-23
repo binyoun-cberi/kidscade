@@ -57,7 +57,11 @@
     wordchainV2Session: 'kidscade_wordchain_v2_session',
     towerV2Session: 'kidscade_tower_v2_session',
     quarantineTutorialSeen: 'kidscade_quarantine17_tutorial_seen',
-    quarantineBestV2: 'kidscade_quarantine17_best_v2'
+    quarantineBestV2: 'kidscade_quarantine17_best_v2',
+    gugudanSettings: 'kidscade_gugudan_settings_v1',
+    gugudanWins: 'kidscade_gugudan_wins_v1',
+    gugudanHighScore: 'kidscade_gugudan_high_score_v1',
+    topKingRecord: 'kidscade_top_king_record_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
