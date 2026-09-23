@@ -8,8 +8,10 @@ import { handleWordchainMatchRequest } from './wordchain-match.mjs';
 import { handleHistoryLiveRequest } from './history-live.mjs';
 import { routeHistoryRoom } from './history-room-router.mjs';
 import { routeWordchainRoom } from './wordchain-room-router.mjs';
+import { routeTowerRoom } from './tower-room-router.mjs';
 export { HistoryQuizRoom } from './history-room.mjs';
 export { WordchainRoom } from './wordchain-room.mjs';
+export { TowerRoom } from './tower-room.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
@@ -32,6 +34,9 @@ export default {
     // Wordchain v2 owns its realtime room state in a Durable Object. Route it
     // before the legacy multiplayer D1 schema preflight so active v2 rooms do
     // not consume (or depend on) D1 reads.
+    const towerRoomResponse = await routeTowerRoom(request, env);
+    if (towerRoomResponse) return towerRoomResponse;
+
     const wordchainRoomResponse = await routeWordchainRoom(request, env);
     if (wordchainRoomResponse) return wordchainRoomResponse;
 
