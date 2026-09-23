@@ -215,5 +215,16 @@ buttons.id.addEventListener('click',inspectId);buttons.temp.addEventListener('cl
 document.querySelectorAll('.decide').forEach(function(b){b.addEventListener('click',function(){decide(b.dataset.action)})});
 document.addEventListener('click',function(e){if(e.target&&e.target.id==='restartBtn')restart()});
 document.addEventListener('keydown',function(e){if(!state.started||document.querySelector('.modal.show'))return;if(['INPUT','TEXTAREA'].indexOf(document.activeElement.tagName)>=0)return;const k=e.key.toLowerCase();if(k==='i')inspectId();else if(k==='t')inspectTemp();else if(k==='u')inspectUv();else if(k==='b')inspectBlood();else if(k==='r')inspectResp();else if(k==='g')inspectBag();else if(k==='1')decide('pass');else if(k==='2')decide('retest');else if(k==='3')decide('quarantine')});
+window.Q17Bridge={
+ getState:function(){return{weekIndex:state.weekIndex,caseIndex:state.caseIndex,trust:state.trust,infection:state.infection,score:state.score,totalCorrect:state.totalCorrect,totalCases:state.totalCases}},
+ applyOutbreakResult:function(result){
+  result=result||{};
+  state.infection=clamp(state.infection+(result.infectionDelta||0),0,99);
+  state.trust=clamp(state.trust+(result.trustDelta||0),0,100);
+  state.score=Math.max(0,state.score+(result.scoreDelta||0));
+  renderHeader();saveBest();
+  if(result.gameOver){state.locked=true;state.started=false;}
+ }
+};
 renderRules();renderHeader();setToolAvailability();
 })();
