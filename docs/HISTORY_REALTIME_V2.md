@@ -2,10 +2,10 @@
 
 ## Scope and routing
 
-History only. Wordchain and Tower retain phase-1 transport. Solo history stays local.
-New UI requests v2 rooms. HISTORY_LIVE_V2=true and HISTORY_LIVE_V2_PERCENT=10 admit
-approximately 10% of new rooms to the pilot. Other new rooms and all old rooms retain
-the legacy D1 engine. A v2 code begins with 0, which legacy code generation excludes.
+History realtime v2 is now the default for every newly created history room. Solo history stays local.
+New UI requests v2 rooms and HISTORY_LIVE_V2=true admits all of them; there is no percentage rollout gate.
+A v2 code begins with 0, which legacy code generation excludes. Legacy routing remains only as a compatibility
+path for an already-issued non-v2 room code, not as the normal creation path.
 Existing v2 codes ALWAYS route to their Durable Object, even after disabling new v2
 creation. Never switch a running room's authority or remove the binding for rollback.
 

@@ -56,6 +56,9 @@ jobs:
             worker/game-records.mjs \
             worker/multiplayer.mjs \
             worker/wordchain-match.mjs \
+            worker/wordchain-room.mjs \
+            worker/wordchain-room-router.mjs \
+            wordchain-realtime.js \
             worker/history-live.mjs \
             worker/main.mjs \
             game-registry.js \
@@ -120,6 +123,8 @@ jobs:
         run: node --test tests/multiplayer.test.mjs
       - name: Run word-chain dictionary tests
         run: node --test tests/wordchain.test.mjs
+      - name: Run word-chain realtime v2 tests
+        run: node --test tests/wordchain-realtime-v2.test.mjs
       - name: Run History Timebattle LIVE tests
         run: node --test tests/history-live.test.mjs
       - name: Run Rhythm Dash v11 tests
