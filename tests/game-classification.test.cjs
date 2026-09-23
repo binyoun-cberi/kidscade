@@ -62,9 +62,9 @@ test('catalog age distribution matches the reviewed inventory', () => {
   }, {});
 
   assert.deepEqual(counts, {
-    low: 27,
-    high: 54,
-    job: 8,
+    low: 29,
+    high: 55,
+    job: 10,
     toddler: 11
   });
 });
@@ -115,7 +115,7 @@ test('딱! 타임 is visible to both low and high elementary groups', () => {
 
 test('all job-experience games are classified under the job category', () => {
   const jobGames = deployedGames.filter(game => game.age === 'job');
-  assert.equal(jobGames.length, 8);
+  assert.equal(jobGames.length, 10);
   for (const game of jobGames) {
     assert.equal(game.category, 'job', `${game.title} should use the job category`);
   }
