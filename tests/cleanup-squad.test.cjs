@@ -19,11 +19,18 @@ test('Cleanup Squad files expose tutorial and local Three runtime',()=>{
   assert.match(runtime,/soda-can\.glb/);
 });
 
-test('Cleanup Squad uses rapid area-cleaning instead of one-object-at-a-time shooting',()=>{
-  assert.match(runtime,/const CLEAN_RADIUS=1\.85/);
+test('Cleanup Squad uses four distinct rapid cleaning tools',()=>{
+  assert.match(html,/data-weapon="water"/);
+  assert.match(html,/data-weapon="foam"/);
+  assert.match(html,/data-weapon="bomb"/);
+  assert.match(html,/data-weapon="vacuum"/);
+  assert.match(runtime,/const WEAPONS=/);
   assert.match(runtime,/function sprayClean\(/);
-  assert.match(runtime,/state\.firing=true/);
-  assert.match(runtime,/now-state\.lastShot<78/);
+  assert.match(runtime,/function spawnFoamField\(/);
+  assert.match(runtime,/function soapBomb\(/);
+  assert.match(runtime,/function vacuumShot\(/);
+  assert.match(runtime,/Digit1:'water'/);
+  assert.match(runtime,/Digit4:'vacuum'/);
   assert.match(runtime,/speed:4\.15/);
   assert.match(runtime,/function messBurst\(/);
   assert.match(runtime,/cameraKick/);
