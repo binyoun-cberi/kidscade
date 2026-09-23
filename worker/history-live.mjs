@@ -225,10 +225,10 @@ async function state(request,env){
   const roster=players.map((p,i)=>({id:p.id,nickname:p.nickname,score:Number(p.score||0),streak:Number(p.streak||0),rank:i+1,answered:answered.has(p.id),online:now-new Date(p.last_seen_at).getTime()<=ONLINE_WINDOW_MS}));
   const plan=readRoomPlan(fresh),q=currentQuestion(fresh),display=q?displayedQuestion(fresh,q):null;
   const payload={ok:true,role:auth.role,selfPlayerId:auth.player?.id||null,room:{code:fresh.room_code,status:fresh.status,maxPlayers:MAX_PLAYERS,questionNumber:qi+1,questionCount:Number(fresh.question_count),secondsPerQuestion:Number(fresh.seconds_per_question),deadlineAt:fresh.question_deadline_at||null,serverNow:nowIso(now),checkpoints:plan.checkpoints,orderMode:plan.orderMode,questionMode:plan.questionMode,eras:plan.eras,scoreMode:plan.scoreMode,round:plan.round},players:roster};
-  if(q&&display&&['question','reveal','finished'].includes(fresh.status))payload.question={number:qi+1,total:Number(fresh.question_count),era:q.era,difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice'};
+  if(q&&display&&['question','reveal','finished'].includes(fresh.status))payload.question={number:qi+1,total:Number(fresh.question_count),difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice',...(fresh.status==='reveal'?{era:q.era}:{})};
   if(q&&fresh.status==='reveal'){
     const stats=Array.from({length:q.o.length},()=>0); answers.forEach(a=>{if(a.option_index>=0&&a.option_index<stats.length)stats[a.option_index]++});
-    payload.reveal={answerIndex:display.answerIndex,explanation:q.e,optionStats:stats,answeredCount:answers.length,correctCount:answers.filter(a=>Number(a.is_correct)===1).length};
+    payload.reveal={answerIndex:display.answerIndex,era:q.era,explanation:q.e,optionStats:stats,answeredCount:answers.length,correctCount:answers.filter(a=>Number(a.is_correct)===1).length};
   }
   if(fresh.status==='checkpoint')payload.checkpoint={afterQuestion:qi+1,nextQuestion:qi+2,totalPlayers:roster.length};
   if(fresh.status==='finished')payload.results=roster;
