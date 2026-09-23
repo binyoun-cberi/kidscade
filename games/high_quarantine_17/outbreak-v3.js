@@ -3,10 +3,19 @@
 const A='../../assets/game/characters/people/kenney-platformer-characters/';
 const SPRITES={
  player:A+'player/poses/player-stand.png',
+ playerWalk1:A+'player/poses/player-walk1.png',
+ playerWalk2:A+'player/poses/player-walk2.png',
+ playerJump:A+'player/poses/player-jump.png',
+ playerShoot:A+'player/poses/player-action1.png',
+ playerHurt:A+'player/poses/player-hurt.png',
  female:A+'female/poses/female-stand.png',
  adventurer:A+'adventurer/poses/adventurer-stand.png',
  soldier:A+'soldier/poses/soldier-stand.png',
- zombie:A+'zombie/poses/zombie-stand.png'
+ zombie:A+'zombie/poses/zombie-stand.png',
+ zombieWalk1:A+'zombie/poses/zombie-walk1.png',
+ zombieWalk2:A+'zombie/poses/zombie-walk2.png',
+ zombieAttack:A+'zombie/poses/zombie-action1.png',
+ zombieHurt:A+'zombie/poses/zombie-hurt.png'
 };
 const PLAYER=SPRITES.player,ZOMBIE=SPRITES.zombie;
 
@@ -18,6 +27,7 @@ const css=[
 '.q17-combat-title{font-weight:1000;letter-spacing:.06em;color:#ff8989}.q17-combat-stats{display:flex;gap:15px;font-size:12px;color:#ccd3d9;flex-wrap:wrap}.q17-combat-stats b{color:#fff}',
 '#q17CombatCanvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:linear-gradient(#202830,#0e1318);touch-action:none;cursor:crosshair}',
 '.q17-combat-help{padding:9px 12px;color:#9ca7b1;font-size:11px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}',
+'.q17-mobile-controls{display:none;padding:8px;background:#0b0f13;border-top:1px solid #313a43;gap:8px;grid-template-columns:1fr 1.45fr}.q17-mobile-pad,.q17-mobile-actions{display:grid;gap:7px}.q17-mobile-pad{grid-template-columns:1fr 1fr}.q17-mobile-actions{grid-template-columns:repeat(3,1fr)}.q17-mobile-controls button{min-height:48px;border:1px solid #59636e;background:#202830;color:#f2f5f7;font-weight:950;border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none}.q17-mobile-controls button:active,.q17-mobile-controls button.active{transform:translateY(1px);background:#36424d}.q17-mobile-controls .shoot{background:#8e3035;border-color:#d85f66}.q17-mobile-controls .jump{background:#314f68}.q17-mobile-controls .melee{background:#59472c}.q17-mobile-controls .reload{grid-column:3;background:#3b4147;font-size:11px}',
 '.q17-alert{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#090c0ff2;border:2px solid #b64f55;padding:18px 22px;text-align:center;min-width:min(500px,88%);box-shadow:0 12px 45px #000;display:none;z-index:5}',
 '.q17-alert.show{display:block}.q17-alert h2{margin:0 0 8px;color:#ff7b7b}.q17-alert p{color:#ccd1d5;line-height:1.55}.q17-alert button{border:0;background:#c2a64c;color:#171717;font-weight:900;padding:10px 16px;cursor:pointer}',
 '.q17-dead{position:fixed;inset:0;z-index:400;background:#050505f7;display:none;align-items:center;justify-content:center;padding:20px}.q17-dead.show{display:flex}',
@@ -38,12 +48,12 @@ const css=[
 '#q17Tutorial{position:fixed;inset:0;z-index:520;background:#050709e8;display:none;align-items:center;justify-content:center;padding:18px}#q17Tutorial.show{display:flex}',
 '.q17-tutorial-card{width:min(720px,100%);background:#161c22;border:1px solid #66727e;box-shadow:0 24px 90px #000;padding:22px}.q17-tutorial-card h2{margin:0 0 8px;color:#efd06f}.q17-tutorial-card p{color:#c2cad0;line-height:1.7}.q17-tutorial-demo{background:#0d1216;border:1px solid #3d4852;padding:14px;margin:14px 0;min-height:112px}.q17-tutorial-demo b{color:#fff}.q17-tutorial-nav{display:flex;justify-content:space-between;gap:8px}.q17-tutorial-nav button{border:1px solid #596570;background:#222a31;color:#eef2f4;padding:9px 14px;font-weight:850;cursor:pointer}.q17-tutorial-nav .next{background:#c4a84b;color:#171717;border:0}.q17-tutorial-progress{color:#7f8b94;font-size:10px;margin-bottom:6px}',
 '@keyframes q17pulse{50%{transform:scale(1.06);box-shadow:0 0 24px #b34b4b88}}',
-'@media(max-width:680px){#q17Outbreak{padding:0}.q17-combat-shell{height:100%;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:1;min-height:0;aspect-ratio:auto}.q17-combat-help{font-size:9px;padding:6px 8px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.q17-iso-btn,.q17-help-btn{padding:5px 7px;font-size:10px}.q17-tutorial-card{padding:16px}}'
+'@media(max-width:680px){#q17Outbreak{padding:0;align-items:flex-start}.q17-combat-shell{width:100%;height:auto;max-height:100dvh;display:flex;flex-direction:column}.q17-combat-head{padding:8px 10px}.q17-combat-title{font-size:12px}.q17-combat-stats{gap:8px;font-size:10px}#q17CombatCanvas{flex:none;width:100%;height:auto;aspect-ratio:16/9}.q17-mobile-controls{display:grid}.q17-combat-help{font-size:9px;padding:5px 8px}.q17-combat-help span:last-child{display:none}.q17-alert{top:42%;padding:14px 15px;min-width:min(520px,92%)}.q17-alert h2{font-size:21px}.q17-alert p{font-size:13px}.q17-iso-room{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}.q17-iso-btn,.q17-help-btn{padding:5px 7px;font-size:10px}.q17-tutorial-card{padding:16px}}'
 ].join('\n');
 const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
 
 const wrap=document.createElement('div');wrap.id='q17Outbreak';
-wrap.innerHTML='<div class="q17-combat-shell"><div class="q17-combat-head"><div class="q17-combat-title" id="q17CombatTitle">⚠ 격리선 붕괴 · 긴급 진압</div><div class="q17-combat-stats"><span>체력 <b id="q17Hp">100</b></span><span>잔여 좀비 <b id="q17Left">0</b></span><span id="q17SurvivorStat" style="display:none">캠프 생존자 <b id="q17Survivors">0</b></span><span>탄창 <b id="q17Ammo">12</b></span><span>감염률 <b id="q17Risk">0%</b></span></div></div><canvas id="q17CombatCanvas" width="960" height="540"></canvas><div class="q17-combat-help"><span>달리기 A/D · 점프 W/↑/Space · 조준 마우스 · 클릭/J 사격 · F 근접 타격 · R 재장전</span><span>플레이어는 매우 빠름 · 좀비는 시민보다 조금 빠름 · 장애물과 발판을 이용하세요</span></div><div class="q17-alert" id="q17Alert"><h2 id="q17AlertTitle">격리선 붕괴</h2><p id="q17AlertText"></p><button id="q17AlertBtn" type="button">진압 시작</button></div></div>';
+wrap.innerHTML='<div class="q17-combat-shell"><div class="q17-combat-head"><div class="q17-combat-title" id="q17CombatTitle">⚠ 격리선 붕괴 · 긴급 진압</div><div class="q17-combat-stats"><span>체력 <b id="q17Hp">100</b></span><span>잔여 좀비 <b id="q17Left">0</b></span><span id="q17SurvivorStat" style="display:none">캠프 생존자 <b id="q17Survivors">0</b></span><span>탄창 <b id="q17Ammo">12</b></span><span>감염률 <b id="q17Risk">0%</b></span></div></div><canvas id="q17CombatCanvas" width="960" height="540"></canvas><div class="q17-mobile-controls" id="q17MobileControls"><div class="q17-mobile-pad"><button type="button" data-hold="left">◀ 이동</button><button type="button" data-hold="right">이동 ▶</button></div><div class="q17-mobile-actions"><button type="button" class="jump" id="q17Jump">점프</button><button type="button" class="shoot" id="q17Shoot">사격</button><button type="button" class="melee" id="q17Melee">밀치기</button><button type="button" class="reload" id="q17Reload">재장전</button></div></div><div class="q17-combat-help"><span>달리기 A/D · 점프 W/↑/Space · 조준 마우스 · 클릭/J 사격 · F 근접 타격 · R 재장전</span><span>짧은 구역을 빠르게 돌파하고, 좀비가 시민에게 닿기 전에 먼저 끊어내세요.</span></div><div class="q17-alert" id="q17Alert"><h2 id="q17AlertTitle">격리선 붕괴</h2><p id="q17AlertText"></p><button id="q17AlertBtn" type="button">진압 시작</button></div></div>';
 document.body.appendChild(wrap);
 
 const dead=document.createElement('div');dead.className='q17-dead';dead.id='q17Dead';
