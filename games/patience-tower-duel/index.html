@@ -81,6 +81,7 @@
     </div>
   </div>
 </div>
+<script src="../../tower-realtime.js?v=20260923-1"></script>
 <script>
 (() => {
   'use strict';
@@ -101,6 +102,12 @@
   let localBest = 0;
   let preparingSeed = null;
   let leavingIntentionally = false;
+  let roomToken = '';
+  let realtime = null;
+  let poseTimer = null;
+  let poseSeq = 0;
+  let matchRAF = 0;
+  const V2_STORAGE = 'kidscadeTowerV2Session';
 
   const errorText = {
     not_authenticated:'Kidscade 로그인이 필요합니다. 메인 화면에서 학생 계정으로 로그인한 뒤 다시 들어오세요.',
@@ -125,6 +132,26 @@
     return data;
   }
 
+  async function towerApi(action, body = {}, tokenValue = roomToken) {
+    const headers = {'content-type':'application/json'};
+    if (tokenValue) headers.authorization = 'Bearer ' + tokenValue;
+    const response = await fetch('/api/multiplayer/tower/' + action, {
+      method:'POST',
+      credentials:'same-origin',
+      headers,
+      body:JSON.stringify(body),
+      signal:AbortSignal.timeout(8000)
+    });
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok || data.ok === false) {
+      const error = new Error(errorText[data.error] || data.error || ('요청 실패 (' + response.status + ')'));
+      error.code = data.error || 'request_failed';
+      throw error;
+    }
+    return data;
+  }
+
   function showToast(text, ms=1700) {
     const el = $('statusToast'); el.textContent = text; el.style.display='block';
     clearTimeout(showToast.t); showToast.t=setTimeout(()=>el.style.display='none',ms);
@@ -136,6 +163,24 @@
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error('login');
       $('accountState').innerHTML = `<b style="color:#86efac">${escapeHtml(data.account?.nickname || '학생')}</b> 계정으로 참가합니다.`;
+      const saved = localStorage.getItem(V2_STORAGE);
+      if (saved) {
+        try {
+          const session = JSON.parse(saved);
+          roomToken = session.token || '';
+          const restored = await towerApi('state', {code:session.code}, roomToken);
+          if (restored?.room) {
+            loginOverlay.classList.add('hidden');
+            lobbyOverlay.classList.remove('hidden');
+            setRoom(restored.room);
+            if (restored.room.status !== 'finished') startRealtime();
+            return;
+          }
+        } catch (_) {
+          localStorage.removeItem(V2_STORAGE);
+          roomToken = '';
+        }
+      }
       setTimeout(()=>{ loginOverlay.classList.add('hidden'); lobbyOverlay.classList.remove('hidden'); },350);
     } catch (_) {
       $('accountState').textContent = errorText.not_authenticated;
@@ -150,8 +195,11 @@
   async function createRoom() {
     try {
       $('createBtn').disabled=true;
-      const data = await api('/api/multiplayer/rooms',{gameId:'patience_tower_duel'});
-      setRoom(data.room); startPolling();
+      const data = await towerApi('rooms',{transport:'v2'},'');
+      roomToken = data.participantToken || '';
+      localStorage.setItem(V2_STORAGE, JSON.stringify({code:data.room.code,token:roomToken}));
+      setRoom(data.room);
+      startRealtime();
     } catch (error) { alert(error.message); }
     finally { $('createBtn').disabled=false; }
   }
@@ -161,8 +209,11 @@
       const code = $('roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
       if (code.length !== 6) throw new Error(errorText.invalid_room_code);
       $('joinBtn').disabled=true;
-      const data = await api('/api/multiplayer/join',{code});
-      setRoom(data.room); startPolling();
+      const data = await towerApi('join',{code},'');
+      roomToken = data.participantToken || '';
+      localStorage.setItem(V2_STORAGE, JSON.stringify({code:data.room.code,token:roomToken}));
+      setRoom(data.room);
+      startRealtime();
     } catch (error) { alert(error.message); }
     finally { $('joinBtn').disabled=false; }
   }
@@ -194,17 +245,62 @@
   async function toggleReady() {
     if (!room) return;
     try {
-      const data=await api('/api/multiplayer/ready',{roomId:room.id,ready:!room.self?.ready});
+      const data=await towerApi('ready',{code:room.code,ready:!room.self?.ready});
       setRoom(data.room);
     } catch(error){showToast(error.message,2600)}
   }
 
-  let pollEnabled=false,syncBusy=false,syncFailures=0,pollGeneration=0,finishPending=false;
-  function stopPolling(){pollEnabled=false;pollGeneration++;clearTimeout(pollTimer)}
-  function scheduleSync(delay){clearTimeout(pollTimer);if(pollEnabled)pollTimer=setTimeout(()=>syncTick(),delay)}
-  function startPolling(){stopPolling();pollEnabled=true;syncFailures=0;finishPending=false;scheduleSync(0)}
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pollEnabled)scheduleSync(0)});
-  window.addEventListener('online',()=>{if(pollEnabled){syncFailures=0;scheduleSync(0)}});
+  function stopRealtime() {
+    if (realtime) {
+      realtime.stop();
+      realtime = null;
+    }
+    clearTimeout(poseTimer);
+    poseTimer = null;
+    cancelAnimationFrame(matchRAF);
+    matchRAF = 0;
+  }
+
+  function handleOpponentPose(player) {
+    if (!room || !player) return;
+    room.opponent = {...(room.opponent || {}), ...player, online:true};
+    $('oppHeight').textContent = (room.opponent.currentHeight || 0) + 'm';
+    pushOpponentPose(room.opponent);
+    updateRaceDots(readCurrentHeight(), room.opponent.currentHeight || 0);
+  }
+
+  function startRealtime() {
+    stopRealtime();
+    if (!room?.code || !roomToken) return;
+    realtime = new TowerRealtime({
+      code:room.code,
+      token:roomToken,
+      onState:next=>setRoom(next),
+      onPose:handleOpponentPose,
+      onMode:live=>{ if(live) showToast('실시간 연결됨',900); },
+      onReplaced:()=>showToast('다른 창에서 다시 연결되어 이 창의 연결이 종료되었습니다.',3000)
+    });
+    realtime.start();
+    schedulePose();
+  }
+
+  function schedulePose() {
+    clearTimeout(poseTimer);
+    if (!realtime) return;
+    const tick = () => {
+      if (!realtime) return;
+      if (room?.status === 'playing' && gameStarted && !gameFrozen && realtime.ready) {
+        realtime.sendPose({
+          seq:++poseSeq,
+          currentHeight:readCurrentHeight(),
+          bestHeight:localBest,
+          pose:readCurrentPose()
+        });
+      }
+      poseTimer = setTimeout(tick, document.hidden ? 500 : 125);
+    };
+    poseTimer = setTimeout(tick,125);
+  }
 
   function nowServer() { return Date.now()+serverOffsetMs; }
 
@@ -233,38 +329,6 @@
       if (!opponent?.pose) { api.setOpponentPose(null); return; }
       api.setOpponentPose({...opponent.pose,nickname:opponent.nickname||'상대'});
     } catch(_){}
-  }
-
-  async function syncTick(forceFinished=false) {
-    if (!room) return;
-    if(forceFinished)finishPending=true;
-    if(syncBusy){if(pollEnabled)scheduleSync(250);return;}
-    syncBusy=true;
-    const id=room.id,generation=pollGeneration;
-    const current=readCurrentHeight();
-    const pose=readCurrentPose();
-    const endMs=room.endAt?new Date(room.endAt).getTime():Infinity;
-    const finished=finishPending || (room.status==='playing' && nowServer()>=endMs);
-    if (finished) freezeGame();
-    try {
-      const data=await api('/api/multiplayer/sync',{roomId:room.id,currentHeight:current,bestHeight:localBest,pose,finished});
-      if(generation!==pollGeneration||room?.id!==id)return;
-      syncFailures=0;if(finished)finishPending=false;
-      room=data.room;
-      if (room.serverNow) serverOffsetMs=new Date(room.serverNow).getTime()-Date.now();
-      renderRoom(room);
-      pushOpponentPose(room.opponent);
-    } catch(error){
-      if(generation!==pollGeneration)return;
-      syncFailures++;
-      if (error.code==='not_authenticated'||error.code==='session_expired'){stopPolling();alert(error.message);location.href='/';}
-    } finally {
-      syncBusy=false;
-      if(generation===pollGeneration&&pollEnabled){
-        const base=document.hidden?5000:room?.status==='playing'?400:2500;
-        scheduleSync(finishPending&&!syncFailures?0:Math.min(15000,base*2**Math.min(syncFailures,5)));
-      }
-    }
   }
 
   async function prepareGame(seed) {
@@ -299,26 +363,46 @@
     if (gameFrozen || !gameStarted) return;
     gameFrozen=true;
     try { frame.contentDocument?.getElementById('pauseBtn')?.click(); } catch(_){}
-    if (!finalSent) { finalSent=true; setTimeout(()=>syncTick(true),0); }
+    if (!finalSent) { finalSent=true; realtime?.sendPose({seq:++poseSeq,currentHeight:readCurrentHeight(),bestHeight:localBest,pose:readCurrentPose()}); }
   }
 
   function handlePlaying(next) {
     lobbyOverlay.classList.add('hidden');
     duelHud.style.display='block';
     prepareGame(next.seed);
-    const startMs=new Date(next.startAt).getTime(), endMs=new Date(next.endAt).getTime(), now=nowServer();
-    const untilStart=startMs-now, left=Math.max(0,endMs-now);
-    if (untilStart>0) {
-      countdown.classList.add('show');
-      $('countText').textContent=untilStart>3200?'READY':String(Math.max(1,Math.ceil(untilStart/1000)));
-    } else {
-      if(frameReady) startEmbeddedGame(); else countdown.classList.add('show');
-      if(!frameReady)$('countText').textContent='LOADING';
-    }
-    const sec=Math.max(0,Math.ceil(left/1000)); $('matchTimer').textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-    const current=readCurrentHeight(); $('meHeight').textContent=`${current}m`; $('oppHeight').textContent=`${next.opponent?.currentHeight||0}m`;
-    updateRaceDots(current,next.opponent?.currentHeight||0);
-    if (left<=0) freezeGame();
+    cancelAnimationFrame(matchRAF);
+
+    const tick=()=>{
+      if(!room||room.status!=='playing')return;
+      const startMs=new Date(room.startAt).getTime();
+      const endMs=new Date(room.endAt).getTime();
+      const now=nowServer();
+      const untilStart=startMs-now;
+      const left=Math.max(0,endMs-now);
+
+      if(untilStart>0){
+        countdown.classList.add('show');
+        $('countText').textContent=untilStart>3200?'READY':String(Math.max(1,Math.ceil(untilStart/1000)));
+      }else{
+        if(frameReady)startEmbeddedGame();
+        else{
+          countdown.classList.add('show');
+          $('countText').textContent='LOADING';
+        }
+      }
+
+      const sec=Math.max(0,Math.ceil(left/1000));
+      $('matchTimer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+      const current=readCurrentHeight();
+      $('meHeight').textContent=current+'m';
+      $('oppHeight').textContent=(room.opponent?.currentHeight||0)+'m';
+      updateRaceDots(current,room.opponent?.currentHeight||0);
+
+      if(left<=0)freezeGame();
+      if(room?.status==='playing')matchRAF=requestAnimationFrame(tick);
+    };
+
+    matchRAF=requestAnimationFrame(tick);
   }
 
   function updateRaceDots(me,opp) {
@@ -328,7 +412,7 @@
   }
 
   function showResult(next) {
-    stopPolling(); freezeGame(); countdown.classList.remove('show'); duelHud.style.display='none'; resultOverlay.classList.remove('hidden'); lobbyOverlay.classList.add('hidden');
+    stopRealtime(); freezeGame(); countdown.classList.remove('show'); duelHud.style.display='none'; resultOverlay.classList.remove('hidden'); lobbyOverlay.classList.add('hidden');
     const outcome=next.result?.outcome||'draw';
     $('resultTitle').textContent=outcome==='win'?'🏆 승리!':outcome==='lose'?'😵 패배!':'🤝 무승부!';
     $('resultSub').textContent='타이머가 끝난 순간의 높이로 결정되었습니다.';
@@ -339,12 +423,12 @@
 
   async function leaveRoom() {
     if (!room) return resetLobby(); leavingIntentionally=true;
-    try{await api('/api/multiplayer/leave',{roomId:room.id})}catch(_){}
+    try{await towerApi('leave',{code:room.code})}catch(_){}
     resetLobby(); leavingIntentionally=false;
   }
 
   function resetLobby() {
-    stopPolling(); room=null; frameReady=false;gameStarted=false;gameFrozen=false;finalSent=false;localBest=0;preparingSeed=null;
+    stopRealtime();localStorage.removeItem(V2_STORAGE);roomToken='';room=null; frameReady=false;gameStarted=false;gameFrozen=false;finalSent=false;localBest=0;preparingSeed=null;
     frame.classList.remove('active');frame.removeAttribute('srcdoc');resultOverlay.classList.add('hidden');countdown.classList.remove('show');duelHud.style.display='none';
     $('roomLobby').style.display='none';$('lobbyChooser').style.display='block';$('roomCodeInput').value='';lobbyOverlay.classList.remove('hidden');
   }
@@ -353,7 +437,7 @@
   $('roomCodeInput').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)});
   $('roomCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom()});
   $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room?.code||'');showToast('방 코드를 복사했습니다.')}catch(_){showToast(`방 코드: ${room?.code||''}`,2500)}});
-  window.addEventListener('beforeunload',()=>{if(!room||room.status==='finished'||leavingIntentionally)return;try{navigator.sendBeacon('/api/multiplayer/leave',new Blob([JSON.stringify({roomId:room.id})],{type:'application/json'}))}catch(_){}});
+  window.addEventListener('beforeunload',()=>{try{realtime?.stop()}catch(_){}});
 
   checkAccount();
 })();
