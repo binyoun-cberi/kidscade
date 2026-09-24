@@ -110,7 +110,8 @@ function mergeCatalog(catalog, legacyGames) {
   });
 
   return {
-    schemaVersion: 6,
+    ...catalog,
+    schemaVersion: 7,
     games: [...catalogOnly, ...migratedLegacy]
   };
 }
