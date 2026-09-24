@@ -66,6 +66,7 @@ jobs:
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
+            catalog-discovery.js \
             game-cover-placeholders.js \
             dashboard-recent.js \
             game-recommendations.js \
