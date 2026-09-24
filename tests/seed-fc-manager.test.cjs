@@ -51,7 +51,7 @@ test('external game scripts compile and the HTML loads sim before game runtime',
   assert.doesNotThrow(() => new Function(simSource));
   assert.doesNotThrow(() => new Function(gameSource));
   assert.match(html, /data\.js[\s\S]*sim\.js[\s\S]*game\.js[\s\S]*kidscade-game-sdk\.js/);
-  assert.match(gameSource, /kidscade_game_v1:high_seed_fc_manager:save/);
+  assert.match(gameSource, /kidscade_game_v2:high_seed_fc_manager:save/);
 });
 
 test('match engine can complete a full 90 minute simulation', () => {
