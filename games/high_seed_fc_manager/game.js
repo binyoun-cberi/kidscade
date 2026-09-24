@@ -9,6 +9,7 @@ var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
 var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
+var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all';
 var soccerBallImg=new Image();
 soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
 var matchAudioDefs={
@@ -173,6 +174,7 @@ function render(view){
   else if(view==='tactics')tactics();
   else if(view==='market')market();
   else if(view==='history')history();
+  else if(view==='analysis')analysis();
   else table();
 }
 function enter(resume){normalize();showScreen('gameScreen');updateTop();render('home');sdkStart({mode:'history-football-manager',season:state.season,resume:!!resume});}
@@ -191,26 +193,46 @@ function nextHistoryPlayer(){
   return a.length?a[(state.round+state.season)%a.length]:state.roster[0];
 }
 function home(){
-  var root=$('viewRoot'),c=clubById(state.clubId),r=rank();
+  var root=$('viewRoot'),c=clubById(state.clubId),r=rank(),rs=rows();
   if(state.round>=state.schedule.length){
-    var top=clubById(rows()[0].clubId);
-    root.innerHTML='<div class="dashboard"><section class="panel next-match"><span class="round-pill">시즌 '+state.season+' 종료</span><h2 style="font-size:34px;margin-top:13px">'+c.emoji+' '+esc(c.name)+'</h2><p class="muted">최종 '+r+'위 · 승점 '+state.table[state.clubId].pts+'</p><div class="fact-box">우승 팀은 <b>'+top.emoji+' '+esc(top.name)+'</b>입니다. 지금 선수단을 그대로 이어서 다음 시즌에 도전할 수 있어요.</div><div class="action-row" style="margin-top:18px"><button id="nextSeason" class="primary" type="button">다음 시즌 시작</button></div></section><aside class="panel"><h3>시즌 기록</h3><p>'+state.matchHistory.filter(function(x){return x.season===state.season;}).length+'경기 완료</p><p class="muted">역사 수첩에서 각 시대의 인물을 다시 살펴볼 수 있어요.</p></aside></div>';
-    $('nextSeason').onclick=function(){state.season++;state.round=0;state.schedule=schedule();state.table=tableBlank();state.trainingAvailable=false;state.budget+=500;state.roster.forEach(function(p){p.fitness=100;});save();updateTop();home();toast('새 시즌이 시작됐어요!');};return;
+    var leader=clubById(rs[0].clubId),statusTitle='',statusText='';
+    if(!state.pyramid){
+      statusTitle='배치 리그 완료';
+      statusText='상위 4팀은 다음 시즌 1부, 하위 4팀은 2부에서 시작해요.';
+    }else if(state.pyramid.division===1){
+      statusTitle=r===1?'🏆 1부 우승!':r===rs.length?'⬇️ 2부 강등':'1부 잔류';
+      statusText=r===1?'역사 드림리그 정상에 올랐어요.':r===rs.length?'다음 시즌은 2부에서 다시 승격에 도전합니다.':'다음 시즌에도 1부에서 우승을 노려요.';
+    }else{
+      statusTitle=r===1?'⬆️ 1부 승격!':'2부 시즌 완료';
+      statusText=r===1?'다음 시즌부터 1부 팀들과 맞붙습니다.':'다음 시즌 다시 승격에 도전해요.';
+    }
+    root.innerHTML='<div class="dashboard">'+
+      '<section class="panel next-match"><span class="round-pill">'+esc(leagueLabel())+' · 시즌 '+state.season+' 종료</span><h2 style="font-size:34px;margin-top:13px">'+statusTitle+'</h2><p class="muted">최종 '+r+'위 · 승점 '+(state.table[state.clubId]?state.table[state.clubId].pts:0)+'</p><div class="fact-box">'+esc(statusText)+'</div><div class="action-row" style="margin-top:18px"><button id="nextSeason" class="primary" type="button">다음 시즌 시작</button>'+(state.replays.length?'<button id="seasonAnalysis" class="secondary" type="button">📊 경기 분석실</button>':'')+'</div></section>'+
+      '<aside class="panel"><h3>이번 시즌 선두</h3><p style="font-size:20px;font-weight:900">'+leader.emoji+' '+esc(leader.name)+'</p><p class="muted">'+(state.pyramid?'승격·강등은 경기 결과로만 결정돼요.':'이번 시즌 성적으로 1부와 2부가 결정돼요.')+'</p></aside>'+
+      '</div>';
+    $('nextSeason').onclick=advanceSeason;
+    if($('seasonAnalysis'))$('seasonAnalysis').onclick=function(){render('analysis');};
+    return;
   }
-  var f=myFixture(),o=opponent(f),spot=nextHistoryPlayer(),rs=rows().slice(0,5);
+  var f=myFixture(),o=opponent(f),spot=nextHistoryPlayer(),topRows=rs.slice(0,5);
   var tired=state.lineup.map(playerById).filter(function(p){return p&&(p.fitness||100)<70;});
   var tasks=[];
+  tasks.push(['🏆 리그 목표',leagueGoalText()]);
   if(state.trainingAvailable)tasks.push(['🏋️ 훈련 가능','경기 뒤 훈련을 골라 선수 능력과 체력을 관리해요.']);
   if(tired.length)tasks.push(['🔋 체력 확인',tired[0].name+' 등 선발 선수의 체력이 낮아요.']);
-  tasks.push(['💰 팀 예산',fmt(state.budget)+' · 세계 용병 시장에서 역사 인물을 영입할 수 있어요.']);
+  tasks.push(['💰 팀 예산',fmt(state.budget)+' · 세계 역사 인물을 영입할 수 있어요.']);
   root.innerHTML='<div class="dashboard">'+
-    '<section class="panel next-match"><span class="round-pill">시즌 '+state.season+' · '+(state.round+1)+'라운드</span><div class="versus"><div class="team-block"><span class="big-crest">'+c.emoji+'</span><b>'+esc(c.name)+'</b><small class="muted">'+esc(c.style)+'</small></div><div class="vs">VS</div><div class="team-block"><span class="big-crest">'+o.emoji+'</span><b>'+esc(o.name)+'</b><small class="muted">'+esc(o.style)+'</small></div></div><div class="action-row"><button id="playMatch" class="primary" type="button">경기 시작</button><button id="toTactics" class="secondary" type="button">작전 확인</button></div></section>'+
-    '<aside class="panel"><h3>현재 '+r+'위</h3><div class="stand-mini">'+rs.map(function(x,i){var cc=clubById(x.clubId);return '<div class="stand-row '+(x.clubId===state.clubId?'me':'')+'"><b>'+(i+1)+'</b><span>'+cc.emoji+' '+esc(cc.short)+'</span><span>'+x.p+'경기</span><b>'+x.pts+'</b></div>';}).join('')+'</div></aside>'+
+    '<section class="panel next-match"><span class="round-pill">'+esc(leagueLabel())+' · 시즌 '+state.season+' · '+(state.round+1)+'라운드</span><div class="versus"><div class="team-block"><span class="big-crest">'+c.emoji+'</span><b>'+esc(c.name)+'</b><small class="muted">'+esc(c.style)+'</small></div><div class="vs">VS</div><div class="team-block"><span class="big-crest">'+o.emoji+'</span><b>'+esc(o.name)+'</b><small class="muted">'+esc(o.style)+'</small></div></div><div class="action-row"><button id="playMatch" class="primary" type="button">경기 시작</button><button id="toTactics" class="secondary" type="button">작전 확인</button>'+(state.replays.length?'<button id="quickAnalysis" class="secondary" type="button">📊 최근 경기</button>':'')+'</div></section>'+
+    '<aside class="panel"><h3>'+esc(leagueLabel())+' · 현재 '+r+'위</h3><div class="stand-mini">'+topRows.map(function(x,i){var cc=clubById(x.clubId);return '<div class="stand-row '+(x.clubId===state.clubId?'me':'')+'"><b>'+(i+1)+'</b><span>'+cc.emoji+' '+esc(cc.short)+'</span><span>'+x.p+'경기</span><b>'+x.pts+'</b></div>';}).join('')+'</div></aside>'+
     '<section class="panel"><h3>이번 주 할 일</h3><div class="task-list">'+tasks.map(function(t,i){return '<div class="task" data-task="'+i+'"><strong>'+t[0]+'</strong><small>'+esc(t[1])+'</small></div>';}).join('')+'</div></section>'+
     '<aside class="panel"><h3>오늘의 역사 선수</h3><div class="player-top"><div><span class="history-tag">'+esc(spot.era)+'</span><h3>'+esc(spot.name)+'</h3></div><span class="pos">'+esc(D.positionKo[spot.pos])+'</span></div><p class="muted">'+esc(spot.fact)+'</p><div class="memory">'+esc(spot.memory)+'</div></aside>'+
     '</div>';
   $('playMatch').onclick=startMatch;$('toTactics').onclick=function(){render('tactics');};
-  if(state.trainingAvailable){var t=root.querySelector('[data-task="0"]');if(t){t.style.cursor='pointer';t.onclick=trainingModal;}}
+  if($('quickAnalysis'))$('quickAnalysis').onclick=function(){openReplay(0);};
+  if(state.trainingAvailable){
+    var idx=tasks.findIndex(function(t){return t[0].indexOf('훈련')>=0;});
+    var task=root.querySelector('[data-task="'+idx+'"]');if(task){task.style.cursor='pointer';task.onclick=trainingModal;}
+  }
 }
 function stats(p){
   return '<div class="stats">'+[['shot','슛'],['pass','패스'],['defense','수비'],['speed','속도'],['stamina','체력']].map(function(x){return '<div class="stat"><b>'+p.stats[x[0]]+'</b><small>'+x[1]+'</small></div>';}).join('')+'</div>';
@@ -285,8 +307,137 @@ function history(){
   root.querySelectorAll('[data-hclub]').forEach(function(b){b.onclick=function(){historyFilter=b.dataset.hclub;history();};});
 }
 function table(){
-  var root=$('viewRoot'),rs=rows();
-  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">시즌 '+state.season+'</span><h2>리그 순위</h2></div></div><table class="table-full"><thead><tr><th>#</th><th>구단</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr></thead><tbody>'+rs.map(function(x,i){var c=clubById(x.clubId);return '<tr class="'+(x.clubId===state.clubId?'me':'')+'"><td>'+(i+1)+'</td><td>'+c.emoji+' '+esc(c.name)+'</td><td>'+x.p+'</td><td>'+x.w+'</td><td>'+x.d+'</td><td>'+x.l+'</td><td>'+((x.gf-x.ga)>=0?'+':'')+(x.gf-x.ga)+'</td><td><b>'+x.pts+'</b></td></tr>';}).join('')+'</tbody></table>';
+  var root=$('viewRoot');
+  function makeTable(rs,division,title){
+    return '<section class="panel league-table-panel"><div class="league-table-title"><h3>'+esc(title)+'</h3><small>'+(
+      !state.pyramid?'상위 4팀 → 다음 시즌 1부 · 하위 4팀 → 2부':
+      division===1?'1위 우승 · 최하위 강등':'1위 자동 승격'
+    )+'</small></div><table class="table-full"><thead><tr><th>#</th><th>구단</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr></thead><tbody>'+
+    rs.map(function(x,i){
+      var c=clubById(x.clubId),zone='';
+      if(!state.pyramid)zone=i<4?'promotion':'relegation';
+      else if(division===1)zone=i===0?'champion':i===rs.length-1?'relegation':'';
+      else if(division===2)zone=i===0?'promotion':'';
+      return '<tr class="'+(x.clubId===state.clubId?'me ':'')+zone+'"><td>'+(i+1)+'</td><td>'+c.emoji+' '+esc(c.name)+'</td><td>'+x.p+'</td><td>'+x.w+'</td><td>'+x.d+'</td><td>'+x.l+'</td><td>'+((x.gf-x.ga)>=0?'+':'')+(x.gf-x.ga)+'</td><td><b>'+x.pts+'</b></td></tr>';
+    }).join('')+'</tbody></table></section>';
+  }
+  var html='<div class="section-bar"><div><span class="eyebrow">시즌 '+state.season+'</span><h2>리그 순위</h2><div class="muted">'+esc(leagueGoalText())+'</div></div></div><div class="league-tables">';
+  if(!state.pyramid)html+=makeTable(rows(),0,'배치 리그');
+  else{
+    var currentDiv=state.pyramid.division,otherDiv=currentDiv===1?2:1;
+    html+=makeTable(rows(),currentDiv,'역사 드림리그 '+currentDiv+'부');
+    if(state.otherLeague)html+=makeTable(rows(state.otherLeague.table),otherDiv,'역사 드림리그 '+otherDiv+'부');
+  }
+  html+='</div>';
+  root.innerHTML=html;
+}
+function analysis(){
+  var root=$('viewRoot'),list=state.replays||[];
+  var cards=list.map(function(r,i){
+    var h=clubById(r.homeClubId),a=clubById(r.awayClubId);
+    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">선수 집중 다시보기 · 히트맵 · 개인 경기 기록</p></div><button class="primary" data-replay="'+i+'" type="button">경기 분석</button></article>';
+  }).join('');
+  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기를 저장해 선수별 움직임과 히트맵을 다시 볼 수 있어요.</div></div></div>'+(cards?'<div class="replay-list">'+cards+'</div>':'<section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">경기를 한 번 마치면 다시보기와 히트맵이 여기에 저장됩니다.</p></section>');
+  root.querySelectorAll('[data-replay]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replay));};});
+}
+function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(function(p){return p.id===id;});}
+function openReplay(index){
+  replayCurrent=(state.replays||[])[index];if(!replayCurrent)return;
+  replayFrame=0;replayCursor=0;replayPlaying=false;replayMode='replay';replayFocus='all';
+  var h=clubById(replayCurrent.homeClubId),a=clubById(replayCurrent.awayClubId);
+  $('replayTitle').textContent='시즌 '+replayCurrent.season+' '+replayCurrent.round+'R · '+h.name+' '+replayCurrent.score[0]+' : '+replayCurrent.score[1]+' '+a.name;
+  var select=$('replayPlayer');select.innerHTML='<option value="all">전체 선수 보기</option>'+replayCurrent.players.slice().sort(function(x,y){return x.side-y.side;}).map(function(p){return '<option value="'+esc(p.id)+'">'+(p.side===replayCurrent.userSide?'★ ':'')+esc(p.name)+' · '+esc(p.pos)+'</option>';}).join('');
+  $('replayRange').min=0;$('replayRange').max=Math.max(0,replayCurrent.frames.length-1);$('replayRange').value=0;
+  renderReplayEvents();updateReplayButtons();updateReplayStats();drawReplayFrame();
+  $('replayLayer').classList.remove('hidden');cancelAnimationFrame(replayRaf);
+}
+function closeReplay(){
+  replayPlaying=false;cancelAnimationFrame(replayRaf);$('replayLayer').classList.add('hidden');replayCurrent=null;
+}
+function updateReplayButtons(){
+  $('replayPlay').textContent=replayPlaying?'⏸ 일시정지':'▶ 재생';
+  document.querySelectorAll('[data-rmode]').forEach(function(b){b.classList.toggle('active',b.dataset.rmode===replayMode);});
+}
+function updateReplayStats(){
+  if(!replayCurrent)return;
+  var box=$('replayStats');
+  if(replayFocus==='all'){
+    var userPlayers=replayCurrent.players.filter(function(p){return p.side===replayCurrent.userSide;});
+    var total={touches:0,shots:0,goals:0,saves:0,distance:0};
+    userPlayers.forEach(function(p){var s=replayCurrent.stats[p.id]||{};Object.keys(total).forEach(function(k){total[k]+=Number(s[k]||0);});});
+    box.innerHTML='<h3>우리 팀 기록</h3><div class="replay-stat-grid"><div><b>'+total.shots+'</b><small>슈팅</small></div><div><b>'+total.goals+'</b><small>골</small></div><div><b>'+total.touches+'</b><small>터치</small></div><div><b>'+total.distance.toFixed(1)+'</b><small>이동 km</small></div></div><p class="muted">선수를 선택하면 개인 기록과 히트맵을 볼 수 있어요.</p>';
+    return;
+  }
+  var p=replayPlayerMeta(replayFocus),s=replayCurrent.stats[replayFocus]||{};
+  if(!p){box.innerHTML='';return;}
+  box.innerHTML='<span class="history-tag">'+esc(p.era||'역사 선수')+'</span><h3>'+esc(p.name)+' · '+esc(p.pos)+'</h3><div class="replay-stat-grid"><div><b>'+Number(s.touches||0)+'</b><small>터치</small></div><div><b>'+Number(s.shots||0)+'</b><small>슈팅</small></div><div><b>'+Number(s.goals||0)+'</b><small>골</small></div><div><b>'+Number(s.saves||0)+'</b><small>선방</small></div><div><b>'+Number(s.distance||0).toFixed(1)+'</b><small>이동 km</small></div></div><div class="memory">'+esc(p.memory||'')+'</div>';
+}
+function renderReplayEvents(){
+  if(!replayCurrent)return;
+  var events=replayCurrent.events.filter(function(e){return ['goal','shot','save','sub','fact'].indexOf(e.type)>=0;}).slice(-18);
+  $('replayEvents').innerHTML=events.map(function(e){return '<button type="button" data-seek-minute="'+e.minute+'" class="replay-event '+e.type+'"><b>'+e.minute+"'</b><span>"+esc(e.text)+'</span></button>';}).join('')||'<p class="muted">기록된 주요 장면이 없어요.</p>';
+  $('replayEvents').querySelectorAll('[data-seek-minute]').forEach(function(b){b.onclick=function(){seekReplayMinute(Number(b.dataset.seekMinute));};});
+}
+function seekReplayMinute(minute){
+  if(!replayCurrent)return;
+  var best=0,d=1e9;replayCurrent.frames.forEach(function(f,i){var x=Math.abs(f[0]-minute);if(x<d){d=x;best=i;}});
+  replayFrame=best;replayCursor=best;$('replayRange').value=best;replayPlaying=false;updateReplayButtons();drawReplayFrame();
+}
+function replayPitchBase(ctx,W,H){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#1f824b';ctx.fillRect(0,0,W,H);
+  for(var i=0;i<10;i++){ctx.fillStyle=i%2?'rgba(0,0,0,.035)':'rgba(255,255,255,.035)';ctx.fillRect(i*W/10,0,W/10,H);}
+  ctx.strokeStyle='rgba(240,255,246,.88)';ctx.lineWidth=4;ctx.strokeRect(38,35,W-76,H-70);
+  ctx.beginPath();ctx.moveTo(W/2,35);ctx.lineTo(W/2,H-35);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,72,0,Math.PI*2);ctx.stroke();
+  ctx.strokeRect(38,H/2-125,135,250);ctx.strokeRect(W-173,H/2-125,135,250);
+}
+function framePlayer(frame,id){
+  var row=frame&&frame[6]?frame[6].find(function(x){return x[0]===id;}):null;
+  return row?{id:row[0],x:row[1],y:row[2],energy:row[3]}:null;
+}
+function drawReplayFrame(){
+  if(!replayCurrent||!replayCurrent.frames.length)return;
+  var canvas=$('replayPitch'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  var frame=replayCurrent.frames[clamp(replayFrame,0,replayCurrent.frames.length-1)];
+  replayPitchBase(ctx,W,H);
+  if(replayMode==='heat'){
+    if(replayFocus==='all'){
+      var first=replayCurrent.players.find(function(p){return p.side===replayCurrent.userSide;});
+      if(first){replayFocus=first.id;$('replayPlayer').value=first.id;updateReplayStats();}
+    }
+    var heat=replayCurrent.heat[replayFocus]||[],max=Math.max.apply(null,heat.concat([1]));
+    for(var hy=0;hy<6;hy++)for(var hx=0;hx<10;hx++){
+      var val=heat[hy*10+hx]||0;if(!val)continue;
+      var alpha=.08+.62*(val/max),x=38+hx*(W-76)/10,y=35+hy*(H-70)/6;
+      ctx.fillStyle='rgba(250,120,45,'+alpha+')';ctx.fillRect(x,y,(W-76)/10+1,(H-70)/6+1);
+    }
+  }else if(replayFocus!=='all'){
+    var start=Math.max(0,replayFrame-14),trail=[];
+    for(var ti=start;ti<=replayFrame;ti++){var q=framePlayer(replayCurrent.frames[ti],replayFocus);if(q)trail.push(q);}
+    for(var t=1;t<trail.length;t++){
+      ctx.beginPath();ctx.moveTo(38+trail[t-1].x/100*(W-76),35+trail[t-1].y/100*(H-70));ctx.lineTo(38+trail[t].x/100*(W-76),35+trail[t].y/100*(H-70));
+      ctx.strokeStyle='rgba(250,204,21,'+(t/trail.length*.72)+')';ctx.lineWidth=2+t/trail.length*6;ctx.lineCap='round';ctx.stroke();
+    }
+  }
+  if(replayMode==='replay'){
+    frame[6].forEach(function(row){
+      var meta=replayPlayerMeta(row[0]);if(!meta)return;
+      var x=38+row[1]/100*(W-76),y=35+row[2]/100*(H-70),focused=replayFocus==='all'||replayFocus===row[0];
+      ctx.globalAlpha=focused?1:.2;ctx.beginPath();ctx.arc(x,y,replayFocus===row[0]?17:13,0,Math.PI*2);
+      ctx.fillStyle=meta.side===0?'#f8fafc':'#111827';ctx.fill();ctx.strokeStyle=meta.side===0?'#0f172a':'#f8fafc';ctx.lineWidth=3;ctx.stroke();
+      if(replayFocus===row[0]){ctx.beginPath();ctx.arc(x,y,23,0,Math.PI*2);ctx.strokeStyle='#facc15';ctx.lineWidth=4;ctx.stroke();}
+      ctx.globalAlpha=1;
+    });
+    var bx=38+frame[1]/100*(W-76),by=35+frame[2]/100*(H-70);if(soccerBallImg.complete&&soccerBallImg.naturalWidth)ctx.drawImage(soccerBallImg,bx-9,by-9,18,18);
+  }
+  $('replayMinute').textContent=Math.floor(frame[0])+"' · "+frame[4]+' : '+frame[5];
+  $('replayRange').value=replayFrame;
+}
+function replayLoop(ts){
+  if(!replayCurrent||!replayPlaying)return;
+  var dt=Math.min(.1,(ts-replayLast)/1000||0);replayLast=ts;replayCursor+=dt*5*replayPlaySpeed;
+  if(replayCursor>=replayCurrent.frames.length-1){replayCursor=replayCurrent.frames.length-1;replayPlaying=false;}
+  replayFrame=Math.floor(replayCursor);drawReplayFrame();updateReplayButtons();
+  if(replayPlaying)replayRaf=requestAnimationFrame(replayLoop);
 }
 function trainingModal(){
   modalBody.innerHTML='<h2>이번 주 훈련</h2><p class="muted">하나만 골라요. 모든 선수의 체력도 조금 회복됩니다.</p><div class="training-grid"><button class="training-btn" data-train="shot"><b>⚽ 슈팅 훈련</b><small>세 선수의 슛 +1~2</small></button><button class="training-btn" data-train="pass"><b>🎯 패스 훈련</b><small>세 선수의 패스 +1~2</small></button><button class="training-btn" data-train="defense"><b>🛡 수비 훈련</b><small>세 선수의 수비 +1~2</small></button><button class="training-btn" data-train="stamina"><b>🔋 체력 훈련</b><small>세 선수의 체력 능력 +1~2</small></button><button class="training-btn" data-train="rest"><b>🌿 휴식</b><small>컨디션을 크게 회복</small></button></div>';
@@ -498,8 +649,8 @@ function showMatchResult(m,f,isHome){
   var verdict=mine>theirs?'승리!':mine<theirs?'아쉬운 패배':'무승부';
   var why=state.tactics.press==='press'?'강한 압박은 공을 되찾는 데 도움이 되지만 체력 소모가 컸어요.':state.tactics.mindset==='defend'?'수비적으로 내려서 실점 위험을 줄이는 선택을 했어요.':state.tactics.attack==='direct'?'빠르게 앞으로 보내는 작전으로 전환 속도를 높였어요.':'패스와 위치를 활용해 균형 있게 경기를 운영했어요.';
   var facts=m.events.filter(function(e){return e.actor&&e.actor.historical;}).slice(-2).map(function(e){return '<div class="memory">'+esc(e.actor.name)+' · '+esc(e.actor.memory)+'</div>';}).join('');
-  modalBody.innerHTML='<span class="eyebrow">'+esc(o.name)+'전</span><h2>'+verdict+'</h2><div class="result-score">'+mine+' : '+theirs+'</div><div class="fact-box"><b>감독 분석</b><br>'+esc(why)+'</div><h3 style="margin-top:16px">오늘 경기에서 만난 역사</h3>'+facts+'<div class="action-row" style="margin-top:16px"><button id="resultHome" class="primary" type="button">감독실로</button><button id="resultTrain" class="secondary" type="button">바로 훈련</button></div>';
-  modal.classList.remove('hidden');$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};
+  modalBody.innerHTML='<span class="eyebrow">'+esc(o.name)+'전</span><h2>'+verdict+'</h2><div class="result-score">'+mine+' : '+theirs+'</div><div class="fact-box"><b>감독 분석</b><br>'+esc(why)+'</div><h3 style="margin-top:16px">오늘 경기에서 만난 역사</h3>'+facts+'<div class="action-row" style="margin-top:16px"><button id="resultHome" class="primary" type="button">감독실로</button><button id="resultAnalysis" class="secondary" type="button">📊 경기 분석</button><button id="resultTrain" class="secondary" type="button">바로 훈련</button></div>';
+  modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};
 }
 function help(){
   modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물 18명 중 선발 11명을 골라요.<br><br><b>2. 작전</b><br>포메이션과 공격·압박·태도를 간단히 선택해요.<br><br><b>3. 경기</b><br>선택한 전술과 선수 능력, 체력이 2D 경기 결과에 실제로 반영돼요.<br><br><b>4. 성장</b><br>경기 뒤 훈련하고 세계의 역사 인물을 영입해 팀을 키워요.</div><p class="muted">역사 인물의 축구 포지션과 능력치는 전부 가상의 게임 설정입니다. 역사적 인물의 업적이나 중요도를 순위로 평가하지 않습니다.</p>';
