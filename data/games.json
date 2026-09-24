@@ -254,11 +254,11 @@
     {
       "id": "job_driver_license",
       "title": "운전면허시험장",
-      "href": "games/job_driver_license/index.html?v=7",
+      "href": "games/job_driver_license/index.html?v=8",
       "category": "job",
       "age": "job",
       "icon": "🚗",
-      "description": "운전석 시점에서 핸들·페달·기어를 직접 조작해 경사로, 신호 교차로, T자 주차, 가속과 급정지를 통과하는 운전면허 기능시험 시뮬레이터. 2종 자동과 1종 보통 수동을 지원합니다.",
+      "description": "운전석 시점에서 핸들·페달·기어를 직접 조작해 경사로, 신호 교차로, T자 주차, 가속과 급정지를 통과하는 운전면허 기능시험 시뮬레이터. 2종 자동과 클러치·H형 기어를 사용하는 1종 보통 수동을 지원합니다.",
       "subject": "career",
       "genre": "simulation",
       "difficulty": "medium",
