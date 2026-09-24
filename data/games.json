@@ -2642,6 +2642,28 @@
       ],
       "qualityStatus": "featured",
       "classroom": false
+    },
+    {
+      "id": "high_history_map",
+      "title": "역사의 지도: 삼국의 선택",
+      "href": "games/high_history_map/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🗺️",
+      "description": "고구려·백제·신라 중 한 나라를 골라 지역 개발, 기술, 외교, 군사와 역사 사건을 운영하며 600년 무렵 동아시아의 다른 역사를 만들어 보는 턴제 그랜드 전략 게임!",
+      "subject": "social",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 25,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
