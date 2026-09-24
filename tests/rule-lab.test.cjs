@@ -37,12 +37,13 @@ test('Rule Lab is registered as a featured thinking puzzle',()=>{
   assert.deepEqual(game.input,['touch','keyboard']);
 });
 
-test('Rule Lab contains a substantial authored stage set and rule vocabulary',()=>{
-  const levels=read('games/high_rule_lab/levels.js');
-  const stageCount=(levels.match(/\nL\('/g)||[]).length;
-  assert.equal(stageCount,60,'expected exactly 60 authored stages');
+test('Rule Lab contains 60 authored stages and the full v2 rule vocabulary',()=>{
+  const source=read('games/high_rule_lab/levels.js');
+  const sandbox={};sandbox.window=sandbox;
+  vm.runInNewContext(source,sandbox);
+  assert.equal(sandbox.RuleLabData.levels.length,60);
   for(const token of ['YOU','STOP','PUSH','WIN','DEFEAT','SINK','HOT','MELT','OPEN','SHUT','MOVE','WEAK']){
-    assert.match(levels,new RegExp(token));
+    assert.ok(Object.hasOwn(sandbox.RuleLabData.P,token),token);
   }
 });
 
@@ -57,7 +58,7 @@ test('Rule Lab shared sprite paths point to existing Kidscade assets',()=>{
 
 
 test('Rule Lab v2 has the planned chapter counts and no initial cell overlaps',()=>{
-  const sandbox={};
+  const sandbox={};sandbox.window=sandbox;
   vm.runInNewContext(read('games/high_rule_lab/levels.js'),sandbox);
   const levels=sandbox.RuleLabData.levels;
   const counts={};
