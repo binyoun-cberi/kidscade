@@ -16,7 +16,7 @@ const QUALITY = new Set(['featured','standard','rework']);
 
 test('catalog v7 gives every game discovery metadata', () => {
   assert.equal(catalog.schemaVersion, 7);
-  assert.equal(games.length, 112);
+  assert.equal(games.length, 113);
   assert.ok(catalog.taxonomy?.subjects?.thinking);
   assert.ok(catalog.taxonomy?.genres?.simulation);
 
