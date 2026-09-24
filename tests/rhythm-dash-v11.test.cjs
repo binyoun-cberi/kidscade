@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const runtimePath = path.join(ROOT, 'rhythm-dash-v11.js');
+const gamePath = path.join(ROOT, '리듬 대시.html');
 const injectorPath = path.join(ROOT, 'scripts', 'inject-game-integrations.cjs');
 
 function read(file) {
@@ -42,15 +43,15 @@ test('Rhythm Dash v11 preserves one-button play and adds fast retry instead of n
   assert.doesNotMatch(source, /Portal|jumpOrb|gravityPortal|dashOrb/);
 });
 
-test('Cloudflare build injects the v11 runtime after the existing Rhythm Dash game script', () => {
+test('Rhythm Dash owns the v11 runtime in source instead of build-time injection', () => {
+  const html = read(gamePath);
   const injector = read(injectorPath);
-  assert.match(injector, /injectScripts\('리듬 대시\.html'/);
-  assert.match(injector, /\/rhythm-dash-v11\.js\?v=20260916-1/);
+  assert.match(html, /rhythm-dash-v11\.js\?v=20260916-1/);
+  assert.doesNotMatch(injector, /injectScripts\('리듬 대시\.html'/);
+  assert.doesNotMatch(injector, /rhythm-dash-v11\.js/);
 
   const builtGame = path.join(ROOT, 'dist', '리듬 대시.html');
   if (fs.existsSync(builtGame)) {
-    const html = read(builtGame);
-    assert.match(html, /<script src="\/rhythm-dash-v11\.js\?v=20260916-1"><\/script>/);
-    assert.ok(html.lastIndexOf('rhythm-dash-v11.js') > html.lastIndexOf('</script>') - 5000 || html.includes('rhythm-dash-v11.js'), 'v11 runtime should be present in built game');
+    assert.match(read(builtGame), /rhythm-dash-v11\.js\?v=20260916-1/);
   }
 });
