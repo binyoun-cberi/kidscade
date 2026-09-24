@@ -1,522 +1,62 @@
 (function(){
 "use strict";
-
-var canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
-var W=1200,H=700,waterY=545,TAU=Math.PI*2;
-var el={
- stageTitle:document.getElementById("stageTitle"),stageGoal:document.getElementById("stageGoal"),
- budget:document.getElementById("budgetText"),vehicle:document.getElementById("vehicleText"),status:document.getElementById("statusText"),
- prev:document.getElementById("prevLevel"),next:document.getElementById("nextLevel"),mode:document.getElementById("modeBtn"),
- help:document.getElementById("helpBtn"),sound:document.getElementById("soundBtn"),test:document.getElementById("testBtn"),
- stop:document.getElementById("stopBtn"),undo:document.getElementById("undoBtn"),reset:document.getElementById("resetBtn"),
- toast:document.getElementById("toast"),result:document.getElementById("resultCard"),resultIcon:document.getElementById("resultIcon"),
- resultTitle:document.getElementById("resultTitle"),resultText:document.getElementById("resultText"),stars:document.getElementById("stars"),
- retry:document.getElementById("retryBtn"),cont:document.getElementById("continueBtn"),conditions:document.getElementById("conditionList"),
- campaign:document.getElementById("campaignInfo"),sandbox:document.getElementById("sandboxPanel"),gap:document.getElementById("gapRange"),
- gapValue:document.getElementById("gapValue"),vehicleSelect:document.getElementById("vehicleSelect"),tutorial:document.getElementById("tutorial"),
- tutorialClose:document.getElementById("tutorialClose")
-};
-
-var VEHICLES={
- sedan:{label:"승용차",file:"sedan-blue.png",load:3.4,speed:92,scale:2.8},
- bus:{label:"스쿨버스",file:"bus-school.png",load:5.6,speed:76,scale:2.7},
- ambulance:{label:"구급차",file:"ambulance.png",load:4.6,speed:88,scale:2.8},
- firetruck:{label:"소방차",file:"firetruck.png",load:6.2,speed:72,scale:2.8},
- truck:{label:"대형 화물차",file:"truck.png",load:8.8,speed:60,scale:2.55}
-};
-var vehicleImages={};
-Object.keys(VEHICLES).forEach(function(k){
- var im=new Image();im.src="../../assets/game/2d/vehicles/pixel/cars/"+VEHICLES[k].file;vehicleImages[k]=im;
-});
-
+var canvas=document.getElementById("game"),ctx=canvas.getContext("2d"),W=1200,H=700,TAU=Math.PI*2;
+var el={stageTitle:document.getElementById("stageTitle"),stageGoal:document.getElementById("stageGoal"),prev:document.getElementById("prevLevel"),next:document.getElementById("nextLevel"),help:document.getElementById("helpBtn"),inkBar:document.getElementById("inkBar"),inkText:document.getElementById("inkText"),vehicle:document.getElementById("vehicleText"),hint:document.getElementById("hint"),toast:document.getElementById("toast"),test:document.getElementById("testBtn"),undo:document.getElementById("undoBtn"),reset:document.getElementById("resetBtn"),result:document.getElementById("resultCard"),resultIcon:document.getElementById("resultIcon"),resultTitle:document.getElementById("resultTitle"),resultText:document.getElementById("resultText"),stars:document.getElementById("stars"),retry:document.getElementById("retryBtn"),cont:document.getElementById("continueBtn"),tutorial:document.getElementById("tutorial"),tutorialClose:document.getElementById("tutorialClose")};
+var VEHICLES={sedan:{label:"승용차",emoji:"🚗",mass:.82,speed:116},bus:{label:"스쿨버스",emoji:"🚌",mass:1.04,speed:100},ambulance:{label:"구급차",emoji:"🚑",mass:.96,speed:110},firetruck:{label:"소방차",emoji:"🚒",mass:1.18,speed:92},truck:{label:"대형 화물차",emoji:"🚚",mass:1.36,speed:82}};
 var LEVELS=[
- {title:"1. 작은 개울",goal:"승용차 한 대를 안전하게 통과시키세요",gap:340,budget:920,par:700,vehicles:["sedan"],foundations:[[-105,555],[0,570],[105,555]],tip:"아래 고정점과 철제 빔을 이어 삼각형을 만들어 보세요."},
- {title:"2. 학교 가는 길",goal:"무거운 스쿨버스가 지나갈 다리를 만드세요",gap:440,budget:1280,par:980,vehicles:["bus"],foundations:[[-145,575],[0,590],[145,575]],tip:"버스는 승용차보다 무거워요. 도로 아래 뼈대를 촘촘히 보강해 보세요."},
- {title:"3. 깊은 골짜기",goal:"바닥 기둥 없이 골짜기를 건너세요",gap:500,budget:1450,par:1120,vehicles:["sedan"],foundations:[],tip:"바닥 고정점이 없어요. 위쪽 구조와 케이블을 활용해 보세요.",towerAnchors:[[-250,205],[250,205]]},
- {title:"4. 큰 강",goal:"구급차가 흔들리지 않게 통과해야 해요",gap:560,budget:1640,par:1280,vehicles:["ambulance"],foundations:[[-210,590],[210,590]],maxSag:48,tip:"긴 다리는 한 곳에 힘이 몰리지 않게 여러 삼각형으로 나누는 게 좋아요."},
- {title:"5. 비바람 다리",goal:"옆바람 속에서도 다리를 지켜내세요",gap:560,budget:1780,par:1380,vehicles:["bus"],foundations:[[-190,585],[0,600],[190,585]],storm:1,maxSway:46,tip:"시험 중 바람이 불어요. 좌우 흔들림을 잡을 대각선 빔을 넣어 보세요."},
- {title:"6. 절약 공사",goal:"적은 비용으로 튼튼한 다리를 완성하세요",gap:520,budget:1320,par:1040,vehicles:["sedan"],foundations:[[-170,580],[170,580]],tip:"재료를 많이 쓰는 것보다 힘이 흐르는 길을 잘 만드는 게 중요해요."},
- {title:"7. 긴급 출동",goal:"구급차와 소방차를 연달아 통과시키세요",gap:600,budget:2020,par:1580,vehicles:["ambulance","firetruck"],foundations:[[-220,600],[0,610],[220,600]],tip:"첫 차량이 지나간 뒤에도 구조물이 버텨야 해요."},
- {title:"8. 초대형 화물",goal:"가장 무거운 화물차를 반대편까지 보내세요",gap:640,budget:2320,par:1820,vehicles:["truck"],foundations:[[-245,610],[-80,620],[80,620],[245,610]],maxSag:58,tip:"도로 바로 아래를 철제 빔으로 받치고 큰 삼각형 안에 작은 삼각형을 넣어 보세요."}
+ {title:"1. 작은 개울",goal:"노란 점 사이를 손가락으로 이어 보세요",gap:330,ink:520,vehicle:"sedan",breakRatio:1.22,gravity:.31,tip:"처음에는 한 줄로도 건널 수 있어요."},
+ {title:"2. 학교 가는 길",goal:"조금 더 긴 강을 건너 보세요",gap:410,ink:650,vehicle:"bus",breakRatio:1.20,gravity:.32,tip:"많이 처지면 아래에 선을 하나 더 받쳐 보세요."},
+ {title:"3. 깊은 골짜기",goal:"긴 다리를 튼튼하게 그려 보세요",gap:485,ink:770,vehicle:"sedan",breakRatio:1.18,gravity:.33,tip:"두 선을 서로 이어 주면 더 안정적이에요."},
+ {title:"4. 큰 강",goal:"구급차가 무사히 지나가게 하세요",gap:545,ink:850,vehicle:"ambulance",breakRatio:1.17,gravity:.34,tip:"가운데가 너무 길면 쉽게 처져요."},
+ {title:"5. 비바람 다리",goal:"흔들려도 끊어지지 않게 그려 보세요",gap:560,ink:900,vehicle:"bus",breakRatio:1.16,gravity:.35,wind:.018,tip:"아래쪽 보강선을 덧그리면 흔들림이 줄어요."},
+ {title:"6. 절약 공사",goal:"적은 선으로 반대편까지 이어 보세요",gap:525,ink:700,vehicle:"sedan",breakRatio:1.17,gravity:.34,tip:"필요한 곳에만 선을 써 보세요."},
+ {title:"7. 긴급 출동",goal:"무거운 소방차가 건널 다리를 그리세요",gap:590,ink:980,vehicle:"firetruck",breakRatio:1.15,gravity:.36,tip:"한 줄보다 여러 선이 서로 연결된 구조가 튼튼해요."},
+ {title:"8. 초대형 화물",goal:"가장 무거운 화물차를 건너게 하세요",gap:625,ink:1080,vehicle:"truck",breakRatio:1.14,gravity:.37,tip:"짧은 선들을 연결해 힘을 나눠 보세요."}
 ];
-
-var MAT={
- road:{label:"도로",rate:1.4,max:175,stiff:.34,limit:.024,width:11,color:"#68758a",weight:.18,freeSpan:170},
- beam:{label:"철제 빔",rate:.8,max:300,stiff:.88,limit:.050,width:7,color:"#4da8ff",weight:.08},
- cable:{label:"케이블",rate:.55,max:380,stiff:.58,limit:.075,width:3,color:"#f5d15e",weight:.03}
-};
-
-var S={
- mode:"campaign",level:0,tool:"road",nodes:[],members:[],history:[],nextNode:1,
- bankL:430,bankR:770,deckY:330,budget:0,spent:0,testing:false,simTime:0,
- pointer:{down:false,start:null,x:0,y:0},route:null,vehicle:null,vehicleIndex:0,
- particles:[],sound:true,resultOpen:false,firstBreak:null,finishDelay:0,maxSag:0,maxSway:0,flexStress:{}
-};
-
-var successAudio=new Audio("../../assets/audio/sfx/success/cheer-yay-01.mp3");
-var failAudio=new Audio("../../assets/audio/sfx/failure/fail-sting-01.mp3");
-successAudio.volume=.42;failAudio.volume=.38;
-var audioCtx=null;
-function tone(freq,dur,type){
- if(!S.sound)return;
- try{
-  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
-  if(audioCtx.state==="suspended")audioCtx.resume();
-  var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;
-  o.type=type||"sine";o.frequency.value=freq;o.connect(g);g.connect(audioCtx.destination);
-  g.gain.setValueAtTime(.055,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.start(t);o.stop(t+dur);
- }catch(e){}
-}
-function playSuccess(){if(!S.sound)return;try{successAudio.currentTime=0;successAudio.play();}catch(e){}}
-function playFail(){if(!S.sound)return;try{failAudio.currentTime=0;failAudio.play();}catch(e){}}
-
-function currentLevel(){
- if(S.mode==="sandbox"){
-  return {title:"샌드박스",goal:"마음껏 만들고 시험해 보세요",gap:Number(el.gap.value)||520,budget:999999,par:0,vehicles:[el.vehicleSelect.value||"sedan"],foundations:[[-240,610],[-120,610],[0,610],[120,610],[240,610]],tip:"예산 제한 없음 · 원하는 만큼 실험해 보세요."};
- }
- return LEVELS[S.level];
-}
-function toast(msg){
- el.toast.textContent=msg;el.toast.classList.add("show");
- clearTimeout(toast._t);toast._t=setTimeout(function(){el.toast.classList.remove("show");},1500);
-}
-function setStatus(msg){el.status.textContent=msg}
-function snap(v){return Math.round(v/20)*20}
-function dist(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.hypot(dx,dy)}
-function memberCost(a,b,type){return Math.round(dist(a,b)*MAT[type].rate)}
-function nodeById(id){for(var i=0;i<S.nodes.length;i++)if(S.nodes[i].id===id)return S.nodes[i];return null}
-function memberBetween(a,b,type){
- for(var i=0;i<S.members.length;i++){var m=S.members[i];if((m.a===a&&m.b===b)||(m.a===b&&m.b===a)){if(!type||m.type===type)return m}}
- return null;
-}
-function addFixed(x,y,kind){
- var n={id:S.nextNode++,x:x,y:y,px:x,py:y,bx:x,by:y,fixed:true,kind:kind||"anchor",ax:0,ay:0};
- S.nodes.push(n);return n;
-}
-function addNode(x,y){
- var n={id:S.nextNode++,x:x,y:y,px:x,py:y,bx:x,by:y,fixed:false,kind:"joint",ax:0,ay:0};
- S.nodes.push(n);return n;
-}
-function findNode(x,y,r){
- r=r||18;var best=null,bd=r;
- S.nodes.forEach(function(n){var d=Math.hypot(n.x-x,n.y-y);if(d<bd){bd=d;best=n}});
- return best;
-}
-function segmentDistance(px,py,a,b){
- var vx=b.x-a.x,vy=b.y-a.y,wx=px-a.x,wy=py-a.y,c1=vx*wx+vy*wy;
- if(c1<=0)return Math.hypot(px-a.x,py-a.y);
- var c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(px-b.x,py-b.y);
- var t=c1/c2,qx=a.x+t*vx,qy=a.y+t*vy;return Math.hypot(px-qx,py-qy);
-}
-function nearestMember(x,y){
- var best=null,bd=14;
- S.members.forEach(function(m){var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;var d=segmentDistance(x,y,a,b);if(d<bd){bd=d;best=m}});
- return best;
-}
-function cleanupNodes(){
- var used={};S.members.forEach(function(m){used[m.a]=1;used[m.b]=1});
- S.nodes=S.nodes.filter(function(n){return n.fixed||used[n.id]});
-}
-function calcSpent(){
- var sum=0;S.members.forEach(function(m){sum+=m.cost});S.spent=sum;return sum;
-}
-function snapshot(){
- S.history.push(JSON.stringify({nodes:S.nodes.map(function(n){return {id:n.id,x:n.bx,y:n.by,fixed:n.fixed,kind:n.kind}}),members:S.members.map(function(m){return {id:m.id,a:m.a,b:m.b,type:m.type,rest:m.rest,cost:m.cost}}),nextNode:S.nextNode}));
- if(S.history.length>40)S.history.shift();
-}
-function restoreSnapshot(raw){
- try{
-  var o=JSON.parse(raw);S.nodes=o.nodes.map(function(n){return {id:n.id,x:n.x,y:n.y,px:n.x,py:n.y,bx:n.x,by:n.y,fixed:n.fixed,kind:n.kind,ax:0,ay:0}});
-  S.members=o.members.map(function(m){return {id:m.id,a:m.a,b:m.b,type:m.type,rest:m.rest,cost:m.cost,broken:false,stress:0,peak:0}});
-  S.nextNode=o.nextNode;calcSpent();updateUI();
- }catch(e){}
-}
-function undo(){
- if(S.testing||S.history.length<2)return;
- S.history.pop();restoreSnapshot(S.history[S.history.length-1]);tone(250,.06,"triangle");
-}
-function resetLevel(keepMode){
- stopTest(true);S.resultOpen=false;el.result.classList.add("hidden");
- var lv=currentLevel(),gap=lv.gap;
- S.bankL=600-gap/2;S.bankR=600+gap/2;S.deckY=330;S.budget=lv.budget;S.nodes=[];S.members=[];S.history=[];S.nextNode=1;
- addFixed(S.bankL,S.deckY,"bank-left");addFixed(S.bankR,S.deckY,"bank-right");
- (lv.foundations||[]).forEach(function(p){addFixed(600+p[0],p[1],"foundation")});
- (lv.towerAnchors||[]).forEach(function(p){addFixed(600+p[0],p[1],"tower")});
- calcSpent();snapshot();updateUI();
-}
-function updateUI(){
- var lv=currentLevel(),names=lv.vehicles.map(function(v){return VEHICLES[v].label}).join(" + ");
- el.stageTitle.textContent=lv.title;el.stageGoal.textContent=lv.goal;el.vehicle.textContent=names;
- el.budget.textContent=S.mode==="sandbox"?"제한 없음":Math.round(S.spent)+" / "+lv.budget;
- el.budget.style.color=S.spent>lv.budget?"#ff6676":"";
- el.prev.disabled=S.mode==="sandbox"||S.level===0;el.next.disabled=S.mode==="sandbox"||S.level===LEVELS.length-1;
- el.mode.textContent=S.mode==="sandbox"?"🏗️ 캠페인":"🧪 샌드박스";
- el.campaign.classList.toggle("hidden",S.mode==="sandbox");el.sandbox.classList.toggle("hidden",S.mode!=="sandbox");
- el.conditions.innerHTML="";
- var items=[];
- if(S.mode==="campaign"){
-  items.push("예산 "+lv.budget+" 이하");
-  items.push(names+" 안전 통과");
-  if(lv.storm)items.push("시험 중 강한 옆바람");
-  if(lv.maxSag)items.push("다리 처짐 "+lv.maxSag+"m 이하");
-  if(lv.maxSway)items.push("좌우 흔들림 "+lv.maxSway+"m 이하");
-  if((lv.foundations||[]).length===0)items.push("강바닥 고정점 없음");
-  items.push(lv.tip);
- }
- items.forEach(function(t){var li=document.createElement("li");li.textContent=t;el.conditions.appendChild(li)});
- setStatus(S.testing?"시험 운행 중":lv.tip);
-}
-function addMember(a,b,type){
- if(!a||!b||a.id===b.id||type==="erase")return false;
- if(memberBetween(a.id,b.id,type)){toast("이미 같은 재료로 연결되어 있어요.");return false}
- var d=dist(a,b),mat=MAT[type];if(d<22){toast("조금 더 멀리 연결해 주세요.");return false}
- if(d>mat.max){toast(mat.label+"은 한 번에 "+mat.max+"m까지만 연결할 수 있어요.");return false}
- var cost=memberCost(a,b,type),lv=currentLevel();
- if(S.mode!=="sandbox"&&S.spent+cost>lv.budget){toast("예산이 부족해요. 다른 구조를 생각해 보세요.");tone(160,.1,"square");return false}
- S.members.push({id:Date.now()+Math.random(),a:a.id,b:b.id,type:type,rest:d,cost:cost,broken:false,stress:0,peak:0});
- calcSpent();snapshot();updateUI();tone(type==="road"?430:type==="beam"?560:700,.045,"triangle");return true;
-}
-
-function fitCanvas(){
- var wrap=document.getElementById("canvasWrap");if(!wrap)return;
- var ww=Math.max(1,wrap.clientWidth),wh=Math.max(1,wrap.clientHeight),ratio=W/H,cw,ch;
- if(ww/wh>ratio){ch=wh;cw=ch*ratio}else{cw=ww;ch=cw/ratio}
- canvas.style.width=Math.floor(cw)+"px";canvas.style.height=Math.floor(ch)+"px";
-}
-if(window.ResizeObserver)new ResizeObserver(fitCanvas).observe(document.getElementById("canvasWrap"));
-window.addEventListener("resize",fitCanvas);
-
-function canvasPoint(ev){
- var r=canvas.getBoundingClientRect();
- return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height};
-}
-canvas.addEventListener("pointerdown",function(ev){
- if(S.testing||S.resultOpen)return;ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
- var p=canvasPoint(ev);S.pointer.down=true;S.pointer.x=p.x;S.pointer.y=p.y;
- if(S.tool==="erase"){
-  var m=nearestMember(p.x,p.y);if(m){S.members=S.members.filter(function(x){return x!==m});cleanupNodes();calcSpent();snapshot();updateUI();tone(180,.05,"square")}else toast("지울 부재를 눌러 주세요.");
-  S.pointer.down=false;return;
- }
- var n=findNode(p.x,p.y,21);
- if(!n){n=addNode(snap(p.x),snap(p.y));}
- S.pointer.start=n;
-});
-canvas.addEventListener("pointermove",function(ev){
- var p=canvasPoint(ev);S.pointer.x=p.x;S.pointer.y=p.y;
-});
-canvas.addEventListener("pointerup",function(ev){
- if(!S.pointer.down)return;ev.preventDefault();
- var p=canvasPoint(ev),start=S.pointer.start,end=findNode(p.x,p.y,22);
- if(!end)end=addNode(snap(p.x),snap(p.y));
- if(!addMember(start,end,S.tool)){cleanupNodes()}
- S.pointer.down=false;S.pointer.start=null;
-});
-canvas.addEventListener("pointercancel",function(){S.pointer.down=false;S.pointer.start=null;cleanupNodes()});
-canvas.addEventListener("contextmenu",function(e){e.preventDefault()});
-
-document.querySelectorAll(".tool").forEach(function(btn){
- btn.addEventListener("click",function(){
-  if(S.testing)return;document.querySelectorAll(".tool").forEach(function(b){b.classList.remove("active")});
-  btn.classList.add("active");S.tool=btn.getAttribute("data-tool");tone(330,.04,"sine");
- });
-});
-
-function findRoadRoute(){
- var left=S.nodes.find(function(n){return n.kind==="bank-left"}),right=S.nodes.find(function(n){return n.kind==="bank-right"});
- if(!left||!right)return null;
- var adj={};S.nodes.forEach(function(n){adj[n.id]=[]});
- S.members.forEach(function(m){if(m.type!=="road"||m.broken)return;var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;var w=dist(a,b);adj[a.id].push({id:b.id,w:w});adj[b.id].push({id:a.id,w:w})});
- var D={},prev={},open=[];S.nodes.forEach(function(n){D[n.id]=Infinity});D[left.id]=0;open.push(left.id);
- while(open.length){
-  open.sort(function(a,b){return D[a]-D[b]});var u=open.shift();if(u===right.id)break;
-  (adj[u]||[]).forEach(function(e){var nd=D[u]+e.w;if(nd<D[e.id]){D[e.id]=nd;prev[e.id]=u;if(open.indexOf(e.id)<0)open.push(e.id)}});
- }
- if(!isFinite(D[right.id]))return null;
- var path=[],cur=right.id;while(cur!=null){path.push(cur);if(cur===left.id)break;cur=prev[cur]}path.reverse();
- return path.length>=2?path:null;
-}
-function resetPhysics(){
- S.nodes.forEach(function(n){n.x=n.bx;n.y=n.by;n.px=n.bx;n.py=n.by;n.ax=0;n.ay=0});
- S.members.forEach(function(m){m.broken=false;m.stress=0;m.peak=0});
- S.particles=[];S.firstBreak=null;S.maxSag=0;S.maxSway=0;S.flexStress={};
-}
-
-function structuralSupportSet(){
- var adj={},seen={},queue=[];
- S.nodes.forEach(function(n){adj[n.id]=[];if(n.fixed){seen[n.id]=1;queue.push(n.id)}});
- S.members.forEach(function(m){
-  if(m.broken||m.type==="road")return;
-  if(!adj[m.a]||!adj[m.b])return;
-  adj[m.a].push(m.b);adj[m.b].push(m.a);
- });
- while(queue.length){
-  var u=queue.shift();
-  (adj[u]||[]).forEach(function(v){if(!seen[v]){seen[v]=1;queue.push(v)}});
- }
- return seen;
-}
-
-function computeRouteFlexStress(){
- var out={};if(!S.route||S.route.length<2)return out;
- var supported=structuralSupportSet(),start=0,i,j,total,m,segments,cursor;
- for(i=1;i<S.route.length;i++){
-  if(!supported[S.route[i]]&&i!==S.route.length-1)continue;
-  total=0;segments=[];
-  for(j=start;j<i;j++){
-   m=roadMemberFor(S.route[j],S.route[j+1]);
-   if(m){segments.push(m);total+=m.rest}
-  }
-  var base=Math.pow(Math.max(.01,total/MAT.road.freeSpan),1.45)*.72;
-  cursor=0;
-  segments.forEach(function(seg){
-   var mid=total>0?(cursor+seg.rest*.5)/total:.5;
-   var centerFactor=.72+.42*Math.sin(Math.PI*mid);
-   out[String(seg.id)]=Math.max(out[String(seg.id)]||0,base*centerFactor);
-   cursor+=seg.rest;
-  });
-  start=i;
- }
- return out;
-}
-
-function applyMemberWeight(){
- S.members.forEach(function(m){
-  if(m.broken)return;var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;
-  var load=(MAT[m.type].weight||0)*(m.rest/100);
-  if(!a.fixed)a.ay+=load*.5;if(!b.fixed)b.ay+=load*.5;
- });
-}
-
-function updateBridgeMotionStats(){
- if(!S.route)return;
- S.route.forEach(function(id){
-  var n=nodeById(id);if(!n)return;
-  S.maxSag=Math.max(S.maxSag,n.y-n.by);
-  S.maxSway=Math.max(S.maxSway,Math.abs(n.x-n.bx));
- });
-}
-function startTest(){
- if(S.testing)return;
- var route=findRoadRoute();if(!route){toast("먼저 도로로 양쪽 노란 고정점을 이어 주세요.");tone(170,.12,"square");return}
- resetPhysics();S.route=route;S.testing=true;S.simTime=0;S.vehicleIndex=0;S.finishDelay=0;S.resultOpen=false;el.result.classList.add("hidden");
- spawnVehicle();el.test.classList.add("hidden");el.stop.classList.remove("hidden");setStatus("시험 운행 중 · 힘이 큰 곳은 빨갛게 변해요");tone(620,.08,"triangle");
-}
-function spawnVehicle(){
- var lv=currentLevel(),key=lv.vehicles[Math.min(S.vehicleIndex,lv.vehicles.length-1)],v=VEHICLES[key];
- S.vehicle={key:key,phase:"approach",x:S.bankL-125,y:S.deckY-7,vx:v.speed,vy:0,seg:0,t:0,angle:0,wet:false};
-}
-function stopTest(silent){
- if(!S.testing&&!silent)return;
- S.testing=false;resetPhysics();S.vehicle=null;S.route=null;el.test.classList.remove("hidden");el.stop.classList.add("hidden");
- if(!silent)setStatus(currentLevel().tip);
-}
-function roadMemberFor(a,b){var m=memberBetween(a,b,"road");return m&&!m.broken?m:null}
-function fail(reason){
- if(!S.testing)return;S.testing=false;el.test.classList.remove("hidden");el.stop.classList.add("hidden");playFail();
- showResult(false,reason||"다리가 버티지 못했어요.");
-}
-function success(){
- if(!S.testing)return;S.testing=false;el.test.classList.remove("hidden");el.stop.classList.add("hidden");playSuccess();
- var lv=currentLevel(),stars=3;if(S.mode!=="sandbox"){stars=S.spent<=lv.par*.82?3:(S.spent<=lv.par?2:1);saveProgress(stars)}
- showResult(true,S.mode==="sandbox"?"멋진 실험 성공! 다른 차량도 시험해 보세요.":"사용 비용 "+Math.round(S.spent)+" · 기준 비용 "+lv.par,stars);
-}
-function showResult(ok,text,stars){
- S.resultOpen=true;el.result.classList.remove("hidden");el.resultIcon.textContent=ok?"🏆":"🛠️";el.resultTitle.textContent=ok?"통과 성공!":"다리가 무너졌어요";
- el.resultText.textContent=text;el.stars.textContent=ok&&S.mode!=="sandbox"?"★★★".slice(0,stars)+"☆☆☆".slice(0,3-stars):"";
- el.cont.classList.toggle("hidden",!ok||S.mode==="sandbox"||S.level===LEVELS.length-1);
-}
-function saveProgress(stars){
- S.bestStars=S.bestStars||{};var key=String(S.level);S.bestStars[key]=Math.max(Number(S.bestStars[key]||0),stars);
-}
-
-function breakMember(m){
- if(m.broken)return;m.broken=true;if(!S.firstBreak)S.firstBreak=m;
- var a=nodeById(m.a),b=nodeById(m.b),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
- for(var i=0;i<14;i++)S.particles.push({x:cx+(Math.random()-.5)*18,y:cy+(Math.random()-.5)*10,vx:(Math.random()-.5)*4,vy:-Math.random()*4-1,life:1,type:"debris"});
- tone(95,.11,"sawtooth");
-}
-function physicsStep(dt){
- var lv=currentLevel(),dts=Math.min(1.5,dt*60);
- S.simTime+=dt;
- var wind=lv.storm?Math.sin(S.simTime*3.1)*.34:0;
- S.nodes.forEach(function(n){n.ax=wind;n.ay=.28});
- applyMemberWeight();
- applyVehicleLoad(dts);
- S.flexStress=computeRouteFlexStress();
- S.nodes.forEach(function(n){
-  if(n.fixed)return;
-  var vx=(n.x-n.px)*.994,vy=(n.y-n.py)*.994,nx=n.x+vx+n.ax*dts*dts,ny=n.y+vy+n.ay*dts*dts;
-  n.px=n.x;n.py=n.y;n.x=nx;n.y=ny;
- });
- for(var iter=0;iter<8;iter++){
-  S.members.forEach(function(m){
-   if(m.broken)return;var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;
-   var dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||.0001,stretch=(d-m.rest)/m.rest;
-   if(m.type==="cable"&&stretch<0){m.stress=Math.max(0,m.stress*.9);return}
-   var abs=Math.abs(stretch),mat=MAT[m.type],proxy=abs/mat.limit;
-   if(m.type==="road")proxy=Math.max(proxy,S.flexStress[String(m.id)]||0);
-   m.stress=Math.max(proxy,m.stress*.90);m.peak=Math.max(m.peak,m.stress);
-   if(S.simTime>.32&&proxy>1.16){breakMember(m);return}
-   var diff=(d-m.rest)/d,corr=diff*mat.stiff;
-   var cx=dx*corr,cy=dy*corr;
-   if(!a.fixed&&!b.fixed){a.x+=cx*.5;a.y+=cy*.5;b.x-=cx*.5;b.y-=cy*.5}
-   else if(a.fixed&&!b.fixed){b.x-=cx;b.y-=cy}
-   else if(!a.fixed&&b.fixed){a.x+=cx;a.y+=cy}
-  });
- }
- S.nodes.forEach(function(n){if(!n.fixed&&n.y>waterY+90){n.y=waterY+90}});
- updateBridgeMotionStats();
- updateVehicle(dt);
- updateParticles(dt);
-}
-function applyVehicleLoad(){
- var v=S.vehicle;if(!v||v.phase!=="bridge"||!S.route)return;
- var a=nodeById(S.route[v.seg]),b=nodeById(S.route[v.seg+1]);if(!a||!b)return;
- var load=VEHICLES[v.key].load*(currentLevel().loadMult||1),t=v.t;
- if(!a.fixed)a.ay+=load*.36*(1-t);if(!b.fixed)b.ay+=load*.36*t;
-}
-function updateVehicle(dt){
- var v=S.vehicle;if(!v)return;var meta=VEHICLES[v.key];
- if(v.phase==="approach"){
-  v.x+=meta.speed*dt;v.y=S.deckY-7;if(v.x>=S.bankL){v.phase="bridge";v.x=S.bankL;v.seg=0;v.t=0}return;
- }
- if(v.phase==="fall"){
-  v.vy+=420*dt;v.y+=v.vy*dt;v.x+=42*dt;if(v.y>waterY+55&&!v.wet){v.wet=true;splash(v.x,waterY);fail("차량이 물에 빠졌어요. 처음 끊어진 곳을 더 튼튼하게 보강해 보세요.")}return;
- }
- if(v.phase==="exit"){
-  v.x+=meta.speed*dt;v.y=S.deckY-7;if(v.x>S.bankR+145){
-   S.vehicleIndex++;
-   if(S.vehicleIndex<currentLevel().vehicles.length){spawnVehicle();toast("첫 차량 통과! 다음 차량이 출발해요.")}
-   else{
-    var lv=currentLevel();
-    if(lv.maxSag&&S.maxSag>lv.maxSag)fail("차는 건넜지만 다리가 너무 많이 처졌어요. 도로 아래를 더 튼튼하게 받쳐 주세요.");
-    else if(lv.maxSway&&S.maxSway>lv.maxSway)fail("다리가 옆으로 너무 크게 흔들렸어요. 대각선 빔으로 흔들림을 잡아 주세요.");
-    else success();
-   }
-  }return;
- }
- if(v.phase==="bridge"){
-  var aId=S.route[v.seg],bId=S.route[v.seg+1],m=roadMemberFor(aId,bId);
-  if(!m){v.phase="fall";v.vy=0;return}
-  var a=nodeById(aId),b=nodeById(bId);if(!a||!b){v.phase="fall";return}
-  var len=Math.max(20,dist(a,b));v.t+=meta.speed*dt/len;
-  while(v.t>=1){
-   v.t-=1;v.seg++;
-   if(v.seg>=S.route.length-1){v.phase="exit";v.x=S.bankR;v.y=S.deckY-7;return}
-   aId=S.route[v.seg];bId=S.route[v.seg+1];m=roadMemberFor(aId,bId);if(!m){v.phase="fall";v.vy=0;return}
-   a=nodeById(aId);b=nodeById(bId);len=Math.max(20,dist(a,b));
-  }
-  v.x=a.x+(b.x-a.x)*v.t;v.y=a.y+(b.y-a.y)*v.t-7;v.angle=Math.atan2(b.y-a.y,b.x-a.x);
-  if(v.y>waterY-6){v.phase="fall";v.vy=40}
- }
-}
-function splash(x,y){
- for(var i=0;i<22;i++)S.particles.push({x:x+(Math.random()-.5)*30,y:y,vx:(Math.random()-.5)*7,vy:-Math.random()*8-2,life:1,type:"water"});
-}
-function updateParticles(dt){
- S.particles.forEach(function(p){p.vy+=14*dt*60;p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.life-=dt*1.5});
- S.particles=S.particles.filter(function(p){return p.life>0});
-}
-
-function drawBackground(t){
- var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#8ed1ff");g.addColorStop(.62,"#d8f1ff");g.addColorStop(1,"#d6e8d2");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- ctx.fillStyle="rgba(255,255,255,.72)";
- for(var i=0;i<5;i++){var cx=110+i*250+Math.sin(t*.06+i)*15,cy=85+(i%2)*45;ctx.beginPath();ctx.arc(cx,cy,28,0,TAU);ctx.arc(cx+32,cy-7,38,0,TAU);ctx.arc(cx+70,cy,25,0,TAU);ctx.fill()}
- ctx.fillStyle="#7aa36d";ctx.beginPath();ctx.moveTo(0,390);ctx.quadraticCurveTo(180,250,360,400);ctx.quadraticCurveTo(520,260,690,405);ctx.quadraticCurveTo(900,235,1200,390);ctx.lineTo(1200,560);ctx.lineTo(0,560);ctx.closePath();ctx.fill();
- ctx.fillStyle="#5b7f54";ctx.beginPath();ctx.moveTo(0,435);ctx.quadraticCurveTo(190,330,400,445);ctx.quadraticCurveTo(690,330,920,445);ctx.quadraticCurveTo(1060,350,1200,420);ctx.lineTo(1200,570);ctx.lineTo(0,570);ctx.closePath();ctx.fill();
- drawBanks();
- var wg=ctx.createLinearGradient(0,waterY,0,H);wg.addColorStop(0,"#47b5e9");wg.addColorStop(1,"#1677ba");ctx.fillStyle=wg;ctx.fillRect(S.bankL,waterY,S.bankR-S.bankL,H-waterY);
- ctx.strokeStyle="rgba(255,255,255,.46)";ctx.lineWidth=3;
- for(var y=waterY+8;y<H;y+=24){ctx.beginPath();for(var x=S.bankL;x<S.bankR;x+=32){var yy=y+Math.sin(x*.035+t*.003+y)*3;if(x===S.bankL)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}
-}
-function drawBanks(){
- ctx.fillStyle="#6c533f";
- ctx.beginPath();ctx.moveTo(0,S.deckY+10);ctx.lineTo(S.bankL,S.deckY+10);ctx.lineTo(S.bankL-22,waterY);ctx.lineTo(0,waterY);ctx.closePath();ctx.fill();
- ctx.beginPath();ctx.moveTo(S.bankR,S.deckY+10);ctx.lineTo(W,S.deckY+10);ctx.lineTo(W,waterY);ctx.lineTo(S.bankR+22,waterY);ctx.closePath();ctx.fill();
- ctx.fillStyle="#5ea955";ctx.fillRect(0,S.deckY-2,S.bankL,18);ctx.fillRect(S.bankR,S.deckY-2,W-S.bankR,18);
- ctx.fillStyle="#384657";ctx.fillRect(0,S.deckY-9,S.bankL,12);ctx.fillRect(S.bankR,S.deckY-9,W-S.bankR,12);
-}
-function drawGrid(){
- if(S.testing)return;ctx.save();ctx.strokeStyle="rgba(30,70,105,.09)";ctx.lineWidth=1;
- for(var x=20;x<W;x+=20){ctx.beginPath();ctx.moveTo(x,160);ctx.lineTo(x,635);ctx.stroke()}
- for(var y=160;y<635;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore();
-}
-function stressColor(m){
- if(!S.testing)return MAT[m.type].color;
- var s=Math.max(0,Math.min(1,m.stress));var hue=120*(1-s);return "hsl("+hue+",86%,"+(m.type==="cable"?62:55)+"%)";
-}
-function drawMembers(){
- var order={cable:0,beam:1,road:2};
- S.members.slice().sort(function(a,b){return order[a.type]-order[b.type]}).forEach(function(m){
-  if(m.broken)return;var a=nodeById(m.a),b=nodeById(m.b);if(!a||!b)return;ctx.save();
-  if(m.type==="road"){
-   ctx.strokeStyle="#263241";ctx.lineWidth=15;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-   ctx.strokeStyle=stressColor(m);ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-   ctx.setLineDash([13,13]);ctx.strokeStyle="rgba(255,255,255,.58)";ctx.lineWidth=1.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-  }else{
-   ctx.strokeStyle="rgba(14,23,36,.55)";ctx.lineWidth=MAT[m.type].width+4;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-   ctx.strokeStyle=stressColor(m);ctx.lineWidth=MAT[m.type].width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-  }
-  ctx.restore();
- });
-}
-function drawAnchors(){
- S.nodes.forEach(function(n){
-  if(n.fixed){
-   ctx.save();ctx.translate(n.x,n.y);
-   if(n.kind==="foundation"){ctx.fillStyle="#4b5967";ctx.fillRect(-18,5,36,28);ctx.fillStyle="#778797";ctx.fillRect(-24,28,48,8)}
-   if(n.kind==="tower"){ctx.fillStyle="#56677a";ctx.fillRect(-13,6,26,52)}
-   ctx.beginPath();ctx.arc(0,0,10,0,TAU);ctx.fillStyle="#ffd34e";ctx.fill();ctx.lineWidth=4;ctx.strokeStyle="#7b5e06";ctx.stroke();ctx.restore();
-  }else if(!S.testing){
-   ctx.beginPath();ctx.arc(n.x,n.y,5.5,0,TAU);ctx.fillStyle="#dce7f4";ctx.fill();ctx.strokeStyle="#52647a";ctx.lineWidth=2;ctx.stroke();
-  }
- });
-}
-function drawPreview(){
- if(!S.pointer.down||!S.pointer.start||S.testing||S.tool==="erase")return;
- var a=S.pointer.start,b={x:snap(S.pointer.x),y:snap(S.pointer.y)},d=dist(a,b),mat=MAT[S.tool],ok=d<=mat.max;
- ctx.save();ctx.setLineDash([10,8]);ctx.lineWidth=MAT[S.tool].width;ctx.strokeStyle=ok?MAT[S.tool].color:"#ff5364";ctx.globalAlpha=.8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);
- ctx.fillStyle="rgba(13,22,37,.82)";ctx.fillRect((a.x+b.x)/2-40,(a.y+b.y)/2-29,80,20);ctx.fillStyle="#fff";ctx.font="800 10px system-ui";ctx.textAlign="center";ctx.fillText(Math.round(d)+"m",(a.x+b.x)/2,(a.y+b.y)/2-15);ctx.restore();
-}
-function drawVehicle(){
- var v=S.vehicle;if(!v)return;var im=vehicleImages[v.key],meta=VEHICLES[v.key];ctx.save();ctx.translate(v.x,v.y);ctx.rotate(v.angle||0);
- var iw=im.naturalWidth||48,ih=im.naturalHeight||22,w=iw*meta.scale,h=ih*meta.scale;
- if(im.complete&&im.naturalWidth){ctx.imageSmoothingEnabled=false;ctx.drawImage(im,-w*.5,-h+4,w,h)}
- else{ctx.fillStyle="#ffcf3f";ctx.fillRect(-35,-24,70,24);ctx.fillStyle="#1f2937";ctx.beginPath();ctx.arc(-20,2,8,0,TAU);ctx.arc(20,2,8,0,TAU);ctx.fill()}
- ctx.restore();
-}
-function drawParticles(){
- S.particles.forEach(function(p){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.type==="water"?"#bfefff":"#506173";ctx.fillRect(p.x-3,p.y-3,6,6)});ctx.globalAlpha=1;
-}
-function drawHint(){
- if(S.testing||S.members.length>0||S.mode==="sandbox")return;
- var lv=currentLevel();ctx.save();ctx.fillStyle="rgba(15,29,46,.72)";ctx.fillRect(385,180,430,58);ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 14px system-ui";ctx.fillText("노란 고정점 사이를 도로로 연결해 보세요",600,204);ctx.fillStyle="#bcd2e7";ctx.font="700 10px system-ui";ctx.fillText(lv.tip,600,222);ctx.restore();
-}
-function render(t){
- drawBackground(t||0);drawGrid();drawMembers();drawAnchors();drawPreview();drawVehicle();drawParticles();drawHint();
-}
-
-var last=performance.now();
-function frame(now){
- var dt=Math.min(.033,(now-last)/1000);last=now;if(S.testing)physicsStep(dt);render(now);requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-
-el.test.addEventListener("click",startTest);el.stop.addEventListener("click",function(){stopTest(false)});el.undo.addEventListener("click",undo);
-el.reset.addEventListener("click",function(){if(S.testing)return;resetLevel();tone(210,.06,"square")});
-el.prev.addEventListener("click",function(){if(S.level>0){S.level--;resetLevel()}});
-el.next.addEventListener("click",function(){if(S.level<LEVELS.length-1){S.level++;resetLevel()}});
-el.retry.addEventListener("click",function(){S.resultOpen=false;el.result.classList.add("hidden");stopTest(true);setStatus(currentLevel().tip)});
-el.cont.addEventListener("click",function(){S.resultOpen=false;el.result.classList.add("hidden");if(S.level<LEVELS.length-1){S.level++;resetLevel()}});
-el.mode.addEventListener("click",function(){
- S.mode=S.mode==="campaign"?"sandbox":"campaign";resetLevel();toast(S.mode==="sandbox"?"샌드박스 모드 · 예산 제한이 없어요.":"캠페인으로 돌아왔어요.");
-});
-el.sound.addEventListener("click",function(){S.sound=!S.sound;el.sound.textContent=S.sound?"🔊":"🔇";if(S.sound)tone(520,.05,"sine")});
-el.help.addEventListener("click",function(){el.tutorial.classList.remove("hidden")});
-el.tutorialClose.addEventListener("click",function(){el.tutorial.classList.add("hidden");try{sessionStorage.setItem("bridgeBuilderTutorialSeen","1")}catch(e){}});
-el.gap.addEventListener("input",function(){el.gapValue.textContent=el.gap.value+"m";if(S.mode==="sandbox")resetLevel()});
-el.vehicleSelect.addEventListener("change",function(){if(S.mode==="sandbox")resetLevel()});
-
-try{if(!sessionStorage.getItem("bridgeBuilderTutorialSeen"))el.tutorial.classList.remove("hidden")}catch(e){el.tutorial.classList.remove("hidden")}
-resetLevel();fitCanvas();
+var S={level:0,mode:"build",nodes:[],edges:[],strokes:[],drawing:false,current:null,ink:0,vehicle:null,snapshot:null,toastTimer:0,hintTimer:0,last:performance.now(),broken:0};
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function level(){return LEVELS[S.level]}
+function banks(){var g=level().gap,cx=W/2;return{leftX:cx-g/2,rightX:cx+g/2,y:405,waterY:525,leftAnchor:{x:cx-g/2,y:395},rightAnchor:{x:cx+g/2,y:395}}}
+function showToast(msg){el.toast.textContent=msg;el.toast.classList.add("show");clearTimeout(S.toastTimer);S.toastTimer=setTimeout(function(){el.toast.classList.remove("show")},1250)}
+function showHint(msg,fade){clearTimeout(S.hintTimer);el.hint.textContent=msg;el.hint.classList.remove("fade");if(fade!==false)S.hintTimer=setTimeout(function(){el.hint.classList.add("fade")},2400)}
+function updateInk(){var r=clamp(S.ink/level().ink,0,1);el.inkBar.style.width=Math.round(r*100)+"%";el.inkText.textContent=Math.round(r*100)+"%"}
+function resetLevel(){S.mode="build";S.nodes=[];S.edges=[];S.strokes=[];S.drawing=false;S.current=null;S.ink=level().ink;S.vehicle=null;S.snapshot=null;S.broken=0;el.result.classList.add("hidden");el.stageTitle.textContent=level().title;el.stageGoal.textContent=level().goal;var v=VEHICLES[level().vehicle];el.vehicle.textContent=v.emoji+" "+v.label;el.test.textContent="▶ 시험 운행";updateInk();showHint(level().goal)}
+function pointFromEvent(e){var r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function makeNode(x,y,pinned){var n={x:x,y:y,px:x,py:y,pinned:!!pinned};S.nodes.push(n);return n}
+function makeEdge(a,b){if(a===b)return null;var e={a:a,b:b,rest:Math.max(2,dist(a,b)),broken:false,strain:1};S.edges.push(e);return e}
+function nearestNode(p,radius,exclude){var best=null,bd=radius;for(var i=0;i<S.nodes.length;i++){var n=S.nodes[i];if(n===exclude)continue;var d=Math.hypot(n.x-p.x,n.y-p.y);if(d<bd){bd=d;best=n}}return best}
+function anchorNear(p){var b=banks(),r=48;if(Math.hypot(p.x-b.leftAnchor.x,p.y-b.leftAnchor.y)<r)return b.leftAnchor;if(Math.hypot(p.x-b.rightAnchor.x,p.y-b.rightAnchor.y)<r)return b.rightAnchor;return null}
+function startStroke(p){if(S.mode!=="build")return;if(S.ink<=2){showToast("남은 선이 없어요");return}var near=nearestNode(p,24,null),a=anchorNear(p),start,created=[];if(near)start=near;else if(a){start=makeNode(a.x,a.y,true);created.push(start)}else{start=makeNode(p.x,p.y,false);created.push(start)}S.current={nodes:[start],edges:[],created:created,used:0};S.drawing=true}
+function extendStroke(p){if(!S.drawing||!S.current||S.ink<=0)return;var last=S.current.nodes[S.current.nodes.length-1],d=Math.hypot(p.x-last.x,p.y-last.y);if(d<15)return;var use=Math.min(d,S.ink),t=use/d,nx=last.x+(p.x-last.x)*t,ny=last.y+(p.y-last.y)*t;var n=makeNode(nx,ny,false),e=makeEdge(last,n);S.current.nodes.push(n);S.current.created.push(n);if(e)S.current.edges.push(e);S.current.used+=use;S.ink-=use;updateInk()}
+function replaceNode(oldNode,newNode){for(var i=0;i<S.edges.length;i++){if(S.edges[i].a===oldNode)S.edges[i].a=newNode;if(S.edges[i].b===oldNode)S.edges[i].b=newNode}}
+function endStroke(){if(!S.drawing||!S.current)return;S.drawing=false;var st=S.current;S.current=null;if(st.nodes.length<2){removeStrokeObjects(st);return}var last=st.nodes[st.nodes.length-1],a=anchorNear(last),near=nearestNode(last,28,last);if(a){last.x=a.x;last.y=a.y;last.px=a.x;last.py=a.y;last.pinned=true}else if(near){replaceNode(last,near);S.nodes=S.nodes.filter(function(n){return n!==last});st.created=st.created.filter(function(n){return n!==last});st.nodes[st.nodes.length-1]=near}S.strokes.push(st);showHint(S.strokes.length===1?"좋아요! 바로 시험해도 돼요. 더 받쳐도 좋아요.":level().tip)}
+function removeStrokeObjects(st){if(!st)return;var edgeSet=new Set(st.edges),nodeSet=new Set(st.created);S.edges=S.edges.filter(function(e){return !edgeSet.has(e)});var usedByOther=new Set();for(var i=0;i<S.edges.length;i++){usedByOther.add(S.edges[i].a);usedByOther.add(S.edges[i].b)}S.nodes=S.nodes.filter(function(n){return !nodeSet.has(n)||usedByOther.has(n)});S.ink=Math.min(level().ink,S.ink+(st.used||0));updateInk()}
+function undo(){if(S.mode!=="build")return;var st=S.strokes.pop();if(!st){showToast("되돌릴 선이 없어요");return}removeStrokeObjects(st);showToast("마지막 선을 되돌렸어요")}
+function clearAll(){if(S.mode!=="build")return;S.nodes=[];S.edges=[];S.strokes=[];S.ink=level().ink;updateInk();showHint("노란 점 사이를 다시 그려 보세요")}
+function hasPinnedSide(side){var b=banks(),x=side==="left"?b.leftAnchor.x:b.rightAnchor.x;return S.nodes.some(function(n){return n.pinned&&Math.abs(n.x-x)<3})}
+function saveSnapshot(){S.snapshot={nodes:S.nodes.map(function(n){return{n:n,x:n.x,y:n.y,px:n.px,py:n.py}}),edges:S.edges.map(function(e){return{e:e}})}}
+function restoreSnapshot(){if(!S.snapshot)return;S.snapshot.nodes.forEach(function(s){s.n.x=s.x;s.n.y=s.y;s.n.px=s.px;s.n.py=s.py});S.snapshot.edges.forEach(function(s){s.e.broken=false;s.e.strain=1});S.broken=0}
+function startTest(){if(S.mode==="run")return;if(!S.edges.length){showToast("먼저 다리를 그려 보세요");return}if(!hasPinnedSide("left")||!hasPinnedSide("right")){showToast("양쪽 노란 점에 다리를 붙여 주세요");return}saveSnapshot();S.mode="run";S.broken=0;var b=banks(),v=VEHICLES[level().vehicle];S.vehicle={x:b.leftX-54,y:b.y-24,vy:0,w:54,h:26,speed:v.speed,mass:v.mass};el.test.textContent="시험 중…";showHint("잘 버티나 볼까요?",false);try{window.KidscadeGame?.start?.({level:S.level+1})}catch(_){}}
+function fail(msg){if(S.mode!=="run")return;S.mode="build";S.vehicle=null;restoreSnapshot();el.test.textContent="▶ 다시 시험";showToast(msg);showHint(level().tip);try{window.KidscadeGame?.sound?.("wrong")}catch(_){}}
+function succeed(){if(S.mode!=="run")return;S.mode="end";var used=level().ink-S.ink,ratio=used/level().ink,stars=ratio<.62?3:ratio<.82?2:1;el.resultIcon.textContent="🏆";el.resultTitle.textContent="통과 성공!";el.resultText.textContent=stars===3?"선도 아끼고 튼튼하게 만들었어요!":"차가 무사히 건넜어요. 더 적은 선으로도 도전해 보세요.";el.stars.textContent="★".repeat(stars)+"☆".repeat(3-stars);el.result.classList.remove("hidden");try{window.KidscadeGame?.score?.((S.level+1)*100+stars*10)}catch(_){}}
+function supportAt(x){var b=banks(),best=null,bestY=Infinity;if(x<=b.leftX||x>=b.rightX)return{y:b.y,edge:null,t:0};for(var i=0;i<S.edges.length;i++){var e=S.edges[i];if(e.broken)continue;var ax=e.a.x,bx=e.b.x,min=Math.min(ax,bx),max=Math.max(ax,bx);if(x<min||x>max||max-min<2)continue;var t=(x-ax)/(bx-ax);if(t<0||t>1)continue;var y=e.a.y+(e.b.y-e.a.y)*t;if(y<bestY){bestY=y;best={y:y,edge:e,t:t}}}return best}
+function physics(dt){if(S.mode!=="run")return;var L=level(),g=L.gravity,wind=L.wind||0,v=S.vehicle;for(var i=0;i<S.nodes.length;i++){var n=S.nodes[i];if(n.pinned)continue;var vx=(n.x-n.px)*.992+wind*Math.sin((performance.now()+i*137)/650),vy=(n.y-n.py)*.992+g*dt*60;n.px=n.x;n.py=n.y;n.x+=vx;n.y+=vy}for(var iter=0;iter<7;iter++){for(var j=0;j<S.edges.length;j++){var e=S.edges[j];if(e.broken)continue;var dx=e.b.x-e.a.x,dy=e.b.y-e.a.y,len=Math.hypot(dx,dy)||.001;e.strain=len/e.rest;if(e.strain>L.breakRatio){e.broken=true;S.broken++;continue}var diff=(len-e.rest)/len,ox=dx*.5*diff,oy=dy*.5*diff;if(!e.a.pinned){e.a.x+=ox;e.a.y+=oy}if(!e.b.pinned){e.b.x-=ox;e.b.y-=oy}}}if(v){var sup=supportAt(v.x),bottom=v.y+v.h/2;if(sup&&bottom>=sup.y-10&&v.vy>=0){v.y=sup.y-v.h/2;v.vy=0;v.x+=v.speed*dt;if(sup.edge){var push=18*v.mass*dt,ee=sup.edge;if(!ee.a.pinned)ee.a.y+=push*(1-sup.t);if(!ee.b.pinned)ee.b.y+=push*sup.t}}else{v.vy+=820*dt;v.y+=v.vy*dt}var b=banks();if(v.x>b.rightX+58){succeed();return}if(v.y>b.waterY+100){fail(S.broken?"다리가 끊어졌어요. 아래쪽을 한 줄 더 받쳐 보세요.":"차가 빠졌어요. 다리의 빈 곳을 이어 보세요.");return}}}
+function drawCloud(x,y,s){ctx.fillStyle="rgba(255,255,255,.82)";ctx.beginPath();ctx.arc(x,y,24*s,0,TAU);ctx.arc(x+25*s,y-7*s,19*s,0,TAU);ctx.arc(x+49*s,y,23*s,0,TAU);ctx.fill()}
+function drawBackground(){var b=banks(),g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#8fd3ff");g.addColorStop(.68,"#e2f7ff");g.addColorStop(1,"#d8eef3");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);drawCloud(85,105,1);drawCloud(350,135,.86);drawCloud(675,100,1);drawCloud(980,130,.9);ctx.fillStyle="#7cab6f";ctx.beginPath();ctx.arc(390,470,150,Math.PI,0);ctx.arc(790,475,130,Math.PI,0);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();ctx.fillStyle="#7b5b42";ctx.fillRect(0,b.y,b.leftX,H-b.y);ctx.fillRect(b.rightX,b.y,W-b.rightX,H-b.y);ctx.fillStyle="#5eb45f";ctx.fillRect(0,b.y-10,b.leftX,10);ctx.fillRect(b.rightX,b.y-10,W-b.rightX,10);ctx.fillStyle="#2b9be8";ctx.fillRect(b.leftX,b.waterY,b.rightX-b.leftX,H-b.waterY);ctx.strokeStyle="rgba(255,255,255,.42)";ctx.lineWidth=2;for(var yy=b.waterY+15;yy<H;yy+=17){ctx.beginPath();ctx.moveTo(b.leftX+5,yy);for(var xx=b.leftX+5;xx<b.rightX-10;xx+=30)ctx.quadraticCurveTo(xx+10,yy-5,xx+21,yy);ctx.stroke()}drawAnchor(b.leftAnchor);drawAnchor(b.rightAnchor)}
+function drawAnchor(a){ctx.fillStyle="#3d4b5e";ctx.fillRect(a.x-18,a.y,36,22);ctx.fillStyle="#ffd34e";ctx.strokeStyle="#806300";ctx.lineWidth=3;ctx.beginPath();ctx.arc(a.x,a.y,9,0,TAU);ctx.fill();ctx.stroke()}
+function drawBridge(){for(var i=0;i<S.edges.length;i++){var e=S.edges[i],strain=e.strain||1;if(e.broken){ctx.strokeStyle="rgba(255,92,109,.35)";ctx.setLineDash([8,7]);ctx.lineWidth=5}else{ctx.setLineDash([]);ctx.strokeStyle=strain<1.06?"#56697f":strain<1.11?"#5caeff":"#ffb44e";ctx.lineWidth=8}ctx.lineCap="round";ctx.beginPath();ctx.moveTo(e.a.x,e.a.y);ctx.lineTo(e.b.x,e.b.y);ctx.stroke();ctx.setLineDash([])}for(var j=0;j<S.nodes.length;j++){var n=S.nodes[j];ctx.fillStyle=n.pinned?"#ffd34e":"#41566e";ctx.beginPath();ctx.arc(n.x,n.y,n.pinned?6:3.2,0,TAU);ctx.fill()}}
+function drawVehicle(){var v=S.vehicle;if(!v)return;ctx.save();ctx.translate(v.x,v.y);ctx.fillStyle="#ef4f55";ctx.fillRect(-v.w/2,-v.h/2,v.w,v.h);ctx.fillStyle="#dbeafe";ctx.fillRect(-8,-v.h/2-9,18,10);ctx.fillStyle="#152033";ctx.beginPath();ctx.arc(-17,v.h/2,8,0,TAU);ctx.arc(17,v.h/2,8,0,TAU);ctx.fill();ctx.restore()}
+function fitCanvas(){var wrap=canvas.parentElement,r=wrap.getBoundingClientRect(),scale=Math.min(r.width/W,r.height/H);canvas.style.width=Math.floor(W*scale)+"px";canvas.style.height=Math.floor(H*scale)+"px"}
+function render(){ctx.clearRect(0,0,W,H);drawBackground();drawBridge();drawVehicle()}
+function tick(now){var dt=Math.min(.033,Math.max(.001,(now-S.last)/1000));S.last=now;physics(dt);render();requestAnimationFrame(tick)}
+function changeLevel(d){if(S.mode==="run")return;S.level=(S.level+d+LEVELS.length)%LEVELS.length;resetLevel()}
+canvas.addEventListener("pointerdown",function(e){e.preventDefault();if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);startStroke(pointFromEvent(e))});
+canvas.addEventListener("pointermove",function(e){if(!S.drawing)return;e.preventDefault();extendStroke(pointFromEvent(e))});
+["pointerup","pointercancel","lostpointercapture"].forEach(function(type){canvas.addEventListener(type,function(e){if(S.drawing){e.preventDefault();endStroke()}})});
+el.test.addEventListener("click",startTest);el.undo.addEventListener("click",undo);el.reset.addEventListener("click",clearAll);el.retry.addEventListener("click",resetLevel);
+el.cont.addEventListener("click",function(){S.level=(S.level+1)%LEVELS.length;resetLevel()});el.prev.addEventListener("click",function(){changeLevel(-1)});el.next.addEventListener("click",function(){changeLevel(1)});
+el.help.addEventListener("click",function(){el.tutorial.classList.remove("hidden")});el.tutorialClose.addEventListener("click",function(){el.tutorial.classList.add("hidden");try{localStorage.setItem("kidscade_bridge_scribble_help_v1","1")}catch(_){}});
+window.addEventListener("resize",fitCanvas);try{window.KidscadeGame?.registerPauseHandlers?.({pause:function(){},resume:function(){S.last=performance.now()}})}catch(_){}
+resetLevel();fitCanvas();var seen=false;try{seen=localStorage.getItem("kidscade_bridge_scribble_help_v1")==="1"}catch(_){}if(!seen)el.tutorial.classList.remove("hidden");requestAnimationFrame(tick);
 })();
