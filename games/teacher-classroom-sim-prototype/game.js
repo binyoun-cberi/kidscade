@@ -7,7 +7,7 @@
   var q=function(s){return document.querySelector(s)};
   var qa=function(s){return Array.from(document.querySelectorAll(s))};
   var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
-  var SAVE_KEY='kidscade.teacherDesk.v43';
+  var SAVE_KEY='kidscade.teacherDesk.v44';
 
   var students={
     minsu:{name:'민수',tone:'orange',icon:'🧒',base:'장난을 좋아하고 말보다 행동이 먼저 나오는 편',known:[]},
@@ -50,7 +50,9 @@
     {id:'library_overdue',title:'도서관 연체 학생 확인',source:'도서관',availableAt:824,due:878,duration:3,detail:'도서관에서 온 목록과 학생 이름을 대조한다.',requiredDocs:['library_memo'],review:{prompt:'현재 반에서 연체 도서가 있는 학생은?',options:['태호','민수','지우'],correct:1}},
     {id:'aftercare_change',title:'돌봄·하교 변경 최종 확인',source:'하교',availableAt:856,due:912,duration:4,detail:'오후에 들어온 하교 변경과 돌봄 명단을 마지막으로 맞춘다.',requiredDocs:['aftercare_sheet','dismissal_notes'],review:{prompt:'오늘 평소 하교 방식과 다른 학생은?',options:['태호','민수','아린'],correct:0}},
     {id:'tomorrow_notice',title:'내일 학년 공지 확인',source:'학년 메신저',availableAt:895,due:952,duration:3,detail:'내일 일정 변경과 준비물을 확인해 필요한 내용을 메모한다.',requiredDocs:['tomorrow_memo']},
-    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:910,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
+    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:910,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'},
+    {id:'record_close',title:'오늘 학생 기록 마감',source:'기록철',availableAt:932,due:980,duration:4,detail:'기록 대기 항목을 확인하고 오늘 남길 내용은 오늘 안에 정리한다.',requiresNoDrafts:true},
+    {id:'photo_roster_send',title:'내일 촬영 명단 제출',source:'학년',availableAt:945,due:985,duration:3,detail:'내일 촬영 시간과 미동의 학생을 다시 대조해 최종 명단을 보낸다.',requiredDocs:['consent_forms','tomorrow_memo'],review:{prompt:'최종 명단에서 촬영 미동의 학생은?',options:['아린','태호','지우'],correct:0}}
   ];
 
   var documentDefs=[
@@ -186,6 +188,15 @@
       actions:[
         {id:'details',label:'어떤 장면이었는지 조금 더 듣는다',cost:2},
         {id:'thanks',label:'알려줘서 고맙다고 하고 메모해둔다',cost:1}
+      ]
+    },
+    {
+      id:'grade_lead_end',type:'visitor',at:956,deadline:966,role:'동료 교사',name:'학년부장',
+      stage:'퇴근 시간이 가까워질 무렵 학년부장이 문 앞에서 다시 확인했다.',
+      dialogue:'내일 사진 촬영 최종 명단 아직 안 왔어요. 미동의 학생 확인하고 오늘 안에 보내주세요.',
+      actions:[
+        {id:'send_now',label:'촬영 동의서와 내일 공지를 대조해 바로 보낸다',cost:3},
+        {id:'computer_later',label:'컴퓨터에서 곧 보내겠다고 한다',cost:.5}
       ]
     },
     {
@@ -745,6 +756,15 @@
     if(key==='art_spill:student_clean'){
       out={title:'두 학생이 바닥을 정리하기 시작했다.',text:'수업은 계속됐지만 재료 수량과 정확한 경위는 확인하지 않았다.'};
     }
+    if(key==='grade_lead_end:send_now'){
+      state.checkedDocs.consent_forms=true;state.checkedDocs.tomorrow_memo=true;
+      state.taskStatus.photo_roster_send='done';
+      out={title:'자료 두 개를 대조해 최종 명단을 바로 보냈다.',text:'아린은 촬영 미동의로 제외하고 변경된 촬영 시간까지 확인했다.'};
+    }
+    if(key==='grade_lead_end:computer_later'){
+      out={title:'학년부장은 알겠다고 하고 돌아갔다.',text:'대화는 빨리 끝났지만 촬영 명단 제출 마감은 그대로 남아 있다.'};
+    }
+
     if(key==='late_message:check_tomorrow'){
       state.checkedDocs.tomorrow_memo=true;state.checkedDocs.consent_forms=true;
       out={title:'내일 일정과 촬영 동의 명단을 같이 확인했다.',text:'아린은 촬영 미동의이고 내일 사진 촬영 시간이 바뀌었다는 점을 한 번에 확인했다.'};
@@ -863,6 +883,9 @@
     }
     if(!taskAnswerReady(t)){
       toast('입력할 내용을 먼저 고르세요.',t.review.prompt,true);return;
+    }
+    if(t.requiresNoDrafts&&state.recordDrafts.length){
+      toast('기록 대기 항목이 남아 있습니다.',state.recordDrafts.length+'건을 기록하거나 정리해야 합니다.',true);return;
     }
     consumeMinutes(t.duration,t.title);
     if(t.review&&state.taskAnswers[id]!==taskCorrectIndex(t)){
