@@ -6,6 +6,12 @@ const STRICT = process.argv.includes('--strict');
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist']);
 const ALLOWED_AGES = new Set(['toddler', 'low', 'high', 'job']);
 const ALLOWED_CATEGORIES = new Set(['math', 'korean', 'lang', 'trivia', 'music', 'job']);
+const ALLOWED_SUBJECTS = new Set(['math', 'korean', 'language', 'social', 'science', 'arts', 'career', 'thinking']);
+const ALLOWED_GENRES = new Set(['action', 'puzzle', 'strategy', 'simulation', 'management', 'quiz', 'rhythm', 'sports', 'sandbox']);
+const ALLOWED_DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
+const ALLOWED_PLAYERS = new Set(['solo', 'local2', 'localMulti', 'online', 'classroom']);
+const ALLOWED_INPUTS = new Set(['touch', 'keyboard']);
+const ALLOWED_QUALITY = new Set(['featured', 'standard', 'rework']);
 
 function readJson(rel) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
@@ -78,6 +84,13 @@ for (const game of effective) {
 
   if (!ALLOWED_AGES.has(String(game.age || ''))) errors.push(`unknown age: ${id} -> ${game.age}`);
   if (!ALLOWED_CATEGORIES.has(String(game.category || ''))) errors.push(`unknown category: ${id} -> ${game.category}`);
+  if (!ALLOWED_SUBJECTS.has(String(game.subject || ''))) errors.push(`unknown subject: ${id} -> ${game.subject}`);
+  if (!ALLOWED_GENRES.has(String(game.genre || ''))) errors.push(`unknown genre: ${id} -> ${game.genre}`);
+  if (!ALLOWED_DIFFICULTIES.has(String(game.difficulty || ''))) errors.push(`unknown difficulty: ${id} -> ${game.difficulty}`);
+  if (!Number.isFinite(Number(game.sessionMinutes)) || Number(game.sessionMinutes) < 1) errors.push(`invalid sessionMinutes: ${id} -> ${game.sessionMinutes}`);
+  if (!Array.isArray(game.players) || !game.players.length || game.players.some(value => !ALLOWED_PLAYERS.has(value))) errors.push(`invalid players: ${id} -> ${JSON.stringify(game.players)}`);
+  if (!Array.isArray(game.input) || !game.input.length || game.input.some(value => !ALLOWED_INPUTS.has(value))) errors.push(`invalid input: ${id} -> ${JSON.stringify(game.input)}`);
+  if (!ALLOWED_QUALITY.has(String(game.qualityStatus || ''))) errors.push(`invalid qualityStatus: ${id} -> ${game.qualityStatus}`);
 }
 
 const files = walk();
@@ -115,7 +128,10 @@ if (technicalDescriptions.length) warnings.push(`player-facing descriptions with
 console.log('Kidscade platform health');
 console.log(`- catalog games: ${games.length} (enabled ${effective.filter(game => !game.disabled).length})`);
 console.log(`- age distribution: ${JSON.stringify(countBy(effective, 'age'))}`);
-console.log(`- category distribution (effective): ${JSON.stringify(countBy(effective, 'category'))}`);
+console.log(`- category distribution (legacy): ${JSON.stringify(countBy(effective, 'category'))}`);
+console.log(`- subject distribution: ${JSON.stringify(countBy(effective, 'subject'))}`);
+console.log(`- genre distribution: ${JSON.stringify(countBy(effective, 'genre'))}`);
+console.log(`- quality distribution: ${JSON.stringify(countBy(effective, 'qualityStatus'))}`);
 console.log(`- root HTML: ${rootHtml.length}`);
 console.log(`- root JS: ${rootJs.length}`);
 console.log(`- legacy catalog entry paths: ${legacyEntries.length}`);
