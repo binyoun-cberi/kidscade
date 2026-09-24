@@ -118,7 +118,7 @@ function create(opts){
     var quality=atk.rating.attack-def.rating.defense+(stat(shooter.p,'shot')-70)*.28;
     var shotChance=clamp(.66+quality/210,.48,.83);
     if(Math.random()>shotChance){emit('chance',displayName(shooter)+'의 공격이 수비에 막혔어요.',m.possession,shooter);return;}
-    var goalP=clamp(.055+quality/900,0.025,.145);
+    var goalP=clamp(.145+quality/650,0.075,.27);
     if(atk.tactics.mindset==='attack')goalP+=.012;
     if(def.tactics.mindset==='defend')goalP-=.009;
     if(Math.random()<goalP){
