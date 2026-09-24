@@ -4,69 +4,94 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>내 몸아 움직여! 뼈·근육 실험실</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div id="app">
-  <header class="topbar">
-    <div class="brand"><span class="brand-icon">🦴</span><div><strong>내 몸아 움직여!</strong><small>뼈·근육 실험실</small></div></div>
-    <div class="mission-head"><span id="missionStep">1 / 8</span><div><b id="missionTitle">팔을 굽혀 보세요</b><small id="missionGoal">Q를 눌러 손을 목표선까지 올려 보세요.</small></div></div>
-    <div class="top-actions"><button id="xrayBtn" class="pill" type="button" aria-pressed="false">🩻 뼈·근육 보기</button><button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button></div>
+  <header class="mission-bar">
+    <div class="mission-compact">
+      <span id="missionStep">1 / 8</span>
+      <b id="missionTitle">팔을 굽혀 보세요</b>
+    </div>
+    <button id="helpBtn" class="mini-action" type="button" aria-label="도움말">?</button>
   </header>
 
-  <main class="layout">
-    <section class="lab-stage">
-      <div class="status-row">
-        <div class="status-chip"><span>지금 작동</span><b id="activeMuscle">쉬는 중</b></div>
-        <div class="status-chip"><span id="measureLabel">팔꿈치</span><b id="measureText">0°</b></div>
-        <div class="status-chip"><span id="stateLabel">관절 상태</span><b id="jointText">편안함</b></div>
-        <div class="status-chip progress-chip"><span>목표</span><b id="goalText">팔을 굽혀 보세요</b></div>
-      </div>
+  <main class="game-layout">
+    <section class="play-stage">
       <div class="canvas-wrap">
         <canvas id="game" width="960" height="560" aria-label="뼈와 근육을 직접 조종하는 과학 실험 게임"></canvas>
+
+        <button id="xrayBtn" class="xray-fab" type="button" aria-pressed="false" aria-label="뼈와 근육 보기">🩻</button>
+
+        <div id="floatingHint" class="floating-hint" aria-live="polite">Q를 눌러 팔을 굽혀 보세요.</div>
+
+        <div id="miniHud" class="mini-hud hidden" aria-live="polite">
+          <b id="miniMetric">팔꿈치 0°</b>
+          <span id="miniState"></span>
+        </div>
+
+        <div id="assistBox" class="assist-pill hidden">
+          <span>균형 보조</span>
+          <b id="assistText">70%</b>
+          <i><span id="assistBar"></span></i>
+        </div>
+
         <div id="toast" class="toast" aria-live="polite"></div>
+
         <div id="missionCard" class="result-card hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
           <div class="result-icon" id="resultIcon">🔬</div>
-          <span class="eyebrow">관찰 결과</span>
           <h2 id="resultTitle">성공!</h2>
           <p id="resultText"></p>
-          <div class="science-note"><b id="scienceTitle">왜 움직였을까요?</b><p id="scienceText"></p></div>
+          <div class="science-note">
+            <b id="scienceTitle">왜 움직였을까요?</b>
+            <p id="scienceText"></p>
+          </div>
           <button id="nextBtn" class="primary" type="button">다음 실험</button>
         </div>
       </div>
     </section>
 
-    <aside class="control-panel">
-      <div class="panel-heading"><b id="controllerTitle">근육 조종기</b><span id="controllerHelp">누르는 동안 근육이 수축해요.</span></div>
+    <aside class="controls-panel">
       <div class="controls" id="controls">
-        <button class="muscle-key" data-key="q" type="button"><kbd>Q</kbd><div><b>위팔 앞쪽</b><small>팔꿈치를 굽혀요</small></div><i><span></span></i></button>
-        <button class="muscle-key" data-key="w" type="button"><kbd>W</kbd><div><b>위팔 뒤쪽</b><small>팔꿈치를 펴요</small></div><i><span></span></i></button>
-        <button class="muscle-key" data-key="e" type="button"><kbd>E</kbd><div><b>어깨 근육</b><small>팔 전체를 들어요</small></div><i><span></span></i></button>
-        <button class="muscle-key" data-key="r" type="button"><kbd>R</kbd><div><b>손 근육</b><small>물건을 잡아요</small></div><i><span></span></i></button>
+        <button class="muscle-key" data-key="q" type="button">
+          <kbd>Q</kbd><b>위팔 앞쪽</b><small>팔꿈치를 굽혀요</small><i><span></span></i>
+        </button>
+        <button class="muscle-key" data-key="w" type="button">
+          <kbd>W</kbd><b>위팔 뒤쪽</b><small>팔꿈치를 펴요</small><i><span></span></i>
+        </button>
+        <button class="muscle-key" data-key="e" type="button">
+          <kbd>E</kbd><b>어깨</b><small>팔 전체를 들어요</small><i><span></span></i>
+        </button>
+        <button class="muscle-key" data-key="r" type="button">
+          <kbd>R</kbd><b>손</b><small>물건을 잡아요</small><i><span></span></i>
+        </button>
       </div>
-      <div class="assist-box hidden" id="assistBox"><div><b>균형 보조</b><span id="assistText">70%</span></div><div class="assist-track"><i id="assistBar"></i></div><small>뒤에서 살짝 도와주지만, 뒤로 갈수록 보조가 줄어요.</small></div>
-      <div class="hint-box"><b>실험 팁</b><p id="hintText">Q와 W는 서로 반대 방향으로 팔꿈치를 움직여요.</p></div>
-      <button id="resetBtn" class="secondary" type="button">↻ 현재 실험 다시 하기</button>
+      <button id="resetBtn" class="reset-compact" type="button">↻ 다시</button>
     </aside>
   </main>
+
+  <div class="hidden-telemetry" aria-hidden="true">
+    <span id="missionGoal"></span><span id="activeMuscle"></span>
+    <span id="measureLabel"></span><span id="measureText"></span>
+    <span id="stateLabel"></span><span id="jointText"></span>
+    <span id="goalText"></span><span id="hintText"></span>
+    <span id="controllerTitle"></span><span id="controllerHelp"></span>
+  </div>
 </div>
 
 <div id="tutorial" class="overlay hidden">
   <div class="dialog">
-    <span class="eyebrow">30초 사용법</span>
-    <h1>근육을 직접 움직여 보세요</h1>
-    <div class="tutorial-body">
-      <div><span>Q</span><p>처음에는 <b>위팔 앞쪽 근육</b>처럼 한 부위씩 움직여요.</p></div>
-      <div><span>W</span><p>반대쪽 근육을 쓰면 관절이 <b>반대 방향</b>으로 움직여요.</p></div>
-      <div><span>E</span><p>뒤로 가면 어깨·허벅지·종아리처럼 <b>여러 근육</b>을 함께 써요.</p></div>
-      <div><span>R</span><p>걷기와 운반에서는 타이밍이 어긋나면 몸이 <b>휘청</b>거려요.</p></div>
+    <span class="eyebrow">처음 한 번만</span>
+    <h1>Q W E R로 몸을 움직여요</h1>
+    <div class="tutorial-keys">
+      <span>Q</span><span>W</span><span>E</span><span>R</span>
     </div>
-    <p class="tutorial-note">키보드가 없어도 오른쪽 버튼을 손가락으로 꾹 누르면 돼요. 4번째 실험부터는 전신이 등장하고, 넘어져도 가까운 곳에서 바로 다시 시작해요.</p>
-    <button id="tutorialStart" class="primary wide" type="button">실험 시작!</button>
+    <p>버튼을 누르고 있는 동안 해당 근육이 힘을 써요. 미션마다 버튼의 역할이 바뀌며, 4번째부터는 전신을 조종합니다.</p>
+    <button id="tutorialStart" class="primary wide" type="button">바로 해보기</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="game.js?v=2"></script>
+<script src="game.js?v=3"></script>
 </body>
 </html>
