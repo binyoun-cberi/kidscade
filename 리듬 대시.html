@@ -871,5 +871,6 @@ document.getElementById('btnToLevels').onclick = () => { changeState('LEVEL_SELE
 document.getElementById('btnResetData').onclick = () => { if (confirm('모든 기록과 해금 상태가 초기화됩니다. 계속하시겠습니까?')) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(HEART_STORAGE_KEY); gameData = { unlockedLevels: [1], highScores: {} }; heartData = { hearts: MAX_HEARTS, lastRefillAt: Date.now() }; saveHeartData(); updateHeartUI(); alert('초기화 되었습니다.'); renderLevelSelect(); } };
 changeState('MENU'); renderRhythmHud();
 </script>
+<script src="rhythm-dash-v11.js?v=20260916-1"></script>
 </body>
 </html>
