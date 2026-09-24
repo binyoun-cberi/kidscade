@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>내 몸아 움직여! 뼈·근육 실험실</title>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">🦴</span><div><strong>내 몸아 움직여!</strong><small>뼈·근육 실험실</small></div></div>
+    <div class="mission-head"><span id="missionStep">1 / 3</span><div><b id="missionTitle">팔을 굽혀 보세요</b><small id="missionGoal">Q를 눌러 손을 목표선까지 올려 보세요.</small></div></div>
+    <div class="top-actions"><button id="xrayBtn" class="pill" type="button" aria-pressed="false">🩻 뼈·근육 보기</button><button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button></div>
+  </header>
+
+  <main class="layout">
+    <section class="lab-stage">
+      <div class="status-row">
+        <div class="status-chip"><span>지금 작동</span><b id="activeMuscle">쉬는 중</b></div>
+        <div class="status-chip"><span>팔꿈치</span><b id="elbowText">0°</b></div>
+        <div class="status-chip"><span>관절 상태</span><b id="jointText">편안함</b></div>
+        <div class="status-chip progress-chip"><span>목표</span><b id="goalText">팔을 굽혀 보세요</b></div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="game" width="960" height="560" aria-label="팔과 근육을 움직이는 과학 실험 게임"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+        <div id="missionCard" class="result-card hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+          <div class="result-icon" id="resultIcon">🔬</div>
+          <span class="eyebrow">관찰 결과</span>
+          <h2 id="resultTitle">성공!</h2>
+          <p id="resultText"></p>
+          <div class="science-note"><b id="scienceTitle">왜 움직였을까요?</b><p id="scienceText"></p></div>
+          <button id="nextBtn" class="primary" type="button">다음 실험</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="control-panel">
+      <div class="panel-heading"><b>근육 조종기</b><span>누르는 동안 근육이 수축해요.</span></div>
+      <div class="controls" id="controls">
+        <button class="muscle-key" data-key="q" type="button"><kbd>Q</kbd><div><b>위팔 앞쪽</b><small>팔꿈치를 굽혀요</small></div><i><span></span></i></button>
+        <button class="muscle-key" data-key="w" type="button"><kbd>W</kbd><div><b>위팔 뒤쪽</b><small>팔꿈치를 펴요</small></div><i><span></span></i></button>
+        <button class="muscle-key" data-key="e" type="button"><kbd>E</kbd><div><b>어깨 근육</b><small>팔 전체를 들어요</small></div><i><span></span></i></button>
+        <button class="muscle-key" data-key="r" type="button"><kbd>R</kbd><div><b>손 근육</b><small>물건을 잡아요</small></div><i><span></span></i></button>
+      </div>
+      <div class="hint-box"><b>실험 팁</b><p id="hintText">Q와 W는 서로 반대 방향으로 팔꿈치를 움직여요.</p></div>
+      <button id="resetBtn" class="secondary" type="button">↻ 현재 실험 다시 하기</button>
+    </aside>
+  </main>
+</div>
+
+<div id="tutorial" class="overlay hidden">
+  <div class="dialog">
+    <span class="eyebrow">30초 사용법</span>
+    <h1>근육을 직접 움직여 보세요</h1>
+    <div class="tutorial-body">
+      <div><span>Q</span><p><b>위팔 앞쪽 근육</b>이 수축해 팔꿈치를 굽혀요.</p></div>
+      <div><span>W</span><p><b>위팔 뒤쪽 근육</b>이 수축해 팔꿈치를 펴요.</p></div>
+      <div><span>E</span><p><b>어깨 근육</b>으로 팔 전체를 들어 올려요.</p></div>
+      <div><span>R</span><p>손이 물건 가까이에 있을 때 <b>잡고 있는 동안</b> 물건을 붙잡아요.</p></div>
+    </div>
+    <p class="tutorial-note">키보드가 없어도 오른쪽 버튼을 손가락으로 꾹 누르면 돼요. 넘어지는 대신 팔이 엉뚱한 곳으로 가는 것이 이 실험의 재미예요.</p>
+    <button id="tutorialStart" class="primary wide" type="button">실험 시작!</button>
+  </div>
+</div>
+
+<script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+<script src="game.js?v=1"></script>
+</body>
+</html>
