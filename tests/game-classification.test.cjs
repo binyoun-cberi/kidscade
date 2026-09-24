@@ -21,6 +21,7 @@ const reviewedAges = {
   toddler_monkey_vines: 'toddler',
   toddler_penguin_ice_pop: 'toddler',
   toddler_color_stack: 'toddler',
+  toddler_traditional_play_yard: 'toddler',
   toddler_three_friends_set: 'low',
   high_omok_arena: 'high',
   sim_mosquito: 'high',
