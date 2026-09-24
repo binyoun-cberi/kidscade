@@ -208,3 +208,61 @@ test('close always clears stale session state even when reward persistence throw
   assert.ok(result.error instanceof Error);
   assert.deepEqual(calls.slice(-3), ['reset', 'badges', 'after-close']);
 });
+
+
+test('deferred start screen does not consume energy or start playtime before Start is pressed', () => {
+  const card = makeCard();
+  let consumed = 0;
+  let started = 0;
+  let remembered = 0;
+  let payload = null;
+
+  const result = launcher.open({
+    target: { classList: makeClassList() },
+    preventDefault() {}
+  }, card, {
+    deferLaunch: true,
+    getGame: () => ({
+      id:'demo', title:'데모 게임', href:'demo.html', category:'math',
+      input:['touch'], sessionMinutes:5, difficulty:'easy', players:['solo']
+    }),
+    getCard: () => card,
+    consumePlayTicket: () => { consumed++; return true; },
+    now: () => 4000,
+    getPlayState: () => ({ plays:4 }),
+    playLimitMax: 5,
+    startSession: () => { started++; },
+    remember: () => { remembered++; },
+    openModal: value => { payload = value; }
+  });
+
+  assert.equal(result.opened, true);
+  assert.equal(result.pending, true);
+  assert.equal(result.session, null);
+  assert.equal(consumed, 0);
+  assert.equal(started, 0);
+  assert.equal(remembered, 0);
+  assert.equal(typeof payload.onStart, 'function');
+
+  const session = payload.onStart();
+  assert.equal(consumed, 1);
+  assert.equal(started, 1);
+  assert.equal(remembered, 1);
+  assert.equal(session.startedAt, 4000);
+  assert.equal(session.hadBonus, true);
+
+  payload.onStart();
+  assert.equal(consumed, 1, 'start callback must be idempotent');
+  assert.equal(started, 1);
+});
+
+test('launcher blocks a second game while the common start screen is pending', () => {
+  const result = launcher.open({
+    target: { classList: makeClassList() },
+    preventDefault() {}
+  }, makeCard(), {
+    isLaunchPending: () => true
+  });
+  assert.equal(result.opened, false);
+  assert.equal(result.reason, 'launch-pending');
+});
