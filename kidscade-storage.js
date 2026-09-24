@@ -64,7 +64,9 @@
     topKingRecord: 'kidscade_top_king_record_v1',
     metroPlannerSave: 'kidscade_metro_planner_v1',
     disasterCityBestSeconds: 'kidscade_disaster_city_best_seconds',
-    folkloreNightSave: 'kidscade_folklore_night_v1'
+    folkloreNightSave: 'kidscade_folklore_night_v1',
+    bodyLabTutorialSeen: 'kidscade_body_lab_tutorial_v2',
+    bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
