@@ -229,3 +229,13 @@ test('migrated games obey every age, subject and search combination', () => {
     }
   }
 });
+
+
+test('bootstrap accepts Game SDK lifecycle messages only from the active iframe', () => {
+  const source = read('main-bootstrap.js');
+  assert.match(source, /event\.origin !== location\.origin/);
+  assert.match(source, /event\.source !== gameIframe\.contentWindow/);
+  assert.match(source, /kidscade:close-game/);
+  assert.match(source, /kidscade:game-event/);
+  assert.match(source, /new CustomEvent\('kidscade:game-event'/);
+});
