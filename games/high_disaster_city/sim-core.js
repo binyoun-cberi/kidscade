@@ -6,21 +6,19 @@ function rngStep(state){state.seed=(state.seed*1664525+1013904223)>>>0;return st
 function shuffle(state,list){for(let i=list.length-1;i>0;i--){const j=Math.floor(rngStep(state)*(i+1));[list[i],list[j]]=[list[j],list[i]]}return list}
 function sideOfX(x){return x<D.TOWN_X?'left':'right'}
 class Simulation{
- constructor(){
-  this.uid=1;this.listeners=[];this.reset();
- }
+ constructor(){this.uid=1;this.listeners=[];this.reset()}
  reset(){
   this.state={mode:'ready',paused:false,tutorial:false,tutorialStep:0,time:0,seed:1,money:320,food:28,population:14,stability:100,maxPopulation:14,
    slots:D.SLOT_X.map((x,i)=>({i,x,building:null})),deck:[],discard:[],hand:[],selectedUid:null,refreshCooldown:0,economyClock:0,growthClock:0,hungerClock:0,
-   disaster:null,next:{side:'left',type:'wildfire',in:16,visible:true},lastSide:'right',lastType:null,rewardChoices:[],effects:[],signals:[],
-   stats:{resolved:0,lost:0,placed:0,cardsPlayed:0}};
+   disasters:[],next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
+   stats:{resolved:0,lost:0,placed:0,replaced:0,upgraded:0,cardsPlayed:0,removed:0}};
  }
  on(fn){this.listeners.push(fn)}
  emit(kind,message,data){this.state.signals.push({kind,message,data})}
  start(opts={}){
   this.reset();const s=this.state;s.mode='playing';s.tutorial=!!opts.tutorial;s.seed=(opts.seed>>>0)||((Date.now()^Math.floor(performance.now()*1000))>>>0)||1;
   s.deck=shuffle(s,D.START_DECK.slice());this.drawToFive();s.next.type=rngStep(s)<.5?'wildfire':'flood';s.next.in=22+rngStep(s)*5;s.next.visible=true;
-  if(s.tutorial){s.tutorialStep=1;this.emit('tip','건설 카드를 누른 뒤 밝아지는 빈 땅을 눌러 보세요.')}
+  if(s.tutorial){s.tutorialStep=1;this.emit('tip','건설 카드를 누른 뒤 밝아지는 땅을 눌러 보세요.')}
   this.emit('start','도시 운영을 시작합니다.');
  }
  rand(){return rngStep(this.state)}
@@ -42,31 +40,55 @@ class Simulation{
  buildingCount(id,side){
   return this.state.slots.reduce((n,s)=>n+(s.building&&s.building.id===id&&(!side||sideOfX(s.x)===side)?1:0),0)
  }
- cityValue(){return this.state.slots.reduce((n,s)=>n+(s.building?D.BUILDINGS[s.building.id].cost:0),0)}
- pressure(){const t=this.state.time;const early=.52+.48*(1-Math.exp(-t/180));const late=Math.max(0,t-180)/720*.85;const city=this.cityValue()/9000;return clamp(early+late+city,.52,2.35)}
- capacity(){return 14+this.buildingCount('house')*6}
- canPlace(uid,slotIndex){
-  const c=this.cardDef(uid),slot=this.state.slots[slotIndex];return !!(c&&c.kind==='build'&&slot&&!slot.building&&this.canAfford(c.cost))
+ supportPower(id,side,progress=.5){
+  const frontX=side==='left'?70+progress*650:1370-progress*650;let power=0;
+  for(const slot of this.state.slots){const b=slot.building;if(!b||b.id!==id||sideOfX(slot.x)!==side)continue;
+   const level=b.level||1,dist=Math.abs(slot.x-frontX),weight=clamp(1.18-dist/850,.52,1.18);power+=level*weight;
+  }
+  return power
  }
+ cityValue(){return this.state.slots.reduce((n,s)=>n+(s.building?D.BUILDINGS[s.building.id].cost*(1+((s.building.level||1)-1)*.45):0),0)}
+ pressure(){const t=this.state.time;const early=.52+.48*(1-Math.exp(-t/180));const late=Math.max(0,t-180)/720*.85;const city=this.cityValue()/9000;return clamp(early+late+city,.52,2.35)}
+ capacity(){return 14+this.state.slots.reduce((n,s)=>n+(s.building?.id==='house'?6*(s.building.level||1):0),0)}
+ placementCost(uid,slotIndex){
+  const c=this.cardDef(uid),slot=this.state.slots[slotIndex];if(!c||c.kind!=='build'||!slot)return Infinity;
+  if(!slot.building)return c.cost;
+  const old=D.BUILDINGS[slot.building.id];if(slot.building.id===c.building){if((slot.building.level||1)>=3)return Infinity;return Math.max(10,Math.round(c.cost*(.58+.12*(slot.building.level||1))))}
+  return Math.max(10,Math.round(c.cost-old.cost*.25))
+ }
+ canPlace(uid,slotIndex){const cost=this.placementCost(uid,slotIndex);return Number.isFinite(cost)&&this.canAfford(cost)}
  placeSelected(slotIndex){
-  const s=this.state,uid=s.selectedUid;if(!this.canPlace(uid,slotIndex))return false;const c=this.cardDef(uid),def=D.BUILDINGS[c.building],slot=s.slots[slotIndex];
-  s.money-=c.cost;slot.building={id:def.id,hp:def.hp,maxHp:def.hp,placedAt:s.time};s.stats.placed++;s.stats.cardsPlayed++;this.discardCard(uid);
-  this.emit('build',def.name+' 건설 완료',{x:slot.x});if(s.tutorial&&s.tutorialStep===1){s.tutorialStep=2;this.emit('tip','좋아요. 이제 양쪽 경고를 보면서 도시를 키우세요.')}
+  const s=this.state,uid=s.selectedUid;if(!this.canPlace(uid,slotIndex))return false;const c=this.cardDef(uid),def=D.BUILDINGS[c.building],slot=s.slots[slotIndex],cost=this.placementCost(uid,slotIndex),old=slot.building;
+  s.money-=cost;
+  if(old&&old.id===def.id){
+   const nextLevel=(old.level||1)+1,ratio=clamp(old.hp/old.maxHp,0,1),maxHp=Math.round(def.hp*(1+.32*(nextLevel-1)));
+   slot.building={...old,level:nextLevel,maxHp,hp:Math.max(Math.round(maxHp*.72),Math.round(maxHp*ratio))};s.stats.upgraded++;this.emit('build',def.name+' '+nextLevel+'단계 강화!',{x:slot.x});
+  }else{
+   if(old){s.stats.replaced++;this.emit('replace',D.BUILDINGS[old.id].name+'을(를) '+def.name+'으로 교체',{x:slot.x})}
+   slot.building={id:def.id,hp:def.hp,maxHp:def.hp,level:1,placedAt:s.time};s.stats.placed++;if(!old)this.emit('build',def.name+' 건설 완료',{x:slot.x});
+  }
+  s.stats.cardsPlayed++;this.discardCard(uid);
+  if(s.tutorial&&s.tutorialStep===1){s.tutorialStep=2;this.emit('tip','좋아요. 이제 좌우 경고를 보면서 도시를 키우세요.')}
   return true
  }
+ matchingDisaster(type){return this.state.disasters.filter(d=>d.type===type).sort((a,b)=>b.progress-a.progress)[0]||null}
  actionUsable(def){
   const s=this.state;if(!def||def.kind!=='action'||!this.canAfford(def.cost))return false;
-  if(def.action==='fireBrigade')return s.disaster?.type==='wildfire';
-  if(def.action==='sandbags')return s.disaster?.type==='flood';
+  if(def.action==='fireBrigade'||def.action==='firebreak')return !!this.matchingDisaster('wildfire');
+  if(def.action==='sandbags'||def.action==='emergencyDrain')return !!this.matchingDisaster('flood');
   if(def.action==='repair')return s.slots.some(x=>x.building&&x.building.hp<x.building.maxHp);
   return true
  }
  playAction(uid){
   const s=this.state,def=this.cardDef(uid);if(!this.actionUsable(def))return false;s.money-=def.cost;
   if(def.action==='fireBrigade'){
-   const bonus=1+this.buildingCount('reservoir')*.16;s.disaster.energy=Math.max(0,s.disaster.energy-34*bonus);s.disaster.progress=Math.max(0,s.disaster.progress-.09*bonus);this.emit('response','소방대가 불길을 밀어냈습니다.');
+   const d=this.matchingDisaster('wildfire'),bonus=1+this.buildingCount('reservoir',d.side)*.12;d.energy=Math.max(0,d.energy-34*bonus);d.progress=Math.max(0,d.progress-.09*bonus);this.emit('response','소방대가 불길을 밀어냈습니다.');
+  }else if(def.action==='firebreak'){
+   const d=this.matchingDisaster('wildfire');d.energy=Math.max(0,d.energy-6);d.progress=Math.max(0,d.progress-.145);d.blockPause=Math.max(d.blockPause||0,2.4);this.emit('response','방화선이 불길의 전진을 끊었습니다.');
   }else if(def.action==='sandbags'){
-   s.disaster.energy=Math.max(0,s.disaster.energy-18);s.disaster.progress=Math.max(0,s.disaster.progress-.075);s.disaster.blockPause=Math.max(s.disaster.blockPause||0,2.1);this.emit('response','모래주머니로 물길을 늦췄습니다.');
+   const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-18);d.progress=Math.max(0,d.progress-.075);d.blockPause=Math.max(d.blockPause||0,2.1);this.emit('response','모래주머니로 물길을 늦췄습니다.');
+  }else if(def.action==='emergencyDrain'){
+   const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-7);d.progress=Math.max(0,d.progress-.14);d.blockPause=Math.max(d.blockPause||0,1.7);this.emit('response','긴급 배수로 물길을 뒤로 밀었습니다.');
   }else if(def.action==='repair'){
    const damaged=s.slots.filter(x=>x.building&&x.building.hp<x.building.maxHp).sort((a,b)=>(a.building.hp/a.building.maxHp)-(b.building.hp/b.building.maxHp))[0];
    if(damaged){damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+52);this.emit('repair',D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x})}
@@ -79,25 +101,50 @@ class Simulation{
  damageBuilding(slotIndex,amount,cause){
   const s=this.state,slot=s.slots[slotIndex];if(!slot?.building)return false;slot.building.hp-=amount;if(slot.building.hp>0)return false;
   const old=slot.building,def=D.BUILDINGS[old.id];slot.building=null;s.stats.lost++;s.stability=Math.max(0,s.stability-(old.id==='house'?7:5));
-  if(old.id==='house')s.population=Math.max(1,s.population-2);
+  if(old.id==='house')s.population=Math.max(1,s.population-2*(old.level||1));
   s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
  }
- resolveDisaster(){
-  const s=this.state,d=s.disaster;if(!d)return;s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',(d.type==='wildfire'?'산불':'홍수')+'을 막아냈습니다!');
-  const p=this.pressure(),baseGap=clamp(11-(p-.55)*3.8,5.5,11);s.disaster=null;s.next.in=baseGap+this.rand()*2;s.next.visible=true;s.rewardChoices=this.makeRewards(3);
+ makeRewards(){
+  const pool=D.REWARD_POOL.slice(),out=[];while(out.length<2&&pool.length){const i=Math.floor(this.rand()*pool.length);out.push({kind:'add',id:pool.splice(i,1)[0]})}
+  if(this.totalDeckSize()>8)out.push({kind:'cleanup',id:'cleanup'});else if(pool.length)out.push({kind:'add',id:pool.splice(Math.floor(this.rand()*pool.length),1)[0]});
+  return out
  }
- makeRewards(n){
-  const pool=D.REWARD_POOL.slice(),out=[];while(out.length<n&&pool.length){const i=Math.floor(this.rand()*pool.length);out.push(pool.splice(i,1)[0])}return out
+ totalDeckSize(){return this.state.deck.length+this.state.discard.length+this.state.hand.length}
+ openReward(){
+  const s=this.state;if(s.rewardChoices.length||s.cleanupChoices.length){s.rewardBacklog++;return}s.rewardChoices=this.makeRewards()
  }
- acceptReward(id){
-  const s=this.state;if(!s.rewardChoices.includes(id))return false;s.discard.push(id);s.rewardChoices=[];this.emit('reward',D.CARDS[id].name+' 카드가 덱에 들어왔습니다.');return true
+ resolveDisaster(d){
+  const s=this.state,i=s.disasters.indexOf(d);if(i<0)return;s.disasters.splice(i,1);s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',(d.type==='wildfire'?'산불':'홍수')+'을 막아냈습니다!');
+  if(!s.disasters.length&&s.time<300)s.next.in=Math.max(s.next.in,5.5);
+  this.openReward();if(s.tutorial&&s.tutorialStep===3)s.tutorialStep=4;
  }
- planNextAfterSpawn(){
-  const s=this.state;s.lastSide=s.disaster.side;s.lastType=s.disaster.type;s.next.side=s.disaster.side==='left'?'right':'left';s.next.type=this.rand()<.5?'wildfire':'flood';s.next.in=999;s.next.visible=false;
+ cleanupCandidates(){
+  const all=[...this.state.hand.map(c=>c.id),...this.state.deck,...this.state.discard],counts={};for(const id of all)counts[id]=(counts[id]||0)+1;
+  return Object.keys(counts).filter(id=>counts[id]>0&&D.CARDS[id]).sort((a,b)=>D.CARDS[a].cost-D.CARDS[b].cost)
  }
+ acceptReward(key){
+  const s=this.state,choice=s.rewardChoices.find(x=>(x.kind==='cleanup'?'cleanup':x.id)===key);if(!choice)return false;
+  if(choice.kind==='cleanup'){s.rewardChoices=[];s.cleanupChoices=this.cleanupCandidates();this.emit('reward','덱에서 카드 한 장을 정리하세요.');return true}
+  s.discard.push(choice.id);s.rewardChoices=[];this.emit('reward',D.CARDS[choice.id].name+' 카드가 덱에 들어왔습니다.');this.finishReward();return true
+ }
+ removeRewardCard(id){
+  const s=this.state;if(!s.cleanupChoices.includes(id)||this.totalDeckSize()<=8)return false;let removed=false;
+  let i=s.deck.indexOf(id);if(i>=0){s.deck.splice(i,1);removed=true}
+  if(!removed){i=s.discard.indexOf(id);if(i>=0){s.discard.splice(i,1);removed=true}}
+  if(!removed){i=s.hand.findIndex(c=>c.id===id);if(i>=0){const [c]=s.hand.splice(i,1);if(s.selectedUid===c.uid)s.selectedUid=null;removed=true;this.drawToFive()}}
+  if(!removed)return false;s.stats.removed++;s.cleanupChoices=[];this.emit('reward',D.CARDS[id].name+' 카드 1장을 덱에서 제거했습니다.');this.finishReward();return true
+ }
+ finishReward(){
+  const s=this.state;if(s.rewardBacklog>0){s.rewardBacklog--;s.rewardChoices=this.makeRewards()}
+ }
+ scheduleNext(d){
+  const s=this.state;s.lastSide=d.side;s.lastType=d.type;s.next.side=d.side==='left'?'right':'left';s.next.type=this.rand()<.5?'wildfire':'flood';
+  const p=this.pressure();s.next.in=clamp(30-(p-.55)*7.5,16,30)+this.rand()*4;s.next.visible=false;
+ }
+ maxConcurrent(){return this.state.time<300?1:2}
  updateEconomy(){
   const s=this.state;let money=s.population*.055,food=-s.population*.032,upkeep=0;
-  for(const slot of s.slots){const b=slot.building;if(!b)continue;const def=D.BUILDINGS[b.id];money+=def.money||0;food+=def.food||0;upkeep+=def.upkeep||0}
+  for(const slot of s.slots){const b=slot.building;if(!b)continue;const def=D.BUILDINGS[b.id],lvl=b.level||1;money+=(def.money||0)*(1+.55*(lvl-1));food+=(def.food||0)*(1+.55*(lvl-1));upkeep+=(def.upkeep||0)*(1+.35*(lvl-1))}
   s.money=Math.max(0,s.money+money-upkeep);s.food=Math.max(0,s.food+food);
   s.growthClock++;if(s.growthClock>=4){s.growthClock=0;if(s.population<this.capacity()&&s.food>5){s.population++;s.maxPopulation=Math.max(s.maxPopulation,s.population)}}
   if(s.food<=.01){s.hungerClock++;s.stability=Math.max(0,s.stability-.7);if(s.hungerClock>=5){s.hungerClock=0;s.population=Math.max(1,s.population-1);this.emit('hunger','식량 부족으로 주민이 떠났습니다.')}}else s.hungerClock=0;
