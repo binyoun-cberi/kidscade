@@ -405,6 +405,8 @@ function drawReplayFrame(){
   if(!replayCurrent||!replayCurrent.frames.length)return;
   var canvas=$('replayPitch'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
   var frame=replayCurrent.frames[clamp(replayFrame,0,replayCurrent.frames.length-1)];
+  var nextFrame=replayCurrent.frames[Math.min(replayFrame+1,replayCurrent.frames.length-1)]||frame;
+  var mix=replayMode==='replay'?clamp(replayCursor-replayFrame,0,1):0;
   replayPitchBase(ctx,W,H);
   if(replayMode==='heat'){
     if(replayFocus==='all'){
@@ -441,15 +443,19 @@ function drawReplayFrame(){
   if(replayMode==='replay'){
     frame[6].forEach(function(row){
       var meta=replayPlayerMeta(row[0]);if(!meta)return;
-      var x=38+row[1]/100*(W-76),y=35+row[2]/100*(H-70),focused=replayFocus==='all'||replayFocus===row[0];
+      var nr=nextFrame[6].find(function(x){return x[0]===row[0];})||row;
+      var rx=row[1]+(nr[1]-row[1])*mix,ry=row[2]+(nr[2]-row[2])*mix;
+      var x=38+rx/100*(W-76),y=35+ry/100*(H-70),focused=replayFocus==='all'||replayFocus===row[0];
       ctx.globalAlpha=focused?1:.2;ctx.beginPath();ctx.arc(x,y,replayFocus===row[0]?17:13,0,Math.PI*2);
       ctx.fillStyle=meta.side===0?'#f8fafc':'#111827';ctx.fill();ctx.strokeStyle=meta.side===0?'#0f172a':'#f8fafc';ctx.lineWidth=3;ctx.stroke();
       if(replayFocus===row[0]){ctx.beginPath();ctx.arc(x,y,23,0,Math.PI*2);ctx.strokeStyle='#facc15';ctx.lineWidth=4;ctx.stroke();}
       ctx.globalAlpha=1;
     });
-    var bx=38+frame[1]/100*(W-76),by=35+frame[2]/100*(H-70);if(soccerBallImg.complete&&soccerBallImg.naturalWidth)ctx.drawImage(soccerBallImg,bx-9,by-9,18,18);
+    var ballX=frame[1]+(nextFrame[1]-frame[1])*mix,ballY=frame[2]+(nextFrame[2]-frame[2])*mix;
+    var bx=38+ballX/100*(W-76),by=35+ballY/100*(H-70);if(soccerBallImg.complete&&soccerBallImg.naturalWidth)ctx.drawImage(soccerBallImg,bx-9,by-9,18,18);
   }
-  $('replayMinute').textContent=Math.floor(frame[0])+"' · "+frame[4]+' : '+frame[5];
+  var shownMinute=frame[0]+(nextFrame[0]-frame[0])*mix;
+  $('replayMinute').textContent=Math.floor(shownMinute)+"' · "+frame[4]+' : '+frame[5];
   $('replayRange').value=replayFrame;
 }
 function replayLoop(ts){
