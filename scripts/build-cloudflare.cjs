@@ -7,7 +7,6 @@ const sharp = require('sharp');
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'dist');
 const COVER_OVERRIDES_PATH = path.join(ROOT, 'data', 'game-cover-overrides.json');
-const DESCRIPTION_OVERRIDES_PATH = path.join(ROOT, 'data', 'game-description-overrides.json');
 const FAVICON_SOURCE = path.join(ROOT, 'assets', 'gate-image', 'favicon.png');
 const REMOVED_GAME_IDS = new Set(['math_remembus']);
 
@@ -97,25 +96,6 @@ function removeRetiredGames(catalog) {
   const before = catalog.games.length;
   catalog.games = catalog.games.filter(game => !REMOVED_GAME_IDS.has(String(game?.id || '')));
   return before - catalog.games.length;
-}
-
-function applyDescriptionOverrides(catalog) {
-  if (!fs.existsSync(DESCRIPTION_OVERRIDES_PATH)) return 0;
-  const overrides = JSON.parse(fs.readFileSync(DESCRIPTION_OVERRIDES_PATH, 'utf8'));
-  const byId = gameMap(catalog);
-  let applied = 0;
-
-  for (const [gameId, description] of Object.entries(overrides || {})) {
-    const game = byId.get(gameId);
-    if (!game) throw new Error(`Description override references unknown game id: ${gameId}`);
-    const text = String(description || '').trim();
-    if (text.length < 10) {
-      throw new Error(`Description override is suspiciously short: ${gameId}`);
-    }
-    game.description = text;
-    applied += 1;
-  }
-  return applied;
 }
 
 function applyCoverOverrides(catalog) {
@@ -227,7 +207,6 @@ async function main() {
   const catalogPath = path.join(OUT, 'data/games.json');
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
   const removedGameCount = removeRetiredGames(catalog);
-  const descriptionOverrideCount = applyDescriptionOverrides(catalog);
   const coverOverrideCount = applyCoverOverrides(catalog);
   const coverStats = await optimizeCatalogCovers(catalog);
   const faviconStats = await optimizeFavicon();
@@ -258,7 +237,6 @@ async function main() {
   console.log(`- published tracked files: ${sourceFiles.length}`);
   console.log(`- retired catalog games removed: ${removedGameCount}`);
   console.log(`- enabled game entry files verified: ${enabledGames.length}`);
-  console.log(`- description overrides applied: ${descriptionOverrideCount}`);
   console.log(`- cover overrides applied: ${coverOverrideCount}`);
   console.log(`- optimized cover images: ${coverStats.optimizedCount}`);
   if (coverStats.optimizedCount) {

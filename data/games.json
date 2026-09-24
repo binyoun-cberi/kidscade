@@ -233,7 +233,7 @@
       "category": "trivia",
       "age": "high",
       "icon": "🎮",
-      "description": "바람을 읽으며 연줄을 당기고 풀어 주세요. 줄이 끊어지거나 연이 내려앉기 전까지 최고 고도와 비행 기록에 도전해요.",
+      "description": "왼쪽·오른쪽 줄만 당겨 연을 파란 바람길 안에 맞추세요. 45초 동안 자동으로 상승하며 별과 황금 돌풍을 모아 최고 고도에 도전하는 간단 연날리기 게임!",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M38 7L65 34L38 60L11 34Z\" fill=\"#ff705d\"/>\n            <path d=\"M38 7L65 34H38Z\" fill=\"#ffd85c\"/>\n            <path d=\"M11 34H38V60Z\" fill=\"#35a9e0\"/>\n            <path d=\"M38 60C31 65 48 67 39 73\"\n                  fill=\"none\" stroke=\"#19344a\" stroke-width=\"3\"\n                  stroke-linecap=\"round\"/>\n            <path d=\"M38 8V59M12 34H64\"\n                  stroke=\"rgba(255,255,255,.8)\" stroke-width=\"2\"/>\n        </svg>",
       "scoreKey": "kite3d_best",
       "isTime": true
@@ -330,7 +330,7 @@
       "category": "trivia",
       "age": "high",
       "icon": "🧭",
-      "description": "1학년부터 6학년까지 매 순간 닥쳐오는 학교생활의 문제들! 학업, 건강, 행복, 평판 네 가지 파라미터의 아슬아슬한 균형을 잡으며 무사히 졸업에 도전해 보세요."
+      "description": "한국 남해와 닮은 무인도에서 물·식량·피로를 관리하고 탐험·낚시·채집·수리·농사를 선택하며 구조 또는 정착을 노리는 턴제 생존 게임. 4종 미니게임과 10가지 엔딩에 도전해요!"
     },
     {
       "id": "math_stationery_boss",
@@ -613,7 +613,7 @@
       "category": "music",
       "age": "high",
       "icon": "🎧",
-      "description": "비트에 맞춰 점프하고 중력 반전과 템포 변화, 포탈을 돌파하는 리듬 액션 게임!",
+      "description": "장단과 비트에 맞춰 달리는 원버튼 리듬 러너! 16개 스테이지가 INTRO·GROOVE·BREAK·DROP·FINALE로 전개되고, 구간마다 음악 편곡과 맵 패턴이 바뀌는 RHYTHM DASH REMIX에 도전하세요.",
       "cover": "assets/gate-image/리듬 대시.png"
     },
     {
@@ -843,7 +843,7 @@
       "category": "math",
       "age": "high",
       "icon": "🗼",
-      "description": "떨어져도 끝나지 않는 점핑 등반 탑에서 몇 m까지 올라갈 수 있는지 도전하는 인내 게임!",
+      "description": "떨어져도 다시 오르는 점핑 등반 탑! 혼자 최고 높이에 도전하거나, 친구와 같은 맵에서 동시에 출발해 3분 뒤 그 순간 더 높은 사람이 이기는 1:1 높이 대전을 즐겨 보세요.",
       "scoreKey": "patienceTowerBestM",
       "scoreUnit": "m",
       "cover": "assets/gate-image/인내의 탑.png"
@@ -864,7 +864,7 @@
       "category": "math",
       "age": "high",
       "icon": "🧊",
-      "description": "쌓기나무를 요리조리 돌려봐요!"
+      "description": "3×3×3 공간에 쌓기나무를 직접 쌓고 돌려보며 위·앞·옆에서 본 모양을 2D 모눈종이에 그려 맞히는 공간감각 학습 게임!"
     },
     {
       "id": "world_flag_master",
