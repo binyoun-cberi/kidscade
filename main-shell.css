@@ -2557,3 +2557,53 @@ body.dark-mode .site-credits {
   .age-name { font-size: .95rem; }
   .age-desc { font-size: .68rem; }
 }
+
+
+/* Common game start / loading / error shell */
+.kc-game-stage{
+  position:absolute;inset:60px 0 0;z-index:9;display:flex;align-items:center;justify-content:center;
+  padding:clamp(14px,3vw,34px);background:
+    radial-gradient(circle at 18% 15%,rgba(255,255,255,.16),transparent 34%),
+    linear-gradient(135deg,#172554 0%,#312e81 48%,#0f172a 100%);
+  overflow:auto
+}
+.kc-game-stage.hidden{display:none!important}
+#game-iframe.kc-game-frame-hidden{visibility:hidden}
+.kc-game-stage-card{
+  width:min(920px,100%);display:grid;grid-template-columns:minmax(250px,.9fr) minmax(300px,1.1fr);
+  overflow:hidden;border:1px solid rgba(255,255,255,.2);border-radius:28px;
+  background:rgba(15,23,42,.9);box-shadow:0 26px 70px rgba(0,0,0,.34);color:#fff;backdrop-filter:blur(18px)
+}
+.kc-game-stage-cover-wrap{min-height:300px;background:rgba(255,255,255,.06);overflow:hidden}
+.kc-game-stage-cover{width:100%;height:100%;min-height:300px;object-fit:cover;display:block}
+.kc-game-stage-cover-wrap[hidden]{display:none}
+.kc-game-stage-cover-wrap[hidden]+.kc-game-stage-copy{grid-column:1/-1;max-width:720px;width:100%;margin:auto}
+.kc-game-stage-copy{padding:clamp(24px,4vw,44px);display:flex;flex-direction:column;justify-content:center;min-width:0}
+.kc-game-stage-kicker{font-size:.78rem;font-weight:900;letter-spacing:.14em;color:#f9a8d4;text-transform:uppercase}
+.kc-game-stage-title{margin:8px 0 10px;font-size:clamp(1.8rem,4vw,3rem);line-height:1.08;word-break:keep-all}
+.kc-game-stage-desc{margin:0;color:#dbeafe;line-height:1.65;font-weight:650;word-break:keep-all}
+.kc-game-stage-meta{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.kc-game-stage-chip{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);font-size:.85rem;font-weight:800;color:#f8fafc}
+.kc-game-stage-status{display:flex;align-items:center;gap:10px;min-height:42px;margin:4px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(15,23,42,.56);color:#cbd5e1;font-size:.86rem;font-weight:800}
+.kc-game-stage-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.kc-game-stage-primary,.kc-game-stage-secondary{min-height:48px;padding:12px 20px;border-radius:14px;font:900 .98rem/1 system-ui,-apple-system,"Noto Sans KR",sans-serif;cursor:pointer}
+.kc-game-stage-primary{border:0;background:#f472b6;color:#fff;box-shadow:0 6px 0 #be185d}
+.kc-game-stage-primary:active{transform:translateY(3px);box-shadow:0 3px 0 #be185d}
+.kc-game-stage-secondary{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff}
+.kc-game-stage-primary:focus-visible,.kc-game-stage-secondary:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.kc-game-stage-card.is-loading .kc-game-stage-cover-wrap{filter:saturate(.65) brightness(.72)}
+.kc-game-stage-card.is-error{border-color:rgba(248,113,113,.45)}
+.kc-game-stage-card.is-error .kc-game-stage-kicker{color:#fca5a5}
+.kc-game-stage-spinner{width:20px;height:20px;flex:0 0 20px;border-radius:50%;border:3px solid rgba(255,255,255,.22);border-top-color:#fff;animation:kcGameStageSpin .8s linear infinite}
+@keyframes kcGameStageSpin{to{transform:rotate(360deg)}}
+
+@media(max-width:720px){
+  .kc-game-stage{inset:60px 0 0;padding:10px}
+  .kc-game-stage-card{grid-template-columns:1fr;border-radius:20px}
+  .kc-game-stage-cover-wrap{min-height:150px;max-height:28vh}
+  .kc-game-stage-cover{min-height:150px}
+  .kc-game-stage-copy{padding:20px}
+  .kc-game-stage-title{font-size:1.7rem}
+  .kc-game-stage-actions{display:grid;grid-template-columns:1fr}
+  .kc-game-stage-primary,.kc-game-stage-secondary{width:100%}
+}
