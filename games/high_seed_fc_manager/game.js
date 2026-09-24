@@ -9,6 +9,22 @@ var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
 var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
+var soccerBallImg=new Image();
+soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
+var matchAudioDefs={
+  whoosh:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.12],
+  impact:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.10],
+  goal:['../../assets/audio/sfx/success/cheer-yay-01.mp3',.20],
+  confirm:['../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.16]
+};
+var matchAudio={};
+Object.keys(matchAudioDefs).forEach(function(k){
+  var def=matchAudioDefs[k],a=new Audio(def[0]);a.preload='auto';a.volume=def[1];matchAudio[k]=a;
+});
+function matchSfx(k,rate){
+  var a=matchAudio[k];if(!a)return;
+  try{a.pause();a.currentTime=0;a.playbackRate=rate||1;a.play().catch(function(){});}catch(e){}
+}
 
 function $(id){return document.getElementById(id);}
 function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
@@ -284,26 +300,121 @@ function matchEvent(e){
   var log=$('eventLog'),div=document.createElement('div');div.className='event-line '+(e.type==='goal'?'goal':e.type==='fact'?'fact':'');
   div.textContent=e.minute+"' · "+e.text;log.prepend(div);
   while(log.children.length>16)log.removeChild(log.lastChild);
-  if(e.type==='goal')sound('success');
+  if(e.type==='goal'){matchSfx('goal',1);sound('success');}
+  else if(e.type==='save')matchSfx('impact',1.08);
+  else if(e.type==='shot')matchSfx('whoosh',1.08);
+  else if(e.type==='sub')matchSfx('confirm',1);
 }
 function setSpeed(s){matchSpeed=s;document.querySelectorAll('.speed').forEach(function(b){b.classList.toggle('active',Number(b.dataset.speed)===s);});}
 function updateLiveTactic(){
-  var t=state.tactics,labels={short:'짧게 연결',direct:'빠르게 앞으로',wide:'측면으로',press:'바로 압박',shape:'자리를 지켜',attack:'공격',balanced:'균형',defend:'수비'};
-  $('liveTacticText').innerHTML='<p><b>'+labels[t.attack]+'</b></p><p>'+labels[t.press]+' · '+labels[t.mindset]+'</p><small class="muted">작전판에서 바꾼 선택이 경기 계산에 반영돼요.</small>';
+  var t=state.tactics;
+  var labels={short:'짧게 연결',direct:'빠르게 앞으로',wide:'측면으로',press:'바로 압박',shape:'자리를 지켜',attack:'공격',balanced:'균형',defend:'수비'};
+  var attackIcon=t.attack==='direct'?'⚡':t.attack==='wide'?'↔️':'🎯';
+  var pressIcon=t.press==='press'?'🔥':'🧱';
+  var mindIcon=t.mindset==='attack'?'⬆️':t.mindset==='defend'?'⬇️':'⚖️';
+  $('liveTacticText').innerHTML=
+    '<div class="tactic-live-row"><span>'+attackIcon+'</span><b>'+labels[t.attack]+'</b></div>'+
+    '<div class="tactic-live-row"><span>'+pressIcon+'</span><b>'+labels[t.press]+'</b></div>'+
+    '<div class="tactic-live-row"><span>'+mindIcon+'</span><b>'+labels[t.mindset]+'</b></div>'+
+    '<small class="muted">선수 이동 꼬리와 압박 방향을 보며 작전 효과를 확인해요.</small>';
 }
 function drawMatch(){
-  if(!match)return;var canvas=$('pitch'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
-  ctx.clearRect(0,0,W,H);ctx.fillStyle='#23834e';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=4;ctx.strokeRect(38,35,W-76,H-70);
-  ctx.beginPath();ctx.moveTo(W/2,35);ctx.lineTo(W/2,H-35);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,72,0,Math.PI*2);ctx.stroke();
+  if(!match)return;
+  var canvas=$('pitch'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1f824b';ctx.fillRect(0,0,W,H);
+  for(var stripe=0;stripe<10;stripe++){
+    ctx.fillStyle=stripe%2===0?'rgba(255,255,255,.035)':'rgba(0,0,0,.035)';
+    ctx.fillRect(stripe*(W/10),0,W/10,H);
+  }
+  var glow=ctx.createRadialGradient(W/2,H/2,40,W/2,H/2,W*.62);
+  glow.addColorStop(0,'rgba(255,255,255,.035)');glow.addColorStop(1,'rgba(0,0,0,.08)');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle='rgba(240,255,246,.88)';ctx.lineWidth=4;
+  ctx.strokeRect(38,35,W-76,H-70);
+  ctx.beginPath();ctx.moveTo(W/2,35);ctx.lineTo(W/2,H-35);ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,H/2,72,0,Math.PI*2);ctx.stroke();
   ctx.strokeRect(38,H/2-125,135,250);ctx.strokeRect(W-173,H/2-125,135,250);
-  match.teams.forEach(function(t,side){t.actors.forEach(function(a){
-    var x=38+a.x/100*(W-76),y=35+a.y/100*(H-70);
-    ctx.beginPath();ctx.fillStyle=side===0?'#f8fafc':'#111827';ctx.strokeStyle=side===0?'#111827':'#f8fafc';ctx.lineWidth=3;ctx.arc(x,y,14,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.fillStyle=side===0?'#111827':'#f8fafc';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.fillText(a.p.name.slice(0,4),x,y+3);
-    if(a.side===match.userSide){ctx.fillStyle='rgba(52,211,153,.9)';ctx.fillRect(x-14,y+18,28*a.energy/100,3);}
-  });});
-  var bx=38+match.ball.x/100*(W-76),by=35+match.ball.y/100*(H-70);ctx.font='24px system-ui';ctx.fillText('⚽',bx,by+8);
+  ctx.strokeRect(38,H/2-64,48,128);ctx.strokeRect(W-86,H/2-64,48,128);
+  ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.beginPath();ctx.arc(128,H/2,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(W-128,H/2,3.5,0,Math.PI*2);ctx.fill();
+
+  match.teams.forEach(function(t,side){
+    t.actors.forEach(function(a){
+      if(!a.trail||a.trail.length<2)return;
+      for(var i=1;i<a.trail.length;i++){
+        var p1=a.trail[i-1],p2=a.trail[i],alpha=(i/a.trail.length)*.30;
+        var x1=38+p1.x/100*(W-76),y1=35+p1.y/100*(H-70);
+        var x2=38+p2.x/100*(W-76),y2=35+p2.y/100*(H-70);
+        ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=t.club.accent||(side===0?'#5eead4':'#f9a8d4');
+        ctx.lineWidth=1.5+(i/a.trail.length)*5;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+      }
+    });
+  });
+
+  if(match.ball.trail&&match.ball.trail.length>1){
+    for(var j=1;j<match.ball.trail.length;j++){
+      var b1=match.ball.trail[j-1],b2=match.ball.trail[j],ba=(j/match.ball.trail.length)*.36;
+      var bx1=38+b1.x/100*(W-76),by1=35+b1.y/100*(H-70);
+      var bx2=38+b2.x/100*(W-76),by2=35+b2.y/100*(H-70);
+      ctx.beginPath();ctx.moveTo(bx1,by1);ctx.lineTo(bx2,by2);
+      ctx.strokeStyle='rgba(255,246,184,'+ba+')';ctx.lineWidth=1.5+(j/match.ball.trail.length)*4;ctx.lineCap='round';ctx.stroke();
+    }
+  }
+
+  (match.effects||[]).forEach(function(fx){
+    var x=38+fx.x/100*(W-76),y=35+fx.y/100*(H-70),life=fx.life,r=7+(1-life)*24;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    if(fx.kind==='goal'){ctx.strokeStyle='rgba(250,204,21,'+(life*.95)+')';ctx.lineWidth=6;}
+    else if(fx.kind==='save'){ctx.strokeStyle='rgba(96,165,250,'+(life*.85)+')';ctx.lineWidth=4;}
+    else if(fx.kind==='sub'){ctx.strokeStyle='rgba(52,211,153,'+(life*.8)+')';ctx.lineWidth=4;}
+    else{ctx.strokeStyle='rgba(255,255,255,'+(life*.5)+')';ctx.lineWidth=3;}
+    ctx.stroke();
+  });
+
+  match.teams.forEach(function(t,side){
+    t.actors.forEach(function(a){
+      var x=38+a.x/100*(W-76),y=35+a.y/100*(H-70);
+      if(a.id===match.lastTouchId||a.pulse>0){
+        var pulseR=19+Math.sin(performance.now()*.012)*2+a.pulse*6;
+        ctx.beginPath();ctx.arc(x,y,pulseR,0,Math.PI*2);
+        ctx.strokeStyle=side===0?'rgba(94,234,212,'+(.22+a.pulse*.38)+')':'rgba(249,168,212,'+(.22+a.pulse*.38)+')';
+        ctx.lineWidth=3;ctx.stroke();
+      }
+      ctx.beginPath();ctx.fillStyle=side===0?'#f8fafc':'#111827';
+      ctx.strokeStyle=t.club.accent||(side===0?'#0f172a':'#f8fafc');ctx.lineWidth=3;
+      ctx.arc(x,y,15,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+      if(a.flash>0){
+        ctx.beginPath();ctx.arc(x,y,17+a.flash*10,0,Math.PI*2);
+        ctx.strokeStyle='rgba(255,255,255,'+(a.flash*.55)+')';ctx.lineWidth=2;ctx.stroke();
+      }
+
+      var label=a.p.name.length>5?a.p.name.slice(0,5):a.p.name;
+      ctx.font='800 9px system-ui';ctx.textAlign='center';
+      var tw=Math.max(28,ctx.measureText(label).width+9);
+      ctx.fillStyle='rgba(5,15,27,.76)';
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(x-tw/2,y+18,tw,16,6);else ctx.rect(x-tw/2,y+18,tw,16);
+      ctx.fill();
+      ctx.fillStyle='#f8fafc';ctx.fillText(label,x,y+29);
+
+      if(a.side===match.userSide){
+        ctx.fillStyle='rgba(4,17,31,.72)';ctx.fillRect(x-16,y+37,32,4);
+        ctx.fillStyle=a.energy>55?'#34d399':a.energy>35?'#facc15':'#fb7185';
+        ctx.fillRect(x-16,y+37,32*a.energy/100,4);
+      }
+    });
+  });
+
+  var bx=38+match.ball.x/100*(W-76),by=35+match.ball.y/100*(H-70);
+  ctx.save();ctx.shadowColor='rgba(255,255,255,.7)';ctx.shadowBlur=12;
+  if(soccerBallImg.complete&&soccerBallImg.naturalWidth)ctx.drawImage(soccerBallImg,bx-10,by-10,20,20);
+  else{ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.stroke();}
+  ctx.restore();
 }
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
