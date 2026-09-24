@@ -2622,11 +2622,11 @@
     {
       "id": "high_bridge_builder",
       "title": "다리야 버텨줘!",
-      "href": "games/high_bridge_builder/index.html?v=5",
+      "href": "games/high_bridge_builder/index.html?v=6",
       "category": "math",
       "age": "high",
       "icon": "🌉",
-      "description": "손가락이나 마우스로 선을 쓱 그어 다리를 만들고 차량을 시험 운행하는 직관적인 2D 물리 실험 게임! 선을 덧그려 받치고, 처짐과 파손을 관찰하며 더 튼튼한 구조를 찾아보세요.",
+      "description": "손가락으로 다리를 쓱 그리면 도로가 되고, 이후 선은 자동으로 보강 구조가 되는 쉬운 2D 물리 게임! 교차한 선은 자동 접합되며 같은 그림은 기기 프레임률과 상관없이 같은 물리로 시험합니다.",
       "subject": "science",
       "genre": "simulation",
       "difficulty": "easy",
