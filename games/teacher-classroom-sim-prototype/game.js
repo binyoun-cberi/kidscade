@@ -36,10 +36,28 @@
   ];
 
   var taskDefs=[
-    {id:'attendance',title:'출석 현황 제출',source:'교무',availableAt:525,due:570,duration:2,detail:'오늘 출결을 확인해 학교 시스템에 입력한다.'},
-    {id:'fieldtrip',title:'현장체험학습 참가 여부 입력',source:'연구부',availableAt:560,due:660,duration:3,detail:'가정에서 받은 참가 여부를 확인해 입력한다.'},
-    {id:'worksheets',title:'수학 활동지 8장 확인',source:'1교시',availableAt:580,due:900,duration:5,detail:'오늘 수학 활동지 중 확인이 필요한 8장을 살핀다.'},
-    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:870,due:990,duration:4,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
+    {id:'attendance',title:'출석 현황 제출',source:'교무',availableAt:525,due:550,duration:2,detail:'출석부와 아침 연락을 대조해 오늘 출결을 입력한다.',requiredDocs:['attendance_sheet'],review:{prompt:'아린의 출결 상태는?',options:['결석','지각 예정','정상 등교'],correct:1}},
+    {id:'morning_notice',title:'아침 전달사항 확인',source:'교무실',availableAt:535,due:565,duration:2,detail:'오늘 바뀐 일정과 교실 전달사항을 확인한다.',requiredDocs:['office_memo']},
+    {id:'fieldtrip',title:'현장체험학습 참가 현황 입력',source:'연구부',availableAt:555,due:625,duration:4,detail:'회수한 신청서를 직접 세어 참가·불참·미제출을 입력한다.',requiredDocs:['fieldtrip_forms'],review:{prompt:'현재 신청서 상태는?',options:['참가 3 · 불참 2 · 미제출 1','참가 4 · 불참 1 · 미제출 1','참가 5 · 불참 1 · 미제출 0'],correct:1}},
+    {id:'worksheets',title:'수학 활동지 8장 확인',source:'1교시',availableAt:580,due:720,duration:5,detail:'오늘 수학 활동지 중 확인이 필요한 8장을 살핀다.'},
+    {id:'meal_check',title:'급식 특이사항 재확인',source:'급식실',availableAt:615,due:680,duration:3,detail:'오늘 식단과 학급 급식 주의사항을 대조한다.',requiredDocs:['meal_roster'],review:{prompt:'오늘 따로 전달해야 할 학생은?',options:['준호','서연','태호'],correct:0}},
+    {id:'contact_check',title:'비상연락망 누락 확인',source:'행정실',availableAt:645,due:710,duration:3,detail:'보호자 연락처 변경 신청과 현재 명단을 대조한다.',requiredDocs:['contact_sheet']},
+    {id:'photo_consent',title:'촬영 동의 명단 입력',source:'연구부',availableAt:700,due:770,duration:4,detail:'수업 촬영 전 동의서를 다시 확인해 명단을 입력한다.',requiredDocs:['consent_forms'],review:{prompt:'촬영 미동의 학생은?',options:['아린','태호','지우'],correct:0}},
+    {id:'class_survey',title:'학급 생활 설문 취합',source:'생활부',availableAt:745,due:805,duration:3,detail:'제출된 설문 수를 확인하고 미제출 학생을 표시한다.',requiredDocs:['survey_stack']},
+    {id:'dismissal',title:'하교 변경사항 확인',source:'하교',availableAt:800,due:870,duration:3,detail:'보호자 메모와 평소 하교 방법을 대조해 오늘 변경을 반영한다.',requiredDocs:['dismissal_notes'],review:{prompt:'오늘 평소와 다르게 하교하는 학생은?',options:['민수','태호','서연'],correct:1}},
+    {id:'art_materials',title:'미술 재료 수량 정리',source:'5교시',availableAt:830,due:900,duration:3,detail:'남은 재료와 사용 수량을 적어 다음 주문량을 정리한다.'},
+    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:870,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
+  ];
+
+  var documentDefs=[
+    {id:'attendance_sheet',title:'오늘 출석부',availableAt:510,source:'교탁',lines:['민수 · 등교','지우 · 등교','서연 · 등교','태호 · 등교','준호 · 등교','아린 · 08:30 현재 미등교'],note:'아침 연락이 있으면 출석 상태를 함께 확인해야 한다.'},
+    {id:'office_memo',title:'아침 교무실 메모',availableAt:532,source:'교무실',lines:['3교시 체육 장소: 운동장 → 체육관 변경','현장체험학습 신청서 10:25까지 1차 집계','5교시 미술 준비물: 색종이 추가 배부'],note:'일정이 바뀐 항목이 섞여 있다.'},
+    {id:'fieldtrip_forms',title:'현장체험학습 신청서 묶음',availableAt:552,source:'가정 제출',lines:['민수 · 참가','지우 · 참가','서연 · 참가','태호 · 미제출','준호 · 불참','아린 · 참가'],note:'총 6명의 상태를 그대로 집계해야 한다.'},
+    {id:'meal_roster',title:'급식 주의사항',availableAt:610,source:'급식실',lines:['오늘 식단: 잡곡밥 · 닭볶음 · 견과류 멸치볶음','준호 · 견과류 반찬 대체식 전달 필요','그 외 오늘 별도 전달 없음'],note:'식단표와 학생별 주의사항을 같이 확인한다.'},
+    {id:'contact_sheet',title:'보호자 연락처 변경 신청',availableAt:642,source:'행정실',lines:['지우 보호자 연락처 끝자리 7712 → 1840 변경','기존 비상연락망에는 아직 7712로 표시됨'],note:'변경 여부를 확인해 현재 명단과 맞춰야 한다.'},
+    {id:'consent_forms',title:'수업 촬영 동의서',availableAt:696,source:'연구부',lines:['민수 · 동의','지우 · 동의','서연 · 동의','태호 · 동의','준호 · 동의','아린 · 미동의'],note:'촬영 화면에 미동의 학생이 포함되지 않도록 해야 한다.'},
+    {id:'survey_stack',title:'학급 생활 설문',availableAt:742,source:'생활부',lines:['제출: 민수 · 지우 · 서연 · 준호 · 아린','미제출: 태호'],note:'미제출 학생은 다음 날 다시 안내한다.'},
+    {id:'dismissal_notes',title:'오늘 하교 변경 메모',availableAt:796,source:'보호자 메모',lines:['태호 · 오늘 학원차 탑승 안 함','15:10 보호자 직접 데리러 옴','다른 학생은 평소 하교 방법 유지'],note:'평소 방식과 다른 학생만 정확히 표시한다.'}
   ];
 
   var eventDefs=[
@@ -162,9 +180,100 @@
         {id:'memory',label:'기억나는 범위에서 바로 설명한다',cost:2},
         {id:'tomorrow_call',label:'내일 다시 확인하고 연락드리겠다고 한다',cost:1}
       ]
+    },
+    {
+      id:'nurse_note',type:'visitor',at:603,deadline:613,studentId:'taeho',role:'보건실 전달',name:'보건 선생님',
+      stage:'수업 사이에 보건 선생님이 짧은 확인서를 들고 왔다.',
+      dialogue:'태호가 아까 잠깐 왔다 갔어요. 크게 아픈 건 아닌데 보호자 연락 여부만 확인해주세요.',
+      actions:[
+        {id:'read_note',label:'확인서를 읽고 태호 상태를 확인한다',cost:2},
+        {id:'later_note',label:'확인서만 받아두고 나중에 본다',cost:.5}
+      ]
+    },
+    {
+      id:'research_rush',type:'visitor',at:632,deadline:640,role:'동료 교사',name:'연구부 선생님',
+      stage:'쉬는 시간 끝나기 직전 연구부 선생님이 교실 문을 열었다.',
+      dialogue:'체험학습 신청서 1차 숫자 지금 받을 수 있을까요? 미제출도 따로 적어주세요.',
+      actions:[
+        {id:'answer_now',label:'신청서 묶음을 확인하고 지금 숫자를 말한다',cost:2},
+        {id:'send_later',label:'컴퓨터 입력으로 보내겠다고 한다',cost:.5}
+      ]
+    },
+    {
+      id:'junho_form',type:'visitor',at:708,deadline:719,studentId:'junho',role:'점심 시간',name:'준호',
+      stage:'준호가 구겨진 종이 한 장을 들고 교탁으로 왔다.',
+      dialogue:'선생님, 이거 체험학습 종이 오늘까지예요? 엄마가 안 간다고 체크했어요.',
+      actions:[
+        {id:'receive',label:'신청서를 받아 기존 묶음과 같이 둔다',cost:1},
+        {id:'check_form',label:'내용과 이름을 지금 확인한다',cost:2}
+      ]
+    },
+    {
+      id:'pickup_change_phone',type:'phone',at:782,deadline:788,studentId:'taeho',role:'보호자 전화',name:'태호 보호자',
+      stage:'오후 수업 중 전화가 걸려왔다.',
+      dialogue:'오늘 태호 학원차 안 타고 제가 직접 데리러 갈게요. 아이한테도 꼭 말해주세요.',
+      actions:[
+        {id:'pickup_note',label:'하교 변경 메모를 바로 남긴다',cost:1},
+        {id:'pickup_ok',label:'확인했다고 답하고 통화를 끝낸다',cost:.5}
+      ]
+    },
+    {
+      id:'art_spill',type:'visitor',at:844,deadline:853,studentId:'minsu',role:'미술 시간',name:'민수',
+      stage:'미술 재료를 나누던 중 바닥에 물통과 색종이가 한꺼번에 쏟아졌다.',
+      dialogue:'선생님! 제가 일부러 그런 거 아니에요. 준호가 지나가다가 쳤어요.',
+      actions:[
+        {id:'clean_first',label:'우선 미끄럽지 않게 주변부터 정리한다',cost:2},
+        {id:'ask_both_art',label:'둘을 불러 무슨 일이었는지 확인한다',cost:3},
+        {id:'student_clean',label:'두 학생에게 정리를 맡기고 수업을 이어간다',cost:1}
+      ]
+    },
+    {
+      id:'admin_request',type:'visitor',at:903,deadline:916,role:'관리자',name:'교감 선생님',
+      stage:'하교 후 교감 선생님이 잠깐 교실에 들렀다.',
+      dialogue:'오늘 친구 사이 일이나 보호자 연락 중에 제가 알아야 할 건 없었나요?',
+      actions:[
+        {id:'report_records',label:'기록철을 확인하며 중요한 일을 전달한다',cost:3},
+        {id:'brief_memory',label:'기억나는 큰 일만 짧게 전달한다',cost:1}
+      ]
+    },
+    {
+      id:'rare_fight',rare:true,type:'visitor',at:704,deadline:709,studentId:'junho',role:'긴급 상황',name:'복도에서 큰 소리',
+      stage:'점심시간 복도에서 학생들이 몰렸다. 민수와 준호가 서로 밀치는 과정에서 준호가 넘어져 팔을 잡고 있다.',
+      dialogue:'주변 아이들이 동시에 “선생님!” 하고 부른다.',
+      actions:[
+        {id:'secure_help',label:'두 학생을 즉시 분리하고 보건·지원 인력을 부른다',cost:3},
+        {id:'question_first',label:'두 학생에게 먼저 누가 시작했는지 묻는다',cost:2},
+        {id:'send_both',label:'둘 다 교실 밖에서 진정하고 기다리게 한다',cost:2}
+      ]
+    },
+    {
+      id:'rare_throw',rare:true,type:'visitor',at:812,deadline:817,studentId:'minsu',role:'긴급 상황',name:'민수',
+      stage:'교사의 안내를 듣던 민수가 갑자기 크게 화를 내며 책상 위 필통을 교사 쪽으로 던졌다.',
+      dialogue:'“저한테만 왜 그래요!”',
+      actions:[
+        {id:'clear_support',label:'주변 학생과 거리를 확보하고 지원을 요청한다',cost:3},
+        {id:'talk_alone',label:'바로 가까이 가서 둘이서 이야기하려 한다',cost:2},
+        {id:'send_out',label:'교실 밖으로 나가 있으라고 지시한다',cost:1}
+      ]
+    },
+    {
+      id:'rare_disclosure',rare:true,type:'visitor',at:848,deadline:856,studentId:'arin',role:'학생 보호',name:'아린',
+      stage:'하교 준비 중 아린이 다른 아이들이 나가기를 기다렸다가 아주 작은 목소리로 말했다.',
+      dialogue:'선생님… 저 오늘 집에 가기 싫어요. 어제 집에서 맞았어요.',
+      actions:[
+        {id:'safe_listen',label:'안전한 곳에서 필요한 만큼만 듣고 학교 보호 절차로 연결한다',cost:4},
+        {id:'call_home',label:'사실 확인을 위해 바로 보호자에게 전화한다',cost:2},
+        {id:'ask_details',label:'정확히 무슨 일이었는지 자세히 캐묻는다',cost:3}
+      ]
+    }
     }
   ];
 
+  function chooseRareEvent(){
+    if(Math.random()>=.10)return null;
+    var ids=['rare_fight','rare_throw','rare_disclosure'];
+    return ids[Math.floor(Math.random()*ids.length)];
+  }
   function freshState(){
     var taskStatus={};taskDefs.forEach(function(t){taskStatus[t.id]='open'});
     var eventStatus={};eventDefs.forEach(function(e){eventStatus[e.id]='pending'});
@@ -172,6 +281,7 @@
       minute:510,lastReal:performance.now(),activeEvent:null,resultEvent:null,resultData:null,
       backlog:[],incomingPhone:null,eventStatus:eventStatus,deferUntil:{},
       flags:{},records:[],recordDrafts:[],notes:[],taskStatus:taskStatus,dynamicTasks:[],
+      checkedDocs:{},taskAnswers:{},rareEventId:chooseRareEvent(),
       openedStudents:{},overtime:false,endPrompted:false,finished:false,tutorialStep:0,tutorialDone:false,
       saveStamp:Date.now()
     };
@@ -245,6 +355,16 @@
   function availableTasks(){
     return allTasks().filter(function(t){return t.availableAt<=state.minute});
   }
+  function availableDocuments(){
+    return documentDefs.filter(function(d){return d.availableAt<=state.minute});
+  }
+  function documentById(id){return documentDefs.find(function(d){return d.id===id})||null}
+  function taskDocsReady(t){
+    return !(t.requiredDocs||[]).some(function(id){return !state.checkedDocs[id]});
+  }
+  function taskAnswerReady(t){
+    return !t.review||state.taskAnswers[t.id]!==undefined;
+  }
 
   function toast(title,text,warn){
     var box=document.createElement('div');box.className='toast'+(warn?' warn':'');
@@ -266,6 +386,7 @@
 
   function eventDef(id){return eventDefs.find(function(e){return e.id===id})||null}
   function eventCondition(e){
+    if(e.rare)return state.rareEventId===e.id;
     if(e.id==='jiwoo_followup')return state.eventStatus.minsu_pencil==='done'||state.flags.pencilDeferred;
     if(e.id==='seoyeon_parent')return state.eventStatus.seoyeon_freeze==='done';
     if(e.id==='jiwoo_parent')return state.eventStatus.minsu_pencil==='done'||state.eventStatus.jiwoo_followup==='done';
@@ -528,6 +649,119 @@
       out={title:'내일 다시 연락하기로 했다.',text:'오늘 해결하지 않은 일이 내일 일정으로 넘어갔다.'};
     }
 
+    if(key==='nurse_note:read_note'){
+      discover('taeho','컨디션이 떨어질 때 보건실을 스스로 찾을 수 있음');
+      addDynamicTask('taeho_health_confirm','태호 보호자 연락 여부 확인',690,2,'보건실 이용 사실과 현재 상태를 보호자에게 전달할지 확인한다.');
+      out={title:'확인서를 읽고 태호 상태를 다시 살폈다.',text:'큰 이상은 없지만 오전에 컨디션이 떨어졌다는 정보를 놓치지 않게 됐다.'};
+    }
+    if(key==='nurse_note:later_note'){
+      addDynamicTask('nurse_note_review','보건실 확인서 읽기',675,2,'받아둔 태호 보건실 확인서를 확인한다.');
+      out={title:'확인서는 서류 더미에 남았다.',text:'지금 시간은 아꼈지만 확인해야 할 일이 하나 늘었다.'};
+    }
+    if(key==='research_rush:answer_now'){
+      state.checkedDocs.fieldtrip_forms=true;
+      out={title:'신청서 묶음을 다시 세어 숫자를 전달했다.',text:'참가 4명, 불참 1명, 미제출 1명으로 1차 집계를 보냈다.'};
+    }
+    if(key==='research_rush:send_later'){
+      out={title:'컴퓨터 입력으로 보내겠다고 했다.',text:'대화는 짧았지만 현장체험학습 업무 마감은 그대로 다가오고 있다.'};
+    }
+    if(key==='junho_form:receive'){
+      state.flags.junhoFormReceived=true;
+      out={title:'준호의 신청서를 기존 묶음에 끼워 넣었다.',text:'이미 불참으로 집계된 내용과 같은지 나중에 다시 확인해야 한다.'};
+    }
+    if(key==='junho_form:check_form'){
+      state.flags.junhoFormReceived=true;state.checkedDocs.fieldtrip_forms=true;
+      out={title:'이름과 체크 내용을 바로 확인했다.',text:'준호는 불참으로 표시되어 있었다. 기존 신청서 집계와 일치한다.'};
+    }
+    if(key==='pickup_change_phone:pickup_note'){
+      state.flags.pickupChangeNoted=true;state.checkedDocs.dismissal_notes=true;
+      out={title:'하교 변경 메모를 바로 남겼다.',text:'태호가 오늘만 학원차를 타지 않는다는 내용이 하교 확인 자료에 들어갔다.'};
+    }
+    if(key==='pickup_change_phone:pickup_ok'){
+      state.flags.pickupChangeKnown=true;
+      out={title:'통화를 짧게 마쳤다.',text:'내용은 기억하고 있지만 별도 메모를 남기지는 않았다.'};
+    }
+    if(key==='art_spill:clean_first'){
+      out={title:'미끄러운 바닥부터 정리했다.',text:'수업은 잠시 끊겼지만 다칠 위험은 줄었다. 누가 건드렸는지는 아직 확인하지 않았다.'};
+      addDynamicTask('art_cleanup_check','미술 재료 파손 수량 확인',900,2,'쏟아진 재료 중 다시 준비해야 할 것이 있는지 확인한다.');
+    }
+    if(key==='art_spill:ask_both_art'){
+      discover('minsu','문제가 생기면 자기 잘못이 아니라고 먼저 설명하는 경향이 있음');discover('junho','이동 중 주변 물건을 건드리는 상황이 가끔 생김');
+      addDraft('art_spill_record','미술 시간 재료 사고','민수의 물통과 재료가 쏟아짐. 준호가 지나가며 건드렸다는 설명을 두 학생에게 확인함.',['minsu','junho']);
+      out={title:'두 학생의 설명이 대체로 맞아떨어졌다.',text:'준호가 지나가다 책상 가장자리를 건드렸고 민수 물통이 넘어졌던 것으로 보인다.'};
+    }
+    if(key==='art_spill:student_clean'){
+      out={title:'두 학생이 바닥을 정리하기 시작했다.',text:'수업은 계속됐지만 재료 수량과 정확한 경위는 확인하지 않았다.'};
+    }
+    if(key==='admin_request:report_records'){
+      out={title:'기록철을 보며 필요한 일만 정리해 전달했다.',text:'오늘 있었던 일을 기억에만 의존하지 않고 시간과 학생을 구분해서 설명했다.'};
+    }
+    if(key==='admin_request:brief_memory'){
+      out={title:'큰 일만 짧게 전달했다.',text:'대화는 빨리 끝났지만 빠진 일이 없는지는 확신하기 어렵다.'};
+    }
+
+    if(key==='rare_fight:secure_help'){
+      state.flags.rareHandled='fight_safe';
+      addDraft('rare_fight_record','긴급 · 민수·준호 몸싸움','점심시간 복도에서 두 학생이 서로 밀치는 과정에서 준호가 넘어져 팔을 잡음. 즉시 분리 후 보건 및 지원 요청.',['minsu','junho']);
+      addDynamicTask('rare_fight_health','준호 보건실 상태 확인',755,3,'넘어진 뒤 팔 통증을 호소한 준호의 상태와 보건실 조치를 확인한다.');
+      addDynamicTask('rare_fight_report','학생 간 신체 충돌 사실 기록',900,6,'당사자와 목격자 진술을 구분해 시간·장소·조치를 기록한다.');
+      addDynamicTask('rare_fight_admin','관리자에게 긴급 상황 공유',780,3,'신체 충돌과 안전 조치 내용을 관리자에게 알린다.');
+      out={title:'주변을 먼저 안전하게 만들었다.',text:'준호는 보건실로 이동했고 민수와는 거리를 뒀다. 이제 사실 확인과 기록 업무가 한꺼번에 생겼다.'};
+    }
+    if(key==='rare_fight:question_first'){
+      state.flags.rareHandled='fight_delayed';
+      addDraft('rare_fight_record','긴급 · 민수·준호 몸싸움','복도에서 신체 충돌 후 준호가 넘어짐. 현장에서 두 학생의 설명을 먼저 들음.',['minsu','junho']);
+      addDynamicTask('rare_fight_health','준호 보건실 상태 확인',742,3,'넘어진 뒤 통증 여부를 확인한다.');
+      addDynamicTask('rare_fight_report','학생 간 신체 충돌 사실 기록',885,7,'현장 조치와 학생 진술을 구분해 기록한다.');
+      out={title:'두 학생의 말이 동시에 쏟아졌다.',text:'누가 먼저 밀었는지 설명이 엇갈리는 동안 주변 아이들이 계속 몰렸다. 안전 확인과 기록이 뒤로 밀렸다.'};
+    }
+    if(key==='rare_fight:send_both'){
+      state.flags.rareHandled='fight_separate';
+      addDynamicTask('rare_fight_health','준호 상태 확인',748,3,'넘어진 뒤 팔 상태를 확인한다.');
+      addDynamicTask('rare_fight_report','학생 간 신체 충돌 사실 기록',890,6,'두 학생을 분리한 뒤 사건 경위를 기록한다.');
+      out={title:'둘을 떨어뜨려 큰 충돌은 멈췄다.',text:'하지만 준호가 다친 정도와 사건 경위는 아직 확인해야 한다.'};
+    }
+
+    if(key==='rare_throw:clear_support'){
+      state.flags.rareHandled='throw_safe';
+      addDraft('rare_throw_record','긴급 · 교사 쪽으로 물건을 던진 상황','민수가 안내 중 격앙되어 교사 방향으로 필통을 던짐. 주변 학생과 거리를 확보하고 지원 요청.',['minsu']);
+      addDynamicTask('rare_throw_report','교사 대상 위협 행동 사실 기록',915,6,'발생 전후 상황·학생 발언·안전 조치를 사실 중심으로 기록한다.');
+      addDynamicTask('rare_throw_support','관리자·지원 인력과 후속 대응 협의',900,4,'학생과 학급의 안전 확보를 위한 후속 대응을 협의한다.');
+      out={title:'교실의 거리를 확보하고 도움을 불렀다.',text:'다른 학생을 먼저 안전하게 한 뒤 민수가 진정할 공간과 지원 인력을 확보했다. 이후 처리 업무가 여러 건 생겼다.'};
+    }
+    if(key==='rare_throw:talk_alone'){
+      state.flags.rareHandled='throw_close';
+      addDynamicTask('rare_throw_report','교사 대상 위협 행동 사실 기록',900,7,'필통 투척과 이후 대화 내용을 사실 중심으로 정리한다.');
+      out={title:'민수와 바로 대화를 시도했다.',text:'민수는 여전히 흥분해 있었고 주변 학생들도 상황을 계속 보고 있었다. 대화 외에 안전과 학급 정리 업무가 남았다.'};
+    }
+    if(key==='rare_throw:send_out'){
+      state.flags.rareHandled='throw_out';
+      addDynamicTask('rare_throw_location','민수 위치·안전 확인',835,3,'교실 밖으로 나간 민수가 어디에서 누구와 있는지 확인한다.');
+      addDynamicTask('rare_throw_report','교사 대상 위협 행동 사실 기록',905,6,'필통 투척과 교실 밖 이동 조치를 기록한다.');
+      out={title:'민수는 교실 밖으로 나갔다.',text:'교실은 잠깐 조용해졌지만 민수의 안전과 이후 지원 여부를 바로 확인해야 한다.'};
+    }
+
+    if(key==='rare_disclosure:safe_listen'){
+      state.flags.rareHandled='disclosure_safe';
+      discover('arin','가정에서의 안전과 관련된 중대한 말을 교사에게 꺼낸 적이 있음');
+      addDraft('rare_disclosure_record','긴급 · 아린 학생 보호 관련 말','하교 준비 중 아린이 “오늘 집에 가기 싫다”, “어제 집에서 맞았다”고 말함. 필요한 만큼만 듣고 학교 학생 보호 절차로 연결함.',['arin']);
+      addDynamicTask('rare_protection_lead','학생 보호 담당자에게 즉시 공유',875,4,'학생의 표현을 그대로 기록해 학교 학생 보호 절차에 따라 담당자에게 공유한다.');
+      addDynamicTask('rare_protection_plan','아린 하교 전 안전 계획 확인',888,4,'학생을 혼자 돌려보내지 않고 학교 내 담당자와 안전한 다음 조치를 확인한다.');
+      out={title:'아린이 더 말할 수 있는 안전한 자리를 마련했다.',text:'교사가 사실을 조사하려 하기보다 학생의 말을 그대로 남기고 학교의 학생 보호 절차로 연결했다. 하교 전 처리할 일이 급격히 늘었다.'};
+    }
+    if(key==='rare_disclosure:call_home'){
+      state.flags.rareHandled='disclosure_homecall';
+      addDynamicTask('rare_protection_review','학생 보호 담당자와 즉시 상황 재검토',866,5,'학생의 말과 보호자 연락 전후 상황을 담당자와 즉시 검토한다.');
+      addDynamicTask('rare_protection_plan','아린 하교 전 안전 계획 확인',884,4,'하교 전 학생의 안전한 다음 조치를 학교 절차에 따라 확인한다.');
+      out={title:'전화 버튼을 누르기 전 처리 순서를 다시 확인할 필요가 생겼다.',text:'가정 안전과 관련된 말은 일반 생활지도와 다르다. 학교의 학생 보호 절차와 담당자 확인이 우선되어야 할 수 있다.'};
+    }
+    if(key==='rare_disclosure:ask_details'){
+      state.flags.rareHandled='disclosure_questioned';
+      addDraft('rare_disclosure_record','긴급 · 아린 학생 보호 관련 말','하교 준비 중 아린이 가정에서 맞았다고 말해 교사가 추가 질문을 함. 학생 표현과 질문 내용을 구분해 기록할 필요.',['arin']);
+      addDynamicTask('rare_protection_lead','학생 보호 담당자에게 즉시 공유',870,5,'학생이 처음 말한 표현과 이후 질문 내용을 구분해 담당자에게 공유한다.');
+      out={title:'아린은 몇 번 대답하다가 말수가 줄었다.',text:'이제 처음 학생이 자발적으로 한 말과 교사의 질문 뒤 나온 내용을 구분해서 기록해야 한다.'};
+    }
+
     return out;
   }
 
@@ -562,11 +796,25 @@
   function completeTask(id){
     var t=allTasks().find(function(x){return x.id===id});if(!t)return;
     var st=state.taskStatus[id];if(st==='done')return;
+    if(!taskDocsReady(t)){
+      var missing=(t.requiredDocs||[]).filter(function(docId){return !state.checkedDocs[docId]}).map(function(docId){var d=documentById(docId);return d?d.title:docId});
+      toast('확인이 더 필요합니다.',missing.join(' · '),true);return;
+    }
+    if(!taskAnswerReady(t)){
+      toast('입력할 내용을 먼저 고르세요.',t.review.prompt,true);return;
+    }
     consumeMinutes(t.duration,t.title);
-    state.taskStatus[id]='done';
+    if(t.review&&state.taskAnswers[id]!==t.review.correct){
+      state.taskStatus[id]='done';
+      state.flags['mistake_'+id]=true;
+      addDynamicTask(id+'_correction',t.title+' 정정',Math.min(1045,state.minute+28),3,'입력 내용이 원자료와 맞지 않아 다시 확인해 정정해야 한다.');
+      toast('입력 내용이 맞지 않습니다.','정정 업무가 추가되었습니다.',true);
+    }else{
+      state.taskStatus[id]='done';
+      toast(t.title,'처리했습니다.',false);
+    }
     if(id==='attendance')state.flags.attendanceDone=true;
     if(id==='call_arin_parent')state.flags.arinCallbackDone=true;
-    toast(t.title,'처리했습니다.',false);
     save();renderAll();renderModal('computer');
   }
 
@@ -601,8 +849,9 @@
     q('#visitorStage').textContent=e.stage;
     q('#visitorDialogue').textContent='“'+e.dialogue+'”';
     var avatar=q('#visitorAvatar'),s=student(e.studentId);
-    avatar.dataset.kind=e.type==='phone'?'phone':(e.role==='동료 교사'?'adult':'student');
+    avatar.dataset.kind=e.type==='phone'?'phone':(e.role==='동료 교사'||e.role==='관리자'||e.role==='보건실 전달'?'adult':'student');
     avatar.dataset.tone=s?s.tone:'';
+    q('#visitorCard').classList.toggle('urgent',!!e.rare);
     var context='';
     if(e.studentId){
       var rows=state.records.filter(function(r){return r.studentIds.indexOf(e.studentId)>=0}).slice(-2);
@@ -613,7 +862,7 @@
     q('#actionList').innerHTML=e.actions.map(function(a){
       return '<button type="button" data-event-action="'+escapeHtml(a.id)+'">'+escapeHtml(a.label)+'<small>약 '+formatCost(a.cost)+' 소요</small></button>';
     }).join('');
-    q('#deferButton').textContent=e.type==='phone'?'잠시 후 다시 받는다':'지금은 넘어간다';
+    q('#deferButton').textContent=e.rare?'긴급 상황을 뒤로 미룬다':(e.type==='phone'?'잠시 후 다시 받는다':'지금은 넘어간다');
   }
   function formatCost(n){return n<1?Math.round(n*60)+'초':n+'분'}
 
@@ -630,7 +879,7 @@
     }
     ids.forEach(function(id){
       var e=eventDef(id),wait=Math.max(0,Math.ceil((state.deferUntil[id]||state.minute)-state.minute));
-      html+='<button class="waiting-item" data-wait-event="'+escapeHtml(id)+'"><strong>'+escapeHtml(e.name)+'</strong><small>'+(wait?'잠시 미룸 · '+wait+'분':'기다리는 중 · '+escapeHtml(e.role))+'</small></button>';
+      html+='<button class="waiting-item '+(e.rare?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(e.name)+'</strong><small>'+(wait?'잠시 미룸 · '+wait+'분':'기다리는 중 · '+escapeHtml(e.role))+'</small></button>';
     });
     list.innerHTML=html||'<p class="empty-copy">아직 기다리는 일이 없습니다.</p>';
   }
@@ -683,12 +932,33 @@
       body.innerHTML=(drafts||'<p class="empty-copy">새로 적을 기록이 없습니다.</p>')+'<div class="record-list">'+(entries||'<p class="empty-copy">아직 남긴 기록이 없습니다.</p>')+'</div>';
     }else if(kind==='computer'){
       kicker.textContent='업무 컴퓨터';title.textContent='오늘 처리할 업무';
-      var tasks=availableTasks();
-      body.innerHTML='<div class="computer-list">'+tasks.map(function(t){
+      var tasks=availableTasks(),docs=availableDocuments();
+      var docHtml='<div class="computer-docs"><h3>확인할 자료</h3><div class="doc-chip-list">'+docs.map(function(d){
+        return '<button class="doc-chip '+(state.checkedDocs[d.id]?'checked':'')+'" data-doc-id="'+escapeHtml(d.id)+'">'+(state.checkedDocs[d.id]?'✓ ':'')+escapeHtml(d.title)+'</button>';
+      }).join('')+'</div></div>';
+      body.innerHTML=docHtml+'<div class="computer-list">'+tasks.map(function(t){
         var st=state.taskStatus[t.id],done=st==='done',over=st==='overdue';
-        return '<div class="computer-task'+(over?' overdue':'')+'"><div><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(t.source)+' · '+(done?'처리 완료':over?'마감 지남 '+fmtTime(t.due):'마감 '+fmtTime(t.due))+'</small><p>'+escapeHtml(t.detail)+'</p></div>'+
+        var req=(t.requiredDocs||[]).map(function(id){var d=documentById(id);return '<span class="req-doc '+(state.checkedDocs[id]?'ok':'')+'">'+(state.checkedDocs[id]?'✓ ':'')+escapeHtml(d?d.title:id)+'</span>'}).join('');
+        var review='';
+        if(t.review&&!done){
+          review='<div class="review-prompt"><strong>'+escapeHtml(t.review.prompt)+'</strong><div class="review-options">'+t.review.options.map(function(opt,i){
+            return '<button type="button" class="'+(state.taskAnswers[t.id]===i?'selected':'')+'" data-task-answer="'+escapeHtml(t.id)+'" data-answer-index="'+i+'">'+escapeHtml(opt)+'</button>';
+          }).join('')+'</div></div>';
+        }
+        return '<div class="computer-task'+(over?' overdue':'')+'"><div><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(t.source)+' · '+(done?'처리 완료':over?'마감 지남 '+fmtTime(t.due):'마감 '+fmtTime(t.due))+'</small><p>'+escapeHtml(t.detail)+'</p>'+(req?'<div class="req-docs">'+req+'</div>':'')+review+'</div>'+
           '<button data-complete-task="'+escapeHtml(t.id)+'" '+(done?'disabled':'')+'>'+(done?'완료':formatCost(t.duration)+' 처리')+'</button></div>';
       }).join('')+'</div>';
+    }else if(kind==='document'){
+      var doc=documentById(studentId);if(!doc){renderModal('computer');return}
+      state.checkedDocs[doc.id]=true;
+      consumeMinutes(.35,'자료 확인');
+      kicker.textContent=doc.source+' · 확인 자료';title.textContent=doc.title;
+      body.innerHTML='<button class="back-button" data-back-computer="1">← 업무 화면으로</button><article class="document-sheet">'+
+        '<div class="document-stamp">확인 '+fmtTime(state.minute)+'</div>'+
+        '<h3>'+escapeHtml(doc.title)+'</h3>'+
+        '<ul>'+doc.lines.map(function(line){return '<li>'+escapeHtml(line)+'</li>'}).join('')+'</ul>'+
+        '<p>'+escapeHtml(doc.note||'')+'</p></article>';
+      save();renderAll();
     }else if(kind==='phone'){
       kicker.textContent='전화기';title.textContent='통화 메모';
       var missed=eventDefs.filter(function(e){return e.type==='phone'&&state.eventStatus[e.id]==='missed'});
@@ -742,7 +1012,7 @@
       {title:'정답을 맞히는 게임이 아닙니다.',text:'학생, 보호자, 학교 업무가 한꺼번에 들어옵니다. 무엇을 지금 처리하고 무엇을 미룰지 정하는 것이 첫 번째 일입니다.',visual:'학생이 기다리는 동안 전화가 울릴 수도 있고, 컴퓨터 업무의 마감도 계속 다가옵니다.'},
       {title:'책상 위 물건이 실제 도구입니다.',text:'명부에서는 아이를 알아가고, 기록철에는 직접 겪은 일을 남깁니다. 컴퓨터에서는 행정 업무를 처리합니다.',visual:'📚 명부　📒 기록철　🖥️ 컴퓨터　☎ 전화　🗒️ 포스트잇'},
       {title:'기록하지 않아도 됩니다.',text:'다만 며칠 뒤가 아니라 오늘 오후에도 보호자가 전화를 할 수 있습니다. 그때 기록이 있으면 정확히 되짚을 수 있습니다.',visual:'사건 → 기록 여부는 선택 → 나중에 그 기록이 실제로 필요해질 수 있음'},
-      {title:'첫날의 목표는 한 가지입니다.',text:'완벽하게 처리하려 하지 말고, 이 반에서 누가 어떤 아이인지 조금씩 기억해 보세요.',visual:'“아, 또 민수구나.”라는 생각이 들기 시작하면 이 게임의 첫 번째 목표는 성공입니다.'}
+      {title:'오후로 갈수록 일이 겹칩니다.',text:'처음에는 한 가지씩 들어오지만 점심 이후에는 서류 확인, 전화, 학생 일, 마감 업무가 동시에 쌓입니다. 자료를 열어 대조하는 동안에도 시간은 조금씩 흐릅니다.',visual:'확인 자료 → 내용 대조 → 입력 → 잘못 입력하면 정정 업무 추가. 아주 드물게 긴급 사건이 끼어들어 하루 계획을 흔들 수도 있습니다.'}
     ];
     return rows[clamp(step,0,rows.length-1)];
   }
@@ -756,8 +1026,9 @@
     if(state.finished){requestAnimationFrame(tick);return}
     var dt=Math.min(.1,(now-state.lastReal)/1000);state.lastReal=now;
     var toolOpen=!q('#toolModal').hidden,tutorialOpen=!q('#tutorial').hidden,endOpen=!q('#dayEnd').hidden;
-    if(!toolOpen&&!tutorialOpen&&!endOpen){
-      var speed=state.activeEvent?0.15:state.resultEvent?0.04:0.44;
+    if(!tutorialOpen&&!endOpen){
+      var base=state.minute<620?.40:state.minute<760?.46:state.minute<890?.52:.48;
+      var speed=toolOpen?.08:state.activeEvent?.16:state.resultEvent?.05:base;
       state.minute+=dt*speed;
       processEvents();checkDeadlines();checkDayEnd();renderAll();
     }
@@ -788,6 +1059,9 @@
     if(e.target.closest('[data-back-roster]')){renderModal('roster');return}
     var d=e.target.closest('[data-record-draft]');if(d){addRecordFromDraft(d.dataset.recordDraft);return}
     var t=e.target.closest('[data-complete-task]');if(t){completeTask(t.dataset.completeTask);return}
+    var doc=e.target.closest('[data-doc-id]');if(doc){renderModal('document',doc.dataset.docId);return}
+    if(e.target.closest('[data-back-computer]')){renderModal('computer');return}
+    var ans=e.target.closest('[data-task-answer]');if(ans){state.taskAnswers[ans.dataset.taskAnswer]=Number(ans.dataset.answerIndex);save();renderModal('computer');return}
     if(e.target.id==='noteSave'){
       var input=q('#noteInput'),v=input&&input.value.trim();if(v){state.notes.unshift(v);state.notes=state.notes.slice(0,12);save();renderModal('note')}
     }
