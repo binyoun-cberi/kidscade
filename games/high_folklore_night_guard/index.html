@@ -394,13 +394,13 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
     <h1>괴담 야간경비</h1>
     <p>할로윈 행사가 끝난 학교. 모두 하교한 뒤 빈 교실과 복도에서 이상 현상이 시작됐습니다. 야간 경비실의 CCTV와 문·조명 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
     <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력, 도감 장비 아이콘"><div class="rules-box">
-      <b>이 게임의 핵심</b><br>
-      귀신마다 규칙은 아주 단순합니다. <b>봐야 하는 존재 / 보면 안 되는 존재 / 문을 열어야 하는 존재 / 닫아야 하는 존재</b>를 구분하세요.<br>
-      도감 속 <b>전승 정보</b>와 <b>게임용 대응 규칙</b>은 서로 다른 내용으로 표시됩니다.
+      <b>야간 경비 원칙</b><br>
+      CCTV·조명·문·특수 장치를 직접 시험해 보며 이상 현상의 규칙을 찾아내세요.<br>
+      같은 행동이 모든 존재에게 통하지는 않습니다.
     </div>
     <div class="mode-grid">
-      <button class="mode" data-mode="practice" type="button"><b>연습 근무</b><small>도깨비 · 유키온나 · 처녀귀신<br>약 2분 30초 · 규칙을 익히기 좋아요.</small></button>
-      <button class="mode" data-mode="full" type="button"><b>할로윈 근무</b><small>6종 모두 등장<br>약 3분 30초 · 서로 반대되는 규칙이 겹칩니다.</small></button>
+      <button class="mode" data-mode="practice" type="button"><b>연습 근무</b><small>이상 현상 3종<br>약 2분 30초 · 관찰 연습에 좋아요.</small></button>
+      <button class="mode" data-mode="full" type="button"><b>할로윈 근무</b><small>이상 현상 6종<br>약 3분 30초 · 규칙을 직접 찾아야 합니다.</small></button>
     </div>
     <div class="tipline">고어 표현 없이 조명·소리·실루엣 중심으로 구성된 공포 게임입니다.</div>
   </div>
@@ -453,7 +453,7 @@ var GHOSTS={
 var state={
   running:false,paused:false,mode:'practice',elapsed:0,duration:150,power:100,currentCam:'korea',
   cameraOpen:false,leftDoor:false,rightDoor:false,leftLight:false,rightLight:false,gameOver:false,
-  discovered:{},encounters:{},lastTick:0,nextEvent:7,
+  discovered:{},mastered:{},encounters:{},lastTick:0,nextEvent:7,
   dokkaebi:null,yuki:null,maiden:{active:false,stage:0,unseen:0,viewed:0},
   egg:null,corridor:null,score:0,cleared:0
 };
@@ -476,6 +476,7 @@ function loadSave(){
 }
 function save(){
   var s=loadSave();s.discovered=Object.assign({},s.discovered||{},state.discovered);
+  s.mastered=Object.assign({},s.mastered||{},state.mastered);
   s.best=Math.max(Number(s.best||0),state.score||0);s.clears=Number(s.clears||0)+(state.gameOver===false&&state.elapsed>=state.duration?1:0);
   localStorage.setItem(STORAGE,JSON.stringify(s));
 }
@@ -509,8 +510,15 @@ function svg(type){
   return '<span class="ghost-sprite ghost-sprite-'+idx+'" aria-hidden="true"></span>';
 }
 function discover(id){
-  if(!state.discovered[id]){state.discovered[id]=true;toast(GHOSTS[id].name+' 도감 정보가 열렸습니다.');renderCodex()}
+  state.discovered[id]=true;
   state.encounters[id]=(state.encounters[id]||0)+1;
+}
+function masterGhost(id){
+  if(!id||!GHOSTS[id])return;
+  state.discovered[id]=true;
+  state.mastered[id]=true;
+  save();
+  renderCodex();
 }
 function toast(msg){
   els.toast.textContent=msg;els.toast.classList.add('show');clearTimeout(toast._t);
@@ -519,15 +527,17 @@ function toast(msg){
 function setPaused(v){state.paused=v}
 function toggleModal(modal,show){modal.classList.toggle('show',show);setPaused(show)}
 function renderHelp(){
-  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="야간 경비 장비"><div class="rules-box"><b>1. CCTV</b>로 어느 전시실에 이상이 생겼는지 확인합니다.<br><b>2. 서쪽/동쪽 불</b>은 문 앞 존재의 모습을 확인할 때만 잠깐 켭니다.<br><b>3. 문</b>은 늘 닫아 두면 봉인력이 크게 줄고, 어떤 존재에게는 오히려 위험합니다.<br><b>4. 도감</b>은 열어 둔 동안 시간이 멈춥니다.</div><p><b>기억할 것:</b> 처녀귀신은 자주 보기 / 달걀귀신은 오래 보지 않기 / 저승사자는 문 열기 / 늑대인간은 문 닫기.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
+  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="야간 경비 장비"><div class="rules-box"><b>CCTV</b>로 교실과 복도를 확인합니다.<br><b>좌우 불</b>은 문 앞을 잠깐 확인합니다.<br><b>좌우 문</b>은 닫아 둔 동안 봉인력을 더 사용합니다.<br><b>특수 장치</b>는 해당 장소에서 필요할 때만 나타납니다.<br><b>도감</b>을 보는 동안 시간은 멈춥니다.</div><p>어떤 현상이 어떤 장치에 반응하는지는 직접 관찰해 알아내세요.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
   $('helpClose').onclick=function(){toggleModal(els.help,false)};
 }
 function renderCodex(){
-  var saved=loadSave(),known=Object.assign({},saved.discovered||{},state.discovered||{});
-  var html='<h2>세계 괴담 도감</h2><p>파란 칸은 <b>전승·문화 정보</b>, 노란 칸은 이 작품에서 만든 <b>게임 규칙</b>입니다. 게임 규칙을 실제 민속 전승으로 보지 마세요.</p><div class="codex-grid">';
+  var saved=loadSave();
+  var known=Object.assign({},saved.discovered||{},state.discovered||{});
+  var mastered=Object.assign({},saved.mastered||{},state.mastered||{});
+  var html='<h2>세계 괴담 도감</h2><p>처음 만난 존재는 전승 정보만 기록됩니다. <b>직접 대응에 성공하거나 실패를 겪은 뒤에야 게임 속 대응법이 기록됩니다.</b></p><div class="codex-grid">';
   Object.keys(GHOSTS).forEach(function(id){
-    var g=GHOSTS[id],open=!!known[id];
-    html+='<article class="codex-card '+(open?'':'locked')+'"><h3>'+(open?g.name:'???')+'</h3><span class="tag">'+(open?g.origin:'미발견')+'</span><span class="tag">'+(open?g.kind:'?')+'</span><div class="fact"><b>전승 정보</b><br>'+(open?g.fact:'근무 중 직접 조우하면 정보가 열립니다.')+'</div><div class="game-rule"><b>게임 속 규칙</b><br>'+(open?g.rule:'아직 알 수 없습니다.')+'</div></article>';
+    var g=GHOSTS[id],seen=!!known[id],solved=!!mastered[id];
+    html+='<article class="codex-card '+(seen?'':'locked')+'"><h3>'+(seen?g.name:'???')+'</h3><span class="tag">'+(seen?g.origin:'미발견')+'</span><span class="tag">'+(seen?g.kind:'?')+'</span><div class="fact"><b>전승 정보</b><br>'+(seen?g.fact:'CCTV에서 직접 발견해 보세요.')+'</div><div class="game-rule"><b>대응 기록</b><br>'+(solved?g.rule:(seen?'아직 알아내지 못했습니다. 직접 관찰하고 시험해 보세요.':'아직 기록이 없습니다.'))+'</div></article>';
   });
   html+='</div><br><button class="primary" id="codexClose" type="button">도감 닫기</button>';
   els.codexContent.innerHTML=html;
@@ -645,26 +655,26 @@ function toggleLight(side){
 }
 function resolveDokkaebi(){
   if(!state.dokkaebi||!state.dokkaebi.active)return;
-  state.dokkaebi.active=false;state.cleared++;state.score+=120;discover('dokkaebi');sound('good');toast('도깨비의 장난을 바로잡았습니다.');renderCamera()
+  state.dokkaebi.active=false;state.cleared++;state.score+=120;masterGhost('dokkaebi');sound('good');renderCamera()
 }
 function useHeater(){
   if(!(state.yuki&&state.yuki.active&&state.currentCam==='japan'))return;
   if(state.power<7){toast('봉인력이 부족합니다.');return}
-  spend(7);state.yuki.frost=Math.max(0,state.yuki.frost-68);discover('yuki');state.score+=50;sound('good');toast('과학실 난방을 올렸습니다.');
-  if(state.yuki.frost<=4){state.yuki.active=false;state.cleared++;state.score+=80;toast('서리가 사라졌습니다.');}
+  spend(7);state.yuki.frost=Math.max(0,state.yuki.frost-68);discover('yuki');state.score+=50;sound('good');
+  if(state.yuki.frost<=4){state.yuki.active=false;state.cleared++;state.score+=80;masterGhost('yuki');}
   renderCamera()
 }
 function spawnDokkaebi(){
   if(state.dokkaebi&&state.dokkaebi.active)return false;
-  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');toast('6-1 교실에서 물건 하나가 흔들립니다. 누군가 숨어 있는 것 같습니다.');return true
+  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');return true
 }
 function spawnYuki(){
   if(state.yuki&&state.yuki.active)return false;
-  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);toast('과학실 창가부터 서리가 번지기 시작합니다.');return true
+  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);return true
 }
 function spawnMaiden(){
   if(state.maiden.active)return false;
-  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');toast('6-1 교실 맨 뒤에 사람 같은 형체가 잠깐 보였습니다.');return true
+  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');return true
 }
 function spawnEgg(){
   if(state.mode==='practice'||(state.egg&&state.egg.active))return false;
@@ -673,7 +683,7 @@ function spawnEgg(){
 function spawnCorridor(type){
   if(state.mode==='practice'||(state.corridor&&state.corridor.active))return false;
   var side=Math.random()<.5?'left':'right';state.corridor={active:true,type:type,side:side,timer:0,safeTime:0};
-  discover(type);if(type==='wolf')sound('growl');else{sound('knock');toast((side==='left'?'서쪽':'동쪽')+' 복도에서 느린 발소리가 들립니다.')}
+  discover(type);if(type==='wolf')sound('growl');else sound('knock')
   return true
 }
 function scheduleEvent(){
@@ -690,7 +700,7 @@ function scheduleEvent(){
 function updateGhosts(dt){
   if(state.dokkaebi&&state.dokkaebi.active){
     state.dokkaebi.timer+=dt;
-    if(state.dokkaebi.timer>12){state.dokkaebi.active=false;spend(7);state.score=Math.max(0,state.score-40);sound('warn');toast('도깨비가 CCTV 순서를 뒤섞고 봉인력을 빼앗았습니다.');renderCamera()}
+    if(state.dokkaebi.timer>12){state.dokkaebi.active=false;spend(7);state.score=Math.max(0,state.score-40);sound('warn');renderCamera()}
   }
   if(state.yuki&&state.yuki.active){
     state.yuki.frost+=dt*(state.mode==='practice'?4.2:5.1);
@@ -711,14 +721,13 @@ function updateGhosts(dt){
         if(state.maiden.unseen>(state.mode==='practice'?12:10)){
           state.maiden.unseen=0;state.maiden.stage++;
           sound('warn');
-          if(state.maiden.stage>=3)toast('서쪽 문 바로 밖에서 인기척이 납니다.');
         }
       }
     }else{
       if(state.leftDoor){
         state.maiden.viewed+=dt;
         state.maiden.unseen=0;
-        if(state.maiden.viewed>2){state.maiden={active:false,stage:0,unseen:0,viewed:0};state.cleared++;state.score+=120;toast('처녀귀신이 물러났습니다.');sound('good')}
+        if(state.maiden.viewed>2){state.maiden={active:false,stage:0,unseen:0,viewed:0};state.cleared++;state.score+=120;masterGhost('maiden');sound('good')}
       }else{
         state.maiden.viewed=0;state.maiden.unseen+=dt;
         if(state.maiden.unseen>5){fail('maiden');return}
@@ -730,17 +739,17 @@ function updateGhosts(dt){
     var staring=state.cameraOpen&&state.currentCam===state.egg.cam;
     if(staring){state.egg.stare+=dt*58;if(state.egg.stare>=100){fail('egg');return}}
     else state.egg.stare=Math.max(0,state.egg.stare-dt*48);
-    if(state.egg.life>8&&!staring){state.egg.active=false;state.cleared++;state.score+=85;toast('얼굴 없는 형체가 사라졌습니다.')}
+    if(state.egg.life>8&&!staring){state.egg.active=false;state.cleared++;state.score+=85;masterGhost('egg');sound('good')}
   }
   if(state.corridor&&state.corridor.active){
     var c=state.corridor;c.timer+=dt;
     var closed=c.side==='left'?state.leftDoor:state.rightDoor;
     if(c.type==='wolf'){
-      if(closed){c.safeTime+=dt;if(c.safeTime>1.7){state.score+=110;state.cleared++;state.corridor=null;sound('good');toast('늑대인간이 문을 긁다가 물러났습니다.');}}
+      if(closed){c.safeTime+=dt;if(c.safeTime>1.7){state.score+=110;state.cleared++;masterGhost('wolf');state.corridor=null;sound('good');}}
       else c.safeTime=0;
       if(c&&c.timer>5.8&&!closed){fail('wolf');return}
     }else{
-      if(!closed){c.safeTime+=dt;if(c.safeTime>2.1){state.score+=110;state.cleared++;state.corridor=null;sound('good');toast('저승사자가 관리실 앞을 조용히 지나갔습니다.');}}
+      if(!closed){c.safeTime+=dt;if(c.safeTime>2.1){state.score+=110;state.cleared++;masterGhost('reaper');state.corridor=null;sound('good');}}
       else c.safeTime=0;
       if(c&&c.timer>6.2&&closed){fail('reaper');return}
     }
@@ -771,7 +780,7 @@ function reset(mode){
   var known=loadSave().discovered||{};
   state.running=true;state.paused=false;state.mode=mode;state.elapsed=0;state.duration=mode==='practice'?150:210;
   state.power=100;state.currentCam='korea';state.cameraOpen=false;state.leftDoor=false;state.rightDoor=false;state.leftLight=false;state.rightLight=false;
-  state.gameOver=false;state.discovered=Object.assign({},known);state.encounters={};state.nextEvent=6;state.dokkaebi=null;state.yuki=null;
+  state.gameOver=false;state.discovered=Object.assign({},known);state.mastered=Object.assign({},loadSave().mastered||{});state.encounters={};state.nextEvent=6;state.dokkaebi=null;state.yuki=null;
   state.maiden={active:false,stage:0,unseen:0,viewed:0};state.egg=null;state.corridor=null;state.score=0;state.cleared=0;state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');els.scare.classList.remove('show')
 }
@@ -779,7 +788,7 @@ function start(mode){
   ensureAudio();els.intro.classList.remove('show');reset(mode);toast(mode==='practice'?'연습 근무를 시작합니다.':'할로윈 특별 근무를 시작합니다.');sound('good')
 }
 function fail(id){
-  if(state.gameOver)return;state.gameOver=true;state.paused=true;state.running=false;
+  if(state.gameOver)return;if(id!=='power')masterGhost(id);state.gameOver=true;state.paused=true;state.running=false;
   var g=id==='power'?{name:'봉인력 고갈',svg:'reaper'}:GHOSTS[id];
   sound('scare');els.scareArt.innerHTML=svg(g.svg||'reaper');els.scareName.textContent=g.name;els.scare.classList.add('show');
   setTimeout(function(){els.scare.classList.remove('show');showResult(false,id)},850)
@@ -796,15 +805,9 @@ function quizHtml(){
   return '<div class="quiz"><h3>짧은 근무 보고서</h3>'+q.map(function(x,i){return '<div class="quiz-q"><b>'+(i+1)+'. '+x.q+'</b><div class="answers">'+x.a.map(function(a,j){return '<button class="answer" data-q="'+i+'" data-a="'+j+'" data-ok="'+x.ok+'" type="button">'+a+'</button>'}).join('')+'</div></div>'}).join('')+'</div>';
 }
 function showResult(ok,cause){
-  var causeText='';
-  if(!ok){
-    if(cause==='power')causeText='장치를 너무 오래 켜 두어 봉인력이 모두 떨어졌습니다.';
-    else if(cause==='yuki')causeText='과학실의 성에가 화면 전체를 덮기 전에 난방을 사용해야 했습니다.';
-    else if(cause==='maiden')causeText='처녀귀신은 CCTV로 자주 확인하면 접근을 늦출 수 있습니다. 문 앞까지 왔다면 서쪽 문을 잠깐 닫아야 합니다.';
-    else if(cause==='egg')causeText='달걀귀신은 발견한 뒤 오래 바라보면 안 됩니다. 바로 다른 카메라로 돌리세요.';
-    else if(cause==='wolf')causeText='늑대인간의 빛나는 눈이나 으르렁거림을 확인했다면 해당 문을 닫아야 합니다.';
-    else if(cause==='reaper')causeText='이 게임의 저승사자는 문을 닫으면 위험합니다. 지나갈 수 있도록 문을 열어 두어야 합니다.';
-  }
+  var causeText=cause==='power'
+    ? '학교의 봉인 설비가 멈췄습니다. 어떤 장치를 너무 오래 사용했는지 돌아보세요.'
+    : '무언가가 관리실까지 도달했습니다. 방금 전 CCTV와 소리에서 어떤 변화가 있었는지 떠올려 보세요.';
   els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'학교의 아침 조명이 켜졌습니다. 여러 존재의 규칙을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 해결한 이상현상 '+state.cleared+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">도감 보기</button></div>';
   els.result.classList.add('show');
   $('retryBtn').onclick=function(){els.result.classList.remove('show');els.intro.classList.add('show');state.paused=true};
