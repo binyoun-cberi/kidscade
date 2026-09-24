@@ -103,10 +103,12 @@
     const filterReplacement = `            function applyFilters() {
                 const delegated = window.KidscadeFilter?.apply?.({
                     age: currentAgeGroup,
-                    category: currentCategory,
+                    subject: currentCategory,
+                    genre: document.body.dataset.kidscadeGenre || 'all',
                     keyword: searchKeyword,
                     ageNames,
-                    categoryNames
+                    categoryNames,
+                    subjectNames
                 });
                 if (delegated) {
                     renderDashboards();
