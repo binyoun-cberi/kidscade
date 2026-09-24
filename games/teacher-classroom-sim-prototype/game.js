@@ -7,7 +7,7 @@
   var q=function(s){return document.querySelector(s)};
   var qa=function(s){return Array.from(document.querySelectorAll(s))};
   var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
-  var SAVE_KEY='kidscade.teacherDesk.v42';
+  var SAVE_KEY='kidscade.teacherDesk.v43';
 
   var students={
     minsu:{name:'민수',tone:'orange',icon:'🧒',base:'장난을 좋아하고 말보다 행동이 먼저 나오는 편',known:[]},
@@ -46,7 +46,11 @@
     {id:'class_survey',title:'학급 생활 설문 취합',source:'생활부',availableAt:770,due:818,duration:3,detail:'제출된 설문 수를 확인하고 미제출 학생을 표시한다.',requiredDocs:['survey_stack']},
     {id:'dismissal',title:'하교 변경사항 확인',source:'하교',availableAt:812,due:858,duration:3,detail:'보호자 메모와 평소 하교 방법을 대조해 오늘 변경을 반영한다.',requiredDocs:['dismissal_notes'],review:{prompt:'오늘 평소와 다르게 하교하는 학생은?',options:['민수','태호','서연'],correct:1}},
     {id:'art_materials',title:'미술 재료 수량 정리',source:'5교시',availableAt:845,due:905,duration:3,detail:'남은 재료와 사용 수량을 적어 다음 주문량을 정리한다.'},
-    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:870,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
+    {id:'return_forms',title:'가정통신문 회수 현황 입력',source:'학년',availableAt:790,due:846,duration:3,detail:'회수된 가정통신문과 미제출 학생을 확인한다.',requiredDocs:['return_form_stack'],review:{prompt:'아직 제출하지 않은 학생은?',options:['아린','준호','서연'],correct:0}},
+    {id:'library_overdue',title:'도서관 연체 학생 확인',source:'도서관',availableAt:824,due:878,duration:3,detail:'도서관에서 온 목록과 학생 이름을 대조한다.',requiredDocs:['library_memo'],review:{prompt:'현재 반에서 연체 도서가 있는 학생은?',options:['태호','민수','지우'],correct:1}},
+    {id:'aftercare_change',title:'돌봄·하교 변경 최종 확인',source:'하교',availableAt:856,due:912,duration:4,detail:'오후에 들어온 하교 변경과 돌봄 명단을 마지막으로 맞춘다.',requiredDocs:['aftercare_sheet','dismissal_notes'],review:{prompt:'오늘 평소 하교 방식과 다른 학생은?',options:['태호','민수','아린'],correct:0}},
+    {id:'tomorrow_notice',title:'내일 학년 공지 확인',source:'학년 메신저',availableAt:895,due:952,duration:3,detail:'내일 일정 변경과 준비물을 확인해 필요한 내용을 메모한다.',requiredDocs:['tomorrow_memo']},
+    {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:910,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
   ];
 
   var documentDefs=[
@@ -57,7 +61,11 @@
     {id:'contact_sheet',title:'보호자 연락처 변경 신청',availableAt:642,source:'행정실',lines:['지우 보호자 연락처 끝자리 7712 → 1840 변경','기존 비상연락망에는 아직 7712로 표시됨'],note:'변경 여부를 확인해 현재 명단과 맞춰야 한다.'},
     {id:'consent_forms',title:'수업 촬영 동의서',availableAt:696,source:'연구부',lines:['민수 · 동의','지우 · 동의','서연 · 동의','태호 · 동의','준호 · 동의','아린 · 미동의'],note:'촬영 화면에 미동의 학생이 포함되지 않도록 해야 한다.'},
     {id:'survey_stack',title:'학급 생활 설문',availableAt:742,source:'생활부',lines:['제출: 민수 · 지우 · 서연 · 준호 · 아린','미제출: 태호'],note:'미제출 학생은 다음 날 다시 안내한다.'},
-    {id:'dismissal_notes',title:'오늘 하교 변경 메모',availableAt:796,source:'보호자 메모',lines:['태호 · 오늘 학원차 탑승 안 함','15:10 보호자 직접 데리러 옴','다른 학생은 평소 하교 방법 유지'],note:'평소 방식과 다른 학생만 정확히 표시한다.'}
+    {id:'dismissal_notes',title:'오늘 하교 변경 메모',availableAt:796,source:'보호자 메모',lines:['태호 · 오늘 학원차 탑승 안 함','15:10 보호자 직접 데리러 옴','다른 학생은 평소 하교 방법 유지'],note:'평소 방식과 다른 학생만 정확히 표시한다.'},
+    {id:'return_form_stack',title:'가정통신문 회수표',availableAt:786,source:'학년',lines:['민수 · 제출','지우 · 제출','서연 · 제출','태호 · 제출','준호 · 제출','아린 · 미제출'],note:'미제출 학생에게는 다음 날 다시 안내해야 한다.'},
+    {id:'library_memo',title:'도서관 연체 알림',availableAt:820,source:'도서관',lines:['민수 · 「우리 몸 과학책」 반납 예정일 지남','그 외 학생 · 연체 없음'],note:'학생 이름을 잘못 입력하지 않도록 반 명부와 대조한다.'},
+    {id:'aftercare_sheet',title:'오늘 돌봄·하교 명단',availableAt:852,source:'돌봄',lines:['태호 · 평소 학원차','오늘 변경 메모 별도 확인 필요','민수 · 도보','지우 · 보호자 동행','서연 · 학원차','준호 · 도보','아린 · 돌봄교실'],note:'오후에 들어온 보호자 연락이 있으면 이 명단보다 최신 정보가 우선이다.'},
+    {id:'tomorrow_memo',title:'내일 학년 공지',availableAt:892,source:'학년 메신저',lines:['1교시 체육 → 2교시로 이동','준비물: 색연필 · 풀','학년 사진 촬영 10:40'],note:'오늘 촬영 동의 명단과 내일 일정이 서로 연결될 수 있다.'}
   ];
 
   var eventDefs=[
@@ -133,7 +141,7 @@
       ]
     },
     {
-      id:'junho_recess',type:'visitor',at:620,deadline:631,studentId:'junho',role:'학생',name:'준호',
+      id:'junho_recess',type:'visitor',at:670,deadline:682,studentId:'junho',role:'학생',name:'준호',
       stage:'준호가 약간 흥분한 목소리로 친구들보다 먼저 교탁으로 왔다.',
       dialogue:'선생님, 민수가 제가 반칙했다고 계속 뭐라 해요. 제가 먼저 안 그랬어요.',
       actions:[
@@ -163,6 +171,15 @@
       ]
     },
     {
+      id:'late_message',type:'visitor',at:878,deadline:889,role:'동료 교사',name:'옆반 선생님',
+      stage:'종례 직전 옆반 선생님이 복사물 한 묶음을 들고 왔다.',
+      dialogue:'내일 학년 사진 촬영 시간 바뀐 거 보셨어요? 미동의 학생도 다시 확인하래요.',
+      actions:[
+        {id:'check_tomorrow',label:'내일 공지와 촬영 동의 명단을 바로 대조한다',cost:3},
+        {id:'note_tomorrow',label:'메모만 남기고 하교 후 확인한다',cost:1}
+      ]
+    },
+    {
       id:'after_school_staff',type:'visitor',at:892,deadline:905,role:'동료 교사',name:'체육 선생님',
       stage:'아이들이 하교할 무렵 체육 선생님이 교실 문을 두드렸다.',
       dialogue:'오늘 준호랑 민수가 경기할 때 좀 과열됐어요. 큰일은 아니었는데 한번 알아두세요.',
@@ -182,7 +199,7 @@
       ]
     },
     {
-      id:'nurse_note',type:'visitor',at:620,deadline:631,studentId:'taeho',role:'보건실 전달',name:'보건 선생님',
+      id:'nurse_note',type:'visitor',at:650,deadline:662,studentId:'taeho',role:'보건실 전달',name:'보건 선생님',
       stage:'수업 사이에 보건 선생님이 짧은 확인서를 들고 왔다.',
       dialogue:'태호가 아까 잠깐 왔다 갔어요. 크게 아픈 건 아닌데 보호자 연락 여부만 확인해주세요.',
       actions:[
@@ -191,7 +208,7 @@
       ]
     },
     {
-      id:'research_rush',type:'visitor',at:638,deadline:646,role:'동료 교사',name:'연구부 선생님',
+      id:'research_rush',type:'visitor',at:688,deadline:697,role:'동료 교사',name:'연구부 선생님',
       stage:'쉬는 시간 끝나기 직전 연구부 선생님이 교실 문을 열었다.',
       dialogue:'체험학습 신청서 1차 숫자 지금 받을 수 있을까요? 미제출도 따로 적어주세요.',
       actions:[
@@ -200,9 +217,9 @@
       ]
     },
     {
-      id:'junho_form',type:'visitor',at:708,deadline:719,studentId:'junho',role:'점심 시간',name:'준호',
-      stage:'준호가 구겨진 종이 한 장을 들고 교탁으로 왔다.',
-      dialogue:'선생님, 이거 체험학습 종이 오늘까지예요? 엄마가 안 간다고 체크했어요.',
+      id:'taeho_form',type:'visitor',at:726,deadline:738,studentId:'taeho',role:'점심 시간',name:'태호',
+      stage:'태호가 가방 안쪽에서 접힌 종이 한 장을 찾아 교탁으로 왔다.',
+      dialogue:'선생님, 체험학습 종이 여기 있었어요. 엄마가 간다고 체크했어요.',
       actions:[
         {id:'receive',label:'신청서를 받아 기존 묶음과 같이 둔다',cost:1},
         {id:'check_form',label:'내용과 이름을 지금 확인한다',cost:2}
@@ -728,6 +745,15 @@
     if(key==='art_spill:student_clean'){
       out={title:'두 학생이 바닥을 정리하기 시작했다.',text:'수업은 계속됐지만 재료 수량과 정확한 경위는 확인하지 않았다.'};
     }
+    if(key==='late_message:check_tomorrow'){
+      state.checkedDocs.tomorrow_memo=true;state.checkedDocs.consent_forms=true;
+      out={title:'내일 일정과 촬영 동의 명단을 같이 확인했다.',text:'아린은 촬영 미동의이고 내일 사진 촬영 시간이 바뀌었다는 점을 한 번에 확인했다.'};
+    }
+    if(key==='late_message:note_tomorrow'){
+      addDynamicTask('late_photo_check','내일 촬영 동의·시간 다시 확인',948,3,'내일 학년 사진 촬영 시간 변경과 촬영 미동의 학생을 다시 확인한다.');
+      out={title:'포스트잇에 짧게 적어뒀다.',text:'지금은 시간을 아꼈지만 하교 후 확인할 일이 하나 더 늘었다.'};
+    }
+
     if(key==='admin_request:report_records'){
       out={title:'기록철을 보며 필요한 일만 정리해 전달했다.',text:'오늘 있었던 일을 기억에만 의존하지 않고 시간과 학생을 구분해서 설명했다.'};
     }
