@@ -2620,6 +2620,29 @@
       "classroom": false
     },
     {
+      "id": "high_body_muscle_lab",
+      "title": "내 몸아 움직여!",
+      "href": "games/high_body_muscle_lab/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🦴",
+      "description": "Q/W/E/R로 근육을 직접 수축시켜 팔을 굽히고 펴고, 버튼을 누르고, 사과를 옮기는 2D 뼈·근육 조작 과학 실험 게임!",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 8,
+      "players": [
+        "solo",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_disaster_city",
       "title": "재난도시: 마을을 지켜라!",
       "href": "games/high_disaster_city/index.html?v=3",
