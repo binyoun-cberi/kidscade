@@ -7,7 +7,7 @@
   var q=function(s){return document.querySelector(s)};
   var qa=function(s){return Array.from(document.querySelectorAll(s))};
   var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
-  var SAVE_KEY='kidscade.teacherDesk.v41';
+  var SAVE_KEY='kidscade.teacherDesk.v42';
 
   var students={
     minsu:{name:'민수',tone:'orange',icon:'🧒',base:'장난을 좋아하고 말보다 행동이 먼저 나오는 편',known:[]},
@@ -36,16 +36,16 @@
   ];
 
   var taskDefs=[
-    {id:'attendance',title:'출석 현황 제출',source:'교무',availableAt:525,due:550,duration:2,detail:'출석부와 아침 연락을 대조해 오늘 출결을 입력한다.',requiredDocs:['attendance_sheet'],review:{prompt:'아린의 출결 상태는?',options:['결석','지각 예정','정상 등교'],correct:1}},
-    {id:'morning_notice',title:'아침 전달사항 확인',source:'교무실',availableAt:535,due:565,duration:2,detail:'오늘 바뀐 일정과 교실 전달사항을 확인한다.',requiredDocs:['office_memo']},
-    {id:'fieldtrip',title:'현장체험학습 참가 현황 입력',source:'연구부',availableAt:555,due:625,duration:4,detail:'회수한 신청서를 직접 세어 참가·불참·미제출을 입력한다.',requiredDocs:['fieldtrip_forms'],review:{prompt:'현재 신청서 상태는?',options:['참가 3 · 불참 2 · 미제출 1','참가 4 · 불참 1 · 미제출 1','참가 5 · 불참 1 · 미제출 0'],correct:1}},
+    {id:'attendance',title:'출석 현황 제출',source:'교무',availableAt:532,due:558,duration:2,detail:'출석부와 아침 연락을 대조해 오늘 출결을 입력한다.',requiredDocs:['attendance_sheet'],review:{prompt:'현재 확인 가능한 아린의 출결 상태는?',options:['결석','지각 예정','현재 미확인'],correct:1}},
+    {id:'morning_notice',title:'아침 전달사항 확인',source:'교무실',availableAt:548,due:578,duration:2,detail:'오늘 바뀐 일정과 교실 전달사항을 확인한다.',requiredDocs:['office_memo']},
+    {id:'fieldtrip',title:'현장체험학습 참가 현황 입력',source:'연구부',availableAt:610,due:648,duration:4,detail:'회수한 신청서를 직접 세어 참가·불참·미제출을 입력한다.',requiredDocs:['fieldtrip_forms'],review:{prompt:'현재 신청서 상태는?',options:['참가 4 · 불참 1 · 미제출 1','참가 5 · 불참 1 · 미제출 0','참가 4 · 불참 0 · 미제출 2'],correct:0}},
     {id:'worksheets',title:'수학 활동지 8장 확인',source:'1교시',availableAt:580,due:720,duration:5,detail:'오늘 수학 활동지 중 확인이 필요한 8장을 살핀다.'},
-    {id:'meal_check',title:'급식 특이사항 재확인',source:'급식실',availableAt:615,due:680,duration:3,detail:'오늘 식단과 학급 급식 주의사항을 대조한다.',requiredDocs:['meal_roster'],review:{prompt:'오늘 따로 전달해야 할 학생은?',options:['준호','서연','태호'],correct:0}},
-    {id:'contact_check',title:'비상연락망 누락 확인',source:'행정실',availableAt:645,due:710,duration:3,detail:'보호자 연락처 변경 신청과 현재 명단을 대조한다.',requiredDocs:['contact_sheet']},
-    {id:'photo_consent',title:'촬영 동의 명단 입력',source:'연구부',availableAt:700,due:770,duration:4,detail:'수업 촬영 전 동의서를 다시 확인해 명단을 입력한다.',requiredDocs:['consent_forms'],review:{prompt:'촬영 미동의 학생은?',options:['아린','태호','지우'],correct:0}},
-    {id:'class_survey',title:'학급 생활 설문 취합',source:'생활부',availableAt:745,due:805,duration:3,detail:'제출된 설문 수를 확인하고 미제출 학생을 표시한다.',requiredDocs:['survey_stack']},
-    {id:'dismissal',title:'하교 변경사항 확인',source:'하교',availableAt:800,due:870,duration:3,detail:'보호자 메모와 평소 하교 방법을 대조해 오늘 변경을 반영한다.',requiredDocs:['dismissal_notes'],review:{prompt:'오늘 평소와 다르게 하교하는 학생은?',options:['민수','태호','서연'],correct:1}},
-    {id:'art_materials',title:'미술 재료 수량 정리',source:'5교시',availableAt:830,due:900,duration:3,detail:'남은 재료와 사용 수량을 적어 다음 주문량을 정리한다.'},
+    {id:'meal_check',title:'급식 특이사항 재확인',source:'급식실',availableAt:635,due:690,duration:3,detail:'오늘 식단과 학급 급식 주의사항을 대조한다.',requiredDocs:['meal_roster'],review:{prompt:'오늘 따로 전달해야 할 학생은?',options:['준호','서연','태호'],correct:0}},
+    {id:'contact_check',title:'비상연락망 누락 확인',source:'행정실',availableAt:670,due:725,duration:3,detail:'보호자 연락처 변경 신청과 현재 명단을 대조한다.',requiredDocs:['contact_sheet']},
+    {id:'photo_consent',title:'촬영 동의 명단 입력',source:'연구부',availableAt:724,due:780,duration:4,detail:'수업 촬영 전 동의서를 다시 확인해 명단을 입력한다.',requiredDocs:['consent_forms'],review:{prompt:'촬영 미동의 학생은?',options:['아린','태호','지우'],correct:0}},
+    {id:'class_survey',title:'학급 생활 설문 취합',source:'생활부',availableAt:770,due:818,duration:3,detail:'제출된 설문 수를 확인하고 미제출 학생을 표시한다.',requiredDocs:['survey_stack']},
+    {id:'dismissal',title:'하교 변경사항 확인',source:'하교',availableAt:812,due:858,duration:3,detail:'보호자 메모와 평소 하교 방법을 대조해 오늘 변경을 반영한다.',requiredDocs:['dismissal_notes'],review:{prompt:'오늘 평소와 다르게 하교하는 학생은?',options:['민수','태호','서연'],correct:1}},
+    {id:'art_materials',title:'미술 재료 수량 정리',source:'5교시',availableAt:845,due:905,duration:3,detail:'남은 재료와 사용 수량을 적어 다음 주문량을 정리한다.'},
     {id:'tomorrow',title:'내일 수업 자료 준비',source:'내일',availableAt:870,due:990,duration:5,detail:'내일 첫 수업에서 사용할 자료를 인쇄하고 정리한다.'}
   ];
 
@@ -62,7 +62,7 @@
 
   var eventDefs=[
     {
-      id:'taeho_supply',type:'visitor',at:514,deadline:524,studentId:'taeho',role:'학생',name:'태호',
+      id:'taeho_supply',type:'visitor',at:516,deadline:528,studentId:'taeho',role:'학생',name:'태호',
       stage:'등교한 태호가 가방을 몇 번 뒤지다가 교탁 앞으로 왔다.',
       dialogue:'선생님… 준비물을 집에 놓고 왔어요.',
       actions:[
@@ -72,7 +72,7 @@
       ]
     },
     {
-      id:'arin_late_phone',type:'phone',at:519,deadline:523,studentId:'arin',role:'보호자 전화',name:'아린 보호자',
+      id:'arin_late_phone',type:'phone',at:526,deadline:532,studentId:'arin',role:'보호자 전화',name:'아린 보호자',
       stage:'등교 시간에 전화가 걸려왔다.',
       dialogue:'선생님, 아린이가 오늘 조금 늦을 것 같아요. 9시 전에는 도착할 것 같습니다.',
       actions:[
@@ -81,7 +81,7 @@
       ]
     },
     {
-      id:'minsu_pencil',type:'visitor',at:525,deadline:537,studentId:'minsu',role:'학생',name:'민수',
+      id:'minsu_pencil',type:'visitor',at:536,deadline:548,studentId:'minsu',role:'학생',name:'민수',
       stage:'민수가 색연필 통을 들고 빠르게 교탁으로 왔다.',
       dialogue:'선생님, 지우가 제 색연필 가져갔어요. 빨리 말해주세요.',
       actions:[
@@ -92,7 +92,7 @@
       ]
     },
     {
-      id:'taeho_math',type:'visitor',at:548,deadline:559,studentId:'taeho',role:'수업 중',name:'태호',
+      id:'taeho_math',type:'visitor',at:562,deadline:573,studentId:'taeho',role:'수업 중',name:'태호',
       stage:'수학 활동이 시작된 지 조금 지났다. 태호가 연필을 든 채 그대로 멈춰 있다.',
       dialogue:'선생님… 첫 문제부터 모르겠어요.',
       actions:[
@@ -102,7 +102,7 @@
       ]
     },
     {
-      id:'minsu_junho_noise',type:'classroom',at:556,deadline:565,studentId:'minsu',role:'교실',name:'민수 · 준호',
+      id:'minsu_junho_noise',type:'classroom',at:575,deadline:584,studentId:'minsu',role:'교실',name:'민수 · 준호',
       stage:'설명하는 동안 교실 뒤쪽에서 웃음소리가 계속 들린다.',
       dialogue:'민수와 준호가 서로 눈을 마주치며 계속 웃고 있다.',
       actions:[
@@ -112,7 +112,7 @@
       ]
     },
     {
-      id:'seoyeon_freeze',type:'visitor',at:563,deadline:575,studentId:'seoyeon',role:'수업 중',name:'서연',
+      id:'seoyeon_freeze',type:'visitor',at:588,deadline:600,studentId:'seoyeon',role:'수업 중',name:'서연',
       stage:'서연은 답을 썼다 지우기를 반복하다가 결국 활동지를 덮었다.',
       dialogue:'저 그냥 안 할래요. 자꾸 틀려요.',
       actions:[
@@ -123,7 +123,7 @@
       ]
     },
     {
-      id:'jiwoo_followup',type:'visitor',at:580,deadline:591,studentId:'jiwoo',role:'쉬는 시간',name:'지우',
+      id:'jiwoo_followup',type:'visitor',at:602,deadline:613,studentId:'jiwoo',role:'쉬는 시간',name:'지우',
       stage:'쉬는 시간이 되자 지우가 다른 친구들이 나간 뒤 교탁 옆에 남았다.',
       dialogue:'아까 민수가 제가 그냥 가져갔다고 했죠? 어제 빌려준다고 했었어요.',
       actions:[
@@ -143,7 +143,7 @@
       ]
     },
     {
-      id:'seoyeon_parent',type:'phone',at:685,deadline:690,studentId:'seoyeon',role:'보호자 전화',name:'서연 보호자',
+      id:'seoyeon_parent',type:'phone',at:700,deadline:706,studentId:'seoyeon',role:'보호자 전화',name:'서연 보호자',
       stage:'점심 직전 전화가 걸려왔다.',
       dialogue:'서연이가 요즘 수학 때문에 많이 속상해하는 것 같아요. 학교에서는 어떤가요?',
       actions:[
@@ -153,7 +153,7 @@
       ]
     },
     {
-      id:'arin_lunch',type:'visitor',at:730,deadline:742,studentId:'arin',role:'점심 시간',name:'아린',
+      id:'arin_lunch',type:'visitor',at:744,deadline:756,studentId:'arin',role:'점심 시간',name:'아린',
       stage:'급식을 거의 먹지 않은 아린이 조용히 교탁 가까이에 서 있다.',
       dialogue:'선생님… 그냥 오늘은 별로 안 먹고 싶어요.',
       actions:[
@@ -163,7 +163,7 @@
       ]
     },
     {
-      id:'after_school_staff',type:'visitor',at:885,deadline:900,role:'동료 교사',name:'체육 선생님',
+      id:'after_school_staff',type:'visitor',at:892,deadline:905,role:'동료 교사',name:'체육 선생님',
       stage:'아이들이 하교할 무렵 체육 선생님이 교실 문을 두드렸다.',
       dialogue:'오늘 준호랑 민수가 경기할 때 좀 과열됐어요. 큰일은 아니었는데 한번 알아두세요.',
       actions:[
@@ -182,7 +182,7 @@
       ]
     },
     {
-      id:'nurse_note',type:'visitor',at:603,deadline:613,studentId:'taeho',role:'보건실 전달',name:'보건 선생님',
+      id:'nurse_note',type:'visitor',at:620,deadline:631,studentId:'taeho',role:'보건실 전달',name:'보건 선생님',
       stage:'수업 사이에 보건 선생님이 짧은 확인서를 들고 왔다.',
       dialogue:'태호가 아까 잠깐 왔다 갔어요. 크게 아픈 건 아닌데 보호자 연락 여부만 확인해주세요.',
       actions:[
@@ -191,7 +191,7 @@
       ]
     },
     {
-      id:'research_rush',type:'visitor',at:620,deadline:628,role:'동료 교사',name:'연구부 선생님',
+      id:'research_rush',type:'visitor',at:638,deadline:646,role:'동료 교사',name:'연구부 선생님',
       stage:'쉬는 시간 끝나기 직전 연구부 선생님이 교실 문을 열었다.',
       dialogue:'체험학습 신청서 1차 숫자 지금 받을 수 있을까요? 미제출도 따로 적어주세요.',
       actions:[
@@ -209,7 +209,7 @@
       ]
     },
     {
-      id:'pickup_change_phone',type:'phone',at:782,deadline:788,studentId:'taeho',role:'보호자 전화',name:'태호 보호자',
+      id:'pickup_change_phone',type:'phone',at:805,deadline:811,studentId:'taeho',role:'보호자 전화',name:'태호 보호자',
       stage:'오후 수업 중 전화가 걸려왔다.',
       dialogue:'오늘 태호 학원차 안 타고 제가 직접 데리러 갈게요. 아이한테도 꼭 말해주세요.',
       actions:[
@@ -218,7 +218,7 @@
       ]
     },
     {
-      id:'art_spill',type:'visitor',at:844,deadline:853,studentId:'minsu',role:'미술 시간',name:'민수',
+      id:'art_spill',type:'visitor',at:850,deadline:859,studentId:'minsu',role:'미술 시간',name:'민수',
       stage:'미술 재료를 나누던 중 바닥에 물통과 색종이가 한꺼번에 쏟아졌다.',
       dialogue:'선생님! 제가 일부러 그런 거 아니에요. 준호가 지나가다가 쳤어요.',
       actions:[
@@ -228,7 +228,7 @@
       ]
     },
     {
-      id:'admin_request',type:'visitor',at:903,deadline:916,role:'관리자',name:'교감 선생님',
+      id:'admin_request',type:'visitor',at:914,deadline:926,role:'관리자',name:'교감 선생님',
       stage:'하교 후 교감 선생님이 잠깐 교실에 들렀다.',
       dialogue:'오늘 친구 사이 일이나 보호자 연락 중에 제가 알아야 할 건 없었나요?',
       actions:[
@@ -237,7 +237,7 @@
       ]
     },
     {
-      id:'rare_fight',rare:true,type:'visitor',at:704,deadline:709,studentId:'junho',role:'긴급 상황',name:'복도에서 큰 소리',
+      id:'rare_fight',rare:true,type:'visitor',at:720,deadline:726,studentId:'junho',role:'긴급 상황',name:'복도에서 큰 소리',
       stage:'점심시간 복도에서 학생들이 몰렸다. 민수와 준호가 서로 밀치는 과정에서 준호가 넘어져 팔을 잡고 있다.',
       dialogue:'주변 아이들이 동시에 “선생님!” 하고 부른다.',
       actions:[
@@ -247,7 +247,7 @@
       ]
     },
     {
-      id:'rare_throw',rare:true,type:'visitor',at:812,deadline:817,studentId:'minsu',role:'긴급 상황',name:'민수',
+      id:'rare_throw',rare:true,type:'visitor',at:828,deadline:834,studentId:'minsu',role:'긴급 상황',name:'민수',
       stage:'교사의 안내를 듣던 민수가 갑자기 크게 화를 내며 책상 위 필통을 교사 쪽으로 던졌다.',
       dialogue:'“저한테만 왜 그래요!”',
       actions:[
@@ -257,7 +257,7 @@
       ]
     },
     {
-      id:'rare_disclosure',rare:true,type:'visitor',at:848,deadline:856,studentId:'arin',role:'학생 보호',name:'아린',
+      id:'rare_disclosure',rare:true,type:'visitor',at:861,deadline:868,studentId:'arin',role:'학생 보호',name:'아린',
       stage:'하교 준비 중 아린이 다른 아이들이 나가기를 기다렸다가 아주 작은 목소리로 말했다.',
       dialogue:'선생님… 저 오늘 집에 가기 싫어요. 어제 집에서 맞았어요.',
       actions:[
@@ -386,6 +386,15 @@
   function taskAnswerReady(t){
     return !t.review||state.taskAnswers[t.id]!==undefined;
   }
+  function taskCorrectIndex(t){
+    if(t.id==='attendance'){
+      return (state.flags.arinLateNoted||state.flags.arinLateKnown||state.flags.arinCallbackDone)?1:2;
+    }
+    if(t.id==='fieldtrip'){
+      return state.flags.taehoFormReceived?1:0;
+    }
+    return t.review?t.review.correct:null;
+  }
 
   function toast(title,text,warn){
     var box=document.createElement('div');box.className='toast'+(warn?' warn':'');
@@ -466,6 +475,7 @@
 
   function openEvent(id){
     var e=eventDef(id);if(!e)return;
+    if(!q('#toolModal').hidden)closeModal();
     if(state.activeEvent&&state.activeEvent!==id){state.eventStatus[state.activeEvent]='waiting';pushBacklog(state.activeEvent)}
     removeBacklog(id);state.activeEvent=id;state.deferUntil[id]=0;
     if(state.eventStatus[id]!=='ringing')state.eventStatus[id]='active';
@@ -473,6 +483,7 @@
   }
   function answerPhone(){
     if(!state.incomingPhone){renderModal('phone');return}
+    if(!q('#toolModal').hidden)closeModal();
     var id=state.incomingPhone;
     if(state.activeEvent&&state.activeEvent!==id){
       state.eventStatus[state.activeEvent]='waiting';pushBacklog(state.activeEvent);
@@ -687,15 +698,15 @@
     if(key==='research_rush:send_later'){
       out={title:'컴퓨터 입력으로 보내겠다고 했다.',text:'대화는 짧았지만 현장체험학습 업무 마감은 그대로 다가오고 있다.'};
     }
-    if(key==='junho_form:receive'){
-      state.flags.junhoFormReceived=true;
-      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'준호가 뒤늦게 낸 신청서가 기존 집계와 같은지 확인하고 필요하면 수정한다.');
-      out={title:'준호의 신청서를 기존 묶음에 끼워 넣었다.',text:'이미 1차 집계를 보냈다면 늦게 낸 신청서까지 다시 확인해야 한다.'};
+    if(key==='taeho_form:receive'){
+      state.flags.taehoFormReceived=true;
+      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'태호가 뒤늦게 낸 신청서가 기존 집계와 같은지 확인하고 필요하면 수정한다.');
+      out={title:'태호의 신청서를 기존 묶음에 끼워 넣었다.',text:'미제출로 잡혀 있던 태호가 참가로 제출했다. 이미 1차 집계를 보냈다면 다시 반영해야 한다.'};
     }
-    if(key==='junho_form:check_form'){
-      state.flags.junhoFormReceived=true;state.checkedDocs.fieldtrip_forms=true;
-      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'준호의 늦은 제출이 기존 집계와 일치하는지 최종 확인한다.');
-      out={title:'이름과 체크 내용을 바로 확인했다.',text:'준호는 불참으로 표시되어 있었다. 기존 신청서 집계와 일치하지만 늦은 제출 자체는 최종 확인이 필요하다.'};
+    if(key==='taeho_form:check_form'){
+      state.flags.taehoFormReceived=true;state.checkedDocs.fieldtrip_forms=true;
+      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'태호의 늦은 제출이 기존 집계와 일치하는지 최종 확인한다.');
+      out={title:'이름과 체크 내용을 바로 확인했다.',text:'태호는 참가로 표시되어 있었다. 기존 집계의 미제출 1명이 사라졌으므로 최종 숫자가 바뀐다.'};
     }
     if(key==='pickup_change_phone:pickup_note'){
       state.flags.pickupChangeNoted=true;state.checkedDocs.dismissal_notes=true;
@@ -828,7 +839,7 @@
       toast('입력할 내용을 먼저 고르세요.',t.review.prompt,true);return;
     }
     consumeMinutes(t.duration,t.title);
-    if(t.review&&state.taskAnswers[id]!==t.review.correct){
+    if(t.review&&state.taskAnswers[id]!==taskCorrectIndex(t)){
       state.taskStatus[id]='done';
       state.flags['mistake_'+id]=true;
       addDynamicTask(id+'_correction',t.title+' 정정',Math.min(1045,state.minute+28),3,'입력 내용이 원자료와 맞지 않아 다시 확인해 정정해야 한다.');
@@ -903,7 +914,9 @@
     }
     ids.forEach(function(id){
       var e=eventDef(id),wait=Math.max(0,Math.ceil((state.deferUntil[id]||state.minute)-state.minute));
-      html+='<button class="waiting-item '+(e.rare?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(e.name)+'</strong><small>'+(wait?'잠시 미룸 · '+wait+'분':'기다리는 중 · '+escapeHtml(e.role))+'</small></button>';
+      var left=Math.max(0,Math.ceil(e.deadline-state.minute));
+      var waitCopy=wait?'잠시 미룸 · '+wait+'분':(left<=2?'곧 떠남 · '+left+'분':escapeHtml(e.role)+' · 약 '+left+'분 남음');
+      html+='<button class="waiting-item '+(e.rare||left<=2?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(e.name)+'</strong><small>'+waitCopy+'</small></button>';
     });
     list.innerHTML=html||'<p class="empty-copy">아직 기다리는 일이 없습니다.</p>';
   }
