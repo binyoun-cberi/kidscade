@@ -53,20 +53,26 @@ function load(){
   }catch(e){}
   return null;
 }
-function tableBlank(){
-  var t={};D.clubs.forEach(function(c){t[c.id]={clubId:c.id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};});return t;
+function tableBlank(ids){
+  var t={},list=ids||D.clubs.map(function(c){return c.id;});
+  list.forEach(function(id){t[id]={clubId:id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};});
+  return t;
 }
-function schedule(){
-  var ids=D.clubs.map(function(c){return c.id;}),fixed=ids[0],rotate=ids.slice(1),rounds=[];
-  for(var r=0;r<ids.length-1;r++){
+function schedule(ids,repeats){
+  var list=(ids||D.clubs.map(function(c){return c.id;})).slice(),rounds=[];
+  if(list.length<2)return rounds;
+  var fixed=list[0],rotate=list.slice(1),base=[];
+  for(var r=0;r<list.length-1;r++){
     var arr=[fixed].concat(rotate),fs=[];
     for(var i=0;i<arr.length/2;i++){
       var a=arr[i],b=arr[arr.length-1-i],flip=(r+i)%2===1;
       fs.push({home:flip?b:a,away:flip?a:b,played:false,score:null});
     }
-    rounds.push(fs);rotate.unshift(rotate.pop());
+    base.push(fs);rotate.unshift(rotate.pop());
   }
-  return rounds.concat(rounds.map(function(fs){return fs.map(function(f){return {home:f.away,away:f.home,played:false,score:null};});}));
+  var homeAway=base.concat(base.map(function(fs){return fs.map(function(f){return {home:f.away,away:f.home,played:false,score:null};});}));
+  for(var n=0;n<(repeats||1);n++)rounds=rounds.concat(clone(homeAway));
+  return rounds;
 }
 function autoLineup(roster,formation){
   var used={},out=[],slots=D.formations[formation]||D.formations['4-3-3'];
@@ -83,7 +89,7 @@ function newState(clubId){
     version:1,clubId:clubId,season:1,round:0,budget:c.budget,formation:'4-3-3',
     tactics:clone(c.tactics),roster:roster,lineup:autoLineup(roster,'4-3-3'),
     schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,
-    worldSigned:[],managerNotes:[],lastResult:null
+    worldSigned:[],managerNotes:[],lastResult:null,replays:[],pyramid:null,otherLeague:null
   };
 }
 function normalize(){
@@ -94,15 +100,57 @@ function normalize(){
   state.schedule=state.schedule||schedule();state.table=state.table||tableBlank();
   state.matchHistory=state.matchHistory||[];state.worldSigned=state.worldSigned||[];
   state.managerNotes=state.managerNotes||[];state.trainingAvailable=!!state.trainingAvailable;
+  state.replays=Array.isArray(state.replays)?state.replays:[];
+  if(state.pyramid===undefined)state.pyramid=null;
+  if(state.otherLeague===undefined)state.otherLeague=null;
   state.roster.forEach(function(p){if(p.fitness==null)p.fitness=100;if(p.form==null)p.form=0;});
 }
-function rows(){
-  return Object.keys(state.table).map(function(k){return state.table[k];}).sort(function(a,b){
+function rows(table){
+  var target=table||state.table;
+  return Object.keys(target).map(function(k){return target[k];}).sort(function(a,b){
     if(b.pts!==a.pts)return b.pts-a.pts;
     var ag=a.gf-a.ga,bg=b.gf-b.ga;if(bg!==ag)return bg-ag;
     if(b.gf!==a.gf)return b.gf-a.gf;
     return clubById(a.clubId).name.localeCompare(clubById(b.clubId).name,'ko');
   });
+}
+function leagueLabel(){
+  if(!state.pyramid)return '배치 리그';
+  return state.pyramid.division===1?'역사 드림리그 1부':'역사 드림리그 2부';
+}
+function leagueGoalText(){
+  if(!state.pyramid)return '이번 시즌 상위 4팀은 다음 시즌 1부, 하위 4팀은 2부로 배정돼요.';
+  return state.pyramid.division===1?'1위는 우승, 최하위는 2부로 강등돼요.':'1위는 다음 시즌 1부로 승격해요.';
+}
+function advanceSeason(){
+  var finalRows=rows(),reward=0,summary='';
+  if(!state.pyramid){
+    var d1=finalRows.slice(0,4).map(function(x){return x.clubId;});
+    var d2=finalRows.slice(4).map(function(x){return x.clubId;});
+    state.pyramid={divisionIds:{1:d1,2:d2},division:d1.indexOf(state.clubId)>=0?1:2,history:[{season:state.season,placement:true,leader:finalRows[0].clubId}]};
+    if(finalRows[0].clubId===state.clubId)reward=200;
+    summary='배치 시즌 종료 · 다음 시즌부터 1부/2부가 시작됩니다.';
+  }else{
+    var cur=state.pyramid.division;
+    var d1Rows=cur===1?finalRows:rows(state.otherLeague.table);
+    var d2Rows=cur===2?finalRows:rows(state.otherLeague.table);
+    var champion=d1Rows[0].clubId,relegated=d1Rows[d1Rows.length-1].clubId,promoted=d2Rows[0].clubId;
+    var next1=state.pyramid.divisionIds[1].filter(function(id){return id!==relegated;}).concat(promoted);
+    var next2=state.pyramid.divisionIds[2].filter(function(id){return id!==promoted;}).concat(relegated);
+    state.pyramid.divisionIds={1:next1,2:next2};
+    state.pyramid.history=state.pyramid.history||[];
+    state.pyramid.history.push({season:state.season,champion:champion,promoted:promoted,relegated:relegated});
+    if(champion===state.clubId)reward=450;
+    else if(promoted===state.clubId)reward=300;
+    summary=clubById(champion).name+' 우승 · '+clubById(promoted).name+' 승격 · '+clubById(relegated).name+' 강등';
+    state.pyramid.division=next1.indexOf(state.clubId)>=0?1:2;
+  }
+  state.season++;state.round=0;state.trainingAvailable=false;state.budget+=500+reward;
+  state.roster.forEach(function(p){p.fitness=100;});
+  var ids=state.pyramid.divisionIds[state.pyramid.division],otherDiv=state.pyramid.division===1?2:1,otherIds=state.pyramid.divisionIds[otherDiv];
+  state.schedule=schedule(ids,2);state.table=tableBlank(ids);
+  state.otherLeague={division:otherDiv,schedule:schedule(otherIds,2),table:tableBlank(otherIds),round:0};
+  save();updateTop();home();toast(summary);
 }
 function rank(){return rows().findIndex(function(x){return x.clubId===state.clubId;})+1;}
 function currentFixtures(){return state.schedule[state.round]||null;}
@@ -113,8 +161,8 @@ function showScreen(id){['startScreen','clubSelect','gameScreen'].forEach(functi
 function updateTop(){
   var el=$('topClub');
   if(!state){el.classList.add('hidden');return;}
-  var c=clubById(state.clubId);
-  el.innerHTML='<span>'+c.emoji+'</span><b>'+esc(c.name)+'</b><small>시즌 '+state.season+' · '+(state.round>=state.schedule.length?'종료':(state.round+1)+'R')+'</small>';
+  var c=clubById(state.clubId),ended=state.round>=state.schedule.length;
+  el.innerHTML='<span>'+c.emoji+'</span><b>'+esc(c.name)+'</b><small>'+esc(leagueLabel())+' · 시즌 '+state.season+' · '+(ended?'종료':(state.round+1)+'R')+'</small>';
   el.classList.remove('hidden');
 }
 function nav(view){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.view===view);});}
@@ -253,8 +301,9 @@ function trainingModal(){
     state.trainingAvailable=false;save();modal.classList.add('hidden');toast(k==='rest'?'푹 쉬고 체력을 회복했어요.':changed.join(' · '));if(currentView==='home')home();
   };});
 }
-function resultToTable(homeId,awayId,hg,ag){
-  var h=state.table[homeId],a=state.table[awayId];h.p++;a.p++;h.gf+=hg;h.ga+=ag;a.gf+=ag;a.ga+=hg;
+function resultToTable(table,homeId,awayId,hg,ag){
+  var h=table[homeId],a=table[awayId];if(!h||!a)return;
+  h.p++;a.p++;h.gf+=hg;h.ga+=ag;a.gf+=ag;a.ga+=hg;
   if(hg>ag){h.w++;a.l++;h.pts+=3;}else if(hg<ag){a.w++;h.l++;a.pts+=3;}else{h.d++;a.d++;h.pts++;a.pts++;}
 }
 function aiResult(a,b){
@@ -266,14 +315,25 @@ function aiResult(a,b){
   function goals(lambda){var g=0,p=Math.exp(-Math.max(.25,lambda)),prod=p,r=Math.random();while(r>prod&&g<6){g++;p*=Math.max(.25,lambda)/g;prod+=p;}return g;}
   return [goals(clamp(baseA,.35,2.4)),goals(clamp(baseB,.35,2.4))];
 }
-function finishRound(f,hg,ag){
-  f.played=true;f.score=[hg,ag];resultToTable(f.home,f.away,hg,ag);
-  currentFixtures().forEach(function(x){if(x===f)return;var g=aiResult(x.home,x.away);x.played=true;x.score=g;resultToTable(x.home,x.away,g[0],g[1]);});
+function finishRound(f,hg,ag,replayData){
+  f.played=true;f.score=[hg,ag];resultToTable(state.table,f.home,f.away,hg,ag);
+  currentFixtures().forEach(function(x){if(x===f)return;var g=aiResult(x.home,x.away);x.played=true;x.score=g;resultToTable(state.table,x.home,x.away,g[0],g[1]);});
+  if(state.pyramid&&state.otherLeague){
+    var otherRound=state.otherLeague.schedule[state.round]||[];
+    otherRound.forEach(function(x){var g=aiResult(x.home,x.away);x.played=true;x.score=g;resultToTable(state.otherLeague.table,x.home,x.away,g[0],g[1]);});
+    state.otherLeague.round=state.round+1;
+  }
   var isHome=f.home===state.clubId,myGoals=isHome?hg:ag,oppGoals=isHome?ag:hg;
-  state.lastResult={season:state.season,round:state.round+1,for:myGoals,against:oppGoals,opponent:opponent(f).id};
-  state.matchHistory.push(clone(state.lastResult));state.round++;state.trainingAvailable=true;
+  state.lastResult={season:state.season,round:state.round+1,for:myGoals,against:oppGoals,opponent:opponent(f).id,league:leagueLabel()};
+  state.matchHistory.push(clone(state.lastResult));
+  if(replayData){
+    replayData.season=state.season;replayData.round=state.round+1;replayData.userClubId=state.clubId;
+    replayData.userSide=isHome?0:1;replayData.opponentId=opponent(f).id;replayData.league=leagueLabel();
+    state.replays.unshift(replayData);state.replays=state.replays.slice(0,6);
+  }
+  state.round++;state.trainingAvailable=true;
   state.roster.forEach(function(p){if(state.lineup.indexOf(p.id)<0)p.fitness=clamp((p.fitness||100)+5,0,100);});
-  state.budget+=80;save();updateTop();sdkScore(state.table[state.clubId].pts*100+state.season*1000);
+  state.budget+=80;save();updateTop();sdkScore((state.table[state.clubId]?state.table[state.clubId].pts:0)*100+state.season*1000);
 }
 function opponentSetup(o){
   return {club:o,roster:clone(o.players),lineup:autoLineup(o.players,'4-3-3'),formation:'4-3-3',tactics:clone(o.tactics)};
@@ -433,7 +493,8 @@ function quickSub(){
 function showMatchResult(m,f,isHome){
   if(resultShown)return;resultShown=true;
   var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f);
-  finishRound(f,hg,ag);
+  var replayData=m.exportReplay?m.exportReplay():null;
+  finishRound(f,hg,ag,replayData);
   var verdict=mine>theirs?'승리!':mine<theirs?'아쉬운 패배':'무승부';
   var why=state.tactics.press==='press'?'강한 압박은 공을 되찾는 데 도움이 되지만 체력 소모가 컸어요.':state.tactics.mindset==='defend'?'수비적으로 내려서 실점 위험을 줄이는 선택을 했어요.':state.tactics.attack==='direct'?'빠르게 앞으로 보내는 작전으로 전환 속도를 높였어요.':'패스와 위치를 활용해 균형 있게 경기를 운영했어요.';
   var facts=m.events.filter(function(e){return e.actor&&e.actor.historical;}).slice(-2).map(function(e){return '<div class="memory">'+esc(e.actor.name)+' · '+esc(e.actor.memory)+'</div>';}).join('');
