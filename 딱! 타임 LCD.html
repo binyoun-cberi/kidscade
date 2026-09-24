@@ -70,5 +70,6 @@ function primary(){state==='running'?finish():begin()}function change(next){if(s
 el.main.addEventListener('click',primary);el.screen.addEventListener('click',primary);el.reset.addEventListener('click',reset);el.modes.forEach(b=>b.addEventListener('click',()=>change(b.dataset.mode)));window.addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat)return;const t=document.activeElement&&document.activeElement.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;e.preventDefault();primary()});nav();ready();
 })();
 </script>
+<script src="timing-exact10-records.js?v=20260916-1"></script>
 </body>
 </html>
