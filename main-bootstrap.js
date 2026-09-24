@@ -377,6 +377,7 @@
       'seed-house-entry.js',
       'game-registry.js',
       'game-filter.js',
+      'catalog-discovery.js',
       'game-cover-placeholders.js',
       'dashboard-recent.js',
       'game-recommendations.js',
