@@ -555,6 +555,8 @@ function resize(){
   camera.aspect=w/h;camera.updateProjectionMatrix();
 }
 addEventListener('resize',resize);
+window.visualViewport?.addEventListener('resize',resize);
+window.visualViewport?.addEventListener('scroll',resize);
 
 selectOptions();initScene();installControls();resetCar();clock=new THREE.Clock();
 requestAnimationFrame(loop);
