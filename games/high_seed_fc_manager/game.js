@@ -9,7 +9,7 @@ var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
 var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
-var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all';
+var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
 soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
 var matchAudioDefs={
@@ -349,6 +349,7 @@ function analysis(){
 }
 function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(function(p){return p.id===id;});}
 function openReplay(index){
+  replayReturnView=currentView||'analysis';
   replayCurrent=(state.replays||[])[index];if(!replayCurrent)return;
   replayFrame=0;replayCursor=0;replayPlaying=false;replayMode='replay';replayFocus='all';
   var h=clubById(replayCurrent.homeClubId),a=clubById(replayCurrent.awayClubId);
@@ -360,6 +361,7 @@ function openReplay(index){
 }
 function closeReplay(){
   replayPlaying=false;cancelAnimationFrame(replayRaf);$('replayLayer').classList.add('hidden');replayCurrent=null;
+  if(state)render(replayReturnView||'analysis');
 }
 function updateReplayButtons(){
   $('replayPlay').textContent=replayPlaying?'⏸ 일시정지':'▶ 재생';
@@ -370,9 +372,9 @@ function updateReplayStats(){
   var box=$('replayStats');
   if(replayFocus==='all'){
     var userPlayers=replayCurrent.players.filter(function(p){return p.side===replayCurrent.userSide;});
-    var total={touches:0,shots:0,goals:0,saves:0,distance:0};
+    var total={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
     userPlayers.forEach(function(p){var s=replayCurrent.stats[p.id]||{};Object.keys(total).forEach(function(k){total[k]+=Number(s[k]||0);});});
-    box.innerHTML='<h3>우리 팀 기록</h3><div class="replay-stat-grid"><div><b>'+total.shots+'</b><small>슈팅</small></div><div><b>'+total.goals+'</b><small>골</small></div><div><b>'+total.touches+'</b><small>터치</small></div><div><b>'+total.distance.toFixed(1)+'</b><small>이동 km</small></div></div><p class="muted">선수를 선택하면 개인 기록과 히트맵을 볼 수 있어요.</p>';
+    box.innerHTML='<h3>우리 팀 기록</h3><div class="replay-stat-grid"><div><b>'+total.shots+'</b><small>슈팅</small></div><div><b>'+total.goals+'</b><small>골</small></div><div><b>'+total.xg.toFixed(2)+'</b><small>xG</small></div><div><b>'+total.touches+'</b><small>주요 관여</small></div><div><b>'+total.distance.toFixed(1)+'</b><small>추정 이동 km</small></div></div><p class="muted">xG는 슈팅 위치·공격 상황을 게임 안에서 계산한 득점 기대값이에요.</p>';
     return;
   }
   var p=replayPlayerMeta(replayFocus),s=replayCurrent.stats[replayFocus]||{};
@@ -665,7 +667,7 @@ function quickSub(){
   var ids=t.actors.map(function(a){return a.id;});
   var bench=state.roster.filter(function(p){return ids.indexOf(p.id)<0;}).sort(function(a,b){return S.playerScore(b,on.slot)-S.playerScore(a,on.slot);})[0];
   if(!bench){toast('교체할 후보가 없어요.');return;}
-  if(match.substitute(side,on.id,bench)){state.lineup=state.lineup.filter(function(id){return id!==on.id;});state.lineup.push(bench.id);save();toast(on.p.name+' → '+bench.name);}
+  if(match.substitute(side,on.id,bench)){toast(on.p.name+' → '+bench.name+' · 다음 경기 선발은 그대로예요.');}
 }
 function showMatchResult(m,f,isHome){
   if(resultShown)return;resultShown=true;
