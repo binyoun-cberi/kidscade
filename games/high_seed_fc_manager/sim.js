@@ -238,10 +238,12 @@ function create(opts){
   };
   m.exportReplay=function(){
     if(!m.replay.frames.length||m.replay.frames[m.replay.frames.length-1][0]<89.9)recordReplayFrame();
-    var players=[];
-    teams.forEach(function(t,side){t.actors.forEach(function(a){
-      if(!players.some(function(p){return p.id===a.id;}))players.push({id:a.id,name:a.p.name,pos:a.p.pos,side:side,era:a.p.era||'',memory:a.p.memory||''});
-    });});
+    var players=[],homePool=opts.homeRoster||[],awayPool=opts.awayRoster||[];
+    Object.keys(m.replay.stats).forEach(function(id){
+      var p=homePool.find(function(x){return x.id===id;}),side=0;
+      if(!p){p=awayPool.find(function(x){return x.id===id;});side=1;}
+      if(p)players.push({id:p.id,name:p.name,pos:p.pos,side:side,era:p.era||'',memory:p.memory||''});
+    });
     return {
       homeClubId:teams[0].club.id,awayClubId:teams[1].club.id,
       score:[m.score[0],m.score[1]],frames:m.replay.frames,
