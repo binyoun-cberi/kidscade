@@ -35,9 +35,11 @@ test('corrected descriptions match the current game implementations', () => {
 
   const kite = fs.readFileSync(path.join(ROOT, 'games/high_kite_wind_rider/바람을 타고.html'), 'utf8');
   assert.match(kite, /조작은 딱 두 개/);
-  assert.match(kite, /45초/);
-  assert.match(kite, /황금 돌풍/);
-  assert.doesNotMatch(byId(sourceCatalog, 'high_kite_wind_rider').description, /줄이 끊|게임 오버/);
+  assert.match(kite, /줄 장력/);
+  assert.match(kite, /황금 상승기류/);
+  assert.doesNotMatch(kite, /남은 시간 45초/);
+  assert.match(byId(sourceCatalog, 'high_kite_wind_rider').description, /줄 장력/);
+  assert.match(byId(sourceCatalog, 'high_kite_wind_rider').description, /기록형/);
 
   const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/3D 전개도 마스터.html'), 'utf8');
   assert.match(blocks, /쌓기나무 3x3x3 관찰기/);
