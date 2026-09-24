@@ -653,7 +653,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};
 }
 function help(){
-  modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물 18명 중 선발 11명을 골라요.<br><br><b>2. 작전</b><br>포메이션과 공격·압박·태도를 간단히 선택해요.<br><br><b>3. 경기</b><br>선택한 전술과 선수 능력, 체력이 2D 경기 결과에 실제로 반영돼요.<br><br><b>4. 성장</b><br>경기 뒤 훈련하고 세계의 역사 인물을 영입해 팀을 키워요.</div><p class="muted">역사 인물의 축구 포지션과 능력치는 전부 가상의 게임 설정입니다. 역사적 인물의 업적이나 중요도를 순위로 평가하지 않습니다.</p>';
+  modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물 18명 중 선발 11명을 골라요.<br><br><b>2. 작전</b><br>포메이션과 공격·압박·태도를 정해요.<br><br><b>3. 경기</b><br>전술과 선수 능력, 체력이 2D 경기 움직임과 결과에 반영돼요.<br><br><b>4. 분석실</b><br>경기를 다시 보며 한 선수만 따라가거나 히트맵·터치·슈팅·이동거리를 확인해요.<br><br><b>5. 리그</b><br>첫 시즌은 배치 리그이며, 이후 1부 우승과 2부 승격, 1부 강등이 매 시즌 이어져요.</div><p class="muted">역사 인물의 축구 포지션과 능력치는 전부 가상의 게임 설정입니다. 역사적 인물의 업적이나 중요도를 순위로 평가하지 않습니다.</p>';
   modal.classList.remove('hidden');
 }
 
