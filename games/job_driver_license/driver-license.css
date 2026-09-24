@@ -31,3 +31,103 @@
 @media(max-width:780px){#cockpit{height:42%}#steeringPad{left:2%;width:190px;height:190px;bottom:-38px}#steeringWheel{width:140px;height:140px;border-width:13px}#leftControls{left:27%;bottom:7px;display:grid;grid-template-columns:repeat(3,42px);gap:4px}.stalk,.small-control{min-width:42px;width:42px;height:38px;font-size:8px}.stalk{font-size:17px}#gearArea{right:25%;width:104px;height:136px;bottom:4px}#pedals{right:1.5%;gap:7px}.pedal-wrap{width:50px}.pedal{height:73px}.mirror{top:17%;height:58px}.dial{width:66px;height:48px}.dial b{font-size:16px}#cluster{grid-template-columns:72px 72px 45px;bottom:7px;transform:translateX(-50%) scale(.88);transform-origin:bottom center}#examMachine{width:min(470px,68vw);padding:7px 10px}.select-grid{gap:6px}.choice{padding:10px}}
 @media(max-width:600px){#mirrorLeft{left:1%}#mirrorRight{right:1%}.mirror{width:18vw}#examMachine{width:64vw}#subInstruction{display:none}#leftControls{left:25%}#gearArea{right:24%}#pedals{gap:4px}.pedal-wrap{width:44px}.pedal{height:64px}.menu-card{padding:18px}.select-grid{grid-template-columns:1fr 1fr}}
 @media(orientation:portrait){#cockpit{height:34%}#steeringPad{transform:scale(.78);transform-origin:bottom left}#gearArea{transform:scale(.82);transform-origin:bottom right}#pedals{transform:scale(.8);transform-origin:bottom right}}
+
+
+/* cockpit layout v3 — wide landscape / KIDSCade shell safe layout */
+:root{--sdk-menu-safe:clamp(112px,8.5vw,154px)}
+#examMachine{width:min(520px,48vw);padding:8px 12px;border-radius:16px}
+.exam-row{font-size:11px}.exam-row b{font-size:16px}
+#instruction{font-size:clamp(15px,1.75vw,19px)}
+#subInstruction{font-size:11px}
+
+#cockpit{height:32%;z-index:5}
+#dashTop{left:-3%;right:-3%;bottom:-8%;height:64%;border-radius:46% 46% 0 0/22% 22% 0 0;border-top-width:3px}
+
+#cluster{
+  z-index:8;left:14%;bottom:19%;
+  grid-template-columns:74px 74px 44px;gap:5px;
+  padding:7px 8px;border-radius:24px 24px 10px 10px;
+  transform:translateX(-50%) scale(.82);transform-origin:bottom center
+}
+.dial{width:68px;height:48px}.dial b{font-size:16px}.dial span{font-size:8px}
+#gearReadout{font-size:27px}.lamps{gap:14px;height:10px}
+
+#steeringPad{left:5.5%;bottom:-35px;width:215px;height:215px}
+#steeringWheel{width:154px;height:154px;border-width:13px}
+.wheel-spoke{width:62px;height:13px}
+#steerKnob{width:38px;height:38px}
+#steeringPad>.control-caption{display:none}
+
+#leftControls{
+  left:30%;bottom:12px;
+  display:grid;grid-template-columns:repeat(3,54px);grid-auto-rows:40px;
+  gap:6px;align-items:stretch
+}
+.stalk,.small-control{
+  min-width:0;width:54px;height:40px;padding:0 5px;
+  border-radius:10px;font-size:10px;box-shadow:0 3px 0 #050809
+}
+.stalk{font-size:18px}
+#signalLeft{grid-column:1;grid-row:1}
+#signalRight{grid-column:2;grid-row:1}
+#ignition{grid-column:3;grid-row:1}
+#seatbelt{grid-column:1;grid-row:2}
+#parkingBrake{grid-column:2 / span 2;grid-row:2;width:114px}
+
+#gearArea{right:31%;bottom:7px;width:105px;height:140px}
+#gearArea>.control-caption{bottom:-12px;font-size:9px}
+.gear-gate{border-radius:15px}
+.gear-gate span{font-size:13px}
+.gear-knob{width:35px;height:35px}
+#autoGate span{left:15px}
+#autoGate span:nth-child(1){top:7px}
+#autoGate span:nth-child(2){top:39px}
+#autoGate span:nth-child(3){top:72px}
+#autoGate span:nth-child(4){top:105px}
+
+#pedals{
+  right:var(--sdk-menu-safe);bottom:10px;gap:10px;
+  align-items:flex-end
+}
+.pedal-wrap{width:54px}
+.pedal{height:78px;font-size:9px;border-radius:10px 10px 6px 6px}
+.pedal.narrow{width:40px}
+.pedal-meter{margin-top:7px}
+
+.mirror{top:18%;width:min(156px,17vw);height:min(66px,9vw);border-width:6px}
+#mirrorLeft{left:2.5%}#mirrorRight{right:2.5%}
+
+@media (max-height:720px) and (orientation:landscape){
+  #examMachine{top:6px;width:min(500px,46vw);padding:6px 10px}
+  #instruction{font-size:15px}#subInstruction{font-size:10px}
+  #cockpit{height:30%}
+  #dashTop{height:61%}
+  #steeringPad{left:4.5%;bottom:-42px;width:195px;height:195px}
+  #steeringWheel{width:140px;height:140px;border-width:12px}
+  #cluster{left:13.5%;bottom:17%;transform:translateX(-50%) scale(.72)}
+  #leftControls{left:29%;bottom:7px;grid-template-columns:repeat(3,49px);grid-auto-rows:36px;gap:5px}
+  .stalk,.small-control{width:49px;height:36px;font-size:9px}
+  #parkingBrake{width:103px}
+  #gearArea{right:31%;bottom:2px;width:96px;height:126px}
+  #pedals{bottom:5px;gap:7px}.pedal-wrap{width:48px}.pedal{height:68px}
+  .mirror{top:19%;height:54px}
+}
+
+@media (max-width:900px) and (orientation:landscape){
+  :root{--sdk-menu-safe:92px}
+  #leftControls{left:27%;grid-template-columns:repeat(3,46px)}
+  .stalk,.small-control{width:46px}
+  #parkingBrake{width:98px}
+  #gearArea{right:29%}
+  #pedals{gap:5px}.pedal-wrap{width:44px}
+}
+
+@media (orientation:portrait){
+  :root{--sdk-menu-safe:72px}
+  #cockpit{height:31%}
+  #steeringPad{left:1%;bottom:-48px}
+  #cluster{left:20%;bottom:22%}
+  #leftControls{left:29%;bottom:4px}
+  #gearArea{right:29%;bottom:3px}
+  #pedals{right:var(--sdk-menu-safe)}
+}
