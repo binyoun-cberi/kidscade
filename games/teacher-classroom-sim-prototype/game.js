@@ -7,7 +7,7 @@
   var q=function(s){return document.querySelector(s)};
   var qa=function(s){return Array.from(document.querySelectorAll(s))};
   var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
-  var SAVE_KEY='kidscade.teacherDesk.v40';
+  var SAVE_KEY='kidscade.teacherDesk.v41';
 
   var students={
     minsu:{name:'민수',tone:'orange',icon:'🧒',base:'장난을 좋아하고 말보다 행동이 먼저 나오는 편',known:[]},
@@ -191,7 +191,7 @@
       ]
     },
     {
-      id:'research_rush',type:'visitor',at:632,deadline:640,role:'동료 교사',name:'연구부 선생님',
+      id:'research_rush',type:'visitor',at:620,deadline:628,role:'동료 교사',name:'연구부 선생님',
       stage:'쉬는 시간 끝나기 직전 연구부 선생님이 교실 문을 열었다.',
       dialogue:'체험학습 신청서 1차 숫자 지금 받을 수 있을까요? 미제출도 따로 적어주세요.',
       actions:[
@@ -666,11 +666,13 @@
     }
     if(key==='junho_form:receive'){
       state.flags.junhoFormReceived=true;
-      out={title:'준호의 신청서를 기존 묶음에 끼워 넣었다.',text:'이미 불참으로 집계된 내용과 같은지 나중에 다시 확인해야 한다.'};
+      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'준호가 뒤늦게 낸 신청서가 기존 집계와 같은지 확인하고 필요하면 수정한다.');
+      out={title:'준호의 신청서를 기존 묶음에 끼워 넣었다.',text:'이미 1차 집계를 보냈다면 늦게 낸 신청서까지 다시 확인해야 한다.'};
     }
     if(key==='junho_form:check_form'){
       state.flags.junhoFormReceived=true;state.checkedDocs.fieldtrip_forms=true;
-      out={title:'이름과 체크 내용을 바로 확인했다.',text:'준호는 불참으로 표시되어 있었다. 기존 신청서 집계와 일치한다.'};
+      if(state.taskStatus.fieldtrip==='done')addDynamicTask('fieldtrip_late_update','늦게 낸 신청서 반영 확인',760,2,'준호의 늦은 제출이 기존 집계와 일치하는지 최종 확인한다.');
+      out={title:'이름과 체크 내용을 바로 확인했다.',text:'준호는 불참으로 표시되어 있었다. 기존 신청서 집계와 일치하지만 늦은 제출 자체는 최종 확인이 필요하다.'};
     }
     if(key==='pickup_change_phone:pickup_note'){
       state.flags.pickupChangeNoted=true;state.checkedDocs.dismissal_notes=true;
