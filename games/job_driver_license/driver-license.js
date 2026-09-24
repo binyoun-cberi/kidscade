@@ -32,7 +32,7 @@ let scene,renderer,camera,leftMirrorCamera,rightMirrorCamera,loader,clock;
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
-let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false;
+let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false,emergencyBrakeSeen=false;
 let deductions=[];
 let sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};
 let mirrorFrame=0;
@@ -128,6 +128,19 @@ function isOnRoad(x,z){
   const connector=x>=37&&x<=47&&z>=20&&z<=27;
   return vertical||horizontal||parking||connector;
 }
+function carCorners(){
+  const halfW=.9,halfL=2.15;
+  const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw),rx=Math.cos(car.yaw),rz=Math.sin(car.yaw);
+  return [
+    {x:car.x+fx*halfL+rx*halfW,z:car.z+fz*halfL+rz*halfW},
+    {x:car.x+fx*halfL-rx*halfW,z:car.z+fz*halfL-rz*halfW},
+    {x:car.x-fx*halfL+rx*halfW,z:car.z-fz*halfL+rz*halfW},
+    {x:car.x-fx*halfL-rx*halfW,z:car.z-fz*halfL-rz*halfW}
+  ];
+}
+function footprintInside(minX,maxX,minZ,maxZ){
+  return carCorners().every(p=>p.x>=minX&&p.x<=maxX&&p.z>=minZ&&p.z<=maxZ);
+}
 function currentDirection(){
   if(license==='auto')return car.gear==='D'?1:car.gear==='R'?-1:0;
   return car.gear===-1?-1:(Number(car.gear)>0?1:0);
@@ -137,7 +150,7 @@ function resetCar(){
   Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,speed:0,steeringWheel:0,wheelAngle:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0});
   touch.steer=touch.throttle=touch.brake=touch.clutch=0;
   gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=0;
-  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
+  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
 }
@@ -318,7 +331,9 @@ function physicsStep(dt){
       drive=(inp.throttle*power+.5*Math.max(0,clutchEngage-.55))*clutchEngage*dir;
       const ratio=[0,3.4,2.15,1.55,1.2,1][g]||3.1;
       const wheelRpm=Math.abs(car.speed)*ratio*310;
-      const target=clutchEngage>.22?Math.max(700,wheelRpm):800+inp.throttle*2600;
+      const freeRpm=800+inp.throttle*3000;
+      const coupledRpm=Math.max(650,wheelRpm);
+      const target=lerp(freeRpm,coupledRpm,clutchEngage);
       car.rpm=lerp(car.rpm,clamp(target,0,4800),clamp(dt*5,0,1));
       if(car.gear!==0&&clutchEngage>.86&&Math.abs(car.speed)<.45&&inp.throttle<.14){
         stallTimer+=dt;if(stallTimer>.55){car.engine=false;car.rpm=0;stallTimer=0;showToast('시동이 꺼졌습니다.','warn');beep(170,.25,.06)}
@@ -418,7 +433,7 @@ function examStep(dt,inp){
   }
   if(stage==='PARK'){
     const inParkingArea=car.x>36&&car.x<48&&car.z>25&&car.z<41;
-    const inBay=car.x>39.2&&car.x<44.8&&car.z>28&&car.z<38.8&&Math.abs(Math.sin(car.yaw))<.62;
+    const inBay=footprintInside(39.2,44.8,28,38.8)&&Math.abs(Math.sin(car.yaw))<.35;
     if(inParkingArea&&currentDirection()===-1&&Math.abs(car.speed)>.25)parkingReverseSeen=true;
     if(inBay&&parkingReverseSeen&&kmh<.7){
       holdTimer+=dt;if(holdTimer>1.1){parkingComplete=true;sectionResults.parking='ok';stage='PARK_EXIT';holdTimer=0;showToast('주차 확인 완료');beep(820,.12,.04);setInstruction('주차 구역에서 나와 오른쪽으로 진행하세요.','가속구간에서는 20km/h 이상 속도를 냅니다.')}
@@ -427,7 +442,7 @@ function examStep(dt,inp){
     return;
   }
   if(stage==='PARK_EXIT'){
-    if(car.z<25.2&&car.x>47&&Math.cos(car.yaw-.5*Math.PI)>.45){
+    if((car.z<25.2&&car.x>47&&Math.cos(car.yaw-.5*Math.PI)>.45)||car.x>66){
       stage='ACCEL';setInstruction('가속구간에서 20km/h 이상 주행하세요.','흰색 시작선을 지난 뒤 충분히 가속합니다.');
     }
     return;
@@ -442,11 +457,12 @@ function examStep(dt,inp){
   }
   if(stage==='EMERGENCY'){
     if(car.x>92&&!emergencyTriggered){
-      emergencyTriggered=true;emergencyTimer=0;beep(1100,.12,.09);setTimeout(()=>beep(1100,.12,.09),170);setInstruction('급정지!','브레이크를 밟아 정지선 전에 완전히 멈추세요.');
+      emergencyTriggered=true;emergencyTimer=0;emergencyBrakeSeen=false;beep(1100,.12,.09);setTimeout(()=>beep(1100,.12,.09),170);setInstruction('급정지!','브레이크를 밟아 정지선 전에 완전히 멈추세요.');
     }
     if(emergencyTriggered){
       emergencyTimer+=dt;
-      if(emergencyTimer>.22&&kmh<.8&&car.x<103){
+      if(inp.brake>.35)emergencyBrakeSeen=true;
+      if(emergencyTimer>.22&&emergencyBrakeSeen&&kmh<.8&&car.x<103){
         sectionResults.emergency='ok';stage='FINISH';showToast('급정지 성공');setInstruction('종료선으로 이동해 정차하세요.','정차 후 주차브레이크·기어·시동까지 마무리합니다.');
       }else if((car.x>=103||emergencyTimer>5)&&!car._emergencyPenalized){
         car._emergencyPenalized=true;sectionResults.emergency='miss';addDeduction('급정지 실패',10);stage='FINISH';setInstruction('종료선으로 이동해 정차하세요.','정차 후 주차브레이크·기어·시동까지 마무리합니다.');
@@ -571,15 +587,17 @@ function installSteering(){
 }
 function installPedal(wrap,kind){
   let startY=0;
+  const base=kind==='throttle'?.32:kind==='clutch'?.9:.68;
+  const floor=kind==='throttle'?.12:kind==='clutch'?.5:.25;
   const update=e=>{
     const r=wrap.getBoundingClientRect();
     const travel=Math.max(42,r.height*.72);
-    touch[kind]=clamp(.55+(e.clientY-startY)/travel,kind==='throttle'?.18:.3,1);
+    touch[kind]=clamp(base+(e.clientY-startY)/travel,floor,1);
     e.preventDefault();
   };
   wrap.addEventListener('pointerdown',e=>{
     if(pedalPointers[kind]!==null)return;
-    pedalPointers[kind]=e.pointerId;startY=e.clientY;touch[kind]=.55;
+    pedalPointers[kind]=e.pointerId;startY=e.clientY;touch[kind]=base;
     try{wrap.setPointerCapture(e.pointerId)}catch(_){}
     e.preventDefault();
   });
