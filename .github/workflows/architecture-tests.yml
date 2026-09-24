@@ -71,6 +71,7 @@ jobs:
             dashboard-recent.js \
             game-recommendations.js \
             game-launcher.js \
+            kidscade-game-sdk.js \
             score-display-normalizer.js \
             ui-clarity-overhaul.js \
             ui-topbar-compact.js \
