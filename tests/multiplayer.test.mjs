@@ -69,15 +69,18 @@ test('Patience Tower duel uses websocket relay and server-owned three-minute fin
   assert.doesNotThrow(() => new Function(script));
 });
 
-test('single-player build integration exposes the duel entry and the 2D asset rework', () => {
+test('single-player source owns the duel entry and the 2D asset rework', () => {
+  const sourceHtml = fs.readFileSync(path.join(root, '인내의 탑.html'), 'utf8');
   const injector = fs.readFileSync(path.join(root, 'scripts/inject-game-integrations.cjs'), 'utf8');
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/games.json'), 'utf8'));
   const entry = fs.readFileSync(path.join(root, 'patience-tower-duel-entry.js'), 'utf8');
   const rework = fs.readFileSync(path.join(root, 'patience-tower-rework.js'), 'utf8');
-  assert.match(injector, /인내의 탑\.html/);
-  assert.match(injector, /patience-tower-rework\.js/);
-  assert.match(injector, /patience-tower-duel-entry\.js/);
-  assert.ok(injector.indexOf('patience-tower-rework.js') < injector.indexOf('patience-tower-duel-entry.js'));
-  assert.match(injector, /인내의 탑\.html\?v=6/);
+  assert.match(sourceHtml, /patience-tower-rework\.js\?v=20260918-3/);
+  assert.match(sourceHtml, /patience-tower-duel-entry\.js\?v=20260918-1/);
+  assert.ok(sourceHtml.indexOf('patience-tower-rework.js') < sourceHtml.indexOf('patience-tower-duel-entry.js'));
+  assert.doesNotMatch(injector, /patience-tower-rework\.js/);
+  assert.doesNotMatch(injector, /patience-tower-duel-entry\.js/);
+  assert.equal(catalog.games.find(game => game.id === 'patience_tower')?.href, '인내의 탑.html?v=6');
   assert.match(entry, /1:1 · 3분 높이 대전/);
   assert.match(entry, /\/games\/patience-tower-duel\//);
   assert.match(rework, /\/assets\/game\/2d\/platformer-art/);
