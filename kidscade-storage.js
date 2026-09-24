@@ -69,7 +69,8 @@
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
   const PREFIXES = Object.freeze({
-    languageV3: 'kidscade_language_v3_'
+    languageV3: 'kidscade_language_v3_',
+    gameSdkV1: 'kidscade_game_v1:'
   });
 
   function getStorage() {
