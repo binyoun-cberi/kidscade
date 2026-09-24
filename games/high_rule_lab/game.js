@@ -63,8 +63,8 @@ function loadLevel(index){
  $('chapterPill').textContent=src.chapter;
  $('labNote').textContent=src.note||'문장을 밀어 세상의 법칙을 바꿔 보세요.';
  updateMoveLabel();
- KidscadeGame?.start?.({stage:levelIndex+1});
- render(true);
+ window.KidscadeGame?.start?.({stage:levelIndex+1});
+ render();
  board.focus({preventScroll:true});
 }
 function updateMoveLabel(){$('moveLabel').textContent=moves+'수'}
@@ -242,8 +242,8 @@ function clearLevel(){
  const best=Number(save.best[key]);if(!best||moves<best)save.best[key]=moves;
  saveProgress(save);
  const clearedCount=Object.keys(save.cleared).length;
- KidscadeGame?.score?.(clearedCount,{unit:'단계',higherIsBetter:true});
- if(clearedCount===DATA.levels.length)KidscadeGame?.gameOver?.({score:clearedCount,scoreOptions:{unit:'단계',higherIsBetter:true}});
+ window.KidscadeGame?.score?.(clearedCount,{unit:'단계',higherIsBetter:true});
+ if(clearedCount===DATA.levels.length)window.KidscadeGame?.gameOver?.({score:clearedCount,scoreOptions:{unit:'단계',higherIsBetter:true}});
  $('clearChapter').textContent=DATA.levels[levelIndex].chapter;
  $('clearTitle').textContent=levelIndex===DATA.levels.length-1?'규칙 연구소 정복!':'실험 성공!';
  $('clearText').textContent=levelIndex===DATA.levels.length-1?'세상의 법칙을 읽고, 부수고, 다시 만드는 법을 익혔어요.':'세상의 법칙을 이용해 길을 만들었어요.';
@@ -332,7 +332,7 @@ function bind(){
  $('nextBtn').onclick=()=>{clearDialog.close();loadLevel(levelIndex===DATA.levels.length-1?0:levelIndex+1)};
  levelDialog.addEventListener('click',e=>{if(e.target===levelDialog)levelDialog.close()});
 }
-KidscadeGame?.registerPauseHandlers?.({pause(){},resume(){board.focus({preventScroll:true})}});
+window.KidscadeGame?.registerPauseHandlers?.({pause(){},resume(){board.focus({preventScroll:true})}});
 bind();
 const save=safeLoad();loadLevel(Math.min(DATA.levels.length-1,Math.max(0,save.unlocked-1)));
 })();
