@@ -92,7 +92,7 @@ function create(opts){
   m.replay={step:.75,next:0,frames:[],heat:{},stats:{}};
   starters.forEach(function(a){
     m.replay.heat[a.id]=Array(60).fill(0);
-    m.replay.stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0};
+    m.replay.stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
   });
   function touchActor(a){
     if(!a||!a.p)return;
@@ -163,6 +163,8 @@ function create(opts){
     var shooterStat=m.replay.stats[shooter.id];if(shooterStat)shooterStat.shots++;
     if(atk.tactics.mindset==='attack')goalP+=.012;
     if(def.tactics.mindset==='defend')goalP-=.009;
+    goalP=clamp(goalP,.03,.32);
+    if(shooterStat)shooterStat.xg+=goalP;
     if(Math.random()<goalP){
       m.score[m.possession]++;
       if(shooterStat)shooterStat.goals++;
@@ -189,7 +191,11 @@ function create(opts){
         a.x+=(tx-a.x)*Math.min(1,dt*sp*.55);
         a.y+=(ty-a.y)*Math.min(1,dt*sp*.55);
         a.energy=clamp(a.energy-dt*.048*b.fatigue,28,100);
-        var ast=m.replay.stats[a.id];if(ast)ast.distance+=Math.hypot((a.x-ox)*1.05,(a.y-oy)*.68)/1000;
+        var ast=m.replay.stats[a.id];
+        if(ast){
+          var distanceScale=a.slot==='GK'?14:a.slot==='CB'?20:a.slot==='FB'?22:a.slot==='CM'?23:a.slot==='WG'?22:a.slot==='ST'?21:21;
+          ast.distance+=Math.hypot((a.x-ox)*1.05,(a.y-oy)*.68)/1000*distanceScale;
+        }
         if(Math.hypot(a.x-ox,a.y-oy)>.015){
           a.trail.push({x:a.x,y:a.y});
           if(a.trail.length>7)a.trail.shift();
@@ -229,9 +235,10 @@ function create(opts){
     var t=teams[side],idx=t.actors.findIndex(function(a){return a.id===outId;});
     if(idx<0||!inPlayer)return false;
     var old=t.actors[idx],fresh={id:inPlayer.id,p:inPlayer,slot:old.slot,side:side,x:old.x,y:old.y,baseX:old.baseX,baseY:old.baseY,vx:0,vy:0,energy:100,trail:[],flash:0,pulse:1};
+    old.p.fitness=clamp(Math.round((old.p.fitness==null?100:old.p.fitness)-(100-old.energy)*.34-2),45,100);
     t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};
     if(!m.replay.heat[fresh.id])m.replay.heat[fresh.id]=Array(60).fill(0);
-    if(!m.replay.stats[fresh.id])m.replay.stats[fresh.id]={touches:0,shots:0,goals:0,saves:0,distance:0};
+    if(!m.replay.stats[fresh.id])m.replay.stats[fresh.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
     recalc(t);
     if(m.ball.owner===old){m.ball.owner=fresh;m.lastTouchId=fresh.id;}
     emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,fresh);return true;
