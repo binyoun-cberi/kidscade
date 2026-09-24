@@ -18,7 +18,7 @@ class UI{
  threatText(s,side){
   const el=side==='left'?this.els.left:this.els.right,d=s.disaster;
   el.className='threatBadge '+side+' calm';
-  if(d&&d.side===side){const pct=Math.max(0,Math.round(d.energy/d.maxEnergy*100)),name=d.type==='wildfire'?'🔥 산불':'🌊 홍수';el.className='threatBadge '+side+' '+(d.type==='wildfire'?'fire':'flood')+' warn';el.querySelector('span').textContent=name+' '+pct+'%';return}
+  if(d&&d.side===side){const pct=Math.max(0,Math.round(d.energy/d.maxEnergy*100)),power=d.strength||1;let name;if(d.type==='wildfire')name=power<.78?'🔥 작은 산불':power<1.2?'🔥 산불':power<1.65?'🔥 거센 산불':'🔥 대형 산불';else name=power<.78?'🌊 약한 홍수':power<1.2?'🌊 홍수':power<1.65?'🌊 거센 홍수':'🌊 대홍수';el.className='threatBadge '+side+' '+(d.type==='wildfire'?'fire':'flood')+' warn';el.querySelector('span').textContent=name+' '+pct+'%';return}
   if(s.next&&s.next.side===side&&s.next.visible){const name=s.next.type==='wildfire'?'🔥 산불 징조':'🌧️ 홍수 징조',tail=s.disaster?'':' · '+Math.ceil(Math.max(0,s.next.in))+'초';el.className='threatBadge '+side+' '+(s.next.type==='wildfire'?'fire':'flood');el.querySelector('span').textContent=name+tail;return}
   el.querySelector('span').textContent='안정';
  }
