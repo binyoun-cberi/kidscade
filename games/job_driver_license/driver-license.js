@@ -135,13 +135,17 @@ function resetCar(){
 }
 function requestGameFullscreen(){
   try{
-    const root=document.documentElement;
-    if(document.fullscreenElement||document.webkitFullscreenElement)return;
     const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
     if(!coarse)return;
-    const fn=root.requestFullscreen||root.webkitRequestFullscreen;
+    const host=(window.parent&&window.parent!==window&&window.parent.document)
+      ? window.parent.document.getElementById('game-modal')
+      : document.documentElement;
+    if(!host)return;
+    const hostDoc=host.ownerDocument||document;
+    if(hostDoc.fullscreenElement||hostDoc.webkitFullscreenElement)return;
+    const fn=host.requestFullscreen||host.webkitRequestFullscreen;
     if(!fn)return;
-    const result=fn.call(root);
+    const result=fn.call(host);
     result?.catch?.(()=>{});
   }catch(_){}
 }
