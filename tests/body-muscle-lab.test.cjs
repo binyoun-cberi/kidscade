@@ -55,7 +55,7 @@ test('full-body missions include staged balance assistance and recoverable falls
 test('body muscle lab catalog metadata is classroom-ready science simulation', () => {
   const game = catalog.games.find(item => item.id === 'high_body_muscle_lab');
   assert.ok(game);
-  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=2');
+  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=3');
   assert.equal(game.subject, 'science');
   assert.equal(game.genre, 'simulation');
   assert.equal(game.difficulty, 'medium');
@@ -63,4 +63,15 @@ test('body muscle lab catalog metadata is classroom-ready science simulation', (
   assert.deepEqual(game.input, ['touch', 'keyboard']);
   assert.ok(game.players.includes('solo'));
   assert.ok(game.players.includes('classroom'));
+});
+
+test('body muscle lab uses compact gameplay-first UI', () => {
+  assert.match(html, /id="floatingHint"/);
+  assert.match(html, /id="miniHud"/);
+  assert.match(html, /class="xray-fab"/);
+  assert.match(html, /class="hidden-telemetry"/);
+  assert.doesNotMatch(html, /class="status-row"/);
+  assert.doesNotMatch(html, /근육 조종기<\/b>/);
+  assert.match(runtime, /showMissionHint/);
+  assert.match(runtime, /updateCompactHud/);
 });
