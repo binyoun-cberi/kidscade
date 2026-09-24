@@ -26,7 +26,7 @@
 - `wrangler.jsonc`
 - Vercel/Netlify 설정 파일
 
-또한 Cloudflare 빌드 산출물의 `index_base.html`에서 `/_vercel/insights/script.js`를 제거한다.
+`index_base.html`의 Vercel Insights 의존성은 소스에서 제거되어 있으며, 빌드 단계의 방어 검사도 남겨 두어 `/_vercel/` 경로가 다시 들어오면 배포 전에 차단한다.
 
 ## 성능 최적화
 
