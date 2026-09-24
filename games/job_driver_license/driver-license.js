@@ -312,6 +312,11 @@ function physicsStep(dt){
   if(gameState!=='playing')return;
   gameTime+=dt;updateSignal();
   const inp=inputState();
+  if(inp.throttle>.15&&toastTimer<=0){
+    if(!car.engine)showToast('시동이 꺼져 있습니다.','warn',1.2);
+    else if(!currentDirection())showToast(license==='auto'?'D 또는 R 기어를 선택하세요.':'주행 기어를 선택하세요.','warn',1.2);
+    else if(car.parkingBrake)showToast('주차브레이크가 걸려 있습니다.','warn',1.2);
+  }
 
   car.steeringWheel=clamp(car.steeringWheel+inp.steer*270*dt,-540,540);
   if(Math.abs(inp.steer)<.04&&Math.abs(car.speed)>.5)car.steeringWheel=approach(car.steeringWheel,0,Math.abs(car.speed)*5.5*dt);
@@ -328,7 +333,9 @@ function physicsStep(dt){
     }else{
       const clutchEngage=1-inp.clutch;
       const g=Math.abs(Number(car.gear));const power=[0,4.6,3.8,3.25,2.8,2.45][g]||3.4;
-      drive=(inp.throttle*power+.5*Math.max(0,clutchEngage-.55))*clutchEngage*dir;
+      const gearCap=[0,5.2,9.2,12.5,15.5,18][g]||12.5;
+      const torqueFade=clamp((gearCap-Math.abs(car.speed))/1.35,0,1);
+      drive=(inp.throttle*power+.5*Math.max(0,clutchEngage-.55))*clutchEngage*dir*torqueFade;
       const ratio=[0,3.4,2.15,1.55,1.2,1][g]||3.1;
       const wheelRpm=Math.abs(car.speed)*ratio*310;
       const freeRpm=800+inp.throttle*3000;
@@ -350,7 +357,6 @@ function physicsStep(dt){
   }
   else if(car.parkingBrake){
     car.speed=approach(car.speed,0,9*dt);
-    if(inp.throttle>.15&&gameState==='playing'&&toastTimer<=0)showToast('주차브레이크가 걸려 있습니다.','warn',1.4);
   }
   else if(inp.brake>.01)car.speed=approach(car.speed,0,(1.4+inp.brake*7.5)*dt);
   else{
@@ -369,7 +375,8 @@ function physicsStep(dt){
   car.y=groundHeight(car.x,car.z);
   car.pitch=Math.atan(groundDz(car.x,car.z)*(-Math.cos(car.yaw)));
 
-  if(!isOnRoad(car.x,car.z)&&Math.abs(car.speed)>.7){
+  const roadCorners=carCorners().filter(p=>isOnRoad(p.x,p.z)).length;
+  if(roadCorners<=1&&Math.abs(car.speed)>.7){
     offroadTimer+=dt;if(offroadTimer>1.3){addDeduction('차로 이탈',5);offroadTimer=-2}
   }else offroadTimer=Math.max(0,offroadTimer-dt*2);
   if(offroadTimer<0){offroadTimer+=dt;if(offroadTimer>=0)offroadTimer=0}
@@ -443,7 +450,7 @@ function examStep(dt,inp){
   }
   if(stage==='PARK_EXIT'){
     if((car.z<25.2&&car.x>47&&Math.cos(car.yaw-.5*Math.PI)>.45)||car.x>66){
-      stage='ACCEL';setInstruction('가속구간에서 20km/h 이상 주행하세요.','흰색 시작선을 지난 뒤 충분히 가속합니다.');
+      stage='ACCEL';setInstruction('가속구간에서 20km/h 이상 주행하세요.',license==='manual'?'1단에서 출발한 뒤 2단으로 변속해 가속합니다.':'흰색 시작선을 지난 뒤 충분히 가속합니다.');
     }
     return;
   }
@@ -551,7 +558,7 @@ function setAutoGear(g){
 function setManualGear(g){
   if(license!=='manual')return;
   if(g!==0&&inputState().clutch<.62){showToast('클러치를 더 밟으세요.','warn');beep(150,.14,.05);return false}
-  if(g===-1&&Math.abs(car.speed)>.7){showToast('정차 후 후진기어를 넣으세요.','warn');return false}
+  if(g===-1&&Math.abs(car.speed)>.25){showToast('정차 후 후진기어를 넣으세요.','warn');return false}
   car.gear=g;beep(480,.04,.025);return true;
 }
 function updateGearVisual(){
@@ -632,7 +639,12 @@ function installLook(){
 function installControls(){
   installSteering();installPedal(ui.throttlePedal,'throttle');installPedal(ui.brakePedal,'brake');installPedal(ui.clutchPedal,'clutch');installAutoGate();installManualGate();installLook();
   ui.signalLeft.addEventListener('click',()=>toggleSignal(-1));ui.signalRight.addEventListener('click',()=>toggleSignal(1));
-  ui.ignition.addEventListener('click',toggleIgnition);ui.seatbelt.addEventListener('click',()=>{car.seatbelt=!car.seatbelt;showToast(car.seatbelt?'안전띠 착용':'안전띠 해제');beep(660,.04,.02)});
+  ui.ignition.addEventListener('click',toggleIgnition);ui.seatbelt.addEventListener('click',()=>{
+    car.seatbelt=!car.seatbelt;
+    showToast(car.seatbelt?'안전띠 착용':'안전띠 해제');
+    if(!car.seatbelt&&gameState==='playing'&&stage!=='PREP')addDeduction('주행 중 안전띠 해제',5);
+    beep(660,.04,.02);
+  });
   ui.parkingBrake.addEventListener('click',()=>{
     if(Math.abs(car.speed)>1){showToast('정차 후 주차브레이크를 조작하세요.','warn');return}
     car.parkingBrake=!car.parkingBrake;
