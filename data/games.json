@@ -70,6 +70,15 @@
       "cover": "assets/gate-image/격리구역 17.png"
     },
     {
+      "id": "high_folklore_night_guard",
+      "title": "괴담 야간경비",
+      "href": "games/high_folklore_night_guard/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "👻",
+      "description": "할로윈 민속박물관의 야간 관리원이 되어 CCTV·조명·문을 조작하며 세계 괴담 속 존재들의 서로 다른 규칙을 구분해 오전 6시까지 버티는 관찰·판단 공포 게임! 도깨비·유키온나·처녀귀신·달걀귀신·저승사자·늑대인간의 전승 정보와 게임 규칙을 도감에서 따로 배웁니다."
+    },
+    {
       "id": "job_nail_artist",
       "title": "네일 아티스트 타이쿤",
       "href": "games/job_nail_artist/네일 아티스트 타이쿤.html",
