@@ -312,13 +312,30 @@
                             <span>⚡ 에너지가 있으면 보상 2배</span>
                         </div>
                     </section>
-                    <nav class="filter-nav" aria-label="게임 카테고리">
-                        <button class="filter-nav-btn filter-btn active" data-filter="all">🌟 전체</button>
-                        <button class="filter-nav-btn filter-btn" data-filter="math">➕ 수학·퍼즐</button>
-                        <button class="filter-nav-btn filter-btn" data-filter="korean">📖 국어</button>
-                        <button class="filter-nav-btn filter-btn" data-filter="lang">🔠 외국어·한자</button>
-                        <button class="filter-nav-btn filter-btn" data-filter="trivia">💡 상식·생활</button>
-                        <button class="filter-nav-btn filter-btn" data-filter="music">🎹 음악·예술</button>
+                    <div class="kc-filter-label">무엇을 배우고 싶어?</div>
+                    <nav class="filter-nav" aria-label="학습 영역">
+                        <button class="filter-nav-btn filter-btn active" data-filter="all" data-subject="all">🌟 전체</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="math" data-subject="math">➕ 수학</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="korean" data-subject="korean">📖 국어</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="language" data-subject="language">🔠 외국어·한자</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="social" data-subject="social">🗺️ 사회</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="science" data-subject="science">🔬 과학·환경</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="arts" data-subject="arts">🎨 예술</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="career" data-subject="career">🧑‍🔬 진로</button>
+                        <button class="filter-nav-btn filter-btn" data-filter="thinking" data-subject="thinking">🧠 사고력</button>
+                    </nav>
+                    <div class="kc-filter-label kc-genre-label">어떤 방식으로 놀까?</div>
+                    <nav class="kc-genre-nav" aria-label="게임 장르">
+                        <button class="kc-genre-filter active" type="button" data-genre="all">전체 장르</button>
+                        <button class="kc-genre-filter" type="button" data-genre="action">액션</button>
+                        <button class="kc-genre-filter" type="button" data-genre="puzzle">퍼즐</button>
+                        <button class="kc-genre-filter" type="button" data-genre="strategy">전략</button>
+                        <button class="kc-genre-filter" type="button" data-genre="simulation">시뮬레이션</button>
+                        <button class="kc-genre-filter" type="button" data-genre="management">경영</button>
+                        <button class="kc-genre-filter" type="button" data-genre="quiz">퀴즈</button>
+                        <button class="kc-genre-filter" type="button" data-genre="rhythm">리듬</button>
+                        <button class="kc-genre-filter" type="button" data-genre="sports">스포츠</button>
+                        <button class="kc-genre-filter" type="button" data-genre="sandbox">샌드박스</button>
                     </nav>
                 </section>
 
@@ -2358,7 +2375,8 @@ ${getEvolutionHintText()}
             const emptyMessage = document.getElementById('empty-message');
             // ★ 직업체험이 추가된 ageNames
             const ageNames = window.KidscadeAgeNavigation.names;
-            const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술' };
+            const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술', job: '직업' };
+            const subjectNames = { all: '전체', math: '수학', korean: '국어', language: '외국어·한자', social: '사회', science: '과학·환경', arts: '예술', career: '진로', thinking: '사고력' };
 
             function getTodayKey() {
                 return window.KidscadeDaily?.getTodayKey?.() || new Date().toLocaleDateString('ko-KR');
