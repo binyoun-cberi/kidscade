@@ -36,6 +36,9 @@ let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=fal
 let deductions=[];
 let sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};
 let mirrorFrame=0;
+const obstacles=[];
+let collisionCooldown=0;
+let lastCollisionId='';
 let headYaw=0,headPitch=0,lookPointer=null,lookLastX=0,lookLastY=0;
 const keys=new Set();
 
@@ -141,6 +144,67 @@ function carCorners(){
 function footprintInside(minX,maxX,minZ,maxZ){
   return carCorners().every(p=>p.x>=minX&&p.x<=maxX&&p.z>=minZ&&p.z<=maxZ);
 }
+
+function addCircleObstacle(id,x,z,r,options={}){
+  const o={id,type:'circle',x,z,r,solid:options.solid!==false,kind:options.kind||'solid',mesh:options.mesh||null,hit:false};
+  obstacles.push(o);return o;
+}
+function addBoxObstacle(id,x,z,w,d,options={}){
+  const o={id,type:'box',x,z,w,d,solid:options.solid!==false,kind:options.kind||'solid',mesh:options.mesh||null,hit:false};
+  obstacles.push(o);return o;
+}
+function pointInCarOBB(px,pz){
+  const dx=px-car.x,dz=pz-car.z;
+  const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw),rx=Math.cos(car.yaw),rz=Math.sin(car.yaw);
+  const localF=dx*fx+dz*fz,localR=dx*rx+dz*rz;
+  return Math.abs(localF)<=2.15&&Math.abs(localR)<=.9;
+}
+function circleHitsCar(o){
+  const dx=o.x-car.x,dz=o.z-car.z;
+  const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw),rx=Math.cos(car.yaw),rz=Math.sin(car.yaw);
+  const localF=dx*fx+dz*fz,localR=dx*rx+dz*rz;
+  const qF=clamp(localF,-2.15,2.15),qR=clamp(localR,-.9,.9);
+  const df=localF-qF,dr=localR-qR;
+  return df*df+dr*dr<=o.r*o.r;
+}
+function boxHitsCar(o){
+  const carPts=carCorners();
+  if(carPts.some(p=>p.x>=o.x-o.w/2&&p.x<=o.x+o.w/2&&p.z>=o.z-o.d/2&&p.z<=o.z+o.d/2))return true;
+  const boxPts=[
+    [o.x-o.w/2,o.z-o.d/2],[o.x+o.w/2,o.z-o.d/2],
+    [o.x+o.w/2,o.z+o.d/2],[o.x-o.w/2,o.z+o.d/2]
+  ];
+  if(boxPts.some(p=>pointInCarOBB(p[0],p[1])))return true;
+  const minX=Math.min(...carPts.map(p=>p.x)),maxX=Math.max(...carPts.map(p=>p.x));
+  const minZ=Math.min(...carPts.map(p=>p.z)),maxZ=Math.max(...carPts.map(p=>p.z));
+  return !(maxX<o.x-o.w/2||minX>o.x+o.w/2||maxZ<o.z-o.d/2||minZ>o.z+o.d/2);
+}
+function findCollision(){
+  for(const o of obstacles){
+    if(!o.solid)continue;
+    const hit=o.type==='circle'?circleHitsCar(o):boxHitsCar(o);
+    if(hit)return o;
+  }
+  return null;
+}
+function handleCollision(o,prev){
+  car.x=prev.x;car.z=prev.z;car.yaw=prev.yaw;
+  const impact=Math.abs(car.speed);
+  car.speed*=-.08;
+  if(o.kind==='cone'){
+    o.solid=false;o.hit=true;
+    if(o.mesh){o.mesh.rotation.z=Math.PI*.48;o.mesh.position.y=.12}
+    showToast('콘에 닿았습니다.','warn',1.2);
+    if(collisionCooldown<=0){addDeduction('안전시설 접촉',5);collisionCooldown=1.2}
+    return;
+  }
+  if(impact>.45){
+    showToast('충돌했습니다.','danger',1.2);beep(120,.12,.06);
+    if(collisionCooldown<=0||lastCollisionId!==o.id){
+      addDeduction('장애물 충돌',10);collisionCooldown=1.5;lastCollisionId=o.id;
+    }
+  }
+}
 function currentDirection(){
   if(license==='auto')return car.gear==='D'?1:car.gear==='R'?-1:0;
   return car.gear===-1?-1:(Number(car.gear)>0?1:0);
@@ -149,7 +213,7 @@ function gearText(){return license==='auto'?String(car.gear):(car.gear===-1?'R':
 function resetCar(){
   Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,speed:0,steeringWheel:0,wheelAngle:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0});
   touch.steer=touch.throttle=touch.brake=touch.clutch=0;
-  gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=0;
+  gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=collisionCooldown=0;lastCollisionId='';
   hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
@@ -217,6 +281,7 @@ function addSign(text,x,z,rotation=0){
   const s=textSprite(text);s.position.set(x,2.15,z);scene.add(s);return s;
 }
 function buildCourse(){
+  obstacles.length=0;
   const grass=new THREE.Mesh(new THREE.PlaneGeometry(260,190),new THREE.MeshStandardMaterial({color:0x6da768,roughness:1}));
   grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;scene.add(grass);
 
@@ -243,13 +308,19 @@ function buildCourse(){
   line(.22,15,36.1,33,white,.16);line(.22,15,47.9,33,white,.16);
   line(.22,12,39.2,33,white,.17);line(.22,12,44.8,33,white,.17);line(5.8,.22,42,38.7,white,.17);
 
-  for(let z=64;z<=80;z+=4){makeBox(.25,.35,.25,0xf07c34,-5.2,.18,z).rotation.y=Math.PI/4;makeBox(.25,.35,.25,0xf07c34,5.2,.18,z).rotation.y=Math.PI/4}
-  for(let x=32;x<=51;x+=3){makeBox(.24,.34,.24,0xf07c34,x,.17,42.7).rotation.y=Math.PI/4}
+  const makeCone=(id,x,z)=>{
+    const mesh=new THREE.Mesh(new THREE.ConeGeometry(.28,.58,12),new THREE.MeshStandardMaterial({color:0xf47b20,roughness:.9}));
+    mesh.position.set(x,.29,z);mesh.castShadow=true;scene.add(mesh);
+    addCircleObstacle(id,x,z,.34,{kind:'cone',mesh});return mesh;
+  };
+  for(let z=64;z<=80;z+=4){makeCone('coneL'+z,-5.2,z);makeCone('coneR'+z,5.2,z)}
+  for(let x=32;x<=51;x+=3)makeCone('parkCone'+x,x,42.7);
 
   addSign('경사로',-6.8,55);addSign('신호 우회전',-6.8,31);addSign('T자 주차',42,44);
   addSign('20km/h 이상',70,26);addSign('급정지',95,26);addSign('종료',112,26);
 
   const pole=makeBox(.18,4,.18,0x3a4347,4.6,2,25.6);pole.castShadow=false;
+  addCircleObstacle('signalPole',4.6,25.6,.3);
   const housing=makeBox(.85,1.8,.55,0x202628,4.6,3.55,25.6);
   signalRedMat=new THREE.MeshStandardMaterial({color:0x501818,emissive:0x240000});
   signalGreenMat=new THREE.MeshStandardMaterial({color:0x17431f,emissive:0x001e08});
@@ -259,26 +330,32 @@ function buildCourse(){
   const stopMark=textSprite('정지선','#ffffff','rgba(180,34,34,.88)');stopMark.position.set(-6,1.15,29);stopMark.scale.set(3.2,1,1);scene.add(stopMark);
   const parkArrow=textSprite('후진 →','#ffffff','rgba(38,97,122,.88)');parkArrow.position.set(42,1.25,27);parkArrow.scale.set(3.4,1.05,1);scene.add(parkArrow);
 
+  let treeN=0;
   for(const [x,z] of [[-16,72],[-18,45],[-18,18],[15,33],[28,49],[58,47],[82,45],[105,45],[123,18],[75,-6],[27,-10]]){
     const trunk=makeBox(.38,2.2,.38,0x78543d,x,1.1,z);trunk.castShadow=false;
+    addCircleObstacle('tree'+(++treeN),x,z,.62);
     const crown=new THREE.Mesh(new THREE.SphereGeometry(1.55,10,8),new THREE.MeshStandardMaterial({color:0x4d8b55,roughness:1}));crown.position.set(x,3,z);crown.castShadow=true;scene.add(crown);
   }
+  let buildingN=0;
   for(const [x,z,c] of [[-12,8,0xd7c09e],[20,51,0xbfcde2],[55,57,0xe2bbb5],[92,56,0xc9d3b0],[118,50,0xd8c7e5]]){
-    makeBox(10,5.5,9,c,x,2.75,z);const roof=makeBox(10.7,.8,9.7,0x554c48,x,5.9,z);roof.rotation.y=.02;
+    makeBox(10,5.5,9,c,x,2.75,z);addBoxObstacle('building'+(++buildingN),x,z,10.4,9.4);
+    const roof=makeBox(10.7,.8,9.7,0x554c48,x,5.9,z);roof.rotation.y=.02;
   }
 }
 async function loadDecorAssets(){
   const base='../../assets/game/3d/vehicles/kenney-car-kit/';
-  const load=(file,pos,scale=1,rot=0)=>new Promise(resolve=>{
+  const load=(file,pos,scale=1,rot=0,id='parked')=>new Promise(resolve=>{
     loader.load(base+file,g=>{
       const root=g.scene;root.position.set(pos[0],pos[1],pos[2]);root.scale.setScalar(scale);root.rotation.y=rot;
-      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(root);resolve(true)
+      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(root);
+      addCircleObstacle(id,pos[0],pos[2],1.55);
+      resolve(true)
     },undefined,()=>resolve(false));
   });
   await Promise.all([
-    load('sedan.glb',[-10,0,17],1.05,Math.PI/2),
-    load('taxi.glb',[79,0,31],1.05,Math.PI),
-    load('suv.glb',[102,0,8],1.05,0)
+    load('sedan.glb',[-10,0,17],1.05,Math.PI/2,'parkedSedan'),
+    load('taxi.glb',[79,0,31],1.05,Math.PI,'parkedTaxi'),
+    load('suv.glb',[102,0,8],1.05,0,'parkedSuv')
   ]);
 }
 function initScene(){
@@ -367,10 +444,14 @@ function physicsStep(dt){
   car.speed=clamp(car.speed,-5.5,12.5);
   if(Math.abs(car.speed)<.015)car.speed=0;
 
+  if(collisionCooldown>0)collisionCooldown=Math.max(0,collisionCooldown-dt);
+  const prevPose={x:car.x,z:car.z,yaw:car.yaw};
   if(Math.abs(car.speed)>.02){
     car.yaw=normAngle(car.yaw+(car.speed/2.62)*Math.tan(car.wheelAngle)*dt);
     car.x+=Math.sin(car.yaw)*car.speed*dt;
     car.z-=Math.cos(car.yaw)*car.speed*dt;
+    const hit=findCollision();
+    if(hit)handleCollision(hit,prevPose);
   }
   car.y=groundHeight(car.x,car.z);
   car.pitch=Math.atan(groundDz(car.x,car.z)*(-Math.cos(car.yaw)));
@@ -398,8 +479,8 @@ function examStep(dt,inp){
       return;
     }
     if(!readyGear()){
-      setInstruction(license==='auto'?'브레이크를 밟고 D에 놓으세요.':'클러치를 밟고 1단에 넣으세요.',
-        license==='auto'?'기어봉을 아래쪽 D까지 내립니다.':'클러치를 충분히 밟은 상태에서 1단으로 변속합니다.');
+      setInstruction(license==='auto'?'브레이크를 밟고 D에 놓으세요.':'클러치를 끝까지 밟고 1단에 넣으세요.',
+        license==='auto'?'기어봉을 아래쪽 D까지 내립니다.':'왼쪽 클러치를 밟은 채 H형 기어봉을 1단으로 옮깁니다.');
       return;
     }
     if(car.parkingBrake){
@@ -414,7 +495,7 @@ function examStep(dt,inp){
   }
   if(stage==='START'&&kmh>2&&car.z<70){
     if(car.signal!==-1)addDeduction('출발 방향지시등 미사용',5);
-    stage='HILL';setInstruction('경사로 정지선에 정확히 멈추세요.','정지 후 뒤로 밀리지 않게 다시 출발합니다.');
+    stage='HILL';setInstruction('경사로 정지선에 정확히 멈추세요.',license==='manual'?'클러치와 브레이크로 정지한 뒤 반클러치와 가속으로 출발합니다.':'정지 후 뒤로 밀리지 않게 다시 출발합니다.');
     return;
   }
   if(stage==='HILL'){
@@ -556,10 +637,15 @@ function setAutoGear(g){
   car.gear=g;beep(500,.04,.025);return true;
 }
 function setManualGear(g){
-  if(license!=='manual')return;
-  if(g!==0&&inputState().clutch<.62){showToast('클러치를 더 밟으세요.','warn');beep(150,.14,.05);return false}
-  if(g===-1&&Math.abs(car.speed)>.25){showToast('정차 후 후진기어를 넣으세요.','warn');return false}
-  car.gear=g;beep(480,.04,.025);return true;
+  if(license!=='manual')return false;
+  const inp=inputState();
+  if(g!==0&&inp.clutch<.62){showToast('클러치를 끝까지 밟고 변속하세요.','warn');beep(150,.14,.05);return false}
+  if(g===-1&&Math.abs(car.speed)>.25){showToast('완전히 정차한 뒤 후진기어를 넣으세요.','warn');return false}
+  if(g>0&&car.speed<-.25){showToast('정차한 뒤 전진기어를 넣으세요.','warn');return false}
+  car.gear=g;
+  const label=g===-1?'후진 R':g===0?'중립 N':g+'단';
+  showToast(label+' 변속',g===0?'normal':'normal',.8);
+  beep(480,.04,.025);return true;
 }
 function updateGearVisual(){
   if(license==='auto'){
