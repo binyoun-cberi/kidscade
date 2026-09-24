@@ -224,6 +224,96 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .door-zone{width:14.5%;top:14%;bottom:23%}.entity-cam{width:190px;height:310px}.room-scene{padding:58px 12px 70px}
   .asset-strip{height:62px}.office{background-position:center top!important}
 }
+
+/* v3 staged apparition pass */
+.camera-view{isolation:isolate}
+.camera-view::before{
+  content:"";position:absolute;inset:0;z-index:14;pointer-events:none;opacity:.18;
+  background:repeating-linear-gradient(0deg,transparent 0 2px,#dce8ed10 3px,#02040514 4px);
+  mix-blend-mode:screen;animation:cctvDrift 5.5s steps(2,end) infinite
+}
+.room-scene{overflow:hidden}
+.entity-cam{
+  left:50%;bottom:0;width:29%;height:74%;transform:none;opacity:1;
+  transition:left .16s ease,bottom .16s ease,width .16s ease,height .16s ease,opacity .16s ease,filter .16s ease;
+  transform-origin:50% 100%;align-items:flex-end
+}
+.entity-cam .ghost-sprite{width:100%;height:100%;max-width:none;background-size:600% 100%}
+.entity-cam.threat-0{filter:brightness(.48) contrast(1.22) saturate(.55);opacity:.54}
+.entity-cam.threat-1{filter:brightness(.68) contrast(1.16) saturate(.67);opacity:.78}
+.entity-cam.threat-2{filter:brightness(.86) contrast(1.14) saturate(.78);opacity:.96}
+
+/* 처녀귀신: 교실 맨 뒤 -> 복도 문틀 -> 카메라 바로 앞 */
+.entity-cam.maiden-back{left:63%;bottom:30%;width:8.5%;height:27%;z-index:3}
+.entity-cam.maiden-back .entity-occluder{
+  display:block;position:absolute;z-index:12;left:-16%;right:-12%;bottom:-5%;height:43%;
+  background:linear-gradient(#15191ee8,#0b0e11f4);clip-path:polygon(0 31%,100% 0,100% 100%,0 100%)
+}
+.entity-cam.maiden-mid{left:17%;bottom:12%;width:16%;height:49%;z-index:5}
+.entity-cam.maiden-mid .entity-occluder{
+  display:block;position:absolute;z-index:12;left:-25%;bottom:-2%;width:54%;height:93%;
+  background:linear-gradient(90deg,#080a0cee,#14191de8 70%,transparent);border-right:3px solid #30383e
+}
+.entity-cam.maiden-near{left:4%;bottom:-19%;width:40%;height:112%;z-index:10;filter:brightness(.72) contrast(1.25) saturate(.58)}
+.entity-cam.maiden-near .ghost-sprite{filter:drop-shadow(0 16px 18px #000) blur(.1px)}
+
+/* 유키온나: 과학실 가장 안쪽에서 서리와 함께 접근 */
+.entity-cam.yuki-frost.threat-0{left:69%;bottom:31%;width:8%;height:26%;z-index:3;opacity:.33;filter:brightness(1.12) contrast(.9) saturate(.3) blur(.45px)}
+.entity-cam.yuki-frost.threat-1{left:58%;bottom:17%;width:15%;height:47%;z-index:5;opacity:.58;filter:brightness(.93) contrast(1) saturate(.38)}
+.entity-cam.yuki-frost.threat-2{left:48%;bottom:-7%;width:29%;height:83%;z-index:10;opacity:.82;filter:brightness(.86) contrast(1.06) saturate(.45)}
+.entity-cam.yuki-frost::after{
+  content:"";position:absolute;inset:-6%;z-index:-1;background:radial-gradient(circle,#cdefff24,transparent 68%);filter:blur(10px)
+}
+
+/* 도깨비: 책상/교탁 뒤에서 얼굴과 상체만 내민다 */
+.entity-cam.dokkaebi-hide.threat-0{left:74%;bottom:23%;width:8%;height:25%;z-index:3;opacity:.48}
+.entity-cam.dokkaebi-hide.threat-1{left:72%;bottom:17%;width:12%;height:37%;z-index:5;opacity:.72}
+.entity-cam.dokkaebi-hide.threat-2{left:68%;bottom:7%;width:19%;height:57%;z-index:8;opacity:.94}
+.entity-cam.dokkaebi-hide .entity-occluder{
+  display:block;position:absolute;z-index:12;left:-28%;right:-28%;bottom:-3%;height:44%;
+  background:linear-gradient(#382d25f4,#17130ff8);border-top:3px solid #574638;box-shadow:0 -6px 14px #0008
+}
+
+/* 달걀귀신: 처음엔 화면 가장자리에서 얼굴만, 오래 보면 중앙으로 미끄러진다 */
+.entity-cam.egg-peek.threat-0{left:-4%;bottom:22%;width:13%;height:39%;z-index:9;opacity:.55;filter:brightness(.57) contrast(1.25) saturate(.38)}
+.entity-cam.egg-peek.threat-1{left:11%;bottom:6%;width:23%;height:66%;z-index:10;opacity:.78;filter:brightness(.72) contrast(1.18) saturate(.48)}
+.entity-cam.egg-peek.threat-2{left:34%;bottom:-18%;width:45%;height:116%;z-index:11;opacity:1;filter:brightness(.9) contrast(1.18) saturate(.55)}
+.entity-cam.egg-peek.threat-2{animation:eggCreep .62s ease-in-out infinite alternate}
+
+/* 가까운 귀신일수록 CCTV 화면 자체가 불안정해 보임 */
+.camera-view:has(.entity-cam.threat-2)::before{opacity:.32;animation:cctvDanger .18s steps(2,end) infinite}
+.camera-view:has(.entity-cam.threat-2) .room-scene{filter:saturate(.62) brightness(.68) contrast(1.18)}
+.entity-occluder{display:none;pointer-events:none}
+
+/* 복도 문 앞 귀신도 전신 정중앙 대신 문 가장자리에서 튀어나오게 */
+.hall-entity .ghost-sprite{transform:translateX(0);filter:drop-shadow(0 12px 15px #000) brightness(.68) contrast(1.22) saturate(.65)}
+.door-zone.left .hall-entity{left:-7%;bottom:-8%;width:112%;height:92%}
+.door-zone.right .hall-entity{left:-4%;bottom:-8%;width:112%;height:92%}
+.door-zone.left .hall-entity .ghost-sprite{transform:translateX(-12%)}
+.door-zone.right .hall-entity .ghost-sprite{transform:translateX(12%)}
+
+/* 점프스케어는 캐릭터를 통째로 전시하지 않고 얼굴/상체가 화면을 침범하는 느낌 */
+.scare #scareArt{width:min(92vw,980px);height:min(94vh,790px);overflow:hidden}
+.scare #scareArt .ghost-sprite{height:125%;width:auto;min-width:48vw;transform:translateY(13%) scale(1.18);filter:drop-shadow(0 0 34px #000) contrast(1.32) brightness(.63) saturate(.6)}
+.scare.show::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,transparent 18%,#000 82%);animation:scarePulse .09s steps(2) 7}
+
+@keyframes cctvDrift{0%,92%,100%{transform:translateY(0)}93%{transform:translateY(2px)}95%{transform:translateY(-1px)}}
+@keyframes cctvDanger{0%{transform:translate(0,0)}25%{transform:translate(2px,-1px)}50%{transform:translate(-2px,1px)}75%{transform:translate(1px,1px)}100%{transform:translate(0,0)}}
+@keyframes eggCreep{from{transform:translateX(-1.5%)}to{transform:translateX(1.5%)}}
+@keyframes scarePulse{0%,100%{opacity:.48}50%{opacity:.12}}
+
+@media(max-width:780px){
+  .entity-cam.maiden-back{width:11%;height:24%;left:61%;bottom:31%}
+  .entity-cam.maiden-mid{width:20%;height:47%;left:11%;bottom:11%}
+  .entity-cam.maiden-near{width:47%;height:104%;left:0;bottom:-16%}
+  .entity-cam.yuki-frost.threat-0{width:10%;height:24%}
+  .entity-cam.yuki-frost.threat-1{width:18%;height:45%}
+  .entity-cam.yuki-frost.threat-2{width:33%;height:80%;left:45%}
+  .entity-cam.dokkaebi-hide.threat-0{width:10%;height:23%}
+  .entity-cam.dokkaebi-hide.threat-1{width:15%;height:34%}
+  .entity-cam.dokkaebi-hide.threat-2{width:23%;height:53%}
+  .entity-cam.egg-peek.threat-2{width:51%;height:108%;left:29%}
+}
 </style>
 </head>
 <body>
@@ -258,7 +348,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       </div>
 
       <div class="desk"></div>
-      <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 전시실의 이상을 확인하세요.<br>도감은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
+      <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 교실과 복도의 이상을 확인하세요.<br>도감은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
       <div class="toast" id="toast"></div>
 
       <div class="controls">
@@ -290,7 +380,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
         <button class="special" id="specialBtn" type="button"></button>
       </div>
       <aside class="cam-side">
-        <h3>박물관 CCTV</h3>
+        <h3>학교 CCTV</h3>
         <div class="map" id="cameraMap"></div>
         <div class="legend">학교 전력을 무작정 쓰면 봉인력이 줄어듭니다. 교실과 복도에서 보이는 징후를 보고 귀신마다 다른 규칙을 판단하세요.</div>
         <button class="camera-close" id="camClose" type="button">모니터 내리기</button>
@@ -467,19 +557,55 @@ function roomPropsVisible(){
   }
 }
 function cameraGhost(){
-  var id=null,cls='mid';
-  if(state.currentCam==='korea'&&state.maiden.active&&state.maiden.stage===0){id='maiden';cls='far'}
-  if(state.currentCam==='special'&&state.maiden.active&&state.maiden.stage===1){id='maiden';cls='mid'}
-  if(state.currentCam==='west'&&state.maiden.active&&state.maiden.stage===2){id='maiden';cls='near'}
-  if(state.egg&&state.egg.active&&state.currentCam===state.egg.cam){id='egg';cls='near'}
-  if(id){els.camEntity.innerHTML=svg(GHOSTS[id].svg);els.camEntity.className='entity-cam show '+cls}
-  else{els.camEntity.innerHTML='';els.camEntity.className='entity-cam'}
+  var id=null,classes=[],stage=0;
+
+  // 가장 위험한 존재를 우선 표시한다. 같은 카메라에 겹쳐도 한 장면은 읽기 쉽게 유지한다.
+  if(state.egg&&state.egg.active&&state.currentCam===state.egg.cam){
+    id='egg';
+    stage=Math.min(2,Math.floor((state.egg.stare||0)/34));
+    classes=['egg-peek','threat-'+stage];
+  }else if(state.maiden.active){
+    if(state.currentCam==='korea'&&state.maiden.stage===0){
+      id='maiden';stage=0;classes=['maiden-back','threat-0'];
+    }else if(state.currentCam==='special'&&state.maiden.stage===1){
+      id='maiden';stage=1;classes=['maiden-mid','threat-1'];
+    }else if(state.currentCam==='west'&&state.maiden.stage===2){
+      id='maiden';stage=2;classes=['maiden-near','threat-2'];
+    }
+  }
+
+  // 유키온나는 서리 속에서 아주 늦게 형체가 보이기 시작한다.
+  if(!id&&state.currentCam==='japan'&&state.yuki&&state.yuki.active&&state.yuki.frost>24){
+    id='yuki';
+    stage=state.yuki.frost>72?2:(state.yuki.frost>47?1:0);
+    classes=['yuki-frost','threat-'+stage];
+  }
+
+  // 도깨비는 처음엔 교실 뒤 가구에 숨어 있고, 오래 방치할수록 몸을 더 내민다.
+  if(!id&&state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.timer>3.5){
+    id='dokkaebi';
+    stage=state.dokkaebi.timer>9?2:(state.dokkaebi.timer>6.2?1:0);
+    classes=['dokkaebi-hide','threat-'+stage];
+  }
+
+  if(id){
+    els.camEntity.innerHTML=svg(GHOSTS[id].svg)+'<span class="entity-occluder" aria-hidden="true"></span>';
+    els.camEntity.className='entity-cam show ghost-'+id+' '+classes.join(' ');
+    els.camEntity.dataset.ghost=id;
+    els.camEntity.dataset.stage=String(stage);
+  }else{
+    els.camEntity.innerHTML='';
+    els.camEntity.className='entity-cam';
+    els.camEntity.removeAttribute('data-ghost');
+    els.camEntity.removeAttribute('data-stage');
+  }
 }
 function renderCamera(){
   var c=CAMERAS.find(function(x){return x.id===state.currentCam})||CAMERAS[0];
   els.camCode.textContent=c.code;els.camName.textContent=c.name;
   els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+c.bg+'")';
   els.roomScene.style.backgroundPosition=c.pos||'center';
+  els.roomScene.dataset.room=state.currentCam;
   document.querySelectorAll('.cam-btn').forEach(function(b){b.classList.toggle('active',b.dataset.cam===state.currentCam)});
   roomPropsVisible();cameraGhost();
   var frost=state.yuki&&state.yuki.active&&state.currentCam==='japan'?Math.min(1,state.yuki.frost/100):0;
@@ -530,15 +656,15 @@ function useHeater(){
 }
 function spawnDokkaebi(){
   if(state.dokkaebi&&state.dokkaebi.active)return false;
-  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');toast('6-1 교실에서 물건 하나의 위치가 달라졌습니다.');return true
+  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');toast('6-1 교실에서 물건 하나가 흔들립니다. 누군가 숨어 있는 것 같습니다.');return true
 }
 function spawnYuki(){
   if(state.yuki&&state.yuki.active)return false;
-  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);toast('과학실 카메라에 서리가 끼기 시작합니다.');return true
+  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);toast('과학실 창가부터 서리가 번지기 시작합니다.');return true
 }
 function spawnMaiden(){
   if(state.maiden.active)return false;
-  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');toast('빈 교실 CCTV에 흰 형체가 나타났습니다.');return true
+  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');toast('6-1 교실 맨 뒤에 사람 같은 형체가 잠깐 보였습니다.');return true
 }
 function spawnEgg(){
   if(state.mode==='practice'||(state.egg&&state.egg.active))return false;
