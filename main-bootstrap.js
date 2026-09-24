@@ -393,7 +393,6 @@
       if (!catalogRes.ok) throw new Error('게임 목록 데이터를 불러오지 못했습니다.');
 
       const catalog = validateCatalog(await catalogRes.json());
-      await window.KidscadeCatalogCovers?.apply(catalog);
       let html = await baseRes.text();
       html = replaceGameCardsFromCatalog(html, catalog);
       html = applyCompatibilityFixes(html);

@@ -204,7 +204,8 @@ test('composed page has exactly one card per catalog entry, including injected l
   assert.ok(!output.includes('href="unknown.html"'));
   // garden.js runs after composition; it must only load garden modules, never add cards.
   vm.runInContext(read('garden.js'), vm.createContext({ document: { write() {} } }));
-  assert.doesNotMatch(read('catalog-extra.js'), /window\.fetch\s*=/);
+  assert.doesNotMatch(read('index.html'), /catalog-extra\.js/);
+  assert.doesNotMatch(read('main-bootstrap.js'), /KidscadeCatalogCovers/);
 });
 
 test('migrated games obey every age, subject and search combination', () => {

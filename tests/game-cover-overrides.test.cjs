@@ -5,19 +5,17 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
-const overrides = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/game-cover-overrides.json'), 'utf8'));
-const ids = new Set((catalog.games || []).map(game => game.id));
+const gamesWithCovers = (catalog.games || []).filter(game => game.cover);
 
-test('every cover override points to a known catalog game and real image', () => {
-  const entries = Object.entries(overrides);
-  assert.ok(entries.length > 0);
+test('catalog covers point directly to real gate images', () => {
+  assert.ok(gamesWithCovers.length >= 80, `unexpectedly few catalog covers: ${gamesWithCovers.length}`);
 
-  for (const [gameId, cover] of entries) {
-    assert.equal(ids.has(gameId), true, `unknown game id: ${gameId}`);
-    assert.match(cover, /^assets\/gate-image\/.+\.png$/i);
+  for (const game of gamesWithCovers) {
+    const cover = String(game.cover || '').split(/[?#]/, 1)[0];
+    assert.match(cover, /^assets\/gate-image\/.+\.(?:png|jpe?g|webp)$/i, `invalid cover path: ${game.id} -> ${game.cover}`);
     const file = path.join(ROOT, cover);
-    assert.equal(fs.existsSync(file), true, `missing cover image: ${cover}`);
-    assert.equal(fs.statSync(file).isFile(), true, `cover is not a file: ${cover}`);
+    assert.equal(fs.existsSync(file), true, `missing cover image: ${game.id} -> ${cover}`);
+    assert.equal(fs.statSync(file).isFile(), true, `cover is not a file: ${game.id} -> ${cover}`);
   }
 });
 

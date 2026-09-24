@@ -6,7 +6,6 @@ const sharp = require('sharp');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'dist');
-const COVER_OVERRIDES_PATH = path.join(ROOT, 'data', 'game-cover-overrides.json');
 const FAVICON_SOURCE = path.join(ROOT, 'assets', 'gate-image', 'favicon.png');
 const REMOVED_GAME_IDS = new Set(['math_remembus']);
 
@@ -98,29 +97,6 @@ function removeRetiredGames(catalog) {
   return before - catalog.games.length;
 }
 
-function applyCoverOverrides(catalog) {
-  if (!fs.existsSync(COVER_OVERRIDES_PATH)) return 0;
-  const overrides = JSON.parse(fs.readFileSync(COVER_OVERRIDES_PATH, 'utf8'));
-  const byId = gameMap(catalog);
-  let applied = 0;
-
-  for (const [gameId, cover] of Object.entries(overrides || {})) {
-    const game = byId.get(gameId);
-    if (!game) throw new Error(`Cover override references unknown game id: ${gameId}`);
-    const rel = normalizeHref(cover);
-    if (!rel.startsWith('assets/gate-image/')) {
-      throw new Error(`Cover override must stay under assets/gate-image: ${gameId} -> ${cover}`);
-    }
-    const sourcePath = path.join(ROOT, rel);
-    if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
-      throw new Error(`Cover override image does not exist: ${gameId} -> ${cover}`);
-    }
-    game.cover = cover;
-    applied += 1;
-  }
-  return applied;
-}
-
 async function optimizeCatalogCovers(catalog) {
   let originalBytes = 0;
   let optimizedBytes = 0;
@@ -207,7 +183,6 @@ async function main() {
   const catalogPath = path.join(OUT, 'data/games.json');
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
   const removedGameCount = removeRetiredGames(catalog);
-  const coverOverrideCount = applyCoverOverrides(catalog);
   const coverStats = await optimizeCatalogCovers(catalog);
   const faviconStats = await optimizeFavicon();
   writeStaticHeaders();
@@ -237,7 +212,6 @@ async function main() {
   console.log(`- published tracked files: ${sourceFiles.length}`);
   console.log(`- retired catalog games removed: ${removedGameCount}`);
   console.log(`- enabled game entry files verified: ${enabledGames.length}`);
-  console.log(`- cover overrides applied: ${coverOverrideCount}`);
   console.log(`- optimized cover images: ${coverStats.optimizedCount}`);
   if (coverStats.optimizedCount) {
     console.log(`- cover payload: ${formatMiB(coverStats.originalBytes)} -> ${formatMiB(coverStats.optimizedBytes)} (${savedPct}% smaller)`);
