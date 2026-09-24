@@ -181,12 +181,55 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .desk{left:3%;right:3%;height:37%}.monitor{width:53vw;height:135px;border-width:8px;border-bottom-width:17px}
   .control-pair{width:37%;gap:4px}.ctrl{padding:4px;min-height:47px}.cam-open{min-width:82px;padding:5px}
 }
+
+/* v2 school art pass: user-provided generated assets */
+.office{
+  background-image:linear-gradient(#02040844,#02040866),url("../../assets/game/2d/office.png")!important;
+  background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;
+}
+.office::before,.office>.desk,.office>.monitor{display:none!important}
+.office-title{top:2.2%;padding:5px 10px;background:#05080aa8;border:1px solid #34414a;color:#aebbc4}
+.door-zone{top:13%;bottom:18%;width:12.5%;border:0;background:transparent;box-shadow:none}
+.door-zone.left{left:.4%}.door-zone.right{right:.4%}
+.door-zone .hall{opacity:0;background:transparent}
+.light-on .hall{opacity:1;background:radial-gradient(circle at 50% 50%,#ffe6a44d 0,#d5ad5030 31%,transparent 72%);box-shadow:inset 0 0 45px #f3d18033}
+.door-panel{background:repeating-linear-gradient(0deg,#30363aee 0 34px,#1e2327ee 34px 41px);box-shadow:0 10px 24px #000}
+.controls{background:linear-gradient(90deg,transparent,#05070988 12%,#050709aa 50%,#05070988 88%,transparent);padding:8px;border-radius:8px}
+.camera-view{background:#05080a}
+.room-scene{
+  inset:0;padding:75px 34px 90px;background-size:cover;background-repeat:no-repeat;background-position:center;
+  filter:saturate(.78) brightness(.78) contrast(1.08);transition:background-position .18s ease;
+}
+.room-scene::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,transparent 28%,#02040755 82%,#000b 100%);opacity:1;z-index:1;pointer-events:none}
+.room-scene .exhibit{display:none}
+.room-scene .prop{z-index:7;text-shadow:0 5px 12px #000;filter:grayscale(.25) brightness(.72) drop-shadow(0 5px 5px #000)}
+.room-scene .prop.changed{filter:saturate(.9) brightness(1.15) drop-shadow(0 0 12px #d7a04d);animation:wobble .56s infinite}
+.entity-cam{z-index:9;width:250px;height:390px;overflow:visible}
+.entity-cam.far{transform:translateX(-50%) scale(.48);bottom:9%;opacity:.64}
+.entity-cam.mid{transform:translateX(-50%) scale(.68);bottom:5%;opacity:.83}
+.entity-cam.near{transform:translateX(-50%) scale(.92);bottom:-2%}
+.ghost-sprite{
+  display:block;height:100%;aspect-ratio:1/2;max-width:100%;background-image:url("../../assets/game/2d/ghosts.png");
+  background-size:600% 100%;background-repeat:no-repeat;filter:drop-shadow(0 10px 13px #000) contrast(1.06) saturate(.8);
+}
+.ghost-sprite-0{background-position:0% 50%}.ghost-sprite-1{background-position:20% 50%}.ghost-sprite-2{background-position:40% 50%}
+.ghost-sprite-3{background-position:60% 50%}.ghost-sprite-4{background-position:80% 50%}.ghost-sprite-5{background-position:100% 50%}
+.hall-entity{width:76%;height:67%;align-items:flex-end;justify-content:center}
+.hall-entity .ghost-sprite{margin:0 auto;height:100%}
+.scare #scareArt{height:min(84vh,690px);display:flex;align-items:flex-end;justify-content:center}
+.scare #scareArt .ghost-sprite{height:100%;filter:drop-shadow(0 0 28px #000) contrast(1.18) brightness(.82)}
+.asset-strip{width:min(760px,100%);height:84px;object-fit:contain;display:block;margin:10px auto 4px;filter:drop-shadow(0 6px 12px #0008)}
+.camera-shell.open{background:#030608f4}
+@media(max-width:780px){
+  .door-zone{width:14.5%;top:14%;bottom:23%}.entity-cam{width:190px;height:310px}.room-scene{padding:58px 12px 70px}
+  .asset-strip{height:62px}.office{background-position:center top!important}
+}
 </style>
 </head>
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="brand">괴담 야간경비<small>자정의 민속박물관</small></div>
+    <div class="brand">괴담 야간경비<small>자정의 학교</small></div>
     <div class="clock" id="clock">12 AM</div>
     <div class="hud">
       <div class="power">
@@ -215,7 +258,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       </div>
 
       <div class="desk"></div>
-      <div class="monitor"><div><b>박물관 감시 단말기</b><small>카메라를 열어 전시실의 이상을 확인하세요.<br>도감은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
+      <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 전시실의 이상을 확인하세요.<br>도감은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
       <div class="toast" id="toast"></div>
 
       <div class="controls">
@@ -249,7 +292,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       <aside class="cam-side">
         <h3>박물관 CCTV</h3>
         <div class="map" id="cameraMap"></div>
-        <div class="legend">같은 장치를 무작정 켜 두면 봉인력이 줄어듭니다. 귀신마다 반대되는 규칙이 있으니 징후를 보고 판단하세요.</div>
+        <div class="legend">학교 전력을 무작정 쓰면 봉인력이 줄어듭니다. 교실과 복도에서 보이는 징후를 보고 귀신마다 다른 규칙을 판단하세요.</div>
         <button class="camera-close" id="camClose" type="button">모니터 내리기</button>
       </aside>
     </section>
@@ -259,8 +302,8 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 <div class="modal show" id="introModal">
   <div class="card">
     <h1>괴담 야간경비</h1>
-    <p>할로윈 특별전이 열린 민속박물관. 폐관 후 전시실에서 이상 현상이 시작됐습니다. CCTV와 관리실 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
-    <div class="rules-box">
+    <p>할로윈 행사가 끝난 학교. 모두 하교한 뒤 빈 교실과 복도에서 이상 현상이 시작됐습니다. 야간 경비실의 CCTV와 문·조명 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
+    <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력, 도감 장비 아이콘"><div class="rules-box">
       <b>이 게임의 핵심</b><br>
       귀신마다 규칙은 아주 단순합니다. <b>봐야 하는 존재 / 보면 안 되는 존재 / 문을 열어야 하는 존재 / 닫아야 하는 존재</b>를 구분하세요.<br>
       도감 속 <b>전승 정보</b>와 <b>게임용 대응 규칙</b>은 서로 다른 내용으로 표시됩니다.
@@ -284,21 +327,21 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 
 var STORAGE='kidscade_folklore_night_v1';
 var CAMERAS=[
-  {id:'korea',code:'CAM 01',name:'한국관'},
-  {id:'japan',code:'CAM 02',name:'일본관'},
-  {id:'europe',code:'CAM 03',name:'유럽관'},
-  {id:'special',code:'CAM 04',name:'할로윈 특별전'},
-  {id:'west',code:'CAM 05',name:'서쪽 복도'},
-  {id:'east',code:'CAM 06',name:'동쪽 복도'}
+  {id:'korea',code:'CAM 01',name:'6-1 교실',bg:'../../assets/game/2d/classroom.png',pos:'center'},
+  {id:'japan',code:'CAM 02',name:'과학실',bg:'../../assets/game/2d/science%20classroom.png',pos:'center'},
+  {id:'europe',code:'CAM 03',name:'2층 중앙 복도',bg:'../../assets/game/2d/hallway.png',pos:'center'},
+  {id:'special',code:'CAM 04',name:'방송실 앞',bg:'../../assets/game/2d/hallway.png',pos:'42% center'},
+  {id:'west',code:'CAM 05',name:'서쪽 복도',bg:'../../assets/game/2d/hallway.png',pos:'25% center'},
+  {id:'east',code:'CAM 06',name:'동쪽 복도',bg:'../../assets/game/2d/hallway.png',pos:'75% center'}
 ];
 var GHOSTS={
   dokkaebi:{name:'도깨비',origin:'한국',kind:'설화 속 존재',
     fact:'한국 설화의 도깨비는 한 가지 모습으로만 전해지지 않으며, 사람에게 장난을 치거나 겨루는 이야기 등 다양한 전승이 있습니다.',
-    rule:'게임에서는 한국관 전시물을 몰래 옮깁니다. 흔들리는 물건을 찾아 눌러 제자리로 돌려놓으세요.',
+    rule:'게임에서는 빈 교실의 물건을 몰래 옮깁니다. CCTV에서 혼자 흔들리는 물건을 찾아 눌러 제자리로 돌려놓으세요.',
     svg:'dokkaebi'},
   yuki:{name:'유키온나',origin:'일본',kind:'요괴·전승',
     fact:'유키온나는 일본의 눈과 겨울에 관련된 이야기에서 등장하는 존재로 전승에 따라 모습과 이야기가 달라집니다.',
-    rule:'게임에서는 일본관의 온도를 떨어뜨립니다. 화면이 얼기 전에 난방을 작동시키세요.',
+    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. CCTV 화면이 얼기 전에 난방을 작동시키세요.',
     svg:'yuki'},
   maiden:{name:'처녀귀신',origin:'한국',kind:'괴담·대중문화 이미지',
     fact:'미혼으로 죽은 여성의 원혼 이야기는 한국의 여러 괴담과 설화에 나타나며, 흰옷과 긴 머리 이미지는 후대 대중문화에서 더욱 정형화되었습니다.',
@@ -332,7 +375,7 @@ var els={
   leftDoorZone:$('leftDoorZone'),rightDoorZone:$('rightDoorZone'),leftEntity:$('leftEntity'),rightEntity:$('rightEntity'),
   leftLight:$('leftLight'),rightLight:$('rightLight'),leftDoor:$('leftDoor'),rightDoor:$('rightDoor'),
   camOpen:$('camOpen'),cameraShell:$('cameraShell'),camClose:$('camClose'),cameraMap:$('cameraMap'),
-  camCode:$('camCode'),camName:$('camName'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
+  camCode:$('camCode'),camName:$('camName'),roomScene:$('roomScene'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
   special:$('specialBtn'),toast:$('toast'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
   scare:$('scare'),scareArt:$('scareArt'),scareName:$('scareName')
@@ -370,15 +413,10 @@ function sound(kind){
   else if(kind==='growl'){tone(62,.35,'sawtooth',.04);noise(.28,.025)}
   else if(kind==='scare'){noise(.45,.16);tone(45,.5,'sawtooth',.11)}
 }
-function svg(type,close){
-  var c=close?'#e7e5de':'#c7d0d5',dark='#121416',red='#d94b55';
-  if(type==='dokkaebi')return '<svg viewBox="0 0 200 260"><path fill="'+dark+'" d="M46 77L24 24l55 31M154 77l22-53-55 31"/><path fill="'+c+'" d="M52 60c35-30 67-30 96 0l18 45-19 118-94 0-19-118z"/><circle cx="76" cy="104" r="8" fill="'+red+'"/><circle cx="124" cy="104" r="8" fill="'+red+'"/><path d="M82 134q18 17 36 0" fill="none" stroke="'+dark+'" stroke-width="8"/><path d="M63 217l-24 30M137 217l24 30" stroke="'+dark+'" stroke-width="16"/></svg>';
-  if(type==='yuki')return '<svg viewBox="0 0 200 280"><path fill="#dce9ec" d="M100 22c-30 0-48 22-48 53v38L27 246h146l-25-133V75c0-31-18-53-48-53z"/><path fill="#151a1e" d="M51 79c12-48 88-55 101 0-9-13-22-22-35-25 9 14 13 34 12 58H71c-1-22 4-44 13-58-14 4-25 12-33 25z"/><circle cx="82" cy="91" r="4" fill="#587b86"/><circle cx="118" cy="91" r="4" fill="#587b86"/></svg>';
-  if(type==='maiden')return '<svg viewBox="0 0 200 280"><path fill="#111417" d="M49 78c0-50 102-59 102 0l-8 87H56z"/><path fill="#e0dfd7" d="M65 79c5-33 65-36 70 0l-8 30H73z"/><path fill="#d6d5cf" d="M65 108h70l35 150H30z"/><path fill="#121518" d="M49 74c10-34 93-43 103 0-12-11-28-18-45-20 10 21 12 46 6 73H66c-6-29-3-54 8-74-10 4-18 11-25 21z"/><circle cx="83" cy="91" r="3" fill="#17191a"/><circle cx="115" cy="91" r="3" fill="#17191a"/></svg>';
-  if(type==='egg')return '<svg viewBox="0 0 200 260"><path fill="#e1dfd8" d="M100 22c43 0 70 39 67 89-4 61-30 115-67 115S37 172 33 111C30 61 57 22 100 22z"/><path fill="#bbb9b3" d="M55 206l-23 49h136l-23-49c-29 21-61 21-90 0z"/></svg>';
-  if(type==='reaper')return '<svg viewBox="0 0 200 280"><path fill="#0c0e10" d="M64 76h72l39 177H25z"/><path fill="#171b1f" d="M75 55c0-30 50-30 50 0v35H75z"/><path fill="#090b0d" d="M39 58h122l-20 18H58z"/><rect x="91" y="7" width="18" height="51" fill="#0a0c0e"/><path fill="#c7c1af" d="M82 76h36v31H82z"/></svg>';
-  if(type==='wolf')return '<svg viewBox="0 0 220 260"><path fill="#282d31" d="M50 65L34 14l49 35c20-9 54-9 74 0l48-35-16 51c21 22 26 55 14 85l-30 82H47l-30-82c-12-30-7-63 13-85z"/><circle cx="76" cy="103" r="8" fill="#f1d36a"/><circle cx="144" cy="103" r="8" fill="#f1d36a"/><path fill="#111" d="M87 141l23 11 23-11-23 31z"/><path stroke="#eee" stroke-width="5" d="M76 174l10 15 8-16M144 174l-10 15-8-16"/></svg>';
-  return '';
+function svg(type){
+  var map={dokkaebi:0,yuki:1,maiden:2,egg:3,reaper:4,wolf:5};
+  var idx=Object.prototype.hasOwnProperty.call(map,type)?map[type]:0;
+  return '<span class="ghost-sprite ghost-sprite-'+idx+'" aria-hidden="true"></span>';
 }
 function discover(id){
   if(!state.discovered[id]){state.discovered[id]=true;toast(GHOSTS[id].name+' 도감 정보가 열렸습니다.');renderCodex()}
@@ -391,7 +429,7 @@ function toast(msg){
 function setPaused(v){state.paused=v}
 function toggleModal(modal,show){modal.classList.toggle('show',show);setPaused(show)}
 function renderHelp(){
-  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><div class="rules-box"><b>1. CCTV</b>로 어느 전시실에 이상이 생겼는지 확인합니다.<br><b>2. 서쪽/동쪽 불</b>은 문 앞 존재의 모습을 확인할 때만 잠깐 켭니다.<br><b>3. 문</b>은 늘 닫아 두면 봉인력이 크게 줄고, 어떤 존재에게는 오히려 위험합니다.<br><b>4. 도감</b>은 열어 둔 동안 시간이 멈춥니다.</div><p><b>기억할 것:</b> 처녀귀신은 자주 보기 / 달걀귀신은 오래 보지 않기 / 저승사자는 문 열기 / 늑대인간은 문 닫기.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
+  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="야간 경비 장비"><div class="rules-box"><b>1. CCTV</b>로 어느 전시실에 이상이 생겼는지 확인합니다.<br><b>2. 서쪽/동쪽 불</b>은 문 앞 존재의 모습을 확인할 때만 잠깐 켭니다.<br><b>3. 문</b>은 늘 닫아 두면 봉인력이 크게 줄고, 어떤 존재에게는 오히려 위험합니다.<br><b>4. 도감</b>은 열어 둔 동안 시간이 멈춥니다.</div><p><b>기억할 것:</b> 처녀귀신은 자주 보기 / 달걀귀신은 오래 보지 않기 / 저승사자는 문 열기 / 늑대인간은 문 닫기.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
   $('helpClose').onclick=function(){toggleModal(els.help,false)};
 }
 function renderCodex(){
@@ -440,6 +478,8 @@ function cameraGhost(){
 function renderCamera(){
   var c=CAMERAS.find(function(x){return x.id===state.currentCam})||CAMERAS[0];
   els.camCode.textContent=c.code;els.camName.textContent=c.name;
+  els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+c.bg+'")';
+  els.roomScene.style.backgroundPosition=c.pos||'center';
   document.querySelectorAll('.cam-btn').forEach(function(b){b.classList.toggle('active',b.dataset.cam===state.currentCam)});
   roomPropsVisible();cameraGhost();
   var frost=state.yuki&&state.yuki.active&&state.currentCam==='japan'?Math.min(1,state.yuki.frost/100):0;
@@ -484,21 +524,21 @@ function resolveDokkaebi(){
 function useHeater(){
   if(!(state.yuki&&state.yuki.active&&state.currentCam==='japan'))return;
   if(state.power<7){toast('봉인력이 부족합니다.');return}
-  spend(7);state.yuki.frost=Math.max(0,state.yuki.frost-68);discover('yuki');state.score+=50;sound('good');toast('일본관 난방을 올렸습니다.');
+  spend(7);state.yuki.frost=Math.max(0,state.yuki.frost-68);discover('yuki');state.score+=50;sound('good');toast('과학실 난방을 올렸습니다.');
   if(state.yuki.frost<=4){state.yuki.active=false;state.cleared++;state.score+=80;toast('서리가 사라졌습니다.');}
   renderCamera()
 }
 function spawnDokkaebi(){
   if(state.dokkaebi&&state.dokkaebi.active)return false;
-  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');toast('한국관에서 뭔가 달라진 것 같습니다.');return true
+  state.dokkaebi={active:true,prop:Math.floor(Math.random()*4),timer:0};discover('dokkaebi');sound('knock');toast('6-1 교실에서 물건 하나의 위치가 달라졌습니다.');return true
 }
 function spawnYuki(){
   if(state.yuki&&state.yuki.active)return false;
-  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);toast('일본관 카메라 신호가 차가워집니다.');return true
+  state.yuki={active:true,frost:8};discover('yuki');tone(210,.25,'sine',.025);toast('과학실 카메라에 서리가 끼기 시작합니다.');return true
 }
 function spawnMaiden(){
   if(state.maiden.active)return false;
-  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');toast('어느 전시실에 흰 형체가 나타났습니다.');return true
+  state.maiden={active:true,stage:0,unseen:0,viewed:0};discover('maiden');toast('빈 교실 CCTV에 흰 형체가 나타났습니다.');return true
 }
 function spawnEgg(){
   if(state.mode==='practice'||(state.egg&&state.egg.active))return false;
@@ -633,13 +673,13 @@ function showResult(ok,cause){
   var causeText='';
   if(!ok){
     if(cause==='power')causeText='장치를 너무 오래 켜 두어 봉인력이 모두 떨어졌습니다.';
-    else if(cause==='yuki')causeText='일본관의 성에가 화면 전체를 덮기 전에 난방을 사용해야 했습니다.';
+    else if(cause==='yuki')causeText='과학실의 성에가 화면 전체를 덮기 전에 난방을 사용해야 했습니다.';
     else if(cause==='maiden')causeText='처녀귀신은 CCTV로 자주 확인하면 접근을 늦출 수 있습니다. 문 앞까지 왔다면 서쪽 문을 잠깐 닫아야 합니다.';
     else if(cause==='egg')causeText='달걀귀신은 발견한 뒤 오래 바라보면 안 됩니다. 바로 다른 카메라로 돌리세요.';
     else if(cause==='wolf')causeText='늑대인간의 빛나는 눈이나 으르렁거림을 확인했다면 해당 문을 닫아야 합니다.';
     else if(cause==='reaper')causeText='이 게임의 저승사자는 문을 닫으면 위험합니다. 지나갈 수 있도록 문을 열어 두어야 합니다.';
   }
-  els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'박물관의 아침 조명이 켜졌습니다. 여러 존재의 규칙을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 해결한 이상현상 '+state.cleared+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">도감 보기</button></div>';
+  els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'학교의 아침 조명이 켜졌습니다. 여러 존재의 규칙을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 해결한 이상현상 '+state.cleared+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">도감 보기</button></div>';
   els.result.classList.add('show');
   $('retryBtn').onclick=function(){els.result.classList.remove('show');els.intro.classList.add('show');state.paused=true};
   $('resultCodex').onclick=function(){els.result.classList.remove('show');renderCodex();els.codex.classList.add('show')};
