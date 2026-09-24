@@ -89,8 +89,39 @@ function create(opts){
   m.lastTouchId=m.ball.owner?m.ball.owner.id:null;
   if(m.ball.owner)m.ball.owner.pulse=1;
 
+  m.replay={step:.75,next:0,frames:[],heat:{},stats:{}};
+  starters.forEach(function(a){
+    m.replay.heat[a.id]=Array(60).fill(0);
+    m.replay.stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0};
+  });
+  function touchActor(a){
+    if(!a||!a.p)return;
+    m.lastTouchId=a.id;a.pulse=1;
+    var st=m.replay.stats[a.id];if(st)st.touches++;
+  }
+  function recordReplayFrame(){
+    var flat=[];
+    teams.forEach(function(t){
+      t.actors.forEach(function(a){
+        flat.push([a.id,Math.round(a.x*10)/10,Math.round(a.y*10)/10,Math.round(a.energy)]);
+        var heat=m.replay.heat[a.id];
+        if(heat){
+          var hx=clamp(Math.floor(a.x/100*10),0,9),hy=clamp(Math.floor(a.y/100*6),0,5);
+          heat[hy*10+hx]++;
+        }
+      });
+    });
+    m.replay.frames.push([
+      Math.round(m.minute*10)/10,
+      Math.round(m.ball.x*10)/10,Math.round(m.ball.y*10)/10,
+      m.ball.owner?m.ball.owner.id:null,m.score[0],m.score[1],flat
+    ]);
+  }
+  recordReplayFrame();
+
+
   function emit(type,text,side,actor){
-    var e={minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:type,text:text,side:side,actor:actor&&actor.p?actor.p:null};
+    var e={minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:type,text:text,side:side,actor:actor&&actor.p?actor.p:null,x:actor&&actor.p?Math.round(actor.x*10)/10:null,y:actor&&actor.p?Math.round(actor.y*10)/10:null};
     m.events.push(e);if(opts.onEvent)opts.onEvent(e);
     if(actor&&actor.p){
       actor.flash=1;actor.pulse=1;m.lastTouchId=actor.id;
@@ -114,7 +145,7 @@ function create(opts){
       var bonus=(x.slot==='ST'?22:x.slot==='WG'?17:x.slot==='CM'?10:2);
       return stat(x.p,'pass')*.35+stat(x.p,'speed')*.25+stat(x.p,'shot')*.25+bonus;
     });
-    m.ball.owner=carrier;m.lastTouchId=carrier.id;carrier.pulse=1;
+    m.ball.owner=carrier;touchActor(carrier);
     var build=clamp(.57+(atk.rating.mid-def.rating.mid)/180,0.36,.78);
     if(Math.random()>build){
       if(Math.random()<.22)emit('chance',displayName(carrier)+'의 전진이 끊겼어요.',m.possession,carrier);
@@ -124,20 +155,22 @@ function create(opts){
       var bonus=x.slot==='ST'?30:x.slot==='WG'?22:x.slot==='CM'?10:2;
       return stat(x.p,'shot')*.55+stat(x.p,'speed')*.18+bonus;
     });
-    m.ball.owner=shooter;m.lastTouchId=shooter.id;shooter.pulse=1;
+    m.ball.owner=shooter;touchActor(shooter);
     var quality=atk.rating.attack-def.rating.defense+(stat(shooter.p,'shot')-70)*.28;
     var shotChance=clamp(.66+quality/210,.48,.83);
     if(Math.random()>shotChance){emit('chance',displayName(shooter)+'의 공격이 수비에 막혔어요.',m.possession,shooter);return;}
     var goalP=clamp(.145+quality/650,0.075,.27);
+    var shooterStat=m.replay.stats[shooter.id];if(shooterStat)shooterStat.shots++;
     if(atk.tactics.mindset==='attack')goalP+=.012;
     if(def.tactics.mindset==='defend')goalP-=.009;
     if(Math.random()<goalP){
       m.score[m.possession]++;
+      if(shooterStat)shooterStat.goals++;
       emit('goal','골! '+displayName(shooter)+'의 슛이 들어갔어요!',m.possession,shooter);
       m.possession=1-m.possession;
     }else if(Math.random()<.37){
       var keeper=def.actors.find(function(x){return x.slot==='GK';})||def.actors[0];
-      m.ball.owner=keeper;m.lastTouchId=keeper.id;keeper.pulse=1;emit('save',displayName(keeper)+'이(가) 슛을 막아 냈어요.',1-m.possession,keeper);
+      m.ball.owner=keeper;touchActor(keeper);var keeperStat=m.replay.stats[keeper.id];if(keeperStat)keeperStat.saves++;emit('save',displayName(keeper)+'이(가) 슛을 막아 냈어요.',1-m.possession,keeper);
     }else emit('shot',displayName(shooter)+'의 슛이 골문을 벗어났어요.',m.possession,shooter);
   }
   function updateActors(dt){
@@ -156,6 +189,7 @@ function create(opts){
         a.x+=(tx-a.x)*Math.min(1,dt*sp*.55);
         a.y+=(ty-a.y)*Math.min(1,dt*sp*.55);
         a.energy=clamp(a.energy-dt*.048*b.fatigue,28,100);
+        var ast=m.replay.stats[a.id];if(ast)ast.distance+=Math.hypot((a.x-ox)*1.05,(a.y-oy)*.68)/1000;
         if(Math.hypot(a.x-ox,a.y-oy)>.015){
           a.trail.push({x:a.x,y:a.y});
           if(a.trail.length>7)a.trail.shift();
@@ -176,6 +210,7 @@ function create(opts){
     var simDt=dt*(speed||1),gameMinutes=simDt*.52;
     m.minute+=gameMinutes;
     updateActors(simDt);
+    while(m.minute>=m.replay.next+m.replay.step&&m.replay.frames.length<180){m.replay.next+=m.replay.step;recordReplayFrame();}
     m.effects=m.effects.filter(function(fx){fx.life-=simDt*1.7;return fx.life>0;});
     if(!m.half&&m.minute>=45){m.half=true;emit('half','전반 종료! 잠깐 숨을 고릅니다.',-1,null);}
     while(m.minute>=m.nextEvent&&m.nextEvent<90){
@@ -194,9 +229,25 @@ function create(opts){
     var t=teams[side],idx=t.actors.findIndex(function(a){return a.id===outId;});
     if(idx<0||!inPlayer)return false;
     var old=t.actors[idx],fresh={id:inPlayer.id,p:inPlayer,slot:old.slot,side:side,x:old.x,y:old.y,baseX:old.baseX,baseY:old.baseY,vx:0,vy:0,energy:100,trail:[],flash:0,pulse:1};
-    t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};recalc(t);
+    t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};
+    if(!m.replay.heat[fresh.id])m.replay.heat[fresh.id]=Array(60).fill(0);
+    if(!m.replay.stats[fresh.id])m.replay.stats[fresh.id]={touches:0,shots:0,goals:0,saves:0,distance:0};
+    recalc(t);
     if(m.ball.owner===old){m.ball.owner=fresh;m.lastTouchId=fresh.id;}
     emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,fresh);return true;
+  };
+  m.exportReplay=function(){
+    if(!m.replay.frames.length||m.replay.frames[m.replay.frames.length-1][0]<89.9)recordReplayFrame();
+    var players=[];
+    teams.forEach(function(t,side){t.actors.forEach(function(a){
+      if(!players.some(function(p){return p.id===a.id;}))players.push({id:a.id,name:a.p.name,pos:a.p.pos,side:side,era:a.p.era||'',memory:a.p.memory||''});
+    });});
+    return {
+      homeClubId:teams[0].club.id,awayClubId:teams[1].club.id,
+      score:[m.score[0],m.score[1]],frames:m.replay.frames,
+      heat:m.replay.heat,stats:m.replay.stats,players:players,
+      events:m.events.map(function(e){return {minute:e.minute,type:e.type,text:e.text,side:e.side,actorId:e.actor?e.actor.id:null,x:e.x,y:e.y};})
+    };
   };
   return m;
 }
