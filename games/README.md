@@ -36,3 +36,19 @@ games/
 - 게임 ID와 저장 키는 파일 이동과 별개로 유지하여 기존 즐겨찾기·기록과 호환합니다.
 - 루트 HTML 수는 증가시키지 않습니다. 새 게임은 루트에 진입 HTML을 만들지 않습니다.
 - `node --test tests/game-filenames.test.cjs`로 표준 진입점과 호환 경로를 확인합니다.
+
+
+## 카탈로그 메타데이터 v7
+
+새 게임과 대규모 리워크 게임은 `data/games.json`에 다음 탐색 정보를 반드시 명시합니다.
+
+- `subject`: math / korean / language / social / science / arts / career / thinking
+- `genre`: action / puzzle / strategy / simulation / management / quiz / rhythm / sports / sandbox
+- `difficulty`: easy / medium / hard
+- `sessionMinutes`: 한 판 또는 대표 세션 플레이 시간
+- `players`: solo / local2 / localMulti / online / classroom 중 하나 이상
+- `input`: touch / keyboard 중 지원 입력
+- `qualityStatus`: featured / standard / rework
+- `classroom`: 교사가 함께 운영하기 좋은 게임인지 여부
+
+기존 `category`는 저장·미션·레거시 호환을 위해 남겨 두지만, 새 메인 탐색 UI의 1차 기준으로 사용하지 않습니다.
