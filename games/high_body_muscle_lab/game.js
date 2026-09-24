@@ -10,7 +10,8 @@ const els={
  toast:$('#toast'),card:$('#missionCard'),resultIcon:$('#resultIcon'),resultTitle:$('#resultTitle'),resultText:$('#resultText'),
  scienceTitle:$('#scienceTitle'),scienceText:$('#scienceText'),nextBtn:$('#nextBtn'),tutorial:$('#tutorial'),
  tutorialStart:$('#tutorialStart'),assistBox:$('#assistBox'),assistText:$('#assistText'),assistBar:$('#assistBar'),
- controllerTitle:$('#controllerTitle'),controllerHelp:$('#controllerHelp')
+ controllerTitle:$('#controllerTitle'),controllerHelp:$('#controllerHelp'),
+ floatingHint:$('#floatingHint'),miniHud:$('#miniHud'),miniMetric:$('#miniMetric'),miniState:$('#miniState')
 };
 const keyButtons=[...document.querySelectorAll('.muscle-key')];
 const inputs={q:false,w:false,e:false,r:false};
@@ -41,6 +42,7 @@ const rig={shoulderX:330,shoulderY:330,upper:142,lower:130,handR:23};
 const pushButton={x:602,y:322,r:27};
 const basket={x:558,y:420,w:92,h:68};
 const WALK_SEQUENCE=['q','w','e','r'];
+let hintTimer=0;
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function lerp(a,b,t){return a+(b-a)*t}
@@ -146,6 +148,42 @@ function showToast(msg){
  state.toastTimer=setTimeout(()=>els.toast.classList.remove('show'),1300);
 }
 
+function showMissionHint(text,duration=2200){
+ if(!els.floatingHint)return;
+ clearTimeout(hintTimer);
+ els.floatingHint.textContent=text;
+ els.floatingHint.classList.remove('hidden');
+ hintTimer=setTimeout(()=>els.floatingHint.classList.add('hidden'),duration);
+}
+
+function updateCompactHud(){
+ if(!els.miniHud)return;
+ const m=currentMission();
+ let metric='',detail='',visible=false;
+ if(m.mode==='arm'){
+  if(state.xray){
+   metric='팔꿈치 '+Math.round(state.elbow*180/Math.PI)+'°';
+   detail=Object.keys(inputs).filter(k=>inputs[k]).map(k=>(m.labels||ARM_LABELS)[k]?.[0]||'').filter(Boolean).join(' + ');
+   visible=true;
+  }
+ }else if(m.target==='stand'){
+  metric='일어서기 '+Math.round(state.body.stand*100)+'%';
+  detail=Math.abs(state.body.lean)>.3?'휘청':'';
+  visible=true;
+ }else if(m.target==='tray'){
+  metric=state.body.distance.toFixed(1)+'m';
+  detail='급식 '+Math.round(state.body.meal)+'%';
+  visible=true;
+ }else{
+  metric=state.body.distance.toFixed(1)+'m';
+  detail=Math.abs(state.body.lean)>.3?'휘청':'';
+  visible=true;
+ }
+ els.miniMetric.textContent=metric;
+ els.miniState.textContent=detail;
+ els.miniHud.classList.toggle('hidden',!visible);
+}
+
 function resetBody(){
  state.body={stand:0,lean:0,leanV:0,distance:0,vx:0,gait:0,expected:0,wobble:0,fall:0,checkpoint:0,obstacleCleared:false,boxGrip:1,trayTilt:0,trayV:0,meal:100,lastStepKey:''};
  if(currentMission().target!=='stand')state.body.stand=1;
@@ -178,8 +216,9 @@ function syncMissionUI(){
  els.goalText.textContent=m.title;
  els.hintText.textContent=m.hint;
  els.nextBtn.textContent=state.mission===missions.length-1?'실험 완료':'다음 실험';
+ showMissionHint(m.goal);
  const body=m.mode==='body';
- els.assistBox.classList.toggle('hidden',!body);
+ els.assistBox.classList.add('hidden');
  const assist=Math.round((m.assist??0)*100);
  els.assistText.textContent=assist+'%';
  els.assistBar.style.width=assist+'%';
@@ -206,7 +245,7 @@ function finishMission(){
  const m=currentMission();
  els.resultIcon.textContent=m.icon||'🔬';
  els.resultTitle.textContent=m.result;
- els.resultText.textContent='방금 움직임을 뼈와 근육의 관계로 다시 확인해 봐요.';
+ els.resultText.textContent='';
  els.scienceTitle.textContent='왜 움직였을까요?';
  els.scienceText.textContent=m.science;
  els.card.classList.remove('hidden');
@@ -246,6 +285,7 @@ function update(dt){
  }
  if(currentMission().mode==='arm')updateArm(dt);
  else updateBody(dt);
+ updateCompactHud();
  syncControls();
 }
 
@@ -469,11 +509,6 @@ function drawRoom(){
  ctx.fillRect(0,0,960,560);
  ctx.fillStyle=state.xray?'#294154':'#cfe4ea';
  ctx.fillRect(0,500,960,60);
- ctx.fillStyle=state.xray?'rgba(255,255,255,.08)':'rgba(255,255,255,.58)';
- ctx.fillRect(0,0,960,74);
- ctx.fillStyle=state.xray?'#9fc5d9':'#5d7b8b';
- ctx.font='700 15px system-ui';
- ctx.fillText(state.xray?'X-RAY 관찰 모드 · 수축한 근육이 더 굵게 보여요':'근육을 직접 조종해 목표를 해결하세요',28,45);
 }
 
 function drawArmObjects(){
@@ -490,7 +525,7 @@ function drawArmObjects(){
   ctx.setLineDash([]);
   ctx.fillStyle=state.xray?'#bae6fd':'#1d5fb9';
   ctx.font='800 14px system-ui';
-  ctx.fillText('손이 이 선 위로 올라오면 성공!',470,282);
+  ctx.fillText('▲ 목표',470,282);
   ctx.restore();
  }
  if(m===1){
@@ -641,9 +676,7 @@ function drawBodyScene(){
   ctx.lineTo(x,512);
   ctx.stroke();
  }
- ctx.fillStyle=state.xray?'#9fc5d9':'#5d7b8b';
- ctx.font='700 12px system-ui';
- ctx.fillText('이동 '+b.distance.toFixed(1)+'m',760,46);
+
  if(m.target==='stand'){
   ctx.fillStyle=state.xray?'#405469':'#b77a4b';
   ctx.fillRect(245,382,95,16);
@@ -654,7 +687,7 @@ function drawBodyScene(){
  if(m.target==='obstacle'){drawObstacle();drawFinishLine(3.4)}
  if(m.target==='box')drawFinishLine(3);
  if(m.target==='tray')drawFinishLine(4);
- drawBodyProgress();
+
 }
 
 function worldX(meters){return 360+(meters-state.body.distance)*190}
@@ -839,6 +872,7 @@ function toggleXray(){
  els.xrayBtn.classList.toggle('on',state.xray);
  els.xrayBtn.setAttribute('aria-pressed',state.xray?'true':'false');
  showToast(state.xray?'뼈와 근육을 관찰해요':'일반 화면으로 돌아왔어요');
+ updateCompactHud();
 }
 
 function showTutorial(){els.tutorial.classList.remove('hidden')}
@@ -846,6 +880,7 @@ function hideTutorial(){
  els.tutorial.classList.add('hidden');
  try{localStorage.setItem('kidscade_body_lab_tutorial_v2','1')}catch(_){}
  try{window.KidscadeGame?.start?.({mission:1})}catch(_){}
+ showMissionHint(currentMission().goal,2600);
 }
 
 window.addEventListener('keydown',e=>{
