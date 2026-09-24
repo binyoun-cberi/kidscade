@@ -70,7 +70,7 @@ function handlePress(k){
   const expected=WALK_SEQUENCE[b.expected];
   if(k===expected){
    b.expected=(b.expected+1)%WALK_SEQUENCE.length;
-   b.vx+=m.target==='obstacle'?1:1.08;
+   b.vx+=m.target==='obstacle'?.30:.30;
    b.gait+=Math.PI/2;
    b.wobble*=.84;
    pulseKey(k,true);
@@ -83,7 +83,7 @@ function handlePress(k){
   const alternating=b.lastStepKey!==k;
   if(alternating){
    b.lastStepKey=k;
-   b.vx+=.82;
+   b.vx+=.30;
    b.gait+=Math.PI;
    b.wobble*=.9;
    pulseKey(k,true);
@@ -95,7 +95,7 @@ function handlePress(k){
   const alternating=b.lastStepKey!==k;
   if(alternating){
    b.lastStepKey=k;
-   b.vx+=.74;
+   b.vx+=.30;
    b.gait+=Math.PI;
    b.trayV+=(k==='q'?0.12:-0.12);
    pulseKey(k,true);
@@ -408,13 +408,13 @@ function checkObstacle(){
  const b=state.body;
  if(b.obstacleCleared)return;
  const obstacleAt=1.65;
- if(b.distance>obstacleAt-.18&&b.distance<obstacleAt+.28){
+ if(b.distance>obstacleAt-.30&&b.distance<obstacleAt+.40){
   const lift=Math.max(activation.q,activation.e);
-  if(lift>.58){
+  if(lift>.50){
    b.obstacleCleared=true;
-   b.vx+=.42;
+   b.vx+=.18;
    showToast('발을 높이 들어 넘었어요!');
-  }else if(b.distance>obstacleAt+.08){
+  }else if(b.distance>obstacleAt+.28){
    triggerFall('발이 장애물에 걸렸어요. 가까이에서 Q 또는 E로 다리를 들어 보세요!');
   }
  }
