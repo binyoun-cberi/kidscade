@@ -36,6 +36,14 @@
       icon: String(game.icon || ''),
       cover: String(game.cover || ''),
       description: cleanText(game.description),
+      subject: String(game.subject || 'thinking'),
+      genre: String(game.genre || 'simulation'),
+      difficulty: String(game.difficulty || 'medium'),
+      sessionMinutes: Number(game.sessionMinutes || 10),
+      players: Array.isArray(game.players) ? [...game.players] : ['solo'],
+      input: Array.isArray(game.input) ? [...game.input] : ['touch', 'keyboard'],
+      qualityStatus: String(game.qualityStatus || 'standard'),
+      classroom: Boolean(game.classroom),
       scoreKey: String(game.scoreKey || ''),
       rankKey: String(game.rankKey || ''),
       scoreUnit: String(game.scoreUnit || ''),
@@ -66,12 +74,12 @@
   }
 
   function all() {
-    return Array.from(registry.values()).map(game => ({ ...game, ages: [...game.ages] }));
+    return Array.from(registry.values()).map(game => ({ ...game, ages: [...game.ages], players: [...game.players], input: [...game.input] }));
   }
 
   function get(id) {
     const game = registry.get(String(id || ''));
-    return game ? { ...game, ages: [...game.ages] } : null;
+    return game ? { ...game, ages: [...game.ages], players: [...game.players], input: [...game.input] } : null;
   }
 
   function query({ age, category, playableOnly = false } = {}) {
