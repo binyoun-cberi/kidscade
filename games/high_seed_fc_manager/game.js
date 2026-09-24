@@ -329,6 +329,13 @@ function table(){
     if(state.otherLeague)html+=makeTable(rows(state.otherLeague.table),otherDiv,'역사 드림리그 '+otherDiv+'부');
   }
   html+='</div>';
+  if(state.pyramid&&state.pyramid.history&&state.pyramid.history.length){
+    var archive=state.pyramid.history.slice().reverse().slice(0,5);
+    html+='<section class="panel league-archive"><h3>리그 역사</h3><div class="archive-list">'+archive.map(function(h){
+      if(h.placement)return '<div><b>시즌 '+h.season+'</b><span>배치 리그 선두 · '+clubById(h.leader).emoji+' '+esc(clubById(h.leader).name)+'</span></div>';
+      return '<div><b>시즌 '+h.season+'</b><span>🏆 '+esc(clubById(h.champion).short)+' · ↑ '+esc(clubById(h.promoted).short)+' · ↓ '+esc(clubById(h.relegated).short)+'</span></div>';
+    }).join('')+'</div></section>';
+  }
   root.innerHTML=html;
 }
 function analysis(){
@@ -410,6 +417,19 @@ function drawReplayFrame(){
       var alpha=.08+.62*(val/max),x=38+hx*(W-76)/10,y=35+hy*(H-70)/6;
       ctx.fillStyle='rgba(250,120,45,'+alpha+')';ctx.fillRect(x,y,(W-76)/10+1,(H-70)/6+1);
     }
+    var avgX=0,avgY=0,avgN=0;
+    replayCurrent.frames.forEach(function(fr){var q=framePlayer(fr,replayFocus);if(q){avgX+=q.x;avgY+=q.y;avgN++;}});
+    if(avgN){
+      avgX/=avgN;avgY/=avgN;
+      var apx=38+avgX/100*(W-76),apy=35+avgY/100*(H-70);
+      ctx.strokeStyle='#67e8f9';ctx.lineWidth=4;
+      ctx.beginPath();ctx.moveTo(apx-9,apy-9);ctx.lineTo(apx+9,apy+9);ctx.moveTo(apx+9,apy-9);ctx.lineTo(apx-9,apy+9);ctx.stroke();
+    }
+    replayCurrent.events.filter(function(e){return e.actorId===replayFocus&&(e.type==='shot'||e.type==='goal')&&e.x!=null&&e.y!=null;}).forEach(function(e){
+      var sx=38+e.x/100*(W-76),sy=35+e.y/100*(H-70);ctx.beginPath();ctx.arc(sx,sy,e.type==='goal'?7:5,0,Math.PI*2);
+      if(e.type==='goal'){ctx.fillStyle='#facc15';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.stroke();}
+      else{ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();}
+    });
   }else if(replayFocus!=='all'){
     var start=Math.max(0,replayFrame-14),trail=[];
     for(var ti=start;ti<=replayFrame;ti++){var q=framePlayer(replayCurrent.frames[ti],replayFocus);if(q)trail.push(q);}
