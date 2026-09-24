@@ -118,11 +118,11 @@
     {
       "id": "high_seed_fc_manager",
       "title": "역사 드림리그: 씨앗 FC 감독",
-      "href": "games/high_seed_fc_manager/index.html?v=5",
+      "href": "games/high_seed_fc_manager/index.html?v=6",
       "category": "trivia",
       "age": "high",
       "icon": "⚽",
-      "description": "고구려·백제·신라·고려·조선·독립운동 시대의 역사 인물로 팀을 꾸려 2D 경기를 지휘하고, 선수 집중 다시보기·히트맵·경기 분석과 1·2부 승격·강등까지 운영하는 축구 감독 전략 게임!",
+      "description": "한국사 인물로 팀을 꾸려 2D 경기를 지휘하고, 실제 패스 전개·전진 패스·키패스·xG·선수 집중 다시보기·히트맵·패스맵과 1·2부 승격·강등까지 운영하는 축구 감독 전략 게임!",
       "subject": "social",
       "genre": "management",
       "difficulty": "medium",
