@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#25353a">
 <title>우리 반: 담임교사 업무 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=41">
+<link rel="stylesheet" href="./style.css?v=42">
 </head>
 <body>
 <main id="app">
@@ -121,6 +121,12 @@
       <div id="taskList" class="task-list"></div>
     </aside>
 
+    <button id="fastForwardButton" class="fast-forward-button" type="button" aria-label="빠르게 시간 보내기">
+      <span aria-hidden="true">⏩</span>
+      <strong>빨리 가기</strong>
+      <small>누르고 있기 · Space</small>
+    </button>
+
     <div id="toastStack" class="toast-stack" aria-live="polite"></div>
   </section>
 
@@ -160,6 +166,6 @@
     </div>
   </section>
 </main>
-<script src="./game.js?v=41"></script>
+<script src="./game.js?v=42"></script>
 </body>
 </html>
