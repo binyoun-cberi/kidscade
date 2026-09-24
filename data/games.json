@@ -135,12 +135,12 @@
     },
     {
       "id": "job_teacher_classroom",
-      "title": "우리 반: 담임교사 시뮬레이터",
+      "title": "우리 반: 담임교사 업무 시뮬레이터",
       "href": "games/teacher-classroom-sim-prototype/index.html?v=40",
       "category": "trivia",
       "age": "job",
       "icon": "🏫",
-      "description": "학생 얼굴과 짧은 사건 카드가 한 장씩 등장하는 담임교사 카드게임! 학생의 산만함·완벽주의·리더형 같은 특성을 읽고 원칙·공감·코칭·자율 네 방향으로 대응하세요. 오늘의 선택은 학생 반응과 다음 날 이야기로 이어집니다!"
+      "description": "교탁으로 찾아오는 학생, 보호자 전화, 기록과 행정 업무를 제한된 시간 안에 처리하는 담임교사 업무 시뮬레이션. 무엇을 지금 처리하고 무엇을 미룰지 판단하며 아이들을 조금씩 알아가세요."
     },
     {
       "id": "math_timing_lcd",
