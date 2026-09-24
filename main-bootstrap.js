@@ -245,6 +245,8 @@
     const launcherEnd = '\n\n            // =====================================\n            // 배지 동기화 및 랭크 보상';
     const launcherReplacement = `            const gameLauncherBridge = {
                 canLaunch: (event) => window.KidscadeAgeNavigation?.canLaunch(event) === true,
+                deferLaunch: true,
+                isLaunchPending: () => window.KidscadeGameFrame?.isPending?.() === true,
                 getGame: (id) => window.KidscadeGames?.get?.(id) || null,
                 getCard: (id) => window.KidscadeGames?.getCard?.(id) || document.querySelector(\`#game-list .game-card[data-id="${'${'}CSS.escape(String(id || ''))}"]\`),
                 playSound: (sound) => playUISound(sound),
@@ -275,15 +277,28 @@
                     trackRecent(id);
                     return true;
                 },
-                openModal: ({ href, titleText }) => {
+                updateModalTitle: (titleText) => {
                     document.getElementById('modal-title-text').innerText = titleText;
+                },
+                openModal: ({ game, href, titleText, onStart, startedTitle }) => {
+                    const opened = window.KidscadeGameFrame?.open?.({
+                        game,
+                        href,
+                        titleText,
+                        onStart,
+                        startedTitle
+                    });
+                    if (opened) return;
+                    const session = onStart?.();
+                    document.getElementById('modal-title-text').innerText = startedTitle?.(session) || titleText;
                     gameIframe.src = href;
                     gameModal.classList.remove('hidden');
                     document.body.style.overflow = 'hidden';
                 },
                 closeModal: () => {
+                    window.KidscadeGameFrame?.reset?.();
                     gameModal.classList.add('hidden');
-                    gameIframe.src = '';
+                    gameIframe.src = 'about:blank';
                     document.body.style.overflow = 'auto';
                 },
                 checkpointPlayTime: (at) => checkpointPlayTime(at),
@@ -337,6 +352,12 @@
                     document.dispatchEvent(new CustomEvent('kidscade:game-event', {
                         detail: event.data?.detail || {}
                     }));
+                    return;
+                }
+                if (event.data?.type === 'kidscade:game-error' && event.data?.detail?.fatal !== false) {
+                    window.KidscadeGameFrame?.showError?.({
+                        code: event.data?.detail?.code || 'GAME_ERROR'
+                    });
                 }
             });`;
     html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
@@ -388,6 +409,7 @@
       'game-cover-placeholders.js',
       'dashboard-recent.js',
       'game-recommendations.js',
+      'game-frame-shell.js',
       'game-launcher.js'
     ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     return html.replace('</body>', scripts + '</body>');
