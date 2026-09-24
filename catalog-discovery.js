@@ -271,10 +271,11 @@
     const meta = document.createElement('div');
     meta.className = 'kc-curated-card-meta';
     const genre = taxonomy?.genres?.[game.genre] || game.genre;
+    const difficulty = taxonomy?.difficulty?.[game.difficulty] || game.difficulty;
     const people = (game.players || []).includes('online') ? '온라인' :
       (game.players || []).includes('localMulti') ? '여럿이' :
       (game.players || []).includes('local2') ? '2인' : '혼자';
-    meta.textContent = `${genre} · ${game.sessionMinutes}분 · ${people}`;
+    meta.textContent = `${genre} · ${game.sessionMinutes}분 · ${difficulty} · ${people}`;
 
     copy.append(title, meta);
     if (game.qualityStatus === 'featured') {
