@@ -12,6 +12,7 @@
   const VERSION = 1;
   const STORAGE_PREFIX = 'kidscade_game_v1:';
   const EVENT_TYPE = 'kidscade:game-event';
+  const ERROR_TYPE = 'kidscade:game-error';
   const CLOSE_TYPE = 'kidscade:close-game';
   const STYLE_ID = 'kidscade-game-shell-style';
   const DEFAULTS = Object.freeze({
@@ -32,6 +33,7 @@
   let muted = false;
   let menuOpen = false;
   let pauseHandlers = null;
+  let errorReportingInstalled = false;
 
   const now = () => root?.performance?.now?.() ?? Date.now();
   const cleanToken = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -104,6 +106,39 @@
       }));
     } catch (_) {}
     return payload;
+  }
+
+  function cleanErrorMessage(value) {
+    return String(value?.message || value || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+  }
+
+  function ignorableError(message) {
+    return /ResizeObserver loop|AbortError|play\(\) request was interrupted|not allowed by the user agent/i.test(String(message || ''));
+  }
+
+  function reportError(error, errorOptions = {}) {
+    const message = cleanErrorMessage(error);
+    if (!message || ignorableError(message)) return false;
+    const code = String(errorOptions.code || 'GAME_ERROR').toUpperCase().replace(/[^A-Z0-9_-]+/g, '_').slice(0, 32) || 'GAME_ERROR';
+    post(ERROR_TYPE, {
+      code,
+      fatal: errorOptions.fatal !== false,
+      message
+    });
+    return true;
+  }
+
+  function installErrorReporting() {
+    if (errorReportingInstalled || !root?.addEventListener) return false;
+    errorReportingInstalled = true;
+    root.addEventListener('error', event => {
+      if (!event?.error) return;
+      reportError(event.error, { code:'RUNTIME_ERROR', fatal:true });
+    });
+    root.addEventListener('unhandledrejection', event => {
+      reportError(event?.reason, { code:'UNHANDLED_REJECTION', fatal:true });
+    });
+    return true;
   }
 
   function currentAudioSettings() {
@@ -361,6 +396,7 @@
     if (options.orientation && options.orientation !== 'any') {
       try { root?.document?.documentElement?.setAttribute('data-kidscade-orientation', options.orientation); } catch (_) {}
     }
+    installErrorReporting();
     if (options.shell) mountShell();
     emit('ready', { title:options.title, orientation:options.orientation });
     return api;
@@ -385,6 +421,7 @@
     VERSION,
     STORAGE_PREFIX,
     EVENT_TYPE,
+    ERROR_TYPE,
     CLOSE_TYPE,
     cleanToken,
     storageKey,
@@ -397,6 +434,7 @@
     togglePause,
     registerPauseHandlers,
     sound,
+    reportError,
     setMuted,
     toggleMuted,
     score,
