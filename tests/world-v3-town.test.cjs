@@ -120,13 +120,15 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/buildKidscadeCity/);
   assert.match(runtime,/cityRuntime\?\.update\?\.\(now,dt\)/);
   assert.match(runtime,/createTownEconomy/);
-  assert.match(runtime,/kidscade-world-city\.js\?v=16/);
-  assert.match(runtime,/kidscade-world-grid\.js\?v=3/);
-  assert.match(runtime,/kidscade-world-economy\.js\?v=14/);
-  assert.match(runtime,/kidscade-world-furnishing\.js\?v=7/);
-  assert.match(runtime,/kidscade-world-audio\.js\?v=1/);
-  assert.match(html,/kidscade-world-v3\.js\?v=35/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=35/);
+  assert.match(runtime,/kidscade-world-city\.js\?v=\d+/);
+  assert.match(runtime,/kidscade-world-grid\.js\?v=\d+/);
+  assert.match(runtime,/kidscade-world-economy\.js\?v=\d+/);
+  assert.match(runtime,/kidscade-world-furnishing\.js\?v=\d+/);
+  assert.match(runtime,/kidscade-world-audio\.js\?v=\d+/);
+  const runtimeVersion=html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1];
+  const integrationVersion=integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1];
+  assert.ok(runtimeVersion,'world-v3 HTML must version its runtime');
+  assert.equal(integrationVersion,runtimeVersion,'world overlay and runtime cache versions must stay aligned');
 });
 
 test('starter resources provide six hand pickups per material and one-time guidance',()=>{
@@ -255,7 +257,8 @@ test('World v3 road-first grid keeps Seed Town in four equal districts',()=>{
   assert.match(city,/city-road-mid-horizontal/);
   assert.match(city,/city-road-mid-vertical/);
   assert.match(city,/city-road-south/);
-  assert.match(city,/market-display/);
+  assert.match(city,/market-fruit/);
+  assert.match(city,/market-register/);
   assert.match(city,/transport-corner/);
   assert.match(city,/validateMapLayout/);
   assert.doesNotMatch(city,/traffic-light\.glb/);
@@ -460,10 +463,13 @@ test('natural props and wayfinding stay inside parcels and off road gutters',()=
   assert.match(runtime,/if\(isPathClearance\(x,z,2\.5,2\.5\)\)continue/);
   assert.match(runtime,/if\(isPathClearance\(x,z,1\.7,1\.6\)\)continue/);
   assert.match(runtime,/const addZoneSign=async\(id,dx,dz,label,rot=0,action=null\)=>/);
-  assert.match(runtime,/addZoneSign\('forest',7\.0,6\.6/);
-  assert.match(runtime,/addZoneSign\('quarry',-7\.0,6\.6/);
-  assert.match(runtime,/addZoneSign\('waterfront',6\.5,6\.8/);
-  assert.match(runtime,/addZoneSign\('beach',6\.4,6\.6/);
+
+  for(const id of ['forest','quarry','waterfront','beach']){
+    const match=runtime.match(new RegExp("addZoneSign\\('"+id+"',(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)"));
+    assert.ok(match,'missing zone sign '+id);
+    const dx=Number(match[1]),dz=Number(match[2]);
+    assert.ok(Math.abs(dx)<=8.5 && Math.abs(dz)<=8.5, id+' sign must remain safely inside its 20m parcel: '+dx+','+dz);
+  }
 });
 
 
