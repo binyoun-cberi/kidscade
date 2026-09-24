@@ -82,7 +82,7 @@ function create(opts){
   teams.forEach(function(t){t.rating=teamRating(t.assign,t.tactics);});
   var m={
     minute:0,score:[0,0],teams:teams,finished:false,half:false,nextEvent:.8+Math.random()*1.2,
-    possession:Math.random()<.5?0:1,ball:{x:50,y:50,owner:null,trail:[]},events:[],effects:[],lastFactAt:-99,lastTouchId:null
+    possession:Math.random()<.5?0:1,ball:{x:50,y:50,owner:null,trail:[]},events:[],effects:[],passVisuals:[],lastFactAt:-99,lastTouchId:null
   };
   var starters=teams[0].actors.concat(teams[1].actors);
   m.ball.owner=starters[Math.floor(Math.random()*starters.length)]||null;
@@ -92,7 +92,7 @@ function create(opts){
   m.replay={step:.75,next:0,frames:[],heat:{},stats:{}};
   starters.forEach(function(a){
     m.replay.heat[a.id]=Array(60).fill(0);
-    m.replay.stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
+    m.replay.stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0};
   });
   function touchActor(a){
     if(!a||!a.p)return;
@@ -133,6 +133,38 @@ function create(opts){
       m.events.push(f);if(opts.onEvent)opts.onEvent(f);
     }
   }
+  function recordPass(side,from,to,completed){
+    var fs=m.replay.stats[from.id],dir=side===0?1:-1;
+    var progress=(to.x-from.x)*dir;
+    if(fs){
+      fs.passesAttempted++;
+      if(completed){fs.passesCompleted++;if(progress>=7)fs.progressivePasses++;}
+    }
+    var e={
+      minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:'pass',side:side,
+      actor:from.p,actorId:from.id,toId:to.id,
+      x:Math.round(from.x*10)/10,y:Math.round(from.y*10)/10,
+      toX:Math.round(to.x*10)/10,toY:Math.round(to.y*10)/10,
+      completed:!!completed,progressive:!!(completed&&progress>=7),keyPass:false,assist:false
+    };
+    m.events.push(e);
+    m.passVisuals.push({x:e.x,y:e.y,toX:e.toX,toY:e.toY,side:side,completed:!!completed,progressive:e.progressive,life:1});
+    if(completed){m.ball.owner=to;touchActor(to);}
+    return e;
+  }
+  function chooseReceiver(team,from){
+    var candidates=team.actors.filter(function(x){return x.id!==from.id;});
+    return pick(candidates,function(x){
+      var dir=team===teams[0]?1:-1,advance=(x.x-from.x)*dir;
+      var distance=Math.hypot(x.x-from.x,x.y-from.y);
+      var role=x.slot==='ST'?18:x.slot==='WG'?15:x.slot==='CM'?12:x.slot==='FB'?7:3;
+      var tactical=0;
+      if(team.tactics.attack==='short')tactical+=Math.max(0,20-distance*.55);
+      if(team.tactics.attack==='direct')tactical+=Math.max(0,advance)*1.1+(x.slot==='ST'?18:0);
+      if(team.tactics.attack==='wide')tactical+=(x.slot==='WG'||x.slot==='FB')?20:0;
+      return 18+stat(x.p,'pass')*.18+stat(x.p,'speed')*.12+role+tactical;
+    });
+  }
   function recalc(t){
     t.rating=teamRating(t.assign,t.tactics);
   }
@@ -142,23 +174,67 @@ function create(opts){
     m.possession=Math.random()<midChance?0:1;
     var atk=teams[m.possession],def=teams[1-m.possession];
     var carrier=pick(atk.actors,function(x){
-      var bonus=(x.slot==='ST'?22:x.slot==='WG'?17:x.slot==='CM'?10:2);
-      return stat(x.p,'pass')*.35+stat(x.p,'speed')*.25+stat(x.p,'shot')*.25+bonus;
+      var bonus=x.slot==='ST'?14:x.slot==='WG'?15:x.slot==='CM'?18:x.slot==='FB'?9:3;
+      return stat(x.p,'pass')*.45+stat(x.p,'speed')*.18+bonus;
     });
     m.ball.owner=carrier;touchActor(carrier);
-    var build=clamp(.57+(atk.rating.mid-def.rating.mid)/180,0.36,.78);
+
+    var passCount=atk.tactics.attack==='short'?(2+Math.floor(Math.random()*3)):
+      atk.tactics.attack==='wide'?(1+Math.floor(Math.random()*3)):Math.floor(Math.random()*3);
+    var lastPassEvent=null;
+    for(var pi=0;pi<passCount;pi++){
+      var receiver=chooseReceiver(atk,carrier);if(!receiver)break;
+      var dist=Math.hypot(receiver.x-carrier.x,receiver.y-carrier.y);
+      var distancePenalty=dist>40 ? .07 : (dist>28 ? .035 : 0);
+      var passP=.76+(stat(carrier.p,'pass')-70)/170-distancePenalty;
+      if(atk.tactics.attack==='short')passP+=.07;
+      if(atk.tactics.attack==='direct')passP-=.045;
+      if(def.tactics.press==='press')passP-=.045;
+      passP=clamp(passP,.56,.94);
+      var completed=Math.random()<passP;
+      lastPassEvent=recordPass(m.possession,carrier,receiver,completed);
+      if(!completed){
+        var interceptor=pick(def.actors,function(x){return stat(x.p,'defense')*.7+stat(x.p,'speed')*.2+10;});
+        if(interceptor){m.ball.owner=interceptor;touchActor(interceptor);}
+        if(Math.random()<.22)emit('chance',displayName(carrier)+'의 패스가 끊겼어요.',m.possession,carrier);
+        return;
+      }
+      carrier=receiver;
+    }
+
+    var build=clamp(.58+(atk.rating.mid-def.rating.mid)/190,0.39,.79);
     if(Math.random()>build){
-      if(Math.random()<.22)emit('chance',displayName(carrier)+'의 전진이 끊겼어요.',m.possession,carrier);
+      if(Math.random()<.25)emit('chance',displayName(carrier)+'의 전진이 막혔어요.',m.possession,carrier);
       return;
     }
+
     var shooter=pick(atk.actors,function(x){
-      var bonus=x.slot==='ST'?30:x.slot==='WG'?22:x.slot==='CM'?10:2;
+      var bonus=x.slot==='ST'?32:x.slot==='WG'?23:x.slot==='CM'?11:2;
+      if(x.id===carrier.id)bonus+=8;
       return stat(x.p,'shot')*.55+stat(x.p,'speed')*.18+bonus;
     });
-    m.ball.owner=shooter;touchActor(shooter);
+    if(shooter.id!==carrier.id){
+      var finalPassP=clamp(.78+(stat(carrier.p,'pass')-70)/180-(def.tactics.press==='press' ? .035 : 0)+(atk.tactics.attack==='short' ? .035 : 0),.59,.94);
+      lastPassEvent=recordPass(m.possession,carrier,shooter,Math.random()<finalPassP);
+      if(!lastPassEvent.completed){
+        var cut=pick(def.actors,function(x){return stat(x.p,'defense')*.72+stat(x.p,'speed')*.18+10;});
+        if(cut){m.ball.owner=cut;touchActor(cut);}
+        return;
+      }
+      carrier=shooter;
+    }else{
+      m.ball.owner=shooter;touchActor(shooter);
+    }
+
     var quality=atk.rating.attack-def.rating.defense+(stat(shooter.p,'shot')-70)*.28;
     var shotChance=clamp(.66+quality/210,.48,.83);
     if(Math.random()>shotChance){emit('chance',displayName(shooter)+'의 공격이 수비에 막혔어요.',m.possession,shooter);return;}
+
+    if(lastPassEvent&&lastPassEvent.completed){
+      lastPassEvent.keyPass=true;
+      var kp=m.replay.stats[lastPassEvent.actorId];if(kp)kp.keyPasses++;
+    }
+
     var goalP=clamp(.145+quality/650,0.075,.27);
     var shooterStat=m.replay.stats[shooter.id];if(shooterStat)shooterStat.shots++;
     if(atk.tactics.mindset==='attack')goalP+=.012;
@@ -168,6 +244,10 @@ function create(opts){
     if(Math.random()<goalP){
       m.score[m.possession]++;
       if(shooterStat)shooterStat.goals++;
+      if(lastPassEvent&&lastPassEvent.completed&&lastPassEvent.actorId!==shooter.id){
+        lastPassEvent.assist=true;
+        var ast=m.replay.stats[lastPassEvent.actorId];if(ast)ast.assists++;
+      }
       emit('goal','골! '+displayName(shooter)+'의 슛이 들어갔어요!',m.possession,shooter);
       m.possession=1-m.possession;
     }else if(Math.random()<.37){
@@ -218,6 +298,7 @@ function create(opts){
     updateActors(simDt);
     while(m.minute>=m.replay.next+m.replay.step&&m.replay.frames.length<180){m.replay.next+=m.replay.step;recordReplayFrame();}
     m.effects=m.effects.filter(function(fx){fx.life-=simDt*1.7;return fx.life>0;});
+    m.passVisuals=m.passVisuals.filter(function(pv){pv.life-=simDt*1.8;return pv.life>0;});
     if(!m.half&&m.minute>=45){m.half=true;emit('half','전반 종료! 잠깐 숨을 고릅니다.',-1,null);}
     while(m.minute>=m.nextEvent&&m.nextEvent<90){
       attackEvent();
@@ -238,7 +319,7 @@ function create(opts){
     old.p.fitness=clamp(Math.round((old.p.fitness==null?100:old.p.fitness)-(100-old.energy)*.34-2),45,100);
     t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};
     if(!m.replay.heat[fresh.id])m.replay.heat[fresh.id]=Array(60).fill(0);
-    if(!m.replay.stats[fresh.id])m.replay.stats[fresh.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
+    if(!m.replay.stats[fresh.id])m.replay.stats[fresh.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0};
     recalc(t);
     if(m.ball.owner===old){m.ball.owner=fresh;m.lastTouchId=fresh.id;}
     emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,fresh);return true;
@@ -255,7 +336,7 @@ function create(opts){
       homeClubId:teams[0].club.id,awayClubId:teams[1].club.id,
       score:[m.score[0],m.score[1]],frames:m.replay.frames,
       heat:m.replay.heat,stats:m.replay.stats,players:players,
-      events:m.events.map(function(e){return {minute:e.minute,type:e.type,text:e.text,side:e.side,actorId:e.actor?e.actor.id:null,x:e.x,y:e.y};})
+      events:m.events.map(function(e){return {minute:e.minute,type:e.type,text:e.text||'',side:e.side,actorId:e.actorId||(e.actor?e.actor.id:null),toId:e.toId||null,x:e.x,y:e.y,toX:e.toX,toY:e.toY,completed:e.completed,progressive:e.progressive,keyPass:e.keyPass,assist:e.assist};})
     };
   };
   return m;
