@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>역사 드림리그: 씨앗 FC 감독</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div id="app">
@@ -53,6 +53,7 @@
       <button class="nav-btn" data-view="tactics" type="button"><span>🧠</span><b>작전</b></button>
       <button class="nav-btn" data-view="market" type="button"><span>🌍</span><b>세계 영입</b></button>
       <button class="nav-btn" data-view="history" type="button"><span>📖</span><b>역사 수첩</b></button>
+      <button class="nav-btn" data-view="analysis" type="button"><span>📊</span><b>분석실</b></button>
       <button class="nav-btn" data-view="table" type="button"><span>🏆</span><b>순위</b></button>
     </nav>
     <div id="viewRoot" class="view-root"></div>
@@ -87,6 +88,46 @@
     </div>
   </div>
 
+  <div id="replayLayer" class="replay-layer hidden">
+    <div class="replay-top">
+      <button id="replayClose" class="ghost" type="button">← 분석실로</button>
+      <div class="replay-heading">
+        <strong id="replayTitle">경기 분석</strong>
+        <small id="replayMinute">0' · 0 : 0</small>
+      </div>
+      <div class="replay-mode-group">
+        <button class="speed active" data-rmode="replay" type="button">▶ 다시보기</button>
+        <button class="speed" data-rmode="heat" type="button">🔥 히트맵</button>
+      </div>
+    </div>
+    <div class="replay-body">
+      <div class="replay-main">
+        <div class="replay-pitch-wrap"><canvas id="replayPitch" width="1000" height="600"></canvas></div>
+        <div class="replay-controls">
+          <button id="replayPlay" class="secondary" type="button">▶ 재생</button>
+          <select id="replaySpeed" aria-label="다시보기 속도">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+          <input id="replayRange" type="range" min="0" max="1" value="0" aria-label="경기 시간">
+        </div>
+      </div>
+      <aside class="replay-side">
+        <div class="mini-card">
+          <label class="replay-player-label" for="replayPlayer">집중해서 볼 선수</label>
+          <select id="replayPlayer"><option value="all">전체 선수 보기</option></select>
+        </div>
+        <div id="replayStats" class="mini-card"></div>
+        <div class="mini-card replay-events-card">
+          <h3>주요 장면</h3>
+          <div id="replayEvents" class="replay-events"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <button id="modalClose" class="modal-close" type="button">×</button>
@@ -97,9 +138,9 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </div>
 
-<script src="data.js?v=2"></script>
-<script src="sim.js?v=2"></script>
-<script src="game.js?v=2"></script>
+<script src="data.js?v=3"></script>
+<script src="sim.js?v=3"></script>
+<script src="game.js?v=3"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_fc_manager" data-title="역사 드림리그: 씨앗 FC 감독" data-shell="true" data-orientation="landscape"></script>
 </body>
 </html>
