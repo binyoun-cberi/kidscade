@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "games": [
     {
       "id": "low_math_number_tower",
@@ -9,7 +9,20 @@
       "age": "low",
       "icon": "🏰",
       "cover": "assets/gate-image/숫자 타워.png",
-      "description": "탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!"
+      "description": "탑의 층을 골라 몬스터와 싸우고 덧셈·뺄셈으로 숫자를 키워 보스를 쓰러뜨려요. 순서를 잘못 고르거나 계산을 틀리면 패배!",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_classroom_war_3d",
@@ -19,7 +32,20 @@
       "age": "high",
       "icon": "🎖️",
       "cover": "assets/gate-image/교실전쟁3D.png",
-      "description": "작아진 3D 학생 편제로 전장을 넓게 보며 정면 사격하고, 사칙연산 관문으로 병력을 키워 서로 다른 움직임의 적과 교실 위협을 막는 3D 교실 디펜스!"
+      "description": "작아진 3D 학생 편제로 전장을 넓게 보며 정면 사격하고, 사칙연산 관문으로 병력을 키워 서로 다른 움직임의 적과 교실 위협을 막는 3D 교실 디펜스!",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_byeokrando_voyage",
@@ -29,7 +55,20 @@
       "age": "high",
       "icon": "⛵",
       "cover": "assets/gate-image/벽란도 상행기.png",
-      "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!"
+      "description": "고려의 상인이 되어 벽란도에서 출항하세요. 동아시아 여러 항구를 오가며 물품을 사고팔고, 선원과 배를 관리하는 역사·경제 항해 시뮬레이션!",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "high_history_timebattle_live",
@@ -38,7 +77,21 @@
       "category": "trivia",
       "age": "high",
       "icon": "⏳",
-      "description": "가르칠 시대를 골라 여러 판을 안정적으로 이어가는 한국사 LIVE 퀴즈. 객관식·OX·40문제·중간 순위·효과음과 재접속을 지원하며 D1 쓰기를 크게 줄인 저부하 실시간 구조를 사용합니다."
+      "description": "가르칠 시대를 골라 여러 판을 안정적으로 이어가는 한국사 LIVE 퀴즈. 객관식·OX·40문제·중간 순위·효과음과 재접속을 지원하며 D1 쓰기를 크게 줄인 저부하 실시간 구조를 사용합니다.",
+      "subject": "social",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "classroom",
+        "online"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": true
     },
     {
       "id": "high_seed_volleyball",
@@ -47,7 +100,20 @@
       "category": "trivia",
       "age": "high",
       "icon": "🏐",
-      "description": "Kenney 캐릭터 에셋으로 플레이하고, 서브는 버튼 한 번으로 안정적으로 상대 코트에 넘긴 뒤 직접 이동·점프·스매시로 랠리를 이어가는 1:1 아케이드 배구입니다."
+      "description": "Kenney 캐릭터 에셋으로 플레이하고, 서브는 버튼 한 번으로 안정적으로 상대 코트에 넘긴 뒤 직접 이동·점프·스매시로 랠리를 이어가는 1:1 아케이드 배구입니다.",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "high_metro_planner",
@@ -56,7 +122,20 @@
       "category": "trivia",
       "age": "high",
       "icon": "🚇",
-      "description": "도시가 커질수록 생기는 역과 승객을 보며 5개 노선을 직접 그리고, 열차 배치·실제 환승·교량·혼잡 관리를 조합해 오래 버티는 2D 도시철도 전략 게임!"
+      "description": "도시가 커질수록 생기는 역과 승객을 보며 5개 노선을 직접 그리고, 열차 배치·실제 환승·교량·혼잡 관리를 조합해 오래 버티는 2D 도시철도 전략 게임!",
+      "subject": "social",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "high_quarantine_17",
@@ -67,7 +146,20 @@
       "icon": "☣️",
       "description": "매주 달라지는 검역 지침을 읽고 체온·UV·혈액·호흡·소지품·통행증을 대조해 8주 동안 감염자를 판별하는 관찰·논리 추론 시뮬레이션!",
       "scoreKey": "quarantine17BestV2",
-      "cover": "assets/gate-image/격리구역 17.png"
+      "cover": "assets/gate-image/격리구역 17.png",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "high_folklore_night_guard",
@@ -76,7 +168,20 @@
       "category": "trivia",
       "age": "high",
       "icon": "👻",
-      "description": "할로윈 밤의 학교 야간 경비원이 되어 교실·과학실·복도 CCTV를 확인하고 문·조명·난방을 조작해 세계 괴담 속 존재들의 서로 반대되는 규칙을 구분하며 오전 6시까지 버티는 관찰·판단 공포 게임!"
+      "description": "할로윈 밤의 학교 야간 경비원이 되어 교실·과학실·복도 CCTV를 확인하고 문·조명·난방을 조작해 세계 괴담 속 존재들의 서로 반대되는 규칙을 구분하며 오전 6시까지 버티는 관찰·판단 공포 게임!",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_nail_artist",
@@ -86,7 +191,20 @@
       "age": "job",
       "icon": "💅",
       "description": "나만의 네일샵을 운영하세요! 손님의 주문에 맞춰 예쁜 네일아트를 완성하고 최고의 네일샵으로 만들어보세요.",
-      "cover": "assets/gate-image/네일 아티스트 타이쿤.png"
+      "cover": "assets/gate-image/네일 아티스트 타이쿤.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_police_car",
@@ -96,7 +214,20 @@
       "age": "job",
       "icon": "🚓",
       "description": "낮아진 3인칭 카메라로 3D 경찰차를 직접 운전해 도시를 순찰하며 수배차 추격, 사고 현장 안전 확보, 교통 정리와 도로 위험 신고를 해결하는 경찰 직업 시뮬레이터!",
-      "cover": "assets/gate-image/경찰차 시뮬레이터.png"
+      "cover": "assets/gate-image/경찰차 시뮬레이터.png",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_drone_pilot",
@@ -105,7 +236,20 @@
       "category": "job",
       "age": "job",
       "icon": "🛸",
-      "description": "두 개의 조종 스틱으로 3D 드론을 직접 날리며 항공 촬영·시설 점검·긴급 배송·실종자 수색·정밀 장애물 비행을 수행하는 드론조종사 직업 체험 시뮬레이터! 자동 호버, FPV 카메라, 배터리와 자동귀환(RTH), 모바일 터치 조종을 지원합니다."
+      "description": "두 개의 조종 스틱으로 3D 드론을 직접 날리며 항공 촬영·시설 점검·긴급 배송·실종자 수색·정밀 장애물 비행을 수행하는 드론조종사 직업 체험 시뮬레이터! 자동 호버, FPV 카메라, 배터리와 자동귀환(RTH), 모바일 터치 조종을 지원합니다.",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_takoyaki_simulator",
@@ -115,7 +259,20 @@
       "age": "job",
       "icon": "🐙",
       "description": "3D로 즐기는 실감 나는 타코야키 만들기! 기름칠부터 반죽 부으기, 속재료 넣기, 타이밍에 맞춰 동글동글하게 굴리기까지 마스터하여 노점의 장인이 되어보세요.",
-      "cover": "assets/gate-image/빙글빙글 타코야키집.png"
+      "cover": "assets/gate-image/빙글빙글 타코야키집.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_scuba_diver",
@@ -126,7 +283,20 @@
       "icon": "🤿",
       "description": "2D 픽셀 잠수 탐사 v34! 생물은 플레이어의 접근 속도·대시·소나·작살·그물 소음에 실제로 반응합니다. 천천히 접근하면 감지거리가 줄고, 통발 미끼와 고래 낙하에서는 먹이활동 상태가 생기며, 심해에서는 다이브 라이트를 끄면 시야를 포기하는 대신 빛에 민감한 생물에게 덜 들킵니다. 관찰한 상태를 직접 만들고 이용하는 사냥 루프로 확장되었습니다.",
       "scoreKey": "deep_diver_2d_v7",
-      "cover": "assets/gate-image/심해 다이버 시뮬레이터.png"
+      "cover": "assets/gate-image/심해 다이버 시뮬레이터.png",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "job_internal_medicine",
@@ -135,7 +305,20 @@
       "category": "job",
       "age": "job",
       "icon": "🩺",
-      "description": "3D 환자를 관찰하며 채팅처럼 문진하고, 문진→검사→진단→처방을 순서대로 진행하세요. 환자의 말뿐 아니라 기침·홍조·움직임도 단서가 되며 하루 종료 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
+      "description": "3D 환자를 관찰하며 채팅처럼 문진하고, 문진→검사→진단→처방을 순서대로 진행하세요. 환자의 말뿐 아니라 기침·홍조·움직임도 단서가 되며 하루 종료 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "job_teacher_classroom",
@@ -144,7 +327,20 @@
       "category": "job",
       "age": "job",
       "icon": "🏫",
-      "description": "교탁으로 찾아오는 학생, 보호자 전화, 기록과 행정 업무를 제한된 시간 안에 처리하는 담임교사 업무 시뮬레이션. 무엇을 지금 처리하고 무엇을 미룰지 판단하며 아이들을 조금씩 알아가세요."
+      "description": "교탁으로 찾아오는 학생, 보호자 전화, 기록과 행정 업무를 제한된 시간 안에 처리하는 담임교사 업무 시뮬레이션. 무엇을 지금 처리하고 무엇을 미룰지 판단하며 아이들을 조금씩 알아가세요.",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "rework",
+      "classroom": false
     },
     {
       "id": "math_timing_lcd",
@@ -158,7 +354,20 @@
         "low",
         "high"
       ],
-      "cover": "assets/gate-image/딱 타임 LCD.png"
+      "cover": "assets/gate-image/딱 타임 LCD.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 3,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "job_steak_master",
@@ -168,7 +377,20 @@
       "age": "job",
       "icon": "🥩",
       "description": "최고의 셰프가 되어보세요! 손님의 까다로운 주문에 맞춰 고기 내부 온도와 양면 시어링 균형을 정밀하게 조절하여 완벽한 스테이크를 굽는 요리 시뮬레이터입니다.",
-      "cover": "assets/gate-image/그릴 마스터.png"
+      "cover": "assets/gate-image/그릴 마스터.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_one_stroke",
@@ -179,7 +401,20 @@
       "icon": "🛵",
       "description": "실제 Kenney 3D 건물·차량·나무와 용도별 다양한 지붕색을 활용한 탑다운 미니어처 도시에서 모든 배달 도로를 한 번씩 잇는 50스테이지 퍼즐!",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M15 55L30 19L52 29L62 57L36 62L15 55Z\"\n                  fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"7\"\n                  stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n            <circle cx=\"15\" cy=\"55\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"30\" cy=\"19\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"52\" cy=\"29\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"62\" cy=\"57\" r=\"7\" fill=\"#303845\"/>\n            <circle cx=\"36\" cy=\"62\" r=\"7\" fill=\"#303845\"/>\n        </svg>",
-      "cover": "assets/gate-image/한붓쓱.png"
+      "cover": "assets/gate-image/한붓쓱.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "low_math_dog_runner",
@@ -190,7 +425,20 @@
       "icon": "×",
       "description": "구구단 문제의 정답 차선으로 달리세요. 장애물을 뛰어넘고 코인을 모으며 최고 거리와 콤보에 도전해요.",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M19 64L31 13M39 64L44 13M58 64L55 13\"\n                  stroke=\"#d9ddff\" stroke-width=\"10\" stroke-linecap=\"round\"/>\n            <path d=\"M12 64H65\" stroke=\"#6f6df7\" stroke-width=\"6\" stroke-linecap=\"round\"/>\n            <circle cx=\"38\" cy=\"41\" r=\"17\" fill=\"#c9792d\"/>\n            <ellipse cx=\"27\" cy=\"31\" rx=\"7\" ry=\"13\" fill=\"#87421e\"/>\n            <ellipse cx=\"49\" cy=\"31\" rx=\"7\" ry=\"13\" fill=\"#87421e\"/>\n            <ellipse cx=\"38\" cy=\"47\" rx=\"10\" ry=\"8\" fill=\"#fff4e4\"/>\n            <circle cx=\"33\" cy=\"39\" r=\"2.5\" fill=\"#201d29\"/>\n            <circle cx=\"43\" cy=\"39\" r=\"2.5\" fill=\"#201d29\"/>\n            <circle cx=\"38\" cy=\"45\" r=\"3\" fill=\"#25243a\"/>\n            <text x=\"38\" y=\"18\" text-anchor=\"middle\"\n                  font-size=\"17\" font-weight=\"900\" fill=\"#ff7c35\">×</text>\n        </svg>",
-      "cover": "assets/gate-image/멍멍 곱셈 러너.png"
+      "cover": "assets/gate-image/멍멍 곱셈 러너.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "music_neon_rift",
@@ -200,7 +448,20 @@
       "age": "high",
       "icon": "🏍️",
       "description": "박자에 맞춰 달리는 1인칭 리듬 러너! 신나는 비트 속에서 차선을 바꾸고 점프하며 24개의 스테이지를 돌파해 보세요.",
-      "cover": "assets/gate-image/네온 리프트.png"
+      "cover": "assets/gate-image/네온 리프트.png",
+      "subject": "arts",
+      "genre": "rhythm",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_sand_art_studio",
@@ -211,7 +472,20 @@
       "icon": "🎮",
       "description": "화면 위에서 떨어지는 모래를 쌓아 산맥과 파도, 색의 층을 만들어 보세요. 나만의 모래 작품을 자유롭게 완성해요.",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <rect x=\"8\" y=\"8\" width=\"60\" height=\"60\" rx=\"17\" fill=\"#f7fafb\"/>\n            <path d=\"M8 56L20 43L30 51L42 31L53 46L68 35V68H8Z\" fill=\"#ffcc62\"/>\n            <path d=\"M8 61L23 49L34 57L47 41L57 53L68 47V68H8Z\" fill=\"#ff7e67\"/>\n            <path d=\"M8 65L25 57L38 63L51 51L68 58V68H8Z\" fill=\"#75d5bb\"/>\n            <circle cx=\"46\" cy=\"14\" r=\"3\" fill=\"#ff7e67\"/>\n            <circle cx=\"52\" cy=\"22\" r=\"3\" fill=\"#ffcc62\"/>\n            <circle cx=\"43\" cy=\"28\" r=\"3\" fill=\"#7372d8\"/>\n        </svg>",
-      "cover": "assets/gate-image/모래 그림 공방.png"
+      "cover": "assets/gate-image/모래 그림 공방.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_melody_workshop",
@@ -222,7 +496,20 @@
       "icon": "🎼",
       "description": "음표와 쉼표를 악보에 직접 배치하고 완성한 곡을 들어보세요. 제목과 가사까지 작성할 수 있는 작곡 공방입니다.",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <rect x=\"8\" y=\"10\" width=\"60\" height=\"56\" rx=\"15\" fill=\"#fffdf8\"/>\n            <path d=\"M15 28H61M15 35H61M15 42H61M15 49H61\"\n                  stroke=\"#ddd6cd\" stroke-width=\"2\"/>\n            <path d=\"M43 19V45C43 51 37 55 31 53C26 51 26 45 30 42C33 40 38 40 43 42\"\n                  fill=\"none\" stroke=\"#6557c8\" stroke-width=\"6\"\n                  stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n            <path d=\"M43 19L58 16V24L43 27Z\" fill=\"#ff7f6d\"/>\n        </svg>",
-      "cover": "assets/gate-image/멜로디 공방.png"
+      "cover": "assets/gate-image/멜로디 공방.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_top_king",
@@ -233,7 +520,20 @@
       "icon": "🎮",
       "description": "빛나는 방향에서 팽이를 정확히 쳐 회전력과 균형을 유지하세요. 점점 좁아지는 경기장에서 오래 버티는 3D 기록 게임입니다.",
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <ellipse cx=\"38\" cy=\"45\" rx=\"29\" ry=\"19\" fill=\"#ff5b4d\"/>\n            <path d=\"M12 42L38 28L64 42L38 55Z\" fill=\"#ffcf3d\"/>\n            <path d=\"M22 49L38 39L55 49L38 59Z\" fill=\"#4e78ff\"/>\n            <rect x=\"32\" y=\"14\" width=\"12\" height=\"17\" rx=\"5\" fill=\"#283652\"/>\n            <path d=\"M34 61H42L39 72H37Z\" fill=\"#263550\"/>\n            <path d=\"M9 25C17 15 25 11 32 10\"\n                  fill=\"none\" stroke=\"#ffb62e\" stroke-width=\"4\"\n                  stroke-linecap=\"round\"/>\n            <path d=\"M67 25C59 15 51 11 44 10\"\n                  fill=\"none\" stroke=\"#4e78ff\" stroke-width=\"4\"\n                  stroke-linecap=\"round\"/>\n        </svg>",
-      "cover": "assets/gate-image/팽이왕.png"
+      "cover": "assets/gate-image/팽이왕.png",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_kite_wind_rider",
@@ -246,7 +546,20 @@
       "iconHtml": "<svg width=\"76\" height=\"76\" viewBox=\"0 0 76 76\">\n            <path d=\"M38 7L65 34L38 60L11 34Z\" fill=\"#ff705d\"/>\n            <path d=\"M38 7L65 34H38Z\" fill=\"#ffd85c\"/>\n            <path d=\"M11 34H38V60Z\" fill=\"#35a9e0\"/>\n            <path d=\"M38 60C31 65 48 67 39 73\"\n                  fill=\"none\" stroke=\"#19344a\" stroke-width=\"3\"\n                  stroke-linecap=\"round\"/>\n            <path d=\"M38 8V59M12 34H64\"\n                  stroke=\"rgba(255,255,255,.8)\" stroke-width=\"2\"/>\n        </svg>",
       "scoreKey": "kite3d_best",
       "isTime": true,
-      "cover": "assets/gate-image/바람을 타고.png"
+      "cover": "assets/gate-image/바람을 타고.png",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_bogle_bunsik",
@@ -256,7 +569,20 @@
       "age": "job",
       "icon": "🥘",
       "description": "3D 분식집 주방을 직접 뛰어다니며 냉장고·재료 선반에서 재료를 가져오고, 라면·떡볶이·사이드 조리대를 동시에 관리해 완성 음식을 서빙하는 액션 타이쿤!",
-      "cover": "assets/gate-image/보글보글 분식집.png"
+      "cover": "assets/gate-image/보글보글 분식집.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "trivia_school_survival",
@@ -266,7 +592,20 @@
       "age": "high",
       "icon": "🎒",
       "description": "1학년부터 6학년까지 무사히 졸업하라! 학교생활 속 수많은 선택지 앞에서 학업, 건강, 행복, 평판의 완벽한 균형을 유지하며 나만의 성장 스토리를 만들어가는 라이프 시뮬레이션 게임입니다.",
-      "cover": "assets/gate-image/초딩 생존기.png"
+      "cover": "assets/gate-image/초딩 생존기.png",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "trivia_zoolympic",
@@ -276,7 +615,20 @@
       "age": "high",
       "icon": "🦁",
       "description": "1,000가지 동물 상식 연속 정답 도전! 단 한 번의 오답으로 경기가 종료되는 짜릿한 룰 속에서 OX 퀴즈, 서식지 찾기, 동물 탐정 등 다양한 문제를 풀며 나만의 최고 연승 기록을 경신해 보세요.",
-      "cover": "assets/gate-image/줄림픽.png"
+      "cover": "assets/gate-image/줄림픽.png",
+      "subject": "science",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_icecream_division",
@@ -286,7 +638,20 @@
       "age": "low",
       "icon": "🍦",
       "description": "아이스크림을 손님들에게 공평하게 나누어 서빙하세요! 기본 나눗셈부터 나머지가 있는 연산까지 재미있는 게임을 통해 자연스럽게 마스터할 수 있습니다.",
-      "cover": "assets/gate-image/아이스크림 나눗셈 가게.png"
+      "cover": "assets/gate-image/아이스크림 나눗셈 가게.png",
+      "subject": "math",
+      "genre": "management",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "sim_mosquito",
@@ -298,7 +663,20 @@
       "description": "배고픈 모기가 되어 인간의 피를 몰래 빠는 생존 시뮬레이터. 무시무시한 손바닥 공격을 피해 목표 혈액량 100%를 채워보세요.",
       "scoreKey": "mosquitoHighScore",
       "scoreUnit": "%",
-      "cover": "assets/gate-image/한 입만 더.png"
+      "cover": "assets/gate-image/한 입만 더.png",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "kor_handwriting_party",
@@ -308,7 +686,20 @@
       "age": "low",
       "icon": "✍️",
       "description": "또박또박 예쁜 글씨 쓰기 도전! 다양한 낱말과 문장을 따라 쓰고, 들리는 소리를 받아 적으며 바른 글씨 습관을 기르고 실시간 점수 평가를 통해 한글 실력을 쑥쑥 키워보세요.",
-      "cover": "assets/gate-image/바른 글씨 파티.png"
+      "cover": "assets/gate-image/바른 글씨 파티.png",
+      "subject": "korean",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_shape_color",
@@ -318,7 +709,19 @@
       "age": "toddler",
       "icon": "🍎",
       "description": "드래그와 터치로 알맞은 색상과 형태의 바구니에 매칭하는 감각 개발 퀴즈!",
-      "cover": "assets/gate-image/모양 색깔 친구들 집 찾기.png"
+      "cover": "assets/gate-image/모양 색깔 친구들 집 찾기.png",
+      "subject": "math",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "kor_sentence_train",
@@ -328,7 +731,20 @@
       "age": "low",
       "icon": "🚂",
       "description": "어절(단어 덩어리)을 바른 순서로 객차에 태워 문장 열차를 출발시키세요! '노력해봐역'부터 '엄청나역'까지 칭찬 역을 지나가며 문장 구조를 자연스럽게 익힐 수 있습니다.",
-      "cover": "assets/gate-image/문장열차.png"
+      "cover": "assets/gate-image/문장열차.png",
+      "subject": "korean",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "trivia_blockraft",
@@ -338,7 +754,20 @@
       "age": "high",
       "icon": "⛵",
       "description": "작은 뗏목에서 시작해 바다의 자원을 모으고 낚시·제작·건축으로 생존하며 배를 확장하는 해양 생존 게임!",
-      "cover": "assets/gate-image/블록래프트.png"
+      "cover": "assets/gate-image/블록래프트.png",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "trivia_drift_survival",
@@ -348,7 +777,20 @@
       "age": "high",
       "icon": "🧭",
       "description": "한국 남해와 닮은 무인도에서 물·식량·피로를 관리하고 탐험·낚시·채집·수리·농사를 선택하며 구조 또는 정착을 노리는 턴제 생존 게임. 4종 미니게임과 10가지 엔딩에 도전해요!",
-      "cover": "assets/gate-image/표류생존기.png"
+      "cover": "assets/gate-image/표류생존기.png",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_stationery_boss",
@@ -358,7 +800,20 @@
       "age": "low",
       "icon": "🏪",
       "description": "손님의 주문을 꼼꼼히 확인하고 장바구니에 담은 뒤, 받은 돈에서 물건값을 빼서 정확한 거스름돈을 돌려주는 덧셈·뺄셈 생활 수학 게임입니다.",
-      "cover": "assets/gate-image/문방구 사장님.png"
+      "cover": "assets/gate-image/문방구 사장님.png",
+      "subject": "math",
+      "genre": "management",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_hidden_emoji",
@@ -368,7 +823,19 @@
       "age": "toddler",
       "icon": "🔍",
       "description": "요리조리 배경 속에 숨어있는 귀여운 이모지 친구들을 찾아보세요! 화면을 요리조리 보며 관찰력과 집중력을 기르는 재미있는 놀이!",
-      "cover": "assets/gate-image/신나는 이모지 숨은 그림 찾기.png"
+      "cover": "assets/gate-image/신나는 이모지 숨은 그림 찾기.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_heaven_stairs",
@@ -379,7 +846,19 @@
       "icon": "☁️",
       "description": "귀여운 꼬마 유령이 되어 구름 위 계단을 폴짝폴짝 올라가요! 방향을 헷갈리지 않고 높이높이 오르며 방향 감각과 순발력을 기르는 두뇌 게임!",
       "scoreKey": "heavenStairsHighScore",
-      "cover": "assets/gate-image/천국의 계단.png"
+      "cover": "assets/gate-image/천국의 계단.png",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "chosung_bomb",
@@ -390,7 +869,20 @@
       "icon": "💣",
       "description": "째깍째깍! 폭탄이 터지기 전에 주제에 맞는 단어를 입력하는 스릴 만점 초성 게임!",
       "scoreKey": "casual_max_score",
-      "cover": "assets/gate-image/시한폭탄 초성 퀴즈.png"
+      "cover": "assets/gate-image/시한폭탄 초성 퀴즈.png",
+      "subject": "korean",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_order_pang",
@@ -400,7 +892,20 @@
       "age": "low",
       "icon": "🎈",
       "description": "1부터 차례대로 번호가 매겨진 풍선을 터뜨리며 집중력과 연산 기초를 다져요!",
-      "cover": "assets/gate-image/순서대로 팡팡.png"
+      "cover": "assets/gate-image/순서대로 팡팡.png",
+      "subject": "math",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "infinite_gugudan",
@@ -411,7 +916,21 @@
       "icon": "👹",
       "description": "곱셈을 빨리 풀어 에너지파를 밀어내자! CPU 초·중·고급과 1:1로 즐기는 실시간 곱셈 대결!",
       "scoreKey": "guguHighScore",
-      "cover": "assets/gate-image/무한루.png"
+      "cover": "assets/gate-image/무한루.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "low_big_puzzle_time",
@@ -420,7 +939,20 @@
       "category": "math",
       "age": "high",
       "icon": "🧩",
-      "description": "4×4, 5×5, 6×6 숫자 퍼즐에 도전해 보세요! 빈 칸을 이용해 숫자를 순서대로 맞추며 집중력과 논리력을 기르는 슬라이딩 퍼즐 게임입니다."
+      "description": "4×4, 5×5, 6×6 숫자 퍼즐에 도전해 보세요! 빈 칸을 이용해 숫자를 순서대로 맞추며 집중력과 논리력을 기르는 슬라이딩 퍼즐 게임입니다.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "hero_english",
@@ -430,7 +962,20 @@
       "age": "low",
       "icon": "🦸‍♂️",
       "description": "알파벳부터 영단어 타격까지! 빌런을 물리치며 최고의 영어 히어로로 성장하자!",
-      "cover": "assets/gate-image/나의 영어 아카데미아.png"
+      "cover": "assets/gate-image/나의 영어 아카데미아.png",
+      "subject": "language",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_word_blaster",
@@ -440,7 +985,20 @@
       "age": "low",
       "icon": "🎯",
       "description": "하늘을 날아다니는 알파벳 드론을 영단어 철자 순서대로 맞히는 3D 1인칭 영어 슈팅! 넉넉한 제한시간과 마지막 10초 정답 힌트로 끝까지 도전하고, 10단어를 통과하면 배운 단어로 문장 보스에 맞서요.",
-      "scoreKey": "kidscade_language_v3_word_blaster_best"
+      "scoreKey": "kidscade_language_v3_word_blaster_best",
+      "subject": "language",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "tod_chick_shell",
@@ -450,7 +1008,19 @@
       "age": "toddler",
       "icon": "🐣",
       "description": "컵 속에 숨은 병아리를 기억하고 요리조리 섞이는 컵을 끝까지 지켜본 뒤 찾아내는 관찰력 게임!",
-      "cover": "assets/gate-image/병아리는 어디에.png"
+      "cover": "assets/gate-image/병아리는 어디에.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_symbol_duel",
@@ -461,7 +1031,20 @@
       "icon": "👀",
       "description": "두 원형 카드에 공통으로 있는 딱 하나의 그림을 CPU보다 먼저 찾아요! 쉬움 10초·보통 5초·어려움 3초의 관찰력 대결.",
       "scoreKey": "symbolDuelBestStreak",
-      "cover": "assets/gate-image/딱 하나! 그림 대결.png"
+      "cover": "assets/gate-image/딱 하나! 그림 대결.png",
+      "subject": "thinking",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "tod_antarctic_exploration",
@@ -472,7 +1055,19 @@
       "icon": "🐧",
       "description": "크레바스와 물개를 점프해 넘고 물고기를 모으며 남극 기지까지 달려가는 원근감 레이싱 액션 게임!",
       "scoreKey": "antarctic_highscore",
-      "cover": "assets/gate-image/남극 탐험 대작전.png"
+      "cover": "assets/gate-image/남극 탐험 대작전.png",
+      "subject": "thinking",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_emoji_minesweeper",
@@ -482,7 +1077,20 @@
       "age": "high",
       "icon": "🐾",
       "description": "귀여운 칸 속에 숨어있는 지뢰를 피해 숫자를 찾아라! 안전하게 땅을 파헤치며 논리적 추리력과 수리력을 키우는 지능 개발 보드 게임!",
-      "scoreKey": "minesweeperHighScore"
+      "scoreKey": "minesweeperHighScore",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_nyam_universe",
@@ -492,7 +1100,20 @@
       "age": "low",
       "icon": "🪐",
       "description": "물건마다 실제 크기를 비교하며 작은 것부터 냠냠! 바이러스·미생물·채소·자동차·집·산·행성·별까지 단계별 최종 목표를 먹어 다음 세계로 커지는 3D 크기 성장 모험!",
-      "cover": "assets/gate-image/냠냠 우주 여행.png"
+      "cover": "assets/gate-image/냠냠 우주 여행.png",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_juice_maker",
@@ -502,7 +1123,20 @@
       "age": "low",
       "icon": "🍹",
       "description": "장애물과 폭탄을 피해 지정된 임무 과일을 바구니에 담아 신선한 주스를 완성하세요!",
-      "cover": "assets/gate-image/과일 농장 주스 메이커.png"
+      "cover": "assets/gate-image/과일 농장 주스 메이커.png",
+      "subject": "thinking",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "triangle_compare",
@@ -511,7 +1145,20 @@
       "category": "math",
       "age": "high",
       "icon": "📐",
-      "description": "모눈종이 위에 자유롭게 꼭짓점을 찍어 삼각형을 만들고, 어떤 삼각형의 넓이가 가장 큰지 직접 비교해 보세요!"
+      "description": "모눈종이 위에 자유롭게 꼭짓점을 찍어 삼각형을 만들고, 어떤 삼각형의 넓이가 가장 큰지 직접 비교해 보세요!",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "lab_water_sort",
@@ -522,7 +1169,20 @@
       "icon": "🧪",
       "description": "색깔별로 시약을 깔끔하게 분류하라! 논리력과 문제 해결력을 기르는 두뇌 트레이닝.",
       "scoreKey": "labWaterSortProgress",
-      "cover": "assets/gate-image/연구소 물 정렬 퍼즐.png"
+      "cover": "assets/gate-image/연구소 물 정렬 퍼즐.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_rubiks_cube",
@@ -534,7 +1194,20 @@
       "description": "요리조리 돌리며 두뇌 회전! 3차원 입체 공간에서 큐브를 맞추며 공간지각력과 인내심을 쑥쑥 기르는 집중력 퍼즐 게임!",
       "scoreKey": "bestTime3x3",
       "isTime": true,
-      "cover": "assets/gate-image/3D 루빅스 큐브.png"
+      "cover": "assets/gate-image/3D 루빅스 큐브.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_3d_block_painter",
@@ -544,7 +1217,20 @@
       "age": "low",
       "icon": "🧱",
       "description": "나만의 3D 블록 세상을 조립하고 예쁜 색깔로 칠해보세요! 입체 공간에서 공간지각력과 창의력을 마음껏 뽐내는 3D 픽셀 아트!",
-      "cover": "assets/gate-image/3D 블록 색칠 놀이.png"
+      "cover": "assets/gate-image/3D 블록 색칠 놀이.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "job_maratang_simulator",
@@ -554,7 +1240,20 @@
       "age": "job",
       "icon": "🍲",
       "description": "다층 3D 재료 찬장에서 해금된 식재료를 골라 작업대에 담고, 15일 동안 재고·현금·평판·이벤트를 운영하며 가게를 키우는 마라탕 타이쿤!",
-      "cover": "assets/gate-image/마라탕 한 그릇.png"
+      "cover": "assets/gate-image/마라탕 한 그릇.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_little_sculptor",
@@ -564,7 +1263,20 @@
       "age": "high",
       "icon": "🗿",
       "description": "화면을 드래그해서 찰흙, 대리석, 나무 등 다양한 재료를 깎고 빚어보세요! 내 손끝에서 탄생하는 세상에 하나뿐인 나만의 멋진 3D 조각품!",
-      "cover": "assets/gate-image/꼬마 조각가 스튜디오.png"
+      "cover": "assets/gate-image/꼬마 조각가 스튜디오.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "geo_exorcist",
@@ -575,7 +1287,20 @@
       "icon": "🔯",
       "description": "도형의 성질과 포함 관계를 파악하라! 악귀를 묶어 봉인하는 퇴마 액션 퍼즐.",
       "scoreKey": "geomatch_max_combo",
-      "cover": "assets/gate-image/도형퇴마왕.png"
+      "cover": "assets/gate-image/도형퇴마왕.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_base10_blocks",
@@ -585,7 +1310,20 @@
       "age": "low",
       "icon": "🧾",
       "description": "3D 마트 계산대에서 실제 상품을 직접 스캔하고 합계를 확인한 뒤, 손님이 낸 돈에서 상품값을 빼 알맞은 지폐와 동전으로 거스름돈을 계산해요.",
-      "cover": "assets/gate-image/우리 동네 마트 계산대.png"
+      "cover": "assets/gate-image/우리 동네 마트 계산대.png",
+      "subject": "math",
+      "genre": "management",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_outbreak_korea",
@@ -595,7 +1333,20 @@
       "age": "high",
       "icon": "🦠",
       "description": "17개 시·도를 오가며 확산과 대응을 시뮬레이션해 보세요. 진화·방역·의료·연구의 선택이 결과를 바꾸는 고학년 전략 게임입니다.",
-      "cover": "assets/gate-image/OUTBREAK KOREA.png"
+      "cover": "assets/gate-image/OUTBREAK KOREA.png",
+      "subject": "science",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_history_match",
@@ -607,7 +1358,20 @@
       "description": "52명의 역사 인물을 시대 카드로! 빨강·검정을 번갈아 쌓고 네 시대의 한국사 연표를 완성하세요.",
       "scoreKey": "historyMatchHS",
       "rankKey": "historyMatchHS",
-      "cover": "assets/gate-image/한국사 솔리테어.png"
+      "cover": "assets/gate-image/한국사 솔리테어.png",
+      "subject": "social",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "alien_pizza",
@@ -617,7 +1381,20 @@
       "age": "high",
       "icon": "🍕",
       "description": "분수를 계산해 외계인 손님의 주문에 맞는 피자를 완성하는 수학 요리 게임!",
-      "cover": "assets/gate-image/외계인 피자 가게.png"
+      "cover": "assets/gate-image/외계인 피자 가게.png",
+      "subject": "math",
+      "genre": "management",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "magic_scale",
@@ -628,7 +1405,20 @@
       "icon": "⚖️",
       "description": "과일과 생활 물건을 접시에 직접 올리며 g 단위와 무게 비교를 익혀요.",
       "scoreKey": "mathMobileHighScore",
-      "cover": "assets/gate-image/신비한 양팔 저울.png"
+      "cover": "assets/gate-image/신비한 양팔 저울.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "hanja_survivors_8",
@@ -639,7 +1429,20 @@
       "icon": "🛡️",
       "description": "숲·설원·지옥·동굴마다 실제 2D 나무·바위·지형 에셋이 촘촘히 배치된 전장에서 이동과 필기를 동시에 하며 8급 한자 50자 주문을 성장시키는 실시간 액션 서바이벌!",
       "scoreKey": "hanja_survivors_best",
-      "cover": "assets/gate-image/한자수호전.png"
+      "cover": "assets/gate-image/한자수호전.png",
+      "subject": "language",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_rhythm_dash",
@@ -649,7 +1452,20 @@
       "age": "high",
       "icon": "🎧",
       "description": "장단과 비트에 맞춰 달리는 원버튼 리듬 러너! 16개 스테이지가 INTRO·GROOVE·BREAK·DROP·FINALE로 전개되고, 구간마다 음악 편곡과 맵 패턴이 바뀌는 RHYTHM DASH REMIX에 도전하세요.",
-      "cover": "assets/gate-image/리듬 대시.png"
+      "cover": "assets/gate-image/리듬 대시.png",
+      "subject": "arts",
+      "genre": "rhythm",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "korea_puzzle",
@@ -659,7 +1475,20 @@
       "age": "high",
       "icon": "🗺️",
       "description": "우리나라 구석구석, 흩어진 지역 퍼즐을 맞춰 지도를 완성하세요!",
-      "cover": "assets/gate-image/K-퍼즐 지도 맞추기.png"
+      "cover": "assets/gate-image/K-퍼즐 지도 맞추기.png",
+      "subject": "social",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "laser_angle",
@@ -669,7 +1498,20 @@
       "age": "high",
       "icon": "🪞",
       "description": "거울 각도를 조절하여 레이저를 목표에 명중시켜요!",
-      "cover": "assets/gate-image/거울아 각도기 써라.png"
+      "cover": "assets/gate-image/거울아 각도기 써라.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "kor_typing_tadak",
@@ -680,7 +1522,20 @@
       "icon": "⌨️",
       "description": "자음·모음 자리 연습부터 19만 사전 낱말·약점 집중 연습·글비 게임까지! 틀린 자모를 기억해 맞춤 낱말로 다시 연습해요.",
       "scoreKey": "tadak_bestSpeed2",
-      "cover": "assets/gate-image/타닥타닥 한글 타자연습.png"
+      "cover": "assets/gate-image/타닥타닥 한글 타자연습.png",
+      "subject": "korean",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_quiz",
@@ -691,7 +1546,20 @@
       "icon": "➕",
       "description": "초등 혼합계산, 누구보다 빠르게!",
       "scoreKey": "mathSpeedQuizBestScore",
-      "rankKey": "mathSpeedQuizRank"
+      "rankKey": "mathSpeedQuizRank",
+      "subject": "math",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "fraction_quiz",
@@ -702,7 +1570,20 @@
       "icon": "➗",
       "description": "분수 계산의 핵심을 마스터해요.",
       "scoreKey": "fractionSpeedQuizBestScore",
-      "rankKey": "fractionSpeedQuizRank"
+      "rankKey": "fractionSpeedQuizRank",
+      "subject": "math",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "snake_math",
@@ -713,7 +1594,20 @@
       "icon": "🐍",
       "description": "스네이크와 사칙연산의 만남!",
       "scoreKey": "snakeMathScore",
-      "rankKey": "snakeMathRank"
+      "rankKey": "snakeMathRank",
+      "subject": "math",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "threes",
@@ -725,7 +1619,20 @@
       "description": "숫자를 합쳐서 더 큰 숫자를!",
       "scoreKey": "threesScore",
       "rankKey": "threesRank",
-      "cover": "assets/gate-image/1+2=3 퍼즐.png"
+      "cover": "assets/gate-image/1+2=3 퍼즐.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_tower_defense",
@@ -736,7 +1643,20 @@
       "icon": "🛡️",
       "description": "떠 있는 어반 SF 아레나에서 실제 몬스터와 포탑을 배치해 ÷2·÷3·÷5·+1·-1 연산을 적용하고, 설치 모드와 실시간 계산식으로 약수·배수를 익히는 3D 타워디펜스!",
       "scoreKey": "neonTowerBest",
-      "cover": "assets/gate-image/약수 타워 디펜스.png"
+      "cover": "assets/gate-image/약수 타워 디펜스.png",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_gugudan_stairs",
@@ -747,7 +1667,20 @@
       "icon": "🧮",
       "description": "구구단 정답을 맞히면 꼬마 유령이 계단을 폴짝! 떨어지지 않게 방향을 전환하며 구구단 연산 속도와 순발력을 동시에 훈련하는 스릴 만점 게임!",
       "scoreKey": "multiplicationHeavenStairsHighScore",
-      "cover": "assets/gate-image/구구단 천국의 계단.png"
+      "cover": "assets/gate-image/구구단 천국의 계단.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "joseon_janggu",
@@ -759,7 +1692,20 @@
       "description": "우리 가락에 맞춰 장구를 쳐보세요! 덩 기덕 쿵 더러러러~ 신나는 국악 리듬 게임.",
       "scoreKey": "jangguScore",
       "rankKey": "jangguRank",
-      "cover": "assets/gate-image/신명나는 쿵덕장구.png"
+      "cover": "assets/gate-image/신명나는 쿵덕장구.png",
+      "subject": "arts",
+      "genre": "rhythm",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "alien_sandwich",
@@ -769,7 +1715,20 @@
       "age": "high",
       "icon": "🥪",
       "description": "자의 cm 눈금을 보고 재료를 직접 자른 뒤 샌드위치에 올리며 길이와 넓이를 익혀요!",
-      "cover": "assets/gate-image/우주 샌드위치 가게.png"
+      "cover": "assets/gate-image/우주 샌드위치 가게.png",
+      "subject": "math",
+      "genre": "management",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "trash_runner",
@@ -780,7 +1739,20 @@
       "icon": "🚛",
       "description": "길가에 나타나는 쓰레기를 줍고 알맞은 쓰레기통에 쏙! 순발력과 분리수거 상식을 동시에 기르는 러닝 게임입니다.",
       "scoreKey": "trash_runner_high_score",
-      "cover": "assets/gate-image/달려라 분리수거 트럭.png"
+      "cover": "assets/gate-image/달려라 분리수거 트럭.png",
+      "subject": "science",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_cleanup_squad",
@@ -790,7 +1762,20 @@
       "age": "low",
       "icon": "🧹",
       "description": "빠른 악당이 학교를 쓰레기와 얼룩으로 왕창 뒤덮어요! 물줄기·거품 분사기·비누폭탄·강력흡입청소기 4종 장비를 바꿔 쓰며 넓은 구역을 와구와구 쓸어내는 3D 1인칭 청소 액션.",
-      "scoreKey": "cleanupSquadBestScore"
+      "scoreKey": "cleanupSquadBestScore",
+      "subject": "science",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "korea_marble",
@@ -800,7 +1785,20 @@
       "age": "high",
       "icon": "✈️",
       "description": "주사위를 굴려 전국을 여행하세요! 각 지역의 랜드마크를 세우며 경제 개념과 지리를 익힙니다.",
-      "cover": "assets/gate-image/K-트래블 마블.png"
+      "cover": "assets/gate-image/K-트래블 마블.png",
+      "subject": "social",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "code_breaker",
@@ -810,7 +1808,20 @@
       "age": "high",
       "icon": "🕵️",
       "description": "0~11의 검정·흰색 암호 타일을 정렬 규칙과 공개 정보로 추리해 상대의 숨은 숫자를 먼저 모두 밝혀내는 논리 보드게임!",
-      "cover": "assets/gate-image/코드 브레이커.png"
+      "cover": "assets/gate-image/코드 브레이커.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "world_boardgames",
@@ -820,7 +1831,21 @@
       "age": "high",
       "icon": "♟️",
       "description": "바둑, 체스, 장기! 전 세계의 대표적인 전략 보드게임을 하나의 앱에서 즐겨보세요.",
-      "cover": "assets/gate-image/월드 보드게임 컬렉션.png"
+      "cover": "assets/gate-image/월드 보드게임 컬렉션.png",
+      "subject": "thinking",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "alkkagi_janggi",
@@ -830,7 +1855,20 @@
       "age": "low",
       "icon": "💥",
       "description": "리얼한 물리엔진! 장기알들을 당겨서 상대방의 기물들을 장외로 날려버리세요.",
-      "cover": "assets/gate-image/장기 알까기 대전.png"
+      "cover": "assets/gate-image/장기 알까기 대전.png",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "burger_master",
@@ -840,7 +1878,20 @@
       "age": "job",
       "icon": "🍔",
       "description": "빠른 판단력과 순발력! 주문에 맞게 버거를 조립하고 매일매일 재료를 관리하여 가게를 운영하세요.",
-      "cover": "assets/gate-image/버거 마스터.png"
+      "cover": "assets/gate-image/버거 마스터.png",
+      "subject": "career",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "word_snake",
@@ -851,7 +1902,20 @@
       "icon": "🐍",
       "description": "스펠링 순서대로 알파벳을 먹어 뱀을 키우고 다른 뱀들과 경쟁하는 영단어 서바이벌!",
       "scoreKey": "wordSnakeHighScore",
-      "cover": "assets/gate-image/영어뱀.png"
+      "cover": "assets/gate-image/영어뱀.png",
+      "subject": "language",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "sudoku",
@@ -863,7 +1927,20 @@
       "description": "머리가 좋아지는 숫자 퍼즐 게임!",
       "scoreKey": "simpleSudokuBest",
       "isTime": true,
-      "cover": "assets/gate-image/나른한 스도쿠.png"
+      "cover": "assets/gate-image/나른한 스도쿠.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "swipe_fraction",
@@ -874,7 +1951,20 @@
       "icon": "⚖️",
       "description": "누가 더 클까요? 스와이프로 휙휙!",
       "scoreKey": "swipeFractionScore",
-      "rankKey": "swipeFractionRank"
+      "rankKey": "swipeFractionRank",
+      "subject": "math",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "polygon_area",
@@ -883,7 +1973,20 @@
       "category": "math",
       "age": "high",
       "icon": "📐",
-      "description": "다각형을 자르고 붙여 넓이를 구해요!"
+      "description": "다각형을 자르고 붙여 넓이를 구해요!",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "patience_tower",
@@ -895,7 +1998,21 @@
       "description": "떨어져도 다시 오르는 점핑 등반 탑! 혼자 최고 높이에 도전하거나, 친구와 같은 맵에서 동시에 출발해 3분 뒤 그 순간 더 높은 사람이 이기는 1:1 높이 대전을 즐겨 보세요.",
       "scoreKey": "patienceTowerBestM",
       "scoreUnit": "m",
-      "cover": "assets/gate-image/인내의 탑.png"
+      "cover": "assets/gate-image/인내의 탑.png",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo",
+        "online"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_corner_clash",
@@ -905,7 +2022,21 @@
       "age": "high",
       "icon": "👑",
       "description": "나의 영토는 모서리로만 이어집니다! 타일을 회전하고 뒤집으며 상대방의 길목을 차단하고 영토를 넓히는 전략 보드게임. 친구들과 함께하거나 AI 왕국과 지능 대결을 펼쳐보세요.",
-      "cover": "assets/gate-image/코너 클래시.png"
+      "cover": "assets/gate-image/코너 클래시.png",
+      "subject": "thinking",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo",
+        "localMulti"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "cube3d",
@@ -914,7 +2045,20 @@
       "category": "math",
       "age": "high",
       "icon": "🧊",
-      "description": "3×3×3 공간에 쌓기나무를 직접 쌓고 돌려보며 위·앞·옆에서 본 모양을 2D 모눈종이에 그려 맞히는 공간감각 학습 게임!"
+      "description": "3×3×3 공간에 쌓기나무를 직접 쌓고 돌려보며 위·앞·옆에서 본 모양을 2D 모눈종이에 그려 맞히는 공간감각 학습 게임!",
+      "subject": "math",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "world_flag_master",
@@ -925,7 +2069,20 @@
       "icon": "🌍",
       "description": "국기와 수도를 맞추며 세계 지리 박사가 되어보세요!",
       "scoreKey": "flagQuizHighScore",
-      "cover": "assets/gate-image/세계국기마스터.png"
+      "cover": "assets/gate-image/세계국기마스터.png",
+      "subject": "social",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "jineung_bird",
@@ -937,7 +2094,20 @@
       "description": "계산과 컨트롤을 동시에! 조건에 맞는 숫자를 만들어 파이프를 통과해요.",
       "scoreKey": "jineungBirdBest_normal",
       "isTime": true,
-      "cover": "assets/gate-image/지능=새.png"
+      "cover": "assets/gate-image/지능=새.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "triangle_situation",
@@ -946,7 +2116,20 @@
       "category": "math",
       "age": "high",
       "icon": "✏️",
-      "description": "몬스터를 피해 넓이가 같은 삼각형을!"
+      "description": "몬스터를 피해 넓이가 같은 삼각형을!",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "korean_vocab",
@@ -957,7 +2140,20 @@
       "icon": "📖",
       "description": "국어 실력 바탕이 되는 단어 퀴즈!",
       "scoreKey": "speedQuizBestScore",
-      "rankKey": "speedQuizRank"
+      "rankKey": "speedQuizRank",
+      "subject": "korean",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "swipe_spelling",
@@ -969,7 +2165,20 @@
       "description": "헷갈리는 맞춤법, 스와이프로 맞춰보세요!",
       "scoreKey": "swipeSpellingScore",
       "rankKey": "swipeSpellingRank",
-      "cover": "assets/gate-image/마춤뻡 뀌주.png"
+      "cover": "assets/gate-image/마춤뻡 뀌주.png",
+      "subject": "korean",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "language_arcade",
@@ -980,7 +2189,20 @@
       "icon": "🌏",
       "description": "영단어·영문장·기초/고급 중국어·일본어 퀴즈를 한 곳에서 골라 즐겨요. 기존 문제 데이터를 그대로 모은 외국어 스피드 퀴즈 컬렉션!",
       "scoreKey": "languageArcadeBest",
-      "cover": "assets/gate-image/월드 랭귀지 아케이드.png"
+      "cover": "assets/gate-image/월드 랭귀지 아케이드.png",
+      "subject": "language",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "math_rune_forest",
@@ -990,7 +2212,20 @@
       "age": "high",
       "icon": "🔮",
       "description": "서바이버즈 방식의 신나는 약수·배수 수학 액션! 회전하는 2·3·5·7 약수 룬과 배수 무기를 전략적으로 교체하며 다가오는 골렘과 슬라임의 숫자를 '1'로 나누어 물리치고 숲의 저주를 풀어보세요.",
-      "cover": "assets/gate-image/넘버 시그널 룬의 숲.png"
+      "cover": "assets/gate-image/넘버 시그널 룬의 숲.png",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "spelling_frog",
@@ -1001,7 +2236,20 @@
       "icon": "🐸",
       "description": "애니메이션 3D 개구리로 확장된 마을을 건너며 차량·완주형 기차·통나무·황새를 피하고, 미리 보이는 알파벳 체크포인트를 찾아 영어 단어를 완성하는 3D 영어 어드벤처!",
       "scoreKey": "spellingFrogHighScore",
-      "cover": "assets/gate-image/스펠링 프로그.png"
+      "cover": "assets/gate-image/스펠링 프로그.png",
+      "subject": "language",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "tod_puzzle_time",
@@ -1013,7 +2261,20 @@
       "description": "알록달록한 숫자 타일들을 1부터 순서대로 예쁘게 정렬해 보아요! 빈칸을 활용해 요리조리 퍼즐을 움직이며 지각 능력과 집중력을 기르는 게임!",
       "scoreKey": "puzzleBestTime",
       "isTime": true,
-      "cover": "assets/gate-image/똑똑 숫자 퍼즐 타임.png"
+      "cover": "assets/gate-image/똑똑 숫자 퍼즐 타임.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "hanja_test",
@@ -1024,7 +2285,20 @@
       "icon": "🀄",
       "description": "5급부터 8급까지 나의 한자 실력은?",
       "scoreKey": "hanjaScore",
-      "rankKey": "hanjaRank"
+      "rankKey": "hanjaRank",
+      "subject": "language",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "piano_studio",
@@ -1035,7 +2309,20 @@
       "icon": "🎹",
       "description": "나만의 곡을 만들고 신나게 연주해요!",
       "scoreKey": "pianoHighScore",
-      "cover": "assets/gate-image/피아노 작곡 교실.png"
+      "cover": "assets/gate-image/피아노 작곡 교실.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "school_tower",
@@ -1046,7 +2333,20 @@
       "icon": "🧙",
       "description": "숫자와 연산 카드를 조합해 적과 싸우고 유물을 모으며 15층의 탑을 오르는 판타지 카드 모험!",
       "scoreKey": "arithmeticSpireBest_v1",
-      "cover": "assets/gate-image/수식의 첨탑.png"
+      "cover": "assets/gate-image/수식의 첨탑.png",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "pixel_editor",
@@ -1056,7 +2356,20 @@
       "age": "high",
       "icon": "🎨",
       "description": "나만의 귀여운 픽셀 아트를 그리고 저장해봐요!",
-      "cover": "assets/gate-image/픽셀 그림판.png"
+      "cover": "assets/gate-image/픽셀 그림판.png",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_emoji_pang",
@@ -1067,7 +2380,19 @@
       "icon": "✨",
       "description": "귀여운 과일과 동물 친구들이 쏙쏙! 똑같은 이모지 모양을 4개 이상 모아서 팡팡 터뜨리며 색깔과 형태 인지 능력을 길러보세요!",
       "scoreKey": "emojiPangBestScore",
-      "cover": "assets/gate-image/말랑말랑 이모지 팡팡.png"
+      "cover": "assets/gate-image/말랑말랑 이모지 팡팡.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "tod_puzzle_bobble",
@@ -1077,7 +2402,19 @@
       "age": "toddler",
       "icon": "🔮",
       "description": "동글동글 예쁜 색깔 방울들을 하늘로 슝슝 발사! 똑같은 색의 방울을 3개 이상 맞춰 터뜨리며 각도와 조준하는 재미를 배우는 공간 놀이!",
-      "cover": "assets/gate-image/알록달록 퍼즐 버블.png"
+      "cover": "assets/gate-image/알록달록 퍼즐 버블.png",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "high_omok_arena",
@@ -1087,7 +2424,21 @@
       "age": "high",
       "icon": "⚫",
       "cover": "assets/gate-image/오목 아레나.png",
-      "description": "친구와 같은 화면에서 1:1 대국하거나 3단계 AI와 겨루는 오목 게임! 강한 착수 타격감과 승리선·파티클·효과음으로 다섯 돌을 먼저 연결해 보세요."
+      "description": "친구와 같은 화면에서 1:1 대국하거나 3단계 AI와 겨루는 오목 게임! 강한 착수 타격감과 승리선·파티클·효과음으로 다섯 돌을 먼저 연결해 보세요.",
+      "subject": "thinking",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "high_star_hoppers",
@@ -1097,7 +2448,21 @@
       "icon": "🌟",
       "title": "별빛 개척단",
       "description": "연속 점프로 별 조각을 반대편 성운까지! AI 대전과 2~6인 로컬 대전을 즐기는 전략 보드게임.",
-      "cover": "assets/gate-image/별빛 개척단.png"
+      "cover": "assets/gate-image/별빛 개척단.png",
+      "subject": "thinking",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo",
+        "localMulti"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     },
     {
       "id": "toddler_monkey_vines",
@@ -1107,7 +2472,19 @@
       "icon": "🐒",
       "title": "몽키 쏙쏙!",
       "description": "색을 뽑고 같은 색 덩굴을 톡! 떨어지는 원숭이를 세며 색깔 구별과 수 세기, 차례 기다리기를 익혀요.",
-      "cover": "assets/gate-image/몽키 쏙쏙!.png"
+      "cover": "assets/gate-image/몽키 쏙쏙!.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "toddler_penguin_ice_pop",
@@ -1117,7 +2494,19 @@
       "icon": "🐧",
       "title": "펭귄 얼음 톡톡!",
       "description": "하얀 얼음과 파란 얼음을 톡톡 깨며 색 구별, 1~3 수 세기, 공간관계와 차례 기다리기를 익혀요.",
-      "cover": "assets/gate-image/펭귄 얼음 톡톡!.png"
+      "cover": "assets/gate-image/펭귄 얼음 톡톡!.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "toddler_color_stack",
@@ -1127,7 +2516,19 @@
       "icon": "🧩",
       "title": "색깔 겹겹!",
       "description": "투명 그림 카드를 차례대로 겹쳐 목표 그림을 완성하며 색·모양 관찰과 순서 사고를 길러요.",
-      "cover": "assets/gate-image/색깔 겹겹!.png"
+      "cover": "assets/gate-image/색깔 겹겹!.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "toddler_three_friends_set",
@@ -1137,7 +2538,20 @@
       "icon": "🔎",
       "title": "셋 친구 찾기!",
       "description": "모양·색깔·개수를 비교해 모두 같거나 모두 다른 카드 3장을 찾으며 관찰력과 분류·논리 사고를 길러요.",
-      "cover": "assets/gate-image/셋 친구 찾기!.png"
+      "cover": "assets/gate-image/셋 친구 찾기!.png",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     },
     {
       "id": "low_wordchain_arena",
@@ -1146,7 +2560,21 @@
       "category": "trivia",
       "age": "low",
       "icon": "🔤",
-      "description": "한국어기초사전+표준국어대사전에서 정제한 195,217개 명사로 즐기는 끝말잇기! 낱말봇 초급·중급·고급과 로그인 친구 1:1·3~8인 온라인 대결을 지원해요."
+      "description": "한국어기초사전+표준국어대사전에서 정제한 195,217개 명사로 즐기는 끝말잇기! 낱말봇 초급·중급·고급과 로그인 친구 1:1·3~8인 온라인 대결을 지원해요.",
+      "subject": "korean",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo",
+        "online"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": true
     },
     {
       "id": "high_bridge_builder",
@@ -1155,7 +2583,20 @@
       "category": "math",
       "age": "high",
       "icon": "🌉",
-      "description": "도로·철제 빔·케이블로 나만의 다리를 설계하고 차량 하중을 견디는 구조를 실험하는 2D 공학 물리 게임!"
+      "description": "도로·철제 빔·케이블로 나만의 다리를 설계하고 차량 하중을 견디는 구조를 실험하는 2D 공학 물리 게임!",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     },
     {
       "id": "high_disaster_city",
@@ -1166,7 +2607,62 @@
       "icon": "🌪️",
       "description": "카드로 마을을 키우는 동안 좌우에서 산불과 홍수가 번갈아 밀려오는 2D 도시 생존 덱빌더! 소방서·제방·배수펌프와 긴급대응 카드를 조합해 끊임없는 재앙을 오래 버텨 보세요.",
       "scoreKey": "kidscade_disaster_city_best_seconds",
-      "isTime": true
+      "isTime": true,
+      "subject": "science",
+      "genre": "strategy",
+      "difficulty": "hard",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": false
     }
-  ]
+  ],
+  "taxonomy": {
+    "subjects": {
+      "all": "전체",
+      "math": "수학",
+      "korean": "국어",
+      "language": "외국어·한자",
+      "social": "사회",
+      "science": "과학·환경",
+      "arts": "예술",
+      "career": "진로",
+      "thinking": "사고력"
+    },
+    "genres": {
+      "all": "전체 장르",
+      "action": "액션",
+      "puzzle": "퍼즐",
+      "strategy": "전략",
+      "simulation": "시뮬레이션",
+      "management": "경영",
+      "quiz": "퀴즈",
+      "rhythm": "리듬",
+      "sports": "스포츠",
+      "sandbox": "샌드박스"
+    },
+    "difficulty": {
+      "easy": "쉬움",
+      "medium": "보통",
+      "hard": "도전"
+    },
+    "players": {
+      "solo": "혼자",
+      "local2": "2인",
+      "localMulti": "여럿이",
+      "online": "온라인",
+      "classroom": "교실"
+    },
+    "quality": {
+      "featured": "추천",
+      "standard": "정식",
+      "rework": "개선 중"
+    }
+  }
 }
