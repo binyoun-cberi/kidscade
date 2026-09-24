@@ -134,3 +134,22 @@ test('manager exposes replay analysis and a two-tier promotion relegation system
   assert.match(gameSource, /state\.replays\.slice\(0,6\)/);
   assert.match(gameSource, /히트맵/);
 });
+
+
+test('substitutions keep next starting XI and replay analytics expose xG', () => {
+  assert.doesNotMatch(
+    gameSource.slice(gameSource.indexOf('function quickSub'), gameSource.indexOf('function showMatchResult')),
+    /state\.lineup=state\.lineup\.filter/
+  );
+  assert.match(simSource, /xg:0/);
+  assert.match(simSource, /shooterStat\.xg\+=goalP/);
+  assert.match(gameSource, /추정 이동 km/);
+  assert.match(gameSource, /주요 관여/);
+});
+
+test('closing replay and post-match modal refreshes the manager view', () => {
+  assert.match(gameSource, /replayReturnView/);
+  assert.match(gameSource, /if\(state\)render\(replayReturnView\|\|'analysis'\)/);
+  assert.match(gameSource, /function closeModalSmart\(\)/);
+  assert.match(gameSource, /if\(match&&match\.finished\)/);
+});
