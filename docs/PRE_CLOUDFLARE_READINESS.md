@@ -59,7 +59,7 @@ Cloudflare/Linux 환경에서는 파일명 대소문자를 정확히 구분한�
 - `C:\...`, `file://...`를 사용하지 않는다.
 - 게임 파일에서 저장소 밖으로 빠져나가는 상대 경로를 만들지 않는다.
 - 외부 CDN은 필요한 경우 유지할 수 있지만 배포 감사에서 목록을 확인한다.
-- Vercel 전용 `/_vercel/insights/script.js`는 Cloudflare 전환 전에 제거 대상이다.
+- Vercel 전용 `/_vercel/insights/script.js`는 2026-09-24 소스에서 제거했다.
 
 ## 4. localStorage 표준화
 
@@ -97,7 +97,6 @@ D1에 처음 동기화할 우선 데이터는 씨앗, 프로필/아바타, 최�
 
 ## 남은 비차단 작업
 
-- `index_base.html`의 Vercel Insights `/_vercel/` 경로 제거
 - 기존 루트 HTML 114개의 점진적 `games/` 이관
 - 외부 CDN 의존성의 우선순위별 로컬화
 - 교실전쟁 3D 탄환 표현처럼 배포를 막지는 않는 게임별 로직·밸런스 개선
