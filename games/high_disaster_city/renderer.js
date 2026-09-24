@@ -73,11 +73,11 @@ class Renderer{
  frontX(d){return d.side==='left'?70+d.progress*650:1370-d.progress*650}
  wildfire(s,d){
   const c=this.ctx,x=this.frontX(d),dir=d.side==='left'?1:-1;c.save();const glow=c.createLinearGradient(x-dir*180,0,x+dir*160,0);glow.addColorStop(0,'#ef704400');glow.addColorStop(.5,'#ef70442c');glow.addColorStop(1,'#ef704400');c.fillStyle=glow;c.fillRect(x-220,0,440,D.H);c.restore();
-  for(let i=-4;i<=4;i++){const fx=x+i*14+Math.sin(s.time*4+i)*5,fy=D.GROUND_Y-34-Math.abs(i%3)*8,sz=44+((i*17)%24);const key=(i&1)?'fire1':'fire2';if(!this.img(key,fx-sz/2,fy-sz,sz,sz)) {c.fillStyle='#f06a32';c.beginPath();c.arc(fx,fy,18,0,Math.PI*2);c.fill()}}
+  const fireCount=clamp(Math.round(4+(d.strength||1)*5),5,15);for(let i=0;i<fireCount;i++){const k=i-(fireCount-1)/2,fx=x+k*13+Math.sin(s.time*4+i)*5,fy=D.GROUND_Y-30-Math.abs(i%3)*7,sz=34+Math.min(34,(d.strength||1)*12)+((i*13)%12);const key=(i&1)?'fire1':'fire2';if(!this.img(key,fx-sz/2,fy-sz,sz,sz)){c.fillStyle='#f06a32';c.beginPath();c.arc(fx,fy,Math.max(12,sz*.34),0,Math.PI*2);c.fill()}}
   for(let i=0;i<5;i++){const sy=D.GROUND_Y-110-i*29-((s.time*18+i*23)%31),sx=x-24+i*13;if(!this.img(i&1?'smoke1':'smoke2',sx,sy,48,48,false,.38)){}}
  }
  flood(s,d){
-  const c=this.ctx,x=this.frontX(d),left=d.side==='left'?0:x,right=d.side==='left'?x:D.W,level=D.GROUND_Y-14-Math.sin(s.time*3)*3;c.fillStyle='#4b95b8b8';c.fillRect(left,level,right-left,D.H-level);c.fillStyle='#8ed0e0cc';c.fillRect(left,level,right-left,8);
+  const c=this.ctx,x=this.frontX(d),left=d.side==='left'?0:x,right=d.side==='left'?x:D.W,power=d.strength||1,wave=2+Math.min(5,power*2.2),level=D.GROUND_Y-10-Math.min(12,power*4)-Math.sin(s.time*3)*wave;c.globalAlpha=clamp(.58+power*.1,.6,.9);c.fillStyle='#4b95b8';c.fillRect(left,level,right-left,D.H-level);c.globalAlpha=1;c.fillStyle='#8ed0e0cc';c.fillRect(left,level,right-left,8);
   if(this.images.waterTop){for(let xx=left-5;xx<right;xx+=64)this.img('waterTop',xx,level-12,64,32,false,.8)}
   for(let i=0;i<5;i++){const bx=x+(d.side==='left'?-1:1)*(i*10),by=level-5-i%2*8;c.strokeStyle='#d8f5f8aa';c.lineWidth=3;c.beginPath();c.arc(bx,by,12+i*2,0,Math.PI);c.stroke()}
  }
