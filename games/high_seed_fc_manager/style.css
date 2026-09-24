@@ -90,3 +90,16 @@ button{border:0;cursor:pointer;color:inherit}
 .analysis-legend{font-size:10px;color:#9fb5ca;line-height:1.5;margin:10px 0 0}
 .league-archive{max-width:1050px;margin:16px auto 0}
 .archive-list{display:grid;gap:7px}.archive-list>div{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;padding:9px 10px;border-radius:10px;background:#0e1d30}.archive-list b{font-size:12px}.archive-list span{font-size:12px;color:#c9d6e5}
+
+
+/* v6 pass analysis */
+.replay-top{grid-template-columns:160px minmax(0,1fr) 330px}
+.replay-mode-group{flex-wrap:wrap}
+.replay-mode-group .speed{white-space:nowrap}
+.replay-event.pass{box-shadow:inset 3px 0 #facc15}
+.analysis-legend{padding-top:2px}
+@media(max-width:650px){
+  .replay-top{grid-template-columns:86px minmax(0,1fr) 154px}
+  .replay-mode-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .replay-mode-group .speed:last-child{grid-column:1/-1}
+}
