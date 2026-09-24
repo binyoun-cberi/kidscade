@@ -180,7 +180,7 @@ function pickSession(){return shuffle([...WORD_BANK]).slice(0,10)}
 let rounds=[];
 
 function startGame(){
-  if(!state.ready)return;state.gameToken++;state.running=true;state.boss=false;state.round=0;state.score=0;state.noHint=0;state.completed=[];state.bossStep=0;
+  if(!state.ready)return;window.KidscadeGame?.start?.();state.gameToken++;state.running=true;state.boss=false;state.round=0;state.score=0;state.noHint=0;state.completed=[];state.bossStep=0;
   state.player.set(0,1.85,5.5);state.yaw=0;state.pitch=.14;rounds=pickSession();ui.startOverlay.classList.add('hidden');ui.endOverlay.classList.add('hidden');ui.bossTag.classList.remove('show');
   nextWord();if(!isCoarse())canvas.requestPointerLock?.();
 }
@@ -237,6 +237,7 @@ function showEnd(win,text){
   ui.resultScore.textContent=state.score.toLocaleString('ko-KR');ui.resultWords.textContent=state.completed.length;ui.resultNoHint.textContent=state.noHint;
   let oldBest=0;try{oldBest=window.KidscadeStorage?.getInt?.(SCORE_KEY,0)||0}catch(_){}
   const best=Math.max(oldBest,state.score);try{window.KidscadeStorage?.setRaw?.(SCORE_KEY,best)}catch(_){}
+  window.KidscadeGame?.gameOver?.({score:state.score,cleared:Boolean(win),completedWords:state.completed.length});
 }
 
 function burst(pos){
