@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#172235">
+<title>역사의 지도: 삼국의 선택</title>
+<style>
+:root{
+  font-family:Pretendard,"Noto Sans KR","맑은 고딕",system-ui,sans-serif;
+  color:#eef4ff; background:#101827;
+  --panel:#172235; --panel2:#1e2d45; --line:#314460; --muted:#9fb0c6; --gold:#ffd166;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0e1725}
+button,input{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.hidden{display:none!important}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr auto;background:radial-gradient(circle at 50% 20%,#203552 0,#101827 55%,#0b1220 100%)}
+.topbar{min-height:64px;padding:8px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #314460;background:rgba(14,23,37,.96);z-index:10}
+.brand{display:flex;align-items:center;gap:9px;min-width:200px}
+.brandMark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#243958;font-size:23px}
+.brand b{display:block;font-size:15px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:1px}
+.resources{display:flex;gap:6px;flex:1;overflow:auto;scrollbar-width:none}
+.res{min-width:74px;padding:7px 9px;border:1px solid #314460;border-radius:12px;background:#172235;display:grid;grid-template-columns:auto 1fr;column-gap:5px;align-items:center}
+.res span{grid-row:1/3;font-size:18px}.res b{font-size:14px;line-height:1}.res small{color:var(--muted);font-size:9px}
+.turnBox{display:flex;align-items:center;gap:8px}
+.turnText{text-align:right;min-width:86px}.turnText b{display:block;font-size:13px}.turnText small{color:var(--muted);font-size:10px}
+.primary,.secondary,.danger,.tiny{border:0;border-radius:12px;font-weight:900}
+.primary{background:#ffd166;color:#332300;padding:10px 16px;box-shadow:0 4px 0 #9b741d}
+.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #9b741d}
+.secondary{background:#263956;color:#eef4ff;border:1px solid #405675;padding:9px 13px}
+.danger{background:#b94c57;color:#fff;padding:9px 13px}
+.tiny{background:#263956;color:#fff;border:1px solid #405675;padding:7px 9px;font-size:11px}
+#main{min-height:0;display:grid;grid-template-columns:225px minmax(360px,1fr) 265px}
+.leftPanel,.rightPanel{min-height:0;overflow:auto;background:rgba(18,29,46,.94);padding:11px;border-color:#314460}
+.leftPanel{border-right:1px solid #314460}.rightPanel{border-left:1px solid #314460}
+.panelTitle{font-size:12px;font-weight:1000;color:#ffd166;margin-bottom:7px}
+.countryBadge{padding:10px;border:1px solid #314460;border-radius:15px;background:#1a2940;margin-bottom:10px}
+.countryBadge b{font-size:16px}.countryBadge p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.45}
+.objective{padding:8px 9px;border-radius:11px;background:#111d2f;border:1px solid #293d59;margin:5px 0;font-size:10px;color:#dce8f7}
+.objective.done{border-color:#3e8f73;color:#96e7c7;background:#112a27}
+.feed{margin-top:10px}.feedItem{padding:7px 4px;border-bottom:1px solid #253750;font-size:9.5px;line-height:1.42;color:#bac8da}.feedItem b{color:#fff}
+.mapWrap{position:relative;min-width:0;min-height:0;overflow:hidden;background:linear-gradient(#203751,#12263c)}
+.mapWrap:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:16px 16px;pointer-events:none}
+.mapHeader{position:absolute;top:10px;left:10px;right:10px;z-index:4;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+.mapNote{background:rgba(9,16,27,.82);border:1px solid #36506f;border-radius:12px;padding:7px 10px;font-size:10px;color:#bfd0e4}
+.mapLegend{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.legend{padding:5px 7px;border-radius:999px;background:rgba(9,16,27,.82);border:1px solid #36506f;font-size:9px}
+#mapSvg{width:100%;height:100%;display:block;touch-action:manipulation}
+.sea{fill:#17314b}.coastGlow{fill:none;stroke:#5f91b5;stroke-width:4;opacity:.22}
+.region{stroke:#cbd8e7;stroke-opacity:.4;stroke-width:2.2;cursor:pointer;transition:.15s}
+.region:hover,.region.selected{stroke:#fff;stroke-width:5;filter:brightness(1.12)}
+.region.moveTarget{stroke:#ffd166;stroke-width:6;filter:drop-shadow(0 0 5px rgba(255,209,102,.8))}
+.region.enemyTarget{stroke:#ff7f87;stroke-width:6}
+.regionLabel{font-weight:1000;font-size:15px;fill:#fff;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#152036;stroke-width:4px;stroke-linejoin:round}
+.armyLabel{font-size:10px;fill:#f3f7ff;text-anchor:middle;pointer-events:none}
+.capitalStar{font-size:14px;fill:#ffd166;text-anchor:middle;pointer-events:none}
+.rightEmpty{color:var(--muted);font-size:11px;line-height:1.6;padding:12px 4px}
+.regionName{font-size:19px;font-weight:1000;margin-bottom:2px}.regionOwner{font-size:11px;color:var(--muted);margin-bottom:8px}
+.statGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.statCell{padding:8px;border:1px solid #314460;border-radius:11px;background:#111d2f}.statCell small{display:block;color:var(--muted);font-size:9px}.statCell b{font-size:13px}
+.buildings{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.building{padding:5px 7px;border-radius:999px;background:#263956;border:1px solid #405675;font-size:9px}
+.actionGroup{border-top:1px solid #314460;margin-top:10px;padding-top:9px}
+.actionGroup h3{font-size:11px;margin:0 0 6px;color:#ffd166}
+.actionList{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.actionBtn{min-height:43px;border:1px solid #405675;border-radius:11px;background:#22344f;color:#fff;font-size:10px;font-weight:900;padding:6px}
+.actionBtn span{display:block;color:#aebfd3;font-size:8px;font-weight:700;margin-top:2px}
+.moveBox{margin-top:8px;padding:8px;border-radius:12px;background:#101b2b;border:1px solid #334b69}
+.moveBox input{width:100%}.moveTargets{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.bottomBar{min-height:58px;padding:7px 10px;display:flex;gap:7px;align-items:center;justify-content:center;border-top:1px solid #314460;background:#101827}
+.navBtn{min-width:92px;border:1px solid #334b69;background:#1c2c44;color:#fff;border-radius:12px;padding:9px 10px;font-weight:900;font-size:11px}.navBtn span{margin-right:5px}
+.commandPill{margin-right:auto;padding:8px 11px;border:1px solid #4a6280;border-radius:12px;background:#172235;font-size:10px}.commandPill b{color:#ffd166;font-size:14px}
+.overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(5,10,18,.78);backdrop-filter:blur(7px)}
+.startCard,.modalCard,.resultCard{width:min(780px,96vw);max-height:92vh;overflow:auto;border:1px solid #49617e;border-radius:24px;background:linear-gradient(160deg,#1b2b43,#101a2a);box-shadow:0 28px 80px rgba(0,0,0,.45);padding:22px}
+.startCard{width:min(900px,96vw)}
+.eyebrow{font-size:10px;font-weight:1000;letter-spacing:.15em;color:#ffd166;text-transform:uppercase}
+.startCard h1{font-size:38px;line-height:1.08;margin:8px 0 6px}.startCard h1 span{color:#ffd166}
+.startLead{color:#bac8da;line-height:1.55;font-size:12px;max-width:700px}
+.nationGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.nationCard{border:2px solid #314460;border-radius:17px;background:#15243a;color:#fff;padding:14px;text-align:left;min-height:155px}
+.nationCard.selected{border-color:#ffd166;box-shadow:0 0 0 2px rgba(255,209,102,.2)}
+.nationCard strong{font-size:20px}.nationCard p{font-size:10px;line-height:1.5;color:#b9c7d9}.traitLine{font-size:9px;margin-top:4px;color:#f0d990}
+.startActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.startActions label{color:#b9c7d9;font-size:10px;margin-left:auto}
+.modalHead{display:flex;justify-content:space-between;gap:10px;align-items:start}.modalHead h2{margin:2px 0 6px;font-size:22px}.closeBtn{width:34px;height:34px;border-radius:10px;border:1px solid #405675;background:#22344f;color:#fff;font-weight:1000}
+.diploList,.techGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.diploCard,.techCard{border:1px solid #354b69;border-radius:14px;padding:11px;background:#132137}
+.diploTop{display:flex;justify-content:space-between;gap:8px}.diploTop b{font-size:14px}.relation{font-size:10px;padding:4px 7px;border-radius:999px;background:#243a58}
+.diploCard p,.techCard p{font-size:9.5px;line-height:1.45;color:#b9c7d9;min-height:27px}
+.diploActions{display:flex;gap:5px;flex-wrap:wrap}.diploActions button{border:1px solid #405675;border-radius:9px;background:#22344f;color:#fff;font-size:9px;font-weight:900;padding:6px 8px}
+.techCard.locked{opacity:.58}.techCard.owned{border-color:#4e9f7c;background:#153128}.techCard h3{font-size:13px;margin:0 0 4px}.techCost{font-size:9px;color:#ffd166}
+.eventCard{width:min(610px,95vw)}.eventArt{font-size:48px;margin-bottom:4px}.eventCard h2{margin:5px 0;font-size:24px}.eventCard p{color:#c3d0df;font-size:12px;line-height:1.6}.choiceList{display:grid;gap:7px;margin-top:13px}.choiceBtn{text-align:left;border:1px solid #405675;border-radius:13px;background:#1f314b;color:#fff;padding:11px}.choiceBtn b{display:block;font-size:11px}.choiceBtn span{display:block;color:#aebfd3;font-size:9px;margin-top:3px}
+.timeline{max-height:420px;overflow:auto;margin-top:10px}.timelineItem{padding:8px;border-bottom:1px solid #2f435f;font-size:10px;line-height:1.45}.timelineItem b{color:#ffd166}
+.resultStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.resultStats div{padding:10px;border:1px solid #354b69;border-radius:13px;background:#122036}.resultStats span{display:block;color:#9fb0c6;font-size:9px}.resultStats b{font-size:18px}
+.tutorialTip{position:absolute;z-index:20;left:50%;bottom:72px;transform:translateX(-50%);width:min(520px,90%);padding:12px 14px;border:1px solid #f0c04b;border-radius:14px;background:#18263b;box-shadow:0 12px 36px rgba(0,0,0,.35)}.tutorialTip b{display:block;color:#ffd166;font-size:11px}.tutorialTip p{margin:3px 0 8px;color:#d4dfec;font-size:10px;line-height:1.5}
+.toast{position:absolute;z-index:30;left:50%;top:72px;transform:translateX(-50%) translateY(-10px);opacity:0;transition:.2s;pointer-events:none;background:#0d1726;border:1px solid #4a6280;border-radius:999px;padding:8px 13px;font-size:10px;font-weight:900;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:980px){
+  .brand{min-width:auto}.brand small{display:none}.resources .res{min-width:62px;padding:6px}.res small{display:none}
+  #main{grid-template-columns:170px minmax(330px,1fr) 220px}.leftPanel,.rightPanel{padding:8px}
+  .startCard h1{font-size:30px}
+}
+@media(max-width:780px){
+  #main{display:block;position:relative}.leftPanel{display:none}
+  .mapWrap{position:absolute;inset:0 0 0 0}.rightPanel{position:absolute;right:7px;top:58px;bottom:7px;width:220px;border:1px solid #3b526f;border-radius:15px;z-index:7;box-shadow:0 12px 35px rgba(0,0,0,.35)}
+  .nationGrid{grid-template-columns:1fr}.nationCard{min-height:auto}.startCard{padding:16px}.startCard h1{font-size:28px}
+  .diploList,.techGrid{grid-template-columns:1fr}.bottomBar{justify-content:flex-start;overflow-x:auto}.navBtn{min-width:82px}.commandPill{min-width:95px}
+  .turnText{display:none}.topbar{padding:6px}.brand b{font-size:12px}.brandMark{width:36px;height:36px}.resources{gap:4px}.res{min-width:55px}
+}
+@media(max-height:460px){
+  .topbar{min-height:52px}.bottomBar{min-height:48px;padding:4px}.navBtn{padding:7px 8px}
+  .rightPanel{top:48px}.regionName{font-size:16px}.statCell{padding:5px}.actionBtn{min-height:36px}
+}
+</style>
+</head>
+<body>
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand"><div class="brandMark">🗺️</div><div><b>역사의 지도</b><small>삼국의 선택 · 교육용 단순화 지도</small></div></div>
+    <div class="resources">
+      <div class="res"><span>🌾</span><b id="foodVal">0</b><small>식량</small></div>
+      <div class="res"><span>💰</span><b id="moneyVal">0</b><small>재정</small></div>
+      <div class="res"><span>👥</span><b id="manpowerVal">0</b><small>인력</small></div>
+      <div class="res"><span>📚</span><b id="knowledgeVal">0</b><small>지식</small></div>
+      <div class="res"><span>👑</span><b id="authorityVal">0</b><small>권위</small></div>
+    </div>
+    <div class="turnBox">
+      <div class="turnText"><b id="dateLabel">600년 봄</b><small id="turnLabel">1 / 24턴</small></div>
+      <button id="endTurnTop" class="primary" type="button">턴 종료</button>
+    </div>
+  </header>
+  <main id="main">
+    <aside class="leftPanel">
+      <div id="countryBadge" class="countryBadge"></div>
+      <div class="panelTitle">이번 캠페인 목표</div>
+      <div id="objectives"></div>
+      <div class="feed">
+        <div class="panelTitle">최근 소식</div>
+        <div id="feed"></div>
+      </div>
+    </aside>
+    <section class="mapWrap">
+      <div class="mapHeader">
+        <div class="mapNote" id="mapHint">지역을 눌러 개발·징병·군대 이동을 결정하세요.</div>
+        <div class="mapLegend" id="legend"></div>
+      </div>
+      <svg id="mapSvg" viewBox="0 0 760 900" role="img" aria-label="삼국 시대 전략 지도">
+        <rect class="sea" width="760" height="900"></rect>
+        <path class="coastGlow" d="M130 72 C270 38 520 80 602 214 C635 310 557 399 576 491 C602 611 504 759 382 816 C270 840 193 758 206 642 C219 529 160 447 176 348 C190 253 122 161 130 72Z"></path>
+        <g id="regionLayer"></g>
+      </svg>
+      <div id="toast" class="toast"></div>
+      <div id="tutorialTip" class="tutorialTip hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialNext" class="tiny" type="button">다음</button></div>
+    </section>
+    <aside class="rightPanel">
+      <div class="panelTitle">지역 정보</div>
+      <div id="regionPanel" class="rightEmpty">지도에서 지역을 선택하면 이곳에 정보와 행동이 나타납니다.</div>
+    </aside>
+  </main>
+  <footer class="bottomBar">
+    <div class="commandPill">명령력 <b id="commandVal">4</b></div>
+    <button id="diploBtn" class="navBtn" type="button"><span>🤝</span>외교</button>
+    <button id="techBtn" class="navBtn" type="button"><span>📜</span>기술</button>
+    <button id="logBtn" class="navBtn" type="button"><span>📖</span>연표</button>
+    <button id="saveBtn" class="navBtn" type="button"><span>💾</span>저장</button>
+  </footer>
+</div>
+
+<div id="startOverlay" class="overlay">
+  <div class="startCard">
+    <div class="eyebrow">KIDSCade Grand Strategy</div>
+    <h1>역사의 지도<br><span>삼국의 선택</span></h1>
+    <p class="startLead">600년 무렵의 동아시아를 교육용으로 단순화한 턴제 전략 게임입니다. 나라를 고르고 지역을 발전시키며 외교·기술·전쟁을 통해 실제 역사와 다른 길도 만들어 보세요. 지역과 국경은 수업용 게임성을 위해 단순화되어 있습니다.</p>
+    <div id="nationGrid" class="nationGrid"></div>
+    <div class="startActions">
+      <button id="startBtn" class="primary" type="button">새 역사 시작</button>
+      <button id="continueBtn" class="secondary hidden" type="button">이어하기</button>
+      <label><input id="tutorialCheck" type="checkbox" checked> 처음 4단계 안내 보기</label>
+    </div>
+  </div>
+</div>
+
+<div id="panelOverlay" class="overlay hidden">
+  <div class="modalCard">
+    <div class="modalHead"><div><div class="eyebrow" id="modalEyebrow"></div><h2 id="modalTitle"></h2><p id="modalDesc" class="startLead"></p></div><button id="closeModal" class="closeBtn" type="button">×</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="eventOverlay" class="overlay hidden">
+  <div class="modalCard eventCard">
+    <div class="eventArt" id="eventIcon">📜</div>
+    <div class="eyebrow">시대의 선택</div>
+    <h2 id="eventTitle"></h2>
+    <p id="eventText"></p>
+    <div id="eventChoices" class="choiceList"></div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay hidden">
+  <div class="resultCard">
+    <div class="eyebrow">당신이 만든 역사</div>
+    <h2 id="resultTitle">캠페인 기록</h2>
+    <p id="resultDesc" class="startLead"></p>
+    <div class="resultStats">
+      <div><span>영토</span><b id="resultRegions">0</b></div>
+      <div><span>총 개발</span><b id="resultDev">0</b></div>
+      <div><span>연구 기술</span><b id="resultTech">0</b></div>
+      <div><span>역사 기록</span><b id="resultEvents">0</b></div>
+    </div>
+    <div id="historyCompare" class="countryBadge"></div>
+    <div class="startActions"><button id="newCampaignBtn" class="primary" type="button">새 역사 만들기</button><button id="closeResultBtn" class="secondary" type="button">지도로 돌아가기</button></div>
+  </div>
+</div>
+
+<script src="../../kidscade-storage.js"></script>
+<script src="../../audio-manager.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="역사의 지도: 삼국의 선택" data-shell="true" data-orientation="landscape"></script>
+<script>
+(function(){
+"use strict";
+var SAVE_KEY="kidscade_game_v1:high_history_map:campaign";
+var MAX_TURNS=24;
+var selectedNation="silla";
+var selectedRegion=null;
+var moveMode=false;
+var tutorialStep=0;
+var state=null;
+
+var COUNTRIES={
+  goguryeo:{name:"고구려",short:"고구려",color:"#596ccf",capital:"pyongyang",icon:"🐎",trait:"산악 방어 +15% · 요동과 북방을 지키는 데 강함",desc:"넓은 북방 영토와 강한 방어력을 활용해 수나라의 압박을 견디세요."},
+  baekje:{name:"백제",short:"백제",color:"#d95f65",capital:"sabi",icon:"⛵",trait:"교역 수입 +3 · 해상 이동 기본 사용",desc:"서남부의 생산력과 해상 교류를 바탕으로 한강과 주변 외교를 노리세요."},
+  silla:{name:"신라",short:"신라",color:"#d6ad31",capital:"gyeongju",icon:"🌙",trait:"사절 효과 +5 · 지식 획득 +10%",desc:"한강과 동남부를 지키면서 외교와 기술로 중후반 힘을 키우세요."},
+  sui:{name:"수나라",short:"수",color:"#76879a",capital:"sui_frontier",icon:"🐉",trait:"대규모 병력",desc:"북서쪽의 강대국",aiOnly:true},
+  wa:{name:"왜",short:"왜",color:"#5b9976",capital:"wa",icon:"🌊",trait:"해상 교류",desc:"바다 건너 세력",aiOnly:true}
+};
+
+var REGION_BASE={
+  sui_frontier:{name:"수나라 변경",owner:"sui",terrain:"plain",food:4,pop:4,dev:4,army:1050,capital:true,points:"105,72 290,56 321,148 244,205 88,166",center:[194,126],neighbors:["liaodong"]},
+  liaodong:{name:"요동",owner:"goguryeo",terrain:"plain",food:3,pop:3,dev:3,army:650,points:"244,205 321,148 425,165 450,263 350,309 253,283",center:[348,229],neighbors:["sui_frontier","gungnae","pyongyang"]},
+  gungnae:{name:"국내성",owner:"goguryeo",terrain:"mountain",food:2,pop:3,dev:3,army:500,capital:false,points:"425,165 531,194 550,296 450,334 450,263",center:[480,245],neighbors:["liaodong","hamheung","pyongyang"]},
+  hamheung:{name:"동북 산지",owner:"goguryeo",terrain:"mountain",food:2,pop:2,dev:2,army:340,points:"531,194 612,250 596,372 513,391 450,334 550,296",center:[540,311],neighbors:["gungnae","pyongyang","gangwon"]},
+  pyongyang:{name:"평양",owner:"goguryeo",terrain:"river",food:4,pop:4,dev:4,army:620,capital:true,points:"253,283 350,309 450,263 450,334 416,418 300,426 230,355",center:[337,355],neighbors:["liaodong","gungnae","hamheung","paegang"]},
+  paegang:{name:"패강",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,points:"230,355 300,426 416,418 444,499 352,547 249,504 205,429",center:[324,474],neighbors:["pyongyang","han","gangwon"]},
+  han:{name:"한강",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,points:"249,504 352,547 370,626 283,662 210,602 208,535",center:[290,585],neighbors:["paegang","gangwon","ungjin","chungju"]},
+  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,points:"416,418 513,391 553,487 522,596 436,627 370,626 352,547 444,499",center:[458,524],neighbors:["hamheung","paegang","han","chungju","gyeongju"]},
+  ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,points:"210,602 283,662 294,728 223,758 162,703 168,635",center:[227,682],neighbors:["han","chungju","sabi"]},
+  chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,points:"283,662 370,626 436,627 443,704 367,749 294,728",center:[363,687],neighbors:["han","gangwon","ungjin","sabi","nakdong"]},
+  sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,points:"223,758 294,728 367,749 351,817 274,847 205,816",center:[283,788],neighbors:["ungjin","chungju","jeolla","nakdong"]},
+  jeolla:{name:"전라",owner:"baekje",terrain:"coast",food:5,pop:3,dev:3,army:390,points:"205,816 274,847 260,884 154,874 120,824 162,773",center:[198,836],neighbors:["sabi","southcoast"]},
+  nakdong:{name:"낙동강",owner:"silla",terrain:"river",food:4,pop:3,dev:3,army:310,points:"367,749 443,704 510,722 507,799 434,842 351,817",center:[425,773],neighbors:["chungju","sabi","gyeongju","southcoast"]},
+  gyeongju:{name:"금성",owner:"silla",terrain:"plain",food:3,pop:4,dev:4,army:500,capital:true,points:"443,704 522,596 577,643 575,748 510,722",center:[516,682],neighbors:["gangwon","chungju","nakdong","southcoast"]},
+  southcoast:{name:"남해안",owner:"silla",terrain:"coast",food:3,pop:3,dev:3,army:260,points:"351,817 434,842 507,799 575,748 558,841 470,884 365,873",center:[463,842],neighbors:["jeolla","nakdong","gyeongju","wa"]},
+  wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,points:"620,690 694,708 720,783 677,844 612,820 591,752",center:[657,770],neighbors:["southcoast"]}
+};
+
+var TECHS=[
+  {id:"irrigation",track:"생산",name:"관개",cost:22,desc:"모든 지역 식량 수입 +10%"},
+  {id:"iron_tools",track:"생산",name:"철제 농기구",cost:38,req:"irrigation",desc:"농장 수입 +1, 지역 개발 비용 -3"},
+  {id:"granary",track:"생산",name:"대형 곡창",cost:58,req:"iron_tools",desc:"식량 부족으로 생기는 손실을 크게 줄임"},
+  {id:"iron_weapons",track:"군사",name:"철제 무기",cost:25,desc:"공격력 +8%"},
+  {id:"cavalry",track:"군사",name:"기병 전술",cost:42,req:"iron_weapons",desc:"평야 공격력 +12%"},
+  {id:"fortification",track:"군사",name:"성곽술",cost:60,req:"cavalry",desc:"성곽 방어 보너스 +20%"},
+  {id:"roads",track:"국가",name:"도로망",cost:25,desc:"매 턴 명령력 +1"},
+  {id:"writing_admin",track:"국가",name:"문자 행정",cost:42,req:"roads",desc:"재정 수입 +10%"},
+  {id:"international_trade",track:"국가",name:"국제 교역",cost:60,req:"writing_admin",desc:"교역 수입 +4, 해상 이동 가능"}
+];
+
+var TERRAIN={
+  plain:{name:"평야",def:1.00,icon:"🌾"},
+  mountain:{name:"산악",def:1.23,icon:"⛰️"},
+  river:{name:"강·하천",def:1.15,icon:"🌊"},
+  coast:{name:"해안",def:1.05,icon:"⚓"}
+};
+
+var OBJECTIVES={
+  goguryeo:[
+    {text:"평양·국내성·요동을 지킨다",check:function(){return owns("goguryeo","pyongyang")&&owns("goguryeo","gungnae")&&owns("goguryeo","liaodong");}},
+    {text:"6개 이상의 지역을 유지한다",check:function(){return regionsOf("goguryeo").length>=6;}},
+    {text:"국가 권위를 70 이상으로 올린다",check:function(){return state.nations.goguryeo.authority>=70;}}
+  ],
+  baekje:[
+    {text:"사비·웅진·전라를 지킨다",check:function(){return owns("baekje","sabi")&&owns("baekje","ungjin")&&owns("baekje","jeolla");}},
+    {text:"왜와 교역 협정을 맺는다",check:function(){return pact("baekje","wa").trade;}},
+    {text:"재정을 120 이상 모은다",check:function(){return state.nations.baekje.money>=120;}}
+  ],
+  silla:[
+    {text:"금성·한강·충주를 지킨다",check:function(){return owns("silla","gyeongju")&&owns("silla","han")&&owns("silla","chungju");}},
+    {text:"다른 나라 하나와 관계 45 이상",check:function(){return Object.keys(COUNTRIES).some(function(k){return k!=="silla"&&relation("silla",k)>=45;});}},
+    {text:"기술을 3개 이상 연구한다",check:function(){return state.nations.silla.techs.length>=3;}}
+  ]
+};
+
+function deepClone(v){return JSON.parse(JSON.stringify(v));}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function pairKey(a,b){return [a,b].sort().join("|");}
+function nation(id){return state.nations[id];}
+function region(id){return state.regions[id];}
+function owns(c,r){return region(r)&&region(r).owner===c;}
+function regionsOf(c){return Object.keys(state.regions).filter(function(k){return state.regions[k].owner===c;});}
+function totalArmy(c){return regionsOf(c).reduce(function(s,k){return s+state.regions[k].army;},0);}
+function totalDev(c){return regionsOf(c).reduce(function(s,k){return s+state.regions[k].dev;},0);}
+function relation(a,b){if(a===b)return 100;return state.relations[pairKey(a,b)]||0;}
+function setRelation(a,b,v){if(a===b)return;state.relations[pairKey(a,b)]=clamp(Math.round(v),-100,100);}
+function changeRelation(a,b,d){setRelation(a,b,relation(a,b)+d);}
+function pact(a,b){var k=pairKey(a,b);if(!state.pacts[k])state.pacts[k]={trade:false,nap:false,alliance:false,war:false,startedTurn:0};return state.pacts[k];}
+function hasTech(c,id){return nation(c).techs.indexOf(id)>=0;}
+function isSeaLink(a,b){return (a==="wa"&&b==="southcoast")||(b==="wa"&&a==="southcoast");}
+function canSeaMove(c){return c==="baekje"||c==="wa"||hasTech(c,"international_trade");}
+function fmt(n){return Math.round(n);}
+function season(){return state.turn%2===1?"봄":"가을";}
+function year(){return 600+Math.floor((state.turn-1)/2);}
+function dateText(){return year()+"년 "+season();}
+function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function initialState(player){
+  var regions=deepClone(REGION_BASE);
+  Object.keys(regions).forEach(function(k){regions[k].buildings={farm:0,market:0,school:0,fort:0,port:0};});
+  return {
+    version:1,player:player,turn:1,commands:4,selectedRegion:null,finished:false,
+    nations:{
+      goguryeo:{food:78,money:66,manpower:64,knowledge:20,authority:55,techs:[],threat:0,warWeariness:0},
+      baekje:{food:72,money:76,manpower:57,knowledge:25,authority:60,techs:[],threat:0,warWeariness:0},
+      silla:{food:68,money:62,manpower:52,knowledge:29,authority:65,techs:[],threat:0,warWeariness:0},
+      sui:{food:115,money:112,manpower:110,knowledge:36,authority:80,techs:["iron_weapons"],threat:12,warWeariness:0},
+      wa:{food:66,money:72,manpower:55,knowledge:24,authority:55,techs:[],threat:0,warWeariness:0}
+    },
+    regions:regions,
+    relations:{
+      "baekje|goguryeo":-15,"goguryeo|silla":-5,"goguryeo|sui":-32,"goguryeo|wa":0,
+      "baekje|silla":-20,"baekje|sui":0,"baekje|wa":28,"silla|sui":5,"silla|wa":2,"sui|wa":0
+    },
+    pacts:{},
+    feed:[{date:"600년 봄",text:"새로운 역사가 시작되었습니다."}],
+    timeline:[{date:"600년 봄",text:COUNTRIES[player].name+"의 국정을 맡았습니다."}],
+    captured:0,battles:0,eventFlags:{}
+  };
+}
+
+function initStart(){
+  var grid=document.getElementById("nationGrid");
+  grid.innerHTML="";
+  ["goguryeo","baekje","silla"].forEach(function(id){
+    var c=COUNTRIES[id];
+    var btn=document.createElement("button");
+    btn.type="button";btn.className="nationCard"+(id===selectedNation?" selected":"");btn.dataset.id=id;
+    btn.innerHTML="<strong>"+c.icon+" "+c.name+"</strong><p>"+c.desc+"</p><div class=\"traitLine\">"+c.trait+"</div>";
+    btn.addEventListener("click",function(){selectedNation=id;initStart();});
+    grid.appendChild(btn);
+  });
+  var saved=loadSave();
+  document.getElementById("continueBtn").classList.toggle("hidden",!saved);
+}
+
+function startNew(){
+  state=initialState(selectedNation);
+  selectedRegion=COUNTRIES[selectedNation].capital;
+  state.selectedRegion=selectedRegion;
+  document.getElementById("startOverlay").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  try{KidscadeGame.start({campaign:"three-kingdoms",country:selectedNation});}catch(e){}
+  renderAll();
+  saveGame(false);
+  if(document.getElementById("tutorialCheck").checked)startTutorial();
+}
+
+function continueGame(){
+  var saved=loadSave();if(!saved)return;
+  state=saved;selectedNation=state.player;selectedRegion=state.selectedRegion||COUNTRIES[state.player].capital;
+  document.getElementById("startOverlay").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  try{KidscadeGame.start({campaign:"three-kingdoms",country:state.player,resume:true});}catch(e){}
+  renderAll();toast("저장한 역사에서 이어갑니다.");
+}
+
+function loadSave(){try{var raw=localStorage.getItem(SAVE_KEY);return raw?JSON.parse(raw):null;}catch(e){return null;}}
+function saveGame(show){
+  if(!state)return;
+  state.selectedRegion=selectedRegion;
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));if(show!==false)toast("현재 역사를 저장했습니다.");}catch(e){if(show!==false)toast("저장할 수 없습니다.");}
+}
+
+function renderAll(){renderHeader();renderMap();renderLeft();renderRegionPanel();}
+function renderHeader(){
+  var n=nation(state.player);
+  document.getElementById("foodVal").textContent=fmt(n.food);
+  document.getElementById("moneyVal").textContent=fmt(n.money);
+  document.getElementById("manpowerVal").textContent=fmt(n.manpower);
+  document.getElementById("knowledgeVal").textContent=fmt(n.knowledge);
+  document.getElementById("authorityVal").textContent=fmt(n.authority);
+  document.getElementById("commandVal").textContent=state.commands;
+  document.getElementById("dateLabel").textContent=dateText();
+  document.getElementById("turnLabel").textContent=state.turn+" / "+MAX_TURNS+"턴";
+}
+function renderLeft(){
+  var c=COUNTRIES[state.player];
+  document.getElementById("countryBadge").innerHTML="<b>"+c.icon+" "+c.name+"</b><p>"+c.trait+"</p>";
+  var obj=document.getElementById("objectives");obj.innerHTML="";
+  OBJECTIVES[state.player].forEach(function(o){
+    var d=document.createElement("div");d.className="objective"+(o.check()?" done":"");d.textContent=(o.check()?"✓ ":"○ ")+o.text;obj.appendChild(d);
+  });
+  var feed=document.getElementById("feed");feed.innerHTML="";
+  state.feed.slice(-8).reverse().forEach(function(item){var d=document.createElement("div");d.className="feedItem";d.innerHTML="<b>"+item.date+"</b><br>"+item.text;feed.appendChild(d);});
+}
+function renderMap(){
+  var layer=document.getElementById("regionLayer");layer.innerHTML="";
+  Object.keys(state.regions).forEach(function(id){
+    var r=region(id),c=COUNTRIES[r.owner];
+    var poly=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    poly.setAttribute("points",r.points);poly.setAttribute("fill",c.color);poly.setAttribute("class","region"+(selectedRegion===id?" selected":""));poly.dataset.id=id;
+    poly.addEventListener("click",function(){handleRegionClick(id);});layer.appendChild(poly);
+    var star=document.createElementNS("http://www.w3.org/2000/svg","text");
+    star.setAttribute("x",r.center[0]);star.setAttribute("y",r.center[1]-22);star.setAttribute("class","capitalStar");star.textContent=(COUNTRIES[r.owner].capital===id)?"★":"";layer.appendChild(star);
+    var label=document.createElementNS("http://www.w3.org/2000/svg","text");
+    label.setAttribute("x",r.center[0]);label.setAttribute("y",r.center[1]);label.setAttribute("class","regionLabel");label.textContent=r.name;layer.appendChild(label);
+    var army=document.createElementNS("http://www.w3.org/2000/svg","text");
+    army.setAttribute("x",r.center[0]);army.setAttribute("y",r.center[1]+18);army.setAttribute("class","armyLabel");army.textContent="⚔ "+fmt(r.army);layer.appendChild(army);
+  });
+  if(moveMode&&selectedRegion){
+    var src=region(selectedRegion);
+    src.neighbors.forEach(function(id){
+      var el=layer.querySelector("polygon[data-id=\""+id+"\"]");if(!el)return;
+      el.classList.add(region(id).owner===state.player?"moveTarget":"enemyTarget");
+    });
+  }
+  var legend=document.getElementById("legend");legend.innerHTML="";
+  Object.keys(COUNTRIES).forEach(function(id){
+    var c=COUNTRIES[id];var s=document.createElement("span");s.className="legend";s.innerHTML="<i style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:"+c.color+";margin-right:4px\"></i>"+c.short;legend.appendChild(s);
+  });
+}
+function handleRegionClick(id){
+  if(moveMode&&selectedRegion&&region(selectedRegion).neighbors.indexOf(id)>=0){executeMove(id);return;}
+  selectedRegion=id;moveMode=false;renderMap();renderRegionPanel();
+}
+function renderRegionPanel(){
+  var panel=document.getElementById("regionPanel");
+  if(!selectedRegion||!region(selectedRegion)){panel.className="rightEmpty";panel.textContent="지역을 선택하세요.";return;}
+  var r=region(selectedRegion),owner=COUNTRIES[r.owner],mine=r.owner===state.player,t=TERRAIN[r.terrain];
+  var buildings=[];
+  var labels={farm:"🌾 농장",market:"🏪 시장",school:"📚 학교",fort:"🏯 성곽",port:"⚓ 항구"};
+  Object.keys(r.buildings).forEach(function(k){if(r.buildings[k])buildings.push("<span class=\"building\">"+labels[k]+"</span>");});
+  var html="<div class=\"regionName\">"+r.name+"</div><div class=\"regionOwner\" style=\"color:"+owner.color+"\">"+owner.name+" · "+t.icon+" "+t.name+"</div>";
+  html+="<div class=\"statGrid\"><div class=\"statCell\"><small>식량 기반</small><b>"+r.food+"</b></div><div class=\"statCell\"><small>인구</small><b>"+r.pop+"</b></div><div class=\"statCell\"><small>개발</small><b>"+r.dev+"</b></div><div class=\"statCell\"><small>주둔 병력</small><b>"+fmt(r.army)+"</b></div></div>";
+  html+="<div class=\"buildings\">"+(buildings.length?buildings.join(""):"<span class=\"building\">시설 없음</span>")+"</div>";
+  if(mine){
+    html+="<div class=\"actionGroup\"><h3>지역 운영</h3><div class=\"actionList\">";
+    html+="<button class=\"actionBtn\" data-act=\"develop\">🏘️ 개발<span>💰 "+(17-(hasTech(state.player,"iron_tools")?3:0))+" · 명령 1</span></button>";
+    html+="<button class=\"actionBtn\" data-act=\"recruit\">🛡️ 징병<span>💰18 👥12 · +180</span></button>";
+    html+="<button class=\"actionBtn\" data-act=\"move\">⚔️ 군대 이동<span>이웃 지역으로 이동</span></button>";
+    html+="<button class=\"actionBtn\" data-act=\"build\">🔨 시설 건설<span>농장·시장·학교·성곽</span></button></div></div>";
+    if(moveMode){
+      var max=Math.max(100,Math.floor((r.army-80)/50)*50);
+      html+="<div class=\"moveBox\"><b style=\"font-size:10px\">이동 병력 <span id=\"moveAmountLabel\">"+Math.min(300,max)+"</span></b><input id=\"moveAmount\" type=\"range\" min=\"100\" max=\""+max+"\" step=\"50\" value=\""+Math.min(300,max)+"\"><div class=\"moveTargets\">";
+      r.neighbors.forEach(function(nid){
+        var nr=region(nid),blocked=isSeaLink(selectedRegion,nid)&&!canSeaMove(state.player);
+        html+="<button class=\"tiny\" data-move-target=\""+nid+"\" "+(blocked?"disabled":"")+">"+nr.name+(nr.owner!==state.player?" ⚔":"")+"</button>";
+      });
+      html+="</div></div>";
+    }
+  }else{
+    html+="<div class=\"actionGroup\"><h3>국경 정보</h3><p style=\"font-size:10px;color:#b9c7d9;line-height:1.5\">관계: "+relationText(relation(state.player,r.owner))+(pact(state.player,r.owner).war?" · 현재 전쟁 중":"")+"</p></div>";
+  }
+  panel.className="";panel.innerHTML=html;
+  panel.querySelectorAll("[data-act]").forEach(function(b){b.addEventListener("click",function(){regionAction(b.dataset.act);});});
+  var slider=document.getElementById("moveAmount");if(slider)slider.addEventListener("input",function(){document.getElementById("moveAmountLabel").textContent=slider.value;});
+  panel.querySelectorAll("[data-move-target]").forEach(function(b){b.addEventListener("click",function(){executeMove(b.dataset.moveTarget);});});
+}
+function spendCommand(n){if(state.commands<n){toast("이번 턴의 명령력이 부족합니다.");return false;}state.commands-=n;return true;}
+function regionAction(type){
+  var r=region(selectedRegion),n=nation(state.player);if(r.owner!==state.player)return;
+  if(type==="develop"){
+    var cost=17-(hasTech(state.player,"iron_tools")?3:0);
+    if(n.money<cost){toast("재정이 부족합니다.");return;}if(!spendCommand(1))return;
+    n.money-=cost;r.dev+=1;if(Math.random()<.55)r.food+=1;log(r.name+"을 개발했습니다.");toast(r.name+" 개발 +1");renderAll();saveGame(false);
+  }
+  if(type==="recruit"){
+    if(n.money<18||n.manpower<12){toast("재정 또는 인력이 부족합니다.");return;}if(!spendCommand(1))return;
+    n.money-=18;n.manpower-=12;r.army+=180;log(r.name+"에서 180명을 징병했습니다.");toast("병력 +180");renderAll();saveGame(false);
+  }
+  if(type==="move"){
+    if(r.army<180){toast("이동시킬 병력이 부족합니다.");return;}moveMode=!moveMode;renderMap();renderRegionPanel();
+  }
+  if(type==="build")openBuildModal();
+}
+function openBuildModal(){
+  var r=region(selectedRegion),items=[
+    {id:"farm",name:"🌾 농장",cost:20,desc:"지역 식량 수입을 늘립니다."},
+    {id:"market",name:"🏪 시장",cost:24,desc:"지역 재정 수입을 늘립니다."},
+    {id:"school",name:"📚 학교",cost:25,desc:"매 턴 지식을 생산합니다."},
+    {id:"fort",name:"🏯 성곽",cost:28,desc:"방어 전투력을 크게 높입니다."}
+  ];
+  if(r.terrain==="coast")items.push({id:"port",name:"⚓ 항구",cost:26,desc:"교역과 해상 이동의 거점입니다."});
+  openModal("지역 건설",r.name+"에 지을 시설을 고르세요.","시설은 지역마다 종류별로 하나씩만 지을 수 있습니다.",items.map(function(it){
+    var disabled=r.buildings[it.id]?"disabled":"";
+    return "<button class=\"choiceBtn\" data-build=\""+it.id+"\" "+disabled+"><b>"+it.name+" · 💰"+it.cost+"</b><span>"+(r.buildings[it.id]?"이미 건설됨":it.desc+" · 명령력 1")+"</span></button>";
+  }).join(""));
+  document.querySelectorAll("[data-build]").forEach(function(b){b.addEventListener("click",function(){buildFacility(b.dataset.build);});});
+}
+function buildFacility(id){
+  var costs={farm:20,market:24,school:25,fort:28,port:26},r=region(selectedRegion),n=nation(state.player),cost=costs[id];
+  if(r.buildings[id])return;if(n.money<cost){toast("재정이 부족합니다.");return;}if(!spendCommand(1))return;
+  n.money-=cost;r.buildings[id]=1;log(r.name+"에 "+({farm:"농장",market:"시장",school:"학교",fort:"성곽",port:"항구"}[id])+"을 세웠습니다.");
+  closeModal();renderAll();saveGame(false);toast("시설 건설 완료");
+}
+function executeMove(targetId){
+  var src=region(selectedRegion),dst=region(targetId);if(!src||src.owner!==state.player||src.neighbors.indexOf(targetId)<0)return;
+  if(isSeaLink(selectedRegion,targetId)&&!canSeaMove(state.player)){toast("해상 이동 기술이 필요합니다.");return;}
+  var slider=document.getElementById("moveAmount");var amount=slider?Number(slider.value):Math.min(300,Math.max(100,src.army-80));
+  amount=Math.min(amount,src.army-80);if(amount<100){toast("최소 주둔 병력 80명을 남겨야 합니다.");return;}
+  if(dst.owner!==state.player&&!pact(state.player,dst.owner).war){toast(COUNTRIES[dst.owner].name+"과 전쟁 중이 아닙니다. 외교에서 먼저 전쟁을 선포하세요.");return;}
+  if(!spendCommand(1))return;
+  src.army-=amount;
+  if(dst.owner===state.player){dst.army+=amount;log(src.name+"에서 "+dst.name+"으로 "+amount+"명을 이동했습니다.");toast("병력 이동 완료");}
+  else resolveBattle(selectedRegion,targetId,amount,state.player,false);
+  moveMode=false;renderAll();saveGame(false);
+}
+function attackMod(c,r,isAttack){
+  var m=1;
+  if(isAttack&&hasTech(c,"iron_weapons"))m*=1.08;
+  if(isAttack&&hasTech(c,"cavalry")&&r.terrain==="plain")m*=1.12;
+  if(!isAttack&&c==="goguryeo"&&r.terrain==="mountain")m*=1.15;
+  return m;
+}
+function resolveBattle(srcId,dstId,attackers,attacker,ai){
+  var src=region(srcId),dst=region(dstId),defender=dst.owner;
+  var attackPower=attackers*attackMod(attacker,dst,true)*(0.88+Math.random()*.24);
+  var fortBonus=1+(dst.buildings.fort?0.35:0)+(hasTech(defender,"fortification")&&dst.buildings.fort?0.20:0);
+  var defensePower=dst.army*TERRAIN[dst.terrain].def*attackMod(defender,dst,false)*fortBonus*(0.88+Math.random()*.24);
+  state.battles++;
+  var win=attackPower>defensePower;
+  var aLoss=clamp(defensePower/Math.max(attackPower,1)*.42,.16,.72);
+  var dLoss=clamp(attackPower/Math.max(defensePower,1)*.48,.18,.82);
+  var aRemain=Math.max(20,Math.round(attackers*(1-aLoss)));
+  var dRemain=Math.max(0,Math.round(dst.army*(1-dLoss)));
+  nation(attacker).warWeariness=clamp(nation(attacker).warWeariness+4,0,100);
+  nation(defender).warWeariness=clamp(nation(defender).warWeariness+5,0,100);
+  if(win){
+    var oldOwner=defender;dst.owner=attacker;dst.army=aRemain;state.nations[attacker].threat+=7;
+    Object.keys(COUNTRIES).forEach(function(k){if(k!==attacker)changeRelation(attacker,k,-(region(dstId).neighbors.some(function(nid){return region(nid).owner===k;})?4:2));});
+    if(attacker===state.player){state.captured++;nation(attacker).authority=clamp(nation(attacker).authority+4,0,100);}
+    log(COUNTRIES[attacker].name+"이 "+dst.name+"을 점령했습니다.");
+    addTimeline("⚔ "+COUNTRIES[attacker].name+"이 "+dst.name+"을 점령");
+    if(!ai)toast(dst.name+" 점령! 남은 병력 "+aRemain);
+    if(COUNTRIES[oldOwner].capital===dstId){nation(oldOwner).authority=clamp(nation(oldOwner).authority-18,0,100);log(COUNTRIES[oldOwner].name+"의 중심지가 함락되어 권위가 흔들렸습니다.");}
+  }else{
+    dst.army=dRemain;src.army+=aRemain;
+    log(COUNTRIES[attacker].name+"의 "+dst.name+" 공격이 막혔습니다.");
+    addTimeline("🛡 "+dst.name+" 방어전");
+    if(!ai)toast("공격 실패 · 병력 "+aRemain+"명 귀환");
+  }
+}
+function relationText(v){if(v>=60)return"매우 우호";if(v>=25)return"우호";if(v>-25)return"보통";if(v>-60)return"경계";return"적대";}
+function openDiplomacy(){
+  var p=state.player,html="<div class=\"diploList\">";
+  Object.keys(COUNTRIES).filter(function(id){return id!==p;}).forEach(function(id){
+    var c=COUNTRIES[id],rel=relation(p,id),pk=pact(p,id),status=[];
+    if(pk.war)status.push("전쟁");if(pk.alliance)status.push("동맹");if(pk.trade)status.push("교역");if(pk.nap)status.push("불가침");
+    html+="<div class=\"diploCard\"><div class=\"diploTop\"><b>"+c.icon+" "+c.name+"</b><span class=\"relation\">"+relationText(rel)+" "+rel+"</span></div><p>"+c.desc+(status.length?" · "+status.join(" · "):"")+"</p><div class=\"diploActions\">";
+    if(pk.war)html+="<button data-dip=\"peace\" data-target=\""+id+"\">평화 제안</button>";
+    else{
+      html+="<button data-dip=\"envoy\" data-target=\""+id+"\">사절</button><button data-dip=\"trade\" data-target=\""+id+"\">교역</button><button data-dip=\"nap\" data-target=\""+id+"\">불가침</button><button data-dip=\"alliance\" data-target=\""+id+"\">동맹</button><button data-dip=\"war\" data-target=\""+id+"\">전쟁</button>";
+    }
+    html+="</div></div>";
+  });
+  html+="</div>";
+  openModal("외교","나라와 나라 사이","관계가 좋아야 더 깊은 협정을 맺을 수 있습니다. 팽창할수록 주변국은 경계합니다.",html);
+  document.querySelectorAll("[data-dip]").forEach(function(b){b.addEventListener("click",function(){diplomacyAction(b.dataset.dip,b.dataset.target);});});
+}
+function diplomacyAction(type,target){
+  var p=state.player,n=nation(p),rel=relation(p,target),pk=pact(p,target);
+  if(type==="envoy"){
+    if(n.authority<8){toast("권위가 부족합니다.");return;}if(!spendCommand(1))return;n.authority-=8;changeRelation(p,target,p==="silla"?20:15);log(targetName(target)+"에 사절을 보내 관계를 개선했습니다.");
+  }else if(type==="trade"){
+    if(rel<5){toast("관계가 아직 좋지 않습니다.");return;}if(pk.trade){toast("이미 교역 중입니다.");return;}if(!spendCommand(1))return;pk.trade=true;changeRelation(p,target,8);log(targetName(target)+"과 교역 협정을 맺었습니다.");
+  }else if(type==="nap"){
+    if(rel<15){toast("관계 15 이상이 필요합니다.");return;}if(!spendCommand(1))return;pk.nap=true;changeRelation(p,target,7);log(targetName(target)+"과 불가침 약속을 맺었습니다.");
+  }else if(type==="alliance"){
+    if(rel<45){toast("관계 45 이상이 필요합니다.");return;}if(!spendCommand(1))return;pk.alliance=true;pk.nap=true;changeRelation(p,target,10);log(targetName(target)+"과 동맹을 맺었습니다.");
+  }else if(type==="war"){
+    if(!spendCommand(1))return;pk.war=true;pk.trade=false;pk.nap=false;pk.alliance=false;pk.startedTurn=state.turn;setRelation(p,target,Math.min(rel,-55));nation(p).authority=clamp(nation(p).authority-3,0,100);log(targetName(target)+"에 전쟁을 선포했습니다.");addTimeline("⚔ "+targetName(target)+"과 전쟁 시작");
+  }else if(type==="peace"){
+    var turns=state.turn-(pk.startedTurn||state.turn),ours=totalArmy(p),theirs=totalArmy(target);
+    if(turns<3&&ours<theirs*1.25){toast(targetName(target)+"이 아직 평화를 받아들이지 않습니다.");return;}
+    if(!spendCommand(1))return;pk.war=false;changeRelation(p,target,18);nation(p).warWeariness=Math.max(0,nation(p).warWeariness-18);nation(target).warWeariness=Math.max(0,nation(target).warWeariness-18);log(targetName(target)+"과 평화를 맺었습니다.");addTimeline("🕊 "+targetName(target)+"과 평화");
+  }
+  renderHeader();renderLeft();saveGame(false);openDiplomacy();
+}
+function targetName(id){return COUNTRIES[id].name;}
+function openTech(){
+  var n=nation(state.player),html="<div class=\"techGrid\">";
+  TECHS.forEach(function(t){
+    var owned=hasTech(state.player,t.id),locked=t.req&&!hasTech(state.player,t.req);
+    html+="<div class=\"techCard "+(owned?"owned ":"")+(locked?"locked":"")+"\"><div class=\"eyebrow\">"+t.track+"</div><h3>"+(owned?"✓ ":"")+t.name+"</h3><p>"+t.desc+"</p><div class=\"techCost\">📚 "+t.cost+(t.req?" · 선행 "+TECHS.find(function(x){return x.id===t.req;}).name:"")+"</div>"+(!owned?"<button class=\"tiny\" data-tech=\""+t.id+"\" "+(locked?"disabled":"")+">연구</button>":"")+"</div>";
+  });
+  html+="</div>";
+  openModal("기술","나라의 발전","연구에는 지식과 명령력 1이 필요합니다. 기술은 이후 전투·경제·외교 계산에 직접 반영됩니다.",html);
+  document.querySelectorAll("[data-tech]").forEach(function(b){b.addEventListener("click",function(){research(b.dataset.tech);});});
+}
+function research(id){
+  var t=TECHS.find(function(x){return x.id===id;}),n=nation(state.player);if(!t||hasTech(state.player,id))return;
+  if(t.req&&!hasTech(state.player,t.req)){toast("선행 기술이 필요합니다.");return;}if(n.knowledge<t.cost){toast("지식이 부족합니다.");return;}if(!spendCommand(1))return;
+  n.knowledge-=t.cost;n.techs.push(id);log(t.name+" 기술을 완성했습니다.");addTimeline("📜 "+t.name+" 연구 완료");renderAll();saveGame(false);openTech();
+}
+function openLog(){
+  var html="<div class=\"timeline\">"+state.timeline.slice().reverse().map(function(x){return"<div class=\"timelineItem\"><b>"+x.date+"</b><br>"+x.text+"</div>";}).join("")+"</div>";
+  openModal("역사 연표","당신이 만든 흐름","날짜는 실제 사건을 그대로 재현하기보다 게임 속 선택과 결과를 기록합니다.",html);
+}
+function openModal(title,eyebrow,desc,body){
+  document.getElementById("modalTitle").textContent=title;document.getElementById("modalEyebrow").textContent=eyebrow;document.getElementById("modalDesc").textContent=desc;document.getElementById("modalBody").innerHTML=body;document.getElementById("panelOverlay").classList.remove("hidden");
+}
+function closeModal(){document.getElementById("panelOverlay").classList.add("hidden");}
+function log(text){state.feed.push({date:dateText(),text:text});if(state.feed.length>60)state.feed.shift();renderLeft();}
+function addTimeline(text){state.timeline.push({date:dateText(),text:text});}
+
+function baseCommands(c){return 4+(hasTech(c,"roads")?1:0);}
+function calculateIncome(c){
+  var regs=regionsOf(c),food=0,money=0,man=0,knowledge=0;
+  regs.forEach(function(id){
+    var r=region(id);
+    food+=r.food+(r.buildings.farm?2+(hasTech(c,"iron_tools")?1:0):0);
+    money+=Math.max(1,r.dev*.72)+(r.buildings.market?3:0);
+    man+=r.pop*.7;knowledge+=r.dev*.18+(r.buildings.school?3:0);
+  });
+  if(hasTech(c,"irrigation"))food*=1.10;
+  if(hasTech(c,"writing_admin"))money*=1.10;
+  var tradeCount=Object.keys(COUNTRIES).filter(function(o){return o!==c&&pact(c,o).trade&&!pact(c,o).war;}).length;
+  money+=tradeCount*(5+(c==="baekje"?3:0)+(hasTech(c,"international_trade")?4:0));
+  var upkeep=totalArmy(c)/280;
+  food-=upkeep*.55;money-=upkeep*.28;
+  if(c==="silla")knowledge*=1.10;
+  return {food:food,money:money,manpower:man,knowledge:knowledge};
+}
+function applyIncome(c){
+  var n=nation(c),inc=calculateIncome(c);
+  n.food=clamp(n.food+inc.food,0,999);n.money=clamp(n.money+inc.money,0,999);n.manpower=clamp(n.manpower+inc.manpower,0,999);n.knowledge=clamp(n.knowledge+inc.knowledge,0,999);
+  if(n.food<=1&&!hasTech(c,"granary")){regionsOf(c).forEach(function(id){region(id).army=Math.max(40,region(id).army-25);});n.authority=clamp(n.authority-4,0,100);}
+  n.authority=clamp(n.authority+1-n.warWeariness*.015,0,100);
+}
+function aiTurn(c){
+  if(c===state.player)return;
+  var n=nation(c),wars=Object.keys(COUNTRIES).filter(function(o){return o!==c&&pact(c,o).war;});
+  if(wars.length){
+    var candidates=[];
+    regionsOf(c).forEach(function(srcId){
+      var src=region(srcId);src.neighbors.forEach(function(dstId){
+        var dst=region(dstId);if(wars.indexOf(dst.owner)<0)return;if(isSeaLink(srcId,dstId)&&!canSeaMove(c))return;
+        var ratio=src.army/Math.max(dst.army*TERRAIN[dst.terrain].def,1);candidates.push({src:srcId,dst:dstId,ratio:ratio});
+      });
+    });
+    candidates.sort(function(a,b){return b.ratio-a.ratio;});
+    if(candidates[0]&&candidates[0].ratio>1.05){
+      var a=candidates[0],src=region(a.src),amount=Math.max(120,Math.floor((src.army-80)*.72));if(amount>100){src.army-=amount;resolveBattle(a.src,a.dst,amount,c,true);}
+    }else aiRecruit(c);
+  }else{
+    if(Math.random()<.58)aiRecruit(c);
+    if(Math.random()<.35)aiDevelop(c);
+    aiDiplomacy(c);
+  }
+}
+function aiRecruit(c){
+  var n=nation(c);if(n.money<18||n.manpower<12)return;
+  var regs=regionsOf(c).slice().sort(function(a,b){return borderScore(b,c)-borderScore(a,c);});if(!regs.length)return;
+  n.money-=18;n.manpower-=12;region(regs[0]).army+=160;
+}
+function borderScore(id,c){return region(id).neighbors.filter(function(n){return region(n).owner!==c;}).length*100+region(id).dev;}
+function aiDevelop(c){
+  var n=nation(c);if(n.money<16)return;var regs=regionsOf(c);if(!regs.length)return;var id=randomChoice(regs);n.money-=16;region(id).dev+=1;
+}
+function aiDiplomacy(c){
+  var targets=Object.keys(COUNTRIES).filter(function(o){return o!==c&&adjacentCountries(c).indexOf(o)>=0&&!pact(c,o).nap&&!pact(c,o).alliance;});
+  if(!targets.length)return;
+  targets.sort(function(a,b){
+    var da=(-relation(c,a))+(nation(a).threat*1.5)+(totalArmy(c)>totalArmy(a)*1.25?18:0);
+    var db=(-relation(c,b))+(nation(b).threat*1.5)+(totalArmy(c)>totalArmy(b)*1.25?18:0);return db-da;
+  });
+  var t=targets[0],desire=(-relation(c,t))+(nation(t).threat*1.5)+(totalArmy(c)>totalArmy(t)*1.3?20:0)-nation(c).warWeariness;
+  if(c==="sui"&&t==="goguryeo"&&state.turn>=8)desire+=18;
+  if(desire>58&&Math.random()<.20){
+    var pk=pact(c,t);pk.war=true;pk.trade=false;pk.nap=false;pk.alliance=false;pk.startedTurn=state.turn;setRelation(c,t,Math.min(relation(c,t),-55));log(COUNTRIES[c].name+"이 "+COUNTRIES[t].name+"에 전쟁을 선포했습니다.");addTimeline("⚔ "+COUNTRIES[c].name+"- "+COUNTRIES[t].name+" 전쟁");
+  }
+}
+function adjacentCountries(c){
+  var set={};regionsOf(c).forEach(function(id){region(id).neighbors.forEach(function(n){if(region(n).owner!==c)set[region(n).owner]=1;});});return Object.keys(set);
+}
+function coolWars(){
+  Object.keys(COUNTRIES).forEach(function(c){var n=nation(c);n.warWeariness=Math.max(0,n.warWeariness-(Object.keys(COUNTRIES).some(function(o){return o!==c&&pact(c,o).war;})?1:4));});
+}
+function endTurn(){
+  if(state.finished)return;
+  closeModal();moveMode=false;
+  Object.keys(COUNTRIES).forEach(applyIncome);
+  ["goguryeo","baekje","silla","sui","wa"].forEach(aiTurn);
+  coolWars();
+  state.turn++;
+  if(state.turn>MAX_TURNS){finishCampaign();return;}
+  state.commands=baseCommands(state.player);
+  maybeEvent();
+  selectedRegion=selectedRegion&&region(selectedRegion)?selectedRegion:COUNTRIES[state.player].capital;
+  renderAll();saveGame(false);
+}
+function maybeEvent(){
+  var key="";
+  if(state.turn===4&&!state.eventFlags.han)key="han";
+  else if(state.turn===8&&!state.eventFlags.sui)key="sui";
+  else if(state.turn===13&&!state.eventFlags.border)key="border";
+  else if(state.turn%3===0)key=randomChoice(["harvest","scholars","merchants","drought"]);
+  if(key)showEvent(key);
+}
+function showEvent(key){
+  state.eventFlags[key+"_"+state.turn]=true;if(key==="han")state.eventFlags.han=true;if(key==="sui")state.eventFlags.sui=true;if(key==="border")state.eventFlags.border=true;
+  var n=nation(state.player),ev;
+  if(key==="han")ev={icon:"🌉",title:"한강을 둘러싼 긴장",text:"한강 유역은 농업·교통·교역을 모두 잇는 중요한 지역입니다. 주변 나라들도 이곳을 주시하고 있습니다.",choices:[
+    ["강변 방어를 보강한다","한강 성곽 설치 · 재정 -20",function(){if(owns(state.player,"han")){region("han").buildings.fort=1;n.money=Math.max(0,n.money-20);}n.authority+=3;}],
+    ["시장과 나루를 키운다","재정 +18 · 주변 관계 +4",function(){n.money+=18;Object.keys(COUNTRIES).forEach(function(c){if(c!==state.player)changeRelation(state.player,c,4);});}],
+    ["다른 지역에 집중한다","명령력 +1",function(){state.commands+=1;}]
+  ]};
+  if(key==="sui")ev={icon:"🐉",title:"북방에서 커지는 압박",text:"수나라의 움직임이 커지고 있다는 소식이 전해집니다. 고구려뿐 아니라 한반도 여러 나라의 외교 계산도 복잡해집니다.",choices:[
+    ["북방 정세를 조사한다","지식 +18 · 수나라 관계 +3",function(){n.knowledge+=18;changeRelation(state.player,"sui",3);}],
+    ["군사 준비를 서두른다","수도 병력 +220 · 인력 -12",function(){var cap=COUNTRIES[state.player].capital;region(cap).army+=220;n.manpower=Math.max(0,n.manpower-12);}],
+    ["사절을 보내 긴장을 낮춘다","권위 -6 · 수나라 관계 +18",function(){n.authority=Math.max(0,n.authority-6);changeRelation(state.player,"sui",18);}]
+  ]};
+  if(key==="border")ev={icon:"🔥",title:"국경의 작은 충돌",text:"변방에서 병사들이 서로를 경계하며 작은 충돌이 일어났습니다. 큰 전쟁으로 번지기 전에 대응해야 합니다.",choices:[
+    ["현지 지휘관을 진정시킨다","권위 +6 · 이웃국 관계 +5",function(){n.authority+=6;adjacentCountries(state.player).forEach(function(c){changeRelation(state.player,c,5);});}],
+    ["병력을 전진 배치한다","국경 병력 +120 · 주변 관계 -5",function(){var regs=regionsOf(state.player).sort(function(a,b){return borderScore(b,state.player)-borderScore(a,state.player);});if(regs[0])region(regs[0]).army+=120;adjacentCountries(state.player).forEach(function(c){changeRelation(state.player,c,-5);});}],
+    ["상인들의 통행을 우선한다","재정 +25 · 권위 -3",function(){n.money+=25;n.authority-=3;}]
+  ]};
+  if(key==="harvest")ev={icon:"🌾",title:"풍년",text:"여러 지역에서 수확이 좋았다는 보고가 올라왔습니다.",choices:[["곡식을 비축한다","식량 +28",function(){n.food+=28;}],["백성에게 나눈다","권위 +9",function(){n.authority+=9;}]]};
+  if(key==="scholars")ev={icon:"📚",title:"학자들의 논쟁",text:"새로운 제도와 기술을 두고 학자들이 열띤 논의를 벌입니다.",choices:[["연구를 지원한다","재정 -12 · 지식 +22",function(){n.money=Math.max(0,n.money-12);n.knowledge+=22;}],["행정에 활용한다","권위 +7 · 재정 +8",function(){n.authority+=7;n.money+=8;}]]};
+  if(key==="merchants")ev={icon:"⛵",title:"멀리서 온 상인",text:"다른 지역의 물품과 소식이 함께 들어왔습니다.",choices:[["교역을 장려한다","재정 +22",function(){n.money+=22;}],["새 지식을 모은다","지식 +16 · 권위 +3",function(){n.knowledge+=16;n.authority+=3;}]]};
+  if(key==="drought")ev={icon:"☀️",title:"가뭄 조짐",text:"비가 적어 일부 지역에서 수확을 걱정하는 목소리가 나옵니다.",choices:[["창고를 연다","식량 -18 · 권위 +8",function(){n.food=Math.max(0,n.food-18);n.authority+=8;}],["관개 시설을 고친다","재정 -14 · 식량 +8 · 지식 +5",function(){n.money=Math.max(0,n.money-14);n.food+=8;n.knowledge+=5;}]]};
+  if(!ev)return;
+  document.getElementById("eventIcon").textContent=ev.icon;document.getElementById("eventTitle").textContent=ev.title;document.getElementById("eventText").textContent=ev.text;
+  var box=document.getElementById("eventChoices");box.innerHTML="";
+  ev.choices.forEach(function(ch){
+    var b=document.createElement("button");b.type="button";b.className="choiceBtn";b.innerHTML="<b>"+ch[0]+"</b><span>"+ch[1]+"</span>";
+    b.addEventListener("click",function(){ch[2]();n.food=clamp(n.food,0,999);n.money=clamp(n.money,0,999);n.authority=clamp(n.authority,0,100);addTimeline("📜 "+ev.title+" — "+ch[0]);log(ev.title+": "+ch[0]);document.getElementById("eventOverlay").classList.add("hidden");renderAll();saveGame(false);});
+    box.appendChild(b);
+  });
+  document.getElementById("eventOverlay").classList.remove("hidden");
+}
+function finishCampaign(){
+  state.finished=true;state.turn=MAX_TURNS;
+  var regs=regionsOf(state.player),dev=totalDev(state.player),tech=nation(state.player).techs.length,goals=OBJECTIVES[state.player].filter(function(o){return o.check();}).length;
+  document.getElementById("resultTitle").textContent=COUNTRIES[state.player].name+"의 "+(MAX_TURNS/2)+"년 기록";
+  document.getElementById("resultDesc").textContent="영토만 넓힌 역사인지, 기술과 외교를 키운 역사인지 아래 기록과 연표를 비교해 보세요. 목표 "+goals+"/"+OBJECTIVES[state.player].length+"개를 달성했습니다.";
+  document.getElementById("resultRegions").textContent=regs.length;
+  document.getElementById("resultDev").textContent=dev;
+  document.getElementById("resultTech").textContent=tech;
+  document.getElementById("resultEvents").textContent=state.timeline.length;
+  document.getElementById("historyCompare").innerHTML="<b>실제 역사와 비교해 보기</b><p>6세기 중반 신라는 한강 유역을 차지했고, 7세기 초 고구려는 수나라의 대규모 침공에 맞섰습니다. 이 게임은 그 시대의 지리·외교·군사 조건을 단순화해 다른 선택도 실험하도록 만든 대체역사 전략 게임입니다.</p>";
+  document.getElementById("resultOverlay").classList.remove("hidden");
+  saveGame(false);try{KidscadeGame.gameOver({campaign:"three-kingdoms",regions:regs.length,goals:goals});}catch(e){}
+}
+function toast(msg){
+  var el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show");},1800);
+}
+function startTutorial(){tutorialStep=0;showTutorial();}
+function showTutorial(){
+  var tips=[
+    ["① 지역을 살펴보세요","지도에서 내 나라의 지역을 누르면 개발·징병·군대 이동을 할 수 있습니다."],
+    ["② 명령력은 선택의 한도","한 턴에 모든 일을 할 수는 없습니다. 개발, 군사, 외교, 연구 중 무엇을 먼저 할지 골라야 합니다."],
+    ["③ 외교도 무기입니다","아래 외교 버튼에서 사절·교역·불가침·동맹을 맺을 수 있습니다. 공격하려면 먼저 전쟁 상태가 되어야 합니다."],
+    ["④ 턴을 넘기면 세계가 움직입니다","턴 종료 뒤 다른 나라 AI도 개발·징병·전쟁을 판단합니다. 24턴 동안 당신만의 역사를 만들어 보세요."]
+  ];
+  if(tutorialStep>=tips.length){document.getElementById("tutorialTip").classList.add("hidden");return;}
+  document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorialTip").classList.remove("hidden");
+}
+function bind(){
+  document.getElementById("startBtn").addEventListener("click",startNew);
+  document.getElementById("continueBtn").addEventListener("click",continueGame);
+  document.getElementById("endTurnTop").addEventListener("click",endTurn);
+  document.getElementById("diploBtn").addEventListener("click",openDiplomacy);
+  document.getElementById("techBtn").addEventListener("click",openTech);
+  document.getElementById("logBtn").addEventListener("click",openLog);
+  document.getElementById("saveBtn").addEventListener("click",function(){saveGame(true);});
+  document.getElementById("closeModal").addEventListener("click",closeModal);
+  document.getElementById("tutorialNext").addEventListener("click",function(){tutorialStep++;showTutorial();});
+  document.getElementById("newCampaignBtn").addEventListener("click",function(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}location.reload();});
+  document.getElementById("closeResultBtn").addEventListener("click",function(){document.getElementById("resultOverlay").classList.add("hidden");});
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){closeModal();document.getElementById("tutorialTip").classList.add("hidden");}
+    if(!state)return;
+    if((e.key==="e"||e.key==="E")&&!document.getElementById("eventOverlay").classList.contains("hidden"))return;
+    if(e.key==="e"||e.key==="E")endTurn();
+    if(e.key==="d"||e.key==="D")openDiplomacy();
+    if(e.key==="t"||e.key==="T")openTech();
+  });
+}
+bind();initStart();
+})();
+</script>
+</body>
+</html>
