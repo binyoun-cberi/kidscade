@@ -93,3 +93,44 @@ test('match presentation has visual movement trails and shared soccer assets', (
   assert.match(gameSource, /match\.ball\.trail/);
   assert.match(gameSource, /match\.effects/);
 });
+
+
+test('replay export records frames heatmaps and player stats', () => {
+  const { SeedFCData, SeedFCSim } = loadDataAndSim();
+  const home = SeedFCData.clubs[0];
+  const away = SeedFCData.clubs[1];
+  const match = SeedFCSim.create({
+    homeClub: home,
+    awayClub: away,
+    homeRoster: JSON.parse(JSON.stringify(home.players)),
+    awayRoster: JSON.parse(JSON.stringify(away.players)),
+    homeLineup: home.players.slice(0, 11).map(player => player.id),
+    awayLineup: away.players.slice(0, 11).map(player => player.id),
+    homeFormation: '4-3-3',
+    awayFormation: '4-3-3',
+    homeTactics: JSON.parse(JSON.stringify(home.tactics)),
+    awayTactics: JSON.parse(JSON.stringify(away.tactics)),
+    formations: SeedFCData.formations
+  });
+  let guard = 0;
+  while (!match.finished && guard++ < 10000) match.update(0.1, 4);
+  const replay = match.exportReplay();
+  assert.ok(replay.frames.length >= 100 && replay.frames.length <= 180);
+  assert.equal(replay.players.length, 22);
+  assert.equal(replay.heat[replay.players[0].id].length, 60);
+  assert.equal(typeof replay.stats[replay.players[0].id].distance, 'number');
+  assert.ok(JSON.stringify(replay).length < 180000);
+});
+
+test('manager exposes replay analysis and a two-tier promotion relegation system', () => {
+  assert.match(html, /data-view="analysis"/);
+  assert.match(html, /id="replayLayer"/);
+  assert.match(gameSource, /function analysis\(\)/);
+  assert.match(gameSource, /function advanceSeason\(\)/);
+  assert.match(gameSource, /divisionIds/);
+  assert.match(gameSource, /promoted/);
+  assert.match(gameSource, /relegated/);
+  assert.match(gameSource, /schedule\(ids,2\)/);
+  assert.match(gameSource, /state\.replays\.slice\(0,6\)/);
+  assert.match(gameSource, /히트맵/);
+});
