@@ -69,6 +69,10 @@ npm run health:strict
 
 - [완료] 카탈로그 schema v7에서 112개 게임 모두에 subject / genre / difficulty / sessionMinutes / players / input / qualityStatus / classroom 메타데이터를 명시했다.
 - [완료] 기존 category는 호환용으로 유지하고 새 탐색 기준과 분리했다.
+- [완료] 메인 필터를 학습영역과 게임 장르의 2단 구조로 바꿨다.
+- [완료] 추천 / 5분 / 같이 하기 / 깊게 하기 / 수업용 큐레이션 탭을 추가했다.
+- [완료] 전체 카드와 추천 카드에 장르 / 예상 시간 / 난도 / 인원 정보를 표시한다.
+- [완료] 플레이어 설명에서 D1·버전 번호 같은 개발자 문구를 제거했다.
 
 학습 영역과 게임 장르를 분리한다.
 
