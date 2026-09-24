@@ -56,7 +56,7 @@ class Renderer{
   const count=Math.min(16,Math.max(5,Math.round(s.population/4)));while(this.agents.length<count){const i=this.agents.length,x=300+(i*109)%820;this.agents.push({x,target:D.TOWN_X,wait:(i%4)*.35,seed:i*17+3,dir:1})}if(this.agents.length>count)this.agents.length=count
  }
  citizens(s){
-  this.ensureAgents(s);const c=this.ctx,dt=clamp(s.time-this.lastCitizenTime,0,.08);this.lastCitizenTime=s.time,targets=[D.TOWN_X,...s.slots.filter(x=>x.building).map(x=>x.x)];
+  if(s.time<this.lastCitizenTime){this.agents=[];this.lastCitizenTime=s.time}this.ensureAgents(s);const c=this.ctx,dt=clamp(s.time-this.lastCitizenTime,0,.08);this.lastCitizenTime=s.time,targets=[D.TOWN_X,...s.slots.filter(x=>x.building).map(x=>x.x)];
   for(let i=0;i<this.agents.length;i++){const a=this.agents[i];let fleeing=false;
    for(const d of s.disasters||[]){const fx=this.frontX(d);if(Math.abs(a.x-fx)<230&&d.progress>.36){a.target=D.TOWN_X;fleeing=true;break}}
    if(!fleeing){a.wait-=dt;if(Math.abs(a.x-a.target)<8){if(a.wait<=0){a.target=targets[(a.seed+Math.floor(s.time/2.7)+i)%targets.length]||D.TOWN_X;a.wait=.5+(a.seed%5)*.18}}}
