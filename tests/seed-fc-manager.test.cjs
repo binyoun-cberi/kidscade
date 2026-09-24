@@ -80,3 +80,16 @@ test('match engine can complete a full 90 minute simulation', () => {
   assert.equal(Number.isInteger(match.score[0]), true);
   assert.equal(Number.isInteger(match.score[1]), true);
 });
+
+
+test('match presentation has visual movement trails and shared soccer assets', () => {
+  assert.match(simSource, /trail:\[\]/);
+  assert.match(simSource, /lastTouchId/);
+  assert.match(simSource, /effects:\[\]/);
+  assert.match(gameSource, /ball_soccer1\.png/);
+  assert.match(gameSource, /projectile-whoosh-01\.mp3/);
+  assert.match(gameSource, /cheer-yay-01\.mp3/);
+  assert.match(gameSource, /a\.trail/);
+  assert.match(gameSource, /match\.ball\.trail/);
+  assert.match(gameSource, /match\.effects/);
+});
