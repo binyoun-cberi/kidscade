@@ -13,7 +13,7 @@ const missions=[
  {title:'버튼을 눌러 보세요',goal:'Q·W·E를 조절해 손으로 파란 버튼을 누르세요.',hint:'팔꿈치만 움직여서는 닿기 어려워요. E로 어깨까지 함께 움직여 보세요.',keys:['q','w','e'],target:'button',result:'손이 버튼에 닿았어요!',science:'어깨와 팔꿈치 관절이 함께 움직이면서 손의 위치가 바뀌었어요. 한 동작에도 여러 근육이 협력해요.'},
  {title:'사과를 바구니에 넣으세요',goal:'손을 사과 가까이 가져간 뒤 R을 누른 채 옮기고, 바구니 위에서 놓으세요.',hint:'R은 토글이 아니라 “잡고 있는 동안” 수축해요. 사과 가까이에서 꾹 눌러 보세요.',keys:['q','w','e','r'],target:'apple',result:'사과를 바구니에 넣었어요!',science:'근육이 뼈를 움직여 손을 사과까지 보내고, 손 근육이 수축해 물건을 붙잡았어요. 여러 관절과 근육의 협응이에요.'}
 ];
-const state={mission:0,xray:false,paused:false,finished:false,shoulder:0.42,shoulderV:0,elbow:0.16,elbowV:0,holdTime:0,buttonPressed:false,apple:{x:548,y:333,vx:0,vy:0,held:false},lastHand:{x:0,y:0},lastTime:performance.now(),toastTimer:0};
+const state={mission:0,xray:false,paused:false,finished:false,shoulder:0.42,shoulderV:0,elbow:0.16,elbowV:0,holdTime:0,buttonPressed:false,apple:{x:548,y:333,vx:0,vy:0,held:false},lastHand:{x:0,y:0},lastTime:performance.now(),toastTimer:0,summary:false};
 const rig={shoulderX:330,shoulderY:330,upper:142,lower:130,handR:23};
 const button={x:602,y:322,r:27};
 const basket={x:558,y:420,w:92,h:68};
@@ -34,7 +34,7 @@ function syncControls(){
 function showToast(msg){els.toast.textContent=msg;els.toast.classList.add('show');clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>els.toast.classList.remove('show'),1200)}
 function resetMission(){
  Object.keys(inputs).forEach(k=>inputs[k]=false);Object.keys(activation).forEach(k=>activation[k]=0);
- state.finished=false;state.holdTime=0;state.buttonPressed=false;state.shoulder=state.mission===1?0.5:0.42;state.shoulderV=0;state.elbow=state.mission===1?0.38:0.16;state.elbowV=0;
+ state.finished=false;state.summary=false;state.holdTime=0;state.buttonPressed=false;state.shoulder=state.mission===1?0.5:0.42;state.shoulderV=0;state.elbow=state.mission===1?0.38:0.16;state.elbowV=0;
  state.apple={x:548,y:333,vx:0,vy:0,held:false};state.lastHand={x:0,y:0};els.card.classList.add('hidden');syncMissionUI();syncControls();
 }
 function syncMissionUI(){const m=missions[state.mission];els.missionStep.textContent=(state.mission+1)+' / '+missions.length;els.missionTitle.textContent=m.title;els.missionGoal.textContent=m.goal;els.goalText.textContent=m.title;els.hintText.textContent=m.hint;els.nextBtn.textContent=state.mission===missions.length-1?'실험 완료':'다음 실험'}
@@ -43,7 +43,7 @@ function finishMission(){
  const m=missions[state.mission];els.resultIcon.textContent=state.mission===2?'🍎':'🔬';els.resultTitle.textContent=m.result;els.resultText.textContent='방금 움직임을 뼈와 근육의 관계로 다시 확인해 봐요.';els.scienceTitle.textContent='왜 움직였을까요?';els.scienceText.textContent=m.science;els.card.classList.remove('hidden');
  try{window.KidscadeGame?.sound?.('correct')}catch(_){ }
 }
-function nextMission(){if(state.mission<missions.length-1){state.mission++;resetMission();showToast('새로운 근육이 추가됐어요!')}else{try{window.KidscadeGame?.score?.(300);window.KidscadeGame?.gameOver?.({score:300,missions:3})}catch(_){ } els.resultIcon.textContent='🏆';els.resultTitle.textContent='뼈·근육 실험 완료!';els.resultText.textContent='팔을 굽히고, 펴고, 들어 올리고, 물건을 잡는 동안 뼈와 근육이 함께 일했어요.';els.scienceTitle.textContent='다음 실험에서는';els.scienceText.textContent='다리와 몸통을 추가해 의자에서 일어나기와 걷기처럼 더 복잡한 전신 움직임을 실험할 수 있어요.';els.nextBtn.textContent='처음부터 다시';els.nextBtn.onclick=()=>{state.mission=0;try{window.KidscadeGame?.start?.({restart:true})}catch(_){ } resetMission()}}}
+function nextMission(){if(state.summary){state.mission=0;try{window.KidscadeGame?.start?.({restart:true})}catch(_){ }resetMission();return}if(state.mission<missions.length-1){state.mission++;resetMission();showToast('새로운 근육이 추가됐어요!')}else{state.summary=true;try{window.KidscadeGame?.score?.(300);window.KidscadeGame?.gameOver?.({score:300,missions:3})}catch(_){ }els.resultIcon.textContent='🏆';els.resultTitle.textContent='뼈·근육 실험 완료!';els.resultText.textContent='팔을 굽히고, 펴고, 들어 올리고, 물건을 잡는 동안 뼈와 근육이 함께 일했어요.';els.scienceTitle.textContent='다음 실험에서는';els.scienceText.textContent='다리와 몸통을 추가해 의자에서 일어나기와 걷기처럼 더 복잡한 전신 움직임을 실험할 수 있어요.';els.nextBtn.textContent='처음부터 다시'}}
 function update(dt){
  if(state.paused||state.finished)return;
  for(const k of Object.keys(activation)) activation[k]=lerp(activation[k],inputs[k]?1:0,clamp(dt*10,0,1));
@@ -91,7 +91,7 @@ function drawRoom(){
 }
 function drawSceneObjects(){
  const m=state.mission;
- if(m===0){ctx.save();ctx.setLineDash([10,8]);ctx.strokeStyle=state.xray?'#7dd3fc':'#2f80ed';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(468,228);ctx.lineTo(620,228);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=state.xray?'#bae6fd':'#1d5fb9';ctx.font='800 14px system-ui';ctx.fillText('손이 이 선 위로 올라오면 성공!',470,210);ctx.restore()}
+ if(m===0){ctx.save();ctx.setLineDash([10,8]);ctx.strokeStyle=state.xray?'#7dd3fc':'#2f80ed';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(468,300);ctx.lineTo(620,300);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=state.xray?'#bae6fd':'#1d5fb9';ctx.font='800 14px system-ui';ctx.fillText('손이 이 선 위로 올라오면 성공!',470,282);ctx.restore()}
  if(m===1){ctx.fillStyle=state.xray?'#334b61':'#fff';ctx.fillRect(640,170,26,270);ctx.fillStyle=state.buttonPressed?'#18a77a':'#3b82f6';ctx.beginPath();ctx.arc(button.x,button.y,button.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 14px system-ui';ctx.textAlign='center';ctx.fillText('PUSH',button.x,button.y+5);ctx.textAlign='left'}
  if(m===2){ctx.fillStyle=state.xray?'#355064':'#a77245';ctx.fillRect(470,365,220,18);ctx.fillRect(490,383,15,117);ctx.fillRect(655,383,15,117);drawBasket();drawApple()}
 }
@@ -114,7 +114,7 @@ function drawMuscles(p,xray){
  const perp={x:-Math.sin(p.a),y:Math.cos(p.a)};
  const b1={x:p.shoulder.x+perp.x*11,y:p.shoulder.y+perp.y*11},b2={x:p.elbow.x+perp.x*8,y:p.elbow.y+perp.y*8};
  const t1={x:p.shoulder.x-perp.x*11,y:p.shoulder.y-perp.y*11},t2={x:p.elbow.x-perp.x*8,y:p.elbow.y-perp.y*8};
- const baseAlpha=xray?.92:.38;
+ const baseAlpha=xray ? .92 : .38;
  ctx.globalAlpha=baseAlpha;line(b1,b2,8+q*11,'#e84c4f');line(t1,t2,7+w*10,'#c63c61');circle({x:p.shoulder.x-2,y:p.shoulder.y-4},14+e*7,'#ef6b54');circle(p.hand,9+r*8,'#d84a76');ctx.globalAlpha=1;
  if(xray){ctx.fillStyle='#f8d0d0';ctx.font='700 12px system-ui';if(q>.08)ctx.fillText('위팔 앞쪽 수축',midUpper.x+16,midUpper.y-18);if(w>.08)ctx.fillText('위팔 뒤쪽 수축',midUpper.x+12,midUpper.y+28);if(e>.08)ctx.fillText('어깨 수축',p.shoulder.x-38,p.shoulder.y-36);if(r>.08)ctx.fillText('손 근육 수축',p.hand.x+18,p.hand.y-18)}
 }
