@@ -34,3 +34,13 @@ test('storage registry owns the Game SDK dynamic namespace', () => {
   assert.equal(storage.prefixes.gameSdkV1, 'kidscade_game_v1:');
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_game_v1:high_disaster_city:best'), true);
 });
+
+
+test('Game SDK exposes a fatal error channel without stack payloads', () => {
+  assert.equal(sdk.ERROR_TYPE, 'kidscade:game-error');
+  assert.equal(typeof sdk.reportError, 'function');
+  const source = fs.readFileSync(path.join(ROOT, 'kidscade-game-sdk.js'), 'utf8');
+  assert.match(source, /kidscade:game-error/);
+  assert.match(source, /installErrorReporting/);
+  assert.doesNotMatch(source, /stack:\s*error/);
+});
