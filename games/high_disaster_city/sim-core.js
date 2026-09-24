@@ -33,9 +33,10 @@ class Simulation{
   const s=this.state,i=s.hand.findIndex(c=>c.uid===uid);if(i<0)return null;const [c]=s.hand.splice(i,1);s.discard.push(c.id);if(s.selectedUid===uid)s.selectedUid=null;this.drawToFive();return c
  }
  selectCard(uid){
-  const c=this.cardDef(uid);if(!c||c.kind!=='build'||!this.canAfford(c.cost))return false;
+  const c=this.cardDef(uid);if(!c||c.kind!=='build'||!this.buildCardUsable(uid))return false;
   this.state.selectedUid=this.state.selectedUid===uid?null:uid;return true
  }
+ buildCardUsable(uid){return this.state.slots.some((_,i)=>this.canPlace(uid,i))}
  canAfford(cost){return this.state.money>=cost}
  buildingCount(id,side){
   return this.state.slots.reduce((n,s)=>n+(s.building&&s.building.id===id&&(!side||sideOfX(s.x)===side)?1:0),0)
