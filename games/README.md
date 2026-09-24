@@ -52,3 +52,33 @@ games/
 - `classroom`: 교사가 함께 운영하기 좋은 게임인지 여부
 
 기존 `category`는 저장·미션·레거시 호환을 위해 남겨 두지만, 새 메인 탐색 UI의 1차 기준으로 사용하지 않습니다.
+
+
+## Game SDK v1
+
+새 게임과 대규모 리워크 게임은 가능하면 공통 SDK를 직접 로드합니다.
+
+```html
+<script
+  src="../../kidscade-game-sdk.js"
+  data-game-id="high_example_game"
+  data-title="예시 게임"
+  data-shell="true"
+  data-orientation="landscape">
+</script>
+```
+
+게임 코드에서는 공통 생명주기를 사용합니다.
+
+```js
+KidscadeGame.start();
+KidscadeGame.sound('correct');
+KidscadeGame.score(1200);
+KidscadeGame.gameOver({ score: 1200 });
+KidscadeGame.exit();
+```
+
+- 공통 메뉴는 다시 시작 / 게임 나가기 / 지원 게임의 음소거 / 연결된 게임의 일시정지를 제공합니다.
+- 자체 음향 엔진을 유지하는 게임은 `data-mute="false"`로 공통 음소거 버튼을 숨기고, 추후 `KidscadeAudio`로 옮긴 뒤 켭니다.
+- iframe 종료를 위해 게임이 직접 `postMessage('*')`를 보내지 않습니다.
+- 저장이 필요한 새 SDK 기록은 `kidscade_game_v1:` namespace를 사용합니다.
