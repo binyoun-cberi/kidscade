@@ -140,8 +140,18 @@
       }
       body.dark-mode .kc-top-category-status { background: #253145; }
 
-      /* Old discovery box is redundant after the filters move into the header. */
-      .kc-discovery { display: none !important; }
+      /* Subject filters live in the sticky header; the second discovery row keeps genre filters visible. */
+      .kc-discovery {
+        display:block !important;
+        margin:0 0 11px !important;
+        padding:0 !important;
+        border:0 !important;
+        background:transparent !important;
+        box-shadow:none !important;
+      }
+      .kc-discovery .tool-panel,
+      .kc-discovery > .kc-filter-label:not(.kc-genre-label) { display:none !important; }
+      .kc-discovery .kc-genre-label { margin:0 2px 5px !important; }
 
       /* Hero: keep one message, remove repeated age/status information. */
       .kc-hero {
@@ -248,7 +258,7 @@
     if (!row) {
       row = document.createElement('div');
       row.className = 'kc-top-category-row';
-      row.setAttribute('aria-label', '게임 카테고리 빠른 선택');
+      row.setAttribute('aria-label', '학습 영역 빠른 선택');
       topbar.appendChild(row);
     }
 
