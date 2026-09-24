@@ -133,7 +133,20 @@ function resetCar(){
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
 }
+function requestGameFullscreen(){
+  try{
+    const root=document.documentElement;
+    if(document.fullscreenElement||document.webkitFullscreenElement)return;
+    const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
+    if(!coarse)return;
+    const fn=root.requestFullscreen||root.webkitRequestFullscreen;
+    if(!fn)return;
+    const result=fn.call(root);
+    result?.catch?.(()=>{});
+  }catch(_){}
+}
 function startGame(){
+  requestGameFullscreen();
   initAudio();gameState='playing';resetCar();ui.start.classList.remove('show');ui.result.classList.remove('show');
   ui.examMode.textContent=(license==='auto'?'2종 자동':'1종 보통')+' · '+(mode==='exam'?'기능시험':'연습');
   setInstruction('안전띠를 매고 시동을 거세요.',license==='auto'?'브레이크를 밟고 D에 놓은 뒤 주차브레이크를 해제합니다.':'클러치를 밟고 1단에 넣은 뒤 주차브레이크를 해제합니다.');
@@ -557,6 +570,8 @@ function resize(){
 addEventListener('resize',resize);
 window.visualViewport?.addEventListener('resize',resize);
 window.visualViewport?.addEventListener('scroll',resize);
+document.addEventListener('fullscreenchange',resize);
+document.addEventListener('webkitfullscreenchange',resize);
 
 selectOptions();initScene();installControls();resetCar();clock=new THREE.Clock();
 requestAnimationFrame(loop);
