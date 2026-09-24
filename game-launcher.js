@@ -72,6 +72,9 @@
     if (bridge.getSession?.()?.id) {
       return { handled: true, opened: false, reason: 'session-active' };
     }
+    if (bridge.isLaunchPending?.()) {
+      return { handled: true, opened: false, reason: 'launch-pending' };
+    }
 
     const gameId = String(getCardValue(cardElement, 'id', 'data-id') || '');
     if (!gameId) return { handled: true, opened: false, reason: 'missing-id' };
@@ -98,29 +101,60 @@
 
     const category = String(game?.category || getCardValue(originCard, 'category', 'data-category') || 'all');
     const title = String(game?.title || originCard?.querySelector?.('.game-title')?.textContent || '게임');
-    const startedAt = finiteNumber(bridge.now?.(), Date.now());
+    let activatedSession = null;
 
-    const hadBonus = Boolean(bridge.consumePlayTicket?.(gameId));
-    if (!hadBonus) {
-      const recharge = bridge.getNextRechargeMs?.(gameId);
-      const rechargeText = bridge.formatRechargeTime?.(recharge);
-      bridge.showToast?.(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${rechargeText || '잠시'} 뒤 보너스 +1`);
+    const activate = () => {
+      if (activatedSession) return activatedSession;
+
+      const startedAt = finiteNumber(bridge.now?.(), Date.now());
+      const hadBonus = Boolean(bridge.consumePlayTicket?.(gameId));
+      if (!hadBonus) {
+        const recharge = bridge.getNextRechargeMs?.(gameId);
+        const rechargeText = bridge.formatRechargeTime?.(recharge);
+        bridge.showToast?.(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${rechargeText || '잠시'} 뒤 보너스 +1`);
+      }
+
+      const energyState = bridge.getPlayState?.(gameId) || { plays: 0 };
+      const playLimitMax = finiteNumber(bridge.playLimitMax, 0);
+      const bonusText = hadBonus
+        ? `추천 에너지 보너스 적용 · 남은 보너스 ${finiteNumber(energyState.plays, 0)}/${playLimitMax}`
+        : '기본 보상 진행';
+
+      activatedSession = { id: gameId, category, title, href, startedAt, hadBonus, bonusText };
+      bridge.startSession?.(activatedSession);
+      bridge.remember?.(gameId);
+      bridge.updateModalTitle?.(`진행 중: ${title} · ${bonusText}`);
+      bridge.afterOpen?.(activatedSession);
+      return activatedSession;
+    };
+
+    bridge.playSound?.('open');
+
+    if (bridge.deferLaunch === true && typeof bridge.openModal === 'function') {
+      bridge.openModal({
+        game: game || {
+          id: gameId,
+          title,
+          href,
+          category
+        },
+        href,
+        title,
+        titleText: `준비: ${title}`,
+        onStart: activate,
+        startedTitle: session => `진행 중: ${title} · ${session?.bonusText || '기본 보상 진행'}`
+      });
+      return { handled: true, opened: true, pending: true, session: null };
     }
 
-    const energyState = bridge.getPlayState?.(gameId) || { plays: 0 };
-    const playLimitMax = finiteNumber(bridge.playLimitMax, 0);
-    const bonusText = hadBonus
-      ? `추천 에너지 보너스 적용 · 남은 보너스 ${finiteNumber(energyState.plays, 0)}/${playLimitMax}`
-      : '기본 보상 진행';
+    const session = activate();
+    bridge.openModal?.({
+      game,
+      ...session,
+      titleText: `진행 중: ${title} · ${session.bonusText}`
+    });
 
-    const session = { id: gameId, category, title, href, startedAt, hadBonus };
-    bridge.playSound?.('open');
-    bridge.startSession?.(session);
-    bridge.remember?.(gameId);
-    bridge.openModal?.({ ...session, bonusText, titleText: `진행 중: ${title} · ${bonusText}` });
-    bridge.afterOpen?.(session);
-
-    return { handled: true, opened: true, session };
+    return { handled: true, opened: true, pending: false, session };
   }
 
   function close(bridge = {}) {
