@@ -4,7 +4,7 @@
 var D=window.SeedFCData,S=window.SeedFCSim;
 if(!D||!S){document.body.innerHTML='<p style="padding:30px">게임 데이터를 불러오지 못했어요.</p>';return;}
 
-var SAVE_KEY='kidscade_game_v1:high_seed_fc_manager:save';
+var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
 var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
@@ -50,7 +50,7 @@ function load(){
     var v=null;
     if(window.KidscadeStorage&&KidscadeStorage.getJSON)v=KidscadeStorage.getJSON(SAVE_KEY,null);
     else{var raw=localStorage.getItem(SAVE_KEY);v=raw?JSON.parse(raw):null;}
-    if(v&&v.version===1&&clubById(v.clubId))return v;
+    if(v&&v.version===2&&clubById(v.clubId))return v;
   }catch(e){}
   return null;
 }
@@ -87,7 +87,7 @@ function autoLineup(roster,formation){
 function newState(clubId){
   var c=clubById(clubId),roster=clone(c.players);
   return {
-    version:1,clubId:clubId,season:1,round:0,budget:c.budget,formation:'4-3-3',
+    version:2,clubId:clubId,season:1,round:0,budget:c.budget,formation:'4-3-3',
     tactics:clone(c.tactics),roster:roster,lineup:autoLineup(roster,'4-3-3'),
     schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,
     worldSigned:[],managerNotes:[],lastResult:null,replays:[],pyramid:null,otherLeague:null
@@ -342,9 +342,9 @@ function analysis(){
   var root=$('viewRoot'),list=state.replays||[];
   var cards=list.map(function(r,i){
     var h=clubById(r.homeClubId),a=clubById(r.awayClubId);
-    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">선수 집중 다시보기 · 히트맵 · 개인 경기 기록</p></div><button class="primary" data-replay="'+i+'" type="button">경기 분석</button></article>';
+    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">선수 집중 다시보기 · 히트맵 · 패스맵 · 개인 경기 기록</p></div><button class="primary" data-replay="'+i+'" type="button">경기 분석</button></article>';
   }).join('');
-  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기를 저장해 선수별 움직임과 히트맵을 다시 볼 수 있어요.</div></div></div>'+(cards?'<div class="replay-list">'+cards+'</div>':'<section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">경기를 한 번 마치면 다시보기와 히트맵이 여기에 저장됩니다.</p></section>');
+  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기를 저장해 선수별 움직임·히트맵·패스맵을 다시 볼 수 있어요.</div></div></div>'+(cards?'<div class="replay-list">'+cards+'</div>':'<section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">경기를 한 번 마치면 다시보기와 히트맵이 여기에 저장됩니다.</p></section>');
   root.querySelectorAll('[data-replay]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replay));};});
 }
 function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(function(p){return p.id===id;});}
@@ -373,19 +373,42 @@ function updateReplayStats(){
   var box=$('replayStats');
   if(replayFocus==='all'){
     var userPlayers=replayCurrent.players.filter(function(p){return p.side===replayCurrent.userSide;});
-    var total={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0};
-    userPlayers.forEach(function(p){var s=replayCurrent.stats[p.id]||{};Object.keys(total).forEach(function(k){total[k]+=Number(s[k]||0);});});
-    box.innerHTML='<h3>우리 팀 기록</h3><div class="replay-stat-grid"><div><b>'+total.shots+'</b><small>슈팅</small></div><div><b>'+total.goals+'</b><small>골</small></div><div><b>'+total.xg.toFixed(2)+'</b><small>xG</small></div><div><b>'+total.touches+'</b><small>주요 관여</small></div><div><b>'+total.distance.toFixed(1)+'</b><small>추정 이동 km</small></div></div><p class="muted">xG는 슈팅 위치·공격 상황을 게임 안에서 계산한 득점 기대값이에요.</p>';
+    var total={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0};
+    userPlayers.forEach(function(p){
+      var s=replayCurrent.stats[p.id]||{};
+      Object.keys(total).forEach(function(k){total[k]+=Number(s[k]||0);});
+    });
+    var passPct=total.passesAttempted?Math.round(total.passesCompleted/total.passesAttempted*100):0;
+    box.innerHTML='<h3>우리 팀 기록</h3><div class="replay-stat-grid">'+
+      '<div><b>'+total.shots+'</b><small>슈팅</small></div><div><b>'+total.xg.toFixed(2)+'</b><small>xG</small></div>'+
+      '<div><b>'+total.passesCompleted+'/'+total.passesAttempted+'</b><small>패스</small></div><div><b>'+passPct+'%</b><small>성공률</small></div>'+
+      '<div><b>'+total.progressivePasses+'</b><small>전진 패스</small></div><div><b>'+total.keyPasses+'</b><small>키패스</small></div>'+
+      '<div><b>'+total.assists+'</b><small>도움</small></div><div><b>'+total.touches+'</b><small>주요 관여</small></div>'+
+      '<div><b>'+total.distance.toFixed(1)+'</b><small>추정 이동 km</small></div></div>'+
+      '<p class="muted">패스맵에서 성공·실패 패스, 전진 패스와 슈팅으로 이어진 키패스를 확인할 수 있어요.</p>';
     return;
   }
   var p=replayPlayerMeta(replayFocus),s=replayCurrent.stats[replayFocus]||{};
   if(!p){box.innerHTML='';return;}
-  box.innerHTML='<span class="history-tag">'+esc(p.era||'역사 선수')+'</span><h3>'+esc(p.name)+' · '+esc(p.pos)+'</h3><div class="replay-stat-grid"><div><b>'+Number(s.touches||0)+'</b><small>터치</small></div><div><b>'+Number(s.shots||0)+'</b><small>슈팅</small></div><div><b>'+Number(s.goals||0)+'</b><small>골</small></div><div><b>'+Number(s.saves||0)+'</b><small>선방</small></div><div><b>'+Number(s.distance||0).toFixed(1)+'</b><small>이동 km</small></div></div><div class="memory">'+esc(p.memory||'')+'</div>';
+  var attempted=Number(s.passesAttempted||0),completed=Number(s.passesCompleted||0),passPct=attempted?Math.round(completed/attempted*100):0;
+  box.innerHTML='<span class="history-tag">'+esc(p.era||'역사 선수')+'</span><h3>'+esc(p.name)+' · '+esc(p.pos)+'</h3>'+
+    '<div class="replay-stat-grid"><div><b>'+completed+'/'+attempted+'</b><small>패스</small></div><div><b>'+passPct+'%</b><small>성공률</small></div>'+
+    '<div><b>'+Number(s.progressivePasses||0)+'</b><small>전진 패스</small></div><div><b>'+Number(s.keyPasses||0)+'</b><small>키패스</small></div>'+
+    '<div><b>'+Number(s.assists||0)+'</b><small>도움</small></div><div><b>'+Number(s.shots||0)+'</b><small>슈팅</small></div>'+
+    '<div><b>'+Number(s.goals||0)+'</b><small>골</small></div><div><b>'+Number(s.xg||0).toFixed(2)+'</b><small>xG</small></div>'+
+    '<div><b>'+Number(s.saves||0)+'</b><small>선방</small></div><div><b>'+Number(s.distance||0).toFixed(1)+'</b><small>추정 이동 km</small></div></div>'+
+    '<div class="memory">'+esc(p.memory||'')+'</div>'+
+    '<p class="analysis-legend">↗ 청록=성공 · 분홍=실패 · 노랑=전진 패스 · 금색=키패스/도움</p>';
 }
 function renderReplayEvents(){
   if(!replayCurrent)return;
-  var events=replayCurrent.events.filter(function(e){return ['goal','shot','save','sub','fact'].indexOf(e.type)>=0;}).slice(-18);
-  $('replayEvents').innerHTML=events.map(function(e){return '<button type="button" data-seek-minute="'+e.minute+'" class="replay-event '+e.type+'"><b>'+e.minute+"'</b><span>"+esc(e.text)+'</span></button>';}).join('')||'<p class="muted">기록된 주요 장면이 없어요.</p>';
+  var events=replayCurrent.events.filter(function(e){
+    return ['goal','shot','save','sub','fact'].indexOf(e.type)>=0||(e.type==='pass'&&(e.keyPass||e.assist));
+  }).slice(-20);
+  $('replayEvents').innerHTML=events.map(function(e){
+    var label=e.type==='pass'?(e.assist?'도움 패스':e.keyPass?'키패스':'패스'):e.text;
+    return '<button type="button" data-seek-minute="'+e.minute+'" class="replay-event '+e.type+'"><b>'+e.minute+"'</b><span>"+esc(label)+'</span></button>';
+  }).join('')||'<p class="muted">기록된 주요 장면이 없어요.</p>';
   $('replayEvents').querySelectorAll('[data-seek-minute]').forEach(function(b){b.onclick=function(){seekReplayMinute(Number(b.dataset.seekMinute));};});
 }
 function seekReplayMinute(minute){
@@ -411,6 +434,7 @@ function drawReplayFrame(){
   var nextFrame=replayCurrent.frames[Math.min(replayFrame+1,replayCurrent.frames.length-1)]||frame;
   var mix=replayMode==='replay'?clamp(replayCursor-replayFrame,0,1):0;
   replayPitchBase(ctx,W,H);
+
   if(replayMode==='heat'){
     if(replayFocus==='all'){
       var first=replayCurrent.players.find(function(p){return p.side===replayCurrent.userSide;});
@@ -435,6 +459,22 @@ function drawReplayFrame(){
       if(e.type==='goal'){ctx.fillStyle='#facc15';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.stroke();}
       else{ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();}
     });
+  }else if(replayMode==='pass'){
+    var passEvents=replayCurrent.events.filter(function(e){
+      if(e.type!=='pass'||e.x==null||e.toX==null)return false;
+      if(replayFocus==='all')return e.side===replayCurrent.userSide;
+      return e.actorId===replayFocus;
+    });
+    passEvents.forEach(function(e){
+      var x1=38+e.x/100*(W-76),y1=35+e.y/100*(H-70),x2=38+e.toX/100*(W-76),y2=35+e.toY/100*(H-70);
+      var color=e.assist?'#fbbf24':e.keyPass?'#fde047':e.progressive?'#facc15':e.completed?'#5eead4':'#fb7185';
+      ctx.save();ctx.globalAlpha=e.completed?.58:.48;ctx.strokeStyle=color;ctx.lineWidth=e.assist?5:e.keyPass?4:e.progressive?3:2;
+      if(!e.completed)ctx.setLineDash([7,6]);
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      ctx.setLineDash([]);ctx.globalAlpha=1;
+      var ang=Math.atan2(y2-y1,x2-x1),head=e.assist?8:6;
+      ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-Math.cos(ang-.55)*head,y2-Math.sin(ang-.55)*head);ctx.lineTo(x2-Math.cos(ang+.55)*head,y2-Math.sin(ang+.55)*head);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.restore();
+    });
   }else if(replayFocus!=='all'){
     var start=Math.max(0,replayFrame-14),trail=[];
     for(var ti=start;ti<=replayFrame;ti++){var q=framePlayer(replayCurrent.frames[ti],replayFocus);if(q)trail.push(q);}
@@ -443,6 +483,7 @@ function drawReplayFrame(){
       ctx.strokeStyle='rgba(250,204,21,'+(t/trail.length*.72)+')';ctx.lineWidth=2+t/trail.length*6;ctx.lineCap='round';ctx.stroke();
     }
   }
+
   if(replayMode==='replay'){
     frame[6].forEach(function(row){
       var meta=replayPlayerMeta(row[0]);if(!meta)return;
@@ -605,6 +646,14 @@ function drawMatch(){
     }
   }
 
+  (match.passVisuals||[]).forEach(function(pv){
+    var x1=38+pv.x/100*(W-76),y1=35+pv.y/100*(H-70),x2=38+pv.toX/100*(W-76),y2=35+pv.toY/100*(H-70);
+    ctx.save();ctx.globalAlpha=Math.max(.08,pv.life*.72);
+    ctx.strokeStyle=pv.completed?(pv.progressive?'#facc15':'#a7f3d0'):'#fb7185';
+    ctx.lineWidth=pv.progressive?4:3;if(!pv.completed)ctx.setLineDash([8,7]);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
+  });
+
   (match.effects||[]).forEach(function(fx){
     var x=38+fx.x/100*(W-76),y=35+fx.y/100*(H-70),life=fx.life,r=7+(1-life)*24;
     ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
@@ -682,7 +731,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};
 }
 function help(){
-  modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물 18명 중 선발 11명을 골라요.<br><br><b>2. 작전</b><br>포메이션과 공격·압박·태도를 정해요.<br><br><b>3. 경기</b><br>전술과 선수 능력, 체력이 2D 경기 움직임과 결과에 반영돼요.<br><br><b>4. 분석실</b><br>경기를 다시 보며 한 선수만 따라가거나 히트맵·터치·슈팅·이동거리를 확인해요.<br><br><b>5. 리그</b><br>첫 시즌은 배치 리그이며, 이후 1부 우승과 2부 승격, 1부 강등이 매 시즌 이어져요.</div><p class="muted">역사 인물의 축구 포지션과 능력치는 전부 가상의 게임 설정입니다. 역사적 인물의 업적이나 중요도를 순위로 평가하지 않습니다.</p>';
+  modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물 18명 중 선발 11명을 골라요.<br><br><b>2. 작전</b><br>포메이션과 공격·압박·태도를 정해요.<br><br><b>3. 경기</b><br>전술과 선수 능력, 체력이 2D 경기 움직임과 결과에 반영돼요.<br><br><b>4. 분석실</b><br>경기를 다시 보며 한 선수를 따라가고 히트맵·패스맵·전진 패스·키패스·xG를 확인해요.<br><br><b>5. 리그</b><br>첫 시즌은 배치 리그이며, 이후 1부 우승과 2부 승격, 1부 강등이 매 시즌 이어져요.</div><p class="muted">역사 인물의 축구 포지션과 능력치는 전부 가상의 게임 설정입니다. 역사적 인물의 업적이나 중요도를 순위로 평가하지 않습니다.</p>';
   modal.classList.remove('hidden');
 }
 
