@@ -153,3 +153,44 @@ test('closing replay and post-match modal refreshes the manager view', () => {
   assert.match(gameSource, /function closeModalSmart\(\)/);
   assert.match(gameSource, /if\(match&&match\.finished\)/);
 });
+
+
+test('passing simulation records completed progressive key passes and assists', () => {
+  const { SeedFCData, SeedFCSim } = loadDataAndSim();
+  const home = SeedFCData.clubs[0];
+  const away = SeedFCData.clubs[1];
+  const match = SeedFCSim.create({
+    homeClub: home,
+    awayClub: away,
+    homeRoster: JSON.parse(JSON.stringify(home.players)),
+    awayRoster: JSON.parse(JSON.stringify(away.players)),
+    homeLineup: home.players.slice(0, 11).map(player => player.id),
+    awayLineup: away.players.slice(0, 11).map(player => player.id),
+    homeFormation: '4-3-3',
+    awayFormation: '4-3-3',
+    homeTactics: JSON.parse(JSON.stringify(home.tactics)),
+    awayTactics: JSON.parse(JSON.stringify(away.tactics)),
+    formations: SeedFCData.formations
+  });
+  let guard = 0;
+  while (!match.finished && guard++ < 10000) match.update(0.1, 4);
+  const replay = match.exportReplay();
+  const stats = Object.values(replay.stats);
+  const attempts = stats.reduce((sum, s) => sum + (s.passesAttempted || 0), 0);
+  const completed = stats.reduce((sum, s) => sum + (s.passesCompleted || 0), 0);
+  assert.ok(attempts > 40);
+  assert.ok(completed > 0 && completed <= attempts);
+  assert.equal(replay.events.filter(e => e.type === 'pass').length, attempts);
+  assert.ok(replay.events.some(e => e.type === 'pass' && typeof e.completed === 'boolean'));
+  assert.ok(stats.every(s => 'progressivePasses' in s && 'keyPasses' in s && 'assists' in s));
+});
+
+test('manager exposes pass map and fresh v2 save schema', () => {
+  assert.match(html, /data-rmode="pass"/);
+  assert.match(gameSource, /replayMode==='pass'/);
+  assert.match(gameSource, /패스 성공률|성공률/);
+  assert.match(gameSource, /전진 패스/);
+  assert.match(gameSource, /키패스/);
+  assert.match(gameSource, /kidscade_game_v2:high_seed_fc_manager:save/);
+  assert.match(gameSource, /version:2/);
+});
