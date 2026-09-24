@@ -26,7 +26,7 @@ class UI{
  handKey(s){const dmg=s.slots.some(x=>x.building&&x.building.hp<x.building.maxHp)?1:0,th=(s.disasters||[]).map(d=>d.type+':'+d.side).join(',');return s.hand.map(c=>c.uid+':'+c.id).join('|')+'#'+s.selectedUid+'#'+Math.floor(s.money)+'#'+th+'#'+dmg}
  renderHand(s,sim){
   const key=this.handKey(s);if(key===this.lastHand)return;this.lastHand=key;
-  this.els.hand.innerHTML=s.hand.map(c=>{const d=D.CARDS[c.id],usable=d.kind==='build'?sim.canAfford(d.cost):sim.actionUsable(d),sel=s.selectedUid===c.uid;
+  this.els.hand.innerHTML=s.hand.map(c=>{const d=D.CARDS[c.id],usable=d.kind==='build'?sim.buildCardUsable(c.uid):sim.actionUsable(d),sel=s.selectedUid===c.uid;
    return '<button class="gameCard '+d.kind+(usable?'':' disabled')+(sel?' selected':'')+'" data-uid="'+c.uid+'" type="button"><div class="cardTop"><span class="icon">'+d.icon+'</span><span class="cost">💰 '+d.cost+'</span></div><h3>'+d.name+'</h3><p>'+d.desc+'</p><span class="tag">'+d.tag+'</span></button>'
   }).join('');
  }
