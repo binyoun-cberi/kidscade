@@ -329,8 +329,15 @@
             });
             window.addEventListener('message', (event) => {
                 if (event.origin !== location.origin || event.source !== gameIframe.contentWindow) return;
-                if (event.data?.type !== 'kidscade:close-game') return;
-                window.KidscadeGameLauncher.close(gameLauncherBridge);
+                if (event.data?.type === 'kidscade:close-game') {
+                    window.KidscadeGameLauncher.close(gameLauncherBridge);
+                    return;
+                }
+                if (event.data?.type === 'kidscade:game-event') {
+                    document.dispatchEvent(new CustomEvent('kidscade:game-event', {
+                        detail: event.data?.detail || {}
+                    }));
+                }
             });`;
     html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
 
