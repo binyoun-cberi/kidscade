@@ -339,3 +339,49 @@ body{
 @supports not (height:100dvh){
   html,body,#game,#hud,.overlay{height:100vh;min-height:100vh}
 }
+
+
+/* v6: clearer instrument cluster and parking-brake state */
+#cluster{
+  left:17.5%;
+  bottom:31%;
+  z-index:9;
+  transform:translateX(-50%) scale(.72);
+  background:rgba(7,12,15,.92);
+  box-shadow:0 5px 18px rgba(0,0,0,.35)
+}
+#steeringPad{z-index:7}
+#parkingBrake.parking-on{
+  background:#6b2626!important;
+  color:#ffd6d6!important;
+  border-color:#c85b5b!important;
+}
+#parkingBrake.parking-off{
+  background:#172126!important;
+  color:#aebcc3!important;
+  border-color:#55646b!important;
+}
+#parkingBrake.parking-on:after{
+  content:"";
+  position:absolute;
+  width:7px;height:7px;
+  border-radius:50%;
+  background:#ff5b5b;
+  box-shadow:0 0 9px #ff5b5b;
+  top:5px;right:6px;
+}
+#parkingBrake{position:relative}
+@media (orientation:landscape) and (max-height:560px){
+  #cluster{
+    left:16%;
+    bottom:39%;
+    transform:translateX(-50%) scale(.50)
+  }
+}
+@media (orientation:landscape) and (max-height:460px){
+  #cluster{
+    left:15.5%;
+    bottom:40%;
+    transform:translateX(-50%) scale(.44)
+  }
+}
