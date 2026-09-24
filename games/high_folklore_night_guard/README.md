@@ -1,6 +1,6 @@
 # 괴담 야간경비
 
-FNAF류의 고정 관리실/CCTV 긴장 구조를 교육용 세계 괴담 게임으로 재해석한 2D 프로토타입입니다.
+학교 야간 경비실을 배경으로 한 고정 관리실/CCTV 생존 공포 구조와 세계 괴담 학습을 결합한 2D 게임입니다.
 
 - 연습 근무: 도깨비, 유키온나, 처녀귀신
 - 할로윈 근무: 위 3종 + 달걀귀신, 저승사자, 늑대인간
@@ -23,3 +23,16 @@ FNAF류의 고정 관리실/CCTV 긴장 구조를 교육용 세계 괴담 게임
 
 저장 키: `kidscade_folklore_night_v1`
 진입점: `games/high_folklore_night_guard/index.html`
+
+
+## v2 학교 아트 연결
+
+사용 자산:
+- `../../assets/game/2d/office.png` — 야간 경비실 메인 배경
+- `../../assets/game/2d/classroom.png` — 6-1 교실 CCTV
+- `../../assets/game/2d/science classroom.png` — 과학실 CCTV
+- `../../assets/game/2d/hallway.png` — 중앙/서쪽/동쪽 복도 CCTV
+- `../../assets/game/2d/ghosts.png` — 6종 귀신 투명 PNG 시트, CSS 6분할 크롭
+- `../../assets/game/2d/instruments.png` — 야간 경비 장비/UI 안내 시트
+
+CCTV 장면은 실제 배경 이미지를 사용하고, 귀신은 한 장의 투명 시트를 6등분하여 각 상태 위치에 독립적으로 배치합니다.
