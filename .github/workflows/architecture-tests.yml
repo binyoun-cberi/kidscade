@@ -70,6 +70,7 @@ jobs:
             game-cover-placeholders.js \
             dashboard-recent.js \
             game-recommendations.js \
+            game-frame-shell.js \
             game-launcher.js \
             kidscade-game-sdk.js \
             score-display-normalizer.js \
