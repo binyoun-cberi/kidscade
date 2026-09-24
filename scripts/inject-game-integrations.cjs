@@ -49,6 +49,19 @@ function stripHrefSuffix(href) {
   try { return decodeURIComponent(plain); } catch (_) { return plain; }
 }
 
+function scriptSources(html) {
+  return [...String(html || '').matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)]
+    .map(match => String(match[1] || '').trim())
+    .filter(Boolean);
+}
+
+function hasScriptFile(html, filename) {
+  return scriptSources(html).some(src => {
+    const clean = src.split(/[?#]/, 1)[0].replaceAll('\\', '/');
+    return clean.split('/').pop() === filename;
+  });
+}
+
 function injectDocumentStartScript(html, tag, relativeHtml) {
   if (/<\/head\s*>/i.test(html)) {
     return html.replace(/<\/head\s*>/i, `${tag}\n</head>`);
@@ -109,14 +122,14 @@ function injectAudioRuntimeIntoCatalogGames() {
     let html = fs.readFileSync(file, 'utf8');
     let changed = false;
 
-    if (!/touch-interaction-guard\.js(?:\?|\")/.test(html)) {
+    if (!hasScriptFile(html, 'touch-interaction-guard.js')) {
       const tag = `<script src="${TOUCH_GUARD_SRC}"></script>`;
       html = injectDocumentStartScript(html, tag, relativeHtml);
       touchGuardInjected += 1;
       changed = true;
     }
 
-    if (!/audio-manager\.js(?:\?|\")/.test(html)) {
+    if (!hasScriptFile(html, 'audio-manager.js')) {
       const tag = `<script src="${AUDIO_MANAGER_SRC}"></script>`;
       html = injectDocumentStartScript(html, tag, relativeHtml);
       managerInjected += 1;
@@ -124,14 +137,14 @@ function injectAudioRuntimeIntoCatalogGames() {
     }
 
     const needsHooks = games.some(game => AUDIO_HOOK_TITLES.has(String(game.title || '').trim()));
-    if (needsHooks && !/game-audio-hooks\.js(?:\?|\")/.test(html)) {
+    if (needsHooks && !hasScriptFile(html, 'game-audio-hooks.js')) {
       html = injectDocumentEndScript(html, `<script src="${AUDIO_HOOKS_SRC}"></script>`);
       hooksInjected += 1;
       changed = true;
     }
 
     const needsExtraHooks = games.some(game => AUDIO_EXTRA_HOOK_TITLES.has(String(game.title || '').trim()));
-    if (needsExtraHooks && !/game-audio-hooks-extra\.js(?:\?|\")/.test(html)) {
+    if (needsExtraHooks && !hasScriptFile(html, 'game-audio-hooks-extra.js')) {
       html = injectDocumentEndScript(html, `<script src="${AUDIO_EXTRA_HOOKS_SRC}"></script>`);
       extraHooksInjected += 1;
       changed = true;

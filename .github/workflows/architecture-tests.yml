@@ -90,6 +90,8 @@ jobs:
           done
       - name: Reject tracked credentials and secret env files
         run: node scripts/secret-audit.cjs
+      - name: Check platform health baseline
+        run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
       - name: Run audio manager and integration tests

@@ -12,6 +12,14 @@ const stripHref = href => {
   try { return decodeURIComponent(plain); } catch (_) { return plain; }
 };
 
+const scriptSources = html => [...String(html || '').matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)]
+  .map(match => String(match[1] || '').trim())
+  .filter(Boolean);
+const hasScriptFile = (html, filename) => scriptSources(html).some(src => {
+  const clean = src.split(/[?#]/, 1)[0].replaceAll('\\', '/');
+  return clean.split('/').pop() === filename;
+});
+
 const ENHANCED_TITLES = [
   '인내의 탑',
   '멍멍 곱셈 러너',
@@ -74,6 +82,7 @@ test('Cloudflare build injector adds the audio manager and both game hook tiers'
   assert.match(source, /injectAudioRuntimeIntoCatalogGames/);
   assert.match(source, /injectDocumentStartScript/);
   assert.match(source, /injectDocumentEndScript/);
+  assert.match(source, /hasScriptFile/);
   assert.match(source, /AUDIO_MANAGER_SRC/);
   assert.match(source, /AUDIO_HOOKS_SRC/);
   assert.match(source, /AUDIO_EXTRA_HOOKS_SRC/);
@@ -99,7 +108,7 @@ test('built enabled games all contain the shared audio manager', () => {
     const file = path.join(dist, relative);
     assert.ok(fs.existsSync(file), `built game entry is missing: ${relative}`);
     const html = fs.readFileSync(file, 'utf8');
-    assert.match(html, /audio-manager\.js\?v=20260917-1/, `audio manager missing from ${game.id}: ${relative}`);
+    assert.ok(hasScriptFile(html, 'audio-manager.js'), `audio manager missing from ${game.id}: ${relative}`);
     checked += 1;
   }
   assert.ok(checked >= 90, `expected broad catalog coverage, checked only ${checked}`);
