@@ -7,7 +7,7 @@ function slotProgress(slot,side){
 }
 function spawn(sim){
  const s=sim.state,type=s.next.type,side=s.next.side,p=sim.pressure(),base=type==='wildfire'?105:112;
- s.disaster={type,side,energy:base*p,maxEnergy:base*p,progress:0,age:0,blockPause:0,blockedSlot:-1,pulse:0};
+ s.disaster={type,side,strength:p,energy:base*p,maxEnergy:base*p,progress:0,age:0,blockPause:0,blockedSlot:-1,pulse:0};
  sim.planNextAfterSpawn();sim.emit('warning',(side==='left'?'서쪽':'동쪽')+'에서 '+(type==='wildfire'?'산불':'홍수')+'이 시작됐습니다!');
  if(s.tutorial&&s.tutorialStep===2){s.tutorialStep=3;sim.emit('tip',type==='wildfire'?'산불에는 「소방대 출동」과 소방서가 효과적입니다.':'홍수에는 「모래주머니」와 제방·배수펌프가 효과적입니다.')}
 }
@@ -19,7 +19,7 @@ function nearestBlockingLevee(sim,d){
  return best
 }
 function damageAroundFront(sim,d,dt,kind){
- const pwr=sim.pressure();for(const slot of sim.state.slots){const b=slot.building;if(!b)continue;const p=slotProgress(slot,d.side),delta=d.progress-p;
+ const pwr=d.strength||sim.pressure();for(const slot of sim.state.slots){const b=slot.building;if(!b)continue;const p=slotProgress(slot,d.side),delta=d.progress-p;
   if(kind==='wildfire'){
    if(Math.abs(delta)<.09){const vuln=b.id==='farm'?1.35:b.id==='reservoir'?.85:1;sim.damageBuilding(slot.i,(7.4*pwr*vuln)*dt,'wildfire')}
   }else{
@@ -28,14 +28,14 @@ function damageAroundFront(sim,d,dt,kind){
  }
 }
 function updateWildfire(sim,d,dt){
- const s=sim.state,p=sim.pressure(),stations=sim.buildingCount('fireStation',d.side),reservoirs=sim.buildingCount('reservoir');
- const suppression=stations*(1.05+reservoirs*.18);d.energy-=dt*(2.05+suppression);d.progress+=dt*(.0315*p);
+ const s=sim.state,p=d.strength||sim.pressure(),stations=sim.buildingCount('fireStation',d.side),reservoirs=sim.buildingCount('reservoir');
+ const suppression=stations*(1.05+reservoirs*.18);d.energy-=dt*(2.18+suppression);d.progress+=dt*(.0295*p);
  d.progress=Math.max(0,d.progress-dt*stations*.0045);damageAroundFront(sim,d,dt,'wildfire');
  if(d.progress>.94){s.stability=Math.max(0,s.stability-dt*(3.1*p));d.energy-=dt*.8}
 }
 function updateFlood(sim,d,dt){
- const s=sim.state,p=sim.pressure(),pumps=sim.buildingCount('pump'),block=nearestBlockingLevee(sim,d);
- d.blockPause=Math.max(0,(d.blockPause||0)-dt);d.energy-=dt*(1.45+pumps*1.65);d.progress=Math.max(0,d.progress-dt*pumps*.0018);
+ const s=sim.state,p=d.strength||sim.pressure(),pumps=sim.buildingCount('pump'),block=nearestBlockingLevee(sim,d);
+ d.blockPause=Math.max(0,(d.blockPause||0)-dt);d.energy-=dt*(1.62+pumps*1.65);d.progress=Math.max(0,d.progress-dt*pumps*.0018);
  if(block&&d.progress>=slotProgress(block,d.side)-.025){
   d.blockedSlot=block.i;d.progress=Math.min(d.progress,slotProgress(block,d.side));d.energy-=dt*.55;sim.damageBuilding(block.i,dt*(8.4*p),'flood');
  }else{d.blockedSlot=-1;if(d.blockPause<=0)d.progress+=dt*(.0275*p)}
