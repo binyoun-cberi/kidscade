@@ -23,6 +23,9 @@ test('Disaster City keeps simulation and rendering separated',()=>{
  assert.doesNotMatch(sim,/setInterval|setTimeout/);
  assert.match(disasters,/wildfire/);
  assert.match(disasters,/flood/);
+ assert.match(sim,/Math\.exp\(-t\/180\)/);
+ assert.match(sim,/\.52/);
+ assert.match(disasters,/strength:p/);
 });
 
 test('Disaster City has twelve build slots and safe shared storage',()=>{
@@ -49,6 +52,6 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=1');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=2');
  assert.equal(item.age,'high');
 });
