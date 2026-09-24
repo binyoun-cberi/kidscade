@@ -179,18 +179,18 @@ function create(opts){
     });
     m.ball.owner=carrier;touchActor(carrier);
 
-    var passCount=atk.tactics.attack==='short'?(2+Math.floor(Math.random()*3)):
-      atk.tactics.attack==='wide'?(1+Math.floor(Math.random()*3)):Math.floor(Math.random()*3);
+    var passCount=atk.tactics.attack==='short'?(3+Math.floor(Math.random()*4)):
+      atk.tactics.attack==='wide'?(2+Math.floor(Math.random()*3)):(1+Math.floor(Math.random()*3));
     var lastPassEvent=null;
     for(var pi=0;pi<passCount;pi++){
       var receiver=chooseReceiver(atk,carrier);if(!receiver)break;
       var dist=Math.hypot(receiver.x-carrier.x,receiver.y-carrier.y);
       var distancePenalty=dist>40 ? .07 : (dist>28 ? .035 : 0);
-      var passP=.76+(stat(carrier.p,'pass')-70)/170-distancePenalty;
-      if(atk.tactics.attack==='short')passP+=.07;
-      if(atk.tactics.attack==='direct')passP-=.045;
-      if(def.tactics.press==='press')passP-=.045;
-      passP=clamp(passP,.56,.94);
+      var passP=.82+(stat(carrier.p,'pass')-70)/180-distancePenalty;
+      if(atk.tactics.attack==='short')passP+=.08;
+      if(atk.tactics.attack==='direct')passP-=.03;
+      if(def.tactics.press==='press')passP-=.03;
+      passP=clamp(passP,.68,.96);
       var completed=Math.random()<passP;
       lastPassEvent=recordPass(m.possession,carrier,receiver,completed);
       if(!completed){
@@ -202,7 +202,7 @@ function create(opts){
       carrier=receiver;
     }
 
-    var build=clamp(.58+(atk.rating.mid-def.rating.mid)/190,0.39,.79);
+    var build=clamp(.67+(atk.rating.mid-def.rating.mid)/205,0.48,.86);
     if(Math.random()>build){
       if(Math.random()<.25)emit('chance',displayName(carrier)+'의 전진이 막혔어요.',m.possession,carrier);
       return;
@@ -214,7 +214,7 @@ function create(opts){
       return stat(x.p,'shot')*.55+stat(x.p,'speed')*.18+bonus;
     });
     if(shooter.id!==carrier.id){
-      var finalPassP=clamp(.78+(stat(carrier.p,'pass')-70)/180-(def.tactics.press==='press' ? .035 : 0)+(atk.tactics.attack==='short' ? .035 : 0),.59,.94);
+      var finalPassP=clamp(.84+(stat(carrier.p,'pass')-70)/190-(def.tactics.press==='press' ? .03 : 0)+(atk.tactics.attack==='short' ? .04 : 0),.68,.96);
       lastPassEvent=recordPass(m.possession,carrier,shooter,Math.random()<finalPassP);
       if(!lastPassEvent.completed){
         var cut=pick(def.actors,function(x){return stat(x.p,'defense')*.72+stat(x.p,'speed')*.18+10;});
@@ -303,7 +303,7 @@ function create(opts){
     while(m.minute>=m.nextEvent&&m.nextEvent<90){
       attackEvent();
       var tempo=(teams[0].rating.bonus.tempo+teams[1].rating.bonus.tempo)/2;
-      m.nextEvent+=clamp((1.35+Math.random()*1.15)/tempo,.9,2.8);
+      m.nextEvent+=clamp((.82+Math.random()*.88)/tempo,.58,1.95);
     }
     if(m.minute>=90){
       m.minute=90;m.finished=true;emit('end','경기 종료!',-1,null);
