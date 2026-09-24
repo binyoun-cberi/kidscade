@@ -15,7 +15,7 @@ function localTarget(value) {
 }
 
 test('catalog has one source of truth and unique valid game ids', () => {
-  assert.equal(catalog.schemaVersion, 6);
+  assert.equal(catalog.schemaVersion, 7);
   assert.ok(Array.isArray(catalog.games));
   assert.equal(Object.hasOwn(catalog, 'coverById'), false);
 
