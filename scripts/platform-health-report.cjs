@@ -114,6 +114,13 @@ const buildOnlyClassification = games.filter(game => {
 const technicalDescriptions = effective.filter(game =>
   /\bv\d+\b|\bD1\b|Cloudflare|저부하|런타임|빌드 구조/i.test(String(game.description || ''))
 );
+const sdkAdopters = effective.filter(game => {
+  const href = normalizeHref(game.href);
+  if (!href || !/\.html?$/i.test(href)) return false;
+  const file = path.join(ROOT, href);
+  if (!fs.existsSync(file)) return false;
+  try { return /kidscade-game-sdk\.js/.test(fs.readFileSync(file, 'utf8')); } catch (_) { return false; }
+});
 const largeFiles = files
   .filter(file => file.size >= 3 * 1024 * 1024)
   .sort((a, b) => b.size - a.size)
@@ -138,6 +145,7 @@ console.log(`- legacy catalog entry paths: ${legacyEntries.length}`);
 console.log(`- effective covers missing: ${missingCovers.length}`);
 console.log(`- build-only classification drift: ${buildOnlyClassification.length}`);
 console.log(`- technical player descriptions: ${technicalDescriptions.length}`);
+console.log(`- Game SDK adopters: ${sdkAdopters.length}/${effective.filter(game => !game.disabled).length}`);
 console.log(`- files >= 3 MiB: ${largeFiles.length}`);
 
 if (buildOnlyClassification.length) {
