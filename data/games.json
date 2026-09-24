@@ -2622,11 +2622,11 @@
     {
       "id": "high_body_muscle_lab",
       "title": "내 몸아 움직여!",
-      "href": "games/high_body_muscle_lab/index.html?v=2",
+      "href": "games/high_body_muscle_lab/index.html?v=3",
       "category": "trivia",
       "age": "high",
       "icon": "🦴",
-      "description": "Q/W/E/R로 근육을 직접 수축시켜 팔을 움직이고, 의자에서 일어나 걷고 장애물을 넘으며 상자와 급식판까지 운반하는 2D 뼈·근육 전신 조작 과학 실험 게임!",
+      "description": "Q/W/E/R로 몸의 근육을 직접 조종해 팔을 움직이고 걷고 물건을 운반하는 뼈·근육 전신 과학 게임. 설명은 줄이고 몸의 움직임을 직접 관찰하며 익힙니다.",
       "subject": "science",
       "genre": "simulation",
       "difficulty": "medium",
