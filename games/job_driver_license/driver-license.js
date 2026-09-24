@@ -153,7 +153,7 @@ function startGame(){
   requestGameFullscreen();
   initAudio();gameState='playing';resetCar();ui.start.classList.remove('show');ui.result.classList.remove('show');
   ui.examMode.textContent=(license==='auto'?'2종 자동':'1종 보통')+' · '+(mode==='exam'?'기능시험':'연습');
-  setInstruction('안전띠를 매고 시동을 거세요.',license==='auto'?'브레이크를 밟고 D에 놓은 뒤 주차브레이크를 해제합니다.':'클러치를 밟고 1단에 넣은 뒤 주차브레이크를 해제합니다.');
+  setInstruction('먼저 안전띠를 매세요.','준비 순서: 안전띠 → 시동 → 기어 → 주차브레이크 해제');
   showToast('운전석 준비 완료');
 }
 function selectOptions(){
@@ -297,7 +297,7 @@ function physicsStep(dt){
   let drive=0;
   if(car.engine&&dir){
     if(license==='auto'){
-      const creep=inp.throttle<.04&&inp.brake<.04?.58*(1-clamp(Math.abs(car.speed)/1.75,0,1)):0;
+      const creep=inp.throttle<.04&&inp.brake<.04?.82*(1-clamp(Math.abs(car.speed)/1.95,0,1)):0;
       drive=(inp.throttle*4.3+creep)*dir;
       const target=800+Math.abs(car.speed)*260+inp.throttle*2100;
       car.rpm=lerp(car.rpm,clamp(target,760,4300),clamp(dt*4,0,1));
@@ -318,7 +318,10 @@ function physicsStep(dt){
   const forwardZ=-Math.cos(car.yaw),dydz=groundDz(car.x,car.z),gradeAlong=dydz*forwardZ;
   const gravity=-9.81*gradeAlong;
   let accel=drive+gravity;
-  if(car.parkingBrake)car.speed=approach(car.speed,0,9*dt);
+  if(car.parkingBrake){
+    car.speed=approach(car.speed,0,9*dt);
+    if(inp.throttle>.15&&gameState==='playing'&&toastTimer<=0)showToast('주차브레이크가 걸려 있습니다.','warn',1.4);
+  }
   else if(inp.brake>.01)car.speed=approach(car.speed,0,(1.4+inp.brake*7.5)*dt);
   else{
     car.speed+=accel*dt;
@@ -349,9 +352,27 @@ function readyGear(){return license==='auto'?car.gear==='D':car.gear===1}
 function examStep(dt,inp){
   const kmh=Math.abs(car.speed)*3.6;
   if(stage==='PREP'){
-    if(car.seatbelt&&car.engine&&readyGear()&&!car.parkingBrake){
-      stage='START';setInstruction('좌측 방향지시등을 켜고 출발하세요.','경사로 정지선까지 천천히 이동합니다.');beep(680,.08,.03);
+    if(!car.seatbelt){
+      setInstruction('먼저 안전띠를 매세요.','아래의 벨트 버튼을 눌러 착용합니다.');
+      return;
     }
+    if(!car.engine){
+      setInstruction('시동을 거세요.','시동 버튼을 눌러 엔진을 켭니다.');
+      return;
+    }
+    if(!readyGear()){
+      setInstruction(license==='auto'?'브레이크를 밟고 D에 놓으세요.':'클러치를 밟고 1단에 넣으세요.',
+        license==='auto'?'기어봉을 아래쪽 D까지 내립니다.':'클러치를 충분히 밟은 상태에서 1단으로 변속합니다.');
+      return;
+    }
+    if(car.parkingBrake){
+      setInstruction('주차브레이크를 해제하세요.','지금은 주차브레이크가 걸려 있어 D여도 차가 움직이지 않습니다.');
+      return;
+    }
+    stage='START';
+    setInstruction('좌측 방향지시등을 켜고 출발하세요.','브레이크에서 발을 떼면 차가 천천히 움직입니다.');
+    showToast('출발 준비 완료');
+    beep(680,.08,.03);
     return;
   }
   if(stage==='START'&&kmh>2&&car.z<70){
@@ -461,7 +482,13 @@ function updateHUD(){
   ui.steeringWheel.style.transform='rotate('+car.steeringWheel+'deg)';
   ui.lampLeft.classList.toggle('on',car.signal===-1);ui.lampRight.classList.toggle('on',car.signal===1);ui.lampBrake.classList.toggle('on',inp.brake>.08||car.parkingBrake);
   ui.signalLeft.classList.toggle('active',car.signal===-1);ui.signalRight.classList.toggle('active',car.signal===1);
-  ui.ignition.classList.toggle('active',car.engine);ui.seatbelt.classList.toggle('active',car.seatbelt);ui.parkingBrake.classList.toggle('active',car.parkingBrake);
+  ui.ignition.classList.toggle('active',car.engine);
+  ui.seatbelt.classList.toggle('active',car.seatbelt);
+  ui.parkingBrake.classList.toggle('parking-on',car.parkingBrake);
+  ui.parkingBrake.classList.toggle('parking-off',!car.parkingBrake);
+  ui.ignition.textContent=car.engine?'시동 ON':'시동';
+  ui.seatbelt.textContent=car.seatbelt?'벨트 완료':'벨트';
+  ui.parkingBrake.textContent=car.parkingBrake?'주차 ON':'주차 해제';
   for(const [kind,v] of [['throttle',inp.throttle],['brake',inp.brake],['clutch',inp.clutch]]){
     const wrap=kind==='throttle'?ui.throttlePedal:kind==='brake'?ui.brakePedal:ui.clutchPedal;
     const p=wrap.querySelector('.pedal'),meter=wrap.querySelector('.pedal-meter i');if(!p||!meter)continue;
@@ -508,7 +535,15 @@ function updateGearVisual(){
 function updateControlVisibility(){
   const manual=license==='manual';ui.autoGate.classList.toggle('hidden',manual);ui.manualGate.classList.toggle('hidden',!manual);ui.clutchPedal.classList.toggle('hidden',!manual);
 }
-function updateButtonVisuals(){ui.parkingBrake.classList.toggle('active',car.parkingBrake);ui.seatbelt.classList.toggle('active',car.seatbelt);ui.ignition.classList.toggle('active',car.engine)}
+function updateButtonVisuals(){
+  ui.seatbelt.classList.toggle('active',car.seatbelt);
+  ui.ignition.classList.toggle('active',car.engine);
+  ui.parkingBrake.classList.toggle('parking-on',car.parkingBrake);
+  ui.parkingBrake.classList.toggle('parking-off',!car.parkingBrake);
+  ui.ignition.textContent=car.engine?'시동 ON':'시동';
+  ui.seatbelt.textContent=car.seatbelt?'벨트 완료':'벨트';
+  ui.parkingBrake.textContent=car.parkingBrake?'주차 ON':'주차 해제';
+}
 
 function installSteering(){
   const el=ui.steeringPad;let pointer=null;
@@ -553,7 +588,13 @@ function installControls(){
   installSteering();installPedal(ui.throttlePedal,'throttle');installPedal(ui.brakePedal,'brake');installPedal(ui.clutchPedal,'clutch');installAutoGate();installManualGate();installLook();
   ui.signalLeft.addEventListener('click',()=>toggleSignal(-1));ui.signalRight.addEventListener('click',()=>toggleSignal(1));
   ui.ignition.addEventListener('click',toggleIgnition);ui.seatbelt.addEventListener('click',()=>{car.seatbelt=!car.seatbelt;showToast(car.seatbelt?'안전띠 착용':'안전띠 해제');beep(660,.04,.02)});
-  ui.parkingBrake.addEventListener('click',()=>{if(Math.abs(car.speed)>1){showToast('정차 후 주차브레이크를 조작하세요.','warn');return}car.parkingBrake=!car.parkingBrake;beep(420,.05,.025)});
+  ui.parkingBrake.addEventListener('click',()=>{
+    if(Math.abs(car.speed)>1){showToast('정차 후 주차브레이크를 조작하세요.','warn');return}
+    car.parkingBrake=!car.parkingBrake;
+    showToast(car.parkingBrake?'주차브레이크가 걸렸습니다.':'주차브레이크를 해제했습니다.');
+    beep(car.parkingBrake?330:560,.07,.03);
+    updateButtonVisuals();
+  });
   addEventListener('keydown',e=>{
     const allow=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC'];if(allow.includes(e.code)){keys.add(e.code);if(e.code.startsWith('Arrow'))e.preventDefault();return}
     if(e.repeat)return;
