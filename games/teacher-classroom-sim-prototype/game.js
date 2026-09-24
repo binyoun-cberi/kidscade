@@ -323,7 +323,7 @@
 
   function openEvent(id){
     var e=eventDef(id);if(!e)return;
-    if(state.activeEvent&&state.activeEvent!==id)pushBacklog(state.activeEvent);
+    if(state.activeEvent&&state.activeEvent!==id){state.eventStatus[state.activeEvent]='waiting';pushBacklog(state.activeEvent)}
     removeBacklog(id);state.activeEvent=id;state.deferUntil[id]=0;
     if(state.eventStatus[id]!=='ringing')state.eventStatus[id]='active';
     renderVisitor();
