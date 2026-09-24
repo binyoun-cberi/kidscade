@@ -287,6 +287,28 @@
   }
 
   var state=freshState();
+  var fastForwardHeld=false;
+
+  function fastForwardBlocked(){
+    return state.finished||state.activeEvent||state.resultEvent||state.incomingPhone||state.backlog.length||
+      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden;
+  }
+  function updateFastForwardUI(){
+    var btn=q('#fastForwardButton');if(!btn)return;
+    btn.classList.toggle('active',fastForwardHeld);
+    btn.disabled=!!(state.finished||state.activeEvent||state.resultEvent||state.incomingPhone||state.backlog.length||
+      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden);
+    var small=btn.querySelector('small');
+    if(small)small.textContent=fastForwardHeld?'4×로 가는 중':'누르고 있기 · Space';
+  }
+  function startFastForward(){
+    if(fastForwardBlocked())return;
+    fastForwardHeld=true;updateFastForwardUI();
+  }
+  function stopFastForward(){
+    if(!fastForwardHeld){updateFastForwardUI();return}
+    fastForwardHeld=false;updateFastForwardUI();
+  }
 
   function load(){
     try{
@@ -400,6 +422,7 @@
     eventDefs.forEach(function(e){
       if(state.eventStatus[e.id]!=='pending'||state.minute<e.at)return;
       if(!eventCondition(e)){state.eventStatus[e.id]='skipped';return}
+      stopFastForward();
       if(e.type==='phone'&&!state.incomingPhone){
         state.eventStatus[e.id]='ringing';state.incomingPhone=e.id;beep('phone');
         toast('전화가 울립니다.',e.name+' · '+fmtTime(state.minute),false);
@@ -901,7 +924,7 @@
   }
 
   function renderAll(){
-    renderHeader();renderVisitor();renderWaiting();renderTasks();
+    renderHeader();renderVisitor();renderWaiting();renderTasks();updateFastForwardUI();
   }
 
   function renderModal(kind,studentId){
@@ -1029,12 +1052,42 @@
     var toolOpen=!q('#toolModal').hidden,tutorialOpen=!q('#tutorial').hidden,endOpen=!q('#dayEnd').hidden;
     if(!tutorialOpen&&!endOpen){
       var base=state.minute<620?.40:state.minute<760?.46:state.minute<890?.52:.48;
-      var speed=toolOpen?.08:state.activeEvent?.16:state.resultEvent?.05:base;
+      if(fastForwardBlocked()&&fastForwardHeld)stopFastForward();
+      var speed=fastForwardHeld?base*4:toolOpen?base*.72:state.activeEvent?base*.90:state.resultEvent?base*.82:base;
       state.minute+=dt*speed;
       processEvents();checkDeadlines();checkDayEnd();renderAll();
     }
     if(Math.floor(now/8000)!==Math.floor((now-dt*1000)/8000))save();
     requestAnimationFrame(tick);
+  }
+
+  function isTypingTarget(el){
+    if(!el)return false;
+    var tag=(el.tagName||'').toLowerCase();
+    return tag==='input'||tag==='textarea'||tag==='select'||el.isContentEditable;
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.code!=='Space'||isTypingTarget(e.target))return;
+    if(!e.repeat)startFastForward();
+    e.preventDefault();
+  });
+  document.addEventListener('keyup',function(e){
+    if(e.code!=='Space'||isTypingTarget(e.target))return;
+    stopFastForward();e.preventDefault();
+  });
+  window.addEventListener('blur',stopFastForward);
+
+  var fastButton=q('#fastForwardButton');
+  if(fastButton){
+    fastButton.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      try{fastButton.setPointerCapture(e.pointerId)}catch(err){}
+      startFastForward();
+    });
+    ['pointerup','pointercancel','lostpointercapture','pointerleave'].forEach(function(type){
+      fastButton.addEventListener(type,function(){stopFastForward()});
+    });
+    fastButton.addEventListener('contextmenu',function(e){e.preventDefault()});
   }
 
   q('#actionList').addEventListener('click',function(e){
@@ -1048,11 +1101,11 @@
     var phone=e.target.closest('[data-answer-phone]');if(phone){answerPhone();return}
     var b=e.target.closest('[data-wait-event]');if(b)openEvent(b.dataset.waitEvent);
   });
-  q('#phoneButton').addEventListener('click',answerPhone);
-  q('#rosterButton').addEventListener('click',function(){renderModal('roster')});
-  q('#recordButton').addEventListener('click',function(){renderModal('record')});
-  q('#computerButton').addEventListener('click',function(){renderModal('computer')});
-  q('#noteButton').addEventListener('click',function(){renderModal('note')});
+  q('#phoneButton').addEventListener('click',function(){stopFastForward();answerPhone()});
+  q('#rosterButton').addEventListener('click',function(){stopFastForward();renderModal('roster')});
+  q('#recordButton').addEventListener('click',function(){stopFastForward();renderModal('record')});
+  q('#computerButton').addEventListener('click',function(){stopFastForward();renderModal('computer')});
+  q('#noteButton').addEventListener('click',function(){stopFastForward();renderModal('note')});
   q('#modalClose').addEventListener('click',closeModal);
   q('#toolModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
   q('#modalBody').addEventListener('click',function(e){
