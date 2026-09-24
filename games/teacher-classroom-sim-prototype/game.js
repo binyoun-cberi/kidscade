@@ -266,7 +266,6 @@
         {id:'ask_details',label:'정확히 무슨 일이었는지 자세히 캐묻는다',cost:3}
       ]
     }
-    }
   ];
 
   function chooseRareEvent(){
