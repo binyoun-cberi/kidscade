@@ -351,6 +351,7 @@ function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(f
 function openReplay(index){
   replayReturnView=currentView||'analysis';
   replayCurrent=(state.replays||[])[index];if(!replayCurrent)return;
+  $('replayClose').textContent=replayReturnView==='analysis'?'← 분석실로':'← 홈으로';
   replayFrame=0;replayCursor=0;replayPlaying=false;replayMode='replay';replayFocus='all';
   var h=clubById(replayCurrent.homeClubId),a=clubById(replayCurrent.awayClubId);
   $('replayTitle').textContent='시즌 '+replayCurrent.season+' '+replayCurrent.round+'R · '+h.name+' '+replayCurrent.score[0]+' : '+replayCurrent.score[1]+' '+a.name;
@@ -544,7 +545,7 @@ function matchEvent(e){
   else if(e.type==='shot')matchSfx('whoosh',1.08);
   else if(e.type==='sub')matchSfx('confirm',1);
 }
-function setSpeed(s){matchSpeed=s;document.querySelectorAll('.speed').forEach(function(b){b.classList.toggle('active',Number(b.dataset.speed)===s);});}
+function setSpeed(s){matchSpeed=s;document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.classList.toggle('active',Number(b.dataset.speed)===s);});}
 function updateLiveTactic(){
   var t=state.tactics;
   var labels={short:'짧게 연결',direct:'빠르게 앞으로',wide:'측면으로',press:'바로 압박',shape:'자리를 지켜',attack:'공격',balanced:'균형',defend:'수비'};
@@ -689,8 +690,16 @@ $('newGameBtn').onclick=showClubs;
 $('continueBtn').onclick=function(){state=load();if(state)enter(true);};
 document.querySelectorAll('.nav-btn').forEach(function(b){b.onclick=function(){render(b.dataset.view);};});
 $('helpBtn').onclick=help;
-$('modalClose').onclick=function(){modal.classList.add('hidden');};
-modal.addEventListener('pointerdown',function(e){if(e.target===modal)modal.classList.add('hidden');});
+function closeModalSmart(){
+  modal.classList.add('hidden');
+  if(match&&match.finished){
+    $('matchLayer').classList.add('hidden');
+    match=null;
+    render('home');
+  }
+}
+$('modalClose').onclick=closeModalSmart;
+modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeModalSmart();});
 document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
 $('quickSubBtn').onclick=quickSub;
 $('replayClose').onclick=closeReplay;
