@@ -3,193 +3,163 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>우리 반: 담임교사 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=34">
+<meta name="theme-color" content="#25353a">
+<title>우리 반: 담임교사 업무 시뮬레이터</title>
+<link rel="stylesheet" href="./style.css?v=40">
 </head>
 <body>
 <main id="app">
-  <div class="toolbar card-toolbar">
-    <button type="button" data-class-tool="roster">📑 학급 명부</button>
-    <button type="button" data-class-tool="record">📒 우리 반 기록</button>
-    <button type="button" data-class-tool="computer">🖥️ 오늘 한눈에</button>
-    <span class="toolbar-spacer"></span>
-    <button id="helpTutorial" type="button" aria-label="도움말 다시 보기">? 도움말</button>
-    <button id="reset" type="button">처음부터</button>
-    <button id="pause" type="button" hidden>일시정지</button>
-    <select id="speed" aria-label="게임 속도" hidden><option value="1">×1</option></select>
-  </div>
+  <header class="statusbar">
+    <div class="day-copy">
+      <strong>첫 출근 · 월요일</strong>
+      <span id="phaseLabel">등교 준비</span>
+    </div>
+    <div class="clock-block">
+      <strong id="clock">08:30</strong>
+      <span id="phaseHint">1교시까지 30분</span>
+    </div>
+    <button id="helpButton" class="header-button" type="button">도움말</button>
+    <button id="resetButton" class="header-button danger" type="button">첫날 다시</button>
+  </header>
 
-  <section class="daybar reigns-daybar">
-    <div class="day-identity">
-      <div class="day-time-row"><span id="dayNumber" class="day-number">1일차</span><strong id="hudClock" class="hud-clock">08:40</strong></div>
-      <div id="periodName" class="period">등교·아침활동</div>
-    </div>
-    <div class="class-meter-strip" aria-label="우리 반 상태">
-      <div class="class-meter" data-meter="flow">
-        <span class="meter-icon">📚</span><small>수업</small>
-        <div class="meter-track"><i id="hudFlowFill"></i><b id="hudFlowDelta"></b></div>
+  <section class="office-scene" aria-label="담임교사 교탁">
+    <div class="classroom-backdrop" aria-hidden="true">
+      <div class="window-light"></div>
+      <div class="board">
+        <small>3학년 2반</small>
+        <strong id="boardSubject">좋은 아침!</strong>
+        <span id="boardNote">오늘도 한 명씩 천천히.</span>
       </div>
-      <div class="class-meter" data-meter="relationship">
-        <span class="meter-icon">🤝</span><small>관계</small>
-        <div class="meter-track"><i id="hudRelationFill"></i><b id="hudRelationDelta"></b></div>
-      </div>
-      <div class="class-meter" data-meter="stability">
-        <span class="meter-icon">🧭</span><small>생활</small>
-        <div class="meter-track"><i id="hudStabilityFill"></i><b id="hudStabilityDelta"></b></div>
-      </div>
-      <div class="class-meter" data-meter="trust">
-        <span class="meter-icon">❤️</span><small>신뢰</small>
-        <div class="meter-track"><i id="hudTrustFill"></i><b id="hudTrustDelta"></b></div>
+      <div class="student-silhouettes">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
     </div>
-    <div class="day-progress-copy">
-      <div id="periodDesc" class="sub">아이들이 하나둘 들어오고 있다.</div>
-      <div class="progress"><i id="progress"></i></div>
-      <div id="locationName" class="sub" hidden>교실</div>
+
+    <aside class="waiting-panel">
+      <div class="panel-title">
+        <span>기다리는 일</span>
+        <strong id="waitingCount">0</strong>
+      </div>
+      <div id="waitingList" class="waiting-list">
+        <p class="empty-copy">아직 기다리는 일이 없습니다.</p>
+      </div>
+    </aside>
+
+    <section id="visitorZone" class="visitor-zone" aria-live="polite">
+      <div id="emptyVisitor" class="empty-visitor">
+        <div class="hallway-glow"></div>
+        <strong>교실이 조용한 틈입니다.</strong>
+        <span>책상 위 일을 처리하거나 잠시 기다려 보세요.</span>
+      </div>
+
+      <article id="visitorCard" class="visitor-card" hidden>
+        <div id="visitorAvatar" class="visitor-avatar" aria-hidden="true">
+          <span class="hair"></span><span class="face"></span><span class="body"></span>
+        </div>
+        <div class="visitor-content">
+          <div class="visitor-kicker">
+            <span id="visitorRole">학생</span>
+            <small id="visitorTime">08:34</small>
+          </div>
+          <h1 id="visitorName">태호</h1>
+          <p id="visitorStage" class="stage-copy"></p>
+          <blockquote id="visitorDialogue"></blockquote>
+          <div id="contextLine" class="context-line" hidden></div>
+          <div id="actionList" class="action-list"></div>
+          <button id="deferButton" class="defer-button" type="button">지금은 넘어간다</button>
+        </div>
+      </article>
+
+      <article id="resultCard" class="result-card" hidden>
+        <small id="resultKicker">그 뒤</small>
+        <h2 id="resultTitle">태호가 고개를 끄덕였다.</h2>
+        <p id="resultText"></p>
+        <button id="resultClose" type="button">마무리</button>
+      </article>
+    </section>
+
+    <section class="desk" aria-label="교탁 위 도구">
+      <div class="desk-shadow"></div>
+
+      <button id="rosterButton" class="desk-object roster-object" type="button">
+        <span class="book-stack"><i></i><i></i><i></i></span>
+        <strong>학급 명부</strong>
+        <small>아이들 정보</small>
+      </button>
+
+      <button id="recordButton" class="desk-object record-object" type="button">
+        <span class="binder"></span>
+        <strong>기록철</strong>
+        <small id="recordBadge">기록 0</small>
+      </button>
+
+      <button id="computerButton" class="desk-object computer-object" type="button">
+        <span class="monitor"><i id="monitorNotice">업무</i></span>
+        <span class="keyboard"></span>
+        <strong>업무 컴퓨터</strong>
+        <small id="computerBadge">할 일 확인</small>
+      </button>
+
+      <button id="phoneButton" class="desk-object phone-object" type="button">
+        <span class="phone"><i></i></span>
+        <strong>전화기</strong>
+        <small id="phoneBadge">조용함</small>
+      </button>
+
+      <button id="noteButton" class="desk-object note-object" type="button">
+        <span class="sticky-note">메모</span>
+        <strong>포스트잇</strong>
+        <small>내가 적어두기</small>
+      </button>
+    </section>
+
+    <aside class="task-panel">
+      <div class="panel-title">
+        <span>오늘 할 일</span>
+        <strong id="taskCount">0</strong>
+      </div>
+      <div id="taskList" class="task-list"></div>
+    </aside>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+  </section>
+
+  <section id="toolModal" class="modal" hidden>
+    <div class="modal-card">
+      <header>
+        <div>
+          <small id="modalKicker">교탁 도구</small>
+          <h2 id="modalTitle">학급 명부</h2>
+        </div>
+        <button id="modalClose" type="button" aria-label="닫기">×</button>
+      </header>
+      <div id="modalBody" class="modal-body"></div>
     </div>
   </section>
 
+  <section id="tutorial" class="tutorial" hidden>
+    <div class="tutorial-card">
+      <small>첫날 안내</small>
+      <h2 id="tutorialTitle"></h2>
+      <p id="tutorialText"></p>
+      <div id="tutorialVisual" class="tutorial-visual"></div>
+      <button id="tutorialNext" type="button">다음</button>
+    </div>
+  </section>
 
-
-
-  <div class="layout">
-    <section>
-      <div id="world" class="world card-stage" aria-label="담임교사 카드게임">
-        <div id="sceneTitle" class="scene-title">우리 반의 하루</div>
-        <div id="cardIdle" class="card-idle">
-          <div class="idle-icon">📚</div>
-          <strong>우리 반의 하루가 흘러갑니다</strong>
-          <p>중요한 순간만 빠르게 이어서 보여줍니다.</p>
-        </div>
-        <div id="timeRush" class="time-rush" hidden aria-live="polite">
-          <small id="timeRushDay">Day 1 · 등교·아침활동</small>
-          <strong id="timeRushClock">08:40</strong>
-          <span id="timeRushCaption">시간이 빠르게 흐른다</span>
-        </div>
-
-        <div id="simulationEngine" class="simulation-engine" aria-hidden="true">
-          <div id="props"></div>
-          <svg id="interactionLinks" class="interaction-links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
-          <div id="teacher" class="teacher" style="left:50%;top:22%">
-            <span id="teacherAvatarMount" class="teacher-avatar-mount"></span>
-            <span class="teacher-label">선생님</span>
-          </div>
-          <div id="students"></div>
-          <button id="encounterToken" class="encounter-token" type="button" hidden aria-label="상황 열기"><span>📌</span><small>상황</small></button>
-          <div id="offscreen" class="offscreen-note">22명</div>
-          <section id="classroomConsole" class="classroom-console" aria-hidden="true"></section>
-        </div>
-
-
-        <section id="encounterOverlay" class="encounter-overlay" hidden aria-live="assertive">
-          <div class="encounter-shell">
-            <div class="encounter-topline">
-              <span id="encounterCategory">교실에서 생긴 일</span>
-              <strong id="encounterTimerText" hidden></strong>
-            </div>
-            <div class="encounter-timer" hidden><i id="encounterTimerFill"></i></div>
-
-            <button type="button" class="encounter-choice choice-up" data-encounter-dir="up">
-              <span class="direction">↑ 원칙</span><strong id="encounterChoiceUp"></strong><small id="encounterEffectUp"></small>
-            </button>
-            <button type="button" class="encounter-choice choice-left" data-encounter-dir="left">
-              <span class="direction">← 코칭</span><strong id="encounterChoiceLeft"></strong><small id="encounterEffectLeft"></small>
-            </button>
-
-            <article id="encounterCard" class="encounter-card" tabindex="0">
-              <div class="encounter-card-time"><strong id="encounterClock">08:40</strong><span class="encounter-card-kicker" id="encounterKicker">Day 1 · 등교·아침활동</span></div>
-              <div id="encounterPortrait" class="encounter-portrait" aria-hidden="true"></div>
-              <div id="encounterThread" class="encounter-thread" hidden></div>
-              <h2 id="encounterTitle">교실에서 무언가 일어났다</h2>
-              <p id="encounterText"></p>
-              <blockquote id="encounterDialogue" hidden></blockquote>
-              <div class="encounter-student" id="encounterStudent"></div>
-              <div class="encounter-drag-hint">카드를 원하는 방향으로 끌어 놓거나, 선택지를 눌러 결정하세요.</div>
-            </article>
-
-            <button type="button" class="encounter-choice choice-right" data-encounter-dir="right">
-              <span class="direction">자율 →</span><strong id="encounterChoiceRight"></strong><small id="encounterEffectRight"></small>
-            </button>
-            <button type="button" class="encounter-choice choice-down" data-encounter-dir="down">
-              <span class="direction">↓ 공감</span><strong id="encounterChoiceDown"></strong><small id="encounterEffectDown"></small>
-            </button>
-
-            <section id="encounterResult" class="encounter-result" hidden>
-              <h3 id="encounterResultTitle">그 뒤</h3>
-              <p id="encounterResultText"></p>
-              <div id="encounterReaction" class="encounter-reaction" hidden></div>
-              <div id="encounterResultStats" class="encounter-result-stats"></div>
-              <button id="encounterReturn" type="button" class="primary">바로 넘기기</button>
-            </section>
-          </div>
-        </section>
-
-        <section id="dayEndOverlay" class="day-end-overlay" hidden aria-live="assertive">
-          <article class="day-end-card">
-            <div class="day-end-kicker">오늘 하루</div>
-            <h2 id="dayEndTitle">Day 1이 끝났습니다</h2>
-            <p id="dayEndText"></p>
-            <div id="dayEndMetrics" class="day-end-metrics"></div>
-            <div class="day-end-cols">
-              <section><h3>내가 자주 택한 방식</h3><div id="dayEndStyles" class="day-end-styles"></div></section>
-              <section><h3>조금 더 지켜볼 아이들</h3><div id="dayEndFollowups" class="day-end-followups"></div></section>
-            </div>
-            <button id="nextDayButton" type="button" class="primary">다음 날 시작</button>
-          </article>
-        </section>
-
-        <section id="toolModal" class="tool-modal" hidden aria-live="polite">
-          <div class="tool-modal-card">
-            <div class="tool-modal-head"><div><small id="toolModalKicker">교탁 도구</small><h3 id="toolModalTitle">도구</h3></div><button id="closeToolModal" type="button" aria-label="닫기">×</button></div>
-            <div id="toolModalBody" class="tool-modal-body"></div>
-          </div>
-        </section>
-
-        <section id="tutorialOverlay" class="tutorial-overlay" hidden aria-live="polite">
-          <div id="tutorialBubble" class="tutorial-bubble">
-            <div class="tutorial-kicker">첫날 안내</div><h3 id="tutorialTitle">우리 반에 오신 걸 환영해요</h3><p id="tutorialText"></p>
-            <button id="tutorialButton" type="button" class="primary">시작하기</button>
-          </div>
-        </section>
-
-        <section id="report" class="report" hidden aria-live="polite">
-          <div class="report-head">
-            <div>
-              <div id="reportTitle" class="period">1교시 정리</div>
-              <div id="reportSub" class="sub"></div>
-            </div>
-          </div>
-
-          <div class="metrics">
-            <div class="metric"><strong id="mDecisions">0</strong><span>선택한 일</span></div>
-            <div class="metric"><strong id="mRecords">0</strong><span>기록할 사건</span></div>
-            <div class="metric"><strong id="mAffected">0</strong><span>관련 학생</span></div>
-            <div class="metric"><strong id="mFlow">0</strong><span>수업 흐름 변화</span></div>
-          </div>
-
-          <div class="report-cols">
-            <div>
-              <h4>이번 시간에 있었던 일</h4>
-              <ul id="incidentList"></ul>
-            </div>
-            <div>
-              <h4>눈에 띈 변화</h4>
-              <ul id="findingList"></ul>
-            </div>
-          </div>
-
-          <div class="report-actions">
-            <button id="continueBtn" class="primary" type="button">교실로 돌아가기</button>
-          </div>
-        </section>
+  <section id="dayEnd" class="day-end" hidden>
+    <div class="day-end-card">
+      <small>첫날 근무</small>
+      <h2 id="dayEndTitle">이제 퇴근할 수 있습니다.</h2>
+      <p id="dayEndLead"></p>
+      <div id="dayEndSummary" class="day-end-summary"></div>
+      <div class="day-end-actions">
+        <button id="overtimeButton" class="secondary" type="button">조금 더 남는다</button>
+        <button id="leaveButton" type="button">오늘은 퇴근한다</button>
       </div>
-
-      <div id="schedule" class="schedule" aria-label="오늘 시간표"></div>
-    </section>
-
-
-  </div>
+    </div>
+  </section>
 </main>
-<script src="./game.js?v=36"></script>
+<script src="./game.js?v=40"></script>
 </body>
 </html>
