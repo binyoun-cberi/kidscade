@@ -2530,6 +2530,28 @@
       "classroom": false
     },
     {
+      "id": "toddler_traditional_play_yard",
+      "title": "우리나라 전통놀이 마당",
+      "href": "games/toddler_traditional_play_yard/우리나라 전통놀이 마당.html?v=1",
+      "category": "trivia",
+      "age": "toddler",
+      "icon": "🏺",
+      "description": "한옥 마당에서 투호·제기차기·딱지치기·사방치기·무궁화 꽃이 피었습니다·쉬운 윷놀이를 골라 즐기고 도장을 모으는 유아용 전통문화 미니게임 모음!",
+      "subject": "social",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "toddler_three_friends_set",
       "href": "games/toddler_three_friends_set/셋 친구 찾기!.html?v=plain-fix-1",
       "category": "math",
