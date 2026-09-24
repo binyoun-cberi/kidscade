@@ -67,6 +67,9 @@ npm run health:strict
 
 ### 2. 카탈로그와 메인 UX
 
+- [완료] 카탈로그 schema v7에서 112개 게임 모두에 subject / genre / difficulty / sessionMinutes / players / input / qualityStatus / classroom 메타데이터를 명시했다.
+- [완료] 기존 category는 호환용으로 유지하고 새 탐색 기준과 분리했다.
+
 학습 영역과 게임 장르를 분리한다.
 
 - 학습: 수학 / 국어 / 영어 / 사회 / 과학 / 예술 / 진로 / 사고력
