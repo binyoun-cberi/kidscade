@@ -531,25 +531,32 @@ function updateGhosts(dt){
     if(state.yuki.frost>=100){fail('yuki');return}
   }
   if(state.maiden.active){
-    var camByStage=['korea','special','west',null][state.maiden.stage]||null;
-    var watching=state.cameraOpen&&camByStage&&state.currentCam===camByStage;
-    if(watching){
-      state.maiden.viewed+=dt;state.maiden.unseen=Math.max(0,state.maiden.unseen-dt*2);
-      if(state.maiden.viewed>2.4){
-        state.maiden.viewed=0;
-        if(state.maiden.stage>0){state.maiden.stage--;state.score+=25;sound('good');toast('흰 형체가 한 구역 뒤로 물러났습니다.')}
+    if(state.maiden.stage<3){
+      var camByStage=['korea','special','west'][state.maiden.stage]||null;
+      var watching=state.cameraOpen&&camByStage&&state.currentCam===camByStage;
+      if(watching){
+        state.maiden.viewed+=dt;state.maiden.unseen=Math.max(0,state.maiden.unseen-dt*2);
+        if(state.maiden.viewed>2.4){
+          state.maiden.viewed=0;
+          if(state.maiden.stage>0){state.maiden.stage--;state.score+=25;sound('good');toast('흰 형체가 한 구역 뒤로 물러났습니다.')}
+        }
+      }else{
+        state.maiden.viewed=0;state.maiden.unseen+=dt;
+        if(state.maiden.unseen>(state.mode==='practice'?12:10)){
+          state.maiden.unseen=0;state.maiden.stage++;
+          sound('warn');
+          if(state.maiden.stage>=3)toast('서쪽 문 바로 밖에서 인기척이 납니다.');
+        }
       }
     }else{
-      state.maiden.viewed=0;state.maiden.unseen+=dt;
-      if(state.maiden.unseen>(state.mode==='practice'?12:10)){
-        state.maiden.unseen=0;state.maiden.stage++;
-        sound('warn');
-        if(state.maiden.stage>=3)toast('서쪽 문 바로 밖에서 인기척이 납니다.');
+      if(state.leftDoor){
+        state.maiden.viewed+=dt;
+        state.maiden.unseen=0;
+        if(state.maiden.viewed>2){state.maiden={active:false,stage:0,unseen:0,viewed:0};state.cleared++;state.score+=120;toast('처녀귀신이 물러났습니다.');sound('good')}
+      }else{
+        state.maiden.viewed=0;state.maiden.unseen+=dt;
+        if(state.maiden.unseen>5){fail('maiden');return}
       }
-    }
-    if(state.maiden.stage>=3){
-      if(state.leftDoor){state.maiden.viewed+=dt;if(state.maiden.viewed>2){state.maiden={active:false,stage:0,unseen:0,viewed:0};state.cleared++;state.score+=120;toast('처녀귀신이 물러났습니다.');sound('good')}}
-      else{state.maiden.unseen+=dt;if(state.maiden.unseen>5){fail('maiden');return}}
     }
   }
   if(state.egg&&state.egg.active){
