@@ -32,7 +32,7 @@ let scene,renderer,camera,leftMirrorCamera,rightMirrorCamera,loader,clock;
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
-let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false;
+let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false;
 let deductions=[];
 let headYaw=0,headPitch=0,lookPointer=null,lookLastX=0,lookLastY=0;
 const keys=new Set();
@@ -129,7 +129,7 @@ function resetCar(){
   Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,speed:0,steeringWheel:0,wheelAngle:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0});
   touch.steer=touch.throttle=touch.brake=touch.clutch=0;
   gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=0;
-  hillStopped=accelOk=emergencyTriggered=parkingComplete=false;score=100;deductions=[];stage='PREP';
+  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];stage='PREP';
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
 }
@@ -280,7 +280,7 @@ function physicsStep(dt){
   let drive=0;
   if(car.engine&&dir){
     if(license==='auto'){
-      const creep=inp.throttle<.04&&inp.brake<.04?.68:0;
+      const creep=inp.throttle<.04&&inp.brake<.04?.58*(1-clamp(Math.abs(car.speed)/1.75,0,1)):0;
       drive=(inp.throttle*4.3+creep)*dir;
       const target=800+Math.abs(car.speed)*260+inp.throttle*2100;
       car.rpm=lerp(car.rpm,clamp(target,760,4300),clamp(dt*4,0,1));
@@ -358,13 +358,15 @@ function examStep(dt,inp){
       if(car.signal!==1&&!car._rightPenalized){car._rightPenalized=true;addDeduction('우회전 방향지시등 미사용',5)}
     }
     if(car.x>7&&Math.abs(car.z-20)<7){
-      stage='PARK';setInstruction('T자 주차 구역에 후진 주차하세요.','오른쪽 주차칸 안에 차를 넣고 완전히 정지합니다.');showToast('다음 과제: T자 주차');
+      stage='PARK';setInstruction('T자 주차 구역에 후진 주차하세요.','후진기어를 사용해 오른쪽 주차칸 안에 차를 넣고 완전히 정지합니다.');showToast('다음 과제: T자 주차');
     }
     return;
   }
   if(stage==='PARK'){
+    const inParkingArea=car.x>36&&car.x<48&&car.z>25&&car.z<41;
     const inBay=car.x>39.2&&car.x<44.8&&car.z>28&&car.z<38.8&&Math.abs(Math.sin(car.yaw))<.62;
-    if(inBay&&kmh<.7){
+    if(inParkingArea&&currentDirection()===-1&&Math.abs(car.speed)>.25)parkingReverseSeen=true;
+    if(inBay&&parkingReverseSeen&&kmh<.7){
       holdTimer+=dt;if(holdTimer>1.1){parkingComplete=true;stage='PARK_EXIT';holdTimer=0;showToast('주차 확인 완료');beep(820,.12,.04);setInstruction('주차 구역에서 나와 오른쪽으로 진행하세요.','가속구간에서는 20km/h 이상 속도를 냅니다.')}
     }else holdTimer=0;
     if(mode==='exam'&&car.x>66&&!parkingComplete){parkingComplete=true;addDeduction('T자 주차 미완료',10);stage='ACCEL';setInstruction('가속구간에서 20km/h 이상 주행하세요.','흰색 시작선을 지난 뒤 충분히 가속합니다.')}
