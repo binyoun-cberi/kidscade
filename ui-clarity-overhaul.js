@@ -59,6 +59,11 @@
         color:#2874b8;
         border-color:rgba(96,165,250,.24);
       }
+      #game-list > .game-card .kc-card-meta-chip.rework {
+        background:#fff3e8;
+        color:#b35b13;
+        border-color:rgba(249,115,22,.24);
+      }
       #game-list > .game-card .kc-card-meta-chip.rank {
         background:#fff9e8;
         color:#9a6813;
@@ -224,10 +229,27 @@
 
     const score = getCardBadgeText(card, '.badge-score');
     const rank = getCardBadgeText(card, '.badge-rank');
-    const signature = `${score}|${rank}`;
+    const game = window.KidscadeGames?.get?.(card.dataset.id);
+    const taxonomy = window.KidscadeCatalog?.taxonomy || {};
+    const genre = game ? (taxonomy.genres?.[game.genre] || game.genre) : '';
+    const session = game?.sessionMinutes ? `${game.sessionMinutes}분` : '';
+    const player = game?.players?.includes('online') ? '온라인' :
+      game?.players?.includes('localMulti') ? '여럿이' :
+      game?.players?.includes('local2') ? '2인' :
+      game?.players?.includes('classroom') ? '교실' : '';
+    const rework = game?.qualityStatus === 'rework' ? '개선 중' : '';
+    const signature = `${genre}|${session}|${player}|${rework}|${score}|${rank}`;
     if (meta.dataset.signature === signature) return;
     meta.dataset.signature = signature;
+    meta.setAttribute('aria-label', '게임 정보');
     meta.replaceChildren();
+
+    for (const value of [genre, session, player, rework].filter(Boolean)) {
+      const chip = document.createElement('span');
+      chip.className = 'kc-card-meta-chip' + (value === '개선 중' ? ' rework' : '');
+      chip.textContent = value;
+      meta.appendChild(chip);
+    }
 
     if (score) {
       const chip = document.createElement('span');
