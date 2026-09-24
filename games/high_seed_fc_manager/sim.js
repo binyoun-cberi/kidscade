@@ -58,7 +58,11 @@ function makeActors(assignments,side,formation){
   var coords=slotCoords[formation]||slotCoords['4-3-3'];
   return assignments.map(function(a,i){
     var c=coords[i]||[50,50],x=side===0?c[0]:100-c[0],y=c[1];
-    return {id:a.player.id,p:a.player,slot:a.slot,side:side,x:x,y:y,baseX:x,baseY:y,vx:0,vy:0,energy:100};
+    return {
+      id:a.player.id,p:a.player,slot:a.slot,side:side,
+      x:x,y:y,baseX:x,baseY:y,vx:0,vy:0,energy:100,
+      trail:[],flash:0,pulse:0
+    };
   });
 }
 function pick(arr,fn){
@@ -78,14 +82,20 @@ function create(opts){
   teams.forEach(function(t){t.rating=teamRating(t.assign,t.tactics);});
   var m={
     minute:0,score:[0,0],teams:teams,finished:false,half:false,nextEvent:.8+Math.random()*1.2,
-    possession:Math.random()<.5?0:1,ball:{x:50,y:50,owner:null},events:[],lastFactAt:-99
+    possession:Math.random()<.5?0:1,ball:{x:50,y:50,owner:null,trail:[]},events:[],effects:[],lastFactAt:-99,lastTouchId:null
   };
   var starters=teams[0].actors.concat(teams[1].actors);
   m.ball.owner=starters[Math.floor(Math.random()*starters.length)]||null;
+  m.lastTouchId=m.ball.owner?m.ball.owner.id:null;
+  if(m.ball.owner)m.ball.owner.pulse=1;
 
   function emit(type,text,side,actor){
-    var e={minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:type,text:text,side:side,actor:actor?actor.p:null};
+    var e={minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:type,text:text,side:side,actor:actor&&actor.p?actor.p:null};
     m.events.push(e);if(opts.onEvent)opts.onEvent(e);
+    if(actor&&actor.p){
+      actor.flash=1;actor.pulse=1;m.lastTouchId=actor.id;
+      m.effects.push({kind:type,x:actor.x,y:actor.y,side:side,life:1});
+    }
     if(actor&&actor.p&&actor.p.historical&&m.minute-m.lastFactAt>8&&Math.random()<.46){
       m.lastFactAt=m.minute;
       var f={minute:e.minute,type:'fact',text:actor.p.name+' · '+actor.p.memory,side:side,actor:actor.p};
@@ -104,7 +114,7 @@ function create(opts){
       var bonus=(x.slot==='ST'?22:x.slot==='WG'?17:x.slot==='CM'?10:2);
       return stat(x.p,'pass')*.35+stat(x.p,'speed')*.25+stat(x.p,'shot')*.25+bonus;
     });
-    m.ball.owner=carrier;
+    m.ball.owner=carrier;m.lastTouchId=carrier.id;carrier.pulse=1;
     var build=clamp(.57+(atk.rating.mid-def.rating.mid)/180,0.36,.78);
     if(Math.random()>build){
       if(Math.random()<.22)emit('chance',displayName(carrier)+'의 전진이 끊겼어요.',m.possession,carrier);
@@ -114,7 +124,7 @@ function create(opts){
       var bonus=x.slot==='ST'?30:x.slot==='WG'?22:x.slot==='CM'?10:2;
       return stat(x.p,'shot')*.55+stat(x.p,'speed')*.18+bonus;
     });
-    m.ball.owner=shooter;
+    m.ball.owner=shooter;m.lastTouchId=shooter.id;shooter.pulse=1;
     var quality=atk.rating.attack-def.rating.defense+(stat(shooter.p,'shot')-70)*.28;
     var shotChance=clamp(.66+quality/210,.48,.83);
     if(Math.random()>shotChance){emit('chance',displayName(shooter)+'의 공격이 수비에 막혔어요.',m.possession,shooter);return;}
@@ -127,7 +137,7 @@ function create(opts){
       m.possession=1-m.possession;
     }else if(Math.random()<.37){
       var keeper=def.actors.find(function(x){return x.slot==='GK';})||def.actors[0];
-      m.ball.owner=keeper;emit('save',displayName(keeper)+'이(가) 슛을 막아 냈어요.',1-m.possession,keeper);
+      m.ball.owner=keeper;m.lastTouchId=keeper.id;keeper.pulse=1;emit('save',displayName(keeper)+'이(가) 슛을 막아 냈어요.',1-m.possession,keeper);
     }else emit('shot',displayName(shooter)+'의 슛이 골문을 벗어났어요.',m.possession,shooter);
   }
   function updateActors(dt){
@@ -140,20 +150,33 @@ function create(opts){
         if(t.tactics.mindset==='defend')push-=(side===0?1:-1)*4;
         var tx=clamp(a.baseX+push+(bx-50)*.08,4,96);
         var ty=clamp(a.baseY+(by-a.baseY)*.08,5,95);
-        if(a===m.ball.owner){tx+=(side===0?1:-1)*3;}
+        if(a===m.ball.owner)tx+=(side===0?1:-1)*3;
+        var ox=a.x,oy=a.y;
         var sp=(stat(a.p,'speed')/100)*(1.8+1.1*a.energy/100);
         a.x+=(tx-a.x)*Math.min(1,dt*sp*.55);
         a.y+=(ty-a.y)*Math.min(1,dt*sp*.55);
         a.energy=clamp(a.energy-dt*.048*b.fatigue,28,100);
+        if(Math.hypot(a.x-ox,a.y-oy)>.015){
+          a.trail.push({x:a.x,y:a.y});
+          if(a.trail.length>7)a.trail.shift();
+        }
+        a.flash=Math.max(0,a.flash-dt*2.4);
+        a.pulse=Math.max(0,a.pulse-dt*1.55);
       });
     });
-    if(m.ball.owner){m.ball.x+=(m.ball.owner.x-m.ball.x)*Math.min(1,dt*8);m.ball.y+=(m.ball.owner.y-m.ball.y)*Math.min(1,dt*8);}
+    if(m.ball.owner){
+      m.ball.x+=(m.ball.owner.x-m.ball.x)*Math.min(1,dt*8);
+      m.ball.y+=(m.ball.owner.y-m.ball.y)*Math.min(1,dt*8);
+    }
+    m.ball.trail.push({x:m.ball.x,y:m.ball.y});
+    if(m.ball.trail.length>10)m.ball.trail.shift();
   }
   m.update=function(dt,speed){
     if(m.finished)return;
     var simDt=dt*(speed||1),gameMinutes=simDt*.52;
     m.minute+=gameMinutes;
     updateActors(simDt);
+    m.effects=m.effects.filter(function(fx){fx.life-=simDt*1.7;return fx.life>0;});
     if(!m.half&&m.minute>=45){m.half=true;emit('half','전반 종료! 잠깐 숨을 고릅니다.',-1,null);}
     while(m.minute>=m.nextEvent&&m.nextEvent<90){
       attackEvent();
@@ -170,10 +193,10 @@ function create(opts){
   m.substitute=function(side,outId,inPlayer){
     var t=teams[side],idx=t.actors.findIndex(function(a){return a.id===outId;});
     if(idx<0||!inPlayer)return false;
-    var old=t.actors[idx],fresh={id:inPlayer.id,p:inPlayer,slot:old.slot,side:side,x:old.x,y:old.y,baseX:old.baseX,baseY:old.baseY,vx:0,vy:0,energy:100};
+    var old=t.actors[idx],fresh={id:inPlayer.id,p:inPlayer,slot:old.slot,side:side,x:old.x,y:old.y,baseX:old.baseX,baseY:old.baseY,vx:0,vy:0,energy:100,trail:[],flash:0,pulse:1};
     t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};recalc(t);
-    if(m.ball.owner===old)m.ball.owner=fresh;
-    emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,inPlayer);return true;
+    if(m.ball.owner===old){m.ball.owner=fresh;m.lastTouchId=fresh.id;}
+    emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,fresh);return true;
   };
   return m;
 }
