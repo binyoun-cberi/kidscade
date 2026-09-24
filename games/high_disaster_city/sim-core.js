@@ -19,7 +19,7 @@ class Simulation{
  emit(kind,message,data){this.state.signals.push({kind,message,data})}
  start(opts={}){
   this.reset();const s=this.state;s.mode='playing';s.tutorial=!!opts.tutorial;s.seed=(opts.seed>>>0)||((Date.now()^Math.floor(performance.now()*1000))>>>0)||1;
-  s.deck=shuffle(s,D.START_DECK.slice());this.drawToFive();s.next.type=rngStep(s)<.5?'wildfire':'flood';s.next.in=14+rngStep(s)*4;s.next.visible=true;
+  s.deck=shuffle(s,D.START_DECK.slice());this.drawToFive();s.next.type=rngStep(s)<.5?'wildfire':'flood';s.next.in=22+rngStep(s)*5;s.next.visible=true;
   if(s.tutorial){s.tutorialStep=1;this.emit('tip','건설 카드를 누른 뒤 밝아지는 빈 땅을 눌러 보세요.')}
   this.emit('start','도시 운영을 시작합니다.');
  }
@@ -43,7 +43,7 @@ class Simulation{
   return this.state.slots.reduce((n,s)=>n+(s.building&&s.building.id===id&&(!side||sideOfX(s.x)===side)?1:0),0)
  }
  cityValue(){return this.state.slots.reduce((n,s)=>n+(s.building?D.BUILDINGS[s.building.id].cost:0),0)}
- pressure(){return clamp(1+this.state.time/300+this.cityValue()/5200,1,2.55)}
+ pressure(){const t=this.state.time;const early=.52+.48*(1-Math.exp(-t/180));const late=Math.max(0,t-180)/720*.85;const city=this.cityValue()/9000;return clamp(early+late+city,.52,2.35)}
  capacity(){return 14+this.buildingCount('house')*6}
  canPlace(uid,slotIndex){
   const c=this.cardDef(uid),slot=this.state.slots[slotIndex];return !!(c&&c.kind==='build'&&slot&&!slot.building&&this.canAfford(c.cost))
@@ -84,7 +84,7 @@ class Simulation{
  }
  resolveDisaster(){
   const s=this.state,d=s.disaster;if(!d)return;s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',(d.type==='wildfire'?'산불':'홍수')+'을 막아냈습니다!');
-  s.disaster=null;s.next.in=5.5+this.rand()*2.5;s.next.visible=true;s.rewardChoices=this.makeRewards(3);
+  const p=this.pressure(),baseGap=clamp(11-(p-.55)*3.8,5.5,11);s.disaster=null;s.next.in=baseGap+this.rand()*2;s.next.visible=true;s.rewardChoices=this.makeRewards(3);
  }
  makeRewards(n){
   const pool=D.REWARD_POOL.slice(),out=[];while(out.length<n&&pool.length){const i=Math.floor(this.rand()*pool.length);out.push(pool.splice(i,1)[0])}return out
