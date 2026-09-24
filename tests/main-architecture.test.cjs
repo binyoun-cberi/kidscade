@@ -239,3 +239,21 @@ test('bootstrap accepts Game SDK lifecycle messages only from the active iframe'
   assert.match(source, /kidscade:game-event/);
   assert.match(source, /new CustomEvent\('kidscade:game-event'/);
 });
+
+
+test('common game start screen owns deferred launch and shared errors', () => {
+  const bootstrap = read('main-bootstrap.js');
+  const launcher = read('game-launcher.js');
+  const frame = read('game-frame-shell.js');
+
+  assert.match(bootstrap, /game-frame-shell\.js/);
+  assert.match(bootstrap, /deferLaunch:\s*true/);
+  assert.match(bootstrap, /KidscadeGameFrame\?\.open/);
+  assert.match(bootstrap, /kidscade:game-error/);
+  assert.match(launcher, /bridge\.deferLaunch === true/);
+  assert.match(launcher, /const\s+activate\s*=\s*\(\)\s*=>/);
+  assert.ok(launcher.indexOf('consumePlayTicket') > launcher.indexOf('const activate'));
+  assert.match(frame, /LOAD_TIMEOUT_MS = 15000/);
+  assert.match(frame, /게임을 불러오지 못했어요/);
+  assert.match(frame, /다시 불러오기/);
+});
