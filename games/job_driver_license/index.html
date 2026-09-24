@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>운전면허시험장</title>
+<link rel="stylesheet" href="driver-license.css?v=1">
+</head>
+<body>
+<canvas id="game" aria-label="운전면허시험장 3D 운전석 화면"></canvas>
+
+<div id="hud">
+  <div id="examMachine" class="glass">
+    <div class="exam-row"><span id="examMode">연습</span><b id="score">100</b></div>
+    <div id="instruction">차종과 모드를 고르고 시작하세요.</div>
+    <div id="subInstruction">운전석의 장치를 직접 조작합니다.</div>
+  </div>
+
+  <div id="cluster" aria-label="계기판">
+    <div class="dial"><span>속도</span><b><i id="speed">0</i><small> km/h</small></b></div>
+    <div class="dial"><span>엔진</span><b><i id="rpm">0</i><small> rpm</small></b></div>
+    <div id="gearReadout">P</div>
+    <div class="lamps">
+      <span id="lampLeft">◀</span><span id="lampBrake">●</span><span id="lampRight">▶</span>
+    </div>
+  </div>
+
+  <div id="mirrorLeft" class="mirror"><span>좌측</span></div>
+  <div id="mirrorRight" class="mirror"><span>우측</span></div>
+
+  <div id="cockpit">
+    <div id="dashTop"></div>
+
+    <div id="steeringPad" class="touch-control" aria-label="핸들 조작 영역">
+      <div id="steeringWheel">
+        <div class="wheel-spoke a"></div><div class="wheel-spoke b"></div><div class="wheel-spoke c"></div>
+        <div id="steerKnob"></div>
+      </div>
+      <div class="control-caption">핸들</div>
+    </div>
+
+    <div id="leftControls">
+      <button id="signalLeft" class="stalk" type="button">◀</button>
+      <button id="signalRight" class="stalk" type="button">▶</button>
+      <button id="ignition" class="small-control" type="button">ENGINE</button>
+      <button id="seatbelt" class="small-control" type="button">BELT</button>
+      <button id="parkingBrake" class="small-control" type="button">P BRAKE</button>
+    </div>
+
+    <div id="gearArea">
+      <div id="autoGate" class="gear-gate">
+        <span data-gear="P">P</span><span data-gear="R">R</span><span data-gear="N">N</span><span data-gear="D">D</span>
+        <div id="autoKnob" class="gear-knob"></div>
+      </div>
+      <div id="manualGate" class="gear-gate hidden">
+        <span class="g1">1</span><span class="g3">3</span><span class="g5">5</span>
+        <span class="g2">2</span><span class="g4">4</span><span class="gr">R</span>
+        <div class="hline h1"></div><div class="hline h2"></div><div class="hline h3"></div>
+        <div id="manualKnob" class="gear-knob"></div>
+      </div>
+      <div class="control-caption">기어</div>
+    </div>
+
+    <div id="pedals">
+      <div id="clutchPedal" class="pedal-wrap hidden"><div class="pedal" data-kind="clutch">클러치</div><div class="pedal-meter"><i></i></div></div>
+      <div id="brakePedal" class="pedal-wrap"><div class="pedal" data-kind="brake">브레이크</div><div class="pedal-meter"><i></i></div></div>
+      <div id="throttlePedal" class="pedal-wrap"><div class="pedal narrow" data-kind="throttle">가속</div><div class="pedal-meter"><i></i></div></div>
+    </div>
+  </div>
+
+  <div id="toast" role="status"></div>
+</div>
+
+<div id="start" class="overlay show">
+  <div class="menu-card">
+    <div class="badge">KIDSCADE 운전 체험</div>
+    <h1>운전면허시험장</h1>
+    <p>운전석에서 핸들·페달·기어를 직접 조작해 기능시험 코스를 달려 보세요. 모바일과 태블릿에서는 여러 손가락을 동시에 사용할 수 있습니다.</p>
+
+    <div class="select-grid">
+      <button class="choice selected" type="button" data-license="auto"><b>2종 자동</b><span>P·R·N·D 자동변속</span></button>
+      <button class="choice" type="button" data-license="manual"><b>1종 보통</b><span>클러치·H형 수동변속</span></button>
+    </div>
+    <div class="select-grid">
+      <button class="choice selected" type="button" data-mode="practice"><b>연습</b><span>감점 없이 코스와 조작 익히기</span></button>
+      <button class="choice" type="button" data-mode="exam"><b>기능시험</b><span>100점 시작 · 80점 이상 합격</span></button>
+    </div>
+
+    <div class="guide">
+      <span>모바일: 핸들 노브 + 페달 + 기어 직접 터치</span>
+      <span>PC: A/D 핸들 · W 가속 · S 브레이크 · Q/E 방향지시등 · I 시동</span>
+    </div>
+    <button id="startBtn" class="primary" type="button">운전석에 앉기</button>
+  </div>
+</div>
+
+<div id="result" class="overlay">
+  <div class="menu-card result-card">
+    <div class="badge">시험 종료</div>
+    <h1 id="resultTitle">합격</h1>
+    <div id="finalScore">100점</div>
+    <div id="resultRows"></div>
+    <button id="retryBtn" class="primary" type="button">다시 도전</button>
+  </div>
+</div>
+
+<script src="../../kidscade-storage.js?v=20260924-driver-license-1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="job_driver_license" data-title="운전면허시험장" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="driver-license.js?v=1"></script>
+</body>
+</html>
