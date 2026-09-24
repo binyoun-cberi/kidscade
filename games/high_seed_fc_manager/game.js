@@ -663,8 +663,38 @@ document.querySelectorAll('.nav-btn').forEach(function(b){b.onclick=function(){r
 $('helpBtn').onclick=help;
 $('modalClose').onclick=function(){modal.classList.add('hidden');};
 modal.addEventListener('pointerdown',function(e){if(e.target===modal)modal.classList.add('hidden');});
-document.querySelectorAll('.speed').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
+document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
 $('quickSubBtn').onclick=quickSub;
+$('replayClose').onclick=closeReplay;
+$('replayPlay').onclick=function(){
+  if(!replayCurrent)return;
+  replayPlaying=!replayPlaying;updateReplayButtons();
+  if(replayPlaying){if(replayFrame>=replayCurrent.frames.length-1){replayFrame=0;replayCursor=0;}$('replayRange').value=replayFrame;replayLast=performance.now();cancelAnimationFrame(replayRaf);replayRaf=requestAnimationFrame(replayLoop);}
+};
+$('replaySpeed').onchange=function(){replayPlaySpeed=clamp(Number(this.value)||1,.5,4);};
+$('replayRange').oninput=function(){
+  if(!replayCurrent)return;replayPlaying=false;replayFrame=Number(this.value)||0;replayCursor=replayFrame;updateReplayButtons();drawReplayFrame();
+};
+$('replayPlayer').onchange=function(){replayFocus=this.value||'all';updateReplayStats();drawReplayFrame();};
+document.querySelectorAll('[data-rmode]').forEach(function(b){b.onclick=function(){
+  replayMode=b.dataset.rmode;replayPlaying=false;
+  if(replayMode==='heat'&&replayFocus==='all'&&replayCurrent){
+    var first=replayCurrent.players.find(function(p){return p.side===replayCurrent.userSide;});
+    if(first){replayFocus=first.id;$('replayPlayer').value=first.id;}
+  }
+  updateReplayButtons();updateReplayStats();drawReplayFrame();
+};});
+$('replayPitch').addEventListener('pointerdown',function(e){
+  if(!replayCurrent||replayMode!=='replay')return;
+  var frame=replayCurrent.frames[replayFrame];if(!frame)return;
+  var rect=this.getBoundingClientRect(),mx=(e.clientX-rect.left)*this.width/rect.width,my=(e.clientY-rect.top)*this.height/rect.height;
+  var best=null,bestD=34;
+  frame[6].forEach(function(row){
+    var x=38+row[1]/100*(1000-76),y=35+row[2]/100*(600-70),d=Math.hypot(mx-x,my-y);
+    if(d<bestD){bestD=d;best=row[0];}
+  });
+  if(best){replayFocus=best;$('replayPlayer').value=best;updateReplayStats();drawReplayFrame();}
+});
 $('matchBackBtn').onclick=function(){
   if(!match||match.finished){$('matchLayer').classList.add('hidden');match=null;return;}
   modalBody.innerHTML='<h2>경기에서 나갈까요?</h2><p class="muted">이 경기는 저장되지 않고 라운드도 진행되지 않아요.</p><div class="action-row"><button id="leaveYes" class="primary" type="button">나가기</button><button id="leaveNo" class="secondary" type="button">계속 경기</button></div>';
