@@ -296,7 +296,6 @@
       }
     });
 
-    if(!state.activeEvent&&!state.resultEvent&&!q('#toolModal').hidden===false)return;
     if(!state.activeEvent&&!state.resultEvent&&q('#toolModal').hidden&&!state.finished){
       var ready=state.backlog.find(function(id){return (state.deferUntil[id]||0)<=state.minute});
       if(ready)openEvent(ready);
