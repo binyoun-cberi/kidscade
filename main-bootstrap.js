@@ -59,7 +59,14 @@
     const rankKey = game.rankKey ? ` data-rankkey="${escapeHtml(game.rankKey)}"` : '';
     const scoreUnit = game.scoreUnit ? ` data-scoreunit="${escapeHtml(game.scoreUnit)}"` : '';
     const isTime = game.isTime ? ' data-istime="true"' : '';
-    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${cover}${scoreKey}${rankKey}${scoreUnit}${isTime}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${renderIcon(game)}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
+    const subject = ` data-subject="${escapeHtml(game.subject || 'thinking')}"`;
+    const genre = ` data-genre="${escapeHtml(game.genre || 'simulation')}"`;
+    const difficulty = ` data-difficulty="${escapeHtml(game.difficulty || 'medium')}"`;
+    const session = ` data-session="${escapeHtml(game.sessionMinutes || 10)}"`;
+    const players = ` data-players="${escapeHtml((game.players || ['solo']).join(','))}"`;
+    const quality = ` data-quality="${escapeHtml(game.qualityStatus || 'standard')}"`;
+    const classroom = game.classroom ? ' data-classroom="true"' : '';
+    return `\n<a href="${escapeHtml(game.href)}" class="game-card${disabled}" data-category="${escapeHtml(game.category || 'all')}" data-age="${escapeHtml(game.age || 'all')}" data-id="${escapeHtml(game.id)}"${subject}${genre}${difficulty}${session}${players}${quality}${classroom}${cover}${scoreKey}${rankKey}${scoreUnit}${isTime}${ariaDisabled}>\n  <span class="fav-star">☆</span>\n  <div class="game-icon">${renderIcon(game)}</div>\n  <div class="game-title">${escapeHtml(game.title)}</div>\n  <div class="game-desc">${escapeHtml(game.description || '')}</div>\n</a>\n`;
   }
 
   function replaceGameCardsFromCatalog(html, catalog) {
