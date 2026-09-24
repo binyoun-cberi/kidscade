@@ -131,3 +131,182 @@
   #gearArea{right:29%;bottom:3px}
   #pedals{right:var(--sdk-menu-safe)}
 }
+
+
+/* v4: short landscape viewport (iPad Safari browser chrome visible) */
+@media (orientation:landscape) and (max-height:560px){
+  :root{--sdk-menu-safe:86px}
+
+  #examMachine{
+    top:4px;
+    width:min(480px,52vw);
+    padding:5px 9px;
+    border-radius:13px
+  }
+  .exam-row{font-size:9px}
+  .exam-row b{font-size:13px}
+  #instruction{font-size:13px;line-height:1.15}
+  #subInstruction{font-size:9px;margin-top:2px}
+
+  .mirror{
+    top:19%;
+    width:min(138px,16vw);
+    height:48px;
+    border-width:5px
+  }
+
+  #cockpit{
+    height:34%;
+    bottom:0
+  }
+  #dashTop{
+    bottom:-2%;
+    height:57%;
+    border-radius:42% 42% 0 0/20% 20% 0 0
+  }
+
+  #steeringPad{
+    left:4%;
+    bottom:4px;
+    width:154px;
+    height:154px
+  }
+  #steeringWheel{
+    width:112px;
+    height:112px;
+    border-width:10px
+  }
+  .wheel-spoke{
+    width:47px;
+    height:10px
+  }
+  #steerKnob{
+    width:31px;
+    height:31px;
+    border-width:2px
+  }
+
+  #cluster{
+    left:13%;
+    bottom:27%;
+    transform:translateX(-50%) scale(.58);
+    transform-origin:bottom center
+  }
+
+  #leftControls{
+    left:26%;
+    bottom:13px;
+    grid-template-columns:repeat(3,42px);
+    grid-auto-rows:31px;
+    gap:4px
+  }
+  .stalk,.small-control{
+    width:42px;
+    height:31px;
+    font-size:8px;
+    border-radius:8px;
+    box-shadow:0 2px 0 #050809
+  }
+  .stalk{font-size:15px}
+  #parkingBrake{width:88px}
+
+  #gearArea{
+    right:31%;
+    bottom:9px;
+    width:78px;
+    height:104px
+  }
+  .gear-gate span{font-size:10px}
+  .gear-knob{
+    width:28px;
+    height:28px;
+    border-width:2px
+  }
+  #autoGate span{left:11px}
+  #autoGate span:nth-child(1){top:5px}
+  #autoGate span:nth-child(2){top:29px}
+  #autoGate span:nth-child(3){top:53px}
+  #autoGate span:nth-child(4){top:77px}
+  #gearArea>.control-caption{display:none}
+
+  #pedals{
+    right:var(--sdk-menu-safe);
+    bottom:12px;
+    gap:5px
+  }
+  .pedal-wrap{width:38px}
+  .pedal{
+    height:54px;
+    font-size:8px;
+    border-width:1px;
+    box-shadow:0 5px 0 #0b0f11
+  }
+  .pedal.narrow{width:31px}
+  .pedal-meter{
+    height:3px;
+    margin-top:5px
+  }
+
+  #toast{
+    top:47%;
+    font-size:11px;
+    padding:6px 11px
+  }
+}
+
+/* very short embedded landscape, e.g. Safari with tab bar + KIDSCade shell */
+@media (orientation:landscape) and (max-height:460px){
+  #examMachine{width:min(430px,50vw)}
+  #subInstruction{display:none}
+  .mirror{top:21%;height:42px}
+
+  #cockpit{height:36%}
+  #steeringPad{
+    left:3%;
+    bottom:6px;
+    width:136px;
+    height:136px
+  }
+  #steeringWheel{
+    width:96px;
+    height:96px;
+    border-width:9px
+  }
+  .wheel-spoke{width:40px;height:9px}
+  #steerKnob{width:27px;height:27px}
+
+  #cluster{
+    left:12%;
+    bottom:29%;
+    transform:translateX(-50%) scale(.50)
+  }
+
+  #leftControls{
+    left:24%;
+    bottom:10px;
+    grid-template-columns:repeat(3,38px);
+    grid-auto-rows:29px
+  }
+  .stalk,.small-control{
+    width:38px;
+    height:29px;
+    font-size:7px
+  }
+  #parkingBrake{width:80px}
+
+  #gearArea{
+    right:30%;
+    bottom:7px;
+    width:70px;
+    height:94px
+  }
+
+  #pedals{
+    right:82px;
+    bottom:9px
+  }
+  .pedal-wrap{width:34px}
+  .pedal{height:48px}
+
+  #dashTop{height:54%}
+}
