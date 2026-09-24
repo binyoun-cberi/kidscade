@@ -232,7 +232,7 @@ function trainingModal(){
     state.roster.forEach(function(p){p.fitness=clamp((p.fitness||100)+(k==='rest'?18:9),0,100);});
     if(k!=='rest'){
       var pool=state.roster.slice().sort(function(){return Math.random()-.5;}).slice(0,3);
-      pool.forEach(function(p){var plus=1+(Math.random()<.35?1:0);p.stats[k]=clamp(p.stats[k]+plus,0,99);p.overall=overall(p);changed.push(p.name+' +'+plus);});
+      pool.forEach(function(p){var plus=1+(Math.random()<.35?1:0);p.stats[k]=clamp(p.stats[k]+plus,0,99);delete p.overall;p.overall=overall(p);changed.push(p.name+' +'+plus);});
     }
     state.trainingAvailable=false;save();modal.classList.add('hidden');toast(k==='rest'?'푹 쉬고 체력을 회복했어요.':changed.join(' · '));if(currentView==='home')home();
   };});
