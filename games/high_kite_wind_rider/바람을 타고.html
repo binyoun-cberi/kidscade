@@ -1,32 +1,264 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>바람을 타고 — 연날리기</title>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>바람을 타고 — 연날리기</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,'Malgun Gothic',sans-serif;background:linear-gradient(#89caf2,#dff5ff);color:#17314b;overflow-x:hidden}button{font:inherit;touch-action:none;user-select:none}.wrap{max-width:920px;margin:auto;padding:10px 12px 22px}.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.top h1{margin:0;font-size:clamp(20px,4vw,30px)}.stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.pill{padding:7px 10px;border-radius:999px;background:#fff9;border:1px solid #fff;font-weight:850;box-shadow:0 2px 5px #44789b33}.rule{margin:9px 0;background:#fffce8;border:2px solid #e6c35b;border-radius:14px;padding:9px 12px;font-weight:850;text-align:center}.rule b{color:#075fa8}.game{position:relative;border:5px solid #fff;border-radius:22px;overflow:hidden;box-shadow:0 12px 30px #315d7840;background:#87c9f2}.game canvas{width:100%;height:auto;display:block;aspect-ratio:16/10}.hud{position:absolute;left:12px;top:12px;padding:8px 11px;border-radius:12px;background:#103d65c9;color:#fff;font-weight:850;pointer-events:none}.gust{position:absolute;right:12px;top:12px;padding:8px 11px;border-radius:12px;background:#ffffffdf;font-weight:900;pointer-events:none}.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.steer{min-height:78px;border:0;border-radius:18px;font-size:21px;font-weight:950;color:white;box-shadow:0 7px 0 #173b62;background:linear-gradient(#338ac9,#1769a8)}.steer:active,.steer.on{transform:translateY(4px);box-shadow:0 3px 0 #173b62;filter:brightness(1.12)}.tip{margin:10px 0 0;text-align:center;line-height:1.5;font-weight:700}.overlay{position:fixed;inset:0;display:grid;place-items:center;background:#183653cc;padding:20px;z-index:20}.overlay.hide{display:none}.card{max-width:520px;background:#fff;border-radius:24px;padding:25px;border:4px solid #225e8f;text-align:center;box-shadow:0 16px 50px #102b4355}.card h2{font-size:31px;margin:0 0 10px}.card p{line-height:1.65}.start{width:100%;border:0;border-radius:14px;padding:14px;font-weight:950;font-size:18px;background:#ffd85f;color:#3b3115;box-shadow:0 5px 0 #b28a24}.mini{font-size:12px;color:#536d7e}@media(max-width:600px){.wrap{padding:7px}.top{align-items:flex-start}.stats{font-size:12px}.game{border-width:3px}.steer{min-height:72px}.rule{font-size:13px}}
-</style></head><body>
-<div class="wrap"><div class="top"><h1>🪁 바람을 타고</h1><div class="stats"><span class="pill">높이 <b id="alt">0</b>m</span><span class="pill">별 <b id="stars">0</b></span><span class="pill">최고 <b id="best">0</b>m</span></div></div><div class="rule">조작은 딱 두 개! <b>왼쪽 줄 / 오른쪽 줄</b>로 연을 파란 바람길 안에 두세요. 바람이 연을 알아서 올려 줍니다.</div>
-<div class="game"><canvas id="c" width="900" height="560"></canvas><div class="hud" id="hud">바람길 안! 상승 ↑</div><div class="gust" id="gust">보통 바람</div></div>
-<div class="controls"><button class="steer" id="left">◀ 왼쪽 줄 당기기</button><button class="steer" id="right">오른쪽 줄 당기기 ▶</button></div><p class="tip">파란 길에서 벗어나도 떨어지거나 게임 오버되지 않아요. 다시 들어오면 됩니다.<br><span class="mini">키보드 ← → 도 사용할 수 있어요. 가끔 오는 황금 돌풍은 운 좋은 보너스!</span></p></div>
-<div class="overlay" id="intro"><div class="card"><h2>어렵게 조종하지 마세요</h2><p>연은 <b>자동으로 앞으로 날고 높이 올라갑니다.</b><br>내가 할 일은 파란 바람길을 보면서 왼쪽이나 오른쪽 줄을 살짝 당기는 것뿐이에요.</p><p>바람길 안에서는 빠르게 올라가고 ⭐을 만날 수 있습니다. 밖으로 나가도 실패하지 않아요.</p><button class="start" id="start">연 날리기 시작</button></div></div>
-<div class="overlay hide" id="result"><div class="card"><h2 id="resultTitle">비행 끝!</h2><p id="resultText"></p><button class="start" id="again">한 번 더 날리기</button></div></div>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,'Malgun Gothic',sans-serif}body{background:linear-gradient(#79bdea,#e8f8ff);color:#17314b;overflow-x:hidden}button{font:inherit;touch-action:none;user-select:none}.wrap{max-width:960px;margin:auto;padding:10px 12px 24px}.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.top h1{margin:0;font-size:clamp(20px,4vw,30px)}.stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.pill{padding:7px 10px;border-radius:999px;background:#fff9;border:1px solid #fff;font-weight:850;box-shadow:0 2px 5px #44789b33}.rule{margin:9px 0;background:#fffce8;border:2px solid #e6c35b;border-radius:14px;padding:9px 12px;font-weight:850;text-align:center}.rule b{color:#075fa8}.game{position:relative;border:5px solid #fff;border-radius:22px;overflow:hidden;box-shadow:0 12px 30px #315d7840;background:#87c9f2}.game canvas{width:100%;height:auto;display:block;aspect-ratio:16/10}.hud{position:absolute;left:12px;top:12px;padding:8px 11px;border-radius:12px;background:#103d65d9;color:#fff;font-weight:900;pointer-events:none}.wind{position:absolute;right:12px;top:12px;padding:8px 11px;border-radius:12px;background:#ffffffea;font-weight:900;pointer-events:none}.zone{position:absolute;left:12px;bottom:12px;padding:7px 10px;border-radius:10px;background:#ffffffd9;font-weight:900;pointer-events:none}.tension{position:absolute;right:12px;bottom:12px;width:min(260px,42vw);padding:8px 10px;border-radius:12px;background:#102f49d9;color:white;font-weight:850;pointer-events:none}.tension-head{display:flex;justify-content:space-between;gap:8px;font-size:13px}.bar{height:11px;margin-top:5px;border-radius:999px;background:#ffffff35;overflow:hidden}.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#66d477 0 55%,#ffd45d 72%,#ff6a61 100%);border-radius:inherit;transition:width .08s linear}.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.steer{min-height:80px;border:0;border-radius:18px;font-size:21px;font-weight:950;color:white;box-shadow:0 7px 0 #173b62;background:linear-gradient(#338ac9,#1769a8)}.steer:active,.steer.on{transform:translateY(4px);box-shadow:0 3px 0 #173b62;filter:brightness(1.12)}.tip{margin:10px 0 0;text-align:center;line-height:1.5;font-weight:760}.mini{font-size:12px;color:#536d7e}.overlay{position:fixed;inset:0;display:grid;place-items:center;background:#183653cc;padding:20px;z-index:20}.overlay.hide{display:none}.card{max-width:560px;background:#fff;border-radius:24px;padding:25px;border:4px solid #225e8f;text-align:center;box-shadow:0 16px 50px #102b4355}.card h2{font-size:30px;margin:0 0 10px}.card p{line-height:1.65}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.how div{padding:10px 8px;border-radius:13px;background:#edf7ff;font-weight:800;font-size:13px}.start{width:100%;border:0;border-radius:14px;padding:14px;font-weight:950;font-size:18px;background:#ffd85f;color:#3b3115;box-shadow:0 5px 0 #b28a24}.danger{animation:dangerPulse .45s infinite alternate}@keyframes dangerPulse{to{filter:brightness(1.28)}}@media(max-width:600px){.wrap{padding:7px}.top{align-items:flex-start}.stats{font-size:12px}.game{border-width:3px}.steer{min-height:72px;font-size:17px}.rule{font-size:13px}.hud,.wind{font-size:12px}.zone{font-size:11px}.tension{width:46vw;font-size:11px}.how{grid-template-columns:1fr}.card{padding:20px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🪁 바람을 타고</h1>
+    <div class="stats">
+      <span class="pill">높이 <b id="alt">0</b>m</span>
+      <span class="pill">별 <b id="stars">0</b></span>
+      <span class="pill">최고 <b id="best">0</b>m</span>
+    </div>
+  </div>
+  <div class="rule">조작은 딱 두 개! <b>왼쪽 줄 / 오른쪽 줄</b>. 바람에 밀릴 때 짧게 당기고, 줄이 팽팽하면 <b>손을 놓아 쉬게</b> 하세요.</div>
+  <div class="game" id="game">
+    <canvas id="c" width="900" height="560"></canvas>
+    <div class="hud" id="hud">파란 상승기류를 찾아요</div>
+    <div class="wind" id="wind">산들바람</div>
+    <div class="zone" id="zone">🌳 운동장 상공</div>
+    <div class="tension" id="tensionBox">
+      <div class="tension-head"><span>줄 장력</span><b id="tensionText">안정 0%</b></div>
+      <div class="bar"><i id="tensionBar"></i></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="steer" id="left">◀ 왼쪽 줄 당기기</button>
+    <button class="steer" id="right">오른쪽 줄 당기기 ▶</button>
+  </div>
+  <p class="tip">파란 상승기류 안에서는 올라가고, 밖에서는 조금씩 내려갑니다. 높은 곳일수록 바람이 거세지고 길이 좁아져요.<br><span class="mini">← → 키도 사용할 수 있어요. ✨ 황금 상승기류는 짧게 나타나는 고속 상승 보너스입니다.</span></p>
+</div>
+
+<div class="overlay" id="intro">
+  <div class="card">
+    <h2>바람을 읽고, 짧게 당기기</h2>
+    <p>연은 바람에 실제로 밀립니다. <b>반대쪽 줄을 짧게 당겨</b> 파란 상승기류 안에 머물러 보세요. 계속 당기기만 하면 줄 장력이 올라가 결국 끊어집니다.</p>
+    <div class="how">
+      <div>🌬️ 바람 화살표<br>연이 밀리는 방향</div>
+      <div>🔵 파란 길<br>안에 있으면 상승</div>
+      <div>🧵 장력<br>손을 놓으면 회복</div>
+    </div>
+    <p>시간 제한은 없습니다. 더 높이 갈수록 바람이 거세집니다.</p>
+    <button class="start" id="start">연 날리기 시작</button>
+  </div>
+</div>
+
+<div class="overlay hide" id="result">
+  <div class="card">
+    <h2 id="resultTitle">비행 끝!</h2>
+    <p id="resultText"></p>
+    <button class="start" id="again">한 번 더 날리기</button>
+  </div>
+</div>
+
 <script>
-(()=>{'use strict';const $=id=>document.getElementById(id),c=$('c'),x=c.getContext('2d'),BEST='kite3d_best';let running=false,last=0,time=0,alt=0,stars=0,kiteX=.5,vx=0,left=false,right=false,path=.5,pathTarget=.5,pathW=.30,gust=1,gustName='보통 바람',nextShift=0,nextStar=0,starList=[],clouds=[];let audio;
-function tone(f=440,d=.07){try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d)}catch(e){}}
-function reset(){time=0;alt=0;stars=0;kiteX=.5;vx=0;path=.5;pathTarget=.5;pathW=.31;gust=1;nextShift=2.5;nextStar=1;starList=[];clouds=Array.from({length:10},(_,i)=>({x:Math.random(),y:Math.random(),s:.55+Math.random()*.8}));$('alt').textContent=0;$('stars').textContent=0;$('best').textContent=localStorage.getItem(BEST)||0}
+(()=>{'use strict';
+const $=id=>document.getElementById(id),c=$('c'),ctx=c.getContext('2d'),BEST='kite3d_best';
+let running=false,last=0,time=0,alt=22,stars=0,combo=0,bestCombo=0,kiteX=.5,vx=0,left=false,right=false,tension=10;
+let laneX=.5,laneTarget=.5,laneW=.32,nextLaneShift=2.6;
+let windDir=0,windForce=.02,windName='산들바람',windKind='calm',nextWind=3;
+let nextStar=1.2,starList=[],gold=null,nextGold=18,clouds=[],holdL=0,holdR=0,outsideTime=0,audio=null;
+
+const zones=[
+  {min:0,name:'🌳 운동장 상공',top:'#65b6ea',bottom:'#e8f8ff'},
+  {min:140,name:'🏙️ 마을 위',top:'#5aa8df',bottom:'#cfeeff'},
+  {min:320,name:'☁️ 구름층',top:'#4d96cf',bottom:'#d8edf7'},
+  {min:620,name:'🌇 노을 하늘',top:'#6c83c8',bottom:'#ffd6a0'},
+  {min:980,name:'🌌 높은 하늘',top:'#243d83',bottom:'#7d99d4'}
+];
+
+function tone(f=440,d=.07,v=.045){try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function difficulty(){return clamp(alt/900,0,1.65)}
+function zoneNow(){let z=zones[0];for(const v of zones)if(alt>=v.min)z=v;return z}
+function reset(){
+  running=false;time=0;alt=22;stars=0;combo=0;bestCombo=0;kiteX=.5;vx=0;tension=10;left=right=false;holdL=holdR=0;outsideTime=0;
+  laneX=.5;laneTarget=.5;laneW=.32;nextLaneShift=2.6;windDir=0;windForce=.02;windName='산들바람';windKind='calm';nextWind=3;
+  nextStar=1.2;starList=[];gold=null;nextGold=17+Math.random()*6;
+  clouds=Array.from({length:12},()=>({x:Math.random(),y:Math.random(),s:.5+Math.random()*.9,spd:.55+Math.random()*.7}));
+  $('alt').textContent='22';$('stars').textContent='0';$('best').textContent=localStorage.getItem(BEST)||'0';$('wind').textContent='산들바람';
+  updateHud(false,false);updateTension();
+}
 function start(){reset();running=true;last=performance.now();$('intro').classList.add('hide');$('result').classList.add('hide');tone(600,.1)}
 function steer(dir,on){if(dir<0)left=on;else right=on;$(dir<0?'left':'right').classList.toggle('on',on)}
-[['left',-1],['right',1]].forEach(([id,d])=>{let b=$(id);b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);steer(d,true)};b.onpointerup=b.onpointercancel=e=>steer(d,false);b.onpointerleave=e=>{if(e.buttons===0)steer(d,false)}});addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){e.preventDefault();steer(-1,true)}if(e.key==='ArrowRight'){e.preventDefault();steer(1,true)}});addEventListener('keyup',e=>{if(e.key==='ArrowLeft')steer(-1,false);if(e.key==='ArrowRight')steer(1,false)});
-function changeWind(){pathTarget=.18+Math.random()*.64;let r=Math.random();if(r<.16){gust=1.75;gustName='✨ 황금 돌풍!';tone(820,.11)}else if(r<.45){gust=1.28;gustName='강한 바람'}else if(r<.72){gust=.78;gustName='산들바람'}else{gust=1;gustName='보통 바람'}$('gust').textContent=gustName;nextShift=time+2.6+Math.random()*2.4}
-function spawnStar(){starList.push({x:Math.max(.08,Math.min(.92,path+(Math.random()-.5)*pathW*.55)),y:-.05,hit:false});nextStar=time+1.1+Math.random()*1.4}
-function update(dt){time+=dt;if(time>=nextShift)changeWind();if(time>=nextStar)spawnStar();path+=(pathTarget-path)*Math.min(1,dt*.75);let input=(right?1:0)-(left?1:0);vx+=input*dt*.82;vx*=Math.pow(.18,dt);vx+=(path-kiteX)*dt*.035;kiteX=Math.max(.055,Math.min(.945,kiteX+vx));let inside=Math.abs(kiteX-path)<pathW/2;let climb=(inside?11:3.5)*gust*dt;alt+=climb;$('alt').textContent=Math.floor(alt);$('hud').textContent=inside?(gust>1.5?'황금 바람 탑승! 쭉쭉 ↑':'바람길 안! 상승 ↑'):'파란 길 쪽으로 돌아가요';for(let s of starList){s.y+=dt*(.19+.045*gust);if(!s.hit&&Math.abs(s.x-kiteX)<.055&&Math.abs(s.y-.62)<.07){s.hit=true;stars++;alt+=8;$('stars').textContent=stars;tone(900,.08)}}starList=starList.filter(s=>s.y<1.1&&!s.hit);clouds.forEach(cl=>{cl.y+=dt*.025*gust;if(cl.y>1.15){cl.y=-.2;cl.x=Math.random()}});if(time>=45)finish()}
-function cloud(cx,cy,s){x.save();x.globalAlpha=.72;x.fillStyle='#fff';x.beginPath();x.arc(cx,cy,30*s,0,7);x.arc(cx+30*s,cy+5*s,22*s,0,7);x.arc(cx-28*s,cy+7*s,20*s,0,7);x.fill();x.restore()}
-function draw(){let w=c.width,h=c.height;let g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'#5aace0');g.addColorStop(1,'#dff5ff');x.fillStyle=g;x.fillRect(0,0,w,h);clouds.forEach(cl=>cloud(cl.x*w,cl.y*h,cl.s));
-// 짙은 파란 바람길
-let px=path*w,pw=pathW*w;x.save();x.globalAlpha=.30;x.fillStyle='#0968b4';x.beginPath();x.moveTo(px-pw/2,0);for(let yy=0;yy<=h;yy+=35){let wave=Math.sin(yy*.025+time*1.6)*18;x.lineTo(px-pw/2+wave,yy)}for(let yy=h;yy>=0;yy-=35){let wave=Math.sin(yy*.025+time*1.6)*18;x.lineTo(px+pw/2+wave,yy)}x.closePath();x.fill();x.globalAlpha=.65;x.strokeStyle='#e8f7ff';x.lineWidth=2;for(let i=0;i<7;i++){let yy=((time*.17+i/7)%1)*h,xx=px+Math.sin(yy*.025+time*1.6)*18;x.beginPath();x.moveTo(xx-40,yy);x.lineTo(xx+40,yy);x.stroke()}x.restore();
-for(let s of starList){x.font='32px system-ui';x.textAlign='center';x.fillText('⭐',s.x*w,s.y*h)}
-// string + kite
-let kx=kiteX*w,ky=.62*h;x.strokeStyle='#5a493a';x.lineWidth=2;x.beginPath();x.moveTo(w*.5,h);x.quadraticCurveTo(w*.52,h*.82,kx,ky+28);x.stroke();x.save();x.translate(kx,ky);let tilt=vx*2.4;x.rotate(tilt);x.fillStyle='#f35f69';x.beginPath();x.moveTo(0,-33);x.lineTo(31,0);x.lineTo(0,33);x.lineTo(-31,0);x.closePath();x.fill();x.strokeStyle='#6b2940';x.lineWidth=3;x.stroke();x.fillStyle='#ffd45c';x.beginPath();x.moveTo(0,-33);x.lineTo(31,0);x.lineTo(0,0);x.closePath();x.fill();x.strokeStyle='#5c4050';x.lineWidth=2;x.beginPath();x.moveTo(0,32);x.quadraticCurveTo(-18,58,7,80);x.stroke();x.restore();
-// ground reference
-x.fillStyle='#67a950';x.fillRect(0,h-14,w,14);x.textAlign='left';x.fillStyle='#17314b';x.font='bold 14px system-ui';x.fillText('남은 시간 '+Math.max(0,Math.ceil(45-time))+'초',14,h-24)}
-function finish(){running=false;left=right=false;$('left').classList.remove('on');$('right').classList.remove('on');let a=Math.floor(alt),best=Math.max(a,Number(localStorage.getItem(BEST)||0));localStorage.setItem(BEST,String(best));$('best').textContent=best;$('resultTitle').textContent=a>=420?'🌤️ 구름 위까지 날렸어요!':'🪁 멋진 비행이었어요!';$('resultText').innerHTML=`45초 동안 <b>${a}m</b> 상승하고 별을 <b>${stars}개</b> 모았어요.<br>파란 바람길을 타는 것만 기억하면 됩니다.`;$('result').classList.remove('hide');tone(760,.18)}
-function loop(now){let dt=Math.min(.035,(now-last)/1000||0);last=now;if(running)update(dt);draw();requestAnimationFrame(loop)}$('start').onclick=start;$('again').onclick=start;reset();requestAnimationFrame(loop);
-})();</script></body></html>
+[['left',-1],['right',1]].forEach(([id,d])=>{const b=$(id);b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);steer(d,true)};b.onpointerup=b.onpointercancel=()=>steer(d,false);b.onpointerleave=e=>{if(e.buttons===0)steer(d,false)}})
+addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='ArrowLeft'){e.preventDefault();steer(-1,true)}if(e.key==='ArrowRight'){e.preventDefault();steer(1,true)}})
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft')steer(-1,false);if(e.key==='ArrowRight')steer(1,false)})
+
+function chooseWind(){
+  const d=difficulty(),r=Math.random(),strongChance=.14+d*.12;
+  if(r<strongChance){
+    windDir=Math.random()<.5?-1:1;windForce=.105+d*.045;windKind='gust';windName=(windDir<0?'⬅️':'➡️')+' 강한 돌풍';tone(250,.09,.025);
+  }else if(r<.63){
+    windDir=Math.random()<.5?-1:1;windForce=.055+d*.035;windKind='cross';windName=(windDir<0?'⬅️':'➡️')+' 옆바람';
+  }else{
+    windDir=(Math.random()-.5)*.35;windForce=.02+d*.014;windKind='calm';windName='〰️ 산들바람';
+  }
+  $('wind').textContent=windName;
+  nextWind=time+Math.max(1.65,3.6-d*.9)+Math.random()*1.4;
+}
+function shiftLane(){
+  const d=difficulty();
+  laneTarget=.15+Math.random()*.70;
+  nextLaneShift=time+Math.max(1.7,3.5-d*.8)+Math.random()*1.5;
+}
+function spawnStar(){
+  const base=gold?gold.x:laneX;
+  const spread=gold?gold.w*.58:laneW*.60;
+  starList.push({x:clamp(base+(Math.random()-.5)*spread,.07,.93),y:-.06,hit:false});
+  nextStar=time+1.2+Math.random()*1.2;
+}
+function spawnGold(){
+  const d=difficulty(),offset=(Math.random()<.5?-1:1)*(.10+Math.random()*.12);
+  gold={x:clamp(laneX+offset,.12,.88),w:Math.max(.085,.13-d*.018),ttl:4.4};
+  nextGold=time+21+Math.random()*14;
+  tone(820,.12,.04);
+}
+function updateTension(){
+  const pct=Math.round(clamp(tension,0,100));
+  $('tensionBar').style.width=pct+'%';
+  const label=pct>=88?'위험!':pct>=66?'팽팽함':pct>=40?'주의':'안정';
+  $('tensionText').textContent=label+' '+pct+'%';
+  $('tensionBox').classList.toggle('danger',pct>=88);
+}
+function updateHud(inside,goldInside){
+  const z=zoneNow();$('zone').textContent=z.name;
+  if(goldInside)$('hud').textContent='✨ 황금 상승기류! 고속 상승';
+  else if(inside)$('hud').textContent='파란 상승기류 안! ↑';
+  else $('hud').textContent='기류 밖! 고도가 내려가요';
+}
+function update(dt){
+  time+=dt;
+  const d=difficulty();
+  laneW=Math.max(.17,.32-d*.095);
+  if(time>=nextWind)chooseWind();
+  if(time>=nextLaneShift)shiftLane();
+  if(time>=nextStar)spawnStar();
+  if(time>=nextGold&&!gold)spawnGold();
+  laneX+=(laneTarget-laneX)*Math.min(1,dt*(.52+d*.16));
+  if(gold){gold.ttl-=dt;if(gold.ttl<=0)gold=null}
+
+  if(left)holdL+=dt;else holdL=Math.max(0,holdL-dt*2.8);
+  if(right)holdR+=dt;else holdR=Math.max(0,holdR-dt*2.8);
+  const both=left&&right;
+  const input=(right?1:0)-(left?1:0);
+  const control=both?0:input*(.78+d*.05);
+  const push=windDir*windForce*(1+d*.18);
+  const softAssist=(laneX-kiteX)*.045;
+  vx+=(control+push+softAssist)*dt;
+  vx*=Math.exp(-(both?3.8:1.75)*dt);
+  kiteX+=vx*dt;
+  if(kiteX<.045){kiteX=.045;vx=Math.abs(vx)*.28;tension+=5}
+  if(kiteX>.955){kiteX=.955;vx=-Math.abs(vx)*.28;tension+=5}
+
+  const inside=Math.abs(kiteX-laneX)<laneW*.5;
+  const goldInside=!!gold&&Math.abs(kiteX-gold.x)<gold.w*.5;
+  if(inside)outsideTime=0;else outsideTime+=dt;
+
+  let climb=inside?(8.7+d*1.4):(-1.25-d*1.35);
+  if(goldInside)climb=24+d*3.2;
+  alt=Math.max(0,alt+climb*dt);
+
+  const activeHold=Math.max(holdL,holdR);
+  if(left||right){
+    tension+=(4.5+Math.abs(windForce)*48+d*2.2+Math.max(0,activeHold-1.05)*7.5)*dt;
+  }else{
+    tension-=(21-d*2.6)*dt;
+  }
+  if(both)tension+=17*dt;
+  if(windKind==='gust')tension+=4.8*dt;
+  if(goldInside)tension-=7.5*dt;
+  tension=clamp(tension,0,110);
+
+  for(const s of starList){
+    s.y+=dt*(.20+d*.018);
+    if(!s.hit&&Math.abs(s.x-kiteX)<.048&&Math.abs(s.y-.62)<.065){
+      s.hit=true;stars++;combo++;bestCombo=Math.max(bestCombo,combo);alt+=4+Math.min(8,combo);tension=Math.max(0,tension-4);
+      $('stars').textContent=stars;tone(850+Math.min(300,combo*35),.075,.035);
+    }
+  }
+  const before=starList.length;
+  starList=starList.filter(s=>s.y<1.08&&!s.hit);
+  if(starList.length<before&&outsideTime>1.1)combo=0;
+
+  clouds.forEach(cl=>{cl.y+=dt*(.018+.011*d)*cl.spd;if(cl.y>1.15){cl.y=-.18;cl.x=Math.random()}});
+  $('alt').textContent=Math.floor(alt);
+  updateHud(inside,goldInside);updateTension();
+
+  if(tension>=100)finish('snap');
+  else if(time>7&&alt<=0)finish('ground');
+}
+function cloud(cx,cy,s,alpha=.68){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,30*s,0,7);ctx.arc(cx+30*s,cy+5*s,22*s,0,7);ctx.arc(cx-28*s,cy+7*s,20*s,0,7);ctx.fill();ctx.restore()}
+function laneShape(center,width,fill,alpha){
+  const w=c.width,h=c.height,px=center*w,pw=width*w;
+  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(px-pw/2,0);
+  for(let yy=0;yy<=h;yy+=32){const wave=Math.sin(yy*.026+time*1.7)*16;ctx.lineTo(px-pw/2+wave,yy)}
+  for(let yy=h;yy>=0;yy-=32){const wave=Math.sin(yy*.026+time*1.7)*16;ctx.lineTo(px+pw/2+wave,yy)}
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function draw(){
+  const w=c.width,h=c.height,z=zoneNow(),d=difficulty();
+  const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,z.top);g.addColorStop(1,z.bottom);ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+
+  if(alt<260){
+    const groundY=h-(32+Math.min(150,alt*.35));
+    ctx.fillStyle='#78ad56';ctx.fillRect(0,groundY,w,h-groundY);
+    ctx.fillStyle='#5e8448';
+    for(let i=0;i<18;i++){const bx=i*58-(time*4%58);const bh=18+(i%4)*7;ctx.fillRect(bx,groundY-bh,34,bh)}
+  }
+  clouds.forEach(cl=>cloud(cl.x*w,cl.y*h,cl.s,alt>900?.40:.65));
+
+  laneShape(laneX,laneW,'#0874c9',.27);
+  ctx.save();ctx.globalAlpha=.72;ctx.strokeStyle='#e9f8ff';ctx.lineWidth=2;
+  for(let i=0;i<8;i++){const yy=h-(((time*.20+i/8)%1)*h),xx=laneX*w+Math.sin(yy*.026+time*1.7)*16;ctx.beginPath();ctx.moveTo(xx-34,yy+10);ctx.lineTo(xx,yy-8);ctx.lineTo(xx+34,yy+10);ctx.stroke()}
+  ctx.restore();
+
+  if(gold){
+    laneShape(gold.x,gold.w,'#ffd64a',.36);
+    ctx.save();ctx.globalAlpha=.82;ctx.strokeStyle='#fff2a0';ctx.lineWidth=3;
+    const gx=gold.x*w;for(let i=0;i<6;i++){const yy=h-(((time*.32+i/6)%1)*h);ctx.beginPath();ctx.moveTo(gx-18,yy+9);ctx.lineTo(gx,yy-10);ctx.lineTo(gx+18,yy+9);ctx.stroke()}ctx.restore();
+  }
+
+  ctx.save();ctx.globalAlpha=.32+.18*(windKind==='gust');ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  const dir=windDir<0?-1:1;
+  for(let i=0;i<9;i++){const yy=38+i*58;const phase=(time*(60+Math.abs(windForce)*500)+i*83)%w;const xx=dir>0?phase:w-phase;ctx.beginPath();ctx.moveTo(xx-dir*55,yy);ctx.lineTo(xx,yy);ctx.stroke()}
+  ctx.restore();
+
+  for(const s of starList){ctx.font='30px system-ui';ctx.textAlign='center';ctx.fillText('⭐',s.x*w,s.y*h)}
+
+  const kx=kiteX*w,ky=.62*h;
+  ctx.strokeStyle=tension>75?'#7a2d2d':'#5a493a';ctx.lineWidth=tension>85?3:2;ctx.beginPath();ctx.moveTo(w*.5,h);ctx.quadraticCurveTo(w*.5+vx*80,h*.82,kx,ky+30);ctx.stroke();
+
+  const shake=tension>80?Math.sin(time*42)*(tension-80)*.10:0;
+  ctx.save();ctx.translate(kx+shake,ky);ctx.rotate(clamp(vx*1.25+windDir*windForce*.7,-.55,.55));
+  ctx.fillStyle='#ef5664';ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(32,0);ctx.lineTo(0,34);ctx.lineTo(-32,0);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#64273b';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#ffd45c';ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(32,0);ctx.lineTo(0,0);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#4bb7dd';ctx.beginPath();ctx.moveTo(-32,0);ctx.lineTo(0,0);ctx.lineTo(0,34);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#5c4050';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,33);ctx.quadraticCurveTo(-20,58,7,83);ctx.stroke();ctx.restore();
+
+  ctx.fillStyle=alt>900?'#f7fbff':'#17314b';ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.fillText('비행 '+Math.floor(time)+'초',14,h-22);
+  if(combo>=2){ctx.textAlign='center';ctx.font='900 18px system-ui';ctx.fillText('⭐ '+combo+' 연속!',w/2,32)}
+}
+function finish(reason){
+  if(!running)return;running=false;left=right=false;$('left').classList.remove('on');$('right').classList.remove('on');
+  const a=Math.floor(alt),best=Math.max(a,Number(localStorage.getItem(BEST)||0));localStorage.setItem(BEST,String(best));$('best').textContent=best;
+  if(reason==='snap'){$('resultTitle').textContent='🧵 줄이 끊어졌어요!';tone(150,.24,.05)}
+  else{$('resultTitle').textContent='🌱 연이 내려앉았어요';tone(220,.18,.04)}
+  const newBest=a>=best&&a>0?' <b>새 최고 기록!</b>':'';
+  $('resultText').innerHTML='최고 고도 <b>'+a+'m</b>'+newBest+'<br>별 <b>'+stars+'개</b> · 최고 연속 <b>'+bestCombo+'개</b> · 비행 <b>'+Math.floor(time)+'초</b><br><br>'+(reason==='snap'?'높은 곳에서는 오래 당기지 말고 중간중간 손을 놓아 장력을 낮춰 보세요.':'상승기류에서 너무 오래 벗어나면 고도가 줄어듭니다.');
+  $('result').classList.remove('hide');
+}
+function loop(now){const dt=Math.min(.034,(now-last)/1000||0);last=now;if(running)update(dt);draw();requestAnimationFrame(loop)}
+$('start').onclick=start;$('again').onclick=start;reset();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
