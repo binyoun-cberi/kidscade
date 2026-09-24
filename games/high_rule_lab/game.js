@@ -4,7 +4,7 @@ const DATA=window.RuleLabData;
 if(!DATA||!Array.isArray(DATA.levels))throw new Error('Rule Lab level data missing');
 const $=id=>document.getElementById(id);
 const board=$('board'),activeRules=$('activeRules'),toastEl=$('toast'),levelDialog=$('levelDialog'),clearDialog=$('clearDialog');
-const SAVE_KEY='kidscade_game_v1:high_rule_lab:progress';
+const SAVE_KEY='kidscade_game_v1:high_rule_lab:progress_v2';
 const ASSETS={
  hero:'../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',
  rock:'../../assets/game/2d/racing/kenney-racing-pack/objects/rock3.png'
@@ -57,7 +57,7 @@ function loadLevel(index){
  history=[];moves=0;hintStep=0;clearedLock=false;lastRuleSignature='';
  document.documentElement.style.setProperty('--cols',src.w);
  document.documentElement.style.setProperty('--rows',src.h);
- $('stageLabel').textContent=(levelIndex+1)+'단계';
+ $('stageLabel').textContent=(levelIndex+1)+' / '+DATA.levels.length;
  $('stageTitle').textContent=src.title;
  $('stageKicker').textContent=src.chapter;
  $('chapterPill').textContent=src.chapter;
@@ -159,6 +159,9 @@ function applyInteractions(rules){
   if(defeat){
    for(const e of living())if(hasProp(e.type,'YOU',rules)&&!hasProp(e.type,'DEFEAT',rules)){removeEntity(e);changed=true}
   }
+  if(living().length>1){
+   for(const e of living())if(hasProp(e.type,'WEAK',rules)){removeEntity(e);changed=true}
+  }
  }
  if(changed)state.entities=state.entities.filter(e=>!e.dead);
 }
@@ -218,7 +221,22 @@ function move(dx,dy){
  render(false,after);
  if(checkWin(after))setTimeout(clearLevel,180);
 }
+function discoveryKey(r){return r.subject+'|'+r.type+'|'+r.predicate}
+function rememberDiscoveries(after){
+ const save=safeLoad();let fresh=null;
+ for(const r of after.rules){
+  const k=discoveryKey(r);
+  if(!save.discoveries[k]){save.discoveries[k]=true;fresh=r}
+ }
+ if(fresh){
+  saveProgress(save);
+  const right=fresh.type==='property'?(DATA.P[fresh.predicate]||fresh.predicate):(DATA.N[fresh.predicate]||fresh.predicate);
+  const badge=$('discoveryBadge');badge.textContent='새 법칙 · '+(DATA.N[fresh.subject]||fresh.subject)+' = '+right;badge.hidden=false;
+  clearTimeout(badge._t);badge._t=setTimeout(()=>{badge.hidden=true},1500);
+ }
+}
 function flashRules(before,after){
+ rememberDiscoveries(after);
  const a=new Set(before.rules.map(r=>r.subject+'|'+r.type+'|'+r.predicate));
  const b=new Set(after.rules.map(r=>r.subject+'|'+r.type+'|'+r.predicate));
  let message='법칙이 바뀌었어요!';
@@ -295,15 +313,20 @@ function showHint(){
  toast(text);$('labNote').textContent=text;tone(420,.05,'sine');
 }
 function renderLevelGrid(){
- const save=safeLoad(),chapters=[];$('levelGrid').innerHTML='';
+ const save=safeLoad();$('levelGrid').innerHTML='';let lastChapter='';
  DATA.levels.forEach((l,i)=>{
+  if(l.chapter!==lastChapter){
+   lastChapter=l.chapter;const h=document.createElement('div');h.className='chapter-row';
+   const total=DATA.levels.filter(x=>x.chapter===l.chapter).length;
+   const done=DATA.levels.reduce((n,x,j)=>n+(x.chapter===l.chapter&&save.cleared[String(j)]?1:0),0);
+   h.innerHTML='<b>'+l.chapter+'</b><span>'+done+' / '+total+'</span>';$('levelGrid').appendChild(h);
+  }
   const b=document.createElement('button');b.type='button';b.className='level-card';
   if(save.cleared[String(i)])b.classList.add('cleared');
   if(i+1>save.unlocked){b.classList.add('locked');b.disabled=true}
   b.innerHTML='<b>'+(i+1)+'</b><small>'+l.chapter+'<br>'+l.title+'</small>';
   b.onclick=()=>{levelDialog.close();loadLevel(i)};
   $('levelGrid').appendChild(b);
-  if(!chapters.includes(l.chapter))chapters.push(l.chapter);
  });
 }
 function openLevels(){renderLevelGrid();if(!levelDialog.open)levelDialog.showModal()}

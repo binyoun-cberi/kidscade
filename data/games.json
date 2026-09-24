@@ -439,15 +439,15 @@
     {
       "id": "high_rule_lab",
       "title": "말대로 월드: 규칙 연구소",
-      "href": "games/high_rule_lab/index.html?v=1",
+      "href": "games/high_rule_lab/index.html?v=2",
       "category": "math",
       "age": "high",
       "icon": "🧩",
-      "description": "한글 규칙 블록을 직접 밀어 ‘아이 = 나’, ‘벽 = 막힘’, ‘돌 = 물’처럼 세상의 법칙과 목표 자체를 바꾸며 길을 만드는 2D 논리 퍼즐!",
+      "description": "한글 규칙 블록을 밀어 ‘아이 = 나’, ‘벽 = 막힘’, ‘돌 = 물’처럼 세상의 법칙과 목표 자체를 바꾸고, 이동·약함·열쇠·변환까지 조합해 60개 실험을 푸는 2D 논리 퍼즐!",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "medium",
-      "sessionMinutes": 10,
+      "sessionMinutes": 15,
       "players": [
         "solo"
       ],

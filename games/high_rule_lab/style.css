@@ -98,7 +98,7 @@ kbd{display:inline-block;min-width:24px;padding:3px 6px;margin-right:5px;border-
 .modal-head small,.clear-modal>small{color:#6e7886;font-weight:900}
 .modal-head h2{margin:2px 0 0}
 .close-btn{border:0;background:#eae5d7;border-radius:10px;width:38px;height:38px;font-weight:1000}
-.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px 20px 22px;overflow:auto;max-height:70vh}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px 20px 22px;overflow:auto;max-height:70vh}.chapter-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 4px 4px;border-bottom:2px solid #ded6c2;color:#27364d}.chapter-row:first-child{margin-top:0}.chapter-row b{font-size:13px}.chapter-row span{font-size:11px;font-weight:900;color:#7b8695}
 .level-card{border:2px solid #d8cfb8;background:#fff;border-radius:13px;padding:10px 6px;min-height:74px;text-align:center;font-weight:1000;cursor:pointer}
 .level-card small{display:block;margin-top:5px;color:#778294;font-size:9px;line-height:1.2}
 .level-card.cleared{background:#e8f6ef;border-color:#79c8a8}
