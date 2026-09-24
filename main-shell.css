@@ -308,7 +308,7 @@
 
         /* 게임 모달 */
         #game-modal { position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--modal-bg); z-index: 9999; display: flex; flex-direction: column;
+        top: 0; left: 0; width: 100vw; height: 100dvh; min-height:100dvh; background-color: var(--modal-bg); z-index: 9999; display: flex; flex-direction: column;
         }
         .modal-header { height: 60px; background-color: var(--modal-header); color: white; display: flex; justify-content: space-between;
         align-items: center; padding: 0 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10;
@@ -320,7 +320,7 @@
         }
         .close-btn:hover { background-color: #dc2626;
         }
-        #game-iframe { flex: 1; width: 100%; height: 100%; border: none; background-color: #fff;
+        #game-iframe { flex: 1 1 auto; min-height:0; width: 100%; height: 100%; border: none; background-color: #fff;
         }
 
         /* 상점 모달 */
@@ -2607,3 +2607,5 @@ body.dark-mode .site-credits {
   .kc-game-stage-actions{display:grid;grid-template-columns:1fr}
   .kc-game-stage-primary,.kc-game-stage-secondary{width:100%}
 }
+
+@supports not (height:100dvh){#game-modal{height:100vh;min-height:100vh}}
