@@ -84,7 +84,8 @@ jobs:
             scripts/import-stdict.cjs \
             scripts/build-wordchain-static.cjs \
             scripts/maratang-selfbar-build.cjs \
-            scripts/bunsik-kitchen-build.cjs; do
+            scripts/bunsik-kitchen-build.cjs \
+            scripts/run-ci-tests.cjs; do
             node --check "$file"
           done
       - name: Reject tracked credentials and secret env files
@@ -93,102 +94,5 @@ jobs:
         run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
-      - name: Run audio manager and integration tests
-        run: node --test tests/audio-manager.test.cjs tests/audio-integration.test.cjs
-      - name: Run touch interaction guard tests
-        run: node --test tests/touch-interaction-guard.test.cjs
-      - name: Run game cover and favicon tests
-        run: node --test tests/game-cover-overrides.test.cjs
-      - name: Run game card description tests
-        run: node --test tests/game-description-overrides.test.cjs
-      - name: Run temporary profile and play history tests
-        run: node --test tests/profile-history.test.cjs
-      - name: Run playtime state tests
-        run: node --test tests/playtime-state.test.cjs tests/index-base-playtime.test.cjs
-      - name: Run seed wallet tests
-        run: node --test tests/seed-wallet.test.cjs tests/index-base-seed-wallet.test.cjs
-      - name: Run daily progress tests
-        run: node --test tests/daily-progress.test.cjs tests/index-base-daily-progress.test.cjs
-      - name: Run achievement state tests
-        run: node --test tests/achievement-state.test.cjs tests/index-base-achievement.test.cjs
-      - name: Run shop state tests
-        run: node --test tests/shop-state.test.cjs tests/index-base-shop-state.test.cjs
-      - name: Run UI information architecture tests
-        run: node --test tests/ui-information-architecture.test.cjs
-      - name: Run UI visual polish tests
-        run: node --test tests/ui-visual-polish.test.cjs
-      - name: Run student account security and sync tests
-        run: node --test tests/accounts.test.mjs
-      - name: Run teacher account management tests
-        run: node --test tests/teacher-management.test.mjs
-      - name: Run seed ranking tests
-        run: node --test tests/seed-rankings.test.mjs
-      - name: Run game record tests
-        run: node --test tests/game-records.test.mjs
-      - name: Run multiplayer room and Patience Tower duel tests
-        run: node --test tests/multiplayer.test.mjs
-      - name: Run word-chain dictionary tests
-        run: node --test tests/wordchain.test.mjs
-      - name: Run word-chain realtime v2 tests
-        run: node --test tests/wordchain-realtime-v2.test.mjs
-      - name: Run History Timebattle LIVE tests
-        run: node --test tests/history-live.test.mjs
-      - name: Run Rhythm Dash v11 tests
-        run: node --test tests/rhythm-dash-v11.test.cjs
-      - name: Run Alien Pizza DX2 tests
-        run: node --test tests/alien-pizza-dx2.test.cjs
-      - name: Run Maratang Selfbar tests
-        run: node --test tests/maratang-selfbar.test.cjs
-      - name: Run Bunsik Kitchen tests
-        run: node --test tests/bunsik-kitchen.test.cjs
-      - name: Run Deep Diver v15 tests
-        run: node --test tests/deep-diver-2d.test.cjs
-
-      - name: Run Code Breaker DX tests
-        run: node --test tests/code-breaker-dx.test.cjs
-      - name: Run Police Patrol rework tests
-        run: node --test tests/police-patrol.test.cjs
-      - name: Run Divisor Tower Defense 3D tests
-        run: node --test tests/math-tower-defense-3d.test.cjs
-      - name: Run Spelling Frog asset rework tests
-        run: node --test tests/spelling-frog-assets.test.cjs
-      - name: Run Word Blaster tests
-        run: node --test tests/word-blaster.test.cjs
-      - name: Run Cleanup Squad tests
-        run: node --test tests/cleanup-squad.test.cjs
-      - name: Run Bridge Lab tests
-        run: node --test tests/bridge-builder.test.cjs
-      - name: Run server stats Worker tests
-        run: node --test tests/server-stats-worker.test.mjs
-      - name: Run popular game ranking tests
-        run: node --test tests/stats-rankings.test.cjs
-      - name: Run storage compatibility tests
-        run: node --test tests/storage.test.cjs
-      - name: Enforce localStorage namespace policy
-        run: node scripts/storage-audit.cjs --strict
-      - name: Run game classification tests
-        run: node --test tests/game-classification.test.cjs
-      - name: Run age navigation regression tests
-        run: node --test tests/age-navigation.test.cjs
-      - name: Run launcher regression tests
-        run: node --test tests/game-launcher.test.cjs
-      - name: Run game exit navigation tests
-        run: node --test tests/game-exit-navigation.test.cjs
-      - name: Run critical release smoke tests
-        run: node --test tests/release-smoke.test.cjs tests/game-filenames.test.cjs
-      - name: Run recommendation regression tests
-        run: node --test tests/recommendations.test.cjs
-      - name: Run garden regression tests
-        run: node --test tests/garden.test.cjs
-      - name: Run Seed World HUD regression tests
-        run: node --test tests/world-v3-hud.test.cjs
-      - name: Run Seed World crafting and development tests
-        run: node --test tests/world-v3-progression.test.cjs
-      - name: Run Seed World homestead starter town and pet tests
-        run: node --test tests/world-v3-homestead.test.cjs tests/world-v3-starter-loop.test.cjs tests/world-v3-town.test.cjs tests/world-v3-survival-pets.test.cjs
-      - name: Run Seed World meta loop tests
-        run: node --test tests/seed-world-meta.test.cjs
-      - name: Run main architecture tests
-        run: node --test tests/main-architecture.test.cjs
-      - name: Enforce deployment-safe paths
-        run: node scripts/deployment-audit.cjs --strict
+      - name: Run all regression tests and audits
+        run: npm run test:ci

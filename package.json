@@ -8,7 +8,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply kidscade-stats --remote",
     "deploy:cloudflare": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy",
     "health": "node scripts/platform-health-report.cjs",
-    "health:strict": "node scripts/platform-health-report.cjs --strict"
+    "health:strict": "node scripts/platform-health-report.cjs --strict",
+    "test:ci": "node scripts/run-ci-tests.cjs"
   },
   "devDependencies": {
     "sharp": "0.35.4",
