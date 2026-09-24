@@ -233,18 +233,19 @@
     const taxonomy = window.KidscadeCatalog?.taxonomy || {};
     const genre = game ? (taxonomy.genres?.[game.genre] || game.genre) : '';
     const session = game?.sessionMinutes ? `${game.sessionMinutes}분` : '';
+    const difficulty = game ? (taxonomy.difficulty?.[game.difficulty] || game.difficulty) : '';
     const player = game?.players?.includes('online') ? '온라인' :
       game?.players?.includes('localMulti') ? '여럿이' :
       game?.players?.includes('local2') ? '2인' :
       game?.players?.includes('classroom') ? '교실' : '';
     const rework = game?.qualityStatus === 'rework' ? '개선 중' : '';
-    const signature = `${genre}|${session}|${player}|${rework}|${score}|${rank}`;
+    const signature = `${genre}|${session}|${difficulty}|${player}|${rework}|${score}|${rank}`;
     if (meta.dataset.signature === signature) return;
     meta.dataset.signature = signature;
     meta.setAttribute('aria-label', '게임 정보');
     meta.replaceChildren();
 
-    for (const value of [genre, session, player, rework].filter(Boolean)) {
+    for (const value of [genre, session, difficulty, player, rework].filter(Boolean)) {
       const chip = document.createElement('span');
       chip.className = 'kc-card-meta-chip' + (value === '개선 중' ? ' rework' : '');
       chip.textContent = value;
