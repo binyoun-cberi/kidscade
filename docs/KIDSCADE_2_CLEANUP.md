@@ -32,7 +32,7 @@ Kidscade는 이미 100개가 넘는 게임과 공용 계정·저장·랭킹·오
 - 루트 JS: 70개
 - 저장소 파일: 약 10,000개
 - 게임 대문은 빌드 시 WebP 최적화를 적용
-- 분류 일부는 `game-classification-overrides.json`에서 빌드 시 보정
+- 정리 시작 당시 분류 일부가 빌드 override에서 보정되었으나 1차 정리에서 원본 `data/games.json`으로 흡수 완료
 - 공통 오디오/터치 런타임 일부는 빌드 시 게임 HTML에 삽입
 
 정확한 현재 값은 다음 명령으로 확인한다.
@@ -57,7 +57,7 @@ npm run health:strict
 
 ### 1. 단일 원본 정리
 
-- 분류 override를 `data/games.json`에 흡수한다.
+- [완료] 분류 override를 `data/games.json`에 흡수했다.
 - 설명 override도 원본 카탈로그로 단계적으로 흡수한다.
 - 게임 로직을 바꾸는 빌드 후 패치를 원본 게임 코드로 이동한다.
 - 빌드 결과와 소스 결과가 다르게 보이는 경우를 줄인다.

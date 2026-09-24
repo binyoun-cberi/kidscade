@@ -82,7 +82,7 @@
       "id": "job_nail_artist",
       "title": "네일 아티스트 타이쿤",
       "href": "games/job_nail_artist/네일 아티스트 타이쿤.html",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "💅",
       "description": "나만의 네일샵을 운영하세요! 손님의 주문에 맞춰 예쁜 네일아트를 완성하고 최고의 네일샵으로 만들어보세요."
@@ -91,7 +91,7 @@
       "id": "job_police_car",
       "title": "경찰차 시뮬레이터",
       "href": "games/job_police_car/경찰차 시뮬레이터.html?v=10",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🚓",
       "description": "낮아진 3인칭 카메라로 3D 경찰차를 직접 운전해 도시를 순찰하며 수배차 추격, 사고 현장 안전 확보, 교통 정리와 도로 위험 신고를 해결하는 경찰 직업 시뮬레이터!"
@@ -109,7 +109,7 @@
       "id": "job_takoyaki_simulator",
       "title": "빙글빙글 타코야키집",
       "href": "games/job_takoyaki_simulator/빙글빙글 타코야키집.html",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🐙",
       "description": "3D로 즐기는 실감 나는 타코야키 만들기! 기름칠부터 반죽 부으기, 속재료 넣기, 타이밍에 맞춰 동글동글하게 굴리기까지 마스터하여 노점의 장인이 되어보세요."
@@ -118,7 +118,7 @@
       "id": "job_scuba_diver",
       "title": "심해 다이버 시뮬레이터",
       "href": "games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=34",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🤿",
       "description": "2D 픽셀 잠수 탐사 v34! 생물은 플레이어의 접근 속도·대시·소나·작살·그물 소음에 실제로 반응합니다. 천천히 접근하면 감지거리가 줄고, 통발 미끼와 고래 낙하에서는 먹이활동 상태가 생기며, 심해에서는 다이브 라이트를 끄면 시야를 포기하는 대신 빛에 민감한 생물에게 덜 들킵니다. 관찰한 상태를 직접 만들고 이용하는 사냥 루프로 확장되었습니다.",
@@ -128,7 +128,7 @@
       "id": "job_internal_medicine",
       "title": "오늘도 진료중!",
       "href": "games/job_internal_medicine/오늘도 진료중!.html?v=3",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🩺",
       "description": "3D 환자를 관찰하며 채팅처럼 문진하고, 문진→검사→진단→처방을 순서대로 진행하세요. 환자의 말뿐 아니라 기침·홍조·움직임도 단서가 되며 하루 종료 리뷰와 악화 재방문으로 결과가 돌아오는 내과 의사 추론 시뮬레이션!"
@@ -137,7 +137,7 @@
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 업무 시뮬레이터",
       "href": "games/teacher-classroom-sim-prototype/index.html?v=41",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🏫",
       "description": "교탁으로 찾아오는 학생, 보호자 전화, 기록과 행정 업무를 제한된 시간 안에 처리하는 담임교사 업무 시뮬레이션. 무엇을 지금 처리하고 무엇을 미룰지 판단하며 아이들을 조금씩 알아가세요."
@@ -149,13 +149,17 @@
       "category": "math",
       "age": "low",
       "icon": "⏱️",
-      "description": "0.01초의 한계에 도전하는 초정밀 디지털 스톱워치 게임! 1·2·3초 신호음 이후 오직 나만의 시간 감각으로 정확히 10.00초(또는 목표 시간)에 딱 멈추며 콤보와 8단계 사다리 도전을 마스터해 보세요."
+      "description": "0.01초의 한계에 도전하는 초정밀 디지털 스톱워치 게임! 1·2·3초 신호음 이후 오직 나만의 시간 감각으로 정확히 10.00초(또는 목표 시간)에 딱 멈추며 콤보와 8단계 사다리 도전을 마스터해 보세요.",
+      "ages": [
+        "low",
+        "high"
+      ]
     },
     {
       "id": "job_steak_master",
       "title": "그릴 마스터 3D DX",
       "href": "games/job_steak_master/그릴 마스터 3D DX.html",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🥩",
       "description": "최고의 셰프가 되어보세요! 손님의 까다로운 주문에 맞춰 고기 내부 온도와 양면 시어링 균형을 정밀하게 조절하여 완벽한 스테이크를 굽는 요리 시뮬레이터입니다."
@@ -238,7 +242,7 @@
       "id": "job_bogle_bunsik",
       "title": "보글보글 분식집",
       "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=6",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🥘",
       "description": "3D 분식집 주방을 직접 뛰어다니며 냉장고·재료 선반에서 재료를 가져오고, 라면·떡볶이·사이드 조리대를 동시에 관리해 완성 음식을 서빙하는 액션 타이쿤!"
@@ -516,7 +520,7 @@
       "id": "job_maratang_simulator",
       "title": "마라탕 한 그릇",
       "href": "games/job_maratang_simulator/마라탕 한 그릇.html?v=11",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🍲",
       "description": "다층 3D 재료 찬장에서 해금된 식재료를 골라 작업대에 담고, 15일 동안 재고·현금·평판·이벤트를 운영하며 가게를 키우는 마라탕 타이쿤!"
@@ -786,7 +790,7 @@
       "id": "burger_master",
       "title": "버거 마스터: 스피드 타이쿤",
       "href": "games/burger_master/버거 마스터： 스피드 타이쿤.html",
-      "category": "trivia",
+      "category": "job",
       "age": "job",
       "icon": "🍔",
       "description": "빠른 판단력과 순발력! 주문에 맞게 버거를 조립하고 매일매일 재료를 관리하여 가게를 운영하세요."

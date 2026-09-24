@@ -80,7 +80,6 @@ jobs:
             games/high_bridge_builder/bridge-builder.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
-            scripts/apply-game-classification-overrides.cjs \
             scripts/inject-game-integrations.cjs \
             scripts/import-stdict.cjs \
             scripts/build-wordchain-static.cjs \
