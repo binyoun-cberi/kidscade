@@ -86,3 +86,7 @@ button{border:0;cursor:pointer;color:inherit}
 @media(max-width:650px){
   .replay-top{grid-template-columns:90px 1fr 110px;min-height:60px;padding:5px}.replay-top .ghost{font-size:10px;padding:8px}.replay-mode-group{gap:3px}.replay-mode-group .speed{font-size:10px;padding:7px}.replay-body{padding:5px}.replay-pitch-wrap{min-height:300px}.replay-side{grid-template-columns:1fr}.replay-events-card{grid-column:auto}.replay-controls{grid-template-columns:90px 70px minmax(90px,1fr)}.replay-card{align-items:flex-start;flex-direction:column}.replay-card .primary{width:100%}
 }
+
+.analysis-legend{font-size:10px;color:#9fb5ca;line-height:1.5;margin:10px 0 0}
+.league-archive{max-width:1050px;margin:16px auto 0}
+.archive-list{display:grid;gap:7px}.archive-list>div{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;padding:9px 10px;border-radius:10px;background:#0e1d30}.archive-list b{font-size:12px}.archive-list span{font-size:12px;color:#c9d6e5}
