@@ -45,7 +45,7 @@ const TEST_FILES = [
   "tests/server-stats-worker.test.mjs",
   "tests/stats-rankings.test.cjs",
   "tests/storage.test.cjs",
-  "tests/game-classification.test.cjs",
+  "tests/game-classification.test.cjs","tests/catalog-metadata.test.cjs",
   "tests/age-navigation.test.cjs",
   "tests/game-launcher.test.cjs",
   "tests/game-exit-navigation.test.cjs",
