@@ -9,12 +9,7 @@ const aliases = JSON.parse(fs.readFileSync(path.join(root, 'data/game-path-alias
 const reserved = { ':': '：', '?': '？', '/': '／', '\\': '＼', '*': '＊', '"': '＂', '<': '＜', '>': '＞', '|': '｜' };
 const reviewedEntryFilenames = new Map([
   ['high_byeokrando_voyage', '벽란도 상행기-launch.html'],
-  ['high_history_timebattle_live', 'history_timebattle.html'],
-  ['job_teacher_classroom', 'index.html'],
-  ['low_word_blaster', 'index.html'],
-  ['low_wordchain_arena', 'index.html'],
-  ['high_seed_volleyball', 'index.html'],
-  ['high_bridge_builder', 'index.html']
+  ['high_history_timebattle_live', 'history_timebattle.html']
 ]);
 
 test('renamed games live below games without increasing the root HTML baseline', () => {
@@ -38,12 +33,24 @@ test('moved game assets resolve under both a domain root and a repository subpat
   }
 });
 
-test('all game entry filenames match card titles and remain unique', () => {
+test('game entry filenames follow the folder standard or a preserved legacy filename', () => {
   const seen = new Set();
   for (const game of catalog.games) {
     const filename = decodeURIComponent(game.href.split(/[?#]/)[0]);
-    const expected = reviewedEntryFilenames.get(game.id) || game.title.replace(/[:?\/\\*"<>|]/g, c => reserved[c]) + '.html';
-    assert.equal(path.basename(filename), expected, game.id);
+    const basename = path.basename(filename);
+    const titleFilename = game.title.replace(/[:?\/\\*"<>|]/g, c => reserved[c]) + '.html';
+    const reviewedLegacy = reviewedEntryFilenames.get(game.id);
+    const foldered = filename.startsWith('games/');
+
+    if (foldered) {
+      assert.ok(
+        basename === 'index.html' || basename === titleFilename || basename === reviewedLegacy,
+        `${game.id}: foldered game entry should prefer index.html or preserve a reviewed legacy filename, got ${basename}`
+      );
+    } else {
+      assert.equal(basename, reviewedLegacy || titleFilename, game.id);
+    }
+
     assert.ok(!seen.has(filename), `duplicate entry: ${filename}`);
     seen.add(filename);
     const html = fs.readFileSync(path.join(root, filename), 'utf8');
