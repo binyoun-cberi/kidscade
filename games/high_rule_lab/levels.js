@@ -1192,24 +1192,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:flag",
-        "x": 7,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "P:WIN",
-        "x": 9,
-        "y": 0
-      },
-      {
-        "kind": "word",
         "token": "N:door",
         "x": 2,
         "y": 7
@@ -1225,6 +1207,24 @@ const levels=[
         "token": "P:WIN",
         "x": 5,
         "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "N:flag",
+        "x": 10,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 10,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:WIN",
+        "x": 10,
+        "y": 2
       }
     ],
     "hints": [
@@ -4098,24 +4098,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:flag",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 9,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "P:WIN",
-        "x": 10,
-        "y": 0
-      },
-      {
-        "kind": "word",
         "token": "N:door",
         "x": 1,
         "y": 8
@@ -4131,6 +4113,24 @@ const levels=[
         "token": "N:flag",
         "x": 3,
         "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "N:flag",
+        "x": 10,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 10,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:WIN",
+        "x": 10,
+        "y": 2
       }
     ],
     "hints": [
@@ -4238,24 +4238,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:flag",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 9,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "P:WIN",
-        "x": 10,
-        "y": 0
-      },
-      {
-        "kind": "word",
         "token": "N:rock",
         "x": 1,
         "y": 8
@@ -4271,6 +4253,24 @@ const levels=[
         "token": "N:flag",
         "x": 3,
         "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "N:flag",
+        "x": 10,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 10,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:WIN",
+        "x": 10,
+        "y": 2
       }
     ],
     "hints": [
@@ -6139,7 +6139,7 @@ const levels=[
     "note": "성질이 여러 개 붙었을 때 어떤 것이 우선하는지 관찰하세요."
   },
   {
-    "title": "두 법칙을 모두 끊어",
+    "title": "두 번 열리는 길",
     "chapter": "두 법칙",
     "w": 11,
     "h": 9,
@@ -6148,12 +6148,168 @@ const levels=[
         "kind": "object",
         "type": "hero",
         "x": 1,
-        "y": 6
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "key",
+        "x": 2,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "rock",
+        "x": 6,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "water",
+        "x": 7,
+        "y": 5
       },
       {
         "kind": "object",
         "type": "flag",
         "x": 9,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 8,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 8,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
         "y": 6
       }
     ],
@@ -6196,46 +6352,100 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:flag",
-        "x": 1,
-        "y": 7
+        "token": "N:key",
+        "x": 0,
+        "y": 8
       },
       {
         "kind": "word",
         "token": "EQ",
+        "x": 1,
+        "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "P:OPEN",
         "x": 2,
-        "y": 7
+        "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "N:key",
+        "x": 4,
+        "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 5,
+        "y": 8
       },
       {
         "kind": "word",
         "token": "P:PUSH",
-        "x": 3,
-        "y": 7
+        "x": 6,
+        "y": 8
       },
       {
         "kind": "word",
-        "token": "N:flag",
-        "x": 6,
-        "y": 2
+        "token": "N:door",
+        "x": 0,
+        "y": 1
       },
       {
         "kind": "word",
         "token": "EQ",
-        "x": 6,
-        "y": 3
+        "x": 1,
+        "y": 1
       },
       {
         "kind": "word",
-        "token": "P:DEFEAT",
+        "token": "P:SHUT",
+        "x": 2,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "N:rock",
+        "x": 4,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 5,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:PUSH",
         "x": 6,
-        "y": 4
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "N:water",
+        "x": 8,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 9,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:SINK",
+        "x": 10,
+        "y": 1
       }
     ],
     "hints": [
-      "깃발은 밀려서 닿지 못하고, 닿으면 위험해요.",
-      "아래의 밀림과 가운데의 위험을 둘 다 문장에서 빼세요."
+      "먼저 열쇠를 문에 밀어 넣으세요.",
+      "그다음 돌을 물에 밀어 넣으면 두 번째 길이 열려요."
     ],
-    "note": "서로 다른 방향의 문장을 고치는 종합 상호작용 문제예요."
+    "note": "서로 다른 두 상호작용을 순서대로 연결하는 단계예요."
   },
   {
     "title": "혼자 움직이는 돌",
