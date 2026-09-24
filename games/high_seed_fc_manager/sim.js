@@ -1,0 +1,181 @@
+(function(){
+'use strict';
+
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function avg(arr){return arr.length?arr.reduce(function(a,b){return a+b;},0)/arr.length:0;}
+function stat(p,k){return (p.stats&&p.stats[k])||50;}
+function fitnessFactor(p){return .76+.24*clamp(p.fitness==null?100:p.fitness,0,100)/100;}
+function playerScore(p,slot){
+  var s=p.stats||{},fit=fitnessFactor(p),v=0;
+  if(slot==='GK')v=s.defense*.55+s.pass*.15+s.stamina*.2+s.speed*.05+s.shot*.05;
+  else if(slot==='CB')v=s.defense*.45+s.stamina*.2+s.pass*.16+s.speed*.11+s.shot*.08;
+  else if(slot==='FB')v=s.defense*.27+s.speed*.25+s.stamina*.2+s.pass*.2+s.shot*.08;
+  else if(slot==='CM')v=s.pass*.38+s.stamina*.2+s.defense*.16+s.shot*.14+s.speed*.12;
+  else if(slot==='WG')v=s.speed*.28+s.shot*.28+s.pass*.24+s.stamina*.14+s.defense*.06;
+  else v=s.shot*.46+s.speed*.22+s.pass*.14+s.stamina*.13+s.defense*.05;
+  if(p.pos===slot)v+=7;
+  return v*fit;
+}
+function assignSlots(roster,lineup,formation,formations){
+  var selected=lineup.map(function(id){return roster.find(function(p){return p.id===id;});}).filter(Boolean);
+  var used={};
+  return (formations[formation]||formations['4-3-3']).map(function(slot){
+    var best=null,bestScore=-1e9;
+    selected.forEach(function(p){
+      if(used[p.id])return;
+      var sc=playerScore(p,slot);
+      if(sc>bestScore){bestScore=sc;best=p;}
+    });
+    if(best)used[best.id]=true;
+    return {slot:slot,player:best};
+  }).filter(function(x){return !!x.player;});
+}
+var slotCoords={
+  '4-4-2':[[7,50],[24,31],[24,69],[31,12],[31,88],[48,34],[48,66],[55,12],[55,88],[76,38],[76,62]],
+  '4-3-3':[[7,50],[24,32],[24,68],[31,12],[31,88],[49,28],[46,50],[49,72],[70,14],[70,86],[79,50]],
+  '4-2-3-1':[[7,50],[24,32],[24,68],[31,12],[31,88],[45,36],[45,64],[64,17],[62,50],[64,83],[79,50]],
+  '5-3-2':[[7,50],[22,26],[20,50],[22,74],[34,10],[34,90],[49,28],[48,50],[49,72],[76,38],[76,62]]
+};
+function tacticsBonus(t){
+  var b={attack:0,defense:0,mid:0,tempo:1,fatigue:1};
+  if(t.attack==='short'){b.mid+=4;b.attack+=1;b.tempo=.93;}
+  if(t.attack==='direct'){b.attack+=4;b.mid-=1;b.tempo=1.08;}
+  if(t.attack==='wide'){b.attack+=2;b.mid+=1;b.tempo=1.04;}
+  if(t.press==='press'){b.mid+=3;b.defense+=1;b.fatigue=1.35;}
+  else{b.defense+=3;b.fatigue=.86;}
+  if(t.mindset==='attack'){b.attack+=5;b.defense-=3;b.tempo*=1.08;}
+  if(t.mindset==='defend'){b.defense+=5;b.attack-=3;b.tempo*=.91;}
+  return b;
+}
+function teamRating(assignments,tactics){
+  var ps=assignments.map(function(a){return a.player;}),b=tacticsBonus(tactics);
+  var attack=avg(ps.map(function(p){return stat(p,'shot')*.48+stat(p,'speed')*.28+stat(p,'pass')*.24;}))+b.attack;
+  var mid=avg(ps.map(function(p){return stat(p,'pass')*.48+stat(p,'stamina')*.25+stat(p,'defense')*.14+stat(p,'speed')*.13;}))+b.mid;
+  var defense=avg(ps.map(function(p){return stat(p,'defense')*.55+stat(p,'stamina')*.22+stat(p,'speed')*.13+stat(p,'pass')*.10;}))+b.defense;
+  return {attack:attack,mid:mid,defense:defense,bonus:b};
+}
+function makeActors(assignments,side,formation){
+  var coords=slotCoords[formation]||slotCoords['4-3-3'];
+  return assignments.map(function(a,i){
+    var c=coords[i]||[50,50],x=side===0?c[0]:100-c[0],y=c[1];
+    return {id:a.player.id,p:a.player,slot:a.slot,side:side,x:x,y:y,baseX:x,baseY:y,vx:0,vy:0,energy:100};
+  });
+}
+function pick(arr,fn){
+  var sum=0,weights=arr.map(function(x){var w=Math.max(.1,fn(x));sum+=w;return w;});
+  var r=Math.random()*sum;
+  for(var i=0;i<arr.length;i++){r-=weights[i];if(r<=0)return arr[i];}
+  return arr[arr.length-1];
+}
+function displayName(a){return a&&a.p?a.p.name:'선수';}
+function create(opts){
+  var homeAssign=assignSlots(opts.homeRoster,opts.homeLineup,opts.homeFormation,opts.formations);
+  var awayAssign=assignSlots(opts.awayRoster,opts.awayLineup,opts.awayFormation,opts.formations);
+  var teams=[
+    {club:opts.homeClub,assign:homeAssign,actors:makeActors(homeAssign,0,opts.homeFormation),tactics:opts.homeTactics,formation:opts.homeFormation},
+    {club:opts.awayClub,assign:awayAssign,actors:makeActors(awayAssign,1,opts.awayFormation),tactics:opts.awayTactics,formation:opts.awayFormation}
+  ];
+  teams.forEach(function(t){t.rating=teamRating(t.assign,t.tactics);});
+  var m={
+    minute:0,score:[0,0],teams:teams,finished:false,half:false,nextEvent:.8+Math.random()*1.2,
+    possession:Math.random()<.5?0:1,ball:{x:50,y:50,owner:null},events:[],lastFactAt:-99
+  };
+  var starters=teams[0].actors.concat(teams[1].actors);
+  m.ball.owner=starters[Math.floor(Math.random()*starters.length)]||null;
+
+  function emit(type,text,side,actor){
+    var e={minute:Math.min(90,Math.max(1,Math.floor(m.minute))),type:type,text:text,side:side,actor:actor?actor.p:null};
+    m.events.push(e);if(opts.onEvent)opts.onEvent(e);
+    if(actor&&actor.p&&actor.p.historical&&m.minute-m.lastFactAt>8&&Math.random()<.46){
+      m.lastFactAt=m.minute;
+      var f={minute:e.minute,type:'fact',text:actor.p.name+' · '+actor.p.memory,side:side,actor:actor.p};
+      m.events.push(f);if(opts.onEvent)opts.onEvent(f);
+    }
+  }
+  function recalc(t){
+    t.rating=teamRating(t.assign,t.tactics);
+  }
+  function attackEvent(){
+    var h=teams[0],a=teams[1];
+    var midChance=clamp(.5+(h.rating.mid-a.rating.mid)/110,0.29,.71);
+    m.possession=Math.random()<midChance?0:1;
+    var atk=teams[m.possession],def=teams[1-m.possession];
+    var carrier=pick(atk.actors,function(x){
+      var bonus=(x.slot==='ST'?22:x.slot==='WG'?17:x.slot==='CM'?10:2);
+      return stat(x.p,'pass')*.35+stat(x.p,'speed')*.25+stat(x.p,'shot')*.25+bonus;
+    });
+    m.ball.owner=carrier;
+    var build=clamp(.57+(atk.rating.mid-def.rating.mid)/180,0.36,.78);
+    if(Math.random()>build){
+      if(Math.random()<.22)emit('chance',displayName(carrier)+'의 전진이 끊겼어요.',m.possession,carrier);
+      return;
+    }
+    var shooter=pick(atk.actors,function(x){
+      var bonus=x.slot==='ST'?30:x.slot==='WG'?22:x.slot==='CM'?10:2;
+      return stat(x.p,'shot')*.55+stat(x.p,'speed')*.18+bonus;
+    });
+    m.ball.owner=shooter;
+    var quality=atk.rating.attack-def.rating.defense+(stat(shooter.p,'shot')-70)*.28;
+    var shotChance=clamp(.66+quality/210,.48,.83);
+    if(Math.random()>shotChance){emit('chance',displayName(shooter)+'의 공격이 수비에 막혔어요.',m.possession,shooter);return;}
+    var goalP=clamp(.055+quality/900,0.025,.145);
+    if(atk.tactics.mindset==='attack')goalP+=.012;
+    if(def.tactics.mindset==='defend')goalP-=.009;
+    if(Math.random()<goalP){
+      m.score[m.possession]++;
+      emit('goal','골! '+displayName(shooter)+'의 슛이 들어갔어요!',m.possession,shooter);
+      m.possession=1-m.possession;
+    }else if(Math.random()<.37){
+      var keeper=def.actors.find(function(x){return x.slot==='GK';})||def.actors[0];
+      m.ball.owner=keeper;emit('save',displayName(keeper)+'이(가) 슛을 막아 냈어요.',1-m.possession,keeper);
+    }else emit('shot',displayName(shooter)+'의 슛이 골문을 벗어났어요.',m.possession,shooter);
+  }
+  function updateActors(dt){
+    var bx=m.ball.owner?m.ball.owner.x:50,by=m.ball.owner?m.ball.owner.y:50;
+    teams.forEach(function(t,side){
+      var b=t.rating.bonus;
+      t.actors.forEach(function(a){
+        var push=(side===0?1:-1)*(m.possession===side?8:-5);
+        if(t.tactics.mindset==='attack')push+=(side===0?1:-1)*4;
+        if(t.tactics.mindset==='defend')push-=(side===0?1:-1)*4;
+        var tx=clamp(a.baseX+push+(bx-50)*.08,4,96);
+        var ty=clamp(a.baseY+(by-a.baseY)*.08,5,95);
+        if(a===m.ball.owner){tx+=(side===0?1:-1)*3;}
+        var sp=(stat(a.p,'speed')/100)*(1.8+1.1*a.energy/100);
+        a.x+=(tx-a.x)*Math.min(1,dt*sp*.55);
+        a.y+=(ty-a.y)*Math.min(1,dt*sp*.55);
+        a.energy=clamp(a.energy-dt*.048*b.fatigue,28,100);
+      });
+    });
+    if(m.ball.owner){m.ball.x+=(m.ball.owner.x-m.ball.x)*Math.min(1,dt*8);m.ball.y+=(m.ball.owner.y-m.ball.y)*Math.min(1,dt*8);}
+  }
+  m.update=function(dt,speed){
+    if(m.finished)return;
+    var simDt=dt*(speed||1),gameMinutes=simDt*.52;
+    m.minute+=gameMinutes;
+    updateActors(simDt);
+    if(!m.half&&m.minute>=45){m.half=true;emit('half','전반 종료! 잠깐 숨을 고릅니다.',-1,null);}
+    while(m.minute>=m.nextEvent&&m.nextEvent<90){
+      attackEvent();
+      var tempo=(teams[0].rating.bonus.tempo+teams[1].rating.bonus.tempo)/2;
+      m.nextEvent+=clamp((1.35+Math.random()*1.15)/tempo,.9,2.8);
+    }
+    if(m.minute>=90){
+      m.minute=90;m.finished=true;emit('end','경기 종료!',-1,null);
+      teams.forEach(function(t){t.actors.forEach(function(a){a.p.fitness=clamp(Math.round((a.p.fitness==null?100:a.p.fitness)-(100-a.energy)*.34-3),45,100);});});
+      if(opts.onFinish)opts.onFinish(m);
+    }
+  };
+  m.setTactics=function(side,t){teams[side].tactics=t;recalc(teams[side]);};
+  m.substitute=function(side,outId,inPlayer){
+    var t=teams[side],idx=t.actors.findIndex(function(a){return a.id===outId;});
+    if(idx<0||!inPlayer)return false;
+    var old=t.actors[idx],fresh={id:inPlayer.id,p:inPlayer,slot:old.slot,side:side,x:old.x,y:old.y,baseX:old.baseX,baseY:old.baseY,vx:0,vy:0,energy:100};
+    t.actors[idx]=fresh;t.assign[idx]={slot:old.slot,player:inPlayer};recalc(t);
+    if(m.ball.owner===old)m.ball.owner=fresh;
+    emit('sub',old.p.name+' 대신 '+inPlayer.name+'이(가) 들어갑니다.',side,inPlayer);return true;
+  };
+  return m;
+}
+window.SeedFCSim={create:create,assignSlots:assignSlots,teamRating:teamRating,playerScore:playerScore};
+})();
