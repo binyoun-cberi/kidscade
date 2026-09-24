@@ -116,6 +116,28 @@
       "classroom": true
     },
     {
+      "id": "high_seed_fc_manager",
+      "title": "역사 드림리그: 씨앗 FC 감독",
+      "href": "games/high_seed_fc_manager/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⚽",
+      "description": "고구려·백제·신라·고려·조선·독립운동 시대의 역사 인물로 선발을 꾸리고, 전술·훈련·세계 역사 인물 영입을 운영하며 2D 경기를 지휘하는 축구 감독 전략 게임!",
+      "subject": "social",
+      "genre": "management",
+      "difficulty": "medium",
+      "sessionMinutes": 25,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_metro_planner",
       "title": "메트로 플래너",
       "href": "games/high_metro_planner/메트로 플래너.html?v=1",
