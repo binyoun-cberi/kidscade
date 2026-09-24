@@ -80,7 +80,7 @@ function fallbackStar(){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.38
 
 const stars=[];let gateSet=null,obstacle=null,runId=0,pendingQuestion=0;
 async function buildGate(url,index){try{return (await fitted(url,2.7)).root}catch(err){console.warn('gate fallback',url,err);return fallbackGate([0x4b87cf,0x63a76c,0xd85e56][index%3])}}
-async function createGateSet(q){const token=runId;if(gateSet){gateSet.group.removeFromParent();gateSet=null}const group=new THREE.Group();group.position.z=-35;world.add(group);const colors=shuffle(ASSET.gates).slice(0,3),gates=await Promise.all(colors.map((url,i)=>buildGate(url,i)));if(token!==runId){group.removeFromParent();return}for(let i=0;i<3;i++){const g=gates[i];g.position.set(LANES[i],0,0);g.rotation.y=Math.PI/2;const label=makeTextSprite(q.answers[i]);label.position.set(LANES[i],3.05,.05);group.add(g,label)}gateSet={group,correctLane:q.correctLane,resolved:false}}
+async function createGateSet(q){const token=runId;if(gateSet){gateSet.group.removeFromParent();gateSet=null}const group=new THREE.Group();group.position.z=-35;world.add(group);const colors=shuffle(ASSET.gates).slice(0,3),gates=await Promise.all(colors.map((url,i)=>buildGate(url,i)));if(token!==runId){group.removeFromParent();return}for(let i=0;i<3;i++){const g=gates[i];g.position.set(LANES[i],0,0);g.rotation.y=0;const label=makeTextSprite(q.answers[i]);label.position.set(LANES[i],3.05,.05);group.add(g,label)}gateSet={group,correctLane:q.correctLane,resolved:false}}
 async function spawnObstacle(){if(obstacle){obstacle.root.removeFromParent();obstacle=null}if(Math.random()>.72)return;const lane=Math.floor(Math.random()*3),kind=Math.random()<.65?'barrier':'cone',url=kind==='barrier'?ASSET.barrier:ASSET.cone;let root;try{root=(await fitted(url,kind==='barrier'?1.5:1.0)).root}catch{root=fallbackObstacle(kind)}root.position.set(LANES[lane],0,-21);world.add(root);obstacle={root,lane,hit:false}}
 async function spawnStar(lane,z=-16){let root;try{root=(await fitted(ASSET.star,.65)).root}catch{root=fallbackStar()}root.position.set(LANES[lane],1.0,z);world.add(root);stars.push({root,lane,collected:false})}
 
@@ -111,5 +111,6 @@ function warmAssets(){const optional=[...ASSET.gates,ASSET.barrier,ASSET.cone,AS
 async function boot(){ui.loadingText.textContent='강아지를 불러오는 중…';await createDog();updateHud();ui.question.textContent='준비되면 출발!';ui.loading.classList.add('hide');setTimeout(()=>ui.loading.remove(),280);warmAssets()}
 boot().catch(err=>{console.error(err);if(!dog){dog=makeFallbackDog();dog.rotation.y=Math.PI;dog.position.set(0,.03,3.25);actorLayer.add(dog)}updateHud();ui.question.textContent='준비되면 출발!';ui.loading.classList.add('hide');setTimeout(()=>ui.loading.remove(),280)});
 </script>
+<script src="../../dog-runner-polish.js?v=20260917-2"></script>
 </body>
 </html>
