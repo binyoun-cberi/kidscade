@@ -919,12 +919,13 @@ function reset(mode){
   document.getElementById('app').classList.remove('power-dead')
 }
 function start(mode){
-  ensureAudio();els.intro.classList.remove('show');reset(mode);toast(mode==='practice'?'연습 근무를 시작합니다.':'할로윈 특별 근무를 시작합니다.');sound('good')
+  ensureAudio();els.intro.classList.remove('show');reset(mode);window.KidscadeGame?.start?.({mode:mode});toast(mode==='practice'?'연습 근무를 시작합니다.':'할로윈 특별 근무를 시작합니다.');sound('good')
 }
 function fail(id){
   if(state.gameOver)return;
   if(id!=='power')masterGhost(id);
   state.gameOver=true;state.paused=true;state.running=false;
+  window.KidscadeGame?.gameOver?.({score:state.score,cleared:false,reason:id});
   if(id==='power')startPowerEnding();
   else startGhostJumpscare(id);
 }
@@ -999,7 +1000,7 @@ function startPowerEnding(){
   },4380);
 }
 function win(){
-  if(state.gameOver)return;state.running=false;state.paused=true;state.elapsed=state.duration;state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();showResult(true)
+  if(state.gameOver)return;state.running=false;state.paused=true;state.elapsed=state.duration;state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)
 }
 function quizHtml(){
   var q=[
@@ -1023,8 +1024,8 @@ function showResult(ok,cause){
   }});
 }
 function exitGame(){
-  if(window.parent&&window.parent!==window){window.parent.postMessage({type:'kidscade:close-game'},'*')}
-  else if(history.length>1)history.back();
+  if(window.KidscadeGame?.exit?.())return;
+  if(history.length>1)history.back();
 }
 
 document.querySelectorAll('.mode').forEach(function(b){b.onclick=function(){start(b.dataset.mode)}});
@@ -1044,5 +1045,6 @@ buildCameraMap();renderCodex();renderHelp();updateOffice();updateHUD();
 requestAnimationFrame(tick);
 })();
 </script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_folklore_night_guard" data-title="괴담 야간경비" data-shell="true" data-mute="false"></script>
 </body>
 </html>
