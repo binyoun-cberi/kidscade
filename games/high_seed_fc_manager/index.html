@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>역사 드림리그: 씨앗 FC 감독</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-ball">⚽</span>
+      <div><strong>역사 드림리그</strong><small>씨앗 FC 감독</small></div>
+    </div>
+    <div id="topClub" class="top-club hidden"></div>
+    <button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button>
+  </header>
+
+  <main id="startScreen" class="screen start-screen">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <span class="eyebrow">고학년 · 사회 × 전략</span>
+        <h1>역사 속 인물들이<br>축구장에서 만난다면?</h1>
+        <p>고구려 FC부터 독립의 별 FC까지. 선발을 고르고 작전을 세워 역사 드림리그의 감독이 되어 보세요.</p>
+        <div class="notice">※ 실제 역사 인물을 가상의 축구 선수로 표현한 학습용 판타지 게임입니다. 축구 능력치는 역사적 인물의 우열을 뜻하지 않습니다.</div>
+        <div class="start-actions">
+          <button id="newGameBtn" class="primary big" type="button">새 시즌 시작</button>
+          <button id="continueBtn" class="secondary big hidden" type="button">이어하기</button>
+        </div>
+      </div>
+      <div class="hero-pitch" aria-hidden="true">
+        <div class="hero-line"></div><div class="hero-circle"></div>
+        <span class="hero-player p1">🐯</span><span class="hero-player p2">📚</span>
+        <span class="hero-player p3">🐢</span><span class="hero-player p4">✨</span>
+        <span class="hero-ball">⚽</span>
+      </div>
+    </section>
+  </main>
+
+  <section id="clubSelect" class="screen hidden">
+    <div class="section-heading">
+      <div><span class="eyebrow">1단계</span><h2>맡을 구단을 골라요</h2></div>
+      <p>각 팀은 실제 시대와 인물을 바탕으로 하지만 축구 설정은 모두 창작이에요.</p>
+    </div>
+    <div id="clubGrid" class="club-grid"></div>
+  </section>
+
+  <section id="gameScreen" class="game-shell hidden">
+    <nav class="side-nav" aria-label="감독 메뉴">
+      <button class="nav-btn active" data-view="home" type="button"><span>🏠</span><b>홈</b></button>
+      <button class="nav-btn" data-view="squad" type="button"><span>👥</span><b>선수단</b></button>
+      <button class="nav-btn" data-view="tactics" type="button"><span>🧠</span><b>작전</b></button>
+      <button class="nav-btn" data-view="market" type="button"><span>🌍</span><b>세계 영입</b></button>
+      <button class="nav-btn" data-view="history" type="button"><span>📖</span><b>역사 수첩</b></button>
+      <button class="nav-btn" data-view="table" type="button"><span>🏆</span><b>순위</b></button>
+    </nav>
+    <div id="viewRoot" class="view-root"></div>
+  </section>
+
+  <div id="matchLayer" class="match-layer hidden">
+    <div class="match-top">
+      <button id="matchBackBtn" class="ghost" type="button">← 경기 포기</button>
+      <div class="scoreboard">
+        <span id="homeName">우리 팀</span><b id="matchScore">0 : 0</b><span id="awayName">상대 팀</span>
+        <small id="matchClock">0'</small>
+      </div>
+      <div class="speed-group" aria-label="경기 속도">
+        <button data-speed="1" class="speed active" type="button">1×</button>
+        <button data-speed="2" class="speed" type="button">2×</button>
+        <button data-speed="4" class="speed" type="button">4×</button>
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="pitch-wrap"><canvas id="pitch" width="1000" height="600"></canvas></div>
+      <aside class="match-side">
+        <div class="mini-card">
+          <h3>감독 지시</h3>
+          <div id="liveTacticText"></div>
+          <button id="quickSubBtn" class="secondary full" type="button">추천 교체</button>
+        </div>
+        <div class="mini-card event-card">
+          <h3>경기 상황</h3>
+          <div id="eventLog" class="event-log"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close" type="button">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_seed_fc_manager" data-title="역사 드림리그: 씨앗 FC 감독" data-shell="true" data-orientation="landscape"></script>
+</body>
+</html>
