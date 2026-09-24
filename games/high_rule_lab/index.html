@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#10233f">
+  <title>말대로 월드: 규칙 연구소 | Kidscade</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+  <script
+    src="../../kidscade-game-sdk.js"
+    data-game-id="high_rule_lab"
+    data-title="말대로 월드: 규칙 연구소"
+    data-shell="true"
+    data-orientation="landscape">
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">▦</span>
+        <div>
+          <strong>말대로 월드</strong>
+          <small>규칙 연구소</small>
+        </div>
+      </div>
+      <div class="stage-meta">
+        <span id="chapterPill" class="pill">규칙의 문</span>
+        <b id="stageLabel">1단계</b>
+        <span id="moveLabel">0수</span>
+      </div>
+      <div class="top-actions">
+        <button id="undoBtn" class="icon-btn" type="button" aria-label="되돌리기">↶</button>
+        <button id="restartBtn" class="icon-btn" type="button" aria-label="다시 시작">↻</button>
+        <button id="levelBtn" class="icon-btn wide" type="button">단계</button>
+        <button id="hintBtn" class="icon-btn wide" type="button">힌트</button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="board-card">
+        <div class="stage-title-row">
+          <div>
+            <small id="stageKicker">규칙의 문</small>
+            <h1 id="stageTitle">깃발까지 가요</h1>
+          </div>
+          <div id="discoveryBadge" class="discovery-badge" hidden>새 법칙 발견!</div>
+        </div>
+
+        <div id="boardWrap" class="board-wrap">
+          <div id="board" class="board" tabindex="0" aria-label="규칙 퍼즐 게임판"></div>
+          <div id="ruleFlash" class="rule-flash" aria-live="polite"></div>
+        </div>
+
+        <div class="touch-pad" aria-label="이동 버튼">
+          <button data-dir="up" type="button">▲</button>
+          <button data-dir="left" type="button">◀</button>
+          <button data-dir="down" type="button">▼</button>
+          <button data-dir="right" type="button">▶</button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="panel-block">
+          <div class="panel-heading">
+            <span>지금 세상의 법칙</span>
+            <small>문장을 밀면 바로 바뀌어요</small>
+          </div>
+          <div id="activeRules" class="active-rules"></div>
+        </section>
+
+        <section class="panel-block compact">
+          <div class="panel-heading">
+            <span>조작</span>
+          </div>
+          <div class="key-help">
+            <span><kbd>← ↑ ↓ →</kbd> 이동</span>
+            <span><kbd>Z</kbd> 되돌리기</span>
+            <span><kbd>R</kbd> 다시 시작</span>
+          </div>
+        </section>
+
+        <section class="panel-block compact lab-note">
+          <div class="panel-heading">
+            <span>연구 노트</span>
+          </div>
+          <p id="labNote">글자도 물건처럼 밀 수 있어요.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="levelDialog" class="modal">
+    <div class="modal-head">
+      <div>
+        <small>연구 구역</small>
+        <h2>단계 고르기</h2>
+      </div>
+      <button id="closeLevels" type="button" class="close-btn">✕</button>
+    </div>
+    <div id="levelGrid" class="level-grid"></div>
+  </dialog>
+
+  <dialog id="clearDialog" class="modal clear-modal">
+    <div class="clear-burst">✦</div>
+    <small id="clearChapter">규칙의 문</small>
+    <h2 id="clearTitle">실험 성공!</h2>
+    <p id="clearText">세상의 법칙을 바꿔 길을 만들었어요.</p>
+    <div class="clear-stats">
+      <span id="clearMoves">0수</span>
+      <span id="clearBest">최고 기록 0수</span>
+    </div>
+    <div class="modal-actions">
+      <button id="retryBtn" type="button" class="secondary">다시 해보기</button>
+      <button id="nextBtn" type="button" class="primary">다음 실험</button>
+    </div>
+  </dialog>
+
+  <script src="./levels.js?v=1"></script>
+  <script src="./game.js?v=1"></script>
+</body>
+</html>
