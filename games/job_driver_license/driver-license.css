@@ -310,3 +310,32 @@
 
   #dashTop{height:54%}
 }
+
+
+/* v5: dynamic viewport root — match other full-screen KIDSCADE games */
+html,body{
+  width:100%;
+  height:100dvh;
+  min-height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+}
+body{
+  position:fixed;
+  inset:0;
+  overscroll-behavior:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+#game,#hud{
+  width:100vw;
+  height:100dvh;
+  min-height:100dvh;
+}
+.overlay{
+  width:100vw;
+  height:100dvh;
+}
+@supports not (height:100dvh){
+  html,body,#game,#hud,.overlay{height:100vh;min-height:100vh}
+}
