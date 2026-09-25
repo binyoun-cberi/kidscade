@@ -4,52 +4,75 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>다리야 버텨줘!</title>
-<link rel="stylesheet" href="bridge-builder.css?v=7">
+<link rel="stylesheet" href="bridge-builder.css?v=8">
 </head>
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="brand"><span>🌉</span><b>다리야 버텨줘!</b></div>
+    <div class="brand"><span>✏️</span><b>다리야 버텨줘!</b></div>
     <div class="stage">
       <button id="prevLevel" class="icon-btn" type="button" aria-label="이전 단계">‹</button>
-      <div><b id="stageTitle">1. 작은 개울</b><small id="stageGoal">노란 점 사이를 손가락으로 이어 보세요</small></div>
+      <div>
+        <b id="stageTitle">1. 작은 개울</b>
+        <small id="stageGoal">벽과 벽 사이를 검은 선 하나로 이어 주세요</small>
+      </div>
       <button id="nextLevel" class="icon-btn" type="button" aria-label="다음 단계">›</button>
     </div>
     <button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button>
   </header>
+
   <main class="layout">
     <section class="board">
       <div class="hud">
-        <div class="ink"><span>남은 선</span><i><b id="inkBar"></b></i><strong id="inkText">100%</strong></div>
-        <span id="vehicleText" class="vehicle-pill">🚗 승용차</span>
+        <div class="ink">
+          <span>남은 잉크</span>
+          <i><b id="inkBar"></b></i>
+          <strong id="inkText">100%</strong>
+        </div>
+        <span id="vehicleText" class="vehicle-pill">🚗 노란 자동차</span>
       </div>
+
       <div class="canvas-wrap">
-        <canvas id="game" width="1200" height="700" aria-label="손가락으로 선을 그어 다리를 만드는 물리 게임"></canvas>
-        <div id="hint" class="hint">노란 점에서 반대쪽 노란 점까지 쓱 그어 보세요</div>
+        <canvas id="game" width="1200" height="700" aria-label="한 줄을 그려 자동차가 건널 길을 만드는 게임"></canvas>
+        <div id="hint" class="hint">왼쪽 벽 끝에서 오른쪽 벽 끝까지 한 번에 쓱!</div>
         <div id="toast" class="toast" aria-live="polite"></div>
+
         <div id="resultCard" class="result-card hidden">
-          <div id="resultIcon" class="result-icon">🏆</div><h2 id="resultTitle">통과 성공!</h2><p id="resultText"></p>
+          <div id="resultIcon" class="result-icon">🏁</div>
+          <h2 id="resultTitle">건넜다!</h2>
+          <p id="resultText"></p>
           <div id="stars" class="stars">★★★</div>
-          <div class="result-actions"><button id="retryBtn" class="soft" type="button">다시 그리기</button><button id="continueBtn" class="primary" type="button">다음 단계</button></div>
+          <div class="result-actions">
+            <button id="retryBtn" class="soft" type="button">다시 그리기</button>
+            <button id="continueBtn" class="primary" type="button">다음 단계</button>
+          </div>
         </div>
       </div>
     </section>
+
     <section class="actions">
-      <button id="testBtn" class="test-btn" type="button">▶ 시험 운행</button>
-      <button id="undoBtn" class="soft" type="button">↶ 되돌리기</button>
-      <button id="resetBtn" class="soft" type="button">✕ 전체 지우기</button>
+      <button id="testBtn" class="test-btn" type="button" disabled>🚗 길을 먼저 그려요</button>
+      <button id="resetBtn" class="soft" type="button">✏️ 다시 그리기</button>
     </section>
   </main>
 </div>
+
 <div id="tutorial" class="overlay hidden">
   <div class="dialog">
-    <span class="eyebrow">아주 간단해요</span><h1>그냥 다리를 그리세요</h1>
+    <span class="eyebrow">규칙은 딱 하나</span>
+    <h1>검은 선 하나만 그리세요</h1>
     <div class="demo-line"><span></span><i></i><span></span></div>
-    <p><b>①</b> 노란 점에서 시작해 반대쪽까지 손가락으로 그어요.<br><b>②</b> 더 튼튼하게 하고 싶으면 선을 덧그려 받쳐요. 선이 만나면 자동으로 붙어요.<br><b>③</b> 시험 운행을 눌러 차가 건너는지 봐요.</p>
-    <button id="tutorialClose" class="primary wide" type="button">바로 그려볼래요!</button>
+    <p>
+      <b>①</b> 왼쪽 벽 끝에서 손가락을 대요.<br>
+      <b>②</b> 손을 떼지 말고 오른쪽 벽 끝까지 선 하나를 그어요.<br>
+      <b>③</b> 출발을 누르면 자동차가 <strong>내가 그린 선 그대로</strong> 달려요.<br><br>
+      보강선, 재료 선택, 복잡한 건 아무것도 없어요.
+    </p>
+    <button id="tutorialClose" class="primary wide" type="button">그려볼래요!</button>
   </div>
 </div>
+
 <script src="../../kidscade-game-sdk.js" data-game-id="high_bridge_builder" data-title="다리야 버텨줘!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="bridge-builder.js?v=7"></script>
+<script src="bridge-builder.js?v=8"></script>
 </body>
 </html>
