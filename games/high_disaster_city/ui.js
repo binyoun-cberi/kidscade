@@ -43,7 +43,7 @@ class UI{
  }
  coach(s){
   let text='';if(s.tutorial&&s.tutorialStep===1)text='카드를 누른 뒤 땅을 누르세요. 기존 시설을 누르면 강화하거나 교체할 수도 있어요.';
-  else if(s.tutorial&&s.tutorialStep===2)text='좌우 경계를 보세요. 재앙은 번갈아 오고, 오래 버티면 서로 겹치기도 합니다.';
+  else if(s.tutorial&&s.tutorialStep===2)text='좌우 경계를 보세요. 재앙은 서쪽과 동쪽에서 번갈아 오고, 오래 버티면 서로 겹치기도 합니다.';
   else if(s.tutorial&&s.tutorialStep===3&&(s.disasters||[]).length){const d=s.disasters[0];text=d.type==='wildfire'?'소방대는 세기를 낮추고, 방화선은 전선을 크게 밀어냅니다.':'모래주머니는 세기를 낮추고, 긴급 배수는 물길을 크게 밀어냅니다.'}
   this.els.coach.textContent=text;this.els.coach.classList.toggle('hidden',!text)
  }
