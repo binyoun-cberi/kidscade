@@ -287,12 +287,15 @@ function rebuildFactoryVisuals(){
 }
 function refreshAllItemViews(){for(const it of items){if(it.view)itemGroup.remove(it.view);it.view=makePayloadView(it.payload);itemGroup.add(it.view)}}
 
+function syncProjection(){
+  if(!camera)return;
+  const aspect=innerWidth/Math.max(1,innerHeight);
+  camera.left=-viewSize*aspect/2;camera.right=viewSize*aspect/2;camera.top=viewSize/2;camera.bottom=-viewSize/2;
+  camera.updateProjectionMatrix();updateCamera();
+}
 function resize(){
   if(!renderer||!camera)return;
-  const w=innerWidth,h=innerHeight,aspect=w/Math.max(1,h);
-  renderer.setSize(w,h,false);
-  camera.left=-viewSize*aspect/2;camera.right=viewSize*aspect/2;camera.top=viewSize/2;camera.bottom=-viewSize/2;camera.updateProjectionMatrix();
-  updateCamera();
+  renderer.setSize(innerWidth,innerHeight,false);syncProjection();
 }
 function updateCamera(){
   clampCameraTarget();
@@ -350,8 +353,9 @@ function pointerDown(ev){
   activePointers.set(ev.pointerId,{x:ev.clientX,y:ev.clientY,type:ev.pointerType,button:ev.button});
   renderer.domElement.setPointerCapture?.(ev.pointerId);
   if(ev.pointerType==='touch'&&activePointers.size>=2){beginTouchPan();dragBuild=null;return}
-  if(ev.button===1||ev.button===2){beginMousePan(ev);return}
+  if(ev.button===1||ev.button===2){beginDragPan(ev);return}
   if(ev.button!==0)return;
+  if(selectedTool==='move'){beginDragPan(ev);return}
   const c=screenToCell(ev.clientX,ev.clientY);if(!c)return;
   if(selectedTool==='belt'||selectedTool==='erase'){
     pushUndo();dragBuild={tool:selectedTool,last:c,changed:false};
@@ -382,7 +386,10 @@ function pointerMove(ev){
 }
 function pointerUp(ev){
   activePointers.delete(ev.pointerId);
-  if(panGesture){if(activePointers.size<2)panGesture=null;return}
+  if(panGesture){
+    if(panGesture.mode==='touch'&&activePointers.size>=2){beginTouchPan();return}
+    endPanGesture();return;
+  }
   if(dragBuild){
     if(dragBuild.changed){saveGame(false);sound('click')}else{undoStack.pop();syncUndo()}
     dragBuild=null;
@@ -392,25 +399,39 @@ function beginTouchPan(){
   const pts=[...activePointers.values()].slice(0,2);
   if(pts.length<2)return;
   panGesture={mode:'touch',cx:(pts[0].x+pts[1].x)/2,cy:(pts[0].y+pts[1].y)/2,dist:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y),target:cameraTarget.clone(),view:viewSize};
+  document.body.classList.add('draggingView');
 }
-function beginMousePan(ev){panGesture={mode:'mouse',cx:ev.clientX,cy:ev.clientY,target:cameraTarget.clone(),view:viewSize,pointerId:ev.pointerId}}
+function beginDragPan(ev){
+  panGesture={mode:'drag',cx:ev.clientX,cy:ev.clientY,target:cameraTarget.clone(),view:viewSize,pointerId:ev.pointerId};
+  document.body.classList.add('draggingView');
+}
+function endPanGesture(){
+  panGesture=null;document.body.classList.remove('draggingView');
+  if(tutorialMode&&tutorialStepIndex===0)showToast('좋아요! 이제 원하는 곳을 자세히 볼 수 있어요.',1500);
+}
+function panTarget(base,dx,dy,view){
+  camera.updateMatrixWorld();
+  const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);right.y=0;if(right.lengthSq()<.001)right.set(1,0,0);right.normalize();
+  const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);up.y=0;if(up.lengthSq()<.001)up.set(0,0,-1);up.normalize();
+  const scale=view/Math.max(1,innerHeight);
+  return base.clone().addScaledVector(right,-dx*scale).addScaledVector(up,dy*scale);
+}
 function updatePanGesture(){
   if(!panGesture)return;
   if(panGesture.mode==='touch'){
     const pts=[...activePointers.values()].slice(0,2);if(pts.length<2)return;
     const cx=(pts[0].x+pts[1].x)/2,cy=(pts[0].y+pts[1].y)/2,dist=Math.max(20,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y));
-    const scale=panGesture.view/Math.max(1,innerHeight);
-    cameraTarget.x=panGesture.target.x-(cx-panGesture.cx)*scale*1.35;
-    cameraTarget.z=panGesture.target.z-(cy-panGesture.cy)*scale*1.35;
-    viewSize=clamp(panGesture.view*(panGesture.dist/dist),18,62);resize();
+    cameraTarget.copy(panTarget(panGesture.target,cx-panGesture.cx,cy-panGesture.cy,panGesture.view));
+    const preset=MAP_PRESETS[mapSize];viewSize=clamp(panGesture.view*(panGesture.dist/dist),preset.minView,60);syncProjection();
   }else{
     const p=activePointers.get(panGesture.pointerId);if(!p)return;
-    const scale=viewSize/Math.max(1,innerHeight);
-    cameraTarget.x=panGesture.target.x-(p.x-panGesture.cx)*scale*1.3;
-    cameraTarget.z=panGesture.target.z-(p.y-panGesture.cy)*scale*1.3;updateCamera();
+    cameraTarget.copy(panTarget(panGesture.target,p.x-panGesture.cx,p.y-panGesture.cy,panGesture.view));updateCamera();
   }
 }
-function wheel(ev){ev.preventDefault();viewSize=clamp(viewSize*(ev.deltaY>0?1.1:.9),18,62);resize()}
+function wheel(ev){
+  ev.preventDefault();
+  const preset=MAP_PRESETS[mapSize];viewSize=clamp(viewSize*(ev.deltaY>0?1.1:.9),preset.minView,60);syncProjection();
+}
 rendererEventsSetup();
 function rendererEventsSetup(){
   const c=$('game');
