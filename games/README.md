@@ -43,7 +43,7 @@ games/
 새 게임과 대규모 리워크 게임은 `data/games.json`에 다음 탐색 정보를 반드시 명시합니다.
 
 - `subject`: math / korean / language / social / science / arts / career / thinking
-- `genre`: action / puzzle / strategy / simulation / management / quiz / rhythm / sports / sandbox
+- `genre`: action / puzzle / strategy / simulation / management / quiz / rhythm / sports / sandbox / rpg
 - `difficulty`: easy / medium / hard
 - `sessionMinutes`: 한 판 또는 대표 세션 플레이 시간
 - `players`: solo / local2 / localMulti / online / classroom 중 하나 이상
