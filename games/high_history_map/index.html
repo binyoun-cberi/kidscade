@@ -40,11 +40,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
 .hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
-.cityName{font-size:11.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.8px}.citySub{font-size:7.8px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.7px}
-.unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:18px;text-anchor:middle;pointer-events:none}.unitCount{font-size:8px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.8px;pointer-events:none}
-.river{fill:none;stroke:#71bce9;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.76;vector-effect:non-scaling-stroke;pointer-events:none}
-.regionLabel{font-size:15px;font-weight:1000;letter-spacing:.12em;fill:#b6c9d9;opacity:.12;text-anchor:middle;pointer-events:none}
-.seaLabel{font-size:14px;font-weight:1000;letter-spacing:.2em;fill:#75a5c7;opacity:.24;text-anchor:middle;pointer-events:none}
+.cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
+.unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:17px;text-anchor:middle;pointer-events:none}.unitCount{font-size:7.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px;pointer-events:none}
+.river{fill:none;stroke:#71bce9;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.74;vector-effect:non-scaling-stroke;pointer-events:none}
+.regionLabel{font-size:13px;font-weight:1000;letter-spacing:.10em;fill:#b6c9d9;opacity:.10;text-anchor:middle;pointer-events:none}
+.seaLabel{font-size:14px;font-weight:1000;letter-spacing:.2em;fill:#75a5c7;opacity:.22;text-anchor:middle;pointer-events:none}
 .rightEmpty{font-size:10px;color:var(--muted);line-height:1.6;padding:10px 2px}.bigName{font-size:19px;font-weight:1000;margin-bottom:2px}.ownerLine{font-size:10px;margin-bottom:9px}
 .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.stat{padding:8px;border:1px solid var(--line);border-radius:10px;background:#111e31}.stat small{display:block;font-size:8px;color:var(--muted)}.stat b{font-size:13px}
 .tagRow{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.tag{padding:5px 7px;border:1px solid #3b5573;border-radius:999px;background:#1b2e48;font-size:9px}
@@ -90,10 +90,10 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 
     <section class="mapWrap" id="mapWrap">
       <div class="mapHud">
-        <div class="mapHint" id="mapHint">요동·한반도·왜 서부까지 이어진 전장에서 육각형을 따라 군대를 움직이세요.</div>
+        <div class="mapHint" id="mapHint">실제 지형 비율을 따라 쪼갠 동북아 헥스맵입니다. 해안선·반도·섬의 위치를 보고 진군하세요.</div>
         <div class="zoomHint">드래그 이동 · 휠/핀치 확대</div>
       </div>
-      <svg id="mapSvg" viewBox="0 0 1040 720" aria-label="중국 동북부·한반도·왜 서부를 포함한 육각 타일 삼국 전략 지도">
+      <svg id="mapSvg" viewBox="0 0 1120 860" aria-label="실제 지형을 바탕으로 단순화한 동북아 육각 타일 지도">
         <g id="camera">
           <g id="hexLayer"></g>
           <g id="riverLayer"></g>
@@ -124,7 +124,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
   <div class="startCard">
     <div class="eyebrow">KIDSCade HEX STRATEGY</div>
     <h1>통일전쟁<br><span style="color:#ffd166">고구려 · 백제 · 신라</span></h1>
-    <p class="startLead">동북아의 지리 관계를 단순화한 23×19 육각 전장에서 요동·한반도·황해·대한해협·왜 서부를 함께 다룹니다. 도시는 핵심 거점이고 그 사이의 평야·산지·해안도 모두 전략적인 땅입니다.</p>
+    <p class="startLead">실제 동북아 지도의 해안선과 상대 위치를 바탕으로 더 촘촘하게 쪼갠 31×26 육각 전장입니다. 중국 동북부·요동·한반도·황해·대한해협·규슈 서부까지 하나의 전략 지도로 이어집니다.</p>
     <div id="nationGrid" class="nationGrid"></div>
     <div class="startActions">
       <button id="startBtn" class="primary" type="button">새 역사 시작</button>
@@ -148,11 +148,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 (function(){
 "use strict";
 
-var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v6";
+var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v7";
 var MAX_TURNS=32;
-var COLS=23;
-var ROWS=19;
-var HEX_SIZE=22;
+var COLS=31;
+var ROWS=26;
+var HEX_SIZE=18;
 var SQRT3=Math.sqrt(3);
 var selectedNation="baekje";
 var state=null;
@@ -167,7 +167,7 @@ var FACTIONS={
   goguryeo:{name:"고구려",color:"#536bd6",icon:"🐎",capital:"pyongyang",trait:"산악 방어 +15% · 북방 기동에 유리",desc:"만주와 한반도 북부의 넓은 영역을 바탕으로 중부 전선을 압박합니다."},
   baekje:{name:"백제",color:"#d95d66",icon:"⛵",capital:"sabi",trait:"평야 식량 +1 · 서해안 경제에 유리",desc:"서남부 평야와 서해 교통을 바탕으로 한강과 남부를 노립니다."},
   silla:{name:"신라",color:"#d6ac32",icon:"🌙",capital:"gyeongju",trait:"도시 방어 +15% · 동남부 방어에 유리",desc:"산악과 낙동강권을 바탕으로 서쪽과 남해안으로 세력을 넓힙니다."},
-  sui:{name:"수나라",color:"#7d8795",icon:"🐉",capital:"sui_frontier",trait:"서쪽 대륙 세력",desc:"요동 서쪽의 강대한 외부 세력",aiOnly:true},
+  sui:{name:"수나라",color:"#7d8795",icon:"🐉",capital:"sui_frontier",trait:"서방 대륙 세력",desc:"요동 서쪽의 강대한 외부 세력",aiOnly:true},
   gaya:{name:"가야권",color:"#4ba184",icon:"⚒️",capital:"gaya",trait:"남부 완충 세력",desc:"백제·신라·왜 사이의 남부 소세력",aiOnly:true},
   wa:{name:"왜",color:"#6f914f",icon:"🛶",capital:"wa_kyushu",trait:"해상 교류 세력",desc:"대한해협 건너 규슈와 서일본의 세력",aiOnly:true},
   tamna:{name:"탐라",color:"#3f9fc6",icon:"🐴",capital:"tamna",trait:"섬 교역",desc:"남쪽 바다의 섬 세력",aiOnly:true},
@@ -191,64 +191,61 @@ var IMPROVEMENTS={
 };
 
 var CITIES={
-  sui_frontier:{name:"수 변경",q:5,r:3,owner:"sui",level:3,def:2,capital:true,label:[-10,-18]},
-  shandong:{name:"산둥 항구",q:4,r:10,owner:"sui",level:2,def:1,label:[-14,22]},
-  liaodong:{name:"요동",q:9,r:5,owner:"goguryeo",level:3,def:2,label:[-8,-18]},
-  gungnae:{name:"국내성",q:13,r:3,owner:"goguryeo",level:3,def:3,label:[10,-18]},
-  pyongyang:{name:"평양",q:13,r:8,owner:"goguryeo",level:4,def:3,capital:true,label:[-14,22]},
-  han:{name:"한성",q:13,r:11,owner:"silla",level:4,def:2,label:[-14,-19]},
-  chungju:{name:"충주",q:14,r:12,owner:"silla",level:2,def:2,label:[14,-17]},
-  ungjin:{name:"웅진",q:12,r:13,owner:"baekje",level:3,def:2,label:[-15,-17]},
-  sabi:{name:"사비",q:12,r:14,owner:"baekje",level:4,def:3,capital:true,label:[-17,22]},
-  geummajeo:{name:"금마저",q:11,r:15,owner:"baekje",level:2,def:1,label:[-18,21]},
-  sangju:{name:"상주",q:14,r:14,owner:"silla",level:2,def:2,label:[14,-18]},
-  gyeongju:{name:"금성",q:16,r:15,owner:"silla",level:4,def:3,capital:true,label:[18,20]},
-  gaya:{name:"가야",q:15,r:16,owner:"gaya",level:2,def:1,capital:true,label:[0,22]},
-  usan:{name:"우산",q:18,r:9,owner:"neutral",level:1,def:1,island:true,label:[12,18]},
-  tamna:{name:"탐라",q:12,r:18,owner:"tamna",level:2,def:1,island:true,capital:true,label:[0,20]},
-  tsushima:{name:"대마도",q:17,r:17,owner:"neutral",level:1,def:1,island:true,label:[0,20]},
-  wa_kyushu:{name:"쓰쿠시",q:19,r:16,owner:"wa",level:3,def:2,capital:true,label:[-12,22]},
-  wa_hakata:{name:"하카타",q:20,r:15,owner:"wa",level:2,def:1,label:[15,-18]},
-  wa_nagato:{name:"나가토",q:21,r:13,owner:"wa",level:2,def:1,label:[12,-17]}
-};
-
-var LAND_MASK={
-  0:[[0,17]],
-  1:[[0,17]],
-  2:[[0,18]],
-  3:[[0,18]],
-  4:[[0,17]],
-  5:[[0,16]],
-  6:[[0,7],[10,16]],
-  7:[[0,7],[10,16]],
-  8:[[0,6],[11,16]],
-  9:[[0,6],[11,16]],
-  10:[[1,6],[11,16]],
-  11:[[2,5],[11,16]],
-  12:[[11,16],[19,22]],
-  13:[[11,16],[18,22]],
-  14:[[11,16],[18,22]],
-  15:[[11,16],[18,22]],
-  16:[[12,16],[18,22]],
-  17:[[18,22]],
-  18:[[19,21]]
+  sui_frontier:{name:"수 변경",q:8,r:5,owner:"sui",level:3,def:2,capital:true,label:[0,-20]},
+  shandong:{name:"산둥 항구",q:7,r:14,owner:"sui",level:2,def:1,label:[-10,22]},
+  liaodong:{name:"요동",q:13,r:9,owner:"goguryeo",level:3,def:2,label:[-14,-18]},
+  gungnae:{name:"국내성",q:18,r:5,owner:"goguryeo",level:3,def:3,label:[14,-18]},
+  pyongyang:{name:"평양",q:18,r:10,owner:"goguryeo",level:4,def:3,capital:true,label:[-14,22]},
+  han:{name:"한성",q:19,r:14,owner:"silla",level:4,def:2,label:[-16,-18]},
+  chungju:{name:"충주",q:20,r:16,owner:"silla",level:2,def:2,label:[16,-18]},
+  ungjin:{name:"웅진",q:18,r:17,owner:"baekje",level:3,def:2,label:[-16,-18]},
+  sabi:{name:"사비",q:18,r:18,owner:"baekje",level:4,def:3,capital:true,label:[-16,22]},
+  geummajeo:{name:"금마저",q:18,r:20,owner:"baekje",level:2,def:1,label:[-18,22]},
+  sangju:{name:"상주",q:21,r:18,owner:"silla",level:2,def:2,label:[16,-18]},
+  gyeongju:{name:"금성",q:23,r:20,owner:"silla",level:4,def:3,capital:true,label:[16,22]},
+  gaya:{name:"가야",q:21,r:21,owner:"gaya",level:2,def:1,capital:true,label:[0,22]},
+  usan:{name:"우산",q:25,r:13,owner:"neutral",level:1,def:1,island:true,label:[14,18]},
+  tamna:{name:"탐라",q:19,r:25,owner:"tamna",level:2,def:1,island:true,capital:true,label:[0,20]},
+  tsushima:{name:"대마도",q:25,r:22,owner:"neutral",level:1,def:1,island:true,label:[0,20]},
+  wa_kyushu:{name:"쓰쿠시",q:27,r:23,owner:"wa",level:3,def:2,capital:true,label:[-12,22]},
+  wa_hakata:{name:"하카타",q:28,r:21,owner:"wa",level:2,def:1,label:[14,-18]},
+  wa_nagato:{name:"나가토",q:29,r:18,owner:"wa",level:2,def:1,label:[12,-18]}
 };
 
 var REGION_LABELS=[
-  {name:"중국 동북부",q:4,r:2},
-  {name:"요동",q:9,r:5},
-  {name:"고구려",q:13,r:6},
-  {name:"한강",q:12,r:11},
-  {name:"백제",q:11,r:14},
-  {name:"신라",q:15,r:14},
-  {name:"가야",q:15,r:16},
-  {name:"왜",q:20,r:16}
+  {name:"중국 동북부",q:6,r:4},
+  {name:"요동",q:13,r:9},
+  {name:"고구려",q:19,r:8},
+  {name:"한강",q:18,r:14},
+  {name:"백제",q:17,r:19},
+  {name:"신라",q:22,r:19},
+  {name:"가야",q:21,r:21},
+  {name:"왜",q:28,r:22}
 ];
+
+var LAND_POLYGONS=[
+  // 중국 동북부·만주 남서부
+  [[-1,-1],[18,-1],[19,1],[19,3],[18,4],[17,5],[16,5],[15,6],[14,7],[13,7],[12,8],[10,8],[9,9],[8,10],[7,11],[5,12],[3,12],[1,11],[-1,10]],
+  // 산둥반도와 황해 서안
+  [[-1,10],[3,10],[5,11],[6,12],[7,13],[9,13],[10,14],[9,15],[7,15],[6,16],[3,16],[1,15],[-1,14]],
+  // 요동반도 돌출부
+  [[10,8],[12,7],[14,7],[15,8],[15,10],[14,12],[13,13],[12,12],[12,10],[11,9]],
+  // 한반도: 북쪽은 넓고 중부가 잘록하며 남쪽이 다시 벌어지는 형태
+  [[16,3],[19,2],[22,3],[24,5],[24,7],[23.5,9],[23,11],[22.5,13],[22,15],[23,17],[24,19],[24,21],[23,22.5],[21.5,23.5],[20,23],[19,22],[18,20],[17.5,18],[17,16],[16.5,14],[16,12],[15.5,10],[15.5,7],[16,5]],
+  // 규슈·서일본 일부
+  [[29,15],[31,15],[31,20],[30,21],[29,21],[29,23],[28,24],[26,24],[25,23],[25,21],[26,20],[27,19],[28,18]]
+];
+
+var EXTRA_LAND_HEXES={
+  "25_13":true,
+  "19_25":true,
+  "25_22":true
+};
 
 var OBJECTIVES={
   goguryeo:[
     {text:"평양과 국내성을 지키기",check:function(){return cityOwner("pyongyang")==="goguryeo"&&cityOwner("gungnae")==="goguryeo";}},
-    {text:"한강 남쪽으로 영토 5칸 확장",check:function(){return ownedTiles("goguryeo").filter(function(t){return t.r>=10&&t.q>=10;}).length>=5;}},
+    {text:"한강 남쪽으로 영토 5칸 확장",check:function(){return ownedTiles("goguryeo").filter(function(t){return t.r>=13&&t.q>=16;}).length>=7;}},
     {text:"적 도시 2곳 점령",check:function(){return state.captured.goguryeo>=2;}}
   ],
   baekje:[
@@ -258,7 +255,7 @@ var OBJECTIVES={
   ],
   silla:[
     {text:"금성과 상주를 지키기",check:function(){return cityOwner("gyeongju")==="silla"&&cityOwner("sangju")==="silla";}},
-    {text:"충주와 한강 북쪽으로 영토 6칸 확장",check:function(){return ownedTiles("silla").filter(function(t){return t.r<=12&&t.q>=11;}).length>=6;}},
+    {text:"충주와 한강 북쪽으로 영토 6칸 확장",check:function(){return ownedTiles("silla").filter(function(t){return t.r<=16&&t.q>=18;}).length>=8;}},
     {text:"적 도시 2곳 점령",check:function(){return state.captured.silla>=2;}}
   ]
 };
@@ -270,7 +267,7 @@ function fmt(n){return Math.round(n).toLocaleString("ko-KR");}
 function season(){return ["봄","여름","가을","겨울"][(state.turn-1)%4];}
 function year(){return 600+Math.floor((state.turn-1)/4);}
 function dateText(){return year()+"년 "+season();}
-function hexCenter(q,r){return [50+SQRT3*HEX_SIZE*(q+.5*(r&1)),54+HEX_SIZE*1.5*r];}
+function hexCenter(q,r){return [55+SQRT3*HEX_SIZE*(q+.5*(r&1)),55+HEX_SIZE*1.5*r];}
 function hexPoints(q,r){
   var c=hexCenter(q,r),a=[];
   for(var i=0;i<6;i++){var ang=Math.PI/180*(60*i-30);a.push((c[0]+HEX_SIZE*Math.cos(ang))+","+(c[1]+HEX_SIZE*Math.sin(ang)));}
@@ -279,13 +276,24 @@ function hexPoints(q,r){
 function neighborCoords(q,r){
   var odd=r&1;
   var ds=odd?[[1,0],[-1,0],[1,-1],[0,-1],[1,1],[0,1]]:[[1,0],[-1,0],[0,-1],[-1,-1],[0,1],[-1,1]];
-  return ds.map(function(d){return [q+d[0],r+d[1]];});
+  return ds.map(function(d){return[q+d[0],r+d[1]];});
 }
 function neighbors(q,r){return neighborCoords(q,r).map(function(p){return tile(p[0],p[1]);}).filter(Boolean);}
 function inBounds(q,r){return q>=0&&q<COLS&&r>=0&&r<ROWS;}
+function pointInPolygon(point,polygon){
+  var x=point[0],y=point[1],inside=false;
+  for(var i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    var xi=polygon[i][0],yi=polygon[i][1],xj=polygon[j][0],yj=polygon[j][1];
+    var hit=((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||0.00001)+xi);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+function hexMapPoint(q,r){return[q+(r&1?.5:0),r];}
 function isLandMask(q,r){
-  var bands=LAND_MASK[r]||[];
-  return bands.some(function(b){return q>=b[0]&&q<=b[1];});
+  if(EXTRA_LAND_HEXES[key(q,r)])return true;
+  var p=hexMapPoint(q,r);
+  return LAND_POLYGONS.some(function(poly){return pointInPolygon(p,poly);});
 }
 function isCoastalShape(q,r){
   if(!isLandMask(q,r))return false;
@@ -293,38 +301,46 @@ function isCoastalShape(q,r){
 }
 function terrainFor(q,r){
   var coastal=isCoastalShape(q,r);
-  // 태백·낭림 계통과 동남부 산악축
-  if((q>=14&&r>=4&&r<=13)||(q>=15&&r>=13&&r<=16))return (q+r)%3===0?"hill":"mountain";
-  // 요동·만주 내륙은 구릉과 산지가 섞임
-  if(q>=9&&q<=13&&r<=7)return (q+r)%2===0?"hill":"mountain";
-  // 중국 동북부 내륙
-  if(q<=8&&r<=5)return (q+r)%4===0?"hill":"plain";
-  if(coastal)return "coast";
-  // 백제 서남부와 황해 서안은 평야 비중을 높임
-  if((q<=13&&r>=10)||(q<=7&&r>=6))return "plain";
-  return (q+r)%5===0?"hill":"plain";
+  if(coastal)return"coast";
+  // 한반도 동부 산악축
+  if((q>=21&&r>=5&&r<=20)||(q>=19&&q<=22&&r>=3&&r<=10))return(q+r)%3===0?"hill":"mountain";
+  // 요동과 만주의 산지
+  if(q>=13&&q<=19&&r<=11)return(q+r)%2===0?"hill":"mountain";
+  // 백제·한강 서부 평야
+  if(q>=16&&q<=19&&r>=13&&r<=21)return"plain";
+  // 중국 동북부 및 산둥은 평야 비중이 높음
+  if(q<=13)return(q+r)%6===0?"hill":"plain";
+  return(q+r)%6===0?"hill":"plain";
 }
 function regionFor(q,r){
-  if(q<=8&&r<=5)return "수나라 변경";
-  if(q<=7&&r>=6)return "산둥·황해 서안";
-  if(q>=9&&r<=6)return "요동·만주";
-  if(q>=11&&r<=9)return "고구려";
-  if(q>=11&&r<=12)return "한강권";
-  if(q<=13&&r>=12&&r<=16)return "백제권";
-  if(q>=14&&q<=17&&r>=12&&r<=16)return "신라·가야권";
-  if(q>=18)return "왜";
-  return "해역";
+  if(q<=10&&r<=11)return"중국 동북부";
+  if(q<=10&&r>=12)return"산둥·황해 서안";
+  if(q>=11&&q<=15&&r>=6&&r<=13)return"요동";
+  if(q>=16&&r<=12)return"고구려";
+  if(q>=17&&q<=20&&r>=13&&r<=15)return"한강권";
+  if(q>=16&&q<=19&&r>=16&&r<=22)return"백제권";
+  if(q>=20&&q<=24&&r>=15&&r<=23)return"신라·가야권";
+  if(q>=25)return"왜";
+  return"해역";
 }
 function ownerFor(q,r){
   if(!isLandMask(q,r))return null;
-  if(q<=8)return "sui";
-  if(q>=18)return "wa";
-  if(r<=9&&q>=9)return "goguryeo";
-  if(r===10&&q<=13)return "goguryeo";
-  if(r>=11&&r<=15&&q<=13)return "baekje";
-  if(r===16&&q>=14&&q<=15)return "gaya";
-  if(r>=10&&r<=16&&q>=14)return "silla";
-  return "neutral";
+  // 수나라 영역
+  if(q<=11)return"sui";
+  // 요동·북부 고구려
+  if(q>=12&&q<=24&&r<=12)return"goguryeo";
+  // 600년 무렵 한강권은 신라
+  if(r>=13&&r<=16&&q>=19)return"silla";
+  // 백제 서남부
+  if(r>=13&&r<=22&&q>=15&&q<=19)return"baekje";
+  // 가야권
+  if(r>=20&&r<=22&&q>=20&&q<=22)return"gaya";
+  // 신라 동남부
+  if(r>=16&&r<=23&&q>=20&&q<=25)return"silla";
+  // 왜
+  if(q>=26&&r>=15)return"wa";
+  if(q===19&&r===25)return"tamna";
+  return"neutral";
 }
 function cityAt(q,r){
   var ids=Object.keys(CITIES);
@@ -339,35 +355,30 @@ function makeTiles(){
       if(cid&&CITIES[cid].island)terrain="coast";
       var own=land?ownerFor(q,r):null;
       if(cid)own=CITIES[cid].owner;
-      out[key(q,r)]={q:q,r:r,terrain:terrain,region:regionFor(q,r),owner:own,city:cid,improvement:null};
+      out[key(q,r)]={q:q,r:r,terrain:terrain,region:land?regionFor(q,r):"해역",owner:own,city:cid,improvement:null};
     }
   }
   return out;
 }
 function makeUnits(){
-  return [
-    {id:"g1",owner:"goguryeo",type:"infantry",q:13,r:8,troops:380,hp:10,moved:false},
-    {id:"g2",owner:"goguryeo",type:"cavalry",q:12,r:7,troops:280,hp:10,moved:false},
-    {id:"g3",owner:"goguryeo",type:"infantry",q:13,r:10,troops:250,hp:10,moved:false},
-
-    {id:"b1",owner:"baekje",type:"infantry",q:12,r:13,troops:310,hp:10,moved:false},
-    {id:"b2",owner:"baekje",type:"archer",q:12,r:14,troops:235,hp:10,moved:false},
-    {id:"b3",owner:"baekje",type:"infantry",q:11,r:15,troops:195,hp:10,moved:false},
-
-    {id:"s1",owner:"silla",type:"infantry",q:14,r:12,troops:260,hp:10,moved:false},
-    {id:"s2",owner:"silla",type:"archer",q:16,r:15,troops:270,hp:10,moved:false},
-
-    {id:"su1",owner:"sui",type:"infantry",q:7,r:5,troops:390,hp:10,moved:false},
-    {id:"su2",owner:"sui",type:"cavalry",q:8,r:4,troops:300,hp:10,moved:false},
-
-    {id:"ga1",owner:"gaya",type:"infantry",q:15,r:16,troops:170,hp:10,moved:false},
-
-    {id:"w1",owner:"wa",type:"infantry",q:19,r:16,troops:220,hp:10,moved:false}
+  return[
+    {id:"g1",owner:"goguryeo",type:"infantry",q:18,r:10,troops:380,hp:10,moved:false},
+    {id:"g2",owner:"goguryeo",type:"cavalry",q:17,r:9,troops:280,hp:10,moved:false},
+    {id:"g3",owner:"goguryeo",type:"infantry",q:18,r:12,troops:250,hp:10,moved:false},
+    {id:"b1",owner:"baekje",type:"infantry",q:18,r:17,troops:310,hp:10,moved:false},
+    {id:"b2",owner:"baekje",type:"archer",q:18,r:18,troops:235,hp:10,moved:false},
+    {id:"b3",owner:"baekje",type:"infantry",q:18,r:20,troops:195,hp:10,moved:false},
+    {id:"s1",owner:"silla",type:"infantry",q:20,r:16,troops:260,hp:10,moved:false},
+    {id:"s2",owner:"silla",type:"archer",q:23,r:20,troops:270,hp:10,moved:false},
+    {id:"su1",owner:"sui",type:"infantry",q:8,r:5,troops:390,hp:10,moved:false},
+    {id:"su2",owner:"sui",type:"cavalry",q:11,r:8,troops:300,hp:10,moved:false},
+    {id:"ga1",owner:"gaya",type:"infantry",q:21,r:21,troops:170,hp:10,moved:false},
+    {id:"w1",owner:"wa",type:"infantry",q:27,r:23,troops:220,hp:10,moved:false}
   ];
 }
 function initialState(player){
   return {
-    version:6,player:player,turn:1,finished:false,
+    version:7,player:player,turn:1,finished:false,
     resources:{
       goguryeo:{food:52,money:45,manpower:42,authority:58},
       baekje:{food:56,money:48,manpower:36,authority:58},
@@ -378,7 +389,7 @@ function initialState(player){
       tamna:{food:22,money:30,manpower:14,authority:42}
     },
     tiles:makeTiles(),units:makeUnits(),captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
-    feed:[{date:"600년 봄",text:"육각 전장에서 새로운 역사가 시작되었습니다."}]
+    feed:[{date:"600년 봄",text:"실제 지형 비율을 따라 쪼갠 동북아 전장에서 새로운 역사가 시작되었습니다."}]
   };
 }
 function unitById(id){return state.units.find(function(u){return u.id===id;});}
@@ -400,7 +411,7 @@ function save(show){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));if(show)toast("현재 역사를 저장했습니다.");}catch(e){if(show)toast("저장할 수 없습니다.");}
 }
 function load(){
-  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===6?x:null;}catch(e){return null;}
+  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===7?x:null;}catch(e){return null;}
 }
 function svgEl(tag,attrs){
   var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
@@ -448,9 +459,9 @@ function renderMap(){
   });
   drawRivers(riverLayer);
   REGION_LABELS.forEach(function(r){var c=hexCenter(r.q,r.r),tx=svgEl("text",{x:c[0],y:c[1],class:"regionLabel"});tx.textContent=r.name;labelLayer.appendChild(tx);});
-  var sea1=svgEl("text",{x:760,y:315,class:"seaLabel"});sea1.textContent="동 해";labelLayer.appendChild(sea1);
-  var sea2=svgEl("text",{x:390,y:475,class:"seaLabel"});sea2.textContent="황 해";labelLayer.appendChild(sea2);
-  var sea3=svgEl("text",{x:720,y:575,class:"seaLabel"});sea3.textContent="대한해협";labelLayer.appendChild(sea3);
+  var sea1=svgEl("text",{x:900,y:305,class:"seaLabel"});sea1.textContent="동 해";labelLayer.appendChild(sea1);
+  var sea2=svgEl("text",{x:480,y:600,class:"seaLabel"});sea2.textContent="황 해";labelLayer.appendChild(sea2);
+  var sea3=svgEl("text",{x:865,y:720,class:"seaLabel"});sea3.textContent="대한해협";labelLayer.appendChild(sea3);
   Object.keys(CITIES).forEach(function(id){
     var c=CITIES[id],t=tile(c.q,c.r);if(!t)return;
     var xy=hexCenter(c.q,c.r),g=svgEl("g",{class:"cityGroup"}),fill=t.owner&&FACTIONS[t.owner]?FACTIONS[t.owner].color:"#75889a";
@@ -464,8 +475,8 @@ function renderMap(){
   state.units.forEach(function(u){
     if(u.troops<=0)return;
     var xy=hexCenter(u.q,u.r),f=FACTIONS[u.owner],g=svgEl("g",{class:"unit"+(selectedUnit===u.id?" selected":"")});
-    g.setAttribute("transform","translate("+(xy[0]+13)+","+(xy[1]-13)+")");
-    g.appendChild(svgEl("circle",{cx:0,cy:0,r:11.5,fill:f.color,class:"unitRing"}));
+    g.setAttribute("transform","translate("+(xy[0]+14)+","+(xy[1]-14)+")");
+    g.appendChild(svgEl("circle",{cx:0,cy:0,r:10.5,fill:f.color,class:"unitRing"}));
     var ic=svgEl("text",{x:0,y:7,class:"unitIcon"});ic.textContent=u.type==="cavalry"?"🐎":u.type==="archer"?"🏹":"🛡️";g.appendChild(ic);
     var ct=svgEl("text",{x:0,y:23,class:"unitCount"});ct.textContent=fmt(u.troops);g.appendChild(ct);
     g.addEventListener("click",function(e){e.stopPropagation();selectUnit(u.id);});
@@ -474,16 +485,11 @@ function renderMap(){
 }
 function drawRivers(layer){
   var paths=[
-    // 압록강 계통
-    [[9,5],[10,5],[11,6],[12,6],[13,6]],
-    // 대동강·평양권
-    [[12,7],[13,8],[13,9]],
-    // 한강
-    [[12,10],[13,10],[13,11],[14,11]],
-    // 금강·백강권
-    [[11,12],[12,13],[12,14]],
-    // 낙동강
-    [[14,13],[15,14],[15,15],[15,16]]
+    [[14,8],[15,8],[16,8],[17,8],[18,8]],
+    [[17,9],[18,10],[18,11]],
+    [[17,13],[18,13],[19,14],[20,14]],
+    [[17,16],[18,17],[18,18]],
+    [[21,17],[22,18],[22,19],[22,20],[21,21]]
   ];
   paths.forEach(function(path){
     var d="";
@@ -747,7 +753,7 @@ function closeModal(){document.getElementById("modalOverlay").classList.add("hid
 function startTutorial(){tutorialStep=0;showTutorial();}
 function showTutorial(){
   var tips=[
-    ["1. 육각 타일","이제 중국 동북부부터 한반도와 왜 서부까지 한 장의 헥스맵으로 이어집니다. 평야·산악·해안까지 모든 육각형이 실제 영토입니다."],
+    ["1. 육각 타일","이번 지도는 실제 동북아 해안선과 반도의 상대 비율을 따라 더 촘촘하게 쪼갰습니다. 중국 동북부·요동·한반도·규슈 서부가 한 장의 헥스맵으로 이어집니다."],
     ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 붉은 칸은 공격 대상입니다."],
     ["3. 지형을 이용하세요","산악은 이동이 느리지만 방어에 좋고, 강을 건너 공격하면 불리합니다. 도로를 놓으면 험지를 더 빨리 지날 수 있습니다."],
     ["4. 빈 땅도 가치가 있습니다","내 타일에 농장·시장·요새·도로를 지어 도시 사이의 영토까지 발전시킬 수 있습니다."]
@@ -756,7 +762,7 @@ function showTutorial(){
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorial").classList.remove("hidden");
 }
 function applyCamera(){document.getElementById("camera").setAttribute("transform","translate("+cam.x+" "+cam.y+") scale("+cam.z+")");}
-function resetCamera(){cam={x:0,y:0,z:.92};applyCamera();}
+function resetCamera(){cam={x:0,y:0,z:.86};applyCamera();}
 function setupCamera(){
   var svg=document.getElementById("mapSvg");
   svg.addEventListener("wheel",function(e){e.preventDefault();var nz=clamp(cam.z*(e.deltaY<0?1.1:.9),.72,1.8);cam.z=nz;applyCamera();},{passive:false});
