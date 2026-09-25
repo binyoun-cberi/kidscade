@@ -523,3 +523,25 @@ button.waiting-item{width:100%}
 .fast-forward-button{
   pointer-events:auto
 }
+
+
+/* v48 document task actions */
+.document-actions{
+  display:grid;
+  gap:7px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid #ddd4c4
+}
+.document-complete{
+  min-height:42px;
+  border:0;
+  border-radius:10px;
+  background:#456b60;
+  color:#fff;
+  font-weight:900;
+  font-size:10px;
+  padding:9px 12px;
+  text-align:center
+}
+.document-complete:hover{background:#36594f}
