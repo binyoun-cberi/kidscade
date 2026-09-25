@@ -191,6 +191,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .cityNode.moveTarget .cityCore{stroke:#ffd166;stroke-width:1.8}
 .cityNode.enemyTarget .cityCore{stroke:#ff7f87;stroke-width:1.8}
 .cityFort{fill:none;stroke:#ffd166;stroke-width:.85;stroke-dasharray:1.5 .7;vector-effect:non-scaling-stroke}
+.cityLeader{stroke:#c9d8e6;stroke-width:.28;stroke-opacity:.55;vector-effect:non-scaling-stroke;pointer-events:none}
 .cityLabelBg{fill:#0b1422;fill-opacity:.88;stroke:#405675;stroke-width:.25}
 .cityLabel{fill:#fff;font-size:3.65px;font-weight:1000;text-anchor:middle;paint-order:stroke;stroke:#0b1422;stroke-width:.8px;stroke-linejoin:round;pointer-events:none}
 .cityArmy{fill:#dce9f6;font-size:2.8px;font-weight:900;text-anchor:middle;pointer-events:none}
@@ -373,7 +374,7 @@ var REGION_BASE={
   wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,geo:[130.40,33.59],map:[650.6,332.1],label:[660.0,332.5],specialty:"fish",neighbors:["tsushima"]}
 };
 
-var TECHS=var TECHS=[
+var TECHS=[
   {id:"irrigation",track:"생산",name:"관개",cost:22,desc:"모든 지역 식량 수입 +10%"},
   {id:"iron_tools",track:"생산",name:"철제 농기구",cost:38,req:"irrigation",desc:"농장 수입 +1, 지역 개발 비용 -3"},
   {id:"granary",track:"생산",name:"대형 곡창",cost:58,req:"iron_tools",desc:"식량 부족으로 생기는 손실을 크게 줄임"},
@@ -687,7 +688,7 @@ function renderMap(){
     if(moveMode&&selectedRegion&&region(selectedRegion).neighbors.indexOf(id)>=0)classes.push(r.owner===state.player?"moveTarget":"enemyTarget");
     g.setAttribute("class",classes.join(" "));
     var hit=svgEl("circle",{cx:p[0],cy:p[1],r:5.2,class:"cityHit"});g.appendChild(hit);
-    var radius=(r.island?2.25:2.7)+(r.buildings.city?.55:0);
+    var radius=(r.island?2.25:2.7)+(r.buildings.city?0.55:0);
     if(r.buildings.fort)g.appendChild(svgEl("circle",{cx:p[0],cy:p[1],r:radius+1.1,class:"cityFort"}));
     var core=svgEl("circle",{cx:p[0],cy:p[1],r:radius,class:"cityCore",fill:c.color});g.appendChild(core);
     if(COUNTRIES[r.owner].capital===id){var star=svgEl("text",{x:p[0],y:p[1]+.95,class:"capitalMark"});star.textContent="★";g.appendChild(star);}
