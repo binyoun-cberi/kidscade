@@ -18,7 +18,7 @@ test('Factory Tycoon is registered as a high-grade thinking sandbox',()=>{
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'sandbox');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=2');
+  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=3');
 });
 
 test('Factory Tycoon uses the common game shell and local Three runtime',()=>{
