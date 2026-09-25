@@ -218,7 +218,7 @@ function move(dx,dy){
  after=parseRules();
  if(ruleChanged){flashRules(before,after);tone(620,.07,'triangle')}
  lastRuleSignature=rulesSignature(after);
- render(false,after);
+ render(after);
  if(checkWin(after))setTimeout(clearLevel,180);
 }
 function discoveryKey(r){return r.subject+'|'+r.type+'|'+r.predicate}
@@ -263,7 +263,7 @@ function clearLevel(){
  window.KidscadeGame?.score?.(clearedCount,{unit:'단계',higherIsBetter:true});
  if(clearedCount===DATA.levels.length)window.KidscadeGame?.gameOver?.({score:clearedCount,scoreOptions:{unit:'단계',higherIsBetter:true}});
  $('clearChapter').textContent=DATA.levels[levelIndex].chapter;
- $('clearTitle').textContent=levelIndex===DATA.levels.length-1?'규칙 연구소 정복!':'실험 성공!';
+ $('clearTitle').textContent=levelIndex===DATA.levels.length-1?'내 말 좀 들어 완주!':'실험 성공!';
  $('clearText').textContent=levelIndex===DATA.levels.length-1?'세상의 법칙을 읽고, 부수고, 다시 만드는 법을 익혔어요.':'세상의 법칙을 이용해 길을 만들었어요.';
  $('clearMoves').textContent=moves+'수';
  $('clearBest').textContent='최고 기록 '+save.best[key]+'수';
