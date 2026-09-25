@@ -299,9 +299,39 @@ function makePlayer(entry,club,clubIndex,i){
   };
   p.overall=overall(p);return p;
 }
+function rolePositionFit(p,slot){
+  const pref=Array.isArray(p.preferredPositions)?p.preferredPositions:[],rank=pref.indexOf(slot);
+  let score=rank===0?30:rank>0?22-rank*4:0;
+  const r=p.footballRole;
+  if(r==='playmaker'&&slot==='CM')score+=16;
+  if(r==='commander'&&(slot==='CB'||slot==='CM'))score+=14;
+  if(r==='explorer'&&(slot==='FB'||slot==='WG'))score+=16;
+  if(r==='creator'&&(slot==='WG'||slot==='CM'))score+=15;
+  if(r==='finisher'&&(slot==='ST'||slot==='WG'))score+=16;
+  if(r==='anchor'&&(slot==='CB'||slot==='GK'))score+=18;
+  if(r==='support'&&(slot==='CM'||slot==='FB'||slot==='GK'))score+=13;
+  if(slot==='GK'&&(r==='anchor'||r==='commander'||r==='support'))score+=9;
+  return score;
+}
+function assignHistoricalPositions(players,clubIndex){
+  const remaining=players.map(function(p,i){return {p:p,i:i};});
+  SLOT_POS.forEach(function(slot){
+    remaining.sort(function(a,b){
+      const d=rolePositionFit(b.p,slot)-rolePositionFit(a.p,slot);
+      if(d)return d;
+      return a.i-b.i;
+    });
+    const chosen=remaining.shift();if(!chosen)return;
+    chosen.p.pos=slot;
+    if(chosen.p.preferredPositions.indexOf(slot)<0)chosen.p.preferredPositions.push(slot);
+    chosen.p.stats=statsFor(slot,clubIndex*31+chosen.i,true);
+    chosen.p.overall=overall(chosen.p);
+  });
+  return players;
+}
 const CLUBS=CLUB_DEFS.map(function(def,clubIndex){
   const c={id:def.id,name:def.name,short:def.short,emoji:def.emoji,accent:def.accent,style:def.style,description:def.description,tactics:def.tactics,budget:def.budget,era:def.era};
-  c.players=def.people.map(function(x,i){return makePlayer(x,c,clubIndex,i);});
+  c.players=assignHistoricalPositions(def.people.map(function(x,i){return makePlayer(x,c,clubIndex,i);}),clubIndex);
   return c;
 });
 function worldPlayer(x,i){
