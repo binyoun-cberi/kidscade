@@ -288,19 +288,19 @@ var REGION_LABELS=[
 
 var OBJECTIVES={
   goguryeo:[
-    {text:"평양과 국내성을 지키기",check:function(){return cityOwner("pyongyang")==="goguryeo"&&cityOwner("gungnae")==="goguryeo";}},
-    {text:"한강 남쪽으로 영토 5칸 확장",check:function(){return ownedTiles("goguryeo").filter(function(t){return t.r>=13&&t.q>=16;}).length>=7;}},
-    {text:"적 도시 2곳 점령",check:function(){return state.captured.goguryeo>=2;}}
+    {text:"국내성을 지키기",check:function(){return cityOwner("gungnae")==="goguryeo";}},
+    {text:"평양 또는 요동을 개척하기",check:function(){return cityOwner("pyongyang")==="goguryeo"||cityOwner("liaodong")==="goguryeo";}},
+    {text:"영토를 12칸 이상으로 넓히기",check:function(){return ownedTiles("goguryeo").length>=12;}}
   ],
   baekje:[
-    {text:"사비·웅진·금마저를 지키기",check:function(){return ["sabi","ungjin","geummajeo"].every(function(id){return cityOwner(id)==="baekje";});}},
-    {text:"한성 또는 충주 점령",check:function(){return cityOwner("han")==="baekje"||cityOwner("chungju")==="baekje";}},
+    {text:"위례성을 지키기",check:function(){return cityOwner("han")==="baekje";}},
+    {text:"웅진 또는 사비를 개척하기",check:function(){return cityOwner("ungjin")==="baekje"||cityOwner("sabi")==="baekje";}},
     {text:"영토 시설 4곳 건설",check:function(){return ownedTiles("baekje").filter(function(t){return !!t.improvement;}).length>=4;}}
   ],
   silla:[
-    {text:"금성과 상주를 지키기",check:function(){return cityOwner("gyeongju")==="silla"&&cityOwner("sangju")==="silla";}},
-    {text:"충주와 한강 북쪽으로 영토 6칸 확장",check:function(){return ownedTiles("silla").filter(function(t){return t.r<=16&&t.q>=18;}).length>=8;}},
-    {text:"적 도시 2곳 점령",check:function(){return state.captured.silla>=2;}}
+    {text:"금성을 지키기",check:function(){return cityOwner("gyeongju")==="silla";}},
+    {text:"상주 또는 충주를 개척하기",check:function(){return cityOwner("sangju")==="silla"||cityOwner("chungju")==="silla";}},
+    {text:"영토를 12칸 이상으로 넓히기",check:function(){return ownedTiles("silla").length>=12;}}
   ]
 };
 
@@ -790,7 +790,8 @@ function openBuild(){
   var body=document.getElementById("modalBody"),current=t.improvement&&IMPROVEMENTS[t.improvement]?IMPROVEMENTS[t.improvement]:null,lvl=improvementLevel(t);
   document.getElementById("modalEyebrow").textContent="타일 개발";
   document.getElementById("modalTitle").textContent=(t.city?CITIES[t.city].name:t.region)+" · "+TERRAIN[t.terrain].name;
-  document.getElementById("modalDesc").textContent=current?current.name+" Lv."+lvl+" 사용 중입니다. 같은 시설은 강화하고, 다른 시설을 고르면 교체할 수 있습니다.":"원하는 시설을 선택하세요. 지형에 맞지 않는 시설만 비활성화됩니다.";
+  var resourceHint=t.resource&&RESOURCE_DEFS[t.resource]?(" · 특산 자원: "+RESOURCE_DEFS[t.resource].icon+" "+RESOURCE_DEFS[t.resource].name+" — "+RESOURCE_DEFS[t.resource].desc):"";
+  document.getElementById("modalDesc").textContent=(current?current.name+" Lv."+lvl+" 사용 중입니다. 같은 시설은 강화하고, 다른 시설을 고르면 교체할 수 있습니다.":"원하는 시설을 선택하세요. 지형에 맞지 않는 시설만 비활성화됩니다.")+resourceHint;
   var html="";
   if(current){
     var up=improvementUpgradeCost(t),max=lvl>=3;
@@ -799,7 +800,8 @@ function openBuild(){
   html+="<div class=\"choiceGrid\">"+Object.keys(IMPROVEMENTS).map(function(id){
     var d=IMPROVEMENTS[id],ok=d.terrain.indexOf(t.terrain)>=0,cost=improvementBuildCost(id),same=t.improvement===id;
     var verb=same?"현재 시설":(current?"교체":"건설");
-    return "<button class=\"choice\" data-impr=\""+id+"\" "+(!ok||same?"disabled":"")+"><img class=\"choiceArt\" src=\""+IMPROVEMENT_ART_ROOT+d.art+"\" alt=\"\"><b>"+d.icon+" "+d.name+" · 💰"+cost+"</b><span>"+verb+" · "+d.desc+"</span></button>";
+    var resourceMatch=t.resource&&RESOURCE_DEFS[t.resource]&&RESOURCE_DEFS[t.resource].improvements.indexOf(id)>=0;
+    return "<button class=\"choice\" data-impr=\""+id+"\" "+(!ok||same?"disabled":"")+"><img class=\"choiceArt\" src=\""+IMPROVEMENT_ART_ROOT+d.art+"\" alt=\"\"><b>"+d.icon+" "+d.name+" · 💰"+cost+(resourceMatch?" · ★특산":"")+"</b><span>"+verb+" · "+d.desc+"</span></button>";
   }).join("")+"</div>";
   body.innerHTML=html;
   document.getElementById("modalOverlay").classList.remove("hidden");
@@ -989,10 +991,11 @@ function closeModal(){document.getElementById("modalOverlay").classList.add("hid
 function startTutorial(){tutorialStep=0;showTutorial();}
 function showTutorial(){
   var tips=[
-    ["1. 육각 타일","이번 지도는 제공된 삼국시대 지도 이미지를 37×44 격자로 직접 표본화해 육지와 바다를 나눴습니다. 이전의 손으로 그린 육지 폴리곤을 사용하지 않습니다."],
-    ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 붉은 칸은 공격 대상입니다."],
-    ["3. 지형을 이용하세요","산악은 이동이 느리지만 방어에 좋고, 강을 건너 공격하면 불리합니다. 도로를 놓으면 험지를 더 빨리 지날 수 있습니다."],
-    ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."]
+    ["1. 건국 거점에서 시작","대부분의 육지는 미개척 상태입니다. 고구려는 국내성, 백제는 위례성, 신라는 금성에서 주변 타일로 직접 영토를 넓혀갑니다."],
+    ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 미개척 타일에 들어가면 내 영토가 됩니다."],
+    ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
+    ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·도요·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."],
+    ["5. 외부 세력","수나라와 왜는 기본적으로 한반도에 침공하지 않습니다. 직접 전쟁이 시작되거나 외교 대리전이 발동된 경우에만 공격적으로 움직입니다."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorial").classList.add("hidden");return;}
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorial").classList.remove("hidden");
