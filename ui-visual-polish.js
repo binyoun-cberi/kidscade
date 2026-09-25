@@ -193,6 +193,41 @@
         font-size:.73rem !important;
       }
 
+      @media (min-width:941px) {
+        #kc-popular-hub.kc-popular-sidebar {
+          margin:0 !important;
+          padding:10px !important;
+          border-radius:18px !important;
+        }
+        .kc-popular-sidebar .kc-popular-head { margin:0 0 8px !important; }
+        .kc-popular-sidebar .kc-popular-grid { gap:0 !important; }
+        .kc-popular-sidebar .kc-popular-panel {
+          display:none !important;
+          padding:0 !important;
+          border:0 !important;
+          border-radius:0 !important;
+          box-shadow:none !important;
+          background:transparent !important;
+        }
+        .kc-popular-sidebar .kc-popular-panel.active { display:block !important; }
+        .kc-popular-sidebar .kc-popular-panel-title { display:none !important; }
+        .kc-popular-sidebar .kc-popular-list { gap:3px !important; }
+        .kc-popular-sidebar .kc-popular-item {
+          grid-template-columns:26px 44px minmax(0,1fr) auto !important;
+          gap:6px !important;
+          padding:5px 3px !important;
+        }
+        .kc-popular-sidebar .kc-popular-thumb { width:44px !important; height:30px !important; border-radius:7px !important; }
+        .kc-popular-sidebar .kc-popular-rank { width:26px !important; height:26px !important; border-radius:8px !important; }
+        #kc-live-stats.kc-stats-sidebar {
+          gap:4px !important;
+          margin:0 !important;
+          padding:9px 11px !important;
+          border-radius:15px !important;
+          font-size:.67rem !important;
+        }
+      }
+
       /* 게임 라이브러리: 대문이 주인공이고 텍스트는 짧게 */
       .kc-library-head { margin-bottom:9px !important; }
       #game-list.game-container { gap:12px !important; }
