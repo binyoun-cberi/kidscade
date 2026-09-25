@@ -363,7 +363,7 @@ var REGION_BASE={
   wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,geo:[130.40,33.59],specialty:"fish",neighbors:["southcoast"]}
 };
 
-var TECHS=var TECHS=[
+var TECHS=[
   {id:"irrigation",track:"생산",name:"관개",cost:22,desc:"모든 지역 식량 수입 +10%"},
   {id:"iron_tools",track:"생산",name:"철제 농기구",cost:38,req:"irrigation",desc:"농장 수입 +1, 지역 개발 비용 -3"},
   {id:"granary",track:"생산",name:"대형 곡창",cost:58,req:"iron_tools",desc:"식량 부족으로 생기는 손실을 크게 줄임"},
@@ -673,7 +673,7 @@ function renderMap(){
     var c=COUNTRIES[id],sp=document.createElement("span");sp.className="legend";sp.innerHTML="<i style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:"+c.color+";margin-right:4px\"></i>"+c.short;legend.appendChild(sp);
   });
 }
-function handleRegionClickfunction handleRegionClick(id){
+function handleRegionClick(id){
   if(moveMode&&selectedRegion&&region(selectedRegion).neighbors.indexOf(id)>=0){executeMove(id);return;}
   selectedRegion=id;moveMode=false;renderMap();renderRegionPanel();
 }
@@ -715,7 +715,7 @@ function renderRegionPanel(){
   var slider=document.getElementById("moveAmount");if(slider)slider.addEventListener("input",function(){document.getElementById("moveAmountLabel").textContent=slider.value;});
   panel.querySelectorAll("[data-move-target]").forEach(function(b){b.addEventListener("click",function(){executeMove(b.dataset.moveTarget);});});
 }
-function spendCommandfunction spendCommand(n){if(state.commands<n){toast("이번 턴의 명령력이 부족합니다.");return false;}state.commands-=n;return true;}
+function spendCommand(n){if(state.commands<n){toast("이번 턴의 명령력이 부족합니다.");return false;}state.commands-=n;return true;}
 function regionAction(type){
   var r=region(selectedRegion),n=nation(state.player);if(r.owner!==state.player)return;
   if(type==="develop"){
@@ -817,7 +817,7 @@ function advanceArmies(){
   });
   state.armiesTransit=next;
 }
-function attackModfunction attackMod(c,r,isAttack){
+function attackMod(c,r,isAttack){
   var m=1;
   if(isAttack&&hasTech(c,"iron_weapons"))m*=1.08;
   if(isAttack&&hasTech(c,"cavalry")&&r.terrain==="plain")m*=1.12;
@@ -942,7 +942,7 @@ function applyIncome(c){
   if(n.food<=1&&!granary){regionsOf(c).forEach(function(id){region(id).army=Math.max(40,region(id).army-25);});n.authority=clamp(n.authority-4,0,100);}
   n.authority=clamp(n.authority+1-n.warWeariness*.015,0,100);
 }
-function aiTurnfunction aiTurn(c){
+function aiTurn(c){
   if(c===state.player)return;
   var n=nation(c),wars=Object.keys(COUNTRIES).filter(function(o){return o!==c&&pact(c,o).war;});
   if(wars.length){
@@ -965,7 +965,7 @@ function aiTurnfunction aiTurn(c){
     aiDiplomacy(c);
   }
 }
-function aiRecruitfunction aiRecruit(c){
+function aiRecruit(c){
   var n=nation(c);if(n.money<18||n.manpower<12)return;
   var regs=regionsOf(c).slice().sort(function(a,b){return borderScore(b,c)-borderScore(a,c);});if(!regs.length)return;
   n.money-=18;n.manpower-=12;region(regs[0]).army+=160;
@@ -1008,7 +1008,7 @@ function endTurn(){
   selectedRegion=selectedRegion&&region(selectedRegion)?selectedRegion:COUNTRIES[state.player].capital;
   renderAll();saveGame(false);
 }
-function maybeEventfunction maybeEvent(){
+function maybeEvent(){
   var key="";
   if(state.turn===4&&!state.eventFlags.han)key="han";
   else if(state.turn===8&&!state.eventFlags.sui)key="sui";
