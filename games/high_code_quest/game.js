@@ -31,7 +31,7 @@ for(const [k,src] of Object.entries(imageSources)){const im=new Image();im.src=s
 
 function loadProgress(){
  try{
-  const raw=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem('kidscade_game_v1:high_code_quest:progress_v1')||'{}');
+  const raw=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
   return {unlocked:Math.max(1,Number(raw.unlocked)||1),completed:raw.completed||{},best:raw.best||{},current:Number(raw.current)||0,programs:raw.programs||{}};
  }catch(_){return {unlocked:1,completed:{},best:{},current:0,programs:{}};}
 }
