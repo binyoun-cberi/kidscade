@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>공장 타이쿤</title>
+<link rel="stylesheet" href="factory-tycoon.css?v=1">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="샌드위치 자동화 공장"></canvas>
+
+  <header id="hud" class="glass">
+    <div class="brand">
+      <span class="brandIcon">🏭</span>
+      <div><small>KIDSCADE SANDBOX</small><b>공장 타이쿤</b></div>
+    </div>
+    <div class="stat"><span>출고</span><b id="shipped">0</b></div>
+    <div class="stat"><span>매출</span><b id="cash">₩0</b></div>
+    <div class="stat"><span>분당</span><b id="perMinute">0.0</b></div>
+    <div class="stat waste"><span>폐기</span><b id="waste">0</b></div>
+  </header>
+
+  <aside id="orders" class="glass">
+    <div class="panelHead"><b>오늘의 인기</b><button id="collapseOrders" type="button" aria-label="주문판 접기">‹</button></div>
+    <div id="orderList"></div>
+    <button id="challengeBtn" type="button" class="challenge">
+      <span>선택 도전</span><b id="challengeTitle">분당 10개 생산</b><small id="challengeProgress">0 / 10</small>
+    </button>
+  </aside>
+
+  <div id="topActions" class="glass">
+    <button id="analysisBtn" type="button" title="분석 보기">◎</button>
+    <button id="pauseBtn" type="button" title="일시정지">Ⅱ</button>
+    <button id="speedBtn" type="button" title="속도">×1</button>
+    <button id="rotateBtn" type="button" title="회전">↻</button>
+    <button id="helpBtn" type="button" title="도움말">?</button>
+  </div>
+
+  <div id="analysisLegend" class="glass hidden">
+    <b>공장 분석</b><span><i class="ok"></i> 흐름 좋음</span><span><i class="warn"></i> 대기 많음</span><span><i class="bad"></i> 막힘</span>
+  </div>
+
+  <div id="toast" class="glass" aria-live="polite"></div>
+
+  <section id="toolbar" class="glass" aria-label="공장 건설 도구">
+    <div class="toolGroup">
+      <button class="tool active" data-tool="belt" type="button"><span>➡</span><b>벨트</b></button>
+      <button class="tool" data-tool="splitter" type="button"><span>⑂</span><b>나누기</b></button>
+      <button class="tool" data-tool="merger" type="button"><span>⇉</span><b>합치기</b></button>
+      <button class="tool" data-tool="cross" type="button"><span>╳</span><b>교차</b></button>
+      <button class="tool" data-tool="assembler" type="button"><span>🥪</span><b>조립</b></button>
+      <button class="tool" data-tool="slicer" type="button"><span>🔪</span><b>자르기</b></button>
+      <button class="tool" data-tool="pan" type="button"><span>🍳</span><b>굽기</b></button>
+      <button class="tool" data-tool="toaster" type="button"><span>🔥</span><b>토스트</b></button>
+      <button class="tool" data-tool="packer" type="button"><span>📦</span><b>포장</b></button>
+      <button class="tool erase" data-tool="erase" type="button"><span>⌫</span><b>지우개</b></button>
+    </div>
+    <div class="toolbarSide">
+      <button id="undoBtn" type="button" aria-label="실행 취소">↶</button>
+      <button id="redoBtn" type="button" aria-label="다시 실행">↷</button>
+      <button id="saveBtn" type="button" aria-label="저장">저장</button>
+    </div>
+  </section>
+
+  <div id="intro" class="overlay">
+    <div class="card introCard">
+      <div class="factoryLogo">🏭</div>
+      <p class="eyebrow">무한 자동화 샌드박스</p>
+      <h1>공장 타이쿤</h1>
+      <p class="lead">무한히 나오는 빵과 재료를 컨베이어로 연결하고, 자르고 굽고 쌓아서 나만의 샌드위치 공장을 만드세요. 기계와 벨트는 전부 무료입니다.</p>
+      <div class="featureRow"><span>∞ 건설 무제한</span><span>🥪 조합 무제한</span><span>⚙ 병목 해결</span><span>💾 자동 저장</span></div>
+      <div class="startActions">
+        <button id="newBtn" class="primary" type="button">새 공장 시작</button>
+        <button id="continueBtn" class="secondary" type="button">이어하기</button>
+      </div>
+      <small class="tip">PC: 드래그 건설 · 휠 확대 · Space 일시정지 · R 회전<br>태블릿: 한 손가락 건설 · 두 손가락 이동/확대</small>
+    </div>
+  </div>
+
+  <div id="help" class="overlay hidden">
+    <div class="card helpCard">
+      <p class="eyebrow">게임 방법</p>
+      <h2>이어 붙이면 공장이 살아나요</h2>
+      <div class="helpGrid">
+        <div><b>1. 벨트를 그어요</b><p>재료 공급기에서 출고장까지 손가락으로 쭉 그리세요. 모서리는 자동으로 이어집니다.</p></div>
+        <div><b>2. 가공해요</b><p>토마토는 자르고, 달걀과 베이컨은 팬에 굽고, 빵은 토스터에 넣을 수 있어요.</p></div>
+        <div><b>3. 조립해요</b><p>조립기는 뒤에서 들어온 음식 위에 옆에서 들어온 재료를 한 층 올립니다. 여러 대를 이어 마음대로 쌓아 보세요.</p></div>
+        <div><b>4. 병목을 고쳐요</b><p>앞이 막히면 재료가 줄줄이 기다립니다. 나누기와 합치기로 흐름을 바꾸고 분석 모드에서 막힌 곳을 찾아보세요.</p></div>
+      </div>
+      <button id="closeHelpBtn" class="primary" type="button">공장으로</button>
+    </div>
+  </div>
+
+  <div id="discover" class="overlay hidden">
+    <div class="card discoverCard">
+      <div class="discoverIcon">✨🥪✨</div>
+      <p class="eyebrow">새 조합 발견</p>
+      <h2 id="discoverLayers">새 샌드위치</h2>
+      <p id="discoverText" class="lead"></p>
+      <label>이 샌드위치의 이름 <input id="discoverName" maxlength="24" placeholder="예: 치즈 폭탄 샌드위치"></label>
+      <button id="discoverSave" class="primary" type="button">도감에 저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_factory_tycoon" data-title="공장 타이쿤" data-shell="true" data-orientation="landscape"></script>
+<script type="module" src="factory-tycoon.js?v=1"></script>
+</body>
+</html>
