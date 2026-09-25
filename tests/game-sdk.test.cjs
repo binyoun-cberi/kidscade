@@ -44,3 +44,11 @@ test('Game SDK exposes a fatal error channel without stack payloads', () => {
   assert.match(source, /installErrorReporting/);
   assert.doesNotMatch(source, /stack:\s*error/);
 });
+
+
+test('Game SDK defers shell mounting when loaded before document.body exists', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'kidscade-game-sdk.js'), 'utf8');
+  assert.match(source, /if \(!root\.document\.body\)/);
+  assert.match(source, /DOMContentLoaded/);
+  assert.match(source, /scheduleShellMount/);
+});
