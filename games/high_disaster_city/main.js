@@ -19,7 +19,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&sim.state.
 function handleSignals(){
  for(const ev of sim.drainSignals()){
   if(ev.message)ui.showToast(ev.message);
-  if(ev.kind==='warning'||ev.kind==='damage')sfx('combat.impact_heavy',{volume:ev.kind==='warning'?.24:.18,cooldownMs:260});
+  if(ev.kind==='warning'||ev.kind==='damage'||ev.kind==='quake')sfx('combat.impact_heavy',{volume:ev.kind==='warning'?.24:ev.kind==='quake'?.28:.18,cooldownMs:260});
   else if(ev.kind==='clear')sfx('success.cheer_yay',{volume:.27,cooldownMs:500});
   else if(ev.kind==='gameover')sfx('failure.fail_sting',{volume:.35,cooldownMs:900});
   else if(ev.kind==='build'||ev.kind==='reward'||ev.kind==='supply')sfx('collect.coin_pickup',{volume:.16,cooldownMs:90});
