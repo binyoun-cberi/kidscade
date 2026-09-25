@@ -148,7 +148,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 (function(){
 "use strict";
 
-var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v8";
+var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v9";
 var MAX_TURNS=32;
 var COLS=37;
 var ROWS=44;
@@ -183,25 +183,27 @@ var TERRAIN={
 };
 
 var IMPROVEMENTS={
-  farm:{name:"농장",icon:"🌾",cost:10,terrain:["plain","coast"],food:2,money:0},
-  market:{name:"시장",icon:"🏪",cost:12,terrain:["plain","coast","hill"],food:0,money:3},
-  fort:{name:"요새",icon:"🏯",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0},
-  road:{name:"도로",icon:"🛣️",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0},
-  fishery:{name:"어장",icon:"🎣",cost:10,terrain:["coast"],food:2,money:1}
+  farm:{name:"농장",icon:"🌾",cost:10,terrain:["plain","coast","hill"],food:2,money:0,manpower:0,authority:0,desc:"식량 생산 +2/레벨"},
+  tradepost:{name:"교역소",icon:"🏪",cost:12,terrain:["plain","coast","hill","mountain"],food:0,money:3,manpower:0,authority:0,desc:"재정 +3/레벨"},
+  barracks:{name:"병영",icon:"🛡️",cost:15,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:2,authority:1,desc:"인력 +2 · 권위 +1/레벨"},
+  mine:{name:"광산",icon:"⛏️",cost:14,terrain:["hill","mountain"],food:0,money:4,manpower:0,authority:0,desc:"재정 +4/레벨"},
+  fort:{name:"요새",icon:"🏯",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"방어 +25%"},
+  road:{name:"도로",icon:"🛣️",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"험지 이동 비용 감소"},
+  fishery:{name:"어장",icon:"🎣",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"}
 };
 
 var CITIES={
   sui_frontier:{name:"수 변경",q:5,r:16,owner:"sui",level:3,def:2,capital:true,label:[0,-16]},
   shandong:{name:"산둥 항구",q:6,r:29,owner:"sui",level:2,def:1,label:[-8,17]},
-  liaodong:{name:"요동",q:14,r:18,owner:"goguryeo",level:3,def:2,label:[-12,-15]},
-  gungnae:{name:"국내성",q:20,r:15,owner:"goguryeo",level:3,def:3,label:[12,-15]},
-  pyongyang:{name:"평양",q:22,r:22,owner:"goguryeo",level:4,def:3,capital:true,label:[-12,17]},
+  liaodong:{name:"요동",q:15,r:18,owner:"goguryeo",level:3,def:2,label:[-12,-15]},
+  gungnae:{name:"국내성",q:21,r:15,owner:"goguryeo",level:3,def:3,label:[12,-15]},
+  pyongyang:{name:"평양",q:21,r:22,owner:"goguryeo",level:4,def:3,capital:true,label:[-12,17]},
   han:{name:"한성",q:22,r:27,owner:"silla",level:4,def:2,label:[-13,-15]},
-  chungju:{name:"충주",q:24,r:29,owner:"silla",level:2,def:2,label:[12,-15]},
-  ungjin:{name:"웅진",q:21,r:30,owner:"baekje",level:3,def:2,label:[-13,-15]},
-  sabi:{name:"사비",q:21,r:31,owner:"baekje",level:4,def:3,capital:true,label:[-13,17]},
-  geummajeo:{name:"금마저",q:21,r:32,owner:"baekje",level:2,def:1,label:[-14,17]},
-  sangju:{name:"상주",q:25,r:31,owner:"silla",level:2,def:2,label:[13,-15]},
+  chungju:{name:"충주",q:23,r:29,owner:"silla",level:2,def:2,label:[12,-15]},
+  ungjin:{name:"웅진",q:20,r:30,owner:"baekje",level:3,def:2,label:[-13,-15]},
+  sabi:{name:"사비",q:20,r:32,owner:"baekje",level:4,def:3,capital:true,label:[-13,17]},
+  geummajeo:{name:"금마저",q:20,r:33,owner:"baekje",level:2,def:1,label:[-14,17]},
+  sangju:{name:"상주",q:24,r:31,owner:"silla",level:2,def:2,label:[13,-15]},
   gyeongju:{name:"금성",q:26,r:34,owner:"silla",level:4,def:3,capital:true,label:[14,17]},
   gaya:{name:"가야권",q:24,r:34,owner:"silla",level:2,def:1,label:[-10,17]},
   usan:{name:"우산",q:29,r:27,owner:"neutral",level:1,def:1,island:true,label:[12,14]},
@@ -250,7 +252,7 @@ var OBJECTIVES={
   baekje:[
     {text:"사비·웅진·금마저를 지키기",check:function(){return ["sabi","ungjin","geummajeo"].every(function(id){return cityOwner(id)==="baekje";});}},
     {text:"한성 또는 충주 점령",check:function(){return cityOwner("han")==="baekje"||cityOwner("chungju")==="baekje";}},
-    {text:"농장 또는 어장 4곳 건설",check:function(){return ownedTiles("baekje").filter(function(t){return t.improvement==="farm"||t.improvement==="fishery";}).length>=4;}}
+    {text:"영토 시설 4곳 건설",check:function(){return ownedTiles("baekje").filter(function(t){return !!t.improvement;}).length>=4;}}
   ],
   silla:[
     {text:"금성과 상주를 지키기",check:function(){return cityOwner("gyeongju")==="silla"&&cityOwner("sangju")==="silla";}},
@@ -342,7 +344,7 @@ function makeTiles(){
       if(cid&&CITIES[cid].island)terrain="coast";
       var own=land?ownerFor(q,r):null;
       if(cid)own=CITIES[cid].owner;
-      out[key(q,r)]={q:q,r:r,terrain:terrain,region:land?regionFor(q,r):"해역",owner:own,city:cid,improvement:null};
+      out[key(q,r)]={q:q,r:r,terrain:terrain,region:land?regionFor(q,r):"해역",owner:own,city:cid,improvement:null,improvementLevel:0};
     }
   }
   return out;
@@ -364,7 +366,7 @@ function makeUnits(){
 }
 function initialState(player){
   return {
-    version:8,player:player,turn:1,finished:false,
+    version:9,player:player,turn:1,finished:false,
     resources:{
       goguryeo:{food:52,money:45,manpower:42,authority:58},
       baekje:{food:56,money:48,manpower:36,authority:58},
@@ -397,7 +399,7 @@ function save(show){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));if(show)toast("현재 역사를 저장했습니다.");}catch(e){if(show)toast("저장할 수 없습니다.");}
 }
 function load(){
-  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===8?x:null;}catch(e){return null;}
+  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===9?x:null;}catch(e){return null;}
 }
 function svgEl(tag,attrs){
   var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
@@ -434,13 +436,14 @@ function renderMap(){
     var t=state.tiles[k],pts=hexPoints(t.q,t.r),p=svgEl("polygon",{points:pts,fill:TERRAIN[t.terrain].fill,class:"hex "+(t.terrain==="sea"?"seaHex":"landHex"),"data-key":k});
     if(selectedTile===k)p.classList.add("selected");
     if(reachable[k]!=null)p.classList.add(reachable[k].attack?"attackable":"reachable");
-    p.addEventListener("click",function(e){e.stopPropagation();onTileClick(k);});
+    p.addEventListener("pointerup",function(e){if(drag&&drag.moved)return;e.stopPropagation();onTileClick(k);});
     hexLayer.appendChild(p);
     if(t.owner&&t.terrain!=="sea"&&FACTIONS[t.owner]){
-      hexLayer.appendChild(svgEl("polygon",{points:pts,fill:FACTIONS[t.owner].color,class:"hexOverlay"}));
+      hexLayer.appendChild(svgEl("polygon",{points:pts,fill:FACTIONS[t.owner].color,class:"hexOverlay","pointer-events":"none"}));
     }
-    if(t.improvement){
-      var c=hexCenter(t.q,t.r),im=svgEl("text",{x:c[0],y:c[1]+5,class:"hexImpr"});im.textContent=IMPROVEMENTS[t.improvement].icon;hexLayer.appendChild(im);
+    if(t.improvement&&IMPROVEMENTS[t.improvement]){
+      var c=hexCenter(t.q,t.r),im=svgEl("text",{x:c[0],y:c[1]+4,class:"hexImpr"});im.textContent=IMPROVEMENTS[t.improvement].icon;hexLayer.appendChild(im);
+      if((t.improvementLevel||1)>1){var lv=svgEl("text",{x:c[0]+8,y:c[1]+10,class:"unitCount"});lv.textContent="L"+(t.improvementLevel||1);hexLayer.appendChild(lv);}
     }
   });
   drawRivers(riverLayer);
@@ -465,7 +468,7 @@ function renderMap(){
     g.appendChild(svgEl("circle",{cx:0,cy:0,r:10.5,fill:f.color,class:"unitRing"}));
     var ic=svgEl("text",{x:0,y:7,class:"unitIcon"});ic.textContent=u.type==="cavalry"?"🐎":u.type==="archer"?"🏹":"🛡️";g.appendChild(ic);
     var ct=svgEl("text",{x:0,y:23,class:"unitCount"});ct.textContent=fmt(u.troops);g.appendChild(ct);
-    g.addEventListener("click",function(e){e.stopPropagation();selectUnit(u.id);});
+    g.addEventListener("pointerup",function(e){if(drag&&drag.moved)return;e.stopPropagation();selectUnit(u.id);});
     unitLayer.appendChild(g);
   });
 }
@@ -501,7 +504,7 @@ function renderInfo(){
   html+="<div class=\"statGrid\"><div class=\"stat\"><small>이동 비용</small><b>"+(ter.move>=99?"이동 불가":ter.move)+"</b></div><div class=\"stat\"><small>방어 보정</small><b>+"+Math.round((ter.def-1)*100)+"%</b></div><div class=\"stat\"><small>식량</small><b>+"+tileFood(t)+"</b></div><div class=\"stat\"><small>재정</small><b>+"+tileMoney(t)+"</b></div></div>";
   var tags=[];
   if(c)tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level);
-  if(t.improvement)tags.push(IMPROVEMENTS[t.improvement].icon+" "+IMPROVEMENTS[t.improvement].name);
+  if(t.improvement&&IMPROVEMENTS[t.improvement])tags.push(IMPROVEMENTS[t.improvement].icon+" "+IMPROVEMENTS[t.improvement].name+" Lv."+(t.improvementLevel||1));
   if(t.terrain==="mountain")tags.push("산길 주의");
   if(tags.length)html+="<div class=\"tagRow\">"+tags.map(function(x){return"<span class=\"tag\">"+x+"</span>";}).join("")+"</div>";
   if(u){
@@ -509,7 +512,7 @@ function renderInfo(){
   }
   if(t.owner===state.player&&t.terrain!=="sea"){
     html+="<div class=\"actionTitle\">타일 운영</div><div class=\"actions\">";
-    html+="<button class=\"act\" id=\"openBuildFromPanel\">🔨 시설<span>농장·시장·도로·요새</span></button>";
+    html+="<button class=\"act\" id=\"openBuildFromPanel\">🔨 타일 개발<span>농장·교역소·병영·광산 등</span></button>";
     if(c)html+="<button class=\"act\" id=\"recruitBtn\">🛡️ 모집<span>💰12 👥8</span></button>";
     html+="</div>";
   }
@@ -611,22 +614,68 @@ function captureCityIfNeeded(u,t,oldOwner){
   if(t.owner!==u.owner)t.owner=u.owner;
   if(previous!==u.owner&&previous!=="neutral"){state.captured[u.owner]=(state.captured[u.owner]||0)+1;resource(u.owner).authority=clamp(resource(u.owner).authority+6,0,100);}
 }
-function tileFood(t){var n=TERRAIN[t.terrain].food;if(t.improvement)n+=IMPROVEMENTS[t.improvement].food||0;if(t.owner==="baekje"&&t.terrain==="plain")n+=1;return n;}
-function tileMoney(t){var n=TERRAIN[t.terrain].money;if(t.improvement)n+=IMPROVEMENTS[t.improvement].money||0;return n;}
+function improvementLevel(t){return t&&t.improvement?Math.max(1,t.improvementLevel||1):0;}
+function tileFood(t){
+  var n=TERRAIN[t.terrain].food;
+  if(t.owner==="baekje"&&t.terrain==="plain")n+=1;
+  if(t.improvement&&IMPROVEMENTS[t.improvement])n+=(IMPROVEMENTS[t.improvement].food||0)*improvementLevel(t);
+  return n;
+}
+function tileMoney(t){
+  var n=TERRAIN[t.terrain].money;
+  if(t.improvement&&IMPROVEMENTS[t.improvement])n+=(IMPROVEMENTS[t.improvement].money||0)*improvementLevel(t);
+  return n;
+}
+function improvementBuildCost(id){
+  var d=IMPROVEMENTS[id],cost=d?d.cost:999;
+  if(state.player==="silla")cost=Math.max(4,cost-2);
+  return cost;
+}
+function improvementUpgradeCost(t){
+  var d=t&&t.improvement?IMPROVEMENTS[t.improvement]:null,lvl=improvementLevel(t);
+  return d?Math.max(6,d.cost+lvl*5):999;
+}
 function openBuild(){
   if(!selectedTile||!state.tiles[selectedTile])return;
-  var t=state.tiles[selectedTile];if(t.owner!==state.player||t.terrain==="sea"){toast("내 영토에서만 시설을 지을 수 있습니다.");return;}
-  var body=document.getElementById("modalBody");document.getElementById("modalEyebrow").textContent="타일 개발";document.getElementById("modalTitle").textContent=(t.city?CITIES[t.city].name:t.region)+" 시설 건설";document.getElementById("modalDesc").textContent="한 타일에는 하나의 시설만 둘 수 있습니다. 지형에 맞는 시설을 선택하세요.";
-  body.innerHTML="<div class=\"choiceGrid\">"+Object.keys(IMPROVEMENTS).map(function(id){var d=IMPROVEMENTS[id],ok=d.terrain.indexOf(t.terrain)>=0;return"<button class=\"choice\" data-impr=\""+id+"\" "+(!ok?"disabled":"")+"><b>"+d.icon+" "+d.name+" · 💰"+d.cost+"</b><span>"+(id==="farm"?"식량 +2":id==="market"?"재정 +3":id==="fort"?"방어 +25%":id==="road"?"이동 비용 감소":"식량 +2 · 재정 +1")+"</span></button>";}).join("")+"</div>";
+  var t=state.tiles[selectedTile];
+  if(t.owner!==state.player||t.terrain==="sea"){toast("내 육지 타일을 먼저 선택하세요.");return;}
+  var body=document.getElementById("modalBody"),current=t.improvement&&IMPROVEMENTS[t.improvement]?IMPROVEMENTS[t.improvement]:null,lvl=improvementLevel(t);
+  document.getElementById("modalEyebrow").textContent="타일 개발";
+  document.getElementById("modalTitle").textContent=(t.city?CITIES[t.city].name:t.region)+" · "+TERRAIN[t.terrain].name;
+  document.getElementById("modalDesc").textContent=current?current.name+" Lv."+lvl+" 사용 중입니다. 같은 시설은 강화하고, 다른 시설을 고르면 교체할 수 있습니다.":"원하는 시설을 선택하세요. 지형에 맞지 않는 시설만 비활성화됩니다.";
+  var html="";
+  if(current){
+    var up=improvementUpgradeCost(t),max=lvl>=3;
+    html+="<div class=\"countryCard\"><b>"+current.icon+" "+current.name+" Lv."+lvl+"</b><p>"+current.desc+"</p><button class=\"primary\" id=\"upgradeImpr\" "+(max?"disabled":"")+">"+(max?"최대 레벨":"Lv."+(lvl+1)+" 강화 · 💰"+up)+"</button></div>";
+  }
+  html+="<div class=\"choiceGrid\">"+Object.keys(IMPROVEMENTS).map(function(id){
+    var d=IMPROVEMENTS[id],ok=d.terrain.indexOf(t.terrain)>=0,cost=improvementBuildCost(id),same=t.improvement===id;
+    var verb=same?"현재 시설":(current?"교체":"건설");
+    return "<button class=\"choice\" data-impr=\""+id+"\" "+(!ok||same?"disabled":"")+"><b>"+d.icon+" "+d.name+" · 💰"+cost+"</b><span>"+verb+" · "+d.desc+"</span></button>";
+  }).join("")+"</div>";
+  body.innerHTML=html;
   document.getElementById("modalOverlay").classList.remove("hidden");
+  var upBtn=document.getElementById("upgradeImpr");if(upBtn)upBtn.addEventListener("click",upgradeImprovement);
   body.querySelectorAll("[data-impr]").forEach(function(b){b.addEventListener("click",function(){buildImprovement(b.dataset.impr);});});
 }
 function buildImprovement(id){
   var t=state.tiles[selectedTile],d=IMPROVEMENTS[id],r=resource(state.player);
-  if(!t||t.owner!==state.player||!d||d.terrain.indexOf(t.terrain)<0)return;
-  var cost=d.cost-(state.player==="silla"?2:0);
+  if(!t||t.owner!==state.player||t.terrain==="sea"||!d||d.terrain.indexOf(t.terrain)<0)return;
+  var cost=improvementBuildCost(id);
   if(r.money<cost){toast("재정이 부족합니다.");return;}
-  r.money-=cost;t.improvement=id;log((t.city?CITIES[t.city].name:t.region)+"에 "+d.name+"을(를) 건설했습니다.");closeModal();renderAll();save(false);
+  var replaced=t.improvement&&t.improvement!==id;
+  r.money-=cost;t.improvement=id;t.improvementLevel=1;
+  log((t.city?CITIES[t.city].name:t.region)+" 타일에 "+d.name+"을(를) "+(replaced?"교체 설치":"건설")+"했습니다.");
+  closeModal();renderAll();save(false);
+}
+function upgradeImprovement(){
+  var t=state.tiles[selectedTile],r=resource(state.player);
+  if(!t||t.owner!==state.player||!t.improvement||!IMPROVEMENTS[t.improvement])return;
+  var lvl=improvementLevel(t);if(lvl>=3){toast("이미 최대 레벨입니다.");return;}
+  var cost=improvementUpgradeCost(t);if(r.money<cost){toast("재정이 부족합니다.");return;}
+  r.money-=cost;t.improvementLevel=lvl+1;
+  log((t.city?CITIES[t.city].name:t.region)+"의 "+IMPROVEMENTS[t.improvement].name+"을(를) Lv."+(lvl+1)+"로 강화했습니다.");
+  closeModal();renderAll();save(false);
 }
 function recruit(){
   var t=state.tiles[selectedTile];if(!t||!t.city||t.owner!==state.player)return;
@@ -640,11 +689,23 @@ function recruit(){
 function applyIncome(owner){
   if(!resource(owner))return;
   var r=resource(owner),ts=ownedTiles(owner);
-  var food=0,money=0;ts.forEach(function(t){food+=tileFood(t);money+=tileMoney(t);});
+  var baseFood=0,baseMoney=0,bonusFood=0,bonusMoney=0,bonusManpower=0,bonusAuthority=0;
+  ts.forEach(function(t){
+    baseFood+=TERRAIN[t.terrain].food+(owner==="baekje"&&t.terrain==="plain"?1:0);
+    baseMoney+=TERRAIN[t.terrain].money;
+    if(t.improvement&&IMPROVEMENTS[t.improvement]){
+      var d=IMPROVEMENTS[t.improvement],lvl=improvementLevel(t);
+      bonusFood+=(d.food||0)*lvl;
+      bonusMoney+=(d.money||0)*lvl;
+      bonusManpower+=(d.manpower||0)*lvl;
+      bonusAuthority+=(d.authority||0)*lvl;
+    }
+  });
   var units=state.units.filter(function(u){return u.owner===owner;}).reduce(function(a,u){return a+u.troops;},0);
-  r.food=clamp(r.food+Math.round(food*.16)-Math.ceil(units/900),0,999);
-  r.money=clamp(r.money+Math.round(money*.18)+factionCities(owner).length,0,999);
-  r.manpower=clamp(r.manpower+Math.max(1,Math.floor(factionCities(owner).length/2)),0,999);
+  r.food=clamp(r.food+Math.round(baseFood*.035)+bonusFood-Math.ceil(units/900),0,999);
+  r.money=clamp(r.money+Math.round(baseMoney*.045)+bonusMoney+factionCities(owner).length,0,999);
+  r.manpower=clamp(r.manpower+Math.max(1,Math.floor(factionCities(owner).length/2))+bonusManpower,0,999);
+  r.authority=clamp(r.authority+bonusAuthority,0,100);
   if(r.food===0){state.units.filter(function(u){return u.owner===owner;}).forEach(function(u){u.troops=Math.max(40,u.troops-20);});}
 }
 function nearestEnemyCity(u){
@@ -742,19 +803,76 @@ function showTutorial(){
     ["1. 육각 타일","이번 지도는 제공된 삼국시대 지도 이미지를 37×44 격자로 직접 표본화해 육지와 바다를 나눴습니다. 이전의 손으로 그린 육지 폴리곤을 사용하지 않습니다."],
     ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 붉은 칸은 공격 대상입니다."],
     ["3. 지형을 이용하세요","산악은 이동이 느리지만 방어에 좋고, 강을 건너 공격하면 불리합니다. 도로를 놓으면 험지를 더 빨리 지날 수 있습니다."],
-    ["4. 빈 땅도 가치가 있습니다","내 타일에 농장·시장·요새·도로를 지어 도시 사이의 영토까지 발전시킬 수 있습니다."]
+    ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorial").classList.add("hidden");return;}
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorial").classList.remove("hidden");
 }
-function applyCamera(){document.getElementById("camera").setAttribute("transform","translate("+cam.x+" "+cam.y+") scale("+cam.z+")");}
-function resetCamera(){cam={x:0,y:0,z:.94};applyCamera();}
+function landBounds(){
+  var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  if(state)Object.keys(state.tiles).forEach(function(k){
+    var t=state.tiles[k];if(t.terrain==="sea")return;
+    var c=hexCenter(t.q,t.r);
+    minX=Math.min(minX,c[0]-HEX_SIZE);maxX=Math.max(maxX,c[0]+HEX_SIZE);
+    minY=Math.min(minY,c[1]-HEX_SIZE);maxY=Math.max(maxY,c[1]+HEX_SIZE);
+  });
+  if(!isFinite(minX))return{minX:0,minY:0,maxX:880,maxY:900};
+  return{minX:minX,minY:minY,maxX:maxX,maxY:maxY};
+}
+function clampCamera(){
+  if(!state)return;
+  var svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal,b=landBounds(),pad=26;
+  var minX=vb.width-(b.maxX+pad)*cam.z,maxX=pad-b.minX*cam.z;
+  var minY=vb.height-(b.maxY+pad)*cam.z,maxY=pad-b.minY*cam.z;
+  cam.x=minX>maxX?(minX+maxX)/2:clamp(cam.x,minX,maxX);
+  cam.y=minY>maxY?(minY+maxY)/2:clamp(cam.y,minY,maxY);
+}
+function applyCamera(){clampCamera();document.getElementById("camera").setAttribute("transform","translate("+cam.x+" "+cam.y+") scale("+cam.z+")");}
+function fitCameraToLand(){
+  if(!state){applyCamera();return;}
+  var svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal,b=landBounds(),pad=34;
+  var w=Math.max(1,b.maxX-b.minX),h=Math.max(1,b.maxY-b.minY);
+  cam.z=clamp(Math.min((vb.width-pad*2)/w,(vb.height-pad*2)/h),.55,1.35);
+  cam.x=vb.width/2-((b.minX+b.maxX)/2)*cam.z;
+  cam.y=vb.height/2-((b.minY+b.maxY)/2)*cam.z;
+  applyCamera();
+}
+function resetCamera(){cam={x:0,y:0,z:1};fitCameraToLand();}
 function setupCamera(){
   var svg=document.getElementById("mapSvg");
-  svg.addEventListener("wheel",function(e){e.preventDefault();var nz=clamp(cam.z*(e.deltaY<0?1.1:.9),.72,1.8);cam.z=nz;applyCamera();},{passive:false});
-  svg.addEventListener("pointerdown",function(e){if(e.pointerType==="touch"&&pinch)return;svg.setPointerCapture(e.pointerId);drag={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};});
-  svg.addEventListener("pointermove",function(e){if(!drag||drag.id!==e.pointerId)return;var dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;cam.x=drag.cx+dx;cam.y=drag.cy+dy;applyCamera();});
-  svg.addEventListener("pointerup",function(e){if(drag&&drag.id===e.pointerId)drag=null;});
+  svg.addEventListener("wheel",function(e){
+    if(!state)return;e.preventDefault();
+    var rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    var px=vb.x+(e.clientX-rect.left)*vb.width/rect.width;
+    var py=vb.y+(e.clientY-rect.top)*vb.height/rect.height;
+    var mapX=(px-cam.x)/cam.z,mapY=(py-cam.y)/cam.z;
+    var nz=clamp(cam.z*(e.deltaY<0?1.14:.88),.55,3.2);
+    cam.x=px-mapX*nz;cam.y=py-mapY*nz;cam.z=nz;applyCamera();
+  },{passive:false});
+  svg.addEventListener("pointerdown",function(e){
+    if(e.button!=null&&e.button!==0)return;
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};
+  });
+  svg.addEventListener("pointermove",function(e){
+    if(!drag||drag.id!==e.pointerId)return;
+    var dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(!drag.moved&&Math.hypot(dx,dy)>5){
+      drag.moved=true;
+      try{svg.setPointerCapture(e.pointerId);}catch(err){}
+    }
+    if(!drag.moved)return;
+    var rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    cam.x=drag.cx+dx*vb.width/rect.width;
+    cam.y=drag.cy+dy*vb.height/rect.height;
+    applyCamera();
+  });
+  svg.addEventListener("pointerup",function(e){
+    if(drag&&drag.id===e.pointerId){
+      try{if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);}catch(err){}
+      drag=null;
+    }
+  });
+  svg.addEventListener("pointercancel",function(e){if(drag&&drag.id===e.pointerId)drag=null;});
 }
 function bind(){
   document.getElementById("startBtn").addEventListener("click",startNew);
