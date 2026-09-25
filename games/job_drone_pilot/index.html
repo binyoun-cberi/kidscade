@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>드론조종사 시뮬레이터</title>
-<link rel="stylesheet" href="drone-sim.css?v=1">
+<link rel="stylesheet" href="drone-sim.css?v=2">
 <script src="../../audio-manager.js?v=20260917-1"></script>
 </head>
 <body>
@@ -36,10 +36,11 @@
       <div class="remoteBrand">KIDSCADE DRONE</div>
       <div class="buttonRow">
         <button id="cameraBtn" type="button">📷 촬영</button>
-        <button id="fpvBtn" type="button">FPV</button>
+        <button id="focusBtn" type="button">🎯 드론 찾기</button>
+        <button id="fpvBtn" type="button">드론 카메라</button>
         <button id="rthBtn" type="button">↩ 귀환</button>
       </div>
-      <div id="keyGuide">WASD 이동 · 방향키 고도/회전 · C 촬영 · V 시점 · R 귀환</div>
+      <div id="keyGuide">화면 드래그 둘러보기 · F 드론 찾기 · WASD 이동 · 방향키 고도/회전 · C 촬영 · V 드론 카메라 · R 귀환</div>
     </div>
     <div class="stickWrap right">
       <div class="stickLabel">이동</div>
@@ -52,10 +53,12 @@
   <div class="card">
     <div class="badge">직업 체험 · 드론조종사</div>
     <h1>드론조종사 시뮬레이터</h1>
-    <p>두 개의 조종 스틱으로 드론을 띄우고 항공 촬영, 시설 점검, 물품 배송, 수색, 장애물 비행 임무를 해결하세요. 드론은 자동으로 수평을 잡아 주지만 관성이 조금 남습니다.</p>
+    <p>지상에 선 드론 조종사의 시점에서 두 개의 조종 스틱으로 드론을 띄우세요. 화면 빈 곳을 드래그하면 주변을 둘러볼 수 있고, 드론을 놓쳤다면 ‘드론 찾기’를 누르면 됩니다. 항공 촬영, 시설 점검, 물품 배송, 수색, 장애물 비행 임무를 해결하세요.</p>
     <div class="guideGrid">
       <div><b>왼쪽 스틱</b><span>고도 · 기체 회전</span></div>
       <div><b>오른쪽 스틱</b><span>전후 · 좌우 이동</span></div>
+      <div><b>조종사 시점</b><span>화면 빈 곳을 드래그해 주변 둘러보기</span></div>
+      <div><b>드론 찾기</b><span>F 또는 버튼으로 기체 방향 다시 보기</span></div>
       <div><b>자동 호버</b><span>스틱을 놓으면 천천히 안정화</span></div>
       <div><b>RTH</b><span>안전 고도로 올라간 뒤 출발점 복귀</span></div>
     </div>
@@ -76,6 +79,6 @@
 </div>
 <div id="loading" class="loading"><div class="spinner"></div><b>비행장을 준비하는 중...</b><small id="loadNote">3D 에셋을 불러오고 있어요.</small></div>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="drone-sim.js?v=1"></script>
+<script type="module" src="drone-sim.js?v=2"></script>
 </body>
 </html>
