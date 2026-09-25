@@ -122,7 +122,7 @@ class Simulation{
   const s=this.state;if(s.rewardChoices.length||s.cleanupChoices.length){s.rewardBacklog++;return}s.rewardChoices=this.makeRewards()
  }
  resolveDisaster(d){
-  const s=this.state,i=s.disasters.indexOf(d);if(i<0)return;s.disasters.splice(i,1);s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',(d.type==='wildfire'?'산불':'홍수')+'을 막아냈습니다!');
+  const s=this.state,i=s.disasters.indexOf(d);if(i<0)return;s.disasters.splice(i,1);s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',d.type==='wildfire'?'산불이 진정됐습니다!':'홍수가 빠져나갔습니다!');
   if(!s.disasters.length){const rest=s.time<180?12:s.time<300?9:6;s.next.in=Math.max(s.next.in,rest+this.rand()*3);}
   this.openReward();if(s.tutorial&&s.tutorialStep===3)s.tutorialStep=4;
  }
