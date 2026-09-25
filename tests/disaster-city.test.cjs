@@ -52,7 +52,8 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=3');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=4');
+ assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
 
