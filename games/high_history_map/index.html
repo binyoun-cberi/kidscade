@@ -838,33 +838,34 @@ function fitCameraToLand(){
   applyCamera();
 }
 function resetCamera(){cam={x:0,y:0,z:1};fitCameraToLand();}
+function screenToSvg(svg,x,y){
+  var p=svg.createSVGPoint();p.x=x;p.y=y;
+  var ctm=svg.getScreenCTM();
+  return ctm?p.matrixTransform(ctm.inverse()):{x:x,y:y};
+}
 function setupCamera(){
   var svg=document.getElementById("mapSvg");
   svg.addEventListener("wheel",function(e){
     if(!state)return;e.preventDefault();
-    var rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
-    var px=vb.x+(e.clientX-rect.left)*vb.width/rect.width;
-    var py=vb.y+(e.clientY-rect.top)*vb.height/rect.height;
-    var mapX=(px-cam.x)/cam.z,mapY=(py-cam.y)/cam.z;
+    var p=screenToSvg(svg,e.clientX,e.clientY);
+    var mapX=(p.x-cam.x)/cam.z,mapY=(p.y-cam.y)/cam.z;
     var nz=clamp(cam.z*(e.deltaY<0?1.14:.88),.55,3.2);
-    cam.x=px-mapX*nz;cam.y=py-mapY*nz;cam.z=nz;applyCamera();
+    cam.x=p.x-mapX*nz;cam.y=p.y-mapY*nz;cam.z=nz;applyCamera();
   },{passive:false});
   svg.addEventListener("pointerdown",function(e){
     if(e.button!=null&&e.button!==0)return;
-    drag={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};
+    var p=screenToSvg(svg,e.clientX,e.clientY);
+    drag={id:e.pointerId,x:p.x,y:p.y,screenX:e.clientX,screenY:e.clientY,cx:cam.x,cy:cam.y,moved:false};
   });
   svg.addEventListener("pointermove",function(e){
     if(!drag||drag.id!==e.pointerId)return;
-    var dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-    if(!drag.moved&&Math.hypot(dx,dy)>5){
+    var p=screenToSvg(svg,e.clientX,e.clientY),sdx=e.clientX-drag.screenX,sdy=e.clientY-drag.screenY;
+    if(!drag.moved&&Math.hypot(sdx,sdy)>5){
       drag.moved=true;
       try{svg.setPointerCapture(e.pointerId);}catch(err){}
     }
     if(!drag.moved)return;
-    var rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
-    cam.x=drag.cx+dx*vb.width/rect.width;
-    cam.y=drag.cy+dy*vb.height/rect.height;
-    applyCamera();
+    cam.x=drag.cx+(p.x-drag.x);cam.y=drag.cy+(p.y-drag.y);applyCamera();
   });
   svg.addEventListener("pointerup",function(e){
     if(drag&&drag.id===e.pointerId){
