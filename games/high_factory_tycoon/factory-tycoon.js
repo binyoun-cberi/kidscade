@@ -444,7 +444,7 @@ function rendererEventsSetup(){
 }
 
 function spawnItem(x,y,dir,payload,fromMachine=false){
-  if(items.length>=MAX_ITEMS)return null;
+  if(items.length>=maxItems())return null;
   if(items.some(i=>i.x===x&&i.y===y))return null;
   const it={id:itemSeq++,x,y,dir,progress:fromMachine?0:.02,payload:clonePlain(payload),wait:0,view:makePayloadView(payload)};
   itemGroup.add(it.view);items.push(it);return it;
@@ -538,7 +538,7 @@ function tickItems(dt){
 function tickSuppliers(dt){
   spawnClock+=dt;if(spawnClock<1.45)return;spawnClock=0;
   for(const s of SUPPLIERS){
-    if(items.length>=MAX_ITEMS)break;
+    if(items.length>=maxItems())break;
     if(!isOccupied(s.x,s.y))spawnItem(s.x,s.y,0,{layers:[{id:s.id,state:'raw'}],packaged:false});
   }
 }
@@ -576,8 +576,20 @@ function saveDiscovery(){
   pendingDiscovery=null;ui.discover.classList.add('hidden');paused=false;ui.pauseBtn.textContent='Ⅱ';sound('ok');saveGame(false);showToast('도감에 저장했어요: '+name,1800);
 }
 function tickOrders(dt){orderClock+=dt;if(orderClock>=180){orderClock=0;pickOrders();showToast('인기 메뉴가 바뀌었어요!',1800)}}
+function rawSourceFor(id){
+  if(id==='toast')return 'bread';
+  if(id==='tomato_slice')return 'tomato';
+  if(id==='egg_cooked')return 'egg';
+  if(id==='bacon')return 'bacon_raw';
+  return id;
+}
+function recipeAvailable(recipe){
+  const available=new Set(SUPPLIERS.map(s=>s.id));
+  return recipe.layers.every(id=>available.has(rawSourceFor(id)));
+}
 function pickOrders(){
-  const shuffled=[...RECIPES].sort(()=>Math.random()-.5);orders=shuffled.slice(0,3);renderOrders();
+  const pool=RECIPES.filter(recipeAvailable);
+  const shuffled=[...pool].sort(()=>Math.random()-.5);orders=shuffled.slice(0,Math.min(3,shuffled.length));renderOrders();
 }
 function renderOrders(){
   ui.orderList.innerHTML='';
@@ -630,47 +642,100 @@ function frame(now){
 
 function saveKey(slot=activeSlot){return SAVE_BASE+slot}
 function serialize(){
-  return {version:1,blueprint:snapshotBlueprint(),stats,gameTime,challengeIndex,camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},savedAt:Date.now()};
+  return {version:2,mapSize,blueprint:snapshotBlueprint(),stats,gameTime,challengeIndex,camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},savedAt:Date.now()};
 }
 function saveGame(notify=true){
   try{window.KidscadeStorage?.setJson(saveKey(),serialize());refreshSlots();if(notify){sound('ok');showToast('공장 '+activeSlot+'을 저장했어요.')}}catch(_){if(notify)showToast('저장하지 못했어요.')}
 }
-function hasSave(slot=activeSlot){try{return !!window.KidscadeStorage?.getJson(saveKey(slot),null)}catch(_){return false}}
+function readSave(slot=activeSlot){try{return window.KidscadeStorage?.getJson(saveKey(slot),null)||null}catch(_){return null}}
+function hasSave(slot=activeSlot){return !!readSave(slot)}
 function loadGame(){
   try{
-    const s=window.KidscadeStorage?.getJson(saveKey(),null);if(!s)return false;
+    const s=readSave();if(!s)return false;
+    const loadedSize=MAP_PRESETS[s.mapSize]?s.mapSize:'large';
+    applyMapSize(loadedSize,{resetView:false});
     blueprint=new Map((s.blueprint||[]).map(([k,v])=>[k,{...v}]));
     stats=Object.assign({shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}},s.stats||{});stats.shipTimes=[];
     gameTime=Number(s.gameTime)||0;challengeIndex=Number(s.challengeIndex)||0;
-    cameraTarget.set(Number(s.camera?.x)||0,0,Number(s.camera?.z)||0);viewSize=clamp(Number(s.camera?.view)||34,18,62);
-    items.forEach(removeItemView);items=[];machineStates.clear();rebuildFactoryVisuals();resize();return true;
+    const preset=MAP_PRESETS[mapSize];
+    cameraTarget.set(Number(s.camera?.x)||0,0,Number(s.camera?.z)||0);
+    viewSize=clamp(Number(s.camera?.view)||preset.view,preset.minView,60);
+    items.forEach(removeItemView);items=[];machineStates.clear();pickOrders();rebuildFactoryVisuals();resize();return true;
   }catch(_){return false}
 }
-function newGame(){
-  blueprint.clear();items.forEach(removeItemView);items=[];machineStates.clear();effects=[];stats={shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}};gameTime=0;challengeIndex=0;undoStack=[];redoStack=[];cameraTarget.set(0,0,0);viewSize=34;pickOrders();rebuildFactoryVisuals();resize();syncUndo();CHALLENGES[0].reset?.();saveGame(false);
+function newGame(size=selectedMapSize){
+  applyMapSize(size);
+  blueprint.clear();items.forEach(removeItemView);items=[];machineStates.clear();effects=[];stats={shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}};gameTime=0;challengeIndex=0;undoStack=[];redoStack=[];
+  cameraTarget.set(0,0,0);viewSize=MAP_PRESETS[mapSize].view;pickOrders();rebuildFactoryVisuals();resize();syncUndo();CHALLENGES[0].reset?.();saveGame(false);
 }
-function startGame(load){
-  if(load&&!loadGame())newGame();else if(!load)newGame();
-  ui.intro.classList.add('hidden');running=true;paused=false;ui.pauseBtn.textContent='Ⅱ';window.KidscadeGame?.start?.();updateHud();showToast('공장 '+activeSlot+' · 재료 공급기가 움직이기 시작했어요.',1700);
+function startGame(load,tutorial=false){
+  tutorialMode=!!tutorial;
+  if(load&&!loadGame())newGame(selectedMapSize);else if(!load)newGame(tutorial?'small':selectedMapSize);
+  ui.intro.classList.add('hidden');running=true;paused=false;ui.pauseBtn.textContent='Ⅱ';window.KidscadeGame?.start?.();updateHud();
+  if(tutorialMode)beginTutorialCoach();else ui.tutorialCoach.classList.add('hidden');
+  showToast('공장 '+activeSlot+' · '+MAP_PRESETS[mapSize].label+'형 맵 · 재료 공급 시작!',1700);
 }
 function togglePause(){
   paused=!paused;ui.pauseBtn.textContent=paused?'▶':'Ⅱ';
   if(paused)window.KidscadeGame?.pause?.();else window.KidscadeGame?.resume?.();
 }
 function setTool(t){
-  selectedTool=t;document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));sound('click');
+  selectedTool=t;
+  document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
+  document.body.classList.toggle('moveMode',t==='move');ui.moveBtn.classList.toggle('active',t==='move');
+  sound('click');
 }
 function rotateTool(){rotation=(rotation+1)%4;sound('click');showToast(['오른쪽','아래','왼쪽','위'][rotation]+' 방향')}
 function toggleAnalysis(){analysis=!analysis;ui.analysisBtn.classList.toggle('active',analysis);ui.analysisLegend.classList.toggle('hidden',!analysis);rebuildFactoryVisuals();showToast(analysis?'막힌 흐름을 색으로 표시해요.':'분석 보기를 껐어요.')}
 function cycleSpeed(){speed=speed===1?2:speed===2?4:1;ui.speedBtn.textContent='×'+speed;sound('click')}
-function setContinueVisibility(){ui.continueBtn.disabled=!hasSave();ui.continueBtn.textContent=hasSave()?'공장 '+activeSlot+' 이어하기':'공장 '+activeSlot+' · 저장 없음'}
+function setContinueVisibility(){
+  const saved=readSave();
+  ui.continueBtn.disabled=!saved;
+  const label=saved?(MAP_PRESETS[saved.mapSize]?.label||'대'):null;
+  ui.continueBtn.textContent=saved?'공장 '+activeSlot+' 이어하기 · '+label:'공장 '+activeSlot+' · 저장 없음';
+}
 function refreshSlots(){
   document.querySelectorAll('.slot').forEach(b=>{
-    const n=Number(b.dataset.slot);b.classList.toggle('active',n===activeSlot);b.classList.toggle('saved',hasSave(n));
+    const n=Number(b.dataset.slot),saved=readSave(n);b.classList.toggle('active',n===activeSlot);b.classList.toggle('saved',!!saved);
+    b.title=saved?'저장된 맵: '+(MAP_PRESETS[saved.mapSize]?.label||'대')+'형':'비어 있는 저장 슬롯';
   });
   setContinueVisibility();
 }
+function refreshSizeButtons(){
+  document.querySelectorAll('.sizeCard').forEach(b=>b.classList.toggle('active',b.dataset.size===selectedMapSize));
+  if(ui.tutorialBtn)ui.tutorialBtn.textContent=selectedMapSize==='small'?'소형 튜토리얼':'소형으로 튜토리얼';
+}
+function selectMapSize(size){
+  if(!MAP_PRESETS[size])return;
+  selectedMapSize=size;refreshSizeButtons();sound('click');
+}
 function selectSlot(n){activeSlot=clamp(Number(n)||1,1,3);refreshSlots();sound('click')}
+const TUTORIAL_STEPS=[
+  {title:'공장을 둘러봐요',text:'오른쪽 위의 ✋ 이동을 누르고 화면을 잡아 끌어 보세요. 큰 공장에서도 원하는 곳을 자세히 볼 수 있어요.',tool:'move'},
+  {title:'컨베이어를 그어요',text:'벨트 도구로 왼쪽의 식빵 공급기에서 오른쪽으로 길을 그어 보세요. 손가락을 떼기 전까지 이어집니다.',tool:'belt'},
+  {title:'재료를 가공해요',text:'토마토 라인에 🔪 자르기를 놓으면 토마토 조각으로 바뀝니다. 기계의 화살표 방향도 확인해 보세요.',tool:'slicer'},
+  {title:'샌드위치를 쌓아요',text:'🥪 조립기는 앞에서 온 음식 위에 옆에서 온 재료를 올립니다. 빵과 치즈를 서로 다른 입력으로 연결해 보세요.',tool:'assembler'},
+  {title:'출고장까지 보내요',text:'완성품을 오른쪽 초록 출고장까지 연결하면 돈과 출고 수가 올라갑니다. 이제 자유롭게 공장을 넓혀 보세요.',tool:'belt'}
+];
+function beginTutorialCoach(){
+  tutorialStepIndex=0;ui.tutorialCoach.classList.remove('hidden');renderTutorialStep();
+}
+function renderTutorialStep(){
+  const step=TUTORIAL_STEPS[tutorialStepIndex];if(!step){finishTutorial();return}
+  ui.tutorialStep.textContent='튜토리얼 '+(tutorialStepIndex+1)+' / '+TUTORIAL_STEPS.length;
+  ui.tutorialTitle.textContent=step.title;ui.tutorialText.textContent=step.text;
+  ui.tutorialNext.textContent=tutorialStepIndex===TUTORIAL_STEPS.length-1?'자유롭게 만들기':'다음';
+  if(step.tool)setTool(step.tool);
+}
+function nextTutorial(){tutorialStepIndex++;if(tutorialStepIndex>=TUTORIAL_STEPS.length)finishTutorial();else renderTutorialStep()}
+function finishTutorial(){
+  tutorialMode=false;ui.tutorialCoach.classList.add('hidden');setTool('belt');saveGame(false);showToast('튜토리얼 완료! 이제 마음대로 만들어 보세요.',1900);
+}
+function startSmallTutorial(){
+  if(hasSave()&&!confirm('공장 '+activeSlot+'의 저장 내용을 소형 튜토리얼 공장으로 덮어쓸까요?'))return;
+  selectedMapSize='small';refreshSizeButtons();startGame(false,true);
+}
+
 function openBook(){
   renderBook();ui.book.classList.remove('hidden');paused=true;ui.pauseBtn.textContent='▶';
 }
