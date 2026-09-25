@@ -2063,16 +2063,16 @@
     },
     {
       "id": "swipe_fraction",
-      "title": "분수 소수 대결!",
-      "href": "games/swipe_fraction/분수 소수 대결!.html",
+      "title": "프랙션 대시",
+      "href": "games/swipe_fraction/분수 소수 대결!.html?v=2",
       "category": "math",
       "age": "high",
-      "icon": "⚖️",
-      "description": "누가 더 클까요? 스와이프로 휙휙!",
+      "icon": "🏃",
+      "description": "3레인 숫자 도시를 달리며 장애물을 피하고, 분수와 소수 중 더 큰 수의 게이트를 골라 콤보를 이어 가는 수학 액션 러너!",
       "scoreKey": "swipeFractionScore",
       "rankKey": "swipeFractionRank",
       "subject": "math",
-      "genre": "quiz",
+      "genre": "action",
       "difficulty": "medium",
       "sessionMinutes": 5,
       "players": [
@@ -2082,7 +2082,7 @@
         "touch",
         "keyboard"
       ],
-      "qualityStatus": "standard",
+      "qualityStatus": "featured",
       "classroom": false
     },
     {
