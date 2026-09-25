@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>역사 드림리그: 씨앗 FC 감독</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <div id="app">
@@ -78,7 +78,10 @@
         <div class="mini-card">
           <h3>감독 지시</h3>
           <div id="liveTacticText"></div>
-          <button id="quickSubBtn" class="secondary full" type="button">추천 교체</button>
+          <div class="live-manager-actions">
+            <button id="quickSubBtn" class="secondary full" type="button">🔄 선수 교체</button>
+            <button id="playerInstructionBtn" class="secondary full" type="button">📣 개인 지시</button>
+          </div>
         </div>
         <div class="mini-card event-card">
           <h3>경기 상황</h3>
@@ -139,9 +142,9 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </div>
 
-<script src="data.js?v=6"></script>
-<script src="sim.js?v=6"></script>
-<script src="game.js?v=6"></script>
+<script src="data.js?v=7"></script>
+<script src="sim.js?v=7"></script>
+<script src="game.js?v=7"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_fc_manager" data-title="역사 드림리그: 씨앗 FC 감독" data-shell="true" data-orientation="landscape"></script>
 </body>
 </html>
