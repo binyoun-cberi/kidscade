@@ -748,12 +748,14 @@ function matchLoop(ts){
   if(!match.finished)raf=requestAnimationFrame(matchLoop);
 }
 function quickSub(){
-  if(!match||match.finished)return;var side=match.userSide,t=match.teams[side];
+  if(!match||match.finished)return;
+  if((match.userSubs||0)>=5){toast('이 경기에서는 교체 5번을 모두 썼어요.');return;}
+  var side=match.userSide,t=match.teams[side];
   var on=t.actors.slice().sort(function(a,b){return a.energy-b.energy;})[0];
   var ids=t.actors.map(function(a){return a.id;});
   var bench=state.roster.filter(function(p){return ids.indexOf(p.id)<0;}).sort(function(a,b){return S.playerScore(b,on.slot)-S.playerScore(a,on.slot);})[0];
   if(!bench){toast('교체할 후보가 없어요.');return;}
-  if(match.substitute(side,on.id,bench)){toast(on.p.name+' → '+bench.name+' · 다음 경기 선발은 그대로예요.');}
+  if(match.substitute(side,on.id,bench)){match.userSubs=(match.userSubs||0)+1;toast(on.p.name+' → '+bench.name+' · 다음 경기 선발은 그대로예요.');}
 }
 function substitutionModal(){
   if(!match||match.finished)return;
@@ -796,7 +798,7 @@ function showMatchResult(m,f,isHome){
   var historyMoment='';
   if(star){
     var original=playerById(star.id)||D.world.find(function(p){return p.id===star.id;});
-    var action=Number(starStats.goals||0)?starStats.goals+'골':Number(starStats.assists||0)?starStats.assists+'도움':Number(starStats.keyPasses||0)?starStats.keyPasses+'번의 키패스':Number(starStats.progressivePasses||0)+'번의 전진 패스';
+    var action=Number(starStats.goals||0)?starStats.goals+'골':Number(starStats.assists||0)?starStats.assists+'도움':Number(starStats.keyPasses||0)?starStats.keyPasses+'번의 키패스':Number(starStats.progressivePasses||0)?starStats.progressivePasses+'번의 전진 패스':Number(starStats.saves||0)?starStats.saves+'번의 선방':Number(starStats.touches||0)+'번의 주요 관여';
     historyMoment='<div class="history-moment"><b>오늘의 역사 선수 · '+esc(star.name)+'</b><span>'+esc((original&&original.footballStyle)||star.footballStyle||'균형형')+'으로 '+esc(action)+'을 기록했습니다.</span><small>'+esc((original&&original.memory)||star.memory||'')+'</small></div>';
   }
   modalBody.innerHTML='<span class="eyebrow">'+esc(o.name)+'전</span><h2>'+verdict+'</h2><div class="result-score">'+mine+' : '+theirs+'</div><div class="fact-box"><b>감독 메모</b><br>'+esc(why)+'</div>'+historyMoment+'<div class="action-row" style="margin-top:16px"><button id="resultHome" class="primary" type="button">감독실로</button><button id="resultAnalysis" class="secondary" type="button">📊 경기 분석</button><button id="resultTrain" class="secondary" type="button">바로 훈련</button></div>';
