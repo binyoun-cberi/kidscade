@@ -276,11 +276,11 @@
     {
       "id": "job_drone_pilot",
       "title": "드론조종사 시뮬레이터",
-      "href": "games/job_drone_pilot/index.html?v=1",
+      "href": "games/job_drone_pilot/index.html?v=2",
       "category": "job",
       "age": "job",
       "icon": "🛸",
-      "description": "두 개의 조종 스틱으로 3D 드론을 직접 날리며 항공 촬영·시설 점검·긴급 배송·실종자 수색·정밀 장애물 비행을 수행하는 드론조종사 직업 체험 시뮬레이터! 자동 호버, FPV 카메라, 배터리와 자동귀환(RTH), 모바일 터치 조종을 지원합니다.",
+      "description": "지상 드론 조종사의 시점에서 화면을 직접 둘러보며 3D 드론을 날리는 직업 체험 시뮬레이터! 두 스틱 조종, 드론 찾기, 선택형 드론 카메라, 자동 호버·RTH를 활용해 항공 촬영·시설 점검·긴급 배송·실종자 수색·정밀 비행 임무를 수행합니다.",
       "subject": "career",
       "genre": "simulation",
       "difficulty": "medium",
@@ -389,11 +389,7 @@
     {
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 업무 시뮬레이터",
-<<<<<<< Updated upstream
       "href": "games/teacher-classroom-sim-prototype/index.html?v=49",
-=======
-      "href": "games/teacher-classroom-sim-prototype/index.html?v=47",
->>>>>>> Stashed changes
       "category": "job",
       "age": "job",
       "icon": "🏫",
