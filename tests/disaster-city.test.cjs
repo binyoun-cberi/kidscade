@@ -52,9 +52,15 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=6');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=7');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
+});
+
+test('Disaster City renderer declares citizen movement targets locally',()=>{
+ const renderer=fs.readFileSync(path.join(game,'renderer.js'),'utf8');
+ assert.match(renderer,/const\\s+targets\\s*=\\s*\\[D\\.TOWN_X/);
+ assert.doesNotMatch(renderer,/lastCitizenTime\\s*=\\s*s\\.time\\s*,\\s*targets\\s*=/);
 });
 
 test('Disaster City core simulation supports upgrades, deck cleanup and spatial defense',()=>{
