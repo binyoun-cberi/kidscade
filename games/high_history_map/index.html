@@ -38,7 +38,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .zoomHint{white-space:nowrap}
 .hex{stroke:#a5bad0;stroke-opacity:.25;stroke-width:1.3;vector-effect:non-scaling-stroke;cursor:pointer;transition:.12s}
 .hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.seaHex{stroke-opacity:.08;fill-opacity:.82}.landHex{stroke-opacity:.32}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
-.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}
+.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
 .unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:17px;text-anchor:middle;pointer-events:none}.unitCount{font-size:7.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px;pointer-events:none}
@@ -59,7 +59,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .nationGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}.nationCard{text-align:left;padding:13px;border:2px solid #314964;border-radius:15px;background:#162741;color:#fff;min-height:140px}.nationCard.selected{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.15)}.nationCard strong{font-size:18px}.nationCard p{font-size:9.5px;color:#b8c7d8;line-height:1.45}.trait{font-size:8.5px;color:#f0d58c}
 .startActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.startActions label{margin-left:auto;font-size:9px;color:#b9c7d8}
 .modalHead{display:flex;justify-content:space-between;gap:10px}.modalHead h2{margin:3px 0 6px}.closeBtn{width:34px;height:34px;border-radius:10px;border:1px solid #405b79;background:#203650;color:#fff;font-weight:1000}
-.choiceGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}.choice{padding:10px;text-align:left;border:1px solid #3b5674;border-radius:12px;background:#172941;color:#fff}.choice b{display:block;font-size:10px}.choice span{display:block;font-size:8px;color:#adbed1;margin-top:3px}
+.choiceGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}.choice{padding:10px;text-align:left;border:1px solid #3b5674;border-radius:12px;background:#172941;color:#fff}.choice b{display:block;font-size:10px}.choice span{display:block;font-size:8px;color:#adbed1;margin-top:3px}.choiceArt{width:26px;height:26px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55));margin-bottom:5px}
 .toast{position:absolute;z-index:30;left:50%;top:55px;transform:translateX(-50%) translateY(-8px);opacity:0;transition:.2s;pointer-events:none;padding:8px 12px;border:1px solid #4c6684;border-radius:999px;background:#0c1727;font-size:9px;font-weight:1000;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .tutorial{position:absolute;z-index:25;left:50%;bottom:16px;transform:translateX(-50%);width:min(500px,90%);padding:11px 13px;border:1px solid #dcb148;border-radius:13px;background:#17263c;box-shadow:0 14px 40px rgba(0,0,0,.4)}.tutorial b{font-size:10px;color:var(--gold)}.tutorial p{font-size:9px;color:#c9d5e2;line-height:1.45;margin:3px 0 7px}
 @media(max-width:900px){#main{grid-template-columns:160px minmax(360px,1fr) 215px}.brand small{display:none}.resources .res{min-width:60px}.panel{padding:8px}}
@@ -91,7 +91,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
     <section class="mapWrap" id="mapWrap">
       <div class="mapHud">
         <div class="mapHint" id="mapHint">제공된 삼국시대 지도의 해안선을 직접 타일화했습니다. 한반도·요동·중국 연안·규슈의 실루엣을 따라 진군하세요.</div>
-        <div class="zoomHint">드래그 이동 · 휠/핀치 확대</div>
+        <div class="zoomHint">드래그 이동 · 휠 확대 · 클릭 선택</div>
       </div>
       <svg id="mapSvg" viewBox="0 0 880 900" aria-label="사용자가 제공한 삼국시대 동북아 지도의 해안선을 육각 타일로 옮긴 전략 지도">
         <g id="camera">
@@ -162,6 +162,7 @@ var reachable={};
 var tutorialStep=0;
 var cam={x:0,y:0,z:1};
 var drag=null,pinch=null;
+var suppressClickUntil=0;
 
 var FACTIONS={
   goguryeo:{name:"고구려",color:"#536bd6",icon:"🐎",capital:"pyongyang",trait:"산악 방어 +15% · 북방 기동에 유리",desc:"만주와 한반도 북부의 넓은 영역을 바탕으로 중부 전선을 압박합니다."},
@@ -182,14 +183,15 @@ var TERRAIN={
   mountain:{name:"산악",fill:"#555e63",move:2,food:0,money:1,def:1.3,icon:"🏔️"}
 };
 
+var IMPROVEMENT_ART_ROOT="../../assets/game/ui/unification-war/";
 var IMPROVEMENTS={
-  farm:{name:"농장",icon:"🌾",cost:10,terrain:["plain","coast","hill"],food:2,money:0,manpower:0,authority:0,desc:"식량 생산 +2/레벨"},
-  tradepost:{name:"교역소",icon:"🏪",cost:12,terrain:["plain","coast","hill","mountain"],food:0,money:3,manpower:0,authority:0,desc:"재정 +3/레벨"},
-  barracks:{name:"병영",icon:"🛡️",cost:15,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:2,authority:1,desc:"인력 +2 · 권위 +1/레벨"},
-  mine:{name:"광산",icon:"⛏️",cost:14,terrain:["hill","mountain"],food:0,money:4,manpower:0,authority:0,desc:"재정 +4/레벨"},
-  fort:{name:"요새",icon:"🏯",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"방어 +25%"},
-  road:{name:"도로",icon:"🛣️",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"험지 이동 비용 감소"},
-  fishery:{name:"어장",icon:"🎣",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"}
+  farm:{name:"농장",icon:"🌾",art:"farm.svg",cost:10,terrain:["plain","coast","hill"],food:2,money:0,manpower:0,authority:0,desc:"식량 생산 +2/레벨"},
+  tradepost:{name:"교역소",icon:"🏪",art:"tradepost.svg",cost:12,terrain:["plain","coast","hill","mountain"],food:0,money:3,manpower:0,authority:0,desc:"재정 +3/레벨"},
+  barracks:{name:"병영",icon:"🛡️",art:"barracks.svg",cost:15,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:2,authority:1,desc:"인력 +2 · 권위 +1/레벨"},
+  mine:{name:"광산",icon:"⛏️",art:"mine.svg",cost:14,terrain:["hill","mountain"],food:0,money:4,manpower:0,authority:0,desc:"재정 +4/레벨"},
+  fort:{name:"요새",icon:"🏯",art:"fort.svg",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"방어 +25%"},
+  road:{name:"도로",icon:"🛣️",art:"road.svg",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"험지 이동 비용 감소"},
+  fishery:{name:"어장",icon:"🎣",art:"fishery.svg",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"}
 };
 
 var CITIES={
@@ -436,14 +438,17 @@ function renderMap(){
     var t=state.tiles[k],pts=hexPoints(t.q,t.r),p=svgEl("polygon",{points:pts,fill:TERRAIN[t.terrain].fill,class:"hex "+(t.terrain==="sea"?"seaHex":"landHex"),"data-key":k});
     if(selectedTile===k)p.classList.add("selected");
     if(reachable[k]!=null)p.classList.add(reachable[k].attack?"attackable":"reachable");
-    p.addEventListener("pointerup",function(e){if(drag&&drag.moved)return;e.stopPropagation();onTileClick(k);});
+    p.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();onTileClick(k);});
     hexLayer.appendChild(p);
     if(t.owner&&t.terrain!=="sea"&&FACTIONS[t.owner]){
       hexLayer.appendChild(svgEl("polygon",{points:pts,fill:FACTIONS[t.owner].color,class:"hexOverlay","pointer-events":"none"}));
     }
     if(t.improvement&&IMPROVEMENTS[t.improvement]){
-      var c=hexCenter(t.q,t.r),im=svgEl("text",{x:c[0],y:c[1]+4,class:"hexImpr"});im.textContent=IMPROVEMENTS[t.improvement].icon;hexLayer.appendChild(im);
-      if((t.improvementLevel||1)>1){var lv=svgEl("text",{x:c[0]+8,y:c[1]+10,class:"unitCount"});lv.textContent="L"+(t.improvementLevel||1);hexLayer.appendChild(lv);}
+      var c=hexCenter(t.q,t.r),d=IMPROVEMENTS[t.improvement],src=IMPROVEMENT_ART_ROOT+(d.art||"");
+      var im=svgEl("image",{x:c[0]-9,y:c[1]-9,width:18,height:18,href:src,class:"hexImprImage",preserveAspectRatio:"xMidYMid meet","pointer-events":"none"});
+      im.setAttributeNS("http://www.w3.org/1999/xlink","href",src);
+      hexLayer.appendChild(im);
+      if((t.improvementLevel||1)>1){var lv=svgEl("text",{x:c[0]+8,y:c[1]+10,class:"hexImprLevel"});lv.textContent="L"+(t.improvementLevel||1);hexLayer.appendChild(lv);}
     }
   });
   drawRivers(riverLayer);
@@ -468,7 +473,7 @@ function renderMap(){
     g.appendChild(svgEl("circle",{cx:0,cy:0,r:10.5,fill:f.color,class:"unitRing"}));
     var ic=svgEl("text",{x:0,y:7,class:"unitIcon"});ic.textContent=u.type==="cavalry"?"🐎":u.type==="archer"?"🏹":"🛡️";g.appendChild(ic);
     var ct=svgEl("text",{x:0,y:23,class:"unitCount"});ct.textContent=fmt(u.troops);g.appendChild(ct);
-    g.addEventListener("pointerup",function(e){if(drag&&drag.moved)return;e.stopPropagation();selectUnit(u.id);});
+    g.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();selectUnit(u.id);});
     unitLayer.appendChild(g);
   });
 }
@@ -651,7 +656,7 @@ function openBuild(){
   html+="<div class=\"choiceGrid\">"+Object.keys(IMPROVEMENTS).map(function(id){
     var d=IMPROVEMENTS[id],ok=d.terrain.indexOf(t.terrain)>=0,cost=improvementBuildCost(id),same=t.improvement===id;
     var verb=same?"현재 시설":(current?"교체":"건설");
-    return "<button class=\"choice\" data-impr=\""+id+"\" "+(!ok||same?"disabled":"")+"><b>"+d.icon+" "+d.name+" · 💰"+cost+"</b><span>"+verb+" · "+d.desc+"</span></button>";
+    return "<button class=\"choice\" data-impr=\""+id+"\" "+(!ok||same?"disabled":"")+"><img class=\"choiceArt\" src=\""+IMPROVEMENT_ART_ROOT+d.art+"\" alt=\"\"><b>"+d.icon+" "+d.name+" · 💰"+cost+"</b><span>"+verb+" · "+d.desc+"</span></button>";
   }).join("")+"</div>";
   body.innerHTML=html;
   document.getElementById("modalOverlay").classList.remove("hidden");
@@ -843,8 +848,14 @@ function screenToSvg(svg,x,y){
   var ctm=svg.getScreenCTM();
   return ctm?p.matrixTransform(ctm.inverse()):{x:x,y:y};
 }
+function finishMapDrag(){
+  if(drag&&drag.moved)suppressClickUntil=performance.now()+180;
+  drag=null;
+}
 function setupCamera(){
   var svg=document.getElementById("mapSvg");
+  svg.style.cursor="grab";
+
   svg.addEventListener("wheel",function(e){
     if(!state)return;e.preventDefault();
     var p=screenToSvg(svg,e.clientX,e.clientY);
@@ -852,28 +863,35 @@ function setupCamera(){
     var nz=clamp(cam.z*(e.deltaY<0?1.14:.88),.55,3.2);
     cam.x=p.x-mapX*nz;cam.y=p.y-mapY*nz;cam.z=nz;applyCamera();
   },{passive:false});
+
   svg.addEventListener("pointerdown",function(e){
-    if(e.button!=null&&e.button!==0)return;
+    if(e.pointerType==="mouse"&&e.button!==0)return;
     var p=screenToSvg(svg,e.clientX,e.clientY);
     drag={id:e.pointerId,x:p.x,y:p.y,screenX:e.clientX,screenY:e.clientY,cx:cam.x,cy:cam.y,moved:false};
   });
+
   svg.addEventListener("pointermove",function(e){
     if(!drag||drag.id!==e.pointerId)return;
+    // 마우스 버튼을 이미 놓았는데 pointerup을 놓친 경우 즉시 추적을 중단한다.
+    if(e.pointerType==="mouse"&&(e.buttons&1)===0){finishMapDrag();svg.style.cursor="grab";return;}
     var p=screenToSvg(svg,e.clientX,e.clientY),sdx=e.clientX-drag.screenX,sdy=e.clientY-drag.screenY;
-    if(!drag.moved&&Math.hypot(sdx,sdy)>5){
-      drag.moved=true;
-      try{svg.setPointerCapture(e.pointerId);}catch(err){}
-    }
+    if(!drag.moved&&Math.hypot(sdx,sdy)>6){drag.moved=true;svg.style.cursor="grabbing";}
     if(!drag.moved)return;
     cam.x=drag.cx+(p.x-drag.x);cam.y=drag.cy+(p.y-drag.y);applyCamera();
+    e.preventDefault();
   });
-  svg.addEventListener("pointerup",function(e){
-    if(drag&&drag.id===e.pointerId){
-      try{if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);}catch(err){}
-      drag=null;
-    }
+
+  // SVG 밖에서 버튼을 놓아도 drag가 남지 않도록 window에서 확실히 종료한다.
+  window.addEventListener("pointerup",function(e){
+    if(drag&&drag.id===e.pointerId){finishMapDrag();svg.style.cursor="grab";}
+  },true);
+  window.addEventListener("pointercancel",function(e){
+    if(drag&&drag.id===e.pointerId){finishMapDrag();svg.style.cursor="grab";}
+  },true);
+  window.addEventListener("blur",function(){finishMapDrag();svg.style.cursor="grab";});
+  svg.addEventListener("mouseleave",function(e){
+    if(e.pointerType==="mouse"&&(e.buttons&1)===0){finishMapDrag();svg.style.cursor="grab";}
   });
-  svg.addEventListener("pointercancel",function(e){if(drag&&drag.id===e.pointerId)drag=null;});
 }
 function bind(){
   document.getElementById("startBtn").addEventListener("click",startNew);
