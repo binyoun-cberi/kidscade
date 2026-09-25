@@ -221,7 +221,7 @@ let gateLoading=false,obstacleLoading=false,runToken=0;
 const game={
   state:'menu',score:0,lives:3,combo:0,bestCombo:0,distance:0,correct:0,answered:0,
   lane:1,targetLane:1,jumpY:0,jumpV:0,onGround:true,slideT:0,invuln:0,speed:10.2,
-  gate:null,obstacles:[],nextGate:95,nextObstacle:18,slowT:0
+  gate:null,obstacles:[],nextGate:58,nextObstacle:10,slowT:0
 };
 
 function difficulty(){return game.distance<500?1:game.distance<1350?2:3}
@@ -258,32 +258,58 @@ async function spawnGate(){
     game.gate={group,q,resolved:false};
     ui.questionText.textContent=q.left.str+'  VS  '+q.right.str;ui.questionHint.textContent='같으면 가운데 = 게이트';ui.question.classList.add('show');
     game.obstacles.forEach(o=>{if(o.root.position.z<-10){o.root.removeFromParent();o.dead=true}});
-    game.nextGate=game.distance+rand(235,285);
+    const lv=difficulty();
+    game.nextGate=game.distance+rand(lv===1?135:lv===2?112:96,lv===1?165:lv===2?142:122);
   }finally{gateLoading=false}
 }
-async function buildObstacle(kind,lane){
+async function buildObstacle(kind,lane,z=-58){
   let root;
   try{
-    const url=kind==='barrier'?ASSET.barrier:kind==='train'?ASSET.train:kind==='suv'?ASSET.suv:ASSET.tallArch;
-    root=(await fitted(url,kind==='train'?4.25:kind==='suv'?2.7:kind==='slide'?2.7:1.55)).root;
+    const url=kind==='barrier'?ASSET.barrier:kind==='cone'?ASSET.cone:kind==='train'?ASSET.train:kind==='suv'?ASSET.suv:ASSET.tallArch;
+    root=(await fitted(url,kind==='train'?4.25:kind==='suv'?2.7:kind==='slide'?2.7:kind==='cone'?.95:1.55)).root;
   }catch{root=fallbackBlock(kind)}
   if(kind==='slide'){
     const panel=new THREE.Mesh(new THREE.BoxGeometry(1.55,.32,.25),new THREE.MeshStandardMaterial({color:0xf59e0b,emissive:0x7c3c00,emissiveIntensity:.12}));
     panel.position.set(0,1.25,0);root.add(panel);
   }
-  root.position.set(LANES[lane],0,-58);moving.add(root);return{root,lane,kind,hit:false,dead:false};
+  root.position.set(LANES[lane],0,z);moving.add(root);return{root,lane,kind,hit:false,dead:false};
+}
+function obstacleKind(){
+  const r=Math.random();
+  return r<.32?'barrier':r<.48?'cone':r<.69?'suv':r<.88?'slide':'train';
 }
 async function spawnObstacle(){
   if(obstacleLoading)return;
-  if(game.gate&&game.gate.group.position.z<-2){game.nextObstacle=game.distance+12;return}
-  obstacleLoading=true;const token=runToken;
+  if(game.gate&&game.gate.group.position.z<-22){game.nextObstacle=game.distance+6;return}
+  obstacleLoading=true;const token=runToken,lv=difficulty();
   try{
-    const lane=(Math.random()*3)|0,r=Math.random();
-    const kind=r<.42?'barrier':r<.66?'suv':r<.84?'slide':'train';
-    const o=await buildObstacle(kind,lane);
-    if(token!==runToken||game.state!=='running'){o.root.removeFromParent();return}
-    game.obstacles.push(o);
-    game.nextObstacle=game.distance+rand(difficulty()===1?34:25,difficulty()===3?44:52);
+    const roll=Math.random();
+    const pattern=lv===1?(roll<.68?'single':'stagger'):(lv===2?(roll<.44?'single':roll<.84?'stagger':'wall'):(roll<.28?'single':roll<.76?'stagger':'wall'));
+    const jobs=[];
+    if(pattern==='single'){
+      jobs.push(buildObstacle(obstacleKind(),(Math.random()*3)|0,-58));
+    }else if(pattern==='stagger'){
+      const first=(Math.random()*3)|0;
+      let second=(Math.random()*3)|0;if(second===first)second=(second+1+(Math.random()*2|0))%3;
+      jobs.push(buildObstacle(obstacleKind(),first,-58));
+      jobs.push(buildObstacle(obstacleKind(),second,-(lv===1?72:lv===2?68:65)));
+      if(lv===3&&Math.random()<.28){
+        let third=[0,1,2].find(x=>x!==second&&x!==first);
+        if(third===undefined)third=(second+1)%3;
+        jobs.push(buildObstacle(Math.random()<.55?'barrier':'cone',third,-80));
+      }
+    }else{
+      const safe=(Math.random()*3)|0;
+      const blocked=[0,1,2].filter(x=>x!==safe);
+      const kinds=blocked.map(()=>Math.random()<.55?'suv':(Math.random()<.62?'barrier':'cone'));
+      jobs.push(buildObstacle(kinds[0],blocked[0],-58));
+      jobs.push(buildObstacle(kinds[1],blocked[1],-58));
+    }
+    const made=await Promise.all(jobs);
+    if(token!==runToken||game.state!=='running'){made.forEach(o=>o.root.removeFromParent());return}
+    game.obstacles.push(...made);
+    const gap=lv===1?rand(20,27):lv===2?rand(14,21):rand(10,17);
+    game.nextObstacle=game.distance+gap;
   }finally{obstacleLoading=false}
 }
 function showFeedback(ok,text){
@@ -305,7 +331,7 @@ function slide(){
 }
 function hitObstacle(o){
   if(o.hit||game.invuln>0)return;
-  let safe=false;if(o.kind==='barrier')safe=game.jumpY>.72;if(o.kind==='slide')safe=game.slideT>0;
+  let safe=false;if(o.kind==='barrier')safe=game.jumpY>.72;if(o.kind==='cone')safe=game.jumpY>.52;if(o.kind==='slide')safe=game.slideT>0;
   if(safe)return;
   o.hit=true;game.lives--;game.combo=0;game.invuln=1.3;game.slowT=1.0;game.score=Math.max(0,game.score-40);tone('hit');playAnim('hit',true);showFeedback(false,o.kind==='train'?'기차는 옆 레인으로 피하세요!':o.kind==='slide'?'아래로 스와이프해서 슬라이드!':'장애물을 피하세요!');
   updateHud();if(game.lives<=0)setTimeout(endGame,420);
@@ -324,6 +350,7 @@ function clearRunObjects(){
 }
 function startGame(){
   clearRunObjects();game.state='running';game.score=0;game.lives=3;game.combo=0;game.bestCombo=0;game.distance=0;game.correct=0;game.answered=0;game.lane=1;game.targetLane=1;game.jumpY=0;game.jumpV=0;game.onGround=true;game.slideT=0;game.invuln=0;game.speed=10.2;game.nextGate=85;game.nextObstacle=18;game.slowT=0;
+  game.nextGate=58;game.nextObstacle=10;
   runner.position.set(0,.02,3.15);runner.scale.setScalar(1);playAnim('run');ui.menu.classList.add('hidden');ui.result.classList.add('hidden');ui.hud.classList.remove('hidden');ui.question.classList.remove('show');tone('start');updateHud();
 }
 function endGame(){
