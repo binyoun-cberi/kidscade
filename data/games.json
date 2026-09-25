@@ -2757,11 +2757,11 @@
     {
       "id": "high_history_map",
       "title": "통일전쟁",
-      "href": "games/high_history_map/index.html?v=3",
+      "href": "games/high_history_map/index.html?v=4",
       "category": "trivia",
       "age": "high",
       "icon": "🗺️",
-      "description": "실제 동아시아 해안선 지도 위에서 고구려·백제·신라를 운영해요. 군대는 계절을 들여 실제 지도 위를 행군하고, 농업·도시·도로·성벽을 장기간 건설하며 지역 특산품 교역과 외교로 통일 경쟁을 펼치는 문명식 턴제 전략 게임!",
+      "description": "실제 동아시아 해안선 지도 위의 수동 보정 거점으로 고구려·백제·신라를 운영해요. 탐라·우산·대마도까지 포함해 군대와 배가 여러 계절에 걸쳐 이동하고, 농업·도시·도로·성벽·교역을 장기적으로 키우는 문명식 턴제 전략 게임!",
       "subject": "social",
       "genre": "strategy",
       "difficulty": "hard",
