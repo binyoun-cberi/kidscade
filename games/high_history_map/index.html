@@ -921,7 +921,7 @@ function calculateIncome(c){
   regs.forEach(function(id){
     var r=region(id),b=r.buildings||{};
     food+=r.food+(b.farm?2:0)+(b.irrigation?2:0)+(hasTech(c,"iron_tools")&&b.farm?1:0);
-    money+=Math.max(1,r.dev*.72)+(b.market?3:0)+(b.city?2:0)+(b.road?.6:0)+(b.port?1:0);
+    money+=Math.max(1,r.dev*.72)+(b.market?3:0)+(b.city?2:0)+(b.road?0.6:0)+(b.port?1:0);
     man+=r.pop*.7+(b.city?1:0);
     knowledge+=r.dev*.18+(b.school?3:0);
   });
