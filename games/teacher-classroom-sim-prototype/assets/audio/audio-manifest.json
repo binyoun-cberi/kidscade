@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "target": "games/teacher-classroom-sim-prototype",
+  "files": [
+    {
+      "file": "message-notification.mp3",
+      "use": "새 교무/업무 알림"
+    },
+    {
+      "file": "classroom-talk.mp3",
+      "use": "쉬는 시간·점심 교실 웅성거림"
+    },
+    {
+      "file": "student-fight.mp3",
+      "use": "희귀 갈등/싸움 사건"
+    },
+    {
+      "file": "lesson-teacher.mp3",
+      "use": "수업하기 버튼을 누르는 동안 낮은 볼륨의 수업 분위기"
+    },
+    {
+      "file": "classroom-ambience.mp3",
+      "use": "수업 시간 기본 교실 배경"
+    },
+    {
+      "file": "school-bell.mp3",
+      "use": "교시/쉬는 시간 전환"
+    },
+    {
+      "file": "phone-ring.mp3",
+      "use": "보호자·학교 전화 수신"
+    }
+  ],
+  "notes": [
+    "원본 파일은 이름만 정리했으며 오디오는 재인코딩하지 않았습니다.",
+    "lesson-teacher.mp3에는 알아들을 수 있는 외국어 음성이 있어 게임에서는 낮은 볼륨 사용을 권장합니다.",
+    "공개 배포 전에는 각 원본 음원의 라이선스/표기 조건을 사용자가 확인해야 합니다."
+  ]
+}
