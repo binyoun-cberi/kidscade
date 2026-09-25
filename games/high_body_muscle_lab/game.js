@@ -27,21 +27,21 @@ const missions=[
  {mode:'arm',title:'버튼을 눌러 보세요',goal:'Q·W·E를 조절해 손으로 파란 버튼을 누르세요.',hint:'팔꿈치만 움직여서는 닿기 어려워요. E로 어깨까지 함께 움직여 보세요.',keys:['q','w','e'],target:'button',result:'손이 버튼에 닿았어요!',science:'어깨와 팔꿈치 관절이 함께 움직이면서 손의 위치가 바뀌었어요. 한 동작에도 여러 근육이 협력해요.',icon:'🔵',labels:ARM_LABELS},
  {mode:'arm',title:'사과를 바구니에 넣으세요',goal:'손을 사과 가까이 가져간 뒤 R을 누른 채 옮기고, 바구니 위에서 놓으세요.',hint:'R은 토글이 아니라 “잡고 있는 동안” 수축해요. 사과 가까이에서 꾹 눌러 보세요.',keys:['q','w','e','r'],target:'apple',result:'사과를 바구니에 넣었어요!',science:'근육이 뼈를 움직여 손을 사과까지 보내고, 손 근육이 수축해 물건을 붙잡았어요. 여러 관절과 근육의 협응이에요.',icon:'🍎',labels:ARM_LABELS},
  {mode:'body',title:'의자에서 일어나세요',goal:'다리와 몸통 근육을 함께 써서 완전히 일어서세요.',hint:'Q만 누르면 무릎만 펴져 몸이 뒤로 넘어가요. W·E도 함께 쓰고 R로 몸통을 세워 보세요.',keys:['q','w','e','r'],target:'stand',assist:.72,result:'혼자 힘으로 일어섰어요!',science:'허벅지 앞쪽 근육이 무릎을 펴고, 엉덩이 근육이 몸을 일으키며, 종아리와 몸통 근육이 균형을 잡았어요.',icon:'🪑',labels:{q:['허벅지 앞쪽','무릎을 펴요'],w:['엉덩이 근육','엉덩관절을 펴요'],e:['종아리 근육','바닥을 밀어요'],r:['몸통 근육','상체 균형을 잡아요']}},
- {mode:'body',title:'3m 걸어가세요',goal:'왼발과 오른발 근육을 번갈아 써서 결승선까지 걸어가세요.',hint:'Q → W → E → R 리듬을 찾아보세요. 같은 쪽만 계속 쓰면 몸이 크게 흔들려요.',keys:['q','w','e','r'],target:'walk',assist:.52,result:'3m를 걸었어요!',science:'걷기는 한 근육만 반복하는 동작이 아니에요. 왼쪽과 오른쪽 다리의 근육이 번갈아 수축하고, 몸통은 중심을 계속 조절해요.',icon:'🚶',labels:{q:['왼 허벅지','왼다리를 앞으로'],w:['왼 종아리','왼발로 밀기'],e:['오른 허벅지','오른다리를 앞으로'],r:['오른 종아리','오른발로 밀기']}},
- {mode:'body',title:'장애물을 넘어가세요',goal:'걷다가 낮은 장애물 앞에서 다리를 충분히 들어 넘어가세요.',hint:'장애물 가까이에서는 Q 또는 E로 앞다리를 먼저 들어야 해요. 낮게 끌면 걸려 넘어져요.',keys:['q','w','e','r'],target:'obstacle',assist:.38,result:'발을 들어 장애물을 넘었어요!',science:'장애물을 넘을 때는 엉덩관절과 무릎을 더 굽혀 발을 높이고, 반대쪽 다리는 몸을 지지하며 균형을 유지해요.',icon:'🚧',labels:{q:['왼 허벅지','왼다리를 높이 들어요'],w:['왼 종아리','왼발로 밀어요'],e:['오른 허벅지','오른다리를 높이 들어요'],r:['오른 종아리','오른발로 밀어요']}},
+ {mode:'body',title:'3m 걸어가세요',goal:'다리를 들어 옮긴 뒤 같은 쪽 발로 바닥을 밀어 3m를 걸어가세요.',hint:'왼쪽은 Q로 다리를 든 뒤 W로 밀고, 오른쪽은 E로 든 뒤 R로 밀어요. 어느 쪽부터 시작해도 돼요.',keys:['q','w','e','r'],target:'walk',assist:.52,result:'3m를 걸었어요!',science:'걷기는 다리를 앞으로 옮기는 동작과 바닥을 미는 동작이 좌우에서 번갈아 이어져요. 몸통은 그 사이 계속 중심을 조절해요.',icon:'🚶',labels:{q:['왼다리 들기','왼발을 바닥에서 들어요'],w:['왼다리 밀기','왼발로 바닥을 밀어요'],e:['오른다리 들기','오른발을 바닥에서 들어요'],r:['오른다리 밀기','오른발로 바닥을 밀어요']}},
+ {mode:'body',title:'장애물을 넘어가세요',goal:'걷다가 장애물 앞에서는 발을 더 높이 든 채 반대쪽 다리로 몸을 밀어 넘으세요.',hint:'Q 또는 E를 눌러 발을 실제로 들어 올린 상태로 장애물에 접근하세요. 그냥 밀기만 하면 발이 걸려요.',keys:['q','w','e','r'],target:'obstacle',assist:.38,result:'발을 들어 장애물을 넘었어요!',science:'장애물을 넘을 때는 평소보다 다리를 더 들어 발끝 높이를 확보하고, 반대쪽 다리는 몸을 지지하고 밀어 줘야 해요.',icon:'🚧',labels:{q:['왼다리 들기','왼발을 높이 들어요'],w:['왼다리 밀기','왼발로 바닥을 밀어요'],e:['오른다리 들기','오른발을 높이 들어요'],r:['오른다리 밀기','오른발로 바닥을 밀어요']}},
  {mode:'body',title:'상자를 옮기세요',goal:'상자를 놓치지 말고 3m 앞 표시까지 옮기세요.',hint:'Q/W로 번갈아 걷고 E를 놓치면 상자가 미끄러져요. R은 몸통을 단단히 잡아 흔들림을 줄여요.',keys:['q','w','e','r'],target:'box',assist:.25,result:'상자를 안전하게 옮겼어요!',science:'무거운 물건을 들면 팔뿐 아니라 다리와 몸통도 더 큰 힘을 써야 해요. 몸 가까이 잡을수록 균형을 잡기 쉬워져요.',icon:'📦',labels:{q:['왼다리 근육','왼발로 한 걸음'],w:['오른다리 근육','오른발로 한 걸음'],e:['팔·손 근육','상자를 꽉 잡아요'],r:['몸통 근육','허리와 몸통을 지지해요']}},
  {mode:'body',title:'급식판을 자리까지!',goal:'급식판을 기울이지 않게 조절하며 4m 앞 자리까지 이동하세요.',hint:'Q/W로 걸으면서 판이 기울면 E는 왼쪽을, R은 오른쪽을 들어 수평을 되찾아요.',keys:['q','w','e','r'],target:'tray',assist:.12,result:'급식판을 무사히 옮겼어요!',science:'걷는 동안 다리 근육은 몸을 이동시키고, 팔과 몸통 근육은 작은 흔들림을 계속 보정해 물체를 수평으로 유지해요. 이것이 전신 협응이에요.',icon:'🍱',labels:{q:['왼다리 근육','왼발로 한 걸음'],w:['오른다리 근육','오른발로 한 걸음'],e:['왼팔 근육','판의 왼쪽을 들어요'],r:['오른팔 근육','판의 오른쪽을 들어요']}}
 ];
 const state={
  mission:0,xray:false,paused:false,finished:false,summary:false,lastTime:performance.now(),toastTimer:0,holdTime:0,
+ missionStartedAt:performance.now(),missionStats:{falls:0,misses:0,drops:0},runStats:{falls:0,misses:0,drops:0,totalTime:0},
  shoulder:.42,shoulderV:0,elbow:.16,elbowV:0,buttonPressed:false,lastHand:{x:0,y:0},
  apple:{x:548,y:333,vx:0,vy:0,held:false},
- body:{stand:0,lean:0,leanV:0,distance:0,vx:0,gait:0,expected:0,wobble:0,fall:0,checkpoint:0,obstacleCleared:false,boxGrip:1,trayTilt:0,trayV:0,meal:100,lastStepKey:''}
+ body:{stand:0,lean:0,leanV:0,distance:0,vx:0,gait:0,wobble:0,fall:0,checkpoint:0,obstacleCleared:false,boxGrip:1,trayTilt:0,trayV:0,meal:100,lastStepKey:'',lastStepSide:'',leftReady:0,rightReady:0,steps:0}
 };
 const rig={shoulderX:330,shoulderY:330,upper:142,lower:130,handR:23};
 const pushButton={x:602,y:322,r:27};
 const basket={x:558,y:420,w:92,h:68};
-const WALK_SEQUENCE=['q','w','e','r'];
 let hintTimer=0;
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -69,17 +69,33 @@ function handlePress(k){
  if(m.mode!=='body'||state.finished||state.body.fall>0)return;
  const b=state.body;
  if(m.target==='walk'||m.target==='obstacle'){
-  const expected=WALK_SEQUENCE[b.expected];
-  if(k===expected){
-   b.expected=(b.expected+1)%WALK_SEQUENCE.length;
-   b.vx+=m.target==='obstacle'?.30:.30;
-   b.gait+=Math.PI/2;
-   b.wobble*=.84;
-   pulseKey(k,true);
-  }else{
-   b.wobble+=.16;
-   b.leanV+=(k==='q'||k==='w'?-1:1)*.13;
-   pulseKey(k,false);
+  if(k==='q'||k==='e'){
+   const side=k==='q'?'left':'right';
+   if(side==='left')b.leftReady=Math.max(b.leftReady,.92);
+   else b.rightReady=Math.max(b.rightReady,.92);
+   b.leanV+=(side==='left'?-1:1)*.025;
+   return;
+  }
+  if(k==='w'||k==='r'){
+   const side=k==='w'?'left':'right';
+   const ready=side==='left'?b.leftReady:b.rightReady;
+   const alternating=b.lastStepSide!==side;
+   if(ready>.2&&alternating){
+    b.lastStepSide=side;
+    b.steps++;
+    b.vx+=.34+.16*ready;
+    b.gait+=Math.PI;
+    b.wobble*=.68;
+    if(side==='left')b.leftReady=.05;
+    else b.rightReady=.05;
+    pulseKey(k,true);
+   }else{
+    b.wobble+=alternating?.12:.22;
+    b.leanV+=(side==='left'?-1:1)*.11;
+    state.missionStats.misses++;
+    pulseKey(k,false);
+    showToast(!alternating?'같은 쪽만 연속으로 밀면 휘청해요!':'먼저 같은 쪽 다리를 들어 보세요!');
+   }
   }
  }else if(m.target==='box'&&(k==='q'||k==='w')){
   const alternating=b.lastStepKey!==k;
@@ -185,7 +201,7 @@ function updateCompactHud(){
 }
 
 function resetBody(){
- state.body={stand:0,lean:0,leanV:0,distance:0,vx:0,gait:0,expected:0,wobble:0,fall:0,checkpoint:0,obstacleCleared:false,boxGrip:1,trayTilt:0,trayV:0,meal:100,lastStepKey:''};
+ state.body={stand:0,lean:0,leanV:0,distance:0,vx:0,gait:0,wobble:0,fall:0,checkpoint:0,obstacleCleared:false,boxGrip:1,trayTilt:0,trayV:0,meal:100,lastStepKey:'',lastStepSide:'',leftReady:0,rightReady:0,steps:0};
  if(currentMission().target!=='stand')state.body.stand=1;
 }
 
@@ -195,6 +211,8 @@ function resetMission(){
  state.finished=false;
  state.summary=false;
  state.holdTime=0;
+ state.missionStartedAt=performance.now();
+ state.missionStats={falls:0,misses:0,drops:0};
  state.buttonPressed=false;
  state.shoulder=state.mission===1?.5:.42;
  state.shoulderV=0;
@@ -218,8 +236,8 @@ function syncMissionUI(){
  els.nextBtn.textContent=state.mission===missions.length-1?'실험 완료':'다음 실험';
  showMissionHint(m.goal);
  const body=m.mode==='body';
- els.assistBox.classList.add('hidden');
  const assist=Math.round((m.assist??0)*100);
+ els.assistBox.classList.toggle('hidden',!body||assist<=0);
  els.assistText.textContent=assist+'%';
  els.assistBar.style.width=assist+'%';
  if(!body){
@@ -240,12 +258,21 @@ function syncMissionUI(){
 function finishMission(){
  if(state.finished)return;
  state.finished=true;
+ const elapsed=Math.max(0,(performance.now()-state.missionStartedAt)/1000);
+ state.runStats.falls+=state.missionStats.falls;
+ state.runStats.misses+=state.missionStats.misses;
+ state.runStats.drops+=state.missionStats.drops;
+ state.runStats.totalTime+=elapsed;
  Object.keys(inputs).forEach(k=>inputs[k]=false);
  syncControls();
  const m=currentMission();
  els.resultIcon.textContent=m.icon||'🔬';
  els.resultTitle.textContent=m.result;
- els.resultText.textContent='';
+ const bits=[elapsed.toFixed(1)+'초'];
+ if(state.missionStats.falls)bits.push('넘어짐 '+state.missionStats.falls+'회');
+ if(state.missionStats.misses)bits.push('헛동작 '+state.missionStats.misses+'회');
+ if(state.missionStats.drops)bits.push('놓침 '+state.missionStats.drops+'회');
+ els.resultText.textContent=bits.join(' · ');
  els.scienceTitle.textContent='왜 움직였을까요?';
  els.scienceText.textContent=m.science;
  els.card.classList.remove('hidden');
@@ -266,12 +293,14 @@ function nextMission(){
  }else{
   state.summary=true;
   try{
-   window.KidscadeGame?.score?.(800);
-   window.KidscadeGame?.gameOver?.({score:800,missions:8});
+   const score=Math.max(300,1000-state.runStats.falls*35-state.runStats.misses*8-state.runStats.drops*20-Math.round(state.runStats.totalTime)*2);
+   window.KidscadeGame?.score?.(score);
+   window.KidscadeGame?.gameOver?.({score,missions:8,...state.runStats});
   }catch(_){}
   els.resultIcon.textContent='🏆';
   els.resultTitle.textContent='전신 뼈·근육 실험 완료!';
-  els.resultText.textContent='팔의 길항근부터 걷기, 장애물, 짐 운반과 급식판 균형까지 모두 해결했어요.';
+  const score=Math.max(300,1000-state.runStats.falls*35-state.runStats.misses*8-state.runStats.drops*20-Math.round(state.runStats.totalTime)*2);
+  els.resultText.textContent='최종 '+score+'점 · 넘어짐 '+state.runStats.falls+'회 · 헛동작 '+state.runStats.misses+'회 · 놓침 '+state.runStats.drops+'회';
   els.scienceTitle.textContent='오늘의 핵심';
   els.scienceText.textContent='뼈는 몸을 지지하고 관절은 움직임의 축이 되며, 근육은 수축하여 뼈를 당겨요. 복잡한 동작은 여러 근육이 순서와 세기를 맞춰 협력해야 가능해요.';
   els.nextBtn.textContent='처음부터 다시';
@@ -393,6 +422,8 @@ function updateBody(dt){
  b.vx*=Math.pow(.74,dt*3.5);
  b.distance+=b.vx*dt;
  b.wobble*=Math.pow(.8,dt*2.2);
+ b.leftReady=clamp(Math.max(b.leftReady,activation.q*.88)-dt*.34,0,1);
+ b.rightReady=clamp(Math.max(b.rightReady,activation.e*.88)-dt*.34,0,1);
 
  if(m.target==='walk'||m.target==='obstacle'){
   const side=(activation.q+activation.w)-(activation.e+activation.r);
@@ -414,6 +445,7 @@ function updateBody(dt){
    showToast('상자를 놓쳤어요! 다시 꽉 잡아 보세요');
    b.distance=Math.max(0,b.distance-.45);
    b.boxGrip=.72;
+   state.missionStats.drops++;
    b.vx=0;
    b.wobble=.16;
   }
@@ -431,6 +463,7 @@ function updateBody(dt){
    showToast('급식판을 다시 받았어요! 천천히 가 볼까요?');
    b.distance=Math.max(0,b.distance-.65);
    b.meal=100;
+   state.missionStats.drops++;
    b.trayTilt=0;
    b.trayV=0;
    b.vx=0;
@@ -440,7 +473,8 @@ function updateBody(dt){
  }
 
  els.measureText.textContent=b.distance.toFixed(1)+'m';
- if(m.target==='tray')els.jointText.textContent='남은 급식 '+Math.round(b.meal)+'%';
+ if(m.target==='walk'||m.target==='obstacle')els.jointText.textContent='걸음 '+b.steps+' · '+(Math.abs(b.lean)<.18?'안정적':Math.abs(b.lean)<.4?'휘청거림':'위험!');
+ else if(m.target==='tray')els.jointText.textContent='남은 급식 '+Math.round(b.meal)+'%';
  else els.jointText.textContent=Math.abs(b.lean)<.18?'안정적':Math.abs(b.lean)<.4?'휘청거림':'위험!';
 }
 
@@ -450,7 +484,7 @@ function checkObstacle(){
  const obstacleAt=1.65;
  if(b.distance>obstacleAt-.30&&b.distance<obstacleAt+.40){
   const lift=Math.max(activation.q,activation.e);
-  if(lift>.50){
+  if(lift>.58){
    b.obstacleCleared=true;
    b.vx+=.18;
    showToast('발을 높이 들어 넘었어요!');
@@ -463,7 +497,8 @@ function checkObstacle(){
 function triggerFall(message){
  const b=state.body;
  if(b.fall>0)return;
- b.fall=.78;
+ b.fall=.92;
+ state.missionStats.falls++;
  b.vx=0;
  b.leanV=0;
  b.checkpoint=Math.max(0,b.distance-.35);
@@ -477,6 +512,7 @@ function recoverFromFall(){
  b.lean=0;
  b.leanV=0;
  b.wobble=.12;
+ b.leftReady=0;b.rightReady=0;b.lastStepSide='';
  b.vx=0;
  b.trayTilt*=.3;
  b.trayV=0;
@@ -635,7 +671,7 @@ function drawArmMuscles(p,xray){
 function bodyPose(){
  const b=state.body,m=currentMission(),floor=500;
  const stand=m.target==='stand'?clamp(b.stand,0,1):1;
- const fall=b.fall>0?(1-b.fall/.78):0;
+ const fall=b.fall>0?(1-b.fall/.92):0;
  const lean=b.lean+fall*1;
  const hip={x:360+Math.sin(lean)*18,y:420-stand*108+fall*88};
  const shoulder={x:hip.x+Math.sin(lean)*88,y:hip.y-Math.cos(lean)*118};
@@ -643,8 +679,8 @@ function bodyPose(){
  const cycle=b.gait;
  let leftStride=Math.sin(cycle)*42;
  let rightStride=Math.sin(cycle+Math.PI)*42;
- let leftLift=Math.max(0,-Math.cos(cycle))*15;
- let rightLift=Math.max(0,-Math.cos(cycle+Math.PI))*15;
+ let leftLift=Math.max(0,-Math.cos(cycle))*12+activation.q*34;
+ let rightLift=Math.max(0,-Math.cos(cycle+Math.PI))*12+activation.e*34;
  if(m.target==='stand'){
   leftStride=-30*(1-stand);
   rightStride=30*(1-stand);
