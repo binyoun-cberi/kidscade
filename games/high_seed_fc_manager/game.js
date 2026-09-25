@@ -90,7 +90,7 @@ function newState(clubId){
     version:2,clubId:clubId,season:1,round:0,budget:c.budget,formation:'4-3-3',
     tactics:Object.assign({line:'standard',tempo:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'4-3-3'),
     schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,
-    worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},pyramid:null,otherLeague:null
+    worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},positionModelVersion:1,pyramid:null,otherLeague:null
   };
 }
 function normalize(){
@@ -105,11 +105,16 @@ function normalize(){
   if(state.pyramid===undefined)state.pyramid=null;
   if(state.otherLeague===undefined)state.otherLeague=null;
   var sourcePlayers=[];D.clubs.forEach(function(c){sourcePlayers=sourcePlayers.concat(c.players);});sourcePlayers=sourcePlayers.concat(D.world);
+  var migratePositions=(state.positionModelVersion||0)<1;
   state.roster.forEach(function(p){
     if(p.fitness==null)p.fitness=100;if(p.form==null)p.form=0;
     var src=sourcePlayers.find(function(x){return x.id===p.id;});
-    if(src){['footballRole','footballStyle','footballNote','preferredPositions'].forEach(function(k){if(p[k]==null&&src[k]!=null)p[k]=clone(src[k]);});}
+    if(src){
+      ['footballRole','footballStyle','footballNote','preferredPositions'].forEach(function(k){if(p[k]==null&&src[k]!=null)p[k]=clone(src[k]);});
+      if(migratePositions){p.pos=src.pos;delete p.overall;p.overall=overall(p);}
+    }
   });
+  state.positionModelVersion=1;
 }
 function rows(table){
   var target=table||state.table;
