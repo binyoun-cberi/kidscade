@@ -381,12 +381,14 @@ function renderMap(){
   var hexLayer=document.getElementById("hexLayer"),cityLayer=document.getElementById("cityLayer"),unitLayer=document.getElementById("unitLayer"),riverLayer=document.getElementById("riverLayer"),labelLayer=document.getElementById("labelLayer");
   hexLayer.innerHTML="";cityLayer.innerHTML="";unitLayer.innerHTML="";riverLayer.innerHTML="";labelLayer.innerHTML="";
   Object.keys(state.tiles).forEach(function(k){
-    var t=state.tiles[k],p=svgEl("polygon",{points:hexPoints(t.q,t.r),fill:tileFill(t),class:"hex","data-key":k});
-    if(t.owner&&t.terrain!=="sea")p.setAttribute("fill-opacity",t.owner==="neutral"?.72:.72);
+    var t=state.tiles[k],pts=hexPoints(t.q,t.r),p=svgEl("polygon",{points:pts,fill:TERRAIN[t.terrain].fill,class:"hex","data-key":k});
     if(selectedTile===k)p.classList.add("selected");
     if(reachable[k]!=null)p.classList.add(reachable[k].attack?"attackable":"reachable");
     p.addEventListener("click",function(e){e.stopPropagation();onTileClick(k);});
     hexLayer.appendChild(p);
+    if(t.owner&&t.terrain!=="sea"&&FACTIONS[t.owner]){
+      hexLayer.appendChild(svgEl("polygon",{points:pts,fill:FACTIONS[t.owner].color,class:"hexOverlay"}));
+    }
     if(t.improvement){
       var c=hexCenter(t.q,t.r),im=svgEl("text",{x:c[0],y:c[1]+5,class:"hexImpr"});im.textContent=IMPROVEMENTS[t.improvement].icon;hexLayer.appendChild(im);
     }
@@ -510,9 +512,10 @@ function onTileClick(k){
   selectedUnit=null;reachable={};renderAll();
 }
 function moveUnit(u,t){
+  var old=t.owner;
   u.q=t.q;u.r=t.r;u.moved=true;
   if(t.owner!==u.owner&&t.terrain!=="sea"){t.owner=u.owner;log(FACTIONS[u.owner].name+" 군이 "+t.region+"의 땅을 확보했습니다.");}
-  captureCityIfNeeded(u,t);
+  captureCityIfNeeded(u,t,old);
   selectedTile=key(t.q,t.r);reachable={};renderAll();save(false);
 }
 function riverPenalty(q1,r1,q2,r2){
@@ -550,7 +553,7 @@ function battle(attacker,dst){
 }
 function captureCityIfNeeded(u,t,oldOwner){
   if(!t.city)return;
-  var previous=oldOwner||CITIES[t.city].owner;
+  var previous=oldOwner==null?CITIES[t.city].owner:oldOwner;
   if(t.owner!==u.owner)t.owner=u.owner;
   if(previous!==u.owner&&previous!=="neutral"){state.captured[u.owner]=(state.captured[u.owner]||0)+1;resource(u.owner).authority=clamp(resource(u.owner).authority+6,0,100);}
 }
@@ -616,7 +619,8 @@ function aiStep(owner){
       var power=u.troops/(en.troops*TERRAIN[dest.terrain].def);
       if(power>1.08)battleSilent(u,dest,en);
     }else if(dest.owner===u.owner||dest.owner==="neutral"||Math.random()<.55){
-      u.q=dest.q;u.r=dest.r;dest.owner=u.owner;captureCityIfNeeded(u,dest);u.moved=true;
+      var old=dest.owner;
+      u.q=dest.q;u.r=dest.r;dest.owner=u.owner;captureCityIfNeeded(u,dest,old);u.moved=true;
     }
   });
   if(r.money>=12&&r.manpower>=8&&units.length<5){
