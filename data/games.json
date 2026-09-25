@@ -2,6 +2,28 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "low_blind_elephant",
+      "title": "눈 감고 코끼리 만지기",
+      "href": "games/low_blind_elephant/index.html?v=1",
+      "category": "trivia",
+      "age": "all",
+      "icon": "🐘",
+      "description": "첫 단서를 보고 동물을 추리하세요. 5초마다 조건이 하나씩 더 공개되고, 2분 동안 쉬움은 떠다니는 후보를 터치하고 어려움은 이름을 직접 입력해 최대한 많은 동물을 맞히는 스피드 동물 추리 게임!",
+      "subject": "science",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 3,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "low_math_number_tower",
       "title": "숫자 타워",
       "href": "숫자 타워.html?v=3",
