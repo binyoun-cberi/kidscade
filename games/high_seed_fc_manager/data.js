@@ -257,10 +257,44 @@ function overall(p){
   }[p.pos];
   return Math.round(s.shot*w[0]+s.pass*w[1]+s.defense*w[2]+s.speed*w[3]+s.stamina*w[4]);
 }
+const FOOTBALL_ROLE_KO={
+  playmaker:'조율가',commander:'지휘관',explorer:'개척형',creator:'창의형',
+  finisher:'돌파형',anchor:'수호형',support:'연결형',balanced:'균형형'
+};
+function footballProfile(entry,pos){
+  const text=[entry[1],entry[2],entry[3],entry[4]].join(' ');
+  let role='balanced',preferred=[pos],note='상황에 맞춰 균형 있게 움직여요.';
+  if(/외교|담판|재상|정치|제도|학자|성리학|개혁|편찬|훈민정음|실학|과학|기술|천문|수학|철학/.test(text)){
+    role='playmaker';preferred=['CM','FB',pos];note='주변을 살피며 다음 패스를 고르는 조율형이에요.';
+  }
+  if(/장군|대첩|항쟁|수군|의병|승병|전투|군사|침입|전쟁|안시성|황산벌/.test(text)){
+    role='commander';preferred=['CB','CM',pos];note='위치를 지키다가 필요할 때 강하게 앞으로 나가요.';
+  }
+  if(/해상|무역|교류|여행|지도|대동여지도|청해진|천도|영토 확장|개척/.test(text)){
+    role='explorer';preferred=['FB','WG','CM',pos];note='넓은 공간을 오가며 빈 곳을 먼저 찾아가요.';
+  }
+  if(/예술|문학|풍속화|서예|그림|발명/.test(text)){
+    role='creator';preferred=['WG','CM',pos];note='정해진 길보다 빈 공간과 새로운 패스 길을 찾아요.';
+  }
+  if(/건국|왕권 강화|통일|전성기|정복|세력을 넓|영토를 넓/.test(text)){
+    role='finisher';preferred=['ST','WG','CM',pos];note='기회가 열리면 주저하지 않고 앞으로 파고들어요.';
+  }
+  if(/구휼|의학|간호|보건|백신|미생물/.test(text)){
+    role='support';preferred=['CM','FB','GK',pos];note='동료 가까이에서 연결을 돕고 빈자리를 메워요.';
+  }
+  if(/수비|지키|마지막 왕|말기|전후 복구/.test(text)){
+    role='anchor';preferred=['CB','GK','CM',pos];note='자리를 쉽게 버리지 않고 뒤를 단단히 지켜요.';
+  }
+  preferred=preferred.filter(function(x,i,a){return POSITIONS.indexOf(x)>=0&&a.indexOf(x)===i;});
+  if(preferred.indexOf(pos)<0)preferred.push(pos);
+  return {role:role,label:FOOTBALL_ROLE_KO[role],preferredPositions:preferred,note:note};
+}
 function makePlayer(entry,club,clubIndex,i){
-  const pos=SLOT_POS[i%SLOT_POS.length],p={
+  const pos=SLOT_POS[i%SLOT_POS.length],profile=footballProfile(entry,pos),p={
     id:club.id+'-'+entry[0],name:entry[1],pos:pos,trait:entry[2],era:club.era,
     fact:entry[3],memory:entry[4],historical:true,clubId:club.id,fitness:100,form:0,
+    footballRole:profile.role,footballStyle:profile.label,footballNote:profile.note,
+    preferredPositions:profile.preferredPositions,
     stats:statsFor(pos,clubIndex*31+i,true)
   };
   p.overall=overall(p);return p;
@@ -271,7 +305,10 @@ const CLUBS=CLUB_DEFS.map(function(def,clubIndex){
   return c;
 });
 function worldPlayer(x,i){
-  const p={id:'world-'+x[0],name:x[1],pos:x[2],trait:x[3],era:x[4],fact:x[5],memory:x[6],price:x[7],historical:true,world:true,fitness:100,form:0,clubId:null,stats:statsFor(x[2],200+i,true)};
+  const entry=[x[0],x[1],x[3],x[5],x[6]],profile=footballProfile(entry,x[2]);
+  const p={id:'world-'+x[0],name:x[1],pos:x[2],trait:x[3],era:x[4],fact:x[5],memory:x[6],price:x[7],historical:true,world:true,fitness:100,form:0,clubId:null,
+    footballRole:profile.role,footballStyle:profile.label,footballNote:profile.note,preferredPositions:profile.preferredPositions,
+    stats:statsFor(x[2],200+i,true)};
   p.overall=overall(p);return p;
 }
 const WORLD=WORLD_DEFS.map(worldPlayer);
