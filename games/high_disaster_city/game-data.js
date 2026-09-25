@@ -23,7 +23,7 @@ const CARDS={
  sandbags:{id:'sandbags',name:'모래주머니',icon:'🟫',cost:28,kind:'action',action:'sandbags',tag:'긴급대응',desc:'홍수 전선을 잠시 뒤로 밀어냅니다.'},
  firebreak:{id:'firebreak',name:'방화선',icon:'⛏️',cost:18,kind:'action',action:'firebreak',tag:'전술대응',desc:'산불의 힘은 조금만 줄이고 전선을 크게 밀어냅니다.'},
  emergencyDrain:{id:'emergencyDrain',name:'긴급 배수',icon:'🪣',cost:18,kind:'action',action:'emergencyDrain',tag:'전술대응',desc:'홍수의 힘보다 물길 자체를 크게 뒤로 밀어냅니다.'},
- repair:{id:'repair',name:'긴급 수리',icon:'🔧',cost:30,kind:'action',action:'repair',tag:'복구',desc:'가장 많이 손상된 건물을 수리합니다.'},
+ repair:{id:'repair',name:'긴급 수리',icon:'🔧',cost:30,kind:'action',action:'repair',tag:'복구',desc:'홍수를 막는 제방을 우선 수리하고, 없으면 가장 손상된 건물을 수리합니다.'},
  ration:{id:'ration',name:'비상 식량',icon:'🥫',cost:22,kind:'action',action:'ration',tag:'보급',desc:'식량을 즉시 12 얻습니다.'}
 };
 const START_DECK=['house','farm','market','house','farm','fireBrigade','sandbags','repair','levee','fireStation','ration','reservoir'];
