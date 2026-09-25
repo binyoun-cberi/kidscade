@@ -4,11 +4,11 @@
     {
       "id": "high_code_quest",
       "title": "버그월드: 코드 원정대",
-      "href": "games/high_code_quest/index.html?v=1",
+      "href": "games/high_code_quest/index.html?v=2",
       "category": "trivia",
       "age": "high",
       "icon": "🤖",
-      "description": "명령 블록으로 캐릭터를 움직이고 코드를 실행·디버깅하며 순차, 반복, 조건, 변수와 함수를 익히는 3D 턴제 코딩 RPG!",
+      "description": "2D 사이드스크롤 세계를 달리고 점프하며 명령 블록으로 캐릭터를 조종하고, 실행·디버깅을 통해 순차·반복·조건·변수·함수를 익히는 코딩 RPG!",
       "subject": "thinking",
       "genre": "rpg",
       "difficulty": "medium",
