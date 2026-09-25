@@ -8,7 +8,7 @@ const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), '
 const games = Array.isArray(catalog.games) ? catalog.games : [];
 
 const SUBJECTS = new Set(['math','korean','language','social','science','arts','career','thinking']);
-const GENRES = new Set(['action','puzzle','strategy','simulation','management','quiz','rhythm','sports','sandbox']);
+const GENRES = new Set(['action','puzzle','strategy','simulation','management','quiz','rhythm','sports','sandbox','rpg']);
 const DIFFICULTIES = new Set(['easy','medium','hard']);
 const PLAYERS = new Set(['solo','local2','localMulti','online','classroom']);
 const INPUTS = new Set(['touch','keyboard']);
