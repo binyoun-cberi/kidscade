@@ -172,6 +172,26 @@
         font-weight:1000;
       }
 
+      @media (min-width:941px) {
+        #${ACTIVITY_STRIP_ID}.kc-activity-sidebar {
+          grid-template-columns:1fr;
+          gap:8px;
+          margin:0;
+        }
+        #${ACTIVITY_STRIP_ID}.kc-activity-sidebar .kc-activity-btn {
+          min-height:58px;
+          padding:10px 11px;
+          border-radius:16px;
+        }
+        #${ACTIVITY_STRIP_ID}.kc-activity-sidebar .kc-activity-title {
+          font-size:.77rem;
+        }
+        #${ACTIVITY_STRIP_ID}.kc-activity-sidebar .kc-activity-sub {
+          font-size:.62rem;
+          line-height:1.4;
+        }
+      }
+
       /* 같은 모달을 사용하지만 탭을 숨겨 각 진입점이 독립 기능처럼 보이게 합니다. */
       #pet-modal .sook-main-tabs { display:none !important; }
       #pet-modal .sook-coach-body { padding-top:12px !important; }
@@ -314,6 +334,27 @@
     if (source) source.click();
   }
 
+  function desktopActivitySidebarEnabled() {
+    return window.matchMedia?.('(min-width: 941px)')?.matches ?? window.innerWidth > 940;
+  }
+
+  function positionActivityStrip(strip) {
+    if (!strip) return false;
+    const sidebar = document.querySelector('.kc-myspace-inner');
+    const avatar = sidebar?.querySelector('.kc-side-card.avatar-shell');
+    const hero = document.querySelector('.kc-arcade .kc-hero');
+
+    if (desktopActivitySidebarEnabled() && sidebar && avatar) {
+      strip.classList.add('kc-activity-sidebar');
+      if (avatar.nextElementSibling !== strip) avatar.insertAdjacentElement('afterend', strip);
+      return true;
+    }
+
+    strip.classList.remove('kc-activity-sidebar');
+    if (hero && hero.nextElementSibling !== strip) hero.insertAdjacentElement('afterend', strip);
+    return Boolean(hero);
+  }
+
   function ensureActivityStrip() {
     const arcade = document.querySelector('.kc-arcade');
     const hero = arcade?.querySelector('.kc-hero');
@@ -338,6 +379,7 @@
       strip.querySelector('[data-kc-activity="missions"]')?.addEventListener('click', openMission);
       strip.querySelector('[data-kc-activity="recommend"]')?.addEventListener('click', openRecommendation);
     }
+    positionActivityStrip(strip);
     syncActivityStrip();
     return true;
   }
@@ -475,6 +517,7 @@
     }, 200);
 
     window.addEventListener('pageshow', scheduleSync);
+    window.addEventListener('resize', scheduleSync, { passive:true });
     document.addEventListener('kidscade:profile-history-changed', scheduleSync);
     document.addEventListener('kidscade:dashboard-rendered', scheduleSync);
     document.addEventListener('kidscade:catalog-ready', scheduleSync);
