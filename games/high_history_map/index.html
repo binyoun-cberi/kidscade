@@ -552,63 +552,158 @@ function renderLeft(){
   document.getElementById("countryBadge").innerHTML="<b>"+c.icon+" "+c.name+"</b><p>"+c.trait+"</p>";
   var obj=document.getElementById("objectives");obj.innerHTML="";
   OBJECTIVES[state.player].forEach(function(o){
-    var d=document.createElement("div");d.className="objective"+(o.check()?" done":"");d.textContent=(o.check()?"✓ ":"○ ")+o.text;obj.appendChild(d);
+    var done=o.check(),d=document.createElement("div");d.className="objective"+(done?" done":"");d.textContent=(done?"✓ ":"○ ")+o.text;obj.appendChild(d);
   });
+  var active=document.getElementById("activeOps"),ops=[];
+  (state.projects||[]).filter(function(p){return region(p.region)&&region(p.region).owner===state.player;}).forEach(function(p){
+    ops.push("<div class=\"operation\">🔨 <b>"+region(p.region).name+"</b> · "+BUILD_DEFS[p.type].name+" <span class=\"eta\">"+p.remaining+"계절</span></div>");
+  });
+  (state.armiesTransit||[]).filter(function(a){return a.owner===state.player;}).forEach(function(a){
+    ops.push("<div class=\"operation\">⚔️ <b>"+region(a.from).name+" → "+region(a.to).name+"</b> · "+fmt(a.amount)+"명 <span class=\"eta\">"+a.remaining+"계절</span></div>");
+  });
+  active.innerHTML=ops.length?ops.join(""):"<div class=\"operation\">진행 중인 건설·행군이 없습니다.</div>";
   var feed=document.getElementById("feed");feed.innerHTML="";
   state.feed.slice(-8).reverse().forEach(function(item){var d=document.createElement("div");d.className="feedItem";d.innerHTML="<b>"+item.date+"</b><br>"+item.text;feed.appendChild(d);});
 }
-function renderMap(){
-  var layer=document.getElementById("regionLayer");layer.innerHTML="";
-  Object.keys(state.regions).forEach(function(id){
-    var r=region(id),c=COUNTRIES[r.owner];
-    var poly=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-    poly.setAttribute("points",r.points);poly.setAttribute("fill",c.color);poly.setAttribute("class","region"+(selectedRegion===id?" selected":""));poly.dataset.id=id;
-    poly.addEventListener("click",function(){handleRegionClick(id);});layer.appendChild(poly);
-    var star=document.createElementNS("http://www.w3.org/2000/svg","text");
-    star.setAttribute("x",r.center[0]);star.setAttribute("y",r.center[1]-22);star.setAttribute("class","capitalStar");star.textContent=(COUNTRIES[r.owner].capital===id)?"★":"";layer.appendChild(star);
-    var label=document.createElementNS("http://www.w3.org/2000/svg","text");
-    label.setAttribute("x",r.center[0]);label.setAttribute("y",r.center[1]);label.setAttribute("class","regionLabel");label.textContent=r.name;layer.appendChild(label);
-    var army=document.createElementNS("http://www.w3.org/2000/svg","text");
-    army.setAttribute("x",r.center[0]);army.setAttribute("y",r.center[1]+18);army.setAttribute("class","armyLabel");army.textContent="⚔ "+fmt(r.army);layer.appendChild(army);
+function svgEl(tag,attrs){
+  var el=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  Object.keys(attrs||{}).forEach(function(k){
+    if(k==="href"){el.setAttribute("href",attrs[k]);try{el.setAttributeNS("http://www.w3.org/1999/xlink","href",attrs[k]);}catch(e){}}
+    else el.setAttribute(k,attrs[k]);
   });
-  if(moveMode&&selectedRegion){
-    var src=region(selectedRegion);
-    src.neighbors.forEach(function(id){
-      var el=layer.querySelector("polygon[data-id=\""+id+"\"]");if(!el)return;
-      el.classList.add(region(id).owner===state.player?"moveTarget":"enemyTarget");
-    });
-  }
-  var legend=document.getElementById("legend");legend.innerHTML="";
-  Object.keys(COUNTRIES).forEach(function(id){
-    var c=COUNTRIES[id];var s=document.createElement("span");s.className="legend";s.innerHTML="<i style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:"+c.color+";margin-right:4px\"></i>"+c.short;legend.appendChild(s);
+  return el;
+}
+function mapPoint(r){
+  var lon=r.geo[0],lat=r.geo[1];
+  return [
+    (lon-MAP_BOUNDS.left)/(MAP_BOUNDS.right-MAP_BOUNDS.left)*MAP_BOUNDS.width,
+    (MAP_BOUNDS.top-lat)/(MAP_BOUNDS.top-MAP_BOUNDS.bottom)*MAP_BOUNDS.height
+  ];
+}
+function projectAt(id){return mapPoint(region(id));}
+function projectLine(layer,p1,p2,cls,stroke){
+  var line=svgEl("line",{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],class:cls});
+  if(stroke)line.setAttribute("stroke",stroke);layer.appendChild(line);return line;
+}
+function projectAtProgress(from,to,progress){
+  var a=projectAt(from),b=projectAt(to),t=clamp(progress,0,1);
+  return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+}
+function projectAtOwnerHub(c){
+  var regs=regionsOf(c);if(!regs.length)return null;
+  var port=regs.find(function(id){return region(id).buildings&&region(id).buildings.port;});
+  if(port)return port;
+  var cap=COUNTRIES[c].capital;if(regs.indexOf(cap)>=0)return cap;
+  return regs.slice().sort(function(a,b){return region(b).dev-region(a).dev;})[0];
+}
+function tradeValue(a,b){
+  var ga={},gb={};
+  regionsOf(a).forEach(function(id){ga[region(id).specialty]=1;});
+  regionsOf(b).forEach(function(id){gb[region(id).specialty]=1;});
+  var diversity=Object.keys(ga).filter(function(k){return !gb[k];}).length+Object.keys(gb).filter(function(k){return !ga[k];}).length;
+  var infra=regionsOf(a).some(function(id){return region(id).buildings.market;})?2:0;
+  infra+=regionsOf(a).some(function(id){return region(id).buildings.road||region(id).buildings.port;})?1:0;
+  return 5+Math.min(5,diversity)+infra+(a==="baekje"?2:0)+(hasTech(a,"international_trade")?2:0);
+}
+function renderTradeRoutes(layer){
+  Object.keys(state.pacts||{}).forEach(function(k){
+    var pk=state.pacts[k];if(!pk||!pk.trade||pk.war)return;
+    var parts=k.split("|"),a=parts[0],b=parts[1],ha=projectAtOwnerHub(a),hb=projectAtOwnerHub(b);
+    if(!ha||!hb)return;
+    var p1=projectAt(ha),p2=projectAt(hb),line=projectLine(layer,p1,p2,"routeTrade");
+    var path="M "+p1[0]+" "+p1[1]+" L "+p2[0]+" "+p2[1];
+    var sea=(a==="wa"||b==="wa");
+    var img=svgEl("image",{href:sea?MAP_ASSETS.ship:MAP_ASSETS.horse,width:sea?6.8:5.5,height:sea?6.8:5.5,x:-3,y:-3,class:"tradeToken"});
+    var motion=svgEl("animateMotion",{path:path,dur:(5.5+Math.random()*2).toFixed(1)+"s",repeatCount:"indefinite",rotate:"auto"});
+    img.appendChild(motion);layer.appendChild(img);
   });
 }
-function handleRegionClick(id){
+function renderTransit(layer){
+  (state.armiesTransit||[]).forEach(function(a){
+    if(!region(a.from)||!region(a.to))return;
+    var p1=projectAt(a.from),p2=projectAt(a.to);
+    projectLine(layer,p1,p2,"routeMove",COUNTRIES[a.owner].color);
+    var progress=1-(a.remaining/Math.max(1,a.duration)),p=projectAtProgress(a.from,a.to,progress);
+    var g=svgEl("g",{});
+    var back=svgEl("circle",{cx:p[0],cy:p[1],r:4.4,class:"transitBack",fill:COUNTRIES[a.owner].color});g.appendChild(back);
+    var asset=a.mode==="sea"?MAP_ASSETS.ship:MAP_ASSETS.soldier;
+    var img=svgEl("image",{href:asset,x:p[0]-3.5,y:p[1]-5.6,width:7,height:7,class:"transitImage"});
+    var bob=svgEl("animate",{attributeName:"y",values:(p[1]-5.6)+";"+(p[1]-6.3)+";"+(p[1]-5.6),dur:".7s",repeatCount:"indefinite"});
+    img.appendChild(bob);g.appendChild(img);
+    var txt=svgEl("text",{x:p[0],y:p[1]+6.3,class:"transitText"});txt.textContent=fmt(a.amount)+" · "+a.remaining+"계절";g.appendChild(txt);
+    layer.appendChild(g);
+  });
+}
+function renderMap(){
+  var layer=document.getElementById("regionLayer"),routes=document.getElementById("routeLayer"),transit=document.getElementById("transitLayer");
+  layer.innerHTML="";routes.innerHTML="";transit.innerHTML="";
+  var drawn={};
+  Object.keys(state.regions).forEach(function(id){
+    var r=region(id),p1=projectAt(id);
+    r.neighbors.forEach(function(nid){
+      var key=[id,nid].sort().join("|");if(drawn[key]||!region(nid))return;drawn[key]=1;
+      var nr=region(nid),same=r.owner===nr.owner;
+      projectLine(routes,p1,projectAt(nid),same?"routeBase routeOwned":"routeBase",same?COUNTRIES[r.owner].color:null);
+    });
+  });
+  renderTradeRoutes(routes);
+  Object.keys(state.regions).forEach(function(id){
+    var r=region(id),c=COUNTRIES[r.owner],p=projectAt(id),g=svgEl("g",{class:"cityNode",tabindex:"0",role:"button","aria-label":r.name+" "+c.name});
+    var classes=["cityNode"];if(selectedRegion===id)classes.push("selected");
+    if(moveMode&&selectedRegion&&region(selectedRegion).neighbors.indexOf(id)>=0)classes.push(r.owner===state.player?"moveTarget":"enemyTarget");
+    g.setAttribute("class",classes.join(" "));
+    var hit=svgEl("circle",{cx:p[0],cy:p[1],r:7.5,class:"cityHit"});g.appendChild(hit);
+    var radius=4.1+(r.buildings.city?1.15:0);
+    if(r.buildings.fort)g.appendChild(svgEl("circle",{cx:p[0],cy:p[1],r:radius+1.8,class:"cityFort"}));
+    var core=svgEl("circle",{cx:p[0],cy:p[1],r:radius,class:"cityCore",fill:c.color});g.appendChild(core);
+    if(COUNTRIES[r.owner].capital===id){var star=svgEl("text",{x:p[0],y:p[1]+1.5,class:"capitalMark"});star.textContent="★";g.appendChild(star);}
+    var spec=SPECIALTIES[r.specialty]||{icon:"•"};
+    var badge=svgEl("text",{x:p[0],y:p[1]-radius-1.5,class:"cityBadge"});badge.textContent=spec.icon;g.appendChild(badge);
+    if((state.projects||[]).some(function(pr){return pr.region===id;})){var hammer=svgEl("text",{x:p[0]+radius+2,y:p[1]-radius,class:"projectMark"});hammer.textContent="🔨";g.appendChild(hammer);}
+    var bg=svgEl("rect",{x:p[0]-10,y:p[1]+5.2,width:20,height:6.1,rx:2,class:"cityLabelBg"});g.appendChild(bg);
+    var label=svgEl("text",{x:p[0],y:p[1]+9.25,class:"cityLabel"});label.textContent=r.name;g.appendChild(label);
+    var army=svgEl("text",{x:p[0],y:p[1]+14,class:"cityArmy"});army.textContent="⚔ "+fmt(r.army);g.appendChild(army);
+    g.addEventListener("click",function(){handleRegionClick(id);});
+    g.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();handleRegionClick(id);}});
+    layer.appendChild(g);
+  });
+  renderTransit(transit);
+  var legend=document.getElementById("legend");legend.innerHTML="";
+  Object.keys(COUNTRIES).forEach(function(id){
+    var c=COUNTRIES[id],sp=document.createElement("span");sp.className="legend";sp.innerHTML="<i style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:"+c.color+";margin-right:4px\"></i>"+c.short;legend.appendChild(sp);
+  });
+}
+function handleRegionClickfunction handleRegionClick(id){
   if(moveMode&&selectedRegion&&region(selectedRegion).neighbors.indexOf(id)>=0){executeMove(id);return;}
   selectedRegion=id;moveMode=false;renderMap();renderRegionPanel();
 }
 function renderRegionPanel(){
   var panel=document.getElementById("regionPanel");
-  if(!selectedRegion||!region(selectedRegion)){panel.className="rightEmpty";panel.textContent="지역을 선택하세요.";return;}
-  var r=region(selectedRegion),owner=COUNTRIES[r.owner],mine=r.owner===state.player,t=TERRAIN[r.terrain];
-  var buildings=[];
-  var labels={farm:"🌾 농장",market:"🏪 시장",school:"📚 학교",fort:"🏯 성곽",port:"⚓ 항구"};
-  Object.keys(r.buildings).forEach(function(k){if(r.buildings[k])buildings.push("<span class=\"building\">"+labels[k]+"</span>");});
+  if(!selectedRegion||!region(selectedRegion)){panel.className="rightEmpty";panel.textContent="도시를 선택하세요.";return;}
+  var r=region(selectedRegion),owner=COUNTRIES[r.owner],mine=r.owner===state.player,t=TERRAIN[r.terrain],spec=SPECIALTIES[r.specialty]||{icon:"📦",name:"교역품"};
+  var buildings=[],labels={};
+  Object.keys(BUILD_DEFS).forEach(function(k){labels[k]=BUILD_DEFS[k].icon+" "+BUILD_DEFS[k].name;});
+  Object.keys(r.buildings).forEach(function(k){if(r.buildings[k]&&labels[k])buildings.push("<span class=\"building\">"+labels[k]+"</span>");});
+  var projects=(state.projects||[]).filter(function(p){return p.region===selectedRegion;});
   var html="<div class=\"regionName\">"+r.name+"</div><div class=\"regionOwner\" style=\"color:"+owner.color+"\">"+owner.name+" · "+t.icon+" "+t.name+"</div>";
+  html+="<div class=\"specialtyBox\">"+spec.icon+" 지역 특산품 <b>"+spec.name+"</b> <span style=\"color:#91a7bd\">· 게임용 경제 단순화</span></div>";
   html+="<div class=\"statGrid\"><div class=\"statCell\"><small>식량 기반</small><b>"+r.food+"</b></div><div class=\"statCell\"><small>인구</small><b>"+r.pop+"</b></div><div class=\"statCell\"><small>개발</small><b>"+r.dev+"</b></div><div class=\"statCell\"><small>주둔 병력</small><b>"+fmt(r.army)+"</b></div></div>";
   html+="<div class=\"buildings\">"+(buildings.length?buildings.join(""):"<span class=\"building\">시설 없음</span>")+"</div>";
+  if(projects.length){
+    html+="<div class=\"projectList\">"+projects.map(function(p){return"<div class=\"projectRow\">🔨 "+BUILD_DEFS[p.type].name+" 건설 중 · <b>"+p.remaining+"계절</b></div>";}).join("")+"</div>";
+  }
   if(mine){
     html+="<div class=\"actionGroup\"><h3>지역 운영</h3><div class=\"actionList\">";
-    html+="<button class=\"actionBtn\" data-act=\"develop\">🏘️ 개발<span>💰 "+(17-(hasTech(state.player,"iron_tools")?3:0))+" · 명령 1</span></button>";
+    html+="<button class=\"actionBtn\" data-act=\"develop\">🏘️ 행정 정비<span>💰 "+(17-(hasTech(state.player,"iron_tools")?3:0))+" · 개발 +1</span></button>";
     html+="<button class=\"actionBtn\" data-act=\"recruit\">🛡️ 징병<span>💰18 👥12 · +180</span></button>";
-    html+="<button class=\"actionBtn\" data-act=\"move\">⚔️ 군대 이동<span>이웃 지역으로 이동</span></button>";
-    html+="<button class=\"actionBtn\" data-act=\"build\">🔨 시설 건설<span>농장·시장·학교·성곽</span></button></div></div>";
+    html+="<button class=\"actionBtn\" data-act=\"move\">⚔️ 군대 이동<span>도착까지 실제 시간이 걸림</span></button>";
+    html+="<button class=\"actionBtn\" data-act=\"build\">🔨 장기 건설<span>농업·도시·성벽·도로</span></button></div></div>";
     if(moveMode){
       var max=Math.max(100,Math.floor((r.army-80)/50)*50);
       html+="<div class=\"moveBox\"><b style=\"font-size:10px\">이동 병력 <span id=\"moveAmountLabel\">"+Math.min(300,max)+"</span></b><input id=\"moveAmount\" type=\"range\" min=\"100\" max=\""+max+"\" step=\"50\" value=\""+Math.min(300,max)+"\"><div class=\"moveTargets\">";
       r.neighbors.forEach(function(nid){
-        var nr=region(nid),blocked=isSeaLink(selectedRegion,nid)&&!canSeaMove(state.player);
-        html+="<button class=\"tiny\" data-move-target=\""+nid+"\" "+(blocked?"disabled":"")+">"+nr.name+(nr.owner!==state.player?" ⚔":"")+"</button>";
+        var nr=region(nid),blocked=isSeaLink(selectedRegion,nid)&&!canSeaMove(state.player),eta=travelTime(state.player,selectedRegion,nid);
+        html+="<button class=\"tiny\" data-move-target=\""+nid+"\" "+(blocked?"disabled":"")+">"+nr.name+" · "+eta+"계절"+(nr.owner!==state.player?" ⚔":"")+"</button>";
       });
       html+="</div></div>";
     }
@@ -620,13 +715,13 @@ function renderRegionPanel(){
   var slider=document.getElementById("moveAmount");if(slider)slider.addEventListener("input",function(){document.getElementById("moveAmountLabel").textContent=slider.value;});
   panel.querySelectorAll("[data-move-target]").forEach(function(b){b.addEventListener("click",function(){executeMove(b.dataset.moveTarget);});});
 }
-function spendCommand(n){if(state.commands<n){toast("이번 턴의 명령력이 부족합니다.");return false;}state.commands-=n;return true;}
+function spendCommandfunction spendCommand(n){if(state.commands<n){toast("이번 턴의 명령력이 부족합니다.");return false;}state.commands-=n;return true;}
 function regionAction(type){
   var r=region(selectedRegion),n=nation(state.player);if(r.owner!==state.player)return;
   if(type==="develop"){
     var cost=17-(hasTech(state.player,"iron_tools")?3:0);
     if(n.money<cost){toast("재정이 부족합니다.");return;}if(!spendCommand(1))return;
-    n.money-=cost;r.dev+=1;if(Math.random()<.55)r.food+=1;log(r.name+"을 개발했습니다.");toast(r.name+" 개발 +1");renderAll();saveGame(false);
+    n.money-=cost;r.dev+=1;if(Math.random()<.45)r.food+=1;log(r.name+"의 행정과 생산 기반을 정비했습니다.");toast(r.name+" 개발 +1");renderAll();saveGame(false);
   }
   if(type==="recruit"){
     if(n.money<18||n.manpower<12){toast("재정 또는 인력이 부족합니다.");return;}if(!spendCommand(1))return;
@@ -637,39 +732,92 @@ function regionAction(type){
   }
   if(type==="build")openBuildModal();
 }
+function projectAtRegion(regionId,type){
+  return (state.projects||[]).find(function(p){return p.region===regionId&&(!type||p.type===type);});
+}
 function openBuildModal(){
-  var r=region(selectedRegion),items=[
-    {id:"farm",name:"🌾 농장",cost:20,desc:"지역 식량 수입을 늘립니다."},
-    {id:"market",name:"🏪 시장",cost:24,desc:"지역 재정 수입을 늘립니다."},
-    {id:"school",name:"📚 학교",cost:25,desc:"매 턴 지식을 생산합니다."},
-    {id:"fort",name:"🏯 성곽",cost:28,desc:"방어 전투력을 크게 높입니다."}
-  ];
-  if(r.terrain==="coast")items.push({id:"port",name:"⚓ 항구",cost:26,desc:"교역과 해상 이동의 거점입니다."});
-  openModal("지역 건설",r.name+"에 지을 시설을 고르세요.","시설은 지역마다 종류별로 하나씩만 지을 수 있습니다.",items.map(function(it){
-    var disabled=r.buildings[it.id]?"disabled":"";
-    return "<button class=\"choiceBtn\" data-build=\""+it.id+"\" "+disabled+"><b>"+it.name+" · 💰"+it.cost+"</b><span>"+(r.buildings[it.id]?"이미 건설됨":it.desc+" · 명령력 1")+"</span></button>";
+  var r=region(selectedRegion),items=Object.keys(BUILD_DEFS).map(function(id){var d=BUILD_DEFS[id];return{id:id,name:d.icon+" "+d.name,cost:d.cost,duration:d.duration,group:d.group,desc:d.desc};});
+  items=items.filter(function(it){return it.id!=="port"||r.terrain==="coast"||r.terrain==="river";});
+  openModal("장기 건설",r.name+"의 발전 계획","시설은 즉시 생기지 않습니다. 계절이 지나야 완성되며 지도에도 건설 상태가 표시됩니다.",items.map(function(it){
+    var active=projectAtRegion(selectedRegion,it.id),done=r.buildings[it.id],disabled=done||active;
+    return "<button class=\"choiceBtn\" data-build=\""+it.id+"\" "+(disabled?"disabled":"")+"><b>"+it.name+" · 💰"+it.cost+" · "+it.duration+"계절</b><span>"+(done?"이미 완성":active?"건설 중 · "+active.remaining+"계절 남음":it.group+" · "+it.desc)+"</span></button>";
   }).join(""));
   document.querySelectorAll("[data-build]").forEach(function(b){b.addEventListener("click",function(){buildFacility(b.dataset.build);});});
 }
 function buildFacility(id){
-  var costs={farm:20,market:24,school:25,fort:28,port:26},r=region(selectedRegion),n=nation(state.player),cost=costs[id];
-  if(r.buildings[id])return;if(n.money<cost){toast("재정이 부족합니다.");return;}if(!spendCommand(1))return;
-  n.money-=cost;r.buildings[id]=1;log(r.name+"에 "+({farm:"농장",market:"시장",school:"학교",fort:"성곽",port:"항구"}[id])+"을 세웠습니다.");
-  closeModal();renderAll();saveGame(false);toast("시설 건설 완료");
+  var def=BUILD_DEFS[id],r=region(selectedRegion),n=nation(state.player);if(!def||r.buildings[id]||projectAtRegion(selectedRegion,id))return;
+  if(n.money<def.cost){toast("재정이 부족합니다.");return;}if(!spendCommand(1))return;
+  var duration=Math.max(1,def.duration-(id==="fort"&&hasTech(state.player,"fortification")?1:0));
+  n.money-=def.cost;state.projects.push({region:selectedRegion,type:id,owner:state.player,remaining:duration,duration:duration});
+  log(r.name+"에서 "+def.name+" 공사를 시작했습니다. ("+duration+"계절)");
+  closeModal();renderAll();saveGame(false);toast(def.name+" 공사 시작");
+}
+function travelTime(owner,srcId,dstId){
+  var src=region(srcId),dst=region(dstId),sea=isSeaLink(srcId,dstId),t=sea?2:2;
+  if(!sea&&(src.terrain==="mountain"||dst.terrain==="mountain"))t+=1;
+  if((src.buildings&&src.buildings.road)&&(dst.buildings&&dst.buildings.road))t-=1;
+  if(hasTech(owner,"roads"))t-=1;
+  if(src.owner!==dst.owner)t+=1;
+  return clamp(t,1,4);
+}
+function hasTransitFrom(owner,srcId){return (state.armiesTransit||[]).some(function(a){return a.owner===owner&&a.from===srcId;});}
+function launchArmy(owner,srcId,dstId,amount,ai){
+  var src=region(srcId),dst=region(dstId);if(!src||!dst||src.army<amount)return false;
+  var duration=travelTime(owner,srcId,dstId),mode=isSeaLink(srcId,dstId)?"sea":"land";
+  src.army-=amount;
+  state.armiesTransit.push({id:state.nextTransitId++,owner:owner,from:srcId,to:dstId,amount:amount,remaining:duration,duration:duration,mode:mode,ai:!!ai});
+  log(COUNTRIES[owner].name+" 군 "+amount+"명이 "+src.name+"에서 "+dst.name+"으로 출발했습니다. ("+duration+"계절)");
+  return true;
 }
 function executeMove(targetId){
   var src=region(selectedRegion),dst=region(targetId);if(!src||src.owner!==state.player||src.neighbors.indexOf(targetId)<0)return;
   if(isSeaLink(selectedRegion,targetId)&&!canSeaMove(state.player)){toast("해상 이동 기술이 필요합니다.");return;}
-  var slider=document.getElementById("moveAmount");var amount=slider?Number(slider.value):Math.min(300,Math.max(100,src.army-80));
+  var slider=document.getElementById("moveAmount"),amount=slider?Number(slider.value):Math.min(300,Math.max(100,src.army-80));
   amount=Math.min(amount,src.army-80);if(amount<100){toast("최소 주둔 병력 80명을 남겨야 합니다.");return;}
   if(dst.owner!==state.player&&!pact(state.player,dst.owner).war){toast(COUNTRIES[dst.owner].name+"과 전쟁 중이 아닙니다. 외교에서 먼저 전쟁을 선포하세요.");return;}
   if(!spendCommand(1))return;
-  src.army-=amount;
-  if(dst.owner===state.player){dst.army+=amount;log(src.name+"에서 "+dst.name+"으로 "+amount+"명을 이동했습니다.");toast("병력 이동 완료");}
-  else resolveBattle(selectedRegion,targetId,amount,state.player,false);
-  moveMode=false;renderAll();saveGame(false);
+  var eta=travelTime(state.player,selectedRegion,targetId);
+  if(!launchArmy(state.player,selectedRegion,targetId,amount,false)){toast("행군을 시작할 수 없습니다.");return;}
+  moveMode=false;renderAll();saveGame(false);toast(dst.name+"까지 "+eta+"계절");
 }
-function attackMod(c,r,isAttack){
+function advanceProjects(){
+  var next=[];
+  (state.projects||[]).forEach(function(p){
+    p.remaining-=1;
+    if(p.remaining<=0&&region(p.region)&&region(p.region).owner===p.owner){
+      region(p.region).buildings[p.type]=1;
+      log(region(p.region).name+"의 "+BUILD_DEFS[p.type].name+"이 완성되었습니다.");
+      addTimeline("🔨 "+region(p.region).name+" · "+BUILD_DEFS[p.type].name+" 완공");
+    }else if(p.remaining>0)next.push(p);
+  });
+  state.projects=next;
+}
+function armyReturnTarget(owner,from){
+  if(region(from)&&region(from).owner===owner)return from;
+  var cap=COUNTRIES[owner].capital;if(region(cap)&&region(cap).owner===owner)return cap;
+  return regionsOf(owner)[0]||null;
+}
+function advanceArmies(){
+  var next=[];
+  (state.armiesTransit||[]).forEach(function(a){
+    a.remaining-=1;
+    if(a.remaining>0){next.push(a);return;}
+    var dst=region(a.to);if(!dst)return;
+    if(dst.owner===a.owner){
+      dst.army+=a.amount;log(COUNTRIES[a.owner].name+" 군 "+a.amount+"명이 "+dst.name+"에 도착했습니다.");
+      return;
+    }
+    if(pact(a.owner,dst.owner).war){
+      log(COUNTRIES[a.owner].name+" 군이 "+dst.name+" 전장에 도착했습니다.");
+      resolveBattle(a.from,a.to,a.amount,a.owner,a.ai);
+      return;
+    }
+    var back=armyReturnTarget(a.owner,a.from);
+    if(back){region(back).army+=a.amount;log("평화가 이루어져 "+COUNTRIES[a.owner].name+" 군이 행군을 중단하고 복귀했습니다.");}
+  });
+  state.armiesTransit=next;
+}
+function attackModfunction attackMod(c,r,isAttack){
   var m=1;
   if(isAttack&&hasTech(c,"iron_weapons"))m*=1.08;
   if(isAttack&&hasTech(c,"cavalry")&&r.terrain==="plain")m*=1.12;
@@ -709,7 +857,7 @@ function openDiplomacy(){
   var p=state.player,html="<div class=\"diploList\">";
   Object.keys(COUNTRIES).filter(function(id){return id!==p;}).forEach(function(id){
     var c=COUNTRIES[id],rel=relation(p,id),pk=pact(p,id),status=[];
-    if(pk.war)status.push("전쟁");if(pk.alliance)status.push("동맹");if(pk.trade)status.push("교역");if(pk.nap)status.push("불가침");
+    if(pk.war)status.push("전쟁");if(pk.alliance)status.push("동맹");if(pk.trade)status.push("교역 +"+fmt(tradeValue(p,id))+"💰/계절");if(pk.nap)status.push("불가침");
     html+="<div class=\"diploCard\"><div class=\"diploTop\"><b>"+c.icon+" "+c.name+"</b><span class=\"relation\">"+relationText(rel)+" "+rel+"</span></div><p>"+c.desc+(status.length?" · "+status.join(" · "):"")+"</p><div class=\"diploActions\">";
     if(pk.war)html+="<button data-dip=\"peace\" data-target=\""+id+"\">평화 제안</button>";
     else{
@@ -771,15 +919,17 @@ function baseCommands(c){return 4+(hasTech(c,"roads")?1:0);}
 function calculateIncome(c){
   var regs=regionsOf(c),food=0,money=0,man=0,knowledge=0;
   regs.forEach(function(id){
-    var r=region(id);
-    food+=r.food+(r.buildings.farm?2+(hasTech(c,"iron_tools")?1:0):0);
-    money+=Math.max(1,r.dev*.72)+(r.buildings.market?3:0);
-    man+=r.pop*.7;knowledge+=r.dev*.18+(r.buildings.school?3:0);
+    var r=region(id),b=r.buildings||{};
+    food+=r.food+(b.farm?2:0)+(b.irrigation?2:0)+(hasTech(c,"iron_tools")&&b.farm?1:0);
+    money+=Math.max(1,r.dev*.72)+(b.market?3:0)+(b.city?2:0)+(b.road?.6:0)+(b.port?1:0);
+    man+=r.pop*.7+(b.city?1:0);
+    knowledge+=r.dev*.18+(b.school?3:0);
   });
   if(hasTech(c,"irrigation"))food*=1.10;
   if(hasTech(c,"writing_admin"))money*=1.10;
-  var tradeCount=Object.keys(COUNTRIES).filter(function(o){return o!==c&&pact(c,o).trade&&!pact(c,o).war;}).length;
-  money+=tradeCount*(5+(c==="baekje"?3:0)+(hasTech(c,"international_trade")?4:0));
+  Object.keys(COUNTRIES).forEach(function(o){
+    if(o===c)return;var pk=pact(c,o);if(pk.trade&&!pk.war)money+=tradeValue(c,o);
+  });
   var upkeep=totalArmy(c)/280;
   food-=upkeep*.55;money-=upkeep*.28;
   if(c==="silla")knowledge*=1.10;
@@ -788,15 +938,17 @@ function calculateIncome(c){
 function applyIncome(c){
   var n=nation(c),inc=calculateIncome(c);
   n.food=clamp(n.food+inc.food,0,999);n.money=clamp(n.money+inc.money,0,999);n.manpower=clamp(n.manpower+inc.manpower,0,999);n.knowledge=clamp(n.knowledge+inc.knowledge,0,999);
-  if(n.food<=1&&!hasTech(c,"granary")){regionsOf(c).forEach(function(id){region(id).army=Math.max(40,region(id).army-25);});n.authority=clamp(n.authority-4,0,100);}
+  var granary=hasTech(c,"granary")||regionsOf(c).some(function(id){return region(id).buildings&&region(id).buildings.granary;});
+  if(n.food<=1&&!granary){regionsOf(c).forEach(function(id){region(id).army=Math.max(40,region(id).army-25);});n.authority=clamp(n.authority-4,0,100);}
   n.authority=clamp(n.authority+1-n.warWeariness*.015,0,100);
 }
-function aiTurn(c){
+function aiTurnfunction aiTurn(c){
   if(c===state.player)return;
   var n=nation(c),wars=Object.keys(COUNTRIES).filter(function(o){return o!==c&&pact(c,o).war;});
   if(wars.length){
     var candidates=[];
     regionsOf(c).forEach(function(srcId){
+      if(hasTransitFrom(c,srcId))return;
       var src=region(srcId);src.neighbors.forEach(function(dstId){
         var dst=region(dstId);if(wars.indexOf(dst.owner)<0)return;if(isSeaLink(srcId,dstId)&&!canSeaMove(c))return;
         var ratio=src.army/Math.max(dst.army*TERRAIN[dst.terrain].def,1);candidates.push({src:srcId,dst:dstId,ratio:ratio});
@@ -804,7 +956,8 @@ function aiTurn(c){
     });
     candidates.sort(function(a,b){return b.ratio-a.ratio;});
     if(candidates[0]&&candidates[0].ratio>1.05){
-      var a=candidates[0],src=region(a.src),amount=Math.max(120,Math.floor((src.army-80)*.72));if(amount>100){src.army-=amount;resolveBattle(a.src,a.dst,amount,c,true);}
+      var a=candidates[0],src=region(a.src),amount=Math.max(120,Math.floor((src.army-80)*.72));
+      if(amount>100)launchArmy(c,a.src,a.dst,amount,true);else aiRecruit(c);
     }else aiRecruit(c);
   }else{
     if(Math.random()<.58)aiRecruit(c);
@@ -812,7 +965,7 @@ function aiTurn(c){
     aiDiplomacy(c);
   }
 }
-function aiRecruit(c){
+function aiRecruitfunction aiRecruit(c){
   var n=nation(c);if(n.money<18||n.manpower<12)return;
   var regs=regionsOf(c).slice().sort(function(a,b){return borderScore(b,c)-borderScore(a,c);});if(!regs.length)return;
   n.money-=18;n.manpower-=12;region(regs[0]).army+=160;
@@ -843,8 +996,10 @@ function coolWars(){
 function endTurn(){
   if(state.finished)return;
   closeModal();moveMode=false;
-  Object.keys(COUNTRIES).forEach(applyIncome);
   ["goguryeo","baekje","silla","sui","wa"].forEach(aiTurn);
+  advanceProjects();
+  advanceArmies();
+  Object.keys(COUNTRIES).forEach(applyIncome);
   coolWars();
   state.turn++;
   if(state.turn>MAX_TURNS){finishCampaign();return;}
@@ -853,7 +1008,7 @@ function endTurn(){
   selectedRegion=selectedRegion&&region(selectedRegion)?selectedRegion:COUNTRIES[state.player].capital;
   renderAll();saveGame(false);
 }
-function maybeEvent(){
+function maybeEventfunction maybeEvent(){
   var key="";
   if(state.turn===4&&!state.eventFlags.han)key="han";
   else if(state.turn===8&&!state.eventFlags.sui)key="sui";
@@ -896,7 +1051,7 @@ function showEvent(key){
 function finishCampaign(){
   state.finished=true;state.turn=MAX_TURNS;
   var regs=regionsOf(state.player),dev=totalDev(state.player),tech=nation(state.player).techs.length,goals=OBJECTIVES[state.player].filter(function(o){return o.check();}).length;
-  document.getElementById("resultTitle").textContent=COUNTRIES[state.player].name+"의 "+(MAX_TURNS/2)+"년 기록";
+  document.getElementById("resultTitle").textContent=COUNTRIES[state.player].name+"의 "+(MAX_TURNS/4)+"년 기록";
   document.getElementById("resultDesc").textContent="영토만 넓힌 역사인지, 기술과 외교를 키운 역사인지 아래 기록과 연표를 비교해 보세요. 목표 "+goals+"/"+OBJECTIVES[state.player].length+"개를 달성했습니다.";
   document.getElementById("resultRegions").textContent=regs.length;
   document.getElementById("resultDev").textContent=dev;
@@ -912,10 +1067,10 @@ function toast(msg){
 function startTutorial(){tutorialStep=0;showTutorial();}
 function showTutorial(){
   var tips=[
-    ["① 지역을 살펴보세요","지도에서 내 나라의 지역을 누르면 개발·징병·군대 이동을 할 수 있습니다."],
+    ["① 실제 지도에서 도시를 고르세요","도시는 실제 지리 위치에 놓여 있습니다. 도시를 누르면 농업·도시·군사 발전을 결정할 수 있습니다."],
     ["② 명령력은 선택의 한도","한 턴에 모든 일을 할 수는 없습니다. 개발, 군사, 외교, 연구 중 무엇을 먼저 할지 골라야 합니다."],
     ["③ 외교도 무기입니다","아래 외교 버튼에서 사절·교역·불가침·동맹을 맺을 수 있습니다. 공격하려면 먼저 전쟁 상태가 되어야 합니다."],
-    ["④ 턴을 넘기면 세계가 움직입니다","턴 종료 뒤 다른 나라 AI도 개발·징병·전쟁을 판단합니다. 24턴 동안 당신만의 역사를 만들어 보세요."]
+    ["④ 시간은 실제 전략 자원입니다","군대는 목적지까지 1~4계절을 행군하고 성벽·시장·농업 시설도 여러 계절에 걸쳐 완성됩니다. 교역로의 말과 배도 지도 위를 오갑니다."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorialTip").classList.add("hidden");return;}
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorialTip").classList.remove("hidden");
