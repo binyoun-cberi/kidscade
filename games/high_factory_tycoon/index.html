@@ -20,6 +20,7 @@
     <div class="stat"><span>매출</span><b id="cash">₩0</b></div>
     <div class="stat"><span>분당</span><b id="perMinute">0.0</b></div>
     <div class="stat waste"><span>폐기</span><b id="waste">0</b></div>
+    <div class="stat mapStat"><span>맵</span><b id="mapBadge">소</b></div>
   </header>
 
   <aside id="orders" class="glass">
@@ -31,6 +32,7 @@
   </aside>
 
   <div id="topActions" class="glass">
+    <button id="moveBtn" type="button" title="화면 이동">✋</button>
     <button id="analysisBtn" type="button" title="분석 보기">◎</button>
     <button id="bookBtn" type="button" title="샌드위치 도감">📖</button>
     <button id="pauseBtn" type="button" title="일시정지">Ⅱ</button>
@@ -72,16 +74,33 @@
       <h1>공장 타이쿤</h1>
       <p class="lead">무한히 나오는 빵과 재료를 컨베이어로 연결하고, 자르고 굽고 쌓아서 나만의 샌드위치 공장을 만드세요. 기계와 벨트는 전부 무료입니다.</p>
       <div class="featureRow"><span>∞ 건설 무제한</span><span>🥪 조합 무제한</span><span>⚙ 병목 해결</span><span>💾 자동 저장</span></div>
+      <div class="sizeTitle"><b>공장 크기</b><small>새 공장을 만들 때 선택해요</small></div>
+      <div class="sizeSelect" aria-label="공장 크기">
+        <button class="sizeCard active" data-size="small" type="button"><b>소</b><span>28×18</span><small>처음 배우기 좋아요</small></button>
+        <button class="sizeCard" data-size="medium" type="button"><b>중</b><span>44×28</span><small>여러 생산선 만들기</small></button>
+        <button class="sizeCard" data-size="large" type="button"><b>대</b><span>64×40</span><small>거대한 자동화 공장</small></button>
+      </div>
       <div class="slotSelect" aria-label="공장 저장 슬롯">
         <button class="slot active" data-slot="1" type="button">공장 1</button>
         <button class="slot" data-slot="2" type="button">공장 2</button>
         <button class="slot" data-slot="3" type="button">공장 3</button>
       </div>
-      <div class="startActions">
+      <div class="startActions three">
+        <button id="tutorialBtn" class="tutorialStart" type="button">소형 튜토리얼</button>
         <button id="newBtn" class="primary" type="button">새 공장 시작</button>
         <button id="continueBtn" class="secondary" type="button">이어하기</button>
       </div>
-      <small class="tip">PC: 드래그 건설 · 휠 확대 · Space 일시정지 · R 회전<br>태블릿: 한 손가락 건설 · 두 손가락 이동/확대</small>
+      <small class="tip">✋ 이동을 누르면 화면을 잡아 끌 수 있어요 · 휠/두 손가락으로 확대·축소<br>PC는 가운데·오른쪽 드래그로도 언제든 화면을 움직일 수 있어요.</small>
+    </div>
+  </div>
+
+  <div id="tutorialCoach" class="tutorialCoach glass hidden">
+    <div class="tutorialStep" id="tutorialStep">튜토리얼 1 / 5</div>
+    <b id="tutorialTitle">공장을 둘러봐요</b>
+    <p id="tutorialText">오른쪽 위의 ✋ 이동을 누르고 화면을 잡아 끌어 보세요.</p>
+    <div class="tutorialActions">
+      <button id="tutorialSkip" type="button">끝내기</button>
+      <button id="tutorialNext" type="button">다음</button>
     </div>
   </div>
 
@@ -90,10 +109,11 @@
       <p class="eyebrow">게임 방법</p>
       <h2>이어 붙이면 공장이 살아나요</h2>
       <div class="helpGrid">
-        <div><b>1. 벨트를 그어요</b><p>재료 공급기에서 출고장까지 손가락으로 쭉 그리세요. 모서리는 자동으로 이어집니다.</p></div>
-        <div><b>2. 가공해요</b><p>토마토는 자르고, 달걀과 베이컨은 팬에 굽고, 빵은 토스터에 넣을 수 있어요.</p></div>
-        <div><b>3. 조립해요</b><p>조립기는 뒤에서 들어온 음식 위에 옆에서 들어온 재료를 한 층 올립니다. 여러 대를 이어 마음대로 쌓아 보세요.</p></div>
-        <div><b>4. 병목을 고쳐요</b><p>앞이 막히면 재료가 줄줄이 기다립니다. 나누기와 합치기로 흐름을 바꾸고 분석 모드에서 막힌 곳을 찾아보세요.</p></div>
+        <div><b>1. 화면을 움직여요</b><p>✋ 이동을 누른 뒤 빈 곳을 잡아 끌면 시점 중심이 움직입니다. 두 손가락으로도 이동·확대할 수 있어요.</p></div>
+        <div><b>2. 벨트를 그어요</b><p>재료 공급기에서 출고장까지 손가락으로 쭉 그리세요. 모서리는 자동으로 이어집니다.</p></div>
+        <div><b>3. 가공해요</b><p>토마토는 자르고, 달걀과 베이컨은 팬에 굽고, 빵은 토스터에 넣을 수 있어요.</p></div>
+        <div><b>4. 조립해요</b><p>조립기는 뒤에서 들어온 음식 위에 옆에서 들어온 재료를 한 층 올립니다. 여러 대를 이어 마음대로 쌓아 보세요.</p></div>
+        <div><b>5. 병목을 고쳐요</b><p>앞이 막히면 재료가 줄줄이 기다립니다. 나누기와 합치기로 흐름을 바꾸고 분석 모드에서 막힌 곳을 찾아보세요.</p></div>
       </div>
       <button id="closeHelpBtn" class="primary" type="button">공장으로</button>
     </div>
