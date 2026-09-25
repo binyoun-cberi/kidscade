@@ -107,6 +107,7 @@ function handlePress(k){
    pulseKey(k,true);
   }else{
    b.wobble+=.2;
+   state.missionStats.misses++;
    pulseKey(k,false);
   }
  }else if(m.target==='tray'&&(k==='q'||k==='w')){
@@ -120,6 +121,7 @@ function handlePress(k){
   }else{
    b.wobble+=.14;
    b.trayV+=(k==='q'?0.18:-0.18);
+   state.missionStats.misses++;
    pulseKey(k,false);
   }
  }
@@ -282,6 +284,7 @@ function finishMission(){
 function nextMission(){
  if(state.summary){
   state.mission=0;
+  state.runStats={falls:0,misses:0,drops:0,totalTime:0};
   try{window.KidscadeGame?.start?.({restart:true})}catch(_){}
   resetMission();
   return;
