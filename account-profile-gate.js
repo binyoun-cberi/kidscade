@@ -35,7 +35,7 @@
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .kc-profile-row{display:none!important}
       body[data-kc-profile-access="guest"] #${GATE_ID}{display:block!important;grid-column:1/-1}
       body[data-kc-profile-access="guest"] #kc-local-profile-card{display:none!important}
-      body[data-kc-profile-access="guest"] .kc-myspace-inner > :not(.avatar-shell):not(#kc-popular-hub):not(#kc-live-stats){display:none!important}
+      body[data-kc-profile-access="guest"] .kc-myspace-inner > :not(.avatar-shell):not(#kc-activity-strip):not(#kc-popular-hub):not(#kc-live-stats){display:none!important}
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell{min-height:0!important;display:block!important}
 
       body[data-kc-profile-access="account"] #kc-local-profile-card .kph-note{font-size:0!important}
