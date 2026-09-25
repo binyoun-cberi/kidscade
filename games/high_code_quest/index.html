@@ -6,11 +6,10 @@
 <meta name="theme-color" content="#101927">
 <title>버그월드: 코드 원정대 | Kidscade</title>
 <link rel="stylesheet" href="./style.css?v=1">
-<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div id="app">
-  <canvas id="world" aria-label="코드 원정대 3D 전장"></canvas>
+  <canvas id="world" aria-label="코드 원정대 2D 사이드스크롤 전장"></canvas>
 
   <header class="hud glass">
     <div class="brand">
@@ -88,9 +87,9 @@
       <div class="logo">⌘</div>
       <p class="eyebrow">KIDSCADE RPG</p>
       <h1>버그월드<br><span>코드 원정대</span></h1>
-      <p class="lead">검 대신 명령을 들고 떠나는 3D 코딩 RPG.<br>코드를 실행하고, 실패한 줄을 찾아 고쳐 세계의 버그를 없애세요.</p>
+      <p class="lead">검 대신 명령을 들고 달리고 점프하는 2D 사이드스크롤 코딩 RPG.<br>코드를 실행하고, 실패한 줄을 찾아 고쳐 세계의 버그를 없애세요.</p>
       <div class="feature-row">
-        <span>순서</span><span>반복</span><span>조건</span><span>변수</span><span>함수</span>
+        <span>이동</span><span>점프</span><span>반복</span><span>조건</span><span>함수</span>
       </div>
       <button id="newBtn" class="primary" type="button">새 원정 시작</button>
       <button id="continueBtn" class="secondary hidden" type="button">이어서 하기</button>
@@ -148,6 +147,6 @@
 <script src="../../kidscade-game-sdk.js" data-game-id="high_code_quest" data-title="버그월드: 코드 원정대" data-shell="true" data-orientation="landscape"></script>
 <script src="./missions.js?v=1"></script>
 <script src="./code-runtime.js?v=1"></script>
-<script type="module" src="./game.js?v=1"></script>
+<script type="module" src="./game.js?v=2"></script>
 </body>
 </html>
