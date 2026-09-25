@@ -3748,6 +3748,150 @@ const levels=[
     "objects": [
       {
         "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 8,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 8,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "object",
         "type": "hero",
         "x": 1,
         "y": 5
@@ -3762,30 +3906,12 @@ const levels=[
         "kind": "object",
         "type": "rock",
         "x": 7,
-        "y": 7
+        "y": 5
       },
       {
         "kind": "object",
         "type": "flag",
         "x": 10,
-        "y": 2
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 8,
-        "y": 7
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 8,
-        "y": 6
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 8,
         "y": 5
       }
     ],
@@ -3882,8 +4008,8 @@ const levels=[
       }
     ],
     "hints": [
-      "아이는 문에 막혀 있어요.",
-      "오른쪽 돌도 이미 나예요."
+      "아이는 문 왼쪽에서 나갈 수 없어요.",
+      "오른쪽 돌도 나이므로 돌을 깃발까지 움직이세요."
     ],
     "note": "조작 대상이 꼭 사람 모양일 필요는 없어요."
   },
@@ -4162,6 +4288,150 @@ const levels=[
     "objects": [
       {
         "kind": "object",
+        "type": "ice",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 1,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 7,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 8,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 11,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 0,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 7,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 8,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "object",
         "type": "hero",
         "x": 1,
         "y": 5
@@ -4176,25 +4446,13 @@ const levels=[
         "kind": "object",
         "type": "wall",
         "x": 7,
-        "y": 7
+        "y": 5
       },
       {
         "kind": "object",
         "type": "flag",
         "x": 10,
-        "y": 2
-      },
-      {
-        "kind": "object",
-        "type": "rock",
-        "x": 8,
-        "y": 6
-      },
-      {
-        "kind": "object",
-        "type": "rock",
-        "x": 9,
-        "y": 6
+        "y": 5
       }
     ],
     "words": [
@@ -4236,6 +4494,24 @@ const levels=[
       },
       {
         "kind": "word",
+        "token": "N:ice",
+        "x": 8,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 8,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 8,
+        "y": 2
+      },
+      {
+        "kind": "word",
         "token": "N:door",
         "x": 0,
         "y": 2
@@ -4254,7 +4530,7 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:rock",
+        "token": "N:wall",
         "x": 4,
         "y": 2
       },
@@ -4266,32 +4542,14 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "P:STOP",
-        "x": 6,
-        "y": 2
-      },
-      {
-        "kind": "word",
-        "token": "N:wall",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
         "token": "P:YOU",
-        "x": 8,
+        "x": 6,
         "y": 2
       }
     ],
     "hints": [
-      "아이는 문에 막혀 있어요.",
-      "오른쪽 벽을 직접 움직여 깃발로 보내세요."
+      "아이는 문 왼쪽에 갇혀 있어요.",
+      "오른쪽의 벽 하나만 움직여 깃발로 보내세요."
     ],
     "note": "벽도 나가 되면 캐릭터처럼 움직입니다."
   },
@@ -4570,39 +4828,51 @@ const levels=[
     "objects": [
       {
         "kind": "object",
-        "type": "hero",
+        "type": "wall",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 1,
-        "y": 7
+        "y": 4
       },
       {
         "kind": "object",
-        "type": "rock",
+        "type": "wall",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 7,
-        "y": 7
-      },
-      {
-        "kind": "object",
-        "type": "flag",
-        "x": 10,
-        "y": 1
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 4,
-        "y": 7
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 4,
-        "y": 6
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 4,
-        "y": 5
+        "y": 4
       },
       {
         "kind": "object",
@@ -4613,8 +4883,116 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 8,
-        "y": 3
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "hero",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "rock",
+        "x": 7,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "flag",
+        "x": 10,
+        "y": 5
       }
     ],
     "words": [
@@ -4692,8 +5070,8 @@ const levels=[
       }
     ],
     "hints": [
-      "아이와 돌이 함께 움직여요.",
-      "아이는 벽에 걸리지만 돌은 계속 갈 수 있어요."
+      "아이와 돌은 함께 움직이지만 아이 앞에는 벽이 있어요.",
+      "돌만 계속 오른쪽으로 갈 수 있습니다."
     ],
     "note": "장애물을 이용하면 동시에 움직이는 둘의 위치를 어긋나게 할 수 있어요."
   },
@@ -4954,33 +5332,123 @@ const levels=[
     "objects": [
       {
         "kind": "object",
-        "type": "hero",
+        "type": "wall",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 1,
-        "y": 7
+        "y": 4
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "wall",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 4,
-        "y": 7
+        "y": 4
       },
       {
         "kind": "object",
-        "type": "flag",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 7,
-        "y": 7
-      },
-      {
-        "kind": "object",
-        "type": "rock",
-        "x": 10,
-        "y": 1
+        "y": 4
       },
       {
         "kind": "object",
         "type": "wall",
         "x": 8,
-        "y": 7
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 6
       },
       {
         "kind": "object",
@@ -4991,7 +5459,43 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "hero",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "flag",
+        "x": 7,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "rock",
+        "x": 10,
         "y": 5
       }
     ],
@@ -5034,24 +5538,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:door",
-        "x": 0,
-        "y": 2
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 1,
-        "y": 2
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 2,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:wall",
         "x": 8,
         "y": 0
@@ -5066,6 +5552,24 @@ const levels=[
         "kind": "word",
         "token": "P:STOP",
         "x": 8,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:door",
+        "x": 0,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 1,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 2,
         "y": 2
       },
       {
@@ -5088,8 +5592,8 @@ const levels=[
       }
     ],
     "hints": [
-      "이번 목표는 돌이에요.",
-      "깃발을 직접 움직여 돌에 닿으세요."
+      "아이 대신 오른쪽 깃발을 움직이세요.",
+      "깃발을 돌까지 보내면 성공입니다."
     ],
     "note": "주인공과 목표의 역할을 뒤집어 봅니다."
   },
@@ -5599,27 +6103,93 @@ const levels=[
     "objects": [
       {
         "kind": "object",
-        "type": "hero",
+        "type": "wall",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 1,
-        "y": 8
+        "y": 4
       },
       {
         "kind": "object",
-        "type": "rock",
+        "type": "wall",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 4,
-        "y": 7
+        "y": 4
       },
       {
         "kind": "object",
-        "type": "water",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 7,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 8,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 0,
         "y": 6
       },
       {
         "kind": "object",
-        "type": "flag",
-        "x": 10,
-        "y": 1
+        "type": "wall",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 2,
+        "y": 6
       },
       {
         "kind": "object",
@@ -5630,14 +6200,80 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
+        "x": 4,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
         "x": 5,
-        "y": 5
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 7,
+        "y": 6
       },
       {
         "kind": "object",
         "type": "wall",
         "x": 8,
-        "y": 4
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "hero",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "rock",
+        "x": 6,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "water",
+        "x": 7,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "flag",
+        "x": 10,
+        "y": 5
       }
     ],
     "words": [
@@ -5733,8 +6369,8 @@ const levels=[
       }
     ],
     "hints": [
-      "아이·돌·물이 한꺼번에 움직여요.",
-      "벽에 걸리는 시점이 서로 달라요."
+      "아이는 벽에 걸리고 돌과 물만 오른쪽으로 갑니다.",
+      "여러 '나' 중 누가 먼저 목표에 닿는지 보세요."
     ],
     "note": "여러 주인공의 위치 차이를 이용하는 연습이에요."
   },
