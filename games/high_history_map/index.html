@@ -38,7 +38,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .zoomHint{white-space:nowrap}
 .hex{stroke:#a5bad0;stroke-opacity:.25;stroke-width:1.3;vector-effect:non-scaling-stroke;cursor:pointer;transition:.12s}
 .hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.seaHex{stroke-opacity:.08;fill-opacity:.82}.landHex{stroke-opacity:.32}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
-.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}
+.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}.resourceIcon{font-size:9px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#08111d;stroke-width:2.4px}.factionBorderBase{fill:none;stroke:#07101b;stroke-width:5.2;stroke-linecap:round;pointer-events:none;opacity:.92}.factionBorder{fill:none;stroke-width:2.8;stroke-linecap:round;pointer-events:none;opacity:.98}.factionBorderPlayer{fill:none;stroke-width:3.8;stroke-linecap:round;pointer-events:none;opacity:1;filter:drop-shadow(0 0 2px rgba(255,255,255,.55))}
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
 .unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:17px;text-anchor:middle;pointer-events:none}.unitCount{font-size:7.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px;pointer-events:none}
@@ -96,6 +96,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
       <svg id="mapSvg" viewBox="0 0 880 900" aria-label="사용자가 제공한 삼국시대 동북아 지도의 해안선을 육각 타일로 옮긴 전략 지도">
         <g id="camera">
           <g id="hexLayer"></g>
+          <g id="borderLayer"></g>
           <g id="riverLayer"></g>
           <g id="labelLayer"></g>
           <g id="cityLayer"></g>
@@ -148,7 +149,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 (function(){
 "use strict";
 
-var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v9";
+var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v10";
 var MAX_TURNS=32;
 var COLS=37;
 var ROWS=44;
@@ -165,14 +166,14 @@ var drag=null,pinch=null;
 var suppressClickUntil=0;
 
 var FACTIONS={
-  goguryeo:{name:"고구려",color:"#536bd6",icon:"🐎",capital:"pyongyang",trait:"산악 방어 +15% · 북방 기동에 유리",desc:"만주와 한반도 북부의 넓은 영역을 바탕으로 중부 전선을 압박합니다."},
-  baekje:{name:"백제",color:"#d95d66",icon:"⛵",capital:"sabi",trait:"평야 식량 +1 · 서해안 경제에 유리",desc:"서남부 평야와 서해 교통을 바탕으로 한강과 남부를 노립니다."},
-  silla:{name:"신라",color:"#d6ac32",icon:"🌙",capital:"gyeongju",trait:"도시 방어 +15% · 동남부 방어에 유리",desc:"산악과 낙동강권을 바탕으로 서쪽과 남해안으로 세력을 넓힙니다."},
-  sui:{name:"수나라",color:"#7d8795",icon:"🐉",capital:"sui_frontier",trait:"서방 대륙 세력",desc:"요동 서쪽의 강대한 외부 세력",aiOnly:true},
-  gaya:{name:"가야권",color:"#4ba184",icon:"⚒️",capital:"gaya",trait:"남부 완충 세력",desc:"백제·신라·왜 사이의 남부 소세력",aiOnly:true},
-  wa:{name:"왜",color:"#6f914f",icon:"🛶",capital:"wa_kyushu",trait:"해상 교류 세력",desc:"대한해협 건너 규슈와 서일본의 세력",aiOnly:true},
+  goguryeo:{name:"고구려",color:"#536bd6",icon:"🐎",capital:"gungnae",trait:"산악 방어 +15% · 북방 기동에 유리",desc:"국내성에서 시작해 만주와 한반도 북부로 세력을 넓혀갑니다."},
+  baekje:{name:"백제",color:"#d95d66",icon:"⛵",capital:"han",trait:"평야 식량 +1 · 서해안 경제에 유리",desc:"위례성에서 시작해 한강과 서남부의 빈 땅을 개척합니다."},
+  silla:{name:"신라",color:"#d6ac32",icon:"🌙",capital:"gyeongju",trait:"도시 방어 +15% · 동남부 방어에 유리",desc:"금성에서 시작해 낙동강권과 남부로 세력을 넓혀갑니다."},
+  sui:{name:"수나라",color:"#7d8795",icon:"🐉",capital:"sui_frontier",trait:"외부 대륙 세력 · 기본 비개입",desc:"전쟁이 선포되거나 대리전이 발동되기 전에는 한반도에 침공하지 않습니다.",aiOnly:true},
+  gaya:{name:"가야 연맹",color:"#4ba184",icon:"⚒️",capital:"gaya",trait:"철 생산 · 남부 도시 연맹",desc:"금관가야·대가야·아라가야·소가야가 남부에서 함께 시작합니다.",aiOnly:true},
+  wa:{name:"왜",color:"#6f914f",icon:"🛶",capital:"wa_kyushu",trait:"해상 교류 세력 · 기본 비개입",desc:"전쟁이 선포되거나 대리전이 발동되기 전에는 한반도에 침공하지 않습니다.",aiOnly:true},
   tamna:{name:"탐라",color:"#3f9fc6",icon:"🐴",capital:"tamna",trait:"섬 교역",desc:"남쪽 바다의 섬 세력",aiOnly:true},
-  neutral:{name:"중립",color:"#708294",icon:"⚪",capital:null,trait:"",desc:""}
+  neutral:{name:"미개척",color:"#708294",icon:"○",capital:null,trait:"",desc:"아직 어느 세력도 지배하지 않는 땅"}
 };
 
 var TERRAIN={
@@ -191,23 +192,45 @@ var IMPROVEMENTS={
   mine:{name:"광산",icon:"⛏️",art:"mine.svg",cost:14,terrain:["hill","mountain"],food:0,money:4,manpower:0,authority:0,desc:"재정 +4/레벨"},
   fort:{name:"요새",icon:"🏯",art:"fort.svg",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"방어 +25%"},
   road:{name:"도로",icon:"🛣️",art:"road.svg",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"험지 이동 비용 감소"},
-  fishery:{name:"어장",icon:"🎣",art:"fishery.svg",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"}
+  fishery:{name:"어장",icon:"🎣",art:"fishery.svg",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"},
+  kiln:{name:"도요",icon:"🏺",art:"kiln.svg",cost:13,terrain:["plain","coast","hill"],food:0,money:2,manpower:0,authority:1,desc:"도자기 생산 · 재정 +2 · 권위 +1/레벨"}
+};
+
+var RESOURCE_DEFS={
+  iron:{name:"철광맥",icon:"⛓️",improvements:["mine"],money:2,manpower:2,desc:"광산을 지으면 철 생산이 활성화됩니다."},
+  gold:{name:"금광맥",icon:"🟡",improvements:["mine"],money:5,manpower:0,desc:"광산을 지으면 높은 재정을 얻습니다."},
+  fur:{name:"모피 산지",icon:"🦊",improvements:["tradepost"],money:4,authority:1,desc:"교역소를 지으면 모피 교역이 활성화됩니다."},
+  clay:{name:"도자기 흙",icon:"🏺",improvements:["kiln"],money:4,authority:2,desc:"도요를 지으면 도자기 생산이 활성화됩니다."},
+  grain:{name:"비옥한 토지",icon:"🌾",improvements:["farm"],food:4,desc:"농장을 지으면 식량 생산량이 크게 늘어납니다."},
+  salt:{name:"소금 산지",icon:"🧂",improvements:["tradepost","fishery"],money:3,food:1,desc:"교역소나 어장을 지으면 소금 교역이 활성화됩니다."},
+  horse:{name:"말 산지",icon:"🐎",improvements:["barracks"],manpower:4,authority:1,desc:"병영을 지으면 기병 자원과 인력을 확보합니다."},
+  timber:{name:"목재 산지",icon:"🌲",improvements:["tradepost","barracks"],money:2,manpower:1,desc:"교역소나 병영으로 목재를 활용할 수 있습니다."}
+};
+
+var RESOURCE_NODES={
+  "17_12":"fur","19_13":"horse","10_18":"horse","15_19":"iron",
+  "20_20":"gold","22_24":"timber","20_29":"grain","19_31":"clay",
+  "22_33":"iron","25_33":"gold","20_35":"salt","26_30":"timber",
+  "6_28":"clay","32_39":"salt"
 };
 
 var CITIES={
   sui_frontier:{name:"수 변경",q:5,r:16,owner:"sui",level:3,def:2,capital:true,label:[0,-16]},
   shandong:{name:"산둥 항구",q:6,r:29,owner:"sui",level:2,def:1,label:[-8,17]},
   liaodong:{name:"요동",q:15,r:18,owner:"goguryeo",level:3,def:2,label:[-12,-15]},
-  gungnae:{name:"국내성",q:21,r:15,owner:"goguryeo",level:3,def:3,label:[12,-15]},
-  pyongyang:{name:"평양",q:21,r:22,owner:"goguryeo",level:4,def:3,capital:true,label:[-12,17]},
-  han:{name:"한성",q:22,r:27,owner:"silla",level:4,def:2,label:[-13,-15]},
+  gungnae:{name:"국내성",q:21,r:15,owner:"goguryeo",level:4,def:3,capital:true,label:[12,-15]},
+  pyongyang:{name:"평양",q:21,r:22,owner:"goguryeo",level:4,def:3,label:[-12,17]},
+  han:{name:"위례성",q:22,r:27,owner:"baekje",level:3,def:2,capital:true,label:[-13,-15]},
   chungju:{name:"충주",q:23,r:29,owner:"silla",level:2,def:2,label:[12,-15]},
   ungjin:{name:"웅진",q:20,r:30,owner:"baekje",level:3,def:2,label:[-13,-15]},
-  sabi:{name:"사비",q:20,r:32,owner:"baekje",level:4,def:3,capital:true,label:[-13,17]},
+  sabi:{name:"사비",q:20,r:32,owner:"baekje",level:4,def:3,label:[-13,17]},
   geummajeo:{name:"금마저",q:20,r:33,owner:"baekje",level:2,def:1,label:[-14,17]},
   sangju:{name:"상주",q:24,r:31,owner:"silla",level:2,def:2,label:[13,-15]},
   gyeongju:{name:"금성",q:26,r:34,owner:"silla",level:4,def:3,capital:true,label:[14,17]},
-  gaya:{name:"가야권",q:24,r:34,owner:"silla",level:2,def:1,label:[-10,17]},
+  gaya:{name:"금관가야",q:24,r:34,owner:"gaya",level:3,def:2,capital:true,label:[-10,17]},
+  daegaya:{name:"대가야",q:23,r:33,owner:"gaya",level:2,def:2,label:[-13,-15]},
+  ara_gaya:{name:"아라가야",q:22,r:35,owner:"gaya",level:2,def:1,label:[-12,17]},
+  sogaya:{name:"소가야",q:21,r:36,owner:"gaya",level:2,def:1,label:[-12,17]},
   usan:{name:"우산",q:29,r:27,owner:"neutral",level:1,def:1,island:true,label:[12,14]},
   tamna:{name:"탐라",q:19,r:41,owner:"tamna",level:2,def:1,island:true,capital:true,label:[0,16]},
   tsushima:{name:"대마도",q:25,r:37,owner:"neutral",level:1,def:1,island:true,label:[0,16]},
@@ -215,6 +238,24 @@ var CITIES={
   wa_hakata:{name:"하카타",q:29,r:39,owner:"wa",level:2,def:1,label:[11,-14]},
   wa_nagato:{name:"나가토",q:33,r:36,owner:"wa",level:2,def:1,label:[11,-14]}
 };
+
+var START_CITY_OWNERS={
+  gungnae:"goguryeo",
+  han:"baekje",
+  gyeongju:"silla",
+  gaya:"gaya",daegaya:"gaya",ara_gaya:"gaya",sogaya:"gaya",
+  sui_frontier:"sui",shandong:"sui",
+  wa_kyushu:"wa",wa_hakata:"wa",wa_nagato:"wa",
+  tamna:"tamna"
+};
+var START_SEEDS=[
+  {city:"gungnae",owner:"goguryeo",radius:1},
+  {city:"han",owner:"baekje",radius:1},
+  {city:"gyeongju",owner:"silla",radius:1},
+  {city:"gaya",owner:"gaya",radius:1},
+  {city:"sui_frontier",owner:"sui",radius:1},
+  {city:"wa_kyushu",owner:"wa",radius:1}
+];
 
 // 아래 마스크는 사용자가 제공한 삼국시대 지도 이미지를 37×44 표본 격자로 읽어
 // 육지 중심점만 남긴 값이다. 작은 내륙 호수는 육지로 메우고 외해만 바다로 유지했다.
