@@ -7,7 +7,6 @@ const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const adopters = [
-  ['high_disaster_city', 'games/high_disaster_city/index.html'],
   ['high_folklore_night_guard', 'games/high_folklore_night_guard/index.html'],
   ['low_word_blaster', 'games/low_word_blaster/index.html'],
   ['high_bridge_builder', 'games/high_bridge_builder/index.html'],
@@ -31,12 +30,15 @@ test('Folklore Night Guard no longer broadcasts close requests to wildcard origi
   assert.match(html, /KidscadeGame\?\.gameOver/);
 });
 
-test('Disaster City and Word Blaster report lifecycle through the SDK', () => {
-  const disaster = read('games/high_disaster_city/main.js');
+test('Word Blaster reports lifecycle through the SDK', () => {
   const word = read('games/low_word_blaster/word-blaster.js');
-  assert.match(disaster, /KidscadeGame\?\.start/);
-  assert.match(disaster, /KidscadeGame\?\.gameOver/);
-  assert.match(disaster, /registerPauseHandlers/);
   assert.match(word, /KidscadeGame\?\.start/);
   assert.match(word, /KidscadeGame\?\.gameOver/);
+});
+
+test('Emergency City stays on its standalone canvas runtime', () => {
+  const html = read('games/high_disaster_city/index.html');
+  const main = read('games/high_disaster_city/main.js');
+  assert.doesNotMatch(html, /kidscade-game-sdk\.js/);
+  assert.doesNotMatch(main, /KidscadeGame/);
 });
