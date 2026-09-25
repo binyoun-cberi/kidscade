@@ -134,11 +134,7 @@ function initThree(){
   scene.add(new THREE.HemisphereLight(0xe9f5ff,0x3b4738,2.05));
   const sun=new THREE.DirectionalLight(0xffe9bd,2.4);sun.position.set(-24,38,18);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
 
-  const floorMat=new THREE.MeshStandardMaterial({color:0x27323a,roughness:.92,metalness:.02});
-  floor=new THREE.Mesh(new THREE.PlaneGeometry(COLS*CELL,ROWS*CELL),floorMat);
-  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
-  const grid=new THREE.GridHelper(Math.max(COLS,ROWS)*CELL,Math.max(COLS,ROWS),0x51616b,0x36434a);
-  grid.position.y=.012;scene.add(grid);
+  buildWorldSurface();
 
   staticGroup=new THREE.Group();itemGroup=new THREE.Group();effectGroup=new THREE.Group();fixedGroup=new THREE.Group();
   scene.add(staticGroup,itemGroup,effectGroup,fixedGroup);
@@ -146,6 +142,48 @@ function initThree(){
   buildFixedVisuals();resize();
   addEventListener('resize',resize,{passive:true});
   Promise.all(MODEL_KEYS.map(loadIngredientModel)).then(()=>{buildFixedVisuals();refreshAllItemViews()});
+}
+
+function buildWorldSurface(){
+  if(!scene)return;
+  if(floor){
+    scene.remove(floor);floor.geometry?.dispose?.();floor.material?.dispose?.();
+  }
+  if(gridHelper){
+    scene.remove(gridHelper);gridHelper.geometry?.dispose?.();gridHelper.material?.dispose?.();
+  }
+  const floorMat=new THREE.MeshStandardMaterial({color:0x27323a,roughness:.92,metalness:.02});
+  floor=new THREE.Mesh(new THREE.PlaneGeometry(COLS*CELL,ROWS*CELL),floorMat);
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+
+  const pts=[],halfW=COLS*CELL/2,halfH=ROWS*CELL/2;
+  for(let x=0;x<=COLS;x++){
+    const wx=-halfW+x*CELL;pts.push(new THREE.Vector3(wx,.012,-halfH),new THREE.Vector3(wx,.012,halfH));
+  }
+  for(let y=0;y<=ROWS;y++){
+    const wz=-halfH+y*CELL;pts.push(new THREE.Vector3(-halfW,.012,wz),new THREE.Vector3(halfW,.012,wz));
+  }
+  const gridGeo=new THREE.BufferGeometry().setFromPoints(pts);
+  const gridMat=new THREE.LineBasicMaterial({color:0x46545d,transparent:true,opacity:.34});
+  gridHelper=new THREE.LineSegments(gridGeo,gridMat);scene.add(gridHelper);
+  if(fixedGroup)buildFixedVisuals();
+}
+function applyMapSize(size,{resetView=true}={}){
+  configureWorldData(size);
+  selectedMapSize=mapSize;
+  if(resetView){
+    cameraTarget.set(0,0,0);
+    viewSize=MAP_PRESETS[mapSize].view;
+  }
+  if(scene)buildWorldSurface();
+  if(ui.mapBadge)ui.mapBadge.textContent=MAP_PRESETS[mapSize].label;
+  refreshSizeButtons();
+  if(renderer&&camera)resize();
+}
+function clampCameraTarget(){
+  const xLimit=Math.max(0,COLS*CELL/2-CELL*1.5),zLimit=Math.max(0,ROWS*CELL/2-CELL*1.5);
+  cameraTarget.x=clamp(cameraTarget.x,-xLimit,xLimit);
+  cameraTarget.z=clamp(cameraTarget.z,-zLimit,zLimit);
 }
 
 async function loadIngredientModel(id){
@@ -257,8 +295,10 @@ function resize(){
   updateCamera();
 }
 function updateCamera(){
+  clampCameraTarget();
   camera.position.set(cameraTarget.x+viewSize*.72,viewSize*.92,cameraTarget.z+viewSize*.82);
   camera.lookAt(cameraTarget.x,0,cameraTarget.z);
+  camera.updateMatrixWorld();
 }
 function screenToCell(clientX,clientY){
   const rect=renderer.domElement.getBoundingClientRect();
