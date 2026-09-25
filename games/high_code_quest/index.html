@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101927">
+<title>버그월드: 코드 원정대 | Kidscade</title>
+<link rel="stylesheet" href="./style.css?v=1">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="world" aria-label="코드 원정대 3D 전장"></canvas>
+
+  <header class="hud glass">
+    <div class="brand">
+      <span class="brand-mark">⌘</span>
+      <div><small>BUG WORLD</small><strong>코드 원정대</strong></div>
+    </div>
+    <div class="mission-meta">
+      <span id="chapterName">시작 마을</span>
+      <b id="missionName">첫 발걸음</b>
+    </div>
+    <div class="stats">
+      <span>♥ <b id="hpValue">5</b></span>
+      <span>◆ 수정 <b id="crystalValue">0</b></span>
+      <span>▦ 코드 <b id="blockValue">0/6</b></span>
+    </div>
+    <div class="hud-actions">
+      <button id="missionsBtn" type="button">임무</button>
+      <button id="helpBtn" type="button">?</button>
+    </div>
+  </header>
+
+  <aside id="missionCard" class="glass mission-card">
+    <small id="missionKicker">순차 실행</small>
+    <h1 id="missionTitle">앞으로 가 봐!</h1>
+    <p id="missionText">명령을 차례대로 놓고 출구까지 이동하세요.</p>
+    <div class="objective" id="objectiveText">출구에 도착하기</div>
+  </aside>
+
+  <section id="codePanel" class="glass code-panel" aria-label="코드 편집기">
+    <div class="code-head">
+      <div>
+        <small>내 프로그램</small>
+        <strong id="codeModeTitle">메인 코드</strong>
+      </div>
+      <div class="code-tabs">
+        <button class="code-tab active" data-code-target="main" type="button">메인</button>
+        <button class="code-tab" data-code-target="function" type="button">나의 함수</button>
+      </div>
+    </div>
+
+    <div class="variable-strip">
+      <span>수정 = <b id="variableCrystal">0</b></span>
+      <span>HP = <b id="variableHp">5</b></span>
+      <span id="sensorReadout">센서: 준비</span>
+    </div>
+
+    <div id="program" class="program" aria-label="현재 프로그램"></div>
+    <div id="insertPath" class="insert-path">여기에 명령이 추가돼요.</div>
+
+    <div class="editor-actions">
+      <button id="outBtn" type="button">↰ 밖으로</button>
+      <button id="undoBtn" type="button">↶ 하나 지우기</button>
+      <button id="clearBtn" type="button">비우기</button>
+    </div>
+
+    <div id="palette" class="palette"></div>
+
+    <div class="run-actions">
+      <button id="stepBtn" class="step" type="button">▷ 한 단계</button>
+      <button id="runBtn" class="run" type="button">▶ 실행</button>
+      <button id="stopBtn" class="stop hidden" type="button">■ 멈춤</button>
+    </div>
+  </section>
+
+  <div id="execBar" class="glass exec-bar">
+    <span id="execIcon">●</span>
+    <b id="execTitle">코드를 만들고 실행해 보세요.</b>
+    <small id="execDetail">실행 중인 블록이 노란색으로 표시됩니다.</small>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="intro" class="overlay">
+    <div class="panel intro-panel">
+      <div class="logo">⌘</div>
+      <p class="eyebrow">KIDSCADE RPG</p>
+      <h1>버그월드<br><span>코드 원정대</span></h1>
+      <p class="lead">검 대신 명령을 들고 떠나는 3D 코딩 RPG.<br>코드를 실행하고, 실패한 줄을 찾아 고쳐 세계의 버그를 없애세요.</p>
+      <div class="feature-row">
+        <span>순서</span><span>반복</span><span>조건</span><span>변수</span><span>함수</span>
+      </div>
+      <button id="newBtn" class="primary" type="button">새 원정 시작</button>
+      <button id="continueBtn" class="secondary hidden" type="button">이어서 하기</button>
+      <small class="intro-note">터치와 마우스 모두 지원 · 시간 제한 없음 · 자동 저장</small>
+    </div>
+  </section>
+
+  <section id="missionSelect" class="overlay hidden">
+    <div class="panel mission-select-panel">
+      <div class="panel-head">
+        <div><small>CODE QUEST</small><h2>임무 선택</h2></div>
+        <button id="closeMissions" type="button">✕</button>
+      </div>
+      <div id="missionGrid" class="mission-grid"></div>
+    </div>
+  </section>
+
+  <section id="help" class="overlay hidden">
+    <div class="panel help-panel">
+      <div class="panel-head">
+        <div><small>PLAY GUIDE</small><h2>코드가 곧 행동이에요</h2></div>
+        <button id="closeHelp" type="button">✕</button>
+      </div>
+      <div class="help-grid">
+        <div><b>1. 명령을 눌러요</b><p>아래 블록을 누르면 현재 선택한 코드 안에 차례대로 들어갑니다.</p></div>
+        <div><b>2. 실행해요</b><p>▶ 실행을 누르면 위에서부터 한 줄씩 캐릭터가 그대로 행동합니다.</p></div>
+        <div><b>3. 버그를 찾아요</b><p>벽에 막히거나 잘못 공격하면 실행이 멈추고 문제가 생긴 블록이 빨갛게 표시됩니다.</p></div>
+        <div><b>4. 반복과 조건</b><p>반복·조건 블록을 넣은 뒤 그 블록을 눌러 안쪽에 실행할 명령을 넣으세요.</p></div>
+        <div><b>5. 나의 함수</b><p>자주 쓰는 행동을 함수 탭에 만들어 두고 메인 코드에서 '나의 함수'를 호출할 수 있어요.</p></div>
+        <div><b>6. 한 단계 실행</b><p>▷ 한 단계로 한 행동씩 확인하면 어떤 줄에서 예상과 달라지는지 찾기 쉽습니다.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="clear" class="overlay hidden">
+    <div class="panel clear-panel">
+      <div class="clear-badge">✓</div>
+      <p class="eyebrow">MISSION CLEAR</p>
+      <h2 id="clearTitle">작동 성공!</h2>
+      <p id="clearText"></p>
+      <div class="badges">
+        <span class="badge earned">✓ 작동</span>
+        <span id="shortBadge" class="badge">◇ 짧은 코드</span>
+        <span id="debugBadge" class="badge">◇ 한 번에 성공</span>
+      </div>
+      <div id="unlockBox" class="unlock-box hidden"></div>
+      <div class="clear-actions">
+        <button id="retryBtn" class="secondary" type="button">다시 해보기</button>
+        <button id="nextBtn" class="primary" type="button">다음 임무</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="../../kidscade-game-sdk.js" data-game-id="high_code_quest" data-title="버그월드: 코드 원정대" data-shell="true" data-orientation="landscape"></script>
+<script src="./missions.js?v=1"></script>
+<script src="./code-runtime.js?v=1"></script>
+<script type="module" src="./game.js?v=1"></script>
+</body>
+</html>
