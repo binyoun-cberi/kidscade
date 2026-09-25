@@ -748,15 +748,27 @@ function captureCityIfNeeded(u,t,oldOwner){
   if(previous!==u.owner&&previous!=="neutral"){state.captured[u.owner]=(state.captured[u.owner]||0)+1;resource(u.owner).authority=clamp(resource(u.owner).authority+6,0,100);}
 }
 function improvementLevel(t){return t&&t.improvement?Math.max(1,t.improvementLevel||1):0;}
+function resourceBonus(t){
+  var out={food:0,money:0,manpower:0,authority:0,active:false};
+  if(!t||!t.resource||!RESOURCE_DEFS[t.resource])return out;
+  var d=RESOURCE_DEFS[t.resource];
+  if(d.improvements.indexOf(t.improvement)<0)return out;
+  var lvl=improvementLevel(t);out.active=true;
+  out.food=(d.food||0)*lvl;out.money=(d.money||0)*lvl;
+  out.manpower=(d.manpower||0)*lvl;out.authority=(d.authority||0)*lvl;
+  return out;
+}
 function tileFood(t){
   var n=TERRAIN[t.terrain].food;
   if(t.owner==="baekje"&&t.terrain==="plain")n+=1;
   if(t.improvement&&IMPROVEMENTS[t.improvement])n+=(IMPROVEMENTS[t.improvement].food||0)*improvementLevel(t);
+  n+=resourceBonus(t).food;
   return n;
 }
 function tileMoney(t){
   var n=TERRAIN[t.terrain].money;
   if(t.improvement&&IMPROVEMENTS[t.improvement])n+=(IMPROVEMENTS[t.improvement].money||0)*improvementLevel(t);
+  n+=resourceBonus(t).money;
   return n;
 }
 function improvementBuildCost(id){
@@ -833,6 +845,8 @@ function applyIncome(owner){
       bonusManpower+=(d.manpower||0)*lvl;
       bonusAuthority+=(d.authority||0)*lvl;
     }
+    var rb=resourceBonus(t);
+    bonusFood+=rb.food;bonusMoney+=rb.money;bonusManpower+=rb.manpower;bonusAuthority+=rb.authority;
   });
   var units=state.units.filter(function(u){return u.owner===owner;}).reduce(function(a,u){return a+u.troops;},0);
   r.food=clamp(r.food+Math.round(baseFood*.035)+bonusFood-Math.ceil(units/900),0,999);
