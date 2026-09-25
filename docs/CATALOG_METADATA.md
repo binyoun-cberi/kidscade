@@ -23,7 +23,7 @@
 - `quiz`
 - `rhythm`
 - `sports`
-- `sandbox`
+- `sandbox`\n- `rpg`
 
 ### Other fields
 - `difficulty`: easy / medium / hard
