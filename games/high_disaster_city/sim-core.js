@@ -73,6 +73,7 @@ class Simulation{
   return true
  }
  matchingDisaster(type){return this.state.disasters.filter(d=>d.type===type).sort((a,b)=>b.progress-a.progress)[0]||null}
+ availableDisasterTypes(){const t=this.state.time;return Object.values(D.DISASTERS||{}).filter(x=>(x.unlock||0)<=t).map(x=>x.id)}
  repairTarget(){
   const s=this.state,flood=this.matchingDisaster('flood');
   if(flood&&Number.isInteger(flood.blockedSlot)&&flood.blockedSlot>=0){
@@ -84,6 +85,10 @@ class Simulation{
   const s=this.state;if(!def||def.kind!=='action'||!this.canAfford(def.cost))return false;
   if(def.action==='fireBrigade'||def.action==='firebreak')return !!this.matchingDisaster('wildfire');
   if(def.action==='sandbags'||def.action==='emergencyDrain')return !!this.matchingDisaster('flood');
+  if(def.action==='stormPrep')return !!this.matchingDisaster('typhoon');
+  if(def.action==='waterDistribution')return !!this.matchingDisaster('heatwave');
+  if(def.action==='snowplow')return !!this.matchingDisaster('blizzard');
+  if(def.action==='evacuation')return !!this.matchingDisaster('earthquake');
   if(def.action==='repair')return !!this.repairTarget();
   return true
  }
@@ -97,6 +102,14 @@ class Simulation{
    const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-18);d.progress=Math.max(0,d.progress-.075);d.blockPause=Math.max(d.blockPause||0,2.1);this.emit('response','모래주머니로 물길을 늦췄습니다.');
   }else if(def.action==='emergencyDrain'){
    const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-7);d.progress=Math.max(0,d.progress-.14);d.blockPause=Math.max(d.blockPause||0,1.7);this.emit('response','긴급 배수로 물길을 뒤로 밀었습니다.');
+  }else if(def.action==='stormPrep'){
+   const d=this.matchingDisaster('typhoon');d.energy=Math.max(0,d.energy-24);d.progress=Math.max(0,d.progress-.10);d.blockPause=Math.max(d.blockPause||0,2.8);this.emit('response','창문과 지붕을 보강해 강풍 피해를 줄였습니다.');
+  }else if(def.action==='waterDistribution'){
+   const d=this.matchingDisaster('heatwave');d.energy=Math.max(0,d.energy-27);s.food+=8;s.stability=Math.min(100,s.stability+1.5);this.emit('response','급수 지원으로 폭염 피해를 낮췄습니다.');
+  }else if(def.action==='snowplow'){
+   const d=this.matchingDisaster('blizzard');d.energy=Math.max(0,d.energy-20);d.progress=Math.max(0,d.progress-.13);d.blockPause=Math.max(d.blockPause||0,2.2);this.emit('response','제설차가 눈길을 열어 폭설 전선을 밀어냈습니다.');
+  }else if(def.action==='evacuation'){
+   const d=this.matchingDisaster('earthquake');d.energy=Math.max(0,d.energy-25);d.blockPause=Math.max(d.blockPause||0,4);s.stability=Math.min(100,s.stability+2);this.emit('response','주민을 긴급 대피시켜 다음 충격 피해를 줄였습니다.');
   }else if(def.action==='repair'){
    const damaged=this.repairTarget();
    if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x})}
@@ -113,7 +126,9 @@ class Simulation{
   s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
  }
  makeRewards(){
-  const pool=D.REWARD_POOL.slice(),out=[];while(out.length<2&&pool.length){const i=Math.floor(this.rand()*pool.length);out.push({kind:'add',id:pool.splice(i,1)[0]})}
+  const pool=D.REWARD_POOL.slice(),out=[],nextType=this.state.next?.type,counters=(D.COUNTERS?.[nextType]||[]).filter(id=>pool.includes(id));
+  if(counters.length){const id=counters[Math.floor(this.rand()*counters.length)],i=pool.indexOf(id);out.push({kind:'add',id});if(i>=0)pool.splice(i,1)}
+  while(out.length<2&&pool.length){const i=Math.floor(this.rand()*pool.length);out.push({kind:'add',id:pool.splice(i,1)[0]})}
   if(this.totalDeckSize()>8)out.push({kind:'cleanup',id:'cleanup'});else if(pool.length)out.push({kind:'add',id:pool.splice(Math.floor(this.rand()*pool.length),1)[0]});
   return out
  }
@@ -122,7 +137,7 @@ class Simulation{
   const s=this.state;if(s.rewardChoices.length||s.cleanupChoices.length){s.rewardBacklog++;return}s.rewardChoices=this.makeRewards()
  }
  resolveDisaster(d){
-  const s=this.state,i=s.disasters.indexOf(d);if(i<0)return;s.disasters.splice(i,1);s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',d.type==='wildfire'?'산불이 진정됐습니다!':'홍수가 빠져나갔습니다!');
+  const s=this.state,i=s.disasters.indexOf(d);if(i<0)return;s.disasters.splice(i,1);s.stats.resolved++;s.stability=Math.min(100,s.stability+1.5);this.emit('clear',D.DISASTERS?.[d.type]?.clear||'재난이 지나갔습니다!');
   if(!s.disasters.length){const rest=s.time<180?12:s.time<300?9:6;s.next.in=Math.max(s.next.in,rest+this.rand()*3);}
   this.openReward();if(s.tutorial&&s.tutorialStep===3)s.tutorialStep=4;
  }
@@ -147,7 +162,8 @@ class Simulation{
  }
  scheduleNext(d){
   const s=this.state;s.lastSide=d.side;s.typeStreak=d.type===s.lastType?(s.typeStreak||1)+1:1;s.lastType=d.type;s.next.side=d.side==='left'?'right':'left';
-  s.next.type=s.typeStreak>=2?(d.type==='wildfire'?'flood':'wildfire'):(this.rand()<.5?'wildfire':'flood');
+  let types=this.availableDisasterTypes();if(s.typeStreak>=2)types=types.filter(type=>type!==d.type);if(!types.length)types=['wildfire','flood'].filter(type=>type!==d.type);
+  s.next.type=types[Math.floor(this.rand()*types.length)]||'wildfire';
   const p=this.pressure();s.next.in=clamp(30-(p-.55)*7.5,16,30)+this.rand()*4;s.next.visible=false;
  }
  maxConcurrent(){return this.state.time<300?1:2}
