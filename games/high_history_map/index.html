@@ -247,7 +247,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
         <div class="mapNote" id="mapHint">도시를 눌러 개발하고, 실제 거리 위로 군대와 교역로가 움직입니다.</div>
         <div class="mapLegend" id="legend"></div>
       </div>
-      <svg id="mapSvg" viewBox="470 178 220 135" preserveAspectRatio="xMidYMid meet" role="img" aria-label="실제 동아시아 해안선을 바탕으로 한 통일전쟁 전략 지도">
+      <svg id="mapSvg" viewBox="462 173 240 154" preserveAspectRatio="xMidYMid meet" role="img" aria-label="실제 동아시아 해안선을 바탕으로 한 통일전쟁 전략 지도">
         <rect class="sea" x="0" y="0" width="800" height="571"></rect>
         <image id="realMapImage" class="realMapImage" x="0" y="0" width="800" height="571"
           href="https://upload.wikimedia.org/wikipedia/commons/2/25/East_Asia_area_blank_CJK.svg"
@@ -383,6 +383,12 @@ var TERRAIN={
 };
 
 var MAP_BOUNDS={top:54.0,bottom:16.05,left:77.726671,right:146.408250,width:800,height:571};
+var CITY_LABEL_OFFSETS={
+  sui_frontier:[-1,6],liaodong:[-10,7],gungnae:[10,7],hamheung:[11,7],
+  pyongyang:[-12,7],paegang:[-13,8],han:[-13,7],gangwon:[13,7],
+  ungjin:[-15,8],chungju:[14,-7],sabi:[-14,13],jeolla:[-14,8],
+  nakdong:[11,10],gyeongju:[15,4],southcoast:[-13,9],wa:[0,-10]
+};
 var MAP_ASSETS={
   soldier:"../../assets/game/characters/people/kenney-platformer-characters/soldier/poses/soldier-walk1.png",
   horse:"../../assets/game/2d/animals/round/horse.png",
@@ -660,9 +666,9 @@ function renderMap(){
     var spec=SPECIALTIES[r.specialty]||{icon:"•"};
     var badge=svgEl("text",{x:p[0],y:p[1]-radius-1.5,class:"cityBadge"});badge.textContent=spec.icon;g.appendChild(badge);
     if((state.projects||[]).some(function(pr){return pr.region===id;})){var hammer=svgEl("text",{x:p[0]+radius+2,y:p[1]-radius,class:"projectMark"});hammer.textContent="🔨";g.appendChild(hammer);}
-    var bg=svgEl("rect",{x:p[0]-10,y:p[1]+5.2,width:20,height:6.1,rx:2,class:"cityLabelBg"});g.appendChild(bg);
-    var label=svgEl("text",{x:p[0],y:p[1]+9.25,class:"cityLabel"});label.textContent=r.name;g.appendChild(label);
-    var army=svgEl("text",{x:p[0],y:p[1]+14,class:"cityArmy"});army.textContent="⚔ "+fmt(r.army);g.appendChild(army);
+    var off=CITY_LABEL_OFFSETS[id]||[0,7],lx=p[0]+off[0],ly=p[1]+off[1];
+    var bg=svgEl("rect",{x:lx-11,y:ly-3.4,width:22,height:6.2,rx:2,class:"cityLabelBg"});g.appendChild(bg);
+    var label=svgEl("text",{x:lx,y:ly+.9,class:"cityLabel"});label.textContent=r.name+" · "+fmt(r.army);g.appendChild(label);
     g.addEventListener("click",function(){handleRegionClick(id);});
     g.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();handleRegionClick(id);}});
     layer.appendChild(g);
@@ -846,7 +852,9 @@ function resolveBattle(srcId,dstId,attackers,attacker,ai){
     if(!ai)toast(dst.name+" 점령! 남은 병력 "+aRemain);
     if(COUNTRIES[oldOwner].capital===dstId){nation(oldOwner).authority=clamp(nation(oldOwner).authority-18,0,100);log(COUNTRIES[oldOwner].name+"의 중심지가 함락되어 권위가 흔들렸습니다.");}
   }else{
-    dst.army=dRemain;src.army+=aRemain;
+    dst.army=dRemain;
+    if(src&&src.owner===attacker)src.army+=aRemain;
+    else{var retreat=armyReturnTarget(attacker,srcId);if(retreat)region(retreat).army+=aRemain;}
     log(COUNTRIES[attacker].name+"의 "+dst.name+" 공격이 막혔습니다.");
     addTimeline("🛡 "+dst.name+" 방어전");
     if(!ai)toast("공격 실패 · 병력 "+aRemain+"명 귀환");
