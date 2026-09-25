@@ -45,8 +45,10 @@
     const eligible = (Array.isArray(games) ? games : []).filter(game => {
       if (!game || game.disabled || game.qualityStatus === 'rework') return false;
       if (!supportsAge(game, state.age)) return false;
-      if (state.subject && state.subject !== 'all' && game.subject !== state.subject) return false;
-      if (state.genre && state.genre !== 'all' && game.genre !== state.genre) return false;
+      const subjects = Array.isArray(state.subjects) ? state.subjects : (state.subject && state.subject !== 'all' ? [state.subject] : []);
+      const genres = Array.isArray(state.genres) ? state.genres : (state.genre && state.genre !== 'all' ? [state.genre] : []);
+      if (subjects.length && !subjects.includes(game.subject)) return false;
+      if (genres.length && !genres.includes(game.genre)) return false;
       return true;
     });
 
@@ -70,7 +72,9 @@
     return {
       age: filter.age || document.body.dataset.kidscadeAge || '',
       subject: filter.subject || 'all',
-      genre: filter.genre || document.body.dataset.kidscadeGenre || 'all'
+      genre: filter.genre || document.body.dataset.kidscadeGenre || 'all',
+      subjects: Array.isArray(filter.subjects) ? filter.subjects : [],
+      genres: Array.isArray(filter.genres) ? filter.genres : []
     };
   }
 
