@@ -10,13 +10,15 @@ button,input{font:inherit}
 button{color:inherit}
 button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
 #app,#game{position:fixed;inset:0;width:100%;height:100%}
-#game{display:block;touch-action:none;background:#162129}
+#game{display:block;touch-action:none;background:#162129;cursor:crosshair}
+body.moveMode #game{cursor:grab}
+body.moveMode.draggingView #game{cursor:grabbing}
 .glass{background:var(--panel);border:1px solid var(--edge);backdrop-filter:blur(12px);box-shadow:0 14px 36px rgba(0,0,0,.26)}
 .hidden{display:none!important}
 #hud{position:absolute;z-index:6;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:17px;pointer-events:none}
 .brand{display:flex;align-items:center;gap:9px;padding-right:11px;border-right:1px solid rgba(255,255,255,.13)}
 .brandIcon{font-size:26px}.brand small{display:block;font-size:8px;letter-spacing:.12em;color:#8fa2b1;font-weight:950}.brand b{display:block;font-size:15px}
-.stat{min-width:55px}.stat span{display:block;color:#91a2af;font-size:9px;font-weight:850}.stat b{font-size:14px}.stat.waste b{color:#ffaaaa}
+.stat{min-width:55px}.stat span{display:block;color:#91a2af;font-size:9px;font-weight:850}.stat b{font-size:14px}.stat.waste b{color:#ffaaaa}.mapStat{min-width:34px}
 #orders{position:absolute;z-index:7;left:max(10px,env(safe-area-inset-left));top:84px;width:190px;padding:10px;border-radius:18px;transition:.2s}
 #orders.collapsed{width:50px;height:44px;overflow:hidden;padding:7px}
 #orders.collapsed #orderList,#orders.collapsed .challenge,#orders.collapsed .panelHead b{display:none}
@@ -47,8 +49,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2
 h1,h2{margin:0;letter-spacing:-.045em}h1{font-size:clamp(42px,8vw,68px);line-height:.96}h2{font-size:clamp(28px,5vw,40px)}
 .lead{color:#bdc8cf;line-height:1.58;font-weight:650}.featureRow{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin:16px 0}
 .featureRow span{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.065);font-size:10px;font-weight:900}
-.startActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.primary,.secondary{border:0;border-radius:15px;padding:13px 16px;font-weight:950;cursor:pointer}
-.primary{background:linear-gradient(135deg,#ffd167,#ff906a);color:#35220e}.secondary{background:rgba(255,255,255,.09);color:#fff}.tip{display:block;margin-top:13px;color:#7f929f;line-height:1.55}
+.startActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.startActions.three{grid-template-columns:1fr 1fr 1fr}.primary,.secondary,.tutorialStart{border:0;border-radius:15px;padding:13px 16px;font-weight:950;cursor:pointer}
+.primary{background:linear-gradient(135deg,#ffd167,#ff906a);color:#35220e}.secondary{background:rgba(255,255,255,.09);color:#fff}.tutorialStart{background:#dff7e8;color:#123d2b}.tip{display:block;margin-top:13px;color:#7f929f;line-height:1.55}
 .helpGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}.helpGrid>div{padding:13px;border-radius:16px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07)}.helpGrid b{font-size:13px}.helpGrid p{margin:5px 0 0;color:#aab9c4;font-size:11px;line-height:1.5}
 .discoverCard{text-align:center;width:min(500px,94vw)}.discoverIcon{font-size:43px}.discoverCard label{display:block;text-align:left;margin:15px 0 5px;color:#aebbc5;font-size:11px;font-weight:850}.discoverCard input{width:100%;margin-top:6px;padding:12px 13px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(0,0,0,.18);color:#fff;user-select:text;-webkit-user-select:text}
 @media(max-width:840px){
@@ -74,3 +76,18 @@ h1,h2{margin:0;letter-spacing:-.045em}h1{font-size:clamp(42px,8vw,68px);line-hei
 .bookEntry b{display:block;font-size:13px}.bookEntry small{display:block;margin-top:5px;color:#9eb0bc;font-size:9px;line-height:1.4}.bookEntry em{display:block;margin-top:6px;color:#ffd37c;font-style:normal;font-size:10px;font-weight:900}
 .bookEmpty{grid-column:1/-1;padding:28px;text-align:center;color:#8fa1ae;font-size:12px}
 @media(max-width:620px){.bookList{grid-template-columns:1fr}}
+
+.sizeTitle{display:flex;justify-content:space-between;align-items:end;margin:16px 1px 7px;text-align:left}
+.sizeTitle b{font-size:12px}.sizeTitle small{font-size:9px;color:#8294a0}
+.sizeSelect{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.sizeCard{border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 8px;background:rgba(255,255,255,.05);text-align:left;cursor:pointer;min-height:72px}
+.sizeCard b{font-size:17px;display:inline-block;margin-right:5px}.sizeCard span{font-size:9px;color:#93a7b4;font-weight:850}
+.sizeCard small{display:block;margin-top:6px;font-size:9px;color:#8fa0ab;line-height:1.25}
+.sizeCard.active{background:linear-gradient(145deg,rgba(255,209,103,.22),rgba(255,144,106,.14));border-color:#ffd88d;box-shadow:0 0 0 1px rgba(255,216,141,.3) inset}
+.sizeCard.active b{color:#ffd783}
+.tutorialCoach{position:absolute;z-index:18;left:50%;bottom:82px;transform:translateX(-50%);width:min(520px,calc(100vw - 30px));padding:12px 14px;border-radius:17px}
+.tutorialCoach .tutorialStep{font-size:9px;color:#f0bd70;font-weight:950;letter-spacing:.08em}
+.tutorialCoach>b{display:block;margin-top:3px;font-size:14px}.tutorialCoach p{margin:5px 0 9px;color:#b6c2ca;font-size:11px;line-height:1.45}
+.tutorialActions{display:flex;justify-content:flex-end;gap:6px}.tutorialActions button{border:0;border-radius:10px;padding:7px 11px;background:rgba(255,255,255,.08);font-size:10px;font-weight:900;cursor:pointer}
+#tutorialNext{background:#ffcc73;color:#36240c}
+@media(max-width:620px){.startActions.three{grid-template-columns:1fr}.sizeCard{min-height:62px;padding:8px 7px}.tutorialCoach{bottom:72px}}
