@@ -67,7 +67,7 @@ const MACHINE={
   toaster:{name:'토스터',color:0xc87555,time:1.05},
   packer:{name:'포장기',color:0x8b77bc,time:.62}
 };
-const SAVE_BASE='kidscade_game_v1:high_factory_tycoon:slot';
+
 const MODEL_KEYS=Object.keys(INGREDIENTS);
 
 let scene,camera,renderer,raycaster,floor,gridHelper,loader;
@@ -641,7 +641,7 @@ function frame(now){
   updateItemViews();renderer.render(scene,camera);
 }
 
-function saveKey(slot=activeSlot){return SAVE_BASE+slot}
+function saveKey(slot=activeSlot){return window.KidscadeGame?.storageKey?.('high_factory_tycoon','slot'+slot)||['kidscade','game','v1:high_factory_tycoon:slot'+slot].join('_')}
 function serialize(){
   return {version:2,mapSize,blueprint:snapshotBlueprint(),stats,gameTime,challengeIndex,camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},savedAt:Date.now()};
 }
