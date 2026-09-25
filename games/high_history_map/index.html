@@ -42,7 +42,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
 .unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:17px;text-anchor:middle;pointer-events:none}.unitCount{font-size:7.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px;pointer-events:none}
-.river{fill:none;stroke:#71bce9;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.74;vector-effect:non-scaling-stroke;pointer-events:none}
+.river{fill:none;stroke:#71bce9;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.74;vector-effect:non-scaling-stroke;pointer-events:none}.seaRoute{fill:none;stroke:#b6d8eb;stroke-width:1.8;stroke-dasharray:5 5;stroke-opacity:.42;pointer-events:none}
 .regionLabel{font-size:13px;font-weight:1000;letter-spacing:.10em;fill:#b6c9d9;opacity:.10;text-anchor:middle;pointer-events:none}
 .seaLabel{font-size:14px;font-weight:1000;letter-spacing:.2em;fill:#75a5c7;opacity:.22;text-anchor:middle;pointer-events:none}
 .rightEmpty{font-size:10px;color:var(--muted);line-height:1.6;padding:10px 2px}.bigName{font-size:19px;font-weight:1000;margin-bottom:2px}.ownerLine{font-size:10px;margin-bottom:9px}
@@ -149,8 +149,8 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 (function(){
 "use strict";
 
-var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v10";
-var MAX_TURNS=32;
+var SAVE_KEY="kidscade_game_v1:high_history_map:hex_v11";
+var MAX_TURNS=48;
 var COLS=37;
 var ROWS=44;
 var HEX_SIZE=12.5;
@@ -213,6 +213,27 @@ var RESOURCE_NODES={
   "22_33":"iron","25_33":"gold","20_35":"salt","26_30":"timber",
   "6_28":"clay","32_39":"salt"
 };
+
+var UNIT_TYPES={
+  infantry:{name:"보병",icon:"🛡️",move:2,cost:12,manpower:8,troops:180,atk:1.00,def:1.06,desc:"도시와 요새 전투에 안정적"},
+  archer:{name:"궁병",icon:"🏹",move:2,cost:14,manpower:8,troops:160,atk:.94,def:1.12,desc:"구릉·산악 방어에 강함"},
+  cavalry:{name:"기병",icon:"🐎",move:3,cost:18,manpower:10,troops:150,atk:1.10,def:.92,desc:"평야 기동과 공격에 강함"}
+};
+
+var RIVER_PATHS=[
+  [[17,19],[18,19],[19,20],[20,20],[21,21]],
+  [[21,21],[22,22],[22,23]],
+  [[21,26],[22,27],[23,27],[24,28]],
+  [[20,29],[21,30],[21,31]],
+  [[24,30],[25,31],[25,32],[25,33],[24,34]]
+];
+
+var SEA_ROUTES=[
+  {a:[30,41],b:[25,37],name:"규슈-대마도"},
+  {a:[25,37],b:[24,36],name:"대마도-남해"},
+  {a:[19,41],b:[20,35],name:"탐라-남해"},
+  {a:[29,27],b:[26,30],name:"우산-동해안"}
+];
 
 var CITIES={
   sui_frontier:{name:"수 변경",q:5,r:16,owner:"sui",level:3,def:2,capital:true,label:[0,-16]},
@@ -309,8 +330,8 @@ function tile(q,r){return state&&state.tiles[key(q,r)];}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function fmt(n){return Math.round(n).toLocaleString("ko-KR");}
 function season(){return ["봄","여름","가을","겨울"][(state.turn-1)%4];}
-function year(){return 600+Math.floor((state.turn-1)/4);}
-function dateText(){return year()+"년 "+season();}
+function year(){return 1+Math.floor((state.turn-1)/4);}
+function dateText(){return "건국 "+year()+"년 "+season();}
 function hexCenter(q,r){return[38+SQRT3*HEX_SIZE*(q+.5*(r&1)),38+HEX_SIZE*1.5*r];}
 function hexPoints(q,r){
   var c=hexCenter(q,r),a=[];
