@@ -355,7 +355,7 @@ var REGION_BASE={
   paegang:{name:"패강",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,geo:[125.60,38.60],map:[569.1,252.8],label:[559.5,253.0],specialty:"salt",neighbors:["pyongyang","han","gangwon"]},
 
   han:{name:"한성",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,geo:[126.98,37.56],map:[575.5,264.1],label:[565.0,263.0],specialty:"grain",neighbors:["paegang","gangwon","ungjin","chungju"]},
-  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,geo:[128.90,37.75],map:[595.9,263.2],label:[605.5,260.5],specialty:"timber",neighbors:["hamheung","paegang","han","chungju","sangju","usan"]},
+  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,geo:[128.90,37.75],map:[595.9,263.2],label:[605.5,260.5],specialty:"timber",neighbors:["hamheung","paegang","han","chungju","sangju","gyeongju","usan"]},
   ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,geo:[127.12,36.46],map:[575.9,281.1],label:[565.0,279.0],specialty:"pottery",neighbors:["han","chungju","sabi"]},
   chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,geo:[127.93,36.99],map:[586.8,275.5],label:[594.5,272.0],specialty:"grain",neighbors:["han","gangwon","ungjin","sabi","sangju","daeya"]},
   sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,geo:[126.91,36.28],map:[574.2,288.3],label:[563.5,287.5],specialty:"craft",neighbors:["ungjin","chungju","geummajeo","daeya"]},
@@ -626,9 +626,11 @@ function projectAtProgress(from,to,progress){
 }
 function projectAtOwnerHub(c){
   var regs=regionsOf(c);if(!regs.length)return null;
-  var port=regs.find(function(id){return region(id).buildings&&region(id).buildings.port;});
-  if(port)return port;
+  var mainlandPorts=regs.filter(function(id){var r=region(id);return !r.island&&r.buildings&&r.buildings.port;});
+  if(mainlandPorts.length)return mainlandPorts.sort(function(a,b){return region(b).dev-region(a).dev;})[0];
   var cap=COUNTRIES[c].capital;if(regs.indexOf(cap)>=0)return cap;
+  var anyPort=regs.find(function(id){return region(id).buildings&&region(id).buildings.port;});
+  if(anyPort)return anyPort;
   return regs.slice().sort(function(a,b){return region(b).dev-region(a).dev;})[0];
 }
 function tradeValue(a,b){
