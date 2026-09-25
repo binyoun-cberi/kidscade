@@ -259,7 +259,7 @@ function finishStroke(){
 }
 
 function clearBridge(){
-  if(S.paused||S.mode==="run")return;
+  if(S.paused)return;
   clearTimeout(S.autoTimer);
   S.mode="build";
   S.points=[];
