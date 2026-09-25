@@ -38,8 +38,9 @@ function updateFlood(sim,d,dt){
 }
 DC.Disasters={
  update(sim,dt){
-  const s=sim.state;s.next.in-=dt;
-  const sideBusy=s.disasters.some(d=>d.side===s.next.side);if(s.next.in<=0&&s.disasters.length<sim.maxConcurrent()&&!sideBusy)spawn(sim);
+  const s=sim.state,choosingReward=s.rewardChoices.length>0||s.cleanupChoices.length>0;
+  if(!choosingReward)s.next.in-=dt;
+  const sideBusy=s.disasters.some(d=>d.side===s.next.side);if(!choosingReward&&s.next.in<=0&&s.disasters.length<sim.maxConcurrent()&&!sideBusy)spawn(sim);
   preview(sim);
   const list=s.disasters.slice();
   for(const d of list){
