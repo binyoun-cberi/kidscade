@@ -483,11 +483,11 @@
     {
       "id": "high_rule_lab",
       "title": "내 말 좀 들어",
-      "href": "games/high_rule_lab/index.html?v=3",
+      "href": "games/high_rule_lab/index.html?v=4",
       "category": "math",
       "age": "high",
       "icon": "🧩",
-      "description": "말 블록을 밀어 ‘아이 = 나’, ‘벽 = 막힘’, ‘돌 = 물’처럼 세상의 법칙과 목표 자체를 바꾸고, 이동·약함·열쇠·변환까지 조합해 60개 퍼즐을 푸는 규칙 변형 논리 게임!",
+      "description": "말 블록을 직접 밀어 막힘·밀림·나·목표·변환 규칙을 바꾸고, 단순 직행이 아닌 60개 규칙 퍼즐을 해결하는 논리 게임!",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "medium",
