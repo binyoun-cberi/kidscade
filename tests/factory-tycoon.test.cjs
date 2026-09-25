@@ -18,7 +18,7 @@ test('Factory Tycoon is registered as a high-grade thinking sandbox',()=>{
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'sandbox');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=1');
+  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=2');
 });
 
 test('Factory Tycoon uses the common game shell and local Three runtime',()=>{
@@ -48,8 +48,24 @@ test('Factory Tycoon includes the planned automation systems',()=>{
     /function toggleAnalysis/,
     /function saveGame/
   ]) assert.match(js,pattern);
-  assert.match(js,/MAX_ITEMS=360/);
+  assert.match(js,/small:\{label:'소',cols:28,rows:18/);
+  assert.match(js,/medium:\{label:'중',cols:44,rows:28/);
+  assert.match(js,/large:\{label:'대',cols:64,rows:40/);
+  assert.match(js,/function maxItems\(\)/);
   assert.match(js,/TICK=1\/20/);
+});
+
+test('Factory Tycoon supports grab camera movement, three map sizes, and a small-map tutorial',()=>{
+  assert.match(html,/id="moveBtn"/);
+  assert.match(html,/data-size="small"/);
+  assert.match(html,/data-size="medium"/);
+  assert.match(html,/data-size="large"/);
+  assert.match(html,/id="tutorialCoach"/);
+  assert.match(js,/function beginDragPan/);
+  assert.match(js,/function panTarget/);
+  assert.match(js,/function startSmallTutorial/);
+  assert.match(js,/const loadedSize=MAP_PRESETS\[s\.mapSize\]\?s\.mapSize:'large'/);
+  assert.match(js,/version:2,mapSize/);
 });
 
 test('Factory Tycoon is touch-first and keeps construction free',()=>{
