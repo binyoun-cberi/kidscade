@@ -448,12 +448,13 @@ function foreignCanInvade(owner){
 }
 function canAttackFaction(attacker,target){
   if(!target||target==="neutral"||target===attacker)return true;
-  if(attacker==="sui"||attacker==="wa")return isAtWar(attacker,target)||!!(state.proxyWars&&state.proxyWars[attacker]);
+  var external=(attacker==="sui"||attacker==="wa")?attacker:((target==="sui"||target==="wa")?target:null);
+  if(external)return isAtWar(attacker,target)||!!(state.proxyWars&&state.proxyWars[external]);
   return true;
 }
 function registerHostility(a,b){
-  if(!a||!b||a===b||b==="neutral")return;
-  if(a==="sui"||a==="wa"||b==="sui"||b==="wa")setWar(a,b,true);
+  if(!a||!b||a===b||a==="neutral"||b==="neutral")return;
+  setWar(a,b,true);
 }
 function activateProxyWar(foreign,sponsor){
   if(!state||["sui","wa"].indexOf(foreign)<0)return;
@@ -623,6 +624,7 @@ function renderMap(){
     }
   });
   drawFactionBorders(borderLayer);
+  drawSeaRoutes(riverLayer);
   drawRivers(riverLayer);
   REGION_LABELS.forEach(function(r){var c=hexCenter(r.q,r.r),tx=svgEl("text",{x:c[0],y:c[1],class:"regionLabel"});tx.textContent=r.name;labelLayer.appendChild(tx);});
   var sea1=svgEl("text",{x:745,y:370,class:"seaLabel"});sea1.textContent="동 해";labelLayer.appendChild(sea1);
@@ -649,15 +651,14 @@ function renderMap(){
     unitLayer.appendChild(g);
   });
 }
+function drawSeaRoutes(layer){
+  SEA_ROUTES.forEach(function(r){
+    var a=hexCenter(r.a[0],r.a[1]),b=hexCenter(r.b[0],r.b[1]);
+    layer.appendChild(svgEl("path",{d:"M "+a[0]+" "+a[1]+" L "+b[0]+" "+b[1],class:"seaRoute"}));
+  });
+}
 function drawRivers(layer){
-  var paths=[
-    [[17,19],[18,19],[19,20],[20,20],[21,21]],
-    [[21,21],[22,22],[22,23]],
-    [[21,26],[22,27],[23,27],[24,28]],
-    [[20,29],[21,30],[21,31]],
-    [[24,30],[25,31],[25,32],[25,33],[24,34]]
-  ];
-  paths.forEach(function(path){
+  RIVER_PATHS.forEach(function(path){
     var d="";
     path.forEach(function(v,i){var c=hexCenter(v[0],v[1]);d+=(i?" L ":"M ")+c[0]+" "+c[1];});
     layer.appendChild(svgEl("path",{d:d,class:"river"}));
@@ -680,7 +681,7 @@ function renderInfo(){
   html+="<div class=\"ownerLine\" style=\"color:"+f.color+"\">"+f.name+" · "+ter.icon+" "+ter.name+"</div>";
   html+="<div class=\"statGrid\"><div class=\"stat\"><small>이동 비용</small><b>"+(ter.move>=99?"이동 불가":ter.move)+"</b></div><div class=\"stat\"><small>방어 보정</small><b>+"+Math.round((ter.def-1)*100)+"%</b></div><div class=\"stat\"><small>식량</small><b>+"+tileFood(t)+"</b></div><div class=\"stat\"><small>재정</small><b>+"+tileMoney(t)+"</b></div></div>";
   var tags=[];
-  if(c)tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level);
+  if(c)tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level+" · 🛡️ 수비대 "+fmt(garrisonAtTile(t)));
   if(t.resource&&RESOURCE_DEFS[t.resource]){var rr=RESOURCE_DEFS[t.resource],active=rr.improvements.indexOf(t.improvement)>=0;tags.push(rr.icon+" "+rr.name+(active?" · 활용 중":""));}
   if(t.improvement&&IMPROVEMENTS[t.improvement])tags.push(IMPROVEMENTS[t.improvement].icon+" "+IMPROVEMENTS[t.improvement].name+" Lv."+(t.improvementLevel||1));
   if(t.terrain==="mountain")tags.push("산길 주의");
@@ -691,7 +692,7 @@ function renderInfo(){
   if(t.owner===state.player&&t.terrain!=="sea"){
     html+="<div class=\"actionTitle\">타일 운영</div><div class=\"actions\">";
     html+="<button class=\"act\" id=\"openBuildFromPanel\">🔨 타일 개발<span>농장·교역소·병영·광산·도요 등</span></button>";
-    if(c)html+="<button class=\"act\" id=\"recruitBtn\">🛡️ 모집<span>💰12 👥8</span></button>";
+    if(c)html+="<button class=\"act\" id=\"recruitBtn\">🛡️ 병력 모집<span>보병 · 궁병 · 기병</span></button>";
     html+="</div>";
   }else if((t.owner==="sui"||t.owner==="wa")&&!isAtWar(state.player,t.owner)){
     html+="<div class=\"actionTitle\">외교</div><div class=\"actions\"><button class=\"act\" id=\"declareWarBtn\">⚔️ 선전포고<span>"+FACTIONS[t.owner].name+"의 비개입 상태를 끝냅니다.</span></button></div>";
@@ -699,7 +700,7 @@ function renderInfo(){
   panel.innerHTML=html;
   var clear=document.getElementById("clearUnitBtn");if(clear)clear.addEventListener("click",function(){selectedUnit=null;reachable={};renderAll();});
   var build=document.getElementById("openBuildFromPanel");if(build)build.addEventListener("click",openBuild);
-  var rec=document.getElementById("recruitBtn");if(rec)rec.addEventListener("click",recruit);
+  var rec=document.getElementById("recruitBtn");if(rec)rec.addEventListener("click",openRecruit);
   var war=document.getElementById("declareWarBtn");if(war)war.addEventListener("click",function(){setWar(state.player,t.owner,true);renderAll();save(false);});
 }
 function unitName(type){return UNIT_TYPES[type]?UNIT_TYPES[type].name:"보병";}
@@ -960,15 +961,40 @@ function upgradeImprovement(){
   log((t.city?CITIES[t.city].name:t.region)+"의 "+IMPROVEMENTS[t.improvement].name+"을(를) Lv."+(lvl+1)+"로 강화했습니다.");
   closeModal();renderAll();save(false);
 }
-function recruit(){
-  var t=state.tiles[selectedTile];if(!t||!t.city||t.owner!==state.player)return;
-  var r=resource(state.player);if(r.money<12||r.manpower<8){toast("재정 또는 인력이 부족합니다.");return;}
-  r.money-=12;r.manpower-=8;
-  var u=playerUnitAt(t.q,t.r);
-  if(u)u.troops+=160;
-  else state.units.push({id:"u"+Date.now(),owner:state.player,type:"infantry",q:t.q,r:t.r,troops:180,hp:10,moved:true});
-  log(CITIES[t.city].name+"에서 새 병력을 모집했습니다.");renderAll();save(false);
+function findSpawnTile(cityTile,owner){
+  if(!friendlyUnitAt(cityTile.q,cityTile.r,owner,null))return cityTile;
+  var near=neighbors(cityTile.q,cityTile.r).filter(function(t){return t.owner===owner&&t.terrain!=="sea"&&!friendlyUnitAt(t.q,t.r,owner,null)&&!enemyUnitAt(t.q,t.r,owner);});
+  return near[0]||cityTile;
 }
+function recruitCostFor(owner,type){
+  var d=UNIT_TYPES[type]||UNIT_TYPES.infantry,cost=d.cost;
+  if(owner==="silla")cost=Math.max(8,cost-1);
+  return{money:cost,manpower:d.manpower,troops:d.troops};
+}
+function openRecruit(){
+  var t=state.tiles[selectedTile];if(!t||!t.city||t.owner!==state.player)return;
+  document.getElementById("modalEyebrow").textContent="병력 모집";
+  document.getElementById("modalTitle").textContent=CITIES[t.city].name+"에서 모집";
+  document.getElementById("modalDesc").textContent="병종마다 이동과 지형 전투 특성이 다릅니다.";
+  document.getElementById("modalBody").innerHTML="<div class=\"choiceGrid\">"+Object.keys(UNIT_TYPES).map(function(type){
+    var d=UNIT_TYPES[type],c=recruitCostFor(state.player,type);
+    return "<button class=\"choice\" data-unit=\""+type+"\"><b>"+d.icon+" "+d.name+" · 💰"+c.money+" 👥"+c.manpower+"</b><span>"+d.desc+" · "+c.troops+"명</span></button>";
+  }).join("")+"</div>";
+  document.getElementById("modalOverlay").classList.remove("hidden");
+  document.getElementById("modalBody").querySelectorAll("[data-unit]").forEach(function(b){b.addEventListener("click",function(){recruitType(b.dataset.unit);});});
+}
+function recruitType(type){
+  var t=state.tiles[selectedTile],d=UNIT_TYPES[type],r=resource(state.player);if(!t||!t.city||t.owner!==state.player||!d)return;
+  var c=recruitCostFor(state.player,type);
+  if(r.money<c.money||r.manpower<c.manpower){toast("재정 또는 인력이 부족합니다.");return;}
+  r.money-=c.money;r.manpower-=c.manpower;
+  var spawn=findSpawnTile(t,state.player),existing=friendlyUnitAt(spawn.q,spawn.r,state.player,null);
+  if(existing){existing.troops+=c.troops;}
+  else state.units.push({id:"u"+Date.now(),owner:state.player,type:type,q:spawn.q,r:spawn.r,troops:c.troops,hp:10,moved:true});
+  log(CITIES[t.city].name+"에서 "+d.name+" "+c.troops+"명을 모집했습니다.");
+  closeModal();renderAll();save(false);
+}
+function recruit(){openRecruit();}
 function applyIncome(owner){
   if(!resource(owner))return;
   var r=resource(owner),ts=ownedTiles(owner);
