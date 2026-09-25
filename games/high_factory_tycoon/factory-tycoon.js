@@ -624,7 +624,8 @@ function updateItemViews(){
 }
 function updateHud(){
   stats.shipTimes=stats.shipTimes.filter(t=>gameTime-t<=60);
-  ui.shipped.textContent=stats.shipped.toLocaleString('ko-KR');ui.cash.textContent=money(stats.cash);ui.perMinute.textContent=stats.shipTimes.length.toFixed(1);ui.waste.textContent=stats.waste.toLocaleString('ko-KR');checkChallenge();
+  ui.shipped.textContent=stats.shipped.toLocaleString('ko-KR');ui.cash.textContent=money(stats.cash);ui.perMinute.textContent=stats.shipTimes.length.toFixed(1);ui.waste.textContent=stats.waste.toLocaleString('ko-KR');
+  ui.mapBadge.textContent=MAP_PRESETS[mapSize].label;checkChallenge();
 }
 function simulate(dt){
   if(!running||paused)return;
@@ -755,24 +756,29 @@ function renderBook(){
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 
 document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+document.querySelectorAll('.sizeCard').forEach(b=>b.addEventListener('click',()=>selectMapSize(b.dataset.size)));
 ui.undoBtn.addEventListener('click',undo);ui.redoBtn.addEventListener('click',redo);ui.saveBtn.addEventListener('click',()=>saveGame(true));
+ui.moveBtn.addEventListener('click',()=>setTool(selectedTool==='move'?'belt':'move'));
 ui.rotateBtn.addEventListener('click',rotateTool);ui.analysisBtn.addEventListener('click',toggleAnalysis);ui.bookBtn.addEventListener('click',openBook);ui.speedBtn.addEventListener('click',cycleSpeed);ui.pauseBtn.addEventListener('click',togglePause);
 ui.helpBtn.addEventListener('click',()=>{ui.help.classList.remove('hidden');paused=true;ui.pauseBtn.textContent='▶'});
 ui.closeHelpBtn.addEventListener('click',()=>{ui.help.classList.add('hidden');paused=false;ui.pauseBtn.textContent='Ⅱ'});
 ui.closeBookBtn.addEventListener('click',closeBook);
 ui.collapseOrders.addEventListener('click',()=>{ui.orders.classList.toggle('collapsed');ui.collapseOrders.textContent=ui.orders.classList.contains('collapsed')?'›':'‹'});
 document.querySelectorAll('.slot').forEach(b=>b.addEventListener('click',()=>selectSlot(b.dataset.slot)));
+ui.tutorialBtn.addEventListener('click',startSmallTutorial);
+ui.tutorialNext.addEventListener('click',nextTutorial);ui.tutorialSkip.addEventListener('click',finishTutorial);
 ui.newBtn.addEventListener('click',()=>{
   if(hasSave()&&!confirm('공장 '+activeSlot+'의 저장 내용을 새 공장으로 덮어쓸까요?'))return;
-  startGame(false);
+  startGame(false,false);
 });
-ui.continueBtn.addEventListener('click',()=>{if(hasSave())startGame(true)});
+ui.continueBtn.addEventListener('click',()=>{if(hasSave())startGame(true,false)});
 ui.discoverSave.addEventListener('click',saveDiscovery);ui.discoverName.addEventListener('keydown',e=>{if(e.key==='Enter')saveDiscovery()});
 ui.challengeBtn.addEventListener('click',()=>showToast('선택 도전은 공장 운영을 막지 않아요.',1600));
 addEventListener('keydown',e=>{
   if(e.target?.tagName==='INPUT')return;
   if(e.code==='Space'){e.preventDefault();togglePause()}
   if(e.key==='r'||e.key==='R')rotateTool();
+  if(e.key==='m'||e.key==='M')setTool(selectedTool==='move'?'belt':'move');
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}
   if(e.key==='1')setTool('belt');if(e.key==='2')setTool('assembler');if(e.key==='0')setTool('erase');
@@ -781,4 +787,4 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)sa
 addEventListener('beforeunload',()=>{if(running)saveGame(false)});
 window.KidscadeGame?.registerPauseHandlers?.({pause:()=>{paused=true;ui.pauseBtn.textContent='▶'},resume:()=>{paused=false;ui.pauseBtn.textContent='Ⅱ'}});
 
-initThree();pickOrders();refreshSlots();syncUndo();updateHud();requestAnimationFrame(frame);
+initThree();pickOrders();refreshSizeButtons();refreshSlots();syncUndo();updateHud();requestAnimationFrame(frame);
