@@ -3,31 +3,41 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 const $=id=>document.getElementById(id);
 const ui={
-  shipped:$('shipped'),cash:$('cash'),perMinute:$('perMinute'),waste:$('waste'),
+  shipped:$('shipped'),cash:$('cash'),perMinute:$('perMinute'),waste:$('waste'),mapBadge:$('mapBadge'),
   orders:$('orders'),orderList:$('orderList'),collapseOrders:$('collapseOrders'),
   challengeBtn:$('challengeBtn'),challengeTitle:$('challengeTitle'),challengeProgress:$('challengeProgress'),
-  analysisBtn:$('analysisBtn'),bookBtn:$('bookBtn'),pauseBtn:$('pauseBtn'),speedBtn:$('speedBtn'),rotateBtn:$('rotateBtn'),helpBtn:$('helpBtn'),
+  moveBtn:$('moveBtn'),analysisBtn:$('analysisBtn'),bookBtn:$('bookBtn'),pauseBtn:$('pauseBtn'),speedBtn:$('speedBtn'),rotateBtn:$('rotateBtn'),helpBtn:$('helpBtn'),
   analysisLegend:$('analysisLegend'),toast:$('toast'),toolbar:$('toolbar'),
   undoBtn:$('undoBtn'),redoBtn:$('redoBtn'),saveBtn:$('saveBtn'),
-  intro:$('intro'),newBtn:$('newBtn'),continueBtn:$('continueBtn'),
+  intro:$('intro'),newBtn:$('newBtn'),continueBtn:$('continueBtn'),tutorialBtn:$('tutorialBtn'),
   help:$('help'),closeHelpBtn:$('closeHelpBtn'),book:$('book'),bookList:$('bookList'),closeBookBtn:$('closeBookBtn'),
+  tutorialCoach:$('tutorialCoach'),tutorialStep:$('tutorialStep'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialNext:$('tutorialNext'),tutorialSkip:$('tutorialSkip'),
   discover:$('discover'),discoverLayers:$('discoverLayers'),discoverText:$('discoverText'),discoverName:$('discoverName'),discoverSave:$('discoverSave')
 };
 
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const DIR_ANGLE=[-Math.PI/2,Math.PI,Math.PI/2,0];
-const COLS=64,ROWS=40,CELL=1.18,MAX_ITEMS=360,TICK=1/20;
-const SUPPLIERS=[
-  {x:1,y:4,id:'bread',label:'식빵',color:0xeac486},
-  {x:1,y:9,id:'cheese',label:'치즈',color:0xf7d94c},
-  {x:1,y:14,id:'ham',label:'햄',color:0xd78673},
-  {x:1,y:19,id:'tomato',label:'토마토',color:0xe5544d},
-  {x:1,y:24,id:'lettuce',label:'양상추',color:0x74bd69},
-  {x:1,y:29,id:'egg',label:'달걀',color:0xf4efe0},
-  {x:1,y:34,id:'bacon_raw',label:'베이컨',color:0xd47b73}
-];
-const SHIPS=[{x:62,y:9},{x:62,y:19},{x:62,y:29}];
-const FIXED=new Set([...SUPPLIERS,...SHIPS].map(p=>key(p.x,p.y)));
+const CELL=1.18,TICK=1/20;
+const MAP_PRESETS={
+  small:{label:'소',cols:28,rows:18,view:16,minView:10,maxItems:160,supplies:['bread','cheese','ham','tomato'],ships:1},
+  medium:{label:'중',cols:44,rows:28,view:20,minView:11,maxItems:260,supplies:['bread','cheese','ham','tomato','lettuce','egg'],ships:2},
+  large:{label:'대',cols:64,rows:40,view:24,minView:12,maxItems:360,supplies:['bread','cheese','ham','tomato','lettuce','egg','bacon_raw'],ships:3}
+};
+const SUPPLY_DEFS={
+  bread:{label:'식빵',color:0xeac486},cheese:{label:'치즈',color:0xf7d94c},ham:{label:'햄',color:0xd78673},
+  tomato:{label:'토마토',color:0xe5544d},lettuce:{label:'양상추',color:0x74bd69},egg:{label:'달걀',color:0xf4efe0},
+  bacon_raw:{label:'베이컨',color:0xd47b73}
+};
+let mapSize='small',selectedMapSize='small',COLS=28,ROWS=18,SUPPLIERS=[],SHIPS=[],FIXED=new Set();
+function configureWorldData(size='small'){
+  const preset=MAP_PRESETS[size]||MAP_PRESETS.small;
+  mapSize=MAP_PRESETS[size]?size:'small';COLS=preset.cols;ROWS=preset.rows;
+  SUPPLIERS=preset.supplies.map((id,i)=>({x:1,y:Math.round((i+1)*ROWS/(preset.supplies.length+1)),id,label:SUPPLY_DEFS[id].label,color:SUPPLY_DEFS[id].color}));
+  SHIPS=Array.from({length:preset.ships},(_,i)=>({x:COLS-2,y:Math.round((i+1)*ROWS/(preset.ships+1))}));
+  FIXED=new Set([...SUPPLIERS,...SHIPS].map(p=>p.x+','+p.y));
+}
+configureWorldData('small');
+function maxItems(){return MAP_PRESETS[mapSize]?.maxItems||360}
 const INGREDIENTS={
   bread:{label:'식빵',value:18,color:0xe8bd78,model:'../../assets/game/3d/bakery/baked-goods/bread-slice.glb'},
   toast:{label:'토스트',value:24,color:0xc98b48,model:'../../assets/game/3d/bakery/baked-goods/bread-slice.glb',tint:0xb96e34},
@@ -42,6 +52,8 @@ const INGREDIENTS={
   bacon:{label:'베이컨',value:31,color:0xbc695f,model:'../../assets/game/food/bacon.glb'}
 };
 const RECIPES=[
+  {name:'치즈 샌드위치',layers:['bread','cheese','bread'],mult:1.35},
+  {name:'햄 토마토 샌드',layers:['bread','ham','tomato_slice','bread'],mult:1.5},
   {name:'햄치즈 샌드위치',layers:['bread','ham','cheese','bread'],mult:1.55},
   {name:'BLT 스타일',layers:['bread','bacon','lettuce','tomato_slice','bread'],mult:1.8},
   {name:'에그 토스트',layers:['toast','egg_cooked','cheese','toast'],mult:2.0},
@@ -58,7 +70,7 @@ const MACHINE={
 const SAVE_BASE='kidscade_game_v1:high_factory_tycoon:slot';
 const MODEL_KEYS=Object.keys(INGREDIENTS);
 
-let scene,camera,renderer,raycaster,floor,loader;
+let scene,camera,renderer,raycaster,floor,gridHelper,loader;
 let staticGroup,itemGroup,effectGroup,fixedGroup;
 let beltMesh,arrowMesh;
 let models=new Map();
@@ -68,8 +80,8 @@ let running=false,paused=false,speed=1,selectedTool='belt',rotation=0,analysis=f
 let stats={shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}};
 let orders=[],challengeIndex=0;
 let undoStack=[],redoStack=[];
-let pendingDiscovery=null,toastTimer=0,activeSlot=1;
-let cameraTarget=new THREE.Vector3(0,0,0),viewSize=34;
+let pendingDiscovery=null,toastTimer=0,activeSlot=1,tutorialMode=false,tutorialStepIndex=0;
+let cameraTarget=new THREE.Vector3(0,0,0),viewSize=MAP_PRESETS.small.view;
 let activePointers=new Map(),dragBuild=null,panGesture=null,lastFrame=performance.now(),acc=0;
 let cellHeat=new Map();
 
