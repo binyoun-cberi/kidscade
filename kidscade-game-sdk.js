@@ -34,6 +34,7 @@
   let menuOpen = false;
   let pauseHandlers = null;
   let errorReportingInstalled = false;
+  let shellMountPending = false;
 
   const now = () => root?.performance?.now?.() ?? Date.now();
   const cleanToken = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -352,8 +353,28 @@
     menuOpen = true;
   }
 
+  function scheduleShellMount() {
+    if (!root?.document || shellMountPending || shellElement() || options.shell === false) return false;
+    shellMountPending = true;
+    const mount = () => {
+      shellMountPending = false;
+      mountShell();
+    };
+    if (root.document.readyState === 'loading') {
+      root.document.addEventListener?.('DOMContentLoaded', mount, { once:true });
+    } else {
+      root.setTimeout?.(mount, 0);
+    }
+    return true;
+  }
+
   function mountShell() {
     if (!root?.document || options.shell === false || shellElement()) return false;
+    if (!root.document.body) {
+      scheduleShellMount();
+      return false;
+    }
+    shellMountPending = false;
     addStyles();
     const shell = root.document.createElement('div');
     shell.id = 'kidscade-game-shell';
