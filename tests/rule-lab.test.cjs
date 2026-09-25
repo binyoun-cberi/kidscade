@@ -30,7 +30,8 @@ test('Rule Lab is registered as a featured thinking puzzle',()=>{
   const catalog=JSON.parse(read('data/games.json'));
   const game=catalog.games.find(g=>g.id==='high_rule_lab');
   assert.ok(game);
-  assert.equal(game.href,'games/high_rule_lab/index.html?v=2');
+  assert.equal(game.href,'games/high_rule_lab/index.html?v=3');
+  assert.equal(game.title,'내 말 좀 들어');
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'puzzle');
   assert.equal(game.qualityStatus,'featured');
@@ -91,4 +92,17 @@ test('Rule Lab v2 engine implements MOVE and WEAK behavior hooks',()=>{
   assert.match(runtime,/hasProp\(e\.type,'WEAK'/);
   assert.match(runtime,/progress_v2/);
   assert.match(runtime,/chapter-row/);
+});
+
+
+test('내 말 좀 들어 loads the SDK after the body content so startup cannot mount into a missing body',()=>{
+  const html=read('games/high_rule_lab/index.html');
+  const bodyIndex=html.indexOf('<body>');
+  const sdkIndex=html.indexOf('kidscade-game-sdk.js');
+  const gameIndex=html.indexOf('./game.js?v=3');
+  assert.ok(bodyIndex>=0);
+  assert.ok(sdkIndex>bodyIndex,'SDK must load after <body>');
+  assert.ok(gameIndex>sdkIndex,'game runtime must load after SDK');
+  assert.match(html,/<title>내 말 좀 들어 \| Kidscade<\/title>/);
+  assert.match(html,/data-title="내 말 좀 들어"/);
 });
