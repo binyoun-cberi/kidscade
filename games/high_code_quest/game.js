@@ -200,7 +200,7 @@ function buildWorld(){
  worldState={
   x:mission.start[0],y:mission.start[1],dir:mission.dir,hp:5,crystals:0,
   walls:new Set((mission.walls||[]).map(function(p){return p[0]+','+p[1];})),
-  crystals:(mission.crystals||[]).map(function(p){return {x:p[0],y:p[1],taken:false,obj:null};}),
+  crystalItems:(mission.crystals||[]).map(function(p){return {x:p[0],y:p[1],taken:false,obj:null};}),
   doors:(mission.doors||[]).map(function(d){return {x:d.x,y:d.y,need:d.need||0,open:false,obj:null};}),
   enemies:(mission.enemies||[]).map(function(e){return Object.assign({},e,{dead:false,maxHp:e.hp,obj:null});})
  };
@@ -217,7 +217,7 @@ function buildWorld(){
  goal.position.copy(pos3(mission.goal[0],mission.goal[1],.13));goal.userData.disposeGeometry=true;boardRoot.add(goal);
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.35,.035,8,24),new THREE.MeshBasicMaterial({color:0xbaffef}));
  ring.rotation.x=Math.PI/2;ring.position.copy(pos3(mission.goal[0],mission.goal[1],.22));ring.userData.disposeGeometry=true;goal.add(ring);
- worldState.crystals.forEach(function(c){
+ worldState.crystalItems.forEach(function(c){
   const o=new THREE.Mesh(new THREE.OctahedronGeometry(.25),new THREE.MeshStandardMaterial({color:0x6de7ff,emissive:0x2c93c2,emissiveIntensity:.75,roughness:.25}));
   o.position.copy(pos3(c.x,c.y,.38));o.castShadow=true;o.userData.disposeGeometry=true;c.obj=o;entityRoot.add(o);
  });
@@ -240,7 +240,7 @@ function ahead(){
 }
 function enemyAt(x,y){return worldState.enemies.find(function(e){return !e.dead&&e.x===x&&e.y===y;});}
 function doorAt(x,y){return worldState.doors.find(function(d){return !d.open&&d.x===x&&d.y===y;});}
-function crystalAt(x,y){return worldState.crystals.find(function(c){return !c.taken&&c.x===x&&c.y===y;});}
+function crystalAt(x,y){return worldState.crystalItems.find(function(c){return !c.taken&&c.x===x&&c.y===y;});}
 function blocked(x,y){
  if(x<0||y<0||x>=mission.w||y>=mission.h)return true;
  if(worldState.walls.has(x+','+y))return true;
@@ -282,7 +282,7 @@ const worldAPI={
   const a=ahead();
   if(cond==='enemyAhead')return Boolean(enemyAt(a.x,a.y));
   if(cond==='wallAhead')return a.x<0||a.y<0||a.x>=mission.w||a.y>=mission.h||worldState.walls.has(a.x+','+a.y)||Boolean(doorAt(a.x,a.y));
-  if(cond==='crystals3')return worldState.crystals>=3;
+  if(cond==='crystals3')return worldState.crystalCount>=3;
   return false;
  },
  applyAction:async function(type){
@@ -302,11 +302,11 @@ const worldAPI={
   }
   if(type==='COLLECT'){
    const c=crystalAt(worldState.x,worldState.y);if(!c)return {ok:false,message:'이 칸에는 주울 수정이 없어요.'};
-   c.taken=true;worldState.crystals++;await fadeRemove(c.obj);sound('collect.coin_pickup');updateHUD();return {ok:true};
+   c.taken=true;worldState.crystalCount++;await fadeRemove(c.obj);sound('collect.coin_pickup');updateHUD();return {ok:true};
   }
   if(type==='OPEN'){
    const d=doorAt(a.x,a.y);if(!d)return {ok:false,message:'바로 앞에 닫힌 문이 없어요.'};
-   if(worldState.crystals<d.need)return {ok:false,message:'수정이 '+d.need+'개 필요해요. 지금은 '+worldState.crystals+'개예요.'};
+   if(worldState.crystalCount<d.need)return {ok:false,message:'수정이 '+d.need+'개 필요해요. 지금은 '+worldState.crystalCount+'개예요.'};
    d.open=true;sound('ui.confirm');
    if(d.obj)await tween(220,function(t){d.obj.scale.y=Math.max(.03,1-t);d.obj.position.y=.58*(1-t);});
    if(d.obj)entityRoot.remove(d.obj);return {ok:true};
@@ -445,8 +445,8 @@ function renderPalette(){
 function renderAllEditor(){renderProgram();renderPalette();}
 function updateHUD(){
  $('hpValue').textContent=worldState?worldState.hp:5;
- $('crystalValue').textContent=worldState?worldState.crystals:0;
- $('variableCrystal').textContent=worldState?worldState.crystals:0;
+ $('crystalValue').textContent=worldState?worldState.crystalCount:0;
+ $('variableCrystal').textContent=worldState?worldState.crystalCount:0;
  $('variableHp').textContent=worldState?worldState.hp:5;
  renderProgram();
 }
@@ -516,7 +516,7 @@ function fitCamera(){
 window.addEventListener('resize',fitCamera);
 function animate(t){
  if(worldState){
-  worldState.crystals.forEach(function(c,i){if(!c.taken&&c.obj){c.obj.rotation.y=t*.0015+i;c.obj.position.y=.38+Math.sin(t*.003+i)*.06;}});
+  worldState.crystalItems.forEach(function(c,i){if(!c.taken&&c.obj){c.obj.rotation.y=t*.0015+i;c.obj.position.y=.38+Math.sin(t*.003+i)*.06;}});
   worldState.enemies.forEach(function(e,i){if(!e.dead&&e.obj)e.obj.position.y=.12+Math.sin(t*.0025+i)*.035;});
  }
  renderer.render(scene,camera);requestAnimationFrame(animate);
