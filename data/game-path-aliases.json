@@ -50,7 +50,7 @@
   "버거 마스터.html": "games/burger_master/버거 마스터： 스피드 타이쿤.html",
   "영어뱀.html": "games/word_snake/영어뱀： 지식 포식자.html",
   "스도쿠.html": "games/sudoku/나른한 스도쿠.html",
-  "스와이프 분수와 소수 퀴즈.html": "games/swipe_fraction/분수 소수 대결!.html",
+  "스와이프 분수와 소수 퀴즈.html": "games/swipe_fraction/index.html",
   "사빼기일각형넓이구하기.html": "games/polygon_area/(사-1)각형 넓이.html",
   "코너 클래시.html": "games/math_corner_clash/PIXEL KINGDOMS (코너 클래시).html",
   "정육면체 전개도 접기 3D 웹 프로그램.html": "games/cube3d/3D 전개도 마스터.html",
@@ -72,5 +72,6 @@
   "셋_친구_찾기.html": "games/toddler_three_friends_set/셋 친구 찾기!.html",
   "수 막대 계산실.html": "games/math_base10_blocks/우리 동네 마트 계산대.html",
   "약수 타워 디펜스.html": "games/math_tower_defense/약수 타워 디펜스.html",
-  "games/math_tower_defense/index.html": "games/math_tower_defense/약수 타워 디펜스.html"
+  "games/math_tower_defense/index.html": "games/math_tower_defense/약수 타워 디펜스.html",
+  "games/swipe_fraction/분수 소수 대결!.html": "games/swipe_fraction/index.html"
 }
