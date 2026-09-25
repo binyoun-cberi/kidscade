@@ -275,7 +275,7 @@ async function hitEnemy(e){
 }
 function fadeRemove(obj){
  if(!obj)return Promise.resolve();
- return tween(180,function(t){obj.scale.setScalar(Math.max(.001,1-t));obj.position.y=.12+t*.7);}).then(function(){entityRoot.remove(obj);});
+ return tween(180,function(t){obj.scale.setScalar(Math.max(.001,1-t));obj.position.y=.12+t*.7;}).then(function(){entityRoot.remove(obj);});
 }
 const worldAPI={
  checkCondition:function(cond){
