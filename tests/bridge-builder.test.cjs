@@ -82,9 +82,9 @@ test('only redraw control lives inside the visible play area',()=>{
   assert.match(css,/position:absolute/);
 });
 
-test('mobile play area keeps the 12 by 7 canvas and v11 runtime',()=>{
+test('mobile play area keeps the 12 by 7 canvas and v12 runtime',()=>{
   assert.match(css,/aspect-ratio:12\/7/);
   assert.match(css,/width:100%!important/);
-  assert.match(html,/bridge-builder\.js\?v=11/);
-  assert.match(html,/bridge-builder\.css\?v=11/);
+  assert.match(html,/bridge-builder\.js\?v=12/);
+  assert.match(html,/bridge-builder\.css\?v=12/);
 });
