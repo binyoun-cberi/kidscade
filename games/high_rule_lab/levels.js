@@ -3572,13 +3572,13 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 3,
+        "x": 4,
         "y": 6
       },
       {
         "kind": "object",
         "type": "wall",
-        "x": 4,
+        "x": 5,
         "y": 6
       },
       {
@@ -10918,13 +10918,13 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 3,
+        "x": 4,
         "y": 6
       },
       {
         "kind": "object",
         "type": "wall",
-        "x": 4,
+        "x": 5,
         "y": 6
       },
       {
@@ -12012,12 +12012,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 4,
-        "y": 6
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 5,
         "y": 6
       },
@@ -12170,10 +12164,10 @@ const levels=[
       }
     ],
     "hints": [
-      "불이 계속 움직여요.",
-      "부딪히지 않게 타이밍을 맞추세요."
+      "불과 같은 줄에서 계속 달리면 서로 엇갈리기만 해요.",
+      "x=4의 아래쪽 틈으로 잠깐 빠져 불을 먼저 보내고 다시 올라오세요."
     ],
-    "note": "자동 이동과 위험이 결합됩니다."
+    "note": "자동 이동 물체와 속도가 같을 때는 옆 공간에서 한 턴을 보내 상대 위치를 바꿀 수 있어요."
   },
   {
     "title": "움직임을 끊어",
@@ -15034,13 +15028,13 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 3,
+        "x": 4,
         "y": 6
       },
       {
         "kind": "object",
         "type": "wall",
-        "x": 4,
+        "x": 5,
         "y": 6
       },
       {
