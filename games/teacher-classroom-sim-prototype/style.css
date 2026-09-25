@@ -545,3 +545,184 @@ button.waiting-item{width:100%}
   text-align:center
 }
 .document-complete:hover{background:#36594f}
+
+
+/* v49 adaptive viewport profiles */
+:root{
+  --choice-font:13px;
+  --choice-small:10px;
+  --choice-min-h:52px;
+  --dialogue-font:16px;
+  --stage-font:12px;
+  --side-title-font:11px;
+  --side-item-font:11px;
+  --side-small-font:9.5px;
+  --tool-modal-max:760px;
+  --tool-modal-vw:60vw;
+  --modal-title-font:22px;
+  --modal-kicker-font:10px;
+  --modal-strong-font:12px;
+  --modal-text-font:11px;
+  --modal-small-font:9.5px;
+  --modal-button-font:10.5px;
+  --modal-button-h:40px;
+  --dialog-max:620px
+}
+html[data-ui-profile="compact"]{
+  --choice-font:13px;
+  --choice-small:10px;
+  --choice-min-h:50px;
+  --dialogue-font:15px;
+  --stage-font:11px;
+  --side-title-font:10.5px;
+  --side-item-font:10.5px;
+  --side-small-font:9px;
+  --tool-modal-max:700px;
+  --tool-modal-vw:64vw;
+  --modal-title-font:21px;
+  --modal-kicker-font:9.5px;
+  --modal-strong-font:11.5px;
+  --modal-text-font:10.5px;
+  --modal-small-font:9px;
+  --modal-button-font:10px;
+  --modal-button-h:38px;
+  --dialog-max:580px
+}
+html[data-ui-profile="medium"]{
+  --choice-font:14px;
+  --choice-small:11px;
+  --choice-min-h:56px;
+  --dialogue-font:17px;
+  --stage-font:12.5px;
+  --side-title-font:11.5px;
+  --side-item-font:11.5px;
+  --side-small-font:10px;
+  --tool-modal-max:800px;
+  --tool-modal-vw:60vw;
+  --modal-title-font:23px;
+  --modal-kicker-font:10.5px;
+  --modal-strong-font:13px;
+  --modal-text-font:12px;
+  --modal-small-font:10px;
+  --modal-button-font:11.5px;
+  --modal-button-h:42px;
+  --dialog-max:650px
+}
+html[data-ui-profile="large"]{
+  --choice-font:15px;
+  --choice-small:11.5px;
+  --choice-min-h:60px;
+  --dialogue-font:18px;
+  --stage-font:13px;
+  --side-title-font:12px;
+  --side-item-font:12px;
+  --side-small-font:10.5px;
+  --tool-modal-max:880px;
+  --tool-modal-vw:56vw;
+  --modal-title-font:25px;
+  --modal-kicker-font:11px;
+  --modal-strong-font:14px;
+  --modal-text-font:12.5px;
+  --modal-small-font:10.5px;
+  --modal-button-font:12px;
+  --modal-button-h:44px;
+  --dialog-max:700px
+}
+html[data-ui-profile="xl"]{
+  --choice-font:16px;
+  --choice-small:12px;
+  --choice-min-h:64px;
+  --dialogue-font:19px;
+  --stage-font:14px;
+  --side-title-font:12.5px;
+  --side-item-font:12.5px;
+  --side-small-font:11px;
+  --tool-modal-max:980px;
+  --tool-modal-vw:52vw;
+  --modal-title-font:27px;
+  --modal-kicker-font:12px;
+  --modal-strong-font:15px;
+  --modal-text-font:13.5px;
+  --modal-small-font:11.5px;
+  --modal-button-font:13px;
+  --modal-button-h:48px;
+  --dialog-max:760px
+}
+html[data-ui-profile="touch"]{
+  --choice-font:15px;
+  --choice-small:11.5px;
+  --choice-min-h:56px;
+  --dialogue-font:17px;
+  --stage-font:12.5px;
+  --side-title-font:11px;
+  --side-item-font:11px;
+  --side-small-font:9.5px;
+  --modal-title-font:23px;
+  --modal-kicker-font:10.5px;
+  --modal-strong-font:13px;
+  --modal-text-font:12px;
+  --modal-small-font:10px;
+  --modal-button-font:12px;
+  --modal-button-h:44px;
+  --dialog-max:94vw
+}
+
+.action-list button{
+  min-height:var(--choice-min-h);
+  padding:10px 12px;
+  font-size:var(--choice-font);
+  line-height:1.4
+}
+.action-list button small{font-size:var(--choice-small);margin-top:4px}
+.visitor-content blockquote{font-size:var(--dialogue-font);line-height:1.55}
+.stage-copy{font-size:var(--stage-font);line-height:1.5}
+.defer-button{font-size:calc(var(--choice-font) * .82);min-height:34px;padding:7px 4px}
+
+.panel-title span{font-size:var(--side-title-font)}
+.waiting-item strong,.task-item strong{font-size:var(--side-item-font);line-height:1.4}
+.waiting-item small,.task-item small{font-size:var(--side-small-font);line-height:1.35}
+
+.modal-card h2{font-size:var(--modal-title-font)}
+.modal-card header small,.tutorial-card>small,.day-end-card>small{font-size:var(--modal-kicker-font)}
+.roster-card strong,.record-entry strong,.computer-task strong,.record-draft strong{font-size:var(--modal-strong-font)}
+.roster-card span,
+.record-entry p,.computer-task p,.record-draft p,
+.detail-section p,.detail-section li,
+.document-sheet li,.document-sheet p,
+.call-log{
+  font-size:var(--modal-text-font);
+  line-height:1.55
+}
+.record-entry small,.computer-task small{font-size:var(--modal-small-font)}
+.computer-task button,.record-draft button,.note-save,
+.doc-chip,.review-options button,.back-button,.document-complete{
+  min-height:var(--modal-button-h);
+  font-size:var(--modal-button-font);
+  padding:9px 12px
+}
+.document-sheet h3{font-size:calc(var(--modal-title-font) * .78)}
+.review-prompt>strong{font-size:var(--modal-text-font)}
+.detail-section h4{font-size:var(--modal-strong-font)}
+.tutorial-card,.day-end-card{width:min(var(--dialog-max),94vw)}
+.tutorial-card h2,.day-end-card h2{font-size:var(--modal-title-font)}
+.tutorial-card p,.day-end-card p{font-size:var(--modal-text-font)}
+.tutorial-visual{font-size:var(--modal-text-font)}
+.summary-box strong{font-size:var(--modal-strong-font)}
+.summary-box li{font-size:var(--modal-text-font)}
+
+@media(min-width:781px){
+  #toolModal .modal-card{
+    width:min(var(--tool-modal-max),var(--tool-modal-vw))
+  }
+  #toolModal .modal-body{padding:18px 20px 40px}
+}
+
+@media(max-width:780px){
+  #toolModal .modal-card{
+    width:100%;
+    height:min(74dvh,720px);
+    max-height:min(74dvh,720px)
+  }
+  #toolModal .modal-body{padding:14px 14px 28px}
+  .action-list{gap:8px}
+}
