@@ -4,7 +4,7 @@ const DC=root.DisasterCity=root.DisasterCity||{},D=DC.DATA;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function slotProgress(slot,side){const span=650;return side==='left'?clamp((slot.x-70)/span,0,1):clamp((1370-slot.x)/span,0,1)}
 function spawn(sim){
- const s=sim.state,type=s.next.type,side=s.next.side,p=sim.pressure(),base=type==='wildfire'?105:112,d={id:(s.time*1000|0)+'-'+side+'-'+type,type,side,strength:p,energy:base*p,maxEnergy:base*p,progress:0,age:0,blockPause:0,blockedSlot:-1,pulse:0};
+ const s=sim.state,type=s.next.type,side=s.next.side,p=sim.pressure(),base=type==='wildfire'?105:112,maxAge=(type==='wildfire'?34:40)+Math.min(12,p*6),d={id:(s.time*1000|0)+'-'+side+'-'+type,type,side,strength:p,energy:base*p,maxEnergy:base*p,progress:0,age:0,maxAge,blockPause:0,blockedSlot:-1,pulse:0};
  s.disasters.push(d);sim.scheduleNext(d);sim.emit('warning',(side==='left'?'서쪽':'동쪽')+'에서 '+(type==='wildfire'?'산불':'홍수')+'이 시작됐습니다!');
  if(s.tutorial&&s.tutorialStep===2){s.tutorialStep=3;sim.emit('tip',type==='wildfire'?'산불에는 소방대와 방화선이 서로 다른 방식으로 효과적입니다.':'홍수에는 모래주머니·긴급 배수·제방·펌프를 조합하세요.')}
 }
@@ -44,7 +44,8 @@ DC.Disasters={
   const list=s.disasters.slice();
   for(const d of list){
    d.age+=dt;d.pulse+=dt;if(d.type==='wildfire')updateWildfire(sim,d,dt);else updateFlood(sim,d,dt);
-   d.energy=clamp(d.energy,0,d.maxEnergy);d.progress=clamp(d.progress,0,1);if(d.energy<=0)sim.resolveDisaster(d);
+   const maxAge=d.maxAge||48,fadeStart=maxAge*.68;if(d.age>fadeStart){const fade=(d.age-fadeStart)/Math.max(1,maxAge-fadeStart);d.energy-=dt*(2.2+fade*7.5);d.progress=Math.max(0,d.progress-dt*(.004+fade*.012));}
+   d.energy=clamp(d.energy,0,d.maxEnergy);d.progress=clamp(d.progress,0,1);if(d.energy<=0||d.age>=maxAge)sim.resolveDisaster(d);
   }
  }
 };
