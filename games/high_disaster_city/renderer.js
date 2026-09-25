@@ -48,7 +48,10 @@ class Renderer{
   if(style==='farm'){c.fillStyle='#85633f';c.fillRect(x-38,D.GROUND_Y-18,76,18);for(let i=-30;i<=30;i+=12){c.fillStyle='#e2b949';c.fillRect(x+i,D.GROUND_Y-51-(i%3),4,32);c.fillStyle='#74a852';c.fillRect(x+i-5,D.GROUND_Y-38,14,4)}this.hpBar(x,D.GROUND_Y-63,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-82,b.level);return}
   if(style==='levee'){c.fillStyle='#79756c';for(let r=0;r<3;r++)for(let i=0;i<4;i++){c.fillStyle=(r+i)%2?'#8f897e':'#6f6c64';c.fillRect(x-44+i*22+(r%2)*7,D.GROUND_Y-21-r*15,21,14)}this.hpBar(x,D.GROUND_Y-76,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-96,b.level);return}
   if(style==='pump'){c.fillStyle='#50616a';c.fillRect(x-34,D.GROUND_Y-58,68,58);c.fillStyle='#78a6b5';c.fillRect(x-24,D.GROUND_Y-48,34,28);c.strokeStyle='#31505f';c.lineWidth=8;c.beginPath();c.arc(x+16,D.GROUND_Y-26,20,-Math.PI/2,Math.PI/2);c.stroke();this.hpBar(x,D.GROUND_Y-74,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-94,b.level);return}
-  if(style==='reservoir'){c.fillStyle='#d7e2dd';c.fillRect(x-31,D.GROUND_Y-68,62,68);c.fillStyle='#5b8e9e';c.fillRect(x-35,D.GROUND_Y-73,70,10);c.fillStyle='#6db6cf';c.fillRect(x-4,D.GROUND_Y-47,8,22);this.hpBar(x,D.GROUND_Y-86,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-106,b.level)}
+  if(style==='reservoir'){c.fillStyle='#d7e2dd';c.fillRect(x-31,D.GROUND_Y-68,62,68);c.fillStyle='#5b8e9e';c.fillRect(x-35,D.GROUND_Y-73,70,10);c.fillStyle='#6db6cf';c.fillRect(x-4,D.GROUND_Y-47,8,22);this.hpBar(x,D.GROUND_Y-86,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-106,b.level);return}
+  if(style==='shelter'){c.fillStyle='#78858d';c.fillRect(x-37,D.GROUND_Y-64,74,64);c.fillStyle='#4b5963';c.beginPath();c.moveTo(x-44,D.GROUND_Y-64);c.lineTo(x,D.GROUND_Y-88);c.lineTo(x+44,D.GROUND_Y-64);c.fill();c.fillStyle='#eef5f7';c.font='900 24px system-ui';c.textAlign='center';c.fillText('⬟',x,D.GROUND_Y-29);this.hpBar(x,D.GROUND_Y-101,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-121,b.level);return}
+  if(style==='cooling'){c.fillStyle='#d7eef2';c.fillRect(x-36,D.GROUND_Y-62,72,62);c.fillStyle='#78b9cb';c.fillRect(x-40,D.GROUND_Y-67,80,10);c.fillStyle='#287a96';c.font='900 25px system-ui';c.textAlign='center';c.fillText('❄',x,D.GROUND_Y-27);this.hpBar(x,D.GROUND_Y-82,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-102,b.level);return}
+  if(style==='snow'){c.fillStyle='#566976';c.fillRect(x-38,D.GROUND_Y-54,76,54);c.fillStyle='#d9eef4';c.fillRect(x-31,D.GROUND_Y-46,42,28);c.fillStyle='#f3c653';c.fillRect(x+10,D.GROUND_Y-35,22,8);c.fillStyle='#e9f5f8';c.font='900 18px system-ui';c.textAlign='center';c.fillText('✣',x-9,D.GROUND_Y-25);this.hpBar(x,D.GROUND_Y-70,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-90,b.level);return}
  }
  townHall(){const c=this.ctx,x=D.TOWN_X;c.fillStyle='#e7d1a8';c.fillRect(x-55,D.GROUND_Y-108,110,108);c.fillStyle='#384e5a';c.beginPath();c.moveTo(x-66,D.GROUND_Y-108);c.lineTo(x,D.GROUND_Y-151);c.lineTo(x+66,D.GROUND_Y-108);c.fill();c.fillStyle='#f5edd7';c.fillRect(x-12,D.GROUND_Y-52,24,52);c.fillStyle='#b44e43';c.fillRect(x-34,D.GROUND_Y-91,68,20);c.fillStyle='#fff3d8';c.font='900 13px system-ui';c.textAlign='center';c.fillText('마을회관',x,D.GROUND_Y-76)}
  frontX(d){return d.side==='left'?70+d.progress*650:1370-d.progress*650}
@@ -58,7 +61,7 @@ class Renderer{
  citizens(s){
   if(s.time<this.lastCitizenTime){this.agents=[];this.lastCitizenTime=s.time}this.ensureAgents(s);const c=this.ctx,dt=clamp(s.time-this.lastCitizenTime,0,.08);this.lastCitizenTime=s.time;const targets=[D.TOWN_X,...s.slots.filter(x=>x.building).map(x=>x.x)];
   for(let i=0;i<this.agents.length;i++){const a=this.agents[i];let fleeing=false;
-   for(const d of s.disasters||[]){const fx=this.frontX(d);if(Math.abs(a.x-fx)<230&&d.progress>.36){a.target=D.TOWN_X;fleeing=true;break}}
+   for(const d of s.disasters||[]){if(!['wildfire','flood','typhoon','blizzard'].includes(d.type))continue;const fx=this.frontX(d);if(Math.abs(a.x-fx)<230&&d.progress>.36){a.target=D.TOWN_X;fleeing=true;break}}
    if(!fleeing){a.wait-=dt;if(Math.abs(a.x-a.target)<8){if(a.wait<=0){a.target=targets[(a.seed+Math.floor(s.time/2.7)+i)%targets.length]||D.TOWN_X;a.wait=.5+(a.seed%5)*.18}}}
    const dx=a.target-a.x,speed=fleeing?118:38;if(Math.abs(dx)>3){a.dir=Math.sign(dx);a.x+=a.dir*Math.min(Math.abs(dx),speed*dt)}
    const y=D.GROUND_Y+8+(i%3)*4,bob=Math.sin(s.time*(fleeing?9:5)+i)*2,key=fleeing?'citizenWalk':i%3===0?'adventurer':i%3===1?'citizen':'citizenWalk',flip=a.dir<0;
@@ -76,6 +79,23 @@ class Renderer{
   for(let i=0;i<5;i++){const bx=x+(d.side==='left'?-1:1)*(i*10),by=level-5-i%2*8;c.strokeStyle='#d8f5f8aa';c.lineWidth=3;c.beginPath();c.arc(bx,by,12+i*2,0,Math.PI);c.stroke()}
   if(d.blockedSlot>=0){const bx=D.SLOT_X[d.blockedSlot];for(let i=0;i<4;i++){c.strokeStyle='#efffffcc';c.lineWidth=3;c.beginPath();c.arc(bx+(i-2)*8,level-7-i*4,15+i*3,Math.PI,Math.PI*2);c.stroke()}}
  }
+ typhoon(s,d){
+  const c=this.ctx,x=this.frontX(d),dir=d.side==='left'?1:-1,p=d.strength||1;c.save();c.globalAlpha=.20;c.fillStyle='#304b61';c.fillRect(0,0,D.W,D.H);c.globalAlpha=1;
+  c.strokeStyle='#d9edf5aa';c.lineWidth=3;for(let i=0;i<18;i++){const y=55+(i*31)%360,xx=x-dir*((i*67+s.time*130)%420);c.beginPath();c.moveTo(xx,y);c.lineTo(xx+dir*70,y+9);c.stroke()}
+  c.strokeStyle='#89b9cfaa';c.lineWidth=2;for(let i=0;i<24;i++){const xx=(i*83+s.time*190)%D.W,yy=40+(i*47)%390;c.beginPath();c.moveTo(xx,yy);c.lineTo(xx-dir*18,yy+30);c.stroke()}c.restore();
+  c.fillStyle='#d9edf5';c.font='900 '+Math.round(42+Math.min(18,p*8))+'px system-ui';c.textAlign='center';c.fillText('🌀',x,D.GROUND_Y-105)
+ }
+ heatwave(s,d){
+  const c=this.ctx,p=clamp(d.progress,0,1);c.save();c.globalAlpha=.10+.10*p;c.fillStyle='#f39a3e';c.fillRect(0,0,D.W,D.H);c.globalAlpha=.85;c.fillStyle='#ffd15a';c.beginPath();c.arc(d.side==='left'?145:D.W-145,92,40+8*Math.sin(s.time*2),0,Math.PI*2);c.fill();
+  c.strokeStyle='#f7c46caa';c.lineWidth=4;for(let i=0;i<12;i++){const x=80+i*120,y=D.GROUND_Y-55-(i%3)*15;c.beginPath();c.moveTo(x,y);c.bezierCurveTo(x-12,y-16,x+12,y-28,x,y-44);c.stroke()}c.restore()
+ }
+ blizzard(s,d){
+  const c=this.ctx,x=this.frontX(d),left=d.side==='left'?0:x,right=d.side==='left'?x:D.W;c.save();c.globalAlpha=.18;c.fillStyle='#eaf7ff';c.fillRect(left,0,right-left,D.H);c.globalAlpha=.9;c.fillStyle='#f7fbff';
+  for(let i=0;i<48;i++){const xx=(i*97+s.time*55*(i%3+1))%D.W,yy=(i*43+s.time*90)%430,r=2+(i%3);c.beginPath();c.arc(xx,yy,r,0,Math.PI*2);c.fill()}c.globalAlpha=.7;c.fillStyle='#d7edf7';c.fillRect(left,D.GROUND_Y-8,right-left,15);c.restore()
+ }
+ earthquake(s,d){
+  const c=this.ctx,p=d.strength||1;c.save();c.strokeStyle='#654c3dcc';c.lineWidth=3;for(let i=0;i<5;i++){const x=520+i*105,y=D.GROUND_Y+25;c.beginPath();c.moveTo(x,y);c.lineTo(x+12,y+12);c.lineTo(x-5,y+24);c.lineTo(x+14,y+39);c.stroke()}c.fillStyle='#58483c';c.font='900 '+Math.round(30+Math.min(16,p*6))+'px system-ui';c.textAlign='center';c.fillText('⚡',D.TOWN_X,D.GROUND_Y+72);c.restore()
+ }
  effects(s){const c=this.ctx;for(const e of s.effects){if(e.type==='ruin'){const p=e.life/e.maxLife;c.globalAlpha=clamp(p,0,1);c.fillStyle='#58493d';for(let i=0;i<8;i++){const xx=e.x-30+i*9,yy=D.GROUND_Y-8-Math.sin(i*4.4)*10-(1-p)*25;c.fillRect(xx,yy,7,7)}c.globalAlpha=1}}}
  slots(s){
   const c=this.ctx;if(!s.selectedUid)return;const selected=s.hand.find(x=>x.uid===s.selectedUid),card=selected&&D.CARDS[selected.id];if(!card||card.kind!=='build')return;
@@ -84,8 +104,9 @@ class Renderer{
  }
  render(s){
   const c=this.ctx,t=this.worldTransform();c.setTransform(this.view.dpr,0,0,this.view.dpr,0,0);c.fillStyle='#11293d';c.fillRect(0,0,this.view.w,this.view.h);c.save();c.translate(t.ox,t.oy);c.scale(t.scale,t.scale);c.imageSmoothingEnabled=false;
+  const quake=(s.disasters||[]).find(d=>d.type==='earthquake');if(quake)c.translate(Math.sin(s.time*46)*3.5*(quake.strength||1),Math.cos(s.time*39)*1.8);
   this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building)this.drawBuilding(slot,slot.building);this.townHall();this.citizens(s);
-  const disasters=(s.disasters||[]).slice().sort((a,b)=>a.type==='flood'?-1:b.type==='flood'?1:0);for(const d of disasters){if(d.type==='wildfire')this.wildfire(s,d);else this.flood(s,d)}this.effects(s);c.restore()
+  const disasters=(s.disasters||[]).slice().sort((a,b)=>a.type==='flood'?-1:b.type==='flood'?1:0);for(const d of disasters){if(d.type==='wildfire')this.wildfire(s,d);else if(d.type==='flood')this.flood(s,d);else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
  }
 }
 DC.Renderer=Renderer;
