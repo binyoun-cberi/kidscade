@@ -356,22 +356,23 @@ function regionFor(q,r){
   if(q>=28&&r>=34)return"왜";
   return"해역";
 }
+function offsetToCube(q,r){
+  var x=q-((r-(r&1))/2),z=r,y=-x-z;
+  return{x:x,y:y,z:z};
+}
+function hexDistance(q1,r1,q2,r2){
+  var a=offsetToCube(q1,r1),b=offsetToCube(q2,r2);
+  return Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.z-b.z));
+}
+function resourceAt(q,r){return RESOURCE_NODES[key(q,r)]||null;}
 function ownerFor(q,r){
   if(!isLandMask(q,r))return null;
-  // 서쪽 대륙
-  if(q<=12)return"sui";
-  // 북방 및 한반도 북부
-  if(r<=26&&q>=13)return"goguryeo";
-  // 600년 무렵 한강권은 신라
-  if(r>=27&&r<=30&&q>=22)return"silla";
-  // 백제 서남부
-  if(r>=27&&r<=35&&q>=19&&q<=22)return"baekje";
-  // 신라 동남부(옛 가야권 포함)
-  if(r>=29&&r<=37&&q>=23&&q<=27)return"silla";
-  // 일본 열도
-  if(r>=34&&q>=28)return"wa";
-  // 탐라
-  if(q===19&&r===41)return"tamna";
+  var cid=cityAt(q,r);
+  if(cid&&START_CITY_OWNERS[cid])return START_CITY_OWNERS[cid];
+  for(var i=0;i<START_SEEDS.length;i++){
+    var seed=START_SEEDS[i],c=CITIES[seed.city];
+    if(c&&hexDistance(q,r,c.q,c.r)<=seed.radius)return seed.owner;
+  }
   return"neutral";
 }
 function cityAt(q,r){
@@ -386,41 +387,74 @@ function makeTiles(){
       var land=isLandMask(q,r),cid=cityAt(q,r),terrain=land?terrainFor(q,r):"sea";
       if(cid&&CITIES[cid].island)terrain="coast";
       var own=land?ownerFor(q,r):null;
-      if(cid)own=CITIES[cid].owner;
-      out[key(q,r)]={q:q,r:r,terrain:terrain,region:land?regionFor(q,r):"해역",owner:own,city:cid,improvement:null,improvementLevel:0};
+      out[key(q,r)]={
+        q:q,r:r,terrain:terrain,region:land?regionFor(q,r):"해역",
+        owner:own,city:cid,resource:land?resourceAt(q,r):null,
+        improvement:null,improvementLevel:0
+      };
     }
   }
   return out;
 }
 function makeUnits(){
+  var G=CITIES.gungnae,B=CITIES.han,S=CITIES.gyeongju,GA=CITIES.gaya,DG=CITIES.daegaya,SU=CITIES.sui_frontier,WA=CITIES.wa_kyushu;
   return[
-    {id:"g1",owner:"goguryeo",type:"infantry",q:22,r:22,troops:380,hp:10,moved:false},
-    {id:"g2",owner:"goguryeo",type:"cavalry",q:20,r:20,troops:280,hp:10,moved:false},
-    {id:"g3",owner:"goguryeo",type:"infantry",q:22,r:26,troops:250,hp:10,moved:false},
-    {id:"b1",owner:"baekje",type:"infantry",q:21,r:30,troops:310,hp:10,moved:false},
-    {id:"b2",owner:"baekje",type:"archer",q:21,r:31,troops:235,hp:10,moved:false},
-    {id:"b3",owner:"baekje",type:"infantry",q:21,r:32,troops:195,hp:10,moved:false},
-    {id:"s1",owner:"silla",type:"infantry",q:24,r:29,troops:260,hp:10,moved:false},
-    {id:"s2",owner:"silla",type:"archer",q:26,r:34,troops:270,hp:10,moved:false},
-    {id:"su1",owner:"sui",type:"infantry",q:5,r:16,troops:390,hp:10,moved:false},
-    {id:"su2",owner:"sui",type:"cavalry",q:10,r:18,troops:300,hp:10,moved:false},
-    {id:"w1",owner:"wa",type:"infantry",q:30,r:41,troops:220,hp:10,moved:false}
+    {id:"g1",owner:"goguryeo",type:"infantry",q:G.q,r:G.r,troops:300,hp:10,moved:false},
+    {id:"g2",owner:"goguryeo",type:"cavalry",q:G.q-1,r:G.r,troops:220,hp:10,moved:false},
+    {id:"b1",owner:"baekje",type:"infantry",q:B.q,r:B.r,troops:280,hp:10,moved:false},
+    {id:"b2",owner:"baekje",type:"archer",q:B.q-1,r:B.r,troops:210,hp:10,moved:false},
+    {id:"s1",owner:"silla",type:"infantry",q:S.q,r:S.r,troops:280,hp:10,moved:false},
+    {id:"s2",owner:"silla",type:"archer",q:S.q-1,r:S.r,troops:210,hp:10,moved:false},
+    {id:"ga1",owner:"gaya",type:"infantry",q:GA.q,r:GA.r,troops:165,hp:10,moved:false},
+    {id:"ga2",owner:"gaya",type:"infantry",q:DG.q,r:DG.r,troops:145,hp:10,moved:false},
+    {id:"su1",owner:"sui",type:"infantry",q:SU.q,r:SU.r,troops:390,hp:10,moved:false},
+    {id:"w1",owner:"wa",type:"infantry",q:WA.q,r:WA.r,troops:220,hp:10,moved:false}
   ];
+}
+function warKey(a,b){return[a,b].sort().join("|");}
+function isAtWar(a,b){return !!(state&&state.wars&&state.wars[warKey(a,b)]);}
+function setWar(a,b,active){
+  if(!state||!a||!b||a===b||a==="neutral"||b==="neutral")return;
+  state.wars=state.wars||{};
+  state.wars[warKey(a,b)]=active!==false;
+  if(active!==false)log(FACTIONS[a].name+"과(와) "+FACTIONS[b].name+" 사이에 전쟁이 시작되었습니다.");
+}
+function foreignCanInvade(owner){
+  if(owner!=="sui"&&owner!=="wa")return true;
+  if(state.proxyWars&&state.proxyWars[owner])return true;
+  return Object.keys(state.wars||{}).some(function(k){return k.split("|").indexOf(owner)>=0&&state.wars[k];});
+}
+function canAttackFaction(attacker,target){
+  if(!target||target==="neutral"||target===attacker)return true;
+  if(attacker==="sui"||attacker==="wa")return isAtWar(attacker,target)||!!(state.proxyWars&&state.proxyWars[attacker]);
+  return true;
+}
+function registerHostility(a,b){
+  if(!a||!b||a===b||b==="neutral")return;
+  if(a==="sui"||a==="wa"||b==="sui"||b==="wa")setWar(a,b,true);
+}
+function activateProxyWar(foreign,sponsor){
+  if(!state||["sui","wa"].indexOf(foreign)<0)return;
+  state.proxyWars=state.proxyWars||{sui:false,wa:false};
+  state.proxyWars[foreign]=true;
+  log((sponsor&&FACTIONS[sponsor]?FACTIONS[sponsor].name+"의 외교로 ":"")+FACTIONS[foreign].name+"의 대리전 개입이 시작되었습니다.");
 }
 function initialState(player){
   return {
-    version:9,player:player,turn:1,finished:false,
+    version:10,player:player,turn:1,finished:false,
     resources:{
-      goguryeo:{food:52,money:45,manpower:42,authority:58},
-      baekje:{food:56,money:48,manpower:36,authority:58},
-      silla:{food:48,money:43,manpower:34,authority:62},
+      goguryeo:{food:36,money:34,manpower:28,authority:52},
+      baekje:{food:38,money:36,manpower:26,authority:52},
+      silla:{food:34,money:34,manpower:26,authority:56},
       sui:{food:64,money:58,manpower:52,authority:64},
-      gaya:{food:30,money:26,manpower:22,authority:44},
+      gaya:{food:30,money:28,manpower:24,authority:46},
       wa:{food:38,money:42,manpower:28,authority:50},
       tamna:{food:22,money:30,manpower:14,authority:42}
     },
-    tiles:makeTiles(),units:makeUnits(),captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
-    feed:[{date:"600년 봄",text:"제공된 삼국시대 지도의 해안선을 직접 타일화한 전장에서 새로운 역사가 시작되었습니다."}]
+    tiles:makeTiles(),units:makeUnits(),
+    captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
+    wars:{},proxyWars:{sui:false,wa:false},
+    feed:[{date:"600년 봄",text:"대부분의 땅은 아직 미개척입니다. 각 세력은 건국 거점에서 주변으로 영토를 넓혀갑니다."}]
   };
 }
 function unitById(id){return state.units.find(function(u){return u.id===id;});}
@@ -442,7 +476,7 @@ function save(show){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));if(show)toast("현재 역사를 저장했습니다.");}catch(e){if(show)toast("저장할 수 없습니다.");}
 }
 function load(){
-  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===9?x:null;}catch(e){return null;}
+  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===10?x:null;}catch(e){return null;}
 }
 function svgEl(tag,attrs){
   var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
