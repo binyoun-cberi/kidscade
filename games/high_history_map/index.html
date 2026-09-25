@@ -801,7 +801,9 @@ function moveUnit(u,t){
   var moved=executeMoveCore(u,t,false);
   state.units=state.units.filter(function(x){return x.troops>0;});
   selectedUnit=moved&&moved.troops>0?moved.id:null;
-  selectedTile=key(t.q,t.r);reachable={};renderAll();save(false);
+  selectedTile=key(t.q,t.r);reachable={};
+  if(u.owner===state.player&&ownsUnificationCapitals(state.player)){state.finished=true;renderAll();save(false);openResult("unification");return;}
+  renderAll();save(false);
 }
 function riverPenalty(q1,r1,q2,r2){
   var p=[key(q1,r1),key(q2,r2)].sort().join("|"),cross=false;
@@ -869,7 +871,9 @@ function resolveCombat(attacker,dst,defender,silent){
 function battle(attacker,dst){
   var defender=enemyUnitAt(dst.q,dst.r,attacker.owner);
   resolveCombat(attacker,dst,defender,false);
-  selectedUnit=attacker.troops>0?attacker.id:null;reachable={};selectedTile=key(dst.q,dst.r);renderAll();save(false);
+  selectedUnit=attacker.troops>0?attacker.id:null;reachable={};selectedTile=key(dst.q,dst.r);
+  if(attacker.owner===state.player&&ownsUnificationCapitals(state.player)){state.finished=true;renderAll();save(false);openResult("unification");return;}
+  renderAll();save(false);
 }
 function battleSilent(attacker,dst,defender){return resolveCombat(attacker,dst,defender,true);}
 function captureCityIfNeeded(u,t,oldOwner){
@@ -1193,17 +1197,30 @@ function aiStep(owner){
   aiDevelop(owner);
   aiRecruit(owner);
 }
+function ownsUnificationCapitals(owner){
+  return cityOwner("gungnae")===owner&&cityOwner("han")===owner&&cityOwner("gyeongju")===owner;
+}
+function campaignScore(owner){
+  var tiles=ownedTiles(owner),cities=factionCities(owner),improvements=tiles.filter(function(t){return !!t.improvement;}).length;
+  var activeResources=tiles.filter(function(t){return resourceBonus(t).active;}).length;
+  return tiles.length+cities.length*8+improvements*3+activeResources*4+Math.round((resource(owner)?resource(owner).authority:0)/5);
+}
 function checkDefeat(){
-  var cities=factionCities(state.player);
-  if(!cities.length){state.finished=true;toast("모든 도시를 잃었습니다.");setTimeout(function(){openResult(false);},700);return true;}
+  var cities=factionCities(state.player),units=state.units.filter(function(u){return u.owner===state.player&&u.troops>0;});
+  if(!cities.length&&!units.length){
+    state.finished=true;toast("도시와 군대를 모두 잃었습니다.");
+    setTimeout(function(){openResult("defeat");},700);return true;
+  }
   return false;
 }
-function openResult(win){
+function openResult(reason){
   document.getElementById("modalEyebrow").textContent="캠페인 기록";
-  document.getElementById("modalTitle").textContent=win?"32턴의 역사가 끝났습니다.":"세력의 도시가 모두 함락되었습니다.";
-  var goals=OBJECTIVES[state.player].filter(function(o){return o.check();}).length;
-  document.getElementById("modalDesc").textContent="달성 목표 "+goals+"/"+OBJECTIVES[state.player].length+" · 보유 도시 "+factionCities(state.player).length+"곳 · 보유 영토 "+ownedTiles(state.player).length+"칸";
-  document.getElementById("modalBody").innerHTML="<div class=\"countryCard\"><b>"+FACTIONS[state.player].name+"의 기록</b><p>육각형 영토, 강과 산지, 도시 거점을 어떻게 활용했는지 지도를 다시 살펴보세요.</p></div><button class=\"primary\" onclick=\"location.reload()\">처음 화면으로</button>";
+  var title=reason==="unification"?"삼국의 건국 수도를 모두 확보했습니다.":reason==="defeat"?"세력이 무너졌습니다.":"48턴의 역사가 끝났습니다.";
+  document.getElementById("modalTitle").textContent=title;
+  var goals=OBJECTIVES[state.player].filter(function(o){return o.check();}).length,score=campaignScore(state.player);
+  document.getElementById("modalDesc").textContent="점수 "+score+" · 달성 목표 "+goals+"/"+OBJECTIVES[state.player].length+" · 보유 도시 "+factionCities(state.player).length+"곳 · 보유 영토 "+ownedTiles(state.player).length+"칸";
+  var note=reason==="unification"?"국내성·위례성·금성을 모두 지배해 통일 조건을 달성했습니다.":reason==="defeat"?"다음에는 건국 수도와 후방 도시의 수비대를 함께 유지해 보세요.":"도시·영토·개발 시설·특산 자원·권위를 합산한 기록입니다.";
+  document.getElementById("modalBody").innerHTML="<div class=\"countryCard\"><b>"+FACTIONS[state.player].name+"의 기록</b><p>"+note+"</p></div><button class=\"primary\" onclick=\"location.reload()\">처음 화면으로</button>";
   document.getElementById("modalOverlay").classList.remove("hidden");
 }
 function endTurn(){
@@ -1213,10 +1230,11 @@ function endTurn(){
   state.units=state.units.filter(function(u){return u.troops>0;});
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applyIncome);
   state.units.forEach(function(u){u.moved=false;});
-  state.turn++;
   if(checkDefeat())return;
-  if(state.turn>MAX_TURNS){state.turn=MAX_TURNS;state.finished=true;renderAll();save(false);openResult(true);return;}
-  log("새 계절이 시작되었습니다. 전선을 다시 살펴보세요.");
+  if(ownsUnificationCapitals(state.player)){state.finished=true;renderAll();save(false);openResult("unification");return;}
+  state.turn++;
+  if(state.turn>MAX_TURNS){state.turn=MAX_TURNS;state.finished=true;renderAll();save(false);openResult("time");return;}
+  log("새 계절이 시작되었습니다. 개척·개발·국경 방어를 다시 살펴보세요.");
   renderAll();save(false);
 }
 function initStart(){
@@ -1243,7 +1261,8 @@ function showTutorial(){
     ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 미개척 타일에 들어가면 내 영토가 됩니다."],
     ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
     ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·도요·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."],
-    ["5. 외부 세력","수나라와 왜는 기본적으로 한반도에 침공하지 않습니다. 직접 전쟁이 시작되거나 외교 대리전이 발동된 경우에만 공격적으로 움직입니다."]
+    ["5. 도시와 전투","도시에는 자동 수비대가 있습니다. 보병은 공성에 안정적이고, 궁병은 산지 방어, 기병은 평야 공격과 기동에 강합니다."],
+    ["6. 외부 세력","수나라와 왜는 기본적으로 한반도에 침공하지 않습니다. 직접 전쟁이 시작되거나 외교 대리전이 발동된 경우에만 해상로와 육로를 이용해 움직입니다."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorial").classList.add("hidden");return;}
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorial").classList.remove("hidden");
