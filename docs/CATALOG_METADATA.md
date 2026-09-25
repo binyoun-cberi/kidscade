@@ -1,4 +1,4 @@
-# Kidscade catalog metadata v7
+- `rpg`\n# Kidscade catalog metadata v7
 
 `data/games.json` is the single source of truth for launch data and game discovery.
 
