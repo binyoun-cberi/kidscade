@@ -29,6 +29,7 @@ test('storage registry keeps current save keys compatible', () => {
   assert.equal(storage.gameKeys.byeokrandoSave, 'kidscade_byeokrando_v1');
   assert.equal(storage.gameKeys.omokArenaSave, 'kidscade_omok_arena_v1');
   assert.equal(storage.prefixes.languageV3, 'kidscade_language_v3_');
+  assert.equal(storage.prefixes.gameSdkV2, 'kidscade_game_v2:');
 });
 
 test('anonymous server-stat and local profile keys stay inside the registered namespace', () => {
@@ -70,6 +71,7 @@ test('registered physical keys include shared, game and dynamic namespaces', () 
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_omok_arena_v1'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_language_v3_en'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_game_v2:high_seed_fc_manager:save'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_unknown_new_key'), false);
 });
 
