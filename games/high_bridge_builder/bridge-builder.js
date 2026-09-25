@@ -61,7 +61,7 @@ var LEVELS=[
     goal:"매달린 장애물 아래로 길을 내려 보세요",
     tip:"이번에는 반대로 길을 아래쪽으로 휘어야 해요.",
     gap:470,vehicle:"bus",leftY:395,rightY:405,waterY:558,par:1.15,
-    obstacles:[{type:"down",at:.52,w:128,bottom:318,label:"터널"}]
+    obstacles:[{type:"down",at:.52,w:128,bottom:352,label:"터널"}]
   },
   {
     title:"4. 위로, 아래로!",
@@ -79,8 +79,8 @@ var LEVELS=[
     tip:"가운데 노란 관문 사이로 길을 정확히 넣어 보세요.",
     gap:560,vehicle:"sedan",leftY:408,rightY:408,waterY:575,par:1.16,
     obstacles:[
-      {type:"down",at:.51,w:112,bottom:300,label:"위 관문"},
-      {type:"up",at:.51,w:112,top:444,label:"아래 관문"}
+      {type:"down",at:.51,w:112,bottom:220,label:"위 관문"},
+      {type:"up",at:.51,w:112,top:360,label:"아래 관문"}
     ]
   },
   {
@@ -100,10 +100,10 @@ var LEVELS=[
     tip:"첫 관문은 조금 높게, 두 번째는 조금 낮게 지나가야 해요.",
     gap:640,vehicle:"firetruck",leftY:410,rightY:390,waterY:580,par:1.31,
     obstacles:[
-      {type:"down",at:.31,w:82,bottom:270,label:"관문"},
-      {type:"up",at:.31,w:82,top:405,label:"관문"},
-      {type:"down",at:.70,w:86,bottom:328,label:"관문"},
-      {type:"up",at:.70,w:86,top:468,label:"관문"}
+      {type:"down",at:.31,w:82,bottom:230,label:"관문"},
+      {type:"up",at:.31,w:82,top:365,label:"관문"},
+      {type:"down",at:.70,w:86,bottom:340,label:"관문"},
+      {type:"up",at:.70,w:86,top:495,label:"관문"}
     ]
   },
   {
@@ -194,7 +194,7 @@ function ensureAudio(){
 function stopEngine(fade){
   var ac=audio.ctx;
   if(!ac||!audio.engineGain)return;
-  var now=ac.currentTime,seconds=fade==null?.12:fade;
+  var now=ac.currentTime,seconds=fade==null ? .12 : fade;
   try{
     audio.engineGain.gain.cancelScheduledValues(now);
     audio.engineGain.gain.setValueAtTime(Math.max(.0001,audio.engineGain.gain.value),now);
@@ -766,7 +766,6 @@ function drawBackground(){
 
   drawBricks(0,b.leftY,b.leftX,H-b.leftY);
   drawBricks(b.rightX,b.rightY,W-b.rightX,H-b.rightY);
-  drawObstacles();
 
   ctx.fillStyle="rgba(20,39,54,.28)";
   ctx.fillRect(0,b.leftY-4,b.leftX,4);
@@ -898,6 +897,7 @@ function render(){
   ctx.clearRect(0,0,W,H);
   drawBackground();
   drawBridge();
+  drawObstacles();
   drawSmoke();
   drawCar();
   drawMarker();
