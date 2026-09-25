@@ -23,6 +23,7 @@ test('Disaster City keeps simulation and rendering separated',()=>{
  assert.doesNotMatch(sim,/setInterval|setTimeout/);
  assert.match(disasters,/wildfire/);
  assert.match(disasters,/flood/);
+ for(const type of ['typhoon','heatwave','blizzard','earthquake'])assert.match(disasters,new RegExp(type));
  assert.match(sim,/Math\.exp\(-t\/180\)/);
  assert.match(sim,/\.52/);
  assert.match(disasters,/strength:p/);
@@ -52,7 +53,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=9');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=10');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -165,6 +166,31 @@ test('Disaster City wildfire also ends naturally, rewards preserve the rest time
  sim.scheduleNext({side:'right',type:'flood'});
  assert.equal(sim.state.typeStreak,2);
  assert.equal(sim.state.next.type,'wildfire','three identical disasters in a row should be prevented');
+});
+
+test('Disaster City progressively unlocks and runs six distinct disasters',()=>{
+ const vm=require('node:vm');
+ const context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,Sim=DC.Simulation;
+ assert.deepEqual(Object.keys(DC.DATA.DISASTERS),['wildfire','flood','typhoon','heatwave','blizzard','earthquake']);
+ const unlockChecks=[[0,['wildfire','flood']],[61,['typhoon']],[106,['heatwave']],[151,['blizzard']],[211,['earthquake']]];
+ const probe=new Sim();probe.start({seed:42});
+ for(const [time,required] of unlockChecks){probe.state.time=time;const types=probe.availableDisasterTypes();for(const type of required)assert.ok(types.includes(type),type+' should unlock by '+time+'s')}
+
+ const actionFor={typhoon:'stormPrep',heatwave:'waterDistribution',blizzard:'snowplow',earthquake:'evacuation'};
+ for(const type of Object.keys(DC.DATA.DISASTERS)){
+  const sim=new Sim();sim.start({seed:100+type.length});sim.state.time=Math.max(1,(DC.DATA.DISASTERS[type].unlock||0)+1);sim.state.money=9999;sim.state.food=999;sim.state.stability=100;sim.state.rewardChoices=[];sim.state.cleanupChoices=[];
+  sim.state.next={side:'left',type,in:0,visible:true};sim.update(1/30);
+  const d=sim.state.disasters.find(x=>x.type===type);assert.ok(d,type+' should spawn');assert.ok(Number.isFinite(d.maxAge)&&d.maxAge>0,type+' should have finite lifetime');
+  if(actionFor[type]){const id=actionFor[type];sim.state.hand=[{id,uid:8000+type.length}];assert.equal(sim.actionUsable(DC.DATA.CARDS[id]),true,id+' should respond to '+type)}
+  const id=d.id,maxAge=d.maxAge;sim.state.next.in=999;
+  for(let i=0;i<Math.ceil((maxAge+1)*30);i++){sim.state.stability=100;sim.state.food=Math.max(100,sim.state.food);sim.update(1/30)}
+  assert.equal(sim.state.disasters.some(x=>x.id===id),false,type+' must end within its lifetime');
+ }
+ const rewards=new Sim();rewards.start({seed:909});rewards.state.next.type='earthquake';const choices=rewards.makeRewards().filter(x=>x.kind==='add').map(x=>x.id);assert.ok(choices.some(id=>DC.DATA.COUNTERS.earthquake.includes(id)),'reward should offer a counter for the announced next disaster');
 });
 
 test('Disaster City survives a long deterministic stress simulation without invalid state',()=>{
