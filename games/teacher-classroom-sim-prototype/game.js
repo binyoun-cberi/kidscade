@@ -32,12 +32,12 @@
   var SAVE_KEY='kidscade.teacherDesk.v44';
 
   var students={
-    minsu:{name:'민수',tone:'orange',icon:'🧒',base:'장난을 좋아하고 말보다 행동이 먼저 나오는 편',known:[]},
-    jiwoo:{name:'지우',tone:'mint',icon:'👧',base:'친구와 이야기하는 것을 좋아하고 관계 변화에 민감함',known:[]},
-    seoyeon:{name:'서연',tone:'purple',icon:'👧',base:'과제를 꼼꼼히 하며 틀리는 것을 크게 신경 쓰는 편',known:[]},
-    taeho:{name:'태호',tone:'yellow',icon:'🧒',base:'과제를 시작할 때 시간이 조금 필요하고 도움을 먼저 청하기 어려워함',known:[]},
-    junho:{name:'준호',tone:'red',icon:'🧒',base:'친구들 사이에서 앞장서는 일이 많고 승부 상황에 몰입하는 편',known:[]},
-    arin:{name:'아린',tone:'mint',icon:'👧',base:'말수가 적고 불편한 일이 있어도 한동안 혼자 가지고 있는 편',known:[]}
+    minsu:{name:'민수',tone:'orange',icon:'🧒',base:'생각보다 몸이 먼저 움직인다. 억울한 일이 생기면 바로 찾아와 말한다.',known:[]},
+    jiwoo:{name:'지우',tone:'mint',icon:'👧',base:'친구 사이 일을 오래 마음에 두는 편이다. 할 말이 남으면 나중에라도 다시 온다.',known:[]},
+    seoyeon:{name:'서연',tone:'purple',icon:'👧',base:'꼼꼼하다. 맞히는 것보다 틀리는 걸 더 신경 쓸 때가 있다.',known:[]},
+    taeho:{name:'태호',tone:'yellow',icon:'🧒',base:'시작하기까지 시간이 걸린다. 모를 때도 한참 있다가 조용히 손을 든다.',known:[]},
+    junho:{name:'준호',tone:'red',icon:'🧒',base:'친구들 앞에서 먼저 나서는 일이 많다. 승부가 붙으면 목소리도 같이 커진다.',known:[]},
+    arin:{name:'아린',tone:'mint',icon:'👧',base:'말수가 적다. 불편한 일이 있어도 바로 말하지 않고 오래 가지고 있는 편이다.',known:[]}
   };
 
   var studentStatDefaults={
@@ -635,6 +635,172 @@
   }
 
   function eventDef(id){return eventDefs.find(function(e){return e.id===id})||null}
+
+  function storyEventView(e){
+    if(!e)return e;
+    var view={
+      id:e.id,type:e.type,role:e.role,name:e.name,studentId:e.studentId,rare:e.rare,
+      stage:e.stage,dialogue:e.dialogue,
+      actions:e.actions.map(function(a){return {id:a.id,label:a.label,cost:a.cost}})
+    };
+    var labels={};
+    function set(stage,dialogue,actionLabels){
+      if(stage!==undefined)view.stage=stage;
+      if(dialogue!==undefined)view.dialogue=dialogue;
+      labels=actionLabels||{};
+      view.actions=view.actions.map(function(a){
+        if(labels[a.id])a.label=labels[a.id];
+        return a;
+      });
+    }
+
+    if(e.id==='taeho_supply'){
+      set('태호가 가방을 한참 뒤지더니 빈손으로 교탁 앞에 선다.','선생님… 준비물 안 가져왔어요.',{
+        spare:'여분을 하나 준다',ask:'어디서 빠졌는지 물어본다',borrow:'친구한테 먼저 빌려보라고 한다'
+      });
+    }
+    if(e.id==='arin_late_phone'){
+      set('아침 출석을 보던 중 전화가 온다.','선생님, 아린이 오늘 좀 늦어요. 9시 전에는 갈 거예요.',{
+        late_note:'출석부 옆에 메모해 둔다',late_ok:'알겠다고 하고 전화를 끊는다'
+      });
+    }
+    if(e.id==='minsu_pencil'){
+      set('민수가 색연필 통을 들고 곧장 교탁으로 온다.','선생님, 지우가 제 색연필 그냥 가져갔어요.',{
+        listen:'민수 얘기를 더 들어본다',both:'지우도 불러 같이 들어본다',return:'일단 색연필부터 돌려주게 한다',recess:'쉬는 시간에 다시 얘기하자고 한다'
+      });
+    }
+    if(e.id==='taeho_math'){
+      var taehoLine=state.flags.taehoMorningHard?'선생님… 저 또 여기서 막혔어요. 어디부터 해요?':
+        state.flags.taehoBorrow?'선생님, 이거 첫 번째부터 잘 모르겠어요.':'선생님… 첫 문제부터 모르겠어요.';
+      set('태호 연필이 아까부터 같은 자리에 멈춰 있다.',taehoLine,{
+        first:'첫 줄만 같이 시작한다',hint:'어디부터 볼지만 짚어준다',peer:'옆 친구에게 먼저 물어보게 한다'
+      });
+    }
+    if(e.id==='minsu_junho_noise'){
+      set('설명 중인데 뒤쪽에서 자꾸 웃음이 새어 나온다.','민수와 준호가 눈만 마주치면 또 웃는다.',{
+        signal:'옆으로 가서 조용히 신호한다',separate:'둘 자리를 잠깐 떼어 놓는다',whole:'수업을 멈추고 반 전체에 말한다'
+      });
+    }
+    if(e.id==='seoyeon_freeze'){
+      set('서연이 몇 번이나 답을 지우더니 활동지를 덮어 버린다.','저 그냥 안 할래요. 또 틀렸어요.',{
+        where:'뭐가 제일 싫은지 묻는다',one:'딱 한 문제만 같이 보자고 한다',finish:'그래도 끝까지 해보자고 한다',rest:'잠깐 쉬었다 하자고 한다'
+      });
+    }
+    if(e.id==='jiwoo_followup'){
+      var jiwooLine=state.flags.pencilReturned?'근데 선생님, 저 그냥 가져간 거 아니에요. 민수가 어제 빌려도 된댔어요.':
+        state.flags.pencilBoth?'선생님, 저 아까 말 다 못 했어요. 어제는 빌려도 된다고 했단 말이에요.':
+        state.flags.pencilDeferred?'선생님, 아까 색연필 얘기 지금 해도 돼요?':
+        '선생님, 저도 할 말 있어요. 어제 민수가 빌려도 된다고 했어요.';
+      set('친구들이 나간 뒤에도 지우가 교탁 옆에 남아 있다.',jiwooLine,{
+        call_both:'민수도 다시 불러본다',hear:'지우 얘기를 먼저 끝까지 듣는다',end:'오늘은 여기까지 하자고 한다'
+      });
+    }
+    if(e.id==='junho_recess'){
+      var junhoLine=state.flags.wholeStopped?'선생님, 아까도 저만 뭐라고 한 것 같아요. 민수도 했는데요.':
+        state.flags.noiseSeparated?'선생님, 민수가 자꾸 저만 반칙했대요. 자기도 했거든요.':
+        '선생님, 민수가 제가 반칙했대요. 자기도 했는데요.';
+      set('준호가 쉬는 시간 종 치자마자 먼저 달려온다.',junhoLine,{
+        facts:'처음부터 차례대로 말해보게 한다',minsu_too:'민수도 불러 같이 확인한다',cool:'둘부터 떨어져 쉬게 한다'
+      });
+    }
+    if(e.id==='seoyeon_parent'){
+      var parentLine=state.flags.seoyeonPushed?'선생님, 서연이가 요즘 수학만 하면 틀릴까 봐 겁난다고 하더라고요. 학교에서도 그래요?':
+        state.flags.seoyeonOne||state.flags.seoyeonAsked?'서연이가 요즘 수학 때문에 자꾸 속상해해요. 학교에서도 그런 모습이 있나요?':
+        '선생님, 서연이가 요즘 수학만 하면 예민해져서요. 학교에서는 어때요?';
+      set('점심 준비 중에 서연 보호자에게 전화가 온다.',parentLine,{
+        record_explain:'오늘 있었던 일을 기록부터 확인한다',listen_parent:'집에서는 어떤지 먼저 묻는다',callback:'조금 더 보고 하교 뒤 연락드린다'
+      });
+    }
+    if(e.id==='arin_lunch'){
+      set('아린 급식판에는 밥이 거의 그대로 남아 있다.','선생님, 저 그냥 그만 먹으면 안 돼요?',{
+        ask_body:'배 아프거나 불편한 데가 있는지 묻는다',ask_reason:'말할 때까지 조금 기다려 본다',eat_more:'조금만 더 먹어보자고 한다'
+      });
+    }
+    if(e.id==='late_message'){
+      set('종례 직전 옆반 선생님이 복사물을 들고 들어온다.','내일 사진 시간 바뀐 거 봤어요? 미동의도 다시 보래요.',{
+        check_tomorrow:'지금 두 자료를 같이 확인한다',note_tomorrow:'일단 메모만 해 둔다'
+      });
+    }
+    if(e.id==='after_school_staff'){
+      var peLine=state.flags.rareHandled&&String(state.flags.rareHandled).indexOf('fight')===0?
+        '오늘 민수랑 준호, 아까 일 전에도 체육에서 좀 세게 붙었어요. 참고로 말씀드려요.':
+        state.flags.recessBoth||state.flags.recessSeparated?
+        '오늘 민수랑 준호, 체육에서도 또 붙더라고요. 싸운 건 아닌데 말이 좀 세졌어요.':
+        '오늘 준호랑 민수 경기할 때 좀 과열됐어요. 큰일은 아닌데 알아두시면 좋을 것 같아요.';
+      set('아이들이 나갈 무렵 체육 선생님이 문을 두드린다.',peLine,{
+        details:'어떤 일이었는지 더 들어본다',thanks:'알겠다고 하고 메모해 둔다'
+      });
+    }
+    if(e.id==='grade_lead_end'){
+      set('퇴근 시간이 가까워지자 학년부장이 문 앞에서 묻는다.','선생님, 내일 사진 명단 아직 안 왔어요. 미동의 확인해서 오늘 안에 부탁드릴게요.',{
+        send_now:'지금 확인해서 바로 보낸다',computer_later:'네, 곧 보낼게요 하고 넘긴다'
+      });
+    }
+    if(e.id==='jiwoo_parent'){
+      var jp=state.flags.pencilRevisited?'지우가 선생님이 다시 같이 얘기해줬다고 하더라고요. 그래도 좀 속상했나 봐요. 오늘 무슨 일이었어요?':
+        state.flags.pencilUnresolved||state.flags.pencilReturned?'지우가 오늘 억울했다고 하더라고요. 색연필 때문에 무슨 일이 있었나요?':
+        '지우가 색연필 일 때문에 속상했다고 하던데요. 오늘 무슨 일이었을까요?';
+      set('아이들이 간 뒤 교실 전화가 다시 울린다.',jp,{
+        check_record:'기록을 보고 설명한다',memory:'기억나는 대로 바로 설명한다',tomorrow_call:'내일 확인하고 다시 연락드린다'
+      });
+    }
+    if(e.id==='nurse_note'){
+      set('보건 선생님이 문틈으로 확인서 한 장을 내민다.','태호가 아까 잠깐 왔다 갔어요. 심한 건 아닌데, 보호자 연락할지는 한번 봐주세요.',{
+        read_note:'확인서를 읽고 태호를 한번 본다',later_note:'일단 받아만 둔다'
+      });
+    }
+    if(e.id==='research_rush'){
+      set('쉬는 시간 끝나기 직전 연구부 선생님이 얼굴을 내민다.','선생님, 체험학습 숫자 지금 나와요? 미제출도 따로요.',{
+        answer_now:'신청서를 다시 세어 바로 말한다',send_later:'컴퓨터로 보내겠다고 한다'
+      });
+    }
+    if(e.id==='taeho_form'){
+      var formLine=state.flags.taehoMorningHard?'선생님, 이거 가방 안쪽에 있었어요. 엄마가 간다고 했어요.':
+        '선생님, 체험학습 종이 찾았어요. 엄마가 간다고 체크했어요.';
+      set('태호가 구겨진 종이 한 장을 들고 온다.',formLine,{
+        receive:'신청서 묶음에 같이 넣는다',check_form:'이름과 체크부터 확인한다'
+      });
+    }
+    if(e.id==='pickup_change_phone'){
+      set('오후 수업 중 보호자 전화가 온다.','선생님, 오늘 태호 학원차 안 타요. 제가 직접 갈게요. 태호한테도 꼭 말해주세요.',{
+        pickup_note:'바로 하교 메모에 적는다',pickup_ok:'알겠다고 하고 통화를 마친다'
+      });
+    }
+    if(e.id==='art_spill'){
+      var spillLine=state.flags.recessBoth||state.flags.recessSeparated?'선생님! 준호가 또 건드렸어요. 저 진짜 가만히 있었어요!':
+        '선생님! 저 아니에요. 준호가 지나가다가 쳤어요!';
+      set('물통이 넘어지고 젖은 색종이가 바닥에 흩어진다.',spillLine,{
+        clean_first:'미끄러운 바닥부터 치운다',ask_both_art:'둘을 불러 바로 확인한다',student_clean:'둘에게 정리를 맡기고 수업을 잇는다'
+      });
+    }
+    if(e.id==='admin_request'){
+      set('하교 후 교감 선생님이 잠깐 교실에 들른다.','오늘 애들 사이에 있었던 일이나 보호자 연락 중에 제가 알아야 할 게 있을까요?',{
+        report_records:'기록을 보며 필요한 것만 말씀드린다',brief_memory:'기억나는 큰 일만 말씀드린다'
+      });
+    }
+    if(e.id==='rare_fight'){
+      var fightLead=state.flags.recessSeparated?'아까 떨어뜨려 놓았던 민수와 준호 주변으로 아이들이 다시 몰려 있다.':
+        '복도 끝에서 큰 소리가 나고 아이들이 한꺼번에 몰린다.';
+      set(fightLead,'준호가 바닥에 주저앉아 팔을 잡고 있고, 민수는 “쟤가 먼저 했어요!”라고 소리친다.',{
+        secure_help:'둘을 떼고 보건·지원 인력을 부른다',question_first:'누가 먼저였는지부터 묻는다',send_both:'둘 다 떨어져 기다리게 한다'
+      });
+    }
+    if(e.id==='rare_throw'){
+      var throwLine=state.flags.wholeStopped?'아까부터 왜 저만 뭐라고 해요!':'저한테만 왜 그래요!';
+      set('민수가 벌떡 일어나더니 책상 위 필통을 교사 쪽으로 던진다.',throwLine,{
+        clear_support:'아이들을 물리고 지원을 부른다',talk_alone:'바로 가까이 가서 이야기한다',send_out:'교실 밖에 나가 있으라고 한다'
+      });
+    }
+    if(e.id==='rare_disclosure'){
+      var disclosure=state.flags.arinTalked?'선생님… 아까는 말 못 했는데요. 저 오늘 집에 가기 싫어요. 어제 집에서 맞았어요.':
+        '선생님… 저 오늘 집에 가기 싫어요. 어제 집에서 맞았어요.';
+      set('하교 준비가 거의 끝났는데 아린이 문 쪽으로 가지 않고 남아 있다.',disclosure,{
+        safe_listen:'조용한 곳에서 필요한 만큼만 듣고 담당자에게 알린다',call_home:'바로 보호자에게 전화해 확인한다',ask_details:'무슨 일이었는지 자세히 묻는다'
+      });
+    }
+    return view;
+  }
+
   function eventCondition(e){
     if(e.rare)return state.rareEventId===e.id;
     if(e.id==='jiwoo_followup')return state.eventStatus.minsu_pencil==='done'||state.flags.pencilDeferred;
@@ -720,9 +886,86 @@
     consumeMinutes(.5,'잠시 미루기');save();renderAll();
   }
 
+  function storyResultOverride(e,action,out){
+    var key=e.id+':'+action.id;
+    var copy={
+      'taeho_supply:spare':['태호가 “감사합니다” 하고 돌아갔다.','준비물은 해결됐다.'],
+      'taeho_supply:ask':['태호가 한참 생각한다.','“어제 꺼내 놨는데… 아침에 그냥 왔어요.”'],
+      'taeho_supply:borrow':['태호가 옆자리 앞에서 한참 머뭇거렸다.','조금 뒤 친구가 준비물을 건넸다.'],
+      'arin_late_phone:late_note':['출석부 한쪽에 메모를 남겼다.','‘아린 9시 전 등교 예정.’'],
+      'arin_late_phone:late_ok':['“네, 알겠습니다.” 하고 전화를 끊었다.','아린이 늦는다는 건 기억해 뒀다.'],
+      'minsu_pencil:listen':['민수 말은 금방 끝났다.','“제가 안 된다고 했는데 그냥 가져갔어요.” 지우 얘기는 아직 못 들었다.'],
+      'minsu_pencil:both':['둘의 말이 딱 맞지는 않았다.','지우는 “어제 된다고 했잖아”라고 했고, 민수는 “오늘도 된다는 말은 안 했어”라고 했다.'],
+      'minsu_pencil:return':['색연필은 바로 민수 손으로 돌아갔다.','지우는 입을 다문 채 자리로 갔다.'],
+      'minsu_pencil:recess':['“쉬는 시간에 보자.”','민수는 표정이 썩 좋지 않은 채 돌아갔다.'],
+      'taeho_math:first':['첫 줄만 같이 썼다.','태호는 잠깐 보더니 다음 계산부터 혼자 적기 시작했다.'],
+      'taeho_math:hint':['문제의 시작점만 손가락으로 짚어줬다.','태호 연필이 다시 움직였다.'],
+      'taeho_math:peer':['태호가 옆 친구를 몇 번 쳐다본다.','한참 뒤 작은 목소리로 “이거 어떻게 했어?” 하고 물었다.'],
+      'minsu_junho_noise:signal':['둘 옆에 서자 웃음이 뚝 끊겼다.','잠깐 뒤 민수가 준호 쪽을 또 힐끗 봤다.'],
+      'minsu_junho_noise:separate':['자리를 떼어 놓자 바로 조용해졌다.','민수는 새 자리에서도 한 번 뒤를 돌아봤다.'],
+      'minsu_junho_noise:whole':['반 전체가 조용해졌다.','민수와 준호뿐 아니라 다른 아이들도 손을 멈췄다.'],
+      'seoyeon_freeze:where':['서연이 한참 있다가 입을 연다.','“모르는 게 아니라… 또 틀리는 게 싫어요.”'],
+      'seoyeon_freeze:one':['“그럼 이것 하나만 같이 보자.”','서연이 덮었던 활동지를 다시 펼쳤다.'],
+      'seoyeon_freeze:finish':['서연이 말없이 활동지를 다시 펼쳤다.','연필보다 지우개가 더 자주 움직였다.'],
+      'seoyeon_freeze:rest':['활동지를 잠깐 치워 뒀다.','서연 어깨에 들어가 있던 힘이 조금 빠졌다.'],
+      'jiwoo_followup:call_both':['민수를 다시 불렀다.','둘은 한참 말이 엇갈리다 “빌릴 때마다 다시 물어보기”로 끝냈다.'],
+      'jiwoo_followup:hear':['지우는 어제 일을 처음부터 다시 말했다.','왜 억울했는지는 알겠지만, 민수 얘기는 아직 듣지 못했다.'],
+      'jiwoo_followup:end':['“오늘은 여기까지만 하자.”','지우가 “네…” 하고 먼저 나갔다.'],
+      'junho_recess:facts':['“처음부터 말해봐.”','준호 목소리는 점점 작아졌지만 민수 얘기와 맞는지는 아직 모른다.'],
+      'junho_recess:minsu_too':['둘을 같이 세워 놓자 말이 또 엇갈렸다.','누가 먼저였는지는 못 정했지만, 둘 다 목소리는 낮아졌다.'],
+      'junho_recess:cool':['일단 둘을 떨어뜨려 놨다.','말다툼은 멈췄지만 서로 쳐다보는 눈은 그대로다.'],
+      'seoyeon_parent:record_explain':['기록을 펼쳐 오늘 일을 짚어 말했다.','보호자는 한참 듣다가 “집에서도 비슷해요”라고 했다.'],
+      'seoyeon_parent:listen_parent':['보호자 말을 먼저 들었다.','“집에서도 틀리면 다 지우고 처음부터 해요.” 학교에서 본 모습과 비슷했다.'],
+      'seoyeon_parent:callback':['“제가 오늘 조금 더 보고 다시 연락드릴게요.”','통화는 끝났고, 하교 뒤 할 일이 하나 생겼다.'],
+      'arin_lunch:ask_body':['“배 아픈 건 아니에요.”','아린은 그냥 입맛이 없고 피곤하다고 했다.'],
+      'arin_lunch:ask_reason':['말없이 기다리자 아린이 먼저 입을 열었다.','“아침에 친구랑 좀 그랬어요.” 그 뒤로는 다시 조용해졌다.'],
+      'arin_lunch:eat_more':['아린이 두세 숟가락을 더 먹었다.','그 뒤 숟가락을 다시 내려놨다.'],
+      'late_message:check_tomorrow':['공지와 동의서를 나란히 펼쳤다.','아린 미동의, 촬영 시간 변경. 두 가지를 같이 확인했다.'],
+      'late_message:note_tomorrow':['포스트잇에 크게 써 붙였다.','‘사진 시간 / 미동의 다시 확인.’'],
+      'after_school_staff:details':['체육 선생님이 장면을 하나 더 말해줬다.','둘이 공을 두고 붙다가 말이 세졌지만 손이 오가진 않았다고 했다.'],
+      'after_school_staff:thanks':['“알겠습니다. 알려주셔서 감사해요.”','기록철에 짧게 남겨 뒀다.'],
+      'grade_lead_end:send_now':['두 자료를 다시 보고 바로 보냈다.','학년부장이 “확인했어요”라고 답했다.'],
+      'grade_lead_end:computer_later':['“네, 곧 보낼게요.”','학년부장은 돌아갔고 마감은 그대로 남았다.'],
+      'jiwoo_parent:memory':['기억나는 데까지 설명했다.','말하다 보니 어디까지 확인했던 건지 조금 헷갈렸다.'],
+      'jiwoo_parent:tomorrow_call':['“내일 아이들한테 다시 확인하고 연락드릴게요.”','전화는 끊겼지만 색연필 일은 내일로 넘어갔다.'],
+      'nurse_note:read_note':['확인서를 읽고 태호 얼굴을 한번 봤다.','태호는 괜찮다고 했지만 평소보다 말이 적었다.'],
+      'nurse_note:later_note':['확인서를 서류 위에 올려뒀다.','지금은 넘겼지만 다시 봐야 한다.'],
+      'research_rush:answer_now':['신청서를 다시 세어 바로 말했다.','참가 4, 불참 1, 미제출 1.'],
+      'research_rush:send_later':['“조금 있다가 컴퓨터로 보낼게요.”','연구부 선생님은 급히 돌아갔다.'],
+      'taeho_form:receive':['신청서 묶음에 태호 종이를 끼워 넣었다.','아까 ‘미제출’이었던 한 칸이 바뀌었다.'],
+      'taeho_form:check_form':['이름과 체크부터 봤다.','태호 · 참가. 아까 센 숫자와 달라졌다.'],
+      'pickup_change_phone:pickup_note':['하교 메모에 바로 적었다.','‘태호 · 오늘 학원차 X · 보호자 직접 하원.’'],
+      'pickup_change_phone:pickup_ok':['“네, 태호한테도 말해둘게요.”','전화를 끊고 수업으로 돌아왔다.'],
+      'art_spill:clean_first':['먼저 바닥부터 닦았다.','둘은 옆에서 서로 자기 잘못이 아니라고 말하고 있다.'],
+      'art_spill:ask_both_art':['둘 얘기를 맞춰보니 장면은 비슷했다.','준호가 지나가며 책상을 건드렸고 민수 물통이 넘어졌다.'],
+      'art_spill:student_clean':['“둘이 먼저 닦아.”','민수와 준호가 투덜거리면서도 걸레를 들었다.'],
+      'admin_request:report_records':['기록철을 펼쳐 필요한 일만 말했다.','교감 선생님이 몇 군데 메모하고 돌아갔다.'],
+      'admin_request:brief_memory':['기억나는 큰 일만 짧게 말씀드렸다.','교감 선생님은 고개를 끄덕였지만, 빠진 게 있는지는 모르겠다.'],
+      'rare_fight:secure_help':['아이들을 물리고 둘부터 떼어 놨다.','준호는 보건실로 갔고 민수는 다른 쪽에서 기다리게 했다.'],
+      'rare_fight:question_first':['“누가 먼저였어?” 묻는 순간 둘이 동시에 소리치기 시작했다.','주변 아이들은 더 몰려들었다.'],
+      'rare_fight:send_both':['둘을 떨어뜨려 세웠다.','싸움은 멈췄지만 준호 팔 상태는 아직 못 봤다.'],
+      'rare_throw:clear_support':['다른 아이들을 뒤로 물리고 도움을 불렀다.','민수와 거리를 둔 채 교실부터 정리했다.'],
+      'rare_throw:talk_alone':['민수에게 바로 다가갔다.','민수는 아직 숨을 거칠게 쉬고 있었고 아이들은 둘을 보고 있었다.'],
+      'rare_throw:send_out':['“밖에 나가 있어.”','민수는 문을 세게 밀고 나갔다. 이제 어디 있는지 확인해야 한다.'],
+      'rare_disclosure:safe_listen':['아린과 조용한 자리로 옮겼다.','처음 한 말을 그대로 적고 학교 담당자에게 바로 알렸다.'],
+      'rare_disclosure:call_home':['전화기를 들었다가 손을 멈췄다.','먼저 학교 안에서 처리 순서를 확인해야 하는 상황이다.'],
+      'rare_disclosure:ask_details':['몇 번 더 묻자 아린 대답이 짧아졌다.','처음 스스로 한 말과 질문 뒤 나온 말을 따로 적어야 한다.']
+    };
+    var v=copy[key];
+    if(!v)return out;
+
+    if(key==='jiwoo_parent:check_record'){
+      var has=hasRecordFor('jiwoo','색연필')||hasRecordFor('minsu','색연필');
+      return has?
+        {title:'기록을 보고 처음부터 설명했다.',text:'보호자는 “아, 그런 일이었군요” 하고 한숨을 내쉬었다.'}:
+        {title:'기록철을 펼쳤지만 색연필 내용이 없었다.',text:'결국 기억나는 데까지 설명하고 내일 다시 확인하기로 했다.'};
+    }
+    return {title:v[0],text:v[1]};
+  }
+
   function actionResult(e,action){
     var key=e.id+':'+action.id;
-    var out={title:'이 일은 일단 지나갔다.',text:'완전히 끝난 일인지 아닌지는 조금 더 지켜봐야 한다.'};
+    var out={title:'일은 일단 지나갔다.',text:'다 끝난 건지는 아직 모르겠다.'};
 
     if(key==='taeho_supply:spare'){
       state.flags.taehoSpare=true;discover('taeho','준비물이 없을 때 교사에게 조심스럽게 도움을 요청함');
@@ -1035,7 +1278,7 @@
       out={title:'아린은 몇 번 대답하다가 말수가 줄었다.',text:'이제 처음 학생이 자발적으로 한 말과 교사의 질문 뒤 나온 내용을 구분해서 기록해야 한다.'};
     }
 
-    return out;
+    return storyResultOverride(e,action,out);
   }
 
   function resolveAction(actionId){
@@ -1120,12 +1363,13 @@
       empty.hidden=false;card.hidden=true;return;
     }
     var e=eventDef(state.activeEvent);if(!e){state.activeEvent=null;empty.hidden=false;card.hidden=true;return}
+    var view=storyEventView(e);
     empty.hidden=true;card.hidden=false;
-    q('#visitorRole').textContent=e.role;
+    q('#visitorRole').textContent=view.role;
     q('#visitorTime').textContent=fmtTime(state.minute);
-    q('#visitorName').textContent=e.name;
-    q('#visitorStage').textContent=e.stage;
-    q('#visitorDialogue').textContent='“'+e.dialogue+'”';
+    q('#visitorName').textContent=view.name;
+    q('#visitorStage').textContent=view.stage;
+    q('#visitorDialogue').textContent='“'+view.dialogue+'”';
     var avatar=q('#visitorAvatar'),s=student(e.studentId);
     avatar.dataset.kind=e.type==='phone'?'phone':(e.role==='동료 교사'||e.role==='관리자'||e.role==='보건실 전달'?'adult':'student');
     avatar.dataset.tone=s?s.tone:'';
@@ -1133,12 +1377,12 @@
     var context='';
     if(e.studentId){
       var rows=state.records.filter(function(r){return r.studentIds.indexOf(e.studentId)>=0}).slice(-2);
-      if(rows.length)context='기록철에 '+rows.length+'개의 관련 기록이 있다.';
+      if(rows.length)context='이 아이와 관련해 남겨 둔 기록이 '+rows.length+'건 있다.';
     }
-    if(e.id==='seoyeon_parent'||e.id==='jiwoo_parent')context='필요하면 통화 전에 기록철이나 명부를 열어볼 수 있다.';
+    if(e.id==='seoyeon_parent'||e.id==='jiwoo_parent')context='전화를 받기 전에 기록철을 펼쳐볼 수도 있다.';
     q('#contextLine').hidden=!context;q('#contextLine').textContent=context;
     var actionList=q('#actionList');
-    var actionSignature=e.id+'|'+e.actions.map(function(a){return a.id+':'+a.label+':'+a.cost}).join('|');
+    var actionSignature=e.id+'|'+view.actions.map(function(a){return a.id+':'+a.label+':'+a.cost}).join('|');
     /*
       renderAll() runs from the animation loop. Replacing actionList.innerHTML every frame
       destroys the button between pointerdown and click, so the visible choices appear dead.
@@ -1146,7 +1390,7 @@
     */
     if(actionList.dataset.renderSignature!==actionSignature){
       actionList.dataset.renderSignature=actionSignature;
-      actionList.innerHTML=e.actions.map(function(a){
+      actionList.innerHTML=view.actions.map(function(a){
         return '<button type="button" data-event-action="'+escapeHtml(a.id)+'">'+escapeHtml(a.label)+'<small>약 '+formatCost(a.cost)+' 소요</small></button>';
       }).join('');
     }
@@ -1166,10 +1410,10 @@
       html+='<button class="waiting-item phone-wait" data-answer-phone="1"><strong>📞 '+escapeHtml(ph.name)+'</strong><small>전화가 울리는 중</small></button>';
     }
     ids.forEach(function(id){
-      var e=eventDef(id),wait=Math.max(0,Math.ceil((state.deferUntil[id]||state.minute)-state.minute));
+      var e=eventDef(id),view=storyEventView(e),wait=Math.max(0,Math.ceil((state.deferUntil[id]||state.minute)-state.minute));
       var left=Math.max(0,Math.ceil(e.deadline-state.minute));
-      var waitCopy=wait?'잠시 미룸 · '+wait+'분':(left<=2?'곧 떠남 · '+left+'분':escapeHtml(e.role)+' · 약 '+left+'분 남음');
-      html+='<button class="waiting-item '+(e.rare||left<=2?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(e.name)+'</strong><small>'+waitCopy+'</small></button>';
+      var waitCopy=wait?'잠깐 미룸 · '+wait+'분':(left<=2?'곧 감 · '+left+'분':escapeHtml(view.role)+' · '+left+'분쯤 남음');
+      html+='<button class="waiting-item '+(e.rare||left<=2?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(view.name)+'</strong><small>'+waitCopy+'</small></button>';
     });
     var waitingHtml=html||'<p class="empty-copy">아직 기다리는 일이 없습니다.</p>';
     if(list.dataset.renderHtml!==waitingHtml){
@@ -1309,28 +1553,49 @@
       state.minute=1050;showDayEnd(false);
     }
   }
+  function storyClosingLines(){
+    var lines=[];
+    if(state.flags.pencilRevisited)lines.push('민수와 지우는 색연필을 제자리에 두고 각자 가방을 챙겼다.');
+    else if(state.flags.pencilReturned||state.flags.pencilUnresolved)lines.push('지우는 하교할 때까지 민수 쪽을 거의 보지 않았다.');
+    else if(state.flags.pencilListenedMinsu)lines.push('민수는 색연필 통을 가방 깊숙이 넣어 두고 갔다.');
+
+    if(state.flags.seoyeonOne)lines.push('서연 활동지에는 끝까지 지우지 않은 답 하나가 남아 있었다.');
+    else if(state.flags.seoyeonPushed)lines.push('서연 자리 밑에 지우개 가루가 유난히 많이 떨어져 있었다.');
+    else if(state.flags.seoyeonRest)lines.push('서연은 종례 때 활동지를 다시 펴 보다가 그대로 가방에 넣었다.');
+
+    if(state.flags.taehoFirstStep)lines.push('태호 활동지 첫 줄에는 같이 시작한 연필 자국이 남아 있었다.');
+    else if(state.flags.taehoHint)lines.push('태호는 같은 문제를 한참 보다가 결국 자기 힘으로 다음 줄을 적었다.');
+
+    if(state.flags.arinTalked)lines.push('아린은 하교 준비를 하다가 한 번 교탁 쪽을 돌아봤다.');
+    else if(state.flags.arinEatPrompt)lines.push('아린 급식판에는 결국 밥이 꽤 남았다.');
+
+    if(state.flags.recessBoth||state.flags.recessSeparated)lines.push('민수와 준호는 종례 때도 서로 떨어진 자리에서 가방을 챙겼다.');
+
+    if(state.flags.rareHandled==='fight_safe')lines.push('준호 자리는 비어 있었고, 민수 책상 위에는 아직 정리하지 않은 공책이 펼쳐져 있었다.');
+    if(state.flags.rareHandled==='throw_safe')lines.push('한동안 시끄럽던 교실이 하교 뒤에는 이상할 만큼 조용했다.');
+    if(state.flags.rareHandled==='disclosure_safe')lines.push('아린의 가방은 교실에 그대로 남아 있었다.');
+
+    if(!lines.length)lines.push('아이들이 나간 뒤 책상마다 오늘 쓰던 공책과 지우개 가루만 남았다.');
+    return lines.slice(0,4);
+  }
+
   function daySummaryHtml(finalMode){
     var open=availableTasks().filter(function(t){return state.taskStatus[t.id]!=='done'});
     var done=availableTasks().filter(function(t){return state.taskStatus[t.id]==='done'});
     var lessonGood=state.lessonResults.filter(function(r){return r.tier==='good'}).length;
     var lessonNormal=state.lessonResults.filter(function(r){return r.tier==='normal'}).length;
     var lessonBad=state.lessonResults.filter(function(r){return r.tier==='disappointing'}).length;
-    var watch=[];
-    if(state.flags.pencilUnresolved||!hasRecordFor('minsu','색연필'))watch.push('민수와 지우의 색연필 문제는 다시 확인할 여지가 있다.');
-    if(state.flags.seoyeonPushed||state.flags.seoyeonMissed)watch.push('서연이 수학에서 멈추는 장면을 한 번 더 살펴볼 필요가 있다.');
-    if(state.flags.arinTalked)watch.push('아린의 점심시간 기분과 친구 관계를 계속 살펴본다.');
-    if(state.flags.recessBoth||state.flags.noiseSignal)watch.push('민수와 준호는 경쟁 상황에서 서로 자극을 받기 쉽다.');
-    if(!watch.length)watch.push('오늘 눈에 띈 아이들을 내일 다시 천천히 살펴본다.');
+    var watch=storyClosingLines();
     return '<div class="summary-box"><strong>처리한 일</strong><ul>'+(done.length?done.map(function(t){return '<li>'+escapeHtml(t.title)+'</li>'}).join(''):'<li>아직 완료한 행정 업무가 많지 않습니다.</li>')+'</ul></div>'+
       '<div class="summary-box"><strong>남은 일</strong><ul>'+(open.length?open.map(function(t){return '<li>'+escapeHtml(t.title)+'</li>'}).join(''):'<li>오늘 업무는 모두 정리했습니다.</li>')+'</ul></div>'+
       '<div class="summary-box"><strong>수업 결과</strong><ul><li>좋음 '+lessonGood+'회 · 보통 '+lessonNormal+'회 · 아쉬움 '+lessonBad+'회</li><li>수업 결과는 학생의 수업 참여·학습 자신감·교사 신뢰에 누적됩니다.</li></ul></div>'+
-      '<div class="summary-box"><strong>조금 더 지켜볼 아이들</strong><ul>'+watch.map(function(x){return '<li>'+escapeHtml(x)+'</li>'}).join('')+'</ul></div>'+
+      '<div class="summary-box"><strong>오늘 교실에 남은 장면</strong><ul>'+watch.map(function(x){return '<li>'+escapeHtml(x)+'</li>'}).join('')+'</ul></div>'+
       '<div class="summary-box"><strong>오늘 남긴 것</strong><ul><li>학생 기록 '+state.records.length+'건</li><li>직접 메모 '+state.notes.length+'개</li><li>'+(state.overtime?'오늘은 정규 퇴근 시간 뒤에도 남아 있었다.':'정규 퇴근 시간 안에 하루를 마무리했다.')+'</li></ul></div>';
   }
   function showDayEnd(finalMode){
     q('#dayEnd').hidden=false;
     q('#dayEndTitle').textContent=finalMode?'첫날 근무를 마쳤습니다.':'이제 퇴근할 수 있습니다.';
-    q('#dayEndLead').textContent=finalMode?'오늘 처리하지 못한 일도, 오늘 알게 된 아이들의 모습도 다음 날로 이어집니다.':'모든 일을 끝낼 필요는 없습니다. 남은 일을 두고 퇴근하거나 조금 더 정리할 수 있습니다.';
+    q('#dayEndLead').textContent=finalMode?'오늘 있었던 일은 내일 아이들이 다시 들어오면 이어진다.':'퇴근해도 되고, 조금 더 남아 정리해도 된다.';
     q('#dayEndSummary').innerHTML=daySummaryHtml(finalMode);
     q('#overtimeButton').hidden=finalMode||state.overtime;
     q('#leaveButton').textContent=finalMode?'첫날 다시하기':'오늘은 퇴근한다';
@@ -1342,10 +1607,10 @@
 
   function tutorialContent(step){
     var rows=[
-      {title:'정답을 맞히는 게임이 아닙니다.',text:'학생, 보호자, 학교 업무가 한꺼번에 들어옵니다. 무엇을 지금 처리하고 무엇을 미룰지 정하는 것이 첫 번째 일입니다.',visual:'학생이 기다리는 동안 전화가 울릴 수도 있고, 컴퓨터 업무의 마감도 계속 다가옵니다.'},
-      {title:'책상 위 물건이 실제 도구입니다.',text:'명부에서는 아이를 알아가고, 기록철에는 직접 겪은 일을 남깁니다. 컴퓨터에서는 행정 업무를 처리합니다.',visual:'📚 명부　📒 기록철　🖥️ 컴퓨터　☎ 전화　🗒️ 포스트잇'},
-      {title:'기록하지 않아도 됩니다.',text:'다만 며칠 뒤가 아니라 오늘 오후에도 보호자가 전화를 할 수 있습니다. 그때 기록이 있으면 정확히 되짚을 수 있습니다.',visual:'사건 → 기록 여부는 선택 → 나중에 그 기록이 실제로 필요해질 수 있음'},
-      {title:'수업 시간도 그냥 지나가지 않습니다.',text:'수업 시간이 되면 화면 아래의 “수업을 한다”를 길게 누르세요. Space도 같습니다. 얼마나 수업을 진행했고 학생들이 얼마나 따라왔는지에 따라 좋음·보통·아쉬움 결과가 나옵니다.',visual:'수업을 한다 → 따라온 학생 수 판정 → 수업 참여 · 학습 자신감 · 교사 신뢰가 다음 수업에 누적됩니다.'}
+      {title:'하루가 생각보다 빨리 갑니다.',text:'아이 얘기를 듣는 동안 전화가 오고, 서류 마감도 지나갑니다. 다 할 수는 없습니다.',visual:'누구 말을 먼저 들을지, 뭘 적어 둘지, 뭘 나중으로 미룰지 정하세요.'},
+      {title:'책상 위 물건을 직접 쓰세요.',text:'명부를 보면 아이를 더 알 수 있고, 기록철에는 오늘 본 일을 남길 수 있습니다. 컴퓨터에는 계속 일이 들어옵니다.',visual:'📚 명부　📒 기록철　🖥️ 컴퓨터　☎ 전화　🗒️ 포스트잇'},
+      {title:'기록은 나중에 돌아옵니다.',text:'아침에 대수롭지 않았던 일이 오후 보호자 전화에서 다시 나올 수 있습니다. 적어 둔 게 있으면 그때 도움이 됩니다.',visual:'아침의 작은 일 → 기록하거나 그냥 넘김 → 오후에 다시 등장'},
+      {title:'수업도 시간을 먹습니다.',text:'수업 시간에는 아래 “수업을 한다”를 길게 누르세요. Space도 됩니다. 다른 일을 붙잡고 있으면 수업은 그만큼 비게 됩니다.',visual:'수업 시간 ↔ 아이 상담 ↔ 전화 ↔ 행정 업무'}
     ];
     return rows[clamp(step,0,rows.length-1)];
   }
