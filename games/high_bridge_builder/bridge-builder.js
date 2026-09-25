@@ -5,8 +5,8 @@ var canvas=document.getElementById("game");
 var ctx=canvas.getContext("2d");
 var W=1200,H=700,TAU=Math.PI*2;
 var SAMPLE_STEP=5;
-var SNAP_X=92;
-var SNAP_Y=120;
+var MAX_JOIN_Y=145;
+var MAX_POINTS=900;
 
 var el={
   stageTitle:document.getElementById("stageTitle"),
@@ -14,13 +14,9 @@ var el={
   prev:document.getElementById("prevLevel"),
   next:document.getElementById("nextLevel"),
   help:document.getElementById("helpBtn"),
-  inkBar:document.getElementById("inkBar"),
-  inkText:document.getElementById("inkText"),
-  vehicle:document.getElementById("vehicleText"),
+  reset:document.getElementById("resetBtn"),
   hint:document.getElementById("hint"),
   toast:document.getElementById("toast"),
-  test:document.getElementById("testBtn"),
-  reset:document.getElementById("resetBtn"),
   result:document.getElementById("resultCard"),
   resultIcon:document.getElementById("resultIcon"),
   resultTitle:document.getElementById("resultTitle"),
@@ -41,14 +37,14 @@ var VEHICLES={
 };
 
 var LEVELS=[
-  {title:"1. 작은 개울",goal:"벽과 벽 사이를 검은 선 하나로 이어 주세요",gap:330,ink:560,vehicle:"sedan",leftY:408,rightY:408,waterY:590},
-  {title:"2. 학교 가는 길",goal:"조금 더 긴 틈을 한 줄로 건너 보세요",gap:410,ink:650,vehicle:"bus",leftY:408,rightY:398,waterY:590},
-  {title:"3. 언덕 건너기",goal:"높이가 다른 두 벽을 자연스럽게 이어 주세요",gap:470,ink:730,vehicle:"sedan",leftY:420,rightY:370,waterY:590},
-  {title:"4. 긴급 출동",goal:"구급차가 달릴 길을 한 번에 그려 주세요",gap:520,ink:800,vehicle:"ambulance",leftY:395,rightY:415,waterY:588},
-  {title:"5. 깊은 골짜기",goal:"너무 아래로 처지지 않게 길을 그려 주세요",gap:565,ink:850,vehicle:"bus",leftY:392,rightY:392,waterY:555},
-  {title:"6. 높은 건너편",goal:"오른쪽 높은 벽까지 부드럽게 이어 주세요",gap:545,ink:820,vehicle:"sedan",leftY:430,rightY:345,waterY:585},
-  {title:"7. 소방차 출동",goal:"긴 틈을 끊기지 않는 선 하나로 이어 주세요",gap:610,ink:920,vehicle:"firetruck",leftY:402,rightY:385,waterY:575},
-  {title:"8. 마지막 협곡",goal:"가장 긴 골짜기를 멋진 한 줄로 건너 보세요",gap:650,ink:980,vehicle:"truck",leftY:420,rightY:360,waterY:565}
+  {title:"1. 작은 개울",goal:"차 앞에서 반대쪽 벽까지 길을 그려 주세요",gap:330,vehicle:"sedan",leftY:408,rightY:408,waterY:590},
+  {title:"2. 학교 가는 길",goal:"조금 더 긴 틈을 한 줄로 이어 주세요",gap:410,vehicle:"bus",leftY:408,rightY:398,waterY:590},
+  {title:"3. 언덕 건너기",goal:"높이가 다른 두 벽을 자연스럽게 이어 주세요",gap:470,vehicle:"sedan",leftY:420,rightY:370,waterY:590},
+  {title:"4. 긴급 출동",goal:"구급차가 달릴 길을 한 번에 그려 주세요",gap:520,vehicle:"ambulance",leftY:395,rightY:415,waterY:588},
+  {title:"5. 깊은 골짜기",goal:"물에 닿지 않게 길을 그려 주세요",gap:565,vehicle:"bus",leftY:392,rightY:392,waterY:555},
+  {title:"6. 높은 건너편",goal:"오른쪽 높은 벽까지 부드럽게 이어 주세요",gap:545,vehicle:"sedan",leftY:430,rightY:345,waterY:585},
+  {title:"7. 소방차 출동",goal:"긴 틈을 끊기지 않는 선 하나로 이어 주세요",gap:610,vehicle:"firetruck",leftY:402,rightY:385,waterY:575},
+  {title:"8. 마지막 협곡",goal:"가장 긴 골짜기를 한 줄로 건너 보세요",gap:650,vehicle:"truck",leftY:420,rightY:360,waterY:565}
 ];
 
 var S={
@@ -57,7 +53,6 @@ var S={
   points:[],
   roadProfile:null,
   drawing:false,
-  inkLeft:0,
   drawLength:0,
   bridgeReady:false,
   vehicle:null,
@@ -67,6 +62,7 @@ var S={
   paused:false,
   toastTimer:0,
   hintTimer:0,
+  autoTimer:0,
   smoke:[]
 };
 
@@ -104,104 +100,71 @@ function showHint(msg,fade){
   clearTimeout(S.hintTimer);
   el.hint.textContent=msg;
   el.hint.classList.remove("fade");
-  if(fade!==false)S.hintTimer=setTimeout(function(){el.hint.classList.add("fade")},2400);
+  if(fade!==false)S.hintTimer=setTimeout(function(){el.hint.classList.add("fade")},2200);
 }
 
-function updateInk(){
-  var total=level().ink;
-  var ratio=clamp(S.inkLeft/total,0,1);
-  el.inkBar.style.width=Math.round(ratio*100)+"%";
-  el.inkText.textContent=Math.round(ratio*100)+"%";
-}
-
-function setTestReady(ready){
-  el.test.disabled=!ready;
-  el.test.textContent=ready?"🚗 출발!":"🚗 길을 먼저 그려요";
+function parkVehicle(){
+  var b=banks(),v=VEHICLES[level().vehicle];
+  S.vehicle={
+    x:b.leftX-58,
+    y:b.leftY-29,
+    angle:0,
+    speed:v.speed,
+    fall:false,
+    vy:0,
+    wobble:0
+  };
 }
 
 function resetLevel(){
+  clearTimeout(S.autoTimer);
   S.mode="build";
   S.points=[];
   S.roadProfile=null;
   S.drawing=false;
-  S.inkLeft=level().ink;
   S.drawLength=0;
   S.bridgeReady=false;
-  S.vehicle=null;
   S.pointer=null;
   S.smoke=[];
   el.result.classList.add("hidden");
   el.stageTitle.textContent=level().title;
   el.stageGoal.textContent=level().goal;
-  el.vehicle.textContent="🚗 "+VEHICLES[level().vehicle].label;
-  updateInk();
-  setTestReady(false);
-  showHint("왼쪽 벽 끝에서 오른쪽 벽 끝까지 한 번에 쓱!");
+  parkVehicle();
+  showHint("차 앞에서 반대쪽 벽까지 선을 그리면 자동으로 출발해요.",false);
 }
 
 function startStroke(p){
   if(S.paused||S.mode!=="build")return;
+  clearTimeout(S.autoTimer);
   S.points=[];
   S.roadProfile=null;
   S.bridgeReady=false;
-  S.inkLeft=level().ink;
   S.drawLength=0;
   S.drawing=true;
   S.pointer=p;
   S.pointerAngle=0;
-  setTestReady(false);
+  S.smoke=[];
+  parkVehicle();
   appendPoint(p,true);
 }
 
 function appendPoint(p,force){
   var pts=S.points;
+  if(pts.length>=MAX_POINTS)return;
   var last=pts.length?pts[pts.length-1]:null;
   if(last){
     var d=dist(last,p);
     if(!force&&d<4)return;
-    var available=S.inkLeft;
-    if(available<=0)return;
-    if(d>available){
-      var t=available/d;
-      p={x:last.x+(p.x-last.x)*t,y:last.y+(p.y-last.y)*t};
-      d=available;
-    }
     S.drawLength+=d;
-    S.inkLeft=Math.max(0,S.inkLeft-d);
     S.pointerAngle=Math.atan2(p.y-last.y,p.x-last.x);
   }
   pts.push({x:p.x,y:p.y});
   S.pointer={x:p.x,y:p.y};
-  updateInk();
 }
 
 function extendStroke(p){
   if(!S.drawing||S.paused)return;
   appendPoint(p,false);
-  if(S.inkLeft<=0){
-    showToast("잉크를 다 썼어요");
-    finishStroke();
-  }
-}
-
-function snapBridgeEnds(){
-  if(S.points.length<2)return false;
-  var b=banks();
-  var first=S.points[0],last=S.points[S.points.length-1];
-
-  if(first.x>last.x){
-    S.points.reverse();
-    first=S.points[0];
-    last=S.points[S.points.length-1];
-  }
-
-  var leftOK=Math.abs(first.x-b.leftX)<=SNAP_X&&Math.abs(first.y-b.leftY)<=SNAP_Y;
-  var rightOK=Math.abs(last.x-b.rightX)<=SNAP_X&&Math.abs(last.y-b.rightY)<=SNAP_Y;
-
-  if(leftOK){first.x=b.leftX;first.y=b.leftY}
-  if(rightOK){last.x=b.rightX;last.y=b.rightY}
-
-  return leftOK&&rightOK;
 }
 
 function segmentYAtX(a,b,x){
@@ -250,6 +213,17 @@ function buildRoadProfile(){
     if(profile[k]===null)return null;
   }
 
+  if(Math.abs(profile[0]-b.leftY)>MAX_JOIN_Y)return null;
+  if(Math.abs(profile[profile.length-1]-b.rightY)>MAX_JOIN_Y)return null;
+
+  var blend=Math.min(10,Math.floor(profile.length/4));
+  for(var n=0;n<=blend;n++){
+    var t=n/Math.max(1,blend);
+    profile[n]=b.leftY*(1-t)+profile[n]*t;
+    var r=profile.length-1-n;
+    profile[r]=b.rightY*(1-t)+profile[r]*t;
+  }
+
   profile[0]=b.leftY;
   profile[profile.length-1]=b.rightY;
   return smoothProfile(profile);
@@ -264,49 +238,40 @@ function finishStroke(){
     S.points=[];
     S.roadProfile=null;
     S.bridgeReady=false;
-    setTestReady(false);
-    showToast("선을 조금 더 길게 그려 주세요");
-    return;
-  }
-
-  if(!snapBridgeEnds()){
-    S.roadProfile=null;
-    S.bridgeReady=false;
-    setTestReady(false);
-    showToast("양쪽 벽 끝에 선을 닿게 해 주세요");
-    showHint("왼쪽 벽 끝 → 오른쪽 벽 끝, 선 하나면 돼요.",false);
+    showToast("차 앞에서 반대쪽까지 길게 그려 주세요");
     return;
   }
 
   S.roadProfile=buildRoadProfile();
   if(!S.roadProfile){
     S.bridgeReady=false;
-    setTestReady(false);
-    showToast("중간에 빈 곳이 있어요");
+    showToast("선이 양쪽 벽까지 이어져야 해요");
+    showHint("벽 위에서 시작해 반대쪽 벽 위까지 쭉 그려 주세요.",false);
     return;
   }
 
   S.bridgeReady=true;
-  setTestReady(true);
-  showHint("완성! 이제 출발만 누르면 돼요.");
+  showHint("좋아! 자동차가 출발합니다.",false);
+  clearTimeout(S.autoTimer);
+  S.autoTimer=setTimeout(function(){
+    if(S.mode==="build"&&S.bridgeReady&&!S.drawing)startTest();
+  },420);
 }
 
 function clearBridge(){
   if(S.paused||S.mode==="run")return;
+  clearTimeout(S.autoTimer);
   S.mode="build";
   S.points=[];
   S.roadProfile=null;
   S.bridgeReady=false;
-  S.vehicle=null;
   S.drawing=false;
   S.pointer=null;
-  S.inkLeft=level().ink;
   S.drawLength=0;
   S.smoke=[];
   el.result.classList.add("hidden");
-  updateInk();
-  setTestReady(false);
-  showHint("새 길을 한 줄로 그려 보세요.");
+  parkVehicle();
+  showHint("다시 한 줄 그리면 돼요.",false);
 }
 
 function roadYAt(x){
@@ -330,17 +295,12 @@ function roadAngleAt(x){
 }
 
 function startTest(){
-  if(S.paused||S.mode!=="build")return;
-  if(!S.bridgeReady||!S.roadProfile){
-    showToast("먼저 양쪽 벽을 선 하나로 이어 주세요");
-    return;
-  }
-
+  if(S.paused||S.mode!=="build"||!S.bridgeReady||!S.roadProfile)return;
   var b=banks(),v=VEHICLES[level().vehicle];
   S.mode="run";
   S.vehicle={
-    x:b.leftX-86,
-    y:b.leftY-27,
+    x:b.leftX-58,
+    y:b.leftY-29,
     angle:0,
     speed:v.speed,
     fall:false,
@@ -348,29 +308,26 @@ function startTest(){
     wobble:0
   };
   S.smoke=[];
-  setTestReady(false);
-  el.test.textContent="🚗 달리는 중…";
-  showHint("내가 그린 선 위로 자동차가 달려요!",false);
+  showHint("내가 그린 선 위로 달리는 중!",true);
   try{window.KidscadeGame?.start?.({level:S.level+1})}catch(_){}
 }
 
 function fail(msg){
   if(S.mode!=="run")return;
   S.mode="build";
-  S.vehicle=null;
   S.smoke=[];
-  setTestReady(S.bridgeReady);
+  parkVehicle();
   showToast(msg);
-  showHint("다시 그리기를 누르고 더 높은 길을 그려 보세요.",false);
+  showHint("화면에 새 선을 그리면 바로 다시 도전해요.",false);
   try{window.KidscadeGame?.sound?.("wrong")}catch(_){}
 }
 
 function succeed(){
   if(S.mode!=="run")return;
   S.mode="end";
-  var used=level().ink-S.inkLeft;
-  var direct=Math.hypot(banks().rightX-banks().leftX,banks().rightY-banks().leftY);
-  var efficiency=used/Math.max(1,direct);
+  var b=banks();
+  var direct=Math.hypot(b.rightX-b.leftX,b.rightY-b.leftY);
+  var efficiency=S.drawLength/Math.max(1,direct);
   var stars=efficiency<1.18?3:efficiency<1.48?2:1;
   el.resultIcon.textContent="🏁";
   el.resultTitle.textContent="건넜다!";
@@ -430,7 +387,7 @@ function updateRun(dt){
     if(s.life<=0)S.smoke.splice(i,1);
   }
 
-  if(v.x>b.rightX+95)succeed();
+  if(v.x>b.rightX+90)succeed();
 }
 
 function drawCloud(x,y,s){
@@ -442,7 +399,7 @@ function drawCloud(x,y,s){
   ctx.fill();
 }
 
-function drawBricks(x,y,w,h,flip){
+function drawBricks(x,y,w,h){
   ctx.save();
   ctx.beginPath();
   ctx.rect(x,y,w,h);
@@ -477,6 +434,18 @@ function drawBricks(x,y,w,h,flip){
   ctx.restore();
 }
 
+function drawEndpoint(x,y,active){
+  ctx.save();
+  ctx.strokeStyle=active?"rgba(255,216,72,.98)":"rgba(255,255,255,.92)";
+  ctx.fillStyle=active?"rgba(255,216,72,.26)":"rgba(255,255,255,.18)";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.arc(x,y,12,0,TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawBackground(){
   var b=banks();
   var sky=ctx.createLinearGradient(0,0,0,H);
@@ -502,19 +471,16 @@ function drawBackground(){
     ctx.stroke();
   }
 
-  drawBricks(0,b.leftY,W>0?b.leftX:0,H-b.leftY,false);
-  drawBricks(b.rightX,b.rightY,W-b.rightX,H-b.rightY,true);
+  drawBricks(0,b.leftY,b.leftX,H-b.leftY);
+  drawBricks(b.rightX,b.rightY,W-b.rightX,H-b.rightY);
 
   ctx.fillStyle="rgba(20,39,54,.28)";
   ctx.fillRect(0,b.leftY-4,b.leftX,4);
   ctx.fillRect(b.rightX,b.rightY-4,W-b.rightX,4);
 
-  if(S.mode==="build"&&!S.drawing){
-    ctx.fillStyle="rgba(255,255,255,.92)";
-    ctx.beginPath();
-    ctx.arc(b.leftX,b.leftY,8,0,TAU);
-    ctx.arc(b.rightX,b.rightY,8,0,TAU);
-    ctx.fill();
+  if(S.mode==="build"){
+    drawEndpoint(b.leftX,b.leftY,S.drawing);
+    drawEndpoint(b.rightX,b.rightY,S.drawing);
   }
 }
 
@@ -531,7 +497,7 @@ function drawBridge(){
   for(var i=1;i<S.points.length;i++)ctx.lineTo(S.points[i].x,S.points[i].y+6);
   ctx.stroke();
 
-  ctx.strokeStyle=S.bridgeReady?"#23272d":"#333941";
+  ctx.strokeStyle=S.bridgeReady?"#20252b":"#323941";
   ctx.lineWidth=17;
   ctx.beginPath();
   ctx.moveTo(S.points[0].x,S.points[0].y);
@@ -598,6 +564,7 @@ function drawCar(){
   ctx.arc(-20,12,10,0,TAU);
   ctx.arc(21,12,10,0,TAU);
   ctx.fill();
+
   ctx.fillStyle="#f5f7f9";
   ctx.beginPath();
   ctx.arc(-20,12,5,0,TAU);
@@ -686,10 +653,15 @@ canvas.addEventListener("pointermove",function(e){
   });
 });
 
-el.test.addEventListener("click",startTest);
 el.reset.addEventListener("click",clearBridge);
-el.retry.addEventListener("click",function(){el.result.classList.add("hidden");clearBridge()});
-el.cont.addEventListener("click",function(){S.level=(S.level+1)%LEVELS.length;resetLevel()});
+el.retry.addEventListener("click",function(){
+  el.result.classList.add("hidden");
+  clearBridge();
+});
+el.cont.addEventListener("click",function(){
+  S.level=(S.level+1)%LEVELS.length;
+  resetLevel();
+});
 el.prev.addEventListener("click",function(){changeLevel(-1)});
 el.next.addEventListener("click",function(){changeLevel(1)});
 el.help.addEventListener("click",function(){el.tutorial.classList.remove("hidden")});
@@ -700,6 +672,7 @@ try{
   window.KidscadeGame?.registerPauseHandlers?.({
     pause:function(){
       if(S.drawing)finishStroke();
+      clearTimeout(S.autoTimer);
       S.paused=true;
     },
     resume:function(){
