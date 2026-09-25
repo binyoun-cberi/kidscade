@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#172235">
-<title>역사의 지도: 삼국의 선택</title>
+<title>통일전쟁</title>
 <style>
 :root{
   font-family:Pretendard,"Noto Sans KR","맑은 고딕",system-ui,sans-serif;
@@ -111,12 +111,76 @@ button:disabled{opacity:.45;cursor:not-allowed}
   .topbar{min-height:52px}.bottomBar{min-height:48px;padding:4px}.navBtn{padding:7px 8px}
   .rightPanel{top:48px}.regionName{font-size:16px}.statCell{padding:5px}.actionBtn{min-height:36px}
 }
+
+/* 2026-09 responsive battlefield rework */
+.landMass{fill:#1b3348;stroke:#4e7896;stroke-width:10;opacity:.55}
+.coastGlow{fill:none;stroke:#76a6c8;stroke-width:5;opacity:.28;filter:drop-shadow(0 0 8px rgba(80,154,210,.28))}
+.seaLabel{font-size:15px;font-weight:900;letter-spacing:.18em;fill:#7fa8c5;opacity:.52;pointer-events:none}
+.region{vector-effect:non-scaling-stroke}
+.mapWrap{background:
+  radial-gradient(circle at 50% 46%,rgba(52,91,124,.42),transparent 52%),
+  linear-gradient(#1c3853,#10243a)}
+@media(min-width:981px){
+  .topbar{min-height:clamp(68px,5.6vh,94px);padding:clamp(8px,.55vw,16px) clamp(12px,.7vw,24px);gap:clamp(9px,.6vw,18px)}
+  .brand{min-width:clamp(235px,14vw,430px);gap:clamp(9px,.55vw,16px)}
+  .brandMark{width:clamp(44px,2.6vw,68px);height:clamp(44px,2.6vw,68px);font-size:clamp(23px,1.35vw,36px)}
+  .brand b{font-size:clamp(16px,.72vw,24px)}
+  .brand small{font-size:clamp(10px,.44vw,15px);margin-top:3px}
+  .resources{gap:clamp(6px,.4vw,12px)}
+  .res{min-width:clamp(78px,5.1vw,132px);padding:clamp(7px,.45vw,13px)}
+  .res span{font-size:clamp(19px,1.05vw,30px)}
+  .res b{font-size:clamp(15px,.68vw,23px)}
+  .res small{font-size:clamp(9px,.4vw,14px)}
+  .turnText{min-width:clamp(92px,5.7vw,150px)}
+  .turnText b{font-size:clamp(13px,.62vw,21px)}
+  .turnText small{font-size:clamp(10px,.42vw,14px)}
+  .primary{padding:clamp(10px,.5vw,15px) clamp(16px,.85vw,28px);font-size:clamp(13px,.6vw,20px)}
+  #main{grid-template-columns:clamp(280px,21vw,720px) minmax(560px,1fr) clamp(320px,21vw,720px)}
+  .leftPanel,.rightPanel{padding:clamp(12px,.72vw,24px)}
+  .panelTitle{font-size:clamp(13px,.58vw,20px);margin-bottom:clamp(7px,.45vw,13px)}
+  .countryBadge{padding:clamp(11px,.65vw,20px);border-radius:clamp(15px,.8vw,22px);margin-bottom:clamp(10px,.65vw,20px)}
+  .countryBadge b{font-size:clamp(17px,.78vw,27px)}
+  .countryBadge p{font-size:clamp(11px,.48vw,16px);line-height:1.55}
+  .objective{padding:clamp(9px,.55vw,15px);font-size:clamp(11px,.5vw,17px);margin:clamp(5px,.3vw,9px) 0}
+  .feed{margin-top:clamp(12px,.7vw,22px)}
+  .feedItem{padding:clamp(8px,.45vw,14px) 5px;font-size:clamp(10px,.46vw,16px);line-height:1.5}
+  .mapHeader{top:clamp(10px,.65vw,22px);left:clamp(10px,.65vw,22px);right:clamp(10px,.65vw,22px)}
+  .mapNote{padding:clamp(8px,.45vw,13px) clamp(11px,.65vw,18px);font-size:clamp(10px,.48vw,16px)}
+  .legend{padding:clamp(5px,.32vw,9px) clamp(8px,.45vw,13px);font-size:clamp(9px,.42vw,14px)}
+  .regionLabel{font-size:clamp(15px,.7vw,24px);stroke-width:5px}
+  .armyLabel{font-size:clamp(10px,.46vw,16px)}
+  .capitalStar{font-size:clamp(14px,.65vw,22px)}
+  .regionName{font-size:clamp(20px,.9vw,31px)}
+  .regionOwner{font-size:clamp(11px,.5vw,17px)}
+  .rightEmpty{font-size:clamp(11px,.5vw,17px);line-height:1.7}
+  .statGrid{gap:clamp(7px,.4vw,12px);margin:clamp(9px,.5vw,15px) 0}
+  .statCell{padding:clamp(9px,.55vw,16px)}
+  .statCell small{font-size:clamp(9px,.4vw,14px)}
+  .statCell b{font-size:clamp(14px,.63vw,21px)}
+  .building{padding:clamp(5px,.3vw,9px) clamp(8px,.4vw,12px);font-size:clamp(9px,.41vw,14px)}
+  .actionGroup h3{font-size:clamp(11px,.5vw,17px)}
+  .actionList{gap:clamp(6px,.35vw,10px)}
+  .actionBtn{min-height:clamp(45px,3.3vh,64px);font-size:clamp(10px,.46vw,16px);padding:clamp(7px,.42vw,12px)}
+  .actionBtn span{font-size:clamp(8px,.37vw,13px)}
+  .bottomBar{min-height:clamp(60px,5vh,82px);padding:clamp(7px,.42vw,12px) clamp(10px,.55vw,18px);gap:clamp(7px,.42vw,13px)}
+  .navBtn{min-width:clamp(96px,6.2vw,160px);padding:clamp(9px,.48vw,14px);font-size:clamp(11px,.5vw,17px)}
+  .commandPill{padding:clamp(8px,.45vw,13px) clamp(12px,.6vw,18px);font-size:clamp(10px,.46vw,16px)}
+  .commandPill b{font-size:clamp(15px,.7vw,24px)}
+  .tutorialTip{bottom:clamp(76px,6vh,100px);width:min(650px,52%);padding:clamp(13px,.65vw,20px)}
+  .tutorialTip b{font-size:clamp(11px,.5vw,17px)}
+  .tutorialTip p{font-size:clamp(10px,.46vw,16px)}
+  .toast{top:clamp(76px,6vh,105px);font-size:clamp(10px,.46vw,16px);padding:clamp(8px,.4vw,12px) clamp(13px,.65vw,20px)}
+}
+@media(min-width:2200px){
+  .leftPanel .feed{display:grid;grid-template-columns:1fr;gap:8px}
+}
+
 </style>
 </head>
 <body>
 <div id="app" class="hidden">
   <header class="topbar">
-    <div class="brand"><div class="brandMark">🗺️</div><div><b>역사의 지도</b><small>삼국의 선택 · 교육용 단순화 지도</small></div></div>
+    <div class="brand"><div class="brandMark">⚔️</div><div><b>통일전쟁</b><small>삼국 통일 전략 · 교육용 단순화 지도</small></div></div>
     <div class="resources">
       <div class="res"><span>🌾</span><b id="foodVal">0</b><small>식량</small></div>
       <div class="res"><span>💰</span><b id="moneyVal">0</b><small>재정</small></div>
@@ -144,9 +208,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
         <div class="mapNote" id="mapHint">지역을 눌러 개발·징병·군대 이동을 결정하세요.</div>
         <div class="mapLegend" id="legend"></div>
       </div>
-      <svg id="mapSvg" viewBox="0 0 760 900" role="img" aria-label="삼국 시대 전략 지도">
-        <rect class="sea" width="760" height="900"></rect>
-        <path class="coastGlow" d="M130 72 C270 38 520 80 602 214 C635 310 557 399 576 491 C602 611 504 759 382 816 C270 840 193 758 206 642 C219 529 160 447 176 348 C190 253 122 161 130 72Z"></path>
+      <svg id="mapSvg" viewBox="40 30 980 860" preserveAspectRatio="xMidYMid meet" role="img" aria-label="통일전쟁 전략 지도">
+        <rect class="sea" x="0" y="0" width="1060" height="920"></rect>
+        <path class="landMass" d="M319 320 L366 260 L481 285 L582 235 L764 235 L812 300 L791 415 L710 455 L717 575 L771 630 L778 730 L764 825 L663 875 L521 870 L352 875 L211 860 L164 810 L190 750 L245 710 L231 640 L265 590 L285 430 Z"></path>
+        <path class="coastGlow" d="M319 320 L366 260 L481 285 L582 235 L764 235 L812 300 L791 415 L710 455 L717 575 L771 630 L778 730 L764 825 L663 875 L521 870 L352 875 L211 860 L164 810 L190 750 L245 710 L231 640 L265 590 L285 430 Z"></path>
+        <text class="seaLabel" x="110" y="535">황해</text>
+        <text class="seaLabel" x="875" y="500">동해</text>
         <g id="regionLayer"></g>
       </svg>
       <div id="toast" class="toast"></div>
@@ -169,7 +236,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <div id="startOverlay" class="overlay">
   <div class="startCard">
     <div class="eyebrow">KIDSCade Grand Strategy</div>
-    <h1>역사의 지도<br><span>삼국의 선택</span></h1>
+    <h1>통일전쟁<br><span>고구려 · 백제 · 신라</span></h1>
     <p class="startLead">600년 무렵의 동아시아를 교육용으로 단순화한 턴제 전략 게임입니다. 나라를 고르고 지역을 발전시키며 외교·기술·전쟁을 통해 실제 역사와 다른 길도 만들어 보세요. 지역과 국경은 수업용 게임성을 위해 단순화되어 있습니다.</p>
     <div id="nationGrid" class="nationGrid"></div>
     <div class="startActions">
@@ -215,7 +282,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
-<script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="역사의 지도: 삼국의 선택" data-shell="true" data-orientation="landscape"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
 <script>
 (function(){
 "use strict";
@@ -236,22 +303,22 @@ var COUNTRIES={
 };
 
 var REGION_BASE={
-  sui_frontier:{name:"수나라 변경",owner:"sui",terrain:"plain",food:4,pop:4,dev:4,army:1050,capital:true,points:"105,72 290,56 321,148 244,205 88,166",center:[194,126],neighbors:["liaodong"]},
-  liaodong:{name:"요동",owner:"goguryeo",terrain:"plain",food:3,pop:3,dev:3,army:650,points:"244,205 321,148 425,165 450,263 350,309 253,283",center:[348,229],neighbors:["sui_frontier","gungnae","pyongyang"]},
-  gungnae:{name:"국내성",owner:"goguryeo",terrain:"mountain",food:2,pop:3,dev:3,army:500,capital:false,points:"425,165 531,194 550,296 450,334 450,263",center:[480,245],neighbors:["liaodong","hamheung","pyongyang"]},
-  hamheung:{name:"동북 산지",owner:"goguryeo",terrain:"mountain",food:2,pop:2,dev:2,army:340,points:"531,194 612,250 596,372 513,391 450,334 550,296",center:[540,311],neighbors:["gungnae","pyongyang","gangwon"]},
-  pyongyang:{name:"평양",owner:"goguryeo",terrain:"river",food:4,pop:4,dev:4,army:620,capital:true,points:"253,283 350,309 450,263 450,334 416,418 300,426 230,355",center:[337,355],neighbors:["liaodong","gungnae","hamheung","paegang"]},
-  paegang:{name:"패강",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,points:"230,355 300,426 416,418 444,499 352,547 249,504 205,429",center:[324,474],neighbors:["pyongyang","han","gangwon"]},
-  han:{name:"한강",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,points:"249,504 352,547 370,626 283,662 210,602 208,535",center:[290,585],neighbors:["paegang","gangwon","ungjin","chungju"]},
-  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,points:"416,418 513,391 553,487 522,596 436,627 370,626 352,547 444,499",center:[458,524],neighbors:["hamheung","paegang","han","chungju","gyeongju"]},
-  ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,points:"210,602 283,662 294,728 223,758 162,703 168,635",center:[227,682],neighbors:["han","chungju","sabi"]},
-  chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,points:"283,662 370,626 436,627 443,704 367,749 294,728",center:[363,687],neighbors:["han","gangwon","ungjin","sabi","nakdong"]},
-  sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,points:"223,758 294,728 367,749 351,817 274,847 205,816",center:[283,788],neighbors:["ungjin","chungju","jeolla","nakdong"]},
-  jeolla:{name:"전라",owner:"baekje",terrain:"coast",food:5,pop:3,dev:3,army:390,points:"205,816 274,847 260,884 154,874 120,824 162,773",center:[198,836],neighbors:["sabi","southcoast"]},
-  nakdong:{name:"낙동강",owner:"silla",terrain:"river",food:4,pop:3,dev:3,army:310,points:"367,749 443,704 510,722 507,799 434,842 351,817",center:[425,773],neighbors:["chungju","sabi","gyeongju","southcoast"]},
-  gyeongju:{name:"금성",owner:"silla",terrain:"plain",food:3,pop:4,dev:4,army:500,capital:true,points:"443,704 522,596 577,643 575,748 510,722",center:[516,682],neighbors:["gangwon","chungju","nakdong","southcoast"]},
-  southcoast:{name:"남해안",owner:"silla",terrain:"coast",food:3,pop:3,dev:3,army:260,points:"351,817 434,842 507,799 575,748 558,841 470,884 365,873",center:[463,842],neighbors:["jeolla","nakdong","gyeongju","wa"]},
-  wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,points:"620,690 694,708 720,783 677,844 612,820 591,752",center:[657,770],neighbors:["southcoast"]}
+  sui_frontier:{name:"수나라 변경",owner:"sui",terrain:"plain",food:4,pop:4,dev:4,army:1050,capital:true,points:"96,60 346,45 420,125 359,190 143,180 82,120",center:[245,120],neighbors:["liaodong"]},
+  liaodong:{name:"요동",owner:"goguryeo",terrain:"plain",food:3,pop:3,dev:3,army:650,points:"359,190 420,125 562,145 582,235 481,285 366,260",center:[474,220],neighbors:["sui_frontier","gungnae","pyongyang"]},
+  gungnae:{name:"국내성",owner:"goguryeo",terrain:"mountain",food:2,pop:3,dev:3,army:500,capital:false,points:"562,145 717,165 764,235 710,305 582,275 582,235",center:[670,220],neighbors:["liaodong","hamheung","pyongyang"]},
+  hamheung:{name:"동북 산지",owner:"goguryeo",terrain:"mountain",food:2,pop:2,dev:2,army:340,points:"710,305 764,235 812,300 791,415 710,455 629,385 582,275",center:[717,340],neighbors:["gungnae","pyongyang","gangwon"]},
+  pyongyang:{name:"평양",owner:"goguryeo",terrain:"river",food:4,pop:4,dev:4,army:620,capital:true,points:"366,260 481,285 582,235 582,275 629,385 508,420 366,390 319,320",center:[461,330],neighbors:["liaodong","gungnae","hamheung","paegang"]},
+  paegang:{name:"패강",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,points:"319,320 366,390 508,420 535,500 447,545 326,515 285,430",center:[420,460],neighbors:["pyongyang","han","gangwon"]},
+  han:{name:"한강",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,points:"326,515 447,545 488,625 420,670 312,650 265,590",center:[380,595],neighbors:["paegang","gangwon","ungjin","chungju"]},
+  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,points:"508,420 629,385 710,455 717,575 629,635 488,625 447,545 535,500",center:[609,520],neighbors:["hamheung","paegang","han","chungju","gyeongju"]},
+  ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,points:"265,590 312,650 420,670 420,735 319,760 245,710 231,640",center:[319,685],neighbors:["han","chungju","sabi"]},
+  chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,points:"420,670 488,625 629,635 622,715 528,755 420,735",center:[521,690],neighbors:["han","gangwon","ungjin","sabi","nakdong"]},
+  sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,points:"319,760 420,735 528,755 508,825 400,850 305,815",center:[406,790],neighbors:["ungjin","chungju","jeolla","nakdong"]},
+  jeolla:{name:"전라",owner:"baekje",terrain:"coast",food:5,pop:3,dev:3,army:390,points:"245,710 319,760 305,815 400,850 352,875 211,860 164,810 190,750",center:[272,820],neighbors:["sabi","southcoast"]},
+  nakdong:{name:"낙동강",owner:"silla",terrain:"river",food:4,pop:3,dev:3,army:310,points:"528,755 622,715 717,735 710,810 622,850 508,825",center:[616,785],neighbors:["chungju","sabi","gyeongju","southcoast"]},
+  gyeongju:{name:"금성",owner:"silla",terrain:"plain",food:3,pop:4,dev:4,army:500,capital:true,points:"629,635 717,575 771,630 778,730 717,735 622,715",center:[717,660],neighbors:["gangwon","chungju","nakdong","southcoast"]},
+  southcoast:{name:"남해안",owner:"silla",terrain:"coast",food:3,pop:3,dev:3,army:260,points:"508,825 622,850 710,810 778,730 764,825 663,875 521,870 352,875 400,850",center:[596,845],neighbors:["jeolla","nakdong","gyeongju","wa"]},
+  wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,points:"852,660 947,680 994,750 947,820 852,800 818,725",center:[906,745],neighbors:["southcoast"]}
 };
 
 var TECHS=[
