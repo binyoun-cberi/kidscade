@@ -198,7 +198,7 @@ function buildWorld(){
  clearGroup(decoRoot);
  mission=applyVariant(missions[missionIndex]);
  worldState={
-  x:mission.start[0],y:mission.start[1],dir:mission.dir,hp:5,crystals:0,
+  x:mission.start[0],y:mission.start[1],dir:mission.dir,hp:5,crystalCount:0,
   walls:new Set((mission.walls||[]).map(function(p){return p[0]+','+p[1];})),
   crystalItems:(mission.crystals||[]).map(function(p){return {x:p[0],y:p[1],taken:false,obj:null};}),
   doors:(mission.doors||[]).map(function(d){return {x:d.x,y:d.y,need:d.need||0,open:false,obj:null};}),
