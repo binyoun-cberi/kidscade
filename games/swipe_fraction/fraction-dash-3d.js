@@ -35,7 +35,7 @@ const ui={
   hud:$('hud'),question:$('questionBox'),questionText:$('questionText'),questionHint:$('questionHint'),
   hearts:$('hearts'),score:$('score'),distance:$('distance'),combo:$('combo'),level:$('level'),
   feedback:$('feedback'),feedbackBig:$('feedbackBig'),feedbackSmall:$('feedbackSmall'),
-  finalScore:$('finalScore'),finalAccuracy:$('finalAccuracy'),finalCombo:$('finalCombo'),finalDistance:$('finalDistance'),best:$('bestScore')
+  finalScore:$('finalScore'),finalAccuracy:$('finalAccuracy'),finalCombo:$('finalCombo'),finalDistance:$('finalDistance'),best:$('bestScoreMenu'),finalBest:$('finalBest')
 };
 
 let settings={sound:true};
@@ -217,6 +217,7 @@ function fallbackBlock(kind){
   const m=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.45,2.6),new THREE.MeshStandardMaterial({color:kind==='train'?0x3e77a6:0xe8b44a}));m.position.y=.73;return m;
 }
 
+let gateLoading=false,obstacleLoading=false,runToken=0;
 const game={
   state:'menu',score:0,lives:3,combo:0,bestCombo:0,distance:0,correct:0,answered:0,
   lane:1,targetLane:1,jumpY:0,jumpV:0,onGround:true,slideT:0,invuln:0,speed:10.2,
@@ -244,17 +245,21 @@ function generateQuestion(){
   return{left,right,answer,explain:left.str+' = '+left.val.toFixed(2)+'  '+symbol+'  '+right.str+' = '+right.val.toFixed(2)};
 }
 async function spawnGate(){
-  if(game.gate)return;
+  if(game.gate||gateLoading)return;
+  gateLoading=true;const token=runToken;
   const q=generateQuestion(),group=new THREE.Group();group.position.z=-58;moving.add(group);
-  const gates=await Promise.all(ASSET.gates.map((u,i)=>makeGateAsset(u,i)));
-  for(let i=0;i<3;i++){
-    const g=gates[i];g.position.x=LANES[i];group.add(g);
-    const label=makeLabel(i===0?q.left.str:i===1?'=':q.right.str,i===1?'equal':'number');label.position.set(LANES[i],3.15,.12);group.add(label);
-  }
-  game.gate={group,q,resolved:false};
-  ui.questionText.textContent=q.left.str+'  VS  '+q.right.str;ui.questionHint.textContent='같으면 가운데 = 게이트';ui.question.classList.add('show');
-  game.obstacles.forEach(o=>{if(o.root.position.z<-10){o.root.removeFromParent();o.dead=true}});
-  game.nextGate=game.distance+rand(235,285);
+  try{
+    const gates=await Promise.all(ASSET.gates.map((u,i)=>makeGateAsset(u,i)));
+    if(token!==runToken||game.state!=='running'){group.removeFromParent();return}
+    for(let i=0;i<3;i++){
+      const g=gates[i];g.position.x=LANES[i];group.add(g);
+      const label=makeLabel(i===0?q.left.str:i===1?'=':q.right.str,i===1?'equal':'number');label.position.set(LANES[i],3.15,.12);group.add(label);
+    }
+    game.gate={group,q,resolved:false};
+    ui.questionText.textContent=q.left.str+'  VS  '+q.right.str;ui.questionHint.textContent='같으면 가운데 = 게이트';ui.question.classList.add('show');
+    game.obstacles.forEach(o=>{if(o.root.position.z<-10){o.root.removeFromParent();o.dead=true}});
+    game.nextGate=game.distance+rand(235,285);
+  }finally{gateLoading=false}
 }
 async function buildObstacle(kind,lane){
   let root;
@@ -269,11 +274,17 @@ async function buildObstacle(kind,lane){
   root.position.set(LANES[lane],0,-58);moving.add(root);return{root,lane,kind,hit:false,dead:false};
 }
 async function spawnObstacle(){
-  if(game.gate&&game.gate.group.position.z<-2)return;
-  const lane=(Math.random()*3)|0,r=Math.random();
-  const kind=r<.42?'barrier':r<.66?'suv':r<.84?'slide':'train';
-  const o=await buildObstacle(kind,lane);game.obstacles.push(o);
-  game.nextObstacle=game.distance+rand(difficulty()===1?34:25,difficulty()===3?44:52);
+  if(obstacleLoading)return;
+  if(game.gate&&game.gate.group.position.z<-2){game.nextObstacle=game.distance+12;return}
+  obstacleLoading=true;const token=runToken;
+  try{
+    const lane=(Math.random()*3)|0,r=Math.random();
+    const kind=r<.42?'barrier':r<.66?'suv':r<.84?'slide':'train';
+    const o=await buildObstacle(kind,lane);
+    if(token!==runToken||game.state!=='running'){o.root.removeFromParent();return}
+    game.obstacles.push(o);
+    game.nextObstacle=game.distance+rand(difficulty()===1?34:25,difficulty()===3?44:52);
+  }finally{obstacleLoading=false}
 }
 function showFeedback(ok,text){
   ui.feedback.className='feedback '+(ok?'good':'bad')+' show';ui.feedbackBig.textContent=ok?(game.combo>=5?'GREAT COMBO!':'PERFECT!'):'아깝다!';ui.feedbackSmall.textContent=text;
@@ -307,6 +318,7 @@ function resolveGate(){
   ui.question.classList.remove('show');updateHud();
 }
 function clearRunObjects(){
+  runToken++;gateLoading=false;obstacleLoading=false;
   if(game.gate){game.gate.group.removeFromParent();game.gate=null}
   game.obstacles.forEach(o=>o.root.removeFromParent());game.obstacles.length=0;
 }
@@ -318,7 +330,7 @@ function endGame(){
   if(game.state!=='running')return;game.state='finished';playAnim('idle');ui.hud.classList.add('hidden');ui.question.classList.remove('show');
   bestScore=Math.max(bestScore,Math.round(game.score));localStorage.setItem(SCORE_KEY,bestScore);
   const rank=bestScore<800?'브론즈':bestScore<1800?'실버':bestScore<3200?'골드':bestScore<5000?'플래티넘':'다이아몬드';localStorage.setItem(RANK_KEY,rank);
-  ui.finalScore.textContent=Math.round(game.score).toLocaleString();ui.finalAccuracy.textContent=(game.answered?Math.round(game.correct/game.answered*100):0)+'%';ui.finalCombo.textContent=game.bestCombo;ui.finalDistance.textContent=Math.round(game.distance)+'m';ui.best.textContent=bestScore.toLocaleString();ui.result.classList.remove('hidden');
+  ui.finalScore.textContent=Math.round(game.score).toLocaleString();ui.finalAccuracy.textContent=(game.answered?Math.round(game.correct/game.answered*100):0)+'%';ui.finalCombo.textContent=game.bestCombo;ui.finalDistance.textContent=Math.round(game.distance)+'m';ui.best.textContent=bestScore.toLocaleString();ui.finalBest.textContent=bestScore.toLocaleString();ui.result.classList.remove('hidden');
 }
 function leaveGame(){
   try{if(parent&&parent!==window){parent.postMessage({type:'kidscade:exit-game'},'*');return}}catch{}
