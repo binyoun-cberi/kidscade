@@ -175,12 +175,49 @@ button:disabled{opacity:.45;cursor:not-allowed}
   .leftPanel .feed{display:grid;grid-template-columns:1fr;gap:8px}
 }
 
+
+/* v3 real geography + living world map */
+.realMapImage{opacity:.82;filter:saturate(.42) brightness(.7) contrast(1.16)}
+.mapTint{fill:#10273d;opacity:.34;pointer-events:none}
+.mapCredit{position:absolute;left:12px;bottom:8px;z-index:5;padding:5px 8px;border-radius:8px;background:rgba(7,15,25,.76);color:#8fa7bd;font-size:9px;pointer-events:none}
+.routeBase{fill:none;stroke:#7f96aa;stroke-width:.55;stroke-opacity:.34;vector-effect:non-scaling-stroke}
+.routeOwned{stroke-width:1.1;stroke-opacity:.55}
+.routeTrade{fill:none;stroke:#ffd166;stroke-width:.9;stroke-dasharray:2.2 1.6;stroke-opacity:.8;vector-effect:non-scaling-stroke}
+.routeMove{fill:none;stroke:#9bd8ff;stroke-width:1.15;stroke-dasharray:2 1.4;stroke-opacity:.9;vector-effect:non-scaling-stroke}
+.cityNode{cursor:pointer;outline:none}
+.cityHit{fill:transparent}
+.cityCore{stroke:#f2f6ff;stroke-width:.8;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+.cityNode:hover .cityCore,.cityNode.selected .cityCore{stroke:#fff;stroke-width:1.7}
+.cityNode.moveTarget .cityCore{stroke:#ffd166;stroke-width:1.8}
+.cityNode.enemyTarget .cityCore{stroke:#ff7f87;stroke-width:1.8}
+.cityFort{fill:none;stroke:#ffd166;stroke-width:.85;stroke-dasharray:1.5 .7;vector-effect:non-scaling-stroke}
+.cityLabelBg{fill:#0b1422;fill-opacity:.88;stroke:#405675;stroke-width:.25}
+.cityLabel{fill:#fff;font-size:3.65px;font-weight:1000;text-anchor:middle;paint-order:stroke;stroke:#0b1422;stroke-width:.8px;stroke-linejoin:round;pointer-events:none}
+.cityArmy{fill:#dce9f6;font-size:2.8px;font-weight:900;text-anchor:middle;pointer-events:none}
+.cityBadge{font-size:3.4px;text-anchor:middle;pointer-events:none}
+.capitalMark{fill:#ffd166;font-size:4.1px;text-anchor:middle;pointer-events:none}
+.projectMark{font-size:3.4px;text-anchor:middle;pointer-events:none}
+.transitBack{fill:#111c2d;stroke:#fff;stroke-width:.45}
+.transitImage{filter:drop-shadow(0 1px 1px rgba(0,0,0,.9))}
+.transitText{fill:#fff;font-size:2.8px;font-weight:1000;text-anchor:middle;paint-order:stroke;stroke:#0b1422;stroke-width:.75px}
+.tradeToken{filter:drop-shadow(0 1px 1px rgba(0,0,0,.85))}
+.activeTitle{margin-top:12px}
+.activeOps{display:grid;gap:5px}
+.operation{padding:7px 8px;border-radius:10px;background:#111d2f;border:1px solid #2d425f;font-size:9.5px;color:#c8d5e4;line-height:1.4}
+.operation b{color:#fff}.operation .eta{color:#ffd166;font-weight:900}
+.specialtyBox{margin:7px 0;padding:8px 9px;border-radius:10px;background:#192942;border:1px solid #314b69;font-size:10px}
+.projectList{display:grid;gap:5px;margin:8px 0}
+.projectRow{padding:7px 8px;border-radius:10px;border:1px solid #5a4c2d;background:#282217;font-size:9.5px;color:#f5df9c}
+@media(max-width:780px){
+  .mapCredit{font-size:7px;max-width:52%}
+}
+
 </style>
 </head>
 <body>
 <div id="app" class="hidden">
   <header class="topbar">
-    <div class="brand"><div class="brandMark">⚔️</div><div><b>통일전쟁</b><small>삼국 통일 전략 · 교육용 단순화 지도</small></div></div>
+    <div class="brand"><div class="brandMark">⚔️</div><div><b>통일전쟁</b><small>삼국 통일 전략 · 실제 지형 기반</small></div></div>
     <div class="resources">
       <div class="res"><span>🌾</span><b id="foodVal">0</b><small>식량</small></div>
       <div class="res"><span>💰</span><b id="moneyVal">0</b><small>재정</small></div>
@@ -198,6 +235,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
       <div id="countryBadge" class="countryBadge"></div>
       <div class="panelTitle">이번 캠페인 목표</div>
       <div id="objectives"></div>
+      <div class="panelTitle activeTitle">진행 중</div>
+      <div id="activeOps" class="activeOps"></div>
       <div class="feed">
         <div class="panelTitle">최근 소식</div>
         <div id="feed"></div>
@@ -205,17 +244,20 @@ button:disabled{opacity:.45;cursor:not-allowed}
     </aside>
     <section class="mapWrap">
       <div class="mapHeader">
-        <div class="mapNote" id="mapHint">지역을 눌러 개발·징병·군대 이동을 결정하세요.</div>
+        <div class="mapNote" id="mapHint">도시를 눌러 개발하고, 실제 거리 위로 군대와 교역로가 움직입니다.</div>
         <div class="mapLegend" id="legend"></div>
       </div>
-      <svg id="mapSvg" viewBox="40 30 980 860" preserveAspectRatio="xMidYMid meet" role="img" aria-label="통일전쟁 전략 지도">
-        <rect class="sea" x="0" y="0" width="1060" height="920"></rect>
-        <path class="landMass" d="M319 320 L366 260 L481 285 L582 235 L764 235 L812 300 L791 415 L710 455 L717 575 L771 630 L778 730 L764 825 L663 875 L521 870 L352 875 L211 860 L164 810 L190 750 L245 710 L231 640 L265 590 L285 430 Z"></path>
-        <path class="coastGlow" d="M319 320 L366 260 L481 285 L582 235 L764 235 L812 300 L791 415 L710 455 L717 575 L771 630 L778 730 L764 825 L663 875 L521 870 L352 875 L211 860 L164 810 L190 750 L245 710 L231 640 L265 590 L285 430 Z"></path>
-        <text class="seaLabel" x="110" y="535">황해</text>
-        <text class="seaLabel" x="875" y="500">동해</text>
+      <svg id="mapSvg" viewBox="470 178 220 135" preserveAspectRatio="xMidYMid meet" role="img" aria-label="실제 동아시아 해안선을 바탕으로 한 통일전쟁 전략 지도">
+        <rect class="sea" x="0" y="0" width="800" height="571"></rect>
+        <image id="realMapImage" class="realMapImage" x="0" y="0" width="800" height="571"
+          href="https://upload.wikimedia.org/wikipedia/commons/2/25/East_Asia_area_blank_CJK.svg"
+          preserveAspectRatio="none"></image>
+        <rect class="mapTint" x="470" y="178" width="220" height="135"></rect>
+        <g id="routeLayer"></g>
         <g id="regionLayer"></g>
+        <g id="transitLayer"></g>
       </svg>
+      <div class="mapCredit">실제 해안선 백지도 기반 · Wikimedia Commons Public Domain · 역사적 영향권/거점은 게임용 단순화</div>
       <div id="toast" class="toast"></div>
       <div id="tutorialTip" class="tutorialTip hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialNext" class="tiny" type="button">다음</button></div>
     </section>
@@ -237,7 +279,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <div class="startCard">
     <div class="eyebrow">KIDSCade Grand Strategy</div>
     <h1>통일전쟁<br><span>고구려 · 백제 · 신라</span></h1>
-    <p class="startLead">600년 무렵의 동아시아를 교육용으로 단순화한 턴제 전략 게임입니다. 나라를 고르고 지역을 발전시키며 외교·기술·전쟁을 통해 실제 역사와 다른 길도 만들어 보세요. 지역과 국경은 수업용 게임성을 위해 단순화되어 있습니다.</p>
+    <p class="startLead">600년 무렵의 동아시아를 실제 해안선 지도 위에서 운영하는 턴제 전략 게임입니다. 도시를 키우고 농업·교역·성벽을 장기간 건설하며, 군대가 실제 지도 위를 이동한 뒤 전투에 도착합니다. 역사적 국경과 경제 수치는 수업용 게임성을 위해 단순화되어 있습니다.</p>
     <div id="nationGrid" class="nationGrid"></div>
     <div class="startActions">
       <button id="startBtn" class="primary" type="button">새 역사 시작</button>
@@ -287,7 +329,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 (function(){
 "use strict";
 var SAVE_KEY="kidscade_game_v1:high_history_map:campaign";
-var MAX_TURNS=24;
+var MAX_TURNS=32;
 var selectedNation="silla";
 var selectedRegion=null;
 var moveMode=false;
@@ -303,25 +345,25 @@ var COUNTRIES={
 };
 
 var REGION_BASE={
-  sui_frontier:{name:"수나라 변경",owner:"sui",terrain:"plain",food:4,pop:4,dev:4,army:1050,capital:true,points:"96,60 346,45 420,125 359,190 143,180 82,120",center:[245,120],neighbors:["liaodong"]},
-  liaodong:{name:"요동",owner:"goguryeo",terrain:"plain",food:3,pop:3,dev:3,army:650,points:"359,190 420,125 562,145 582,235 481,285 366,260",center:[474,220],neighbors:["sui_frontier","gungnae","pyongyang"]},
-  gungnae:{name:"국내성",owner:"goguryeo",terrain:"mountain",food:2,pop:3,dev:3,army:500,capital:false,points:"562,145 717,165 764,235 710,305 582,275 582,235",center:[670,220],neighbors:["liaodong","hamheung","pyongyang"]},
-  hamheung:{name:"동북 산지",owner:"goguryeo",terrain:"mountain",food:2,pop:2,dev:2,army:340,points:"710,305 764,235 812,300 791,415 710,455 629,385 582,275",center:[717,340],neighbors:["gungnae","pyongyang","gangwon"]},
-  pyongyang:{name:"평양",owner:"goguryeo",terrain:"river",food:4,pop:4,dev:4,army:620,capital:true,points:"366,260 481,285 582,235 582,275 629,385 508,420 366,390 319,320",center:[461,330],neighbors:["liaodong","gungnae","hamheung","paegang"]},
-  paegang:{name:"패강",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,points:"319,320 366,390 508,420 535,500 447,545 326,515 285,430",center:[420,460],neighbors:["pyongyang","han","gangwon"]},
-  han:{name:"한강",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,points:"326,515 447,545 488,625 420,670 312,650 265,590",center:[380,595],neighbors:["paegang","gangwon","ungjin","chungju"]},
-  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,points:"508,420 629,385 710,455 717,575 629,635 488,625 447,545 535,500",center:[609,520],neighbors:["hamheung","paegang","han","chungju","gyeongju"]},
-  ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,points:"265,590 312,650 420,670 420,735 319,760 245,710 231,640",center:[319,685],neighbors:["han","chungju","sabi"]},
-  chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,points:"420,670 488,625 629,635 622,715 528,755 420,735",center:[521,690],neighbors:["han","gangwon","ungjin","sabi","nakdong"]},
-  sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,points:"319,760 420,735 528,755 508,825 400,850 305,815",center:[406,790],neighbors:["ungjin","chungju","jeolla","nakdong"]},
-  jeolla:{name:"전라",owner:"baekje",terrain:"coast",food:5,pop:3,dev:3,army:390,points:"245,710 319,760 305,815 400,850 352,875 211,860 164,810 190,750",center:[272,820],neighbors:["sabi","southcoast"]},
-  nakdong:{name:"낙동강",owner:"silla",terrain:"river",food:4,pop:3,dev:3,army:310,points:"528,755 622,715 717,735 710,810 622,850 508,825",center:[616,785],neighbors:["chungju","sabi","gyeongju","southcoast"]},
-  gyeongju:{name:"금성",owner:"silla",terrain:"plain",food:3,pop:4,dev:4,army:500,capital:true,points:"629,635 717,575 771,630 778,730 717,735 622,715",center:[717,660],neighbors:["gangwon","chungju","nakdong","southcoast"]},
-  southcoast:{name:"남해안",owner:"silla",terrain:"coast",food:3,pop:3,dev:3,army:260,points:"508,825 622,850 710,810 778,730 764,825 663,875 521,870 352,875 400,850",center:[596,845],neighbors:["jeolla","nakdong","gyeongju","wa"]},
-  wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,points:"852,660 947,680 994,750 947,820 852,800 818,725",center:[906,745],neighbors:["southcoast"]}
+  sui_frontier:{name:"수나라 변경",owner:"sui",terrain:"plain",food:4,pop:4,dev:4,army:1050,capital:true,geo:[121.00,41.50],specialty:"horse",neighbors:["liaodong"]},
+  liaodong:{name:"요동",owner:"goguryeo",terrain:"plain",food:3,pop:3,dev:3,army:650,geo:[123.17,41.27],specialty:"iron",neighbors:["sui_frontier","gungnae","pyongyang"]},
+  gungnae:{name:"국내성",owner:"goguryeo",terrain:"mountain",food:2,pop:3,dev:3,army:500,geo:[126.18,41.13],specialty:"timber",neighbors:["liaodong","hamheung","pyongyang"]},
+  hamheung:{name:"동북 산지",owner:"goguryeo",terrain:"mountain",food:2,pop:2,dev:2,army:340,geo:[127.54,39.92],specialty:"timber",neighbors:["gungnae","pyongyang","gangwon"]},
+  pyongyang:{name:"평양",owner:"goguryeo",terrain:"river",food:4,pop:4,dev:4,army:620,capital:true,geo:[125.75,39.03],specialty:"grain",neighbors:["liaodong","gungnae","hamheung","paegang"]},
+  paegang:{name:"패강 유역",owner:"goguryeo",terrain:"river",food:3,pop:3,dev:2,army:360,geo:[125.60,38.60],specialty:"salt",neighbors:["pyongyang","han","gangwon"]},
+  han:{name:"한강",owner:"silla",terrain:"river",food:5,pop:4,dev:4,army:430,geo:[126.98,37.56],specialty:"grain",neighbors:["paegang","gangwon","ungjin","chungju"]},
+  gangwon:{name:"동해 산지",owner:"silla",terrain:"mountain",food:2,pop:2,dev:2,army:260,geo:[128.90,37.75],specialty:"timber",neighbors:["hamheung","paegang","han","chungju","gyeongju"]},
+  ungjin:{name:"웅진",owner:"baekje",terrain:"mountain",food:3,pop:3,dev:3,army:350,geo:[127.12,36.46],specialty:"pottery",neighbors:["han","chungju","sabi"]},
+  chungju:{name:"충주",owner:"silla",terrain:"plain",food:4,pop:3,dev:3,army:340,geo:[127.93,36.99],specialty:"grain",neighbors:["han","gangwon","ungjin","sabi","nakdong"]},
+  sabi:{name:"사비",owner:"baekje",terrain:"plain",food:4,pop:4,dev:4,army:510,capital:true,geo:[126.91,36.28],specialty:"craft",neighbors:["ungjin","chungju","jeolla","nakdong"]},
+  jeolla:{name:"전라",owner:"baekje",terrain:"coast",food:5,pop:3,dev:3,army:390,geo:[127.15,35.82],specialty:"salt",neighbors:["sabi","southcoast"]},
+  nakdong:{name:"낙동강",owner:"silla",terrain:"river",food:4,pop:3,dev:3,army:310,geo:[128.60,35.87],specialty:"iron",neighbors:["chungju","sabi","gyeongju","southcoast"]},
+  gyeongju:{name:"금성",owner:"silla",terrain:"plain",food:3,pop:4,dev:4,army:500,capital:true,geo:[129.22,35.86],specialty:"craft",neighbors:["gangwon","chungju","nakdong","southcoast"]},
+  southcoast:{name:"남해안",owner:"silla",terrain:"coast",food:3,pop:3,dev:3,army:260,geo:[129.00,35.10],specialty:"fish",neighbors:["jeolla","nakdong","gyeongju","wa"]},
+  wa:{name:"왜",owner:"wa",terrain:"coast",food:3,pop:4,dev:4,army:650,capital:true,geo:[130.40,33.59],specialty:"fish",neighbors:["southcoast"]}
 };
 
-var TECHS=[
+var TECHS=var TECHS=[
   {id:"irrigation",track:"생산",name:"관개",cost:22,desc:"모든 지역 식량 수입 +10%"},
   {id:"iron_tools",track:"생산",name:"철제 농기구",cost:38,req:"irrigation",desc:"농장 수입 +1, 지역 개발 비용 -3"},
   {id:"granary",track:"생산",name:"대형 곡창",cost:58,req:"iron_tools",desc:"식량 부족으로 생기는 손실을 크게 줄임"},
@@ -338,6 +380,34 @@ var TERRAIN={
   mountain:{name:"산악",def:1.23,icon:"⛰️"},
   river:{name:"강·하천",def:1.15,icon:"🌊"},
   coast:{name:"해안",def:1.05,icon:"⚓"}
+};
+
+var MAP_BOUNDS={top:54.0,bottom:16.05,left:77.726671,right:146.408250,width:800,height:571};
+var MAP_ASSETS={
+  soldier:"../../assets/game/characters/people/kenney-platformer-characters/soldier/poses/soldier-walk1.png",
+  horse:"../../assets/game/2d/animals/round/horse.png",
+  ship:"../../assets/game/2d/pirate/ships/ship-1.png"
+};
+var SPECIALTIES={
+  horse:{icon:"🐎",name:"말"},
+  iron:{icon:"⛏️",name:"철"},
+  timber:{icon:"🌲",name:"목재"},
+  grain:{icon:"🌾",name:"곡물"},
+  salt:{icon:"🧂",name:"소금"},
+  pottery:{icon:"🏺",name:"도기"},
+  craft:{icon:"✨",name:"공예품"},
+  fish:{icon:"🐟",name:"해산물"}
+};
+var BUILD_DEFS={
+  farm:{name:"농경지 개간",icon:"🌾",cost:20,duration:2,group:"농업",desc:"지역 식량 수입 +2"},
+  irrigation:{name:"관개 수로",icon:"💧",cost:28,duration:3,group:"농업",desc:"지역 식량 수입 +2 · 가뭄 대응"},
+  granary:{name:"곡창",icon:"🏚️",cost:26,duration:3,group:"농업",desc:"식량 부족 피해를 줄임"},
+  market:{name:"시장",icon:"🏪",cost:24,duration:2,group:"도시",desc:"재정 수입 +3 · 교역 가치 상승"},
+  city:{name:"도시 확장",icon:"🏘️",cost:38,duration:4,group:"도시",desc:"재정·인력 수입 증가 · 지도에서 도시가 커짐"},
+  road:{name:"도로 정비",icon:"🛤️",cost:26,duration:3,group:"도시",desc:"군대 이동 시간 단축 · 교역 가치 상승"},
+  school:{name:"학당",icon:"📚",cost:25,duration:3,group:"문화",desc:"매 계절 지식 생산"},
+  fort:{name:"성벽",icon:"🏯",cost:45,duration:5,group:"군사",desc:"오랜 공사 뒤 방어력 크게 증가"},
+  port:{name:"항구",icon:"⚓",cost:36,duration:4,group:"교역",desc:"해상 교역 가치와 항로 활용 강화"}
 };
 
 var OBJECTIVES={
@@ -365,7 +435,11 @@ function nation(id){return state.nations[id];}
 function region(id){return state.regions[id];}
 function owns(c,r){return region(r)&&region(r).owner===c;}
 function regionsOf(c){return Object.keys(state.regions).filter(function(k){return state.regions[k].owner===c;});}
-function totalArmy(c){return regionsOf(c).reduce(function(s,k){return s+state.regions[k].army;},0);}
+function totalArmy(c){
+  var stationed=regionsOf(c).reduce(function(sum,k){return sum+state.regions[k].army;},0);
+  var marching=(state.armiesTransit||[]).filter(function(a){return a.owner===c;}).reduce(function(sum,a){return sum+a.amount;},0);
+  return stationed+marching;
+}
 function totalDev(c){return regionsOf(c).reduce(function(s,k){return s+state.regions[k].dev;},0);}
 function relation(a,b){if(a===b)return 100;return state.relations[pairKey(a,b)]||0;}
 function setRelation(a,b,v){if(a===b)return;state.relations[pairKey(a,b)]=clamp(Math.round(v),-100,100);}
@@ -375,16 +449,16 @@ function hasTech(c,id){return nation(c).techs.indexOf(id)>=0;}
 function isSeaLink(a,b){return (a==="wa"&&b==="southcoast")||(b==="wa"&&a==="southcoast");}
 function canSeaMove(c){return c==="baekje"||c==="wa"||hasTech(c,"international_trade");}
 function fmt(n){return Math.round(n);}
-function season(){return state.turn%2===1?"봄":"가을";}
-function year(){return 600+Math.floor((state.turn-1)/2);}
+function season(){return ["봄","여름","가을","겨울"][(state.turn-1)%4];}
+function year(){return 600+Math.floor((state.turn-1)/4);}
 function dateText(){return year()+"년 "+season();}
 function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)];}
 
 function initialState(player){
   var regions=deepClone(REGION_BASE);
-  Object.keys(regions).forEach(function(k){regions[k].buildings={farm:0,market:0,school:0,fort:0,port:0};});
+  Object.keys(regions).forEach(function(k){regions[k].buildings={farm:0,irrigation:0,granary:0,market:0,city:0,road:0,school:0,fort:0,port:0};});
   return {
-    version:1,player:player,turn:1,commands:4,selectedRegion:null,finished:false,
+    version:2,player:player,turn:1,commands:4,selectedRegion:null,finished:false,projects:[],armiesTransit:[],nextTransitId:1,
     nations:{
       goguryeo:{food:78,money:66,manpower:64,knowledge:20,authority:55,techs:[],threat:0,warWeariness:0},
       baekje:{food:72,money:76,manpower:57,knowledge:25,authority:60,techs:[],threat:0,warWeariness:0},
@@ -440,7 +514,21 @@ function continueGame(){
   renderAll();toast("저장한 역사에서 이어갑니다.");
 }
 
-function loadSave(){try{var raw=localStorage.getItem(SAVE_KEY);return raw?JSON.parse(raw):null;}catch(e){return null;}}
+function migrateState(saved){
+  if(!saved)return null;
+  saved.projects=Array.isArray(saved.projects)?saved.projects:[];
+  saved.armiesTransit=Array.isArray(saved.armiesTransit)?saved.armiesTransit:[];
+  saved.nextTransitId=saved.nextTransitId||1;
+  saved.regions=saved.regions||{};
+  Object.keys(saved.regions).forEach(function(id){
+    var r=saved.regions[id],base=REGION_BASE[id];if(!r||!base)return;
+    r.geo=base.geo.slice();r.neighbors=base.neighbors.slice();r.terrain=base.terrain;r.specialty=base.specialty;
+    r.buildings=r.buildings||{};
+    Object.keys(BUILD_DEFS).forEach(function(k){r.buildings[k]=Number(r.buildings[k]||0);});
+  });
+  saved.version=2;return saved;
+}
+function loadSave(){try{var raw=localStorage.getItem(SAVE_KEY);return raw?migrateState(JSON.parse(raw)):null;}catch(e){return null;}}
 function saveGame(show){
   if(!state)return;
   state.selectedRegion=selectedRegion;
