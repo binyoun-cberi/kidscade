@@ -64,6 +64,12 @@
       .kc-popular-title { margin:0; font-size:1.02rem; font-weight:950; color:#1e293b; }
       .kc-popular-note { font-size:.72rem; font-weight:700; color:#94a3b8; }
       body.dark-mode .kc-popular-title { color:#f8fafc; }
+      .kc-popular-tabs { display:none; gap:5px; margin-top:8px; padding:3px; border-radius:12px; background:#f1f5f9; }
+      body.dark-mode .kc-popular-tabs { background:#263449; }
+      .kc-popular-tab { flex:1; min-height:30px; border:0; border-radius:9px; background:transparent; color:#64748b; font:inherit; font-size:.68rem; font-weight:950; cursor:pointer; }
+      .kc-popular-tab.active { background:#fff; color:#7c3aed; box-shadow:0 3px 9px rgba(15,23,42,.08); }
+      body.dark-mode .kc-popular-tab { color:#cbd5e1; }
+      body.dark-mode .kc-popular-tab.active { background:#334155; color:#ddd6fe; }
       .kc-popular-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
       .kc-popular-panel { min-width:0; padding:12px; border:1px solid rgba(148,163,184,.22); border-radius:18px; background:rgba(255,255,255,.82); box-shadow:0 8px 22px rgba(15,23,42,.055); }
       body.dark-mode .kc-popular-panel { background:rgba(30,41,59,.82); border-color:rgba(148,163,184,.18); }
@@ -81,11 +87,33 @@
       body.dark-mode .kc-popular-rank { background:#334155; color:#cbd5e1; }
       .kc-popular-thumb { width:64px; height:40px; display:block; object-fit:cover; border-radius:9px; background:#e2e8f0; }
       .kc-popular-copy { min-width:0; }
-      .kc-popular-game-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; font-weight:900; color:#1e293b; }
+      .kc-popular-game-title { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; font-weight:900; color:#1e293b; }
       body.dark-mode .kc-popular-game-title { color:#f8fafc; }
-      .kc-popular-game-sub { margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.65rem; font-weight:700; color:#94a3b8; }
+      .kc-popular-game-sub { display:block; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.65rem; font-weight:700; color:#94a3b8; }
       .kc-popular-count { white-space:nowrap; font-size:.73rem; font-weight:950; color:#f97316; }
       .kc-popular-empty { padding:14px 8px; text-align:center; font-size:.73rem; font-weight:750; color:#94a3b8; }
+
+      @media (min-width:941px) {
+        #kc-popular-hub.kc-popular-sidebar { margin:0; padding:12px; border:1px solid rgba(148,163,184,.22); border-radius:18px; background:rgba(255,255,255,.82); box-shadow:0 8px 22px rgba(15,23,42,.055); }
+        body.dark-mode #kc-popular-hub.kc-popular-sidebar { background:rgba(30,41,59,.82); border-color:rgba(148,163,184,.18); }
+        .kc-popular-sidebar .kc-popular-head { display:block; margin:0 0 8px; }
+        .kc-popular-sidebar .kc-popular-title { font-size:.92rem; }
+        .kc-popular-sidebar .kc-popular-note { display:block; margin-top:3px; font-size:.60rem; line-height:1.35; }
+        .kc-popular-sidebar .kc-popular-tabs { display:flex; }
+        .kc-popular-sidebar .kc-popular-grid { grid-template-columns:1fr; gap:0; }
+        .kc-popular-sidebar .kc-popular-panel { display:none; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+        .kc-popular-sidebar .kc-popular-panel.active { display:block; }
+        .kc-popular-sidebar .kc-popular-panel-title { display:none; }
+        .kc-popular-sidebar .kc-popular-list { gap:3px; }
+        .kc-popular-sidebar .kc-popular-item { grid-template-columns:26px 44px minmax(0,1fr) auto; gap:6px; padding:5px 3px; border-radius:10px; }
+        .kc-popular-sidebar .kc-popular-rank { width:26px; height:26px; border-radius:8px; font-size:.66rem; }
+        .kc-popular-sidebar .kc-popular-thumb { width:44px; height:30px; border-radius:7px; }
+        .kc-popular-sidebar .kc-popular-game-title { font-size:.71rem; }
+        .kc-popular-sidebar .kc-popular-game-sub { font-size:.58rem; }
+        .kc-popular-sidebar .kc-popular-count { font-size:.66rem; }
+        #kc-live-stats.kc-stats-sidebar { margin:0; padding:10px 12px; flex-direction:column; align-items:flex-start; gap:4px; border-radius:16px; font-size:.68rem; }
+      }
+
       @media (max-width:780px) {
         .kc-popular-grid { grid-template-columns:1fr; }
         .kc-popular-item { grid-template-columns:28px 58px minmax(0,1fr) auto; gap:7px; }
@@ -113,41 +141,21 @@
     return window.KidscadePlay?.open(gameId);
   }
 
-  function ensureSiteStats() {
-    let element = document.getElementById('kc-live-stats');
-    if (element) return element;
-    const list = document.getElementById('game-list');
-    if (!list?.parentNode) return null;
-    element = document.createElement('div');
-    element.id = 'kc-live-stats';
-    element.setAttribute('aria-live', 'polite');
-    list.parentNode.insertBefore(element, list);
-    return element;
+  function desktopSidebarEnabled() {
+    return window.matchMedia?.('(min-width: 941px)')?.matches ?? window.innerWidth > 940;
   }
 
-  function ensurePopularHub() {
-    let hub = document.getElementById('kc-popular-hub');
-    if (!hub) {
-      hub = document.createElement('section');
-      hub.id = 'kc-popular-hub';
-      hub.innerHTML = `
-        <div class="kc-popular-head">
-          <h2 class="kc-popular-title">🔥 인기 게임</h2>
-          <span class="kc-popular-note">30초 이상 플레이한 기록을 기준으로 집계해요.</span>
-        </div>
-        <div class="kc-popular-grid">
-          <section class="kc-popular-panel" aria-labelledby="kc-weekly-popular-title">
-            <h3 class="kc-popular-panel-title" id="kc-weekly-popular-title"><span>이번 주 인기 TOP 5</span><span>7일 랭킹</span></h3>
-            <div class="kc-popular-list" data-popular-list="weekly"></div>
-          </section>
-          <section class="kc-popular-panel" aria-labelledby="kc-alltime-popular-title">
-            <h3 class="kc-popular-panel-title" id="kc-alltime-popular-title"><span>누적 인기 TOP 5</span><span>전체 랭킹</span></h3>
-            <div class="kc-popular-list" data-popular-list="allTime"></div>
-          </section>
-        </div>
-      `;
+  function positionPopularHub(hub) {
+    if (!hub) return null;
+    const sidebar = document.querySelector('.kc-myspace-inner');
+    const avatar = sidebar?.querySelector('.kc-side-card.avatar-shell');
+    if (desktopSidebarEnabled() && sidebar && avatar) {
+      hub.classList.add('kc-popular-sidebar');
+      if (avatar.nextElementSibling !== hub) avatar.insertAdjacentElement('afterend', hub);
+      return hub;
     }
 
+    hub.classList.remove('kc-popular-sidebar');
     const quickZone = document.querySelector('.kc-quick-zone');
     if (quickZone?.parentNode) {
       if (quickZone.nextElementSibling !== hub) quickZone.insertAdjacentElement('afterend', hub);
@@ -158,6 +166,96 @@
     const siteStats = document.getElementById('kc-live-stats');
     if (list?.parentNode && !hub.isConnected) list.parentNode.insertBefore(hub, siteStats || list);
     return hub;
+  }
+
+  function positionSiteStats(element) {
+    if (!element) return null;
+    const sidebar = document.querySelector('.kc-myspace-inner');
+    const hub = document.getElementById('kc-popular-hub');
+    const avatar = sidebar?.querySelector('.kc-side-card.avatar-shell');
+    if (desktopSidebarEnabled() && sidebar && avatar) {
+      element.classList.add('kc-stats-sidebar');
+      const anchor = hub?.parentNode === sidebar ? hub : avatar;
+      if (anchor.nextElementSibling !== element) anchor.insertAdjacentElement('afterend', element);
+      return element;
+    }
+
+    element.classList.remove('kc-stats-sidebar');
+    const list = document.getElementById('game-list');
+    if (list?.parentNode && list.previousElementSibling !== element) list.parentNode.insertBefore(element, list);
+    return element;
+  }
+
+  function syncStatsPlacement() {
+    positionPopularHub(document.getElementById('kc-popular-hub'));
+    positionSiteStats(document.getElementById('kc-live-stats'));
+  }
+
+  function ensureSiteStats() {
+    let element = document.getElementById('kc-live-stats');
+    if (!element) {
+      const list = document.getElementById('game-list');
+      if (!list?.parentNode) return null;
+      element = document.createElement('div');
+      element.id = 'kc-live-stats';
+      element.setAttribute('aria-live', 'polite');
+      list.parentNode.insertBefore(element, list);
+    }
+    return positionSiteStats(element);
+  }
+
+  function setPopularTab(hub, metric) {
+    const activeMetric = metric === 'allTime' ? 'allTime' : 'weekly';
+    hub.dataset.activePopular = activeMetric;
+    hub.querySelectorAll('[data-popular-tab]').forEach(button => {
+      const active = button.dataset.popularTab === activeMetric;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    hub.querySelectorAll('[data-popular-panel]').forEach(panel => {
+      panel.classList.toggle('active', panel.dataset.popularPanel === activeMetric);
+    });
+  }
+
+  function ensurePopularHub() {
+    let hub = document.getElementById('kc-popular-hub');
+    if (!hub) {
+      hub = document.createElement('section');
+      hub.id = 'kc-popular-hub';
+      hub.innerHTML = `
+        <div class="kc-popular-head">
+          <div>
+            <h2 class="kc-popular-title">🔥 인기 게임</h2>
+            <span class="kc-popular-note">30초 이상 플레이 기록 기준</span>
+          </div>
+          <div class="kc-popular-tabs" role="tablist" aria-label="인기 게임 기간">
+            <button class="kc-popular-tab active" type="button" role="tab" data-popular-tab="weekly" aria-selected="true">이번 주</button>
+            <button class="kc-popular-tab" type="button" role="tab" data-popular-tab="allTime" aria-selected="false" tabindex="-1">누적</button>
+          </div>
+        </div>
+        <div class="kc-popular-grid">
+          <section class="kc-popular-panel active" data-popular-panel="weekly" aria-labelledby="kc-weekly-popular-title">
+            <h3 class="kc-popular-panel-title" id="kc-weekly-popular-title"><span>이번 주 인기 TOP 5</span><span>7일 랭킹</span></h3>
+            <div class="kc-popular-list" data-popular-list="weekly"></div>
+          </section>
+          <section class="kc-popular-panel" data-popular-panel="allTime" aria-labelledby="kc-alltime-popular-title">
+            <h3 class="kc-popular-panel-title" id="kc-alltime-popular-title"><span>누적 인기 TOP 5</span><span>전체 랭킹</span></h3>
+            <div class="kc-popular-list" data-popular-list="allTime"></div>
+          </section>
+        </div>
+      `;
+    }
+
+    if (!hub.dataset.tabsBound) {
+      hub.dataset.tabsBound = '1';
+      hub.querySelectorAll('[data-popular-tab]').forEach(button => {
+        button.addEventListener('click', () => setPopularTab(hub, button.dataset.popularTab));
+      });
+      setPopularTab(hub, hub.dataset.activePopular || 'weekly');
+    }
+
+    return positionPopularHub(hub);
   }
 
   function renderSiteStats(stats) {
@@ -375,8 +473,11 @@
     await recordWeeklyVisit();
     await loadStats(false);
     document.addEventListener('kidscade:dashboard-rendered', () => {
+      syncStatsPlacement();
       if (currentStats?.ok) renderPopularRankings(currentStats);
     });
+    window.addEventListener('resize', syncStatsPlacement, { passive: true });
+    syncStatsPlacement();
     return true;
   }
 
