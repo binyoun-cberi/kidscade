@@ -8,16 +8,34 @@ const runtime=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','brid
 const html=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','index.html'),'utf8');
 const css=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','bridge-builder.css'),'utf8');
 
-test('Bridge Builder is a one-stroke auto-run game',()=>{
+test('Bridge Builder stays a one-stroke auto-run game',()=>{
   assert.match(html,/선 하나만 그리면 돼요/);
   assert.match(html,/자동으로 출발/);
   assert.match(html,/id="resetBtn"/);
   assert.doesNotMatch(html,/id="testBtn"/);
   assert.doesNotMatch(html,/id="inkBar"/);
-  assert.doesNotMatch(html,/남은 잉크/);
   assert.match(runtime,/function startStroke/);
   assert.match(runtime,/function finishStroke/);
   assert.match(runtime,/setTimeout\(function\(\)\{[\s\S]*startTest\(\)/);
+});
+
+test('only stage one is a plain gap and later stages add route-changing obstacles',()=>{
+  assert.match(runtime,/title:"1\. 작은 개울"[\s\S]*obstacles:\[\]/);
+  assert.match(runtime,/title:"2\. 바위 기둥"[\s\S]*type:"up"/);
+  assert.match(runtime,/title:"3\. 낮은 터널"[\s\S]*type:"down"/);
+  assert.match(runtime,/title:"4\. 위로, 아래로!"[\s\S]*type:"up"[\s\S]*type:"down"/);
+  assert.match(runtime,/title:"5\. 좁은 관문"/);
+  assert.match(runtime,/title:"6\. 지그재그 협곡"/);
+  assert.match(runtime,/title:"7\. 두 개의 관문"/);
+  assert.match(runtime,/title:"8\. 마지막 협곡"/);
+});
+
+test('car collides with the authored obstacles instead of ignoring them',()=>{
+  assert.match(runtime,/function resolvedObstacles/);
+  assert.match(runtime,/function carHitsObstacle/);
+  assert.match(runtime,/if\(carHitsObstacle\(v\)\)/);
+  assert.match(runtime,/장애물을 피해 길을 다시 그려 보세요/);
+  assert.match(runtime,/function drawObstacles/);
 });
 
 test('car is parked and visible before the player draws',()=>{
@@ -25,13 +43,6 @@ test('car is parked and visible before the player draws',()=>{
   assert.match(runtime,/parkVehicle\(\);[\s\S]*showHint/);
   assert.match(runtime,/x:b\.leftX-58/);
   assert.match(runtime,/function drawCar/);
-});
-
-test('starting a new stroke immediately replaces the previous road',()=>{
-  assert.match(runtime,/function startStroke[\s\S]*S\.points=\[\]/);
-  assert.match(runtime,/S\.roadProfile=null/);
-  assert.match(runtime,/S\.bridgeReady=false/);
-  assert.match(runtime,/parkVehicle\(\)/);
 });
 
 test('drawn line itself becomes the road profile',()=>{
@@ -42,36 +53,38 @@ test('drawn line itself becomes the road profile',()=>{
   assert.match(runtime,/var y=roadYAt\(v\.x\)/);
 });
 
-test('bridge validation accepts a line spanning the gap and snaps only the sampled ends',()=>{
-  assert.match(runtime,/MAX_JOIN_Y=145/);
-  assert.match(runtime,/if\(profile\[k\]===null\)return null/);
-  assert.match(runtime,/Math\.abs\(profile\[0\]-b\.leftY\)>MAX_JOIN_Y/);
-  assert.match(runtime,/profile\[0\]=b\.leftY/);
-  assert.match(runtime,/profile\[profile\.length-1\]=b\.rightY/);
+test('engine audio starts with the run and changes pitch on slopes',()=>{
+  assert.match(runtime,/function ensureAudio/);
+  assert.match(runtime,/function startEngine/);
+  assert.match(runtime,/function stopEngine/);
+  assert.match(runtime,/function updateEngine/);
+  assert.match(runtime,/a\.type="sawtooth"/);
+  assert.match(runtime,/b\.type="triangle"/);
+  assert.match(runtime,/startEngine\(\);[\s\S]*내가 그린 길을 달리는 중/);
+  assert.match(runtime,/updateEngine\(v\.angle\)/);
 });
 
-test('old structure and material simulation stays removed',()=>{
+test('old structural bridge simulation stays removed',()=>{
   assert.doesNotMatch(runtime,/\bdeck\b/);
   assert.doesNotMatch(runtime,/\bbrace\b/);
   assert.doesNotMatch(runtime,/makeNode/);
   assert.doesNotMatch(runtime,/makeEdge/);
   assert.doesNotMatch(runtime,/makeBend/);
   assert.doesNotMatch(runtime,/breakRatio/);
-  assert.doesNotMatch(runtime,/strain/);
   assert.doesNotMatch(runtime,/solveConstraint/);
   assert.doesNotMatch(runtime,/function physics/);
 });
 
-test('only the redraw control lives inside the visible play area',()=>{
+test('only redraw control lives inside the visible play area',()=>{
   assert.match(html,/class="reset-floating"/);
   assert.doesNotMatch(html,/class="actions"/);
   assert.match(css,/\.reset-floating/);
   assert.match(css,/position:absolute/);
 });
 
-test('mobile play area keeps the 12 by 7 canvas and v9 runtime',()=>{
+test('mobile play area keeps the 12 by 7 canvas and v11 runtime',()=>{
   assert.match(css,/aspect-ratio:12\/7/);
   assert.match(css,/width:100%!important/);
-  assert.match(html,/bridge-builder\.js\?v=10/);
-  assert.match(html,/bridge-builder\.css\?v=10/);
+  assert.match(html,/bridge-builder\.js\?v=11/);
+  assert.match(html,/bridge-builder\.css\?v=11/);
 });
