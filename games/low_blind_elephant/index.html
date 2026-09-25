@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>눈 감고 코끼리 만지기</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script src="../../kidscade-game-sdk.js" data-game-id="low_blind_elephant" data-title="눈 감고 코끼리 만지기" data-shell="true" data-orientation="landscape"></script>
+</head>
+<body>
+<main id="app">
+  <section id="menu" class="screen menu-screen">
+    <div class="title-mark" aria-hidden="true">🙈🐘</div>
+    <p class="eyebrow">동물 추리 스피드 게임</p>
+    <h1>눈 감고 코끼리 만지기</h1>
+    <p class="lead">첫 단서부터 정답을 떠올려 보세요. 5초마다 새 단서가 열리고, 2분 동안 최대한 많은 동물을 맞히면 됩니다.</p>
+    <div class="mode-grid">
+      <button class="mode-card easy" data-mode="easy" type="button">
+        <span class="mode-icon">🐾</span><b>쉬움</b>
+        <small>아래를 떠다니는 6마리 후보 중 정답을 터치해요.</small>
+      </button>
+      <button class="mode-card hard" data-mode="hard" type="button">
+        <span class="mode-icon">⌨️</span><b>어려움</b>
+        <small>후보 없이 동물 이름을 직접 입력해요. 조금 낯선 동물도 등장해요.</small>
+      </button>
+    </div>
+    <div class="rules">
+      <span>⏱️ 2분</span><span>🔎 5초마다 단서</span><span>⚡ 빠른 정답 = 높은 점수</span><span>❌ 오답 = 3초 감소</span>
+    </div>
+  </section>
+
+  <section id="game" class="screen game-screen hidden" aria-live="polite">
+    <header class="hud">
+      <div class="hud-chip timer"><small>남은 시간</small><strong id="time">2:00</strong></div>
+      <div class="hud-center">
+        <span id="modeBadge" class="mode-badge">쉬움</span>
+        <div class="clue-clock"><span id="clueFill"></span></div>
+        <small id="nextClue">다음 단서 5초</small>
+      </div>
+      <div class="stats">
+        <div><small>정답</small><strong id="correct">0</strong></div>
+        <div><small>점수</small><strong id="score">0</strong></div>
+        <div><small>연속</small><strong id="streak">0</strong></div>
+      </div>
+    </header>
+
+    <section class="mystery">
+      <div class="mystery-orb" id="mysteryOrb">
+        <span class="closed-eyes">⌣　⌣</span>
+        <b>?</b>
+      </div>
+      <div class="clue-area">
+        <p class="round-label">이 동물은 누구일까요?</p>
+        <ol id="clues" class="clue-list"></ol>
+      </div>
+    </section>
+
+    <section id="easyAnswer" class="answer-panel candidates-panel">
+      <p class="answer-title">후보를 터치하세요</p>
+      <div id="candidates" class="candidates"></div>
+    </section>
+
+    <section id="hardAnswer" class="answer-panel typing-panel hidden">
+      <label for="answerInput">동물 이름을 직접 입력하세요</label>
+      <div class="typing-row">
+        <input id="answerInput" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="text" maxlength="20" placeholder="예: 코끼리">
+        <button id="submitAnswer" type="button">정답!</button>
+      </div>
+      <p id="typingHelp" class="typing-help">띄어쓰기는 달라도 괜찮아요.</p>
+    </section>
+
+    <div id="feedback" class="feedback" role="status"></div>
+  </section>
+
+  <section id="result" class="screen result-screen hidden">
+    <div class="result-card">
+      <p class="eyebrow">2분 탐험 끝!</p>
+      <div id="resultAnimal" class="result-animal">🐘</div>
+      <h2 id="resultTitle">동물 탐정!</h2>
+      <p id="resultSummary"></p>
+      <div class="result-stats">
+        <div><small>맞힌 동물</small><strong id="finalCorrect">0</strong></div>
+        <div><small>최종 점수</small><strong id="finalScore">0</strong></div>
+        <div><small>최고 연속</small><strong id="finalStreak">0</strong></div>
+      </div>
+      <p id="bestText" class="best-text"></p>
+      <div class="result-actions">
+        <button id="retry" class="primary" type="button">같은 난이도로 다시</button>
+        <button id="backMenu" type="button">난이도 바꾸기</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="game.js?v=1"></script>
+</body>
+</html>
