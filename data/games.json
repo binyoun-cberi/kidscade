@@ -2,6 +2,28 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_factory_tycoon",
+      "title": "공장 타이쿤",
+      "href": "games/high_factory_tycoon/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🏭",
+      "description": "무한히 나오는 식빵과 재료를 컨베이어·가공기·조립기로 연결해 나만의 샌드위치 자동화 공장을 만드는 자유 샌드박스!",
+      "subject": "thinking",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 20,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "low_blind_elephant",
       "title": "눈 감고 코끼리 만지기",
       "href": "games/low_blind_elephant/index.html?v=1",
