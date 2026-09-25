@@ -2,6 +2,28 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_code_quest",
+      "title": "버그월드: 코드 원정대",
+      "href": "games/high_code_quest/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🤖",
+      "description": "명령 블록으로 캐릭터를 움직이고 코드를 실행·디버깅하며 순차, 반복, 조건, 변수와 함수를 익히는 3D 턴제 코딩 RPG!",
+      "subject": "thinking",
+      "genre": "rpg",
+      "difficulty": "medium",
+      "sessionMinutes": 20,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_factory_tycoon",
       "title": "공장 타이쿤",
       "href": "games/high_factory_tycoon/index.html?v=3",
@@ -2859,4 +2881,4 @@
       "rework": "개선 중"
     }
   }
-}
+}\n
