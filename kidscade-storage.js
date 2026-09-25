@@ -66,7 +66,7 @@
     disasterCityBestSeconds: 'kidscade_disaster_city_best_seconds',
     folkloreNightSave: 'kidscade_folklore_night_v1',
     bodyLabTutorialSeen: 'kidscade_body_lab_tutorial_v2',
-    bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v1'
+    bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
