@@ -2861,7 +2861,8 @@
       "quiz": "퀴즈",
       "rhythm": "리듬",
       "sports": "스포츠",
-      "sandbox": "샌드박스"
+      "sandbox": "샌드박스",
+      "rpg": "RPG"
     },
     "difficulty": {
       "easy": "쉬움",
@@ -2881,4 +2882,4 @@
       "rework": "개선 중"
     }
   }
-}\n
+}
