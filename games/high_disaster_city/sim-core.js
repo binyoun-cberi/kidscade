@@ -10,7 +10,7 @@ class Simulation{
  reset(){
   this.state={mode:'ready',paused:false,tutorial:false,tutorialStep:0,time:0,seed:1,money:320,food:28,population:14,stability:100,maxPopulation:14,
    slots:D.SLOT_X.map((x,i)=>({i,x,building:null})),deck:[],discard:[],hand:[],selectedUid:null,refreshCooldown:0,economyClock:0,growthClock:0,hungerClock:0,
-   disasters:[],next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
+   disasters:[],next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
    stats:{resolved:0,lost:0,placed:0,replaced:0,upgraded:0,cardsPlayed:0,removed:0}};
  }
  on(fn){this.listeners.push(fn)}
@@ -146,7 +146,8 @@ class Simulation{
   const s=this.state;if(s.rewardBacklog>0){s.rewardBacklog--;s.rewardChoices=this.makeRewards()}
  }
  scheduleNext(d){
-  const s=this.state;s.lastSide=d.side;s.lastType=d.type;s.next.side=d.side==='left'?'right':'left';s.next.type=this.rand()<.5?'wildfire':'flood';
+  const s=this.state;s.lastSide=d.side;s.typeStreak=d.type===s.lastType?(s.typeStreak||1)+1:1;s.lastType=d.type;s.next.side=d.side==='left'?'right':'left';
+  s.next.type=s.typeStreak>=2?(d.type==='wildfire'?'flood':'wildfire'):(this.rand()<.5?'wildfire':'flood');
   const p=this.pressure();s.next.in=clamp(30-(p-.55)*7.5,16,30)+this.rand()*4;s.next.visible=false;
  }
  maxConcurrent(){return this.state.time<300?1:2}
