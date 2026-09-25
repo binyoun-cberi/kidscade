@@ -1,13 +1,78 @@
-const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const ROOT=path.resolve(__dirname,'..');const runtime=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','bridge-builder.js'),'utf8');const html=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','index.html'),'utf8');const css=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','bridge-builder.css'),'utf8');
-test('Bridge Builder keeps the scribble-first controls',()=>{assert.match(html,/그냥 다리를 그리세요/);assert.match(html,/id="inkBar"/);assert.doesNotMatch(html,/data-tool="road"/);assert.match(runtime,/function startStroke/);assert.match(runtime,/function extendStroke/);assert.match(runtime,/pointerdown/);assert.match(runtime,/pointermove/)});
-test('physics uses a fixed timestep and pause-aware loop',()=>{assert.match(runtime,/FIXED=1\/60/);assert.match(runtime,/while\(S\.acc>=FIXED/);assert.match(runtime,/MAX_STEPS/);assert.match(runtime,/S\.paused/);assert.match(runtime,/registerPauseHandlers/);assert.match(runtime,/S\.acc=0/)});
-test('drawn strokes have deck brace roles and bending stiffness',()=>{assert.match(runtime,/role==="deck"/);assert.match(runtime,/function makeBend/);assert.match(runtime,/S\.bends/);assert.match(runtime,/e\.role!=="deck"/);assert.match(runtime,/stiff:role==="deck"/)});
-test('crossing strokes snap and split existing segments',()=>{assert.match(runtime,/function nearestEdgeProjection/);assert.match(runtime,/function splitEdge/);assert.match(runtime,/function resolveStructurePoint/);assert.match(runtime,/replaceNodeRefs/);assert.match(html,/선이 만나면 자동으로 붙어요/ )});
-test('testing requires a real left-to-right deck path',()=>{assert.match(runtime,/function hasDeckPath/);assert.match(runtime,/if\(!hasDeckPath\(false\)\)/);assert.match(runtime,/차가 달릴 길이 왼쪽에서 오른쪽까지 이어져야 해요/);assert.match(runtime,/hasDeckPath\(false\)\)succeed/ )});
-test('failure restores the editable bridge',()=>{assert.match(runtime,/function serializeGeometry/);assert.match(runtime,/function loadGeometry/);assert.match(runtime,/S\.snapshot=serializeGeometry/);assert.match(runtime,/if\(S\.snapshot\)loadGeometry\(S\.snapshot\)/)});
-test('early stages have enough ink for a road plus reinforcement',()=>{assert.match(runtime,/gap:330,ink:720/);assert.match(runtime,/gap:410,ink:900/);assert.match(runtime,/gap:625,ink:1480/)});
-test('mobile play area preserves the canvas aspect ratio',()=>{assert.match(css,/aspect-ratio:12\/7/);assert.match(css,/width:100%!important/);assert.match(html,/bridge-builder\.js\?v=7/)});
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 
-test('bridge routing is recomputed from the finished structure',()=>{assert.match(runtime,/function findBuildDeckRoute/);assert.match(runtime,/function refreshDeckRoles/);assert.match(runtime,/refreshDeckRoles\(\);if\(!hasDeckPath/);assert.match(runtime,/Math\.hypot\(n\.x-b\.leftAnchor\.x,n\.y-b\.leftAnchor\.y\)<5/)});
-test('bank supports pin naturally and physics uses accumulated damage',()=>{assert.match(runtime,/function bankPinNear/);assert.match(runtime,/var g=bankPinNear\(p\)/);assert.match(runtime,/damage:0/);assert.match(runtime,/se\.damage=.*\.022/);assert.match(runtime,/for\(var iter=0;iter<10;iter\+\+\)/);assert.doesNotMatch(runtime,/if\(e\.strain>L\.breakRatio\)\{e\.broken=true/)});
+const ROOT=path.resolve(__dirname,'..');
+const runtime=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','bridge-builder.js'),'utf8');
+const html=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','index.html'),'utf8');
+const css=fs.readFileSync(path.join(ROOT,'games','high_bridge_builder','bridge-builder.css'),'utf8');
+
+test('Bridge Builder is now a one-stroke draw-a-road game',()=>{
+  assert.match(html,/검은 선 하나만 그리세요/);
+  assert.match(html,/내가 그린 선 그대로/);
+  assert.match(html,/id="testBtn"/);
+  assert.match(html,/id="resetBtn"/);
+  assert.doesNotMatch(html,/id="undoBtn"/);
+  assert.match(runtime,/function startStroke/);
+  assert.match(runtime,/function extendStroke/);
+  assert.match(runtime,/function finishStroke/);
+  assert.match(runtime,/pointerdown/);
+  assert.match(runtime,/pointermove/);
+});
+
+test('old structural bridge simulation is completely removed',()=>{
+  assert.doesNotMatch(runtime,/\bdeck\b/);
+  assert.doesNotMatch(runtime,/\bbrace\b/);
+  assert.doesNotMatch(runtime,/makeNode/);
+  assert.doesNotMatch(runtime,/makeEdge/);
+  assert.doesNotMatch(runtime,/makeBend/);
+  assert.doesNotMatch(runtime,/breakRatio/);
+  assert.doesNotMatch(runtime,/strain/);
+  assert.doesNotMatch(runtime,/solveConstraint/);
+  assert.doesNotMatch(runtime,/nearestEdgeProjection/);
+});
+
+test('starting a new stroke replaces the previous road',()=>{
+  assert.match(runtime,/function startStroke[\s\S]*S\.points=\[\]/);
+  assert.match(runtime,/S\.roadProfile=null/);
+  assert.match(runtime,/S\.bridgeReady=false/);
+});
+
+test('drawn line is sampled directly into the road the car follows',()=>{
+  assert.match(runtime,/function segmentYAtX/);
+  assert.match(runtime,/function buildRoadProfile/);
+  assert.match(runtime,/function roadYAt/);
+  assert.match(runtime,/function roadAngleAt/);
+  assert.match(runtime,/var y=roadYAt\(v\.x\)/);
+});
+
+test('a bridge only needs one continuous line touching both platform lips',()=>{
+  assert.match(runtime,/function snapBridgeEnds/);
+  assert.match(runtime,/leftOK/);
+  assert.match(runtime,/rightOK/);
+  assert.match(runtime,/return leftOK&&rightOK/);
+  assert.match(runtime,/양쪽 벽 끝에 선을 닿게 해 주세요/);
+});
+
+test('ink limits only drawing length and no longer represents materials',()=>{
+  assert.match(runtime,/inkLeft/);
+  assert.match(runtime,/S\.inkLeft=Math\.max\(0,S\.inkLeft-d\)/);
+  assert.match(html,/남은 잉크/);
+  assert.doesNotMatch(html,/보강선/);
+  assert.doesNotMatch(html,/재료 선택/);
+});
+
+test('vehicle success is simple deterministic traversal rather than structural physics',()=>{
+  assert.match(runtime,/function updateRun\(dt\)/);
+  assert.match(runtime,/v\.x\+=v\.speed\*dt/);
+  assert.match(runtime,/if\(v\.x>b\.rightX\+95\)succeed\(\)/);
+  assert.doesNotMatch(runtime,/function physics/);
+});
+
+test('mobile play area keeps the 12 by 7 canvas and v8 runtime',()=>{
+  assert.match(css,/aspect-ratio:12\/7/);
+  assert.match(css,/width:100%!important/);
+  assert.match(html,/bridge-builder\.js\?v=8/);
+  assert.match(html,/bridge-builder\.css\?v=8/);
+});
