@@ -356,7 +356,8 @@
                 }
                 if (event.data?.type === 'kidscade:game-error' && event.data?.detail?.fatal !== false) {
                     window.KidscadeGameFrame?.showError?.({
-                        code: event.data?.detail?.code || 'GAME_ERROR'
+                        code: event.data?.detail?.code || 'GAME_ERROR',
+                        userMessage: event.data?.detail?.message ? '게임 오류: ' + event.data.detail.message : undefined
                     });
                 }
             });`;
