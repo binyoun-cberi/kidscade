@@ -162,6 +162,32 @@
       #kc-activity-strip .kc-activity-title { font-size:.78rem !important; }
       #kc-activity-strip .kc-activity-sub { margin-top:3px !important; font-size:.63rem !important; }
 
+      @media (min-width:941px) {
+        #kc-activity-strip.kc-activity-sidebar {
+          grid-template-columns:1fr !important;
+          gap:7px !important;
+          margin:0 !important;
+        }
+        #kc-activity-strip.kc-activity-sidebar .kc-activity-btn {
+          min-height:56px !important;
+          padding:9px 10px !important;
+          border-radius:15px !important;
+          box-shadow:0 6px 16px rgba(15,23,42,.05) !important;
+        }
+        #kc-activity-strip.kc-activity-sidebar .kc-activity-title {
+          font-size:.75rem !important;
+        }
+        #kc-activity-strip.kc-activity-sidebar .kc-activity-sub {
+          margin-top:3px !important;
+          font-size:.60rem !important;
+          line-height:1.38 !important;
+        }
+        #kc-activity-strip.kc-activity-sidebar .kc-activity-count {
+          padding:3px 6px !important;
+          font-size:.58rem !important;
+        }
+      }
+
       /* 이어서 플레이 / 즐겨찾기 */
       .kc-quick-zone { gap:10px !important; margin-bottom:14px !important; }
       .dashboard-section:not(.hidden) { padding:10px !important; border-radius:18px !important; box-shadow:0 7px 20px rgba(15,23,42,.055) !important; }
