@@ -2609,3 +2609,22 @@ body.dark-mode .site-credits {
 }
 
 @supports not (height:100dvh){#game-modal{height:100vh;min-height:100vh}}
+
+
+/* v45 game frame viewport sizing */
+#game-modal>.modal-header{
+  flex:0 0 60px;
+  min-height:60px
+}
+#game-modal>#game-iframe{
+  flex:1 1 0;
+  min-height:0;
+  height:auto;
+  display:block
+}
+@media (max-width:768px){
+  #game-modal>.modal-header{
+    flex-basis:50px;
+    min-height:50px
+  }
+}
