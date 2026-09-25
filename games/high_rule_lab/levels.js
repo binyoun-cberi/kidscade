@@ -3887,12 +3887,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
-        "y": 4
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 9,
         "y": 4
       },
@@ -3942,24 +3936,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:wall",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:rock",
         "x": 0,
         "y": 2
@@ -3974,6 +3950,24 @@ const levels=[
         "kind": "word",
         "token": "P:YOU",
         "x": 2,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 11,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
         "y": 2
       }
     ],
@@ -4397,12 +4391,6 @@ const levels=[
       {
         "kind": "object",
         "type": "ice",
-        "x": 8,
-        "y": 4
-      },
-      {
-        "kind": "object",
-        "type": "ice",
         "x": 9,
         "y": 4
       },
@@ -4452,24 +4440,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:ice",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:wall",
         "x": 0,
         "y": 2
@@ -4484,6 +4454,24 @@ const levels=[
         "kind": "word",
         "token": "P:YOU",
         "x": 2,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:ice",
+        "x": 11,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
         "y": 2
       }
     ],
@@ -4907,12 +4895,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
-        "y": 4
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 9,
         "y": 4
       },
@@ -4962,24 +4944,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:wall",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:rock",
         "x": 0,
         "y": 2
@@ -4994,6 +4958,24 @@ const levels=[
         "kind": "word",
         "token": "P:YOU",
         "x": 2,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 11,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
         "y": 2
       }
     ],
@@ -5399,12 +5381,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
-        "y": 4
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 9,
         "y": 4
       },
@@ -5454,24 +5430,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:wall",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:flag",
         "x": 0,
         "y": 2
@@ -5486,6 +5444,24 @@ const levels=[
         "kind": "word",
         "token": "P:YOU",
         "x": 2,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 11,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
         "y": 2
       }
     ],
@@ -6146,12 +6122,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
-        "y": 4
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 9,
         "y": 4
       },
@@ -6201,24 +6171,6 @@ const levels=[
       },
       {
         "kind": "word",
-        "token": "N:wall",
-        "x": 8,
-        "y": 0
-      },
-      {
-        "kind": "word",
-        "token": "EQ",
-        "x": 8,
-        "y": 1
-      },
-      {
-        "kind": "word",
-        "token": "P:STOP",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "word",
         "token": "N:rock",
         "x": 0,
         "y": 2
@@ -6251,6 +6203,24 @@ const levels=[
         "kind": "word",
         "token": "P:YOU",
         "x": 6,
+        "y": 2
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 11,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 1
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
         "y": 2
       }
     ],
