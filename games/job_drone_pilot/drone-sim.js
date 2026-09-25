@@ -8,7 +8,7 @@ const ui = {
   missionKind: $('#missionKind'), missionTitle: $('#missionTitle'), missionText: $('#missionText'), missionMeta: $('#missionMeta'),
   missionProgress: $('#missionProgress'), missionProgressBar: $('#missionProgress i'), battery: $('#battery'), altitude: $('#altitude'),
   speed: $('#speed'), mode: $('#mode'), heading: $('#heading'), targetBearing: $('#targetBearing'), targetDistance: $('#targetDistance'),
-  toast: $('#toast'), cameraBtn: $('#cameraBtn'), fpvBtn: $('#fpvBtn'), rthBtn: $('#rthBtn'),
+  toast: $('#toast'), cameraBtn: $('#cameraBtn'), focusBtn: $('#focusBtn'), fpvBtn: $('#fpvBtn'), rthBtn: $('#rthBtn'),
   leftStick: $('#leftStick'), rightStick: $('#rightStick'), leftKnob: $('#leftKnob'), rightKnob: $('#rightKnob'),
   endTitle: $('#endTitle'), endText: $('#endText'), resultGrid: $('#resultGrid')
 };
@@ -26,6 +26,14 @@ const coarse = matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchP
 let scene, camera, renderer, sun, loader;
 let state = 'menu';
 let fpv = false;
+const operatorView = {
+  eye: new THREE.Vector3(0, 1.72, 10.5),
+  yaw: 0,
+  pitch: -0.08,
+  pointer: null,
+  lastX: 0,
+  lastY: 0
+};
 let accumulator = 0;
 let lastTime = performance.now();
 let flightTime = 0;
@@ -307,7 +315,8 @@ function makePerson(x,z) {
 
 function resetDrone() {
   drone.root.position.copy(HOME); drone.vel.set(0,0,0); drone.yaw=0; drone.root.rotation.set(0,0,0); drone.tilt.rotation.set(0,0,0);
-  drone.batterySeconds=450; rth.active=false; rth.phase='idle'; fpv=false; ui.fpvBtn.classList.remove('active'); ui.rthBtn.classList.remove('active');
+  drone.batterySeconds=450; rth.active=false; rth.phase='idle'; fpv=false; ui.fpvBtn.classList.remove('active'); ui.fpvBtn.textContent='드론 카메라'; ui.rthBtn.classList.remove('active');
+  focusDroneView(true);
 }
 function startGame(withTutorial) {
   initAudio(); state='playing'; ui.start.classList.remove('show'); ui.end.classList.remove('show'); hideToast();
@@ -329,7 +338,7 @@ function spawnTutorial() {
   mission={type:'tutorial',phase:'takeoff',index:0,time:0,max:125,rings:[new THREE.Vector3(0,6,-13),new THREE.Vector3(10,8,-25),new THREE.Vector3(-7,5,-36)]};
   lastMissionType='tutorial';
   setMissionUI('기초 훈련','① 6m까지 상승','왼쪽 스틱을 위로 밀어 드론을 천천히 상승시키세요.');
-  ui.cameraBtn.textContent='📷 촬영'; setProgress(0); makeGroundMarker(0,0,0x6fe7a9); showToast('왼쪽 스틱 ↑ : 상승', 'normal', 2.8);
+  ui.cameraBtn.textContent='📷 촬영'; setProgress(0); makeGroundMarker(0,0,0x6fe7a9); showToast('화면 드래그로 둘러보기 · F로 드론 찾기', 'normal', 3.4);
 }
 function tutorialUpdate(dt) {
   if (!mission || mission.type!=='tutorial') return;
@@ -408,7 +417,7 @@ function flashPhoto(){const f=document.createElement('div');f.style.cssText='pos
 function setRTH(active){
   if(state!=='playing')return;
   if(active){rth.active=true;rth.phase='ascend';rth.safeY=Math.max(12,drone.root.position.y);ui.rthBtn.classList.add('active');ui.mode.textContent='RTH';showToast('자동귀환 시작 · 안전 고도로 이동합니다.','warn')}
-  else{rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='GPS';showToast('자동귀환을 취소했습니다.')}
+  else{rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='조종사';showToast('자동귀환을 취소했습니다.')}
 }
 function updateRTH(dt){
   if(!rth.active)return false;
@@ -419,7 +428,7 @@ function updateRTH(dt){
     if(hd>0.05)toHome.normalize();desiredVelocity.set(toHome.x*5.2,clamp((rth.safeY-p.y)*1.4,-1.8,1.8),toHome.z*5.2);if(hd<2.2)rth.phase='land';
   }else{
     desiredVelocity.set(clamp(-p.x*1.6,-1.2,1.2),p.y>.55?-1.5:0,clamp(-p.z*1.6,-1.2,1.2));
-    if(hd<1.4&&p.y<=.48){rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='GPS';showToast('출발점 자동귀환 완료');if(endPending)endGame('근무 시간이 끝나 자동귀환 후 안전하게 착륙했습니다.');}
+    if(hd<1.4&&p.y<=.48){rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='조종사';showToast('출발점 자동귀환 완료');if(endPending)endGame('근무 시간이 끝나 자동귀환 후 안전하게 착륙했습니다.');}
   }
   return true;
 }
@@ -470,10 +479,37 @@ function enforceWorldBounds(){const p=drone.root.position;let hit=false;if(p.x<-
 function checkCollisions(prev){const p=drone.root.position;const radius=.58;for(const c of colliders){if(p.y>c.h+.45)continue;if(c.type==='box'){const minX=c.x-c.w/2-radius,maxX=c.x+c.w/2+radius,minZ=c.z-c.d/2-radius,maxZ=c.z+c.d/2+radius;if(p.x>minX&&p.x<maxX&&p.z>minZ&&p.z<maxZ){resolveImpact(prev);return}}else{const d=Math.hypot(p.x-c.x,p.z-c.z);if(d<c.r+radius){resolveImpact(prev);return}}}}
 function resolveImpact(prev){drone.root.position.x=prev.x;drone.root.position.z=prev.z;drone.vel.x*=-.12;drone.vel.z*=-.12;if(impactCooldown<=0){impactCooldown=.8;stats.collisions++;stats.score=Math.max(0,stats.score-5);showToast('충격! 속도를 줄이고 기체를 안정화하세요.','danger',1.6)}}
 
+function focusDroneView(immediate=false){
+  if(!camera)return;
+  const eye=operatorView.eye;
+  const dx=drone.root.position.x-eye.x;
+  const dy=(drone.root.position.y+.15)-eye.y;
+  const dz=drone.root.position.z-eye.z;
+  const flat=Math.hypot(dx,dz)||.001;
+  operatorView.yaw=Math.atan2(dx,-dz);
+  operatorView.pitch=clamp(Math.atan2(dy,flat),-.82,.88);
+  if(immediate&&!fpv){
+    camera.position.copy(eye);
+    const cp=Math.cos(operatorView.pitch);
+    tempV.set(Math.sin(operatorView.yaw)*cp,Math.sin(operatorView.pitch),-Math.cos(operatorView.yaw)*cp);
+    camera.lookAt(tempV2.copy(eye).addScaledVector(tempV,30));
+  }
+}
 function updateCamera(dt){
-  const p=drone.root.position;const forward=tempV.set(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
-  if(fpv){const desired=tempV2.copy(p).addScaledVector(forward,.48);desired.y+=.16;camera.position.lerp(desired,expFactor(14,dt));const look=desired.clone().addScaledVector(forward,20);look.y+=-drone.tilt.rotation.x*5;camera.lookAt(look);drone.visual.visible=false;camera.fov=73;}
-  else{const desired=tempV2.copy(p).addScaledVector(forward,-5.6);desired.y+=2.65;camera.position.lerp(desired,expFactor(7.5,dt));const look=p.clone().addScaledVector(forward,3.1);look.y+=.55;camera.lookAt(look);drone.visual.visible=true;camera.fov=60;}
+  const p=drone.root.position;
+  const forward=tempV.set(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
+  if(fpv){
+    const desired=tempV2.copy(p).addScaledVector(forward,.48);desired.y+=.16;
+    camera.position.lerp(desired,expFactor(14,dt));
+    const look=desired.clone().addScaledVector(forward,20);look.y+=-drone.tilt.rotation.x*5;
+    camera.lookAt(look);drone.visual.visible=false;camera.fov=73;
+  }else{
+    camera.position.lerp(operatorView.eye,expFactor(14,dt));
+    const cp=Math.cos(operatorView.pitch);
+    const lookDir=tempV.set(Math.sin(operatorView.yaw)*cp,Math.sin(operatorView.pitch),-Math.cos(operatorView.yaw)*cp);
+    camera.lookAt(tempV2.copy(camera.position).addScaledVector(lookDir,30));
+    drone.visual.visible=true;camera.fov=64;
+  }
   camera.updateProjectionMatrix();
 }
 function updateMissionVisuals(time){
@@ -481,7 +517,7 @@ function updateMissionVisuals(time){
 }
 function updateHUD(){
   const p=drone.root.position;const hsp=Math.hypot(drone.vel.x,drone.vel.z);const bat=clamp(drone.batterySeconds/450*100,0,100);
-  ui.battery.textContent=`${Math.round(bat)}%`;ui.altitude.textContent=`${Math.max(0,p.y-.36).toFixed(1)} m`;ui.speed.textContent=`${hsp.toFixed(1)} m/s`;ui.mode.textContent=rth.active?'RTH':fpv?'FPV':'GPS';
+  ui.battery.textContent=`${Math.round(bat)}%`;ui.altitude.textContent=`${Math.max(0,p.y-.36).toFixed(1)} m`;ui.speed.textContent=`${hsp.toFixed(1)} m/s`;ui.mode.textContent=fpv?'드론':rth.active?'귀환':'조종사';
   ui.battery.classList.toggle('warn',bat<20&&bat>=8);ui.battery.classList.toggle('danger',bat<8);
   const deg=(THREE.MathUtils.radToDeg(drone.yaw)%360+360)%360;const dirs=['N','NE','E','SE','S','SW','W','NW'];ui.heading.textContent=dirs[Math.round(deg/45)%8];
   const t=currentMissionTarget();if(t){const dx=t.x-p.x,dz=t.z-p.z,dist=Math.hypot(dx,dz);ui.targetDistance.textContent=`${Math.round(dist)} m`;const desired=Math.atan2(dx,-dz);let rel=(desired-drone.yaw+TAU)%TAU;const arrows=['↑','↗','→','↘','↓','↙','←','↖'];ui.targetBearing.textContent=arrows[Math.round(rel/(TAU/8))%8]}else{ui.targetDistance.textContent='-- m';ui.targetBearing.textContent='•'}
@@ -505,16 +541,44 @@ function installStick(el,key){
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>el.addEventListener(type,end));
 }
 function resetInputs(){input.keys.clear();for(const side of [input.left,input.right]){side.x=0;side.y=0;side.pointer=null}updateStickVisuals()}
+function installLookControls(){
+  const canvas=ui.canvas;
+  const begin=e=>{
+    if(fpv||state!=='playing'||operatorView.pointer!==null)return;
+    operatorView.pointer=e.pointerId;operatorView.lastX=e.clientX;operatorView.lastY=e.clientY;
+    canvas.classList.add('looking');
+    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+    e.preventDefault();
+  };
+  const move=e=>{
+    if(e.pointerId!==operatorView.pointer||fpv)return;
+    const dx=e.clientX-operatorView.lastX,dy=e.clientY-operatorView.lastY;
+    operatorView.lastX=e.clientX;operatorView.lastY=e.clientY;
+    const sensitivity=e.pointerType==='mouse'?.0042:.0056;
+    operatorView.yaw-=dx*sensitivity;
+    operatorView.pitch=clamp(operatorView.pitch-dy*sensitivity,-.82,.88);
+    e.preventDefault();
+  };
+  const end=e=>{
+    if(e.pointerId!==operatorView.pointer)return;
+    operatorView.pointer=null;canvas.classList.remove('looking');
+  };
+  canvas.addEventListener('pointerdown',begin);
+  canvas.addEventListener('pointermove',move);
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>canvas.addEventListener(type,end));
+}
 function installControls(){
-  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR']);
-  addEventListener('keydown',e=>{if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR'].includes(e.code))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='KeyC')tryAction();else if(e.code==='KeyV')toggleFPV();else if(e.code==='KeyR')setRTH(!rth.active);else input.keys.add(e.code)});
+  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF']);
+  addEventListener('keydown',e=>{if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR','KeyF'].includes(e.code))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='KeyC')tryAction();else if(e.code==='KeyV')toggleFPV();else if(e.code==='KeyR')setRTH(!rth.active);else if(e.code==='KeyF'){if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')}else input.keys.add(e.code)});
   addEventListener('keyup',e=>input.keys.delete(e.code));
-  addEventListener('blur',resetInputs);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs()});
-  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');
-  ui.cameraBtn.addEventListener('click',tryAction);ui.fpvBtn.addEventListener('click',toggleFPV);ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
+  addEventListener('blur',()=>{resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')});document.addEventListener('visibilitychange',()=>{if(document.hidden){resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')}});
+  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');installLookControls();
+  ui.cameraBtn.addEventListener('click',tryAction);
+  ui.focusBtn.addEventListener('click',()=>{if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')});
+  ui.fpvBtn.addEventListener('click',toggleFPV);ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
   ui.tutorialBtn.addEventListener('click',()=>startGame(true));ui.workBtn.addEventListener('click',()=>startGame(false));ui.restartBtn.addEventListener('click',()=>{ui.end.classList.remove('show');ui.start.classList.add('show');state='menu';resetDrone();clearMissionMeshes();});
 }
-function toggleFPV(){if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);showToast(fpv?'FPV 카메라로 전환':'3인칭 카메라로 전환')}
+function toggleFPV(){if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);ui.fpvBtn.textContent=fpv?'조종사 화면':'드론 카메라';if(!fpv)focusDroneView();showToast(fpv?'드론 카메라로 전환':'지상 조종사 시점으로 복귀')}
 function resize(){if(!renderer||!camera)return;camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.38:1.6))}
 addEventListener('resize',resize);
 
