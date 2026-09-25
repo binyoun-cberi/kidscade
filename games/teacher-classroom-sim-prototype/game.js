@@ -7,6 +7,28 @@
   var q=function(s){return document.querySelector(s)};
   var qa=function(s){return Array.from(document.querySelectorAll(s))};
   var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
+
+  function applyUiProfile(){
+    var root=document.documentElement;
+    var w=Math.max(root.clientWidth||0,window.innerWidth||0);
+    var h=Math.max(root.clientHeight||0,window.innerHeight||0);
+    var coarse=false;
+    try{coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches}catch(e){}
+    coarse=coarse||Number(navigator.maxTouchPoints||0)>0;
+    var profile='compact';
+    if(coarse&&w<900)profile='touch';
+    else if(w>=1800&&h>=900)profile='xl';
+    else if(w>=1350&&h>=760)profile='large';
+    else if(w>=1050&&h>=680)profile='medium';
+    root.dataset.uiProfile=profile;
+    root.dataset.inputMode=coarse?'touch':'pointer';
+  }
+  applyUiProfile();
+  var uiProfileFrame=0;
+  window.addEventListener('resize',function(){
+    if(uiProfileFrame)cancelAnimationFrame(uiProfileFrame);
+    uiProfileFrame=requestAnimationFrame(function(){uiProfileFrame=0;applyUiProfile()});
+  });
   var SAVE_KEY='kidscade.teacherDesk.v44';
 
   var students={
