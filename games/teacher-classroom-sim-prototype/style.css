@@ -484,3 +484,42 @@ button.waiting-item{width:100%}
   .desk{height:32%}
   .waiting-panel,.task-panel{max-height:39%}
 }
+
+
+/* v46 interaction hitbox fix */
+.visitor-zone{
+  z-index:20;
+  pointer-events:none
+}
+.visitor-card,
+.visitor-content,
+.action-list,
+.action-list button,
+.defer-button,
+.result-card,
+.result-card button{
+  pointer-events:auto
+}
+.action-list button,
+.defer-button,
+.result-card button{
+  position:relative;
+  z-index:2;
+  touch-action:manipulation
+}
+
+/* The wooden desk is visual scenery; only its actual tools should capture input. */
+.desk{
+  z-index:8;
+  pointer-events:none
+}
+.desk-object{
+  pointer-events:auto
+}
+
+/* Side panels and fast-forward remain intentionally interactive above the scene. */
+.waiting-panel,
+.task-panel,
+.fast-forward-button{
+  pointer-events:auto
+}
