@@ -12,7 +12,7 @@
   const DEFAULT_GENRE_NAMES = {
     all: '전체 장르', action: '액션', puzzle: '퍼즐', strategy: '전략',
     simulation: '시뮬레이션', management: '경영', quiz: '퀴즈',
-    rhythm: '리듬', sports: '스포츠', sandbox: '샌드박스'
+    rhythm: '리듬', sports: '스포츠', sandbox: '샌드박스', rpg: 'RPG'
   };
 
   function clean(value) {
