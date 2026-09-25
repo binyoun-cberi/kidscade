@@ -3,7 +3,7 @@
 const DC=root.DisasterCity,D=DC.DATA,sim=new DC.Simulation(),renderer=new DC.Renderer(document.getElementById('gameCanvas'));
 const sfx=(key,opts={})=>{try{root.KidscadeAudio?.play?.(key,opts)?.catch?.(()=>{})}catch(_){}};
 const ui=new DC.UI({
- start(tutorial){sim.start({tutorial});renderer.agents=[];renderer.lastCitizenTime=0;ui.startDone();root.KidscadeGame?.start?.({tutorial:Boolean(tutorial)});sfx('collect.coin_pickup',{volume:.24,cooldownMs:100});},
+ start(tutorial){sim.start({tutorial});renderer.agents=[];renderer.lastCitizenTime=0;ui.startDone();sfx('collect.coin_pickup',{volume:.24,cooldownMs:100});},
  refresh(){if(sim.refreshHand())sfx('collect.coin_drop',{volume:.20,cooldownMs:120});},
  pause(){sim.togglePause();},
  sound(){const a=root.KidscadeAudio;if(!a)return;const muted=!a.getSettings().muted;a.setMuted(muted);ui.soundState();if(!muted)sfx('collect.coin_pickup',{volume:.20,cooldownMs:100})},
@@ -21,7 +21,7 @@ function handleSignals(){
   if(ev.message)ui.showToast(ev.message);
   if(ev.kind==='warning'||ev.kind==='damage')sfx('combat.impact_heavy',{volume:ev.kind==='warning'?.24:.18,cooldownMs:260});
   else if(ev.kind==='clear')sfx('success.cheer_yay',{volume:.27,cooldownMs:500});
-  else if(ev.kind==='gameover'){sfx('failure.fail_sting',{volume:.35,cooldownMs:900});root.KidscadeGame?.gameOver?.({score:Math.round(sim.state.time||0),scoreOptions:{unit:'sec'},survivedSeconds:Math.round(sim.state.time||0)});}
+  else if(ev.kind==='gameover')sfx('failure.fail_sting',{volume:.35,cooldownMs:900});
   else if(ev.kind==='build'||ev.kind==='reward'||ev.kind==='supply')sfx('collect.coin_pickup',{volume:.16,cooldownMs:90});
  }
 }
@@ -30,10 +30,6 @@ function frame(now){
  const raw=Math.min(.05,Math.max(0,(now-last)/1000));last=now;if(sim.state.mode==='playing'&&!sim.state.paused){acc=Math.min(.16,acc+raw);while(acc>=STEP){sim.update(STEP);acc-=STEP}}
  handleSignals();renderer.render(sim.state);uiClock+=raw;if(uiClock>.08){uiClock=0;ui.render(sim.state,sim)}requestAnimationFrame(frame)
 }
-root.KidscadeGame?.registerPauseHandlers?.({
- pause(){if(sim.state.mode==='playing'&&!sim.state.paused){sim.togglePause();ui.render(sim.state,sim)}},
- resume(){if(sim.state.mode==='playing'&&sim.state.paused){sim.togglePause();ui.render(sim.state,sim)}}
-});
 renderer.load().then(()=>{ui.render(sim.state,sim);requestAnimationFrame(frame)}).catch(()=>{ui.render(sim.state,sim);requestAnimationFrame(frame)});
 root.__disasterCity={sim,renderer,ui};
 })(window);
