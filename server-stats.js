@@ -151,7 +151,9 @@
     const avatar = sidebar?.querySelector('.kc-side-card.avatar-shell');
     if (desktopSidebarEnabled() && sidebar && avatar) {
       hub.classList.add('kc-popular-sidebar');
-      if (avatar.nextElementSibling !== hub) avatar.insertAdjacentElement('afterend', hub);
+      const activity = sidebar.querySelector('#kc-activity-strip.kc-activity-sidebar');
+      const anchor = activity || avatar;
+      if (anchor.nextElementSibling !== hub) anchor.insertAdjacentElement('afterend', hub);
       return hub;
     }
 
