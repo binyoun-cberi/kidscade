@@ -1,611 +1,103 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>분수 소수 대결!</title>
-    <!-- Tailwind CSS (CDN) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 커스텀 애니메이션 */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-10px); }
-        }
-        .animate-shake {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        @keyframes confetti-fall {
-            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-            100% { transform: translate(var(--sx), calc(var(--sy) * 20)) rotate(var(--r)); opacity: 0; }
-        }
-        .animate-confetti-fall {
-            animation: confetti-fall 1.5s ease-out forwards;
-        }
-        .card-transition {
-            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .no-transition {
-            transition: none !important;
-        }
-        .bg-red-200 { background-color: #fecaca !important; }
-        .bg-slate-100 { background-color: #f1f5f9 !important; }
-
-        /* 터치 시 텍스트 선택 및 스크롤 방지 */
-        body {
-            overscroll-behavior: none;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>프랙션 대시</title>
+<style>
+:root{color-scheme:dark;--glass:rgba(8,18,38,.72);--line:rgba(255,255,255,.16);--accent:#67e8f9;--good:#86efac;--bad:#fb7185}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f;font-family:system-ui,-apple-system,"Pretendard","Noto Sans KR",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}button{font:inherit}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}.ui{position:fixed;inset:0;pointer-events:none;color:white}
+#hud{position:absolute;left:12px;right:12px;top:max(10px,env(safe-area-inset-top));display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.pill{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);border-radius:16px;padding:9px 12px;box-shadow:0 8px 30px rgba(0,0,0,.22)}
+#hearts{font-size:20px;letter-spacing:2px;min-width:92px}.score{font-weight:900;font-size:22px;line-height:1}.sub{font-size:11px;opacity:.72;margin-top:5px;font-weight:700}.combo{font-size:14px;font-weight:900;text-align:right;min-width:96px}.combo.hot{color:#fde047;transform:scale(1.05)}
+#question{position:absolute;left:50%;top:max(82px,calc(env(safe-area-inset-top) + 74px));transform:translateX(-50%);min-width:min(520px,92vw);text-align:center;opacity:0;transition:.2s;pointer-events:none}.qbox{display:inline-flex;align-items:center;gap:10px;background:rgba(5,15,32,.82);border:1px solid rgba(103,232,249,.35);border-radius:18px;padding:10px 16px;box-shadow:0 10px 28px rgba(0,0,0,.26)}.qtitle{font-size:11px;font-weight:900;color:#a5f3fc;letter-spacing:.08em}.qtext{font-size:20px;font-weight:1000}.qhelp{font-size:11px;opacity:.7;margin-top:4px}
+#feedback{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%) scale(.9);text-align:center;opacity:0;transition:.16s}.feedback-card{min-width:min(440px,86vw);background:rgba(4,15,31,.9);border:2px solid rgba(255,255,255,.18);border-radius:24px;padding:18px 22px;box-shadow:0 18px 55px rgba(0,0,0,.38)}#feedback.good .feedback-card{border-color:#4ade80}#feedback.bad .feedback-card{border-color:#fb7185}.fb-big{font-size:30px;font-weight:1000}.fb-small{font-size:15px;font-weight:800;margin-top:4px;color:#dbeafe}
+#controls{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:8px;opacity:.72}.ctrl{font-size:11px;font-weight:800;background:rgba(2,8,23,.6);border:1px solid rgba(255,255,255,.15);padding:7px 10px;border-radius:999px}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 20%,rgba(8,145,178,.22),rgba(3,7,18,.94));color:white;z-index:20}.hidden{display:none!important}.panel{width:min(620px,96vw);max-height:94vh;overflow:auto;background:rgba(7,18,38,.92);border:1px solid rgba(255,255,255,.16);border-radius:30px;padding:26px;box-shadow:0 30px 90px rgba(0,0,0,.45);text-align:center}.eyebrow{font-size:12px;font-weight:1000;letter-spacing:.18em;color:#67e8f9}.title{font-size:clamp(42px,9vw,72px);font-weight:1000;line-height:.95;margin:8px 0 6px;letter-spacing:-.05em}.tag{font-size:15px;color:#cbd5e1;font-weight:750}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0}.how>div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px 8px}.how b{display:block;font-size:24px;margin-bottom:5px}.how span{font-size:12px;color:#cbd5e1;font-weight:700}.mathrule{background:linear-gradient(135deg,rgba(8,145,178,.18),rgba(99,102,241,.16));border:1px solid rgba(103,232,249,.22);border-radius:18px;padding:14px;margin-bottom:18px;font-weight:800;font-size:14px;line-height:1.6}.primary{pointer-events:auto;border:0;border-radius:18px;padding:15px 24px;width:100%;font-weight:1000;font-size:20px;color:#082f49;background:linear-gradient(135deg,#67e8f9,#86efac);box-shadow:0 10px 28px rgba(34,211,238,.24);cursor:pointer}.primary:active{transform:translateY(2px)}.secondary{pointer-events:auto;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 18px;width:100%;font-weight:900;font-size:16px;color:white;background:rgba(255,255,255,.06);margin-top:9px;cursor:pointer}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.stats>div{background:rgba(255,255,255,.06);border-radius:18px;padding:14px 8px}.stats b{font-size:26px;display:block}.stats span{font-size:11px;opacity:.7;font-weight:800}.note{font-size:11px;color:#94a3b8;margin-top:12px;line-height:1.5}
+@media(max-width:520px){.panel{padding:22px 16px}.how{gap:7px}.how>div{padding:11px 4px}.pill{padding:8px 9px}.score{font-size:19px}#question{top:76px}.qtext{font-size:17px}#controls{display:none}}
+</style>
 </head>
-<body class="min-h-screen bg-slate-100 flex flex-col items-center justify-center font-sans overflow-hidden transition-colors duration-300" id="app-container">
-
-    <!-- 파티클 컨테이너 -->
-    <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden z-50"></div>
-
-    <!-- 1. 시작 화면 -->
-    <div id="start-screen" class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center space-y-8 z-10 block">
-        <div>
-            <h1 class="text-4xl font-extrabold text-blue-600 mb-2">분수 소수 대결!</h1>
-            <p class="text-slate-500 font-medium">누가 더 클까요?</p>
-        </div>
-
-        <div class="bg-blue-50 p-6 rounded-2xl space-y-4 text-left">
-            <h2 class="font-bold text-gray-700 mb-2 text-center">게임 방법</h2>
-            <div class="flex items-center gap-3">
-                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">←</div>
-                <span class="text-gray-600 font-medium">왼쪽이 크면 <b class="text-blue-500">왼쪽으로 스와이프</b></span>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">→</div>
-                <span class="text-gray-600 font-medium">오른쪽이 크면 <b class="text-blue-500">오른쪽으로 스와이프</b></span>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="bg-white shadow p-2 rounded text-xl w-12 text-center font-bold">↓</div>
-                <span class="text-gray-600 font-medium">둘이 같으면 <b class="text-green-500">아래로 스와이프</b></span>
-            </div>
-        </div>
-
-        <button id="btn-start" class="w-full bg-blue-500 hover:bg-blue-600 active:scale-95 transition text-white font-bold text-2xl py-4 rounded-2xl shadow-lg">
-            게임 시작
-        </button>
+<body>
+<canvas id="game"></canvas>
+<div class="ui" id="ui">
+  <div id="hud" class="hidden">
+    <div class="pill"><div id="hearts">❤️❤️❤️</div><div class="sub" id="level">LEVEL 1 · 워밍업</div></div>
+    <div class="pill" style="text-align:center"><div class="score" id="score">0</div><div class="sub">SCORE · <span id="distance">0m</span></div></div>
+    <div class="pill combo" id="combo"><div id="comboText">COMBO 0</div><div class="sub" id="bestText">BEST 0</div></div>
+  </div>
+  <div id="question"><div class="qbox"><div><div class="qtitle">더 큰 수의 레인으로!</div><div class="qtext" id="questionText">3/4  VS  0.68</div><div class="qhelp">같으면 가운데 = 게이트</div></div></div></div>
+  <div id="feedback"><div class="feedback-card"><div class="fb-big" id="feedbackBig">PERFECT!</div><div class="fb-small" id="feedbackSmall">3/4 = 0.75 &gt; 0.68</div></div></div>
+  <div id="controls" class="hidden"><div class="ctrl">← → / A D : 레인</div><div class="ctrl">↑ / W : 점프</div><div class="ctrl">↓ / S : 슬라이드</div></div>
+</div>
+<div id="start" class="overlay">
+  <div class="panel">
+    <div class="eyebrow">KIDSCade · MATH RUNNER</div>
+    <div class="title">프랙션<br>대시</div>
+    <div class="tag">달리고, 피하고, 더 큰 수를 고르자!</div>
+    <div class="how">
+      <div><b>↔️</b><span>좌우 스와이프<br>레인 변경</span></div>
+      <div><b>⬆️</b><span>위로 스와이프<br>장애물 점프</span></div>
+      <div><b>⬇️</b><span>아래 스와이프<br>낮게 슬라이드</span></div>
     </div>
-
-    <!-- 2. 플레이 화면 -->
-    <div id="playing-screen" class="hidden flex-col w-full max-w-md flex-1 relative py-4 w-full h-full px-4">
-        <!-- 상단 HUD -->
-        <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-4 z-10 shrink-0">
-            <div id="hearts-container" class="flex gap-2 text-2xl">
-                <!-- 하트 아이콘들이 여기에 렌더링됨 -->
-            </div>
-            <div class="text-center flex flex-col items-center">
-                <div id="rank-badge" class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300">
-                    <span id="rank-icon">🪨</span> <span id="rank-name">아이언</span>
-                </div>
-                <div id="score-display" class="text-2xl font-black text-gray-700 leading-none">0</div>
-            </div>
-            <div class="text-right w-[80px]">
-                <div id="combo-display" class="text-gray-400 font-bold text-xl">0 COMBO</div>
-            </div>
-        </div>
-
-        <!-- 카드 영역 -->
-        <div class="flex-1 relative flex items-center justify-center min-h-[300px]">
-            <!-- 다음 카드 더미 (시각적 효과) -->
-            <div class="absolute w-[320px] h-64 bg-white rounded-3xl shadow-sm border border-gray-100 transform scale-95 translate-y-4 opacity-50 z-0"></div>
-            
-            <!-- 실제 조작하는 카드 -->
-            <div id="game-card" class="absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-4 card-transition bg-white border-white z-20">
-                <!-- 힌트 배경 -->
-                <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                    <div id="swipe-hint" class="text-9xl font-black"></div>
-                </div>
-
-                <div class="flex-1 flex justify-center items-center text-gray-800 p-2" id="left-value"></div>
-                
-                <div class="w-2 h-full bg-slate-100 relative shrink-0">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 text-sm font-bold text-gray-400 shadow-sm border">VS</div>
-                </div>
-
-                <div class="flex-1 flex justify-center items-center text-gray-800 p-2" id="right-value"></div>
-            </div>
-        </div>
-
-        <!-- 하단 가이드 -->
-        <div class="text-center mt-4 text-gray-400 font-medium z-10 bg-white/50 py-2 rounded-xl backdrop-blur-sm shrink-0 shadow-sm">
-            ← 왼쪽이 큼 <span class="mx-2">|</span> 
-            같음 ↓ <span class="mx-2">|</span> 
-            오른쪽이 큼 →
-        </div>
+    <div class="mathrule">게이트가 나오면 <b>왼쪽 수 · = · 오른쪽 수</b> 중 정답 레인으로 들어가세요.<br>예: <b>3/4 vs 0.68 → 왼쪽</b> · <b>1/2 vs 0.5 → 가운데</b></div>
+    <button class="primary" id="startBtn">달리기 시작</button>
+    <div class="note">수학 게이트를 틀려도 바로 끝나지 않습니다. 점수와 콤보만 줄고 잠깐 느려져요. 장애물에 세 번 부딪히면 달리기가 끝납니다.</div>
+  </div>
+</div>
+<div id="gameover" class="overlay hidden">
+  <div class="panel">
+    <div class="eyebrow">RUN COMPLETE</div>
+    <div class="title" style="font-size:clamp(38px,8vw,62px)">기록 완료!</div>
+    <div class="tag" id="resultLine">숫자 도시를 질주했어요.</div>
+    <div class="stats">
+      <div><b id="finalScore">0</b><span>점수</span></div>
+      <div><b id="finalAccuracy">0%</b><span>게이트 정확도</span></div>
+      <div><b id="finalCombo">0</b><span>최고 콤보</span></div>
     </div>
-
-    <!-- 3. 게임 오버 화면 -->
-    <div id="gameover-screen" class="hidden bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center space-y-6 z-10">
-        <div>
-            <h1 class="text-4xl font-black text-red-500 mb-2">게임 오버!</h1>
-            <p class="text-slate-500 font-medium">아쉽게도 하트를 모두 잃었어요.</p>
-        </div>
-
-        <div class="bg-slate-50 rounded-2xl p-6 space-y-4 border border-slate-100 relative overflow-hidden">
-            <div class="flex flex-col items-center justify-center py-2">
-                <span id="final-rank-icon" class="text-6xl mb-2 drop-shadow-sm animate-bounce">🪨</span>
-                <span id="final-rank-name" class="text-2xl font-black">아이언</span>
-                <span class="text-xs text-gray-400 font-bold mt-1">최종 티어</span>
-            </div>
-            <div class="w-full h-px bg-slate-200 my-2"></div>
-            <div class="flex justify-around items-center">
-                <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">최고 점수</p>
-                    <p id="high-score-display" class="text-xl font-black text-blue-500">0</p>
-                </div>
-                <div class="w-px h-12 bg-slate-200"></div>
-                <div>
-                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">내 점수</p>
-                    <p id="final-score-display" class="text-3xl font-black text-gray-800">0</p>
-                </div>
-            </div>
-        </div>
-
-        <button id="btn-restart" class="w-full bg-green-500 hover:bg-green-600 active:scale-95 transition text-white font-bold text-2xl py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
-            <span>🔄</span> 다시하기
-        </button>
-    </div>
-
-    <script>
-        // ==========================================
-        // 1. Audio Engine (Web Audio API 활용)
-        // ==========================================
-        class AudioEngine {
-            constructor() {
-                this.ctx = null;
-                this.isPlayingBgm = false;
-                this.nextNoteTime = 0;
-                this.currentNote = 0;
-                this.tempo = 140;
-                this.notes = [
-                    392.00, 329.63, 261.63, 329.63,
-                    392.00, 392.00, 392.00, 0,
-                    329.63, 329.63, 329.63, 0,
-                    392.00, 493.88, 493.88, 0
-                ]; 
-                this.timerID = null;
-            }
-
-            init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            }
-
-            playCorrect() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.3);
-            }
-
-            playWrong() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.3);
-            }
-
-            scheduler() {
-                while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
-                    if (this.notes[this.currentNote] !== 0) {
-                        this.playNote(this.notes[this.currentNote], this.nextNoteTime);
-                    }
-                    this.nextNoteTime += 60.0 / this.tempo / 2;
-                    this.currentNote = (this.currentNote + 1) % this.notes.length;
-                }
-                this.timerID = setTimeout(() => this.scheduler(), 25);
-            }
-
-            playNote(freq, time) {
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.frequency.value = freq;
-                osc.type = 'triangle';
-                gain.gain.setValueAtTime(0.02, time);
-                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
-                osc.start(time);
-                osc.stop(time + 0.2);
-            }
-
-            startBGM() {
-                if (this.isPlayingBgm) return;
-                this.init();
-                this.isPlayingBgm = true;
-                this.nextNoteTime = this.ctx.currentTime + 0.1;
-                this.scheduler();
-            }
-
-            stopBGM() {
-                this.isPlayingBgm = false;
-                clearTimeout(this.timerID);
-            }
-        }
-
-        const audioEngine = new AudioEngine();
-
-        // ==========================================
-        // 2. Game Logic & State Management
-        // ==========================================
-        const denominators = [2, 4, 5, 8, 10, 20, 25, 50, 100];
-        let score = 0;
-        let highScore = 0;
-        let combo = 0;
-        let lives = 3;
-        let currentQuestion = null;
-        let cardStatus = 'default';
-
-        function generateQuestion() {
-            const chance = Math.random();
-            let leftStr, rightStr, leftVal, rightVal, answer;
-
-            const generateFraction = () => {
-                const den = denominators[Math.floor(Math.random() * denominators.length)];
-                const num = Math.floor(Math.random() * (den - 1)) + 1;
-                return { str: `${num}/${den}`, val: num / den };
-            };
-
-            const generateDecimal = () => {
-                const num = Math.floor(Math.random() * 99) + 1;
-                return { str: (num / 100).toString(), val: num / 100 };
-            };
-
-            if (chance < 0.2) {
-                const frac = generateFraction();
-                leftStr = frac.str; leftVal = frac.val;
-                rightStr = frac.val.toString(); rightVal = frac.val;
-                answer = 'down';
-            } else {
-                const leftIsFraction = Math.random() > 0.5;
-                if (leftIsFraction) {
-                    const frac = generateFraction();
-                    const dec = generateDecimal();
-                    leftStr = frac.str; leftVal = frac.val;
-                    rightStr = dec.str; rightVal = dec.val;
-                } else {
-                    const dec = generateDecimal();
-                    const frac = generateFraction();
-                    leftStr = dec.str; leftVal = dec.val;
-                    rightStr = frac.str; rightVal = frac.val;
-                }
-                if (leftVal === rightVal) answer = 'down';
-                else if (leftVal > rightVal) answer = 'left';
-                else answer = 'right';
-            }
-            return { leftStr, rightStr, answer };
-        }
-
-        function getRank(score) {
-            if (score < 100) return { name: '아이언', color: 'text-gray-500', bg: 'bg-gray-100', icon: '🪨' };
-            if (score < 300) return { name: '브론즈', color: 'text-amber-700', bg: 'bg-amber-100', icon: '🥉' };
-            if (score < 500) return { name: '실버', color: 'text-slate-500', bg: 'bg-slate-200', icon: '🥈' };
-            if (score < 1000) return { name: '골드', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '🥇' };
-            if (score < 2000) return { name: '플래티넘', color: 'text-teal-600', bg: 'bg-teal-100', icon: '✨' };
-            if (score < 3000) return { name: '다이아몬드', color: 'text-blue-500', bg: 'bg-blue-100', icon: '💎' };
-            if (score < 4000) return { name: '마스터', color: 'text-purple-500', bg: 'bg-purple-100', icon: '🔮' };
-            if (score < 5000) return { name: '그랜드마스터', color: 'text-red-500', bg: 'bg-red-100', icon: '🔥' };
-            return { name: '챌린저', color: 'text-yellow-700', bg: 'bg-yellow-200', icon: '👑' };
-        }
-
-        function formatMathHTML(text) {
-            if (text.includes('/')) {
-                const parts = text.split('/');
-                return `
-                    <div class="flex flex-col items-center justify-center font-bold text-4xl">
-                        <span>${parts[0]}</span>
-                        <hr class="w-10 border-t-4 border-gray-800 my-2 rounded-full" />
-                        <span>${parts[1]}</span>
-                    </div>
-                `;
-            }
-            return `<div class="font-bold text-4xl">${text}</div>`;
-        }
-
-        // ==========================================
-        // 3. UI Update Functions
-        // ==========================================
-        const els = {
-            appContainer: document.getElementById('app-container'),
-            startScreen: document.getElementById('start-screen'),
-            playingScreen: document.getElementById('playing-screen'),
-            gameoverScreen: document.getElementById('gameover-screen'),
-            heartsContainer: document.getElementById('hearts-container'),
-            scoreDisplay: document.getElementById('score-display'),
-            comboDisplay: document.getElementById('combo-display'),
-            rankBadge: document.getElementById('rank-badge'),
-            rankIcon: document.getElementById('rank-icon'),
-            rankName: document.getElementById('rank-name'),
-            gameCard: document.getElementById('game-card'),
-            leftValue: document.getElementById('left-value'),
-            rightValue: document.getElementById('right-value'),
-            swipeHint: document.getElementById('swipe-hint'),
-            confettiContainer: document.getElementById('confetti-container')
-        };
-
-        function switchScreen(screen) {
-            els.startScreen.style.display = 'none';
-            els.playingScreen.style.display = 'none';
-            els.gameoverScreen.style.display = 'none';
-            els.playingScreen.classList.remove('flex');
-
-            if (screen === 'start') els.startScreen.style.display = 'block';
-            if (screen === 'playing') {
-                els.playingScreen.style.display = 'flex';
-                els.playingScreen.classList.add('flex');
-            }
-            if (screen === 'gameover') els.gameoverScreen.style.display = 'block';
-        }
-
-        function updateHUD(justLostHeart = false) {
-            // 점수 및 콤보 업데이트
-            els.scoreDisplay.innerText = score;
-            if (combo > 1) {
-                els.comboDisplay.innerHTML = `<span class="text-orange-500 animate-bounce block">${combo} COMBO!</span>`;
-            } else {
-                els.comboDisplay.innerHTML = `0 COMBO`;
-            }
-
-            // 랭크 업데이트
-            const rank = getRank(score);
-            els.rankBadge.className = `text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full mb-1 flex items-center gap-1 transition-colors duration-300 ${rank.bg} ${rank.color}`;
-            els.rankIcon.innerText = rank.icon;
-            els.rankName.innerText = rank.name;
-
-            // 하트 업데이트
-            els.heartsContainer.innerHTML = '';
-            for (let i = 0; i < 3; i++) {
-                const isAlive = i < lives;
-                const justLost = justLostHeart && (i === lives);
-                
-                let heartHTML = '';
-                let classes = 'transition-all duration-300 inline-block origin-center ';
-
-                if (isAlive) {
-                    heartHTML = '❤️';
-                    classes += 'scale-100';
-                } else if (justLost) {
-                    heartHTML = '💔';
-                    classes += 'animate-shake scale-150 drop-shadow-md z-20';
-                } else {
-                    heartHTML = '🖤';
-                    classes += 'scale-75 opacity-40';
-                }
-
-                els.heartsContainer.innerHTML += `<span class="${classes}">${heartHTML}</span>`;
-            }
-        }
-
-        function showNextQuestion() {
-            currentQuestion = generateQuestion();
-            els.leftValue.innerHTML = formatMathHTML(currentQuestion.leftStr);
-            els.rightValue.innerHTML = formatMathHTML(currentQuestion.rightStr);
-            resetCard();
-        }
-
-        function resetCard() {
-            cardStatus = 'default';
-            els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row cursor-grab active:cursor-grabbing border-4 card-transition bg-white border-white z-20';
-            els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
-            els.swipeHint.innerText = '';
-        }
-
-        function createConfetti() {
-            els.confettiContainer.innerHTML = '';
-            const particleCount = Math.min(10 + combo * 5, 60);
-            const colors = ['#10B981', '#34D399', '#FCD34D', '#FBBF24', '#60A5FA'];
-            
-            for (let i = 0; i < particleCount; i++) {
-                const p = document.createElement('div');
-                const size = Math.random() * 10 + 5;
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                
-                p.className = 'absolute rounded-sm animate-confetti-fall';
-                p.style.left = `${Math.random() * 100}%`;
-                p.style.top = `${Math.random() * -20}%`;
-                p.style.width = `${size}px`;
-                p.style.height = `${size}px`;
-                p.style.backgroundColor = color;
-                p.style.setProperty('--sx', `${(Math.random() - 0.5) * 10}px`);
-                p.style.setProperty('--sy', `${Math.random() * 5 + 5}px`);
-                p.style.setProperty('--r', `${Math.random() * 360}deg`);
-                
-                els.confettiContainer.appendChild(p);
-            }
-
-            setTimeout(() => {
-                els.confettiContainer.innerHTML = '';
-            }, 1500);
-        }
-
-        // ==========================================
-        // 4. Game Flow Controls
-        // ==========================================
-        function startGame() {
-            audioEngine.init();
-            audioEngine.startBGM();
-            score = 0;
-            combo = 0;
-            lives = 3;
-            cardStatus = 'default';
-            els.appContainer.className = 'min-h-screen bg-slate-100 flex flex-col items-center justify-center font-sans overflow-hidden transition-colors duration-300';
-            
-            updateHUD();
-            showNextQuestion();
-            switchScreen('playing');
-        }
-
-        function handleAnswer(swipedDirection) {
-            if (cardStatus !== 'default') return;
-
-            const isCorrect = swipedDirection === currentQuestion.answer;
-
-            if (isCorrect) {
-                audioEngine.playCorrect();
-                cardStatus = 'correct';
-                score += 10 + (combo * 5);
-                combo++;
-                updateHUD();
-                createConfetti();
-
-                // 정답 연출
-                els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row border-4 card-transition bg-green-100 border-green-500 z-20';
-                
-                let flyX = swipedDirection === 'left' ? -500 : swipedDirection === 'right' ? 500 : 0;
-                let flyY = swipedDirection === 'down' ? 500 : 0;
-                els.gameCard.style.transform = `translate(${flyX}px, ${flyY}px) rotate(${flyX * 0.05}deg)`;
-
-                setTimeout(() => {
-                    showNextQuestion();
-                }, 300);
-
-            } else {
-                audioEngine.playWrong();
-                cardStatus = 'wrong';
-                combo = 0;
-                lives--;
-                
-                // 오답 연출 (배경 플래시 및 하트 깨짐)
-                els.appContainer.classList.add('bg-red-200');
-                els.appContainer.classList.remove('bg-slate-100');
-                updateHUD(true); // true = 방금 잃은 하트 애니메이션 실행
-
-                els.gameCard.className = 'absolute w-[320px] h-64 rounded-3xl shadow-2xl flex flex-row border-4 card-transition bg-red-100 border-red-500 animate-shake z-20';
-                els.gameCard.style.transform = `translate(0px, 0px) rotate(0deg)`;
-
-                setTimeout(() => {
-                    els.appContainer.classList.remove('bg-red-200');
-                    els.appContainer.classList.add('bg-slate-100');
-                    
-                    if (lives <= 0) {
-                        gameOver();
-                    } else {
-                        resetCard();
-                        updateHUD(); // 흔들리는 애니메이션 끝난 후 하트를 완전히 까맣게 변경
-                    }
-                }, 500);
-            }
-        }
-
-        function gameOver() {
-            audioEngine.stopBGM();
-            if (score > highScore) highScore = score;
-            
-            const finalRank = getRank(score);
-            document.getElementById('final-rank-icon').innerText = finalRank.icon;
-            const rankNameEl = document.getElementById('final-rank-name');
-            rankNameEl.innerText = finalRank.name;
-            rankNameEl.className = `text-2xl font-black ${finalRank.color}`;
-            
-            document.getElementById('final-score-display').innerText = score;
-            document.getElementById('high-score-display').innerText = highScore;
-
-            localStorage.setItem('swipeFractionRank', finalRank.name);
-            localStorage.setItem('swipeFractionScore', highScore);
-
-            switchScreen('gameover');
-        }
-
-        // ==========================================
-        // 5. Drag / Touch Event Listeners
-        // ==========================================
-        let isDragging = false;
-        let startPos = { x: 0, y: 0 };
-        let currentDrag = { x: 0, y: 0 };
-
-        function onDragStart(e) {
-            if (cardStatus !== 'default') return;
-            isDragging = true;
-            els.gameCard.classList.remove('card-transition');
-            els.gameCard.classList.add('no-transition');
-            
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            startPos = { x: clientX, y: clientY };
-        }
-
-        function onDragMove(e) {
-            if (!isDragging) return;
-            e.preventDefault(); // 스크롤 방지
-            
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            currentDrag.x = clientX - startPos.x;
-            currentDrag.y = clientY - startPos.y;
-
-            els.gameCard.style.transform = `translate(${currentDrag.x}px, ${currentDrag.y}px) rotate(${currentDrag.x * 0.05}deg)`;
-
-            // 힌트 텍스트 업데이트
-            if (currentDrag.x < -50) els.swipeHint.innerText = '←';
-            else if (currentDrag.x > 50) els.swipeHint.innerText = '→';
-            else if (currentDrag.y > 50) els.swipeHint.innerText = '↓';
-            else els.swipeHint.innerText = '';
-        }
-
-        function onDragEnd() {
-            if (!isDragging) return;
-            isDragging = false;
-            
-            els.gameCard.classList.remove('no-transition');
-            els.gameCard.classList.add('card-transition');
-
-            const threshold = 80;
-            if (Math.abs(currentDrag.x) > Math.abs(currentDrag.y)) {
-                if (currentDrag.x < -threshold) handleAnswer('left');
-                else if (currentDrag.x > threshold) handleAnswer('right');
-                else resetCard();
-            } else {
-                if (currentDrag.y > threshold) handleAnswer('down');
-                else resetCard();
-            }
-            
-            currentDrag = { x: 0, y: 0 };
-        }
-
-        // 마우스 이벤트
-        els.gameCard.addEventListener('mousedown', onDragStart);
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('mouseup', onDragEnd);
-
-        // 터치 이벤트
-        els.gameCard.addEventListener('touchstart', onDragStart, { passive: false });
-        document.addEventListener('touchmove', onDragMove, { passive: false });
-        document.addEventListener('touchend', onDragEnd);
-
-        // 버튼 이벤트
-        document.getElementById('btn-start').addEventListener('click', startGame);
-        document.getElementById('btn-restart').addEventListener('click', startGame);
-
-    </script>
+    <button class="primary" id="restartBtn">다시 달리기</button>
+    <button class="secondary" id="homeBtn">키즈케이드로 나가기</button>
+  </div>
+</div>
+<script>
+(()=>{'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');const $=id=>document.getElementById(id);
+const UI={hud:$('hud'),controls:$('controls'),question:$('question'),questionText:$('questionText'),feedback:$('feedback'),feedbackBig:$('feedbackBig'),feedbackSmall:$('feedbackSmall'),score:$('score'),distance:$('distance'),hearts:$('hearts'),level:$('level'),combo:$('combo'),comboText:$('comboText'),bestText:$('bestText'),start:$('start'),gameover:$('gameover')};
+const MAX_Z=110;let W=0,H=0,DPR=1,running=false,last=0,time=0,distance=0,score=0,lives=3,combo=0,bestCombo=0,correct=0,answered=0,speed=24,slowTimer=0,shake=0;
+let player={lane:1,xLane:1,jumpT:0,slideT:0,invuln:0};let obstacles=[],gate=null,nextGateAt=70,nextObstacleAt=20,particles=[];let highScore=Number(localStorage.getItem('swipeFractionScore')||0);let audio=null;
+function initAudio(){if(audio)return;audio=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}
+function tone(freq,dur=.12,type='sine',vol=.05,slide=1){if(!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*slide),audio.currentTime+dur);g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur)}
+function sfx(kind){if(kind==='good'){tone(650,.09,'sine',.045,1.7);setTimeout(()=>tone(980,.12,'sine',.04,1.25),55)}else if(kind==='bad'){tone(190,.22,'sawtooth',.05,.55)}else if(kind==='hit'){tone(110,.25,'square',.055,.5)}else if(kind==='move'){tone(310,.045,'triangle',.018,1.08)}else if(kind==='jump'){tone(360,.09,'sine',.025,1.5)}else if(kind==='slide'){tone(240,.08,'triangle',.02,.7)}}
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0)}addEventListener('resize',resize);resize();
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function lerp(a,b,t){return a+(b-a)*t}function rand(a,b){return a+Math.random()*(b-a)}
+function difficulty(){return distance<650?1:distance<1500?2:3}function levelName(){const d=difficulty();return d===1?'LEVEL 1 · 워밍업':d===2?'LEVEL 2 · 스피드업':'LEVEL 3 · 초근접 비교'}
+function makeQuestion(){const lv=difficulty(),dens=lv===1?[2,4,5,10]:lv===2?[4,5,8,10,20,25]:[8,10,20,25,40,50,100],equalChance=lv===1?.16:.13;let den=dens[(Math.random()*dens.length)|0],num=1+((Math.random()*(den-1))|0),fVal=num/den,dVal,dStr;if(Math.random()<equalChance){dVal=fVal;dStr=Number(fVal.toFixed(3)).toString()}else{let tries=0;do{dVal=lv===1?(1+((Math.random()*9)|0))/10:(1+((Math.random()*98)|0))/100;tries++}while((Math.abs(dVal-fVal)<(lv===1?.09:lv===2?.035:.009)||dVal===fVal)&&tries<40);dStr=Number(dVal.toFixed(2)).toString()}let left={str:num+'/'+den,val:fVal},right={str:dStr,val:dVal};if(Math.random()<.5)[left,right]=[right,left];let answer=left.val===right.val?1:(left.val>right.val?0:2);const symbol=left.val===right.val?'=':(left.val>right.val?'>':'<');return{left,right,answer,explain:left.str+' = '+left.val.toFixed(2)+'  '+symbol+'  '+right.str+' = '+right.val.toFixed(2)}}
+function reset(){time=0;distance=0;score=0;lives=3;combo=0;bestCombo=0;correct=0;answered=0;speed=24;slowTimer=0;shake=0;player={lane:1,xLane:1,jumpT:0,slideT:0,invuln:0};obstacles=[];gate=null;particles=[];nextGateAt=90;nextObstacleAt=18;hideFeedback();UI.question.style.opacity=0;updateHUD()}
+function updateHUD(){UI.score.textContent=Math.max(0,Math.round(score));UI.distance.textContent=Math.round(distance)+'m';UI.hearts.textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);UI.level.textContent=levelName();UI.comboText.textContent='COMBO '+combo;UI.bestText.textContent='BEST '+bestCombo;UI.combo.classList.toggle('hot',combo>=4)}
+function showFeedback(ok,text){UI.feedback.className=ok?'good':'bad';UI.feedbackBig.textContent=ok?(combo>=5?'GREAT COMBO!':'PERFECT!'):'아깝다!';UI.feedbackSmall.textContent=text;UI.feedback.style.opacity=1;UI.feedback.style.transform='translate(-50%,-50%) scale(1)';setTimeout(hideFeedback,850)}function hideFeedback(){UI.feedback.style.opacity=0;UI.feedback.style.transform='translate(-50%,-50%) scale(.9)'}
+function spawnGate(){gate={z:MAX_Z,q:makeQuestion(),resolved:false};UI.questionText.textContent=gate.q.left.str+'  VS  '+gate.q.right.str;UI.question.style.opacity=1;obstacles=obstacles.filter(o=>o.z<34);nextGateAt=distance+rand(235,285)}
+function spawnObstacle(){if(gate&&gate.z<92)return;const lane=(Math.random()*3)|0,roll=Math.random(),type=roll<.42?'crate':roll<.74?'barrier':'overhead';obstacles.push({lane,z:MAX_Z,type,hit:false});nextObstacleAt=distance+rand(difficulty()===1?30:23,difficulty()===3?39:46)}
+function changeLane(dir){if(!running)return;const n=clamp(player.lane+dir,0,2);if(n!==player.lane){player.lane=n;sfx('move')}}function jump(){if(!running||player.jumpT>0||player.slideT>0)return;player.jumpT=.72;sfx('jump')}function slide(){if(!running||player.slideT>0||player.jumpT>0)return;player.slideT=.58;sfx('slide')}
+function key(e){if(!running)return;const k=e.key.toLowerCase();if(['arrowleft','a'].includes(k)){e.preventDefault();changeLane(-1)}if(['arrowright','d'].includes(k)){e.preventDefault();changeLane(1)}if(['arrowup','w',' '].includes(k)){e.preventDefault();jump()}if(['arrowdown','s'].includes(k)){e.preventDefault();slide()}}addEventListener('keydown',key,{passive:false});
+let pointer=null;canvas.addEventListener('pointerdown',e=>{if(!running)return;pointer={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId)});canvas.addEventListener('pointerup',e=>{if(!running||!pointer)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y,ax=Math.abs(dx),ay=Math.abs(dy);pointer=null;if(Math.max(ax,ay)<24)return;if(ax>ay)changeLane(dx<0?-1:1);else dy<0?jump():slide()});
+function hitObstacle(o){if(o.hit||player.invuln>0)return;const jumping=player.jumpT>0&&player.jumpT<.63,sliding=player.slideT>0;let safe=false;if(o.type==='barrier')safe=jumping;if(o.type==='overhead')safe=sliding;if(safe)return;o.hit=true;lives--;combo=0;player.invuln=1.35;slowTimer=1;shake=12;score=Math.max(0,score-40);sfx('hit');burst(player.lane,8,'#fb7185');updateHUD();if(lives<=0)setTimeout(endGame,260)}
+function resolveGate(){if(!gate||gate.resolved)return;gate.resolved=true;answered++;const ok=player.lane===gate.q.answer;if(ok){correct++;combo++;bestCombo=Math.max(bestCombo,combo);const mult=1+Math.min(3,Math.floor((combo-1)/4));score+=100*mult;sfx('good');burst(player.lane,18,'#86efac');showFeedback(true,gate.q.explain)}else{combo=0;score=Math.max(0,score-50);slowTimer=1.2;shake=7;sfx('bad');showFeedback(false,gate.q.explain)}UI.question.style.opacity=0;updateHUD()}
+function burst(lane,count,color){for(let i=0;i<count;i++)particles.push({lane,z:6,x:rand(-.2,.2),y:rand(0,.5),vx:rand(-1.2,1.2),vy:rand(1,3),life:rand(.45,.9),color})}
+function startGame(){initAudio();UI.start.classList.add('hidden');UI.gameover.classList.add('hidden');UI.hud.classList.remove('hidden');UI.controls.classList.remove('hidden');reset();running=true;last=performance.now();requestAnimationFrame(loop)}
+function endGame(){if(!running)return;running=false;UI.hud.classList.add('hidden');UI.controls.classList.add('hidden');UI.question.style.opacity=0;highScore=Math.max(highScore,Math.round(score));localStorage.setItem('swipeFractionScore',highScore);const rank=highScore<800?'브론즈':highScore<1800?'실버':highScore<3200?'골드':highScore<5000?'플래티넘':'다이아몬드';localStorage.setItem('swipeFractionRank',rank);$('finalScore').textContent=Math.round(score);$('finalAccuracy').textContent=(answered?Math.round(correct/answered*100):0)+'%';$('finalCombo').textContent=bestCombo;$('resultLine').textContent=Math.round(distance)+'m · 정답 '+correct+'/'+answered+' · 최고 기록 '+highScore;UI.gameover.classList.remove('hidden')}
+$('startBtn').addEventListener('click',startGame);$('restartBtn').addEventListener('click',startGame);$('homeBtn').addEventListener('click',()=>{try{if(window.parent&&window.parent!==window){window.parent.postMessage({type:'kidscade:exit-game'},'*');return}}catch(e){}location.href='../../index.html'});document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)last=performance.now()});
+function loop(now){if(!running)return;let dt=Math.min(.034,(now-last)/1000||0);last=now;update(dt);draw();requestAnimationFrame(loop)}
+function update(dt){time+=dt;const lv=difficulty(),targetSpeed=(lv===1?24:lv===2?28:32)+Math.min(5,time/45);if(slowTimer>0){slowTimer-=dt;speed=lerp(speed,targetSpeed*.62,.09)}else speed=lerp(speed,targetSpeed,.03);distance+=speed*dt;score+=speed*dt*.18;if(player.invuln>0)player.invuln-=dt;if(player.jumpT>0)player.jumpT=Math.max(0,player.jumpT-dt);if(player.slideT>0)player.slideT=Math.max(0,player.slideT-dt);player.xLane=lerp(player.xLane,player.lane,Math.min(1,dt*11));if(shake>0)shake=Math.max(0,shake-dt*34);if(distance>=nextGateAt&&!gate)spawnGate();if(distance>=nextObstacleAt)spawnObstacle();obstacles.forEach(o=>{o.z-=speed*dt;if(!o.hit&&o.z<7&&o.z>2&&o.lane===player.lane)hitObstacle(o)});obstacles=obstacles.filter(o=>o.z>-8);if(gate){gate.z-=speed*dt;if(!gate.resolved&&gate.z<6)resolveGate();if(gate.z<-8)gate=null}particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy-=5*dt;p.z-=speed*dt*.3});particles=particles.filter(p=>p.life>0);updateHUD()}
+function roadX(lane,z){const t=1-clamp(z/MAX_Z,0,1),halfNear=Math.min(W*.46,390),halfFar=24,half=lerp(halfFar,halfNear,Math.pow(t,1.35));return W/2+(lane-1)*half*.66}function project(z){const t=1-clamp(z/MAX_Z,0,1),horizon=H*.20,near=H*.88,y=lerp(horizon,near,Math.pow(t,1.62)),s=.16+.92*Math.pow(t,1.9);return{t,y,s}}
+function roundRect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+function draw(){ctx.save();if(shake>0)ctx.translate(rand(-shake,shake),rand(-shake*.45,shake*.45));drawSky();drawRoad();const all=[];for(const o of obstacles)all.push({kind:'o',z:o.z,obj:o});if(gate)all.push({kind:'g',z:gate.z,obj:gate});all.sort((a,b)=>b.z-a.z);for(const x of all)x.kind==='o'?drawObstacle(x.obj):drawGate(x.obj);drawParticles();drawPlayer();ctx.restore()}
+function drawSky(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#071426');g.addColorStop(.45,'#0e7490');g.addColorStop(1,'#7dd3fc');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);const horizon=H*.20;ctx.fillStyle='rgba(255,255,255,.08)';for(let i=0;i<18;i++){const bw=26+(i%4)*12,bh=35+(i%6)*18,x=(i*83+37)%W;ctx.fillRect(x,horizon-bh,bw,bh);ctx.fillStyle='rgba(253,224,71,.28)';for(let yy=horizon-bh+10;yy<horizon-8;yy+=14)for(let xx=x+7;xx<x+bw-5;xx+=12)ctx.fillRect(xx,yy,4,5);ctx.fillStyle='rgba(255,255,255,.08)'}ctx.fillStyle='rgba(255,255,255,.45)';for(let i=0;i<10;i++){const x=(i*173+time*8)%(W+120)-60,y=40+(i%4)*31;ctx.beginPath();ctx.arc(x,y,2+(i%3),0,Math.PI*2);ctx.fill()}}
+function drawRoad(){const hz=H*.20,near=H*.95,half=Math.min(W*.48,410);ctx.fillStyle='#0f172a';ctx.beginPath();ctx.moveTo(W/2-28,hz);ctx.lineTo(W/2+28,hz);ctx.lineTo(W/2+half,near);ctx.lineTo(W/2-half,near);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(103,232,249,.25)';ctx.lineWidth=2;for(const l of[-.5,.5]){ctx.beginPath();for(let z=MAX_Z;z>=0;z-=4){const p=project(z),x=roadX(l+1,z);if(z===MAX_Z)ctx.moveTo(x,p.y);else ctx.lineTo(x,p.y)}ctx.stroke()}for(let z=((distance*1.7)%18);z<MAX_Z;z+=18){const p=project(z);ctx.strokeStyle='rgba(255,255,255,'+(.08+p.t*.15)+')';ctx.lineWidth=1+p.s*3;ctx.beginPath();ctx.moveTo(roadX(.12,z),p.y);ctx.lineTo(roadX(1.88,z),p.y);ctx.stroke()}ctx.fillStyle='rgba(34,211,238,.15)';ctx.beginPath();ctx.moveTo(W/2-34,hz);ctx.lineTo(W/2-48,hz);ctx.lineTo(W/2-half-26,near);ctx.lineTo(W/2-half,near);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(W/2+34,hz);ctx.lineTo(W/2+48,hz);ctx.lineTo(W/2+half+26,near);ctx.lineTo(W/2+half,near);ctx.closePath();ctx.fill()}
+function drawObstacle(o){if(o.z>MAX_Z||o.z<-5)return;const p=project(o.z),x=roadX(o.lane,o.z),s=p.s;if(o.hit)ctx.globalAlpha=.28;if(o.type==='crate'){roundRect(x-34*s,p.y-68*s,68*s,68*s,8*s,'#b45309','#fde68a');ctx.strokeStyle='#fef3c7';ctx.lineWidth=4*s;ctx.beginPath();ctx.moveTo(x-24*s,p.y-58*s);ctx.lineTo(x+24*s,p.y-10*s);ctx.moveTo(x+24*s,p.y-58*s);ctx.lineTo(x-24*s,p.y-10*s);ctx.stroke()}else if(o.type==='barrier'){ctx.fillStyle='#f97316';ctx.beginPath();ctx.moveTo(x,p.y-70*s);ctx.lineTo(x-42*s,p.y);ctx.lineTo(x+42*s,p.y);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(x-24*s,p.y-34*s,48*s,9*s)}else{ctx.fillStyle='#64748b';ctx.fillRect(x-48*s,p.y-92*s,9*s,92*s);ctx.fillRect(x+39*s,p.y-92*s,9*s,92*s);roundRect(x-54*s,p.y-112*s,108*s,30*s,6*s,'#f43f5e','#fecdd3');ctx.fillStyle='white';ctx.font='900 '+16*s+'px system-ui';ctx.textAlign='center';ctx.fillText('DUCK',x,p.y-91*s)}ctx.globalAlpha=1}
+function drawGate(g){if(g.z>MAX_Z||g.z<-8)return;const p=project(g.z),s=p.s,labels=[g.q.left.str,'=',g.q.right.str];for(let lane=0;lane<3;lane++){const x=roadX(lane,g.z),w=90*s,h=118*s;ctx.save();if(g.resolved&&lane!==player.lane)ctx.globalAlpha=.3;const grad=ctx.createLinearGradient(x-w/2,p.y-h,x+w/2,p.y);grad.addColorStop(0,lane===1?'rgba(250,204,21,.7)':'rgba(34,211,238,.75)');grad.addColorStop(1,lane===1?'rgba(245,158,11,.55)':'rgba(99,102,241,.7)');ctx.strokeStyle=grad;ctx.lineWidth=Math.max(3,8*s);ctx.beginPath();ctx.roundRect(x-w/2,p.y-h,w,h,16*s);ctx.stroke();ctx.fillStyle='rgba(3,7,18,.82)';ctx.beginPath();ctx.roundRect(x-w*.46,p.y-h*.82,w*.92,h*.48,11*s);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.24)';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='1000 '+Math.max(13,31*s)+'px system-ui';ctx.fillText(labels[lane],x,p.y-h*.58);if(lane===1){ctx.font='900 '+Math.max(8,12*s)+'px system-ui';ctx.fillStyle='#fde68a';ctx.fillText('SAME',x,p.y-h*.24)}ctx.restore()}}
+function drawPlayer(){const ground=H*.86,x=roadX(player.xLane,0);let jy=0;if(player.jumpT>0){const progress=1-player.jumpT/.72;jy=Math.sin(progress*Math.PI)*92}const slide=player.slideT>0,blink=player.invuln>0&&Math.floor(player.invuln*12)%2===0;if(blink)ctx.globalAlpha=.38;ctx.save();ctx.translate(x,ground-jy);if(slide){ctx.scale(1.12,.62);ctx.rotate(-.08)}const run=Math.sin(time*15)*10;ctx.strokeStyle='#0f172a';ctx.lineWidth=10;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-8,-38);ctx.lineTo(-18+run*.55,2);ctx.moveTo(8,-38);ctx.lineTo(18-run*.55,2);ctx.stroke();ctx.strokeStyle='#fde68a';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-18,-56);ctx.lineTo(-28-run*.35,-26);ctx.moveTo(18,-56);ctx.lineTo(28+run*.35,-26);ctx.stroke();roundRect(-24,-88,48,52,14,'#22d3ee','#cffafe');ctx.fillStyle='#f5cfa0';ctx.beginPath();ctx.arc(0,-108,23,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1e293b';ctx.beginPath();ctx.arc(0,-114,23,Math.PI,Math.PI*2);ctx.fill();ctx.fillStyle='white';ctx.beginPath();ctx.arc(-8,-108,3,0,Math.PI*2);ctx.arc(8,-108,3,0,Math.PI*2);ctx.fill();ctx.restore();ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(x,ground+5,34,9,0,0,Math.PI*2);ctx.fill()}
+function drawParticles(){for(const p of particles){const pr=project(clamp(p.z,0,MAX_Z)),x=roadX(p.lane+p.x,p.z),y=pr.y-p.y*32;ctx.globalAlpha=clamp(p.life*1.5,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(x,y,5+pr.s*5,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}draw();
+})();
+</script>
 </body>
 </html>
