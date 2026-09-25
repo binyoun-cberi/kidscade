@@ -1,9 +1,7 @@
 :root{
   --bg:#071426;
-  --panel:#0f2038;
   --text:#f5fbff;
   --muted:#a9bfd2;
-  --green:#2bc96b;
 }
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)}
@@ -21,43 +19,43 @@ button{font:inherit;color:inherit}
 .stage>div{text-align:center;min-width:0}
 .stage b{display:block;font-size:14px}
 .stage small{display:block;color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.icon-btn,.soft,.primary,.test-btn{border:0;cursor:pointer;font-weight:900}
+.icon-btn,.soft,.primary,.reset-floating{border:0;cursor:pointer;font-weight:900}
 .icon-btn{width:38px;height:38px;border-radius:12px;background:#203753;font-size:20px}
 
-.layout{min-height:0;flex:1;display:flex;flex-direction:column;gap:7px;padding:7px}
-.board{min-height:0;flex:1;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:#0b1a2e;border:1px solid rgba(255,255,255,.08)}
-.hud{height:42px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 12px;background:#10243d;border-bottom:1px solid rgba(255,255,255,.06)}
-.ink{display:grid;grid-template-columns:auto minmax(100px,220px) 42px;align-items:center;gap:8px;font-size:10px}
-.ink>span{color:var(--muted);font-weight:800}
-.ink>i{height:9px;border-radius:99px;background:#081628;overflow:hidden}
-.ink>i>b{display:block;height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#2476ff,#70c7ff)}
-.ink>strong,.vehicle-pill{font-size:10px}
-.vehicle-pill{font-weight:900;color:#e5f2fb}
-
-.canvas-wrap{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#18afe2}
-#game{display:block;max-width:100%;max-height:100%;touch-action:none;cursor:crosshair;background:#1db8ea}
+.layout{min-height:0;flex:1;padding:6px}
+.board{
+  height:100%;min-height:0;display:flex;border-radius:18px;overflow:hidden;
+  background:#19afe2;border:1px solid rgba(255,255,255,.08)
+}
+.canvas-wrap{
+  position:relative;flex:1;min-width:0;min-height:0;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;background:#19afe2
+}
+#game{
+  display:block;max-width:100%;max-height:100%;touch-action:none;cursor:crosshair;background:#1db8ea
+}
 
 .hint{
-  position:absolute;left:50%;top:13px;transform:translateX(-50%);
-  max-width:82%;padding:8px 13px;border-radius:999px;
-  background:rgba(8,24,42,.78);font-size:10px;font-weight:900;text-align:center;
-  pointer-events:none;transition:.2s
+  position:absolute;left:50%;top:12px;transform:translateX(-50%);
+  max-width:70%;padding:8px 13px;border-radius:999px;
+  background:rgba(8,24,42,.8);font-size:11px;font-weight:900;text-align:center;
+  pointer-events:none;transition:.2s;z-index:3
 }
 .hint.fade{opacity:.18}
 .toast{
   position:absolute;left:50%;top:54px;transform:translate(-50%,-10px);opacity:0;
   padding:8px 13px;border-radius:99px;background:rgba(8,24,42,.94);
-  font-size:10px;font-weight:900;pointer-events:none;transition:.18s
+  font-size:10px;font-weight:900;pointer-events:none;transition:.18s;z-index:4
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-.actions{
-  flex:none;display:grid;grid-template-columns:1.45fr 1fr;gap:7px;
-  padding:8px;border-radius:16px;background:#102039;border:1px solid rgba(255,255,255,.08)
+.reset-floating{
+  position:absolute;right:12px;top:12px;z-index:4;
+  min-height:42px;padding:0 14px;border-radius:13px;
+  background:rgba(16,32,57,.9);border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 4px 0 rgba(5,15,28,.35)
 }
-.actions button{min-height:48px;border-radius:13px}
-.test-btn{background:linear-gradient(180deg,#31d578,#19a952);box-shadow:0 4px 0 #087b35}
-.test-btn:disabled{opacity:.5;cursor:default;box-shadow:none}
+
 .soft{background:#213a5a}
 .primary{background:linear-gradient(180deg,#55aeff,#357bff)}
 
@@ -72,7 +70,7 @@ button{font:inherit;color:inherit}
 .result-card p{margin:0;color:#bdd0df;font-size:11px;line-height:1.55}
 .stars{margin:8px 0 12px;font-size:25px;letter-spacing:3px;color:#ffd34e}
 .result-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:7px}
-.result-actions button{min-height:42px;border-radius:11px}
+.result-actions button{min-height:42px;border-radius:11px;border:0;font-weight:900;cursor:pointer}
 .hidden{display:none!important}
 
 .overlay{
@@ -86,7 +84,7 @@ button{font:inherit;color:inherit}
 .eyebrow{font-size:9px;font-weight:1000;color:#79bdff;letter-spacing:.12em}
 .dialog h1{margin:5px 0 13px;font-size:26px}
 .dialog p{font-size:11px;line-height:1.75;color:#c2d2e0}
-.wide{width:100%;min-height:45px;border-radius:12px}
+.wide{width:100%;min-height:45px;border-radius:12px;border:0;font-weight:900;cursor:pointer}
 .demo-line{height:76px;display:flex;align-items:center;padding:0 34px}
 .demo-line span{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #b7d9e9}
 .demo-line i{height:12px;flex:1;background:#252a31;border-radius:99px;transform:rotate(-4deg);box-shadow:0 4px 0 rgba(0,0,0,.18)}
@@ -96,21 +94,17 @@ button{font:inherit;color:inherit}
   .brand b{font-size:11px}.brand span{font-size:20px}
   .stage{gap:5px}.stage b{font-size:11px}.stage small{display:none}
   .icon-btn{width:35px;height:35px}
-  .layout{padding:5px;gap:5px;overflow:auto}
-  .board{flex:none}
-  .hud{height:38px;padding:5px 8px}
-  .ink{grid-template-columns:auto minmax(80px,160px) 36px;gap:6px}
-  .canvas-wrap{flex:none;width:100%;aspect-ratio:12/7;height:auto}
+  .layout{padding:4px}
+  .board{height:auto}
+  .canvas-wrap{width:100%;aspect-ratio:12/7;height:auto}
   .canvas-wrap #game{width:100%!important;height:100%!important;max-width:none;max-height:none;object-fit:contain}
-  .actions{padding:6px;gap:5px}
-  .actions button{min-height:44px;font-size:11px}
+  .hint{top:8px;max-width:62%;font-size:9px;padding:7px 9px}
+  .reset-floating{right:8px;top:8px;min-height:38px;padding:0 10px;font-size:10px}
 }
 @media(max-width:460px){
   .brand b{display:none}
   .topbar{grid-template-columns:34px minmax(120px,1fr) 36px}
-  .vehicle-pill{font-size:9px}
-  .hint{top:9px;font-size:9px;padding:7px 9px}
-  .actions button{font-size:10px}
+  .hint{max-width:58%}
   .dialog{padding:19px}
   .dialog h1{font-size:22px}
 }
