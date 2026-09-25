@@ -2755,11 +2755,11 @@
     {
       "id": "high_disaster_city",
       "title": "이머전시티",
-      "href": "games/high_disaster_city/index.html?v=7",
+      "href": "games/high_disaster_city/index.html?v=8",
       "category": "trivia",
       "age": "high",
       "icon": "🌪️",
-      "description": "카드로 도시를 키우는 동안 좌우에서 산불과 홍수가 번갈아 밀려오는 2D 재난 생존 덱빌더! 소방서·제방·배수펌프와 긴급대응 카드를 조합해 이머전시티를 오래 지켜 보세요.",
+      "description": "카드로 도시를 키우며 반복해서 찾아오는 산불과 홍수를 버티는 2D 재난 생존 덱빌더! 재난은 일정 시간이 지나면 잦아들고, 제방·배수펌프·긴급대응과 수리를 조합해 다음 재난을 준비하세요.",
       "scoreKey": "kidscade_disaster_city_best_seconds",
       "isTime": true,
       "subject": "science",
