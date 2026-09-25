@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#25353a">
 <title>우리 반: 담임교사 업무 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=49">
+<link rel="stylesheet" href="./style.css?v=50">
 </head>
 <body>
 <main id="app">
@@ -121,11 +121,20 @@
       <div id="taskList" class="task-list"></div>
     </aside>
 
-    <button id="fastForwardButton" class="fast-forward-button" type="button" aria-label="빠르게 시간 보내기">
-      <span aria-hidden="true">⏩</span>
-      <strong>빨리 가기</strong>
-      <small>누르고 있기 · Space</small>
+    <button id="fastForwardButton" class="fast-forward-button" type="button" aria-label="수업 진행 또는 시간 보내기">
+      <span aria-hidden="true">▶▶</span>
+      <strong id="lessonActionLabel">수업을 한다</strong>
+      <small id="lessonActionHint">길게 누르기 · Space</small>
     </button>
+
+    <section id="lessonResultPanel" class="lesson-result-panel" hidden aria-live="polite">
+      <small id="lessonResultKicker">수학 · 수업 결과</small>
+      <h2 id="lessonResultTitle">좋은 수업이었다</h2>
+      <strong id="lessonResultLead"></strong>
+      <p id="lessonResultText"></p>
+      <div id="lessonResultStudents" class="lesson-result-students"></div>
+      <button id="lessonResultClose" type="button">계속하기</button>
+    </section>
 
     <div id="toastStack" class="toast-stack" aria-live="polite"></div>
   </section>
@@ -166,6 +175,6 @@
     </div>
   </section>
 </main>
-<script src="./game.js?v=49"></script>
+<script src="./game.js?v=50"></script>
 </body>
 </html>
