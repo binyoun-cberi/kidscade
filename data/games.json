@@ -389,7 +389,11 @@
     {
       "id": "job_teacher_classroom",
       "title": "우리 반: 담임교사 업무 시뮬레이터",
+<<<<<<< Updated upstream
       "href": "games/teacher-classroom-sim-prototype/index.html?v=48",
+=======
+      "href": "games/teacher-classroom-sim-prototype/index.html?v=47",
+>>>>>>> Stashed changes
       "category": "job",
       "age": "job",
       "icon": "🏫",
