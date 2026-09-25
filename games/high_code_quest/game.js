@@ -230,7 +230,11 @@ const worldAPI={
    const high=type==='HIGH_JUMP',x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
    if(y===null)return {ok:false,message:high?'높이 뛰어도 착지할 발판이 없어요.':'점프해서 착지할 곳이 없어요.'};
    const mid=worldState.x+worldState.dir;
+   const targetEnemy=enemyAt(x,y);
+   const blockingDoor=worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=2&&Math.abs(d.y-worldState.y)<=1.1&&y<=worldState.y+1.5);
    if(enemyAt(mid,worldState.y)&&!high)return {ok:false,message:'몬스터가 점프 길을 막고 있어요.'};
+   if(targetEnemy)return {ok:false,message:'착지할 곳에 몬스터가 있어요.'};
+   if(blockingDoor)return {ok:false,message:'잠긴 문은 점프로 넘을 수 없어요.'};
    await jumpTo(x,y,high);sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='DROP'){
@@ -285,7 +289,9 @@ const worldAPI={
    else if((e.type==='blob'||e.type==='mush'||e.type==='ghost'||e.type==='shield')&&state==='attack'&&dx<=1.25&&dy<=1.2)hits=true;
    if(hits){
     if(worldState.evade>0){events.push({message:'회피 성공!'});sound('ui.confirm');}
-    else damage++;
+    else if(e.type==='boss_mushroom')damage+=3;
+    else if(e.type==='spitter'||e.type==='golem')damage+=2;
+    else damage+=1;
    }
   }
   if(worldState.evade>0)worldState.evade=0;
