@@ -461,9 +461,34 @@ function activateProxyWar(foreign,sponsor){
   state.proxyWars[foreign]=true;
   log((sponsor&&FACTIONS[sponsor]?FACTIONS[sponsor].name+"의 외교로 ":"")+FACTIONS[foreign].name+"의 대리전 개입이 시작되었습니다.");
 }
+function cityGarrisonCap(cityId,owner){
+  var c=CITIES[cityId];if(!c)return 0;
+  if(owner==="neutral")return 35+c.level*25;
+  return 70+c.level*35+(c.capital?80:0);
+}
+function makeInitialGarrisons(tiles){
+  var out={};
+  Object.keys(CITIES).forEach(function(id){
+    var c=CITIES[id],t=tiles[key(c.q,c.r)],owner=t?t.owner:"neutral";
+    out[id]=cityGarrisonCap(id,owner);
+  });
+  return out;
+}
+function garrisonAtTile(t){
+  if(!t||!t.city||!state.cityGarrisons)return 0;
+  return Math.max(0,state.cityGarrisons[t.city]||0);
+}
+function replenishGarrisons(owner){
+  if(!state.cityGarrisons)return;
+  factionCities(owner).forEach(function(id){
+    var c=CITIES[id],cap=cityGarrisonCap(id,owner),cur=state.cityGarrisons[id]||0;
+    state.cityGarrisons[id]=Math.min(cap,cur+8+c.level*5);
+  });
+}
 function initialState(player){
+  var tiles=makeTiles();
   return {
-    version:10,player:player,turn:1,finished:false,
+    version:11,player:player,turn:1,finished:false,
     resources:{
       goguryeo:{food:36,money:34,manpower:28,authority:52},
       baekje:{food:38,money:36,manpower:26,authority:52},
@@ -473,10 +498,11 @@ function initialState(player){
       wa:{food:38,money:42,manpower:28,authority:50},
       tamna:{food:22,money:30,manpower:14,authority:42}
     },
-    tiles:makeTiles(),units:makeUnits(),
+    tiles:tiles,units:makeUnits(),
+    cityGarrisons:makeInitialGarrisons(tiles),
     captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
     wars:{},proxyWars:{sui:false,wa:false},
-    feed:[{date:"600년 봄",text:"대부분의 땅은 아직 미개척입니다. 각 세력은 건국 거점에서 주변으로 영토를 넓혀갑니다."}]
+    feed:[{date:"건국 1년 봄",text:"건국 거점에서 개척을 시작합니다. 빈 땅을 넓히고 도시·자원·방어선을 연결하세요."}]
   };
 }
 function unitById(id){return state.units.find(function(u){return u.id===id;});}
@@ -498,7 +524,7 @@ function save(show){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));if(show)toast("현재 역사를 저장했습니다.");}catch(e){if(show)toast("저장할 수 없습니다.");}
 }
 function load(){
-  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===10?x:null;}catch(e){return null;}
+  try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");return x&&x.version===11?x:null;}catch(e){return null;}
 }
 function svgEl(tag,attrs){
   var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
