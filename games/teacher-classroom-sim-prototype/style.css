@@ -726,3 +726,172 @@ html[data-ui-profile="touch"]{
   #toolModal .modal-body{padding:14px 14px 28px}
   .action-list{gap:8px}
 }
+
+
+/* v50 active lesson loop */
+.fast-forward-button{
+  left:50%;
+  right:auto;
+  bottom:16px;
+  transform:translateX(-50%);
+  min-width:240px;
+  min-height:58px;
+  padding:8px 16px;
+  border-radius:18px;
+  grid-template-columns:auto minmax(0,1fr);
+  column-gap:10px;
+  text-align:left
+}
+.fast-forward-button>span{font-size:19px;letter-spacing:-4px;padding-right:3px}
+.fast-forward-button>strong{font-size:13px}
+.fast-forward-button>small{font-size:9.5px;line-height:1.25}
+.fast-forward-button[data-mode="lesson"]{
+  background:rgba(47,91,77,.94);
+  border-color:rgba(203,239,221,.58)
+}
+.fast-forward-button[data-mode="wait"]{
+  background:rgba(35,51,56,.90)
+}
+.fast-forward-button:hover{transform:translateX(-50%) translateY(-1px)}
+.fast-forward-button.active{
+  transform:translateX(-50%) translateY(2px) scale(.985)
+}
+.fast-forward-button:disabled{
+  transform:translateX(-50%);
+  opacity:.48
+}
+
+.lesson-result-panel{
+  position:absolute;
+  left:50%;
+  bottom:88px;
+  transform:translateX(-50%);
+  z-index:72;
+  width:min(620px,calc(100% - 34px));
+  padding:17px 19px;
+  border:1px solid rgba(255,255,255,.76);
+  border-radius:20px;
+  background:rgba(248,246,238,.97);
+  color:#31413e;
+  box-shadow:0 18px 55px rgba(31,46,45,.30);
+  backdrop-filter:blur(12px);
+  pointer-events:auto
+}
+.lesson-result-panel[hidden]{display:none}
+.lesson-result-panel>small{
+  display:block;
+  color:#6b7e77;
+  font-weight:900;
+  font-size:10px;
+  letter-spacing:.04em
+}
+.lesson-result-panel h2{
+  margin:4px 0 5px;
+  font-size:clamp(22px,2.4vw,30px)
+}
+.lesson-result-panel>strong{
+  display:block;
+  font-size:12px;
+  color:#435c55
+}
+.lesson-result-panel p{
+  margin:8px 0 11px;
+  font-size:12px;
+  line-height:1.5;
+  color:#5a6662
+}
+.lesson-result-students{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:12px
+}
+.lesson-result-students span{
+  padding:6px 9px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+  border:1px solid transparent
+}
+.lesson-result-students .followed{
+  background:#e4f2e8;
+  color:#35674d;
+  border-color:#b8d8c3
+}
+.lesson-result-students .struggled{
+  background:#f5e6df;
+  color:#8a5147;
+  border-color:#e0bbb0
+}
+#lessonResultClose{
+  width:100%;
+  min-height:42px;
+  border:0;
+  border-radius:11px;
+  background:#426e61;
+  color:#fff;
+  font-weight:900;
+  font-size:12px
+}
+
+.student-stat-pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin:7px 0
+}
+.student-stat-pills span{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 6px;
+  border-radius:999px;
+  background:#edf1ed;
+  border:1px solid #d5ddd7;
+  color:#58635f;
+  font-size:9px;
+  font-weight:850
+}
+.student-stat-pills b{
+  color:#2f5c50;
+  font-size:10px
+}
+.roster-card .student-stat-pills{
+  margin:6px 0 3px
+}
+
+@media(min-width:1350px){
+  .fast-forward-button{min-width:280px;min-height:64px}
+  .fast-forward-button>strong{font-size:15px}
+  .fast-forward-button>small{font-size:10.5px}
+  .lesson-result-panel{width:min(700px,calc(100% - 40px));padding:20px 22px}
+  .lesson-result-panel>strong,.lesson-result-panel p{font-size:13px}
+  .lesson-result-students span{font-size:11px;padding:7px 10px}
+}
+
+@media(max-width:680px){
+  .fast-forward-button{
+    left:50%;
+    right:auto;
+    bottom:10px;
+    width:min(72vw,260px);
+    min-width:0;
+    height:auto;
+    min-height:56px;
+    padding:7px 13px;
+    border-radius:18px;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-rows:auto auto
+  }
+  .fast-forward-button>span{display:block;font-size:17px}
+  .fast-forward-button>strong{display:block;font-size:13px}
+  .fast-forward-button>small{display:block;font-size:9px}
+  .lesson-result-panel{
+    bottom:78px;
+    width:calc(100% - 16px);
+    padding:14px
+  }
+  .lesson-result-panel h2{font-size:21px}
+  .lesson-result-panel>strong,.lesson-result-panel p{font-size:11px}
+}
