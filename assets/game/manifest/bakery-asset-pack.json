@@ -1,0 +1,1842 @@
+{
+  "version": "1.0.0",
+  "generated_for": "KIDSCade",
+  "models": {
+    "tiny-treats-bakery-interior-1.1": [
+      {
+        "source_name": "basket_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/basket-a.glb",
+        "sha256": "db5632aa5350aa29f1062025860d62a76960bea6aedfa18a157d834e87283b21",
+        "bytes": 40740
+      },
+      {
+        "source_name": "basket_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/basket-b.glb",
+        "sha256": "c38fd1359251bf249fa27f6d109b24fdb2f64aab9627fe418c2509fb02348d3e",
+        "bytes": 32916
+      },
+      {
+        "source_name": "bread.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/bread.glb",
+        "sha256": "cafcad896e3a551002d1fe79a07e59023096f99a48b86f3d25c53ad6f0777648",
+        "bytes": 31056
+      },
+      {
+        "source_name": "bread_oven.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/bread-oven.glb",
+        "sha256": "ab3736b72b52b235b7a75b96628f6bc9435d9cc603d3a80a0d3c9df9bb03ceee",
+        "bytes": 76240
+      },
+      {
+        "source_name": "cash_register.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/cash-register.glb",
+        "sha256": "06ac735c93e4e9ac4983761afc79affda7522d27cd1719d1e2fba9f082f33eeb",
+        "bytes": 99152
+      },
+      {
+        "source_name": "chair.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/chair.glb",
+        "sha256": "409f7f921b2a594aeede17c8ac1940bbeaf8d1e875a9f0e63b2f82a2024e4240",
+        "bytes": 42908
+      },
+      {
+        "source_name": "coffee_cup_takeaway.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/coffee-cup-takeaway.glb",
+        "sha256": "2b75ba89e76d9bb4420994248754cb369fd85aebea6b0d5e7dfbafa1c81af85f",
+        "bytes": 31332
+      },
+      {
+        "source_name": "coffee_cup_takeaway_stacked.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/coffee-cup-takeaway-stacked.glb",
+        "sha256": "84d522fef5bbc5332894108696f785af9eee84c6bdd667e1fdb31ac031bd0f96",
+        "bytes": 43672
+      },
+      {
+        "source_name": "coffee_machine.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/coffee-machine.glb",
+        "sha256": "e0ef8b61d91f282d37d75b67da7bb2ca016e15ff99cd5308a6d1697cf5bde7cb",
+        "bytes": 76372
+      },
+      {
+        "source_name": "cookie.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/cookie.glb",
+        "sha256": "5254e644cb30c995801559ac0d1b3d7e8765f5528a31a38e6ae206d4f78e7fd5",
+        "bytes": 38052
+      },
+      {
+        "source_name": "cookie_jar.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/cookie-jar.glb",
+        "sha256": "2f0756c84ca3d56c5e86773af9c0b0aca337a275ec3e2bd31cd9588a609b5d44",
+        "bytes": 33664
+      },
+      {
+        "source_name": "counter_table.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/counter-table.glb",
+        "sha256": "6aa328cb4a9e91f1faf60ad3a1ad6e5feff2c0c0361961c9212e0f2fb07f1660",
+        "bytes": 37356
+      },
+      {
+        "source_name": "countertop_closet_A_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-closet-a-large.glb",
+        "sha256": "91aa4621f0c161cc4741dd469422da982bb8eb73e496c909831973fea10eb05b",
+        "bytes": 27556
+      },
+      {
+        "source_name": "countertop_closet_A_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-closet-a-small.glb",
+        "sha256": "cb216813666e21979e58ba024768f73619dc3ca2c9b013289d386e75d75fd925",
+        "bytes": 27556
+      },
+      {
+        "source_name": "countertop_closet_B_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-closet-b-large.glb",
+        "sha256": "40dae4f859113e09b6f459bae2a332f4720260e290cbda5804b2f3ac819ce3c4",
+        "bytes": 26780
+      },
+      {
+        "source_name": "countertop_closet_B_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-closet-b-small.glb",
+        "sha256": "fb619f598830ee4be3ae808964ab42ab4f8fba11463316388a939de4631ca8da",
+        "bytes": 26780
+      },
+      {
+        "source_name": "countertop_corner_inner.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-corner-inner.glb",
+        "sha256": "1a58996ecabe1c6b48031a69319d936e53a67f8832f6753e4c1b04b8d7a42e70",
+        "bytes": 26632
+      },
+      {
+        "source_name": "countertop_counter_outer.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-counter-outer.glb",
+        "sha256": "9fc81b3839fcc1833448e907bf8dfb5a3fda206e13f68f3eec88ddc9597f9582",
+        "bytes": 26644
+      },
+      {
+        "source_name": "countertop_straight_A_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-straight-a-large.glb",
+        "sha256": "9aa2106031a63ee12b967bbbcbb7b61f0745b491b13a4adad75f885bbb4c4346",
+        "bytes": 28664
+      },
+      {
+        "source_name": "countertop_straight_A_short.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-straight-a-short.glb",
+        "sha256": "f6d9fc61c289aef18db1302082be5cc43752bb58c93cbc6957f46e0c31fa4cb8",
+        "bytes": 27564
+      },
+      {
+        "source_name": "countertop_straight_B_long.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-straight-b-long.glb",
+        "sha256": "dd07ad5c02fd4405a345d16c06a59990282be2add7419eb6187710ee0f3f3b5c",
+        "bytes": 27796
+      },
+      {
+        "source_name": "countertop_straight_B_short.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/countertop-straight-b-short.glb",
+        "sha256": "bedebd0f2fa63e0922d6016d325f0e5f621d14b1ad77519b4e71d78782c78b94",
+        "bytes": 26712
+      },
+      {
+        "source_name": "cream_puff.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/cream-puff.glb",
+        "sha256": "5f33e4f30a0ceac695c3ced7ed2ebefe5d84787d347dfc73819c5da995e085ed",
+        "bytes": 31496
+      },
+      {
+        "source_name": "curtains.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/curtains.glb",
+        "sha256": "1889ae374a5dddd1cf076566e0f53373ac3f478eb6a7612c6151a1bd87c86b2a",
+        "bytes": 43200
+      },
+      {
+        "source_name": "display_case_long.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/display-case-long.glb",
+        "sha256": "32b78a290eae6b5780925669bff25db835bb8238cf78ec8c63b9292a9bf465c9",
+        "bytes": 47512
+      },
+      {
+        "source_name": "display_case_short.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/display-case-short.glb",
+        "sha256": "8f858f9cc5ce89e2dc71d53966b352abd0b8a00306824d9cf7880d128199354e",
+        "bytes": 44180
+      },
+      {
+        "source_name": "door_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/door-modular.glb",
+        "sha256": "4abb406375affc2e4dc9f8b781c12bfe010aff9089be473b8cb4ab4004058648",
+        "bytes": 37388
+      },
+      {
+        "source_name": "dough_ball.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/dough-ball.glb",
+        "sha256": "df8d0bd554f4abe8cd328225e5a4c1b701b44880c5c8c3dc3f1230306548fdf6",
+        "bytes": 24384
+      },
+      {
+        "source_name": "dough_rolled_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/dough-rolled-a.glb",
+        "sha256": "cae0abdb436a9feb67b4e9d75dd7317f39dc8544729501729b74114d70fbf1ef",
+        "bytes": 26740
+      },
+      {
+        "source_name": "dough_rolled_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/dough-rolled-b.glb",
+        "sha256": "5395db2aad5341ab4b4d51b25ff0022f69e20011a011fc2b6de20e7afa4d66e8",
+        "bytes": 26744
+      },
+      {
+        "source_name": "dough_roller.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/dough-roller.glb",
+        "sha256": "075974570c651157d774ba426eeae0dec021a0a7404e8201ed2d655ef4f596ae",
+        "bytes": 33100
+      },
+      {
+        "source_name": "egg_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/egg-a.glb",
+        "sha256": "8880dc7a5a01f58393f9e77f55597624fc541a52c32c472e3ad817340803f264",
+        "bytes": 26292
+      },
+      {
+        "source_name": "egg_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/egg-b.glb",
+        "sha256": "3eacff06bd52d186f5a093cf4d5e8727cb4aba46aa12a256aafb87010d098c6a",
+        "bytes": 26292
+      },
+      {
+        "source_name": "floor_connection.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/floor-connection.glb",
+        "sha256": "d1d2e8a7256c59def9e5d51624545ab081cc9b29e605a1c17d11ee4481294767",
+        "bytes": 30876
+      },
+      {
+        "source_name": "floor_tiled.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/floor-tiled.glb",
+        "sha256": "3fdd79e7246becf45c2fb8ba4bdf27d47e435c2fae7c44e1ca5fb1eb40975ebe",
+        "bytes": 28700
+      },
+      {
+        "source_name": "floor_wood.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/floor-wood.glb",
+        "sha256": "722e855ced1aba4a514647015c0c38ce4de76f81e2c9e342e2fa50295bca804e",
+        "bytes": 29700
+      },
+      {
+        "source_name": "flour_sack_closed.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/flour-sack-closed.glb",
+        "sha256": "47650c02d65377c7c4cdbb5cd3cf87c309bd3f5dc8a7c389bd076c1281194bbc",
+        "bytes": 33240
+      },
+      {
+        "source_name": "flour_sack_open.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/flour-sack-open.glb",
+        "sha256": "f6649f9e59f1d6eb84e9944cd82609a77087ddafc7d3c582d4487af39836d7c5",
+        "bytes": 37172
+      },
+      {
+        "source_name": "macaron_blue.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/macaron-blue.glb",
+        "sha256": "377aa4932bd365eb95848f4c5f45d205d3f857bb7e3c6ff6d23cd16359af5c10",
+        "bytes": 32836
+      },
+      {
+        "source_name": "macaron_pink.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/macaron-pink.glb",
+        "sha256": "8d847e69dd000ace7c066655f69bce81fe97ea077cff0572ad94fa39f5138d92",
+        "bytes": 32836
+      },
+      {
+        "source_name": "macaron_yellow.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/macaron-yellow.glb",
+        "sha256": "3b55adc50245f38aef9ab8e423ef3326141998712b0fe83462ba75bd3d63efc1",
+        "bytes": 32840
+      },
+      {
+        "source_name": "milk.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/milk.glb",
+        "sha256": "a7bdb3261af87345c8631fa9ccdcefd7b93a942706cf968ea77a01fa2d299caf",
+        "bytes": 36468
+      },
+      {
+        "source_name": "mixing_bowl.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mixing-bowl.glb",
+        "sha256": "3955a58c31950ac3bef044ee006779e6820153684d7941656cf3a542e1fe5444",
+        "bytes": 31656
+      },
+      {
+        "source_name": "mug_A_blue.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mug-a-blue.glb",
+        "sha256": "b62a972fb4edecfcba6f021035f760d7042090f4f672fa4b099b79eafbd2108a",
+        "bytes": 34744
+      },
+      {
+        "source_name": "mug_A_pink.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mug-a-pink.glb",
+        "sha256": "66e5e34a181333ba8186859f0d77ac83ba9e2bbde1eb525ff4903ef6d05c042c",
+        "bytes": 34744
+      },
+      {
+        "source_name": "mug_A_yellow.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mug-a-yellow.glb",
+        "sha256": "c476239ab603cc899e73cc3bd38c51a6668f7f86c758d2b414c78ec7a5b3943f",
+        "bytes": 34748
+      },
+      {
+        "source_name": "mug_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mug-b.glb",
+        "sha256": "30b088238ef77e740dcd8784fae037e3e49dc4ea34241c6ebbcd3efe3cd40c1b",
+        "bytes": 37620
+      },
+      {
+        "source_name": "mug_B_stacked.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/mug-b-stacked.glb",
+        "sha256": "e6ed7a1c704c8396caf01a1f762000f7c1ce3a4b21f04c8309acdf95e6d4827e",
+        "bytes": 52696
+      },
+      {
+        "source_name": "pastry_stand_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pastry-stand-a.glb",
+        "sha256": "34fb0d8ed91f8023c98ff8c768be6d241ac2e8c9ddbf0836d0db8cafa2c169a4",
+        "bytes": 41572
+      },
+      {
+        "source_name": "pastry_stand_A_covered.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pastry-stand-a-covered.glb",
+        "sha256": "d3dab81b920e92f4d6cfa277495e0cc4d3a442217e5265e2e5c37a8ba412012d",
+        "bytes": 49584
+      },
+      {
+        "source_name": "pastry_stand_A_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pastry-stand-a-decorated.glb",
+        "sha256": "d2d1bc2370842b6906edd0e95dcaf3e15382fe4ca709ad73351f45790fcb400a",
+        "bytes": 69500
+      },
+      {
+        "source_name": "pastry_stand_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pastry-stand-b.glb",
+        "sha256": "04aca0d9008dd0937047af59f202427531b7b1997263d37c98227d2c574a5805",
+        "bytes": 54292
+      },
+      {
+        "source_name": "pastry_stand_B_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pastry-stand-b-decorated.glb",
+        "sha256": "f65f1a97e2d53a373cb0154b90503a45c09da05bea1889fc9a5df34cf7cc23d9",
+        "bytes": 85184
+      },
+      {
+        "source_name": "plate.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/plate.glb",
+        "sha256": "2313141daba300678df77c4e9afe7be5b86746b4c14d42194f8e10966e760dab",
+        "bytes": 39248
+      },
+      {
+        "source_name": "plate_stacked.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/plate-stacked.glb",
+        "sha256": "f8c6c62c8250e70ae09f960962ccf6b49b456cdeb29eadc8834c66c1dd3c9cdc",
+        "bytes": 49652
+      },
+      {
+        "source_name": "pretzel.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pretzel.glb",
+        "sha256": "ea750ee9ffddb7130b83d10b43573d985210d50bf1cfac4703641f9f200e01e3",
+        "bytes": 36272
+      },
+      {
+        "source_name": "pricing_card.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/pricing-card.glb",
+        "sha256": "00d7d118ece487edbfadcfe79cef699bc6b10ce9f607fa225a621d9c02b24f53",
+        "bytes": 32072
+      },
+      {
+        "source_name": "rug.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/rug.glb",
+        "sha256": "1531f151511c96e1cb83bf657facab921500234c95f14a7157f6872a2d76eae1",
+        "bytes": 30988
+      },
+      {
+        "source_name": "scale.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/scale.glb",
+        "sha256": "71a4dc10b9e1a5cbf2948d81cfb3dd26bdc97003b8fa63ac1ffec8001f4de74a",
+        "bytes": 48156
+      },
+      {
+        "source_name": "serving_tray.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/serving-tray.glb",
+        "sha256": "629e101a7a92dde2949c0a78d9ff440519c0b6803d7519170f24aa71aee96632",
+        "bytes": 34136
+      },
+      {
+        "source_name": "stand_mixer.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/stand-mixer.glb",
+        "sha256": "f4ffaff59d035a7a9aceea40d48448cd4f2054b878455ae5129657b5b3cc6893",
+        "bytes": 79996
+      },
+      {
+        "source_name": "table_round_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/table-round-a.glb",
+        "sha256": "2b2aee0c904e2ba95ef71f50e9487cda06de217349b82593397aae83396537ed",
+        "bytes": 35460
+      },
+      {
+        "source_name": "table_round_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/table-round-b.glb",
+        "sha256": "e6ddbdab5b664a9edcf8947c9fa7176405ad7ac00b815b963900a17399b15e53",
+        "bytes": 48332
+      },
+      {
+        "source_name": "table_round_C.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/table-round-c.glb",
+        "sha256": "5f7de0bc25c4b9ada2fe7da9ad775e9913965ba43e6b5d6cb3ee26625daf5b68",
+        "bytes": 43156
+      },
+      {
+        "source_name": "tin_A_beige.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-a-beige.glb",
+        "sha256": "8e4afba12cacda6935a29f3f9f32b89a8fffd8612f5c290477c1a92df0783ae0",
+        "bytes": 30868
+      },
+      {
+        "source_name": "tin_A_brown.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-a-brown.glb",
+        "sha256": "4be1071c7bc2531fff30c17fbf5ddbc06ada1ce0b2743dc313d53aec6e0b0e9a",
+        "bytes": 30868
+      },
+      {
+        "source_name": "tin_A_grey.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-a-grey.glb",
+        "sha256": "59fa33dd77f88b3fd0a8db89c2db131ca6d3cb493ffdff2094d463f965960f1d",
+        "bytes": 30868
+      },
+      {
+        "source_name": "tin_B_beige.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-b-beige.glb",
+        "sha256": "d09f2b654357eedca75f00a6d0fda7653a9e2b8e69f16f5c3667aaee3a538353",
+        "bytes": 31060
+      },
+      {
+        "source_name": "tin_B_brown.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-b-brown.glb",
+        "sha256": "1d68c79ce6eec98ea76113e5b0df018f519a329cb448cb066d0aa1dd686ce7a1",
+        "bytes": 31060
+      },
+      {
+        "source_name": "tin_B_grey.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/tin-b-grey.glb",
+        "sha256": "3b086e0b3b69a2c7692d13d1cd80fdb253d777e3fd40e5ba65ce0e7a6381ab76",
+        "bytes": 31056
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_corner_inner_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-corner-inner-a.glb",
+        "sha256": "9011e8070468e0beaf06b47366e2d7f42870e821cff8abdc5304365ce851d29b",
+        "bytes": 23880
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_corner_inner_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-corner-inner-b.glb",
+        "sha256": "3ed116e2d7f8642a44619b8b262118b845f6181cc5db2f0bfd09e1d533baf785",
+        "bytes": 32988
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_corner_outer_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-corner-outer-a.glb",
+        "sha256": "0b6fb8f18419baf0797919d8bbaf547ea868b226880df55d9a7c534e7f579b1e",
+        "bytes": 34440
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_corner_outer_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-corner-outer-b.glb",
+        "sha256": "d4784b745f70303b3396e45fec67e9fd922c1f66e5b535057cb37e6abfdb0b40",
+        "bytes": 23904
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_doorway.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-doorway.glb",
+        "sha256": "4efe5bb7b99139fc82a2a64a8fe2fe66f65199686649f4cc02b78e2b5b9a5bf9",
+        "bytes": 24640
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_corner_inner_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-corner-inner-a.glb",
+        "sha256": "092e3f6975194b7aab6cbcc0c7a211c0d0b86d577d732e06d99f394a2df02615",
+        "bytes": 23888
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_corner_inner_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-corner-inner-b.glb",
+        "sha256": "fda32c05e3ffffa40d79c1568559f84a1139c7ea3b90661a5d62a2a54538fc5c",
+        "bytes": 29916
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_corner_outer_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-corner-outer-a.glb",
+        "sha256": "3bfefb620a508553875c09e8365832f0e067aece0d062c3357ee183afdd67860",
+        "bytes": 31304
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_corner_outer_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-corner-outer-b.glb",
+        "sha256": "548f883f82e94f9f70a35abe39cfafa29b2bd8a3ba0daa8d5b7cfc20c0a056fc",
+        "bytes": 23916
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_straight_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-straight-a.glb",
+        "sha256": "428467808c751096bf036195b050c23e9c1c342f232f3faa43633d2f04a9396b",
+        "bytes": 27136
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_half_straight_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-half-straight-b.glb",
+        "sha256": "c988558c505b94a2f4a2d05b17aa0d9d76dfe40feb180e5ddb4a6eb2eda0ab3c",
+        "bytes": 23288
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_straight_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-straight-a.glb",
+        "sha256": "71b84c5b9212438d6acee47e2b154c26a30c8b0176277dd14fadc820ef331c8a",
+        "bytes": 28804
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_straight_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-straight-b.glb",
+        "sha256": "a128ac75beddee7cb0847a4f8346e742f45793abdcc8989542cf7cd824d35f50",
+        "bytes": 23276
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_center_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-center-a.glb",
+        "sha256": "86839449d4053a0c6e045928a2c5f740a69e4e770bb1ee14c0f5ff7932465474",
+        "bytes": 29236
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_center_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-center-b.glb",
+        "sha256": "2c7aa84331ab4eb5612f693bde3e3f9bc33aaf759cef9115fd400c4bff726520",
+        "bytes": 23944
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_left_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-left-a.glb",
+        "sha256": "12b8b40533de1fa278fdfc7011166bdf0caae8b71955ee96770b26d48c554df7",
+        "bytes": 30604
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_left_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-left-b.glb",
+        "sha256": "955d5f58c16e710407f57b1cd0eb946594d7f5d9872bb0525640bec323a961b4",
+        "bytes": 24180
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_right_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-right-a.glb",
+        "sha256": "c08eaf3914230d741f2790120d9e86860a10420e85ca906e741f89a7f12a9853",
+        "bytes": 30604
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_full_right_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-full-right-b.glb",
+        "sha256": "543aa3ce1475789638273aeaf93a7ad4176d2ae0c3bb470d775b0273b7830f37",
+        "bytes": 24180
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_large_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-large-a.glb",
+        "sha256": "95cbe8fea0922ee0590c69d36efb33de5ef08d7e5bde13b7a79be3f10e364630",
+        "bytes": 31860
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_large_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-large-b.glb",
+        "sha256": "d6af34cee1cec9797cb8ad06ac2622246d89cac0a34e69a09e82378c756acc6c",
+        "bytes": 24456
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_small_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-small-a.glb",
+        "sha256": "7fef22414a235887b71b4446132552184f89358a73e7d1b8a1d1951212dfbfe7",
+        "bytes": 31860
+      },
+      {
+        "source_name": "wall_modular_panelled_bakery_window_small_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-modular-panelled-bakery-window-small-b.glb",
+        "sha256": "38f42ac61e2567ca942f2e6114ab26a298161c3f89c9879dd979989efa2ca73d",
+        "bytes": 24456
+      },
+      {
+        "source_name": "wall_panelled_bakery_corner_inner.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-corner-inner.glb",
+        "sha256": "cf5ad970bbb9231b6ea872bcd9b033f76ffaee6e8c5254fb6dde95978c1cf71a",
+        "bytes": 33552
+      },
+      {
+        "source_name": "wall_panelled_bakery_corner_outer.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-corner-outer.glb",
+        "sha256": "2ec4e15daad31f32f82d4f11d6a1f12b14ce8bbe21507de09d534c5804a4b60c",
+        "bytes": 34852
+      },
+      {
+        "source_name": "wall_panelled_bakery_doorway.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-doorway.glb",
+        "sha256": "6e14c6d723c67b7dd5fca6a9e4f7e81447f7dd6100febeeaf2207d502caa28e6",
+        "bytes": 41216
+      },
+      {
+        "source_name": "wall_panelled_bakery_straight.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-straight.glb",
+        "sha256": "4d6c98eaba975ae2009b0869f944cb879a5365e9a796a3c9f51bd092abb6d1a6",
+        "bytes": 28940
+      },
+      {
+        "source_name": "wall_panelled_bakery_window_full_center.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-window-full-center.glb",
+        "sha256": "82c34b21c393501e3dcfd7c97ea084772c7604fb39f27959a5838412d02ca708",
+        "bytes": 37548
+      },
+      {
+        "source_name": "wall_panelled_bakery_window_full_left.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-window-full-left.glb",
+        "sha256": "5b5ee128a562f27aef42273e7998064240c71e2f7710995f774704c4720a49fa",
+        "bytes": 39560
+      },
+      {
+        "source_name": "wall_panelled_bakery_window_full_right.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-window-full-right.glb",
+        "sha256": "7885a243ba61c5ad1e2f80e8d5438fabd4da7ae9b63361a7f7158b606507755f",
+        "bytes": 39560
+      },
+      {
+        "source_name": "wall_panelled_bakery_window_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-window-large.glb",
+        "sha256": "caeb51d38941d1e4bb7a1e44156dcdd0550cb0c31614ec0957e8979fa6ab1fc5",
+        "bytes": 41012
+      },
+      {
+        "source_name": "wall_panelled_bakery_window_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-panelled-bakery-window-small.glb",
+        "sha256": "a12abf02b715fea0d1d279bf08607fa8a729fe1a6d3b596a9586b971109a4edc",
+        "bytes": 41012
+      },
+      {
+        "source_name": "wall_shelf_bakery_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-shelf-bakery-a.glb",
+        "sha256": "cae3b6c814c9bffec46fb22a42ce854ef1a65bee89583fc6e46e449779c11b2d",
+        "bytes": 30212
+      },
+      {
+        "source_name": "wall_shelf_bakery_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-shelf-bakery-b.glb",
+        "sha256": "6743197c1bd030f54801ba9b17cf32a1042868fc94b6e920efd8ca8a05b0a9c4",
+        "bytes": 33180
+      },
+      {
+        "source_name": "wall_shelf_bakery_C.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-shelf-bakery-c.glb",
+        "sha256": "eac4c90695bd50d923e8c5aba6299f15e7ef3903fd1fe618789c0c46a029e497",
+        "bytes": 28160
+      },
+      {
+        "source_name": "wall_shelf_bakery_end.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-shelf-bakery-end.glb",
+        "sha256": "6fa162b931678104b4c0caa8c16adbaf6aaec623add52124d50ede61ad67b654",
+        "bytes": 24396
+      },
+      {
+        "source_name": "wall_sign_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-sign-large.glb",
+        "sha256": "e5f3114017bfba51438dbe4fd2a868f4d48308ad27991bd827090db11e95d1f4",
+        "bytes": 47776
+      },
+      {
+        "source_name": "wall_sign_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/wall-sign-small.glb",
+        "sha256": "a20330160bbe43912139cc30877723cd6e11f7c13a32082e6a128853cec16960",
+        "bytes": 40560
+      },
+      {
+        "source_name": "whisk.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/whisk.glb",
+        "sha256": "eb3ffd3ac488edd35109db1c5e68d505710b9ec1a137c08914e5535eff5635a7",
+        "bytes": 41200
+      },
+      {
+        "source_name": "window_full_center_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/window-full-center-modular.glb",
+        "sha256": "b861faf457d1acf0917b91112593dc3b44f929932d8266eb8ebdcfd281d7299e",
+        "bytes": 30004
+      },
+      {
+        "source_name": "window_full_left_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/window-full-left-modular.glb",
+        "sha256": "cc8a7883a917926ef55da69833044331c40f7780c6c0a0ca6c8e7e95c56dcc8b",
+        "bytes": 30340
+      },
+      {
+        "source_name": "window_full_right_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/window-full-right-modular.glb",
+        "sha256": "2f0440d1e81928f18b69bf90294f941ba158cb48fac2a91e41235c220682733e",
+        "bytes": 30344
+      },
+      {
+        "source_name": "window_large_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/window-large-modular.glb",
+        "sha256": "52a6a9bf0dc632cb5c7d4ac20b5d95d3290e260b6961e02b75445e99b32939dd",
+        "bytes": 30708
+      },
+      {
+        "source_name": "window_small_modular.gltf",
+        "runtime_path": "assets/game/3d/bakery/interior/window-small-modular.glb",
+        "sha256": "08d17e4f42e55155c9d455786cd16fd19ba7d1e8132adb826aa52ebef9afec68",
+        "bytes": 30708
+      }
+    ],
+    "tiny-treats-baked-goods-1.0": [
+      {
+        "source_name": "baguette.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/baguette.glb",
+        "sha256": "9d8ae6310f27a2edf2d7926f17b30fe373d806765e75ca0c6b7ffe04c8616b50",
+        "bytes": 30568
+      },
+      {
+        "source_name": "baguette_half.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/baguette-half.glb",
+        "sha256": "9f21834d034db64108f8f981b07d946d9f32d1cb6aae1a17137c9f147782b8d8",
+        "bytes": 29568
+      },
+      {
+        "source_name": "baguette_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/baguette-slice.glb",
+        "sha256": "1cf1cb3d36721e77ce4eef7877f07b8345a9a3e2b89ffaba44b050dd7473c128",
+        "bytes": 25980
+      },
+      {
+        "source_name": "bread.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/bread.glb",
+        "sha256": "9d42e90c1789df736b3c2ae9cf065cf3d6df1458a8047b4751a212cee62be434",
+        "bytes": 33396
+      },
+      {
+        "source_name": "bread_half.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/bread-half.glb",
+        "sha256": "0da31f5ceea1425cf6af4609307c89318a3085ea9ab2e944621b94d163833a09",
+        "bytes": 31176
+      },
+      {
+        "source_name": "bread_roll.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/bread-roll.glb",
+        "sha256": "58c8f548b697bbe80d1284196f134463d5bb16cc4e2f29b7caa98ad4c35c254b",
+        "bytes": 30416
+      },
+      {
+        "source_name": "bread_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/bread-slice.glb",
+        "sha256": "48d35b3c2234f507a8253f08926f8b5ebb4fe67c28130d70fabd5442d4687125",
+        "bytes": 28364
+      },
+      {
+        "source_name": "cake_birthday.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-birthday.glb",
+        "sha256": "551fe6aa906268418493621046c4341aca7f3a003421ded780dba34bfe9f4427",
+        "bytes": 121088
+      },
+      {
+        "source_name": "cake_birthday_cut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-birthday-cut.glb",
+        "sha256": "dce9c17ca673030c0d497c4f521c5d4be5ccea4593032156f06d2cfbd8220e4f",
+        "bytes": 113128
+      },
+      {
+        "source_name": "cake_birthday_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-birthday-slice.glb",
+        "sha256": "bbc71b60f93eef426c0153472e46f9cc574ba3a61d97002b45072ea524b00d5b",
+        "bytes": 39540
+      },
+      {
+        "source_name": "cake_chocolate.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-chocolate.glb",
+        "sha256": "38e1049441eaef2cf83c46fb84f52f97cbd76d2499102dbf526c7700eb95b6d4",
+        "bytes": 93888
+      },
+      {
+        "source_name": "cake_chocolate_cut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-chocolate-cut.glb",
+        "sha256": "85d1aa4b31c675ab0b613fe5b142dc4e824a8903f666999db396b5f0b245e302",
+        "bytes": 89944
+      },
+      {
+        "source_name": "cake_chocolate_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-chocolate-slice.glb",
+        "sha256": "1d856996ef4ddc73fb96f886e3d68d5d0e318d3c7e2d7f0d07396c0e7d0a9cf7",
+        "bytes": 35848
+      },
+      {
+        "source_name": "cake_strawberry.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-strawberry.glb",
+        "sha256": "ceeb61d373d532b9f65d6502b131f672e96ec2846c058d6beafc1a4998e788d7",
+        "bytes": 99768
+      },
+      {
+        "source_name": "cake_strawberry_cut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-strawberry-cut.glb",
+        "sha256": "287494d38880e061668181e83a1c5d444b26fbea3307d7a82e2c83aea4846df3",
+        "bytes": 97096
+      },
+      {
+        "source_name": "cake_strawberry_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cake-strawberry-slice.glb",
+        "sha256": "0ecb844d685411ac610e72e6f9e5da0c807fc118b0ea8c7a32029c68cd3aaa9b",
+        "bytes": 46892
+      },
+      {
+        "source_name": "cinnamon_roll.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cinnamon-roll.glb",
+        "sha256": "4d68fd1a48c1b9b6ea60b181068965acc0195856c5229aba9447cec58927e1f6",
+        "bytes": 39288
+      },
+      {
+        "source_name": "cookie.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cookie.glb",
+        "sha256": "1818d7fbae480f87671d80ae5a4a19034e0be1f5eb161de5fa300ee26c102397",
+        "bytes": 35488
+      },
+      {
+        "source_name": "croissant.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/croissant.glb",
+        "sha256": "958f3764097d9583ff2b1acf9266aa715a2ac658bc7539b82f8a2d05c4ee01d7",
+        "bytes": 32832
+      },
+      {
+        "source_name": "cupcake.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/cupcake.glb",
+        "sha256": "25e54c3cd1cb003930a86c0060f9d9b0d6579d093f526e4d24b8813069509b8a",
+        "bytes": 49136
+      },
+      {
+        "source_name": "donut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/donut.glb",
+        "sha256": "88c735348a59652548c0c332ad2113852cb7cf01ebcdcb6fa134278abe94aa38",
+        "bytes": 30496
+      },
+      {
+        "source_name": "donut_chocolate.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/donut-chocolate.glb",
+        "sha256": "3433535a54881e36701f774b30f91c2749424c17da0dacdfbadc6742ca5e7e2b",
+        "bytes": 46572
+      },
+      {
+        "source_name": "donut_pink.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/donut-pink.glb",
+        "sha256": "ddc695e8d286e959648337551be4628fc93fd9d0bac551b59cfd9558a894c408",
+        "bytes": 47076
+      },
+      {
+        "source_name": "muffin.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/muffin.glb",
+        "sha256": "eb17dfec447cc9738a8e72dec56e907f0ef2ec342cdfa895c19d5511a164a149",
+        "bytes": 43920
+      },
+      {
+        "source_name": "pie_apple.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-apple.glb",
+        "sha256": "3c71bf0e3b54503b44391354a78cd83e9d27f22de8b6d63415295152627a6bae",
+        "bytes": 38052
+      },
+      {
+        "source_name": "pie_apple_cut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-apple-cut.glb",
+        "sha256": "df8051d830885c8b1f53faf18f7dd8c0a04112008f30488102053cdb50a14a75",
+        "bytes": 44244
+      },
+      {
+        "source_name": "pie_apple_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-apple-slice.glb",
+        "sha256": "8a6aa062d8283d083d93b10bd2fe1dfda9411a6b8ad1459250fb2b670f6ec2f3",
+        "bytes": 35232
+      },
+      {
+        "source_name": "pie_cherry.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-cherry.glb",
+        "sha256": "d8e885d7c2d4b642f3cbe9b155101ec5b6f7b1dd764930543467224e0f84d08e",
+        "bytes": 42448
+      },
+      {
+        "source_name": "pie_cherry_cut.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-cherry-cut.glb",
+        "sha256": "3110438f2896e9d574bca2405467458220c6a29f7ddbcf6f4fc26c1fefc017c1",
+        "bytes": 45940
+      },
+      {
+        "source_name": "pie_cherry_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/pie-cherry-slice.glb",
+        "sha256": "205b6fb8e5a7e03e5af445bf3fda3ee809323bbe043c58d7baaa7b23316399b4",
+        "bytes": 33556
+      },
+      {
+        "source_name": "waffle.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/waffle.glb",
+        "sha256": "2a4d8af5a904247110f9dbb641d5435faecfcc889ce0006d586cd6f0335e5767",
+        "bytes": 38776
+      },
+      {
+        "source_name": "waffle_stacked.gltf",
+        "runtime_path": "assets/game/3d/bakery/baked-goods/waffle-stacked.glb",
+        "sha256": "a14031a373a34f770475a57efea0f6894801d8833c1232e0b35e0e252cbccb46",
+        "bytes": 59128
+      }
+    ],
+    "kaykit-restaurant-bits-1.0": [
+      {
+        "source_name": "bowl.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/bowl.glb",
+        "sha256": "049f12cb6320a8c825dd96c71768459fb55789c2daa5f48fbf7010a6f9256671",
+        "bytes": 30680
+      },
+      {
+        "source_name": "bowl_dirty.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/bowl-dirty.glb",
+        "sha256": "e15e18a21bd67c42016b4a5960e0e6a12db977bf401e683cf1722d5a2fc883a2",
+        "bytes": 33624
+      },
+      {
+        "source_name": "bowl_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/bowl-small.glb",
+        "sha256": "03c3c56c057f623926d5e73299418a73104ffce112527d7073b155c6b6679f02",
+        "bytes": 31184
+      },
+      {
+        "source_name": "chair_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/chair-a.glb",
+        "sha256": "041abace622f2b0fe475e4d9e4b25182a3cc60cd00692de464a0fce2d90e1886",
+        "bytes": 39288
+      },
+      {
+        "source_name": "chair_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/chair-b.glb",
+        "sha256": "46b9aa7e48929a5f34d8cfed2c4766a0afc567b6e12b9090ad2086e3244b93cb",
+        "bytes": 39288
+      },
+      {
+        "source_name": "chair_stool.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/chair-stool.glb",
+        "sha256": "a9a92ade032b49695f89a69c19592b31d27559c595545844afadfe1f318fa381",
+        "bytes": 32400
+      },
+      {
+        "source_name": "crate.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate.glb",
+        "sha256": "5a3853cc27d3c67bbb816cc8336312b95d629405925a43c9370679cbcc0fb90a",
+        "bytes": 31380
+      },
+      {
+        "source_name": "crate_buns.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-buns.glb",
+        "sha256": "24254fb3f2b8b42792f1cec4bcb356e52e7191c662509b3192b3c5306c5555a3",
+        "bytes": 125192
+      },
+      {
+        "source_name": "crate_carrots.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-carrots.glb",
+        "sha256": "6b2eafc23d928c193ed6693a170ab7bd7a3d1d439d32793f9a84f72afc6e2e27",
+        "bytes": 85604
+      },
+      {
+        "source_name": "crate_cheese.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-cheese.glb",
+        "sha256": "f5cca4b135e6af4400a32ae580719c236cc2e46c880f2e8e0758bae023fb4e79",
+        "bytes": 72664
+      },
+      {
+        "source_name": "crate_ham.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-ham.glb",
+        "sha256": "77d8349a43d94293916645ffc5368f50deaee7d75408ae0750489d21f4020683",
+        "bytes": 48800
+      },
+      {
+        "source_name": "crate_lettuce.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-lettuce.glb",
+        "sha256": "a08dfbb108dae6baa124096701b510ccf41bcc5d48a99fed7a455d5309398e00",
+        "bytes": 91836
+      },
+      {
+        "source_name": "crate_lid.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-lid.glb",
+        "sha256": "71462cb14be8f9a6b3d35f8a1a07582a8db8eb8cbac5da401195b1312b460708",
+        "bytes": 34860
+      },
+      {
+        "source_name": "crate_onions.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-onions.glb",
+        "sha256": "076c517cb233672dcf027a497f16456979b7b3417e7254f0614ef52bec9ffd3b",
+        "bytes": 83080
+      },
+      {
+        "source_name": "crate_potatoes.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-potatoes.glb",
+        "sha256": "811d281237b0e30fc06f4602359caaf8abebbe82ad42cb2d4be618d77ab7ac7c",
+        "bytes": 52372
+      },
+      {
+        "source_name": "crate_steak.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-steak.glb",
+        "sha256": "58b965f5401ee35d689c2755eb79e75f72bc1752eefc09ff9b5838377540a2b9",
+        "bytes": 71720
+      },
+      {
+        "source_name": "crate_tomatoes.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/crate-tomatoes.glb",
+        "sha256": "e92b1e6949b3fd46ad5ebfa0c06660c6e9a6ad1965193476429395b3af3aa445",
+        "bytes": 104324
+      },
+      {
+        "source_name": "cuttingboard.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/cuttingboard.glb",
+        "sha256": "10bebb7a57e77ba4c78dcc5f04eb0f1e8393f83e0f8445583cd460f59c44e8dd",
+        "bytes": 24552
+      },
+      {
+        "source_name": "dishrack.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/dishrack.glb",
+        "sha256": "859cb7f21f8035cfe858a28c501211a9585078294d0136fbb6611c2196291346",
+        "bytes": 35752
+      },
+      {
+        "source_name": "dishrack_plates.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/dishrack-plates.glb",
+        "sha256": "ba2bc28a1543a539528edc1063f2633c24a363c9aafc8fa5febdcd94bc894a11",
+        "bytes": 60344
+      },
+      {
+        "source_name": "door_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/door-a.glb",
+        "sha256": "dfa36c8da6a3f408a2706066200cfd5e8cdef38356d5cb0ae946d248b585cbbe",
+        "bytes": 34156
+      },
+      {
+        "source_name": "door_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/door-b.glb",
+        "sha256": "2311a3e7a2d1e7b5be7561d6ef2d28810796aa0ccf1c4bad29c5f5b2dcff515d",
+        "bytes": 34156
+      },
+      {
+        "source_name": "extractorhood.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/extractorhood.glb",
+        "sha256": "dff84c1001752fab5f3e6473f660c0374d57d7604a618e3f3e0295545dea9807",
+        "bytes": 34252
+      },
+      {
+        "source_name": "floor_kitchen.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/floor-kitchen.glb",
+        "sha256": "1af3e21963c742e7deafd9291c0418a4aa72c3e1921570f338e19bf042124ebf",
+        "bytes": 25552
+      },
+      {
+        "source_name": "floor_kitchen_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/floor-kitchen-small.glb",
+        "sha256": "f6fc4acaccc984cd3639676847c89114dee642cd0ae021154bf7939200981114",
+        "bytes": 25556
+      },
+      {
+        "source_name": "food_burger.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-burger.glb",
+        "sha256": "33085d506e3940eb44ebb296139cfb8ed51815a919aa1c8107961a20927b97be",
+        "bytes": 84748
+      },
+      {
+        "source_name": "food_dinner.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-dinner.glb",
+        "sha256": "0b191dcbd5400a45821d7ab6cb208c54bc439ef9fd1c52f085624ed9466f2838",
+        "bytes": 67184
+      },
+      {
+        "source_name": "food_ingredient_bun.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-bun.glb",
+        "sha256": "03d3a749c0ee1d5aeef552ac003a27b20960bab427754153fbff3a23ac2d6323",
+        "bytes": 38068
+      },
+      {
+        "source_name": "food_ingredient_bun_bottom.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-bun-bottom.glb",
+        "sha256": "2ebd2a8a8b888fda3db1ed32ae46b519fa102a665445e7a227ab6433995ec04a",
+        "bytes": 27384
+      },
+      {
+        "source_name": "food_ingredient_bun_top.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-bun-top.glb",
+        "sha256": "0609bee9315354885f423b83dda2ff2cc3a3daaac9d1e3ffbaf77952d14d790f",
+        "bytes": 34408
+      },
+      {
+        "source_name": "food_ingredient_burger_cooked.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-burger-cooked.glb",
+        "sha256": "f5413993ed60264b7063e8358c487acf716b3d284cb6f2976bee4f1dd12f0606",
+        "bytes": 29712
+      },
+      {
+        "source_name": "food_ingredient_burger_trash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-burger-trash.glb",
+        "sha256": "e1222dacb65081b49163b561f211b27889995d628d1f679eedf821cdd573cffd",
+        "bytes": 29712
+      },
+      {
+        "source_name": "food_ingredient_burger_uncooked.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-burger-uncooked.glb",
+        "sha256": "a57ba907d223ed95add5d5db68f246e636a52ccd2cb94f3d49691e28968c9b3b",
+        "bytes": 29140
+      },
+      {
+        "source_name": "food_ingredient_carrot.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-carrot.glb",
+        "sha256": "6aa32a13307299e8264e3bc9467ae0a161c2f27cf8c739679088d6c3b2345e1c",
+        "bytes": 32512
+      },
+      {
+        "source_name": "food_ingredient_carrot_chopped.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-carrot-chopped.glb",
+        "sha256": "11a93a951ee28811f18c4aeec04c5c61d39edf27ead642847467e5349eb4df8a",
+        "bytes": 40728
+      },
+      {
+        "source_name": "food_ingredient_carrot_pieces.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-carrot-pieces.glb",
+        "sha256": "9caff803b86a30a1cf9e6e31ba8c3edd93226ba10b256e23d7c1c249807192d2",
+        "bytes": 44596
+      },
+      {
+        "source_name": "food_ingredient_cheese.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-cheese.glb",
+        "sha256": "8e121cb5e137f3e301a6ab62a1cc74b19363327b47a5e655a500b28e24d2f362",
+        "bytes": 32484
+      },
+      {
+        "source_name": "food_ingredient_cheese_chopped.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-cheese-chopped.glb",
+        "sha256": "a91efbdc75e6b5ee47b8e7ba70bb87f82c1da20fa1db5519711df4c798296191",
+        "bytes": 32356
+      },
+      {
+        "source_name": "food_ingredient_cheese_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-cheese-slice.glb",
+        "sha256": "836a7295ae20e0555aabee6f4644f82719203466b625cd8d9d07ee9440429dc6",
+        "bytes": 24456
+      },
+      {
+        "source_name": "food_ingredient_ham.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-ham.glb",
+        "sha256": "89feebc0b3d0419505a7d0ef48a3e9b2d7c3b60ef1e3af27beb0dbd310426c86",
+        "bytes": 31108
+      },
+      {
+        "source_name": "food_ingredient_ham_cooked.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-ham-cooked.glb",
+        "sha256": "41e09b3188818d7fef9639770aade2dd0fc46b3816b47f64e9e55776a707dd6c",
+        "bytes": 31112
+      },
+      {
+        "source_name": "food_ingredient_ham_trash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-ham-trash.glb",
+        "sha256": "af5cae12cb36b3695bf92fd399bc8a27518700e46ec9b39f75d233e59097d79b",
+        "bytes": 31112
+      },
+      {
+        "source_name": "food_ingredient_lettuce.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-lettuce.glb",
+        "sha256": "0a9209d01049e4a8c64fe1e0d1e0decf40b5ee9156719ccb385229261fb5320b",
+        "bytes": 37408
+      },
+      {
+        "source_name": "food_ingredient_lettuce_chopped.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-lettuce-chopped.glb",
+        "sha256": "1cdeec24ecd7736e441ff588823a5cee01152045310c87bba1c36aa1fd9a62ab",
+        "bytes": 38216
+      },
+      {
+        "source_name": "food_ingredient_lettuce_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-lettuce-slice.glb",
+        "sha256": "2eb76661b60775ac49839788764d34521dba3131087e6b526fb46d1a50f14b73",
+        "bytes": 28308
+      },
+      {
+        "source_name": "food_ingredient_onion.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-onion.glb",
+        "sha256": "7899c46420ef1b39279bd84c685f378c4e56104084a36ad953652da2531e82d0",
+        "bytes": 32760
+      },
+      {
+        "source_name": "food_ingredient_onion_chopped.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-onion-chopped.glb",
+        "sha256": "581e13276f003fdce1c2e5791c5fcebbb74d63e31596cfd34f41e96afcbd111d",
+        "bytes": 48240
+      },
+      {
+        "source_name": "food_ingredient_onion_rings.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-onion-rings.glb",
+        "sha256": "e42e6a72e7ad9589aab1184fcacd3c92d46b62c93ace652e1fb39493dda21180",
+        "bytes": 37036
+      },
+      {
+        "source_name": "food_ingredient_potato.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-potato.glb",
+        "sha256": "5a4fc9d565277e7fe7f7216def802911aa8bf8ec93872ca199988ea143f115ef",
+        "bytes": 25924
+      },
+      {
+        "source_name": "food_ingredient_potato_chopped.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-potato-chopped.glb",
+        "sha256": "2904136e46384ebf1049087d8d4c1261ca426fc27570c5d24cec1c6c3759ce3d",
+        "bytes": 31492
+      },
+      {
+        "source_name": "food_ingredient_potato_mashed.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-potato-mashed.glb",
+        "sha256": "a3f8f200b808c3af0ee7cc416fb34ef789dba4a087631e6e9205e0572fdbf91c",
+        "bytes": 23752
+      },
+      {
+        "source_name": "food_ingredient_steak.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-steak.glb",
+        "sha256": "dbc24053288b82de55567230fe22d03a520306b5ff34e24e74fb3d485e57d012",
+        "bytes": 35880
+      },
+      {
+        "source_name": "food_ingredient_steak_pieces.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-steak-pieces.glb",
+        "sha256": "9b3db3ab285fe62f66dd27d7a41482a154cb6822e6484c590343429939530805",
+        "bytes": 31704
+      },
+      {
+        "source_name": "food_ingredient_tomato.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-tomato.glb",
+        "sha256": "6395c9c66743b94153eeab10f4aa46d5b5ca2bf0d13a74207723baab62490ffb",
+        "bytes": 35748
+      },
+      {
+        "source_name": "food_ingredient_tomato_slice.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-tomato-slice.glb",
+        "sha256": "653ee54c4aa238721f3901a5fd2ac50fc35c5a8d7c706bb34035c4967a77b0e9",
+        "bytes": 31960
+      },
+      {
+        "source_name": "food_ingredient_tomato_slices.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-tomato-slices.glb",
+        "sha256": "831c6430f54fbe8d6eff36a4f00ae9a607eb7cc723e868c6f44e531c86157315",
+        "bytes": 43100
+      },
+      {
+        "source_name": "food_ingredient_vegetableburger_cooked.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-vegetableburger-cooked.glb",
+        "sha256": "63ef809a016a2a778257f6c8a9c1870027f3ea5434b0576d4d1163664e620b04",
+        "bytes": 38828
+      },
+      {
+        "source_name": "food_ingredient_vegetableburger_uncooked.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-ingredient-vegetableburger-uncooked.glb",
+        "sha256": "a804b24829059a16db6a4dc80b78bd9f46bd44ffdfcfc909e75aabb38b4c680a",
+        "bytes": 38252
+      },
+      {
+        "source_name": "food_stew.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-stew.glb",
+        "sha256": "e134be98f6bfa6c41a3a16a8a621cfadf392febcd7f5377d031e86a20b40fa79",
+        "bytes": 45376
+      },
+      {
+        "source_name": "food_vegetableburger.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/food-vegetableburger.glb",
+        "sha256": "e5db1c2f58328d3ab9654a7b8cfb09d8346a835f087a1eda1a706b22dc11a5c2",
+        "bytes": 91840
+      },
+      {
+        "source_name": "fridge_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/fridge-a.glb",
+        "sha256": "afc29c489105e542ec9c8785d7c9e525196840ebee8e913d324310d102b207ce",
+        "bytes": 51008
+      },
+      {
+        "source_name": "fridge_A_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/fridge-a-decorated.glb",
+        "sha256": "4861814920ad9badb1dae4fc9d36f39d950a2d5ba60c966143174af33150ec38",
+        "bytes": 112200
+      },
+      {
+        "source_name": "fridge_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/fridge-b.glb",
+        "sha256": "df54ee4c90c37b7b343f4f1c2bab96d0eaf827474a1aa6b742e13b4c88914bc5",
+        "bytes": 42496
+      },
+      {
+        "source_name": "jar_A_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-a-large.glb",
+        "sha256": "67933516b6b008f1159a74f087b85eb0b6e02381dde0a42ba44e1cd630cbe92c",
+        "bytes": 28848
+      },
+      {
+        "source_name": "jar_A_medium.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-a-medium.glb",
+        "sha256": "8b34e7c98c24eb73857767aacfc1e338c50ec552ca0d13d1bb3b2d165bcd3577",
+        "bytes": 29612
+      },
+      {
+        "source_name": "jar_A_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-a-small.glb",
+        "sha256": "fad715df4d6e82d852455c7a8b19f2d4a7cfe388e9dba3787e662d5de15edcb5",
+        "bytes": 29408
+      },
+      {
+        "source_name": "jar_B_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-b-large.glb",
+        "sha256": "8cf4bd3c7ac32c6d672e6231b8d76a63630a172dd70716b065a98685fcec1d5e",
+        "bytes": 28848
+      },
+      {
+        "source_name": "jar_B_medium.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-b-medium.glb",
+        "sha256": "71fc4df7ec97c113bc8289db904bb06c79091ea39ebce10700229882b3e3c704",
+        "bytes": 29612
+      },
+      {
+        "source_name": "jar_B_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-b-small.glb",
+        "sha256": "36c2106bb3875ad2fa31f89c7a2b0bd28db7ba5e1c440e27835179ea18d9cd88",
+        "bytes": 29408
+      },
+      {
+        "source_name": "jar_C_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-c-large.glb",
+        "sha256": "26fc3e7fb0a96340cdd01f4fa7f11a5ed95f4c007faad4563cdec46356c9338f",
+        "bytes": 28848
+      },
+      {
+        "source_name": "jar_C_medium.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-c-medium.glb",
+        "sha256": "3afd87d304a619f8f0f022760e65b56d2a3d300e9f478a10d7cbb3b1d23b83d4",
+        "bytes": 29612
+      },
+      {
+        "source_name": "jar_C_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-c-small.glb",
+        "sha256": "425869e8e77ffde0e726b93d1e0391e3d8073fb0c834263aec5036f86804ff23",
+        "bytes": 29408
+      },
+      {
+        "source_name": "jar_D_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-d-large.glb",
+        "sha256": "58a4503047c2d8f7a0beec570b9f1d884a17fc23787744c738e0f61aa9e6689a",
+        "bytes": 28848
+      },
+      {
+        "source_name": "jar_D_medium.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-d-medium.glb",
+        "sha256": "9b823d85caffbf45dd3e8371f4c68c3d98326ea829836ce48ece57d3709ae034",
+        "bytes": 29612
+      },
+      {
+        "source_name": "jar_D_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/jar-d-small.glb",
+        "sha256": "93734c7e82593d7f81a3afa0dfa5e8fc6a953eda0e4d27867ff303a2076910a2",
+        "bytes": 29408
+      },
+      {
+        "source_name": "ketchup.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/ketchup.glb",
+        "sha256": "6ac773834d4551018bbc4f25f519d44a74b9919fe1d9bf9aa0c8e07bce46c716",
+        "bytes": 28856
+      },
+      {
+        "source_name": "kitchencabinet.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencabinet.glb",
+        "sha256": "41544334b61ef98244572f25aeb901903751b3e0addb2b8c8b255e16526666e2",
+        "bytes": 29736
+      },
+      {
+        "source_name": "kitchencabinet_corner.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencabinet-corner.glb",
+        "sha256": "e3cdec8ebdf357c087b7dc51c075dbeb1465a45db827ebc39e9cf76ec6ede4f2",
+        "bytes": 30720
+      },
+      {
+        "source_name": "kitchencabinet_corner_half.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencabinet-corner-half.glb",
+        "sha256": "b2e1c1505cfe04fc01504ba779ec014035e404fb852e54fed1ac7f9e82593529",
+        "bytes": 30852
+      },
+      {
+        "source_name": "kitchencabinet_half.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencabinet-half.glb",
+        "sha256": "5018b74e02c5be91f7f88099cd44cb9d64c8f2846f9d478800291e766e8415f0",
+        "bytes": 29740
+      },
+      {
+        "source_name": "kitchencounter_innercorner.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-innercorner.glb",
+        "sha256": "a49fdbf00590cfaf7f8ac092172e068f276a764fe423b39d729b0986e1a9f7ef",
+        "bytes": 24732
+      },
+      {
+        "source_name": "kitchencounter_innercorner_backsplash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-innercorner-backsplash.glb",
+        "sha256": "1c5f88fd402202de6c1d84c2fee2381e9e677c63b5a817bffdfeecaeed021583",
+        "bytes": 25732
+      },
+      {
+        "source_name": "kitchencounter_outercorner.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-outercorner.glb",
+        "sha256": "9ab38bf4029e577ec7372d4ac922eddfa9ed15bca9af88be26fc21598e4a273c",
+        "bytes": 24748
+      },
+      {
+        "source_name": "kitchencounter_outercorner_backsplash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-outercorner-backsplash.glb",
+        "sha256": "248b0fb53d535720cad52b4f2f4bad8bd58aab2e6e028371cb12fe27af1b6cf8",
+        "bytes": 25752
+      },
+      {
+        "source_name": "kitchencounter_sink.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-sink.glb",
+        "sha256": "f58a63d6a7eae03bdb4ab3237df8072a127032d03f08d9bd69368640eb43810a",
+        "bytes": 51596
+      },
+      {
+        "source_name": "kitchencounter_sink_backsplash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-sink-backsplash.glb",
+        "sha256": "25aca3c7fb07b62164f1b5d3c1a5763a4a37733d512dd159a878d6997f6915e4",
+        "bytes": 52284
+      },
+      {
+        "source_name": "kitchencounter_straight_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-a.glb",
+        "sha256": "a449df76e0da175400588e777012836ccd21a7e0adb23778b79ca5f6de4fa08a",
+        "bytes": 30748
+      },
+      {
+        "source_name": "kitchencounter_straight_A_backsplash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-a-backsplash.glb",
+        "sha256": "e2546c328da75d4ea92e2d254243b52dd9b5c4e235bfd8dd74f3a8b01389bc5e",
+        "bytes": 31424
+      },
+      {
+        "source_name": "kitchencounter_straight_A_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-a-decorated.glb",
+        "sha256": "7dc08d3ebb852986e46a5e03980c42e6bf50d95b7c5b1642a9c62451a65c7bde",
+        "bytes": 85860
+      },
+      {
+        "source_name": "kitchencounter_straight_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-b.glb",
+        "sha256": "be3f66f7f2407e2f07c2319d723bf3659cf308154190a5c4de9015a3ab929262",
+        "bytes": 30396
+      },
+      {
+        "source_name": "kitchencounter_straight_B_backsplash.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-b-backsplash.glb",
+        "sha256": "047ef38c0ea261837a24c44ef36ba77b0f674d5eca0fb536618d69d2c385d4aa",
+        "bytes": 31072
+      },
+      {
+        "source_name": "kitchencounter_straight_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchencounter-straight-decorated.glb",
+        "sha256": "32e30562d39118c46c2fd7141b275defc43c8d29980d81b331c420bb9ed89f7d",
+        "bytes": 59392
+      },
+      {
+        "source_name": "kitchentable_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-a.glb",
+        "sha256": "579fa782040e0eb347bda5a28c69bda1df29e92247cf641e9ac77b4e41a85ee4",
+        "bytes": 34096
+      },
+      {
+        "source_name": "kitchentable_A_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-a-large.glb",
+        "sha256": "acd90677c5ccef92e1c7ac62a15547dda16d7e0e70aaad1c1e93670a8c5cd867",
+        "bytes": 34044
+      },
+      {
+        "source_name": "kitchentable_A_large_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-a-large-decorated.glb",
+        "sha256": "b1755d11c22b2ab8e389622cbe2c750e1020ec5fb315c001fbe73ec38e964a09",
+        "bytes": 100192
+      },
+      {
+        "source_name": "kitchentable_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-b.glb",
+        "sha256": "3fadbecb7c1e010c3089491b27fed680f4123bca2a5447f85f2e0158f6feaae3",
+        "bytes": 34096
+      },
+      {
+        "source_name": "kitchentable_B_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-b-large.glb",
+        "sha256": "bad5e96efd944b7e58ea2f1fd8019208d176783001d3e234fbb6ea574677a025",
+        "bytes": 34044
+      },
+      {
+        "source_name": "kitchentable_sink.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-sink.glb",
+        "sha256": "65916d0ff82d83af365ed1b06e41b51ae803e6f7d135c3ee703dcfc1d622b9ad",
+        "bytes": 54952
+      },
+      {
+        "source_name": "kitchentable_sink_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-sink-large.glb",
+        "sha256": "ae71000250a9aa4a645932280e24d480c2c91b6285261c4c9bdcd67aaef37d88",
+        "bytes": 60816
+      },
+      {
+        "source_name": "kitchentable_sink_large_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/kitchentable-sink-large-decorated.glb",
+        "sha256": "f2783b4d2a1317c50f893d2410ff1a7523048465e4480aa98e2830b491c9df2e",
+        "bytes": 128152
+      },
+      {
+        "source_name": "knife.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/knife.glb",
+        "sha256": "1b57c7b007fc59ba97560fcfc324d4b74de731bf1abbdfc8bec1aa8a80ef88bf",
+        "bytes": 26980
+      },
+      {
+        "source_name": "lid_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/lid-a.glb",
+        "sha256": "e9fb6f50f4a33a0291238a8cf9b5388080744efd10a877ec938a759600be487f",
+        "bytes": 29548
+      },
+      {
+        "source_name": "lid_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/lid-b.glb",
+        "sha256": "b21767f7352a847783e56a59c2d93bbf17a77f1392389a14e7abbe63e0fb2a99",
+        "bytes": 29548
+      },
+      {
+        "source_name": "lid_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/lid-large.glb",
+        "sha256": "1b2d9c82b05a41dc657c55026a816802322f9ed3a41009af098899dd61c0b513",
+        "bytes": 29456
+      },
+      {
+        "source_name": "menu.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/menu.glb",
+        "sha256": "d57371482628868f5fbda37c9482e287e9e973ce479967bac4bc5da4f692aa1e",
+        "bytes": 27820
+      },
+      {
+        "source_name": "mustard.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/mustard.glb",
+        "sha256": "6b5f7fe1ae56faed30a76b7f3931bcc6ec5cea09288e13332b35b6ea2eca1113",
+        "bytes": 28856
+      },
+      {
+        "source_name": "oven.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/oven.glb",
+        "sha256": "d3a2a070113375ba1bec70e9be8e37c94f7e68919d3a1d7991b501822b56df1a",
+        "bytes": 57800
+      },
+      {
+        "source_name": "pan_006.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pan-006.glb",
+        "sha256": "6653c5a3c4e41261e3571262336b69e8c821cc7052e362c6b65647d287fa44eb",
+        "bytes": 33252
+      },
+      {
+        "source_name": "pan_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pan-a.glb",
+        "sha256": "21f36ed4df9130e3246e071ae2078fd9e96dff93e70527d74a80240d45a1b986",
+        "bytes": 33436
+      },
+      {
+        "source_name": "pan_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pan-b.glb",
+        "sha256": "146d06f2779d1df2ea0b98380c81c2ac1594b1579b7b467e4db3e5a7547410e1",
+        "bytes": 33436
+      },
+      {
+        "source_name": "papertowel.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/papertowel.glb",
+        "sha256": "77ce4d92f2147a167d90774fdd5a57588e77607fcd786c5151479580584cdd30",
+        "bytes": 30908
+      },
+      {
+        "source_name": "pillar_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pillar-a.glb",
+        "sha256": "fd10422a70dded9b3d38980dc3d05bc012804ebba33fe3ae0c6e97ebb386d495",
+        "bytes": 25480
+      },
+      {
+        "source_name": "pillar_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pillar-b.glb",
+        "sha256": "cc1e337d9521b2d3b9c67651a725cafbc5c5d530fb03ce9b2e0a6b0bc7960ded",
+        "bytes": 25416
+      },
+      {
+        "source_name": "plate.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/plate.glb",
+        "sha256": "5dbf3f56bf6310eb3ace92e19506a89f00d5e29170c3cd6dfb4edfadbc89f8b7",
+        "bytes": 28568
+      },
+      {
+        "source_name": "plate_dirty.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/plate-dirty.glb",
+        "sha256": "269f562bf0f8ad4f682ae182f974a1f7c58c9027f4374f10fa7142972e996ebd",
+        "bytes": 33540
+      },
+      {
+        "source_name": "plate_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/plate-small.glb",
+        "sha256": "66d7e7a55ece1703d3eae2fe2f2a4ef285eda69c8cc7069b57ec3a70c8a4657f",
+        "bytes": 27012
+      },
+      {
+        "source_name": "pot_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pot-a.glb",
+        "sha256": "b232aa4b684bab0a30238b2d10307781c3950d062b7fb541f53d433128642b38",
+        "bytes": 35372
+      },
+      {
+        "source_name": "pot_A_stew.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pot-a-stew.glb",
+        "sha256": "3791c2538b7cf3535ab133e34cefbeaa2033e0c9714976b15c2d04ad45e56ea3",
+        "bytes": 49444
+      },
+      {
+        "source_name": "pot_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pot-b.glb",
+        "sha256": "af7073f95e9ae0130e04d8ab840cb57c8eefba425a23f3bc69784c396b82c1e8",
+        "bytes": 35372
+      },
+      {
+        "source_name": "pot_B_stew.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pot-b-stew.glb",
+        "sha256": "8b2c35b2bf1f7df0c78169f11899ae85f69efc95fbea4e1c938bff2b2971505b",
+        "bytes": 49444
+      },
+      {
+        "source_name": "pot_large.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/pot-large.glb",
+        "sha256": "be8de0f20ab5dc262cb6d7ffeeeb4992d0df5a2c304f36ab2da159361edabb30",
+        "bytes": 39120
+      },
+      {
+        "source_name": "shelf_papertowel.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/shelf-papertowel.glb",
+        "sha256": "0996805543f1fd8af85b8fdb3e87c58475ea071eaeadd79c94b5cb443f85ba63",
+        "bytes": 36564
+      },
+      {
+        "source_name": "shelf_papertowel_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/shelf-papertowel-decorated.glb",
+        "sha256": "f050dc9af6ba55c519ca329b65701dbb02e5dd61aceec43db6ffbd10e1eb51b9",
+        "bytes": 57208
+      },
+      {
+        "source_name": "stew_bowl.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stew-bowl.glb",
+        "sha256": "6f25351ac5eeba9fcaf4fcf641285266a0fc9c62068724c2a93b51beebe09962",
+        "bytes": 37116
+      },
+      {
+        "source_name": "stew_pot.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stew-pot.glb",
+        "sha256": "53e707e7683683064838463c81350b00e753c74918312674300b4699b2bc7888",
+        "bytes": 37112
+      },
+      {
+        "source_name": "stove_multi.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stove-multi.glb",
+        "sha256": "f1951163ed3c7163e6b439b492bd5dfa1e2c7f9e22b9bd9852cac303aedf1074",
+        "bytes": 77076
+      },
+      {
+        "source_name": "stove_multi_countertop.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stove-multi-countertop.glb",
+        "sha256": "34b4c3087a33109007188a7649c5509e622abbdd3d0d4d518f5ca95668297ed3",
+        "bytes": 58112
+      },
+      {
+        "source_name": "stove_multi_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stove-multi-decorated.glb",
+        "sha256": "6b9db73409759275a4aaba34231a9313356940eb49eeaa7c9ba8f156bf28744a",
+        "bytes": 125600
+      },
+      {
+        "source_name": "stove_single.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stove-single.glb",
+        "sha256": "f4d775d7b8890c47f1911a8ac9ac11077fccc7f522483be3483f67300743c702",
+        "bytes": 58748
+      },
+      {
+        "source_name": "stove_single_countertop.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/stove-single-countertop.glb",
+        "sha256": "f0b71f77e71366790c74f1132994122c7b8bbf913a7aa6f3c0ca642a6cdd44ec",
+        "bytes": 40164
+      },
+      {
+        "source_name": "table_round_A.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/table-round-a.glb",
+        "sha256": "3b529b59d947e70d4901774fae45d2a4212c4a75e3cab0935a7bf3781bbe4b5d",
+        "bytes": 34900
+      },
+      {
+        "source_name": "table_round_A_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/table-round-a-decorated.glb",
+        "sha256": "d11f2ab0223281c4466c58d7a8dfaf6c70406afabc40c301caccf5061764eb74",
+        "bytes": 195008
+      },
+      {
+        "source_name": "table_round_A_small.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/table-round-a-small.glb",
+        "sha256": "fa72588d983962c8003b47877360ef8fe33183452c3db7e029afa8eea00802f7",
+        "bytes": 34912
+      },
+      {
+        "source_name": "table_round_A_small_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/table-round-a-small-decorated.glb",
+        "sha256": "9b09dc047eec26d7f1f3264c936ed088f598912ad31c5aeaa47d9c4db07b62ff",
+        "bytes": 53332
+      },
+      {
+        "source_name": "table_round_B.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/table-round-b.glb",
+        "sha256": "1aaca8d864b85f3a6ffd0494179c0f2d8664aea4d044f24ab75083c862fc6957",
+        "bytes": 35372
+      },
+      {
+        "source_name": "towelrail.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/towelrail.glb",
+        "sha256": "a15d5c841f3d66a15d2ea0902d4e6b486e2264d5e65e435542e20bebe5ca63a4",
+        "bytes": 30472
+      },
+      {
+        "source_name": "wall.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall.glb",
+        "sha256": "0d75e1fa7931ba6c635a95ec7cb2e9efeea6e6545ca668db63767896f288ffa8",
+        "bytes": 27684
+      },
+      {
+        "source_name": "wall_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-decorated.glb",
+        "sha256": "c50f08508f0d4fabf18a5b43be0e9bca83afe867f924786de653dab6274f1441",
+        "bytes": 195716
+      },
+      {
+        "source_name": "wall_doorway.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-doorway.glb",
+        "sha256": "8637fd789b359783dd76cc6338b86b75a60e6a2941a5d3537498c8b6d0e02ec4",
+        "bytes": 32688
+      },
+      {
+        "source_name": "wall_half.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-half.glb",
+        "sha256": "c44c019d10a5e713539965eb2147870f8f7333a314711473f29ed190030a8488",
+        "bytes": 27692
+      },
+      {
+        "source_name": "wall_orderwindow.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-orderwindow.glb",
+        "sha256": "084e4af5a730f9080767db595b8ac6a28b8e724ec52536da4bc313f2a0bfcdcd",
+        "bytes": 34512
+      },
+      {
+        "source_name": "wall_orderwindow_decorated.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-orderwindow-decorated.glb",
+        "sha256": "e803256db999d954d97c3ac9d501c149bfa9f7e600029dbb39e1fec0cb37025d",
+        "bytes": 52804
+      },
+      {
+        "source_name": "wall_window_closed.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-window-closed.glb",
+        "sha256": "8560e47e6957e9c99a3f19c496ad5874393f2e6f9276c03b5d5464737858f208",
+        "bytes": 34052
+      },
+      {
+        "source_name": "wall_window_open.gltf",
+        "runtime_path": "assets/game/3d/bakery/restaurant-bits/wall-window-open.glb",
+        "sha256": "ab2175b381e0212b8d25ffbf16f161358f91260f53fc8b2cf7c8354adf4dce58",
+        "bytes": 33772
+      }
+    ]
+  },
+  "sources": {
+    "tiny-treats-bakery-interior-1.1": {
+      "title": "Tiny Treats - Bakery Interior 1.1",
+      "creator": "Isa Lousberg",
+      "license": "CC0-1.0",
+      "source": "https://tinytreats.itch.io/bakery-interior"
+    },
+    "tiny-treats-baked-goods-1.0": {
+      "title": "Tiny Treats - Baked Goods 1.0",
+      "creator": "Isa Lousberg",
+      "license": "CC0-1.0",
+      "source": "https://tinytreats.itch.io/baked-goods"
+    },
+    "kaykit-restaurant-bits-1.0": {
+      "title": "KayKit - Restaurant Bits 1.0",
+      "creator": "Kay Lousberg",
+      "license": "CC0-1.0",
+      "source": "https://kaylousberg.itch.io/restaurant-bits"
+    }
+  },
+  "core": {
+    "stand_mixer": "assets/game/3d/bakery/interior/stand-mixer.glb",
+    "scale": "assets/game/3d/bakery/interior/scale.glb",
+    "bread_oven": "assets/game/3d/bakery/interior/bread-oven.glb",
+    "dough_ball": "assets/game/3d/bakery/interior/dough-ball.glb",
+    "dough_rolled_a": "assets/game/3d/bakery/interior/dough-rolled-a.glb",
+    "dough_rolled_b": "assets/game/3d/bakery/interior/dough-rolled-b.glb",
+    "rolling_pin": "assets/game/3d/bakery/interior/dough-roller.glb",
+    "flour_open": "assets/game/3d/bakery/interior/flour-sack-open.glb",
+    "flour_closed": "assets/game/3d/bakery/interior/flour-sack-closed.glb",
+    "milk": "assets/game/3d/bakery/interior/milk.glb",
+    "egg_a": "assets/game/3d/bakery/interior/egg-a.glb",
+    "mixing_bowl": "assets/game/3d/bakery/interior/mixing-bowl.glb",
+    "whisk": "assets/game/3d/bakery/interior/whisk.glb",
+    "serving_tray": "assets/game/3d/bakery/interior/serving-tray.glb",
+    "display_long": "assets/game/3d/bakery/interior/display-case-long.glb",
+    "display_short": "assets/game/3d/bakery/interior/display-case-short.glb",
+    "cash_register": "assets/game/3d/bakery/interior/cash-register.glb",
+    "pricing_card": "assets/game/3d/bakery/interior/pricing-card.glb",
+    "bread": "assets/game/3d/bakery/baked-goods/bread.glb",
+    "bread_slice": "assets/game/3d/bakery/baked-goods/bread-slice.glb",
+    "baguette": "assets/game/3d/bakery/baked-goods/baguette.glb",
+    "croissant": "assets/game/3d/bakery/baked-goods/croissant.glb",
+    "cinnamon_roll": "assets/game/3d/bakery/baked-goods/cinnamon-roll.glb",
+    "muffin": "assets/game/3d/bakery/baked-goods/muffin.glb",
+    "cupcake": "assets/game/3d/bakery/baked-goods/cupcake.glb",
+    "donut": "assets/game/3d/bakery/baked-goods/donut.glb",
+    "waffle": "assets/game/3d/bakery/baked-goods/waffle.glb",
+    "restaurant_oven": "assets/game/3d/bakery/restaurant-bits/oven.glb",
+    "restaurant_menu": "assets/game/3d/bakery/restaurant-bits/menu.glb",
+    "restaurant_jars": "assets/game/3d/bakery/restaurant-bits/jar-a-large.glb"
+  },
+  "audio": {
+    "bread-slice-01.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/bread-slice-01.mp3",
+      "usage": "bread slicing / knife on cutting board",
+      "duration_seconds": 8.0,
+      "sha256": "c08960c7ff15bd12179119ce581f9a5ef37c6b2cb6b0d3892de2e4ce242ab9ca"
+    },
+    "mixer-fast-loop-01.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/mixer-fast-loop-01.mp3",
+      "usage": "fast mixer / cream or batter mixing",
+      "duration_seconds": 8.0,
+      "sha256": "64891979f293c75ef5df9bb8448ea38b844b937123a2469cb7a19fc48efc2dc0"
+    },
+    "dough-roll-01.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/dough-roll-01.mp3",
+      "usage": "rolling dough with rolling pin",
+      "duration_seconds": 7.0,
+      "sha256": "a53f1dc933516461593501e9be281a6bca5385c6f22ebfc264a72b5c41ad95d8"
+    },
+    "dough-roll-02.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/dough-roll-02.mp3",
+      "usage": "alternate rolling pass",
+      "duration_seconds": 4.5,
+      "sha256": "ca8f8ab0472dbe15fc1c42a3d92ea3cc44a46f285b7726d217f1479ce3877edc"
+    },
+    "dough-mixer-loop-01.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/dough-mixer-loop-01.mp3",
+      "usage": "stand mixer kneading bread dough",
+      "duration_seconds": 8.0,
+      "sha256": "b5bbf1e06709270040917ccda116a787d31257eea4ea1e9334573c141322c5d3"
+    },
+    "dough-mixer-loop-02.mp3": {
+      "runtime_path": "assets/audio/sfx/bakery/dough-mixer-loop-02.mp3",
+      "usage": "alternate stand mixer loop",
+      "duration_seconds": 8.0,
+      "sha256": "06f3ef653f4467a81ff4e72371319289c0a06ce91a7caacd376a5232efb28036"
+    }
+  }
+}
