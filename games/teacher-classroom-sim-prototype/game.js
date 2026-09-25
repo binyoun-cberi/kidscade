@@ -943,9 +943,19 @@
     }
     if(e.id==='seoyeon_parent'||e.id==='jiwoo_parent')context='필요하면 통화 전에 기록철이나 명부를 열어볼 수 있다.';
     q('#contextLine').hidden=!context;q('#contextLine').textContent=context;
-    q('#actionList').innerHTML=e.actions.map(function(a){
-      return '<button type="button" data-event-action="'+escapeHtml(a.id)+'">'+escapeHtml(a.label)+'<small>약 '+formatCost(a.cost)+' 소요</small></button>';
-    }).join('');
+    var actionList=q('#actionList');
+    var actionSignature=e.id+'|'+e.actions.map(function(a){return a.id+':'+a.label+':'+a.cost}).join('|');
+    /*
+      renderAll() runs from the animation loop. Replacing actionList.innerHTML every frame
+      destroys the button between pointerdown and click, so the visible choices appear dead.
+      Keep the actual button nodes stable until the active event/actions really change.
+    */
+    if(actionList.dataset.renderSignature!==actionSignature){
+      actionList.dataset.renderSignature=actionSignature;
+      actionList.innerHTML=e.actions.map(function(a){
+        return '<button type="button" data-event-action="'+escapeHtml(a.id)+'">'+escapeHtml(a.label)+'<small>약 '+formatCost(a.cost)+' 소요</small></button>';
+      }).join('');
+    }
     q('#deferButton').textContent=e.rare?'긴급 상황을 뒤로 미룬다':(e.type==='phone'?'잠시 후 다시 받는다':'지금은 넘어간다');
   }
   function formatCost(n){return n<1?Math.round(n*60)+'초':n+'분'}
@@ -967,16 +977,25 @@
       var waitCopy=wait?'잠시 미룸 · '+wait+'분':(left<=2?'곧 떠남 · '+left+'분':escapeHtml(e.role)+' · 약 '+left+'분 남음');
       html+='<button class="waiting-item '+(e.rare||left<=2?'urgent':'')+'" data-wait-event="'+escapeHtml(id)+'"><strong>'+(e.rare?'⚠️ ':'')+escapeHtml(e.name)+'</strong><small>'+waitCopy+'</small></button>';
     });
-    list.innerHTML=html||'<p class="empty-copy">아직 기다리는 일이 없습니다.</p>';
+    var waitingHtml=html||'<p class="empty-copy">아직 기다리는 일이 없습니다.</p>';
+    if(list.dataset.renderHtml!==waitingHtml){
+      list.dataset.renderHtml=waitingHtml;
+      list.innerHTML=waitingHtml;
+    }
   }
 
   function renderTasks(){
     var tasks=availableTasks(),open=tasks.filter(function(t){return state.taskStatus[t.id]!=='done'});
     q('#taskCount').textContent=open.length;
-    q('#taskList').innerHTML=tasks.map(function(t){
+    var taskHtml=tasks.map(function(t){
       var st=state.taskStatus[t.id],due=fmtTime(t.due),cls=st==='done'?' done':st==='overdue'?' overdue':'';
       return '<div class="task-item'+cls+'"><strong>'+escapeHtml(t.title)+'</strong><small>'+(st==='done'?'처리 완료':st==='overdue'?'마감 지남 · '+due:'마감 '+due)+'</small></div>';
     }).join('')||'<p class="empty-copy">지금 처리할 업무가 없습니다.</p>';
+    var taskList=q('#taskList');
+    if(taskList.dataset.renderHtml!==taskHtml){
+      taskList.dataset.renderHtml=taskHtml;
+      taskList.innerHTML=taskHtml;
+    }
     var openComputer=open.length;
     q('#computerBadge').textContent=openComputer?openComputer+'건 남음':'업무 정리됨';
     q('#monitorNotice').textContent=openComputer?openComputer+'건':'완료';
