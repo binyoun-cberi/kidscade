@@ -550,25 +550,31 @@ function renderLeft(){
   state.feed.slice(-8).reverse().forEach(function(x){var d=document.createElement("div");d.className="feedItem";d.innerHTML="<b>"+x.date+"</b><br>"+x.text;feed.appendChild(d);});
 }
 function renderMap(){
-  var hexLayer=document.getElementById("hexLayer"),cityLayer=document.getElementById("cityLayer"),unitLayer=document.getElementById("unitLayer"),riverLayer=document.getElementById("riverLayer"),labelLayer=document.getElementById("labelLayer");
-  hexLayer.innerHTML="";cityLayer.innerHTML="";unitLayer.innerHTML="";riverLayer.innerHTML="";labelLayer.innerHTML="";
+  var hexLayer=document.getElementById("hexLayer"),borderLayer=document.getElementById("borderLayer"),cityLayer=document.getElementById("cityLayer"),unitLayer=document.getElementById("unitLayer"),riverLayer=document.getElementById("riverLayer"),labelLayer=document.getElementById("labelLayer");
+  hexLayer.innerHTML="";borderLayer.innerHTML="";cityLayer.innerHTML="";unitLayer.innerHTML="";riverLayer.innerHTML="";labelLayer.innerHTML="";
   Object.keys(state.tiles).forEach(function(k){
     var t=state.tiles[k],pts=hexPoints(t.q,t.r),p=svgEl("polygon",{points:pts,fill:TERRAIN[t.terrain].fill,class:"hex "+(t.terrain==="sea"?"seaHex":"landHex"),"data-key":k});
     if(selectedTile===k)p.classList.add("selected");
     if(reachable[k]!=null)p.classList.add(reachable[k].attack?"attackable":"reachable");
     p.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();onTileClick(k);});
     hexLayer.appendChild(p);
-    if(t.owner&&t.terrain!=="sea"&&FACTIONS[t.owner]){
+    if(t.owner&&t.owner!=="neutral"&&t.terrain!=="sea"&&FACTIONS[t.owner]){
       hexLayer.appendChild(svgEl("polygon",{points:pts,fill:FACTIONS[t.owner].color,class:"hexOverlay","pointer-events":"none"}));
     }
+    var tc=hexCenter(t.q,t.r);
+    if(t.resource&&RESOURCE_DEFS[t.resource]){
+      var rd=RESOURCE_DEFS[t.resource],ri=svgEl("text",{x:tc[0]-7,y:tc[1]-4,class:"resourceIcon"});
+      ri.textContent=rd.icon;hexLayer.appendChild(ri);
+    }
     if(t.improvement&&IMPROVEMENTS[t.improvement]){
-      var c=hexCenter(t.q,t.r),d=IMPROVEMENTS[t.improvement],src=IMPROVEMENT_ART_ROOT+(d.art||"");
+      var c=tc,d=IMPROVEMENTS[t.improvement],src=IMPROVEMENT_ART_ROOT+(d.art||"");
       var im=svgEl("image",{x:c[0]-9,y:c[1]-9,width:18,height:18,href:src,class:"hexImprImage",preserveAspectRatio:"xMidYMid meet","pointer-events":"none"});
       im.setAttributeNS("http://www.w3.org/1999/xlink","href",src);
       hexLayer.appendChild(im);
       if((t.improvementLevel||1)>1){var lv=svgEl("text",{x:c[0]+8,y:c[1]+10,class:"hexImprLevel"});lv.textContent="L"+(t.improvementLevel||1);hexLayer.appendChild(lv);}
     }
   });
+  drawFactionBorders(borderLayer);
   drawRivers(riverLayer);
   REGION_LABELS.forEach(function(r){var c=hexCenter(r.q,r.r),tx=svgEl("text",{x:c[0],y:c[1],class:"regionLabel"});tx.textContent=r.name;labelLayer.appendChild(tx);});
   var sea1=svgEl("text",{x:745,y:370,class:"seaLabel"});sea1.textContent="동 해";labelLayer.appendChild(sea1);
