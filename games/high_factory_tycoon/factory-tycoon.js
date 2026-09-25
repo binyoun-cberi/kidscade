@@ -426,17 +426,24 @@ function tickMachines(dt){
     }
   }
 }
-function outDir(cell,it){
+function visualOutDir(cell,it){
   if(!cell)return it.dir;
-  if(cell.type==='splitter'){
-    const a=cell.toggle?rotRight(cell.dir):cell.dir;cell.toggle=!cell.toggle;return a;
-  }
+  if(cell.type==='splitter')return cell.toggle?rotRight(cell.dir):cell.dir;
   if(cell.type==='cross')return it.dir;
   if(cell.dir!==undefined)return cell.dir;
   return it.dir;
 }
+function takeOutDir(cell,it){
+  if(!cell)return it.dir;
+  if(cell.type==='splitter'){
+    const d=cell.toggle?rotRight(cell.dir):cell.dir;
+    cell.toggle=!cell.toggle;
+    return d;
+  }
+  return visualOutDir(cell,it);
+}
 function tryAdvance(it){
-  const current=cellAt(it.x,it.y),d=outDir(current,it),v=DIRS[d],nx=it.x+v.x,ny=it.y+v.y;
+  const current=cellAt(it.x,it.y),d=takeOutDir(current,it),v=DIRS[d],nx=it.x+v.x,ny=it.y+v.y;
   if(!inBounds(nx,ny)){discardItem(it);return true}
   const target=cellAt(nx,ny);
   if(!target){discardItem(it);return true}
@@ -532,7 +539,7 @@ function tickEffects(dt){
 function updateItemViews(){
   for(const it of items){
     if(!it.view)continue;
-    const c=cellAt(it.x,it.y),d=outDir(c||{dir:it.dir},it),v=DIRS[d],p=cellWorld(it.x,it.y);
+    const c=cellAt(it.x,it.y),d=visualOutDir(c||{dir:it.dir},it),v=DIRS[d],p=cellWorld(it.x,it.y);
     const t=clamp(it.progress,0,1);it.view.position.set(p.x+v.x*CELL*(t-.5),.34,p.z+v.y*CELL*(t-.5));it.view.rotation.y=-d*Math.PI/2;
   }
 }
