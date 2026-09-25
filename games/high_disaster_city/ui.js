@@ -19,7 +19,7 @@ class UI{
   const el=side==='left'?this.els.left:this.els.right,d=(s.disasters||[]).find(x=>x.side===side);el.className='threatBadge '+side+' calm';
   if(d){const power=d.strength||1,stage=d.progress<.3?'외곽':d.progress<.62?'접근 중':d.progress<.9?'주거지 위험':'마을 위험';let name;
    if(d.type==='wildfire')name=power<.78?'🔥 작은 산불':power<1.2?'🔥 산불':power<1.65?'🔥 거센 산불':'🔥 대형 산불';else name=power<.78?'🌊 약한 홍수':power<1.2?'🌊 홍수':power<1.65?'🌊 거센 홍수':'🌊 대홍수';
-   el.className='threatBadge '+side+' '+(d.type==='wildfire'?'fire':'flood')+' warn';el.querySelector('span').textContent=name+' · '+stage;return}
+   const remain=Math.max(0,Math.ceil((d.maxAge||48)-d.age)),tail=remain>0?' · 약 '+remain+'초 후 잦아듦':'';el.className='threatBadge '+side+' '+(d.type==='wildfire'?'fire':'flood')+' warn';el.querySelector('span').textContent=name+' · '+stage+tail;return}
   if(s.next&&s.next.side===side&&s.next.visible){const name=s.next.type==='wildfire'?'🔥 산불 징조':'🌧️ 홍수 징조',tail=(s.disasters||[]).length?'':' · '+Math.ceil(Math.max(0,s.next.in))+'초';el.className='threatBadge '+side+' '+(s.next.type==='wildfire'?'fire':'flood');el.querySelector('span').textContent=name+tail;return}
   el.querySelector('span').textContent='안정';
  }
