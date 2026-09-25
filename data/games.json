@@ -2067,11 +2067,11 @@
     {
       "id": "swipe_fraction",
       "title": "프랙션 대시",
-      "href": "games/swipe_fraction/분수 소수 대결!.html?v=2",
+      "href": "games/swipe_fraction/분수 소수 대결!.html?v=3",
       "category": "math",
       "age": "high",
       "icon": "🏃",
-      "description": "3레인 숫자 도시를 달리며 장애물을 피하고, 분수와 소수 중 더 큰 수의 게이트를 골라 콤보를 이어 가는 수학 액션 러너!",
+      "description": "3D 숫자 도시를 달리며 기차·차량·바리케이드를 피하고, 분수와 소수 중 더 큰 수의 게이트를 골라 콤보를 이어 가는 수학 액션 러너!",
       "scoreKey": "swipeFractionScore",
       "rankKey": "swipeFractionRank",
       "subject": "math",
