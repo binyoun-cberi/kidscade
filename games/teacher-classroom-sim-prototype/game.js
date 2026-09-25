@@ -37,7 +37,7 @@
 
   var taskDefs=[
     {id:'attendance',title:'출석 현황 제출',source:'교무',availableAt:532,due:558,duration:2,detail:'출석부와 아침 연락을 대조해 오늘 출결을 입력한다.',requiredDocs:['attendance_sheet'],review:{prompt:'현재 확인 가능한 아린의 출결 상태는?',options:['결석','지각 예정','현재 미확인'],correct:1}},
-    {id:'morning_notice',title:'아침 전달사항 확인',source:'교무실',availableAt:548,due:578,duration:2,detail:'오늘 바뀐 일정과 교실 전달사항을 확인한다.',requiredDocs:['office_memo']},
+    {id:'morning_notice',title:'아침 교무실 메모 확인',source:'교무실',availableAt:548,due:578,duration:2,detail:'오늘 바뀐 일정과 교실 전달사항을 확인하고 필요한 준비를 반영한다.',requiredDocs:['office_memo']},
     {id:'fieldtrip',title:'현장체험학습 참가 현황 입력',source:'연구부',availableAt:610,due:648,duration:4,detail:'회수한 신청서를 직접 세어 참가·불참·미제출을 입력한다.',requiredDocs:['fieldtrip_forms'],review:{prompt:'현재 신청서 상태는?',options:['참가 4 · 불참 1 · 미제출 1','참가 5 · 불참 1 · 미제출 0','참가 4 · 불참 0 · 미제출 2'],correct:0}},
     {id:'worksheets',title:'수학 활동지 8장 확인',source:'1교시',availableAt:580,due:720,duration:5,detail:'오늘 수학 활동지 중 확인이 필요한 8장을 살핀다.'},
     {id:'meal_check',title:'급식 특이사항 재확인',source:'급식실',availableAt:635,due:690,duration:3,detail:'오늘 식단과 학급 급식 주의사항을 대조한다.',requiredDocs:['meal_roster'],review:{prompt:'오늘 따로 전달해야 할 학생은?',options:['준호','서연','태호'],correct:0}},
@@ -1058,11 +1058,19 @@
       state.checkedDocs[doc.id]=true;
       consumeMinutes(.35,'자료 확인');
       kicker.textContent=doc.source+' · 확인 자료';title.textContent=doc.title;
+      var linkedSimpleTasks=availableTasks().filter(function(t){
+        return state.taskStatus[t.id]!=='done'&&!t.review&&(t.requiredDocs||[]).indexOf(doc.id)>=0;
+      });
+      var linkedActions=linkedSimpleTasks.map(function(t){
+        return '<button class="document-complete" data-complete-task="'+escapeHtml(t.id)+'">✓ '+escapeHtml(t.title)+' 완료하기 · '+formatCost(t.duration)+'</button>';
+      }).join('');
       body.innerHTML='<button class="back-button" data-back-computer="1">← 업무 화면으로</button><article class="document-sheet">'+
         '<div class="document-stamp">확인 '+fmtTime(state.minute)+'</div>'+
         '<h3>'+escapeHtml(doc.title)+'</h3>'+
         '<ul>'+doc.lines.map(function(line){return '<li>'+escapeHtml(line)+'</li>'}).join('')+'</ul>'+
-        '<p>'+escapeHtml(doc.note||'')+'</p></article>';
+        '<p>'+escapeHtml(doc.note||'')+'</p>'+
+        (linkedActions?'<div class="document-actions">'+linkedActions+'</div>':'')+
+        '</article>';
       save();renderAll();
     }else if(kind==='phone'){
       kicker.textContent='전화기';title.textContent='통화 메모';
