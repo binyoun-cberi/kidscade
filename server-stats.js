@@ -468,6 +468,17 @@
     if (booted || !document.getElementById('game-list') || !window.KidscadeCatalog) return false;
     booted = true;
     installStyles();
+
+    // Mount the desktop popular-games panel immediately. Network/cache stats can
+    // fill it a moment later, but the layout itself must never disappear.
+    const popularHub = ensurePopularHub();
+    if (popularHub && !popularHub.querySelector('.kc-popular-item')) {
+      const emptyStats = { games: {} };
+      const rankings = buildPopularLists(availableGameStats(emptyStats));
+      renderPopularList(popularHub.querySelector('[data-popular-list="weekly"]'), rankings.weekly, 'weekly');
+      renderPopularList(popularHub.querySelector('[data-popular-list="allTime"]'), rankings.allTime, 'allTime');
+    }
+
     const cached = readCache();
     if (cached) render(cached.data);
     await recordWeeklyVisit();
