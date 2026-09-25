@@ -6,11 +6,11 @@ const ui={
   shipped:$('shipped'),cash:$('cash'),perMinute:$('perMinute'),waste:$('waste'),
   orders:$('orders'),orderList:$('orderList'),collapseOrders:$('collapseOrders'),
   challengeBtn:$('challengeBtn'),challengeTitle:$('challengeTitle'),challengeProgress:$('challengeProgress'),
-  analysisBtn:$('analysisBtn'),pauseBtn:$('pauseBtn'),speedBtn:$('speedBtn'),rotateBtn:$('rotateBtn'),helpBtn:$('helpBtn'),
+  analysisBtn:$('analysisBtn'),bookBtn:$('bookBtn'),pauseBtn:$('pauseBtn'),speedBtn:$('speedBtn'),rotateBtn:$('rotateBtn'),helpBtn:$('helpBtn'),
   analysisLegend:$('analysisLegend'),toast:$('toast'),toolbar:$('toolbar'),
   undoBtn:$('undoBtn'),redoBtn:$('redoBtn'),saveBtn:$('saveBtn'),
   intro:$('intro'),newBtn:$('newBtn'),continueBtn:$('continueBtn'),
-  help:$('help'),closeHelpBtn:$('closeHelpBtn'),
+  help:$('help'),closeHelpBtn:$('closeHelpBtn'),book:$('book'),bookList:$('bookList'),closeBookBtn:$('closeBookBtn'),
   discover:$('discover'),discoverLayers:$('discoverLayers'),discoverText:$('discoverText'),discoverName:$('discoverName'),discoverSave:$('discoverSave')
 };
 
@@ -55,7 +55,7 @@ const MACHINE={
   toaster:{name:'토스터',color:0xc87555,time:1.05},
   packer:{name:'포장기',color:0x8b77bc,time:.62}
 };
-const SAVE_KEY='kidscade_game_v1:high_factory_tycoon:save';
+const SAVE_BASE='kidscade_game_v1:high_factory_tycoon:slot';
 const MODEL_KEYS=Object.keys(INGREDIENTS);
 
 let scene,camera,renderer,raycaster,floor,loader;
@@ -68,7 +68,7 @@ let running=false,paused=false,speed=1,selectedTool='belt',rotation=0,analysis=f
 let stats={shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}};
 let orders=[],challengeIndex=0;
 let undoStack=[],redoStack=[];
-let pendingDiscovery=null,toastTimer=0;
+let pendingDiscovery=null,toastTimer=0,activeSlot=1;
 let cameraTarget=new THREE.Vector3(0,0,0),viewSize=34;
 let activePointers=new Map(),dragBuild=null,panGesture=null,lastFrame=performance.now(),acc=0;
 let cellHeat=new Map();
@@ -151,7 +151,7 @@ function normalizeModel(obj,target=.7){
   const box=new THREE.Box3().setFromObject(obj),size=box.getSize(new THREE.Vector3());
   const s=Math.max(size.x,size.y,size.z)||1;obj.scale.multiplyScalar(target/s);obj.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(obj),c=b.getCenter(new THREE.Vector3());
-  obj.position.sub(c);obj.position.y-=b.min.y;return obj;
+  obj.position.x-=c.x;obj.position.z-=c.z;obj.position.y-=b.min.y;return obj;
 }
 function cloneModel(id){
   const m=models.get(id);
@@ -422,7 +422,8 @@ function tickMachines(dt){
     const [x,y]=k.split(',').map(Number),st=machineState(x,y);
     if(st.timer>0)st.timer-=dt;
     if(st.busy&&st.timer<=0&&!isOccupied(x,y)){
-      spawnItem(x,y,c.dir,st.busy,true);st.busy=null;st.timer=0;
+      const out=spawnItem(x,y,c.dir,st.busy,true);
+      if(out){st.busy=null;st.timer=0}
     }
   }
 }
@@ -433,30 +434,23 @@ function visualOutDir(cell,it){
   if(cell.dir!==undefined)return cell.dir;
   return it.dir;
 }
-function takeOutDir(cell,it){
-  if(!cell)return it.dir;
-  if(cell.type==='splitter'){
-    const d=cell.toggle?rotRight(cell.dir):cell.dir;
-    cell.toggle=!cell.toggle;
-    return d;
-  }
-  return visualOutDir(cell,it);
-}
+function takeOutDir(cell,it){return visualOutDir(cell,it)}
+function markSplitUsed(cell){if(cell?.type==='splitter')cell.toggle=!cell.toggle}
 function tryAdvance(it){
   const current=cellAt(it.x,it.y),d=takeOutDir(current,it),v=DIRS[d],nx=it.x+v.x,ny=it.y+v.y;
-  if(!inBounds(nx,ny)){discardItem(it);return true}
+  if(!inBounds(nx,ny)){discardItem(it);markSplitUsed(current);return true}
   const target=cellAt(nx,ny);
-  if(!target){discardItem(it);return true}
+  if(!target){discardItem(it);markSplitUsed(current);return true}
   if(target.type==='supplier')return false;
-  if(target.type==='ship'){shipItem(it);it.dead=true;removeItemView(it);return true}
+  if(target.type==='ship'){shipItem(it);it.dead=true;removeItemView(it);markSplitUsed(current);return true}
   if(MACHINE[target.type]){
-    if(acceptedMachine(target,it,d,nx,ny)){it.dead=true;removeItemView(it);return true}
+    if(acceptedMachine(target,it,d,nx,ny)){it.dead=true;removeItemView(it);markSplitUsed(current);return true}
     return false;
   }
   if(isOccupied(nx,ny,it))return false;
   it.x=nx;it.y=ny;it.progress=0;it.wait=0;
   if(target.type==='cross')it.dir=d;else if(target.dir!==undefined)it.dir=target.dir;else it.dir=d;
-  return true;
+  markSplitUsed(current);return true;
 }
 function tickItems(dt){
   cellHeat.clear();
@@ -561,16 +555,17 @@ function frame(now){
   updateItemViews();renderer.render(scene,camera);
 }
 
+function saveKey(slot=activeSlot){return SAVE_BASE+slot}
 function serialize(){
   return {version:1,blueprint:snapshotBlueprint(),stats,gameTime,challengeIndex,camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},savedAt:Date.now()};
 }
 function saveGame(notify=true){
-  try{window.KidscadeStorage?.setJson(SAVE_KEY,serialize());if(notify){sound('ok');showToast('공장을 저장했어요.')}}catch(_){if(notify)showToast('저장하지 못했어요.')}
+  try{window.KidscadeStorage?.setJson(saveKey(),serialize());refreshSlots();if(notify){sound('ok');showToast('공장 '+activeSlot+'을 저장했어요.')}}catch(_){if(notify)showToast('저장하지 못했어요.')}
 }
-function hasSave(){try{return !!window.KidscadeStorage?.getJson(SAVE_KEY,null)}catch(_){return false}}
+function hasSave(slot=activeSlot){try{return !!window.KidscadeStorage?.getJson(saveKey(slot),null)}catch(_){return false}}
 function loadGame(){
   try{
-    const s=window.KidscadeStorage?.getJson(SAVE_KEY,null);if(!s)return false;
+    const s=window.KidscadeStorage?.getJson(saveKey(),null);if(!s)return false;
     blueprint=new Map((s.blueprint||[]).map(([k,v])=>[k,{...v}]));
     stats=Object.assign({shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}},s.stats||{});stats.shipTimes=[];
     gameTime=Number(s.gameTime)||0;challengeIndex=Number(s.challengeIndex)||0;
@@ -583,7 +578,7 @@ function newGame(){
 }
 function startGame(load){
   if(load&&!loadGame())newGame();else if(!load)newGame();
-  ui.intro.classList.add('hidden');running=true;paused=false;ui.pauseBtn.textContent='Ⅱ';window.KidscadeGame?.start?.();updateHud();showToast('재료 공급기가 움직이기 시작했어요.',1700);
+  ui.intro.classList.add('hidden');running=true;paused=false;ui.pauseBtn.textContent='Ⅱ';window.KidscadeGame?.start?.();updateHud();showToast('공장 '+activeSlot+' · 재료 공급기가 움직이기 시작했어요.',1700);
 }
 function togglePause(){
   paused=!paused;ui.pauseBtn.textContent=paused?'▶':'Ⅱ';
@@ -595,15 +590,45 @@ function setTool(t){
 function rotateTool(){rotation=(rotation+1)%4;sound('click');showToast(['오른쪽','아래','왼쪽','위'][rotation]+' 방향')}
 function toggleAnalysis(){analysis=!analysis;ui.analysisBtn.classList.toggle('active',analysis);ui.analysisLegend.classList.toggle('hidden',!analysis);rebuildFactoryVisuals();showToast(analysis?'막힌 흐름을 색으로 표시해요.':'분석 보기를 껐어요.')}
 function cycleSpeed(){speed=speed===1?2:speed===2?4:1;ui.speedBtn.textContent='×'+speed;sound('click')}
-function setContinueVisibility(){ui.continueBtn.disabled=!hasSave();ui.continueBtn.textContent=hasSave()?'이어하기':'저장된 공장 없음'}
+function setContinueVisibility(){ui.continueBtn.disabled=!hasSave();ui.continueBtn.textContent=hasSave()?'공장 '+activeSlot+' 이어하기':'공장 '+activeSlot+' · 저장 없음'}
+function refreshSlots(){
+  document.querySelectorAll('.slot').forEach(b=>{
+    const n=Number(b.dataset.slot);b.classList.toggle('active',n===activeSlot);b.classList.toggle('saved',hasSave(n));
+  });
+  setContinueVisibility();
+}
+function selectSlot(n){activeSlot=clamp(Number(n)||1,1,3);refreshSlots();sound('click')}
+function openBook(){
+  renderBook();ui.book.classList.remove('hidden');paused=true;ui.pauseBtn.textContent='▶';
+}
+function closeBook(){ui.book.classList.add('hidden');paused=false;ui.pauseBtn.textContent='Ⅱ'}
+function renderBook(){
+  const entries=Object.values(stats.discoveries||{});
+  ui.bookList.innerHTML='';
+  if(!entries.length){ui.bookList.innerHTML='<div class="bookEmpty">아직 발견한 샌드위치가 없어요.<br>재료를 3층 이상 쌓아 출고해 보세요.</div>';return}
+  entries.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));
+  for(const d of entries){
+    const div=document.createElement('div');div.className='bookEntry';
+    const layers=(d.layers||[]).map(l=>INGREDIENTS[l.id]?.label||l.id).join(' · ');
+    div.innerHTML='<b>'+escapeHtml(d.name||'이름 없는 샌드위치')+'</b><small>'+escapeHtml(layers)+'</small><em>발견 가격 '+money(d.value||0)+'</em>';
+    ui.bookList.appendChild(div);
+  }
+}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 
 document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 ui.undoBtn.addEventListener('click',undo);ui.redoBtn.addEventListener('click',redo);ui.saveBtn.addEventListener('click',()=>saveGame(true));
-ui.rotateBtn.addEventListener('click',rotateTool);ui.analysisBtn.addEventListener('click',toggleAnalysis);ui.speedBtn.addEventListener('click',cycleSpeed);ui.pauseBtn.addEventListener('click',togglePause);
+ui.rotateBtn.addEventListener('click',rotateTool);ui.analysisBtn.addEventListener('click',toggleAnalysis);ui.bookBtn.addEventListener('click',openBook);ui.speedBtn.addEventListener('click',cycleSpeed);ui.pauseBtn.addEventListener('click',togglePause);
 ui.helpBtn.addEventListener('click',()=>{ui.help.classList.remove('hidden');paused=true;ui.pauseBtn.textContent='▶'});
 ui.closeHelpBtn.addEventListener('click',()=>{ui.help.classList.add('hidden');paused=false;ui.pauseBtn.textContent='Ⅱ'});
+ui.closeBookBtn.addEventListener('click',closeBook);
 ui.collapseOrders.addEventListener('click',()=>{ui.orders.classList.toggle('collapsed');ui.collapseOrders.textContent=ui.orders.classList.contains('collapsed')?'›':'‹'});
-ui.newBtn.addEventListener('click',()=>startGame(false));ui.continueBtn.addEventListener('click',()=>{if(hasSave())startGame(true)});
+document.querySelectorAll('.slot').forEach(b=>b.addEventListener('click',()=>selectSlot(b.dataset.slot)));
+ui.newBtn.addEventListener('click',()=>{
+  if(hasSave()&&!confirm('공장 '+activeSlot+'의 저장 내용을 새 공장으로 덮어쓸까요?'))return;
+  startGame(false);
+});
+ui.continueBtn.addEventListener('click',()=>{if(hasSave())startGame(true)});
 ui.discoverSave.addEventListener('click',saveDiscovery);ui.discoverName.addEventListener('keydown',e=>{if(e.key==='Enter')saveDiscovery()});
 ui.challengeBtn.addEventListener('click',()=>showToast('선택 도전은 공장 운영을 막지 않아요.',1600));
 addEventListener('keydown',e=>{
@@ -618,4 +643,4 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)sa
 addEventListener('beforeunload',()=>{if(running)saveGame(false)});
 window.KidscadeGame?.registerPauseHandlers?.({pause:()=>{paused=true;ui.pauseBtn.textContent='▶'},resume:()=>{paused=false;ui.pauseBtn.textContent='Ⅱ'}});
 
-initThree();pickOrders();setContinueVisibility();syncUndo();updateHud();requestAnimationFrame(frame);
+initThree();pickOrders();refreshSlots();syncUndo();updateHud();requestAnimationFrame(frame);
