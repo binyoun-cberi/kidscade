@@ -61,7 +61,7 @@ var LEVELS=[
     goal:"매달린 장애물 아래로 길을 내려 보세요",
     tip:"이번에는 반대로 길을 아래쪽으로 휘어야 해요.",
     gap:470,vehicle:"bus",leftY:395,rightY:405,waterY:558,par:1.15,
-    obstacles:[{type:"down",at:.52,w:128,bottom:352,label:"터널"}]
+    obstacles:[{type:"down",at:.52,w:128,bottom:380,label:"터널"}]
   },
   {
     title:"4. 위로, 아래로!",
@@ -90,7 +90,7 @@ var LEVELS=[
     gap:610,vehicle:"bus",leftY:402,rightY:395,waterY:575,par:1.40,
     obstacles:[
       {type:"up",at:.23,w:72,top:330,label:"기둥"},
-      {type:"down",at:.50,w:86,bottom:294,label:"천장"},
+      {type:"down",at:.50,w:86,bottom:330,label:"천장"},
       {type:"up",at:.77,w:74,top:340,label:"기둥"}
     ]
   },
