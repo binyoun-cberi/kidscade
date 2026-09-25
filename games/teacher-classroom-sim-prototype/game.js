@@ -40,18 +40,32 @@
     arin:{name:'아린',tone:'mint',icon:'👧',base:'말수가 적고 불편한 일이 있어도 한동안 혼자 가지고 있는 편',known:[]}
   };
 
+  var studentStatDefaults={
+    minsu:{participation:62,confidence:63,trust:56},
+    jiwoo:{participation:64,confidence:61,trust:58},
+    seoyeon:{participation:68,confidence:49,trust:60},
+    taeho:{participation:48,confidence:45,trust:57},
+    junho:{participation:66,confidence:66,trust:54},
+    arin:{participation:51,confidence:52,trust:61}
+  };
+  function cloneStudentStats(){
+    var out={};
+    Object.keys(studentStatDefaults).forEach(function(id){out[id]=Object.assign({},studentStatDefaults[id])});
+    return out;
+  }
+
   var phases=[
     {start:510,end:540,label:'등교 준비',board:'좋은 아침!',hint:'1교시까지 {n}분'},
-    {start:540,end:580,label:'1교시 · 수학',board:'수학 · 받아올림 있는 덧셈',hint:'수업 종료까지 {n}분'},
+    {start:540,end:580,label:'1교시 · 수학',board:'수학 · 받아올림 있는 덧셈',hint:'수업 종료까지 {n}분',lessonId:'math',subject:'수학'},
     {start:580,end:590,label:'쉬는 시간',board:'쉬는 시간',hint:'다음 수업까지 {n}분'},
-    {start:590,end:630,label:'2교시 · 국어',board:'국어 · 중심 내용 찾기',hint:'수업 종료까지 {n}분'},
+    {start:590,end:630,label:'2교시 · 국어',board:'국어 · 중심 내용 찾기',hint:'수업 종료까지 {n}분',lessonId:'korean',subject:'국어'},
     {start:630,end:640,label:'쉬는 시간',board:'쉬는 시간',hint:'다음 수업까지 {n}분'},
-    {start:640,end:680,label:'3교시 · 체육',board:'체육 · 협동 게임',hint:'수업 종료까지 {n}분'},
+    {start:640,end:680,label:'3교시 · 체육',board:'체육 · 협동 게임',hint:'수업 종료까지 {n}분',lessonId:'pe',subject:'체육'},
     {start:680,end:690,label:'쉬는 시간',board:'쉬는 시간',hint:'점심 전 {n}분'},
     {start:690,end:755,label:'점심 시간',board:'점심 시간',hint:'점심 종료까지 {n}분'},
-    {start:755,end:820,label:'4교시 · 사회',board:'사회 · 우리 지역 읽기',hint:'수업 종료까지 {n}분'},
+    {start:755,end:820,label:'4교시 · 사회',board:'사회 · 우리 지역 읽기',hint:'수업 종료까지 {n}분',lessonId:'social',subject:'사회'},
     {start:820,end:830,label:'쉬는 시간',board:'쉬는 시간',hint:'다음 수업까지 {n}분'},
-    {start:830,end:870,label:'5교시 · 미술',board:'미술 · 재료로 표현하기',hint:'수업 종료까지 {n}분'},
+    {start:830,end:870,label:'5교시 · 미술',board:'미술 · 재료로 표현하기',hint:'수업 종료까지 {n}분',lessonId:'art',subject:'미술'},
     {start:870,end:890,label:'청소·종례',board:'하루 정리',hint:'하교까지 {n}분'},
     {start:890,end:990,label:'하교 후 업무',board:'아이들은 하교했습니다',hint:'퇴근 가능까지 {n}분'},
     {start:990,end:1050,label:'초과 근무',board:'조용해진 교실',hint:'조금 늦은 시간'}
@@ -332,6 +346,7 @@
       flags:{},records:[],recordDrafts:[],notes:[],taskStatus:taskStatus,dynamicTasks:[],
       checkedDocs:{},taskAnswers:{},rareEventId:chooseRareEvent(),
       openedStudents:{},overtime:false,endPrompted:false,finished:false,tutorialStep:0,tutorialDone:false,
+      studentStats:cloneStudentStats(),lessonTeaching:{},lessonEvaluated:{},lessonResults:[],pendingLessonResult:null,lessonSystemVersion:1,
       saveStamp:Date.now()
     };
   }
@@ -339,32 +354,186 @@
   var state=freshState();
   var fastForwardHeld=false;
 
+  function ensureLessonState(legacy){
+    if(!state.studentStats)state.studentStats=cloneStudentStats();
+    Object.keys(studentStatDefaults).forEach(function(id){
+      state.studentStats[id]=Object.assign({},studentStatDefaults[id],state.studentStats[id]||{});
+    });
+    if(!state.lessonTeaching)state.lessonTeaching={};
+    if(!state.lessonEvaluated)state.lessonEvaluated={};
+    if(!Array.isArray(state.lessonResults))state.lessonResults=[];
+    if(state.pendingLessonResult===undefined)state.pendingLessonResult=null;
+    if(legacy){
+      phases.forEach(function(p){
+        if(p.lessonId&&p.start<state.minute)state.lessonEvaluated[p.lessonId]=true;
+      });
+    }
+    state.lessonSystemVersion=1;
+  }
+  function isLessonPhase(p){return !!(p&&p.lessonId)}
+  function studentProgress(id){
+    ensureLessonState(false);
+    return state.studentStats[id]||studentStatDefaults[id];
+  }
+  function statDelta(id,delta){
+    var s=studentProgress(id);
+    ['participation','confidence','trust'].forEach(function(k){
+      s[k]=clamp(Math.round((s[k]||50)+(delta[k]||0)),0,100);
+    });
+  }
+  function lessonCoverage(p){
+    if(!isLessonPhase(p))return 0;
+    return clamp((state.lessonTeaching[p.lessonId]||0)/(p.end-p.start),0,1);
+  }
+  function addTeachingMinutes(fromMinute,toMinute){
+    if(toMinute<=fromMinute)return;
+    phases.forEach(function(p){
+      if(!isLessonPhase(p)||state.lessonEvaluated[p.lessonId])return;
+      var overlap=Math.max(0,Math.min(toMinute,p.end)-Math.max(fromMinute,p.start));
+      if(overlap>0)state.lessonTeaching[p.lessonId]=(state.lessonTeaching[p.lessonId]||0)+overlap;
+    });
+  }
+  function evaluateLesson(p){
+    if(!isLessonPhase(p)||state.lessonEvaluated[p.lessonId])return;
+    var coverage=lessonCoverage(p);
+    var pass={},scores={},passedCount=0,ids=Object.keys(students);
+    ids.forEach(function(id){
+      var s=studentProgress(id);
+      var base=s.participation*.45+s.confidence*.35+s.trust*.20;
+      var score=base*.58+coverage*42;
+      score=Math.round(clamp(score,0,100));
+      scores[id]=score;
+      pass[id]=score>=60;
+      if(pass[id])passedCount++;
+    });
+    var tier=passedCount>=5?'good':passedCount>=3?'normal':'disappointing';
+    var changes={};
+    ids.forEach(function(id){
+      var d;
+      if(tier==='good')d=pass[id]?{participation:2,confidence:2,trust:1}:{participation:1,confidence:0,trust:1};
+      else if(tier==='normal')d=pass[id]?{participation:1,confidence:1,trust:1}:{participation:0,confidence:-1,trust:0};
+      else d=pass[id]?{participation:0,confidence:0,trust:0}:{participation:-2,confidence:-2,trust:-1};
+      changes[id]=d;statDelta(id,d);
+    });
+    var result={
+      lessonId:p.lessonId,subject:p.subject||p.label,tier:tier,passedCount:passedCount,total:ids.length,
+      coverage:Math.round(coverage*100),pass:pass,scores:scores,changes:changes,minute:p.end
+    };
+    state.lessonEvaluated[p.lessonId]=true;
+    state.lessonResults.push(result);
+    state.pendingLessonResult=result;
+    save();
+  }
+  function evaluateCrossedLessons(beforeMinute,afterMinute){
+    if(afterMinute<=beforeMinute)return;
+    phases.forEach(function(p){
+      if(isLessonPhase(p)&&beforeMinute<p.end&&afterMinute>=p.end)evaluateLesson(p);
+    });
+  }
+
+  var AUDIO_ROOT='./assets/audio/';
+  var audioDefs={
+    message:{file:'message-notification.mp3',volume:.22},
+    talk:{file:'classroom-talk.mp3',volume:.075,loop:true},
+    fight:{file:'student-fight.mp3',volume:.18,loop:true},
+    teacher:{file:'lesson-teacher.mp3',volume:.035,loop:true},
+    ambience:{file:'classroom-ambience.mp3',volume:.085,loop:true},
+    bell:{file:'school-bell.mp3',volume:.24},
+    phone:{file:'phone-ring.mp3',volume:.20,loop:true}
+  };
+  var audioCache={},audioEnabled=false,audioPrimed=false,activeAmbient=null,lastAudioPhase=-1,lastAudioTasks={};
+  function audioNode(key){
+    if(audioCache[key])return audioCache[key];
+    var def=audioDefs[key];if(!def||typeof Audio==='undefined')return null;
+    var a=new Audio(AUDIO_ROOT+def.file);a.preload='auto';a.volume=def.volume;a.loop=!!def.loop;
+    a.addEventListener('error',function(){a.dataset.failed='1'});
+    audioCache[key]=a;return a;
+  }
+  function playAudio(key,restart){
+    if(!audioEnabled)return;
+    var a=audioNode(key);if(!a||a.dataset.failed==='1')return;
+    if(restart){try{a.currentTime=0}catch(e){}}
+    var promise=a.play();if(promise&&promise.catch)promise.catch(function(){});
+  }
+  function stopAudio(key){
+    var a=audioCache[key];if(!a)return;
+    a.pause();
+    try{a.currentTime=0}catch(e){}
+  }
+  function syncLoop(key,on){
+    var a=audioNode(key);if(!a)return;
+    if(on){if(a.paused)playAudio(key,false)}else if(!a.paused)stopAudio(key);
+  }
+  function unlockGameAudio(){
+    if(audioEnabled)return;
+    audioEnabled=true;syncGameAudio(true);
+  }
+  function syncGameAudio(initial){
+    if(!audioEnabled)return;
+    var p=currentPhase(),idx=phases.indexOf(p);
+    if(!audioPrimed||initial){
+      lastAudioPhase=idx;
+      availableTasks().forEach(function(t){lastAudioTasks[t.id]=true});
+      audioPrimed=true;
+    }else if(idx!==lastAudioPhase){
+      var prev=phases[lastAudioPhase];
+      if((prev&&isLessonPhase(prev))||isLessonPhase(p)||/쉬는 시간|점심 시간|청소·종례/.test(p.label))playAudio('bell',true);
+      lastAudioPhase=idx;
+    }
+    var wantedAmbient=isLessonPhase(p)?'ambience':(/쉬는 시간|점심 시간/.test(p.label)?'talk':null);
+    if(activeAmbient!==wantedAmbient){
+      if(activeAmbient)stopAudio(activeAmbient);
+      activeAmbient=wantedAmbient;
+      if(activeAmbient)playAudio(activeAmbient,false);
+    }
+    syncLoop('teacher',isLessonPhase(p)&&fastForwardHeld&&!fastForwardBlocked());
+    syncLoop('phone',!!state.incomingPhone);
+    syncLoop('fight',state.activeEvent==='rare_fight');
+    var nowTasks={};
+    availableTasks().forEach(function(t){
+      nowTasks[t.id]=true;
+      if(audioPrimed&&!lastAudioTasks[t.id])playAudio('message',true);
+    });
+    lastAudioTasks=nowTasks;
+  }
+  document.addEventListener('pointerdown',unlockGameAudio,{capture:true,once:true});
+  document.addEventListener('keydown',unlockGameAudio,{capture:true,once:true});
+
   function fastForwardBlocked(){
     return state.finished||state.activeEvent||state.resultEvent||state.incomingPhone||state.backlog.length||
-      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden;
+      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden||!q('#lessonResultPanel').hidden;
   }
   function updateFastForwardUI(){
     var btn=q('#fastForwardButton');if(!btn)return;
+    var p=currentPhase(),lesson=isLessonPhase(p),coverage=lesson?Math.round(lessonCoverage(p)*100):0;
+    var label=q('#lessonActionLabel')||btn.querySelector('strong');
+    var small=q('#lessonActionHint')||btn.querySelector('small');
+    btn.dataset.mode=lesson?'lesson':'wait';
     btn.classList.toggle('active',fastForwardHeld);
     btn.disabled=!!(state.finished||state.activeEvent||state.resultEvent||state.incomingPhone||state.backlog.length||
-      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden);
-    var small=btn.querySelector('small');
-    if(small)small.textContent=fastForwardHeld?'4×로 가는 중':'누르고 있기 · Space';
+      !q('#toolModal').hidden||!q('#tutorial').hidden||!q('#dayEnd').hidden||!q('#lessonResultPanel').hidden);
+    if(label)label.textContent=lesson?'수업을 한다':'시간을 보낸다';
+    if(small){
+      if(lesson)small.textContent=fastForwardHeld?(p.subject+' 수업 중 · '+coverage+'%'):('길게 누르기 · Space · 수업 '+coverage+'%');
+      else small.textContent=fastForwardHeld?'4×로 시간 보내는 중':'길게 누르기 · Space';
+    }
   }
   function startFastForward(){
     if(fastForwardBlocked())return;
-    fastForwardHeld=true;updateFastForwardUI();
+    fastForwardHeld=true;updateFastForwardUI();syncGameAudio();
   }
   function stopFastForward(){
-    if(!fastForwardHeld){updateFastForwardUI();return}
-    fastForwardHeld=false;updateFastForwardUI();
+    if(!fastForwardHeld){updateFastForwardUI();syncGameAudio();return}
+    fastForwardHeld=false;updateFastForwardUI();syncGameAudio();
   }
 
   function load(){
     try{
       var raw=localStorage.getItem(SAVE_KEY);if(!raw)return;
       var saved=JSON.parse(raw);if(!saved||typeof saved.minute!=='number')return;
+      var legacyLesson=!saved.lessonSystemVersion;
       state=Object.assign(freshState(),saved);
+      ensureLessonState(legacyLesson);
       state.lastReal=performance.now();
     }catch(e){}
   }
@@ -377,6 +546,7 @@
     state.tutorialDone=true;
     q('#tutorial').hidden=true;
     q('#dayEnd').hidden=true;
+    q('#lessonResultPanel').hidden=true;
     closeModal();
     renderAll();
     toast('첫날을 다시 시작했습니다.');
@@ -882,7 +1052,9 @@
 
   function consumeMinutes(n,reason){
     if(!n)return;
+    var beforeMinute=state.minute;
     state.minute+=n;
+    evaluateCrossedLessons(beforeMinute,state.minute);
     if(reason)state.flags.lastTimeUse=reason;
     processEvents();checkDeadlines();checkDayEnd();
   }
@@ -1026,8 +1198,30 @@
     q('#phoneBadge').textContent=state.incomingPhone?'전화 오는 중':'조용함';
   }
 
+  function renderLessonResult(){
+    var panel=q('#lessonResultPanel');if(!panel)return;
+    var r=state.pendingLessonResult;
+    if(!r){panel.hidden=true;return}
+    panel.hidden=false;
+    var title=r.tier==='good'?'좋은 수업이었다':r.tier==='normal'?'무난하게 마쳤다':'조금 아쉬운 수업이었다';
+    var lead=r.tier==='good'?'대부분의 학생이 흐름을 따라왔다. 참여와 자신감이 함께 올라갔다.':
+      r.tier==='normal'?'절반 정도는 잘 따라왔지만 몇몇 학생은 버거워했다.':'따라오기 힘들어한 학생이 많았다. 참여와 자신감이 떨어질 수 있다.';
+    q('#lessonResultKicker').textContent=r.subject+' · 수업 결과';
+    q('#lessonResultTitle').textContent=title;
+    q('#lessonResultLead').textContent=r.total+'명 중 '+r.passedCount+'명이 수업 흐름을 따라옴 · 수업 진행 '+r.coverage+'%';
+    q('#lessonResultText').textContent=lead;
+    q('#lessonResultStudents').innerHTML=Object.keys(students).map(function(id){
+      return '<span class="'+(r.pass[id]?'followed':'struggled')+'">'+students[id].name+' '+(r.pass[id]?'✓':'△')+'</span>';
+    }).join('');
+  }
+
   function renderAll(){
-    renderHeader();renderVisitor();renderWaiting();renderTasks();updateFastForwardUI();
+    renderHeader();renderVisitor();renderWaiting();renderTasks();renderLessonResult();updateFastForwardUI();syncGameAudio();
+  }
+
+  function studentStatHtml(id){
+    var st=studentProgress(id);
+    return '<div class="student-stat-pills"><span>수업 참여 <b>'+st.participation+'</b></span><span>학습 자신감 <b>'+st.confidence+'</b></span><span>교사 신뢰 <b>'+st.trust+'</b></span></div>';
   }
 
   function renderModal(kind,studentId){
@@ -1039,13 +1233,13 @@
         var s=student(studentId);state.openedStudents[studentId]=true;
         title.textContent=s.name+' · 명부';
         body.innerHTML='<button class="back-button" data-back-roster="1">← 명부로</button>'+
-          '<div class="student-detail"><div class="detail-avatar">'+s.icon+'</div><div><h3>'+escapeHtml(s.name)+'</h3><p>'+escapeHtml(s.base)+'</p>'+
+          '<div class="student-detail"><div class="detail-avatar">'+s.icon+'</div><div><h3>'+escapeHtml(s.name)+'</h3><p>'+escapeHtml(s.base)+'</p>'+studentStatHtml(studentId)+
           '<div class="detail-section"><h4>직접 알게 된 점</h4>'+(s.known.length?'<ul>'+s.known.map(function(x){return '<li>'+escapeHtml(x)+'</li>'}).join('')+'</ul>':'<p>아직 직접 겪으며 알게 된 것이 많지 않습니다.</p>')+'</div>'+
           '<div class="detail-section"><h4>남긴 기록</h4><p>'+state.records.filter(function(r){return r.studentIds.indexOf(studentId)>=0}).length+'건</p></div></div></div>';
       }else{
         body.innerHTML='<div class="roster-grid">'+Object.keys(students).map(function(id){
           var s=students[id],known=s.known.length;
-          return '<button class="roster-card" data-student-id="'+id+'"><strong>'+s.icon+' '+escapeHtml(s.name)+'</strong><span>'+escapeHtml(s.base)+'</span><span>알게 된 점 '+known+'개</span></button>';
+          return '<button class="roster-card" data-student-id="'+id+'"><strong>'+s.icon+' '+escapeHtml(s.name)+'</strong><span>'+escapeHtml(s.base)+'</span>'+studentStatHtml(id)+'<span>알게 된 점 '+known+'개</span></button>';
         }).join('')+'</div>';
       }
     }else if(kind==='record'){
@@ -1118,6 +1312,9 @@
   function daySummaryHtml(finalMode){
     var open=availableTasks().filter(function(t){return state.taskStatus[t.id]!=='done'});
     var done=availableTasks().filter(function(t){return state.taskStatus[t.id]==='done'});
+    var lessonGood=state.lessonResults.filter(function(r){return r.tier==='good'}).length;
+    var lessonNormal=state.lessonResults.filter(function(r){return r.tier==='normal'}).length;
+    var lessonBad=state.lessonResults.filter(function(r){return r.tier==='disappointing'}).length;
     var watch=[];
     if(state.flags.pencilUnresolved||!hasRecordFor('minsu','색연필'))watch.push('민수와 지우의 색연필 문제는 다시 확인할 여지가 있다.');
     if(state.flags.seoyeonPushed||state.flags.seoyeonMissed)watch.push('서연이 수학에서 멈추는 장면을 한 번 더 살펴볼 필요가 있다.');
@@ -1126,6 +1323,7 @@
     if(!watch.length)watch.push('오늘 눈에 띈 아이들을 내일 다시 천천히 살펴본다.');
     return '<div class="summary-box"><strong>처리한 일</strong><ul>'+(done.length?done.map(function(t){return '<li>'+escapeHtml(t.title)+'</li>'}).join(''):'<li>아직 완료한 행정 업무가 많지 않습니다.</li>')+'</ul></div>'+
       '<div class="summary-box"><strong>남은 일</strong><ul>'+(open.length?open.map(function(t){return '<li>'+escapeHtml(t.title)+'</li>'}).join(''):'<li>오늘 업무는 모두 정리했습니다.</li>')+'</ul></div>'+
+      '<div class="summary-box"><strong>수업 결과</strong><ul><li>좋음 '+lessonGood+'회 · 보통 '+lessonNormal+'회 · 아쉬움 '+lessonBad+'회</li><li>수업 결과는 학생의 수업 참여·학습 자신감·교사 신뢰에 누적됩니다.</li></ul></div>'+
       '<div class="summary-box"><strong>조금 더 지켜볼 아이들</strong><ul>'+watch.map(function(x){return '<li>'+escapeHtml(x)+'</li>'}).join('')+'</ul></div>'+
       '<div class="summary-box"><strong>오늘 남긴 것</strong><ul><li>학생 기록 '+state.records.length+'건</li><li>직접 메모 '+state.notes.length+'개</li><li>'+(state.overtime?'오늘은 정규 퇴근 시간 뒤에도 남아 있었다.':'정규 퇴근 시간 안에 하루를 마무리했다.')+'</li></ul></div>';
   }
@@ -1147,7 +1345,7 @@
       {title:'정답을 맞히는 게임이 아닙니다.',text:'학생, 보호자, 학교 업무가 한꺼번에 들어옵니다. 무엇을 지금 처리하고 무엇을 미룰지 정하는 것이 첫 번째 일입니다.',visual:'학생이 기다리는 동안 전화가 울릴 수도 있고, 컴퓨터 업무의 마감도 계속 다가옵니다.'},
       {title:'책상 위 물건이 실제 도구입니다.',text:'명부에서는 아이를 알아가고, 기록철에는 직접 겪은 일을 남깁니다. 컴퓨터에서는 행정 업무를 처리합니다.',visual:'📚 명부　📒 기록철　🖥️ 컴퓨터　☎ 전화　🗒️ 포스트잇'},
       {title:'기록하지 않아도 됩니다.',text:'다만 며칠 뒤가 아니라 오늘 오후에도 보호자가 전화를 할 수 있습니다. 그때 기록이 있으면 정확히 되짚을 수 있습니다.',visual:'사건 → 기록 여부는 선택 → 나중에 그 기록이 실제로 필요해질 수 있음'},
-      {title:'오후로 갈수록 일이 겹칩니다.',text:'처음에는 한 가지씩 들어오지만 점심 이후에는 서류 확인, 전화, 학생 일, 마감 업무가 동시에 쌓입니다. 자료를 열어 대조하는 동안에도 시간은 조금씩 흐릅니다.',visual:'확인 자료 → 내용 대조 → 입력 → 잘못 입력하면 정정 업무 추가. 아주 드물게 긴급 사건이 끼어들어 하루 계획을 흔들 수도 있습니다.'}
+      {title:'수업 시간도 그냥 지나가지 않습니다.',text:'수업 시간이 되면 화면 아래의 “수업을 한다”를 길게 누르세요. Space도 같습니다. 얼마나 수업을 진행했고 학생들이 얼마나 따라왔는지에 따라 좋음·보통·아쉬움 결과가 나옵니다.',visual:'수업을 한다 → 따라온 학생 수 판정 → 수업 참여 · 학습 자신감 · 교사 신뢰가 다음 수업에 누적됩니다.'}
     ];
     return rows[clamp(step,0,rows.length-1)];
   }
@@ -1165,7 +1363,10 @@
       var base=state.minute<620?.40:state.minute<760?.46:state.minute<890?.52:.48;
       if(fastForwardBlocked()&&fastForwardHeld)stopFastForward();
       var speed=fastForwardHeld?base*4:toolOpen?base*.72:state.activeEvent?base*.90:state.resultEvent?base*.82:base;
-      state.minute+=dt*speed;
+      var beforeMinute=state.minute,afterMinute=state.minute+dt*speed;
+      if(fastForwardHeld)addTeachingMinutes(beforeMinute,afterMinute);
+      state.minute=afterMinute;
+      evaluateCrossedLessons(beforeMinute,state.minute);
       processEvents();checkDeadlines();checkDayEnd();renderAll();
     }
     if(Math.floor(now/8000)!==Math.floor((now-dt*1000)/8000))save();
@@ -1207,6 +1408,9 @@
   q('#deferButton').addEventListener('click',deferActive);
   q('#resultClose').addEventListener('click',function(){
     state.resultEvent=null;state.resultData=null;processEvents();save();renderAll();
+  });
+  q('#lessonResultClose').addEventListener('click',function(){
+    state.pendingLessonResult=null;save();renderAll();
   });
   q('#waitingList').addEventListener('click',function(e){
     var phone=e.target.closest('[data-answer-phone]');if(phone){answerPhone();return}
