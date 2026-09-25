@@ -52,7 +52,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=7');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=8');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -90,6 +90,41 @@ test('Disaster City core simulation supports upgrades, deck cleanup and spatial 
  sim.state.hand=[];sim.state.discard=[];
  const rewards=sim.makeRewards();
  assert.ok(rewards.some(x=>x.kind==='cleanup'));
+});
+
+test('Disaster City floods end naturally and urgent repair prioritizes the blocking levee',()=>{
+ const vm=require('node:vm');
+ const context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+  vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ }
+ const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
+ sim.start({seed:777});
+ sim.state.next={side:'left',type:'flood',in:0,visible:true};
+ sim.update(1/30);
+ const flood=sim.state.disasters[0];
+ assert.ok(flood&&flood.type==='flood');
+ assert.ok(Number.isFinite(flood.maxAge)&&flood.maxAge<=55);
+ const floodId=flood.id,maxAge=flood.maxAge;
+ sim.state.next.in=999;
+ for(let i=0;i<Math.ceil((maxAge+1)*30);i++){
+  sim.state.stability=100;
+  sim.update(1/30);
+ }
+ assert.equal(sim.state.disasters.some(d=>d.id===floodId),false,'a flood must not linger forever');
+ assert.ok(sim.state.stats.resolved>=1);
+
+ sim.state.disasters=[{id:'repair-test',type:'flood',side:'left',progress:.35,blockedSlot:1,energy:50,maxEnergy:50,age:1,maxAge:40,strength:1}];
+ sim.state.slots[1].building={id:'levee',hp:30,maxHp:150,level:1};
+ sim.state.slots[2].building={id:'farm',hp:1,maxHp:85,level:1};
+ sim.state.hand=[{id:'repair',uid:9999}];
+ sim.state.deck=[];sim.state.discard=[];sim.state.money=500;
+ const beforeLevee=sim.state.slots[1].building.hp,beforeFarm=sim.state.slots[2].building.hp;
+ assert.equal(sim.playAction(9999),true);
+ assert.ok(sim.state.slots[1].building.hp>beforeLevee,'blocking levee should be repaired first');
+ assert.equal(sim.state.slots[2].building.hp,beforeFarm,'other damaged buildings should wait while a levee is actively blocking floodwater');
 });
 
 test('Disaster City survives a long deterministic stress simulation without invalid state',()=>{
