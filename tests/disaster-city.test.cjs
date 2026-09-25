@@ -52,7 +52,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=8');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=9');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -125,6 +125,46 @@ test('Disaster City floods end naturally and urgent repair prioritizes the block
  assert.equal(sim.playAction(9999),true);
  assert.ok(sim.state.slots[1].building.hp>beforeLevee,'blocking levee should be repaired first');
  assert.equal(sim.state.slots[2].building.hp,beforeFarm,'other damaged buildings should wait while a levee is actively blocking floodwater');
+});
+
+test('Disaster City wildfire also ends naturally, rewards preserve the rest timer, and streaks are capped',()=>{
+ const vm=require('node:vm');
+ const context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+  vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ }
+ const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
+ sim.start({seed:778});
+ sim.state.next={side:'left',type:'wildfire',in:0,visible:true};
+ sim.update(1/30);
+ const fire=sim.state.disasters[0];
+ assert.ok(fire&&fire.type==='wildfire');
+ assert.ok(Number.isFinite(fire.maxAge)&&fire.maxAge<=50);
+ const fireId=fire.id,maxAge=fire.maxAge;
+ sim.state.next.in=999;
+ for(let i=0;i<Math.ceil((maxAge+1)*30);i++){
+  sim.state.stability=100;
+  sim.update(1/30);
+ }
+ assert.equal(sim.state.disasters.some(d=>d.id===fireId),false,'a wildfire must not linger forever');
+
+ sim.state.disasters=[];
+ sim.state.rewardChoices=[{kind:'add',id:'farm'}];
+ sim.state.cleanupChoices=[];
+ sim.state.next.in=11;
+ context.window.DisasterCity.Disasters.update(sim,2);
+ assert.equal(sim.state.next.in,11,'reward choice should not consume the next-wave rest timer');
+ sim.state.rewardChoices=[];
+ context.window.DisasterCity.Disasters.update(sim,2);
+ assert.ok(sim.state.next.in<11,'next-wave timer should resume after reward choice');
+
+ sim.state.lastType=null;sim.state.typeStreak=0;
+ sim.scheduleNext({side:'left',type:'flood'});
+ sim.scheduleNext({side:'right',type:'flood'});
+ assert.equal(sim.state.typeStreak,2);
+ assert.equal(sim.state.next.type,'wildfire','three identical disasters in a row should be prevented');
 });
 
 test('Disaster City survives a long deterministic stress simulation without invalid state',()=>{
