@@ -367,6 +367,7 @@
   }
 
   function applyCompatibilityFixes(html) {
+    html = html.replace('data-genre="sandbox">샌드박스</button>\\n', 'data-genre="sandbox">샌드박스</button>\n');
     html = html.replace('href="main-shell.css"', 'href="' + withVersion('main-shell.css') + '"');
     html = html.replace('src="touch-interaction-guard.js"', 'src="' + withVersion('touch-interaction-guard.js') + '"');
     html = html.replace('src="playtime-state.js"', 'src="' + withVersion('playtime-state.js') + '"');
