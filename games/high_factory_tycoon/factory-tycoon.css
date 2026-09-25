@@ -64,3 +64,13 @@ h1,h2{margin:0;letter-spacing:-.045em}h1{font-size:clamp(42px,8vw,68px);line-hei
 }
 @media(max-height:560px){#orders{top:56px}.introCard{padding:18px}.factoryLogo{font-size:38px}.featureRow{margin:9px 0}.lead{margin:8px 0}h1{font-size:40px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+.slotSelect{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 9px}
+.slot{border:1px solid rgba(255,255,255,.11);border-radius:12px;padding:9px 7px;background:rgba(255,255,255,.055);font-size:10px;font-weight:900;cursor:pointer}
+.slot.active{background:#fff0c7;color:#4b3009;border-color:#fff}
+.slot.saved:after{content:" · 저장됨";font-size:8px;opacity:.65}
+.bookCard{width:min(620px,94vw)}.bookList{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:16px 0;max-height:50vh;overflow:auto}
+.bookEntry{padding:12px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}
+.bookEntry b{display:block;font-size:13px}.bookEntry small{display:block;margin-top:5px;color:#9eb0bc;font-size:9px;line-height:1.4}.bookEntry em{display:block;margin-top:6px;color:#ffd37c;font-style:normal;font-size:10px;font-weight:900}
+.bookEmpty{grid-column:1/-1;padding:28px;text-align:center;color:#8fa1ae;font-size:12px}
+@media(max-width:620px){.bookList{grid-template-columns:1fr}}
