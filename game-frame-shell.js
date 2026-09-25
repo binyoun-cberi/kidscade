@@ -221,13 +221,13 @@
         const message = cleanText(event?.message || event?.error?.message);
         if (!message || ignorableRuntimeError(message)) return;
         console.error?.('[KidscadeGameFrame] game runtime error:', event?.error || message);
-        showError({ code:'RUNTIME_ERROR' });
+        showError({ code:'RUNTIME_ERROR', userMessage:`게임 오류: ${message}` });
       };
       const onReject = event => {
         const message = cleanText(event?.reason?.message || event?.reason);
         if (!message || ignorableRuntimeError(message)) return;
         console.error?.('[KidscadeGameFrame] unhandled game rejection:', event?.reason || message);
-        showError({ code:'UNHANDLED_REJECTION' });
+        showError({ code:'UNHANDLED_REJECTION', userMessage:`게임 오류: ${message}` });
       };
       child.addEventListener('error', onError);
       child.addEventListener('unhandledrejection', onReject);
