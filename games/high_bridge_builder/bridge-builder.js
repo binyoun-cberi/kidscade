@@ -36,15 +36,88 @@ var VEHICLES={
   truck:{label:"화물차",speed:118}
 };
 
+/*
+  up   = 아래에서 솟은 장애물. 길을 위로 그려 넘어가야 한다.
+  down = 위에서 내려온 장애물. 길을 아래로 그려 통과해야 한다.
+  같은 x에 up/down을 두면 좁은 통과문이 된다.
+*/
 var LEVELS=[
-  {title:"1. 작은 개울",goal:"차 앞에서 반대쪽 벽까지 길을 그려 주세요",gap:330,vehicle:"sedan",leftY:408,rightY:408,waterY:590},
-  {title:"2. 학교 가는 길",goal:"조금 더 긴 틈을 한 줄로 이어 주세요",gap:410,vehicle:"bus",leftY:408,rightY:398,waterY:590},
-  {title:"3. 언덕 건너기",goal:"높이가 다른 두 벽을 자연스럽게 이어 주세요",gap:470,vehicle:"sedan",leftY:420,rightY:370,waterY:590},
-  {title:"4. 긴급 출동",goal:"구급차가 달릴 길을 한 번에 그려 주세요",gap:520,vehicle:"ambulance",leftY:395,rightY:415,waterY:588},
-  {title:"5. 깊은 골짜기",goal:"물에 닿지 않게 길을 그려 주세요",gap:565,vehicle:"bus",leftY:392,rightY:392,waterY:555},
-  {title:"6. 높은 건너편",goal:"오른쪽 높은 벽까지 부드럽게 이어 주세요",gap:545,vehicle:"sedan",leftY:430,rightY:345,waterY:585},
-  {title:"7. 소방차 출동",goal:"긴 틈을 끊기지 않는 선 하나로 이어 주세요",gap:610,vehicle:"firetruck",leftY:402,rightY:385,waterY:575},
-  {title:"8. 마지막 협곡",goal:"가장 긴 골짜기를 한 줄로 건너 보세요",gap:650,vehicle:"truck",leftY:420,rightY:360,waterY:565}
+  {
+    title:"1. 작은 개울",
+    goal:"처음은 간단해요. 반대쪽까지 길 하나!",
+    tip:"자동차 앞에서 반대쪽 벽까지 이어 보세요.",
+    gap:330,vehicle:"sedan",leftY:408,rightY:408,waterY:590,par:1.02,
+    obstacles:[]
+  },
+  {
+    title:"2. 바위 기둥",
+    goal:"가운데 바위 기둥을 위로 넘어가세요",
+    tip:"직선으로 그리면 부딪혀요. 가운데를 살짝 높여 보세요.",
+    gap:420,vehicle:"sedan",leftY:410,rightY:405,waterY:590,par:1.18,
+    obstacles:[{type:"up",at:.52,w:108,top:332,label:"바위"}]
+  },
+  {
+    title:"3. 낮은 터널",
+    goal:"매달린 장애물 아래로 길을 내려 보세요",
+    tip:"이번에는 반대로 길을 아래쪽으로 휘어야 해요.",
+    gap:470,vehicle:"bus",leftY:395,rightY:405,waterY:558,par:1.15,
+    obstacles:[{type:"down",at:.52,w:128,bottom:318,label:"터널"}]
+  },
+  {
+    title:"4. 위로, 아래로!",
+    goal:"첫 기둥은 위로, 다음 장애물은 아래로 피하세요",
+    tip:"한 번 올라갔다가 다시 내려오는 S자 길이 필요해요.",
+    gap:525,vehicle:"ambulance",leftY:408,rightY:405,waterY:575,par:1.30,
+    obstacles:[
+      {type:"up",at:.31,w:82,top:338,label:"기둥"},
+      {type:"down",at:.70,w:104,bottom:302,label:"매달린 벽"}
+    ]
+  },
+  {
+    title:"5. 좁은 관문",
+    goal:"위아래 장애물 사이의 좁은 틈을 통과하세요",
+    tip:"가운데 노란 관문 사이로 길을 정확히 넣어 보세요.",
+    gap:560,vehicle:"sedan",leftY:408,rightY:408,waterY:575,par:1.16,
+    obstacles:[
+      {type:"down",at:.51,w:112,bottom:300,label:"위 관문"},
+      {type:"up",at:.51,w:112,top:444,label:"아래 관문"}
+    ]
+  },
+  {
+    title:"6. 지그재그 협곡",
+    goal:"기둥과 천장을 번갈아 피해 가세요",
+    tip:"위 → 아래 → 위. 길의 높이를 세 번 바꿔야 해요.",
+    gap:610,vehicle:"bus",leftY:402,rightY:395,waterY:575,par:1.40,
+    obstacles:[
+      {type:"up",at:.23,w:72,top:330,label:"기둥"},
+      {type:"down",at:.50,w:86,bottom:294,label:"천장"},
+      {type:"up",at:.77,w:74,top:340,label:"기둥"}
+    ]
+  },
+  {
+    title:"7. 두 개의 관문",
+    goal:"높이가 다른 두 관문을 차례로 통과하세요",
+    tip:"첫 관문은 조금 높게, 두 번째는 조금 낮게 지나가야 해요.",
+    gap:640,vehicle:"firetruck",leftY:410,rightY:390,waterY:580,par:1.31,
+    obstacles:[
+      {type:"down",at:.31,w:82,bottom:270,label:"관문"},
+      {type:"up",at:.31,w:82,top:405,label:"관문"},
+      {type:"down",at:.70,w:86,bottom:328,label:"관문"},
+      {type:"up",at:.70,w:86,top:468,label:"관문"}
+    ]
+  },
+  {
+    title:"8. 마지막 협곡",
+    goal:"네 장애물을 모두 피해 화물차를 건너게 하세요",
+    tip:"처음부터 끝까지 경로를 보고 한 번에 그려 보세요.",
+    gap:680,vehicle:"truck",leftY:420,rightY:370,waterY:575,par:1.48,
+    obstacles:[
+      {type:"up",at:.18,w:70,top:342,label:"바위"},
+      {type:"down",at:.40,w:82,bottom:286,label:"천장"},
+      {type:"up",at:.62,w:76,top:326,label:"바위"},
+      {type:"down",at:.82,w:76,bottom:320,label:"천장"}
+    ]
+  }
 ];
 
 var S={
@@ -63,7 +136,17 @@ var S={
   toastTimer:0,
   hintTimer:0,
   autoTimer:0,
-  smoke:[]
+  smoke:[],
+  crashFlash:0
+};
+
+var audio={
+  ctx:null,
+  master:null,
+  engineGain:null,
+  engineA:null,
+  engineB:null,
+  filter:null
 };
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -89,18 +172,123 @@ function pointFromEvent(e){
   };
 }
 
+function ensureAudio(){
+  if(audio.ctx){
+    if(audio.ctx.state==="suspended")audio.ctx.resume().catch(function(){});
+    return audio.ctx;
+  }
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return null;
+    audio.ctx=new AC();
+    audio.master=audio.ctx.createGain();
+    audio.master.gain.value=.72;
+    audio.master.connect(audio.ctx.destination);
+    if(audio.ctx.state==="suspended")audio.ctx.resume().catch(function(){});
+    return audio.ctx;
+  }catch(_){
+    return null;
+  }
+}
+
+function stopEngine(fade){
+  var ac=audio.ctx;
+  if(!ac||!audio.engineGain)return;
+  var now=ac.currentTime,seconds=fade==null?.12:fade;
+  try{
+    audio.engineGain.gain.cancelScheduledValues(now);
+    audio.engineGain.gain.setValueAtTime(Math.max(.0001,audio.engineGain.gain.value),now);
+    audio.engineGain.gain.exponentialRampToValueAtTime(.0001,now+seconds);
+    if(audio.engineA)audio.engineA.stop(now+seconds+.03);
+    if(audio.engineB)audio.engineB.stop(now+seconds+.03);
+  }catch(_){}
+  audio.engineGain=null;
+  audio.engineA=null;
+  audio.engineB=null;
+  audio.filter=null;
+}
+
+function startEngine(){
+  var ac=ensureAudio();
+  if(!ac)return;
+  stopEngine(.03);
+  try{
+    var now=ac.currentTime;
+    var gain=ac.createGain();
+    var filter=ac.createBiquadFilter();
+    var a=ac.createOscillator();
+    var b=ac.createOscillator();
+
+    a.type="sawtooth";
+    b.type="triangle";
+    a.frequency.setValueAtTime(46,now);
+    a.frequency.exponentialRampToValueAtTime(66,now+.28);
+    b.frequency.setValueAtTime(92,now);
+    b.frequency.exponentialRampToValueAtTime(132,now+.28);
+
+    filter.type="lowpass";
+    filter.frequency.value=420;
+    filter.Q.value=.7;
+
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(.035,now+.11);
+
+    a.connect(filter);
+    b.connect(filter);
+    filter.connect(gain);
+    gain.connect(audio.master);
+
+    a.start(now);
+    b.start(now);
+
+    audio.engineGain=gain;
+    audio.engineA=a;
+    audio.engineB=b;
+    audio.filter=filter;
+  }catch(_){}
+}
+
+function updateEngine(angle){
+  var ac=audio.ctx;
+  if(!ac||!audio.engineA||!audio.engineB)return;
+  var now=ac.currentTime;
+  var load=clamp(Math.abs(angle),0,1);
+  var base=62+load*22;
+  try{
+    audio.engineA.frequency.setTargetAtTime(base,now,.05);
+    audio.engineB.frequency.setTargetAtTime(base*2.02,now,.05);
+    if(audio.filter)audio.filter.frequency.setTargetAtTime(390+load*170,now,.08);
+  }catch(_){}
+}
+
+function crashSound(){
+  var ac=ensureAudio();
+  if(!ac)return;
+  try{
+    var now=ac.currentTime;
+    var osc=ac.createOscillator(),g=ac.createGain();
+    osc.type="square";
+    osc.frequency.setValueAtTime(115,now);
+    osc.frequency.exponentialRampToValueAtTime(42,now+.18);
+    g.gain.setValueAtTime(.055,now);
+    g.gain.exponentialRampToValueAtTime(.0001,now+.2);
+    osc.connect(g);g.connect(audio.master);
+    osc.start(now);osc.stop(now+.21);
+  }catch(_){}
+}
+
 function showToast(msg){
   el.toast.textContent=msg;
   el.toast.classList.add("show");
   clearTimeout(S.toastTimer);
-  S.toastTimer=setTimeout(function(){el.toast.classList.remove("show")},1450);
+  S.toastTimer=setTimeout(function(){el.toast.classList.remove("show")},1500);
 }
 
 function showHint(msg,fade){
   clearTimeout(S.hintTimer);
   el.hint.textContent=msg;
   el.hint.classList.remove("fade");
-  if(fade!==false)S.hintTimer=setTimeout(function(){el.hint.classList.add("fade")},2200);
+  if(fade!==false)S.hintTimer=setTimeout(function(){el.hint.classList.add("fade")},2400);
 }
 
 function parkVehicle(){
@@ -118,6 +306,7 @@ function parkVehicle(){
 
 function resetLevel(){
   clearTimeout(S.autoTimer);
+  stopEngine(.04);
   S.mode="build";
   S.points=[];
   S.roadProfile=null;
@@ -126,16 +315,19 @@ function resetLevel(){
   S.bridgeReady=false;
   S.pointer=null;
   S.smoke=[];
+  S.crashFlash=0;
   el.result.classList.add("hidden");
   el.stageTitle.textContent=level().title;
   el.stageGoal.textContent=level().goal;
   parkVehicle();
-  showHint("차 앞에서 반대쪽 벽까지 선을 그리면 자동으로 출발해요.",false);
+  showHint(level().tip,false);
 }
 
 function startStroke(p){
   if(S.paused||S.mode!=="build")return;
+  ensureAudio();
   clearTimeout(S.autoTimer);
+  stopEngine(.03);
   S.points=[];
   S.roadProfile=null;
   S.bridgeReady=false;
@@ -144,6 +336,7 @@ function startStroke(p){
   S.pointer=p;
   S.pointerAngle=0;
   S.smoke=[];
+  S.crashFlash=0;
   parkVehicle();
   appendPoint(p,true);
 }
@@ -246,7 +439,7 @@ function finishStroke(){
   if(!S.roadProfile){
     S.bridgeReady=false;
     showToast("선이 양쪽 벽까지 이어져야 해요");
-    showHint("벽 위에서 시작해 반대쪽 벽 위까지 쭉 그려 주세요.",false);
+    showHint(level().tip,false);
     return;
   }
 
@@ -255,12 +448,13 @@ function finishStroke(){
   clearTimeout(S.autoTimer);
   S.autoTimer=setTimeout(function(){
     if(S.mode==="build"&&S.bridgeReady&&!S.drawing)startTest();
-  },420);
+  },380);
 }
 
 function clearBridge(){
   if(S.paused)return;
   clearTimeout(S.autoTimer);
+  stopEngine(.04);
   S.mode="build";
   S.points=[];
   S.roadProfile=null;
@@ -269,9 +463,10 @@ function clearBridge(){
   S.pointer=null;
   S.drawLength=0;
   S.smoke=[];
+  S.crashFlash=0;
   el.result.classList.add("hidden");
   parkVehicle();
-  showHint("다시 한 줄 그리면 돼요.",false);
+  showHint(level().tip,false);
 }
 
 function roadYAt(x){
@@ -294,6 +489,29 @@ function roadAngleAt(x){
   return Math.atan2(y2-y1,16);
 }
 
+function resolvedObstacles(){
+  var b=banks(),gap=b.rightX-b.leftX,L=level(),out=[];
+  for(var i=0;i<L.obstacles.length;i++){
+    var o=L.obstacles[i],x=b.leftX+gap*o.at;
+    if(o.type==="up"){
+      out.push({type:o.type,x:x-o.w/2,y:o.top,w:o.w,h:H-o.top,label:o.label||""});
+    }else{
+      out.push({type:o.type,x:x-o.w/2,y:0,w:o.w,h:o.bottom,label:o.label||""});
+    }
+  }
+  return out;
+}
+
+function carHitsObstacle(v){
+  var obs=resolvedObstacles();
+  var left=v.x-29,right=v.x+32,top=v.y-34,bottom=v.y+17;
+  for(var i=0;i<obs.length;i++){
+    var o=obs[i];
+    if(right>o.x&&left<o.x+o.w&&bottom>o.y&&top<o.y+o.h)return true;
+  }
+  return false;
+}
+
 function startTest(){
   if(S.paused||S.mode!=="build"||!S.bridgeReady||!S.roadProfile)return;
   var b=banks(),v=VEHICLES[level().vehicle];
@@ -308,30 +526,38 @@ function startTest(){
     wobble:0
   };
   S.smoke=[];
-  showHint("내가 그린 선 위로 달리는 중!",true);
+  startEngine();
+  showHint("내가 그린 길을 달리는 중!",true);
   try{window.KidscadeGame?.start?.({level:S.level+1})}catch(_){}
 }
 
-function fail(msg){
+function fail(msg,impact){
   if(S.mode!=="run")return;
+  stopEngine(.06);
+  if(impact){
+    crashSound();
+    S.crashFlash=1;
+  }
   S.mode="build";
   S.smoke=[];
   parkVehicle();
   showToast(msg);
-  showHint("화면에 새 선을 그리면 바로 다시 도전해요.",false);
+  showHint(level().tip,false);
   try{window.KidscadeGame?.sound?.("wrong")}catch(_){}
 }
 
 function succeed(){
   if(S.mode!=="run")return;
+  stopEngine(.16);
   S.mode="end";
-  var b=banks();
+  var b=banks(),L=level();
   var direct=Math.hypot(b.rightX-b.leftX,b.rightY-b.leftY);
   var efficiency=S.drawLength/Math.max(1,direct);
-  var stars=efficiency<1.18?3:efficiency<1.48?2:1;
+  var relative=efficiency/Math.max(1,L.par||1);
+  var stars=relative<1.09?3:relative<1.24?2:1;
   el.resultIcon.textContent="🏁";
   el.resultTitle.textContent="건넜다!";
-  el.resultText.textContent=stars===3?"짧고 매끈한 길이에요!":"자동차가 무사히 건넜어요.";
+  el.resultText.textContent=stars===3?"장애물을 깔끔하게 피했어요!":"자동차가 무사히 건넜어요.";
   el.stars.textContent="★".repeat(stars)+"☆".repeat(3-stars);
   el.result.classList.remove("hidden");
   try{
@@ -346,6 +572,7 @@ function addSmoke(x,y){
 }
 
 function updateRun(dt){
+  if(S.crashFlash>0)S.crashFlash=Math.max(0,S.crashFlash-dt*4.5);
   if(S.mode!=="run"||S.paused||!S.vehicle)return;
   var b=banks(),v=S.vehicle;
 
@@ -353,7 +580,8 @@ function updateRun(dt){
     v.vy+=760*dt;
     v.y+=v.vy*dt;
     v.angle+=2.1*dt;
-    if(v.y>H+80)fail("차가 아래로 떨어졌어요");
+    updateEngine(1);
+    if(v.y>H+80)fail("길이 너무 아래로 내려갔어요",true);
     return;
   }
 
@@ -375,6 +603,12 @@ function updateRun(dt){
   v.angle+=(targetAngle-v.angle)*Math.min(1,dt*12);
   v.wobble+=dt*8;
   v.y=y-28+Math.sin(v.wobble)*1.2;
+  updateEngine(v.angle);
+
+  if(carHitsObstacle(v)){
+    fail("쿵! 장애물을 피해 길을 다시 그려 보세요",true);
+    return;
+  }
 
   if(Math.random()<dt*7&&v.x>b.leftX-25)addSmoke(v.x-35,v.y+5);
 
@@ -446,6 +680,65 @@ function drawEndpoint(x,y,active){
   ctx.restore();
 }
 
+function drawHazardStripe(x,y,w,flip){
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x,y,w,14);
+  ctx.clip();
+  ctx.fillStyle="#f5c542";
+  ctx.fillRect(x,y,w,14);
+  ctx.strokeStyle="#34363b";
+  ctx.lineWidth=10;
+  for(var xx=x-20;xx<x+w+25;xx+=28){
+    ctx.beginPath();
+    ctx.moveTo(xx,flip?y+14:y);
+    ctx.lineTo(xx+18,flip?y:y+14);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawObstacles(){
+  var obs=resolvedObstacles();
+  for(var i=0;i<obs.length;i++){
+    var o=obs[i];
+    var grad=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y);
+    grad.addColorStop(0,"#58636e");
+    grad.addColorStop(.5,"#39434d");
+    grad.addColorStop(1,"#636f79");
+    ctx.fillStyle=grad;
+    ctx.fillRect(o.x,o.y,o.w,o.h);
+
+    ctx.strokeStyle="rgba(255,255,255,.13)";
+    ctx.lineWidth=3;
+    ctx.strokeRect(o.x+2,o.y+2,o.w-4,o.h-4);
+
+    if(o.type==="up"){
+      drawHazardStripe(o.x,o.y,o.w,false);
+      ctx.fillStyle="#303840";
+      ctx.beginPath();
+      ctx.moveTo(o.x,o.y);
+      ctx.lineTo(o.x+o.w*.16,o.y-12);
+      ctx.lineTo(o.x+o.w*.36,o.y-4);
+      ctx.lineTo(o.x+o.w*.55,o.y-16);
+      ctx.lineTo(o.x+o.w*.76,o.y-5);
+      ctx.lineTo(o.x+o.w,o.y);
+      ctx.closePath();
+      ctx.fill();
+    }else{
+      drawHazardStripe(o.x,o.y+o.h-14,o.w,true);
+      ctx.strokeStyle="#252d35";
+      ctx.lineWidth=6;
+      ctx.beginPath();
+      ctx.moveTo(o.x+o.w*.25,0);
+      ctx.lineTo(o.x+o.w*.25,Math.max(0,o.h-2));
+      ctx.moveTo(o.x+o.w*.75,0);
+      ctx.lineTo(o.x+o.w*.75,Math.max(0,o.h-2));
+      ctx.stroke();
+    }
+  }
+}
+
 function drawBackground(){
   var b=banks();
   var sky=ctx.createLinearGradient(0,0,0,H);
@@ -473,6 +766,7 @@ function drawBackground(){
 
   drawBricks(0,b.leftY,b.leftX,H-b.leftY);
   drawBricks(b.rightX,b.rightY,W-b.rightX,H-b.rightY);
+  drawObstacles();
 
   ctx.fillStyle="rgba(20,39,54,.28)";
   ctx.fillRect(0,b.leftY-4,b.leftX,4);
@@ -607,6 +901,10 @@ function render(){
   drawSmoke();
   drawCar();
   drawMarker();
+  if(S.crashFlash>0){
+    ctx.fillStyle="rgba(255,226,80,"+(S.crashFlash*.32)+")";
+    ctx.fillRect(0,0,W,H);
+  }
 }
 
 function fitCanvas(){
@@ -634,6 +932,7 @@ function changeLevel(delta){
 canvas.addEventListener("pointerdown",function(e){
   if(S.paused||S.mode!=="build")return;
   e.preventDefault();
+  ensureAudio();
   if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
   startStroke(pointFromEvent(e));
 });
@@ -653,19 +952,21 @@ canvas.addEventListener("pointermove",function(e){
   });
 });
 
-el.reset.addEventListener("click",clearBridge);
+el.reset.addEventListener("click",function(){ensureAudio();clearBridge()});
 el.retry.addEventListener("click",function(){
+  ensureAudio();
   el.result.classList.add("hidden");
   clearBridge();
 });
 el.cont.addEventListener("click",function(){
+  ensureAudio();
   S.level=(S.level+1)%LEVELS.length;
   resetLevel();
 });
-el.prev.addEventListener("click",function(){changeLevel(-1)});
-el.next.addEventListener("click",function(){changeLevel(1)});
-el.help.addEventListener("click",function(){el.tutorial.classList.remove("hidden")});
-el.tutorialClose.addEventListener("click",function(){el.tutorial.classList.add("hidden")});
+el.prev.addEventListener("click",function(){ensureAudio();changeLevel(-1)});
+el.next.addEventListener("click",function(){ensureAudio();changeLevel(1)});
+el.help.addEventListener("click",function(){ensureAudio();el.tutorial.classList.remove("hidden")});
+el.tutorialClose.addEventListener("click",function(){ensureAudio();el.tutorial.classList.add("hidden")});
 window.addEventListener("resize",fitCanvas);
 
 try{
@@ -673,11 +974,13 @@ try{
     pause:function(){
       if(S.drawing)finishStroke();
       clearTimeout(S.autoTimer);
+      stopEngine(.04);
       S.paused=true;
     },
     resume:function(){
       S.paused=false;
       S.last=performance.now();
+      if(S.mode==="run")startEngine();
     }
   });
 }catch(_){}
