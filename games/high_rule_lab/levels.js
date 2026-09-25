@@ -389,12 +389,6 @@ const levels=[
       {
         "kind": "object",
         "type": "wall",
-        "x": 8,
-        "y": 2
-      },
-      {
-        "kind": "object",
-        "type": "wall",
         "x": 3,
         "y": 7
       },
@@ -475,12 +469,6 @@ const levels=[
         "type": "wall",
         "x": 8,
         "y": 6
-      },
-      {
-        "kind": "object",
-        "type": "wall",
-        "x": 5,
-        "y": 2
       },
       {
         "kind": "object",
