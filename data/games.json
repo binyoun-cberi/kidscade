@@ -4,15 +4,15 @@
     {
       "id": "high_code_quest",
       "title": "버그월드: 코드 원정대",
-      "href": "games/high_code_quest/index.html?v=2",
+      "href": "games/high_code_quest/index.html?v=3",
       "category": "trivia",
       "age": "high",
       "icon": "🤖",
-      "description": "2D 사이드스크롤 세계를 달리고 점프하며 명령 블록으로 캐릭터를 조종하고, 실행·디버깅을 통해 순차·반복·조건·변수·함수를 익히는 코딩 RPG!",
+      "description": "프롤로그 입단 시험을 지나 버섯 숲으로 원정하는 2D 사이드스크롤 코딩 RPG! 높낮이 플랫폼과 분기 길을 탐험하고, 센서·장비·나의 기술을 조합해 적 패턴을 읽고 프로그램을 발전시키세요.",
       "subject": "thinking",
       "genre": "rpg",
       "difficulty": "medium",
-      "sessionMinutes": 20,
+      "sessionMinutes": 25,
       "players": [
         "solo"
       ],
