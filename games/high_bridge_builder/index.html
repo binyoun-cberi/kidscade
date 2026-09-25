@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>다리야 버텨줘!</title>
-<link rel="stylesheet" href="bridge-builder.css?v=8">
+<link rel="stylesheet" href="bridge-builder.css?v=9">
 </head>
 <body>
 <div id="app">
@@ -14,7 +14,7 @@
       <button id="prevLevel" class="icon-btn" type="button" aria-label="이전 단계">‹</button>
       <div>
         <b id="stageTitle">1. 작은 개울</b>
-        <small id="stageGoal">벽과 벽 사이를 검은 선 하나로 이어 주세요</small>
+        <small id="stageGoal">차 앞에서 반대쪽 벽까지 길을 그려 주세요</small>
       </div>
       <button id="nextLevel" class="icon-btn" type="button" aria-label="다음 단계">›</button>
     </div>
@@ -23,19 +23,11 @@
 
   <main class="layout">
     <section class="board">
-      <div class="hud">
-        <div class="ink">
-          <span>남은 잉크</span>
-          <i><b id="inkBar"></b></i>
-          <strong id="inkText">100%</strong>
-        </div>
-        <span id="vehicleText" class="vehicle-pill">🚗 노란 자동차</span>
-      </div>
-
       <div class="canvas-wrap">
         <canvas id="game" width="1200" height="700" aria-label="한 줄을 그려 자동차가 건널 길을 만드는 게임"></canvas>
-        <div id="hint" class="hint">왼쪽 벽 끝에서 오른쪽 벽 끝까지 한 번에 쓱!</div>
+        <div id="hint" class="hint">차 앞에서 반대쪽 벽까지 선을 그리면 자동으로 출발해요.</div>
         <div id="toast" class="toast" aria-live="polite"></div>
+        <button id="resetBtn" class="reset-floating" type="button">↻ 다시 그리기</button>
 
         <div id="resultCard" class="result-card hidden">
           <div id="resultIcon" class="result-icon">🏁</div>
@@ -49,30 +41,25 @@
         </div>
       </div>
     </section>
-
-    <section class="actions">
-      <button id="testBtn" class="test-btn" type="button" disabled>🚗 길을 먼저 그려요</button>
-      <button id="resetBtn" class="soft" type="button">✏️ 다시 그리기</button>
-    </section>
   </main>
 </div>
 
 <div id="tutorial" class="overlay hidden">
   <div class="dialog">
     <span class="eyebrow">규칙은 딱 하나</span>
-    <h1>검은 선 하나만 그리세요</h1>
+    <h1>선 하나만 그리면 돼요</h1>
     <div class="demo-line"><span></span><i></i><span></span></div>
     <p>
-      <b>①</b> 왼쪽 벽 끝에서 손가락을 대요.<br>
-      <b>②</b> 손을 떼지 말고 오른쪽 벽 끝까지 선 하나를 그어요.<br>
-      <b>③</b> 출발을 누르면 자동차가 <strong>내가 그린 선 그대로</strong> 달려요.<br><br>
-      그냥 한 줄 그리고 자동차를 보내면 끝이에요.
+      <b>①</b> 왼쪽에 기다리는 자동차 앞에서 시작해요.<br>
+      <b>②</b> 반대쪽 벽까지 손을 떼지 않고 길을 그어요.<br>
+      <b>③</b> 손을 떼면 자동차가 <strong>자동으로 출발</strong>해요.<br><br>
+      다시 하고 싶으면 화면 오른쪽 위의 <b>다시 그리기</b>만 누르면 돼요.
     </p>
-    <button id="tutorialClose" class="primary wide" type="button">그려볼래요!</button>
+    <button id="tutorialClose" class="primary wide" type="button">알겠어요!</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_bridge_builder" data-title="다리야 버텨줘!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="bridge-builder.js?v=8"></script>
+<script src="bridge-builder.js?v=9"></script>
 </body>
 </html>
