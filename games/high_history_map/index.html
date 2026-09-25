@@ -485,8 +485,51 @@ function svgEl(tag,attrs){
 }
 function tileFill(t){
   var base=TERRAIN[t.terrain].fill;
-  if(!t.owner||t.terrain==="sea")return base;
+  if(!t.owner||t.terrain==="sea"||t.owner==="neutral")return base;
   return FACTIONS[t.owner]?FACTIONS[t.owner].color:base;
+}
+function hexVertices(q,r){
+  var c=hexCenter(q,r),out=[];
+  for(var i=0;i<6;i++){var ang=Math.PI/180*(60*i-30);out.push([c[0]+HEX_SIZE*Math.cos(ang),c[1]+HEX_SIZE*Math.sin(ang)]);}
+  return out;
+}
+function drawBorderPath(layer,a,b,color,cls,dash,offset){
+  var d="M "+a[0]+" "+a[1]+" L "+b[0]+" "+b[1];
+  layer.appendChild(svgEl("path",{d:d,class:"factionBorderBase"}));
+  var attrs={d:d,class:cls||"factionBorder",stroke:color};
+  if(dash)attrs["stroke-dasharray"]=dash;
+  if(offset!=null)attrs["stroke-dashoffset"]=offset;
+  layer.appendChild(svgEl("path",attrs));
+}
+function drawFactionBorders(layer){
+  layer.innerHTML="";
+  var dirs=[
+    {even:[1,0],odd:[1,0],edge:[0,1]},
+    {even:[0,1],odd:[1,1],edge:[1,2]},
+    {even:[-1,1],odd:[0,1],edge:[2,3]},
+    {even:[-1,0],odd:[-1,0],edge:[3,4]},
+    {even:[-1,-1],odd:[0,-1],edge:[4,5]},
+    {even:[0,-1],odd:[1,-1],edge:[5,0]}
+  ];
+  Object.keys(state.tiles).forEach(function(k){
+    var t=state.tiles[k];
+    if(!t||t.terrain==="sea"||!t.owner||t.owner==="neutral")return;
+    var verts=hexVertices(t.q,t.r);
+    dirs.forEach(function(side){
+      var d=(t.r&1)?side.odd:side.even,nq=t.q+d[0],nr=t.r+d[1],n=state.tiles[key(nq,nr)];
+      if(n&&n.terrain==="sea")return;
+      var no=n&&n.owner?n.owner:"neutral";
+      if(no===t.owner)return;
+      if(no!=="neutral"&&key(t.q,t.r)>key(nq,nr))return;
+      var a=verts[side.edge[0]],b=verts[side.edge[1]];
+      if(no==="neutral"){
+        drawBorderPath(layer,a,b,FACTIONS[t.owner].color,t.owner===state.player?"factionBorderPlayer":"factionBorder");
+      }else{
+        drawBorderPath(layer,a,b,FACTIONS[t.owner].color,t.owner===state.player?"factionBorderPlayer":"factionBorder","5 5",0);
+        drawBorderPath(layer,a,b,FACTIONS[no].color,no===state.player?"factionBorderPlayer":"factionBorder","5 5",5);
+      }
+    });
+  });
 }
 function renderAll(){renderHeader();renderMap();renderLeft();renderInfo();applyCamera();}
 function renderHeader(){
