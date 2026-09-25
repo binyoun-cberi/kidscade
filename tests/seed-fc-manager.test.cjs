@@ -194,3 +194,50 @@ test('manager exposes pass map and fresh v2 save schema', () => {
   assert.match(gameSource, /kidscade_game_v2:high_seed_fc_manager:save/);
   assert.match(gameSource, /version:2/);
 });
+
+
+test('historical players expose football identities and live manager controls', () => {
+  const { SeedFCData, SeedFCSim } = loadDataAndSim();
+  const all = SeedFCData.clubs.flatMap(club => club.players);
+  assert.ok(all.every(player => typeof player.footballRole === 'string' && player.footballRole.length > 0));
+  assert.ok(all.every(player => typeof player.footballStyle === 'string' && player.footballStyle.length > 0));
+  assert.ok(all.every(player => Array.isArray(player.preferredPositions) && player.preferredPositions.length > 0));
+
+  const home = SeedFCData.clubs[0];
+  const away = SeedFCData.clubs[1];
+  const match = SeedFCSim.create({
+    homeClub: home,
+    awayClub: away,
+    homeRoster: JSON.parse(JSON.stringify(home.players)),
+    awayRoster: JSON.parse(JSON.stringify(away.players)),
+    homeLineup: home.players.slice(0, 11).map(player => player.id),
+    awayLineup: away.players.slice(0, 11).map(player => player.id),
+    homeFormation: '4-3-3',
+    awayFormation: '4-3-3',
+    homeTactics: {...home.tactics, line:'standard', tempo:'normal'},
+    awayTactics: {...away.tactics, line:'standard', tempo:'normal'},
+    formations: SeedFCData.formations
+  });
+  match.userSide = 0;
+  assert.equal(typeof match.setTactics, 'function');
+  assert.equal(typeof match.setInstruction, 'function');
+  assert.equal(typeof match.getActors, 'function');
+  const first = match.getActors(0)[0];
+  assert.equal(match.setInstruction(0, first.id, 'forward'), true);
+  match.setTactics(0, {line:'high', tempo:'fast'});
+  let guard = 0;
+  while (!match.finished && guard++ < 10000) match.update(0.1, 4);
+  assert.equal(match.finished, true);
+  assert.ok(match.exportReplay().events.some(event => event.type === 'coach'));
+});
+
+test('manager UI exposes direct substitutions individual instructions targeted training and careers', () => {
+  assert.match(html, /id="playerInstructionBtn"/);
+  assert.match(html, /선수 교체/);
+  assert.match(gameSource, /function substitutionModal\(\)/);
+  assert.match(gameSource, /function instructionModal\(\)/);
+  assert.match(gameSource, /data-live/);
+  assert.match(gameSource, /function updateCareer\(/);
+  assert.match(gameSource, /id="trainPlayer"/);
+  assert.match(gameSource, /state\.career/);
+});
