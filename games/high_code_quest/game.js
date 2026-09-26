@@ -170,6 +170,8 @@ function defaultCycle(type){
 }
 function hazardAt(x){return worldState.hazards.find(h=>Math.abs(h.x-x)<.55&&hazardState(h)==='danger');}
 function safeAhead(){return !hazardAt(worldState.x+worldState.dir);}
+function threatRange(e){return ['spitter','boss_mushroom','mirage_boss','root_warden','null_core'].includes(e.type)?4.2:e.type==='bat'?2.7:1.7;}
+function windupThreat(){return worldState.enemies.filter(e=>!e.dead&&currentEnemyState(e)==='windup'&&Math.abs(e.x-worldState.x)<=threatRange(e)&&Math.abs((e.y||0)-worldState.y)<=3).sort((a,b)=>Math.abs(a.x-worldState.x)-Math.abs(b.x-worldState.x))[0];}
 function spendEnergy(cost=1){
  if(!mission.usesEnergy)return true;
  if(worldState.energy<cost)return false;
@@ -254,11 +256,11 @@ const worldAPI={
  },
  checkCondition(cond){
   if(cond==='enemyAhead')return Boolean(enemyAhead());
-  if(cond==='enemyAheadWindup'){const e=enemyAhead(4.2);return Boolean(e&&currentEnemyState(e)==='windup');}
+  if(cond==='enemyAheadWindup')return Boolean(windupThreat());
   if(cond==='gapAhead'){const x=worldState.x+worldState.dir;return surfaceNear(x,worldState.y,.75,.9)===null;}
   if(cond==='platformAbove'){const x=worldState.x+worldState.dir*2;return platformCandidatesAt(x).some(y=>y>worldState.y+.7&&y<=worldState.y+5);}
   if(cond==='hpLow')return worldState.hp<=2;
-  if(cond==='enemyWindup')return worldState.enemies.some(e=>!e.dead&&Math.abs(e.x-worldState.x)<=4.2&&Math.abs((e.y||0)-worldState.y)<=3&&currentEnemyState(e)==='windup');
+  if(cond==='enemyWindup')return Boolean(windupThreat());
   if(cond==='crystals3')return worldState.crystalCount>=3;
   if(cond==='atGoal'){const g=mission.goal||{x:0,y:0};return Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;}
   if(cond==='safeAhead')return safeAhead();
