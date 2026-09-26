@@ -68,6 +68,8 @@
     disasterCityBestSeconds: 'kidscade_disaster_city_best_seconds',
     folkloreNightSave: 'kidscade_folklore_night_v1',
     bodyLabTutorialSeen: 'kidscade_body_lab_tutorial_v2',
+    bodyBoxingTutorialSeen: 'kidscade_body_boxing_tutorial_v1',
+    legacyGamePlayLimits: 'kidscade_game_play_limits',
     bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2'
   });
 
