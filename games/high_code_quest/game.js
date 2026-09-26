@@ -266,6 +266,7 @@ const worldAPI={
   if(cond==='itemHere')return Boolean(crystalHere());
   if(cond==='doorAhead')return Boolean(doorAhead());
   if(cond==='switchHere')return Boolean(switchHere());
+  if(cond==='conveyorAhead')return worldState.conveyors.some(v=>worldState.x+worldState.dir>=v.from&&worldState.x+worldState.dir<=v.to);
   if(cond==='dataHere')return Boolean(dataHere());
   if(cond==='data3')return worldState.dataCount>=3;
   if(cond==='data5')return worldState.dataCount>=5;
