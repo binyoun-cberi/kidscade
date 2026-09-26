@@ -462,10 +462,10 @@ function showValidationFailure(report){
 }
 async function handleMissionDone(){
  if(cleared||validating)return;
- validating=true;setExecuting(false);setRunButtons(false);stepSession=false;
+ validating=true;setExecuting(false);setRunButtons(false);stepSession=false;$('runBtn').disabled=true;$('stepBtn').disabled=true;
  setExec('프로그램 검사 중…',mission.validationTests?.length?'다른 상황에서도 같은 코드가 작동하는지 확인하고 있어요.':'사용한 코딩 개념을 확인하고 있어요.','running');
  const report=await Validator.validate({mission,program:mainProgram,functionProgram,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
- lastValidation=report;renderValidationResults(report);
+ $('runBtn').disabled=false;$('stepBtn').disabled=false;lastValidation=report;renderValidationResults(report);
  if(!report.ok){
   failures++;validating=false;sound('ui.error');setExec('다른 상황에서 버그 발생',report.concept?.ok===false?report.concept.message:'코드를 고쳐 다시 실행해 보세요.','error');showValidationFailure(report);return;
  }
