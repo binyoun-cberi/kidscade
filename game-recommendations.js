@@ -34,7 +34,6 @@
     const favoriteIds = new Set(cleanIds(options.favoriteIds));
     const recentIds = new Set(cleanIds(options.recentIds));
     const dominantCategory = options.dominantCategory || null;
-    const playState = options.playState || { plays: 0 };
     const random = typeof options.random === 'function' ? options.random : Math.random;
 
     const gameId = String(game.id);
@@ -50,7 +49,6 @@
     if (answers.style === 'challenge' && (game.scoreKey || game.rankKey)) score += 4;
     if (answers.style === 'short' && String(game.description || '').length < 60) score += 2;
 
-    if ((Number(playState.plays) || 0) <= 0) score -= 20;
     score += random() * 2;
     return score;
   }
