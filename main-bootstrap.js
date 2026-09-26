@@ -112,7 +112,6 @@
                 });
                 if (delegated) {
                     renderDashboards();
-                    updatePlayLimitUI();
                     return;
                 }
 
@@ -136,7 +135,6 @@
                     visibleGameCount.textContent = \`${'${'}ageLabel} 게임 ${'${'}visibleCount}/${'${'}ageTotalCount}개 표시\`;
                 }
                 renderDashboards();
-                updatePlayLimitUI();
             }`;
     html = replaceBetween(html, filterStart, filterEnd, filterReplacement);
 
@@ -144,7 +142,6 @@
     const dashboardEnd = '\n\n            function trackRecent(id) {';
     const dashboardReplacement = `            function renderDashboards() {
                 if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
-                    updatePlayLimitUI();
                     return;
                 }
 
@@ -174,7 +171,6 @@
                     }
                 });
                 if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
-                updatePlayLimitUI();
             }`;
     html = replaceBetween(html, dashboardStart, dashboardEnd, dashboardReplacement);
 
