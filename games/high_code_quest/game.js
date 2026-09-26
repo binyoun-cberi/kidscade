@@ -487,11 +487,17 @@ function renderPalette(){
  });
 }
 function renderAllEditor(){renderProgram();renderPalette();}
+function programContainsId(list,id){
+ for(const n of list||[]){if(n.id===id)return true;if(programContainsId(n.body,id)||programContainsId(n.elseBody,id))return true;}return false;
+}
 function updateMiniCode(){
  const mini=$('miniCodeLines');if(!mini)return;mini.replaceChildren();
- const flat=[];function walk(list,depth=0){for(const n of list||[]){flat.push({n,depth});if(n.body)walk(n.body,depth+1);if(n.elseBody?.length)walk(n.elseBody,depth+1);}}walk(mainProgram);
- const idx=Math.max(0,flat.findIndex(v=>v.n.id===executingNodeId));const from=Math.max(0,idx-1),to=Math.min(flat.length,from+4);
- for(let i=from;i<to;i++){const v=flat[i],d=document.createElement('div');d.className=v.n.id===executingNodeId?'active':'';d.style.paddingLeft=(v.depth*10)+'px';d.textContent=(v.n.id===executingNodeId?'▶ ':'  ')+(BLOCKS[v.n.type]?.label||v.n.type);mini.appendChild(d);}
+ let source=mainProgram,prefix='';
+ if(programContainsId(functionPrograms.a,executingNodeId)){source=functionPrograms.a;prefix='ƒA · ';}
+ else if(programContainsId(functionPrograms.b,executingNodeId)){source=functionPrograms.b;prefix='ƒB · ';}
+ const flat=[];function walk(list,depth=0){for(const n of list||[]){flat.push({n,depth});if(n.body)walk(n.body,depth+1);if(n.elseBody?.length)walk(n.elseBody,depth+1);}}walk(source);
+ let idx=flat.findIndex(v=>v.n.id===executingNodeId);if(idx<0)idx=0;const from=Math.max(0,idx-1),to=Math.min(flat.length,from+5);
+ for(let i=from;i<to;i++){const v=flat[i],d=document.createElement('div');d.className=v.n.id===executingNodeId?'active':'';d.style.paddingLeft=(v.depth*10)+'px';d.textContent=(v.n.id===executingNodeId?'▶ ':'  ')+(i===from&&prefix?prefix:'')+(BLOCKS[v.n.type]?.label||v.n.type);mini.appendChild(d);}
 }
 function updateHUD(){
  $('hpValue').textContent=worldState?.hp??5;$('crystalValue').textContent=worldState?.crystalCount??0;$('variableCrystal').textContent=worldState?.crystalCount??0;$('variableHp').textContent=worldState?.hp??5;
@@ -568,9 +574,12 @@ function renderMissionGrid(){
 }
 function renderWorldMap(){
  const root=$('campaignMap');if(!root)return;root.replaceChildren();
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.classList.add('map-links');
+ for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.classList.add(progress.completed[a.end]?'done':'');svg.appendChild(line);}
+ root.appendChild(svg);
  for(const region of regions){
   const locked=region.locked||Number.isInteger(region.requiresMission)&&!progress.completed[region.requiresMission];
-  const btn=document.createElement('button');btn.type='button';btn.className='map-node'+(locked?' locked':'');
+  const btn=document.createElement('button');btn.type='button';btn.className='map-node'+(locked?' locked':'')+(progress.completed[region.end]?' complete':'');
   btn.style.left=region.x+'%';btn.style.top=region.y+'%';
   const doneCount=Array.from({length:region.end-region.start+1},(_,k)=>region.start+k).filter(i=>progress.completed[i]).length;
   btn.innerHTML='<span>'+region.icon+'</span><b>'+region.name+'</b><small>'+region.subtitle+(locked?' · 잠김':' · '+doneCount+'/'+(region.end-region.start+1))+'</small>';
