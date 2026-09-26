@@ -132,9 +132,6 @@
         document.body.dataset.kcGuestMobileSection = 'games';
         setNavActive(target === 'search' ? 'search' : 'games');
         scheduleSync();
-      } else if (target === 'growth') {
-        document.body.dataset.kcGuestMobileSection = 'games';
-        scheduleSync();
       }
     }, true);
 
