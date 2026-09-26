@@ -324,7 +324,10 @@
                     activeGameCategory = 'all';
                     activeGameHadBonus = false;
                 },
-                syncBadges: () => syncBadgesAndProfile()
+                syncBadges: () => syncBadgesAndProfile(),
+                afterClose: (detail) => {
+                    document.dispatchEvent(new CustomEvent('kidscade:game-closed', { detail: detail || {} }));
+                }
             };
 
             window.KidscadePlay = Object.freeze({
