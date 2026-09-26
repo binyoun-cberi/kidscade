@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kidscade 학급경제 관리</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{font-family:"맑은 고딕",system-ui,sans-serif;--bg:#f6f7fb;--paper:#fff;--ink:#263244;--muted:#68768b;--line:#e5e9f0;--purple:#7c5cff;--green:#159a72;--amber:#d88712;--red:#c94b5d;--shadow:0 12px 32px rgba(28,40,68,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.wrap{width:min(1320px,calc(100% - 24px));margin:20px auto 60px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.top h1{margin:0;font-size:1.7rem;letter-spacing:-.05em}.top p{margin:5px 0 0;color:var(--muted);font-size:.78rem;font-weight:750}.top a{color:#6647d9;text-decoration:none;font-weight:950}.card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:var(--shadow);margin-bottom:13px}.hidden{display:none!important}.notice{padding:13px;border-radius:13px;background:#fff8e8;border:1px solid #ffe0a0;color:#775818;font-size:.76rem;font-weight:800;line-height:1.55}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{padding:14px;border:1px solid #ede9fe;border-radius:15px;background:linear-gradient(145deg,#fff,#faf8ff)}.metric span{font-size:.67rem;color:var(--muted);font-weight:900}.metric b{display:block;margin-top:4px;font-size:1.35rem;color:#5940c9}.tabs{display:flex;gap:7px;overflow:auto;padding:7px;background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:13px}.tab{border:0;background:transparent;color:#68768b;border-radius:10px;padding:9px 12px;font-size:.72rem;font-weight:950;white-space:nowrap;cursor:pointer}.tab.active{background:var(--ink);color:#fff}.panel{display:none}.panel.active{display:block}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:13px}.stack{display:grid;gap:11px}.head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:11px}.head h2{margin:0;font-size:1.05rem;letter-spacing:-.03em}.head p{margin:4px 0 0;color:var(--muted);font-size:.69rem;font-weight:750;line-height:1.45}.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field{display:grid;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:.66rem;font-weight:900;color:#5c6a7e}.input,select,textarea{width:100%;min-height:41px;border:1px solid #dbe2eb;border-radius:11px;padding:8px 10px;background:#fff;color:var(--ink)}textarea{min-height:68px;resize:vertical}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.btn{border:0;border-radius:11px;min-height:38px;padding:0 12px;background:var(--purple);color:#fff;font-size:.69rem;font-weight:950;cursor:pointer}.btn.secondary{background:#eef2f7;color:#526077}.btn.green{background:var(--green)}.btn.warn{background:#fff4df;color:#9a6411}.btn.danger{background:#fff0f2;color:#b13c4c}.btn:disabled{opacity:.5;cursor:not-allowed}.table{overflow:auto;border:1px solid var(--line);border-radius:14px}.table table{width:100%;border-collapse:collapse;min-width:680px;font-size:.7rem}.table th,.table td{padding:9px 10px;border-bottom:1px solid #eef1f5;text-align:left}.table th{background:#fafbfc;color:#68768b;font-size:.63rem}.table tr:last-child td{border-bottom:0}.rows{display:grid;gap:7px}.row{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--line);border-radius:12px}.row strong{font-size:.75rem}.row small{display:block;margin-top:3px;color:var(--muted);font-size:.62rem;line-height:1.4}.pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f1efff;color:#5f50d3;font-size:.58rem;font-weight:950}.pill.good{background:#e9f8f2;color:#157657}.pill.warn{background:#fff3df;color:#96600e}.status{min-height:19px;margin-top:8px;font-size:.7rem;font-weight:900}.error{color:#dc2626}.success{color:#15803d}.empty{padding:18px;text-align:center;color:#94a3b8;font-size:.7rem;font-weight:800}.code{font-family:ui-monospace,monospace;font-weight:900}.setup{max-width:760px;margin:30px auto}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}@media(max-width:620px){.wrap{width:calc(100% - 14px)}.grid4,.form{grid-template-columns:1fr}.field.full{grid-column:auto}.top{display:grid}.table table{min-width:620px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <div><h1>💰 <span id="titleClass">학급경제</span></h1><p id="subtitle">KIDScade 학생 계정과 연결된 학급경제 관리</p></div>
+    <a href="/teacher/">← 교사 관리</a>
+  </div>
+
+  <section id="authMissing" class="card setup hidden">
+    <h2 style="margin-top:0">교사 관리에서 먼저 들어와 주세요</h2>
+    <div class="notice">교사 관리 코드가 이 탭에 없습니다. /teacher/에서 관리 코드를 입력한 뒤 학급의 ‘💰 학급경제’ 버튼을 눌러 주세요.</div>
+    <div class="actions"><a class="btn secondary" href="/teacher/" style="display:inline-flex;align-items:center;text-decoration:none">교사 관리로 이동</a></div>
+  </section>
+
+  <section id="setupView" class="card setup hidden">
+    <div class="head"><div><h2>이 학급의 경제 시작하기</h2><p>KIDSCade 학생 계정 전체에 시작금을 만들고 경제 기능을 켭니다.</p></div></div>
+    <div class="form">
+      <div class="field"><label>화폐 이름</label><input class="input" id="setupCurrency" value="뚝"></div>
+      <div class="field"><label>시작금</label><input class="input" id="setupOpening" type="number" value="100"></div>
+      <div class="field"><label>소득세율 %</label><input class="input" id="setupIncome" type="number" value="10"></div>
+      <div class="field"><label>소비세율 %</label><input class="input" id="setupSales" type="number" value="10"></div>
+      <div class="field"><label>저축 이율 % / 월급회차</label><input class="input" id="setupInterest" type="number" value="1"></div>
+      <div class="field"><label>과태료 상한 % / 월급</label><input class="input" id="setupFineCap" type="number" value="30"></div>
+      <div class="field full"><label>월급날 표시</label><input class="input" id="setupPayday" value="금요일"></div>
+    </div>
+    <div class="actions"><button class="btn" id="enableEconomy">학급경제 시작</button></div>
+    <div class="status" id="setupStatus"></div>
+  </section>
+
+  <section id="appView" class="hidden">
+    <section class="grid4">
+      <div class="metric"><span>학생 현금</span><b id="mCash">0</b></div>
+      <div class="metric"><span>학생 저축</span><b id="mSavings">0</b></div>
+      <div class="metric"><span>정부계좌</span><b id="mTreasury">0</b></div>
+      <div class="metric"><span>취업 학생</span><b id="mJobs">0명</b></div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="overview">학생계좌</button>
+      <button class="tab" data-tab="jobs">자격증·직업</button>
+      <button class="tab" data-tab="payroll">월급·세금</button>
+      <button class="tab" data-tab="store">상점</button>
+      <button class="tab" data-tab="law">법·과태료</button>
+      <button class="tab" data-tab="ledger">장부·설정</button>
+    </nav>
+
+    <section class="panel active" id="panel-overview">
+      <div class="card">
+        <div class="head"><div><h2>학생 경제 계좌</h2><p>기존 KIDSCade 계정과 자동으로 연결됩니다.</p></div><button class="btn secondary" id="refresh">새로고침</button></div>
+        <div class="table"><table><thead><tr><th>계정</th><th>닉네임</th><th>직업</th><th>현금</th><th>저축</th><th>자격증</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-jobs">
+      <div class="layout">
+        <div class="stack">
+          <div class="card"><div class="head"><div><h2>자격증</h2><p>직업 지원 조건으로 사용할 수 있습니다.</p></div></div><div class="rows" id="certRows"></div></div>
+          <div class="card"><div class="head"><div><h2>직업 시장</h2><p>지원자와 채용자를 확인하고 채용합니다.</p></div></div><div class="rows" id="jobRows"></div></div>
+        </div>
+        <div class="stack">
+          <div class="card"><div class="head"><div><h2>자격증 만들기</h2></div></div><div class="field"><label>이름</label><input class="input" id="certName" placeholder="금융기초"></div><div class="field"><label>설명</label><input class="input" id="certDesc"></div><div class="actions"><button class="btn" id="createCert">추가</button></div></div>
+          <div class="card"><div class="head"><div><h2>자격증 부여</h2></div></div><div class="form"><div class="field"><label>학생</label><select id="grantStudent"></select></div><div class="field"><label>자격증</label><select id="grantCert"></select></div></div><div class="actions"><button class="btn green" id="grantCertBtn">부여</button><button class="btn secondary" id="revokeCertBtn">회수</button></div></div>
+          <div class="card"><div class="head"><div><h2>직업 만들기</h2></div></div><div class="form"><div class="field full"><label>직업명</label><input class="input" id="jobName" placeholder="은행원"></div><div class="field"><label>월급</label><input class="input" id="jobSalary" type="number" value="120"></div><div class="field"><label>정원</label><input class="input" id="jobCapacity" type="number" value="1"></div><div class="field full"><label>필요 자격증</label><select id="jobCerts" multiple size="3"></select></div><div class="field full"><label>하는 일</label><textarea id="jobTask"></textarea></div></div><div class="actions"><button class="btn" id="createJob">직업 등록</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-payroll">
+      <div class="layout">
+        <div class="stack">
+          <div class="card"><div class="head"><div><h2>월급 정산</h2><p>같은 급여 회차는 두 번 지급할 수 없습니다.</p></div></div><div class="form"><div class="field"><label>급여 회차</label><input class="input" id="periodId"></div><div class="field"><label>소득세</label><input class="input" id="payTax" disabled></div></div><div class="actions"><button class="btn" id="runPayroll">전체 월급 정산</button></div><div class="status" id="payStatus"></div><div class="table" style="margin-top:10px"><table><thead><tr><th>학생</th><th>직업</th><th>세전</th><th>세금</th><th>실수령</th><th>예상 이자</th></tr></thead><tbody id="payPreview"></tbody></table></div></div>
+          <div class="card"><div class="head"><div><h2>정부 공공지출</h2></div></div><div class="form"><div class="field"><label>금액</label><input class="input" id="treasuryAmount" type="number" value="50"></div><div class="field"><label>사용처</label><input class="input" id="treasuryReason" placeholder="학급 행사 지원"></div></div><div class="actions"><button class="btn green" id="spendTreasury">지출 기록</button></div></div>
+        </div>
+        <div class="card"><div class="head"><div><h2>교사 빠른 거래</h2><p>개별 지급 또는 징수를 장부에 기록합니다.</p></div></div><div class="form"><div class="field full"><label>학생</label><select id="manualStudent"></select></div><div class="field"><label>금액</label><input class="input" id="manualAmount" type="number" value="10"></div><div class="field"><label>징수액 정부계좌로</label><select id="manualTreasury"><option value="no">아니오</option><option value="yes">예</option></select></div><div class="field full"><label>이유</label><input class="input" id="manualReason"></div></div><div class="actions"><button class="btn" id="manualTx">거래 기록</button></div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-store">
+      <div class="layout">
+        <div class="card"><div class="head"><div><h2>학급상점</h2></div></div><div class="rows" id="itemRows"></div></div>
+        <div class="card"><div class="head"><div><h2>상품 등록</h2></div></div><div class="form"><div class="field full"><label>상품명</label><input class="input" id="itemName"></div><div class="field"><label>세전 가격</label><input class="input" id="itemPrice" type="number" value="50"></div><div class="field"><label>재고</label><input class="input" id="itemStock" type="number" value="10"></div><div class="field full"><label><input id="itemUnlimited" type="checkbox" style="width:auto;min-height:auto"> 무제한 재고</label></div></div><div class="actions"><button class="btn" id="createItem">상품 등록</button></div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-law">
+      <div class="layout">
+        <div class="stack">
+          <div class="card"><div class="head"><div><h2>학급 법전</h2></div></div><div class="rows" id="lawRows"></div></div>
+          <div class="card"><div class="head"><div><h2>처분 사건</h2></div></div><div class="rows" id="caseRows"></div></div>
+        </div>
+        <div class="stack">
+          <div class="card"><div class="head"><div><h2>법 만들기</h2></div></div><div class="form"><div class="field full"><label>법 이름</label><input class="input" id="lawTitle"></div><div class="field"><label>기본 과태료</label><input class="input" id="lawFine" type="number" value="10"></div><div class="field"><label>시행일</label><input class="input" id="lawDate" type="date"></div><div class="field full"><label>설명</label><textarea id="lawDesc"></textarea></div></div><div class="actions"><button class="btn" id="createLaw">법 등록</button></div></div>
+          <div class="card"><div class="head"><div><h2>사건 등록</h2></div></div><div class="form"><div class="field"><label>학생</label><select id="caseStudent"></select></div><div class="field"><label>법</label><select id="caseLaw"></select></div><div class="field"><label>예정 과태료</label><input class="input" id="caseFine" type="number" value="10"></div><div class="field"><label>발생일</label><input class="input" id="caseDate" type="date"></div><div class="field full"><label>사실 기록</label><textarea id="caseNote"></textarea></div></div><div class="actions"><button class="btn" id="createCase">처분 예정 등록</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-ledger">
+      <div class="layout">
+        <div class="card"><div class="head"><div><h2>최근 장부</h2><p>최근 120건의 경제 기록입니다.</p></div></div><div class="rows" id="txRows"></div></div>
+        <div class="card"><div class="head"><div><h2>경제 설정</h2></div></div><div class="form"><div class="field"><label>화폐</label><input class="input" id="setCurrency"></div><div class="field"><label>소득세 %</label><input class="input" id="setIncome" type="number"></div><div class="field"><label>소비세 %</label><input class="input" id="setSales" type="number"></div><div class="field"><label>저축 이율 %</label><input class="input" id="setInterest" type="number"></div><div class="field"><label>과태료 상한 %</label><input class="input" id="setFineCap" type="number"></div><div class="field"><label>월급날 표시</label><input class="input" id="setPayday"></div></div><div class="actions"><button class="btn" id="saveSettings">설정 저장</button></div></div>
+      </div>
+    </section>
+  </section>
+</main>
+<script src="/teacher-economy.js"></script>
+</body>
+</html>
