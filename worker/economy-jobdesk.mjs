@@ -1,5 +1,6 @@
 import {
-  json, nowIso, clean, cleanId, clampInt, parseJson, requireEconomyStudent
+  json, nowIso, clean, cleanId, clampInt, parseJson, requireEconomyStudent,
+  claimRequest, completeRequest
 } from './economy-common.mjs';
 import { authorizeTeacherForClass } from './teacher-auth.mjs';
 
@@ -27,10 +28,19 @@ export function sanitizeJobCapabilities(values) {
   )].slice(0, 20);
 }
 
+function koreaDate() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0,10);
+}
+
+function duplicateResponse(claim) {
+  if (claim.status === 'done') return json({ok:true,duplicate:true,...(claim.body || {})});
+  return json({ok:false,error:'request_in_progress'},409);
+}
+
 function periodForDate(value) {
   const raw = /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))
     ? String(value)
-    : new Date().toISOString().slice(0,10);
+    : koreaDate();
   const [year,month,day] = raw.split('-').map(Number);
   return year + '-' + String(month).padStart(2,'0') + '-' + Math.ceil(day / 7) + '주';
 }
@@ -113,7 +123,7 @@ export async function getStudentJobDesk(env,classId,studentId) {
     };
   }
 
-  const today=new Date().toISOString().slice(0,10);
+  const today=koreaDate();
   const needsRoster=codes.includes('stats.clean_plate') || codes.includes('credit.learning_ledger');
 
   const [roster,cleanSummary,cleanRecords,creditLedger,activities]=await Promise.all([
@@ -180,6 +190,9 @@ export async function studentCleanPlateRecord(request,env){
   let body;
   try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
 
+  const claim=await claimRequest(env,auth.row.class_id,auth.row.student_id,'job-clean-plate',body?.requestKey);
+  if(!claim.ok)return duplicateResponse(claim);
+
   const targetStudentId=cleanId(body?.targetStudentId);
   const target=await classStudent(env,auth.row.class_id,targetStudentId);
   if(!target)return json({ok:false,error:'student_not_found'},404);
@@ -218,7 +231,9 @@ export async function studentCleanPlateRecord(request,env){
     recordDate
   });
 
-  return json({ok:true,recordId:id});
+  const response={recordId:id};
+  await completeRequest(env,claim.key,response);
+  return json({ok:true,...response});
 }
 
 function creditDeltaForResult(result){
@@ -231,6 +246,9 @@ export async function studentCreditBookRecord(request,env){
 
   let body;
   try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
+
+  const claim=await claimRequest(env,auth.row.class_id,auth.row.student_id,'job-credit-ledger',body?.requestKey);
+  if(!claim.ok)return duplicateResponse(claim);
 
   const targetStudentId=cleanId(body?.targetStudentId);
   if(targetStudentId===auth.row.student_id){
@@ -273,7 +291,9 @@ export async function studentCreditBookRecord(request,env){
     recordDate
   });
 
-  return json({ok:true,recordId:id,suggestedDelta:delta});
+  const response={recordId:id,suggestedDelta:delta};
+  await completeRequest(env,claim.key,response);
+  return json({ok:true,...response});
 }
 
 export async function teacherJobCapabilities(request,env){
