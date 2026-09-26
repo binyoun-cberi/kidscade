@@ -270,9 +270,20 @@
       }
       #game-list > .game-card .game-title { margin-bottom:5px !important; font-size:.96rem !important; }
       #game-list > .game-card .game-desc { font-size:.71rem !important; line-height:1.4 !important; }
-      #game-list > .game-card .kc-server-card-stats { margin-top:5px !important; font-size:.63rem !important; }
-      #game-list > .game-card .kc-card-meta { margin-top:6px !important; min-height:23px !important; }
-      #game-list > .game-card .play-limit-badge { margin-top:5px !important; }
+      #game-list > .game-card .kc-server-card-stats { margin-top:4px !important; font-size:.60rem !important; }
+      #game-list > .game-card .kc-card-meta { margin-top:5px !important; min-height:20px !important; }
+      #game-list > .game-card .kc-card-meta-chip { padding:4px 7px !important; font-size:.58rem !important; }
+      #game-list > .game-card .play-limit-badge {
+        position:absolute !important;
+        top:10px !important;
+        right:10px !important;
+        margin:0 !important;
+        min-width:34px !important;
+        min-height:27px !important;
+        padding:0 7px !important;
+        border-radius:999px !important;
+        font-size:.58rem !important;
+      }
 
       /* 성장/미션/추천 모달 */
       #pet-modal { padding:10px !important; }
@@ -387,7 +398,14 @@
         #game-list > .game-card .kc-server-card-stats { font-size:.54rem !important; margin-top:3px !important; }
         #game-list > .game-card .kc-card-meta { margin-top:3px !important; min-height:19px !important; }
         #game-list > .game-card .kc-card-meta-chip { font-size:.5rem !important; padding:3px 5px !important; }
-        #game-list > .game-card .play-limit-badge { font-size:.5rem !important; padding:3px 4px !important; }
+        #game-list > .game-card .play-limit-badge {
+          top:7px !important;
+          right:7px !important;
+          min-width:30px !important;
+          min-height:24px !important;
+          font-size:.50rem !important;
+          padding:0 5px !important;
+        }
 
         #pet-modal { padding:5px !important; }
         #pet-modal .sook-coach-content { height:calc(100dvh - 10px) !important; border-radius:18px !important; }
