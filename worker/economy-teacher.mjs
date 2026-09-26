@@ -3,6 +3,7 @@ import {
   json, nowIso, clean, cleanId, clampInt, parseJson,
   classRow, settingsRow, settingsPayload, ensureClassAccounts
 } from './economy-common.mjs';
+import { sanitizeJobCapabilities } from './economy-jobdesk.mjs';
 
 export async function teacherEconomyState(request, env) {
   const classId = cleanId(new URL(request.url).searchParams.get('classId'));
@@ -287,6 +288,7 @@ export async function teacherJob(request, env) {
   const required = Array.isArray(body?.requiredCertificateIds)
     ? body.requiredCertificateIds.map(cleanId).filter(Boolean).slice(0,20)
     : [];
+  const capabilities = sanitizeJobCapabilities(body?.capabilities);
 
   const statements = [
     env.DB.prepare(
@@ -306,6 +308,13 @@ export async function teacherJob(request, env) {
       'INSERT OR IGNORE INTO economy_job_certificates (job_id, certificate_id) ' +
       'SELECT ?, id FROM economy_certificates WHERE id = ? AND class_id = ?'
     ).bind(id,certificateId,classId));
+  }
+
+  for (const capability of capabilities) {
+    statements.push(env.DB.prepare(
+      'INSERT INTO economy_job_capabilities (job_id,class_id,capability,access_level,limit_value,created_at) ' +
+      "VALUES (?,?,?,'execute',NULL,?)"
+    ).bind(id,classId,capability,now));
   }
 
   await env.DB.batch(statements);
