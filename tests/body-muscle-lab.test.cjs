@@ -7,71 +7,70 @@ const ROOT = path.resolve(__dirname, '..');
 const gameDir = path.join(ROOT, 'games', 'high_body_muscle_lab');
 const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
 const runtime = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'games.json'), 'utf8'));
 
-test('body muscle lab uses the shared game SDK and stable game id', () => {
+test('muscle boxing keeps the stable game id and shared SDK', () => {
   assert.match(html, /kidscade-game-sdk\.js/);
   assert.match(html, /data-game-id="high_body_muscle_lab"/);
   assert.doesNotMatch(html + runtime, /postMessage\([^\n]+['"]\*['"]\)/);
 });
 
-test('body muscle lab exposes keyboard and touch muscle controls', () => {
+test('QWER directly control named antagonist upper-arm muscles', () => {
   for (const key of ['q', 'w', 'e', 'r']) assert.match(html, new RegExp('data-key="' + key + '"'));
-  assert.match(runtime, /pointerdown/);
-  assert.match(runtime, /keydown/);
+  assert.match(html, /왼팔 상완이두근/);
+  assert.match(html, /왼팔 상완삼두근/);
+  assert.match(html, /오른팔 상완이두근/);
+  assert.match(html, /오른팔 상완삼두근/);
+  assert.match(html, /수축 → 팔꿈치 굽힘/);
+  assert.match(html, /수축 → 팔꿈치 폄/);
+  assert.match(runtime, /const MUSCLES=/);
+  assert.match(runtime, /role:'flexor'/);
+  assert.match(runtime, /role:'extensor'/);
+});
+
+test('boxing has no punch or guard action button and derives both from elbow state', () => {
+  assert.doesNotMatch(html, /data-action="(?:punch|guard)"/);
+  assert.match(runtime, /arm\.flex>=\.66/);
+  assert.match(runtime, /crossedContact/);
+  assert.match(runtime, /fastExtension/);
+  assert.match(runtime, /resolvePlayerPunch/);
+  assert.match(runtime, /resolveEnemyPunch/);
+  assert.match(html, /충분히 굽혀져 있으면 <strong>자동으로 가드<\/strong>/);
+  assert.match(html, /빠르게 쭉 펴서/);
+});
+
+test('boxing is toe-to-toe without player step controls', () => {
+  assert.doesNotMatch(html, /스텝|이동 키|방향키/);
+  assert.doesNotMatch(runtime, /playerX|playerVelocity|walk|dash|stepLeft|stepRight/);
+  assert.match(runtime, /playerArmPose/);
+  assert.match(runtime, /enemyArmPose/);
+});
+
+test('xray view labels biceps and triceps and explains the simplified model', () => {
+  assert.match(runtime, /상완이두근\(굽힘\)/);
+  assert.match(runtime, /상완삼두근\(폄\)/);
+  assert.match(runtime, /길항근/);
+  assert.match(runtime, /실제 복싱은 어깨·가슴·몸통·다리 근육도 함께 사용/);
   assert.match(runtime, /toggleXray/);
 });
 
-test('body muscle lab ships arm and full-body science missions', () => {
-  const missionNames = [
-    '팔을 굽혀 보세요',
-    '버튼을 눌러 보세요',
-    '사과를 바구니에 넣으세요',
-    '의자에서 일어나세요',
-    '3m 걸어가세요',
-    '장애물을 넘어가세요',
-    '상자를 옮기세요',
-    '급식판을 자리까지!'
-  ];
-  for (const title of missionNames) assert.ok(runtime.includes(title), 'missing mission: ' + title);
-  assert.match(runtime, /위팔 앞쪽 근육이 수축/);
-  assert.match(runtime, /왼쪽과 오른쪽 다리의 근육이 번갈아 수축/);
-  assert.match(runtime, /전신 협응/);
+test('muscle boxing supports keyboard and touch', () => {
+  assert.match(runtime, /pointerdown/);
+  assert.match(runtime, /keydown/);
+  assert.match(runtime, /pointercancel/);
+  assert.match(css, /touch-action:none/);
 });
 
-test('full-body missions include staged balance assistance and recoverable falls', () => {
-  assert.match(runtime, /assist:\.72/);
-  assert.match(runtime, /assist:\.52/);
-  assert.match(runtime, /assist:\.38/);
-  assert.match(runtime, /assist:\.25/);
-  assert.match(runtime, /assist:\.12/);
-  assert.match(runtime, /triggerFall/);
-  assert.match(runtime, /recoverFromFall/);
-  assert.match(runtime, /checkpoint/);
-  assert.match(runtime, /trayTilt/);
-  assert.match(runtime, /boxGrip/);
-});
-
-test('body muscle lab catalog metadata is classroom-ready science simulation', () => {
+test('catalog describes the new science sports game', () => {
   const game = catalog.games.find(item => item.id === 'high_body_muscle_lab');
   assert.ok(game);
-  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=3');
+  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=5');
   assert.equal(game.subject, 'science');
-  assert.equal(game.genre, 'simulation');
+  assert.equal(game.genre, 'sports');
   assert.equal(game.difficulty, 'medium');
   assert.equal(game.classroom, true);
   assert.deepEqual(game.input, ['touch', 'keyboard']);
   assert.ok(game.players.includes('solo'));
-  assert.ok(game.players.includes('classroom'));
-});
-
-test('body muscle lab uses compact gameplay-first UI', () => {
-  assert.match(html, /id="floatingHint"/);
-  assert.match(html, /id="miniHud"/);
-  assert.match(html, /class="xray-fab"/);
-  assert.match(html, /class="hidden-telemetry"/);
-  assert.doesNotMatch(html, /class="status-row"/);
-  assert.doesNotMatch(html, /근육 조종기<\/b>/);
-  assert.match(runtime, /showMissionHint/);
-  assert.match(runtime, /updateCompactHud/);
+  assert.match(game.description, /상완이두근.*상완삼두근/);
 });
