@@ -64,7 +64,7 @@
         opacity:0;
         pointer-events:none;
       }
-      .kc-top-actions { flex-wrap:nowrap !important; gap:6px !important; }
+      .kc-top-actions { flex-wrap:nowrap !important; gap:6px !important; pointer-events:auto !important; position:relative; z-index:3; }
       .kc-top-actions .header-btn {
         min-height:38px !important;
         height:38px !important;
@@ -73,6 +73,9 @@
         box-shadow:none !important;
         font-size:.78rem !important;
         white-space:nowrap;
+        pointer-events:auto !important;
+        position:relative;
+        z-index:4;
       }
       #theme-btn {
         width:40px !important;
@@ -156,11 +159,38 @@
     shell.classList.toggle('kc-has-search', Boolean(search.value.trim()));
   }
 
+  function bindThemeFallback() {
+    const theme = document.getElementById('theme-btn');
+    if (!theme || theme.dataset.kcThemeBound) return;
+    theme.dataset.kcThemeBound = '1';
+    let dark = false;
+    try { dark = localStorage.getItem('kidscade_darkmode') === 'true'; } catch (_) {}
+    document.body.classList.toggle('dark-mode', dark);
+    theme.addEventListener('click', () => {
+      dark = !document.body.classList.contains('dark-mode');
+      document.body.classList.toggle('dark-mode', dark);
+      try { localStorage.setItem('kidscade_darkmode', String(dark)); } catch (_) {}
+      try { window.playUISound?.('click'); } catch (_) {}
+    });
+  }
+
+  function bindAgeFallback() {
+    const age = document.getElementById('btn-change-age');
+    if (!age || age.dataset.kcAgeNavBound || age.dataset.kcAgeFallbackBound) return;
+    const nav = window.KidscadeAgeNavigation;
+    if (!nav?.showSelector) return;
+    age.dataset.kcAgeFallbackBound = '1';
+    age.addEventListener('click', event => nav.showSelector(event));
+  }
+
   function compactHeader() {
     const topbar = document.querySelector('#main-app > .kc-topbar');
     if (!topbar) return;
 
     topbar.querySelectorAll('.kc-top-category-row').forEach(row => row.remove());
+
+    bindThemeFallback();
+    bindAgeFallback();
 
     const theme = document.getElementById('theme-btn');
     if (theme) {
