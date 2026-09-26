@@ -284,7 +284,7 @@ export async function teacherCaseDecisionV3(request,env){
   const classId=cleanId(b.classId),caseId=cleanId(b.caseId),decision=clean(b.decision,20);
   const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
   const item=await env.DB.prepare(
-    'SELECT c.*,e.balance,e.savings_balance,s.treasury_balance FROM economy_cases c '+
+    'SELECT c.*,e.balance,e.savings_balance,s.treasury_balance,s.government_debt_balance FROM economy_cases c '+
     'JOIN economy_accounts e ON e.student_id=c.student_id JOIN economy_class_settings s ON s.class_id=c.class_id '+
     'WHERE c.id=? AND c.class_id=?'
   ).bind(caseId,classId).first();
@@ -317,18 +317,23 @@ export async function teacherCaseDecisionV3(request,env){
   }else if(decision==='reverse'&&item.status==='appealed'){
     const refund=Number(item.applied_fine||0);
     const balance=Number(item.balance||0)+refund;
-    const treasury=Number(item.treasury_balance||0)-refund;
+    const availableTreasury=Number(item.treasury_balance||0);
+    const treasuryUsed=Math.min(availableTreasury,refund);
+    const debtIncrease=Math.max(0,refund-availableTreasury);
+    const treasury=availableTreasury-treasuryUsed;
+    const governmentDebt=Number(item.government_debt_balance||0)+debtIncrease;
     await env.DB.batch([
       env.DB.prepare("UPDATE economy_cases SET status='reversed',decided_at=?,final_note=? WHERE id=?")
         .bind(now,clean(b.finalNote,240),caseId),
       env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=?').bind(balance,now,item.student_id),
-      env.DB.prepare('UPDATE economy_class_settings SET treasury_balance=?,updated_at=? WHERE class_id=?').bind(treasury,now,classId)
+      env.DB.prepare('UPDATE economy_class_settings SET treasury_balance=?,government_debt_balance=?,updated_at=? WHERE class_id=?')
+        .bind(treasury,governmentDebt,now,classId)
     ]);
     if(refund>0){
       await env.DB.prepare(
         'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
         "VALUES (?,?,'fine-refund','과태료 취소 환급',?,?,?,?,?)"
-      ).bind(classId,item.student_id,refund,balance,Number(item.savings_balance||0),JSON.stringify({caseId}),now).run();
+      ).bind(classId,item.student_id,refund,balance,Number(item.savings_balance||0),JSON.stringify({caseId,debtIncrease}),now).run();
     }
     await adjustCredit(env,classId,item.student_id,10,'이의신청 인용');
   }else{
