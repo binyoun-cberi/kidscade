@@ -20,6 +20,7 @@ const TEST_FILES = [
   "tests/index-base-achievement.test.cjs",
   "tests/shop-state.test.cjs",
   "tests/index-base-shop-state.test.cjs",
+  "tests/auto-update.test.cjs",
   "tests/ui-information-architecture.test.cjs",
   "tests/ui-visual-polish.test.cjs",
   "tests/accounts.test.mjs",
