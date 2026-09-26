@@ -378,6 +378,8 @@ async function deleteClass(request, env) {
   if (confirmName !== classroom.name) return json({ ok: false, error: 'confirmation_mismatch' }, 400);
   const statements = [
     env.DB.prepare(`DELETE FROM student_sessions WHERE student_id IN (SELECT id FROM student_accounts WHERE class_id = ?)`).bind(classId),
+    env.DB.prepare('DELETE FROM class_teacher_sessions WHERE class_id = ?').bind(classId),
+    env.DB.prepare('DELETE FROM class_teacher_accounts WHERE class_id = ?').bind(classId),
     env.DB.prepare('DELETE FROM student_accounts WHERE class_id = ?').bind(classId),
     env.DB.prepare('DELETE FROM kidscade_classes WHERE id = ?').bind(classId)
   ];
@@ -416,6 +418,7 @@ export async function handleTeacherManagementRequest(request, env) {
     if (path === '/api/teacher/class-delete') return request.method === 'DELETE' ? deleteClass(request, env) : methodNotAllowed('DELETE');
   } catch (error) {
     const message = String(error?.message || '');
+    if (/class_teacher_accounts|class_teacher_sessions/i.test(message)) return json({ ok: false, error: 'teacher_schema_not_ready' }, 503);
     if (/no such table|SQLITE_ERROR/i.test(message)) return json({ ok: false, error: 'account_schema_not_ready' }, 503);
     console.error('[Kidscade teacher management API]', error);
     return json({ ok: false, error: 'account_server_error' }, 500);
