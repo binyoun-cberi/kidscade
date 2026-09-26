@@ -4,7 +4,7 @@
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d',{alpha:false});
 const W=1200,H=760,DPR_CAP=1.75;
-const GAME_MIN_PER_SEC=6;
+const GAME_MIN_PER_SEC=18;
 const REPORT_DAYS=3;
 const TRANSFER_PENALTY=8;
 const MAX_DEBT=150;
@@ -75,7 +75,7 @@ const ui={
 let cssW=innerWidth,cssH=innerHeight,scale=1,offX=0,offY=0,dpr=1,last=performance.now();
 let noticeTimer=0,soundOn=true,pointer={x:0,y:0},drag=null;
 let mode='track',selectedLine=0,pendingTrim=false,selectedCityId=null,selectedServiceId=null;
-let undoStack=[],routeCache=new Map(),networkDirty=true;
+let undoStack=[],routeCache=new Map(),networkDirty=true,panelRefresh=0;
 let save={tutorialSeen:false,bestDelivered:0,bestAccess:0,bestMonths:0};
 
 const state={
@@ -294,9 +294,15 @@ function warmRouteCache(){
  for(const a of CITIES)for(const b of CITIES)if(a.id!==b.id)shortestRoute(a.id,b.id);
  networkDirty=false;
 }
-function nextServiceFor(origin,dest){
+function nextLegFor(origin,dest){
  if(networkDirty)warmRouteCache();
- const r=shortestRoute(origin,dest);return r&&r.legs.length?r.legs[0].serviceId:null;
+ const r=shortestRoute(origin,dest);return r&&r.legs.length?r.legs[0]:null;
+}
+function nextServiceFor(origin,dest){const leg=nextLegFor(origin,dest);return leg?leg.serviceId:null}
+function nextStopForTrain(t,s){
+ let dir=t.dir,ni=t.stopIndex+dir;
+ if(ni<0||ni>=s.stops.length){dir*=-1;ni=t.stopIndex+dir}
+ return s.stops[ni]||null;
 }
 function calcAccessibility(){
  if(networkDirty)warmRouteCache();
@@ -345,7 +351,13 @@ function spawnTrainForService(s,first){
  state.trains.push({id:'t'+Date.now()+Math.random(),serviceId:s.id,stopIndex:0,nextIndex:1,dir:1,phase:'travel',progress:frac,onboard:[],dwell:0});
 }
 function resetTrainsForService(serviceId){
- const s=serviceById(serviceId);state.trains=state.trains.filter(t=>t.serviceId!==serviceId);
+ const s=serviceById(serviceId);
+ const old=state.trains.filter(t=>t.serviceId===serviceId);
+ for(const t of old){
+  const stop=s&&s.stops.length?city(s.stops[Math.min(t.stopIndex,s.stops.length-1)]):null;
+  if(stop)for(const g of t.onboard)addQueue(stop.id,g.dest,g.count,g.age);
+ }
+ state.trains=state.trains.filter(t=>t.serviceId!==serviceId);
  if(!s||s.stops.length<2||s.trainCount<=0)return;
  for(let i=0;i<s.trainCount;i++){
   const t={id:'t'+serviceId+'_'+i+'_'+Date.now(),serviceId,stopIndex:0,nextIndex:1,dir:1,phase:'travel',progress:i/Math.max(1,s.trainCount),onboard:[],dwell:0};
@@ -357,14 +369,14 @@ function serviceContainsAdjacent(s,a,b){
  return false;
 }
 function handleTrainAtStation(t,s,stopId){
- const cityObj=city(stopId);
+ const cityObj=city(stopId),nextStop=nextStopForTrain(t,s);
  const kept=[];
  for(const g of t.onboard){
   if(g.dest===stopId){
    deliverPassengers(s,g.count,g.origin,g.dest);
   }else{
-   const ns=nextServiceFor(stopId,g.dest);
-   if(ns!==null&&ns===s.id)kept.push(g);else addQueue(stopId,g.dest,g.count,g.age);
+   const leg=nextLegFor(stopId,g.dest);
+   if(leg&&leg.serviceId===s.id&&leg.to===nextStop)kept.push(g);else addQueue(stopId,g.dest,g.count,g.age);
   }
  }
  t.onboard=kept;
@@ -374,8 +386,8 @@ function handleTrainAtStation(t,s,stopId){
  const entries=[...q.values()].sort((a,b)=>b.age-a.age);
  for(const g of entries){
   if(space<=0)break;
-  const ns=nextServiceFor(stopId,g.dest);
-  if(ns!==s.id)continue;
+  const leg=nextLegFor(stopId,g.dest);
+  if(!leg||leg.serviceId!==s.id||leg.to!==nextStop)continue;
   const take=Math.min(space,g.count);if(take<=0)continue;
   t.onboard.push({origin:stopId,dest:g.dest,count:take,age:g.age});g.count-=take;space-=take;s.boardedMonth+=take;
   if(g.count<=0)q.delete(g.dest);
@@ -400,7 +412,7 @@ function updateTrains(gameDelta){
   const aId=s.stops[t.stopIndex],bId=s.stops[t.nextIndex],minutes=serviceSegmentMinutes(aId,bId);
   t.progress+=gameDelta/Math.max(1,minutes);
   if(t.progress>=1){
-   t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=2;
+   t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=6;
    handleTrainAtStation(t,s,s.stops[t.stopIndex]);
   }
  }
@@ -424,6 +436,10 @@ function openMonthReport(){
  if(state.reportOpen||state.gameOver)return;
  state.reportOpen=true;state.paused=true;
  const op=operatingCost();state.lastOperatingCost=op;state.cash-=op;
+ if(state.cash<0&&state.debt<MAX_DEBT){
+  const loan=Math.min(50,MAX_DEBT-state.debt);state.debt+=loan;state.cash+=loan;showNotice('월말 운영자금 '+loan+'억을 대출했어요.',1500);
+ }
+ if(state.cash<-20&&state.debt>=MAX_DEBT){gameOver('대출 한도에 도달해 월 운영비를 감당할 수 없습니다.');return}
  const profit=state.incomeMonth-op;state.lastMonthProfit=profit;
  ui.reportTitle.textContent=state.month+'개월차 결산';
  ui.reportDelivered.textContent=state.deliveredMonth+'명';ui.reportProfit.textContent=money(profit);
@@ -463,7 +479,9 @@ function update(dt){
  const total=state.gameMin;
  state.day=Math.floor((total-360)/1440)+1;
  if(state.day>=state.nextReportDay&&!state.reportOpen)openMonthReport();
- updateHud();updatePanels(false);
+ panelRefresh+=dt;
+ if(panelRefresh>=.8){panelRefresh=0;updatePanels(true)}else updatePanels(false);
+ updateHud();
 }
 
 function updateHud(){
