@@ -22,6 +22,7 @@ jobs:
         shell: bash
         run: |
           for file in \
+            auto-update.js \
             kidscade-storage.js \
             audio-manager.js \
             touch-interaction-guard.js \
