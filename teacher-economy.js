@@ -58,7 +58,7 @@
       ...options,
       credentials:'same-origin',
       headers:{
-        authorization:'Bearer ' + adminKey,
+        ...(adminKey ? {authorization:'Bearer ' + adminKey} : {}),
         ...(options.body ? {'content-type':'application/json'} : {}),
         ...(options.headers || {})
       }
@@ -73,7 +73,7 @@
   }
 
   async function load() {
-    if (!adminKey || !classId) {
+    if (!classId) {
       $('titleClass').textContent = classNameHint || '학급경제';
       show('authMissing');
       return;
@@ -81,7 +81,7 @@
 
     try {
       const result = await api('/api/teacher/economy?classId=' + encodeURIComponent(classId));
-      if (result.response.status === 401) {
+      if (result.response.status === 401 || result.response.status === 403) {
         show('authMissing');
         return;
       }
