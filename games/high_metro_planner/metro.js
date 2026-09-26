@@ -513,7 +513,7 @@ function updatePanels(rebuildList=true){
    card.innerHTML='<div class="serviceTop"><span>'+s.name+'</span><span class="profit '+(profit>=0?'pos':'neg')+'">'+money(profit)+'</span></div>'+
     '<div class="serviceMeta"><span>🚆 '+s.trainCount+'대</span><span>배차 '+Math.round(calculateHeadway(s))+'분</span><span>이용 '+Math.round(load)+'%</span></div>'+
     '<div class="serviceStopsMini">'+s.stops.map(id=>city(id).name).join(' · ')+'</div>';
-   card.addEventListener('click',()=>{selectedServiceId=s.id;selectedCityId=null;updatePanels()});ui.serviceList.appendChild(card);
+   card.addEventListener('click',()=>{selectedServiceId=s.id;selectedLine=s.id;selectedCityId=null;mode='line';pendingTrim=false;updateToolbar();updatePanels();play('click')});ui.serviceList.appendChild(card);
   });
   if(!ui.serviceList.children.length){const d=document.createElement('div');d.className='detailEmpty';d.textContent='아직 운행 중인 노선이 없습니다.';ui.serviceList.appendChild(d)}
  }
