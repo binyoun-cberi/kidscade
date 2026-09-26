@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  // The retired per-game energy boost should not linger in student browsers.
+  try { localStorage.removeItem('kidscade_game_play_limits'); } catch (_) {}
+
   const SAVE_SCHEMA_VERSION = 1;
 
   // Site-wide and shared subsystem state. Physical key names stay unchanged so
@@ -17,7 +20,6 @@
     claimedRanks: 'kidscade_claimed_ranks',
     petItems: 'kidscade_pet_items',
     pet: 'kidscade_pet',
-    playLimits: 'kidscade_game_play_limits',
     dailyRewardClaimed: 'kidscade_daily_reward_claimed',
     dailyMissions: 'kidscade_daily_missions',
     attendance: 'kidscade_attendance',
