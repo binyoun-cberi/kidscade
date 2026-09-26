@@ -3,6 +3,7 @@ import {
   creditProfile, adjustCredit, claimRequest, completeRequest
 } from './economy-common.mjs';
 import { getStudentEconomy as getStudentEconomyLegacy } from './economy-student.mjs';
+import { getStudentJobDesk } from './economy-jobdesk.mjs';
 
 async function requestBody(request) {
   try { return await parseJson(request); } catch (_) { return null; }
@@ -47,10 +48,11 @@ export async function getStudentEconomyV3(request, env) {
   const salaryBase = Number(job?.salary || base.settings?.openingBalance || 100);
   const loanLimit = Math.floor(salaryBase * profile.loanMultiplier);
   const activeOutstanding = await activeLoanTotal(env, studentId);
+  const jobDesk = await getStudentJobDesk(env,classId,studentId);
 
   const [workLogs, loans, inventory, payslips, spending, creditEvents, companies, products, sales] = await Promise.all([
     env.DB.prepare(
-      'SELECT id, job_id, period_id, work_date, note, status, pay_percent, teacher_note, submitted_at, decided_at ' +
+      'SELECT id, job_id, period_id, work_date, note, status, pay_percent, teacher_note, submitted_at, decided_at, activity_count, activity_summary ' +
       'FROM economy_work_logs WHERE student_id = ? ORDER BY submitted_at DESC LIMIT 20'
     ).bind(studentId).all(),
     env.DB.prepare(
@@ -119,7 +121,8 @@ export async function getStudentEconomyV3(request, env) {
       stock:product.stock == null ? null : Number(product.stock),
       active:Boolean(Number(product.active))
     })),
-    companySales: sales?.results || []
+    companySales: sales?.results || [],
+    jobDesk
   });
 }
 
@@ -234,15 +237,22 @@ export async function studentWorkLog(request, env) {
   if(!periodId||!note)return json({ok:false,error:'work_log_required'},400);
   const job=await currentJob(env,auth.row.student_id);
   if(!job)return json({ok:false,error:'job_not_assigned'},409);
+  const activityRows=await env.DB.prepare(
+    'SELECT action_label,COUNT(*) AS total FROM economy_job_activity WHERE student_id=? AND class_id=? AND period_id=? GROUP BY action_label ORDER BY action_label'
+  ).bind(auth.row.student_id,auth.row.class_id,periodId).all();
+  const activityCount=(activityRows?.results||[]).reduce((sum,row)=>sum+Number(row.total||0),0);
+  const activitySummary=(activityRows?.results||[]).map(row=>clean(row.action_label,60)+' '+Number(row.total||0)+'건').join(' · ').slice(0,400);
+
   const now=nowIso();
   const id=crypto.randomUUID();
   const result=await env.DB.prepare(
-    'INSERT INTO economy_work_logs (id,class_id,student_id,job_id,period_id,work_date,note,status,pay_percent,teacher_note,submitted_at) '+
-    "VALUES (?,?,?,?,?,?,?,'submitted',100,'',?) "+
+    'INSERT INTO economy_work_logs (id,class_id,student_id,job_id,period_id,work_date,note,status,pay_percent,teacher_note,submitted_at,activity_count,activity_summary) '+
+    "VALUES (?,?,?,?,?,?,?,'submitted',100,'',?,?,?) "+
     'ON CONFLICT(student_id,period_id) DO UPDATE SET job_id=excluded.job_id,work_date=excluded.work_date,note=excluded.note,'+
-    "status='submitted',pay_percent=100,teacher_note='',submitted_at=excluded.submitted_at,decided_at=NULL "+
+    "status='submitted',pay_percent=100,teacher_note='',submitted_at=excluded.submitted_at,decided_at=NULL,"+
+    'activity_count=excluded.activity_count,activity_summary=excluded.activity_summary '+
     "WHERE economy_work_logs.status IN ('submitted','rejected')"
-  ).bind(id,auth.row.class_id,auth.row.student_id,job.id,periodId,workDate,note,now).run();
+  ).bind(id,auth.row.class_id,auth.row.student_id,job.id,periodId,workDate,note,now,activityCount,activitySummary).run();
   if(!Number(result?.meta?.changes||0))return json({ok:false,error:'work_log_locked'},409);
   return json({ok:true});
 }

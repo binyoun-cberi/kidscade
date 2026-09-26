@@ -118,6 +118,7 @@ button,input{font:inherit}
     <nav class="tabs">
       <button class="tab active" data-tab="wallet">거래·급여</button>
       <button class="tab" data-tab="work">근무일지</button>
+      <button class="tab hidden" id="jobDeskTab" data-tab="jobdesk">직업업무</button>
       <button class="tab" data-tab="bank">은행·대출</button>
       <button class="tab" data-tab="jobs">직업시장</button>
       <button class="tab" data-tab="store">상점</button>
@@ -144,6 +145,43 @@ button,input{font:inherit}
       <div class="actions"><button class="btn primary" id="submitWork">근무일지 제출</button></div>
       <h2 style="margin-top:18px">내 근무 기록</h2>
       <div class="stack" id="workRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-jobdesk">
+      <h2 id="jobDeskTitle">내 직업 업무실</h2>
+      <p id="jobDeskIntro">현재 직업에 연결된 업무 기능만 열립니다.</p>
+      <div id="jobCapabilityPills" style="margin-bottom:12px"></div>
+
+      <div id="cleanPlateTool" class="hidden">
+        <div class="notice" id="cleanPlateSummary">오늘의 클린식판 통계를 불러오는 중…</div>
+        <h2 style="margin-top:18px">클린식판 기록</h2>
+        <p>통계청 업무입니다. 학생별 급식 결과를 기록하면 학급 통계와 내 업무 실적에 자동 반영됩니다.</p>
+        <div class="field"><label>학생</label><select class="input" id="cleanPlateStudent"></select></div>
+        <div class="field"><label>날짜</label><input class="input" id="cleanPlateDate" type="date"></div>
+        <div class="field"><label>결과</label><select class="input" id="cleanPlateResult"><option value="clean">클린식판</option><option value="partial">조금 남김</option><option value="leftover">많이 남김</option></select></div>
+        <div class="field"><label>메모</label><input class="input" id="cleanPlateNote" maxlength="200" placeholder="선택 사항"></div>
+        <div class="actions"><button class="btn green" id="saveCleanPlate">기록 저장</button></div>
+        <h2 style="margin-top:18px">최근 클린식판 장부</h2>
+        <div class="stack" id="cleanPlateRows"></div>
+      </div>
+
+      <div id="creditLedgerTool" class="hidden">
+        <h2 style="margin-top:18px">제출물·숙제 신용장부</h2>
+        <p>신용평가사 업무입니다. 학생의 학습 이행을 기록합니다. 신용점수 변화는 선생님이 검토한 뒤에만 반영됩니다.</p>
+        <div class="field"><label>학생</label><select class="input" id="creditLedgerStudent"></select></div>
+        <div class="field"><label>날짜</label><input class="input" id="creditLedgerDate" type="date"></div>
+        <div class="field"><label>종류</label><select class="input" id="creditLedgerCategory"><option value="homework">숙제</option><option value="submission">제출물</option><option value="materials">준비물</option><option value="other">기타</option></select></div>
+        <div class="field"><label>항목</label><input class="input" id="creditLedgerTitle" maxlength="80" placeholder="예: 수학 익힘책 32~35쪽"></div>
+        <div class="field"><label>이행 상태</label><select class="input" id="creditLedgerResult"><option value="excellent">아주 잘함 (+2 제안)</option><option value="complete">완료 (+1 제안)</option><option value="late">늦음 (-1 제안)</option><option value="missing">미제출 (-2 제안)</option></select></div>
+        <div class="field"><label>메모</label><input class="input" id="creditLedgerNote" maxlength="240" placeholder="사실만 간단히 기록"></div>
+        <div class="actions"><button class="btn primary" id="saveCreditLedger">장부 기록</button></div>
+        <h2 style="margin-top:18px">내가 기록한 최근 장부</h2>
+        <div class="stack" id="creditLedgerRows"></div>
+      </div>
+
+      <h2 style="margin-top:18px">자동 업무 실적</h2>
+      <p>직업 기능을 실제로 사용하면 자동으로 쌓이고 근무일지 제출 때 실적 요약이 함께 저장됩니다.</p>
+      <div class="stack" id="jobActivityRows"></div>
     </section>
 
     <section class="panel card section" id="panel-bank">
@@ -216,6 +254,6 @@ button,input{font:inherit}
   </section>
 </main>
 <div class="toast" id="toast"></div>
-<script src="economy.js?v=20260926-v3"></script>
+<script src="economy.js?v=20260927-jobdesk"></script>
 </body>
 </html>

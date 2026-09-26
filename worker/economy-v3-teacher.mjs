@@ -4,6 +4,7 @@ import {
   creditProfile, adjustCredit
 } from './economy-common.mjs';
 import { teacherEconomyState as teacherEconomyStateLegacy } from './economy-teacher.mjs';
+import { JOB_CAPABILITY_CATALOG } from './economy-jobdesk.mjs';
 
 async function body(request){
   try{return await parseJson(request)}catch(_){return null}
@@ -23,7 +24,7 @@ export async function teacherEconomyStateV3(request,env){
   const classId=base.classroom?.id;
   if(!classId)return json(base);
 
-  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents,creditRows]=await Promise.all([
+  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents,creditRows,jobCapabilities,cleanPlateRecords,creditBookRecords]=await Promise.all([
     env.DB.prepare(
       'SELECT w.*,a.login_id,a.nickname,j.name AS job_name,j.salary AS job_salary '+
       'FROM economy_work_logs w JOIN student_accounts a ON a.id=w.student_id '+
@@ -64,10 +65,39 @@ export async function teacherEconomyStateV3(request,env){
     ).bind(classId).all(),
     env.DB.prepare(
       'SELECT student_id,credit_score FROM economy_accounts WHERE class_id=?'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT job_id,capability,access_level,limit_value FROM economy_job_capabilities WHERE class_id=? ORDER BY job_id,capability'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT r.id,r.recorder_student_id,r.target_student_id,r.record_date,r.result,r.note,r.updated_at,'+
+      'rec.nickname AS recorder_nickname,target.nickname AS target_nickname '+
+      'FROM economy_clean_plate_records r '+
+      'JOIN student_accounts rec ON rec.id=r.recorder_student_id '+
+      'JOIN student_accounts target ON target.id=r.target_student_id '+
+      'WHERE r.class_id=? ORDER BY r.record_date DESC,r.updated_at DESC LIMIT 120'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT r.id,r.recorder_student_id,r.target_student_id,r.record_date,r.category,r.title,r.result,r.note,'+
+      'r.suggested_delta,r.review_status,r.teacher_note,r.created_at,r.reviewed_at,'+
+      'rec.nickname AS recorder_nickname,target.nickname AS target_nickname '+
+      'FROM economy_credit_book_records r '+
+      'JOIN student_accounts rec ON rec.id=r.recorder_student_id '+
+      'JOIN student_accounts target ON target.id=r.target_student_id '+
+      'WHERE r.class_id=? ORDER BY r.created_at DESC LIMIT 150'
     ).bind(classId).all()
   ]);
 
   const creditMap=new Map((creditRows?.results||[]).map(row=>[row.student_id,Number(row.credit_score||700)]));
+  const capabilityMap=new Map();
+  for(const row of jobCapabilities?.results||[]){
+    if(!capabilityMap.has(row.job_id)) capabilityMap.set(row.job_id,[]);
+    capabilityMap.get(row.job_id).push({
+      code:row.capability,
+      accessLevel:row.access_level||'execute',
+      limitValue:row.limit_value==null?null:Number(row.limit_value)
+    });
+  }
   const students=[];
   for(const student of base.students||[]){
     const score=creditMap.get(student.id)??700;
@@ -86,6 +116,8 @@ export async function teacherEconomyStateV3(request,env){
 
   return json({
     ...base,
+    jobs:(base.jobs||[]).map(job=>({...job,capabilities:capabilityMap.get(job.id)||[]})),
+    capabilityCatalog:JOB_CAPABILITY_CATALOG,
     students,
     workLogs:workLogs?.results||[],
     loans:loans?.results||[],
@@ -95,7 +127,9 @@ export async function teacherEconomyStateV3(request,env){
     companies:(companies?.results||[]).map(x=>({...x,cash_balance:Number(x.cash_balance||0)})),
     companyProducts:(products?.results||[]).map(x=>({...x,price:Number(x.price||0),stock:x.stock==null?null:Number(x.stock)})),
     companySales:sales?.results||[],
-    creditEvents:creditEvents?.results||[]
+    creditEvents:creditEvents?.results||[],
+    cleanPlateRecords:cleanPlateRecords?.results||[],
+    creditBookRecords:creditBookRecords?.results||[]
   });
 }
 

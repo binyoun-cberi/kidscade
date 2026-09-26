@@ -64,6 +64,11 @@
       company_not_active:'승인된 회사만 상품을 등록할 수 있어요.',
       company_funds_insufficient:'회사 잔액이 부족해요.',
       request_in_progress:'같은 요청을 처리 중이에요. 잠시만 기다려 주세요.',
+      job_capability_required:'현재 직업에는 이 업무 권한이 없어요.',
+      student_not_found:'학생을 찾을 수 없어요.',
+      clean_plate_result_required:'클린식판 결과를 선택해 주세요.',
+      credit_record_required:'장부 항목과 이행 상태를 확인해 주세요.',
+      self_credit_record_forbidden:'내 학습 신용장부는 내가 직접 기록할 수 없어요.',
       economy_schema_not_ready:'학급경제 서버를 준비 중이에요.'
     };
     return map[code] || '요청을 처리하지 못했어요.';
@@ -132,7 +137,7 @@
     busy.add(key);
     try {
       const body = { ...payload };
-      if (!body.requestKey && /savings|buy|repay|withdraw/.test(path)) body.requestKey = requestKey();
+      if (!body.requestKey && /savings|buy|repay|withdraw|job-duty/.test(path)) body.requestKey = requestKey();
       const result = await request(path, { method:'POST', body:JSON.stringify(body) });
       if (!result.response.ok || !result.body.ok) {
         toast(errorText(result.body?.error));
@@ -232,6 +237,35 @@
     await mutate('/api/economy/company-withdraw',{companyId:mine.id,amount},'회사 수익을 지갑으로 옮겼어요.','company-withdraw');
   }
 
+  async function saveCleanPlateRecord() {
+    const targetStudentId = $('cleanPlateStudent')?.value || '';
+    const recordDate = $('cleanPlateDate')?.value || todayText();
+    const result = $('cleanPlateResult')?.value || '';
+    const note = String($('cleanPlateNote')?.value || '').trim();
+    if (!targetStudentId || !result) return toast('학생과 결과를 선택해 주세요.');
+    const ok = await mutate('/api/economy/job-duty/clean-plate',{
+      targetStudentId,recordDate,result,note
+    },'클린식판 장부에 기록했어요.','clean-plate');
+    if (ok && $('cleanPlateNote')) $('cleanPlateNote').value='';
+  }
+
+  async function saveCreditLedgerRecord() {
+    const targetStudentId = $('creditLedgerStudent')?.value || '';
+    const recordDate = $('creditLedgerDate')?.value || todayText();
+    const category = $('creditLedgerCategory')?.value || 'other';
+    const title = String($('creditLedgerTitle')?.value || '').trim();
+    const result = $('creditLedgerResult')?.value || '';
+    const note = String($('creditLedgerNote')?.value || '').trim();
+    if (!targetStudentId || !title || !result) return toast('학생, 항목, 이행 상태를 확인해 주세요.');
+    const ok = await mutate('/api/economy/job-duty/credit-record',{
+      targetStudentId,recordDate,category,title,result,note
+    },'학습 신용장부에 기록했어요. 선생님 검토 후 신용점수에 반영돼요.','credit-ledger');
+    if (ok) {
+      if ($('creditLedgerTitle')) $('creditLedgerTitle').value='';
+      if ($('creditLedgerNote')) $('creditLedgerNote').value='';
+    }
+  }
+
   function caseStatus(value) {
     return ({
       pending:'처분 예정',confirmed:'확정',appealed:'이의 신청 중',
@@ -276,6 +310,7 @@
       '<div class="row"><div><strong>' + escapeHtml(item.period_id) + ' · ' + escapeHtml(workStatus(item.status)) +
       '</strong><small>' + escapeHtml(item.work_date) + ' · ' + escapeHtml(item.note || '') +
       (item.status === 'approved' ? ' · 급여 반영 ' + Number(item.pay_percent || 0) + '%' : '') +
+      (Number(item.activity_count || 0) > 0 ? '<br>자동 업무 실적 ' + Number(item.activity_count || 0) + '건 · ' + escapeHtml(item.activity_summary || '') : '') +
       (item.teacher_note ? '<br>선생님: ' + escapeHtml(item.teacher_note) : '') +
       '</small></div></div>'
     ).join('') : '<div class="empty">아직 제출한 근무일지가 없어요.</div>';
@@ -301,6 +336,85 @@
       '</strong><small>' + escapeHtml(new Date(e.created_at).toLocaleString('ko-KR')) + '</small></div><b>' +
       Number(e.score_after || 0) + '</b></div>'
     ).join('') : '<div class="empty">아직 신용 변동 기록이 없어요.</div>';
+  }
+
+  function renderJobDesk() {
+    const desk = data.jobDesk || {};
+    const capabilities = desk.capabilities || [];
+    const codes = new Set(capabilities.map(item => item.code));
+    const hasDesk = capabilities.length > 0;
+    $('jobDeskTab')?.classList.toggle('hidden', !hasDesk);
+    if (!hasDesk) return;
+
+    $('jobDeskTitle').textContent = (desk.job?.name || '내 직업') + ' 업무실';
+    $('jobDeskIntro').textContent = desk.job?.task || '현재 직업에 연결된 업무 기능을 수행합니다.';
+
+    const labels = {
+      'stats.clean_plate':'통계청 · 클린식판 통계',
+      'credit.learning_ledger':'신용평가사 · 제출물·숙제 장부'
+    };
+    $('jobCapabilityPills').innerHTML = capabilities.map(item =>
+      '<span class="pill good">' + escapeHtml(labels[item.code] || item.code) + '</span>'
+    ).join('');
+
+    const rosterOptions = (desk.roster || []).map(student =>
+      '<option value="' + escapeHtml(student.id) + '">' +
+      escapeHtml((student.nickname || '새싹 게이머') + ' · ' + student.loginId) + '</option>'
+    ).join('');
+
+    const cleanEnabled = codes.has('stats.clean_plate');
+    $('cleanPlateTool')?.classList.toggle('hidden', !cleanEnabled);
+    if (cleanEnabled) {
+      $('cleanPlateStudent').innerHTML = rosterOptions;
+      const summary = desk.cleanPlate?.summary || {};
+      const total = Number(summary.total || 0);
+      const cleanCount = Number(summary.clean || 0);
+      const rate = total ? Math.round(cleanCount * 100 / total) : 0;
+      $('cleanPlateSummary').textContent =
+        '오늘 기록 ' + total + '명 · 클린식판 ' + cleanCount + '명 · 클린율 ' + rate + '% · 조금 남김 ' +
+        Number(summary.partial || 0) + '명 · 많이 남김 ' + Number(summary.leftover || 0) + '명';
+      const cleanLabel = {clean:'클린식판',partial:'조금 남김',leftover:'많이 남김'};
+      $('cleanPlateRows').innerHTML = (desk.cleanPlate?.records || []).length
+        ? desk.cleanPlate.records.map(row =>
+          '<div class="row"><div><strong>' + escapeHtml(row.nickname || row.login_id || '학생') +
+          ' · ' + escapeHtml(cleanLabel[row.result] || row.result) + '</strong><small>' +
+          escapeHtml(row.record_date) + (row.note ? ' · ' + escapeHtml(row.note) : '') +
+          '</small></div></div>'
+        ).join('')
+        : '<div class="empty">아직 기록이 없어요.</div>';
+    }
+
+    const creditEnabled = codes.has('credit.learning_ledger');
+    $('creditLedgerTool')?.classList.toggle('hidden', !creditEnabled);
+    if (creditEnabled) {
+      const selfId = data.student?.id;
+      $('creditLedgerStudent').innerHTML = (desk.roster || []).filter(student => student.id !== selfId).map(student =>
+        '<option value="' + escapeHtml(student.id) + '">' +
+        escapeHtml((student.nickname || '새싹 게이머') + ' · ' + student.loginId) + '</option>'
+      ).join('');
+      const categoryLabel={homework:'숙제',submission:'제출물',materials:'준비물',other:'기타'};
+      const resultLabel={excellent:'아주 잘함',complete:'완료',late:'늦음',missing:'미제출'};
+      const reviewLabel={pending:'선생님 검토 대기',approved:'신용 반영',rejected:'반영 안 함'};
+      $('creditLedgerRows').innerHTML = (desk.creditLedger || []).length
+        ? desk.creditLedger.map(row =>
+          '<div class="row"><div><strong>' + escapeHtml(row.nickname || row.login_id || '학생') +
+          ' · ' + escapeHtml(categoryLabel[row.category] || row.category) + ' · ' + escapeHtml(row.title) +
+          '</strong><small>' + escapeHtml(row.record_date) + ' · ' + escapeHtml(resultLabel[row.result] || row.result) +
+          ' · 신용 ' + (Number(row.suggested_delta || 0) >= 0 ? '+' : '') + Number(row.suggested_delta || 0) + '점 제안' +
+          ' · ' + escapeHtml(reviewLabel[row.review_status] || row.review_status) +
+          (row.teacher_note ? '<br>선생님: ' + escapeHtml(row.teacher_note) : '') +
+          '</small></div></div>'
+        ).join('')
+        : '<div class="empty">아직 내가 기록한 학습 장부가 없어요.</div>';
+    }
+
+    $('jobActivityRows').innerHTML = (desk.activities || []).length
+      ? desk.activities.map(item =>
+        '<div class="row"><div><strong>' + escapeHtml(item.action_label || '직업 업무') +
+        '</strong><small>' + escapeHtml(item.period_id || '') + ' · ' +
+        escapeHtml(new Date(item.created_at).toLocaleString('ko-KR')) + '</small></div></div>'
+      ).join('')
+      : '<div class="empty">아직 자동으로 기록된 업무 실적이 없어요.</div>';
   }
 
   function renderJobs() {
@@ -443,6 +557,7 @@
     renderPayslips();
     renderTransactions();
     renderWork();
+    renderJobDesk();
     renderLoans();
     renderJobs();
     renderStore();
@@ -463,6 +578,8 @@
   $('depositBtn').onclick = () => saveMoney('deposit');
   $('withdrawBtn').onclick = () => saveMoney('withdraw');
   $('submitWork').onclick = submitWork;
+  $('saveCleanPlate').onclick = saveCleanPlateRecord;
+  $('saveCreditLedger').onclick = saveCreditLedgerRecord;
   $('requestLoan').onclick = requestLoan;
   $('createCompany').onclick = createCompany;
   $('createCompanyProduct').onclick = createCompanyProduct;
@@ -470,6 +587,8 @@
 
   $('workDate').value = todayText();
   $('workPeriod').value = defaultPeriod();
+  $('cleanPlateDate').value = todayText();
+  $('creditLedgerDate').value = todayText();
 
   load();
 })();
