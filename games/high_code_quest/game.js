@@ -1,6 +1,7 @@
 const DATA=window.CodeQuestData;
 const RuntimeAPI=window.CodeQuestRuntime;
-if(!DATA||!RuntimeAPI)throw new Error('Code Quest data/runtime missing');
+const Validator=window.CodeQuestValidator;
+if(!DATA||!RuntimeAPI||!Validator)throw new Error('Code Quest data/runtime/validator missing');
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY='kidscade_game_v1:high_code_quest:progress_v3';
@@ -19,6 +20,7 @@ let executingNodeId='',errorNodeId='',cameraX=0,cameraY=0;
 let dpr=Math.min(2,window.devicePixelRatio||1);
 let runSpeed=1;
 let runToken=0;
+let validating=false,lastValidation=null,uiTrace=[];
 
 const images={};
 const imageSources={
@@ -41,13 +43,13 @@ const rewardNames={
 };
 
 function defaultProgress(){
- return {unlocked:1,completed:{},best:{},current:0,programs:{},inventory:{},treasures:{},memoryBonus:0,rewardClaimed:{},runCount:0};
+ return {unlocked:1,completed:{},best:{},metrics:{},current:0,programs:{},inventory:{},treasures:{},memoryBonus:0,rewardClaimed:{},runCount:0};
 }
 function loadProgress(){
  let raw={};
  try{raw=JSON.parse(localStorage.getItem(SAVE_KEY)||localStorage.getItem('kidscade_game_v1:high_code_quest:progress_v2')||'{}');}catch(_){}
  const p={...defaultProgress(),...raw};
- p.unlocked=Math.max(1,Number(p.unlocked)||1);p.completed=p.completed||{};p.best=p.best||{};p.programs=p.programs||{};p.inventory=p.inventory||{};p.treasures=p.treasures||{};p.rewardClaimed=p.rewardClaimed||{};
+ p.unlocked=Math.max(1,Number(p.unlocked)||1);p.completed=p.completed||{};p.best=p.best||{};p.metrics=p.metrics||{};p.programs=p.programs||{};p.inventory=p.inventory||{};p.treasures=p.treasures||{};p.rewardClaimed=p.rewardClaimed||{};
  migrateRewards(p);
  return p;
 }
@@ -89,6 +91,21 @@ function setExec(title,detail,mode='idle'){
  $('execTitle').textContent=title;$('execDetail').textContent=detail||'';
  $('execBar').classList.toggle('running',mode==='running');$('execBar').classList.toggle('error',mode==='error');
  $('execIcon').textContent=mode==='running'?'▶':mode==='error'?'!':'●';
+}
+function traceLabel(event){
+ if(event.kind==='check')return (BLOCKS[event.node?.type]?.label||'조건')+' '+(event.result?'✓':'✕');
+ if(event.kind==='call')return 'ƒ 나의 기술';
+ if(event.kind==='loop')return (BLOCKS[event.node?.type]?.label||'반복')+' '+event.index+'/'+event.total;
+ if(event.kind==='action')return BLOCKS[event.node?.type]?.label||event.node?.type||'행동';
+ return '';
+}
+function pushTrace(event){
+ if(!['check','call','loop','action'].includes(event.kind))return;
+ uiTrace.push({kind:event.kind,label:traceLabel(event),result:event.result});if(uiTrace.length>5)uiTrace.shift();renderTraceStrip();
+}
+function renderTraceStrip(){
+ const root=$('traceStrip');if(!root)return;root.replaceChildren();
+ uiTrace.forEach((x,i)=>{const d=document.createElement('span');d.className='trace-chip '+x.kind+(x.kind==='check'?' '+(x.result?'true':'false'):'')+(i===uiTrace.length-1?' current':'');d.textContent=x.label;root.appendChild(d);});
 }
 function setExecuting(on){
  document.body.classList.toggle('executing',on);
@@ -158,7 +175,7 @@ function buildWorld(){
   enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:0}))
  };
  cameraX=Math.max(0,(worldState.displayX-2.2)*tileW());cameraY=worldState.displayY*vertUnit()*.2;
- executingNodeId='';errorNodeId='';stepSession=false;
+ executingNodeId='';errorNodeId='';stepSession=false;uiTrace=[];renderTraceStrip();
  updateHUD();renderProgram();updateBossHud();
  setExec('코드를 만들고 실행해 보세요.','▶ 실행을 누르면 캐릭터가 코드대로 모험합니다.');
 }
@@ -203,6 +220,10 @@ async function hurtPlayer(amount=1){
 async function openDoor(d){sound('ui.confirm');d.open=true;await tween(speedMs(240),q=>{d.openT=q;});}
 
 const worldAPI={
+ getTraceState(){
+  if(!worldState)return null;
+  return {x:worldState.x,y:worldState.y,hp:worldState.hp,crystals:worldState.crystalCount,enemies:worldState.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,type:e.type,hp:e.hp,state:currentEnemyState(e)}))};
+ },
  checkCondition(cond){
   if(cond==='enemyAhead')return Boolean(enemyAhead());
   if(cond==='gapAhead'){
@@ -428,37 +449,55 @@ function updateBossHud(){
  if(!boss){box.classList.add('hidden');return;}box.classList.remove('hidden');$('bossName').textContent=boss.type==='boss_mushroom'?'BUGCAP · 왕버섯':'NULL GOLEM';$('bossHp').style.width=(100*boss.hp/boss.maxHp)+'%';$('bossState').textContent=stateLabel(currentEnemyState(boss));
 }
 function stateLabel(s){return ({idle:'대기',windup:'공격 준비!',shoot:'독포자!',spore:'포자 폭발!',rest:'빈틈',hover:'비행',swoop:'급강하!',guard:'방어 중',open:'빈틈',slam:'내려찍기!'})[s]||s;}
-function missionRequirementOK(){
- if(mission.requireFunction&&!functionProgram.length)return {ok:false,message:'나의 기술을 하나 만들어 사용해 보세요.'};
- if(mission.requireType&&!RuntimeAPI.containsType(mainProgram,mission.requireType))return {ok:false,message:'이번 구역은 '+BLOCKS[mission.requireType].label+'을 활용해 해결해 보세요.'};
- return {ok:true};
+function renderValidationResults(report){
+ const summary=$('testSummary');if(summary){summary.replaceChildren();const all=[{name:'현재 구역',ok:true,message:''},...(report?.results||[])];for(const r of all){const row=document.createElement('div');row.className='test-row '+(r.ok?'ok':'fail');row.innerHTML='<span class="mark">'+(r.ok?'✓':'✕')+'</span><b>'+r.name+'</b><small>'+(r.ok?'통과':(r.message||'프로그램이 멈췄어요.'))+'</small>';summary.appendChild(row);}}
+ const rows=$('validationRows');if(rows){rows.replaceChildren();if(report?.concept?.ok===false){const row=document.createElement('div');row.className='test-row fail';row.innerHTML='<span class="mark">✕</span><b>코딩 개념 사용</b><small>'+report.concept.message+'</small>';rows.appendChild(row);}for(const r of report?.results||[]){const row=document.createElement('div');row.className='test-row '+(r.ok?'ok':'fail');row.innerHTML='<span class="mark">'+(r.ok?'✓':'✕')+'</span><b>'+r.name+'</b><small>'+(r.ok?'통과':(r.message||'프로그램이 멈췄어요.'))+'</small>';rows.appendChild(row);}}
 }
-function handleMissionDone(){
- const req=missionRequirementOK();if(!req.ok){failures++;sound('ui.error');setExec('목적지에는 왔지만…',req.message,'error');toast(req.message,true);stepSession=false;setExecuting(false);return;}
- if(cleared)return;cleared=true;worldState.pose='cheer';sound('success.victory_fanfare');setExecuting(false);
- const count=RuntimeAPI.countNodes(mainProgram),short=count<=mission.par,clean=failures===0;
+function showValidationFailure(report){
+ renderValidationResults(report);
+ const failed=report?.results?.find(r=>!r.ok),msg=!report?.concept?.ok?report.concept.message:(failed?.message||'다른 배치에서는 프로그램이 끝까지 작동하지 않았어요.');
+ $('validationMessage').textContent=msg;
+ if(failed?.trace?.length){const err=[...failed.trace].reverse().find(e=>e.kind==='error');if(err?.nodeId){errorNodeId=err.nodeId;renderProgram();}}
+ $('validationFail').classList.remove('hidden');
+}
+async function handleMissionDone(){
+ if(cleared||validating)return;
+ validating=true;setExecuting(false);setRunButtons(false);stepSession=false;$('runBtn').disabled=true;$('stepBtn').disabled=true;
+ setExec('프로그램 검사 중…',mission.validationTests?.length?'다른 상황에서도 같은 코드가 작동하는지 확인하고 있어요.':'사용한 코딩 개념을 확인하고 있어요.','running');
+ const report=await Validator.validate({mission,program:mainProgram,functionProgram,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
+ $('runBtn').disabled=false;$('stepBtn').disabled=false;lastValidation=report;renderValidationResults(report);
+ if(!report.ok){
+  failures++;validating=false;sound('ui.error');setExec('다른 상황에서 버그 발생',report.concept?.ok===false?report.concept.message:'코드를 고쳐 다시 실행해 보세요.','error');showValidationFailure(report);return;
+ }
+ validating=false;cleared=true;worldState.pose='cheer';sound('success.victory_fanfare');
+ const m=report.metrics,total=m.totalNodes,short=total<=(mission.totalPar||mission.par),clean=failures===0,stable=report.stable;
  progress.completed[missionIndex]=true;progress.unlocked=Math.max(progress.unlocked,Math.min(missions.length,missionIndex+2));
- const old=progress.best[missionIndex];progress.best[missionIndex]=!old||count<old?count:old;progress.current=Math.min(missions.length-1,missionIndex+1);
+ const old=progress.best[missionIndex];progress.best[missionIndex]=!old||total<old?total:old;progress.metrics[missionIndex]={mainNodes:m.mainNodes,functionNodes:m.functionNodes,totalNodes:total,actions:m.actions,calls:m.calls,stable};
+ progress.current=Math.min(missions.length-1,missionIndex+1);
  progress.best['variant_'+missionIndex]=(Number(progress.best['variant_'+missionIndex])||0)+1;claimReward(missionIndex);saveProgress();
  try{window.KidscadeGame?.score?.(Object.keys(progress.completed).filter(k=>progress.completed[k]).length,{unit:'구역'});}catch(_){}
  $('clearTitle').textContent=mission.boss?'지역 정화 완료!':missionIndex===9?'입단 시험 통과!':'구역 돌파!';
- $('clearText').textContent='메인 코드 '+count+'블록으로 해결했어요.';$('shortBadge').classList.toggle('earned',short);$('shortBadge').textContent=(short?'✓':'◇')+' 짧은 코드';$('debugBadge').classList.toggle('earned',clean);$('debugBadge').textContent=(clean?'✓':'◇')+' 한 번에 성공';
+ $('clearText').textContent='메인 '+m.mainNodes+'블록 + 기술 '+m.functionNodes+'블록으로 해결했어요.';
+ $('clearMetrics').innerHTML='<span>전체 코드 <b>'+total+'</b></span><span>실행 행동 <b>'+m.actions+'</b></span><span>기술 호출 <b>'+m.calls+'</b></span>';
+ $('stableBadge').classList.toggle('hidden',!(mission.validationTests?.length));$('stableBadge').classList.toggle('earned',stable);$('stableBadge').textContent=(stable?'✓':'◇')+' 안정된 코드';
+ $('shortBadge').classList.toggle('earned',short);$('shortBadge').textContent=(short?'✓':'◇')+' 깔끔한 코드';
+ $('debugBadge').classList.toggle('earned',clean);$('debugBadge').textContent=(clean?'✓':'◇')+' 정밀 설계';
  const r=mission.reward;if(r){$('unlockBox').textContent='획득 · '+r.name+' — '+r.desc;$('unlockBox').classList.remove('hidden');}else $('unlockBox').classList.add('hidden');
  $('nextBtn').textContent=missionIndex===9?'월드맵 열기':missionIndex===missions.length-1?'월드맵으로':'다음 구역';
- $('clear').classList.remove('hidden');setExec('임무 해결!','장비와 프로그램은 다음 구역에도 이어집니다.');renderMissionGrid();renderWorldMap();renderInventory();
+ $('clear').classList.remove('hidden');setExec('임무 해결!','현재 구역과 프로그램 검사를 모두 통과했어요.');renderMissionGrid();renderWorldMap();renderInventory();
 }
 function setMissionText(){
  $('chapterName').textContent=mission.chapter;$('missionName').textContent=mission.name;$('missionKicker').textContent=mission.concept;$('missionTitle').textContent=mission.title;$('missionText').textContent=mission.text;$('objectiveText').textContent=mission.objective;
 }
 function loadMission(index,resetCode=false){
- missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;failures=0;stepSession=false;insertPath=[];codeTarget='main';
+ missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';
  const slot=currentStore(),carry=mission.carryProgram?previousCarryStore():null;
  if(resetCode){mainProgram=[];functionProgram=[];}
  else if((slot.main?.length||slot.fn?.length)){mainProgram=normalizeNodes(clone(slot.main||[]));functionProgram=normalizeNodes(clone(slot.fn||[]));}
  else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionProgram=normalizeNodes(clone(carry.fn||[]));}
  else{mainProgram=[];functionProgram=[];}
  persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));
- $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');
+ $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');$('validationFail')?.classList.add('hidden');
  try{window.KidscadeGame?.start?.({stage:missionIndex+1,title:mission.title});}catch(_){}
 }
 function renderMissionGrid(){
@@ -507,10 +546,10 @@ const runtime=new RuntimeAPI.Runtime({
   else if(event.kind==='action')setExec(BLOCKS[event.node.type].label,'캐릭터가 이 명령을 실행하는 중','running');
   else if(event.kind==='checkpoint'){toast('체크포인트 · '+event.name);}
   else if(event.kind==='enemy-event'&&event.message)toast(event.message,event.message.includes('맞'));
-  updateMiniCode();
+  pushTrace(event);updateMiniCode();
  },
  onError(node,message){failures++;errorNodeId=node?.id||executingNodeId;renderProgram();sound('ui.error');setExec('여기서 버그 발생',message,'error');toast(message,true);stepSession=false;setExecuting(false);setRunButtons(false);},
- onDone(){handleMissionDone();}
+ onDone(){void handleMissionDone();}
 });
 function setSpeed(v){
  runSpeed=v;runtime.setDelay(140/v);document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===v));
@@ -592,6 +631,7 @@ $('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 �
 $('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionProgram);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
 $('stopBtn').onclick=()=>{runtime.stop();stepSession=false;setExecuting(false);setRunButtons(false);setExec('실행을 멈췄어요.','코드를 고친 뒤 다시 실행해 보세요.');};
 $('retryBtn').onclick=()=>{$('clear').classList.add('hidden');cleared=false;buildWorld();};
+$('validationCloseBtn').onclick=()=>{$('validationFail').classList.add('hidden');setExec('코드를 고쳐 보세요.','문제가 난 줄을 확인하고 다시 실행해 보세요.');};
 $('nextBtn').onclick=()=>{
  $('clear').classList.add('hidden');
  if(missionIndex===9||missionIndex===missions.length-1){renderWorldMap();$('worldMapOverlay').classList.remove('hidden');}

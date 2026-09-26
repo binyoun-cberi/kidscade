@@ -24,11 +24,22 @@ class CodeQuestRuntime{
   this.delay=options.delay||180;
   this.running=false;this.stopped=false;this.iterator=null;
   this.actions=0;this.maxActions=140;this.program=[];this.functionProgram=[];
+  this.trace=[];this.stats={actions:0,calls:0,loops:0,conditions:{}};
  }
  setDelay(ms){this.delay=Math.max(0,Number(ms)||0);}
+ getState(){
+  try{return this.world&&typeof this.world.getTraceState==='function'?this.world.getTraceState():null;}catch(_){return null;}
+ }
+ record(event,before=null,after=null){
+  const item={tick:this.trace.length+1,...event};
+  if(before!==null)item.before=before;if(after!==null)item.after=after;
+  this.trace.push(item);return item;
+ }
+ getTrace(){return JSON.parse(JSON.stringify(this.trace));}
+ getSummary(){return JSON.parse(JSON.stringify(this.stats));}
  prepare(program,functionProgram){
   this.program=program||[];this.functionProgram=functionProgram||[];
-  this.actions=0;this.stopped=false;this.iterator=this.walk(this.program,0);
+  this.actions=0;this.stopped=false;this.trace=[];this.stats={actions:0,calls:0,loops:0,conditions:{}};this.iterator=this.walk(this.program,0);
  }
  *walk(list,depth){
   if(depth>12)throw new Error('함수를 너무 깊게 불렀어요.');
@@ -71,10 +82,21 @@ class CodeQuestRuntime{
    }
    const event=step.value;
    this.onEvent(event);
-   if(event.kind!=='action')continue;
-   this.actions++;
+   if(event.kind!=='action'){
+    if(event.kind==='check'){
+     const key=event.node?.type||event.condition||'condition',c=this.stats.conditions[key]||(this.stats.conditions[key]={checks:0,trueCount:0,falseCount:0});
+     c.checks++;if(event.result)c.trueCount++;else c.falseCount++;
+    }else if(event.kind==='call')this.stats.calls++;
+    else if(event.kind==='loop')this.stats.loops++;
+    this.record({kind:event.kind,nodeId:event.node?.id||'',type:event.node?.type||'',result:event.result,condition:event.condition,index:event.index,total:event.total});
+    continue;
+   }
+   this.actions++;this.stats.actions++;
    if(this.actions>this.maxActions)return this.fail(event.node,'같은 행동이 너무 오래 반복되고 있어요. 코드를 확인해 보세요.');
+   const before=this.getState();
    const result=await this.world.applyAction(event.node.type);
+   const after=this.getState();
+   this.record({kind:'action',nodeId:event.node?.id||'',type:event.node?.type||'',ok:Boolean(result&&result.ok!==false)},before,after);
    if(!result||result.ok===false)return this.fail(event.node,(result&&result.message)||'이 명령을 실행할 수 없어요.');
    if(result.checkpoint)this.onEvent({kind:'checkpoint',name:result.checkpoint});
    if(Array.isArray(result.events))result.events.forEach(e=>this.onEvent({kind:'world-event',...e}));
@@ -108,9 +130,11 @@ class CodeQuestRuntime{
  }
  stop(){this.stopped=true;this.running=false;this.onEvent({kind:'run-stop'});}
  fail(node,message){
+  this.record({kind:'error',nodeId:node?.id||'',type:node?.type||'',message});
   this.stopped=true;this.running=false;this.onError(node,message);
   return {done:true,error:true,message};
  }
 }
-window.CodeQuestRuntime={Runtime:CodeQuestRuntime,countNodes,containsType};
+function countProgramNodes(mainProgram,functionProgram){return countNodes(mainProgram)+countNodes(functionProgram);}
+window.CodeQuestRuntime={Runtime:CodeQuestRuntime,countNodes,countProgramNodes,containsType};
 })();
