@@ -1,4 +1,5 @@
 import { hashPin, normalizeLoginId, isValidLoginId } from './accounts.mjs';
+import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -123,28 +124,53 @@ function cleanClassName(value) {
 }
 
 async function getOverview(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-  const classes = await env.DB.prepare(`
-    SELECT c.id, c.class_code, c.name, c.created_at,
-           COUNT(a.id) AS student_count,
-           SUM(CASE WHEN a.disabled = 0 THEN 1 ELSE 0 END) AS active_count,
-           SUM(CASE WHEN a.disabled = 1 THEN 1 ELSE 0 END) AS disabled_count
-    FROM kidscade_classes c
-    LEFT JOIN student_accounts a ON a.class_id = c.id
-    GROUP BY c.id
-    ORDER BY c.created_at DESC
-  `).all();
-  const students = await env.DB.prepare(`
-    SELECT a.id, a.login_id, a.nickname, a.last_login_at, a.disabled,
-           a.state_revision, a.state_json, a.updated_at, a.locked_until,
-           c.id AS class_id, c.class_code, c.name AS class_name,
-           (SELECT COUNT(*) FROM student_sessions s
-             WHERE s.student_id = a.id AND s.expires_at > ?) AS active_sessions
-    FROM student_accounts a
-    JOIN kidscade_classes c ON c.id = a.class_id
-    ORDER BY c.created_at DESC, a.login_id ASC
-  `).bind(nowIso()).all();
+  const auth = await authorizeTeacherAccess(request, env);
+  if (auth.response) return auth.response;
+
+  const classes = auth.global
+    ? await env.DB.prepare(`
+        SELECT c.id, c.class_code, c.name, c.created_at,
+               COUNT(a.id) AS student_count,
+               SUM(CASE WHEN a.disabled = 0 THEN 1 ELSE 0 END) AS active_count,
+               SUM(CASE WHEN a.disabled = 1 THEN 1 ELSE 0 END) AS disabled_count
+        FROM kidscade_classes c
+        LEFT JOIN student_accounts a ON a.class_id = c.id
+        GROUP BY c.id
+        ORDER BY c.created_at DESC
+      `).all()
+    : await env.DB.prepare(`
+        SELECT c.id, c.class_code, c.name, c.created_at,
+               COUNT(a.id) AS student_count,
+               SUM(CASE WHEN a.disabled = 0 THEN 1 ELSE 0 END) AS active_count,
+               SUM(CASE WHEN a.disabled = 1 THEN 1 ELSE 0 END) AS disabled_count
+        FROM kidscade_classes c
+        LEFT JOIN student_accounts a ON a.class_id = c.id
+        WHERE c.id = ?
+        GROUP BY c.id
+      `).bind(auth.classId).all();
+
+  const students = auth.global
+    ? await env.DB.prepare(`
+        SELECT a.id, a.login_id, a.nickname, a.last_login_at, a.disabled,
+               a.state_revision, a.state_json, a.updated_at, a.locked_until,
+               c.id AS class_id, c.class_code, c.name AS class_name,
+               (SELECT COUNT(*) FROM student_sessions s
+                 WHERE s.student_id = a.id AND s.expires_at > ?) AS active_sessions
+        FROM student_accounts a
+        JOIN kidscade_classes c ON c.id = a.class_id
+        ORDER BY c.created_at DESC, a.login_id ASC
+      `).bind(nowIso()).all()
+    : await env.DB.prepare(`
+        SELECT a.id, a.login_id, a.nickname, a.last_login_at, a.disabled,
+               a.state_revision, a.state_json, a.updated_at, a.locked_until,
+               c.id AS class_id, c.class_code, c.name AS class_name,
+               (SELECT COUNT(*) FROM student_sessions s
+                 WHERE s.student_id = a.id AND s.expires_at > ?) AS active_sessions
+        FROM student_accounts a
+        JOIN kidscade_classes c ON c.id = a.class_id
+        WHERE a.class_id = ?
+        ORDER BY a.login_id ASC
+      `).bind(nowIso(), auth.classId).all();
 
   const safeStudents = (students?.results || []).map(row => ({
     id: row.id,
@@ -162,18 +188,39 @@ async function getOverview(request, env) {
     summary: summarizeStudentState(row.state_json)
   }));
 
-  return json({ ok: true, classes: classes?.results || [], students: safeStudents });
+  const classRows = classes?.results || [];
+  let teacherCredentials = [];
+  if (auth.global) {
+    for (const classroom of classRows) {
+      await ensureTeacherCredential(env, classroom.id, classroom.class_code);
+    }
+    teacherCredentials = await listTeacherCredentialsForAdmin(env, classRows.map(item => item.id));
+  }
+
+  return json({
+    ok: true,
+    scope: auth.global ? 'global' : 'class',
+    teacher: auth.global ? null : {
+      loginId: auth.loginId,
+      classId: auth.classId,
+      className: auth.className,
+      classCode: auth.classCode
+    },
+    classes: classRows,
+    students: safeStudents,
+    teacherCredentials
+  });
 }
 
 async function renameClass(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const classId = String(body?.classId || '').trim();
   const name = cleanClassName(body?.name);
   if (!classId) return json({ ok: false, error: 'class_id_required' }, 400);
   if (!name) return json({ ok: false, error: 'class_name_required' }, 400);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const found = await env.DB.prepare('SELECT id FROM kidscade_classes WHERE id = ?').bind(classId).first();
   if (!found) return json({ ok: false, error: 'class_not_found' }, 404);
   await env.DB.prepare('UPDATE kidscade_classes SET name = ? WHERE id = ?').bind(name, classId).run();
@@ -181,12 +228,12 @@ async function renameClass(request, env) {
 }
 
 async function addStudents(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const classId = String(body?.classId || '').trim();
   const count = clampInt(body?.count, 1, MAX_ADD_STUDENTS);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const classroom = await env.DB.prepare(`
     SELECT c.id, c.class_code, c.name, COUNT(a.id) AS student_count
     FROM kidscade_classes c
@@ -229,16 +276,16 @@ async function addStudents(request, env) {
 async function findStudent(env, loginId) {
   const normalized = normalizeLoginId(loginId);
   if (!isValidLoginId(normalized)) return null;
-  return env.DB.prepare('SELECT id, login_id, disabled FROM student_accounts WHERE login_id = ? COLLATE NOCASE').bind(normalized).first();
+  return env.DB.prepare('SELECT id, login_id, class_id, disabled FROM student_accounts WHERE login_id = ? COLLATE NOCASE').bind(normalized).first();
 }
 
 async function setStudentStatus(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const account = await findStudent(env, body?.loginId);
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
   const disabled = Boolean(body?.disabled);
   await env.DB.prepare(`
     UPDATE student_accounts SET disabled = ?, failed_attempts = 0, locked_until = NULL, updated_at = ? WHERE id = ?
@@ -248,22 +295,22 @@ async function setStudentStatus(request, env) {
 }
 
 async function forceStudentLogout(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const account = await findStudent(env, body?.loginId);
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
   const result = await env.DB.prepare('DELETE FROM student_sessions WHERE student_id = ?').bind(account.id).run();
   return json({ ok: true, loginId: account.login_id, loggedOutSessions: Number(result?.meta?.changes || 0) });
 }
 
 async function forceClassLogout(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const classId = String(body?.classId || '').trim();
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const classroom = await env.DB.prepare('SELECT id FROM kidscade_classes WHERE id = ?').bind(classId).first();
   if (!classroom) return json({ ok: false, error: 'class_not_found' }, 404);
   const result = await env.DB.prepare(`
@@ -273,8 +320,6 @@ async function forceClassLogout(request, env) {
 }
 
 async function resetStudentProgress(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const loginId = normalizeLoginId(body?.loginId);
@@ -282,6 +327,8 @@ async function resetStudentProgress(request, env) {
   if (!loginId || confirmLoginId !== loginId) return json({ ok: false, error: 'confirmation_mismatch' }, 400);
   const account = await findStudent(env, loginId);
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
   const now = nowIso();
   const state = blankStudentState();
   state.profile.updatedAt = now;
@@ -296,8 +343,6 @@ async function resetStudentProgress(request, env) {
 }
 
 async function deleteStudent(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const loginId = normalizeLoginId(body?.loginId);
@@ -305,6 +350,8 @@ async function deleteStudent(request, env) {
   if (!loginId || confirmLoginId !== loginId) return json({ ok: false, error: 'confirmation_mismatch' }, 400);
   const account = await findStudent(env, loginId);
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
   const statements = [
     env.DB.prepare('DELETE FROM student_sessions WHERE student_id = ?').bind(account.id),
     env.DB.prepare('DELETE FROM student_accounts WHERE id = ?').bind(account.id)
@@ -315,12 +362,12 @@ async function deleteStudent(request, env) {
 }
 
 async function deleteClass(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const classId = String(body?.classId || '').trim();
   const confirmName = cleanClassName(body?.confirmName);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const classroom = await env.DB.prepare(`
     SELECT c.id, c.name, COUNT(a.id) AS student_count
     FROM kidscade_classes c
