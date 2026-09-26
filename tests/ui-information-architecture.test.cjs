@@ -24,13 +24,12 @@ test('information architecture and account profile gate load before bootstrap', 
   assert.ok(gate < bootstrap, 'profile gate must survive the asynchronous lobby bootstrap');
 });
 
-test('mobile primary navigation exposes the four intended destinations', () => {
+test('mobile primary navigation exposes only games profile and search', () => {
   assert.match(source, /data-mobile-nav=\"games\"/);
   assert.match(source, /data-mobile-nav=\"profile\"/);
-  assert.match(source, /data-mobile-nav=\"growth\"/);
   assert.match(source, /data-mobile-nav=\"search\"/);
+  assert.doesNotMatch(source, /data-mobile-nav=\"growth\"/);
   assert.match(source, />내 프로필</);
-  assert.match(source, />Cube Pets</);
   assert.match(source, />찾기</);
 });
 
