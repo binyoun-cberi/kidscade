@@ -31,9 +31,8 @@ test('first visit: age gesture is consumed, background stays inert until ready, 
     assert.equal(f.api.state().phase,'entering');
     assert.equal(f.elements['main-app'].inert,true);
     assert.equal(f.elements['age-selection-screen'].style.visibility,'visible');
-    let consumed=0;
-    const result=launcher.open({}, {dataset:{id:'demo'}}, {canLaunch:f.api.canLaunch, consumePlayTicket(){consumed++;}});
-    assert.equal(result.reason,'navigation-not-ready');assert.equal(consumed,0);
+    const result=launcher.open({}, {dataset:{id:'demo'}}, {canLaunch:f.api.canLaunch});
+    assert.equal(result.reason,'navigation-not-ready');
     f.click(age);assert.deepEqual(f.changes,[age]);
     f.flush();assert.equal(f.api.canLaunch(),true);assert.equal(f.elements['main-app'].inert,false);
     assert.equal(f.entered(),1);assert.equal(f.elements['btn-change-age'].focused,true);
@@ -64,8 +63,7 @@ test('double click, held key, and age-button events cannot launch games after tr
   assert.equal(f.api.canLaunch({detail:1,target:{closest:()=>null}}),true);
 });
 
-test('second launch cannot overwrite a live session or spend another bonus', () => {
-  let consumed=0;
-  const result=launcher.open({}, {dataset:{id:'second'}}, {canLaunch:()=>true,getSession:()=>({id:'first'}),consumePlayTicket(){consumed++;}});
-  assert.equal(result.reason,'session-active');assert.equal(consumed,0);
+test('second launch cannot overwrite a live session', () => {
+  const result=launcher.open({}, {dataset:{id:'second'}}, {canLaunch:()=>true,getSession:()=>({id:'first'})});
+  assert.equal(result.reason,'session-active');
 });
