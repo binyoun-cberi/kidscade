@@ -78,6 +78,8 @@ function makeWorld(mission,test){
  function chargerHere(){return state.rechargeStations.find(v=>Math.abs((v.x??v)-state.x)<.55&&sameLevel(v.y||0,state.y,.8));}
  function hazardAt(x){return state.hazards.find(h=>Math.abs(h.x-x)<.55&&hazardState(h)==='danger');}
  function safeAhead(){return !hazardAt(state.x+state.dir);}
+ function threatRange(e){return ['spitter','boss_mushroom','mirage_boss','root_warden','null_core'].includes(e.type)?4.2:e.type==='bat'?2.7:1.7;}
+ function windupThreat(){return state.enemies.filter(e=>!e.dead&&enemyState(e)==='windup'&&Math.abs(e.x-state.x)<=threatRange(e)&&Math.abs((e.y||0)-state.y)<=3).sort((a,b)=>Math.abs(a.x-state.x)-Math.abs(b.x-state.x))[0];}
  function spend(cost=1){
   if(!m.usesEnergy)return true;
   if(state.energy<cost)return false;state.energy=Math.max(0,state.energy-cost);return true;
@@ -97,11 +99,11 @@ function makeWorld(mission,test){
   },
   checkCondition(cond){
    if(cond==='enemyAhead')return Boolean(enemyAhead());
-   if(cond==='enemyAheadWindup'){const e=enemyAhead(4.2);return Boolean(e&&enemyState(e)==='windup');}
+   if(cond==='enemyAheadWindup')return Boolean(windupThreat());
    if(cond==='gapAhead')return surfaceNear(state.x+state.dir,state.y,.75,.9)===null;
    if(cond==='platformAbove'){const x=state.x+state.dir*2;return candidates(x).some(y=>y>state.y+.7&&y<=state.y+5);}
    if(cond==='hpLow')return state.hp<=2;
-   if(cond==='enemyWindup')return state.enemies.some(e=>!e.dead&&Math.abs(e.x-state.x)<=4.2&&Math.abs(e.y-state.y)<=3&&enemyState(e)==='windup');
+   if(cond==='enemyWindup')return Boolean(windupThreat());
    if(cond==='crystals3')return state.crystalCount>=3;
    if(cond==='atGoal'){const g=m.goal||{x:0,y:0};return Math.abs(state.x-g.x)<.55&&Math.abs(state.y-g.y)<1;}
    if(cond==='safeAhead')return safeAhead();
