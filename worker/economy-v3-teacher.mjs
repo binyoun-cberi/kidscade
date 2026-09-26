@@ -23,7 +23,7 @@ export async function teacherEconomyStateV3(request,env){
   const classId=base.classroom?.id;
   if(!classId)return json(base);
 
-  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents]=await Promise.all([
+  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents,creditRows]=await Promise.all([
     env.DB.prepare(
       'SELECT w.*,a.login_id,a.nickname,j.name AS job_name,j.salary AS job_salary '+
       'FROM economy_work_logs w JOIN student_accounts a ON a.id=w.student_id '+
@@ -61,18 +61,22 @@ export async function teacherEconomyStateV3(request,env){
     env.DB.prepare(
       'SELECT e.*,a.login_id,a.nickname FROM economy_credit_events e JOIN student_accounts a ON a.id=e.student_id '+
       'WHERE e.class_id=? ORDER BY e.id DESC LIMIT 120'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT student_id,credit_score FROM economy_accounts WHERE class_id=?'
     ).bind(classId).all()
   ]);
 
+  const creditMap=new Map((creditRows?.results||[]).map(row=>[row.student_id,Number(row.credit_score||700)]));
   const students=[];
   for(const student of base.students||[]){
-    const row=await account(env,student.id);
+    const score=creditMap.get(student.id)??700;
     const currentJob=(base.jobs||[]).find(job=>job.id===student.jobId);
-    const profile=creditProfile(row?.credit_score,base.settings||{});
+    const profile=creditProfile(score,base.settings||{});
     const baseForLoan=Number(currentJob?.salary||base.settings?.openingBalance||100);
     students.push({
       ...student,
-      creditScore:Number(row?.credit_score||700),
+      creditScore:Number(score),
       creditGrade:profile.grade,
       savingsRate:profile.savingsRate,
       loanRate:profile.loanRate,
