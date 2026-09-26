@@ -116,7 +116,7 @@ function makeWorld(mission,test){
    if(cond==='data3')return state.dataCount>=3;
    if(cond==='data5')return state.dataCount>=5;
    if(cond==='terminalHere')return Boolean(terminalHere());
-   if(cond==='energyLow')return state.energy<=3;
+   if(cond==='energyLow')return state.energy<=4;
    if(cond==='chargerHere')return Boolean(chargerHere());
    return false;
   },
