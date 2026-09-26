@@ -252,7 +252,7 @@
               <div class="class-summary"><span>학생 ${allMembers.length}명</span><span>현재 로그인 ${onlineCount}명</span><span>사용 중지 ${disabledCount}명</span><span>누적 플레이 ${totalPlays}회</span></div>
             </div>
             <div class="class-actions">
-              <button type="button" data-action="economy" data-class-id="\${escapeHtml(classroom.id)}" data-class-name="\${escapeHtml(classroom.name)}">💰 학급경제</button>
+              <button type="button" data-action="economy" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">💰 학급경제</button>
               <button class="secondary" type="button" data-action="rename-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">이름 변경</button>
               <button type="button" data-action="add-students" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">학생 추가</button>
               <button class="secondary" type="button" data-action="logout-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">전체 로그아웃</button>
