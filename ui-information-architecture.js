@@ -4,7 +4,7 @@
   const STYLE_ID = 'kidscade-information-architecture-style';
   const PROFILE_IDENTITY_ID = 'kc-profile-identity';
   const ACTIVITY_STRIP_ID = 'kc-activity-strip';
-  const MOBILE_SIGNATURE = 'profile-growth-search-v1';
+  const MOBILE_SIGNATURE = 'profile-search-v2';
   let bodyObserver = null;
   let modalObserver = null;
   let syncQueued = false;
@@ -16,7 +16,7 @@
     style.textContent = `
       /* =========================================================
          Kidscade information architecture pass
-         게임 / 내 프로필 / Cube Pets 생존 월드를 명확히 분리합니다.
+         모바일은 게임 / 내 프로필 / 찾기 세 경로만 유지합니다.
          ========================================================= */
       .kc-side-card.avatar-shell .kc-side-head { padding-bottom: 7px !important; }
       .kc-side-card.avatar-shell .kc-eyebrow { color:#7c5cff !important; }
@@ -200,7 +200,19 @@
         .kc-side-card.avatar-shell { scroll-margin-top:12px; }
         #kc-local-profile-card { scroll-margin-top:12px; }
         #${ACTIVITY_STRIP_ID} { margin-bottom:11px; }
-        .kc-mobile-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+
+        /* 모바일 메인은 게임만 보여주고 프로필은 하단 탭에서만 엽니다. */
+        body:not([data-kc-mobile-section]) .kc-myspace,
+        body[data-kc-mobile-section="games"] .kc-myspace { display:none !important; }
+        body[data-kc-mobile-section="profile"] .kc-arcade { display:none !important; }
+        body[data-kc-mobile-section="profile"] .kc-myspace {
+          display:block !important;
+          order:0 !important;
+        }
+        body[data-kc-mobile-section="profile"] #kc-pet-card,
+        #kc-pet-card { display:none !important; }
+
+        .kc-mobile-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
       }
 
       @media (max-width:620px) {
@@ -442,9 +454,9 @@
       nav.innerHTML = `
         <button class="kc-mobile-nav-btn active" type="button" data-mobile-nav="games"><span class="kc-mobile-nav-icon">🎮</span>게임</button>
         <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="profile"><span class="kc-mobile-nav-icon">👤</span>내 프로필</button>
-        <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="growth"><span class="kc-mobile-nav-icon">🐾</span>Cube Pets</button>
         <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="search"><span class="kc-mobile-nav-icon">🔎</span>찾기</button>
       `;
+      document.body.dataset.kcMobileSection ||= 'games';
     }
 
     if (nav.dataset.iaBound !== '1') {
@@ -455,17 +467,18 @@
         const target = button.dataset.mobileNav;
         setMobileActive(target);
         if (target === 'games') {
+          document.body.dataset.kcMobileSection = 'games';
           document.querySelector('.kc-arcade')?.scrollIntoView({ behavior:'smooth', block:'start' });
         } else if (target === 'profile') {
-          document.querySelector('.kc-myspace')?.scrollIntoView({ behavior:'smooth', block:'start' });
+          document.body.dataset.kcMobileSection = 'profile';
+          window.scrollTo({ top:0, behavior:'smooth' });
           document.getElementById(PROFILE_IDENTITY_ID)?.classList.add('kc-profile-id-highlight');
           window.setTimeout(() => document.getElementById(PROFILE_IDENTITY_ID)?.classList.remove('kc-profile-id-highlight'), 800);
-        } else if (target === 'growth') {
-          document.getElementById('sidebar-pet-open')?.click();
         } else if (target === 'search') {
+          document.body.dataset.kcMobileSection = 'games';
           const search = document.getElementById('game-search-input');
           search?.scrollIntoView({ behavior:'smooth', block:'center' });
-          window.setTimeout(() => search?.focus(), 280);
+          window.setTimeout(() => search?.focus(), 220);
         }
       });
     }
