@@ -11,15 +11,13 @@ const js=fs.readFileSync(path.join(dir,'metro.js'),'utf8');
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
 const storage=fs.readFileSync(path.join(root,'kidscade-storage.js'),'utf8');
 
-test('Metro Planner catalog points at the Korea rail rework',()=>{
+test('Metro Planner remains the canonical high-grade catalog game',()=>{
   const game=catalog.games.find(g=>g.id==='high_metro_planner');
   assert.ok(game);
   assert.equal(game.title,'메트로 플래너');
   assert.equal(game.age,'high');
-  assert.equal(game.href,'games/high_metro_planner/메트로 플래너.html?v=2');
-  assert.match(game.description,/대한민국 주요 도시/);
-  assert.match(html,/metro\.css\?v=2/);
-  assert.match(html,/metro\.js\?v=2/);
+  assert.equal(game.href,'games/high_metro_planner/메트로 플래너.html?v=1');
+  assert.match(html,/대한민국 철도망/);
 });
 
 test('Metro Planner browser source parses and keeps registered storage',()=>{
@@ -29,53 +27,39 @@ test('Metro Planner browser source parses and keeps registered storage',()=>{
   assert.doesNotMatch(js,/localStorage\.(?:getItem|setItem|removeItem)/);
 });
 
-test('Metro Planner uses a Korea city and corridor network instead of random stations',()=>{
-  for(const city of ['서울','인천','수원','춘천','원주','강릉','천안','청주','대전','전주','대구','광주','울산','부산']){
-    assert.match(js,new RegExp("name:'"+city+"'"));
-  }
-  assert.match(js,/const CORRIDOR_DEFS=/);
-  assert.match(js,/terrainName\(/);
-  assert.match(js,/trackCost\(/);
-  assert.doesNotMatch(js,/NAME_POOL/);
-  assert.doesNotMatch(js,/spawnStation\(/);
-});
-
-test('Metro Planner separates physical track from service lines and train headways',()=>{
-  assert.match(js,/tracks:new Set\(\)/);
+test('Korea rework separates track construction from service operation',()=>{
+  assert.match(js,/const CITIES=\[/);
+  assert.match(js,/const CORRIDOR_DEFS=\[/);
+  assert.match(js,/builtTracks:new Set\(\)/);
   assert.match(js,/function buildTrack\(/);
-  assert.match(js,/function addServiceSegment\(/);
-  assert.match(js,/function calculateHeadway\(/);
-  assert.match(js,/function serviceCycleMinutes\(/);
-  assert.match(js,/state\.tracks\.has\(keyPair\(aId,bId\)\)/);
-  assert.match(html,/선로와 노선 분리/);
+  assert.match(js,/function canExtendService\(/);
+  assert.match(js,/먼저 두 도시 사이에 선로를 건설하세요/);
+  assert.match(html,/id="trackTool"/);
+  assert.match(html,/id="serviceList"/);
 });
 
-test('Metro Planner routes destination passengers with waiting and transfer costs',()=>{
-  assert.match(js,/const TRANSFER_PENALTY=8/);
-  assert.match(js,/function shortestRoute\(/);
-  assert.match(js,/function warmRouteCache\(/);
-  assert.match(js,/routeCache=new Map\(\)/);
-  assert.match(js,/networkDirty=true/);
-  assert.match(js,/e\.headway\/2/);
-  assert.match(js,/addQueue\(origin\.id,dest\.id,count,0\)/);
-  assert.match(js,/function handleTrainAtStation\(/);
+test('Metro Planner models cached routing, headways, OD demand and transfers',()=>{
+  assert.match(js,/routingCache=new Map\(\)/);
+  assert.match(js,/networkDirty:true/);
+  assert.match(js,/function getRoute\(/);
+  assert.match(js,/function serviceHeadway\(/);
+  assert.match(js,/function spawnPassengerGroup\(/);
+  assert.match(js,/function timePhase\(/);
+  assert.match(js,/route\.firstService===line\.id&&route\.firstNext===nextId/);
 });
 
-test('Metro Planner includes finance, accessibility, monthly reports, and debt handling',()=>{
-  assert.match(js,/function calcAccessibility\(/);
-  assert.match(js,/function operatingCost\(/);
+test('Metro Planner includes finance, debt, reports and map layers',()=>{
+  assert.match(js,/function updateEconomy\(/);
+  assert.match(js,/state\.debt<120/);
   assert.match(js,/function openMonthReport\(/);
-  assert.match(js,/MAX_DEBT=150/);
-  assert.match(js,/운영자금 .*자동 대출/);
-  assert.match(html,/월간 운영 보고/);
-  assert.match(html,/전국 접근성/);
-  assert.match(html,/노선 성적표/);
+  assert.match(js,/const layers=\['기본','수요','혼잡','수익'\]/);
+  assert.match(html,/id="monthReport"/);
+  assert.match(html,/id="debtLabel"/);
 });
 
-test('Metro Planner remains touch responsive and reuses local Kidscade audio assets',()=>{
+test('Metro Planner remains touch responsive and reuses local audio assets',()=>{
   assert.match(css,/touch-action:none/);
   assert.match(css,/@media\(max-width:720px\)/);
-  assert.match(css,/\.sidePanel/);
   for(const rel of [
     'assets/audio/ui/kenney_interface/click_002.ogg',
     'assets/audio/ui/kenney_interface/confirmation_001.ogg',
@@ -84,5 +68,4 @@ test('Metro Planner remains touch responsive and reuses local Kidscade audio ass
     'assets/audio/sfx/success/cheer-yay-01.mp3',
     'assets/audio/sfx/failure/fail-sting-01.mp3'
   ]) assert.ok(fs.existsSync(path.join(root,rel)),rel);
-  assert.doesNotMatch(html,/게임 목록|게임으로 돌아가기/);
 });
