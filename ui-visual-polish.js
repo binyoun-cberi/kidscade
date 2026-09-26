@@ -276,7 +276,7 @@
       #game-list > .game-card .play-limit-badge {
         position:absolute !important;
         top:10px !important;
-        right:10px !important;
+        left:10px !important;
         margin:0 !important;
         min-width:34px !important;
         min-height:27px !important;
@@ -400,7 +400,7 @@
         #game-list > .game-card .kc-card-meta-chip { font-size:.5rem !important; padding:3px 5px !important; }
         #game-list > .game-card .play-limit-badge {
           top:7px !important;
-          right:7px !important;
+          left:7px !important;
           min-width:30px !important;
           min-height:24px !important;
           font-size:.50rem !important;
