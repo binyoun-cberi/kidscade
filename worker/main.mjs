@@ -1,6 +1,7 @@
 import statsWorker from './index.mjs';
 import { handleAccountRequest } from './accounts.mjs';
 import { handleTeacherManagementRequest } from './teacher-admin.mjs';
+import { handleTeacherAuthRequest } from './teacher-auth.mjs';
 import { handleEconomyRequest } from './economy.mjs';
 import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
@@ -27,6 +28,9 @@ function multiplayerDatabaseError(error) {
 
 export default {
   async fetch(request, env, ctx) {
+    const teacherAuthResponse = await handleTeacherAuthRequest(request, env);
+    if (teacherAuthResponse) return teacherAuthResponse;
+
     const teacherResponse = await handleTeacherManagementRequest(request, env);
     if (teacherResponse) return teacherResponse;
 
