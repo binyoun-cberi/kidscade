@@ -181,8 +181,8 @@ function buildWorld(){
  mission=applyVariant(missions[missionIndex]);
  const start=mission.start||{x:1,y:0},maxEnergy=Number(mission.maxEnergy||mission.startEnergy||10);
  worldState={
-  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:5,maxHp:5,crystalCount:0,dataCount:0,
-  energy:Number(mission.startEnergy||maxEnergy),maxEnergy,potions:1,pose:'idle',jumpLift:0,evade:0,lastAction:'',
+  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:Number(mission.playerHp||mission.maxHp||5),maxHp:Number(mission.maxHp||mission.playerHp||5),crystalCount:0,dataCount:0,
+  energy:Number(mission.startEnergy||maxEnergy),maxEnergy,potions:Number(mission.potions??1),pose:'idle',jumpLift:0,evade:0,lastAction:'',
   crystals:(mission.crystals||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
   dataItems:(mission.dataItems||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
   switches:(mission.switches||[]).map(v=>({...v,on:Boolean(v.on)})),
