@@ -251,7 +251,14 @@ async function cpuTurn(){
  const token=turnToken;await new Promise(r=>setTimeout(r,650+Math.random()*650));if(!playing||token!==turnToken)return;
  const word=await pickCpu();if(!playing||token!==turnToken)return;
  if(!word){cpuLife--;renderLives();sfx('success.cheer_woohoo',{volume:.30,cooldownMs:450});setMsg('낱말봇이 이어갈 단어를 못 찾았어요!','good');if(cpuLife<=0)return finish(true);await new Promise(r=>setTimeout(r,900));return newRound()}
- currentWord=word;used.push(word);$('currentWord').textContent=word;chip(word,'cpu');renderNeed();sfx('collect.coin_drop',{volume:.18,rate:1.05,cooldownMs:160});setMsg('낱말봇: '+word);await new Promise(r=>setTimeout(r,520));playerTurn()
+ currentWord=word;used.push(word);$('currentWord').textContent=word;chip(word,'cpu');renderNeed();sfx('collect.coin_drop',{volume:.18,rate:1.05,cooldownMs:160});setMsg('낱말봇: '+word);
+ const canPlayerContinue=await hasContinuation(word);if(!playing||token!==turnToken)return;
+ if(!canPlayerContinue){
+  meLife--;renderLives();sfx('combat.impact_heavy',{volume:.32,cooldownMs:180});sfx('combat.hurt_grunt',{volume:.25,cooldownMs:240});setMsg('한방단어! 이어갈 단어가 없어 목숨이 하나 줄었어요.','bad');
+  if(meLife<=0)return finish(false);
+  await new Promise(r=>setTimeout(r,900));return newRound()
+ }
+ await new Promise(r=>setTimeout(r,520));playerTurn()
 }
 async function submit(){
  if(!playing||!myTurn)return;const w=normalize($('wordInput').value);if(!w)return;
