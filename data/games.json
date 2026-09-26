@@ -844,6 +844,28 @@
       "classroom": false
     },
     {
+      "id": "toddler_muk_jji_ppa",
+      "title": "묵찌빠!",
+      "href": "games/toddler_muk_jji_ppa/index.html?v=1",
+      "category": "trivia",
+      "age": "toddler",
+      "icon": "✊",
+      "description": "큰 묵·찌·빠 버튼을 눌러 친구와 가위바위보로 공격권을 정하고, 같은 손이 나오는 순간 별을 얻는 유아용 묵찌빠 놀이!",
+      "subject": "thinking",
+      "genre": "strategy",
+      "difficulty": "easy",
+      "sessionMinutes": 3,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "tod_shape_color",
       "title": "모양 색깔 친구들 집 찾기",
       "href": "games/tod_shape_color/모양 색깔 친구들 집 찾기.html",
