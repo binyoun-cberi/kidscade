@@ -112,7 +112,11 @@ test('single-player source owns the duel entry and the 2D asset rework', () => {
   assert.match(rework, /airFriction:\.992/);
   assert.match(rework, /hero\.trail\.length>14/);
   assert.ok(fs.existsSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql')));
-  assert.match(fs.readFileSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql'),'utf8'), /ADD COLUMN state_json TEXT/);
+  const migration5 = fs.readFileSync(path.join(root,'migrations','0005_multiplayer_rooms.sql'),'utf8');
+  const migration6 = fs.readFileSync(path.join(root,'migrations','0006_multiplayer_player_pose.sql'),'utf8');
+  assert.match(migration5, /state_json TEXT/);
+  assert.match(migration6, /Compatibility migration/);
+  assert.match(migration6, /SELECT 1/);
   assert.doesNotThrow(() => new Function(rework));
   assert.equal(fs.existsSync(path.join(root, '인내의 탑 대전.html')), false, 'new mode should not add another root HTML file');
 });
