@@ -57,9 +57,22 @@
   }
 
   function show(view) {
-    ['loginView','disabledView','walletView'].forEach(id => {
+    ['loginView','disabledView','errorView','walletView'].forEach(id => {
       $(id)?.classList.toggle('hidden', id !== view);
     });
+  }
+
+  function showServerError(body = {}) {
+    data = null;
+    show('errorView');
+    const code = body?.error || '';
+    const message = errorText(code);
+    if ($('errorText')) $('errorText').textContent = message;
+    if ($('errorNotice')) {
+      $('errorNotice').textContent = code === 'economy_schema_not_ready'
+        ? '선생님 쪽에서 학급경제 DB 준비가 끝나면 자동으로 같은 로그인 계정으로 열립니다.'
+        : '로그인 정보는 그대로 유지됩니다. 다시 로그인하지 말고 잠시 후 다시 시도해 주세요.';
+    }
   }
 
   async function load() {
@@ -76,52 +89,15 @@
         return;
       }
       if (!response.ok || !body.ok) {
-        data = null;
-        show('loginView');
-        $('loginStatus').textContent = errorText(body?.error);
-        $('loginStatus').classList.remove('hidden');
+        showServerError(body);
         return;
       }
       data = body;
       show('walletView');
       render();
     } catch (_) {
-      show('loginView');
-      $('loginStatus').textContent = '네트워크 연결을 확인해 주세요.';
-      $('loginStatus').classList.remove('hidden');
-    }
-  }
-
-  async function login() {
-    const loginId = String($('loginId')?.value || '').trim().toUpperCase().replace(/\s+/g,'');
-    const pin = String($('pin')?.value || '').replace(/\D/g,'').slice(0,6);
-    if (!loginId || pin.length !== 6) {
-      $('loginStatus').textContent = 'ID와 6자리 PIN을 모두 입력해 주세요.';
-      $('loginStatus').classList.remove('hidden');
-      return;
-    }
-
-    const button = $('loginBtn');
-    button.disabled = true;
-    button.textContent = '확인 중…';
-    try {
-      const { response, body } = await request('/api/account/login', {
-        method:'POST',
-        body:JSON.stringify({ loginId, pin })
-      });
-      if (!response.ok || !body.ok) {
-        $('loginStatus').textContent = errorText(body?.error);
-        $('loginStatus').classList.remove('hidden');
-        return;
-      }
-      $('loginStatus').classList.add('hidden');
-      await load();
-    } catch (_) {
-      $('loginStatus').textContent = '네트워크 연결을 확인해 주세요.';
-      $('loginStatus').classList.remove('hidden');
-    } finally {
-      button.disabled = false;
-      button.textContent = '로그인';
+      showServerError({ error:'network_error' });
+      if ($('errorText')) $('errorText').textContent = '네트워크 연결을 확인해 주세요.';
     }
   }
 
@@ -289,7 +265,7 @@
     };
   });
 
-  $('loginBtn').onclick = login;
+  $('retryBtn')?.addEventListener('click', load);
   $('depositBtn').onclick = () => saveMoney('deposit');
   $('withdrawBtn').onclick = () => saveMoney('withdraw');
   load();

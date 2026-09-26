@@ -238,7 +238,7 @@ export async function requireStudent(request, env) {
   const tokenHash = await sha256(token);
   const row = await env.DB.prepare(`
     SELECT s.token_hash, s.expires_at,
-           a.id AS student_id, a.login_id, a.nickname, a.state_json, a.state_revision,
+           a.id AS student_id, a.class_id, a.login_id, a.nickname, a.state_json, a.state_revision,
            a.last_login_at, a.disabled,
            c.name AS class_name, c.class_code
     FROM student_sessions s
