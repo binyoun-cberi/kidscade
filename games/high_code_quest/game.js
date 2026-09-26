@@ -20,7 +20,7 @@ let executingNodeId='',errorNodeId='',cameraX=0,cameraY=0;
 let dpr=Math.min(2,window.devicePixelRatio||1);
 let runSpeed=1;
 let runToken=0;
-let validating=false,lastValidation=null;
+let validating=false,lastValidation=null,uiTrace=[];
 
 const images={};
 const imageSources={
@@ -92,6 +92,21 @@ function setExec(title,detail,mode='idle'){
  $('execBar').classList.toggle('running',mode==='running');$('execBar').classList.toggle('error',mode==='error');
  $('execIcon').textContent=mode==='running'?'▶':mode==='error'?'!':'●';
 }
+function traceLabel(event){
+ if(event.kind==='check')return (BLOCKS[event.node?.type]?.label||'조건')+' '+(event.result?'✓':'✕');
+ if(event.kind==='call')return 'ƒ 나의 기술';
+ if(event.kind==='loop')return (BLOCKS[event.node?.type]?.label||'반복')+' '+event.index+'/'+event.total;
+ if(event.kind==='action')return BLOCKS[event.node?.type]?.label||event.node?.type||'행동';
+ return '';
+}
+function pushTrace(event){
+ if(!['check','call','loop','action'].includes(event.kind))return;
+ uiTrace.push({kind:event.kind,label:traceLabel(event),result:event.result});if(uiTrace.length>5)uiTrace.shift();renderTraceStrip();
+}
+function renderTraceStrip(){
+ const root=$('traceStrip');if(!root)return;root.replaceChildren();
+ uiTrace.forEach((x,i)=>{const d=document.createElement('span');d.className='trace-chip '+x.kind+(x.kind==='check'?' '+(x.result?'true':'false'):'')+(i===uiTrace.length-1?' current':'');d.textContent=x.label;root.appendChild(d);});
+}
 function setExecuting(on){
  document.body.classList.toggle('executing',on);
  const mini=$('miniCode');if(mini)mini.classList.toggle('hidden',!on);
@@ -160,7 +175,7 @@ function buildWorld(){
   enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:0}))
  };
  cameraX=Math.max(0,(worldState.displayX-2.2)*tileW());cameraY=worldState.displayY*vertUnit()*.2;
- executingNodeId='';errorNodeId='';stepSession=false;
+ executingNodeId='';errorNodeId='';stepSession=false;uiTrace=[];renderTraceStrip();
  updateHUD();renderProgram();updateBossHud();
  setExec('코드를 만들고 실행해 보세요.','▶ 실행을 누르면 캐릭터가 코드대로 모험합니다.');
 }
@@ -531,7 +546,7 @@ const runtime=new RuntimeAPI.Runtime({
   else if(event.kind==='action')setExec(BLOCKS[event.node.type].label,'캐릭터가 이 명령을 실행하는 중','running');
   else if(event.kind==='checkpoint'){toast('체크포인트 · '+event.name);}
   else if(event.kind==='enemy-event'&&event.message)toast(event.message,event.message.includes('맞'));
-  updateMiniCode();
+  pushTrace(event);updateMiniCode();
  },
  onError(node,message){failures++;errorNodeId=node?.id||executingNodeId;renderProgram();sound('ui.error');setExec('여기서 버그 발생',message,'error');toast(message,true);stepSession=false;setExecuting(false);setRunButtons(false);},
  onDone(){void handleMissionDone();}
