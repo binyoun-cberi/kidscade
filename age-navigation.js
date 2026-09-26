@@ -101,11 +101,15 @@
           catch (error) { console.error?.('[KidscadeAgeNavigation] onSelect failed:', error); }
         }
       }, true);
-      element('btn-change-age')?.addEventListener('click', event => {
-        showSelector(event);
-        try { callbacks.onChangeRequested?.(); }
-        catch (error) { console.error?.('[KidscadeAgeNavigation] onChangeRequested failed:', error); }
-      });
+      const changeButton = element('btn-change-age');
+      if (changeButton) {
+        changeButton.dataset.kcAgeNavBound = '1';
+        changeButton.addEventListener('click', event => {
+          showSelector(event);
+          try { callbacks.onChangeRequested?.(); }
+          catch (error) { console.error?.('[KidscadeAgeNavigation] onChangeRequested failed:', error); }
+        });
+      }
       if (age) {
         try { callbacks.onAgeChange?.(age); }
         catch (error) { console.error?.('[KidscadeAgeNavigation] initial onAgeChange failed:', error); }
