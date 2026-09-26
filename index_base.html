@@ -304,29 +304,44 @@
                         </div>
                     </section>
                     <div class="kc-tag-head">
-                        <div class="kc-filter-label">🏷️ 태그로 게임 좁히기</div>
-                        <div class="kc-tag-selection-status" id="kc-tag-selection-status">여러 개 선택 가능</div>
+                        <div>
+                            <div class="kc-filter-label">🏷️ 태그로 게임 좁히기</div>
+                            <div class="kc-tag-help">교과와 장르를 함께 골라 원하는 게임만 남겨보세요.</div>
+                        </div>
+                        <div class="kc-tag-head-actions">
+                            <div class="kc-tag-selection-status" id="kc-tag-selection-status">여러 개 선택 가능</div>
+                            <button class="kc-tag-reset active" type="button" data-tag-reset aria-pressed="true">전체 보기</button>
+                        </div>
                     </div>
-                    <nav class="kc-tag-nav" aria-label="게임 태그" aria-multiselectable="true">
-                        <button class="kc-tag-filter active" type="button" data-tag-reset aria-pressed="true">🌟 전체</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="math" aria-pressed="false">➕ 수학</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="korean" aria-pressed="false">📖 국어</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="language" aria-pressed="false">🔠 외국어·한자</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="social" aria-pressed="false">🗺️ 사회</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="science" aria-pressed="false">🔬 과학·환경</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="arts" aria-pressed="false">🎨 예술</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="career" aria-pressed="false">🧑‍🔬 진로</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="thinking" aria-pressed="false">🧠 사고력</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="action" aria-pressed="false">액션</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="puzzle" aria-pressed="false">퍼즐</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="strategy" aria-pressed="false">전략</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="simulation" aria-pressed="false">시뮬레이션</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="management" aria-pressed="false">경영</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="quiz" aria-pressed="false">퀴즈</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="rhythm" aria-pressed="false">리듬</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="sports" aria-pressed="false">스포츠</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="sandbox" aria-pressed="false">샌드박스</button>
-                        <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="rpg" aria-pressed="false">RPG</button>
+                    <nav class="kc-tag-nav" aria-label="게임 태그">
+                        <div class="kc-tag-group" data-tag-group="subject" role="group" aria-label="교과 태그">
+                            <span class="kc-tag-group-label">교과</span>
+                            <div class="kc-tag-group-items">
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="math" aria-pressed="false">➕ 수학</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="korean" aria-pressed="false">📖 국어</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="language" aria-pressed="false">🔠 외국어·한자</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="social" aria-pressed="false">🗺️ 사회</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="science" aria-pressed="false">🔬 과학·환경</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="arts" aria-pressed="false">🎨 예술</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="career" aria-pressed="false">🧑‍🔬 진로</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="subject" data-tag="thinking" aria-pressed="false">🧠 사고력</button>
+                            </div>
+                        </div>
+                        <div class="kc-tag-group" data-tag-group="genre" role="group" aria-label="장르 태그">
+                            <span class="kc-tag-group-label">장르</span>
+                            <div class="kc-tag-group-items">
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="action" aria-pressed="false">액션</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="puzzle" aria-pressed="false">퍼즐</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="strategy" aria-pressed="false">전략</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="simulation" aria-pressed="false">시뮬레이션</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="management" aria-pressed="false">경영</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="quiz" aria-pressed="false">퀴즈</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="rhythm" aria-pressed="false">리듬</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="sports" aria-pressed="false">스포츠</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="sandbox" aria-pressed="false">샌드박스</button>
+                                <button class="kc-tag-filter" type="button" data-tag-type="genre" data-tag="rpg" aria-pressed="false">RPG</button>
+                            </div>
+                        </div>
                     </nav>
                 </section>
 
@@ -1796,15 +1811,15 @@
                     }
                     badge.classList.remove('low', 'empty');
                     card.classList.toggle('out-of-bonus', state.plays <= 0);
-                    if (state.plays <= 0) {
-                        badge.classList.add('empty');
-                        badge.innerHTML = `⚡ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 보너스 +1</small>`;
-                    } else if (state.plays < PLAY_LIMIT_MAX) {
-                        badge.classList.add('low');
-                        badge.innerHTML = `⚡ ${state.plays}/${PLAY_LIMIT_MAX}<br><small>${formatRechargeTime(getNextRechargeMs(gameId))} 후 보너스 +1</small>`;
-                    } else {
-                        badge.textContent = `⚡ 보너스 ${state.plays}/${PLAY_LIMIT_MAX}`;
-                    }
+                    const recharge = state.plays < PLAY_LIMIT_MAX ? formatRechargeTime(getNextRechargeMs(gameId)) : '';
+                    if (state.plays <= 0) badge.classList.add('empty');
+                    else if (state.plays < PLAY_LIMIT_MAX) badge.classList.add('low');
+                    badge.textContent = `⚡ ${state.plays}`;
+                    const detail = state.plays >= PLAY_LIMIT_MAX
+                        ? `추천 에너지 ${state.plays}/${PLAY_LIMIT_MAX} · 보상 2배 가능`
+                        : `추천 에너지 ${state.plays}/${PLAY_LIMIT_MAX} · ${recharge} 후 +1`;
+                    badge.title = detail;
+                    badge.setAttribute('aria-label', detail);
                 });
                 savePlayLimits();
             }
