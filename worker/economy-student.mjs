@@ -66,7 +66,8 @@ export async function getStudentEconomy(request, env) {
   ).bind(row.class_id).all();
 
   const cases = await env.DB.prepare(
-    'SELECT id, law_id, proposed_fine, applied_fine, note, occurred_at, status, appeal_text, created_at, decided_at, appealed_at ' +
+    'SELECT id, law_id, proposed_fine, applied_fine, note, occurred_at, status, appeal_text, created_at, decided_at, appealed_at, ' +
+    'salary_snapshot, fine_cap_snapshot, appeal_count, severity, final_note ' +
     'FROM economy_cases WHERE student_id = ? ORDER BY created_at DESC LIMIT 30'
   ).bind(row.student_id).all();
 
