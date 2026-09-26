@@ -113,7 +113,6 @@
       .dashboard-container .mini-card .fav-star,
       .dashboard-container .mini-card .badge-container,
       .dashboard-container .mini-card .cert-btn,
-      .dashboard-container .mini-card .play-limit-badge,
       .dashboard-container .mini-card .kc-card-meta { display: none !important; }
       .dashboard-container .mini-card.kc-has-cover .game-title {
         margin: 0 2px 3px !important;
