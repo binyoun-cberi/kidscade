@@ -154,6 +154,13 @@ async function runCase(program,functionProgram,mission,test){
 function traceUses(trace,type){
  return (trace||[]).some(e=>e.type===type&&(e.kind==='action'||e.kind==='check'||e.kind==='call'||e.kind==='loop'));
 }
+function conditionStats(traces,type){
+ const out={checks:0,trueCount:0,falseCount:0};
+ for(const trace of traces)for(const e of trace||[])if(e.kind==='check'&&e.type===type){
+  out.checks++;if(e.result)out.trueCount++;else out.falseCount++;
+ }
+ return out;
+}
 function conceptCheck(mission,functionProgram,traces){
  if(mission.requireFunction){
   const called=traces.some(t=>(t||[]).some(e=>e.kind==='call'));
@@ -162,6 +169,18 @@ function conceptCheck(mission,functionProgram,traces){
  if(mission.requireType){
   const used=traces.some(t=>traceUses(t,mission.requireType));
   if(!used)return {ok:false,message:'이번 구역에서는 '+((window.CodeQuestData?.blocks?.[mission.requireType]?.label)||mission.requireType)+'을 실제 실행해 보세요.'};
+ }
+ if(mission.requireCallCount){
+  const calls=traces.flat().filter(e=>e?.kind==='call').length;
+  if(calls<mission.requireCallCount)return {ok:false,message:'나의 기술을 '+mission.requireCallCount+'번 이상 실제로 재사용해 보세요.'};
+ }
+ if(mission.requireConditionTrue){
+  const c=conditionStats(traces,mission.requireConditionTrue);
+  if(c.trueCount<1)return {ok:false,message:'조건이 참이 되는 상황에서 '+((window.CodeQuestData?.blocks?.[mission.requireConditionTrue]?.label)||mission.requireConditionTrue)+'을 활용해 보세요.'};
+ }
+ if(mission.requireConditionCoverage){
+  const c=conditionStats(traces,mission.requireConditionCoverage);
+  if(c.trueCount<1||c.falseCount<1)return {ok:false,message:'같은 조건이 참일 때와 거짓일 때 모두 올바르게 작동하도록 만들어 보세요.'};
  }
  return {ok:true};
 }
