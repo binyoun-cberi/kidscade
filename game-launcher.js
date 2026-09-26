@@ -13,7 +13,7 @@
     return Number.isFinite(number) ? number : fallback;
   }
 
-  function calculateReward(seconds, hadBonus = false, minRewardSeconds = DEFAULT_MIN_REWARD_SECONDS) {
+  function calculateReward(seconds, minRewardSeconds = DEFAULT_MIN_REWARD_SECONDS) {
     const sessionSec = Math.max(0, Math.floor(finiteNumber(seconds)));
     const threshold = Math.max(0, Math.floor(finiteNumber(minRewardSeconds, DEFAULT_MIN_REWARD_SECONDS)));
     const eligible = sessionSec >= threshold;
@@ -29,14 +29,12 @@
         baseSeeds: 0,
         baseExp: 0,
         rewardSeeds: 0,
-        gainedExp: 0,
-        multiplier: 1
+        gainedExp: 0
       };
     }
 
     const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
     const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
-    const multiplier = hadBonus ? 2 : 1;
 
     return {
       eligible: true,
@@ -45,9 +43,8 @@
       durationText,
       baseSeeds,
       baseExp,
-      rewardSeeds: baseSeeds * multiplier,
-      gainedExp: baseExp * multiplier,
-      multiplier
+      rewardSeeds: baseSeeds,
+      gainedExp: baseExp
     };
   }
 
@@ -107,23 +104,11 @@
       if (activatedSession) return activatedSession;
 
       const startedAt = finiteNumber(bridge.now?.(), Date.now());
-      const hadBonus = Boolean(bridge.consumePlayTicket?.(gameId));
-      if (!hadBonus) {
-        const recharge = bridge.getNextRechargeMs?.(gameId);
-        const rechargeText = bridge.formatRechargeTime?.(recharge);
-        bridge.showToast?.(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${rechargeText || '잠시'} 뒤 보너스 +1`);
-      }
 
-      const energyState = bridge.getPlayState?.(gameId) || { plays: 0 };
-      const playLimitMax = finiteNumber(bridge.playLimitMax, 0);
-      const bonusText = hadBonus
-        ? `추천 에너지 보너스 적용 · 남은 보너스 ${finiteNumber(energyState.plays, 0)}/${playLimitMax}`
-        : '기본 보상 진행';
-
-      activatedSession = { id: gameId, category, title, href, startedAt, hadBonus, bonusText };
+      activatedSession = { id: gameId, category, title, href, startedAt };
       bridge.startSession?.(activatedSession);
       bridge.remember?.(gameId);
-      bridge.updateModalTitle?.(`진행 중: ${title} · ${bonusText}`);
+      bridge.updateModalTitle?.(`진행 중: ${title}`);
       bridge.afterOpen?.(activatedSession);
       return activatedSession;
     };
@@ -142,7 +127,7 @@
         title,
         titleText: `준비: ${title}`,
         onStart: activate,
-        startedTitle: session => `진행 중: ${title} · ${session?.bonusText || '기본 보상 진행'}`
+        startedTitle: () => `진행 중: ${title}`
       });
       return { handled: true, opened: true, pending: true, session: null };
     }
@@ -151,7 +136,7 @@
     bridge.openModal?.({
       game,
       ...session,
-      titleText: `진행 중: ${title} · ${session.bonusText}`
+      titleText: `진행 중: ${title}`
     });
 
     return { handled: true, opened: true, pending: false, session };
@@ -174,12 +159,9 @@
       sessionSec = Math.max(0, Math.floor((closedAt - finiteNumber(session.startedAt)) / 1000));
       bridge.checkpointPlayTime?.(closedAt);
 
-      reward = calculateReward(sessionSec, Boolean(session.hadBonus), bridge.minRewardPlaySec);
+      reward = calculateReward(sessionSec, bridge.minRewardPlaySec);
       if (reward.eligible) {
-        const reason = session.hadBonus
-          ? `추천 에너지 보너스 · ${reward.durationText}`
-          : `게임 도전 · ${reward.durationText}`;
-        bridge.addCoins?.(reward.rewardSeeds, reason);
+        bridge.addCoins?.(reward.rewardSeeds, `게임 도전 · ${reward.durationText}`);
         bridge.addPetExp?.(reward.gainedExp, session.category);
         bridge.savePet?.();
         bridge.updateMission?.(session.category, session.id);
