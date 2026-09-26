@@ -202,14 +202,15 @@ export async function teacherSettings(request, env) {
   const incomeTaxRate = clampInt(body?.incomeTaxRate ?? current.income_tax_rate,0,100,Number(current.income_tax_rate));
   const consumptionTaxRate = clampInt(body?.consumptionTaxRate ?? current.consumption_tax_rate,0,100,Number(current.consumption_tax_rate));
   const savingsInterestRate = clampInt(body?.savingsInterestRate ?? current.savings_interest_rate,0,20,Number(current.savings_interest_rate));
+  const loanInterestRate = clampInt(body?.loanInterestRate ?? current.loan_interest_rate,1,30,Number(current.loan_interest_rate || 5));
   const fineCapPercent = clampInt(body?.fineCapPercent ?? current.fine_cap_percent,0,100,Number(current.fine_cap_percent));
   const paydayLabel = clean(body?.paydayLabel ?? current.payday_label,20) || current.payday_label;
 
   await env.DB.prepare(
     'UPDATE economy_class_settings SET currency = ?, income_tax_rate = ?, consumption_tax_rate = ?, ' +
-    'savings_interest_rate = ?, fine_cap_percent = ?, payday_label = ?, updated_at = ? WHERE class_id = ?'
+    'savings_interest_rate = ?, loan_interest_rate = ?, fine_cap_percent = ?, payday_label = ?, updated_at = ? WHERE class_id = ?'
   ).bind(
-    currency, incomeTaxRate, consumptionTaxRate, savingsInterestRate,
+    currency, incomeTaxRate, consumptionTaxRate, savingsInterestRate, loanInterestRate,
     fineCapPercent, paydayLabel, nowIso(), classId
   ).run();
 
