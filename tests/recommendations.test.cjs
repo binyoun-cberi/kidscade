@@ -13,7 +13,6 @@ const base = {
   answers: {},
   favoriteIds: [],
   recentIds: [],
-  playState: { plays: 1 },
   random: () => 0
 };
 
@@ -54,14 +53,13 @@ test('recommendation scorer uses catalog metadata for challenge and short-play s
   assert.equal(short, 2);
 });
 
-test('recommendation scorer uses dominant category and preserves the existing unplayed penalty', () => {
+test('recommendation scorer uses dominant category without per-game availability penalties', () => {
   const score = recommendations.scoreGame(game, {
     ...base,
     answers: { category: 'any' },
-    dominantCategory: { key: 'math', value: 12 },
-    playState: { plays: 0 }
+    dominantCategory: { key: 'math', value: 12 }
   });
-  assert.equal(score, -14);
+  assert.equal(score, 6);
 });
 
 test('recommendation scorer rejects missing games and supports deterministic random tie-breaking', () => {
