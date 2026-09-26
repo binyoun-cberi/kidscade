@@ -10,6 +10,11 @@ function countNodes(list){
  });
  return n;
 }
+function normalizeFunctions(input){
+ if(Array.isArray(input))return {a:input,b:[]};
+ if(input&&typeof input==='object')return {a:Array.isArray(input.a)?input.a:[],b:Array.isArray(input.b)?input.b:[]};
+ return {a:[],b:[]};
+}
 function containsType(list,type){
  return (list||[]).some(node=>node.type===type||
    (node.body&&containsType(node.body,type))||
@@ -23,7 +28,7 @@ class CodeQuestRuntime{
   this.onDone=options.onDone||function(){};
   this.delay=options.delay||180;
   this.running=false;this.stopped=false;this.iterator=null;
-  this.actions=0;this.maxActions=140;this.program=[];this.functionProgram=[];
+  this.actions=0;this.maxActions=220;this.program=[];this.functionPrograms={a:[],b:[]};
   this.trace=[];this.stats={actions:0,calls:0,loops:0,conditions:{}};
  }
  setDelay(ms){this.delay=Math.max(0,Number(ms)||0);}
@@ -37,8 +42,8 @@ class CodeQuestRuntime{
  }
  getTrace(){return JSON.parse(JSON.stringify(this.trace));}
  getSummary(){return JSON.parse(JSON.stringify(this.stats));}
- prepare(program,functionProgram){
-  this.program=program||[];this.functionProgram=functionProgram||[];
+ prepare(program,functionPrograms){
+  this.program=program||[];this.functionPrograms=normalizeFunctions(functionPrograms);
   this.actions=0;this.stopped=false;this.trace=[];this.stats={actions:0,calls:0,loops:0,conditions:{}};this.iterator=this.walk(this.program,0);
  }
  *walk(list,depth){
@@ -62,10 +67,18 @@ class CodeQuestRuntime{
      yield {kind:'else',node};
      yield* this.walk(node.elseBody,depth+1);
     }
+   }else if(def.kind==='until'){
+    let i=0;
+    while(!Boolean(this.world.checkCondition(def.condition))){
+     i++;if(i>(def.limit||80))throw new Error('반복이 너무 오래 계속돼요. 끝나는 조건을 확인해 보세요.');
+     yield {kind:'loop',node,index:i,total:'?',until:true};
+     yield* this.walk(node.body||[],depth+1);
+    }
    }else if(def.kind==='call'){
-    yield {kind:'call',node};
-    if(!this.functionProgram.length)throw new Error('나의 기술이 비어 있어요.');
-    yield* this.walk(this.functionProgram,depth+1);
+    const slot=def.slot||'a',fn=this.functionPrograms[slot]||[];
+    yield {kind:'call',node,slot};
+    if(!fn.length)throw new Error(slot==='b'?'나의 기술 B가 비어 있어요.':'나의 기술 A가 비어 있어요.');
+    yield* this.walk(fn,depth+1);
    }
   }
  }
@@ -110,9 +123,9 @@ class CodeQuestRuntime{
   }
   return {done:true,stopped:true};
  }
- async run(program,functionProgram){
+ async run(program,functionPrograms){
   if(this.running)return;
-  this.prepare(program,functionProgram);this.running=true;this.onEvent({kind:'run-start'});
+  this.prepare(program,functionPrograms);this.running=true;this.onEvent({kind:'run-start'});
   while(this.running&&!this.stopped){
    const result=await this.nextAction();
    if(result.done)break;
@@ -120,9 +133,9 @@ class CodeQuestRuntime{
   }
   this.running=false;this.onEvent({kind:'run-stop'});
  }
- async step(program,functionProgram){
+ async step(program,functionPrograms){
   if(this.running)return;
-  if(!this.iterator||this.stopped)this.prepare(program,functionProgram);
+  if(!this.iterator||this.stopped)this.prepare(program,functionPrograms);
   this.running=true;this.onEvent({kind:'step-start'});
   const result=await this.nextAction();
   this.running=false;this.onEvent({kind:'step-stop'});
@@ -135,6 +148,8 @@ class CodeQuestRuntime{
   return {done:true,error:true,message};
  }
 }
-function countProgramNodes(mainProgram,functionProgram){return countNodes(mainProgram)+countNodes(functionProgram);}
-window.CodeQuestRuntime={Runtime:CodeQuestRuntime,countNodes,countProgramNodes,containsType};
+function countProgramNodes(mainProgram,functionPrograms){
+ const f=normalizeFunctions(functionPrograms);return countNodes(mainProgram)+countNodes(f.a)+countNodes(f.b);
+}
+window.CodeQuestRuntime={Runtime:CodeQuestRuntime,countNodes,countProgramNodes,containsType,normalizeFunctions};
 })();
