@@ -85,7 +85,7 @@
       }
       #game-list > .game-card .play-limit-badge {
         position:absolute !important;
-        right:10px !important;
+        left:10px !important;
         top:10px !important;
         margin:0 !important;
         min-width:34px !important;
