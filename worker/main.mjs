@@ -1,6 +1,7 @@
 import statsWorker from './index.mjs';
 import { handleAccountRequest } from './accounts.mjs';
 import { handleTeacherManagementRequest } from './teacher-admin.mjs';
+import { handleEconomyRequest } from './economy.mjs';
 import { handleSeedRankingRequest } from './seed-rankings.mjs';
 import { handleGameRecordRequest } from './game-records.mjs';
 import { handleMultiplayerRequest } from './multiplayer.mjs';
@@ -28,6 +29,9 @@ export default {
   async fetch(request, env, ctx) {
     const teacherResponse = await handleTeacherManagementRequest(request, env);
     if (teacherResponse) return teacherResponse;
+
+    const economyResponse = await handleEconomyRequest(request, env);
+    if (economyResponse) return economyResponse;
 
     const url = new URL(request.url);
 

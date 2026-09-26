@@ -103,7 +103,8 @@
       #${SLOT_ID} .kca-copy{min-width:0}
       #${SLOT_ID} .kca-title{font-size:.68rem;font-weight:1000;color:var(--kc-ink,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-sub{margin-top:2px;font-size:.59rem;font-weight:800;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      #${SLOT_ID} button{flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer}
+      #${SLOT_ID} .kca-buttons{display:flex;gap:5px;align-items:center;flex:none}
+      #${SLOT_ID} button,#${SLOT_ID} .kca-wallet{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
       #${SLOT_ID} .kca-logout{background:#eef2f7;color:#64748b}
       body.dark-mode #${SLOT_ID} .kca-logout{background:#334155;color:#e2e8f0}
       #${MODAL_ID}{position:fixed;inset:0;z-index:14000;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.52);backdrop-filter:blur(8px)}
@@ -179,7 +180,7 @@
       slot.querySelector('[data-kca-login]')?.addEventListener('click', openLogin);
       return true;
     }
-    slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div>`;
+    slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><a class="kca-wallet" href="/economy.html">💰 지갑</a><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div>`;
     slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
     return true;
   }

@@ -145,7 +145,7 @@ function requireConfig(env, { teacher = false } = {}) {
   return null;
 }
 
-function authorizeTeacher(request, env) {
+export function authorizeTeacher(request, env) {
   const missing = requireConfig(env, { teacher: true });
   if (missing) return missing;
   if (!secureEqual(getBearer(request), env.KIDSCADE_ADMIN_KEY)) {
@@ -230,7 +230,7 @@ function accountPayload(row) {
   };
 }
 
-async function requireStudent(request, env) {
+export async function requireStudent(request, env) {
   const missing = requireConfig(env);
   if (missing) return { response: missing };
   const token = parseCookies(request)[SESSION_COOKIE] || '';
