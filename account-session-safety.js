@@ -11,7 +11,7 @@
     [
       'profile','playHistory','seeds','avatarInventory','avatarEquipped','inventory','equipped',
       'pet','petItems','gardenState','recents','favorites','dailyMissions','dailyRewardClaimed',
-      'attendance','playtimeSeconds','legacyPlaytimeMinutes','claimedRanks','playLimits'
+      'attendance','playtimeSeconds','legacyPlaytimeMinutes','claimedRanks'
     ].forEach(key => { try { s.remove(key); } catch (_) {} });
     try { sessionStorage.removeItem('kc_account_sync_meta_v1'); } catch (_) {}
   }
