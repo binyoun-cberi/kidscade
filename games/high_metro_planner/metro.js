@@ -3,614 +3,634 @@
 
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d',{alpha:false});
-const W=1000,H=650,RIVER_X=525,RIVER_W=58;
-const DPR_CAP=1.75;
-const SHAPES=['circle','triangle','square','diamond'];
-const LINE_DEFS=[
-  {name:'1호선',color:'#46c7ff'},
-  {name:'2호선',color:'#ff9b54'},
-  {name:'3호선',color:'#6de59e'},
-  {name:'4호선',color:'#d886ff'},
-  {name:'5호선',color:'#ffd65d'}
+const W=1200,H=760,DPR_CAP=1.75;
+const GAME_MIN_PER_SEC=6;
+const REPORT_DAYS=3;
+const TRANSFER_PENALTY=8;
+const MAX_DEBT=150;
+const TRAIN_CAPACITY=36;
+
+const CITIES=[
+ {id:'seoul',name:'서울',x:430,y:135,pop:10,jobs:10,industry:7,tourism:9,education:9,hub:10},
+ {id:'incheon',name:'인천',x:345,y:155,pop:8,jobs:7,industry:8,tourism:5,education:5,hub:7},
+ {id:'suwon',name:'수원',x:425,y:205,pop:8,jobs:8,industry:8,tourism:3,education:6,hub:7},
+ {id:'chuncheon',name:'춘천',x:535,y:135,pop:4,jobs:4,industry:3,tourism:7,education:5,hub:4},
+ {id:'wonju',name:'원주',x:555,y:220,pop:5,jobs:5,industry:5,tourism:4,education:5,hub:5},
+ {id:'gangneung',name:'강릉',x:665,y:190,pop:4,jobs:3,industry:2,tourism:9,education:3,hub:4},
+ {id:'cheonan',name:'천안',x:440,y:275,pop:6,jobs:6,industry:7,tourism:3,education:6,hub:7},
+ {id:'cheongju',name:'청주',x:515,y:285,pop:6,jobs:6,industry:7,tourism:3,education:6,hub:6},
+ {id:'daejeon',name:'대전',x:495,y:350,pop:7,jobs:7,industry:5,tourism:3,education:8,hub:9},
+ {id:'jeonju',name:'전주',x:420,y:415,pop:5,jobs:5,industry:4,tourism:7,education:6,hub:5},
+ {id:'daegu',name:'대구',x:595,y:420,pop:8,jobs:7,industry:7,tourism:5,education:6,hub:8},
+ {id:'pohang',name:'포항',x:685,y:390,pop:5,jobs:5,industry:9,tourism:5,education:4,hub:5},
+ {id:'gwangju',name:'광주',x:395,y:500,pop:7,jobs:7,industry:5,tourism:6,education:7,hub:7},
+ {id:'mokpo',name:'목포',x:315,y:555,pop:4,jobs:3,industry:5,tourism:7,education:3,hub:4},
+ {id:'suncheon',name:'순천',x:470,y:550,pop:4,jobs:4,industry:4,tourism:8,education:4,hub:4},
+ {id:'changwon',name:'창원',x:565,y:555,pop:6,jobs:6,industry:9,tourism:4,education:4,hub:6},
+ {id:'ulsan',name:'울산',x:670,y:500,pop:6,jobs:6,industry:10,tourism:4,education:3,hub:6},
+ {id:'busan',name:'부산',x:640,y:575,pop:9,jobs:8,industry:9,tourism:8,education:6,hub:9}
 ];
-const NAME_POOL=['새봄','한빛','푸른길','솔마루','별내','강빛','해오름','느티','샘터','달맞이','구름재','나래','도담','이음','마루','온새미','가람','여울','라온','초롱','누리','한결','미르','아람'];
+
+const CORRIDOR_DEFS=[
+ ['incheon','seoul',28,'metro',1.05],['seoul','suwon',35,'metro',1.12],['seoul','chuncheon',75,'hill',1.25],
+ ['suwon','cheonan',62,'plain',1.00],['chuncheon','wonju',82,'mountain',1.48],['wonju','gangneung',95,'mountain',1.70],
+ ['wonju','cheongju',92,'hill',1.28],['cheonan','cheongju',45,'plain',1.00],['cheonan','daejeon',68,'plain',1.02],
+ ['cheongju','daejeon',42,'plain',1.00],['daejeon','jeonju',67,'hill',1.12],['daejeon','daegu',145,'hill',1.24],
+ ['jeonju','gwangju',102,'plain',1.03],['gwangju','mokpo',80,'plain',1.02],['gwangju','suncheon',92,'hill',1.18],
+ ['suncheon','changwon',115,'hill',1.25],['changwon','busan',50,'metro',1.10],['changwon','daegu',105,'hill',1.18],
+ ['daegu','pohang',78,'hill',1.22],['daegu','ulsan',112,'hill',1.22],['ulsan','busan',72,'metro',1.12],
+ ['daegu','busan',120,'hill',1.20],['cheongju','daegu',150,'mountain',1.42]
+];
+const CORRIDORS=CORRIDOR_DEFS.map((v,i)=>({
+ id:'c'+i,a:v[0],b:v[1],km:v[2],terrain:v[3],mult:v[4],
+ cost:Math.max(6,Math.round(v[2]*.115*v[4]))
+}));
+
+const LINE_DEFS=[
+ {name:'1호선',color:'#66d9ff'},
+ {name:'2호선',color:'#ff9d66'},
+ {name:'3호선',color:'#72e59e'},
+ {name:'4호선',color:'#cf8bff'},
+ {name:'5호선',color:'#ffd866'}
+];
 
 const $=id=>document.getElementById(id);
 const ui={
-  menu:$('menu'),help:$('help'),upgrade:$('upgrade'),result:$('result'),
-  start:$('startBtn'),tutorial:$('tutorialBtn'),closeHelp:$('closeHelpBtn'),
-  retry:$('retryBtn'),menuBtn:$('menuBtn'),pause:$('pauseBtn'),speed:$('speedBtn'),sound:$('soundBtn'),helpBtn:$('helpBtn'),
-  week:$('weekLabel'),delivered:$('deliveredLabel'),waiting:$('waitingLabel'),danger:$('dangerLabel'),
-  notice:$('notice'),lineTools:$('lineTools'),trainTool:$('trainTool'),bridgeTool:$('bridgeTool'),trimTool:$('trimTool'),undo:$('undoBtn'),
-  trainStock:$('trainStock'),bridgeStock:$('bridgeStock'),best:$('bestText'),choices:$('upgradeChoices'),
-  resultTitle:$('resultTitle'),resultReason:$('resultReason'),resultDelivered:$('resultDelivered'),resultTime:$('resultTime'),resultStations:$('resultStations'),
-  tutorialBubble:$('tutorialBubble'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialSkip:$('tutorialSkip')
+ menu:$('menu'),help:$('help'),report:$('monthReport'),result:$('result'),
+ start:$('startBtn'),tutorial:$('tutorialBtn'),closeHelp:$('closeHelpBtn'),retry:$('retryBtn'),menuBtn:$('menuBtn'),
+ pause:$('pauseBtn'),speed:$('speedBtn'),layer:$('layerBtn'),sound:$('soundBtn'),helpBtn:$('helpBtn'),
+ date:$('dateLabel'),cash:$('cashLabel'),delivered:$('deliveredLabel'),wait:$('waitLabel'),access:$('accessLabel'),
+ serviceList:$('serviceList'),monthProfit:$('monthProfitLabel'),notice:$('notice'),
+ trackTool:$('trackTool'),lineTools:$('lineTools'),trainTool:$('trainTool'),trimTool:$('trimTool'),undo:$('undoBtn'),trainStock:$('trainStock'),
+ detailEmpty:$('detailEmpty'),cityDetail:$('cityDetail'),serviceDetail:$('serviceDetail'),
+ cityName:$('cityName'),cityPop:$('cityPop'),cityJobs:$('cityJobs'),cityIndustry:$('cityIndustry'),cityTourism:$('cityTourism'),
+ cityWaiting:$('cityWaiting'),cityCrowding:$('cityCrowding'),cityTopDest:$('cityTopDest'),cityServices:$('cityServices'),
+ serviceName:$('serviceName'),serviceStops:$('serviceStops'),serviceTrains:$('serviceTrains'),serviceHeadway:$('serviceHeadway'),serviceLoad:$('serviceLoad'),serviceProfit:$('serviceProfit'),
+ income:$('incomeLabel'),expense:$('expenseLabel'),debt:$('debtLabel'),
+ reportTitle:$('reportTitle'),reportDelivered:$('reportDelivered'),reportProfit:$('reportProfit'),reportAccess:$('reportAccess'),reportWait:$('reportWait'),reportChoices:$('reportChoices'),
+ resultTitle:$('resultTitle'),resultReason:$('resultReason'),resultDelivered:$('resultDelivered'),resultTime:$('resultTime'),resultAccess:$('resultAccess'),
+ tutorialBubble:$('tutorialBubble'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialSkip:$('tutorialSkip')
 };
 
-let cssW=innerWidth,cssH=innerHeight,scale=1,offX=0,offY=0,dpr=1;
-let last=performance.now(),noticeTimer=0,soundOn=true;
-let save={tutorialSeen:false,bestDelivered:0,bestSeconds:0};
-let rng=Math.random;
-let decor=[];
-let undoStack=[];
-let drag=null;
-let pointer={x:0,y:0};
-let selectedLine=0;
-let pendingTrain=false;
-let pendingTrim=false;
-let tutorialStep=0;
+let cssW=innerWidth,cssH=innerHeight,scale=1,offX=0,offY=0,dpr=1,last=performance.now();
+let noticeTimer=0,soundOn=true,pointer={x:0,y:0},drag=null;
+let mode='track',selectedLine=0,pendingTrim=false,selectedCityId=null,selectedServiceId=null;
+let undoStack=[],routeCache=new Map(),networkDirty=true;
+let save={tutorialSeen:false,bestDelivered:0,bestAccess:0,bestMonths:0};
 
 const state={
-  running:false,paused:false,upgradeOpen:false,gameOver:false,speed:1,
-  time:0,delivered:0,stations:[],lines:[],unlockedLines:2,
-  spareTrains:2,bridges:1,capacity:6,nextStationAt:42,nextUpgradeAt:75,
-  spawnCarry:0,stationSeq:0,tutorialMode:false,week:1
+ running:false,paused:false,reportOpen:false,gameOver:false,speed:1,
+ gameMin:360,day:1,month:1,nextReportDay:4,
+ cash:220,debt:0,delivered:0,deliveredMonth:0,incomeMonth:0,lastMonthProfit:0,lastOperatingCost:0,
+ spareTrains:3,unlockedLines:3,
+ tracks:new Set(),services:[],trains:[],
+ queues:new Map(),spawnCarry:0,tutorial:false,tutorialStep:0
 };
-
-function loadSave(){
-  try{
-    const api=window.KidscadeStorage;
-    if(api) save=Object.assign(save,api.getJson('metroPlannerSave',save)||{});
-  }catch(_){}
-  refreshBest();
-}
-function persist(){
-  try{window.KidscadeStorage?.setJson('metroPlannerSave',save)}catch(_){}
-}
-function refreshBest(){
-  if(!save.bestDelivered){ui.best.textContent='첫 도시의 기록을 만들어 보세요.';return}
-  ui.best.textContent='최고 기록 · '+save.bestDelivered+'명 수송 · '+formatTime(save.bestSeconds);
-}
 
 const audio={
-  click:makePool('../../assets/audio/ui/kenney_interface/click_002.ogg',.28,3),
-  confirm:makePool('../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.34,3),
-  error:makePool('../../assets/audio/ui/kenney_interface/error_002.ogg',.27,2),
-  tick:makePool('../../assets/audio/ui/kenney_interface/tick_001.ogg',.18,3),
-  success:makePool('../../assets/audio/sfx/success/cheer-yay-01.mp3',.22,2),
-  fail:makePool('../../assets/audio/sfx/failure/fail-sting-01.mp3',.28,2)
+ click:makePool('../../assets/audio/ui/kenney_interface/click_002.ogg',.22,3),
+ confirm:makePool('../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.28,3),
+ error:makePool('../../assets/audio/ui/kenney_interface/error_002.ogg',.23,2),
+ tick:makePool('../../assets/audio/ui/kenney_interface/tick_001.ogg',.14,3),
+ success:makePool('../../assets/audio/sfx/success/cheer-yay-01.mp3',.18,2),
+ fail:makePool('../../assets/audio/sfx/failure/fail-sting-01.mp3',.24,2)
 };
-function makePool(src,volume,n){
-  return {i:0,a:Array.from({length:n},()=>{const a=new Audio(src);a.preload='auto';a.volume=volume;return a})};
-}
-function play(name,rate=1){
-  if(!soundOn)return;
-  const p=audio[name];if(!p)return;
-  const a=p.a[p.i++%p.a.length];
-  try{a.pause();a.currentTime=0;a.playbackRate=rate;a.play().catch(()=>{})}catch(_){}
-}
+function makePool(src,volume,n){return {i:0,a:Array.from({length:n},()=>{const a=new Audio(src);a.preload='auto';a.volume=volume;return a})}}
+function play(name,rate=1){if(!soundOn)return;const p=audio[name];if(!p)return;const a=p.a[p.i++%p.a.length];try{a.pause();a.currentTime=0;a.playbackRate=rate;a.play().catch(()=>{})}catch(_){}}
 
-function mulberry32(seed){
-  let a=seed>>>0;
-  return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296};
-}
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
-  return arr;
-}
+function city(id){return CITIES.find(c=>c.id===id)}
+function corridorByCities(a,b){return CORRIDORS.find(c=>(c.a===a&&c.b===b)||(c.a===b&&c.b===a))}
+function serviceById(id){return state.services.find(s=>s.id===id)}
+function keyPair(a,b){return a<b?a+'|'+b:b+'|'+a}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function lerp(a,b,t){return a+(b-a)*t}
-function formatTime(sec){sec=Math.max(0,Math.floor(sec));return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function money(v){const n=Math.round(v*10)/10;return (n>=0?'':'-')+Math.abs(n).toFixed(Math.abs(n)%1?1:0)+'억'}
+function totalWaiting(id){const q=state.queues.get(id);if(!q)return 0;let n=0;for(const g of q.values())n+=g.count;return n}
+function cityCapacity(c){return 18+c.pop*3+c.hub}
+function crowding(c){return clamp(totalWaiting(c.id)/cityCapacity(c),0,1.5)}
+function terrainName(t){return t==='mountain'?'산악':t==='hill'?'구릉':t==='metro'?'도심':'평야'}
+
+function loadSave(){
+ try{const api=window.KidscadeStorage;if(api)save=Object.assign(save,api.getJson('metroPlannerSave',save)||{})}catch(_){}
+ refreshBest();
+}
+function persist(){try{window.KidscadeStorage?.setJson('metroPlannerSave',save)}catch(_){}}
+function refreshBest(){
+ const el=$('bestText');if(!el)return;
+ if(!save.bestDelivered){el.textContent='첫 대한민국 철도망 기록을 만들어 보세요.';return}
+ el.textContent='최고 기록 · '+save.bestDelivered+'명 수송 · 접근성 '+Math.round(save.bestAccess||0)+'% · '+(save.bestMonths||1)+'개월';
+}
 
 function resize(){
-  cssW=innerWidth;cssH=innerHeight;dpr=Math.min(devicePixelRatio||1,DPR_CAP);
-  canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr));
-  canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
-  scale=Math.min(cssW/W,cssH/H);offX=(cssW-W*scale)/2;offY=(cssH-H*scale)/2;
+ cssW=innerWidth;cssH=innerHeight;dpr=Math.min(devicePixelRatio||1,DPR_CAP);
+ canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr));
+ canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
+ scale=Math.min(cssW/W,cssH/H);offX=(cssW-W*scale)/2;offY=(cssH-H*scale)/2;
 }
 addEventListener('resize',resize,{passive:true});resize();
-
-function worldPoint(ev){
-  const r=canvas.getBoundingClientRect();
-  return {x:(ev.clientX-r.left-offX)/scale,y:(ev.clientY-r.top-offY)/scale};
-}
+function worldPoint(ev){const r=canvas.getBoundingClientRect();return{x:(ev.clientX-r.left-offX)/scale,y:(ev.clientY-r.top-offY)/scale}}
 
 function resetState(tutorial){
-  const seed=(Date.now()^(Math.random()*0xffffffff))>>>0;rng=mulberry32(seed);
-  Object.assign(state,{running:true,paused:false,upgradeOpen:false,gameOver:false,speed:1,time:0,delivered:0,stations:[],lines:[],unlockedLines:2,spareTrains:2,bridges:1,capacity:6,nextStationAt:42,nextUpgradeAt:75,spawnCarry:0,stationSeq:0,tutorialMode:!!tutorial,week:1});
-  selectedLine=0;pendingTrain=false;pendingTrim=false;undoStack=[];drag=null;tutorialStep=0;
-  state.lines=LINE_DEFS.map((d,i)=>({id:i,name:d.name,color:d.color,stops:[],trains:[]}));
-  const base=[
-    [165,205,'circle'],[338,168,'triangle'],[270,405,'square'],[695,215,'diamond'],[790,414,'circle']
-  ];
-  base.forEach(v=>createStation(v[0],v[1],v[2],true));
-  buildDecor();
-  updateLineButtons();updateHud();
-  ui.menu.classList.add('hidden');ui.result.classList.add('hidden');ui.upgrade.classList.add('hidden');ui.help.classList.add('hidden');
-  ui.pause.textContent='⏸';ui.speed.textContent='×1';
-  if(tutorial){startTutorial()}else{ui.tutorialBubble.classList.add('hidden');showNotice('노선을 골라 역과 역 사이를 드래그하세요.',2200)}
-  last=performance.now();
-}
-function buildDecor(){
-  decor=[];
-  const r=mulberry32(918273);
-  for(let i=0;i<95;i++){
-    const x=35+r()*930,y=72+r()*500;
-    if(Math.abs(x-RIVER_X)<RIVER_W*.8)continue;
-    const w=8+r()*23,h=6+r()*18;
-    decor.push({x,y,w,h,a:.025+r()*.035});
-  }
-}
-
-function createStation(x,y,shape,initial=false){
-  const id=state.stationSeq++;
-  const s={id,x,y,shape:shape||SHAPES[Math.floor(rng()*SHAPES.length)],name:NAME_POOL[id%NAME_POOL.length]+'역',queue:[],danger:0,pulse:initial?0:1,demand:.78+rng()*.48};
-  state.stations.push(s);return s;
-}
-function spawnStation(){
-  if(state.stations.length>=16)return;
-  let best=null;
-  for(let tries=0;tries<100;tries++){
-    const side=rng()<.5?-1:1;
-    const x=side<0?75+rng()*390:590+rng()*335;
-    const y=105+rng()*420;
-    const p={x,y};
-    let min=999;
-    for(const s of state.stations)min=Math.min(min,dist(p,s));
-    if(min>94){best=p;break}
-  }
-  if(!best)return;
-  const counts=Object.fromEntries(SHAPES.map(sh=>[sh,state.stations.filter(s=>s.shape===sh).length]));
-  const minCount=Math.min(...Object.values(counts));
-  const pool=SHAPES.filter(sh=>counts[sh]<=minCount+1);
-  const s=createStation(best.x,best.y,pool[Math.floor(rng()*pool.length)]);
-  play('tick',1.08);showNotice('새 역 '+s.name+'이 생겼어요.',1500);
-}
-function stationById(id){return state.stations.find(s=>s.id===id)}
-function lineById(id){return state.lines[id]}
-
-function updateLineButtons(){
-  ui.lineTools.innerHTML='';
-  state.lines.forEach((line,i)=>{
-    const b=document.createElement('button');
-    b.type='button';b.className='tool lineTool'+(i===selectedLine&&!pendingTrain&&!pendingTrim?' active':'')+(i>=state.unlockedLines?' locked':'');
-    b.style.setProperty('--line',line.color);
-    b.innerHTML='<span>●</span><b>'+line.name+'</b><small>'+line.trains.length+'🚇</small>';
-    b.disabled=i>=state.unlockedLines;
-    b.addEventListener('click',()=>{
-      play('click');
-      if(pendingTrain){assignTrain(i);return}
-      selectedLine=i;pendingTrain=false;pendingTrim=false;updateLineButtons();ui.trainTool.classList.remove('ready');ui.trimTool.classList.remove('ready');
-      showNotice(line.name+' 선택 · 노선 끝에서 다른 역으로 드래그',1200);
-    });
-    ui.lineTools.appendChild(b);
-  });
-  ui.trainStock.textContent=state.spareTrains;
-  ui.bridgeStock.textContent=state.bridges;
-  ui.trainTool.classList.toggle('ready',pendingTrain);ui.trimTool.classList.toggle('ready',pendingTrim);
-}
-function updateHud(){
-  state.week=Math.floor(state.time/75)+1;
-  ui.week.textContent=state.week+'주차';
-  ui.delivered.textContent=state.delivered+'명';
-  const waiting=state.stations.reduce((n,s)=>n+s.queue.length,0);
-  ui.waiting.textContent=waiting+'명';
-  const hottest=state.stations.reduce((m,s)=>Math.max(m,s.danger),0);
-  ui.danger.textContent=hottest<=0?'안정':Math.ceil(hottest)+'초';
-  ui.danger.classList.toggle('hot',hottest>5);
-  ui.trainStock.textContent=state.spareTrains;ui.bridgeStock.textContent=state.bridges;
-}
-function showNotice(text,ms=1300){
-  ui.notice.textContent=text;ui.notice.classList.add('show');clearTimeout(noticeTimer);
-  noticeTimer=setTimeout(()=>ui.notice.classList.remove('show'),ms);
+ Object.assign(state,{
+  running:true,paused:false,reportOpen:false,gameOver:false,speed:1,
+  gameMin:360,day:1,month:1,nextReportDay:4,cash:220,debt:0,delivered:0,deliveredMonth:0,incomeMonth:0,lastMonthProfit:0,lastOperatingCost:0,
+  spareTrains:3,unlockedLines:3,tracks:new Set(),services:[],trains:[],queues:new Map(),spawnCarry:0,tutorial:!!tutorial,tutorialStep:0
+ });
+ CITIES.forEach(c=>state.queues.set(c.id,new Map()));
+ state.services=LINE_DEFS.map((d,i)=>({id:i,name:d.name,color:d.color,stops:[],trainCount:0,revenueMonth:0,deliveredMonth:0,boardedMonth:0}));
+ mode='track';selectedLine=0;pendingTrim=false;selectedCityId=null;selectedServiceId=null;undoStack=[];routeCache.clear();networkDirty=true;drag=null;
+ ui.menu.classList.add('hidden');ui.help.classList.add('hidden');ui.report.classList.add('hidden');ui.result.classList.add('hidden');
+ ui.pause.textContent='⏸';ui.speed.textContent='×1';ui.layer.textContent='기본';
+ updateToolbar();updatePanels();updateHud();
+ if(tutorial)startTutorial();else{ui.tutorialBubble.classList.add('hidden');showNotice('먼저 가까운 도시 사이에 선로를 건설하세요.',2200)}
+ last=performance.now();
 }
 
 function startTutorial(){
-  state.tutorialMode=true;tutorialStep=0;
-  ui.tutorialBubble.classList.remove('hidden');
-  ui.tutorialTitle.textContent='첫 노선을 만들어요';
-  ui.tutorialText.textContent='파란 1호선이 선택되어 있어요. 왼쪽의 원형역과 삼각역 사이를 손가락이나 마우스로 드래그해 보세요.';
+ state.tutorial=true;state.tutorialStep=0;ui.tutorialBubble.classList.remove('hidden');
+ ui.tutorialTitle.textContent='1. 서울과 수원을 연결해 보세요';
+ ui.tutorialText.textContent='선로 건설이 선택되어 있습니다. 서울에서 수원까지 드래그하면 실제 선로가 만들어집니다.';
 }
-function tutorialRouteDone(){
-  if(!state.tutorialMode||tutorialStep!==0)return;
-  tutorialStep=1;
-  const a=state.stations[0],b=state.stations[1];
-  a.queue.push({shape:b.shape,age:0});
-  ui.tutorialTitle.textContent='승객이 기다리고 있어요';
-  ui.tutorialText.textContent='역 옆 작은 ▲는 삼각형 역으로 가고 싶은 승객이에요. 열차가 도착하면 자동으로 타고 이동합니다.';
+function tutorialTrackBuilt(a,b){
+ if(!state.tutorial||state.tutorialStep!==0)return;
+ if(!((a==='seoul'&&b==='suwon')||(a==='suwon'&&b==='seoul')))return;
+ state.tutorialStep=1;selectedLine=0;mode='line';updateToolbar();
+ ui.tutorialTitle.textContent='2. 1호선을 운행하세요';
+ ui.tutorialText.textContent='이제 파란 1호선을 선택해 같은 서울-수원 구간을 다시 드래그하세요. 선로 위에 운행 노선이 생깁니다.';
 }
-function tutorialDelivered(){
-  if(!state.tutorialMode||tutorialStep!==1)return;
-  tutorialStep=2;
-  ui.tutorialTitle.textContent='이제 도시를 키워 보세요';
-  ui.tutorialText.textContent='강을 건너는 노선에는 교량 1개가 필요해요. 75초마다 도시 지원도 받을 수 있습니다.';
-  save.tutorialSeen=true;persist();
-  setTimeout(()=>{if(tutorialStep===2){state.tutorialMode=false;ui.tutorialBubble.classList.add('hidden')}},5000);
+function tutorialLineBuilt(){
+ if(!state.tutorial||state.tutorialStep!==1)return;
+ state.tutorialStep=2;
+ ui.tutorialTitle.textContent='3. 승객과 배차를 지켜보세요';
+ ui.tutorialText.textContent='첫 열차가 자동으로 배치됩니다. 승객은 목적지를 갖고 이동하고, 열차를 추가하면 배차가 짧아집니다.';
+ save.tutorialSeen=true;persist();
+ setTimeout(()=>{if(state.tutorialStep===2){state.tutorial=false;ui.tutorialBubble.classList.add('hidden')}},6500);
 }
-ui.tutorialSkip.addEventListener('click',()=>{
-  state.tutorialMode=false;save.tutorialSeen=true;persist();ui.tutorialBubble.classList.add('hidden');play('click');
-});
+ui.tutorialSkip.addEventListener('click',()=>{state.tutorial=false;save.tutorialSeen=true;persist();ui.tutorialBubble.classList.add('hidden');play('click')});
+
+function showNotice(text,ms=1500){ui.notice.textContent=text;ui.notice.classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>ui.notice.classList.remove('show'),ms)}
 
 function snapshot(){
-  return {
-    lines:state.lines.map(l=>({stops:l.stops.slice(),trains:l.trains.map(t=>Object.assign({},t,{passengers:t.passengers.map(p=>Object.assign({},p))}))})),
-    spareTrains:state.spareTrains,bridges:state.bridges,unlockedLines:state.unlockedLines,capacity:state.capacity
-  };
+ return {
+  cash:state.cash,debt:state.debt,spareTrains:state.spareTrains,unlockedLines:state.unlockedLines,
+  tracks:[...state.tracks],
+  services:state.services.map(s=>({id:s.id,stops:s.stops.slice(),trainCount:s.trainCount})),
+  trains:state.trains.map(t=>({...t,onboard:t.onboard.map(g=>({...g}))}))
+ };
 }
-function pushUndo(){undoStack.push(snapshot());if(undoStack.length>14)undoStack.shift()}
-function restore(snap){
-  state.spareTrains=snap.spareTrains;state.bridges=snap.bridges;state.unlockedLines=snap.unlockedLines;state.capacity=snap.capacity;
-  state.lines.forEach((l,i)=>{l.stops=snap.lines[i].stops.slice();l.trains=snap.lines[i].trains.map(t=>Object.assign({},t,{passengers:t.passengers.map(p=>Object.assign({},p))}))});
-  updateLineButtons();showNotice('이전 노선 상태로 되돌렸어요.',1000);play('click');
+function pushUndo(){undoStack.push(snapshot());if(undoStack.length>18)undoStack.shift()}
+function restore(s){
+ state.cash=s.cash;state.debt=s.debt;state.spareTrains=s.spareTrains;state.unlockedLines=s.unlockedLines;state.tracks=new Set(s.tracks);
+ for(const ss of s.services){const d=serviceById(ss.id);d.stops=ss.stops.slice();d.trainCount=ss.trainCount}
+ state.trains=s.trains.map(t=>({...t,onboard:t.onboard.map(g=>({...g}))}));
+ markNetworkDirty();updateToolbar();updatePanels();updateHud();showNotice('이전 철도망 상태로 되돌렸어요.');play('click');
 }
-ui.undo.addEventListener('click',()=>{if(!state.running||!undoStack.length){play('error');showNotice('되돌릴 변경이 없어요.');return}restore(undoStack.pop())});
+ui.undo.addEventListener('click',()=>{if(!undoStack.length){play('error');showNotice('되돌릴 변경이 없어요.');return}restore(undoStack.pop())});
 
-function segmentCrossesRiver(a,b){
-  const ax=a.x-RIVER_X,bx=b.x-RIVER_X;
-  return ax===0||bx===0||ax*bx<0;
+function trackCost(c){return c.cost}
+function spend(amount,reason){
+ state.cash-=amount;
+ if(state.cash<0&&state.debt<MAX_DEBT){
+  const loan=Math.min(50,MAX_DEBT-state.debt);state.debt+=loan;state.cash+=loan;showNotice('운영자금 '+loan+'억을 자동 대출했어요.',1800);
+ }
+ if(state.cash<-20&&state.debt>=MAX_DEBT)gameOver('부채 한도에 도달해 더 이상 철도망을 유지할 수 없습니다.');
+ updateHud();
 }
-function canAddSegment(a,b,line){
-  if(a.id===b.id)return {ok:false,msg:'같은 역끼리는 연결할 수 없어요.'};
-  if(line.stops.includes(a.id)&&line.stops.includes(b.id))return {ok:false,msg:'이미 같은 노선에 있는 구간이에요.'};
-  if(line.stops.length){
-    const first=line.stops[0],last=line.stops[line.stops.length-1];
-    if(a.id!==first&&a.id!==last&&b.id!==first&&b.id!==last)return {ok:false,msg:'노선의 끝에서 이어 주세요.'};
-    const newId=line.stops.includes(a.id)?b.id:a.id;
-    if(line.stops.includes(newId))return {ok:false,msg:'노선이 자기 자신을 다시 지나갈 수 없어요.'};
-  }
-  if(segmentCrossesRiver(a,b)&&state.bridges<=0)return {ok:false,msg:'강을 건널 교량이 부족해요.'};
-  return {ok:true};
-}
-function addSegment(a,b){
-  const line=lineById(selectedLine);if(!line||selectedLine>=state.unlockedLines)return;
-  const check=canAddSegment(a,b,line);
-  if(!check.ok){play('error');showNotice(check.msg);return}
-  pushUndo();
-  if(segmentCrossesRiver(a,b))state.bridges--;
-  if(!line.stops.length){line.stops=[a.id,b.id]}
-  else{
-    const first=line.stops[0],last=line.stops[line.stops.length-1];
-    if(a.id===first)line.stops.unshift(b.id);
-    else if(a.id===last)line.stops.push(b.id);
-    else if(b.id===first)line.stops.unshift(a.id);
-    else if(b.id===last)line.stops.push(a.id);
-  }
-  resetLineTrains(line);
-  if(!line.trains.length&&state.spareTrains>0){state.spareTrains--;line.trains.push(makeTrain(line.id,0))}
-  updateLineButtons();play('confirm',1.06);showNotice(line.name+' 연결 완료',900);tutorialRouteDone();
-}
-function makeTrain(lineId,offset=0){
-  return {lineId,stopIndex:0,dir:1,phase:'dwell',dwell:.55+offset,progress:0,nextIndex:1,passengers:[],prepared:false};
-}
-function resetLineTrains(line){
-  const first=stationById(line.stops[0]);
-  for(const t of line.trains){
-    if(first&&t.passengers.length)first.queue.push(...t.passengers);
-    t.passengers=[];t.stopIndex=0;t.dir=1;t.phase='dwell';t.dwell=.55;t.progress=0;t.nextIndex=Math.min(1,line.stops.length-1);t.prepared=false;
-  }
-}
-function assignTrain(lineId){
-  if(state.spareTrains<=0){pendingTrain=false;updateLineButtons();play('error');showNotice('남은 열차가 없어요.');return}
-  const line=lineById(lineId);
-  if(!line||line.stops.length<2){play('error');showNotice('먼저 두 역 이상을 연결해 주세요.');return}
-  pushUndo();state.spareTrains--;line.trains.push(makeTrain(lineId,line.trains.length*.14));pendingTrain=false;updateLineButtons();play('confirm');showNotice(line.name+'에 열차를 추가했어요.',1200);
-}
-ui.trainTool.addEventListener('click',()=>{
-  if(!state.running)return;
-  if(state.spareTrains<=0){play('error');showNotice('도시 지원에서 열차를 더 받아야 해요.');return}
-  pendingTrain=!pendingTrain;pendingTrim=false;updateLineButtons();play('click');showNotice(pendingTrain?'열차를 넣을 노선 색을 누르세요.':'열차 배치를 취소했어요.',1200);
-});
-ui.bridgeTool.addEventListener('click',()=>{play('click');showNotice('교량은 강을 건너는 새 구간에 자동으로 사용돼요. · '+state.bridges+'개 남음',1700)});
-ui.trimTool.addEventListener('click',()=>{
-  if(!state.running)return;
-  pendingTrim=!pendingTrim;pendingTrain=false;updateLineButtons();play('click');
-  showNotice(pendingTrim?'선택한 노선의 맨 끝 역을 눌러 구간을 철거하세요.':'노선 철거를 취소했어요.',1400);
-});
-function trimSelectedLineAt(station){
-  const line=lineById(selectedLine);
-  if(!line||line.stops.length<2){play('error');showNotice('줄일 노선이 없어요.');return}
-  const firstId=line.stops[0],lastId=line.stops[line.stops.length-1];
-  if(station.id!==firstId&&station.id!==lastId){play('error');showNotice('선택한 노선의 맨 끝 역을 눌러 주세요.');return}
-  pushUndo();
-  const first=stationById(firstId),last=stationById(lastId);
-  let neighbor;
-  if(station.id===firstId){neighbor=stationById(line.stops[1]);if(first&&neighbor&&segmentCrossesRiver(first,neighbor))state.bridges++;line.stops.shift()}
-  else{neighbor=stationById(line.stops[line.stops.length-2]);if(last&&neighbor&&segmentCrossesRiver(last,neighbor))state.bridges++;line.stops.pop()}
-  if(line.stops.length<2){
-    const home=stationById(line.stops[0]);
-    for(const t of line.trains){if(home&&t.passengers.length)home.queue.push(...t.passengers)}
-    state.spareTrains+=line.trains.length;line.trains=[];line.stops=[];
-  }else resetLineTrains(line);
-  pendingTrim=false;updateLineButtons();play('confirm');showNotice(line.name+'의 끝 구간을 철거했어요.',1200);
+function buildTrack(aId,bId){
+ const cor=corridorByCities(aId,bId);
+ if(!cor){play('error');showNotice('이 두 도시는 바로 연결할 수 없어요. 인접한 도시를 이용하세요.');return false}
+ const k=keyPair(aId,bId);if(state.tracks.has(k)){play('error');showNotice('이미 선로가 놓여 있어요.');return false}
+ const cost=trackCost(cor);if(state.cash+Math.max(0,MAX_DEBT-state.debt)<cost){play('error');showNotice('건설 자금이 부족해요.');return false}
+ pushUndo();state.tracks.add(k);spend(cost,'track');markNetworkDirty();play('confirm');
+ showNotice(city(aId).name+'–'+city(bId).name+' 선로 완공 · '+terrainName(cor.terrain)+' · '+cost+'억',1800);
+ tutorialTrackBuilt(aId,bId);return true;
 }
 
-function graphEdges(){
-  const adj=new Map(state.stations.map(s=>[s.id,[]]));
-  for(const line of state.lines){
-    if(line.stops.length<2)continue;
-    for(let i=0;i<line.stops.length-1;i++){
-      const a=stationById(line.stops[i]),b=stationById(line.stops[i+1]);if(!a||!b)continue;
-      const w=dist(a,b)/105;
-      adj.get(a.id).push({to:b.id,line:line.id,w});adj.get(b.id).push({to:a.id,line:line.id,w});
-    }
-  }
-  return adj;
+function canExtendService(s,aId,bId){
+ if(!state.tracks.has(keyPair(aId,bId)))return {ok:false,msg:'먼저 두 도시 사이에 선로를 건설해야 해요.'};
+ if(aId===bId)return {ok:false,msg:'같은 도시끼리는 연결할 수 없어요.'};
+ if(!s.stops.length)return {ok:true};
+ const first=s.stops[0],last=s.stops[s.stops.length-1];
+ const aIn=s.stops.includes(aId),bIn=s.stops.includes(bId);
+ if(aIn&&bIn)return {ok:false,msg:'이미 이 노선에 포함된 구간이에요.'};
+ if(aIn&&!bIn&&(aId===first||aId===last))return {ok:true,newId:bId,at:aId===first?'front':'back'};
+ if(bIn&&!aIn&&(bId===first||bId===last))return {ok:true,newId:aId,at:bId===first?'front':'back'};
+ return {ok:false,msg:'운행 노선의 맨 끝 도시에서 이어 주세요.'};
 }
-function shortestPath(startId,targetShape){
-  const start=stationById(startId);if(!start)return null;if(start.shape===targetShape)return [startId];
-  const adj=graphEdges();
-  const best=new Map(),prev=new Map(),todo=[];
-  const startKey=startId+'|-1';best.set(startKey,0);todo.push({sid:startId,line:-1,cost:0,key:startKey});
-  let found=null;
-  while(todo.length){
-    todo.sort((a,b)=>a.cost-b.cost);const cur=todo.shift();
-    if(cur.cost!==best.get(cur.key))continue;
-    const st=stationById(cur.sid);
-    if(cur.sid!==startId&&st&&st.shape===targetShape){found=cur;break}
-    for(const e of adj.get(cur.sid)||[]){
-      const transfer=cur.line!==-1&&cur.line!==e.line ? .52 : 0;
-      const cost=cur.cost+e.w+transfer;
-      const key=e.to+'|'+e.line;
-      if(cost<(best.get(key)??Infinity)){best.set(key,cost);prev.set(key,cur.key);todo.push({sid:e.to,line:e.line,cost,key})}
-    }
-  }
-  if(!found)return null;
-  const keys=[];let k=found.key;while(k){keys.push(k);k=prev.get(k)}keys.reverse();
-  const ids=[];for(const key of keys){const id=Number(key.split('|')[0]);if(ids[ids.length-1]!==id)ids.push(id)}
-  return ids;
+function addServiceSegment(aId,bId){
+ const s=serviceById(selectedLine);if(!s||selectedLine>=state.unlockedLines)return false;
+ const check=canExtendService(s,aId,bId);if(!check.ok){play('error');showNotice(check.msg);return false}
+ pushUndo();
+ if(!s.stops.length)s.stops=[aId,bId];
+ else if(check.at==='front')s.stops.unshift(check.newId);
+ else s.stops.push(check.newId);
+ if(s.trainCount===0&&state.spareTrains>0){state.spareTrains--;s.trainCount=1;spawnTrainForService(s,true)}
+ resetTrainsForService(s.id);markNetworkDirty();play('confirm');showNotice(s.name+' 운행 구간을 설정했어요.',1200);tutorialLineBuilt();updateToolbar();updatePanels();return true;
+}
+function trimServiceAt(cityId){
+ const s=serviceById(selectedLine);if(!s||s.stops.length<2){play('error');showNotice('줄일 운행 노선이 없어요.');return}
+ if(cityId!==s.stops[0]&&cityId!==s.stops[s.stops.length-1]){play('error');showNotice('노선의 맨 끝 도시를 눌러 주세요.');return}
+ pushUndo();
+ if(cityId===s.stops[0])s.stops.shift();else s.stops.pop();
+ if(s.stops.length<2){
+  s.stops=[];state.spareTrains+=s.trainCount;s.trainCount=0;state.trains=state.trains.filter(t=>t.serviceId!==s.id);
+ }else resetTrainsForService(s.id);
+ pendingTrim=false;markNetworkDirty();updateToolbar();updatePanels();play('confirm');showNotice(s.name+'의 끝 구간을 줄였어요.');
+}
+function addTrainToSelected(){
+ const s=serviceById(selectedLine);
+ if(!s||s.stops.length<2){play('error');showNotice('먼저 선택한 노선을 두 도시 이상 운행시켜 주세요.');return}
+ if(state.spareTrains<=0){play('error');showNotice('남은 열차가 없어요. 월간 지원에서 열차를 확보하세요.');return}
+ pushUndo();state.spareTrains--;s.trainCount++;spawnTrainForService(s,false);markNetworkDirty();updateToolbar();updatePanels();play('confirm');
+ showNotice(s.name+' 열차 '+s.trainCount+'대 · 배차 약 '+Math.round(calculateHeadway(s))+'분');
 }
 
-function normalizedNext(line,t){
-  if(line.stops.length<2)return null;
-  let ni=t.stopIndex+t.dir;
-  if(ni<0||ni>=line.stops.length){t.dir*=-1;ni=t.stopIndex+t.dir}
-  return clamp(ni,0,line.stops.length-1);
+function markNetworkDirty(){networkDirty=true;routeCache.clear()}
+function serviceSegmentMinutes(aId,bId){
+ const c=corridorByCities(aId,bId);if(!c)return 999;
+ return Math.max(7,c.km/4.2);
 }
-function processStop(line,t){
-  if(line.stops.length<2)return;
-  const st=stationById(line.stops[t.stopIndex]);if(!st)return;
-  const ni=normalizedNext(line,t);if(ni===null)return;
-  const nextId=line.stops[ni];
-  const keep=[];
-  for(const p of t.passengers){
-    if(st.shape===p.shape){state.delivered++;play('tick',1.22);tutorialDelivered();continue}
-    const path=shortestPath(st.id,p.shape);
-    if(path&&path[1]===nextId)keep.push(p);else st.queue.push(p);
-  }
-  t.passengers=keep;
-  for(let i=0;i<st.queue.length&&t.passengers.length<state.capacity;){
-    const p=st.queue[i];const path=shortestPath(st.id,p.shape);
-    if(path&&path[1]===nextId){t.passengers.push(p);st.queue.splice(i,1)}else i++;
-  }
-  t.nextIndex=ni;
+function serviceCycleMinutes(s){
+ if(s.stops.length<2)return 999;
+ let one=0;for(let i=0;i<s.stops.length-1;i++)one+=serviceSegmentMinutes(s.stops[i],s.stops[i+1])+2;
+ return one*2;
 }
-function updateTrain(line,t,dt){
-  if(line.stops.length<2)return;
-  t.stopIndex=clamp(t.stopIndex,0,line.stops.length-1);
+function calculateHeadway(s){if(!s||s.trainCount<=0||s.stops.length<2)return 999;return Math.max(5,serviceCycleMinutes(s)/s.trainCount)}
+function buildRoutingAdj(){
+ const adj=new Map(CITIES.map(c=>[c.id,[]]));
+ for(const s of state.services){
+  if(s.trainCount<=0||s.stops.length<2)continue;
+  const head=calculateHeadway(s);
+  for(let i=0;i<s.stops.length-1;i++){
+   const a=s.stops[i],b=s.stops[i+1],travel=serviceSegmentMinutes(a,b);
+   adj.get(a).push({to:b,serviceId:s.id,travel,headway:head});
+   adj.get(b).push({to:a,serviceId:s.id,travel,headway:head});
+  }
+ }
+ return adj;
+}
+function shortestRoute(from,to){
+ if(from===to)return {time:0,legs:[]};
+ const cacheKey=from+'>'+to;if(!networkDirty&&routeCache.has(cacheKey))return routeCache.get(cacheKey);
+ const adj=buildRoutingAdj(),pq=[{city:from,line:-1,cost:0,legs:[]}],best=new Map();
+ let answer=null;
+ while(pq.length){
+  pq.sort((a,b)=>a.cost-b.cost);const cur=pq.shift(),bk=cur.city+'@'+cur.line;
+  if(best.has(bk)&&best.get(bk)<=cur.cost)continue;best.set(bk,cur.cost);
+  if(cur.city===to){answer={time:cur.cost,legs:cur.legs};break}
+  for(const e of adj.get(cur.city)||[]){
+   const switching=cur.line!==-1&&cur.line!==e.serviceId;
+   const wait=cur.line===e.serviceId?0:e.headway/2;
+   const add=e.travel+wait+(switching?TRANSFER_PENALTY:0);
+   const legs=cur.legs.concat([{from:cur.city,to:e.to,serviceId:e.serviceId}]);
+   pq.push({city:e.to,line:e.serviceId,cost:cur.cost+add,legs});
+  }
+ }
+ routeCache.set(cacheKey,answer);return answer;
+}
+function warmRouteCache(){
+ routeCache.clear();
+ for(const a of CITIES)for(const b of CITIES)if(a.id!==b.id)shortestRoute(a.id,b.id);
+ networkDirty=false;
+}
+function nextServiceFor(origin,dest){
+ if(networkDirty)warmRouteCache();
+ const r=shortestRoute(origin,dest);return r&&r.legs.length?r.legs[0].serviceId:null;
+}
+function calcAccessibility(){
+ if(networkDirty)warmRouteCache();
+ let ok=0,total=0;
+ for(const a of CITIES)for(const b of CITIES)if(a.id!==b.id){total++;if(shortestRoute(a.id,b.id))ok++}
+ return total?ok/total*100:0;
+}
+
+function addQueue(origin,dest,count,age=0){
+ if(origin===dest||count<=0)return;
+ const q=state.queues.get(origin);const g=q.get(dest)||{dest,count:0,age:0};const old=g.count;
+ g.count+=count;g.age=(old*g.age+count*age)/Math.max(1,g.count);q.set(dest,g);
+}
+function pickWeighted(items,weightFn){
+ let total=0;for(const x of items)total+=Math.max(0,weightFn(x));
+ let r=Math.random()*total;for(const x of items){r-=Math.max(0,weightFn(x));if(r<=0)return x}return items[items.length-1];
+}
+function demandAttraction(c,timeHour){
+ let a=c.pop*.55+c.jobs*.55+c.industry*.28+c.tourism*.25+c.education*.22+c.hub*.2;
+ if(timeHour>=6&&timeHour<10)a+=c.jobs*.9+c.education*.45;
+ if(timeHour>=17&&timeHour<21)a+=c.pop*.6+c.tourism*.35;
+ if(timeHour>=10&&timeHour<17)a+=c.tourism*.25;
+ return a;
+}
+function spawnDemand(){
+ const hour=(state.gameMin/60)%24;
+ const origin=pickWeighted(CITIES,c=>c.pop*.8+c.jobs*.15);
+ const pool=CITIES.filter(c=>c.id!==origin.id);
+ const dest=pickWeighted(pool,c=>{
+  const d=dist(origin,c),distanceFactor=.55+Math.min(1.4,d/260);
+  return demandAttraction(c,hour)*distanceFactor;
+ });
+ const monthFactor=1+(state.month-1)*.08;
+ const count=Math.max(1,Math.round((1+Math.random()*2.2)*monthFactor));
+ addQueue(origin.id,dest.id,count,0);
+}
+function ageQueues(gameDelta){
+ for(const q of state.queues.values())for(const g of q.values())g.age+=gameDelta;
+}
+
+function spawnTrainForService(s,first){
+ if(s.stops.length<2)return;
+ const count=Math.max(1,s.trainCount);
+ const idx=state.trains.filter(t=>t.serviceId===s.id).length;
+ const frac=first?0:(idx/count);
+ state.trains.push({id:'t'+Date.now()+Math.random(),serviceId:s.id,stopIndex:0,nextIndex:1,dir:1,phase:'travel',progress:frac,onboard:[],dwell:0});
+}
+function resetTrainsForService(serviceId){
+ const s=serviceById(serviceId);state.trains=state.trains.filter(t=>t.serviceId!==serviceId);
+ if(!s||s.stops.length<2||s.trainCount<=0)return;
+ for(let i=0;i<s.trainCount;i++){
+  const t={id:'t'+serviceId+'_'+i+'_'+Date.now(),serviceId,stopIndex:0,nextIndex:1,dir:1,phase:'travel',progress:i/Math.max(1,s.trainCount),onboard:[],dwell:0};
+  state.trains.push(t);
+ }
+}
+function serviceContainsAdjacent(s,a,b){
+ for(let i=0;i<s.stops.length-1;i++)if((s.stops[i]===a&&s.stops[i+1]===b)||(s.stops[i]===b&&s.stops[i+1]===a))return true;
+ return false;
+}
+function handleTrainAtStation(t,s,stopId){
+ const cityObj=city(stopId);
+ const kept=[];
+ for(const g of t.onboard){
+  if(g.dest===stopId){
+   deliverPassengers(s,g.count,g.origin,g.dest);
+  }else{
+   const ns=nextServiceFor(stopId,g.dest);
+   if(ns!==null&&ns===s.id)kept.push(g);else addQueue(stopId,g.dest,g.count,g.age);
+  }
+ }
+ t.onboard=kept;
+ let space=TRAIN_CAPACITY-t.onboard.reduce((n,g)=>n+g.count,0);
+ if(space<=0)return;
+ const q=state.queues.get(stopId);
+ const entries=[...q.values()].sort((a,b)=>b.age-a.age);
+ for(const g of entries){
+  if(space<=0)break;
+  const ns=nextServiceFor(stopId,g.dest);
+  if(ns!==s.id)continue;
+  const take=Math.min(space,g.count);if(take<=0)continue;
+  t.onboard.push({origin:stopId,dest:g.dest,count:take,age:g.age});g.count-=take;space-=take;s.boardedMonth+=take;
+  if(g.count<=0)q.delete(g.dest);
+ }
+ if(cityObj&&crowding(cityObj)>1)showNotice(cityObj.name+'역이 매우 혼잡해요. 열차 증편이나 우회 노선을 검토하세요.',1100);
+}
+function deliverPassengers(s,count,origin,dest){
+ const a=city(origin),b=city(dest),d=a&&b?dist(a,b):120;
+ const fare=count*(.025+Math.min(.07,d/5000));
+ state.delivered+=count;state.deliveredMonth+=count;state.incomeMonth+=fare;state.cash+=fare;s.revenueMonth+=fare;s.deliveredMonth+=count;
+}
+function updateTrains(gameDelta){
+ for(const t of state.trains){
+  const s=serviceById(t.serviceId);if(!s||s.stops.length<2)continue;
   if(t.phase==='dwell'){
-    if(!t.prepared){processStop(line,t);t.prepared=true}
-    t.dwell-=dt;
-    if(t.dwell<=0){t.phase='travel';t.progress=0}
-    return;
+   t.dwell-=gameDelta;if(t.dwell<=0){
+    let ni=t.stopIndex+t.dir;if(ni<0||ni>=s.stops.length){t.dir*=-1;ni=t.stopIndex+t.dir}
+    t.nextIndex=ni;t.progress=0;t.phase='travel';
+   }
+   continue;
   }
-  const a=stationById(line.stops[t.stopIndex]),b=stationById(line.stops[t.nextIndex]);
-  if(!a||!b){t.phase='dwell';t.dwell=.5;return}
-  const d=Math.max(1,dist(a,b));t.progress+=92*dt/d;
-  if(t.progress>=1){t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=.62;t.prepared=false}
-}
-function spawnPassenger(){
-  if(state.stations.length<2)return;
-  const weighted=[];let total=0;
-  for(const s of state.stations){total+=s.demand;weighted.push([s,total])}
-  let n=rng()*total,origin=weighted[0][0];
-  for(const row of weighted){if(n<=row[1]){origin=row[0];break}}
-  const targets=[...new Set(state.stations.filter(s=>s.id!==origin.id&&s.shape!==origin.shape).map(s=>s.shape))];
-  if(!targets.length)return;
-  const shape=targets[Math.floor(rng()*targets.length)];
-  if(origin.queue.length<18)origin.queue.push({shape,age:0});
-}
-function demandPerMinute(t){
-  const m=t/60;return Math.min(38,6+1.5*m+.38*m*m);
-}
-function updateDemand(dt){
-  if(state.tutorialMode&&tutorialStep===0)return;
-  state.spawnCarry+=dt*demandPerMinute(state.time)/60;
-  while(state.spawnCarry>=1){state.spawnCarry--;spawnPassenger()}
-}
-function updateCongestion(dt){
-  for(const s of state.stations){
-    for(const p of s.queue)p.age+=dt;
-    if(s.queue.length>=8)s.danger+=dt;else s.danger=Math.max(0,s.danger-dt*1.75);
-    s.pulse=Math.max(0,s.pulse-dt*1.2);
-    if(s.danger>=14){endGame(s.name+'의 승강장이 너무 오래 붐볐어요.');return}
+  const aId=s.stops[t.stopIndex],bId=s.stops[t.nextIndex],minutes=serviceSegmentMinutes(aId,bId);
+  t.progress+=gameDelta/Math.max(1,minutes);
+  if(t.progress>=1){
+   t.stopIndex=t.nextIndex;t.progress=0;t.phase='dwell';t.dwell=2;
+   handleTrainAtStation(t,s,s.stops[t.stopIndex]);
   }
+ }
 }
-function update(dt){
-  state.time+=dt;
-  updateDemand(dt);
-  for(const line of state.lines)for(const t of line.trains)updateTrain(line,t,dt);
-  updateCongestion(dt);if(state.gameOver)return;
-  if(state.time>=state.nextStationAt&&state.stations.length<16){spawnStation();state.nextStationAt+=37+rng()*9}
-  if(state.time>=state.nextUpgradeAt){state.nextUpgradeAt+=75;openUpgrade();return}
-  updateHud();
-}
-function openUpgrade(){
-  state.upgradeOpen=true;state.paused=true;ui.upgrade.classList.remove('hidden');play('success',1.12);
-  const defs=[
-    {id:'train',icon:'🚇',title:'열차 1대',text:'혼잡한 노선에 추가 열차를 배치할 수 있어요.'},
-    {id:'line',icon:'🛤️',title:'새 노선',text:'새로운 색 노선을 하나 더 사용할 수 있어요.'},
-    {id:'bridge',icon:'🌉',title:'교량 2개',text:'강을 건너는 노선을 두 구간 더 만들 수 있어요.'},
-    {id:'capacity',icon:'🚃',title:'객차 확장',text:'모든 열차의 정원이 2명 늘어나요.'}
-  ].filter(x=>x.id!=='line'||state.unlockedLines<LINE_DEFS.length).filter(x=>x.id!=='capacity'||state.capacity<10);
-  shuffle(defs);const choices=defs.slice(0,Math.min(3,defs.length));
-  ui.choices.innerHTML='';
-  for(const d of choices){
-    const b=document.createElement('button');b.type='button';b.className='upgradeCard';
-    b.innerHTML='<span class="upIcon">'+d.icon+'</span><b>'+d.title+'</b><p>'+d.text+'</p>';
-    b.addEventListener('click',()=>applyUpgrade(d.id));ui.choices.appendChild(b);
-  }
-}
-function applyUpgrade(id){
-  pushUndo();
-  if(id==='train')state.spareTrains++;
-  if(id==='line')state.unlockedLines=Math.min(LINE_DEFS.length,state.unlockedLines+1);
-  if(id==='bridge')state.bridges+=2;
-  if(id==='capacity')state.capacity=Math.min(10,state.capacity+2);
-  state.upgradeOpen=false;state.paused=false;ui.upgrade.classList.add('hidden');updateLineButtons();play('confirm',1.06);showNotice('도시 지원이 적용됐어요.',1300);
-}
-function endGame(reason){
-  if(state.gameOver)return;
-  state.gameOver=true;state.running=false;state.paused=true;ui.result.classList.remove('hidden');play('fail');
-  ui.resultReason.textContent=reason;ui.resultDelivered.textContent=state.delivered+'명';ui.resultTime.textContent=formatTime(state.time);ui.resultStations.textContent=state.stations.length+'개';
-  const newBest=state.delivered>save.bestDelivered;
-  if(newBest){save.bestDelivered=state.delivered;save.bestSeconds=Math.max(save.bestSeconds,Math.floor(state.time));ui.resultTitle.textContent='새 최고 기록!'}
-  else ui.resultTitle.textContent='도시 운영 종료';
-  persist();refreshBest();
+function trainPos(t){
+ const s=serviceById(t.serviceId);if(!s||s.stops.length<2)return null;
+ const a=city(s.stops[t.stopIndex]),b=city(s.stops[t.nextIndex]);if(!a||!b)return null;
+ const p=t.phase==='travel'?clamp(t.progress,0,1):0;
+ return {x:lerp(a.x,b.x,p),y:lerp(a.y,b.y,p),a,b,s};
 }
 
-function nearestStation(p,r=31){
-  let best=null,bd=r;
-  for(const s of state.stations){const d=dist(p,s);if(d<bd){best=s;bd=d}}
-  return best;
+function averageWait(){
+ let n=0,sum=0;for(const q of state.queues.values())for(const g of q.values()){n+=g.count;sum+=g.count*g.age}
+ return n?sum/n:0;
 }
-function distancePointToSegment(p,a,b){
-  const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y;
-  const c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t=c2?clamp(c1/c2,0,1):0;
-  return Math.hypot(p.x-(a.x+vx*t),p.y-(a.y+vy*t));
+function operatingCost(){
+ const activeTracks=state.tracks.size,trainCount=state.trains.length,activeServices=state.services.filter(s=>s.stops.length>=2&&s.trainCount>0).length;
+ return activeTracks*.22+trainCount*.7+activeServices*.45+state.debt*.02;
 }
-function nearestLineAt(p){
-  let best=null,bd=24;
-  for(const line of state.lines.slice(0,state.unlockedLines)){
-    for(let i=0;i<line.stops.length-1;i++){
-      const a=stationById(line.stops[i]),b=stationById(line.stops[i+1]);if(!a||!b)continue;
-      const d=distancePointToSegment(p,a,b);if(d<bd){best=line;bd=d}
-    }
+function openMonthReport(){
+ if(state.reportOpen||state.gameOver)return;
+ state.reportOpen=true;state.paused=true;
+ const op=operatingCost();state.lastOperatingCost=op;state.cash-=op;
+ const profit=state.incomeMonth-op;state.lastMonthProfit=profit;
+ ui.reportTitle.textContent=state.month+'개월차 결산';
+ ui.reportDelivered.textContent=state.deliveredMonth+'명';ui.reportProfit.textContent=money(profit);
+ ui.reportAccess.textContent=Math.round(calcAccessibility())+'%';ui.reportWait.textContent=Math.round(averageWait())+'분';
+ ui.reportChoices.innerHTML='';
+ const choices=[
+  {icon:'🚆',title:'열차 지원',desc:'예비 열차 2대를 받습니다.',apply:()=>{state.spareTrains+=2}},
+  {icon:'💰',title:'운영 보조금',desc:'현금 30억을 지원받습니다.',apply:()=>{state.cash+=30}},
+  {icon:'🗺',title:'노선권 확대',desc:state.unlockedLines<LINE_DEFS.length?'새 운행 노선 1개를 개방합니다.':'노선권이 모두 열렸습니다. 대신 20억을 받습니다.',apply:()=>{if(state.unlockedLines<LINE_DEFS.length)state.unlockedLines++;else state.cash+=20}}
+ ];
+ choices.forEach(ch=>{
+  const b=document.createElement('button');b.className='upgradeCard';b.type='button';
+  b.innerHTML='<span class="upIcon">'+ch.icon+'</span><b>'+ch.title+'</b><p>'+ch.desc+'</p>';
+  b.addEventListener('click',()=>{ch.apply();finishMonthReport();play('confirm')});ui.reportChoices.appendChild(b);
+ });
+ ui.report.classList.remove('hidden');updateHud();
+}
+function finishMonthReport(){
+ ui.report.classList.add('hidden');state.reportOpen=false;state.month++;state.nextReportDay+=REPORT_DAYS;state.deliveredMonth=0;state.incomeMonth=0;
+ for(const s of state.services){s.revenueMonth=0;s.deliveredMonth=0;s.boardedMonth=0}
+ state.paused=false;updateToolbar();updatePanels();updateHud();showNotice(state.month+'개월차 운영을 시작합니다.',1300);
+ if(state.cash<-20&&state.debt>=MAX_DEBT)gameOver('대출 한도에 도달한 상태에서 운영 적자가 계속되었습니다.');
+}
+function gameOver(reason){
+ if(state.gameOver)return;state.gameOver=true;state.paused=true;state.running=false;play('fail');
+ const access=calcAccessibility();save.bestDelivered=Math.max(save.bestDelivered||0,state.delivered);
+ save.bestAccess=Math.max(save.bestAccess||0,access);save.bestMonths=Math.max(save.bestMonths||0,state.month);persist();refreshBest();
+ ui.resultReason.textContent=reason;ui.resultDelivered.textContent=state.delivered+'명';ui.resultTime.textContent=state.month+'개월';ui.resultAccess.textContent=Math.round(access)+'%';
+ ui.result.classList.remove('hidden');
+}
+
+function update(dt){
+ const real=dt*state.speed,gameDelta=real*GAME_MIN_PER_SEC;
+ state.gameMin+=gameDelta;ageQueues(gameDelta);updateTrains(gameDelta);
+ state.spawnCarry+=real*(1.05+(state.month-1)*.08);
+ while(state.spawnCarry>=1){state.spawnCarry-=1;spawnDemand()}
+ const total=state.gameMin;
+ state.day=Math.floor((total-360)/1440)+1;
+ if(state.day>=state.nextReportDay&&!state.reportOpen)openMonthReport();
+ updateHud();updatePanels(false);
+}
+
+function updateHud(){
+ const mins=((state.gameMin%1440)+1440)%1440,h=Math.floor(mins/60),m=Math.floor(mins%60);
+ ui.date.textContent=state.day+'일차 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+ ui.cash.textContent=money(state.cash);ui.delivered.textContent=state.delivered+'명';ui.wait.textContent=Math.round(averageWait())+'분';
+ ui.access.textContent=Math.round(calcAccessibility())+'%';ui.monthProfit.textContent=money(state.lastMonthProfit);
+ ui.income.textContent=money(state.incomeMonth);ui.expense.textContent=money(operatingCost());ui.debt.textContent=money(state.debt);ui.trainStock.textContent=state.spareTrains;
+}
+function updateToolbar(){
+ ui.trackTool.classList.toggle('active',mode==='track');
+ ui.trimTool.classList.toggle('ready',pendingTrim);
+ ui.lineTools.innerHTML='';
+ state.services.forEach((s,i)=>{
+  const b=document.createElement('button');b.type='button';b.className='tool lineTool'+(mode==='line'&&selectedLine===i&&!pendingTrim?' active':'')+(i>=state.unlockedLines?' locked':'');
+  b.style.setProperty('--line',s.color);b.disabled=i>=state.unlockedLines;
+  b.innerHTML='<span>●</span><b>'+s.name+'</b><small>'+(s.stops.length>=2?(s.trainCount+'대 · '+Math.round(calculateHeadway(s))+'분'):'미운행')+'</small>';
+  b.addEventListener('click',()=>{mode='line';selectedLine=i;pendingTrim=false;selectedServiceId=i;selectedCityId=null;play('click');updateToolbar();updatePanels();showNotice(s.name+' 선택 · 건설된 선로 위를 드래그하세요.',1000)});
+  ui.lineTools.appendChild(b);
+ });
+ ui.trainStock.textContent=state.spareTrains;
+}
+function updatePanels(rebuildList=true){
+ if(rebuildList){
+  ui.serviceList.innerHTML='';
+  state.services.filter((s,i)=>i<state.unlockedLines&&s.stops.length>=2).forEach(s=>{
+   const card=document.createElement('button');card.type='button';card.className='serviceCard'+(selectedServiceId===s.id?' active':'');card.style.setProperty('--line',s.color);
+   const load=serviceLoad(s),profit=s.revenueMonth-operatingShare(s);
+   card.innerHTML='<div class="serviceTop"><span>'+s.name+'</span><span class="profit '+(profit>=0?'pos':'neg')+'">'+money(profit)+'</span></div>'+
+    '<div class="serviceMeta"><span>🚆 '+s.trainCount+'대</span><span>배차 '+Math.round(calculateHeadway(s))+'분</span><span>이용 '+Math.round(load)+'%</span></div>'+
+    '<div class="serviceStopsMini">'+s.stops.map(id=>city(id).name).join(' · ')+'</div>';
+   card.addEventListener('click',()=>{selectedServiceId=s.id;selectedCityId=null;updatePanels()});ui.serviceList.appendChild(card);
+  });
+  if(!ui.serviceList.children.length){const d=document.createElement('div');d.className='detailEmpty';d.textContent='아직 운행 중인 노선이 없습니다.';ui.serviceList.appendChild(d)}
+ }
+ ui.detailEmpty.classList.toggle('hidden',selectedCityId!==null||selectedServiceId!==null);
+ ui.cityDetail.classList.toggle('hidden',selectedCityId===null);
+ ui.serviceDetail.classList.toggle('hidden',selectedServiceId===null||selectedCityId!==null);
+ if(selectedCityId!==null){
+  const c=city(selectedCityId),q=state.queues.get(c.id),entries=[...q.values()].sort((a,b)=>b.count-a.count);
+  ui.cityName.textContent=c.name;ui.cityPop.textContent=c.pop;ui.cityJobs.textContent=c.jobs;ui.cityIndustry.textContent=c.industry;ui.cityTourism.textContent=c.tourism;
+  ui.cityWaiting.textContent=totalWaiting(c.id)+'명';ui.cityCrowding.textContent=Math.round(crowding(c)*100)+'%';
+  ui.cityTopDest.textContent=entries.slice(0,3).map(g=>city(g.dest).name+' '+g.count).join(' · ')||'-';
+  const sv=state.services.filter(s=>s.stops.includes(c.id)&&s.stops.length>=2).map(s=>s.name);ui.cityServices.textContent=sv.join(' · ')||'없음';
+ }
+ if(selectedServiceId!==null&&selectedCityId===null){
+  const s=serviceById(selectedServiceId);if(s){
+   ui.serviceName.textContent=s.name;ui.serviceStops.textContent=s.stops.map(id=>city(id).name).join(' → ')||'-';
+   ui.serviceTrains.textContent=s.trainCount+'대';ui.serviceHeadway.textContent=s.trainCount?Math.round(calculateHeadway(s))+'분':'-';
+   ui.serviceLoad.textContent=Math.round(serviceLoad(s))+'%';ui.serviceProfit.textContent=money(s.revenueMonth-operatingShare(s));
   }
-  return best;
+ }
 }
+function operatingShare(s){return s.trainCount*.7+(s.stops.length>1?(s.stops.length-1)*.12:0)+.45}
+function serviceLoad(s){
+ if(!s.trainCount)return 0;
+ const capacity=s.trainCount*TRAIN_CAPACITY;
+ const onboard=state.trains.filter(t=>t.serviceId===s.id).reduce((n,t)=>n+t.onboard.reduce((m,g)=>m+g.count,0),0);
+ return clamp(onboard/Math.max(1,capacity)*100,0,140);
+}
+
+const KOREA_SHAPE=[
+ [370,88],[430,80],[495,92],[555,115],[610,150],[655,205],[700,270],[690,335],[720,395],[700,460],[675,520],[650,600],
+ [600,635],[540,620],[500,585],[455,570],[405,585],[355,565],[315,525],[320,470],[350,430],[365,385],[350,335],[365,280],[340,225],[350,170]
+];
+function drawBackground(){
+ ctx.fillStyle='#07110e';ctx.fillRect(0,0,W,H);
+ ctx.save();ctx.beginPath();ctx.moveTo(KOREA_SHAPE[0][0],KOREA_SHAPE[0][1]);for(let i=1;i<KOREA_SHAPE.length;i++)ctx.lineTo(KOREA_SHAPE[i][0],KOREA_SHAPE[i][1]);ctx.closePath();
+ ctx.fillStyle='#102219';ctx.fill();ctx.strokeStyle='rgba(150,205,173,.16)';ctx.lineWidth=2;ctx.stroke();ctx.clip();
+ ctx.strokeStyle='rgba(144,180,157,.065)';ctx.lineWidth=1;
+ [[360,250,690,280],[350,365,705,390],[365,475,680,500],[500,100,470,600],[575,120,550,610]].forEach(l=>{ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke()});
+ ctx.strokeStyle='rgba(128,176,145,.13)';ctx.lineWidth=4;ctx.setLineDash([6,10]);
+ ctx.beginPath();ctx.moveTo(575,135);ctx.lineTo(610,235);ctx.lineTo(620,340);ctx.lineTo(635,445);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='rgba(185,205,190,.08)';ctx.font='800 18px system-ui';ctx.fillText('태백산맥',615,300);
+ ctx.restore();
+ ctx.fillStyle='rgba(132,166,146,.12)';ctx.font='800 12px system-ui';ctx.fillText('서해',260,360);ctx.fillText('동해',750,330);ctx.fillText('남해',520,675);
+}
+function drawTracks(){
+ for(const c of CORRIDORS){
+  const k=keyPair(c.a,c.b);if(!state.tracks.has(k))continue;
+  const a=city(c.a),b=city(c.b);ctx.lineCap='round';
+  ctx.strokeStyle='rgba(4,9,7,.95)';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  ctx.strokeStyle='rgba(178,198,186,.45)';ctx.lineWidth=3;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);
+ }
+}
+function segmentServiceCount(a,b){return state.services.filter(s=>s.stops.length>=2&&serviceContainsAdjacent(s,a,b)).length}
+function serviceOffset(s,a,b){
+ const list=state.services.filter(x=>x.stops.length>=2&&serviceContainsAdjacent(x,a,b));const idx=list.findIndex(x=>x.id===s.id);return (idx-(list.length-1)/2)*5;
+}
+function drawServices(){
+ for(const s of state.services){
+  if(s.stops.length<2)continue;
+  ctx.strokeStyle=s.color;ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';
+  for(let i=0;i<s.stops.length-1;i++){
+   const a=city(s.stops[i]),b=city(s.stops[i+1]),off=serviceOffset(s,a.id,b.id),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
+   ctx.beginPath();ctx.moveTo(a.x+nx*off,a.y+ny*off);ctx.lineTo(b.x+nx*off,b.y+ny*off);ctx.stroke();
+  }
+ }
+}
+function drawDemandLayer(){
+ if(ui.layer.textContent!=='수요')return;
+ const flows=[];
+ for(const c of CITIES){for(const g of state.queues.get(c.id).values())if(g.count>1)flows.push({from:c,to:city(g.dest),count:g.count})}
+ flows.sort((a,b)=>b.count-a.count);
+ for(const f of flows.slice(0,14)){
+  ctx.strokeStyle='rgba(255,205,112,'+clamp(.12+f.count*.018,.16,.55)+')';ctx.lineWidth=clamp(1+f.count*.15,1.5,8);ctx.beginPath();ctx.moveTo(f.from.x,f.from.y);ctx.lineTo(f.to.x,f.to.y);ctx.stroke();
+ }
+}
+function drawCities(){
+ for(const c of CITIES){
+  const q=totalWaiting(c.id),cr=crowding(c),served=state.services.some(s=>s.stops.includes(c.id)&&s.trainCount>0),tracked=[...state.tracks].some(k=>k.split('|').includes(c.id));
+  if(ui.layer.textContent==='혼잡'&&cr>.15){ctx.beginPath();ctx.arc(c.x,c.y,18+cr*16,0,Math.PI*2);ctx.fillStyle=cr>.9?'rgba(255,100,90,.28)':'rgba(242,196,111,.18)';ctx.fill()}
+  ctx.beginPath();ctx.arc(c.x,c.y,served?8:tracked?7:5,0,Math.PI*2);ctx.fillStyle=served?'#eef7f0':tracked?'#9fb4a8':'#60756a';ctx.fill();
+  ctx.strokeStyle=served?'#15251d':'rgba(255,255,255,.2)';ctx.lineWidth=2;ctx.stroke();
+  ctx.font='850 13px system-ui';ctx.textAlign='center';ctx.fillStyle=selectedCityId===c.id?'#baffd3':'#d8e7de';ctx.fillText(c.name,c.x,c.y-13);
+  if(q>0){ctx.beginPath();ctx.arc(c.x+13,c.y+10,9,0,Math.PI*2);ctx.fillStyle=cr>.9?'#ff7f73':'#223d30';ctx.fill();ctx.fillStyle='#fff';ctx.font='900 9px system-ui';ctx.fillText(q>99?'99+':String(q),c.x+13,c.y+13)}
+ }
+}
+function drawTrains(){
+ for(const t of state.trains){const p=trainPos(t);if(!p)continue;ctx.save();ctx.translate(p.x,p.y);const ang=Math.atan2(p.b.y-p.a.y,p.b.x-p.a.x);ctx.rotate(ang);ctx.fillStyle=p.s.color;roundRect(-11,-6,22,12,3);ctx.fill();ctx.fillStyle='#f8fff9';ctx.fillRect(-6,-3,4,4);ctx.fillRect(2,-3,4,4);ctx.restore()}
+}
+function drawPreview(){
+ if(!drag)return;const a=drag.from,b=pointer,target=nearestCity(b);if(!a)return;
+ let color='#d8eee0',ok=true;
+ if(target&&target.id!==a.id){
+  if(mode==='track'){const cor=corridorByCities(a.id,target.id);ok=!!cor&&!state.tracks.has(keyPair(a.id,target.id));color=ok?'#d8eee0':'#ff8176'}
+  else{const s=serviceById(selectedLine),check=canExtendService(s,a.id,target.id);ok=check.ok;color=ok?s.color:'#ff8176'}
+ }
+ ctx.save();ctx.setLineDash([10,8]);ctx.strokeStyle=color;ctx.globalAlpha=.8;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(target?target.x:b.x,target?target.y:b.y);ctx.stroke();ctx.restore();
+}
+function drawFinanceLayer(){
+ if(ui.layer.textContent!=='재정')return;
+ for(const s of state.services){
+  if(s.stops.length<2)continue;const p=s.revenueMonth-operatingShare(s),mid=city(s.stops[Math.floor(s.stops.length/2)]);
+  ctx.fillStyle=p>=0?'rgba(121,239,166,.86)':'rgba(255,127,115,.86)';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillText((p>=0?'+':'')+money(p),mid.x,mid.y+28);
+ }
+}
+function render(){
+ ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*offX,dpr*offY);drawBackground();drawDemandLayer();drawTracks();drawServices();drawTrains();drawCities();drawFinanceLayer();drawPreview();ctx.setTransform(1,0,0,1,0,0);
+}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function nearestCity(p){let best=null,bd=23;for(const c of CITIES){const d=dist(p,c);if(d<bd){best=c;bd=d}}return best}
+
 canvas.addEventListener('pointerdown',ev=>{
-  if(!state.running||state.paused||state.gameOver)return;
-  const p=worldPoint(ev);pointer=p;canvas.setPointerCapture?.(ev.pointerId);
-  if(pendingTrain){const line=nearestLineAt(p);if(line)assignTrain(line.id);else{play('error');showNotice('열차를 넣을 노선을 눌러 주세요.')}return}
-  const s=nearestStation(p);
-  if(pendingTrim){if(s)trimSelectedLineAt(s);else{play('error');showNotice('노선 끝의 역을 눌러 주세요.')}return}
-  if(s){drag={from:s,pointerId:ev.pointerId};play('click',1.06)}
+ if(!state.running||state.paused||state.gameOver)return;const p=worldPoint(ev),c=nearestCity(p);pointer=p;if(!c)return;
+ if(pendingTrim){trimServiceAt(c.id);return}
+ drag={from:c,start:p};canvas.setPointerCapture?.(ev.pointerId);
 });
 canvas.addEventListener('pointermove',ev=>{pointer=worldPoint(ev)});
 canvas.addEventListener('pointerup',ev=>{
-  if(!state.running||state.paused||state.gameOver)return;
-  const p=worldPoint(ev),to=nearestStation(p);pointer=p;
-  if(drag){
-    const from=drag.from;drag=null;
-    if(to&&to.id!==from.id)addSegment(from,to);
-    else if(to&&to.id===from.id){
-      const used=state.lines.filter(l=>l.stops.includes(to.id)).map(l=>l.name).join(' · ')||'연결 없음';
-      showNotice(to.name+' · 대기 '+to.queue.length+'명 · '+used,1700);
-    }
-  }else if(to){
-    const used=state.lines.filter(l=>l.stops.includes(to.id)).map(l=>l.name).join(' · ')||'연결 없음';
-    showNotice(to.name+' · 대기 '+to.queue.length+'명 · '+used,1700);
-  }
+ if(!drag)return;const p=worldPoint(ev),to=nearestCity(p),from=drag.from;drag=null;
+ if(!to||to.id===from.id){selectCity(from.id);return}
+ if(mode==='track')buildTrack(from.id,to.id);else addServiceSegment(from.id,to.id);
+ updatePanels();updateHud();
 });
 canvas.addEventListener('pointercancel',()=>{drag=null});
+function selectCity(id){selectedCityId=id;selectedServiceId=null;updatePanels();play('click')}
 
-function drawBackground(){
-  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#102434');g.addColorStop(1,'#0a1824');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(173,201,221,.055)';ctx.lineWidth=1;
-  for(let x=55;x<W;x+=70){ctx.beginPath();ctx.moveTo(x,50);ctx.lineTo(x,H-38);ctx.stroke()}
-  for(let y=76;y<H;y+=62){ctx.beginPath();ctx.moveTo(35,y);ctx.lineTo(W-35,y);ctx.stroke()}
-  for(const b of decor){ctx.fillStyle='rgba(184,211,229,'+b.a+')';ctx.fillRect(b.x,b.y,b.w,b.h)}
-  ctx.fillStyle='#12384f';ctx.beginPath();ctx.moveTo(RIVER_X-RIVER_W/2,0);
-  for(let y=0;y<=H;y+=60)ctx.lineTo(RIVER_X-RIVER_W/2+Math.sin(y*.025)*9,y);
-  for(let y=H;y>=0;y-=60)ctx.lineTo(RIVER_X+RIVER_W/2+Math.sin(y*.025+1.3)*9,y);
-  ctx.closePath();ctx.fill();
-  ctx.strokeStyle='rgba(86,184,224,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(RIVER_X,0);for(let y=0;y<=H;y+=20)ctx.lineTo(RIVER_X+Math.sin(y*.03)*8,y);ctx.stroke();
-}
-function drawRoutes(){
-  for(const line of state.lines){
-    if(line.stops.length<2)continue;
-    ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.strokeStyle='rgba(2,8,16,.72)';ctx.lineWidth=16;ctx.beginPath();
-    line.stops.forEach((id,i)=>{const s=stationById(id);if(!s)return;if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y)});ctx.stroke();
-    ctx.strokeStyle=line.color;ctx.lineWidth=9;ctx.beginPath();
-    line.stops.forEach((id,i)=>{const s=stationById(id);if(!s)return;if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y)});ctx.stroke();
-    for(let i=0;i<line.stops.length-1;i++){
-      const a=stationById(line.stops[i]),b=stationById(line.stops[i+1]);if(a&&b&&segmentCrossesRiver(a,b))drawBridge(a,b);
-    }
-  }
-}
-function drawBridge(a,b){
-  const t=(RIVER_X-a.x)/(b.x-a.x||1);const y=lerp(a.y,b.y,t);
-  const ang=Math.atan2(b.y-a.y,b.x-a.x);
-  ctx.save();ctx.translate(RIVER_X,y);ctx.rotate(ang);ctx.fillStyle='rgba(226,235,240,.78)';ctx.fillRect(-36,-9,72,18);ctx.fillStyle='rgba(25,39,49,.55)';
-  for(let x=-28;x<=28;x+=14)ctx.fillRect(x,-9,3,18);ctx.restore();
-}
-function shapePath(shape,x,y,r){
-  ctx.beginPath();
-  if(shape==='circle'){ctx.arc(x,y,r,0,Math.PI*2);return}
-  if(shape==='triangle'){ctx.moveTo(x,y-r);ctx.lineTo(x+r*.92,y+r*.72);ctx.lineTo(x-r*.92,y+r*.72);ctx.closePath();return}
-  if(shape==='square'){ctx.rect(x-r*.78,y-r*.78,r*1.56,r*1.56);return}
-  ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();
-}
-function drawStations(){
-  for(const s of state.stations){
-    if(s.danger>0){
-      ctx.strokeStyle=s.danger>8?'#ff6f68':'#ffb35c';ctx.lineWidth=5;ctx.beginPath();ctx.arc(s.x,s.y,29,-Math.PI/2,-Math.PI/2+Math.PI*2*(s.danger/14));ctx.stroke();
-    }
-    if(s.pulse>0){ctx.globalAlpha=s.pulse*.35;ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(s.x,s.y,24+(1-s.pulse)*22,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}
-    ctx.fillStyle='#f6fbff';ctx.strokeStyle='#07131f';ctx.lineWidth=4;shapePath(s.shape,s.x,s.y,15);ctx.fill();ctx.stroke();
-    drawQueue(s);
-  }
-}
-function drawQueue(s){
-  const n=Math.min(s.queue.length,12);
-  if(!n)return;
-  const cols=6,startX=s.x-(Math.min(n,6)-1)*6,startY=s.y+27;
-  for(let i=0;i<n;i++){
-    const p=s.queue[i],x=startX+(i%cols)*12,y=startY+Math.floor(i/cols)*12;
-    ctx.fillStyle=s.queue.length>=8?'#ffd0cd':'#dce9f5';ctx.strokeStyle='rgba(5,14,25,.9)';ctx.lineWidth=1.4;shapePath(p.shape,x,y,4.2);ctx.fill();ctx.stroke();
-  }
-  if(s.queue.length>12){ctx.fillStyle='#fff';ctx.font='800 9px system-ui';ctx.fillText('+'+(s.queue.length-12),s.x+37,s.y+39)}
-}
-function trainPosition(line,t){
-  const a=stationById(line.stops[t.stopIndex]);if(!a)return null;
-  if(t.phase!=='travel')return {x:a.x,y:a.y,ang:0};
-  const b=stationById(line.stops[t.nextIndex]);if(!b)return {x:a.x,y:a.y,ang:0};
-  return {x:lerp(a.x,b.x,t.progress),y:lerp(a.y,b.y,t.progress),ang:Math.atan2(b.y-a.y,b.x-a.x)};
-}
-function drawTrains(){
-  for(const line of state.lines)for(const t of line.trains){
-    const p=trainPosition(line,t);if(!p)continue;
-    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang);ctx.fillStyle='#07131f';roundRect(-16,-9,32,18,6);ctx.fill();ctx.fillStyle=line.color;roundRect(-13,-6,26,12,4);ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(-7,-3,5,4);ctx.fillRect(2,-3,5,4);
-    if(t.passengers.length){ctx.fillStyle='#fff';ctx.font='900 8px system-ui';ctx.textAlign='center';ctx.fillText(String(t.passengers.length),0,3)}
-    ctx.restore();
-  }
-}
-function roundRect(x,y,w,h,r){
-  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
-}
-function drawPreview(){
-  if(!drag)return;const a=drag.from,b=pointer,line=lineById(selectedLine);if(!a||!line)return;
-  const target=nearestStation(b),end=target||b;const check=target?canAddSegment(a,target,line):{ok:true};
-  ctx.save();ctx.setLineDash([12,9]);ctx.strokeStyle=check.ok?line.color:'#ff6f68';ctx.globalAlpha=.72;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(end.x,end.y);ctx.stroke();ctx.restore();
-  if(target){ctx.strokeStyle=check.ok?'#fff':'#ff6f68';ctx.lineWidth=4;ctx.beginPath();ctx.arc(target.x,target.y,24,0,Math.PI*2);ctx.stroke()}
-}
-function render(){
-  ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*offX,dpr*offY);
-  drawBackground();drawRoutes();drawTrains();drawStations();drawPreview();
-  ctx.setTransform(1,0,0,1,0,0);
-}
-function loop(now){
-  requestAnimationFrame(loop);
-  const raw=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
-  if(state.running&&!state.paused&&!state.gameOver)update(raw*state.speed);
-  render();
-}
-requestAnimationFrame(loop);
-
-ui.pause.addEventListener('click',()=>{
-  if(!state.running||state.gameOver)return;
-  if(state.upgradeOpen)return;
-  state.paused=!state.paused;ui.pause.textContent=state.paused?'▶':'⏸';play('click');showNotice(state.paused?'일시정지':'다시 운영합니다.',900);
-});
-ui.speed.addEventListener('click',()=>{
-  if(!state.running)return;state.speed=state.speed===1?2:1;ui.speed.textContent='×'+state.speed;play('click');showNotice(state.speed===2?'2배속':'1배속',700);
-});
+ui.trackTool.addEventListener('click',()=>{mode='track';pendingTrim=false;selectedServiceId=null;updateToolbar();showNotice('선로 건설 · 인접 도시 사이를 드래그하세요.');play('click')});
+ui.trainTool.addEventListener('click',()=>addTrainToSelected());
+ui.trimTool.addEventListener('click',()=>{pendingTrim=!pendingTrim;mode='line';updateToolbar();showNotice(pendingTrim?'선택한 노선의 맨 끝 도시를 누르세요.':'노선 줄이기를 취소했어요.');play('click')});
+ui.pause.addEventListener('click',()=>{if(!state.running||state.reportOpen||state.gameOver)return;state.paused=!state.paused;ui.pause.textContent=state.paused?'▶':'⏸';play('click')});
+ui.speed.addEventListener('click',()=>{if(!state.running)return;state.speed=state.speed===1?2:state.speed===2?4:1;ui.speed.textContent='×'+state.speed;showNotice(state.speed+'배속');play('click')});
+ui.layer.addEventListener('click',()=>{const layers=['기본','수요','혼잡','재정'],i=layers.indexOf(ui.layer.textContent);ui.layer.textContent=layers[(i+1)%layers.length];play('click')});
 ui.sound.addEventListener('click',()=>{soundOn=!soundOn;ui.sound.textContent=soundOn?'🔊':'🔇';if(soundOn)play('click')});
 ui.helpBtn.addEventListener('click',()=>{ui.help.classList.remove('hidden');if(state.running)state.paused=true;play('click')});
-ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');if(state.running&&!state.upgradeOpen&&!state.gameOver)state.paused=false;play('click')});
+ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');if(state.running&&!state.reportOpen&&!state.gameOver)state.paused=false;play('click')});
 ui.start.addEventListener('click',()=>{play('confirm');resetState(!save.tutorialSeen)});
 ui.tutorial.addEventListener('click',()=>{play('confirm');resetState(true)});
 ui.retry.addEventListener('click',()=>{play('confirm');resetState(false)});
@@ -618,11 +638,16 @@ ui.menuBtn.addEventListener('click',()=>{ui.result.classList.add('hidden');ui.me
 
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.running&&!state.gameOver){state.paused=true;ui.pause.textContent='▶'}});
 addEventListener('keydown',ev=>{
-  if(ev.code==='Space'&&state.running&&!state.upgradeOpen){ev.preventDefault();ui.pause.click()}
-  if(ev.code==='Digit1'||ev.code==='Digit2'||ev.code==='Digit3'||ev.code==='Digit4'||ev.code==='Digit5'){
-    const i=Number(ev.code.slice(-1))-1;if(i<state.unlockedLines){selectedLine=i;pendingTrain=false;pendingTrim=false;updateLineButtons();play('click')}
-  }
+ if(ev.code==='Space'&&state.running&&!state.reportOpen){ev.preventDefault();ui.pause.click()}
+ if(/^Digit[1-5]$/.test(ev.code)){const i=Number(ev.code.slice(-1))-1;if(i<state.unlockedLines){mode='line';selectedLine=i;selectedServiceId=i;selectedCityId=null;pendingTrim=false;updateToolbar();updatePanels();play('click')}}
 });
 
-loadSave();updateLineButtons();updateHud();render();
+function loop(now){
+ requestAnimationFrame(loop);const raw=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
+ if(state.running&&!state.paused&&!state.gameOver&&!state.reportOpen)update(raw);
+ render();
+}
+requestAnimationFrame(loop);
+loadSave();updateToolbar();updatePanels();updateHud();render();
+
 })();
