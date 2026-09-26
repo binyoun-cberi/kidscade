@@ -3,6 +3,7 @@
 
   const KEY_NAME = 'kc_teacher_admin_key';
   let adminKey = '';
+  let authMode = 'none';
   let lastCredentials = [];
   let lastCredentialClass = null;
   let overviewData = { classes: [], students: [] };
@@ -33,7 +34,7 @@
       ...options,
       credentials: 'same-origin',
       headers: {
-        authorization: `Bearer ${adminKey}`,
+        ...(adminKey ? { authorization: `Bearer ${adminKey}` } : {}),
         ...(options.body ? { 'content-type': 'application/json' } : {}),
         ...(options.headers || {})
       }
@@ -44,7 +45,12 @@
   }
 
   function errorText(body) {
-    if (body?.error === 'unauthorized') return '관리 코드가 올바르지 않습니다.';
+    if (body?.error === 'unauthorized') return '로그인 정보가 올바르지 않거나 세션이 만료되었습니다.';
+    if (body?.error === 'invalid_teacher_credentials') return '교사 ID 또는 비밀번호를 확인해 주세요.';
+    if (body?.error === 'teacher_temporarily_locked') return '로그인 실패가 반복되어 잠시 잠겼습니다.';
+    if (body?.error === 'teacher_session_expired') return '교사 로그인이 만료되었습니다. 다시 로그인해 주세요.';
+    if (body?.error === 'teacher_schema_not_ready') return '교사 계정 DB 준비가 아직 끝나지 않았습니다.';
+    if (body?.error === 'forbidden_class') return '이 교사 계정은 해당 학급을 관리할 수 없습니다.';
     if (body?.error === 'teacher_admin_not_configured') return 'Cloudflare Worker Secret에 KIDSCADE_ADMIN_KEY를 먼저 등록해야 합니다.';
     if (body?.error === 'account_secret_not_configured') return 'Cloudflare Worker Secret에 KIDSCADE_ACCOUNT_PEPPER를 먼저 등록해야 합니다.';
     if (body?.error === 'account_schema_not_ready') return 'D1 계정 테이블이 아직 없습니다. 0002_student_accounts.sql을 적용해 주세요.';
@@ -57,7 +63,8 @@
   }
 
   function showManagement(open) {
-    ['admin-dashboard','class-create','class-list'].forEach(id => $(id)?.classList.toggle('hidden', !open));
+    ['admin-dashboard','class-list'].forEach(id => $(id)?.classList.toggle('hidden', !open));
+    $('class-create')?.classList.toggle('hidden', !open || overviewData?.scope !== 'global');
     $('admin-logout')?.classList.toggle('hidden', !open);
   }
 
@@ -76,23 +83,72 @@
         showManagement(false);
         return;
       }
+      authMode = 'global';
       saveKey(adminKey);
       overviewData = body;
       showManagement(true);
-      setStatus('auth-status', '교사 관리가 열렸습니다.', 'success');
+      setStatus('auth-status', '전역 관리자 모드로 열렸습니다.', 'success');
       renderOverview();
     } catch (_) {
       setStatus('auth-status', '네트워크 연결을 확인해 주세요.', 'error');
     }
   }
 
-  function endManagement() {
+  async function endManagement() {
+    if (authMode === 'class') {
+      try { await api('/api/teacher/auth/logout', { method:'POST' }); } catch (_) {}
+    }
     adminKey = '';
+    authMode = 'none';
     saveKey('');
-    overviewData = { classes: [], students: [] };
+    overviewData = { classes: [], students: [], scope:'none' };
     if ($('admin-key')) $('admin-key').value = '';
+    if ($('teacher-login-password')) $('teacher-login-password').value = '';
     showManagement(false);
     setStatus('auth-status', '교사 관리가 종료되었습니다.');
+  }
+
+  async function authenticateTeacher() {
+    const loginId = String($('teacher-login-id')?.value || '').trim().toUpperCase().replace(/\s+/g,'');
+    const password = String($('teacher-login-password')?.value || '');
+    if (!loginId || !password) {
+      setStatus('auth-status','교사 ID와 비밀번호를 입력해 주세요.','error');
+      return;
+    }
+    adminKey = '';
+    saveKey('');
+    setStatus('auth-status','교사 계정을 확인하고 있습니다...');
+    try {
+      const { response, body } = await api('/api/teacher/auth/login', {
+        method:'POST',
+        body:JSON.stringify({ loginId, password })
+      });
+      if (!response.ok || !body.ok) {
+        setStatus('auth-status',errorText(body),'error');
+        showManagement(false);
+        return;
+      }
+      authMode = 'class';
+      if ($('teacher-login-password')) $('teacher-login-password').value = '';
+      await refreshOverview();
+      setStatus('auth-status',(body.teacher?.className || '우리 반') + ' 교사 관리가 열렸습니다.','success');
+    } catch (_) {
+      setStatus('auth-status','네트워크 연결을 확인해 주세요.','error');
+    }
+  }
+
+  async function resumeTeacherSession() {
+    if (adminKey) return false;
+    try {
+      const { response, body } = await api('/api/teacher/auth/me');
+      if (!response.ok || !body.ok || body.scope !== 'class') return false;
+      authMode = 'class';
+      await refreshOverview();
+      setStatus('auth-status',(body.teacher?.className || '우리 반') + ' 교사 로그인 유지 중','success');
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   async function createClass() {
@@ -115,7 +171,10 @@
         return;
       }
       setCredentials(body.classroom, body.credentials || []);
-      setStatus('create-status', `${name} 학생 계정 ${lastCredentials.length}개를 만들었습니다.`, 'success');
+      const teacherText = body.teacherCredential
+        ? ` · 교사 ID ${body.teacherCredential.loginId} / 비밀번호 ${body.teacherCredential.password}`
+        : '';
+      setStatus('create-status', `${name} 학생 계정 ${lastCredentials.length}개를 만들었습니다.${teacherText}`, 'success');
       if ($('class-name')) $('class-name').value = '';
       await refreshOverview();
     } catch (_) {
@@ -199,6 +258,11 @@
   }
 
   function renderOverview() {
+    if ($('management-scope')) {
+      $('management-scope').textContent = overviewData?.scope === 'global'
+        ? '전역 관리자 · 모든 학급과 교사 계정을 관리합니다.'
+        : ((overviewData?.teacher?.className || '우리 반') + ' 전용 관리 · 이 학급만 표시됩니다.');
+    }
     renderMetrics();
     renderClasses();
   }
@@ -221,6 +285,12 @@
       const onlineCount = allMembers.filter(student => Number(student.active_sessions || 0) > 0).length;
       const disabledCount = allMembers.filter(student => Number(student.disabled)).length;
       const totalPlays = allMembers.reduce((sum, student) => sum + Number(student.summary?.plays || 0), 0);
+      const teacherCredential = (overviewData.teacherCredentials || []).find(item => item.classId === classroom.id);
+      const teacherCredentialHtml = overviewData.scope === 'global'
+        ? (teacherCredential
+          ? `<div class="teacher-credential"><b>👩‍🏫 교사 계정</b><code>${escapeHtml(teacherCredential.loginId)}</code><code>${escapeHtml(teacherCredential.password || '확인 불가')}</code><button class="secondary" type="button" data-action="copy-teacher" data-class-id="${escapeHtml(classroom.id)}">복사</button><button type="button" data-action="reset-teacher" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">비밀번호 재발급</button></div>`
+          : '<div class="teacher-credential"><b>👩‍🏫 교사 계정 준비 중</b></div>')
+        : `<div class="teacher-credential"><b>👩‍🏫 내 교사 ID</b><code>${escapeHtml(overviewData.teacher?.loginId || '')}</code></div>`;
       const rows = members.map(student => {
         const summary = student.summary || {};
         const online = Number(student.active_sessions || 0) > 0
@@ -250,6 +320,7 @@
               <h3>${escapeHtml(classroom.name)}</h3>
               <div class="muted">학급 코드 ${escapeHtml(classroom.class_code)}</div>
               <div class="class-summary"><span>학생 ${allMembers.length}명</span><span>현재 로그인 ${onlineCount}명</span><span>사용 중지 ${disabledCount}명</span><span>누적 플레이 ${totalPlays}회</span></div>
+              ${teacherCredentialHtml}
             </div>
             <div class="class-actions">
               <button type="button" data-action="economy" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">💰 학급경제</button>
@@ -267,11 +338,11 @@
   }
 
   async function refreshOverview() {
-    if (!adminKey) return;
+    if (!adminKey && authMode !== 'class') return;
     try {
       const { response, body } = await api('/api/teacher/overview');
       if (!response.ok || !body.ok) {
-        if (response.status === 401) endManagement();
+        if (response.status === 401) await endManagement();
         else alert(errorText(body));
         return;
       }
@@ -385,6 +456,31 @@
     });
   }
 
+  async function resetTeacherCredential(classId, className, button) {
+    if (!confirm(className + ' 교사의 기존 비밀번호를 폐기하고 새 비밀번호를 발급할까요?\n현재 교사 로그인 세션도 종료됩니다.')) return;
+    await withButton(button,'재발급 중',async()=>{
+      const { response, body } = await api('/api/teacher/class-credential',{
+        method:'POST',
+        body:JSON.stringify({ classId })
+      });
+      if (!response.ok || !body.ok) return alert(errorText(body));
+      alert('교사 ID: ' + body.loginId + '\n새 비밀번호: ' + body.password);
+      await refreshOverview();
+    });
+  }
+
+  async function copyTeacherCredential(classId) {
+    const credential = (overviewData.teacherCredentials || []).find(item => item.classId === classId);
+    if (!credential) return alert('교사 계정 정보를 찾지 못했습니다.');
+    const text = '교사 ID: ' + credential.loginId + '\n비밀번호: ' + (credential.password || '');
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('교사 ID와 비밀번호를 복사했습니다.');
+    } catch (_) {
+      prompt('아래 내용을 복사하세요.', text);
+    }
+  }
+
   async function withButton(button, busyText, task) {
     const previous = button?.textContent;
     if (button) { button.disabled = true; button.textContent = busyText; }
@@ -450,6 +546,8 @@
     const classId = button.dataset.classId;
     const className = button.dataset.className;
     if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
+    else if (action === 'reset-teacher') resetTeacherCredential(classId, className, button);
+    else if (action === 'copy-teacher') copyTeacherCredential(classId || '');
     else if (action === 'reset-pin') resetPin(loginId, button);
     else if (action === 'logout-student') forceStudentLogout(loginId, button);
     else if (action === 'toggle-status') toggleStudent(loginId, button.dataset.disabled === '1', button);
@@ -462,6 +560,7 @@
   }
 
   function init() {
+    $('teacher-login')?.addEventListener('click', authenticateTeacher);
     $('admin-login')?.addEventListener('click', authenticate);
     $('admin-logout')?.addEventListener('click', endManagement);
     $('create-class')?.addEventListener('click', createClass);
@@ -474,12 +573,15 @@
     $('student-search')?.addEventListener('input', renderClasses);
     $('student-status-filter')?.addEventListener('change', renderClasses);
     $('admin-key')?.addEventListener('keydown', event => { if (event.key === 'Enter') authenticate(); });
+    $('teacher-login-password')?.addEventListener('keydown', event => { if (event.key === 'Enter') authenticateTeacher(); });
 
     const saved = loadSavedKey();
     if (saved) {
       adminKey = saved;
       if ($('admin-key')) $('admin-key').value = saved;
       authenticate();
+    } else {
+      resumeTeacherSession();
     }
   }
 

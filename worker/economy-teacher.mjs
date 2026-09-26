@@ -1,14 +1,13 @@
-import { authorizeTeacher } from './accounts.mjs';
+import { authorizeTeacherForClass } from './teacher-auth.mjs';
 import {
   json, nowIso, clean, cleanId, clampInt, parseJson,
   classRow, settingsRow, settingsPayload, ensureClassAccounts
 } from './economy-common.mjs';
 
 export async function teacherEconomyState(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   const classId = cleanId(new URL(request.url).searchParams.get('classId'));
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   if (!classId) return json({ ok:false, error:'class_id_required' },400);
 
   const classroom = await classRow(env, classId);
@@ -154,13 +153,12 @@ export async function teacherEconomyState(request, env) {
 }
 
 export async function teacherEnable(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const classroom = await classRow(env, classId);
   if (!classroom) return json({ ok:false,error:'class_not_found' },404);
 
@@ -191,13 +189,12 @@ export async function teacherEnable(request, env) {
 }
 
 export async function teacherSettings(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const current = await settingsRow(env, classId);
   if (!current) return json({ ok:false,error:'economy_not_enabled' },404);
 
@@ -220,13 +217,12 @@ export async function teacherSettings(request, env) {
 }
 
 export async function teacherCertificate(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   if (!await settingsRow(env,classId)) return json({ ok:false,error:'economy_not_enabled' },404);
 
   const name = clean(body?.name,50);
@@ -241,13 +237,12 @@ export async function teacherCertificate(request, env) {
 }
 
 export async function teacherCertificateGrant(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const studentId = cleanId(body?.studentId);
   const certificateId = cleanId(body?.certificateId);
 
@@ -275,13 +270,12 @@ export async function teacherCertificateGrant(request, env) {
 }
 
 export async function teacherJob(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const name = clean(body?.name,50);
   if (!name) return json({ ok:false,error:'name_required' },400);
   if (!await settingsRow(env,classId)) return json({ ok:false,error:'economy_not_enabled' },404);
@@ -317,13 +311,12 @@ export async function teacherJob(request, env) {
 }
 
 export async function teacherJobAssign(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const studentId = cleanId(body?.studentId);
   const jobId = cleanId(body?.jobId);
 
@@ -366,13 +359,12 @@ export async function teacherJobAssign(request, env) {
 }
 
 export async function teacherPayroll(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const periodId = clean(body?.periodId,40);
   if (!periodId) return json({ ok:false,error:'period_required' },400);
 
@@ -492,13 +484,12 @@ export async function teacherPayroll(request, env) {
 }
 
 export async function teacherManual(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const studentId = cleanId(body?.studentId);
   const amount = Math.trunc(Number(body?.amount || 0));
   if (!amount) return json({ ok:false,error:'invalid_amount' },400);
@@ -550,13 +541,12 @@ export async function teacherManual(request, env) {
 }
 
 export async function teacherTreasury(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const amount = clampInt(body?.amount,1,1000000,0);
   const settings = await settingsRow(env,classId);
   if (!settings) return json({ ok:false,error:'economy_not_enabled' },404);
@@ -580,13 +570,12 @@ export async function teacherTreasury(request, env) {
 }
 
 export async function teacherItem(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const name = clean(body?.name,60);
   if (!name) return json({ ok:false,error:'name_required' },400);
   if (!await settingsRow(env,classId)) return json({ ok:false,error:'economy_not_enabled' },404);
@@ -605,13 +594,12 @@ export async function teacherItem(request, env) {
 }
 
 export async function teacherLaw(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const title = clean(body?.title,80);
   if (!title) return json({ ok:false,error:'title_required' },400);
   if (!await settingsRow(env,classId)) return json({ ok:false,error:'economy_not_enabled' },404);
@@ -632,13 +620,12 @@ export async function teacherLaw(request, env) {
 }
 
 export async function teacherCase(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const studentId = cleanId(body?.studentId);
   const lawId = cleanId(body?.lawId);
 
@@ -675,13 +662,12 @@ export async function teacherCase(request, env) {
 }
 
 export async function teacherCaseDecision(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
-
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
 
   const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
   const caseId = cleanId(body?.caseId);
   const decision = clean(body?.decision,20);
 

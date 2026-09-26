@@ -1,3 +1,5 @@
+import { authorizeGlobalAdmin, authorizeTeacherForClass, ensureTeacherCredential } from './teacher-auth.mjs';
+
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
   'x-content-type-options': 'nosniff',
@@ -146,12 +148,7 @@ function requireConfig(env, { teacher = false } = {}) {
 }
 
 export function authorizeTeacher(request, env) {
-  const missing = requireConfig(env, { teacher: true });
-  if (missing) return missing;
-  if (!secureEqual(getBearer(request), env.KIDSCADE_ADMIN_KEY)) {
-    return json({ ok: false, error: 'unauthorized' }, 401);
-  }
-  return null;
+  return authorizeGlobalAdmin(request, env);
 }
 
 function safeObject(value) {
@@ -389,10 +386,13 @@ async function createClass(request, env) {
   if (typeof env.DB.batch === 'function') await env.DB.batch(statements);
   else for (const statement of statements) await statement.run();
 
+  const teacherCredential = await ensureTeacherCredential(env, classId, classCode);
+
   return json({
     ok: true,
     classroom: { id: classId, code: classCode, name, studentCount: count, createdAt },
-    credentials
+    credentials,
+    teacherCredential
   }, 201);
 }
 
@@ -417,14 +417,14 @@ async function listClasses(request, env) {
 }
 
 async function resetPin(request, env) {
-  const denied = authorizeTeacher(request, env);
-  if (denied) return denied;
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const loginId = normalizeLoginId(body?.loginId);
   if (!isValidLoginId(loginId)) return json({ ok: false, error: 'invalid_login_id' }, 400);
-  const account = await env.DB.prepare('SELECT id FROM student_accounts WHERE login_id = ? COLLATE NOCASE').bind(loginId).first();
+  const account = await env.DB.prepare('SELECT id, class_id FROM student_accounts WHERE login_id = ? COLLATE NOCASE').bind(loginId).first();
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
   const pin = randomPin();
   const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
   const now = nowIso();
