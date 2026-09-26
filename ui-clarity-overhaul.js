@@ -77,44 +77,6 @@
       body.dark-mode #game-list > .game-card .kc-card-meta-chip.score { background:#173650; color:#b8ddff; }
       body.dark-mode #game-list > .game-card .kc-card-meta-chip.rank { background:#453316; color:#fde9a9; }
 
-      /* Bonus energy is optional. Never make a playable game look locked. */
-      #game-list > .game-card.out-of-bonus { filter:none !important; opacity:1 !important; }
-      #game-list > .game-card.out-of-bonus:hover {
-        transform:translateY(-5px) !important;
-        box-shadow:var(--kc-shadow) !important;
-      }
-      #game-list > .game-card .play-limit-badge {
-        position:absolute !important;
-        left:10px !important;
-        top:10px !important;
-        margin:0 !important;
-        min-width:34px !important;
-        min-height:27px !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-        padding:0 7px !important;
-        border-radius:999px !important;
-        background:#eefaf3 !important;
-        color:#25744d !important;
-        border-color:rgba(74,222,128,.34) !important;
-        font-size:.59rem !important;
-      }
-      #game-list > .game-card .play-limit-badge.low {
-        background:#fff8e6 !important;
-        color:#966411 !important;
-        border-color:rgba(245,158,11,.30) !important;
-      }
-      #game-list > .game-card .play-limit-badge.empty {
-        background:#f3f4f6 !important;
-        color:#747d8d !important;
-        border-color:rgba(148,163,184,.28) !important;
-      }
-      body.dark-mode #game-list > .game-card .play-limit-badge.empty {
-        background:#263244 !important;
-        color:#c0cada !important;
-        border-color:#3a4658 !important;
-      }
 
       /* My Space: keep one route per feature. */
       #avatar-plaza-seeds { display:none !important; }
@@ -194,11 +156,6 @@
         #game-list > .game-card .kc-card-meta { min-height:22px; margin-top:5px; gap:3px; }
         #game-list > .game-card .kc-card-meta-chip { padding:4px 6px; font-size:.55rem; }
         #game-list > .game-card .kc-card-meta-chip.rank { display:none; }
-        #game-list > .game-card .play-limit-badge {
-          margin-top:4px !important;
-          padding:4px 5px !important;
-          font-size:.55rem !important;
-        }
         #pet-modal .sook-room-shortcuts { grid-template-columns:1fr 1fr !important; }
       }
 
@@ -231,9 +188,7 @@
       meta = document.createElement('div');
       meta.className = 'kc-card-meta';
       meta.setAttribute('aria-label', '게임 기록');
-      const energy = card.querySelector(':scope > .play-limit-badge');
-      if (energy) card.insertBefore(meta, energy);
-      else card.appendChild(meta);
+      card.appendChild(meta);
     }
 
     const score = getCardBadgeText(card, '.badge-score');
