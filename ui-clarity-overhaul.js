@@ -30,24 +30,24 @@
       #game-list > .game-card .cert-btn { display:none !important; }
       #game-list > .game-card .kc-card-meta {
         width:100%;
-        min-height:27px;
-        margin-top:9px;
+        min-height:22px;
+        margin-top:7px;
         display:flex;
         align-items:center;
         justify-content:center;
-        gap:5px;
+        gap:4px;
         flex-wrap:wrap;
       }
       #game-list > .game-card .kc-card-meta:empty { display:none; }
       #game-list > .game-card .kc-card-meta-chip {
         min-width:0;
         max-width:100%;
-        padding:5px 8px;
+        padding:4px 7px;
         border-radius:999px;
         background:#f4f5f8;
         border:1px solid rgba(148,163,184,.20);
         color:#60697a;
-        font-size:.64rem;
+        font-size:.60rem;
         font-weight:950;
         line-height:1.15;
         white-space:nowrap;
@@ -84,12 +84,21 @@
         box-shadow:var(--kc-shadow) !important;
       }
       #game-list > .game-card .play-limit-badge {
-        margin-top:6px !important;
-        padding:5px 8px !important;
+        position:absolute !important;
+        right:10px !important;
+        top:10px !important;
+        margin:0 !important;
+        min-width:34px !important;
+        min-height:27px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:0 7px !important;
+        border-radius:999px !important;
         background:#eefaf3 !important;
         color:#25744d !important;
         border-color:rgba(74,222,128,.34) !important;
-        font-size:.63rem !important;
+        font-size:.59rem !important;
       }
       #game-list > .game-card .play-limit-badge.low {
         background:#fff8e6 !important;
@@ -233,19 +242,18 @@
     const taxonomy = window.KidscadeCatalog?.taxonomy || {};
     const genre = game ? (taxonomy.genres?.[game.genre] || game.genre) : '';
     const session = game?.sessionMinutes ? `${game.sessionMinutes}분` : '';
-    const difficulty = game ? (taxonomy.difficulty?.[game.difficulty] || game.difficulty) : '';
     const player = game?.players?.includes('online') ? '온라인' :
       game?.players?.includes('localMulti') ? '여럿이' :
       game?.players?.includes('local2') ? '2인' :
       game?.players?.includes('classroom') ? '교실' : '';
     const rework = game?.qualityStatus === 'rework' ? '개선 중' : '';
-    const signature = `${genre}|${session}|${difficulty}|${player}|${rework}|${score}|${rank}`;
+    const signature = `${genre}|${session}|${player}|${rework}|${score}`;
     if (meta.dataset.signature === signature) return;
     meta.dataset.signature = signature;
     meta.setAttribute('aria-label', '게임 정보');
     meta.replaceChildren();
 
-    for (const value of [genre, session, difficulty, player, rework].filter(Boolean)) {
+    for (const value of [genre, session, player, rework].filter(Boolean)) {
       const chip = document.createElement('span');
       chip.className = 'kc-card-meta-chip' + (value === '개선 중' ? ' rework' : '');
       chip.textContent = value;
@@ -256,12 +264,6 @@
       const chip = document.createElement('span');
       chip.className = 'kc-card-meta-chip score';
       chip.textContent = score;
-      meta.appendChild(chip);
-    }
-    if (rank) {
-      const chip = document.createElement('span');
-      chip.className = 'kc-card-meta-chip rank';
-      chip.textContent = rank;
       meta.appendChild(chip);
     }
   }
