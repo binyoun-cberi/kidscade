@@ -101,7 +101,7 @@ class CodeQuestRuntime{
      c.checks++;if(event.result)c.trueCount++;else c.falseCount++;
     }else if(event.kind==='call')this.stats.calls++;
     else if(event.kind==='loop')this.stats.loops++;
-    this.record({kind:event.kind,nodeId:event.node?.id||'',type:event.node?.type||'',result:event.result,condition:event.condition,index:event.index,total:event.total});
+    this.record({kind:event.kind,nodeId:event.node?.id||'',type:event.node?.type||'',result:event.result,condition:event.condition,index:event.index,total:event.total,slot:event.slot});
     continue;
    }
    this.actions++;this.stats.actions++;
