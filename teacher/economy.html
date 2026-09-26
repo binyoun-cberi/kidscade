@@ -18,7 +18,7 @@ button,input,select,textarea{font:inherit}
 .card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 10px 28px rgba(15,23,42,.06);margin-bottom:14px}
 .hidden{display:none!important}
 .notice{padding:12px 13px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a5b12;font-size:.74rem;font-weight:850;line-height:1.55}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.grid4{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
 .metric{border:1px solid #ede9fe;border-radius:16px;padding:13px;background:linear-gradient(145deg,#fff,#faf8ff)}
 .metric span{font-size:.72rem;color:#64748b;font-weight:900}
 .metric b{display:block;margin-top:4px;font-size:1.25rem;color:#5b3fd1}
@@ -112,13 +112,16 @@ textarea{min-height:72px;resize:vertical}
       <div class="metric"><span>학생 저축</span><b id="mSavings">0</b></div>
       <div class="metric"><span>정부계좌</span><b id="mTreasury">0</b></div>
       <div class="metric"><span>취업 학생</span><b id="mJobs">0명</b></div>
+      <div class="metric"><span>정부 채무</span><b id="mDebt">0</b></div>
     </section>
 
     <nav class="tabs">
       <button class="tab active" data-tab="overview">학생계좌</button>
+      <button class="tab" data-tab="work">근무확인</button>
       <button class="tab" data-tab="jobs">자격증·직업</button>
-      <button class="tab" data-tab="payroll">월급·세금</button>
-      <button class="tab" data-tab="store">상점</button>
+      <button class="tab" data-tab="payroll">급여·은행·정부</button>
+      <button class="tab" data-tab="store">상점·보관함</button>
+      <button class="tab" data-tab="company">학생회사</button>
       <button class="tab" data-tab="law">법·과태료</button>
       <button class="tab" data-tab="ledger">장부·설정</button>
     </nav>
@@ -126,7 +129,14 @@ textarea{min-height:72px;resize:vertical}
     <section class="panel active" id="panel-overview">
       <div class="card">
         <div class="head"><div><h2>학생 경제 계좌</h2><p>기존 KIDSCade 계정과 자동으로 연결됩니다.</p></div><button class="btn secondary" id="refresh">새로고침</button></div>
-        <div class="table"><table><thead><tr><th>계정</th><th>닉네임</th><th>직업</th><th>현금</th><th>저축</th><th>자격증</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+        <div class="table"><table><thead><tr><th>계정</th><th>닉네임</th><th>직업</th><th>현금</th><th>저축</th><th>신용</th><th>자격증</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-work">
+      <div class="card">
+        <div class="head"><div><h2>근무일지 확인</h2><p>승인한 근무 비율이 해당 급여 회차의 실제 급여에 반영됩니다.</p></div></div>
+        <div class="rows" id="workLogRows"></div>
       </div>
     </section>
 
@@ -148,7 +158,8 @@ textarea{min-height:72px;resize:vertical}
       <div class="layout">
         <div class="stack">
           <div class="card"><div class="head"><div><h2>월급 정산</h2><p>같은 급여 회차는 두 번 지급할 수 없습니다.</p></div></div><div class="form"><div class="field"><label>급여 회차</label><input class="input" id="periodId"></div><div class="field"><label>소득세</label><input class="input" id="payTax" disabled></div></div><div class="actions"><button class="btn" id="runPayroll">전체 월급 정산</button></div><div class="status" id="payStatus"></div><div class="table" style="margin-top:10px"><table><thead><tr><th>학생</th><th>직업</th><th>세전</th><th>세금</th><th>실수령</th><th>예상 이자</th></tr></thead><tbody id="payPreview"></tbody></table></div></div>
-          <div class="card"><div class="head"><div><h2>정부 공공지출</h2></div></div><div class="form"><div class="field"><label>금액</label><input class="input" id="treasuryAmount" type="number" value="50"></div><div class="field"><label>사용처</label><input class="input" id="treasuryReason" placeholder="학급 행사 지원"></div></div><div class="actions"><button class="btn green" id="spendTreasury">지출 기록</button></div></div>
+          <div class="card"><div class="head"><div><h2>정부 공공지출·채무</h2><p>정부계좌가 부족해도 지출할 수 있으며 부족분은 채무로 공개됩니다.</p></div></div><div class="notice" id="debtStatus"></div><div class="form" style="margin-top:10px"><div class="field"><label>지출 금액</label><input class="input" id="treasuryAmount" type="number" value="50"></div><div class="field"><label>사용처</label><input class="input" id="treasuryReason" placeholder="학급 행사 지원"></div><div class="field"><label>채무 상환액</label><input class="input" id="debtRepayAmount" type="number" value="50"></div></div><div class="actions"><button class="btn green" id="spendTreasury">공공지출 기록</button><button class="btn secondary" id="repayDebt">정부 채무 상환</button></div><div class="rows" id="spendingAdminRows" style="margin-top:12px"></div></div>
+          <div class="card"><div class="head"><div><h2>대출 심사</h2><p>학생 신용등급에 따라 신청 시점 이율과 한도가 결정됩니다.</p></div></div><div class="rows" id="loanAdminRows"></div></div>
         </div>
         <div class="card"><div class="head"><div><h2>교사 빠른 거래</h2><p>개별 지급 또는 징수를 장부에 기록합니다.</p></div></div><div class="form"><div class="field full"><label>학생</label><select id="manualStudent"></select></div><div class="field"><label>금액</label><input class="input" id="manualAmount" type="number" value="10"></div><div class="field"><label>징수액 정부계좌로</label><select id="manualTreasury"><option value="no">아니오</option><option value="yes">예</option></select></div><div class="field full"><label>이유</label><input class="input" id="manualReason"></div></div><div class="actions"><button class="btn" id="manualTx">거래 기록</button></div></div>
       </div>
@@ -156,8 +167,15 @@ textarea{min-height:72px;resize:vertical}
 
     <section class="panel" id="panel-store">
       <div class="layout">
-        <div class="card"><div class="head"><div><h2>학급상점</h2></div></div><div class="rows" id="itemRows"></div></div>
-        <div class="card"><div class="head"><div><h2>상품 등록</h2></div></div><div class="form"><div class="field full"><label>상품명</label><input class="input" id="itemName"></div><div class="field"><label>세전 가격</label><input class="input" id="itemPrice" type="number" value="50"></div><div class="field"><label>재고</label><input class="input" id="itemStock" type="number" value="10"></div><div class="field full"><label><input id="itemUnlimited" type="checkbox" style="width:auto;min-height:auto"> 무제한 재고</label></div></div><div class="actions"><button class="btn" id="createItem">상품 등록</button></div></div>
+        <div class="stack"><div class="card"><div class="head"><div><h2>학급상점</h2></div></div><div class="rows" id="itemRows"></div></div><div class="card"><div class="head"><div><h2>보관함 사용 요청</h2></div></div><div class="rows" id="inventoryAdminRows"></div></div></div>
+        <div class="card"><div class="head"><div><h2>상품 등록</h2></div></div><div class="form"><div class="field full"><label>상품명</label><input class="input" id="itemName"></div><div class="field"><label>세전 가격</label><input class="input" id="itemPrice" type="number" value="50"></div><div class="field"><label>재고</label><input class="input" id="itemStock" type="number" value="10"></div><div class="field full"><label><input id="itemUnlimited" type="checkbox" style="width:auto;min-height:auto"> 무제한 재고</label></div><div class="field full"><label>상품 유형</label><select id="itemType"><option value="inventory">보관함/사용권</option><option value="immediate">즉시 지급</option></select></div></div><div class="actions"><button class="btn" id="createItem">상품 등록</button></div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-company">
+      <div class="layout">
+        <div class="card"><div class="head"><div><h2>회사 설립·운영</h2><p>설립 신청을 승인하면 학생 대표가 상품을 등록하고 판매할 수 있습니다.</p></div></div><div class="rows" id="companyAdminRows"></div></div>
+        <div class="card"><div class="head"><div><h2>최근 회사 매출</h2></div></div><div class="rows" id="companySalesRows"></div></div>
       </div>
     </section>
 
@@ -169,7 +187,7 @@ textarea{min-height:72px;resize:vertical}
         </div>
         <div class="stack">
           <div class="card"><div class="head"><div><h2>법 만들기</h2></div></div><div class="form"><div class="field full"><label>법 이름</label><input class="input" id="lawTitle"></div><div class="field"><label>기본 과태료</label><input class="input" id="lawFine" type="number" value="10"></div><div class="field"><label>시행일</label><input class="input" id="lawDate" type="date"></div><div class="field full"><label>설명</label><textarea id="lawDesc"></textarea></div></div><div class="actions"><button class="btn" id="createLaw">법 등록</button></div></div>
-          <div class="card"><div class="head"><div><h2>사건 등록</h2></div></div><div class="form"><div class="field"><label>학생</label><select id="caseStudent"></select></div><div class="field"><label>법</label><select id="caseLaw"></select></div><div class="field"><label>예정 과태료</label><input class="input" id="caseFine" type="number" value="10"></div><div class="field"><label>발생일</label><input class="input" id="caseDate" type="date"></div><div class="field full"><label>사실 기록</label><textarea id="caseNote"></textarea></div></div><div class="actions"><button class="btn" id="createCase">처분 예정 등록</button></div></div>
+          <div class="card"><div class="head"><div><h2>사건 등록</h2></div></div><div class="form"><div class="field"><label>학생</label><select id="caseStudent"></select></div><div class="field"><label>법</label><select id="caseLaw"></select></div><div class="field"><label>예정 과태료</label><input class="input" id="caseFine" type="number" value="10"></div><div class="field"><label>사건 심각도</label><select id="caseSeverity"><option value="1">1단계</option><option value="2">2단계</option><option value="3">3단계</option></select></div><div class="field"><label>발생일</label><input class="input" id="caseDate" type="date"></div><div class="field full"><label>사실 기록</label><textarea id="caseNote"></textarea></div></div><div class="actions"><button class="btn" id="createCase">처분 예정 등록</button></div></div>
         </div>
       </div>
     </section>
@@ -177,11 +195,11 @@ textarea{min-height:72px;resize:vertical}
     <section class="panel" id="panel-ledger">
       <div class="layout">
         <div class="card"><div class="head"><div><h2>최근 장부</h2><p>최근 120건의 경제 기록입니다.</p></div></div><div class="rows" id="txRows"></div></div>
-        <div class="card"><div class="head"><div><h2>경제 설정</h2></div></div><div class="form"><div class="field"><label>화폐</label><input class="input" id="setCurrency"></div><div class="field"><label>소득세 %</label><input class="input" id="setIncome" type="number"></div><div class="field"><label>소비세 %</label><input class="input" id="setSales" type="number"></div><div class="field"><label>저축 이율 %</label><input class="input" id="setInterest" type="number"></div><div class="field"><label>과태료 상한 %</label><input class="input" id="setFineCap" type="number"></div><div class="field"><label>월급날 표시</label><input class="input" id="setPayday"></div></div><div class="actions"><button class="btn" id="saveSettings">설정 저장</button></div></div>
+        <div class="card"><div class="head"><div><h2>경제 설정</h2></div></div><div class="form"><div class="field"><label>화폐</label><input class="input" id="setCurrency"></div><div class="field"><label>소득세 %</label><input class="input" id="setIncome" type="number"></div><div class="field"><label>소비세 %</label><input class="input" id="setSales" type="number"></div><div class="field"><label>기본 저축 이율 %</label><input class="input" id="setInterest" type="number"></div><div class="field"><label>기본 대출 이율 %</label><input class="input" id="setLoanInterest" type="number"></div><div class="field"><label>과태료 상한 %</label><input class="input" id="setFineCap" type="number"></div><div class="field"><label>월급날 표시</label><input class="input" id="setPayday"></div></div><div class="actions"><button class="btn" id="saveSettings">설정 저장</button></div></div>
       </div>
     </section>
   </section>
 </main>
-<script src="/teacher-economy.js"></script>
+<script src="/teacher-economy.js?v=20260926-v3"></script>
 </body>
 </html>

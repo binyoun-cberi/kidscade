@@ -54,7 +54,7 @@ export async function teacherEconomyState(request, env) {
   ).bind(classId).all();
 
   const items = await env.DB.prepare(
-    'SELECT id, name, price, stock, active, created_at FROM economy_items WHERE class_id = ? ORDER BY created_at ASC'
+    'SELECT id, name, price, stock, fulfillment_type, active, created_at FROM economy_items WHERE class_id = ? ORDER BY created_at ASC'
   ).bind(classId).all();
 
   const laws = await env.DB.prepare(
@@ -64,7 +64,7 @@ export async function teacherEconomyState(request, env) {
 
   const cases = await env.DB.prepare(
     'SELECT id, student_id, law_id, proposed_fine, applied_fine, note, occurred_at, status, ' +
-    'appeal_text, created_at, decided_at, appealed_at FROM economy_cases ' +
+    'appeal_text, created_at, decided_at, appealed_at, salary_snapshot, fine_cap_snapshot, appeal_count, severity, final_note FROM economy_cases ' +
     'WHERE class_id = ? ORDER BY created_at DESC LIMIT 100'
   ).bind(classId).all();
 
@@ -136,6 +136,7 @@ export async function teacherEconomyState(request, env) {
       name:item.name,
       price:Number(item.price || 0),
       stock:item.stock == null ? null : Number(item.stock),
+      fulfillmentType:item.fulfillment_type || 'inventory',
       active:Boolean(Number(item.active))
     })),
     laws:(laws?.results || []).map(item => ({
@@ -202,14 +203,15 @@ export async function teacherSettings(request, env) {
   const incomeTaxRate = clampInt(body?.incomeTaxRate ?? current.income_tax_rate,0,100,Number(current.income_tax_rate));
   const consumptionTaxRate = clampInt(body?.consumptionTaxRate ?? current.consumption_tax_rate,0,100,Number(current.consumption_tax_rate));
   const savingsInterestRate = clampInt(body?.savingsInterestRate ?? current.savings_interest_rate,0,20,Number(current.savings_interest_rate));
+  const loanInterestRate = clampInt(body?.loanInterestRate ?? current.loan_interest_rate,1,30,Number(current.loan_interest_rate || 5));
   const fineCapPercent = clampInt(body?.fineCapPercent ?? current.fine_cap_percent,0,100,Number(current.fine_cap_percent));
   const paydayLabel = clean(body?.paydayLabel ?? current.payday_label,20) || current.payday_label;
 
   await env.DB.prepare(
     'UPDATE economy_class_settings SET currency = ?, income_tax_rate = ?, consumption_tax_rate = ?, ' +
-    'savings_interest_rate = ?, fine_cap_percent = ?, payday_label = ?, updated_at = ? WHERE class_id = ?'
+    'savings_interest_rate = ?, loan_interest_rate = ?, fine_cap_percent = ?, payday_label = ?, updated_at = ? WHERE class_id = ?'
   ).bind(
-    currency, incomeTaxRate, consumptionTaxRate, savingsInterestRate,
+    currency, incomeTaxRate, consumptionTaxRate, savingsInterestRate, loanInterestRate,
     fineCapPercent, paydayLabel, nowIso(), classId
   ).run();
 

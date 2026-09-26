@@ -26,12 +26,12 @@ button,input{font:inherit}
 .hero small{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;background:#e0f2fe;color:#0284c7;font-size:.7rem;font-weight:1000}
 .hero h1{margin:8px 0 0;color:var(--kc-pink);font-size:clamp(1.9rem,7vw,3rem);letter-spacing:-.05em;text-shadow:1px 1px 0 #fff}
 .job{display:inline-flex;margin-top:9px;padding:6px 10px;border-radius:999px;background:#f3e8ff;color:#7c3aed;border:1px solid #ddd6fe;font-size:.72rem;font-weight:1000}
-.balances{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.balances{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
 .balance{padding:15px 16px;border:3px solid #fde68a;border-radius:18px;background:#fffbeb;box-shadow:0 4px 0 rgba(245,158,11,.08)}
-.balance:nth-child(2){border-color:#bbf7d0;background:#f0fdf4}
+.balance:nth-child(2){border-color:#bbf7d0;background:#f0fdf4}.balance:nth-child(3){border-color:#c4b5fd;background:#f5f3ff}
 .balance span{display:block;font-size:.72rem;color:#64748b;font-weight:1000}
 .balance b{display:block;margin-top:2px;font-size:1.75rem;color:#b45309}
-.balance:nth-child(2) b{color:#15803d}
+.balance:nth-child(2) b{color:#15803d}.balance:nth-child(3) b{color:#7c3aed}
 .tabs{display:flex;gap:7px;overflow:auto;margin:14px 0;padding:7px;background:#fff;border:3px solid #c4b5fd;border-radius:18px;box-shadow:var(--kc-shadow)}
 .tab{flex:0 0 auto;border:0;background:#f8fafc;color:#64748b;border-radius:999px;padding:9px 13px;font-size:.72rem;font-weight:1000;white-space:nowrap;cursor:pointer}
 .tab:hover{background:#f3e8ff;color:#7c3aed}
@@ -70,7 +70,7 @@ button,input{font:inherit}
 @media(max-width:620px){
   .wrap{width:calc(100% - 14px);padding-top:10px}
   .top{margin-bottom:10px}
-  .balances{grid-template-columns:1fr 1fr}
+  .balances{grid-template-columns:1fr}
   .hero{padding:18px}
   .hero h1{font-size:2rem}
   .row{align-items:flex-start}
@@ -111,45 +111,104 @@ button,input{font:inherit}
       <div class="balances">
         <div class="balance"><span>내 지갑</span><b id="cash">0</b></div>
         <div class="balance"><span>내 저축</span><b id="savings">0</b></div>
+        <div class="balance"><span>신용등급</span><b id="creditGrade">B</b><small id="creditScore">700점</small></div>
       </div>
     </section>
 
     <nav class="tabs">
-      <button class="tab active" data-tab="wallet">거래내역</button>
-      <button class="tab" data-tab="bank">은행</button>
+      <button class="tab active" data-tab="wallet">거래·급여</button>
+      <button class="tab" data-tab="work">근무일지</button>
+      <button class="tab" data-tab="bank">은행·대출</button>
       <button class="tab" data-tab="jobs">직업시장</button>
-      <button class="tab" data-tab="store">학급상점</button>
+      <button class="tab" data-tab="store">상점</button>
+      <button class="tab" data-tab="inventory">보관함</button>
+      <button class="tab" data-tab="company">회사</button>
+      <button class="tab" data-tab="government">정부·세금</button>
       <button class="tab" data-tab="law">법·처분</button>
     </nav>
 
     <section class="panel active card section" id="panel-wallet">
-      <h2>최근 거래</h2>
-      <p>월급, 세금, 저축, 구매, 과태료가 최근 순서로 기록됩니다.</p>
+      <h2>최근 급여명세서</h2>
+      <p>세전 월급, 소득세, 실수령액, 저축이자와 대출이자를 한 번에 확인합니다.</p>
+      <div class="stack" id="payslipRows"></div>
+      <h2 style="margin-top:18px">최근 거래</h2>
       <div class="stack" id="txRows"></div>
     </section>
 
+    <section class="panel card section" id="panel-work">
+      <h2>근무일지</h2>
+      <p>이번 급여 회차에 한 일을 기록하면 선생님이 확인한 뒤 급여에 반영합니다.</p>
+      <div class="field"><label>급여 회차</label><input class="input" id="workPeriod"></div>
+      <div class="field"><label>근무 날짜</label><input class="input" id="workDate" type="date"></div>
+      <div class="field"><label>오늘 한 일</label><input class="input" id="workNote" maxlength="400" placeholder="예: 아침 출석 확인과 게시판 정리를 했어요."></div>
+      <div class="actions"><button class="btn primary" id="submitWork">근무일지 제출</button></div>
+      <h2 style="margin-top:18px">내 근무 기록</h2>
+      <div class="stack" id="workRows"></div>
+    </section>
+
     <section class="panel card section" id="panel-bank">
-      <h2>은행</h2>
-      <p id="interestInfo">저축 이율을 불러오는 중…</p>
-      <div class="field"><label>금액</label><input class="input" id="bankAmount" type="number" min="1" value="10"></div>
+      <h2>은행·신용</h2>
+      <p id="interestInfo">신용등급별 이율을 불러오는 중…</p>
+      <div class="notice" id="creditInfo"></div>
+      <div class="field"><label>저축/인출 금액</label><input class="input" id="bankAmount" type="number" min="1" value="10"></div>
       <div class="actions"><button class="btn green" id="depositBtn">저축하기</button><button class="btn soft" id="withdrawBtn">저축 인출</button></div>
+      <h2 style="margin-top:18px">대출</h2>
+      <div class="field"><label>대출 신청 금액</label><input class="input" id="loanAmount" type="number" min="1" value="50"></div>
+      <div class="actions"><button class="btn primary" id="requestLoan">대출 신청</button></div>
+      <div class="stack" id="loanRows" style="margin-top:12px"></div>
+      <h2 style="margin-top:18px">신용 변동</h2>
+      <div class="stack" id="creditRows"></div>
     </section>
 
     <section class="panel card section" id="panel-jobs">
       <h2>직업 시장</h2>
-      <p>필요한 자격증이 있으면 직접 지원할 수 있고, 채용은 선생님이 확정합니다.</p>
+      <p>필요한 자격증을 갖추고 지원하면 선생님이 채용합니다.</p>
       <div class="stack" id="jobRows"></div>
     </section>
 
     <section class="panel card section" id="panel-store">
       <h2>학급상점</h2>
-      <p>상품 가격과 소비세를 확인하고 내 지갑에서 직접 구매합니다.</p>
+      <p>상품가격과 소비세를 확인해 구매합니다. 사용권 상품은 내 보관함으로 들어갑니다.</p>
       <div class="stack" id="storeRows"></div>
+      <h2 style="margin-top:18px">학생 회사 상점</h2>
+      <div class="stack" id="companyStoreRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-inventory">
+      <h2>내 보관함</h2>
+      <p>구매한 사용권과 상품을 보관합니다. 사용 요청은 선생님 확인 후 처리됩니다.</p>
+      <div class="stack" id="inventoryRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-company">
+      <h2>학생 회사</h2>
+      <p>회사를 신청하고 승인되면 상품을 등록해 판매할 수 있습니다.</p>
+      <div class="stack" id="myCompanyRows"></div>
+      <div class="field"><label>회사 이름</label><input class="input" id="companyName" maxlength="50"></div>
+      <div class="field"><label>회사 소개</label><input class="input" id="companyDesc" maxlength="240"></div>
+      <div class="actions"><button class="btn primary" id="createCompany">회사 설립 신청</button></div>
+      <div id="companyProductForm" class="hidden">
+        <h2 style="margin-top:18px">우리 회사 상품 등록</h2>
+        <div class="field"><label>상품 이름</label><input class="input" id="companyProductName"></div>
+        <div class="field"><label>가격</label><input class="input" id="companyProductPrice" type="number" min="1" value="30"></div>
+        <div class="field"><label>재고</label><input class="input" id="companyProductStock" type="number" min="0" value="10"></div>
+        <div class="field"><label>상품 유형</label><select class="input" id="companyProductType"><option value="inventory">보관함 상품/사용권</option><option value="immediate">즉시 지급 상품</option></select></div>
+        <div class="actions"><button class="btn green" id="createCompanyProduct">상품 등록</button></div>
+        <div class="field"><label>회사 수익 인출</label><input class="input" id="companyWithdrawAmount" type="number" min="1" value="10"></div>
+        <div class="actions"><button class="btn soft" id="withdrawCompany">대표 지갑으로 인출</button></div>
+      </div>
+    </section>
+
+    <section class="panel card section" id="panel-government">
+      <h2>우리 반 세금은 어디에 쓰였나요?</h2>
+      <p>정부 공공지출과 정부 채무 상태를 공개합니다.</p>
+      <div class="notice" id="governmentStatus"></div>
+      <div class="stack" id="spendingRows" style="margin-top:12px"></div>
     </section>
 
     <section class="panel card section" id="panel-law">
       <h2>학급 법전</h2>
-      <p>시행 중인 법과 내 처분 기록을 확인합니다.</p>
+      <p>시행 중인 법과 내 처분 기록을 확인합니다. 이의신청은 처분당 한 번만 가능합니다.</p>
       <div class="stack" id="lawRows"></div>
       <h2 style="margin-top:18px">내 처분 기록</h2>
       <div class="stack" id="caseRows"></div>
@@ -157,6 +216,6 @@ button,input{font:inherit}
   </section>
 </main>
 <div class="toast" id="toast"></div>
-<script src="economy.js"></script>
+<script src="economy.js?v=20260926-v3"></script>
 </body>
 </html>
