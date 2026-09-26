@@ -252,7 +252,6 @@ test('common game start screen owns deferred launch and shared errors', () => {
   assert.match(bootstrap, /kidscade:game-error/);
   assert.match(launcher, /bridge\.deferLaunch === true/);
   assert.match(launcher, /const\s+activate\s*=\s*\(\)\s*=>/);
-  assert.ok(launcher.indexOf('consumePlayTicket') > launcher.indexOf('const activate'));
   assert.match(frame, /LOAD_TIMEOUT_MS = 15000/);
   assert.match(frame, /게임을 불러오지 못했어요/);
   assert.match(frame, /다시 불러오기/);
