@@ -115,3 +115,18 @@ body.executing .mission-card{opacity:.45}
 .trace-chip.action{color:#b9d8f4}.trace-chip.call{color:#8eeadd;border-color:#5eead444}
 .trace-chip.current{box-shadow:inset 2px 0 var(--gold);color:#fff}
 @media(max-width:700px),(orientation:portrait){.trace-strip{grid-column:1/-1}.trace-chip{max-width:92px}}
+
+/* v5 full campaign */
+.node.until{border-left-color:#6ee7d8;background:#12313a}
+.palette button.until{background:#123a42;border-color:#5eead455}
+.code-tabs{gap:2px}.code-tab{min-width:0}.code-tab.locked,.code-tab:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
+.map-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.map-links line{stroke:#8fb9a866;stroke-width:.8;stroke-dasharray:2 1.7;vector-effect:non-scaling-stroke}
+.map-links line.done{stroke:#72e5bdcc;stroke-width:1.2}
+.map-node{z-index:1}.map-node.complete{border-color:#73e2bb88;box-shadow:0 0 24px #55d6ad26,0 12px 32px #0008}
+@media(max-width:700px),(orientation:portrait){
+ .code-tabs{max-width:58vw}.code-tab{padding:6px 7px;font-size:9px}
+ .variable-strip{max-height:62px;overflow:auto}
+ .campaign-map{min-width:620px}
+ .world-map-panel{overflow-x:auto}
+}

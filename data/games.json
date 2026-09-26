@@ -4,11 +4,11 @@
     {
       "id": "high_code_quest",
       "title": "버그월드: 코드 원정대",
-      "href": "games/high_code_quest/index.html?v=5",
+      "href": "games/high_code_quest/index.html?v=6",
       "category": "trivia",
       "age": "high",
       "icon": "🤖",
-      "description": "프롤로그 입단 시험을 지나 버섯 숲으로 원정하는 2D 사이드스크롤 코딩 RPG! 높낮이 플랫폼과 분기 길을 탐험하고, 센서·장비·나의 기술을 조합해 적 패턴을 읽고 프로그램을 발전시키세요.",
+      "description": "코드 캠프부터 버섯 숲·수정 광산·기계 도시·데이터 사막·버그 성채·NULL CORE까지 이어지는 40스테이지 코딩 RPG! 조건 반복, 센서, 기술 A/B, 스위치, 데이터·에너지를 조합해 환경이 달라도 작동하는 범용 프로그램을 완성하세요.",
       "subject": "thinking",
       "genre": "rpg",
       "difficulty": "medium",

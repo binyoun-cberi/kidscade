@@ -41,6 +41,7 @@ const TEST_FILES = [
   "tests/deep-diver-2d.test.cjs",
   "tests/code-breaker-dx.test.cjs",
   "tests/code-quest-v4.test.cjs",
+  "tests/code-quest-full-campaign.test.cjs",
   "tests/police-patrol.test.cjs",
   "tests/math-tower-defense-3d.test.cjs",
   "tests/spelling-frog-assets.test.cjs",

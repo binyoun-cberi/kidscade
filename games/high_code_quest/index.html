@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101927">
 <title>버그월드: 코드 원정대 | Kidscade</title>
-<link rel="stylesheet" href="./style.css?v=4">
+<link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
 <div id="app">
@@ -48,12 +48,15 @@
       </div>
       <div class="code-tabs">
         <button class="code-tab active" data-code-target="main" type="button">메인</button>
-        <button class="code-tab" data-code-target="function" type="button">나의 기술</button>
+        <button class="code-tab" data-code-target="a" type="button">기술 A</button>
+        <button id="skillBTab" class="code-tab" data-code-target="b" type="button">기술 B</button>
       </div>
     </div>
 
     <div class="variable-strip">
       <span>수정 = <b id="variableCrystal">0</b></span>
+      <span id="dataStat" class="hidden">데이터 = <b id="variableData">0</b></span>
+      <span id="energyStat" class="hidden">에너지 = <b id="variableEnergy">0</b></span>
       <span>HP = <b id="variableHp">5</b></span>
       <span id="sensorReadout">센서: 준비</span>
     </div>
@@ -139,6 +142,8 @@
         <div><b>5. 나의 기술</b><p>자주 쓰는 행동을 기술 탭에 묶어 두면 본편에서도 계속 다시 사용할 수 있어요.</p></div>
         <div><b>6. 한 단계 실행</b><p>▷ 한 단계로 한 행동씩 확인하면 어떤 줄에서 예상과 달라지는지 찾기 쉽습니다.</p></div>
         <div><b>7. 프로그램 검사</b><p>일부 임무는 통과 뒤 적이나 절벽 위치가 달라진 상황에서도 같은 코드가 작동하는지 확인합니다. 위치를 외우기보다 센서와 조건을 활용하세요.</p></div>
+        <div><b>8. 조건 반복</b><p>수정 광산부터는 목적지나 안전 상태가 될 때까지 코드를 반복할 수 있어요. 칸 수를 외우는 대신 끝나는 조건을 생각하세요.</p></div>
+        <div><b>9. 기술 A/B</b><p>기계 도시부터 두 기술 슬롯을 사용할 수 있어요. 이동과 전투처럼 역할을 나누면 더 짧고 안정적인 프로그램을 만들 수 있어요.</p></div>
       </div>
     </div>
   </section>
@@ -206,9 +211,9 @@
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_code_quest" data-title="버그월드: 코드 원정대" data-shell="true" data-orientation="landscape"></script>
-<script src="./missions.js?v=5"></script>
-<script src="./code-runtime.js?v=4"></script>
-<script src="./validator.js?v=1"></script>
-<script type="module" src="./game.js?v=5"></script>
+<script src="./missions.js?v=6"></script>
+<script src="./code-runtime.js?v=5"></script>
+<script src="./validator.js?v=2"></script>
+<script type="module" src="./game.js?v=6"></script>
 </body>
 </html>

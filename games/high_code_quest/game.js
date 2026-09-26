@@ -14,7 +14,7 @@ const ctx=canvas.getContext('2d');
 let progress=loadProgress();
 let missionIndex=Math.min(missions.length-1,Math.max(0,progress.current||0));
 let mission=missions[missionIndex],worldState=null;
-let mainProgram=[],functionProgram=[],codeTarget='main',insertPath=[];
+let mainProgram=[],functionPrograms={a:[],b:[]},codeTarget='main',insertPath=[];
 let nodeSeq=0,failures=0,stepSession=false,cleared=false,toastTimer=0;
 let executingNodeId='',errorNodeId='',cameraX=0,cameraY=0;
 let dpr=Math.min(2,window.devicePixelRatio||1);
@@ -39,7 +39,7 @@ const rewardNames={
  boots_basic:'원정대 장화',jump_module:'점프 모듈',hand_module:'수집 모듈',sword_module:'디버그 블레이드',
  loop_core:'반복 코어',enemy_sensor:'적 감지 센서',terrain_sensor:'지형 센서',memory_sensor:'상태 메모리',
  function_slot:'기술 슬롯',ranger_badge:'코드 원정대 배지',reflex_sensor:'반응 센서',altimeter:'고도 센서',
- high_jump_boots:'고점프 부츠',dash_boots:'대시 부츠',forest_core:'버섯 숲 코어'
+ high_jump_boots:'고점프 부츠',dash_boots:'대시 부츠',forest_core:'버섯 숲 코어',auto_loop_core:'자동 반복 코어',proximity_sensor:'통행 센서',ore_scanner:'광석 스캐너',logic_core:'논리 결합 코어',mine_core:'수정 광산 코어',dual_function_core:'듀얼 기술 코어',switch_tool:'스위치 툴',motion_compass:'동작 보정기',laser_sensor:'레이저 센서',city_core:'기계 도시 코어',data_scanner:'데이터 스캐너',upload_module:'업로드 모듈',energy_cell:'에너지 셀',resource_core:'자원 판단 코어',desert_core:'데이터 사막 코어',citadel_key:'성채 접근 키',reuse_badge:'재사용 배지',system_core:'시스템 코어',survival_core:'생존 코어',citadel_core:'성채 루트 키',universal_move_core:'범용 이동 코어',universal_combat_core:'범용 전투 코어',universal_resource_core:'범용 자원 코어',ranger_master:'코드 원정대 마스터 코어',null_core:'NULL CORE 정화 배지'
 };
 
 function defaultProgress(){
@@ -74,13 +74,13 @@ function normalizeNodes(list){
   return x;
  });
 }
-function currentStore(){if(!progress.programs[missionIndex])progress.programs[missionIndex]={main:[],fn:[]};return progress.programs[missionIndex];}
+function currentStore(){if(!progress.programs[missionIndex])progress.programs[missionIndex]={main:[],fn:[],fns:{a:[],b:[]}};return progress.programs[missionIndex];}
 function previousCarryStore(){
  for(let i=missionIndex-1;i>=0;i--){if(missions[i].arc===mission.arc&&progress.programs[i])return progress.programs[i];}
  return null;
 }
 function persistCode(){
- const slot=currentStore();slot.main=clone(mainProgram);slot.fn=clone(functionProgram);progress.current=missionIndex;saveProgress();
+ const slot=currentStore();slot.main=clone(mainProgram);slot.fns=clone(functionPrograms);slot.fn=clone(functionPrograms.a);progress.current=missionIndex;saveProgress();
 }
 function sound(key){try{window.KidscadeGame?.sound?.(key);}catch(_){}}
 function toast(text,bad=false){
@@ -94,7 +94,7 @@ function setExec(title,detail,mode='idle'){
 }
 function traceLabel(event){
  if(event.kind==='check')return (BLOCKS[event.node?.type]?.label||'조건')+' '+(event.result?'✓':'✕');
- if(event.kind==='call')return 'ƒ 나의 기술';
+ if(event.kind==='call')return 'ƒ 기술 '+((event.slot||'a').toUpperCase());
  if(event.kind==='loop')return (BLOCKS[event.node?.type]?.label||'반복')+' '+event.index+'/'+event.total;
  if(event.kind==='action')return BLOCKS[event.node?.type]?.label||event.node?.type||'행동';
  return '';
@@ -145,16 +145,21 @@ function lowerSurface(x,currentY){
 }
 function groundExists(x,y){return surfaceNear(x,y,0.75,0.9)!==null;}
 function sameLevel(a,b,t=.75){return Math.abs(a-b)<=t;}
-function enemyAt(x,y,range=.6){return worldState.enemies.find(e=>!e.dead&&Math.abs(e.x-x)<=range&&sameLevel(e.y,y,1.05));}
+function enemyAt(x,y,range=.6){return worldState.enemies.find(e=>!e.dead&&!e.passThrough&&Math.abs(e.x-x)<=range&&sameLevel(e.y,y,1.05));}
 function enemyAhead(range=1.25){
  const dir=worldState.dir;return worldState.enemies
-  .filter(e=>!e.dead&&(e.x-worldState.x)*dir>0&&(e.x-worldState.x)*dir<=range&&Math.abs(e.y-worldState.y)<=1.4)
+  .filter(e=>!e.dead&&!e.passThrough&&(e.x-worldState.x)*dir>0&&(e.x-worldState.x)*dir<=range&&Math.abs((e.y||0)-worldState.y)<=1.4)
   .sort((a,b)=>Math.abs(a.x-worldState.x)-Math.abs(b.x-worldState.x))[0];
 }
-function doorAhead(range=1.2){return worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=range&&sameLevel(d.y,worldState.y,1));}
+function doorAhead(range=1.2){return worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=range&&sameLevel(d.y||0,worldState.y,1));}
 function crystalHere(){return worldState.crystals.find(c=>!c.taken&&Math.abs(c.x-worldState.x)<.55&&sameLevel(c.y,worldState.y,.8));}
+function dataHere(){return worldState.dataItems.find(c=>!c.taken&&Math.abs(c.x-worldState.x)<.55&&sameLevel(c.y,worldState.y,.8));}
+function switchHere(){return worldState.switches.find(v=>Math.abs(v.x-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
+function terminalHere(){return worldState.terminals.find(v=>!v.uploaded&&Math.abs(v.x-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
+function chargerHere(){return worldState.rechargeStations.find(v=>Math.abs((v.x??v)-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
 function treasureHere(){return worldState.treasures.find(t=>!t.taken&&Math.abs(t.x-worldState.x)<.6&&sameLevel(t.y,worldState.y,.9));}
-function currentEnemyState(e){const cycle=e.cycle||defaultCycle(e.type);return cycle[e.stateIndex%cycle.length];}
+function currentEnemyState(e){const cycle=e.cycle||defaultCycle(e.type);return cycle[(e.stateIndex||0)%cycle.length];}
+function hazardState(h){const cycle=h.cycle||['safe','danger'];return cycle[(h.stateIndex||0)%cycle.length];}
 function defaultCycle(type){
  if(type==='spitter')return ['idle','windup','shoot','rest'];
  if(type==='bat')return ['hover','windup','swoop','rest'];
@@ -163,16 +168,31 @@ function defaultCycle(type){
  if(type==='golem')return ['idle','windup','slam','rest'];
  return ['idle','attack'];
 }
+function hazardAt(x){return worldState.hazards.find(h=>Math.abs(h.x-x)<.55&&hazardState(h)==='danger');}
+function safeAhead(){return !hazardAt(worldState.x+worldState.dir);}
+function threatRange(e){return ['spitter','boss_mushroom','mirage_boss','root_warden','null_core'].includes(e.type)?4.2:e.type==='bat'?2.7:1.7;}
+function windupThreat(){return worldState.enemies.filter(e=>!e.dead&&currentEnemyState(e)==='windup'&&Math.abs(e.x-worldState.x)<=threatRange(e)&&Math.abs((e.y||0)-worldState.y)<=3).sort((a,b)=>Math.abs(a.x-worldState.x)-Math.abs(b.x-worldState.x))[0];}
+function spendEnergy(cost=1){
+ if(!mission.usesEnergy)return true;
+ if(worldState.energy<cost)return false;
+ worldState.energy=Math.max(0,worldState.energy-cost);updateHUD();return true;
+}
 function buildWorld(){
  mission=applyVariant(missions[missionIndex]);
- const start=mission.start||{x:1,y:0};
+ const start=mission.start||{x:1,y:0},maxEnergy=Number(mission.maxEnergy||mission.startEnergy||10);
  worldState={
-  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:5,maxHp:5,crystalCount:0,potions:1,
-  pose:'idle',jumpLift:0,evade:0,lastAction:'',
+  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:Number(mission.playerHp||mission.maxHp||5),maxHp:Number(mission.maxHp||mission.playerHp||5),crystalCount:0,dataCount:0,
+  energy:Number(mission.startEnergy||maxEnergy),maxEnergy,potions:Number(mission.potions??1),pose:'idle',jumpLift:0,evade:0,lastAction:'',
   crystals:(mission.crystals||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
+  dataItems:(mission.dataItems||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
+  switches:(mission.switches||[]).map(v=>({...v,on:Boolean(v.on)})),
+  terminals:(mission.terminals||[]).map(v=>({...v,uploaded:false})),
+  rechargeStations:clone(mission.rechargeStations||[]),
+  conveyors:clone(mission.conveyors||[]),
+  hazards:(mission.hazards||[]).map(h=>({...h,stateIndex:Number.isInteger(h.initialStateIndex)?h.initialStateIndex:0})),
   treasures:(mission.treasures||[]).map(t=>({...t,taken:Boolean(progress.treasures[t.id]),bob:Math.random()*6.28})),
   doors:(mission.doors||[]).map(d=>({...d,open:false,openT:0})),
-  enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:0}))
+  enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:Number.isInteger(e.initialStateIndex)?e.initialStateIndex:0}))
  };
  cameraX=Math.max(0,(worldState.displayX-2.2)*tileW());cameraY=worldState.displayY*vertUnit()*.2;
  executingNodeId='';errorNodeId='';stepSession=false;uiTrace=[];renderTraceStrip();
@@ -191,7 +211,7 @@ function tween(ms,update){
  return new Promise(resolve=>{const start=performance.now();function frame(now){const t=Math.min(1,(now-start)/ms);update(1-Math.pow(1-t,3),t);if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});
 }
 async function moveTo(x,y,mode='walk'){
- const fx=worldState.displayX,fy=worldState.displayY;worldState.pose=mode==='dash'?'walk':'walk';
+ const fx=worldState.displayX,fy=worldState.displayY;worldState.pose='walk';
  await tween(speedMs(mode==='dash'?180:270),(q,t)=>{worldState.displayX=fx+(x-fx)*q;worldState.displayY=fy+(y-fy)*q;worldState.jumpLift=mode==='walk'?Math.sin(t*Math.PI)*4:0;});
  worldState.x=x;worldState.y=y;worldState.displayX=x;worldState.displayY=y;worldState.jumpLift=0;worldState.pose='idle';
 }
@@ -206,10 +226,9 @@ async function dropTo(y){
  worldState.y=y;worldState.displayY=y;worldState.jumpLift=0;worldState.pose='idle';
 }
 async function attackEnemy(e){
- worldState.pose='attack';e.hitT=performance.now()+speedMs(230);
- await tween(speedMs(210),()=>{});
+ worldState.pose='attack';e.hitT=performance.now()+speedMs(230);await tween(speedMs(210),()=>{});
  const state=currentEnemyState(e);
- if(e.type==='shield'&&state==='guard'){sound('ui.error');toast('방패에 막혔어! 방어가 풀릴 때를 노려봐.',true);worldState.pose='idle';return {blocked:true};}
+ if(state==='guard'){sound('ui.error');toast('방어에 막혔어! 빈틈을 기다려봐.',true);worldState.pose='idle';return {blocked:true};}
  e.hp--;sound('combat.impact_heavy');
  if(e.hp<=0){e.dead=true;toast(e.boss?'보스의 버그 코어가 깨졌다!':'버그 몬스터 제거!');}
  worldState.pose='idle';updateBossHud();return {blocked:false};
@@ -218,64 +237,83 @@ async function hurtPlayer(amount=1){
  worldState.hp=Math.max(0,worldState.hp-amount);worldState.pose='hurt';sound('combat.hurt_voice');await tween(speedMs(170),()=>{});worldState.pose='idle';updateHUD();
 }
 async function openDoor(d){sound('ui.confirm');d.open=true;await tween(speedMs(240),q=>{d.openT=q;});}
+async function openLinkedDoors(){
+ for(const d of worldState.doors){
+  let should=false;
+  if(d.switchId){const sw=worldState.switches.find(v=>v.id===d.switchId);should=Boolean(sw?.on);}
+  if(d.terminalId){const t=worldState.terminals.find(v=>v.id===d.terminalId);should=Boolean(t?.uploaded);}
+  if(should&&!d.open)await openDoor(d);
+ }
+}
 
 const worldAPI={
  getTraceState(){
   if(!worldState)return null;
-  return {x:worldState.x,y:worldState.y,hp:worldState.hp,crystals:worldState.crystalCount,enemies:worldState.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,type:e.type,hp:e.hp,state:currentEnemyState(e)}))};
+  return {x:worldState.x,y:worldState.y,hp:worldState.hp,crystals:worldState.crystalCount,data:worldState.dataCount,energy:worldState.energy,
+   switches:worldState.switches.map(v=>({id:v.id,on:v.on})),uploads:worldState.terminals.filter(v=>v.uploaded).length,
+   hazards:worldState.hazards.map(h=>({x:h.x,state:hazardState(h)})),
+   enemies:worldState.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,type:e.type,hp:e.hp,state:currentEnemyState(e)}))};
  },
  checkCondition(cond){
   if(cond==='enemyAhead')return Boolean(enemyAhead());
-  if(cond==='gapAhead'){
-   const x=worldState.x+worldState.dir;return surfaceNear(x,worldState.y,.75,.9)===null;
-  }
-  if(cond==='platformAbove'){
-   const x=worldState.x+worldState.dir*2;return platformCandidatesAt(x).some(y=>y>worldState.y+.7&&y<=worldState.y+5);
-  }
+  if(cond==='enemyAheadWindup')return Boolean(windupThreat());
+  if(cond==='gapAhead'){const x=worldState.x+worldState.dir;return surfaceNear(x,worldState.y,.75,.9)===null;}
+  if(cond==='platformAbove'){const x=worldState.x+worldState.dir*2;return platformCandidatesAt(x).some(y=>y>worldState.y+.7&&y<=worldState.y+5);}
   if(cond==='hpLow')return worldState.hp<=2;
-  if(cond==='enemyWindup')return worldState.enemies.some(e=>!e.dead&&Math.abs(e.x-worldState.x)<=4.2&&Math.abs(e.y-worldState.y)<=3&&currentEnemyState(e)==='windup');
+  if(cond==='enemyWindup')return Boolean(windupThreat());
   if(cond==='crystals3')return worldState.crystalCount>=3;
+  if(cond==='atGoal'){const g=mission.goal||{x:0,y:0};return Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;}
+  if(cond==='safeAhead')return safeAhead();
+  if(cond==='enemiesGone')return !worldState.enemies.some(e=>!e.dead);
+  if(cond==='itemHere')return Boolean(crystalHere());
+  if(cond==='doorAhead')return Boolean(doorAhead());
+  if(cond==='switchHere')return Boolean(switchHere());
+  if(cond==='conveyorAhead')return worldState.conveyors.some(v=>worldState.x+worldState.dir>=v.from&&worldState.x+worldState.dir<=v.to);
+  if(cond==='dataHere')return Boolean(dataHere());
+  if(cond==='data3')return worldState.dataCount>=3;
+  if(cond==='data5')return worldState.dataCount>=5;
+  if(cond==='terminalHere')return Boolean(terminalHere());
+  if(cond==='energyLow')return worldState.energy<=4;
+  if(cond==='chargerHere')return Boolean(chargerHere());
   return false;
  },
  async applyAction(type){
   errorNodeId='';worldState.lastAction=type;
   if(type==='FWD'||type==='BACK'){
-   const dir=type==='BACK'?-worldState.dir:worldState.dir,x=worldState.x+dir;
-   const y=surfaceNear(x,worldState.y,.75,.9);
+   const dir=type==='BACK'?-worldState.dir:worldState.dir,x=worldState.x+dir,y=surfaceNear(x,worldState.y,.75,.9);
    if(y===null)return {ok:false,message:'앞이 끊겨 있어요. 점프하거나 다른 길을 찾아보세요.'};
    if(enemyAt(x,y))return {ok:false,message:'앞에 버그 몬스터가 있어요. 먼저 처리해야 해요.'};
-   const d=worldState.doors.find(v=>!v.open&&Math.abs(v.x-x)<.6&&sameLevel(v.y,y,1));if(d)return {ok:false,message:'문이 길을 막고 있어요.'};
+   const d=worldState.doors.find(v=>!v.open&&Math.abs(v.x-x)<.6&&sameLevel(v.y||0,y,1));if(d)return {ok:false,message:'문이 길을 막고 있어요.'};
+   if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요. 충전기를 찾아보세요.'};
    await moveTo(x,y);sound('ui.tick');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='JUMP'||type==='HIGH_JUMP'){
-   const high=type==='HIGH_JUMP',x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
+   const high=type==='HIGH_JUMP';
+   const x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
    if(y===null)return {ok:false,message:high?'높이 뛰어도 착지할 발판이 없어요.':'점프해서 착지할 곳이 없어요.'};
-   const mid=worldState.x+worldState.dir;
-   const targetEnemy=enemyAt(x,y);
-   const blockingDoor=worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=2&&Math.abs(d.y-worldState.y)<=1.1&&y<=worldState.y+1.5);
+   const mid=worldState.x+worldState.dir,targetEnemy=enemyAt(x,y);
+   const blockingDoor=worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=2&&Math.abs((d.y||0)-worldState.y)<=1.1&&y<=worldState.y+1.5);
    if(enemyAt(mid,worldState.y)&&!high)return {ok:false,message:'몬스터가 점프 길을 막고 있어요.'};
    if(targetEnemy)return {ok:false,message:'착지할 곳에 몬스터가 있어요.'};
    if(blockingDoor)return {ok:false,message:'잠긴 문은 점프로 넘을 수 없어요.'};
+   if(!spendEnergy(high?2:1))return {ok:false,message:'점프할 에너지가 부족해요.'};
    await jumpTo(x,y,high);sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
-  if(type==='DROP'){
-   const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};
-   await dropTo(y);updateHUD();return {ok:true};
-  }
+  if(type==='DROP'){const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요.'};await dropTo(y);updateHUD();return {ok:true};}
   if(type==='DASH'){
    const x=worldState.x+worldState.dir*2,y=surfaceNear(x,worldState.y,1,1.1),mid=worldState.x+worldState.dir;
    if(y===null||enemyAt(mid,worldState.y)||enemyAt(x,y)||doorAhead(2.1))return {ok:false,message:'대시할 길이 막혀 있어요.'};
+   if(!spendEnergy(2))return {ok:false,message:'대시할 에너지가 부족해요.'};
    await moveTo(x,y,'dash');sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='DODGE'){
-   worldState.evade=1;worldState.pose='duck';const back=worldState.x-worldState.dir;
-   const by=surfaceNear(back,worldState.y,.6,.8);
+   worldState.evade=1;worldState.pose='duck';const back=worldState.x-worldState.dir,by=surfaceNear(back,worldState.y,.6,.8);
    if(by!==null&&!enemyAt(back,by))await moveTo(back,by,'dash');else await tween(speedMs(150),()=>{});
    worldState.pose='idle';return {ok:true};
   }
   if(type==='ATTACK'){
    const e=enemyAhead(1.35);if(!e)return {ok:false,message:'공격할 적이 바로 앞에 없어요.'};
-   const r=await attackEnemy(e);updateHUD();return {ok:true,events:r.blocked?[{message:'방패가 공격을 튕겨냈어요.'}]:[]};
+   const r=await attackEnemy(e);updateHUD();return {ok:true,events:r.blocked?[{message:'방어에 공격이 튕겨 나갔어요.'}]:[]};
   }
   if(type==='WAIT'){worldState.pose='idle';await tween(speedMs(210),()=>{});return {ok:true};}
   if(type==='COLLECT'){
@@ -283,48 +321,62 @@ const worldAPI={
    const t=treasureHere();if(t){t.taken=true;claimTreasure(t);sound('success.correct');toast(t.name+' 획득!');return {ok:true};}
    return {ok:false,message:'지금 있는 곳에는 주울 것이 없어요.'};
   }
+  if(type==='COLLECT_DATA'){
+   const d=dataHere();if(!d)return {ok:false,message:'지금 있는 곳에는 데이터가 없어요.'};
+   d.taken=true;worldState.dataCount++;sound('collect.coin_pickup');updateHUD();return {ok:true};
+  }
+  if(type==='TOGGLE'){
+   const sw=switchHere();if(!sw)return {ok:false,message:'지금 있는 곳에는 스위치가 없어요.'};
+   sw.on=true;sound('ui.confirm');await openLinkedDoors();return {ok:true};
+  }
+  if(type==='UPLOAD'){
+   const t=terminalHere();if(!t)return {ok:false,message:'지금 있는 곳에는 업로드할 단말기가 없어요.'};
+   if(worldState.dataCount<(t.need||0))return {ok:false,message:'업로드할 데이터가 부족해요.'};
+   t.uploaded=true;worldState.dataCount=Math.max(0,worldState.dataCount-(t.need||0));sound('success.correct');await openLinkedDoors();updateHUD();return {ok:true};
+  }
+  if(type==='CHARGE'){
+   if(!chargerHere())return {ok:false,message:'지금 있는 곳에는 충전기가 없어요.'};
+   worldState.energy=worldState.maxEnergy;sound('success.correct');updateHUD();return {ok:true};
+  }
   if(type==='OPEN'){
    const d=doorAhead();if(!d)return {ok:false,message:'바로 앞에 닫힌 문이 없어요.'};
-   if(worldState.crystalCount<d.need)return {ok:false,message:'수정이 '+d.need+'개 필요해요. 지금은 '+worldState.crystalCount+'개예요.'};
+   if(d.switchId||d.terminalId)return {ok:false,message:'이 문은 연결된 장치를 먼저 작동해야 해요.'};
+   if(worldState.crystalCount<(d.need||0))return {ok:false,message:'수정이 '+(d.need||0)+'개 필요해요. 지금은 '+worldState.crystalCount+'개예요.'};
    await openDoor(d);return {ok:true};
   }
   if(type==='HEAL'){
-   if(worldState.potions<=0)return {ok:false,message:'회복 코어를 이미 사용했어요.'};
-   if(worldState.hp>=worldState.maxHp)return {ok:false,message:'지금은 체력이 가득 차 있어요.'};
+   if(worldState.hp>=worldState.maxHp||worldState.potions<=0)return {ok:true};
    worldState.potions--;worldState.hp=Math.min(worldState.maxHp,worldState.hp+2);sound('success.correct');updateHUD();return {ok:true};
   }
   return {ok:false,message:'알 수 없는 명령이에요.'};
  },
  async afterPlayerAction(){
   const events=[];let damage=0;
+  const activeHazard=worldState.hazards.find(h=>Math.abs(h.x-worldState.x)<.55&&hazardState(h)==='danger');
+  if(activeHazard)damage+=1;
+  for(const h of worldState.hazards){const cycle=h.cycle||['safe','danger'];h.stateIndex=((h.stateIndex||0)+1)%cycle.length;}
   for(const e of worldState.enemies){
-   if(e.dead)continue;
-   const cycle=e.cycle||defaultCycle(e.type);
-   e.stateIndex=(e.stateIndex+1)%cycle.length;
-   const state=currentEnemyState(e);
-   const dx=Math.abs(e.x-worldState.x),dy=Math.abs(e.y-worldState.y);
-   let hits=false;
-   if((e.type==='spitter'||e.type==='boss_mushroom')&&(state==='shoot'||state==='spore')&&dx<=5&&dy<=2.2)hits=true;
-   else if(e.type==='bat'&&state==='swoop'&&dx<=2.7)hits=true;
-   else if(e.type==='golem'&&state==='slam'&&dx<=2.2&&dy<=1.2)hits=true;
-   else if((e.type==='blob'||e.type==='mush'||e.type==='ghost'||e.type==='shield')&&state==='attack'&&dx<=1.25&&dy<=1.2)hits=true;
-   if(hits){
-    if(worldState.evade>0){events.push({message:'회피 성공!'});sound('ui.confirm');}
-    else if(e.type==='boss_mushroom')damage+=3;
-    else if(e.type==='spitter'||e.type==='golem')damage+=2;
-    else damage+=1;
-   }
+   if(e.dead)continue;const cycle=e.cycle||defaultCycle(e.type);e.stateIndex=((e.stateIndex||0)+1)%cycle.length;
+   const state=currentEnemyState(e),dx=Math.abs(e.x-worldState.x),dy=Math.abs((e.y||0)-worldState.y);let hits=false;
+   if((state==='shoot'||state==='spore')&&dx<=5&&dy<=2.2)hits=true;
+   else if((state==='swoop'||state==='slam')&&dx<=2.7&&dy<=1.5)hits=true;
+   else if(state==='attack'&&dx<=1.25&&dy<=1.2)hits=true;
+   if(hits){if(worldState.evade>0){events.push({message:'회피 성공!'});sound('ui.confirm');}else damage+=e.boss?2:(e.type==='spitter'||e.type==='golem'?2:1);}
   }
   if(worldState.evade>0)worldState.evade=0;
-  if(damage>0){await hurtPlayer(damage);events.push({message:'버그 공격에 맞았어요!'});}
-  updateBossHud();
+  const cv=worldState.conveyors.find(v=>worldState.x>=v.from&&worldState.x<=v.to);
+  if(cv){
+   const nx=worldState.x+(cv.dir||1),ny=surfaceNear(nx,worldState.y,1,1);
+   if(ny!==null&&!enemyAt(nx,ny)&&!worldState.doors.some(d=>!d.open&&Math.abs(d.x-nx)<.6)){await moveTo(nx,ny,'dash');events.push({message:'컨베이어가 한 칸 밀었어요.'});}
+  }
+  if(damage>0){await hurtPlayer(damage);events.push({message:activeHazard?'위험 장치에 닿았어요!':'버그 공격에 맞았어요!'});}
+  updateBossHud();updateHUD();
   return {defeat:worldState.hp<=0,event:events[0]};
  },
  isComplete(){
-  const g=mission.goal||{x:0,y:0};
-  const atGoal=Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;
-  const bossAlive=worldState.enemies.some(e=>e.boss&&!e.dead);
-  return atGoal&&!bossAlive;
+  const g=mission.goal||{x:0,y:0},atGoal=Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;
+  const bossAlive=worldState.enemies.some(e=>e.boss&&!e.dead),uploads=worldState.terminals.filter(t=>t.uploaded).length;
+  return atGoal&&!bossAlive&&uploads>=Number(mission.requireUploads||0);
  }
 };
 
@@ -357,8 +409,8 @@ function getUnlockedBlocks(){
 function allowedBlocks(){
  const s=new Set(mission.available||[]);getUnlockedBlocks().forEach(b=>s.add(b));return [...s];
 }
-function memoryLimit(){return (mission.functionMemory&&codeTarget==='function'?mission.functionMemory:mission.memory)+(codeTarget==='main'?progress.memoryBonus:0);}
-function activeRoot(){return codeTarget==='function'?functionProgram:mainProgram;}
+function memoryLimit(){return (mission.functionMemory&&codeTarget!=='main'?mission.functionMemory:mission.memory)+(codeTarget==='main'?progress.memoryBonus:0);}
+function activeRoot(){return codeTarget==='main'?mainProgram:(functionPrograms[codeTarget]||functionPrograms.a);}
 function resolveContainer(root,path,which='body'){
  let list=root;
  for(const part of path){
@@ -372,9 +424,9 @@ function resolveContainer(root,path,which='body'){
 function invalidateExecution(){runtime.stop();runtime.iterator=null;stepSession=false;executingNodeId='';errorNodeId='';setExecuting(false);setExec('코드가 바뀌었어요.','다시 실행하면 구역 처음부터 확인합니다.');}
 function addBlock(type){
  if(!allowedBlocks().includes(type)){toast('아직 잠긴 명령이에요.',true);return;}
- if(codeTarget==='function'&&type==='CALL_FN'){toast('나의 기술 안에서 자기 자신은 부를 수 없어요.',true);return;}
+ if(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B')){toast('나의 기술 안에서는 다른 기술을 부르지 않아요.',true);return;}
  const root=activeRoot();if(RuntimeAPI.countNodes(root)>=memoryLimit()){toast('메모리가 꽉 찼어요. 반복이나 나의 기술로 코드를 줄여 보세요.',true);sound('ui.error');return;}
- const def=BLOCKS[type],node={id:makeId(),type};if(def.kind==='structure'||def.kind==='condition')node.body=[];if(def.kind==='condition')node.elseBody=[];
+ const def=BLOCKS[type],node={id:makeId(),type};if(def.kind==='structure'||def.kind==='condition'||def.kind==='until')node.body=[];if(def.kind==='condition')node.elseBody=[];
  resolveContainer(root,insertPath).push(node);if(node.body)insertPath=insertPath.concat(node.id+':body');
  persistCode();invalidateExecution();renderAllEditor();sound('ui.click');
 }
@@ -422,7 +474,7 @@ function findNodeLabel(list,id){
 }
 function renderProgram(){
  const root=$('program');root.replaceChildren();renderNodes(activeRoot(),root,[]);
- $('blockValue').textContent=RuntimeAPI.countNodes(activeRoot())+'/'+memoryLimit();$('codeModeTitle').textContent=codeTarget==='function'?'나의 기술':'메인 코드';
+ $('blockValue').textContent=RuntimeAPI.countNodes(activeRoot())+'/'+memoryLimit();$('codeModeTitle').textContent=codeTarget==='a'?'나의 기술 A':codeTarget==='b'?'나의 기술 B':'메인 코드';
  const labels=insertPath.map(p=>findNodeLabel(activeRoot(),String(p).split(':')[0])+(String(p).includes('elseBody')?' / 아니면':'')).filter(Boolean);
  $('insertPath').textContent=labels.length?'추가 위치: '+labels.join(' › '):'여기에 명령이 추가돼요.';
  updateMiniCode();
@@ -430,23 +482,33 @@ function renderProgram(){
 function renderPalette(){
  const root=$('palette');root.replaceChildren();
  allowedBlocks().forEach(type=>{
-  if(codeTarget==='function'&&type==='CALL_FN')return;
+  if(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B'))return;
   const def=BLOCKS[type],b=document.createElement('button');b.type='button';b.className=def.kind||'action';b.innerHTML='<b>'+def.icon+'</b>'+def.label;b.onclick=()=>addBlock(type);root.appendChild(b);
  });
 }
 function renderAllEditor(){renderProgram();renderPalette();}
+function programContainsId(list,id){
+ for(const n of list||[]){if(n.id===id)return true;if(programContainsId(n.body,id)||programContainsId(n.elseBody,id))return true;}return false;
+}
 function updateMiniCode(){
  const mini=$('miniCodeLines');if(!mini)return;mini.replaceChildren();
- const flat=[];function walk(list,depth=0){for(const n of list||[]){flat.push({n,depth});if(n.body)walk(n.body,depth+1);if(n.elseBody?.length)walk(n.elseBody,depth+1);}}walk(mainProgram);
- const idx=Math.max(0,flat.findIndex(v=>v.n.id===executingNodeId));const from=Math.max(0,idx-1),to=Math.min(flat.length,from+4);
- for(let i=from;i<to;i++){const v=flat[i],d=document.createElement('div');d.className=v.n.id===executingNodeId?'active':'';d.style.paddingLeft=(v.depth*10)+'px';d.textContent=(v.n.id===executingNodeId?'▶ ':'  ')+(BLOCKS[v.n.type]?.label||v.n.type);mini.appendChild(d);}
+ let source=mainProgram,prefix='';
+ if(programContainsId(functionPrograms.a,executingNodeId)){source=functionPrograms.a;prefix='ƒA · ';}
+ else if(programContainsId(functionPrograms.b,executingNodeId)){source=functionPrograms.b;prefix='ƒB · ';}
+ const flat=[];function walk(list,depth=0){for(const n of list||[]){flat.push({n,depth});if(n.body)walk(n.body,depth+1);if(n.elseBody?.length)walk(n.elseBody,depth+1);}}walk(source);
+ let idx=flat.findIndex(v=>v.n.id===executingNodeId);if(idx<0)idx=0;const from=Math.max(0,idx-1),to=Math.min(flat.length,from+5);
+ for(let i=from;i<to;i++){const v=flat[i],d=document.createElement('div');d.className=v.n.id===executingNodeId?'active':'';d.style.paddingLeft=(v.depth*10)+'px';d.textContent=(v.n.id===executingNodeId?'▶ ':'  ')+(i===from&&prefix?prefix:'')+(BLOCKS[v.n.type]?.label||v.n.type);mini.appendChild(d);}
 }
 function updateHUD(){
- $('hpValue').textContent=worldState?.hp??5;$('crystalValue').textContent=worldState?.crystalCount??0;$('variableCrystal').textContent=worldState?.crystalCount??0;$('variableHp').textContent=worldState?.hp??5;renderProgram();
+ $('hpValue').textContent=worldState?.hp??5;$('crystalValue').textContent=worldState?.crystalCount??0;$('variableCrystal').textContent=worldState?.crystalCount??0;$('variableHp').textContent=worldState?.hp??5;
+ $('variableData').textContent=worldState?.dataCount??0;$('variableEnergy').textContent=worldState?.energy??0;
+ $('dataStat').classList.toggle('hidden',!(mission?.dataItems?.length||mission?.terminals?.length));
+ $('energyStat').classList.toggle('hidden',!mission?.usesEnergy);
+ renderProgram();
 }
 function updateBossHud(){
  const box=$('bossHud');if(!box||!worldState)return;const boss=worldState.enemies.find(e=>e.boss&&!e.dead);
- if(!boss){box.classList.add('hidden');return;}box.classList.remove('hidden');$('bossName').textContent=boss.type==='boss_mushroom'?'BUGCAP · 왕버섯':'NULL GOLEM';$('bossHp').style.width=(100*boss.hp/boss.maxHp)+'%';$('bossState').textContent=stateLabel(currentEnemyState(boss));
+ if(!boss){box.classList.add('hidden');return;}box.classList.remove('hidden');const names={boss_mushroom:'BUGCAP · 왕버섯',mine_overseer:'ORE-0 · 광산 감독관',gear_boss:'GEAR · 중앙 AI',mirage_boss:'MIRAGE · 서버 코어',root_warden:'ROOT WARDEN',null_core:'NULL CORE'};$('bossName').textContent=names[boss.type]||'BUG BOSS';$('bossHp').style.width=(100*boss.hp/boss.maxHp)+'%';$('bossState').textContent=stateLabel(currentEnemyState(boss));
 }
 function stateLabel(s){return ({idle:'대기',windup:'공격 준비!',shoot:'독포자!',spore:'포자 폭발!',rest:'빈틈',hover:'비행',swoop:'급강하!',guard:'방어 중',open:'빈틈',slam:'내려찍기!'})[s]||s;}
 function renderValidationResults(report){
@@ -464,7 +526,7 @@ async function handleMissionDone(){
  if(cleared||validating)return;
  validating=true;setExecuting(false);setRunButtons(false);stepSession=false;$('runBtn').disabled=true;$('stepBtn').disabled=true;
  setExec('프로그램 검사 중…',mission.validationTests?.length?'다른 상황에서도 같은 코드가 작동하는지 확인하고 있어요.':'사용한 코딩 개념을 확인하고 있어요.','running');
- const report=await Validator.validate({mission,program:mainProgram,functionProgram,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
+ const report=await Validator.validate({mission,program:mainProgram,functionPrograms,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
  $('runBtn').disabled=false;$('stepBtn').disabled=false;lastValidation=report;renderValidationResults(report);
  if(!report.ok){
   failures++;validating=false;sound('ui.error');setExec('다른 상황에서 버그 발생',report.concept?.ok===false?report.concept.message:'코드를 고쳐 다시 실행해 보세요.','error');showValidationFailure(report);return;
@@ -492,26 +554,32 @@ function setMissionText(){
 function loadMission(index,resetCode=false){
  missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';
  const slot=currentStore(),carry=mission.carryProgram?previousCarryStore():null;
- if(resetCode){mainProgram=[];functionProgram=[];}
- else if((slot.main?.length||slot.fn?.length)){mainProgram=normalizeNodes(clone(slot.main||[]));functionProgram=normalizeNodes(clone(slot.fn||[]));}
- else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionProgram=normalizeNodes(clone(carry.fn||[]));}
- else{mainProgram=[];functionProgram=[];}
+ if(resetCode){mainProgram=[];functionPrograms={a:[],b:[]};}
+ else if((slot.main?.length||slot.fn?.length||slot.fns?.a?.length||slot.fns?.b?.length)){
+  mainProgram=normalizeNodes(clone(slot.main||[]));functionPrograms={a:normalizeNodes(clone(slot.fns?.a||slot.fn||[])),b:normalizeNodes(clone(slot.fns?.b||[]))};
+ }
+ else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionPrograms={a:normalizeNodes(clone(carry.fns?.a||carry.fn||[])),b:normalizeNodes(clone(carry.fns?.b||[]))};}
+ else{mainProgram=[];functionPrograms={a:[],b:[]};}
  persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));
+ const skillB=$('skillBTab');if(skillB){skillB.disabled=!(progress.inventory.mine_core||missionIndex>=20);skillB.classList.toggle('locked',skillB.disabled);}
  $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');$('validationFail')?.classList.add('hidden');
  try{window.KidscadeGame?.start?.({stage:missionIndex+1,title:mission.title});}catch(_){}
 }
 function renderMissionGrid(){
  const root=$('missionGrid');root.replaceChildren();let lastArc='';
  missions.forEach((m,i)=>{
-  if(m.arc!==lastArc){lastArc=m.arc;const h=document.createElement('div');h.className='mission-arc';h.textContent=m.arc==='prologue'?'코드 캠프 · 입단 시험':'버섯 숲 · 첫 원정';root.appendChild(h);}
+  if(m.arc!==lastArc){lastArc=m.arc;const h=document.createElement('div');h.className='mission-arc';const names={prologue:'코드 캠프 · 입단 시험',forest:'버섯 숲 · 상태와 분기',mine:'수정 광산 · 조건 반복',city:'기계 도시 · 다중 함수',desert:'데이터 사막 · 변수와 자원',citadel:'버그 성채 · 종합 검증',null:'NULL CORE · 최종 범용 AI'};h.textContent=names[m.arc]||m.arc;root.appendChild(h);}
   const b=document.createElement('button');b.type='button';b.className='mission-item'+(i>=progress.unlocked?' locked':'')+(progress.completed[i]?' done':'');b.innerHTML='<b>'+(progress.completed[i]?'✓ ':'')+m.name+'</b><span>'+m.concept+' · 메모리 '+(m.memory+(progress.memoryBonus||0))+'</span>';b.disabled=i>=progress.unlocked;b.onclick=()=>loadMission(i,false);root.appendChild(b);
  });
 }
 function renderWorldMap(){
  const root=$('campaignMap');if(!root)return;root.replaceChildren();
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.classList.add('map-links');
+ for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.classList.add(progress.completed[a.end]?'done':'');svg.appendChild(line);}
+ root.appendChild(svg);
  for(const region of regions){
   const locked=region.locked||Number.isInteger(region.requiresMission)&&!progress.completed[region.requiresMission];
-  const btn=document.createElement('button');btn.type='button';btn.className='map-node'+(locked?' locked':'');
+  const btn=document.createElement('button');btn.type='button';btn.className='map-node'+(locked?' locked':'')+(progress.completed[region.end]?' complete':'');
   btn.style.left=region.x+'%';btn.style.top=region.y+'%';
   const doneCount=Array.from({length:region.end-region.start+1},(_,k)=>region.start+k).filter(i=>progress.completed[i]).length;
   btn.innerHTML='<span>'+region.icon+'</span><b>'+region.name+'</b><small>'+region.subtitle+(locked?' · 잠김':' · '+doneCount+'/'+(region.end-region.start+1))+'</small>';
@@ -541,8 +609,8 @@ const runtime=new RuntimeAPI.Runtime({
   else if(event.kind==='run-stop'){setExecuting(false);setRunButtons(false);}
   else if(event.kind==='check'){const def=BLOCKS[event.node.type];$('sensorReadout').textContent='센서: '+(event.result?'참 ✓':'거짓 ✕');setExec(def.label,event.result?'참 → 안쪽 실행':'거짓 → 아니면/다음으로','running');}
   else if(event.kind==='else')setExec('아니면','조건이 거짓이라 이쪽 코드를 실행해요.','running');
-  else if(event.kind==='loop')setExec(BLOCKS[event.node.type].label,event.index+' / '+event.total+'번째 반복','running');
-  else if(event.kind==='call')setExec('나의 기술','저장한 행동 묶음을 실행합니다.','running');
+  else if(event.kind==='loop')setExec(BLOCKS[event.node.type].label,event.until?event.index+'번째 · 끝나는 조건을 다시 확인합니다.':event.index+' / '+event.total+'번째 반복','running');
+  else if(event.kind==='call')setExec('나의 기술 '+((event.slot||'a').toUpperCase()),'저장한 행동 묶음을 실행합니다.','running');
   else if(event.kind==='action')setExec(BLOCKS[event.node.type].label,'캐릭터가 이 명령을 실행하는 중','running');
   else if(event.kind==='checkpoint'){toast('체크포인트 · '+event.name);}
   else if(event.kind==='enemy-event'&&event.message)toast(event.message,event.message.includes('맞'));
@@ -556,18 +624,32 @@ function setSpeed(v){
 }
 
 function drawSky(w,h,time){
- const forest=mission?.arc==='forest';
- const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,forest?'#132d32':'#132a4f');g.addColorStop(.56,forest?'#28614f':'#285c7e');g.addColorStop(1,forest?'#76a85f':'#7cc5b2');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
- ctx.globalAlpha=.12;ctx.fillStyle='#fff';for(let i=0;i<7;i++){const x=((i*243-cameraX*.11)%(w+260))-130,y=55+(i%3)*50;ctx.beginPath();ctx.ellipse(x,y,78,22,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
- ctx.fillStyle=forest?'#173d38':'#183c53';for(let i=-2;i<12;i++){const x=i*230-(cameraX*.25%230);ctx.beginPath();ctx.moveTo(x,h*.72);ctx.lineTo(x+110,h*.33+(i%2)*42);ctx.lineTo(x+250,h*.72);ctx.fill();}
- if(forest){ctx.fillStyle='#1e513f';for(let i=-2;i<22;i++){const x=i*95-(cameraX*.52%95),y=h*.73;ctx.fillRect(x+28,y-110-(i%3)*20,10,120);ctx.beginPath();ctx.arc(x+33,y-125-(i%3)*20,35,0,Math.PI*2);ctx.fill();}}
+ const themes={
+  prologue:['#132a4f','#285c7e','#7cc5b2','#183c53'],
+  forest:['#132d32','#28614f','#76a85f','#173d38'],
+  mine:['#181d35','#33405b','#6f7f8e','#21263a'],
+  city:['#111b2d','#244052','#55717b','#182735'],
+  desert:['#49321f','#996b3e','#d9aa67','#6c4930'],
+  citadel:['#21152e','#4a284b','#70465f','#2c1c35'],
+  null:['#090914','#18162b','#30304a','#11111d']
+ },t=themes[mission?.arc]||themes.prologue;
+ const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,t[0]);g.addColorStop(.56,t[1]);g.addColorStop(1,t[2]);ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+ ctx.globalAlpha=.1;ctx.fillStyle='#fff';for(let i=0;i<7;i++){const x=((i*243-cameraX*.11)%(w+260))-130,y=55+(i%3)*50;ctx.beginPath();ctx.ellipse(x,y,78,22,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+ ctx.fillStyle=t[3];for(let i=-2;i<12;i++){const x=i*230-(cameraX*.25%230);ctx.beginPath();ctx.moveTo(x,h*.72);ctx.lineTo(x+110,h*.33+(i%2)*42);ctx.lineTo(x+250,h*.72);ctx.fill();}
+ if(mission?.arc==='forest'){ctx.fillStyle='#1e513f';for(let i=-2;i<22;i++){const x=i*95-(cameraX*.52%95),y=h*.73;ctx.fillRect(x+28,y-110-(i%3)*20,10,120);ctx.beginPath();ctx.arc(x+33,y-125-(i%3)*20,35,0,Math.PI*2);ctx.fill();}}
+ if(mission?.arc==='city'||mission?.arc==='citadel'){ctx.fillStyle='#0b1621aa';for(let i=-2;i<16;i++){const x=i*120-(cameraX*.38%120),bh=80+(i%4)*34;ctx.fillRect(x,h*.72-bh,78,bh);ctx.fillStyle='#8de8ff20';for(let y=h*.72-bh+15;y<h*.7;y+=22)ctx.fillRect(x+12,y,8,7);ctx.fillStyle='#0b1621aa';}}
+ if(mission?.arc==='desert'){ctx.fillStyle='#c58b4b44';for(let i=-2;i<10;i++){const x=i*250-(cameraX*.22%250);ctx.beginPath();ctx.ellipse(x,h*.72,190,48,0,Math.PI,Math.PI*2);ctx.fill();}}
+ if(mission?.arc==='null'){ctx.strokeStyle='#8f8cff18';ctx.lineWidth=1;for(let x=((cameraX*.18)%55)*-1;x<w;x+=55){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}for(let y=30;y<h;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
 }
 function drawPlatforms(h){
- const tw=tileW(),vu=vertUnit();
+ const tw=tileW(),pal={
+  prologue:['#63a84b','#294735','#9ad86e','#24372c'],forest:['#6d9c4d','#385c37','#9ad86e','#24372c'],
+  mine:['#768695','#414d5c','#b9d3e2','#303a46'],city:['#607d8c','#364c59','#8ecfe5','#263743'],
+  desert:['#c58b4b','#785a39','#f1c67f','#60452d'],citadel:['#77506f','#493149','#c288b6','#352438'],null:['#4f5068','#2a2a3d','#a7a6ff','#20202f']
+ }[mission?.arc]||['#63a84b','#294735','#9ad86e','#24372c'];
  for(const p of mission.platforms||[]){
-  const x=sx(p.x)-tw*.5,y=sy(p.y),w=p.w*tw;
-  const grad=ctx.createLinearGradient(0,y,0,y+70);grad.addColorStop(0,mission.arc==='forest'?'#6d9c4d':'#63a84b');grad.addColorStop(.16,mission.arc==='forest'?'#385c37':'#294735');grad.addColorStop(1,'#1e3128');
-  ctx.fillStyle=grad;ctx.fillRect(x,y,w,Math.max(14,h-y+10));ctx.fillStyle='#9ad86e';ctx.fillRect(x,y,w,5);ctx.fillStyle='#24372c';ctx.fillRect(x,y+13,w,5);
+  const x=sx(p.x)-tw*.5,y=sy(p.y),w=p.w*tw,grad=ctx.createLinearGradient(0,y,0,y+70);grad.addColorStop(0,pal[0]);grad.addColorStop(.16,pal[1]);grad.addColorStop(1,pal[3]);
+  ctx.fillStyle=grad;ctx.fillRect(x,y,w,Math.max(14,h-y+10));ctx.fillStyle=pal[2];ctx.fillRect(x,y,w,5);ctx.fillStyle=pal[3];ctx.fillRect(x,y+13,w,5);
  }
 }
 function drawGoal(){
@@ -575,6 +657,27 @@ function drawGoal(){
 }
 function drawCrystal(c,time){
  if(c.taken)return;const x=sx(c.x),y=sy(c.y)-38-Math.sin(time*.004+c.bob)*5;ctx.save();ctx.translate(x,y);ctx.rotate(time*.0015+c.bob);ctx.fillStyle='#76eaff';ctx.shadowColor='#4adcfb';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(10,0);ctx.lineTo(0,15);ctx.lineTo(-10,0);ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawDataItem(d,time){
+ if(d.taken)return;const x=sx(d.x),y=sy(d.y)-34-Math.sin(time*.005+(d.bob||0))*4;ctx.save();ctx.translate(x,y);ctx.fillStyle='#7df6ff';ctx.shadowColor='#63e9ff';ctx.shadowBlur=16;ctx.fillRect(-11,-11,22,22);ctx.fillStyle='#173845';ctx.font='900 11px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText('01',0,4);ctx.restore();
+}
+function drawSwitch(sw){
+ const x=sx(sw.x),y=sy(sw.y);ctx.save();ctx.translate(x,y);ctx.fillStyle='#263b49';ctx.fillRect(-15,-28,30,28);ctx.fillStyle=sw.on?'#72f0a7':'#ffcf66';ctx.beginPath();ctx.arc(0,-18,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#dcecff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(sw.on?9:-8,-36);ctx.stroke();ctx.restore();
+}
+function drawTerminal(t){
+ const x=sx(t.x),y=sy(t.y);ctx.save();ctx.translate(x,y);ctx.fillStyle='#20313f';ctx.fillRect(-20,-48,40,48);ctx.fillStyle=t.uploaded?'#67e8ae':'#6fc9ff';ctx.fillRect(-14,-40,28,20);ctx.fillStyle='#07131d';ctx.font='900 9px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText(t.uploaded?'OK':'DATA',0,-27);ctx.restore();
+}
+function drawCharger(c){
+ const x=sx(c.x??c),y=sy(c.y||0);ctx.save();ctx.translate(x,y);ctx.fillStyle='#2c3948';ctx.fillRect(-13,-34,26,34);ctx.fillStyle='#ffe36b';ctx.font='900 22px system-ui';ctx.textAlign='center';ctx.fillText('⚡',0,-9);ctx.restore();
+}
+function drawHazard(h,time){
+ const x=sx(h.x),y=sy(h.y||0),danger=hazardState(h)==='danger';ctx.save();ctx.translate(x,y);
+ if(h.type==='cart'){ctx.fillStyle=danger?'#d95c62':'#617784';ctx.fillRect(-24,-25,48,23);ctx.fillStyle='#1a222a';ctx.beginPath();ctx.arc(-15,1,7,0,Math.PI*2);ctx.arc(15,1,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dce7ec';ctx.fillRect(-18,-18,36,5);}
+ else{ctx.globalAlpha=danger?.88:.25;ctx.strokeStyle=danger?'#ff5c6a':'#72d8ff';ctx.lineWidth=danger?6:2;ctx.shadowColor=danger?'#ff304b':'#64d8ff';ctx.shadowBlur=danger?18:5;ctx.beginPath();ctx.moveTo(0,-120);ctx.lineTo(0,0);ctx.stroke();ctx.fillStyle='#263541';ctx.fillRect(-12,-15,24,15);}
+ ctx.restore();
+}
+function drawConveyors(){
+ const tw=tileW();ctx.save();ctx.font='900 16px system-ui';ctx.textAlign='center';for(const c of worldState.conveyors||[]){for(let x=c.from;x<=c.to;x++){ctx.fillStyle='#d8eef3aa';ctx.fillText(c.dir<0?'‹':'›',sx(x),sy(0)-7);ctx.strokeStyle='#7ba0ad55';ctx.strokeRect(sx(x)-tw*.42,sy(0)-5,tw*.84,8);}}ctx.restore();
 }
 function drawTreasure(t,time){
  if(t.taken)return;const x=sx(t.x),y=sy(t.y)-27-Math.sin(time*.003+t.bob)*3;ctx.save();ctx.translate(x,y);ctx.fillStyle='#f6c85b';ctx.shadowColor='#ffd969';ctx.shadowBlur=16;ctx.fillRect(-15,-16,30,22);ctx.fillStyle='#9b5d2d';ctx.fillRect(-15,-8,30,5);ctx.fillStyle='#fff0a9';ctx.fillRect(-3,-9,6,8);ctx.restore();
@@ -587,6 +690,7 @@ function drawEnemy(e,time){
  else if(e.type==='shield'){ctx.fillStyle='#70889a';ctx.fillRect(-16,-32,32,34);ctx.fillStyle=state==='guard'?'#d0d9e0':'#61707c';ctx.fillRect(-24,-30,12,36);}
  else if(e.type==='boss_mushroom'||e.type==='spitter'||e.type==='mush'){ctx.fillStyle=e.boss?'#b64f87':'#e58b5e';ctx.beginPath();ctx.arc(0,-14,e.boss?25:21,Math.PI,0);ctx.lineTo(e.boss?23:18,-2);ctx.lineTo(e.boss?-23:-18,-2);ctx.closePath();ctx.fill();ctx.fillStyle='#e8d4b7';ctx.fillRect(e.boss?-11:-8,-2,e.boss?22:16,e.boss?28:20);}
  else if(e.type==='golem'){ctx.fillStyle='#8799a8';ctx.fillRect(-19,-35,38,38);ctx.fillStyle='#61717e';ctx.fillRect(-25,-23,8,24);ctx.fillRect(17,-23,8,24);}
+ else if(['robot','mine_overseer','gear_boss','mirage_boss','root_warden','null_core'].includes(e.type)){ctx.fillStyle=e.boss?'#5969a9':'#668794';ctx.fillRect(-20,-34,40,38);ctx.fillStyle=state==='guard'?'#bfc8dd':'#394b60';ctx.fillRect(-25,-25,8,26);ctx.fillRect(17,-25,8,26);ctx.fillStyle='#74f1e4';ctx.fillRect(-11,-25,22,8);ctx.fillStyle='#1b2430';ctx.fillRect(-6,-22,4,3);ctx.fillRect(3,-22,4,3);}
  else if(e.type==='ghost'){ctx.fillStyle='#a98ef4';ctx.beginPath();ctx.arc(0,-14,20,Math.PI,0);ctx.lineTo(20,14);ctx.lineTo(10,7);ctx.lineTo(0,14);ctx.lineTo(-10,7);ctx.lineTo(-20,14);ctx.closePath();ctx.fill();}
  else{ctx.fillStyle='#6ed28a';ctx.beginPath();ctx.arc(0,-8,22,Math.PI,0);ctx.quadraticCurveTo(26,14,0,15);ctx.quadraticCurveTo(-26,14,-22,-8);ctx.fill();}
  ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.fillRect(-9,-15,5,6);ctx.fillRect(5,-15,5,6);ctx.fillStyle='#18222a';ctx.fillRect(-7,-13,2,3);ctx.fillRect(7,-13,2,3);
@@ -606,7 +710,7 @@ function render(time){
   const targetX=Math.max(0,worldState.displayX*tileW()-w*.36);cameraX+=(targetX-cameraX)*.075;
   const targetY=worldState.displayY*vertUnit()*.24;cameraY+=(targetY-cameraY)*.06;
  }
- drawSky(w,h,time);if(mission&&worldState){drawPlatforms(h);drawGoal();worldState.crystals.forEach(c=>drawCrystal(c,time));worldState.treasures.forEach(t=>drawTreasure(t,time));worldState.doors.forEach(drawDoor);worldState.enemies.forEach(e=>drawEnemy(e,time));drawHero();}
+ drawSky(w,h,time);if(mission&&worldState){drawPlatforms(h);drawConveyors();drawGoal();worldState.crystals.forEach(c=>drawCrystal(c,time));worldState.dataItems.forEach(d=>drawDataItem(d,time));worldState.switches.forEach(drawSwitch);worldState.terminals.forEach(drawTerminal);worldState.rechargeStations.forEach(drawCharger);worldState.hazards.forEach(h=>drawHazard(h,time));worldState.treasures.forEach(t=>drawTreasure(t,time));worldState.doors.forEach(drawDoor);worldState.enemies.forEach(e=>drawEnemy(e,time));drawHero();}
  requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
@@ -626,15 +730,15 @@ document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>setSpeed(Numb
 document.querySelectorAll('.code-tab').forEach(b=>b.onclick=()=>{codeTarget=b.dataset.codeTarget;insertPath=[];document.querySelectorAll('.code-tab').forEach(x=>x.classList.toggle('active',x===b));renderAllEditor();});
 $('outBtn').onclick=()=>{if(insertPath.length)insertPath.pop();renderAllEditor();};
 $('undoBtn').onclick=()=>{const c=resolveContainer(activeRoot(),insertPath);if(c.length){c.pop();persistCode();invalidateExecution();renderAllEditor();}};
-$('clearBtn').onclick=()=>{if(codeTarget==='function')functionProgram=[];else mainProgram=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
-$('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionProgram);};
-$('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionProgram);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
+$('clearBtn').onclick=()=>{if(codeTarget==='main')mainProgram=[];else functionPrograms[codeTarget]=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
+$('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionPrograms);};
+$('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionPrograms);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
 $('stopBtn').onclick=()=>{runtime.stop();stepSession=false;setExecuting(false);setRunButtons(false);setExec('실행을 멈췄어요.','코드를 고친 뒤 다시 실행해 보세요.');};
 $('retryBtn').onclick=()=>{$('clear').classList.add('hidden');cleared=false;buildWorld();};
 $('validationCloseBtn').onclick=()=>{$('validationFail').classList.add('hidden');setExec('코드를 고쳐 보세요.','문제가 난 줄을 확인하고 다시 실행해 보세요.');};
 $('nextBtn').onclick=()=>{
  $('clear').classList.add('hidden');
- if(missionIndex===9||missionIndex===missions.length-1){renderWorldMap();$('worldMapOverlay').classList.remove('hidden');}
+ if(regions.some(r=>r.end===missionIndex)||missionIndex===missions.length-1){renderWorldMap();$('worldMapOverlay').classList.remove('hidden');}
  else loadMission(missionIndex+1,false);
 };
 
