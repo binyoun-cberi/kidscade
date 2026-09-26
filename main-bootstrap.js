@@ -213,8 +213,7 @@
                 const game = window.KidscadeGames?.get?.(gameId);
                 const delegated = window.KidscadeRecommendations?.scoreCurrent?.(game, {
                     answers,
-                    dominantCategory: getDominantPetCategory(),
-                    playState: getPlayState(gameId, false)
+                    dominantCategory: getDominantPetCategory()
                 });
                 if (Number.isFinite(delegated)) return delegated;
 
@@ -234,8 +233,6 @@
                     const descLen = (card.querySelector('.game-desc')?.innerText || '').length;
                     if (descLen < 60) score += 2;
                 }
-                const state = getPlayState(gameId, false);
-                if (state.plays <= 0) score -= 20;
                 score += Math.random() * 2;
                 return score;
             }`;
@@ -251,26 +248,19 @@
                 getCard: (id) => window.KidscadeGames?.getCard?.(id) || document.querySelector(\`#game-list .game-card[data-id="${'${'}CSS.escape(String(id || ''))}"]\`),
                 playSound: (sound) => playUISound(sound),
                 alert: (message) => window.alert(message),
-                consumePlayTicket: (id) => consumePlayTicket(id),
-                getNextRechargeMs: (id) => getNextRechargeMs(id),
-                formatRechargeTime: (ms) => formatRechargeTime(ms),
                 showToast: (message) => showToast(message),
                 now: () => Date.now(),
-                getPlayState: (id) => getPlayState(id),
-                playLimitMax: PLAY_LIMIT_MAX,
                 minRewardPlaySec: MIN_REWARD_PLAY_SEC,
                 startSession: (session) => {
                     playStartTime = session.startedAt;
                     playCheckpointTime = session.startedAt;
                     activeGameId = session.id;
                     activeGameCategory = session.category || 'all';
-                    activeGameHadBonus = Boolean(session.hadBonus);
                 },
                 getSession: () => ({
                     id: activeGameId,
                     category: activeGameCategory,
-                    startedAt: playStartTime,
-                    hadBonus: activeGameHadBonus
+                    startedAt: playStartTime
                 }),
                 remember: (id) => {
                     if (window.KidscadeDashboard?.remember?.(id)) return true;
@@ -322,7 +312,6 @@
                     playCheckpointTime = 0;
                     activeGameId = null;
                     activeGameCategory = 'all';
-                    activeGameHadBonus = false;
                 },
                 syncBadges: () => syncBadgesAndProfile(),
                 afterClose: (detail) => {
