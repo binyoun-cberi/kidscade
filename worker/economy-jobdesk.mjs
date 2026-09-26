@@ -199,7 +199,7 @@ export async function studentCleanPlateRecord(request,env){
 
   const recordDate=/^\d{4}-\d{2}-\d{2}$/.test(String(body?.recordDate||''))
     ? String(body.recordDate)
-    : new Date().toISOString().slice(0,10);
+    : koreaDate();
   const result=['clean','partial','leftover'].includes(body?.result) ? body.result : '';
   if(!result)return json({ok:false,error:'clean_plate_result_required'},400);
 
@@ -259,7 +259,7 @@ export async function studentCreditBookRecord(request,env){
 
   const recordDate=/^\d{4}-\d{2}-\d{2}$/.test(String(body?.recordDate||''))
     ? String(body.recordDate)
-    : new Date().toISOString().slice(0,10);
+    : koreaDate();
   const category=['homework','submission','materials','other'].includes(body?.category)
     ? body.category
     : 'other';
