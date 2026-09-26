@@ -143,7 +143,7 @@
           bottom:max(10px,env(safe-area-inset-bottom));
           z-index:9985;
           display:grid;
-          grid-template-columns:repeat(4,minmax(0,1fr));
+          grid-template-columns:repeat(3,minmax(0,1fr));
           gap:5px;
           padding:7px;
           border:1px solid rgba(148,163,184,.26);
@@ -318,9 +318,8 @@
     nav.setAttribute('aria-label', 'Kidscade 주요 메뉴');
     nav.innerHTML = `
       <button class="kc-mobile-nav-btn active" type="button" data-mobile-nav="games"><span class="kc-mobile-nav-icon">🎮</span>게임</button>
-      <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="space"><span class="kc-mobile-nav-icon">🏡</span>내 공간</button>
-      <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="missions"><span class="kc-mobile-nav-icon">🎯</span>미션</button>
-      <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="shop"><span class="kc-mobile-nav-icon">🛒</span>상점</button>
+      <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="profile"><span class="kc-mobile-nav-icon">👤</span>내 프로필</button>
+      <button class="kc-mobile-nav-btn" type="button" data-mobile-nav="search"><span class="kc-mobile-nav-icon">🔎</span>찾기</button>
     `;
     document.body.appendChild(nav);
 
@@ -331,13 +330,16 @@
       setMobileActive(target);
 
       if (target === 'games') {
+        document.body.dataset.kcMobileSection = 'games';
         document.querySelector('.kc-arcade')?.scrollIntoView({ behavior:'smooth', block:'start' });
-      } else if (target === 'space') {
-        openSookTab('room');
-      } else if (target === 'missions') {
-        openSookTab('missions');
-      } else if (target === 'shop') {
-        document.getElementById('btn-open-shop')?.click();
+      } else if (target === 'profile') {
+        document.body.dataset.kcMobileSection = 'profile';
+        window.scrollTo({ top:0, behavior:'smooth' });
+      } else if (target === 'search') {
+        document.body.dataset.kcMobileSection = 'games';
+        const search = document.getElementById('game-search-input');
+        search?.scrollIntoView({ behavior:'smooth', block:'center' });
+        setTimeout(() => search?.focus(), 220);
       }
     });
   }
