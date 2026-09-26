@@ -145,16 +145,21 @@ function lowerSurface(x,currentY){
 }
 function groundExists(x,y){return surfaceNear(x,y,0.75,0.9)!==null;}
 function sameLevel(a,b,t=.75){return Math.abs(a-b)<=t;}
-function enemyAt(x,y,range=.6){return worldState.enemies.find(e=>!e.dead&&Math.abs(e.x-x)<=range&&sameLevel(e.y,y,1.05));}
+function enemyAt(x,y,range=.6){return worldState.enemies.find(e=>!e.dead&&!e.passThrough&&Math.abs(e.x-x)<=range&&sameLevel(e.y,y,1.05));}
 function enemyAhead(range=1.25){
  const dir=worldState.dir;return worldState.enemies
-  .filter(e=>!e.dead&&(e.x-worldState.x)*dir>0&&(e.x-worldState.x)*dir<=range&&Math.abs(e.y-worldState.y)<=1.4)
+  .filter(e=>!e.dead&&!e.passThrough&&(e.x-worldState.x)*dir>0&&(e.x-worldState.x)*dir<=range&&Math.abs((e.y||0)-worldState.y)<=1.4)
   .sort((a,b)=>Math.abs(a.x-worldState.x)-Math.abs(b.x-worldState.x))[0];
 }
-function doorAhead(range=1.2){return worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=range&&sameLevel(d.y,worldState.y,1));}
+function doorAhead(range=1.2){return worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=range&&sameLevel(d.y||0,worldState.y,1));}
 function crystalHere(){return worldState.crystals.find(c=>!c.taken&&Math.abs(c.x-worldState.x)<.55&&sameLevel(c.y,worldState.y,.8));}
+function dataHere(){return worldState.dataItems.find(c=>!c.taken&&Math.abs(c.x-worldState.x)<.55&&sameLevel(c.y,worldState.y,.8));}
+function switchHere(){return worldState.switches.find(v=>Math.abs(v.x-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
+function terminalHere(){return worldState.terminals.find(v=>!v.uploaded&&Math.abs(v.x-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
+function chargerHere(){return worldState.rechargeStations.find(v=>Math.abs((v.x??v)-worldState.x)<.55&&sameLevel(v.y||0,worldState.y,.8));}
 function treasureHere(){return worldState.treasures.find(t=>!t.taken&&Math.abs(t.x-worldState.x)<.6&&sameLevel(t.y,worldState.y,.9));}
-function currentEnemyState(e){const cycle=e.cycle||defaultCycle(e.type);return cycle[e.stateIndex%cycle.length];}
+function currentEnemyState(e){const cycle=e.cycle||defaultCycle(e.type);return cycle[(e.stateIndex||0)%cycle.length];}
+function hazardState(h){const cycle=h.cycle||['safe','danger'];return cycle[(h.stateIndex||0)%cycle.length];}
 function defaultCycle(type){
  if(type==='spitter')return ['idle','windup','shoot','rest'];
  if(type==='bat')return ['hover','windup','swoop','rest'];
@@ -163,16 +168,29 @@ function defaultCycle(type){
  if(type==='golem')return ['idle','windup','slam','rest'];
  return ['idle','attack'];
 }
+function hazardAt(x){return worldState.hazards.find(h=>Math.abs(h.x-x)<.55&&hazardState(h)==='danger');}
+function safeAhead(){return !hazardAt(worldState.x+worldState.dir);}
+function spendEnergy(cost=1){
+ if(!mission.usesEnergy)return true;
+ if(worldState.energy<cost)return false;
+ worldState.energy=Math.max(0,worldState.energy-cost);updateHUD();return true;
+}
 function buildWorld(){
  mission=applyVariant(missions[missionIndex]);
- const start=mission.start||{x:1,y:0};
+ const start=mission.start||{x:1,y:0},maxEnergy=Number(mission.maxEnergy||mission.startEnergy||10);
  worldState={
-  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:5,maxHp:5,crystalCount:0,potions:1,
-  pose:'idle',jumpLift:0,evade:0,lastAction:'',
+  x:start.x,y:start.y,displayX:start.x,displayY:start.y,dir:1,hp:5,maxHp:5,crystalCount:0,dataCount:0,
+  energy:Number(mission.startEnergy||maxEnergy),maxEnergy,potions:1,pose:'idle',jumpLift:0,evade:0,lastAction:'',
   crystals:(mission.crystals||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
+  dataItems:(mission.dataItems||[]).map(c=>({...c,taken:false,bob:Math.random()*6.28})),
+  switches:(mission.switches||[]).map(v=>({...v,on:Boolean(v.on)})),
+  terminals:(mission.terminals||[]).map(v=>({...v,uploaded:false})),
+  rechargeStations:clone(mission.rechargeStations||[]),
+  conveyors:clone(mission.conveyors||[]),
+  hazards:(mission.hazards||[]).map(h=>({...h,stateIndex:Number.isInteger(h.initialStateIndex)?h.initialStateIndex:0})),
   treasures:(mission.treasures||[]).map(t=>({...t,taken:Boolean(progress.treasures[t.id]),bob:Math.random()*6.28})),
   doors:(mission.doors||[]).map(d=>({...d,open:false,openT:0})),
-  enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:0}))
+  enemies:(mission.enemies||[]).map(e=>({...e,maxHp:e.hp,dead:false,hitT:0,stateIndex:Number.isInteger(e.initialStateIndex)?e.initialStateIndex:0}))
  };
  cameraX=Math.max(0,(worldState.displayX-2.2)*tileW());cameraY=worldState.displayY*vertUnit()*.2;
  executingNodeId='';errorNodeId='';stepSession=false;uiTrace=[];renderTraceStrip();
@@ -191,7 +209,7 @@ function tween(ms,update){
  return new Promise(resolve=>{const start=performance.now();function frame(now){const t=Math.min(1,(now-start)/ms);update(1-Math.pow(1-t,3),t);if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});
 }
 async function moveTo(x,y,mode='walk'){
- const fx=worldState.displayX,fy=worldState.displayY;worldState.pose=mode==='dash'?'walk':'walk';
+ const fx=worldState.displayX,fy=worldState.displayY;worldState.pose='walk';
  await tween(speedMs(mode==='dash'?180:270),(q,t)=>{worldState.displayX=fx+(x-fx)*q;worldState.displayY=fy+(y-fy)*q;worldState.jumpLift=mode==='walk'?Math.sin(t*Math.PI)*4:0;});
  worldState.x=x;worldState.y=y;worldState.displayX=x;worldState.displayY=y;worldState.jumpLift=0;worldState.pose='idle';
 }
@@ -206,10 +224,9 @@ async function dropTo(y){
  worldState.y=y;worldState.displayY=y;worldState.jumpLift=0;worldState.pose='idle';
 }
 async function attackEnemy(e){
- worldState.pose='attack';e.hitT=performance.now()+speedMs(230);
- await tween(speedMs(210),()=>{});
+ worldState.pose='attack';e.hitT=performance.now()+speedMs(230);await tween(speedMs(210),()=>{});
  const state=currentEnemyState(e);
- if(e.type==='shield'&&state==='guard'){sound('ui.error');toast('방패에 막혔어! 방어가 풀릴 때를 노려봐.',true);worldState.pose='idle';return {blocked:true};}
+ if(state==='guard'){sound('ui.error');toast('방어에 막혔어! 빈틈을 기다려봐.',true);worldState.pose='idle';return {blocked:true};}
  e.hp--;sound('combat.impact_heavy');
  if(e.hp<=0){e.dead=true;toast(e.boss?'보스의 버그 코어가 깨졌다!':'버그 몬스터 제거!');}
  worldState.pose='idle';updateBossHud();return {blocked:false};
@@ -218,64 +235,81 @@ async function hurtPlayer(amount=1){
  worldState.hp=Math.max(0,worldState.hp-amount);worldState.pose='hurt';sound('combat.hurt_voice');await tween(speedMs(170),()=>{});worldState.pose='idle';updateHUD();
 }
 async function openDoor(d){sound('ui.confirm');d.open=true;await tween(speedMs(240),q=>{d.openT=q;});}
+async function openLinkedDoors(){
+ for(const d of worldState.doors){
+  let should=false;
+  if(d.switchId){const sw=worldState.switches.find(v=>v.id===d.switchId);should=Boolean(sw?.on);}
+  if(d.terminalId){const t=worldState.terminals.find(v=>v.id===d.terminalId);should=Boolean(t?.uploaded);}
+  if(should&&!d.open)await openDoor(d);
+ }
+}
 
 const worldAPI={
  getTraceState(){
   if(!worldState)return null;
-  return {x:worldState.x,y:worldState.y,hp:worldState.hp,crystals:worldState.crystalCount,enemies:worldState.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,type:e.type,hp:e.hp,state:currentEnemyState(e)}))};
+  return {x:worldState.x,y:worldState.y,hp:worldState.hp,crystals:worldState.crystalCount,data:worldState.dataCount,energy:worldState.energy,
+   switches:worldState.switches.map(v=>({id:v.id,on:v.on})),uploads:worldState.terminals.filter(v=>v.uploaded).length,
+   hazards:worldState.hazards.map(h=>({x:h.x,state:hazardState(h)})),
+   enemies:worldState.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,type:e.type,hp:e.hp,state:currentEnemyState(e)}))};
  },
  checkCondition(cond){
   if(cond==='enemyAhead')return Boolean(enemyAhead());
-  if(cond==='gapAhead'){
-   const x=worldState.x+worldState.dir;return surfaceNear(x,worldState.y,.75,.9)===null;
-  }
-  if(cond==='platformAbove'){
-   const x=worldState.x+worldState.dir*2;return platformCandidatesAt(x).some(y=>y>worldState.y+.7&&y<=worldState.y+5);
-  }
+  if(cond==='enemyAheadWindup'){const e=enemyAhead(4.2);return Boolean(e&&currentEnemyState(e)==='windup');}
+  if(cond==='gapAhead'){const x=worldState.x+worldState.dir;return surfaceNear(x,worldState.y,.75,.9)===null;}
+  if(cond==='platformAbove'){const x=worldState.x+worldState.dir*2;return platformCandidatesAt(x).some(y=>y>worldState.y+.7&&y<=worldState.y+5);}
   if(cond==='hpLow')return worldState.hp<=2;
-  if(cond==='enemyWindup')return worldState.enemies.some(e=>!e.dead&&Math.abs(e.x-worldState.x)<=4.2&&Math.abs(e.y-worldState.y)<=3&&currentEnemyState(e)==='windup');
+  if(cond==='enemyWindup')return worldState.enemies.some(e=>!e.dead&&Math.abs(e.x-worldState.x)<=4.2&&Math.abs((e.y||0)-worldState.y)<=3&&currentEnemyState(e)==='windup');
   if(cond==='crystals3')return worldState.crystalCount>=3;
+  if(cond==='atGoal'){const g=mission.goal||{x:0,y:0};return Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;}
+  if(cond==='safeAhead')return safeAhead();
+  if(cond==='enemiesGone')return !worldState.enemies.some(e=>!e.dead);
+  if(cond==='itemHere')return Boolean(crystalHere());
+  if(cond==='doorAhead')return Boolean(doorAhead());
+  if(cond==='switchHere')return Boolean(switchHere());
+  if(cond==='dataHere')return Boolean(dataHere());
+  if(cond==='data3')return worldState.dataCount>=3;
+  if(cond==='data5')return worldState.dataCount>=5;
+  if(cond==='terminalHere')return Boolean(terminalHere());
+  if(cond==='energyLow')return worldState.energy<=2;
+  if(cond==='chargerHere')return Boolean(chargerHere());
   return false;
  },
  async applyAction(type){
   errorNodeId='';worldState.lastAction=type;
   if(type==='FWD'||type==='BACK'){
-   const dir=type==='BACK'?-worldState.dir:worldState.dir,x=worldState.x+dir;
-   const y=surfaceNear(x,worldState.y,.75,.9);
+   if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요. 충전기를 찾아보세요.'};
+   const dir=type==='BACK'?-worldState.dir:worldState.dir,x=worldState.x+dir,y=surfaceNear(x,worldState.y,.75,.9);
    if(y===null)return {ok:false,message:'앞이 끊겨 있어요. 점프하거나 다른 길을 찾아보세요.'};
    if(enemyAt(x,y))return {ok:false,message:'앞에 버그 몬스터가 있어요. 먼저 처리해야 해요.'};
-   const d=worldState.doors.find(v=>!v.open&&Math.abs(v.x-x)<.6&&sameLevel(v.y,y,1));if(d)return {ok:false,message:'문이 길을 막고 있어요.'};
+   const d=worldState.doors.find(v=>!v.open&&Math.abs(v.x-x)<.6&&sameLevel(v.y||0,y,1));if(d)return {ok:false,message:'문이 길을 막고 있어요.'};
    await moveTo(x,y);sound('ui.tick');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='JUMP'||type==='HIGH_JUMP'){
-   const high=type==='HIGH_JUMP',x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
+   const high=type==='HIGH_JUMP';if(!spendEnergy(high?2:1))return {ok:false,message:'점프할 에너지가 부족해요.'};
+   const x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
    if(y===null)return {ok:false,message:high?'높이 뛰어도 착지할 발판이 없어요.':'점프해서 착지할 곳이 없어요.'};
-   const mid=worldState.x+worldState.dir;
-   const targetEnemy=enemyAt(x,y);
-   const blockingDoor=worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=2&&Math.abs(d.y-worldState.y)<=1.1&&y<=worldState.y+1.5);
+   const mid=worldState.x+worldState.dir,targetEnemy=enemyAt(x,y);
+   const blockingDoor=worldState.doors.find(d=>!d.open&&(d.x-worldState.x)*worldState.dir>0&&(d.x-worldState.x)*worldState.dir<=2&&Math.abs((d.y||0)-worldState.y)<=1.1&&y<=worldState.y+1.5);
    if(enemyAt(mid,worldState.y)&&!high)return {ok:false,message:'몬스터가 점프 길을 막고 있어요.'};
    if(targetEnemy)return {ok:false,message:'착지할 곳에 몬스터가 있어요.'};
    if(blockingDoor)return {ok:false,message:'잠긴 문은 점프로 넘을 수 없어요.'};
    await jumpTo(x,y,high);sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
-  if(type==='DROP'){
-   const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};
-   await dropTo(y);updateHUD();return {ok:true};
-  }
+  if(type==='DROP'){if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요.'};const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};await dropTo(y);updateHUD();return {ok:true};}
   if(type==='DASH'){
+   if(!spendEnergy(2))return {ok:false,message:'대시할 에너지가 부족해요.'};
    const x=worldState.x+worldState.dir*2,y=surfaceNear(x,worldState.y,1,1.1),mid=worldState.x+worldState.dir;
    if(y===null||enemyAt(mid,worldState.y)||enemyAt(x,y)||doorAhead(2.1))return {ok:false,message:'대시할 길이 막혀 있어요.'};
    await moveTo(x,y,'dash');sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='DODGE'){
-   worldState.evade=1;worldState.pose='duck';const back=worldState.x-worldState.dir;
-   const by=surfaceNear(back,worldState.y,.6,.8);
+   worldState.evade=1;worldState.pose='duck';const back=worldState.x-worldState.dir,by=surfaceNear(back,worldState.y,.6,.8);
    if(by!==null&&!enemyAt(back,by))await moveTo(back,by,'dash');else await tween(speedMs(150),()=>{});
    worldState.pose='idle';return {ok:true};
   }
   if(type==='ATTACK'){
    const e=enemyAhead(1.35);if(!e)return {ok:false,message:'공격할 적이 바로 앞에 없어요.'};
-   const r=await attackEnemy(e);updateHUD();return {ok:true,events:r.blocked?[{message:'방패가 공격을 튕겨냈어요.'}]:[]};
+   const r=await attackEnemy(e);updateHUD();return {ok:true,events:r.blocked?[{message:'방어에 공격이 튕겨 나갔어요.'}]:[]};
   }
   if(type==='WAIT'){worldState.pose='idle';await tween(speedMs(210),()=>{});return {ok:true};}
   if(type==='COLLECT'){
@@ -283,9 +317,27 @@ const worldAPI={
    const t=treasureHere();if(t){t.taken=true;claimTreasure(t);sound('success.correct');toast(t.name+' 획득!');return {ok:true};}
    return {ok:false,message:'지금 있는 곳에는 주울 것이 없어요.'};
   }
+  if(type==='COLLECT_DATA'){
+   const d=dataHere();if(!d)return {ok:false,message:'지금 있는 곳에는 데이터가 없어요.'};
+   d.taken=true;worldState.dataCount++;sound('collect.coin_pickup');updateHUD();return {ok:true};
+  }
+  if(type==='TOGGLE'){
+   const sw=switchHere();if(!sw)return {ok:false,message:'지금 있는 곳에는 스위치가 없어요.'};
+   sw.on=true;sound('ui.confirm');await openLinkedDoors();return {ok:true};
+  }
+  if(type==='UPLOAD'){
+   const t=terminalHere();if(!t)return {ok:false,message:'지금 있는 곳에는 업로드할 단말기가 없어요.'};
+   if(worldState.dataCount<(t.need||0))return {ok:false,message:'업로드할 데이터가 부족해요.'};
+   t.uploaded=true;worldState.dataCount=Math.max(0,worldState.dataCount-(t.need||0));sound('success.correct');await openLinkedDoors();updateHUD();return {ok:true};
+  }
+  if(type==='CHARGE'){
+   if(!chargerHere())return {ok:false,message:'지금 있는 곳에는 충전기가 없어요.'};
+   worldState.energy=worldState.maxEnergy;sound('success.correct');updateHUD();return {ok:true};
+  }
   if(type==='OPEN'){
    const d=doorAhead();if(!d)return {ok:false,message:'바로 앞에 닫힌 문이 없어요.'};
-   if(worldState.crystalCount<d.need)return {ok:false,message:'수정이 '+d.need+'개 필요해요. 지금은 '+worldState.crystalCount+'개예요.'};
+   if(d.switchId||d.terminalId)return {ok:false,message:'이 문은 연결된 장치를 먼저 작동해야 해요.'};
+   if(worldState.crystalCount<(d.need||0))return {ok:false,message:'수정이 '+(d.need||0)+'개 필요해요. 지금은 '+worldState.crystalCount+'개예요.'};
    await openDoor(d);return {ok:true};
   }
   if(type==='HEAL'){
@@ -297,34 +349,31 @@ const worldAPI={
  },
  async afterPlayerAction(){
   const events=[];let damage=0;
+  const activeHazard=worldState.hazards.find(h=>Math.abs(h.x-worldState.x)<.55&&hazardState(h)==='danger');
+  if(activeHazard)damage+=1;
+  for(const h of worldState.hazards){const cycle=h.cycle||['safe','danger'];h.stateIndex=((h.stateIndex||0)+1)%cycle.length;}
   for(const e of worldState.enemies){
-   if(e.dead)continue;
-   const cycle=e.cycle||defaultCycle(e.type);
-   e.stateIndex=(e.stateIndex+1)%cycle.length;
-   const state=currentEnemyState(e);
-   const dx=Math.abs(e.x-worldState.x),dy=Math.abs(e.y-worldState.y);
-   let hits=false;
-   if((e.type==='spitter'||e.type==='boss_mushroom')&&(state==='shoot'||state==='spore')&&dx<=5&&dy<=2.2)hits=true;
-   else if(e.type==='bat'&&state==='swoop'&&dx<=2.7)hits=true;
-   else if(e.type==='golem'&&state==='slam'&&dx<=2.2&&dy<=1.2)hits=true;
-   else if((e.type==='blob'||e.type==='mush'||e.type==='ghost'||e.type==='shield')&&state==='attack'&&dx<=1.25&&dy<=1.2)hits=true;
-   if(hits){
-    if(worldState.evade>0){events.push({message:'회피 성공!'});sound('ui.confirm');}
-    else if(e.type==='boss_mushroom')damage+=3;
-    else if(e.type==='spitter'||e.type==='golem')damage+=2;
-    else damage+=1;
-   }
+   if(e.dead)continue;const cycle=e.cycle||defaultCycle(e.type);e.stateIndex=((e.stateIndex||0)+1)%cycle.length;
+   const state=currentEnemyState(e),dx=Math.abs(e.x-worldState.x),dy=Math.abs((e.y||0)-worldState.y);let hits=false;
+   if((state==='shoot'||state==='spore')&&dx<=5&&dy<=2.2)hits=true;
+   else if((state==='swoop'||state==='slam')&&dx<=2.7&&dy<=1.5)hits=true;
+   else if(state==='attack'&&dx<=1.25&&dy<=1.2)hits=true;
+   if(hits){if(worldState.evade>0){events.push({message:'회피 성공!'});sound('ui.confirm');}else damage+=e.boss?2:(e.type==='spitter'||e.type==='golem'?2:1);}
   }
   if(worldState.evade>0)worldState.evade=0;
-  if(damage>0){await hurtPlayer(damage);events.push({message:'버그 공격에 맞았어요!'});}
-  updateBossHud();
+  const cv=worldState.conveyors.find(v=>worldState.x>=v.from&&worldState.x<=v.to);
+  if(cv){
+   const nx=worldState.x+(cv.dir||1),ny=surfaceNear(nx,worldState.y,1,1);
+   if(ny!==null&&!enemyAt(nx,ny)&&!worldState.doors.some(d=>!d.open&&Math.abs(d.x-nx)<.6)){await moveTo(nx,ny,'dash');events.push({message:'컨베이어가 한 칸 밀었어요.'});}
+  }
+  if(damage>0){await hurtPlayer(damage);events.push({message:activeHazard?'위험 장치에 닿았어요!':'버그 공격에 맞았어요!'});}
+  updateBossHud();updateHUD();
   return {defeat:worldState.hp<=0,event:events[0]};
  },
  isComplete(){
-  const g=mission.goal||{x:0,y:0};
-  const atGoal=Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;
-  const bossAlive=worldState.enemies.some(e=>e.boss&&!e.dead);
-  return atGoal&&!bossAlive;
+  const g=mission.goal||{x:0,y:0},atGoal=Math.abs(worldState.x-g.x)<.55&&Math.abs(worldState.y-g.y)<1;
+  const bossAlive=worldState.enemies.some(e=>e.boss&&!e.dead),uploads=worldState.terminals.filter(t=>t.uploaded).length;
+  return atGoal&&!bossAlive&&uploads>=Number(mission.requireUploads||0);
  }
 };
 
