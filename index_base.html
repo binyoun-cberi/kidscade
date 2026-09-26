@@ -1092,12 +1092,7 @@
                 localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
             }
 
-            const PLAY_LIMIT_MAX = 5;
-            const PLAY_RECHARGE_MS = 5 * 60 * 1000;
-            let gamePlayLimits = safeParseStorage('kidscade_game_play_limits', {});
-            let playLimitTimer = null;
             let activeGameId = null;
-            let activeGameHadBonus = false;
 
             const coinDisplay = document.getElementById('coin-display');
             let activeGameCategory = "all"; 
@@ -1742,93 +1737,6 @@
             document.addEventListener('keydown', e => { if(e.key==='Escape' && !document.getElementById('avatar-modal')?.classList.contains('hidden')) closeAvatarWardrobe(); });
             renderAvatarPlaza();
 
-
-            // =====================================
-            // 게임별 추천 에너지 시스템: 게임마다 최대 5개, 5분마다 1개 회복. 에너지가 있으면 보상 2배, 없어도 플레이 가능
-            // =====================================
-            function savePlayLimits() {
-                localStorage.setItem('kidscade_game_play_limits', JSON.stringify(gamePlayLimits));
-            }
-
-            function getPlayState(gameId, shouldSave = true) {
-                const now = Date.now();
-                let state = gamePlayLimits[gameId];
-                if (!state || typeof state !== 'object') {
-                    state = { plays: PLAY_LIMIT_MAX, lastRefill: now };
-                }
-                state.plays = Math.max(0, Math.min(PLAY_LIMIT_MAX, parseInt(state.plays, 10) || 0));
-                state.lastRefill = parseInt(state.lastRefill, 10) || now;
-                if (state.plays < PLAY_LIMIT_MAX) {
-                    const elapsed = Math.max(0, now - state.lastRefill);
-                    const recovered = Math.floor(elapsed / PLAY_RECHARGE_MS);
-                    if (recovered > 0) {
-                        state.plays = Math.min(PLAY_LIMIT_MAX, state.plays + recovered);
-                        state.lastRefill += recovered * PLAY_RECHARGE_MS;
-                        if (state.plays >= PLAY_LIMIT_MAX) state.lastRefill = now;
-                    }
-                } else {
-                    state.lastRefill = now;
-                }
-                gamePlayLimits[gameId] = state;
-                if (shouldSave) savePlayLimits();
-                return state;
-            }
-
-            function consumePlayTicket(gameId) {
-                const state = getPlayState(gameId);
-                if (state.plays <= 0) return false;
-                const wasFull = state.plays >= PLAY_LIMIT_MAX;
-                state.plays -= 1;
-                if (wasFull) state.lastRefill = Date.now();
-                gamePlayLimits[gameId] = state;
-                savePlayLimits();
-                updatePlayLimitUI();
-                return true;
-            }
-
-            function formatRechargeTime(ms) {
-                const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-                const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-                const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-                return `${minutes}:${seconds}`;
-            }
-
-            function getNextRechargeMs(gameId) {
-                const state = getPlayState(gameId, false);
-                if (state.plays >= PLAY_LIMIT_MAX) return 0;
-                return Math.max(0, PLAY_RECHARGE_MS - (Date.now() - state.lastRefill));
-            }
-
-            function updatePlayLimitUI() {
-                document.querySelectorAll('.game-card[data-id]').forEach(card => {
-                    const gameId = card.getAttribute('data-id');
-                    const state = getPlayState(gameId, false);
-                    let badge = card.querySelector('.play-limit-badge');
-                    if (!badge) {
-                        badge = document.createElement('div');
-                        badge.className = 'play-limit-badge';
-                        card.appendChild(badge);
-                    }
-                    badge.classList.remove('low', 'empty');
-                    card.classList.toggle('out-of-bonus', state.plays <= 0);
-                    const recharge = state.plays < PLAY_LIMIT_MAX ? formatRechargeTime(getNextRechargeMs(gameId)) : '';
-                    if (state.plays <= 0) badge.classList.add('empty');
-                    else if (state.plays < PLAY_LIMIT_MAX) badge.classList.add('low');
-                    badge.textContent = `⚡ ${state.plays}`;
-                    const detail = state.plays >= PLAY_LIMIT_MAX
-                        ? `추천 에너지 ${state.plays}/${PLAY_LIMIT_MAX} · 보상 2배 가능`
-                        : `추천 에너지 ${state.plays}/${PLAY_LIMIT_MAX} · ${recharge} 후 +1`;
-                    badge.title = detail;
-                    badge.setAttribute('aria-label', detail);
-                });
-                savePlayLimits();
-            }
-
-            function startPlayLimitTimer() {
-                if (playLimitTimer) clearInterval(playLimitTimer);
-                updatePlayLimitUI();
-                playLimitTimer = setInterval(updatePlayLimitUI, 1000);
-            }
 
             function applyEquipped() {
                 const badge = shopDB.badge.find(item => item.id === getEquippedShopId('badge')) || shopDB.badge[0];
@@ -2557,8 +2465,6 @@ ${getEvolutionHintText()}
                     const descLen = (card.querySelector('.game-desc')?.innerText || '').length;
                     if (descLen < 60) score += 2;
                 }
-                const state = getPlayState(gameId, false);
-                if (state.plays <= 0) score -= 20;
                 score += Math.random() * 2;
                 return score;
             }
@@ -2652,7 +2558,6 @@ ${getEvolutionHintText()}
                 }
 
                 renderDashboards();
-                updatePlayLimitUI();
             }
 
             function setAgeGroup(ageKey) {
@@ -2750,17 +2655,10 @@ ${getEvolutionHintText()}
                 const originCard = document.querySelector(`#game-list .game-card[data-id="${gameId}"]`) || cardElement;
                 if (originCard.classList.contains('disabled')) { playUISound('click'); alert("열심히 준비 중인 게임입니다! 조금만 기다려주세요 😊"); return; }
 
-                activeGameHadBonus = consumePlayTicket(gameId);
-                if (!activeGameHadBonus) {
-                    showToast(`추천 에너지가 없어도 플레이할 수 있어요. 이번 판은 기본 보상으로 진행됩니다. ${formatRechargeTime(getNextRechargeMs(gameId))} 뒤 보너스 +1`);
-                }
-
                 playUISound('open'); playStartTime = Date.now(); playCheckpointTime = playStartTime; activeGameId = gameId;
                 activeGameCategory = originCard.getAttribute('data-category') || "all";
                 trackRecent(gameId);
-                const energyState = getPlayState(gameId);
-                const bonusText = activeGameHadBonus ? `추천 에너지 보너스 적용 · 남은 보너스 ${energyState.plays}/${PLAY_LIMIT_MAX}` : '기본 보상 진행';
-                document.getElementById('modal-title-text').innerText = `진행 중: ${originCard.querySelector('.game-title').innerText} · ${bonusText}`;
+                document.getElementById('modal-title-text').innerText = `진행 중: ${originCard.querySelector('.game-title').innerText}`;
                 gameIframe.src = originCard.getAttribute('href');
                 gameModal.classList.remove('hidden'); document.body.style.overflow = 'hidden';
             }
@@ -2778,11 +2676,11 @@ ${getEvolutionHintText()}
                         const sessionMin = Math.floor(sessionSec / 60);
                         const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
                         const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
-                        const rewardSeeds = activeGameHadBonus ? baseSeeds * 2 : baseSeeds;
-                        const gainedExp = activeGameHadBonus ? baseExp * 2 : baseExp;
+                        const rewardSeeds = baseSeeds;
+                        const gainedExp = baseExp;
                         const durationText = sessionMin > 0 ? `${sessionMin}분 ${sessionSec % 60}초` : `${sessionSec}초`;
 
-                        addCoins(rewardSeeds, activeGameHadBonus ? `추천 에너지 보너스 · ${durationText}` : `게임 도전 · ${durationText}`);
+                        addCoins(rewardSeeds, `게임 도전 · ${durationText}`);
 
                         if (pet.level < 4 && gainedExp > 0) {
                             pet.exp += gainedExp;
@@ -2799,7 +2697,6 @@ ${getEvolutionHintText()}
                     playStartTime = 0;
                     playCheckpointTime = 0;
                     activeGameId = null;
-                    activeGameHadBonus = false;
                 }
                 syncBadgesAndProfile();
             });
@@ -2933,7 +2830,6 @@ ${getEvolutionHintText()}
                     }
                 });
                 if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
-                updatePlayLimitUI();
             }
 
             function trackRecent(id) {
@@ -3590,7 +3486,6 @@ ${getEvolutionHintText()}
 
 
             syncBadgesAndProfile();
-            startPlayLimitTimer();
             
             // =====================================
             // 다크모드 및 출석
