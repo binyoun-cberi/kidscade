@@ -271,22 +271,22 @@ const worldAPI={
   if(cond==='data3')return worldState.dataCount>=3;
   if(cond==='data5')return worldState.dataCount>=5;
   if(cond==='terminalHere')return Boolean(terminalHere());
-  if(cond==='energyLow')return worldState.energy<=2;
+  if(cond==='energyLow')return worldState.energy<=3;
   if(cond==='chargerHere')return Boolean(chargerHere());
   return false;
  },
  async applyAction(type){
   errorNodeId='';worldState.lastAction=type;
   if(type==='FWD'||type==='BACK'){
-   if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요. 충전기를 찾아보세요.'};
    const dir=type==='BACK'?-worldState.dir:worldState.dir,x=worldState.x+dir,y=surfaceNear(x,worldState.y,.75,.9);
    if(y===null)return {ok:false,message:'앞이 끊겨 있어요. 점프하거나 다른 길을 찾아보세요.'};
    if(enemyAt(x,y))return {ok:false,message:'앞에 버그 몬스터가 있어요. 먼저 처리해야 해요.'};
    const d=worldState.doors.find(v=>!v.open&&Math.abs(v.x-x)<.6&&sameLevel(v.y||0,y,1));if(d)return {ok:false,message:'문이 길을 막고 있어요.'};
+   if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요. 충전기를 찾아보세요.'};
    await moveTo(x,y);sound('ui.tick');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='JUMP'||type==='HIGH_JUMP'){
-   const high=type==='HIGH_JUMP';if(!spendEnergy(high?2:1))return {ok:false,message:'점프할 에너지가 부족해요.'};
+   const high=type==='HIGH_JUMP';
    const x=worldState.x+worldState.dir*2,y=jumpSurface(x,worldState.y,high);
    if(y===null)return {ok:false,message:high?'높이 뛰어도 착지할 발판이 없어요.':'점프해서 착지할 곳이 없어요.'};
    const mid=worldState.x+worldState.dir,targetEnemy=enemyAt(x,y);
@@ -294,13 +294,14 @@ const worldAPI={
    if(enemyAt(mid,worldState.y)&&!high)return {ok:false,message:'몬스터가 점프 길을 막고 있어요.'};
    if(targetEnemy)return {ok:false,message:'착지할 곳에 몬스터가 있어요.'};
    if(blockingDoor)return {ok:false,message:'잠긴 문은 점프로 넘을 수 없어요.'};
+   if(!spendEnergy(high?2:1))return {ok:false,message:'점프할 에너지가 부족해요.'};
    await jumpTo(x,y,high);sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
-  if(type==='DROP'){if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요.'};const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};await dropTo(y);updateHUD();return {ok:true};}
+  if(type==='DROP'){const y=lowerSurface(worldState.x,worldState.y);if(y===null)return {ok:false,message:'바로 아래에 내려갈 길이 없어요.'};if(!spendEnergy(1))return {ok:false,message:'에너지가 부족해요.'};await dropTo(y);updateHUD();return {ok:true};}
   if(type==='DASH'){
-   if(!spendEnergy(2))return {ok:false,message:'대시할 에너지가 부족해요.'};
    const x=worldState.x+worldState.dir*2,y=surfaceNear(x,worldState.y,1,1.1),mid=worldState.x+worldState.dir;
    if(y===null||enemyAt(mid,worldState.y)||enemyAt(x,y)||doorAhead(2.1))return {ok:false,message:'대시할 길이 막혀 있어요.'};
+   if(!spendEnergy(2))return {ok:false,message:'대시할 에너지가 부족해요.'};
    await moveTo(x,y,'dash');sound('ui.confirm');updateHUD();return {ok:true,checkpoint:checkpointAt(x)};
   }
   if(type==='DODGE'){
