@@ -109,6 +109,7 @@ function makeWorld(mission,test){
    if(cond==='itemHere')return Boolean(crystalHere());
    if(cond==='doorAhead')return Boolean(doorAhead());
    if(cond==='switchHere')return Boolean(switchHere());
+   if(cond==='conveyorAhead')return state.conveyors.some(v=>state.x+state.dir>=v.from&&state.x+state.dir<=v.to);
    if(cond==='dataHere')return Boolean(dataHere());
    if(cond==='data3')return state.dataCount>=3;
    if(cond==='data5')return state.dataCount>=5;
