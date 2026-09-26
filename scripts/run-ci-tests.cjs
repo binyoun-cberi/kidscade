@@ -25,6 +25,8 @@ const TEST_FILES = [
   "tests/ui-visual-polish.test.cjs",
   "tests/accounts.test.mjs",
   "tests/teacher-management.test.mjs",
+  "tests/economy.test.mjs",
+  "tests/economy-v3.test.mjs",
   "tests/seed-rankings.test.mjs",
   "tests/game-records.test.mjs",
   "tests/multiplayer.test.mjs",
