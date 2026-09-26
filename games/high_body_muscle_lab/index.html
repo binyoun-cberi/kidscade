@@ -3,95 +3,97 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>내 몸아 움직여! 뼈·근육 실험실</title>
-<link rel="stylesheet" href="style.css?v=4">
+<title>내 몸아 움직여! 근육 복싱</title>
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div id="app">
-  <header class="mission-bar">
-    <div class="mission-compact">
-      <span id="missionStep">1 / 8</span>
-      <b id="missionTitle">팔을 굽혀 보세요</b>
+  <header class="fight-bar">
+    <div class="fighter-status player-status">
+      <span>나</span>
+      <i><b id="playerHp"></b></i>
+      <strong id="playerHpText">100</strong>
     </div>
-    <button id="helpBtn" class="mini-action" type="button" aria-label="도움말">?</button>
+    <div class="round-status">
+      <small id="roundLabel">1라운드</small>
+      <b id="timer">45</b>
+      <span id="fightState">상완이두근으로 팔을 접어 가드하세요</span>
+    </div>
+    <div class="fighter-status enemy-status">
+      <strong id="enemyHpText">100</strong>
+      <i><b id="enemyHp"></b></i>
+      <span>상대</span>
+    </div>
+    <button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button>
   </header>
 
   <main class="game-layout">
     <section class="play-stage">
       <div class="canvas-wrap">
-        <canvas id="game" width="960" height="560" aria-label="뼈와 근육을 직접 조종하는 과학 실험 게임"></canvas>
-
-        <button id="xrayBtn" class="xray-fab" type="button" aria-pressed="false" aria-label="뼈와 근육 보기">🩻</button>
-
-        <div id="floatingHint" class="floating-hint" aria-live="polite">Q를 눌러 팔을 굽혀 보세요.</div>
-
-        <div id="miniHud" class="mini-hud hidden" aria-live="polite">
-          <b id="miniMetric">팔꿈치 0°</b>
-          <span id="miniState"></span>
-        </div>
-
-        <div id="assistBox" class="assist-pill hidden">
-          <span>균형 보조</span>
-          <b id="assistText">70%</b>
-          <i><span id="assistBar"></span></i>
-        </div>
-
+        <canvas id="game" width="960" height="560" aria-label="상완이두근과 상완삼두근을 직접 수축시켜 복싱하는 과학 게임"></canvas>
+        <button id="xrayBtn" class="xray-fab" type="button" aria-pressed="false" aria-label="근육과 뼈 보기">🩻</button>
+        <div id="cue" class="cue" aria-live="polite">팔을 접으면 자동 가드 · 팔을 빠르게 펴서 닿으면 펀치!</div>
         <div id="toast" class="toast" aria-live="polite"></div>
+        <div id="combo" class="combo hidden"><b id="comboCount">2</b> 연속 적중!</div>
 
-        <div id="missionCard" class="result-card hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
-          <div class="result-icon" id="resultIcon">🔬</div>
-          <h2 id="resultTitle">성공!</h2>
+        <div id="resultCard" class="result-card hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+          <div id="resultIcon" class="result-icon">🥊</div>
+          <h2 id="resultTitle">라운드 종료</h2>
           <p id="resultText"></p>
           <div class="science-note">
-            <b id="scienceTitle">왜 움직였을까요?</b>
+            <b id="scienceTitle">근육 포인트</b>
             <p id="scienceText"></p>
           </div>
-          <button id="nextBtn" class="primary" type="button">다음 실험</button>
+          <button id="nextBtn" class="primary" type="button">다음 라운드</button>
         </div>
       </div>
     </section>
 
     <aside class="controls-panel">
-      <div class="controls" id="controls">
-        <button class="muscle-key" data-key="q" type="button">
-          <kbd>Q</kbd><b>위팔 앞쪽</b><small>팔꿈치를 굽혀요</small><i><span></span></i>
+      <div class="muscle-group">
+        <div class="group-title"><b>왼팔</b><span id="leftState">가드</span></div>
+        <button class="muscle-key flexor" data-key="q" type="button">
+          <kbd>Q</kbd><b>상완이두근</b><small>수축 → 팔꿈치 굽힘</small><i><span></span></i>
         </button>
-        <button class="muscle-key" data-key="w" type="button">
-          <kbd>W</kbd><b>위팔 뒤쪽</b><small>팔꿈치를 펴요</small><i><span></span></i>
-        </button>
-        <button class="muscle-key" data-key="e" type="button">
-          <kbd>E</kbd><b>어깨</b><small>팔 전체를 들어요</small><i><span></span></i>
-        </button>
-        <button class="muscle-key" data-key="r" type="button">
-          <kbd>R</kbd><b>손</b><small>물건을 잡아요</small><i><span></span></i>
+        <button class="muscle-key extensor" data-key="w" type="button">
+          <kbd>W</kbd><b>상완삼두근</b><small>수축 → 팔꿈치 폄</small><i><span></span></i>
         </button>
       </div>
-      <button id="resetBtn" class="reset-compact" type="button">↻ 다시</button>
+
+      <div class="muscle-group">
+        <div class="group-title"><b>오른팔</b><span id="rightState">가드</span></div>
+        <button class="muscle-key flexor" data-key="e" type="button">
+          <kbd>E</kbd><b>상완이두근</b><small>수축 → 팔꿈치 굽힘</small><i><span></span></i>
+        </button>
+        <button class="muscle-key extensor" data-key="r" type="button">
+          <kbd>R</kbd><b>상완삼두근</b><small>수축 → 팔꿈치 폄</small><i><span></span></i>
+        </button>
+      </div>
+      <button id="resetBtn" class="reset-compact" type="button">↻ 경기 다시 시작</button>
     </aside>
   </main>
-
-  <div class="hidden-telemetry" aria-hidden="true">
-    <span id="missionGoal"></span><span id="activeMuscle"></span>
-    <span id="measureLabel"></span><span id="measureText"></span>
-    <span id="stateLabel"></span><span id="jointText"></span>
-    <span id="goalText"></span><span id="hintText"></span>
-    <span id="controllerTitle"></span><span id="controllerHelp"></span>
-  </div>
 </div>
 
 <div id="tutorial" class="overlay hidden">
   <div class="dialog">
-    <span class="eyebrow">처음 한 번만</span>
-    <h1>Q W E R로 몸을 움직여요</h1>
-    <div class="tutorial-keys">
-      <span>Q</span><span>W</span><span>E</span><span>R</span>
+    <span class="eyebrow">근육을 직접 움직이는 복싱</span>
+    <h1>펀치 버튼은 없어요</h1>
+    <div class="tutorial-muscles">
+      <div><kbd>Q</kbd><b>왼팔 상완이두근</b><span>팔을 굽혀 가드</span></div>
+      <div><kbd>W</kbd><b>왼팔 상완삼두근</b><span>팔을 펴서 공격</span></div>
+      <div><kbd>E</kbd><b>오른팔 상완이두근</b><span>팔을 굽혀 가드</span></div>
+      <div><kbd>R</kbd><b>오른팔 상완삼두근</b><span>팔을 펴서 공격</span></div>
     </div>
-    <p>버튼을 누르고 있는 동안 해당 근육이 힘을 써요. 전신 걷기에서는 Q/E로 다리를 들고 W/R로 같은 쪽 발을 밀어요. 정답 순서를 외우기보다 몸의 움직임을 보고 조절해 보세요.</p>
-    <button id="tutorialStart" class="primary wide" type="button">바로 해보기</button>
+    <p>
+      상대 주먹이 닿는 순간 그쪽 팔이 충분히 굽혀져 있으면 <strong>자동으로 가드</strong>해요.
+      팔을 먼저 접었다가 상완삼두근을 수축해 <strong>빠르게 쭉 펴서</strong> 상대에게 닿으면 펀치가 됩니다.
+      이 게임은 팔꿈치 굽힘·폄에 집중한 단순화된 모델이며, 실제 복싱에서는 어깨·가슴·몸통·다리 근육도 함께 사용합니다.
+    </p>
+    <button id="tutorialStart" class="primary wide" type="button">링에 올라가기</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="game.js?v=4"></script>
+<script src="game.js?v=5"></script>
 </body>
 </html>
