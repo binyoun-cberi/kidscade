@@ -1,4 +1,4 @@
-const SESSION_COOKIE = 'kidscade_teacher_session';
+const SESSION_COOKIE = 'kc_teacher_session';
 const SESSION_MAX_AGE_SEC = 12 * 60 * 60;
 const LOGIN_LOCK_THRESHOLD = 5;
 const LOGIN_LOCK_MINUTES = 10;
