@@ -103,7 +103,7 @@
       }, true);
       const changeButton = element('btn-change-age');
       if (changeButton) {
-        changeButton.dataset.kcAgeNavBound = '1';
+        if (changeButton.dataset) changeButton.dataset.kcAgeNavBound = '1';
         changeButton.addEventListener('click', event => {
           showSelector(event);
           try { callbacks.onChangeRequested?.(); }
