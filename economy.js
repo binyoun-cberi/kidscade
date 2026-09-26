@@ -137,7 +137,7 @@
     busy.add(key);
     try {
       const body = { ...payload };
-      if (!body.requestKey && /savings|buy|repay|withdraw/.test(path)) body.requestKey = requestKey();
+      if (!body.requestKey && /savings|buy|repay|withdraw|job-duty/.test(path)) body.requestKey = requestKey();
       const result = await request(path, { method:'POST', body:JSON.stringify(body) });
       if (!result.response.ok || !result.body.ok) {
         toast(errorText(result.body?.error));
