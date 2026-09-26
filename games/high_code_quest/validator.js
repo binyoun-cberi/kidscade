@@ -182,7 +182,7 @@ function makeWorld(mission,test){
     d.open=true;return {ok:true};
    }
    if(type==='HEAL'){
-    if(state.potions<=0||state.hp>=state.maxHp)return {ok:false,message:'지금은 회복할 수 없어요.'};
+    if(state.hp>=state.maxHp||state.potions<=0)return {ok:true};
     state.potions--;state.hp=Math.min(state.maxHp,state.hp+2);return {ok:true};
    }
    return {ok:false,message:'알 수 없는 명령이에요.'};
