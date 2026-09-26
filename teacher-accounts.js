@@ -288,7 +288,7 @@
       const teacherCredential = (overviewData.teacherCredentials || []).find(item => item.classId === classroom.id);
       const teacherCredentialHtml = overviewData.scope === 'global'
         ? (teacherCredential
-          ? `<div class="teacher-credential"><b>👩‍🏫 교사 계정</b><code>${escapeHtml(teacherCredential.loginId)}</code><code>${escapeHtml(teacherCredential.password || '확인 불가')}</code><button class="secondary" type="button" data-action="copy-teacher" data-teacher-id="${escapeHtml(teacherCredential.loginId)}" data-teacher-password="${escapeHtml(teacherCredential.password || '')}">복사</button><button type="button" data-action="reset-teacher" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">비밀번호 재발급</button></div>`
+          ? `<div class="teacher-credential"><b>👩‍🏫 교사 계정</b><code>${escapeHtml(teacherCredential.loginId)}</code><code>${escapeHtml(teacherCredential.password || '확인 불가')}</code><button class="secondary" type="button" data-action="copy-teacher" data-class-id="${escapeHtml(classroom.id)}">복사</button><button type="button" data-action="reset-teacher" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">비밀번호 재발급</button></div>`
           : '<div class="teacher-credential"><b>👩‍🏫 교사 계정 준비 중</b></div>')
         : `<div class="teacher-credential"><b>👩‍🏫 내 교사 ID</b><code>${escapeHtml(overviewData.teacher?.loginId || '')}</code></div>`;
       const rows = members.map(student => {
@@ -469,8 +469,10 @@
     });
   }
 
-  async function copyTeacherCredential(loginId, password) {
-    const text = '교사 ID: ' + loginId + '\n비밀번호: ' + password;
+  async function copyTeacherCredential(classId) {
+    const credential = (overviewData.teacherCredentials || []).find(item => item.classId === classId);
+    if (!credential) return alert('교사 계정 정보를 찾지 못했습니다.');
+    const text = '교사 ID: ' + credential.loginId + '\n비밀번호: ' + (credential.password || '');
     try {
       await navigator.clipboard.writeText(text);
       alert('교사 ID와 비밀번호를 복사했습니다.');
@@ -545,7 +547,7 @@
     const className = button.dataset.className;
     if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
     else if (action === 'reset-teacher') resetTeacherCredential(classId, className, button);
-    else if (action === 'copy-teacher') copyTeacherCredential(button.dataset.teacherId || '', button.dataset.teacherPassword || '');
+    else if (action === 'copy-teacher') copyTeacherCredential(classId || '');
     else if (action === 'reset-pin') resetPin(loginId, button);
     else if (action === 'logout-student') forceStudentLogout(loginId, button);
     else if (action === 'toggle-status') toggleStudent(loginId, button.dataset.disabled === '1', button);
