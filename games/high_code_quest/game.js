@@ -436,7 +436,7 @@ function updateBossHud(){
 function stateLabel(s){return ({idle:'대기',windup:'공격 준비!',shoot:'독포자!',spore:'포자 폭발!',rest:'빈틈',hover:'비행',swoop:'급강하!',guard:'방어 중',open:'빈틈',slam:'내려찍기!'})[s]||s;}
 function renderValidationResults(report){
  const summary=$('testSummary');if(summary){summary.replaceChildren();const all=[{name:'현재 구역',ok:true,message:''},...(report?.results||[])];for(const r of all){const row=document.createElement('div');row.className='test-row '+(r.ok?'ok':'fail');row.innerHTML='<span class="mark">'+(r.ok?'✓':'✕')+'</span><b>'+r.name+'</b><small>'+(r.ok?'통과':(r.message||'프로그램이 멈췄어요.'))+'</small>';summary.appendChild(row);}}
- const rows=$('validationRows');if(rows){rows.replaceChildren();for(const r of report?.results||[]){const row=document.createElement('div');row.className='test-row '+(r.ok?'ok':'fail');row.innerHTML='<span class="mark">'+(r.ok?'✓':'✕')+'</span><b>'+r.name+'</b><small>'+(r.ok?'통과':(r.message||'프로그램이 멈췄어요.'))+'</small>';rows.appendChild(row);}}
+ const rows=$('validationRows');if(rows){rows.replaceChildren();if(report?.concept?.ok===false){const row=document.createElement('div');row.className='test-row fail';row.innerHTML='<span class="mark">✕</span><b>코딩 개념 사용</b><small>'+report.concept.message+'</small>';rows.appendChild(row);}for(const r of report?.results||[]){const row=document.createElement('div');row.className='test-row '+(r.ok?'ok':'fail');row.innerHTML='<span class="mark">'+(r.ok?'✓':'✕')+'</span><b>'+r.name+'</b><small>'+(r.ok?'통과':(r.message||'프로그램이 멈췄어요.'))+'</small>';rows.appendChild(row);}}
 }
 function showValidationFailure(report){
  renderValidationResults(report);
@@ -464,7 +464,7 @@ async function handleMissionDone(){
  $('clearTitle').textContent=mission.boss?'지역 정화 완료!':missionIndex===9?'입단 시험 통과!':'구역 돌파!';
  $('clearText').textContent='메인 '+m.mainNodes+'블록 + 기술 '+m.functionNodes+'블록으로 해결했어요.';
  $('clearMetrics').innerHTML='<span>전체 코드 <b>'+total+'</b></span><span>실행 행동 <b>'+m.actions+'</b></span><span>기술 호출 <b>'+m.calls+'</b></span>';
- $('stableBadge').classList.toggle('earned',stable);$('stableBadge').textContent=(stable?'✓':'◇')+' 안정된 코드';
+ $('stableBadge').classList.toggle('hidden',!(mission.validationTests?.length));$('stableBadge').classList.toggle('earned',stable);$('stableBadge').textContent=(stable?'✓':'◇')+' 안정된 코드';
  $('shortBadge').classList.toggle('earned',short);$('shortBadge').textContent=(short?'✓':'◇')+' 깔끔한 코드';
  $('debugBadge').classList.toggle('earned',clean);$('debugBadge').textContent=(clean?'✓':'◇')+' 정밀 설계';
  const r=mission.reward;if(r){$('unlockBox').textContent='획득 · '+r.name+' — '+r.desc;$('unlockBox').classList.remove('hidden');}else $('unlockBox').classList.add('hidden');
