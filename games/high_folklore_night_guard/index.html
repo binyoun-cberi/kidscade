@@ -609,6 +609,26 @@ var NIGHT_CONFIGS={
   full:{duration:360,pool:['dokkaebi','yuki','maiden','egg','reaper','wolf'],budget:10,eventBase:8.5}
 };
 var THREAT_COST={dokkaebi:2,yuki:3,maiden:4,egg:3,reaper:4,wolf:5};
+function shortestRoute(start,target){
+  if(start===target)return [start];
+  var q=[[start]],seen={};seen[start]=true;
+  while(q.length){
+    var route=q.shift(),node=route[route.length-1],next=SCHOOL_GRAPH[node]||[];
+    for(var i=0;i<next.length;i++){
+      var n=next[i];if(seen[n])continue;
+      var r=route.concat(n);if(n===target)return r;seen[n]=true;q.push(r);
+    }
+  }
+  return [start,target];
+}
+function routeVia(start,waypoints){
+  var route=[start],from=start;
+  (waypoints||[]).forEach(function(target){
+    var part=shortestRoute(from,target);
+    route=route.concat(part.slice(1));from=target;
+  });
+  return route;
+}
 var ANOMALIES=[
   {id:'moved-chair',cam:'korea',visual:'sign',mark:'의자?',ghost:'dokkaebi'},
   {id:'wrong-board',cam:'korea',visual:'writing',mark:'뒤를 보지 마',ghost:null},
@@ -631,7 +651,27 @@ var ANOMALIES=[
   {id:'east-scratch',cam:'east',visual:'scratch',ghost:'wolf'},
   {id:'east-eyes',cam:'east',visual:'eyes',ghost:null},
   {id:'east-hand',cam:'east',visual:'hand',ghost:null},
-  {id:'east-light',cam:'east',visual:'light',ghost:null}
+  {id:'east-light',cam:'east',visual:'light',ghost:null},
+  {id:'korea-static',cam:'korea',visual:'static',ghost:null},
+  {id:'korea-eyes',cam:'korea',visual:'eyes',ghost:null},
+  {id:'korea-hand',cam:'korea',visual:'hand',ghost:'dokkaebi'},
+  {id:'japan-writing',cam:'japan',visual:'writing',mark:'춥다',ghost:'yuki'},
+  {id:'japan-photo',cam:'japan',visual:'photo',ghost:null},
+  {id:'japan-light',cam:'japan',visual:'light',ghost:'yuki'},
+  {id:'central-hand',cam:'europe',visual:'hand',ghost:null},
+  {id:'central-writing',cam:'europe',visual:'writing',mark:'가지 마',ghost:null},
+  {id:'central-clock',cam:'europe',visual:'clock',ghost:null},
+  {id:'broadcast-eyes',cam:'special',visual:'eyes',ghost:'egg'},
+  {id:'broadcast-shadow',cam:'special',visual:'shadow',ghost:'maiden'},
+  {id:'broadcast-static',cam:'special',visual:'static',ghost:'egg'},
+  {id:'west-door',cam:'west',visual:'door',ghost:null},
+  {id:'west-hair',cam:'west',visual:'hair',ghost:'maiden'},
+  {id:'west-clock',cam:'west',visual:'clock',ghost:null},
+  {id:'east-door',cam:'east',visual:'door',ghost:null},
+  {id:'east-shadow',cam:'east',visual:'shadow',ghost:'reaper'},
+  {id:'east-static',cam:'east',visual:'static',ghost:null},
+  {id:'east-photo',cam:'east',visual:'photo',ghost:'egg'},
+  {id:'west-static',cam:'west',visual:'static',ghost:null}
 ];
 var GHOSTS={
   dokkaebi:{name:'도깨비',origin:'한국',kind:'설화 속 존재',
@@ -934,7 +974,7 @@ function spawnYuki(){
 }
 function spawnMaiden(){
   if(state.maiden.active)return false;
-  state.maiden={active:true,path:['korea','europe','special','west','office'],index:0,unseen:0,viewed:0,totalViewed:0};discover('maiden');directorShift(8);return true
+  state.maiden={active:true,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0};discover('maiden');directorShift(8);return true
 }
 function spawnEgg(){
   if(state.egg&&state.egg.active)return false;
@@ -946,7 +986,8 @@ function spawnCorridor(type){
   if(state.corridor&&state.corridor.active)return false;
   if(state.maiden.active&&state.maiden.index>=3)return false;
   var side=Math.random()<.5?'left':'right';
-  state.corridor={active:true,type:type,side:side,location:'europe',phase:0,timer:0,safeTime:0};
+  var doorCam=side==='left'?'west':'east',route=routeVia('europe',[doorCam,'office']);
+  state.corridor={active:true,type:type,side:side,route:route,index:0,location:route[0],phase:0,timer:0,safeTime:0};
   discover(type);directorShift(type==='wolf'?11:9);sound(type==='wolf'?'growl':'bell',side);return true
 }
 function spawnAnomaly(){
@@ -1040,7 +1081,7 @@ function updateGhosts(dt){
     }else{
       if(state.leftDoor){
         m.viewed+=dt;m.unseen=0;
-        if(m.viewed>2){state.maiden={active:false,path:['korea','europe','special','west','office'],index:0,unseen:0,viewed:0,totalViewed:0};state.cleared++;state.score+=120;directorShift(-18);masterGhost('maiden');sound('good')}
+        if(m.viewed>2){state.maiden={active:false,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0};state.cleared++;state.score+=120;directorShift(-18);masterGhost('maiden');sound('good')}
       }else{
         m.viewed=0;m.unseen+=dt;
         if(m.unseen>4.6){fail('maiden');return}
@@ -1057,9 +1098,9 @@ function updateGhosts(dt){
   if(state.corridor&&state.corridor.active){
     var c=state.corridor;c.timer+=dt;
     if(c.phase===0&&c.timer>1.8){
-      c.phase=1;c.timer=0;c.location=c.side==='left'?'west':'east';sound(c.type==='wolf'?'growl':'bell',c.side);
+      c.phase=1;c.index=1;c.timer=0;c.location=c.route[c.index]||c.location;sound(c.type==='wolf'?'growl':'bell',c.side);
     }else if(c.phase===1&&c.timer>2.15){
-      c.phase=2;c.timer=0;c.location='office';sound(c.type==='wolf'?'growl':'knock',c.side);
+      c.phase=2;c.index=c.route.length-1;c.timer=0;c.location=c.route[c.index]||'office';sound(c.type==='wolf'?'growl':'knock',c.side);
     }else if(c.phase===2){
       var closed=c.side==='left'?state.leftDoor:state.rightDoor;
       if(c.type==='wolf'){
@@ -1106,7 +1147,7 @@ function reset(mode){
   state.power=100;state.currentCam='korea';state.cameraOpen=false;state.leftDoor=false;state.rightDoor=false;state.leftLight=false;state.rightLight=false;
   state.gameOver=false;state.discovered=Object.assign({},known);state.observed=Object.assign({},saved.observed||{});state.mastered=Object.assign({},saved.mastered||{});
   state.masteryCount=Object.assign({},saved.masteryCount||{});state.encounters={};state.nextEvent=6;state.dokkaebi=null;state.yuki=null;
-  state.maiden={active:false,path:['korea','europe','special','west','office'],index:0,unseen:0,viewed:0,totalViewed:0};
+  state.maiden={active:false,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0};
   state.egg=null;state.corridor=null;state.anomaly=null;state.score=0;state.cleared=0;state.anomaliesFound=0;state.falseReports=0;
   state.director={tension:0,calm:0,lastEvent:'none'};state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');
