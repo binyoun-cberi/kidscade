@@ -273,7 +273,7 @@ const worldAPI={
   if(cond==='data3')return worldState.dataCount>=3;
   if(cond==='data5')return worldState.dataCount>=5;
   if(cond==='terminalHere')return Boolean(terminalHere());
-  if(cond==='energyLow')return worldState.energy<=3;
+  if(cond==='energyLow')return worldState.energy<=4;
   if(cond==='chargerHere')return Boolean(chargerHere());
   return false;
  },
