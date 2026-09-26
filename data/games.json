@@ -210,16 +210,16 @@
     {
       "id": "high_metro_planner",
       "title": "메트로 플래너",
-      "href": "games/high_metro_planner/메트로 플래너.html?v=1",
+      "href": "games/high_metro_planner/메트로 플래너.html?v=2",
       "category": "trivia",
       "age": "high",
       "icon": "🚇",
       "cover": "assets/gate-image/metro planner.png",
-      "description": "도시가 커질수록 생기는 역과 승객을 보며 5개 노선을 직접 그리고, 열차 배치·실제 환승·교량·혼잡 관리를 조합해 오래 버티는 2D 도시철도 전략 게임!",
+      "description": "대한민국 주요 도시를 실제 지리 관계에 맞춰 연결하고, 선로 건설·운행 노선·열차 배차·환승·도시 간 수요·재정·지역 접근성을 함께 운영하는 전국 철도 전략 시뮬레이션!",
       "subject": "social",
       "genre": "strategy",
       "difficulty": "hard",
-      "sessionMinutes": 15,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],
