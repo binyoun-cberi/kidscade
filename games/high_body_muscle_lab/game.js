@@ -422,7 +422,7 @@ function drawFighterBase(x,faceRight,color,flash){
   ctx.save();
   if(flash>0){ctx.shadowColor='#fff';ctx.shadowBlur=22}
   circle({x,y:185},46,'#f0c59b');
-  ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(x,y=169,42,Math.PI,0);ctx.fill();
+  ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(x,169,42,Math.PI,0);ctx.fill();
   ctx.fillStyle=color;
   ctx.beginPath();ctx.roundRect(x-58,235,116,150,38);ctx.fill();
   ctx.fillStyle='#263238';ctx.fillRect(x-55,370,48,115);ctx.fillRect(x+7,370,48,115);
