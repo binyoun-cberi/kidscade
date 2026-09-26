@@ -2792,15 +2792,15 @@
     {
       "id": "high_body_muscle_lab",
       "title": "내 몸아 움직여!",
-      "href": "games/high_body_muscle_lab/index.html?v=4",
+      "href": "games/high_body_muscle_lab/index.html?v=5",
       "category": "trivia",
       "age": "high",
-      "icon": "🦴",
-      "description": "Q/W/E/R로 몸의 근육을 직접 조종해 팔을 움직이고 걷고 물건을 운반하는 뼈·근육 전신 과학 게임. 설명은 줄이고 몸의 움직임을 직접 관찰하며 익힙니다.",
+      "icon": "🥊",
+      "description": "상완이두근과 상완삼두근을 직접 수축시켜 팔을 굽히고 펴는 근육 복싱 게임. 상대 주먹이 올 때 팔이 충분히 접혀 있으면 자동 가드, 접었다가 빠르게 쭉 펴서 닿으면 펀치가 됩니다.",
       "subject": "science",
-      "genre": "simulation",
+      "genre": "sports",
       "difficulty": "medium",
-      "sessionMinutes": 12,
+      "sessionMinutes": 8,
       "players": [
         "solo",
         "classroom"
