@@ -14,7 +14,7 @@
       #main-app > .kc-topbar {
         min-height: 0 !important;
         padding: 8px max(14px, calc((100vw - 1680px) / 2 + 24px)) 7px !important;
-        grid-template-columns: auto minmax(260px, 660px) auto !important;
+        grid-template-columns: auto minmax(180px, .7fr) minmax(260px, 660px) auto !important;
         grid-template-rows: 46px auto !important;
         column-gap: 14px !important;
         row-gap: 7px !important;
@@ -37,6 +37,18 @@
         letter-spacing: -.025em;
       }
       .kc-brand span { display: none !important; }
+
+      .kc-top-title {
+        min-width:0;
+        color:var(--kc-ink);
+        font-size:clamp(1rem,1.35vw,1.28rem);
+        line-height:1.1;
+        letter-spacing:-.035em;
+        font-weight:1000;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
 
       .kc-top-search-wrap {
         width: 100%;
@@ -153,29 +165,23 @@
       .kc-discovery > .kc-filter-label:not(.kc-genre-label) { display:none !important; }
       .kc-discovery .kc-genre-label { margin:0 2px 5px !important; }
 
-      /* Hero: keep one message, remove repeated age/status information. */
+      /* Hero remains only as a layout anchor for activity tools. */
       .kc-hero {
-        display: block !important;
-        padding: 2px 2px 12px !important;
+        display:block !important;
+        height:0 !important;
+        min-height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
       }
-      .kc-hero .kc-eyebrow,
-      .kc-hero-status { display: none !important; }
-      .kc-hero h1 {
-        font-size: clamp(1.65rem, 2.2vw, 2.35rem) !important;
-        line-height: 1.08 !important;
-      }
-      .kc-hero p {
-        margin-top: 5px !important;
-        font-size: .82rem !important;
-        font-weight: 750 !important;
-      }
+      .kc-hero > * { display:none !important; }
 
       @media (max-width: 940px) {
         #main-app > .kc-topbar {
           position: sticky !important;
           top: 0 !important;
           grid-template-columns: minmax(0,1fr) auto !important;
-          grid-template-rows: 40px 42px auto !important;
+          grid-template-rows: 40px auto 42px auto !important;
           padding: 7px 10px 6px !important;
           gap: 6px 8px !important;
         }
@@ -190,6 +196,12 @@
           font-size: 1rem !important;
         }
         .kc-brand strong { font-size: 1rem !important; }
+        .kc-top-title {
+          grid-column:1 / -1;
+          grid-row:2;
+          font-size:1.02rem;
+          padding:0 2px 1px;
+        }
         .kc-top-actions {
           grid-column: 2;
           grid-row: 1;
@@ -203,12 +215,12 @@
         #theme-btn { width: 36px !important; }
         .kc-top-search-wrap {
           grid-column: 1 / -1 !important;
-          grid-row: 2 !important;
+          grid-row: 3 !important;
         }
         .kc-top-search { min-height: 42px !important; }
         .kc-top-category-row {
           grid-column: 1 / -1;
-          grid-row: 3;
+          grid-row: 4;
           display: block;
           padding-top: 5px;
         }
@@ -219,9 +231,6 @@
           font-size: .67rem !important;
         }
         .kc-lobby { padding-top: 10px !important; }
-        .kc-hero { padding-bottom: 9px !important; }
-        .kc-hero h1 { font-size: 1.55rem !important; }
-        .kc-hero p { font-size: .77rem !important; }
       }
 
       @media (max-width: 620px) {
@@ -240,9 +249,7 @@
           padding: 0 9px !important;
           font-size: .64rem !important;
         }
-        .kc-hero p { display: none !important; }
-        .kc-hero { padding: 0 1px 8px !important; }
-        .kc-hero h1 { font-size: 1.35rem !important; }
+        .kc-top-title { font-size:.95rem; }
       }
     `;
     document.head.appendChild(style);
