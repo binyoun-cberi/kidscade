@@ -46,7 +46,7 @@ export async function classRow(env, classId) {
 export async function settingsRow(env, classId) {
   return env.DB.prepare(
     'SELECT class_id, currency, opening_balance, income_tax_rate, consumption_tax_rate, ' +
-    'savings_interest_rate, fine_cap_percent, payday_label, treasury_balance, enabled, created_at, updated_at ' +
+    'savings_interest_rate, loan_interest_rate, fine_cap_percent, payday_label, treasury_balance, government_debt_balance, enabled, created_at, updated_at ' +
     'FROM economy_class_settings WHERE class_id = ?'
   ).bind(classId).first();
 }
@@ -60,9 +60,11 @@ export function settingsPayload(row) {
     incomeTaxRate: Number(row.income_tax_rate || 0),
     consumptionTaxRate: Number(row.consumption_tax_rate || 0),
     savingsInterestRate: Number(row.savings_interest_rate || 0),
+    loanInterestRate: Number(row.loan_interest_rate || 5),
     fineCapPercent: Number(row.fine_cap_percent || 0),
     paydayLabel: row.payday_label || '금요일',
     treasury: Number(row.treasury_balance || 0),
+    governmentDebt: Number(row.government_debt_balance || 0),
     enabled: Number(row.enabled || 0) === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -128,4 +130,85 @@ export async function requireEconomyStudent(request, env) {
 
 export function methodNotAllowed(allow) {
   return json({ ok: false, error: 'method_not_allowed' }, 405, { allow });
+}
+
+
+export function creditProfile(scoreValue, settings = {}) {
+  const score = clampInt(scoreValue, 300, 1000, 700);
+  const baseSavings = Number(settings.savings_interest_rate ?? settings.savingsInterestRate ?? 1);
+  const baseLoan = Number(settings.loan_interest_rate ?? settings.loanInterestRate ?? 5);
+  let grade = 'D';
+  let savingsBonus = -2;
+  let loanAdjust = 5;
+  let loanMultiplier = 1;
+  if (score >= 900) {
+    grade = 'A+';
+    savingsBonus = 2;
+    loanAdjust = -3;
+    loanMultiplier = 3;
+  } else if (score >= 800) {
+    grade = 'A';
+    savingsBonus = 1;
+    loanAdjust = -2;
+    loanMultiplier = 2.5;
+  } else if (score >= 700) {
+    grade = 'B';
+    savingsBonus = 0;
+    loanAdjust = 0;
+    loanMultiplier = 2;
+  } else if (score >= 600) {
+    grade = 'C';
+    savingsBonus = -1;
+    loanAdjust = 2;
+    loanMultiplier = 1.5;
+  }
+  return {
+    score,
+    grade,
+    savingsRate: Math.max(0, Math.round(baseSavings + savingsBonus)),
+    loanRate: Math.max(1, Math.round(baseLoan + loanAdjust)),
+    loanMultiplier
+  };
+}
+
+export async function adjustCredit(env, classId, studentId, delta, reason) {
+  const current = await env.DB.prepare(
+    'SELECT credit_score FROM economy_accounts WHERE student_id = ? AND class_id = ?'
+  ).bind(studentId, classId).first();
+  if (!current) return null;
+  const next = clampInt(Number(current.credit_score || 700) + Number(delta || 0), 300, 1000, 700);
+  const now = nowIso();
+  await env.DB.batch([
+    env.DB.prepare(
+      'UPDATE economy_accounts SET credit_score = ?, updated_at = ? WHERE student_id = ? AND class_id = ?'
+    ).bind(next, now, studentId, classId),
+    env.DB.prepare(
+      'INSERT INTO economy_credit_events (class_id, student_id, delta, reason, score_after, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(classId, studentId, Number(delta || 0), clean(reason, 120), next, now)
+  ]);
+  return next;
+}
+
+export async function claimRequest(env, classId, studentId, action, requestKey) {
+  const key = cleanId(requestKey);
+  if (!key) return { ok: true, key: null };
+  const now = nowIso();
+  const result = await env.DB.prepare(
+    "INSERT OR IGNORE INTO economy_request_keys (request_key, class_id, student_id, action, status, result_json, created_at) VALUES (?, ?, ?, ?, 'pending', '{}', ?)"
+  ).bind(key, classId, studentId || null, clean(action, 40), now).run();
+  if (Number(result?.meta?.changes || 0) > 0) return { ok: true, key };
+  const existing = await env.DB.prepare(
+    'SELECT status, result_json FROM economy_request_keys WHERE request_key = ?'
+  ).bind(key).first();
+  let body = {};
+  try { body = JSON.parse(existing?.result_json || '{}'); } catch (_) {}
+  return { ok: false, key, status: existing?.status || 'pending', body };
+}
+
+export async function completeRequest(env, requestKey, body) {
+  const key = cleanId(requestKey);
+  if (!key) return;
+  await env.DB.prepare(
+    "UPDATE economy_request_keys SET status = 'done', result_json = ? WHERE request_key = ?"
+  ).bind(JSON.stringify(body || {}), key).run();
 }
