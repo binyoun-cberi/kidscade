@@ -108,3 +108,10 @@ body.executing .mission-card{opacity:.45}
  .clear-metrics{gap:4px}.clear-metrics span{font-size:9px;padding:6px 7px}
  .validation-panel h2{font-size:23px}
 }
+
+.trace-strip{grid-column:2;display:flex;gap:4px;min-width:0;overflow:hidden;margin-top:4px}
+.trace-chip{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:7px;background:#07131f;border:1px solid #ffffff10;color:#8ea6b9;font-size:8px;font-weight:850}
+.trace-chip.check.true{color:#9cf1c5;border-color:#76e6a344}.trace-chip.check.false{color:#f5d78a;border-color:#ffd36a44}
+.trace-chip.action{color:#b9d8f4}.trace-chip.call{color:#8eeadd;border-color:#5eead444}
+.trace-chip.current{box-shadow:inset 2px 0 var(--gold);color:#fff}
+@media(max-width:700px),(orientation:portrait){.trace-strip{grid-column:1/-1}.trace-chip{max-width:92px}}
