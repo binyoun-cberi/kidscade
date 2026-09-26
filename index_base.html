@@ -3491,13 +3491,17 @@ ${getEvolutionHintText()}
             // 다크모드 및 출석
             // =====================================
             const themeBtn = document.getElementById('theme-btn');
-            let isDarkMode = localStorage.getItem('kidscade_darkmode') === 'true';
-            if (isDarkMode) document.body.classList.add('dark-mode');
-            themeBtn.addEventListener('click', () => {
-                playUISound('click'); isDarkMode = !isDarkMode;
+            if (themeBtn && !themeBtn.dataset.kcThemeBound) {
+                themeBtn.dataset.kcThemeBound = '1';
+                let isDarkMode = localStorage.getItem('kidscade_darkmode') === 'true';
                 document.body.classList.toggle('dark-mode', isDarkMode);
-                localStorage.setItem('kidscade_darkmode', isDarkMode);
-            });
+                themeBtn.addEventListener('click', () => {
+                    playUISound('click');
+                    isDarkMode = !isDarkMode;
+                    document.body.classList.toggle('dark-mode', isDarkMode);
+                    localStorage.setItem('kidscade_darkmode', String(isDarkMode));
+                });
+            }
 
             let attendanceRewardPending = false;
             function checkAttendance() {
