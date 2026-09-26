@@ -360,7 +360,6 @@
       }
       .kc-quick-hub .mini-card .game-icon { width:48px !important; height:48px !important; font-size:2rem !important; margin-bottom:5px !important; }
       .kc-quick-hub .mini-card .game-title { margin:0 !important; font-size:.78rem !important; }
-      .kc-quick-hub .mini-card .play-limit-badge,
       .kc-quick-hub .mini-card .kc-card-meta { display:none !important; }
       .dashboard-container .kc-dashboard-card { text-decoration:none; cursor:pointer; }
       @media (max-width:620px) {
