@@ -33,42 +33,109 @@
     style.textContent = `
       .kc-tag-head {
         display:flex;
-        align-items:end;
+        align-items:flex-end;
         justify-content:space-between;
-        gap:10px;
-        margin:8px 2px 6px;
+        gap:14px;
+        margin:8px 2px 7px;
       }
       .kc-tag-head .kc-filter-label {
         margin:0 !important;
-        font-size:.72rem;
-        font-weight:1000;
         color:var(--kc-ink,#334155);
+        font-size:.78rem;
+        font-weight:1000;
+      }
+      .kc-tag-help {
+        margin-top:2px;
+        color:var(--kc-muted,#64748b);
+        font-size:.60rem;
+        font-weight:750;
+      }
+      .kc-tag-head-actions {
+        display:flex;
+        align-items:center;
+        justify-content:flex-end;
+        gap:7px;
+        flex-wrap:wrap;
       }
       .kc-tag-selection-status {
         color:var(--kc-muted,#64748b);
-        font-size:.61rem;
-        font-weight:850;
+        font-size:.62rem;
+        font-weight:900;
         white-space:nowrap;
       }
+      .kc-tag-reset {
+        min-height:29px;
+        padding:0 10px;
+        border:1px solid rgba(124,92,255,.18);
+        border-radius:999px;
+        background:rgba(124,92,255,.06);
+        color:#6d4fd7;
+        font:inherit;
+        font-size:.61rem;
+        font-weight:950;
+        cursor:pointer;
+      }
+      .kc-tag-reset:not(.active) {
+        background:transparent;
+        color:var(--kc-muted,#64748b);
+        border-color:var(--kc-line,rgba(148,163,184,.24));
+      }
       .kc-tag-nav {
+        display:grid;
+        gap:7px;
+        padding:10px 11px;
+        border:1px solid var(--kc-line,rgba(148,163,184,.22));
+        border-radius:18px;
+        background:color-mix(in srgb,var(--kc-panel,#fff) 96%,#f8fafc 4%);
+        box-shadow:0 6px 18px rgba(15,23,42,.035);
+      }
+      .kc-tag-group {
+        min-width:0;
+        display:grid;
+        grid-template-columns:48px minmax(0,1fr);
+        align-items:start;
+        gap:8px;
+      }
+      .kc-tag-group + .kc-tag-group {
+        padding-top:7px;
+        border-top:1px dashed rgba(148,163,184,.24);
+      }
+      .kc-tag-group-label {
+        min-height:31px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:10px;
+        background:#f4f5f8;
+        color:#667085;
+        font-size:.61rem;
+        font-weight:1000;
+      }
+      .kc-tag-group[data-tag-group="subject"] .kc-tag-group-label {
+        background:#f4f0ff;
+        color:#7552d7;
+      }
+      .kc-tag-group[data-tag-group="genre"] .kc-tag-group-label {
+        background:#edf9f6;
+        color:#17866f;
+      }
+      .kc-tag-group-items {
+        min-width:0;
         display:flex;
         flex-wrap:wrap;
-        align-items:center;
-        gap:6px;
-        padding:2px 0 5px;
+        gap:5px;
       }
       .kc-tag-filter {
-        min-height:33px;
-        padding:0 11px;
+        min-height:31px;
+        padding:0 10px;
         border:1px solid var(--kc-line,rgba(148,163,184,.24));
         border-radius:999px;
         background:var(--kc-panel,#fff);
         color:var(--kc-muted,#64748b);
         font:inherit;
-        font-size:.68rem;
+        font-size:.65rem;
         font-weight:900;
         cursor:pointer;
-        box-shadow:0 3px 9px rgba(15,23,42,.035);
         transition:transform .14s ease,background .14s ease,border-color .14s ease,box-shadow .14s ease;
       }
       .kc-tag-filter:hover {
@@ -78,39 +145,45 @@
       .kc-tag-filter.active {
         color:#fff;
         border-color:transparent;
-        box-shadow:0 7px 15px rgba(79,70,229,.15);
+        box-shadow:0 6px 14px rgba(79,70,229,.13);
       }
       .kc-tag-filter[data-tag-type="subject"].active {
-        background:linear-gradient(135deg,#7c5cff,#a855f7);
+        background:linear-gradient(135deg,#7c5cff,#9d62ed);
       }
       .kc-tag-filter[data-tag-type="genre"].active {
         background:linear-gradient(135deg,#2387f3,#17a981);
       }
-      .kc-tag-filter[data-tag-reset].active {
-        background:linear-gradient(135deg,#ff5c87,#8b5cf6);
-      }
-      .kc-tag-filter[data-tag-type="genre"] {
-        border-style:dashed;
-      }
-      .kc-tag-filter[data-tag-type="genre"].active {
-        border-style:solid;
-      }
-      body.dark-mode .kc-tag-filter {
-        background:#1e293b;
-        color:#cbd5e1;
-        border-color:#3b4759;
-      }
+      body.dark-mode .kc-tag-nav { background:#1e293b; border-color:#334155; }
+      body.dark-mode .kc-tag-group-label { background:#2a3547; color:#cbd5e1; }
+      body.dark-mode .kc-tag-group[data-tag-group="subject"] .kc-tag-group-label { background:#342b55; color:#ded5ff; }
+      body.dark-mode .kc-tag-group[data-tag-group="genre"] .kc-tag-group-label { background:#183d39; color:#9fe6d3; }
+      body.dark-mode .kc-tag-filter { background:#1e293b; color:#cbd5e1; border-color:#3b4759; }
       body.dark-mode .kc-tag-filter.active { color:#fff; }
+      body.dark-mode .kc-tag-reset { color:#d9ceff; background:#342b55; border-color:#55477a; }
+
       @media (max-width:940px) {
         .kc-tag-head { margin-top:6px; }
-        .kc-tag-nav { gap:5px; }
-        .kc-tag-filter { min-height:32px; padding:0 10px; font-size:.65rem; }
+        .kc-tag-nav { padding:9px; }
+        .kc-tag-group { grid-template-columns:44px minmax(0,1fr); gap:6px; }
+        .kc-tag-filter { min-height:31px; padding:0 9px; font-size:.63rem; }
       }
       @media (max-width:620px) {
-        .kc-tag-head { align-items:center; }
+        .kc-tag-head { align-items:flex-start; }
+        .kc-tag-help { display:none; }
+        .kc-tag-head-actions { gap:5px; }
         .kc-tag-selection-status { font-size:.56rem; }
-        .kc-tag-nav { gap:5px 4px; }
-        .kc-tag-filter { min-height:30px; padding:0 9px; font-size:.61rem; }
+        .kc-tag-reset { min-height:27px; padding:0 8px; font-size:.56rem; }
+        .kc-tag-nav { gap:6px; padding:8px; border-radius:15px; }
+        .kc-tag-group { grid-template-columns:1fr; gap:5px; }
+        .kc-tag-group-label {
+          min-height:auto;
+          justify-content:flex-start;
+          padding:0 2px;
+          background:transparent !important;
+          font-size:.58rem;
+        }
+        .kc-tag-group-items { gap:4px; }
+        .kc-tag-filter { min-height:29px; padding:0 8px; font-size:.59rem; }
       }
     `;
     document.head.appendChild(style);
@@ -193,13 +266,14 @@
     return game?.age === age;
   }
 
-  function updateTagStatus(subjects, genres) {
+  function updateTagStatus(subjects, genres, visibleCount = null) {
     const status = document.getElementById('kc-tag-selection-status');
     const count = subjects.length + genres.length;
     if (!status) return;
+    const result = Number.isFinite(visibleCount) ? `${visibleCount}개 게임` : '';
     status.textContent = count
-      ? `${count}개 태그 선택 · 교과와 장르를 함께 좁혀요`
-      : '여러 개 선택 가능';
+      ? `${count}개 태그 · ${result || '결과 계산 중'}`
+      : (result ? `${result} · 여러 개 선택 가능` : '여러 개 선택 가능');
   }
 
   function apply(input = {}) {
@@ -231,7 +305,6 @@
 
     document.body.dataset.kidscadeSubject = state.subject;
     document.body.dataset.kidscadeGenre = state.genre;
-    updateTagStatus(subjects, genres);
 
     const keyword = clean(state.keyword);
     let visibleCount = 0;
@@ -243,7 +316,6 @@
 
       const matchAge = matchesAge(game, state.age);
       const matchCategory = state.category === 'all' || game.category === state.category;
-      // Faceted tags: OR inside the same kind, AND between subject and genre.
       const matchSubject = subjects.length === 0 || subjects.includes(clean(game.subject));
       const matchGenre = genres.length === 0 || genres.includes(clean(game.genre));
       const categoryLabel = state.categoryNames?.[game.category] || DEFAULT_CATEGORY_NAMES[game.category] || '';
@@ -267,6 +339,7 @@
       visibleGameCount.textContent = `${ageLabel} 게임 ${visibleCount}/${ageTotalCount}개 표시`;
     }
 
+    updateTagStatus(subjects, genres, visibleCount);
     document.dispatchEvent(new CustomEvent('kidscade:filter-applied', {
       detail: { ...state, visibleCount, ageTotalCount }
     }));
@@ -274,34 +347,38 @@
   }
 
   function syncTagButtons() {
-    const nav = document.querySelector('.kc-tag-nav');
-    if (!nav) return;
-    const selected = nav.querySelectorAll('.kc-tag-filter.active:not([data-tag-reset])');
-    const reset = nav.querySelector('.kc-tag-filter[data-tag-reset]');
+    const root = document.querySelector('.kc-discovery');
+    const nav = root?.querySelector('.kc-tag-nav');
+    if (!root || !nav) return;
+    const selected = nav.querySelectorAll('.kc-tag-filter.active');
+    const reset = root.querySelector('[data-tag-reset]');
     const hasSelection = selected.length > 0;
     reset?.classList.toggle('active', !hasSelection);
     reset?.setAttribute('aria-pressed', String(!hasSelection));
-    nav.querySelectorAll('.kc-tag-filter:not([data-tag-reset])').forEach(button => {
+    nav.querySelectorAll('.kc-tag-filter').forEach(button => {
       button.setAttribute('aria-pressed', String(button.classList.contains('active')));
     });
   }
 
   function bindTagFilters() {
-    const nav = document.querySelector('.kc-tag-nav');
-    if (!nav || nav.dataset.bound === '1') return false;
-    nav.dataset.bound = '1';
+    const root = document.querySelector('.kc-discovery');
+    const nav = root?.querySelector('.kc-tag-nav');
+    if (!root || !nav || root.dataset.tagBound === '1') return false;
+    root.dataset.tagBound = '1';
     syncTagButtons();
 
-    nav.addEventListener('click', event => {
-      const button = event.target.closest('.kc-tag-filter');
-      if (!button || !nav.contains(button)) return;
-
-      if (button.hasAttribute('data-tag-reset')) {
-        nav.querySelectorAll('.kc-tag-filter:not([data-tag-reset])').forEach(item => item.classList.remove('active'));
-      } else {
-        button.classList.toggle('active');
+    root.addEventListener('click', event => {
+      const reset = event.target.closest('[data-tag-reset]');
+      if (reset && root.contains(reset)) {
+        nav.querySelectorAll('.kc-tag-filter').forEach(item => item.classList.remove('active'));
+        syncTagButtons();
+        apply({});
+        return;
       }
 
+      const button = event.target.closest('.kc-tag-filter');
+      if (!button || !nav.contains(button)) return;
+      button.classList.toggle('active');
       syncTagButtons();
       apply({});
     });
