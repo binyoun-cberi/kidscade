@@ -116,6 +116,11 @@ test('bootstrap derives runtime URLs from its own script version', () => {
   assert.doesNotMatch(source, /20260914-refactor/);
 });
 
+test('bootstrap no longer calls the retired energy UI during lobby initialization', () => {
+  const source = read('main-bootstrap.js');
+  assert.doesNotMatch(source, /updatePlayLimitUI/);
+});
+
 test('cover renderer reuses the boot catalog and never refetches or reads coverById', () => {
   const source = read('game-cover-placeholders.js');
   assert.doesNotMatch(source, /\bfetch\s*\(/);
