@@ -14,7 +14,7 @@ const ctx=canvas.getContext('2d');
 let progress=loadProgress();
 let missionIndex=Math.min(missions.length-1,Math.max(0,progress.current||0));
 let mission=missions[missionIndex],worldState=null;
-let mainProgram=[],functionProgram=[],codeTarget='main',insertPath=[];
+let mainProgram=[],functionPrograms={a:[],b:[]},codeTarget='main',insertPath=[];
 let nodeSeq=0,failures=0,stepSession=false,cleared=false,toastTimer=0;
 let executingNodeId='',errorNodeId='',cameraX=0,cameraY=0;
 let dpr=Math.min(2,window.devicePixelRatio||1);
@@ -39,7 +39,7 @@ const rewardNames={
  boots_basic:'원정대 장화',jump_module:'점프 모듈',hand_module:'수집 모듈',sword_module:'디버그 블레이드',
  loop_core:'반복 코어',enemy_sensor:'적 감지 센서',terrain_sensor:'지형 센서',memory_sensor:'상태 메모리',
  function_slot:'기술 슬롯',ranger_badge:'코드 원정대 배지',reflex_sensor:'반응 센서',altimeter:'고도 센서',
- high_jump_boots:'고점프 부츠',dash_boots:'대시 부츠',forest_core:'버섯 숲 코어'
+ high_jump_boots:'고점프 부츠',dash_boots:'대시 부츠',forest_core:'버섯 숲 코어',auto_loop_core:'자동 반복 코어',proximity_sensor:'통행 센서',ore_scanner:'광석 스캐너',logic_core:'논리 결합 코어',mine_core:'수정 광산 코어',dual_function_core:'듀얼 기술 코어',switch_tool:'스위치 툴',motion_compass:'동작 보정기',laser_sensor:'레이저 센서',city_core:'기계 도시 코어',data_scanner:'데이터 스캐너',upload_module:'업로드 모듈',energy_cell:'에너지 셀',resource_core:'자원 판단 코어',desert_core:'데이터 사막 코어',citadel_key:'성채 접근 키',reuse_badge:'재사용 배지',system_core:'시스템 코어',survival_core:'생존 코어',citadel_core:'성채 루트 키',universal_move_core:'범용 이동 코어',universal_combat_core:'범용 전투 코어',universal_resource_core:'범용 자원 코어',ranger_master:'코드 원정대 마스터 코어',null_core:'NULL CORE 정화 배지'
 };
 
 function defaultProgress(){
@@ -74,13 +74,13 @@ function normalizeNodes(list){
   return x;
  });
 }
-function currentStore(){if(!progress.programs[missionIndex])progress.programs[missionIndex]={main:[],fn:[]};return progress.programs[missionIndex];}
+function currentStore(){if(!progress.programs[missionIndex])progress.programs[missionIndex]={main:[],fn:[],fns:{a:[],b:[]}};return progress.programs[missionIndex];}
 function previousCarryStore(){
  for(let i=missionIndex-1;i>=0;i--){if(missions[i].arc===mission.arc&&progress.programs[i])return progress.programs[i];}
  return null;
 }
 function persistCode(){
- const slot=currentStore();slot.main=clone(mainProgram);slot.fn=clone(functionProgram);progress.current=missionIndex;saveProgress();
+ const slot=currentStore();slot.main=clone(mainProgram);slot.fns=clone(functionPrograms);slot.fn=clone(functionPrograms.a);progress.current=missionIndex;saveProgress();
 }
 function sound(key){try{window.KidscadeGame?.sound?.(key);}catch(_){}}
 function toast(text,bad=false){
@@ -357,8 +357,8 @@ function getUnlockedBlocks(){
 function allowedBlocks(){
  const s=new Set(mission.available||[]);getUnlockedBlocks().forEach(b=>s.add(b));return [...s];
 }
-function memoryLimit(){return (mission.functionMemory&&codeTarget==='function'?mission.functionMemory:mission.memory)+(codeTarget==='main'?progress.memoryBonus:0);}
-function activeRoot(){return codeTarget==='function'?functionProgram:mainProgram;}
+function memoryLimit(){return (mission.functionMemory&&codeTarget!=='main'?mission.functionMemory:mission.memory)+(codeTarget==='main'?progress.memoryBonus:0);}
+function activeRoot(){return codeTarget==='main'?mainProgram:(functionPrograms[codeTarget]||functionPrograms.a);}
 function resolveContainer(root,path,which='body'){
  let list=root;
  for(const part of path){
@@ -372,7 +372,7 @@ function resolveContainer(root,path,which='body'){
 function invalidateExecution(){runtime.stop();runtime.iterator=null;stepSession=false;executingNodeId='';errorNodeId='';setExecuting(false);setExec('코드가 바뀌었어요.','다시 실행하면 구역 처음부터 확인합니다.');}
 function addBlock(type){
  if(!allowedBlocks().includes(type)){toast('아직 잠긴 명령이에요.',true);return;}
- if(codeTarget==='function'&&type==='CALL_FN'){toast('나의 기술 안에서 자기 자신은 부를 수 없어요.',true);return;}
+ if(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B')){toast('나의 기술 안에서는 다른 기술을 부르지 않아요.',true);return;}
  const root=activeRoot();if(RuntimeAPI.countNodes(root)>=memoryLimit()){toast('메모리가 꽉 찼어요. 반복이나 나의 기술로 코드를 줄여 보세요.',true);sound('ui.error');return;}
  const def=BLOCKS[type],node={id:makeId(),type};if(def.kind==='structure'||def.kind==='condition')node.body=[];if(def.kind==='condition')node.elseBody=[];
  resolveContainer(root,insertPath).push(node);if(node.body)insertPath=insertPath.concat(node.id+':body');
@@ -422,7 +422,7 @@ function findNodeLabel(list,id){
 }
 function renderProgram(){
  const root=$('program');root.replaceChildren();renderNodes(activeRoot(),root,[]);
- $('blockValue').textContent=RuntimeAPI.countNodes(activeRoot())+'/'+memoryLimit();$('codeModeTitle').textContent=codeTarget==='function'?'나의 기술':'메인 코드';
+ $('blockValue').textContent=RuntimeAPI.countNodes(activeRoot())+'/'+memoryLimit();$('codeModeTitle').textContent=codeTarget==='a'?'나의 기술 A':codeTarget==='b'?'나의 기술 B':'메인 코드';
  const labels=insertPath.map(p=>findNodeLabel(activeRoot(),String(p).split(':')[0])+(String(p).includes('elseBody')?' / 아니면':'')).filter(Boolean);
  $('insertPath').textContent=labels.length?'추가 위치: '+labels.join(' › '):'여기에 명령이 추가돼요.';
  updateMiniCode();
@@ -430,7 +430,7 @@ function renderProgram(){
 function renderPalette(){
  const root=$('palette');root.replaceChildren();
  allowedBlocks().forEach(type=>{
-  if(codeTarget==='function'&&type==='CALL_FN')return;
+  if(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B'))return;
   const def=BLOCKS[type],b=document.createElement('button');b.type='button';b.className=def.kind||'action';b.innerHTML='<b>'+def.icon+'</b>'+def.label;b.onclick=()=>addBlock(type);root.appendChild(b);
  });
 }
@@ -464,7 +464,7 @@ async function handleMissionDone(){
  if(cleared||validating)return;
  validating=true;setExecuting(false);setRunButtons(false);stepSession=false;$('runBtn').disabled=true;$('stepBtn').disabled=true;
  setExec('프로그램 검사 중…',mission.validationTests?.length?'다른 상황에서도 같은 코드가 작동하는지 확인하고 있어요.':'사용한 코딩 개념을 확인하고 있어요.','running');
- const report=await Validator.validate({mission,program:mainProgram,functionProgram,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
+ const report=await Validator.validate({mission,program:mainProgram,functionPrograms,visibleTrace:runtime.getTrace(),visibleSummary:runtime.getSummary()});
  $('runBtn').disabled=false;$('stepBtn').disabled=false;lastValidation=report;renderValidationResults(report);
  if(!report.ok){
   failures++;validating=false;sound('ui.error');setExec('다른 상황에서 버그 발생',report.concept?.ok===false?report.concept.message:'코드를 고쳐 다시 실행해 보세요.','error');showValidationFailure(report);return;
@@ -492,10 +492,12 @@ function setMissionText(){
 function loadMission(index,resetCode=false){
  missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';
  const slot=currentStore(),carry=mission.carryProgram?previousCarryStore():null;
- if(resetCode){mainProgram=[];functionProgram=[];}
- else if((slot.main?.length||slot.fn?.length)){mainProgram=normalizeNodes(clone(slot.main||[]));functionProgram=normalizeNodes(clone(slot.fn||[]));}
- else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionProgram=normalizeNodes(clone(carry.fn||[]));}
- else{mainProgram=[];functionProgram=[];}
+ if(resetCode){mainProgram=[];functionPrograms={a:[],b:[]};}
+ else if((slot.main?.length||slot.fn?.length||slot.fns?.a?.length||slot.fns?.b?.length)){
+  mainProgram=normalizeNodes(clone(slot.main||[]));functionPrograms={a:normalizeNodes(clone(slot.fns?.a||slot.fn||[])),b:normalizeNodes(clone(slot.fns?.b||[]))};
+ }
+ else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionPrograms={a:normalizeNodes(clone(carry.fns?.a||carry.fn||[])),b:normalizeNodes(clone(carry.fns?.b||[]))};}
+ else{mainProgram=[];functionPrograms={a:[],b:[]};}
  persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));
  $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');$('validationFail')?.classList.add('hidden');
  try{window.KidscadeGame?.start?.({stage:missionIndex+1,title:mission.title});}catch(_){}
@@ -626,9 +628,9 @@ document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>setSpeed(Numb
 document.querySelectorAll('.code-tab').forEach(b=>b.onclick=()=>{codeTarget=b.dataset.codeTarget;insertPath=[];document.querySelectorAll('.code-tab').forEach(x=>x.classList.toggle('active',x===b));renderAllEditor();});
 $('outBtn').onclick=()=>{if(insertPath.length)insertPath.pop();renderAllEditor();};
 $('undoBtn').onclick=()=>{const c=resolveContainer(activeRoot(),insertPath);if(c.length){c.pop();persistCode();invalidateExecution();renderAllEditor();}};
-$('clearBtn').onclick=()=>{if(codeTarget==='function')functionProgram=[];else mainProgram=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
-$('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionProgram);};
-$('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionProgram);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
+$('clearBtn').onclick=()=>{if(codeTarget==='main')mainProgram=[];else functionPrograms[codeTarget]=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
+$('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionPrograms);};
+$('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionPrograms);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
 $('stopBtn').onclick=()=>{runtime.stop();stepSession=false;setExecuting(false);setRunButtons(false);setExec('실행을 멈췄어요.','코드를 고친 뒤 다시 실행해 보세요.');};
 $('retryBtn').onclick=()=>{$('clear').classList.add('hidden');cleared=false;buildWorld();};
 $('validationCloseBtn').onclick=()=>{$('validationFail').classList.add('hidden');setExec('코드를 고쳐 보세요.','문제가 난 줄을 확인하고 다시 실행해 보세요.');};
