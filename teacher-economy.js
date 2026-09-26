@@ -65,6 +65,7 @@
       company_not_found:'회사를 찾지 못했습니다.',
       invalid_company_transition:'현재 회사 상태에서는 처리할 수 없습니다.',
       debt_repay_unavailable:'상환할 채무가 없거나 정부계좌 잔액이 없습니다.',
+      credit_record_not_pending:'이미 처리했거나 찾을 수 없는 학습 신용장부 기록입니다.',
       name_required:'이름을 입력해 주세요.',
       title_required:'법 이름을 입력해 주세요.'
     };
@@ -237,6 +238,7 @@
       return '<div class="row"><div><strong>'+escapeHtml(log.nickname||log.login_id)+' · '+escapeHtml(log.job_name||'직업')+' · '+escapeHtml(log.period_id)+
         '</strong><small>'+escapeHtml(log.work_date)+' · '+escapeHtml(log.note||'')+
         '<br>상태 '+escapeHtml(log.status)+' · 급여반영 '+Number(log.pay_percent||0)+'%'+
+        (Number(log.activity_count||0)>0?'<br>자동 업무 실적 '+Number(log.activity_count||0)+'건 · '+escapeHtml(log.activity_summary||''):'')+
         (log.teacher_note?' · '+escapeHtml(log.teacher_note):'')+
         '</small></div><div class="actions" style="margin:0">'+buttons+'</div></div>';
     }).join(''):'<div class="empty">제출된 근무일지가 없습니다.</div>';
@@ -259,6 +261,45 @@
         },null,'work-'+button.dataset.work);
       };
     });
+
+    const cleanLabels={clean:'클린식판',partial:'조금 남김',leftover:'많이 남김'};
+    $('cleanPlateAdminRows').innerHTML=(data.cleanPlateRecords||[]).length
+      ?(data.cleanPlateRecords||[]).map(row=>
+        '<div class="row"><div><strong>'+escapeHtml(row.target_nickname||studentName(row.target_student_id))+' · '+escapeHtml(cleanLabels[row.result]||row.result)+
+        '</strong><small>'+escapeHtml(row.record_date)+' · 기록 '+escapeHtml(row.recorder_nickname||studentName(row.recorder_student_id))+
+        (row.note?' · '+escapeHtml(row.note):'')+'</small></div></div>'
+      ).join('')
+      :'<div class="empty">아직 클린식판 통계 기록이 없습니다.</div>';
+
+    const categoryLabels={homework:'숙제',submission:'제출물',materials:'준비물',other:'기타'};
+    const resultLabels={excellent:'아주 잘함',complete:'완료',late:'늦음',missing:'미제출'};
+    const reviewLabels={pending:'검토 대기',approved:'신용 반영',rejected:'반영 안 함'};
+    $('creditBookAdminRows').innerHTML=(data.creditBookRecords||[]).length
+      ?(data.creditBookRecords||[]).map(row=>{
+        const pending=row.review_status==='pending';
+        const buttons=pending
+          ?'<div class="actions" style="margin:0"><button class="btn green" data-credit-record="'+escapeHtml(row.id)+'" data-credit-decision="approve">신용 반영</button>'+
+            '<button class="btn secondary" data-credit-record="'+escapeHtml(row.id)+'" data-credit-decision="reject">반영 안 함</button></div>'
+          :'';
+        return '<div class="row"><div><strong>'+escapeHtml(row.target_nickname||studentName(row.target_student_id))+' · '+escapeHtml(categoryLabels[row.category]||row.category)+' · '+escapeHtml(row.title)+
+          '</strong><small>'+escapeHtml(row.record_date)+' · '+escapeHtml(resultLabels[row.result]||row.result)+' · 신용 '+(Number(row.suggested_delta||0)>=0?'+':'')+Number(row.suggested_delta||0)+'점 제안'+
+          ' · '+escapeHtml(reviewLabels[row.review_status]||row.review_status)+'<br>기록자 '+escapeHtml(row.recorder_nickname||studentName(row.recorder_student_id))+
+          (row.note?' · '+escapeHtml(row.note):'')+(row.teacher_note?'<br>교사 메모: '+escapeHtml(row.teacher_note):'')+
+          '</small></div>'+buttons+'</div>';
+      }).join('')
+      :'<div class="empty">아직 제출물·숙제 신용장부 기록이 없습니다.</div>';
+
+    document.querySelectorAll('[data-credit-record][data-credit-decision]').forEach(button=>{
+      button.onclick=async()=>{
+        const approve=button.dataset.creditDecision==='approve';
+        const teacherNote=prompt(approve?'신용 반영 메모(선택)':'반영하지 않는 이유(선택)','')||'';
+        await mutate('/api/teacher/economy/credit-record-decision','POST',{
+          recordId:button.dataset.creditRecord,
+          decision:approve?'approve':'reject',
+          teacherNote
+        },null,'credit-record-'+button.dataset.creditRecord);
+      };
+    });
   }
 
   function renderCertificatesAndJobs(){
@@ -274,14 +315,27 @@
     $('grantCert').innerHTML=certOptions;
     $('jobCerts').innerHTML=certOptions;
 
+    const catalog=(data.capabilityCatalog||[
+      {code:'stats.clean_plate',label:'통계청 · 클린식판 통계'},
+      {code:'credit.learning_ledger',label:'신용평가사 · 제출물·숙제 장부'}
+    ]);
+
     $('jobRows').innerHTML=(data.jobs||[]).length?data.jobs.map(job=>{
       const applicants=(job.applicantIds||[]).map(studentName).join(', ')||'없음';
       const assigned=(job.assignedStudentIds||[]).map(studentName).join(', ')||'미채용';
       const required=(job.requiredCertificateIds||[]).map(id=>certMap.get(id)?.name).filter(Boolean).join(', ')||'없음';
-      return '<div class="row"><div><strong>'+escapeHtml(job.name)+' · '+escapeHtml(money(job.salary))+' · 정원 '+Number(job.capacity||1)+
+      const selected=new Set((job.capabilities||[]).map(item=>item.code));
+      const capabilityNames=catalog.filter(item=>selected.has(item.code)).map(item=>item.label).join(', ')||'없음';
+      const capOptions=catalog.map(item=>
+        '<option value="'+escapeHtml(item.code)+'" '+(selected.has(item.code)?'selected':'')+'>'+escapeHtml(item.label)+'</option>'
+      ).join('');
+      return '<div class="row" style="align-items:flex-start"><div style="min-width:0;flex:1"><strong>'+escapeHtml(job.name)+' · '+escapeHtml(money(job.salary))+' · 정원 '+Number(job.capacity||1)+
         '</strong><small>필요 자격증: '+escapeHtml(required)+'<br>지원: '+escapeHtml(applicants)+' / 채용: '+escapeHtml(assigned)+
-        '</small></div><div style="display:flex;gap:6px;align-items:center"><select data-job-select="'+escapeHtml(job.id)+'" style="min-width:150px"><option value="">학생 선택</option>'+
-        optionsStudents()+'</select><button class="btn" data-assign-job="'+escapeHtml(job.id)+'">채용</button></div></div>';
+        '<br>직업 기능: '+escapeHtml(capabilityNames)+'</small></div>'+
+        '<div style="display:grid;gap:6px;min-width:220px"><div style="display:flex;gap:6px"><select data-job-select="'+escapeHtml(job.id)+'" style="min-width:140px"><option value="">학생 선택</option>'+
+        optionsStudents()+'</select><button class="btn" data-assign-job="'+escapeHtml(job.id)+'">채용</button></div>'+
+        '<select data-job-caps="'+escapeHtml(job.id)+'" multiple size="'+Math.max(2,Math.min(4,catalog.length))+'">'+capOptions+'</select>'+
+        '<button class="btn secondary" data-save-job-caps="'+escapeHtml(job.id)+'">직업 기능 저장</button></div></div>';
     }).join(''):'<div class="empty">아직 직업이 없습니다.</div>';
 
     document.querySelectorAll('[data-assign-job]').forEach(button=>{
@@ -291,6 +345,15 @@
         const studentId=select?.value||'';
         if(!studentId)return alert('채용할 학생을 선택해 주세요.');
         await mutate('/api/teacher/economy/job-assign','POST',{jobId,studentId},null,'assign-'+jobId);
+      };
+    });
+
+    document.querySelectorAll('[data-save-job-caps]').forEach(button=>{
+      button.onclick=async()=>{
+        const jobId=button.dataset.saveJobCaps;
+        const select=document.querySelector('[data-job-caps="'+CSS.escape(jobId)+'"]');
+        const capabilities=Array.from(select?.selectedOptions||[]).map(option=>option.value);
+        await mutate('/api/teacher/economy/job-capabilities','POST',{jobId,capabilities},null,'job-caps-'+jobId);
       };
     });
   }
@@ -483,9 +546,12 @@
 
   async function createJob(){
     const requiredCertificateIds=Array.from($('jobCerts').selectedOptions).map(option=>option.value);
+    const capabilities=[];
+    if($('jobCapCleanPlate').checked)capabilities.push('stats.clean_plate');
+    if($('jobCapCreditLedger').checked)capabilities.push('credit.learning_ledger');
     await mutate('/api/teacher/economy/job','POST',{
       name:$('jobName').value,salary:Number($('jobSalary').value),capacity:Number($('jobCapacity').value),
-      task:$('jobTask').value,requiredCertificateIds
+      task:$('jobTask').value,requiredCertificateIds,capabilities
     });
   }
 
