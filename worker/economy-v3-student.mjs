@@ -52,7 +52,7 @@ export async function getStudentEconomyV3(request, env) {
 
   const [workLogs, loans, inventory, payslips, spending, creditEvents, companies, products, sales] = await Promise.all([
     env.DB.prepare(
-      'SELECT id, job_id, period_id, work_date, note, status, pay_percent, teacher_note, submitted_at, decided_at ' +
+      'SELECT id, job_id, period_id, work_date, note, status, pay_percent, teacher_note, submitted_at, decided_at, activity_count, activity_summary ' +
       'FROM economy_work_logs WHERE student_id = ? ORDER BY submitted_at DESC LIMIT 20'
     ).bind(studentId).all(),
     env.DB.prepare(
