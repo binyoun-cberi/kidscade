@@ -30,8 +30,8 @@ function makeWorld(mission,test){
  const m=missionForTest(mission,test),start=m.start||{x:1,y:0};
  const maxEnergy=Number(m.maxEnergy||m.startEnergy||10);
  const state={
-  x:start.x,y:start.y,dir:1,hp:5,maxHp:5,crystalCount:0,dataCount:0,
-  energy:Number(m.startEnergy||maxEnergy),maxEnergy,potions:1,evade:0,lastAction:'',
+  x:start.x,y:start.y,dir:1,hp:Number(m.playerHp||m.maxHp||5),maxHp:Number(m.maxHp||m.playerHp||5),crystalCount:0,dataCount:0,
+  energy:Number(m.startEnergy||maxEnergy),maxEnergy,potions:Number(m.potions??1),evade:0,lastAction:'',
   crystals:(m.crystals||[]).map(c=>({...c,taken:false})),
   dataItems:(m.dataItems||[]).map(c=>({...c,taken:false})),
   switches:(m.switches||[]).map(v=>({...v,on:Boolean(v.on)})),
