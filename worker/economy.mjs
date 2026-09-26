@@ -37,6 +37,12 @@ import {
   teacherCaseDecisionV3,
   teacherPayrollV3
 } from './economy-v3-teacher.mjs';
+import {
+  studentCleanPlateRecord,
+  studentCreditBookRecord,
+  teacherJobCapabilities,
+  teacherCreditBookDecision
+} from './economy-jobdesk.mjs';
 
 export async function handleEconomyRequest(request, env) {
   const path = new URL(request.url).pathname;
@@ -54,11 +60,15 @@ export async function handleEconomyRequest(request, env) {
     '/api/economy/company-product',
     '/api/economy/company-buy',
     '/api/economy/company-withdraw',
+    '/api/economy/job-duty/clean-plate',
+    '/api/economy/job-duty/credit-record',
     '/api/teacher/economy/work-decision',
     '/api/teacher/economy/loan-decision',
     '/api/teacher/economy/inventory-decision',
     '/api/teacher/economy/company-decision',
     '/api/teacher/economy/debt-repay',
+    '/api/teacher/economy/job-capabilities',
+    '/api/teacher/economy/credit-record-decision',
     '/api/teacher/economy',
     '/api/teacher/economy/enable',
     '/api/teacher/economy/settings',
@@ -90,6 +100,8 @@ export async function handleEconomyRequest(request, env) {
     if (path === '/api/economy/company-product') return request.method === 'POST' ? studentCompanyProduct(request, env) : methodNotAllowed('POST');
     if (path === '/api/economy/company-buy') return request.method === 'POST' ? studentCompanyBuy(request, env) : methodNotAllowed('POST');
     if (path === '/api/economy/company-withdraw') return request.method === 'POST' ? studentCompanyWithdraw(request, env) : methodNotAllowed('POST');
+    if (path === '/api/economy/job-duty/clean-plate') return request.method === 'POST' ? studentCleanPlateRecord(request, env) : methodNotAllowed('POST');
+    if (path === '/api/economy/job-duty/credit-record') return request.method === 'POST' ? studentCreditBookRecord(request, env) : methodNotAllowed('POST');
 
     if (path === '/api/teacher/economy') return request.method === 'GET' ? teacherEconomyStateV3(request, env) : methodNotAllowed('GET');
     if (path === '/api/teacher/economy/enable') return request.method === 'POST' ? teacherEnable(request, env) : methodNotAllowed('POST');
@@ -107,6 +119,8 @@ export async function handleEconomyRequest(request, env) {
     if (path === '/api/teacher/economy/inventory-decision') return request.method === 'POST' ? teacherInventoryDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/company-decision') return request.method === 'POST' ? teacherCompanyDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/debt-repay') return request.method === 'POST' ? teacherDebtRepay(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/job-capabilities') return request.method === 'POST' ? teacherJobCapabilities(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/credit-record-decision') return request.method === 'POST' ? teacherCreditBookDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/law') return request.method === 'POST' ? teacherLaw(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/case') return request.method === 'POST' ? teacherCaseV3(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/case-decision') return request.method === 'POST' ? teacherCaseDecisionV3(request, env) : methodNotAllowed('POST');
