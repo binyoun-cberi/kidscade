@@ -242,7 +242,7 @@ export async function teacherDebtRepay(request,env){
   ).bind(pay,pay,now,classId).run();
   await env.DB.prepare(
     'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,treasury_after,meta_json,created_at) '+
-    "VALUES (?,NULL,'debt-repay','정부 채무 상환',?,?,?,?,?)"
+    "VALUES (?,NULL,'debt-repay','정부 채무 상환',?,?,?,?)"
   ).bind(
     classId,-pay,Number(settings.treasury_balance||0)-pay,
     JSON.stringify({debtPaid:pay}),now
@@ -269,7 +269,7 @@ export async function teacherCaseV3(request,env){
   await env.DB.prepare(
     'INSERT INTO economy_cases (id,class_id,student_id,law_id,proposed_fine,applied_fine,note,occurred_at,status,appeal_text,created_at,'+
     'salary_snapshot,fine_cap_snapshot,appeal_count,severity,final_note) '+
-    "VALUES (?,?,?,?,?,0,?,?,'pending','',?,?,?,?,?,1,'')"
+    "VALUES (?,?,?,?,?,0,?,?,'pending','',?,?,?,?,?,'')"
   ).bind(
     crypto.randomUUID(),classId,studentId,lawId,
     clampInt(b.fine,0,100000,Number(law.default_fine||0)),
