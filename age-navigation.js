@@ -62,14 +62,16 @@
       age = nextAge;
       try { storage.setItem('kidscade_age', age); } catch (_) { /* Session selection still works. */ }
       render();
-      callbacks.onAgeChange?.(age);
+      try { callbacks.onAgeChange?.(age); }
+      catch (error) { console.error?.('[KidscadeAgeNavigation] onAgeChange failed:', error); }
       timer = setTimeout(() => {
         timer = null;
         phase = 'ready';
         render();
         // Keep keyboard focus on navigation, never on a game underneath the old selector.
         element('btn-change-age')?.focus({ preventScroll: true });
-        callbacks.onEntered?.(age);
+        try { callbacks.onEntered?.(age); }
+        catch (error) { console.error?.('[KidscadeAgeNavigation] onEntered failed:', error); }
       }, TRANSITION_MS);
       return true;
     }
@@ -87,18 +89,27 @@
       try { saved = storage.getItem('kidscade_age'); } catch (_) {}
       if (validAge(saved)) { age = saved; phase = 'ready'; }
       render();
-      if (age) callbacks.onAgeChange?.(age);
+      // Navigation controls must be bound before consumer callbacks run.
+      // A failure in filtering/dashboard code must never strand the age selector or topbar.
       element('age-selection-screen')?.addEventListener('click', event => {
         const button = event.target.closest?.('.age-btn-card');
         // Consume this gesture before any document-level game handler can see it.
         event.stopImmediatePropagation();
         event.preventDefault();
-        if (button && select(button.dataset.targetAge, event)) callbacks.onSelect?.();
+        if (button && select(button.dataset.targetAge, event)) {
+          try { callbacks.onSelect?.(); }
+          catch (error) { console.error?.('[KidscadeAgeNavigation] onSelect failed:', error); }
+        }
       }, true);
       element('btn-change-age')?.addEventListener('click', event => {
         showSelector(event);
-        callbacks.onChangeRequested?.();
+        try { callbacks.onChangeRequested?.(); }
+        catch (error) { console.error?.('[KidscadeAgeNavigation] onChangeRequested failed:', error); }
       });
+      if (age) {
+        try { callbacks.onAgeChange?.(age); }
+        catch (error) { console.error?.('[KidscadeAgeNavigation] initial onAgeChange failed:', error); }
+      }
     }
 
     return Object.freeze({ names: AGE_NAMES, init, select, showSelector, canLaunch, state: () => ({ phase, age }) });
