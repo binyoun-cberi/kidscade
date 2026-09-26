@@ -57,7 +57,7 @@ export async function getStudentEconomy(request, env) {
   });
 
   const items = await env.DB.prepare(
-    'SELECT id, name, price, stock FROM economy_items WHERE class_id = ? AND active = 1 ORDER BY created_at ASC'
+    'SELECT id, name, price, stock, fulfillment_type FROM economy_items WHERE class_id = ? AND active = 1 ORDER BY created_at ASC'
   ).bind(row.class_id).all();
 
   const laws = await env.DB.prepare(
@@ -98,7 +98,8 @@ export async function getStudentEconomy(request, env) {
       id: item.id,
       name: item.name,
       price: Number(item.price || 0),
-      stock: item.stock == null ? null : Number(item.stock)
+      stock: item.stock == null ? null : Number(item.stock),
+      fulfillmentType: item.fulfillment_type || 'inventory'
     })),
     laws: (laws?.results || []).map(item => ({
       id: item.id,
