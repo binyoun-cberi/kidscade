@@ -1,1 +1,136 @@
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>메트로 플래너</title>
+<link rel="stylesheet" href="metro.css?v=2">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="대한민국 철도망을 설계하고 운영하는 메트로 플래너 게임 지도"></canvas>
+
+  <header id="hud" class="glass">
+    <div class="hudBlock dateBlock"><span class="eyebrow">대한민국 철도 운영</span><strong id="dateLabel">1일차 06:00</strong></div>
+    <div class="hudStat"><span>현금</span><b id="cashLabel">220억</b></div>
+    <div class="hudStat"><span>수송</span><b id="deliveredLabel">0명</b></div>
+    <div class="hudStat"><span>평균 대기</span><b id="waitLabel">0분</b></div>
+    <div class="hudStat"><span>전국 접근성</span><b id="accessLabel">0%</b></div>
+  </header>
+
+  <div id="topActions" class="glass">
+    <button id="pauseBtn" type="button" aria-label="일시정지">⏸</button>
+    <button id="speedBtn" type="button" aria-label="게임 속도">×1</button>
+    <button id="layerBtn" type="button" aria-label="지도 레이어">기본</button>
+    <button id="soundBtn" type="button" aria-label="소리">🔊</button>
+    <button id="helpBtn" type="button" aria-label="도움말">?</button>
+  </div>
+
+  <aside id="leftPanel" class="sidePanel glass">
+    <div class="sideHead"><span class="eyebrow">운행 노선</span><b>노선 성적표</b></div>
+    <div id="serviceList" class="serviceList"></div>
+    <div class="sideFoot"><span>이번 달</span><b id="monthProfitLabel">0억</b></div>
+  </aside>
+
+  <aside id="rightPanel" class="sidePanel glass">
+    <div id="detailEmpty" class="detailEmpty">
+      <span class="eyebrow">도시 · 노선 정보</span>
+      <b>지도를 눌러 자세히 보기</b>
+      <p>도시를 누르면 수요와 혼잡을, 노선을 누르면 배차와 수익을 확인할 수 있어요.</p>
+    </div>
+    <div id="cityDetail" class="detail hidden">
+      <span class="eyebrow">도시</span><h2 id="cityName">서울</h2>
+      <div class="metricGrid">
+        <div><span>인구</span><b id="cityPop">10</b></div><div><span>업무</span><b id="cityJobs">10</b></div>
+        <div><span>산업</span><b id="cityIndustry">7</b></div><div><span>관광</span><b id="cityTourism">9</b></div>
+      </div>
+      <div class="detailRow"><span>대기 승객</span><b id="cityWaiting">0명</b></div>
+      <div class="detailRow"><span>혼잡도</span><b id="cityCrowding">0%</b></div>
+      <div class="detailRow"><span>주요 목적지</span><b id="cityTopDest">-</b></div>
+      <div class="detailRow"><span>운행 노선</span><b id="cityServices">없음</b></div>
+    </div>
+    <div id="serviceDetail" class="detail hidden">
+      <span class="eyebrow">운행 노선</span><h2 id="serviceName">경부 급행</h2>
+      <div class="detailRow"><span>정차 도시</span><b id="serviceStops">-</b></div>
+      <div class="detailRow"><span>열차</span><b id="serviceTrains">0대</b></div>
+      <div class="detailRow"><span>배차</span><b id="serviceHeadway">-</b></div>
+      <div class="detailRow"><span>이용률</span><b id="serviceLoad">0%</b></div>
+      <div class="detailRow"><span>이번 달 수익</span><b id="serviceProfit">0억</b></div>
+    </div>
+    <div class="financeMini">
+      <span class="eyebrow">재정</span>
+      <div class="detailRow"><span>수입</span><b id="incomeLabel">0억</b></div>
+      <div class="detailRow"><span>운영비</span><b id="expenseLabel">0억</b></div>
+      <div class="detailRow"><span>부채</span><b id="debtLabel">0억</b></div>
+    </div>
+  </aside>
+
+  <div id="notice" class="glass" aria-live="polite"></div>
+
+  <section id="toolbar" class="glass" aria-label="철도 건설 및 운영 도구">
+    <button id="trackTool" class="tool mode active" type="button"><span>🛤️</span><b>선로 건설</b><small id="trackHint">드래그</small></button>
+    <div class="toolDivider"></div>
+    <div id="lineTools"></div>
+    <div class="toolDivider"></div>
+    <button id="trainTool" class="tool resource" type="button"><span>🚆</span><b>열차 추가</b><small id="trainStock">3</small></button>
+    <button id="trimTool" class="tool" type="button"><span>✂</span><b>노선 줄이기</b></button>
+    <button id="undoBtn" class="tool" type="button"><span>↶</span><b>되돌리기</b></button>
+  </section>
+
+  <div id="menu" class="overlay">
+    <div class="panel introPanel">
+      <div class="logoMark">KR</div>
+      <p class="eyebrow">KIDSCade Strategy</p>
+      <h1>메트로 플래너</h1>
+      <p class="lead">대한민국의 도시를 철도로 연결하고 노선과 배차를 설계하세요. 빠른 길만이 아니라 수익, 혼잡, 지역 접근성까지 함께 운영해야 합니다.</p>
+      <div class="featureRow"><span>🇰🇷 한국 지리</span><span>🛤 선로와 노선 분리</span><span>⇄ 실제 환승</span><span>🚆 배차 운영</span><span>💹 노선 수익</span></div>
+      <button id="startBtn" class="primary" type="button">대한민국 철도망 시작</button>
+      <button id="tutorialBtn" class="secondary" type="button">빠른 튜토리얼</button>
+      <div id="bestText" class="best"></div>
+    </div>
+  </div>
+
+  <div id="help" class="overlay hidden">
+    <div class="panel helpPanel">
+      <p class="eyebrow">게임 방법</p><h2>선로를 놓고, 그 위에 운행 노선을 만드세요</h2>
+      <div class="helpGrid">
+        <div><b>1. 선로 건설</b><p>🛤 선로 건설을 선택한 뒤 가까운 도시 사이를 드래그하세요. 산악·강 구간은 더 비쌉니다.</p></div>
+        <div><b>2. 운행 노선</b><p>색 노선을 선택해 이미 만든 선로 위 도시를 이어 주세요. 같은 선로에 여러 노선이 함께 다닐 수 있습니다.</p></div>
+        <div><b>3. 승객과 환승</b><p>승객은 실제 도시 목적지를 갖고 이동시간·대기시간·환승을 비교해 경로를 고릅니다.</p></div>
+        <div><b>4. 배차와 혼잡</b><p>열차를 추가하면 배차가 짧아집니다. 수요가 많은 노선과 환승도시에 열차를 집중하세요.</p></div>
+        <div><b>5. 재정</b><p>선로 건설비와 열차 운영비가 듭니다. 승객을 운송하면 운임 수입이 생깁니다.</p></div>
+        <div><b>6. 전국 접근성</b><p>적자 노선도 지역을 연결해 접근성을 높일 수 있습니다. 흑자만이 유일한 목표는 아닙니다.</p></div>
+      </div>
+      <button id="closeHelpBtn" class="primary" type="button">확인</button>
+    </div>
+  </div>
+
+  <div id="monthReport" class="overlay hidden">
+    <div class="panel reportPanel">
+      <p class="eyebrow">월간 운영 보고</p><h2 id="reportTitle">1개월차 결산</h2>
+      <div class="resultStats">
+        <div><span>수송</span><b id="reportDelivered">0명</b></div>
+        <div><span>순이익</span><b id="reportProfit">0억</b></div>
+        <div><span>접근성</span><b id="reportAccess">0%</b></div>
+        <div><span>평균 대기</span><b id="reportWait">0분</b></div>
+      </div>
+      <div class="reportChoiceTitle">다음 달 철도 지원</div>
+      <div id="reportChoices" class="upgradeChoices"></div>
+    </div>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="panel resultPanel">
+      <div class="resultIcon">🚆</div><p class="eyebrow">운영 종료</p><h2 id="resultTitle">철도공사 재정이 무너졌어요</h2>
+      <p id="resultReason" class="lead"></p>
+      <div class="resultStats"><div><span>수송한 승객</span><b id="resultDelivered">0명</b></div><div><span>운영 기간</span><b id="resultTime">0일</b></div><div><span>접근성</span><b id="resultAccess">0%</b></div></div>
+      <button id="retryBtn" class="primary" type="button">다시 운영하기</button><button id="menuBtn" class="secondary" type="button">메인으로</button>
+    </div>
+  </div>
+
+  <div id="tutorialBubble" class="tutorialBubble hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialSkip" type="button">건너뛰기</button></div>
+</div>
+<script src="../../kidscade-storage.js"></script>
+<script src="metro.js?v=2"></script>
+</body>
+</html>
