@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kidscade 학급경제</title>
+<link rel="icon" href="favicon.png">
+<style>
+:root{font-family:"Pretendard","맑은 고딕",system-ui,sans-serif;--bg:#eef6ff;--paper:#fff;--ink:#27334a;--muted:#6b7890;--line:#e3e8f1;--purple:#7c5cff;--green:#18a678;--amber:#e79c24;--red:#db5960;--shadow:0 15px 40px rgba(40,55,90,.11)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#e8e4ff,transparent 27%),radial-gradient(circle at 90% 6%,#dff8ef,transparent 27%),var(--bg);color:var(--ink)}button,input{font:inherit}.wrap{width:min(980px,calc(100% - 22px));margin:auto;padding:18px 0 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.top a{color:inherit;text-decoration:none;font-weight:950}.card{background:#ffffffea;border:1px solid #fff;border-radius:23px;padding:18px;box-shadow:var(--shadow)}.hero{padding:22px}.hero h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);letter-spacing:-.06em}.hero small{font-weight:900;color:var(--muted)}.job{display:inline-flex;margin-top:8px;padding:6px 9px;border-radius:999px;background:#f0edff;color:#6650d8;font-size:11px;font-weight:950}.balances{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.balance{padding:16px;border-radius:18px;background:#f7f5ff;border:1px solid #ebe7ff}.balance:nth-child(2){background:#eefaf5;border-color:#d8f2e5}.balance span{display:block;font-size:11px;color:var(--muted);font-weight:900}.balance b{display:block;font-size:28px;margin-top:3px}.tabs{display:flex;gap:7px;overflow:auto;margin:14px 0;padding:7px;border-radius:16px;background:#ffffffdd;box-shadow:var(--shadow)}.tab{border:0;background:transparent;color:#6f7890;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:950;white-space:nowrap;cursor:pointer}.tab.active{background:var(--ink);color:#fff}.panel{display:none}.panel.active{display:block}.section h2{margin:0;font-size:19px;letter-spacing:-.04em}.section>p{margin:5px 0 13px;color:var(--muted);font-size:12px;font-weight:750;line-height:1.55}.stack{display:grid;gap:8px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}.row strong{font-size:13px}.row small{display:block;margin-top:3px;color:var(--muted);font-size:10px;font-weight:750;line-height:1.45}.pill{display:inline-flex;padding:5px 7px;border-radius:999px;background:#f1efff;color:#6254d7;font-size:9px;font-weight:950;margin:4px 3px 0 0}.pill.good{background:#e9f9f3;color:#147b5c}.pill.warn{background:#fff2df;color:#9a6411}.pill.bad{background:#fff0f0;color:#b54147}.btn{border:0;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:950;cursor:pointer}.primary{background:var(--purple);color:#fff}.green{background:var(--green);color:#fff}.soft{background:#f1f5f9;color:#526077}.danger{background:#fff0f0;color:#b54147}.field{display:grid;gap:6px;margin-top:10px}.field label{font-size:11px;font-weight:900;color:#617087}.input{width:100%;min-height:43px;border:1px solid #dce3ed;border-radius:12px;padding:0 11px;background:#fff;color:var(--ink)}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.notice{padding:14px;border-radius:14px;background:#fff8e8;border:1px solid #ffe0a0;color:#795918;font-size:12px;font-weight:800;line-height:1.6}.empty{padding:22px;text-align:center;color:#8a96a8;font-size:12px;font-weight:800;border:1px dashed var(--line);border-radius:14px;background:#fff}.login{max-width:520px;margin:45px auto}.login h1{margin:0;font-size:32px;letter-spacing:-.05em}.login p{color:var(--muted);font-size:13px;font-weight:700;line-height:1.6}.hidden{display:none!important}.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,16px);opacity:0;background:#202839;color:#fff;border-radius:999px;padding:11px 16px;font-size:11px;font-weight:900;transition:.2s;z-index:50}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:620px){.balances{grid-template-columns:1fr}.wrap{width:calc(100% - 14px)}.row{align-items:flex-start}.row>.btn{flex:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><a href="/">← KIDSCade</a><a href="/" id="accountLink">내 계정</a></div>
+
+  <section id="loginView" class="card login hidden">
+    <h1>💰 학급경제 지갑</h1>
+    <p>평소 KIDSCade에서 쓰는 ID와 6자리 PIN으로 로그인하세요. 별도 학급경제 계정은 만들지 않습니다.</p>
+    <div class="field"><label>Kidscade ID</label><input class="input" id="loginId" maxlength="32" autocomplete="username" placeholder="KC-ABCDE-01"></div>
+    <div class="field"><label>6자리 PIN</label><input class="input" id="pin" maxlength="6" inputmode="numeric" type="password" autocomplete="current-password"></div>
+    <div class="actions"><button class="btn primary" id="loginBtn">로그인</button></div>
+    <div id="loginStatus" class="notice hidden" style="margin-top:12px"></div>
+  </section>
+
+  <section id="disabledView" class="card login hidden">
+    <h1>💰 학급경제</h1>
+    <p>로그인은 되어 있지만 선생님이 아직 이 학급의 학급경제를 시작하지 않았어요.</p>
+    <div class="notice">선생님이 KIDSCade 교사 관리에서 학급경제를 시작하면 같은 계정으로 바로 사용할 수 있어요.</div>
+  </section>
+
+  <section id="walletView" class="hidden">
+    <section class="card hero">
+      <small id="className">우리 반</small>
+      <h1 id="studentName">새싹 게이머</h1>
+      <div class="job" id="jobLine">직업 미배정</div>
+      <div class="balances">
+        <div class="balance"><span>내 지갑</span><b id="cash">0</b></div>
+        <div class="balance"><span>내 저축</span><b id="savings">0</b></div>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="wallet">거래내역</button>
+      <button class="tab" data-tab="bank">은행</button>
+      <button class="tab" data-tab="jobs">직업시장</button>
+      <button class="tab" data-tab="store">학급상점</button>
+      <button class="tab" data-tab="law">법·처분</button>
+    </nav>
+
+    <section class="panel active card section" id="panel-wallet">
+      <h2>최근 거래</h2>
+      <p>월급, 세금, 저축, 구매, 과태료가 최근 순서로 기록됩니다.</p>
+      <div class="stack" id="txRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-bank">
+      <h2>은행</h2>
+      <p id="interestInfo">저축 이율을 불러오는 중…</p>
+      <div class="field"><label>금액</label><input class="input" id="bankAmount" type="number" min="1" value="10"></div>
+      <div class="actions"><button class="btn green" id="depositBtn">저축하기</button><button class="btn soft" id="withdrawBtn">저축 인출</button></div>
+    </section>
+
+    <section class="panel card section" id="panel-jobs">
+      <h2>직업 시장</h2>
+      <p>필요한 자격증이 있으면 직접 지원할 수 있고, 채용은 선생님이 확정합니다.</p>
+      <div class="stack" id="jobRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-store">
+      <h2>학급상점</h2>
+      <p>상품 가격과 소비세를 확인하고 내 지갑에서 직접 구매합니다.</p>
+      <div class="stack" id="storeRows"></div>
+    </section>
+
+    <section class="panel card section" id="panel-law">
+      <h2>학급 법전</h2>
+      <p>시행 중인 법과 내 처분 기록을 확인합니다.</p>
+      <div class="stack" id="lawRows"></div>
+      <h2 style="margin-top:18px">내 처분 기록</h2>
+      <div class="stack" id="caseRows"></div>
+    </section>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="economy.js"></script>
+</body>
+</html>
