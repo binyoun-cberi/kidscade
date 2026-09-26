@@ -345,8 +345,7 @@ const worldAPI={
    await openDoor(d);return {ok:true};
   }
   if(type==='HEAL'){
-   if(worldState.potions<=0)return {ok:false,message:'회복 코어를 이미 사용했어요.'};
-   if(worldState.hp>=worldState.maxHp)return {ok:false,message:'지금은 체력이 가득 차 있어요.'};
+   if(worldState.hp>=worldState.maxHp||worldState.potions<=0)return {ok:true};
    worldState.potions--;worldState.hp=Math.min(worldState.maxHp,worldState.hp+2);sound('success.correct');updateHUD();return {ok:true};
   }
   return {ok:false,message:'알 수 없는 명령이에요.'};
