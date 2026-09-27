@@ -143,3 +143,20 @@ button{border:0;cursor:pointer;color:inherit}
 .scout-box{display:flex;flex-direction:column;gap:4px;margin:10px 0;padding:12px;border:1px dashed #aab6c5;border-radius:14px;background:#f7f9fb;text-align:center}
 .scout-box small{color:#667085}
 .card-actions button:disabled{opacity:.45;cursor:not-allowed}
+
+
+/* 역사 드림리그 v10: 역사 카드 컬렉션 / 전술 변화 분석 */
+.history-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.history-progress>div{background:var(--panel,#fff);border:1px solid #d8e0e8;border-radius:14px;padding:10px;text-align:center}
+.history-progress b{display:block;font-size:20px}.history-progress small{color:#667085}
+.history-collection-badge{font-size:11px;font-weight:900;padding:6px 8px;border-radius:999px;background:#eef3f7;color:#475467}
+.history-card.discovered{box-shadow:0 0 0 2px #d8b45a33 inset}
+.history-card-focus{padding:12px;border-radius:16px;background:#f8f4e8;margin:10px 0 14px}
+.history-question{margin-top:12px}.history-question>p{color:#667085;line-height:1.55}
+.history-answer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.history-answer-grid button{border:1px solid #cbd5e1;border-radius:12px;background:white;padding:11px;font-weight:900;cursor:pointer}
+.history-answer-grid button.correct{background:#eaf8ef;border-color:#58a86d}.history-answer-grid button.wrong{background:#fff0f0;border-color:#cf6a6a}
+.history-feedback{margin-top:10px;padding:10px;border-radius:12px;background:#f4f6f8}.history-feedback.success{background:#eaf8ef}
+.tactic-impact{margin-top:12px;padding:11px;border-radius:14px;background:#f5f7fa;border:1px solid #e0e6ed}
+.tactic-impact>b,.tactic-impact>small{display:block}.impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.impact-grid span{background:white;border-radius:10px;padding:8px;font-size:11px}.impact-grid strong{display:block;font-size:14px;margin-top:3px}
+@media(max-width:720px){.history-progress{grid-template-columns:repeat(2,1fr)}.history-answer-grid,.impact-grid{grid-template-columns:1fr}}
