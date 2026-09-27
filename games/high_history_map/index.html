@@ -151,9 +151,9 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=13"></script>
-<script src="./core/pathfinding.js?v=13"></script>
-<script src="./core/invariants.js?v=13"></script>
+<script src="./core/actions.js?v=14"></script>
+<script src="./core/pathfinding.js?v=14"></script>
+<script src="./core/invariants.js?v=14"></script>
 <script>
 (function(){
 "use strict";
@@ -230,7 +230,7 @@ var RESOURCE_NODES={
 
 var UNIT_TYPES={
   infantry:{name:"보병",icon:"🛡️",move:2,cost:12,manpower:8,troops:180,atk:1.00,def:1.06,desc:"도시와 요새 전투에 안정적"},
-  archer:{name:"궁병",icon:"🏹",move:2,cost:14,manpower:8,troops:160,atk:.94,def:1.12,desc:"구릉·산악 방어에 강함"},
+  archer:{name:"궁병",icon:"🏹",move:2,cost:14,manpower:8,troops:160,atk:.94,def:1.12,desc:"구릉·산악 방어 · 인접한 적에게 원거리 공격"},
   cavalry:{name:"기병",icon:"🐎",move:3,cost:18,manpower:10,troops:150,atk:1.10,def:.92,desc:"평야 기동과 공격에 강함"}
 };
 
@@ -599,8 +599,9 @@ function ensureActionBus(){
     if(u.moved)return{ok:false,reason:"이 부대는 이미 행동했습니다."};
     var info=computeReach(u)[a.target];
     if(!info||!info.attack)return{ok:false,reason:"공격할 수 없는 목표입니다."};
-    var won=resolveCombat(u,t,enemyUnitAt(t.q,t.r,u.owner),!!meta.silent);
-    return{ok:true,won:won,unitId:u.troops>0?u.id:null,target:a.target};
+    var defender=enemyUnitAt(t.q,t.r,u.owner),ranged=u.type==="archer"&&hexDistance(u.q,u.r,t.q,t.r)===1;
+    var won=ranged?resolveRangedCombat(u,t,defender,!!meta.silent):resolveCombat(u,t,defender,!!meta.silent);
+    return{ok:true,won:won,ranged:ranged,unitId:u.troops>0?u.id:null,target:a.target};
   });
   actionBus.register("build",function(ctx){
     var a=ctx.action,meta=ctx.meta,t=state.tiles[a.target],d=IMPROVEMENTS[a.improvement],r=resource(a.actor);
@@ -830,7 +831,9 @@ function renderInfo(){
   if(t.terrain==="mountain")tags.push("산길 주의");
   if(tags.length)html+="<div class=\"tagRow\">"+tags.map(function(x){return"<span class=\"tag\">"+x+"</span>";}).join("")+"</div>";
   if(u){
-    html+="<div class=\"unitPanel\"><b>"+FACTIONS[u.owner].icon+" "+unitName(u.type)+" · "+fmt(u.troops)+"명</b><p>"+(u.moved?"이번 턴 행동을 마쳤습니다.":"밝게 표시된 육각형으로 이동하거나 적군을 공격할 수 있습니다.")+"</p><button class=\"tiny\" id=\"clearUnitBtn\">선택 해제</button></div>";
+    var unitHelp=u.moved?"이번 턴 행동을 마쳤습니다.":"밝게 표시된 육각형으로 이동하거나 적군을 공격할 수 있습니다.";
+    if(!u.moved&&u.type==="archer")unitHelp+=" 바로 옆 적은 현재 칸에서 원거리 공격합니다.";
+    html+="<div class=\"unitPanel\"><b>"+FACTIONS[u.owner].icon+" "+unitName(u.type)+" · "+fmt(u.troops)+"명</b><p>"+unitHelp+"</p><button class=\"tiny\" id=\"clearUnitBtn\">선택 해제</button></div>";
   }
   if(t.owner===state.player&&t.terrain!=="sea"){
     html+="<div class=\"actionTitle\">타일 운영</div><div class=\"actions\">";
@@ -913,7 +916,7 @@ function onTileClick(k){
   var t=state.tiles[k];
   if(selectedUnit&&reachable[k]!=null){
     var u=unitById(selectedUnit);if(!u||u.moved)return;
-    if(reachable[k].attack)battle(u,t);else moveUnit(u,t);
+    if(reachable[k].attack)openCombatPreview(u,t);else moveUnit(u,t);
     return;
   }
   selectedTile=k;
@@ -1006,6 +1009,82 @@ function resolveCombat(attacker,dst,defender,silent){
   }
   state.units=state.units.filter(function(x){return x.troops>0;});
   return won;
+}
+function resolveRangedCombat(attacker,dst,defender,silent){
+  var garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral");
+  if(defOwner!=="neutral")registerHostility(attacker.owner,defOwner);
+  if(!defender&&garrison<=0)return false;
+  var unitDefTroops=defender?defender.troops:0,totalDefTroops=unitDefTroops+garrison;
+  var atkPower=attacker.troops*unitAttackMultiplier(attacker,dst)*.96*(.93+Math.random()*.14);
+  var defPower=(unitDefTroops*unitDefenseMultiplier(defOwner,defender?defender.type:"infantry",dst)+garrison*unitDefenseMultiplier(defOwner,"infantry",dst))*(.93+Math.random()*.14);
+  var targetLoss=clamp(atkPower/Math.max(defPower,1)*.36,.12,.62);
+  var counterLoss=clamp(defPower/Math.max(atkPower,1)*.055,.02,.18);
+  attacker.troops=Math.max(25,Math.round(attacker.troops*(1-counterLoss)));
+  var remain=Math.max(0,Math.round(totalDefTroops*(1-targetLoss)));
+  if(defender){
+    var share=totalDefTroops?unitDefTroops/totalDefTroops:1;
+    defender.troops=Math.round(remain*share);
+    if(dst.city)state.cityGarrisons[dst.city]=Math.max(0,remain-defender.troops);
+  }else if(dst.city)state.cityGarrisons[dst.city]=remain;
+  attacker.moved=true;
+  state.units=state.units.filter(function(x){return x.troops>0;});
+  if(!silent){
+    log(FACTIONS[attacker.owner].name+" 궁병이 "+(dst.city?CITIES[dst.city].name:dst.region)+"에 원거리 공격을 가했습니다.");
+    toast("원거리 공격 · 적 병력 "+fmt(totalDefTroops)+" → "+fmt(remain));
+  }
+  return remain<=0;
+}
+function combatForecast(attacker,dst){
+  var defender=enemyUnitAt(dst.q,dst.r,attacker.owner),garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral");
+  var ranged=attacker.type==="archer"&&hexDistance(attacker.q,attacker.r,dst.q,dst.r)===1;
+  var river=ranged?1:riverPenalty(attacker.q,attacker.r,dst.q,dst.r);
+  var atk=attacker.troops*unitAttackMultiplier(attacker,dst)*river;
+  var def=(defender?defender.troops*unitDefenseMultiplier(defOwner,defender.type,dst):0)+garrison*unitDefenseMultiplier(defOwner,"infantry",dst);
+  var ratio=atk/Math.max(1,def),ownLoss,enemyLoss;
+  if(ranged){
+    ownLoss=clamp((def/Math.max(atk,1))*.055,.02,.18);
+    enemyLoss=clamp((atk/Math.max(def,1))*.36,.12,.62);
+  }else if(ratio>=1){
+    ownLoss=clamp((def/Math.max(atk,1))*.44,.12,.66);
+    enemyLoss=clamp(ratio*.55,.28,.88);
+  }else{
+    ownLoss=clamp((def/Math.max(atk,1))*.34,.25,.82);
+    enemyLoss=clamp((atk/Math.max(def,1))*.43,.10,.60);
+  }
+  var outlook=ratio>=1.28?"우세":ratio>=.88?"팽팽":"불리";
+  return{defender:defender,garrison:garrison,defOwner:defOwner,ranged:ranged,river:river,ratio:ratio,ownLoss:ownLoss,enemyLoss:enemyLoss,outlook:outlook};
+}
+function lossRangeText(v){
+  var p=Math.round(v*100),lo=Math.max(1,p-7),hi=Math.min(95,p+7);
+  return lo+"~"+hi+"%";
+}
+function openCombatPreview(attacker,dst){
+  var f=combatForecast(attacker,dst),targetName=dst.city?CITIES[dst.city].name:dst.region;
+  document.getElementById("modalEyebrow").textContent=f.ranged?"궁병 원거리 공격":"전투 예상";
+  document.getElementById("modalTitle").textContent=(f.ranged?"🏹 ":"⚔️ ")+targetName+" 공격";
+  var notes=[];
+  if(f.ranged)notes.push("궁병은 현재 칸에 남고 적을 약화시킵니다.");
+  if(f.river<1)notes.push("강을 건너 공격해 공격력이 감소합니다.");
+  if(dst.improvement==="fort")notes.push("적 요새의 방어 보너스가 적용됩니다.");
+  if(dst.terrain==="mountain"||dst.terrain==="hill")notes.push(TERRAIN[dst.terrain].name+" 방어 보너스가 적용됩니다.");
+  document.getElementById("modalDesc").textContent=notes.join(" ")||"지형과 병종, 도시 수비대를 반영한 예상치입니다. 실제 결과에는 변동이 있습니다.";
+  var defTroops=(f.defender?f.defender.troops:0)+f.garrison;
+  var ratioText=Math.round(f.ratio*100)/100;
+  document.getElementById("modalBody").innerHTML=
+    "<div class=\"statGrid\">"+
+      "<div class=\"stat\"><small>우리 병력</small><b>"+fmt(attacker.troops)+"</b></div>"+
+      "<div class=\"stat\"><small>적 방어 병력</small><b>"+fmt(defTroops)+"</b></div>"+
+      "<div class=\"stat\"><small>전력 비율</small><b>"+ratioText+"</b></div>"+
+      "<div class=\"stat\"><small>전망</small><b>"+f.outlook+"</b></div>"+
+    "</div>"+
+    "<div class=\"countryCard\" style=\"margin-top:10px\"><b>예상 손실</b><p>우리 "+lossRangeText(f.ownLoss)+" · 적 "+lossRangeText(f.enemyLoss)+"</p></div>"+
+    "<div class=\"actions\"><button class=\"act\" id=\"confirmCombat\">"+(f.ranged?"🏹 사격":"⚔️ 공격")+"<span>전투를 실행합니다.</span></button><button class=\"act\" id=\"cancelCombat\">취소<span>전투를 하지 않습니다.</span></button></div>";
+  document.getElementById("modalOverlay").classList.remove("hidden");
+  document.getElementById("confirmCombat").addEventListener("click",function(){
+    var live=unitById(attacker.id),target=state.tiles[key(dst.q,dst.r)];
+    closeModal();if(live&&target)battle(live,target);
+  });
+  document.getElementById("cancelCombat").addEventListener("click",closeModal);
 }
 function battle(attacker,dst){
   var target=key(dst.q,dst.r),result=applyAction({type:"attack",actor:attacker.owner,unitId:attacker.id,target:target},{silent:false});
@@ -1381,7 +1460,7 @@ function showTutorial(){
     ["2. 군대 이동","내 군대를 누르면 이동 가능 칸이 표시됩니다. PC에서는 목적지에 마우스를 올리면 이동 경로와 비용이 보입니다. 적 부대 주변 통제구역에 들어가면 그 턴 이동이 끝납니다."],
     ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
     ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·도요·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."],
-    ["5. 도시와 전투","도시에는 자동 수비대가 있습니다. 보병은 공성에 안정적이고, 궁병은 산지 방어, 기병은 평야 공격과 기동에 강합니다."],
+    ["5. 도시와 전투","공격 전에는 병력·지형·수비대를 반영한 예상 손실을 확인할 수 있습니다. 보병은 공성에 안정적이고, 궁병은 바로 옆 적을 원거리 공격하며, 기병은 평야 기동에 강합니다."],
     ["6. 외부 세력","수나라와 왜는 기본적으로 한반도에 침공하지 않습니다. 직접 전쟁이 시작되거나 외교 대리전이 발동된 경우에만 해상로와 육로를 이용해 움직입니다."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorial").classList.add("hidden");return;}
