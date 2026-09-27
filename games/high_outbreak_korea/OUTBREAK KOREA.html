@@ -153,7 +153,7 @@ html,body{min-height:100%;overflow-x:hidden}body{padding-bottom:76px}#app{min-he
     <div class="speed" aria-label="게임 속도"><button type="button" data-speed="0">⏸</button><button type="button" data-speed="1" class="active">×1</button><button type="button" data-speed="2">×2</button><button type="button" data-speed="4">×4</button></div>
   </div>
 
-  <div class="objective"><span class="badge" id="objPhase">MISSION</span><strong id="objTitle">전국 확산</strong><div class="objText" id="objText">15개 이상 지역에 진입하고 전국 감염률 70%를 달성하세요.</div><span class="badge" id="objStatus">0 / 17</span></div>
+  <div class="objective"><span class="badge" id="objPhase">MISSION</span><strong id="objTitle">발견되기 전에 확산</strong><div class="objText" id="objText">잠복·무증상·교통·환경 진화를 조합하고 정부의 병원체 발견을 최대한 늦추세요.</div><span class="badge" id="objStatus">발견 위험 0%</span></div>
 
   <div class="layout">
     <section class="panel left">
@@ -234,7 +234,7 @@ const pathogenTypes={
 '세균형':{title:'균형 적응형',passive:'환경 진화 비용 -1 · 계절 변화의 불이익이 작습니다.',special:'적응 전환',specialDesc:'현재 계절 적응 보너스를 12일간 크게 높입니다.',stats:{spread:2.05,stealth:2,adapt:2.7,mutation:1.7},cooldown:22},
 '바이러스형':{title:'급변형',passive:'돌연변이 확률이 높고 무료 진화를 얻을 수 있습니다.',special:'변이 폭발',specialDesc:'즉시 사용 가능한 무작위 진화 1개를 얻습니다.',stats:{spread:2.15,stealth:1.8,adapt:1.9,mutation:3.5},cooldown:28},
 '진균형':{title:'지역 정착형',passive:'감염 지역 감소가 느리며 드물게 떨어진 지역으로 도약합니다.',special:'확산 도약',specialDesc:'감염된 지역에서 무작위 미감염 지역 하나에 작은 거점을 만듭니다.',stats:{spread:1.65,stealth:2.2,adapt:2.4,mutation:1.6,persist:.8},cooldown:26},
-'기생형':{title:'은폐 장기전형',passive:'정부 관심도 상승이 느리지만 초반 확산 속도가 낮습니다.',special:'조용한 공존',specialDesc:'10일간 정부 관심도 상승을 크게 억제합니다.',stats:{spread:1.6,stealth:3.4,adapt:2.1,mutation:1.4},cooldown:24},
+'기생형':{title:'은폐 장기전형',passive:'정부 발견 위험 상승이 느리지만 초반 확산 속도가 낮습니다.',special:'조용한 공존',specialDesc:'10일간 정부 발견 위험 상승을 크게 억제합니다.',stats:{spread:1.6,stealth:3.4,adapt:2.1,mutation:1.4},cooldown:24},
 '비정형형':{title:'초장기 분석난형',passive:'확산은 매우 느리지만 2부에서 병원체 분석 속도가 낮아집니다.',special:'지속 강화',specialDesc:'선택 지역의 정착도와 유지력을 15일간 강화합니다.',stats:{spread:1.35,stealth:3,adapt:2.2,mutation:1.1,persist:.5},cooldown:30}
 };
 const P1={
@@ -571,7 +571,7 @@ function renderTree(){
  $('#treeTitle').textContent=state.phase===1?'병원체 진화 네트워크':'인간 대응 네트워크';$('#treeSubtitle').textContent=isTransmission?'중심 전파핵에서 4개 전파군으로 갈라집니다. 각 경로의 I → II를 따라 전문화하세요.':state.phase===1?'연결선을 따라 빌드를 발전시키세요. 강한 진화가 항상 좋은 선택은 아닙니다.':'진단·방역·의료·연구·사회를 연결해 상황에 맞는 대응망을 구축하세요.';$('#modalResource').textContent=state.phase===1?`🧬 ${Math.floor(state.dna)}`:`🔬 ${Math.floor(state.research)}`;
 }
 function openTree(){renderTree.tab=null;renderTree.selected=null;renderTree();$('#treeOverlay').classList.add('show');$('#treeOverlay').setAttribute('aria-hidden','false')}function closeTree(){$('#treeOverlay').classList.remove('show');$('#treeOverlay').setAttribute('aria-hidden','true')}
-function openHelp(){if(state.done){$('#helpOverlay').classList.add('show');return}$('#helpBody').innerHTML=state.phase===1?`<h2>1부 · 확산</h2><p><b>목표:</b> 진화 4회 이상, 16개 지역 진입, 전국 감염률 70%, 울릉도 진입을 달성합니다.</p><p>병원체마다 패시브와 고유 능력이 다릅니다. 진화 트리에서는 공기·물·조류·동물·설치류·곤충·혈액·밀접접촉 같은 전파 방식과 확산·잠복·환경·생존 중 무엇을 강화할지 고르세요. 지역 특성과 계절도 영향을 줍니다.</p><p>증상·사회 영향이 커지면 정부 관심도가 빨리 올라가므로 단순히 강한 노드를 모두 찍는 것이 정답은 아닙니다.</p>`:`<h2>2부 · 대응</h2><p><b>목표:</b> R값을 낮추고 의료부하와 국민 협조를 관리하면서 치료·예방 연구를 실제 보급 단계까지 진행합니다.</p><p>지도를 눌러 지역별 <b>집중검사·의료지원·소통·이동관리</b>를 사용할 수 있습니다. 분석도가 오르면 1부에서 만든 특성이 공개되고 추천 대응도 달라집니다.</p><p>연구 100%는 끝이 아닙니다. 생산·보급이 진행되어야 효과가 전국에 나타납니다.</p>`;$('#helpOverlay').classList.add('show')}
+function openHelp(){if(state.done){$('#helpOverlay').classList.add('show');return}$('#helpBody').innerHTML=state.phase===1?`<h2>1부 · 확산</h2><p><b>목표:</b> 병원체가 공식 발견되기 전까지 최대한 넓고 깊게 확산시키세요. 전국 70%나 울릉도 감염 같은 강제 조건은 없습니다.</p><p>감염은 <b>S → E(잠복) → IA(무증상 전염) / IS(증상 전염) → H(중증) → R(회복) / D(사망)</b> 흐름으로 진행됩니다. 잠복·무증상은 발견을 늦추고, 강한 증상·중증은 발견을 빠르게 만듭니다.</p><p>KTX·공항·버스·항만과 인접 생활권을 통해 잠복 감염자가 다른 지역으로 이동합니다. 지역 특성·계절·진화의 조합이 실제 전파 속도를 바꿉니다.</p>`:`<h2>2부 · 대응</h2><p><b>목표:</b> R을 0.95 아래로 낮추고 낮은 의료부하를 14일 동안 유지해 확산을 통제합니다.</p><p><b>집중검사</b>는 숨은 감염과 전파를 줄이고, <b>의료지원</b>은 중증 회복을 돕습니다. <b>소통</b>은 협조와 정책 피로를 회복하며, <b>이동관리</b>는 지역 간 이동을 줄이는 대신 피로를 높입니다.</p><p>치료·예방 연구는 연구 완료 뒤 실제 보급률이 올라가야 효과가 커집니다. 의료 과부하와 낮은 협조가 장기간 겹치면 대응 실패로 이어집니다.</p>`;$('#helpOverlay').classList.add('show')}
 function setSpeedButtons(){$$('.speed button').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===state.speed))}
 function loop(){if(state.started&&state.speed>0&&!state.done){for(let i=0;i<state.speed;i++)state.phase===1?phase1Tick():phase2Tick();renderAll()}setTimeout(loop,220)}
 buildMap();for(const r of regions){const o=document.createElement('option');o.value=r.id;o.textContent=`${r.name} · ${r.traits.join('/')}`;if(r.id==='chungbuk')o.selected=true;$('#startRegion').appendChild(o)}
