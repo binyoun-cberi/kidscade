@@ -71,7 +71,8 @@
     bodyLabTutorialSeen: 'kidscade_body_lab_tutorial_v2',
     bodyBoxingTutorialSeen: 'kidscade_body_boxing_tutorial_v1',
     legacyGamePlayLimits: 'kidscade_game_play_limits',
-    bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2'
+    bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2',
+    speakJjoayoProgress: 'kidscade_speak_jjoayo_progress_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
