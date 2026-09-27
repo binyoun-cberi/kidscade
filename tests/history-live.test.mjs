@@ -124,6 +124,42 @@ test('OX bank covers the source fact pool and keeps both O and X answers', () =>
   assert.ok(mixed.some(q => q.family !== 'ox'));
 });
 
+test('reusable facts now provide relation questions instead of only wording variants', () => {
+  const families=new Set(QUESTION_BANK.map(q=>q.family));
+  for(const family of ['era-peer','era-odd','era-order'])assert.ok(families.has(family),family+' should exist');
+  const relation=QUESTION_BANK.filter(q=>['era-peer','era-odd','era-order'].includes(q.family));
+  assert.ok(relation.length>=200,'relationship questions should form a substantial pool');
+  assert.ok(relation.every(q=>q.o.length===4&&new Set(q.o).size===4));
+});
+
+test('the same source fact can produce both true and false OX questions', () => {
+  const grouped=new Map();
+  for(const q of QUESTION_BANK.filter(q=>q.family==='ox')){
+    if(!grouped.has(q.sourceFact))grouped.set(q.sourceFact,new Set());
+    grouped.get(q.sourceFact).add(q.a===0?'O':'X');
+  }
+  const dual=[...grouped.values()].filter(set=>set.has('O')&&set.has('X'));
+  assert.ok(dual.length>=900,'most reusable facts should support both O and X');
+});
+
+test('live reveal shows class response data instead of leaking TOP 5 every question', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.doesNotMatch(html,/현재 TOP 5/);
+  assert.match(html,/이번 문제 학급 결과/);
+  assert.match(html,/id="classResult"/);
+  assert.match(html,/순위는 설정한 중간 점검과 최종 결과에서만 공개됩니다/);
+  assert.match(html,/function renderCheckpoint/);
+});
+
+test('teacher UI exposes one-time reconnect recovery controls', () => {
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  const router=fs.readFileSync(new URL('../worker/history-room-router.mjs',import.meta.url),'utf8');
+  assert.match(html,/id="recoveryToggle"/);
+  assert.match(html,/id="recoveryCode"/);
+  assert.match(html,/function issueRecovery/);
+  assert.match(html,/\/recovery-code/);
+  assert.match(router,/recovery-code/);
+});
 test('multiple-choice distractors prefer the same era and same category', () => {
   const candidates = CORE_HISTORY_FACTS
     .map((fact,index)=>({fact,index}))
