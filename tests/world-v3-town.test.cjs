@@ -512,13 +512,13 @@ test('Seed Bus exposes ranch orchard and beach districts',()=>{
 });
 
 
-test('profile Seed World entry replaces legacy garden and shop navigation',()=>{
+test('profile Seed World entry replaces legacy garden and main pet navigation',()=>{
   assert.doesNotMatch(indexBase,/id="sidebar-pet-open"/);
-  assert.match(indexBase,/id="kc-pet-card" aria-label="Cube Pets 현황"/);
+  assert.doesNotMatch(indexBase,/id="kc-pet-card"/);
+  assert.doesNotMatch(indexBase,/id="pet-widget"/);
   assert.match(indexBase,/id="btn-open-shop"[^>]*data-open-life-world="profile-world"[^>]*>🌱 씨앗 월드</);
-  assert.doesNotMatch(indexBase,/kc-pet-card'\)\?\.addEventListener\('click'/);
   assert.match(uiInfo,/shopButton\.textContent = '🌱 씨앗 월드'/);
-  assert.match(uiInfo,/document\.getElementById\('sidebar-pet-open'\)\?\.remove\(\)/);
+  assert.match(uiInfo,/document\.getElementById\('kc-pet-card'\)\?\.remove\(\)/);
   assert.match(integration,/if\(openBtn\)openBtn\.remove\(\)/);
   assert.match(seedEntry,/document\.querySelector\('\.kc-seed-house-card'\)\?\.remove\(\)/);
 });
