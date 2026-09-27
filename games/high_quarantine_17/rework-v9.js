@@ -94,7 +94,22 @@ if(reportModal){
   was=showing;
  }).observe(reportModal,{attributes:true,attributeFilter:['class']});
 }
-new MutationObserver(()=>renderCity()).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+if(window.Q17Bridge&&typeof window.Q17Bridge.applyOutbreakResult==='function'){
+ const originalApply=window.Q17Bridge.applyOutbreakResult;
+ window.Q17Bridge.applyOutbreakResult=function(result){
+  const overlay=document.getElementById('q17Outbreak');
+  let context='';
+  if(overlay&&overlay.classList.contains('show')){
+   const title=(document.getElementById('q17CombatTitle')||{}).textContent||'';
+   if(title.indexOf('생존자 캠프')>=0)context='camp';
+   else if(title.indexOf('격리실')>=0)context='isolation';
+  }
+  const v=originalApply.apply(this,arguments);
+  if(context)try{window.Q17Systems.applyCombat(result,context)}catch(_){}
+  renderCity();
+  return v;
+ };
+}
 
 renderCity();
 window.Q17Rework={renderCity:renderCity,openCity:openCity};
