@@ -575,7 +575,7 @@ function renderMissionGrid(){
 function renderWorldMap(){
  const root=$('campaignMap');if(!root)return;root.replaceChildren();
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.classList.add('map-links');
- for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.classList.add(progress.completed[a.end]?'done':'');svg.appendChild(line);}
+ for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);if(progress.completed[a.end])line.classList.add('done');svg.appendChild(line);}
  root.appendChild(svg);
  for(const region of regions){
   const locked=region.locked||Number.isInteger(region.requiresMission)&&!progress.completed[region.requiresMission];
