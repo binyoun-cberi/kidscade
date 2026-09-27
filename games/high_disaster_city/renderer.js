@@ -68,6 +68,28 @@ class Renderer{
    if(!this.img(key,a.x-14,y-34+bob,28,34,flip)){c.fillStyle='#f0c59b';c.beginPath();c.arc(a.x,y-24,7,0,Math.PI*2);c.fill();c.fillStyle='#436c82';c.fillRect(a.x-7,y-17,14,20)}
   }
  }
+ fieldHazards(s){
+  const f=s.field;if(!f?.cells?.length)return;const c=this.ctx,cols=f.cols||D.FIELD?.cols||24,rows=f.rows||D.FIELD?.rows||5,cw=D.W/cols,mid=(rows-1)/2;
+  c.save();
+  for(const x of f.cells){
+   const px=x.c*cw,rowOff=(x.r-mid)*6,ground=D.GROUND_Y+18+rowOff;
+   if(x.burned>.03){c.globalAlpha=clamp(.10+x.burned*.30,.1,.38);c.fillStyle='#2d2924';c.fillRect(px,ground-5,cw+1,10)}
+   if(x.water>.015){
+    const h=clamp(5+x.water*32,5,48);c.globalAlpha=clamp(.20+x.water*.38,.20,.72);c.fillStyle=x.water>.65?'#337fa8':'#55a9c7';c.fillRect(px,ground-h,cw+1,h);
+    c.globalAlpha=clamp(.22+x.water*.32,.22,.58);c.fillStyle='#b9edf3';c.fillRect(px,ground-h,Math.max(8,cw*.86),2.5)
+   }
+   if(x.fire>.025){
+    const p=clamp(x.fire,0,1.2),size=20+p*34,fy=ground-7-rowOff*.2,key=((x.c+x.r)&1)?'fire1':'fire2';
+    c.globalAlpha=clamp(.45+p*.42,.45,.95);
+    if(!this.img(key,px+cw*.5-size*.5,fy-size,size,size,false,c.globalAlpha)){c.fillStyle='#ef7135';c.beginPath();c.arc(px+cw*.5,fy-size*.35,8+p*10,0,Math.PI*2);c.fill()}
+    if(x.heat>.22){c.globalAlpha=clamp(x.heat*.22,.08,.32);this.img(((x.c+x.r)&1)?'smoke1':'smoke2',px+cw*.5-18,fy-size-20,36,36,false,c.globalAlpha)}
+   }
+  }
+  c.globalAlpha=1;
+  for(const col of f.firebreaks||[]){const x=col*cw+cw*.5;c.fillStyle='#3e3428cc';c.fillRect(x-5,D.GROUND_Y-54,10,76);c.fillStyle='#d0b17a';c.fillRect(x-2,D.GROUND_Y-54,4,76)}
+  for(const b of f.tempBarriers||[]){const x=b.col*cw+cw*.5,p=clamp(b.hp/42,0,1);c.globalAlpha=.55+.4*p;c.fillStyle='#b99a67';for(let i=0;i<5;i++)c.fillRect(x-28+i*12,D.GROUND_Y-15-(i%2)*7,11,8)}
+  c.restore();c.globalAlpha=1
+ }
  wildfire(s,d){
   const c=this.ctx,x=this.frontX(d),dir=d.side==='left'?1:-1;c.save();const glow=c.createLinearGradient(x-dir*180,0,x+dir*160,0);glow.addColorStop(0,'#ef704400');glow.addColorStop(.5,'#ef70442c');glow.addColorStop(1,'#ef704400');c.fillStyle=glow;c.fillRect(x-220,0,440,D.H);c.restore();
   const fireCount=clamp(Math.round(4+(d.strength||1)*5),5,15);for(let i=0;i<fireCount;i++){const k=i-(fireCount-1)/2,fx=x+k*13+Math.sin(s.time*4+i)*5,fy=D.GROUND_Y-30-Math.abs(i%3)*7,sz=34+Math.min(34,(d.strength||1)*12)+((i*13)%12),key=(i&1)?'fire1':'fire2';if(!this.img(key,fx-sz/2,fy-sz,sz,sz)){c.fillStyle='#f06a32';c.beginPath();c.arc(fx,fy,Math.max(12,sz*.34),0,Math.PI*2);c.fill()}}
@@ -105,8 +127,8 @@ class Renderer{
  render(s){
   const c=this.ctx,t=this.worldTransform();c.setTransform(this.view.dpr,0,0,this.view.dpr,0,0);c.fillStyle='#11293d';c.fillRect(0,0,this.view.w,this.view.h);c.save();c.translate(t.ox,t.oy);c.scale(t.scale,t.scale);c.imageSmoothingEnabled=false;
   const quake=(s.disasters||[]).find(d=>d.type==='earthquake');if(quake)c.translate(Math.sin(s.time*46)*3.5*(quake.strength||1),Math.cos(s.time*39)*1.8);
-  this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building)this.drawBuilding(slot,slot.building);this.townHall();this.citizens(s);
-  const disasters=(s.disasters||[]).slice().sort((a,b)=>a.type==='flood'?-1:b.type==='flood'?1:0);for(const d of disasters){if(d.type==='wildfire')this.wildfire(s,d);else if(d.type==='flood')this.flood(s,d);else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
+  this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building)this.drawBuilding(slot,slot.building);this.townHall();this.citizens(s);this.fieldHazards(s);
+  const disasters=(s.disasters||[]).slice();for(const d of disasters){if(d.type==='wildfire'||d.type==='flood')continue;else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
  }
 }
 DC.Renderer=Renderer;
