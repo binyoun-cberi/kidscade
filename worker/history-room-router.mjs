@@ -5,7 +5,7 @@ export async function routeHistoryRoom(request, env) {
   const url = new URL(request.url);
   if (!url.pathname.startsWith(PREFIX)) return null;
   const action = url.pathname.slice(PREFIX.length);
-  if (!['rooms','join','state','ticket','socket','heartbeat','answer','start','next','continue','reconfigure','close','retry-results'].includes(action)) return null;
+  if (!['rooms','join','state','ticket','socket','heartbeat','answer','start','next','continue','reconfigure','close','retry-results','recovery-code'].includes(action)) return null;
   let body = {};
   if (request.method === 'POST') {
     if (!(request.headers.get('content-type') || '').includes('application/json')) return reply('json_required',400);
