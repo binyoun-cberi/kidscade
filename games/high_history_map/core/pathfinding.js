@@ -39,9 +39,9 @@ function reachable(options){
       if(!isFinite(step)||step>=99||nextCost>maxCost)continue;
       if(costs[nk]!=null&&costs[nk]<=nextCost)continue;
       costs[nk]=nextCost;previous[nk]=cur.key;
-      var attack=!!(cls&&cls.attack),frontier=!!(cls&&cls.frontier),zoc=!!(cls&&cls.zoc);
+      var attack=!!(cls&&cls.attack),frontier=!!(cls&&cls.frontier),zoc=!!(cls&&cls.zoc),stop=!!(cls&&cls.stop);
       out[nk]={cost:nextCost,attack:attack,frontier:frontier,zoc:zoc,from:cur.key};
-      if(!attack&&!frontier)heap.push({node:n,key:nk,cost:nextCost,priority:nextCost});
+      if(!attack&&!frontier&&!stop)heap.push({node:n,key:nk,cost:nextCost,priority:nextCost});
     }
   }
   delete out[startKey];
