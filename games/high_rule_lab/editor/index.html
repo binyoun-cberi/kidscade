@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>내 말 좀 들어 · 레벨 에디터</title>
+  <link rel="stylesheet" href="../style.css?v=3">
+  <link rel="stylesheet" href="./editor.css?v=1">
+</head>
+<body class="editor-body">
+  <div class="editor-shell">
+    <header class="editor-top">
+      <div><b>내 말 좀 들어 · 레벨 에디터</b><small>실제 v3 엔진으로 바로 검증하고 플레이합니다.</small></div>
+      <div class="editor-actions">
+        <select id="loadLevel"></select>
+        <button id="newLevel" type="button">새 레벨</button>
+        <button id="playBtn" type="button" class="primary">▶ 플레이테스트</button>
+      </div>
+    </header>
+
+    <main class="editor-layout">
+      <aside class="editor-panel palette-panel">
+        <div class="editor-heading"><b>도구</b><span id="selectedLabel">아이</span></div>
+        <div class="tool-row">
+          <button data-tool="erase" type="button">지우개</button>
+          <button id="clearBoard" type="button">전체 지우기</button>
+        </div>
+        <h3>물체</h3>
+        <div id="objectPalette" class="palette-grid"></div>
+        <h3>문장 · 명사</h3>
+        <div id="nounPalette" class="palette-grid"></div>
+        <h3>문장 · 성질</h3>
+        <div id="propPalette" class="palette-grid"></div>
+        <h3>연산자</h3>
+        <div id="operatorPalette" class="palette-grid"></div>
+      </aside>
+
+      <section class="editor-center">
+        <div class="board-toolbar">
+          <div>
+            <button id="wMinus" type="button">가로 −</button><b id="sizeLabel">12 × 10</b><button id="wPlus" type="button">가로 +</button>
+            <button id="hMinus" type="button">세로 −</button><button id="hPlus" type="button">세로 +</button>
+          </div>
+          <small>좌클릭 배치 · 우클릭 삭제</small>
+        </div>
+        <div id="editorBoard" class="editor-board" aria-label="레벨 편집판"></div>
+      </section>
+
+      <aside class="editor-panel meta-panel">
+        <div class="editor-heading"><b>레벨 정보</b><span id="validationBadge">검사 중</span></div>
+        <label>제목<input id="titleInput" type="text"></label>
+        <label>챕터<input id="chapterInput" type="text"></label>
+        <label>연구 노트<textarea id="noteInput" rows="3"></textarea></label>
+        <label>힌트 1<input id="hint1" type="text"></label>
+        <label>힌트 2<input id="hint2" type="text"></label>
+        <label>힌트 3<input id="hint3" type="text"></label>
+
+        <div class="rule-preview">
+          <h3>인식된 법칙</h3>
+          <div id="rulePreview"></div>
+        </div>
+        <div class="validation-box">
+          <h3>Validator</h3>
+          <div id="validationList"></div>
+        </div>
+
+        <label>JSON<textarea id="jsonBox" rows="10" spellcheck="false"></textarea></label>
+        <div class="tool-row">
+          <button id="exportBtn" type="button">JSON 갱신</button>
+          <button id="copyBtn" type="button">복사</button>
+          <button id="importBtn" type="button">JSON 불러오기</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="playDialog" class="editor-play">
+    <div class="play-head"><div><b id="playTitle">플레이테스트</b><small id="playStatus">방향키로 움직이세요.</small></div><button id="closePlay" type="button">✕</button></div>
+    <div id="playBoard" class="board editor-play-board" tabindex="0"></div>
+    <div class="play-bottom">
+      <div id="playRules" class="active-rules"></div>
+      <div class="touch-pad editor-touch">
+        <button data-play-dir="up" type="button">▲</button>
+        <button data-play-dir="left" type="button">◀</button>
+        <button data-play-dir="down" type="button">▼</button>
+        <button data-play-dir="right" type="button">▶</button>
+      </div>
+      <div class="tool-row"><button id="playUndo" type="button">↶ 되돌리기</button><button id="playRestart" type="button">↻ 처음부터</button></div>
+    </div>
+  </dialog>
+
+  <script src="../levels.js?v=4"></script>
+  <script src="../engine/state.js?v=5"></script>
+  <script src="../engine/rules.js?v=5"></script>
+  <script src="../engine/movement.js?v=5"></script>
+  <script src="../engine/interactions.js?v=5"></script>
+  <script src="../engine/history.js?v=5"></script>
+  <script src="../engine/turn.js?v=5"></script>
+  <script src="../engine/validator.js?v=5"></script>
+  <script src="../ui/renderer.js?v=5"></script>
+  <script src="./editor.js?v=1"></script>
+</body>
+</html>

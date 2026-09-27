@@ -245,3 +245,19 @@ test('Rule Lab v3 MOVE keeps two-dimensional facing and history restores exact s
   const h=new E.History(state);h.push(auto.state);const restored=h.undo();
   assert.equal(E.State.serialize(restored),E.State.serialize(state));
 });
+
+
+test('Rule Lab v3 ships a level editor that reuses the production engine',()=>{
+  for(const rel of [
+    'games/high_rule_lab/editor/index.html',
+    'games/high_rule_lab/editor/editor.css',
+    'games/high_rule_lab/editor/editor.js'
+  ]) assert.ok(fs.existsSync(path.join(ROOT,rel)),rel);
+  const html=read('games/high_rule_lab/editor/index.html');
+  const js=read('games/high_rule_lab/editor/editor.js');
+  assert.match(html,/engine\/turn\.js\?v=5/);
+  assert.match(html,/ui\/renderer\.js\?v=5/);
+  assert.match(js,/Validator\.validateLevel/);
+  assert.match(js,/E\.Turn\.step/);
+  new vm.Script(js);
+});
