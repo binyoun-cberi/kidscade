@@ -120,6 +120,74 @@ async function parseJson(request){
   if(!type.toLowerCase().includes('application/json'))throw new Error('json-required');
   return request.json();
 }
+function clampInt(value,min,max){
+  const number=Math.floor(Number(value));
+  if(!Number.isFinite(number))return min;
+  return Math.min(max,Math.max(min,number));
+}
+function safeObject(value){return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
+function safeArray(value,limit=400){return Array.isArray(value)?value.slice(0,limit):[]}
+function cleanStringArray(value,limit=400){
+  return safeArray(value,limit).map(item=>String(item||'').trim().slice(0,100)).filter(Boolean);
+}
+function cleanStringMap(value,maxEntries=80){
+  const out={};
+  Object.entries(safeObject(value)).slice(0,maxEntries).forEach(([key,entry])=>{
+    const safeKey=String(key||'').trim().slice(0,80);
+    if(!safeKey||['__proto__','prototype','constructor'].includes(safeKey))return;
+    if(typeof entry==='string'||typeof entry==='number'||typeof entry==='boolean'||entry===null){
+      out[safeKey]=typeof entry==='string'?entry.slice(0,180):entry;
+    }
+  });
+  return out;
+}
+function boundedJsonObject(value,byteLimit=56*1024){
+  const input=safeObject(value);
+  const text=JSON.stringify(input);
+  if(new TextEncoder().encode(text).byteLength>byteLimit)return {};
+  return JSON.parse(text);
+}
+function sanitizeTeacherState(input){
+  const state=safeObject(input);
+  const profile=safeObject(state.profile);
+  const out={
+    version:1,
+    profile:{
+      version:1,
+      nickname:String(profile.nickname||'선생님').replace(/[<>\u0000-\u001f]/g,'').replace(/\s+/g,' ').trim().slice(0,12)||'선생님',
+      createdAt:typeof profile.createdAt==='string'?profile.createdAt.slice(0,40):'',
+      updatedAt:typeof profile.updatedAt==='string'?profile.updatedAt.slice(0,40):''
+    },
+    seeds:clampInt(state.seeds,0,1_000_000_000),
+    sproutPower:clampInt(state.sproutPower,0,1_000_000_000),
+    avatarInventory:cleanStringArray(state.avatarInventory,500),
+    avatarEquipped:cleanStringMap(state.avatarEquipped,40),
+    playHistory:boundedJsonObject(state.playHistory,56*1024),
+    inventory:boundedJsonObject(state.inventory,16*1024),
+    equipped:cleanStringMap(state.equipped,80)
+  };
+  if(new TextEncoder().encode(JSON.stringify(out)).byteLength>96*1024)throw new Error('state-too-large');
+  return out;
+}
+function parseTeacherState(value){
+  try{return value?JSON.parse(value):{}}catch(_){return {}}
+}
+function teacherAccountPayload(row){
+  const state=parseTeacherState(row?.state_json);
+  return {
+    account:{
+      role:'teacher',
+      loginId:row.login_id,
+      nickname:state?.profile?.nickname||'선생님',
+      classId:row.class_id,
+      className:row.class_name||'',
+      classCode:row.class_code||'',
+      revision:Number(row.state_revision||0),
+      lastLoginAt:row.last_login_at||null
+    },
+    state
+  };
+}
 
 export function authorizeGlobalAdmin(request,env){
   const missing=configError(env);
@@ -138,7 +206,7 @@ export async function authorizeTeacherAccess(request,env){
   if(!/^[0-9a-f]{64}$/i.test(token))return {response:json({ok:false,error:'unauthorized'},401)};
   const tokenHash=await sha256(token);
   const row=await env.DB.prepare(
-    'SELECT s.token_hash,s.expires_at,t.class_id,t.login_id,t.disabled,c.name AS class_name,c.class_code '+
+    'SELECT s.token_hash,s.expires_at,t.class_id,t.login_id,t.disabled,t.state_json,t.state_revision,t.last_login_at,c.name AS class_name,c.class_code '+
     'FROM class_teacher_sessions s '+
     'JOIN class_teacher_accounts t ON t.class_id=s.class_id '+
     'JOIN kidscade_classes c ON c.id=t.class_id '+
@@ -158,6 +226,9 @@ export async function authorizeTeacherAccess(request,env){
     loginId:row.login_id,
     className:row.class_name,
     classCode:row.class_code,
+    state_json:row.state_json,
+    state_revision:row.state_revision,
+    last_login_at:row.last_login_at,
     tokenHash
   };
 }
@@ -291,9 +362,11 @@ async function teacherLogin(request,env){
     ).bind(now,now,row.class_id)
   ]);
 
+  row.last_login_at=now;
   return json({
     ok:true,
-    teacher:{loginId:row.login_id,classId:row.class_id,className:row.class_name,classCode:row.class_code}
+    teacher:{loginId:row.login_id,classId:row.class_id,className:row.class_name,classCode:row.class_code},
+    ...teacherAccountPayload(row)
   },200,{'set-cookie':makeSessionCookie(token)});
 }
 
@@ -309,16 +382,47 @@ async function teacherLogout(request,env){
 async function teacherMe(request,env){
   const auth=await authorizeTeacherAccess(request,env);
   if(auth.response)return auth.response;
+  if(auth.global)return json({ok:true,scope:'global',teacher:null});
   return json({
     ok:true,
-    scope:auth.global?'global':'class',
-    teacher:auth.global?null:{
+    scope:'class',
+    teacher:{
       loginId:auth.loginId,
       classId:auth.classId,
       className:auth.className,
       classCode:auth.classCode
-    }
+    },
+    ...teacherAccountPayload({
+      login_id:auth.loginId,
+      class_id:auth.classId,
+      class_name:auth.className,
+      class_code:auth.classCode,
+      state_json:auth.state_json,
+      state_revision:auth.state_revision,
+      last_login_at:auth.last_login_at
+    })
   });
+}
+
+async function teacherSync(request,env){
+  const auth=await authorizeTeacherAccess(request,env);
+  if(auth.response)return auth.response;
+  if(auth.global)return json({ok:false,error:'class_teacher_required'},403);
+  let body;
+  try{body=await parseJson(request)}catch(_){return json({ok:false,error:'invalid_json'},400)}
+  let state;
+  try{state=sanitizeTeacherState(body?.state)}catch(error){
+    return json({ok:false,error:error?.message==='state-too-large'?'state_too_large':'invalid_state'},400);
+  }
+  const now=nowIso();
+  await env.DB.prepare(
+    'UPDATE class_teacher_accounts SET state_json=?,state_revision=state_revision+1,updated_at=? WHERE class_id=?'
+  ).bind(JSON.stringify(state),now,auth.classId).run();
+  const row=await env.DB.prepare(
+    'SELECT t.*,c.name AS class_name,c.class_code FROM class_teacher_accounts t '+
+    'JOIN kidscade_classes c ON c.id=t.class_id WHERE t.class_id=?'
+  ).bind(auth.classId).first();
+  return json({ok:true,...teacherAccountPayload(row)});
 }
 
 async function resetCredentialEndpoint(request,env){
@@ -343,12 +447,14 @@ export async function handleTeacherAuthRequest(request,env){
     '/api/teacher/auth/login',
     '/api/teacher/auth/logout',
     '/api/teacher/auth/me',
+    '/api/teacher/auth/sync',
     '/api/teacher/class-credential'
   ].includes(path))return null;
   try{
     if(path==='/api/teacher/auth/login')return request.method==='POST'?teacherLogin(request,env):json({ok:false,error:'method_not_allowed'},405,{allow:'POST'});
     if(path==='/api/teacher/auth/logout')return request.method==='POST'?teacherLogout(request,env):json({ok:false,error:'method_not_allowed'},405,{allow:'POST'});
     if(path==='/api/teacher/auth/me')return request.method==='GET'?teacherMe(request,env):json({ok:false,error:'method_not_allowed'},405,{allow:'GET'});
+    if(path==='/api/teacher/auth/sync')return request.method==='POST'?teacherSync(request,env):json({ok:false,error:'method_not_allowed'},405,{allow:'POST'});
     if(path==='/api/teacher/class-credential')return request.method==='POST'?resetCredentialEndpoint(request,env):json({ok:false,error:'method_not_allowed'},405,{allow:'POST'});
   }catch(error){
     const message=String(error?.message||'');
