@@ -13,6 +13,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:920px;margin:28px auto 0}.big,.btn{border:0;border-radius:17px;padding:16px 18px;font-weight:1000}.big{font-size:21px;color:#071423}.host{background:var(--gold)}.join{background:#6ee7b7}.solo{background:#c7a8ff;color:#151126}.btn{background:#e6f0ff;color:#0b1d31}.btn.primary{background:var(--gold)}.btn.danger{background:#71313b;color:#ffe0e4}
 .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.field{display:grid;gap:8px;margin:14px 0}.field label{font-weight:900}.field input,.field select{width:100%;border:1px solid #466b90;background:#0a1c31;color:white;border-radius:14px;padding:14px;font-weight:850}.era-tools,.preset-row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.mini{border:1px solid #466b90;background:#102c4b;color:#dcecff;border-radius:999px;padding:8px 11px;font-weight:900}.era-picker{display:flex;gap:7px;flex-wrap:wrap}.era-chip{position:relative}.era-chip input{position:absolute;opacity:0;pointer-events:none}.era-chip span{display:block;border:1px solid #466b90;background:#0b2139;color:#b9cce1;border-radius:999px;padding:9px 12px;font-weight:900;cursor:pointer}.era-chip input:checked+span{background:#2b67a4;border-color:#78b5f4;color:white;box-shadow:inset 0 0 0 1px #ffffff22}.round-note{padding:12px 14px;border-radius:14px;background:#0b2139;border:1px solid #31597e;color:#c9dbef;line-height:1.5}
 .roomcode{text-align:center;font-size:clamp(48px,10vw,96px);letter-spacing:.12em;font-weight:1000;color:var(--gold)}.sub{text-align:center;color:var(--muted);font-weight:850}.statline{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:900}.roster{display:flex;gap:8px;flex-wrap:wrap;max-height:320px;overflow:auto}.pill{background:#173758;border:1px solid #315a81;border-radius:999px;padding:9px 12px;font-weight:900}.pill.off{opacity:.45}
+.recovery-overlay{position:fixed;inset:0;z-index:120;background:#020a12cc;display:grid;place-items:center;padding:18px}.recovery-card{width:min(720px,100%);max-height:86vh;overflow:auto}.recovery-list{display:grid;gap:8px;margin-top:14px}.recovery-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid #315a81;border-radius:14px;background:#102c4b}.recovery-row small{display:block;color:var(--muted);margin-top:3px}.recovery-code{font-size:clamp(34px,8vw,58px);font-weight:1000;letter-spacing:.12em;color:var(--gold);text-align:center;padding:16px 8px}.recovery-help{line-height:1.55;color:#c9dbef}
 .progress{height:13px;background:#081827;border-radius:99px;overflow:hidden;margin-top:9px}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4e98ff,#35d69a)}
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:12px}.era{display:inline-block;padding:8px 12px;border-radius:999px;background:#21456f;font-weight:900}.tiny{font-size:13px;color:var(--muted);margin-top:8px}.timer{width:78px;height:78px;border:7px solid var(--gold);border-radius:50%;display:grid;place-items:center;background:#091c31;font-size:29px;font-weight:1000}.question{font-size:clamp(24px,4vw,42px);line-height:1.28;font-weight:1000;margin:22px 0}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.answers.ox{grid-template-columns:1fr 1fr;max-width:760px;margin-left:auto;margin-right:auto}.answers.ox .answer{min-height:140px;text-align:center;font-size:clamp(42px,8vw,76px);display:grid;place-items:center}.answer{min-height:94px;border:0;border-radius:18px;color:white;padding:16px;font-size:clamp(17px,2.4vw,24px);font-weight:1000;text-align:left}.answer:nth-child(1){background:#d44d59}.answer:nth-child(2){background:#3979d6}.answer:nth-child(3){background:#c98d25}.answer:nth-child(4){background:#38966e}.answer:disabled{opacity:.62;filter:saturate(.5)}.answer.selected{outline:5px solid white;opacity:1}.answer.correct{outline:6px solid #6bf2af;opacity:1;filter:none}.answer.wrong{opacity:.3}
 .notice{text-align:center;padding:25px;font-size:20px;font-weight:900}.score{font-size:36px;font-weight:1000;color:var(--gold)}.explain{margin-top:16px;padding:16px;border-radius:16px;background:#0b2038;color:#dcecff;line-height:1.55;font-weight:750}.rank{display:grid;gap:8px}.rankrow{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:#132f50;font-weight:900}.rankrow.me{outline:2px solid var(--gold)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
@@ -22,7 +23,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 <body>
 <div id="fxFlash" class="fx-flash"></div><div id="fxBurst" class="fx-burst" aria-hidden="true"></div><div id="fxToast" class="fx-toast" role="status" aria-live="polite"></div>
 <div class="wrap">
-  <div class="top"><div class="brand">KIDScade <b>LIVE</b></div><div class="top-actions"><span id="connectionState" class="connection-pill hidden"></span><button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()">🔊 효과음</button><button class="home homebtn" type="button" onclick="exitKidscade()">← 게임 목록</button></div></div>
+  <div class="top"><div class="brand">KIDScade <b>LIVE</b></div><div class="top-actions"><span id="connectionState" class="connection-pill hidden"></span><button id="recoveryToggle" class="sound-toggle hidden" type="button" onclick="openRecoveryPanel()">학생 재접속</button><button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()">🔊 효과음</button><button class="home homebtn" type="button" onclick="exitKidscade()">← 게임 목록</button></div></div>
 
   <main id="landing" class="card hero">
     <span class="badge">초등 5·6학년 한국사 · 최대 26명</span>
@@ -68,10 +69,20 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       <h2>게임 입장</h2>
       <div class="field"><label>6자리 방 코드</label><input id="joinCode" maxlength="6" autocomplete="off" placeholder="ABC123" style="text-transform:uppercase;font-size:24px;letter-spacing:.12em"></div>
       <div class="field"><label>별명</label><input id="nickname" maxlength="14" autocomplete="off" placeholder="예: 세종팬"></div>
+      <div class="field"><label>재접속 코드 <span class="tiny">(선생님이 발급했을 때만)</span></label><input id="recoveryCode" maxlength="8" autocomplete="off" placeholder="예: A7K9P2Q4" style="text-transform:uppercase;font-size:20px;letter-spacing:.1em"><div class="tiny">코드가 있으면 별명을 다시 입력하지 않아도 기존 점수와 자리로 돌아갑니다.</div></div>
       <button class="btn primary" style="width:100%" onclick="joinRoom()">입장하기</button>
     </div>
     <div class="toolbar"><button class="btn" onclick="showOnly('landing')">뒤로</button></div>
   </section>
+
+  <div id="recoveryPanel" class="recovery-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="recoveryTitle">
+    <div class="card recovery-card">
+      <div class="qhead"><div><span class="badge">교사용</span><h2 id="recoveryTitle" style="margin:8px 0 0">학생 재접속 복구</h2></div><button class="btn" type="button" onclick="closeRecoveryPanel()">닫기</button></div>
+      <p class="recovery-help">학생을 선택하면 <b>10분 동안 한 번만 쓸 수 있는 재접속 코드</b>가 발급됩니다. 학생은 방 코드와 재접속 코드로 들어오며, 기존 점수·연속 정답 기록을 그대로 이어갑니다. 복구가 완료되면 이전 로그인 토큰은 무효화됩니다.</p>
+      <div id="recoveryPlayers" class="recovery-list"></div>
+      <div id="recoveryResult" class="round-note hidden" style="margin-top:14px"></div>
+    </div>
+  </div>
 
   <section id="lobby" class="hidden">
     <div class="grid">
@@ -137,7 +148,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
         <div id="hostNext" class="toolbar hidden"><button id="nextQuestionBtn" class="btn primary" onclick="hostNext()">다음 문제</button></div>
         <div id="studentNext" class="notice hidden">다음 문제를 기다려 주세요.</div>
       </div>
-      <div class="card"><h2 style="margin-top:0">현재 TOP 5</h2><div id="top5" class="rank"></div></div>
+      <div class="card"><h2 style="margin-top:0">이번 문제 학급 결과</h2><div id="classResult" class="rank"></div></div>
     </div>
   </section>
 
@@ -180,6 +191,8 @@ function acceptLiveState(d){
   if(lastState?.room?.code===d.room.code&&Number(d.version)<Number(lastState.version))return;
   if(lastState?.room?.roundId&&lastState.room.roundId!==d.room.roundId){answeredFor=-1;lastChosenOption=-1;}
   lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();
+  $('recoveryToggle')?.classList.toggle('hidden',session.role!=='host'||!usesRealtime());
+  if(!$('recoveryPanel')?.classList.contains('hidden'))renderRecoveryPlayers();
   pollFailures=0;terminalFailures=0;setConnectionState('','');
   if(d.room.status==='closed'){clearSession();showOnly('landing');toastFx('수업 방이 종료되었어요.');return;}
   if(!roundEditing)render(d);
@@ -239,10 +252,10 @@ function syncEraPicker(id,eras){const set=new Set(Array.isArray(eras)&&eras.leng
 function setEraPreset(id,preset){syncEraPicker(id,ERA_PRESETS[preset]||ERA_PRESETS.all)}
 function eraSummary(eras){const list=Array.isArray(eras)?eras:[];if(list.length>=ERA_PRESETS.all.length)return '전체 시대';if(list.length<=3)return list.join(' · ');return list.slice(0,3).join(' · ')+' 외 '+(list.length-3)+'개 시대'}
 function save(){if(session?.role!=='solo')sessionStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
-function clearSession(){stopRealtime();sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;lastState=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF)}
+function clearSession(){stopRealtime();sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;lastState=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF);closeRecoveryPanel();$('recoveryToggle')?.classList.add('hidden')}
 function authHeaders(){return {'Authorization':'Bearer '+session.token}}
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-const liveV2Errors={stale_state:'방 상태가 바뀌었어요. 화면을 확인한 뒤 다시 눌러 주세요.',results_pending:'결과를 보관 중이에요. 잠시 뒤 다시 시도해 주세요.',rate_limited:'요청이 잠시 몰렸어요. 조금 기다린 뒤 다시 시도해 주세요.',history_v2_unavailable:'실시간 방 서버에 연결되지 않았어요. 방을 바꾸지 말고 잠시 뒤 다시 시도해 주세요.',round_limit:'이 방의 진행 한도에 도달했어요. 새 방을 만들어 주세요.'};
+const liveV2Errors={stale_state:'방 상태가 바뀌었어요. 화면을 확인한 뒤 다시 눌러 주세요.',results_pending:'결과를 보관 중이에요. 잠시 뒤 다시 시도해 주세요.',rate_limited:'요청이 잠시 몰렸어요. 조금 기다린 뒤 다시 시도해 주세요.',history_v2_unavailable:'실시간 방 서버에 연결되지 않았어요. 방을 바꾸지 말고 잠시 뒤 다시 시도해 주세요.',round_limit:'이 방의 진행 한도에 도달했어요. 새 방을 만들어 주세요.',invalid_recovery_code:'재접속 코드가 틀렸거나 만료되었어요. 선생님께 새 코드를 받아 주세요.',player_not_found:'복구할 학생을 찾을 수 없어요.'};
 async function requestJson(url,opts={},timeoutMs=6500){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -381,15 +394,43 @@ async function saveRoundSetup(){
   }catch(e){alert(errorText(e))}
 }
 async function joinRoom(){
-  const code=$('joinCode').value.trim().toUpperCase(),nickname=$('nickname').value.trim();
-  if(code.length!==6||!nickname)return alert('방 코드와 별명을 입력해 주세요.');
-  try{const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname,playerId:pendingReconnectPlayerId||undefined})});pendingReconnectPlayerId='';session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};lastPresenceWriteAt=Date.now();save();if(d.reconnected)toastFx('기존 점수로 다시 연결했어요!');startPolling()}catch(e){alert(errorText(e))}
+  const code=$('joinCode').value.trim().toUpperCase(),nickname=$('nickname').value.trim(),recovery=$('recoveryCode').value.trim().toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g,'');
+  if(code.length!==6||(!nickname&&!recovery))return alert(recovery?'방 코드를 확인해 주세요.':'방 코드와 별명을 입력해 주세요.');
+  try{
+    const d=await api('/join',{method:'POST',body:JSON.stringify({code,nickname,recoveryCode:recovery||undefined,playerId:pendingReconnectPlayerId||undefined})});
+    pendingReconnectPlayerId='';$('recoveryCode').value='';session={role:'player',code:d.code,token:d.playerToken,playerId:d.playerId,nickname:d.nickname};lastPresenceWriteAt=Date.now();save();
+    if(d.recovered)toastFx('기존 점수로 복구했어요!');else if(d.reconnected)toastFx('기존 점수로 다시 연결했어요!');
+    startPolling();
+  }catch(e){alert(errorText(e))}
 }
 async function hostStart(){lastChosenOption=-1;lastTimerTick=-1;playSfx('ui.confirm',{volume:.35});try{await api('/start',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
 async function hostNext(){lastChosenOption=-1;lastTimerTick=-1;playSfx('ui.click',{volume:.28});if(session?.role==='solo')return soloNext();try{await api('/next',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
 async function hostContinue(){try{await api('/continue',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})});answeredFor=-1;await poll()}catch(e){alert(errorText(e))}}
 async function closeRoom(){if(!confirm('이 방을 닫을까요?'))return;try{await api('/close',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code})})}catch(e){}clearSession();location.reload()}
 async function copyJoinLink(){const url=new URL(location.href);url.search='';url.searchParams.set('room',session.code);try{await navigator.clipboard.writeText(url.toString());alert('학생 입장 링크를 복사했어요.')}catch(_){prompt('이 링크를 학생에게 보내 주세요.',url.toString())}}
+function closeRecoveryPanel(){$('recoveryPanel')?.classList.add('hidden')}
+function openRecoveryPanel(){
+  if(session?.role!=='host'||!usesRealtime()||!lastState)return;
+  $('recoveryResult').classList.add('hidden');$('recoveryResult').innerHTML='';renderRecoveryPlayers();$('recoveryPanel').classList.remove('hidden');
+}
+function renderRecoveryPlayers(){
+  const box=$('recoveryPlayers');if(!box||session?.role!=='host'||!lastState)return;
+  if(!lastState.players.length){box.innerHTML='<div class="notice">아직 참가한 학생이 없습니다.</div>';return}
+  box.innerHTML=lastState.players.map(p=>'<div class="recovery-row"><div><b>'+esc(p.nickname)+'</b><small>'+(p.online?'현재 연결됨':'현재 연결 끊김')+' · 기존 점수 '+Number(p.score||0).toLocaleString()+'점</small></div><button type="button" class="mini" data-recover-player="'+esc(p.id)+'">복구 코드 발급</button></div>').join('');
+  box.querySelectorAll('[data-recover-player]').forEach(btn=>btn.onclick=()=>issueRecovery(btn.dataset.recoverPlayer));
+}
+async function issueRecovery(playerId){
+  const player=lastState?.players?.find(p=>p.id===playerId);if(!player)return;
+  try{
+    const d=await api('/recovery-code',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,playerId})});
+    const url=new URL(location.href);url.search='';url.searchParams.set('room',session.code);url.searchParams.set('recover',d.recoveryCode);
+    const result=$('recoveryResult');result.classList.remove('hidden');
+    result.innerHTML='<div style="font-weight:1000">'+esc(d.nickname)+' 재접속 코드</div><div class="recovery-code">'+esc(d.recoveryCode)+'</div><div class="tiny" style="text-align:center">10분 이내 1회 사용 · 사용 즉시 이전 로그인 무효화</div><div class="toolbar" style="justify-content:center"><button id="copyRecoveryCode" class="btn" type="button">코드 복사</button><button id="copyRecoveryLink" class="btn" type="button">재접속 링크 복사</button></div>';
+    $('copyRecoveryCode').onclick=()=>copyText(d.recoveryCode,'재접속 코드를 복사했어요.');
+    $('copyRecoveryLink').onclick=()=>copyText(url.toString(),'재접속 링크를 복사했어요.');
+  }catch(e){alert(errorText(e))}
+}
+async function copyText(value,message){try{await navigator.clipboard.writeText(value);toastFx(message)}catch(_){prompt(message,value)}}
 
 async function loadBank(){if(!bankModule)bankModule=await import('../../data/history-live-question-bank.mjs');return bankModule}
 async function startSolo(){
@@ -527,8 +568,12 @@ function renderReveal(s){
   $('revealAnswers').classList.toggle('ox',q.kind==='ox');$('revealAnswers').innerHTML=q.options.map((o,i)=>'<div class="answer '+(i===r.answerIndex?'correct':'wrong')+' '+(i===r.answerIndex?'fx-correct':((i===lastChosenOption&&i!==r.answerIndex)?'fx-wrong':''))+'">'+esc(o)+(session.role==='solo'?'':' <small>('+r.optionStats[i]+'명)</small>')+'</div>').join('');
   $('explanation').textContent=r.explanation;$('hostNext').classList.toggle('hidden',!['host','solo'].includes(session.role));$('studentNext').classList.toggle('hidden',session.role!=='player');
   $('myScore').textContent=me?me.score.toLocaleString()+'점':'';const combo=$('comboChip');const streak=Number(me?.streak||0);combo.textContent=streak>=2?'🔥 '+streak+'연속 정답!':'';combo.classList.toggle('hidden',streak<2);
-  renderRank('top5',session.role==='solo'?[]:s.players.slice(0,5));
-  $('top5').parentElement.classList.toggle('hidden',session.role==='solo');
+  const classResult=$('classResult');classResult.parentElement.classList.toggle('hidden',session.role==='solo');
+  if(session.role!=='solo'){
+    const answered=Number(r.answeredCount||0),correct=Number(r.correctCount||0),total=s.players.length;
+    const correctRate=answered?Math.round(correct/answered*100):0,responseRate=total?Math.round(answered/total*100):0;
+    classResult.innerHTML='<div class="rankrow"><b>'+correctRate+'%</b><span>정답률</span><b>'+correct+' / '+answered+'명</b></div><div class="rankrow"><b>'+responseRate+'%</b><span>응답률</span><b>'+answered+' / '+total+'명</b></div><div class="round-note">순위는 설정한 중간 점검과 최종 결과에서만 공개됩니다.</div>';
+  }
 }
 function renderCheckpoint(s){
   showOnly('checkpoint');cancelAnimationFrame(timerRAF);fxOnce('cp:'+String(s.room.round||0)+':'+String(s.checkpoint?.afterQuestion||s.room.questionNumber),()=>{playSfx('cheer',{volume:.28,cooldownMs:800});flashFx('gold');confettiFx(22);toastFx('중간 순위 공개!')});const me=s.players.find(p=>p.id===session.playerId),after=s.checkpoint?.afterQuestion||s.room.questionNumber;
@@ -575,8 +620,10 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session&&
 
 (function boot(){
   checkHealth();toggleCheckpointCustom();toggleRoundCheckpointCustom();preloadSfx();syncSoundButton();
-  const qs=new URLSearchParams(location.search),room=qs.get('room');
-  if(room){$('joinCode').value=room.toUpperCase();showSetup('join')}
+  const qs=new URLSearchParams(location.search),room=qs.get('room'),recover=qs.get('recover');
+  if(room)$('joinCode').value=room.toUpperCase();
+  if(recover)$('recoveryCode').value=recover.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g,'').slice(0,8);
+  if(room||recover)showSetup('join')
   try{const s=JSON.parse(sessionStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}
 })();
 </script>
