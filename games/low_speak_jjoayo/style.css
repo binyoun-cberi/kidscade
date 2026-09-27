@@ -49,6 +49,16 @@ legend{font-weight:950;margin-bottom:9px}
 .primary{width:100%;min-height:58px;background:linear-gradient(135deg,#ffcc3f,#ff9b3d);color:#402b00;font-size:1.12rem;box-shadow:0 9px 0 #dc7e22,0 16px 28px rgba(220,126,34,.22)}
 .primary:active{transform:translateY(4px);box-shadow:0 5px 0 #dc7e22}
 .privacy-note{text-align:center;color:#7790a4;font-size:.72rem;line-height:1.4;margin:15px 4px 0}
+.legend-note{font-size:.68rem;color:#7b91a4;font-weight:850;margin-left:4px}
+.pack-note{margin:7px 2px 0;color:#7a91a4;font-size:.7rem;line-height:1.35}
+.local-record-card{margin:2px 0 16px;padding:13px;border:2px solid #dce9f2;border-radius:18px;background:#f8fcff}
+.record-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.record-head h3{margin:0;font-size:.9rem}.record-head span{max-width:58%;text-align:right;color:#6c8397;font-size:.68rem;font-weight:850}
+.record-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.record-mini-grid div{background:#fff;border-radius:13px;padding:9px 7px;text-align:center}
+.record-mini-grid small{display:block;color:#7a91a4;font-size:.62rem;font-weight:850}
+.record-mini-grid b{display:block;margin-top:2px;font-size:1.05rem;color:#284a67}
+.record-weak{margin:9px 2px 0;color:#6b8295;font-size:.7rem;line-height:1.35;font-weight:750}
 
 #gameScreen{grid-template-rows:auto auto 1fr auto auto auto;gap:10px;align-content:stretch;padding-top:4px}
 .hud{display:grid;grid-template-columns:82px 1fr 82px;gap:9px;align-items:center}

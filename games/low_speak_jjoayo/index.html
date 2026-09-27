@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>스피크가 쪼아요!</title>
-  <link rel="stylesheet" href="./style.css?v=1">
-  <script src="../../kidscade-game-sdk.js" data-game-id="low_speak_jjoayo" data-title="스피크가 쪼아요!" data-shell="true" data-mute="false" data-orientation="portrait"></script>
+  <link rel="stylesheet" href="./style.css?v=2">
+  <script src="../../kidscade-storage.js?v=20260927-speak-jjoayo-2"></script>\n  <script src="../../kidscade-game-sdk.js" data-game-id="low_speak_jjoayo" data-title="스피크가 쪼아요!" data-shell="true" data-mute="false" data-orientation="portrait"></script>
 </head>
 <body>
   <div class="sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -30,9 +30,20 @@
         </fieldset>
 
         <fieldset>
-          <legend>📚 단어팩</legend>
-          <div class="chips wrap" id="packChips">
-            <button type="button" class="chip selected" data-pack="all">골고루</button>
+          <legend>📚 학년팩 <small class="legend-note">권장 난이도</small></legend>
+          <div class="chips wrap" id="gradePackChips">
+            <button type="button" class="chip selected" data-pack="grade3">3학년</button>
+            <button type="button" class="chip" data-pack="grade4">4학년</button>
+            <button type="button" class="chip" data-pack="grade5">5학년</button>
+            <button type="button" class="chip" data-pack="grade6">6학년</button>
+          </div>
+          <p class="pack-note">현재 100단어를 난이도 순으로 25개씩 나눈 권장팩이에요. 특정 교과서 전용 목록은 아니에요.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>🎯 주제 연습</legend>
+          <div class="chips wrap" id="topicPackChips">
+            <button type="button" class="chip" data-pack="all">전체 100</button>
             <button type="button" class="chip" data-pack="animal">동물</button>
             <button type="button" class="chip" data-pack="food">음식</button>
             <button type="button" class="chip" data-pack="school">학교</button>
@@ -52,6 +63,19 @@
             </button>
           </div>
         </fieldset>
+
+        <section class="local-record-card" aria-live="polite">
+          <div class="record-head">
+            <h3>💾 이 기기 기록</h3>
+            <span id="recordScope">3학년 · 60초 · 말하기</span>
+          </div>
+          <div class="record-mini-grid">
+            <div><small>이 조건 최고</small><b id="recordBest">-</b></div>
+            <div><small>플레이</small><b id="recordRuns">0판</b></div>
+            <div><small>누적 정답</small><b id="recordTotalCorrect">0개</b></div>
+          </div>
+          <p id="recordWeak" class="record-weak">아직 어려운 단어 기록이 없어요.</p>
+        </section>
 
         <div class="rules">
           <span>✅ 정답 +1</span>
@@ -136,6 +160,6 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
-  <script type="module" src="./game.js?v=1"></script>
+  <script type="module" src="./game.js?v=2"></script>
 </body>
 </html>

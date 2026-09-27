@@ -51,14 +51,41 @@ test('Speak Jjoayo separates speech homophones from typed spelling',()=>{
   assert.match(words,/en:'read'.*speechAliases:\['reed'\]/);
 });
 
+
+test('Speak Jjoayo has four 25-word recommended grade packs',()=>{
+  for(const grade of [3,4,5,6]){
+    const count=(words.match(new RegExp("grade:"+grade,"g"))||[]).length;
+    assert.equal(count,25,'grade '+grade+' should have 25 words');
+  }
+  assert.match(words,/grade3:'3학년 권장'/);
+  assert.match(words,/grade6:'6학년 권장'/);
+  assert.ok(html.includes('id="gradePackChips"'));
+  assert.ok(html.includes('data-pack="grade3"'));
+  assert.ok(html.includes('data-pack="grade6"'));
+});
+
+test('Speak Jjoayo stores local condition records through KidscadeStorage',()=>{
+  const storage=fs.readFileSync(path.join(root,'kidscade-storage.js'),'utf8');
+  assert.ok(html.includes('kidscade-storage.js'));
+  assert.match(storage,/speakJjoayoProgress:\s*'kidscade_speak_jjoayo_progress_v1'/);
+  assert.match(runtime,/const SAVE_KEY='speakJjoayoProgress'/);
+  assert.match(runtime,/KidscadeStorage\?\.getJson/);
+  assert.match(runtime,/KidscadeStorage\?\.setJson/);
+  assert.match(runtime,/progress\.recent=progress\.recent\.slice\(0,20\)/);
+  assert.match(runtime,/function persistRun\(/);
+  assert.match(runtime,/function refreshRecordPanel\(/);
+  assert.doesNotMatch(runtime,/localStorage\.(?:getItem|setItem|removeItem)/);
+});
+
 test('Speak Jjoayo is registered as a language quiz',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='low_speak_jjoayo');
   assert.ok(game);
   assert.equal(game.title,'스피크가 쪼아요!');
-  assert.equal(game.href,'games/low_speak_jjoayo/index.html?v=1');
+  assert.equal(game.href,'games/low_speak_jjoayo/index.html?v=2');
   assert.equal(game.category,'lang');
   assert.equal(game.subject,'language');
   assert.equal(game.genre,'quiz');
   assert.equal(game.age,'low');
+  assert.deepEqual(game.ages,['low','high']);
 });
