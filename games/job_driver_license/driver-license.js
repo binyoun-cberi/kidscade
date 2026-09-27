@@ -706,7 +706,7 @@ function physicsStep(dt){
   if(!dir&&!transmissionLocked&&Math.abs(gradeAlong)>.03&&!car.parkingBrake&&inp.brake<.05)car.speed+=gravity*dt;
   const maxForward=license==='auto'?9:10.5,maxReverse=3.6;
   car.speed=clamp(car.speed,-maxReverse,maxForward);
-  if(Math.abs(car.speed)<.015)car.speed=0;
+  if(Math.abs(car.speed)<.002)car.speed=0;
   runStats.maxSpeed=Math.max(runStats.maxSpeed,Math.abs(car.speed)*3.6);
 
   if(collisionCooldown>0)collisionCooldown=Math.max(0,collisionCooldown-dt);
@@ -736,7 +736,7 @@ function examinerMonitor(dt,inp,roadCorners){
   if(gameState!=='playing')return;
   const kmh=Math.abs(car.speed)*3.6;
   if(mode==='exam'){
-    if(!car.seatbelt){disqualify('안전띠 미착용');return}
+    if(stage!=='PREP'&&!car.seatbelt){disqualify('안전띠 미착용');return}
     if(stage==='START'&&gameTime-examiner.startAt>EXAM_RULES.startLimit){disqualify('출발 지시 후 30초 이내 미출발');return}
     if(stage!=='ACCEL'&&stage!=='PREP'&&stage!=='SECURE'&&kmh>EXAM_RULES.overspeedKmh){
       examiner.overspeedTimer+=dt;
