@@ -1280,9 +1280,12 @@ function uniqueDateChoices(index) {
   }
   return out;
 }
-function addDirectFact({era,type,term,clue,q,o,e,family,oxStatement=null,oxAnswer=true}) {
+function addDirectFact({era,type,term,clue,q,o,e,family,oxStatement=null,oxAnswer=true,oxStatements=null}) {
   if(!q||!Array.isArray(o)||o.length!==4||new Set(o).size!==4)return;
-  CORE_FACTS.push({era,type,term,clue,direct:true,q,o,a:0,e,family,oxStatement,oxAnswer:Boolean(oxAnswer)});
+  CORE_FACTS.push({
+    era,type,term,clue,direct:true,q,o,a:0,e,family,oxStatement,oxAnswer:Boolean(oxAnswer),
+    oxStatements:Array.isArray(oxStatements)?oxStatements.map(x=>({statement:String(x.statement||''),answer:Boolean(x.answer)})).filter(x=>x.statement):null
+  });
 }
 
 // 서로 다른 사건·연도 관계 자체를 독립 지식 항목으로 추가한다.
@@ -1296,10 +1299,10 @@ MODERN_TIMELINE_EVENTS.forEach((event,index)=>{
     o:options,
     e:`${event.name}: ${event.year}년에 일어난 일입니다.`,
     family:'date',
-    oxStatement:index%2===0
-      ? `‘${event.name}’: ${event.year}년에 일어났다.`
-      : `‘${event.name}’: ${options[1]}에 일어났다.`,
-    oxAnswer:index%2===0
+    oxStatements:[
+      {statement:`‘${event.name}’: ${event.year}년에 일어났다.`,answer:true},
+      {statement:`‘${event.name}’: ${options[1]}에 일어났다.`,answer:false}
+    ]
   });
 });
 
@@ -1316,10 +1319,10 @@ for(let distance=1;distance<=8;distance++){
       o:options,
       e:`시간순으로 ${first.name}(${first.year}년) → ${second.name}(${second.year}년)입니다.`,
       family:'chronology-before',
-      oxStatement:(i+distance)%2===0
-        ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
-        : `시간순으로 ‘${second.name} → ${first.name}’이다.`,
-      oxAnswer:(i+distance)%2===0
+      oxStatements:[
+        {statement:`시간순으로 ‘${first.name} → ${second.name}’이다.`,answer:true},
+        {statement:`시간순으로 ‘${second.name} → ${first.name}’이다.`,answer:false}
+      ]
     });
     addDirectFact({
       era,type:'순서',term:second.name,
@@ -1328,10 +1331,10 @@ for(let distance=1;distance<=8;distance++){
       o:[second.name,first.name,'같은 시기에 일어났다','자료만으로 순서를 알 수 없다'],
       e:`시간순으로 ${first.name}(${first.year}년) → ${second.name}(${second.year}년)입니다.`,
       family:'chronology-after',
-      oxStatement:(i+distance)%2!==0
-        ? `시간순으로 ‘${first.name} → ${second.name}’이다.`
-        : `시간순으로 ‘${second.name} → ${first.name}’이다.`,
-      oxAnswer:(i+distance)%2!==0
+      oxStatements:[
+        {statement:`시간순으로 ‘${first.name} → ${second.name}’이다.`,answer:true},
+        {statement:`시간순으로 ‘${second.name} → ${first.name}’이다.`,answer:false}
+      ]
     });
   }
 }
@@ -1428,32 +1431,86 @@ function wrongFactForOx(fact,index){
   }
   return null;
 }
-function regularOxQuestion(fact,index){
-  const isTrue=index%2===0;
-  if(isTrue){
-    return {
-      id:`ox-${index}`,era:fact.era,difficulty:2,
-      q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
-      o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
-      sourceFact:index,family:'ox'
-    };
-  }
+function regularOxQuestions(fact,index){
+  const out=[{
+    id:`ox-${index}-true`,era:fact.era,difficulty:2,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
+    o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
+    sourceFact:index,family:'ox'
+  }];
   const wrong=wrongFactForOx(fact,index);
-  if(!wrong){
-    return {
-      id:`ox-${index}`,era:fact.era,difficulty:2,
-      q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
-      o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
-      sourceFact:index,family:'ox'
-    };
-  }
-  return {
-    id:`ox-${index}`,era:fact.era,difficulty:2,
+  if(wrong)out.push({
+    id:`ox-${index}-false`,era:fact.era,difficulty:2,
     q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${wrong.clue}`,
     o:['O','X'],a:1,
     e:`X가 정답입니다. 제시된 설명은 ‘${wrong.term}’에 더 알맞습니다. ${fact.term}: ${fact.clue}`,
     sourceFact:index,family:'ox'
-  };
+  });
+  return out;
+}
+
+function seededFacts(list,seed,count){
+  if(!list.length)return [];
+  const start=hashText(seed)%list.length,out=[];
+  for(let step=0;step<list.length&&out.length<count;step++){
+    const fact=list[(start+step)%list.length];
+    if(fact&&!out.includes(fact))out.push(fact);
+  }
+  return out;
+}
+function distinctEraFacts(list,seed,count){
+  const out=[],used=new Set();
+  for(const fact of seededFacts(list,seed,list.length)){
+    if(used.has(fact.era))continue;
+    used.add(fact.era);out.push(fact);
+    if(out.length===count)break;
+  }
+  return out;
+}
+function relationQuestions(fact,index){
+  const regular=CORE_FACTS.filter(x=>!x.direct);
+  const sameEra=regular.filter(x=>x!==fact&&x.era===fact.era);
+  const otherEra=regular.filter(x=>x.era!==fact.era);
+  const out=[];
+
+  const peer=seededFacts(sameEra,fact.term+':peer',1)[0];
+  const peerDistractors=distinctEraFacts(otherEra,fact.term+':peer-distractors',3);
+  if(peer&&peerDistractors.length===3)out.push({
+    id:`era-peer-${index}`,era:fact.era,difficulty:2,
+    q:`‘${fact.term}’와 같은 시대에 함께 살펴볼 대상으로 가장 알맞은 것은 무엇일까요?`,
+    o:[peer.term,...peerDistractors.map(x=>x.term)],a:0,
+    e:`${topicLabel(fact.term)} ${fact.era}와 관련 있고, ‘${peer.term}’도 같은 시대에 함께 살펴볼 수 있습니다.`,
+    sourceFact:index,family:'era-peer'
+  });
+
+  const sameSet=seededFacts(sameEra,fact.term+':odd-same',2);
+  const intruder=seededFacts(otherEra,fact.term+':odd-other',1)[0];
+  if(sameSet.length===2&&intruder)out.push({
+    id:`era-odd-${index}`,era:fact.era,difficulty:2,
+    q:`다음 중 나머지 셋과 관련된 시대가 다른 하나는 무엇일까요?`,
+    o:[fact.term,...sameSet.map(x=>x.term),intruder.term],a:3,
+    e:`‘${fact.term}’, ‘${sameSet[0].term}’, ‘${sameSet[1].term}’은 모두 ${fact.era}와 관련 있고, ‘${intruder.term}’은 ${intruder.era}와 관련 있습니다.`,
+    sourceFact:index,family:'era-odd'
+  });
+
+  const pos=ERA_OPTIONS.indexOf(fact.era);
+  const later=distinctEraFacts(regular.filter(x=>ERA_OPTIONS.indexOf(x.era)>pos),fact.term+':later',3);
+  const earlier=distinctEraFacts(regular.filter(x=>ERA_OPTIONS.indexOf(x.era)<pos),fact.term+':earlier',3);
+  if(later.length===3)out.push({
+    id:`era-order-${index}`,era:fact.era,difficulty:3,
+    q:`다음 중 가장 이른 시대와 관련된 것은 무엇일까요?`,
+    o:[fact.term,...later.map(x=>x.term)],a:0,
+    e:`‘${fact.term}’은 ${fact.era}와 관련되어, 제시된 보기 가운데 가장 이른 시대에 해당합니다.`,
+    sourceFact:index,family:'era-order'
+  });
+  else if(earlier.length===3)out.push({
+    id:`era-order-${index}`,era:fact.era,difficulty:3,
+    q:`다음 중 가장 늦은 시대와 관련된 것은 무엇일까요?`,
+    o:[fact.term,...earlier.map(x=>x.term)],a:0,
+    e:`‘${fact.term}’은 ${fact.era}와 관련되어, 제시된 보기 가운데 가장 늦은 시대에 해당합니다.`,
+    sourceFact:index,family:'era-order'
+  });
+  return out;
 }
 
 function buildBank() {
@@ -1465,14 +1522,15 @@ function buildBank() {
         q:fact.q,o:[...fact.o],a:Number(fact.a)||0,e:fact.e,
         sourceFact:index,family:fact.family||'direct'
       });
-      if(fact.oxStatement){
-        out.push({
-          id:`ox-direct-${index}`,era:fact.era,difficulty:2,
-          q:`OX 문제\n${fact.oxStatement}`,
-          o:['O','X'],a:fact.oxAnswer?0:1,e:`${fact.oxAnswer?'O':'X'}가 정답입니다. ${fact.e}`,
-          sourceFact:index,family:'ox'
-        });
-      }
+      const oxVariants=Array.isArray(fact.oxStatements)&&fact.oxStatements.length
+        ? fact.oxStatements
+        : fact.oxStatement?[{statement:fact.oxStatement,answer:fact.oxAnswer}]:[];
+      oxVariants.forEach((item,variant)=>out.push({
+        id:`ox-direct-${index}-${variant}`,era:fact.era,difficulty:2,
+        q:`OX 문제\n${item.statement}`,
+        o:['O','X'],a:item.answer?0:1,e:`${item.answer?'O':'X'}가 정답입니다. ${fact.e}`,
+        sourceFact:index,family:'ox'
+      }));
       return;
     }
     const termOptions = [fact.term, ...pickDistractors(index, 'term')];
@@ -1492,7 +1550,8 @@ function buildBank() {
       q:makePrompt(fact.term), o:[fact.era, ...eraDistractors(fact.era, fact.term + variant)], a:0,
       e:`${topicLabel(fact.term)} ${fact.era}와 가장 관련 깊습니다. ${fact.clue}`, sourceFact:index, family:'era'
     }));
-    out.push(regularOxQuestion(fact,index));
+    relationQuestions(fact,index).forEach(q=>out.push(q));
+    regularOxQuestions(fact,index).forEach(q=>out.push(q));
   });
   return out;
 }
