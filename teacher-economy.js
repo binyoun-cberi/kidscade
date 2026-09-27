@@ -617,11 +617,16 @@
     },null,'debt-repay');
   }
 
-  async function manualTransaction(){
+  async function manualTransaction(direction){
+    const raw=Math.abs(Math.trunc(Number($('manualAmount').value)||0));
+    if(!raw)return alert('금액을 1 이상 입력해 주세요.');
+    const take=direction==='take';
     await mutate('/api/teacher/economy/manual','POST',{
-      studentId:$('manualStudent').value,amount:Number($('manualAmount').value),
-      reason:$('manualReason').value,toTreasury:$('manualTreasury').value==='yes'
-    });
+      studentId:$('manualStudent').value,
+      amount:take?-raw:raw,
+      reason:$('manualReason').value,
+      toTreasury:take&&$('manualTreasury').value==='yes'
+    },null,'manual-'+direction+'-'+$('manualStudent').value);
   }
 
   async function createItem(){
@@ -675,7 +680,8 @@
   $('runPayroll').onclick=runPayroll;
   $('spendTreasury').onclick=spendTreasury;
   $('repayDebt').onclick=repayDebt;
-  $('manualTx').onclick=manualTransaction;
+  $('manualGive').onclick=()=>manualTransaction('give');
+  $('manualTake').onclick=()=>manualTransaction('take');
   $('createItem').onclick=createItem;
   $('createLaw').onclick=createLaw;
   $('createCase').onclick=createCase;
