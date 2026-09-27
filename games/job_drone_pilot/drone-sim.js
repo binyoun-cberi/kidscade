@@ -517,8 +517,9 @@ function updateRTH(dt){
   }else if(rth.phase==='home'){
     if(hd>0.05)toHome.normalize();desiredVelocity.set(toHome.x*5.2,clamp((rth.safeY-p.y)*1.4,-1.8,1.8),toHome.z*5.2);if(hd<2.2){rth.phase='hover';rth.hover=0;}
   }else if(rth.phase==='hover'){
-    rth.hover+=dt;desiredVelocity.set(clamp(-p.x*1.2,-.8,.8),clamp((Math.min(rth.safeY,3.2)-p.y)*1.4,-1.8,1.8),clamp(-p.z*1.2,-.8,.8));
-    if(p.y<=3.45&&rth.hover>.9){rth.phase='land';rth.hover=0;showToast('착륙 지점 확인 · 자동 착륙합니다.');}
+    desiredVelocity.set(clamp(-p.x*1.2,-.8,.8),clamp((Math.min(rth.safeY,3.2)-p.y)*1.4,-1.8,1.8),clamp(-p.z*1.2,-.8,.8));
+    if(p.y<=3.45)rth.hover+=dt;else rth.hover=0;
+    if(rth.hover>.9){rth.phase='land';rth.hover=0;showToast('착륙 지점 확인 · 자동 착륙합니다.');}
   }else{
     desiredVelocity.set(clamp(-p.x*1.6,-1.2,1.2),p.y>.55?-1.25:0,clamp(-p.z*1.6,-1.2,1.2));
     if(hd<1.4&&p.y<=.48){rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');showToast('출발점 자동귀환 완료');if(endPending)endGame('근무 시간이 끝나 자동귀환 후 안전하게 착륙했습니다.');}
@@ -553,12 +554,14 @@ function physicsStep(dt){
     const hr=expFactor(3.2,dt),vr=expFactor(4,dt);drone.vel.x=lerp(drone.vel.x,desiredVelocity.x,hr);drone.vel.z=lerp(drone.vel.z,desiredVelocity.z,hr);drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,vr);
   }else if(flightMode==='stable'){
     const forwardSpeed=c.forward*6.8,strafeSpeed=c.strafe*5.2;
-    desiredVelocity.x=sy*forwardSpeed+cy*strafeSpeed+windState.current.x*.18;
-    desiredVelocity.z=-cy*forwardSpeed+sy*strafeSpeed+windState.current.y*.18;desiredVelocity.y=c.lift*3.0;
+    const windFactor=drone.root.position.y>.6 ? .18 : 0;
+    desiredVelocity.x=sy*forwardSpeed+cy*strafeSpeed+windState.current.x*windFactor;
+    desiredVelocity.z=-cy*forwardSpeed+sy*strafeSpeed+windState.current.y*windFactor;desiredVelocity.y=c.lift*3.0;
     const hr=expFactor(3.15,dt),vr=expFactor(4.0,dt);drone.vel.x=lerp(drone.vel.x,desiredVelocity.x,hr);drone.vel.z=lerp(drone.vel.z,desiredVelocity.z,hr);drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,vr);
   }else{
-    const ax=sy*(c.forward*10.4)+cy*(c.strafe*8.8)+windState.current.x*.72;
-    const az=-cy*(c.forward*10.4)+sy*(c.strafe*8.8)+windState.current.y*.72;
+    const sportWind=drone.root.position.y>.6 ? .72 : 0;
+    const ax=sy*(c.forward*10.4)+cy*(c.strafe*8.8)+windState.current.x*sportWind;
+    const az=-cy*(c.forward*10.4)+sy*(c.strafe*8.8)+windState.current.y*sportWind;
     drone.vel.x+=ax*dt;drone.vel.z+=az*dt;
     const drag=Math.exp(-(Math.abs(c.forward)+Math.abs(c.strafe)>.08 ? .42 : 1.18)*dt);drone.vel.x*=drag;drone.vel.z*=drag;
     const hs=Math.hypot(drone.vel.x,drone.vel.z),maxHs=c.precision?4.8:9.0;if(hs>maxHs){drone.vel.x*=maxHs/hs;drone.vel.z*=maxHs/hs}
@@ -577,7 +580,7 @@ function physicsStep(dt){
   const hsp=Math.hypot(drone.vel.x,drone.vel.z);
   if(drone.armed){const drain=dt*(1+.25*clamp(hsp/7,0,1)+.18*Math.abs(c.lift)+(flightMode==='sport' ? .08 : 0));drone.batterySeconds=Math.max(0,drone.batterySeconds-drain);}
   if(drone.armed||drone.everAirborne){flightTime+=dt;shiftRemaining=Math.max(0,shiftRemaining-dt);}
-  if(drone.everAirborne&&drone.armed&&drone.root.position.y<=.4&&hsp<.34&&Math.abs(drone.vel.y)<.08){
+  if(drone.everAirborne&&drone.armed&&drone.root.position.y<=.4&&hsp<.6&&Math.abs(drone.vel.y)<.08){
     drone.groundStill+=dt;if(drone.groundStill>1.5){setArmed(false,true);showToast('착륙 확인 · 모터가 자동으로 정지했습니다.');}
   }else drone.groundStill=0;
   if(shiftRemaining<=0&&!endPending){endPending=true;if(!rth.active)setRTH(true);setMissionUI('근무 종료','자동귀환 중','근무 시간이 끝났습니다. 출발점으로 안전하게 돌아갑니다.');mission=null;clearMissionMeshes();}
