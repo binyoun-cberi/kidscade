@@ -124,13 +124,13 @@
     .question{margin:2px 0 3px;font-size:clamp(2.2rem,7vw,4.2rem);font-weight:1000;letter-spacing:-.06em}
     .entry{min-height:38px;color:#fff1ae;font-size:1.35rem;font-weight:1000}
     .combo-line{margin-top:3px;color:#86eaff;font-size:.72rem;font-weight:900}
-    .pad{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+    .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
     .pad button{
       min-height:48px;border-radius:12px;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.1);
       font-weight:1000;font-size:1.05rem;cursor:pointer
     }
     .pad button:active{transform:scale(.96);background:rgba(255,255,255,.15)}
-    .pad .enter{grid-column:span 2;background:rgba(52,211,153,.14);color:#a7f3d0}
+    .pad .zero{grid-column:span 2}
     .pad .del{color:#ffc1ce}
     .quit-btn{min-width:58px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:pointer}
 
@@ -142,11 +142,11 @@
     .duel-head b{font-size:.74rem}.duel-head span{font-size:.62rem;color:var(--muted)}
     .duel-question{text-align:center;font-size:clamp(1.7rem,5vw,3rem);font-weight:1000}
     .duel-entry{text-align:center;height:27px;color:#fff2a8;font-weight:1000}
-    .mini-pad{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+    .mini-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
     .mini-pad button{min-height:42px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-weight:1000;cursor:pointer}
-    .mini-pad .enter{grid-column:span 2}
-    .p1 .mini-pad .enter{color:#aeeeff;background:rgba(85,215,255,.11)}
-    .p2 .mini-pad .enter{color:#ffc1cf;background:rgba(255,107,138,.11)}
+    .mini-pad .zero{grid-column:span 2}
+    .p1 .mini-pad .zero{color:#aeeeff;background:rgba(85,215,255,.08)}
+    .p2 .mini-pad .zero{color:#ffc1cf;background:rgba(255,107,138,.08)}
 
     .overlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(2,3,9,.76);backdrop-filter:blur(7px)}
     .overlay-card{width:min(440px,100%);padding:22px;text-align:center}
@@ -346,10 +346,10 @@
             <div class="combo-line" id="soloFeedback">빠르게 풀수록 강해져요!</div>
           </div>
           <div class="pad" data-pad="0">
-            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
-            <button class="del" data-key="del">⌫</button><button data-key="0">0</button><button class="enter" data-key="enter">발사!</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button class="zero" data-key="0">0</button><button class="del" data-key="del">삭제</button>
           </div>
         </div>
         <button class="quit-btn" id="quitBtn">나가기</button>
@@ -357,25 +357,25 @@
 
       <div class="local-controls hidden" id="localControls">
         <div class="panel duel-card p1">
-          <div class="duel-head"><b>PLAYER 1</b><span>숫자열 + Enter</span></div>
+          <div class="duel-head"><b>PLAYER 1</b><span>숫자열 · 자동 발사</span></div>
           <div class="duel-question" id="p1Question">7 × 8</div>
           <div class="duel-entry" id="p1Entry">?</div>
           <div class="mini-pad" data-pad="0">
-            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
-            <button data-key="del">⌫</button><button data-key="0">0</button><button class="enter" data-key="enter">발사</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button class="zero" data-key="0">0</button><button data-key="del">삭제</button>
           </div>
         </div>
         <div class="panel duel-card p2">
-          <div class="duel-head"><b>PLAYER 2</b><span>숫자패드 + Enter</span></div>
+          <div class="duel-head"><b>PLAYER 2</b><span>숫자패드 · 자동 발사</span></div>
           <div class="duel-question" id="p2Question">6 × 9</div>
           <div class="duel-entry" id="p2Entry">?</div>
           <div class="mini-pad" data-pad="1">
-            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
-            <button data-key="del">⌫</button><button data-key="0">0</button><button class="enter" data-key="enter">발사</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button class="zero" data-key="0">0</button><button data-key="del">삭제</button>
           </div>
         </div>
         <button class="quit-btn" id="localQuitBtn">나가기</button>
