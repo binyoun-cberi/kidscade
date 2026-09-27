@@ -10,7 +10,7 @@ class Simulation{
  reset(){
   this.state={mode:'ready',paused:false,tutorial:false,tutorialStep:0,time:0,seed:1,money:320,food:28,population:14,stability:100,maxPopulation:14,
    slots:D.SLOT_X.map((x,i)=>({i,x,building:null})),deck:[],discard:[],hand:[],selectedUid:null,refreshCooldown:0,economyClock:0,growthClock:0,hungerClock:0,
-   disasters:[],next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
+   disasters:[],field:DC.Field?.createState?.()||null,next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
    stats:{resolved:0,lost:0,placed:0,replaced:0,upgraded:0,cardsPlayed:0,removed:0}};
  }
  on(fn){this.listeners.push(fn)}
@@ -95,13 +95,13 @@ class Simulation{
  playAction(uid){
   const s=this.state,def=this.cardDef(uid);if(!this.actionUsable(def))return false;s.money-=def.cost;
   if(def.action==='fireBrigade'){
-   const d=this.matchingDisaster('wildfire'),bonus=1+this.buildingCount('reservoir',d.side)*.12;d.energy=Math.max(0,d.energy-34*bonus);d.progress=Math.max(0,d.progress-.09*bonus);this.emit('response','소방대가 불길을 밀어냈습니다.');
+   const d=this.matchingDisaster('wildfire'),bonus=1+this.buildingCount('reservoir',d.side)*.12;DC.Field?.fireBrigade?.(this,d);d.energy=Math.max(0,d.energy-18*bonus);this.emit('response','소방대가 가장 거센 불길을 집중 진압했습니다.');
   }else if(def.action==='firebreak'){
-   const d=this.matchingDisaster('wildfire');d.energy=Math.max(0,d.energy-6);d.progress=Math.max(0,d.progress-.145);d.blockPause=Math.max(d.blockPause||0,2.4);this.emit('response','방화선이 불길의 전진을 끊었습니다.');
+   const d=this.matchingDisaster('wildfire'),col=DC.Field?.firebreak?.(this,d);d.energy=Math.max(0,d.energy-6);d.blockPause=Math.max(d.blockPause||0,2.4);this.emit('response','방화선을 만들어 불길의 연료 경로를 끊었습니다.',{col});
   }else if(def.action==='sandbags'){
-   const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-18);d.progress=Math.max(0,d.progress-.075);d.blockPause=Math.max(d.blockPause||0,2.1);this.emit('response','모래주머니로 물길을 늦췄습니다.');
+   const d=this.matchingDisaster('flood'),col=DC.Field?.sandbags?.(this,d);d.energy=Math.max(0,d.energy-8);d.blockPause=Math.max(d.blockPause||0,2.1);this.emit('response','모래주머니 임시 장벽을 설치했습니다.',{col});
   }else if(def.action==='emergencyDrain'){
-   const d=this.matchingDisaster('flood');d.energy=Math.max(0,d.energy-7);d.progress=Math.max(0,d.progress-.14);d.blockPause=Math.max(d.blockPause||0,1.7);this.emit('response','긴급 배수로 물길을 뒤로 밀었습니다.');
+   const d=this.matchingDisaster('flood'),count=DC.Field?.emergencyDrain?.(this,d)||0;d.energy=Math.max(0,d.energy-10);d.blockPause=Math.max(d.blockPause||0,1.2);this.emit('response','침수 지역 '+count+'칸을 긴급 배수했습니다.');
   }else if(def.action==='stormPrep'){
    const d=this.matchingDisaster('typhoon');d.energy=Math.max(0,d.energy-24);d.progress=Math.max(0,d.progress-.10);d.blockPause=Math.max(d.blockPause||0,2.8);this.emit('response','창문과 지붕을 보강해 강풍 피해를 줄였습니다.');
   }else if(def.action==='waterDistribution'){
