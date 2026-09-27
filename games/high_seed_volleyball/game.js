@@ -127,7 +127,7 @@ function collidePlayer(me,inp){
    // A receive must actually pop the ball upward. The old lerp could leave a fast
    // descending ball with almost no rebound, so guarantee a minimum lift while
    // still preserving stronger physically-reflected bounces.
-   const lift=dive?-410:-350-Math.max(0,-ny)*85;
+   const lift=dive?-500:-370-Math.max(0,-ny)*90;
    if(ball.vy>lift)ball.vy=lift;
    if(dive){burst(ball.x,ball.y,5);shake=Math.max(shake,1.8);sound('hit',1.24)}else sound('hit',1.44);
  }
