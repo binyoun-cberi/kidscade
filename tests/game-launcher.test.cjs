@@ -30,21 +30,20 @@ test('reward calculation preserves the 30-second threshold and standard rewards'
     sessionMin: 0,
     durationText: '29초',
     baseSeeds: 0,
-    baseExp: 0,
     rewardSeeds: 0,
-    gainedExp: 0
+    rewardPower: 0
   });
 
   const short = launcher.calculateReward(30, 30);
   assert.equal(short.rewardSeeds, 3);
-  assert.equal(short.gainedExp, 5);
+  assert.equal(short.rewardPower, 5);
   assert.equal(short.durationText, '30초');
 
   const long = launcher.calculateReward(120, 30);
   assert.equal(long.baseSeeds, 10);
   assert.equal(long.baseExp, 20);
   assert.equal(long.rewardSeeds, 10);
-  assert.equal(long.gainedExp, 20);
+  assert.equal(long.rewardPower, 20);
 });
 
 test('open creates a catalog-driven session, remembers the game and opens the iframe payload', () => {
@@ -130,8 +129,7 @@ test('close records reward, pet experience, mission and garden session in one li
     closeModal: () => calls.push(['modal-close']),
     checkpointPlayTime: at => calls.push(['checkpoint', at]),
     addCoins: (amount, reason) => calls.push(['coins', amount, reason]),
-    addPetExp: (amount, category) => calls.push(['exp', amount, category]),
-    savePet: () => calls.push(['save-pet']),
+    addSproutPower: (amount, reason) => calls.push(['power', amount, reason]),
     updateMission: (category, id) => calls.push(['mission', category, id]),
     recordGardenSession: payload => calls.push(['garden', payload]),
     resetSession: () => calls.push(['reset']),
@@ -140,9 +138,9 @@ test('close records reward, pet experience, mission and garden session in one li
 
   assert.equal(result.sessionSec, 120);
   assert.equal(result.reward.rewardSeeds, 10);
-  assert.equal(result.reward.gainedExp, 20);
+  assert.equal(result.reward.rewardPower, 20);
   assert.ok(calls.some(call => call[0] === 'coins' && call[1] === 10));
-  assert.ok(calls.some(call => call[0] === 'exp' && call[1] === 20 && call[2] === 'math'));
+  assert.ok(calls.some(call => call[0] === 'power' && call[1] > 0));
   assert.ok(calls.some(call => call[0] === 'mission'));
   assert.ok(calls.some(call => call[0] === 'garden' && call[1].seconds === 120));
   assert.ok(calls.some(call => call[0] === 'garden' && Object.hasOwn(call[1], 'title')));
@@ -158,7 +156,7 @@ test('short close saves time but does not grant reward', () => {
     closeModal: () => {},
     checkpointPlayTime: () => calls.push('checkpoint'),
     addCoins: () => calls.push('coins'),
-    addPetExp: () => calls.push('exp'),
+    addSproutPower: () => calls.push('power'),
     showToast: text => calls.push(text),
     resetSession: () => calls.push('reset'),
     syncBadges: () => calls.push('badges')
