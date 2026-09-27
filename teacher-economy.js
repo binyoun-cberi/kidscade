@@ -322,18 +322,28 @@
 
     $('jobRows').innerHTML=(data.jobs||[]).length?data.jobs.map(job=>{
       const applicants=(job.applicantIds||[]).map(studentName).join(', ')||'없음';
-      const assigned=(job.assignedStudentIds||[]).map(studentName).join(', ')||'미채용';
+      const assignedIds=job.assignedStudentIds||[];
+      const assigned=assignedIds.map(studentName).join(', ')||'미채용';
       const required=(job.requiredCertificateIds||[]).map(id=>certMap.get(id)?.name).filter(Boolean).join(', ')||'없음';
       const selected=new Set((job.capabilities||[]).map(item=>item.code));
       const capabilityNames=catalog.filter(item=>selected.has(item.code)).map(item=>item.label).join(', ')||'없음';
       const capOptions=catalog.map(item=>
         '<option value="'+escapeHtml(item.code)+'" '+(selected.has(item.code)?'selected':'')+'>'+escapeHtml(item.label)+'</option>'
       ).join('');
+      const unassignButtons=assignedIds.length
+        ?'<div style="display:flex;flex-wrap:wrap;gap:5px">'+assignedIds.map(studentId=>
+          '<button class="btn danger" data-unassign-job-student="'+escapeHtml(studentId)+'" data-unassign-job="'+escapeHtml(job.id)+'">'+
+          escapeHtml(studentName(studentId))+' 직업 해제</button>'
+        ).join('')+'</div>'
+        :'';
       return '<div class="row" style="align-items:flex-start"><div style="min-width:0;flex:1"><strong>'+escapeHtml(job.name)+' · '+escapeHtml(money(job.salary))+' · 정원 '+Number(job.capacity||1)+
         '</strong><small>필요 자격증: '+escapeHtml(required)+'<br>지원: '+escapeHtml(applicants)+' / 채용: '+escapeHtml(assigned)+
-        '<br>직업 기능: '+escapeHtml(capabilityNames)+'</small></div>'+
-        '<div style="display:grid;gap:6px;min-width:220px"><div style="display:flex;gap:6px"><select data-job-select="'+escapeHtml(job.id)+'" style="min-width:140px"><option value="">학생 선택</option>'+
-        optionsStudents()+'</select><button class="btn" data-assign-job="'+escapeHtml(job.id)+'">채용</button></div>'+
+        '<br>직업 기능: '+escapeHtml(capabilityNames)+'</small>'+unassignButtons+'</div>'+
+        '<div style="display:grid;gap:6px;min-width:240px"><select data-job-select="'+escapeHtml(job.id)+'"><option value="">학생 선택</option>'+
+        optionsStudents()+'</select><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        '<button class="btn" data-assign-job="'+escapeHtml(job.id)+'">일반 배정</button>'+
+        '<button class="btn secondary" data-force-assign-job="'+escapeHtml(job.id)+'">강제 배정</button></div>'+
+        '<small style="color:#64748b;line-height:1.4">강제 배정은 자격증·정원 조건을 무시하고 기존 직업을 즉시 교체합니다.</small>'+
         '<select data-job-caps="'+escapeHtml(job.id)+'" multiple size="'+Math.max(2,Math.min(4,catalog.length))+'">'+capOptions+'</select>'+
         '<button class="btn secondary" data-save-job-caps="'+escapeHtml(job.id)+'">직업 기능 저장</button></div></div>';
     }).join(''):'<div class="empty">아직 직업이 없습니다.</div>';
@@ -343,8 +353,28 @@
         const jobId=button.dataset.assignJob;
         const select=document.querySelector('[data-job-select="'+CSS.escape(jobId)+'"]');
         const studentId=select?.value||'';
-        if(!studentId)return alert('채용할 학생을 선택해 주세요.');
-        await mutate('/api/teacher/economy/job-assign','POST',{jobId,studentId},null,'assign-'+jobId);
+        if(!studentId)return alert('배정할 학생을 선택해 주세요.');
+        await mutate('/api/teacher/economy/job-assign','POST',{jobId,studentId,force:false},null,'assign-'+jobId+'-'+studentId);
+      };
+    });
+
+    document.querySelectorAll('[data-force-assign-job]').forEach(button=>{
+      button.onclick=async()=>{
+        const jobId=button.dataset.forceAssignJob;
+        const select=document.querySelector('[data-job-select="'+CSS.escape(jobId)+'"]');
+        const studentId=select?.value||'';
+        if(!studentId)return alert('강제 배정할 학생을 선택해 주세요.');
+        if(!confirm(studentName(studentId)+' 학생을 이 직업에 강제 배정할까요?\n자격증·정원 조건을 무시하고 현재 직업이 있으면 즉시 변경됩니다.'))return;
+        await mutate('/api/teacher/economy/job-assign','POST',{jobId,studentId,force:true},null,'force-assign-'+jobId+'-'+studentId);
+      };
+    });
+
+    document.querySelectorAll('[data-unassign-job-student]').forEach(button=>{
+      button.onclick=async()=>{
+        const studentId=button.dataset.unassignJobStudent;
+        const name=studentName(studentId);
+        if(!confirm(name+' 학생의 직업을 해제해서 무직으로 만들까요?\n과거 근무일지와 급여 기록은 그대로 보존됩니다.'))return;
+        await mutate('/api/teacher/economy/job-unassign','POST',{studentId},null,'unassign-'+studentId);
       };
     });
 
