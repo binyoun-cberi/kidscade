@@ -27,14 +27,13 @@
         sessionMin,
         durationText,
         baseSeeds: 0,
-        baseExp: 0,
         rewardSeeds: 0,
-        gainedExp: 0
+        rewardPower: 0
       };
     }
 
     const baseSeeds = sessionMin > 0 ? Math.max(5, sessionMin * 5) : 3;
-    const baseExp = sessionMin > 0 ? Math.max(8, sessionMin * 10) : 5;
+    const rewardPower = sessionMin > 0 ? Math.max(2, sessionMin * 2) : 1;
 
     return {
       eligible: true,
@@ -42,9 +41,8 @@
       sessionMin,
       durationText,
       baseSeeds,
-      baseExp,
       rewardSeeds: baseSeeds,
-      gainedExp: baseExp
+      rewardPower
     };
   }
 
@@ -162,8 +160,7 @@
       reward = calculateReward(sessionSec, bridge.minRewardPlaySec);
       if (reward.eligible) {
         bridge.addCoins?.(reward.rewardSeeds, `게임 도전 · ${reward.durationText}`);
-        bridge.addPetExp?.(reward.gainedExp, session.category);
-        bridge.savePet?.();
+        bridge.addSproutPower?.(reward.rewardPower, `게임 도전 · ${session.title} · ${reward.durationText}`);
         bridge.updateMission?.(session.category, session.id);
         bridge.recordGardenSession?.({
           game: session.id,
