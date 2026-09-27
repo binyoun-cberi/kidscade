@@ -408,3 +408,47 @@ body{
 @media (max-width:700px){
   .backup-camera{width:38vw;top:29%}
 }
+
+
+/* v8: examiner mode + corrected cockpit controls */
+#examinerPanel{
+  position:absolute;top:max(10px,env(safe-area-inset-top));right:18px;width:min(280px,28vw);
+  padding:9px 11px;border-radius:14px;text-align:left;transition:.18s
+}
+.examiner-head{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10px;color:#afbec6;font-weight:900}
+.examiner-head b{padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.09);color:#fff;font-size:10px}
+#examinerText{margin-top:4px;font-size:11px;line-height:1.35;color:#eef6f9;font-weight:800}
+#examinerPanel.examiner-warn{border-color:rgba(255,196,94,.72);box-shadow:0 0 18px rgba(255,196,94,.16)}
+#examinerPanel.examiner-danger{border-color:rgba(255,103,103,.78);box-shadow:0 0 20px rgba(255,70,70,.22)}
+#examinerPanel.examiner-ok{border-color:rgba(98,216,134,.72)}
+.hazard-control.active{background:#6b5020!important;color:#ffe58e!important;border-color:#d8a83d!important}
+.result-disqualify{background:#ffe7e7!important;color:#9b3030!important}
+.result-disqualify b{color:#862121!important}
+@media (orientation:landscape) and (max-height:560px){
+  #examinerPanel{top:4px;right:10px;width:min(245px,29vw);padding:6px 8px}
+  #examinerText{font-size:9px}.examiner-head{font-size:8px}.examiner-head b{font-size:8px}
+}
+@media(max-width:760px){
+  #examinerPanel{right:7px;width:28vw}
+  #examinerText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
+#leftControls{grid-template-columns:repeat(3,54px);grid-auto-rows:40px}
+#hazard{grid-column:3;grid-row:2}
+#parkingBrake{grid-column:2;grid-row:2;width:54px}
+@media (max-height:720px) and (orientation:landscape){
+  #leftControls{grid-template-columns:repeat(3,49px)}
+  #parkingBrake{width:49px}
+}
+@media (max-width:900px) and (orientation:landscape){
+  #leftControls{grid-template-columns:repeat(3,46px)}
+  #parkingBrake{width:46px}
+}
+@media (orientation:landscape) and (max-height:560px){
+  #leftControls{grid-template-columns:repeat(3,42px)}
+  #parkingBrake{width:42px}
+}
+@media (orientation:landscape) and (max-height:460px){
+  #leftControls{grid-template-columns:repeat(3,38px)}
+  #parkingBrake{width:38px}
+}
