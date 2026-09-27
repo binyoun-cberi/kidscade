@@ -79,7 +79,7 @@ class Simulation{
   if(flood&&Number.isInteger(flood.blockedSlot)&&flood.blockedSlot>=0){
    const slot=s.slots[flood.blockedSlot];if(slot?.building?.id==='levee'&&slot.building.hp<slot.building.maxHp)return slot;
   }
-  return s.slots.filter(x=>x.building&&x.building.hp<x.building.maxHp).sort((a,b)=>(a.building.hp/a.building.maxHp)-(b.building.hp/b.building.maxHp))[0]||null
+  return s.slots.filter(x=>x.building&&(x.building.hp<x.building.maxHp||x.building.condition==='flooded'||x.building.condition==='damaged')).sort((a,b)=>(a.building.hp/a.building.maxHp)-(b.building.hp/b.building.maxHp))[0]||null
  }
  actionUsable(def){
   const s=this.state;if(!def||def.kind!=='action'||!this.canAfford(def.cost))return false;
