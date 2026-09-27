@@ -68,12 +68,12 @@
         <div class="kpg-icon">👤</div>
         <div class="kpg-kicker">PROFILE</div>
         <div class="kpg-title">로그인하고 내 프로필 열기</div>
-        <div class="kpg-copy">게임은 게스트로 바로 즐길 수 있어요. 로그인하면 플레이 기록, 씨앗, 랭킹과 아바타를 내 계정에 이어서 보관할 수 있어요.</div>
+        <div class="kpg-copy">게임은 게스트로 바로 즐길 수 있어요. 로그인하면 플레이 기록, 씨앗, 새싹력과 아바타를 내 계정에 이어서 보관할 수 있어요.</div>
         <button class="kpg-login" type="button">학생 계정 로그인</button>
         <div class="kpg-benefits">
           <div class="kpg-benefit">☁️ 기록 동기화</div>
           <div class="kpg-benefit">🌱 씨앗 보관</div>
-          <div class="kpg-benefit">🏆 우리 반 랭킹</div>
+          <div class="kpg-benefit">🌟 새싹력 랭킹</div>
           <div class="kpg-benefit">🎨 아바타 저장</div>
         </div>
       `;
