@@ -44,6 +44,7 @@ const TEST_FILES = [
   "tests/code-quest-full-campaign.test.cjs",
   "tests/unification-war-v12.test.cjs",
   "tests/police-patrol.test.cjs",\n  "tests/driver-license.test.cjs",
+  "tests/drone-pilot-v3.test.cjs",
   "tests/math-tower-defense-3d.test.cjs",
   "tests/spelling-frog-assets.test.cjs",
   "tests/word-blaster.test.cjs",
