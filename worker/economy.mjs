@@ -30,6 +30,11 @@ import {
   teacherEconomyStateV3,
   teacherWorkDecision,
   teacherLoanDecision,
+  teacherLoanRecord,
+  teacherPropertySave,
+  teacherLeaseCreate,
+  teacherLeaseClose,
+  teacherRentCollect,
   teacherInventoryDecision,
   teacherCompanyDecision,
   teacherItemV3,
@@ -67,6 +72,11 @@ export async function handleEconomyRequest(request, env) {
     '/api/economy/job-duty/credit-record',
     '/api/teacher/economy/work-decision',
     '/api/teacher/economy/loan-decision',
+    '/api/teacher/economy/loan-record',
+    '/api/teacher/economy/property',
+    '/api/teacher/economy/lease',
+    '/api/teacher/economy/lease-close',
+    '/api/teacher/economy/rent-collect',
     '/api/teacher/economy/inventory-decision',
     '/api/teacher/economy/company-decision',
     '/api/teacher/economy/debt-repay',
@@ -122,6 +132,11 @@ export async function handleEconomyRequest(request, env) {
     if (path === '/api/teacher/economy/item') return request.method === 'POST' ? teacherItemV3(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/work-decision') return request.method === 'POST' ? teacherWorkDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/loan-decision') return request.method === 'POST' ? teacherLoanDecision(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/loan-record') return request.method === 'POST' ? teacherLoanRecord(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/property') return request.method === 'POST' ? teacherPropertySave(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/lease') return request.method === 'POST' ? teacherLeaseCreate(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/lease-close') return request.method === 'POST' ? teacherLeaseClose(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/rent-collect') return request.method === 'POST' ? teacherRentCollect(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/inventory-decision') return request.method === 'POST' ? teacherInventoryDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/company-decision') return request.method === 'POST' ? teacherCompanyDecision(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/debt-repay') return request.method === 'POST' ? teacherDebtRepay(request, env) : methodNotAllowed('POST');
