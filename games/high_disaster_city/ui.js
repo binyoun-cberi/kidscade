@@ -38,7 +38,7 @@ class UI{
   if(s.next&&s.next.side===side&&s.next.visible){const def=D.DISASTERS?.[s.next.type]||{name:'재난',icon:'⚠️'},tail=(s.disasters||[]).length?'':' · '+Math.ceil(Math.max(0,s.next.in))+'초';el.className='threatBadge '+side+' '+s.next.type;el.querySelector('span').textContent=def.icon+' '+def.name+' 징조'+tail;return}
   el.querySelector('span').textContent='안정';
  }
- handKey(s){const dmg=s.slots.some(x=>x.building&&x.building.hp<x.building.maxHp)?1:0,th=(s.disasters||[]).map(d=>d.type+':'+d.side).join(',');return s.hand.map(c=>c.uid+':'+c.id).join('|')+'#'+s.selectedUid+'#'+Math.floor(s.money)+'#'+th+'#'+dmg}
+ handKey(s){const dmg=s.slots.some(x=>x.building&&(x.building.hp<x.building.maxHp||x.building.condition==='flooded'||x.building.condition==='damaged'))?1:0,th=(s.disasters||[]).map(d=>d.type+':'+d.side).join(',');return s.hand.map(c=>c.uid+':'+c.id).join('|')+'#'+s.selectedUid+'#'+Math.floor(s.money)+'#'+th+'#'+dmg}
  renderHand(s,sim){
   const key=this.handKey(s);if(key===this.lastHand)return;this.lastHand=key;
   this.els.hand.innerHTML=s.hand.map(c=>{const d=D.CARDS[c.id],usable=d.kind==='build'?sim.buildCardUsable(c.uid):sim.actionUsable(d),sel=s.selectedUid===c.uid;
@@ -73,7 +73,12 @@ class UI{
   this.els.money.textContent=fmt(s.money);this.els.food.textContent=fmt(s.food);this.els.population.textContent=fmt(s.population);this.els.stability.textContent=fmt(s.stability);this.els.time.textContent=clock(s.time);
   this.els.deck.textContent=s.deck.length;this.els.discard.textContent=s.discard.length;this.els.refresh.disabled=s.refreshCooldown>0;this.els.refreshCool.textContent=s.refreshCooldown>0?Math.ceil(s.refreshCooldown)+'초':'준비됨';
   this.els.pause.textContent=s.paused?'▶':'Ⅱ';this.els.pauseShade.classList.toggle('hidden',!s.paused);this.threatText(s,'left');this.threatText(s,'right');this.renderHand(s,sim);this.renderReward(s);this.coach(s);this.soundState();
-  const ds=s.disasters||[],messages={wildfire:'불이 퍼지는 방향을 보고 소방서·저수조·방화선으로 길을 끊으세요.',flood:'물이 어디까지 찼는지 보고 제방·펌프·긴급 배수를 조합하세요.',typhoon:'강풍이 건물을 넓게 때립니다. 대피소와 창문 보강을 활용하세요.',heatwave:'폭염이 식량과 안정도를 갉아먹습니다. 급수와 쉼터가 중요합니다.',blizzard:'눈이 쌓이기 전에 제설기지와 제설차를 준비하세요.',earthquake:'여진이 오기 전에 대피시키고 손상 시설을 수리하세요.'};this.els.dock.textContent=ds.length>=2?'양쪽 재앙이 겹쳤습니다. 핵심 시설부터 지키세요.':ds.length===1?(messages[ds[0].type]||'재난에 맞는 대응카드를 사용하세요.'):'도시를 키우고 다음 징조를 준비하세요.';
+  const ds=s.disasters||[],ev=DC.Population?.summary?.(sim)||{sheltered:0,stranded:0},rec=DC.Recovery?.summary?.(sim)||{flooded:0,damaged:0},messages={wildfire:'불이 퍼지는 방향을 보고 소방서·저수조·방화선으로 길을 끊으세요.',flood:'물이 어디까지 찼는지 보고 제방·펌프·긴급 배수를 조합하세요.',typhoon:'강풍이 건물을 넓게 때립니다. 대피소와 창문 보강을 활용하세요.',heatwave:'폭염이 식량과 안정도를 갉아먹습니다. 급수와 쉼터가 중요합니다.',blizzard:'눈이 쌓이기 전에 제설기지와 제설차로 길을 여세요.',earthquake:'여진이 오기 전에 대피시키고 손상 시설을 수리하세요.'};
+  if(ev.stranded>0)this.els.dock.textContent='🚨 대피 지연 '+ev.stranded+'명 · 대피소 정원과 위치를 확인하세요.';
+  else if(ds.length>=2)this.els.dock.textContent='양쪽 재앙이 겹쳤습니다. 핵심 시설과 주민 대피를 먼저 챙기세요.';
+  else if(ds.length===1)this.els.dock.textContent=messages[ds[0].type]||'재난에 맞는 대응카드를 사용하세요.';
+  else if(rec.flooded+rec.damaged>0)this.els.dock.textContent='🔧 복구 중 · 침수 '+rec.flooded+'곳 / 파손 '+rec.damaged+'곳';
+  else this.els.dock.textContent='도시를 키우고 다음 징조를 준비하세요.';
   if(s.mode==='gameover'&&!this.els.over.classList.contains('show'))this.showGameOver(s)
  }
  startDone(){this.els.start.classList.remove('show');this.els.over.classList.remove('show');this.lastHand=''}
