@@ -646,9 +646,11 @@ function physicsStep(dt){
   }
 
   const steerSpeedKmh=Math.abs(car.speed)*3.6;
-  const steerLimit=lerp(460,290,clamp(steerSpeedKmh/32,0,1));
-  const steerTarget=inp.steer*steerLimit;
-  const steerRate=Math.abs(inp.steer)>.04?760:920;
+  const steerLimit=lerp(500,265,clamp(steerSpeedKmh/38,0,1));
+  const rawSteer=Math.abs(inp.steer)<.025?0:inp.steer;
+  const shapedSteer=Math.sign(rawSteer)*Math.pow(Math.abs(rawSteer),1.18);
+  const steerTarget=shapedSteer*steerLimit;
+  const steerRate=Math.abs(rawSteer)>.025?1650:2100;
   car.steeringWheel=approach(car.steeringWheel,steerTarget,steerRate*dt);
   car.steeringWheel=clamp(car.steeringWheel,-steerLimit,steerLimit);
   car.wheelAngle=rad(car.steeringWheel/15);
@@ -919,9 +921,9 @@ function updateCamera(dt){
   if(lookPointer===null){headYaw=approach(headYaw,0,.18*dt);headPitch=approach(headPitch,0,.1*dt)}
   const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw),rx=Math.cos(car.yaw),rz=Math.sin(car.yaw);
   camera.position.set(car.x-rx*.32-fx*.15,car.y+1.43,car.z-rz*.32-fz*.15);
-  camera.rotation.order='YXZ';camera.rotation.y=car.yaw+headYaw;camera.rotation.x=car.pitch+headPitch;camera.rotation.z=0;
+  camera.rotation.order='YXZ';camera.rotation.y=-car.yaw+headYaw;camera.rotation.x=car.pitch+headPitch;camera.rotation.z=0;
 
-  const backYaw=car.yaw+Math.PI;
+  const backYaw=-car.yaw+Math.PI;
   const bx=Math.sin(backYaw),bz=-Math.cos(backYaw);
   for(const [cam,side,out] of [[leftMirrorCamera,-1,.22],[rightMirrorCamera,1,-.22]]){
     cam.position.set(car.x+rx*.7*side-fx*.2,car.y+1.42,car.z+rz*.7*side-fz*.2);
