@@ -69,3 +69,17 @@ test('Metro Planner remains touch responsive and reuses local audio assets',()=>
     'assets/audio/sfx/failure/fail-sting-01.mp3'
   ]) assert.ok(fs.existsSync(path.join(root,rel)),rel);
 });
+
+test('Metro Planner supports map camera zoom, pan, pinch and fit controls',()=>{
+  assert.match(html,/id="mapControls"/);
+  assert.match(html,/id="zoomInBtn"/);
+  assert.match(html,/id="zoomOutBtn"/);
+  assert.match(html,/id="fitMapBtn"/);
+  assert.match(js,/const camera=\{x:W\/2,y:H\/2,zoom:1,minZoom:\.8,maxZoom:2\.5\}/);
+  assert.match(js,/function setZoomAt\(/);
+  assert.match(js,/function fitMap\(/);
+  assert.match(js,/activePointers=new Map\(\)/);
+  assert.match(js,/pinchGesture/);
+  assert.match(js,/addEventListener\('wheel'/);
+  assert.match(js,/panGesture/);
+});
