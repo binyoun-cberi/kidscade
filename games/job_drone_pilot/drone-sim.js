@@ -716,6 +716,12 @@ function bindArmHold(){
   ui.armBtn.addEventListener('pointerdown',e=>{if(holding)return;holding=true;ui.armBtn.classList.add('holding');try{ui.armBtn.setPointerCapture(e.pointerId)}catch(_){}timer=setTimeout(()=>{timer=0;holding=false;ui.armBtn.classList.remove('holding');setArmed(!drone.armed)},650)});
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>ui.armBtn.addEventListener(type,clear));
 }
+function bindArmHold(){
+  let timer=0,holding=false;
+  const clear=()=>{if(timer)clearTimeout(timer);timer=0;holding=false;ui.armBtn.classList.remove('holding')};
+  ui.armBtn.addEventListener('pointerdown',e=>{if(holding)return;holding=true;ui.armBtn.classList.add('holding');try{ui.armBtn.setPointerCapture(e.pointerId)}catch(_){}timer=setTimeout(()=>{timer=0;holding=false;ui.armBtn.classList.remove('holding');setArmed(!drone.armed)},650)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>ui.armBtn.addEventListener(type,clear));
+}
 function installControls(){
   const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF','KeyM','KeyZ','KeyX','Space','ShiftLeft','ShiftRight']);
   addEventListener('keydown',e=>{
