@@ -92,3 +92,27 @@ test('Driver License v9 exposes a live examiner panel',()=>{
   assert.match(html,/id="examinerText"/);
   assert.match(css,/#examinerPanel/);
 });
+
+
+test('Driver License v10 upgrades the exam course with shared 3D environment assets',()=>{
+  for(const token of ['traffic-light.glb','construction-cone.glb','light-square.glb','tree-default.glb','tree-oak.glb','tree-pine-round-a.glb','big-building.glb','building-red.glb','sedan.glb']){
+    assert.match(js,new RegExp(token.replace(/[.*+?^$\{\}()|[\]\\]/g,'\\$&')));
+  }
+  assert.match(js,/function rebuildVisualEnvironment/);
+  assert.match(js,/function cloneVisual/);
+  assert.match(js,/function makeEnhancedRoad/);
+});
+
+test('Driver License v10 uses tighter cinematic lighting, fog and driver FOV',()=>{
+  assert.match(js,/new THREE\.Fog\(0x86c8e4,28,92\)/);
+  assert.match(js,/new THREE\.PerspectiveCamera\(54/);
+  assert.match(js,/sunLight\.shadow\.mapSize\.set\(2048,2048\)/);
+  assert.match(js,/function updateShadowFocus/);
+  assert.match(js,/new THREE\.DirectionalLight\(0x91c9ff,\.68\)/);
+});
+
+test('Driver License v10 adds a hood layer without exposing it in mirrors',()=>{
+  assert.match(js,/function buildHood/);
+  assert.match(js,/o\.layers\.set\(2\)/);
+  assert.match(js,/camera\.layers\.enable\(2\)/);
+});
