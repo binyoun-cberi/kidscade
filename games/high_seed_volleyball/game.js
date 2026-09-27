@@ -118,13 +118,18 @@ function collidePlayer(me,inp){
  const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;ball.x=c.cx+ux*ex;ball.y=c.cy+uy*ey;
  let nx=ux/ex,ny=uy/ey,nlen=Math.hypot(nx,ny)||1;nx/=nlen;ny/=nlen;
  const smash=me.attack>0&&!me.onGround&&me.state!=='DIVE',dive=me.state==='DIVE';let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
- if(vn<0){const restitution=smash?1.05:dive?.94:.88;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*85;rvy+=ny*85}
+ if(vn<0){const restitution=smash?1.06:dive?1.00:.96;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*92;rvy+=ny*92}
  ball.vx=rvx+me.vx*(smash?.42:dive?.34:.28);ball.vy=rvy+me.vy*(smash?.18:.12);
  const courtDir=me.side===0?1:-1;
  if(smash){const aim=shotAimFor(me,inp),deep=aim>0,short=aim<0,targetVX=courtDir*(deep?490:short?365:435),targetVY=deep?170:short?285:225;ball.vx=lerp(ball.vx,targetVX,.72);ball.vy=lerp(ball.vy,targetVY,.78);me.attack=0;shake=Math.max(shake,4.2);burst(ball.x,ball.y,11);sound('hit',1.04)}
  else{
-   const minForward=dive?135:105,forward=ball.vx*courtDir;if(forward<minForward)ball.vx+=courtDir*(minForward-forward)*.72;
-   const lift=dive?-255:-175-Math.max(0,-ny)*90;if(ball.vy>lift)ball.vy=lerp(ball.vy,lift,dive?.82:.68);if(dive){burst(ball.x,ball.y,5);shake=Math.max(shake,1.8);sound('hit',1.24)}else sound('hit',1.44);
+   const minForward=dive?145:115,forward=ball.vx*courtDir;if(forward<minForward)ball.vx+=courtDir*(minForward-forward)*.72;
+   // A receive must actually pop the ball upward. The old lerp could leave a fast
+   // descending ball with almost no rebound, so guarantee a minimum lift while
+   // still preserving stronger physically-reflected bounces.
+   const lift=dive?-410:-350-Math.max(0,-ny)*85;
+   if(ball.vy>lift)ball.vy=lift;
+   if(dive){burst(ball.x,ball.y,5);shake=Math.max(shake,1.8);sound('hit',1.24)}else sound('hit',1.44);
  }
  capBallBody(ball);ball.hitLock=.07;
  if(ball.lastTouch!==me.side){ball.lastTouch=me.side;me.touches++;rally++;rallyEl.textContent='랠리 '+rally;if(practice){if(rally>bestRally){bestRally=rally;localStorage.setItem('seedVolleyBestRally',String(bestRally));document.getElementById('matchInfo').textContent='연습 모드 · 최고 '+bestRally}practiceCoach(me,smash,dive)}}
