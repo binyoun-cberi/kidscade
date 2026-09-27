@@ -34,7 +34,7 @@ const CARDS={
  stormPrep:{id:'stormPrep',name:'창문 보강',icon:'🪟',cost:24,kind:'action',action:'stormPrep',tag:'태풍대응',desc:'태풍의 전진을 늦추고 바람 세기를 낮춥니다.'},
  waterDistribution:{id:'waterDistribution',name:'급수 지원',icon:'🚰',cost:22,kind:'action',action:'waterDistribution',tag:'폭염대응',desc:'폭염을 약화시키고 식량·안정을 조금 회복합니다.'},
  snowplow:{id:'snowplow',name:'제설차 출동',icon:'🚜',cost:24,kind:'action',action:'snowplow',tag:'폭설대응',desc:'폭설 전선을 크게 밀어내고 눈의 세기를 낮춥니다.'},
- evacuation:{id:'evacuation',name:'긴급 대피',icon:'🚨',cost:26,kind:'action',action:'evacuation',tag:'지진대응',desc:'지진의 다음 충격을 늦추고 도시 안정도를 지킵니다.'}
+ evacuation:{id:'evacuation',name:'긴급 대피',icon:'🚨',cost:26,kind:'action',action:'evacuation',tag:'긴급대응',desc:'홍수·산불·태풍·지진 때 15초간 주민 대피를 가속합니다.'}
 };
 const START_DECK=['house','farm','market','house','farm','fireBrigade','sandbags','repair','levee','fireStation','ration','reservoir'];
 const REWARD_POOL=['fireStation','pump','reservoir','levee','repair','fireBrigade','sandbags','firebreak','emergencyDrain','shelter','coolingCenter','snowDepot','stormPrep','waterDistribution','snowplow','evacuation','market','farm','ration'];
@@ -47,9 +47,9 @@ const DISASTERS={
  earthquake:{id:'earthquake',name:'지진',icon:'🌎',unlock:210,baseEnergy:95,baseAge:20,clear:'지진의 흔들림이 멎었습니다!'}
 };
 const COUNTERS={
- wildfire:['fireStation','fireBrigade','firebreak','reservoir'],
- flood:['levee','pump','sandbags','emergencyDrain'],
- typhoon:['shelter','stormPrep','repair'],
+ wildfire:['fireStation','fireBrigade','firebreak','reservoir','evacuation'],
+ flood:['levee','pump','sandbags','emergencyDrain','evacuation'],
+ typhoon:['shelter','stormPrep','repair','evacuation'],
  heatwave:['coolingCenter','waterDistribution','reservoir'],
  blizzard:['snowDepot','snowplow','ration'],
  earthquake:['shelter','evacuation','repair']
