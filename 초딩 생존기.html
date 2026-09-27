@@ -947,8 +947,100 @@
       id:'g6_last_week',storylet:true,grade:[6],phases:['학년말'],priority:80,weight:1.5,
       requires:()=>state.turn>=Math.max(0,state.queue.length-4),
       choiceMeta:{left:{constructive:true,flags:['polished_final_project']},right:{constructive:true,flags:['made_class_memory']}}
+    }),
+    Object.assign(E('친구 민서','3학년 모둠 편성','새 모둠을 정하는 날이야. 민서가 네 쪽을 보고 있지만, 평소 같이 해보고 싶던 다른 친구들도 있어.',
+      '새 친구들과 해본다',S(2,0,3,-1,1),'민서와 같은 모둠을 한다',S(1,0,3,4,0),
+      '새로운 친구들과 가까워졌지만 민서와 보내는 시간은 줄었어요.','익숙한 호흡 덕분에 모둠이 빠르게 자리를 잡았어요.'),{
+      id:'g3_minseo_group',storylet:true,grade:[3],characterId:'민서',phases:['새 학기','1학기'],priority:58,weight:1.4,
+      requires:()=>!!state.flags.met_minseo||(state.friendRelations?.민서||0)>=2,
+      choiceMeta:{left:{relation:-1,constructive:true,flags:['expanded_friend_circle']},right:{relation:2,constructive:true,flags:['chose_minseo_group']}}
+    }),
+    Object.assign(E('친구 민서','4학년 어색한 자리','점심시간에 민서와 단둘이 남았는데 예전보다 할 말이 잘 떠오르지 않아. 먼저 지난 이야기를 꺼내볼까?',
+      '괜히 어색할까 봐 조용히 있는다',S(1,0,0,-2,-1),'예전 일을 꺼내며 먼저 말한다',S(0,0,3,5,1),
+      '편한 침묵일 수도 있었지만 거리는 조금 더 남았어요.','옛날 이야기를 시작하자 금세 웃을 거리가 생겼어요.'),{
+      id:'g4_minseo_old_friend',storylet:true,grade:[4],characterId:'민서',phases:['1학기','여름·2학기 초'],priority:62,weight:1.4,
+      requires:()=>state.friendMoments?.민서>=2,
+      choiceMeta:{left:{relation:-1,constructive:false},right:{relation:3,constructive:true,flags:['reconnected_minseo']}}
+    }),
+    Object.assign(E('친구 민서','5학년 서로 다른 무리','요즘 너와 민서는 쉬는 시간에 어울리는 친구들이 달라졌어. 민서가 “우리 요즘 거의 못 놀지?”라고 말해.',
+      '각자 친구가 생긴 거라고 넘긴다',S(1,0,2,-1,-1),'그래도 가끔 둘이 만나자고 한다',S(0,0,3,4,0),
+      '서로의 생활은 존중했지만 둘만의 시간은 더 줄었어요.','매일 붙어 있진 않아도 오래된 친구 자리는 남겨뒀어요.'),{
+      id:'g5_minseo_different_groups',storylet:true,grade:[5],characterId:'민서',phases:['1학기','2학기'],priority:64,weight:1.5,
+      requires:()=>state.friendMoments?.민서>=3&&(state.friendRelations?.민서||0)>=0,
+      choiceMeta:{left:{relation:-1,constructive:true,flags:['let_minseo_drift']},right:{relation:3,constructive:true,flags:['kept_minseo_close']}}
+    }),
+    Object.assign(E('친구 민서','졸업앨범 한마디','졸업앨범을 돌려 쓰는 날이야. 민서 페이지가 네 앞에 왔어. 여섯 해 동안 있었던 일을 길게 써줄까?',
+      '짧게 졸업 축하만 쓴다',S(0,0,1,0,-1),'기억나는 일을 구체적으로 써준다',S(0,0,5,5,-2),
+      '깔끔한 인사를 남기고 앨범을 넘겼어요.','연필, 모둠, 점심시간 이야기가 한 페이지에 이어졌어요.'),{
+      id:'g6_minseo_album',storylet:true,grade:[6],characterId:'민서',phases:['2학기','학년말'],priority:82,weight:1.8,
+      requires:()=>state.friendMoments?.민서>=4&&(state.friendRelations?.민서||0)>=3,
+      choiceMeta:{left:{relation:0,constructive:true},right:{relation:3,constructive:true,flags:['minseo_album_memory']}}
+    }),
+
+    Object.assign(E('친구 준호','2학년 달리기 경쟁','준호가 체육 시간마다 너보다 먼저 들어오려고 해. 오늘도 “이번엔 내가 이긴다!”며 웃고 있어.',
+      '무조건 이기려고 끝까지 달린다',S(1,5,2,-1,4),'서로 기록을 재보자고 한다',S(1,4,3,3,0),
+      '기록은 빨라졌지만 둘 사이에 승부만 남았어요.','누가 이기든 지난 기록보다 좋아졌는지 같이 확인했어요.'),{
+      id:'g2_junho_race',storylet:true,grade:[2],characterId:'준호',phases:['1학기','2학기'],priority:42,weight:1.2,
+      requires:()=>!state.friendMoments?.준호,
+      choiceMeta:{left:{relation:-1,constructive:false,flags:['junho_rivalry']},right:{relation:2,constructive:true,flags:['healthy_rivalry']}}
+    }),
+    Object.assign(E('친구 준호','3학년 수학 문제','준호가 네가 푼 수학 문제를 보고 자기 풀이가 더 빠르다고 해. 둘의 답은 똑같아.',
+      '누가 더 빠른지 다시 겨룬다',S(4,0,2,-1,2),'서로 풀이를 비교한다',S(5,0,2,3,-1),
+      '속도는 빨라졌지만 틀린 이유를 볼 시간은 줄었어요.','두 풀이의 다른 점을 찾다가 새로운 방법을 하나 배웠어요.'),{
+      id:'g3_junho_math',storylet:true,grade:[3],characterId:'준호',phases:['1학기','2학기'],priority:48,weight:1.3,
+      requires:()=>state.friendMoments?.준호>=1,
+      choiceMeta:{left:{relation:-1,constructive:false,flags:['junho_competed_math']},right:{relation:2,constructive:true,flags:['junho_shared_method']}}
+    }),
+    Object.assign(E('친구 준호','5학년 다시 부탁','준호가 예전에 숙제 일로 곤란했던 걸 기억한다며 이번에는 답 대신 힌트만 달라고 해.',
+      '바쁘니 혼자 해보라고 한다',S(3,0,0,-2,-1),'힌트 한 단계만 같이 본다',S(2,0,2,4,1),
+      '내 시간은 지켰지만 준호는 혼자 문제를 붙잡았어요.','이번에는 답을 넘기지 않고 스스로 풀 수 있게 도왔어요.'),{
+      id:'g5_junho_second_chance',storylet:true,grade:[5],characterId:'준호',phases:['1학기','2학기'],priority:72,weight:1.6,
+      requires:()=>!!state.flags.sent_homework_answers||!!state.flags.taught_junho,
+      choiceMeta:{left:{relation:-1,constructive:true},right:{relation:3,constructive:true,flags:['junho_learned_independence']}}
+    }),
+    Object.assign(E('친구 준호','6학년 마지막 승부','졸업 전 체육대회에서 준호와 마지막 계주 주자가 됐어. 준호가 “이번엔 결과보다 제대로 뛰자”고 해.',
+      '마지막까지 승부에만 집중한다',S(1,6,3,-1,3),'서로 실수해도 끝까지 응원한다',S(0,5,5,5,-2),
+      '끝까지 전력으로 달렸고 오래된 경쟁도 마지막까지 뜨거웠어요.','승부는 했지만 결승선을 지난 뒤 제일 먼저 서로를 찾았어요.'),{
+      id:'g6_junho_final_race',storylet:true,grade:[6],characterId:'준호',phases:['2학기','학년말'],priority:76,weight:1.6,
+      requires:()=>state.friendMoments?.준호>=2,
+      choiceMeta:{left:{relation:0,constructive:true,flags:['junho_final_rivalry']},right:{relation:3,constructive:true,flags:['junho_final_respect']}}
+    }),
+
+    Object.assign(E('친구 서윤','3학년 발표 준비','서윤이 모둠 발표에서 사람들 앞에 서는 게 긴장된다고 해. 네가 발표를 더 맡아줄 수도 있어.',
+      '내가 발표를 거의 맡는다',S(3,0,1,1,3),'서윤과 한 문장씩 나눠 연습한다',S(2,0,3,4,1),
+      '발표는 빨리 준비됐지만 서윤이 직접 해볼 기회는 줄었어요.','시간은 더 걸렸지만 둘 다 자기 문장을 말할 수 있게 됐어요.'),{
+      id:'g3_seoyun_presentation',storylet:true,grade:[3],characterId:'서윤',phases:['1학기','2학기'],priority:44,weight:1.2,
+      requires:()=>!state.friendMoments?.서윤,
+      choiceMeta:{left:{relation:0,constructive:false,flags:['spoke_for_seoyun']},right:{relation:2,constructive:true,flags:['practiced_with_seoyun']}}
+    }),
+    Object.assign(E('친구 서윤','4학년 비밀 이야기','서윤이 요즘 친구 관계가 힘들다며 너한테만 말해줬어. 다른 친구가 무슨 일인지 자꾸 물어봐.',
+      '대충 내용을 알려준다',S(0,0,1,2,2),'서윤이 직접 말할 때까지 기다린다',S(0,0,1,4,0),
+      '궁금증은 풀렸지만 서윤의 이야기가 다른 곳으로 흘러갔어요.','답답해도 친구가 맡긴 이야기를 그대로 두었어요.'),{
+      id:'g4_seoyun_secret',storylet:true,grade:[4],characterId:'서윤',phases:['1학기','여름·2학기 초'],priority:52,weight:1.3,
+      requires:()=>state.friendMoments?.서윤>=1,
+      choiceMeta:{left:{relation:-3,constructive:false,flags:['shared_seoyun_secret']},right:{relation:3,constructive:true,flags:['kept_seoyun_secret']}}
+    }),
+    Object.assign(E('친구 서윤','6학년 다시 꺼낸 사진','서윤이 5학년 때 단체 채팅방 사진 이야기를 꺼냈어. 이제는 웃으며 말하지만 그때는 꽤 속상했다고 해.',
+      '지난 일인데 이제 잊자고 한다',S(0,0,0,-2,-1),'그때 네가 한 행동을 다시 이야기한다',S(0,0,2,4,1),
+      '대화는 빨리 끝났지만 그때의 마음까지 정리되진 않았어요.','잘했든 잘못했든 그때 어떤 선택을 했는지 솔직하게 돌아봤어요.'),{
+      id:'g6_seoyun_groupchat_memory',storylet:true,grade:[6],characterId:'서윤',phases:['1학기','2학기'],priority:78,weight:1.7,
+      requires:()=>!!state.flags.joined_mocking||!!state.flags.protected_seoyun,
+      choiceMeta:{left:{relation:-1,constructive:false},right:{relation:3,constructive:true,flags:['closed_groupchat_memory']}}
     })
   ];
+  const NPC_PROFILES={
+    '민서':{label:'오래된 친구',high:'단짝',mid:'친한 친구',low:'서먹한 친구'},
+    '준호':{label:'경쟁 친구',high:'믿는 라이벌',mid:'좋은 경쟁 상대',low:'불편한 경쟁 상대'},
+    '서윤':{label:'신뢰 친구',high:'믿고 말하는 친구',mid:'편한 친구',low:'조심스러운 사이'}
+  };
+  function bondTier(name){
+    const rel=state.friendRelations?.[name]||0,moments=state.friendMoments?.[name]||0,p=NPC_PROFILES[name];
+    if(!p)return rel>=6?'단짝':rel>=2?'친한 친구':rel<=-3?'서먹한 사이':'아는 친구';
+    if(rel>=7&&moments>=4)return p.high;
+    if(rel>=2)return p.mid;
+    if(rel<=-3)return p.low;
+    return p.label;
+  }
   const storyletById=Object.fromEntries(storyletCards.map(e=>[e.id,e]));
   function gradeMatches(e){return !e.grade||(Array.isArray(e.grade)?e.grade.includes(state.grade):e.grade===state.grade)}
   function storyletOpen(e,phase){
@@ -1088,7 +1180,7 @@
     if(state.turn>=state.queue.length){return finishGrade()}
     state.current=state.queue[state.turn];
     const e=state.current;
-    const fname=e.characterId||extractFriendName(e.who),rel=fname?(state.friendRelations[fname]||0):0;speaker.textContent=fname?`${e.who} · 인연 ${rel>0?'+':''}${rel}`:e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
+    const fname=e.characterId||extractFriendName(e.who),rel=fname?(state.friendRelations[fname]||0):0;speaker.textContent=fname?`${e.who} · ${bondTier(fname)} · ${rel>0?'+':''}${rel}`:e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
     leftGuide.querySelector('strong').textContent=e.left;rightGuide.querySelector('strong').textContent=e.right;leftBtn.textContent=e.left;rightBtn.textContent=e.right;
     const p=palette[(state.grade-1)%palette.length];cardBanner.style.setProperty('--c1',e.c1||p[0]);cardBanner.style.setProperty('--c2',e.c2||p[1]);
     $('#gradeText').textContent=`${gradeNames[state.grade]} · ${e._phase||currentPhaseName()}`;$('#turnText').textContent=`${state.turn+1} / ${state.queue.length}`;
@@ -1195,10 +1287,26 @@
     return graduationStories.tightrope;
   }
   function topFriendName(){
-    const entries=Object.entries(state.friendNames).sort((a,b)=>b[1]-a[1]);return entries[0]?.[0]||'지민';
+    const entries=Object.entries(state.friendRelations||{}).sort((a,b)=>b[1]-a[1]||((state.friendMoments?.[b[0]]||0)-(state.friendMoments?.[a[0]]||0)));
+    return entries[0]?.[0]||'지민';
+  }
+  function relationshipFutureStories(){
+    const out=[],rel=n=>state.friendRelations?.[n]||0,mom=n=>state.friendMoments?.[n]||0;
+    if(rel('민서')>=7&&mom('민서')>=4){
+      out.push({score:28+rel('민서')+mom('민서'),story:{kicker:'중학교 첫날',symbol:'교문',title:'새 교복 옆에 익숙한 얼굴',text:'낯선 교실 앞에서 민서를 다시 만났습니다. 초등학교 내내 매일 붙어 있었던 것은 아니지만, 멀어졌다 다시 이야기한 시간까지 둘의 역사에 남아 있었습니다.',quote:'민서: “우리 또 같은 학교네. 이번엔 매점부터 찾자.”',future:true}});
+    }else if(rel('민서')<=-3&&mom('민서')>=2){
+      out.push({score:17+mom('민서'),story:{kicker:'졸업 뒤 어느 날',symbol:'메시지',title:'늦게 도착한 짧은 안부',text:'한동안 멀어졌던 민서에게서 짧은 안부가 왔습니다. 초등학교에서 어긋난 시간이 모두 사라지진 않았지만, 답장을 보낼지 고민할 만큼의 문은 남아 있었습니다.',quote:'메시지: “잘 지내? 졸업앨범 보다가 생각났어.”',future:true}});
+    }
+    if(rel('준호')>=6&&mom('준호')>=3){
+      out.push({score:25+rel('준호')+mom('준호'),story:{kicker:'몇 년 뒤 체육관',symbol:'기록표',title:'아직도 서로 기록을 보여준다',text:'준호와는 여전히 만나면 무엇이든 작은 승부가 시작됩니다. 달라진 점은 이기고 나서도 상대의 기록이 좋아진 이유를 같이 찾는다는 것입니다.',quote:'준호: “졌다. 근데 너 이번 기록 진짜 좋다.”',future:true}});
+    }
+    if(rel('서윤')>=6&&mom('서윤')>=3){
+      out.push({score:26+rel('서윤')+mom('서윤'),story:{kicker:'중학교 단체 채팅방',symbol:'말풍선',title:'보내기 전에 한 번 더 본다',text:'새로운 단체 채팅방에서도 누군가의 사진과 이야기가 빠르게 오갔습니다. 서윤과 겪은 일 덕분에 둘은 서로에게 “이거 올려도 괜찮을까?”라고 먼저 묻는 사람이 됐습니다.',quote:'서윤: “우리 이번엔 먼저 물어보자.”',future:true}});
+    }
+    return out;
   }
   function buildFutureCookies(){
-    const list=[];
+    const list=[...relationshipFutureStories()];
     const add=(score,story)=>list.push({score,story:{...story,future:true}});
     if(state.sportCare>=7&&state.subjectGood['체육']>=7&&state.stats.health>=35){
       add(state.sportCare+state.subjectGood['체육'],{kicker:'10년 뒤',symbol:'유니폼',title:'관중석에서 네 이름이 들렸다',text:'초등학교 때부터 몸을 함부로 쓰지 않고 꾸준히 훈련한 덕분에, 성인이 된 너는 선수 명단에 이름을 올렸습니다. 경기 시작 전에도 가장 먼저 팀원들의 상태를 살폈습니다.',quote:'중계진의 한마디: “기록도 좋지만 팀이 이 선수를 믿습니다.”'});
@@ -1214,14 +1322,10 @@
     if(state.subjectGood['영어']>=8&&state.stats.social>=35&&state.stats.social<=88){
       add(state.subjectGood['영어']+4,{kicker:'8년 뒤',symbol:'탑승권',title:'낯선 도시에서 먼저 말을 걸었다',text:'틀릴까 봐 입을 닫기보다 쉬운 말로 다시 확인하던 습관 덕분에, 너는 다른 나라에서 온 사람들과 함께 일하게 됐습니다.',quote:'휴대전화 메모: “문법보다 먼저, 상대가 이해했는지 확인하기.”'});
     }
-    if(state.friendCare>=12){
-      const name=topFriendName();
-      add(state.friendCare+6,{kicker:'아주 먼 훗날',symbol:'초대장',title:`졸업앨범 옆자리, ${name}`,text:`스물여덟 살의 어느 봄, 초등학교 때부터 오래 곁을 지킨 ${name}와 결혼했습니다. 크게 특별한 한 번보다, 곤란할 때 기다려주고 약속을 지킨 작은 장면들이 두 사람 사이에 오래 남았습니다.`,quote:'청첩장 한쪽: “친구로 오래 지냈고, 앞으로도 제일 친한 편이 되기로 했습니다.”'});
-    }
     if(state.friendCare>=10&&state.stats.social>=48&&state.stats.study>=50){
       add(state.friendCare+state.stats.social/10,{kicker:'11년 뒤',symbol:'교실',title:'이번에는 네가 반 아이들을 기다렸다',text:'친구 사이에서 말을 이어주고 모르는 문제를 차분히 설명하던 너는 어린이들과 함께 일하는 사람이 됐습니다. 수업이 끝난 뒤에도 질문 하나를 더 들어주고 교실 불을 껐습니다.',quote:'어느 학생의 편지: “선생님은 제가 말할 때 안 급하게 기다려줘요.”'});
     }
-    return list.sort((a,b)=>b.score-a.score).slice(0,2).map(x=>x.story);
+    return list.sort((a,b)=>b.score-a.score).slice(0,3).map(x=>x.story);
   }
   function finishGrade(){
     if(state.grade===6){
