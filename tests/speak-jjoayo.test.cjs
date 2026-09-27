@@ -39,6 +39,18 @@ test('Speak Jjoayo modules parse and include a useful starter word bank',()=>{
   for(const category of ["animal","food","school","color","daily"])assert.ok(words.includes("cat:'"+category+"'"));
 });
 
+
+test('Speak Jjoayo separates speech homophones from typed spelling',()=>{
+  assert.match(runtime,/speechAliases/);
+  assert.match(runtime,/acceptedAnswers\(word,\{speech=false\}/);
+  assert.match(runtime,/isCorrectTranscript\(transcript,\{speech:true\}\)/);
+  assert.match(runtime,/isCorrectTranscript\(value,\{speech:false\}\)/);
+  assert.match(words,/en:'eye'.*speechAliases:\['i'\]/);
+  assert.match(words,/en:'write'.*speechAliases:\['right','rite'\]/);
+  assert.match(words,/en:'see'.*speechAliases:\['sea'\]/);
+  assert.match(words,/en:'read'.*speechAliases:\['reed'\]/);
+});
+
 test('Speak Jjoayo is registered as a language quiz',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='low_speak_jjoayo');
