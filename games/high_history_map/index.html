@@ -36,8 +36,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .mapHud{position:absolute;top:9px;left:9px;right:9px;z-index:8;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
 .mapHint,.zoomHint{padding:6px 9px;border:1px solid #3a5573;border-radius:10px;background:rgba(8,17,29,.84);font-size:9px;color:#c0d0e1}
 .zoomHint{white-space:nowrap}
+.movePreview{position:absolute;left:10px;bottom:10px;z-index:9;max-width:310px;padding:7px 9px;border:1px solid #4b6989;border-radius:10px;background:rgba(8,17,29,.9);font-size:9px;font-weight:900;color:#e6f2ff;pointer-events:none;box-shadow:0 5px 18px rgba(0,0,0,.28)}
+.minimap{position:absolute;right:10px;bottom:10px;z-index:9;width:168px;height:148px;border:1px solid #4b6989;border-radius:11px;background:#0a1a29;box-shadow:0 7px 22px rgba(0,0,0,.34);cursor:crosshair;touch-action:none}
 .hex{stroke:#a5bad0;stroke-opacity:.25;stroke-width:1.3;vector-effect:non-scaling-stroke;cursor:pointer;transition:.12s}
-.hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.seaHex{stroke-opacity:.08;fill-opacity:.82}.landHex{stroke-opacity:.32}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
+.hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.seaHex{stroke-opacity:.08;fill-opacity:.82}.landHex{stroke-opacity:.32}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.reachable.zocReach{stroke:#f6bd60;stroke-width:3.1}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
+.movePath{fill:none;stroke:#ffe39a;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 5;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 2px rgba(0,0,0,.8))}.movePath.attack{stroke:#ff8991}.movePathNode{fill:#fff3c2;stroke:#182536;stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
 .hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}.resourceIcon{font-size:9px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#08111d;stroke-width:2.4px}.factionBorderBase{fill:none;stroke:#07101b;stroke-width:5.2;stroke-linecap:round;pointer-events:none;opacity:.92}.factionBorder{fill:none;stroke-width:2.8;stroke-linecap:round;pointer-events:none;opacity:.98}.factionBorderPlayer{fill:none;stroke-width:3.8;stroke-linecap:round;pointer-events:none;opacity:1;filter:drop-shadow(0 0 2px rgba(255,255,255,.55))}
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
@@ -63,7 +66,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .toast{position:absolute;z-index:30;left:50%;top:55px;transform:translateX(-50%) translateY(-8px);opacity:0;transition:.2s;pointer-events:none;padding:8px 12px;border:1px solid #4c6684;border-radius:999px;background:#0c1727;font-size:9px;font-weight:1000;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .tutorial{position:absolute;z-index:25;left:50%;bottom:16px;transform:translateX(-50%);width:min(500px,90%);padding:11px 13px;border:1px solid #dcb148;border-radius:13px;background:#17263c;box-shadow:0 14px 40px rgba(0,0,0,.4)}.tutorial b{font-size:10px;color:var(--gold)}.tutorial p{font-size:9px;color:#c9d5e2;line-height:1.45;margin:3px 0 7px}
 @media(max-width:900px){#main{grid-template-columns:160px minmax(360px,1fr) 215px}.brand small{display:none}.resources .res{min-width:60px}.panel{padding:8px}}
-@media(max-width:760px){#main{display:block;position:relative}.left{display:none}.mapWrap{position:absolute;inset:0}.right{position:absolute;z-index:12;right:6px;top:54px;bottom:6px;width:205px;border:1px solid #395370;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.42)}.nationGrid{grid-template-columns:1fr}.nationCard{min-height:auto}.dateBox{display:none}.brand{min-width:auto}.topbar{padding:6px}.brandMark{width:35px;height:35px}.resources{gap:4px}.res{min-width:52px;padding:5px}.res small{display:none}.bottom{overflow-x:auto}.navBtn{min-width:72px}.statusPill{min-width:105px}}
+@media(max-width:760px){#main{display:block;position:relative}.left{display:none}.mapWrap{position:absolute;inset:0}.right{position:absolute;z-index:12;right:6px;top:54px;bottom:6px;width:205px;border:1px solid #395370;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.42)}.nationGrid{grid-template-columns:1fr}.nationCard{min-height:auto}.dateBox{display:none}.brand{min-width:auto}.topbar{padding:6px}.brandMark{width:35px;height:35px}.resources{gap:4px}.res{min-width:52px;padding:5px}.res small{display:none}.bottom{overflow-x:auto}.navBtn{min-width:72px}.statusPill{min-width:105px}.minimap{width:122px;height:108px;right:216px;bottom:8px}.movePreview{right:216px;max-width:none;bottom:121px}}
 </style>
 </head>
 <body>
@@ -98,11 +101,14 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
           <g id="hexLayer"></g>
           <g id="borderLayer"></g>
           <g id="riverLayer"></g>
+          <g id="pathLayer"></g>
           <g id="labelLayer"></g>
           <g id="cityLayer"></g>
           <g id="unitLayer"></g>
         </g>
       </svg>
+      <canvas id="minimap" class="minimap" width="168" height="148" aria-label="전장 미니맵"></canvas>
+      <div id="movePreview" class="movePreview hidden"></div>
       <div id="toast" class="toast"></div>
       <div id="tutorial" class="tutorial hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialNext" class="tiny" type="button">다음</button></div>
     </section>
@@ -145,9 +151,9 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=12"></script>
-<script src="./core/pathfinding.js?v=12"></script>
-<script src="./core/invariants.js?v=12"></script>
+<script src="./core/actions.js?v=13"></script>
+<script src="./core/pathfinding.js?v=13"></script>
+<script src="./core/invariants.js?v=13"></script>
 <script>
 (function(){
 "use strict";
@@ -165,6 +171,9 @@ var actionBus=null;
 var selectedTile=null;
 var selectedUnit=null;
 var reachable={};
+var reachDetail=null;
+var hoveredTile=null;
+var minimapBase=null;
 var tutorialStep=0;
 var cam={x:0,y:0,z:1};
 var drag=null,pinch=null;
@@ -196,7 +205,7 @@ var IMPROVEMENTS={
   barracks:{name:"병영",icon:"🛡️",art:"barracks.svg",cost:15,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:2,authority:1,desc:"인력 +2 · 권위 +1/레벨"},
   mine:{name:"광산",icon:"⛏️",art:"mine.svg",cost:14,terrain:["hill","mountain"],food:0,money:4,manpower:0,authority:0,desc:"재정 +4/레벨"},
   fort:{name:"요새",icon:"🏯",art:"fort.svg",cost:14,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"방어 +25%"},
-  road:{name:"도로",icon:"🛣️",art:"road.svg",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"험지 이동 비용 감소"},
+  road:{name:"도로",icon:"🛣️",art:"road.svg",cost:8,terrain:["plain","coast","hill","mountain"],food:0,money:0,manpower:0,authority:0,desc:"이동 비용을 크게 줄여 군대와 보급 이동을 돕습니다."},
   fishery:{name:"어장",icon:"🎣",art:"fishery.svg",cost:10,terrain:["coast"],food:2,money:1,manpower:0,authority:0,desc:"식량 +2 · 재정 +1/레벨"},
   kiln:{name:"도요",icon:"🏺",art:"kiln.svg",cost:13,terrain:["plain","coast","hill"],food:0,money:2,manpower:0,authority:1,desc:"도자기 생산 · 재정 +2 · 권위 +1/레벨"}
 };
@@ -688,7 +697,7 @@ function drawFactionBorders(layer){
     });
   });
 }
-function renderAll(){renderHeader();renderMap();renderLeft();renderInfo();applyCamera();}
+function renderAll(){renderHeader();renderMap();renderLeft();renderInfo();renderMinimap();applyCamera();}
 function renderHeader(){
   var r=resource(state.player);
   document.getElementById("foodVal").textContent=fmt(r.food);
@@ -707,12 +716,14 @@ function renderLeft(){
   state.feed.slice(-8).reverse().forEach(function(x){var d=document.createElement("div");d.className="feedItem";d.innerHTML="<b>"+x.date+"</b><br>"+x.text;feed.appendChild(d);});
 }
 function renderMap(){
-  var hexLayer=document.getElementById("hexLayer"),borderLayer=document.getElementById("borderLayer"),cityLayer=document.getElementById("cityLayer"),unitLayer=document.getElementById("unitLayer"),riverLayer=document.getElementById("riverLayer"),labelLayer=document.getElementById("labelLayer");
-  hexLayer.innerHTML="";borderLayer.innerHTML="";cityLayer.innerHTML="";unitLayer.innerHTML="";riverLayer.innerHTML="";labelLayer.innerHTML="";
+  var hexLayer=document.getElementById("hexLayer"),borderLayer=document.getElementById("borderLayer"),cityLayer=document.getElementById("cityLayer"),unitLayer=document.getElementById("unitLayer"),riverLayer=document.getElementById("riverLayer"),pathLayer=document.getElementById("pathLayer"),labelLayer=document.getElementById("labelLayer");
+  hexLayer.innerHTML="";borderLayer.innerHTML="";cityLayer.innerHTML="";unitLayer.innerHTML="";riverLayer.innerHTML="";pathLayer.innerHTML="";labelLayer.innerHTML="";
   Object.keys(state.tiles).forEach(function(k){
     var t=state.tiles[k],pts=hexPoints(t.q,t.r),p=svgEl("polygon",{points:pts,fill:TERRAIN[t.terrain].fill,class:"hex "+(t.terrain==="sea"?"seaHex":"landHex"),"data-key":k});
     if(selectedTile===k)p.classList.add("selected");
-    if(reachable[k]!=null)p.classList.add(reachable[k].attack?"attackable":"reachable");
+    if(reachable[k]!=null){p.classList.add(reachable[k].attack?"attackable":"reachable");if(reachable[k].zoc)p.classList.add("zocReach");}
+    p.addEventListener("pointerenter",function(){if(selectedUnit&&reachable[k]){hoveredTile=k;renderPathPreview();}});
+    p.addEventListener("pointerleave",function(){if(hoveredTile===k){hoveredTile=null;renderPathPreview();}});
     p.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();onTileClick(k);});
     hexLayer.appendChild(p);
     if(t.owner&&t.owner!=="neutral"&&t.terrain!=="sea"&&FACTIONS[t.owner]){
@@ -758,6 +769,29 @@ function renderMap(){
     g.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();selectUnit(u.id);});
     unitLayer.appendChild(g);
   });
+  renderPathPreview();
+}
+function renderPathPreview(){
+  var layer=document.getElementById("pathLayer"),box=document.getElementById("movePreview");
+  if(!layer||!box)return;
+  layer.innerHTML="";
+  if(!selectedUnit||!hoveredTile||!reachable[hoveredTile]||!reachDetail){box.classList.add("hidden");return;}
+  var u=unitById(selectedUnit);if(!u){box.classList.add("hidden");return;}
+  var start=key(u.q,u.r),path=window.UnificationWarPathfinding.reconstruct(reachDetail.previous,start,hoveredTile);
+  if(path.length<2){box.classList.add("hidden");return;}
+  var d="",roads=0,rivers=0;
+  path.forEach(function(k,i){
+    var t=state.tiles[k],c=hexCenter(t.q,t.r);d+=(i?" L ":"M ")+c[0]+" "+c[1];
+    if(i&&t.improvement==="road")roads++;
+    if(i){var p=state.tiles[path[i-1]];if(riverPenalty(p.q,p.r,t.q,t.r)<1)rivers++;}
+  });
+  var info=reachable[hoveredTile],line=svgEl("path",{d:d,class:"movePath"+(info.attack?" attack":"")});layer.appendChild(line);
+  var dest=state.tiles[hoveredTile],dc=hexCenter(dest.q,dest.r);layer.appendChild(svgEl("circle",{cx:dc[0],cy:dc[1],r:5,class:"movePathNode"}));
+  var bits=[info.attack?"공격":"이동","비용 "+info.cost];
+  if(roads)bits.push("도로 "+roads+"칸");
+  if(rivers)bits.push("강 도하 "+rivers+"회");
+  if(info.zoc)bits.push("적 통제구역 · 이동 종료");
+  box.textContent=bits.join(" · ");box.classList.remove("hidden");
 }
 function drawSeaRoutes(layer){
   SEA_ROUTES.forEach(function(r){
@@ -787,7 +821,8 @@ function renderInfo(){
   var f=t.owner&&FACTIONS[t.owner]?FACTIONS[t.owner]:FACTIONS.neutral,ter=TERRAIN[t.terrain],cid=t.city,c=cid?CITIES[cid]:null;
   var html="<div class=\"bigName\">"+(c?c.name:t.region+" "+(t.q+1)+","+(t.r+1))+"</div>";
   html+="<div class=\"ownerLine\" style=\"color:"+f.color+"\">"+f.name+" · "+ter.icon+" "+ter.name+"</div>";
-  html+="<div class=\"statGrid\"><div class=\"stat\"><small>이동 비용</small><b>"+(ter.move>=99?"이동 불가":ter.move)+"</b></div><div class=\"stat\"><small>방어 보정</small><b>+"+Math.round((ter.def-1)*100)+"%</b></div><div class=\"stat\"><small>식량</small><b>+"+tileFood(t)+"</b></div><div class=\"stat\"><small>재정</small><b>+"+tileMoney(t)+"</b></div></div>";
+  var shownMove=ter.move>=99?"이동 불가":(t.improvement==="road"?Math.max(.5,ter.move-.75):ter.move);
+  html+="<div class=\"statGrid\"><div class=\"stat\"><small>이동 비용</small><b>"+shownMove+"</b></div><div class=\"stat\"><small>방어 보정</small><b>+"+Math.round((ter.def-1)*100)+"%</b></div><div class=\"stat\"><small>식량</small><b>+"+tileFood(t)+"</b></div><div class=\"stat\"><small>재정</small><b>+"+tileMoney(t)+"</b></div></div>";
   var tags=[];
   if(c)tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level+" · 🛡️ 수비대 "+fmt(garrisonAtTile(t)));
   if(t.resource&&RESOURCE_DEFS[t.resource]){var rr=RESOURCE_DEFS[t.resource],active=rr.improvements.indexOf(t.improvement)>=0;tags.push(rr.icon+" "+rr.name+(active?" · 활용 중":""));}
@@ -837,7 +872,7 @@ function moveCost(u,t,from){
   if(from&&routeBetween(from.q,from.r,t.q,t.r))return 2;
   if(t.terrain==="sea")return 99;
   var c=TERRAIN[t.terrain].move;
-  if(t.improvement==="road")c=Math.max(1,c-1);
+  if(t.improvement==="road")c=Math.max(.5,c-.75);
   if(u.type==="cavalry"&&t.terrain==="mountain")c+=1;
   return c;
 }
@@ -845,6 +880,12 @@ function tileHasHostileDefense(u,t){
   var enemy=enemyUnitAt(t.q,t.r,u.owner);
   if(enemy)return true;
   return !!(t.city&&t.owner!==u.owner&&garrisonAtTile(t)>0);
+}
+function enemyZocAt(u,t){
+  return neighbors(t.q,t.r).some(function(n){
+    var enemy=enemyUnitAt(n.q,n.r,u.owner);
+    return !!(enemy&&canAttackFaction(u.owner,enemy.owner));
+  });
 }
 function computeReachDetailed(u){
   return window.UnificationWarPathfinding.reachable({
@@ -856,16 +897,16 @@ function computeReachDetailed(u){
     classify:function(n){
       if(n.terrain==="sea")return{blocked:true};
       if(n.owner&&n.owner!=="neutral"&&n.owner!==u.owner&&!canAttackFaction(u.owner,n.owner))return{blocked:true};
-      var hostile=tileHasHostileDefense(u,n);
-      return{attack:hostile,frontier:hostile||n.owner!==u.owner};
+      var hostile=tileHasHostileDefense(u,n),zoc=!hostile&&enemyZocAt(u,n);
+      return{attack:hostile,frontier:hostile||n.owner!==u.owner||zoc,zoc:zoc};
     }
   });
 }
 function computeReach(u){return computeReachDetailed(u).tiles;}
 function selectUnit(id){
   var u=unitById(id);if(!u)return;
-  selectedUnit=id;selectedTile=key(u.q,u.r);
-  reachable=(u.owner===state.player&&!u.moved)?computeReach(u):{};
+  selectedUnit=id;selectedTile=key(u.q,u.r);hoveredTile=null;
+  if(u.owner===state.player&&!u.moved){reachDetail=computeReachDetailed(u);reachable=reachDetail.tiles;}else{reachDetail=null;reachable={};}
   renderAll();
 }
 function onTileClick(k){
@@ -1337,7 +1378,7 @@ function startTutorial(){tutorialStep=0;showTutorial();}
 function showTutorial(){
   var tips=[
     ["1. 건국 거점에서 시작","대부분의 육지는 미개척 상태입니다. 고구려는 국내성, 백제는 위례성, 신라는 금성에서 주변 타일로 직접 영토를 넓혀갑니다."],
-    ["2. 군대 이동","내 군대 아이콘을 누르면 이번 턴에 갈 수 있는 칸이 하늘색으로 표시됩니다. 미개척 타일에 들어가면 내 영토가 됩니다."],
+    ["2. 군대 이동","내 군대를 누르면 이동 가능 칸이 표시됩니다. PC에서는 목적지에 마우스를 올리면 이동 경로와 비용이 보입니다. 적 부대 주변 통제구역에 들어가면 그 턴 이동이 끝납니다."],
     ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
     ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·도요·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."],
     ["5. 도시와 전투","도시에는 자동 수비대가 있습니다. 보병은 공성에 안정적이고, 궁병은 산지 방어, 기병은 평야 공격과 기동에 강합니다."],
@@ -1365,7 +1406,46 @@ function clampCamera(){
   cam.x=minX>maxX?(minX+maxX)/2:clamp(cam.x,minX,maxX);
   cam.y=minY>maxY?(minY+maxY)/2:clamp(cam.y,minY,maxY);
 }
-function applyCamera(){clampCamera();document.getElementById("camera").setAttribute("transform","translate("+cam.x+" "+cam.y+") scale("+cam.z+")");}
+function renderMinimap(){
+  var canvas=document.getElementById("minimap");if(!canvas||!state)return;
+  if(!minimapBase){minimapBase=document.createElement("canvas");minimapBase.width=canvas.width;minimapBase.height=canvas.height;}
+  var ctx=minimapBase.getContext("2d"),b=landBounds(),pad=6,w=Math.max(1,b.maxX-b.minX),h=Math.max(1,b.maxY-b.minY);
+  var scale=Math.min((canvas.width-pad*2)/w,(canvas.height-pad*2)/h);
+  var ox=(canvas.width-w*scale)/2-b.minX*scale,oy=(canvas.height-h*scale)/2-b.minY*scale;
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#0b2032";ctx.fillRect(0,0,canvas.width,canvas.height);
+  Object.keys(state.tiles).forEach(function(k){
+    var t=state.tiles[k];if(t.terrain==="sea")return;
+    var c=hexCenter(t.q,t.r),x=ox+c[0]*scale,y=oy+c[1]*scale;
+    ctx.fillStyle=t.owner&&t.owner!=="neutral"&&FACTIONS[t.owner]?FACTIONS[t.owner].color:TERRAIN[t.terrain].fill;
+    var s=Math.max(2.2,HEX_SIZE*1.45*scale);ctx.fillRect(x-s/2,y-s/2,s,s);
+  });
+  Object.keys(CITIES).forEach(function(id){
+    var c=CITIES[id],t=tile(c.q,c.r);if(!t)return;
+    var p=hexCenter(c.q,c.r),x=ox+p[0]*scale,y=oy+p[1]*scale;
+    ctx.fillStyle="#f7fbff";ctx.fillRect(x-1.5,y-1.5,3,3);
+  });
+  canvas._mini={b:b,scale:scale,ox:ox,oy:oy};
+  drawMinimapViewport();
+}
+function drawMinimapViewport(){
+  var canvas=document.getElementById("minimap");if(!canvas||!minimapBase||!canvas._mini)return;
+  var ctx=canvas.getContext("2d"),m=canvas._mini,svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal;
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(minimapBase,0,0);
+  var x1=(-cam.x)/cam.z,y1=(-cam.y)/cam.z,x2=(vb.width-cam.x)/cam.z,y2=(vb.height-cam.y)/cam.z;
+  var x=m.ox+x1*m.scale,y=m.oy+y1*m.scale,w=(x2-x1)*m.scale,h=(y2-y1)*m.scale;
+  ctx.strokeStyle="#ffffff";ctx.lineWidth=1.5;ctx.strokeRect(x,y,w,h);
+}
+function setupMinimap(){
+  var canvas=document.getElementById("minimap");if(!canvas)return;
+  canvas.addEventListener("pointerdown",function(e){
+    if(!state||!canvas._mini)return;
+    e.preventDefault();e.stopPropagation();
+    var rect=canvas.getBoundingClientRect(),px=(e.clientX-rect.left)*canvas.width/rect.width,py=(e.clientY-rect.top)*canvas.height/rect.height,m=canvas._mini;
+    var mapX=(px-m.ox)/m.scale,mapY=(py-m.oy)/m.scale,svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal;
+    cam.x=vb.width/2-mapX*cam.z;cam.y=vb.height/2-mapY*cam.z;applyCamera();
+  });
+}
+function applyCamera(){clampCamera();document.getElementById("camera").setAttribute("transform","translate("+cam.x+" "+cam.y+") scale("+cam.z+")");drawMinimapViewport();}
 function fitCameraToLand(){
   if(!state){applyCamera();return;}
   var svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal,b=landBounds(),pad=34;
@@ -1437,6 +1517,7 @@ function bind(){
   document.getElementById("tutorialNext").addEventListener("click",function(){tutorialStep++;showTutorial();});
   document.addEventListener("keydown",function(e){if(e.key==="Escape"){selectedUnit=null;reachable={};closeModal();renderAll();}if(e.key==="e"||e.key==="E")endTurn();});
   setupCamera();
+  setupMinimap();
 }
 bind();initStart();
 })();
