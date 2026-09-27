@@ -115,3 +115,17 @@ test('Taewo has a dedicated visual profile',()=>{
   assert.match(html,/if\(e\.antagonist\|\|\/친구\\s\*태오\//);
   assert.match(html,/return 'villain'/);
 });
+
+
+test('Taewo arc beats are prioritized and visible at grade transitions',()=>{
+  for(const [id,priority] of [
+    ['g2_taeo_cleanup_escape',96],['g3_taeo_prank',93],['g4_taeo_winning_team',91],
+    ['g5_taeo_anonymous_poll',93],['g6_taeo_pack_offer',97],['g6_taeo_respect',97]
+  ]){
+    const at=html.indexOf("id:'"+id+"'");
+    assert.ok(at>=0,'missing '+id);
+    assert.ok(html.slice(at,at+350).includes('priority:'+priority),'wrong priority for '+id);
+  }
+  assert.match(html,/태오: \$\{antagonistTier\('태오'\)\} \(영향 \$\{taeo\.influence\} \/ 저항 \$\{taeo\.defiance\}\)/);
+  assert.match(html,/s\.antagonists=s\.antagonists\|\|\{\}/);
+});
