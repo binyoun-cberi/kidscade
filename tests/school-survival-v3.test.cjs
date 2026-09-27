@@ -50,3 +50,31 @@ test('school survival v3 orders a school year by phases and preserves legacy sav
   assert.match(html,/s\.pendingChains=Array\.isArray/);
   assert.match(html,/gradeNames\[state\.grade\].*e\._phase/);
 });
+
+
+test('school survival v3 carries named friendships across multiple grades',()=>{
+  for(const id of [
+    'g1_minseo_first_friend','g2_minseo_pencil','g3_minseo_group','g4_minseo_old_friend','g5_minseo_different_groups','g6_minseo_album',
+    'g2_junho_race','g3_junho_math','g4_homework_copy','g5_junho_second_chance','g6_junho_final_race',
+    'g3_seoyun_presentation','g4_seoyun_secret','g5_groupchat_photo','g6_seoyun_groupchat_memory'
+  ]) assert.ok(html.includes(id), 'missing friendship arc event '+id);
+  assert.match(html,/const NPC_PROFILES=/);
+  assert.match(html,/function bondTier\(name\)/);
+  assert.match(html,/친구 민서.*bondTier|bondTier\(fname\)/s);
+});
+
+test('friendship choices unlock later callbacks and relationship-specific futures',()=>{
+  assert.match(html,/state\.flags\.met_minseo/);
+  assert.match(html,/state\.flags\.sent_homework_answers\|\|!!state\.flags\.taught_junho/);
+  assert.match(html,/state\.flags\.joined_mocking\|\|!!state\.flags\.protected_seoyun/);
+  assert.match(html,/function relationshipFutureStories\(\)/);
+  assert.match(html,/새 교복 옆에 익숙한 얼굴/);
+  assert.match(html,/아직도 서로 기록을 보여준다/);
+  assert.match(html,/보내기 전에 한 번 더 본다/);
+  assert.doesNotMatch(html,/결혼했습니다/);
+});
+
+test('graduation can surface up to three earned future scenes',()=>{
+  assert.match(html,/const list=\[\.\.\.relationshipFutureStories\(\)\]/);
+  assert.match(html,/slice\(0,3\)\.map\(x=>x\.story\)/);
+});
