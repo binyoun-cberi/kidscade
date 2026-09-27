@@ -120,6 +120,7 @@ textarea{min-height:72px;resize:vertical}
       <button class="tab" data-tab="work">근무확인</button>
       <button class="tab" data-tab="jobs">자격증·직업</button>
       <button class="tab" data-tab="payroll">급여·은행·정부</button>
+      <button class="tab" data-tab="property">부동산·월세</button>
       <button class="tab" data-tab="store">상점·보관함</button>
       <button class="tab" data-tab="company">학생회사</button>
       <button class="tab" data-tab="law">법·과태료</button>
@@ -177,8 +178,67 @@ textarea{min-height:72px;resize:vertical}
           <div class="card"><div class="head"><div><h2>월급 정산</h2><p>같은 급여 회차는 두 번 지급할 수 없습니다.</p></div></div><div class="form"><div class="field"><label>급여 회차</label><input class="input" id="periodId"></div><div class="field"><label>소득세</label><input class="input" id="payTax" disabled></div></div><div class="actions"><button class="btn" id="runPayroll">전체 월급 정산</button></div><div class="status" id="payStatus"></div><div class="table" style="margin-top:10px"><table><thead><tr><th>학생</th><th>직업</th><th>세전</th><th>세금</th><th>실수령</th><th>예상 이자</th></tr></thead><tbody id="payPreview"></tbody></table></div></div>
           <div class="card"><div class="head"><div><h2>정부 공공지출·채무</h2><p>정부계좌가 부족해도 지출할 수 있으며 부족분은 채무로 공개됩니다.</p></div></div><div class="notice" id="debtStatus"></div><div class="form" style="margin-top:10px"><div class="field"><label>지출 금액</label><input class="input" id="treasuryAmount" type="number" value="50"></div><div class="field"><label>사용처</label><input class="input" id="treasuryReason" placeholder="학급 행사 지원"></div><div class="field"><label>채무 상환액</label><input class="input" id="debtRepayAmount" type="number" value="50"></div></div><div class="actions"><button class="btn green" id="spendTreasury">공공지출 기록</button><button class="btn secondary" id="repayDebt">정부 채무 상환</button></div><div class="rows" id="spendingAdminRows" style="margin-top:12px"></div></div>
           <div class="card"><div class="head"><div><h2>대출 심사</h2><p>학생 신용등급에 따라 신청 시점 이율과 한도가 결정됩니다.</p></div></div><div class="rows" id="loanAdminRows"></div></div>
+          <div class="card"><div class="head"><div><h2>기존 은행 대출 직접 등록</h2><p>이미 교실에서 실행된 대출을 장부에 옮깁니다. 지갑에 돈이 이미 반영됐다면 입금 옵션을 끄세요.</p></div></div>
+            <div class="form">
+              <div class="field full"><label>학생</label><select id="recordLoanStudent"></select></div>
+              <div class="field"><label>원금</label><input class="input" id="recordLoanPrincipal" type="number" min="1" value="100"></div>
+              <div class="field"><label>현재 남은 원금</label><input class="input" id="recordLoanOutstanding" type="number" min="0" value="100"></div>
+              <div class="field"><label>이율 %</label><input class="input" id="recordLoanRate" type="number" min="0" value="5"></div>
+              <div class="field"><label>대출일</label><input class="input" id="recordLoanDate" type="date"></div>
+              <div class="field full"><label>용도</label><input class="input" id="recordLoanPurpose" placeholder="예: 자리 구입 대출"></div>
+              <div class="field full"><label>연결 부동산</label><select id="recordLoanProperty"><option value="">연결 안 함</option></select></div>
+              <div class="field full"><label><input id="recordLoanDeposit" type="checkbox" style="width:auto;min-height:auto"> 대출 원금도 학생 지갑에 지금 입금</label></div>
+              <div class="field full"><label>교사 메모</label><input class="input" id="recordLoanNote" placeholder="예: 9월 1일 은행대출 수기 기록 이식"></div>
+            </div>
+            <div class="actions"><button class="btn" id="recordLoanBtn">대출 기록 추가</button></div>
+          </div>
         </div>
         <div class="card"><div class="head"><div><h2>교사 빠른 거래</h2><p>학생에게 돈을 즉시 지급하거나 회수할 수 있습니다. 모든 조정은 거래 장부에 남습니다.</p></div></div><div class="form"><div class="field full"><label>학생</label><select id="manualStudent"></select></div><div class="field"><label>금액</label><input class="input" id="manualAmount" type="number" min="1" value="10"></div><div class="field"><label>회수액 정부계좌로</label><select id="manualTreasury"><option value="no">아니오</option><option value="yes">예</option></select></div><div class="field full"><label>이유</label><input class="input" id="manualReason" placeholder="예: 특별수당 / 규칙 위반 회수"></div></div><div class="actions"><button class="btn green" id="manualGive">돈 지급</button><button class="btn danger" id="manualTake">돈 회수</button></div><div class="notice" style="margin-top:10px">회수는 학생의 현재 현금 잔액까지만 가능합니다.</div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-property">
+      <div class="layout">
+        <div class="stack">
+          <div class="card">
+            <div class="head"><div><h2>자리 부동산 현황</h2><p>미분양 자리는 정부 소유, 매입된 자리는 학생 소유로 기록합니다.</p></div></div>
+            <div class="rows" id="propertyRows"></div>
+          </div>
+          <div class="card">
+            <div class="head"><div><h2>임대계약·월세</h2><p>정부 소유 미분양 자리에 월세로 사는 학생을 연결하고 회차별 월세를 징수합니다.</p></div></div>
+            <div class="form"><div class="field"><label>월세 회차</label><input class="input" id="rentPeriodId"></div></div>
+            <div class="rows" id="leaseRows" style="margin-top:12px"></div>
+            <h3 style="margin-top:18px">최근 월세 장부</h3>
+            <div class="rows" id="rentPaymentRows"></div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="head"><div><h2>부동산 등록·소유권</h2><p>기존 매입 내역을 옮길 때는 ‘매매대금 정산’을 끄고, 앞으로 실제 매매할 때만 켜세요.</p></div></div>
+            <input id="propertyId" type="hidden">
+            <div class="form">
+              <div class="field"><label>자리 이름</label><input class="input" id="propertyName" placeholder="예: 1번 자리 / 창가 A"></div>
+              <div class="field"><label>매매 기준가</label><input class="input" id="propertyPrice" type="number" min="0" value="100"></div>
+              <div class="field"><label>소유자 유형</label><select id="propertyOwnerType"><option value="government">정부(미분양)</option><option value="student">학생 소유</option></select></div>
+              <div class="field"><label>학생 소유자</label><select id="propertyOwnerStudent"></select></div>
+              <div class="field"><label>취득일</label><input class="input" id="propertyAcquiredAt" type="date"></div>
+              <div class="field full"><label>메모</label><input class="input" id="propertyNote" placeholder="예: 9월 2주차 경매 낙찰"></div>
+              <div class="field full"><label><input id="propertySettlePurchase" type="checkbox" style="width:auto;min-height:auto"> 소유권 변경과 함께 매매대금도 실제 정산</label></div>
+            </div>
+            <div class="actions"><button class="btn" id="saveProperty">부동산 저장</button><button class="btn secondary" id="resetProperty">새 항목</button></div>
+          </div>
+          <div class="card">
+            <div class="head"><div><h2>월세 계약 등록</h2><p>현재 자리 소유자가 집주인이 됩니다. 정부 소유라면 월세는 정부계좌로 들어갑니다.</p></div></div>
+            <div class="form">
+              <div class="field full"><label>자리</label><select id="leaseProperty"></select></div>
+              <div class="field full"><label>임차 학생</label><select id="leaseTenant"></select></div>
+              <div class="field"><label>회차당 월세</label><input class="input" id="leaseRent" type="number" min="1" value="20"></div>
+              <div class="field"><label>시작 회차</label><input class="input" id="leaseStartPeriod"></div>
+              <div class="field full"><label>계약 메모</label><input class="input" id="leaseNote" placeholder="예: 미분양 정부주택 월세"></div>
+            </div>
+            <div class="actions"><button class="btn green" id="createLease">월세 계약 등록</button></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -217,6 +277,6 @@ textarea{min-height:72px;resize:vertical}
     </section>
   </section>
 </main>
-<script src="/teacher-economy.js?v=20260927-jobdesk"></script>
+<script src="/teacher-economy.js?v=20260927-realestate"></script>
 </body>
 </html>
