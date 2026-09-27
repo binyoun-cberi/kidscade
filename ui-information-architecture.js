@@ -323,17 +323,9 @@
   }
 
   function normalizeGrowthArea() {
-    const petCard = document.getElementById('kc-pet-card');
-    if (petCard) {
-      petCard.setAttribute('aria-label', 'Cube Pets 현황');
-      petCard.removeAttribute('role');
-      petCard.removeAttribute('tabindex');
-      delete petCard.dataset.openLifeWorld;
-    }
+    // Legacy main-screen pet UI is retired. Cube Pets live only inside Seed World.
+    document.getElementById('kc-pet-card')?.remove();
     document.getElementById('sidebar-pet-open')?.remove();
-
-    const petTalk = document.getElementById('sidebar-pet-talk');
-    if (petTalk) petTalk.textContent = '씨앗 월드에서 만나고 길들이고 함께 생활해요.';
   }
 
   function openMission() {
@@ -417,7 +409,7 @@
     const title = modal.querySelector('.sook-coach-header > span');
     const mode = activeSookPanel();
     const labels = {
-      room: ['🐾 Cube Pets 월드', 'Cube Pets 월드'],
+      room: ['🌱 씨앗 월드', '씨앗 월드'],
       missions: ['🎯 오늘의 미션', '오늘의 미션'],
       recommend: ['💬 게임 추천', '게임 추천']
     };
