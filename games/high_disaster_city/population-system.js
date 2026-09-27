@@ -28,7 +28,7 @@ function sync(sim){
 }
 function assignShelter(sim,g,used){
  const home=sim.state.slots[g.slotIndex],shelters=sim.state.slots.filter(x=>x.building?.id==='shelter').sort((a,b)=>Math.abs(a.x-home.x)-Math.abs(b.x-home.x));
- for(const slot of shelters){const cap=shelterCapacity(slot.building),taken=used.get(slot.i)||0,room=Math.max(0,cap-taken);if(room<=0)continue;used.set(slot.i,taken+Math.min(room,g.total));g.targetSlot=slot.i;return room>=g.total}
+ for(const slot of shelters){const cap=shelterCapacity(slot.building),taken=used.get(slot.i)||0,room=Math.max(0,cap-taken);if(room<g.total)continue;used.set(slot.i,taken+g.total);g.targetSlot=slot.i;return true}
  g.targetSlot=-1;return false
 }
 function update(sim,dt){
