@@ -11,6 +11,9 @@
   let applyingCloud = false;
   let syncTimer = 0;
   let syncing = false;
+  let economySummary = null;
+  let economySummaryLoaded = false;
+  let economySummaryLoading = false;
 
   function store() { return window.KidscadeStorage || null; }
   function profileApi() { return window.KidscadeProfileHistory || null; }
@@ -104,9 +107,24 @@
       #${SLOT_ID} .kca-title{font-size:.68rem;font-weight:1000;color:var(--kc-ink,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-sub{margin-top:2px;font-size:.59rem;font-weight:800;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-buttons{display:flex;gap:5px;align-items:center;flex:none}
-      #${SLOT_ID} button,#${SLOT_ID} .kca-wallet{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
+      #${SLOT_ID} button{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
       #${SLOT_ID} .kca-logout{background:#eef2f7;color:#64748b}
+      #${SLOT_ID} .kca-economy-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:58px;padding:8px 10px;border-radius:14px;text-decoration:none;background:linear-gradient(135deg,rgba(124,92,255,.09),rgba(236,72,153,.07));border:1px solid rgba(124,92,255,.18);box-shadow:0 5px 14px rgba(124,92,255,.07);color:var(--kc-ink,#334155);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      #${SLOT_ID} .kca-economy-card:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.34);box-shadow:0 8px 18px rgba(124,92,255,.12)}
+      #${SLOT_ID} .kca-economy-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#fff1a8,#ffd166);box-shadow:inset 0 0 0 1px rgba(180,120,0,.08);font-size:1rem}
+      #${SLOT_ID} .kca-economy-copy{min-width:0;display:grid;gap:1px}
+      #${SLOT_ID} .kca-economy-title{display:flex;align-items:center;gap:5px;font-size:.69rem;font-weight:1000;letter-spacing:-.02em}
+      #${SLOT_ID} .kca-economy-badge{display:inline-flex;align-items:center;min-height:17px;padding:0 5px;border-radius:999px;background:rgba(124,92,255,.11);color:#6d4aff;font-size:.51rem;font-weight:1000}
+      #${SLOT_ID} .kca-economy-badge.attention{background:#fff0dc;color:#c56a00}
+      #${SLOT_ID} .kca-economy-meta{font-size:.57rem;font-weight:900;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #${SLOT_ID} .kca-economy-status{font-size:.54rem;font-weight:850;color:#8b5cf6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #${SLOT_ID} .kca-economy-status.attention{color:#c56a00}
+      #${SLOT_ID} .kca-economy-arrow{font-size:1.15rem;font-weight:1000;color:#8b5cf6;padding-right:1px}
       body.dark-mode #${SLOT_ID} .kca-logout{background:#334155;color:#e2e8f0}
+      body.dark-mode #${SLOT_ID} .kca-economy-card{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.10));border-color:rgba(196,181,253,.22);color:#f8fafc}
+      body.dark-mode #${SLOT_ID} .kca-economy-icon{background:linear-gradient(135deg,#7c5cff,#ec4899);box-shadow:none}
+      body.dark-mode #${SLOT_ID} .kca-economy-meta{color:#cbd5e1}
+      body.dark-mode #${SLOT_ID} .kca-economy-status{color:#c4b5fd}
       #${MODAL_ID}{position:fixed;inset:0;z-index:14000;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.52);backdrop-filter:blur(8px)}
       #${MODAL_ID}.hidden{display:none!important}
       #${MODAL_ID} .kca-modal-card{width:min(420px,100%);border-radius:24px;background:#fff;padding:22px;box-shadow:0 24px 60px rgba(15,23,42,.28);color:#334155}
@@ -166,6 +184,80 @@
     document.body.style.overflow = '';
   }
 
+  function economyCardView() {
+    if (!economySummaryLoaded) {
+      return {
+        badge:'열기',
+        attention:false,
+        meta:'월급 · 직업 · 은행 · 상점',
+        status:'학급경제로 들어가기'
+      };
+    }
+    if (economySummary?.enabled === false) {
+      return {
+        badge:'준비 중',
+        attention:false,
+        meta:'학급경제',
+        status:'선생님이 학급경제를 시작하면 사용할 수 있어요.'
+      };
+    }
+    if (!economySummary?.enabled) {
+      return {
+        badge:'열기',
+        attention:false,
+        meta:'월급 · 직업 · 은행 · 상점',
+        status:'학급경제로 들어가기'
+      };
+    }
+
+    const currency = String(economySummary.currency || '뚝');
+    const balance = Math.max(0,Math.round(Number(economySummary.balance || 0))).toLocaleString('ko-KR');
+    const jobName = economySummary.job?.name || '직업 미배정';
+    if (economySummary.workLogDue) {
+      return {
+        badge:'확인',
+        attention:true,
+        meta:'내 현금 ' + balance + currency + ' · ' + jobName,
+        status:'이번 급여 회차 근무일지 제출 필요'
+      };
+    }
+    if (Number(economySummary.capabilityCount || 0) > 0) {
+      return {
+        badge:'업무',
+        attention:false,
+        meta:'내 현금 ' + balance + currency + ' · ' + jobName,
+        status:'직업 전용 업무가 열려 있어요.'
+      };
+    }
+    return {
+      badge:'열기',
+      attention:false,
+      meta:'내 현금 ' + balance + currency + ' · ' + jobName,
+      status:'월급 · 은행 · 상점 이용하기'
+    };
+  }
+
+  async function loadEconomySummary() {
+    if (!account || economySummaryLoading) return;
+    economySummaryLoading = true;
+    try {
+      const { response, body } = await api('/api/economy/summary');
+      if (response.ok && body.ok) {
+        economySummary = body;
+      } else if (body?.error === 'economy_not_enabled') {
+        economySummary = { enabled:false };
+      } else {
+        economySummary = { enabled:null };
+      }
+    } catch (_) {
+      economySummary = { enabled:null };
+    } finally {
+      economySummaryLoaded = true;
+      economySummaryLoading = false;
+      renderSlot();
+    }
+  }
+
   function renderSlot() {
     const identity = document.getElementById('kc-profile-identity');
     if (!identity || !available) return false;
@@ -180,7 +272,8 @@
       slot.querySelector('[data-kca-login]')?.addEventListener('click', openLogin);
       return true;
     }
-    slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><a class="kca-wallet" href="/economy.html">💰 지갑</a><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div>`;
+    const economyView = economyCardView();
+    slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><a class="kca-economy-card" href="/economy.html" aria-label="학급경제 열기"><span class="kca-economy-icon">💰</span><span class="kca-economy-copy"><span class="kca-economy-title">학급경제 <span class="kca-economy-badge ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.badge)}</span></span><span class="kca-economy-meta">${escapeHtml(economyView.meta)}</span><span class="kca-economy-status ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.status)}</span></span><span class="kca-economy-arrow">›</span></a>`;
     slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
     return true;
   }
@@ -223,7 +316,10 @@
         writeMeta({ loginId: account.loginId, revision: 0 });
       }
       closeLogin();
+      economySummary = null;
+      economySummaryLoaded = false;
       renderSlot();
+      loadEconomySummary();
     } catch (_) {
       if (error) error.textContent = '네트워크 연결을 확인해 주세요.';
     } finally {
@@ -270,6 +366,8 @@
     await syncNow();
     try { await api('/api/account/logout', { method:'POST', body:'{}' }); } catch (_) {}
     account = null;
+    economySummary = null;
+    economySummaryLoaded = false;
     clearLocalAccountProgress();
     location.reload();
   }
@@ -283,6 +381,8 @@
       }
       if (!response.ok || !body.ok) {
         account = null;
+        economySummary = null;
+        economySummaryLoaded = false;
         renderSlot();
         return;
       }
@@ -297,6 +397,7 @@
       }
       if (revision === 0 && hasMeaningfulProgress()) await syncNow();
       renderSlot();
+      loadEconomySummary();
     } catch (_) {
       renderSlot();
     }
