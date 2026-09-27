@@ -233,6 +233,11 @@ function conditionStats(traces,type){
  for(const trace of traces)for(const e of trace||[])if(e.kind==='check'&&e.type===type){out.checks++;if(e.result)out.trueCount++;else out.falseCount++;}
  return out;
 }
+function objectParticle(label){
+ const text=String(label||'');const ch=text.charCodeAt(text.length-1);
+ if(ch>=0xAC00&&ch<=0xD7A3)return ((ch-0xAC00)%28?'을':'를');
+ return '을';
+}
 function conceptCheck(mission,functionPrograms,traces){
  const f=RuntimeAPI.normalizeFunctions(functionPrograms);
  const calls=traces.flat().filter(e=>e?.kind==='call');
