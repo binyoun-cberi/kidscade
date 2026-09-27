@@ -85,9 +85,11 @@
   }
 
   function errorText(code, body = {}) {
-    if (code === 'invalid_credentials') return '아이디 또는 PIN을 확인해 주세요.';
+    if (code === 'invalid_credentials') return '학생 ID 또는 PIN을 확인해 주세요.';
+    if (code === 'invalid_teacher_credentials') return '교사 ID 또는 비밀번호를 확인해 주세요.';
     if (code === 'temporarily_locked') return 'PIN을 여러 번 잘못 입력해 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.';
-    if (code === 'not_authenticated' || code === 'session_expired') return '로그인이 만료됐어요. 다시 로그인해 주세요.';
+    if (code === 'teacher_temporarily_locked') return '비밀번호를 여러 번 잘못 입력해 교사 계정이 잠시 잠겼어요.';
+    if (code === 'not_authenticated' || code === 'session_expired' || code === 'unauthorized' || code === 'teacher_session_expired') return '로그인이 만료됐어요. 다시 로그인해 주세요.';
     if (code === 'account_schema_not_ready' || code === 'account_secret_not_configured' || code === 'account_database_not_configured') return '계정 기능을 준비 중이에요.';
     return body?.message || '잠시 후 다시 시도해 주세요.';
   }
@@ -104,7 +106,7 @@
       #${SLOT_ID} .kca-title{font-size:.68rem;font-weight:1000;color:var(--kc-ink,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-sub{margin-top:2px;font-size:.59rem;font-weight:800;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-buttons{display:flex;gap:5px;align-items:center;flex:none}
-      #${SLOT_ID} button{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
+      #${SLOT_ID} button,#${SLOT_ID} .kca-button{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
       #${SLOT_ID} .kca-logout{background:#eef2f7;color:#64748b}
       #${SLOT_ID} .kca-economy-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:58px;padding:8px 10px;border-radius:14px;text-decoration:none;background:linear-gradient(135deg,rgba(124,92,255,.09),rgba(236,72,153,.07));border:1px solid rgba(124,92,255,.18);box-shadow:0 5px 14px rgba(124,92,255,.07);color:var(--kc-ink,#334155);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
       #${SLOT_ID} .kca-economy-card:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.34);box-shadow:0 8px 18px rgba(124,92,255,.12)}
@@ -153,13 +155,13 @@
     modal.className = 'hidden';
     modal.innerHTML = `
       <form class="kca-modal-card" id="kca-login-form">
-        <h2>☁️ 내 기록 이어하기</h2>
-        <p>선생님에게 받은 Kidscade ID와 6자리 PIN을 입력하세요. 계정이 없어도 게스트로 계속 이용할 수 있어요.</p>
-        <label>Kidscade ID<input id="kca-login-id" autocomplete="username" placeholder="KC-ABCDE-01" maxlength="32"></label>
-        <label>6자리 PIN<input class="kca-pin" id="kca-login-pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••••" maxlength="6"></label>
+        <h2>☁️ Kidscade 로그인</h2>
+        <p>학생은 KC 아이디와 6자리 PIN, 교사는 KT 아이디와 교사 비밀번호로 로그인할 수 있어요.</p>
+        <label>Kidscade ID<input id="kca-login-id" autocomplete="username" placeholder="KC-ABCDE-01 또는 KT-ABCDE" maxlength="32"></label>
+        <label>PIN / 비밀번호<input class="kca-pin" id="kca-login-pin" type="password" autocomplete="current-password" placeholder="PIN 또는 비밀번호" maxlength="64"></label>
         <div class="kca-error" id="kca-login-error" aria-live="polite"></div>
         <div class="kca-actions"><button class="kca-login" type="submit">로그인</button><button class="kca-cancel" type="button">취소</button></div>
-        <div class="kca-help">처음 로그인하는 새 계정이면 이 브라우저의 닉네임·씨앗·아바타·플레이 기록을 계정에 그대로 저장해요.</div>
+        <div class="kca-help">KC 학생 계정과 KT 교사 계정 모두 메인 화면에서 게임 기록을 이어갈 수 있어요. 교사 계정의 학급경제 데이터는 학생 계정과 분리됩니다.</div>
       </form>
     `;
     document.body.appendChild(modal);
@@ -235,7 +237,7 @@
   }
 
   async function loadEconomySummary() {
-    if (!account || economySummaryLoading) return;
+    if (!account || account.role === 'teacher' || economySummaryLoading) return;
     economySummaryLoading = true;
     try {
       const { response, body } = await api('/api/economy/summary');
@@ -269,6 +271,11 @@
       slot.querySelector('[data-kca-login]')?.addEventListener('click', openLogin);
       return true;
     }
+    if (account.role === 'teacher') {
+      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><a class="kca-button" href="/teacher/">교사 관리</a><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div>`;
+      slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
+      return true;
+    }
     const economyView = economyCardView();
     slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><a class="kca-economy-card" href="/economy.html" aria-label="학급경제 열기"><span class="kca-economy-icon">💰</span><span class="kca-economy-copy"><span class="kca-economy-title">학급경제 <span class="kca-economy-badge ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.badge)}</span></span><span class="kca-economy-meta">${escapeHtml(economyView.meta)}</span><span class="kca-economy-status ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.status)}</span></span><span class="kca-economy-arrow">›</span></a>`;
     slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
@@ -285,16 +292,20 @@
     const pinInput = document.getElementById('kca-login-pin');
     const error = document.getElementById('kca-login-error');
     const loginId = String(idInput?.value || '').trim().toUpperCase().replace(/\s+/g, '');
-    const pin = String(pinInput?.value || '').replace(/\D/g, '').slice(0, 6);
+    const credential = String(pinInput?.value || '');
+    const isTeacher = loginId.startsWith('KT-');
+    const pin = isTeacher ? credential : credential.replace(/\D/g, '').slice(0, 6);
     if (error) error.textContent = '';
-    if (!loginId || pin.length !== 6) {
-      if (error) error.textContent = '아이디와 6자리 PIN을 입력해 주세요.';
+    if (!loginId || (!isTeacher && pin.length !== 6) || (isTeacher && (credential.length < 6 || credential.length > 64))) {
+      if (error) error.textContent = isTeacher ? '교사 ID와 비밀번호를 입력해 주세요.' : '학생 ID와 6자리 PIN을 입력해 주세요.';
       return;
     }
     const button = event.currentTarget.querySelector('.kca-login');
     if (button) { button.disabled = true; button.textContent = '확인 중...'; }
     try {
-      const { response, body } = await api('/api/account/login', { method:'POST', body:JSON.stringify({ loginId, pin }) });
+      const loginPath = isTeacher ? '/api/teacher/auth/login' : '/api/account/login';
+      const loginBody = isTeacher ? { loginId, password:credential } : { loginId, pin };
+      const { response, body } = await api(loginPath, { method:'POST', body:JSON.stringify(loginBody) });
       if (!response.ok || !body.ok) {
         if (error) error.textContent = errorText(body.error, body);
         return;
@@ -316,7 +327,7 @@
       economySummary = null;
       economySummaryLoaded = false;
       renderSlot();
-      loadEconomySummary();
+      if (account.role !== 'teacher') loadEconomySummary();
     } catch (_) {
       if (error) error.textContent = '네트워크 연결을 확인해 주세요.';
     } finally {
@@ -329,7 +340,8 @@
     syncing = true;
     try {
       const state = forcedState || collectState();
-      const { response, body } = await api('/api/account/sync', { method:'POST', body:JSON.stringify({ state }) });
+      const syncPath = account.role === 'teacher' ? '/api/teacher/auth/sync' : '/api/account/sync';
+      const { response, body } = await api(syncPath, { method:'POST', body:JSON.stringify({ state }) });
       if (!response.ok || !body.ok) return false;
       account = body.account;
       writeMeta({ loginId: account.loginId, revision: account.revision });
@@ -361,7 +373,8 @@
   async function logout() {
     if (!account) return;
     await syncNow();
-    try { await api('/api/account/logout', { method:'POST', body:'{}' }); } catch (_) {}
+    const logoutPath = account.role === 'teacher' ? '/api/teacher/auth/logout' : '/api/account/logout';
+    try { await api(logoutPath, { method:'POST', body:'{}' }); } catch (_) {}
     account = null;
     economySummary = null;
     economySummaryLoaded = false;
@@ -371,12 +384,19 @@
 
   async function checkSession() {
     try {
-      const { response, body } = await api('/api/account/me');
-      if (response.status === 503 && ['account_schema_not_ready','account_secret_not_configured','account_database_not_configured'].includes(body.error)) {
+      let { response, body } = await api('/api/account/me');
+      if (!response.ok || !body.ok) {
+        const teacherSession = await api('/api/teacher/auth/me');
+        if (teacherSession.response.ok && teacherSession.body.ok && teacherSession.body.account) {
+          response = teacherSession.response;
+          body = teacherSession.body;
+        }
+      }
+      if (response.status === 503 && ['account_schema_not_ready','account_secret_not_configured','account_database_not_configured','teacher_schema_not_ready'].includes(body.error)) {
         available = false;
         return;
       }
-      if (!response.ok || !body.ok) {
+      if (!response.ok || !body.ok || !body.account) {
         account = null;
         economySummary = null;
         economySummaryLoaded = false;
@@ -394,7 +414,7 @@
       }
       if (revision === 0 && hasMeaningfulProgress()) await syncNow();
       renderSlot();
-      loadEconomySummary();
+      if (account.role !== 'teacher') loadEconomySummary();
     } catch (_) {
       renderSlot();
     }
