@@ -17,7 +17,7 @@ Kidscade 저학년용 음성 영단어 스피드 게임입니다.
 
 ## 플랫폼 연동
 - Game SDK v1: `low_speak_jjoayo`
-- 기록은 `KidscadeGame.gameOver({score})`를 통해 SDK 최고기록에 전달합니다.\n- 게임 자체 로컬 기록은 `KidscadeStorage`의 `speakJjoayoProgress`에 저장하며 조건별 최고점, 최근 20판, 단어별 정답/패스/힌트 통계를 유지합니다.
+- 기록은 `KidscadeGame.gameOver({score})`를 통해 SDK 최고기록에 전달합니다.\n- 게임 자체 로컬 기록은 `KidscadeStorage`의 `speakJjoayoProgress`에 저장하며 조건별 최고점, 최근 20판, 단어별 정답/패스/힌트 통계를 유지합니다.\n- 로컬 기록은 같은 기기·브라우저의 사이트 데이터에만 남으며 브라우저 데이터를 지우면 함께 초기화됩니다.
 - 외부 음성 API 키나 별도 게임 백엔드는 사용하지 않습니다.
 
 ## 참고 설계
