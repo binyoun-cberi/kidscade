@@ -5,7 +5,7 @@ const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const root=path.join(__dirname,'..');
 const game=path.join(root,'games','high_disaster_city');
-const files=['game-data.js','sim-core.js','disaster-system.js','renderer.js','ui.js','main.js'];
+const files=['game-data.js','field-system.js','sim-core.js','disaster-system.js','renderer.js','ui.js','main.js'];
 
 test('Disaster City browser scripts parse',()=>{
  for(const file of files){
@@ -17,8 +17,10 @@ test('Disaster City browser scripts parse',()=>{
 
 test('Disaster City keeps simulation and rendering separated',()=>{
  const sim=fs.readFileSync(path.join(game,'sim-core.js'),'utf8');
+ const field=fs.readFileSync(path.join(game,'field-system.js'),'utf8');
  const disasters=fs.readFileSync(path.join(game,'disaster-system.js'),'utf8');
  assert.doesNotMatch(sim,/document\./);
+ assert.doesNotMatch(field,/document\./);
  assert.doesNotMatch(disasters,/document\./);
  assert.doesNotMatch(sim,/setInterval|setTimeout/);
  assert.match(disasters,/wildfire/);
@@ -27,6 +29,8 @@ test('Disaster City keeps simulation and rendering separated',()=>{
  assert.match(sim,/Math\.exp\(-t\/180\)/);
  assert.match(sim,/\.52/);
  assert.match(disasters,/strength:p/);
+ assert.match(field,/updateFlood/);
+ assert.match(field,/updateWildfire/);
 });
 
 test('Disaster City has twelve build slots and safe shared storage',()=>{
@@ -53,7 +57,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=10');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=11');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -69,7 +73,7 @@ test('Disaster City core simulation supports upgrades, deck cleanup and spatial 
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -93,12 +97,45 @@ test('Disaster City core simulation supports upgrades, deck cleanup and spatial 
  assert.ok(rewards.some(x=>x.kind==='cleanup'));
 });
 
+
+test('Disaster City spatial field simulates water defenses and fire control',()=>{
+ const vm=require('node:vm');
+ const context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,Sim=DC.Simulation;
+
+ const base=new Sim();base.start({seed:3001});base.state.next.in=999;base.state.money=9999;
+ const protectedSim=new Sim();protectedSim.start({seed:3001});protectedSim.state.next.in=999;protectedSim.state.money=9999;
+ protectedSim.state.slots[1].building={id:'levee',hp:150,maxHp:150,level:1};
+ protectedSim.state.slots[2].building={id:'pump',hp:105,maxHp:105,level:1};
+ const mkFlood=()=>({id:'field-flood',type:'flood',side:'left',strength:1,energy:100,maxEnergy:100,progress:0,age:8,maxAge:40,phase:'impact',blockPause:0,blockedSlot:-1,pulse:0});
+ const a=mkFlood(),b=mkFlood();base.state.disasters=[a];protectedSim.state.disasters=[b];
+ DC.Field.startDisaster(base,a);DC.Field.startDisaster(protectedSim,b);
+ for(let i=0;i<240;i++){DC.Field.updateFlood(base,a,1/30);DC.Field.updateFlood(protectedSim,b,1/30)}
+ const baseInner=base.state.field.cells.filter(c=>c.c>=6&&c.c<=11).reduce((n,c)=>n+c.water,0);
+ const protectedInner=protectedSim.state.field.cells.filter(c=>c.c>=6&&c.c<=11).reduce((n,c)=>n+c.water,0);
+ assert.ok(protectedInner<baseInner,'levee and pump should reduce inland floodwater');
+
+ const fireSim=new Sim();fireSim.start({seed:4001});fireSim.state.next.in=999;fireSim.state.money=9999;
+ const fire={id:'field-fire',type:'wildfire',side:'left',strength:1,energy:100,maxEnergy:100,progress:0,age:7,maxAge:36,phase:'impact',blockPause:0,blockedSlot:-1,pulse:0};
+ fireSim.state.disasters=[fire];DC.Field.startDisaster(fireSim,fire);
+ for(let i=0;i<120;i++)DC.Field.updateWildfire(fireSim,fire,1/30);
+ const before=DC.Field.total(fireSim.state.field,'fire','left');
+ const col=DC.Field.firebreak(fireSim,fire);
+ for(let i=0;i<90;i++)DC.Field.updateWildfire(fireSim,fire,1/30);
+ const breakCells=fireSim.state.field.cells.filter(c=>c.c===col);
+ assert.ok(breakCells.every(c=>c.fuel===0),'firebreak column should have no remaining fuel');
+ assert.ok(DC.Field.total(fireSim.state.field,'fire','left')<=before*1.8,'fire should remain bounded after a firebreak');
+});
+
 test('Disaster City floods end naturally and urgent repair prioritizes the blocking levee',()=>{
  const vm=require('node:vm');
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -133,7 +170,7 @@ test('Disaster City wildfire also ends naturally, rewards preserve the rest time
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -173,7 +210,7 @@ test('Disaster City progressively unlocks and runs six distinct disasters',()=>{
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  const DC=context.window.DisasterCity,Sim=DC.Simulation;
  assert.deepEqual(Object.keys(DC.DATA.DISASTERS),['wildfire','flood','typhoon','heatwave','blizzard','earthquake']);
  const unlockChecks=[[0,['wildfire','flood']],[61,['typhoon']],[106,['heatwave']],[151,['blizzard']],[211,['earthquake']]];
@@ -198,7 +235,7 @@ test('Disaster City survives a long deterministic stress simulation without inva
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
