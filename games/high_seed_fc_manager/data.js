@@ -12,6 +12,17 @@ const BASE={
   WG:{shot:72,pass:72,defense:38,speed:88,stamina:78},
   ST:{shot:86,pass:58,defense:30,speed:79,stamina:76}
 };
+const COACH_PROFILES=[
+  {name:'전환 설계형',preferredFormations:['4-3-3','4-2-3-1'],adaptability:72,riskTolerance:64,substitutionSpeed:66},
+  {name:'유연한 조율형',preferredFormations:['4-2-3-1','4-3-3'],adaptability:82,riskTolerance:48,substitutionSpeed:70},
+  {name:'조직 압박형',preferredFormations:['4-4-2','4-3-3'],adaptability:68,riskTolerance:58,substitutionSpeed:72},
+  {name:'중앙 장악형',preferredFormations:['4-2-3-1','5-3-2'],adaptability:76,riskTolerance:44,substitutionSpeed:62},
+  {name:'점유 조율형',preferredFormations:['4-2-3-1','4-3-3'],adaptability:86,riskTolerance:38,substitutionSpeed:68},
+  {name:'속도 변화형',preferredFormations:['4-3-3','4-4-2'],adaptability:74,riskTolerance:70,substitutionSpeed:76},
+  {name:'적극 전진형',preferredFormations:['4-3-3','4-2-3-1'],adaptability:79,riskTolerance:78,substitutionSpeed:80},
+  {name:'균형 대응형',preferredFormations:['4-2-3-1','4-3-3','4-4-2'],adaptability:88,riskTolerance:55,substitutionSpeed:74}
+];
+
 const CLUB_DEFS=[
   {
     id:'goguryeo',name:'고구려 FC',short:'고구려',emoji:'🐯',accent:'#ef4444',
@@ -292,12 +303,15 @@ function footballProfile(entry,pos){
 function makePlayer(entry,club,clubIndex,i){
   const pos=SLOT_POS[i%SLOT_POS.length],profile=footballProfile(entry,pos),p={
     id:club.id+'-'+entry[0],name:entry[1],pos:pos,trait:entry[2],era:club.era,
-    fact:entry[3],memory:entry[4],historical:true,clubId:club.id,fitness:100,form:0,
+    fact:entry[3],memory:entry[4],historical:true,clubId:club.id,fitness:100,form:50,morale:70,sharpness:75,injury:null,
     footballRole:profile.role,footballStyle:profile.label,footballNote:profile.note,
     preferredPositions:profile.preferredPositions,
     stats:statsFor(pos,clubIndex*31+i,true)
   };
-  p.overall=overall(p);return p;
+  p.overall=overall(p);
+  p.history={era:p.era,trait:p.trait,fact:p.fact,memory:p.memory};
+  p.football={role:p.footballRole,style:p.footballStyle,note:p.footballNote,preferredPositions:p.preferredPositions.slice()};
+  return p;
 }
 function rolePositionFit(p,slot){
   const pref=Array.isArray(p.preferredPositions)?p.preferredPositions:[],rank=pref.indexOf(slot);
@@ -330,21 +344,25 @@ function assignHistoricalPositions(players,clubIndex){
   return players;
 }
 const CLUBS=CLUB_DEFS.map(function(def,clubIndex){
-  const c={id:def.id,name:def.name,short:def.short,emoji:def.emoji,accent:def.accent,style:def.style,description:def.description,tactics:def.tactics,budget:def.budget,era:def.era};
+  const cp=COACH_PROFILES[clubIndex]||COACH_PROFILES[0];
+  const c={id:def.id,name:def.name,short:def.short,emoji:def.emoji,accent:def.accent,style:def.style,description:def.description,tactics:def.tactics,budget:def.budget,era:def.era,coachProfile:Object.assign({},cp,{preferredFormations:cp.preferredFormations.slice()})};
   c.players=assignHistoricalPositions(def.people.map(function(x,i){return makePlayer(x,c,clubIndex,i);}),clubIndex);
   return c;
 });
 function worldPlayer(x,i){
   const entry=[x[0],x[1],x[3],x[5],x[6]],profile=footballProfile(entry,x[2]);
-  const p={id:'world-'+x[0],name:x[1],pos:x[2],trait:x[3],era:x[4],fact:x[5],memory:x[6],price:x[7],historical:true,world:true,fitness:100,form:0,clubId:null,
+  const p={id:'world-'+x[0],name:x[1],pos:x[2],trait:x[3],era:x[4],fact:x[5],memory:x[6],price:x[7],historical:true,world:true,fitness:100,form:50,morale:70,sharpness:75,injury:null,clubId:null,
     footballRole:profile.role,footballStyle:profile.label,footballNote:profile.note,preferredPositions:profile.preferredPositions,
     stats:statsFor(x[2],200+i,true)};
-  p.overall=overall(p);return p;
+  p.overall=overall(p);
+  p.history={era:p.era,trait:p.trait,fact:p.fact,memory:p.memory};
+  p.football={role:p.footballRole,style:p.footballStyle,note:p.footballNote,preferredPositions:p.preferredPositions.slice()};
+  return p;
 }
 const WORLD=WORLD_DEFS.map(worldPlayer);
 
 window.SeedFCData=Object.freeze({
-  clubs:CLUBS,world:WORLD,positions:POSITIONS,positionKo:POSITION_KO,
+  clubs:CLUBS,world:WORLD,coachProfiles:COACH_PROFILES,positions:POSITIONS,positionKo:POSITION_KO,
   formations:{
     '4-4-2':['GK','CB','CB','FB','FB','CM','CM','WG','WG','ST','ST'],
     '4-3-3':['GK','CB','CB','FB','FB','CM','CM','CM','WG','WG','ST'],
