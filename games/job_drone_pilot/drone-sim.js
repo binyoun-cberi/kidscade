@@ -532,7 +532,7 @@ function getInputState(){
   if(k.has('ArrowLeft'))lx-=1;if(k.has('ArrowRight'))lx+=1;if(k.has('ArrowUp'))ly-=1;if(k.has('ArrowDown'))ly+=1;
   if(k.has('KeyA'))rx-=1;if(k.has('KeyD'))rx+=1;if(k.has('KeyW'))ry-=1;if(k.has('KeyS'))ry+=1;
   const gp=getGamepad();if(gp){lx+=applyDeadzone(gp.axes[0]||0);ly+=applyDeadzone(gp.axes[1]||0);rx+=applyDeadzone(gp.axes[2]||0);ry+=applyDeadzone(gp.axes[3]||0)}
-  const precision=k.has('ShiftLeft')||k.has('ShiftRight'),scale=precision?.42:1;
+  const precision=k.has('ShiftLeft')||k.has('ShiftRight'),scale=precision ? .42 : 1;
   return {yaw:clamp(lx,-1,1)*scale,lift:clamp(-ly,-1,1)*scale,strafe:clamp(rx,-1,1)*scale,forward:clamp(-ry,-1,1)*scale,precision};
 }
 function physicsStep(dt){
@@ -560,7 +560,7 @@ function physicsStep(dt){
     const ax=sy*(c.forward*10.4)+cy*(c.strafe*8.8)+windState.current.x*.72;
     const az=-cy*(c.forward*10.4)+sy*(c.strafe*8.8)+windState.current.y*.72;
     drone.vel.x+=ax*dt;drone.vel.z+=az*dt;
-    const drag=Math.exp(-(Math.abs(c.forward)+Math.abs(c.strafe)>.08?.42:1.18)*dt);drone.vel.x*=drag;drone.vel.z*=drag;
+    const drag=Math.exp(-(Math.abs(c.forward)+Math.abs(c.strafe)>.08 ? .42 : 1.18)*dt);drone.vel.x*=drag;drone.vel.z*=drag;
     const hs=Math.hypot(drone.vel.x,drone.vel.z),maxHs=c.precision?4.8:9.0;if(hs>maxHs){drone.vel.x*=maxHs/hs;drone.vel.z*=maxHs/hs}
     desiredVelocity.y=c.lift*3.4;drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,expFactor(3.2,dt));
   }
@@ -575,7 +575,7 @@ function physicsStep(dt){
   enforceWorldBounds();checkCollisions(prev,preImpactSpeed);
   const traveled=Math.hypot(drone.root.position.x-prev.x,drone.root.position.z-prev.z);stats.distance+=traveled;
   const hsp=Math.hypot(drone.vel.x,drone.vel.z);
-  if(drone.armed){const drain=dt*(1+.25*clamp(hsp/7,0,1)+.18*Math.abs(c.lift)+(flightMode==='sport'?.08:0));drone.batterySeconds=Math.max(0,drone.batterySeconds-drain);}
+  if(drone.armed){const drain=dt*(1+.25*clamp(hsp/7,0,1)+.18*Math.abs(c.lift)+(flightMode==='sport' ? .08 : 0));drone.batterySeconds=Math.max(0,drone.batterySeconds-drain);}
   if(drone.armed||drone.everAirborne){flightTime+=dt;shiftRemaining=Math.max(0,shiftRemaining-dt);}
   if(drone.everAirborne&&drone.armed&&drone.root.position.y<=.4&&hsp<.34&&Math.abs(drone.vel.y)<.08){
     drone.groundStill+=dt;if(drone.groundStill>1.5){setArmed(false,true);showToast('착륙 확인 · 모터가 자동으로 정지했습니다.');}
@@ -586,7 +586,7 @@ function physicsStep(dt){
   if(bat<7&&!criticalBatteryWarned){criticalBatteryWarned=true;showToast('배터리 위험 · 자동귀환을 시작합니다!','danger',3);setRTH(true)}
   if(bat<=0&&drone.root.position.y<=.45){setArmed(false,true);endGame('배터리가 소진되어 비상 착륙했습니다. 다음 비행에서는 조금 일찍 귀환해 보세요.')}
   if(!endPending)updateMission(dt);
-  const tiltScale=flightMode==='sport'?.34:.22,targetPitch=-c.forward*tiltScale-clamp(drone.vel.z*cy-drone.vel.x*sy,-7,7)*.007,targetRoll=-c.strafe*tiltScale;
+  const tiltScale=flightMode==='sport' ? .34 : .22,targetPitch=-c.forward*tiltScale-clamp(drone.vel.z*cy-drone.vel.x*sy,-7,7)*.007,targetRoll=-c.strafe*tiltScale;
   drone.tilt.rotation.x=lerp(drone.tilt.rotation.x,targetPitch,expFactor(flightMode==='sport'?4.2:6,dt));drone.tilt.rotation.z=lerp(drone.tilt.rotation.z,targetRoll,expFactor(flightMode==='sport'?4.2:6,dt));drone.root.rotation.y=drone.yaw;
   for(const rotor of drone.rotors)rotor.rotation.y+=dt*(drone.armed?48+hsp*2.4+Math.abs(c.lift)*12:3.5);
   updateAudio(hsp,c.lift);
