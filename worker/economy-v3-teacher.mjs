@@ -24,7 +24,7 @@ export async function teacherEconomyStateV3(request,env){
   const classId=base.classroom?.id;
   if(!classId)return json(base);
 
-  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents,creditRows,jobCapabilities,cleanPlateRecords,creditBookRecords]=await Promise.all([
+  const [workLogs,loans,inventory,payslips,spending,companies,products,sales,creditEvents,creditRows,jobCapabilities,cleanPlateRecords,creditBookRecords,properties,propertyLeases,rentPayments]=await Promise.all([
     env.DB.prepare(
       'SELECT w.*,a.login_id,a.nickname,j.name AS job_name,j.salary AS job_salary '+
       'FROM economy_work_logs w JOIN student_accounts a ON a.id=w.student_id '+
@@ -85,6 +85,32 @@ export async function teacherEconomyStateV3(request,env){
       'JOIN student_accounts rec ON rec.id=r.recorder_student_id '+
       'JOIN student_accounts target ON target.id=r.target_student_id '+
       'WHERE r.class_id=? ORDER BY r.created_at DESC LIMIT 150'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT p.*,owner.login_id AS owner_login_id,owner.nickname AS owner_nickname,'+
+      'l.id AS active_lease_id,l.tenant_student_id,l.rent_amount,l.start_period,l.last_paid_period,'+
+      'tenant.login_id AS tenant_login_id,tenant.nickname AS tenant_nickname '+
+      'FROM economy_properties p '+
+      'LEFT JOIN student_accounts owner ON owner.id=p.owner_student_id '+
+      "LEFT JOIN economy_property_leases l ON l.property_id=p.id AND l.status='active' "+
+      'LEFT JOIN student_accounts tenant ON tenant.id=l.tenant_student_id '+
+      'WHERE p.class_id=? ORDER BY p.name'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT l.*,p.name AS property_name,tenant.login_id AS tenant_login_id,tenant.nickname AS tenant_nickname,'+
+      'landlord.login_id AS landlord_login_id,landlord.nickname AS landlord_nickname '+
+      'FROM economy_property_leases l JOIN economy_properties p ON p.id=l.property_id '+
+      'JOIN student_accounts tenant ON tenant.id=l.tenant_student_id '+
+      'LEFT JOIN student_accounts landlord ON landlord.id=l.landlord_student_id '+
+      'WHERE l.class_id=? ORDER BY l.created_at DESC LIMIT 150'
+    ).bind(classId).all(),
+    env.DB.prepare(
+      'SELECT r.*,p.name AS property_name,tenant.login_id AS tenant_login_id,tenant.nickname AS tenant_nickname,'+
+      'landlord.nickname AS landlord_nickname '+
+      'FROM economy_rent_payments r JOIN economy_properties p ON p.id=r.property_id '+
+      'JOIN student_accounts tenant ON tenant.id=r.tenant_student_id '+
+      'LEFT JOIN student_accounts landlord ON landlord.id=r.landlord_student_id '+
+      'WHERE r.class_id=? ORDER BY r.created_at DESC LIMIT 150'
     ).bind(classId).all()
   ]);
 
@@ -129,7 +155,18 @@ export async function teacherEconomyStateV3(request,env){
     companySales:sales?.results||[],
     creditEvents:creditEvents?.results||[],
     cleanPlateRecords:cleanPlateRecords?.results||[],
-    creditBookRecords:creditBookRecords?.results||[]
+    creditBookRecords:creditBookRecords?.results||[],
+    properties:(properties?.results||[]).map(row=>({
+      ...row,
+      purchase_price:Number(row.purchase_price||0),
+      rent_amount:row.rent_amount==null?null:Number(row.rent_amount)
+    })),
+    propertyLeases:(propertyLeases?.results||[]).map(row=>({...row,rent_amount:Number(row.rent_amount||0)})),
+    rentPayments:(rentPayments?.results||[]).map(row=>({
+      ...row,
+      amount_due:Number(row.amount_due||0),
+      amount_paid:Number(row.amount_paid||0)
+    }))
   });
 }
 
@@ -181,6 +218,280 @@ export async function teacherLoanDecision(request,env){
     "VALUES (?,?,'loan','대출 실행',?,?,?,?,?)"
   ).bind(classId,loan.student_id,Number(loan.principal||0),Number(row?.balance||0),Number(row?.savings_balance||0),JSON.stringify({loanId}),now).run();
   return json({ok:true});
+}
+
+
+export async function teacherLoanRecord(request,env){
+  const b=await body(request); if(!b)return json({ok:false,error:'invalid_json'},400);
+  const classId=cleanId(b.classId),studentId=cleanId(b.studentId),propertyId=cleanId(b.propertyId);
+  const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
+  const student=await env.DB.prepare(
+    'SELECT a.id,e.balance,e.savings_balance FROM student_accounts a JOIN economy_accounts e ON e.student_id=a.id '+
+    'WHERE a.id=? AND a.class_id=? AND a.disabled=0'
+  ).bind(studentId,classId).first();
+  if(!student)return json({ok:false,error:'student_not_found'},404);
+  if(propertyId){
+    const property=await env.DB.prepare('SELECT id FROM economy_properties WHERE id=? AND class_id=?').bind(propertyId,classId).first();
+    if(!property)return json({ok:false,error:'property_not_found'},404);
+  }
+  const principal=clampInt(b.principal,1,1000000,0);
+  if(!principal)return json({ok:false,error:'invalid_amount'},400);
+  const outstanding=clampInt(b.outstanding,0,2000000,principal);
+  const ratePercent=clampInt(b.ratePercent,0,50,Number((await settingsRow(env,classId))?.loan_interest_rate||5));
+  const occurredAt=clean(b.occurredAt,30)||nowIso();
+  const purpose=clean(b.purpose,120)||'은행 대출';
+  const teacherNote=clean(b.teacherNote,240);
+  const depositFunds=b.depositFunds===true;
+  const id=crypto.randomUUID(),now=nowIso();
+  const status=outstanding>0?'active':'paid';
+  const statements=[
+    env.DB.prepare(
+      'INSERT INTO economy_loans (id,class_id,student_id,principal,outstanding,rate_percent,status,requested_at,decided_at,last_interest_period,teacher_note,closed_at,'+
+      'source_type,purpose,occurred_at,property_id) VALUES (?,?,?,?,?,?,?,?,?,NULL,?,?,?,?,?,?)'
+    ).bind(id,classId,studentId,principal,outstanding,ratePercent,status,occurredAt,now,teacherNote,status==='paid'?now:null,'teacher_entry',purpose,occurredAt,propertyId||null)
+  ];
+  let nextBalance=Number(student.balance||0);
+  if(depositFunds){
+    nextBalance+=principal;
+    statements.push(
+      env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=? AND class_id=?')
+        .bind(nextBalance,now,studentId,classId),
+      env.DB.prepare(
+        'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+        "VALUES (?,?,'loan',?,?,?,?,?,?)"
+      ).bind(classId,studentId,'교사 등록 대출금 입금 · '+purpose,principal,nextBalance,Number(student.savings_balance||0),JSON.stringify({loanId:id,sourceType:'teacher_entry',propertyId:propertyId||null}),now)
+    );
+  }else{
+    statements.push(
+      env.DB.prepare(
+        'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+        "VALUES (?,?,'loan-record',?,0,?,?,?,?)"
+      ).bind(classId,studentId,'기존 은행 대출 기록 · '+purpose,nextBalance,Number(student.savings_balance||0),JSON.stringify({loanId:id,principal,outstanding,ratePercent,propertyId:propertyId||null}),now)
+    );
+  }
+  await env.DB.batch(statements);
+  return json({ok:true,loanId:id,status,balance:nextBalance});
+}
+
+export async function teacherPropertySave(request,env){
+  const b=await body(request); if(!b)return json({ok:false,error:'invalid_json'},400);
+  const classId=cleanId(b.classId),propertyId=cleanId(b.propertyId),ownerStudentId=cleanId(b.ownerStudentId);
+  const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
+  const name=clean(b.name,60);
+  if(!name)return json({ok:false,error:'name_required'},400);
+  const ownerType=b.ownerType==='student'?'student':'government';
+  if(ownerType==='student'&&!ownerStudentId)return json({ok:false,error:'property_owner_required'},400);
+  if(ownerStudentId){
+    const owner=await env.DB.prepare('SELECT id FROM student_accounts WHERE id=? AND class_id=? AND disabled=0').bind(ownerStudentId,classId).first();
+    if(!owner)return json({ok:false,error:'student_not_found'},404);
+  }
+  const existing=propertyId?await env.DB.prepare('SELECT * FROM economy_properties WHERE id=? AND class_id=?').bind(propertyId,classId).first():null;
+  if(propertyId&&!existing)return json({ok:false,error:'property_not_found'},404);
+  const price=clampInt(b.purchasePrice,0,1000000,Number(existing?.purchase_price||0));
+  const acquiredAt=clean(b.acquiredAt,30)||existing?.acquired_at||nowIso();
+  const note=clean(b.note,240);
+  const id=existing?.id||crypto.randomUUID(),now=nowIso();
+  const previousOwnerType=existing?.owner_type||'government';
+  const previousOwnerStudentId=existing?.owner_student_id||null;
+  const ownershipChanged=!existing||previousOwnerType!==ownerType||String(previousOwnerStudentId||'')!==String(ownerStudentId||'');
+  const settlePurchase=b.settlePurchase===true&&ownershipChanged&&ownerType==='student'&&price>0;
+
+  const statements=[];
+  if(settlePurchase){
+    const buyer=await account(env,ownerStudentId);
+    if(!buyer)return json({ok:false,error:'student_not_found'},404);
+    if(Number(buyer.balance||0)<price)return json({ok:false,error:'insufficient_funds'},409);
+    const buyerBalance=Number(buyer.balance||0)-price;
+    statements.push(
+      env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=? AND class_id=?')
+        .bind(buyerBalance,now,ownerStudentId,classId),
+      env.DB.prepare(
+        'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+        "VALUES (?,?,'property-purchase',?,?,?,?,?,?)"
+      ).bind(classId,ownerStudentId,'자리 부동산 매입 · '+name,-price,buyerBalance,Number(buyer.savings_balance||0),JSON.stringify({propertyId:id}),now)
+    );
+    if(previousOwnerType==='student'&&previousOwnerStudentId&&previousOwnerStudentId!==ownerStudentId){
+      const seller=await account(env,previousOwnerStudentId);
+      if(seller){
+        const sellerBalance=Number(seller.balance||0)+price;
+        statements.push(
+          env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=? AND class_id=?')
+            .bind(sellerBalance,now,previousOwnerStudentId,classId),
+          env.DB.prepare(
+            'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+            "VALUES (?,?,'property-sale',?,?,?,?,?,?)"
+          ).bind(classId,previousOwnerStudentId,'자리 부동산 매각 · '+name,price,sellerBalance,Number(seller.savings_balance||0),JSON.stringify({propertyId:id,buyerStudentId:ownerStudentId}),now)
+        );
+      }
+    }else{
+      const settings=await settingsRow(env,classId);
+      const treasury=Number(settings?.treasury_balance||0)+price;
+      statements.push(
+        env.DB.prepare('UPDATE economy_class_settings SET treasury_balance=?,updated_at=? WHERE class_id=?').bind(treasury,now,classId),
+        env.DB.prepare(
+          'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,treasury_after,meta_json,created_at) '+
+          "VALUES (?,NULL,'treasury',?,?,?,?,?)"
+        ).bind(classId,'정부 보유 자리 매각 · '+name,price,treasury,JSON.stringify({propertyId:id,buyerStudentId:ownerStudentId}),now)
+      );
+    }
+  }
+
+  if(existing){
+    statements.push(
+      env.DB.prepare(
+        'UPDATE economy_properties SET name=?,purchase_price=?,owner_type=?,owner_student_id=?,acquired_at=?,note=?,updated_at=? WHERE id=? AND class_id=?'
+      ).bind(name,price,ownerType,ownerType==='student'?ownerStudentId:null,acquiredAt,note,now,id,classId)
+    );
+  }else{
+    statements.push(
+      env.DB.prepare(
+        'INSERT INTO economy_properties (id,class_id,name,purchase_price,owner_type,owner_student_id,acquired_at,note,created_at,updated_at) '+
+        'VALUES (?,?,?,?,?,?,?,?,?,?)'
+      ).bind(id,classId,name,price,ownerType,ownerType==='student'?ownerStudentId:null,acquiredAt,note,now,now)
+    );
+  }
+
+  if(ownershipChanged){
+    const lease=await env.DB.prepare(
+      "SELECT id,tenant_student_id FROM economy_property_leases WHERE property_id=? AND class_id=? AND status='active'"
+    ).bind(id,classId).first();
+    if(lease){
+      if(ownerType==='student'&&lease.tenant_student_id===ownerStudentId){
+        statements.push(
+          env.DB.prepare("UPDATE economy_property_leases SET status='ended',ended_at=? WHERE id=?").bind(now,lease.id)
+        );
+      }else{
+        statements.push(
+          env.DB.prepare('UPDATE economy_property_leases SET landlord_type=?,landlord_student_id=? WHERE id=?')
+            .bind(ownerType,ownerType==='student'?ownerStudentId:null,lease.id)
+        );
+      }
+    }
+  }
+  await env.DB.batch(statements);
+  return json({ok:true,propertyId:id,settled:settlePurchase});
+}
+
+export async function teacherLeaseCreate(request,env){
+  const b=await body(request); if(!b)return json({ok:false,error:'invalid_json'},400);
+  const classId=cleanId(b.classId),propertyId=cleanId(b.propertyId),tenantStudentId=cleanId(b.tenantStudentId);
+  const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
+  const property=await env.DB.prepare('SELECT * FROM economy_properties WHERE id=? AND class_id=?').bind(propertyId,classId).first();
+  if(!property)return json({ok:false,error:'property_not_found'},404);
+  const tenant=await env.DB.prepare('SELECT id FROM student_accounts WHERE id=? AND class_id=? AND disabled=0').bind(tenantStudentId,classId).first();
+  if(!tenant)return json({ok:false,error:'student_not_found'},404);
+  if(property.owner_type==='student'&&property.owner_student_id===tenantStudentId)return json({ok:false,error:'property_owner_cannot_rent'},409);
+  const occupied=await env.DB.prepare(
+    "SELECT id FROM economy_property_leases WHERE class_id=? AND status='active' AND (property_id=? OR tenant_student_id=?) LIMIT 1"
+  ).bind(classId,propertyId,tenantStudentId).first();
+  if(occupied)return json({ok:false,error:'property_or_tenant_already_leased'},409);
+  const rentAmount=clampInt(b.rentAmount,1,1000000,0);
+  if(!rentAmount)return json({ok:false,error:'invalid_amount'},400);
+  const startPeriod=clean(b.startPeriod,40);
+  if(!startPeriod)return json({ok:false,error:'period_required'},400);
+  const id=crypto.randomUUID(),now=nowIso();
+  await env.DB.prepare(
+    'INSERT INTO economy_property_leases (id,class_id,property_id,tenant_student_id,landlord_type,landlord_student_id,rent_amount,start_period,last_paid_period,status,note,created_at,ended_at) '+
+    "VALUES (?,?,?,?,?,?,?,?,NULL,'active',?,?,NULL)"
+  ).bind(id,classId,propertyId,tenantStudentId,property.owner_type,property.owner_type==='student'?property.owner_student_id:null,rentAmount,startPeriod,clean(b.note,240),now).run();
+  return json({ok:true,leaseId:id});
+}
+
+export async function teacherLeaseClose(request,env){
+  const b=await body(request); if(!b)return json({ok:false,error:'invalid_json'},400);
+  const classId=cleanId(b.classId),leaseId=cleanId(b.leaseId);
+  const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
+  const result=await env.DB.prepare(
+    "UPDATE economy_property_leases SET status='ended',ended_at=? WHERE id=? AND class_id=? AND status='active'"
+  ).bind(nowIso(),leaseId,classId).run();
+  if(!Number(result?.meta?.changes||0))return json({ok:false,error:'lease_not_active'},409);
+  return json({ok:true});
+}
+
+export async function teacherRentCollect(request,env){
+  const b=await body(request); if(!b)return json({ok:false,error:'invalid_json'},400);
+  const classId=cleanId(b.classId),leaseId=cleanId(b.leaseId),periodId=clean(b.periodId,40);
+  const access=await authorizeTeacherForClass(request,env,classId); if(access.response)return access.response;
+  if(!periodId)return json({ok:false,error:'period_required'},400);
+  const lease=await env.DB.prepare(
+    'SELECT l.*,p.name AS property_name,e.balance,e.savings_balance FROM economy_property_leases l '+
+    'JOIN economy_properties p ON p.id=l.property_id JOIN economy_accounts e ON e.student_id=l.tenant_student_id '+
+    "WHERE l.id=? AND l.class_id=? AND l.status='active'"
+  ).bind(leaseId,classId).first();
+  if(!lease)return json({ok:false,error:'lease_not_active'},404);
+  const existing=await env.DB.prepare(
+    'SELECT * FROM economy_rent_payments WHERE lease_id=? AND period_id=?'
+  ).bind(leaseId,periodId).first();
+  if(existing?.status==='paid')return json({ok:true,duplicate:true,status:'paid',paid:Number(existing.amount_paid||0)});
+
+  const due=Number(lease.rent_amount||0),now=nowIso();
+  const paymentId=existing?.id||crypto.randomUUID();
+  const tenantBalance=Number(lease.balance||0);
+  if(tenantBalance<due){
+    if(existing){
+      await env.DB.prepare(
+        "UPDATE economy_rent_payments SET amount_due=?,amount_paid=0,status='unpaid',note=?,paid_at=NULL WHERE id=?"
+      ).bind(due,clean(b.note,240)||'잔액 부족',paymentId).run();
+    }else{
+      await env.DB.prepare(
+        'INSERT INTO economy_rent_payments (id,class_id,lease_id,property_id,tenant_student_id,landlord_type,landlord_student_id,period_id,amount_due,amount_paid,status,note,created_at,paid_at) '+
+        "VALUES (?,?,?,?,?,?,?,?,?,0,'unpaid',?,?,NULL)"
+      ).bind(paymentId,classId,leaseId,lease.property_id,lease.tenant_student_id,lease.landlord_type,lease.landlord_student_id,periodId,due,clean(b.note,240)||'잔액 부족',now).run();
+    }
+    return json({ok:true,status:'unpaid',due,available:tenantBalance,shortage:due-tenantBalance});
+  }
+
+  const tenantNext=tenantBalance-due;
+  const statements=[
+    env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=? AND class_id=?')
+      .bind(tenantNext,now,lease.tenant_student_id,classId),
+    env.DB.prepare(
+      'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+      "VALUES (?,?,'rent',?,?,?,?,?,?)"
+    ).bind(classId,lease.tenant_student_id,'월세 납부 · '+lease.property_name+' · '+periodId,-due,tenantNext,Number(lease.savings_balance||0),JSON.stringify({leaseId,propertyId:lease.property_id,periodId}),now),
+    env.DB.prepare('UPDATE economy_property_leases SET last_paid_period=? WHERE id=?').bind(periodId,leaseId)
+  ];
+
+  if(lease.landlord_type==='student'&&lease.landlord_student_id){
+    const landlord=await account(env,lease.landlord_student_id);
+    if(!landlord)return json({ok:false,error:'property_owner_required'},409);
+    const landlordNext=Number(landlord.balance||0)+due;
+    statements.push(
+      env.DB.prepare('UPDATE economy_accounts SET balance=?,updated_at=? WHERE student_id=? AND class_id=?')
+        .bind(landlordNext,now,lease.landlord_student_id,classId),
+      env.DB.prepare(
+        'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,balance_after,savings_after,meta_json,created_at) '+
+        "VALUES (?,?,'rent-income',?,?,?,?,?,?)"
+      ).bind(classId,lease.landlord_student_id,'월세 수입 · '+lease.property_name+' · '+periodId,due,landlordNext,Number(landlord.savings_balance||0),JSON.stringify({leaseId,propertyId:lease.property_id,periodId,tenantStudentId:lease.tenant_student_id}),now)
+    );
+  }else{
+    const settings=await settingsRow(env,classId);
+    const treasury=Number(settings?.treasury_balance||0)+due;
+    statements.push(
+      env.DB.prepare('UPDATE economy_class_settings SET treasury_balance=?,updated_at=? WHERE class_id=?').bind(treasury,now,classId),
+      env.DB.prepare(
+        'INSERT INTO economy_transactions (class_id,student_id,type,reason,amount,treasury_after,meta_json,created_at) '+
+        "VALUES (?,NULL,'treasury',?,?,?,?,?)"
+      ).bind(classId,'정부 소유 자리 월세 · '+lease.property_name+' · '+periodId,due,treasury,JSON.stringify({leaseId,propertyId:lease.property_id,periodId,tenantStudentId:lease.tenant_student_id}),now)
+    );
+  }
+
+  if(existing){
+    statements.push(
+      env.DB.prepare(
+        "UPDATE economy_rent_payments SET amount_due=?,amount_paid=?,status='paid',note=?,paid_at=? WHERE id=?"
+      ).bind(due,due,clean(b.note,240),now,paymentId)
+    );
+  }else{
+    statements.push(
+      env.DB.prepare(
+        'INSERT INTO economy_rent_payments (id,class_id,lease_id,property_id,tenant_student_id,landlord_type,landlord_student_id,period_id,amount_due,amount_paid,status,note,created_at,paid_at) '+
+        "VALUES (?,?,?,?,?,?,?,?,?,?,'paid',?,?,?)"
+      ).bind(paymentId,classId,leaseId,lease.property_id,lease.tenant_student_id,lease.landlord_type,lease.landlord_student_id,periodId,due,due,clean(b.note,240),now,now)
+    );
+  }
+  await env.DB.batch(statements);
+  return json({ok:true,status:'paid',paid:due});
 }
 
 export async function teacherInventoryDecision(request,env){
