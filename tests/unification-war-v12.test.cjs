@@ -75,6 +75,18 @@ test('도로 보급망과 보급 상태 단계가 정상 계산된다', () => {
   assert.equal(w.UnificationWarSupply.statusForCost(11).key, 'isolated');
 });
 
+test('삼국별 상황형 역사 선택 데이터가 준비되어 있다', () => {
+  const w = loadBrowserScripts(['games/high_history_map/data/events.js']);
+  for (const nation of ['goguryeo','baekje','silla']) {
+    const events = w.UnificationWarEvents.forNation(nation);
+    assert.equal(events.length, 2);
+    for (const event of events) {
+      assert.equal(event.choices.length, 2);
+      assert.ok(event.turn > 0);
+    }
+  }
+});
+
 test('국가 AI는 방어·전쟁·회복·전쟁준비 상태를 구분한다', () => {
   const w = loadBrowserScripts(['games/high_history_map/ai/strategy.js']);
   const p = w.UnificationWarAIStrategy.personality('goguryeo');
@@ -103,7 +115,9 @@ test('v12 핵심 플레이 UI가 소스에 남아 있다', () => {
     'function resolveRangedCombat',
     'function supplyMapFor',
     'function updateAIStrategy',
+    'function playerFronts',
+    'function openHistoryEvent',
     'function openCityProjects'
   ]) assert.ok(html.includes(token), token);
-  assert.match(catalog, /games\/high_history_map\/index\.html\?v=20/);
+  assert.match(catalog, /games\/high_history_map\/index\.html\?v=22/);
 });
