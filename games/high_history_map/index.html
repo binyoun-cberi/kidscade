@@ -153,13 +153,13 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=23"></script>
-<script src="./core/pathfinding.js?v=23"></script>
-<script src="./core/supply.js?v=23"></script>
-<script src="./core/warfare.js?v=23"></script>
-<script src="./ai/strategy.js?v=23"></script>
-<script src="./data/events.js?v=23"></script>
-<script src="./core/invariants.js?v=23"></script>
+<script src="./core/actions.js?v=25"></script>
+<script src="./core/pathfinding.js?v=25"></script>
+<script src="./core/supply.js?v=25"></script>
+<script src="./core/warfare.js?v=25"></script>
+<script src="./ai/strategy.js?v=25"></script>
+<script src="./data/events.js?v=25"></script>
+<script src="./core/invariants.js?v=25"></script>
 <script>
 (function(){
 "use strict";
@@ -594,6 +594,15 @@ function validateStateNow(context){
   Object.keys(state.cityProjects||{}).forEach(function(cityId){
     var p=state.cityProjects[cityId];
     if(!CITIES[cityId]||!p||!CITY_PROJECTS[p.type]||!isFinite(p.remaining)||p.remaining<1)issues.push("도시 사업 "+cityId+" 데이터가 올바르지 않습니다.");
+  });
+  Object.keys(state.unitMissions||{}).forEach(function(id){
+    var m=state.unitMissions[id];if(m&&!window.UnificationWarWarfare.MISSIONS[m.type])issues.push("부대 "+id+" 임무 데이터가 올바르지 않습니다.");
+  });
+  Object.keys(state.sieges||{}).forEach(function(cityId){
+    var s=state.sieges[cityId];if(!CITIES[cityId]||!s||!isFinite(s.pressure)||s.pressure<0||s.pressure>100)issues.push("공성 "+cityId+" 데이터가 올바르지 않습니다.");
+  });
+  Object.keys(state.warFatigue||{}).forEach(function(owner){
+    var f=state.warFatigue[owner];if(!isFinite(f)||f<0||f>100)issues.push(owner+" 전쟁 피로 값이 올바르지 않습니다.");
   });
   if(issues.length&&window.console&&console.warn)console.warn("[통일전쟁 상태 검사 · "+(context||"unknown")+"]",issues);
   return issues;
@@ -1060,7 +1069,7 @@ function findRetreatTile(u){
   if(!u||!state)return null;
   var best=null,bestScore=-999;
   neighbors(u.q,u.r).forEach(function(t){
-    if(!t||t.terrain==="sea"||t.owner!==u.owner||enemyUnitAt(t.q,t.r,u.owner)||enemyZocAt(u,t))return;
+    if(!t||t.terrain==="sea"||t.owner!==u.owner||enemyUnitAt(t.q,t.r,u.owner)||friendlyUnitAt(t.q,t.r,u.owner,u.id)||enemyZocAt(u,t))return;
     var score=TERRAIN[t.terrain].def*3-closestFriendlyCityDistance(u.owner,t.q,t.r)*.35;
     if(t.improvement==="road")score+=1.3;if(t.city)score+=2.5;
     if(score>bestScore){bestScore=score;best=t;}
@@ -1263,9 +1272,9 @@ function applyFieldReinforcement(owner){
     if(r.manpower<=0||u.troops>=430)return;
     var supply=supplyInfoForUnit(u);if(supply.key!=="good"||closestFriendlyCityDistance(owner,u.q,u.r)>2)return;
     var gain=window.UnificationWarWarfare.reinforcementAmount(u.type,unitMissionType(u));
-    gain=Math.min(gain,430-u.troops,Math.max(0,r.manpower*3));
+    gain=Math.min(gain,430-u.troops,Math.max(0,r.manpower*12));
     if(gain<=0)return;
-    var manpowerCost=Math.max(1,Math.ceil(gain/3));if(r.manpower<manpowerCost)return;
+    var manpowerCost=Math.max(1,Math.ceil(gain/12));if(r.manpower<manpowerCost)return;
     r.manpower-=manpowerCost;u.troops+=gain;reinforced++;
   });
   if(owner===state.player&&reinforced)log("보급이 연결된 "+reinforced+"개 부대에 증원 병력이 합류했습니다.");
@@ -2034,7 +2043,7 @@ function openResult(reason){
   var title=reason==="unification"?"삼국의 건국 수도를 모두 확보했습니다.":reason==="defeat"?"세력이 무너졌습니다.":"48턴의 역사가 끝났습니다.";
   document.getElementById("modalTitle").textContent=title;
   var goals=OBJECTIVES[state.player].filter(function(o){return o.check();}).length,score=campaignScore(state.player);
-  document.getElementById("modalDesc").textContent="점수 "+score+" · 달성 목표 "+goals+"/"+OBJECTIVES[state.player].length+" · 보유 도시 "+factionCities(state.player).length+"곳 · 보유 영토 "+ownedTiles(state.player).length+"칸";
+  document.getElementById("modalDesc").textContent="점수 "+score+" · 달성 목표 "+goals+"/"+OBJECTIVES[state.player].length+" · 보유 도시 "+factionCities(state.player).length+"곳 · 보유 영토 "+ownedTiles(state.player).length+"칸 · 전쟁 피로 "+Math.round(fatigueValue(state.player));
   var note=reason==="unification"?"국내성·위례성·금성을 모두 지배해 통일 조건을 달성했습니다.":reason==="defeat"?"다음에는 건국 수도와 후방 도시의 수비대를 함께 유지해 보세요.":"도시·영토·개발 시설·특산 자원·권위를 합산한 기록입니다.";
   var historyText=historyRecordText();
   document.getElementById("modalBody").innerHTML="<div class=\"countryCard\"><b>"+FACTIONS[state.player].name+"의 기록</b><p>"+note+"</p></div>"+(historyText?"<div class=\"countryCard\"><b>주요 역사 선택</b><p>"+historyText+"</p></div>":"")+"<button class=\"primary\" onclick=\"location.reload()\">처음 화면으로</button>";
