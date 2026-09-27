@@ -468,7 +468,7 @@
   }
 
   async function resetProgress(loginId, button) {
-    const typed = prompt(`정말 ${loginId}의 닉네임·씨앗·아바타·플레이 기록·쑥쑥랜드 기록을 초기화할까요?\n되돌릴 수 없습니다. 계속하려면 학생 ID를 정확히 입력하세요.`, '');
+    const typed = prompt(`정말 ${loginId}의 닉네임·씨앗·새싹력·아바타·플레이 기록을 초기화할까요?\n되돌릴 수 없습니다. 계속하려면 학생 ID를 정확히 입력하세요.`, '');
     if (typed === null) return;
     await withButton(button, '초기화 중', async () => {
       const { response, body } = await api('/api/teacher/reset-progress', {
@@ -574,14 +574,15 @@
 
   function exportOverview() {
     const classes = new Map((overviewData.classes || []).map(item => [item.id, item]));
-    const rows = [['학급','학급코드','ID','닉네임','상태','현재로그인','씨앗','플레이횟수','플레이시간(초)','플레이게임수','클라우드저장횟수','마지막로그인']];
+    const rows = [['학급','학급코드','ID','닉네임','상태','현재로그인','새싹력','이번주새싹력','씨앗','플레이횟수','플레이시간(초)','플레이게임수','클라우드저장횟수','마지막로그인']];
     (overviewData.students || []).forEach(student => {
       const classroom = classes.get(student.class_id) || {};
       rows.push([
         classroom.name || student.class_name || '', classroom.class_code || student.class_code || '', student.login_id,
         student.nickname || '', Number(student.disabled) ? '사용 중지' : (isLocked(student) ? 'PIN 잠김' : '사용 가능'),
-        Number(student.active_sessions || 0), Number(student.summary?.seeds || 0), Number(student.summary?.plays || 0),
-        Number(student.summary?.seconds || 0), Number(student.summary?.gameCount || 0), Number(student.state_revision || 0), student.last_login_at || ''
+        Number(student.active_sessions || 0), Number(student.summary?.sproutPower || 0), Number(student.weekly_sprout_power || 0),
+        Number(student.summary?.seeds || 0), Number(student.summary?.plays || 0), Number(student.summary?.seconds || 0),
+        Number(student.summary?.gameCount || 0), Number(student.state_revision || 0), student.last_login_at || ''
       ]);
     });
     downloadText('kidscade-student-overview.csv', rows.map(row => row.map(csvEscape).join(',')).join('\n'));
