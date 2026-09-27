@@ -28,6 +28,7 @@ const TEST_FILES = [
   "tests/economy.test.mjs",
   "tests/economy-v3.test.mjs",
   "tests/economy-job-capabilities.test.mjs",
+  "tests/economy-real-estate.test.mjs",
   "tests/seed-rankings.test.mjs",
   "tests/game-records.test.mjs",
   "tests/multiplayer.test.mjs",
