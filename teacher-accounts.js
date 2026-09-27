@@ -246,6 +246,51 @@
     });
   }
 
+  function seedRankMark(rank) {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return String(rank) + '위';
+  }
+
+  function renderSeedRankList(members, mode) {
+    const active = members.filter(student => !Number(student.disabled));
+    const getter = mode === 'weekly'
+      ? student => Math.max(0, Number(student.weekly_earned || 0))
+      : student => Math.max(0, Number(student.summary?.seeds || 0));
+    const ranked = [...active]
+      .sort((a, b) => getter(b) - getter(a) || String(a.nickname || '').localeCompare(String(b.nickname || ''), 'ko'))
+      .slice(0, 10);
+    if (!ranked.length || ranked.every(student => getter(student) === 0)) {
+      return '<div class="seed-rank-empty">' + (mode === 'weekly' ? '아직 이번 주 획득 기록이 없습니다.' : '아직 보유 씨앗 기록이 없습니다.') + '</div>';
+    }
+    return ranked.map((student, index) => `
+      <div class="seed-rank-row">
+        <span class="seed-rank-place">${seedRankMark(index + 1)}</span>
+        <strong>${escapeHtml(student.nickname || '새싹 게이머')}</strong>
+        <span class="seed-rank-value">🌱 ${getter(student).toLocaleString('ko-KR')}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderSeedRanking(members) {
+    const active = members.filter(student => !Number(student.disabled));
+    const totalBalance = active.reduce((sum, student) => sum + Math.max(0, Number(student.summary?.seeds || 0)), 0);
+    const totalWeekly = active.reduce((sum, student) => sum + Math.max(0, Number(student.weekly_earned || 0)), 0);
+    return `
+      <section class="seed-rank-board" aria-label="우리 반 씨앗 랭킹">
+        <div class="seed-rank-head">
+          <div><b>🏆 우리 반 씨앗 랭킹</b><span>학생 화면의 씨앗 랭킹과 같은 기준입니다.</span></div>
+          <div class="seed-rank-totals"><span>반 보유 🌱 ${totalBalance.toLocaleString('ko-KR')}</span><span>이번 주 +${totalWeekly.toLocaleString('ko-KR')}</span></div>
+        </div>
+        <div class="seed-rank-columns">
+          <div class="seed-rank-column"><h4>🌱 보유 씨앗 TOP 10</h4>${renderSeedRankList(active, 'balance')}</div>
+          <div class="seed-rank-column"><h4>⭐ 이번 주 획득 TOP 10</h4>${renderSeedRankList(active, 'weekly')}</div>
+        </div>
+      </section>
+    `;
+  }
+
   function renderMetrics() {
     const classes = Array.isArray(overviewData.classes) ? overviewData.classes : [];
     const students = Array.isArray(overviewData.students) ? overviewData.students : [];
@@ -285,6 +330,8 @@
       const onlineCount = allMembers.filter(student => Number(student.active_sessions || 0) > 0).length;
       const disabledCount = allMembers.filter(student => Number(student.disabled)).length;
       const totalPlays = allMembers.reduce((sum, student) => sum + Number(student.summary?.plays || 0), 0);
+      const totalSeeds = allMembers.filter(student => !Number(student.disabled)).reduce((sum, student) => sum + Number(student.summary?.seeds || 0), 0);
+      const seedRankingHtml = renderSeedRanking(allMembers);
       const teacherCredential = (overviewData.teacherCredentials || []).find(item => item.classId === classroom.id);
       const teacherCredentialHtml = overviewData.scope === 'global'
         ? (teacherCredential
@@ -300,7 +347,7 @@
           <tr>
             <td data-label="계정"><span class="idline">${escapeHtml(student.login_id)}</span><span class="tiny">${statusBadge(student)} ${online}</span></td>
             <td data-label="닉네임"><b>${escapeHtml(student.nickname || '새싹 게이머')}</b></td>
-            <td data-label="기록"><b>🌱 ${Number(summary.seeds || 0).toLocaleString('ko-KR')}</b><span class="tiny">${Number(summary.plays || 0)}회 · ${Number(summary.gameCount || 0)}게임 · ${escapeHtml(formatDuration(summary.seconds))}</span></td>
+            <td data-label="기록"><b>🌱 ${Number(summary.seeds || 0).toLocaleString('ko-KR')}</b><span class="tiny">이번 주 +${Number(student.weekly_earned || 0).toLocaleString('ko-KR')} · ${Number(summary.plays || 0)}회 · ${Number(summary.gameCount || 0)}게임 · ${escapeHtml(formatDuration(summary.seconds))}</span></td>
             <td data-label="클라우드">${student.state_revision > 0 ? `저장 ${Number(student.state_revision)}회` : '첫 저장 전'}<span class="tiny">${escapeHtml(formatDate(student.updated_at))}</span></td>
             <td data-label="마지막 로그인">${escapeHtml(formatDate(student.last_login_at))}</td>
             <td data-label="관리"><div class="student-actions">
@@ -319,7 +366,7 @@
             <div>
               <h3>${escapeHtml(classroom.name)}</h3>
               <div class="muted">학급 코드 ${escapeHtml(classroom.class_code)}</div>
-              <div class="class-summary"><span>학생 ${allMembers.length}명</span><span>현재 로그인 ${onlineCount}명</span><span>사용 중지 ${disabledCount}명</span><span>누적 플레이 ${totalPlays}회</span></div>
+              <div class="class-summary"><span>학생 ${allMembers.length}명</span><span>현재 로그인 ${onlineCount}명</span><span>사용 중지 ${disabledCount}명</span><span>반 씨앗 🌱 ${totalSeeds.toLocaleString('ko-KR')}</span><span>누적 플레이 ${totalPlays}회</span></div>
               ${teacherCredentialHtml}
             </div>
             <div class="class-actions">
@@ -330,6 +377,7 @@
               <button class="danger" type="button" data-action="delete-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">학급 삭제</button>
             </div>
           </div>
+          ${seedRankingHtml}
           ${members.length ? `<table class="student-table"><thead><tr><th>계정</th><th>닉네임</th><th>개인 기록</th><th>클라우드</th><th>마지막 로그인</th><th>관리</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty">조건에 맞는 학생이 없습니다.</div>'}
         </section>
       `;
