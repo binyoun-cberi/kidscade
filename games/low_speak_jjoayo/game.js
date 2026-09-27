@@ -58,14 +58,16 @@ function normalize(value){
   return text.replace(/[^a-z0-9]+/g,'');
 }
 
-function acceptedAnswers(word){
-  return [word.en,...(word.aliases||[])].map(normalize);
+function acceptedAnswers(word,{speech=false}={}){
+  const values=[word.en,...(word.aliases||[])];
+  if(speech)values.push(...(word.speechAliases||[]));
+  return values.map(normalize);
 }
 
-function isCorrectTranscript(text){
+function isCorrectTranscript(text,{speech=false}={}){
   if(!state.current)return false;
   const candidate=normalize(text);
-  return Boolean(candidate)&&acceptedAnswers(state.current).includes(candidate);
+  return Boolean(candidate)&&acceptedAnswers(state.current,{speech}).includes(candidate);
 }
 
 function shuffle(items){
@@ -232,7 +234,7 @@ function spawnRecognition(session){
       if(result[0]?.transcript)display=result[0].transcript.trim();
       for(let a=0;a<Math.min(result.length,5);a++){
         const transcript=result[a]?.transcript||'';
-        if(isCorrectTranscript(transcript)){
+        if(isCorrectTranscript(transcript,{speech:true})){
           ui.heard.textContent='"'+transcript.trim()+'"';
           answerCorrect();
           return;
@@ -372,7 +374,7 @@ function submitTyping(event){
   if(!value)return;
   ui.heard.textContent='"'+value+'"';
   ui.typingInput.value='';
-  if(isCorrectTranscript(value)){
+  if(isCorrectTranscript(value,{speech:false})){
     answerCorrect();
   }else{
     state.combo=0;
