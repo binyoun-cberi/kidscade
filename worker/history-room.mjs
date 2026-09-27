@@ -2,6 +2,9 @@ import { createState, roleFor, addPlayer, advanceDeadline, hostCommand, answer, 
 
 const json = (body,status=200) => Response.json(body,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 const token = () => Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+const RECOVERY_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const recoveryCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>RECOVERY_ALPHABET[b%RECOVERY_ALPHABET.length]).join('');
+const cleanRecoveryCode=value=>String(value||'').toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g,'').slice(0,8);
 async function hash(value) { return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join(''); }
 const errorResponse = e => json({ok:false,error:e.status?e.message:'history_live_server_error'},e.status||500);
 
@@ -98,6 +101,21 @@ export class HistoryQuizRoom {
       return json({ok:true,pending:next.outbox.length});
     }
     if(this.state.status==='closed')fail('room_closed',410);
+    if(action==='recovery-code'){
+      const auth=await this.authenticate(request);if(auth.role!=='host')fail('host_required',403);
+      const playerId=String(body.playerId||''),player=this.state.players.find(p=>p.id===playerId);
+      if(!player)fail('player_not_found',404);
+      const next=structuredClone(this.state);next.recoveries={...(next.recoveries||{})};
+      for(const [digest,entry] of Object.entries(next.recoveries))if(!entry||entry.expiresAt<=now)delete next.recoveries[digest];
+      let code='',digest='';
+      for(let attempt=0;attempt<6;attempt++){
+        code=recoveryCode();digest=await hash(code);
+        if(!next.recoveries[digest])break;
+      }
+      next.recoveries[digest]={playerId,expiresAt:now+10*60*1000};
+      await this.commit(next);
+      return json({ok:true,recoveryCode:code,playerId,nickname:player.nickname,expiresIn:600});
+    }
     if(action==='join'){
       // A nickname or public player id is never proof of ownership.
       if(request.headers.has('authorization')){
@@ -105,6 +123,20 @@ export class HistoryQuizRoom {
         const p=this.state.players.find(p=>p.id===auth.id);
         if(!p)fail('player_required',403);
         return json({ok:true,code:this.state.code,playerId:p.id,nickname:p.nickname,transport:'v2',reconnected:true});
+      }
+      const suppliedRecovery=cleanRecoveryCode(body.recoveryCode);
+      if(suppliedRecovery){
+        const digest=await hash(suppliedRecovery),next=structuredClone(this.state);next.recoveries={...(next.recoveries||{})};
+        for(const [key,entry] of Object.entries(next.recoveries))if(!entry||entry.expiresAt<=now)delete next.recoveries[key];
+        const entry=next.recoveries[digest];
+        if(!entry)fail('invalid_recovery_code',403);
+        const p=next.players.find(p=>p.id===entry.playerId);
+        if(!p)fail('player_not_found',404);
+        const playerToken=token();p.hash=await hash(playerToken);delete next.recoveries[digest];next.version++;
+        await this.commit(next);
+        for(const ws of this.ctx.getWebSockets())if(ws.deserializeAttachment()?.id===p.id)try{ws.close(4001,'recovered');}catch{}
+        this.broadcast();
+        return json({ok:true,code:next.code,playerId:p.id,nickname:p.nickname,playerToken,transport:'v2',reconnected:true,recovered:true});
       }
       const playerToken=token(),next=structuredClone(this.state);
       const p=addPlayer(next,body.nickname,await hash(playerToken),now);
