@@ -1,6 +1,6 @@
 import { hashPin, normalizeLoginId, isValidLoginId } from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
-import { kstWeekKey } from './seed-rankings.mjs';
+import { kstWeekKey } from './sprout-power.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -67,14 +67,12 @@ export function blankStudentState() {
     version: 1,
     profile: { version: 1, nickname: '새싹 게이머', createdAt: '', updatedAt: '' },
     seeds: 0,
+    sproutPower: 0,
     avatarInventory: [],
     avatarEquipped: {},
     playHistory: { version: 1, games: {}, recent: [] },
     inventory: {},
-    equipped: {},
-    pet: {},
-    petItems: {},
-    gardenState: {}
+    equipped: {}
   };
 }
 
@@ -100,11 +98,10 @@ export function summarizeStudentState(value) {
   });
   return {
     seeds: Math.max(0, Math.floor(Number(state.seeds || 0))),
+    sproutPower: Math.max(0, Math.floor(Number(state.sproutPower || 0))),
     plays,
     seconds,
-    gameCount,
-    gardenLevel: Math.max(0, Math.floor(Number(state.gardenState?.level || 0))),
-    petLevel: Math.max(0, Math.floor(Number(state.pet?.level || 0)))
+    gameCount
   };
 }
 
@@ -189,33 +186,33 @@ async function getOverview(request, env) {
     summary: summarizeStudentState(row.state_json)
   }));
 
-  const seedWeekKey = kstWeekKey();
-  let weeklySeedRows = [];
+  const sproutWeekKey = kstWeekKey();
+  let weeklySproutRows = [];
   try {
     const weekly = auth.global
       ? await env.DB.prepare(`
-          SELECT w.student_id, w.earned_seeds
-          FROM student_seed_weekly w
+          SELECT w.student_id, w.earned_power
+          FROM student_sprout_weekly w
           JOIN student_accounts a ON a.id = w.student_id
           WHERE w.week_key = ?
-        `).bind(seedWeekKey).all()
+        `).bind(sproutWeekKey).all()
       : await env.DB.prepare(`
-          SELECT w.student_id, w.earned_seeds
-          FROM student_seed_weekly w
+          SELECT w.student_id, w.earned_power
+          FROM student_sprout_weekly w
           JOIN student_accounts a ON a.id = w.student_id
           WHERE w.week_key = ? AND a.class_id = ?
-        `).bind(seedWeekKey, auth.classId).all();
-    weeklySeedRows = weekly?.results || [];
+        `).bind(sproutWeekKey, auth.classId).all();
+    weeklySproutRows = weekly?.results || [];
   } catch (error) {
     const message = String(error?.message || '');
-    if (!/no such table: student_seed_weekly|SQLITE_ERROR.*student_seed_weekly/i.test(message)) throw error;
+    if (!/no such table: student_sprout_weekly|SQLITE_ERROR.*student_sprout_weekly/i.test(message)) throw error;
   }
-  const weeklyByStudent = new Map(weeklySeedRows.map(row => [
+  const weeklySproutByStudent = new Map(weeklySproutRows.map(row => [
     String(row.student_id || ''),
-    Math.max(0, Math.floor(Number(row.earned_seeds || 0)))
+    Math.max(0, Math.floor(Number(row.earned_power || 0)))
   ]));
   safeStudents.forEach(student => {
-    student.weekly_earned = weeklyByStudent.get(String(student.id || '')) || 0;
+    student.weekly_sprout_power = weeklySproutByStudent.get(String(student.id || '')) || 0;
   });
 
   const classRows = classes?.results || [];
@@ -238,7 +235,7 @@ async function getOverview(request, env) {
     },
     classes: classRows,
     students: safeStudents,
-    seedWeekKey,
+    sproutWeekKey,
     teacherCredentials
   });
 }
