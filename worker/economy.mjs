@@ -2,6 +2,7 @@ import { methodNotAllowed, json } from './economy-common.mjs';
 import { studentApply } from './economy-student.mjs';
 import {
   getStudentEconomyV3,
+  studentEconomySummary,
   studentSavingsV3,
   studentBuyV3,
   studentWorkLog,
@@ -48,6 +49,7 @@ export async function handleEconomyRequest(request, env) {
   const path = new URL(request.url).pathname;
   const known = new Set([
     '/api/economy',
+    '/api/economy/summary',
     '/api/economy/savings',
     '/api/economy/job-apply',
     '/api/economy/buy',
@@ -88,6 +90,7 @@ export async function handleEconomyRequest(request, env) {
 
   try {
     if (path === '/api/economy') return request.method === 'GET' ? getStudentEconomyV3(request, env) : methodNotAllowed('GET');
+    if (path === '/api/economy/summary') return request.method === 'GET' ? studentEconomySummary(request, env) : methodNotAllowed('GET');
     if (path === '/api/economy/savings') return request.method === 'POST' ? studentSavingsV3(request, env) : methodNotAllowed('POST');
     if (path === '/api/economy/job-apply') return request.method === 'POST' ? studentApply(request, env) : methodNotAllowed('POST');
     if (path === '/api/economy/buy') return request.method === 'POST' ? studentBuyV3(request, env) : methodNotAllowed('POST');

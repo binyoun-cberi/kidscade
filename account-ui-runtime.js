@@ -20,6 +20,21 @@
       #kc-account-slot button{flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer}
       #kc-account-slot .kca-logout{background:#eef2f7;color:#64748b}
       body.dark-mode #kc-account-slot .kca-logout{background:#334155;color:#e2e8f0}
+      #kc-account-slot .kca-economy-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:58px;padding:8px 10px;border-radius:14px;text-decoration:none;background:linear-gradient(135deg,rgba(124,92,255,.09),rgba(236,72,153,.07));border:1px solid rgba(124,92,255,.18);box-shadow:0 5px 14px rgba(124,92,255,.07);color:var(--kc-ink,#334155);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      #kc-account-slot .kca-economy-card:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.34);box-shadow:0 8px 18px rgba(124,92,255,.12)}
+      #kc-account-slot .kca-economy-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#fff1a8,#ffd166);box-shadow:inset 0 0 0 1px rgba(180,120,0,.08);font-size:1rem}
+      #kc-account-slot .kca-economy-copy{min-width:0;display:grid;gap:1px}
+      #kc-account-slot .kca-economy-title{display:flex;align-items:center;gap:5px;font-size:.69rem;font-weight:1000;letter-spacing:-.02em}
+      #kc-account-slot .kca-economy-badge{display:inline-flex;align-items:center;min-height:17px;padding:0 5px;border-radius:999px;background:rgba(124,92,255,.11);color:#6d4aff;font-size:.51rem;font-weight:1000}
+      #kc-account-slot .kca-economy-badge.attention{background:#fff0dc;color:#c56a00}
+      #kc-account-slot .kca-economy-meta{font-size:.57rem;font-weight:900;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #kc-account-slot .kca-economy-status{font-size:.54rem;font-weight:850;color:#8b5cf6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #kc-account-slot .kca-economy-status.attention{color:#c56a00}
+      #kc-account-slot .kca-economy-arrow{font-size:1.15rem;font-weight:1000;color:#8b5cf6;padding-right:1px}
+      body.dark-mode #kc-account-slot .kca-economy-card{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.10));border-color:rgba(196,181,253,.22);color:#f8fafc}
+      body.dark-mode #kc-account-slot .kca-economy-icon{background:linear-gradient(135deg,#7c5cff,#ec4899);box-shadow:none}
+      body.dark-mode #kc-account-slot .kca-economy-meta{color:#cbd5e1}
+      body.dark-mode #kc-account-slot .kca-economy-status{color:#c4b5fd}
 
       #kc-account-modal{position:fixed!important;inset:0!important;z-index:30000!important;display:grid!important;place-items:center!important;padding:18px!important;background:rgba(15,23,42,.58)!important;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);box-sizing:border-box;overscroll-behavior:contain}
       #kc-account-modal.hidden{display:none!important}

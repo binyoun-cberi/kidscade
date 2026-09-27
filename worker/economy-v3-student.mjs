@@ -22,6 +22,54 @@ async function currentJob(env, studentId) {
   ).bind(studentId).first();
 }
 
+function currentEconomyPeriod() {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const iso = d.toISOString().slice(0,10);
+  const [year,month,day] = iso.split('-').map(Number);
+  return year + '-' + String(month).padStart(2,'0') + '-' + Math.ceil(day / 7) + '주';
+}
+
+export async function studentEconomySummary(request, env) {
+  const auth = await requireEconomyStudent(request, env);
+  if (auth.response) return auth.response;
+
+  const studentId = auth.row.student_id;
+  const classId = auth.row.class_id;
+  const periodId = currentEconomyPeriod();
+  const [account,job] = await Promise.all([
+    studentAccount(env,studentId),
+    currentJob(env,studentId)
+  ]);
+
+  let workStatus = null;
+  let capabilityCount = 0;
+  if (job?.id) {
+    const [work,capabilities] = await Promise.all([
+      env.DB.prepare(
+        'SELECT status FROM economy_work_logs WHERE student_id=? AND class_id=? AND period_id=? LIMIT 1'
+      ).bind(studentId,classId,periodId).first(),
+      env.DB.prepare(
+        'SELECT COUNT(*) AS total FROM economy_job_capabilities WHERE job_id=? AND class_id=?'
+      ).bind(job.id,classId).first()
+    ]);
+    workStatus = work?.status || null;
+    capabilityCount = Number(capabilities?.total || 0);
+  }
+
+  return json({
+    ok:true,
+    enabled:true,
+    currency:auth.settings.currency || '뚝',
+    balance:Number(account?.balance || 0),
+    savings:Number(account?.savings_balance || 0),
+    job:job ? { id:job.id,name:job.name,salary:Number(job.salary || 0) } : null,
+    periodId,
+    workStatus,
+    workLogDue:Boolean(job?.id && !['submitted','approved'].includes(workStatus || '')),
+    capabilityCount
+  });
+}
+
 async function activeLoanTotal(env, studentId) {
   const row = await env.DB.prepare(
     "SELECT COALESCE(SUM(outstanding),0) AS total FROM economy_loans WHERE student_id = ? AND status = 'active'"

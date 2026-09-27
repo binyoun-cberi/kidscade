@@ -88,3 +88,25 @@ test('nickname sanitizer removes markup delimiters and caps length', () => {
   assert.equal(sanitizeNickname('  번개토끼  '), '번개토끼');
   assert.ok(sanitizeNickname('12345678901234567890').length <= 12);
 });
+
+
+test('profile account card promotes classroom economy with a lightweight live summary', () => {
+  const client = fs.readFileSync(path.join(ROOT, 'account-client.js'), 'utf8');
+  const runtime = fs.readFileSync(path.join(ROOT, 'account-ui-runtime.js'), 'utf8');
+  const router = fs.readFileSync(path.join(ROOT, 'worker', 'economy.mjs'), 'utf8');
+  const student = fs.readFileSync(path.join(ROOT, 'worker', 'economy-v3-student.mjs'), 'utf8');
+
+  assert.match(client, /kca-economy-card/);
+  assert.match(client, />학급경제 </);
+  assert.match(client, /\/api\/economy\/summary/);
+  assert.match(client, /근무일지 제출 필요/);
+  assert.match(client, /직업 전용 업무가 열려 있어요/);
+  assert.doesNotMatch(client, />💰 지갑</);
+  assert.match(runtime, /kca-economy-card/);
+
+  assert.match(router, /\/api\/economy\/summary/);
+  assert.match(router, /studentEconomySummary/);
+  assert.match(student, /export async function studentEconomySummary/);
+  assert.match(student, /economy_job_capabilities/);
+  assert.match(student, /workLogDue/);
+});
