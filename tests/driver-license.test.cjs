@@ -116,3 +116,15 @@ test('Driver License v10 adds a hood layer without exposing it in mirrors',()=>{
   assert.match(js,/o\.layers\.set\(2\)/);
   assert.match(js,/camera\.layers\.enable\(2\)/);
 });
+
+
+test('Driver License v11 lets the driver complete PREP before seatbelt enforcement',()=>{
+  assert.match(js,/if\(stage!=='PREP'&&!car\.seatbelt\)/);
+  assert.doesNotMatch(js,/if\(!car\.seatbelt\)\{disqualify\('안전띠 미착용'\)/);
+});
+
+test('Driver License v11 preserves low-speed automatic creep',()=>{
+  assert.match(js,/if\(Math\.abs\(car\.speed\)<\.002\)car\.speed=0/);
+  assert.doesNotMatch(js,/if\(Math\.abs\(car\.speed\)<\.015\)car\.speed=0/);
+  assert.match(js,/const creepTarget=1\.05/);
+});
