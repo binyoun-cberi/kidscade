@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>스피크가 쪼아요!</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+  <script src="../../kidscade-game-sdk.js" data-game-id="low_speak_jjoayo" data-title="스피크가 쪼아요!" data-shell="true" data-mute="false" data-orientation="portrait"></script>
+</head>
+<body>
+  <div class="sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <main id="app">
+    <section id="menuScreen" class="screen active">
+      <div class="brand-card">
+        <div class="mascot" aria-hidden="true">🐥🎤</div>
+        <p class="eyebrow">VOICE WORD RUSH</p>
+        <h1>스피크가 쪼아요!</h1>
+        <p class="tagline">한글 뜻을 보고 영어로 말해요.<br><b>시간 안에 최대한 많이!</b></p>
+      </div>
+
+      <div class="setup-card">
+        <fieldset>
+          <legend>⏱ 도전 시간</legend>
+          <div class="chips" id="durationChips">
+            <button type="button" class="chip" data-duration="30">30초</button>
+            <button type="button" class="chip selected" data-duration="60">60초</button>
+            <button type="button" class="chip" data-duration="90">90초</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>📚 단어팩</legend>
+          <div class="chips wrap" id="packChips">
+            <button type="button" class="chip selected" data-pack="all">골고루</button>
+            <button type="button" class="chip" data-pack="animal">동물</button>
+            <button type="button" class="chip" data-pack="food">음식</button>
+            <button type="button" class="chip" data-pack="school">학교</button>
+            <button type="button" class="chip" data-pack="color">색깔</button>
+            <button type="button" class="chip" data-pack="daily">생활</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>🎮 입력 방법</legend>
+          <div class="input-choice">
+            <button id="voiceModeBtn" type="button" class="mode-btn selected">
+              <span>🎤</span><b>말하기</b><small id="voiceSupportText">추천</small>
+            </button>
+            <button id="typingModeBtn" type="button" class="mode-btn">
+              <span>⌨️</span><b>타이핑</b><small>대체 모드</small>
+            </button>
+          </div>
+        </fieldset>
+
+        <div class="rules">
+          <span>✅ 정답 +1</span>
+          <span>🔥 5콤보마다 시간 보너스</span>
+          <span>⏭ PASS -1초</span>
+          <span>🔊 힌트 -3초</span>
+        </div>
+
+        <button id="startBtn" class="primary" type="button">🎤 게임 시작</button>
+        <p class="privacy-note">녹음 파일은 게임에 저장하지 않아요. 마이크가 안 되면 타이핑으로 바로 바꿀 수 있어요.</p>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <header class="hud">
+        <div class="hud-item"><small>정답</small><b id="scoreText">0</b></div>
+        <div class="timer-wrap">
+          <div id="timerText" class="timer">60.0</div>
+          <div class="timer-track"><div id="timerBar"></div></div>
+        </div>
+        <div class="hud-item"><small>최고콤보</small><b id="bestComboText">0</b></div>
+      </header>
+
+      <div id="comboBadge" class="combo-badge">🔥 COMBO <b id="comboText">0</b></div>
+
+      <section id="wordCard" class="word-card" aria-live="polite">
+        <div id="emojiText" class="emoji">🍎</div>
+        <p id="koreanText" class="korean">사과</p>
+        <p id="packText" class="pack-label">골고루</p>
+      </section>
+
+      <div id="feedback" class="feedback">영어로 말해 보세요!</div>
+
+      <section class="listen-card">
+        <div class="mic-line">
+          <div id="micOrb" class="mic-orb">🎤</div>
+          <div>
+            <b id="micStatus">듣고 있어요</b>
+            <p id="heardText">말하면 여기에 보여요</p>
+          </div>
+        </div>
+
+        <form id="typingForm" class="typing-form hidden" autocomplete="off">
+          <input id="typingInput" type="text" inputmode="latin" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="영단어를 입력하고 Enter">
+          <button type="submit">확인</button>
+        </form>
+      </section>
+
+      <div class="action-row">
+        <button id="hintBtn" class="secondary" type="button">🔊 힌트 <small>-3초</small></button>
+        <button id="passBtn" class="pass" type="button">PASS <small>-1초</small></button>
+      </div>
+
+      <button id="switchInputBtn" class="text-button" type="button">⌨️ 타이핑 모드로 바꾸기</button>
+    </section>
+
+    <section id="resultScreen" class="screen">
+      <div class="result-card">
+        <div id="resultIcon" class="result-icon">🏆</div>
+        <p class="eyebrow">TIME UP!</p>
+        <h2 id="resultTitle">쪼아! 최고 기록!</h2>
+        <div class="big-score"><b id="resultScore">0</b><span>개 정답</span></div>
+
+        <div class="result-grid">
+          <div><small>최고 콤보</small><b id="resultCombo">0</b></div>
+          <div><small>PASS</small><b id="resultPass">0</b></div>
+          <div><small>평균 응답</small><b id="resultSpeed">0.0초</b></div>
+          <div><small>개인 최고</small><b id="resultBest">0</b></div>
+        </div>
+
+        <div class="review-box">
+          <h3>다시 보면 좋은 단어</h3>
+          <div id="reviewWords" class="review-words"></div>
+        </div>
+
+        <div class="result-actions">
+          <button id="retryBtn" class="primary" type="button">한 판 더!</button>
+          <button id="menuBtn" class="secondary" type="button">설정 바꾸기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="./game.js?v=1"></script>
+</body>
+</html>
