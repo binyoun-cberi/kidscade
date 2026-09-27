@@ -86,6 +86,24 @@ test('nickname plus public player id cannot reclaim someone else token',async()=
  const other=await (await h.room.fetch(req('join',{nickname:'가람',playerId:p.playerId}))).json();
  assert.notEqual(other.playerId,p.playerId);assert.notEqual(other.nickname,p.nickname);
 });
+test('teacher recovery code reclaims the same active player and invalidates the old token',async()=>{
+ const h=await setup(1),player=h.room.state.players[0],oldToken=h.players[0].playerToken;
+ player.score=4321;player.streak=4;
+ const issued=await h.room.fetch(req('recovery-code',{playerId:player.id},h.created.hostToken));
+ assert.equal(issued.status,200);
+ const recovery=await issued.json();assert.match(recovery.recoveryCode,/^[A-HJ-NP-Z2-9]{8}$/);
+ const recoveredResponse=await h.room.fetch(req('join',{code:'0ABCDE',recoveryCode:recovery.recoveryCode}));
+ assert.equal(recoveredResponse.status,200);
+ const recovered=await recoveredResponse.json();
+ assert.equal(recovered.playerId,player.id);assert.equal(recovered.recovered,true);
+ assert.equal(h.room.state.players.length,1);assert.equal(h.room.state.players[0].score,4321);assert.equal(h.room.state.players[0].streak,4);
+ const oldState=await h.room.fetch(new Request('https://game.test/api/history-live/state?code=0ABCDE',{headers:{authorization:'Bearer '+oldToken}}));
+ assert.equal(oldState.status,401);
+ const newState=await h.room.fetch(new Request('https://game.test/api/history-live/state?code=0ABCDE',{headers:{authorization:'Bearer '+recovered.playerToken}}));
+ assert.equal(newState.status,200);
+ const replay=await h.room.fetch(req('join',{code:'0ABCDE',recoveryCode:recovery.recoveryCode}));
+ assert.equal(replay.status,403);
+});
 test('HTTP fallback is read-only in an unchanged phase',async()=>{
  const h=await setup(),writes=h.storage.writes;
  for(let i=0;i<10;i++)assert.equal((await h.room.fetch(new Request('https://game.test/api/history-live/state',{headers:{authorization:'Bearer '+h.players[0].playerToken}}))).status,200);
