@@ -19,7 +19,7 @@ export function settings(body = {}) {
 export function createState(code, hostHash, body, now) {
   return { schema: 1, id: crypto.randomUUID(), code, hostHash, ...settings(body), round: 1,
     roundId: crypto.randomUUID(), status: 'waiting', qi: -1, version: 1, createdAt: now, expiresAt: now + ROOM_TTL,
-    players: [], answers: {}, actions: {}, tickets: {}, outbox: [] };
+    players: [], answers: {}, actions: {}, tickets: {}, recoveries: {}, outbox: [] };
 }
 export function roleFor(state, hash) {
   if (hash === state.hostHash) return { role: 'host', id: 'host' };
@@ -92,7 +92,7 @@ export function hostCommand(state, action, body, now) {
     if (state.round >= 100) fail('round_limit');
     if (state.status === 'finished') state.round++;
     Object.assign(state, settings(body)); state.roundId = crypto.randomUUID();
-    state.status = 'waiting'; state.qi = -1; state.answers = {}; state.deadlineAt = null;
+    state.status = 'waiting'; state.qi = -1; state.answers = {}; state.deadlineAt = null; state.recoveries = {};
     for (const p of state.players) { p.streak = 0; if (state.scoreMode === 'reset') p.score = 0; }
   } else if (action === 'close') {
     state.status = 'closed'; state.deadlineAt = null;
