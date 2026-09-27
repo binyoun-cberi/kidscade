@@ -27,7 +27,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .panelTitle{font-size:11px;font-weight:1000;color:var(--gold);margin:4px 0 7px}.countryCard{padding:10px;border:1px solid var(--line);border-radius:14px;background:#192941;margin-bottom:11px}
 .countryCard b{font-size:16px}.countryCard p{margin:4px 0 0;color:var(--muted);font-size:9.5px;line-height:1.45}
 .objective{padding:8px;border:1px solid #2e4561;border-radius:10px;background:#111e31;margin:5px 0;font-size:9.5px}.objective.done{border-color:#3d8c70;color:#9ee7c7;background:#112a26}
-.feed{margin-top:12px}.feedItem{padding:7px 2px;border-bottom:1px solid #263950;font-size:9px;line-height:1.4;color:#b8c8d9}.feedItem b{color:#fff}
+.feed{margin-top:12px}.feedItem{padding:7px 2px;border-bottom:1px solid #263950;font-size:9px;line-height:1.4;color:#b8c8d9}.feedItem b{color:#fff}.frontItem{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:7px 8px;border:1px solid #2e4561;border-radius:10px;background:#111e31;margin:5px 0;font-size:9px}.frontItem b{font-size:9px}.frontState{padding:3px 6px;border-radius:999px;font-size:8px;font-weight:1000;white-space:nowrap}.frontState.stable{background:#173329;color:#a9e8c9}.frontState.watch{background:#33301b;color:#ffe09a}.frontState.hot{background:#3c281c;color:#ffbf8b}.frontState.danger{background:#401f29;color:#ff9aa2}
 .mapWrap{position:relative;min-width:0;min-height:0;overflow:hidden;background:
  radial-gradient(circle at 50% 44%,rgba(58,105,142,.34),transparent 50%),
  linear-gradient(#17324b,#0e2134)}
@@ -41,7 +41,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .hex{stroke:#a5bad0;stroke-opacity:.25;stroke-width:1.3;vector-effect:non-scaling-stroke;cursor:pointer;transition:.12s}
 .hex:hover{stroke:#fff;stroke-opacity:.82;stroke-width:2.4}.seaHex{stroke-opacity:.08;fill-opacity:.82}.landHex{stroke-opacity:.32}.hex.selected{stroke:#ffd166;stroke-opacity:1;stroke-width:3}.hex.reachable{stroke:#8de0ff;stroke-opacity:1;stroke-width:2.8}.hex.reachable.zocReach{stroke:#f6bd60;stroke-width:3.1}.hex.attackable{stroke:#ff747e;stroke-opacity:1;stroke-width:3.1}
 .movePath{fill:none;stroke:#ffe39a;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 5;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 2px rgba(0,0,0,.8))}.movePath.attack{stroke:#ff8991}.movePathNode{fill:#fff3c2;stroke:#182536;stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
-.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}.resourceIcon{font-size:9px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#08111d;stroke-width:2.4px}.factionBorderBase{fill:none;stroke:#07101b;stroke-width:5.2;stroke-linecap:round;pointer-events:none;opacity:.92}.factionBorder{fill:none;stroke-width:2.8;stroke-linecap:round;pointer-events:none;opacity:.98}.factionBorderPlayer{fill:none;stroke-width:3.8;stroke-linecap:round;pointer-events:none;opacity:1;filter:drop-shadow(0 0 2px rgba(255,255,255,.55))}
+.hexOverlay{pointer-events:none;opacity:.22}.hexImpr{font-size:14px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1422;stroke-width:3px}.hexImprImage{pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.85))}.hexImprLevel{font-size:6.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2px;pointer-events:none}.resourceIcon{font-size:9px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#08111d;stroke-width:2.4px}.factionBorderBase{fill:none;stroke:#07101b;stroke-width:5.2;stroke-linecap:round;pointer-events:none;opacity:.92}.factionBorder{fill:none;stroke-width:2.8;stroke-linecap:round;pointer-events:none;opacity:.98}.factionBorderPlayer{fill:none;stroke-width:3.8;stroke-linecap:round;pointer-events:none;opacity:1;filter:drop-shadow(0 0 2px rgba(255,255,255,.55))}.frontBorderTense{stroke-width:4.2;filter:drop-shadow(0 0 2px rgba(255,209,102,.55))}.frontBorderHot{stroke-width:4.8;filter:drop-shadow(0 0 3px rgba(255,145,92,.85))}.frontBorderDanger{stroke-width:5.4;filter:drop-shadow(0 0 4px rgba(255,83,99,.95))}
 .cityGroup{pointer-events:none}.cityCore{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
 .cityName{font-size:10.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:3.4px}.citySub{font-size:7.5px;font-weight:900;fill:#cbd9e8;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px}
 .unit{cursor:pointer;filter:drop-shadow(0 2px 2px rgba(0,0,0,.75))}.unitRing{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit.selected .unitRing{stroke:#ffd166;stroke-width:4}.unitIcon{font-size:17px;text-anchor:middle;pointer-events:none}.unitCount{font-size:7.5px;font-weight:1000;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#08111d;stroke-width:2.6px;pointer-events:none}
@@ -88,6 +88,8 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
       <div id="countryCard" class="countryCard"></div>
       <div class="panelTitle">이번 역사 목표</div>
       <div id="objectives"></div>
+      <div class="panelTitle" style="margin-top:11px">전선 상황</div>
+      <div id="fronts"></div>
       <div class="feed"><div class="panelTitle">최근 소식</div><div id="feed"></div></div>
     </aside>
 
@@ -151,11 +153,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=18"></script>
-<script src="./core/pathfinding.js?v=18"></script>
-<script src="./core/supply.js?v=18"></script>
-<script src="./ai/strategy.js?v=18"></script>
-<script src="./core/invariants.js?v=18"></script>
+<script src="./core/actions.js?v=19"></script>
+<script src="./core/pathfinding.js?v=19"></script>
+<script src="./core/supply.js?v=19"></script>
+<script src="./ai/strategy.js?v=19"></script>
+<script src="./core/invariants.js?v=19"></script>
 <script>
 (function(){
 "use strict";
@@ -695,6 +697,59 @@ function drawBorderPath(layer,a,b,color,cls,dash,offset){
   if(offset!=null)attrs["stroke-dashoffset"]=offset;
   layer.appendChild(svgEl("path",attrs));
 }
+function militaryPowerNear(owner,q,r,radius){
+  var total=0;
+  state.units.forEach(function(u){
+    if(u.owner!==owner||u.troops<=0||hexDistance(u.q,u.r,q,r)>radius)return;
+    var d=UNIT_TYPES[u.type]||UNIT_TYPES.infantry;
+    total+=u.troops*((d.atk+d.def)/2);
+  });
+  Object.keys(CITIES).forEach(function(id){
+    if(cityOwner(id)!==owner)return;
+    var c=CITIES[id];if(hexDistance(c.q,c.r,q,r)<=radius)total+=garrisonAtTile(tile(c.q,c.r))*.8;
+  });
+  return total;
+}
+function hostilePowerNear(owner,q,r,radius){
+  var total=0;
+  state.units.forEach(function(u){
+    if(u.owner===owner||u.owner==="neutral"||u.troops<=0||!canAttackFaction(owner,u.owner)||hexDistance(u.q,u.r,q,r)>radius)return;
+    var d=UNIT_TYPES[u.type]||UNIT_TYPES.infantry;
+    total+=u.troops*((d.atk+d.def)/2);
+  });
+  return total;
+}
+function frontLevel(owner,q,r){
+  var friendly=militaryPowerNear(owner,q,r,3),enemy=hostilePowerNear(owner,q,r,3),ratio=enemy/Math.max(120,friendly);
+  if(enemy<=40)return{key:"stable",name:"안정",friendly:friendly,enemy:enemy};
+  if(ratio>=1.35)return{key:"danger",name:"위험",friendly:friendly,enemy:enemy};
+  if(ratio>=.82||friendly+enemy>=520)return{key:"hot",name:"접전",friendly:friendly,enemy:enemy};
+  return{key:"watch",name:"경계",friendly:friendly,enemy:enemy};
+}
+function playerFronts(){
+  var out=[];
+  factionCities(state.player).forEach(function(id){
+    var c=CITIES[id],nearest=999;
+    state.units.forEach(function(u){if(u.owner!==state.player&&u.troops>0&&canAttackFaction(state.player,u.owner))nearest=Math.min(nearest,hexDistance(c.q,c.r,u.q,u.r));});
+    var border=neighbors(c.q,c.r).some(function(n){return n.owner!==state.player&&n.terrain!=="sea";});
+    if(nearest<=7||border||c.capital){
+      var f=frontLevel(state.player,c.q,c.r);
+      out.push({id:id,name:c.name,level:f,nearest:nearest,capital:!!c.capital});
+    }
+  });
+  out.sort(function(a,b){
+    var rank={danger:4,hot:3,watch:2,stable:1};
+    return rank[b.level.key]-rank[a.level.key]||(a.nearest-b.nearest)||(b.capital-a.capital);
+  });
+  return out.slice(0,3);
+}
+function frontClassForEdge(t,n){
+  if(!n||n.owner==="neutral"||t.owner==="neutral"||t.owner===n.owner)return"";
+  var playerSide=t.owner===state.player?t:(n.owner===state.player?n:null);
+  if(!playerSide)return"";
+  var f=frontLevel(state.player,playerSide.q,playerSide.r);
+  return f.key==="danger"?" frontBorderDanger":f.key==="hot"?" frontBorderHot":f.key==="watch"?" frontBorderTense":"";
+}
 function drawFactionBorders(layer){
   layer.innerHTML="";
   var dirs=[
@@ -719,8 +774,9 @@ function drawFactionBorders(layer){
       if(no==="neutral"){
         drawBorderPath(layer,a,b,FACTIONS[t.owner].color,t.owner===state.player?"factionBorderPlayer":"factionBorder");
       }else{
-        drawBorderPath(layer,a,b,FACTIONS[t.owner].color,t.owner===state.player?"factionBorderPlayer":"factionBorder","5 5",0);
-        drawBorderPath(layer,a,b,FACTIONS[no].color,no===state.player?"factionBorderPlayer":"factionBorder","5 5",5);
+        var frontClass=frontClassForEdge(t,n);
+        drawBorderPath(layer,a,b,FACTIONS[t.owner].color,(t.owner===state.player?"factionBorderPlayer":"factionBorder")+frontClass,"5 5",0);
+        drawBorderPath(layer,a,b,FACTIONS[no].color,(no===state.player?"factionBorderPlayer":"factionBorder")+frontClass,"5 5",5);
       }
     });
   });
@@ -740,6 +796,14 @@ function renderLeft(){
   document.getElementById("countryCard").innerHTML="<b>"+f.icon+" "+f.name+"</b><p>"+f.trait+"</p>";
   var box=document.getElementById("objectives");box.innerHTML="";
   OBJECTIVES[state.player].forEach(function(o){var d=document.createElement("div");d.className="objective"+(o.check()?" done":"");d.textContent=(o.check()?"✓ ":"○ ")+o.text;box.appendChild(d);});
+  var fronts=document.getElementById("fronts");fronts.innerHTML="";
+  var frontList=playerFronts();
+  if(!frontList.length){fronts.innerHTML="<div class=\"frontItem\"><b>접촉한 전선 없음</b><span class=\"frontState stable\">안정</span></div>";}
+  else frontList.forEach(function(x){
+    var d=document.createElement("div");d.className="frontItem";
+    d.innerHTML="<b>"+x.name+" 방면</b><span class=\"frontState "+x.level.key+"\">"+x.level.name+"</span>";
+    fronts.appendChild(d);
+  });
   var feed=document.getElementById("feed");feed.innerHTML="";
   state.feed.slice(-8).reverse().forEach(function(x){var d=document.createElement("div");d.className="feedItem";d.innerHTML="<b>"+x.date+"</b><br>"+x.text;feed.appendChild(d);});
 }
