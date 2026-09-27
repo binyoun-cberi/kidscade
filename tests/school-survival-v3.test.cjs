@@ -78,3 +78,40 @@ test('graduation can surface up to three earned future scenes',()=>{
   assert.match(html,/const list=\[\.\.\.relationshipFutureStories\(\)\]/);
   assert.match(html,/slice\(0,3\)\.map\(x=>x\.story\)/);
 });
+
+
+test('Taewo uses a separate antagonist state instead of normal friendship',()=>{
+  assert.match(html,/antagonists:\{'태오':\{bond:0,influence:0,defiance:0,moments:0\}\}/);
+  assert.match(html,/function antagonistTier\(name\)/);
+  assert.match(html,/function applyAntagonistChoice\(name,meta,constructive,fx\)/);
+  assert.match(html,/name==='태오'/);
+  assert.match(html,/영향 \$\{av\.influence\} \/ 저항 \$\{av\.defiance\}/);
+});
+
+test('Taewo antagonist arc spans grade 2 through graduation with consequences',()=>{
+  for(const id of [
+    'g2_taeo_cleanup_escape','g2_taeo_cleanup_caught',
+    'g3_taeo_prank','g3_taeo_prank_backfire',
+    'g4_taeo_winning_team',
+    'g5_taeo_anonymous_poll','g5_taeo_poll_fallout',
+    'g6_taeo_pack_offer','g6_taeo_respect','g6_taeo_last_prank'
+  ]) assert.ok(html.includes(id), 'missing Taewo antagonist event '+id);
+  assert.match(html,/chain:\{id:'g2_taeo_cleanup_caught',delay:2\}/);
+  assert.match(html,/chain:\{id:'g3_taeo_prank_backfire',delay:2\}/);
+  assert.match(html,/chain:\{id:'g5_taeo_poll_fallout',delay:2\}/);
+});
+
+test('Taewo route can end as influence, boundary, or mutual-rival outcome',()=>{
+  assert.match(html,/또 쉬운 길을 제안하는 목소리/);
+  assert.match(html,/친구는 아니어도 서로 인정한다/);
+  assert.match(html,/끝까지 지킨 선/);
+  assert.match(html,/taeo\.influence>=8/);
+  assert.match(html,/taeo\.defiance>=8&&taeo\.bond>=2/);
+  assert.match(html,/taeo\.defiance>=7/);
+});
+
+test('Taewo has a dedicated visual profile',()=>{
+  assert.match(html,/villain:\{classes:/);
+  assert.match(html,/if\(e\.antagonist\|\|\/친구\\s\*태오\//);
+  assert.match(html,/return 'villain'/);
+});
