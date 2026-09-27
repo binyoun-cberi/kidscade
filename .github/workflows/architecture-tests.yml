@@ -32,7 +32,7 @@ jobs:
             account-session-safety.js \
             account-ui-runtime.js \
             account-profile-gate.js \
-            seed-ranking.js \
+            sprout-power.js \
             seed-balance-sync.js \
             playtime-state.js \
             seed-wallet.js \
@@ -53,7 +53,7 @@ jobs:
             worker/index.mjs \
             worker/accounts.mjs \
             worker/teacher-admin.mjs \
-            worker/seed-rankings.mjs \
+            worker/sprout-power.mjs \
             worker/game-records.mjs \
             worker/multiplayer.mjs \
             worker/wordchain-match.mjs \
