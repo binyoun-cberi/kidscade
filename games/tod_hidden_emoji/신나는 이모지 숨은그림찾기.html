@@ -1,546 +1,846 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이모지 숨은 그림 찾기</title>
-    <style>
-        body {
-            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #2c3e50; /* 바깥 배경은 어둡게 */
-            height: 100vh;
-            display: flex;
-            flex-direction: row; /* 기본은 좌우 배치 */
-            overflow: hidden; /* 전체 화면 스크롤 방지 */
-        }
-
-        /* 왼쪽: 게임 영역 패널 */
-        #left-panel {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background-color: #1a252f;
-            position: relative;
-        }
-
-        /* 오른쪽: UI 컨트롤 패널 */
-        #right-panel {
-            width: 350px;
-            background-color: #f8f9fa;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            padding: 25px 20px;
-            z-index: 10;
-            overflow-y: auto;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column; /* 모바일에서는 위아래 배치 */
-            }
-            #left-panel {
-                height: 60vh;
-                padding: 10px;
-            }
-            #right-panel {
-                width: 100%;
-                height: 40vh;
-                box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-                padding: 15px;
-                box-sizing: border-box;
-            }
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e9ecef;
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-size: 22px;
-            margin: 0;
-            line-height: 1.3;
-        }
-
-        #sound-toggle {
-            font-size: 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
-        #sound-toggle:hover {
-            background: #e9ecef;
-        }
-
-        #timer-display {
-            font-size: 32px;
-            font-weight: bold;
-            color: #e67e22;
-            text-align: center;
-            background: #fff;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            border: 2px solid #fdebd0;
-        }
-
-        /* 찾을 목록 스타일 */
-        .target-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 20px 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* 2열 배치 */
-            gap: 10px;
-        }
-
-        .target-item {
-            background: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .target-item.found {
-            color: #95a5a6;
-            text-decoration: line-through;
-            background-color: #ecf0f1;
-            opacity: 0.6;
-            box-shadow: none;
-        }
-
-        /* 메시지 및 다음 버튼 영역 */
-        #status-area {
-            margin-top: auto; /* 남은 공간을 밀어내서 하단에 배치 */
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            text-align: center;
-        }
-
-        #message-text {
-            font-size: 18px;
-            font-weight: bold;
-            min-height: 44px;
-        }
-
-        .next-btn {
-            padding: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: none;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
-        }
-        .next-btn:hover { background-color: #2980b9; transform: translateY(-2px); }
-        .next-btn:active { transform: translateY(0); }
-
-        #game-wrapper {
-            position: relative;
-            /* 3:2 비율 유지하면서 부모 안에서 최대 크기로 꽉 차게 */
-            aspect-ratio: 3 / 2;
-            width: 100%;
-            max-height: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 6px solid #fff;
-            border-radius: 12px;
-            overflow: hidden;
-            background-color: #ddd;
-        }
-
-        #game-area {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            cursor: crosshair;
-            transition: background-image 0.5s ease-in-out;
-        }
-
-        /* 숨겨진 클릭 영역 (이모지) */
-        .hitbox {
-            position: absolute;
-            cursor: inherit; 
-            font-size: 40px; 
-            /* 1. 투명도를 0.15에서 0.3으로 올려서 조금 더 잘 보이게 조정 */
-            opacity: 0.3;    
-            /* 2. 블렌드 모드는 유지하여 배경과 자연스럽게 섞이게 함 */
-            mix-blend-mode: hard-light;
-            /* 3. 색감을 60%에서 80%로 올려서 약간 더 뚜렷하게 */
-            filter: saturate(80%); 
-            transition: opacity 0.5s ease, transform 0.3s ease, filter 0.3s, mix-blend-mode 0.3s; 
-            user-select: none; 
-            transform: translate(-50%, -50%);
-        }
-
-        /* 화면 크기가 작아지면 이모지 크기도 비율에 맞게 조금 줄임 */
-        @media (max-width: 1000px) { .hitbox { font-size: 30px; } }
-        @media (max-width: 600px) { .hitbox { font-size: 24px; } }
-
-        .hitbox.found-mark {
-            opacity: 1; 
-            /* 찾았을 때는 원래 색상과 질감으로 돌아오게 함 */
-            mix-blend-mode: normal;
-            filter: saturate(100%);
-            cursor: default;
-            pointer-events: none;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            z-index: 10; 
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); 
-        }
-
-        @keyframes popIn {
-            0% { transform: translate(-50%, -50%) scale(0.8); }
-            50% { transform: translate(-50%, -50%) scale(1.5); }
-            100% { transform: translate(-50%, -50%) scale(1.2); }
-        }
-
-        #loading {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(221, 221, 221, 0.95);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 24px; font-weight: bold; color: #2c3e50; z-index: 20;
-        }
-
-        #start-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(255, 255, 255, 0.98);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 200;
-        }
-        #start-screen h1 { font-size: 40px; margin-bottom: 10px; color: #2c3e50; text-align: center;}
-        
-        #start-game-btn {
-            padding: 20px 40px; font-size: 28px; background-color: #2ecc71; font-weight: bold;
-            color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 30px;
-            box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3); transition: transform 0.2s;
-        }
-        #start-game-btn:hover { transform: scale(1.05); }
-
-        #dev-tools {
-            margin-top: 25px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 8px;
-            font-size: 12px;
-        }
-        #dev-tools button {
-            background: #7f8c8d; color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>신나는 이모지 숨은그림찾기</title>
+<style>
+:root{
+  --ink:#203044;
+  --muted:#617084;
+  --card:#ffffff;
+  --line:#dce5ef;
+  --accent:#3977f6;
+  --good:#19a66a;
+  --warn:#ffb547;
+  --shadow:0 14px 35px rgba(24,45,78,.14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;color:var(--ink);background:#edf4fb}
+button{font:inherit}
+button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
+#app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  height:64px;padding:0 18px;display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);
+  position:relative;z-index:50
+}
+.brand{font-weight:900;font-size:20px;white-space:nowrap}
+.topbar-spacer{flex:1}
+.icon-btn,.small-btn{
+  border:0;border-radius:14px;background:#eef3f8;color:var(--ink);cursor:pointer;
+  min-width:46px;min-height:46px;font-weight:800
+}
+.small-btn{padding:0 14px}
+.icon-btn:active,.small-btn:active,.primary-btn:active,.theme-card:active{transform:scale(.97)}
+#game-view{flex:1;display:none;padding:16px;min-height:0}
+.play-layout{
+  margin:auto;width:min(1220px,100%);height:calc(100vh - 96px);
+  display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px
+}
+.board-card,.mission-panel{
+  background:var(--card);border-radius:24px;box-shadow:var(--shadow);overflow:hidden
+}
+.board-card{display:flex;min-width:0;min-height:0;position:relative}
+#scene{
+  position:relative;width:100%;height:100%;min-height:420px;overflow:hidden;
+  background:#bfe9ff center/cover no-repeat;touch-action:manipulation;user-select:none;
+  cursor:default;isolation:isolate
+}
+#scene.pixel-scene,#scene.pixel-scene img{image-rendering:pixelated}
+.scene-layer,.decor-layer,.target-layer{position:absolute;inset:0;pointer-events:none}
+.scene-layer{z-index:1}
+.decor-layer{z-index:2}
+.target-layer{z-index:5}
+.scene-layer img.fill-layer{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.decor{
+  position:absolute;transform:translate(-50%,-50%);object-fit:contain;
+  pointer-events:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.12))
+}
+.shape{
+  position:absolute;transform:translate(-50%,-50%);pointer-events:none
+}
+.barn{
+  background:#d95c4d;border:5px solid #963f37;border-radius:6px;
+  box-shadow:0 7px 0 rgba(0,0,0,.08)
+}
+.barn:before{
+  content:"";position:absolute;left:50%;top:-42%;width:78%;height:70%;
+  background:#9d473e;transform:translateX(-50%) rotate(45deg);z-index:-1;border-radius:4px
+}
+.barn:after{
+  content:"";position:absolute;left:37%;bottom:0;width:26%;height:48%;
+  background:#6e3b2f;border:3px solid #4f2b23;border-bottom:0;border-radius:5px 5px 0 0
+}
+.fence{
+  background:repeating-linear-gradient(90deg,#e9c782 0 7px,transparent 7px 28px);
+  border-top:7px solid #d7ad60;border-bottom:7px solid #d7ad60
+}
+.building{border:4px solid rgba(39,55,78,.22);border-radius:8px 8px 2px 2px;box-shadow:0 8px 0 rgba(0,0,0,.08)}
+.building:after{
+  content:"";position:absolute;inset:14% 14% 18%;
+  background:repeating-linear-gradient(90deg,#dff6ff 0 13%,transparent 13% 27%);
+  opacity:.95
+}
+.scene-candy{background:linear-gradient(#9de6ff 0 56%,#ffd4e8 56% 100%)}
+.scene-candy:before{
+  content:"";position:absolute;z-index:0;left:-8%;right:-8%;bottom:-18%;height:55%;
+  border-radius:50% 50% 0 0;background:linear-gradient(#ffc0dc 0 32%,#f6a6d1 32% 100%);
+  border-top:10px solid rgba(255,255,255,.72)
+}
+.scene-ice{background:linear-gradient(#bfeaff 0 58%,#f8fdff 58% 100%)}
+.scene-ice:before{
+  content:"";position:absolute;z-index:0;left:-8%;right:-8%;bottom:-18%;height:53%;
+  border-radius:48% 52% 0 0;background:#f5fbff;border-top:10px solid #fff
+}
+.scene-town{background:linear-gradient(#a7ddff 0 63%,#cbd2d9 63% 100%)}
+.scene-town:before{
+  content:"";position:absolute;z-index:0;left:0;right:0;bottom:0;height:32%;background:#606b76
+}
+.scene-town:after{
+  content:"";position:absolute;z-index:0;left:0;right:0;bottom:14%;height:5px;
+  background:repeating-linear-gradient(90deg,#fff 0 44px,transparent 44px 82px);opacity:.9
+}
+.target-hit{
+  position:absolute;transform:translate(-50%,-50%);width:clamp(56px,7vw,72px);height:clamp(56px,7vw,72px);
+  border:0;background:transparent;padding:0;display:grid;place-items:center;pointer-events:auto;
+  cursor:pointer;border-radius:50%;touch-action:manipulation
+}
+.target-hit img{
+  width:min(var(--sprite-size),12vw);height:min(var(--sprite-size),12vw);max-width:58px;max-height:58px;
+  object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18));
+  transition:transform .18s ease,filter .18s ease,opacity .2s ease
+}
+.target-hit .emoji-fallback{display:none;font-size:40px;pointer-events:none}
+.target-hit.found{pointer-events:none}
+.target-hit.found img{animation:foundPop .55s ease forwards;filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 10px #32c989)}
+.target-hit.found:after{
+  content:"✓";position:absolute;right:1px;top:1px;width:24px;height:24px;border-radius:50%;
+  display:grid;place-items:center;background:#21b66f;color:#fff;font-weight:900;box-shadow:0 2px 7px rgba(0,0,0,.2)
+}
+.target-hit.hinted:before{
+  content:"";position:absolute;inset:-9px;border:5px solid #ffe46a;border-radius:50%;
+  animation:hintPulse .75s ease-in-out infinite alternate;box-shadow:0 0 0 7px rgba(255,228,106,.24)
+}
+@keyframes foundPop{0%{transform:scale(.8)}45%{transform:scale(1.45)}100%{transform:scale(1.12)}}
+@keyframes hintPulse{from{transform:scale(.88);opacity:.65}to{transform:scale(1.15);opacity:1}}
+.tap-ripple{
+  position:absolute;width:36px;height:36px;border:4px solid rgba(255,255,255,.95);border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:8;animation:ripple .48s ease-out forwards
+}
+@keyframes ripple{from{opacity:1;scale:.55}to{opacity:0;scale:1.65}}
+.scene-badge{
+  position:absolute;left:14px;top:14px;z-index:20;background:rgba(255,255,255,.91);
+  border:1px solid rgba(255,255,255,.75);backdrop-filter:blur(6px);border-radius:999px;
+  padding:9px 14px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.12)
+}
+.timer-chip{
+  position:absolute;right:14px;top:14px;z-index:20;background:rgba(32,48,68,.82);color:#fff;
+  border-radius:999px;padding:9px 14px;font-weight:900;display:none
+}
+.mission-panel{padding:18px;display:flex;flex-direction:column;min-height:0}
+.mission-title{font-size:23px;font-weight:900;margin:0 0 4px}
+.mission-sub{color:var(--muted);font-weight:700;margin:0 0 14px}
+#target-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:auto;padding:2px;margin-bottom:14px}
+.target-card{
+  min-height:104px;border:2px solid var(--line);border-radius:18px;background:#fff;padding:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-weight:900;text-align:center
+}
+.target-card img{width:48px;height:48px;object-fit:contain;image-rendering:auto}
+.target-card.pixel img{image-rendering:pixelated}
+.target-card.found{background:#ebf8f1;border-color:#9cdec0;color:#6f7c86}
+.target-card.found img{opacity:.45;filter:grayscale(.6)}
+.target-card.found .target-name{text-decoration:line-through}
+.target-emoji{font-size:16px}
+.target-name{font-size:14px;line-height:1.2}
+#message{
+  min-height:52px;margin-top:auto;border-radius:16px;background:#f2f6fb;padding:12px;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;color:#41526a
+}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.primary-btn,.secondary-btn{
+  min-height:50px;border:0;border-radius:15px;font-weight:900;cursor:pointer;padding:10px 12px
+}
+.primary-btn{background:var(--accent);color:#fff;box-shadow:0 6px 13px rgba(57,119,246,.2)}
+.secondary-btn{background:#eef3f8;color:#34465e}
+#complete{
+  position:absolute;inset:0;z-index:40;background:rgba(28,47,67,.36);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:20px
+}
+.complete-card{
+  width:min(430px,94%);background:#fff;border-radius:26px;padding:26px;text-align:center;box-shadow:0 20px 55px rgba(0,0,0,.2)
+}
+.complete-stars{font-size:48px;letter-spacing:5px;animation:stars .65s ease both}
+@keyframes stars{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.complete-card h2{margin:6px 0 4px;font-size:28px}
+.complete-card p{color:var(--muted);font-weight:700}
+.complete-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+#start-screen{
+  flex:1;padding:24px 18px 38px;overflow:auto;background:
+  radial-gradient(circle at 12% 15%,rgba(255,212,119,.42),transparent 23%),
+  radial-gradient(circle at 86% 10%,rgba(119,213,255,.42),transparent 22%),
+  linear-gradient(#f8fbff,#edf4fb)
+}
+.start-wrap{width:min(1050px,100%);margin:auto}
+.hero{
+  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:22px;align-items:center;
+  background:#fff;border-radius:28px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px
+}
+.hero-copy h1{font-size:clamp(31px,5vw,52px);line-height:1.05;margin:0 0 12px;letter-spacing:-2px}
+.hero-copy p{margin:0;color:var(--muted);font-size:18px;font-weight:700;line-height:1.6}
+.hero img{width:100%;max-height:260px;object-fit:cover;border-radius:22px;background:#e8eff6}
+.section-card{background:#fff;border-radius:24px;padding:20px;box-shadow:var(--shadow);margin-top:16px}
+.section-title{font-size:21px;font-weight:900;margin-bottom:12px}
+.difficulty-row{display:flex;gap:10px;flex-wrap:wrap}
+.diff-btn{
+  flex:1;min-width:170px;border:2px solid var(--line);background:#fff;border-radius:17px;padding:12px;cursor:pointer;text-align:left
+}
+.diff-btn strong{display:block;font-size:17px;margin-bottom:3px}
+.diff-btn span{font-size:13px;color:var(--muted);font-weight:700}
+.diff-btn.active{border-color:#3977f6;background:#eef5ff;box-shadow:0 0 0 3px rgba(57,119,246,.08)}
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.theme-card{
+  border:2px solid var(--line);background:#fff;border-radius:20px;padding:16px;text-align:left;cursor:pointer;
+  min-height:130px;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease
+}
+.theme-card:hover{transform:translateY(-2px);border-color:#9fc0ff;box-shadow:0 9px 20px rgba(41,79,130,.09)}
+.theme-emoji{font-size:34px;display:block;margin-bottom:8px}
+.theme-name{display:block;font-size:18px;font-weight:900}
+.theme-desc{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-top:4px;line-height:1.4}
+.random-btn{width:100%;margin-top:12px;min-height:54px}
+.screen-reader{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (max-width:900px){
+  .play-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;height:auto;min-height:calc(100vh - 96px)}
+  .board-card{aspect-ratio:3/2}
+  #scene{min-height:0}
+  .mission-panel{padding:13px}
+  .mission-title{font-size:19px}
+  .mission-sub{font-size:13px;margin-bottom:8px}
+  #target-list{grid-template-columns:repeat(4,1fr);overflow:visible;margin-bottom:8px}
+  .target-card{min-height:82px;padding:5px}
+  .target-card img{width:38px;height:38px}
+  .target-name{font-size:12px}
+  #message{min-height:42px;padding:8px}
+}
+@media (max-width:650px){
+  .topbar{height:58px;padding:0 10px}.brand{font-size:16px}.small-btn{padding:0 10px;min-height:42px}.icon-btn{min-height:42px;min-width:42px}
+  #game-view{padding:8px}.play-layout{gap:8px;min-height:calc(100vh - 74px)}
+  .board-card,.mission-panel{border-radius:18px}
+  #target-list{grid-template-columns:repeat(3,1fr)}
+  .target-card{min-height:76px;border-radius:14px}
+  .hero{grid-template-columns:1fr;padding:18px}.hero img{max-height:190px}
+  .theme-grid{grid-template-columns:1fr 1fr}
+  .theme-card{min-height:118px;padding:13px}
+  .section-card{padding:15px}
+  .action-row{grid-template-columns:1fr 1fr}
+}
+@media (max-width:430px){
+  .theme-grid{grid-template-columns:1fr 1fr}
+  .theme-name{font-size:16px}.theme-desc{font-size:12px}
+  #target-list{grid-template-columns:repeat(3,1fr)}
+  .target-card img{width:34px;height:34px}
+  .target-card{min-height:70px}
+  .target-name{font-size:11px}
+}
+</style>
 </head>
 <body>
+<div id="app">
+  <div class="topbar">
+    <button class="small-btn" id="home-btn" type="button" style="display:none">← 테마</button>
+    <div class="brand">🔎 신나는 이모지 숨은그림찾기</div>
+    <div class="topbar-spacer"></div>
+    <button class="icon-btn" id="sound-btn" type="button" aria-label="효과음 켜기/끄기">🔊</button>
+  </div>
 
-    <div id="start-screen">
-        <h1>😊 신나는 이모지<br>숨은 그림 찾기 😊</h1>
-        <p style="font-size: 20px; color: #555; text-align: center; margin-top: 10px;">
-            소리를 켜면 더 재밌어요!<br>배경은 매번 무작위로 바뀝니다.
-        </p>
-        <button id="start-game-btn">게임 시작하기 🎮</button>
+  <main id="start-screen">
+    <div class="start-wrap">
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>이모지 힌트를 보고<br>그림 속 친구를 찾아요!</h1>
+          <p>무작위 사진 대신 키즈케이드 안의 그림 에셋으로 장면을 만들었어요. 같은 테마도 찾을 친구와 숨는 곳이 매번 달라집니다.</p>
+        </div>
+        <img src="../../assets/gate-image/신나는 이모지 숨은 그림 찾기.png" alt="신나는 이모지 숨은그림찾기 대표 이미지">
+      </section>
+
+      <section class="section-card">
+        <div class="section-title">1. 난이도를 골라요</div>
+        <div class="difficulty-row" id="difficulty-row">
+          <button class="diff-btn" type="button" data-diff="easy"><strong>🌱 쉬움</strong><span>3개 찾기 · 크게 보여요</span></button>
+          <button class="diff-btn active" type="button" data-diff="normal"><strong>🌼 보통</strong><span>4개 찾기 · 추천 난이도</span></button>
+          <button class="diff-btn" type="button" data-diff="challenge"><strong>⭐ 도전</strong><span>5개 찾기 · 기록도 재요</span></button>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="section-title">2. 어디로 갈까요?</div>
+        <div class="theme-grid" id="theme-grid"></div>
+        <button class="primary-btn random-btn" id="random-btn" type="button">🎲 아무 곳이나 출발!</button>
+      </section>
     </div>
+  </main>
 
-    <div id="left-panel">
-        <div id="game-wrapper">
-            <div id="loading" style="display: none;">⏳ 맵을 불러오는 중...</div>
-            <div id="game-area">
-                <!-- 이모지들이 이곳에 생성됩니다 -->
+  <main id="game-view">
+    <div class="play-layout">
+      <section class="board-card">
+        <div id="scene" aria-label="숨은그림찾기 놀이 장면">
+          <div class="scene-layer" id="scene-layer"></div>
+          <div class="decor-layer" id="decor-layer"></div>
+          <div class="target-layer" id="target-layer"></div>
+          <div class="scene-badge" id="scene-badge"></div>
+          <div class="timer-chip" id="timer-chip">⏱ 0.0초</div>
+
+          <div id="complete">
+            <div class="complete-card">
+              <div class="complete-stars">⭐ ⭐ ⭐</div>
+              <h2>모두 찾았어요!</h2>
+              <p id="complete-text">정말 잘 찾았어요.</p>
+              <div class="complete-actions">
+                <button class="primary-btn" id="again-btn" type="button">한 번 더</button>
+                <button class="secondary-btn" id="other-btn" type="button">다른 곳</button>
+              </div>
             </div>
+          </div>
         </div>
+      </section>
+
+      <aside class="mission-panel">
+        <h2 class="mission-title">오늘 찾을 친구</h2>
+        <p class="mission-sub" id="mission-sub">그림과 이모지를 같이 보고 찾아보세요.</p>
+        <div id="target-list"></div>
+        <div id="message" aria-live="polite">천천히 둘러봐요. 꼭꼭 숨어 있어요!</div>
+        <div class="action-row">
+          <button class="secondary-btn" id="hint-btn" type="button">💡 힌트</button>
+          <button class="primary-btn" id="new-round-btn" type="button">🔄 새로 숨기기</button>
+        </div>
+      </aside>
     </div>
+  </main>
 
-    <div id="right-panel">
-        <div class="panel-header">
-            <h1 id="stage-title">🔍 Stage 1</h1>
-            <button id="sound-toggle" title="배경음악 켜기/끄기">🔇</button>
-        </div>
+  <div class="screen-reader" id="announce" aria-live="assertive"></div>
+</div>
 
-        <div id="timer-display">⏱️ 0.0초</div>
-        
-        <ul class="target-list" id="target-list">
-            <!-- 자바스크립트로 리스트가 생성됩니다 -->
-        </ul>
+<script>
+(function(){
+  "use strict";
 
-        <div id="status-area">
-            <div id="message-text"></div>
-            <button id="next-stage-btn" class="next-btn">다음 스테이지 ➡️</button>
-        </div>
+  var ROOT = "../../assets/game/";
+  var difficulty = "normal";
+  var currentSceneKey = null;
+  var currentTargets = [];
+  var foundIds = new Set();
+  var wrongTaps = 0;
+  var startedAt = 0;
+  var timerHandle = 0;
+  var soundOn = true;
+  var hintLocked = false;
 
-        <!-- 제작자 도구 -->
-        <div id="dev-tools">
-            <button id="toggle-dev">숨겨진 이모지 보기 (Off)</button>
-            <div style="color: #555; margin-top: 5px;">
-                랜덤 좌표 활성화 됨.<br>
-                <span id="click-coords" style="color: #c0392b; font-weight: bold;">클릭: (0%, 0%)</span>
-            </div>
-        </div>
-    </div>
+  var DIFFICULTY = {
+    easy: { count: 3, sprite: 54, label: "쉬움" },
+    normal: { count: 4, sprite: 47, label: "보통" },
+    challenge: { count: 5, sprite: 41, label: "도전" }
+  };
 
-    <script>
-        const sfxCorrect = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
-        const sfxClear = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-        const bgm = new Audio('https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3');
-        bgm.loop = true;
-        bgm.volume = 0.2;
-        let isSoundOn = false;
+  function asset(path){ return ROOT + path; }
+  function item(name, emoji, src, pixel){ return { name:name, emoji:emoji, src:asset(src), pixel:!!pixel }; }
+  function deco(src, x, y, w, rotate, pixel){
+    return { type:"image", src:asset(src), x:x, y:y, w:w, rotate:rotate || 0, pixel:!!pixel };
+  }
+  function shape(className, x, y, w, h, color){
+    return { type:"shape", className:className, x:x, y:y, w:w, h:h, color:color || "" };
+  }
 
-        const soundToggleBtn = document.getElementById('sound-toggle');
-        const startScreen = document.getElementById('start-screen');
-        const startGameBtn = document.getElementById('start-game-btn');
+  var SLOTS = [
+    {x:13,y:24,s:.92},{x:28,y:30,s:.82},{x:46,y:22,s:.88},{x:66,y:29,s:.78},{x:84,y:23,s:.92},
+    {x:18,y:50,s:.8},{x:38,y:48,s:.9},{x:59,y:51,s:.78},{x:78,y:48,s:.86},
+    {x:11,y:72,s:.88},{x:30,y:76,s:.76},{x:51,y:70,s:.9},{x:70,y:76,s:.8},{x:88,y:70,s:.9}
+  ];
 
-        startGameBtn.addEventListener('click', () => {
-            startScreen.style.display = 'none';
-            toggleSound(true); 
-            loadStage(currentStageIndex);
-        });
+  var SCENES = {
+    ocean: {
+      name:"바닷속 친구들", emoji:"🌊", desc:"물고기와 해초 사이를 살펴봐요", className:"scene-ocean", pixel:true,
+      background:asset("2d/underwater/underwater-diving/environment/background.png"),
+      layers:[asset("2d/underwater/underwater-diving/environment/midground.png")],
+      decorations:[
+        deco("2d/fish/background_seaweed_a.png",8,69,10,0,true),
+        deco("2d/fish/background_seaweed_g.png",91,71,11,0,true),
+        deco("2d/fish/rock_a.png",17,83,9,-5,true),
+        deco("2d/fish/rock_b.png",82,84,8,7,true),
+        deco("2d/fish/seaweed_green_a.png",34,78,8,0,true),
+        deco("2d/fish/seaweed_pink_a.png",66,79,8,0,true),
+        deco("2d/fish/bubble_a.png",23,16,4,0,true),
+        deco("2d/fish/bubble_b.png",73,17,4,0,true)
+      ],
+      candidates:[
+        item("파란 물고기","🐟","2d/fish/fish_blue.png",true),
+        item("주황 물고기","🐠","2d/fish/fish_orange.png",true),
+        item("초록 물고기","🐟","2d/fish/fish_green.png",true),
+        item("분홍 물고기","🐠","2d/fish/fish_pink.png",true),
+        item("빨간 물고기","🐟","2d/fish/fish_red.png",true),
+        item("갈색 물고기","🐠","2d/fish/fish_brown.png",true)
+      ]
+    },
+    mushroom: {
+      name:"신비한 버섯숲", emoji:"🍄", desc:"버섯과 숲속 동물을 찾아요", className:"scene-mushroom", pixel:true,
+      background:asset("2d/platformer-art/expansions/mushroom/backgrounds/bg-shroom.png"),
+      layers:[],
+      decorations:[
+        deco("2d/platformer-art/expansions/mushroom/bush.png",12,79,11,0,true),
+        deco("2d/platformer-art/expansions/mushroom/bush.png",88,78,12,0,true),
+        deco("2d/platformer-art/expansions/mushroom/tall-shroom-red.png",22,67,8,-5,true),
+        deco("2d/platformer-art/expansions/mushroom/tall-shroom-brown.png",77,68,8,5,true),
+        deco("2d/platformer-art/expansions/mushroom/shroom-red-mid.png",51,81,8,0,true)
+      ],
+      candidates:[
+        item("빨간 버섯","🍄","2d/platformer-art/expansions/mushroom/tiny-shroom-red.png",true),
+        item("갈색 버섯","🍄","2d/platformer-art/expansions/mushroom/tiny-shroom-brown.png",true),
+        item("황갈색 버섯","🍄","2d/platformer-art/expansions/mushroom/tiny-shroom-tan.png",true),
+        item("토끼","🐰","2d/animals/round/rabbit.png",false),
+        item("개구리","🐸","2d/animals/round/frog.png",false),
+        item("부엉이","🦉","2d/animals/round/owl.png",false)
+      ]
+    },
+    candy: {
+      name:"달콤한 사탕나라", emoji:"🍭", desc:"알록달록 간식을 찾아요", className:"scene-candy", pixel:true,
+      background:"",
+      layers:[],
+      decorations:[
+        deco("2d/platformer-art/expansions/candy/cake-hill-left2.png",13,77,14,0,true),
+        deco("2d/platformer-art/expansions/candy/cake-hill-right2.png",87,77,14,0,true),
+        deco("2d/platformer-art/expansions/candy/lollipop-white-red.png",18,47,8,-6,true),
+        deco("2d/platformer-art/expansions/candy/lollipop-white-green.png",82,45,8,5,true),
+        deco("2d/platformer-art/expansions/candy/cream-pink.png",50,77,8,0,true),
+        deco("2d/platformer-art/expansions/candy/waffle-white.png",67,80,7,8,true)
+      ],
+      candidates:[
+        item("빨간 사탕","🍬","2d/platformer-art/expansions/candy/candy-red.png",true),
+        item("초록 사탕","🍬","2d/platformer-art/expansions/candy/candy-green.png",true),
+        item("파란 사탕","🍬","2d/platformer-art/expansions/candy/candy-blue.png",true),
+        item("초코 쿠키","🍪","2d/platformer-art/expansions/candy/cookie-choco.png",true),
+        item("컵케이크","🧁","2d/platformer-art/expansions/candy/cup-cake.png",true),
+        item("하트 사탕","💗","2d/platformer-art/expansions/candy/heart.png",true)
+      ]
+    },
+    ice: {
+      name:"반짝반짝 눈나라", emoji:"❄️", desc:"눈밭에 숨은 겨울 친구를 찾아요", className:"scene-ice", pixel:true,
+      background:"",
+      layers:[],
+      decorations:[
+        deco("2d/platformer-art/expansions/ice/snow-hill.png",18,80,18,0,true),
+        deco("2d/platformer-art/expansions/ice/snow-hill-low.png",82,82,18,0,true),
+        deco("2d/platformer-art/expansions/ice/dead-tree.png",15,55,9,0,true),
+        deco("2d/platformer-art/expansions/ice/tree-top-snow.png",85,52,11,0,true),
+        deco("2d/platformer-art/expansions/ice/cane-green-small.png",66,72,6,0,true),
+        deco("2d/platformer-art/expansions/ice/ice-block.png",37,83,10,0,true)
+      ],
+      candidates:[
+        item("펭귄","🐧","2d/animals/round/penguin.png",false),
+        item("이글루","🏠","2d/platformer-art/expansions/ice/igloo.png",true),
+        item("큰 눈덩이","⚪","2d/platformer-art/expansions/ice/snow-ball-big.png",true),
+        item("바위","🪨","2d/platformer-art/expansions/ice/rock.png",true),
+        item("작은 소나무","🌲","2d/platformer-art/expansions/ice/pine-sapling.png",true),
+        item("겨울풀","🌿","2d/platformer-art/expansions/ice/plant.png",true)
+      ]
+    },
+    farm: {
+      name:"동물 가득 농장", emoji:"🚜", desc:"초원과 헛간 주변을 살펴봐요", className:"scene-farm", pixel:false,
+      background:asset("2d/platformer-art/expansions/mushroom/backgrounds/bg-grasslands.png"),
+      layers:[],
+      shapes:[
+        shape("barn",74,54,18,22,""),
+        shape("fence",31,73,36,11,"")
+      ],
+      decorations:[
+        deco("2d/vehicles/pixel/cars/tractor.png",17,75,9,-2,true),
+        deco("2d/animals/round/dog.png",86,78,8,0,false),
+        deco("2d/animals/round/rabbit.png",46,82,7,0,false)
+      ],
+      candidates:[
+        item("소","🐄","2d/animals/round/cow.png",false),
+        item("돼지","🐷","2d/animals/round/pig.png",false),
+        item("닭","🐔","2d/animals/round/chicken.png",false),
+        item("오리","🦆","2d/animals/round/duck.png",false),
+        item("말","🐴","2d/animals/round/horse.png",false),
+        item("염소","🐐","2d/animals/round/goat.png",false)
+      ]
+    },
+    town: {
+      name:"씽씽 작은마을", emoji:"🏘️", desc:"도로와 건물 사이 탈것을 찾아요", className:"scene-town", pixel:true,
+      background:"",
+      layers:[],
+      shapes:[
+        shape("building",13,43,16,38,"#f4c86c"),
+        shape("building",33,47,17,31,"#ef8d7b"),
+        shape("building",67,44,16,37,"#81c3dd"),
+        shape("building",87,48,17,29,"#a6d77a")
+      ],
+      decorations:[
+        deco("2d/vehicles/pixel/props/sign-street.png",48,55,6,0,true),
+        deco("2d/vehicles/pixel/props/light-double.png",57,56,5,0,true),
+        deco("2d/vehicles/pixel/props/barrier.png",76,78,7,0,true),
+        deco("2d/vehicles/pixel/cars/truckdelivery.png",23,82,9,0,true)
+      ],
+      candidates:[
+        item("택시","🚕","2d/vehicles/pixel/cars/taxi.png",true),
+        item("스쿨버스","🚌","2d/vehicles/pixel/cars/bus-school.png",true),
+        item("경찰차","🚓","2d/vehicles/pixel/cars/police.png",true),
+        item("스쿠터","🛵","2d/vehicles/pixel/cars/scooter.png",true),
+        item("자전거","🚲","2d/vehicles/pixel/cars/cycle.png",true),
+        item("소방차","🚒","2d/vehicles/pixel/cars/firetruck.png",true)
+      ]
+    }
+  };
 
-        soundToggleBtn.addEventListener('click', () => {
-            toggleSound(!isSoundOn);
-        });
+  var sfxFound = new Audio("../../assets/audio/ui/kenney_interface/confirmation_001.ogg");
+  var sfxWrong = new Audio("../../assets/audio/ui/kenney_interface/error_002.ogg");
+  var sfxClear = new Audio("../../assets/audio/sfx/success/cheer-yay-01.mp3");
+  sfxFound.volume = .5;
+  sfxWrong.volume = .28;
+  sfxClear.volume = .65;
 
-        function toggleSound(forceOn) {
-            isSoundOn = forceOn;
-            if (isSoundOn) {
-                bgm.play().catch(e => console.log("오디오 대기 중"));
-                soundToggleBtn.innerText = '🔊';
-            } else {
-                bgm.pause();
-                soundToggleBtn.innerText = '🔇';
-            }
-        }
+  var startScreen = document.getElementById("start-screen");
+  var gameView = document.getElementById("game-view");
+  var themeGrid = document.getElementById("theme-grid");
+  var difficultyRow = document.getElementById("difficulty-row");
+  var randomBtn = document.getElementById("random-btn");
+  var homeBtn = document.getElementById("home-btn");
+  var soundBtn = document.getElementById("sound-btn");
+  var sceneEl = document.getElementById("scene");
+  var sceneLayer = document.getElementById("scene-layer");
+  var decorLayer = document.getElementById("decor-layer");
+  var targetLayer = document.getElementById("target-layer");
+  var sceneBadge = document.getElementById("scene-badge");
+  var targetList = document.getElementById("target-list");
+  var message = document.getElementById("message");
+  var hintBtn = document.getElementById("hint-btn");
+  var newRoundBtn = document.getElementById("new-round-btn");
+  var timerChip = document.getElementById("timer-chip");
+  var complete = document.getElementById("complete");
+  var completeText = document.getElementById("complete-text");
+  var againBtn = document.getElementById("again-btn");
+  var otherBtn = document.getElementById("other-btn");
+  var announce = document.getElementById("announce");
 
-        const stages = [
-            { targets: [ { id: 's1_1', name: '사과', emoji: '🍎' }, { id: 's1_2', name: '바나나', emoji: '🍌' }, { id: 's1_3', name: '포도', emoji: '🍇' }, { id: 's1_4', name: '수박', emoji: '🍉' } ] },
-            { targets: [ { id: 's2_1', name: '버섯', emoji: '🍄' }, { id: 's2_2', name: '나뭇잎', emoji: '🍂' }, { id: 's2_3', name: '다람쥐', emoji: '🐿️' }, { id: 's2_4', name: '해바라기', emoji: '🌻' } ] },
-            { targets: [ { id: 's3_1', name: '야자수', emoji: '🌴' }, { id: 's3_2', name: '게', emoji: '🦀' }, { id: 's3_3', name: '조개', emoji: '🐚' }, { id: 's3_4', name: '물고기', emoji: '🐟' } ] },
-            { targets: [ { id: 's4_1', name: '외계인', emoji: '👽' }, { id: 's4_2', name: '로켓', emoji: '🚀' }, { id: 's4_3', name: 'UFO', emoji: '🛸' }, { id: 's4_4', name: '혜성', emoji: '☄️' } ] },
-            { targets: [ { id: 's5_1', name: '택시', emoji: '🚕' }, { id: 's5_2', name: '빌딩', emoji: '🏢' }, { id: 's5_3', name: '신호등', emoji: '🚦' }, { id: 's5_4', name: '비둘기', emoji: '🕊️' }, { id: 's5_5', name: '스쿠터', emoji: '🛵' }, { id: 's5_6', name: '스케이트보드', emoji: '🛹' } ] },
-            { targets: [ { id: 's6_1', name: '선인장', emoji: '🌵' }, { id: 's6_2', name: '낙타', emoji: '🐫' }, { id: 's6_3', name: '전갈', emoji: '🦂' }, { id: 's6_4', name: '태양', emoji: '☀️' } ] },
-            { targets: [ { id: 's7_1', name: '열대어', emoji: '🐠' }, { id: 's7_2', name: '상어', emoji: '🦈' }, { id: 's7_3', name: '문어', emoji: '🐙' }, { id: 's7_4', name: '인어', emoji: '🧜‍♀️' } ] },
-            { targets: [ { id: 's8_1', name: '소', emoji: '🐄' }, { id: 's8_2', name: '돼지', emoji: '🐖' }, { id: 's8_3', name: '트랙터', emoji: '🚜' }, { id: 's8_4', name: '벼', emoji: '🌾' } ] },
-            { targets: [ { id: 's9_1', name: '가방', emoji: '🎒' }, { id: 's9_2', name: '책', emoji: '📚' }, { id: 's9_3', name: '연필', emoji: '✏️' }, { id: 's9_4', name: '선생님', emoji: '👩‍🏫' } ] },
-            { targets: [ { id: 's10_1', name: '커피', emoji: '☕' }, { id: 's10_2', name: '케이크', emoji: '🍰' }, { id: 's10_3', name: '크루아상', emoji: '🥐' }, { id: 's10_4', name: '화분', emoji: '🪴' }, { id: 's10_5', name: '도넛', emoji: '🍩' }, { id: 's10_6', name: '아이스크림', emoji: '🍦' }, { id: 's10_7', name: '쿠키', emoji: '🍪' } ] },
-            { targets: [ { id: 's11_1', name: '롤러코스터', emoji: '🎢' }, { id: 's11_2', name: '관람차', emoji: '🎡' }, { id: 's11_3', name: '회전목마', emoji: '🎠' }, { id: 's11_4', name: '팝콘', emoji: '🍿' } ] },
-            { targets: [ { id: 's12_1', name: '눈사람', emoji: '⛄' }, { id: 's12_2', name: '스키', emoji: '⛷️' }, { id: 's12_3', name: '눈송이', emoji: '❄️' }, { id: 's12_4', name: '스노보드', emoji: '🏂' } ] },
-            { targets: [ { id: 's13_1', name: '튤립', emoji: '🌷' }, { id: 's13_2', name: '나비', emoji: '🦋' }, { id: 's13_3', name: '꿀벌', emoji: '🐝' }, { id: 's13_4', name: '무당벌레', emoji: '🐞' } ] },
-            { targets: [ { id: 's14_1', name: '프라이팬', emoji: '🍳' }, { id: 's14_2', name: '칼', emoji: '🔪' }, { id: 's14_3', name: '소금', emoji: '🧂' }, { id: 's14_4', name: '접시', emoji: '🍽️' } ] },
-            { targets: [ { id: 's15_1', name: '펼친 책', emoji: '📖' }, { id: 's15_2', name: '안경', emoji: '🤓' }, { id: 's15_3', name: '서류함', emoji: '🗄️' }, { id: 's15_4', name: '두루마리', emoji: '📜' }, { id: 's15_5', name: '신문', emoji: '📰' }, { id: 's15_6', name: '돋보기', emoji: '🔍' } ] },
-            { targets: [ { id: 's16_1', name: '사과', emoji: '🍎' }, { id: 's16_2', name: '브로콜리', emoji: '🥦' }, { id: 's16_3', name: '바게트', emoji: '🥖' }, { id: 's16_4', name: '치즈', emoji: '🧀' } ] },
-            { targets: [ { id: 's17_1', name: '호박', emoji: '🎃' }, { id: 's17_2', name: '유령', emoji: '👻' }, { id: 's17_3', name: '박쥐', emoji: '🦇' }, { id: 's17_4', name: '거미줄', emoji: '🕸️' } ] },
-            { targets: [ { id: 's18_1', name: '트리', emoji: '🎄' }, { id: 's18_2', name: '산타', emoji: '🎅' }, { id: 's18_3', name: '선물', emoji: '🎁' }, { id: 's18_4', name: '순록', emoji: '🦌' } ] },
-            { targets: [ { id: 's19_1', name: '텐트', emoji: '⛺' }, { id: 's19_2', name: '모닥불', emoji: '🔥' }, { id: 's19_3', name: '침낭', emoji: '🛌' }, { id: 's19_4', name: '손전등', emoji: '🔦' } ] },
-            { targets: [ { id: 's20_1', name: '티라노', emoji: '🦖' }, { id: 's20_2', name: '브라키오', emoji: '🦕' }, { id: 's20_3', name: '화산', emoji: '🌋' }, { id: 's20_4', name: '뼈다귀', emoji: '🦴' }, { id: 's20_5', name: '발자국', emoji: '🐾' }, { id: 's20_6', name: '도마뱀', emoji: '🦎' }, { id: 's20_7', name: '알', emoji: '🥚' } ] },
-            { targets: [ { id: 's21_1', name: '구급차', emoji: '🚑' }, { id: 's21_2', name: '청진기', emoji: '🩺' }, { id: 's21_3', name: '알약', emoji: '💊' }, { id: 's21_4', name: '반창고', emoji: '🩹' } ] },
-            { targets: [ { id: 's22_1', name: '비행기', emoji: '✈️' }, { id: 's22_2', name: '가방', emoji: '🧳' }, { id: 's22_3', name: '이륙', emoji: '🛫' }, { id: 's22_4', name: '여권', emoji: '🛂' } ] },
-            { targets: [ { id: 's23_1', name: '인공위성', emoji: '🛰️' }, { id: 's23_2', name: '우주인', emoji: '🧑‍🚀' }, { id: 's23_3', name: '망원경', emoji: '🔭' }, { id: 's23_4', name: '은하수', emoji: '🌌' } ] },
-            { targets: [ { id: 's24_1', name: '프레첼', emoji: '🥨' }, { id: 's24_2', name: '베이글', emoji: '🥯' }, { id: 's24_3', name: '식빵', emoji: '🍞' }, { id: 's24_4', name: '컵케이크', emoji: '🧁' } ] },
-            { targets: [ { id: 's25_1', name: '곰인형', emoji: '🧸' }, { id: 's25_2', name: '요요', emoji: '🪀' }, { id: 's25_3', name: '기차', emoji: '🚂' }, { id: 's25_4', name: '퍼즐', emoji: '🧩' }, { id: 's25_5', name: '로봇', emoji: '🤖' }, { id: 's25_6', name: '로켓', emoji: '🚀' }, { id: 's25_7', name: '연', emoji: '🪁' } ] },
-            { targets: [ { id: 's26_1', name: '해적기', emoji: '🏴‍☠️' }, { id: 's26_2', name: '닻', emoji: '⚓' }, { id: 's26_3', name: '앵무새', emoji: '🦜' }, { id: 's26_4', name: '동전', emoji: '🪙' } ] },
-            { targets: [ { id: 's27_1', name: '원숭이', emoji: '🐒' }, { id: 's27_2', name: '호랑이', emoji: '🐅' }, { id: 's27_3', name: '뱀', emoji: '🐍' }, { id: 's27_4', name: '나뭇잎', emoji: '🌿' } ] },
-            { targets: [ { id: 's28_1', name: '펭귄', emoji: '🐧' }, { id: 's28_2', name: '북극곰', emoji: '🐻‍❄️' }, { id: 's28_3', name: '얼음', emoji: '🧊' }, { id: 's28_4', name: '바다표범', emoji: '🦭' } ] },
-            { targets: [ { id: 's29_1', name: '화산', emoji: '🌋' }, { id: 's29_2', name: '불꽃', emoji: '🔥' }, { id: 's29_3', name: '독수리', emoji: '🦅' }, { id: 's29_4', name: '바위', emoji: '🪨' } ] },
-            { targets: [ { id: 's30_1', name: '무지개', emoji: '🌈' }, { id: 's30_2', name: '유니콘', emoji: '🦄' }, { id: 's30_3', name: '구름', emoji: '☁️' }, { id: 's30_4', name: '풍선', emoji: '🎈' }, { id: 's30_5', name: '리본', emoji: '🎀' }, { id: 's30_6', name: '별', emoji: '⭐' }, { id: 's30_7', name: '달', emoji: '🌙' }, { id: 's30_8', name: '하트', emoji: '❤️' } ] }
-        ];
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
 
-        let currentStageIndex = 0;
-        let foundCount = 0;
-        let startTime = 0;
-        let timerInterval = null;
+  function play(audio){
+    if(!soundOn) return;
+    try{ audio.currentTime = 0; audio.play().catch(function(){}); }catch(e){}
+  }
 
-        const gameArea = document.getElementById('game-area');
-        const targetListEl = document.getElementById('target-list');
-        const messageTextEl = document.getElementById('message-text');
-        const nextStageBtn = document.getElementById('next-stage-btn');
-        const stageTitleEl = document.getElementById('stage-title');
-        const timerDisplayEl = document.getElementById('timer-display');
-        const loadingEl = document.getElementById('loading');
+  function renderThemeCards(){
+    themeGrid.innerHTML = "";
+    Object.keys(SCENES).forEach(function(key){
+      var s = SCENES[key];
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "theme-card";
+      b.dataset.theme = key;
 
-        const safeKeywords = ['puppy', 'kitten', 'cute', 'park', 'toys', 'balloon', 'zoo', 'garden', 'ocean', 'candy', 'kids', 'playground', 'nature'];
+      var e = document.createElement("span");
+      e.className = "theme-emoji";
+      e.textContent = s.emoji;
 
-        function getValidPosition(existingPositions) {
-            let left, top;
-            let attempts = 0;
-            const minDistance = 12; 
-            
-            while (attempts < 100) {
-                left = Math.floor(Math.random() * 80) + 10;
-                top = Math.floor(Math.random() * 80) + 10;
-                let isValid = true;
-                
-                for (let pos of existingPositions) {
-                    const dx = pos.left - left;
-                    const dy = pos.top - top;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < minDistance) {
-                        isValid = false;
-                        break;
-                    }
-                }
-                if (isValid) return { left, top };
-                attempts++;
-            }
-            return { left, top }; 
-        }
+      var n = document.createElement("span");
+      n.className = "theme-name";
+      n.textContent = s.name;
 
-        function loadStage(index) {
-            const stage = stages[index];
-            foundCount = 0;
-            
-            gameArea.innerHTML = '';
-            targetListEl.innerHTML = '';
-            messageTextEl.innerText = '';
-            nextStageBtn.style.display = 'none';
-            gameArea.style.backgroundImage = 'none'; 
-            
-            clearInterval(timerInterval);
-            timerDisplayEl.innerText = "⏱️ 0.0초";
-            
-            stageTitleEl.innerText = `🔍 Stage ${index + 1} / ${stages.length}`;
-            
-            loadingEl.style.display = 'flex';
+      var d = document.createElement("span");
+      d.className = "theme-desc";
+      d.textContent = s.desc;
 
-            const randomKeyword = safeKeywords[Math.floor(Math.random() * safeKeywords.length)];
-            const randomLock = Math.floor(Math.random() * 1000);
-            const dynamicBackgroundUrl = `https://loremflickr.com/800/533/${randomKeyword}?lock=${randomLock}`;
+      b.appendChild(e); b.appendChild(n); b.appendChild(d);
+      themeGrid.appendChild(b);
+    });
+  }
 
-            const bgImage = new Image();
-            bgImage.onload = function() {
-                loadingEl.style.display = 'none';
-                gameArea.style.backgroundImage = `url('${dynamicBackgroundUrl}')`;
+  function chooseDifficulty(next){
+    difficulty = next;
+    Array.prototype.forEach.call(difficultyRow.querySelectorAll(".diff-btn"),function(btn){
+      btn.classList.toggle("active",btn.dataset.diff===difficulty);
+    });
+  }
 
-                startTime = Date.now();
-                timerInterval = setInterval(() => {
-                    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                    timerDisplayEl.innerText = `⏱️ ${elapsed}초`;
-                }, 100);
+  function goHome(){
+    cancelAnimationFrame(timerHandle);
+    currentSceneKey = null;
+    gameView.style.display = "none";
+    startScreen.style.display = "block";
+    homeBtn.style.display = "none";
+    complete.style.display = "none";
+    window.scrollTo(0,0);
+  }
 
-                const usedPositions = []; 
+  function startScene(key){
+    currentSceneKey = key;
+    startScreen.style.display = "none";
+    gameView.style.display = "block";
+    homeBtn.style.display = "inline-flex";
+    homeBtn.style.alignItems = "center";
+    homeBtn.style.justifyContent = "center";
+    buildRound();
+  }
 
-                stage.targets.forEach(target => {
-                    const li = document.createElement('li');
-                    li.className = 'target-item';
-                    li.id = `ui-${target.id}`;
-                    li.innerHTML = `<span style="font-size:20px;">${target.emoji}</span> ${target.name}`; 
-                    targetListEl.appendChild(li);
+  function setImageFallback(img, emojiFallback){
+    img.addEventListener("error",function(){
+      img.style.display = "none";
+      if(emojiFallback) emojiFallback.style.display = "block";
+    },{once:true});
+  }
 
-                    const hitbox = document.createElement('div');
-                    hitbox.className = 'hitbox';
-                    hitbox.id = `hitbox-${target.id}`;
-                    hitbox.innerText = target.emoji;
-                    
-                    const newPos = getValidPosition(usedPositions);
-                    usedPositions.push(newPos);
-                    
-                    hitbox.style.left = newPos.left + '%';
-                    hitbox.style.top = newPos.top + '%';
+  function addDecoration(d){
+    if(d.type==="shape"){
+      var sh = document.createElement("div");
+      sh.className = "shape " + d.className;
+      sh.style.left = d.x + "%";
+      sh.style.top = d.y + "%";
+      sh.style.width = d.w + "%";
+      sh.style.height = d.h + "%";
+      if(d.color) sh.style.backgroundColor = d.color;
+      decorLayer.appendChild(sh);
+      return;
+    }
+    var img = document.createElement("img");
+    img.className = "decor";
+    img.src = d.src;
+    img.alt = "";
+    img.draggable = false;
+    img.style.left = d.x + "%";
+    img.style.top = d.y + "%";
+    img.style.width = d.w + "%";
+    img.style.transform = "translate(-50%,-50%) rotate(" + d.rotate + "deg)";
+    if(d.pixel) img.style.imageRendering = "pixelated";
+    decorLayer.appendChild(img);
+  }
 
-                    hitbox.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        
-                        if (!this.classList.contains('found-mark')) {
-                            if (isSoundOn) {
-                                sfxCorrect.currentTime = 0;
-                                sfxCorrect.play();
-                            }
+  function renderTargetCard(target){
+    var card = document.createElement("div");
+    card.className = "target-card" + (target.pixel ? " pixel" : "");
+    card.dataset.id = target.id;
 
-                            this.classList.add('found-mark');
-                            document.getElementById(`ui-${target.id}`).classList.add('found');
-                            foundCount++;
-                            
-                            if (foundCount === stage.targets.length) {
-                                clearInterval(timerInterval);
-                                const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+    var img = document.createElement("img");
+    img.src = target.src;
+    img.alt = target.name;
+    var fallback = document.createElement("span");
+    fallback.className = "target-emoji";
+    fallback.textContent = target.emoji;
+    fallback.style.display = "none";
+    setImageFallback(img,fallback);
 
-                                if (isSoundOn) {
-                                    sfxClear.currentTime = 0;
-                                    sfxClear.play();
-                                }
+    var emoji = document.createElement("span");
+    emoji.className = "target-emoji";
+    emoji.textContent = target.emoji;
 
-                                if (currentStageIndex < stages.length - 1) {
-                                    messageTextEl.innerHTML = `<span style="color:#27ae60">🎉 모두 찾았습니다!</span><br><span style="font-size:15px; color:#555;">기록: ${finalTime}초</span>`;
-                                    nextStageBtn.style.display = 'inline-block';
-                                } else {
-                                    messageTextEl.innerHTML = `<span style="color:#8e44ad">🏆 모든 스테이지 클리어! 🏆</span><br><span style="font-size:15px; color:#555;">최종 기록: ${finalTime}초</span>`;
-                                }
-                            }
-                        }
-                    });
+    var name = document.createElement("span");
+    name.className = "target-name";
+    name.textContent = target.name;
 
-                    gameArea.appendChild(hitbox);
-                });
-                
-                if(isDevMode) updateDevModeVisuals();
-            };
-            
-            bgImage.src = dynamicBackgroundUrl;
-        }
+    card.appendChild(img);
+    card.appendChild(fallback);
+    card.appendChild(emoji);
+    card.appendChild(name);
+    targetList.appendChild(card);
+  }
 
-        nextStageBtn.addEventListener('click', () => {
-            currentStageIndex++;
-            loadStage(currentStageIndex);
-        });
+  function renderTargetSprite(target,slot,index){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "target-hit";
+    btn.dataset.id = target.id;
+    btn.setAttribute("aria-label",target.name + " 찾기");
+    btn.style.left = slot.x + "%";
+    btn.style.top = slot.y + "%";
+    btn.style.setProperty("--sprite-size",Math.round(DIFFICULTY[difficulty].sprite * slot.s) + "px");
 
-        let isDevMode = false;
-        const devBtn = document.getElementById('toggle-dev');
-        const coordsText = document.getElementById('click-coords');
+    var img = document.createElement("img");
+    img.src = target.src;
+    img.alt = "";
+    img.draggable = false;
+    if(target.pixel) img.style.imageRendering = "pixelated";
+    img.style.transform = "rotate(" + ((index%3)-1)*5 + "deg)";
 
-        function updateDevModeVisuals() {
-            const hitboxes = document.querySelectorAll('.hitbox:not(.found-mark)');
-            hitboxes.forEach(box => {
-                box.style.opacity = isDevMode ? '0.8' : '0.2';
-                box.style.border = isDevMode ? '2px dashed red' : 'none';
-            });
-        }
+    var fallback = document.createElement("span");
+    fallback.className = "emoji-fallback";
+    fallback.textContent = target.emoji;
+    setImageFallback(img,fallback);
 
-        devBtn.addEventListener('click', () => {
-            isDevMode = !isDevMode;
-            devBtn.innerText = `숨겨진 이모지 보기 (${isDevMode ? 'On' : 'Off'})`;
-            updateDevModeVisuals();
-        });
+    btn.appendChild(img);
+    btn.appendChild(fallback);
+    btn.addEventListener("click",function(ev){
+      ev.stopPropagation();
+      foundTarget(target.id);
+    });
+    targetLayer.appendChild(btn);
+  }
 
-        gameArea.addEventListener('click', function(e) {
-            const rect = gameArea.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const xPercent = (x / rect.width * 100).toFixed(1);
-            const yPercent = (y / rect.height * 100).toFixed(1);
+  function buildRound(){
+    cancelAnimationFrame(timerHandle);
+    foundIds = new Set();
+    wrongTaps = 0;
+    hintLocked = false;
+    complete.style.display = "none";
+    message.textContent = "천천히 둘러봐요. 꼭꼭 숨어 있어요!";
+    hintBtn.disabled = false;
 
-            coordsText.innerText = `클릭: (${xPercent}%, ${yPercent}%)`;
-            
-            if (!isDevMode) {
-                console.log("빈 공간을 클릭했습니다.");
-            }
-        });
-    </script>
+    var s = SCENES[currentSceneKey];
+    sceneEl.className = s.className + (s.pixel ? " pixel-scene" : "");
+    sceneEl.style.backgroundImage = s.background ? "url('" + s.background + "')" : "none";
+    sceneBadge.textContent = s.emoji + " " + s.name + " · " + DIFFICULTY[difficulty].label;
+    timerChip.style.display = difficulty==="challenge" ? "block" : "none";
+
+    sceneLayer.innerHTML = "";
+    decorLayer.innerHTML = "";
+    targetLayer.innerHTML = "";
+    targetList.innerHTML = "";
+
+    (s.layers || []).forEach(function(src){
+      var img = document.createElement("img");
+      img.className = "fill-layer";
+      img.src = src;
+      img.alt = "";
+      img.draggable = false;
+      sceneLayer.appendChild(img);
+    });
+
+    (s.shapes || []).forEach(addDecoration);
+    (s.decorations || []).forEach(addDecoration);
+
+    var count = Math.min(DIFFICULTY[difficulty].count,s.candidates.length);
+    var picked = shuffle(s.candidates).slice(0,count);
+    var slots = shuffle(SLOTS).slice(0,count);
+
+    currentTargets = picked.map(function(t,i){
+      return { id:currentSceneKey + "-" + Date.now() + "-" + i, name:t.name, emoji:t.emoji, src:t.src, pixel:t.pixel, slot:slots[i] };
+    });
+
+    currentTargets.forEach(function(t,i){
+      renderTargetCard(t);
+      renderTargetSprite(t,t.slot,i);
+    });
+
+    startedAt = performance.now();
+    updateTimer();
+  }
+
+  function updateTimer(){
+    if(difficulty!=="challenge" || !currentSceneKey) return;
+    var elapsed = (performance.now()-startedAt)/1000;
+    timerChip.textContent = "⏱ " + elapsed.toFixed(1) + "초";
+    timerHandle = requestAnimationFrame(updateTimer);
+  }
+
+  function foundTarget(id){
+    if(foundIds.has(id)) return;
+    foundIds.add(id);
+    play(sfxFound);
+
+    var sprite = targetLayer.querySelector('[data-id="' + id + '"]');
+    var card = targetList.querySelector('[data-id="' + id + '"]');
+    if(sprite) sprite.classList.add("found");
+    if(card) card.classList.add("found");
+
+    var target = currentTargets.find(function(t){ return t.id===id; });
+    var left = currentTargets.length-foundIds.size;
+    announce.textContent = (target ? target.name : "친구") + " 찾았어요.";
+
+    if(left<=0){
+      finishRound();
+    }else if(left===1){
+      message.textContent = "우와! 하나만 더 찾으면 돼요!";
+    }else{
+      message.textContent = "찾았다! 이제 " + left + "개 남았어요.";
+    }
+  }
+
+  function finishRound(){
+    cancelAnimationFrame(timerHandle);
+    play(sfxClear);
+    var elapsed = (performance.now()-startedAt)/1000;
+    if(difficulty==="challenge"){
+      completeText.textContent = elapsed.toFixed(1) + "초 만에 모두 찾았어요!";
+    }else{
+      completeText.textContent = "눈썰미가 정말 좋아요. 같은 곳에 다시 숨겨볼까요?";
+    }
+    message.textContent = "모두 찾았어요! ⭐⭐⭐";
+    complete.style.display = "flex";
+    announce.textContent = "모두 찾았어요!";
+  }
+
+  function wrongTap(ev){
+    if(ev.target.closest(".target-hit") || complete.style.display==="flex") return;
+    var rect = sceneEl.getBoundingClientRect();
+    var x = ev.clientX-rect.left;
+    var y = ev.clientY-rect.top;
+    var ripple = document.createElement("span");
+    ripple.className = "tap-ripple";
+    ripple.style.left = x + "px";
+    ripple.style.top = y + "px";
+    sceneEl.appendChild(ripple);
+    setTimeout(function(){ ripple.remove(); },520);
+
+    wrongTaps++;
+    if(wrongTaps===2) message.textContent = "조금 더 천천히 살펴볼까요?";
+    if(wrongTaps>=4) message.textContent = "어려우면 💡 힌트를 눌러도 괜찮아요!";
+    if(wrongTaps<=2) play(sfxWrong);
+  }
+
+  function hint(){
+    if(hintLocked) return;
+    var remaining = currentTargets.filter(function(t){ return !foundIds.has(t.id); });
+    if(!remaining.length) return;
+    var t = remaining[Math.floor(Math.random()*remaining.length)];
+    var sprite = targetLayer.querySelector('[data-id="' + t.id + '"]');
+    if(!sprite) return;
+
+    hintLocked = true;
+    hintBtn.disabled = true;
+    sprite.classList.add("hinted");
+    message.textContent = t.emoji + " " + t.name + " 근처가 반짝여요!";
+    setTimeout(function(){ sprite.classList.remove("hinted"); },1800);
+    setTimeout(function(){
+      hintLocked = false;
+      hintBtn.disabled = false;
+    },4200);
+  }
+
+  difficultyRow.addEventListener("click",function(ev){
+    var btn = ev.target.closest(".diff-btn");
+    if(btn) chooseDifficulty(btn.dataset.diff);
+  });
+
+  themeGrid.addEventListener("click",function(ev){
+    var btn = ev.target.closest(".theme-card");
+    if(btn) startScene(btn.dataset.theme);
+  });
+
+  randomBtn.addEventListener("click",function(){
+    var keys = Object.keys(SCENES);
+    startScene(keys[Math.floor(Math.random()*keys.length)]);
+  });
+
+  homeBtn.addEventListener("click",goHome);
+  otherBtn.addEventListener("click",goHome);
+  againBtn.addEventListener("click",buildRound);
+  newRoundBtn.addEventListener("click",buildRound);
+  hintBtn.addEventListener("click",hint);
+  sceneEl.addEventListener("pointerdown",wrongTap);
+
+  soundBtn.addEventListener("click",function(){
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? "🔊" : "🔇";
+    soundBtn.setAttribute("aria-label",soundOn ? "효과음 끄기" : "효과음 켜기");
+  });
+
+  renderThemeCards();
+  chooseDifficulty("normal");
+})();
+</script>
 </body>
 </html>
