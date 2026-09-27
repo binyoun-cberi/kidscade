@@ -53,7 +53,7 @@ const KOREA_OUTLINE=[[405,78],[470,67],[535,77],[598,91],[655,119],[704,154],[72
 
 const ui={
   menu:$('menu'),help:$('help'),report:$('monthReport'),result:$('result'),start:$('startBtn'),tutorial:$('tutorialBtn'),closeHelp:$('closeHelpBtn'),retry:$('retryBtn'),menuBtn:$('menuBtn'),
-  pause:$('pauseBtn'),speed:$('speedBtn'),layer:$('layerBtn'),sound:$('soundBtn'),helpBtn:$('helpBtn'),date:$('dateLabel'),cash:$('cashLabel'),delivered:$('deliveredLabel'),wait:$('waitLabel'),access:$('accessLabel'),
+  pause:$('pauseBtn'),speed:$('speedBtn'),layer:$('layerBtn'),sound:$('soundBtn'),helpBtn:$('helpBtn'),zoomIn:$('zoomInBtn'),zoomOut:$('zoomOutBtn'),fitMap:$('fitMapBtn'),zoomLabel:$('zoomLabel'),date:$('dateLabel'),cash:$('cashLabel'),delivered:$('deliveredLabel'),wait:$('waitLabel'),access:$('accessLabel'),
   notice:$('notice'),trackTool:$('trackTool'),lineTools:$('lineTools'),trainTool:$('trainTool'),trimTool:$('trimTool'),undo:$('undoBtn'),trainStock:$('trainStock'),best:$('bestText'),serviceList:$('serviceList'),monthProfit:$('monthProfitLabel'),
   detailEmpty:$('detailEmpty'),cityDetail:$('cityDetail'),serviceDetail:$('serviceDetail'),cityName:$('cityName'),cityPop:$('cityPop'),cityJobs:$('cityJobs'),cityIndustry:$('cityIndustry'),cityTourism:$('cityTourism'),cityWaiting:$('cityWaiting'),cityCrowding:$('cityCrowding'),cityTopDest:$('cityTopDest'),cityServices:$('cityServices'),
   serviceName:$('serviceName'),serviceStops:$('serviceStops'),serviceTrains:$('serviceTrains'),serviceHeadway:$('serviceHeadway'),serviceLoad:$('serviceLoad'),serviceProfit:$('serviceProfit'),income:$('incomeLabel'),expense:$('expenseLabel'),debt:$('debtLabel'),
@@ -62,8 +62,9 @@ const ui={
 };
 
 let cssW=innerWidth,cssH=innerHeight,scale=1,offX=0,offY=0,dpr=1,last=performance.now(),noticeTimer=0,soundOn=true;
+const camera={x:W/2,y:H/2,zoom:1,minZoom:.8,maxZoom:2.5};
 let pointer={x:0,y:0},drag=null,selectedService=0,mode='track',pendingTrim=false,tutorialStep=0,uiAccumulator=0;
-let undoStack=[],routingCache=new Map();
+let undoStack=[],routingCache=new Map(),activePointers=new Map(),panGesture=null,pinchGesture=null;
 let save={tutorialSeen:false,bestDelivered:0,bestAccess:0,bestDays:0};
 
 const state={
@@ -92,15 +93,22 @@ function loadSave(){try{if(window.KidscadeStorage)save=Object.assign(save,window
 function persist(){try{window.KidscadeStorage?.setJson('metroPlannerSave',save)}catch(_){}}
 function refreshBest(){if(!save.bestDelivered){ui.best.textContent='첫 대한민국 철도망의 기록을 만들어 보세요.';return}ui.best.textContent=`최고 기록 · ${save.bestDelivered}명 수송 · 접근성 ${save.bestAccess}% · ${save.bestDays}일`}
 
-function resize(){cssW=innerWidth;cssH=innerHeight;dpr=Math.min(devicePixelRatio||1,DPR_CAP);canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr));canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';scale=Math.min(cssW/W,cssH/H);offX=(cssW-W*scale)/2;offY=(cssH-H*scale)/2}
-function worldPoint(ev){const r=canvas.getBoundingClientRect();return {x:(ev.clientX-r.left-offX)/scale,y:(ev.clientY-r.top-offY)/scale}}
+function resize(){cssW=innerWidth;cssH=innerHeight;dpr=Math.min(devicePixelRatio||1,DPR_CAP);canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr));canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';scale=Math.min(cssW/W,cssH/H);offX=(cssW-W*scale)/2;offY=(cssH-H*scale)/2;clampCamera()}
+function clientLogical(clientX,clientY){const r=canvas.getBoundingClientRect();return {x:(clientX-r.left-offX)/scale,y:(clientY-r.top-offY)/scale}}
+function worldFromClient(clientX,clientY){const p=clientLogical(clientX,clientY);return {x:camera.x+(p.x-W/2)/camera.zoom,y:camera.y+(p.y-H/2)/camera.zoom}}
+function worldPoint(ev){return worldFromClient(ev.clientX,ev.clientY)}
+function updateZoomLabel(){if(ui.zoomLabel)ui.zoomLabel.textContent=Math.round(camera.zoom*100)+'%'}
+function clampCamera(){const hx=W/(2*camera.zoom),hy=H/(2*camera.zoom);camera.x=hx>=W/2?W/2:clamp(camera.x,hx,W-hx);camera.y=hy>=H/2?H/2:clamp(camera.y,hy,H-hy);updateZoomLabel()}
+function setZoomAt(clientX,clientY,target){const before=worldFromClient(clientX,clientY),p=clientLogical(clientX,clientY);camera.zoom=clamp(target,camera.minZoom,camera.maxZoom);camera.x=before.x-(p.x-W/2)/camera.zoom;camera.y=before.y-(p.y-H/2)/camera.zoom;clampCamera()}
+function zoomAtCenter(target){const r=canvas.getBoundingClientRect();setZoomAt(r.left+r.width/2,r.top+r.height/2,target)}
+function fitMap(notify=true){camera.x=W/2;camera.y=H/2;camera.zoom=1;clampCamera();if(notify)showNotice('대한민국 전체 지도를 맞췄어요.',800)}
 addEventListener('resize',resize,{passive:true});resize();
 
 function newService(def){return {id:def.id,color:def.color,base:def.base,name:def.base,stops:[],trains:[],revenue:0,expense:0,carried:0,peakLoad:0}}
 function resetState(tutorial=false){
   Object.assign(state,{running:true,paused:false,reportOpen:false,gameOver:false,speed:1,layer:'기본',elapsed:0,delivered:0,lost:0,cash:220,debt:0,spareTrains:3,stationCapacity:70,builtTracks:new Set(),services:SERVICES.map(newService),spawnCarry:0,nextReport:REPORT_DAYS*1440,month:1,monthIncome:0,monthExpense:0,constructionSpent:0,networkDirty:true,loanCooldown:0,tutorialMode:!!tutorial,lastReportDelivered:0});
   for(const c of CITIES){c.waiting={};c.unhappy=0;c.pulse=0}
-  routingCache.clear();undoStack=[];selectedService=0;mode='track';pendingTrim=false;drag=null;tutorialStep=0;
+  routingCache.clear();undoStack=[];selectedService=0;mode='track';pendingTrim=false;drag=null;tutorialStep=0;activePointers.clear();panGesture=null;pinchGesture=null;fitMap(false);
   ui.menu.classList.add('hidden');ui.result.classList.add('hidden');ui.report.classList.add('hidden');ui.help.classList.add('hidden');ui.pause.textContent='⏸';ui.speed.textContent='×1';ui.layer.textContent='기본';
   updateTools();updateAllUI();last=performance.now();
   if(tutorial)startTutorial();else{ui.tutorialBubble.classList.add('hidden');showNotice('🛤 선로 건설: 도시와 도시 사이를 드래그해 첫 철도를 놓아 보세요.',2400)}
@@ -183,13 +191,40 @@ function openMonthReport(){if(state.reportOpen||state.gameOver)return;state.repo
 function applyReportChoice(id){if(id==='train')state.spareTrains++;if(id==='grant')state.cash+=30;if(id==='station')state.stationCapacity+=15;state.month++;state.lastReportDelivered=state.delivered;state.monthIncome=0;state.monthExpense=0;for(const line of state.services){line.revenue=0;line.expense=0;line.carried=0;line.peakLoad=0}state.reportOpen=false;state.paused=false;ui.report.classList.add('hidden');play('confirm');showNotice('다음 달 철도 지원이 적용됐어요.',1200);updateAllUI()}
 function endGame(reason){if(state.gameOver)return;state.gameOver=true;state.running=false;state.paused=true;ui.result.classList.remove('hidden');play('fail');const days=Math.floor(state.elapsed/1440)+1,acc=accessibility();ui.resultReason.textContent=reason;ui.resultDelivered.textContent=Math.floor(state.delivered)+'명';ui.resultTime.textContent=days+'일';ui.resultAccess.textContent=acc+'%';if(state.delivered>save.bestDelivered||acc>save.bestAccess){save.bestDelivered=Math.max(save.bestDelivered,Math.floor(state.delivered));save.bestAccess=Math.max(save.bestAccess,acc);save.bestDays=Math.max(save.bestDays,days);ui.resultTitle.textContent='새 운영 기록'}else ui.resultTitle.textContent='철도 운영 종료';persist();refreshBest()}
 
-function nearestCity(p,r=25){let best=null,bd=r;for(const c of CITIES){const d=dist(p,c);if(d<bd){best=c;bd=d}}return best}
+function nearestCity(p,r=25/camera.zoom){let best=null,bd=r;for(const c of CITIES){const d=dist(p,c);if(d<bd){best=c;bd=d}}return best}
 function pointSegmentDistance(p,a,b){const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t=c2?clamp(c1/c2,0,1):0;return Math.hypot(p.x-(a.x+vx*t),p.y-(a.y+vy*t))}
-function nearestServiceAt(p){let best=null,bd=16;for(const line of state.services){for(let i=0;i<line.stops.length-1;i++){const a=city(line.stops[i]),b=city(line.stops[i+1]),d=pointSegmentDistance(p,a,b);if(d<bd){best=line;bd=d}}}return best}
-canvas.addEventListener('pointerdown',ev=>{if(!state.running||state.paused||state.gameOver)return;const p=worldPoint(ev);pointer=p;canvas.setPointerCapture?.(ev.pointerId);const c=nearestCity(p);if(pendingTrim){if(c)trimServiceAt(c);else{play('error');showNotice('노선 끝의 도시를 눌러 주세요.')}return}if(c){drag={from:c,pointerId:ev.pointerId};play('click',1.04);return}const line=nearestServiceAt(p);if(line){selectedService=line.id;mode='service';updateTools();showServiceDetail(line);play('click')}})
-canvas.addEventListener('pointermove',ev=>{pointer=worldPoint(ev)})
-canvas.addEventListener('pointerup',ev=>{if(!state.running||state.paused||state.gameOver)return;const p=worldPoint(ev),to=nearestCity(p);pointer=p;if(drag){const from=drag.from;drag=null;if(to&&to.id!==from.id){if(mode==='track')buildTrack(from,to);else addServiceSegment(from,to)}else if(to)showCityDetail(to)}else if(to)showCityDetail(to)})
-canvas.addEventListener('pointercancel',()=>{drag=null})
+function nearestServiceAt(p){let best=null,bd=16/camera.zoom;for(const line of state.services){for(let i=0;i<line.stops.length-1;i++){const a=city(line.stops[i]),b=city(line.stops[i+1]),d=pointSegmentDistance(p,a,b);if(d<bd){best=line;bd=d}}}return best}
+function pointerPair(){const p=[...activePointers.values()];if(p.length<2)return null;return {a:p[0],b:p[1],mx:(p[0].x+p[1].x)/2,my:(p[0].y+p[1].y)/2,d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}}
+canvas.addEventListener('pointerdown',ev=>{
+  if(!state.running||state.gameOver)return;
+  canvas.setPointerCapture?.(ev.pointerId);activePointers.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+  if(activePointers.size===2){const q=pointerPair();drag=null;panGesture=null;pinchGesture={distance:Math.max(1,q.d),zoom:camera.zoom,anchor:worldFromClient(q.mx,q.my)};return}
+  const p=worldPoint(ev);pointer=p;
+  if(state.paused||state.reportOpen){panGesture={pointerId:ev.pointerId,lastX:ev.clientX,lastY:ev.clientY,startX:ev.clientX,startY:ev.clientY,moved:false};return}
+  const c=nearestCity(p);
+  if(pendingTrim){if(c)trimServiceAt(c);else{play('error');showNotice('노선 끝의 도시를 눌러 주세요.')}return}
+  if(c){drag={from:c,pointerId:ev.pointerId};play('click',1.04);return}
+  const line=nearestServiceAt(p);
+  if(line){selectedService=line.id;mode='service';updateTools();showServiceDetail(line);play('click');return}
+  panGesture={pointerId:ev.pointerId,lastX:ev.clientX,lastY:ev.clientY,startX:ev.clientX,startY:ev.clientY,moved:false};
+})
+canvas.addEventListener('pointermove',ev=>{
+  if(activePointers.has(ev.pointerId))activePointers.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+  if(activePointers.size>=2&&pinchGesture){const q=pointerPair(),newZoom=clamp(pinchGesture.zoom*(q.d/pinchGesture.distance),camera.minZoom,camera.maxZoom),p=clientLogical(q.mx,q.my);camera.zoom=newZoom;camera.x=pinchGesture.anchor.x-(p.x-W/2)/newZoom;camera.y=pinchGesture.anchor.y-(p.y-H/2)/newZoom;clampCamera();pointer=worldPoint(ev);return}
+  if(panGesture&&panGesture.pointerId===ev.pointerId){const dx=ev.clientX-panGesture.lastX,dy=ev.clientY-panGesture.lastY;camera.x-=dx/(scale*camera.zoom);camera.y-=dy/(scale*camera.zoom);panGesture.lastX=ev.clientX;panGesture.lastY=ev.clientY;if(Math.hypot(ev.clientX-panGesture.startX,ev.clientY-panGesture.startY)>5)panGesture.moved=true;clampCamera();pointer=worldPoint(ev);return}
+  pointer=worldPoint(ev);
+})
+canvas.addEventListener('pointerup',ev=>{
+  const wasPinching=!!pinchGesture;activePointers.delete(ev.pointerId);
+  if(wasPinching){drag=null;if(activePointers.size<2){pinchGesture=null;const rem=[...activePointers.entries()][0];panGesture=rem?{pointerId:rem[0],lastX:rem[1].x,lastY:rem[1].y,startX:rem[1].x,startY:rem[1].y,moved:true}:null}return}
+  if(panGesture&&panGesture.pointerId===ev.pointerId){const moved=panGesture.moved;panGesture=null;if(moved)return}
+  if(!state.running||state.paused||state.reportOpen||state.gameOver)return;
+  const p=worldPoint(ev),to=nearestCity(p);pointer=p;
+  if(drag&&drag.pointerId===ev.pointerId){const from=drag.from;drag=null;if(to&&to.id!==from.id){if(mode==='track')buildTrack(from,to);else addServiceSegment(from,to)}else if(to)showCityDetail(to)}
+  else if(to)showCityDetail(to);
+})
+canvas.addEventListener('pointercancel',ev=>{activePointers.delete(ev.pointerId);if(drag?.pointerId===ev.pointerId)drag=null;if(panGesture?.pointerId===ev.pointerId)panGesture=null;if(activePointers.size<2)pinchGesture=null})
+canvas.addEventListener('wheel',ev=>{if(!state.running)return;ev.preventDefault();setZoomAt(ev.clientX,ev.clientY,camera.zoom*Math.exp(-ev.deltaY*.0014))},{passive:false})
 
 function drawBackground(){ctx.fillStyle='#07100d';ctx.fillRect(0,0,W,H);const g=ctx.createRadialGradient(535,330,80,535,330,460);g.addColorStop(0,'#0e1c17');g.addColorStop(1,'#07100d');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(151,189,169,.12)';ctx.font='700 11px system-ui';ctx.fillText('서해',275,345);ctx.fillText('동해',795,300);ctx.fillText('남해',575,610);ctx.beginPath();KOREA_OUTLINE.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle='#0d1b16';ctx.fill();ctx.strokeStyle='rgba(137,174,154,.24)';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='rgba(118,150,133,.09)';ctx.lineWidth=1;const borders=[[[405,210],[520,220],[650,205]],[[385,320],[520,315],[730,300]],[[370,430],[520,430],[735,410]],[[510,90],[500,545]],[[620,105],[600,560]]];for(const pts of borders){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke()}drawMountains()}
 function drawMountains(){ctx.fillStyle='rgba(127,158,140,.12)';for(let i=0;i<12;i++){const x=620+(i%3)*27,y=145+Math.floor(i/3)*70;ctx.beginPath();ctx.moveTo(x,y+11);ctx.lineTo(x+7,y);ctx.lineTo(x+14,y+11);ctx.closePath();ctx.fill()}ctx.fillStyle='rgba(134,166,148,.16)';ctx.font='700 8px system-ui';ctx.fillText('산악 지형',650,132)}
@@ -203,7 +238,7 @@ function trainPosition(line,t){const a=city(line.stops[t.stopIndex]);if(!a)retur
 function drawTrains(){for(const line of state.services)for(const t of line.trains){const p=trainPosition(line,t);if(!p)continue;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang);ctx.fillStyle='#06100b';roundRect(-10,-6,20,12,3);ctx.fill();ctx.fillStyle=line.color;roundRect(-8,-4,16,8,2);ctx.fill();const n=passengerCount(t);if(n){ctx.rotate(-p.ang);ctx.fillStyle='#eff8f1';ctx.font='900 7px system-ui';ctx.textAlign='center';ctx.fillText(n,0,-8)}ctx.restore()}ctx.textAlign='left'}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 function drawPreview(){if(!drag)return;const a=drag.from,to=nearestCity(pointer),end=to||pointer;let ok=true,msg='';if(to){if(mode==='track'){const cor=corridor(a.id,to.id);ok=!!cor&&!state.builtTracks.has(trackKey(a.id,to.id));msg=cor?`${TERRAIN[cor.terrain].label} · ${cor.cost}억`:'직접 연결 불가'}else{const check=canExtendService(a,to,state.services[selectedService]);ok=check.ok;msg=check.msg||state.services[selectedService].name}}ctx.save();ctx.setLineDash([10,7]);ctx.strokeStyle=ok?(mode==='track'?'#c6d8cd':state.services[selectedService].color):'#e7746e';ctx.globalAlpha=.8;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(end.x,end.y);ctx.stroke();ctx.restore();if(to){ctx.strokeStyle=ok?'#dff8e8':'#e7746e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(to.x,to.y,16,0,Math.PI*2);ctx.stroke();if(msg){ctx.fillStyle='rgba(4,12,8,.9)';roundRect((a.x+to.x)/2-43,(a.y+to.y)/2-26,86,20,4);ctx.fill();ctx.fillStyle='#dcebe2';ctx.font='800 8px system-ui';ctx.textAlign='center';ctx.fillText(msg,(a.x+to.x)/2,(a.y+to.y)/2-13);ctx.textAlign='left'}}}
-function render(){ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*offX,dpr*offY);drawBackground();drawCandidateCorridors();drawTracks();drawDemandLayer();drawServices();drawTrains();drawCities();drawPreview();ctx.setTransform(1,0,0,1,0,0)}
+function render(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#07100d';ctx.fillRect(0,0,canvas.width,canvas.height);const z=camera.zoom,tx=dpr*(offX+scale*(W/2-z*camera.x)),ty=dpr*(offY+scale*(H/2-z*camera.y));ctx.setTransform(dpr*scale*z,0,0,dpr*scale*z,tx,ty);drawBackground();drawCandidateCorridors();drawTracks();drawDemandLayer();drawServices();drawTrains();drawCities();drawPreview();ctx.setTransform(1,0,0,1,0,0)}
 function loop(now){requestAnimationFrame(loop);const raw=Math.min(.05,Math.max(0,(now-last)/1000));last=now;if(state.running&&!state.paused&&!state.gameOver)update(raw*GAME_MIN_PER_SEC*state.speed);render()}
 
 ui.trackTool.addEventListener('click',()=>{mode='track';pendingTrim=false;play('click');updateTools();showNotice('선로 건설 모드 · 가까운 도시 사이를 드래그하세요.',1100)});
@@ -213,6 +248,9 @@ ui.undo.addEventListener('click',()=>{if(!state.running||!undoStack.length){play
 ui.pause.addEventListener('click',()=>{if(!state.running||state.gameOver||state.reportOpen)return;state.paused=!state.paused;ui.pause.textContent=state.paused?'▶':'⏸';play('click');showNotice(state.paused?'일시정지':'운영 재개',700)});
 ui.speed.addEventListener('click',()=>{if(!state.running)return;state.speed=state.speed===1?2:state.speed===2?4:1;ui.speed.textContent='×'+state.speed;play('click');showNotice(`${state.speed}배속`,650)});
 ui.layer.addEventListener('click',()=>{const layers=['기본','수요','혼잡','수익'];state.layer=layers[(layers.indexOf(state.layer)+1)%layers.length];ui.layer.textContent=state.layer;play('click');showNotice(`${state.layer} 레이어`,700)});
+ui.zoomIn.addEventListener('click',()=>{zoomAtCenter(camera.zoom*1.22);play('click')});
+ui.zoomOut.addEventListener('click',()=>{zoomAtCenter(camera.zoom/1.22);play('click')});
+ui.fitMap.addEventListener('click',()=>{fitMap(true);play('click')});
 ui.sound.addEventListener('click',()=>{soundOn=!soundOn;ui.sound.textContent=soundOn?'🔊':'🔇';if(soundOn)play('click')});
 ui.helpBtn.addEventListener('click',()=>{ui.help.classList.remove('hidden');if(state.running)state.paused=true;play('click')});
 ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');if(state.running&&!state.reportOpen&&!state.gameOver)state.paused=false;play('click')});
