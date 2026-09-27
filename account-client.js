@@ -33,20 +33,19 @@
       version: 1,
       profile: p?.loadProfile?.() || s?.getJson?.('profile', {}) || {},
       seeds: s?.getInt?.('seeds', 0) || 0,
+      sproutPower: s?.getInt?.('sproutPower', 0) || 0,
       avatarInventory: s?.getJson?.('avatarInventory', []) || [],
       avatarEquipped: s?.getJson?.('avatarEquipped', {}) || {},
       playHistory: p?.loadHistory?.() || s?.getJson?.('playHistory', {}) || {},
       inventory: s?.getJson?.('inventory', {}) || {},
-      equipped: s?.getJson?.('equipped', {}) || {},
-      pet: s?.getJson?.('pet', {}) || {},
-      petItems: s?.getJson?.('petItems', {}) || {},
-      gardenState: s?.getJson?.('gardenState', {}) || {}
+      equipped: s?.getJson?.('equipped', {}) || {}
     };
   }
 
   function hasMeaningfulProgress(state = collectState()) {
     const defaultName = profileApi()?.DEFAULT_NICKNAME || '새싹 게이머';
     if (Number(state.seeds || 0) > 0) return true;
+    if (Number(state.sproutPower || 0) > 0) return true;
     if (state.profile?.nickname && state.profile.nickname !== defaultName) return true;
     if (Object.keys(state.playHistory?.games || {}).length > 0) return true;
     if (Array.isArray(state.avatarInventory) && state.avatarInventory.length > 0) return true;
@@ -63,14 +62,12 @@
     try {
       if (state.profile) p?.saveProfile?.(state.profile) || s.setJson('profile', state.profile);
       s.setRaw('seeds', Math.max(0, Math.floor(Number(state.seeds || 0))));
+      s.setRaw('sproutPower', Math.max(0, Math.floor(Number(state.sproutPower || 0))));
       s.setJson('avatarInventory', Array.isArray(state.avatarInventory) ? state.avatarInventory : []);
       s.setJson('avatarEquipped', state.avatarEquipped || {});
       if (state.playHistory) p?.saveHistory?.(state.playHistory) || s.setJson('playHistory', state.playHistory);
       s.setJson('inventory', state.inventory || {});
       s.setJson('equipped', state.equipped || {});
-      s.setJson('pet', state.pet || {});
-      s.setJson('petItems', state.petItems || {});
-      s.setJson('gardenState', state.gardenState || {});
     } finally {
       applyingCloud = false;
     }
@@ -355,7 +352,7 @@
     const s = store();
     if (!s) return;
     [
-      'profile','playHistory','seeds','avatarInventory','avatarEquipped','inventory','equipped',
+      'profile','playHistory','seeds','sproutPower','avatarInventory','avatarEquipped','inventory','equipped',
       'pet','petItems','gardenState','recents','favorites','dailyMissions','dailyRewardClaimed','attendance'
     ].forEach(key => { try { s.remove(key); } catch (_) {} });
     writeMeta({});
