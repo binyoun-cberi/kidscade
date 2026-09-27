@@ -85,6 +85,13 @@ const DEFAULT_CITY={
 let city=JSON.parse(JSON.stringify(DEFAULT_CITY));
 let cityLog=[];
 let campaignSeed=0;
+let activeIncident=null;
+const INCIDENTS=[
+ {id:'flu',label:'계절성 감기 유행',desc:'정상 시민 사이에서도 기침이 늘었습니다. 기침 하나만으로 감염을 단정하지 마십시오.',minWeek:1},
+ {id:'heat',label:'폭염 경보',desc:'더위로 체온이 평소보다 높게 측정되는 시민이 있습니다. 복합 기준을 확인하십시오.',minWeek:1},
+ {id:'supply',label:'혈액 키트 배송 지연',desc:'이번 주 혈액 검사 키트가 1개 적게 지급됩니다.',minWeek:2,bloodKitsDelta:-1,needsBlood:true},
+ {id:'vent',label:'격리동 환기 고장',desc:'A/B 격리동 내부 노출 위험이 증가했습니다. 감염 의심자는 방을 분산 배치하십시오.',minWeek:4,facilityRisk:1.5}
+];
 
 function hashString(s){
  let h=2166136261>>>0;
@@ -110,6 +117,7 @@ function resetCampaign(){
  campaignSeed=(Date.now()^Math.floor(Math.random()*0xffffffff))>>>0;
  city=JSON.parse(JSON.stringify(DEFAULT_CITY));
  cityLog=[];
+ activeIncident=null;
  try{sessionStorage.setItem('q17_campaign_seed_v9',String(campaignSeed))}catch(_){}
 }
 function rngFor(wi,index,salt){
@@ -175,16 +183,46 @@ function reskinCitizen(base,wi,index,used){
  }
  return p;
 }
+function chooseIncident(week,wi){
+ if(wi<=0)return null;
+ const r=rngFor(wi,991,'incident');
+ if(r()<.18)return null;
+ const eligible=INCIDENTS.filter(x=>wi>=x.minWeek&&(!x.needsBlood||Number(week.bloodKits)>0));
+ return eligible.length?eligible[Math.floor(r()*eligible.length)%eligible.length]:null;
+}
+function applyIncidentToCitizens(list,incident,wi){
+ if(!incident||!list.length)return;
+ const r=rngFor(wi,772,'incident-citizens');
+ const healthy=list.filter(x=>!x.infected);
+ if(!healthy.length)return;
+ if(incident.id==='flu'){
+  const p=healthy[Math.floor(r()*healthy.length)%healthy.length];
+  p.cough=true;p.dialogue='콜록… 요즘 주변에도 감기 걸린 사람이 많아요.';
+ }
+ if(incident.id==='heat'){
+  const candidates=healthy.filter(x=>x.temp<38);
+  if(candidates.length){
+   const p=candidates[Math.floor(r()*candidates.length)%candidates.length];
+   p.temp=Math.min(38.6,Math.round((p.temp+.7+r()*.4)*10)/10);
+   p.dialogue='밖이 너무 더워서 아직도 몸이 뜨거운 것 같아요.';
+  }
+ }
+}
 function prepareWeek(week,wi){
- if(!week||!Array.isArray(week.citizens))return;
+ if(!week||!Array.isArray(week.citizens))return{bloodKitsDelta:0};
  if(!week.__q17BaseCitizens){
   Object.defineProperty(week,'__q17BaseCitizens',{value:JSON.parse(JSON.stringify(week.citizens)),writable:true,enumerable:false});
  }
- const key=String(ensureSeed())+':'+wi+':'+JSON.stringify(citySnapshot().map(x=>[x.id,x.infection]));
- if(week.__q17GeneratedKey===key)return;
- const used=new Set();
- week.citizens=week.__q17BaseCitizens.map((p,i)=>reskinCitizen(p,wi,i,used));
- week.__q17GeneratedKey=key;
+ activeIncident=chooseIncident(week,wi);
+ const incidentId=activeIncident?activeIncident.id:'none';
+ const key=String(ensureSeed())+':'+wi+':'+incidentId+':'+JSON.stringify(citySnapshot().map(x=>[x.id,x.infection]));
+ if(week.__q17GeneratedKey!==key){
+  const used=new Set();
+  week.citizens=week.__q17BaseCitizens.map((p,i)=>reskinCitizen(p,wi,i,used));
+  applyIncidentToCitizens(week.citizens,activeIncident,wi);
+  week.__q17GeneratedKey=key;
+ }
+ return{bloodKitsDelta:activeIncident&&activeIncident.bloodKitsDelta||0,incident:activeIncident};
 }
 function evaluate(p,wi){
  const rules=RULESETS[Math.max(0,Math.min(RULESETS.length-1,wi))]||[];
@@ -257,18 +295,21 @@ function citySummary(){
  const rows=citySnapshot();
  const highest=rows.slice().sort((a,b)=>b.infection-a.infection)[0];
  const avg=Math.round(rows.reduce((s,x)=>s+x.infection,0)/rows.length);
- return{average:avg,highest:highest,rows:rows,log:cityLog.slice()};
+ return{average:avg,highest:highest,rows:rows,log:cityLog.slice(),incident:activeIncident};
 }
 function bulletin(){
  const s=citySummary();
- if(!s.highest)return'도시 상황 자료가 없습니다.';
- if(s.highest.infection>=25)return'<b>'+s.highest.label+'</b>의 감염 위험이 높습니다. 해당 구역 통행자의 검사 누락에 주의하세요.';
- if(s.highest.infection>=16)return'<b>'+s.highest.label+'</b>에서 신고가 늘고 있습니다. 출신 구역은 단서일 뿐, 현재 지침으로 판정하세요.';
- return'도시 감염은 아직 통제 범위입니다. 출신 구역만 보고 단정하지 말고 검사 결과를 확인하세요.';
+ const event=s.incident?'<b>상황실 특보 · '+s.incident.label+'</b> · '+s.incident.desc+'<br>':'';
+ if(!s.highest)return event+'도시 상황 자료가 없습니다.';
+ if(s.highest.infection>=25)return event+'<b>'+s.highest.label+'</b>의 감염 위험이 높습니다. 해당 구역 통행자의 검사 누락에 주의하세요.';
+ if(s.highest.infection>=16)return event+'<b>'+s.highest.label+'</b>에서 신고가 늘고 있습니다. 출신 구역은 단서일 뿐, 현재 지침으로 판정하세요.';
+ return event+'도시 감염은 아직 통제 범위입니다. 출신 구역만 보고 단정하지 말고 검사 결과를 확인하세요.';
 }
+function weekIncident(){return activeIncident?Object.assign({},activeIncident):null}
 function facilityExposureStep(){
  const s=citySummary();
- return s.average>=20?1.25:1;
+ const incidentRisk=activeIncident&&activeIncident.facilityRisk||1;
+ return Math.max(incidentRisk,s.average>=20?1.25:1);
 }
 
 window.Q17Systems={
@@ -282,6 +323,7 @@ window.Q17Systems={
  citySnapshot:citySnapshot,
  citySummary:citySummary,
  bulletin:bulletin,
+ weekIncident:weekIncident,
  facilityExposureStep:facilityExposureStep,
  resetCampaign:resetCampaign,
  getSeed:ensureSeed
