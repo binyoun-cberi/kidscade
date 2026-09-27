@@ -385,3 +385,26 @@ body{
     transform:translateX(-50%) scale(.44)
   }
 }
+
+
+/* v7: reverse camera + exam result polish */
+.backup-camera{
+  position:absolute;left:50%;top:30%;transform:translateX(-50%);
+  width:min(360px,34vw);aspect-ratio:1.62/1;
+  display:none;overflow:hidden;border:7px solid #11191d;border-radius:12px;
+  background:rgba(21,36,43,.16);box-shadow:0 8px 24px rgba(0,0,0,.36)
+}
+.backup-camera.show{display:block}
+.backup-camera span{
+  position:absolute;z-index:2;left:8px;bottom:5px;font-size:10px;font-weight:900;
+  color:rgba(255,255,255,.82);text-shadow:0 1px 4px #000
+}
+.result-summary{background:#e7f4f8}
+.result-summary b{color:#176b89}
+@media (orientation:landscape) and (max-height:560px){
+  .backup-camera{top:28%;width:min(280px,31vw);border-width:5px}
+  .backup-camera span{font-size:8px}
+}
+@media (max-width:700px){
+  .backup-camera{width:38vw;top:29%}
+}
