@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>메트로 플래너</title>
-<link rel="stylesheet" href="metro.css?v=2">
+<link rel="stylesheet" href="metro.css?v=3">
 </head>
 <body>
 <div id="app">
@@ -24,6 +24,13 @@
     <button id="layerBtn" type="button" aria-label="지도 레이어">기본</button>
     <button id="soundBtn" type="button" aria-label="소리">🔊</button>
     <button id="helpBtn" type="button" aria-label="도움말">?</button>
+  </div>
+
+  <div id="mapControls" class="glass" aria-label="지도 확대와 이동">
+    <button id="zoomOutBtn" type="button" aria-label="지도 축소">−</button>
+    <span id="zoomLabel" aria-live="polite">100%</span>
+    <button id="zoomInBtn" type="button" aria-label="지도 확대">＋</button>
+    <button id="fitMapBtn" type="button" aria-label="대한민국 전체 보기" title="대한민국 전체 보기">⛶</button>
   </div>
 
   <aside id="leftPanel" class="sidePanel glass">
@@ -131,6 +138,6 @@
   <div id="tutorialBubble" class="tutorialBubble hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialSkip" type="button">건너뛰기</button></div>
 </div>
 <script src="../../kidscade-storage.js"></script>
-<script src="metro.js?v=2"></script>
+<script src="metro.js?v=3"></script>
 </body>
 </html>
