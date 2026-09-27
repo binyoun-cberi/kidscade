@@ -65,7 +65,7 @@ test('muscle boxing supports keyboard and touch', () => {
 test('catalog describes the new science sports game', () => {
   const game = catalog.games.find(item => item.id === 'high_body_muscle_lab');
   assert.ok(game);
-  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=5');
+  assert.equal(game.href, 'games/high_body_muscle_lab/index.html?v=6');
   assert.equal(game.subject, 'science');
   assert.equal(game.genre, 'sports');
   assert.equal(game.difficulty, 'medium');
@@ -73,4 +73,18 @@ test('catalog describes the new science sports game', () => {
   assert.deepEqual(game.input, ['touch', 'keyboard']);
   assert.ok(game.players.includes('solo'));
   assert.match(game.description, /상완이두근.*상완삼두근/);
+});
+
+
+test('rework adds pattern boxing, counter windows, muscle meters and optional camera body-control', () => {
+  assert.match(html, /id="cameraModeBtn"/);
+  assert.match(html, /id="cameraPreview"/);
+  assert.match(runtime, /MoveNet/);
+  assert.match(runtime, /jointAngle/);
+  assert.match(runtime, /buildEnemySequence/);
+  assert.match(runtime, /feintChance/);
+  assert.match(runtime, /COUNTER!/);
+  assert.match(runtime, /coContractTime/);
+  assert.match(css, /muscle-key i span/);
+  assert.match(css, /camera-preview/);
 });

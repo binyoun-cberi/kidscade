@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>내 몸아 움직여! 근육 복싱</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <div id="app">
@@ -30,7 +30,7 @@
   <main class="game-layout">
     <section class="play-stage">
       <div class="canvas-wrap">
-        <canvas id="game" width="960" height="560" aria-label="상완이두근과 상완삼두근을 직접 수축시켜 복싱하는 과학 게임"></canvas>
+        <video id="cameraPreview" class="camera-preview hidden" autoplay muted playsinline aria-label="몸 인식 카메라 미리보기"></video>\n        <canvas id="game" width="960" height="560" aria-label="상완이두근과 상완삼두근을 직접 수축시켜 복싱하는 과학 게임"></canvas>
         <button id="xrayBtn" class="xray-fab" type="button" aria-pressed="false" aria-label="근육과 뼈 보기">🩻</button>
         <div id="cue" class="cue" aria-live="polite">팔을 접으면 자동 가드 · 팔을 빠르게 펴서 닿으면 펀치!</div>
         <div id="toast" class="toast" aria-live="polite"></div>
@@ -50,6 +50,14 @@
     </section>
 
     <aside class="controls-panel">
+      <div class="input-mode-panel">
+        <div class="mode-buttons" role="group" aria-label="조작 방식">
+          <button id="manualModeBtn" class="mode-btn active" type="button">⌨️ 키·터치</button>
+          <button id="cameraModeBtn" class="mode-btn" type="button">📷 몸으로</button>
+        </div>
+        <span id="cameraStatus" class="camera-status">키보드 · 터치</span>
+      </div>
+      <div id="muscleCoach" class="muscle-coach" aria-live="polite">Q/W/E/R 또는 화면 버튼으로 근육을 직접 수축시키세요.</div>
       <div class="muscle-group">
         <div class="group-title"><b>왼팔</b><span id="leftState">가드</span></div>
         <button class="muscle-key flexor" data-key="q" type="button">
@@ -94,6 +102,6 @@
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="game.js?v=5"></script>
+<script src="game.js?v=6"></script>
 </body>
 </html>
