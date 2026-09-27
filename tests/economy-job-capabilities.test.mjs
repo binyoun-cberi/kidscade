@@ -98,3 +98,41 @@ test('student and teacher UIs expose the capability workbench', () => {
   assert.match(teacherJs, /data-save-job-caps/);
   assert.match(teacherJs, /credit-record-decision/);
 });
+
+
+test('teacher can normally assign, force assign, and remove jobs', () => {
+  const teacher = read('worker','economy-teacher.mjs');
+  const router = read('worker','economy.mjs');
+  const ui = read('teacher-economy.js');
+
+  assert.match(teacher, /export async function teacherJobAssign/);
+  assert.match(teacher, /const force = body\?\.force === true/);
+  assert.match(teacher, /if \(!force\)/);
+  assert.match(teacher, /certificate_required/);
+  assert.match(teacher, /job_full/);
+  assert.match(teacher, /export async function teacherJobUnassign/);
+  assert.match(teacher, /DELETE FROM economy_job_assignments WHERE student_id = \?/);
+
+  assert.match(router, /\/api\/teacher\/economy\/job-unassign/);
+  assert.match(router, /teacherJobUnassign/);
+
+  assert.match(ui, /data-force-assign-job/);
+  assert.match(ui, /force:true/);
+  assert.match(ui, /data-unassign-job-student/);
+  assert.match(ui, /job-unassign/);
+});
+
+test('teacher quick transaction UI exposes explicit money give and take controls', () => {
+  const html = read('teacher','economy.html');
+  const ui = read('teacher-economy.js');
+  const teacher = read('worker','economy-teacher.mjs');
+
+  assert.match(html, /id="manualGive"/);
+  assert.match(html, /id="manualTake"/);
+  assert.doesNotMatch(html, /id="manualTx"/);
+  assert.match(ui, /manualTransaction\('give'\)/);
+  assert.match(ui, /manualTransaction\('take'\)/);
+  assert.match(ui, /amount:take\?-raw:raw/);
+  assert.match(teacher, /nextBalance < 0/);
+  assert.match(teacher, /toTreasury/);
+});
