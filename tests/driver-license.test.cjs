@@ -44,10 +44,10 @@ test('Driver License v8 records driving quality and parking alignment',()=>{
   assert.match(css,/result-summary/);
 });
 
-test('Driver License v8 touch pedals use continuous pointer position',()=>{
-  assert.match(js,/const y=clamp\(\(e\.clientY-r\.top\)/);
-  assert.match(js,/touch\[kind\]=clamp\(\.1\+y\*\.9/);
-  assert.doesNotMatch(js,/const base=kind==='throttle'/);
+test('Driver License v9 touch pedals act like real pedals and can be feathered upward',()=>{
+  assert.match(js,/touch\[kind\]=1/);
+  assert.match(js,/const up=Math\.max\(0,startY-e\.clientY\)/);
+  assert.match(js,/touch\[kind\]=clamp\(1-up\/travel,0,1\)/);
 });
 
 test('Driver License module syntax parses after removing ESM imports',()=>{
