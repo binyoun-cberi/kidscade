@@ -11,31 +11,31 @@ test('blank cloud state resets Kidscade shared progress without deleting the acc
   const state = blankStudentState();
   assert.equal(state.profile.nickname, '새싹 게이머');
   assert.equal(state.seeds, 0);
+  assert.equal(state.sproutPower, 0);
   assert.deepEqual(state.avatarInventory, []);
   assert.deepEqual(state.playHistory.games, {});
-  assert.deepEqual(state.gardenState, {});
+  assert.equal(Object.hasOwn(state, 'gardenState'), false);
+  assert.equal(Object.hasOwn(state, 'pet'), false);
 });
 
 test('teacher overview summary stays compact while preserving useful play totals', () => {
   const summary = summarizeStudentState({
     seeds: 1450,
+    sproutPower: 380,
     playHistory: {
       games: {
         math: { plays: 3, seconds: 210 },
         english: { plays: 2, seconds: 125 },
         untouched: { plays: 0, seconds: 0 }
       }
-    },
-    gardenState: { level: 4 },
-    pet: { level: 3 }
+    }
   });
   assert.deepEqual(summary, {
     seeds: 1450,
+    sproutPower: 380,
     plays: 5,
     seconds: 335,
-    gameCount: 2,
-    gardenLevel: 4,
-    petLevel: 3
+    gameCount: 2
   });
 });
 
