@@ -128,3 +128,50 @@ test('Driver License v11 preserves low-speed automatic creep',()=>{
   assert.doesNotMatch(js,/if\(Math\.abs\(car\.speed\)<\.015\)car\.speed=0/);
   assert.match(js,/const creepTarget=1\.05/);
 });
+
+
+test('Driver License v12 uses a climbable ten-percent hill',()=>{
+  assert.match(js,/return \(60-z\)\*\.1/);
+  assert.match(js,/return \(z-40\)\*\.1/);
+  assert.match(js,/return -\.1/);
+  assert.match(js,/const ang=Math\.atan\(\.1\)/);
+});
+
+test('Driver License v12 automatic physics simulation reaches creep and climbs the hill',()=>{
+  const dt=1/60;
+  const approach=(v,target,amount)=>v<target?Math.min(target,v+amount):Math.max(target,v-amount);
+  const gd=z=>z<=60&&z>=50?-.1:z<50&&z>=40?.1:0;
+  const step=(state,throttle=0,brake=0)=>{
+    let {speed,z}=state,drive=Math.pow(throttle,1.18)*2.15;
+    if(throttle<.04&&brake<.04){
+      const target=1.05;
+      if(speed<target-.05)speed=approach(speed,target,.72*dt);
+      else if(speed>target+.08)speed=approach(speed,target,.82*dt);
+    }
+    const gravity=-9.81*(gd(z)*-1);
+    if(brake>.01)speed=approach(speed,0,(1.6+brake*5.6)*dt);
+    else{
+      speed+=(drive+gravity)*dt;
+      if(throttle>=.04)speed=approach(speed,0,.08*dt);
+    }
+    speed=Math.max(-3.6,Math.min(9,speed));
+    if(Math.abs(speed)<.002)speed=0;
+    z-=speed*dt;
+    return{speed,z};
+  };
+  let creep={speed:0,z:73};
+  for(let i=0;i<180;i++)creep=step(creep,0,0);
+  assert.ok(creep.speed*3.6>3,'automatic creep should exceed 3 km/h');
+
+  let hill={speed:0,z:54};
+  for(let i=0;i<120;i++)hill=step(hill,.7,0);
+  assert.ok(hill.z<54,'70% throttle should move forward uphill');
+  assert.ok(hill.speed>0,'hill start should remain forward');
+
+  let braking={speed:20/3.6,z:75},distance=0;
+  for(let i=0;i<60&&braking.speed>0;i++){
+    const before=braking.z;braking=step(braking,0,1);distance+=Math.abs(braking.z-before);
+  }
+  assert.ok(braking.speed===0,'full brake should stop from 20 km/h within one second');
+  assert.ok(distance<3,'20 km/h stopping distance should stay below 3m in the game model');
+});
