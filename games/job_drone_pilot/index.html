@@ -22,7 +22,9 @@
     <div><span>BAT</span><b id="battery">100%</b></div>
     <div><span>ALT</span><b id="altitude">0.0 m</b></div>
     <div><span>SPD</span><b id="speed">0.0 m/s</b></div>
-    <div><span>MODE</span><b id="mode">GPS</b></div>
+    <div><span>MODE</span><b id="mode">안정</b></div>
+    <div><span>WIND</span><b id="wind">0.0 m/s</b></div>
+    <div><span>DRONE</span><b id="health">100%</b></div>
   </div>
   <div id="toast" role="status"></div>
   <div id="reticle" aria-hidden="true"><span></span></div>
@@ -33,14 +35,26 @@
       <div class="stickHint">↑↓ 고도 · ←→ 회전</div>
     </div>
     <div id="remoteCenter">
-      <div class="remoteBrand">KIDSCADE DRONE</div>
+      <div class="remoteBrand">KIDSCADE DRONE · PILOT CONSOLE</div>
+      <div id="controllerScreen" aria-label="드론 조종기 카메라 화면">
+        <canvas id="pipView"></canvas>
+        <div class="pipShade top"><span id="armState">SAFE</span><b id="pipMode">안정</b></div>
+        <div class="pipShade bottom"><span id="pipTelemetry">ALT 0.0 · BAT 100%</span><b id="signal">LINK 100%</b></div>
+        <div id="gimbalReadout">CAM -18°</div>
+      </div>
       <div class="buttonRow">
+        <button id="armBtn" class="arm" type="button">모터 시작</button>
         <button id="cameraBtn" type="button">📷 촬영</button>
-        <button id="focusBtn" type="button">🎯 드론 찾기</button>
-        <button id="fpvBtn" type="button">드론 카메라</button>
+        <button id="modeBtn" type="button">안정 모드</button>
+        <button id="fpvBtn" type="button">FPV 전체화면</button>
         <button id="rthBtn" type="button">↩ 귀환</button>
       </div>
-      <div id="keyGuide">화면 드래그 둘러보기 · F 드론 찾기 · WASD 이동 · 방향키 고도/회전 · C 촬영 · V 드론 카메라 · R 귀환</div>
+      <div class="auxRow">
+        <button id="gimbalUpBtn" type="button">짐벌 ↑</button>
+        <button id="gimbalDownBtn" type="button">짐벌 ↓</button>
+        <button id="focusBtn" type="button">🎯 드론 찾기</button>
+      </div>
+      <div id="keyGuide">WASD 이동 · 방향키 고도/회전 · Space 모터 · M 모드 · Shift 정밀 · Z/X 짐벌 · C 촬영 · V FPV · R 귀환</div>
     </div>
     <div class="stickWrap right">
       <div class="stickLabel">이동</div>
@@ -53,14 +67,14 @@
   <div class="card">
     <div class="badge">직업 체험 · 드론조종사</div>
     <h1>드론조종사 시뮬레이터</h1>
-    <p>지상에 선 드론 조종사의 시점에서 두 개의 조종 스틱으로 드론을 띄우세요. 화면 빈 곳을 드래그하면 주변을 둘러볼 수 있고, 드론을 놓쳤다면 ‘드론 찾기’를 누르면 됩니다. 항공 촬영, 시설 점검, 물품 배송, 수색, 장애물 비행 임무를 해결하세요.</p>
+    <p>지상에 선 조종사처럼 하늘의 기체와 손안의 조종기 화면을 번갈아 보며 비행하세요. 먼저 모터를 시작한 뒤 이륙하고, 안정 모드와 일반 모드를 상황에 맞게 사용합니다. 바람과 기체 상태를 확인하며 항공 촬영, 시설 점검, 물품 배송, 수색, 장애물 비행 임무를 해결하세요.</p>
     <div class="guideGrid">
       <div><b>왼쪽 스틱</b><span>고도 · 기체 회전</span></div>
       <div><b>오른쪽 스틱</b><span>전후 · 좌우 이동</span></div>
-      <div><b>조종사 시점</b><span>화면 빈 곳을 드래그해 주변 둘러보기</span></div>
-      <div><b>드론 찾기</b><span>F 또는 버튼으로 기체 방향 다시 보기</span></div>
-      <div><b>자동 호버</b><span>스틱을 놓으면 천천히 안정화</span></div>
-      <div><b>RTH</b><span>안전 고도로 올라간 뒤 출발점 복귀</span></div>
+      <div><b>조종사 시점</b><span>육안으로 기체를 보고 조종기 화면으로 카메라 확인</span></div>
+      <div><b>모터 시작</b><span>비행 전 ARM 후 이륙 · 착륙 뒤 안전하게 정지</span></div>
+      <div><b>비행 모드</b><span>안정 모드는 자동제동 · 일반 모드는 관성과 바람 체감</span></div>
+      <div><b>RTH</b><span>안전 고도 상승 → 출발점 호버 → 자동 착륙</span></div>
     </div>
     <div class="startActions">
       <button id="tutorialBtn" class="primary" type="button">기초 훈련부터</button>
