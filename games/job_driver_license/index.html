@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>운전면허시험장</title>
-<link rel="stylesheet" href="driver-license.css?v=6">
+<link rel="stylesheet" href="driver-license.css?v=7">
 </head>
 <body>
 <canvas id="game" aria-label="운전면허시험장 3D 운전석 화면"></canvas>
@@ -27,6 +27,7 @@
 
   <div id="mirrorLeft" class="mirror"><span>좌측</span></div>
   <div id="mirrorRight" class="mirror"><span>우측</span></div>
+  <div id="backupCamera" class="backup-camera"><span>후방카메라 · 예상 궤적</span></div>
 
   <div id="cockpit">
     <div id="dashTop"></div>
@@ -107,6 +108,6 @@
 <script src="../../kidscade-storage.js?v=20260924-driver-license-1"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="job_driver_license" data-title="운전면허시험장" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="driver-license.js?v=7"></script>
+<script type="module" src="driver-license.js?v=8"></script>
 </body>
 </html>
