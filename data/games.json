@@ -1166,6 +1166,28 @@
       "classroom": false
     },
     {
+      "id": "low_speak_jjoayo",
+      "title": "스피크가 쪼아요!",
+      "href": "games/low_speak_jjoayo/index.html?v=1",
+      "category": "lang",
+      "age": "low",
+      "icon": "🎤",
+      "description": "한글 뜻과 그림을 보고 영어 단어를 말하세요! 30·60·90초 동안 최대한 많이 맞히고 콤보로 시간을 늘리는 음성 영단어 스피드런. 마이크가 안 되면 타이핑으로 바로 이어서 플레이할 수 있어요.",
+      "subject": "language",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 2,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "tod_chick_shell",
       "title": "병아리는 어디에?",
       "href": "games/tod_chick_shell/병아리는 어디에？.html",
