@@ -175,3 +175,28 @@ test('Driver License v12 automatic physics simulation reaches creep and climbs t
   assert.ok(braking.speed===0,'full brake should stop from 20 km/h within one second');
   assert.ok(distance<3,'20 km/h stopping distance should stay below 3m in the game model');
 });
+
+
+test('Driver License v13 keeps camera heading aligned with vehicle steering direction',()=>{
+  assert.match(js,/camera\.rotation\.y=-car\.yaw\+headYaw/);
+  assert.match(js,/const backYaw=-car\.yaw\+Math\.PI/);
+
+  const dt=1/60,wheelbase=2.62,speed=10/3.6;
+  let yaw=0,x=0,z=73;
+  const wheelAngle=-30*Math.PI/180; // left steering
+  for(let i=0;i<60;i++){
+    yaw=Math.atan2(Math.sin(yaw+(speed/wheelbase)*Math.tan(wheelAngle)*dt),Math.cos(yaw+(speed/wheelbase)*Math.tan(wheelAngle)*dt));
+    x+=Math.sin(yaw)*speed*dt;
+    z-=Math.cos(yaw)*speed*dt;
+  }
+  const cameraYaw=-yaw;
+  const cameraForwardX=-Math.sin(cameraYaw);
+  assert.ok(x<0,'left steering must move the car toward world left');
+  assert.ok(cameraForwardX<0,'driver camera must look toward the same leftward heading');
+});
+
+test('Driver License v13 steering returns quickly instead of feeling boat-like',()=>{
+  assert.match(js,/const steerRate=Math\.abs\(rawSteer\)>\.025\?1650:2100/);
+  assert.match(js,/Math\.pow\(Math\.abs\(rawSteer\),1\.18\)/);
+  assert.match(js,/lerp\(500,265,clamp\(steerSpeedKmh\/38,0,1\)\)/);
+});
