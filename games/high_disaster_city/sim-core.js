@@ -10,7 +10,7 @@ class Simulation{
  reset(){
   this.state={mode:'ready',paused:false,tutorial:false,tutorialStep:0,time:0,seed:1,money:320,food:28,population:14,stability:100,maxPopulation:14,
    slots:D.SLOT_X.map((x,i)=>({i,x,building:null})),deck:[],discard:[],hand:[],selectedUid:null,refreshCooldown:0,economyClock:0,growthClock:0,hungerClock:0,
-   disasters:[],field:DC.Field?.createState?.()||null,next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
+   disasters:[],field:DC.Field?.createState?.()||null,recovery:{debris:[],recovered:0},evacuation:{groups:[],boostUntil:0,evacuatedTotal:0,stranded:0,sheltered:0},next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
    stats:{resolved:0,lost:0,placed:0,replaced:0,upgraded:0,cardsPlayed:0,removed:0}};
  }
  on(fn){this.listeners.push(fn)}
@@ -88,7 +88,7 @@ class Simulation{
   if(def.action==='stormPrep')return !!this.matchingDisaster('typhoon');
   if(def.action==='waterDistribution')return !!this.matchingDisaster('heatwave');
   if(def.action==='snowplow')return !!this.matchingDisaster('blizzard');
-  if(def.action==='evacuation')return !!this.matchingDisaster('earthquake');
+  if(def.action==='evacuation')return this.state.disasters.some(d=>['wildfire','flood','typhoon','earthquake'].includes(d.type));
   if(def.action==='repair')return !!this.repairTarget();
   return true
  }
@@ -109,10 +109,10 @@ class Simulation{
   }else if(def.action==='snowplow'){
    const d=this.matchingDisaster('blizzard');d.energy=Math.max(0,d.energy-20);d.progress=Math.max(0,d.progress-.13);d.blockPause=Math.max(d.blockPause||0,2.2);this.emit('response','제설차가 눈길을 열어 폭설 전선을 밀어냈습니다.');
   }else if(def.action==='evacuation'){
-   const d=this.matchingDisaster('earthquake');d.energy=Math.max(0,d.energy-25);d.blockPause=Math.max(d.blockPause||0,4);s.stability=Math.min(100,s.stability+2);this.emit('response','주민을 긴급 대피시켜 다음 충격 피해를 줄였습니다.');
+   const d=this.matchingDisaster('earthquake');if(d){d.energy=Math.max(0,d.energy-18);d.blockPause=Math.max(d.blockPause||0,4)}DC.Population?.emergency?.(this,15);s.stability=Math.min(100,s.stability+1);this.emit('response','긴급 대피 명령을 내려 15초 동안 주민 이동을 빠르게 했습니다.');
   }else if(def.action==='repair'){
    const damaged=this.repairTarget();
-   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x})}
+   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);DC.Recovery?.repair?.(this,damaged);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x})}
   }else if(def.action==='ration'){s.food+=12;this.emit('supply','비상 식량 +12')}
   s.stats.cardsPlayed++;this.discardCard(uid);return true
  }
@@ -120,10 +120,10 @@ class Simulation{
   const s=this.state;if(s.refreshCooldown>0||s.hand.length===0)return false;for(const c of s.hand)s.discard.push(c.id);s.hand.length=0;s.selectedUid=null;s.refreshCooldown=12;this.drawToFive();this.emit('shuffle','손패를 새로 받았습니다.');return true
  }
  damageBuilding(slotIndex,amount,cause){
-  const s=this.state,slot=s.slots[slotIndex];if(!slot?.building)return false;slot.building.hp-=amount;if(slot.building.hp>0)return false;
+  const s=this.state,slot=s.slots[slotIndex];if(!slot?.building)return false;slot.building.hp-=amount;if(slot.building.hp>0){DC.Recovery?.markDamaged?.(this,slotIndex);return false}
   const old=slot.building,def=D.BUILDINGS[old.id];slot.building=null;s.stats.lost++;s.stability=Math.max(0,s.stability-(old.id==='house'?7:5));
   if(old.id==='house')s.population=Math.max(1,s.population-2*(old.level||1));
-  s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
+  DC.Recovery?.markDestroyed?.(this,slot,old);s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
  }
  makeRewards(){
   const pool=D.REWARD_POOL.slice(),out=[],nextType=this.state.next?.type,counters=(D.COUNTERS?.[nextType]||[]).filter(id=>pool.includes(id));
@@ -169,7 +169,7 @@ class Simulation{
  maxConcurrent(){return this.state.time<300?1:2}
  updateEconomy(){
   const s=this.state;let money=s.population*.055,food=-s.population*.032,upkeep=0;
-  for(const slot of s.slots){const b=slot.building;if(!b)continue;const def=D.BUILDINGS[b.id],lvl=b.level||1;money+=(def.money||0)*(1+.55*(lvl-1));food+=(def.food||0)*(1+.55*(lvl-1));upkeep+=(def.upkeep||0)*(1+.35*(lvl-1))}
+  for(const slot of s.slots){const b=slot.building;if(!b)continue;const def=D.BUILDINGS[b.id],lvl=b.level||1,eff=DC.Recovery?.efficiency?.(b)??1;money+=(def.money||0)*(1+.55*(lvl-1))*eff;food+=(def.food||0)*(1+.55*(lvl-1))*eff;upkeep+=(def.upkeep||0)*(1+.35*(lvl-1))}
   s.money=Math.max(0,s.money+money-upkeep);s.food=Math.max(0,s.food+food);
   s.growthClock++;if(s.growthClock>=4){s.growthClock=0;if(s.population<this.capacity()&&s.food>5){s.population++;s.maxPopulation=Math.max(s.maxPopulation,s.population)}}
   if(s.food<=.01){s.hungerClock++;s.stability=Math.max(0,s.stability-.7);if(s.hungerClock>=5){s.hungerClock=0;s.population=Math.max(1,s.population-1);this.emit('hunger','식량 부족으로 주민이 떠났습니다.')}}else s.hungerClock=0;
@@ -178,7 +178,7 @@ class Simulation{
  update(dt){
   const s=this.state;if(s.mode!=='playing'||s.paused)return;s.time+=dt;s.refreshCooldown=Math.max(0,s.refreshCooldown-dt);this.updateEffects(dt);
   s.economyClock+=dt;while(s.economyClock>=1){s.economyClock-=1;this.updateEconomy()}
-  if(DC.Disasters)DC.Disasters.update(this,dt);
+  if(DC.Disasters)DC.Disasters.update(this,dt);DC.Recovery?.update?.(this,dt);DC.Population?.update?.(this,dt);
   if(s.stability<=0){s.stability=0;this.gameOver()}
  }
  gameOver(){
