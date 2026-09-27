@@ -194,7 +194,10 @@ function evaluate(p,wi){
 function reason(p,wi){
  const rules=RULESETS[Math.max(0,Math.min(RULESETS.length-1,wi))]||[];
  const hit=rules.find(r=>r.when(p));
- if(hit)return hit.reason;
+ if(hit){
+  if(p.forged&&hit.reason.indexOf('통행증')>=0&&p.docIssueLabel)return p.docIssueLabel+' · 추가검사 대상';
+  return hit.reason;
+ }
  if(p.district==='D-7')return'D-7 의무 혈액검사 음성 및 다른 격리 기준 없음';
  return'현행 격리·추가검사 기준에 해당하지 않음';
 }
