@@ -197,14 +197,12 @@ export function sanitizeSyncState(input) {
       updatedAt: typeof profile.updatedAt === 'string' ? profile.updatedAt.slice(0, 40) : ''
     },
     seeds: clampInt(state.seeds, 0, 1_000_000_000),
+    sproutPower: clampInt(state.sproutPower, 0, 1_000_000_000),
     avatarInventory: cleanStringArray(state.avatarInventory, 500),
     avatarEquipped: cleanStringMap(state.avatarEquipped, 40),
     playHistory: boundedJsonObject(state.playHistory, 56 * 1024),
     inventory: boundedJsonObject(state.inventory, 16 * 1024),
-    equipped: cleanStringMap(state.equipped, 80),
-    pet: boundedJsonObject(state.pet, 12 * 1024),
-    petItems: boundedJsonObject(state.petItems, 12 * 1024),
-    gardenState: boundedJsonObject(state.gardenState, 32 * 1024)
+    equipped: cleanStringMap(state.equipped, 80)
   };
   const bytes = new TextEncoder().encode(JSON.stringify(out)).byteLength;
   if (bytes > MAX_STATE_BYTES) throw new Error('state-too-large');
