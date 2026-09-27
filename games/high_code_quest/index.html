@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101927">
 <title>버그월드: 코드 원정대 | Kidscade</title>
-<link rel="stylesheet" href="./style.css?v=5">
+<link rel="stylesheet" href="./style.css?v=6">
 </head>
 <body>
 <div id="app">
@@ -68,6 +68,7 @@
       <button id="outBtn" type="button">↰ 밖으로</button>
       <button id="undoBtn" type="button">↶ 하나 지우기</button>
       <button id="clearBtn" type="button">비우기</button>
+      <button id="importPrevBtn" class="hidden" type="button">이전 코드 가져오기</button>
     </div>
 
     <div id="palette" class="palette"></div>
@@ -87,6 +88,7 @@
       <button type="button" data-speed="0.5">×0.5</button>
       <button type="button" data-speed="1" class="active">×1</button>
       <button type="button" data-speed="2">×2</button>
+      <button type="button" data-speed="4">×4</button>
     </div>
     <div id="traceStrip" class="trace-strip" aria-label="최근 실행 기록"></div>
   </div>
@@ -108,7 +110,7 @@
       <div class="logo">⌘</div>
       <p class="eyebrow">KIDSCADE RPG</p>
       <h1>버그월드<br><span>코드 원정대</span></h1>
-      <p class="lead">검 대신 명령을 들고 달리고 점프하는 2D 사이드스크롤 코딩 RPG.<br>코드를 실행하고, 실패한 줄을 찾아 고쳐 세계의 버그를 없애세요.</p>
+      <p class="lead">코드 캠프부터 NULL CORE까지 이어지는 40스테이지 코딩 RPG.<br>실행하고, 실패한 줄을 고치고, 환경이 달라도 작동하는 프로그램을 완성하세요.</p>
       <div class="feature-row">
         <span>분기 탐험</span><span>장비</span><span>조건</span><span>나의 기술</span><span>보스 AI</span>
       </div>
@@ -211,9 +213,9 @@
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_code_quest" data-title="버그월드: 코드 원정대" data-shell="true" data-orientation="landscape"></script>
-<script src="./missions.js?v=6"></script>
+<script src="./missions.js?v=7"></script>
 <script src="./code-runtime.js?v=5"></script>
-<script src="./validator.js?v=2"></script>
-<script type="module" src="./game.js?v=6"></script>
+<script src="./validator.js?v=3"></script>
+<script type="module" src="./game.js?v=7"></script>
 </body>
 </html>

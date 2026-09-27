@@ -233,13 +233,18 @@ function conditionStats(traces,type){
  for(const trace of traces)for(const e of trace||[])if(e.kind==='check'&&e.type===type){out.checks++;if(e.result)out.trueCount++;else out.falseCount++;}
  return out;
 }
+function objectParticle(label){
+ const text=String(label||'');const ch=text.charCodeAt(text.length-1);
+ if(ch>=0xAC00&&ch<=0xD7A3)return ((ch-0xAC00)%28?'을':'를');
+ return '을';
+}
 function conceptCheck(mission,functionPrograms,traces){
  const f=RuntimeAPI.normalizeFunctions(functionPrograms);
  const calls=traces.flat().filter(e=>e?.kind==='call');
  if(mission.requireFunction&&(!f.a.length||!calls.some(e=>(e.slot||'a')==='a')))return {ok:false,message:'나의 기술 A를 만들고 실제로 불러와 사용해 보세요.'};
  if(mission.requireFunctionB&&(!f.b.length||!calls.some(e=>e.slot==='b')))return {ok:false,message:'나의 기술 B를 만들고 실제로 불러와 사용해 보세요.'};
  const required=[...(mission.requireTypes||[])];if(mission.requireType)required.push(mission.requireType);
- for(const type of required)if(!traces.some(t=>traceUses(t,type)))return {ok:false,message:'이번 구역에서는 '+((window.CodeQuestData?.blocks?.[type]?.label)||type)+'을 실제 실행해 보세요.'};
+ for(const type of required)if(!traces.some(t=>traceUses(t,type))){const label=(window.CodeQuestData?.blocks?.[type]?.label)||type;return {ok:false,message:'이번 구역에서는 '+label+objectParticle(label)+' 실제 실행해 보세요.'};}
  if(mission.requireCallCount&&calls.length<mission.requireCallCount)return {ok:false,message:'나의 기술을 '+mission.requireCallCount+'번 이상 실제로 재사용해 보세요.'};
  if(mission.requireCallSlots){
   for(const [slot,need] of Object.entries(mission.requireCallSlots)){
@@ -247,7 +252,7 @@ function conceptCheck(mission,functionPrograms,traces){
    if(got<need)return {ok:false,message:'나의 기술 '+slot.toUpperCase()+'를 '+need+'번 이상 재사용해 보세요.'};
   }
  }
- if(mission.requireConditionTrue){const c=conditionStats(traces,mission.requireConditionTrue);if(c.trueCount<1)return {ok:false,message:'조건이 참이 되는 상황에서 '+((window.CodeQuestData?.blocks?.[mission.requireConditionTrue]?.label)||mission.requireConditionTrue)+'을 활용해 보세요.'};}
+ if(mission.requireConditionTrue){const c=conditionStats(traces,mission.requireConditionTrue);if(c.trueCount<1){const label=(window.CodeQuestData?.blocks?.[mission.requireConditionTrue]?.label)||mission.requireConditionTrue;return {ok:false,message:'조건이 참이 되는 상황에서 '+label+objectParticle(label)+' 활용해 보세요.'};}}
  if(mission.requireConditionCoverage){const c=conditionStats(traces,mission.requireConditionCoverage);if(c.trueCount<1||c.falseCount<1)return {ok:false,message:'같은 조건이 참일 때와 거짓일 때 모두 올바르게 작동하도록 만들어 보세요.'};}
  return {ok:true};
 }

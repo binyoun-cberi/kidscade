@@ -21,6 +21,7 @@ let dpr=Math.min(2,window.devicePixelRatio||1);
 let runSpeed=1;
 let runToken=0;
 let validating=false,lastValidation=null,uiTrace=[];
+let paletteCategory='all';
 
 const images={};
 const imageSources={
@@ -79,6 +80,27 @@ function previousCarryStore(){
  for(let i=missionIndex-1;i>=0;i--){if(missions[i].arc===mission.arc&&progress.programs[i])return progress.programs[i];}
  return null;
 }
+function previousProgramStore(){
+ for(let i=missionIndex-1;i>=0;i--){const p=progress.programs[i];if(p&&(p.main?.length||p.fn?.length||p.fns?.a?.length||p.fns?.b?.length))return p;}
+ return null;
+}
+function activeMemoryBonus(){return Math.min(Number(progress.memoryBonus)||0,Number(mission?.memoryBonusCap??8));}
+function filterAllowedNodes(list){
+ const allowed=new Set(allowedBlocks());
+ return (list||[]).filter(n=>allowed.has(n.type)).map(n=>{
+  const x={id:makeId(),type:n.type};
+  if(Array.isArray(n.body))x.body=filterAllowedNodes(n.body);
+  if(Array.isArray(n.elseBody))x.elseBody=filterAllowedNodes(n.elseBody);
+  return x;
+ });
+}
+function importPreviousProgram(){
+ const src=previousProgramStore();if(!src){toast('가져올 이전 코드가 없어요.',true);return;}
+ if((mainProgram.length||functionPrograms.a.length||functionPrograms.b.length)&&!confirm('현재 코드를 이전 임무 코드로 바꿀까요?'))return;
+ mainProgram=filterAllowedNodes(clone(src.main||[]));
+ functionPrograms={a:filterAllowedNodes(clone(src.fns?.a||src.fn||[])),b:filterAllowedNodes(clone(src.fns?.b||[]))};
+ insertPath=[];persistCode();invalidateExecution();renderAllEditor();toast('이전 임무 코드를 가져왔어요.');
+}
 function persistCode(){
  const slot=currentStore();slot.main=clone(mainProgram);slot.fns=clone(functionPrograms);slot.fn=clone(functionPrograms.a);progress.current=missionIndex;saveProgress();
 }
@@ -112,7 +134,7 @@ function setExecuting(on){
  const mini=$('miniCode');if(mini)mini.classList.toggle('hidden',!on);
 }
 function setRunButtons(running){$('runBtn').classList.toggle('hidden',running);$('stepBtn').classList.toggle('hidden',running);$('stopBtn').classList.toggle('hidden',!running);}
-function speedMs(ms){return Math.max(45,ms/runSpeed);}
+function speedMs(ms){return Math.max(runSpeed>=4?28:45,ms/runSpeed);}
 function resize(){
  dpr=Math.min(2,window.devicePixelRatio||1);
  const r=canvas.getBoundingClientRect();canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);
@@ -230,7 +252,7 @@ async function attackEnemy(e){
  const state=currentEnemyState(e);
  if(state==='guard'){sound('ui.error');toast('방어에 막혔어! 빈틈을 기다려봐.',true);worldState.pose='idle';return {blocked:true};}
  e.hp--;sound('combat.impact_heavy');
- if(e.hp<=0){e.dead=true;toast(e.boss?'보스의 버그 코어가 깨졌다!':'버그 몬스터 제거!');}
+ if(e.hp<=0){e.dead=true;if(e.boss){const core=worldState.treasures.find(t=>!t.taken);if(core){core.taken=true;claimTreasure(core);}toast('보스의 버그 코어를 자동 회수했어요!');}else toast('버그 몬스터 제거!');}
  worldState.pose='idle';updateBossHud();return {blocked:false};
 }
 async function hurtPlayer(amount=1){
@@ -409,7 +431,7 @@ function getUnlockedBlocks(){
 function allowedBlocks(){
  const s=new Set(mission.available||[]);getUnlockedBlocks().forEach(b=>s.add(b));return [...s];
 }
-function memoryLimit(){return (mission.functionMemory&&codeTarget!=='main'?mission.functionMemory:mission.memory)+(codeTarget==='main'?progress.memoryBonus:0);}
+function memoryLimit(){return (mission.functionMemory&&codeTarget!=='main'?mission.functionMemory:mission.memory)+(codeTarget==='main'?activeMemoryBonus():0);}
 function activeRoot(){return codeTarget==='main'?mainProgram:(functionPrograms[codeTarget]||functionPrograms.a);}
 function resolveContainer(root,path,which='body'){
  let list=root;
@@ -479,10 +501,37 @@ function renderProgram(){
  $('insertPath').textContent=labels.length?'추가 위치: '+labels.join(' › '):'여기에 명령이 추가돼요.';
  updateMiniCode();
 }
+function refreshExecutionHighlights(){
+ document.querySelectorAll('#program .node').forEach(el=>{
+  el.classList.toggle('active',Boolean(executingNodeId)&&el.dataset.nodeId===executingNodeId);
+  el.classList.toggle('error',Boolean(errorNodeId)&&el.dataset.nodeId===errorNodeId);
+ });
+ updateMiniCode();
+}
+function blockGroup(type){
+ if(['FWD','BACK','JUMP','HIGH_JUMP','DROP','DASH'].includes(type))return 'move';
+ if(['ATTACK','DODGE','WAIT','HEAL'].includes(type))return 'combat';
+ if(type.startsWith('IF_'))return 'sensor';
+ if(['COLLECT','OPEN','TOGGLE','COLLECT_DATA','UPLOAD','CHARGE'].includes(type))return 'resource';
+ if(type.startsWith('REP')||type.startsWith('UNTIL_'))return 'flow';
+ if(type.startsWith('CALL_FN'))return 'skill';
+ return 'other';
+}
 function renderPalette(){
  const root=$('palette');root.replaceChildren();
- allowedBlocks().forEach(type=>{
-  if(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B'))return;
+ const types=allowedBlocks().filter(type=>!(codeTarget!=='main'&&(type==='CALL_FN'||type==='CALL_FN_B')));
+ if(types.length>12){
+  const tabs=document.createElement('div');tabs.className='palette-groups';
+  const groups=[['all','전체'],['move','이동'],['combat','전투'],['sensor','센서'],['resource','자원'],['flow','반복'],['skill','기술']];
+  for(const [id,label] of groups){
+   if(id!=='all'&&!types.some(t=>blockGroup(t)===id))continue;
+   const b=document.createElement('button');b.type='button';b.className='palette-group'+(paletteCategory===id?' active':'');b.textContent=label;b.onclick=()=>{paletteCategory=id;renderPalette();};tabs.appendChild(b);
+  }
+  root.appendChild(tabs);
+ }
+ const shown=paletteCategory==='all'?types:types.filter(t=>blockGroup(t)===paletteCategory);
+ if(!shown.length&&paletteCategory!=='all'){paletteCategory='all';return renderPalette();}
+ shown.forEach(type=>{
   const def=BLOCKS[type],b=document.createElement('button');b.type='button';b.className=def.kind||'action';b.innerHTML='<b>'+def.icon+'</b>'+def.label;b.onclick=()=>addBlock(type);root.appendChild(b);
  });
 }
@@ -504,7 +553,6 @@ function updateHUD(){
  $('variableData').textContent=worldState?.dataCount??0;$('variableEnergy').textContent=worldState?.energy??0;
  $('dataStat').classList.toggle('hidden',!(mission?.dataItems?.length||mission?.terminals?.length));
  $('energyStat').classList.toggle('hidden',!mission?.usesEnergy);
- renderProgram();
 }
 function updateBossHud(){
  const box=$('bossHud');if(!box||!worldState)return;const boss=worldState.enemies.find(e=>e.boss&&!e.dead);
@@ -552,7 +600,7 @@ function setMissionText(){
  $('chapterName').textContent=mission.chapter;$('missionName').textContent=mission.name;$('missionKicker').textContent=mission.concept;$('missionTitle').textContent=mission.title;$('missionText').textContent=mission.text;$('objectiveText').textContent=mission.objective;
 }
 function loadMission(index,resetCode=false){
- missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';
+ missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';paletteCategory='all';
  const slot=currentStore(),carry=mission.carryProgram?previousCarryStore():null;
  if(resetCode){mainProgram=[];functionPrograms={a:[],b:[]};}
  else if((slot.main?.length||slot.fn?.length||slot.fns?.a?.length||slot.fns?.b?.length)){
@@ -561,7 +609,7 @@ function loadMission(index,resetCode=false){
  else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionPrograms={a:normalizeNodes(clone(carry.fns?.a||carry.fn||[])),b:normalizeNodes(clone(carry.fns?.b||[]))};}
  else{mainProgram=[];functionPrograms={a:[],b:[]};}
  persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));
- const skillB=$('skillBTab');if(skillB){skillB.disabled=!(progress.inventory.mine_core||missionIndex>=20);skillB.classList.toggle('locked',skillB.disabled);}
+ const skillB=$('skillBTab');if(skillB){skillB.disabled=!(progress.inventory.mine_core||missionIndex>=20);skillB.classList.toggle('locked',skillB.disabled);}const importBtn=$('importPrevBtn');if(importBtn)importBtn.classList.toggle('hidden',!previousProgramStore());
  $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');$('validationFail')?.classList.add('hidden');
  try{window.KidscadeGame?.start?.({stage:missionIndex+1,title:mission.title});}catch(_){}
 }
@@ -569,13 +617,13 @@ function renderMissionGrid(){
  const root=$('missionGrid');root.replaceChildren();let lastArc='';
  missions.forEach((m,i)=>{
   if(m.arc!==lastArc){lastArc=m.arc;const h=document.createElement('div');h.className='mission-arc';const names={prologue:'코드 캠프 · 입단 시험',forest:'버섯 숲 · 상태와 분기',mine:'수정 광산 · 조건 반복',city:'기계 도시 · 다중 함수',desert:'데이터 사막 · 변수와 자원',citadel:'버그 성채 · 종합 검증',null:'NULL CORE · 최종 범용 AI'};h.textContent=names[m.arc]||m.arc;root.appendChild(h);}
-  const b=document.createElement('button');b.type='button';b.className='mission-item'+(i>=progress.unlocked?' locked':'')+(progress.completed[i]?' done':'');b.innerHTML='<b>'+(progress.completed[i]?'✓ ':'')+m.name+'</b><span>'+m.concept+' · 메모리 '+(m.memory+(progress.memoryBonus||0))+'</span>';b.disabled=i>=progress.unlocked;b.onclick=()=>loadMission(i,false);root.appendChild(b);
+  const b=document.createElement('button');b.type='button';b.className='mission-item'+(i>=progress.unlocked?' locked':'')+(progress.completed[i]?' done':'');b.innerHTML='<b>'+(progress.completed[i]?'✓ ':'')+m.name+'</b><span>'+m.concept+' · 메모리 '+(m.memory+Math.min(Number(progress.memoryBonus)||0,Number(m.memoryBonusCap??8)))+'</span>';b.disabled=i>=progress.unlocked;b.onclick=()=>loadMission(i,false);root.appendChild(b);
  });
 }
 function renderWorldMap(){
  const root=$('campaignMap');if(!root)return;root.replaceChildren();
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.classList.add('map-links');
- for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.classList.add(progress.completed[a.end]?'done':'');svg.appendChild(line);}
+ for(let i=0;i<regions.length-1;i++){const a=regions[i],b=regions[i+1],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);if(progress.completed[a.end])line.classList.add('done');svg.appendChild(line);}
  root.appendChild(svg);
  for(const region of regions){
   const locked=region.locked||Number.isInteger(region.requiresMission)&&!progress.completed[region.requiresMission];
@@ -591,20 +639,32 @@ function renderWorldMap(){
 function renderInventory(){
  const root=$('inventoryGrid');if(!root)return;root.replaceChildren();
  const owned=Object.keys(progress.inventory).filter(k=>progress.inventory[k]);
- if(!owned.length){root.innerHTML='<div class="inventory-empty">아직 장비가 없어요. 입단 시험을 진행해 보세요.</div>';return;}
- owned.forEach(id=>{const d=document.createElement('div');d.className='gear-card';d.innerHTML='<span>'+gearIcon(id)+'</span><div><b>'+rewardNames[id]+'</b><small>'+gearDesc(id)+'</small></div>';root.appendChild(d);});
- $('memoryBonusText').textContent='추가 메모리 +'+(progress.memoryBonus||0);
+ const treasures=Object.keys(progress.treasures).filter(k=>progress.treasures[k]);
+ if(!owned.length&&!treasures.length){root.innerHTML='<div class="inventory-empty">아직 장비가 없어요. 입단 시험을 진행해 보세요.</div>';return;}
+ owned.forEach(id=>{const d=document.createElement('div');d.className='gear-card';d.innerHTML='<span>'+gearIcon(id)+'</span><div><b>'+(rewardNames[id]||id)+'</b><small>'+gearDesc(id)+'</small></div>';root.appendChild(d);});
+ const treasureMeta={forest_cache:['숲의 메모리 조각','버섯 숲에서 찾은 숨은 보물'],altimeter_chip:['고도 측정 칩','위쪽 경로에서 발견한 탐험 기록'],sky_shard:['하늘빛 수정','박쥐 절벽의 희귀 보물'],memory_core:['메모리 코어 +2','메인 코드 메모리를 2 늘린 숨은 코어'],null_core_shard:['NULL CORE 조각','최종 원정에서 회수한 정화 조각']};
+ treasures.forEach(id=>{const meta=treasureMeta[id];if(!meta)return;const d=document.createElement('div');d.className='gear-card treasure-card';d.innerHTML='<span>✦</span><div><b>'+meta[0]+'</b><small>'+meta[1]+'</small></div>';root.appendChild(d);});
+ $('memoryBonusText').textContent='보유 +'+(progress.memoryBonus||0)+' · 현재 적용 +'+activeMemoryBonus();
 }
 function gearIcon(id){if(id.includes('sensor'))return '◉';if(id.includes('boots'))return '⇈';if(id.includes('core'))return '◆';if(id.includes('blade'))return '⚔';if(id.includes('loop'))return '↻';if(id.includes('function'))return 'ƒ';if(id.includes('badge'))return '★';return '▣';}
 function gearDesc(id){
- const map={reflex_sensor:'공격 준비 상태 감지 + 회피',altimeter:'위쪽 발판 감지',high_jump_boots:'높이 점프와 하강',dash_boots:'대시 명령',forest_core:'코드 메모리 +4'};
- return map[id]||'코딩 행동과 센서를 확장하는 원정 장비';
+ const map={
+  boots_basic:'앞으로 이동하는 기본 행동',jump_module:'절벽을 넘는 점프 행동',hand_module:'수정과 보물 수집',sword_module:'버그 몬스터 공격',
+  loop_core:'고정 횟수 반복',enemy_sensor:'앞의 적 감지',terrain_sensor:'앞의 절벽 감지',memory_sensor:'수정 개수 상태 감지',function_slot:'기술 A 저장과 호출',
+  ranger_badge:'코드 캠프 입단 완료',reflex_sensor:'공격 준비 상태 감지 + 회피',altimeter:'위쪽 발판 감지',high_jump_boots:'높이 점프와 하강',dash_boots:'두 칸 빠른 이동',
+  forest_core:'조건 반복 해금 · 메모리 보너스',auto_loop_core:'목적지까지 조건 반복',proximity_sensor:'위험 구간 안전 상태 감지',ore_scanner:'현재 수집물과 문 감지',logic_core:'적과 공격 준비를 함께 판단',mine_core:'기술 B 해금 · 메모리 보너스',
+  dual_function_core:'기술 A/B 역할 분리',switch_tool:'스위치 감지와 작동',motion_compass:'컨베이어 자동 이동 보정',laser_sensor:'주기 위험 상태 판별',city_core:'데이터 수집·업로드 해금',
+  data_scanner:'데이터 패킷 감지',upload_module:'단말기 업로드',energy_cell:'에너지와 충전기 상태 감지',resource_core:'여러 자원을 동시에 판단',desert_core:'성채 종합 검증 해금',
+  citadel_key:'복합 변형 시험 진입',reuse_badge:'두 기술 재사용 숙련',system_core:'스위치·데이터·위험 통합 제어',survival_core:'HP와 에너지 장기 관리',citadel_core:'NULL CORE 진입',
+  universal_move_core:'변형 지형 범용 이동',universal_combat_core:'적 종류와 무관한 상태 전투',universal_resource_core:'배치가 달라도 자원 처리',ranger_master:'최종 통합 AI 완성',null_core:'40스테이지 원정 완료'
+ };
+ return map[id]||'원정에서 획득한 코딩 장비';
 }
 
 const runtime=new RuntimeAPI.Runtime({
  world:worldAPI,delay:140,
  onEvent(event){
-  if(event.node){executingNodeId=event.node.id;errorNodeId='';renderProgram();}
+  if(event.node){executingNodeId=event.node.id;errorNodeId='';refreshExecutionHighlights();}
   if(event.kind==='run-start'){setExecuting(true);setRunButtons(true);}
   else if(event.kind==='run-stop'){setExecuting(false);setRunButtons(false);}
   else if(event.kind==='check'){const def=BLOCKS[event.node.type];$('sensorReadout').textContent='센서: '+(event.result?'참 ✓':'거짓 ✕');setExec(def.label,event.result?'참 → 안쪽 실행':'거짓 → 아니면/다음으로','running');}
@@ -616,7 +676,7 @@ const runtime=new RuntimeAPI.Runtime({
   else if(event.kind==='enemy-event'&&event.message)toast(event.message,event.message.includes('맞'));
   pushTrace(event);updateMiniCode();
  },
- onError(node,message){failures++;errorNodeId=node?.id||executingNodeId;renderProgram();sound('ui.error');setExec('여기서 버그 발생',message,'error');toast(message,true);stepSession=false;setExecuting(false);setRunButtons(false);},
+ onError(node,message){failures++;errorNodeId=node?.id||executingNodeId;refreshExecutionHighlights();sound('ui.error');setExec('여기서 버그 발생',message,'error');toast(message,true);stepSession=false;setExecuting(false);setRunButtons(false);},
  onDone(){void handleMissionDone();}
 });
 function setSpeed(v){
@@ -690,7 +750,12 @@ function drawEnemy(e,time){
  else if(e.type==='shield'){ctx.fillStyle='#70889a';ctx.fillRect(-16,-32,32,34);ctx.fillStyle=state==='guard'?'#d0d9e0':'#61707c';ctx.fillRect(-24,-30,12,36);}
  else if(e.type==='boss_mushroom'||e.type==='spitter'||e.type==='mush'){ctx.fillStyle=e.boss?'#b64f87':'#e58b5e';ctx.beginPath();ctx.arc(0,-14,e.boss?25:21,Math.PI,0);ctx.lineTo(e.boss?23:18,-2);ctx.lineTo(e.boss?-23:-18,-2);ctx.closePath();ctx.fill();ctx.fillStyle='#e8d4b7';ctx.fillRect(e.boss?-11:-8,-2,e.boss?22:16,e.boss?28:20);}
  else if(e.type==='golem'){ctx.fillStyle='#8799a8';ctx.fillRect(-19,-35,38,38);ctx.fillStyle='#61717e';ctx.fillRect(-25,-23,8,24);ctx.fillRect(17,-23,8,24);}
- else if(['robot','mine_overseer','gear_boss','mirage_boss','root_warden','null_core'].includes(e.type)){ctx.fillStyle=e.boss?'#5969a9':'#668794';ctx.fillRect(-20,-34,40,38);ctx.fillStyle=state==='guard'?'#bfc8dd':'#394b60';ctx.fillRect(-25,-25,8,26);ctx.fillRect(17,-25,8,26);ctx.fillStyle='#74f1e4';ctx.fillRect(-11,-25,22,8);ctx.fillStyle='#1b2430';ctx.fillRect(-6,-22,4,3);ctx.fillRect(3,-22,4,3);}
+ else if(e.type==='mine_overseer'){ctx.fillStyle='#7b8796';ctx.fillRect(-22,-35,44,38);ctx.fillStyle='#d8b45f';ctx.beginPath();ctx.moveTo(-28,-16);ctx.lineTo(-43,-5);ctx.lineTo(-28,6);ctx.closePath();ctx.fill();ctx.fillStyle='#b7e8ff';ctx.fillRect(-12,-27,24,8);}
+ else if(e.type==='gear_boss'){ctx.fillStyle='#607482';ctx.beginPath();for(let i=0;i<16;i++){const a=i*Math.PI/8,r=i%2?24:33;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r-12);}ctx.closePath();ctx.fill();ctx.fillStyle='#243642';ctx.fillRect(-15,-25,30,26);ctx.fillStyle='#74f1e4';ctx.fillRect(-10,-19,20,6);}
+ else if(e.type==='mirage_boss'){ctx.globalAlpha=.72;ctx.fillStyle='#8071d7';ctx.fillRect(-18,-36,36,40);ctx.globalAlpha=.22;ctx.fillRect(-30,-31,36,40);ctx.fillRect(-6,-41,36,40);ctx.globalAlpha=1;ctx.fillStyle='#a9fbff';ctx.fillRect(-10,-25,20,7);}
+ else if(e.type==='root_warden'){ctx.fillStyle='#6f526b';ctx.fillRect(-20,-38,40,42);ctx.fillStyle='#b58a7f';ctx.fillRect(-28,-28,10,32);ctx.fillRect(18,-28,10,32);ctx.strokeStyle='#e1a3c9';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,-17,28,Math.PI,0);ctx.stroke();ctx.fillStyle='#f2d3e6';ctx.fillRect(-9,-27,18,6);}
+ else if(e.type==='null_core'){ctx.fillStyle='#17172b';ctx.fillRect(-22,-40,44,44);ctx.strokeStyle='#a69cff';ctx.lineWidth=4;ctx.strokeRect(-24,-42,48,48);ctx.fillStyle='#ff5f9a';ctx.fillRect(-13,-30,10,8);ctx.fillStyle='#71f5ff';ctx.fillRect(4,-30,10,8);ctx.globalAlpha=.5;ctx.fillRect(-31,-8,12,4);ctx.fillRect(20,-18,15,4);ctx.globalAlpha=1;}
+ else if(e.type==='robot'){ctx.fillStyle='#668794';ctx.fillRect(-20,-34,40,38);ctx.fillStyle=state==='guard'?'#bfc8dd':'#394b60';ctx.fillRect(-25,-25,8,26);ctx.fillRect(17,-25,8,26);ctx.fillStyle='#74f1e4';ctx.fillRect(-11,-25,22,8);}
  else if(e.type==='ghost'){ctx.fillStyle='#a98ef4';ctx.beginPath();ctx.arc(0,-14,20,Math.PI,0);ctx.lineTo(20,14);ctx.lineTo(10,7);ctx.lineTo(0,14);ctx.lineTo(-10,7);ctx.lineTo(-20,14);ctx.closePath();ctx.fill();}
  else{ctx.fillStyle='#6ed28a';ctx.beginPath();ctx.arc(0,-8,22,Math.PI,0);ctx.quadraticCurveTo(26,14,0,15);ctx.quadraticCurveTo(-26,14,-22,-8);ctx.fill();}
  ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.fillRect(-9,-15,5,6);ctx.fillRect(5,-15,5,6);ctx.fillStyle='#18222a';ctx.fillRect(-7,-13,2,3);ctx.fillRect(7,-13,2,3);
@@ -715,7 +780,7 @@ function render(time){
 }
 requestAnimationFrame(render);
 
-$('newBtn').onclick=()=>{progress=defaultProgress();saveProgress();$('intro').classList.add('hidden');loadMission(0,true);};
+$('newBtn').onclick=()=>{const hasProgress=progress.unlocked>1||Object.keys(progress.completed).length>0;if(hasProgress&&!confirm('새 원정을 시작하면 현재 코드와 진행 기록이 초기화됩니다. 정말 처음부터 시작할까요?'))return;progress=defaultProgress();saveProgress();$('intro').classList.add('hidden');loadMission(0,true);};
 $('continueBtn').onclick=()=>{$('intro').classList.add('hidden');loadMission(Math.min(progress.unlocked-1,progress.current||0),false);};
 $('continueBtn').classList.toggle('hidden',progress.unlocked<=1&&!Object.keys(progress.completed).length);
 $('missionsBtn').onclick=()=>{renderMissionGrid();$('missionSelect').classList.remove('hidden');};
@@ -731,6 +796,7 @@ document.querySelectorAll('.code-tab').forEach(b=>b.onclick=()=>{codeTarget=b.da
 $('outBtn').onclick=()=>{if(insertPath.length)insertPath.pop();renderAllEditor();};
 $('undoBtn').onclick=()=>{const c=resolveContainer(activeRoot(),insertPath);if(c.length){c.pop();persistCode();invalidateExecution();renderAllEditor();}};
 $('clearBtn').onclick=()=>{if(codeTarget==='main')mainProgram=[];else functionPrograms[codeTarget]=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
+$('importPrevBtn').onclick=importPreviousProgram;
 $('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionPrograms);};
 $('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionPrograms);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
 $('stopBtn').onclick=()=>{runtime.stop();stepSession=false;setExecuting(false);setRunButtons(false);setExec('실행을 멈췄어요.','코드를 고친 뒤 다시 실행해 보세요.');};

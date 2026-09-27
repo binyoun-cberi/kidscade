@@ -130,3 +130,20 @@ body.executing .mission-card{opacity:.45}
  .campaign-map{min-width:620px}
  .world-map-panel{overflow-x:auto}
 }
+
+/* v6 mobile playtest rework */
+.editor-actions{flex-wrap:wrap}
+.editor-actions #importPrevBtn{flex:1 0 100%;background:#102d3a;border-color:#5eead444;color:#bff8ef}
+.palette-groups{grid-column:1/-1;display:flex;gap:4px;overflow-x:auto;padding:1px 0 4px;scrollbar-width:none}
+.palette-groups::-webkit-scrollbar{display:none}
+.palette .palette-group{min-height:28px;flex:0 0 auto;padding:5px 9px;border-radius:999px;background:#07131f;border-color:#ffffff15;color:#91a9bc;font-size:9px}
+.palette .palette-group.active{background:#28557a;border-color:#79c9d655;color:#fff}
+.treasure-card{border-color:#f2cf6b44;background:#211d18}
+.treasure-card>span{background:#5a4820;color:#ffe58a}
+@media(max-width:700px),(orientation:portrait){
+ .palette-groups{position:sticky;top:0;z-index:2;background:#0b1726;padding-top:3px}
+ .palette{max-height:118px}
+ .editor-actions button{min-width:0}
+ .speed-controls{max-width:100%;overflow-x:auto}
+ .speed-controls button{flex:0 0 auto}
+}
