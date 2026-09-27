@@ -134,7 +134,7 @@ export class HistoryQuizRoom {
         if(!p)fail('player_not_found',404);
         const playerToken=token();p.hash=await hash(playerToken);delete next.recoveries[digest];next.version++;
         await this.commit(next);
-        for(const ws of this.ctx.getWebSockets())if(ws.deserializeAttachment()?.id===p.id)try{ws.close(4001,'recovered');}catch{}
+        for(const ws of this.ctx.getWebSockets()){try{if(ws.deserializeAttachment()?.id===p.id)ws.close(4001,'recovered');}catch{}}
         this.broadcast();
         return json({ok:true,code:next.code,playerId:p.id,nickname:p.nickname,playerToken,transport:'v2',reconnected:true,recovered:true});
       }
