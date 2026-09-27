@@ -53,6 +53,10 @@ class Renderer{
   if(style==='cooling'){c.fillStyle='#d7eef2';c.fillRect(x-36,D.GROUND_Y-62,72,62);c.fillStyle='#78b9cb';c.fillRect(x-40,D.GROUND_Y-67,80,10);c.fillStyle='#287a96';c.font='900 25px system-ui';c.textAlign='center';c.fillText('❄',x,D.GROUND_Y-27);this.hpBar(x,D.GROUND_Y-82,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-102,b.level);return}
   if(style==='snow'){c.fillStyle='#566976';c.fillRect(x-38,D.GROUND_Y-54,76,54);c.fillStyle='#d9eef4';c.fillRect(x-31,D.GROUND_Y-46,42,28);c.fillStyle='#f3c653';c.fillRect(x+10,D.GROUND_Y-35,22,8);c.fillStyle='#e9f5f8';c.font='900 18px system-ui';c.textAlign='center';c.fillText('✣',x-9,D.GROUND_Y-25);this.hpBar(x,D.GROUND_Y-70,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-90,b.level);return}
  }
+ conditionBadge(slot){
+  const b=slot.building;if(!b||!b.condition||b.condition==='normal')return;const c=this.ctx,x=slot.x,y=D.GROUND_Y-116;
+  c.save();c.fillStyle='#173449dd';c.beginPath();c.arc(x,y,15,0,Math.PI*2);c.fill();c.fillStyle='#fff';c.font='900 16px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(b.condition==='flooded'?'💧':'🔧',x,y+1);c.restore()
+ }
  townHall(){const c=this.ctx,x=D.TOWN_X;c.fillStyle='#e7d1a8';c.fillRect(x-55,D.GROUND_Y-108,110,108);c.fillStyle='#384e5a';c.beginPath();c.moveTo(x-66,D.GROUND_Y-108);c.lineTo(x,D.GROUND_Y-151);c.lineTo(x+66,D.GROUND_Y-108);c.fill();c.fillStyle='#f5edd7';c.fillRect(x-12,D.GROUND_Y-52,24,52);c.fillStyle='#b44e43';c.fillRect(x-34,D.GROUND_Y-91,68,20);c.fillStyle='#fff3d8';c.font='900 13px system-ui';c.textAlign='center';c.fillText('마을회관',x,D.GROUND_Y-76)}
  frontX(d){return d.side==='left'?70+d.progress*650:1370-d.progress*650}
  ensureAgents(s){
@@ -61,7 +65,7 @@ class Renderer{
  citizens(s){
   if(s.time<this.lastCitizenTime){this.agents=[];this.lastCitizenTime=s.time}this.ensureAgents(s);const c=this.ctx,dt=clamp(s.time-this.lastCitizenTime,0,.08);this.lastCitizenTime=s.time;const targets=[D.TOWN_X,...s.slots.filter(x=>x.building).map(x=>x.x)];
   for(let i=0;i<this.agents.length;i++){const a=this.agents[i];let fleeing=false;
-   for(const d of s.disasters||[]){if(!['wildfire','flood','typhoon','blizzard'].includes(d.type))continue;const fx=this.frontX(d);if(Math.abs(a.x-fx)<230&&d.progress>.36){a.target=D.TOWN_X;fleeing=true;break}}
+   for(const d of s.disasters||[]){if(!['wildfire','flood','typhoon','blizzard'].includes(d.type))continue;const fx=this.frontX(d);if(Math.abs(a.x-fx)<230&&d.progress>.36){const shelters=s.slots.filter(q=>q.building?.id==='shelter');a.target=shelters.length?shelters.sort((p,q)=>Math.abs(p.x-a.x)-Math.abs(q.x-a.x))[0].x:D.TOWN_X;fleeing=true;break}}
    if(!fleeing){a.wait-=dt;if(Math.abs(a.x-a.target)<8){if(a.wait<=0){a.target=targets[(a.seed+Math.floor(s.time/2.7)+i)%targets.length]||D.TOWN_X;a.wait=.5+(a.seed%5)*.18}}}
    const dx=a.target-a.x,speed=fleeing?118:38;if(Math.abs(dx)>3){a.dir=Math.sign(dx);a.x+=a.dir*Math.min(Math.abs(dx),speed*dt)}
    const y=D.GROUND_Y+8+(i%3)*4,bob=Math.sin(s.time*(fleeing?9:5)+i)*2,key=fleeing?'citizenWalk':i%3===0?'adventurer':i%3===1?'citizen':'citizenWalk',flip=a.dir<0;
@@ -127,7 +131,7 @@ class Renderer{
  render(s){
   const c=this.ctx,t=this.worldTransform();c.setTransform(this.view.dpr,0,0,this.view.dpr,0,0);c.fillStyle='#11293d';c.fillRect(0,0,this.view.w,this.view.h);c.save();c.translate(t.ox,t.oy);c.scale(t.scale,t.scale);c.imageSmoothingEnabled=false;
   const quake=(s.disasters||[]).find(d=>d.type==='earthquake');if(quake)c.translate(Math.sin(s.time*46)*3.5*(quake.strength||1),Math.cos(s.time*39)*1.8);
-  this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building)this.drawBuilding(slot,slot.building);this.townHall();this.citizens(s);this.fieldHazards(s);
+  this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building){this.drawBuilding(slot,slot.building);this.conditionBadge(slot)}this.townHall();this.citizens(s);this.fieldHazards(s);
   const disasters=(s.disasters||[]).slice();for(const d of disasters){if(d.type==='wildfire'||d.type==='flood')continue;else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
  }
 }
