@@ -75,6 +75,20 @@ test('도로 보급망과 보급 상태 단계가 정상 계산된다', () => {
   assert.equal(w.UnificationWarSupply.statusForCost(11).key, 'isolated');
 });
 
+test('전쟁 임무·공성·피로 규칙이 단계적으로 계산된다', () => {
+  const w = loadBrowserScripts(['games/high_history_map/core/warfare.js']);
+  assert.ok(w.UnificationWarWarfare.attackMultiplier('attack','infantry') > 1);
+  assert.ok(w.UnificationWarWarfare.defenseMultiplier('defend') > 1);
+  assert.ok(w.UnificationWarWarfare.reinforcementAmount('infantry','reserve') >
+    w.UnificationWarWarfare.reinforcementAmount('infantry','attack'));
+  assert.ok(w.UnificationWarWarfare.fatigueMultiplier(80) < 1);
+  assert.equal(w.UnificationWarWarfare.fatigueLabel(80).key, 'critical');
+  assert.equal(w.UnificationWarWarfare.siegeStage(10).key, 'watch');
+  assert.equal(w.UnificationWarWarfare.siegeStage(30).key, 'siege');
+  assert.equal(w.UnificationWarWarfare.siegeStage(55).key, 'tight');
+  assert.equal(w.UnificationWarWarfare.siegeStage(80).key, 'breach');
+});
+
 test('삼국별 상황형 역사 선택 데이터가 준비되어 있다', () => {
   const w = loadBrowserScripts(['games/high_history_map/data/events.js']);
   for (const nation of ['goguryeo','baekje','silla']) {
@@ -115,9 +129,17 @@ test('v12 핵심 플레이 UI가 소스에 남아 있다', () => {
     'function resolveRangedCombat',
     'function supplyMapFor',
     'function updateAIStrategy',
+    'function aiFrontCandidates',
+    'function assignAIOperations',
+    'function shouldAIRetreat',
     'function playerFronts',
+    'function addSiegePressure',
+    'function applyFieldReinforcement',
+    'function updateWarFatigue',
+    'actionBus.register("setMission"',
+    'actionBus.register("retreat"',
     'function openHistoryEvent',
     'function openCityProjects'
   ]) assert.ok(html.includes(token), token);
-  assert.match(catalog, /games\/high_history_map\/index\.html\?v=22/);
+  assert.match(catalog, /games\/high_history_map\/index\.html\?v=24/);
 });
