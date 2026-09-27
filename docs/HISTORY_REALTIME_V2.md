@@ -47,10 +47,12 @@ correctness/points. The HTTP answer acknowledgement also excludes correctness, e
 on duplicate requests. Teacher-only progress pushes avoid N-by-N answer broadcasts.
 The shared public practice question bank remains public; this is not an exam secrecy
 system. Nickname/playerId alone cannot reclaim an existing identity. Lost bearer tokens
-cannot be recovered automatically; instructor-mediated recovery UI is not yet shipped.
-Joining new participants is limited to the waiting phase. Existing participants can
-reconnect at any phase with their saved token. This prevents last-second roster changes
-from changing the current question's all-answered condition.
+can be recovered only through an instructor-issued, one-time 8-character recovery code.
+Recovery codes expire after 10 minutes, preserve the existing player identity/score, and
+rotate the player's bearer token so the previous login is invalidated. Joining new
+participants is limited to the waiting phase. Existing participants can reconnect at any
+phase with their saved token or a valid instructor-issued recovery code. This prevents
+last-second roster changes from changing the current question's all-answered condition.
 
 ## Transport and lifecycle
 
