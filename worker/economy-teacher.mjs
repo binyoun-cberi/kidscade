@@ -330,32 +330,35 @@ export async function teacherJobAssign(request, env) {
   if (access.response) return access.response;
   const studentId = cleanId(body?.studentId);
   const jobId = cleanId(body?.jobId);
+  const force = body?.force === true;
 
   const student = await env.DB.prepare(
-    'SELECT id FROM student_accounts WHERE id = ? AND class_id = ?'
+    'SELECT id FROM student_accounts WHERE id = ? AND class_id = ? AND disabled = 0'
   ).bind(studentId,classId).first();
 
   const job = await env.DB.prepare(
-    'SELECT id, capacity FROM economy_jobs WHERE id = ? AND class_id = ? AND active = 1'
+    'SELECT id, name, capacity FROM economy_jobs WHERE id = ? AND class_id = ? AND active = 1'
   ).bind(jobId,classId).first();
 
   if (!student || !job) return json({ ok:false,error:'not_found' },404);
 
-  const missing = await env.DB.prepare(
-    'SELECT jc.certificate_id FROM economy_job_certificates jc ' +
-    'WHERE jc.job_id = ? AND NOT EXISTS (' +
-    'SELECT 1 FROM economy_student_certificates sc WHERE sc.student_id = ? AND sc.certificate_id = jc.certificate_id' +
-    ') LIMIT 1'
-  ).bind(jobId,studentId).first();
+  if (!force) {
+    const missing = await env.DB.prepare(
+      'SELECT jc.certificate_id FROM economy_job_certificates jc ' +
+      'WHERE jc.job_id = ? AND NOT EXISTS (' +
+      'SELECT 1 FROM economy_student_certificates sc WHERE sc.student_id = ? AND sc.certificate_id = jc.certificate_id' +
+      ') LIMIT 1'
+    ).bind(jobId,studentId).first();
 
-  if (missing) return json({ ok:false,error:'certificate_required' },409);
+    if (missing) return json({ ok:false,error:'certificate_required' },409);
 
-  const count = await env.DB.prepare(
-    'SELECT COUNT(*) AS total FROM economy_job_assignments WHERE job_id = ? AND student_id <> ?'
-  ).bind(jobId,studentId).first();
+    const count = await env.DB.prepare(
+      'SELECT COUNT(*) AS total FROM economy_job_assignments WHERE job_id = ? AND student_id <> ?'
+    ).bind(jobId,studentId).first();
 
-  if (Number(count?.total || 0) >= Number(job.capacity || 1)) {
-    return json({ ok:false,error:'job_full' },409);
+    if (Number(count?.total || 0) >= Number(job.capacity || 1)) {
+      return json({ ok:false,error:'job_full' },409);
+    }
   }
 
   await env.DB.batch([
@@ -366,7 +369,41 @@ export async function teacherJobAssign(request, env) {
     env.DB.prepare('DELETE FROM economy_job_applications WHERE student_id = ?').bind(studentId)
   ]);
 
-  return json({ ok:true });
+  return json({ ok:true, force, jobId, studentId });
+}
+
+export async function teacherJobUnassign(request, env) {
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok:false,error:'invalid_json' },400); }
+
+  const classId = cleanId(body?.classId);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
+  const studentId = cleanId(body?.studentId);
+
+  const student = await env.DB.prepare(
+    'SELECT id FROM student_accounts WHERE id = ? AND class_id = ?'
+  ).bind(studentId,classId).first();
+  if (!student) return json({ ok:false,error:'not_found' },404);
+
+  const current = await env.DB.prepare(
+    'SELECT a.job_id, j.name AS job_name FROM economy_job_assignments a ' +
+    'JOIN economy_jobs j ON j.id = a.job_id WHERE a.student_id = ? AND j.class_id = ?'
+  ).bind(studentId,classId).first();
+
+  if (!current) return json({ ok:true, alreadyUnassigned:true, studentId });
+
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM economy_job_assignments WHERE student_id = ?').bind(studentId),
+    env.DB.prepare('DELETE FROM economy_job_applications WHERE student_id = ?').bind(studentId)
+  ]);
+
+  return json({
+    ok:true,
+    studentId,
+    previousJobId:current.job_id,
+    previousJobName:current.job_name || ''
+  });
 }
 
 export async function teacherPayroll(request, env) {
