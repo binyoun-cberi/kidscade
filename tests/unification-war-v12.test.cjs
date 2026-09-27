@@ -141,5 +141,5 @@ test('v12 핵심 플레이 UI가 소스에 남아 있다', () => {
     'function openHistoryEvent',
     'function openCityProjects'
   ]) assert.ok(html.includes(token), token);
-  assert.match(catalog, /games\/high_history_map\/index\.html\?v=24/);
+  assert.match(catalog, /games\/high_history_map\/index\.html\?v=25/);
 });
