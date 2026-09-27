@@ -12,10 +12,28 @@ test('Rule Lab files are present and scripts parse',()=>{
     'games/high_rule_lab/index.html',
     'games/high_rule_lab/style.css',
     'games/high_rule_lab/levels.js',
-    'games/high_rule_lab/game.js'
+    'games/high_rule_lab/game.js',
+    'games/high_rule_lab/engine/state.js',
+    'games/high_rule_lab/engine/rules.js',
+    'games/high_rule_lab/engine/movement.js',
+    'games/high_rule_lab/engine/interactions.js',
+    'games/high_rule_lab/engine/history.js',
+    'games/high_rule_lab/engine/turn.js',
+    'games/high_rule_lab/engine/validator.js',
+    'games/high_rule_lab/ui/renderer.js'
   ]) assert.ok(fs.existsSync(path.join(ROOT,rel)),rel);
   new vm.Script(read('games/high_rule_lab/levels.js'));
-  new vm.Script(read('games/high_rule_lab/game.js'));
+  for(const rel of [
+    'games/high_rule_lab/engine/state.js',
+    'games/high_rule_lab/engine/rules.js',
+    'games/high_rule_lab/engine/movement.js',
+    'games/high_rule_lab/engine/interactions.js',
+    'games/high_rule_lab/engine/history.js',
+    'games/high_rule_lab/engine/turn.js',
+    'games/high_rule_lab/engine/validator.js',
+    'games/high_rule_lab/ui/renderer.js',
+    'games/high_rule_lab/game.js'
+  ]) new vm.Script(read(rel));
 });
 
 test('Rule Lab uses the Kidscade game SDK and safe game folder entrypoint',()=>{
@@ -30,7 +48,7 @@ test('Rule Lab is registered as a featured thinking puzzle',()=>{
   const catalog=JSON.parse(read('data/games.json'));
   const game=catalog.games.find(g=>g.id==='high_rule_lab');
   assert.ok(game);
-  assert.equal(game.href,'games/high_rule_lab/index.html?v=4');
+  assert.equal(game.href,'games/high_rule_lab/index.html?v=5');
   assert.equal(game.title,'내 말 좀 들어');
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'puzzle');
@@ -87,10 +105,13 @@ test('Rule Lab v2 has the planned chapter counts and no initial cell overlaps',(
 });
 
 test('Rule Lab v2 engine implements MOVE and WEAK behavior hooks',()=>{
+  const movement=read('games/high_rule_lab/engine/movement.js');
+  const interactions=read('games/high_rule_lab/engine/interactions.js');
   const runtime=read('games/high_rule_lab/game.js');
-  assert.match(runtime,/hasProp\(e\.type,'MOVE'/);
-  assert.match(runtime,/hasProp\(e\.type,'WEAK'/);
+  assert.match(movement,/hasProp\(e\.type,'MOVE'/);
+  assert.match(interactions,/hasProp\(e\.type,'WEAK'/);
   assert.match(runtime,/progress_v2/);
+  assert.match(runtime,/progress_v3/);
   assert.match(runtime,/chapter-row/);
 });
 
@@ -99,7 +120,7 @@ test('내 말 좀 들어 loads the SDK after the body content so startup cannot 
   const html=read('games/high_rule_lab/index.html');
   const bodyIndex=html.indexOf('<body>');
   const sdkIndex=html.indexOf('kidscade-game-sdk.js');
-  const gameIndex=html.indexOf('./game.js?v=4');
+  const gameIndex=html.indexOf('./game.js?v=5');
   assert.ok(bodyIndex>=0);
   assert.ok(sdkIndex>bodyIndex,'SDK must load after <body>');
   assert.ok(gameIndex>sdkIndex,'game runtime must load after SDK');
@@ -170,4 +191,57 @@ test('내 말 좀 들어 keeps the two multi-step regression solutions reachable
   assert.match(source,/"title": "마지막 법칙"/);
   assert.match(source,/"token": "N:rock",[\s\S]{0,180}"token": "EQ",[\s\S]{0,180}"token": "N:water"/);
   assert.match(source,/"token": "N:water",[\s\S]{0,180}"token": "EQ",[\s\S]{0,180}"token": "P:WIN"/);
+});
+
+
+test('Rule Lab v3 parser supports compound AND rules and transactional movement',()=>{
+  const sandbox={};sandbox.window=sandbox;
+  for(const rel of [
+    'games/high_rule_lab/engine/state.js',
+    'games/high_rule_lab/engine/rules.js',
+    'games/high_rule_lab/engine/movement.js',
+    'games/high_rule_lab/engine/interactions.js',
+    'games/high_rule_lab/engine/history.js',
+    'games/high_rule_lab/engine/turn.js'
+  ]) vm.runInNewContext(read(rel),sandbox);
+  const E=sandbox.RuleLabEngine;
+  const level={w:8,h:5,objects:[
+    {kind:'object',type:'hero',x:1,y:2},
+    {kind:'object',type:'rock',x:2,y:2},
+    {kind:'object',type:'rock',x:3,y:2},
+    {kind:'object',type:'wall',x:4,y:2}
+  ],words:[
+    {kind:'word',token:'N:hero',x:0,y:0},{kind:'word',token:'EQ',x:1,y:0},{kind:'word',token:'P:YOU',x:2,y:0},
+    {kind:'word',token:'N:rock',x:4,y:0},{kind:'word',token:'EQ',x:5,y:0},{kind:'word',token:'P:PUSH',x:6,y:0},{kind:'word',token:'AND',x:7,y:0},
+    {kind:'word',token:'P:WEAK',x:7,y:1},
+    {kind:'word',token:'N:wall',x:0,y:4},{kind:'word',token:'EQ',x:1,y:4},{kind:'word',token:'P:STOP',x:2,y:4}
+  ]};
+  const state=E.State.fromLevel(level),before=E.State.serialize(state),rules=E.Rules.parse(state);
+  assert.ok(E.Rules.hasProp('hero','YOU',rules));
+  const blocked=E.Movement.attemptMove(state,state.entities.find(e=>e.type==='hero').id,1,0,rules);
+  assert.equal(blocked.ok,false);
+  assert.equal(E.State.serialize(state),before,'failed push must not mutate source state');
+
+  const compound={w:9,h:4,objects:[],words:[
+    {kind:'word',token:'N:rock',x:0,y:0},{kind:'word',token:'EQ',x:1,y:0},{kind:'word',token:'P:PUSH',x:2,y:0},
+    {kind:'word',token:'AND',x:3,y:0},{kind:'word',token:'P:WEAK',x:4,y:0}
+  ]};
+  const cr=E.Rules.parse(E.State.fromLevel(compound));
+  assert.ok(E.Rules.hasProp('rock','PUSH',cr));
+  assert.ok(E.Rules.hasProp('rock','WEAK',cr));
+});
+
+test('Rule Lab v3 MOVE keeps two-dimensional facing and history restores exact snapshots',()=>{
+  const sandbox={};sandbox.window=sandbox;
+  for(const rel of [
+    'games/high_rule_lab/engine/state.js','games/high_rule_lab/engine/rules.js','games/high_rule_lab/engine/movement.js','games/high_rule_lab/engine/history.js'
+  ]) vm.runInNewContext(read(rel),sandbox);
+  const E=sandbox.RuleLabEngine;
+  const level={w:5,h:5,objects:[{kind:'object',type:'fire',x:2,y:3,facing:{dx:0,dy:-1}}],words:[
+    {kind:'word',token:'N:fire',x:0,y:0},{kind:'word',token:'EQ',x:1,y:0},{kind:'word',token:'P:MOVE',x:2,y:0}
+  ]};
+  const state=E.State.fromLevel(level),rules=E.Rules.parse(state),auto=E.Movement.autoMove(state,rules);
+  assert.equal(auto.state.entities.find(e=>e.type==='fire').y,2);
+  const h=new E.History(state);h.push(auto.state);const restored=h.undo();
+  assert.equal(E.State.serialize(restored),E.State.serialize(state));
 });

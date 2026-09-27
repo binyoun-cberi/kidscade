@@ -153,3 +153,12 @@ kbd{display:inline-block;min-width:24px;padding:3px 6px;margin-right:5px;border-
 @media(orientation:portrait) and (max-width:980px){
   .board{width:96vw}
 }
+
+
+/* Rule Lab v3 */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.entity.word.rule-active .word-tile{box-shadow:0 4px 0 #a79462,0 0 0 3px rgba(255,207,74,.28),0 6px 10px rgba(0,0,0,.12)}
+.rule-chip.compound{flex-wrap:wrap}
+.rule-chip .and{font-size:10px;color:#728094;font-weight:800}
+.rule-chip.negated{background:#fff1ef;border-color:#efb6af}
+.rule-chip.negated .eq{color:#c94d43;font-size:16px}
