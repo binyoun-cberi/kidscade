@@ -1030,7 +1030,7 @@
     Object.assign(E('친구 태오','청소 당번 탈출','2학년 청소 시간, 태오가 “선생님 안 보니까 우리 먼저 가자”고 속삭여. 아직 네 구역은 조금 남았어.',
       '태오를 따라 먼저 간다',S(0,1,5,2,-2),'내 구역을 끝내고 간다',S(1,-1,1,-1,1),
       '잠깐은 신났지만 네 몫의 청소가 그대로 남았어요.','태오는 먼저 갔지만 네 자리는 끝까지 정리했어요.'),{
-      id:'g2_taeo_cleanup_escape',storylet:true,antagonist:true,grade:[2],characterId:'태오',phases:['새 학기','1학기'],priority:86,weight:1.6,
+      id:'g2_taeo_cleanup_escape',storylet:true,antagonist:true,grade:[2],characterId:'태오',phases:['새 학기','1학기'],priority:96,weight:1.6,
       requires:()=>!state.antagonists?.['태오']?.moments,
       choiceMeta:{
         left:{constructive:false,flags:['followed_taeo_cleanup'],antagonist:{bond:2,influence:2,defiance:0},chain:{id:'g2_taeo_cleanup_caught',delay:2}},
@@ -1049,7 +1049,7 @@
     Object.assign(E('친구 태오','장난 계획','3학년 쉬는 시간, 태오가 다른 친구 필통을 몰래 숨겼다가 나중에 돌려주자고 해. “장난인데 뭐 어때?”라고 웃고 있어.',
       '같이 숨긴다',S(0,0,5,2,2),'그 장난은 하지 말자고 한다',S(0,0,1,-1,1),
       '처음엔 웃겼지만 필통 주인은 점점 표정이 굳었어요.','태오는 재미없다며 투덜댔지만 필통은 제자리에 남았어요.'),{
-      id:'g3_taeo_prank',storylet:true,antagonist:true,grade:[3],characterId:'태오',phases:['1학기','2학기'],priority:85,weight:1.6,
+      id:'g3_taeo_prank',storylet:true,antagonist:true,grade:[3],characterId:'태오',phases:['1학기','2학기'],priority:93,weight:1.6,
       requires:()=>state.antagonists?.['태오']?.moments>=1,
       choiceMeta:{
         left:{constructive:false,flags:['joined_taeo_prank'],antagonist:{bond:2,influence:2,defiance:-1},chain:{id:'g3_taeo_prank_backfire',delay:2}},
@@ -1068,7 +1068,7 @@
     Object.assign(E('친구 태오','이기는 팀','4학년 체육 시간, 태오가 “잘하는 애들끼리만 팀 짜면 무조건 이겨”라며 몇 명을 빼자고 해.',
       '이길 수 있게 잘하는 친구만 고른다',S(1,5,3,-5,2),'모두 뛸 방법을 찾자고 한다',S(0,2,4,6,1),
       '팀은 강해졌지만 벤치에 남은 친구들은 조용해졌어요.','조금 불리해도 모두가 역할을 갖고 경기에 들어갔어요.'),{
-      id:'g4_taeo_winning_team',storylet:true,antagonist:true,grade:[4],characterId:'태오',phases:['1학기','2학기'],priority:86,weight:1.7,
+      id:'g4_taeo_winning_team',storylet:true,antagonist:true,grade:[4],characterId:'태오',phases:['1학기','2학기'],priority:91,weight:1.7,
       requires:()=>state.antagonists?.['태오']?.moments>=2,
       choiceMeta:{
         left:{constructive:false,flags:['joined_taeo_exclusion'],antagonist:{bond:2,influence:2,defiance:-1}},
@@ -1078,7 +1078,7 @@
     Object.assign(E('친구 태오','익명 투표','5학년 단체 채팅방에서 태오가 “우리 반에서 제일 답답한 애” 익명 투표를 만들자고 해. 누가 만들었는지는 표시되지 않는대.',
       '재미로 같이 만든다',S(0,0,5,3,3),'그건 사람 찍는 거라고 거절한다',S(0,0,0,-1,1),
       '채팅방은 잠깐 시끄러워졌지만 누군가는 자기 이름이 나올까 조용해졌어요.','태오는 유난이라고 했지만 투표 링크는 만들어지지 않았어요.'),{
-      id:'g5_taeo_anonymous_poll',storylet:true,antagonist:true,grade:[5],characterId:'태오',phases:['1학기','여름·2학기 초'],priority:88,weight:1.8,
+      id:'g5_taeo_anonymous_poll',storylet:true,antagonist:true,grade:[5],characterId:'태오',phases:['1학기','여름·2학기 초'],priority:93,weight:1.8,
       requires:()=>state.antagonists?.['태오']?.moments>=3,
       choiceMeta:{
         left:{constructive:false,flags:['joined_taeo_poll'],antagonist:{bond:3,influence:3,defiance:-1},chain:{id:'g5_taeo_poll_fallout',delay:2}},
@@ -1097,7 +1097,7 @@
     Object.assign(E('친구 태오','우리끼리 다니자','6학년이 되자 태오가 중학교에 가서도 자기랑 몇 명만 붙어 다니자고 해. “싫은 애들은 굳이 끼워줄 필요 없잖아.”',
       '그 무리에 들어가겠다고 한다',S(0,0,4,4,2),'누구를 빼는 약속은 안 한다고 말한다',S(0,0,1,-1,-1),
       '태오는 만족했고 너는 확실한 자리를 얻었지만 그 자리에 들어오지 못할 사람도 정해졌어요.','태오는 재미없다고 했지만 네가 지킬 선은 분명해졌어요.'),{
-      id:'g6_taeo_pack_offer',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['새 학기','1학기'],priority:92,weight:2,
+      id:'g6_taeo_pack_offer',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['새 학기','1학기'],priority:97,weight:2,
       requires:()=> (state.antagonists?.['태오']?.influence||0)>=6,
       choiceMeta:{
         left:{constructive:false,flags:['joined_taeo_pack'],antagonist:{bond:3,influence:3,defiance:-1}},
@@ -1107,7 +1107,7 @@
     Object.assign(E('친구 태오','안 휘둘리는 애','6학년 복도에서 태오가 피식 웃으며 말해. “넌 진짜 내가 뭐 하자고 해도 잘 안 넘어오더라.”',
       '앞으로도 선은 지킬 거라고 한다',S(0,0,1,0,-1),'선만 지키면 같이 놀 수 있다고 한다',S(0,0,3,2,-2),
       '태오와 친해지진 않았지만 서로 어디까지인지 확실히 알게 됐어요.','태오가 잠깐 웃었고, 둘 사이에는 이상하게도 지킬 규칙이 생겼어요.'),{
-      id:'g6_taeo_respect',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['1학기','2학기'],priority:92,weight:2,
+      id:'g6_taeo_respect',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['1학기','2학기'],priority:97,weight:2,
       requires:()=> (state.antagonists?.['태오']?.defiance||0)>=7&&(state.antagonists?.['태오']?.influence||0)<6,
       choiceMeta:{
         left:{constructive:true,flags:['taeo_clear_boundary'],antagonist:{bond:-1,influence:-1,defiance:2}},
@@ -1469,7 +1469,7 @@
       const story=chooseGraduationStory(),cookies=buildFutureCookies();
       showDramaticEnding(story,'end-graduate',null,cookies);return;
     }
-    const prev=state.grade;state.grade++;playSfx('grade');startBgm();$('#gradeUpBig').textContent=state.grade+'학년';const top=Object.entries(state.friendRelations||{}).sort((a,b)=>b[1]-a[1])[0];$('#gradeUpText').textContent=`${prev}학년 종료 · 학업 ${state.stats.study} / 건강 ${state.stats.health} / 행복 ${state.stats.happy} / 관계 ${state.stats.social} / 부담 ${state.stats.stress}`+(top?` · 가장 가까워진 친구: ${top[0]} (${top[1]>0?'+':''}${top[1]})`:'');$('#gradeUp').classList.add('show')
+    const prev=state.grade;state.grade++;playSfx('grade');startBgm();$('#gradeUpBig').textContent=state.grade+'학년';const top=Object.entries(state.friendRelations||{}).sort((a,b)=>b[1]-a[1])[0],taeo=state.antagonists?.['태오'];$('#gradeUpText').textContent=`${prev}학년 종료 · 학업 ${state.stats.study} / 건강 ${state.stats.health} / 행복 ${state.stats.happy} / 관계 ${state.stats.social} / 부담 ${state.stats.stress}`+(top?` · 가장 가까워진 친구: ${top[0]} (${top[1]>0?'+':''}${top[1]})`:'')+(taeo?.moments?` · 태오: ${antagonistTier('태오')} (영향 ${taeo.influence} / 저항 ${taeo.defiance})`:'');$('#gradeUp').classList.add('show')
   }
   function continueGrade(){buildQueue();$('#gradeUp').classList.remove('show');startBgm();nextCard();saveState()}
   function paintEnding(story,endingClass,brokenKey,isCookie=false){
