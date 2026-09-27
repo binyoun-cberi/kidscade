@@ -21,7 +21,7 @@ let dpr=Math.min(2,window.devicePixelRatio||1);
 let runSpeed=1;
 let runToken=0;
 let validating=false,lastValidation=null,uiTrace=[];
-let paletteCategory='all';
+let paletteCategory='all',hintStep=0;
 
 const images={};
 const imageSources={
@@ -536,6 +536,25 @@ function renderPalette(){
  });
 }
 function renderAllEditor(){renderProgram();renderPalette();}
+function missionHints(){return Array.isArray(mission?.hints)?mission.hints.filter(Boolean):[];}
+function renderHintPanel(show=false){
+ const hints=missionHints(),btn=$('hintBtn'),box=$('coachHint');
+ if(btn)btn.classList.toggle('hidden',!hints.length);
+ if(!box)return;
+ if(!hints.length){box.classList.add('hidden');return;}
+ hintStep=Math.max(0,Math.min(hints.length-1,hintStep));
+ $('coachHintStep').textContent='힌트 '+(hintStep+1)+' / '+hints.length;
+ $('coachHintText').textContent=hints[hintStep];
+ $('nextHintBtn').textContent=hintStep>=hints.length-1?'처음 힌트로':'다음 힌트';
+ box.classList.toggle('hidden',!show);
+}
+function openHint(){renderHintPanel(true);}
+function nextHint(){
+ const hints=missionHints();if(!hints.length)return;
+ hintStep=(hintStep+1)%hints.length;renderHintPanel(true);
+}
+function closeHint(){const box=$('coachHint');if(box)box.classList.add('hidden');}
+
 function programContainsId(list,id){
  for(const n of list||[]){if(n.id===id)return true;if(programContainsId(n.body,id)||programContainsId(n.elseBody,id))return true;}return false;
 }
@@ -600,7 +619,7 @@ function setMissionText(){
  $('chapterName').textContent=mission.chapter;$('missionName').textContent=mission.name;$('missionKicker').textContent=mission.concept;$('missionTitle').textContent=mission.title;$('missionText').textContent=mission.text;$('objectiveText').textContent=mission.objective;
 }
 function loadMission(index,resetCode=false){
- missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';paletteCategory='all';
+ missionIndex=Math.max(0,Math.min(missions.length-1,index));mission=missions[missionIndex];nodeSeq=0;cleared=false;validating=false;lastValidation=null;failures=0;stepSession=false;insertPath=[];codeTarget='main';paletteCategory='all';hintStep=0;
  const slot=currentStore(),carry=mission.carryProgram?previousCarryStore():null;
  if(resetCode){mainProgram=[];functionPrograms={a:[],b:[]};}
  else if((slot.main?.length||slot.fn?.length||slot.fns?.a?.length||slot.fns?.b?.length)){
@@ -608,7 +627,7 @@ function loadMission(index,resetCode=false){
  }
  else if(carry){mainProgram=normalizeNodes(clone(carry.main||[]));functionPrograms={a:normalizeNodes(clone(carry.fns?.a||carry.fn||[])),b:normalizeNodes(clone(carry.fns?.b||[]))};}
  else{mainProgram=[];functionPrograms={a:[],b:[]};}
- persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));
+ persistCode();setMissionText();buildWorld();renderAllEditor();renderMissionGrid();document.querySelectorAll('.code-tab').forEach(b=>b.classList.toggle('active',b.dataset.codeTarget==='main'));renderHintPanel(missionIndex>=4&&missionIndex<=6&&!mainProgram.length);
  const skillB=$('skillBTab');if(skillB){skillB.disabled=!(progress.inventory.mine_core||missionIndex>=20);skillB.classList.toggle('locked',skillB.disabled);}const importBtn=$('importPrevBtn');if(importBtn)importBtn.classList.toggle('hidden',!previousProgramStore());
  $('missionSelect').classList.add('hidden');$('worldMapOverlay')?.classList.add('hidden');$('clear').classList.add('hidden');$('validationFail')?.classList.add('hidden');
  try{window.KidscadeGame?.start?.({stage:missionIndex+1,title:mission.title});}catch(_){}
@@ -797,6 +816,9 @@ $('outBtn').onclick=()=>{if(insertPath.length)insertPath.pop();renderAllEditor()
 $('undoBtn').onclick=()=>{const c=resolveContainer(activeRoot(),insertPath);if(c.length){c.pop();persistCode();invalidateExecution();renderAllEditor();}};
 $('clearBtn').onclick=()=>{if(codeTarget==='main')mainProgram=[];else functionPrograms[codeTarget]=[];insertPath=[];persistCode();invalidateExecution();renderAllEditor();};
 $('importPrevBtn').onclick=importPreviousProgram;
+$('hintBtn').onclick=()=>{const box=$('coachHint');if(box?.classList.contains('hidden'))openHint();else closeHint();};
+$('nextHintBtn').onclick=nextHint;
+$('closeHintBtn').onclick=closeHint;
 $('runBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}buildWorld();setSpeed(runSpeed);setExecuting(true);setRunButtons(true);await runtime.run(mainProgram,functionPrograms);};
 $('stepBtn').onclick=async()=>{if(!mainProgram.length){toast('먼저 명령을 하나 이상 놓아 주세요.',true);return;}if(!stepSession){buildWorld();runtime.prepare(mainProgram,functionPrograms);stepSession=true;}setRunButtons(true);const res=await runtime.nextAction();setRunButtons(false);if(res?.done)stepSession=false;};
 $('stopBtn').onclick=()=>{runtime.stop();stepSession=false;setExecuting(false);setRunButtons(false);setExec('실행을 멈췄어요.','코드를 고친 뒤 다시 실행해 보세요.');};
