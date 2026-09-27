@@ -16,7 +16,7 @@ const ui={
   instruction:document.querySelector('#instruction'),subInstruction:document.querySelector('#subInstruction'),
   speed:document.querySelector('#speed'),rpm:document.querySelector('#rpm'),gearReadout:document.querySelector('#gearReadout'),
   lampLeft:document.querySelector('#lampLeft'),lampRight:document.querySelector('#lampRight'),lampBrake:document.querySelector('#lampBrake'),
-  mirrorLeft:document.querySelector('#mirrorLeft'),mirrorRight:document.querySelector('#mirrorRight'),
+  mirrorLeft:document.querySelector('#mirrorLeft'),mirrorRight:document.querySelector('#mirrorRight'),backupCamera:document.querySelector('#backupCamera'),
   steeringPad:document.querySelector('#steeringPad'),steeringWheel:document.querySelector('#steeringWheel'),steerKnob:document.querySelector('#steerKnob'),
   signalLeft:document.querySelector('#signalLeft'),signalRight:document.querySelector('#signalRight'),
   ignition:document.querySelector('#ignition'),seatbelt:document.querySelector('#seatbelt'),parkingBrake:document.querySelector('#parkingBrake'),
@@ -28,7 +28,8 @@ const ui={
 };
 
 let license='auto',mode='practice',gameState='menu',stage='PREP',score=100;
-let scene,renderer,camera,leftMirrorCamera,rightMirrorCamera,loader,clock;
+let scene,renderer,camera,leftMirrorCamera,rightMirrorCamera,backupCamera,loader,clock;
+let backupGuideLeft,backupGuideRight;
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
@@ -41,6 +42,9 @@ let collisionCooldown=0;
 let lastCollisionId='';
 let headYaw=0,headPitch=0,lookPointer=null,lookLastX=0,lookLastY=0;
 const keys=new Set();
+
+let examEvents=[];
+let runStats={collisions:0,cones:0,offroad:0,gearChanges:0,maxSpeed:0,parking:null};
 
 const touch={steer:0,throttle:0,brake:0,clutch:0};
 const pedalPointers={throttle:null,brake:null,clutch:null};
@@ -81,7 +85,12 @@ function showToast(text,tone='normal',seconds=1.8){
 function setInstruction(main,sub=''){
   ui.instruction.textContent=main;ui.subInstruction.textContent=sub;
 }
+function recordEvent(kind,label,data={}){
+  examEvents.push({t:Math.round(gameTime*10)/10,kind,label,...data});
+  if(examEvents.length>120)examEvents.shift();
+}
 function addDeduction(label,points){
+  recordEvent('fault',label,{points:mode==='exam'?points:0});
   if(mode!=='exam'){showToast(label,'warn');beep(520,.08,.035);return}
   score=Math.max(0,score-points);deductions.push({label,points});ui.score.textContent=score;
   showToast('감점되었습니다.','danger',1.5);beep(260,.18,.07);
@@ -102,6 +111,17 @@ function finishRun(){
   }
   if(mode==='exam'&&deductions.length){
     for(const d of deductions){const row=document.createElement('div');row.className='result-row';row.innerHTML='<b>'+d.label+'</b><span>-'+d.points+'점</span>';ui.resultRows.append(row)}
+  }
+  const summary=[
+    ['최고 속도',Math.round(runStats.maxSpeed)+' km/h'],
+    ['접촉 기록',runStats.collisions+'회 · 콘 '+runStats.cones+'회'],
+    ['차로 이탈',runStats.offroad+'회']
+  ];
+  if(runStats.parking){
+    summary.push(['주차 정렬','좌우 '+runStats.parking.lat.toFixed(2)+'m · 각도 '+runStats.parking.angle.toFixed(1)+'°']);
+  }
+  for(const [label,value] of summary){
+    const row=document.createElement('div');row.className='result-row result-summary';row.innerHTML='<b>'+label+'</b><span>'+value+'</span>';ui.resultRows.append(row);
   }
   ui.result.classList.add('show');beep(passed?880:220,.35,.07);
   if(mode==='exam'){
@@ -144,6 +164,11 @@ function carCorners(){
 function footprintInside(minX,maxX,minZ,maxZ){
   return carCorners().every(p=>p.x>=minX&&p.x<=maxX&&p.z>=minZ&&p.z<=maxZ);
 }
+function parkingMetrics(){
+  const cx=42,cz=33.4;
+  const to0=Math.abs(normAngle(car.yaw)),toPi=Math.abs(normAngle(car.yaw-Math.PI));
+  return{lat:Math.abs(car.x-cx),long:Math.abs(car.z-cz),angle:deg(Math.min(to0,toPi))};
+}
 
 function addCircleObstacle(id,x,z,r,options={}){
   const o={id,type:'circle',x,z,r,solid:options.solid!==false,kind:options.kind||'solid',mesh:options.mesh||null,hit:false};
@@ -153,11 +178,34 @@ function addBoxObstacle(id,x,z,w,d,options={}){
   const o={id,type:'box',x,z,w,d,solid:options.solid!==false,kind:options.kind||'solid',mesh:options.mesh||null,hit:false};
   obstacles.push(o);return o;
 }
-function pointInCarOBB(px,pz){
-  const dx=px-car.x,dz=pz-car.z;
-  const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw),rx=Math.cos(car.yaw),rz=Math.sin(car.yaw);
-  const localF=dx*fx+dz*fz,localR=dx*rx+dz*rz;
-  return Math.abs(localF)<=2.15&&Math.abs(localR)<=.9;
+function carRect(){
+  return{cx:car.x,cz:car.z,hw:.9,hl:2.15,angle:car.yaw};
+}
+function rectCorners2D(r){
+  const s=Math.sin(r.angle),c=Math.cos(r.angle);
+  const ax={x:c,z:s},az={x:s,z:-c},pts=[];
+  for(const sx of [-1,1])for(const sz of [-1,1])pts.push({
+    x:r.cx+sx*r.hw*ax.x+sz*r.hl*az.x,
+    z:r.cz+sx*r.hw*ax.z+sz*r.hl*az.z
+  });
+  return pts;
+}
+function rectAxes2D(r){
+  const s=Math.sin(r.angle),c=Math.cos(r.angle);
+  return[{x:c,z:s},{x:s,z:-c}];
+}
+function projectionRange2D(points,axis){
+  let min=Infinity,max=-Infinity;
+  for(const p of points){const d=p.x*axis.x+p.z*axis.z;if(d<min)min=d;if(d>max)max=d}
+  return[min,max];
+}
+function rectsIntersectSAT(a,b){
+  const ap=rectCorners2D(a),bp=rectCorners2D(b);
+  for(const axis of [...rectAxes2D(a),...rectAxes2D(b)]){
+    const [amin,amax]=projectionRange2D(ap,axis),[bmin,bmax]=projectionRange2D(bp,axis);
+    if(amax<bmin||bmax<amin)return false;
+  }
+  return true;
 }
 function circleHitsCar(o){
   const dx=o.x-car.x,dz=o.z-car.z;
@@ -168,16 +216,7 @@ function circleHitsCar(o){
   return df*df+dr*dr<=o.r*o.r;
 }
 function boxHitsCar(o){
-  const carPts=carCorners();
-  if(carPts.some(p=>p.x>=o.x-o.w/2&&p.x<=o.x+o.w/2&&p.z>=o.z-o.d/2&&p.z<=o.z+o.d/2))return true;
-  const boxPts=[
-    [o.x-o.w/2,o.z-o.d/2],[o.x+o.w/2,o.z-o.d/2],
-    [o.x+o.w/2,o.z+o.d/2],[o.x-o.w/2,o.z+o.d/2]
-  ];
-  if(boxPts.some(p=>pointInCarOBB(p[0],p[1])))return true;
-  const minX=Math.min(...carPts.map(p=>p.x)),maxX=Math.max(...carPts.map(p=>p.x));
-  const minZ=Math.min(...carPts.map(p=>p.z)),maxZ=Math.max(...carPts.map(p=>p.z));
-  return !(maxX<o.x-o.w/2||minX>o.x+o.w/2||maxZ<o.z-o.d/2||minZ>o.z+o.d/2);
+  return rectsIntersectSAT(carRect(),{cx:o.x,cz:o.z,hw:o.w/2,hl:o.d/2,angle:0});
 }
 function findCollision(){
   for(const o of obstacles){
@@ -188,17 +227,19 @@ function findCollision(){
   return null;
 }
 function handleCollision(o,prev){
-  car.x=prev.x;car.z=prev.z;car.yaw=prev.yaw;
   const impact=Math.abs(car.speed);
-  car.speed*=-.08;
   if(o.kind==='cone'){
-    o.solid=false;o.hit=true;
+    o.solid=false;o.hit=true;runStats.cones++;recordEvent('contact','안전콘 접촉',{impact});
     if(o.mesh){o.mesh.rotation.z=Math.PI*.48;o.mesh.position.y=.12}
+    car.speed*=.68;
     showToast('콘에 닿았습니다.','warn',1.2);
     if(collisionCooldown<=0){addDeduction('안전시설 접촉',5);collisionCooldown=1.2}
     return;
   }
-  if(impact>.45){
+  car.x=prev.x;car.z=prev.z;car.yaw=prev.yaw;
+  car.speed=0;
+  if(impact>.18){
+    runStats.collisions++;recordEvent('collision','장애물 충돌',{impact});
     showToast('충돌했습니다.','danger',1.2);beep(120,.12,.06);
     if(collisionCooldown<=0||lastCollisionId!==o.id){
       addDeduction('장애물 충돌',10);collisionCooldown=1.5;lastCollisionId=o.id;
@@ -214,7 +255,7 @@ function resetCar(){
   Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,speed:0,steeringWheel:0,wheelAngle:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0});
   touch.steer=touch.throttle=touch.brake=touch.clutch=0;
   gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=collisionCooldown=0;lastCollisionId='';
-  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
+  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];examEvents=[];runStats={collisions:0,cones:0,offroad:0,gearChanges:0,maxSpeed:0,parking:null};sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
 }
@@ -358,6 +399,33 @@ async function loadDecorAssets(){
     load('suv.glb',[102,0,8],1.05,0,'parkedSuv')
   ]);
 }
+function initBackupGuides(){
+  const makeGuide=()=>{
+    const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+    const line=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffd85a,transparent:true,opacity:.92}));
+    line.layers.set(1);scene.add(line);return line;
+  };
+  backupGuideLeft=makeGuide();backupGuideRight=makeGuide();
+}
+function updateBackupGuide(){
+  if(!backupGuideLeft||!backupGuideRight)return;
+  const active=gameState==='playing'&&currentDirection()===-1;
+  backupGuideLeft.visible=backupGuideRight.visible=active;
+  if(!active)return;
+  const fx=Math.sin(car.yaw),fz=-Math.cos(car.yaw);
+  let x=car.x-fx*1.5,z=car.z-fz*1.5,theta=car.yaw;
+  const left=[],right=[],ds=.2,steps=24,half=.72;
+  for(let i=0;i<=steps;i++){
+    const rx=Math.cos(theta),rz=Math.sin(theta),y=groundHeight(x,z)+.075;
+    left.push(new THREE.Vector3(x+rx*half,y,z+rz*half));
+    right.push(new THREE.Vector3(x-rx*half,y,z-rz*half));
+    theta=normAngle(theta-Math.tan(car.wheelAngle)/2.62*ds);
+    x-=Math.sin(theta)*ds;z+=Math.cos(theta)*ds;
+  }
+  backupGuideLeft.geometry.setFromPoints(left);
+  backupGuideRight.geometry.setFromPoints(right);
+}
+
 function initScene(){
   scene=new THREE.Scene();scene.background=new THREE.Color(0x9bc8df);scene.fog=new THREE.Fog(0x9bc8df,85,190);
   renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
@@ -365,9 +433,10 @@ function initScene(){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   camera=new THREE.PerspectiveCamera(63,innerWidth/Math.max(1,innerHeight),.05,240);
   leftMirrorCamera=new THREE.PerspectiveCamera(55,2,.05,180);rightMirrorCamera=new THREE.PerspectiveCamera(55,2,.05,180);
+  backupCamera=new THREE.PerspectiveCamera(62,1.62,.05,120);backupCamera.layers.enable(1);
   scene.add(new THREE.HemisphereLight(0xdff5ff,0x536f45,2.1));
   const sun=new THREE.DirectionalLight(0xffefcf,2.25);sun.position.set(35,58,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-90;sun.shadow.camera.right=130;sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;scene.add(sun);
-  buildCourse();loader=new GLTFLoader();loadDecorAssets();resize();
+  buildCourse();initBackupGuides();loader=new GLTFLoader();loadDecorAssets();resize();
 }
 
 function updateSignal(){
@@ -395,8 +464,10 @@ function physicsStep(dt){
     else if(car.parkingBrake)showToast('주차브레이크가 걸려 있습니다.','warn',1.2);
   }
 
-  car.steeringWheel=clamp(car.steeringWheel+inp.steer*270*dt,-540,540);
-  if(Math.abs(inp.steer)<.04&&Math.abs(car.speed)>.5)car.steeringWheel=approach(car.steeringWheel,0,Math.abs(car.speed)*5.5*dt);
+  const steerSpeedKmh=Math.abs(car.speed)*3.6;
+  const steerLimit=lerp(540,330,clamp(steerSpeedKmh/45,0,1));
+  car.steeringWheel=clamp(car.steeringWheel+inp.steer*330*dt,-steerLimit,steerLimit);
+  if(Math.abs(inp.steer)<.04&&Math.abs(car.speed)>.25)car.steeringWheel=approach(car.steeringWheel,0,(95+Math.abs(car.speed)*22)*dt);
   car.wheelAngle=rad(car.steeringWheel/540*35);
 
   const dir=currentDirection();
@@ -443,6 +514,7 @@ function physicsStep(dt){
   if(!dir&&!transmissionLocked&&Math.abs(gradeAlong)>.03&&!car.parkingBrake&&inp.brake<.05)car.speed+=gravity*dt;
   car.speed=clamp(car.speed,-5.5,12.5);
   if(Math.abs(car.speed)<.015)car.speed=0;
+  runStats.maxSpeed=Math.max(runStats.maxSpeed,Math.abs(car.speed)*3.6);
 
   if(collisionCooldown>0)collisionCooldown=Math.max(0,collisionCooldown-dt);
   const prevPose={x:car.x,z:car.z,yaw:car.yaw};
@@ -458,7 +530,7 @@ function physicsStep(dt){
 
   const roadCorners=carCorners().filter(p=>isOnRoad(p.x,p.z)).length;
   if(roadCorners<=1&&Math.abs(car.speed)>.7){
-    offroadTimer+=dt;if(offroadTimer>1.3){addDeduction('차로 이탈',5);offroadTimer=-2}
+    offroadTimer+=dt;if(offroadTimer>1.3){runStats.offroad++;addDeduction('차로 이탈',5);offroadTimer=-2}
   }else offroadTimer=Math.max(0,offroadTimer-dt*2);
   if(offroadTimer<0){offroadTimer+=dt;if(offroadTimer>=0)offroadTimer=0}
 
@@ -524,7 +596,12 @@ function examStep(dt,inp){
     const inBay=footprintInside(39.2,44.8,28,38.8)&&Math.abs(Math.sin(car.yaw))<.35;
     if(inParkingArea&&currentDirection()===-1&&Math.abs(car.speed)>.25)parkingReverseSeen=true;
     if(inBay&&parkingReverseSeen&&kmh<.7){
-      holdTimer+=dt;if(holdTimer>1.1){parkingComplete=true;sectionResults.parking='ok';stage='PARK_EXIT';holdTimer=0;showToast('주차 확인 완료');beep(820,.12,.04);setInstruction('주차 구역에서 나와 오른쪽으로 진행하세요.','가속구간에서는 20km/h 이상 속도를 냅니다.')}
+      holdTimer+=dt;if(holdTimer>1.1){
+        parkingComplete=true;sectionResults.parking='ok';stage='PARK_EXIT';holdTimer=0;
+        runStats.parking=parkingMetrics();recordEvent('section','T자 주차 완료',runStats.parking);
+        const quality=runStats.parking.lat<.35&&runStats.parking.angle<4?'정렬이 매우 좋습니다.':runStats.parking.lat<.65&&runStats.parking.angle<8?'안정적으로 들어왔습니다.':'주차 완료 · 정렬을 조금 더 다듬어 보세요.';
+        showToast(quality);beep(820,.12,.04);setInstruction('주차 구역에서 나와 오른쪽으로 진행하세요.','가속구간에서는 20km/h 이상 속도를 냅니다.');
+      }
     }else holdTimer=0;
     if(car.x>66&&!parkingComplete){parkingComplete=true;sectionResults.parking='miss';addDeduction('T자 주차 미완료',10);stage='ACCEL';setInstruction('가속구간에서 20km/h 이상 주행하세요.','흰색 시작선을 지난 뒤 충분히 가속합니다.')}
     return;
@@ -583,17 +660,23 @@ function updateCamera(dt){
     cam.position.set(car.x+rx*.7*side-fx*.2,car.y+1.42,car.z+rz*.7*side-fz*.2);
     cam.rotation.order='YXZ';cam.rotation.y=backYaw+out*side;cam.rotation.x=.02;cam.rotation.z=0;
   }
+  backupCamera.position.set(car.x-fx*1.72,car.y+1.02,car.z-fz*1.72);
+  backupCamera.rotation.order='YXZ';backupCamera.rotation.y=backYaw;backupCamera.rotation.x=-.24;backupCamera.rotation.z=0;
 }
 function render(){
   renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);
   if(gameState==='menu')return;
-  const drawMirror=(el,cam)=>{
+  const drawInset=(el,cam)=>{
+    if(!el)return;
     const r=el.getBoundingClientRect();if(r.width<8||r.height<8)return;
     const x=r.left+6,y=innerHeight-r.bottom+6,w=Math.max(1,r.width-12),h=Math.max(1,r.height-12);
     cam.aspect=w/h;cam.updateProjectionMatrix();
     renderer.setScissorTest(true);renderer.setScissor(x,y,w,h);renderer.setViewport(x,y,w,h);renderer.render(scene,cam);
   };
-  drawMirror(ui.mirrorLeft,leftMirrorCamera);drawMirror(ui.mirrorRight,rightMirrorCamera);
+  drawInset(ui.mirrorLeft,leftMirrorCamera);drawInset(ui.mirrorRight,rightMirrorCamera);
+  const reverseActive=gameState==='playing'&&currentDirection()===-1;
+  ui.backupCamera?.classList.toggle('show',reverseActive);
+  if(reverseActive)drawInset(ui.backupCamera,backupCamera);
   renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
 }
 function updateHUD(){
@@ -614,7 +697,7 @@ function updateHUD(){
     const p=wrap.querySelector('.pedal'),meter=wrap.querySelector('.pedal-meter i');if(!p||!meter)continue;
     p.style.transform='perspective(150px) rotateX('+(v*14)+'deg) translateY('+(v*5)+'px)';meter.style.width=(v*100)+'%';
   }
-  updateGearVisual();
+  updateBackupGuide();updateGearVisual();
 }
 
 function loop(now){
@@ -634,7 +717,7 @@ function setAutoGear(g){
   if(license!=='auto')return;
   if((car.gear==='P'||g==='P'||(car.gear==='D'&&g==='R')||(car.gear==='R'&&g==='D'))&&inputState().brake<.22){showToast('브레이크를 밟고 기어를 바꾸세요.','warn');beep(190,.08,.04);return false}
   if(Math.abs(car.speed)>.25&&((car.gear==='D'&&g==='R')||(car.gear==='R'&&g==='D')||g==='P')){showToast('완전히 정차한 뒤 변속하세요.','warn');return false}
-  car.gear=g;beep(500,.04,.025);return true;
+  if(car.gear!==g){runStats.gearChanges++;recordEvent('gear','기어 '+g)}car.gear=g;beep(500,.04,.025);return true;
 }
 function setManualGear(g){
   if(license!=='manual')return false;
@@ -642,7 +725,7 @@ function setManualGear(g){
   if(g!==0&&inp.clutch<.62){showToast('클러치를 끝까지 밟고 변속하세요.','warn');beep(150,.14,.05);return false}
   if(g===-1&&Math.abs(car.speed)>.25){showToast('완전히 정차한 뒤 후진기어를 넣으세요.','warn');return false}
   if(g>0&&car.speed<-.25){showToast('정차한 뒤 전진기어를 넣으세요.','warn');return false}
-  car.gear=g;
+  if(car.gear!==g){runStats.gearChanges++;recordEvent('gear','기어 '+(g===-1?'R':g===0?'N':g))}car.gear=g;
   const label=g===-1?'후진 R':g===0?'중립 N':g+'단';
   showToast(label+' 변속',g===0?'normal':'normal',.8);
   beep(480,.04,.025);return true;
@@ -679,20 +762,17 @@ function installSteering(){
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
 }
 function installPedal(wrap,kind){
-  let startY=0;
-  const base=kind==='throttle'?.32:kind==='clutch'?.9:.68;
-  const floor=kind==='throttle'?.12:kind==='clutch'?.5:.25;
   const update=e=>{
     const r=wrap.getBoundingClientRect();
-    const travel=Math.max(42,r.height*.72);
-    touch[kind]=clamp(base+(e.clientY-startY)/travel,floor,1);
+    const y=clamp((e.clientY-r.top)/Math.max(1,r.height),0,1);
+    touch[kind]=clamp(.1+y*.9,0,1);
     e.preventDefault();
   };
   wrap.addEventListener('pointerdown',e=>{
     if(pedalPointers[kind]!==null)return;
-    pedalPointers[kind]=e.pointerId;startY=e.clientY;touch[kind]=base;
+    pedalPointers[kind]=e.pointerId;
     try{wrap.setPointerCapture(e.pointerId)}catch(_){}
-    e.preventDefault();
+    update(e);
   });
   wrap.addEventListener('pointermove',e=>{if(e.pointerId===pedalPointers[kind])update(e)});
   const end=e=>{if(e.pointerId!==pedalPointers[kind])return;pedalPointers[kind]=null;touch[kind]=0};
