@@ -898,7 +898,7 @@ function computeReachDetailed(u){
       if(n.terrain==="sea")return{blocked:true};
       if(n.owner&&n.owner!=="neutral"&&n.owner!==u.owner&&!canAttackFaction(u.owner,n.owner))return{blocked:true};
       var hostile=tileHasHostileDefense(u,n),zoc=!hostile&&enemyZocAt(u,n);
-      return{attack:hostile,frontier:hostile||n.owner!==u.owner||zoc,zoc:zoc};
+      return{attack:hostile,frontier:hostile||n.owner!==u.owner,zoc:zoc,stop:zoc};
     }
   });
 }
