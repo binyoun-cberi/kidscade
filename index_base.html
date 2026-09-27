@@ -19,14 +19,6 @@
 
     <div id="toast-container"></div>
 
-    <div id="pet-widget">
-        <div id="pet-widget-inner">
-            <span id="pet-widget-avatar">🐟</span>
-            <div id="pet-widget-badge" class="pet-status-badge">!</div>
-        </div>
-        <div id="pet-widget-bubble">오늘도 열공하자! 🚀</div>
-    </div>
-
     <div id="pet-modal" class="hidden" aria-label="쑥쑥랜드">
         <div class="shop-content sook-coach-content">
             <div class="shop-header sook-coach-header">
@@ -2042,7 +2034,7 @@ ${getEvolutionHintText()}
                 document.getElementById('pet-modal').classList.add('hidden');
                 document.body.style.overflow = '';
             });
-            document.getElementById('pet-widget').addEventListener('click', () => {
+            document.getElementById('pet-widget')?.addEventListener('click', () => {
                 playUISound('open');
                 switchSookTab('room');
                 document.getElementById('pet-modal').classList.remove('hidden');
@@ -2403,7 +2395,7 @@ ${getEvolutionHintText()}
                 recBox.innerHTML = '';
                 recBox.classList.add('hidden');
                 petTalkState = { answers: {} };
-                appendPetTalkMessage('sook', `안녕! 나는 ${pet.name}야. 몇 가지 물어보고 오늘 하기 좋은 게임을 골라줄게.`);
+                appendPetTalkMessage('sook', '안녕! 키즈케이드 게임 도우미야. 몇 가지 물어보고 오늘 하기 좋은 게임을 골라줄게.');
                 askPetTalkCategory();
             }
 
