@@ -22,6 +22,7 @@ import {
   teacherCertificateGrant,
   teacherJob,
   teacherJobAssign,
+  teacherJobUnassign,
   teacherManual,
   teacherLaw
 } from './economy-teacher.mjs';
@@ -78,6 +79,7 @@ export async function handleEconomyRequest(request, env) {
     '/api/teacher/economy/certificate-grant',
     '/api/teacher/economy/job',
     '/api/teacher/economy/job-assign',
+    '/api/teacher/economy/job-unassign',
     '/api/teacher/economy/payroll',
     '/api/teacher/economy/manual',
     '/api/teacher/economy/treasury',
@@ -113,6 +115,7 @@ export async function handleEconomyRequest(request, env) {
     if (path === '/api/teacher/economy/certificate-grant') return request.method === 'POST' ? teacherCertificateGrant(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/job') return request.method === 'POST' ? teacherJob(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/job-assign') return request.method === 'POST' ? teacherJobAssign(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/economy/job-unassign') return request.method === 'POST' ? teacherJobUnassign(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/payroll') return request.method === 'POST' ? teacherPayrollV3(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/manual') return request.method === 'POST' ? teacherManual(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/economy/treasury') return request.method === 'POST' ? teacherTreasuryV3(request, env) : methodNotAllowed('POST');
