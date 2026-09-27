@@ -61,6 +61,12 @@
       work_log_not_found:'근무일지를 찾지 못했습니다.',
       work_log_locked:'이미 처리가 끝난 근무일지입니다.',
       loan_not_found:'대출 신청을 찾지 못했습니다.',
+      student_not_found:'학생 계정을 찾지 못했습니다.',
+      property_not_found:'자리 부동산을 찾지 못했습니다.',
+      property_owner_required:'학생 소유자를 선택해 주세요.',
+      property_owner_cannot_rent:'자기 소유 자리에는 월세 계약을 만들 수 없습니다.',
+      property_or_tenant_already_leased:'해당 자리 또는 학생에게 이미 진행 중인 월세 계약이 있습니다.',
+      lease_not_active:'진행 중인 월세 계약이 아닙니다.',
       inventory_not_pending:'사용 요청 상태가 아닙니다.',
       company_not_found:'회사를 찾지 못했습니다.',
       invalid_company_transition:'현재 회사 상태에서는 처리할 수 없습니다.',
@@ -416,8 +422,10 @@
         buttons='<button class="btn green" data-loan="'+escapeHtml(loan.id)+'" data-loan-decision="approve">승인</button>'+
           '<button class="btn secondary" data-loan="'+escapeHtml(loan.id)+'" data-loan-decision="reject">거절</button>';
       }
+      const source=loan.source_type==='teacher_entry'?'교사 등록':'학생 신청';
       return '<div class="row"><div><strong>'+escapeHtml(loan.nickname||loan.login_id)+' · '+escapeHtml(money(loan.principal))+' · '+Number(loan.rate_percent||0)+'%</strong>'+
-        '<small>상태 '+escapeHtml(loan.status)+' · 잔액 '+escapeHtml(money(loan.outstanding))+
+        '<small>'+escapeHtml(source)+' · 상태 '+escapeHtml(loan.status)+' · 잔액 '+escapeHtml(money(loan.outstanding))+
+        (loan.purpose?' · '+escapeHtml(loan.purpose):'')+
         (loan.teacher_note?' · '+escapeHtml(loan.teacher_note):'')+'</small></div><div class="actions" style="margin:0">'+buttons+'</div></div>';
     }).join(''):'<div class="empty">대출 신청이 없습니다.</div>';
 
@@ -437,6 +445,86 @@
       (Number(item.debt_increase||0)>0?' · 신규 채무 '+escapeHtml(money(item.debt_increase)):'')+
       ' · '+escapeHtml(new Date(item.created_at).toLocaleString('ko-KR'))+'</small></div></div>'
     ).join(''):'<div class="empty">공공지출 기록이 없습니다.</div>';
+  }
+
+
+  function resetPropertyForm(){
+    $('propertyId').value='';
+    $('propertyName').value='';
+    $('propertyPrice').value=100;
+    $('propertyOwnerType').value='government';
+    $('propertyOwnerStudent').value=(data.students||[])[0]?.id||'';
+    $('propertyAcquiredAt').value=todayText();
+    $('propertyNote').value='';
+    $('propertySettlePurchase').checked=false;
+  }
+
+  function renderProperties(){
+    const studentOptions=optionsStudents();
+    for(const id of ['propertyOwnerStudent','leaseTenant','recordLoanStudent']){
+      if($(id))$(id).innerHTML=studentOptions;
+    }
+    const properties=data.properties||[];
+    const propertyOptions=properties.map(p=>
+      '<option value="'+escapeHtml(p.id)+'">'+escapeHtml(p.name)+' · '+(p.owner_type==='student'?('소유 '+(p.owner_nickname||p.owner_login_id||'학생')):'정부 소유')+'</option>'
+    ).join('');
+    $('leaseProperty').innerHTML=propertyOptions;
+    $('recordLoanProperty').innerHTML='<option value="">연결 안 함</option>'+propertyOptions;
+
+    $('propertyRows').innerHTML=properties.length?properties.map(p=>{
+      const owner=p.owner_type==='student'?(p.owner_nickname||p.owner_login_id||'학생'):'정부';
+      const resident=p.active_lease_id?(p.tenant_nickname||p.tenant_login_id||'임차 학생'):(p.owner_type==='student'?owner:'비어 있음');
+      const housing=p.active_lease_id?'월세 '+money(p.rent_amount||0)+' / 회차':'임대계약 없음';
+      return '<div class="row"><div><strong>'+escapeHtml(p.name)+' · 집주인 '+escapeHtml(owner)+'</strong>'+
+        '<small>기준가 '+escapeHtml(money(p.purchase_price||0))+' · 거주 '+escapeHtml(resident)+' · '+escapeHtml(housing)+
+        (p.note?' · '+escapeHtml(p.note):'')+'</small></div>'+
+        '<button class="btn secondary" data-property-edit="'+escapeHtml(p.id)+'">수정</button></div>';
+    }).join(''):'<div class="empty">아직 등록된 자리 부동산이 없습니다.</div>';
+
+    document.querySelectorAll('[data-property-edit]').forEach(button=>{
+      button.onclick=()=>{
+        const p=properties.find(x=>x.id===button.dataset.propertyEdit);
+        if(!p)return;
+        $('propertyId').value=p.id;
+        $('propertyName').value=p.name||'';
+        $('propertyPrice').value=Number(p.purchase_price||0);
+        $('propertyOwnerType').value=p.owner_type==='student'?'student':'government';
+        $('propertyOwnerStudent').value=p.owner_student_id||((data.students||[])[0]?.id||'');
+        $('propertyAcquiredAt').value=String(p.acquired_at||'').slice(0,10)||todayText();
+        $('propertyNote').value=p.note||'';
+        $('propertySettlePurchase').checked=false;
+      };
+    });
+
+    const leases=(data.propertyLeases||[]).filter(l=>l.status==='active');
+    $('leaseRows').innerHTML=leases.length?leases.map(l=>{
+      const landlord=l.landlord_type==='student'?(l.landlord_nickname||l.landlord_login_id||'학생 집주인'):'정부';
+      return '<div class="row"><div><strong>'+escapeHtml(l.property_name)+' · '+escapeHtml(l.tenant_nickname||l.tenant_login_id||'학생')+
+        '</strong><small>집주인 '+escapeHtml(landlord)+' · 월세 '+escapeHtml(money(l.rent_amount))+' · 시작 '+escapeHtml(l.start_period)+
+        (l.last_paid_period?' · 최근 납부 '+escapeHtml(l.last_paid_period):' · 아직 납부 기록 없음')+
+        (l.note?' · '+escapeHtml(l.note):'')+'</small></div><div class="actions" style="margin:0">'+
+        '<button class="btn green" data-rent-collect="'+escapeHtml(l.id)+'">월세 징수</button>'+
+        '<button class="btn secondary" data-lease-close="'+escapeHtml(l.id)+'">계약 종료</button></div></div>';
+    }).join(''):'<div class="empty">진행 중인 월세 계약이 없습니다.</div>';
+
+    document.querySelectorAll('[data-rent-collect]').forEach(button=>{
+      button.onclick=()=>collectRent(button.dataset.rentCollect);
+    });
+    document.querySelectorAll('[data-lease-close]').forEach(button=>{
+      button.onclick=async()=>{
+        if(!confirm('이 월세 계약을 종료할까요?'))return;
+        await mutate('/api/teacher/economy/lease-close','POST',{leaseId:button.dataset.leaseClose},null,'lease-close-'+button.dataset.leaseClose);
+      };
+    });
+
+    const payments=data.rentPayments||[];
+    $('rentPaymentRows').innerHTML=payments.length?payments.map(p=>
+      '<div class="row"><div><strong>'+escapeHtml(p.property_name)+' · '+escapeHtml(p.tenant_nickname||p.tenant_login_id||'학생')+
+      ' · '+escapeHtml(p.period_id)+'</strong><small>'+escapeHtml(p.status==='paid'?'납부 완료':'미납')+
+      ' · 청구 '+escapeHtml(money(p.amount_due))+' · 납부 '+escapeHtml(money(p.amount_paid))+
+      (p.note?' · '+escapeHtml(p.note):'')+'</small></div><span class="pill '+(p.status==='paid'?'good':'bad')+'">'+
+      (p.status==='paid'?'완납':'미납')+'</span></div>'
+    ).join(''):'<div class="empty">월세 장부가 아직 없습니다.</div>';
   }
 
   function renderStore(){
@@ -558,6 +646,7 @@
     renderWork();
     renderCertificatesAndJobs();
     renderPayroll();
+    renderProperties();
     renderStore();
     renderCompanies();
     renderLaw();
@@ -629,6 +718,59 @@
     },null,'manual-'+direction+'-'+$('manualStudent').value);
   }
 
+
+  async function recordLoan(){
+    const principal=Math.max(0,Math.trunc(Number($('recordLoanPrincipal').value)||0));
+    if(!principal)return alert('대출 원금을 입력해 주세요.');
+    await mutate('/api/teacher/economy/loan-record','POST',{
+      studentId:$('recordLoanStudent').value,
+      principal,
+      outstanding:Math.max(0,Math.trunc(Number($('recordLoanOutstanding').value)||0)),
+      ratePercent:Number($('recordLoanRate').value)||0,
+      occurredAt:$('recordLoanDate').value,
+      purpose:$('recordLoanPurpose').value,
+      propertyId:$('recordLoanProperty').value,
+      depositFunds:$('recordLoanDeposit').checked,
+      teacherNote:$('recordLoanNote').value
+    },null,'loan-record-'+$('recordLoanStudent').value);
+  }
+
+  async function saveProperty(){
+    const name=String($('propertyName').value||'').trim();
+    if(!name)return alert('자리 이름을 입력해 주세요.');
+    const settle=$('propertySettlePurchase').checked;
+    if(settle&&!confirm('매매대금을 실제 학생 지갑/정부계좌에 반영할까요? 기존 매입 내역을 단순 등록하는 경우에는 취소하고 체크를 해제하세요.'))return;
+    const result=await mutate('/api/teacher/economy/property','POST',{
+      propertyId:$('propertyId').value,
+      name,
+      purchasePrice:Number($('propertyPrice').value)||0,
+      ownerType:$('propertyOwnerType').value,
+      ownerStudentId:$('propertyOwnerStudent').value,
+      acquiredAt:$('propertyAcquiredAt').value,
+      note:$('propertyNote').value,
+      settlePurchase:settle
+    },null,'property-'+($('propertyId').value||name));
+    if(result)resetPropertyForm();
+  }
+
+  async function createLease(){
+    if(!$('leaseProperty').value)return alert('먼저 자리 부동산을 등록해 주세요.');
+    await mutate('/api/teacher/economy/lease','POST',{
+      propertyId:$('leaseProperty').value,
+      tenantStudentId:$('leaseTenant').value,
+      rentAmount:Number($('leaseRent').value)||0,
+      startPeriod:$('leaseStartPeriod').value,
+      note:$('leaseNote').value
+    },null,'lease-create-'+$('leaseProperty').value);
+  }
+
+  async function collectRent(leaseId){
+    const periodId=String($('rentPeriodId').value||'').trim();
+    if(!periodId)return alert('월세 회차를 입력해 주세요.');
+    const result=await mutate('/api/teacher/economy/rent-collect','POST',{leaseId,periodId},null,'rent-'+leaseId+'-'+periodId);
+    if(result?.status==='unpaid')alert('학생 잔액이 부족해 미납으로 기록했습니다. 부족액 '+money(result.shortage||0));
+  }
+
   async function createItem(){
     await mutate('/api/teacher/economy/item','POST',{
       name:$('itemName').value,price:Number($('itemPrice').value),stock:Number($('itemStock').value),
@@ -680,6 +822,10 @@
   $('runPayroll').onclick=runPayroll;
   $('spendTreasury').onclick=spendTreasury;
   $('repayDebt').onclick=repayDebt;
+  $('recordLoanBtn').onclick=recordLoan;
+  $('saveProperty').onclick=saveProperty;
+  $('resetProperty').onclick=resetPropertyForm;
+  $('createLease').onclick=createLease;
   $('manualGive').onclick=()=>manualTransaction('give');
   $('manualTake').onclick=()=>manualTransaction('take');
   $('createItem').onclick=createItem;
@@ -690,7 +836,11 @@
 
   $('lawDate').value=todayText();
   $('caseDate').value=todayText();
+  $('recordLoanDate').value=todayText();
+  $('propertyAcquiredAt').value=todayText();
   $('periodId').value=defaultPeriod();
+  $('rentPeriodId').value=defaultPeriod();
+  $('leaseStartPeriod').value=defaultPeriod();
 
   adminKey=loadKey();
   load();
