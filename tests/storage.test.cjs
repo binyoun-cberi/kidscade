@@ -19,6 +19,7 @@ function loadStorage() {
 test('storage registry keeps current save keys compatible', () => {
   const storage = loadStorage();
   assert.equal(storage.keys.seeds, 'kidscade_coins');
+  assert.equal(storage.keys.sproutPower, 'kidscade_sprout_power');
   assert.equal(storage.keys.favorites, 'kidscade_favs');
   assert.equal(storage.keys.recents, 'kidscade_recents');
   assert.equal(storage.keys.avatarInventory, 'kidscade_avatar_inventory');
@@ -67,6 +68,7 @@ test('typed helpers round-trip JSON and booleans', () => {
 test('registered physical keys include shared, game and dynamic namespaces', () => {
   const storage = loadStorage();
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_coins'), true);
+  assert.equal(storage.isRegisteredPhysicalKey('kidscade_sprout_power'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_seed_world_meta_v1'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_aquarium_v1'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_omok_arena_v1'), true);
