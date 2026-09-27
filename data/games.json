@@ -163,6 +163,29 @@
       "classroom": true
     },
     {
+      "id": "low_pong_battle",
+      "title": "퐁퐁 배틀",
+      "href": "games/low_pong_battle/index.html?v=1",
+      "category": "trivia",
+      "age": "low",
+      "icon": "🏓",
+      "description": "큰 패들로 공을 통통 받아치며 컴퓨터 또는 친구와 겨루는 저학년용 PONG 아케이드! 3·5점제, 쉬운 CPU와 초반 보정, 키보드 2인 대전과 모바일 양쪽 터치·드래그 조작을 지원해요.",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_seed_volleyball",
       "title": "씨앗 배구",
       "href": "games/high_seed_volleyball/index.html?v=4",
