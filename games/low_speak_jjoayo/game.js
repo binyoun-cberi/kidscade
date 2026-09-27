@@ -1,4 +1,4 @@
-import { WORDS, PACK_LABELS } from './words.js?v=2';
+import { WORDS, PACK_LABELS } from './words.js?v=3';
 
 const $ = id => document.getElementById(id);
 const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;

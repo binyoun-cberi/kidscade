@@ -1191,11 +1191,11 @@
     {
       "id": "low_speak_jjoayo",
       "title": "스피크가 쪼아요!",
-      "href": "games/low_speak_jjoayo/index.html?v=2",
+      "href": "games/low_speak_jjoayo/index.html?v=3",
       "category": "lang",
       "age": "low",
       "icon": "🎤",
-      "description": "초3~6 권장 학년팩과 주제팩에서 한글 뜻·그림을 보고 영어 단어를 말하세요! 30·60·90초 기록에 도전하고, 이 기기에 최고점·최근 플레이·단어별 학습 기록을 저장하는 음성 영단어 스피드런.",
+      "description": "초3~6 권장 학년팩 400단어와 주제팩에서 한글 뜻·그림을 보고 영어 단어를 말하세요! 30·60·90초 기록에 도전하고, 이 기기에 최고점·최근 플레이·단어별 학습 기록을 저장하는 음성 영단어 스피드런.",
       "subject": "language",
       "genre": "quiz",
       "difficulty": "easy",
