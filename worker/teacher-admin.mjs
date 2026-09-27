@@ -1,5 +1,6 @@
 import { hashPin, normalizeLoginId, isValidLoginId } from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
+import { kstWeekKey } from './seed-rankings.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -188,6 +189,35 @@ async function getOverview(request, env) {
     summary: summarizeStudentState(row.state_json)
   }));
 
+  const seedWeekKey = kstWeekKey();
+  let weeklySeedRows = [];
+  try {
+    const weekly = auth.global
+      ? await env.DB.prepare(`
+          SELECT w.student_id, w.earned_seeds
+          FROM student_seed_weekly w
+          JOIN student_accounts a ON a.id = w.student_id
+          WHERE w.week_key = ?
+        `).bind(seedWeekKey).all()
+      : await env.DB.prepare(`
+          SELECT w.student_id, w.earned_seeds
+          FROM student_seed_weekly w
+          JOIN student_accounts a ON a.id = w.student_id
+          WHERE w.week_key = ? AND a.class_id = ?
+        `).bind(seedWeekKey, auth.classId).all();
+    weeklySeedRows = weekly?.results || [];
+  } catch (error) {
+    const message = String(error?.message || '');
+    if (!/no such table: student_seed_weekly|SQLITE_ERROR.*student_seed_weekly/i.test(message)) throw error;
+  }
+  const weeklyByStudent = new Map(weeklySeedRows.map(row => [
+    String(row.student_id || ''),
+    Math.max(0, Math.floor(Number(row.earned_seeds || 0)))
+  ]));
+  safeStudents.forEach(student => {
+    student.weekly_earned = weeklyByStudent.get(String(student.id || '')) || 0;
+  });
+
   const classRows = classes?.results || [];
   let teacherCredentials = [];
   if (auth.global) {
@@ -208,6 +238,7 @@ async function getOverview(request, env) {
     },
     classes: classRows,
     students: safeStudents,
+    seedWeekKey,
     teacherCredentials
   });
 }
