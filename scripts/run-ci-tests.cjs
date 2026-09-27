@@ -46,6 +46,7 @@ const TEST_FILES = [
   "tests/police-patrol.test.cjs",
   "tests/driver-license.test.cjs",
   "tests/drone-pilot-v3.test.cjs",
+  "tests/byeokrando-tutorial.test.cjs",
   "tests/math-tower-defense-3d.test.cjs",
   "tests/spelling-frog-assets.test.cjs",
   "tests/word-blaster.test.cjs",

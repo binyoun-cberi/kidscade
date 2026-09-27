@@ -38,6 +38,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
       ' getPortGroup:()=>portGroup,',
       ' getCamera:()=>camera,',
       ' getPorts:()=>PORTS,',
+      ' getGoods:()=>GOODS,',
+      ' getSailState:()=>sailState,',
+      ' persistState,',
       ' hideIllustratedPort,',
       ' showIllustratedPort,',
       ' getBuildPort:()=>buildPort,',
@@ -59,7 +62,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080a0a}
       '<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>',
       '<script src="../../audio-manager.js?v=20260917-1"><\/script>',
       '<script src="./byeokrando-bgm.js?v=1"><\/script>',
-      '<script src="./byeokrando-assets.js?v=3"><\/script>'
+      '<script src="./byeokrando-assets.js?v=3"><\/script>',
+      '<script src="./byeokrando-tutorial.js?v=2"><\/script>'
     ].join('\n');
     html=html.replace('</body>',extras+'\n</body>');
 

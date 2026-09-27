@@ -27,6 +27,7 @@ test('storage registry keeps current save keys compatible', () => {
   assert.equal(storage.keys.seedWorldMeta, 'kidscade_seed_world_meta_v1');
   assert.equal(storage.gameKeys.aquariumSave, 'kidscade_aquarium_v1');
   assert.equal(storage.gameKeys.byeokrandoSave, 'kidscade_byeokrando_v1');
+  assert.equal(storage.gameKeys.byeokrandoTutorialV2, 'kidscade_byeokrando_tutorial_v2');
   assert.equal(storage.gameKeys.omokArenaSave, 'kidscade_omok_arena_v1');
   assert.equal(storage.prefixes.languageV3, 'kidscade_language_v3_');
   assert.equal(storage.prefixes.gameSdkV2, 'kidscade_game_v2:');
