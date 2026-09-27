@@ -7,8 +7,11 @@ const ui = {
   tutorialBtn: $('#tutorialBtn'), workBtn: $('#workBtn'), restartBtn: $('#restartBtn'),
   missionKind: $('#missionKind'), missionTitle: $('#missionTitle'), missionText: $('#missionText'), missionMeta: $('#missionMeta'),
   missionProgress: $('#missionProgress'), missionProgressBar: $('#missionProgress i'), battery: $('#battery'), altitude: $('#altitude'),
-  speed: $('#speed'), mode: $('#mode'), heading: $('#heading'), targetBearing: $('#targetBearing'), targetDistance: $('#targetDistance'),
-  toast: $('#toast'), cameraBtn: $('#cameraBtn'), focusBtn: $('#focusBtn'), fpvBtn: $('#fpvBtn'), rthBtn: $('#rthBtn'),
+  speed: $('#speed'), mode: $('#mode'), wind: $('#wind'), health: $('#health'), heading: $('#heading'), targetBearing: $('#targetBearing'),
+  targetDistance: $('#targetDistance'), toast: $('#toast'), cameraBtn: $('#cameraBtn'), focusBtn: $('#focusBtn'), fpvBtn: $('#fpvBtn'),
+  rthBtn: $('#rthBtn'), armBtn: $('#armBtn'), modeBtn: $('#modeBtn'), gimbalUpBtn: $('#gimbalUpBtn'), gimbalDownBtn: $('#gimbalDownBtn'),
+  controllerScreen: $('#controllerScreen'), pipCanvas: $('#pipView'), armState: $('#armState'), pipMode: $('#pipMode'),
+  pipTelemetry: $('#pipTelemetry'), signal: $('#signal'), gimbalReadout: $('#gimbalReadout'),
   leftStick: $('#leftStick'), rightStick: $('#rightStick'), leftKnob: $('#leftKnob'), rightKnob: $('#rightKnob'),
   endTitle: $('#endTitle'), endText: $('#endText'), resultGrid: $('#resultGrid')
 };
@@ -23,9 +26,14 @@ const WORLD_HALF = 78;
 const HOME = new THREE.Vector3(0, 0.36, 0);
 const coarse = matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
 
-let scene, camera, renderer, sun, loader;
+let scene, camera, renderer, pipCamera, pipRenderer, sun, loader;
 let state = 'menu';
 let fpv = false;
+let flightMode = 'stable';
+let cameraShake = 0;
+let pipFrame = 0;
+const windState = { base: new THREE.Vector2(.8, .2), current: new THREE.Vector2(.8, .2), t: 0, speed: .82 };
+const gamepadState = { connected: false, index: -1, prev: [] };
 const operatorView = {
   eye: new THREE.Vector3(0, 1.72, 10.5),
   yaw: 0,
@@ -54,7 +62,7 @@ const input = {
   left: { x: 0, y: 0, pointer: null },
   right: { x: 0, y: 0, pointer: null }
 };
-const rth = { active: false, phase: 'idle', safeY: 12 };
+const rth = { active: false, phase: 'idle', safeY: 12, hover: 0 };
 const colliders = [];
 const scenicObjects = [];
 const missionMeshes = new THREE.Group();
@@ -70,6 +78,11 @@ const drone = {
   vel: new THREE.Vector3(),
   yaw: 0,
   batterySeconds: 450,
+  armed: false,
+  health: 100,
+  gimbalPitch: -18,
+  everAirborne: false,
+  groundStill: 0,
   modelLoaded: false,
   rotors: []
 };
@@ -94,7 +107,7 @@ function updateAudio(speed, lift) {
   if (!audio.ctx || !audio.osc || !audio.gain) return;
   const t = audio.ctx.currentTime;
   audio.osc.frequency.setTargetAtTime(82 + speed * 6 + Math.abs(lift) * 24, t, 0.04);
-  audio.gain.gain.setTargetAtTime(state === 'playing' ? 0.015 + Math.min(0.018, speed * 0.0016) : 0.0001, t, 0.08);
+  audio.gain.gain.setTargetAtTime(state === 'playing' && drone.armed ? 0.015 + Math.min(0.018, speed * 0.0016) : 0.0001, t, 0.08);
 }
 
 function showToast(text, tone = 'normal', seconds = 2.1) {
@@ -114,6 +127,63 @@ function setProgress(value = null) {
   ui.missionProgress.style.display = 'block';
   ui.missionProgressBar.style.width = `${clamp(value, 0, 100)}%`;
 }
+function flightModeName(){ return flightMode === 'sport' ? '일반' : '안정'; }
+function setFlightMode(mode, quiet=false) {
+  flightMode = mode === 'sport' ? 'sport' : 'stable';
+  ui.modeBtn?.classList.toggle('sport', flightMode === 'sport');
+  if (ui.modeBtn) ui.modeBtn.textContent = flightMode === 'sport' ? '일반 모드' : '안정 모드';
+  if (!quiet) showToast(flightMode === 'sport' ? '일반 모드 · 관성과 바람의 영향을 더 크게 받습니다.' : '안정 모드 · 스틱을 놓으면 자동으로 감속합니다.');
+}
+function toggleFlightMode(){ setFlightMode(flightMode === 'stable' ? 'sport' : 'stable'); }
+function setArmed(active, quiet=false) {
+  active = !!active;
+  if (active && drone.health <= 0) return;
+  if (!active && drone.root.position.y > .68) {
+    if (!quiet) showToast('비행 중에는 모터를 끌 수 없습니다. 먼저 착륙하세요.','warn');
+    return;
+  }
+  drone.armed = active;
+  if (!active) drone.groundStill = 0;
+  ui.armBtn?.classList.toggle('armed', active);
+  ui.armState?.classList.toggle('armed', active);
+  if (ui.armBtn) ui.armBtn.textContent = active ? '모터 정지' : '모터 시작';
+  if (ui.armState) ui.armState.textContent = active ? 'ARMED' : 'SAFE';
+  if (!quiet) showToast(active ? '모터 시작 · 주변을 확인하고 천천히 이륙하세요.' : '모터 정지 · 기체가 안전 상태입니다.', active ? 'warn' : 'normal');
+}
+function adjustGimbal(delta) {
+  drone.gimbalPitch = clamp(drone.gimbalPitch + delta, -75, 5);
+  if (ui.gimbalReadout) ui.gimbalReadout.textContent = `CAM ${Math.round(drone.gimbalPitch)}°`;
+}
+function randomizeWind() {
+  const a = Math.random() * TAU, mag = .6 + Math.random() * 1.6;
+  windState.base.set(Math.cos(a) * mag, Math.sin(a) * mag);windState.current.copy(windState.base);windState.t = 0; windState.speed = mag;
+}
+function updateWind(dt) {
+  windState.t += dt;
+  const gx = Math.sin(windState.t * .73) * .48 + Math.sin(windState.t * 1.91 + 1.2) * .18;
+  const gz = Math.sin(windState.t * .61 + 2.4) * .42 + Math.sin(windState.t * 1.43) * .16;
+  windState.current.set(windState.base.x + gx, windState.base.y + gz);windState.speed = windState.current.length();
+}
+function applyDeadzone(v, dz=.12) {const a=Math.abs(v);if(a<=dz)return 0;return Math.sign(v)*(a-dz)/(1-dz)}
+function getGamepad() {
+  const list=navigator.getGamepads?.()||[];
+  if(gamepadState.index>=0&&list[gamepadState.index])return list[gamepadState.index];
+  for(const gp of list)if(gp){gamepadState.index=gp.index;return gp}
+  return null;
+}
+function pollGamepadButtons() {
+  const gp=getGamepad();if(!gp){gamepadState.connected=false;gamepadState.prev=[];return}
+  if(!gamepadState.connected){gamepadState.connected=true;showToast('게임패드 연결 · 듀얼 스틱 조종을 사용할 수 있습니다.')}
+  const edge=i=>!!gp.buttons[i]?.pressed&&!gamepadState.prev[i];
+  if(edge(0))setArmed(!drone.armed);if(edge(1))toggleFlightMode();if(edge(2))tryAction();if(edge(3))setRTH(!rth.active);
+  gamepadState.prev=gp.buttons.map(b=>!!b.pressed);
+}
+function signalStrength() {const d=Math.hypot(drone.root.position.x-HOME.x,drone.root.position.z-HOME.z);return Math.round(clamp(100-d/(WORLD_HALF*1.08)*72,22,100))}
+function cameraAimError(target) {
+  const p=drone.root.position,dx=target.x-p.x,dz=target.z-p.z,hd=Math.max(.01,Math.hypot(dx,dz));
+  const desiredPitch=THREE.MathUtils.radToDeg(Math.atan2((target.y||0)-p.y,hd));
+  return {yaw:facingTarget(target),pitch:Math.abs(desiredPitch-drone.gimbalPitch)};
+}
 
 function initScene() {
   scene = new THREE.Scene();
@@ -129,6 +199,12 @@ function initScene() {
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  pipCamera = new THREE.PerspectiveCamera(72, 16 / 9, 0.04, 220);
+  pipRenderer = new THREE.WebGLRenderer({ canvas: ui.pipCanvas, antialias: false, powerPreference: 'low-power' });
+  pipRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  pipRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  pipRenderer.toneMappingExposure = 1.02;
+  pipRenderer.shadowMap.enabled = false;
 
   scene.add(new THREE.HemisphereLight(0xdff6ff, 0x55734f, 2.05));
   sun = new THREE.DirectionalLight(0xfff1d5, 2.25);
@@ -315,14 +391,17 @@ function makePerson(x,z) {
 
 function resetDrone() {
   drone.root.position.copy(HOME); drone.vel.set(0,0,0); drone.yaw=0; drone.root.rotation.set(0,0,0); drone.tilt.rotation.set(0,0,0);
-  drone.batterySeconds=450; rth.active=false; rth.phase='idle'; fpv=false; ui.fpvBtn.classList.remove('active'); ui.fpvBtn.textContent='드론 카메라'; ui.rthBtn.classList.remove('active');
-  focusDroneView(true);
+  drone.batterySeconds=450; drone.health=100; drone.gimbalPitch=-18; drone.everAirborne=false; drone.groundStill=0;
+  rth.active=false; rth.phase='idle'; rth.hover=0; fpv=false; setArmed(false,true); setFlightMode('stable',true);
+  ui.fpvBtn.classList.remove('active'); ui.fpvBtn.textContent='FPV 전체화면'; ui.rthBtn.classList.remove('active');
+  adjustGimbal(0); focusDroneView(true);
 }
 function startGame(withTutorial) {
   initAudio(); state='playing'; ui.start.classList.remove('show'); ui.end.classList.remove('show'); hideToast();
-  resetInputs(); resetDrone(); clearMissionMeshes(); flightTime=0; shiftRemaining=360; missionDelay=.4; mission=null; lastMissionType=''; endPending=false; impactCooldown=0; lowBatteryWarned=false; criticalBatteryWarned=false;
+  resetInputs(); resetDrone(); clearMissionMeshes(); randomizeWind(); flightTime=0; shiftRemaining=360; missionDelay=.4; mission=null; lastMissionType=''; endPending=false; impactCooldown=0; lowBatteryWarned=false; criticalBatteryWarned=false;
   Object.assign(stats,{missions:0,photos:0,collisions:0,score:0,distance:0});
   if (withTutorial) spawnTutorial(); else spawnMission(true);
+  showToast('조종기에서 모터 시작을 길게 눌러 비행을 준비하세요.', 'warn', 3.2);
   lastTime=performance.now(); accumulator=0;
 }
 function endGame(reason='6분 비행 근무를 마쳤습니다.') {
@@ -335,21 +414,24 @@ function endGame(reason='6분 비행 근무를 마쳤습니다.') {
 
 function spawnTutorial() {
   clearMissionMeshes();
-  mission={type:'tutorial',phase:'takeoff',index:0,time:0,max:125,rings:[new THREE.Vector3(0,6,-13),new THREE.Vector3(10,8,-25),new THREE.Vector3(-7,5,-36)]};
+  mission={type:'tutorial',phase:'arm',index:0,time:0,max:145,rings:[new THREE.Vector3(0,6,-13),new THREE.Vector3(10,8,-25),new THREE.Vector3(-7,5,-36)]};
   lastMissionType='tutorial';
-  setMissionUI('기초 훈련','① 6m까지 상승','왼쪽 스틱을 위로 밀어 드론을 천천히 상승시키세요.');
-  ui.cameraBtn.textContent='📷 촬영'; setProgress(0); makeGroundMarker(0,0,0x6fe7a9); showToast('화면 드래그로 둘러보기 · F로 드론 찾기', 'normal', 3.4);
+  setMissionUI('기초 훈련','① 모터 시작','조종기 중앙의 ‘모터 시작’을 길게 눌러 드론을 비행 가능 상태로 만드세요.');
+  ui.cameraBtn.textContent='📷 촬영'; setProgress(0); makeGroundMarker(0,0,0x6fe7a9); showToast('먼저 모터를 시작하세요. Space 키로도 가능합니다.', 'normal', 3.4);
 }
 function tutorialUpdate(dt) {
   if (!mission || mission.type!=='tutorial') return;
   mission.time+=dt;
   const p=drone.root.position;
-  if(mission.phase==='takeoff'){
+  if(mission.phase==='arm'){
+    setProgress(drone.armed?100:0);ui.missionMeta.textContent=drone.armed?'ARMED · 이륙 준비 완료':'SAFE · 모터가 정지되어 있습니다.';
+    if(drone.armed){mission.phase='takeoff';setMissionUI('기초 훈련','② 6m까지 상승','왼쪽 스틱을 위로 밀어 드론을 천천히 상승시키세요.');showToast('좋아요. 천천히 상승해 보세요.');}
+  }else if(mission.phase==='takeoff'){
     const pct=clamp((p.y-.36)/5.65*100,0,100);setProgress(pct);ui.missionMeta.textContent=`현재 고도 ${p.y.toFixed(1)}m / 목표 6.0m`;
-    if(p.y>=5.9){mission.phase='rings';mission.index=0;clearMissionMeshes();mission.rings.forEach((v,i)=>{const m=makeRing(v,i===0?0x74eeff:0x7c91a4);m.userData.courseIndex=i});setMissionUI('기초 훈련','② 링 3개 통과','오른쪽 스틱으로 이동하고 왼쪽 스틱 좌우로 기체 방향을 돌려 보세요.');showToast('오른쪽 스틱으로 전후·좌우 이동');}
+    if(p.y>=5.9){mission.phase='rings';mission.index=0;clearMissionMeshes();mission.rings.forEach((v,i)=>{const m=makeRing(v,i===0?0x74eeff:0x7c91a4);m.userData.courseIndex=i});setMissionUI('기초 훈련','③ 링 3개 통과','오른쪽 스틱으로 이동하고 왼쪽 스틱 좌우로 기체 방향을 돌려 보세요.');showToast('오른쪽 스틱으로 전후·좌우 이동');}
   }else if(mission.phase==='rings'){
     const t=mission.rings[mission.index];const d=p.distanceTo(t);setProgress(mission.index/3*100);ui.missionMeta.textContent=`링 ${mission.index+1}/3 · ${Math.max(0,d).toFixed(0)}m`;
-    if(d<2.25){mission.index++;stats.score+=25;const rings=missionMeshes.children.filter(o=>o.geometry?.type==='TorusGeometry');rings.forEach((m,i)=>m.material.color.setHex(i===mission.index?0x74eeff:0x7c91a4));if(mission.index>=3){mission.phase='land';clearMissionMeshes();makeGroundMarker(0,0,0x73e8a9);setMissionUI('기초 훈련','③ 출발점에 착륙','H 표시 위로 돌아와 천천히 고도를 낮추세요.');showToast('착륙은 낮은 속도로!','warn');}}
+    if(d<2.25){mission.index++;stats.score+=25;const rings=missionMeshes.children.filter(o=>o.geometry?.type==='TorusGeometry');rings.forEach((m,i)=>m.material.color.setHex(i===mission.index?0x74eeff:0x7c91a4));if(mission.index>=3){mission.phase='land';clearMissionMeshes();makeGroundMarker(0,0,0x73e8a9);setMissionUI('기초 훈련','④ 출발점에 착륙','H 표시 위로 돌아와 천천히 고도를 낮추세요.');showToast('착륙은 낮은 속도로!','warn');}}
   }else if(mission.phase==='land'){
     const hd=Math.hypot(p.x,p.z),sp=Math.hypot(drone.vel.x,drone.vel.z);setProgress(clamp((1-hd/25)*100,0,100));ui.missionMeta.textContent=`착륙장 ${hd.toFixed(0)}m · 속도 ${sp.toFixed(1)}m/s`;
     if(hd<2.8&&p.y<.62&&sp<1.05){finishMission(80,'기초 비행 훈련 완료! 이제 실제 임무가 시작됩니다.');missionDelay=1.8;}
@@ -370,10 +452,10 @@ function spawnMission(first=false){
   let type=choose(pool);if(type===lastMissionType) type=pool[(pool.indexOf(type)+1+Math.floor(Math.random()*(pool.length-1)))%pool.length];lastMissionType=type;
   if(type==='photo') spawnPhoto(); else if(type==='inspect') spawnInspect(); else if(type==='delivery') spawnDelivery(); else if(type==='search') spawnSearch(); else spawnCourse();
 }
-function spawnPhoto(){const s=choose(missionSites.photo);mission={type:'photo',site:s,time:0,max:62};makeGroundMarker(s.x,s.z,0x58cfff);setMissionUI('항공 촬영',`${s.label} 촬영`, '목표에 접근해 적당한 고도에서 기체 앞쪽을 대상에 맞춘 뒤 촬영하세요.');ui.cameraBtn.textContent='📷 촬영';showToast('촬영 임무 수신');}
+function spawnPhoto(){const s=choose(missionSites.photo);mission={type:'photo',site:s,time:0,max:68};makeGroundMarker(s.x,s.z,0x58cfff);setMissionUI('항공 촬영',`${s.label} 촬영`, '조종기 화면을 보며 거리를 맞추고 짐벌을 조절해 대상을 화면 중앙에 둔 뒤 촬영하세요.');ui.cameraBtn.textContent='📷 촬영';showToast('촬영 임무 수신 · 조종기 화면과 짐벌을 활용하세요.');}
 function spawnInspect(){const s=choose(missionSites.inspect);let points;if(s.label==='통신탑')points=[new THREE.Vector3(60,5,55),new THREE.Vector3(66,9,49),new THREE.Vector3(72,6,55)];else points=[new THREE.Vector3(-34,5,-32),new THREE.Vector3(-42,9,-23),new THREE.Vector3(-51,6,-32)];mission={type:'inspect',site:s,points,index:0,time:0,max:70};points.forEach((p,i)=>{const m=makeRing(p,i===0?0x78f1c4:0x708b89);m.userData.courseIndex=i});setMissionUI('시설 점검',`${s.label} 3면 점검`,'빛나는 점검 위치를 순서대로 가까이 지나가세요.');ui.cameraBtn.textContent='📷 촬영';showToast('시설 점검 임무 수신');}
 function spawnDelivery(){const s=choose(missionSites.delivery);mission={type:'delivery',site:s,time:0,max:70};makeGroundMarker(s.x,s.z,0xffc85c);setMissionUI('긴급 배송',`${s.label}에 물품 전달`,'표시된 착륙장에 속도를 줄여 부드럽게 착륙하세요.');ui.cameraBtn.textContent='📦 배송 중';showToast('배송 물품 탑재 완료');}
-function spawnSearch(){const s=choose(missionSites.search);const person=makePerson(s.x,s.z);mission={type:'search',site:s,person,time:0,max:78,revealed:false};setMissionUI('실종자 수색',`${s.label} 수색`,'마지막 목격 지점 주변을 비행하세요. 20m 안에 들어오면 구조 대상이 보이기 시작합니다.');ui.cameraBtn.textContent='🔍 확인';showToast('수색 임무 수신');}
+function spawnSearch(){const s=choose(missionSites.search);const person=makePerson(s.x,s.z);mission={type:'search',site:s,person,time:0,max:84,revealed:false};setMissionUI('실종자 수색',`${s.label} 수색`,'마지막 목격 지점 주변을 낮은 속도로 훑어보세요. 육안과 조종기 화면을 번갈아 확인합니다.');ui.cameraBtn.textContent='🔍 확인';showToast('수색 임무 수신 · 천천히 구역을 훑어보세요.');}
 function spawnCourse(){const base=choose([{x:18,z:-12},{x:-16,z:24},{x:35,z:6}]);const points=[new THREE.Vector3(base.x,4.5,base.z),new THREE.Vector3(base.x+12,7,base.z-10),new THREE.Vector3(base.x+2,9,base.z-21),new THREE.Vector3(base.x-12,5.5,base.z-12)];mission={type:'course',points,index:0,time:0,max:60};points.forEach((p,i)=>{const m=makeRing(p,i===0?0x75edff:0x718694);m.userData.courseIndex=i});setMissionUI('장애물 비행','정밀 코스 통과','높이가 다른 링을 순서대로 통과하세요. 급하게 꺾기보다 속도를 줄여 정확히 지나가면 좋습니다.');ui.cameraBtn.textContent='📷 촬영';showToast('정밀 비행 코스 시작');}
 function finishMission(points,msg){stats.missions++;stats.score+=points;mission=null;clearMissionMeshes();missionDelay=1.5;setMissionUI('임무 완료','다음 임무 수신 대기','주변을 안정적으로 비행하며 다음 요청을 기다리세요.');ui.missionMeta.textContent='';setProgress(null);showToast(msg);}
 function failMission(msg){stats.score=Math.max(0,stats.score-15);mission=null;clearMissionMeshes();missionDelay=1.2;setMissionUI('임무 재배정','다음 임무 준비','시간이 지나 다른 임무로 넘어갑니다.');ui.missionMeta.textContent='';setProgress(null);showToast(msg,'warn');}
@@ -385,10 +467,13 @@ function currentMissionTarget(){
 function updateMission(dt){
   if(!mission){missionDelay-=dt;if(missionDelay<=0)spawnMission();return}
   if(mission.type==='tutorial'){tutorialUpdate(dt);return}
+  if(!drone.armed && drone.root.position.y<=.45){ui.missionMeta.textContent='모터를 시작하면 임무 시간이 흐릅니다.';return}
   mission.time+=dt;if(mission.time>mission.max){failMission('임무 시간이 지나 다른 요청으로 넘어갑니다.');return}
   const p=drone.root.position;const target=currentMissionTarget();const hd=target?Math.hypot(target.x-p.x,target.z-p.z):0;ui.missionMeta.textContent=`목표 ${Math.max(0,Math.round(hd))}m · 남은 시간 ${Math.ceil(mission.max-mission.time)}초`;
   if(mission.type==='photo'){
-    const altOk=p.y>6&&p.y<18;const near=hd<14;const facing=facingTarget(target)<38;const readiness=(near?40:0)+(altOk?30:0)+(facing?30:0);setProgress(readiness);ui.missionMeta.textContent+=` · ${near?'거리 OK':'더 접근'} · ${altOk?'고도 OK':'고도 6~18m'} · ${facing?'각도 OK':'대상을 정면에'}`;
+    const altOk=p.y>6&&p.y<18;const near=hd<14;const aim=cameraAimError(target);const yawOk=aim.yaw<32,pitchOk=aim.pitch<28;
+    const readiness=(near?35:0)+(altOk?25:0)+(yawOk?20:0)+(pitchOk?20:0);setProgress(readiness);
+    ui.missionMeta.textContent+=` · ${near?'거리 OK':'더 접근'} · ${altOk?'고도 OK':'고도 6~18m'} · ${yawOk?'방향 OK':'기체 방향 조정'} · ${pitchOk?'카메라 OK':'짐벌 조정'}`;
   }else if(mission.type==='inspect'||mission.type==='course'){
     const t=mission.points[mission.index];const d=p.distanceTo(t);setProgress((mission.index/mission.points.length)*100);ui.missionMeta.textContent=`지점 ${mission.index+1}/${mission.points.length} · ${d.toFixed(0)}m`;
     if(d<2.3){mission.index++;stats.score+=12;const rings=missionMeshes.children;for(const m of rings){const i=m.userData.courseIndex;m.material?.color?.setHex(i===mission.index?0x75edff:0x718694)}if(mission.index>=mission.points.length)finishMission(mission.type==='course'?85:95,mission.type==='course'?'정밀 코스 통과 완료!':'시설 점검 완료!');}
@@ -405,8 +490,8 @@ function tryAction(){
   if(state!=='playing'||!mission)return;
   const p=drone.root.position;const target=currentMissionTarget();const hd=target?Math.hypot(target.x-p.x,target.z-p.z):999;
   if(mission.type==='photo'){
-    const ok=hd<14&&p.y>6&&p.y<18&&facingTarget(target)<38;
-    if(ok){stats.photos++;stats.score+=20;flashPhoto();finishMission(105,'촬영 성공! 구도와 고도가 좋았습니다.')}else showToast(hd>=14?'촬영 대상에 조금 더 접근하세요.':p.y<=6||p.y>=18?'고도를 6~18m로 맞추세요.':'기체 앞쪽을 대상에 맞추세요.','warn');
+    const aim=cameraAimError(target);const ok=hd<14&&p.y>6&&p.y<18&&aim.yaw<32&&aim.pitch<28;
+    if(ok){stats.photos++;stats.score+=20;flashPhoto();finishMission(110,'촬영 성공! 거리·고도·기체 방향·짐벌 구도가 모두 좋았습니다.')}else showToast(hd>=14?'촬영 대상에 조금 더 접근하세요.':p.y<=6||p.y>=18?'고도를 6~18m로 맞추세요.':aim.yaw>=32?'기체 앞쪽을 대상에 맞추세요.':'짐벌을 조절해 대상을 화면 중앙에 두세요.','warn');
   }else if(mission.type==='search'){
     const ok=mission.revealed&&hd<13&&p.y>2.5&&p.y<13;
     if(ok){stats.photos++;flashPhoto();finishMission(110,'실종자 위치 확인 완료! 구조팀에 좌표를 보냈습니다.')}else showToast(mission.revealed?'대상에 조금 더 가까이 접근하세요.':'먼저 수색 지역에서 대상을 찾아야 합니다.','warn');
@@ -416,8 +501,13 @@ function flashPhoto(){const f=document.createElement('div');f.style.cssText='pos
 
 function setRTH(active){
   if(state!=='playing')return;
-  if(active){rth.active=true;rth.phase='ascend';rth.safeY=Math.max(12,drone.root.position.y);ui.rthBtn.classList.add('active');ui.mode.textContent='RTH';showToast('자동귀환 시작 · 안전 고도로 이동합니다.','warn')}
-  else{rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='조종사';showToast('자동귀환을 취소했습니다.')}
+  if(active){
+    if(!drone.armed){showToast('자동귀환 전에 모터를 시작해야 합니다.','warn');return}
+    rth.active=true;rth.phase='ascend';rth.safeY=Math.max(12,drone.root.position.y);rth.hover=0;
+    ui.rthBtn.classList.add('active');ui.mode.textContent='귀환';showToast('자동귀환 시작 · 안전 고도로 이동합니다.','warn');
+  }else{
+    rth.active=false;rth.phase='idle';rth.hover=0;ui.rthBtn.classList.remove('active');showToast('자동귀환을 취소하고 조종권을 되찾았습니다.');
+  }
 }
 function updateRTH(dt){
   if(!rth.active)return false;
@@ -425,10 +515,14 @@ function updateRTH(dt){
   if(rth.phase==='ascend'){
     desiredVelocity.set(0,Math.min(2.8,(rth.safeY-p.y)*1.1),0);if(p.y>=rth.safeY-.25)rth.phase='home';
   }else if(rth.phase==='home'){
-    if(hd>0.05)toHome.normalize();desiredVelocity.set(toHome.x*5.2,clamp((rth.safeY-p.y)*1.4,-1.8,1.8),toHome.z*5.2);if(hd<2.2)rth.phase='land';
+    if(hd>0.05)toHome.normalize();desiredVelocity.set(toHome.x*5.2,clamp((rth.safeY-p.y)*1.4,-1.8,1.8),toHome.z*5.2);if(hd<2.2){rth.phase='hover';rth.hover=0;}
+  }else if(rth.phase==='hover'){
+    desiredVelocity.set(clamp(-p.x*1.2,-.8,.8),clamp((Math.min(rth.safeY,3.2)-p.y)*1.4,-1.8,1.8),clamp(-p.z*1.2,-.8,.8));
+    if(p.y<=3.45)rth.hover+=dt;else rth.hover=0;
+    if(rth.hover>.9){rth.phase='land';rth.hover=0;showToast('착륙 지점 확인 · 자동 착륙합니다.');}
   }else{
-    desiredVelocity.set(clamp(-p.x*1.6,-1.2,1.2),p.y>.55?-1.5:0,clamp(-p.z*1.6,-1.2,1.2));
-    if(hd<1.4&&p.y<=.48){rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');ui.mode.textContent='조종사';showToast('출발점 자동귀환 완료');if(endPending)endGame('근무 시간이 끝나 자동귀환 후 안전하게 착륙했습니다.');}
+    desiredVelocity.set(clamp(-p.x*1.6,-1.2,1.2),p.y>.55?-1.25:0,clamp(-p.z*1.6,-1.2,1.2));
+    if(hd<1.4&&p.y<=.48){rth.active=false;rth.phase='idle';ui.rthBtn.classList.remove('active');showToast('출발점 자동귀환 완료');if(endPending)endGame('근무 시간이 끝나 자동귀환 후 안전하게 착륙했습니다.');}
   }
   return true;
 }
@@ -438,46 +532,93 @@ function getInputState(){
   const k=input.keys;let lx=input.left.x,ly=input.left.y,rx=input.right.x,ry=input.right.y;
   if(k.has('ArrowLeft'))lx-=1;if(k.has('ArrowRight'))lx+=1;if(k.has('ArrowUp'))ly-=1;if(k.has('ArrowDown'))ly+=1;
   if(k.has('KeyA'))rx-=1;if(k.has('KeyD'))rx+=1;if(k.has('KeyW'))ry-=1;if(k.has('KeyS'))ry+=1;
-  return {yaw:clamp(lx,-1,1),lift:clamp(-ly,-1,1),strafe:clamp(rx,-1,1),forward:clamp(-ry,-1,1)};
+  const gp=getGamepad();if(gp){lx+=applyDeadzone(gp.axes[0]||0);ly+=applyDeadzone(gp.axes[1]||0);rx+=applyDeadzone(gp.axes[2]||0);ry+=applyDeadzone(gp.axes[3]||0)}
+  const precision=k.has('ShiftLeft')||k.has('ShiftRight'),scale=precision ? .42 : 1;
+  return {yaw:clamp(lx,-1,1)*scale,lift:clamp(-ly,-1,1)*scale,strafe:clamp(rx,-1,1)*scale,forward:clamp(-ry,-1,1)*scale,precision};
 }
 function physicsStep(dt){
   if(state!=='playing')return;
-  impactCooldown=Math.max(0,impactCooldown-dt);
-  const c=getInputState();
+  pollGamepadButtons();updateWind(dt);impactCooldown=Math.max(0,impactCooldown-dt);cameraShake=Math.max(0,cameraShake-dt*2.8);
+  const c=getInputState(),manual=Math.max(Math.abs(c.yaw),Math.abs(c.lift),Math.abs(c.strafe),Math.abs(c.forward));
+  if(rth.active&&manual>.72){setRTH(false);showToast('스틱 입력 감지 · 자동귀환을 취소했습니다.');}
   const sy=Math.sin(drone.yaw),cy=Math.cos(drone.yaw);
-  drone.yaw += c.yaw * THREE.MathUtils.degToRad(100) * dt;
-  if(drone.yaw>Math.PI)drone.yaw-=TAU;if(drone.yaw<-Math.PI)drone.yaw+=TAU;
-  desiredVelocity.set(0,0,0);
-  const usingRTH=updateRTH(dt);
-  if(!usingRTH){
-    const forwardSpeed=c.forward*6.8,strafeSpeed=c.strafe*5.2;
-    desiredVelocity.x=sy*forwardSpeed+cy*strafeSpeed;desiredVelocity.z=-cy*forwardSpeed+sy*strafeSpeed;desiredVelocity.y=c.lift*3.0;
-    if(drone.batterySeconds<=0){desiredVelocity.x=0;desiredVelocity.z=0;desiredVelocity.y=-1.1;}
+  if(drone.armed&&!rth.active){
+    const yawRate=flightMode==='sport'?135:100;drone.yaw+=c.yaw*THREE.MathUtils.degToRad(yawRate)*dt;
+    if(drone.yaw>Math.PI)drone.yaw-=TAU;if(drone.yaw<-Math.PI)drone.yaw+=TAU;
   }
-  const horizResponse=expFactor(3.15,dt),vertResponse=expFactor(4.0,dt);
-  drone.vel.x=lerp(drone.vel.x,desiredVelocity.x,horizResponse);drone.vel.z=lerp(drone.vel.z,desiredVelocity.z,horizResponse);drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,vertResponse);
-  const prev=tempV2.copy(drone.root.position);drone.root.position.addScaledVector(drone.vel,dt);
-  if(drone.root.position.y<.36){drone.root.position.y=.36;if(drone.vel.y<0)drone.vel.y=0;}
+  desiredVelocity.set(0,0,0);
+  const usingRTH=drone.armed&&updateRTH(dt);
+  if(!drone.armed){
+    const stop=expFactor(5.2,dt);drone.vel.x=lerp(drone.vel.x,0,stop);drone.vel.z=lerp(drone.vel.z,0,stop);drone.vel.y=lerp(drone.vel.y,0,stop);
+  }else if(usingRTH){
+    const hr=expFactor(3.2,dt),vr=expFactor(4,dt);drone.vel.x=lerp(drone.vel.x,desiredVelocity.x,hr);drone.vel.z=lerp(drone.vel.z,desiredVelocity.z,hr);drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,vr);
+  }else if(flightMode==='stable'){
+    const forwardSpeed=c.forward*6.8,strafeSpeed=c.strafe*5.2;
+    const windFactor=drone.root.position.y>.6 ? .18 : 0;
+    desiredVelocity.x=sy*forwardSpeed+cy*strafeSpeed+windState.current.x*windFactor;
+    desiredVelocity.z=-cy*forwardSpeed+sy*strafeSpeed+windState.current.y*windFactor;desiredVelocity.y=c.lift*3.0;
+    const hr=expFactor(3.15,dt),vr=expFactor(4.0,dt);drone.vel.x=lerp(drone.vel.x,desiredVelocity.x,hr);drone.vel.z=lerp(drone.vel.z,desiredVelocity.z,hr);drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,vr);
+  }else{
+    const sportWind=drone.root.position.y>.6 ? .72 : 0;
+    const ax=sy*(c.forward*10.4)+cy*(c.strafe*8.8)+windState.current.x*sportWind;
+    const az=-cy*(c.forward*10.4)+sy*(c.strafe*8.8)+windState.current.y*sportWind;
+    drone.vel.x+=ax*dt;drone.vel.z+=az*dt;
+    const drag=Math.exp(-(Math.abs(c.forward)+Math.abs(c.strafe)>.08 ? .42 : 1.18)*dt);drone.vel.x*=drag;drone.vel.z*=drag;
+    const hs=Math.hypot(drone.vel.x,drone.vel.z),maxHs=c.precision?4.8:9.0;if(hs>maxHs){drone.vel.x*=maxHs/hs;drone.vel.z*=maxHs/hs}
+    desiredVelocity.y=c.lift*3.4;drone.vel.y=lerp(drone.vel.y,desiredVelocity.y,expFactor(3.2,dt));
+  }
+  if(drone.batterySeconds<=0&&drone.armed){drone.vel.x*=.98;drone.vel.z*=.98;drone.vel.y=lerp(drone.vel.y,-1.1,expFactor(2.5,dt));}
+  const prev=tempV2.copy(drone.root.position),preImpactSpeed=drone.vel.length(),preVy=drone.vel.y;drone.root.position.addScaledVector(drone.vel,dt);
+  if(drone.root.position.y<.36){
+    drone.root.position.y=.36;if(preVy<-3.1&&drone.armed&&impactCooldown<=0){impactCooldown=.9;applyDamage(clamp((Math.abs(preVy)-2.8)*9,4,32),'거친 착륙');}
+    if(drone.vel.y<0)drone.vel.y=0;
+  }
   if(drone.root.position.y>28){drone.root.position.y=28;if(drone.vel.y>0)drone.vel.y*=.3;showToast('훈련장 최대 고도 28m입니다.','warn',1.3)}
-  enforceWorldBounds();
-  checkCollisions(prev);
+  if(drone.root.position.y>.72)drone.everAirborne=true;
+  enforceWorldBounds();checkCollisions(prev,preImpactSpeed);
   const traveled=Math.hypot(drone.root.position.x-prev.x,drone.root.position.z-prev.z);stats.distance+=traveled;
-  const hsp=Math.hypot(drone.vel.x,drone.vel.z);const drain=dt*(1+.26*clamp(hsp/6.8,0,1)+.18*Math.abs(c.lift));drone.batterySeconds=Math.max(0,drone.batterySeconds-drain);
-  flightTime+=dt;shiftRemaining=Math.max(0,shiftRemaining-dt);
+  const hsp=Math.hypot(drone.vel.x,drone.vel.z);
+  if(drone.armed){const drain=dt*(1+.25*clamp(hsp/7,0,1)+.18*Math.abs(c.lift)+(flightMode==='sport' ? .08 : 0));drone.batterySeconds=Math.max(0,drone.batterySeconds-drain);}
+  if(drone.armed||drone.everAirborne){flightTime+=dt;shiftRemaining=Math.max(0,shiftRemaining-dt);}
+  if(drone.everAirborne&&drone.armed&&drone.root.position.y<=.4&&hsp<.6&&Math.abs(drone.vel.y)<.08){
+    drone.groundStill+=dt;if(drone.groundStill>1.5){setArmed(false,true);showToast('착륙 확인 · 모터가 자동으로 정지했습니다.');}
+  }else drone.groundStill=0;
   if(shiftRemaining<=0&&!endPending){endPending=true;if(!rth.active)setRTH(true);setMissionUI('근무 종료','자동귀환 중','근무 시간이 끝났습니다. 출발점으로 안전하게 돌아갑니다.');mission=null;clearMissionMeshes();}
   const bat=drone.batterySeconds/450*100;
   if(bat<18&&!lowBatteryWarned){lowBatteryWarned=true;showToast('배터리 18% · 귀환을 준비하세요.','warn',3)}
   if(bat<7&&!criticalBatteryWarned){criticalBatteryWarned=true;showToast('배터리 위험 · 자동귀환을 시작합니다!','danger',3);setRTH(true)}
-  if(bat<=0&&drone.root.position.y<=.45){endGame('배터리가 소진되어 비상 착륙했습니다. 다음 비행에서는 조금 일찍 귀환해 보세요.')}
+  if(bat<=0&&drone.root.position.y<=.45){setArmed(false,true);endGame('배터리가 소진되어 비상 착륙했습니다. 다음 비행에서는 조금 일찍 귀환해 보세요.')}
   if(!endPending)updateMission(dt);
-  const targetPitch=-c.forward*.21-clamp(drone.vel.z*cy-drone.vel.x*sy,-6,6)*.006;const targetRoll=-c.strafe*.23;
-  drone.tilt.rotation.x=lerp(drone.tilt.rotation.x,targetPitch,expFactor(6,dt));drone.tilt.rotation.z=lerp(drone.tilt.rotation.z,targetRoll,expFactor(6,dt));drone.root.rotation.y=drone.yaw;
-  for(const rotor of drone.rotors)rotor.rotation.y+=dt*(48+hsp*2.4+Math.abs(c.lift)*12);
+  const tiltScale=flightMode==='sport' ? .34 : .22,targetPitch=-c.forward*tiltScale-clamp(drone.vel.z*cy-drone.vel.x*sy,-7,7)*.007,targetRoll=-c.strafe*tiltScale;
+  drone.tilt.rotation.x=lerp(drone.tilt.rotation.x,targetPitch,expFactor(flightMode==='sport'?4.2:6,dt));drone.tilt.rotation.z=lerp(drone.tilt.rotation.z,targetRoll,expFactor(flightMode==='sport'?4.2:6,dt));drone.root.rotation.y=drone.yaw;
+  for(const rotor of drone.rotors)rotor.rotation.y+=dt*(drone.armed?48+hsp*2.4+Math.abs(c.lift)*12:3.5);
   updateAudio(hsp,c.lift);
 }
-function enforceWorldBounds(){const p=drone.root.position;let hit=false;if(p.x<-WORLD_HALF){p.x=-WORLD_HALF;drone.vel.x=Math.max(0,drone.vel.x*.2);hit=true}else if(p.x>WORLD_HALF){p.x=WORLD_HALF;drone.vel.x=Math.min(0,drone.vel.x*.2);hit=true}if(p.z<-WORLD_HALF){p.z=-WORLD_HALF;drone.vel.z=Math.max(0,drone.vel.z*.2);hit=true}else if(p.z>WORLD_HALF){p.z=WORLD_HALF;drone.vel.z=Math.min(0,drone.vel.z*.2);hit=true}if(hit)showToast('훈련장 비행 구역을 벗어날 수 없습니다.','warn',1.5)}
-function checkCollisions(prev){const p=drone.root.position;const radius=.58;for(const c of colliders){if(p.y>c.h+.45)continue;if(c.type==='box'){const minX=c.x-c.w/2-radius,maxX=c.x+c.w/2+radius,minZ=c.z-c.d/2-radius,maxZ=c.z+c.d/2+radius;if(p.x>minX&&p.x<maxX&&p.z>minZ&&p.z<maxZ){resolveImpact(prev);return}}else{const d=Math.hypot(p.x-c.x,p.z-c.z);if(d<c.r+radius){resolveImpact(prev);return}}}}
-function resolveImpact(prev){drone.root.position.x=prev.x;drone.root.position.z=prev.z;drone.vel.x*=-.12;drone.vel.z*=-.12;if(impactCooldown<=0){impactCooldown=.8;stats.collisions++;stats.score=Math.max(0,stats.score-5);showToast('충격! 속도를 줄이고 기체를 안정화하세요.','danger',1.6)}}
+function enforceWorldBounds(){
+  const p=drone.root.position;let hit=false;
+  if(p.x<-WORLD_HALF){p.x=-WORLD_HALF;drone.vel.x=Math.max(0,drone.vel.x*.2);hit=true}else if(p.x>WORLD_HALF){p.x=WORLD_HALF;drone.vel.x=Math.min(0,drone.vel.x*.2);hit=true}
+  if(p.z<-WORLD_HALF){p.z=-WORLD_HALF;drone.vel.z=Math.max(0,drone.vel.z*.2);hit=true}else if(p.z>WORLD_HALF){p.z=WORLD_HALF;drone.vel.z=Math.min(0,drone.vel.z*.2);hit=true}
+  if(hit)showToast('훈련장 비행 구역을 벗어날 수 없습니다.','warn',1.5);
+}
+function checkCollisions(prev,impactSpeed=0){
+  const p=drone.root.position,radius=.58;
+  for(const c of colliders){
+    if(p.y>c.h+.45)continue;
+    if(c.type==='box'){
+      const minX=c.x-c.w/2-radius,maxX=c.x+c.w/2+radius,minZ=c.z-c.d/2-radius,maxZ=c.z+c.d/2+radius;
+      if(p.x>minX&&p.x<maxX&&p.z>minZ&&p.z<maxZ){resolveImpact(prev,impactSpeed);return}
+    }else if(Math.hypot(p.x-c.x,p.z-c.z)<c.r+radius){resolveImpact(prev,impactSpeed);return}
+  }
+}
+function applyDamage(amount,reason='충돌'){
+  amount=Math.max(0,amount);if(amount<=0)return;drone.health=clamp(drone.health-amount,0,100);cameraShake=Math.max(cameraShake,clamp(amount/22,.18,.8));
+  if(drone.health<=0){setArmed(false,true);endGame(`${reason}으로 기체가 크게 손상되어 비행을 종료했습니다.`);return}
+  showToast(`${reason}! 기체 상태 ${Math.round(drone.health)}%`,amount>18?'danger':'warn',1.8);
+}
+function resolveImpact(prev,impactSpeed=0){
+  drone.root.position.x=prev.x;drone.root.position.z=prev.z;drone.vel.x*=-.16;drone.vel.z*=-.16;
+  if(impactCooldown<=0){impactCooldown=.8;stats.collisions++;stats.score=Math.max(0,stats.score-5);const damage=impactSpeed>2?clamp((impactSpeed-1.8)*5,3,28):0;if(damage)applyDamage(damage,'충돌');else showToast('접촉! 속도를 줄이고 기체를 안정화하세요.','warn',1.4)}
+}
 
 function focusDroneView(immediate=false){
   if(!camera)return;
@@ -496,32 +637,37 @@ function focusDroneView(immediate=false){
   }
 }
 function updateCamera(dt){
-  const p=drone.root.position;
-  const forward=tempV.set(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
+  const p=drone.root.position,forward=tempV.set(Math.sin(drone.yaw),0,-Math.cos(drone.yaw)),gimbal=THREE.MathUtils.degToRad(drone.gimbalPitch);
   if(fpv){
-    const desired=tempV2.copy(p).addScaledVector(forward,.48);desired.y+=.16;
-    camera.position.lerp(desired,expFactor(14,dt));
-    const look=desired.clone().addScaledVector(forward,20);look.y+=-drone.tilt.rotation.x*5;
-    camera.lookAt(look);drone.visual.visible=false;camera.fov=73;
+    const desired=tempV2.copy(p).addScaledVector(forward,.56);desired.y+=.12;camera.position.lerp(desired,expFactor(14,dt));
+    const look=desired.clone().addScaledVector(forward,20);look.y+=Math.tan(gimbal)*20;camera.lookAt(look);camera.fov=73;
   }else{
-    camera.position.lerp(operatorView.eye,expFactor(14,dt));
-    const cp=Math.cos(operatorView.pitch);
-    const lookDir=tempV.set(Math.sin(operatorView.yaw)*cp,Math.sin(operatorView.pitch),-Math.cos(operatorView.yaw)*cp);
-    camera.lookAt(tempV2.copy(camera.position).addScaledVector(lookDir,30));
-    drone.visual.visible=true;camera.fov=64;
+    camera.position.lerp(operatorView.eye,expFactor(14,dt));const cp=Math.cos(operatorView.pitch);
+    const lookDir=tempV.set(Math.sin(operatorView.yaw)*cp,Math.sin(operatorView.pitch),-Math.cos(operatorView.yaw)*cp);camera.lookAt(tempV2.copy(camera.position).addScaledVector(lookDir,30));camera.fov=64;
   }
-  camera.updateProjectionMatrix();
+  if(cameraShake>0){camera.position.x+=Math.sin(performance.now()*.071)*cameraShake*.045;camera.position.y+=Math.cos(performance.now()*.083)*cameraShake*.035}
+  drone.visual.visible=true;camera.updateProjectionMatrix();
 }
+function updatePipCamera(){
+  if(!pipCamera)return;const p=drone.root.position,forward=tempV.set(Math.sin(drone.yaw),0,-Math.cos(drone.yaw)),gimbal=THREE.MathUtils.degToRad(drone.gimbalPitch);
+  pipCamera.position.copy(p).addScaledVector(forward,.58);pipCamera.position.y+=.11;
+  const look=tempV2.copy(pipCamera.position).addScaledVector(forward,18);look.y+=Math.tan(gimbal)*18;pipCamera.lookAt(look);
+}
+function renderPip(){if(!pipRenderer||!pipCamera||state==='menu')return;if(coarse&&((pipFrame++)%2))return;updatePipCamera();pipRenderer.render(scene,pipCamera)}
 function updateMissionVisuals(time){
   missionMeshes.children.forEach((m,i)=>{if(m.geometry?.type==='TorusGeometry'){const pulse=1+Math.sin(time*3.2+i)*.035;m.scale.setScalar(pulse)}else if(m.isGroup){m.rotation.y+=.003;const ring=m.children[0];if(ring)ring.scale.setScalar(1+Math.sin(time*3.4)*.045)}});
 }
 function updateHUD(){
-  const p=drone.root.position;const hsp=Math.hypot(drone.vel.x,drone.vel.z);const bat=clamp(drone.batterySeconds/450*100,0,100);
-  ui.battery.textContent=`${Math.round(bat)}%`;ui.altitude.textContent=`${Math.max(0,p.y-.36).toFixed(1)} m`;ui.speed.textContent=`${hsp.toFixed(1)} m/s`;ui.mode.textContent=fpv?'드론':rth.active?'귀환':'조종사';
-  ui.battery.classList.toggle('warn',bat<20&&bat>=8);ui.battery.classList.toggle('danger',bat<8);
-  const deg=(THREE.MathUtils.radToDeg(drone.yaw)%360+360)%360;const dirs=['N','NE','E','SE','S','SW','W','NW'];ui.heading.textContent=dirs[Math.round(deg/45)%8];
-  const t=currentMissionTarget();if(t){const dx=t.x-p.x,dz=t.z-p.z,dist=Math.hypot(dx,dz);ui.targetDistance.textContent=`${Math.round(dist)} m`;const desired=Math.atan2(dx,-dz);let rel=(desired-drone.yaw+TAU)%TAU;const arrows=['↑','↗','→','↘','↓','↙','←','↖'];ui.targetBearing.textContent=arrows[Math.round(rel/(TAU/8))%8]}else{ui.targetDistance.textContent='-- m';ui.targetBearing.textContent='•'}
+  const p=drone.root.position,hsp=Math.hypot(drone.vel.x,drone.vel.z),bat=clamp(drone.batterySeconds/450*100,0,100);
+  ui.battery.textContent=`${Math.round(bat)}%`;ui.altitude.textContent=`${Math.max(0,p.y-.36).toFixed(1)} m`;ui.speed.textContent=`${hsp.toFixed(1)} m/s`;ui.mode.textContent=rth.active?'귀환':flightModeName();ui.health.textContent=`${Math.round(drone.health)}%`;
+  const wa=Math.atan2(windState.current.x,-windState.current.y),arrows=['↑','↗','→','↘','↓','↙','←','↖'];ui.wind.textContent=`${windState.speed.toFixed(1)} ${arrows[Math.round(((wa+TAU)%TAU)/(TAU/8))%8]}`;
+  ui.battery.classList.toggle('warn',bat<20&&bat>=8);ui.battery.classList.toggle('danger',bat<8);ui.health.classList.toggle('warn',drone.health<65&&drone.health>=30);ui.health.classList.toggle('danger',drone.health<30);
+  const deg=(THREE.MathUtils.radToDeg(drone.yaw)%360+360)%360,dirs=['N','NE','E','SE','S','SW','W','NW'];ui.heading.textContent=dirs[Math.round(deg/45)%8];
+  const t=currentMissionTarget();if(t){const dx=t.x-p.x,dz=t.z-p.z,dist=Math.hypot(dx,dz);ui.targetDistance.textContent=`${Math.round(dist)} m`;const desired=Math.atan2(dx,-dz);let rel=(desired-drone.yaw+TAU)%TAU;ui.targetBearing.textContent=arrows[Math.round(rel/(TAU/8))%8]}else{ui.targetDistance.textContent='-- m';ui.targetBearing.textContent='•'}
   if(!mission&&!endPending)ui.missionMeta.textContent=`근무 ${Math.floor(shiftRemaining/60)}:${String(Math.ceil(shiftRemaining%60)).padStart(2,'0')} · 배터리 ${Math.round(bat)}%`;
+  ui.armBtn.classList.toggle('armed',drone.armed);ui.armBtn.textContent=drone.armed?'모터 정지':'모터 시작';ui.armState.textContent=drone.armed?'ARMED':'SAFE';ui.armState.classList.toggle('armed',drone.armed);
+  ui.modeBtn.classList.toggle('sport',flightMode==='sport');ui.modeBtn.textContent=flightMode==='sport'?'일반 모드':'안정 모드';ui.pipMode.textContent=rth.active?'RTH':flightModeName();
+  ui.pipTelemetry.textContent=`ALT ${Math.max(0,p.y-.36).toFixed(1)} · BAT ${Math.round(bat)}% · WIND ${windState.speed.toFixed(1)}`;ui.signal.textContent=`LINK ${signalStrength()}%`;ui.gimbalReadout.textContent=`CAM ${Math.round(drone.gimbalPitch)}°`;
   updateStickVisuals();
 }
 function updateStickVisuals(){const c=getInputState();const r=31;ui.leftKnob.style.transform=`translate(calc(-50% + ${c.yaw*r}px),calc(-50% + ${-c.lift*r}px))`;ui.rightKnob.style.transform=`translate(calc(-50% + ${c.strafe*r}px),calc(-50% + ${-c.forward*r}px))`;}
@@ -529,7 +675,7 @@ function updateStickVisuals(){const c=getInputState();const r=31;ui.leftKnob.sty
 function loop(now){
   const frameDt=clamp((now-lastTime)/1000,0,.05);lastTime=now;accumulator+=frameDt;let steps=0;while(accumulator>=FIXED_DT&&steps<MAX_STEPS){physicsStep(FIXED_DT);accumulator-=FIXED_DT;steps++}if(steps===MAX_STEPS&&accumulator>=FIXED_DT)accumulator=0;
   if(toastTimer>0){toastTimer-=frameDt;if(toastTimer<=0)hideToast()}
-  updateCamera(frameDt);updateMissionVisuals(now/1000);updateHUD();renderer.render(scene,camera);requestAnimationFrame(loop);
+  updateCamera(frameDt);updateMissionVisuals(now/1000);updateHUD();renderer.render(scene,camera);renderPip();requestAnimationFrame(loop);
 }
 
 function installStick(el,key){
@@ -567,19 +713,64 @@ function installLookControls(){
   canvas.addEventListener('pointermove',move);
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>canvas.addEventListener(type,end));
 }
-function installControls(){
-  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF']);
-  addEventListener('keydown',e=>{if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR','KeyF'].includes(e.code))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='KeyC')tryAction();else if(e.code==='KeyV')toggleFPV();else if(e.code==='KeyR')setRTH(!rth.active);else if(e.code==='KeyF'){if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')}else input.keys.add(e.code)});
-  addEventListener('keyup',e=>input.keys.delete(e.code));
-  addEventListener('blur',()=>{resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')});document.addEventListener('visibilitychange',()=>{if(document.hidden){resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')}});
-  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');installLookControls();
-  ui.cameraBtn.addEventListener('click',tryAction);
-  ui.focusBtn.addEventListener('click',()=>{if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')});
-  ui.fpvBtn.addEventListener('click',toggleFPV);ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
-  ui.tutorialBtn.addEventListener('click',()=>startGame(true));ui.workBtn.addEventListener('click',()=>startGame(false));ui.restartBtn.addEventListener('click',()=>{ui.end.classList.remove('show');ui.start.classList.add('show');state='menu';resetDrone();clearMissionMeshes();});
+function bindArmHold(){
+  let timer=0,holding=false;
+  const clear=()=>{if(timer)clearTimeout(timer);timer=0;holding=false;ui.armBtn.classList.remove('holding')};
+  ui.armBtn.addEventListener('pointerdown',e=>{if(holding)return;holding=true;ui.armBtn.classList.add('holding');try{ui.armBtn.setPointerCapture(e.pointerId)}catch(_){}timer=setTimeout(()=>{timer=0;holding=false;ui.armBtn.classList.remove('holding');setArmed(!drone.armed)},650)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>ui.armBtn.addEventListener(type,clear));
 }
-function toggleFPV(){if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);ui.fpvBtn.textContent=fpv?'조종사 화면':'드론 카메라';if(!fpv)focusDroneView();showToast(fpv?'드론 카메라로 전환':'지상 조종사 시점으로 복귀')}
-function resize(){if(!renderer||!camera)return;camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.38:1.6))}
+function bindArmHold(){
+  let timer=0,holding=false;
+  const clear=()=>{if(timer)clearTimeout(timer);timer=0;holding=false;ui.armBtn.classList.remove('holding')};
+  ui.armBtn.addEventListener('pointerdown',e=>{if(holding)return;holding=true;ui.armBtn.classList.add('holding');try{ui.armBtn.setPointerCapture(e.pointerId)}catch(_){}timer=setTimeout(()=>{timer=0;holding=false;ui.armBtn.classList.remove('holding');setArmed(!drone.armed)},650)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>ui.armBtn.addEventListener(type,clear));
+}
+function installControls(){
+  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF','KeyM','KeyZ','KeyX','Space','ShiftLeft','ShiftRight']);
+  addEventListener('keydown',e=>{
+    if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR','KeyF','KeyM','KeyZ','KeyX','Space'].includes(e.code))return;
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+    if(e.code==='KeyC')tryAction();
+    else if(e.code==='KeyV')toggleFPV();
+    else if(e.code==='KeyR')setRTH(!rth.active);
+    else if(e.code==='KeyF'){if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')}
+    else if(e.code==='KeyM')toggleFlightMode();
+    else if(e.code==='KeyZ')adjustGimbal(8);
+    else if(e.code==='KeyX')adjustGimbal(-8);
+    else if(e.code==='Space')setArmed(!drone.armed);
+    else input.keys.add(e.code);
+  });
+  addEventListener('keyup',e=>input.keys.delete(e.code));
+  addEventListener('blur',()=>{resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')}});
+  addEventListener('gamepadconnected',e=>{gamepadState.index=e.gamepad.index;gamepadState.connected=false});
+  addEventListener('gamepaddisconnected',e=>{if(gamepadState.index===e.gamepad.index){gamepadState.index=-1;gamepadState.connected=false;gamepadState.prev=[]}});
+  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');installLookControls();bindArmHold();
+  ui.cameraBtn.addEventListener('click',tryAction);
+  ui.modeBtn.addEventListener('click',toggleFlightMode);
+  ui.gimbalUpBtn.addEventListener('click',()=>adjustGimbal(8));
+  ui.gimbalDownBtn.addEventListener('click',()=>adjustGimbal(-8));
+  ui.focusBtn.addEventListener('click',()=>{if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')});
+  ui.controllerScreen.addEventListener('click',toggleFPV);
+  ui.fpvBtn.addEventListener('click',toggleFPV);
+  ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
+  ui.tutorialBtn.addEventListener('click',()=>startGame(true));
+  ui.workBtn.addEventListener('click',()=>startGame(false));
+  ui.restartBtn.addEventListener('click',()=>{ui.end.classList.remove('show');ui.start.classList.add('show');state='menu';resetDrone();clearMissionMeshes();});
+}
+function toggleFPV(){
+  if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);ui.fpvBtn.textContent=fpv?'조종사 화면':'FPV 전체화면';
+  if(!fpv)focusDroneView();showToast(fpv?'드론 카메라를 전체 화면으로 확대했습니다.':'지상 조종사 시점으로 복귀했습니다.');
+}
+function resizePip(){
+  if(!pipRenderer||!pipCamera||!ui.pipCanvas)return;
+  const r=ui.pipCanvas.getBoundingClientRect(),w=Math.max(160,Math.round(r.width||320)),h=Math.max(68,Math.round(r.height||92));
+  pipCamera.aspect=w/h;pipCamera.updateProjectionMatrix();pipRenderer.setSize(w,h,false);pipRenderer.setPixelRatio(1);
+}
+function resize(){
+  if(!renderer||!camera)return;camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.38:1.6));resizePip();
+}
 addEventListener('resize',resize);
 
 async function boot(){
