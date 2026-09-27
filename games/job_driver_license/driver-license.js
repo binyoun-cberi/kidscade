@@ -496,7 +496,7 @@ function physicsStep(dt){
   }
 
   const steerSpeedKmh=Math.abs(car.speed)*3.6;
-  const steerLimit=lerp(500,300,clamp(steerSpeedKmh/32,0,1));
+  const steerLimit=lerp(460,290,clamp(steerSpeedKmh/32,0,1));
   const steerTarget=inp.steer*steerLimit;
   const steerRate=Math.abs(inp.steer)>.04?760:920;
   car.steeringWheel=approach(car.steeringWheel,steerTarget,steerRate*dt);
@@ -509,11 +509,11 @@ function physicsStep(dt){
     if(license==='auto'){
       const along=car.speed*dir;
       const throttleCurve=Math.pow(inp.throttle,1.18);
-      drive=throttleCurve*2.75*dir;
+      drive=throttleCurve*2.15*dir;
       if(inp.throttle<.04&&inp.brake<.04){
         const creepTarget=1.05;
         if(along<creepTarget-.05)car.speed=approach(car.speed,creepTarget*dir,.72*dt);
-        else if(along>creepTarget+.08)car.speed=approach(car.speed,creepTarget*dir,.62*dt);
+        else if(along>creepTarget+.08)car.speed=approach(car.speed,creepTarget*dir,.82*dt);
       }
       const target=800+Math.abs(car.speed)*230+inp.throttle*1850;
       car.rpm=lerp(car.rpm,clamp(target,760,3800),clamp(dt*4.5,0,1));
@@ -881,17 +881,18 @@ function installSteering(){
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,end));
 }
 function installPedal(wrap,kind){
+  let startY=0;
   const update=e=>{
-    const r=wrap.getBoundingClientRect();
-    const y=clamp((e.clientY-r.top)/Math.max(1,r.height),0,1);
-    touch[kind]=clamp(.1+y*.9,0,1);
+    const r=wrap.getBoundingClientRect(),travel=Math.max(44,r.height*.72);
+    const up=Math.max(0,startY-e.clientY);
+    touch[kind]=clamp(1-up/travel,0,1);
     e.preventDefault();
   };
   wrap.addEventListener('pointerdown',e=>{
     if(pedalPointers[kind]!==null)return;
-    pedalPointers[kind]=e.pointerId;
+    pedalPointers[kind]=e.pointerId;startY=e.clientY;touch[kind]=1;
     try{wrap.setPointerCapture(e.pointerId)}catch(_){}
-    update(e);
+    e.preventDefault();
   });
   wrap.addEventListener('pointermove',e=>{if(e.pointerId===pedalPointers[kind])update(e)});
   const end=e=>{if(e.pointerId!==pedalPointers[kind])return;pedalPointers[kind]=null;touch[kind]=0};
