@@ -201,7 +201,7 @@ function advanceIsolation(){
    if(!zombieRooms.has(d.room||'A'))return;
    if(!d.wrong||d.infectedAtEntry||d.acquired||d.status==='zombie'||d.status==='infected'||d.status==='turning')return;
    const before=d.exposure;d.exposure+=risk;
-   if(d.exposure>=2){d.status='infected';d.acquired=true;d.stage=0;eventText=d.name+'이(가) '+(d.room||'A')+'실에서 감염되었습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 격리 중 감염 확인');const b=bridge();if(b)b.applyOutbreakResult({trustDelta:-4,scoreDelta:-120})}
+   if(d.exposure>=3){d.status='infected';d.acquired=true;d.stage=0;eventText=d.name+'이(가) '+(d.room||'A')+'실에서 감염되었습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 격리 중 감염 확인');const b=bridge();if(b)b.applyOutbreakResult({trustDelta:-4,scoreDelta:-120})}
    else if(before<1&&d.exposure>=1){d.status='exposed';eventText=d.name+'이(가) 같은 방의 감염자에게 노출됐습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 감염자 접촉')}
   });
  }
