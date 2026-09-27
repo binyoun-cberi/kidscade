@@ -75,7 +75,7 @@ test('signed-in play record copy describes account synchronization', () => {
 
 test('growth modal no longer presents profile wording or tab duplication', () => {
   assert.match(source, /#pet-modal \.sook-main-tabs \{ display:none !important; \}/);
-  assert.match(source, /room: \['🐾 Cube Pets 월드', 'Cube Pets 월드'\]/);
+  assert.match(source, /room: \['🌱 씨앗 월드', '씨앗 월드'\]/);
   assert.match(source, /missions: \['🎯 오늘의 미션', '오늘의 미션'\]/);
   assert.match(source, /recommend: \['💬 게임 추천', '게임 추천'\]/);
 });
