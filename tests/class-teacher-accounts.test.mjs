@@ -46,6 +46,22 @@ test('class teacher access is scoped across roster and economy routes', () => {
   assert.match(accounts,/authorizeTeacherForClass/);
 });
 
+
+test('teacher accounts can log in from the main Kidscade account UI without becoming student economy accounts', () => {
+  const migration = fs.readFileSync(path.join(ROOT,'migrations','0013_teacher_main_profile.sql'),'utf8');
+  const auth = fs.readFileSync(path.join(ROOT,'worker','teacher-auth.mjs'),'utf8');
+  const client = fs.readFileSync(path.join(ROOT,'account-client.js'),'utf8');
+  assert.match(migration,/state_json/);
+  assert.match(migration,/state_revision/);
+  assert.match(auth,/\/api\/teacher\/auth\/sync/);
+  assert.match(auth,/role:'teacher'/);
+  assert.match(client,/startsWith\('KT-'\)/);
+  assert.match(client,/\/api\/teacher\/auth\/login/);
+  assert.match(client,/\/api\/teacher\/auth\/sync/);
+  assert.match(client,/교사 관리/);
+  assert.match(client,/account\.role === 'teacher'/);
+});
+
 test('economy pages use Kidscade visual language', () => {
   const wallet = fs.readFileSync(path.join(ROOT,'economy.html'),'utf8');
   const teacher = fs.readFileSync(path.join(ROOT,'teacher','economy.html'),'utf8');
