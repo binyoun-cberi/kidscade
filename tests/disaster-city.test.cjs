@@ -5,7 +5,7 @@ const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const root=path.join(__dirname,'..');
 const game=path.join(root,'games','high_disaster_city');
-const files=['game-data.js','field-system.js','sim-core.js','disaster-system.js','renderer.js','ui.js','main.js'];
+const files=['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js','renderer.js','ui.js','main.js'];
 
 test('Disaster City browser scripts parse',()=>{
  for(const file of files){
@@ -73,7 +73,7 @@ test('Disaster City core simulation supports upgrades, deck cleanup and spatial 
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -103,7 +103,7 @@ test('Disaster City spatial field simulates water defenses and fire control',()=
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  const DC=context.window.DisasterCity,Sim=DC.Simulation;
 
  const base=new Sim();base.start({seed:3001});base.state.next.in=999;base.state.money=9999;
@@ -130,12 +130,45 @@ test('Disaster City spatial field simulates water defenses and fire control',()=
  assert.ok(DC.Field.total(fireSim.state.field,'fire','left')<=before*1.8,'fire should remain bounded after a firebreak');
 });
 
+test('Disaster City recovery penalties and shelter evacuation are connected',()=>{
+ const vm=require('node:vm');
+ const context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,Sim=DC.Simulation,sim=new Sim();
+ sim.start({seed:5150});sim.state.money=9999;sim.state.population=12;sim.state.food=100;
+ sim.state.slots[0].building={id:'house',hp:100,maxHp:100,level:1};
+ sim.state.slots[1].building={id:'house',hp:100,maxHp:100,level:1};
+ sim.state.slots[3].building={id:'shelter',hp:135,maxHp:135,level:1};
+ DC.Population.sync(sim);
+ assert.equal(DC.Population.summary(sim).total,12);
+ assert.equal(DC.Population.shelterCapacity(sim.state.slots[3].building),10);
+
+ const hc=DC.Field.slotCol(sim.state.slots[0]),hr=DC.Field.slotRow();
+ for(const c of DC.Field.cellsInRadius(sim.state.field,hc,hr,1))c.water=.8;
+ sim.state.disasters=[{id:'evac-flood',type:'flood',side:'left',strength:1,energy:50,maxEnergy:100,progress:.5,age:10,maxAge:40,phase:'impact',blockPause:0,blockedSlot:-1,pulse:0}];
+ for(let i=0;i<180;i++)DC.Population.update(sim,1/30);
+ const evac=DC.Population.summary(sim);
+ assert.ok(evac.sheltered<=10,'shelter capacity must cap sheltered residents');
+ assert.ok(evac.stranded>=0);
+
+ const market=sim.state.slots[4];market.building={id:'market',hp:95,maxHp:95,level:1,condition:'flooded',recovery:.2};
+ assert.ok(DC.Recovery.efficiency(market.building)<1,'flooded buildings must operate below full efficiency');
+ DC.Recovery.repair(sim,market);
+ assert.equal(market.building.condition,'normal');
+ assert.equal(DC.Recovery.efficiency(market.building),1);
+
+ DC.Population.emergency(sim,15);
+ assert.ok(sim.state.evacuation.boostUntil>=sim.state.time+15);
+});
+
 test('Disaster City floods end naturally and urgent repair prioritizes the blocking levee',()=>{
  const vm=require('node:vm');
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -170,7 +203,7 @@ test('Disaster City wildfire also ends naturally, rewards preserve the rest time
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
@@ -210,7 +243,7 @@ test('Disaster City progressively unlocks and runs six distinct disasters',()=>{
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  const DC=context.window.DisasterCity,Sim=DC.Simulation;
  assert.deepEqual(Object.keys(DC.DATA.DISASTERS),['wildfire','flood','typhoon','heatwave','blizzard','earthquake']);
  const unlockChecks=[[0,['wildfire','flood']],[61,['typhoon']],[106,['heatwave']],[151,['blizzard']],[211,['earthquake']]];
@@ -235,7 +268,7 @@ test('Disaster City survives a long deterministic stress simulation without inva
  const context={console,performance:{now:()=>0},window:{}};
  context.window.window=context.window;
  vm.createContext(context);
- for(const file of ['game-data.js','field-system.js','sim-core.js','disaster-system.js']){
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js']){
   vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
  }
  const Sim=context.window.DisasterCity.Simulation,sim=new Sim();
