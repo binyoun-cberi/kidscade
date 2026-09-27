@@ -15321,6 +15321,8 @@ const levels=[
         "x": 10,
         "y": 5
       },
+    ],
+    "words": [
       {
         "kind": "word",
         "token": "N:water",
@@ -15338,9 +15340,7 @@ const levels=[
         "token": "P:YOU",
         "x": 11,
         "y": 8
-      }
-    ],
-    "words": [
+      },
       {
         "kind": "word",
         "token": "N:hero",
