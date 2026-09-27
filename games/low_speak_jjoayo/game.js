@@ -105,6 +105,7 @@ function setInputMode(mode,{announce=false}={}){
       beginListeningForQuestion();
     }
   }
+  if(state.phase==='menu')resetStartButton();
   if(announce)toast(next==='voice'?'말하기 모드로 바꿨어요!':'타이핑 모드로 바꿨어요!');
 }
 
