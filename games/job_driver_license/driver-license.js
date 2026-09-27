@@ -188,14 +188,14 @@ function finishRun(){
 
 function groundHeight(x,z){
   if(Math.abs(x)>5)return 0;
-  if(z<=60&&z>=50)return (60-z)*.2;
-  if(z<50&&z>=40)return (z-40)*.2;
+  if(z<=60&&z>=50)return (60-z)*.1;
+  if(z<50&&z>=40)return (z-40)*.1;
   return 0;
 }
 function groundDz(x,z){
   if(Math.abs(x)>5)return 0;
-  if(z<=60&&z>=50)return -.2;
-  if(z<50&&z>=40)return .2;
+  if(z<=60&&z>=50)return -.1;
+  if(z<50&&z>=40)return .1;
   return 0;
 }
 function isOnRoad(x,z){
@@ -526,7 +526,7 @@ function buildCourse(){
   grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;scene.add(grass);
 
   makeEnhancedRoad(9,22,0,71,0,0,'z');
-  const ang=Math.atan(.2);
+  const ang=Math.atan(.1);
   makeRoadSegment(9,10,0,55,1,-ang);
   makeRoadSegment(9,10,0,45,1,ang);
   makeEnhancedRoad(9,26,0,27,0,0,'z');
