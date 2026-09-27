@@ -249,7 +249,7 @@ const AudioScheduler={
 };
 
 const PATTERNS={
-  single:{len:4,diff:1,place(b,r){add(r()<.32?'wall':'spike',b,Math.floor(r()*3))}},
+  single:{len:4,diff:1,place(b,r){add(stage().id===1||stage().id===3?'spike':(r()<.32?'wall':'spike'),b,Math.floor(r()*3))}},
   jumpChain:{len:5,diff:2,place(b,r){const l=Math.floor(r()*3);add('spike',b,l);add('spike',b+2,l);if(stage().id>14)add('spike',b+3.5,(l+1)%3)}},
   gate:{len:4.5,diff:2,place(b,r){openGate(b,Math.floor(r()*3))}},
   gateSwitch:{len:5,diff:3,place(b,r){const a=Math.floor(r()*3),dir=r()<.5?-1:1,c=clamp(a+dir,0,2),next=c===a?(a===0?1:1):c;openGate(b,a);openGate(b+2,next)}},
@@ -274,6 +274,7 @@ function poolForStage(id,section){
   if(section==='climax'&&id>=8)pool.push('gateSwitch','cross','lockdown');
   if(id===1)pool=['jumpChain','single'];
   if(id===2)pool=['gate','single'];
+  if(id===3)pool=['jumpChain','single'];
   if(id===7)pool=['gate','gateSwitch','lockdown'];
   if(id===10)pool=['lowHigh','cross'];
   if(id===11)pool=['zigzag','gateSwitch'];
@@ -310,7 +311,7 @@ function validateLevel(){
   }
   let reachable=new Set([1]),lastBeat=0;
   for(const g of groups){
-    const seconds=beatSeconds(lastBeat,g.beat),maxShift=Math.max(1,Math.floor(seconds/.145+.001));
+    const seconds=beatSeconds(lastBeat,g.beat),maxShift=Math.max(0,Math.floor((seconds+.025)/.145));
     const next=new Set();
     for(const from of reachable){
       for(let lane=0;lane<3;lane++)if(Math.abs(lane-from)<=maxShift&&!g.blocked.has(lane))next.add(lane);
@@ -352,7 +353,7 @@ function buildLevel(){
     obstacles.sort((a,b2)=>a.beat-b2.beat);valid=validateLevel();
   }
   if(!valid){
-    obstacles=obstacles.filter(o=>o.type!=='wall'||o.beat<20||o.type==='goal');
+    obstacles=obstacles.filter(o=>o.type!=='goal'&&(o.type!=='wall'||o.beat<20));
     for(let b=22;b<st.length-8;b+=5.5)add('spike',b,Math.floor((b/5.5)%3));
     add('goal',st.length-2,1,{group:'goal'});obstacles.sort((a,b)=>a.beat-b.beat);
   }
@@ -415,9 +416,11 @@ function reset(){
   const st=stage();document.documentElement.style.setProperty('--accent',st.c1);document.documentElement.style.setProperty('--accent2',st.c2);stageChip.textContent=String(st.id).padStart(2,'0')+' // '+st.name;
   banner.querySelector('.num').textContent='STAGE '+String(st.id).padStart(2,'0');banner.querySelector('.name').textContent=st.name;banner.querySelector('.tag').textContent=st.tag;
 }
+let loopRunning=false;
+function ensureLoop(){if(loopRunning)return;loopRunning=true;requestAnimationFrame(loop)}
 function startStage(i=currentStage){
   initAudio();currentStage=i;closeStageMenu();reset();centerMsg.classList.add('hidden');S.state='playing';S.lastTime=performance.now();
-  const begin=()=>{RhythmClock.start(0);AudioScheduler.reset(0);requestAnimationFrame(loop)};
+  const begin=()=>{RhythmClock.start(0);AudioScheduler.reset(0);ensureLoop()};
   if(audio&&audio.state==='suspended')audio.resume().then(begin).catch(begin);else begin();
 }
 function die(){
@@ -634,7 +637,7 @@ function drawPostFX(){
   // 조준점
   ctx.globalAlpha=.38;ctx.fillStyle='#fff';ctx.fillRect(W*.5-8*dpr,H*.51,16*dpr,1.5*dpr);ctx.fillRect(W*.5-.75*dpr,H*.51-8*dpr,1.5*dpr,16*dpr);ctx.globalAlpha=1;
 }
-function loop(t){if(!S.lastTime)S.lastTime=t;const dt=Math.min(.034,Math.max(0,(t-S.lastTime)/1000));S.lastTime=t;update(dt);draw();if(['playing','dead','clear','paused'].includes(S.state))requestAnimationFrame(loop)}
+function loop(t){if(!S.lastTime)S.lastTime=t;const dt=Math.min(.034,Math.max(0,(t-S.lastTime)/1000));S.lastTime=t;update(dt);draw();if(['playing','dead','clear','paused'].includes(S.state))requestAnimationFrame(loop);else loopRunning=false}
 
 renderStageMenu();S.lastTime=performance.now();draw();
 })();
