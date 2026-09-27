@@ -355,6 +355,25 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
     {x:18,y:50,s:.8},{x:38,y:48,s:.9},{x:59,y:51,s:.78},{x:78,y:48,s:.86},
     {x:11,y:72,s:.88},{x:30,y:76,s:.76},{x:51,y:70,s:.9},{x:70,y:76,s:.8},{x:88,y:70,s:.9}
   ];
+  var FOREST_SLOTS = [
+    {x:13,y:39,s:.88},{x:30,y:43,s:.8},{x:47,y:38,s:.88},{x:66,y:44,s:.78},{x:84,y:39,s:.88},
+    {x:18,y:62,s:.82},{x:37,y:66,s:.9},{x:57,y:61,s:.8},{x:76,y:65,s:.86},
+    {x:12,y:78,s:.86},{x:29,y:80,s:.76},{x:48,y:76,s:.88},{x:68,y:80,s:.8},{x:88,y:77,s:.88}
+  ];
+  var SNOW_SLOTS = [
+    {x:12,y:54,s:.88},{x:29,y:57,s:.8},{x:47,y:54,s:.88},{x:65,y:58,s:.78},{x:84,y:54,s:.88},
+    {x:18,y:70,s:.82},{x:37,y:72,s:.9},{x:56,y:69,s:.8},{x:76,y:72,s:.86},
+    {x:10,y:82,s:.84},{x:28,y:83,s:.76},{x:49,y:81,s:.88},{x:69,y:84,s:.8},{x:89,y:81,s:.86}
+  ];
+  var FARM_SLOTS = [
+    {x:12,y:56,s:.9},{x:27,y:60,s:.82},{x:43,y:56,s:.88},{x:60,y:61,s:.8},{x:86,y:60,s:.88},
+    {x:18,y:72,s:.84},{x:39,y:73,s:.9},{x:56,y:75,s:.82},{x:80,y:73,s:.86},
+    {x:11,y:84,s:.84},{x:31,y:84,s:.78},{x:50,y:84,s:.88},{x:70,y:85,s:.82},{x:89,y:83,s:.86}
+  ];
+  var TOWN_SLOTS = [
+    {x:10,y:69,s:.9},{x:24,y:72,s:.82},{x:39,y:69,s:.88},{x:54,y:73,s:.8},{x:70,y:69,s:.88},{x:86,y:72,s:.84},
+    {x:15,y:83,s:.84},{x:31,y:84,s:.78},{x:47,y:82,s:.88},{x:63,y:85,s:.82},{x:79,y:83,s:.86},{x:91,y:84,s:.82}
+  ];
 
   var SCENES = {
     ocean: {
@@ -382,6 +401,7 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
     },
     mushroom: {
       name:"신비한 버섯숲", emoji:"🍄", desc:"버섯과 숲속 동물을 찾아요", className:"scene-mushroom", pixel:true,
+      slots:FOREST_SLOTS,
       background:asset("2d/platformer-art/expansions/mushroom/backgrounds/bg-shroom.png"),
       layers:[],
       decorations:[
@@ -423,6 +443,7 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
     },
     ice: {
       name:"반짝반짝 눈나라", emoji:"❄️", desc:"눈밭에 숨은 겨울 친구를 찾아요", className:"scene-ice", pixel:true,
+      slots:SNOW_SLOTS,
       background:"",
       layers:[],
       decorations:[
@@ -444,6 +465,7 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
     },
     farm: {
       name:"동물 가득 농장", emoji:"🚜", desc:"초원과 헛간 주변을 살펴봐요", className:"scene-farm", pixel:false,
+      slots:FARM_SLOTS,
       background:asset("2d/platformer-art/expansions/mushroom/backgrounds/bg-grasslands.png"),
       layers:[],
       shapes:[
@@ -466,6 +488,7 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
     },
     town: {
       name:"씽씽 작은마을", emoji:"🏘️", desc:"도로와 건물 사이 탈것을 찾아요", className:"scene-town", pixel:true,
+      slots:TOWN_SLOTS,
       background:"",
       layers:[],
       shapes:[
@@ -714,7 +737,7 @@ button:focus-visible{outline:4px solid rgba(57,119,246,.32);outline-offset:3px}
 
     var count = Math.min(DIFFICULTY[difficulty].count,s.candidates.length);
     var picked = shuffle(s.candidates).slice(0,count);
-    var slots = shuffle(SLOTS).slice(0,count);
+    var slots = shuffle(s.slots || SLOTS).slice(0,count);
 
     currentTargets = picked.map(function(t,i){
       return { id:currentSceneKey + "-" + Date.now() + "-" + i, name:t.name, emoji:t.emoji, src:t.src, pixel:t.pixel, slot:slots[i] };
