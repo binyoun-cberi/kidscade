@@ -266,21 +266,6 @@
                         </div>
                     </section>
 
-                    <section class="kc-side-card kc-pet-card" id="kc-pet-card" aria-label="Cube Pets 현황">
-                        <div class="kc-pet-top">
-                            <div class="kc-pet-avatar" id="sidebar-pet-avatar">🐶</div>
-                            <div>
-                                <div class="kc-pet-name" id="sidebar-pet-title">Cube Pets</div>
-                                <div class="kc-pet-sub" id="sidebar-pet-sub">월드에서 만나고 함께 탐험해요</div>
-                                <div class="kc-pet-track"><div class="kc-pet-fill" id="sidebar-pet-fill"></div></div>
-                            </div>
-                        </div>
-                        <div class="kc-pet-talk" id="sidebar-pet-talk">별도 정원 없이 생활·생존 월드 안에서 펫을 만나요.</div>
-                        <div class="kc-side-actions">
-                            <button class="kc-side-btn" id="sidebar-recommend" type="button">💬 추천</button>
-                        </div>
-                    </section>
-
                     <section class="kc-side-card kc-mission-card" id="sidebar-mission-card" tabindex="0" role="button" aria-label="오늘의 미션 보기">
                         <div class="kc-mission-row">
                             <div class="kc-mission-title">🎯 오늘의 미션</div>
@@ -2370,13 +2355,10 @@ ${getEvolutionHintText()}
                 }
                 completed.forEach(mission => {
                     changeSeeds(mission.reward, '', { toast: false });
-                    showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개를 받았어요.`, true);
+                    const power = Math.max(5, Math.round(Number(mission.reward || 0) / 5));
+                    window.KidscadeSproutPower?.earn?.(power, '일일 미션 · ' + mission.title);
+                    showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개 · 새싹력 +${power}`, true);
                 });
-                if (completed.length > 0) {
-                    pet.exp += completed.length * 10;
-                    savePet();
-                    checkPetEvolution();
-                }
                 renderDailyMissions();
             }
 
@@ -2756,6 +2738,7 @@ ${getEvolutionHintText()}
                     if (achievement.highRank && !achievement.rewardClaimed) {
                         const gameTitle = card.querySelector('.game-title')?.innerText || gameId;
                         if (addCoins(1000, `[${gameTitle}] 최고 등급 달성!`)) {
+                            window.KidscadeSproutPower?.earn?.(100, '최고 등급 달성 · ' + gameTitle);
                             if (window.KidscadeAchievements?.markRewardClaimed) {
                                 window.KidscadeAchievements.markRewardClaimed(gameId);
                             } else {
