@@ -151,11 +151,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=17"></script>
-<script src="./core/pathfinding.js?v=17"></script>
-<script src="./core/supply.js?v=17"></script>
-<script src="./ai/strategy.js?v=17"></script>
-<script src="./core/invariants.js?v=17"></script>
+<script src="./core/actions.js?v=18"></script>
+<script src="./core/pathfinding.js?v=18"></script>
+<script src="./core/supply.js?v=18"></script>
+<script src="./ai/strategy.js?v=18"></script>
+<script src="./core/invariants.js?v=18"></script>
 <script>
 (function(){
 "use strict";
@@ -550,18 +550,20 @@ function toast(msg){
 }
 function migrateState(x){
   if(!x||typeof x!=="object")return null;
-  if(x.version===11){
-    x.version=12;x.engineRevision=x.engineRevision||0;x.nextUnitId=x.nextUnitId||1;
-    x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};
-  }
+  if(x.version===11)x.version=12;
   if(x.version!==12)return null;
   x.engineRevision=x.engineRevision||0;x.nextUnitId=x.nextUnitId||1;
   x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};
+  x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};
   return x;
 }
 function validateStateNow(context){
   if(!state||!window.UnificationWarInvariants)return[];
   var issues=window.UnificationWarInvariants.validateState(state,{keyOf:key});
+  Object.keys(state.cityProjects||{}).forEach(function(cityId){
+    var p=state.cityProjects[cityId];
+    if(!CITIES[cityId]||!p||!CITY_PROJECTS[p.type]||!isFinite(p.remaining)||p.remaining<1)issues.push("도시 사업 "+cityId+" 데이터가 올바르지 않습니다.");
+  });
   if(issues.length&&window.console&&console.warn)console.warn("[통일전쟁 상태 검사 · "+(context||"unknown")+"]",issues);
   return issues;
 }
@@ -1263,8 +1265,8 @@ function openRecruit(){
   document.getElementById("modalTitle").textContent=CITIES[t.city].name+"에서 모집";
   document.getElementById("modalDesc").textContent="병종마다 이동과 지형 전투 특성이 다릅니다.";
   document.getElementById("modalBody").innerHTML="<div class=\"choiceGrid\">"+Object.keys(UNIT_TYPES).map(function(type){
-    var d=UNIT_TYPES[type],c=recruitCostFor(state.player,type);
-    return "<button class=\"choice\" data-unit=\""+type+"\"><b>"+d.icon+" "+d.name+" · 💰"+c.money+" 👥"+c.manpower+"</b><span>"+d.desc+" · "+c.troops+"명</span></button>";
+    var d=UNIT_TYPES[type],c=recruitCostFor(state.player,type),bonus=cityUpgradeLevel(t.city,"barracks")*30,total=c.troops+bonus;
+    return "<button class=\"choice\" data-unit=\""+type+"\"><b>"+d.icon+" "+d.name+" · 💰"+c.money+" 👥"+c.manpower+"</b><span>"+d.desc+" · "+total+"명"+(bonus?" (병영 +"+bonus+")":"")+"</span></button>";
   }).join("")+"</div>";
   document.getElementById("modalOverlay").classList.remove("hidden");
   document.getElementById("modalBody").querySelectorAll("[data-unit]").forEach(function(b){b.addEventListener("click",function(){recruitType(b.dataset.unit);});});
@@ -1431,7 +1433,7 @@ function strategicWarCity(owner){
     var c=CITIES[id],o=cityOwner(id);if(!o||o===owner||o==="neutral"||!isAtWar(owner,o))return;
     var d=999;
     factionCities(owner).forEach(function(oid){var oc=CITIES[oid];d=Math.min(d,hexDistance(oc.q,oc.r,c.q,c.r));});
-    var score=d-c.level*.35-(c.capital?.8:0);
+    var score=d-c.level*.35-(c.capital?0.8:0);
     if(score<bestScore){bestScore=score;best={q:c.q,r:c.r,city:id,owner:o,kind:"war"};}
   });
   return best;
@@ -1443,7 +1445,7 @@ function strategicRivalCity(owner){
     if(!o||o===owner||o==="neutral"||!canAttackFaction(owner,o))return;
     var d=999;
     factionCities(owner).forEach(function(oid){var oc=CITIES[oid];d=Math.min(d,hexDistance(oc.q,oc.r,c.q,c.r));});
-    var score=d-c.level*.28-(c.capital?.65:0);
+    var score=d-c.level*.28-(c.capital?0.65:0);
     if(score<bestScore){bestScore=score;best={q:c.q,r:c.r,city:id,owner:o,kind:"rival",score:score};}
   });
   return best;
