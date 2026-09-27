@@ -289,13 +289,7 @@
                 },
                 checkpointPlayTime: (at) => checkpointPlayTime(at),
                 addCoins: (amount, reason) => addCoins(amount, reason),
-                addPetExp: (amount, category) => {
-                    if (pet.level < 4 && amount > 0) {
-                        pet.exp += amount;
-                        if (category !== 'all') pet.expTracks[category] = (pet.expTracks[category] || 0) + amount;
-                    }
-                },
-                savePet: () => savePet(),
+                addSproutPower: (amount, reason) => window.KidscadeSproutPower?.earn?.(amount, reason),
                 updateMission: (category, id) => updateMissionProgress(category, id),
                 recordGardenSession: (payload) => {
                     const result = window.KidscadeSeedWorldMeta?.recordGameSession?.(payload);
@@ -360,6 +354,7 @@
     html = html.replace('src="touch-interaction-guard.js"', 'src="' + withVersion('touch-interaction-guard.js') + '"');
     html = html.replace('src="playtime-state.js"', 'src="' + withVersion('playtime-state.js') + '"');
     html = html.replace('src="seed-wallet.js"', 'src="' + withVersion('seed-wallet.js') + '"');
+    html = html.replace('src="sprout-power.js"', 'src="' + withVersion('sprout-power.js') + '"');
     html = html.replace('src="daily-progress.js"', 'src="' + withVersion('daily-progress.js') + '"');
     html = html.replace('src="achievement-state.js"', 'src="' + withVersion('achievement-state.js') + '"');
     html = html.replace('src="shop-state.js"', 'src="' + withVersion('shop-state.js') + '"');
