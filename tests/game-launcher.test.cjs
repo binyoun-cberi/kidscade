@@ -36,14 +36,13 @@ test('reward calculation preserves the 30-second threshold and standard rewards'
 
   const short = launcher.calculateReward(30, 30);
   assert.equal(short.rewardSeeds, 3);
-  assert.equal(short.rewardPower, 5);
+  assert.equal(short.rewardPower, 1);
   assert.equal(short.durationText, '30초');
 
   const long = launcher.calculateReward(120, 30);
   assert.equal(long.baseSeeds, 10);
-  assert.equal(long.baseExp, 20);
   assert.equal(long.rewardSeeds, 10);
-  assert.equal(long.rewardPower, 20);
+  assert.equal(long.rewardPower, 4);
 });
 
 test('open creates a catalog-driven session, remembers the game and opens the iframe payload', () => {
@@ -119,7 +118,7 @@ test('open blocks aria-disabled cards and missing hrefs before opening', () => {
   assert.equal(missingResult.reason, 'missing-href');
 });
 
-test('close records reward, pet experience, mission and garden session in one lifecycle', () => {
+test('close records seeds, sprout power, mission and Seed World session in one lifecycle', () => {
   const calls = [];
   const result = launcher.close({
     now: () => 121000,
@@ -138,7 +137,7 @@ test('close records reward, pet experience, mission and garden session in one li
 
   assert.equal(result.sessionSec, 120);
   assert.equal(result.reward.rewardSeeds, 10);
-  assert.equal(result.reward.rewardPower, 20);
+  assert.equal(result.reward.rewardPower, 4);
   assert.ok(calls.some(call => call[0] === 'coins' && call[1] === 10));
   assert.ok(calls.some(call => call[0] === 'power' && call[1] > 0));
   assert.ok(calls.some(call => call[0] === 'mission'));
@@ -165,7 +164,7 @@ test('short close saves time but does not grant reward', () => {
   assert.equal(result.sessionSec, 20);
   assert.equal(result.reward.eligible, false);
   assert.equal(calls.includes('coins'), false);
-  assert.equal(calls.includes('exp'), false);
+  assert.equal(calls.includes('power'), false);
   assert.ok(calls.some(value => typeof value === 'string' && value.includes('20초')));
 });
 
