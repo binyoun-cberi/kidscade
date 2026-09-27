@@ -1704,6 +1704,82 @@ function targetDefensePower(target){
   var t=tile(target.q,target.r);if(t&&t.city)total+=garrisonAtTile(t);
   return total;
 }
+function aiFrontCandidates(owner,mode,primaryTarget){
+  var out=[];
+  factionCities(owner).forEach(function(id){
+    var c=CITIES[id],enemy=hostilePowerNear(owner,c.q,c.r,5),friendly=militaryPowerNear(owner,c.q,c.r,4);
+    if(enemy<=0)return;
+    var danger=enemy/Math.max(100,friendly),priority=75+danger*35+(c.capital?20:0);
+    out.push({id:"def_"+id,kind:"defend",q:c.q,r:c.r,city:id,owner:owner,priority:priority,label:c.name+" 방어"});
+  });
+  Object.keys(CITIES).forEach(function(id){
+    var c=CITIES[id],o=cityOwner(id);
+    if(!o||o===owner||o==="neutral"||!isAtWar(owner,o))return;
+    var nearest=999;factionCities(owner).forEach(function(oid){var oc=CITIES[oid];nearest=Math.min(nearest,hexDistance(oc.q,oc.r,c.q,c.r));});
+    var priority=58+c.level*8+(c.capital?18:0)-nearest*1.7;
+    out.push({id:"atk_"+id,kind:"attack",q:c.q,r:c.r,city:id,owner:o,priority:priority,label:c.name+" 공략"});
+  });
+  if((mode==="EXPAND"||mode==="PREPARE_WAR")&&out.length<3){
+    var neutral=[];
+    Object.keys(state.tiles).forEach(function(k){
+      var t=state.tiles[k];if(t.terrain==="sea"||t.owner!=="neutral")return;
+      if(!neighbors(t.q,t.r).some(function(n){return n.owner===owner;}))return;
+      var p=(t.city?28:0)+(t.resource?14:0)+(t.terrain==="plain"?4:0);
+      neutral.push({id:"exp_"+k,kind:"expand",q:t.q,r:t.r,city:t.city||null,owner:"neutral",priority:35+p,label:t.city?CITIES[t.city].name+" 개척":"변경 개척"});
+    });
+    neutral.sort(function(a,b){return b.priority-a.priority;});
+    out=out.concat(neutral.slice(0,3-out.length));
+  }
+  if(primaryTarget&&!out.some(function(f){return f.q===primaryTarget.q&&f.r===primaryTarget.r;})){
+    out.push({id:"main_"+(primaryTarget.city||key(primaryTarget.q,primaryTarget.r)),kind:mode==="DEFEND"?"defend":mode==="PREPARE_WAR"?"prepare":"attack",q:primaryTarget.q,r:primaryTarget.r,city:primaryTarget.city||null,owner:primaryTarget.owner||null,priority:70,label:"주요 작전"});
+  }
+  out.sort(function(a,b){return b.priority-a.priority;});
+  var selected=[];
+  out.forEach(function(f){
+    if(selected.length>=3)return;
+    if(selected.some(function(x){return hexDistance(x.q,x.r,f.q,f.r)<=1&&x.kind===f.kind;}))return;
+    selected.push(f);
+  });
+  return selected;
+}
+function nearestFriendlyCityTarget(owner,u){
+  var best=null,bestD=999;
+  factionCities(owner).forEach(function(id){var c=CITIES[id],d=hexDistance(u.q,u.r,c.q,c.r);if(d<bestD){bestD=d;best={q:c.q,r:c.r,city:id,owner:owner,kind:"recover"};}});
+  return best;
+}
+function assignAIOperations(owner,strategy,units){
+  state.unitMissions=state.unitMissions||{};
+  var fronts=(strategy&&strategy.fronts)||[],loads={};
+  units.slice().sort(function(a,b){return b.troops-a.troops;}).forEach(function(u,index){
+    var supply=supplyInfoForUnit(u),mission="attack",target=null;
+    if(u.troops<95||supply.key==="isolated"){
+      mission="reserve";target=nearestFriendlyCityTarget(owner,u);
+    }else if(fronts.length){
+      var best=null,bestScore=999;
+      fronts.forEach(function(f){
+        var load=loads[f.id]||0,score=hexDistance(u.q,u.r,f.q,f.r)+load*2.2-f.priority*.025;
+        if(u.type==="cavalry"&&f.kind==="attack")score-=1.4;
+        if(u.type==="archer"&&f.kind==="defend")score-=1.2;
+        if(score<bestScore){bestScore=score;best=f;}
+      });
+      if(best){
+        loads[best.id]=(loads[best.id]||0)+1;target={q:best.q,r:best.r,city:best.city,owner:best.owner,kind:best.kind};
+        if(best.kind==="defend")mission=u.type==="cavalry"?"attack":"defend";
+        else if(best.kind==="prepare")mission="reserve";
+        else if(best.kind==="attack"&&u.type==="cavalry"&&index%2===0)mission="raid";
+        else mission="attack";
+      }
+    }
+    if(!target&&strategy&&strategy.target)target=strategy.target;
+    applyAction({type:"setMission",actor:owner,unitId:u.id,mission:mission,target:target},{silent:true});
+  });
+}
+function shouldAIRetreat(u){
+  if(!u||u.troops<=0)return false;
+  var nearbyEnemy=neighbors(u.q,u.r).some(function(t){return !!enemyUnitAt(t.q,t.r,u.owner);});
+  var supply=supplyInfoForUnit(u);
+  return nearbyEnemy&&(u.troops<85||supply.key==="isolated"||fatigueValue(u.owner)>=82&&u.troops<140);
+}
 function updateAIStrategy(owner){
   state.aiStrategies=state.aiStrategies||{};
   var passive=(owner==="sui"||owner==="wa")&&!foreignCanInvade(owner);
@@ -1732,11 +1808,18 @@ function updateAIStrategy(owner){
     else if(factionCities(owner).length){var cid=factionCities(owner)[0],cc=CITIES[cid];target={q:cc.q,r:cc.r,city:cid,owner:owner,kind:"recover"};}
   }
   var s={mode:mode,target:target,objective:objective,rally:rally,turn:state.turn,powerRatio:powerRatio};
+  s.fronts=aiFrontCandidates(owner,mode,target||objective);
   state.aiStrategies[owner]=s;return s;
 }
 function chooseAITarget(owner,u){
   var s=state.aiStrategies&&state.aiStrategies[owner];
   if(!s||s.turn!==state.turn)s=updateAIStrategy(owner);
+  var assigned=state.unitMissions&&state.unitMissions[u.id];
+  if(assigned&&assigned.target){
+    var at=assigned.target;
+    if(unitMissionType(u)==="reserve"&&hexDistance(u.q,u.r,at.q,at.r)<=1)return null;
+    return at;
+  }
   if(s.mode==="DEFEND"&&s.target){
     if(hexDistance(u.q,u.r,s.target.q,s.target.r)<=8)return s.target;
     return nearestExpansionTarget(u);
@@ -1765,12 +1848,21 @@ function bestAIReach(u,target,cautious){
       var ratio=estimateBattleRatio(u,t);
       if(ratio<(cautious?1.08:.82))return;
     }
-    var score=hexDistance(t.q,t.r,target.q,target.r);
+    var score=hexDistance(t.q,t.r,target.q,target.r),mission=unitMissionType(u);
     if(info.attack)score-=2.2;
     if(info.frontier)score-=.35;
     if(t.city)score-=1.2;
     if(t.resource)score-=.7;
-    if(target.kind==="defend")score-=TERRAIN[t.terrain].def*.35;
+    if(target.kind==="defend"||mission==="defend")score-=TERRAIN[t.terrain].def*.55;
+    if(mission==="raid"){
+      if(t.improvement==="road")score-=1.4;
+      if(t.resource)score-=1.1;
+      if(t.terrain==="mountain")score+=1.8;
+    }
+    if(mission==="reserve"){
+      if(t.city&&t.owner===u.owner)score-=1.8;
+      if(t.improvement==="road")score-=.6;
+    }
     if(score<bestScore){bestScore=score;best={tile:t,info:info,score:score};}
   });
   return best;
@@ -1841,7 +1933,9 @@ function aiCityProject(owner){
   for(var i=0;i<cities.length;i++){
     var id=cities[i];if(state.cityProjects&&state.cityProjects[id])continue;
     var c=CITIES[id],t=tile(c.q,c.r),type="market";
-    if(strategy&&(strategy.mode==="WAR"||strategy.mode==="PREPARE_WAR")&&cityUpgradeLevel(id,"barracks")<2)type="barracks";
+    var threatened=strategy&&strategy.fronts&&strategy.fronts.some(function(f){return f.kind==="defend"&&f.city===id;});
+    if(threatened&&cityUpgradeLevel(id,"walls")<2)type="walls";
+    else if(strategy&&(strategy.mode==="WAR"||strategy.mode==="PREPARE_WAR")&&cityUpgradeLevel(id,"barracks")<2)type="barracks";
     else if(((strategy&&strategy.mode==="DEFEND")||isBorderTile(t,owner))&&cityUpgradeLevel(id,"walls")<2)type="walls";
     else if(cityUpgradeLevel(id,"market")>=2)continue;
     var p=CITY_PROJECTS[type];if(r.money>=p.cost+6){choice={tile:t,type:type};break;}
@@ -1853,11 +1947,16 @@ function aiStep(owner){
   var passiveExternal=(owner==="sui"||owner==="wa")&&!foreignCanInvade(owner);
   var strategy=updateAIStrategy(owner);
   var units=state.units.filter(function(u){return u.owner===owner&&u.troops>0;});
+  assignAIOperations(owner,strategy,units);
   if(!passiveExternal){
     units.forEach(function(u){
       u.moved=false;
+      if(shouldAIRetreat(u)){
+        var retreat=applyAction({type:"retreat",actor:owner,unitId:u.id},{silent:true});
+        if(retreat.ok)return;
+      }
       var target=chooseAITarget(owner,u);if(!target)return;
-      var choice=bestAIReach(u,target,owner==="gaya");if(!choice)return;
+      var choice=bestAIReach(u,target,owner==="gaya"||unitMissionType(u)==="defend");if(!choice)return;
       var dest=choice.tile;
       if(choice.info.attack)battleSilent(u,dest,enemyUnitAt(dest.q,dest.r,u.owner));
       else applyAction({type:"move",actor:owner,unitId:u.id,target:key(dest.q,dest.r)},{silent:true});
