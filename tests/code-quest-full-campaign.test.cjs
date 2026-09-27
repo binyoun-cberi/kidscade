@@ -125,10 +125,17 @@ test('mission 23 conveyor sensor allows preemptive route correction',async()=>{
   assertFullPass(await validateMission(23,program));
 });
 
-test('mission 24 laser timing validator accepts safe-wait logic',async()=>{
+test('mission 24 combines laser timing with switch state',async()=>{
   seq=0;
-  const program=[n('UNTIL_GOAL',[n('UNTIL_SAFE',[n('WAIT')]),n('FWD')])];
-  assertFullPass(await validateMission(24,program));
+  const program=[n('UNTIL_GOAL',[
+    n('UNTIL_SAFE',[n('WAIT')]),
+    n('IF_SWITCH',[n('TOGGLE')]),
+    n('FWD')
+  ])];
+  const result=await validateMission(24,program);
+  assertFullPass(result);
+  assert.ok(result.visible.state.switches.every(v=>v.on));
+  assert.ok(result.report.results.every(r=>r.state.switches.every(v=>v.on)));
 });
 
 test('mission 29 manages data energy upload and shifted resources',async()=>{
@@ -207,6 +214,32 @@ test('mission 38 universal resource logic survives relocated chargers and data',
     n('FWD')
   ])];
   assertFullPass(await validateMission(38,program));
+});
+
+test('mission 39 integrated AI survives two hidden system layouts',async()=>{
+  seq=0;
+  const functions={
+    a:[
+      n('IF_ENEMY',[n('IF_WINDUP',[n('DODGE')],[n('WAIT')])],[
+        n('IF_SWITCH',[n('TOGGLE')]),
+        n('IF_DATA',[n('COLLECT_DATA')]),
+        n('IF_CHARGER',[n('IF_ENERGY_LOW',[n('CHARGE')])]),
+        n('IF_TERMINAL',[n('UPLOAD')]),
+        n('UNTIL_SAFE',[n('WAIT')]),
+        n('IF_GAP',[n('JUMP')],[n('FWD')])
+      ])
+    ],
+    b:[
+      n('IF_HP_LOW',[n('HEAL')]),
+      n('IF_WINDUP',[n('DODGE')]),
+      n('IF_ENEMY',[n('ATTACK')])
+    ]
+  };
+  const program=[n('UNTIL_GOAL',[n('CALL_FN_B'),n('CALL_FN')])];
+  const result=await validateMission(39,program,functions);
+  assertFullPass(result);
+  assert.equal(result.report.results.length,2);
+  assert.ok(result.report.results.every(r=>r.state.uploads===1));
 });
 
 test('mission 40 final AI clears visible and both hidden NULL CORE worlds',async()=>{
