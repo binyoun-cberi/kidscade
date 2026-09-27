@@ -54,3 +54,41 @@ test('Driver License module syntax parses after removing ESM imports',()=>{
   const body=js.replace(/^import .*$/gm,'');
   assert.doesNotThrow(()=>new Function(body));
 });
+
+
+test('Driver License v9 steering input targets an angle instead of continuously accumulating',()=>{
+  assert.match(js,/const steerTarget=inp\.steer\*steerLimit/);
+  assert.match(js,/approach\(car\.steeringWheel,steerTarget/);
+  assert.doesNotMatch(js,/car\.steeringWheel\+inp\.steer\*330\*dt/);
+});
+
+test('Driver License v9 has examiner rules and immediate disqualification paths',()=>{
+  assert.match(js,/const EXAM_RULES=/);
+  assert.match(js,/function examinerMonitor/);
+  assert.match(js,/function disqualify/);
+  assert.match(js,/안전띠 미착용/);
+  assert.match(js,/경사로 1m 이상 후방 밀림/);
+  assert.match(js,/신호위반 또는 정지선 침범/);
+  assert.match(js,/안전사고 발생/);
+});
+
+test('Driver License v9 adds emergency hazard-light evaluation',()=>{
+  assert.match(html,/id="hazard"/);
+  assert.match(js,/function toggleHazard/);
+  assert.match(js,/emergencyStopLimit:2/);
+  assert.match(js,/emergencyHazardLimit:3/);
+  assert.match(js,/돌발 비상등 조작 지연/);
+});
+
+test('Driver License v9 requires three-second hill stop and parking-brake confirmation',()=>{
+  assert.match(js,/hillStopSeconds:3/);
+  assert.match(js,/parkingBrakeHold>=1/);
+  assert.match(js,/parkingLimit:120/);
+});
+
+test('Driver License v9 exposes a live examiner panel',()=>{
+  assert.match(html,/id="examinerPanel"/);
+  assert.match(html,/id="examinerState"/);
+  assert.match(html,/id="examinerText"/);
+  assert.match(css,/#examinerPanel/);
+});
