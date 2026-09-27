@@ -710,19 +710,58 @@ function installLookControls(){
   canvas.addEventListener('pointermove',move);
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>canvas.addEventListener(type,end));
 }
-function installControls(){
-  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF']);
-  addEventListener('keydown',e=>{if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR','KeyF'].includes(e.code))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='KeyC')tryAction();else if(e.code==='KeyV')toggleFPV();else if(e.code==='KeyR')setRTH(!rth.active);else if(e.code==='KeyF'){if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')}else input.keys.add(e.code)});
-  addEventListener('keyup',e=>input.keys.delete(e.code));
-  addEventListener('blur',()=>{resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')});document.addEventListener('visibilitychange',()=>{if(document.hidden){resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')}});
-  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');installLookControls();
-  ui.cameraBtn.addEventListener('click',tryAction);
-  ui.focusBtn.addEventListener('click',()=>{if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')});
-  ui.fpvBtn.addEventListener('click',toggleFPV);ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
-  ui.tutorialBtn.addEventListener('click',()=>startGame(true));ui.workBtn.addEventListener('click',()=>startGame(false));ui.restartBtn.addEventListener('click',()=>{ui.end.classList.remove('show');ui.start.classList.add('show');state='menu';resetDrone();clearMissionMeshes();});
+function bindArmHold(){
+  let timer=0,holding=false;
+  const clear=()=>{if(timer)clearTimeout(timer);timer=0;holding=false;ui.armBtn.classList.remove('holding')};
+  ui.armBtn.addEventListener('pointerdown',e=>{if(holding)return;holding=true;ui.armBtn.classList.add('holding');try{ui.armBtn.setPointerCapture(e.pointerId)}catch(_){}timer=setTimeout(()=>{timer=0;holding=false;ui.armBtn.classList.remove('holding');setArmed(!drone.armed)},650)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>ui.armBtn.addEventListener(type,clear));
 }
-function toggleFPV(){if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);ui.fpvBtn.textContent=fpv?'조종사 화면':'드론 카메라';if(!fpv)focusDroneView();showToast(fpv?'드론 카메라로 전환':'지상 조종사 시점으로 복귀')}
-function resize(){if(!renderer||!camera)return;camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.38:1.6))}
+function installControls(){
+  const allowed=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyC','KeyV','KeyR','KeyF','KeyM','KeyZ','KeyX','Space','ShiftLeft','ShiftRight']);
+  addEventListener('keydown',e=>{
+    if(!allowed.has(e.code)||e.repeat&&['KeyC','KeyV','KeyR','KeyF','KeyM','KeyZ','KeyX','Space'].includes(e.code))return;
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+    if(e.code==='KeyC')tryAction();
+    else if(e.code==='KeyV')toggleFPV();
+    else if(e.code==='KeyR')setRTH(!rth.active);
+    else if(e.code==='KeyF'){if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')}
+    else if(e.code==='KeyM')toggleFlightMode();
+    else if(e.code==='KeyZ')adjustGimbal(8);
+    else if(e.code==='KeyX')adjustGimbal(-8);
+    else if(e.code==='Space')setArmed(!drone.armed);
+    else input.keys.add(e.code);
+  });
+  addEventListener('keyup',e=>input.keys.delete(e.code));
+  addEventListener('blur',()=>{resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){resetInputs();operatorView.pointer=null;ui.canvas.classList.remove('looking')}});
+  addEventListener('gamepadconnected',e=>{gamepadState.index=e.gamepad.index;gamepadState.connected=false});
+  addEventListener('gamepaddisconnected',e=>{if(gamepadState.index===e.gamepad.index){gamepadState.index=-1;gamepadState.connected=false;gamepadState.prev=[]}});
+  installStick(ui.leftStick,'left');installStick(ui.rightStick,'right');installLookControls();bindArmHold();
+  ui.cameraBtn.addEventListener('click',tryAction);
+  ui.modeBtn.addEventListener('click',toggleFlightMode);
+  ui.gimbalUpBtn.addEventListener('click',()=>adjustGimbal(8));
+  ui.gimbalDownBtn.addEventListener('click',()=>adjustGimbal(-8));
+  ui.focusBtn.addEventListener('click',()=>{if(fpv)toggleFPV();focusDroneView();showToast('드론 방향을 다시 바라봅니다.')});
+  ui.controllerScreen.addEventListener('click',toggleFPV);
+  ui.fpvBtn.addEventListener('click',toggleFPV);
+  ui.rthBtn.addEventListener('click',()=>setRTH(!rth.active));
+  ui.tutorialBtn.addEventListener('click',()=>startGame(true));
+  ui.workBtn.addEventListener('click',()=>startGame(false));
+  ui.restartBtn.addEventListener('click',()=>{ui.end.classList.remove('show');ui.start.classList.add('show');state='menu';resetDrone();clearMissionMeshes();});
+}
+function toggleFPV(){
+  if(state!=='playing')return;fpv=!fpv;ui.fpvBtn.classList.toggle('active',fpv);ui.fpvBtn.textContent=fpv?'조종사 화면':'FPV 전체화면';
+  if(!fpv)focusDroneView();showToast(fpv?'드론 카메라를 전체 화면으로 확대했습니다.':'지상 조종사 시점으로 복귀했습니다.');
+}
+function resizePip(){
+  if(!pipRenderer||!pipCamera||!ui.pipCanvas)return;
+  const r=ui.pipCanvas.getBoundingClientRect(),w=Math.max(160,Math.round(r.width||320)),h=Math.max(68,Math.round(r.height||92));
+  pipCamera.aspect=w/h;pipCamera.updateProjectionMatrix();pipRenderer.setSize(w,h,false);pipRenderer.setPixelRatio(1);
+}
+function resize(){
+  if(!renderer||!camera)return;camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,coarse?1.38:1.6));resizePip();
+}
 addEventListener('resize',resize);
 
 async function boot(){
