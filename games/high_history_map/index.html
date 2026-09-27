@@ -151,11 +151,11 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=16"></script>
-<script src="./core/pathfinding.js?v=16"></script>
-<script src="./core/supply.js?v=16"></script>
-<script src="./ai/strategy.js?v=16"></script>
-<script src="./core/invariants.js?v=16"></script>
+<script src="./core/actions.js?v=17"></script>
+<script src="./core/pathfinding.js?v=17"></script>
+<script src="./core/supply.js?v=17"></script>
+<script src="./ai/strategy.js?v=17"></script>
+<script src="./core/invariants.js?v=17"></script>
 <script>
 (function(){
 "use strict";
@@ -235,6 +235,12 @@ var UNIT_TYPES={
   infantry:{name:"보병",icon:"🛡️",move:2,cost:12,manpower:8,troops:180,atk:1.00,def:1.06,desc:"도시와 요새 전투에 안정적"},
   archer:{name:"궁병",icon:"🏹",move:2,cost:14,manpower:8,troops:160,atk:.94,def:1.12,desc:"구릉·산악 방어 · 인접한 적에게 원거리 공격"},
   cavalry:{name:"기병",icon:"🐎",move:3,cost:18,manpower:10,troops:150,atk:1.10,def:.92,desc:"평야 기동과 공격에 강함"}
+};
+var CITY_PROJECTS={
+  walls:{name:"성벽 보강",icon:"🧱",cost:18,turns:2,max:2,desc:"도시 수비대 최대치 +50"},
+  barracks:{name:"병영 확장",icon:"🛡️",cost:16,turns:2,max:2,desc:"이 도시의 신규 모집 병력 +30"},
+  market:{name:"시장 확장",icon:"🏪",cost:14,turns:2,max:2,desc:"매 턴 재정 +2"},
+  repair:{name:"수비대 복구",icon:"🔧",cost:8,turns:1,max:99,desc:"완료 시 도시 수비대를 크게 회복"}
 };
 
 var RIVER_PATHS=[
@@ -479,10 +485,14 @@ function activateProxyWar(foreign,sponsor){
   state.proxyWars[foreign]=true;
   log((sponsor&&FACTIONS[sponsor]?FACTIONS[sponsor].name+"의 외교로 ":"")+FACTIONS[foreign].name+"의 대리전 개입이 시작되었습니다.");
 }
+function cityUpgradeLevel(cityId,type){
+  if(!state||!state.cityUpgrades||!state.cityUpgrades[cityId])return 0;
+  return state.cityUpgrades[cityId][type]||0;
+}
 function cityGarrisonCap(cityId,owner){
   var c=CITIES[cityId];if(!c)return 0;
   if(owner==="neutral")return 35+c.level*25;
-  return 70+c.level*35+(c.capital?80:0);
+  return 70+c.level*35+(c.capital?80:0)+cityUpgradeLevel(cityId,"walls")*50;
 }
 function makeInitialGarrisons(tiles){
   var out={};
@@ -519,7 +529,7 @@ function initialState(player){
     tiles:tiles,units:makeUnits(),
     cityGarrisons:makeInitialGarrisons(tiles),
     captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
-    wars:{},proxyWars:{sui:false,wa:false},aiStrategies:{},
+    wars:{},proxyWars:{sui:false,wa:false},aiStrategies:{},cityProjects:{},cityUpgrades:{},
     feed:[{date:"건국 1년 봄",text:"건국 거점에서 개척을 시작합니다. 빈 땅을 넓히고 도시·자원·방어선을 연결하세요."}]
   };
 }
@@ -542,7 +552,7 @@ function migrateState(x){
   if(!x||typeof x!=="object")return null;
   if(x.version===11){
     x.version=12;x.engineRevision=x.engineRevision||0;x.nextUnitId=x.nextUnitId||1;
-    x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};
+    x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};
   }
   if(x.version!==12)return null;
   x.engineRevision=x.engineRevision||0;x.nextUnitId=x.nextUnitId||1;
@@ -631,14 +641,26 @@ function ensureActionBus(){
   actionBus.register("recruit",function(ctx){
     var a=ctx.action,meta=ctx.meta,t=state.tiles[a.target],d=UNIT_TYPES[a.unitType],r=resource(a.actor);
     if(!t||!t.city||t.owner!==a.actor||!d||!r)return{ok:false,reason:"이 도시에서는 병력을 모집할 수 없습니다."};
-    var c=recruitCostFor(a.actor,a.unitType);
+    var c=recruitCostFor(a.actor,a.unitType),bonus=cityUpgradeLevel(t.city,"barracks")*30,recruits=c.troops+bonus;
     if(r.money<c.money||r.manpower<c.manpower)return{ok:false,reason:"재정 또는 인력이 부족합니다."};
     r.money-=c.money;r.manpower-=c.manpower;
     var spawn=findSpawnTile(t,a.actor),existing=friendlyUnitAt(spawn.q,spawn.r,a.actor,null);
-    if(existing)existing.troops+=c.troops;
-    else state.units.push({id:nextUnitId(a.actor),owner:a.actor,type:a.unitType,q:spawn.q,r:spawn.r,troops:c.troops,hp:10,moved:true});
-    if(!meta.silent)log(CITIES[t.city].name+"에서 "+d.name+" "+c.troops+"명을 모집했습니다.");
-    return{ok:true,cost:c};
+    if(existing)existing.troops+=recruits;
+    else state.units.push({id:nextUnitId(a.actor),owner:a.actor,type:a.unitType,q:spawn.q,r:spawn.r,troops:recruits,hp:10,moved:true});
+    if(!meta.silent)log(CITIES[t.city].name+"에서 "+d.name+" "+recruits+"명을 모집했습니다.");
+    return{ok:true,cost:c,troops:recruits};
+  });
+  actionBus.register("startProject",function(ctx){
+    var a=ctx.action,meta=ctx.meta,t=state.tiles[a.target],p=CITY_PROJECTS[a.project],r=resource(a.actor);
+    if(!t||!t.city||t.owner!==a.actor||!p||!r)return{ok:false,reason:"이 도시에서는 사업을 시작할 수 없습니다."};
+    state.cityProjects=state.cityProjects||{};state.cityUpgrades=state.cityUpgrades||{};
+    if(state.cityProjects[t.city])return{ok:false,reason:"이미 진행 중인 도시 사업이 있습니다."};
+    var lvl=cityUpgradeLevel(t.city,a.project);
+    if(a.project!=="repair"&&lvl>=p.max)return{ok:false,reason:"이미 최대 단계까지 확장했습니다."};
+    if(r.money<p.cost)return{ok:false,reason:"재정이 부족합니다."};
+    r.money-=p.cost;state.cityProjects[t.city]={type:a.project,remaining:p.turns,owner:a.actor};
+    if(!meta.silent)log(CITIES[t.city].name+"에서 "+p.name+" 사업을 시작했습니다.");
+    return{ok:true,project:a.project,remaining:p.turns};
   });
   actionBus.register("declareWar",function(ctx){
     var a=ctx.action;
@@ -828,7 +850,13 @@ function renderInfo(){
   var shownMove=ter.move>=99?"이동 불가":(t.improvement==="road"?Math.max(.5,ter.move-.75):ter.move);
   html+="<div class=\"statGrid\"><div class=\"stat\"><small>이동 비용</small><b>"+shownMove+"</b></div><div class=\"stat\"><small>방어 보정</small><b>+"+Math.round((ter.def-1)*100)+"%</b></div><div class=\"stat\"><small>식량</small><b>+"+tileFood(t)+"</b></div><div class=\"stat\"><small>재정</small><b>+"+tileMoney(t)+"</b></div></div>";
   var tags=[];
-  if(c)tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level+" · 🛡️ 수비대 "+fmt(garrisonAtTile(t)));
+  if(c){
+    tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level+" · 🛡️ 수비대 "+fmt(garrisonAtTile(t)));
+    var cp=state.cityProjects&&state.cityProjects[cid];
+    if(cp&&CITY_PROJECTS[cp.type])tags.push(CITY_PROJECTS[cp.type].icon+" "+CITY_PROJECTS[cp.type].name+" · "+cp.remaining+"턴");
+    var ups=[];["walls","barracks","market"].forEach(function(k){var lv=cityUpgradeLevel(cid,k);if(lv)ups.push(CITY_PROJECTS[k].name+" Lv."+lv);});
+    if(ups.length)tags.push("🏗️ "+ups.join(" · "));
+  }
   if(t.resource&&RESOURCE_DEFS[t.resource]){var rr=RESOURCE_DEFS[t.resource],active=rr.improvements.indexOf(t.improvement)>=0;tags.push(rr.icon+" "+rr.name+(active?" · 활용 중":""));}
   if(t.improvement&&IMPROVEMENTS[t.improvement])tags.push(IMPROVEMENTS[t.improvement].icon+" "+IMPROVEMENTS[t.improvement].name+" Lv."+(t.improvementLevel||1));
   if(t.terrain==="mountain")tags.push("산길 주의");
@@ -842,7 +870,7 @@ function renderInfo(){
   if(t.owner===state.player&&t.terrain!=="sea"){
     html+="<div class=\"actionTitle\">타일 운영</div><div class=\"actions\">";
     html+="<button class=\"act\" id=\"openBuildFromPanel\">🔨 타일 개발<span>농장·교역소·병영·광산·도요 등</span></button>";
-    if(c)html+="<button class=\"act\" id=\"recruitBtn\">🛡️ 병력 모집<span>보병 · 궁병 · 기병</span></button>";
+    if(c){html+="<button class=\"act\" id=\"recruitBtn\">🛡️ 병력 모집<span>보병 · 궁병 · 기병</span></button>";html+="<button class=\"act\" id=\"cityProjectBtn\">🏗️ 도시 사업<span>성벽 · 병영 · 시장 · 수비대 복구</span></button>";}
     html+="</div>";
   }else if((t.owner==="sui"||t.owner==="wa")&&!isAtWar(state.player,t.owner)){
     html+="<div class=\"actionTitle\">외교</div><div class=\"actions\"><button class=\"act\" id=\"declareWarBtn\">⚔️ 선전포고<span>"+FACTIONS[t.owner].name+"의 비개입 상태를 끝냅니다.</span></button></div>";
@@ -851,6 +879,7 @@ function renderInfo(){
   var clear=document.getElementById("clearUnitBtn");if(clear)clear.addEventListener("click",function(){selectedUnit=null;reachable={};renderAll();});
   var build=document.getElementById("openBuildFromPanel");if(build)build.addEventListener("click",openBuild);
   var rec=document.getElementById("recruitBtn");if(rec)rec.addEventListener("click",openRecruit);
+  var project=document.getElementById("cityProjectBtn");if(project)project.addEventListener("click",openCityProjects);
   var war=document.getElementById("declareWarBtn");if(war)war.addEventListener("click",function(){var result=applyAction({type:"declareWar",actor:state.player,target:t.owner},{silent:false});if(!result.ok){toast(result.reason);return;}renderAll();save(false);});
 }
 function unitName(type){return UNIT_TYPES[type]?UNIT_TYPES[type].name:"보병";}
@@ -1245,6 +1274,50 @@ function recruitType(type){
   if(!result.ok){toast(result.reason||"병력을 모집할 수 없습니다.");return;}
   closeModal();renderAll();save(false);
 }
+function openCityProjects(){
+  var t=state.tiles[selectedTile];if(!t||!t.city||t.owner!==state.player)return;
+  var cid=t.city,current=state.cityProjects&&state.cityProjects[cid];
+  document.getElementById("modalEyebrow").textContent="도시 사업";
+  document.getElementById("modalTitle").textContent=CITIES[cid].name+" 개발";
+  document.getElementById("modalDesc").textContent=current?(CITY_PROJECTS[current.type].name+" 진행 중 · "+current.remaining+"턴 남음"):"도시마다 한 번에 하나의 사업만 진행할 수 있습니다.";
+  document.getElementById("modalBody").innerHTML="<div class=\"choiceGrid\">"+Object.keys(CITY_PROJECTS).map(function(id){
+    var p=CITY_PROJECTS[id],lvl=cityUpgradeLevel(cid,id),maxed=id!=="repair"&&lvl>=p.max,disabled=!!current||maxed;
+    var levelText=id==="repair"?"":" · 현재 Lv."+lvl+"/"+p.max;
+    return "<button class=\"choice\" data-project=\""+id+"\" "+(disabled?"disabled":"")+"><b>"+p.icon+" "+p.name+" · 💰"+p.cost+" · "+p.turns+"턴</b><span>"+p.desc+levelText+"</span></button>";
+  }).join("")+"</div>";
+  document.getElementById("modalOverlay").classList.remove("hidden");
+  document.getElementById("modalBody").querySelectorAll("[data-project]").forEach(function(b){b.addEventListener("click",function(){startCityProject(b.dataset.project);});});
+}
+function startCityProject(type){
+  var result=applyAction({type:"startProject",actor:state.player,target:selectedTile,project:type},{silent:false});
+  if(!result.ok){toast(result.reason||"도시 사업을 시작할 수 없습니다.");return;}
+  closeModal();renderAll();save(false);
+}
+function completeCityProject(cityId,project){
+  state.cityUpgrades=state.cityUpgrades||{};state.cityUpgrades[cityId]=state.cityUpgrades[cityId]||{};
+  if(project.type==="repair"){
+    var owner=cityOwner(cityId);
+    state.cityGarrisons[cityId]=Math.min(cityGarrisonCap(cityId,owner),(state.cityGarrisons[cityId]||0)+100);
+  }else{
+    state.cityUpgrades[cityId][project.type]=(state.cityUpgrades[cityId][project.type]||0)+1;
+    if(project.type==="walls"){
+      var owner2=cityOwner(cityId);
+      state.cityGarrisons[cityId]=Math.min(cityGarrisonCap(cityId,owner2),(state.cityGarrisons[cityId]||0)+50);
+    }
+  }
+}
+function advanceCityProjects(owner){
+  state.cityProjects=state.cityProjects||{};
+  Object.keys(state.cityProjects).forEach(function(cityId){
+    var p=state.cityProjects[cityId];if(!p)return;
+    if(cityOwner(cityId)!==p.owner){delete state.cityProjects[cityId];return;}
+    if(p.owner!==owner)return;
+    p.remaining--;
+    if(p.remaining>0)return;
+    var def=CITY_PROJECTS[p.type];completeCityProject(cityId,p);delete state.cityProjects[cityId];
+    if(owner===state.player&&def)log(CITIES[cityId].name+"의 "+def.name+" 사업이 완료되었습니다.");
+  });
+}
 function recruit(){openRecruit();}
 function applyIncome(owner){
   if(!resource(owner))return;
@@ -1263,6 +1336,7 @@ function applyIncome(owner){
     var rb=resourceBonus(t);
     bonusFood+=rb.food;bonusMoney+=rb.money;bonusManpower+=rb.manpower;bonusAuthority+=rb.authority;
   });
+  factionCities(owner).forEach(function(id){bonusMoney+=cityUpgradeLevel(id,"market")*2;});
   var units=state.units.filter(function(u){return u.owner===owner;}).reduce(function(a,u){return a+u.troops;},0);
   r.food=clamp(r.food+Math.round(baseFood*.035)+bonusFood-Math.ceil(units/900),0,999);
   r.money=clamp(r.money+Math.round(baseMoney*.045)+bonusMoney+factionCities(owner).length,0,999);
@@ -1526,6 +1600,19 @@ function aiRecruit(owner){
   if(r.money<cost.money||r.manpower<cost.manpower)return;
   applyAction({type:"recruit",actor:owner,target:key(ct.q,ct.r),unitType:type},{silent:true});
 }
+function aiCityProject(owner){
+  var r=resource(owner),cities=factionCities(owner);if(!r||!cities.length||r.money<12)return;
+  var strategy=state.aiStrategies&&state.aiStrategies[owner],choice=null;
+  for(var i=0;i<cities.length;i++){
+    var id=cities[i];if(state.cityProjects&&state.cityProjects[id])continue;
+    var c=CITIES[id],t=tile(c.q,c.r),type="market";
+    if(strategy&&(strategy.mode==="WAR"||strategy.mode==="PREPARE_WAR")&&cityUpgradeLevel(id,"barracks")<2)type="barracks";
+    else if(((strategy&&strategy.mode==="DEFEND")||isBorderTile(t,owner))&&cityUpgradeLevel(id,"walls")<2)type="walls";
+    else if(cityUpgradeLevel(id,"market")>=2)continue;
+    var p=CITY_PROJECTS[type];if(r.money>=p.cost+6){choice={tile:t,type:type};break;}
+  }
+  if(choice)applyAction({type:"startProject",actor:owner,target:key(choice.tile.q,choice.tile.r),project:choice.type},{silent:true});
+}
 function aiStep(owner){
   var r=resource(owner);if(!r)return;
   var passiveExternal=(owner==="sui"||owner==="wa")&&!foreignCanInvade(owner);
@@ -1544,6 +1631,7 @@ function aiStep(owner){
   state.units=state.units.filter(function(u){return u.troops>0;});
   aiDevelop(owner);
   aiRecruit(owner);
+  aiCityProject(owner);
 }
 function ownsUnificationCapitals(owner){
   return cityOwner("gungnae")===owner&&cityOwner("han")===owner&&cityOwner("gyeongju")===owner;
@@ -1576,6 +1664,7 @@ function endTurn(){
   selectedUnit=null;reachable={};
   ["goguryeo","baekje","silla","gaya","sui","wa"].forEach(function(o){if(o!==state.player)aiStep(o);});
   state.units=state.units.filter(function(u){return u.troops>0;});
+  ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(advanceCityProjects);
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applyIncome);
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applySupplyAttrition);
   state.units.forEach(function(u){u.moved=false;});
@@ -1610,7 +1699,7 @@ function showTutorial(){
     ["1. 건국 거점에서 시작","대부분의 육지는 미개척 상태입니다. 고구려는 국내성, 백제는 위례성, 신라는 금성에서 주변 타일로 직접 영토를 넓혀갑니다."],
     ["2. 군대 이동","내 군대를 누르면 이동 가능 칸이 표시됩니다. PC에서는 목적지에 마우스를 올리면 이동 경로와 비용이 보입니다. 적 부대 주변 통제구역에 들어가면 그 턴 이동이 끝납니다."],
     ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
-    ["4. 모든 타일을 개발하세요","내 육각형을 누르면 농장·교역소·병영·광산·도요·요새·도로·어장을 직접 선택해 짓고 Lv.3까지 강화할 수 있습니다."],
+    ["4. 땅과 도시를 개발하세요","내 육각형에는 농장·교역소·병영·광산·도요·요새·도로·어장을 지을 수 있습니다. 도시는 성벽·병영·시장 확장이나 수비대 복구 사업을 한 번에 하나씩 진행합니다."],
     ["5. 도시와 전투","공격 전에는 병력·지형·수비대를 반영한 예상 손실을 확인할 수 있습니다. 보병은 공성에 안정적이고, 궁병은 바로 옆 적을 원거리 공격하며, 기병은 평야 기동에 강합니다."],
     ["6. 보급과 외부 세력","도시에서 이어진 내 영토와 도로가 군대의 보급망입니다. 너무 멀리 진군해 보급이 끊기면 전투력이 떨어지고 병력 손실도 생깁니다. 수나라와 왜는 전쟁이나 대리전이 시작되기 전까지 기본 비개입입니다."]
   ];
