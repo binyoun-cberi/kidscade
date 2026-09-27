@@ -52,7 +52,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.stat{padding:8px;border:1px solid var(--line);border-radius:10px;background:#111e31}.stat small{display:block;font-size:8px;color:var(--muted)}.stat b{font-size:13px}
 .tagRow{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.tag{padding:5px 7px;border:1px solid #3b5573;border-radius:999px;background:#1b2e48;font-size:9px}
 .actionTitle{margin:12px 0 6px;font-size:10px;color:var(--gold);font-weight:1000}.actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}.act{min-height:42px;padding:6px;border:1px solid #415c7b;border-radius:10px;background:#223853;color:#fff;font-size:9px;font-weight:900}.act span{display:block;font-size:7.8px;color:#adc0d4;margin-top:2px}
-.unitPanel{margin-top:9px;padding:8px;border:1px solid #4a6382;border-radius:11px;background:#17283f}.unitPanel b{font-size:11px}.unitPanel p{font-size:8.5px;color:#b7c7d8;margin:4px 0 7px;line-height:1.45}.supplyLine{display:inline-block;padding:4px 6px;border-radius:999px;border:1px solid #45617d;font-size:8px;font-weight:1000;margin:1px 0 5px}.supplyLine.good{color:#a9e8c9;border-color:#397c62}.supplyLine.strained{color:#ffe09a;border-color:#8f7537}.supplyLine.isolated{color:#ff9aa2;border-color:#944550}
+.unitPanel{margin-top:9px;padding:8px;border:1px solid #4a6382;border-radius:11px;background:#17283f}.unitPanel b{font-size:11px}.unitPanel p{font-size:8.5px;color:#b7c7d8;margin:4px 0 7px;line-height:1.45}.supplyLine{display:inline-block;padding:4px 6px;border-radius:999px;border:1px solid #45617d;font-size:8px;font-weight:1000;margin:1px 0 5px}.supplyLine.good{color:#a9e8c9;border-color:#397c62}.supplyLine.strained{color:#ffe09a;border-color:#8f7537}.supplyLine.isolated{color:#ff9aa2;border-color:#944550}.missionLine{display:inline-block;padding:4px 6px;border-radius:999px;border:1px solid #536f91;font-size:8px;font-weight:1000;margin:1px 4px 5px 0;color:#d9e8fa}.fatigueLine{display:inline-block;padding:4px 6px;border-radius:999px;border:1px solid #705a79;font-size:8px;font-weight:1000;margin-top:5px}.siegeTag{border-color:#9a6540!important;color:#ffd0aa!important}
 .bottom{min-height:56px;padding:6px 10px;display:flex;align-items:center;gap:7px;border-top:1px solid var(--line);background:#101b2c}
 .statusPill{margin-right:auto;padding:8px 10px;border:1px solid #3d5674;border-radius:11px;background:#17263c;font-size:9px}.statusPill b{color:var(--gold);font-size:12px}
 .navBtn{border:1px solid #3d5674;border-radius:11px;background:#1c3049;color:#fff;padding:8px 10px;font-size:10px;font-weight:900}
@@ -153,12 +153,13 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_history_map" data-title="통일전쟁" data-shell="true" data-orientation="landscape"></script>
-<script src="./core/actions.js?v=20"></script>
-<script src="./core/pathfinding.js?v=20"></script>
-<script src="./core/supply.js?v=20"></script>
-<script src="./ai/strategy.js?v=20"></script>
-<script src="./data/events.js?v=20"></script>
-<script src="./core/invariants.js?v=20"></script>
+<script src="./core/actions.js?v=23"></script>
+<script src="./core/pathfinding.js?v=23"></script>
+<script src="./core/supply.js?v=23"></script>
+<script src="./core/warfare.js?v=23"></script>
+<script src="./ai/strategy.js?v=23"></script>
+<script src="./data/events.js?v=23"></script>
+<script src="./core/invariants.js?v=23"></script>
 <script>
 (function(){
 "use strict";
@@ -513,7 +514,9 @@ function replenishGarrisons(owner){
   if(!state.cityGarrisons)return;
   factionCities(owner).forEach(function(id){
     var c=CITIES[id],cap=cityGarrisonCap(id,owner),cur=state.cityGarrisons[id]||0;
-    state.cityGarrisons[id]=Math.min(cap,cur+8+c.level*5);
+    var siege=siegeForCity(id),stage=window.UnificationWarWarfare.siegeStage(siege?siege.pressure:0);
+    var gain=Math.max(1,Math.round((8+c.level*5)*stage.replenish));
+    state.cityGarrisons[id]=Math.min(cap,cur+gain);
   });
 }
 function initialState(player){
@@ -532,7 +535,7 @@ function initialState(player){
     tiles:tiles,units:makeUnits(),
     cityGarrisons:makeInitialGarrisons(tiles),
     captured:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},
-    wars:{},proxyWars:{sui:false,wa:false},aiStrategies:{},cityProjects:{},cityUpgrades:{},historyEvents:{},nationBonuses:{},
+    wars:{},proxyWars:{sui:false,wa:false},aiStrategies:{},cityProjects:{},cityUpgrades:{},historyEvents:{},nationBonuses:{},unitMissions:{},sieges:{},warFatigue:{goguryeo:0,baekje:0,silla:0,sui:0,gaya:0,wa:0,tamna:0},battleStats:{},
     feed:[{date:"건국 1년 봄",text:"건국 거점에서 개척을 시작합니다. 빈 땅을 넓히고 도시·자원·방어선을 연결하세요."}]
   };
 }
@@ -547,6 +550,24 @@ function resource(owner){return state.resources[owner];}
 function nationBonus(owner,key){
   if(!state||!state.nationBonuses||!state.nationBonuses[owner])return 0;
   return Number(state.nationBonuses[owner][key]||0);
+}
+function unitMissionType(u){
+  if(!u||!state||!state.unitMissions)return"reserve";
+  var m=state.unitMissions[u.id];return m&&window.UnificationWarWarfare.MISSIONS[m.type]?m.type:"reserve";
+}
+function unitMission(u){return window.UnificationWarWarfare.mission(unitMissionType(u));}
+function fatigueValue(owner){return Math.max(0,Math.min(100,Number(state.warFatigue&&state.warFatigue[owner]||0)));}
+function addFatigue(owner,amount){
+  if(!owner||owner==="neutral"||!state.resources[owner])return;
+  state.warFatigue=state.warFatigue||{};
+  state.warFatigue[owner]=clamp(fatigueValue(owner)+(Number(amount)||0),0,100);
+}
+function activeWarCount(owner){
+  return Object.keys(state.wars||{}).filter(function(k){return state.wars[k]&&k.split("|").indexOf(owner)>=0;}).length;
+}
+function siegeForCity(cityId){return state.sieges&&state.sieges[cityId]?state.sieges[cityId]:null;}
+function siegeStageForCity(cityId){
+  var s=siegeForCity(cityId);return window.UnificationWarWarfare.siegeStage(s?s.pressure:0);
 }
 function log(msg){
   state.feed.push({date:dateText(),text:msg});
@@ -563,6 +584,8 @@ function migrateState(x){
   x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};
   x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};
   x.historyEvents=x.historyEvents||{};x.nationBonuses=x.nationBonuses||{};
+  x.unitMissions=x.unitMissions||{};x.sieges=x.sieges||{};x.warFatigue=x.warFatigue||{};x.battleStats=x.battleStats||{};
+  ["goguryeo","baekje","silla","sui","gaya","wa","tamna"].forEach(function(o){if(!isFinite(x.warFatigue[o]))x.warFatigue[o]=0;});
   return x;
 }
 function validateStateNow(context){
@@ -625,6 +648,25 @@ function ensureActionBus(){
     var defender=enemyUnitAt(t.q,t.r,u.owner),ranged=u.type==="archer"&&hexDistance(u.q,u.r,t.q,t.r)===1;
     var won=ranged?resolveRangedCombat(u,t,defender,!!meta.silent):resolveCombat(u,t,defender,!!meta.silent);
     return{ok:true,won:won,ranged:ranged,unitId:u.troops>0?u.id:null,target:a.target};
+  });
+  actionBus.register("setMission",function(ctx){
+    var a=ctx.action,u=unitById(a.unitId);
+    if(!u||u.owner!==a.actor)return{ok:false,reason:"임무를 지정할 부대를 찾을 수 없습니다."};
+    if(!window.UnificationWarWarfare.MISSIONS[a.mission])return{ok:false,reason:"알 수 없는 부대 임무입니다."};
+    state.unitMissions=state.unitMissions||{};
+    state.unitMissions[u.id]={type:a.mission,target:a.target||null,turn:state.turn};
+    return{ok:true,mission:a.mission};
+  });
+  actionBus.register("retreat",function(ctx){
+    var a=ctx.action,u=unitById(a.unitId);
+    if(!u||u.owner!==a.actor)return{ok:false,reason:"후퇴할 부대를 찾을 수 없습니다."};
+    if(u.retreatUsedTurn===state.turn)return{ok:false,reason:"이번 턴에는 이미 후퇴했습니다."};
+    var dest=findRetreatTile(u);if(!dest)return{ok:false,reason:"후퇴할 안전한 칸이 없습니다."};
+    var loss=window.UnificationWarWarfare.retreatLoss(u.troops);
+    u.troops=Math.max(25,u.troops-loss);u.q=dest.q;u.r=dest.r;u.moved=true;u.retreatUsedTurn=state.turn;
+    state.unitMissions=state.unitMissions||{};state.unitMissions[u.id]={type:"reserve",target:null,turn:state.turn};
+    if(!ctx.meta.silent){log(FACTIONS[u.owner].name+" 부대가 전열을 정비하기 위해 후퇴했습니다.");toast("후퇴 · "+loss+"명 이탈");}
+    return{ok:true,target:key(dest.q,dest.r),loss:loss};
   });
   actionBus.register("build",function(ctx){
     var a=ctx.action,meta=ctx.meta,t=state.tiles[a.target],d=IMPROVEMENTS[a.improvement],r=resource(a.actor);
@@ -818,7 +860,8 @@ function renderHeader(){
 }
 function renderLeft(){
   var f=FACTIONS[state.player];
-  document.getElementById("countryCard").innerHTML="<b>"+f.icon+" "+f.name+"</b><p>"+f.trait+"</p>";
+  var fatigue=fatigueValue(state.player),fatigueInfo=window.UnificationWarWarfare.fatigueLabel(fatigue);
+  document.getElementById("countryCard").innerHTML="<b>"+f.icon+" "+f.name+"</b><p>"+f.trait+"</p><div class=\"fatigueLine\">전쟁 피로 "+fatigue+" · "+fatigueInfo.name+"</div>";
   var box=document.getElementById("objectives");box.innerHTML="";
   OBJECTIVES[state.player].forEach(function(o){var d=document.createElement("div");d.className="objective"+(o.check()?" done":"");d.textContent=(o.check()?"✓ ":"○ ")+o.text;box.appendChild(d);});
   var fronts=document.getElementById("fronts");fronts.innerHTML="";
@@ -945,6 +988,7 @@ function renderInfo(){
     tags.push((c.capital?"👑 수도":"🏘️ 도시")+" Lv."+c.level+" · 🛡️ 수비대 "+fmt(garrisonAtTile(t)));
     var cp=state.cityProjects&&state.cityProjects[cid];
     if(cp&&CITY_PROJECTS[cp.type])tags.push(CITY_PROJECTS[cp.type].icon+" "+CITY_PROJECTS[cp.type].name+" · "+cp.remaining+"턴");
+    var sg=siegeForCity(cid);if(sg){var ss=siegeStageForCity(cid);tags.push("🔥 "+ss.name+" "+Math.round(sg.pressure)+"%");}
     var ups=[];["walls","barracks","market"].forEach(function(k){var lv=cityUpgradeLevel(cid,k);if(lv)ups.push(CITY_PROJECTS[k].name+" Lv."+lv);});
     if(ups.length)tags.push("🏗️ "+ups.join(" · "));
   }
@@ -956,7 +1000,13 @@ function renderInfo(){
     var unitHelp=u.moved?"이번 턴 행동을 마쳤습니다.":"밝게 표시된 육각형으로 이동하거나 적군을 공격할 수 있습니다.";
     if(!u.moved&&u.type==="archer")unitHelp+=" 바로 옆 적은 현재 칸에서 원거리 공격합니다.";
     var supply=supplyInfoForUnit(u),supplyText=supply.key==="good"?"보급 원활":supply.key==="strained"?"보급 불안 · 공격 -5%":"보급 고립 · 공격 -15% · 턴 종료 시 병력 손실";
-    html+="<div class=\"unitPanel\"><b>"+FACTIONS[u.owner].icon+" "+unitName(u.type)+" · "+fmt(u.troops)+"명</b><p>"+unitHelp+"</p><div class=\"supplyLine "+supply.key+"\">"+supplyText+"</div><br><button class=\"tiny\" id=\"clearUnitBtn\">선택 해제</button></div>";
+    var mission=unitMission(u),retreat=findRetreatTile(u);
+    html+="<div class=\"unitPanel\"><b>"+FACTIONS[u.owner].icon+" "+unitName(u.type)+" · "+fmt(u.troops)+"명</b><p>"+unitHelp+"</p><div class=\"missionLine\">"+mission.icon+" "+mission.name+"</div><div class=\"supplyLine "+supply.key+"\">"+supplyText+"</div>";
+    if(u.owner===state.player){
+      html+="<div class=\"actionTitle\">부대 임무</div><div class=\"actions\"><button class=\"act missionBtn\" data-mission=\"attack\">⚔️ 공격<span>공격력 강화</span></button><button class=\"act missionBtn\" data-mission=\"defend\">🛡️ 방어<span>방어력 강화</span></button><button class=\"act missionBtn\" data-mission=\"reserve\">⏳ 대기<span>증원·재정비</span></button><button class=\"act missionBtn\" data-mission=\"raid\">🐎 기동<span>측면·보급로 압박</span></button></div>";
+      if(retreat)html+="<button class=\"tiny\" id=\"retreatBtn\" style=\"margin-top:6px\">↩ 안전한 칸으로 후퇴</button>";
+    }
+    html+="<br><button class=\"tiny\" id=\"clearUnitBtn\">선택 해제</button></div>";
   }
   if(t.owner===state.player&&t.terrain!=="sea"){
     html+="<div class=\"actionTitle\">타일 운영</div><div class=\"actions\">";
@@ -968,6 +1018,14 @@ function renderInfo(){
   }
   panel.innerHTML=html;
   var clear=document.getElementById("clearUnitBtn");if(clear)clear.addEventListener("click",function(){selectedUnit=null;reachable={};renderAll();});
+  document.querySelectorAll(".missionBtn").forEach(function(b){b.addEventListener("click",function(){
+    if(!selectedUnit)return;var unit=unitById(selectedUnit),result=applyAction({type:"setMission",actor:state.player,unitId:selectedUnit,mission:b.dataset.mission},{silent:false});
+    if(!result.ok){toast(result.reason);return;}renderAll();save(false);
+  });});
+  var retreatBtn=document.getElementById("retreatBtn");if(retreatBtn)retreatBtn.addEventListener("click",function(){
+    if(!selectedUnit)return;var result=applyAction({type:"retreat",actor:state.player,unitId:selectedUnit},{silent:false});
+    if(!result.ok){toast(result.reason);return;}selectedTile=result.target;reachable={};renderAll();save(false);
+  });
   var build=document.getElementById("openBuildFromPanel");if(build)build.addEventListener("click",openBuild);
   var rec=document.getElementById("recruitBtn");if(rec)rec.addEventListener("click",openRecruit);
   var project=document.getElementById("cityProjectBtn");if(project)project.addEventListener("click",openCityProjects);
@@ -994,6 +1052,20 @@ function movementNeighbors(t){
     if(dest&&!seen[key(dest.q,dest.r)]){seen[key(dest.q,dest.r)]=1;out.push(dest);}
   });
   return out;
+}
+function closestFriendlyCityDistance(owner,q,r){
+  var best=999;factionCities(owner).forEach(function(id){var c=CITIES[id];best=Math.min(best,hexDistance(q,r,c.q,c.r));});return best;
+}
+function findRetreatTile(u){
+  if(!u||!state)return null;
+  var best=null,bestScore=-999;
+  neighbors(u.q,u.r).forEach(function(t){
+    if(!t||t.terrain==="sea"||t.owner!==u.owner||enemyUnitAt(t.q,t.r,u.owner)||enemyZocAt(u,t))return;
+    var score=TERRAIN[t.terrain].def*3-closestFriendlyCityDistance(u.owner,t.q,t.r)*.35;
+    if(t.improvement==="road")score+=1.3;if(t.city)score+=2.5;
+    if(score>bestScore){bestScore=score;best=t;}
+  });
+  return best;
 }
 function moveCost(u,t,from){
   if(from&&routeBetween(from.q,from.r,t.q,t.r))return 2;
@@ -1126,6 +1198,8 @@ function unitAttackMultiplier(u,dst){
   }
   m*=supplyInfoForUnit(u).attack;
   m*=1+nationBonus(u.owner,"attackBonus");
+  m*=window.UnificationWarWarfare.attackMultiplier(unitMissionType(u),type);
+  m*=window.UnificationWarWarfare.fatigueMultiplier(fatigueValue(u.owner));
   return m;
 }
 function unitDefenseMultiplier(owner,type,dst){
@@ -1138,10 +1212,66 @@ function unitDefenseMultiplier(owner,type,dst){
   if(owner==="silla"&&dst.city)m*=1.15;
   m*=1+nationBonus(owner,"defenseBonus");
   if(dst.improvement==="fort")m*=1+nationBonus(owner,"fortDefense");
+  var defenderHere=state.units.find(function(x){return x.owner===owner&&x.q===dst.q&&x.r===dst.r&&x.troops>0;});
+  if(defenderHere)m*=window.UnificationWarWarfare.defenseMultiplier(unitMissionType(defenderHere));
+  m*=window.UnificationWarWarfare.fatigueMultiplier(fatigueValue(owner));
+  if(dst.city)m*=siegeStageForCity(dst.city).defense;
   return m;
 }
+function recordBattleLoss(owner,loss){
+  if(!owner||owner==="neutral"||loss<=0)return;
+  state.battleStats=state.battleStats||{};state.battleStats[owner]=state.battleStats[owner]||{losses:0,battles:0};
+  state.battleStats[owner].losses+=loss;state.battleStats[owner].battles++;
+  addFatigue(owner,Math.min(6,Math.max(.5,loss/120)));
+}
+function addSiegePressure(attacker,dst,amount){
+  if(!dst||!dst.city||dst.owner===attacker.owner||dst.owner==="neutral")return;
+  state.sieges=state.sieges||{};
+  var current=state.sieges[dst.city];
+  if(!current||current.attacker!==attacker.owner){
+    current={attacker:attacker.owner,defender:dst.owner,pressure:0,turns:0,lastTurn:state.turn};
+    state.sieges[dst.city]=current;
+  }
+  current.pressure=clamp(current.pressure+(Number(amount)||0),0,100);
+  current.lastTurn=state.turn;current.defender=dst.owner;
+}
+function advanceSieges(){
+  state.sieges=state.sieges||{};
+  Object.keys(state.sieges).forEach(function(cityId){
+    var s=state.sieges[cityId],c=CITIES[cityId],t=c&&tile(c.q,c.r);
+    if(!s||!t||t.owner!==s.defender||t.owner===s.attacker){delete state.sieges[cityId];return;}
+    var adjacent=state.units.some(function(u){return u.owner===s.attacker&&u.troops>0&&hexDistance(u.q,u.r,c.q,c.r)<=1&&supplyInfoForUnit(u).key!=="isolated";});
+    if(adjacent){s.pressure=clamp(s.pressure+4,0,100);s.turns=(s.turns||0)+1;}
+    else s.pressure=Math.max(0,s.pressure-18);
+    if(s.pressure<=0)delete state.sieges[cityId];
+  });
+}
+function updateWarFatigue(){
+  Object.keys(state.resources).forEach(function(owner){
+    var wars=activeWarCount(owner),f=fatigueValue(owner);
+    if(wars>0)addFatigue(owner,1+Math.min(2,wars-1));
+    else state.warFatigue[owner]=Math.max(0,f-4);
+    if(fatigueValue(owner)>=65){
+      var r=resource(owner);if(r)r.authority=Math.max(0,r.authority-1);
+    }
+  });
+}
+function applyFieldReinforcement(owner){
+  var r=resource(owner);if(!r||r.manpower<=0)return;
+  var reinforced=0;
+  state.units.filter(function(u){return u.owner===owner&&u.troops>0;}).forEach(function(u){
+    if(r.manpower<=0||u.troops>=430)return;
+    var supply=supplyInfoForUnit(u);if(supply.key!=="good"||closestFriendlyCityDistance(owner,u.q,u.r)>2)return;
+    var gain=window.UnificationWarWarfare.reinforcementAmount(u.type,unitMissionType(u));
+    gain=Math.min(gain,430-u.troops,Math.max(0,r.manpower*3));
+    if(gain<=0)return;
+    var manpowerCost=Math.max(1,Math.ceil(gain/3));if(r.manpower<manpowerCost)return;
+    r.manpower-=manpowerCost;u.troops+=gain;reinforced++;
+  });
+  if(owner===state.player&&reinforced)log("보급이 연결된 "+reinforced+"개 부대에 증원 병력이 합류했습니다.");
+}
 function resolveCombat(attacker,dst,defender,silent){
-  var oldOwner=dst.owner,garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral");
+  var oldOwner=dst.owner,garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral"),atkBefore=attacker.troops,defBefore=(defender?defender.troops:0)+garrison;
   if(defOwner!=="neutral")registerHostility(attacker.owner,defOwner);
   if(!defender&&garrison<=0){executeMoveCore(attacker,dst,silent);return true;}
   var unitDefTroops=defender?defender.troops:0,totalDefTroops=unitDefTroops+garrison;
@@ -1169,11 +1299,14 @@ function resolveCombat(attacker,dst,defender,silent){
     attacker.moved=true;
     if(!silent){log(FACTIONS[attacker.owner].name+" 군이 "+(dst.city?CITIES[dst.city].name:dst.region)+" 공격에서 물러났습니다.");toast("공격 실패 · "+fmt(attacker.troops)+"명 남음");}
   }
+  var defAfter=(defender&&defender.troops>0?defender.troops:0)+(dst.city&&dst.owner===defOwner?garrisonAtTile(dst):0);
+  recordBattleLoss(attacker.owner,Math.max(0,atkBefore-attacker.troops));recordBattleLoss(defOwner,Math.max(0,defBefore-defAfter));
+  if(!won&&dst.city)addSiegePressure(attacker,dst,18+Math.min(18,(defBefore-defAfter)/12));
   state.units=state.units.filter(function(x){return x.troops>0;});
   return won;
 }
 function resolveRangedCombat(attacker,dst,defender,silent){
-  var garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral");
+  var garrison=garrisonAtTile(dst),defOwner=defender?defender.owner:(dst.owner||"neutral"),atkBefore=attacker.troops,defBefore=(defender?defender.troops:0)+garrison;
   if(defOwner!=="neutral")registerHostility(attacker.owner,defOwner);
   if(!defender&&garrison<=0)return false;
   var unitDefTroops=defender?defender.troops:0,totalDefTroops=unitDefTroops+garrison;
@@ -1190,6 +1323,8 @@ function resolveRangedCombat(attacker,dst,defender,silent){
     if(dst.city)state.cityGarrisons[dst.city]=Math.max(0,remain-defender.troops);
   }else if(dst.city)state.cityGarrisons[dst.city]=remain;
   attacker.moved=true;
+  recordBattleLoss(attacker.owner,Math.max(0,atkBefore-attacker.troops));recordBattleLoss(defOwner,Math.max(0,defBefore-remain));
+  if(dst.city&&remain>0)addSiegePressure(attacker,dst,10+Math.min(12,(defBefore-remain)/15));
   state.units=state.units.filter(function(x){return x.troops>0;});
   if(!silent){
     log(FACTIONS[attacker.owner].name+" 궁병이 "+(dst.city?CITIES[dst.city].name:dst.region)+"에 원거리 공격을 가했습니다.");
@@ -1230,6 +1365,7 @@ function openCombatPreview(attacker,dst){
   var atkSupply=supplyInfoForUnit(attacker);if(atkSupply.key!=="good")notes.push("우리 부대의 보급 상태가 "+atkSupply.name+"이라 공격력이 감소합니다.");
   if(f.river<1)notes.push("강을 건너 공격해 공격력이 감소합니다.");
   if(dst.improvement==="fort")notes.push("적 요새의 방어 보너스가 적용됩니다.");
+  if(dst.city&&siegeForCity(dst.city)){var ss=siegeStageForCity(dst.city);notes.push("현재 "+ss.name+" 상태라 도시 방어력이 약화되어 있습니다.");}
   if(dst.terrain==="mountain"||dst.terrain==="hill")notes.push(TERRAIN[dst.terrain].name+" 방어 보너스가 적용됩니다.");
   document.getElementById("modalDesc").textContent=notes.join(" ")||"지형과 병종, 도시 수비대를 반영한 예상치입니다. 실제 결과에는 변동이 있습니다.";
   var defTroops=(f.defender?f.defender.troops:0)+f.garrison;
@@ -1270,7 +1406,9 @@ function captureCityIfNeeded(u,t,oldOwner){
     if(previous!=="neutral"){
       state.captured[u.owner]=(state.captured[u.owner]||0)+1;
       resource(u.owner).authority=clamp(resource(u.owner).authority+6,0,100);
+      addFatigue(previous,10);addFatigue(u.owner,2);
     }
+    if(state.sieges)delete state.sieges[t.city];
   }
 }
 function improvementLevel(t){return t&&t.improvement?Math.max(1,t.improvementLevel||1):0;}
@@ -1811,6 +1949,8 @@ function endTurn(){
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(advanceCityProjects);
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applyIncome);
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applySupplyAttrition);
+  ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applyFieldReinforcement);
+  advanceSieges();updateWarFatigue();
   state.units.forEach(function(u){u.moved=false;});
   if(checkDefeat())return;
   if(ownsUnificationCapitals(state.player)){state.finished=true;renderAll();save(false);openResult("unification");return;}
@@ -1845,7 +1985,8 @@ function showTutorial(){
     ["3. 지형과 특산 자원","철광맥·금광맥·모피·도자기 흙·비옥한 토지·소금·말·목재가 일부 타일에 배치되어 있습니다. 알맞은 시설을 지으면 추가 수입을 얻습니다."],
     ["4. 땅과 도시를 개발하세요","내 육각형에는 농장·교역소·병영·광산·도요·요새·도로·어장을 지을 수 있습니다. 도시는 성벽·병영·시장 확장이나 수비대 복구 사업을 한 번에 하나씩 진행합니다."],
     ["5. 도시와 전투","공격 전에는 병력·지형·수비대를 반영한 예상 손실을 확인할 수 있습니다. 보병은 공성에 안정적이고, 궁병은 바로 옆 적을 원거리 공격하며, 기병은 평야 기동에 강합니다."],
-    ["6. 보급과 외부 세력","도시에서 이어진 내 영토와 도로가 군대의 보급망입니다. 너무 멀리 진군해 보급이 끊기면 전투력이 떨어지고 병력 손실도 생깁니다. 수나라와 왜는 전쟁이나 대리전이 시작되기 전까지 기본 비개입입니다."]
+    ["6. 보급과 외부 세력","도시에서 이어진 내 영토와 도로가 군대의 보급망입니다. 너무 멀리 진군해 보급이 끊기면 전투력이 떨어지고 병력 손실도 생깁니다. 수나라와 왜는 전쟁이나 대리전이 시작되기 전까지 기본 비개입입니다."],
+    ["7. 임무·공성·후퇴","부대에는 공격·방어·대기·기동 임무를 지정할 수 있습니다. 도시를 반복 압박하면 포위가 깊어져 방어와 수비대 회복이 약해집니다. 위험한 부대는 후퇴해 보급망에서 증원받으세요."]
   ];
   if(tutorialStep>=tips.length){document.getElementById("tutorial").classList.add("hidden");return;}
   document.getElementById("tutorialTitle").textContent=tips[tutorialStep][0];document.getElementById("tutorialText").textContent=tips[tutorialStep][1];document.getElementById("tutorial").classList.remove("hidden");
