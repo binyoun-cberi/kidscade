@@ -45,6 +45,7 @@ test('cloud sync state only keeps bounded Kidscade progress fields', () => {
   const state = sanitizeSyncState({
     profile: { nickname: '<b>번개토끼</b>' },
     seeds: 1234,
+    sproutPower: 87,
     avatarInventory: ['hat_1', 'shirt_2'],
     avatarEquipped: { hair: 'hair_1' },
     playHistory: { games: { math: { plays: 3 } } },
@@ -57,7 +58,11 @@ test('cloud sync state only keeps bounded Kidscade progress fields', () => {
   });
   assert.equal(state.profile.nickname, 'b번개토끼/b');
   assert.equal(state.seeds, 1234);
+  assert.equal(state.sproutPower, 87);
   assert.deepEqual(state.avatarInventory, ['hat_1', 'shirt_2']);
+  assert.equal(Object.hasOwn(state, 'pet'), false);
+  assert.equal(Object.hasOwn(state, 'petItems'), false);
+  assert.equal(Object.hasOwn(state, 'gardenState'), false);
   assert.equal(Object.hasOwn(state, 'ignoredSecret'), false);
 });
 
