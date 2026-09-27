@@ -11,6 +11,7 @@
   const KEYS = Object.freeze({
     saveVersion: 'kidscade_save_version',
     seeds: 'kidscade_coins',
+    sproutPower: 'kidscade_sprout_power',
     favorites: 'kidscade_favs',
     recents: 'kidscade_recents',
     age: 'kidscade_age',
