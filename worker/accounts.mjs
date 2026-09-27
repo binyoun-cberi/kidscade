@@ -214,6 +214,7 @@ function accountPayload(row) {
   try { state = row?.state_json ? JSON.parse(row.state_json) : {}; } catch (_) {}
   return {
     account: {
+      role: 'student',
       loginId: row.login_id,
       nickname: row.nickname || '새싹 게이머',
       className: row.class_name || '',
