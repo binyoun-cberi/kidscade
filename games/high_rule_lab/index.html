@@ -83,7 +83,8 @@
     </main>
   </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>\n  <div id="gameLog" class="sr-only" role="log" aria-live="polite"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="gameLog" class="sr-only" role="log" aria-live="polite"></div>
 
   <dialog id="levelDialog" class="modal">
     <div class="modal-head">
@@ -113,6 +114,14 @@
 
   <script src="../../kidscade-game-sdk.js" data-game-id="high_rule_lab" data-title="내 말 좀 들어" data-shell="true" data-orientation="landscape"></script>
   <script src="./levels.js?v=4"></script>
-  <script src="./game.js?v=4"></script>
+  <script src="./engine/state.js?v=5"></script>
+  <script src="./engine/rules.js?v=5"></script>
+  <script src="./engine/movement.js?v=5"></script>
+  <script src="./engine/interactions.js?v=5"></script>
+  <script src="./engine/history.js?v=5"></script>
+  <script src="./engine/turn.js?v=5"></script>
+  <script src="./engine/validator.js?v=5"></script>
+  <script src="./ui/renderer.js?v=5"></script>
+  <script src="./game.js?v=5"></script>
 </body>
 </html>
