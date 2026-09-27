@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>운전면허시험장</title>
-<link rel="stylesheet" href="driver-license.css?v=7">
+<link rel="stylesheet" href="driver-license.css?v=8">
 </head>
 <body>
 <canvas id="game" aria-label="운전면허시험장 3D 운전석 화면"></canvas>
@@ -14,6 +14,11 @@
     <div class="exam-row"><span id="examMode">연습</span><b id="score">100</b></div>
     <div id="instruction">차종과 모드를 고르고 시작하세요.</div>
     <div id="subInstruction">운전석의 장치를 직접 조작합니다.</div>
+  </div>
+
+  <div id="examinerPanel" class="glass">
+    <div class="examiner-head"><span>시험관</span><b id="examinerState">대기</b></div>
+    <div id="examinerText">시험을 시작하면 주행 상태를 실시간으로 판정합니다.</div>
   </div>
 
   <div id="cluster" aria-label="계기판">
@@ -46,6 +51,7 @@
       <button id="ignition" class="small-control" type="button">시동</button>
       <button id="seatbelt" class="small-control" type="button">벨트</button>
       <button id="parkingBrake" class="small-control" type="button">주차</button>
+      <button id="hazard" class="small-control hazard-control" type="button">비상등</button>
     </div>
 
     <div id="gearArea">
@@ -108,6 +114,6 @@
 <script src="../../kidscade-storage.js?v=20260924-driver-license-1"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="job_driver_license" data-title="운전면허시험장" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="driver-license.js?v=8"></script>
+<script type="module" src="driver-license.js?v=9"></script>
 </body>
 </html>
