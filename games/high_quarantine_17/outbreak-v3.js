@@ -264,7 +264,7 @@ function resizeCanvas(){
  const w=Math.max(320,Math.round(cssW*dpr)),h=Math.max(180,Math.round(cssH*dpr));
  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
 }
-function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,vx:0,vy:0,r:21*(window.devicePixelRatio||1),hp:hp||2,speed:speed||124*(window.devicePixelRatio||1),hit:0,attack:0,name:name||'',attackDelay:attackDelay||0,onGround:true,knock:0})}
+function spawnZombie(x,y,hp,speed,name,attackDelay){zombies.push({x:x,y:y,vx:0,vy:0,r:21*(window.devicePixelRatio||1),hp:hp||2,speed:speed||124*(window.devicePixelRatio||1),hit:0,attack:0,name:name||'',attackDelay:attackDelay||0,onGround:true,jumpCd:0,knock:0})}
 function makeWorld(kind){
  const dpr=Math.min(2,window.devicePixelRatio||1);
  worldH=canvas.height;
@@ -288,7 +288,7 @@ function setupCombat(kind,payload){
  }else if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer'];
   const xs=[760,900,1030,1160,1280,1380];
-  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,bite:0,bitten:false,turnTimer:0})});
+  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,vy:0,onGround:true,jumpCd:0,bite:0,bitten:false,turnTimer:0})});
   spawnZombie(560*dpr,groundY,2,126*dpr,currentIntruder,2.1);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
   document.getElementById('q17SurvivorStat').style.display='';
@@ -367,6 +367,29 @@ function collidesObstacle(x,y,r){
 function obstacleAhead(entity,dir){
  return obstacles.find(function(o){return dir>0?entity.x+entity.r+10>o.x&&entity.x<o.x&&entity.x+entity.r<o.x+o.w:entity.x-entity.r-10<o.x+o.w&&entity.x>o.x+o.w&&entity.x-entity.r>o.x});
 }
+function launchObstacleJump(entity,obs,dpr,factor){
+ if(!obs||!entity.onGround||(entity.jumpCd||0)>0)return;
+ const h=obs.h/dpr;
+ entity.vy=-Math.min(620,360+h*2.2)*dpr*(factor||1);
+ entity.onGround=false;entity.jumpCd=.62;
+}
+function stepWalkerPhysics(entity,dt,dpr){
+ entity.jumpCd=Math.max(0,(entity.jumpCd||0)-dt);
+ const prevY=entity.y;
+ entity.vy=(entity.vy||0)+1080*dpr*dt;
+ entity.y+=entity.vy*dt;
+ let landed=false;
+ if(entity.vy>=0){
+  obstacles.forEach(function(o){
+   if(landed)return;
+   if(entity.x+entity.r*.55>o.x&&entity.x-entity.r*.55<o.x+o.w&&entity.y>=o.y&&prevY<=o.y+2*dpr){
+    entity.y=o.y;entity.vy=0;landed=true;
+   }
+  });
+ }
+ if(entity.y>=groundY){entity.y=groundY;entity.vy=0;landed=true}
+ entity.onGround=landed;
+}
 function worldMouse(e){const r=canvas.getBoundingClientRect(),sx=(e.clientX-r.left)*canvas.width/r.width,sy=(e.clientY-r.top)*canvas.height/r.height;return{x:cameraX+sx/viewScale,y:(sy-canvas.height*(1-viewScale))/viewScale}}
 function update(dt){
  if(!started)return;
@@ -395,8 +418,9 @@ function update(dt){
    if(s.bitten){s.turnTimer-=dt;if(s.turnTimer<=0){convertSurvivor(s);return}}
    let near=null,nd=Infinity;zombies.forEach(function(z){const d=Math.abs(z.x-s.x);if(d<nd){nd=d;near=z}});
    if(near&&nd<210*dpr&&!s.bitten){s.dir=near.x<s.x?1:-1}
-   s.x+=s.dir*s.speed*dt;
-   const obs=obstacleAhead(s,s.dir);if(obs){s.dir*=-1}
+   const obs=obstacleAhead(s,s.dir);if(obs)launchObstacleJump(s,obs,dpr,.88);
+   s.x+=s.dir*s.speed*dt*(s.onGround?1:.94);
+   stepWalkerPhysics(s,dt,dpr);
    if(s.x<520*dpr){s.x=520*dpr;s.dir=1}if(s.x>worldW-80*dpr){s.x=worldW-80*dpr;s.dir=-1}
    if(!s.bitten)s.bite=Math.max(0,s.bite-dt*.22);
   });
@@ -406,12 +430,14 @@ function update(dt){
  zombies.forEach(function(z){
   z.attackDelay=Math.max(0,z.attackDelay-dt);z.hit=Math.max(0,z.hit-dt);z.attack=Math.max(0,z.attack-dt);
   const target=nearestTargetForZombie(z),dir=target.x>=z.x?1:-1;
+  const obs=obstacleAhead(z,dir);if(obs)launchObstacleJump(z,obs,dpr,1);
   if(Math.abs(z.knock)>1){z.x+=z.knock*dt;z.knock*=Math.pow(.02,dt)}
-  else{z.x+=dir*z.speed*dt;const obs=obstacleAhead(z,dir);if(obs){z.x+=dir*z.speed*.45*dt}}
-  const dist=Math.abs(target.x-z.x);
+  else z.x+=dir*z.speed*dt*(z.onGround?1:.92);
+  stepWalkerPhysics(z,dt,dpr);
+  const dist=Math.abs(target.x-z.x),vertical=Math.abs((target.y||groundY)-z.y);
   if(target===player){
-   if(dist<player.r+z.r&&Math.abs(player.y-groundY)<60*dpr&&player.iframes<=0){player.hp=Math.max(0,player.hp-10);player.iframes=.72;player.hurt=.28;z.attack=.22;player.vx=dir*210*dpr;damageFlash=.45;screenShake=Math.max(screenShake,8);updateHud();if(player.hp<=0){lose();return}}
-  }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&dist<target.r+z.r+6*dpr){
+   if(dist<player.r+z.r&&vertical<60*dpr&&player.iframes<=0){player.hp=Math.max(0,player.hp-10);player.iframes=.72;player.hurt=.28;z.attack=.22;player.vx=dir*210*dpr;damageFlash=.45;screenShake=Math.max(screenShake,8);updateHud();if(player.hp<=0){lose();return}}
+  }else if(target.alive&&!target.bitten&&z.attackDelay<=0&&dist<target.r+z.r+6*dpr&&vertical<52*dpr){
    z.attack=.18;target.bite=(target.bite||0)+dt;if(target.bite>=1.85){target.bitten=true;target.turnTimer=5.5;target.bite=0;z.attackDelay=1.05;notify('생존자 물림 · 약 5초 안에 제압 필요')}
   }
  });
