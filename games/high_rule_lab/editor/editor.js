@@ -58,7 +58,7 @@ function startPlay(){
  const v=renderRulesAndValidation();if(v.errors.length){alert('Validator 오류를 먼저 고쳐 주세요.');return}
  playState=E.State.fromLevel(draft);playHistory=new E.History(playState);document.documentElement.style.setProperty('--cols',draft.w);document.documentElement.style.setProperty('--rows',draft.h);
  const pb=$('playBoard');pb.innerHTML='';playRenderer=new UI.Renderer(pb,$('playRules'),DATA,{hero:'../../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',rock:'../../../assets/game/2d/racing/kenney-racing-pack/objects/rock3.png'});
- $('playTitle').textContent=draft.title||'플레이테스트';$('playStatus').textContent='방향키로 움직이세요.';playRenderer.render(playState,E.Rules.parse(playState),{added:[],removed:[]});$('playDialog').showModal();setTimeout(()=>pb.focus(),0);
+ $('playTitle').textContent=draft.title||'플레이테스트';$('playStatus').textContent='방향키로 움직이세요.';playRenderer.render(playState,E.Rules.parse(playState),{added:[],removed:[]});if(!$('playDialog').open)$('playDialog').showModal();setTimeout(()=>pb.focus(),0);
 }
 function playMove(dx,dy){if(!playState)return;const r=E.Turn.step(playState,{dx,dy});if(!r.moved)return;playState=r.state;playHistory.push(playState);playRenderer.render(playState,r.rules,r.diff);$('playStatus').textContent=r.won?'✓ 해결됨 · '+playState.moves+'수':playState.moves+'수'}
 function playUndo(){const s=playHistory&&playHistory.undo();if(!s)return;playState=s;playRenderer.render(playState,E.Rules.parse(playState),{added:[],removed:[]});$('playStatus').textContent=playState.moves+'수'}
