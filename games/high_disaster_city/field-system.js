@@ -67,7 +67,7 @@ function barrierFor(sim,field,from,to,d,potential,dt){
  return factor
 }
 function stepWater(sim,d,dt){
- const f=ensure(sim),delta=new Float64Array(f.cells.length),rate=C.flowRate||.48;
+ const f=ensure(sim),delta=new Float64Array(f.cells.length),outgoing=new Float64Array(f.cells.length),rate=C.flowRate||.48;
  d.blockedSlot=-1;
  for(let r=0;r<C.rows;r++)for(let c=0;c<C.cols;c++){
   const a=cell(f,c,r);
@@ -76,10 +76,10 @@ function stepWater(sim,d,dt){
    const sa=a.elevation+a.water,sb=b.elevation+b.water,diff=sa-sb;
    if(Math.abs(diff)<.002)continue;
    const src=diff>0?a:b,dst=diff>0?b:a,si=idx(src.c,src.r),di=idx(dst.c,dst.r);
-   const potential=Math.min(src.water,Math.abs(diff)*rate*dt);
+   const available=Math.max(0,src.water-outgoing[si]),potential=Math.min(available,Math.abs(diff)*rate*dt);
    if(potential<=0)continue;
    const factor=barrierFor(sim,f,src,dst,d,potential,dt),flow=potential*factor;
-   delta[si]-=flow;delta[di]+=flow;
+   outgoing[si]+=flow;delta[si]-=flow;delta[di]+=flow;
   }
  }
  for(let i=0;i<f.cells.length;i++)f.cells[i].water=clamp(f.cells[i].water+delta[i],0,1.5);
@@ -115,8 +115,6 @@ function updateFlood(sim,d,dt){
  const f=ensure(sim);injectFlood(sim,d,dt);stepWater(sim,d,dt);pumpDrain(sim,dt);
  const drain=(C.ambientDrain||.006)+(d.phase==='receding'?(C.recedingDrain||.026):0)+(d.phase==='recovery'?.045:0);
  for(const x of f.cells)x.water=Math.max(0,x.water-drain*dt);
- for(const b of f.tempBarriers)b.life-=dt;
- f.tempBarriers=f.tempBarriers.filter(x=>x.hp>0&&x.life>0);
  if(d.phase!=='recovery')floodDamage(sim,d,dt);
  d.progress=fieldProgress(f,d.side,'water',.055);
  const wet=sideCells(f,d.side),sum=wet.reduce((n,x)=>n+x.water,0),peak=wet.reduce((m,x)=>Math.max(m,x.water),0);
@@ -140,6 +138,13 @@ function igniteEdge(sim,d){
  const f=ensure(sim),edge=d.side==='left'?0:C.cols-1;
  for(let r=0;r<C.rows;r++){const x=cell(f,edge,r);x.fire=Math.max(x.fire,.48+(r===slotRow()?.22:.08));x.heat=Math.max(x.heat,.7)}
 }
+function localFuel(sim,x){
+ let mult=1;
+ if(x.r===slotRow()){
+  for(const slot of sim.state.slots){if(slotCol(slot)!==x.c||!slot.building)continue;mult+=D.BUILDINGS[slot.building.id]?.fuelBonus||0}
+ }
+ return clamp(x.fuel*mult,0,1.35)
+}
 function stepFire(sim,d,dt){
  const f=ensure(sim),deltaFire=new Float64Array(f.cells.length),deltaHeat=new Float64Array(f.cells.length),dir=inwardDir(d.side),spreadBase=C.fireSpread||.20;
  for(const x of f.cells){
@@ -148,7 +153,7 @@ function stepFire(sim,d,dt){
    for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
     const n=cell(f,x.c+dc,x.r+dr);if(!n||n.fuel<=.01)continue;
     let wind=1;if(dc===dir)wind=1.55;else if(dc===-dir)wind=.65;
-    const add=x.fire*n.fuel*(1-n.moisture)*spreadBase*wind*dt;
+    const add=x.fire*localFuel(sim,n)*(1-n.moisture)*spreadBase*wind*dt;
     deltaFire[idx(n.c,n.r)]+=add;deltaHeat[idx(n.c,n.r)]+=add*.8;
    }
   }
