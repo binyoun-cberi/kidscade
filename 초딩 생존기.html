@@ -764,7 +764,7 @@
     const seed=makeSeed();
     return {grade:1,turn:0,stats:{study:50,health:50,happy:50,social:50,stress:20},queue:[],current:null,locked:false,sound,voice,
       history:[],subjectSeen:blankSubjectMap(),subjectGood:blankSubjectMap(),friendCare:0,friendNames:{},friendRelations:{},friendMoments:{},sportCare:0,recoveries:0,
-      flags:{},storyletSeen:{},pendingChains:[],lifetimeTurn:0,lastStoryletTurn:-99,rngSeed:seed,rngState:seed,phaseHistory:[],
+      flags:{},storyletSeen:{},pendingChains:[],lifetimeTurn:0,lastStoryletTurn:-99,rngSeed:seed,rngState:seed,phaseHistory:[],antagonists:{'태오':{bond:0,influence:0,defiance:0,moments:0}},
       minSeen:{study:50,health:50,happy:50,social:50,stress:20},maxSeen:{study:50,health:50,happy:50,social:50,stress:20}};
   }
 
@@ -824,7 +824,7 @@
       const s=JSON.parse(raw);if(!s||!s.grade||!Array.isArray(s.queue))return null;
       s.stats={study:50,health:50,happy:50,social:50,stress:20,...s.stats};
       s.friendRelations=s.friendRelations||{};s.friendMoments=s.friendMoments||{};
-      s.flags=s.flags||{};s.storyletSeen=s.storyletSeen||{};s.pendingChains=Array.isArray(s.pendingChains)?s.pendingChains:[];
+      s.flags=s.flags||{};s.storyletSeen=s.storyletSeen||{};s.pendingChains=Array.isArray(s.pendingChains)?s.pendingChains:[];s.antagonists=s.antagonists||{};s.antagonists['태오']={bond:0,influence:0,defiance:0,moments:0,...(s.antagonists['태오']||{})};
       s.lifetimeTurn=Number.isFinite(s.lifetimeTurn)?s.lifetimeTurn:(Array.isArray(s.history)?s.history.length:0);
       s.lastStoryletTurn=Number.isFinite(s.lastStoryletTurn)?s.lastStoryletTurn:-99;
       s.rngSeed=(Number(s.rngSeed)>>>0)||makeSeed();s.rngState=(Number(s.rngState)>>>0)||s.rngSeed;s.phaseHistory=Array.isArray(s.phaseHistory)?s.phaseHistory:[];
@@ -1026,6 +1026,103 @@
       id:'g6_seoyun_groupchat_memory',storylet:true,grade:[6],characterId:'서윤',phases:['1학기','2학기'],priority:78,weight:1.7,
       requires:()=>!!state.flags.joined_mocking||!!state.flags.protected_seoyun,
       choiceMeta:{left:{relation:-1,constructive:false},right:{relation:3,constructive:true,flags:['closed_groupchat_memory']}}
+    }),
+    Object.assign(E('친구 태오','청소 당번 탈출','2학년 청소 시간, 태오가 “선생님 안 보니까 우리 먼저 가자”고 속삭여. 아직 네 구역은 조금 남았어.',
+      '태오를 따라 먼저 간다',S(0,1,5,2,-2),'내 구역을 끝내고 간다',S(1,-1,1,-1,1),
+      '잠깐은 신났지만 네 몫의 청소가 그대로 남았어요.','태오는 먼저 갔지만 네 자리는 끝까지 정리했어요.'),{
+      id:'g2_taeo_cleanup_escape',storylet:true,antagonist:true,grade:[2],characterId:'태오',phases:['새 학기','1학기'],priority:86,weight:1.6,
+      requires:()=>!state.antagonists?.['태오']?.moments,
+      choiceMeta:{
+        left:{constructive:false,flags:['followed_taeo_cleanup'],antagonist:{bond:2,influence:2,defiance:0},chain:{id:'g2_taeo_cleanup_caught',delay:2}},
+        right:{constructive:true,flags:['refused_taeo_cleanup'],antagonist:{bond:-1,influence:0,defiance:2}}
+      }
+    }),
+    Object.assign(E('담임 선생님','남겨진 청소','며칠 뒤 선생님이 청소 구역이 비어 있던 날을 물어보셨어. 태오는 옆에서 아무 말도 하지 않고 너를 보고 있어.',
+      '둘 다 끝낸 척한다',S(-1,0,1,1,4),'먼저 갔다고 사실대로 말한다',S(-1,0,-1,-2,-2),
+      '태오는 만족해했지만 설명해야 할 일이 하나 더 생겼어요.','태오는 표정이 굳었지만 선생님은 다음부터 지키자고 정리했어요.'),{
+      id:'g2_taeo_cleanup_caught',storylet:true,chainOnly:true,antagonist:true,grade:[2],characterId:'태오',priority:100,
+      choiceMeta:{
+        left:{constructive:false,flags:['covered_taeo_cleanup'],antagonist:{bond:2,influence:2,defiance:-1}},
+        right:{constructive:true,flags:['told_cleanup_truth'],antagonist:{bond:-2,influence:-1,defiance:2}}
+      }
+    }),
+    Object.assign(E('친구 태오','장난 계획','3학년 쉬는 시간, 태오가 다른 친구 필통을 몰래 숨겼다가 나중에 돌려주자고 해. “장난인데 뭐 어때?”라고 웃고 있어.',
+      '같이 숨긴다',S(0,0,5,2,2),'그 장난은 하지 말자고 한다',S(0,0,1,-1,1),
+      '처음엔 웃겼지만 필통 주인은 점점 표정이 굳었어요.','태오는 재미없다며 투덜댔지만 필통은 제자리에 남았어요.'),{
+      id:'g3_taeo_prank',storylet:true,antagonist:true,grade:[3],characterId:'태오',phases:['1학기','2학기'],priority:85,weight:1.6,
+      requires:()=>state.antagonists?.['태오']?.moments>=1,
+      choiceMeta:{
+        left:{constructive:false,flags:['joined_taeo_prank'],antagonist:{bond:2,influence:2,defiance:-1},chain:{id:'g3_taeo_prank_backfire',delay:2}},
+        right:{constructive:true,flags:['stopped_taeo_prank'],antagonist:{bond:-1,influence:-1,defiance:2}}
+      }
+    }),
+    Object.assign(E('친구 태오','장난의 뒷부분','숨긴 필통 때문에 친구가 울기 시작했어. 태오는 “이제 네가 갖다 놓고 와”라고 작은 목소리로 말해.',
+      '조용히 돌려놓고 모른 척한다',S(0,0,-2,0,3),'같이 했다고 말하고 사과한다',S(-1,0,-1,-2,-3),
+      '물건은 돌아갔지만 누가 왜 그랬는지는 남지 않았어요.','혼날 수 있어도 장난을 끝내는 책임은 함께 졌어요.'),{
+      id:'g3_taeo_prank_backfire',storylet:true,chainOnly:true,antagonist:true,grade:[3],characterId:'태오',priority:100,
+      choiceMeta:{
+        left:{constructive:false,flags:['hid_taeo_prank'],antagonist:{bond:2,influence:2,defiance:-1}},
+        right:{constructive:true,flags:['owned_taeo_prank'],antagonist:{bond:-1,influence:-1,defiance:3}}
+      }
+    }),
+    Object.assign(E('친구 태오','이기는 팀','4학년 체육 시간, 태오가 “잘하는 애들끼리만 팀 짜면 무조건 이겨”라며 몇 명을 빼자고 해.',
+      '이길 수 있게 잘하는 친구만 고른다',S(1,5,3,-5,2),'모두 뛸 방법을 찾자고 한다',S(0,2,4,6,1),
+      '팀은 강해졌지만 벤치에 남은 친구들은 조용해졌어요.','조금 불리해도 모두가 역할을 갖고 경기에 들어갔어요.'),{
+      id:'g4_taeo_winning_team',storylet:true,antagonist:true,grade:[4],characterId:'태오',phases:['1학기','2학기'],priority:86,weight:1.7,
+      requires:()=>state.antagonists?.['태오']?.moments>=2,
+      choiceMeta:{
+        left:{constructive:false,flags:['joined_taeo_exclusion'],antagonist:{bond:2,influence:2,defiance:-1}},
+        right:{constructive:true,flags:['opposed_taeo_exclusion'],antagonist:{bond:-1,influence:-1,defiance:2}}
+      }
+    }),
+    Object.assign(E('친구 태오','익명 투표','5학년 단체 채팅방에서 태오가 “우리 반에서 제일 답답한 애” 익명 투표를 만들자고 해. 누가 만들었는지는 표시되지 않는대.',
+      '재미로 같이 만든다',S(0,0,5,3,3),'그건 사람 찍는 거라고 거절한다',S(0,0,0,-1,1),
+      '채팅방은 잠깐 시끄러워졌지만 누군가는 자기 이름이 나올까 조용해졌어요.','태오는 유난이라고 했지만 투표 링크는 만들어지지 않았어요.'),{
+      id:'g5_taeo_anonymous_poll',storylet:true,antagonist:true,grade:[5],characterId:'태오',phases:['1학기','여름·2학기 초'],priority:88,weight:1.8,
+      requires:()=>state.antagonists?.['태오']?.moments>=3,
+      choiceMeta:{
+        left:{constructive:false,flags:['joined_taeo_poll'],antagonist:{bond:3,influence:3,defiance:-1},chain:{id:'g5_taeo_poll_fallout',delay:2}},
+        right:{constructive:true,flags:['refused_taeo_poll'],antagonist:{bond:-2,influence:-1,defiance:3}}
+      }
+    }),
+    Object.assign(E('친구 태오','누가 만들었어?','익명 투표 화면이 캡처돼 선생님에게 들어갔어. 태오는 “네가 먼저 하자고 했다고 하면 되지?”라고 말해.',
+      '그 말에 맞춰준다',S(-2,0,-2,1,6),'같이 만들었다고 사실대로 말한다',S(-2,0,-1,-2,-3),
+      '태오는 네 편이라고 했지만 책임은 네 쪽으로 더 기울었어요.','둘 다 책임을 나눠 지게 됐고 태오는 한동안 말을 줄였어요.'),{
+      id:'g5_taeo_poll_fallout',storylet:true,chainOnly:true,antagonist:true,grade:[5],characterId:'태오',priority:100,
+      choiceMeta:{
+        left:{constructive:false,flags:['took_taeo_blame'],antagonist:{bond:3,influence:3,defiance:-2}},
+        right:{constructive:true,flags:['shared_taeo_responsibility'],antagonist:{bond:-1,influence:-2,defiance:3}}
+      }
+    }),
+    Object.assign(E('친구 태오','우리끼리 다니자','6학년이 되자 태오가 중학교에 가서도 자기랑 몇 명만 붙어 다니자고 해. “싫은 애들은 굳이 끼워줄 필요 없잖아.”',
+      '그 무리에 들어가겠다고 한다',S(0,0,4,4,2),'누구를 빼는 약속은 안 한다고 말한다',S(0,0,1,-1,-1),
+      '태오는 만족했고 너는 확실한 자리를 얻었지만 그 자리에 들어오지 못할 사람도 정해졌어요.','태오는 재미없다고 했지만 네가 지킬 선은 분명해졌어요.'),{
+      id:'g6_taeo_pack_offer',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['새 학기','1학기'],priority:92,weight:2,
+      requires:()=> (state.antagonists?.['태오']?.influence||0)>=6,
+      choiceMeta:{
+        left:{constructive:false,flags:['joined_taeo_pack'],antagonist:{bond:3,influence:3,defiance:-1}},
+        right:{constructive:true,flags:['refused_taeo_pack'],antagonist:{bond:-2,influence:-2,defiance:3}}
+      }
+    }),
+    Object.assign(E('친구 태오','안 휘둘리는 애','6학년 복도에서 태오가 피식 웃으며 말해. “넌 진짜 내가 뭐 하자고 해도 잘 안 넘어오더라.”',
+      '앞으로도 선은 지킬 거라고 한다',S(0,0,1,0,-1),'선만 지키면 같이 놀 수 있다고 한다',S(0,0,3,2,-2),
+      '태오와 친해지진 않았지만 서로 어디까지인지 확실히 알게 됐어요.','태오가 잠깐 웃었고, 둘 사이에는 이상하게도 지킬 규칙이 생겼어요.'),{
+      id:'g6_taeo_respect',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['1학기','2학기'],priority:92,weight:2,
+      requires:()=> (state.antagonists?.['태오']?.defiance||0)>=7&&(state.antagonists?.['태오']?.influence||0)<6,
+      choiceMeta:{
+        left:{constructive:true,flags:['taeo_clear_boundary'],antagonist:{bond:-1,influence:-1,defiance:2}},
+        right:{constructive:true,flags:['taeo_respect_rival'],antagonist:{bond:3,influence:0,defiance:1}}
+      }
+    }),
+    Object.assign(E('친구 태오','졸업식 장난','졸업식 단체사진 직전, 태오가 앞줄 친구들만 모르게 우스운 포즈를 맞추자고 해. 마지막 추억이라며 네 눈치를 보고 있어.',
+      '몰래 장난 포즈를 맞춘다',S(0,0,5,2,1),'모두 알고 같이 찍자고 바꾼다',S(0,0,4,4,-1),
+      '사진은 웃겼지만 몇몇 친구는 자기만 몰랐다는 걸 나중에 알게 됐어요.','장난은 남았지만 누구도 놀림거리가 되지 않는 사진이 됐어요.'),{
+      id:'g6_taeo_last_prank',storylet:true,antagonist:true,grade:[6],characterId:'태오',phases:['2학기','학년말'],priority:84,weight:1.6,
+      requires:()=>state.antagonists?.['태오']?.moments>=4,
+      choiceMeta:{
+        left:{constructive:false,flags:['taeo_last_secret_prank'],antagonist:{bond:2,influence:1,defiance:0}},
+        right:{constructive:true,flags:['taeo_last_inclusive_prank'],antagonist:{bond:1,influence:-1,defiance:2}}
+      }
     })
   ];
   const NPC_PROFILES={
@@ -1033,6 +1130,34 @@
     '준호':{label:'경쟁 친구',high:'믿는 라이벌',mid:'좋은 경쟁 상대',low:'불편한 경쟁 상대'},
     '서윤':{label:'신뢰 친구',high:'믿고 말하는 친구',mid:'편한 친구',low:'조심스러운 사이'}
   };
+  const ANTAGONIST_PROFILES={'태오':{label:'말썽 친구'}};
+  function antagonistState(name='태오'){
+    state.antagonists=state.antagonists||{};
+    state.antagonists[name]={bond:0,influence:0,defiance:0,moments:0,...(state.antagonists[name]||{})};
+    return state.antagonists[name];
+  }
+  function antagonistTier(name){
+    const a=antagonistState(name);
+    if(a.influence>=8&&a.defiance<5)return '패거리 중심';
+    if(a.defiance>=8&&a.bond>=2)return '서로 인정한 숙적';
+    if(a.defiance>=7)return '선을 그은 숙적';
+    if(a.bond<=-5)return '충돌 중';
+    if(a.influence>=4)return '위험한 단짝';
+    return ANTAGONIST_PROFILES[name]?.label||'경계하는 사이';
+  }
+  function applyAntagonistChoice(name,meta,constructive,fx){
+    const a=antagonistState(name),d=meta?.antagonist||{};
+    const generic=meta?.antagonist?null:{
+      bond:Math.max(-1,Math.min(1,Math.round((fx.social||0)/4))),
+      influence:constructive?0:1,
+      defiance:constructive?1:0
+    };
+    const delta=generic||d;
+    a.bond=Math.max(-12,Math.min(12,a.bond+(Number(delta.bond)||0)));
+    a.influence=Math.max(0,Math.min(15,a.influence+(Number(delta.influence)||0)));
+    a.defiance=Math.max(0,Math.min(15,a.defiance+(Number(delta.defiance)||0)));
+    a.moments++;
+  }
   function bondTier(name){
     const rel=state.friendRelations?.[name]||0,moments=state.friendMoments?.[name]||0,p=NPC_PROFILES[name];
     if(!p)return rel>=6?'단짝':rel>=2?'친한 친구':rel<=-3?'서먹한 사이':'아는 친구';
@@ -1123,10 +1248,12 @@
     friendA:{classes:'char-friend-a hair-short outfit-casual age-child',skin:'#efbd9b',skinShadow:'#d1916e',hair:'#343037',hair2:'#625a68',shirt:'#6f87ac',cloth2:'#eaf0f8',detail:'#536b91',glass:'#4e5a6a',voice:{pitch:1.04,rate:1.0,index:20}},
     friendB:{classes:'char-friend-b hair-bob outfit-hoodie age-child',skin:'#d99f79',skinShadow:'#ba7553',hair:'#4a2f37',hair2:'#88576a',shirt:'#a4647d',cloth2:'#7b455e',detail:'#7b455e',glass:'#4a5668',voice:{pitch:1.14,rate:.97,index:21}},
     friendC:{classes:'char-friend-c hair-undercut outfit-casual age-child',skin:'#c88a65',skinShadow:'#a96748',hair:'#222a32',hair2:'#4c6275',shirt:'#d08351',cloth2:'#f4e5da',detail:'#9b5b33',glass:'#465365',voice:{pitch:.9,rate:1.06,index:22}},
+    villain:{classes:'char-friend-c hair-undercut outfit-casual age-child',skin:'#d5a07b',skinShadow:'#b87b58',hair:'#171b22',hair2:'#394454',shirt:'#383f50',cloth2:'#d7b66b',detail:'#a77726',glass:'#303844',voice:{pitch:.82,rate:1.03,index:24}},
     friendD:{classes:'char-friend-d hair-ponytail outfit-casual age-child',skin:'#f0c3a3',skinShadow:'#d39a78',hair:'#282e37',hair2:'#596474',shirt:'#4d9b86',cloth2:'#e4f4ef',detail:'#397c6b',glass:'#465365',voice:{pitch:1.18,rate:.95,index:23}}
   };
   function characterKeyFor(e){
     const who=e.who||'',text=`${who} ${e.theme||''} ${e.q||''}`,sub=e.subject||'';
+    if(e.antagonist||/친구\s*태오/.test(who))return 'villain';
     if(/체육 선생님|코치/.test(who))return 'peTeacher';
     if(/영어 선생님/.test(who))return 'englishTeacher';
     if(/과학 선생님/.test(who))return 'scienceTeacher';
@@ -1180,7 +1307,7 @@
     if(state.turn>=state.queue.length){return finishGrade()}
     state.current=state.queue[state.turn];
     const e=state.current;
-    const fname=e.characterId||extractFriendName(e.who),rel=fname?(state.friendRelations[fname]||0):0;speaker.textContent=fname?`${e.who} · ${bondTier(fname)} · ${rel>0?'+':''}${rel}`:e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
+    const fname=e.characterId||extractFriendName(e.who),isAntagonist=!!e.antagonist||fname==='태오',rel=fname?(state.friendRelations[fname]||0):0;const av=isAntagonist?antagonistState(fname):null;speaker.textContent=fname?(isAntagonist?`${e.who} · ${antagonistTier(fname)} · 영향 ${av.influence} / 저항 ${av.defiance}`:`${e.who} · ${bondTier(fname)} · ${rel>0?'+':''}${rel}`):e.who;theme.textContent=e.subject?(e.theme===e.subject?`${e.subject} 수업의 선택`:`${e.subject} · ${e.theme}`):e.theme;question.textContent=e.q;setCardLook(e);clearPreview();
     leftGuide.querySelector('strong').textContent=e.left;rightGuide.querySelector('strong').textContent=e.right;leftBtn.textContent=e.left;rightBtn.textContent=e.right;
     const p=palette[(state.grade-1)%palette.length];cardBanner.style.setProperty('--c1',e.c1||p[0]);cardBanner.style.setProperty('--c2',e.c2||p[1]);
     $('#gradeText').textContent=`${gradeNames[state.grade]} · ${e._phase||currentPhaseName()}`;$('#turnText').textContent=`${state.turn+1} / ${state.queue.length}`;
@@ -1207,8 +1334,10 @@
     if(meta.chain)queueChain(meta.chain);
     if(e.subject){state.subjectSeen[e.subject]++;if(constructive)state.subjectGood[e.subject]++}
     if(e.subject==='체육'&&fx.health>0&&constructive)state.sportCare++;
-    const name=e.characterId||extractFriendName(e.who);
-    if(name){
+    const name=e.characterId||extractFriendName(e.who),isAntagonist=!!e.antagonist||name==='태오';
+    if(name&&isAntagonist){
+      applyAntagonistChoice(name,meta,constructive,fx);
+    }else if(name){
       let delta;
       if(Number.isFinite(meta.relation))delta=meta.relation;
       else{
@@ -1302,6 +1431,14 @@
     }
     if(rel('서윤')>=6&&mom('서윤')>=3){
       out.push({score:26+rel('서윤')+mom('서윤'),story:{kicker:'중학교 단체 채팅방',symbol:'말풍선',title:'보내기 전에 한 번 더 본다',text:'새로운 단체 채팅방에서도 누군가의 사진과 이야기가 빠르게 오갔습니다. 서윤과 겪은 일 덕분에 둘은 서로에게 “이거 올려도 괜찮을까?”라고 먼저 묻는 사람이 됐습니다.',quote:'서윤: “우리 이번엔 먼저 물어보자.”',future:true}});
+    }
+    const taeo=state.antagonists?.['태오']||{bond:0,influence:0,defiance:0,moments:0};
+    if(taeo.influence>=8){
+      out.push({score:31+taeo.influence,story:{kicker:'중학교 첫 주',symbol:'무리',title:'또 쉬운 길을 제안하는 목소리',text:'새 학교에서도 태오는 금세 몇 명을 모았습니다. 너는 초등학교 때처럼 그 무리 안에서 편한 자리를 얻었지만, 이번에도 누군가를 빼자는 말이 자연스럽게 따라왔습니다. 이제는 그 자리에 계속 있을지 다시 선택해야 합니다.',quote:'태오: “우리끼리만 다니면 편하잖아.”',future:true}});
+    }else if(taeo.defiance>=8&&taeo.bond>=2){
+      out.push({score:32+taeo.defiance+taeo.bond,story:{kicker:'중학교 운동장',symbol:'라이벌',title:'친구는 아니어도 서로 인정한다',text:'태오와는 여전히 자주 부딪혔지만 예전처럼 서로를 끌고 가지는 않았습니다. 태오도 네 앞에서는 선을 넘는 제안을 한 번 더 생각했고, 너도 태오의 좋은 승부욕까지 부정하지는 않았습니다.',quote:'태오: “됐어. 너한텐 이런 거 안 통하는 거 알거든.”',future:true}});
+    }else if(taeo.defiance>=7){
+      out.push({score:29+taeo.defiance,story:{kicker:'졸업 뒤 복도',symbol:'경계선',title:'끝까지 지킨 선',text:'태오와 친한 친구가 되지는 않았습니다. 대신 몇 년 동안 반복해서 “그건 안 해”라고 말한 덕분에, 둘 사이에는 굳이 설명하지 않아도 넘지 않는 선이 생겼습니다.',quote:'졸업앨범 한마디: “싫은 건 싫다고 말해도 학교생활은 계속된다.”',future:true}});
     }
     return out;
   }
