@@ -458,6 +458,56 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 @keyframes anomalyStatic{0%{transform:translateY(0)}50%{transform:translateY(4px)}100%{transform:translateY(-2px)}}
 @keyframes badLight{0%,52%,100%{opacity:.05}53%,66%{opacity:.55}}
 @media(max-width:780px){.map{grid-template-columns:repeat(3,1fr)}.anomaly-writing{top:20%}.route-note{display:none}}
+/* v7 real CCTV asset integration */
+.anomaly-layer{z-index:11;pointer-events:none}
+.anomaly-asset{
+  position:absolute;display:block;object-fit:contain;max-width:none;max-height:none;
+  pointer-events:none;opacity:.82;filter:drop-shadow(0 5px 9px #000b) saturate(.78) brightness(.82);
+  mix-blend-mode:normal
+}
+.anomaly-asset.subtle{opacity:.58;filter:drop-shadow(0 4px 8px #000a) saturate(.6) brightness(.72)}
+.anomaly-asset.ghostly{opacity:.52;filter:drop-shadow(0 5px 10px #000d) grayscale(.3) brightness(.68)}
+.anomaly-asset.glass{opacity:.45;mix-blend-mode:screen;filter:brightness(.9) contrast(1.1)}
+.anomaly-asset.floor{opacity:.48;filter:brightness(.62) contrast(1.15);transform:perspective(500px) rotateX(58deg)}
+.anomaly-asset.class-photo{left:5.5%;top:17%;width:18%;height:25%;object-fit:contain}
+.anomaly-asset.class-figure{right:13%;bottom:25%;width:11%;height:40%}
+.anomaly-asset.class-board{left:24%;top:16%;width:36%;height:18%;object-fit:contain}
+.anomaly-asset.class-door{left:15%;top:20%;width:15%;height:55%;object-fit:contain}
+.anomaly-asset.science-frost{left:0;top:0;width:45%;height:73%;object-fit:cover;object-position:left top}
+.anomaly-asset.science-shape{left:61%;bottom:24%;width:10%;height:35%}
+.anomaly-asset.science-skeleton{left:25%;bottom:13%;width:12%;height:57%}
+.anomaly-asset.science-thermo{left:28%;top:17%;width:5%;height:31%}
+.anomaly-asset.hall-clock{right:4%;top:12%;width:12%;height:18%}
+.anomaly-asset.hall-shadow{left:25%;bottom:3%;width:50%;height:52%;object-fit:fill}
+.anomaly-asset.hall-sign{left:29%;top:28%;width:15%;height:15%}
+.anomaly-asset.hall-door{right:13%;top:22%;width:13%;height:54%}
+.anomaly-asset.broadcast-shadow{left:12%;bottom:15%;width:25%;height:62%}
+.anomaly-asset.broadcast-eyes{right:17%;top:33%;width:15%;height:12%}
+.anomaly-asset.broadcast-hair{left:16%;top:6%;width:24%;height:70%}
+.anomaly-asset.west-hair{left:18%;top:7%;width:21%;height:81%}
+.anomaly-asset.west-reaper{right:13%;bottom:19%;width:15%;height:48%}
+.anomaly-asset.east-shadow{right:18%;bottom:16%;width:16%;height:51%}
+.anomaly-asset.east-lantern{left:44%;bottom:31%;width:8%;height:17%;filter:drop-shadow(0 0 14px #d7a85b88) brightness(.82)}
+.anomaly-asset.hall-eyes{left:44%;top:31%;width:12%;height:10%}
+.anomaly-asset.handprint{right:9%;top:22%;width:18%;height:27%;opacity:.42;mix-blend-mode:screen}
+.anomaly-asset.scratch{right:13%;top:28%;width:22%;height:37%;opacity:.58}
+.anomaly-asset.footprints{left:35%;bottom:4%;width:31%;height:28%}
+.room-scene .prop{
+  display:none;position:absolute;z-index:10;margin:0;padding:0;border:0;background-color:transparent;
+  background-repeat:no-repeat;background-position:center;background-size:contain;font-size:0;color:transparent;
+  opacity:0;cursor:pointer;filter:none;text-shadow:none;transition:opacity .16s,filter .16s,transform .16s
+}
+.room-scene .prop:hover{transform:none}
+.room-scene .prop.changed{opacity:.88;animation:dokkaebiObject .75s ease-in-out infinite alternate;filter:drop-shadow(0 0 9px #d7a04d55) brightness(.82)}
+.room-scene .prop[data-prop="0"]{left:34%;bottom:12%;width:25%;height:34%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_desk_shift_01.png")}
+.room-scene .prop[data-prop="1"]{left:5%;top:15%;width:20%;height:27%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_photo_extra_student_01.png")}
+.room-scene .prop[data-prop="2"]{left:23%;top:14%;width:39%;height:20%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_board_text_02.png")}
+.room-scene .prop[data-prop="3"]{left:14%;top:17%;width:17%;height:60%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_extra_door_01.png")}
+@keyframes dokkaebiObject{from{filter:drop-shadow(0 0 3px #d7a04d22) brightness(.72)}to{filter:drop-shadow(0 0 11px #d7a04d55) brightness(.9)}}
+@media(max-width:780px){
+  .anomaly-asset.class-photo{width:21%}.anomaly-asset.class-board{width:41%}
+  .anomaly-asset.west-reaper,.anomaly-asset.east-shadow{width:19%}
+}
 </style>
 </head>
 <body>
@@ -514,10 +564,10 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
         <div class="cam-head"><span id="camCode">CAM 01</span><small id="camName">한국관</small></div>
         <div class="room-scene" id="roomScene">
           <div class="exhibit"></div>
-          <button class="prop p1" data-prop="0" type="button">🏺</button>
-          <button class="prop p2" data-prop="1" type="button">🪑</button>
-          <button class="prop p3" data-prop="2" type="button">🖼️</button>
-          <button class="prop p4" data-prop="3" type="button">📚</button>
+          <button class="prop p1" data-prop="0" type="button" aria-label="변한 책상"></button>
+          <button class="prop p2" data-prop="1" type="button" aria-label="변한 사진"></button>
+          <button class="prop p3" data-prop="2" type="button" aria-label="변한 칠판"></button>
+          <button class="prop p4" data-prop="3" type="button" aria-label="새로 생긴 문"></button>
           <div class="entity-cam" id="camEntity"></div>
           <div class="frost" id="frost"></div>
           <div class="stare-vignette" id="stareVignette"></div>
@@ -581,13 +631,14 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 'use strict';
 
 var STORAGE='kidscade_folklore_night_v1';
+var ASSET_ROOT='../../assets/kidscade_folklore_night_guard_renamed_assets/';
 var CAMERAS=[
-  {id:'korea',code:'CAM 01',name:'6-1 교실',bg:'../../assets/game/2d/classroom.png',pos:'center'},
-  {id:'japan',code:'CAM 02',name:'과학실',bg:'../../assets/game/2d/science%20classroom.png',pos:'center'},
-  {id:'europe',code:'CAM 03',name:'2층 중앙 복도',bg:'../../assets/game/2d/hallway.png',pos:'center'},
-  {id:'special',code:'CAM 04',name:'방송실 앞',bg:'../../assets/game/2d/hallway.png',pos:'42% center'},
-  {id:'west',code:'CAM 05',name:'서쪽 복도',bg:'../../assets/game/2d/hallway.png',pos:'25% center'},
-  {id:'east',code:'CAM 06',name:'동쪽 복도',bg:'../../assets/game/2d/hallway.png',pos:'75% center'}
+  {id:'korea',code:'CAM 01',name:'6-1 교실',bg:ASSET_ROOT+'classroom_base_01.png',pos:'center'},
+  {id:'japan',code:'CAM 02',name:'과학실',bg:ASSET_ROOT+'science_base_01.png',pos:'center'},
+  {id:'europe',code:'CAM 03',name:'2층 중앙 복도',bg:ASSET_ROOT+'hall_center_base_01.png',pos:'center'},
+  {id:'special',code:'CAM 04',name:'방송실 앞',bg:ASSET_ROOT+'broadcast_front_base_01.png',pos:'center'},
+  {id:'west',code:'CAM 05',name:'서쪽 복도',bg:ASSET_ROOT+'hall_west_base_01.png',pos:'center'},
+  {id:'east',code:'CAM 06',name:'동쪽 복도',bg:ASSET_ROOT+'hall_east_base_01.png',pos:'center'}
 ];
 
 var SCHOOL_GRAPH={
@@ -630,48 +681,52 @@ function routeVia(start,waypoints){
   return route;
 }
 var ANOMALIES=[
-  {id:'moved-chair',cam:'korea',visual:'sign',mark:'의자?',ghost:'dokkaebi'},
-  {id:'wrong-board',cam:'korea',visual:'writing',mark:'뒤를 보지 마',ghost:null},
-  {id:'faceless-photo',cam:'korea',visual:'photo',ghost:'egg'},
-  {id:'long-hair',cam:'korea',visual:'hair',ghost:'maiden'},
-  {id:'cold-hand',cam:'japan',visual:'hand',ghost:'yuki'},
-  {id:'wrong-clock',cam:'japan',visual:'clock',ghost:null},
-  {id:'extra-shadow',cam:'japan',visual:'shadow',ghost:null},
-  {id:'static-japan',cam:'japan',visual:'static',ghost:'yuki'},
-  {id:'hall-eyes',cam:'europe',visual:'eyes',ghost:'wolf'},
-  {id:'hall-shadow',cam:'europe',visual:'silhouette',ghost:'reaper'},
-  {id:'extra-door',cam:'europe',visual:'door',ghost:null},
-  {id:'hall-static',cam:'europe',visual:'static',ghost:null},
-  {id:'broadcast-writing',cam:'special',visual:'writing',mark:'방송 종료',ghost:null},
-  {id:'broadcast-photo',cam:'special',visual:'photo',ghost:'maiden'},
-  {id:'broadcast-light',cam:'special',visual:'light',ghost:null},
-  {id:'west-scratch',cam:'west',visual:'scratch',ghost:'wolf'},
-  {id:'west-prints',cam:'west',visual:'prints',ghost:null},
-  {id:'west-shadow',cam:'west',visual:'shadow',ghost:'reaper'},
-  {id:'east-scratch',cam:'east',visual:'scratch',ghost:'wolf'},
-  {id:'east-eyes',cam:'east',visual:'eyes',ghost:null},
-  {id:'east-hand',cam:'east',visual:'hand',ghost:null},
-  {id:'east-light',cam:'east',visual:'light',ghost:null},
-  {id:'korea-static',cam:'korea',visual:'static',ghost:null},
-  {id:'korea-eyes',cam:'korea',visual:'eyes',ghost:null},
-  {id:'korea-hand',cam:'korea',visual:'hand',ghost:'dokkaebi'},
-  {id:'japan-writing',cam:'japan',visual:'writing',mark:'춥다',ghost:'yuki'},
-  {id:'japan-photo',cam:'japan',visual:'photo',ghost:null},
-  {id:'japan-light',cam:'japan',visual:'light',ghost:'yuki'},
-  {id:'central-hand',cam:'europe',visual:'hand',ghost:null},
-  {id:'central-writing',cam:'europe',visual:'writing',mark:'가지 마',ghost:null},
-  {id:'central-clock',cam:'europe',visual:'clock',ghost:null},
-  {id:'broadcast-eyes',cam:'special',visual:'eyes',ghost:'egg'},
-  {id:'broadcast-shadow',cam:'special',visual:'shadow',ghost:'maiden'},
-  {id:'broadcast-static',cam:'special',visual:'static',ghost:'egg'},
-  {id:'west-door',cam:'west',visual:'door',ghost:null},
-  {id:'west-hair',cam:'west',visual:'hair',ghost:'maiden'},
-  {id:'west-clock',cam:'west',visual:'clock',ghost:null},
-  {id:'east-door',cam:'east',visual:'door',ghost:null},
-  {id:'east-shadow',cam:'east',visual:'shadow',ghost:'reaper'},
-  {id:'east-static',cam:'east',visual:'static',ghost:null},
-  {id:'east-photo',cam:'east',visual:'photo',ghost:'egg'},
-  {id:'west-static',cam:'west',visual:'static',ghost:null}
+  // CAM 01 · 교실
+  {id:'class-photo-extra',cam:'korea',asset:'classroom_photo_extra_student_01.png',assetClass:'class-photo',ghost:'dokkaebi'},
+  {id:'class-photo-eyes',cam:'korea',asset:'classroom_photo_eyes_open_01.png',assetClass:'class-photo subtle',ghost:'egg'},
+  {id:'class-back-figure',cam:'korea',asset:'classroom_back_figure_01.png',assetClass:'class-figure ghostly',ghost:'maiden'},
+  {id:'class-board-message',cam:'korea',asset:'classroom_board_text_02.png',assetClass:'class-board subtle',ghost:null},
+  {id:'class-extra-door',cam:'korea',variantBg:'classroom_variant_extra_door_01.png',ghost:null},
+
+  // CAM 02 · 과학실
+  {id:'science-window-frost',cam:'japan',asset:'science_window_frost_02.png',assetClass:'science-frost glass',ghost:'yuki'},
+  {id:'science-white-shape',cam:'japan',asset:'science_white_shape_far_01.png',assetClass:'science-shape ghostly',ghost:'yuki'},
+  {id:'science-skeleton-turn',cam:'japan',asset:'science_skeleton_turn_01.png',assetClass:'science-skeleton subtle',ghost:null},
+  {id:'science-thermo-frozen',cam:'japan',asset:'science_thermometer_frozen.png',assetClass:'science-thermo',ghost:'yuki'},
+  {id:'science-handprint',cam:'japan',asset:'handprint_02.png',assetClass:'handprint',ghost:null},
+  {id:'science-room-frozen',cam:'japan',variantBg:'science_variant_frozen_01.png',ghost:'yuki'},
+
+  // CAM 03 · 중앙 복도
+  {id:'center-shadow',cam:'europe',asset:'hall_long_shadow_01.png',assetClass:'hall-shadow subtle',ghost:'reaper'},
+  {id:'center-sign',cam:'europe',asset:'hall_sign_wrong_01.png',assetClass:'hall-sign',ghost:null},
+  {id:'center-clock',cam:'europe',asset:'hall_clock_wrong_01.png',assetClass:'hall-clock',ghost:null},
+  {id:'center-eyes',cam:'europe',asset:'eyes_02.png',assetClass:'hall-eyes ghostly',ghost:'wolf'},
+  {id:'center-footprints',cam:'europe',asset:'footprints_wet_01.png',assetClass:'footprints floor',ghost:null},
+  {id:'center-extra-left',cam:'europe',variantBg:'hall_center_variant_extra_door_left_01.png',ghost:null},
+  {id:'center-extra-right',cam:'europe',variantBg:'hall_center_variant_extra_door_right_01.png',ghost:null},
+  {id:'center-extra-door-overlay',cam:'europe',asset:'hall_extra_door_right_01.png',assetClass:'hall-door subtle',ghost:null},
+
+  // CAM 04 · 방송실 앞
+  {id:'broadcast-shadow',cam:'special',asset:'broadcast_shadow_door_01.png',assetClass:'broadcast-shadow ghostly',ghost:'maiden'},
+  {id:'broadcast-eyes',cam:'special',asset:'broadcast_eyes_01.png',assetClass:'broadcast-eyes ghostly',ghost:'egg'},
+  {id:'broadcast-hair',cam:'special',asset:'broadcast_hair_frame_01.png',assetClass:'broadcast-hair ghostly',ghost:'maiden'},
+  {id:'broadcast-handprint',cam:'special',asset:'handprint_02.png',assetClass:'handprint',ghost:null},
+
+  // CAM 05 · 서쪽 복도
+  {id:'west-scratch',cam:'west',asset:'scratch_02.png',assetClass:'scratch',ghost:'wolf'},
+  {id:'west-prints',cam:'west',asset:'footprints_wet_01.png',assetClass:'footprints floor',ghost:null},
+  {id:'west-hair',cam:'west',asset:'west_hair_01.png',assetClass:'west-hair ghostly',ghost:'maiden'},
+  {id:'west-reaper',cam:'west',asset:'west_reaper_hat_01.png',assetClass:'west-reaper ghostly',ghost:'reaper'},
+  {id:'west-eyes',cam:'west',asset:'eyes_02.png',assetClass:'hall-eyes ghostly',ghost:'wolf'},
+  {id:'west-extra-door',cam:'west',variantBg:'hall_west_variant_extra_door_01.png',ghost:null},
+
+  // CAM 06 · 동쪽 복도
+  {id:'east-scratch',cam:'east',asset:'scratch_02.png',assetClass:'scratch',ghost:'wolf'},
+  {id:'east-shadow',cam:'east',asset:'east_shadow_01.png',assetClass:'east-shadow ghostly',ghost:'reaper'},
+  {id:'east-lantern',cam:'east',asset:'east_reaper_lantern_01.png',assetClass:'east-lantern ghostly',ghost:'reaper'},
+  {id:'east-eyes',cam:'east',asset:'eyes_02.png',assetClass:'hall-eyes ghostly',ghost:'wolf'},
+  {id:'east-handprint',cam:'east',asset:'handprint_02.png',assetClass:'handprint',ghost:null},
+  {id:'east-extra-door',cam:'east',variantBg:'hall_east_variant_extra_door_01.png',ghost:null}
 ];
 var GHOSTS={
   dokkaebi:{name:'도깨비',origin:'한국',kind:'설화 속 존재',
@@ -838,10 +893,12 @@ function closeCamera(){
   state.cameraOpen=false;els.cameraShell.classList.remove('open');sound('cam')
 }
 function roomPropsVisible(){
-  var show=state.currentCam==='korea';document.querySelectorAll('.prop').forEach(function(p){p.style.display=show?'block':'none';p.classList.remove('changed')});
-  if(show&&state.dokkaebi&&state.dokkaebi.active){
-    var p=document.querySelector('.prop[data-prop="'+state.dokkaebi.prop+'"]');if(p)p.classList.add('changed');
-  }
+  var show=state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active;
+  document.querySelectorAll('.prop').forEach(function(p){
+    var changed=show&&Number(p.dataset.prop)===state.dokkaebi.prop;
+    p.style.display=changed?'block':'none';
+    p.classList.toggle('changed',!!changed);
+  });
 }
 function currentMaidenCam(){
   if(!state.maiden||!state.maiden.active)return null;
@@ -875,16 +932,9 @@ function cameraGhost(){
   }
 }
 function anomalyMarkup(a){
-  if(!a)return '';
-  var cls='anomaly-'+a.visual;
-  if(a.visual==='writing')return '<div class="'+cls+'">'+(a.mark||'???')+'</div>';
-  if(a.visual==='eyes')return '<div class="'+cls+'">• •</div>';
-  if(a.visual==='clock')return '<div class="'+cls+'">13:66</div>';
-  if(a.visual==='hand')return '<div class="'+cls+'">✋</div>';
-  if(a.visual==='scratch')return '<div class="'+cls+'">╱╱╱</div>';
-  if(a.visual==='prints')return '<div class="'+cls+'">·· ··</div>';
-  if(a.visual==='sign')return '<div class="'+cls+'">'+(a.mark||'???')+'</div>';
-  return '<div class="'+cls+'"></div>';
+  if(!a||a.variantBg||!a.asset)return '';
+  var cls='anomaly-asset '+(a.assetClass||'');
+  return '<img class="'+cls+'" src="'+ASSET_ROOT+a.asset+'" alt="" draggable="false">';
 }
 function renderAnomaly(){
   var a=state.anomaly;
@@ -894,7 +944,10 @@ function renderAnomaly(){
 function renderCamera(){
   var c=CAMERAS.find(function(x){return x.id===state.currentCam})||CAMERAS[0];
   els.camCode.textContent=c.code;els.camName.textContent=c.name;
-  els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+c.bg+'")';
+  var bg=c.bg,a=state.anomaly;
+  if(a&&a.active&&a.cam===state.currentCam&&a.variantBg)bg=ASSET_ROOT+a.variantBg;
+  if(state.currentCam==='japan'&&state.yuki&&state.yuki.active&&state.yuki.frost>=74)bg=ASSET_ROOT+'science_variant_frozen_01.png';
+  els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+bg+'")';
   els.roomScene.style.backgroundPosition=c.pos||'center';
   els.roomScene.dataset.room=state.currentCam;
   document.querySelectorAll('.cam-btn').forEach(function(b){b.classList.toggle('active',b.dataset.cam===state.currentCam)});
@@ -994,7 +1047,7 @@ function spawnAnomaly(){
   if(state.anomaly&&state.anomaly.active)return false;
   var choices=ANOMALIES.filter(function(a){return a.cam!==state.currentCam||Math.random()<.55});
   var def=choices[Math.floor(Math.random()*choices.length)]||ANOMALIES[0];
-  state.anomaly={active:true,id:def.id,cam:def.cam,visual:def.visual,mark:def.mark||'',ghost:def.ghost||null,life:0,duration:14+Math.random()*8};
+  state.anomaly=Object.assign({active:true,life:0,duration:14+Math.random()*8},def);
   directorShift(4);state.director.lastEvent='anomaly';return true
 }
 function reportAnomaly(){
@@ -1274,7 +1327,6 @@ els.leftLight.onclick=function(){toggleLight('left')};els.rightLight.onclick=fun
 els.special.onclick=useHeater;els.reportBtn.onclick=reportAnomaly;
 document.querySelectorAll('.prop').forEach(function(p){p.onclick=function(){
   if(state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&Number(p.dataset.prop)===state.dokkaebi.prop)resolveDokkaebi();
-  else{sound('click');toast('이 물건은 그대로입니다.')}
 }});
 $('codexBtn').onclick=function(){renderCodex();toggleModal(els.codex,true)};
 $('helpBtn').onclick=function(){renderHelp();toggleModal(els.help,true)};
