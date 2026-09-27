@@ -9,7 +9,7 @@
     const s = storage();
     if (!s) return;
     [
-      'profile','playHistory','seeds','avatarInventory','avatarEquipped','inventory','equipped',
+      'profile','playHistory','seeds','sproutPower','avatarInventory','avatarEquipped','inventory','equipped',
       'pet','petItems','gardenState','recents','favorites','dailyMissions','dailyRewardClaimed',
       'attendance','playtimeSeconds','legacyPlaytimeMinutes','claimedRanks'
     ].forEach(key => { try { s.remove(key); } catch (_) {} });
