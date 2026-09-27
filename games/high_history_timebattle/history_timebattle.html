@@ -267,7 +267,7 @@ async function requestJson(url,opts={},timeoutMs=6500){
 }
 async function api(path,opts={},retries=0){
   // Stable command identity across retries; never infer the round on the server.
-  if(usesRealtime()&&opts.body&&!['/join','/rooms'].includes(path)){
+  if(usesRealtime()&&opts.body&&!['/join','/rooms','/recovery-code'].includes(path)){
     const body=JSON.parse(opts.body);
     opts={...opts,body:JSON.stringify({...body,roundId:lastState?.room?.roundId,version:lastState?.version,requestId:crypto.randomUUID()})};
     retries=Math.max(retries,1);
