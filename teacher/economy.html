@@ -156,7 +156,7 @@ textarea{min-height:72px;resize:vertical}
       <div class="layout">
         <div class="stack">
           <div class="card"><div class="head"><div><h2>자격증</h2><p>직업 지원 조건으로 사용할 수 있습니다.</p></div></div><div class="rows" id="certRows"></div></div>
-          <div class="card"><div class="head"><div><h2>직업 시장</h2><p>지원자와 채용자를 확인하고 채용합니다.</p></div></div><div class="rows" id="jobRows"></div></div>
+          <div class="card"><div class="head"><div><h2>직업 시장</h2><p>일반 배정은 자격증·정원 규칙을 따릅니다. 강제 배정과 직업 해제는 교사가 언제든 사용할 수 있습니다.</p></div></div><div class="rows" id="jobRows"></div></div>
         </div>
         <div class="stack">
           <div class="card"><div class="head"><div><h2>자격증 만들기</h2></div></div><div class="field"><label>이름</label><input class="input" id="certName" placeholder="금융기초"></div><div class="field"><label>설명</label><input class="input" id="certDesc"></div><div class="actions"><button class="btn" id="createCert">추가</button></div></div>
@@ -178,7 +178,7 @@ textarea{min-height:72px;resize:vertical}
           <div class="card"><div class="head"><div><h2>정부 공공지출·채무</h2><p>정부계좌가 부족해도 지출할 수 있으며 부족분은 채무로 공개됩니다.</p></div></div><div class="notice" id="debtStatus"></div><div class="form" style="margin-top:10px"><div class="field"><label>지출 금액</label><input class="input" id="treasuryAmount" type="number" value="50"></div><div class="field"><label>사용처</label><input class="input" id="treasuryReason" placeholder="학급 행사 지원"></div><div class="field"><label>채무 상환액</label><input class="input" id="debtRepayAmount" type="number" value="50"></div></div><div class="actions"><button class="btn green" id="spendTreasury">공공지출 기록</button><button class="btn secondary" id="repayDebt">정부 채무 상환</button></div><div class="rows" id="spendingAdminRows" style="margin-top:12px"></div></div>
           <div class="card"><div class="head"><div><h2>대출 심사</h2><p>학생 신용등급에 따라 신청 시점 이율과 한도가 결정됩니다.</p></div></div><div class="rows" id="loanAdminRows"></div></div>
         </div>
-        <div class="card"><div class="head"><div><h2>교사 빠른 거래</h2><p>개별 지급 또는 징수를 장부에 기록합니다.</p></div></div><div class="form"><div class="field full"><label>학생</label><select id="manualStudent"></select></div><div class="field"><label>금액</label><input class="input" id="manualAmount" type="number" value="10"></div><div class="field"><label>징수액 정부계좌로</label><select id="manualTreasury"><option value="no">아니오</option><option value="yes">예</option></select></div><div class="field full"><label>이유</label><input class="input" id="manualReason"></div></div><div class="actions"><button class="btn" id="manualTx">거래 기록</button></div></div>
+        <div class="card"><div class="head"><div><h2>교사 빠른 거래</h2><p>학생에게 돈을 즉시 지급하거나 회수할 수 있습니다. 모든 조정은 거래 장부에 남습니다.</p></div></div><div class="form"><div class="field full"><label>학생</label><select id="manualStudent"></select></div><div class="field"><label>금액</label><input class="input" id="manualAmount" type="number" min="1" value="10"></div><div class="field"><label>회수액 정부계좌로</label><select id="manualTreasury"><option value="no">아니오</option><option value="yes">예</option></select></div><div class="field full"><label>이유</label><input class="input" id="manualReason" placeholder="예: 특별수당 / 규칙 위반 회수"></div></div><div class="actions"><button class="btn green" id="manualGive">돈 지급</button><button class="btn danger" id="manualTake">돈 회수</button></div><div class="notice" style="margin-top:10px">회수는 학생의 현재 현금 잔액까지만 가능합니다.</div></div>
       </div>
     </section>
 
