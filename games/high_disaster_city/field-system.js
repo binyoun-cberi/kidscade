@@ -107,6 +107,7 @@ function floodDamage(sim,d,dt){
   const c=slotCol(slot),r=slotRow(),depth=Math.max(...cellsInRadius(f,c,r,1).map(x=>x.water));
   if(depth<.16)continue;
   const def=D.BUILDINGS[b.id]||{},res=def.floodResistance||.68;
+  if(depth>.28)DC.Recovery?.markFlooded?.(sim,slot.i,depth);
   const excess=Math.max(0,depth-res*.32),vuln=b.id==='farm'?1.28:b.id==='pump'?.72:1;
   if(excess>0)sim.damageBuilding(slot.i,excess*(3.8*p*vuln)*dt,'flood');
  }
