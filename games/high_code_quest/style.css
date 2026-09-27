@@ -147,3 +147,17 @@ body.executing .mission-card{opacity:.45}
  .speed-controls{max-width:100%;overflow-x:auto}
  .speed-controls button{flex:0 0 auto}
 }
+
+/* v8 early mission coaching */
+.editor-actions .hint-action{background:#453714;border-color:#ffd36a55;color:#ffe49a}
+.coach-hint{border:1px solid #ffd36a45;background:#211b0f;border-radius:12px;padding:9px 10px;color:#f8e9b5;box-shadow:0 8px 24px #0005}
+.coach-hint>div{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.coach-hint>div b{font-size:10px;color:#ffd978}
+.coach-hint>div button{border:0;background:transparent;padding:1px 5px;font-size:16px;color:#d4bd7f}
+.coach-hint p{margin:6px 0 8px;font-size:11px;line-height:1.5;word-break:keep-all}
+.coach-hint>button{width:100%;padding:6px 8px;font-size:10px;background:#493b19;border-color:#ffd36a3d}
+@media(max-width:700px),(orientation:portrait){
+ .coach-hint{padding:7px 9px}
+ .coach-hint p{font-size:10px;margin:4px 0 6px}
+ .coach-hint>button{padding:5px 7px}
+}
