@@ -43,9 +43,10 @@
     const el = document.createElement('style');
     el.id = STYLE_ID;
     el.textContent = `
-      #${ENTRY_ID}{margin-top:6px}
-      #${ENTRY_ID} button{width:100%;min-height:38px;border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:0 10px;background:linear-gradient(135deg,#fff7ed,#fef9c3);color:#92400e;font-size:.68rem;font-weight:1000;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
-      #${ENTRY_ID} button span:last-child{font-size:.58rem;color:#a16207}
+      #${ENTRY_ID}{margin:8px 0 7px}
+      #${ENTRY_ID} button{width:100%;min-height:48px;border:1px solid rgba(245,158,11,.38);border-radius:14px;padding:7px 11px;background:linear-gradient(135deg,#fff7d6,#ffedd5);color:#92400e;font-size:.77rem;font-weight:1000;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 7px 16px rgba(180,120,20,.10)}
+      #${ENTRY_ID} button:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(180,120,20,.14)}
+      #${ENTRY_ID} button span:last-child{font-size:.62rem;color:#a16207;white-space:nowrap}
       body.dark-mode #${ENTRY_ID} button{background:linear-gradient(135deg,rgba(120,53,15,.35),rgba(113,63,18,.25));color:#fde68a;border-color:rgba(251,191,36,.25)}
       #${MODAL_ID}{position:fixed;inset:0;z-index:32000;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.58);backdrop-filter:blur(8px)}
       #${MODAL_ID}.hidden{display:none!important}
@@ -130,10 +131,10 @@
       el = document.createElement('div');
       el.id = ENTRY_ID;
       const accountSlot = document.getElementById('kc-account-slot');
-      if (accountSlot?.parentElement === host) accountSlot.insertAdjacentElement('afterend', el);
+      if (accountSlot?.parentElement === host) accountSlot.insertAdjacentElement('beforebegin', el);
       else host.appendChild(el);
     }
-    el.innerHTML = '<button type="button"><span>🏆 우리 반 씨앗 랭킹</span><span>보유 · 이번 주 획득 ›</span></button>';
+    el.innerHTML = '<button type="button"><span>🏆 씨앗 랭킹</span><span>우리 반 TOP 10 · 주간 ›</span></button>';
     el.querySelector('button')?.addEventListener('click', open);
   }
 
