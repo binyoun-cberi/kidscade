@@ -119,6 +119,13 @@
       #${SLOT_ID} .kca-economy-status{font-size:.54rem;font-weight:850;color:#8b5cf6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-economy-status.attention{color:#c56a00}
       #${SLOT_ID} .kca-economy-arrow{font-size:1.15rem;font-weight:1000;color:#8b5cf6;padding-right:1px}
+      #${SLOT_ID} .kca-teacher-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      #${SLOT_ID} .kca-teacher-action{min-width:0;display:grid;gap:3px;padding:10px 9px;border-radius:13px;text-decoration:none;border:1px solid rgba(124,92,255,.18);background:linear-gradient(135deg,rgba(124,92,255,.08),rgba(236,72,153,.05));color:var(--kc-ink,#334155)}
+      #${SLOT_ID} .kca-teacher-action strong{font-size:.68rem;font-weight:1000;line-height:1.2}
+      #${SLOT_ID} .kca-teacher-action span{font-size:.55rem;font-weight:850;color:var(--kc-muted,#64748b);line-height:1.25}
+      #${SLOT_ID} .kca-teacher-action:hover{border-color:rgba(124,92,255,.34);transform:translateY(-1px)}
+      body.dark-mode #${SLOT_ID} .kca-teacher-action{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.09));border-color:rgba(196,181,253,.22);color:#f8fafc}
+      body.dark-mode #${SLOT_ID} .kca-teacher-action span{color:#cbd5e1}
       body.dark-mode #${SLOT_ID} .kca-logout{background:#334155;color:#e2e8f0}
       body.dark-mode #${SLOT_ID} .kca-economy-card{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.10));border-color:rgba(196,181,253,.22);color:#f8fafc}
       body.dark-mode #${SLOT_ID} .kca-economy-icon{background:linear-gradient(135deg,#7c5cff,#ec4899);box-shadow:none}
@@ -272,7 +279,8 @@
       return true;
     }
     if (account.role === 'teacher') {
-      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><a class="kca-button" href="/teacher/">교사 관리</a><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div>`;
+      const teacherEconomyHref = '/teacher/economy.html?classId=' + encodeURIComponent(account.classId || '') + '&className=' + encodeURIComponent(account.className || '');
+      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><div class="kca-teacher-actions"><a class="kca-teacher-action" href="/teacher/"><strong>👩‍🏫 교사 관리</strong><span>학생 계정 · 반 관리</span></a><a class="kca-teacher-action" href="${escapeHtml(teacherEconomyHref)}"><strong>💰 학급경제 관리</strong><span>급여 · 은행 · 부동산</span></a></div>`;
       slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
       return true;
     }
