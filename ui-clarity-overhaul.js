@@ -243,7 +243,13 @@
     if (petOpen) petOpen.textContent = '🐾 Cube Pets 월드';
 
     const shop = document.getElementById('btn-open-shop');
-    if (shop) { shop.textContent = '🌱 씨앗 월드'; shop.dataset.openLifeWorld = 'profile-world'; shop.setAttribute('aria-label','씨앗 월드 들어가기'); }
+    if (shop) {
+      if (!shop.querySelector('.kc-world-main')) {
+        shop.innerHTML = '<span class="kc-world-main"><span class="kc-world-icon">🌱</span><span class="kc-world-copy"><span class="kc-world-title">씨앗 월드</span><span class="kc-world-meta">마을을 돌보고 보상을 확인해요</span></span></span><span class="kc-world-arrow" aria-hidden="true">›</span>';
+      }
+      shop.dataset.openLifeWorld = 'profile-world';
+      shop.setAttribute('aria-label','씨앗 월드 들어가기');
+    }
 
     const petHeader = document.querySelector('#pet-modal .sook-coach-header > span');
     if (petHeader) petHeader.textContent = '🐾 Cube Pets는 생존 월드에서 만나요';
