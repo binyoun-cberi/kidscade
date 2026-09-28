@@ -337,12 +337,23 @@ function toggleXray(){
   $('actionXray').textContent=xray?'구조 보기 ON':'구조 보기';toast(xray?'장식을 숨기고 블록 구조를 살펴봅니다.':'일반 건축 화면으로 돌아왔어요.');
 }
 function saveFreeWorld(){
-  if(mode!=='free')return;const data={blocks:freeMeshes.map(m=>[m.userData.gx,m.userData.gy,m.userData.gz,m.userData.matIndex]),collected:Array.from(collected),unlocked:unlocked};
-  try{localStorage.setItem('cubeArchitectWorldV1',JSON.stringify(data));lastFreeSave=performance.now()}catch(e){}
+  if(mode!=='free')return;
+  const data={blocks:freeMeshes.map(m=>[m.userData.gx,m.userData.gy,m.userData.gz,m.userData.matIndex]),collected:Array.from(collected),unlocked:unlocked};
+  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSave',data))lastFreeSave=performance.now()}catch(e){}
 }
 function loadFreeWorld(){
   try{
-    const raw=localStorage.getItem('cubeArchitectWorldV1');if(!raw)return;const d=JSON.parse(raw);unlocked=Math.max(3,Math.min(6,d.unlocked||3));collected=new Set(d.collected||[]);
+    let d=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
+    if(!d){
+      const legacyRaw=localStorage.getItem('cubeArchitectWorldV1');
+      if(legacyRaw){
+        d=JSON.parse(legacyRaw);
+        window.KidscadeStorage?.setJson('cubeArchitectWorldSave',d);
+        localStorage.removeItem('cubeArchitectWorldV1');
+      }
+    }
+    if(!d)return;
+    unlocked=Math.max(3,Math.min(6,d.unlocked||3));collected=new Set(d.collected||[]);
     (d.blocks||[]).forEach(v=>addFreeBlock(v[0],v[1],v[2],v[3],{playerBuilt:true,breakable:true}));
     collectibles.forEach(m=>{if(collected.has(m.userData.collectible)){scene.remove(m);m.userData.gone=true}})
   }catch(e){}
