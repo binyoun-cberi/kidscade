@@ -46,7 +46,7 @@
   function toDecimal(a,max=6){
     a=parse(a);if(!isTerminating(a))return null;
     const p=Math.min(decimalPlaces(a),max);
-    return (a.n/a.d).toFixed(p).replace(/\.0+$|(?<=\.[0-9]*?)0+$/,'').replace(/\.$/,'');
+    const s=(a.n/a.d).toFixed(p);return s.includes('.')?s.replace(/0+$/,'').replace(/\.$/,''):s;
   }
   function toFraction(a){a=parse(a);return a.d===1?String(a.n):a.n+'/'+a.d}
   function display(a,prefer='fraction'){
