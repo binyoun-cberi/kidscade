@@ -44,3 +44,16 @@ test('Night Guard horror presentation uses staged atmosphere', () => {
   assert.match(html, /ghost-reaper\.pre/);
   assert.match(html, /ghost-yuki\.pre/);
 });
+
+
+test('Night Guard hallucination fake scares are cosmetic and protected from unfair overlaps', () => {
+  assert.match(html, /id="fakeScare"/);
+  assert.match(html, /function triggerFakeScare\(\)/);
+  assert.match(html, /function fakeScareSafe\(\)/);
+  assert.match(html, /나를 봤니\?/);
+  assert.match(html, /fake-scare-eye/);
+  assert.match(html, /state\.fakeScareToken\+\+/);
+  assert.match(html, /cam-switching/);
+  assert.match(html, /signalIntrusion\.classList\.contains\('show'\)/);
+  assert.doesNotMatch(html, /triggerFakeScare\([^)]*\).*fail\(/s);
+});
