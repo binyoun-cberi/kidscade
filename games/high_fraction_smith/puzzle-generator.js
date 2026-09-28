@@ -46,6 +46,7 @@
         current=made;
       }
       if(!current)continue;
+      if(materials.some(v=>E.eq(v,current)))continue;
       const unique=new Set(materials.map(E.key));
       if(unique.size<Math.min(2,materials.length))continue;
       return {target:clone(current),materials,recipe};
