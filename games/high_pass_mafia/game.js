@@ -2,7 +2,6 @@
   'use strict';
 
   const SAVE_NAME = 'mafiaPassPlaySave';
-  const FALLBACK_KEY = 'kidscade_mafia_passplay_v1';
   const MIN_PLAYERS = 4;
   const MAX_PLAYERS = 16;
 
@@ -76,9 +75,7 @@
 
   function storageGet() {
     try {
-      if (window.KidscadeStorage) return window.KidscadeStorage.getJson(SAVE_NAME, null);
-      const raw = localStorage.getItem(FALLBACK_KEY);
-      return raw ? JSON.parse(raw) : null;
+      return window.KidscadeStorage ? window.KidscadeStorage.getJson(SAVE_NAME, null) : null;
     } catch (_) {
       return null;
     }
@@ -86,9 +83,7 @@
 
   function storageSet(payload) {
     try {
-      if (window.KidscadeStorage) return window.KidscadeStorage.setJson(SAVE_NAME, payload);
-      localStorage.setItem(FALLBACK_KEY, JSON.stringify(payload));
-      return true;
+      return window.KidscadeStorage ? window.KidscadeStorage.setJson(SAVE_NAME, payload) : false;
     } catch (_) {
       return false;
     }
