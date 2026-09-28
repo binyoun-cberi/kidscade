@@ -203,22 +203,7 @@
         @keyframes fadeOut { to { opacity: 0;
         transform: translateY(-10px); } }
 
-        /* 대시보드 */
-        .dashboard-section { max-width: 1200px;
-        margin: 20px auto 0; padding: 0 20px; text-align: left; }
-        .dashboard-title { font-size: 1.5em;
-        font-weight: bold; color: var(--text-color); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-        }
-        .playtime-display { font-size: 0.7em; background: #4ade80; color: white; padding: 4px 12px;
-        border-radius: 12px; font-weight: normal; }
-        .dashboard-container { display: flex; gap: 15px; overflow-x: auto;
-        padding: 10px 5px; }
-        .dashboard-container::-webkit-scrollbar { height: 6px;
-        }
-        .dashboard-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px;
-        }
-
-        /* 필터 네비게이션 */
+                /* 필터 네비게이션 */        /* 필터 네비게이션 */
         .filter-nav { margin: 30px auto 10px;
         display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; padding: 0 20px; max-width: 1000px;
         }
@@ -249,15 +234,7 @@
         }
         .game-card.disabled { filter: grayscale(100%) opacity(0.7); cursor: not-allowed; transform: none !important;
         box-shadow: none !important; border-color: #cbd5e1;}
-        .mini-card { width: 180px; padding: 15px; border-width: 3px;
-        font-size: 0.9em; }
-        .mini-card .game-icon { font-size: 2.5em;
-        }
-        .mini-card .game-title { font-size: 1.1em;
-        }
-        .mini-card .game-desc, .mini-card .fav-star, .mini-card .badge-container { display: none;
-        } 
-        .game-icon { font-size: 4.5em; margin-bottom: 10px;
+        .game-icon { font-size: 4.5em; margin-bottom: 10px;        .game-icon { font-size: 4.5em; margin-bottom: 10px;
         }
         .game-title { font-size: 1.3em; font-weight: bold; margin-bottom: 8px; color: #ff6b81; word-break: keep-all;
         }
@@ -2202,14 +2179,7 @@ body.dark-mode .site-credits {
         .kc-credits a { color:inherit; font-weight:900; text-decoration:underline; text-underline-offset:2px; }
         .kc-credits a:hover { color:var(--kc-brand); }
 
-        /* ---------- Arcade heading ---------- */
-        .kc-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:end; padding:8px 2px 15px; text-align:left; }
-        .kc-hero h1 { margin:0; color:var(--kc-ink); font-size:clamp(2rem,3.2vw,3.2rem); letter-spacing:-.06em; text-shadow:none; line-height:1.02; }
-        .kc-hero p { margin:8px 0 0; color:var(--kc-muted); font-size:.94rem; font-weight:750; }
-        .kc-hero-status { text-align:right; color:var(--kc-muted); font-size:.75rem; font-weight:900; }
-        .kc-hero-status strong { display:block; color:var(--kc-ink); font-size:1rem; margin-bottom:2px; }
-
-        /* ---------- Discovery filters (search moved to header) ---------- */
+                /* ---------- Discovery filters (search moved to header) ---------- */        /* ---------- Discovery filters (search moved to header) ---------- */
         .kc-discovery {
             margin-bottom:16px; padding:11px 13px 12px; background:var(--kc-panel); border:1px solid var(--kc-line);
             border-radius:20px; box-shadow:var(--kc-shadow);
@@ -2236,26 +2206,7 @@ body.dark-mode .site-credits {
         }
         body.dark-mode .filter-btn { background:linear-gradient(180deg,#223047,#1e2b3d) !important; border-color:#3b4658 !important; color:#d5deeb !important; }
 
-        /* ---------- Continue / favorites ---------- */
-        .kc-quick-zone { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
-        .dashboard-section { max-width:none !important; margin:0 !important; padding:0 !important; text-align:left; min-width:0; }
-        .dashboard-section:not(.hidden) { background:var(--kc-panel); border:1px solid var(--kc-line); border-radius:20px; padding:12px !important; box-shadow:var(--kc-shadow); }
-        .dashboard-title { margin:0 0 8px !important; font-size:.9rem !important; }
-        .playtime-display { background:#eef8f2 !important; color:#2f8f59 !important; font-size:.66rem !important; }
-        .dashboard-container { padding:0 !important; gap:8px !important; }
-        .dashboard-container .mini-card {
-            min-width:156px; width:156px !important; min-height:130px !important; padding:11px !important;
-            border:1px solid var(--kc-line) !important; border-radius:16px !important; box-shadow:none !important;
-            background:var(--kc-panel) !important; align-items:flex-start !important; text-align:left !important;
-        }
-        .dashboard-container .mini-card .game-icon {
-            width:54px; height:54px; margin:0 0 8px !important; border-radius:16px; display:grid; place-items:center;
-            font-size:2rem !important; background:#f6f7fb; filter:none !important;
-        }
-        body.dark-mode .dashboard-container .mini-card .game-icon { background:#243044; }
-        .dashboard-container .mini-card .game-title { font-size:.8rem !important; margin-bottom:0 !important; color:var(--kc-ink) !important; }
-
-        /* ---------- Game library ---------- */
+        /* ---------- Game library ---------- */        /* ---------- Game library ---------- */
         .kc-library-head { display:flex; align-items:end; justify-content:space-between; gap:12px; margin:6px 2px 11px; text-align:left; }
         .kc-library-head h2 { margin:0; font-size:1.2rem; letter-spacing:-.035em; }
         .kc-library-head p { margin:3px 0 0; color:var(--kc-muted); font-size:.73rem; font-weight:750; }
@@ -2359,7 +2310,6 @@ body.dark-mode .site-credits {
             .kc-profile-row { grid-column:2; padding:4px 12px 12px; }
             .kc-pet-card,.kc-mission-card { display:none; }
             #pet-widget { display:block !important; }
-            .kc-quick-zone { grid-template-columns:1fr; }
         }
         @media (max-width:620px) {
             #main-app > .kc-topbar { grid-template-columns:1fr; }
