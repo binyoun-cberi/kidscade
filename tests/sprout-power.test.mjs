@@ -37,6 +37,15 @@ test('sprout-power migration and API routes are wired', () => {
   assert.match(worker, /json_extract\(a\.state_json,'\$\.sproutPower'\)/);
 });
 
+test('teachers can view class sprout-power ranking without writing student weekly ledgers', () => {
+  const worker = fs.readFileSync(path.join(ROOT, 'worker', 'sprout-power.mjs'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'sprout-power.js'), 'utf8');
+  assert.match(worker, /authorizeTeacherAccess/);
+  assert.match(worker, /requireRankingViewer/);
+  assert.match(client, /isTeacher/);
+  assert.match(client, /!isTeacher\(\)/);
+});
+
 test('student ranking UI uses non-spendable sprout power instead of seed balance', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const client = fs.readFileSync(path.join(ROOT, 'sprout-power.js'), 'utf8');
