@@ -247,6 +247,7 @@
       case 'night_intro': return renderNightIntro();
       case 'night_handoff': return renderNightHandoff();
       case 'night_action': return renderNightAction();
+      case 'detective_result': return renderDetectiveResult();
       case 'dawn': return renderDawn();
       case 'discussion': return renderDiscussion();
       case 'nomination_handoff': return renderNominationHandoff();
@@ -391,6 +392,7 @@
       night_intro: '밤 시작',
       night_handoff: '밤 행동',
       night_action: '밤 행동',
+      detective_result: '경찰 조사 결과',
       dawn: '아침',
       discussion: '토론',
       nomination_handoff: '용의자 지목',
@@ -454,6 +456,7 @@
       nightOrder: [],
       turnIndex: 0,
       nightActions: null,
+      pendingInvestigation: null,
       lastNight: null,
       previousProtectId: null,
       pendingWinner: null,
@@ -717,13 +720,29 @@
   function showInvestigationResult(p, targetId) {
     const target = playerById(targetId);
     if (!target) return;
-    state.nightActions.investigations.push({
+    const result = {
       detectiveId: p.id,
       targetId: target.id,
       isMafia: target.team === 'mafia',
       day: state.day
-    });
+    };
+    state.nightActions.investigations.push(result);
+    state.pendingInvestigation = result;
+    state.phase = 'detective_result';
     persist();
+    render();
+  }
+
+  function renderDetectiveResult() {
+    const p = currentNightPlayer();
+    const result = state.pendingInvestigation;
+    const target = result ? playerById(result.targetId) : null;
+    if (!p || !target || !result || result.detectiveId !== p.id || result.day !== state.day) {
+      state.pendingInvestigation = null;
+      state.phase = 'night_action';
+      persist();
+      return render();
+    }
     setScreen(
       '<div class="phase-wrap"><section class="phase-card">' +
       '<div class="pass-name">' + escapeHtml(p.name) + '만 확인</div><div class="phase-icon">🔍</div>' +
@@ -746,6 +765,7 @@
   }
 
   function finishNightTurn() {
+    state.pendingInvestigation = null;
     state.turnIndex += 1;
     if (state.turnIndex >= state.nightOrder.length) {
       resolveNight();
