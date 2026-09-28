@@ -57,7 +57,7 @@ test('Driver License module syntax parses after removing ESM imports',()=>{
 
 
 test('Driver License steering input targets a shaped angle instead of continuously accumulating',()=>{
-  assert.match(js,/const rawSteer=inp\.steer/);
+  assert.match(js,/const rawSteer=Math\.abs\(inp\.steer\)<\.025\?0:inp\.steer/);
   assert.match(js,/const shapedSteer=Math\.sign\(rawSteer\)\*Math\.pow\(Math\.abs\(rawSteer\),1\.18\)/);
   assert.match(js,/const steerTarget=shapedSteer\*steerLimit/);
   assert.match(js,/approach\(car\.steeringWheel,steerTarget/);
