@@ -129,21 +129,32 @@ test('cover renderer reuses the boot catalog and never refetches or reads coverB
   assert.match(source, /window\.KidscadeGames/);
 });
 
-test('dashboard exclusively owns quick-hub and favorite/recent state APIs', () => {
+test('dashboard owns favorite/recent state without rendering the retired quick hub', () => {
   const clarity = read('ui-clarity-overhaul.js');
   const dashboard = read('dashboard-recent.js');
 
   assert.doesNotMatch(clarity, /buildQuickHub|syncQuickHub|recent-list|favorite-list/);
-  assert.doesNotMatch(clarity, /observe\(document\.body/);
-  assert.match(dashboard, /function ensureQuickHub/);
-  assert.match(dashboard, /function syncQuickHub/);
+  assert.doesNotMatch(dashboard, /ensureQuickHub|syncQuickHub|createMiniCard|kc-quick-zone|recent-list|favorite-list/);
   assert.match(dashboard, /function\s+favoriteIds\s*\(/);
   assert.match(dashboard, /function\s+recentIds\s*\(/);
   assert.match(dashboard, /kidscade:favorites-changed/);
   assert.match(dashboard, /kidscade:recents-changed/);
   assert.match(dashboard, /favorites:\s*favoriteIds/);
   assert.match(dashboard, /recents:\s*recentIds/);
-  assert.match(dashboard, /kidscade:dashboard-rendered/);
+});
+
+test('Home V2 is the only main discovery presentation', () => {
+  const base = read('index_base.html');
+  const bootstrap = read('main-bootstrap.js');
+  const stats = read('server-stats.js');
+  const homeCss = read('home-v2.css');
+
+  assert.doesNotMatch(base, /kc-quick-zone|recent-section|favorite-section|class="kc-hero"/);
+  assert.doesNotMatch(bootstrap, /catalog-discovery\.js/);
+  assert.doesNotMatch(stats, /kc-popular-hub|kc-live-stats|kc-server-card-stats|createPopularItem/);
+  assert.doesNotMatch(homeCss, /kc-quick-zone|kc-curated-discovery|kc-popular-hub/);
+  assert.equal(fs.existsSync(path.join(ROOT, 'catalog-discovery.js')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'stats-rankings.js')), false);
 });
 
 test('dashboard owns favorite mutation and bootstrap removes legacy per-star listeners', () => {
