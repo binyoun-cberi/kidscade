@@ -124,29 +124,32 @@
     .question{margin:2px 0 3px;font-size:clamp(2.2rem,7vw,4.2rem);font-weight:1000;letter-spacing:-.06em}
     .entry{min-height:38px;color:#fff1ae;font-size:1.35rem;font-weight:1000}
     .combo-line{margin-top:3px;color:#86eaff;font-size:.72rem;font-weight:900}
-    .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:7px;padding:8px;border-radius:16px;background:#080c19;border:2px solid rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45)}
     .pad button{
-      min-height:48px;border-radius:12px;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.1);
-      font-weight:1000;font-size:1.05rem;cursor:pointer
+      min-height:56px;border-radius:12px;background:linear-gradient(180deg,#f8fafc,#dce3ec);border:2px solid #fff;
+      color:#111827;box-shadow:0 3px 0 #8c98aa;font-weight:1000;font-size:clamp(1.25rem,3vw,1.75rem);cursor:pointer;
+      touch-action:none;user-select:none;-webkit-user-select:none
     }
-    .pad button:active{transform:scale(.96);background:rgba(255,255,255,.15)}
+    .pad button:active,.pad button.pad-pressed{transform:translateY(2px);box-shadow:0 1px 0 #8c98aa;background:#fff}
     .pad .zero{grid-column:span 2}
-    .pad .del{color:#ffc1ce}
+    .pad .del{color:#fff;background:linear-gradient(180deg,#ef7087,#bd294b);border-color:#ff9cad;box-shadow:0 3px 0 #7a1933;font-size:clamp(.95rem,2.2vw,1.25rem)}
     .quit-btn{min-width:58px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--line);cursor:pointer}
 
-    .local-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-    .duel-card{padding:10px;min-width:0}
-    .duel-card.p1{border-color:rgba(85,215,255,.3)}
-    .duel-card.p2{border-color:rgba(255,107,138,.3)}
-    .duel-head{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:4px}
-    .duel-head b{font-size:.74rem}.duel-head span{font-size:.62rem;color:var(--muted)}
-    .duel-question{text-align:center;font-size:clamp(1.7rem,5vw,3rem);font-weight:1000}
-    .duel-entry{text-align:center;height:27px;color:#fff2a8;font-weight:1000}
-    .mini-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-    .mini-pad button{min-height:42px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-weight:1000;cursor:pointer}
+    .local-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
+    .duel-card{padding:9px;min-width:0;display:flex;flex-direction:column}
+    .duel-card.p1{border:3px solid #48cbff;background:linear-gradient(180deg,rgba(31,126,190,.22),rgba(13,17,33,.94));box-shadow:inset 0 4px 0 rgba(85,215,255,.16)}
+    .duel-card.p2{border:3px solid #ff6b8a;background:linear-gradient(180deg,rgba(180,36,78,.22),rgba(13,17,33,.94));box-shadow:inset 0 4px 0 rgba(255,107,138,.16)}
+    .duel-head{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:5px}
+    .duel-head b{font-size:clamp(.82rem,2vw,1.1rem);letter-spacing:.04em}.duel-head span{font-size:.68rem;color:#d8deef;font-weight:800}
+    .duel-question{text-align:center;padding:6px 4px 1px;border-radius:12px 12px 0 0;background:#070b16;font-size:clamp(2rem,5.4vw,3.35rem);font-weight:1000;line-height:1.05}
+    .duel-entry{text-align:center;min-height:34px;margin-bottom:7px;border-radius:0 0 12px 12px;background:#070b16;color:#fff2a8;font-size:clamp(1.1rem,2.8vw,1.55rem);font-weight:1000}
+    .mini-pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:7px;border-radius:15px;background:#070a12;border:2px solid rgba(255,255,255,.12);min-height:0;flex:1}
+    .mini-pad button{min-height:50px;border-radius:11px;background:linear-gradient(180deg,#f8fafc,#dbe2eb);border:2px solid #fff;color:#111827;box-shadow:0 3px 0 #8793a5;font-weight:1000;font-size:clamp(1.2rem,3.2vw,1.9rem);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}
+    .mini-pad button:active,.mini-pad button.pad-pressed{transform:translateY(2px);box-shadow:0 1px 0 #8793a5;background:#fff}
     .mini-pad .zero{grid-column:span 2}
-    .p1 .mini-pad .zero{color:#aeeeff;background:rgba(85,215,255,.08)}
-    .p2 .mini-pad .zero{color:#ffc1cf;background:rgba(255,107,138,.08)}
+    .p1 .mini-pad .zero,.p2 .mini-pad .zero{color:#111827;background:linear-gradient(180deg,#f8fafc,#dbe2eb)}
+    .mini-pad button[data-key="del"]{color:#fff;background:linear-gradient(180deg,#ef7087,#bd294b);border-color:#ff9cad;box-shadow:0 3px 0 #7a1933;font-size:clamp(.88rem,2vw,1.1rem)}
+    .local-controls>.quit-btn{position:absolute;right:4px;top:-38px;z-index:20;min-width:64px;height:31px;border-radius:10px;font-size:.72rem;background:rgba(3,5,12,.78)}
 
     .overlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(2,3,9,.76);backdrop-filter:blur(7px)}
     .overlay-card{width:min(440px,100%);padding:22px;text-align:center}
@@ -184,13 +187,22 @@
     @keyframes hit{0%,100%{transform:translateX(0)}50%{transform:translateX(var(--hit,8px))}}
     @keyframes lines{from{background-position:0 0}to{background-position:80px 0}}
     @keyframes flash{0%{opacity:0}40%{opacity:1}100%{opacity:0}}
+    .battle-screen.local-battle{gap:6px;min-height:calc(100dvh - 24px);height:calc(100dvh - 24px);overflow:hidden}
+    .battle-screen.local-battle .hud{flex:0 0 auto}
+    .battle-screen.local-battle .arena{height:clamp(165px,29dvh,250px);flex:0 0 auto}
+    .battle-screen.local-battle .local-controls{flex:1;min-height:0}
+    .battle-screen.local-battle .duel-card{min-height:0}
+    .battle-screen.local-battle .mini-pad button{min-height:0}
     @media(max-width:720px){
       .setup-grid{grid-template-columns:1fr}
       .rules{grid-template-columns:1fr 1fr 1fr}
       .solo-card{grid-template-columns:1fr}
       .arena{height:260px}
-      .pad button{min-height:44px}
+      .pad button{min-height:50px}
       .hud{grid-template-columns:1fr 72px 1fr}
+      .battle-screen.local-battle .arena{height:clamp(145px,24dvh,205px)}
+      .battle-screen.local-battle .duel-head span{display:none}
+      .battle-screen.local-battle .duel-question{font-size:clamp(1.8rem,7vw,2.75rem)}
     }
     @media(max-width:430px){
       .app{padding:8px}.screen{min-height:calc(100dvh - 16px);gap:8px}
@@ -199,7 +211,7 @@
       .choice{min-height:42px}.tables{gap:5px}.table-chip{min-height:38px}
       .arena{height:220px;border-radius:18px}.avatar{font-size:3.6rem}
       .status-float{top:6%;font-size:.68rem}.cpu-question{top:25%}
-      .local-controls{gap:5px}.duel-card{padding:7px}.mini-pad{gap:3px}.mini-pad button{min-height:39px;font-size:.88rem}
+      .local-controls{gap:5px}.duel-card{padding:5px}.mini-pad{gap:4px;padding:5px}.mini-pad button{min-height:0;font-size:1.05rem}
       .hud-side{padding:6px}.round-center strong{font-size:.75rem}.round-center span{font-size:.58rem}
       .stat-grid{grid-template-columns:1fr 1fr}
     }
@@ -357,7 +369,7 @@
 
       <div class="local-controls hidden" id="localControls">
         <div class="panel duel-card p1">
-          <div class="duel-head"><b>PLAYER 1</b><span>숫자열 · 자동 발사</span></div>
+          <div class="duel-head"><b>PLAYER 1</b><span>숫자열 / 왼쪽 터치</span></div>
           <div class="duel-question" id="p1Question">7 × 8</div>
           <div class="duel-entry" id="p1Entry">?</div>
           <div class="mini-pad" data-pad="0">
@@ -368,7 +380,7 @@
           </div>
         </div>
         <div class="panel duel-card p2">
-          <div class="duel-head"><b>PLAYER 2</b><span>숫자패드 · 자동 발사</span></div>
+          <div class="duel-head"><b>PLAYER 2</b><span>숫자패드 / 오른쪽 터치</span></div>
           <div class="duel-question" id="p2Question">6 × 9</div>
           <div class="duel-entry" id="p2Entry">?</div>
           <div class="mini-pad" data-pad="1">
@@ -587,13 +599,43 @@
         if(c){state.cpu=c.dataset.cpu;saveSettings();updateMenu();return}
         var t=e.target.closest("[data-table]");
         if(t){state.table=t.dataset.table;saveSettings();updateMenu();return}
-        var k=e.target.closest("[data-key]");
-        if(k){
-          var pad=k.closest("[data-pad]");
-          if(pad)pressKey(+pad.dataset.pad,k.dataset.key);
-          return;
-        }
+
       });
+
+      function activatePadButton(button){
+        if(!button)return false;
+        var pad=button.closest("[data-pad]");
+        if(!pad)return false;
+        pressKey(+pad.dataset.pad,button.dataset.key);
+        button.classList.add("pad-pressed");
+        setTimeout(function(){button.classList.remove("pad-pressed")},90);
+        return true;
+      }
+
+      if(window.PointerEvent){
+        document.addEventListener("pointerdown",function(e){
+          var button=e.target.closest&&e.target.closest("[data-key]");
+          if(!button)return;
+          if(e.pointerType==="mouse"&&e.button!==0)return;
+          if(activatePadButton(button))e.preventDefault();
+        },{passive:false});
+      }else{
+        document.addEventListener("touchstart",function(e){
+          var handled=false;
+          Array.prototype.forEach.call(e.changedTouches,function(touch){
+            var target=touch.target&&touch.target.closest?touch.target:document.elementFromPoint(touch.clientX,touch.clientY);
+            var button=target&&target.closest?target.closest("[data-key]"):null;
+            if(button&&activatePadButton(button))handled=true;
+          });
+          if(handled)e.preventDefault();
+        },{passive:false});
+        document.addEventListener("mousedown",function(e){
+          if(e.button!==0)return;
+          var button=e.target.closest&&e.target.closest("[data-key]");
+          if(button&&activatePadButton(button))e.preventDefault();
+        });
+      }
+
       els.startBtn.addEventListener("click",function(){transition(startMatch)});
       els.soundBtn.addEventListener("click",function(){state.sound=!state.sound;saveSettings();updateMenu();if(state.sound)tone(520,.08,"sine")});
       els.quitBtn.addEventListener("click",openQuit);
@@ -643,6 +685,7 @@
       showOnly(els.battleScreen);
       els.soloControls.classList.toggle("hidden",state.mode!=="cpu");
       els.localControls.classList.toggle("hidden",state.mode!=="local");
+      els.battleScreen.classList.toggle("local-battle",state.mode==="local");
       setupCharacterSprites();
       els.leftName.textContent=state.mode==="cpu"?"나":"PLAYER 1";
       els.rightName.textContent=state.mode==="cpu"?"CPU "+CPU[state.cpu].label:"PLAYER 2";
