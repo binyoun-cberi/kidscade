@@ -395,7 +395,8 @@
       'dashboard-recent.js',
       'game-recommendations.js',
       'game-frame-shell.js',
-      'game-launcher.js'
+      'game-launcher.js',
+      'home-v2.js'
     ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     return html.replace('</body>', scripts + '</body>');
   }

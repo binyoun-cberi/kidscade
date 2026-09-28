@@ -252,6 +252,7 @@ test('common game start screen owns deferred launch and shared errors', () => {
   const frame = read('game-frame-shell.js');
 
   assert.match(bootstrap, /game-frame-shell\.js/);
+  assert.match(bootstrap, /home-v2\.js/);
   assert.match(bootstrap, /deferLaunch:\s*true/);
   assert.match(bootstrap, /KidscadeGameFrame\?\.open/);
   assert.match(bootstrap, /kidscade:game-error/);

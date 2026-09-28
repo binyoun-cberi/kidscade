@@ -73,6 +73,7 @@ jobs:
             game-recommendations.js \
             game-frame-shell.js \
             game-launcher.js \
+            home-v2.js \
             kidscade-game-sdk.js \
             score-display-normalizer.js \
             ui-clarity-overhaul.js \
