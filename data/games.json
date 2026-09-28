@@ -165,18 +165,18 @@
     {
       "id": "low_bumper_roulette",
       "title": "범퍼 룰렛 레이스",
-      "href": "games/low_bumper_roulette/index.html?v=1",
+      "href": "games/low_bumper_roulette/index.html?v=2",
       "category": "trivia",
       "age": "low",
       "icon": "🎡",
-      "description": "이름을 넣고 출발하면 알록달록한 구슬이 수많은 범퍼에 통통 튕기며 결승선을 향해 달려가는 교실용 복불복 레이스! 2~24명 참가, 1~3명 당첨, 세 가지 튕김 강도를 지원해요.",
+      "description": "친구나 말을 2~16개 넣고 출발! 범퍼와 스프링에 통통 튕기며 결승선을 향해 달려요. 1등 뽑기와 모두 나누기 모드를 지원하는 저학년용 레이스 게임.",
       "subject": "thinking",
       "genre": "simulation",
       "difficulty": "easy",
       "sessionMinutes": 5,
       "players": [
-        "classroom",
-        "localMulti"
+        "localMulti",
+        "classroom"
       ],
       "input": [
         "touch",
