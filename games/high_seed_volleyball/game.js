@@ -29,6 +29,107 @@ let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,speedCap:520,trail:A
 const CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
 function makeSpriteSet(name){const pose=(poseName)=>{const img=new Image();img.src=CHARACTER_ROOT+name+'/poses/'+name+'-'+poseName+'.png';return img};return {stand:pose('stand'),walk1:pose('walk1'),walk2:pose('walk2'),jump:pose('jump'),action:pose('action1'),cheer:pose('cheer1'),hurt:pose('hurt')}}
 const athleteSprites=[makeSpriteSet('player'),makeSpriteSet('female')];
+
+const AVATAR_PREVIEW_KEY='kidscade-avatar-studio-preview';
+function kidscadeHost(){
+ try{if(parent&&parent!==window&&parent.location.origin===location.origin)return parent}catch(_){}
+ return window;
+}
+function safeAvatar(fn,fallback=''){try{return fn()}catch(_){return fallback}}
+function avatarFrameApi(){
+ const h=kidscadeHost();
+ const candidates=[
+   safeAvatar(()=>window.KidscadeAvatarShop,null),
+   safeAvatar(()=>h.KidscadeAvatarShop,null),
+   safeAvatar(()=>h.document?.getElementById('kidscade-avatar-studio-frame')?.contentWindow?.KidscadeAvatarShop,null)
+ ];
+ return candidates.find(api=>api&&typeof api.renderPreviewFrame==='function')||null;
+}
+function svgDataUrl(svg){
+ if(!svg)return'';
+ const embedded=(svg.match(/<image[^>]+href=["']([^"']+)["']/i)||[])[1];
+ if(embedded&&embedded.startsWith('data:image'))return embedded;
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+function savedAvatarSource(){
+ const h=kidscadeHost();
+ const saved=safeAvatar(()=>h.localStorage.getItem(AVATAR_PREVIEW_KEY),'')||safeAvatar(()=>localStorage.getItem(AVATAR_PREVIEW_KEY),'');
+ if(saved&&saved.startsWith('data:image'))return saved;
+ const svg=safeAvatar(()=>typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG():'','');
+ return svgDataUrl(svg);
+}
+class VolleyAvatarActor{
+ constructor(side){
+   this.side=side;this.img=new Image();this.img.decoding='async';this.ready=false;this.source='';this.lastCapture=0;this.lastStatic=0;
+   this.img.onload=()=>{this.ready=true};this.img.onerror=()=>{this.ready=false};this.refreshStatic(true);
+ }
+ setSource(src){
+   if(!src||src===this.source)return false;
+   this.source=src;this.ready=false;this.img.src=src;return true;
+ }
+ refreshStatic(force=false){
+   const now=performance.now();if(!force&&now-this.lastStatic<1300)return;
+   this.lastStatic=now;this.setSource(savedAvatarSource());
+ }
+ modeFor(me){
+   if(me.state==='SLIDE'||me.attack>0)return 'smile';
+   if(!me.onGround)return 'jump';
+   if(Math.abs(me.vx)>34)return 'walk';
+   return 'idle';
+ }
+ capture(mode,now){
+   const api=avatarFrameApi();
+   if(!api||now-this.lastCapture<105)return false;
+   this.lastCapture=now;
+   const src=safeAvatar(()=>api.renderPreviewFrame(mode,now/1000),'')||'';
+   if(src&&src.startsWith('data:image')){this.setSource(src);return true}
+   return false;
+ }
+ render(ctx,me,number){
+   const now=performance.now(),mode=this.modeFor(me);
+   if(!this.capture(mode,now))this.refreshStatic(false);
+   if(!this.ready||!this.img.naturalWidth)return false;
+
+   const footY=me.y+me.h*.5,air=!me.onGround;
+   const walk=Math.sin(me.run*2.1),idle=Math.sin(now/520);
+   let bob=me.onGround?(Math.abs(me.vx)>34?walk*2.6:idle*.45):0;
+   let sx=1,sy=1,rot=0,ox=0,oy=0,targetH=132;
+
+   if(me.state==='SLIDE'){
+     targetH=118;sx=1.10;sy=.80;rot=me.face*.34;ox=me.face*15;oy=8;bob=0;
+   }else if(me.state==='RECOVER'){
+     targetH=126;sx=1.05;sy=.90;rot=me.face*.08;oy=5;bob=0;
+   }else if(me.attack>0&&!me.onGround){
+     targetH=136;sx=1.07;sy=.96;rot=me.face*-.12;ox=me.face*6;oy=-2;
+   }else if(air){
+     targetH=136;sx=.97;sy=1.05;rot=me.vx/7000;
+   }else if(me.land>0){
+     sx=1.08;sy=.91;oy=4;
+   }else if(Math.abs(me.vx)>34){
+     sx=1+Math.abs(walk)*.018;sy=1-Math.abs(walk)*.025;rot=clamp(me.vx/9000,-.045,.045);
+   }
+
+   const ratio=this.img.naturalWidth/Math.max(1,this.img.naturalHeight),targetW=targetH*ratio;
+   ctx.save();
+   ctx.fillStyle='rgba(15,23,42,.17)';ctx.beginPath();
+   ctx.ellipse(me.x,GROUND+3,31*(air?.78:1),7*(air?.72:1),0,0,Math.PI*2);ctx.fill();
+   ctx.translate(me.x+ox,footY+bob+oy);
+   ctx.rotate(rot);
+   ctx.scale((me.face>=0?1:-1)*sx,sy);
+   ctx.drawImage(this.img,-targetW/2,-targetH*.93,targetW,targetH);
+
+   // Small team badge keeps mirrored/custom avatars readable without recoloring skin/hair.
+   ctx.scale(me.face>=0?1:-1,1);
+   const badgeX=me.face*0,badgeY=-targetH*.58;
+   ctx.fillStyle=this.side===0?'rgba(34,197,94,.94)':'rgba(59,130,246,.94)';
+   ctx.beginPath();ctx.arc(badgeX,badgeY,11,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=2;ctx.stroke();
+   ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(number),badgeX,badgeY+.5);
+   ctx.restore();
+   return true;
+ }
+}
+const volleyAvatars=[new VolleyAvatarActor(0),new VolleyAvatarActor(1)];
 let serveArmed=false,serveCharging=false,serveCharge=0,cpuServeTarget=.55;
 
 const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getContext('2d');
@@ -345,6 +446,11 @@ function update(dt){
 }
 
 function drawAthlete(me,color,number){
+ if(volleyAvatars[me.side]?.render(ctx,me,number)){
+   if(DEBUG){const c=colliderFor(me);ctx.strokeStyle=me.side===0?'#16a34a':'#2563eb';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(c.cx,c.cy,c.rx,c.ry,0,0,Math.PI*2);ctx.stroke()}
+   return;
+ }
+ // Avatar data/API unavailable: keep the existing Kenney character as a safe fallback.
  const set=athleteSprites[me.side];let img=set.stand;if(me.state==='SLIDE'||me.state==='RECOVER')img=set.hurt;else if(me.attack>0)img=set.action;else if(!me.onGround)img=set.jump;else if(Math.abs(me.vx)>38)img=(Math.floor(me.run)%2===0?set.walk1:set.walk2);
  const footY=me.y+me.h*.5;ctx.save();ctx.fillStyle='rgba(15,23,42,.16)';ctx.beginPath();ctx.ellipse(me.x,GROUND+3,30*(me.onGround?1:.72),7*(me.onGround?1:.72),0,0,Math.PI*2);ctx.fill();
  if(img&&img.complete&&img.naturalWidth){const h=me.state==='SLIDE'?104:126,w=h*(img.naturalWidth/img.naturalHeight);ctx.translate(me.x,footY);if(me.state==='SLIDE')ctx.rotate(me.face*.32);ctx.scale(me.face>=0?1:-1,1);ctx.drawImage(img,-w/2,-h,w,h);if(me.attack>0){ctx.fillStyle='rgba(250,204,21,.25)';ctx.beginPath();ctx.arc(34,-70,19,0,Math.PI*2);ctx.fill()}}
@@ -366,4 +472,5 @@ document.getElementById('pauseBtn').addEventListener('click',()=>togglePause());
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==='KeyP'&&playing)togglePause()},{passive:false});addEventListener('keyup',e=>{keys[e.code]=false});
 document.querySelectorAll('#touch button[data-key]').forEach(btn=>{const k=btn.dataset.key;const on=e=>{e.preventDefault();touch[k]=true};const off=e=>{e.preventDefault();touch[k]=false};btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('pointerleave',off)});
 addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);Object.keys(touch).forEach(k=>touch[k]=false);if(playing&&!paused)togglePause(true)});
+addEventListener('storage',e=>{if(e.key===AVATAR_PREVIEW_KEY)volleyAvatars.forEach(a=>a.refreshStatic(true))});
 })();
