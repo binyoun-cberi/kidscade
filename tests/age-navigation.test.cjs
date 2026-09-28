@@ -6,7 +6,7 @@ const launcher = require('../game-launcher.js');
 function fixture(saved, blockedStorage = false) {
   const timers = new Map(); let nextTimer = 0; const changes = []; let entered = 0;
   const buttons = ['toddler', 'low', 'high', 'job'].map(age => ({ dataset: { targetAge: age }, focus() {} }));
-  const elements = Object.fromEntries(['age-selection-screen', 'main-app', 'current-age-label', 'kc-age-hero-label', 'btn-change-age'].map(id => [id, {
+  const elements = Object.fromEntries(['age-selection-screen', 'main-app', 'current-age-icon', 'current-age-label', 'kc-age-hero-label', 'btn-change-age'].map(id => [id, {
     style: {}, attrs: {}, listeners: {}, focused: false,
     setAttribute(k,v) { this.attrs[k] = v; },
     querySelectorAll() { return buttons; }, querySelector() { return buttons[0]; },
@@ -23,7 +23,7 @@ function fixture(saved, blockedStorage = false) {
 }
 
 test('first visit: age gesture is consumed, background stays inert until ready, no game starts', () => {
-  for (const age of ['toddler','low','high','job']) {
+  for (const age of ['toddler','low','high']) {
     const f=fixture(null);
     assert.equal(f.api.canLaunch(),false);
     const event=f.click(age);
@@ -40,15 +40,15 @@ test('first visit: age gesture is consumed, background stays inert until ready, 
 });
 
 test('valid saved age enters lobby; unknown saved values return to selection', () => {
-  for (const age of ['toddler','low','high','job']) { const f=fixture(age);assert.equal(f.api.state().phase,'ready');assert.deepEqual(f.changes,[age]); }
-  for (const age of ['',null,'all','undefined','invalid']) assert.equal(fixture(age).api.state().phase,'selecting');
+  for (const age of ['toddler','low','high']) { const f=fixture(age);assert.equal(f.api.state().phase,'ready');assert.deepEqual(f.changes,[age]); }
+  for (const age of ['',null,'all','job','undefined','invalid']) assert.equal(fixture(age).api.state().phase,'selecting');
 });
 
 test('age changes cancel pending transitions and initialization cannot bind twice', () => {
   const f=fixture('high');f.init();assert.deepEqual(f.changes,['high']);
   f.api.showSelector();assert.equal(f.api.canLaunch(),false);
   f.click('low');f.api.showSelector();f.flush();assert.equal(f.api.state().phase,'selecting');
-  f.click('job');f.flush();assert.deepEqual(f.api.state(),{phase:'ready',age:'job'});assert.equal(f.entered(),1);
+  f.click('high');f.flush();assert.deepEqual(f.api.state(),{phase:'ready',age:'high'});assert.equal(f.entered(),1);
 });
 
 test('blocked storage still permits session selection', () => {
@@ -66,4 +66,23 @@ test('double click, held key, and age-button events cannot launch games after tr
 test('second launch cannot overwrite a live session', () => {
   const result=launcher.open({}, {dataset:{id:'second'}}, {canLaunch:()=>true,getSession:()=>({id:'first'})});
   assert.equal(result.reason,'session-active');
+});
+
+
+test('legacy career selection is no longer a valid age gate value', () => {
+  assert.equal(navigation.validAge('job'), false);
+  const f=fixture('job');
+  assert.deepEqual(f.api.state(), {phase:'selecting',age:''});
+  assert.equal(f.api.select('job'), false);
+});
+
+test('age gate markup exposes exactly three age choices and no career card', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const html=fs.readFileSync(path.resolve(__dirname,'..','index_base.html'),'utf8');
+  const gate=html.match(/<div id="age-selection-screen"[\s\S]*?<div id="main-app">/)?.[0] || '';
+  assert.equal((gate.match(/class="age-btn-card"/g) || []).length, 3);
+  assert.doesNotMatch(gate, /data-target-age="job"/);
+  assert.match(gate, /어디에서 놀까요\?/);
+  assert.match(gate, /선택은 언제든 바꿀 수 있어요/);
 });

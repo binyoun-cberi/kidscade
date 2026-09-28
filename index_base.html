@@ -13,6 +13,7 @@
     <script src="achievement-state.js"></script>
     <script src="shop-state.js"></script>
     <link rel="stylesheet" href="main-shell.css">
+    <link rel="stylesheet" href="age-gate.css">
 
 </head>
 <body>
@@ -100,33 +101,40 @@
         <iframe id="hamster-iframe" src="about:blank" title="Kidscade 나의 3D 햄스터 집" allow="fullscreen"></iframe>
     </div>
 
-    <div id="age-selection-screen">
-        <h1 class="age-screen-title">환영합니다! 🎉</h1>
-        <p class="age-screen-subtitle">맞춤형 오락실을 위해 나이를 알려주세요!</p>
-        <div class="age-cards-container">
-            <button type="button" class="age-btn-card" data-target-age="toddler">
-                <span class="age-icon">🐥</span>
-                <span class="age-name">유아 (3~6세)</span>
-                <span class="age-desc">그림·관찰·기초 놀이를 즐겨요</span>
+    <div id="age-selection-screen" role="dialog" aria-modal="true" aria-labelledby="age-screen-title" aria-describedby="age-screen-subtitle">
+        <div class="age-gate-brand" aria-hidden="true">KIDSCADE <span>🎮</span></div>
+        <h1 class="age-screen-title" id="age-screen-title">어디에서 놀까요?</h1>
+        <p class="age-screen-subtitle" id="age-screen-subtitle">학년을 골라주세요</p>
+        <div class="age-cards-container" role="list" aria-label="연령 선택">
+            <button type="button" class="age-btn-card" data-target-age="toddler" role="listitem">
+                <span class="age-icon" aria-hidden="true">🐥</span>
+                <span class="age-card-copy">
+                    <span class="age-name">유아 3~6세</span>
+                    <span class="age-desc">보고, 찾고, 놀아요</span>
+                </span>
+                <span class="age-arrow" aria-hidden="true">›</span>
+                <span class="age-current" aria-hidden="true">✓</span>
             </button>
-            <button type="button" class="age-btn-card" data-target-age="low">
-                <span class="age-icon">🎒</span>
-                <span class="age-name">초등 저학년</span>
-                <span class="age-desc">1~3학년 기초 학습·놀이 게임</span>
+            <button type="button" class="age-btn-card" data-target-age="low" role="listitem">
+                <span class="age-icon" aria-hidden="true">🎒</span>
+                <span class="age-card-copy">
+                    <span class="age-name">초등 1~3학년</span>
+                    <span class="age-desc">쉽고 재미있게 배워요</span>
+                </span>
+                <span class="age-arrow" aria-hidden="true">›</span>
+                <span class="age-current" aria-hidden="true">✓</span>
             </button>
-            <button type="button" class="age-btn-card" data-target-age="high">
-                <span class="age-icon">🚀</span>
-                <span class="age-name">초등 고학년</span>
-                <span class="age-desc">4~6학년 심화·전략·도전 게임</span>
-            </button>
-        
-            <!-- 새로 추가된 직업체험 카드 -->
-            <button type="button" class="age-btn-card" data-target-age="job">
-                <span class="age-icon">🧑‍🔬</span>
-                <span class="age-name">직업체험</span>
-                <span class="age-desc">다양한 직업을 게임으로 체험해요</span>
+            <button type="button" class="age-btn-card" data-target-age="high" role="listitem">
+                <span class="age-icon" aria-hidden="true">🚀</span>
+                <span class="age-card-copy">
+                    <span class="age-name">초등 4~6학년</span>
+                    <span class="age-desc">생각하고 도전해요</span>
+                </span>
+                <span class="age-arrow" aria-hidden="true">›</span>
+                <span class="age-current" aria-hidden="true">✓</span>
             </button>
         </div>
+        <p class="age-screen-note">선택은 언제든 바꿀 수 있어요</p>
     </div>
 
     <div id="main-app">
@@ -215,7 +223,7 @@
                 </div>
             </div>
             <div class="kc-top-actions">
-                <button class="header-btn age-change-btn" id="btn-change-age">🎒 <span id="current-age-label">초등 고학년</span></button>
+                <button class="header-btn age-change-btn" id="btn-change-age"><span id="current-age-icon" aria-hidden="true">🚀</span> <span id="current-age-label">초등 4~6학년</span></button>
                 <button class="header-btn theme-toggle" id="theme-btn">🌙 다크 모드</button>
             </div>
         </header>

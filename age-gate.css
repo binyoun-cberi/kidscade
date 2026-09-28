@@ -1,0 +1,308 @@
+/* Kidscade age gate v3
+   One job only: choose an age. Career exploration lives inside Home 2.0. */
+
+#age-selection-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding:
+    max(28px, env(safe-area-inset-top))
+    clamp(18px, 4vw, 44px)
+    max(30px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 12% 10%, rgba(219, 240, 255, .95), transparent 29rem),
+    radial-gradient(circle at 88% 8%, rgba(255, 234, 154, .72), transparent 26rem),
+    linear-gradient(145deg, #f6fbff 0%, #fffaf0 52%, #fff5f8 100%);
+  transition: opacity .28s ease, visibility .28s ease;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  text-align: center;
+}
+
+.age-gate-brand {
+  margin: 0 0 14px;
+  color: #7055e8;
+  font-size: .82rem;
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: .13em;
+}
+.age-gate-brand span { letter-spacing: 0; }
+
+.age-screen-title {
+  margin: 0;
+  color: #fb6688;
+  font-size: clamp(2rem, 4.8vw, 3rem);
+  line-height: 1.08;
+  font-weight: 1000;
+  letter-spacing: -.055em;
+  text-shadow: none;
+}
+
+.age-screen-subtitle {
+  margin: 9px 0 26px;
+  color: #657087;
+  font-size: clamp(.95rem, 2vw, 1.08rem);
+  line-height: 1.45;
+  font-weight: 800;
+}
+
+.age-cards-container {
+  width: min(100%, 980px);
+  max-width: 980px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.age-btn-card {
+  position: relative;
+  width: auto;
+  min-width: 0;
+  min-height: 206px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  margin: 0;
+  padding: 24px 20px;
+  overflow: hidden;
+  border: 2px solid rgba(244, 193, 58, .74);
+  border-radius: 25px;
+  background: rgba(255, 255, 255, .94);
+  color: #263247;
+  box-shadow: 0 13px 30px rgba(61, 72, 99, .09);
+  font: inherit;
+  text-align: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  transition:
+    transform .16s ease,
+    border-color .16s ease,
+    box-shadow .16s ease,
+    background .16s ease;
+}
+
+.age-btn-card::after { display: none; content: none; }
+
+.age-btn-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(112, 85, 232, .55);
+  box-shadow: 0 18px 34px rgba(61, 72, 99, .13);
+}
+
+.age-btn-card:active {
+  transform: translateY(-1px) scale(.988);
+}
+
+.age-btn-card:focus-visible {
+  outline: 4px solid rgba(112, 85, 232, .28);
+  outline-offset: 4px;
+}
+
+.age-btn-card.is-current {
+  border-color: #7556ef;
+  background: linear-gradient(145deg, #fff 20%, #f8f5ff 100%);
+  box-shadow:
+    0 0 0 4px rgba(117, 86, 239, .11),
+    0 16px 34px rgba(86, 66, 170, .14);
+}
+
+.age-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 23px;
+  background: linear-gradient(145deg, #fff7cc, #fff0a6);
+  font-size: 2.7rem;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(235, 188, 50, .18);
+}
+
+.age-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.age-name {
+  margin: 0;
+  color: #f45f82;
+  font-size: 1.24rem;
+  line-height: 1.2;
+  font-weight: 1000;
+  letter-spacing: -.035em;
+  word-break: keep-all;
+}
+
+.age-desc {
+  margin: 0;
+  min-height: 0;
+  color: #6d788c;
+  font-size: .86rem;
+  line-height: 1.45;
+  font-weight: 720;
+  word-break: keep-all;
+}
+
+.age-arrow {
+  display: none;
+  color: #9b7d20;
+  font-size: 1.65rem;
+  font-weight: 1000;
+}
+
+.age-current {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 31px;
+  height: 31px;
+  display: none;
+  place-items: center;
+  border-radius: 999px;
+  background: #7556ef;
+  color: #fff;
+  font-size: .95rem;
+  font-weight: 1000;
+  box-shadow: 0 6px 14px rgba(117, 86, 239, .24);
+}
+
+.age-btn-card.is-current .age-current { display: grid; }
+
+.age-screen-note {
+  margin: 20px 0 0;
+  color: #8791a3;
+  font-size: .82rem;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
+body.dark-mode #age-selection-screen {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(57, 81, 119, .55), transparent 29rem),
+    radial-gradient(circle at 88% 8%, rgba(103, 80, 32, .42), transparent 26rem),
+    linear-gradient(145deg, #111827 0%, #182235 52%, #251b35 100%);
+}
+body.dark-mode .age-gate-brand { color: #c4b5fd; }
+body.dark-mode .age-screen-title { color: #f9a8d4; text-shadow: none; }
+body.dark-mode .age-screen-subtitle,
+body.dark-mode .age-screen-note { color: #aeb9ca; }
+body.dark-mode .age-btn-card {
+  border-color: rgba(226, 187, 72, .42);
+  background: rgba(36, 48, 67, .94);
+  color: #f8fafc;
+}
+body.dark-mode .age-btn-card:hover,
+body.dark-mode .age-btn-card.is-current { border-color: #9b87f5; background: #2d2944; }
+body.dark-mode .age-icon { background: linear-gradient(145deg, #4d4526, #3b3829); }
+body.dark-mode .age-name { color: #f9a8d4; }
+body.dark-mode .age-desc { color: #c2ccda; }
+
+@media (max-width: 768px) {
+  #age-selection-screen {
+    justify-content: flex-start;
+    padding:
+      max(26px, env(safe-area-inset-top))
+      18px
+      max(30px, env(safe-area-inset-bottom));
+  }
+
+  .age-gate-brand { margin: 2px 0 13px; font-size: .74rem; }
+  .age-screen-title { font-size: clamp(1.75rem, 8vw, 2.2rem); }
+  .age-screen-subtitle { margin: 7px 0 20px; font-size: .92rem; }
+
+  .age-cards-container {
+    width: min(100%, 470px);
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .age-btn-card {
+    min-height: 98px;
+    grid-template-columns: 58px minmax(0, 1fr) 24px;
+    grid-template-rows: auto;
+    place-items: center stretch;
+    gap: 13px;
+    padding: 15px 16px;
+    border-radius: 21px;
+    text-align: left;
+  }
+
+  .age-btn-card:hover {
+    transform: none;
+    box-shadow: 0 13px 30px rgba(61, 72, 99, .09);
+  }
+
+  .age-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    font-size: 2rem;
+  }
+
+  .age-card-copy { gap: 5px; }
+  .age-name { font-size: 1.08rem; }
+  .age-desc { font-size: .8rem; }
+  .age-arrow { display: block; justify-self: end; }
+  .age-current {
+    position: static;
+    width: 28px;
+    height: 28px;
+    justify-self: end;
+    font-size: .85rem;
+  }
+  .age-btn-card.is-current .age-arrow { display: none; }
+
+  .age-screen-note { margin-top: 16px; font-size: .76rem; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  #age-selection-screen {
+    justify-content: center;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      18px
+      max(10px, env(safe-area-inset-bottom));
+  }
+  .age-gate-brand { margin-bottom: 6px; }
+  .age-screen-title { font-size: 1.55rem; }
+  .age-screen-subtitle { margin: 4px 0 10px; font-size: .78rem; }
+  .age-cards-container {
+    width: min(100%, 780px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .age-btn-card {
+    min-height: 112px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 9px;
+    padding: 11px 12px;
+    border-radius: 17px;
+    text-align: left;
+  }
+  .age-icon { width: 48px; height: 48px; border-radius: 15px; font-size: 1.7rem; }
+  .age-name { font-size: .88rem; }
+  .age-desc { font-size: .67rem; }
+  .age-arrow, .age-current { display: none; }
+  .age-screen-note { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #age-selection-screen,
+  .age-btn-card { transition: none; }
+}
