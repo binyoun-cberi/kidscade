@@ -85,8 +85,15 @@ function cpuBallClone(){
  return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||555};
 }
 function simulateCpuSmashLanding(aim){
- const g=cpuBallClone(),courtDir=-1,deep=aim>0,short=aim<0;
- const targetVX=courtDir*(deep?490:short?365:435),targetVY=deep?170:short?285:225;
+ const g=cpuBallClone(),courtDir=-1;
+ const profiles={
+   '-2':{vx:325,vy:330},
+   '-1':{vx:365,vy:285},
+   '0':{vx:435,vy:225},
+   '1':{vx:485,vy:175},
+   '2':{vx:520,vy:135}
+ },profile=profiles[String(aim)]||profiles['0'];
+ const targetVX=courtDir*profile.vx,targetVY=profile.vy;
  g.vx=lerp(g.vx,targetVX,.72);g.vy=lerp(g.vy,targetVY,.78);g.speedCap=555;capBallBody(g);
  let t=0;
  for(let i=0;i<240;i++){
@@ -96,7 +103,7 @@ function simulateCpuSmashLanding(aim){
  return {x:g.x,t,valid:false};
 }
 function chooseCpuAttackAim(){
- const opp=p[0],candidates=[-1,0,1].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
+ const opp=p[0],candidates=[-2,-1,0,1,2].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
  const valid=candidates.filter(q=>q.valid);
  if(!valid.length)return 0;
  valid.forEach(q=>{
@@ -225,7 +232,12 @@ function updatePlayer(me,inp,dt){
  }
 }
 
-function shotAimFor(me,inp){if(Number.isFinite(inp.aim)&&inp.aim!==0)return inp.aim;const towardOpponent=me.side===0?inp.r:inp.l;const towardOwn=me.side===0?inp.l:inp.r;return towardOpponent?1:towardOwn?-1:0}
+function shotAimFor(me,inp){
+ if(me.side===1&&(mode==='cpu'||mode==='practice')&&Number.isFinite(inp.aim))return inp.aim;
+ if(Number.isFinite(inp.aim)&&inp.aim!==0)return inp.aim;
+ const towardOpponent=me.side===0?inp.r:inp.l,towardOwn=me.side===0?inp.l:inp.r;
+ return towardOpponent?1:towardOwn?-1:0;
+}
 function colliderFor(me){if(me.state==='SLIDE')return {cx:me.x+me.face*30,cy:GROUND-25,rx:72,ry:26};return {cx:me.x,cy:me.y-13,rx:me.w*.56,ry:me.h*.54}}
 function collidePlayer(me,inp){
  if(ball.hitLock>0)return;const c=colliderFor(me),ex=c.rx+ball.r,ey=c.ry+ball.r,qx=(ball.x-c.cx)/ex,qy=(ball.y-c.cy)/ey,d2=qx*qx+qy*qy;if(d2>=1)return;
@@ -235,7 +247,12 @@ function collidePlayer(me,inp){
  if(vn<0){const restitution=smash?1.06:dive?1.00:.96;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*92;rvy+=ny*92}
  ball.vx=rvx+me.vx*(smash?.42:dive?.34:.28);ball.vy=rvy+me.vy*(smash?.18:.12);
  const courtDir=me.side===0?1:-1;
- if(smash){const aim=shotAimFor(me,inp),deep=aim>0,short=aim<0,targetVX=courtDir*(deep?490:short?365:435),targetVY=deep?170:short?285:225;ball.vx=lerp(ball.vx,targetVX,.72);ball.vy=lerp(ball.vy,targetVY,.78);me.attack=0;shake=Math.max(shake,4.2);burst(ball.x,ball.y,11);sound('hit',1.04)}
+ if(smash){
+   const aim=shotAimFor(me,inp),profiles={
+     '-2':{vx:325,vy:330},'-1':{vx:365,vy:285},'0':{vx:435,vy:225},'1':{vx:485,vy:175},'2':{vx:520,vy:135}
+   },profile=profiles[String(aim)]||profiles['0'],targetVX=courtDir*profile.vx,targetVY=profile.vy;
+   ball.vx=lerp(ball.vx,targetVX,.72);ball.vy=lerp(ball.vy,targetVY,.78);me.attack=0;shake=Math.max(shake,4.2);burst(ball.x,ball.y,11);sound('hit',1.04)
+ }
  else{
    const minForward=dive?145:115,forward=ball.vx*courtDir;if(forward<minForward)ball.vx+=courtDir*(minForward-forward)*.72;
    // A receive must actually pop the ball upward. The old lerp could leave a fast
