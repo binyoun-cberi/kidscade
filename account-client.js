@@ -99,15 +99,16 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #${SLOT_ID}{margin-top:8px;display:grid;gap:6px}
-      #${SLOT_ID} .kca-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.72);border:1px solid rgba(124,92,255,.12)}
-      body.dark-mode #${SLOT_ID} .kca-row{background:rgba(30,41,59,.62);border-color:rgba(196,181,253,.16)}
+      #${SLOT_ID}{margin-top:10px;display:grid;gap:8px}
+      #${SLOT_ID} .kca-row{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 11px;border-radius:15px;background:rgba(255,255,255,.82);border:1px solid rgba(124,92,255,.14);box-shadow:0 5px 14px rgba(75,56,130,.05)}
+      body.dark-mode #${SLOT_ID} .kca-row{background:rgba(30,41,59,.72);border-color:rgba(196,181,253,.18)}
       #${SLOT_ID} .kca-copy{min-width:0}
-      #${SLOT_ID} .kca-title{font-size:.68rem;font-weight:1000;color:var(--kc-ink,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      #${SLOT_ID} .kca-sub{margin-top:2px;font-size:.59rem;font-weight:800;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #${SLOT_ID} .kca-title{font-size:.72rem;font-weight:1000;color:var(--kc-ink,#253047);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em}
+      #${SLOT_ID} .kca-sub{margin-top:3px;font-size:.59rem;font-weight:850;color:var(--kc-muted,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-buttons{display:flex;gap:5px;align-items:center;flex:none}
-      #${SLOT_ID} button,#${SLOT_ID} .kca-button{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:10px;min-height:32px;padding:0 9px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.62rem;font-weight:1000;cursor:pointer;text-decoration:none}
-      #${SLOT_ID} .kca-logout{background:#eef2f7;color:#64748b}
+      #${SLOT_ID} button,#${SLOT_ID} .kca-button{display:inline-flex;align-items:center;justify-content:center;flex:none;border:0;border-radius:999px;min-height:34px;padding:0 11px;background:linear-gradient(135deg,#7c5cff,#8b5cf6);color:#fff;font-size:.61rem;font-weight:1000;cursor:pointer;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      #${SLOT_ID} .kca-logout{border:1px solid #dce3ee;background:linear-gradient(180deg,#fff,#f4f7fb);color:#607089;box-shadow:0 4px 10px rgba(51,65,85,.08)}
+      #${SLOT_ID} .kca-logout:hover{transform:translateY(-1px);box-shadow:0 7px 14px rgba(51,65,85,.12)}
       #${SLOT_ID} .kca-economy-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:58px;padding:8px 10px;border-radius:14px;text-decoration:none;background:linear-gradient(135deg,rgba(124,92,255,.09),rgba(236,72,153,.07));border:1px solid rgba(124,92,255,.18);box-shadow:0 5px 14px rgba(124,92,255,.07);color:var(--kc-ink,#334155);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
       #${SLOT_ID} .kca-economy-card:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.34);box-shadow:0 8px 18px rgba(124,92,255,.12)}
       #${SLOT_ID} .kca-economy-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#fff1a8,#ffd166);box-shadow:inset 0 0 0 1px rgba(180,120,0,.08);font-size:1rem}
@@ -119,14 +120,26 @@
       #${SLOT_ID} .kca-economy-status{font-size:.54rem;font-weight:850;color:#8b5cf6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #${SLOT_ID} .kca-economy-status.attention{color:#c56a00}
       #${SLOT_ID} .kca-economy-arrow{font-size:1.15rem;font-weight:1000;color:#8b5cf6;padding-right:1px}
-      #${SLOT_ID} .kca-teacher-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-      #${SLOT_ID} .kca-teacher-action{min-width:0;display:grid;gap:3px;padding:10px 9px;border-radius:13px;text-decoration:none;border:1px solid rgba(124,92,255,.18);background:linear-gradient(135deg,rgba(124,92,255,.08),rgba(236,72,153,.05));color:var(--kc-ink,#334155)}
-      #${SLOT_ID} .kca-teacher-action strong{font-size:.68rem;font-weight:1000;line-height:1.2}
-      #${SLOT_ID} .kca-teacher-action span{font-size:.55rem;font-weight:850;color:var(--kc-muted,#64748b);line-height:1.25}
-      #${SLOT_ID} .kca-teacher-action:hover{border-color:rgba(124,92,255,.34);transform:translateY(-1px)}
-      body.dark-mode #${SLOT_ID} .kca-teacher-action{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.09));border-color:rgba(196,181,253,.22);color:#f8fafc}
-      body.dark-mode #${SLOT_ID} .kca-teacher-action span{color:#cbd5e1}
-      body.dark-mode #${SLOT_ID} .kca-logout{background:#334155;color:#e2e8f0}
+      #${SLOT_ID} .kca-teacher-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      #${SLOT_ID} .kca-teacher-action{position:relative;min-width:0;min-height:72px;display:grid;grid-template-columns:36px minmax(0,1fr) 24px;align-items:center;gap:7px;padding:10px 9px;border-radius:17px;text-decoration:none;overflow:hidden;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      #${SLOT_ID} .kca-teacher-action::before{content:"";position:absolute;inset:-24px auto auto -24px;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.34);filter:blur(1px);pointer-events:none}
+      #${SLOT_ID} .kca-teacher-action.manage{border:1px solid rgba(139,92,246,.30);background:linear-gradient(135deg,#f1e9ff 0%,#fbf7ff 52%,#f7ecff 100%);box-shadow:0 8px 18px rgba(124,92,255,.13);color:#5b21b6}
+      #${SLOT_ID} .kca-teacher-action.economy{border:1px solid rgba(245,158,11,.34);background:linear-gradient(135deg,#fff7e3 0%,#fffdf7 50%,#fff1e3 100%);box-shadow:0 8px 18px rgba(217,119,6,.12);color:#9a4c12}
+      #${SLOT_ID} .kca-teacher-action:hover{transform:translateY(-2px)}
+      #${SLOT_ID} .kca-teacher-action.manage:hover{box-shadow:0 12px 24px rgba(124,92,255,.18);border-color:rgba(124,92,255,.46)}
+      #${SLOT_ID} .kca-teacher-action.economy:hover{box-shadow:0 12px 24px rgba(217,119,6,.17);border-color:rgba(245,158,11,.50)}
+      #${SLOT_ID} .kca-action-icon{position:relative;z-index:1;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;background:rgba(255,255,255,.78);box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 10px rgba(75,56,130,.08)}
+      #${SLOT_ID} .kca-action-copy{position:relative;z-index:1;min-width:0;display:grid;gap:3px}
+      #${SLOT_ID} .kca-action-copy strong{font-size:.72rem;font-weight:1000;line-height:1.2;letter-spacing:-.025em;white-space:nowrap}
+      #${SLOT_ID} .kca-action-copy span{font-size:.54rem;font-weight:850;line-height:1.2;color:#6f7080;white-space:nowrap}
+      #${SLOT_ID} .kca-action-arrow{position:relative;z-index:1;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:1rem;font-weight:1000;line-height:1}
+      #${SLOT_ID} .manage .kca-action-arrow{background:linear-gradient(135deg,#9b6cff,#7c5cff);box-shadow:0 4px 10px rgba(124,92,255,.22)}
+      #${SLOT_ID} .economy .kca-action-arrow{background:linear-gradient(135deg,#ffbc73,#ff8d5d);box-shadow:0 4px 10px rgba(245,158,11,.20)}
+      body.dark-mode #${SLOT_ID} .kca-teacher-action.manage{background:linear-gradient(135deg,rgba(91,33,182,.38),rgba(49,46,129,.28));border-color:rgba(196,181,253,.28);color:#ede9fe}
+      body.dark-mode #${SLOT_ID} .kca-teacher-action.economy{background:linear-gradient(135deg,rgba(120,53,15,.36),rgba(69,26,3,.26));border-color:rgba(253,186,116,.25);color:#fed7aa}
+      body.dark-mode #${SLOT_ID} .kca-action-copy span{color:#cbd5e1}
+      body.dark-mode #${SLOT_ID} .kca-action-icon{background:rgba(15,23,42,.28)}
+      body.dark-mode #${SLOT_ID} .kca-logout{background:#334155;color:#e2e8f0;border-color:#475569}
       body.dark-mode #${SLOT_ID} .kca-economy-card{background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(236,72,153,.10));border-color:rgba(196,181,253,.22);color:#f8fafc}
       body.dark-mode #${SLOT_ID} .kca-economy-icon{background:linear-gradient(135deg,#7c5cff,#ec4899);box-shadow:none}
       body.dark-mode #${SLOT_ID} .kca-economy-meta{color:#cbd5e1}
@@ -280,7 +293,7 @@
     }
     if (account.role === 'teacher') {
       const teacherEconomyHref = '/teacher/economy.html?classId=' + encodeURIComponent(account.classId || '') + '&className=' + encodeURIComponent(account.className || '');
-      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><div class="kca-teacher-actions"><a class="kca-teacher-action" href="/teacher/"><strong>👩‍🏫 교사 관리</strong><span>학생 계정 · 반 관리</span></a><a class="kca-teacher-action" href="${escapeHtml(teacherEconomyHref)}"><strong>💰 학급경제 관리</strong><span>급여 · 은행 · 부동산</span></a></div>`;
+      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>↪ 로그아웃</button></div></div><div class="kca-teacher-actions"><a class="kca-teacher-action manage" href="/teacher/"><span class="kca-action-icon" aria-hidden="true">👩‍🏫</span><span class="kca-action-copy"><strong>교사 관리</strong><span>학생 계정 · 반 관리</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a><a class="kca-teacher-action economy" href="${escapeHtml(teacherEconomyHref)}"><span class="kca-action-icon" aria-hidden="true">💰</span><span class="kca-action-copy"><strong>학급경제 관리</strong><span>급여 · 은행 · 부동산</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a></div>`;
       slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
       return true;
     }
