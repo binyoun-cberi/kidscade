@@ -37,6 +37,15 @@ test('seed ranking migration and API routes are wired', () => {
   assert.match(worker, /json_extract\(a\.state_json, '\$\.seeds'\)/);
 });
 
+test('teachers can view class seed ranking without writing student weekly ledgers', () => {
+  const worker = fs.readFileSync(path.join(ROOT, 'worker', 'seed-rankings.mjs'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'seed-ranking.js'), 'utf8');
+  assert.match(worker, /authorizeTeacherAccess/);
+  assert.match(worker, /requireRankingViewer/);
+  assert.match(client, /isTeacher/);
+  assert.match(client, /!isTeacher\(\)/);
+});
+
 test('student ranking UI exposes only the requested seed views', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const client = fs.readFileSync(path.join(ROOT, 'seed-ranking.js'), 'utf8');
