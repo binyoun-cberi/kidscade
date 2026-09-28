@@ -238,7 +238,12 @@ function shotAimFor(me,inp){
  const towardOpponent=me.side===0?inp.r:inp.l,towardOwn=me.side===0?inp.l:inp.r;
  return towardOpponent?1:towardOwn?-1:0;
 }
-function colliderFor(me){if(me.state==='SLIDE')return {cx:me.x+me.face*30,cy:GROUND-25,rx:72,ry:26};return {cx:me.x,cy:me.y-13,rx:me.w*.56,ry:me.h*.54}}
+function colliderFor(me){
+ if(me.state==='SLIDE')return {cx:me.x+me.face*34,cy:GROUND-27,rx:84,ry:29};
+ if(me.attack>0&&!me.onGround)return {cx:me.x+me.face*12,cy:me.y-20,rx:56,ry:48};
+ if(!me.onGround)return {cx:me.x+me.face*4,cy:me.y-18,rx:50,ry:49};
+ return {cx:me.x,cy:me.y-11,rx:48,ry:47};
+}
 function collidePlayer(me,inp){
  if(ball.hitLock>0)return;const c=colliderFor(me),ex=c.rx+ball.r,ey=c.ry+ball.r,qx=(ball.x-c.cx)/ex,qy=(ball.y-c.cy)/ey,d2=qx*qx+qy*qy;if(d2>=1)return;
  const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;ball.x=c.cx+ux*ex;ball.y=c.cy+uy*ey;
