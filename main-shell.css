@@ -2316,8 +2316,6 @@ body.dark-mode .site-credits {
             .kc-top-actions { justify-content:flex-start; }
             .kc-top-search-wrap { grid-column:auto; grid-row:auto; }
             .kc-top-search { min-height:48px !important; }
-            .kc-hero { grid-template-columns:1fr; }
-            .kc-hero-status { text-align:left; }
             .filter-nav { gap:6px !important; }
             .filter-btn { min-height:39px; padding:0 11px !important; font-size:.72rem !important; }
             #game-list.game-container { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
