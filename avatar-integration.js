@@ -149,7 +149,8 @@
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:auto;transform-origin:50% 92%;will-change:transform;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center;will-change:transform,opacity}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#756c86;font-size:.85rem}
-      #avatar-plaza-preview .avatar-preview-edit{position:absolute!important;right:10px!important;bottom:10px!important;left:auto!important;top:auto!important;z-index:80!important;display:inline-flex!important;align-items:center;justify-content:center;min-height:36px!important;width:auto!important;padding:0 12px!important;border:2px solid rgba(255,255,255,.92)!important;border-radius:999px!important;background:linear-gradient(135deg,#8b5cf6,#ec4899)!important;color:#fff!important;font-size:.74rem!important;font-weight:1000!important;box-shadow:0 6px 16px rgba(83,51,145,.34)!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important}
+      #avatar-plaza-preview .avatar-preview-edit{position:absolute!important;right:12px!important;bottom:12px!important;left:auto!important;top:auto!important;z-index:80!important;display:inline-flex!important;align-items:center;justify-content:center;min-height:40px!important;width:auto!important;padding:0 16px!important;border:2px solid rgba(255,255,255,.92)!important;border-radius:999px!important;background:linear-gradient(135deg,#8b5cf6 0%,#a855f7 48%,#ec4899 100%)!important;color:#fff!important;font-size:.74rem!important;font-weight:1000!important;letter-spacing:-.01em!important;box-shadow:0 9px 20px rgba(83,51,145,.32),inset 0 1px 0 rgba(255,255,255,.22)!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important;transition:transform .16s ease,box-shadow .16s ease!important}
+      #avatar-plaza-preview .avatar-preview-edit:hover{transform:translateY(-2px)!important;box-shadow:0 13px 26px rgba(83,51,145,.38),inset 0 1px 0 rgba(255,255,255,.24)!important}
       @media(max-width:700px){#kidscade-avatar-studio-overlay{padding:0}#kidscade-avatar-studio-bar{border-radius:0;padding:8px 10px}#kidscade-avatar-studio-bar span{display:none}#kidscade-avatar-studio-frame{border-radius:0}}
       @media(prefers-reduced-motion:reduce){#kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{transition:none!important}}
     `;
@@ -173,7 +174,7 @@
       host.appendChild(button);
     }
     button.classList.add('avatar-open-btn','avatar-preview-edit');
-    button.textContent = '👕 꾸미기';
+    button.textContent = '👕 아바타 꾸미기 ›';
     button.setAttribute('aria-label','내 캐릭터 꾸미기');
     return button;
   }
