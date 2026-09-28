@@ -214,15 +214,15 @@
     {
       "id": "high_pass_mafia",
       "title": "누가 마피아? : 한밤의 마을",
-      "href": "games/high_pass_mafia/index.html?v=3",
+      "href": "games/high_pass_mafia/index.html?v=5",
       "category": "trivia",
       "age": "high",
       "icon": "🌙",
-      "description": "휴대폰 한 대를 차례로 넘기며 역할 확인, 밤 행동, 토론, 용의자 지목, 최후 변론과 처형 투표까지 사회자 없이 진행하는 4~16인 패스 앤 플레이 마피아 게임!",
+      "description": "휴대폰 한 대를 차례로 넘기며 즐기는 4~24인 마피아! 4~16명 클래식 모드와 17~24명 학급 모드가 자동 전환되어 역할 확인, 밤 행동, 토론과 비밀 최종투표까지 사회자 없이 진행합니다.",
       "subject": "thinking",
       "genre": "strategy",
       "difficulty": "medium",
-      "sessionMinutes": 20,
+      "sessionMinutes": 25,
       "players": [
         "localMulti",
         "classroom"
