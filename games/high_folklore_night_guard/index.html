@@ -929,7 +929,7 @@ function closeCamera(){
   state.cameraOpen=false;els.cameraShell.classList.remove('open');els.cameraView.classList.remove('cam-switching');sound('cam')
 }
 function cameraFeedLive(cam){
-  return state.cameraOpen&&!state.blackout&&performance.now()>=state.cameraSwitchUntil&&(!cam||state.currentCam===cam)
+  return state.cameraOpen&&!state.blackout&&!els.cameraView.classList.contains('cam-switching')&&performance.now()>=state.cameraSwitchUntil&&(!cam||state.currentCam===cam)
 }
 function roomPropsVisible(){
   var show=state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive;
@@ -1208,7 +1208,7 @@ function updateMaiden(dt){
       }
     }else{
       m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?12:Math.max(6.8,10-m.index*.55);
-      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){m.index=Math.min(m.path.length-1,m.index+1);sound('warn')}}
+      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn')}}}
     }
   }else{
     if(state.leftDoor){
