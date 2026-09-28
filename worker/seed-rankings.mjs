@@ -1,3 +1,5 @@
+import { authorizeTeacherAccess } from './teacher-auth.mjs';
+
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
@@ -116,8 +118,28 @@ async function recordSeedEarned(request, env) {
   return json({ ok: true, weekKey, weeklyEarned: Math.max(0, Number(saved?.earned_seeds || 0)) });
 }
 
+async function requireRankingViewer(request, env) {
+  const student = await requireStudent(request, env);
+  if (!student.response) {
+    return {
+      classId: student.row.class_id,
+      className: student.row.class_name || '',
+      selfId: String(student.row.student_id || '')
+    };
+  }
+  const teacher = await authorizeTeacherAccess(request, env);
+  if (!teacher.response && !teacher.global) {
+    return {
+      classId: teacher.classId,
+      className: teacher.className || '',
+      selfId: ''
+    };
+  }
+  return { response: student.response };
+}
+
 async function getSeedRanking(request, env) {
-  const auth = await requireStudent(request, env);
+  const auth = await requireRankingViewer(request, env);
   if (auth.response) return auth.response;
   const weekKey = kstWeekKey();
   const result = await env.DB.prepare(`
@@ -129,13 +151,13 @@ async function getSeedRanking(request, env) {
     LEFT JOIN student_seed_weekly w
       ON w.student_id = a.id AND w.week_key = ?
     WHERE a.class_id = ? AND a.disabled = 0
-  `).bind(weekKey, auth.row.class_id).all();
+  `).bind(weekKey, auth.classId).all();
   const rows = result?.results || [];
-  const balance = rankRows(rows, 'seed_balance', auth.row.student_id);
-  const weekly = rankRows(rows, 'weekly_earned', auth.row.student_id);
+  const balance = rankRows(rows, 'seed_balance', auth.selfId);
+  const weekly = rankRows(rows, 'weekly_earned', auth.selfId);
   return json({
     ok: true,
-    className: auth.row.class_name || '',
+    className: auth.className || '',
     weekKey,
     memberCount: rows.length,
     balance: {
