@@ -31,6 +31,8 @@ test('Fraction Smith uses Kidscade avatar, audio and particle assets',()=>{
   const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
   const js=fs.readFileSync(path.join(dir,'game.js'),'utf8');
   const avatar=fs.readFileSync(path.join(dir,'fraction-smith-avatar.js'),'utf8');
+  assert.doesNotThrow(()=>new Function(js));
+  assert.doesNotThrow(()=>new Function(avatar));
   assert.match(html,/fraction-smith-avatar\.js/);
   assert.match(avatar,/kidscade-avatar-studio-preview/);
   assert.match(avatar,/renderPreviewFrame/);
