@@ -3,7 +3,8 @@
 
   const SAVE_NAME = 'mafiaPassPlaySave';
   const MIN_PLAYERS = 4;
-  const MAX_PLAYERS = 16;
+  const MAX_PLAYERS = 24;
+  const CLASS_MODE_MIN = 17;
 
   const ROLE = Object.freeze({
     mafia: {
@@ -70,7 +71,9 @@
     if (count <= 6) return 1;
     if (count <= 9) return 2;
     if (count <= 12) return 3;
-    return 4;
+    if (count <= 16) return 4;
+    if (count <= 21) return 5;
+    return 6;
   }
 
   function storageGet() {
@@ -170,6 +173,12 @@
     return state ? state.players.filter(p => p.alive) : [];
   }
 
+  function isClassMode() {
+    if (!state) return setup.playerCount >= CLASS_MODE_MIN;
+    if (typeof state.settings?.classMode === 'boolean') return state.settings.classMode;
+    return state.players.length >= CLASS_MODE_MIN;
+  }
+
   function setScreen(html) {
     stopTimer();
     el.screen.innerHTML = html;
@@ -250,6 +259,11 @@
       case 'detective_result': return renderDetectiveResult();
       case 'dawn': return renderDawn();
       case 'discussion': return renderDiscussion();
+      case 'class_candidate_select': return renderClassCandidateSelect();
+      case 'class_defense': return renderClassDefense();
+      case 'class_vote_handoff': return renderClassVoteHandoff();
+      case 'class_vote': return renderClassVote();
+      case 'class_result': return renderClassResult();
       case 'nomination_handoff': return renderNominationHandoff();
       case 'nomination_vote': return renderNominationVote();
       case 'nomination_result': return renderNominationResult();
@@ -274,6 +288,8 @@
     const countEl = document.getElementById('playerCount');
     const countLabel = document.getElementById('playerCountLabel');
     const nameFields = document.getElementById('nameFields');
+    const modePreview = document.getElementById('modePreview');
+    const bulkNames = document.getElementById('bulkNames');
     const mafiaCount = document.getElementById('mafiaCount');
     const citizenCount = document.getElementById('citizenCount');
     const detectiveToggle = document.getElementById('detectiveToggle');
@@ -297,7 +313,16 @@
       revealDeathToggle.checked = setup.revealDeath;
       selfHealToggle.checked = setup.allowConsecutiveSelfHeal;
       renderNames();
+      updateModePreview();
       updateBalance();
+    }
+
+    function updateModePreview() {
+      const classroom = setup.playerCount >= CLASS_MODE_MIN;
+      modePreview.classList.toggle('classroom', classroom);
+      modePreview.innerHTML = classroom
+        ? '<b>🏫 학급 모드 · ' + setup.playerCount + '명</b>밤에는 전원이 빠르게 휴대폰을 확인하고, 낮에는 공개 후보 2명 선정 → 후보별 변론 → 후보를 제외한 전원의 단 한 번 비밀 최종투표로 진행합니다.'
+        : '<b>🌙 클래식 모드 · ' + setup.playerCount + '명</b>비밀 지목 → 최후 변론 → 처형 찬반 투표의 정통 마피아 흐름으로 진행합니다.';
     }
 
     function renderNames() {
@@ -365,6 +390,22 @@
     revealDeathToggle.addEventListener('change', () => { setup.revealDeath = revealDeathToggle.checked; persist(); });
     selfHealToggle.addEventListener('change', () => { setup.allowConsecutiveSelfHeal = selfHealToggle.checked; persist(); });
 
+    document.getElementById('applyBulkNames').addEventListener('click', () => {
+      const values = String(bulkNames.value || '')
+        .split(/[\n,;]+/)
+        .map(cleanName)
+        .filter(Boolean)
+        .slice(0, setup.playerCount);
+      if (!values.length) {
+        toast('붙여넣은 명단에서 이름을 찾지 못했어요.');
+        return;
+      }
+      values.forEach((name, i) => { setup.names[i] = name; });
+      syncSetupUi();
+      persist();
+      toast(values.length + '명의 이름을 적용했어요.');
+    });
+
     document.getElementById('startBtn').addEventListener('click', startGame);
 
     const saved = storageGet();
@@ -395,6 +436,11 @@
       detective_result: '경찰 조사 결과',
       dawn: '아침',
       discussion: '토론',
+      class_candidate_select: '학급 후보 선정',
+      class_defense: '학급 후보 변론',
+      class_vote_handoff: '학급 최종투표',
+      class_vote: '학급 최종투표',
+      class_result: '학급 투표 결과',
       nomination_handoff: '용의자 지목',
       nomination_vote: '용의자 지목',
       nomination_result: '지목 결과',
@@ -450,7 +496,8 @@
         discussionSeconds: setup.discussionSeconds,
         defenseSeconds: setup.defenseSeconds,
         revealDeath: setup.revealDeath,
-        allowConsecutiveSelfHeal: setup.allowConsecutiveSelfHeal
+        allowConsecutiveSelfHeal: setup.allowConsecutiveSelfHeal,
+        classMode: setup.playerCount >= CLASS_MODE_MIN
       },
       roleIndex: 0,
       nightOrder: [],
@@ -466,7 +513,10 @@
       accusedId: null,
       trialVotes: {},
       deadline: null,
-      lastTrial: null
+      lastTrial: null,
+      classCandidates: [],
+      classDefenseIndex: 0,
+      classVotes: {}
     };
     persist();
     sdkStart();
@@ -478,10 +528,10 @@
     const p = state.players[state.roleIndex];
     setScreen(
       '<div class="phase-wrap"><section class="phase-card">' +
-      '<div class="phase-icon">📱</div><div class="phase-label">비밀 역할 확인</div>' +
+      '<div class="phase-icon">📱</div><div class="phase-label">비밀 역할 확인 · ' + (state.roleIndex + 1) + '/' + state.players.length + '</div>' +
       '<h2>' + escapeHtml(p.name) + ' 차례</h2>' +
-      '<p>휴대폰을 <b>' + escapeHtml(p.name) + '</b>에게만 보여 주세요.<br>다른 사람은 화면에서 시선을 떼어 주세요.</p>' +
-      '<div class="privacy-shield">🔒 다음 화면에는 개인 역할이 표시됩니다.</div>' +
+      '<p>' + (isClassMode() ? '이름을 확인한 뒤 바로 개인 역할을 보세요.' : '휴대폰을 <b>' + escapeHtml(p.name) + '</b>에게만 보여 주세요.<br>다른 사람은 화면에서 시선을 떼어 주세요.') + '</p>' +
+      '<div class="' + (isClassMode() ? 'fast-pass' : 'privacy-shield') + '">🔒 역할은 다음 화면에서만 공개됩니다.</div>' +
       '<div class="phase-actions"><button class="primary giant" id="privateBtn" type="button">내가 ' + escapeHtml(p.name) + '입니다</button></div>' +
       '</section></div>'
     );
@@ -567,7 +617,7 @@
       '<div class="phase-icon">🌙</div><div class="phase-label">NIGHT ' + state.day + '</div>' +
       '<h2>' + (first ? '첫 번째 밤이 찾아왔습니다' : '다시 밤이 찾아왔습니다') + '</h2>' +
       '<p>지금부터 살아 있는 모든 플레이어가 차례로 휴대폰을 받습니다.<br>행동이 없는 시민도 똑같이 자신의 밤 차례를 확인해요.</p>' +
-      '<div class="status-row"><span class="pill">생존 <b>' + alivePlayers().length + '명</b></span><span class="pill">마피아 수는 비밀</span></div>' +
+      '<div class="status-row"><span class="pill">생존 <b>' + alivePlayers().length + '명</b></span><span class="pill">마피아 수는 비밀</span>' + (isClassMode() ? '<span class="pill"><b>학급 빠른 밤</b></span>' : '') + '</div>' +
       '<div class="phase-actions"><button class="primary giant" id="nightStart" type="button">밤 시작</button></div>' +
       '</section></div>'
     );
@@ -600,8 +650,8 @@
       '<div class="phase-wrap"><section class="phase-card">' +
       '<div class="phase-icon">📱</div><div class="phase-label">NIGHT ' + state.day + ' · ' + (state.turnIndex + 1) + '/' + state.nightOrder.length + '</div>' +
       '<h2>' + escapeHtml(p.name) + '에게 넘겨주세요</h2>' +
-      '<p>이 화면에는 역할이나 행동 여부가 표시되지 않습니다.<br><b>' + escapeHtml(p.name) + '</b>만 다음 버튼을 눌러 주세요.</p>' +
-      '<div class="privacy-shield">🔒 개인 밤 행동이 준비되어 있습니다.</div>' +
+      '<p>' + (isClassMode() ? '이름만 확인하고 바로 개인 밤 차례로 들어갑니다.' : '이 화면에는 역할이나 행동 여부가 표시되지 않습니다.<br><b>' + escapeHtml(p.name) + '</b>만 다음 버튼을 눌러 주세요.') + '</p>' +
+      '<div class="' + (isClassMode() ? 'fast-pass' : 'privacy-shield') + '">🔒 역할과 행동 여부는 다른 사람에게 보이지 않습니다.</div>' +
       '<div class="phase-actions"><button class="primary giant" id="nightPrivate" type="button">내 밤 차례 시작</button></div>' +
       '</section></div>'
     );
@@ -613,7 +663,7 @@
   }
 
   function candidateButtons(players, selectedId, extraText) {
-    return '<div class="player-grid">' + players.map(p =>
+    return '<div class="player-grid ' + (isClassMode() ? 'class-mode-grid' : '') + '">' + players.map(p =>
       '<button class="player-btn ' + (p.id === selectedId ? 'selected' : '') + '" type="button" data-target="' + p.id + '">' +
       escapeHtml(p.name) + (extraText ? '<small>' + escapeHtml(extraText(p)) + '</small>' : '') + '</button>'
     ).join('') + '</div>';
@@ -632,8 +682,8 @@
       setScreen(
         '<div class="phase-wrap"><section class="phase-card">' +
         '<div class="pass-name">' + escapeHtml(p.name) + '의 밤</div><div class="phase-icon">😴</div>' +
-        '<h2>오늘 밤은 조용합니다</h2><p>당신은 <b>시민</b>입니다. 특별한 밤 행동은 없어요.<br>아침까지 누구도 믿지 마세요.</p>' +
-        '<div class="phase-actions"><button class="primary" id="nightDone" type="button">밤 행동 완료</button></div>' +
+        '<h2>' + (isClassMode() ? '시민 · 행동 없음' : '오늘 밤은 조용합니다') + '</h2><p>' + (isClassMode() ? '특별한 밤 행동이 없습니다. 바로 다음 사람에게 넘겨주세요.' : '당신은 <b>시민</b>입니다. 특별한 밤 행동은 없어요.<br>아침까지 누구도 믿지 마세요.') + '</p>' +
+        '<div class="phase-actions"><button class="primary" id="nightDone" type="button">' + (isClassMode() ? '확인 · 다음 사람' : '밤 행동 완료') + '</button></div>' +
         '</section></div>'
       );
       document.getElementById('nightDone').addEventListener('click', finishNightTurn);
@@ -891,10 +941,10 @@
     setScreen(
       '<div class="phase-wrap"><section class="phase-card">' +
       '<div class="phase-icon">☀️</div><div class="phase-label">DAY ' + state.day + ' · 토론</div>' +
-      '<h2>마피아를 찾아내세요</h2><p>기기는 테이블 가운데 두고 서로의 말을 들어보세요. 밤의 정보는 말로만 설득해야 합니다.</p>' +
+      '<h2>마피아를 찾아내세요</h2><p>' + (isClassMode() ? '학급 전체가 토론한 뒤 공개적으로 최종 후보 2명을 정합니다. 그 뒤에는 휴대폰을 한 바퀴만 돌려 최종 비밀투표를 합니다.' : '기기는 테이블 가운데 두고 서로의 말을 들어보세요. 밤의 정보는 말로만 설득해야 합니다.') + '</p>' +
       '<div class="timer" id="timer">00:00</div>' +
-      '<div class="status-row"><span class="pill">생존 <b>' + alivePlayers().length + '명</b></span><span class="pill">비밀 지목 예정</span></div>' +
-      '<div class="phase-actions"><button class="primary" id="voteNow" type="button">토론 끝내고 용의자 지목</button></div>' +
+      '<div class="status-row"><span class="pill">생존 <b>' + alivePlayers().length + '명</b></span><span class="pill">' + (isClassMode() ? '<b>후보 2명 → 1회 비밀투표</b>' : '비밀 지목 예정') + '</span></div>' +
+      '<div class="phase-actions"><button class="primary" id="voteNow" type="button">' + (isClassMode() ? '토론 끝내고 후보 2명 정하기' : '토론 끝내고 용의자 지목') + '</button></div>' +
       '</section></div>'
     );
     const next = () => beginNomination(false);
@@ -902,8 +952,223 @@
     runTimer(next);
   }
 
+  function beginClassCandidateSelect() {
+    stopTimer();
+    state.phase = 'class_candidate_select';
+    state.classCandidates = [];
+    state.classDefenseIndex = 0;
+    state.classVotes = {};
+    state.deadline = null;
+    persist();
+    cue('vote');
+    render();
+  }
+
+  function renderClassCandidateSelect() {
+    const alive = alivePlayers().sort((a, b) => a.seat - b.seat);
+    const selected = state.classCandidates || [];
+    setScreen(
+      '<div class="phase-wrap class-mode"><section class="phase-card">' +
+      '<div class="phase-icon">🏫</div><div class="phase-label">학급 모드 · 공개 후보 선정</div>' +
+      '<h2>최종 후보 2명을 정하세요</h2>' +
+      '<p>지금은 비밀투표가 아닙니다. 토론을 바탕으로 학급이 공개적으로 합의한 용의자 두 명을 선택하세요.</p>' +
+      '<div class="candidate-pick"><span class="candidate-chip ' + (selected[0] ? 'filled' : '') + '">후보 A · ' + (selected[0] ? escapeHtml(playerById(selected[0])?.name || '') : '선택 전') + '</span>' +
+      '<span class="candidate-chip ' + (selected[1] ? 'filled' : '') + '">후보 B · ' + (selected[1] ? escapeHtml(playerById(selected[1])?.name || '') : '선택 전') + '</span></div>' +
+      '<div class="class-candidate-grid">' + alive.map(p =>
+        '<button class="player-btn ' + (selected.includes(p.id) ? 'selected' : '') + '" type="button" data-class-candidate="' + p.id + '">' + escapeHtml(p.name) + '</button>'
+      ).join('') + '</div>' +
+      '<div class="phase-actions"><button class="primary giant" id="classCandidatesDone" type="button" ' + (selected.length === 2 ? '' : 'disabled') + '>후보 확정 · 변론 시작</button></div>' +
+      '</section></div>'
+    );
+    document.querySelectorAll('[data-class-candidate]').forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.dataset.classCandidate;
+      const current = state.classCandidates || [];
+      if (current.includes(id)) {
+        state.classCandidates = current.filter(x => x !== id);
+      } else if (current.length < 2) {
+        state.classCandidates = current.concat(id);
+      } else {
+        state.classCandidates = [current[1], id];
+      }
+      persist();
+      render();
+    }));
+    document.getElementById('classCandidatesDone').addEventListener('click', () => {
+      if ((state.classCandidates || []).length !== 2) return;
+      state.classDefenseIndex = 0;
+      state.phase = 'class_defense';
+      state.deadline = Date.now() + state.settings.defenseSeconds * 1000;
+      persist();
+      render();
+    });
+  }
+
+  function renderClassDefense() {
+    const candidates = (state.classCandidates || []).map(playerById).filter(Boolean);
+    if (candidates.length !== 2) return beginClassCandidateSelect();
+    const index = clamp(Number(state.classDefenseIndex) || 0, 0, 1);
+    const candidate = candidates[index];
+    if (!state.deadline) state.deadline = Date.now() + state.settings.defenseSeconds * 1000;
+    setScreen(
+      '<div class="phase-wrap class-mode"><section class="phase-card">' +
+      '<div class="phase-icon">🎙️</div><div class="phase-label">학급 모드 · 후보 변론 ' + (index + 1) + '/2</div>' +
+      '<h2>' + escapeHtml(candidate.name) + '의 변론</h2>' +
+      '<p>후보 한 명씩 짧게 말합니다. 다른 사람은 끼어들지 않고 듣습니다.</p>' +
+      '<div class="timer" id="timer">00:00</div>' +
+      '<div class="phase-actions"><button class="primary" id="classDefenseNext" type="button">' + (index === 0 ? '다음 후보 변론' : '최종 비밀투표 시작') + '</button></div>' +
+      '</section></div>'
+    );
+    const next = () => {
+      stopTimer();
+      if (index === 0) {
+        state.classDefenseIndex = 1;
+        state.deadline = Date.now() + state.settings.defenseSeconds * 1000;
+        persist();
+        render();
+      } else {
+        beginClassVote();
+      }
+    };
+    document.getElementById('classDefenseNext').addEventListener('click', next);
+    runTimer(next);
+  }
+
+  function beginClassVote() {
+    stopTimer();
+    const excluded = new Set(state.classCandidates || []);
+    state.nightOrder = alivePlayers().filter(p => !excluded.has(p.id)).sort((a, b) => a.seat - b.seat).map(p => p.id);
+    state.turnIndex = 0;
+    state.classVotes = {};
+    state.phase = 'class_vote_handoff';
+    state.deadline = null;
+    persist();
+    cue('vote');
+    render();
+  }
+
+  function renderClassVoteHandoff() {
+    const voter = currentVoter();
+    const candidates = (state.classCandidates || []).map(playerById).filter(Boolean);
+    if (!voter || candidates.length !== 2) return resolveClassVote();
+    setScreen(
+      '<div class="phase-wrap class-mode"><section class="phase-card">' +
+      '<div class="phase-icon">📱</div><div class="phase-label">최종 비밀투표 · ' + (state.turnIndex + 1) + '/' + state.nightOrder.length + '</div>' +
+      '<h2>' + escapeHtml(voter.name) + '에게 넘겨주세요</h2>' +
+      '<p>후보 두 명 중 한 명을 처형하거나, 둘 다 살릴 수 있습니다.</p>' +
+      '<div class="fast-pass">🔒 후보 두 명은 투표에서 빠져 휴대폰 인계 횟수를 줄입니다.</div>' +
+      '<div class="phase-actions"><button class="primary giant" id="classVotePrivate" type="button">내 최종투표 시작</button></div>' +
+      '</section></div>'
+    );
+    document.getElementById('classVotePrivate').addEventListener('click', () => {
+      state.phase = 'class_vote';
+      persist();
+      render();
+    });
+  }
+
+  function renderClassVote() {
+    const voter = currentVoter();
+    const candidates = (state.classCandidates || []).map(playerById).filter(Boolean);
+    if (!voter || candidates.length !== 2) return resolveClassVote();
+    setScreen(
+      '<div class="phase-wrap class-mode"><section class="phase-card">' +
+      '<div class="pass-name">' + escapeHtml(voter.name) + '의 최종 비밀투표</div>' +
+      '<div class="phase-icon">⚖️</div><h2>오늘의 결정</h2>' +
+      '<p>한 번 선택하면 바꿀 수 없습니다.</p>' +
+      '<div class="class-final-grid">' +
+        '<button class="candidate-a" type="button" data-class-vote="' + candidates[0].id + '">⚔️<br>' + escapeHtml(candidates[0].name) + '</button>' +
+        '<button class="candidate-b" type="button" data-class-vote="' + candidates[1].id + '">⚔️<br>' + escapeHtml(candidates[1].name) + '</button>' +
+        '<button class="save-all" type="button" data-class-vote="none">🕊️<br>둘 다 살린다</button>' +
+      '</div></section></div>'
+    );
+    document.querySelectorAll('[data-class-vote]').forEach(btn => btn.addEventListener('click', () => {
+      state.classVotes[voter.id] = btn.dataset.classVote;
+      state.turnIndex += 1;
+      cue('vote');
+      if (state.turnIndex >= state.nightOrder.length) resolveClassVote();
+      else {
+        state.phase = 'class_vote_handoff';
+        persist();
+        render();
+      }
+    }, { once: true }));
+  }
+
+  function resolveClassVote() {
+    const candidates = (state.classCandidates || []).map(playerById).filter(Boolean);
+    if (candidates.length !== 2) return beginClassCandidateSelect();
+    const counts = { [candidates[0].id]: 0, [candidates[1].id]: 0, none: 0 };
+    Object.values(state.classVotes || {}).forEach(value => {
+      if (Object.prototype.hasOwnProperty.call(counts, value)) counts[value] += 1;
+    });
+    const a = counts[candidates[0].id];
+    const b = counts[candidates[1].id];
+    const none = counts.none;
+    let executedId = null;
+    if (a > b && a > none) executedId = candidates[0].id;
+    if (b > a && b > none) executedId = candidates[1].id;
+    const executed = executedId ? playerById(executedId) : null;
+    if (executed) executed.alive = false;
+    state.lastTrial = {
+      classMode: true,
+      candidates: candidates.map(p => p.id),
+      counts,
+      executedId,
+      executed: Boolean(executed)
+    };
+    state.pendingWinner = checkWinner();
+    state.phase = 'class_result';
+    persist();
+    cue(executed ? 'danger' : 'safe');
+    render();
+  }
+
+  function renderClassResult() {
+    const out = state.lastTrial || {};
+    const candidates = (out.candidates || state.classCandidates || []).map(playerById).filter(Boolean);
+    if (candidates.length !== 2) return beginClassCandidateSelect();
+    const executed = out.executedId ? playerById(out.executedId) : null;
+    const counts = out.counts || {};
+    const a = counts[candidates[0].id] || 0;
+    const b = counts[candidates[1].id] || 0;
+    const none = counts.none || 0;
+    const noExecutionReason = a === b && a >= none
+      ? '두 후보가 동률이라 오늘은 아무도 처형하지 않습니다.'
+      : '‘둘 다 살린다’가 최다득표이거나 최다득표와 동률이라 오늘은 아무도 처형하지 않습니다.';
+    setScreen(
+      '<div class="phase-wrap class-mode"><section class="phase-card">' +
+      '<div class="phase-icon">' + (executed ? '⚔️' : '🕊️') + '</div><div class="phase-label">학급 모드 · 최종 결과</div>' +
+      '<h2>' + (executed ? escapeHtml(executed.name) + ' 처형' : '오늘은 처형 없음') + '</h2>' +
+      '<p>' + (executed ? '최종 비밀투표에서 가장 많은 표를 받아 처형되었습니다.' : noExecutionReason) + '</p>' +
+      (executed ? deathRoleText(executed) : '') +
+      '<div class="result-list">' +
+        '<div class="result-row"><span>' + escapeHtml(candidates[0].name) + '</span><strong>' + a + '표</strong></div>' +
+        '<div class="result-row"><span>' + escapeHtml(candidates[1].name) + '</span><strong>' + b + '표</strong></div>' +
+        '<div class="result-row"><span>둘 다 살린다</span><strong>' + none + '표</strong></div>' +
+      '</div>' +
+      '<div class="phase-actions"><button class="primary giant" id="afterClassVote" type="button">' + (state.pendingWinner ? '게임 결과 확인' : '다음 밤으로') + '</button></div>' +
+      '</section></div>'
+    );
+    document.getElementById('afterClassVote').addEventListener('click', () => {
+      if (state.pendingWinner) {
+        finishGame(state.pendingWinner);
+      } else {
+        state.day += 1;
+        state.phase = 'night_intro';
+        state.classCandidates = [];
+        state.classDefenseIndex = 0;
+        state.classVotes = {};
+        state.votes = {};
+        state.trialVotes = {};
+        persist();
+        render();
+      }
+    });
+  }
+
   function beginNomination(runoff) {
     stopTimer();
+    if (isClassMode() && !runoff) return beginClassCandidateSelect();
     const alive = alivePlayers().sort((a, b) => a.seat - b.seat);
     state.phase = 'nomination_handoff';
     state.turnIndex = 0;
