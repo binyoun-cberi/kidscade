@@ -917,6 +917,31 @@
       "cover": "assets/gate-image/묵찌빠!.png"
     },
     {
+      "id": "toddler_photo_coloring",
+      "title": "찰칵! 색칠공방",
+      "href": "games/toddler_photo_coloring/index.html?v=1",
+      "category": "trivia",
+      "age": "toddler",
+      "ages": [
+        "toddler",
+        "low"
+      ],
+      "icon": "🎨",
+      "description": "내 사진을 불러오면 기기 안에서 간단·보통·자세히 3가지 색칠 도안으로 바꿔줘요. 마음에 드는 선을 골라 영역을 톡톡 채우거나 붓으로 칠하고, 원본 사진을 살펴본 뒤 완성 작품과 도안을 PNG로 저장하는 창작 놀이!",
+      "subject": "thinking",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "tod_shape_color",
       "title": "모양 색깔 친구들 집 찾기",
       "href": "games/tod_shape_color/모양 색깔 친구들 집 찾기.html",
