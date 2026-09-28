@@ -51,8 +51,9 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #${ENTRY_ID}{margin:8px 0 7px}
-      #${ENTRY_ID} button{width:100%;min-height:50px;border:1px solid rgba(124,92,255,.28);border-radius:14px;padding:7px 11px;background:linear-gradient(135deg,#f3e8ff,#eef2ff);color:#5b21b6;font-size:.77rem;font-weight:1000;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 7px 16px rgba(124,92,255,.10)}
+      #${ENTRY_ID}{margin:0;padding:11px}
+      #${ENTRY_ID} .ksp-kicker{font-size:.6rem;font-weight:1000;letter-spacing:.08em;color:#8b5cf6;margin:0 0 7px 2px}
+      #${ENTRY_ID} button{width:100%;min-height:54px;border:1px solid rgba(124,92,255,.28);border-radius:14px;padding:8px 11px;background:linear-gradient(135deg,#f3e8ff,#eef2ff);color:#5b21b6;font-size:.77rem;font-weight:1000;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 7px 16px rgba(124,92,255,.10)}
       #${ENTRY_ID} button:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(124,92,255,.14)}
       #${ENTRY_ID} button span:last-child{font-size:.62rem;color:#6d4fd7;white-space:nowrap}
       body.dark-mode #${ENTRY_ID} button{background:linear-gradient(135deg,rgba(91,33,182,.38),rgba(49,46,129,.35));color:#ede9fe;border-color:rgba(196,181,253,.28)}
@@ -155,22 +156,35 @@
 
   function entry() {
     installStyles();
-    const host = document.getElementById('kc-profile-identity');
+    const host = document.querySelector('.kc-myspace-inner');
     let el = document.getElementById(ENTRY_ID);
-    if (!loginId || !host) {
+    if (!host) {
       el?.remove();
       return;
     }
     if (!el) {
-      el = document.createElement('div');
+      el = document.createElement('section');
       el.id = ENTRY_ID;
-      const accountSlot = document.getElementById('kc-account-slot');
-      if (accountSlot?.parentElement === host) accountSlot.insertAdjacentElement('beforebegin', el);
+      el.className = 'kc-side-card ksp-sidebar-card';
+      el.setAttribute('aria-label', '새싹력 랭킹');
+      const avatar = host.querySelector('.kc-side-card.avatar-shell');
+      const record = document.getElementById('kc-local-profile-card');
+      if (record?.parentElement === host) host.insertBefore(el, record);
+      else if (avatar?.nextSibling) host.insertBefore(el, avatar.nextSibling);
       else host.appendChild(el);
     }
     const value = currentPower();
-    el.innerHTML = `<button type="button"><span>🌟 새싹력 랭킹</span><span>Lv.${levelFor(value)} · ${value.toLocaleString('ko-KR')} ›</span></button>`;
-    el.querySelector('button')?.addEventListener('click', open);
+    const meta = loginId
+      ? `Lv.${levelFor(value)} · ${value.toLocaleString('ko-KR')} ›`
+      : '로그인 후 우리 반 순위 보기 ›';
+    el.innerHTML = `<div class="ksp-kicker">RANKING</div><button type="button"><span>🌟 새싹력 랭킹</span><span>${meta}</span></button>`;
+    el.querySelector('button')?.addEventListener('click', () => {
+      if (!loginId) {
+        window.KidscadeAccount?.login?.();
+        return;
+      }
+      open();
+    });
   }
 
   async function refresh() {
