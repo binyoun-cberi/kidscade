@@ -96,8 +96,8 @@ class VolleyAvatarActor{
    this.source=src;this.ready=false;this.img.src=src;return true;
  }
  refreshStatic(force=false){
-   const now=performance.now();if(!force&&now-this.lastStatic<1300)return;
-   this.lastStatic=now;
+   if(this.source&&!force)return;
+   this.lastStatic=performance.now();
    const src=this.side===1?cpuAvatarSource():savedAvatarSource();
    this.setSource(src);
  }
@@ -116,8 +116,8 @@ class VolleyAvatarActor{
    return false;
  }
  render(ctx,me,number){
-   const now=performance.now(),mode=this.modeFor(me);
-   if(!this.capture(mode,now))this.refreshStatic(false);
+   const now=performance.now();
+   this.refreshStatic(false);
    if(!this.ready||!this.img.naturalWidth)return false;
 
    const footY=me.y+me.h*.5,air=!me.onGround;
@@ -200,15 +200,65 @@ function inputFor(i){
 
 function capBallBody(obj){const max=obj.speedCap||520,s=Math.hypot(obj.vx,obj.vy);if(s>max){obj.vx*=max/s;obj.vy*=max/s}obj.vx=clamp(obj.vx,-600,600);obj.vy=clamp(obj.vy,-650,650)}
 function resolveNetBody(obj,prevX,prevY){
- const r=obj.r||ball.r;if(obj.y-r>GROUND||obj.y+r<NETTOP-12)return;
- const capR=NETW*.5+4,dx=obj.x-NETX,dy=obj.y-NETTOP,dist=Math.hypot(dx,dy),touchR=r+capR;
- if(dist<touchR&&obj.y<NETTOP+22){const nx=dist?dx/dist:(prevX<NETX?-1:1),ny=dist?dy/dist:-1;obj.x=NETX+nx*touchR;obj.y=NETTOP+ny*touchR;const vn=obj.vx*nx+obj.vy*ny;if(vn<0){obj.vx-=(1.72*vn)*nx;obj.vy-=(1.72*vn)*ny}obj.vx*=.92;obj.vy*=.92;capBallBody(obj);return}
- if(obj.y+r>NETTOP&&Math.abs(obj.x-NETX)<NETW/2+r){if(prevX<NETX){obj.x=NETX-NETW/2-r;obj.vx=-Math.abs(obj.vx)*.8}else{obj.x=NETX+NETW/2+r;obj.vx=Math.abs(obj.vx)*.8}capBallBody(obj)}
+ const r=obj.r||ball.r;
+ if(Math.min(prevY,obj.y)-r>GROUND||Math.max(prevY,obj.y)+r<NETTOP-16)return;
+
+ const segX=obj.x-prevX,segY=obj.y-prevY,segLen2=segX*segX+segY*segY;
+ const capR=NETW*.5+4,touchR=r+capR;
+
+ // Swept circle against the rounded net cap. Checking the whole travelled segment
+ // prevents a fast serve from appearing on the far side without a collision.
+ if(segLen2>0){
+   const t=clamp(((NETX-prevX)*segX+(NETTOP-prevY)*segY)/segLen2,0,1);
+   const hx=prevX+segX*t,hy=prevY+segY*t,dx=hx-NETX,dy=hy-NETTOP,dist=Math.hypot(dx,dy);
+   if(dist<touchR&&hy<NETTOP+24){
+     const nx=dist?dx/dist:(prevX<NETX?-1:1),ny=dist?dy/dist:-1;
+     obj.x=NETX+nx*(touchR+.2);obj.y=NETTOP+ny*(touchR+.2);
+     const vn=obj.vx*nx+obj.vy*ny;
+     if(vn<0){obj.vx-=(1.76*vn)*nx;obj.vy-=(1.76*vn)*ny}
+     obj.vx*=.92;obj.vy*=.92;capBallBody(obj);return;
+   }
+ }
+
+ // Swept collision against the vertical sides of the net. Use the expanded
+ // boundary for the ball radius and interpolate Y at the exact crossing time.
+ const left=NETX-NETW/2-r,right=NETX+NETW/2+r;
+ if(segX>0&&prevX<=left&&obj.x>=left){
+   const t=(left-prevX)/segX,y=prevY+segY*t;
+   if(y+r>NETTOP&&y-r<GROUND){
+     obj.x=left-.2;obj.y=y;obj.vx=-Math.abs(obj.vx)*.82;capBallBody(obj);return;
+   }
+ }else if(segX<0&&prevX>=right&&obj.x<=right){
+   const t=(right-prevX)/segX,y=prevY+segY*t;
+   if(y+r>NETTOP&&y-r<GROUND){
+     obj.x=right+.2;obj.y=y;obj.vx=Math.abs(obj.vx)*.82;capBallBody(obj);return;
+   }
+ }
+
+ // Static overlap fallback for very low velocities or numerical edge cases.
+ const dx=obj.x-NETX,dy=obj.y-NETTOP,dist=Math.hypot(dx,dy);
+ if(dist<touchR&&obj.y<NETTOP+24){
+   const nx=dist?dx/dist:(prevX<NETX?-1:1),ny=dist?dy/dist:-1;
+   obj.x=NETX+nx*(touchR+.2);obj.y=NETTOP+ny*(touchR+.2);
+   const vn=obj.vx*nx+obj.vy*ny;if(vn<0){obj.vx-=(1.76*vn)*nx;obj.vy-=(1.76*vn)*ny}
+   obj.vx*=.92;obj.vy*=.92;capBallBody(obj);return;
+ }
+ if(obj.y+r>NETTOP&&obj.y-r<GROUND&&obj.x>left&&obj.x<right){
+   if(prevX<NETX){obj.x=left-.2;obj.vx=-Math.abs(obj.vx)*.82}
+   else{obj.x=right+.2;obj.vx=Math.abs(obj.vx)*.82}
+   capBallBody(obj);
+ }
 }
-function stepBallBody(obj,dt){
+function stepBallBodySingle(obj,dt){
  const px=obj.x,py=obj.y;obj.vy+=BALL_GRAVITY*dt;obj.x+=obj.vx*dt;obj.y+=obj.vy*dt;obj.vx*=Math.pow(.9992,dt*60);const r=obj.r||ball.r;
  if(obj.x-r<0){obj.x=r;obj.vx=Math.abs(obj.vx)*.83}else if(obj.x+r>W){obj.x=W-r;obj.vx=-Math.abs(obj.vx)*.83}
- if(obj.y-r<0){obj.y=r;obj.vy=Math.abs(obj.vy)*.78}resolveNetBody(obj,px,py);capBallBody(obj);
+ if(obj.y-r<0){obj.y=r;obj.vy=Math.abs(obj.vy)*.78}
+ resolveNetBody(obj,px,py);capBallBody(obj);
+}
+function stepBallBody(obj,dt){
+ const travel=Math.hypot(obj.vx,obj.vy)*dt;
+ const steps=clamp(Math.ceil(travel/3),1,8),sub=dt/steps;
+ for(let i=0;i<steps;i++)stepBallBodySingle(obj,sub);
 }
 function predictBallLanding(){
  const g={x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap};let t=0;
@@ -497,7 +547,7 @@ function drawNet(){ctx.fillStyle='#334155';ctx.fillRect(NETX-NETW/2,NETTOP,NETW,
 function drawBall(){const height=clamp((GROUND-ball.y)/300,0,1);ctx.fillStyle='rgba(15,23,42,'+(0.08+.12*(1-height))+')';ctx.beginPath();ctx.ellipse(ball.x,GROUND+2,22*(1-height*.45),6*(1-height*.45),0,0,7);ctx.fill();for(let i=0;i<ball.trail.length;i++){const t=ball.trail[(ball.trailHead+i)%ball.trail.length];if(t.a<=0)continue;ctx.globalAlpha=t.a*.11;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(t.x,t.y,ball.r*(.34+t.a*.35),0,7);ctx.fill()}ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,7);ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*.58,-.5,2.5);ctx.stroke();ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*.58,2.6,5.7);ctx.stroke()}
 function drawDebug(){if(!DEBUG)return;const pred=predictBallLanding();ctx.save();ctx.setLineDash([6,6]);ctx.strokeStyle='rgba(220,38,38,.8)';ctx.beginPath();ctx.moveTo(pred.x,GROUND-34);ctx.lineTo(pred.x,GROUND);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#111827';ctx.font='700 12px system-ui';ctx.fillText('예상 '+Math.round(pred.x)+' / '+pred.t.toFixed(2)+'s',pred.x-42,GROUND-40);ctx.restore()}
 function draw(){ctx.drawImage(bg,0,0);ctx.save();if(shake)ctx.translate(Math.sin(simTime*56)*shake,Math.cos(simTime*61)*shake*.5);drawNet();drawAthlete(p[0],'#22c55e','1');drawAthlete(p[1],'#3b82f6','2');drawBall();for(const q of particles){ctx.globalAlpha=Math.max(0,q.t/.34);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(q.x,q.y,3,0,7);ctx.fill()}ctx.globalAlpha=1;drawDebug();ctx.restore()}
-function frame(t){requestAnimationFrame(frame);if(!playing||paused){if(renderDirty){draw();renderDirty=false}last=t;return}let delta=Math.min(.05,Math.max(0,(t-last)/1000||0));last=t;acc+=delta;let steps=0;while(acc>=FIXED&&steps<6){update(FIXED);acc-=FIXED;steps++}if(steps===6)acc=0;draw()}
+function frame(t){requestAnimationFrame(frame);if(!playing||paused){if(renderDirty){draw();renderDirty=false}last=t;return}let delta=Math.min(.033,Math.max(0,(t-last)/1000||0));last=t;acc=Math.min(acc+delta,FIXED*3);let steps=0;while(acc>=FIXED&&steps<4){update(FIXED);acc-=FIXED;steps++}if(steps===4)acc=Math.min(acc,FIXED*.5);draw()}
 requestAnimationFrame(frame);
 
 document.getElementById('modeGrid').addEventListener('click',e=>{const btn=e.target.closest('[data-mode]');if(!btn)return;document.querySelectorAll('.mode[data-mode]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('difficulty').disabled=btn.dataset.mode!=='cpu'});
