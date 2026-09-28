@@ -2239,6 +2239,29 @@
       "cover": "assets/gate-image/프랙션 대시.png"
     },
     {
+      "id": "high_fraction_smith",
+      "title": "프랙션 스미스",
+      "href": "games/high_fraction_smith/index.html?v=1",
+      "category": "math",
+      "age": "high",
+      "icon": "⚒️",
+      "description": "내 키즈케이드 아바타가 대장장이가 되어 분수·소수 조각을 모루에 올리고 +·−·×·÷ 공구로 직접 가공해 목표값을 만드는 수학 액션 퍼즐! 견습 연습, 60초 러시, 최단 타격 마스터 오더를 즐겨요.",
+      "scoreKey": "fractionSmithBest_v1_rush",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "polygon_area",
       "title": "(사-1)각형 넓이",
       "href": "games/polygon_area/(사-1)각형 넓이.html",
