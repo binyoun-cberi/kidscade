@@ -375,12 +375,6 @@
     return true;
   }
 
-  function normalizeGrowthArea() {
-    // Legacy main-screen pet UI is retired. Cube Pets live only inside Seed World.
-    document.getElementById('kc-pet-card')?.remove();
-    document.getElementById('sidebar-pet-open')?.remove();
-  }
-
   function openMission() {
     const source = document.getElementById('sidebar-mission-card');
     if (source) source.click();
