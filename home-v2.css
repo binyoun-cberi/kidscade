@@ -201,4 +201,181 @@ body.kc-home-v2-ready[data-kc-home-mode="home"] #kc-home-backbar {
   height:36px;
   border:1px solid var(--kc-line);
   border-radius:11px;
-  background:var(--kc-pan
+  background:var(--kc-panel);
+  color:var(--kc-ink);
+  font:inherit;
+  font-size:1.25rem;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(15,23,42,.05);
+}
+.kc-home-rail-track {
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(188px,1fr);
+  gap:10px;
+  overflow-x:auto;
+  padding:2px 2px 8px;
+  scroll-snap-type:x proximity;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+}
+.kc-home-card {
+  width:100%;
+  min-width:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--kc-ink);
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  scroll-snap-align:start;
+  border-radius:16px;
+}
+.kc-home-card:focus-visible {
+  outline:4px solid rgba(124,92,255,.32);
+  outline-offset:3px;
+}
+.kc-home-card-art {
+  position:relative;
+  display:block;
+  aspect-ratio:16 / 9;
+  overflow:hidden;
+  border:1px solid var(--kc-line);
+  border-radius:15px;
+  background:#e2e8f0;
+  box-shadow:0 8px 20px rgba(15,23,42,.07);
+  transition:transform .17s ease,box-shadow .17s ease,border-color .17s ease;
+}
+.kc-home-card:hover .kc-home-card-art,
+.kc-home-card:focus-visible .kc-home-card-art {
+  transform:translateY(-3px);
+  border-color:rgba(124,92,255,.30);
+  box-shadow:0 14px 28px rgba(15,23,42,.12);
+}
+.kc-home-card-art img {
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.kc-home-card-count {
+  position:absolute;
+  left:7px;
+  bottom:7px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:rgba(15,23,42,.78);
+  color:#fff;
+  font-size:.56rem;
+  font-weight:1000;
+  backdrop-filter:blur(8px);
+}
+.kc-home-card-title {
+  display:block;
+  margin:7px 2px 0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--kc-ink);
+  font-size:.78rem;
+  font-weight:1000;
+}
+.kc-home-card-meta {
+  display:block;
+  margin:3px 2px 0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--kc-muted);
+  font-size:.58rem;
+  font-weight:800;
+}
+
+.kc-home-library-cta {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:3px;
+  padding:15px 17px;
+  border:1px solid rgba(124,92,255,.16);
+  border-radius:20px;
+  background:linear-gradient(135deg,rgba(124,92,255,.075),var(--kc-panel) 55%);
+  box-shadow:0 7px 20px rgba(15,23,42,.05);
+}
+.kc-home-library-cta > div { display:grid; gap:3px; min-width:0; }
+.kc-home-library-cta strong { color:var(--kc-ink); font-size:.9rem; }
+.kc-home-library-cta span { color:var(--kc-muted); font-size:.65rem; font-weight:750; }
+.kc-home-library-open {
+  flex:none;
+  min-height:42px;
+  padding:0 14px;
+  border:0;
+  border-radius:13px;
+  background:#7c5cff;
+  color:#fff;
+  font:inherit;
+  font-size:.73rem;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(124,92,255,.20);
+}
+
+/* Home 2.0 keeps the left column useful but visually secondary to the games. */
+@media (min-width:941px) {
+  body.kc-home-v2-ready .kc-myspace-inner { top:78px; gap:8px !important; }
+  body.kc-home-v2-ready .avatar-plaza-preview { height:128px !important; }
+  body.kc-home-v2-ready .kc-side-card.avatar-shell .kc-side-head { padding-top:11px !important; }
+  body.kc-home-v2-ready #kc-local-profile-card { display:none !important; }
+  body.kc-home-v2-ready #kc-popular-hub { display:none !important; }
+  .kc-home-rail-track { grid-auto-columns:minmax(188px,calc((100% - 40px) / 5)); }
+}
+
+body.dark-mode .kc-home-card-art { background:#263244; }
+body.dark-mode .kc-home-back,
+body.dark-mode .kc-home-rail-arrows button { background:#263244; }
+body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124,92,255,.12),var(--kc-panel) 55%); }
+
+@media (max-width:940px) {
+  .kc-home-v2 { gap:15px; margin-bottom:16px; }
+  .kc-home-hero { min-height:238px; border-radius:22px; }
+  .kc-home-hero-copy {
+    width:min(560px,78%);
+    min-height:238px;
+    padding:20px;
+  }
+  .kc-home-hero h1 { font-size:clamp(1.45rem,5vw,2rem); }
+  .kc-home-hero p { font-size:.75rem; -webkit-line-clamp:2; }
+  .kc-home-rail-stack { gap:17px; }
+  .kc-home-rail-arrows { display:none; }
+  .kc-home-rail-track {
+    grid-auto-columns:minmax(168px,48vw);
+    gap:9px;
+    margin-right:-9px;
+    padding-right:9px;
+    scrollbar-width:none;
+  }
+  .kc-home-rail-track::-webkit-scrollbar { display:none; }
+  .kc-home-library-cta { padding:13px; border-radius:17px; }
+}
+
+@media (max-width:620px) {
+  .kc-home-hero { min-height:205px; border-radius:19px; }
+  .kc-home-hero-shade {
+    background:
+      linear-gradient(90deg,rgba(15,23,42,.93),rgba(15,23,42,.60) 68%,rgba(15,23,42,.18)),
+      linear-gradient(0deg,rgba(15,23,42,.45),transparent 60%);
+  }
+  .kc-home-hero-copy {
+    width:84%;
+    min-height:205px;
+    padding:16px;
+  }
+  .kc-home-hero-kicker { margin-bottom:5px; font-size:.58rem; }
+  .kc-home-hero h1 { font-size:1.4rem; }
+  .kc-home-hero p { margin-top:7px; font-size:.67rem; line-height:1.45; }
+  .kc-home-hero-meta { margin-top:7px; font-size:.58rem; }
+  .kc-home-hero-actions { margin-top:11px; gap:6px; }
+  .kc-home-play,.kc-home-fa
