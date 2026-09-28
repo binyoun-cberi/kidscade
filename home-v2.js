@@ -430,4 +430,152 @@
   }
 
   function escapeHtml(value) {
-    return String(value ?? '').replac
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+
+  function render() {
+    renderQueued = false;
+    const shell = ensureShell();
+    if (!shell) return false;
+    const age = currentAge();
+    const list = games();
+    if (!list.length) return false;
+
+    const recents = recentGames(age);
+    const recentIdList = recentIds();
+    const favoriteIdList = favoriteIds();
+    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age);
+    const recommended = recommendGames(list, {
+      age,
+      recentIds: recentIdList,
+      favoriteIds: favoriteIdList
+    });
+    const hero = heroGame(list, age, { recentIds: recentIdList });
+    const rails = railDefinitions(list, {
+      age,
+      recentGames: recents,
+      popularGames: popular,
+      recommendedGames: recommended,
+      recentIds: recentIdList,
+      favoriteIds: favoriteIdList
+    });
+
+    shell.innerHTML = `
+      ${heroMarkup(hero, age)}
+      <div class="kc-home-rail-stack">
+        ${rails.map(railMarkup).join('')}
+      </div>
+      <div class="kc-home-library-cta">
+        <div>
+          <strong>🎮 모든 게임 둘러보기</strong>
+          <span>${escapeHtml(AGE_LABELS[age] || '선택한 연령')} 게임을 교과·장르·검색으로 찾아볼 수 있어요.</span>
+        </div>
+        <button type="button" class="kc-home-library-open">모든 게임 보기 ›</button>
+      </div>
+    `;
+
+    wireShell(shell);
+    prepareKeyboardNavigation(shell);
+    root.document.body.classList.add('kc-home-v2-ready');
+    root.document.body.dataset.kcHomeMode = 'home';
+    updateBackbar();
+    return true;
+  }
+
+  function scheduleRender() {
+    if (!root?.document || renderQueued) return;
+    renderQueued = true;
+    const schedule = root.requestAnimationFrame || (callback => setTimeout(callback, 16));
+    schedule(() => render());
+  }
+
+  function wireShell(shell) {
+    if (shell.dataset.kcHomeBound === '1') return;
+    shell.dataset.kcHomeBound = '1';
+    shell.addEventListener('click', event => {
+      const play = event.target.closest('[data-home-play]');
+      if (play) {
+        event.preventDefault();
+        launch(play.dataset.homePlay);
+        return;
+      }
+      const favorite = event.target.closest('[data-home-fav]');
+      if (favorite) {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFavorite(favorite.dataset.homeFav);
+        return;
+      }
+      const prev = event.target.closest('[data-rail-prev]');
+      const next = event.target.closest('[data-rail-next]');
+      if (prev || next) {
+        const rail = event.target.closest('.kc-home-rail');
+        scrollRail(rail, next ? 1 : -1);
+        return;
+      }
+      if (event.target.closest('.kc-home-library-open')) {
+        showLibrary();
+      }
+    });
+
+    shell.addEventListener('keydown', event => {
+      const card = event.target.closest('[data-home-card]');
+      if (!card) return;
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      event.preventDefault();
+      moveCardFocus(card, event.key);
+    });
+  }
+
+  function prepareKeyboardNavigation(shell) {
+    shell.querySelectorAll('.kc-home-rail').forEach(rail => {
+      const cards = rail.querySelectorAll('[data-home-card]');
+      cards.forEach((card, index) => { card.tabIndex = index === 0 ? 0 : -1; });
+    });
+  }
+
+  function moveCardFocus(card, key) {
+    const rail = card.closest('.kc-home-rail');
+    if (!rail) return;
+    const rails = Array.from(root.document.querySelectorAll('.kc-home-rail'));
+    const cards = Array.from(rail.querySelectorAll('[data-home-card]'));
+    const cardIndex = cards.indexOf(card);
+    const railIndex = rails.indexOf(rail);
+    let target = null;
+
+    if (key === 'ArrowLeft') target = cards[Math.max(0, cardIndex - 1)];
+    if (key === 'ArrowRight') target = cards[Math.min(cards.length - 1, cardIndex + 1)];
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      const nextRail = rails[railIndex + (key === 'ArrowDown' ? 1 : -1)];
+      const nextCards = nextRail ? Array.from(nextRail.querySelectorAll('[data-home-card]')) : [];
+      target = nextCards[Math.min(cardIndex, Math.max(0, nextCards.length - 1))] || null;
+    }
+
+    if (!target || target === card) return;
+    card.tabIndex = -1;
+    target.tabIndex = 0;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  function scrollRail(rail, direction) {
+    const track = rail?.querySelector('[data-rail-track]');
+    if (!track) return;
+    track.scrollBy({ left: direction * Math.max(260, track.clientWidth * 0.82), behavior: 'smooth' });
+  }
+
+  function showLibrary() {
+    if (!root?.document) return;
+    root.document.body.dataset.kcHomeMode = 'library';
+    updateBackbar();
+    root.document.querySelector('.kc-library-head')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showHome() {
+    if
