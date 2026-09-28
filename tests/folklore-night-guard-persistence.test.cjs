@@ -30,3 +30,17 @@ test('camera switching static blocks active tracking until the feed is live', ()
   assert.match(html, /var staring=cameraFeedLive\(e\.cam\)/);
   assert.match(html, /var watched=cameraFeedLive\(r\.location\)/);
 });
+
+
+test('Night Guard horror presentation uses staged atmosphere', () => {
+  assert.match(html, /id="ambientLayer"/);
+  assert.match(html, /id="presenceLayer"/);
+  assert.match(html, /id="signalIntrusion"/);
+  assert.match(html, /function nightVisualPhase\(\)/);
+  assert.match(html, /function triggerSignalIntrusion\(\)/);
+  assert.match(html, /function presenceAsset\(id,cam,stage\)/);
+  assert.match(html, /room-scene\.night-phase-3/);
+  assert.match(html, /ghost-wolf\.threat-0/);
+  assert.match(html, /ghost-reaper\.pre/);
+  assert.match(html, /ghost-yuki\.pre/);
+});
