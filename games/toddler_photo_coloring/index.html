@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>찰칵! 색칠공방 | Kidscade</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+  <main class="app" id="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">KIDSCADE · 내 사진이 색칠공부로!</p>
+        <h1>📸 찰칵! 색칠공방</h1>
+      </div>
+      <button class="soft-btn" id="homeBtn" type="button">처음으로</button>
+    </header>
+
+    <section class="screen active" id="uploadScreen" aria-labelledby="uploadTitle">
+      <div class="hero-card">
+        <div class="hero-icon">🎨</div>
+        <h2 id="uploadTitle">어떤 사진을 색칠해볼까?</h2>
+        <p>사진을 고르면 이 기기 안에서 바로 선을 따서 색칠공부로 만들어줘요.</p>
+        <div class="big-actions">
+          <button class="primary big" id="cameraBtn" type="button">📷 사진 찍기</button>
+          <button class="secondary big" id="galleryBtn" type="button">🖼️ 사진 불러오기</button>
+        </div>
+        <p class="privacy">🔒 사진은 서버로 보내지 않고 이 기기에서만 처리해요.</p>
+      </div>
+      <input id="cameraInput" class="sr-only" type="file" accept="image/*" capture="environment">
+      <input id="galleryInput" class="sr-only" type="file" accept="image/*">
+    </section>
+
+    <section class="screen" id="lineScreen" aria-labelledby="lineTitle">
+      <div class="section-head">
+        <div>
+          <p class="step">1 / 2 · 자동 선 따기</p>
+          <h2 id="lineTitle">마음에 드는 선을 골라요</h2>
+          <p>사진마다 잘 어울리는 선이 달라요. 세 가지를 비교해보세요.</p>
+        </div>
+        <button class="soft-btn" id="pickOtherBtn" type="button">다른 사진</button>
+      </div>
+      <div class="source-strip">
+        <canvas id="sourcePreview" aria-label="원본 사진 미리보기"></canvas>
+        <div class="process-note" id="processNote">사진을 준비하고 있어요…</div>
+      </div>
+      <div class="preset-grid" id="presetGrid">
+        <button class="preset-card" data-preset="simple" type="button">
+          <span class="badge">🐣 간단하게</span>
+          <canvas></canvas>
+          <small>큰 모양 위주 · 유아 추천</small>
+        </button>
+        <button class="preset-card selected" data-preset="normal" type="button">
+          <span class="badge">🎨 적당하게</span>
+          <canvas></canvas>
+          <small>선명하고 자연스럽게</small>
+        </button>
+        <button class="preset-card" data-preset="detail" type="button">
+          <span class="badge">🔍 자세하게</span>
+          <canvas></canvas>
+          <small>작은 선도 더 많이</small>
+        </button>
+      </div>
+      <button class="primary next-btn" id="startColorBtn" type="button" disabled>이 선으로 색칠하기 →</button>
+    </section>
+
+    <section class="screen" id="paintScreen" aria-labelledby="paintTitle">
+      <div class="paint-head">
+        <div>
+          <p class="step">2 / 2 · 색칠하기</p>
+          <h2 id="paintTitle">톡 누르거나 슥슥 칠해요</h2>
+        </div>
+        <div class="progress-wrap">
+          <span id="progressText">0%</span>
+          <div class="progress-track"><i id="progressBar"></i></div>
+        </div>
+      </div>
+
+      <div class="studio">
+        <div class="canvas-panel">
+          <div class="canvas-stage" id="canvasStage">
+            <canvas id="colorCanvas"></canvas>
+            <canvas id="lineCanvas"></canvas>
+            <canvas id="peekCanvas"></canvas>
+          </div>
+          <div class="canvas-actions">
+            <button class="soft-btn" id="peekBtn" type="button">👀 원본 보기</button>
+            <button class="soft-btn" id="lineOnlyBtn" type="button">✏️ 도안 저장</button>
+          </div>
+        </div>
+
+        <aside class="tool-panel">
+          <div class="tool-group">
+            <h3>도구</h3>
+            <div class="tool-grid">
+              <button class="tool active" data-tool="bucket" type="button">🪣<span>채우기</span></button>
+              <button class="tool" data-tool="brush" type="button">🖌️<span>붓</span></button>
+              <button class="tool" data-tool="eraser" type="button">🧽<span>지우개</span></button>
+            </div>
+          </div>
+
+          <div class="tool-group">
+            <h3>색깔</h3>
+            <div class="palette" id="palette">
+              <button style="--c:#ef4444" data-color="#ef4444" aria-label="빨강"></button>
+              <button style="--c:#f97316" data-color="#f97316" aria-label="주황"></button>
+              <button style="--c:#facc15" data-color="#facc15" aria-label="노랑"></button>
+              <button style="--c:#22c55e" data-color="#22c55e" aria-label="초록"></button>
+              <button style="--c:#38bdf8" data-color="#38bdf8" aria-label="하늘"></button>
+              <button style="--c:#2563eb" data-color="#2563eb" aria-label="파랑"></button>
+              <button style="--c:#8b5cf6" data-color="#8b5cf6" aria-label="보라"></button>
+              <button style="--c:#ec4899" data-color="#ec4899" aria-label="분홍"></button>
+              <button style="--c:#92400e" data-color="#92400e" aria-label="갈색"></button>
+              <button style="--c:#111827" data-color="#111827" aria-label="검정"></button>
+            </div>
+            <div class="color-row">
+              <input id="colorPicker" type="color" value="#ef4444" aria-label="직접 색 고르기">
+              <button class="photo-color" id="photoColorBtn" type="button">📷 사진색</button>
+            </div>
+          </div>
+
+          <div class="tool-group">
+            <div class="range-head"><h3>붓 크기</h3><b id="sizeLabel">18</b></div>
+            <input id="brushSize" type="range" min="6" max="44" value="18">
+            <label class="safe-toggle"><input id="safeBrush" type="checkbox" checked> <span>✨ 선 밖으로 안 나가요</span></label>
+          </div>
+
+          <div class="tool-group small-actions">
+            <button id="undoBtn" type="button">↩️ 되돌리기</button>
+            <button id="redoBtn" type="button">↪️ 다시하기</button>
+            <button id="clearBtn" type="button">🧼 색 지우기</button>
+          </div>
+
+          <button class="primary finish-btn" id="finishBtn" type="button">✨ 완성했어요!</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="resultScreen" aria-labelledby="resultTitle">
+      <div class="result-card">
+        <p class="step">작품 완성!</p>
+        <h2 id="resultTitle">내 사진이 멋진 색칠 작품이 됐어요 🎉</h2>
+        <div class="result-grid">
+          <figure><img id="resultOriginal" alt="원본 사진"><figcaption>📷 내 사진</figcaption></figure>
+          <figure><img id="resultLine" alt="색칠 도안"><figcaption>✏️ 색칠 도안</figcaption></figure>
+          <figure><img id="resultArt" alt="완성 작품"><figcaption>🎨 내 작품</figcaption></figure>
+        </div>
+        <div class="big-actions">
+          <button class="primary big" id="downloadBtn" type="button">💾 내 작품 저장하기</button>
+          <button class="secondary big" id="backPaintBtn" type="button">🖌️ 더 색칠하기</button>
+          <button class="soft-btn big" id="newPhotoBtn" type="button">📷 새 사진</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script src="../../kidscade-game-sdk.js" data-game-id="toddler_photo_coloring" data-title="찰칵! 색칠공방" data-shell="true" data-mute="false" data-orientation="any"></script>
+  <script src="./game.js?v=1"></script>
+</body>
+</html>
