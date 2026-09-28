@@ -270,7 +270,7 @@
       note:'이번 주 KIDSCADE에서 자주 플레이한 게임이에요.',
       games:popular,
       showPlayCount:true
-    }, { preserveOrder:true, leadCount:3 });
+    }, { leadCount:3 });
 
     if (recommended.length) addRail({
       key:'recommended',
@@ -614,11 +614,12 @@
     const recents = recentGames(age);
     const recentIdList = recentIds();
     const favoriteIdList = favoriteIds();
-    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age);
+    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age, MAX_RAIL_GAMES * 2);
     const recommended = recommendGames(list, {
       age,
       recentIds: recentIdList,
-      favoriteIds: favoriteIdList
+      favoriteIds: favoriteIdList,
+      limit: MAX_RAIL_GAMES * 2
     });
     const hero = heroGame(list, age, { recentIds: recentIdList });
     const rails = railDefinitions(list, {
