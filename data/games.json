@@ -21,7 +21,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/버그월드 코드 원정대.png"
     },
     {
       "id": "high_factory_tycoon",
@@ -183,7 +184,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/범퍼 룰렛 레이스.png"
     },
     {
       "id": "low_pong_battle",
@@ -206,7 +208,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/퐁퐁 배틀.png"
     },
     {
       "id": "high_seed_volleyball",
@@ -228,7 +231,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/씨앗 배구.png"
     },
     {
       "id": "high_seed_fc_manager",
@@ -909,7 +913,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/묵찌빠!.png"
     },
     {
       "id": "tod_shape_color",
@@ -1235,7 +1240,8 @@
       "ages": [
         "low",
         "high"
-      ]
+      ],
+      "cover": "assets/gate-image/스피크가 쪼아요!.png"
     },
     {
       "id": "tod_chick_shell",
@@ -1327,7 +1333,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": false,
+      "cover": "assets/gate-image/귀여운 이모지 지뢰찾기.png"
     },
     {
       "id": "low_nyam_universe",
@@ -1844,7 +1851,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": false,
+      "cover": "assets/gate-image/혼합 계산 스네이크.png"
     },
     {
       "id": "threes",
@@ -2202,7 +2210,8 @@
         "keyboard"
       ],
       "qualityStatus": "featured",
-      "classroom": false
+      "classroom": false,
+      "cover": "assets/gate-image/프랙션 대시.png"
     },
     {
       "id": "polygon_area",
@@ -2391,7 +2400,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": false,
+      "cover": "assets/gate-image/초등 어휘력 퀴즈.png"
     },
     {
       "id": "swipe_spelling",
