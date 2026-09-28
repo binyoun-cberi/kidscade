@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const W=960,H=540,GROUND=470,NETX=480,NETTOP=282,NETW=18,FIXED=1/120,SERVE_CHARGE_TIME=1.3;
-const BALL_GRAVITY=1120,PLAYER_GRAVITY=1420,PLAYER_MAX=455,AIR_MAX=425;
+const BALL_GRAVITY=900,PLAYER_GRAVITY=1420,PLAYER_MAX=455,AIR_MAX=425;
 const DEBUG=new URLSearchParams(location.search).has('debug');
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const DPR=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=true;
@@ -25,7 +25,7 @@ function player(side){
  return {side,x:side===0?250:710,y:GROUND-48,w:72,h:96,vx:0,vy:0,onGround:true,state:'GROUND',jumpLatch:false,smashLatch:false,attack:0,slideTimer:0,recover:0,land:0,run:0,face:side===0?1:-1,touches:0};
 }
 let p=[player(0),player(1)];
-let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,speedCap:555,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
+let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,speedCap:520,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
 const CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
 function makeSpriteSet(name){const pose=(poseName)=>{const img=new Image();img.src=CHARACTER_ROOT+name+'/poses/'+name+'-'+poseName+'.png';return img};return {stand:pose('stand'),walk1:pose('walk1'),walk2:pose('walk2'),jump:pose('jump'),action:pose('action1'),cheer:pose('cheer1'),hurt:pose('hurt')}}
 const athleteSprites=[makeSpriteSet('player'),makeSpriteSet('female')];
@@ -43,7 +43,7 @@ function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
  p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.aim=0;cpuState.predX=710;cpuState.predT=1;cpuState.shotCooldown=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
- rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=-1;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
+ rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=520;cpuServeTarget=-1;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
  const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 충전':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 꾹 누르고 떼서 서브';serveText.classList.add('show');
 }
 function startGame(){
@@ -61,7 +61,7 @@ function inputFor(i){
  out.aim=0;return out;
 }
 
-function capBallBody(obj){const max=obj.speedCap||555,s=Math.hypot(obj.vx,obj.vy);if(s>max){obj.vx*=max/s;obj.vy*=max/s}obj.vx=clamp(obj.vx,-650,650);obj.vy=clamp(obj.vy,-680,680)}
+function capBallBody(obj){const max=obj.speedCap||520,s=Math.hypot(obj.vx,obj.vy);if(s>max){obj.vx*=max/s;obj.vy*=max/s}obj.vx=clamp(obj.vx,-600,600);obj.vy=clamp(obj.vy,-650,650)}
 function resolveNetBody(obj,prevX,prevY){
  const r=obj.r||ball.r;if(obj.y-r>GROUND||obj.y+r<NETTOP-12)return;
  const capR=NETW*.5+4,dx=obj.x-NETX,dy=obj.y-NETTOP,dist=Math.hypot(dx,dy),touchR=r+capR;
@@ -82,19 +82,19 @@ function predictBallLanding(){
 const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,aim:0,predX:710,predT:1,shotCooldown:0};
 
 function cpuBallClone(){
- return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||555};
+ return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||520};
 }
 function simulateCpuSmashLanding(aim){
  const g=cpuBallClone(),courtDir=-1;
  const profiles={
-   '-2':{vx:325,vy:330},
-   '-1':{vx:365,vy:285},
-   '0':{vx:435,vy:225},
-   '1':{vx:485,vy:175},
-   '2':{vx:520,vy:135}
+   '-2':{vx:300,vy:285},
+   '-1':{vx:340,vy:245},
+   '0':{vx:405,vy:195},
+   '1':{vx:450,vy:150},
+   '2':{vx:485,vy:115}
  },profile=profiles[String(aim)]||profiles['0'];
  const targetVX=courtDir*profile.vx,targetVY=profile.vy;
- g.vx=lerp(g.vx,targetVX,.72);g.vy=lerp(g.vy,targetVY,.78);g.speedCap=555;capBallBody(g);
+ g.vx=lerp(g.vx,targetVX,.72);g.vy=lerp(g.vy,targetVY,.78);g.speedCap=520;capBallBody(g);
  let t=0;
  for(let i=0;i<240;i++){
    stepBallBody(g,1/120);t+=1/120;
@@ -248,7 +248,7 @@ function collidePlayer(me,inp){
  if(ball.hitLock>0)return;const c=colliderFor(me),ex=c.rx+ball.r,ey=c.ry+ball.r,qx=(ball.x-c.cx)/ex,qy=(ball.y-c.cy)/ey,d2=qx*qx+qy*qy;if(d2>=1)return;
  const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;ball.x=c.cx+ux*ex;ball.y=c.cy+uy*ey;
  let nx=ux/ex,ny=uy/ey,nlen=Math.hypot(nx,ny)||1;nx/=nlen;ny/=nlen;
- const smash=me.attack>0&&!me.onGround&&me.state!=='SLIDE',dive=me.state==='SLIDE';ball.speedCap=555;let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
+ const smash=me.attack>0&&!me.onGround&&me.state!=='SLIDE',dive=me.state==='SLIDE';ball.speedCap=520;let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
  if(vn<0){const restitution=smash?1.06:dive?1.00:.96;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*92;rvy+=ny*92}
  ball.vx=rvx+me.vx*(smash?.42:dive?.34:.28);ball.vy=rvy+me.vy*(smash?.18:.12);
  const courtDir=me.side===0?1:-1;
@@ -263,7 +263,7 @@ function collidePlayer(me,inp){
    // A receive must actually pop the ball upward. The old lerp could leave a fast
    // descending ball with almost no rebound, so guarantee a minimum lift while
    // still preserving stronger physically-reflected bounces.
-   const lift=dive?-500:-370-Math.max(0,-ny)*90;
+   const lift=dive?-510:-390-Math.max(0,-ny)*100;
    if(ball.vy>lift)ball.vy=lift;
    if(dive){burst(ball.x,ball.y,5);shake=Math.max(shake,1.8);sound('hit',1.24)}else sound('hit',1.44);
  }
@@ -277,7 +277,7 @@ function updateServeGauge(power,show=true){
 function burst(x,y,n){for(let i=0;i<n&&particles.length<52;i++)particles.push({x,y,vx:(Math.random()-.5)*230,vy:(Math.random()-.5)*190-45,t:.34})}
 function simulateServeLanding(power,side=serveSide){
  power=clamp(power,0,1);const ease=power*power*(3-2*power),dir=side===0?1:-1,me=p[side];
- const g={x:me.x+dir*44,y:me.y-82,vx:dir*lerp(320,580,ease),vy:-lerp(510,470,ease),r:ball.r,speedCap:lerp(600,800,ease)};
+ const g={x:me.x+dir*44,y:me.y-82,vx:dir*lerp(300,540,ease),vy:-lerp(480,440,ease),r:ball.r,speedCap:lerp(570,720,ease)};
  let t=0,netHit=false;
  for(let i=0;i<360;i++){
    const beforeX=g.x,beforeVX=g.vx;stepBallBody(g,FIXED);t+=FIXED;
@@ -308,7 +308,7 @@ function chooseCpuServePower(){
 function launchServe(power=0){
  power=clamp(power,0,1);const dir=serveSide===0?1:-1,ease=power*power*(3-2*power);
  ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;
- ball.vx=dir*lerp(320,580,ease);ball.vy=-lerp(510,470,ease);ball.speedCap=lerp(600,800,ease);ball.hitLock=.14;p[serveSide].attack=.12;
+ ball.vx=dir*lerp(300,540,ease);ball.vy=-lerp(480,440,ease);ball.speedCap=lerp(570,720,ease);ball.hitLock=.14;p[serveSide].attack=.12;
  if(power>.72){shake=Math.max(shake,2.8);burst(ball.x,ball.y,8)}
  setPhase('play',0);serveCharging=false;serveCharge=0;serveText.classList.remove('show');updateServeGauge(0,false);sound('hit',lerp(1.32,.98,ease));
 }
