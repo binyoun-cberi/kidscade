@@ -41,7 +41,7 @@ const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getC
 
 function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
- p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jump=false;cpuState.smash=false;cpuState.slide=false;cpuState.aim=0;
+ p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.slide=false;cpuState.aim=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
  rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=difficulty==='easy'?.35+Math.random()*.22:difficulty==='hard'?.68+Math.random()*.25:.5+Math.random()*.25;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
  const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 충전':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 꾹 누르고 떼서 서브';serveText.classList.add('show');
@@ -79,27 +79,79 @@ function predictBallLanding(){
  return {x:g.x,t:6};
 }
 
-const cpuState={think:0,targetX:710,jump:false,smash:false,slide:false,aim:0,predX:710,predT:1};
+const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,slide:false,aim:0,predX:710,predT:1};
+function chooseCpuAttackAim(){
+ const opp=p[0];
+ // Right-side CPU attacks left. If the opponent is camping deep, use a short shot;
+ // if the opponent is near the net, send it deep behind them.
+ if(opp.x<215)return -1;
+ if(opp.x>330)return 1;
+ return opp.vx>90?-1:opp.vx<-90?1:(Math.random()<.5?-1:1);
+}
 function cpuInput(dt){
- const cfg=difficulty==='easy'?{react:.27,err:105,offset:10,jump:.48,smash:.18,slide:.58,mistake:.28}:difficulty==='hard'?{react:.075,err:22,offset:38,jump:.91,smash:.74,slide:.96,mistake:.08}:{react:.145,err:50,offset:28,jump:.72,smash:.48,slide:.82,mistake:.16};
+ const cfg=difficulty==='easy'
+   ?{react:.18,err:78,offset:14,dead:15,jumpLead:.42,slideMargin:145,attackChance:.28}
+   :difficulty==='hard'
+   ?{react:.055,err:10,offset:42,dead:5,jumpLead:.66,slideMargin:245,attackChance:.92}
+   :{react:.095,err:28,offset:31,dead:8,jumpLead:.54,slideMargin:195,attackChance:.64};
+
+ cpuState.jumpTimer=Math.max(0,cpuState.jumpTimer-dt);
+ cpuState.attackTimer=Math.max(0,cpuState.attackTimer-dt);
  cpuState.think-=dt;
+
  if(cpuState.think<=0){
-   cpuState.think=cfg.react;const me=p[1],pred=predictBallLanding();cpuState.predX=pred.x;cpuState.predT=pred.t;
-   const onMySide=pred.x>NETX;const noisy=pred.x+(Math.random()-.5)*cfg.err;let offset=onMySide?cfg.offset:0;if(Math.random()<cfg.mistake)offset*=(Math.random()>.5?-0.3:.25);
-   cpuState.targetX=clamp(onMySide?noisy+offset:720,NETX+62,W-42);cpuState.jump=false;cpuState.smash=false;cpuState.slide=false;
-   const close=Math.abs(ball.x-me.x),landingGap=Math.abs(pred.x-me.x),descending=ball.vy>0;
-   const runReach=PLAYER_MAX*Math.max(0,pred.t)+42;
-   // Pikachu-style last-chance slide: if normal running is unlikely to reach a low,
-   // descending ball, commit to a fast ground slide instead of simply losing the point.
-   if(phase==='play'&&onMySide&&me.onGround&&me.recover<=0&&descending&&pred.t<.48&&landingGap>runReach*.72&&landingGap<runReach+205&&Math.random()<cfg.slide){
-     cpuState.slide=true;cpuState.targetX=clamp(pred.x,NETX+52,W-36);
-   }else if(phase==='play'&&ball.x>NETX-30&&pred.t<.62&&close<126&&ball.y<me.y-24&&ball.y>me.y-205&&Math.random()<cfg.jump){
-     cpuState.jump=true;
+   cpuState.think=cfg.react;
+   const me=p[1],pred=predictBallLanding();
+   cpuState.predX=pred.x;cpuState.predT=pred.t;cpuState.slide=false;
+
+   const onMySide=pred.x>NETX;
+   if(onMySide){
+     // Stand slightly behind the landing point so the normal rebound naturally goes left.
+     const speedBias=clamp(Math.abs(ball.vx)*.045,0,18);
+     const error=(Math.random()-.5)*cfg.err;
+     cpuState.targetX=clamp(pred.x+cfg.offset+speedBias+error,NETX+58,W-44);
+   }else{
+     // Recover to a useful defensive base while the opponent has the ball.
+     cpuState.targetX=ball.x<NETX?clamp(735+(p[0].x-240)*.12,650,795):720;
    }
-   if(!me.onGround&&me.recover<=0&&close<96&&ball.y<me.y+8&&ball.y>me.y-115&&Math.random()<cfg.smash){cpuState.smash=true;cpuState.aim=p[0].x<240?1:-1}
+
+   if(phase==='play'&&onMySide&&me.recover<=0){
+     const landingGap=Math.abs(pred.x-me.x);
+     const runReach=PLAYER_MAX*Math.max(0,pred.t)+44;
+     const ballLow=ball.y>me.y-82;
+     const descending=ball.vy>0;
+
+     // Do not randomly ignore a reachable ball. Slide only when running is unlikely
+     // to make it but the slide extension still can.
+     if(me.onGround&&descending&&pred.t<.52&&landingGap>runReach*.84&&landingGap<runReach+cfg.slideMargin){
+       cpuState.slide=true;
+       cpuState.targetX=clamp(pred.x,NETX+50,W-38);
+       cpuState.attackTimer=.055;
+     }else{
+       const close=Math.abs(ball.x-me.x);
+       const inJumpLane=close<88+cfg.err*.16;
+       const goodHeight=ball.y<me.y-26&&ball.y>me.y-190;
+       const shouldJump=me.onGround&&descending&&inJumpLane&&goodHeight&&pred.t<cfg.jumpLead;
+       if(shouldJump)cpuState.jumpTimer=.075;
+     }
+   }
+
+   // Once airborne and close enough, attack deliberately instead of relying on a
+   // random power-hit check every think cycle.
+   const close=Math.abs(ball.x-me.x);
+   const attackWindow=!me.onGround&&me.recover<=0&&ball.x>NETX-24&&close<86&&ball.y<me.y+8&&ball.y>me.y-118;
+   if(attackWindow&&cpuState.attackTimer<=0&&Math.random()<cfg.attackChance){
+     cpuState.aim=chooseCpuAttackAim();
+     cpuState.attackTimer=.055;
+   }
  }
- const me=p[1],dead=9,out=inputCache[1];
- out.l=me.x>cpuState.targetX+dead;out.r=me.x<cpuState.targetX-dead;out.j=cpuState.jump;out.s=cpuState.smash||cpuState.slide;out.aim=cpuState.aim;
+
+ const me=p[1],out=inputCache[1],dead=cfg.dead;
+ out.l=me.x>cpuState.targetX+dead;
+ out.r=me.x<cpuState.targetX-dead;
+ out.j=cpuState.jumpTimer>0;
+ out.s=cpuState.attackTimer>0;
+ out.aim=cpuState.aim;
  return out;
 }
 
