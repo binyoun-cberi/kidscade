@@ -67,6 +67,25 @@ function savedAvatarSource(){
  const svg=safeAvatar(()=>typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG():'','');
  return svgDataUrl(svg);
 }
+const CPU_AVATAR_PRESETS=[
+ {name:'블루 스파이크',equipment:{skin:'skin_warm',hair:'hair_short',top:'top_soccer',bottom:'bottom_track',head:'head_cap',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
+ {name:'네온 리베로',equipment:{skin:'skin_peach',hair:'hair_bob',top:'top_hoodie',bottom:'bottom_jeans',head:'head_headphones',face:'face_round',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
+ {name:'썬더 세터',equipment:{skin:'skin_deep',hair:'hair_curl',top:'top_uniform',bottom:'bottom_track',head:'head_none',face:'face_sun',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
+ {name:'포니 에이스',equipment:{skin:'skin_warm',hair:'hair_pony',top:'top_soccer',bottom:'bottom_shorts',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}}
+];
+let cpuAvatarPresetIndex=0;
+function cpuAvatarPreset(){return CPU_AVATAR_PRESETS[cpuAvatarPresetIndex%CPU_AVATAR_PRESETS.length]}
+function cpuAvatarSource(){
+ const h=kidscadeHost(),preset=cpuAvatarPreset();
+ const svg=safeAvatar(()=>typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG(preset.equipment):'','');
+ return svgDataUrl(svg);
+}
+function rotateCpuAvatarPreset(){
+ let next=Math.floor(Math.random()*CPU_AVATAR_PRESETS.length);
+ if(CPU_AVATAR_PRESETS.length>1&&next===cpuAvatarPresetIndex)next=(next+1)%CPU_AVATAR_PRESETS.length;
+ cpuAvatarPresetIndex=next;
+ volleyAvatars?.[1]?.refreshStatic(true);
+}
 class VolleyAvatarActor{
  constructor(side){
    this.side=side;this.img=new Image();this.img.decoding='async';this.ready=false;this.source='';this.lastCapture=0;this.lastStatic=0;
@@ -78,7 +97,9 @@ class VolleyAvatarActor{
  }
  refreshStatic(force=false){
    const now=performance.now();if(!force&&now-this.lastStatic<1300)return;
-   this.lastStatic=now;this.setSource(savedAvatarSource());
+   this.lastStatic=now;
+   const src=this.side===1?cpuAvatarSource():savedAvatarSource();
+   this.setSource(src);
  }
  modeFor(me){
    if(me.state==='SLIDE'||me.attack>0)return 'smile';
@@ -87,6 +108,7 @@ class VolleyAvatarActor{
    return 'idle';
  }
  capture(mode,now){
+   if(this.side===1)return false;
    if(now-this.lastCapture<105)return false;
    this.lastCapture=now;
    const src=cachedAvatarFrame(mode,now);
@@ -136,6 +158,10 @@ class VolleyAvatarActor{
    ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=2;ctx.stroke();
    ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(number),badgeX,badgeY+.5);
    ctx.restore();
+   if(this.side===1&&(mode==='cpu'||mode==='practice')){
+     ctx.save();ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(15,23,42,.82)';
+     ctx.fillText(cpuAvatarPreset().name,me.x,footY-targetH-8);ctx.restore();
+   }
    return true;
  }
 }
@@ -159,7 +185,7 @@ function resetEntities(server){
 }
 function startGame(){
  mode=document.querySelector('.mode.active[data-mode]')?.dataset.mode||'cpu';difficulty=document.getElementById('difficulty').value;target=Number(document.getElementById('target').value)||7;practice=mode==='practice';practiceStage=0;
- score=[0,0];playing=true;paused=false;simTime=0;last=performance.now();acc=0;menu.classList.add('hidden');result.classList.add('hidden');pauseLayer.classList.add('hidden');pad2.classList.toggle('hidden',mode!=='2p');document.getElementById('pauseBtn').textContent='⏸';
+ score=[0,0];playing=true;paused=false;simTime=0;last=performance.now();acc=0;if(mode==='cpu'||mode==='practice')rotateCpuAvatarPreset();menu.classList.add('hidden');result.classList.add('hidden');pauseLayer.classList.add('hidden');pad2.classList.toggle('hidden',mode!=='2p');document.getElementById('pauseBtn').textContent='⏸';
  document.getElementById('matchInfo').textContent=practice?'연습 모드 · 최고 '+bestRally:target+'점 · 2점 차 승리';updateScore();resetEntities(0);showTip(practice?'먼저 좌우로 움직여 공 아래에 자리 잡아 보세요.':'공을 쫓지 말고 먼저 타점으로 이동하세요.',2600);app.focus();
 }
 function updateScore(){scoreEls[0].textContent=score[0];scoreEls[1].textContent=score[1]}
@@ -482,5 +508,5 @@ document.getElementById('pauseBtn').addEventListener('click',()=>togglePause());
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==='KeyP'&&playing)togglePause()},{passive:false});addEventListener('keyup',e=>{keys[e.code]=false});
 document.querySelectorAll('#touch button[data-key]').forEach(btn=>{const k=btn.dataset.key;const on=e=>{e.preventDefault();touch[k]=true};const off=e=>{e.preventDefault();touch[k]=false};btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('pointerleave',off)});
 addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);Object.keys(touch).forEach(k=>touch[k]=false);if(playing&&!paused)togglePause(true)});
-addEventListener('storage',e=>{if(e.key===AVATAR_PREVIEW_KEY)volleyAvatars.forEach(a=>a.refreshStatic(true))});
+addEventListener('storage',e=>{if(e.key===AVATAR_PREVIEW_KEY)volleyAvatars[0]?.refreshStatic(true)});
 })();
