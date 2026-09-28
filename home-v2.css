@@ -8,13 +8,19 @@
 }
 
 body.kc-home-v2-ready[data-kc-home-mode="home"] .kc-discovery,
+body.kc-home-v2-ready[data-kc-home-mode="home"] .kc-quick-zone,
+body.kc-home-v2-ready[data-kc-home-mode="home"] #kc-curated-discovery,
 body.kc-home-v2-ready[data-kc-home-mode="home"] .kc-library-head,
 body.kc-home-v2-ready[data-kc-home-mode="home"] #game-list {
   display:none !important;
 }
 
 body.kc-home-v2-ready[data-kc-home-mode="library"] .kc-home-v2,
-body.kc-home-v2-ready[data-kc-home-mode="search"] .kc-home-v2 {
+body.kc-home-v2-ready[data-kc-home-mode="search"] .kc-home-v2,
+body.kc-home-v2-ready[data-kc-home-mode="library"] .kc-quick-zone,
+body.kc-home-v2-ready[data-kc-home-mode="search"] .kc-quick-zone,
+body.kc-home-v2-ready[data-kc-home-mode="library"] #kc-curated-discovery,
+body.kc-home-v2-ready[data-kc-home-mode="search"] #kc-curated-discovery {
   display:none !important;
 }
 
@@ -31,6 +37,10 @@ body.kc-home-v2-ready[data-kc-home-mode="search"] .kc-library-head {
 body.kc-home-v2-ready[data-kc-home-mode="library"] #game-list,
 body.kc-home-v2-ready[data-kc-home-mode="search"] #game-list {
   display:grid !important;
+}
+
+body.kc-home-v2-ready #kc-popular-hub {
+  display:none !important;
 }
 
 body.kc-home-v2-ready[data-kc-home-mode="home"] #kc-home-backbar {
@@ -319,6 +329,7 @@ body.kc-home-v2-ready[data-kc-home-mode="home"] #kc-home-backbar {
   body.kc-home-v2-ready .avatar-plaza-preview { height:128px !important; }
   body.kc-home-v2-ready .kc-side-card.avatar-shell .kc-side-head { padding-top:11px !important; }
   body.kc-home-v2-ready #kc-local-profile-card { display:none !important; }
+  body.kc-home-v2-ready #kc-popular-hub { display:none !important; }
   .kc-home-rail-track { grid-auto-columns:minmax(188px,calc((100% - 40px) / 5)); }
 }
 

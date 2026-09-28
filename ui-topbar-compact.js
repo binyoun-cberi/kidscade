@@ -96,6 +96,16 @@
       }
       .kc-discovery .tool-panel { display:none !important; }
 
+      .kc-hero {
+        display:block !important;
+        height:0 !important;
+        min-height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:hidden !important;
+      }
+      .kc-hero > * { display:none !important; }
+
       @media (max-width:940px) {
         #main-app > .kc-topbar {
           position:sticky !important;

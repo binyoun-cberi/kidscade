@@ -280,6 +280,8 @@
             </aside>
 
             <section class="kc-arcade" aria-label="Kidscade 게임 오락실">
+                <div class="kc-hero" aria-hidden="true"></div>
+
                 <section class="kc-discovery" aria-label="게임 찾기">
                     <section class="tool-panel" aria-label="게임 안내">
                         <div class="tool-panel-info">
@@ -327,6 +329,20 @@
                         </div>
                     </nav>
                 </section>
+
+                <div class="kc-quick-zone">
+                    <section class="dashboard-section hidden" id="recent-section">
+                        <div class="dashboard-title">
+                            <span>🕒 이어서 플레이</span>
+                            <span class="playtime-display" id="total-playtime">총 학습 시간: 00분</span>
+                        </div>
+                        <div class="dashboard-container" id="recent-list"></div>
+                    </section>
+                    <section class="dashboard-section hidden" id="favorite-section">
+                        <div class="dashboard-title">⭐ 즐겨찾기</div>
+                        <div class="dashboard-container" id="favorite-list"></div>
+                    </section>
+                </div>
 
                 <div class="kc-library-head">
                     <div>
@@ -2772,7 +2788,31 @@ ${getEvolutionHintText()}
             // 즐겨찾기 & 최근 플레이 
             // =====================================
             function renderDashboards() {
-                return window.KidscadeDashboard?.render?.({ age: currentAgeGroup }) === true;
+                const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
+                favList.innerHTML = ''; let favCount = 0;
+                favorites.forEach(id => {
+                    const originCard = document.querySelector(`#game-list .game-card[data-id="${id}"]`);
+                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
+                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
+                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
+                        favList.appendChild(clone);
+                        originCard.querySelector('.fav-star').innerText = '★'; originCard.querySelector('.fav-star').classList.add('active');
+                        favCount++;
+                    }
+                });
+                if (favCount > 0) favSection.classList.remove('hidden'); else favSection.classList.add('hidden');
+
+                const recentList = document.getElementById('recent-list'); const recentSection = document.getElementById('recent-section');
+                recentList.innerHTML = ''; let recentCount = 0;
+                recents.forEach(id => {
+                    const originCard = document.querySelector(`#game-list .game-card[data-id="${id}"]`);
+                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
+                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
+                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
+                        recentList.appendChild(clone); recentCount++;
+                    }
+                });
+                if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
             }
 
             function trackRecent(id) {

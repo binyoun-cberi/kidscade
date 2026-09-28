@@ -29,10 +29,10 @@ test('mobile play record can collapse secondary detail without removing totals',
   assert.match(source, /간단히 보기/);
 });
 
-test('second pass tightens profile, activity, and library card visuals', () => {
+test('second pass tightens profile, activity, ranking, and game card visuals', () => {
   assert.match(source, /\.kc-side-card\.avatar-shell/);
   assert.match(source, /#kc-activity-strip/);
-  assert.doesNotMatch(source, /\.kc-popular-panel|\.kc-quick-zone/);
+  assert.match(source, /\.kc-popular-panel/);
   assert.match(source, /#game-list > \.game-card/);
   assert.match(source, /\.game-card\.kc-has-cover \.game-cover-shell/);
 });

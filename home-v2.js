@@ -623,7 +623,6 @@
   function bindGlobalEvents() {
     root.document.addEventListener('kidscade:favorites-changed', scheduleRender);
     root.document.addEventListener('kidscade:recents-changed', scheduleRender);
-    root.document.addEventListener('kidscade:server-stats-updated', scheduleRender);
     root.document.addEventListener('kidscade:game-closed', () => {
       root.KidscadeServerStats?.load?.(false)?.then?.(() => scheduleRender());
       scheduleRender();

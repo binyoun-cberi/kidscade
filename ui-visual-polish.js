@@ -28,6 +28,8 @@
       .kc-lobby { gap:18px !important; }
       .kc-myspace-inner { gap:10px !important; }
       .kc-arcade { min-width:0; }
+      .kc-hero { padding-bottom:10px !important; }
+      .kc-hero h1 { letter-spacing:-.045em !important; }
 
       /* 프로필: 중첩 카드 느낌을 줄이고 한 덩어리처럼 보이게 */
       .kc-side-card.avatar-shell {
@@ -188,7 +190,73 @@
         }
       }
 
-      /* 게임 라이브러리: 대문이 주인공이고 텍스트는 짧게 */      /* 게임 라이브러리: 대문이 주인공이고 텍스트는 짧게 */
+      /* 이어서 플레이 / 즐겨찾기 */
+      .kc-quick-zone { gap:10px !important; margin-bottom:14px !important; }
+      .dashboard-section:not(.hidden) { padding:10px !important; border-radius:18px !important; box-shadow:0 7px 20px rgba(15,23,42,.055) !important; }
+      .dashboard-title { margin-bottom:7px !important; font-size:.84rem !important; }
+      .dashboard-container { gap:7px !important; }
+      .dashboard-container .mini-card { border-radius:14px !important; }
+      .dashboard-container .mini-card.kc-has-cover {
+        width:142px !important;
+        min-width:142px !important;
+        max-width:142px !important;
+      }
+
+      /* 인기 게임과 이용 현황 */
+      #kc-popular-hub { margin-bottom:15px !important; }
+      .kc-popular-head { margin-bottom:7px !important; }
+      .kc-popular-grid { gap:10px !important; }
+      .kc-popular-panel { padding:10px !important; border-radius:17px !important; box-shadow:0 7px 20px rgba(15,23,42,.05) !important; }
+      .kc-popular-panel-title { margin-bottom:6px !important; font-size:.79rem !important; }
+      .kc-popular-list { gap:4px !important; }
+      .kc-popular-item { grid-template-columns:28px 58px minmax(0,1fr) auto !important; gap:7px !important; padding:5px !important; }
+      .kc-popular-thumb { width:58px !important; height:37px !important; border-radius:8px !important; }
+      .kc-popular-rank { width:28px !important; height:28px !important; border-radius:9px !important; }
+      #kc-live-stats {
+        gap:5px 9px !important;
+        margin:8px 0 11px !important;
+        padding:8px 10px !important;
+        border-radius:13px !important;
+        box-shadow:none !important;
+        font-size:.73rem !important;
+      }
+
+      @media (min-width:941px) {
+        #kc-popular-hub.kc-popular-sidebar {
+          margin:0 !important;
+          padding:10px !important;
+          border-radius:18px !important;
+        }
+        .kc-popular-sidebar .kc-popular-head { margin:0 0 8px !important; }
+        .kc-popular-sidebar .kc-popular-grid { gap:0 !important; }
+        .kc-popular-sidebar .kc-popular-panel {
+          display:none !important;
+          padding:0 !important;
+          border:0 !important;
+          border-radius:0 !important;
+          box-shadow:none !important;
+          background:transparent !important;
+        }
+        .kc-popular-sidebar .kc-popular-panel.active { display:block !important; }
+        .kc-popular-sidebar .kc-popular-panel-title { display:none !important; }
+        .kc-popular-sidebar .kc-popular-list { gap:3px !important; }
+        .kc-popular-sidebar .kc-popular-item {
+          grid-template-columns:26px 44px minmax(0,1fr) auto !important;
+          gap:6px !important;
+          padding:5px 3px !important;
+        }
+        .kc-popular-sidebar .kc-popular-thumb { width:44px !important; height:30px !important; border-radius:7px !important; }
+        .kc-popular-sidebar .kc-popular-rank { width:26px !important; height:26px !important; border-radius:8px !important; }
+        #kc-live-stats.kc-stats-sidebar {
+          gap:4px !important;
+          margin:0 !important;
+          padding:9px 11px !important;
+          border-radius:15px !important;
+          font-size:.67rem !important;
+        }
+      }
+
+      /* 게임 라이브러리: 대문이 주인공이고 텍스트는 짧게 */
       .kc-library-head { margin-bottom:9px !important; }
       #game-list.game-container { gap:12px !important; }
       #game-list > .game-card {
@@ -204,6 +272,7 @@
       }
       #game-list > .game-card .game-title { margin-bottom:5px !important; font-size:.96rem !important; }
       #game-list > .game-card .game-desc { font-size:.71rem !important; line-height:1.4 !important; }
+      #game-list > .game-card .kc-server-card-stats { margin-top:4px !important; font-size:.60rem !important; }
       #game-list > .game-card .kc-card-meta { margin-top:5px !important; min-height:20px !important; }
       #game-list > .game-card .kc-card-meta-chip { padding:4px 7px !important; font-size:.58rem !important; }
 
@@ -258,6 +327,8 @@
 
       @media (max-width:${MOBILE_BREAKPOINT}px) {
         .kc-lobby { padding-left:9px !important; padding-right:9px !important; gap:10px !important; }
+        .kc-hero { padding:0 1px 7px !important; }
+        .kc-hero h1 { font-size:1.24rem !important; }
 
         .kc-side-card.avatar-shell {
           grid-template-columns:128px minmax(0,1fr) !important;
@@ -285,6 +356,26 @@
         #kc-activity-strip .kc-activity-title { font-size:.71rem !important; }
         #kc-activity-strip .kc-activity-sub { display:none !important; }
 
+        .kc-quick-zone { margin-bottom:11px !important; }
+        .dashboard-section:not(.hidden) { padding:8px !important; }
+        .dashboard-title { font-size:.76rem !important; }
+        .playtime-display { font-size:.56rem !important; }
+
+        .kc-popular-head { margin-bottom:6px !important; }
+        .kc-popular-title { font-size:.92rem !important; }
+        .kc-popular-grid { gap:8px !important; }
+        .kc-popular-panel { padding:8px !important; border-radius:15px !important; }
+        .kc-popular-panel-title { font-size:.72rem !important; }
+        .kc-popular-item { grid-template-columns:24px 50px minmax(0,1fr) auto !important; gap:6px !important; padding:4px 3px !important; }
+        .kc-popular-rank { width:24px !important; height:24px !important; font-size:.65rem !important; }
+        .kc-popular-thumb { width:50px !important; height:32px !important; }
+        .kc-popular-game-title { font-size:.69rem !important; }
+        .kc-popular-game-sub { display:none !important; }
+        .kc-popular-count { font-size:.64rem !important; }
+
+        #kc-live-stats { justify-content:center; margin:6px 0 9px !important; padding:7px 8px !important; font-size:.65rem !important; }
+        #kc-live-stats .kc-stats-label { width:100%; text-align:center; }
+
         #game-list > .game-card {
           min-height:168px !important;
           padding:34px 7px 8px !important;
@@ -294,6 +385,7 @@
         #game-list > .game-card.kc-has-cover .game-cover-shell { margin-bottom:6px !important; border-radius:11px !important; }
         #game-list > .game-card .game-icon { width:56px !important; height:56px !important; font-size:2.2rem !important; margin-bottom:6px !important; }
         #game-list > .game-card .game-title { font-size:.76rem !important; line-height:1.2 !important; margin-bottom:3px !important; }
+        #game-list > .game-card .kc-server-card-stats { font-size:.54rem !important; margin-top:3px !important; }
         #game-list > .game-card .kc-card-meta { margin-top:3px !important; min-height:19px !important; }
         #game-list > .game-card .kc-card-meta-chip { font-size:.5rem !important; padding:3px 5px !important; }
 
