@@ -11,7 +11,13 @@
 
   const HOME_ID = 'kc-home-v2';
   const BACKBAR_ID = 'kc-home-backbar';
+  const LAYOUT_BUTTON_ID = 'btn-home-layout';
   const MAX_RAIL_GAMES = 12;
+  const HOME_LAYOUTS = Object.freeze({ recommend: 'recommend', classic: 'classic' });
+
+  function normalizeLayout(value) {
+    return value === HOME_LAYOUTS.classic ? HOME_LAYOUTS.classic : HOME_LAYOUTS.recommend;
+  }
   const AGE_LABELS = Object.freeze({
     toddler: '유아',
     low: '1~3학년',
@@ -439,6 +445,86 @@
     return escapeHtml(value);
   }
 
+  function storedLayout() {
+    try {
+      return normalizeLayout(root?.KidscadeStorage?.getRaw?.('homeLayout', HOME_LAYOUTS.recommend));
+    } catch (_) {
+      return HOME_LAYOUTS.recommend;
+    }
+  }
+
+  function currentLayout() {
+    if (!root?.document) return storedLayout();
+    return normalizeLayout(root.document.body.dataset.kcHomeLayout || storedLayout());
+  }
+
+  function updateLayoutButton(layout = currentLayout()) {
+    const button = root?.document?.getElementById(LAYOUT_BUTTON_ID);
+    if (!button) return;
+    const classic = layout === HOME_LAYOUTS.classic;
+    const icon = button.querySelector('.kc-home-layout-icon');
+    const label = button.querySelector('.kc-home-layout-label');
+    if (icon) icon.textContent = classic ? '▦' : '✨';
+    if (label) label.textContent = classic ? '전체 홈' : '추천 홈';
+    button.dataset.layout = layout;
+    button.setAttribute('aria-label', classic
+      ? '현재 전체형 홈. 추천형 홈으로 바꾸기'
+      : '현재 추천형 홈. 전체형 홈으로 바꾸기');
+    button.setAttribute('title', classic
+      ? '전체형 홈 사용 중 · 추천형으로 바꾸기'
+      : '추천형 홈 사용 중 · 전체형으로 바꾸기');
+  }
+
+  function setLayout(nextLayout, options = {}) {
+    if (!root?.document) return normalizeLayout(nextLayout);
+    const layout = normalizeLayout(nextLayout);
+    const body = root.document.body;
+    const search = root.document.getElementById('game-search-input');
+    const hasSearch = Boolean(search?.value?.trim());
+
+    body.dataset.kcHomeLayout = layout;
+    body.dataset.kcHomeMode = layout === HOME_LAYOUTS.classic
+      ? (hasSearch ? 'search' : 'library')
+      : 'home';
+    delete body.dataset.kcHomeSearchReturn;
+
+    if (options.persist !== false) {
+      try { root.KidscadeStorage?.setRaw?.('homeLayout', layout); } catch (_) {}
+    }
+
+    updateLayoutButton(layout);
+    updateBackbar();
+    root.KidscadeDashboard?.render?.({ age: currentAge() });
+    root.document.dispatchEvent(new CustomEvent('kidscade:home-layout-changed', {
+      detail: { layout }
+    }));
+
+    if (options.scroll !== false) {
+      const target = layout === HOME_LAYOUTS.classic
+        ? root.document.querySelector('.kc-discovery')
+        : root.document.getElementById(HOME_ID);
+      target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    }
+    return layout;
+  }
+
+  function toggleLayout() {
+    return setLayout(currentLayout() === HOME_LAYOUTS.classic
+      ? HOME_LAYOUTS.recommend
+      : HOME_LAYOUTS.classic);
+  }
+
+  function bindLayoutToggle() {
+    const button = root?.document?.getElementById(LAYOUT_BUTTON_ID);
+    if (!button || button.dataset.kcHomeLayoutBound === '1') return;
+    button.dataset.kcHomeLayoutBound = '1';
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      toggleLayout();
+    });
+    updateLayoutButton();
+  }
+
   function render() {
     renderQueued = false;
     const shell = ensureShell();
@@ -483,8 +569,12 @@
     wireShell(shell);
     prepareKeyboardNavigation(shell);
     root.document.body.classList.add('kc-home-v2-ready');
-    root.document.body.dataset.kcHomeMode = 'home';
-    updateBackbar();
+    if (!root.document.body.dataset.kcHomeLayout) {
+      setLayout(storedLayout(), { persist: false, scroll: false });
+    } else {
+      updateLayoutButton(currentLayout());
+      updateBackbar();
+    }
     return true;
   }
 
@@ -584,9 +674,14 @@
       search.value = '';
       search.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    root.document.body.dataset.kcHomeMode = 'home';
+    if (currentLayout() === HOME_LAYOUTS.classic) {
+      root.document.body.dataset.kcHomeMode = 'library';
+      root.document.querySelector('.kc-discovery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      root.document.body.dataset.kcHomeMode = 'home';
+      root.document.getElementById(HOME_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     updateBackbar();
-    root.document.getElementById(HOME_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function updateBackbar() {
@@ -608,12 +703,18 @@
     search.addEventListener('input', () => {
       const value = search.value.trim();
       const body = root.document.body;
-      const currentMode = body.dataset.kcHomeMode || 'home';
+      const layout = currentLayout();
+      const currentMode = body.dataset.kcHomeMode || (layout === HOME_LAYOUTS.classic ? 'library' : 'home');
       if (value) {
-        if (currentMode !== 'search') body.dataset.kcHomeSearchReturn = currentMode === 'library' ? 'library' : 'home';
+        if (currentMode !== 'search') {
+          body.dataset.kcHomeSearchReturn = layout === HOME_LAYOUTS.classic
+            ? 'library'
+            : (currentMode === 'library' ? 'library' : 'home');
+        }
         body.dataset.kcHomeMode = 'search';
       } else if (currentMode === 'search') {
-        body.dataset.kcHomeMode = body.dataset.kcHomeSearchReturn || 'home';
+        body.dataset.kcHomeMode = body.dataset.kcHomeSearchReturn ||
+          (layout === HOME_LAYOUTS.classic ? 'library' : 'home');
         delete body.dataset.kcHomeSearchReturn;
       }
       updateBackbar();
@@ -656,6 +757,7 @@
       }
       mounted = true;
       bindSearch();
+      bindLayoutToggle();
       bindGlobalEvents();
       render();
       refreshStats();
@@ -670,6 +772,10 @@
     render,
     showHome,
     showLibrary,
+    setLayout,
+    toggleLayout,
+    currentLayout,
+    normalizeLayout,
     supportsAge,
     dailyHash,
     rankPopular,

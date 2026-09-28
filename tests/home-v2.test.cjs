@@ -58,3 +58,21 @@ test('Home V2 rails expose career as a discovery row for school ages', () => {
   assert.ok(career);
   assert.deepEqual(career.games.map(game => game.id).sort(), ['job-a','job-b']);
 });
+
+
+test('Home V2 supports recommended and classic presentation modes', () => {
+  assert.equal(home.normalizeLayout('recommend'), 'recommend');
+  assert.equal(home.normalizeLayout('classic'), 'classic');
+  assert.equal(home.normalizeLayout('anything-else'), 'recommend');
+});
+
+test('home layout switch is wired without duplicating the catalog', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const html=fs.readFileSync(path.resolve(__dirname,'..','index_base.html'),'utf8');
+  const css=fs.readFileSync(path.resolve(__dirname,'..','home-v2.css'),'utf8');
+  const storage=fs.readFileSync(path.resolve(__dirname,'..','kidscade-storage.js'),'utf8');
+  assert.match(html, /id="btn-home-layout"/);
+  assert.match(css, /data-kc-home-layout="classic"/);
+  assert.match(storage, /homeLayout:\s*'kidscade_home_layout'/);
+});

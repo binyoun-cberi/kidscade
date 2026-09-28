@@ -47,6 +47,44 @@ body.kc-home-v2-ready[data-kc-home-mode="home"] #kc-home-backbar {
   display:none;
 }
 
+/* Optional classic lobby: reuse the existing DOM instead of cloning data or cards. */
+body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-home-v2,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] #kc-home-backbar {
+  display:none !important;
+}
+body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-discovery,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] #kc-curated-discovery,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-library-head,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] #game-list,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] #kc-popular-hub {
+  display:block !important;
+}
+body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-library-head {
+  display:flex !important;
+}
+body.kc-home-v2-ready[data-kc-home-layout="classic"] #game-list,
+body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
+  display:grid !important;
+}
+
+#btn-home-layout {
+  min-width:86px;
+  justify-content:center;
+  gap:5px;
+  border-color:rgba(124,92,255,.18) !important;
+  background:color-mix(in srgb,var(--kc-panel) 92%,#ede9fe 8%) !important;
+}
+#btn-home-layout[data-layout="classic"] {
+  border-color:rgba(14,165,233,.22) !important;
+  background:color-mix(in srgb,var(--kc-panel) 91%,#e0f2fe 9%) !important;
+}
+#btn-home-layout .kc-home-layout-icon {
+  font-size:.9rem;
+}
+#btn-home-layout .kc-home-layout-label {
+  font-weight:1000;
+}
+
 .kc-home-backbar {
   display:flex;
   align-items:center;
@@ -362,6 +400,14 @@ body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124
 }
 
 @media (max-width:620px) {
+  #btn-home-layout {
+    min-width:66px;
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+  #btn-home-layout .kc-home-layout-label {
+    font-size:.66rem;
+  }
   .kc-home-hero { min-height:205px; border-radius:19px; }
   .kc-home-hero-shade {
     background:

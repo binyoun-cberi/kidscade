@@ -15,6 +15,7 @@
     favorites: 'kidscade_favs',
     recents: 'kidscade_recents',
     age: 'kidscade_age',
+    homeLayout: 'kidscade_home_layout',
     darkMode: 'kidscade_darkmode',
     inventory: 'kidscade_inventory',
     equipped: 'kidscade_equipped',
