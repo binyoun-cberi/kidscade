@@ -9,6 +9,7 @@ const dir=path.join(root,'games','low_speak_jjoayo');
 const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const runtime=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const words=fs.readFileSync(path.join(dir,'words.js'),'utf8');
+const speechConfusions=fs.readFileSync(path.join(dir,'speech-confusions.js'),'utf8');
 
 test('Speak Jjoayo uses browser speech recognition with a typing fallback',()=>{
   assert.match(runtime,/SpeechRecognition\s*\|\|\s*window\.webkitSpeechRecognition/);
@@ -30,7 +31,7 @@ test('Speak Jjoayo keeps the 60-second rush rules and Kidscade SDK lifecycle',()
 });
 
 test('Speak Jjoayo modules parse and include the 400-word bank',()=>{
-  for(const source of [runtime,words]){
+  for(const source of [runtime,words,speechConfusions]){
     const checked=spawnSync(process.execPath,['--input-type=module','--check'],{input:source,encoding:'utf8'});
     assert.equal(checked.status,0,checked.stderr||checked.stdout);
   }
@@ -39,6 +40,24 @@ test('Speak Jjoayo modules parse and include the 400-word bank',()=>{
   for(const category of ["animal","food","school","color","daily"])assert.ok(words.includes("cat:'"+category+"'"));
 });
 
+
+test('Speak Jjoayo has a shared speech-confusion engine for STT homophones',()=>{
+  assert.match(runtime,/speechConfusionsFor/);
+  assert.match(speechConfusions,/\['hear','here'\]/);
+  assert.match(speechConfusions,/\['bee','be'\]/);
+  assert.match(speechConfusions,/\['tea','tee'\]/);
+  assert.match(speechConfusions,/\['hair','hare'\]/);
+  assert.match(speechConfusions,/\['deer','dear'\]/);
+  assert.match(speechConfusions,/\['new','knew'\]/);
+  assert.match(speechConfusions,/\['road','rode'\]/);
+  assert.match(speechConfusions,/\['sell','cell'\]/);
+  assert.match(speechConfusions,/\['wait','weight'\]/);
+  assert.match(speechConfusions,/three:\['3'\]/);
+  assert.match(speechConfusions,/ten:\['10'\]/);
+  assert.match(runtime,/SpeechRecognitionPhraseCtor/);
+  assert.match(runtime,/recognition\.phrases=canonical/);
+  assert.match(runtime,/3\.5/);
+});
 
 test('Speak Jjoayo separates speech homophones from typed spelling',()=>{
   assert.match(runtime,/speechAliases/);
@@ -87,7 +106,7 @@ test('Speak Jjoayo is registered as a language quiz',()=>{
   const game=catalog.games.find(g=>g.id==='low_speak_jjoayo');
   assert.ok(game);
   assert.equal(game.title,'스피크가 쪼아요!');
-  assert.equal(game.href,'games/low_speak_jjoayo/index.html?v=3');
+  assert.equal(game.href,'games/low_speak_jjoayo/index.html?v=4');
   assert.equal(game.category,'lang');
   assert.equal(game.subject,'language');
   assert.equal(game.genre,'quiz');
