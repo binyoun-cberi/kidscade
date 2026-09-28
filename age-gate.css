@@ -120,6 +120,11 @@
     0 16px 34px rgba(86, 66, 170, .14);
 }
 
+.age-btn-card > .age-icon { display: grid; }
+.age-btn-card > .age-card-copy { display: grid; }
+.age-btn-card > .age-arrow { display: none; }
+.age-btn-card > .age-current { display: none; }
+
 .age-icon {
   width: 72px;
   height: 72px;
@@ -182,7 +187,7 @@
   box-shadow: 0 6px 14px rgba(117, 86, 239, .24);
 }
 
-.age-btn-card.is-current .age-current { display: grid; }
+.age-btn-card.is-current > .age-current { display: grid; }
 
 .age-screen-note {
   margin: 20px 0 0;
@@ -258,7 +263,7 @@ body.dark-mode .age-desc { color: #c2ccda; }
   .age-card-copy { gap: 5px; }
   .age-name { font-size: 1.08rem; }
   .age-desc { font-size: .8rem; }
-  .age-arrow { display: block; justify-self: end; }
+  .age-btn-card > .age-arrow { display: block; justify-self: end; }
   .age-current {
     position: static;
     width: 28px;
@@ -266,7 +271,7 @@ body.dark-mode .age-desc { color: #c2ccda; }
     justify-self: end;
     font-size: .85rem;
   }
-  .age-btn-card.is-current .age-arrow { display: none; }
+  .age-btn-card.is-current > .age-arrow { display: none; }
 
   .age-screen-note { margin-top: 16px; font-size: .76rem; }
 }
@@ -298,7 +303,7 @@ body.dark-mode .age-desc { color: #c2ccda; }
   .age-icon { width: 48px; height: 48px; border-radius: 15px; font-size: 1.7rem; }
   .age-name { font-size: .88rem; }
   .age-desc { font-size: .67rem; }
-  .age-arrow, .age-current { display: none; }
+  .age-btn-card > .age-arrow, .age-btn-card > .age-current { display: none; }
   .age-screen-note { display: none; }
 }
 
