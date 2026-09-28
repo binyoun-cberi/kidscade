@@ -212,6 +212,29 @@
       "cover": "assets/gate-image/퐁퐁 배틀.png"
     },
     {
+      "id": "high_pass_mafia",
+      "title": "누가 마피아? : 한밤의 마을",
+      "href": "games/high_pass_mafia/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌙",
+      "description": "휴대폰 한 대를 차례로 넘기며 역할 확인, 밤 행동, 토론, 용의자 지목, 최후 변론과 처형 투표까지 사회자 없이 진행하는 4~16인 패스 앤 플레이 마피아 게임!",
+      "subject": "thinking",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 20,
+      "players": [
+        "localMulti",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_seed_volleyball",
       "title": "씨앗 배구",
       "href": "games/high_seed_volleyball/index.html?v=16",
