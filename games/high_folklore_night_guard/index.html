@@ -631,6 +631,63 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .office::after{opacity:.5}
 }
 
+
+/* v10 hallucination scare system */
+.fake-scare{
+  position:fixed;inset:0;z-index:175;display:none;pointer-events:none;
+  align-items:center;justify-content:center;overflow:hidden;background:#000
+}
+.fake-scare.show{display:flex}
+.fake-scare-noise{position:absolute;inset:0;opacity:.18;background:
+  repeating-linear-gradient(0deg,#fff0 0 2px,#e7f5ff20 3px,#0000 5px);
+  mix-blend-mode:screen;animation:fakeNoise .075s steps(2,end) infinite}
+.fake-scare-text{
+  position:relative;z-index:4;padding:12px 18px;max-width:88vw;text-align:center;
+  font-family:Georgia,"Malgun Gothic",serif;font-size:clamp(34px,7vw,88px);font-weight:950;
+  letter-spacing:.08em;color:#a3131d;text-shadow:0 0 9px #400,0 4px 0 #000;
+  transform:rotate(-1deg)
+}
+.fake-scare.type-text .fake-scare-text{animation:fakeTextIn .18s steps(2,end) both}
+.fake-scare.type-signal .fake-scare-text{
+  font-family:ui-monospace,monospace;font-size:clamp(25px,5vw,64px);color:#b53138;
+  letter-spacing:.16em;animation:signalTextGlitch .12s steps(2,end) infinite
+}
+.fake-scare-eye{
+  display:none;position:relative;z-index:5;width:min(62vw,690px);aspect-ratio:2.15/1;
+  border-radius:50% 45% 50% 45%;background:
+    radial-gradient(circle at 51% 51%,#020202 0 11%,#4b5960 12% 18%,#a6a39a 19% 25%,#d8d4c8 26% 45%,#77736b 46% 48%,#121212 50% 100%);
+  box-shadow:0 0 110px #a4a49a1c,inset 0 0 80px #000;
+  transform:rotate(-3deg) scaleY(.76)
+}
+.fake-scare-eye i{
+  position:absolute;left:50%;top:50%;width:8%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);background:#000;box-shadow:0 0 18px #000
+}
+.fake-scare.type-eye .fake-scare-eye{display:block;animation:eyeOpen .2s cubic-bezier(.1,.85,.2,1) both}
+.fake-scare.type-eye .fake-scare-text{display:none}
+.fake-scare-shadow{
+  display:none;position:absolute;z-index:4;left:50%;bottom:-20%;width:min(38vw,380px);height:115%;
+  transform:translateX(-50%);background:linear-gradient(#000,#020202);
+  clip-path:polygon(34% 0,66% 0,76% 12%,82% 55%,100% 100%,0 100%,18% 55%,24% 12%);
+  filter:blur(3px)
+}
+.fake-scare.type-shadow .fake-scare-shadow{display:block;animation:shadowFlash .24s steps(2,end) both}
+.fake-scare.type-shadow .fake-scare-text{display:none}
+.fake-scare.type-shadow::after{
+  content:"";position:absolute;z-index:6;left:calc(50% - 22px);top:30%;width:8px;height:5px;border-radius:50%;
+  background:#c6c9b4aa;box-shadow:36px 0 #c6c9b4aa,0 0 12px #b9c28d88,36px 0 12px #b9c28d88
+}
+@keyframes fakeNoise{0%{transform:translateY(0)}50%{transform:translateY(5px)}100%{transform:translateY(-3px)}}
+@keyframes fakeTextIn{0%{opacity:0;transform:scale(1.22) rotate(2deg)}45%{opacity:1;transform:scale(.96) rotate(-2deg)}100%{opacity:.92;transform:scale(1) rotate(-1deg)}}
+@keyframes signalTextGlitch{0%,100%{transform:translate(0)}33%{transform:translate(5px,-2px)}66%{transform:translate(-4px,2px)}}
+@keyframes eyeOpen{0%{opacity:0;transform:rotate(-3deg) scaleY(.03) scaleX(.88)}45%{opacity:1;transform:rotate(-3deg) scaleY(.88) scaleX(1.03)}100%{opacity:.96;transform:rotate(-3deg) scaleY(.76) scaleX(1)}}
+@keyframes shadowFlash{0%{opacity:0;transform:translateX(-50%) translateY(18%) scale(.72)}50%{opacity:.8}100%{opacity:.18;transform:translateX(-50%) translateY(0) scale(1.12)}}
+@media(max-width:780px){
+  .fake-scare-eye{width:82vw}
+  .fake-scare-text{font-size:clamp(30px,10vw,58px)}
+  .fake-scare-shadow{width:58vw}
+}
+
 </style>
 </head>
 <body>
@@ -738,6 +795,12 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 <div class="modal" id="helpModal"><div class="card" id="helpContent"></div></div>
 <div class="modal" id="codexModal"><div class="card" id="codexContent"></div></div>
 <div class="modal" id="resultModal"><div class="card" id="resultContent"></div></div>
+<div class="fake-scare" id="fakeScare" aria-hidden="true">
+  <div class="fake-scare-noise"></div>
+  <div class="fake-scare-text" id="fakeScareText"></div>
+  <div class="fake-scare-eye" id="fakeScareEye"><i></i></div>
+  <div class="fake-scare-shadow" id="fakeScareShadow"></div>
+</div>
 <div class="scare" id="scare" aria-hidden="true">
   <div class="scare-flash"></div>
   <div id="scareArt"></div>
@@ -888,7 +951,7 @@ var state={
   egg:null,roamers:{reaper:null,wolf:null},anomaly:null,score:0,cleared:0,anomaliesFound:0,falseReports:0,
   director:{tension:0,calm:0,lastEvent:'none'},
   blackout:false,blackoutElapsed:0,blackoutKillAt:0,cameraSwitchUntil:0,officeLook:'center',
-  nextDreadCue:12,signalToken:0
+  nextDreadCue:12,signalToken:0,nextFakeScare:34,fakeScareActive:false,fakeScareToken:0
 };
 var audioCtx=null;
 
@@ -902,6 +965,7 @@ var els={
   ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),
   special:$('specialBtn'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
+  fakeScare:$('fakeScare'),fakeScareText:$('fakeScareText'),fakeScareEye:$('fakeScareEye'),fakeScareShadow:$('fakeScareShadow'),
   scare:$('scare'),scareArt:$('scareArt'),scareName:$('scareName'),
   powerEnding:$('powerEnding'),powerReaper:$('powerReaper'),powerMaiden:$('powerMaiden'),powerEgg:$('powerEgg'),powerFinal:$('powerFinal')
 };
@@ -955,6 +1019,7 @@ function sound(kind,side){
   else if(kind==='frost'){tone(1280,.12,'sine',.012,pan);noise(.2,.018,pan)}
   else if(kind==='school'){tone(48,.55,'sine',.011,pan);setTimeout(function(){noise(.13,.008,pan)},170)}
   else if(kind==='buzz'){tone(96,.07,'square',.006,pan);setTimeout(function(){tone(82,.05,'square',.004,pan)},95)}
+  else if(kind==='fake'){noise(.16,.055,pan);tone(52,.28,'sawtooth',.025,pan);setTimeout(function(){tone(116,.06,'square',.012,pan)},85)}
 }
 function svg(type){
   var map={dokkaebi:0,yuki:1,maiden:2,egg:3,reaper:4,wolf:5};
@@ -1099,6 +1164,46 @@ function updateDreadAtmosphere(){
     els.cameraView.classList.add('micro-flicker');
     setTimeout(function(){els.cameraView.classList.remove('micro-flicker')},180+Math.random()*260)
   }
+}
+function fakeScareSafe(){
+  if(state.gameOver||state.blackout||state.paused||state.fakeScareActive)return false;
+  if(state.maiden&&state.maiden.active&&currentMaidenCam()==='office')return false;
+  var rr=state.roamers||{};
+  if((rr.wolf&&rr.wolf.location==='office')||(rr.reaper&&rr.reaper.location==='office'))return false;
+  if(state.egg&&state.egg.stare>58)return false;
+  if(state.yuki&&state.yuki.location==='japan'&&state.yuki.frost>84)return false;
+  return true
+}
+function scheduleNextFakeScare(){
+  var phase=nightVisualPhase(),base=[32,24,17,12][phase]||30,spread=[24,18,15,12][phase]||20;
+  if(state.mode==='practice')base+=10;
+  state.nextFakeScare=state.elapsed+base+Math.random()*spread
+}
+function clearFakeScare(token){
+  if(token!==state.fakeScareToken)return;
+  state.fakeScareActive=false;
+  els.fakeScare.className='fake-scare';
+  els.fakeScare.setAttribute('aria-hidden','true');
+  els.fakeScareText.textContent=''
+}
+function triggerFakeScare(){
+  if(!fakeScareSafe()){state.nextFakeScare=state.elapsed+3+Math.random()*4;return}
+  var phase=nightVisualPhase(),types=phase===0?['text','signal']:phase===1?['text','eye','signal']:['text','eye','signal','shadow'];
+  var type=types[Math.floor(Math.random()*types.length)],token=++state.fakeScareToken;
+  var messages=['나를 봤니?','거기 있구나','뒤를 보지 마','아직도 보고 있니?','문을 열어','나 여기 있어'];
+  state.fakeScareActive=true;
+  els.fakeScare.setAttribute('aria-hidden','false');
+  els.fakeScareText.textContent='';
+  els.fakeScare.className='fake-scare show type-'+type;
+  if(type==='text')els.fakeScareText.textContent=messages[Math.floor(Math.random()*messages.length)];
+  else if(type==='signal')els.fakeScareText.textContent=Math.random()<.5?'UNKNOWN INPUT':'신호가 아닙니다';
+  sound('fake',Math.random()<.5?'left':'right');
+  var duration=type==='eye'?360+Math.random()*180:type==='shadow'?230+Math.random()*140:420+Math.random()*220;
+  setTimeout(function(){clearFakeScare(token)},duration);
+  scheduleNextFakeScare()
+}
+function updateFakeScare(){
+  if(state.elapsed>=state.nextFakeScare)triggerFakeScare()
 }
 function roomPropsVisible(){
   var show=state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive;
@@ -1485,7 +1590,7 @@ function tick(now){
     if(state.elapsed>=state.duration){win();requestAnimationFrame(tick);return}
     if(state.blackout)updateBlackout(dt);
     else{
-      drainPower(dt);updateGhosts(dt);updateAnomaly(dt);updateDirector(dt);updateDreadAtmosphere();
+      drainPower(dt);updateGhosts(dt);updateAnomaly(dt);updateDirector(dt);updateDreadAtmosphere();updateFakeScare();
       if(state.elapsed>=state.nextEvent)scheduleEvent()
     }
     updateHUD();updateOffice();if(state.cameraOpen)renderCamera()
@@ -1499,14 +1604,15 @@ function reset(mode){
   state.gameOver=false;state.discovered=Object.assign({},known);state.observed=Object.assign({},saved.observed||{});state.mastered=Object.assign({},saved.mastered||{});
   state.masteryCount=Object.assign({},saved.masteryCount||{});state.encounters={};state.nextEvent=10+Math.random()*5;
   state.anomaly=null;state.score=0;state.cleared=0;state.anomaliesFound=0;state.falseReports=0;
-  state.director={tension:0,calm:0,lastEvent:'none'};state.blackout=false;state.blackoutElapsed=0;state.blackoutKillAt=0;state.cameraSwitchUntil=0;state.officeLook='center';state.nextDreadCue=12+Math.random()*8;state.signalToken=0;
+  state.director={tension:0,calm:0,lastEvent:'none'};state.blackout=false;state.blackoutElapsed=0;state.blackoutKillAt=0;state.cameraSwitchUntil=0;state.officeLook='center';state.nextDreadCue=12+Math.random()*8;state.signalToken=0;state.nextFakeScare=30+Math.random()*24;state.fakeScareActive=false;state.fakeScareToken=0;
   initializePersistentGhosts();state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');
   els.scare.className='scare';els.scare.setAttribute('aria-hidden','true');
   els.powerEnding.className='power-ending';els.powerEnding.setAttribute('aria-hidden','true');
   document.getElementById('app').classList.remove('power-dead','low-seal','critical-seal');
   els.signalIntrusion.className='signal-intrusion';els.signalIntrusion.innerHTML='';
-  els.presenceLayer.innerHTML='';els.presenceLayer.className='presence-layer'
+  els.presenceLayer.innerHTML='';els.presenceLayer.className='presence-layer';
+  els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');els.fakeScareText.textContent=''
 }
 function start(mode){
   ensureAudio();els.intro.classList.remove('show');reset(mode);window.KidscadeGame?.start?.({mode:mode});
@@ -1515,6 +1621,7 @@ function start(mode){
 }
 function fail(id){
   if(state.gameOver)return;
+  state.fakeScareToken++;state.fakeScareActive=false;els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');
   if(id!=='power')discover(id);
   state.gameOver=true;state.paused=true;state.running=false;
   window.KidscadeGame?.gameOver?.({score:state.score,cleared:false,reason:id});
