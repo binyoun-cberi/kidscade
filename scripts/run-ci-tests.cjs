@@ -36,7 +36,7 @@ const TEST_FILES = [
   "tests/wordchain-realtime-v2.test.mjs",
   "tests/history-live.test.mjs",
   "tests/rhythm-dash-v11.test.cjs",
-  "tests/alien-pizza-dx2.test.cjs",
+  "tests/alien-pizza-dx2.test.cjs",\n  "tests/fraction-smith.test.cjs",
   "tests/maratang-selfbar.test.cjs",
   "tests/bunsik-kitchen.test.cjs",
   "tests/deep-diver-2d.test.cjs",
