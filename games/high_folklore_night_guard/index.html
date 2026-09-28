@@ -613,7 +613,8 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
     <p>할로윈 행사가 끝난 학교. 모두 하교한 뒤 빈 교실과 복도에서 이상 현상이 시작됐습니다. 야간 경비실의 CCTV와 문·조명 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
     <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력, 도감 장비 아이콘"><div class="rules-box">
       <b>야간 경비 원칙</b><br>
-      근무에 배치된 존재는 <b>처음부터 학교 어딘가에 있으며 사라지지 않습니다.</b><br>\n      CCTV로 “언제 나타났나”가 아니라 <b>“지금 어디에 있나”</b>를 추적하고, 서로 다른 대응 규칙을 구분하세요.
+      근무에 배치된 존재는 <b>처음부터 학교 어딘가에 있으며 사라지지 않습니다.</b><br>
+      CCTV로 “언제 나타났나”가 아니라 <b>“지금 어디에 있나”</b>를 추적하고, 서로 다른 대응 규칙을 구분하세요.
     </div>
     <div class="mode-grid">
       <button class="mode" data-mode="practice" type="button"><b>연습 근무</b><small>도깨비 · 유키온나<br>3분 · CCTV와 이상 기록 연습</small></button>
@@ -1399,7 +1400,9 @@ function startPowerEnding(){
     showResult(false,'power');
   },4380);
 }
-function win(){\n  if(state.gameOver)return;state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)\n}
+function win(){
+  if(state.gameOver)return;state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)
+}
 function quizHtml(){
   var q=[
     {q:'눈과 추위와 관련된 일본 전승의 존재는?',a:['도깨비','유키온나','저승사자'],ok:1},
