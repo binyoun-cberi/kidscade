@@ -42,12 +42,17 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(byId(sourceCatalog, 'high_kite_wind_rider').description, /기록형/);
 
   const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/3D 전개도 마스터.html'), 'utf8');
-  assert.match(blocks, /쌓기나무 3x3x3 관찰기/);
-  assert.match(blocks, /위에서 본 모양/);
-  assert.match(blocks, /앞에서 본 모양/);
-  assert.match(blocks, /옆에서 본 모양/);
-  assert.match(byId(sourceCatalog, 'cube3d').description, /3×3×3/);
-  assert.match(byId(sourceCatalog, 'cube3d').description, /위·앞·옆/);
+  const architect = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect.js'), 'utf8');
+  assert.match(blocks, /CUBE/);
+  assert.match(blocks, /설계도 챌린지/);
+  assert.match(blocks, /전개도 연구실/);
+  assert.match(blocks, /아키텍트 월드/);
+  assert.match(architect, /겨냥도/);
+  assert.match(architect, /foldPreview/);
+  assert.match(architect, /saveFreeWorld/);
+  assert.match(byId(sourceCatalog, 'cube3d').title, /큐브 아키텍트/);
+  assert.match(byId(sourceCatalog, 'cube3d').description, /겨냥도/);
+  assert.match(byId(sourceCatalog, 'cube3d').description, /자유 건축/);
 });
 
 test('Cloudflare artifact preserves the source card descriptions', () => {
