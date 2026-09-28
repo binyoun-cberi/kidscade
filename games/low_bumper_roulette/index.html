@@ -1,102 +1,2985 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>범퍼 룰렛 레이스</title>
-<style>
-:root{color-scheme:dark;--ink:#20263a;--yellow:#ffd84d}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;background:#15203a;color:white}
-button,textarea,select{font:inherit}button{border:0;cursor:pointer}
-#app{position:relative;width:100%;height:100%;min-height:360px;overflow:hidden;background:radial-gradient(circle at 15% 10%,rgba(89,200,255,.32),transparent 32%),radial-gradient(circle at 85% 5%,rgba(255,111,145,.26),transparent 28%),linear-gradient(180deg,#233a69 0%,#15203a 70%)}
-#game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#hud{position:absolute;left:14px;right:14px;top:12px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:space-between;pointer-events:none}
-.badge{padding:8px 12px;border-radius:999px;background:rgba(20,29,53,.72);backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;font-weight:900}
-#raceStatus{max-width:min(60vw,620px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
-#menuBtn{pointer-events:auto;min-width:46px;height:42px;padding:0 13px;border-radius:15px;background:rgba(20,29,53,.84);color:white;font-weight:950}
-.overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(12,18,34,.76);backdrop-filter:blur(5px)}
-.hidden{display:none!important}
-.panel{width:min(770px,95vw);max-height:93vh;overflow:auto;border-radius:30px;padding:24px;background:linear-gradient(180deg,#fffdf7,#fff6d8);color:var(--ink);box-shadow:0 30px 100px rgba(0,0,0,.38)}
-h1,h2,p{margin-top:0}h1{font-size:clamp(39px,7vw,68px);line-height:1;margin-bottom:8px;letter-spacing:-.04em}.lead{color:#59647a;font-weight:750;line-height:1.55;margin-bottom:16px}
-.setupGrid{display:grid;grid-template-columns:1.45fr .75fr;gap:14px;align-items:stretch}
-.namesBox{display:flex;flex-direction:column;gap:8px}label{font-size:13px;font-weight:900;color:#525d71}
-textarea{width:100%;min-height:250px;resize:vertical;border:3px solid #dfe5ee;border-radius:18px;padding:14px;background:white;color:var(--ink);line-height:1.55;outline:none}
-textarea:focus{border-color:#6c9eff;box-shadow:0 0 0 4px rgba(108,158,255,.15)}
-.sideCard{display:flex;flex-direction:column;gap:10px;border:2px solid #e5dfca;border-radius:20px;padding:14px;background:rgba(255,255,255,.65)}
-.sideCard h3{margin:0;font-size:16px}.miniBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mini{border-radius:14px;padding:10px 11px;background:#e8edf5;color:var(--ink);font-weight:900}
-.field{display:flex;flex-direction:column;gap:6px}.field select{width:100%;border:2px solid #d9dfeb;border-radius:14px;padding:11px;background:white;color:var(--ink)}
-.tip{font-size:12px;color:#6a7385;line-height:1.5}
-.primary,.secondary{width:100%;border-radius:18px;padding:14px 16px;font-weight:1000}.primary{margin-top:15px;background:linear-gradient(180deg,#ffe66d,#ffd02d);color:#2b2b2b;font-size:19px;box-shadow:0 7px 0 #d7a818}.primary:active{transform:translateY(3px);box-shadow:0 4px 0 #d7a818}.secondary{margin-top:9px;background:#e4eaf3;color:var(--ink)}
-.counter{font-variant-numeric:tabular-nums}.resultNames{display:grid;gap:10px;margin:18px 0}
-.resultRow{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:18px;background:white;border:2px solid #e2e7ee;font-weight:950;font-size:18px}
-.medal{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#ffe59b;font-size:23px}
-#bigWinner{font-size:clamp(34px,6vw,58px);font-weight:1000;line-height:1.12;margin:10px 0 4px;color:#ff5d7c;word-break:keep-all}
-#countdown{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:10;font-size:clamp(72px,16vw,160px);font-weight:1000;text-shadow:0 10px 28px rgba(0,0,0,.35);pointer-events:none}
-#toast{position:absolute;left:50%;top:15%;transform:translateX(-50%);z-index:9;padding:8px 14px;border-radius:999px;background:rgba(20,29,53,.82);font-weight:950;opacity:0;transition:opacity .15s;pointer-events:none}
-#toast.show{opacity:1}
-@media(max-width:680px){.panel{padding:18px;border-radius:23px}.setupGrid{grid-template-columns:1fr}.sideCard{padding:12px}textarea{min-height:150px}.badge{font-size:11px;padding:7px 9px}#hud{top:8px;left:8px;right:8px;gap:6px}#menuBtn{height:38px;min-width:42px}}
-@media(prefers-reduced-motion:reduce){#toast{transition:none}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>엎치락뒤치락 범퍼 룰렛</title>
+    <!-- Tailwind 유틸리티 CSS를 파일 내부에 정적으로 포함하여 학교망에서도 UI가 유지됩니다. -->
+    <style id="tailwind-static">
+/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+    --color-red-300: oklch(80.8% 0.114 19.571);
+    --color-red-400: oklch(70.4% 0.191 22.216);
+    --color-red-500: oklch(63.7% 0.237 25.331);
+    --color-red-600: oklch(57.7% 0.245 27.325);
+    --color-red-700: oklch(50.5% 0.213 27.518);
+    --color-red-800: oklch(44.4% 0.177 26.899);
+    --color-red-900: oklch(39.6% 0.141 25.723);
+    --color-orange-500: oklch(70.5% 0.213 47.604);
+    --color-orange-600: oklch(64.6% 0.222 41.116);
+    --color-yellow-300: oklch(90.5% 0.182 98.111);
+    --color-yellow-400: oklch(85.2% 0.199 91.936);
+    --color-yellow-500: oklch(79.5% 0.184 86.047);
+    --color-blue-500: oklch(62.3% 0.214 259.815);
+    --color-gray-200: oklch(92.8% 0.006 264.531);
+    --color-gray-300: oklch(87.2% 0.01 258.338);
+    --color-gray-400: oklch(70.7% 0.022 261.325);
+    --color-gray-500: oklch(55.1% 0.027 264.364);
+    --color-gray-600: oklch(44.6% 0.03 256.802);
+    --color-gray-700: oklch(37.3% 0.034 259.733);
+    --color-gray-800: oklch(27.8% 0.033 256.848);
+    --color-gray-900: oklch(21% 0.034 264.665);
+    --color-black: #000;
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --container-2xl: 42rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: calc(1 / 0.75);
+    --text-sm: 0.875rem;
+    --text-sm--line-height: calc(1.25 / 0.875);
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
+    --text-lg: 1.125rem;
+    --text-lg--line-height: calc(1.75 / 1.125);
+    --text-xl: 1.25rem;
+    --text-xl--line-height: calc(1.75 / 1.25);
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: calc(2 / 1.5);
+    --text-3xl: 1.875rem;
+    --text-3xl--line-height: calc(2.25 / 1.875);
+    --text-7xl: 4.5rem;
+    --text-7xl--line-height: 1;
+    --text-9xl: 8rem;
+    --text-9xl--line-height: 1;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --tracking-wide: 0.025em;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --drop-shadow-md: 0 3px 3px rgb(0 0 0 / 0.12);
+    --drop-shadow-2xl: 0 25px 25px rgb(0 0 0 / 0.15);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    --default-transition-duration: 150ms;
+    --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden="until-found"])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .pointer-events-auto {
+    pointer-events: auto;
+  }
+  .pointer-events-none {
+    pointer-events: none;
+  }
+  .absolute {
+    position: absolute;
+  }
+  .inset-0 {
+    inset: calc(var(--spacing) * 0);
+  }
+  .top-1\/4 {
+    top: calc(1/4 * 100%);
+  }
+  .top-4 {
+    top: calc(var(--spacing) * 4);
+  }
+  .right-4 {
+    right: calc(var(--spacing) * 4);
+  }
+  .left-1\/2 {
+    left: calc(1/2 * 100%);
+  }
+  .left-4 {
+    left: calc(var(--spacing) * 4);
+  }
+  .z-10 {
+    z-index: 10;
+  }
+  .z-50 {
+    z-index: 50;
+  }
+  .mx-4 {
+    margin-inline: calc(var(--spacing) * 4);
+  }
+  .mt-1 {
+    margin-top: calc(var(--spacing) * 1);
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-3 {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .mb-2 {
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+  .mb-3 {
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+  .mb-6 {
+    margin-bottom: calc(var(--spacing) * 6);
+  }
+  .ml-auto {
+    margin-left: auto;
+  }
+  .block {
+    display: block;
+  }
+  .flex {
+    display: flex;
+  }
+  .grid {
+    display: grid;
+  }
+  .hidden {
+    display: none;
+  }
+  .h-3 {
+    height: calc(var(--spacing) * 3);
+  }
+  .h-5 {
+    height: calc(var(--spacing) * 5);
+  }
+  .max-h-\[85vh\] {
+    max-height: 85vh;
+  }
+  .max-h-\[90vh\] {
+    max-height: 90vh;
+  }
+  .min-h-\[1rem\] {
+    min-height: 1rem;
+  }
+  .w-3 {
+    width: calc(var(--spacing) * 3);
+  }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
+  .w-5 {
+    width: calc(var(--spacing) * 5);
+  }
+  .w-6 {
+    width: calc(var(--spacing) * 6);
+  }
+  .w-8 {
+    width: calc(var(--spacing) * 8);
+  }
+  .w-20 {
+    width: calc(var(--spacing) * 20);
+  }
+  .w-40 {
+    width: calc(var(--spacing) * 40);
+  }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
+  }
+  .w-full {
+    width: 100%;
+  }
+  .max-w-2xl {
+    max-width: var(--container-2xl);
+  }
+  .min-w-0 {
+    min-width: calc(var(--spacing) * 0);
+  }
+  .flex-1 {
+    flex: 1;
+  }
+  .shrink-0 {
+    flex-shrink: 0;
+  }
+  .-translate-x-1\/2 {
+    --tw-translate-x: calc(calc(1/2 * 100%) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+  .-translate-y-1\/2 {
+    --tw-translate-y: calc(calc(1/2 * 100%) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+  .scale-95 {
+    --tw-scale-x: 95%;
+    --tw-scale-y: 95%;
+    --tw-scale-z: 95%;
+    scale: var(--tw-scale-x) var(--tw-scale-y);
+  }
+  .scale-125 {
+    --tw-scale-x: 125%;
+    --tw-scale-y: 125%;
+    --tw-scale-z: 125%;
+    scale: var(--tw-scale-x) var(--tw-scale-y);
+  }
+  .transform {
+    transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .animate-pulse {
+    animation: var(--animate-pulse);
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .cursor-wait {
+    cursor: wait;
+  }
+  .resize-none {
+    resize: none;
+  }
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  .flex-col {
+    flex-direction: column;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .gap-2 {
+    gap: calc(var(--spacing) * 2);
+  }
+  .gap-3 {
+    gap: calc(var(--spacing) * 3);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .space-y-2 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 2) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
+  .self-center {
+    align-self: center;
+  }
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  .overflow-y-auto {
+    overflow-y: auto;
+  }
+  .rounded-2xl {
+    border-radius: var(--radius-2xl);
+  }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
+  }
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
+  .border-2 {
+    border-style: var(--tw-border-style);
+    border-width: 2px;
+  }
+  .border-b {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+  }
+  .border-l-4 {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+  }
+  .border-gray-600 {
+    border-color: var(--color-gray-600);
+  }
+  .border-gray-700 {
+    border-color: var(--color-gray-700);
+  }
+  .border-yellow-500 {
+    border-color: var(--color-yellow-500);
+  }
+  .bg-black {
+    background-color: var(--color-black);
+  }
+  .bg-gray-700 {
+    background-color: var(--color-gray-700);
+  }
+  .bg-gray-800 {
+    background-color: var(--color-gray-800);
+  }
+  .bg-gray-900 {
+    background-color: var(--color-gray-900);
+  }
+  .bg-red-600 {
+    background-color: var(--color-red-600);
+  }
+  .bg-red-800 {
+    background-color: var(--color-red-800);
+  }
+  .bg-red-900 {
+    background-color: var(--color-red-900);
+  }
+  .bg-gradient-to-r {
+    --tw-gradient-position: to right in oklab;
+    background-image: linear-gradient(var(--tw-gradient-stops));
+  }
+  .from-yellow-500 {
+    --tw-gradient-from: var(--color-yellow-500);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+  .to-orange-600 {
+    --tw-gradient-to: var(--color-orange-600);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+  .p-2 {
+    padding: calc(var(--spacing) * 2);
+  }
+  .p-3 {
+    padding: calc(var(--spacing) * 3);
+  }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .p-6 {
+    padding: calc(var(--spacing) * 6);
+  }
+  .px-1\.5 {
+    padding-inline: calc(var(--spacing) * 1.5);
+  }
+  .px-2 {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+  .px-6 {
+    padding-inline: calc(var(--spacing) * 6);
+  }
+  .px-8 {
+    padding-inline: calc(var(--spacing) * 8);
+  }
+  .py-0\.5 {
+    padding-block: calc(var(--spacing) * 0.5);
+  }
+  .py-1 {
+    padding-block: calc(var(--spacing) * 1);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
+  }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
+  }
+  .pb-1 {
+    padding-bottom: calc(var(--spacing) * 1);
+  }
+  .pl-8 {
+    padding-left: calc(var(--spacing) * 8);
+  }
+  .text-center {
+    text-align: center;
+  }
+  .text-left {
+    text-align: left;
+  }
+  .text-2xl {
+    font-size: var(--text-2xl);
+    line-height: var(--tw-leading, var(--text-2xl--line-height));
+  }
+  .text-7xl {
+    font-size: var(--text-7xl);
+    line-height: var(--tw-leading, var(--text-7xl--line-height));
+  }
+  .text-base {
+    font-size: var(--text-base);
+    line-height: var(--tw-leading, var(--text-base--line-height));
+  }
+  .text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+  }
+  .text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--tw-leading, var(--text-xl--line-height));
+  }
+  .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+  }
+  .text-\[10px\] {
+    font-size: 10px;
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .font-extrabold {
+    --tw-font-weight: var(--font-weight-extrabold);
+    font-weight: var(--font-weight-extrabold);
+  }
+  .font-medium {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+  }
+  .tracking-wide {
+    --tw-tracking: var(--tracking-wide);
+    letter-spacing: var(--tracking-wide);
+  }
+  .whitespace-nowrap {
+    white-space: nowrap;
+  }
+  .text-gray-200 {
+    color: var(--color-gray-200);
+  }
+  .text-gray-300 {
+    color: var(--color-gray-300);
+  }
+  .text-gray-400 {
+    color: var(--color-gray-400);
+  }
+  .text-gray-500 {
+    color: var(--color-gray-500);
+  }
+  .text-gray-600 {
+    color: var(--color-gray-600);
+  }
+  .text-red-300 {
+    color: var(--color-red-300);
+  }
+  .text-red-400 {
+    color: var(--color-red-400);
+  }
+  .text-red-500 {
+    color: var(--color-red-500);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .text-yellow-300 {
+    color: var(--color-yellow-300);
+  }
+  .text-yellow-400 {
+    color: var(--color-yellow-400);
+  }
+  .opacity-50 {
+    opacity: 50%;
+  }
+  .opacity-70 {
+    opacity: 70%;
+  }
+  .opacity-90 {
+    opacity: 90%;
+  }
+  .shadow-2xl {
+    --tw-shadow: 0 25px 50px -12px var(--tw-shadow-color, rgb(0 0 0 / 0.25));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-inner {
+    --tw-shadow: inset 0 2px 4px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.05));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-lg {
+    --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-md {
+    --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 2px 4px -2px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .drop-shadow-2xl {
+    --tw-drop-shadow-size: drop-shadow(0 25px 25px var(--tw-drop-shadow-color, rgb(0 0 0 / 0.15)));
+    --tw-drop-shadow: drop-shadow(var(--drop-shadow-2xl));
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+  .drop-shadow-md {
+    --tw-drop-shadow-size: drop-shadow(0 3px 3px var(--tw-drop-shadow-color, rgb(0 0 0 / 0.12)));
+    --tw-drop-shadow: drop-shadow(var(--drop-shadow-md));
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+  .grayscale {
+    --tw-grayscale: grayscale(100%);
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+  .transition {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, -webkit-backdrop-filter, backdrop-filter, display, visibility, content-visibility, overlay, pointer-events;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-opacity {
+    transition-property: opacity;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-transform {
+    transition-property: transform, translate, scale, rotate;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .duration-300 {
+    --tw-duration: 300ms;
+    transition-duration: 300ms;
+  }
+  .ease-out {
+    --tw-ease: var(--ease-out);
+    transition-timing-function: var(--ease-out);
+  }
+  .select-none {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .hover\:scale-100 {
+    &:hover {
+      @media (hover: hover) {
+        --tw-scale-x: 100%;
+        --tw-scale-y: 100%;
+        --tw-scale-z: 100%;
+        scale: var(--tw-scale-x) var(--tw-scale-y);
+      }
+    }
+  }
+  .hover\:scale-105 {
+    &:hover {
+      @media (hover: hover) {
+        --tw-scale-x: 105%;
+        --tw-scale-y: 105%;
+        --tw-scale-z: 105%;
+        scale: var(--tw-scale-x) var(--tw-scale-y);
+      }
+    }
+  }
+  .hover\:bg-gray-600 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-gray-600);
+      }
+    }
+  }
+  .hover\:bg-red-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-red-700);
+      }
+    }
+  }
+  .hover\:from-yellow-400 {
+    &:hover {
+      @media (hover: hover) {
+        --tw-gradient-from: var(--color-yellow-400);
+        --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+      }
+    }
+  }
+  .hover\:to-orange-500 {
+    &:hover {
+      @media (hover: hover) {
+        --tw-gradient-to: var(--color-orange-500);
+        --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+      }
+    }
+  }
+  .focus\:ring-2 {
+    &:focus {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus\:ring-blue-500 {
+    &:focus {
+      --tw-ring-color: var(--color-blue-500);
+    }
+  }
+  .focus\:ring-yellow-500 {
+    &:focus {
+      --tw-ring-color: var(--color-yellow-500);
+    }
+  }
+  .focus\:outline-none {
+    &:focus {
+      --tw-outline-style: none;
+      outline-style: none;
+    }
+  }
+  .active\:scale-95 {
+    &:active {
+      --tw-scale-x: 95%;
+      --tw-scale-y: 95%;
+      --tw-scale-z: 95%;
+      scale: var(--tw-scale-x) var(--tw-scale-y);
+    }
+  }
+  .md\:right-8 {
+    @media (width >= 48rem) {
+      right: calc(var(--spacing) * 8);
+    }
+  }
+  .md\:mt-8 {
+    @media (width >= 48rem) {
+      margin-top: calc(var(--spacing) * 8);
+    }
+  }
+  .md\:h-4 {
+    @media (width >= 48rem) {
+      height: calc(var(--spacing) * 4);
+    }
+  }
+  .md\:h-6 {
+    @media (width >= 48rem) {
+      height: calc(var(--spacing) * 6);
+    }
+  }
+  .md\:w-4 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 4);
+    }
+  }
+  .md\:w-6 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 6);
+    }
+  }
+  .md\:w-8 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 8);
+    }
+  }
+  .md\:w-12 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 12);
+    }
+  }
+  .md\:w-48 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 48);
+    }
+  }
+  .md\:w-64 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 64);
+    }
+  }
+  .md\:grid-cols-2 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .md\:gap-3 {
+    @media (width >= 48rem) {
+      gap: calc(var(--spacing) * 3);
+    }
+  }
+  .md\:gap-4 {
+    @media (width >= 48rem) {
+      gap: calc(var(--spacing) * 4);
+    }
+  }
+  .md\:gap-6 {
+    @media (width >= 48rem) {
+      gap: calc(var(--spacing) * 6);
+    }
+  }
+  .md\:p-3 {
+    @media (width >= 48rem) {
+      padding: calc(var(--spacing) * 3);
+    }
+  }
+  .md\:p-4 {
+    @media (width >= 48rem) {
+      padding: calc(var(--spacing) * 4);
+    }
+  }
+  .md\:p-8 {
+    @media (width >= 48rem) {
+      padding: calc(var(--spacing) * 8);
+    }
+  }
+  .md\:px-2 {
+    @media (width >= 48rem) {
+      padding-inline: calc(var(--spacing) * 2);
+    }
+  }
+  .md\:py-1 {
+    @media (width >= 48rem) {
+      padding-block: calc(var(--spacing) * 1);
+    }
+  }
+  .md\:py-4 {
+    @media (width >= 48rem) {
+      padding-block: calc(var(--spacing) * 4);
+    }
+  }
+  .md\:text-2xl {
+    @media (width >= 48rem) {
+      font-size: var(--text-2xl);
+      line-height: var(--tw-leading, var(--text-2xl--line-height));
+    }
+  }
+  .md\:text-3xl {
+    @media (width >= 48rem) {
+      font-size: var(--text-3xl);
+      line-height: var(--tw-leading, var(--text-3xl--line-height));
+    }
+  }
+  .md\:text-9xl {
+    @media (width >= 48rem) {
+      font-size: var(--text-9xl);
+      line-height: var(--tw-leading, var(--text-9xl--line-height));
+    }
+  }
+  .md\:text-base {
+    @media (width >= 48rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+  }
+  .md\:text-lg {
+    @media (width >= 48rem) {
+      font-size: var(--text-lg);
+      line-height: var(--tw-leading, var(--text-lg--line-height));
+    }
+  }
+  .md\:text-sm {
+    @media (width >= 48rem) {
+      font-size: var(--text-sm);
+      line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+  }
+  .md\:text-xl {
+    @media (width >= 48rem) {
+      font-size: var(--text-xl);
+      line-height: var(--tw-leading, var(--text-xl--line-height));
+    }
+  }
+  .md\:text-xs {
+    @media (width >= 48rem) {
+      font-size: var(--text-xs);
+      line-height: var(--tw-leading, var(--text-xs--line-height));
+    }
+  }
+}
+@property --tw-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-scale-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-scale-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-scale-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-rotate-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-z {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-gradient-position {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-gradient-from {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+@property --tw-gradient-via {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+@property --tw-gradient-to {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+@property --tw-gradient-stops {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-gradient-via-stops {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-gradient-from-position {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+@property --tw-gradient-via-position {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --tw-gradient-to-position {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-blur {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-brightness {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-contrast {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-grayscale {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-hue-rotate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-invert {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-opacity {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-saturate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-sepia {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-drop-shadow-size {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ease {
+  syntax: "*";
+  inherits: false;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-translate-x: 0;
+      --tw-translate-y: 0;
+      --tw-translate-z: 0;
+      --tw-scale-x: 1;
+      --tw-scale-y: 1;
+      --tw-scale-z: 1;
+      --tw-rotate-x: initial;
+      --tw-rotate-y: initial;
+      --tw-rotate-z: initial;
+      --tw-skew-x: initial;
+      --tw-skew-y: initial;
+      --tw-space-y-reverse: 0;
+      --tw-border-style: solid;
+      --tw-gradient-position: initial;
+      --tw-gradient-from: #0000;
+      --tw-gradient-via: #0000;
+      --tw-gradient-to: #0000;
+      --tw-gradient-stops: initial;
+      --tw-gradient-via-stops: initial;
+      --tw-gradient-from-position: 0%;
+      --tw-gradient-via-position: 50%;
+      --tw-gradient-to-position: 100%;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-blur: initial;
+      --tw-brightness: initial;
+      --tw-contrast: initial;
+      --tw-grayscale: initial;
+      --tw-hue-rotate: initial;
+      --tw-invert: initial;
+      --tw-opacity: initial;
+      --tw-saturate: initial;
+      --tw-sepia: initial;
+      --tw-drop-shadow: initial;
+      --tw-drop-shadow-color: initial;
+      --tw-drop-shadow-alpha: 100%;
+      --tw-drop-shadow-size: initial;
+      --tw-duration: initial;
+      --tw-ease: initial;
+    }
+  }
+}
+
+    </style>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; font-family: 'Pretendard', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .leaderboard-item {
+            transition: all 0.3s ease;
+        }
+
+        #leaderboard-panel {
+            transition: opacity 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            #leaderboard-panel {
+                opacity: 0.4;
+                width: auto;
+                min-width: 140px;
+            }
+            #leaderboard-panel:hover, #leaderboard-panel:active {
+                opacity: 1;
+            }
+        }
+
+        #win-log {
+            max-height: 60vh;
+            overflow-y: hidden;
+        }
+        .win-item {
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        #countdown-display {
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+        
+        #debug-panel {
+            display: none;
+            border-color: #ef4444;
+        }
+
+        #setup-panel { overscroll-behavior: contain; }
+        .setting-option { min-height: 112px; }
+        .option-check {
+            width: 20px;
+            height: 20px;
+            flex: 0 0 auto;
+            accent-color: #f59e0b;
+            cursor: pointer;
+        }
+        .option-check.one-slot-check { accent-color: #10b981; }
+        .countdown-number-input:disabled {
+            opacity: .42;
+            cursor: not-allowed;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            filter: grayscale(.25);
+        }
+        /* Tailwind v3의 배경 투명도 표현을 정적 CSS에서도 동일하게 유지 */
+        .bg-black.bg-opacity-30 { background-color: rgba(0,0,0,.30); }
+        .bg-black.bg-opacity-80 { background-color: rgba(0,0,0,.80); }
+        .bg-gray-800.bg-opacity-30 { background-color: rgba(31,41,55,.30); }
+        .bg-gray-800.bg-opacity-50 { background-color: rgba(31,41,55,.50); }
+        .bg-gray-800.bg-opacity-60 { background-color: rgba(31,41,55,.60); }
+        .bg-gray-900.bg-opacity-35 { background-color: rgba(17,24,39,.35); }
+        .bg-red-900.bg-opacity-30 { background-color: rgba(127,29,29,.30); }
+        .setup-helper-row{display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 8px}
+        .setup-helper-btn{border:1px solid rgba(148,163,184,.35);background:rgba(30,41,59,.8);color:#e2e8f0;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:800}
+        .mode-card{border:1px solid rgba(100,116,139,.55);background:rgba(15,23,42,.42);border-radius:14px;padding:12px}
+        .mode-card label{display:block;font-size:12px;font-weight:800;color:#cbd5e1;margin-bottom:6px}
+        .mode-card select{width:100%;border:1px solid #475569;background:#1f2937;color:#fff;border-radius:9px;padding:9px}
+        .probability-hint{font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.45}
+        .teacher-tools-btn{border:1px solid rgba(248,113,113,.4);background:rgba(127,29,29,.18);color:#fca5a5;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:800}
+        #debug-panel.open{display:block}
+        @media (max-width: 640px) {
+            .setting-option { min-height: auto; }
+        }
+    </style>
 </head>
 <body>
-<div id="app" aria-label="범퍼 룰렛 레이스">
-  <canvas id="game"></canvas>
-  <div id="hud">
-    <div class="badge">🎡 범퍼 룰렛</div>
-    <div class="badge counter" id="raceStatus">준비 중 · 참가자 8명</div>
-    <button id="menuBtn" type="button" aria-label="설정 열기">☰</button>
-  </div>
-  <div id="toast"></div>
-  <div id="countdown" class="hidden">3</div>
-  <div id="menu" class="overlay">
-    <div class="panel">
-      <h1>범퍼 룰렛 레이스</h1>
-      <p class="lead">이름을 넣고 출발! 구슬이 범퍼에 통통 튕기며 내려가요. 결승선에 먼저 들어온 친구가 오늘의 당첨자!</p>
-      <div class="setupGrid">
-        <div class="namesBox">
-          <label for="names">참가자 이름 · 줄바꿈 또는 쉼표로 나눠 주세요</label>
-          <textarea id="names" spellcheck="false">1번
-2번
-3번
-4번
-5번
-6번
-7번
-8번</textarea>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer" class="flex flex-col items-center justify-center">
+        
+        <div id="setup-panel" class="glass-panel p-6 md:p-8 rounded-2xl shadow-2xl pointer-events-auto w-full max-w-2xl mx-4 transition-opacity duration-300 absolute z-10 max-h-[90vh] overflow-y-auto">
+            <h1 id="main-title" class="text-2xl md:text-3xl font-bold mb-6 text-center text-yellow-400 drop-shadow-md cursor-pointer select-none">🚀 엎치락뒤치락 범퍼 룰렛</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">학생 명단 (엔터로 구분)</label>
+                    <div class="setup-helper-row">
+                        <button type="button" id="load-classroom-btn" class="setup-helper-btn">👥 우리 반 불러오기</button>
+                        <button type="button" id="sample-names-btn" class="setup-helper-btn">예시 명단</button>
+                    </div>
+                    <textarea id="names-input" rows="8" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm md:text-base" placeholder="학생 이름을 한 줄에 한 명씩 입력"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">결과 슬롯 (엔터로 구분)</label>
+                    <textarea id="slots-input" rows="8" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm md:text-base">발표 당첨!
+통과
+통과
+질문하기
+통과</textarea>
+                    <p class="probability-hint">같은 결과를 여러 줄 넣으면 그 결과가 나올 영역이 넓어져 확률이 높아집니다.</p>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button type="button" id="open-debug-btn" class="teacher-tools-btn">🔒 교사 지정 결과</button>
+            </div>
+            <div id="debug-panel" class="mt-3 p-4 border-2 rounded-xl bg-red-900 bg-opacity-30">
+                <h3 class="text-red-400 font-bold mb-3 flex items-center gap-2">
+                    <span>🔒 교사 지정 결과</span>
+                    <button id="close-debug-btn" class="ml-auto text-xs bg-red-800 hover:bg-red-700 px-2 py-1 rounded text-white">닫기</button>
+                </h3>
+                <p class="text-xs text-gray-300 mb-3">필요한 경우 특정 학생이 들어갈 결과 함을 지정합니다. 지정된 구슬은 마지막 구간에서 실제 해당 함으로 유도됩니다.</p>
+                <div class="flex flex-col gap-2" id="cheat-list">
+                    <div class="flex gap-2 cheat-row">
+                        <input type="text" placeholder="학생 이름 (예: 김철수)" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+                        <span class="text-white self-center">👉</span>
+                        <input type="text" placeholder="강제 결과 (예: 발표 당첨!)" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+                    </div>
+                </div>
+                <button id="add-cheat-btn" class="mt-2 text-xs bg-gray-700 hover:bg-gray-600 w-full py-2 rounded text-gray-300 transition">+ 조작 대상 추가</button>
+            </div>
+            
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <section class="mode-card">
+                    <label for="game-purpose">게임 목적</label>
+                    <select id="game-purpose">
+                        <option value="winner">🏆 우승자 뽑기 · 1위 중심</option>
+                        <option value="assign">🎯 전체 결과 배정 · 모두 도착</option>
+                    </select>
+                    <p class="probability-hint" id="purpose-help">1위가 도착하면 설정한 시간 뒤 레이스를 종료합니다.</p>
+                </section>
+                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
+                    <label class="flex items-start gap-3 cursor-pointer select-none">
+                        <input type="checkbox" id="close-race" class="option-check mt-1" checked>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold text-gray-200">엎치락뒤치락 보정</span>
+                            <span class="block text-xs text-gray-400 mt-1">뒤처진 구슬을 조금 돕고 독주를 완화해 접전을 만듭니다.</span>
+                        </span>
+                    </label>
+                </section>
+                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
+                    <label class="flex items-start gap-3 cursor-pointer select-none">
+                        <input type="checkbox" id="use-countdown" class="option-check mt-1" checked>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold text-gray-200">1위 도착 후 카운트다운</span>
+                            <span class="block text-xs text-gray-400 mt-1">우승자 뽑기 모드에서만 사용합니다.</span>
+                        </span>
+                    </label>
+                    <div class="mt-3 flex items-center gap-2 pl-8">
+                        <label for="countdown-seconds" class="text-xs font-bold text-gray-400 whitespace-nowrap">종료까지</label>
+                        <input id="countdown-seconds" type="number" min="1" max="60" step="1" value="10" inputmode="numeric" class="countdown-number-input w-20 bg-gray-800 border border-gray-600 rounded-lg p-2 text-center text-white font-bold focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                        <span class="text-xs font-bold text-gray-400">초</span>
+                    </div>
+                </section>
+                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
+                    <label class="flex items-start gap-3 cursor-pointer select-none">
+                        <input type="checkbox" id="one-marble-per-slot" class="option-check one-slot-check mt-1">
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold text-gray-200">결과 중복 금지</span>
+                            <span class="block text-xs text-gray-400 mt-1">한 결과 함에는 한 명만 들어갑니다.</span>
+                        </span>
+                    </label>
+                    <p class="text-xs text-gray-500 mt-3 pl-8">전체 결과 배정에서 사용할 때 슬롯 수가 학생 수 이상이어야 합니다.</p>
+                </section>
+            </div>
+            <p class="text-xs text-gray-400 text-center mt-2">용수철은 각각 무작위로 1~3번 튕긴 뒤 사라집니다.</p>
+
+            <button id="start-btn" class="mt-6 md:mt-8 w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-lg">
+                범퍼 레이스 시작!
+            </button>
+            <p class="text-xs text-gray-400 text-center mt-4">충돌 효과음이 재생됩니다. 교실 볼륨을 확인해 주세요.</p>
+            <p id="engine-status" class="text-xs text-yellow-300 text-center mt-2 min-h-[1rem]"></p>
         </div>
-        <div class="sideCard">
-          <h3>빠른 설정</h3>
-          <div class="miniBtns">
-            <button class="mini" id="fill8" type="button">8명</button>
-            <button class="mini" id="fill20" type="button">20명</button>
-            <button class="mini" id="clearNames" type="button">비우기</button>
-            <button class="mini" id="shuffleNames" type="button">섞기</button>
-          </div>
-          <label class="field">몇 명을 뽑을까요?
-            <select id="winnerCount"><option value="1" selected>1명</option><option value="2">2명</option><option value="3">3명</option></select>
-          </label>
-          <label class="field">레이스 느낌
-            <select id="chaos"><option value="calm">차분하게</option><option value="normal" selected>통통하게 · 추천</option><option value="wild">와글와글</option></select>
-          </label>
-          <p class="tip">2~24명까지 참가할 수 있어요. 매 판 시작 위치와 튕김이 달라져 결과를 미리 알 수 없어요.</p>
+
+        <div id="hud" class="absolute inset-0 pointer-events-none hidden">
+            <div id="leaderboard-panel" class="absolute top-4 left-4 glass-panel p-3 md:p-4 rounded-xl w-40 md:w-48 pointer-events-auto">
+                <h3 class="text-yellow-400 font-bold mb-2 border-b border-gray-600 pb-1 text-sm md:text-base">🏆 현재 순위</h3>
+                <ul id="leaderboard-list" class="space-y-2 text-xs md:text-sm"></ul>
+            </div>
+
+            <div class="absolute top-4 right-4 md:right-8 w-48 md:w-64 flex flex-col gap-2" id="win-log">
+            </div>
+
+            <div id="countdown-display" class="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center hidden transition-all">
+                <span id="countdown-label" class="text-white text-lg md:text-2xl font-bold bg-red-600 px-4 py-1 rounded-full mb-2 shadow-lg animate-pulse whitespace-nowrap">1위 도착! 10초 후 종료</span>
+                <span id="countdown-number" class="text-7xl md:text-9xl font-extrabold text-red-500 opacity-90 drop-shadow-2xl">10</span>
+            </div>
         </div>
-      </div>
-      <button class="primary" id="startBtn" type="button">🎉 레이스 출발!</button>
+
+        <div id="result-modal" class="hidden absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center pointer-events-auto z-50 p-4">
+            <div class="glass-panel p-6 md:p-8 rounded-2xl text-center transform transition-transform scale-95 hover:scale-100 shadow-2xl border-yellow-500 border-2 w-full max-w-2xl max-h-[85vh] flex flex-col">
+                <h2 id="result-title" class="text-2xl md:text-3xl text-yellow-300 mb-6 font-bold shrink-0">🎉 최종 결과 🎉</h2>
+                <div id="result-list" class="flex-1 overflow-y-auto grid grid-cols-1 gap-2 md:gap-3 mb-6 pr-2 text-left">
+                </div>
+                <button id="reset-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 md:py-4 px-8 rounded-xl transition text-base md:text-lg w-full shrink-0">
+                    설정으로 돌아가기
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
-  <div id="result" class="overlay hidden">
-    <div class="panel" style="max-width:570px;text-align:center">
-      <div style="font-size:54px">🏆</div>
-      <h2 style="font-size:30px;margin-bottom:4px">당첨!</h2>
-      <div id="bigWinner"></div>
-      <p class="lead" id="resultText">범퍼 사이를 뚫고 가장 먼저 도착했어요!</p>
-      <div class="resultNames" id="resultNames"></div>
-      <button class="primary" id="againBtn" type="button">같은 이름으로 한 판 더!</button>
-      <button class="secondary" id="editBtn" type="button">이름 다시 고치기</button>
-    </div>
-  </div>
-</div>
-<script src="./game.js?v=1"></script>
+
+    <script>
+window.Gulliver = window.Gulliver || {
+  getClassroom(){
+    return { className:'키즈케이드', students:[] };
+  },
+  toast(message){
+    try { window.KidscadeGame?.toast?.(message); }
+    catch(_) { alert(message); }
+  },
+  mountShell(){}
+};
+</script>
+
+    <script src="vendor/matter.min.js"></script>
+    <script>
+        // --- 교사 지정 결과 관련 로직 ---
+        let cheatData = {}; 
+        
+        const titleEl = document.getElementById('main-title');
+        const debugPanel = document.getElementById('debug-panel');
+        
+        document.getElementById('open-debug-btn').addEventListener('click', () => {
+            debugPanel.classList.add('open');
+        });
+        document.getElementById('close-debug-btn').addEventListener('click', () => {
+            debugPanel.classList.remove('open');
+        });
+
+        document.getElementById('add-cheat-btn').addEventListener('click', () => {
+            const list = document.getElementById('cheat-list');
+            const newRow = document.createElement('div');
+            newRow.className = 'flex gap-2 cheat-row mt-2';
+            newRow.innerHTML = `
+                <input type="text" placeholder="학생 이름" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+                <span class="text-white self-center">👉</span>
+                <input type="text" placeholder="강제 결과" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+            `;
+            list.appendChild(newRow);
+        });
+
+        function parseCheatData() {
+            cheatData = {};
+            const rows = document.querySelectorAll('.cheat-row');
+            rows.forEach(row => {
+                const name = row.querySelector('.cheat-name').value.trim();
+                const res = row.querySelector('.cheat-result').value.trim();
+                if (name && res) {
+                    cheatData[name] = res; 
+                }
+            });
+            console.log("교사 지정 결과:", cheatData);
+        }
+
+        // --- 오디오 시스템 ---
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = AudioContextClass ? new AudioContextClass() : null;
+        let lastSoundTime = 0;
+
+        function playSound(type, velocity) {
+            if (!audioCtx) return;
+            const now = Date.now();
+            if (now - lastSoundTime < 50) return;
+            lastSoundTime = now;
+
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const vol = Math.min(Math.max(velocity / 20, 0.05), 0.3);
+
+            if (type === 'hit') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400 + Math.random() * 200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'bumper') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(vol * 2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                osc.type = 'square';
+                const notes = [440, 554, 659, 880]; 
+                notes.forEach((freq, i) => {
+                    const oscWin = audioCtx.createOscillator();
+                    const gainWin = audioCtx.createGain();
+                    oscWin.type = 'square';
+                    oscWin.frequency.value = freq;
+                    oscWin.connect(gainWin);
+                    gainWin.connect(audioCtx.destination);
+                    
+                    const startTime = audioCtx.currentTime + i * 0.1;
+                    gainWin.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainWin.gain.setValueAtTime(0.2, startTime);
+                    gainWin.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                    
+                    oscWin.start(startTime);
+                    oscWin.stop(startTime + 0.5);
+                });
+            }
+        }
+
+        let Engine, Render, Runner, Bodies, Composite, Body, Events, Vector, Constraint;
+
+        const MATTER_URLS = [
+            './vendor/matter.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js',
+            'https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js',
+            'https://unpkg.com/matter-js@0.19.0/build/matter.min.js'
+        ];
+
+        function setEngineStatus(message, isError = false) {
+            const status = document.getElementById('engine-status');
+            if (!status) return;
+            status.textContent = message || '';
+            status.className = isError
+                ? 'text-xs text-red-300 text-center mt-2 min-h-[1rem] font-bold'
+                : 'text-xs text-yellow-300 text-center mt-2 min-h-[1rem]';
+        }
+
+        function loadMatterScript(index = 0) {
+            return new Promise((resolve, reject) => {
+                if (window.Matter) {
+                    resolve(window.Matter);
+                    return;
+                }
+
+                if (index >= MATTER_URLS.length) {
+                    reject(new Error('Matter.js를 불러오지 못했습니다.'));
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = MATTER_URLS[index];
+                script.async = true;
+                script.onload = () => {
+                    if (window.Matter) {
+                        resolve(window.Matter);
+                    } else {
+                        loadMatterScript(index + 1).then(resolve).catch(reject);
+                    }
+                };
+                script.onerror = () => {
+                    loadMatterScript(index + 1).then(resolve).catch(reject);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        function bindMatterEngine() {
+            ({ Engine, Render, Runner, Bodies, Composite, Body, Events, Vector, Constraint } = window.Matter);
+        }
+
+        function bootstrapGame() {
+            const startBtn = document.getElementById('start-btn');
+            const originalText = startBtn ? startBtn.textContent : '레이스 시작!';
+
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.textContent = '물리 엔진 준비 중...';
+                startBtn.classList.add('opacity-70', 'cursor-wait');
+            }
+            setEngineStatus('물리 엔진을 불러오는 중입니다...');
+
+            loadMatterScript()
+                .then(() => {
+                    bindMatterEngine();
+                    initGame();
+                    if (startBtn) {
+                        startBtn.disabled = false;
+                        startBtn.textContent = originalText.trim() || '레이스 시작!';
+                        startBtn.classList.remove('opacity-70', 'cursor-wait');
+                    }
+                    setEngineStatus('');
+                })
+                .catch((err) => {
+                    console.error(err);
+                    if (startBtn) {
+                        startBtn.disabled = true;
+                        startBtn.textContent = '물리 엔진 로드 실패';
+                        startBtn.classList.add('opacity-70');
+                    }
+                    setEngineStatus('물리 엔진을 불러오지 못했습니다. 페이지를 새로고침해 주세요.', true);
+                });
+        }
+
+        let engine, runner;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'setup'; 
+        let marbles = [];
+        let mapElements = [];
+        let slotZones = [];
+        let results = [];
+        let motorizedWheels = []; 
+        let dynamicSlopes = []; 
+        let pendingSpringRemovals = [];
+        let cleanFunnelZone = null;
+        let isFinished = false;
+        let finishLineY = 0; 
+        
+        let startBoxBottom; 
+
+        let countdownTimer = null;
+        let countdownValue = 10;
+        let countdownSeconds = 10;
+        let isCountdownActive = false;
+        let useCountdown = true;
+        let useOneMarblePerSlot = false;
+        let gamePurpose = 'winner';
+        let useCloseRace = true;
+        const CONFIG_KEY = 'gulliver.bumperRoulette.v2';
+        let lastLeaderboardPaint = 0;
+
+        const WORLD_WIDTH = 1200;
+        let WORLD_HEIGHT = 15000; 
+        const MARBLE_RADIUS = 13; 
+
+        let camera = { x: 0, y: 0, scale: 1, targetY: 0 };
+        const colors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#bef264', '#fca5a5'];
+
+        function saveGameConfig() {
+            try {
+                const rows = [...document.querySelectorAll('.cheat-row')].map(row => ({
+                    name: row.querySelector('.cheat-name')?.value || '',
+                    result: row.querySelector('.cheat-result')?.value || ''
+                }));
+                const payload = {
+                    names: document.getElementById('names-input').value,
+                    slots: document.getElementById('slots-input').value,
+                    purpose: document.getElementById('game-purpose').value,
+                    closeRace: document.getElementById('close-race').checked,
+                    useCountdown: document.getElementById('use-countdown').checked,
+                    countdown: getCountdownSeconds(),
+                    uniqueSlot: document.getElementById('one-marble-per-slot').checked,
+                    teacherResults: rows
+                };
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(payload));
+            } catch (e) { console.warn('범퍼 룰렛 설정 저장 실패', e); }
+        }
+
+        function restoreTeacherRows(rows) {
+            const list = document.getElementById('cheat-list');
+            list.innerHTML = '';
+            const source = Array.isArray(rows) && rows.length ? rows : [{name:'', result:''}];
+            source.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'flex gap-2 cheat-row mt-2';
+                row.innerHTML = `
+                    <input type="text" placeholder="학생 이름" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+                    <span class="text-white self-center">👉</span>
+                    <input type="text" placeholder="지정 결과" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
+                `;
+                row.querySelector('.cheat-name').value = item.name || '';
+                row.querySelector('.cheat-result').value = item.result || '';
+                list.appendChild(row);
+            });
+        }
+
+        function loadGameConfig() {
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null'); } catch {}
+            if (!saved) return;
+            if (typeof saved.names === 'string') document.getElementById('names-input').value = saved.names;
+            if (typeof saved.slots === 'string') document.getElementById('slots-input').value = saved.slots;
+            if (saved.purpose) document.getElementById('game-purpose').value = saved.purpose;
+            document.getElementById('close-race').checked = saved.closeRace !== false;
+            document.getElementById('use-countdown').checked = saved.useCountdown !== false;
+            if (saved.countdown) document.getElementById('countdown-seconds').value = saved.countdown;
+            document.getElementById('one-marble-per-slot').checked = Boolean(saved.uniqueSlot);
+            restoreTeacherRows(saved.teacherResults);
+        }
+
+        function syncPurposeUI() {
+            const purpose = document.getElementById('game-purpose').value;
+            const countdown = document.getElementById('use-countdown');
+            const countdownInput = document.getElementById('countdown-seconds');
+            const help = document.getElementById('purpose-help');
+            const start = document.getElementById('start-btn');
+            if (purpose === 'assign') {
+                countdown.checked = false;
+                countdown.disabled = true;
+                countdownInput.disabled = true;
+                help.textContent = '모든 학생이 결과 함에 들어갈 때까지 진행합니다.';
+                start.textContent = '전체 결과 배정 시작!';
+            } else {
+                countdown.disabled = false;
+                countdownInput.disabled = !countdown.checked;
+                help.textContent = '1위가 도착하면 설정한 시간 뒤 레이스를 종료합니다.';
+                start.textContent = '우승 레이스 시작!';
+            }
+        }
+
+        function loadClassroomNames() {
+            try {
+                const room = Gulliver.getClassroom();
+                if (!room.students || !room.students.length) {
+                    Gulliver.toast('먼저 우리 반에서 학생 명단을 저장해 주세요.');
+                    return;
+                }
+                document.getElementById('names-input').value = room.students.map(s => s.name).join('\n');
+                saveGameConfig();
+                Gulliver.toast((room.className || '우리 반') + ' ' + room.students.length + '명을 불러왔습니다.');
+            } catch (e) { alert('우리 반 명단을 불러오지 못했습니다.'); }
+        }
+
+
+        function getCountdownSeconds() {
+            const input = document.getElementById('countdown-seconds');
+            const raw = Number(input ? input.value : 10);
+            const safeSeconds = Number.isFinite(raw) ? Math.round(raw) : 10;
+            const clamped = Math.max(1, Math.min(60, safeSeconds));
+            if (input) input.value = clamped;
+            return clamped;
+        }
+
+        function resetCountdownDisplay() {
+            countdownSeconds = getCountdownSeconds();
+            countdownValue = countdownSeconds;
+            const cdNum = document.getElementById('countdown-number');
+            const cdLabel = document.getElementById('countdown-label');
+            if (cdNum) cdNum.innerText = String(countdownValue);
+            if (cdLabel) cdLabel.innerText = `1위 도착! ${countdownSeconds}초 후 종료`;
+        }
+
+        function setHudVisible(visible) {
+            const hud = document.getElementById('hud');
+            if (!hud) return;
+            hud.classList.toggle('hidden', !visible);
+        }
+
+        function syncCountdownInputState() {
+            const toggle = document.getElementById('use-countdown');
+            const input = document.getElementById('countdown-seconds');
+            if (!toggle || !input) return;
+            input.disabled = !toggle.checked;
+        }
+
+        function getSlotByX(x) {
+            return slotZones.find(zone => x >= zone.x && x < zone.x + zone.width) || null;
+        }
+
+        function getFreeSlotZones() {
+            return slotZones.filter(zone => !zone.occupied && (!useOneMarblePerSlot || !zone.reservedFor));
+        }
+
+        function reserveTeacherSlots() {
+            slotZones.forEach(zone => { zone.reservedFor = null; });
+            if (!useOneMarblePerSlot) return true;
+            for (const [name, result] of Object.entries(cheatData)) {
+                const zone = slotZones.find(z => z.text === result && !z.reservedFor);
+                if (!zone) return false;
+                zone.reservedFor = name;
+            }
+            return true;
+        }
+
+        function getNearestFreeSlot(x) {
+            const freeSlots = getFreeSlotZones();
+            if (freeSlots.length === 0) return null;
+            return freeSlots.slice().sort((a, b) => Math.abs(a.centerX - x) - Math.abs(b.centerX - x))[0];
+        }
+
+        function getPreferredSlotForMarble(marble, fallbackX = null) {
+            if (!slotZones.length) return null;
+
+            const targetText = cheatData[marble.name];
+            if (targetText) {
+                const forced = useOneMarblePerSlot
+                    ? slotZones.find(z => z.reservedFor === marble.name && !z.occupied)
+                    : slotZones.find(z => z.text === targetText);
+                if (forced) return forced;
+            }
+
+            const x = fallbackX ?? marble.body.position.x;
+            const physical = getSlotByX(x);
+            if (!useOneMarblePerSlot) return physical;
+            if (physical && !physical.occupied) return physical;
+            return getNearestFreeSlot(x);
+        }
+
+        function captureMarbleInSlot(marble, slot) {
+            if (!slot) return;
+
+            slot.occupiedCount = (slot.occupiedCount || 0) + 1;
+
+            const isTeacherDirected = Boolean(cheatData[marble.name]);
+            if (useOneMarblePerSlot || isTeacherDirected) {
+                if (useOneMarblePerSlot) {
+                    slot.occupied = true;
+                    slot.occupiedBy = marble.name;
+                    slot.reservedFor = null;
+                }
+                Body.setVelocity(marble.body, { x: 0, y: 0 });
+                Body.setAngularVelocity(marble.body, 0);
+                Body.setPosition(marble.body, { x: slot.centerX, y: slot.captureY });
+                Body.setStatic(marble.body, true);
+                marble.body.frictionAir = 1;
+            } else {
+                marble.body.frictionAir = 0.5;
+            }
+        }
+
+        function queueSpringRemoval(springBody) {
+            if (!springBody || springBody.springDead) return;
+            springBody.springDead = true;
+            pendingSpringRemovals.push(springBody);
+        }
+
+        function flushPendingSpringRemovals() {
+            if (!pendingSpringRemovals.length) return;
+            const removals = pendingSpringRemovals.splice(0);
+            removals.forEach(springBody => {
+                Composite.remove(engine.world, springBody);
+                const index = mapElements.indexOf(springBody);
+                if (index > -1) mapElements.splice(index, 1);
+            });
+        }
+
+        function handleSpringHit(marbleBody, springBody) {
+            if (!springBody || springBody.springDead) return;
+
+            playSound('bumper', 30);
+            const dirX = marbleBody.position.x >= springBody.position.x ? 1 : -1;
+            Body.setVelocity(marbleBody, {
+                x: dirX * (10 + Math.random() * 16),
+                y: -20 - Math.random() * 20
+            });
+
+            springBody.springUsesLeft = Math.max(0, (springBody.springUsesLeft || 1) - 1);
+            if (springBody.springUsesLeft <= 0) {
+                queueSpringRemoval(springBody);
+            } else {
+                springBody.render.fillStyle = springBody.springUsesLeft === 1 ? '#7E22CE' : '#A855F7';
+            }
+        }
+
+        function makeSpringBody(x, y) {
+            const springBody = Bodies.rectangle(x, y, 50, 15, {
+                isStatic: true,
+                render: { fillStyle: '#A855F7' },
+                friction: 0,
+                restitution: 0.2,
+                angle: (Math.random() - 0.5) * Math.PI,
+                label: 'spring'
+            });
+            springBody.springMaxUses = 1 + Math.floor(Math.random() * 3);
+            springBody.springUsesLeft = springBody.springMaxUses;
+            springBody.springDead = false;
+            return springBody;
+        }
+
+        function initGame() {
+            engine = Engine.create();
+            // 수정됨: Matter.js 0.19.0에서는 engine.gravity.y를 사용해야 합니다.
+            engine.gravity.y = 1.0; 
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+            Events.on(engine, 'collisionStart', function(event) {
+                if(gameState !== 'playing') return;
+                let pairs = event.pairs;
+                for (let i = 0; i < pairs.length; i++) {
+                    let pair = pairs[i];
+                    
+                    const labelA = pair.bodyA.label;
+                    const labelB = pair.bodyB.label;
+
+                    if (labelA === 'marble' || labelB === 'marble') {
+                        const otherLabel = labelA === 'marble' ? labelB : labelA;
+                        
+                        if (otherLabel === 'wall' || otherLabel === 'bump' || otherLabel === 'dynamicSlope' || otherLabel === 'startBoxBottom') continue;
+
+                        const velocityA = pair.bodyA.velocity ? Vector.magnitude(pair.bodyA.velocity) : 0;
+                        const velocityB = pair.bodyB.velocity ? Vector.magnitude(pair.bodyB.velocity) : 0;
+                        const relVelocity = velocityA + velocityB;
+
+                        if (relVelocity > 2) {
+                            if (otherLabel === 'bumper') {
+                                playSound('bumper', relVelocity);
+                            } else if (otherLabel !== 'spring') {
+                                playSound('hit', relVelocity);
+                            }
+                        }
+
+                        if (otherLabel === 'spring') {
+                            const marbleBody = labelA === 'marble' ? pair.bodyA : pair.bodyB;
+                            const springBody = labelA === 'spring' ? pair.bodyA : pair.bodyB;
+                            handleSpringHit(marbleBody, springBody);
+                        }
+                    }
+                }
+            });
+
+            Events.on(engine, 'afterUpdate', function() {
+                flushPendingSpringRemovals();
+            });
+
+            Events.on(engine, 'beforeUpdate', function() {
+                if(gameState !== 'playing') return;
+
+                const time = engine.timing.timestamp;
+
+                motorizedWheels.forEach(wheel => {
+                    Body.setAngularVelocity(wheel, wheel.motorSpeed);
+                });
+
+                dynamicSlopes.forEach(slope => {
+                    const angleOffset = Math.sin(time * slope.swingSpeed + slope.timeOffset) * slope.swingAmplitude;
+                    Body.setAngle(slope, slope.baseAngle + angleOffset);
+                });
+
+                let activeMarbles = [...marbles].filter(m => !m.finished).sort((a, b) => b.body.position.y - a.body.position.y);
+                let currentLeader = activeMarbles[0];
+                let secondPlace = activeMarbles[1];
+                let leaderY = currentLeader ? currentLeader.body.position.y : 0;
+                
+                let hasLeaderFinished = results.length > 0;
+
+                marbles.forEach(m => {
+                    if (m.finished) return;
+
+                    // --- 교사 지정 결과 또는 결과 중복 금지에서만 보조 유도 ---
+                    const needsSlotGuide = Boolean(cheatData[m.name]) || useOneMarblePerSlot;
+                    if (needsSlotGuide && m.body.position.y > finishLineY - 1500) {
+                        const preferredSlot = getPreferredSlotForMarble(m, m.body.position.x);
+                        if (preferredSlot) {
+                            const diffX = preferredSlot.centerX - m.body.position.x;
+                            if (Math.abs(diffX) > 10) {
+                                const pullForce = Math.sign(diffX) * (cheatData[m.name] ? 0.0008 : 0.00035);
+                                Body.applyForce(m.body, m.body.position, { x: pullForce, y: 0 });
+                            }
+                        }
+                    }
+                    // ------------------------------------------------------
+
+                    // --- 순수 깔때기 구간 전용 안전장치 ---
+                    // 깔때기 자체는 길고 좁아도 되지만, 여러 구슬이 한꺼번에 몰려 아치처럼 멈출 수 있습니다.
+                    // 이때 옆으로 마구 흔들지 않고 아래쪽으로만 부드럽게 흘려보냅니다.
+                    const inCleanFunnel = cleanFunnelZone &&
+                        m.body.position.y > cleanFunnelZone.topY &&
+                        m.body.position.y < cleanFunnelZone.bottomY;
+
+                    if (inCleanFunnel) {
+                        const speed = Vector.magnitude(m.body.velocity);
+                        if (speed < 0.45) {
+                            m.funnelSlowTicks = (m.funnelSlowTicks || 0) + 1;
+                            Body.applyForce(m.body, m.body.position, { x: 0, y: 0.00055 });
+
+                            if (m.funnelSlowTicks > 90 && m.body.velocity.y < 1.2) {
+                                Body.setVelocity(m.body, {
+                                    x: Math.max(Math.min(m.body.velocity.x * 0.35, 2), -2),
+                                    y: 1.7
+                                });
+                            }
+                        } else {
+                            m.funnelSlowTicks = 0;
+                        }
+                    } else {
+                        m.funnelSlowTicks = 0;
+                    }
+                    
+                    if (hasLeaderFinished && gamePurpose === 'winner') {
+                        m.body.frictionAir = 0.005;
+                        Body.applyForce(m.body, m.body.position, { x: 0, y: 0.0025 });
+                    } else if (useCloseRace) {
+                        let distanceBehind = leaderY - m.body.position.y;
+                        if (distanceBehind > 150 && m !== currentLeader) {
+                            let boost = Math.min(distanceBehind * 0.0000015, 0.0015);
+                            Body.applyForce(m.body, m.body.position, { x: 0, y: boost });
+                        }
+                        if (m === currentLeader && secondPlace) {
+                            let gap = currentLeader.body.position.y - secondPlace.body.position.y;
+                            if (gap > 250) {
+                                m.body.frictionAir = 0.08;
+                                if (m.body.velocity.y > 6) Body.setVelocity(m.body, { x: m.body.velocity.x, y: 6 });
+                            } else {
+                                m.body.frictionAir = 0.015;
+                            }
+                        } else {
+                            m.body.frictionAir = 0.015;
+                        }
+                    } else {
+                        m.body.frictionAir = 0.015;
+                    }
+                    
+                    if (Math.abs(m.body.velocity.x) < 0.3 && Math.abs(m.body.velocity.y) < 0.3) {
+                        m.stuckTicks = (m.stuckTicks || 0) + 1;
+                        if (m.stuckTicks > 30) {
+                            let shakeForce = Math.min(0.008, 0.001 * Math.pow(1.055, Math.min(m.stuckTicks - 30, 80))); 
+                            let dir = (m.stuckTicks % 6 < 3) ? 1 : -1; 
+                            
+                            Body.applyForce(m.body, m.body.position, { 
+                                x: dir * shakeForce, 
+                                y: shakeForce * 0.35 
+                            });
+
+                            if (m.stuckTicks > 150 && m.body.velocity.y < 1.2) {
+                                Body.setVelocity(m.body, {
+                                    x: Math.max(Math.min(m.body.velocity.x + dir * 0.8, 4), -4),
+                                    y: 1.8
+                                });
+                            }
+                        }
+                    } else {
+                        m.stuckTicks = 0; 
+                    }
+                });
+            });
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createMap(slotNames) {
+            mapElements = [];
+            slotZones = [];
+            motorizedWheels = []; 
+            dynamicSlopes = [];
+            pendingSpringRemovals = [];
+            cleanFunnelZone = null;
+            Composite.clear(engine.world);
+
+            const wallOpts = { isStatic: true, render: { fillStyle: '#334155' }, friction: 0, restitution: 0.2, label: 'wall' }; 
+            const pinOpts = { isStatic: true, render: { fillStyle: '#94A3B8' }, friction: 0, restitution: 0.9, label: 'pin' }; 
+            const bumperOpts = { isStatic: true, render: { fillStyle: '#F43F5E' }, friction: 0, restitution: 1.5, label: 'bumper' }; 
+
+            let currentY = 0;
+
+            const boxWidth = 900; 
+            
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH / 2 - boxWidth/2, -50, 40, 300, wallOpts)); 
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH / 2 + boxWidth/2, -50, 40, 300, wallOpts)); 
+            
+            startBoxBottom = Bodies.rectangle(WORLD_WIDTH / 2, 100, boxWidth, 40, { 
+                isStatic: true, 
+                render: { fillStyle: '#F59E0B' }, 
+                label: 'startBoxBottom' 
+            });
+            mapElements.push(startBoxBottom);
+
+            currentY += 400; 
+
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.15, currentY, WORLD_WIDTH * 0.6, 60, { ...wallOpts, angle: Math.PI / 6 }));
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.85, currentY, WORLD_WIDTH * 0.6, 60, { ...wallOpts, angle: -Math.PI / 6 }));
+            currentY += 400; 
+
+            function addDynamicBumpySlope(cx, cy, width, baseAngle) {
+                const parts = [];
+                parts.push(Bodies.rectangle(cx, cy, width, 40, { render: { fillStyle: '#334155' } }));
+                
+                const bumpRadius = 30; 
+                const bumpSpacing = 40; 
+                const numBumps = Math.floor(width / bumpSpacing);
+                
+                for(let j=0; j < numBumps; j++) {
+                    const dist = (j - (numBumps - 1) / 2) * bumpSpacing;
+                    const bx = cx + dist;
+                    const by = cy; 
+                    parts.push(Bodies.circle(bx, by, bumpRadius, { render: { fillStyle: '#475569' } })); 
+                }
+
+                const slopeBody = Body.create({
+                    parts: parts,
+                    isStatic: true, 
+                    friction: 0, 
+                    restitution: 0.5, 
+                    label: 'dynamicSlope' 
+                });
+
+                Body.setAngle(slopeBody, baseAngle);
+                slopeBody.baseAngle = baseAngle;
+                slopeBody.timeOffset = cx + cy; 
+                slopeBody.swingSpeed = 0.003; 
+                slopeBody.swingAmplitude = 0.25; 
+
+                dynamicSlopes.push(slopeBody);
+                mapElements.push(slopeBody);
+            }
+
+            for (let i = 0; i < 4; i++) {
+                const isLeft = i % 2 === 0;
+                const cx = isLeft ? WORLD_WIDTH * 0.35 : WORLD_WIDTH * 0.65;
+                const angle = isLeft ? 0.35 : -0.35; 
+                addDynamicBumpySlope(cx, currentY, WORLD_WIDTH * 0.7, angle);
+                currentY += 350; 
+            }
+
+            currentY += 100;
+            const rows1 = 15; 
+            for (let row = 0; row < rows1; row++) {
+                const cols = row % 2 === 0 ? 13 : 12; 
+                const spacingX = WORLD_WIDTH / 14;
+                const offsetX = row % 2 === 0 ? spacingX : spacingX * 1.5;
+                for (let col = 0; col < cols; col++) {
+                    mapElements.push(Bodies.circle(offsetX + col * spacingX, currentY + row * 90, 10, pinOpts));
+                }
+                
+                if (row % 4 === 0) {
+                    mapElements.push(Bodies.rectangle(0, currentY + row * 90, 150, 20, { ...wallOpts, angle: Math.PI / 4 }));
+                    mapElements.push(Bodies.rectangle(WORLD_WIDTH, currentY + row * 90, 150, 20, { ...wallOpts, angle: -Math.PI / 4 }));
+                }
+            }
+            currentY += rows1 * 90 + 200;
+
+            for(let row = 0; row < 5; row++) {
+                const cols = row % 2 === 0 ? 6 : 5;
+                const spacingX = WORLD_WIDTH / 6.5;
+                const offsetX = row % 2 === 0 ? spacingX : spacingX * 1.5;
+                for(let col = 0; col < cols; col++) {
+                    const sx = offsetX + col * spacingX;
+                    const sy = currentY + row * 160;
+                    
+                    const parts = [];
+                    parts.push(Bodies.circle(sx, sy, 10)); 
+                    parts.push(Bodies.rectangle(sx, sy, 100, 16, { angle: 0 })); 
+                    parts.push(Bodies.rectangle(sx, sy, 100, 16, { angle: Math.PI/2 })); 
+                    
+                    const spinner = Body.create({
+                        parts: parts,
+                        isStatic: false,
+                        density: 100, 
+                        frictionAir: 0, 
+                        restitution: 0.7, 
+                        render: { fillStyle: '#14B8A6' },
+                        label: 'motorizedWheel'
+                    });
+                    
+                    const pivot = Constraint.create({ pointA: { x: sx, y: sy }, bodyB: spinner, length: 0, stiffness: 1, render:{visible:false} });
+                    
+                    spinner.motorSpeed = (Math.random() > 0.5 ? 1 : -1) * (0.05 + Math.random() * 0.05);
+                    motorizedWheels.push(spinner); 
+
+                    mapElements.push(spinner);
+                    Composite.add(engine.world, pivot);
+                }
+            }
+            currentY += 5 * 160 + 100;
+            
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.1, currentY, WORLD_WIDTH * 0.4, 40, { ...wallOpts, angle: Math.PI / 8 }));
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.9, currentY, WORLD_WIDTH * 0.4, 40, { ...wallOpts, angle: -Math.PI / 8 }));
+            currentY += 300;
+
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.15, currentY, WORLD_WIDTH * 0.6, 80, { ...wallOpts, angle: Math.PI / 6 }));
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.85, currentY, WORLD_WIDTH * 0.6, 80, { ...wallOpts, angle: -Math.PI / 6 }));
+            currentY += 300;
+            
+            mapElements.push(Bodies.circle(WORLD_WIDTH * 0.4, currentY, 40, bumperOpts));
+            mapElements.push(Bodies.circle(WORLD_WIDTH * 0.6, currentY, 40, bumperOpts));
+            mapElements.push(Bodies.circle(WORLD_WIDTH * 0.5, currentY + 100, 50, bumperOpts));
+            currentY += 300;
+
+            function addMotorizedFlipper(x, y, length, speed, color) {
+                const bar = Bodies.rectangle(x, y, length, 30, {
+                    density: 100,
+                    frictionAir: 0, 
+                    friction: 0.1,
+                    restitution: 1.5, 
+                    render: { fillStyle: color },
+                    label: 'motorizedFlipper'
+                });
+                
+                const pivot = Constraint.create({ pointA: { x, y }, bodyB: bar, length: 0, stiffness: 1, render: { visible: false } });
+                bar.motorSpeed = speed; 
+                motorizedWheels.push(bar); 
+                mapElements.push(bar);
+                Composite.add(engine.world, pivot);
+            }
+
+            currentY += 200;
+            addMotorizedFlipper(WORLD_WIDTH * 0.3, currentY, 450, 0.06, '#F59E0B');
+            addMotorizedFlipper(WORLD_WIDTH * 0.7, currentY, 450, -0.06, '#10B981');
+            currentY += 400;
+            addMotorizedFlipper(WORLD_WIDTH * 0.5, currentY, 600, 0.08, '#3B82F6');
+            currentY += 400;
+
+            for (let i = 0; i < 4; i++) {
+                const isLeft = i % 2 !== 0;
+                const cx = isLeft ? WORLD_WIDTH * 0.35 : WORLD_WIDTH * 0.65;
+                const angle = isLeft ? 0.35 : -0.35; 
+                addDynamicBumpySlope(cx, currentY, WORLD_WIDTH * 0.7, angle);
+                currentY += 350;
+            }
+
+            function addCleanGatherFunnel(startY) {
+                // 구획 전환용 순수 깔때기입니다.
+                // 핵심 원칙: 이 구간 안에는 범퍼, 용수철, 핀, 회전물 같은 기믹을 절대 섞지 않습니다.
+                const topY = startY + 60;
+                const exitY = startY + 760;
+                const topGap = 1060;
+                const exitGap = 240; // 좁아지는 목은 허용하되, 여러 구슬이 동시에 빠질 폭은 유지합니다.
+                const railThickness = 34;
+                const centerX = WORLD_WIDTH / 2;
+                const minimumSafeGap = MARBLE_RADIUS * 4;
+
+                if (exitGap < minimumSafeGap) {
+                    console.warn('깔때기 출구가 너무 좁습니다. exitGap:', exitGap, 'minimumSafeGap:', minimumSafeGap);
+                }
+
+                cleanFunnelZone = {
+                    topY,
+                    bottomY: exitY + 190,
+                    leftX: centerX - topGap / 2,
+                    rightX: centerX + topGap / 2,
+                    exitGap
+                };
+
+                function addRail(x1, y1, x2, y2) {
+                    const dx = x2 - x1;
+                    const dy = y2 - y1;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+                    const cx = (x1 + x2) / 2;
+                    const cy = (y1 + y2) / 2;
+                    mapElements.push(Bodies.rectangle(cx, cy, length, railThickness, {
+                        ...wallOpts,
+                        angle: angle,
+                        friction: 0,
+                        restitution: 0.12,
+                        label: 'wall'
+                    }));
+                }
+
+                // 위쪽에서 넓게 받고, 아래쪽에서 길게 모아 다음 구획으로 넘깁니다.
+                addRail(centerX - topGap / 2, topY, centerX - exitGap / 2, exitY);
+                addRail(centerX + topGap / 2, topY, centerX + exitGap / 2, exitY);
+
+                // 출구 목. 바닥은 절대 만들지 않아 갇히지 않게 합니다.
+                addRail(centerX - exitGap / 2, exitY - 10, centerX - exitGap / 2, exitY + 170);
+                addRail(centerX + exitGap / 2, exitY - 10, centerX + exitGap / 2, exitY + 170);
+
+                return 960;
+            }
+
+            currentY += 70;
+            currentY += addCleanGatherFunnel(currentY);
+            currentY += 90;
+
+            const mazeHeight = 3500; 
+            const cols = 9;  
+            const rows = 20; 
+            const cellW = (WORLD_WIDTH - 200) / cols;
+            const cellH = mazeHeight / rows;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if(Math.random() > 0.2) { 
+                        const bx = 100 + c * cellW + cellW / 2 + (Math.random() * 30 - 15);
+                        const by = currentY + r * cellH + cellH / 2 + (Math.random() * 30 - 15);
+                        
+                        const rand = Math.random();
+                        if(rand > 0.5) { 
+                            const radius = 12 + Math.random() * 22; 
+                            let bouncePower = 1.0 + (radius / 20); 
+                            let lightness = Math.min(45 + ((radius - 12) / 22) * 35, 80);
+                            let color = `hsl(343, 90%, ${lightness}%)`;
+
+                            if (Math.random() > 0.9) {
+                                bouncePower = 2.5;
+                                color = '#FFFFFF';
+                            }
+
+                            mapElements.push(Bodies.circle(bx, by, radius, {
+                                isStatic: true,
+                                render: { fillStyle: color },
+                                friction: 0,
+                                restitution: bouncePower, 
+                                label: 'bumper'
+                            }));
+                        } else if (rand > 0.2) {
+                            mapElements.push(makeSpringBody(bx, by));
+                        } else { 
+                            mapElements.push(Bodies.circle(bx, by, 8 + Math.random() * 8, pinOpts));
+                        }
+                    }
+                }
+            }
+
+            for (let dy = 200; dy < mazeHeight; dy += 300) {
+                mapElements.push(Bodies.rectangle(0, currentY + dy, 200, 30, { ...wallOpts, angle: Math.PI / 4 }));
+                mapElements.push(Bodies.rectangle(WORLD_WIDTH, currentY + dy + 150, 200, 30, { ...wallOpts, angle: -Math.PI / 4 }));
+            }
+
+            currentY += mazeHeight + 300; 
+
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.15, currentY, WORLD_WIDTH * 0.6, 40, { ...wallOpts, angle: Math.PI / 6 }));
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH * 0.85, currentY, WORLD_WIDTH * 0.6, 40, { ...wallOpts, angle: -Math.PI / 6 }));
+            currentY += 300;
+
+            const pachinkoHeight = 800; 
+            const rows2 = Math.floor(pachinkoHeight / 80); 
+            for (let row = 0; row < rows2; row++) {
+                const cols = row % 2 === 0 ? 15 : 14;
+                const spacingX = WORLD_WIDTH / 16;
+                const offsetX = row % 2 === 0 ? spacingX : spacingX * 1.5;
+                for (let col = 0; col < cols; col++) {
+                    mapElements.push(Bodies.circle(offsetX + col * spacingX, currentY + row * 80, 8, pinOpts));
+                }
+                
+                if (row % 4 === 0) {
+                    mapElements.push(Bodies.rectangle(0, currentY + row * 80, 150, 20, { ...wallOpts, angle: Math.PI / 4 }));
+                    mapElements.push(Bodies.rectangle(WORLD_WIDTH, currentY + row * 80, 150, 20, { ...wallOpts, angle: -Math.PI / 4 }));
+                }
+            }
+            currentY += pachinkoHeight + 300; 
+
+            const slotCount = slotNames.length;
+            const slotWidth = WORLD_WIDTH / slotCount;
+            const slotDepth = 1000; 
+            const slotCenterY = currentY + slotDepth / 2;
+
+            for (let i = 0; i <= slotCount; i++) {
+                mapElements.push(Bodies.rectangle(i * slotWidth, slotCenterY, 30, slotDepth, wallOpts));
+            }
+
+            for (let i = 0; i < slotCount; i++) {
+                const centerX = i * slotWidth + slotWidth / 2;
+                mapElements.push(Bodies.rectangle(centerX, currentY + slotDepth, slotWidth, 100, wallOpts));
+                slotZones.push({
+                    id: i,
+                    x: i * slotWidth,
+                    width: slotWidth,
+                    y: currentY,
+                    text: slotNames[i],
+                    centerX: centerX,
+                    captureY: currentY + slotDepth - 155,
+                    occupied: false,
+                    occupiedBy: null,
+                    occupiedCount: 0,
+                    reservedFor: null
+                });
+            }
+
+            finishLineY = currentY + slotDepth - 100;
+            WORLD_HEIGHT = currentY + slotDepth + 200;
+
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH / 2, -500, WORLD_WIDTH, 1000, wallOpts)); 
+            mapElements.push(Bodies.rectangle(-250, WORLD_HEIGHT / 2, 500, WORLD_HEIGHT + 1000, wallOpts)); 
+            mapElements.push(Bodies.rectangle(WORLD_WIDTH + 250, WORLD_HEIGHT / 2, 500, WORLD_HEIGHT + 1000, wallOpts)); 
+
+            // 깔때기 구간에는 벽 이외의 기믹이 들어오지 않았는지 코드상으로 확인합니다.
+            if (cleanFunnelZone) {
+                const forbiddenLabels = new Set(['pin', 'bumper', 'spring', 'motorizedWheel', 'motorizedFlipper', 'dynamicSlope']);
+                const intruders = mapElements.filter(body =>
+                    forbiddenLabels.has(body.label) &&
+                    body.position.y > cleanFunnelZone.topY - 40 &&
+                    body.position.y < cleanFunnelZone.bottomY + 40
+                );
+                if (intruders.length > 0) {
+                    console.warn('깔때기 안에 섞이면 안 되는 기믹이 감지되었습니다:', intruders.map(b => b.label));
+                }
+            }
+
+            Composite.add(engine.world, mapElements);
+        }
+
+        function createMarbles(names) {
+            marbles = [];
+            
+            const maxCols = 22;
+            const spacing = MARBLE_RADIUS * 2.5; 
+            const actualCols = Math.min(names.length, maxCols);
+            
+            const startX = (WORLD_WIDTH / 2) - ((actualCols * spacing) / 2) + (spacing / 2);
+            const startY = 70; 
+
+            names.forEach((name, index) => {
+                if(!name.trim()) return;
+
+                const color = colors[index % colors.length];
+                
+                const row = Math.floor(index / maxCols);
+                const col = index % maxCols;
+                const spawnX = startX + (col * spacing);
+                const spawnY = startY - (row * spacing); 
+                
+                const body = Bodies.circle(
+                    spawnX, 
+                    spawnY,       
+                    MARBLE_RADIUS, 
+                    {
+                        restitution: 0.5, 
+                        friction: 0, 
+                        frictionAir: 0.015, 
+                        density: 0.05,
+                        label: 'marble'
+                    }
+                );
+                
+                marbles.push({
+                    id: index,
+                    body: body,
+                    name: name.trim(),
+                    color: color,
+                    finished: false,
+                    slotResult: null,
+                    stuckTicks: 0,
+                    funnelSlowTicks: 0 
+                });
+                
+                Composite.add(engine.world, body);
+            });
+        }
+
+        function startGame() {
+            if (gameState === 'playing') return;
+            parseCheatData();
+
+            gamePurpose = document.getElementById('game-purpose').value;
+            useCountdown = gamePurpose === 'winner' && document.getElementById('use-countdown').checked;
+            countdownSeconds = getCountdownSeconds();
+            useOneMarblePerSlot = document.getElementById('one-marble-per-slot').checked;
+            useCloseRace = document.getElementById('close-race').checked;
+            saveGameConfig();
+
+            let namesInput = document.getElementById('names-input').value.split('\n').filter(n => n.trim() !== '');
+            const slotsInput = document.getElementById('slots-input').value.split('\n').filter(n => n.trim() !== '');
+
+            if (namesInput.length === 0 || slotsInput.length === 0) {
+                alert("학생 명단과 슬롯을 1개 이상 입력해주세요.");
+                return;
+            }
+
+            if (useOneMarblePerSlot && slotsInput.length < namesInput.length) {
+                alert(`결과 중복 금지에서는 결과 슬롯 수가 학생 수 이상이어야 합니다.\n현재 학생 ${namesInput.length}명, 슬롯 ${slotsInput.length}개입니다.`);
+                return;
+            }
+            const nameSet = new Set(namesInput.map(x=>x.trim()));
+            const slotSet = new Set(slotsInput.map(x=>x.trim()));
+            const directedCounts = {};
+            const slotCounts = {};
+            slotsInput.forEach(result => slotCounts[result.trim()] = (slotCounts[result.trim()] || 0) + 1);
+            for (const [name,result] of Object.entries(cheatData)) {
+                if (!nameSet.has(name)) {
+                    alert(`교사 지정 결과의 학생 '${name}'이 현재 명단에 없습니다.`);
+                    return;
+                }
+                if (!slotSet.has(result)) {
+                    alert(`'${name}' 학생에게 지정한 결과 '${result}'가 결과 슬롯에 없습니다.`);
+                    return;
+                }
+                directedCounts[result] = (directedCounts[result] || 0) + 1;
+            }
+            if (useOneMarblePerSlot) {
+                for (const [result,count] of Object.entries(directedCounts)) {
+                    if (count > (slotCounts[result] || 0)) {
+                        alert(`결과 중복 금지에서는 '${result}' 함이 ${slotCounts[result] || 0}개뿐인데 ${count}명이 지정되어 있습니다.`);
+                        return;
+                    }
+                }
+            }
+
+            for (let i = namesInput.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [namesInput[i], namesInput[j]] = [namesInput[j], namesInput[i]];
+            }
+
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+
+            document.getElementById('setup-panel').style.opacity = '0';
+            
+            document.getElementById('win-log').innerHTML = ''; 
+            document.getElementById('countdown-display').classList.add('hidden');
+            document.getElementById('countdown-number').className = 'text-7xl md:text-9xl font-extrabold text-red-500 opacity-90 drop-shadow-2xl transition-all';
+            
+            clearInterval(countdownTimer);
+            isCountdownActive = false;
+            resetCountdownDisplay();
+
+            setTimeout(() => {
+                document.getElementById('setup-panel').style.display = 'none';
+                setHudVisible(true);
+            }, 300);
+
+            createMap(slotsInput);
+            if (!reserveTeacherSlots()) {
+                alert('교사 지정 결과용 슬롯을 예약하지 못했습니다. 결과 슬롯 설정을 확인해 주세요.');
+                resetGame();
+                return;
+            }
+            createMarbles(namesInput);
+
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            gameState = 'playing';
+            isFinished = false;
+            results = [];
+            
+            camera.y = -200;
+            camera.targetY = -200;
+
+            setTimeout(() => {
+                if (gameState === 'playing' && startBoxBottom) {
+                    playSound('hit', 20); 
+                    
+                    Composite.remove(engine.world, startBoxBottom);
+                    
+                    const index = mapElements.indexOf(startBoxBottom);
+                    if (index > -1) {
+                        mapElements.splice(index, 1);
+                    }
+                }
+            }, 2000);
+        }
+
+        function resetGame() {
+            if (runner) {
+                Runner.stop(runner);
+                runner = null;
+            }
+            gameState = 'setup';
+            
+            clearInterval(countdownTimer);
+            
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('setup-panel').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('setup-panel').style.opacity = '1';
+            }, 50);
+            setHudVisible(false);
+            syncPurposeUI();
+        }
+
+        function updateLeaderboard(sortedMarbles) {
+            const listEl = document.getElementById('leaderboard-list');
+            listEl.innerHTML = '';
+            
+            const top5 = sortedMarbles.slice(0, 5);
+            
+            top5.forEach((m, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-2 leaderboard-item bg-gray-800 bg-opacity-50 p-2 rounded';
+                
+                let rankStr = `${index + 1}위`;
+                if(index === 0) rankStr = '👑 1위';
+                
+                li.innerHTML = `
+                    <span class="font-bold w-8 md:w-12 text-gray-300 text-center">${rankStr}</span>
+                    <div class="w-3 h-3 rounded-full shadow-md border border-gray-600 shrink-0" style="background-color: ${m.color}"></div>
+                    <span class="text-white font-medium truncate flex-1">${m.name}</span>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function renderLoop(now = performance.now()) {
+            requestAnimationFrame(renderLoop);
+
+            ctx.fillStyle = '#1a202c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState !== 'playing' && gameState !== 'finished') return;
+
+            let sortedMarbles = [...marbles].sort((a, b) => b.body.position.y - a.body.position.y);
+            let leader = sortedMarbles.find(m => !m.finished) || sortedMarbles[0];
+
+            if (now - lastLeaderboardPaint > 160) {
+                updateLeaderboard(sortedMarbles);
+                lastLeaderboardPaint = now;
+            }
+
+            if (leader && leader.body.position.y > finishLineY && !leader.finished) {
+                checkWinCondition(leader);
+            }
+
+            if (leader) {
+                camera.targetY = leader.body.position.y - (canvas.height * 0.6);
+            }
+            camera.targetY = Math.max(-200, Math.min(camera.targetY, WORLD_HEIGHT - canvas.height));
+
+            const lerpSpeed = 0.05; 
+            camera.y += (camera.targetY - camera.y) * lerpSpeed;
+
+            const scale = Math.min(canvas.width / WORLD_WIDTH, 1);
+            camera.scale = scale;
+            camera.x = (WORLD_WIDTH * scale - canvas.width) / 2;
+
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y * scale);
+            ctx.scale(scale, scale);
+
+            mapElements.forEach(body => {
+                if (body.parts && body.parts.length > 1) {
+                    for (let i = 1; i < body.parts.length; i++) {
+                        const part = body.parts[i];
+                        ctx.beginPath();
+                        ctx.moveTo(part.vertices[0].x, part.vertices[0].y);
+                        for (let j = 1; j < part.vertices.length; j++) {
+                            ctx.lineTo(part.vertices[j].x, part.vertices[j].y);
+                        }
+                        ctx.lineTo(part.vertices[0].x, part.vertices[0].y);
+                        ctx.fillStyle = body.render.fillStyle || '#334155';
+                        ctx.fill();
+                        
+                        if(body.label !== 'dynamicSlope') {
+                            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.beginPath();
+                    ctx.arc(body.position.x, body.position.y, 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                    ctx.stroke();
+                } else if (body.label === 'bump' || body.label === 'pin' || body.label === 'bumper') {
+                    ctx.beginPath();
+                    ctx.arc(body.position.x, body.position.y, body.circleRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = body.render.fillStyle || '#94A3B8';
+                    ctx.fill();
+                    
+                    if(body.label === 'bumper') {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = body.render.fillStyle; 
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+                } else if (body.label === 'spring') {
+                    ctx.save();
+                    ctx.translate(body.position.x, body.position.y);
+                    ctx.rotate(body.angle);
+                    
+                    ctx.fillStyle = body.springUsesLeft === 1 ? '#7E22CE' : '#A855F7';
+                    ctx.fillRect(-22.5, -7.5, 45, 15);
+                    
+                    ctx.strokeStyle = '#D8B4FE'; 
+                    ctx.lineWidth = 2;
+                    for(let k = -15; k <= 15; k += 6) {
+                        ctx.beginPath();
+                        ctx.moveTo(k, -7.5);
+                        ctx.lineTo(k + 4, 7.5);
+                        ctx.stroke();
+                    }
+
+                    ctx.rotate(-body.angle);
+                    ctx.fillStyle = '#F5D0FE';
+                    ctx.font = 'bold 18px Pretendard';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`${body.springUsesLeft ?? 1}`, 0, -25);
+                    ctx.restore();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(body.vertices[0].x, body.vertices[0].y);
+                    for (let j = 1; j < body.vertices.length; j++) {
+                        ctx.lineTo(body.vertices[j].x, body.vertices[j].y);
+                    }
+                    ctx.lineTo(body.vertices[0].x, body.vertices[0].y);
+                    ctx.fillStyle = body.render.fillStyle || '#334155';
+                    ctx.fill();
+                    
+                    if (body.render.strokeStyle !== 'transparent') {
+                        ctx.strokeStyle = body.render.strokeStyle || 'rgba(255,255,255,0.1)';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            slotZones.forEach(slot => {
+                ctx.fillStyle = slot.occupied ? 'rgba(16, 185, 129, 0.26)' : 'rgba(255, 255, 255, 0.12)';
+                ctx.fillRect(slot.x + 16, slot.y + 40, Math.max(0, slot.width - 32), 110);
+                ctx.strokeStyle = slot.occupied ? 'rgba(110, 231, 183, 0.9)' : 'rgba(255, 255, 255, 0.24)';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(slot.x + 16, slot.y + 40, Math.max(0, slot.width - 32), 110);
+
+                ctx.fillStyle = slot.occupied ? '#A7F3D0' : 'rgba(255, 255, 255, 0.72)';
+                ctx.font = `bold ${Math.max(18, Math.min(34, slot.width * 0.16))}px Pretendard`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(slot.text, slot.centerX, slot.y + 95, Math.max(60, slot.width - 42));
+
+                if (useOneMarblePerSlot) {
+                    ctx.font = 'bold 18px Pretendard';
+                    ctx.fillStyle = slot.occupied ? '#34D399' : '#FDE68A';
+                    ctx.fillText(slot.occupied ? '사용됨' : (slot.reservedFor ? '예약 함' : '빈 함'), slot.centerX, slot.y + 138);
+                }
+            });
+
+            marbles.forEach(m => {
+                const pos = m.body.position;
+                
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, MARBLE_RADIUS, 0, 2 * Math.PI);
+                ctx.fillStyle = m.color;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(pos.x - 5, pos.y - 5, MARBLE_RADIUS * 0.3, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fill();
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.stroke();
+
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Pretendard';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 4;
+                ctx.fillText(m.name, pos.x, pos.y - 28);
+                ctx.shadowBlur = 0;
+                
+                if(m === sortedMarbles[0] && gameState === 'playing' && m.body.position.y > 0) {
+                    ctx.font = '24px Arial';
+                    ctx.fillText('👑', pos.x, pos.y - 55);
+                }
+            });
+
+            ctx.restore(); 
+
+            drawMinimap();
+        }
+
+        function drawMinimap() {
+            const mmWidth = 15; 
+            const mmHeight = canvas.height * 0.6;
+            const mmX = canvas.width - mmWidth - 10; 
+            const mmY = (canvas.height - mmHeight) / 2;
+
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.6)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(mmX, mmY, mmWidth, mmHeight, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            const viewYRatio = camera.y / WORLD_HEIGHT;
+            const viewHRatio = canvas.height / WORLD_HEIGHT;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(mmX, mmY + (viewYRatio * mmHeight), mmWidth, viewHRatio * mmHeight);
+
+            marbles.forEach(m => {
+                const ratioY = Math.max(0, Math.min(m.body.position.y / WORLD_HEIGHT, 1));
+                const dotY = mmY + (ratioY * mmHeight);
+                
+                const ratioX = Math.max(0, Math.min(m.body.position.x / WORLD_WIDTH, 1));
+                const dotX = mmX + (ratioX * mmWidth);
+
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, 2.5, 0, 2 * Math.PI);
+                ctx.fillStyle = m.color;
+                ctx.fill();
+                
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+                ctx.stroke();
+            });
+        }
+
+        function checkWinCondition(marble) {
+            if (isFinished || marble.finished) return;
+
+            const x = marble.body.position.x;
+            const selectedSlot = getPreferredSlotForMarble(marble, x)
+                || getNearestFreeSlot(x)
+                || getSlotByX(Math.max(0, Math.min(WORLD_WIDTH - 0.001, x)))
+                || slotZones[0];
+
+            if (!selectedSlot) {
+                console.error('도착 결과 함을 찾지 못했습니다.');
+                return;
+            }
+
+            const resultText = selectedSlot.text;
+
+            marble.finished = true;
+            captureMarbleInSlot(marble, selectedSlot);
+
+            marble.slotResult = resultText;
+            results.push({ marble: marble, text: resultText });
+            
+            playSound('win', 20); 
+            
+            const logDiv = document.getElementById('win-log');
+            const logItem = document.createElement('div');
+            logItem.className = 'glass-panel p-2 md:p-3 rounded-lg flex items-center gap-2 md:gap-3 win-item border-l-4 shadow-md bg-opacity-90';
+            logItem.style.borderColor = marble.color;
+            logItem.innerHTML = `
+                <div class="text-gray-400 font-bold text-[10px] md:text-xs w-4 text-center">${results.length}</div>
+                <div class="w-3 h-3 md:w-4 md:h-4 rounded-full shadow-inner shrink-0" style="background-color: ${marble.color}"></div>
+                <div class="flex-1 flex justify-between items-center overflow-hidden">
+                    <div class="text-white font-bold text-xs md:text-sm tracking-wide truncate pr-2">${marble.name}</div>
+                    <div class="text-yellow-300 text-[10px] md:text-xs font-bold bg-black bg-opacity-30 px-1.5 py-0.5 md:px-2 md:py-1 rounded shrink-0">${resultText}</div>
+                </div>
+            `;
+            logDiv.appendChild(logItem);
+            
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            if (gamePurpose === 'winner' && !isCountdownActive && useCountdown) {
+                startCountdown();
+            }
+
+            if (results.length === marbles.length) {
+                endGame();
+            }
+        }
+
+        function startCountdown() {
+            clearInterval(countdownTimer);
+            isCountdownActive = true;
+            resetCountdownDisplay();
+            const cdDisplay = document.getElementById('countdown-display');
+            const cdNum = document.getElementById('countdown-number');
+            cdDisplay.classList.remove('hidden');
+            
+            countdownTimer = setInterval(() => {
+                countdownValue--;
+                cdNum.innerText = countdownValue;
+                
+                if (countdownValue <= 3) {
+                    cdNum.classList.add('scale-125', 'text-yellow-400');
+                    playSound('hit', 20); 
+                }
+                
+                if (countdownValue <= 0) {
+                    clearInterval(countdownTimer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            if (isFinished) return;
+            isFinished = true;
+            gameState = 'finished';
+            clearInterval(countdownTimer);
+            document.getElementById('countdown-display').classList.add('hidden');
+
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('result-title');
+            if (title) title.textContent = gamePurpose === 'assign' ? '🎯 전체 배정 결과' : '🏆 레이스 결과';
+            const resultList = document.getElementById('result-list');
+            resultList.innerHTML = '';
+
+            results.forEach((res, index) => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-800 bg-opacity-60 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-600';
+                item.innerHTML = `
+                    <div class="text-xl md:text-2xl font-bold text-gray-500 w-6 md:w-8 text-center">${index + 1}</div>
+                    <div class="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md shrink-0" style="background-color: ${res.marble.color}"></div>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="text-white font-bold text-lg md:text-xl truncate">${res.marble.name}</div>
+                    </div>
+                    <div class="text-yellow-400 font-extrabold text-base md:text-xl whitespace-nowrap shrink-0">${res.text}</div>
+                `;
+                resultList.appendChild(item);
+            });
+            
+            const unfinished = marbles.filter(m => !m.finished);
+            unfinished.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-800 bg-opacity-30 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-700 opacity-50';
+                item.innerHTML = `
+                    <div class="text-xl md:text-2xl font-bold text-gray-600 w-6 md:w-8 text-center">-</div>
+                    <div class="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md grayscale shrink-0" style="background-color: ${m.color}"></div>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="text-gray-400 font-bold text-lg md:text-xl truncate">${m.name}</div>
+                    </div>
+                    <div class="text-red-400 font-extrabold text-sm md:text-lg whitespace-nowrap shrink-0">시간 초과</div>
+                `;
+                resultList.appendChild(item);
+            });
+
+            setTimeout(() => {
+                modal.classList.remove('hidden');
+                setHudVisible(false);
+            }, 1000); 
+        }
+
+        const countdownToggleEl = document.getElementById('use-countdown');
+        const countdownInputEl = document.getElementById('countdown-seconds');
+        const purposeEl = document.getElementById('game-purpose');
+        loadGameConfig();
+        purposeEl.addEventListener('change',()=>{syncPurposeUI();saveGameConfig();});
+        countdownToggleEl.addEventListener('change',()=>{syncCountdownInputState();saveGameConfig();});
+        countdownInputEl.addEventListener('change',()=>{resetCountdownDisplay();saveGameConfig();});
+        countdownInputEl.addEventListener('blur', resetCountdownDisplay);
+        document.getElementById('close-race').addEventListener('change',saveGameConfig);
+        document.getElementById('one-marble-per-slot').addEventListener('change',saveGameConfig);
+        document.getElementById('names-input').addEventListener('input',saveGameConfig);
+        document.getElementById('slots-input').addEventListener('input',saveGameConfig);
+        document.getElementById('load-classroom-btn').addEventListener('click',loadClassroomNames);
+        document.getElementById('sample-names-btn').addEventListener('click',()=>{
+            document.getElementById('names-input').value=['민준','서연','도윤','하은','지호','수아','현우','윤서'].join('\n');
+            saveGameConfig();
+        });
+        document.getElementById('debug-panel').addEventListener('input',saveGameConfig);
+        syncPurposeUI();
+        resetCountdownDisplay();
+        setHudVisible(false);
+        window.addEventListener('load', bootstrapGame);
+
+    </script>
 <script src="../../kidscade-game-sdk.js" data-game-id="low_bumper_roulette" data-title="범퍼 룰렛 레이스" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
