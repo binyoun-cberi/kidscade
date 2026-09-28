@@ -254,7 +254,7 @@ function collidePlayer(me,inp){
  const courtDir=me.side===0?1:-1;
  if(smash){
    const aim=shotAimFor(me,inp),profiles={
-     '-2':{vx:325,vy:330},'-1':{vx:365,vy:285},'0':{vx:435,vy:225},'1':{vx:485,vy:175},'2':{vx:520,vy:135}
+     '-2':{vx:300,vy:285},'-1':{vx:340,vy:245},'0':{vx:405,vy:195},'1':{vx:450,vy:150},'2':{vx:485,vy:115}
    },profile=profiles[String(aim)]||profiles['0'],targetVX=courtDir*profile.vx,targetVY=profile.vy;
    ball.vx=lerp(ball.vx,targetVX,.72);ball.vy=lerp(ball.vy,targetVY,.78);me.attack=0;shake=Math.max(shake,4.2);burst(ball.x,ball.y,11);sound('hit',1.04)
  }
