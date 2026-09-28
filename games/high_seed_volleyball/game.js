@@ -41,7 +41,7 @@ const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getC
 
 function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
- p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.slide=false;cpuState.aim=0;
+ p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.aim=0;cpuState.predX=710;cpuState.predT=1;cpuState.shotCooldown=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
  rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=difficulty==='easy'?.35+Math.random()*.22:difficulty==='hard'?.68+Math.random()*.25:.5+Math.random()*.25;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
  const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 충전':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 꾹 누르고 떼서 서브';serveText.classList.add('show');
@@ -79,74 +79,120 @@ function predictBallLanding(){
  return {x:g.x,t:6};
 }
 
-const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,slide:false,aim:0,predX:710,predT:1};
+const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,aim:0,predX:710,predT:1,shotCooldown:0};
+
+function cpuBallClone(){
+ return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||555};
+}
+function simulateCpuSmashLanding(aim){
+ const g=cpuBallClone(),courtDir=-1,deep=aim>0,short=aim<0;
+ const targetVX=courtDir*(deep?490:short?365:435),targetVY=deep?170:short?285:225;
+ g.vx=lerp(g.vx,targetVX,.72);g.vy=lerp(g.vy,targetVY,.78);g.speedCap=555;capBallBody(g);
+ let t=0;
+ for(let i=0;i<240;i++){
+   stepBallBody(g,1/120);t+=1/120;
+   if(g.y+g.r>=GROUND)return {x:g.x,t,valid:g.x<NETX-10};
+ }
+ return {x:g.x,t,valid:false};
+}
 function chooseCpuAttackAim(){
- const opp=p[0];
- // Right-side CPU attacks left. If the opponent is camping deep, use a short shot;
- // if the opponent is near the net, send it deep behind them.
- if(opp.x<215)return -1;
- if(opp.x>330)return 1;
- return opp.vx>90?-1:opp.vx<-90?1:(Math.random()<.5?-1:1);
+ const opp=p[0],candidates=[-1,0,1].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
+ const valid=candidates.filter(q=>q.valid);
+ if(!valid.length)return 0;
+ valid.forEach(q=>{
+   const separation=Math.abs(q.x-opp.x);
+   const safeCourt=q.x>45&&q.x<NETX-36?22:0;
+   const behindBonus=(opp.x>285&&q.x<220)||(opp.x<210&&q.x>300)?28:0;
+   q.score=separation+safeCourt+behindBonus;
+ });
+ valid.sort((a,b)=>b.score-a.score);
+ if(difficulty==='easy'&&valid.length>1&&Math.random()<.32)return valid[1].aim;
+ if(difficulty==='normal'&&valid.length>1&&Math.random()<.10)return valid[1].aim;
+ return valid[0].aim;
+}
+function predictCpuJumpIntercept(me){
+ const g=cpuBallClone(),floorY=GROUND-me.h*.5,dt=1/60;
+ let t=0;
+ for(let i=0;i<55;i++){
+   stepBallBody(g,dt);t+=dt;
+   if(g.y+g.r>=GROUND)break;
+   if(g.x<NETX-18||g.x>W-18)continue;
+   if(g.y<175||g.y>390)continue;
+   const rawY=floorY-620*t+.5*PLAYER_GRAVITY*t*t;
+   const jumpY=t<.88?Math.min(floorY,rawY):floorY;
+   const playerCenterY=jumpY-13;
+   const verticalOK=Math.abs(g.y-playerCenterY)<78;
+   const horizontalReach=AIR_MAX*t+88;
+   const horizontalOK=Math.abs(g.x-me.x)<horizontalReach;
+   if(verticalOK&&horizontalOK)return {x:g.x,y:g.y,t};
+ }
+ return null;
 }
 function cpuInput(dt){
  const cfg=difficulty==='easy'
-   ?{react:.18,err:78,offset:14,dead:15,jumpLead:.42,slideMargin:145,attackChance:.28}
-   :difficulty==='hard'
-   ?{react:.055,err:10,offset:42,dead:5,jumpLead:.66,slideMargin:245,attackChance:.92}
-   :{react:.095,err:28,offset:31,dead:8,jumpLead:.54,slideMargin:195,attackChance:.64};
+  ?{think:.080,err:60,offset:18,dead:14,slideMargin:150}
+  :difficulty==='hard'
+  ?{think:.018,err:4,offset:38,dead:4,slideMargin:255}
+  :{think:.035,err:18,offset:30,dead:7,slideMargin:205};
 
+ const me=p[1],out=inputCache[1];
  cpuState.jumpTimer=Math.max(0,cpuState.jumpTimer-dt);
  cpuState.attackTimer=Math.max(0,cpuState.attackTimer-dt);
+ cpuState.shotCooldown=Math.max(0,cpuState.shotCooldown-dt);
  cpuState.think-=dt;
 
  if(cpuState.think<=0){
-   cpuState.think=cfg.react;
-   const me=p[1],pred=predictBallLanding();
-   cpuState.predX=pred.x;cpuState.predT=pred.t;cpuState.slide=false;
-
+   cpuState.think=cfg.think;
+   const pred=predictBallLanding();
+   cpuState.predX=pred.x;cpuState.predT=pred.t;
    const onMySide=pred.x>NETX;
    if(onMySide){
-     // Stand slightly behind the landing point so the normal rebound naturally goes left.
-     const speedBias=clamp(Math.abs(ball.vx)*.045,0,18);
      const error=(Math.random()-.5)*cfg.err;
-     cpuState.targetX=clamp(pred.x+cfg.offset+speedBias+error,NETX+58,W-44);
+     const behind=cfg.offset+clamp(Math.abs(ball.vx)*.035,0,16);
+     cpuState.targetX=clamp(pred.x+behind+error,NETX+58,W-44);
    }else{
-     // Recover to a useful defensive base while the opponent has the ball.
-     cpuState.targetX=ball.x<NETX?clamp(735+(p[0].x-240)*.12,650,795):720;
+     // Original Pikachu AI does not chase a ball that belongs to the other side;
+     // it takes a useful standby position and waits for the return.
+     const oppThreat=clamp((p[0].x-250)*.18,-32,32);
+     cpuState.targetX=clamp(720+oppThreat,650,790);
    }
 
-   if(phase==='play'&&onMySide&&me.recover<=0){
-     const landingGap=Math.abs(pred.x-me.x);
-     const runReach=PLAYER_MAX*Math.max(0,pred.t)+44;
-     const ballLow=ball.y>me.y-82;
-     const descending=ball.vy>0;
-
-     // Do not randomly ignore a reachable ball. Slide only when running is unlikely
-     // to make it but the slide extension still can.
-     if(me.onGround&&descending&&pred.t<.52&&landingGap>runReach*.84&&landingGap<runReach+cfg.slideMargin){
-       cpuState.slide=true;
-       cpuState.targetX=clamp(pred.x,NETX+50,W-38);
-       cpuState.attackTimer=.055;
-     }else{
-       const close=Math.abs(ball.x-me.x);
-       const inJumpLane=close<88+cfg.err*.16;
-       const goodHeight=ball.y<me.y-26&&ball.y>me.y-190;
-       const shouldJump=me.onGround&&descending&&inJumpLane&&goodHeight&&pred.t<cfg.jumpLead;
-       if(shouldJump)cpuState.jumpTimer=.075;
+   // Predict whether jumping now can create an actual contact window.
+   if(phase==='play'&&me.onGround&&me.recover<=0&&me.state!=='SLIDE'){
+     const intercept=predictCpuJumpIntercept(me);
+     if(intercept&&intercept.t>.10&&intercept.t<.62){
+       cpuState.targetX=clamp(intercept.x+16,NETX+58,W-44);
+       if(intercept.t<.50)cpuState.jumpTimer=.055;
      }
-   }
-
-   // Once airborne and close enough, attack deliberately instead of relying on a
-   // random power-hit check every think cycle.
-   const close=Math.abs(ball.x-me.x);
-   const attackWindow=!me.onGround&&me.recover<=0&&ball.x>NETX-24&&close<86&&ball.y<me.y+8&&ball.y>me.y-118;
-   if(attackWindow&&cpuState.attackTimer<=0&&Math.random()<cfg.attackChance){
-     cpuState.aim=chooseCpuAttackAim();
-     cpuState.attackTimer=.055;
    }
  }
 
- const me=p[1],out=inputCache[1],dead=cfg.dead;
+ // Pikachu Volleyball switches from landing-point pursuit to direct ball pursuit
+ // after jumping. This keeps the CPU under the ball instead of committing to an old prediction.
+ if(phase==='play'&&!me.onGround&&me.state!=='SLIDE'&&me.recover<=0){
+   cpuState.targetX=clamp(ball.x+18,NETX+56,W-42);
+ }
+
+ // Last-chance ground slide: deterministic when running cannot reach but the slide can.
+ if(phase==='play'&&me.onGround&&me.state!=='SLIDE'&&me.recover<=0&&ball.vy>0&&cpuState.predX>NETX){
+   const gap=Math.abs(cpuState.predX-me.x);
+   const runReach=PLAYER_MAX*Math.max(0,cpuState.predT)+48;
+   if(cpuState.predT<.50&&gap>runReach*.82&&gap<runReach+cfg.slideMargin){
+     cpuState.targetX=clamp(cpuState.predX,NETX+50,W-38);
+     if(!me.smashLatch)cpuState.attackTimer=.045;
+   }
+ }
+
+ // Attack every frame while airborne so a narrow hit window is not missed between AI think ticks.
+ const close=Math.abs(ball.x-me.x),vertical=Math.abs(ball.y-(me.y-18));
+ const attackWindow=phase==='play'&&!me.onGround&&me.recover<=0&&me.state!=='SLIDE'&&ball.x>NETX-28&&close<92&&vertical<88;
+ if(attackWindow&&cpuState.shotCooldown<=0&&!me.smashLatch){
+   cpuState.aim=chooseCpuAttackAim();
+   cpuState.attackTimer=.045;
+   cpuState.shotCooldown=.16;
+ }
+
+ const dead=cfg.dead;
  out.l=me.x>cpuState.targetX+dead;
  out.r=me.x<cpuState.targetX-dead;
  out.j=cpuState.jumpTimer>0;
