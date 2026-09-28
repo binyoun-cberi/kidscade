@@ -1,12 +1,12 @@
 (function(){
 'use strict';
-const W=960,H=540,GROUND=470,NETX=480,NETTOP=282,NETW=18,FIXED=1/120;
+const W=960,H=540,GROUND=470,NETX=480,NETTOP=282,NETW=18,FIXED=1/120,SERVE_CHARGE_TIME=1.3;
 const BALL_GRAVITY=1120,PLAYER_GRAVITY=1420,PLAYER_MAX=455,AIR_MAX=425;
 const DEBUG=new URLSearchParams(location.search).has('debug');
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const DPR=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=true;
 const menu=document.getElementById('menu'),result=document.getElementById('result'),help=document.getElementById('help'),pauseLayer=document.getElementById('pauseLayer');
-const app=document.getElementById('app'),tip=document.getElementById('tip'),pad2=document.getElementById('pad2'),serveText=document.getElementById('serveText');
+const app=document.getElementById('app'),tip=document.getElementById('tip'),pad2=document.getElementById('pad2'),serveText=document.getElementById('serveText'),serveGauge=document.getElementById('serveGauge'),serveGaugeFill=document.getElementById('serveGaugeFill'),serveGaugeLabel=document.getElementById('serveGaugeLabel');
 const scoreEls=[document.querySelector('#score1 span'),document.querySelector('#score2 span')],rallyEl=document.getElementById('rallyInfo');
 const keys=Object.create(null),touch=Object.create(null);
 const inputCache=[{l:false,r:false,j:false,s:false,aim:0},{l:false,r:false,j:false,s:false,aim:0}];
@@ -25,11 +25,11 @@ function player(side){
  return {side,x:side===0?250:710,y:GROUND-48,w:72,h:96,vx:0,vy:0,onGround:true,state:'GROUND',jumpLatch:false,smashLatch:false,attack:0,slideTimer:0,recover:0,land:0,run:0,face:side===0?1:-1,touches:0};
 }
 let p=[player(0),player(1)];
-let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
+let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,speedCap:555,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
 const CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
 function makeSpriteSet(name){const pose=(poseName)=>{const img=new Image();img.src=CHARACTER_ROOT+name+'/poses/'+name+'-'+poseName+'.png';return img};return {stand:pose('stand'),walk1:pose('walk1'),walk2:pose('walk2'),jump:pose('jump'),action:pose('action1'),cheer:pose('cheer1'),hurt:pose('hurt')}}
 const athleteSprites=[makeSpriteSet('player'),makeSpriteSet('female')];
-let serveArmed=false;
+let serveArmed=false,serveCharging=false,serveCharge=0,cpuServeTarget=.55;
 
 const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getContext('2d');
 (function buildBackground(){
@@ -43,8 +43,8 @@ function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
  p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jump=false;cpuState.smash=false;cpuState.slide=false;cpuState.aim=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
- rally=0;rallyEl.textContent='랠리 0';serveArmed=false;setPhase('serve',.68);renderDirty=true;
- const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 준비':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 눌러 서브';serveText.classList.add('show');
+ rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=difficulty==='easy'?.35+Math.random()*.22:difficulty==='hard'?.68+Math.random()*.25:.5+Math.random()*.25;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
+ const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 충전':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 꾹 누르고 떼서 서브';serveText.classList.add('show');
 }
 function startGame(){
  mode=document.querySelector('.mode.active[data-mode]')?.dataset.mode||'cpu';difficulty=document.getElementById('difficulty').value;target=Number(document.getElementById('target').value)||7;practice=mode==='practice';practiceStage=0;
@@ -61,7 +61,7 @@ function inputFor(i){
  out.aim=0;return out;
 }
 
-function capBallBody(obj){const max=555,s=Math.hypot(obj.vx,obj.vy);if(s>max){obj.vx*=max/s;obj.vy*=max/s}obj.vx=clamp(obj.vx,-505,505);obj.vy=clamp(obj.vy,-625,625)}
+function capBallBody(obj){const max=obj.speedCap||555,s=Math.hypot(obj.vx,obj.vy);if(s>max){obj.vx*=max/s;obj.vy*=max/s}obj.vx=clamp(obj.vx,-650,650);obj.vy=clamp(obj.vy,-680,680)}
 function resolveNetBody(obj,prevX,prevY){
  const r=obj.r||ball.r;if(obj.y-r>GROUND||obj.y+r<NETTOP-12)return;
  const capR=NETW*.5+4,dx=obj.x-NETX,dy=obj.y-NETTOP,dist=Math.hypot(dx,dy),touchR=r+capR;
@@ -74,7 +74,7 @@ function stepBallBody(obj,dt){
  if(obj.y-r<0){obj.y=r;obj.vy=Math.abs(obj.vy)*.78}resolveNetBody(obj,px,py);capBallBody(obj);
 }
 function predictBallLanding(){
- const g={x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r};let t=0;
+ const g={x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap};let t=0;
  for(let i=0;i<720;i++){stepBallBody(g,FIXED);t+=FIXED;if(g.y+g.r>=GROUND)return {x:g.x,t}}
  return {x:g.x,t:6};
 }
@@ -133,7 +133,7 @@ function collidePlayer(me,inp){
  if(ball.hitLock>0)return;const c=colliderFor(me),ex=c.rx+ball.r,ey=c.ry+ball.r,qx=(ball.x-c.cx)/ex,qy=(ball.y-c.cy)/ey,d2=qx*qx+qy*qy;if(d2>=1)return;
  const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;ball.x=c.cx+ux*ex;ball.y=c.cy+uy*ey;
  let nx=ux/ex,ny=uy/ey,nlen=Math.hypot(nx,ny)||1;nx/=nlen;ny/=nlen;
- const smash=me.attack>0&&!me.onGround&&me.state!=='SLIDE',dive=me.state==='SLIDE';let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
+ const smash=me.attack>0&&!me.onGround&&me.state!=='SLIDE',dive=me.state==='SLIDE';ball.speedCap=555;let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
  if(vn<0){const restitution=smash?1.06:dive?1.00:.96;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*92;rvy+=ny*92}
  ball.vx=rvx+me.vx*(smash?.42:dive?.34:.28);ball.vy=rvy+me.vy*(smash?.18:.12);
  const courtDir=me.side===0?1:-1;
@@ -151,8 +151,17 @@ function collidePlayer(me,inp){
  if(ball.lastTouch!==me.side){ball.lastTouch=me.side;me.touches++;rally++;rallyEl.textContent='랠리 '+rally;if(practice){if(rally>bestRally){bestRally=rally;localStorage.setItem('seedVolleyBestRally',String(bestRally));document.getElementById('matchInfo').textContent='연습 모드 · 최고 '+bestRally}practiceCoach(me,smash,dive)}}
 }
 function practiceCoach(me,smash,dive){if(me.side!==0)return;if(practiceStage===0){practiceStage=1;showTip('좋아요! 이제 W로 점프해서 더 높은 타점을 만들어 보세요.',1800)}else if(practiceStage===1&&!me.onGround){practiceStage=2;showTip('공중에서 S를 누르면 강타! 방향키를 함께 누르면 길이를 조절해요.',2100)}else if(practiceStage===2&&smash){practiceStage=3;showTip('마지막 기술: 땅에서 방향키+S를 누르면 슬라이딩 수비!',2100)}else if(practiceStage===3&&dive){practiceStage=4;showTip('조작 완료! 이제 긴 랠리에 도전하세요.',2200)}}
+function updateServeGauge(power,show=true){
+ power=clamp(power,0,1);serveGaugeFill.style.width=Math.round(power*100)+'%';serveGaugeLabel.textContent=power>=.98?'MAX POWER!':('서브 파워 '+Math.round(power*100)+'%');serveGauge.classList.toggle('hidden',!show);
+}
 function burst(x,y,n){for(let i=0;i<n&&particles.length<52;i++)particles.push({x,y,vx:(Math.random()-.5)*230,vy:(Math.random()-.5)*190-45,t:.34})}
-function launchServe(){const dir=serveSide===0?1:-1;ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;ball.vx=dir*285;ball.vy=-455;ball.hitLock=.14;p[serveSide].attack=.1;setPhase('play',0);serveText.classList.remove('show');sound('hit',1.32)}
+function launchServe(power=0){
+ power=clamp(power,0,1);const dir=serveSide===0?1:-1,ease=power*power*(3-2*power);
+ ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;
+ ball.vx=dir*lerp(285,520,ease);ball.vy=-lerp(455,535,ease);ball.speedCap=lerp(555,760,ease);ball.hitLock=.14;p[serveSide].attack=.12;
+ if(power>.72){shake=Math.max(shake,2.8);burst(ball.x,ball.y,8)}
+ setPhase('play',0);serveCharging=false;serveCharge=0;serveText.classList.remove('show');updateServeGauge(0,false);sound('hit',lerp(1.32,.98,ease));
+}
 function scorePoint(winner){
  if(phase!=='play')return;if(practice){sound('cheer',1.04);resetEntities(winner===0?1:0);showTip('괜찮아요. 다시 타점을 잡아 이어 가요!',900);return}
  score[winner]++;updateScore();sound('cheer',winner===0?1.07:.98);serveSide=1-winner;setPhase('point',.75);serveText.textContent=(winner===0?'초록 팀':'파랑 팀')+' 득점!';serveText.classList.add('show');const a=score[0],bb=score[1],done=Math.max(a,bb)>=target&&Math.abs(a-bb)>=2;if(done){phase='finish';phaseTimer=.72;serveSide=a>bb?0:1}
@@ -162,7 +171,19 @@ function updateBall(dt){ball.hitLock=Math.max(0,ball.hitLock-dt);stepBallBody(ba
 function updateParticles(dt){for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.t-=dt;if(q.t<=0){particles.splice(i,1);continue}q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=420*dt}}
 function update(dt){
  simTime+=dt;const in0=inputFor(0),in1=mode==='cpu'||mode==='practice'?cpuInput(dt):inputFor(1);updatePlayer(p[0],in0,dt);updatePlayer(p[1],in1,dt);updateParticles(dt);shake=Math.max(0,shake-dt*18);
- if(phase==='serve'){const me=p[serveSide],dir=serveSide===0?1:-1,serveInput=serveSide===0?in0:in1;ball.x=me.x+dir*44;ball.y=me.y-82+Math.sin(simTime*8)*3;ball.vx=ball.vy=0;if(!serveInput.s)serveArmed=true;const cpuServing=(mode==='cpu'||mode==='practice')&&serveSide===1;if(cpuServing){phaseTimer-=dt;if(phaseTimer<=0)launchServe()}else if(serveArmed&&serveInput.s)launchServe();return}
+ if(phase==='serve'){
+   const me=p[serveSide],dir=serveSide===0?1:-1,serveInput=serveSide===0?in0:in1;ball.x=me.x+dir*44;ball.y=me.y-82+Math.sin(simTime*8)*3;ball.vx=ball.vy=0;
+   const cpuServing=(mode==='cpu'||mode==='practice')&&serveSide===1;
+   if(cpuServing){
+     phaseTimer-=dt;
+     if(phaseTimer<=0){serveCharging=true;serveCharge=Math.min(cpuServeTarget,serveCharge+dt/SERVE_CHARGE_TIME);updateServeGauge(serveCharge,true);if(serveCharge>=cpuServeTarget)launchServe(serveCharge)}
+   }else{
+     if(!serveInput.s&&!serveCharging)serveArmed=true;
+     if(serveArmed&&serveInput.s){serveCharging=true;serveCharge=Math.min(1,serveCharge+dt/SERVE_CHARGE_TIME);updateServeGauge(serveCharge,true)}
+     else if(serveCharging&&!serveInput.s){launchServe(serveCharge)}
+   }
+   return;
+ }
  if(phase==='point'){phaseTimer-=dt;if(phaseTimer<=0)resetEntities(serveSide);return}if(phase==='finish'){phaseTimer-=dt;if(phaseTimer<=0)finish(serveSide);return}if(phase!=='play')return;
  updateBall(dt);collidePlayer(p[0],in0);collidePlayer(p[1],in1);trailTimer-=dt;if(trailTimer<=0){trailTimer=1/45;const t=ball.trail[ball.trailHead];t.x=ball.x;t.y=ball.y;t.a=1;ball.trailHead=(ball.trailHead+1)%ball.trail.length}for(const t of ball.trail)t.a=Math.max(0,t.a-dt*3.8);
  if(ball.y+ball.r>=GROUND){ball.y=GROUND-ball.r;ball.vx=ball.vy=0;scorePoint(ball.x<NETX?1:0)}
