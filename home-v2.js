@@ -307,4 +307,127 @@
   }
 
   function playCount(gameId) {
-    const value = root?.KidscadeServerStats?.current?.gam
+    const value = root?.KidscadeServerStats?.current?.games?.[gameId];
+    return Number(value?.weeklyPlays || 0);
+  }
+
+  function launch(gameId) {
+    return root?.KidscadePlay?.open?.(gameId);
+  }
+
+  function toggleFavorite(gameId) {
+    const result = root?.KidscadeDashboard?.toggleFavorite?.(gameId);
+    scheduleRender();
+    return result;
+  }
+
+  function isFavorite(gameId) {
+    return root?.KidscadeDashboard?.isFavorite?.(gameId) === true ||
+      favoriteIds().includes(String(gameId || ''));
+  }
+
+  function ensureStylesheet() {
+    if (!root?.document || root.document.querySelector('link[data-kc-home-v2-style]')) return;
+    const link = root.document.createElement('link');
+    link.rel = 'stylesheet';
+    link.dataset.kcHomeV2Style = '1';
+    const version = root.KidscadeBoot?.version || 'dev';
+    link.href = `home-v2.css?v=${encodeURIComponent(version)}`;
+    root.document.head.appendChild(link);
+  }
+
+  function ensureShell() {
+    if (!root?.document) return null;
+    let shell = root.document.getElementById(HOME_ID);
+    if (shell) return shell;
+    const arcade = root.document.querySelector('.kc-arcade');
+    const discovery = root.document.querySelector('.kc-discovery');
+    if (!arcade || !discovery) return null;
+
+    shell = root.document.createElement('section');
+    shell.id = HOME_ID;
+    shell.className = 'kc-home-v2';
+    shell.setAttribute('aria-label', 'KIDSCADE 추천 홈');
+    arcade.insertBefore(shell, discovery);
+
+    let backbar = root.document.getElementById(BACKBAR_ID);
+    if (!backbar) {
+      backbar = root.document.createElement('div');
+      backbar.id = BACKBAR_ID;
+      backbar.className = 'kc-home-backbar';
+      backbar.innerHTML = `
+        <button type="button" class="kc-home-back">← 추천 홈</button>
+        <div class="kc-home-back-copy">
+          <strong class="kc-home-back-title">모든 게임</strong>
+          <span class="kc-home-back-note">검색과 태그로 원하는 게임을 찾아보세요.</span>
+        </div>
+      `;
+      arcade.insertBefore(backbar, discovery);
+      backbar.querySelector('.kc-home-back')?.addEventListener('click', () => showHome());
+    }
+
+    root.document.body.classList.add('kc-home-v2-ready');
+    return shell;
+  }
+
+  function heroMarkup(game, age) {
+    if (!game) return '';
+    const cover = game.cover || 'kidscade placeholder.png';
+    const favorite = isFavorite(game.id);
+    const subject = SUBJECT_LABELS[game.subject] || AGE_LABELS[age] || '추천';
+    return `
+      <article class="kc-home-hero" data-game-id="${escapeAttr(game.id)}">
+        <img class="kc-home-hero-art" src="${escapeAttr(cover)}" alt="" decoding="async">
+        <div class="kc-home-hero-shade"></div>
+        <div class="kc-home-hero-copy">
+          <div class="kc-home-hero-kicker">KIDSCADE PICK · ${escapeHtml(subject)}</div>
+          <h1>${escapeHtml(game.title)}</h1>
+          <p>${escapeHtml(game.description || '오늘의 추천 게임을 바로 시작해 보세요.')}</p>
+          <div class="kc-home-hero-meta">${escapeHtml(metaText(game))}</div>
+          <div class="kc-home-hero-actions">
+            <button type="button" class="kc-home-play" data-home-play="${escapeAttr(game.id)}">▶ 바로 시작</button>
+            <button type="button" class="kc-home-fav${favorite ? ' active' : ''}" data-home-fav="${escapeAttr(game.id)}" aria-pressed="${favorite ? 'true' : 'false'}">${favorite ? '★ 찜했어요' : '☆ 찜하기'}</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function railCardMarkup(game, rail) {
+    const cover = game.cover || 'kidscade placeholder.png';
+    const count = rail.showPlayCount ? playCount(game.id) : 0;
+    const countMarkup = count > 0 ? `<span class="kc-home-card-count">🔥 ${count.toLocaleString('ko-KR')}회</span>` : '';
+    return `
+      <button type="button" class="kc-home-card" data-home-play="${escapeAttr(game.id)}" data-home-card tabindex="-1">
+        <span class="kc-home-card-art">
+          <img src="${escapeAttr(cover)}" alt="" loading="lazy" decoding="async">
+          ${countMarkup}
+        </span>
+        <span class="kc-home-card-title">${escapeHtml(game.title)}</span>
+        <span class="kc-home-card-meta">${escapeHtml(metaText(game))}</span>
+      </button>
+    `;
+  }
+
+  function railMarkup(rail, index) {
+    return `
+      <section class="kc-home-rail" data-home-rail="${escapeAttr(rail.key)}" aria-labelledby="kc-home-rail-title-${index}">
+        <div class="kc-home-rail-head">
+          <div>
+            <h2 id="kc-home-rail-title-${index}">${escapeHtml(rail.title)}</h2>
+            <p>${escapeHtml(rail.note || '')}</p>
+          </div>
+          <div class="kc-home-rail-arrows" aria-label="${escapeAttr(rail.title)} 이동">
+            <button type="button" data-rail-prev aria-label="이전 게임">‹</button>
+            <button type="button" data-rail-next aria-label="다음 게임">›</button>
+          </div>
+        </div>
+        <div class="kc-home-rail-track" data-rail-track>
+          ${rail.games.map(game => railCardMarkup(game, rail)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replac
