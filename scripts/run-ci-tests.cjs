@@ -46,6 +46,7 @@ const TEST_FILES = [
   "tests/unification-war-v12.test.cjs",
   "tests/police-patrol.test.cjs",
   "tests/driver-license.test.cjs",
+  "tests/folklore-night-guard-persistence.test.cjs",
   "tests/drone-pilot-v3.test.cjs",
   "tests/byeokrando-tutorial.test.cjs",
   "tests/math-tower-defense-3d.test.cjs",
