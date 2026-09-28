@@ -2246,7 +2246,7 @@
       "age": "high",
       "icon": "⚒️",
       "description": "내 키즈케이드 아바타가 대장장이가 되어 분수·소수 조각을 모루에 올리고 +·−·×·÷ 공구로 직접 가공해 목표값을 만드는 수학 액션 퍼즐! 견습 연습, 60초 러시, 최단 타격 마스터 오더를 즐겨요.",
-      "scoreKey": "fractionSmithBest_v1_rush",
+      "scoreKey": "kidscade_fraction_smith_best_v1",
       "subject": "math",
       "genre": "puzzle",
       "difficulty": "medium",
