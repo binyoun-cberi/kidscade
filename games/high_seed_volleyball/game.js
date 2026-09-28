@@ -43,7 +43,7 @@ function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
  p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.aim=0;cpuState.predX=710;cpuState.predT=1;cpuState.shotCooldown=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
- rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=difficulty==='easy'?.35+Math.random()*.22:difficulty==='hard'?.68+Math.random()*.25:.5+Math.random()*.25;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
+ rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=555;cpuServeTarget=-1;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
  const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 충전':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 꾹 누르고 떼서 서브';serveText.classList.add('show');
 }
 function startGame(){
@@ -270,10 +270,40 @@ function updateServeGauge(power,show=true){
  power=clamp(power,0,1);serveGaugeFill.style.width=Math.round(power*100)+'%';serveGaugeLabel.textContent=power>=.98?'MAX POWER!':('서브 파워 '+Math.round(power*100)+'%');serveGauge.classList.toggle('hidden',!show);
 }
 function burst(x,y,n){for(let i=0;i<n&&particles.length<52;i++)particles.push({x,y,vx:(Math.random()-.5)*230,vy:(Math.random()-.5)*190-45,t:.34})}
+function simulateServeLanding(power,side=serveSide){
+ power=clamp(power,0,1);const ease=power*power*(3-2*power),dir=side===0?1:-1,me=p[side];
+ const g={x:me.x+dir*44,y:me.y-82,vx:dir*lerp(320,580,ease),vy:-lerp(510,470,ease),r:ball.r,speedCap:lerp(600,800,ease)};
+ let t=0,netHit=false;
+ for(let i=0;i<360;i++){
+   const beforeX=g.x,beforeVX=g.vx;stepBallBody(g,FIXED);t+=FIXED;
+   if((beforeX-NETX)*(g.x-NETX)<=0&&Math.sign(beforeVX)!==Math.sign(g.vx))netHit=true;
+   if(g.y+g.r>=GROUND)return {x:g.x,t,valid:side===1?(g.x>38&&g.x<NETX-30):(g.x< W-38&&g.x>NETX+30),netHit};
+ }
+ return {x:g.x,t,valid:false,netHit:true};
+}
+function chooseCpuServePower(){
+ const opp=p[0],candidates=[];
+ for(let i=0;i<=20;i++){
+   const power=i/20,res=simulateServeLanding(power,1);
+   if(!res.valid||res.netHit)continue;
+   const boundarySafety=Math.min(res.x-38,(NETX-30)-res.x);
+   const separation=Math.abs(res.x-opp.x);
+   const fastBonus=power*18;
+   candidates.push({power,...res,score:separation+Math.min(70,boundarySafety)*.10+fastBonus});
+ }
+ if(!candidates.length)return .55;
+ candidates.sort((a,b)=>b.score-a.score);
+ if(difficulty==='easy'){
+   const pool=candidates.slice(0,Math.min(7,candidates.length));
+   return pool[Math.min(pool.length-1,2+Math.floor(Math.random()*Math.max(1,pool.length-2)))].power;
+ }
+ if(difficulty==='normal'&&candidates.length>2&&Math.random()<.18)return candidates[1+Math.floor(Math.random()*2)].power;
+ return candidates[0].power;
+}
 function launchServe(power=0){
  power=clamp(power,0,1);const dir=serveSide===0?1:-1,ease=power*power*(3-2*power);
  ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;
- ball.vx=dir*lerp(320,520,ease);ball.vy=-lerp(510,535,ease);ball.speedCap=lerp(600,760,ease);ball.hitLock=.14;p[serveSide].attack=.12;
+ ball.vx=dir*lerp(320,580,ease);ball.vy=-lerp(510,470,ease);ball.speedCap=lerp(600,800,ease);ball.hitLock=.14;p[serveSide].attack=.12;
  if(power>.72){shake=Math.max(shake,2.8);burst(ball.x,ball.y,8)}
  setPhase('play',0);serveCharging=false;serveCharge=0;serveText.classList.remove('show');updateServeGauge(0,false);sound('hit',lerp(1.32,.98,ease));
 }
@@ -291,7 +321,12 @@ function update(dt){
    const cpuServing=(mode==='cpu'||mode==='practice')&&serveSide===1;
    if(cpuServing){
      phaseTimer-=dt;
-     if(phaseTimer<=0){serveCharging=true;serveCharge=Math.min(cpuServeTarget,serveCharge+dt/SERVE_CHARGE_TIME);updateServeGauge(serveCharge,true);if(serveCharge>=cpuServeTarget)launchServe(serveCharge)}
+     if(phaseTimer<=0){
+       if(cpuServeTarget<0)cpuServeTarget=chooseCpuServePower();
+       serveCharging=true;serveCharge=Math.min(cpuServeTarget,serveCharge+dt/SERVE_CHARGE_TIME);
+       updateServeGauge(serveCharge,true);
+       if(serveCharge>=cpuServeTarget)launchServe(serveCharge);
+     }
    }else{
      if(!serveInput.s&&!serveCharging)serveArmed=true;
      if(serveArmed&&serveInput.s){serveCharging=true;serveCharge=Math.min(1,serveCharge+dt/SERVE_CHARGE_TIME);updateServeGauge(serveCharge,true)}
