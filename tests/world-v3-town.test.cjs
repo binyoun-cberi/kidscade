@@ -517,7 +517,9 @@ test('profile Seed World entry replaces legacy garden and main pet navigation',(
   assert.doesNotMatch(indexBase,/id="kc-pet-card"/);
   assert.doesNotMatch(indexBase,/id="pet-widget"/);
   assert.match(indexBase,/id="btn-open-shop"[^>]*data-open-life-world="profile-world"[^>]*>🌱 씨앗 월드</);
-  assert.match(uiInfo,/shopButton\.textContent = '🌱 씨앗 월드'/);
+  assert.match(uiInfo,/kc-world-title/);
+  assert.match(uiInfo,/씨앗 월드/);
+  assert.match(integration,/kc-world-meta/);
   assert.match(uiInfo,/document\.getElementById\('kc-pet-card'\)\?\.remove\(\)/);
   assert.match(integration,/if\(openBtn\)openBtn\.remove\(\)/);
   assert.match(seedEntry,/document\.querySelector\('\.kc-seed-house-card'\)\?\.remove\(\)/);
