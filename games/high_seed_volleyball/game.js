@@ -158,7 +158,7 @@ function burst(x,y,n){for(let i=0;i<n&&particles.length<52;i++)particles.push({x
 function launchServe(power=0){
  power=clamp(power,0,1);const dir=serveSide===0?1:-1,ease=power*power*(3-2*power);
  ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;
- ball.vx=dir*lerp(285,520,ease);ball.vy=-lerp(455,535,ease);ball.speedCap=lerp(555,760,ease);ball.hitLock=.14;p[serveSide].attack=.12;
+ ball.vx=dir*lerp(320,520,ease);ball.vy=-lerp(510,535,ease);ball.speedCap=lerp(600,760,ease);ball.hitLock=.14;p[serveSide].attack=.12;
  if(power>.72){shake=Math.max(shake,2.8);burst(ball.x,ball.y,8)}
  setPhase('play',0);serveCharging=false;serveCharge=0;serveText.classList.remove('show');updateServeGauge(0,false);sound('hit',lerp(1.32,.98,ease));
 }
