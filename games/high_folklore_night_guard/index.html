@@ -1094,16 +1094,20 @@ function resetRoamer(r,rewarded){
   r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.rest=4+Math.random()*4
 }
 function initializePersistentGhosts(){
-  state.dokkaebi=castHas('dokkaebi')?{active:true,location:'korea',previous:null,moveClock:0,moveEvery:8.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:2}:null;
+  state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:8.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:2}:null;
   state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:12.5,frost:18,rest:4}:null;
   state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:5}:{active:false,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
   if(castHas('egg')){
-    var eggCams=['korea','japan','europe','special','west','east'];
-    state.egg={active:true,cam:eggCams[Math.floor(Math.random()*eggCams.length)],life:0,stare:0,seenThisStop:false,moveEvery:6.5+Math.random()*4}
+    var occupied=['special','japan'];if(state.maiden.active)occupied.push('korea');
+    var eggCams=['west','east','europe','korea','special','japan'].filter(function(cam){return occupied.indexOf(cam)<0});
+    state.egg={active:true,cam:eggCams[Math.floor(Math.random()*eggCams.length)]||'west',life:0,stare:0,seenThisStop:false,moveEvery:6.5+Math.random()*4}
   }else state.egg=null;
   state.roamers={reaper:null,wolf:null};
   if(castHas('reaper'))state.roamers.reaper=makeRoamer('reaper',7);
-  if(castHas('wolf'))state.roamers.wolf=makeRoamer('wolf',10)
+  if(castHas('wolf')){
+    state.roamers.wolf=makeRoamer('wolf',10);
+    if(state.roamers.wolf){state.roamers.wolf.index=1;state.roamers.wolf.location=state.roamers.wolf.route[1];state.roamers.wolf.moveClock=0}
+  }
 }
 function threatPressure(){
   var n=0;
