@@ -18,6 +18,7 @@
   }[ch]));
 
   function account() { return window.KidscadeAccount?.account || null; }
+  function isTeacher() { return account()?.role === 'teacher'; }
   function store() { return window.KidscadeStorage || null; }
   function currentPower() {
     try { return Math.max(0, store()?.getInt?.('sproutPower', 0) || 0); } catch (_) { return 0; }
@@ -206,7 +207,7 @@
     flushTimer = setTimeout(flush, 450);
   }
   async function flush() {
-    if (!loginId || flushing || pending <= 0 || account()?.loginId !== loginId) return;
+    if (!loginId || isTeacher() || flushing || pending <= 0 || account()?.loginId !== loginId) return;
     const amount = Math.min(MAX_BATCH, pending);
     flushing = true;
     try {
@@ -232,7 +233,7 @@
     const delta = Math.max(0, Math.min(500, Math.floor(Number(amount || 0))));
     if (!delta) return { ok:false, power:currentPower(), delta:0 };
     const power = setPower(currentPower() + delta);
-    if (loginId) {
+    if (loginId && !isTeacher()) {
       pending += delta;
       savePending();
       scheduleFlush();
@@ -247,7 +248,7 @@
     if (nextLogin !== loginId) {
       loginId = nextLogin;
       ranking = null;
-      pending = loginId ? loadPending(loginId) : 0;
+      pending = loginId && !isTeacher() ? loadPending(loginId) : 0;
       if (!loginId) close();
       entry();
       if (pending > 0) scheduleFlush();
