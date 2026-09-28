@@ -61,7 +61,9 @@
     if(meta.pendingMail>0)extras.push('📬 '+meta.pendingMail);
     if(ripe>0)extras.push('🥕 '+ripe);
     if(orchard>0)extras.push('🍎 '+orchard);
-    btn.textContent='🌱 씨앗 월드 · '+ '⭐'.repeat(villageStars())+(extras.length?' · '+extras.join(' · '):'');
+    const stars='⭐'.repeat(villageStars());
+    const status=[stars,...extras].filter(Boolean).join(' · ')||'마을을 돌보고 보상을 확인해요';
+    btn.innerHTML='<span class="kc-world-main"><span class="kc-world-icon">🌱</span><span class="kc-world-copy"><span class="kc-world-title">씨앗 월드</span><span class="kc-world-meta">'+status+'</span></span></span><span class="kc-world-arrow" aria-hidden="true">›</span>';
     btn.classList.toggle('has-world-alert',meta.pendingMail>0||ripe>0);
     btn.setAttribute('aria-label',extras.length?'씨앗 월드 · '+extras.join(' · '):'씨앗 월드');
     const seedLine=document.getElementById('avatar-plaza-seeds');
