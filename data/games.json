@@ -2278,16 +2278,16 @@
     },
     {
       "id": "cube3d",
-      "title": "3D 전개도 마스터",
+      "title": "큐브 아키텍트",
       "href": "games/cube3d/3D 전개도 마스터.html",
       "category": "math",
       "age": "high",
-      "icon": "🧊",
-      "description": "3×3×3 공간에 쌓기나무를 직접 쌓고 돌려보며 위·앞·옆에서 본 모양을 2D 모눈종이에 그려 맞히는 공간감각 학습 게임!",
+      "icon": "🏗️",
+      "description": "겨냥도를 보고 3D 건축물을 복원하고, 전개도의 면을 직육면체에 맞춰 본 뒤 작은 블록 월드에서 탐험·수집·자유 건축까지 즐기는 공간도형 게임!",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
-      "sessionMinutes": 15,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],
@@ -2296,7 +2296,7 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": true
     },
     {
       "id": "world_flag_master",
