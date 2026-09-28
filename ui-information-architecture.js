@@ -406,7 +406,8 @@
     if (!strip) return false;
     const sidebar = document.querySelector('.kc-myspace-inner');
     const avatar = sidebar?.querySelector('.kc-side-card.avatar-shell');
-    const hero = document.querySelector('.kc-arcade .kc-hero');
+    const arcade = document.querySelector('.kc-arcade');
+    const home = document.getElementById('kc-home-v2');
 
     if (desktopActivitySidebarEnabled() && sidebar && avatar) {
       strip.classList.add('kc-activity-sidebar');
@@ -415,14 +416,23 @@
     }
 
     strip.classList.remove('kc-activity-sidebar');
-    if (hero && hero.nextElementSibling !== strip) hero.insertAdjacentElement('afterend', strip);
-    return Boolean(hero);
+    if (!arcade) return false;
+    if (home) {
+      if (home.nextElementSibling !== strip) home.insertAdjacentElement('afterend', strip);
+      return true;
+    }
+    const discovery = arcade.querySelector('.kc-discovery');
+    if (discovery) {
+      if (discovery.previousElementSibling !== strip) arcade.insertBefore(strip, discovery);
+      return true;
+    }
+    if (strip.parentElement !== arcade) arcade.prepend(strip);
+    return true;
   }
 
   function ensureActivityStrip() {
     const arcade = document.querySelector('.kc-arcade');
-    const hero = arcade?.querySelector('.kc-hero');
-    if (!arcade || !hero) return false;
+    if (!arcade) return false;
 
     let strip = document.getElementById(ACTIVITY_STRIP_ID);
     if (!strip) {
@@ -439,7 +449,9 @@
           <span class="kc-activity-sub">무엇을 할지 고민되면 지금 나에게 맞는 게임을 골라봐요.</span>
         </button>
       `;
-      hero.insertAdjacentElement('afterend', strip);
+      const discovery = arcade.querySelector('.kc-discovery');
+      if (discovery) arcade.insertBefore(strip, discovery);
+      else arcade.prepend(strip);
       strip.querySelector('[data-kc-activity="missions"]')?.addEventListener('click', openMission);
       strip.querySelector('[data-kc-activity="recommend"]')?.addEventListener('click', openRecommendation);
     }
