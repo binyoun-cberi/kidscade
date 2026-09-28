@@ -520,7 +520,7 @@ test('profile Seed World entry replaces legacy garden and main pet navigation',(
   assert.match(uiInfo,/kc-world-title/);
   assert.match(uiInfo,/씨앗 월드/);
   assert.match(integration,/kc-world-meta/);
-  assert.match(uiInfo,/document\.getElementById\('kc-pet-card'\)\?\.remove\(\)/);
+  assert.doesNotMatch(uiInfo,/kc-pet-card|sidebar-pet-open|pet-widget/);
   assert.match(integration,/if\(openBtn\)openBtn\.remove\(\)/);
   assert.match(seedEntry,/document\.querySelector\('\.kc-seed-house-card'\)\?\.remove\(\)/);
 });
