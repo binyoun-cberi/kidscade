@@ -39,21 +39,13 @@ test('seed ranking migration and API routes are wired', () => {
 
 test('teachers can view class seed ranking without writing student weekly ledgers', () => {
   const worker = fs.readFileSync(path.join(ROOT, 'worker', 'seed-rankings.mjs'), 'utf8');
-  const client = fs.readFileSync(path.join(ROOT, 'seed-ranking.js'), 'utf8');
   assert.match(worker, /authorizeTeacherAccess/);
   assert.match(worker, /requireRankingViewer/);
-  assert.match(client, /isTeacher/);
-  assert.match(client, /!isTeacher\(\)/);
 });
 
-test('student ranking UI exposes only the requested seed views', () => {
+test('legacy seed-ranking client is retired while server APIs stay available', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const client = fs.readFileSync(path.join(ROOT, 'seed-ranking.js'), 'utf8');
-  assert.match(index, /seed-ranking\.js/);
-  assert.match(client, /보유 씨앗/);
-  assert.match(client, /이번 주 획득/);
-  assert.match(client, /우리 반 씨앗 랭킹/);
-  assert.match(client, /\/api\/account\/seed-earned/);
-  assert.match(client, /\/api\/account\/seed-ranking/);
-  assert.doesNotMatch(client, /loginId.*innerHTML/);
+  const clientPath = path.join(ROOT, 'seed-ranking.js');
+  assert.equal(fs.existsSync(clientPath), false);
+  assert.doesNotMatch(index, /seed-ranking\.js/);
 });
