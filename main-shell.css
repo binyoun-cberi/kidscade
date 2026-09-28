@@ -784,11 +784,6 @@
             .shop-item { width: 100%;
             }
 
-            #pet-widget {
-                width: 70px; height: 70px; font-size: 2.2em; bottom: 20px; right: 20px;
-            }
-            #pet-widget-inner { font-size: 2.2em; }
-            #pet-widget-bubble { bottom: 80px; font-size: 11px; }
         }
         .hidden { display: none !important;
         }
