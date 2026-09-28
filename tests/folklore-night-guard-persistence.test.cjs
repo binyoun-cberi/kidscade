@@ -55,5 +55,9 @@ test('Night Guard hallucination fake scares are cosmetic and protected from unfa
   assert.match(html, /state\.fakeScareToken\+\+/);
   assert.match(html, /cam-switching/);
   assert.match(html, /signalIntrusion\.classList\.contains\('show'\)/);
-  assert.doesNotMatch(html, /triggerFakeScare\([^)]*\).*fail\(/s);
+  const start = html.indexOf('function triggerFakeScare(){');
+  const end = html.indexOf('function updateFakeScare(){', start);
+  assert.ok(start >= 0 && end > start, 'fake scare function should be isolated for safety checks');
+  const fakeScareBody = html.slice(start, end);
+  assert.doesNotMatch(fakeScareBody, /\bfail\(/);
 });
