@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>프랙션 스미스</title>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div class="game-shell">
+  <header class="hud">
+    <div class="brand"><span class="brand-mark">⚒</span><div><strong>프랙션 스미스</strong><small>숫자를 두들겨 주문을 완성하라!</small></div></div>
+    <div class="hud-stats">
+      <div class="stat"><span>주문</span><b id="orderCount">0</b></div>
+      <div class="stat"><span>점수</span><b id="score">0</b></div>
+      <div class="stat heat"><span>HEAT</span><b id="heat">🔥</b></div>
+      <div class="stat timer"><span>시간</span><b id="timer">∞</b></div>
+    </div>
+    <button class="sound-btn" id="soundBtn" aria-label="소리 켜기 또는 끄기">🔊</button>
+  </header>
+
+  <main class="forge-room">
+    <section class="order-board" aria-live="polite">
+      <span class="order-label">오늘의 주문</span>
+      <strong id="targetValue">3/4</strong>
+      <span id="orderMeta">기준 1타</span>
+    </section>
+
+    <section class="work-zone">
+      <div class="avatar-bay">
+        <div class="avatar-stage" id="avatarStage">
+          <div class="avatar-shadow"></div>
+          <img id="avatarImg" alt="내 키즈케이드 아바타">
+          <div class="avatar-fallback" id="avatarFallback">🧑‍🏭</div>
+          <div class="held-stage-tool" id="stageTool" aria-hidden="true"></div>
+        </div>
+        <div class="avatar-caption"><span class="live-dot"></span> 내 키즈케이드 아바타</div>
+      </div>
+
+      <div class="anvil-zone">
+        <div class="forge-fire" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="equation-line" id="equationLine">재료 두 개를 모루에 올려요</div>
+        <div class="anvil" id="anvil" aria-label="작업 모루">
+          <button class="slot" id="slotA" data-slot="0" aria-label="첫 번째 재료"><span>1</span></button>
+          <div class="op-badge" id="opBadge">?</div>
+          <button class="slot" id="slotB" data-slot="1" aria-label="두 번째 재료"><span>2</span></button>
+          <div class="anvil-top"></div>
+          <div class="anvil-body"><div class="anvil-logo">F</div></div>
+          <div class="anvil-foot"></div>
+        </div>
+        <div class="result-pop" id="resultPop" aria-live="assertive"></div>
+      </div>
+    </section>
+
+    <section class="tool-rack" aria-label="연산 공구">
+      <button class="tool add" data-op="+" data-kind="add"><span class="tool-art">🔨</span><b>+</b><small>결합 망치</small></button>
+      <button class="tool sub" data-op="-" data-kind="sub"><span class="tool-art">🔧</span><b>−</b><small>절삭 끌</small></button>
+      <button class="tool mul" data-op="×" data-kind="mul"><span class="tool-art">⚒️</span><b>×</b><small>대형 해머</small></button>
+      <button class="tool div" data-op="÷" data-kind="div"><span class="tool-art">🪓</span><b>÷</b><small>분할 도끼</small></button>
+    </section>
+
+    <section class="tray-panel">
+      <div class="tray-head">
+        <div><b>숫자 재료함</b><small>두 조각을 모루에 올리고 공구로 내려치세요.</small></div>
+        <div class="tray-actions"><button id="hintBtn">💡 힌트</button><button id="undoBtn">↶ 되돌리기</button></div>
+      </div>
+      <div class="material-tray" id="materialTray"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <div class="tool-ghost" id="toolGhost" aria-hidden="true"></div>
+  <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+
+  <div class="modal open" id="startModal">
+    <div class="modal-card">
+      <div class="modal-icon">⚒️</div>
+      <h1>프랙션 스미스</h1>
+      <p>내 키즈케이드 아바타가 대장장이가 됩니다.<br>분수와 소수 조각을 조합해 주문값을 만들어 보세요.</p>
+      <div class="mode-grid">
+        <button data-mode="practice"><b>🛠 견습 대장간</b><span>시간 제한 없이 연습 · 힌트/되돌리기</span></button>
+        <button data-mode="rush"><b>🔥 60초 러시</b><span>연속 주문으로 HEAT를 올리는 아케이드</span></button>
+        <button data-mode="master"><b>👑 마스터 오더</b><span>3단계 제작 · 최단 타격 도전</span></button>
+      </div>
+      <small class="modal-tip">조각은 탭하거나 끌어서 올릴 수 있고, 공구는 탭하거나 모루로 끌어 내려칠 수 있어요.</small>
+    </div>
+  </div>
+
+  <div class="modal" id="finishModal">
+    <div class="modal-card compact">
+      <div class="modal-icon" id="finishIcon">🔥</div>
+      <h2 id="finishTitle">작업 종료!</h2>
+      <p id="finishText"></p>
+      <div class="finish-score" id="finishScore">0</div>
+      <div class="finish-actions"><button id="againBtn">다시 하기</button><button id="modeBtn">모드 선택</button></div>
+    </div>
+  </div>
+</div>
+<script src="fraction-engine.js?v=1"></script>
+<script src="puzzle-generator.js?v=1"></script>
+<script src="fraction-smith-avatar.js?v=1"></script>
+<script src="game.js?v=1"></script>
+</body>
+</html>
