@@ -179,7 +179,13 @@ function finishRun(){
   }
   ui.result.classList.add('show');beep(passed?880:220,.35,.07);
   if(mode==='exam'){
-    try{localStorage.setItem('driverLicenseBest',String(Math.max(Number(localStorage.getItem('driverLicenseBest')||0),score)))}catch(_){}
+    try{
+      let best=window.KidscadeStorage?.getInt('driverLicenseBest',0)||0;
+      const legacy=Number(localStorage.getItem('driverLicenseBest')||0);
+      best=Math.max(best,legacy,score);
+      window.KidscadeStorage?.setRaw('driverLicenseBest',String(best));
+      if(legacy) localStorage.removeItem('driverLicenseBest');
+    }catch(_){}
     try{window.KidscadeGame?.gameOver?.({score,passed,license,disqualified:examiner.disqualified,reason:examiner.reason});}catch(_){}
   }else{
     try{window.KidscadeGame?.gameOver?.({practice:true,license});}catch(_){}
