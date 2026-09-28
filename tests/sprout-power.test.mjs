@@ -46,6 +46,14 @@ test('teachers can view class sprout-power ranking without writing student weekl
   assert.match(client, /!isTeacher\(\)/);
 });
 
+test('sprout-power ranking entry is pinned to the main sidebar and remains visible for guests', () => {
+  const client = fs.readFileSync(path.join(ROOT, 'sprout-power.js'), 'utf8');
+  assert.match(client, /querySelector\('\.kc-myspace-inner'\)/);
+  assert.match(client, /kc-side-card ksp-sidebar-card/);
+  assert.match(client, /로그인 후 우리 반 순위 보기/);
+  assert.match(client, /KidscadeAccount\?\.login/);
+});
+
 test('student ranking UI uses non-spendable sprout power instead of seed balance', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const client = fs.readFileSync(path.join(ROOT, 'sprout-power.js'), 'utf8');
