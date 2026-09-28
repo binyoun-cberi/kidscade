@@ -378,4 +378,20 @@ body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124
   .kc-home-hero p { margin-top:7px; font-size:.67rem; line-height:1.45; }
   .kc-home-hero-meta { margin-top:7px; font-size:.58rem; }
   .kc-home-hero-actions { margin-top:11px; gap:6px; }
-  .kc-home-play,.kc-home-fa
+  .kc-home-play,.kc-home-fav { min-height:40px; padding:0 12px; font-size:.68rem; }
+  .kc-home-rail-head { margin-bottom:7px; }
+  .kc-home-rail-head h2 { font-size:.93rem; }
+  .kc-home-rail-head p { display:none; }
+  .kc-home-rail-track {
+    grid-auto-columns:minmax(142px,68vw);
+    gap:8px;
+  }
+  .kc-home-card-art { border-radius:13px; }
+  .kc-home-card-title { font-size:.72rem; }
+  .kc-home-card-meta { font-size:.54rem; }
+  .kc-home-library-cta { display:grid; gap:10px; }
+  .kc-home-library-open { width:100%; min-height:44px; }
+  .kc-home-backbar { padding:8px 9px; border-radius:14px; }
+  .kc-home-back { min-height:38px; padding:0 10px; }
+  .kc-home-back-note { display:none; }
+}
