@@ -331,35 +331,6 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
   font-weight:800;
 }
 
-.kc-home-library-cta {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  margin-top:3px;
-  padding:15px 17px;
-  border:1px solid rgba(124,92,255,.16);
-  border-radius:20px;
-  background:linear-gradient(135deg,rgba(124,92,255,.075),var(--kc-panel) 55%);
-  box-shadow:0 7px 20px rgba(15,23,42,.05);
-}
-.kc-home-library-cta > div { display:grid; gap:3px; min-width:0; }
-.kc-home-library-cta strong { color:var(--kc-ink); font-size:.9rem; }
-.kc-home-library-cta span { color:var(--kc-muted); font-size:.65rem; font-weight:750; }
-.kc-home-library-open {
-  flex:none;
-  min-height:42px;
-  padding:0 14px;
-  border:0;
-  border-radius:13px;
-  background:#7c5cff;
-  color:#fff;
-  font:inherit;
-  font-size:.73rem;
-  font-weight:1000;
-  cursor:pointer;
-  box-shadow:0 7px 16px rgba(124,92,255,.20);
-}
 
 /* Home 2.0 keeps the left column useful but visually secondary to the games. */
 @media (min-width:941px) {
@@ -374,7 +345,6 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
 body.dark-mode .kc-home-card-art { background:#263244; }
 body.dark-mode .kc-home-back,
 body.dark-mode .kc-home-rail-arrows button { background:#263244; }
-body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124,92,255,.12),var(--kc-panel) 55%); }
 
 @media (max-width:940px) {
   .kc-home-v2 { gap:15px; margin-bottom:16px; }
@@ -396,7 +366,6 @@ body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124
     scrollbar-width:none;
   }
   .kc-home-rail-track::-webkit-scrollbar { display:none; }
-  .kc-home-library-cta { padding:13px; border-radius:17px; }
 }
 
 @media (max-width:620px) {
@@ -435,8 +404,6 @@ body.dark-mode .kc-home-library-cta { background:linear-gradient(135deg,rgba(124
   .kc-home-card-art { border-radius:13px; }
   .kc-home-card-title { font-size:.72rem; }
   .kc-home-card-meta { font-size:.54rem; }
-  .kc-home-library-cta { display:grid; gap:10px; }
-  .kc-home-library-open { width:100%; min-height:44px; }
   .kc-home-backbar { padding:8px 9px; border-radius:14px; }
   .kc-home-back { min-height:38px; padding:0 10px; }
   .kc-home-back-note { display:none; }
