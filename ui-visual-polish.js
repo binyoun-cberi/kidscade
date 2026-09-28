@@ -133,10 +133,6 @@
         border-radius:19px !important;
         box-shadow:0 7px 20px rgba(15,23,42,.055) !important;
       }
-      #kc-pet-card .kc-pet-avatar { width:48px !important; height:48px !important; border-radius:15px !important; }
-      #kc-pet-card .kc-pet-talk { margin-top:8px !important; padding:8px 9px !important; border-radius:12px !important; }
-      #kc-pet-card .kc-side-actions { margin-top:8px !important; }
-      #kc-pet-card #sidebar-pet-open { min-height:43px !important; border-radius:13px !important; }
 
       /* 오늘의 활동: 두 기능을 확실히 구분하되 과한 장식은 줄임 */
       #kc-activity-strip { gap:8px !important; margin-bottom:12px !important; }
