@@ -360,7 +360,8 @@
         setup.names = setup.names.slice(0, next);
       }
       setup.playerCount = next;
-      setup.mafia = Math.min(setup.mafia, Math.max(1, Math.floor((next - 1) / 2)));
+      setup.mafia = recommendedMafia(next);
+      if (next >= 5) setup.doctor = true;
       if (next < 5 && setup.doctor && next - setup.mafia - (setup.detective ? 1 : 0) - 1 < 1) setup.doctor = false;
       syncSetupUi();
       persist();
