@@ -45,6 +45,15 @@ function avatarFrameApi(){
  ];
  return candidates.find(api=>api&&typeof api.renderPreviewFrame==='function')||null;
 }
+const avatarLiveFrameCache=new Map();
+function cachedAvatarFrame(mode,now){
+ const cached=avatarLiveFrameCache.get(mode);
+ if(cached&&now-cached.time<95)return cached.src;
+ const api=avatarFrameApi();if(!api)return cached?.src||'';
+ const src=safeAvatar(()=>api.renderPreviewFrame(mode,now/1000),'')||'';
+ if(src&&src.startsWith('data:image')){avatarLiveFrameCache.set(mode,{time:now,src});return src}
+ return cached?.src||'';
+}
 function svgDataUrl(svg){
  if(!svg)return'';
  const embedded=(svg.match(/<image[^>]+href=["']([^"']+)["']/i)||[])[1];
@@ -78,10 +87,9 @@ class VolleyAvatarActor{
    return 'idle';
  }
  capture(mode,now){
-   const api=avatarFrameApi();
-   if(!api||now-this.lastCapture<105)return false;
+   if(now-this.lastCapture<105)return false;
    this.lastCapture=now;
-   const src=safeAvatar(()=>api.renderPreviewFrame(mode,now/1000),'')||'';
+   const src=cachedAvatarFrame(mode,now);
    if(src&&src.startsWith('data:image')){this.setSource(src);return true}
    return false;
  }
@@ -116,7 +124,9 @@ class VolleyAvatarActor{
    ctx.translate(me.x+ox,footY+bob+oy);
    ctx.rotate(rot);
    ctx.scale((me.face>=0?1:-1)*sx,sy);
+   ctx.filter=this.side===0?'drop-shadow(0 0 3px rgba(34,197,94,.78))':'drop-shadow(0 0 3px rgba(59,130,246,.82))';
    ctx.drawImage(this.img,-targetW/2,-targetH*.93,targetW,targetH);
+   ctx.filter='none';
 
    // Small team badge keeps mirrored/custom avatars readable without recoloring skin/hair.
    ctx.scale(me.face>=0?1:-1,1);
