@@ -38,6 +38,7 @@ const TEST_FILES = [
   "tests/rhythm-dash-v11.test.cjs",
   "tests/alien-pizza-dx2.test.cjs",
   "tests/fraction-smith.test.cjs",
+  "tests/pass-mafia.test.cjs",
   "tests/maratang-selfbar.test.cjs",
   "tests/bunsik-kitchen.test.cjs",
   "tests/deep-diver-2d.test.cjs",
