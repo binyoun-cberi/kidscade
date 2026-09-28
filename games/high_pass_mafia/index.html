@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
 <title>누가 마피아? : 한밤의 마을</title>
-<link rel="stylesheet" href="./style.css?v=1">
-<script src="../../kidscade-storage.js?v=20260929-mafia-3"></script>
+<link rel="stylesheet" href="./style.css?v=2">
+<script src="../../kidscade-storage.js?v=20260929-mafia-4"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_pass_mafia" data-title="누가 마피아? : 한밤의 마을" data-shell="true" data-mute="false" data-orientation="portrait"></script>
 </head>
 <body>
@@ -47,6 +47,13 @@
         <div class="big-number" id="playerCount">6</div>
         <button class="stepper" type="button" data-count="1" aria-label="인원 늘리기">＋</button>
       </div>
+      <div id="modePreview" class="mode-preview"></div>
+      <details class="bulk-entry">
+        <summary>👥 학급 명단 한 번에 입력</summary>
+        <p>한 줄에 한 명씩 붙여넣거나 쉼표로 구분해 입력하세요. 현재 인원만큼 앞에서부터 적용됩니다.</p>
+        <textarea id="bulkNames" rows="6" placeholder="김민수&#10;이서연&#10;박지우&#10;..."></textarea>
+        <button id="applyBulkNames" class="secondary" type="button">명단 적용</button>
+      </details>
       <div id="nameFields" class="name-fields"></div>
     </section>
 
@@ -99,10 +106,10 @@
     </section>
 
     <button id="startBtn" class="primary giant" type="button">🌙 게임 시작</button>
-    <p class="setup-tip">역할을 본 뒤에는 반드시 화면이 잠긴 것을 확인하고 다음 사람에게 넘겨주세요.</p>
+    <p class="setup-tip">4~16명은 클래식 모드, 17~24명은 대규모 진행에 맞춘 학급 모드가 자동 적용됩니다.</p>
   </div>
 </template>
 
-<script src="./game.js?v=3"></script>
+<script src="./game.js?v=4"></script>
 </body>
 </html>
