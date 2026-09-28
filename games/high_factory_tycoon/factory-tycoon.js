@@ -19,6 +19,8 @@ const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const DIR_ANGLE=[-Math.PI/2,0,Math.PI/2,Math.PI];
 const DIR_LABELS=['오른쪽','아래','왼쪽','위'];
 const ROTATABLE_TYPES=new Set(['belt','splitter','merger','cross','assembler','slicer','pan','toaster','packer']);
+const BELT_TYPES=new Set(['belt','splitter','merger','cross']);
+const ALL_DIRS=[0,1,2,3];
 const CELL=1.18,TICK=1/20;
 const MAP_PRESETS={
   small:{label:'소',cols:28,rows:18,view:16,minView:10,maxItems:160,supplies:['bread','cheese','ham','tomato'],ships:1},
@@ -73,7 +75,7 @@ const MACHINE={
 const MODEL_KEYS=Object.keys(INGREDIENTS);
 
 let scene,camera,renderer,raycaster,floor,gridHelper,loader;
-let staticGroup,itemGroup,effectGroup,fixedGroup;
+let staticGroup,itemGroup,effectGroup,fixedGroup,previewGroup;
 let beltMesh,arrowMesh;
 let models=new Map();
 let blueprint=new Map(),items=[],effects=[],machineStates=new Map();
@@ -85,6 +87,7 @@ let undoStack=[],redoStack=[];
 let pendingDiscovery=null,toastTimer=0,activeSlot=1,tutorialMode=false,tutorialStepIndex=0;
 let cameraTarget=new THREE.Vector3(0,0,0),viewSize=MAP_PRESETS.small.view;
 let activePointers=new Map(),dragBuild=null,panGesture=null,lastFrame=performance.now(),acc=0;
+let hoverCell=null,previewPath=[];
 let cellHeat=new Map();
 
 const loaderAudio={
@@ -138,8 +141,8 @@ function initThree(){
 
   buildWorldSurface();
 
-  staticGroup=new THREE.Group();itemGroup=new THREE.Group();effectGroup=new THREE.Group();fixedGroup=new THREE.Group();
-  scene.add(staticGroup,itemGroup,effectGroup,fixedGroup);
+  staticGroup=new THREE.Group();itemGroup=new THREE.Group();effectGroup=new THREE.Group();fixedGroup=new THREE.Group();previewGroup=new THREE.Group();
+  scene.add(staticGroup,itemGroup,effectGroup,fixedGroup,previewGroup);
   raycaster=new THREE.Raycaster();loader=new GLTFLoader();
   buildFixedVisuals();resize();
   addEventListener('resize',resize,{passive:true});
@@ -251,41 +254,195 @@ function buildFixedVisuals(){
     fixedGroup.add(g);
   }
 }
+const BELT_CENTER_GEO=new THREE.BoxGeometry(CELL*.44,.12,CELL*.44);
+const BELT_ARM_X_GEO=new THREE.BoxGeometry(CELL*.60,.12,CELL*.44);
+const BELT_ARM_Z_GEO=new THREE.BoxGeometry(CELL*.44,.12,CELL*.60);
+const BELT_ARROW_GEO=new THREE.ConeGeometry(.13,.36,3);
+const BELT_MAT=new THREE.MeshStandardMaterial({color:0x69747a,roughness:.72,metalness:.16});
+const BELT_OK_MAT=new THREE.MeshStandardMaterial({color:0x67b88d,roughness:.72,metalness:.12});
+const BELT_WARN_MAT=new THREE.MeshStandardMaterial({color:0xc6a553,roughness:.72,metalness:.12});
+const BELT_BAD_MAT=new THREE.MeshStandardMaterial({color:0xc86a68,roughness:.72,metalness:.12});
+const BELT_ARROW_MAT=new THREE.MeshStandardMaterial({color:0xffc65e,roughness:.7,emissive:0x3c2505});
+const GHOST_OK_MAT=new THREE.MeshStandardMaterial({color:0x6fe2ff,transparent:true,opacity:.42,roughness:.6,metalness:.05,depthWrite:false});
+const GHOST_BAD_MAT=new THREE.MeshStandardMaterial({color:0xff6f6f,transparent:true,opacity:.48,roughness:.6,metalness:.05,depthWrite:false});
+const GHOST_ARROW_MAT=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x315e68,transparent:true,opacity:.82,depthWrite:false});
+const MACHINE_TOP_MAT=new THREE.MeshStandardMaterial({color:0x222b31,roughness:.55,metalness:.22});
+const MACHINE_INDICATOR_MAT=new THREE.MeshStandardMaterial({color:0xffd174,emissive:0x3b2508});
+const machineBaseMats=new Map();
+
+function oppositeDir(d){return (d+2)%4}
+function cellFromMap(map,x,y){return fixedAt(x,y)||map.get(key(x,y))||null}
+function outgoingDirs(cell){
+  if(!cell)return [];
+  if(cell.type==='supplier')return [0];
+  if(cell.type==='ship')return [];
+  if(cell.type==='cross')return ALL_DIRS;
+  if(cell.type==='splitter')return [cell.dir??0,rotRight(cell.dir??0)];
+  if(cell.dir!==undefined)return [cell.dir];
+  return [];
+}
+function beltConnections(x,y,c,map=blueprint){
+  if(c.type==='cross')return ALL_DIRS.slice();
+  const dirs=new Set();
+  const d=Number.isInteger(c.dir)?c.dir:0;
+  if(c.type==='splitter'){
+    dirs.add(oppositeDir(d));dirs.add(d);dirs.add(rotRight(d));
+  }else if(c.type==='merger'){
+    dirs.add(oppositeDir(d));dirs.add(rotLeft(d));dirs.add(d);
+  }else dirs.add(d);
+
+  for(const nd of ALL_DIRS){
+    const v=DIRS[nd],n=cellFromMap(map,x+v.x,y+v.y);
+    if(!n)continue;
+    if(outgoingDirs(c).includes(nd))dirs.add(nd);
+    if(outgoingDirs(n).includes(oppositeDir(nd)))dirs.add(nd);
+  }
+  if(c.type==='belt'&&dirs.size===1)dirs.add(oppositeDir(d));
+  return [...dirs].sort((a,b)=>a-b);
+}
+function beltMaterial(x,y,ghost,valid){
+  if(ghost)return valid?GHOST_OK_MAT:GHOST_BAD_MAT;
+  if(!analysis)return BELT_MAT;
+  const h=cellHeat.get(key(x,y))||0;
+  return h>1.6?BELT_BAD_MAT:h>.55?BELT_WARN_MAT:BELT_OK_MAT;
+}
+function makeDirectionArrow(dir,ghost=false){
+  const arrow=new THREE.Mesh(BELT_ARROW_GEO,ghost?GHOST_ARROW_MAT:BELT_ARROW_MAT);
+  const target=new THREE.Vector3(DIRS[dir].x,0,DIRS[dir].y).normalize();
+  arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),target);
+  arrow.position.y=.23;
+  return arrow;
+}
+function makeBeltTile(x,y,c,map=blueprint,{ghost=false,valid=true}={}){
+  const g=new THREE.Group();g.position.copy(cellWorld(x,y));
+  const mat=beltMaterial(x,y,ghost,valid),connections=beltConnections(x,y,c,map);
+  const center=new THREE.Mesh(BELT_CENTER_GEO,mat);center.position.y=.09;center.castShadow=!ghost;center.receiveShadow=!ghost;g.add(center);
+  for(const d of connections){
+    const horizontal=d===0||d===2;
+    const arm=new THREE.Mesh(horizontal?BELT_ARM_X_GEO:BELT_ARM_Z_GEO,mat);
+    arm.position.set(DIRS[d].x*CELL*.255,.09,DIRS[d].y*CELL*.255);
+    arm.castShadow=!ghost;arm.receiveShadow=!ghost;g.add(arm);
+  }
+  const dir=Number.isInteger(c.dir)?c.dir:0;
+  g.add(makeDirectionArrow(dir,ghost));
+  if(c.type!=='belt'){
+    const hubColor=c.type==='splitter'?0xe5a84f:c.type==='merger'?0x69a9d1:0x9a7bd4;
+    const hubMat=ghost?(valid?GHOST_OK_MAT:GHOST_BAD_MAT):new THREE.MeshStandardMaterial({color:hubColor,roughness:.55,metalness:.12});
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.08,12),hubMat);hub.position.y=.17;g.add(hub);
+  }
+  return g;
+}
+function machineBaseMaterial(type){
+  if(!machineBaseMats.has(type))machineBaseMats.set(type,new THREE.MeshStandardMaterial({color:MACHINE[type].color,roughness:.68,metalness:.08}));
+  return machineBaseMats.get(type);
+}
+function makeMachineVisual(type,dir,{ghost=false,valid=true}={}){
+  const g=new THREE.Group();g.rotation.y=-dir*Math.PI/2;
+  const baseMat=ghost?(valid?GHOST_OK_MAT:GHOST_BAD_MAT):machineBaseMaterial(type);
+  const topMat=ghost?(valid?GHOST_OK_MAT:GHOST_BAD_MAT):MACHINE_TOP_MAT;
+  const indicatorMat=ghost?GHOST_ARROW_MAT:MACHINE_INDICATOR_MAT;
+  const base=new THREE.Mesh(new THREE.BoxGeometry(CELL*.88,.48,CELL*.88),baseMat);
+  base.position.y=.25;base.castShadow=!ghost;base.receiveShadow=!ghost;g.add(base);
+  const topGeo=type==='pan'?new THREE.CylinderGeometry(.34,.4,.13,16):type==='assembler'?new THREE.CylinderGeometry(.18,.28,.48,8):new THREE.BoxGeometry(.48,.24,.55);
+  const top=new THREE.Mesh(topGeo,topMat);top.position.y=.58;g.add(top);
+  const indicator=new THREE.Mesh(new THREE.ConeGeometry(.12,.32,3),indicatorMat);
+  indicator.rotation.z=-Math.PI/2;indicator.position.set(.34,.73,0);g.add(indicator);
+  return g;
+}
+function beltPathCells(a,b,defaultDir=rotation){
+  if(!a||!b)return [];
+  const cells=[{x:a.x,y:a.y},...manhattanCells(a,b)];
+  return cells.map((c,i)=>{
+    let dir=defaultDir;
+    if(i<cells.length-1)dir=dirBetween(c,cells[i+1]);
+    else if(i>0)dir=dirBetween(cells[i-1],c);
+    return {...c,dir};
+  });
+}
+function previewMapFor(entries){
+  const map=new Map(blueprint);
+  for(const e of entries){
+    if(!inBounds(e.x,e.y)||FIXED.has(key(e.x,e.y)))continue;
+    map.set(key(e.x,e.y),{type:'belt',dir:e.dir,toggle:false});
+  }
+  return map;
+}
+function canPreviewBeltAt(x,y){
+  if(!inBounds(x,y)||FIXED.has(key(x,y)))return false;
+  const old=blueprint.get(key(x,y));
+  return !old||BELT_TYPES.has(old.type);
+}
+function applyBeltPath(entries){
+  if(!entries.length)return false;
+  const before=JSON.stringify(snapshotBlueprint());
+  if(entries.length===1){
+    const e=entries[0],k=key(e.x,e.y);
+    if(inBounds(e.x,e.y)&&!FIXED.has(k)&&!blueprint.has(k))blueprint.set(k,{type:'belt',dir:e.dir,toggle:false});
+  }else{
+    for(let i=1;i<entries.length;i++)addBeltStep(entries[i-1],entries[i]);
+  }
+  return JSON.stringify(snapshotBlueprint())!==before;
+}
+function makeEraseGhost(x,y){
+  const valid=!!blueprint.get(key(x,y));
+  const mat=valid?GHOST_BAD_MAT:GHOST_OK_MAT;
+  const m=new THREE.Mesh(new THREE.BoxGeometry(CELL*.88,.08,CELL*.88),mat);
+  m.position.copy(cellWorld(x,y));m.position.y=.08;return m;
+}
+function rebuildPreviewVisuals(){
+  if(!previewGroup)return;
+  previewGroup.clear();
+  if(!running||selectedTool==='move'||!hoverCell)return;
+
+  if(rotateArmed){
+    const existing=blueprint.get(key(hoverCell.x,hoverCell.y));
+    if(existing&&ROTATABLE_TYPES.has(existing.type)){
+      const next={...existing,dir:rotRight(Number.isInteger(existing.dir)?existing.dir:0)};
+      const valid=true;
+      if(BELT_TYPES.has(next.type)){
+        const map=new Map(blueprint);map.set(key(hoverCell.x,hoverCell.y),next);
+        previewGroup.add(makeBeltTile(hoverCell.x,hoverCell.y,next,map,{ghost:true,valid}));
+      }else if(MACHINE[next.type]){
+        const g=makeMachineVisual(next.type,next.dir,{ghost:true,valid});g.position.copy(cellWorld(hoverCell.x,hoverCell.y));previewGroup.add(g);
+      }
+      return;
+    }
+  }
+
+  if((dragBuild&&dragBuild.tool==='belt')||selectedTool==='belt'){
+    const entries=dragBuild?.tool==='belt'?previewPath:beltPathCells(hoverCell,hoverCell,rotation);
+    const map=previewMapFor(entries);
+    for(const e of entries){
+      if(FIXED.has(key(e.x,e.y)))continue;
+      previewGroup.add(makeBeltTile(e.x,e.y,{type:'belt',dir:e.dir,toggle:false},map,{ghost:true,valid:canPreviewBeltAt(e.x,e.y)}));
+    }
+    return;
+  }
+
+  const c=dragBuild?.pending?dragBuild.last:hoverCell;
+  const tool=dragBuild?.pending?dragBuild.tool:selectedTool;
+  const dir=dragBuild?.pending?dragBuild.dir:rotation;
+  if(!c)return;
+  if(tool==='erase'){previewGroup.add(makeEraseGhost(c.x,c.y));return}
+  const valid=inBounds(c.x,c.y)&&!FIXED.has(key(c.x,c.y));
+  if(BELT_TYPES.has(tool)){
+    const temp={type:tool,dir,toggle:false},map=new Map(blueprint);map.set(key(c.x,c.y),temp);
+    previewGroup.add(makeBeltTile(c.x,c.y,temp,map,{ghost:true,valid}));
+  }else if(MACHINE[tool]){
+    const g=makeMachineVisual(tool,dir,{ghost:true,valid});g.position.copy(cellWorld(c.x,c.y));previewGroup.add(g);
+  }
+}
+
 function rebuildFactoryVisuals(){
   staticGroup.clear();
-  const belts=[];
-  for(const [k,c] of blueprint)if(['belt','splitter','merger','cross'].includes(c.type)){const [x,y]=k.split(',').map(Number);belts.push({x,y,c})}
-  const beltGeo=new THREE.BoxGeometry(CELL*.9,.12,CELL*.78);
-  const beltMat=new THREE.MeshStandardMaterial({color:0x69747a,roughness:.72,metalness:.16});
-  beltMesh=new THREE.InstancedMesh(beltGeo,beltMat,Math.max(1,belts.length));beltMesh.castShadow=true;beltMesh.receiveShadow=true;
-  beltMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  const arrowGeo=new THREE.ConeGeometry(.13,.36,3);
-  const arrowMat=new THREE.MeshStandardMaterial({color:0xffc65e,roughness:.7,emissive:0x3c2505});
-  arrowMesh=new THREE.InstancedMesh(arrowGeo,arrowMat,Math.max(1,belts.length));arrowMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  const dummy=new THREE.Object3D(),color=new THREE.Color();
-  belts.forEach((b,i)=>{
-    const p=cellWorld(b.x,b.y);dummy.position.set(p.x,.09,p.z);dummy.rotation.set(0,-b.c.dir*Math.PI/2,0);dummy.updateMatrix();beltMesh.setMatrixAt(i,dummy.matrix);
-    if(analysis){
-      const h=cellHeat.get(key(b.x,b.y))||0;color.setHex(h>1.6?0xff6767:h>.55?0xffd166:0x74df9d);beltMesh.setColorAt(i,color);
-    }
-    dummy.position.set(p.x,.22,p.z);dummy.rotation.set(Math.PI/2,0,DIR_ANGLE[b.c.dir]);dummy.updateMatrix();arrowMesh.setMatrixAt(i,dummy.matrix);
-  });
-  if(analysis&&beltMesh.instanceColor)beltMesh.instanceColor.needsUpdate=true;
-  staticGroup.add(beltMesh,arrowMesh);
-
   for(const [k,c] of blueprint){
-    if(!MACHINE[c.type])continue;
-    const [x,y]=k.split(',').map(Number),p=cellWorld(x,y),g=new THREE.Group();g.position.copy(p);g.rotation.y=-c.dir*Math.PI/2;
-    const def=MACHINE[c.type];
-    const base=new THREE.Mesh(new THREE.BoxGeometry(CELL*.88,.48,CELL*.88),new THREE.MeshStandardMaterial({color:def.color,roughness:.68,metalness:.08}));
-    base.position.y=.25;base.castShadow=true;base.receiveShadow=true;g.add(base);
-    const topGeo=c.type==='pan'?new THREE.CylinderGeometry(.34,.4,.13,16):c.type==='assembler'?new THREE.CylinderGeometry(.18,.28,.48,8):new THREE.BoxGeometry(.48,.24,.55);
-    const top=new THREE.Mesh(topGeo,new THREE.MeshStandardMaterial({color:0x222b31,roughness:.55,metalness:.22}));
-    top.position.y=.58;g.add(top);
-    const indicator=new THREE.Mesh(new THREE.ConeGeometry(.12,.32,3),new THREE.MeshStandardMaterial({color:0xffd174,emissive:0x3b2508}));
-    indicator.rotation.z=-Math.PI/2;indicator.position.set(.34,.73,0);g.add(indicator);
-    staticGroup.add(g);
+    const [x,y]=k.split(',').map(Number);
+    if(BELT_TYPES.has(c.type))staticGroup.add(makeBeltTile(x,y,c,blueprint));
+    else if(MACHINE[c.type]){
+      const g=makeMachineVisual(c.type,c.dir);g.position.copy(cellWorld(x,y));staticGroup.add(g);
+    }
   }
+  rebuildPreviewVisuals();
 }
 function refreshAllItemViews(){for(const it of items){if(it.view)itemGroup.remove(it.view);it.view=makePayloadView(it.payload);itemGroup.add(it.view)}}
 
@@ -362,11 +519,13 @@ function manhattanCells(a,b){
 function pointerDown(ev){
   activePointers.set(ev.pointerId,{x:ev.clientX,y:ev.clientY,type:ev.pointerType,button:ev.button});
   renderer.domElement.setPointerCapture?.(ev.pointerId);
-  if(ev.pointerType==='touch'&&activePointers.size>=2){beginTouchPan();dragBuild=null;return}
-  if(ev.button===1||ev.button===2){beginDragPan(ev);return}
+  if(ev.pointerType==='touch'&&activePointers.size>=2){beginTouchPan();dragBuild=null;previewPath=[];hoverCell=null;rebuildPreviewVisuals();return}
+  if(ev.button===1||ev.button===2){hoverCell=null;previewPath=[];rebuildPreviewVisuals();beginDragPan(ev);return}
   if(ev.button!==0)return;
-  if(selectedTool==='move'){beginDragPan(ev);return}
+  if(selectedTool==='move'){hoverCell=null;rebuildPreviewVisuals();beginDragPan(ev);return}
   const c=screenToCell(ev.clientX,ev.clientY);if(!c)return;
+  hoverCell=c;
+
   if(rotateArmed){
     const existing=blueprint.get(key(c.x,c.y));
     if(existing&&ROTATABLE_TYPES.has(existing.type)){
@@ -376,32 +535,41 @@ function pointerDown(ev){
     }
     disarmRotate();
   }
-  if(selectedTool==='belt'||selectedTool==='erase'){
-    pushUndo();dragBuild={tool:selectedTool,last:c,changed:false};
-    if(selectedTool==='erase')dragBuild.changed=setCell(c.x,c.y,'erase')||dragBuild.changed;
-    else if(!FIXED.has(key(c.x,c.y))){const old=blueprint.get(key(c.x,c.y));if(!old){blueprint.set(key(c.x,c.y),{type:'belt',dir:rotation,toggle:false});dragBuild.changed=true}}
-    rebuildFactoryVisuals();
-  }else{
-    pushUndo();
-    const changed=setCell(c.x,c.y,selectedTool,rotation);
-    if(changed){rebuildFactoryVisuals();saveGame(false);sound('click')}
-    else undoStack.pop();
-    syncUndo();
+
+  if(selectedTool==='belt'){
+    dragBuild={tool:'belt',start:c,last:c,dir:rotation,changed:false};
+    previewPath=beltPathCells(c,c,rotation);rebuildPreviewVisuals();return;
   }
+  if(selectedTool==='erase'){
+    pushUndo();dragBuild={tool:'erase',last:c,changed:false};
+    dragBuild.changed=setCell(c.x,c.y,'erase')||dragBuild.changed;
+    rebuildFactoryVisuals();return;
+  }
+
+  dragBuild={tool:selectedTool,start:c,last:c,dir:rotation,pending:true,changed:false};
+  rebuildPreviewVisuals();
 }
 function pointerMove(ev){
   const p=activePointers.get(ev.pointerId);if(p){p.x=ev.clientX;p.y=ev.clientY}
   if(panGesture){updatePanGesture();return}
-  if(!dragBuild)return;
-  const c=screenToCell(ev.clientX,ev.clientY);if(!c||!dragBuild.last)return;
-  if(c.x===dragBuild.last.x&&c.y===dragBuild.last.y)return;
-  const path=manhattanCells(dragBuild.last,c);let prev=dragBuild.last;
-  for(const step of path){
-    if(dragBuild.tool==='erase')dragBuild.changed=setCell(step.x,step.y,'erase')||dragBuild.changed;
-    else{addBeltStep(prev,step);dragBuild.changed=true}
-    prev=step;
+  const c=screenToCell(ev.clientX,ev.clientY);
+  hoverCell=c;
+  if(!dragBuild){rebuildPreviewVisuals();return}
+  if(!c){rebuildPreviewVisuals();return}
+
+  if(dragBuild.tool==='belt'){
+    dragBuild.last=c;
+    previewPath=beltPathCells(dragBuild.start,c,dragBuild.dir);
+    rebuildPreviewVisuals();return;
   }
-  dragBuild.last=c;rebuildFactoryVisuals();
+  if(dragBuild.pending){
+    dragBuild.last=c;rebuildPreviewVisuals();return;
+  }
+  if(dragBuild.tool==='erase'){
+    if(dragBuild.last&&c.x===dragBuild.last.x&&c.y===dragBuild.last.y){rebuildPreviewVisuals();return}
+    dragBuild.changed=setCell(c.x,c.y,'erase')||dragBuild.changed;
+    dragBuild.last=c;rebuildFactoryVisuals();
+  }
 }
 function pointerUp(ev){
   activePointers.delete(ev.pointerId);
@@ -409,10 +577,32 @@ function pointerUp(ev){
     if(panGesture.mode==='touch'&&activePointers.size>=2){beginTouchPan();return}
     endPanGesture();return;
   }
-  if(dragBuild){
-    if(dragBuild.changed){saveGame(false);sound('click')}else{undoStack.pop();syncUndo()}
-    dragBuild=null;
+  if(!dragBuild){rebuildPreviewVisuals();return}
+
+  const build=dragBuild;dragBuild=null;
+  if(build.tool==='belt'){
+    const entries=previewPath;previewPath=[];
+    pushUndo();
+    const changed=applyBeltPath(entries);
+    if(changed){rebuildFactoryVisuals();saveGame(false);sound('click')}
+    else{undoStack.pop();syncUndo();rebuildPreviewVisuals()}
+    return;
   }
+  if(build.pending){
+    pushUndo();
+    const c=build.last,changed=c?setCell(c.x,c.y,build.tool,build.dir):false;
+    if(changed){rebuildFactoryVisuals();saveGame(false);sound('click')}
+    else{undoStack.pop();syncUndo();rebuildPreviewVisuals()}
+    return;
+  }
+  if(build.tool==='erase'){
+    if(build.changed){saveGame(false);sound('click')}else{undoStack.pop();syncUndo()}
+    rebuildPreviewVisuals();
+  }
+}
+function pointerLeave(){
+  if(activePointers.size)return;
+  hoverCell=null;previewPath=[];rebuildPreviewVisuals();
 }
 function beginTouchPan(){
   const pts=[...activePointers.values()].slice(0,2);
@@ -458,6 +648,7 @@ function rendererEventsSetup(){
   c.addEventListener('pointermove',pointerMove);
   c.addEventListener('pointerup',pointerUp);
   c.addEventListener('pointercancel',pointerUp);
+  c.addEventListener('pointerleave',pointerLeave);
   c.addEventListener('wheel',wheel,{passive:false});
   c.addEventListener('contextmenu',e=>e.preventDefault());
 }
@@ -700,15 +891,15 @@ function togglePause(){
   if(paused)window.KidscadeGame?.pause?.();else window.KidscadeGame?.resume?.();
 }
 function setTool(t){
-  selectedTool=t;
+  selectedTool=t;dragBuild=null;previewPath=[];
   disarmRotate();
   document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
   document.body.classList.toggle('moveMode',t==='move');ui.moveBtn.classList.toggle('active',t==='move');
-  sound('click');
+  rebuildPreviewVisuals();sound('click');
 }
 function rotateTool(){
-  rotation=(rotation+1)%4;rotateArmed=true;ui.rotateBtn.classList.add('active');sound('click');
-  showToast(DIR_LABELS[rotation]+' 방향 · 설치된 설비를 누르면 90° 회전');
+  rotation=(rotation+1)%4;rotateArmed=true;ui.rotateBtn.classList.add('active');rebuildPreviewVisuals();sound('click');
+  showToast(DIR_LABELS[rotation]+' 방향 · 설치 전 모양을 확인하고, 설치물을 누르면 90° 회전');
 }
 function toggleAnalysis(){analysis=!analysis;ui.analysisBtn.classList.toggle('active',analysis);ui.analysisLegend.classList.toggle('hidden',!analysis);rebuildFactoryVisuals();showToast(analysis?'막힌 흐름을 색으로 표시해요.':'분석 보기를 껐어요.')}
 function cycleSpeed(){speed=speed===1?2:speed===2?4:1;ui.speedBtn.textContent='×'+speed;sound('click')}
