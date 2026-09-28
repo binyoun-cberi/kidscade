@@ -773,6 +773,81 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .rulebook-rule{font-size:12px}.rulebook-note{margin-left:5%;font-size:12px}
   .rulebook-evidence{grid-template-columns:1fr 1fr}.rulebook-evidence img{height:82px}
 }
+/* v9 · generated character PNG + staged jumpscares */
+.presence-layer .character-presence{
+  position:absolute;left:50%;bottom:0;width:auto;max-width:76%;object-fit:contain;
+  transform:translateX(-50%);transform-origin:50% 100%;pointer-events:none;
+  filter:grayscale(.38) brightness(.54) contrast(1.22) drop-shadow(0 10px 18px #000e)
+}
+.presence-layer .character-presence.presence-stage-0{
+  height:31%;bottom:23%;opacity:.36;filter:grayscale(.6) brightness(.38) contrast(1.35) drop-shadow(0 8px 14px #000)
+}
+.presence-layer .character-presence.presence-stage-1{
+  height:57%;bottom:8%;opacity:.68;filter:grayscale(.32) brightness(.54) contrast(1.27) drop-shadow(0 10px 18px #000)
+}
+.presence-layer .character-presence.presence-stage-2{
+  height:87%;bottom:-7%;opacity:.94;filter:grayscale(.12) brightness(.68) contrast(1.2) drop-shadow(0 13px 22px #000)
+}
+.presence-layer .character-dokkaebi.presence-stage-0{left:72%;height:25%;bottom:27%}
+.presence-layer .character-dokkaebi.presence-stage-1{left:67%;height:48%}
+.presence-layer .character-wolf.presence-stage-0{height:36%;bottom:22%}
+.presence-layer .character-wolf.presence-stage-1{height:67%;bottom:4%}
+.presence-layer .character-reaper.presence-stage-0{height:38%;bottom:18%;opacity:.29}
+.presence-layer .character-reaper.presence-stage-1{height:67%;bottom:2%;opacity:.56}
+.presence-layer .character-yuki{filter:saturate(.45) brightness(.68) contrast(1.1) drop-shadow(0 0 16px #c9f4ff44)}
+.presence-layer .character-egg.presence-stage-0{left:70%;height:31%}
+.presence-layer .character-egg.presence-stage-1{left:61%;height:58%}
+.presence-layer .character-maiden.presence-stage-0{left:66%;height:34%}
+.presence-layer .character-maiden.presence-stage-1{left:58%;height:62%}
+
+.scare #scareArt{
+  position:absolute!important;inset:0!important;width:100vw!important;height:100vh!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  transform:none!important;opacity:1!important;overflow:hidden
+}
+.jumpscare-character{
+  position:absolute;left:50%;bottom:-2%;height:92vh;width:auto;max-width:none;object-fit:contain;
+  transform:translateX(-50%);transform-origin:50% 70%;
+  filter:drop-shadow(0 0 32px #000) contrast(1.16) brightness(.72);
+  transition:none;will-change:transform,opacity,filter
+}
+.scare[data-jump-stage="far"] .jumpscare-character{
+  height:54vh;bottom:10%;opacity:.34;filter:grayscale(.48) brightness(.4) contrast(1.35) drop-shadow(0 0 20px #000)
+}
+.scare[data-jump-stage="mid"] .jumpscare-character{
+  height:82vh;bottom:1%;opacity:.74;filter:grayscale(.18) brightness(.58) contrast(1.25) drop-shadow(0 0 27px #000)
+}
+.scare[data-jump-stage="near"] .jumpscare-character{
+  height:128vh;bottom:-27%;opacity:1;filter:brightness(.82) contrast(1.28) drop-shadow(0 0 38px #000)
+}
+.scare.ghost-maiden[data-jump-stage="far"] .jumpscare-character{left:61%}
+.scare.ghost-maiden[data-jump-stage="mid"] .jumpscare-character{left:52%}
+.scare.ghost-maiden[data-jump-stage="near"] .jumpscare-character{animation:pngMaidenRush .48s cubic-bezier(.08,.8,.15,1) both}
+.scare.ghost-egg[data-jump-stage="far"] .jumpscare-character{left:72%}
+.scare.ghost-egg[data-jump-stage="mid"] .jumpscare-character{left:34%}
+.scare.ghost-egg[data-jump-stage="near"] .jumpscare-character{animation:pngEggSnap .36s steps(4,end) both}
+.scare.ghost-yuki[data-jump-stage="near"] .jumpscare-character{animation:pngYukiGlide .55s ease-out both;filter:brightness(.92) contrast(1.14) drop-shadow(0 0 32px #bff5ff88)}
+.scare.ghost-reaper[data-jump-stage="far"] .jumpscare-character{opacity:.18;filter:brightness(.28) contrast(1.45)}
+.scare.ghost-reaper[data-jump-stage="near"] .jumpscare-character{animation:pngReaperAdvance .68s ease-out both}
+.scare.ghost-wolf[data-jump-stage="far"] .jumpscare-character{left:72%;transform:translateX(-50%) rotate(-5deg)}
+.scare.ghost-wolf[data-jump-stage="mid"] .jumpscare-character{left:57%;transform:translateX(-50%) rotate(-2deg)}
+.scare.ghost-wolf[data-jump-stage="near"] .jumpscare-character{animation:pngWolfLunge .28s cubic-bezier(.03,.9,.13,1) both}
+.scare.ghost-dokkaebi[data-jump-stage="far"] .jumpscare-character{left:27%;transform:translateX(-50%) rotate(7deg)}
+.scare.ghost-dokkaebi[data-jump-stage="mid"] .jumpscare-character{left:71%;transform:translateX(-50%) rotate(-5deg)}
+.scare.ghost-dokkaebi[data-jump-stage="near"] .jumpscare-character{animation:pngDokkaebiPop .38s cubic-bezier(.06,.86,.14,1) both}
+
+.power-apparition .power-character,.power-final .power-character{
+  height:100%;max-width:100%;object-fit:contain;filter:brightness(.34) contrast(1.42) saturate(.35) drop-shadow(0 0 24px #000)
+}
+@keyframes pngMaidenRush{0%{transform:translateX(-50%) scale(.82)}100%{transform:translateX(-50%) scale(1.18)}}
+@keyframes pngEggSnap{
+  0%{transform:translate(-72%,0) scale(.82)}33%{transform:translate(-28%,-2%) scale(.96)}
+  66%{transform:translate(-60%,2%) scale(1.08)}100%{transform:translate(-50%,1%) scale(1.22)}
+}
+@keyframes pngYukiGlide{0%{transform:translateX(-50%) scale(.86);opacity:.5}100%{transform:translateX(-50%) scale(1.16);opacity:1}}
+@keyframes pngReaperAdvance{0%{transform:translateX(-50%) scale(.8);opacity:.25}100%{transform:translateX(-50%) scale(1.15);opacity:1}}
+@keyframes pngWolfLunge{0%{transform:translate(15%,12%) scale(.72) rotate(-5deg)}100%{transform:translate(-50%,0) scale(1.28) rotate(1deg)}}
+@keyframes pngDokkaebiPop{0%{transform:translate(-85%,12%) scale(.75) rotate(8deg)}100%{transform:translate(-50%,0) scale(1.2) rotate(-1deg)}}
 </style>
 </head>
 <body>
@@ -906,6 +981,14 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 
 var STORAGE='kidscade_folklore_night_v1';
 var ASSET_ROOT='../../assets/kidscade_folklore_night_guard_renamed_assets/';
+var CHARACTER_ASSETS={
+  maiden:['maiden_far_01.png','maiden_mid_01.png','maiden_near_01.png'],
+  egg:['egg_far_01.png','egg_mid_01.png','egg_near_01.png'],
+  reaper:['reaper_far_01.png','reaper_mid_01.png','reaper_near_01.png'],
+  yuki:['yuki_far_01.png','yuki_mid_01.png','yuki_near_01.png'],
+  wolf:['wolf_far_01.png','wolf_mid_01.png','wolf_near_01.png'],
+  dokkaebi:['dokkaebi_far_01.png','dokkaebi_mid_01.png','dokkaebi_near_01.png']
+};
 var CAMERAS=[
   {id:'korea',code:'CAM 01',name:'6-1 교실',bg:ASSET_ROOT+'classroom_base_01.png',pos:'center'},
   {id:'japan',code:'CAM 02',name:'과학실',bg:ASSET_ROOT+'science_base_01.png',pos:'center'},
@@ -1039,6 +1122,51 @@ var state={
   nextDreadCue:12,signalToken:0,nextFakeScare:34,fakeScareActive:false,fakeScareToken:0
 };
 var audioCtx=null;
+var ambientAudio=null;
+var audioPool={};
+var AUDIO_ASSETS={
+  alarm:'sfx_school_alarm_bell.mp3',
+  growl:'sfx_monster_growl.mp3',
+  phone:'sfx_phone_ring.mp3',
+  scream1:'sfx_scream_01.mp3',
+  sting:'sfx_horror_sting_01.mp3',
+  howl:'sfx_wolf_howl.mp3',
+  giggle:'sfx_child_giggle.mp3',
+  horn:'sfx_clown_horn.mp3',
+  run:'sfx_running_steps.mp3',
+  cackle:'sfx_cackle.mp3',
+  frostReal:'sfx_freezing.mp3',
+  scream2:'sfx_scream_02.mp3',
+  clown:'sfx_clown_laughter.mp3',
+  clockFast:'sfx_clock_fast.mp3',
+  croak:'sfx_creature_croak.mp3',
+  clownWarning:'sfx_clown_warning.mp3',
+  schoolEnd:'sfx_school_bell_jp.mp3',
+  childLaugh:'sfx_child_laughter_02.mp3',
+  musicBox:'amb_scary_music_box.mp3',
+  night:'amb_scary_night.mp3'
+};
+function playClip(key,volume,rate){
+  var file=AUDIO_ASSETS[key];if(!file)return null;
+  try{
+    var a=new Audio(ASSET_ROOT+file);a.preload='auto';a.volume=volume==null?.35:volume;
+    if(rate)a.playbackRate=rate;
+    a.play().catch(function(){});
+    return a
+  }catch(e){return null}
+}
+function startAmbient(){
+  stopAmbient();
+  try{
+    ambientAudio=new Audio(ASSET_ROOT+AUDIO_ASSETS.night);ambientAudio.loop=true;ambientAudio.volume=.075;
+    ambientAudio.play().catch(function(){})
+  }catch(e){ambientAudio=null}
+}
+function stopAmbient(){
+  if(!ambientAudio)return;
+  try{ambientAudio.pause();ambientAudio.currentTime=0}catch(e){}
+  ambientAudio=null
+}
 
 var $=function(id){return document.getElementById(id)};
 var els={
@@ -1091,6 +1219,17 @@ function noise(dur,vol,pan){
 }
 function sound(kind,side){
   var pan=side==='left'?-.72:(side==='right'?.72:0);
+  if(kind==='growl')playClip('growl',.28);
+  else if(kind==='frost')playClip('frostReal',.25);
+  else if(kind==='fake')playClip('sting',.2);
+  else if(kind==='alarm')playClip('alarm',.24);
+  else if(kind==='schoolEnd')playClip('schoolEnd',.28);
+  else if(kind==='run')playClip('run',.24);
+  else if(kind==='howl')playClip('howl',.26);
+  else if(kind==='giggle')playClip('giggle',.24);
+  else if(kind==='clown')playClip('clown',.28);
+  else if(kind==='cackle')playClip('cackle',.22);
+  else if(kind==='phone')playClip('phone',.18);
   if(kind==='cam'){noise(.07,.016,pan);tone(160,.06,'square',.015,pan)}
   else if(kind==='click'){tone(420,.05,'square',.012,pan)}
   else if(kind==='warn'){tone(110,.18,'sawtooth',.025,pan)}
@@ -1105,6 +1244,7 @@ function sound(kind,side){
   else if(kind==='school'){tone(48,.55,'sine',.011,pan);setTimeout(function(){noise(.13,.008,pan)},170)}
   else if(kind==='buzz'){tone(96,.07,'square',.006,pan);setTimeout(function(){tone(82,.05,'square',.004,pan)},95)}
   else if(kind==='fake'){noise(.16,.055,pan);tone(52,.28,'sawtooth',.025,pan);setTimeout(function(){tone(116,.06,'square',.012,pan)},85)}
+  else if(kind==='alarm'||kind==='schoolEnd'||kind==='run'||kind==='howl'||kind==='giggle'||kind==='clown'||kind==='cackle'||kind==='phone'){}
 }
 function svg(type){
   var map={dokkaebi:0,yuki:1,maiden:2,egg:3,reaper:4,wolf:5};
@@ -1299,27 +1439,15 @@ function triggerSignalIntrusion(){
   },115+Math.random()*85)
 }
 function presenceAsset(id,cam,stage){
-  if(stage>=2)return null;
-  var map={
-    maiden:{
-      korea:{asset:'classroom_back_figure_01.png',cls:'class-figure'},
-      special:{asset:'broadcast_hair_frame_01.png',cls:'broadcast-hair'},
-      west:{asset:'west_hair_01.png',cls:'west-hair'}
-    },
-    yuki:{japan:{asset:'science_white_shape_far_01.png',cls:'science-shape'}},
-    reaper:{
-      europe:{asset:'hall_long_shadow_01.png',cls:'hall-shadow'},
-      west:{asset:'west_reaper_hat_01.png',cls:'west-reaper'},
-      east:{asset:'east_reaper_lantern_01.png',cls:'east-lantern'}
-    },
-    wolf:{
-      europe:{asset:'eyes_02.png',cls:'hall-eyes'},
-      west:{asset:'eyes_02.png',cls:'hall-eyes presence-eyes-left'},
-      east:{asset:'eyes_02.png',cls:'hall-eyes presence-eyes-right'}
-    },
-    egg:{special:{asset:'broadcast_eyes_01.png',cls:'broadcast-eyes'}}
-  };
-  return map[id]&&map[id][cam]?map[id][cam]:null
+  var assets=CHARACTER_ASSETS[id];
+  if(!assets)return null;
+  var n=Math.max(0,Math.min(2,Number(stage)||0));
+  return {asset:assets[n],cls:'character-presence character-'+id+' room-'+cam};
+}
+function ghostImageHtml(id,stage,cls){
+  var assets=CHARACTER_ASSETS[id]||CHARACTER_ASSETS.maiden;
+  var n=Math.max(0,Math.min(2,Number(stage)||0));
+  return '<img class="'+(cls||'jumpscare-character')+'" src="'+ASSET_ROOT+assets[n]+'" alt="" draggable="false">';
 }
 function renderAtmosphere(){
   var phase=nightVisualPhase(),cam=state.currentCam;
@@ -1372,7 +1500,7 @@ function triggerFakeScare(){
   els.fakeScare.className='fake-scare show type-'+type;
   if(type==='text')els.fakeScareText.textContent=messages[Math.floor(Math.random()*messages.length)];
   else if(type==='signal')els.fakeScareText.textContent=Math.random()<.5?'UNKNOWN INPUT':'신호가 아닙니다';
-  sound('fake',Math.random()<.5?'left':'right');
+  sound('fake',Math.random()<.5?'left':'right');if(type==='signal'&&Math.random()<.35)sound('phone');else if(type==='shadow'&&Math.random()<.3)sound('cackle');
   var duration=type==='eye'?360+Math.random()*180:type==='shadow'?230+Math.random()*140:420+Math.random()*220;
   setTimeout(function(){clearFakeScare(token)},duration);
   scheduleNextFakeScare()
@@ -1403,7 +1531,7 @@ function cameraGhost(){
     ['wolf','reaper'].some(function(type){
       var r=state.roamers&&state.roamers[type];
       if(r&&r.active&&r.location===state.currentCam){
-        id=type;stage=r.index>=1?1:0;classes=['threat-'+stage];return true
+        id=type;stage=Math.min(2,Math.max(0,r.index));classes=['threat-'+stage];return true
       }
       return false
     })
@@ -1722,8 +1850,8 @@ function updateRoamer(r,dt){
       var nextIndex=Math.min(r.route.length-1,r.index+1);
       if(nextIndex===r.route.length-1&&!roamerCanEnterOffice(r)){r.rest=1.5;return}
       r.index=nextIndex;r.location=r.route[r.index];r.attackTime=0;r.safeTime=0;
-      if(r.location==='office')sound(r.type==='wolf'?'growl':'knock',r.side);
-      else if(r.index===1)sound(r.type==='wolf'?'growl':'bell',r.side)
+      if(r.location==='office'){if(r.type==='wolf')sound('run',r.side);sound(r.type==='wolf'?'growl':'knock',r.side)}
+      else if(r.index===1)sound(r.type==='wolf'?'howl':'bell',r.side)
     }
   }
 }
@@ -1773,6 +1901,7 @@ function tick(now){
   requestAnimationFrame(tick)
 }
 function reset(mode){
+  stopAmbient();
   var saved=loadSave(),known=saved.discovered||{},cfg=NIGHT_CONFIGS[mode]||NIGHT_CONFIGS.full;
   state.running=true;state.paused=false;state.mode=mode;state.elapsed=0;state.duration=cfg.duration;
   state.power=100;state.currentCam='korea';state.cameraOpen=false;state.leftDoor=false;state.rightDoor=false;state.leftLight=false;state.rightLight=false;
@@ -1790,7 +1919,7 @@ function reset(mode){
   els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');els.fakeScareText.textContent=''
 }
 function start(mode){
-  ensureAudio();els.intro.classList.remove('show');reset(mode);window.KidscadeGame?.start?.({mode:mode});
+  ensureAudio();els.intro.classList.remove('show');reset(mode);startAmbient();window.KidscadeGame?.start?.({mode:mode});
   var label=mode==='practice'?'연습 근무':mode==='full'?'특별 근무':mode.replace('night','')+'일차 근무';
   toast(label+'를 시작합니다.');sound('good')
 }
@@ -1804,30 +1933,67 @@ function fail(id){
   else startGhostJumpscare(id);
 }
 function startGhostJumpscare(id){
-  var g=GHOSTS[id]||GHOSTS.maiden;
+  var assets=CHARACTER_ASSETS[id]||CHARACTER_ASSETS.maiden;
+  var timing={
+    maiden:{mid:420,near:880,end:1580},
+    egg:{mid:210,near:470,end:1080},
+    yuki:{mid:430,near:900,end:1600},
+    reaper:{mid:610,near:1160,end:1840},
+    wolf:{mid:130,near:330,end:900},
+    dokkaebi:{mid:300,near:690,end:1320}
+  }[id]||{mid:350,near:760,end:1400};
   state.cameraOpen=false;
   els.cameraShell.classList.remove('open');
+  if(ambientAudio)ambientAudio.volume=.018;
   els.scare.dataset.ghost=id;
+  els.scare.dataset.jumpStage='far';
   els.scare.setAttribute('aria-hidden','false');
-  els.scareArt.innerHTML=svg(g.svg);
+  els.scareArt.innerHTML=ghostImageHtml(id,0);
   els.scareName.textContent='';
   els.scare.className='scare pre show ghost-'+id;
-  sound(id==='yuki'?'frost':id==='reaper'?'bell':id==='wolf'?'growl':'static');
 
-  // 짧은 정적/암전 뒤 실제 돌진 프레임. 이름이나 공략 문장은 보여주지 않는다.
+  if(id==='maiden'){playClip('musicBox',.09);sound('static')}
+  else if(id==='egg'){sound('phone');sound('static')}
+  else if(id==='yuki'){sound('frost')}
+  else if(id==='reaper'){sound('bell')}
+  else if(id==='wolf'){sound('howl')}
+  else if(id==='dokkaebi'){sound('giggle')}
+
   setTimeout(function(){
-    if(id==='reaper')sound('bell');
-    sound('scare');
+    if(!els.scare.classList.contains('show'))return;
+    els.scare.dataset.jumpStage='mid';
+    els.scareArt.innerHTML=ghostImageHtml(id,1);
     els.scare.classList.remove('pre');
-    els.scare.classList.add('strike');
-  },id==='wolf'?170:300);
+    els.scare.classList.add('approach');
+    if(id==='wolf')sound('run');
+    else if(id==='dokkaebi')sound('cackle');
+    else if(id==='reaper')sound('bell');
+    else if(id==='yuki')sound('frost');
+  },timing.mid);
 
   setTimeout(function(){
+    if(!els.scare.classList.contains('show'))return;
+    els.scare.dataset.jumpStage='near';
+    els.scareArt.innerHTML=ghostImageHtml(id,2);
+    els.scare.classList.remove('approach');
+    els.scare.classList.add('strike');
+    if(id==='wolf'){sound('growl');playClip('scream2',.34)}
+    else if(id==='dokkaebi'){sound('clown');playClip('scream1',.22)}
+    else if(id==='maiden'){playClip('scream2',.33);sound('scare')}
+    else if(id==='egg'){playClip('sting',.32);playClip('scream1',.25)}
+    else if(id==='yuki'){playClip('frostReal',.34);playClip('scream1',.18)}
+    else if(id==='reaper'){playClip('sting',.26);sound('bell')}
+  },timing.near);
+
+  setTimeout(function(){
+    stopAmbient();
     els.scare.className='scare';
+    els.scare.removeAttribute('data-jump-stage');
     els.scare.setAttribute('aria-hidden','true');
     delete els.scare.dataset.ghost;
+    els.scareArt.innerHTML='';
     showResult(false,id);
-  },id==='wolf'?1020:1280);
+  },timing.end);
 }
 function startPowerEnding(){
   closeCamera();
@@ -1836,11 +2002,11 @@ function startPowerEnding(){
   document.getElementById('app').classList.add('power-dead');
   els.powerEnding.setAttribute('aria-hidden','false');
   els.powerEnding.className='power-ending show phase-black';
-  els.powerReaper.innerHTML=svg('reaper');
-  els.powerMaiden.innerHTML=svg('maiden');
-  els.powerEgg.innerHTML=svg('egg');
-  els.powerFinal.innerHTML=svg(Math.random()<.5?'wolf':'dokkaebi');
-  sound('powerdown');
+  els.powerReaper.innerHTML=ghostImageHtml('reaper',0,'power-character');
+  els.powerMaiden.innerHTML=ghostImageHtml('maiden',1,'power-character');
+  els.powerEgg.innerHTML=ghostImageHtml('egg',1,'power-character');
+  var finalGhost=Math.random()<.5?'wolf':'dokkaebi';els.powerFinal.innerHTML=ghostImageHtml(finalGhost,2,'power-character');
+  if(ambientAudio)ambientAudio.volume=.015;sound('alarm');sound('powerdown');
 
   // 0%가 되는 순간 모든 장치가 죽고, 잠시 정적만 남는다.
   setTimeout(function(){
@@ -1867,6 +2033,7 @@ function startPowerEnding(){
     sound('scare');
   },3420);
   setTimeout(function(){
+    stopAmbient();
     els.powerEnding.className='power-ending';
     els.powerEnding.setAttribute('aria-hidden','true');
     document.getElementById('app').classList.remove('power-dead');
@@ -1874,7 +2041,7 @@ function startPowerEnding(){
   },4380);
 }
 function win(){
-  if(state.gameOver)return;state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)
+  if(state.gameOver)return;stopAmbient();sound('schoolEnd');state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)
 }
 function quizHtml(){
   var q=[
