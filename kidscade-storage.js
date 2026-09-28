@@ -75,7 +75,8 @@
     legacyGamePlayLimits: 'kidscade_game_play_limits',
     bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2',
     speakJjoayoProgress: 'kidscade_speak_jjoayo_progress_v1',
-    fractionSmithBest: 'kidscade_fraction_smith_best_v1'
+    fractionSmithBest: 'kidscade_fraction_smith_best_v1',
+    mafiaPassPlaySave: 'kidscade_mafia_passplay_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
