@@ -1237,6 +1237,38 @@
   }
 }
 
+    
+        /* Kidscade 학생용 UI */
+        .student-hidden { display:none !important; }
+        .student-setup { max-width: 760px !important; }
+        .student-subtitle { color:#cbd5e1; text-align:center; font-weight:700; margin:-12px 0 22px; font-size:.95rem; }
+        .student-step { background:rgba(15,23,42,.72); border:1px solid rgba(148,163,184,.24); border-radius:18px; padding:16px; margin-top:14px; }
+        .student-step-title { color:#fef3c7; font-size:1rem; font-weight:900; margin-bottom:10px; }
+        .student-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .student-mode-btn { min-height:82px; border:2px solid #475569; border-radius:16px; background:#1f2937; color:#f8fafc; padding:12px; font-weight:900; font-size:1rem; cursor:pointer; transition:.16s ease; }
+        .student-mode-btn small { display:block; margin-top:4px; color:#94a3b8; font-size:.72rem; font-weight:700; }
+        .student-mode-btn.active { border-color:#fbbf24; background:linear-gradient(135deg,rgba(245,158,11,.32),rgba(249,115,22,.22)); transform:translateY(-1px); box-shadow:0 0 0 3px rgba(251,191,36,.12); }
+        .student-helper-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+        .student-helper-btn { min-height:42px; padding:8px 13px; border-radius:12px; background:#334155; color:#e2e8f0; font-weight:800; font-size:.82rem; border:1px solid #475569; cursor:pointer; }
+        .student-helper-btn:active { transform:scale(.97); }
+        .student-tip { margin-top:8px; color:#94a3b8; font-size:.78rem; font-weight:650; line-height:1.45; }
+        #slot-setup.student-collapsed { display:none; }
+        #race-callout { position:absolute; top:18px; left:50%; transform:translateX(-50%) translateY(-10px); opacity:0; transition:.2s ease; background:rgba(15,23,42,.88); border:2px solid #fbbf24; color:#fff7ed; border-radius:999px; padding:9px 18px; font-weight:900; font-size:clamp(.9rem,2vw,1.2rem); box-shadow:0 8px 28px rgba(0,0,0,.28); white-space:nowrap; }
+        #race-callout.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .result-actions { display:grid; grid-template-columns:1.2fr .8fr; gap:10px; flex-shrink:0; }
+        #again-btn { background:linear-gradient(90deg,#f59e0b,#f97316); color:white; font-weight:900; min-height:56px; border-radius:14px; padding:12px 18px; }
+        #reset-btn { min-height:56px; border-radius:14px; }
+        .winner-hero { justify-content:center; text-align:center; flex-direction:column; gap:7px !important; padding:20px !important; border-color:#fbbf24 !important; }
+        .winner-hero .winner-name { font-size:clamp(1.8rem,6vw,3.2rem) !important; color:#fef3c7; font-weight:1000; max-width:100%; }
+        @media (max-width:640px){
+          .student-setup { margin-left:10px !important; margin-right:10px !important; padding:16px !important; max-height:88vh !important; }
+          .student-mode-grid { grid-template-columns:1fr 1fr; }
+          .student-mode-btn { min-height:74px; padding:9px; font-size:.9rem; }
+          .student-mode-btn small { display:none; }
+          #leaderboard-panel { width:138px !important; padding:9px !important; }
+          .result-actions { grid-template-columns:1fr; }
+        }
+
     </style>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; font-family: 'Pretendard', sans-serif; touch-action: none; }
@@ -1338,101 +1370,70 @@
 
     <div id="ui-layer" class="flex flex-col items-center justify-center">
         
-        <div id="setup-panel" class="glass-panel p-6 md:p-8 rounded-2xl shadow-2xl pointer-events-auto w-full max-w-2xl mx-4 transition-opacity duration-300 absolute z-10 max-h-[90vh] overflow-y-auto">
-            <h1 id="main-title" class="text-2xl md:text-3xl font-bold mb-6 text-center text-yellow-400 drop-shadow-md cursor-pointer select-none">🚀 엎치락뒤치락 범퍼 룰렛</h1>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">학생 명단 (엔터로 구분)</label>
-                    <div class="setup-helper-row">
-                        <button type="button" id="load-classroom-btn" class="setup-helper-btn">👥 우리 반 불러오기</button>
-                        <button type="button" id="sample-names-btn" class="setup-helper-btn">예시 명단</button>
-                    </div>
-                    <textarea id="names-input" rows="8" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm md:text-base" placeholder="학생 이름을 한 줄에 한 명씩 입력"></textarea>
+        <div id="setup-panel" class="glass-panel p-6 md:p-8 rounded-2xl shadow-2xl pointer-events-auto w-full max-w-2xl mx-4 transition-opacity duration-300 absolute z-10 max-h-[90vh] overflow-y-auto student-setup">
+            <h1 id="main-title" class="text-2xl md:text-3xl font-bold mb-6 text-center text-yellow-400 drop-shadow-md select-none">🎡 범퍼 룰렛 레이스</h1>
+            <p class="student-subtitle">친구나 말을 넣고 출발! 범퍼에 통통 튕기며 결승선까지 달려요.</p>
+
+            <section class="student-step">
+                <div class="student-step-title">1. 어떻게 놀까?</div>
+                <div class="student-mode-grid">
+                    <button type="button" class="student-mode-btn active" data-student-mode="winner">🏁 1등 뽑기<small>가장 먼저 도착한 하나를 뽑아요</small></button>
+                    <button type="button" class="student-mode-btn" data-student-mode="assign">🎯 모두 나누기<small>끝까지 달려 결과 칸을 하나씩 받아요</small></button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">결과 슬롯 (엔터로 구분)</label>
-                    <textarea id="slots-input" rows="8" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none text-sm md:text-base">발표 당첨!
-통과
-통과
-질문하기
-통과</textarea>
-                    <p class="probability-hint">같은 결과를 여러 줄 넣으면 그 결과가 나올 영역이 넓어져 확률이 높아집니다.</p>
+                <select id="game-purpose" class="student-hidden">
+                    <option value="winner">winner</option>
+                    <option value="assign">assign</option>
+                </select>
+                <p id="purpose-help" class="student-tip">가장 먼저 결승선에 도착한 친구가 오늘의 주인공!</p>
+            </section>
+
+            <section class="student-step">
+                <div class="student-step-title">2. 누가 달릴까?</div>
+                <div class="student-helper-row">
+                    <button type="button" id="sample-names-btn" class="student-helper-btn">👫 친구 8명</button>
+                    <button type="button" id="number-names-btn" class="student-helper-btn">🔢 1번~8번</button>
+                    <button type="button" id="clear-names-btn" class="student-helper-btn">지우기</button>
                 </div>
+                <textarea id="names-input" rows="6" class="w-full bg-gray-800 border border-gray-600 rounded-xl p-3 text-white focus:ring-2 focus:ring-yellow-500 focus:outline-none resize-none text-base md:text-lg" placeholder="민준&#10;서연&#10;도윤&#10;하은"></textarea>
+                <p class="student-tip">한 줄에 하나씩 · 2~16개까지 추천해요.</p>
+            </section>
+
+            <section id="slot-setup" class="student-step student-collapsed">
+                <div class="student-step-title">3. 어떤 결과로 나눌까?</div>
+                <div class="student-helper-row">
+                    <button type="button" id="team-slots-btn" class="student-helper-btn">🎨 4색 팀</button>
+                    <button type="button" id="pair-slots-btn" class="student-helper-btn">👥 두 팀</button>
+                </div>
+                <textarea id="slots-input" rows="5" class="w-full bg-gray-800 border border-gray-600 rounded-xl p-3 text-white focus:ring-2 focus:ring-yellow-500 focus:outline-none resize-none text-base">도착!
+도착!
+도착!
+도착!
+도착!</textarea>
+                <p class="student-tip">같은 결과를 여러 줄 써도 괜찮아요. 모든 구슬이 끝까지 달려요.</p>
+            </section>
+
+            <div class="student-hidden" aria-hidden="true">
+                <button type="button" id="load-classroom-btn">우리 반 불러오기</button>
+                <button type="button" id="open-debug-btn">교사 지정 결과</button>
+                <div id="debug-panel">
+                    <button id="close-debug-btn">닫기</button>
+                    <div id="cheat-list"><div class="cheat-row"><input class="cheat-name"><input class="cheat-result"></div></div>
+                    <button id="add-cheat-btn">추가</button>
+                </div>
+                <input type="checkbox" id="close-race" checked>
+                <input type="checkbox" id="use-countdown" checked>
+                <input id="countdown-seconds" type="number" value="3">
+                <input type="checkbox" id="one-marble-per-slot">
             </div>
 
-            <div class="mt-4 flex justify-end">
-                <button type="button" id="open-debug-btn" class="teacher-tools-btn">🔒 교사 지정 결과</button>
-            </div>
-            <div id="debug-panel" class="mt-3 p-4 border-2 rounded-xl bg-red-900 bg-opacity-30">
-                <h3 class="text-red-400 font-bold mb-3 flex items-center gap-2">
-                    <span>🔒 교사 지정 결과</span>
-                    <button id="close-debug-btn" class="ml-auto text-xs bg-red-800 hover:bg-red-700 px-2 py-1 rounded text-white">닫기</button>
-                </h3>
-                <p class="text-xs text-gray-300 mb-3">필요한 경우 특정 학생이 들어갈 결과 함을 지정합니다. 지정된 구슬은 마지막 구간에서 실제 해당 함으로 유도됩니다.</p>
-                <div class="flex flex-col gap-2" id="cheat-list">
-                    <div class="flex gap-2 cheat-row">
-                        <input type="text" placeholder="학생 이름 (예: 김철수)" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-                        <span class="text-white self-center">👉</span>
-                        <input type="text" placeholder="강제 결과 (예: 발표 당첨!)" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-                    </div>
-                </div>
-                <button id="add-cheat-btn" class="mt-2 text-xs bg-gray-700 hover:bg-gray-600 w-full py-2 rounded text-gray-300 transition">+ 조작 대상 추가</button>
-            </div>
-            
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <section class="mode-card">
-                    <label for="game-purpose">게임 목적</label>
-                    <select id="game-purpose">
-                        <option value="winner">🏆 우승자 뽑기 · 1위 중심</option>
-                        <option value="assign">🎯 전체 결과 배정 · 모두 도착</option>
-                    </select>
-                    <p class="probability-hint" id="purpose-help">1위가 도착하면 설정한 시간 뒤 레이스를 종료합니다.</p>
-                </section>
-                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
-                    <label class="flex items-start gap-3 cursor-pointer select-none">
-                        <input type="checkbox" id="close-race" class="option-check mt-1" checked>
-                        <span class="min-w-0">
-                            <span class="block text-sm font-bold text-gray-200">엎치락뒤치락 보정</span>
-                            <span class="block text-xs text-gray-400 mt-1">뒤처진 구슬을 조금 돕고 독주를 완화해 접전을 만듭니다.</span>
-                        </span>
-                    </label>
-                </section>
-                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
-                    <label class="flex items-start gap-3 cursor-pointer select-none">
-                        <input type="checkbox" id="use-countdown" class="option-check mt-1" checked>
-                        <span class="min-w-0">
-                            <span class="block text-sm font-bold text-gray-200">1위 도착 후 카운트다운</span>
-                            <span class="block text-xs text-gray-400 mt-1">우승자 뽑기 모드에서만 사용합니다.</span>
-                        </span>
-                    </label>
-                    <div class="mt-3 flex items-center gap-2 pl-8">
-                        <label for="countdown-seconds" class="text-xs font-bold text-gray-400 whitespace-nowrap">종료까지</label>
-                        <input id="countdown-seconds" type="number" min="1" max="60" step="1" value="10" inputmode="numeric" class="countdown-number-input w-20 bg-gray-800 border border-gray-600 rounded-lg p-2 text-center text-white font-bold focus:ring-2 focus:ring-yellow-500 focus:outline-none">
-                        <span class="text-xs font-bold text-gray-400">초</span>
-                    </div>
-                </section>
-                <section class="setting-option bg-gray-900 bg-opacity-35 border border-gray-700 rounded-xl px-4 py-3">
-                    <label class="flex items-start gap-3 cursor-pointer select-none">
-                        <input type="checkbox" id="one-marble-per-slot" class="option-check one-slot-check mt-1">
-                        <span class="min-w-0">
-                            <span class="block text-sm font-bold text-gray-200">결과 중복 금지</span>
-                            <span class="block text-xs text-gray-400 mt-1">한 결과 함에는 한 명만 들어갑니다.</span>
-                        </span>
-                    </label>
-                    <p class="text-xs text-gray-500 mt-3 pl-8">전체 결과 배정에서 사용할 때 슬롯 수가 학생 수 이상이어야 합니다.</p>
-                </section>
-            </div>
-            <p class="text-xs text-gray-400 text-center mt-2">용수철은 각각 무작위로 1~3번 튕긴 뒤 사라집니다.</p>
-
-            <button id="start-btn" class="mt-6 md:mt-8 w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-lg">
-                범퍼 레이스 시작!
+            <button id="start-btn" class="mt-6 w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-xl">
+                🚀 레이스 시작!
             </button>
-            <p class="text-xs text-gray-400 text-center mt-4">충돌 효과음이 재생됩니다. 교실 볼륨을 확인해 주세요.</p>
-            <p id="engine-status" class="text-xs text-yellow-300 text-center mt-2 min-h-[1rem]"></p>
+            <p id="engine-status" class="text-xs text-yellow-300 text-center mt-3 min-h-[1rem]"></p>
         </div>
 
         <div id="hud" class="absolute inset-0 pointer-events-none hidden">
+            <div id="race-callout">🔥 선두 교체!</div>
             <div id="leaderboard-panel" class="absolute top-4 left-4 glass-panel p-3 md:p-4 rounded-xl w-40 md:w-48 pointer-events-auto">
                 <h3 class="text-yellow-400 font-bold mb-2 border-b border-gray-600 pb-1 text-sm md:text-base">🏆 현재 순위</h3>
                 <ul id="leaderboard-list" class="space-y-2 text-xs md:text-sm"></ul>
@@ -1452,9 +1453,10 @@
                 <h2 id="result-title" class="text-2xl md:text-3xl text-yellow-300 mb-6 font-bold shrink-0">🎉 최종 결과 🎉</h2>
                 <div id="result-list" class="flex-1 overflow-y-auto grid grid-cols-1 gap-2 md:gap-3 mb-6 pr-2 text-left">
                 </div>
-                <button id="reset-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 md:py-4 px-8 rounded-xl transition text-base md:text-lg w-full shrink-0">
-                    설정으로 돌아가기
-                </button>
+                <div class="result-actions">
+                    <button id="again-btn">🔁 같은 친구로 다시!</button>
+                    <button id="reset-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 transition text-base md:text-lg w-full">✏️ 친구 바꾸기</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1500,16 +1502,8 @@ window.Gulliver = window.Gulliver || {
         });
 
         function parseCheatData() {
+            // Kidscade 학생판에서는 결과 지정/조작 기능을 사용하지 않습니다.
             cheatData = {};
-            const rows = document.querySelectorAll('.cheat-row');
-            rows.forEach(row => {
-                const name = row.querySelector('.cheat-name').value.trim();
-                const res = row.querySelector('.cheat-result').value.trim();
-                if (name && res) {
-                    cheatData[name] = res; 
-                }
-            });
-            console.log("교사 지정 결과:", cheatData);
         }
 
         // --- 오디오 시스템 ---
@@ -1674,14 +1668,14 @@ window.Gulliver = window.Gulliver || {
         let startBoxBottom; 
 
         let countdownTimer = null;
-        let countdownValue = 10;
-        let countdownSeconds = 10;
+        let countdownValue = 3;
+        let countdownSeconds = 3;
         let isCountdownActive = false;
         let useCountdown = true;
         let useOneMarblePerSlot = false;
         let gamePurpose = 'winner';
         let useCloseRace = true;
-        const CONFIG_KEY = 'gulliver.bumperRoulette.v2';
+        const CONFIG_KEY = 'kidscade.bumperRoulette.student.v1';
         let lastLeaderboardPaint = 0;
 
         const WORLD_WIDTH = 1200;
@@ -1753,13 +1747,13 @@ window.Gulliver = window.Gulliver || {
                 countdown.checked = false;
                 countdown.disabled = true;
                 countdownInput.disabled = true;
-                help.textContent = '모든 학생이 결과 함에 들어갈 때까지 진행합니다.';
-                start.textContent = '전체 결과 배정 시작!';
+                help.textContent = '모든 구슬이 끝까지 달려서 결과 칸을 받아요.';
+                start.textContent = '🚀 모두 출발!';
             } else {
                 countdown.disabled = false;
                 countdownInput.disabled = !countdown.checked;
-                help.textContent = '1위가 도착하면 설정한 시간 뒤 레이스를 종료합니다.';
-                start.textContent = '우승 레이스 시작!';
+                help.textContent = '가장 먼저 결승선에 도착한 친구가 오늘의 주인공!';
+                start.textContent = '🚀 레이스 시작!';
             }
         }
 
@@ -1779,8 +1773,8 @@ window.Gulliver = window.Gulliver || {
 
         function getCountdownSeconds() {
             const input = document.getElementById('countdown-seconds');
-            const raw = Number(input ? input.value : 10);
-            const safeSeconds = Number.isFinite(raw) ? Math.round(raw) : 10;
+            const raw = Number(input ? input.value : 3);
+            const safeSeconds = Number.isFinite(raw) ? Math.round(raw) : 3;
             const clamped = Math.max(1, Math.min(60, safeSeconds));
             if (input) input.value = clamped;
             return clamped;
@@ -1932,6 +1926,7 @@ window.Gulliver = window.Gulliver || {
 
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('reset-btn').addEventListener('click', resetGame);
+            document.getElementById('again-btn').addEventListener('click', restartSameRoster);
 
             Events.on(engine, 'collisionStart', function(event) {
                 if(gameState !== 'playing') return;
@@ -2496,8 +2491,12 @@ window.Gulliver = window.Gulliver || {
             let namesInput = document.getElementById('names-input').value.split('\n').filter(n => n.trim() !== '');
             const slotsInput = document.getElementById('slots-input').value.split('\n').filter(n => n.trim() !== '');
 
-            if (namesInput.length === 0 || slotsInput.length === 0) {
-                alert("학생 명단과 슬롯을 1개 이상 입력해주세요.");
+            if (namesInput.length < 2 || slotsInput.length === 0) {
+                alert("레이스할 친구나 말을 2개 이상 넣어 주세요!");
+                return;
+            }
+            if (namesInput.length > 16) {
+                alert("학생판은 이름이 잘 보이도록 한 번에 16개까지 달릴 수 있어요.");
                 return;
             }
 
@@ -2569,6 +2568,8 @@ window.Gulliver = window.Gulliver || {
             
             camera.y = -200;
             camera.targetY = -200;
+            lastLeaderId = null;
+            leaderChangeCount = 0;
 
             setTimeout(() => {
                 if (gameState === 'playing' && startBoxBottom) {
@@ -2602,11 +2603,39 @@ window.Gulliver = window.Gulliver || {
             syncPurposeUI();
         }
 
+        let lastLeaderId = null;
+        let leaderChangeCount = 0;
+        let calloutTimer = null;
+
+        function showRaceCallout(message) {
+            const el = document.getElementById('race-callout');
+            if (!el) return;
+            el.textContent = message;
+            el.classList.add('show');
+            clearTimeout(calloutTimer);
+            calloutTimer = setTimeout(() => el.classList.remove('show'), 1200);
+        }
+
+        function restartSameRoster() {
+            if (runner) {
+                Runner.stop(runner);
+                runner = null;
+            }
+            clearInterval(countdownTimer);
+            gameState = 'setup';
+            document.getElementById('result-modal').classList.add('hidden');
+            const setup = document.getElementById('setup-panel');
+            setup.style.display = 'block';
+            setup.style.opacity = '0';
+            setHudVisible(false);
+            setTimeout(startGame, 80);
+        }
+
         function updateLeaderboard(sortedMarbles) {
             const listEl = document.getElementById('leaderboard-list');
             listEl.innerHTML = '';
             
-            const top5 = sortedMarbles.slice(0, 5);
+            const top5 = sortedMarbles.slice(0, 3);
             
             top5.forEach((m, index) => {
                 const li = document.createElement('li');
@@ -2634,6 +2663,14 @@ window.Gulliver = window.Gulliver || {
 
             let sortedMarbles = [...marbles].sort((a, b) => b.body.position.y - a.body.position.y);
             let leader = sortedMarbles.find(m => !m.finished) || sortedMarbles[0];
+
+            if (leader && gameState === 'playing' && leader.id !== lastLeaderId) {
+                if (lastLeaderId !== null) {
+                    leaderChangeCount++;
+                    showRaceCallout(leaderChangeCount >= 3 ? `🔥 대역전! ${leader.name}` : `👑 선두 교체! ${leader.name}`);
+                }
+                lastLeaderId = leader.id;
+            }
 
             if (now - lastLeaderboardPaint > 160) {
                 updateLeaderboard(sortedMarbles);
@@ -2917,14 +2954,21 @@ window.Gulliver = window.Gulliver || {
 
             const modal = document.getElementById('result-modal');
             const title = document.getElementById('result-title');
-            if (title) title.textContent = gamePurpose === 'assign' ? '🎯 전체 배정 결과' : '🏆 레이스 결과';
+            if (title) title.textContent = gamePurpose === 'assign' ? '🎯 모두 도착했어요!' : '🎉 오늘의 주인공!';
             const resultList = document.getElementById('result-list');
             resultList.innerHTML = '';
 
-            results.forEach((res, index) => {
+            const shownResults = gamePurpose === 'winner' ? results.slice(0, 1) : results;
+            shownResults.forEach((res, index) => {
                 const item = document.createElement('div');
-                item.className = 'bg-gray-800 bg-opacity-60 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-600';
-                item.innerHTML = `
+                item.className = gamePurpose === 'winner'
+                    ? 'winner-hero bg-gray-800 bg-opacity-60 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-600'
+                    : 'bg-gray-800 bg-opacity-60 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-600';
+                item.innerHTML = gamePurpose === 'winner' ? `
+                    <div class="text-5xl">🏆</div>
+                    <div class="winner-name">${res.marble.name}</div>
+                    <div class="text-yellow-300 font-bold">가장 먼저 결승선에 도착했어요!</div>
+                ` : `
                     <div class="text-xl md:text-2xl font-bold text-gray-500 w-6 md:w-8 text-center">${index + 1}</div>
                     <div class="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md shrink-0" style="background-color: ${res.marble.color}"></div>
                     <div class="flex-1 overflow-hidden">
@@ -2934,21 +2978,21 @@ window.Gulliver = window.Gulliver || {
                 `;
                 resultList.appendChild(item);
             });
-            
-            const unfinished = marbles.filter(m => !m.finished);
-            unfinished.forEach(m => {
-                const item = document.createElement('div');
-                item.className = 'bg-gray-800 bg-opacity-30 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-700 opacity-50';
-                item.innerHTML = `
-                    <div class="text-xl md:text-2xl font-bold text-gray-600 w-6 md:w-8 text-center">-</div>
-                    <div class="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md grayscale shrink-0" style="background-color: ${m.color}"></div>
-                    <div class="flex-1 overflow-hidden">
-                        <div class="text-gray-400 font-bold text-lg md:text-xl truncate">${m.name}</div>
-                    </div>
-                    <div class="text-red-400 font-extrabold text-sm md:text-lg whitespace-nowrap shrink-0">시간 초과</div>
-                `;
-                resultList.appendChild(item);
-            });
+
+            if (gamePurpose === 'assign') {
+                const unfinished = marbles.filter(m => !m.finished);
+                unfinished.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-gray-800 bg-opacity-30 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 border border-gray-700 opacity-50';
+                    item.innerHTML = `
+                        <div class="text-xl md:text-2xl font-bold text-gray-600 w-6 md:w-8 text-center">-</div>
+                        <div class="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md grayscale shrink-0" style="background-color: ${m.color}"></div>
+                        <div class="flex-1 overflow-hidden"><div class="text-gray-400 font-bold text-lg md:text-xl truncate">${m.name}</div></div>
+                        <div class="text-red-400 font-extrabold text-sm md:text-lg whitespace-nowrap shrink-0">아직 도착 전</div>
+                    `;
+                    resultList.appendChild(item);
+                });
+            }
 
             setTimeout(() => {
                 modal.classList.remove('hidden');
@@ -2959,7 +3003,35 @@ window.Gulliver = window.Gulliver || {
         const countdownToggleEl = document.getElementById('use-countdown');
         const countdownInputEl = document.getElementById('countdown-seconds');
         const purposeEl = document.getElementById('game-purpose');
+
+        function setStudentMode(mode, persist = true) {
+            const slotSetup = document.getElementById('slot-setup');
+            const slots = document.getElementById('slots-input');
+            purposeEl.value = mode;
+            document.querySelectorAll('.student-mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.studentMode === mode);
+            });
+            if (mode === 'assign') {
+                slotSetup.classList.remove('student-collapsed');
+                if (/^(도착!\s*){3,}$/m.test(slots.value.replace(/\n/g,'')) || slots.value.trim().split('\n').every(v=>v.trim()==='도착!')) {
+                    slots.value = slots.dataset.assignSlots || '빨강 팀\n파랑 팀\n노랑 팀\n초록 팀';
+                }
+            } else {
+                if (slots.value.trim().split('\n').some(v => v.trim() !== '도착!')) slots.dataset.assignSlots = slots.value;
+                slotSetup.classList.add('student-collapsed');
+                slots.value = '도착!\n도착!\n도착!\n도착!\n도착!';
+            }
+            document.getElementById('use-countdown').checked = mode === 'winner';
+            document.getElementById('countdown-seconds').value = 3;
+            document.getElementById('one-marble-per-slot').checked = false;
+            document.getElementById('close-race').checked = true;
+            syncPurposeUI();
+            if (persist) saveGameConfig();
+        }
+
         loadGameConfig();
+        document.querySelectorAll('.student-mode-btn').forEach(btn => btn.addEventListener('click',()=>setStudentMode(btn.dataset.studentMode)));
+        setStudentMode(purposeEl.value === 'assign' ? 'assign' : 'winner', false);
         purposeEl.addEventListener('change',()=>{syncPurposeUI();saveGameConfig();});
         countdownToggleEl.addEventListener('change',()=>{syncCountdownInputState();saveGameConfig();});
         countdownInputEl.addEventListener('change',()=>{resetCountdownDisplay();saveGameConfig();});
@@ -2971,6 +3043,23 @@ window.Gulliver = window.Gulliver || {
         document.getElementById('load-classroom-btn').addEventListener('click',loadClassroomNames);
         document.getElementById('sample-names-btn').addEventListener('click',()=>{
             document.getElementById('names-input').value=['민준','서연','도윤','하은','지호','수아','현우','윤서'].join('\n');
+            saveGameConfig();
+        });
+        document.getElementById('number-names-btn').addEventListener('click',()=>{
+            document.getElementById('names-input').value=Array.from({length:8},(_,i)=>`${i+1}번`).join('\n');
+            saveGameConfig();
+        });
+        document.getElementById('clear-names-btn').addEventListener('click',()=>{
+            document.getElementById('names-input').value='';
+            document.getElementById('names-input').focus();
+            saveGameConfig();
+        });
+        document.getElementById('team-slots-btn').addEventListener('click',()=>{
+            document.getElementById('slots-input').value='빨강 팀\n파랑 팀\n노랑 팀\n초록 팀';
+            saveGameConfig();
+        });
+        document.getElementById('pair-slots-btn').addEventListener('click',()=>{
+            document.getElementById('slots-input').value='A팀\nA팀\nB팀\nB팀';
             saveGameConfig();
         });
         document.getElementById('debug-panel').addEventListener('input',saveGameConfig);
