@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>누가 마피아? : 한밤의 마을</title>
+<link rel="stylesheet" href="./style.css?v=1">
+<script src="../../kidscade-storage.js?v=20260929-mafia-1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_pass_mafia" data-title="누가 마피아? : 한밤의 마을" data-shell="true" data-mute="false" data-orientation="portrait"></script>
+</head>
+<body>
+<main id="app">
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">PASS &amp; PLAY</span>
+      <h1>누가 마피아?</h1>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundBtn" type="button" aria-label="소리 켜기/끄기">🔊</button>
+      <button class="icon-btn hidden" id="resetBtn" type="button" aria-label="게임 종료">↺</button>
+    </div>
+  </header>
+
+  <section id="screen" class="screen" aria-live="polite"></section>
+  <div id="toast" class="toast" role="status"></div>
+</main>
+
+<template id="setupTemplate">
+  <div class="setup-wrap">
+    <section class="hero-card">
+      <div class="moon">🌙</div>
+      <p class="kicker">휴대폰 한 대면 충분해요</p>
+      <h2>사회자 없이 즐기는<br>마피아 게임</h2>
+      <p>역할 확인부터 밤 행동, 지목, 최후 변론, 처형 투표와 승리 판정까지 기기가 진행해요.</p>
+    </section>
+
+    <section class="card" id="resumeCard"></section>
+
+    <section class="card">
+      <div class="section-title">
+        <div><span>1</span><h3>플레이어</h3></div>
+        <strong id="playerCountLabel">6명</strong>
+      </div>
+      <div class="stepper-row">
+        <button class="stepper" type="button" data-count="-1" aria-label="인원 줄이기">−</button>
+        <div class="big-number" id="playerCount">6</div>
+        <button class="stepper" type="button" data-count="1" aria-label="인원 늘리기">＋</button>
+      </div>
+      <div id="nameFields" class="name-fields"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div><span>2</span><h3>역할 구성</h3></div>
+        <button class="text-btn" id="recommendBtn" type="button">추천으로 맞추기</button>
+      </div>
+      <div class="role-settings">
+        <div class="role-row">
+          <div><b>🔪 마피아</b><small>밤마다 한 명을 노려요</small></div>
+          <div class="mini-stepper"><button type="button" data-role-step="mafia:-1">−</button><strong id="mafiaCount">1</strong><button type="button" data-role-step="mafia:1">＋</button></div>
+        </div>
+        <label class="role-row check-row">
+          <div><b>🔍 경찰</b><small>밤마다 한 명을 조사해요</small></div>
+          <input id="detectiveToggle" type="checkbox" checked>
+        </label>
+        <label class="role-row check-row">
+          <div><b>💉 의사</b><small>밤마다 한 명을 보호해요</small></div>
+          <input id="doctorToggle" type="checkbox" checked>
+        </label>
+        <div class="role-row muted-role">
+          <div><b>🙂 시민</b><small>남는 자리는 모두 시민이에요</small></div>
+          <strong id="citizenCount">3</strong>
+        </div>
+      </div>
+      <div id="balanceNote" class="note"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><div><span>3</span><h3>게임 규칙</h3></div></div>
+      <div class="option-grid">
+        <label>낮 토론
+          <select id="discussionSelect">
+            <option value="120">2분</option>
+            <option value="180" selected>3분</option>
+            <option value="300">5분</option>
+          </select>
+        </label>
+        <label>최후 변론
+          <select id="defenseSelect">
+            <option value="20">20초</option>
+            <option value="30" selected>30초</option>
+            <option value="60">1분</option>
+          </select>
+        </label>
+        <label class="toggle-line"><span>사망 시 역할 공개</span><input id="revealDeathToggle" type="checkbox"></label>
+        <label class="toggle-line"><span>의사 연속 자기치료</span><input id="selfHealToggle" type="checkbox"></label>
+      </div>
+    </section>
+
+    <button id="startBtn" class="primary giant" type="button">🌙 게임 시작</button>
+    <p class="setup-tip">역할을 본 뒤에는 반드시 화면이 잠긴 것을 확인하고 다음 사람에게 넘겨주세요.</p>
+  </div>
+</template>
+
+<script src="./game.js?v=1"></script>
+</body>
+</html>
