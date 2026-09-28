@@ -110,7 +110,7 @@ function hint(){
  const step=state.puzzle?.recipe?.[0];if(!step)return;toast('힌트: '+E.display(step.a,'fraction')+' '+step.op+' '+E.display(step.b,'fraction')+' 부터 만들어 보세요.',2600)
 }
 function undo(){if(state.busy||!state.history.length)return;restore(state.history.pop());play('select',.2);toast('한 번 전으로 되돌렸어요.')}
-function saveBest(){try{const k='fractionSmithBest_v1_'+state.mode,prev=Number(localStorage.getItem(k)||0);if(state.score>prev)localStorage.setItem(k,String(state.score))}catch(_){}}
+function saveBest(){if(state.mode!=='rush')return;try{const k='kidscade_fraction_smith_best_v1',prev=Number(localStorage.getItem(k)||0);if(state.score>prev)localStorage.setItem(k,String(state.score))}catch(_){}}
 function start(mode){
  clearInterval(state.timerId);state={...state,mode,puzzle:null,pieces:new Map(),slots:[null,null],score:0,combo:0,heat:1,orders:0,strikes:0,time:mode==='rush'?60:0,running:true,busy:false,history:[],resultSeq:0,timerId:0};
  el.start.classList.remove('open');el.finish.classList.remove('open');newPuzzle();
