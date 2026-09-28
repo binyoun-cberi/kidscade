@@ -17,6 +17,8 @@ const ui={
 
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const DIR_ANGLE=[-Math.PI/2,Math.PI,Math.PI/2,0];
+const DIR_LABELS=['오른쪽','아래','왼쪽','위'];
+const ROTATABLE_TYPES=new Set(['belt','splitter','merger','cross','assembler','slicer','pan','toaster','packer']);
 const CELL=1.18,TICK=1/20;
 const MAP_PRESETS={
   small:{label:'소',cols:28,rows:18,view:16,minView:10,maxItems:160,supplies:['bread','cheese','ham','tomato'],ships:1},
@@ -76,7 +78,7 @@ let beltMesh,arrowMesh;
 let models=new Map();
 let blueprint=new Map(),items=[],effects=[],machineStates=new Map();
 let itemSeq=1,spawnClock=0,gameTime=0,orderClock=0,saveClock=0,analysisClock=0;
-let running=false,paused=false,speed=1,selectedTool='belt',rotation=0,analysis=false;
+let running=false,paused=false,speed=1,selectedTool='belt',rotation=0,rotateArmed=false,analysis=false;
 let stats={shipped:0,cash:0,waste:0,shipTimes:[],discoveries:{}};
 let orders=[],challengeIndex=0;
 let undoStack=[],redoStack=[];
@@ -329,6 +331,14 @@ function setCell(x,y,type,dir=rotation){
   if(type==='erase'){if(blueprint.delete(k)){machineStates.delete(k);return true}return false}
   blueprint.set(k,{type,dir,toggle:false});machineStates.delete(k);return true;
 }
+function rotatePlacedCell(x,y){
+  const cell=blueprint.get(key(x,y));
+  if(!cell||!ROTATABLE_TYPES.has(cell.type))return false;
+  cell.dir=rotRight(Number.isInteger(cell.dir)?cell.dir:0);
+  rotation=cell.dir;
+  return true;
+}
+function disarmRotate(){rotateArmed=false;ui.rotateBtn.classList.remove('active')}
 function addBeltStep(a,b){
   if(!a||!b)return;
   const d=dirBetween(a,b);
@@ -357,6 +367,15 @@ function pointerDown(ev){
   if(ev.button!==0)return;
   if(selectedTool==='move'){beginDragPan(ev);return}
   const c=screenToCell(ev.clientX,ev.clientY);if(!c)return;
+  if(rotateArmed){
+    const existing=blueprint.get(key(c.x,c.y));
+    if(existing&&ROTATABLE_TYPES.has(existing.type)){
+      pushUndo();rotatePlacedCell(c.x,c.y);disarmRotate();rebuildFactoryVisuals();saveGame(false);sound('click');syncUndo();
+      showToast('설치물 회전 · '+DIR_LABELS[existing.dir]+' 방향');
+      return;
+    }
+    disarmRotate();
+  }
   if(selectedTool==='belt'||selectedTool==='erase'){
     pushUndo();dragBuild={tool:selectedTool,last:c,changed:false};
     if(selectedTool==='erase')dragBuild.changed=setCell(c.x,c.y,'erase')||dragBuild.changed;
@@ -682,11 +701,15 @@ function togglePause(){
 }
 function setTool(t){
   selectedTool=t;
+  disarmRotate();
   document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
   document.body.classList.toggle('moveMode',t==='move');ui.moveBtn.classList.toggle('active',t==='move');
   sound('click');
 }
-function rotateTool(){rotation=(rotation+1)%4;sound('click');showToast(['오른쪽','아래','왼쪽','위'][rotation]+' 방향')}
+function rotateTool(){
+  rotation=(rotation+1)%4;rotateArmed=true;ui.rotateBtn.classList.add('active');sound('click');
+  showToast(DIR_LABELS[rotation]+' 방향 · 설치된 설비를 누르면 90° 회전');
+}
 function toggleAnalysis(){analysis=!analysis;ui.analysisBtn.classList.toggle('active',analysis);ui.analysisLegend.classList.toggle('hidden',!analysis);rebuildFactoryVisuals();showToast(analysis?'막힌 흐름을 색으로 표시해요.':'분석 보기를 껐어요.')}
 function cycleSpeed(){speed=speed===1?2:speed===2?4:1;ui.speedBtn.textContent='×'+speed;sound('click')}
 function setContinueVisibility(){
