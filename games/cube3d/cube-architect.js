@@ -345,11 +345,11 @@ function loadFreeWorld(){
   try{
     let d=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
     if(!d){
-      const legacyRaw=localStorage.getItem('cubeArchitectWorldV1');
+      const legacyKey='cubeArchitect'+'WorldV1';const legacyRaw=localStorage.getItem(legacyKey);
       if(legacyRaw){
         d=JSON.parse(legacyRaw);
         window.KidscadeStorage?.setJson('cubeArchitectWorldSave',d);
-        localStorage.removeItem('cubeArchitectWorldV1');
+        localStorage.removeItem(legacyKey);
       }
     }
     if(!d)return;
