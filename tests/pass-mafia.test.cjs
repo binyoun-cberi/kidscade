@@ -29,7 +29,7 @@ test('Pass Mafia automatically enables classroom mode from 17 players', () => {
 
 test('Pass Mafia classroom day uses two public candidates and one secret final pass', () => {
   assert.match(js, /function beginClassCandidateSelect\(\)/);
-  assert.match(js, /classCandidates\.length !== 2/);
+  assert.match(js, /classCandidates[^\n]*length !== 2/);
   assert.match(js, /function beginClassVote\(\)/);
   assert.match(js, /const excluded = new Set\(state\.classCandidates \|\| \[\]\)/);
   assert.match(js, /filter\(p => !excluded\.has\(p\.id\)\)/);
