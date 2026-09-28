@@ -162,4 +162,149 @@
         score += (subjectAffinity.get(game.subject) || 0) * 2.4;
         score += (genreAffinity.get(game.genre) || 0) * 2.8;
         if (favorites.has(String(game.id))) score += 2;
-        if (!
+        if (!recent.has(String(game.id))) score += 4;
+        else score -= 5;
+        if (Number(game.sessionMinutes || 0) <= 10) score += 1;
+        score += (dailyHash(game.id, dateKey) % 1000) / 1000;
+        return { game, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, options.limit || MAX_RAIL_GAMES)
+      .map(entry => entry.game);
+  }
+
+  function deterministicGames(gameList, predicate, age, limit = MAX_RAIL_GAMES, dateKey = kstDateKey()) {
+    return gameList
+      .filter(game => supportsAge(game, age) && predicate(game))
+      .sort((a, b) => dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey))
+      .slice(0, limit);
+  }
+
+  function railDefinitions(gameList, options = {}) {
+    const age = options.age || 'high';
+    const dateKey = options.dateKey || kstDateKey();
+    const definitions = [];
+
+    const recent = Array.isArray(options.recentGames) ? options.recentGames : [];
+    const popular = Array.isArray(options.popularGames) ? options.popularGames : [];
+    const recommended = Array.isArray(options.recommendedGames)
+      ? options.recommendedGames
+      : recommendGames(gameList, {
+          age,
+          recentIds: options.recentIds || [],
+          favoriteIds: options.favoriteIds || [],
+          dateKey
+        });
+
+    if (recent.length) definitions.push({
+      key: 'recent',
+      title: '🕒 이어서 플레이',
+      note: '최근에 하던 게임으로 바로 돌아가요.',
+      games: recent.slice(0, MAX_RAIL_GAMES)
+    });
+
+    if (popular.length) definitions.push({
+      key: 'popular',
+      title: '🔥 지금 많이 하는 게임',
+      note: '이번 주 KIDSCADE에서 자주 플레이한 게임이에요.',
+      games: popular.slice(0, MAX_RAIL_GAMES),
+      showPlayCount: true
+    });
+
+    if (recommended.length) definitions.push({
+      key: 'recommended',
+      title: '✨ 오늘 뭐 하지?',
+      note: '최근 취향과 오늘의 추천을 섞어 골랐어요.',
+      games: recommended
+    });
+
+    const quick = deterministicGames(gameList, game => Number(game.sessionMinutes || 99) <= 5, age, MAX_RAIL_GAMES, dateKey);
+    if (quick.length >= 3) definitions.push({
+      key: 'quick',
+      title: age === 'toddler' ? '⚡ 짧게 놀아요' : '⚡ 5분이면 한 판',
+      note: '짧은 시간에도 부담 없이 시작할 수 있어요.',
+      games: quick
+    });
+
+    const together = deterministicGames(
+      gameList,
+      game => (game.players || []).some(mode => mode !== 'solo'),
+      age,
+      MAX_RAIL_GAMES,
+      dateKey
+    );
+    if (together.length >= 3) definitions.push({
+      key: 'together',
+      title: '👥 친구랑 같이 해요',
+      note: '2인·여럿이·온라인으로 함께할 수 있어요.',
+      games: together
+    });
+
+    const thinking = deterministicGames(
+      gameList,
+      game => game.subject === 'thinking' || ['puzzle', 'strategy'].includes(game.genre),
+      age,
+      MAX_RAIL_GAMES,
+      dateKey
+    );
+    if (thinking.length >= 4) definitions.push({
+      key: 'thinking',
+      title: age === 'toddler' ? '🧩 찾아보고 맞춰요' : '🧠 머리 쓰는 게임',
+      note: '퍼즐과 전략으로 생각하는 재미를 느껴봐요.',
+      games: thinking
+    });
+
+    if (age === 'low' || age === 'high') {
+      const career = gameList
+        .filter(game => game.age === 'job' && !game.disabled && game.qualityStatus !== 'rework')
+        .sort((a, b) => dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey))
+        .slice(0, MAX_RAIL_GAMES);
+      if (career.length) definitions.push({
+        key: 'career',
+        title: '🧑‍🔬 직업체험관',
+        note: '가게·현장·전문 직업을 게임으로 체험해요.',
+        games: career
+      });
+    }
+
+    if (age === 'job') {
+      const deep = deterministicGames(gameList, game => game.age === 'job', 'job', MAX_RAIL_GAMES, dateKey);
+      if (deep.length) definitions.push({
+        key: 'career-all',
+        title: '💼 직업을 골라 체험해요',
+        note: '직업체험 게임을 한곳에서 둘러볼 수 있어요.',
+        games: deep
+      });
+    }
+
+    return definitions.slice(0, age === 'toddler' ? 5 : 7);
+  }
+
+  function heroGame(gameList, age, options = {}) {
+    const dateKey = options.dateKey || kstDateKey();
+    const recent = new Set(cleanIds(options.recentIds));
+    const eligible = gameList.filter(game => supportsAge(game, age));
+    const featured = eligible.filter(game => game.qualityStatus === 'featured');
+    const pool = featured.length ? featured : eligible;
+    if (!pool.length) return null;
+
+    return [...pool].sort((a, b) => {
+      const ar = recent.has(String(a.id)) ? 1 : 0;
+      const br = recent.has(String(b.id)) ? 1 : 0;
+      if (ar !== br) return ar - br;
+      return dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey);
+    })[0] || null;
+  }
+
+  function metaText(game) {
+    const genre = GENRE_LABELS[game.genre] || '';
+    const session = Number(game.sessionMinutes || 0) > 0 ? `${game.sessionMinutes}분` : '';
+    const people = (game.players || []).includes('online') ? '온라인' :
+      (game.players || []).includes('localMulti') ? '여럿이' :
+      (game.players || []).includes('local2') ? '2인' :
+      (game.players || []).includes('classroom') ? '교실' : '혼자';
+    return [genre, session, people].filter(Boolean).join(' · ');
+  }
+
+  function playCount(gameId) {
+    const value = root?.KidscadeServerStats?.current?.gam
