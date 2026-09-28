@@ -20,7 +20,7 @@ test('avatar customize action lives inside the avatar preview and Seed World sta
   assert.match(indexBase,/id="btn-open-shop"[\s\S]*씨앗 월드/);
   assert.match(avatar,/function ensurePreviewEditButton/);
   assert.match(avatar,/z-index:80/);
-  assert.match(avatar,/button\.textContent = '👕 꾸미기'/);
+  assert.match(avatar,/button\.textContent = '👕 아바타 꾸미기 ›'/);
 });
 
 test('Seed World uses the compact survival HUD instead of the old debug panels',()=>{
