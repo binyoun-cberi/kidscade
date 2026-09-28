@@ -19,6 +19,7 @@
   }[ch]));
 
   function account() { return window.KidscadeAccount?.account || null; }
+  function isTeacher() { return account()?.role === 'teacher'; }
   function store() { return window.KidscadeStorage || null; }
   function balance() {
     try { return Math.max(0, store()?.getInt?.('seeds', 0) || 0); } catch (_) { return 0; }
@@ -192,7 +193,7 @@
   }
 
   async function flush(keepalive = false) {
-    if (!loginId || flushing || pending <= 0 || account()?.loginId !== loginId) return;
+    if (!loginId || isTeacher() || flushing || pending <= 0 || account()?.loginId !== loginId) return;
     const amount = Math.min(100000, pending);
     flushing = true;
     try {
@@ -226,7 +227,7 @@
       loginId = nextLogin;
       ranking = null;
       lastBalance = currentBalance;
-      pending = loginId ? loadPending(loginId) : 0;
+      pending = loginId && !isTeacher() ? loadPending(loginId) : 0;
       if (!loginId) close();
       entry();
       if (pending > 0) scheduleFlush();
@@ -242,7 +243,7 @@
     if (lastBalance === null) lastBalance = currentBalance;
     const delta = currentBalance - lastBalance;
     lastBalance = currentBalance;
-    if (delta > 0) {
+    if (!isTeacher() && delta > 0) {
       pending += delta;
       savePending();
       scheduleFlush();
