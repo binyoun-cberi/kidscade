@@ -578,4 +578,103 @@
   }
 
   function showHome() {
-    if
+    if (!root?.document) return;
+    const search = root.document.getElementById('game-search-input');
+    if (search?.value) {
+      search.value = '';
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    root.document.body.dataset.kcHomeMode = 'home';
+    updateBackbar();
+    root.document.getElementById(HOME_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function updateBackbar() {
+    const bar = root?.document?.getElementById(BACKBAR_ID);
+    if (!bar) return;
+    const mode = root.document.body.dataset.kcHomeMode || 'home';
+    const title = bar.querySelector('.kc-home-back-title');
+    const note = bar.querySelector('.kc-home-back-note');
+    if (title) title.textContent = mode === 'search' ? '검색 결과' : '모든 게임';
+    if (note) note.textContent = mode === 'search'
+      ? '검색어와 태그에 맞는 게임만 보여주고 있어요.'
+      : '검색과 태그로 원하는 게임을 찾아보세요.';
+  }
+
+  function bindSearch() {
+    const search = root?.document?.getElementById('game-search-input');
+    if (!search || searchBound) return;
+    searchBound = true;
+    search.addEventListener('input', () => {
+      const value = search.value.trim();
+      const body = root.document.body;
+      const currentMode = body.dataset.kcHomeMode || 'home';
+      if (value) {
+        if (currentMode !== 'search') body.dataset.kcHomeSearchReturn = currentMode === 'library' ? 'library' : 'home';
+        body.dataset.kcHomeMode = 'search';
+      } else if (currentMode === 'search') {
+        body.dataset.kcHomeMode = body.dataset.kcHomeSearchReturn || 'home';
+        delete body.dataset.kcHomeSearchReturn;
+      }
+      updateBackbar();
+    });
+  }
+
+  function bindGlobalEvents() {
+    root.document.addEventListener('kidscade:favorites-changed', scheduleRender);
+    root.document.addEventListener('kidscade:recents-changed', scheduleRender);
+    root.document.addEventListener('kidscade:game-closed', () => {
+      root.KidscadeServerStats?.load?.(false)?.then?.(() => scheduleRender());
+      scheduleRender();
+    });
+
+    if (!bodyObserver && root.MutationObserver) {
+      bodyObserver = new MutationObserver(mutations => {
+        if (mutations.some(mutation => mutation.attributeName === 'data-kidscade-age')) scheduleRender();
+      });
+      bodyObserver.observe(root.document.body, { attributes: true, attributeFilter: ['data-kidscade-age'] });
+    }
+  }
+
+  async function refreshStats() {
+    try {
+      await root?.KidscadeServerStats?.load?.(false);
+    } catch (_) {}
+    scheduleRender();
+  }
+
+  function mount() {
+    if (!root?.document || mounted) return false;
+    ensureStylesheet();
+    const attempt = () => {
+      if (mounted) return;
+      const shell = ensureShell();
+      const ready = shell && games().length && root.KidscadePlay && root.KidscadeDashboard;
+      if (!ready) {
+        setTimeout(attempt, 80);
+        return;
+      }
+      mounted = true;
+      bindSearch();
+      bindGlobalEvents();
+      render();
+      refreshStats();
+    };
+    if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', attempt, { once: true });
+    else attempt();
+    return true;
+  }
+
+  return Object.freeze({
+    mount,
+    render,
+    showHome,
+    showLibrary,
+    supportsAge,
+    dailyHash,
+    rankPopular,
+    recommendGames,
+    railDefinitions,
+    heroGame
+  });
+});
