@@ -1167,6 +1167,7 @@ function updateDreadAtmosphere(){
 }
 function fakeScareSafe(){
   if(state.gameOver||state.blackout||state.paused||state.fakeScareActive)return false;
+  if(els.cameraView.classList.contains('cam-switching')||els.signalIntrusion.classList.contains('show'))return false;
   if(state.maiden&&state.maiden.active&&currentMaidenCam()==='office')return false;
   var rr=state.roamers||{};
   if((rr.wolf&&rr.wolf.location==='office')||(rr.reaper&&rr.reaper.location==='office'))return false;
