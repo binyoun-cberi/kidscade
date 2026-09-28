@@ -127,13 +127,6 @@
       }
       body.dark-mode #${TOGGLE_ID} { background:rgba(167,139,250,.10); color:#ddd6fe; border-color:rgba(167,139,250,.2); }
 
-      /* 쑥쑥랜드 카드: 프로필보다 한 단계 가벼운 보조 목적지 */
-      #kc-pet-card {
-        padding:12px !important;
-        border-radius:19px !important;
-        box-shadow:0 7px 20px rgba(15,23,42,.055) !important;
-      }
-
       /* 오늘의 활동: 두 기능을 확실히 구분하되 과한 장식은 줄임 */
       #kc-activity-strip { gap:8px !important; margin-bottom:12px !important; }
       #kc-activity-strip .kc-activity-btn {
@@ -444,8 +437,6 @@
   function addVisualLabels() {
     const profile = document.querySelector('.kc-side-card.avatar-shell');
     if (profile) profile.dataset.kcVisualRole = 'profile';
-    const growth = document.getElementById('kc-pet-card');
-    if (growth) growth.dataset.kcVisualRole = 'growth';
     const library = document.getElementById('game-list');
     if (library) library.dataset.kcVisualRole = 'library';
   }
