@@ -22,7 +22,7 @@ let score=[0,0],serveSide=0,rally=0,bestRally=Number(localStorage.getItem('seedV
 let phase='serve',phaseTimer=.9,shake=0,particles=[],trailTimer=0,practiceStage=0;
 
 function player(side){
- return {side,x:side===0?250:710,y:GROUND-48,w:72,h:96,vx:0,vy:0,onGround:true,state:'GROUND',jumpLatch:false,smashLatch:false,attack:0,diveTimer:0,recover:0,land:0,run:0,face:side===0?1:-1,touches:0};
+ return {side,x:side===0?250:710,y:GROUND-48,w:72,h:96,vx:0,vy:0,onGround:true,state:'GROUND',jumpLatch:false,smashLatch:false,attack:0,slideTimer:0,recover:0,land:0,run:0,face:side===0?1:-1,touches:0};
 }
 let p=[player(0),player(1)];
 let ball={x:300,y:210,vx:0,vy:0,r:18,lastTouch:-1,hitLock:0,trail:Array.from({length:7},()=>({x:300,y:210,a:0})),trailHead:0};
@@ -41,7 +41,7 @@ const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getC
 
 function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
- p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jump=false;cpuState.smash=false;cpuState.aim=0;
+ p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jump=false;cpuState.smash=false;cpuState.slide=false;cpuState.aim=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
  rally=0;rallyEl.textContent='랠리 0';serveArmed=false;setPhase('serve',.68);renderDirty=true;
  const cpuServing=(mode==='cpu'||mode==='practice')&&server===1;const serveKey=server===0?'S':'↓';serveText.textContent=cpuServing?'파랑 팀 서브 준비':(server===0?'초록 팀':'파랑 팀')+' · '+serveKey+' 눌러 서브';serveText.classList.add('show');
@@ -79,45 +79,61 @@ function predictBallLanding(){
  return {x:g.x,t:6};
 }
 
-const cpuState={think:0,targetX:710,jump:false,smash:false,aim:0,predX:710,predT:1};
+const cpuState={think:0,targetX:710,jump:false,smash:false,slide:false,aim:0,predX:710,predT:1};
 function cpuInput(dt){
- const cfg=difficulty==='easy'?{react:.27,err:105,offset:10,jump:.48,smash:.18,mistake:.28}:difficulty==='hard'?{react:.075,err:22,offset:38,jump:.91,smash:.74,mistake:.08}:{react:.145,err:50,offset:28,jump:.72,smash:.48,mistake:.16};
+ const cfg=difficulty==='easy'?{react:.27,err:105,offset:10,jump:.48,smash:.18,slide:.58,mistake:.28}:difficulty==='hard'?{react:.075,err:22,offset:38,jump:.91,smash:.74,slide:.96,mistake:.08}:{react:.145,err:50,offset:28,jump:.72,smash:.48,slide:.82,mistake:.16};
  cpuState.think-=dt;
  if(cpuState.think<=0){
    cpuState.think=cfg.react;const me=p[1],pred=predictBallLanding();cpuState.predX=pred.x;cpuState.predT=pred.t;
    const onMySide=pred.x>NETX;const noisy=pred.x+(Math.random()-.5)*cfg.err;let offset=onMySide?cfg.offset:0;if(Math.random()<cfg.mistake)offset*=(Math.random()>.5?-0.3:.25);
-   cpuState.targetX=clamp(onMySide?noisy+offset:720,NETX+62,W-42);cpuState.jump=false;cpuState.smash=false;
-   const close=Math.abs(ball.x-me.x);if(phase==='play'&&ball.x>NETX-30&&pred.t<.62&&close<126&&ball.y<me.y-24&&ball.y>me.y-205&&Math.random()<cfg.jump)cpuState.jump=true;
+   cpuState.targetX=clamp(onMySide?noisy+offset:720,NETX+62,W-42);cpuState.jump=false;cpuState.smash=false;cpuState.slide=false;
+   const close=Math.abs(ball.x-me.x),landingGap=Math.abs(pred.x-me.x),descending=ball.vy>0;
+   const runReach=PLAYER_MAX*Math.max(0,pred.t)+42;
+   // Pikachu-style last-chance slide: if normal running is unlikely to reach a low,
+   // descending ball, commit to a fast ground slide instead of simply losing the point.
+   if(phase==='play'&&onMySide&&me.onGround&&me.recover<=0&&descending&&pred.t<.48&&landingGap>runReach*.72&&landingGap<runReach+205&&Math.random()<cfg.slide){
+     cpuState.slide=true;cpuState.targetX=clamp(pred.x,NETX+52,W-36);
+   }else if(phase==='play'&&ball.x>NETX-30&&pred.t<.62&&close<126&&ball.y<me.y-24&&ball.y>me.y-205&&Math.random()<cfg.jump){
+     cpuState.jump=true;
+   }
    if(!me.onGround&&me.recover<=0&&close<96&&ball.y<me.y+8&&ball.y>me.y-115&&Math.random()<cfg.smash){cpuState.smash=true;cpuState.aim=p[0].x<240?1:-1}
  }
- const me=p[1],dead=9,out=inputCache[1];out.l=me.x>cpuState.targetX+dead;out.r=me.x<cpuState.targetX-dead;out.j=cpuState.jump;out.s=cpuState.smash;out.aim=cpuState.aim;return out;
+ const me=p[1],dead=9,out=inputCache[1];
+ out.l=me.x>cpuState.targetX+dead;out.r=me.x<cpuState.targetX-dead;out.j=cpuState.jump;out.s=cpuState.smash||cpuState.slide;out.aim=cpuState.aim;
+ return out;
 }
 
-function beginDive(me,dir){me.state='DIVE';me.diveTimer=.24;me.recover=0;me.onGround=false;me.vx=dir*575;me.vy=-165;me.face=dir;shake=Math.max(shake,.7);sound('jump',.9)}
+function beginSlide(me,dir){
+ me.state='SLIDE';me.slideTimer=.31;me.recover=0;me.onGround=true;me.vy=0;me.vx=dir*640;me.face=dir;me.y=GROUND-me.h*.5;shake=Math.max(shake,.8);sound('jump',.86);
+}
 function updatePlayer(me,inp,dt){
- me.attack=Math.max(0,me.attack-dt);me.diveTimer=Math.max(0,me.diveTimer-dt);me.recover=Math.max(0,me.recover-dt);me.land=Math.max(0,me.land-dt);
- const pressedAttack=inp.s&&!me.smashLatch;const dir=(inp.r?1:0)-(inp.l?1:0);
- if(me.recover>0){me.state='RECOVER';me.vx*=Math.pow(.78,dt*60)}
- else if(me.state==='DIVE'){
-   me.vx*=Math.pow(.985,dt*60);if(me.diveTimer<=0)me.state='JUMP';
+ me.attack=Math.max(0,me.attack-dt);me.slideTimer=Math.max(0,me.slideTimer-dt);me.recover=Math.max(0,me.recover-dt);me.land=Math.max(0,me.land-dt);
+ const pressedAttack=inp.s&&!me.smashLatch;const dir=(inp.r?1:0)-(inp.l?1:0);const floorY=GROUND-me.h*.5;
+ if(me.recover>0){me.state='RECOVER';me.vx*=Math.pow(.74,dt*60);me.y=floorY;me.vy=0;me.onGround=true}
+ else if(me.state==='SLIDE'){
+   me.vx*=Math.pow(.992,dt*60);me.x+=me.vx*dt;me.y=floorY;me.vy=0;me.onGround=true;
+   if(me.slideTimer<=0){me.recover=.22;me.state='RECOVER';me.vx*=.32}
  }else{
    const accel=me.onGround?5000:2600,max=me.onGround?PLAYER_MAX:AIR_MAX;if(inp.l){me.vx-=accel*dt;me.face=-1}if(inp.r){me.vx+=accel*dt;me.face=1}if(!inp.l&&!inp.r)me.vx*=Math.pow(me.onGround?.58:.91,dt*60);me.vx=clamp(me.vx,-max,max);
    if(inp.j&&!me.jumpLatch&&me.onGround){me.vy=-620;me.onGround=false;me.state='JUMP';me.land=0;sound('jump',1.06)}
-   if(pressedAttack){if(me.onGround&&dir!==0)beginDive(me,dir);else if(!me.onGround){me.attack=.18;me.state='ATTACK'}}
+   if(pressedAttack){if(me.onGround&&dir!==0)beginSlide(me,dir);else if(!me.onGround){me.attack=.18;me.state='ATTACK'}}
+   if(me.state!=='SLIDE'){me.vy+=PLAYER_GRAVITY*dt;me.x+=me.vx*dt;me.y+=me.vy*dt}
  }
- me.jumpLatch=inp.j;me.smashLatch=inp.s;me.vy+=PLAYER_GRAVITY*dt;me.x+=me.vx*dt;me.y+=me.vy*dt;me.run+=Math.abs(me.vx)*dt*.045;
- const half=me.state==='DIVE'?me.w*.50:me.w*.42,lo=me.side===0?half:NETX+NETW/2+half,hi=me.side===0?NETX-NETW/2-half:W-half;me.x=clamp(me.x,lo,hi);
- const floorY=GROUND-me.h*.5;if(me.y>=floorY){const wasAir=!me.onGround;if(wasAir&&me.vy>170){me.land=.12;shake=Math.max(shake,1.2)}me.y=floorY;me.vy=0;me.onGround=true;if(me.state==='DIVE'||me.diveTimer>0){me.recover=.3;me.state='RECOVER';me.vx*=.38}else if(me.recover<=0)me.state=Math.abs(me.vx)>28?'RUN':'GROUND'}
- else if(me.attack<=0&&me.state!=='DIVE')me.state='JUMP';
+ me.jumpLatch=inp.j;me.smashLatch=inp.s;me.run+=Math.abs(me.vx)*dt*.045;
+ const half=me.state==='SLIDE'?me.w*.58:me.w*.42,lo=me.side===0?half:NETX+NETW/2+half,hi=me.side===0?NETX-NETW/2-half:W-half;me.x=clamp(me.x,lo,hi);
+ if(me.state!=='SLIDE'&&me.recover<=0){
+   if(me.y>=floorY){const wasAir=!me.onGround;if(wasAir&&me.vy>170){me.land=.12;shake=Math.max(shake,1.2)}me.y=floorY;me.vy=0;me.onGround=true;me.state=Math.abs(me.vx)>28?'RUN':'GROUND'}
+   else if(me.attack<=0){me.onGround=false;me.state='JUMP'}
+ }
 }
 
 function shotAimFor(me,inp){if(Number.isFinite(inp.aim)&&inp.aim!==0)return inp.aim;const towardOpponent=me.side===0?inp.r:inp.l;const towardOwn=me.side===0?inp.l:inp.r;return towardOpponent?1:towardOwn?-1:0}
-function colliderFor(me){if(me.state==='DIVE')return {cx:me.x+me.face*12,cy:me.y+10,rx:52,ry:31};return {cx:me.x,cy:me.y-13,rx:me.w*.54,ry:me.h*.52}}
+function colliderFor(me){if(me.state==='SLIDE')return {cx:me.x+me.face*30,cy:GROUND-25,rx:72,ry:26};return {cx:me.x,cy:me.y-13,rx:me.w*.56,ry:me.h*.54}}
 function collidePlayer(me,inp){
  if(ball.hitLock>0)return;const c=colliderFor(me),ex=c.rx+ball.r,ey=c.ry+ball.r,qx=(ball.x-c.cx)/ex,qy=(ball.y-c.cy)/ey,d2=qx*qx+qy*qy;if(d2>=1)return;
  const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;ball.x=c.cx+ux*ex;ball.y=c.cy+uy*ey;
  let nx=ux/ex,ny=uy/ey,nlen=Math.hypot(nx,ny)||1;nx/=nlen;ny/=nlen;
- const smash=me.attack>0&&!me.onGround&&me.state!=='DIVE',dive=me.state==='DIVE';let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
+ const smash=me.attack>0&&!me.onGround&&me.state!=='SLIDE',dive=me.state==='SLIDE';let rvx=ball.vx-me.vx,rvy=ball.vy-me.vy,vn=rvx*nx+rvy*ny;
  if(vn<0){const restitution=smash?1.06:dive?1.00:.96;rvx-=(1+restitution)*vn*nx;rvy-=(1+restitution)*vn*ny}else{rvx+=nx*92;rvy+=ny*92}
  ball.vx=rvx+me.vx*(smash?.42:dive?.34:.28);ball.vy=rvy+me.vy*(smash?.18:.12);
  const courtDir=me.side===0?1:-1;
@@ -134,7 +150,7 @@ function collidePlayer(me,inp){
  capBallBody(ball);ball.hitLock=.07;
  if(ball.lastTouch!==me.side){ball.lastTouch=me.side;me.touches++;rally++;rallyEl.textContent='랠리 '+rally;if(practice){if(rally>bestRally){bestRally=rally;localStorage.setItem('seedVolleyBestRally',String(bestRally));document.getElementById('matchInfo').textContent='연습 모드 · 최고 '+bestRally}practiceCoach(me,smash,dive)}}
 }
-function practiceCoach(me,smash,dive){if(me.side!==0)return;if(practiceStage===0){practiceStage=1;showTip('좋아요! 이제 W로 점프해서 더 높은 타점을 만들어 보세요.',1800)}else if(practiceStage===1&&!me.onGround){practiceStage=2;showTip('공중에서 S를 누르면 강타! 방향키를 함께 누르면 길이를 조절해요.',2100)}else if(practiceStage===2&&smash){practiceStage=3;showTip('마지막 기술: 땅에서 방향키+S를 누르면 다이브 수비!',2100)}else if(practiceStage===3&&dive){practiceStage=4;showTip('조작 완료! 이제 긴 랠리에 도전하세요.',2200)}}
+function practiceCoach(me,smash,dive){if(me.side!==0)return;if(practiceStage===0){practiceStage=1;showTip('좋아요! 이제 W로 점프해서 더 높은 타점을 만들어 보세요.',1800)}else if(practiceStage===1&&!me.onGround){practiceStage=2;showTip('공중에서 S를 누르면 강타! 방향키를 함께 누르면 길이를 조절해요.',2100)}else if(practiceStage===2&&smash){practiceStage=3;showTip('마지막 기술: 땅에서 방향키+S를 누르면 슬라이딩 수비!',2100)}else if(practiceStage===3&&dive){practiceStage=4;showTip('조작 완료! 이제 긴 랠리에 도전하세요.',2200)}}
 function burst(x,y,n){for(let i=0;i<n&&particles.length<52;i++)particles.push({x,y,vx:(Math.random()-.5)*230,vy:(Math.random()-.5)*190-45,t:.34})}
 function launchServe(){const dir=serveSide===0?1:-1;ball.x=p[serveSide].x+dir*44;ball.y=p[serveSide].y-82;ball.vx=dir*285;ball.vy=-455;ball.hitLock=.14;p[serveSide].attack=.1;setPhase('play',0);serveText.classList.remove('show');sound('hit',1.32)}
 function scorePoint(winner){
@@ -153,9 +169,9 @@ function update(dt){
 }
 
 function drawAthlete(me,color,number){
- const set=athleteSprites[me.side];let img=set.stand;if(me.state==='DIVE'||me.state==='RECOVER')img=set.hurt;else if(me.attack>0)img=set.action;else if(!me.onGround)img=set.jump;else if(Math.abs(me.vx)>38)img=(Math.floor(me.run)%2===0?set.walk1:set.walk2);
+ const set=athleteSprites[me.side];let img=set.stand;if(me.state==='SLIDE'||me.state==='RECOVER')img=set.hurt;else if(me.attack>0)img=set.action;else if(!me.onGround)img=set.jump;else if(Math.abs(me.vx)>38)img=(Math.floor(me.run)%2===0?set.walk1:set.walk2);
  const footY=me.y+me.h*.5;ctx.save();ctx.fillStyle='rgba(15,23,42,.16)';ctx.beginPath();ctx.ellipse(me.x,GROUND+3,30*(me.onGround?1:.72),7*(me.onGround?1:.72),0,0,Math.PI*2);ctx.fill();
- if(img&&img.complete&&img.naturalWidth){const h=me.state==='DIVE'?112:126,w=h*(img.naturalWidth/img.naturalHeight);ctx.translate(me.x,footY);if(me.state==='DIVE')ctx.rotate(me.face*.22);ctx.scale(me.face>=0?1:-1,1);ctx.drawImage(img,-w/2,-h,w,h);if(me.attack>0){ctx.fillStyle='rgba(250,204,21,.25)';ctx.beginPath();ctx.arc(34,-70,19,0,Math.PI*2);ctx.fill()}}
+ if(img&&img.complete&&img.naturalWidth){const h=me.state==='SLIDE'?104:126,w=h*(img.naturalWidth/img.naturalHeight);ctx.translate(me.x,footY);if(me.state==='SLIDE')ctx.rotate(me.face*.32);ctx.scale(me.face>=0?1:-1,1);ctx.drawImage(img,-w/2,-h,w,h);if(me.attack>0){ctx.fillStyle='rgba(250,204,21,.25)';ctx.beginPath();ctx.arc(34,-70,19,0,Math.PI*2);ctx.fill()}}
  else{ctx.fillStyle=color;ctx.fillRect(me.x-24,footY-92,48,92);ctx.fillStyle='#fff';ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.fillText(number,me.x,footY-45)}ctx.restore();
  if(DEBUG){const c=colliderFor(me);ctx.strokeStyle=me.side===0?'#16a34a':'#2563eb';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(c.cx,c.cy,c.rx,c.ry,0,0,Math.PI*2);ctx.stroke()}
 }
