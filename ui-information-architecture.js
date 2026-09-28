@@ -60,15 +60,22 @@
       }
       #${PROFILE_IDENTITY_ID} .kc-profile-id-edit {
         flex:none;
-        border:0;
-        border-radius:10px;
-        padding:6px 8px;
-        background:#fff;
-        color:#6d4fd7;
-        box-shadow:0 4px 10px rgba(76,56,150,.08);
-        font-size:.64rem;
+        min-height:34px;
+        border:1px solid rgba(124,92,255,.18);
+        border-radius:999px;
+        padding:0 11px;
+        background:linear-gradient(135deg,#ffffff 0%,#f8f3ff 100%);
+        color:#7c3aed;
+        box-shadow:0 5px 12px rgba(91,33,182,.08);
+        font-size:.63rem;
         font-weight:1000;
         cursor:pointer;
+        transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+      }
+      #${PROFILE_IDENTITY_ID} .kc-profile-id-edit:hover {
+        transform:translateY(-1px);
+        border-color:rgba(124,92,255,.34);
+        box-shadow:0 8px 16px rgba(91,33,182,.12);
       }
       body.dark-mode #${PROFILE_IDENTITY_ID} {
         background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(236,72,153,.12));
@@ -77,25 +84,76 @@
       body.dark-mode #${PROFILE_IDENTITY_ID} .kc-profile-id-edit { background:#2d3748; color:#ddd6fe; }
 
       .avatar-plaza-actions {
-        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+        grid-template-columns:1fr !important;
         gap:7px !important;
       }
-      .avatar-plaza-actions #avatar-open-btn,
       .avatar-plaza-actions #btn-open-shop {
+        position:relative;
         width:100% !important;
         min-width:0 !important;
-        min-height:46px !important;
+        min-height:50px !important;
         margin:0 !important;
-        border-radius:14px !important;
-        padding:0 9px !important;
+        border-radius:16px !important;
+        padding:0 42px 0 13px !important;
+        border:1px solid rgba(245,158,11,.28) !important;
+        background:linear-gradient(135deg,#fff9e8 0%,#fffdf8 56%,#fff2df 100%) !important;
+        color:#9a6813 !important;
+        box-shadow:0 8px 18px rgba(180,120,20,.10) !important;
         font-size:.72rem !important;
         font-weight:1000 !important;
+        text-align:left !important;
+        overflow:visible !important;
+        transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease !important;
       }
-      .avatar-plaza-actions #btn-open-shop {
-        border:1px solid rgba(245,158,11,.25) !important;
-        background:linear-gradient(135deg,#fff8df,#fff) !important;
-        color:#9a6813 !important;
-        box-shadow:0 7px 15px rgba(180,120,20,.08) !important;
+      .avatar-plaza-actions #btn-open-shop:hover {
+        transform:translateY(-2px) !important;
+        border-color:rgba(245,158,11,.45) !important;
+        box-shadow:0 12px 24px rgba(180,120,20,.16) !important;
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-main {
+        display:flex;
+        align-items:center;
+        gap:7px;
+        min-width:0;
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-icon {
+        font-size:1.2rem;
+        filter:drop-shadow(0 3px 5px rgba(96,80,20,.08));
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-copy {
+        min-width:0;
+        display:grid;
+        gap:1px;
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-title {
+        font-size:.74rem;
+        line-height:1.1;
+        font-weight:1000;
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-meta {
+        font-size:.53rem;
+        line-height:1.2;
+        font-weight:850;
+        color:#a56d23;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      .avatar-plaza-actions #btn-open-shop .kc-world-arrow {
+        position:absolute;
+        right:11px;
+        top:50%;
+        transform:translateY(-50%);
+        width:24px;
+        height:24px;
+        display:grid;
+        place-items:center;
+        border-radius:50%;
+        background:linear-gradient(135deg,#ffd994,#ffb65e);
+        color:#fff;
+        font-size:1rem;
+        font-weight:1000;
+        box-shadow:0 4px 10px rgba(217,119,6,.18);
       }
       body.dark-mode .avatar-plaza-actions #btn-open-shop {
         background:linear-gradient(135deg,#44371b,#2c313b) !important;
@@ -292,13 +350,15 @@
     if (name && name.textContent !== nickname) name.textContent = nickname;
 
     const avatarButton = document.getElementById('avatar-open-btn');
-    if (avatarButton && avatarButton.textContent !== '👕 아바타 꾸미기') avatarButton.textContent = '👕 아바타 꾸미기';
+    if (avatarButton && avatarButton.textContent !== '👕 아바타 꾸미기 ›') avatarButton.textContent = '👕 아바타 꾸미기 ›';
 
     const shopButton = document.getElementById('btn-open-shop');
     const avatarActions = shell.querySelector('.avatar-plaza-actions');
     if (shopButton && avatarActions) {
       if (shopButton.parentElement !== avatarActions) avatarActions.appendChild(shopButton);
-      shopButton.textContent = '🌱 씨앗 월드';
+      if (!shopButton.querySelector('.kc-world-main')) {
+        shopButton.innerHTML = '<span class="kc-world-main"><span class="kc-world-icon">🌱</span><span class="kc-world-copy"><span class="kc-world-title">씨앗 월드</span><span class="kc-world-meta">마을을 돌보고 보상을 확인해요</span></span></span><span class="kc-world-arrow" aria-hidden="true">›</span>';
+      }
       shopButton.classList.add('kc-profile-shop-btn');
       shopButton.dataset.openLifeWorld = 'profile-world';
       shopButton.setAttribute('aria-label', '씨앗 월드 들어가기');
