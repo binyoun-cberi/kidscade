@@ -173,10 +173,6 @@
 
       /* Cube Pets는 진입 버튼이 아니라 월드 안 친구들의 현황 카드입니다. */
       #sidebar-recommend { display:none !important; }
-      #kc-pet-card { cursor:default !important; }
-      #kc-pet-card:hover { transform:none !important; }
-      #kc-pet-card .kc-side-actions { display:none !important; }
-      #kc-pet-card #sidebar-pet-open { display:none !important; }
 
       /* 미션은 프로필 사이드바에서 제거하고 게임 영역의 활동 도구로 이동합니다. */
       #sidebar-mission-card { display:none !important; }
@@ -267,9 +263,6 @@
           display:block !important;
           order:0 !important;
         }
-        body[data-kc-mobile-section="profile"] #kc-pet-card,
-        #kc-pet-card { display:none !important; }
-
         .kc-mobile-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
       }
 
@@ -380,12 +373,6 @@
       note.textContent = '30초 이상 플레이한 기록을 이 브라우저에 저장해요.';
     }
     return true;
-  }
-
-  function normalizeGrowthArea() {
-    // Legacy main-screen pet UI is retired. Cube Pets live only inside Seed World.
-    document.getElementById('kc-pet-card')?.remove();
-    document.getElementById('sidebar-pet-open')?.remove();
   }
 
   function openMission() {

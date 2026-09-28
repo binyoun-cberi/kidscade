@@ -19,7 +19,7 @@ if (!html.includes('href="main-shell.css"')) {
 
   const css = html.slice(styleStart + 7, styleEnd).replace(/^\n/, '').replace(/\s+$/, '') + '\n';
   if (css.length < 50000) fail(`추출할 CSS가 예상보다 작습니다: ${css.length} bytes`);
-  if (!css.includes('#age-selection-screen') || !css.includes('#game-list') || !css.includes('#pet-widget')) {
+  if (!css.includes('#age-selection-screen') || !css.includes('#game-list')) {
     fail('핵심 UI 스타일 셀렉터가 누락되어 추출을 중단합니다.');
   }
 

@@ -15,7 +15,7 @@ test('index_base delegates the large stylesheet to main-shell.css', () => {
   assert.ok(css.length > 50000, 'main-shell.css should contain the extracted legacy shell stylesheet');
   assert.match(css, /#age-selection-screen/);
   assert.match(css, /#game-list/);
-  assert.match(css, /#pet-widget/);
+  assert.doesNotMatch(css, /#pet-widget/);
 });
 
 test('bootstrap cache-busts the extracted stylesheet with the runtime version', () => {

@@ -96,7 +96,6 @@
       /* Mobile primary navigation. */
       .kc-mobile-nav { display:none; }
       @media (max-width:${MOBILE_BREAKPOINT}px) {
-        #pet-widget { display:none !important; }
         #main-app { padding-bottom:78px !important; }
         .kc-mobile-nav {
           position:fixed;
@@ -239,9 +238,6 @@
     const title = document.querySelector('.kc-side-card.avatar-shell .kc-side-title');
     if (title) title.textContent = '내 공간';
 
-    const petOpen = document.getElementById('sidebar-pet-open');
-    if (petOpen) petOpen.textContent = '🐾 Cube Pets 월드';
-
     const shop = document.getElementById('btn-open-shop');
     if (shop) {
       if (!shop.querySelector('.kc-world-main')) {
@@ -258,17 +254,6 @@
   function setMobileActive(name) {
     document.querySelectorAll('.kc-mobile-nav-btn').forEach(button => {
       button.classList.toggle('active', button.dataset.mobileNav === name);
-    });
-  }
-
-  function openSookTab(tab) {
-    if (tab === 'room') {
-      window.openKidscadeLifeWorld?.();
-      return;
-    }
-    document.getElementById('pet-widget')?.click();
-    requestAnimationFrame(() => {
-      document.querySelector(`.sook-main-tab[data-sook-tab="${tab}"]`)?.click();
     });
   }
 

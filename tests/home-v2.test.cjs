@@ -76,3 +76,80 @@ test('home layout switch is wired without duplicating the catalog', () => {
   assert.match(css, /data-kc-home-layout="classic"/);
   assert.match(storage, /homeLayout:\s*'kidscade_home_layout'/);
 });
+
+
+test('Home V2 rail salts prevent the same deterministic ordering everywhere', () => {
+  const pool = Array.from({length:8}, (_,index) => ({
+    id:`g-${index}`, title:`G${index}`, age:'high', subject:'math',
+    genre:'quiz', sessionMinutes:5, players:['solo']
+  }));
+  const quick = home.deterministicGames(pool, () => true, 'high', 8, '2026-09-28', 'quick').map(game => game.id);
+  const math = home.deterministicGames(pool, () => true, 'high', 8, '2026-09-28', 'subject:math').map(game => game.id);
+  assert.notDeepEqual(quick, math);
+  assert.deepEqual(
+    home.deterministicGames(pool, () => true, 'high', 8, '2026-09-28', 'quick').map(game => game.id),
+    quick
+  );
+});
+
+test('Home V2 pushes already-promoted games behind fresh rail leaders', () => {
+  const pool = ['a','b','c','d','e'].map(id => ({ id }));
+  const seen = new Set(['a','b']);
+  const result = home.diversifyRail(pool, seen, 5, 3);
+  assert.deepEqual(result.slice(0,3).map(game => game.id), ['c','d','e']);
+  assert.deepEqual([...seen].sort(), ['a','b','c','d','e']);
+});
+
+test('Home V2 adds subject shelves when the current age has enough games', () => {
+  const subjectGames = [
+    ...games,
+    { id:'math-2', title:'수학2', age:'high', subject:'math', genre:'puzzle', sessionMinutes:10, players:['solo'] },
+    { id:'korean-1', title:'국어1', age:'high', subject:'korean', genre:'quiz', sessionMinutes:10, players:['solo'] },
+    { id:'korean-2', title:'국어2', age:'high', subject:'korean', genre:'quiz', sessionMinutes:10, players:['solo'] },
+    { id:'science-1', title:'과학1', age:'high', subject:'science', genre:'simulation', sessionMinutes:10, players:['solo'] },
+    { id:'science-2', title:'과학2', age:'high', subject:'science', genre:'quiz', sessionMinutes:10, players:['solo'] }
+  ];
+  const rails = home.railDefinitions(subjectGames, {
+    age:'high',
+    dateKey:'2026-09-28',
+    recentGames:[],
+    popularGames:[],
+    recommendedGames:[]
+  });
+  assert.ok(rails.find(rail => rail.key === 'subject-math'));
+  assert.ok(rails.find(rail => rail.key === 'subject-korean'));
+  assert.ok(rails.find(rail => rail.key === 'subject-science'));
+  assert.equal(rails.some(rail => rail.key === 'thinking'), false);
+});
+
+test('recommended home no longer duplicates the all-games CTA already handled by the home toggle', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const source=fs.readFileSync(path.resolve(__dirname,'..','home-v2.js'),'utf8');
+  const css=fs.readFileSync(path.resolve(__dirname,'..','home-v2.css'),'utf8');
+  assert.doesNotMatch(source, /kc-home-library-cta|kc-home-library-open|모든 게임 둘러보기/);
+  assert.doesNotMatch(css, /kc-home-library-cta|kc-home-library-open/);
+});
+
+
+test('Home V2 keeps the leading cards diverse across overlapping rails when enough games exist', () => {
+  const pool = Array.from({length:24}, (_,index) => ({
+    id:`overlap-${index}`,
+    title:`겹침 ${index}`,
+    age:'high',
+    subject:index % 2 === 0 ? 'math' : 'thinking',
+    genre:index % 3 === 0 ? 'strategy' : 'quiz',
+    sessionMinutes:5,
+    players:['local2']
+  }));
+  const rails = home.railDefinitions(pool, {
+    age:'high',
+    heroId:'overlap-0',
+    dateKey:'2026-09-28',
+    recentGames:pool.slice(0,3),
+    popularGames:pool.slice(0,12),
+    recommendedGames:pool.slice(0,18)
+  });
+  const leadIds = rails.flatMap(rail => rail.games.slice(0,3).map(game => game.id));
+  assert.equal(new Set(leadIds).size, leadIds.length);
+});

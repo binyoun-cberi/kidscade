@@ -382,24 +382,6 @@
         /* =========================================
             🐾 에듀 펫 플로팅 위젯 & 마이룸 스타일
            ========================================= */
-        #pet-widget {
-            position: fixed; bottom: 30px; right: 30px; width: 95px; height: 95px;
-            padding: 6px; background: conic-gradient(#4ade80 0%, #cbd5e1 0%); 
-            border-radius: 50%; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            z-index: 999; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; user-select: none;
-        }
-        #pet-widget-inner {
-            width: 100%; height: 100%; background-color: var(--card-bg); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 2.8em; position: relative;
-        }
-        #pet-widget:hover { transform: scale(1.1) rotate(5deg); box-shadow: 0 12px 28px rgba(0,0,0,0.25); }
-        .pet-status-badge {
-            position: absolute; top: -5px; right: -5px; width: 28px; height: 28px; background: #ef4444; color: white; font-size: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; display: none;
-        }
-        #pet-widget-bubble {
-            position: absolute; bottom: 105px; right: 0; background: rgba(15, 23, 42, 0.95); color: white; padding: 8px 14px; border-radius: 16px; font-size: 13px; font-weight: bold; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: opacity 0.3s, transform 0.3s;
-        }
-        #pet-widget:hover #pet-widget-bubble { opacity: 1; transform: translateY(0); }
 
         .stat-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; }
         .stat-label { width: 70px; text-align: right; margin-right: 10px; font-weight: bold; }
@@ -802,11 +784,6 @@
             .shop-item { width: 100%;
             }
 
-            #pet-widget {
-                width: 70px; height: 70px; font-size: 2.2em; bottom: 20px; right: 20px;
-            }
-            #pet-widget-inner { font-size: 2.2em; }
-            #pet-widget-bubble { bottom: 80px; font-size: 11px; }
         }
         .hidden { display: none !important;
         }
@@ -2160,21 +2137,6 @@ body.dark-mode .site-credits {
         body.dark-mode .coin-display { background:#103526 !important; color:#8de7b7 !important; }
 
         /* ---------- Sooksook / side buttons ---------- */
-        .kc-pet-card { padding:14px; text-align:left; cursor:pointer; transition:transform .16s ease,border-color .16s ease; }
-        .kc-pet-card:hover { transform:translateY(-2px); border-color:rgba(47,189,115,.45); }
-        .kc-pet-top { display:grid; grid-template-columns:70px minmax(0,1fr); gap:12px; align-items:center; }
-        .kc-pet-avatar {
-            width:70px; height:70px; display:grid; place-items:center; border-radius:22px; font-size:2.35rem;
-            background:linear-gradient(145deg,#e7fff0,#edf5ff); border:1px solid #dcecdf;
-            box-shadow:inset 0 1px 0 #fff, 0 7px 16px rgba(47,189,115,.08);
-        }
-        body.dark-mode .kc-pet-avatar { background:#183329; border-color:#315242; }
-        .kc-pet-name { font-weight:1000; font-size:.98rem; letter-spacing:-.025em; }
-        .kc-pet-sub { margin-top:3px; font-size:.73rem; color:var(--kc-muted); font-weight:800; }
-        .kc-pet-track { height:9px; margin-top:9px; border-radius:999px; background:#edf0f5; overflow:hidden; }
-        .kc-pet-fill { height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--kc-green),#8ad84b); transition:width .25s ease; }
-        .kc-pet-talk { margin-top:10px; padding:10px 11px; border-radius:15px; background:#f6f7fb; color:#5e6677; font-size:.75rem; font-weight:800; line-height:1.4; }
-        body.dark-mode .kc-pet-talk { background:#202b3b; color:#cbd5e1; }
         .kc-side-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
         .kc-side-btn {
             min-height:44px; border:1px solid rgba(148,163,184,.24); border-radius:16px;
@@ -2331,7 +2293,6 @@ body.dark-mode .site-credits {
         body.card-skin-neon #game-list > .game-card { box-shadow:0 14px 28px rgba(139,92,246,.18) !important; }
 
         /* Keep legacy floating pet only on compact layouts */
-        #pet-widget { display:none !important; }
 
         @media (min-width:1550px) {
             #game-list.game-container { grid-template-columns:repeat(auto-fill,minmax(250px,1fr)) !important; }
@@ -2357,8 +2318,7 @@ body.dark-mode .site-credits {
             .avatar-plaza-info { display:none; }
             .avatar-plaza-actions { padding:4px 12px 12px; }
             .kc-profile-row { grid-column:2; padding:4px 12px 12px; }
-            .kc-pet-card,.kc-mission-card { display:none; }
-            #pet-widget { display:block !important; }
+            .kc-mission-card { display:none; }
             .kc-quick-zone { grid-template-columns:1fr; }
         }
         @media (max-width:620px) {

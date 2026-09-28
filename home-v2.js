@@ -34,6 +34,16 @@
     career: '진로',
     thinking: '사고력'
   });
+  const SUBJECT_RAILS = Object.freeze([
+    { subject:'math', emoji:'➗', title:'수학으로 놀아요', note:'수와 연산, 도형을 게임으로 익혀요.' },
+    { subject:'korean', emoji:'✍️', title:'국어로 놀아요', note:'말과 글을 재미있는 게임으로 익혀요.' },
+    { subject:'language', emoji:'🌏', title:'외국어·한자', note:'영어와 여러 언어, 한자를 게임으로 만나요.' },
+    { subject:'social', emoji:'🗺️', title:'사회·역사', note:'사람과 지역, 역사를 게임으로 탐험해요.' },
+    { subject:'science', emoji:'🔬', title:'과학·환경', note:'관찰하고 실험하며 세상을 알아가요.' },
+    { subject:'arts', emoji:'🎨', title:'예술·창작', note:'그리고 만들고 표현하는 게임을 모았어요.' },
+    { subject:'thinking', emoji:'🧠', title:'사고력', note:'퍼즐과 전략으로 생각하는 힘을 길러요.' }
+  ]);
+
   const GENRE_LABELS = Object.freeze({
     action: '액션',
     puzzle: '퍼즐',
@@ -179,17 +189,62 @@
       .map(entry => entry.game);
   }
 
-  function deterministicGames(gameList, predicate, age, limit = MAX_RAIL_GAMES, dateKey = kstDateKey()) {
+  function deterministicGames(
+    gameList,
+    predicate,
+    age,
+    limit = MAX_RAIL_GAMES,
+    dateKey = kstDateKey(),
+    salt = 'default'
+  ) {
     return gameList
       .filter(game => supportsAge(game, age) && predicate(game))
-      .sort((a, b) => dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey))
+      .sort((a, b) =>
+        dailyHash(`${salt}:${a.id}`, dateKey) -
+        dailyHash(`${salt}:${b.id}`, dateKey)
+      )
       .slice(0, limit);
+  }
+
+  function diversifyRail(candidates, seenLeadIds, limit = MAX_RAIL_GAMES, leadCount = 3) {
+    const seen = seenLeadIds instanceof Set ? seenLeadIds : new Set();
+    const unique = [];
+    const known = new Set();
+    for (const game of candidates || []) {
+      const id = String(game?.id || '');
+      if (!id || known.has(id)) continue;
+      known.add(id);
+      unique.push(game);
+    }
+
+    const fresh = unique.filter(game => !seen.has(String(game.id)));
+    const reused = unique.filter(game => seen.has(String(game.id)));
+    const result = [...fresh, ...reused].slice(0, limit);
+
+    result.slice(0, leadCount).forEach(game => seen.add(String(game.id)));
+    return result;
   }
 
   function railDefinitions(gameList, options = {}) {
     const age = options.age || 'high';
     const dateKey = options.dateKey || kstDateKey();
     const definitions = [];
+    const seenLeadIds = new Set(cleanIds(options.heroId ? [options.heroId] : []));
+
+    const addRail = (rail, config = {}) => {
+      const rawGames = Array.isArray(rail.games) ? rail.games : [];
+      const minGames = Number(config.minGames ?? 1);
+      if (rawGames.length < minGames) return false;
+      const gamesForRail = config.preserveOrder
+        ? rawGames.slice(0, MAX_RAIL_GAMES)
+        : diversifyRail(rawGames, seenLeadIds, MAX_RAIL_GAMES, config.leadCount ?? 3);
+      if (gamesForRail.length < minGames) return false;
+      definitions.push({ ...rail, games: gamesForRail });
+      if (config.preserveOrder) {
+        gamesForRail.slice(0, config.leadCount ?? 3).forEach(game => seenLeadIds.add(String(game.id)));
+      }
+      return true;
+    };
 
     const recent = Array.isArray(options.recentGames) ? options.recentGames : [];
     const popular = Array.isArray(options.popularGames) ? options.popularGames : [];
@@ -202,88 +257,111 @@
           dateKey
         });
 
-    if (recent.length) definitions.push({
-      key: 'recent',
-      title: '🕒 이어서 플레이',
-      note: '최근에 하던 게임으로 바로 돌아가요.',
-      games: recent.slice(0, MAX_RAIL_GAMES)
-    });
+    if (recent.length) addRail({
+      key:'recent',
+      title:'🕒 이어서 플레이',
+      note:'최근에 하던 게임으로 바로 돌아가요.',
+      games:recent
+    }, { preserveOrder:true, leadCount:3 });
 
-    if (popular.length) definitions.push({
-      key: 'popular',
-      title: '🔥 지금 많이 하는 게임',
-      note: '이번 주 KIDSCADE에서 자주 플레이한 게임이에요.',
-      games: popular.slice(0, MAX_RAIL_GAMES),
-      showPlayCount: true
-    });
+    if (popular.length) addRail({
+      key:'popular',
+      title:'🔥 지금 많이 하는 게임',
+      note:'이번 주 KIDSCADE에서 자주 플레이한 게임이에요.',
+      games:popular,
+      showPlayCount:true
+    }, { leadCount:3 });
 
-    if (recommended.length) definitions.push({
-      key: 'recommended',
-      title: '✨ 오늘 뭐 하지?',
-      note: '최근 취향과 오늘의 추천을 섞어 골랐어요.',
-      games: recommended
-    });
+    if (recommended.length) addRail({
+      key:'recommended',
+      title:'✨ 오늘 뭐 하지?',
+      note:'최근 취향과 오늘의 추천을 섞어 골랐어요.',
+      games:recommended
+    }, { leadCount:4 });
 
-    const quick = deterministicGames(gameList, game => Number(game.sessionMinutes || 99) <= 5, age, MAX_RAIL_GAMES, dateKey);
-    if (quick.length >= 3) definitions.push({
-      key: 'quick',
-      title: age === 'toddler' ? '⚡ 짧게 놀아요' : '⚡ 5분이면 한 판',
-      note: '짧은 시간에도 부담 없이 시작할 수 있어요.',
-      games: quick
-    });
+    const quick = deterministicGames(
+      gameList,
+      game => Number(game.sessionMinutes || 99) <= 5,
+      age,
+      MAX_RAIL_GAMES * 2,
+      dateKey,
+      'quick'
+    );
+    addRail({
+      key:'quick',
+      title:age === 'toddler' ? '⚡ 짧게 놀아요' : '⚡ 5분이면 한 판',
+      note:'짧은 시간에도 부담 없이 시작할 수 있어요.',
+      games:quick
+    }, { minGames:3, leadCount:3 });
 
     const together = deterministicGames(
       gameList,
       game => (game.players || []).some(mode => mode !== 'solo'),
       age,
-      MAX_RAIL_GAMES,
-      dateKey
+      MAX_RAIL_GAMES * 2,
+      dateKey,
+      'together'
     );
-    if (together.length >= 3) definitions.push({
-      key: 'together',
-      title: '👥 친구랑 같이 해요',
-      note: '2인·여럿이·온라인으로 함께할 수 있어요.',
-      games: together
-    });
-
-    const thinking = deterministicGames(
-      gameList,
-      game => game.subject === 'thinking' || ['puzzle', 'strategy'].includes(game.genre),
-      age,
-      MAX_RAIL_GAMES,
-      dateKey
-    );
-    if (thinking.length >= 4) definitions.push({
-      key: 'thinking',
-      title: age === 'toddler' ? '🧩 찾아보고 맞춰요' : '🧠 머리 쓰는 게임',
-      note: '퍼즐과 전략으로 생각하는 재미를 느껴봐요.',
-      games: thinking
-    });
+    addRail({
+      key:'together',
+      title:'👥 친구랑 같이 해요',
+      note:'2인·여럿이·온라인으로 함께할 수 있어요.',
+      games:together
+    }, { minGames:3, leadCount:3 });
 
     if (age === 'low' || age === 'high') {
       const career = gameList
         .filter(game => game.age === 'job' && !game.disabled && game.qualityStatus !== 'rework')
-        .sort((a, b) => dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey))
-        .slice(0, MAX_RAIL_GAMES);
-      if (career.length) definitions.push({
-        key: 'career',
-        title: '🧑‍🔬 직업체험관',
-        note: '가게·현장·전문 직업을 게임으로 체험해요.',
-        games: career
-      });
+        .sort((a, b) =>
+          dailyHash(`career:${a.id}`, dateKey) -
+          dailyHash(`career:${b.id}`, dateKey)
+        )
+        .slice(0, MAX_RAIL_GAMES * 2);
+      addRail({
+        key:'career',
+        title:'🧑‍🔬 직업체험관',
+        note:'가게·현장·전문 직업을 게임으로 체험해요.',
+        games:career
+      }, { leadCount:3 });
     }
 
     if (age === 'job') {
-      const deep = deterministicGames(gameList, game => game.age === 'job', 'job', MAX_RAIL_GAMES, dateKey);
-      if (deep.length) definitions.push({
-        key: 'career-all',
-        title: '💼 직업을 골라 체험해요',
-        note: '직업체험 게임을 한곳에서 둘러볼 수 있어요.',
-        games: deep
-      });
+      const deep = deterministicGames(
+        gameList,
+        game => game.age === 'job',
+        'job',
+        MAX_RAIL_GAMES * 2,
+        dateKey,
+        'career-all'
+      );
+      addRail({
+        key:'career-all',
+        title:'💼 직업을 골라 체험해요',
+        note:'직업체험 게임을 한곳에서 둘러볼 수 있어요.',
+        games:deep
+      }, { leadCount:3 });
     }
 
-    return definitions.slice(0, age === 'toddler' ? 5 : 7);
+    const subjectMinimum = age === 'toddler' ? 3 : 2;
+    for (const config of SUBJECT_RAILS) {
+      const candidates = deterministicGames(
+        gameList,
+        game => game.subject === config.subject,
+        age,
+        MAX_RAIL_GAMES * 2,
+        dateKey,
+        `subject:${config.subject}`
+      );
+      addRail({
+        key:`subject-${config.subject}`,
+        title:`${config.emoji} ${config.title}`,
+        note:config.note,
+        subject:config.subject,
+        games:candidates
+      }, { minGames:subjectMinimum, leadCount:3 });
+    }
+
+    return definitions;
   }
 
   function heroGame(gameList, age, options = {}) {
@@ -536,15 +614,17 @@
     const recents = recentGames(age);
     const recentIdList = recentIds();
     const favoriteIdList = favoriteIds();
-    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age);
+    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age, MAX_RAIL_GAMES * 2);
     const recommended = recommendGames(list, {
       age,
       recentIds: recentIdList,
-      favoriteIds: favoriteIdList
+      favoriteIds: favoriteIdList,
+      limit: MAX_RAIL_GAMES * 2
     });
     const hero = heroGame(list, age, { recentIds: recentIdList });
     const rails = railDefinitions(list, {
       age,
+      heroId: hero?.id || '',
       recentGames: recents,
       popularGames: popular,
       recommendedGames: recommended,
@@ -556,13 +636,6 @@
       ${heroMarkup(hero, age)}
       <div class="kc-home-rail-stack">
         ${rails.map(railMarkup).join('')}
-      </div>
-      <div class="kc-home-library-cta">
-        <div>
-          <strong>🎮 모든 게임 둘러보기</strong>
-          <span>${escapeHtml(AGE_LABELS[age] || '선택한 연령')} 게임을 교과·장르·검색으로 찾아볼 수 있어요.</span>
-        </div>
-        <button type="button" class="kc-home-library-open">모든 게임 보기 ›</button>
       </div>
     `;
 
@@ -608,9 +681,6 @@
         const rail = event.target.closest('.kc-home-rail');
         scrollRail(rail, next ? 1 : -1);
         return;
-      }
-      if (event.target.closest('.kc-home-library-open')) {
-        showLibrary();
       }
     });
 
@@ -780,6 +850,8 @@
     dailyHash,
     rankPopular,
     recommendGames,
+    deterministicGames,
+    diversifyRail,
     railDefinitions,
     heroGame
   });
