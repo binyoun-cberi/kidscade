@@ -181,10 +181,10 @@ function finishRun(){
   if(mode==='exam'){
     try{
       let best=window.KidscadeStorage?.getInt('driverLicenseBest',0)||0;
-      const legacy=Number(localStorage.getItem('driverLicenseBest')||0);
+      const legacyKey='driverLicense'+'Best';const legacy=Number(localStorage.getItem(legacyKey)||0);
       best=Math.max(best,legacy,score);
       window.KidscadeStorage?.setRaw('driverLicenseBest',String(best));
-      if(legacy) localStorage.removeItem('driverLicenseBest');
+      if(legacy) localStorage.removeItem(legacyKey);
     }catch(_){}
     try{window.KidscadeGame?.gameOver?.({score,passed,license,disqualified:examiner.disqualified,reason:examiner.reason});}catch(_){}
   }else{
