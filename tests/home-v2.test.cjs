@@ -130,3 +130,26 @@ test('recommended home no longer duplicates the all-games CTA already handled by
   assert.doesNotMatch(source, /kc-home-library-cta|kc-home-library-open|모든 게임 둘러보기/);
   assert.doesNotMatch(css, /kc-home-library-cta|kc-home-library-open/);
 });
+
+
+test('Home V2 keeps the leading cards diverse across overlapping rails when enough games exist', () => {
+  const pool = Array.from({length:24}, (_,index) => ({
+    id:`overlap-${index}`,
+    title:`겹침 ${index}`,
+    age:'high',
+    subject:index % 2 === 0 ? 'math' : 'thinking',
+    genre:index % 3 === 0 ? 'strategy' : 'quiz',
+    sessionMinutes:5,
+    players:['local2']
+  }));
+  const rails = home.railDefinitions(pool, {
+    age:'high',
+    heroId:'overlap-0',
+    dateKey:'2026-09-28',
+    recentGames:pool.slice(0,3),
+    popularGames:pool.slice(0,12),
+    recommendedGames:pool.slice(0,18)
+  });
+  const leadIds = rails.flatMap(rail => rail.games.slice(0,3).map(game => game.id));
+  assert.equal(new Set(leadIds).size, leadIds.length);
+});
