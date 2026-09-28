@@ -1119,7 +1119,8 @@ var state={
   egg:null,roamers:{reaper:null,wolf:null},anomaly:null,score:0,cleared:0,anomaliesFound:0,falseReports:0,
   director:{tension:0,calm:0,lastEvent:'none'},
   blackout:false,blackoutElapsed:0,blackoutKillAt:0,cameraSwitchUntil:0,officeLook:'center',
-  nextDreadCue:12,signalToken:0,nextFakeScare:34,fakeScareActive:false,fakeScareToken:0
+  nextDreadCue:12,signalToken:0,nextFakeScare:34,fakeScareActive:false,fakeScareToken:0,
+  nextAudioCue:18,lastAudioHour:-1,yukiCueLevel:0,eggCueLevel:0
 };
 var audioCtx=null;
 var ambientAudio=null;
@@ -1166,6 +1167,11 @@ function stopAmbient(){
   if(!ambientAudio)return;
   try{ambientAudio.pause();ambientAudio.currentTime=0}catch(e){}
   ambientAudio=null
+}
+function playTimedClip(key,volume,rate,durationMs){
+  var a=playClip(key,volume,rate);
+  if(a&&durationMs)setTimeout(function(){try{a.pause();a.currentTime=0}catch(e){}},durationMs);
+  return a
 }
 
 var $=function(id){return document.getElementById(id)};
@@ -1467,6 +1473,79 @@ function updateDreadAtmosphere(){
     setTimeout(function(){els.cameraView.classList.remove('micro-flicker')},180+Math.random()*260)
   }
 }
+function updateSoundscape(){
+  if(state.gameOver||state.paused||state.blackout)return;
+
+  // 시간 경과 자체가 불안하게 들리도록 2시 이후부터 시계 소리를 아주 짧게 사용.
+  var hour=Math.min(5,Math.floor(state.elapsed/(state.duration/6)));
+  if(hour!==state.lastAudioHour){
+    state.lastAudioHour=hour;
+    if(hour>=2)playTimedClip('clockFast',hour>=4?.12:.08,1.02,900);
+    if(hour===4&&Math.random()<.65)playTimedClip('phone',.10,.92,1200);
+  }
+
+  // 유키온나: 결빙 단계가 바뀔 때 실제 얼음 소리. 냉기가 빠지면 단계도 다시 내려가 재발 가능.
+  if(state.yuki&&state.yuki.active&&state.yuki.location==='japan'){
+    var level=state.yuki.frost>=72?2:(state.yuki.frost>=45?1:0);
+    if(level>state.yukiCueLevel){
+      playTimedClip('frostReal',level===2?.22:.14,level===2?.88:1.05,1300);
+      if(level===2)playTimedClip('sting',.08,.78,650);
+    }
+    state.yukiCueLevel=level;
+  }else state.yukiCueLevel=0;
+
+  // 달걀귀신: 오래 바라볼수록 통신이 틀어지는 듯한 음향.
+  if(state.egg&&state.egg.active){
+    var eggLevel=state.egg.stare>=68?2:(state.egg.stare>=32?1:0);
+    if(eggLevel>state.eggCueLevel){
+      if(eggLevel===1)playTimedClip('phone',.09,.72,800);
+      else playTimedClip('sting',.13,.72,720);
+    }
+    state.eggCueLevel=eggLevel;
+  }else state.eggCueLevel=0;
+
+  if(state.elapsed<state.nextAudioCue)return;
+  var pressure=threatPressure(),cues=[];
+
+  // 실제 위치/상태를 반영하는 방향성 있는 소리 단서.
+  if(state.dokkaebi&&state.dokkaebi.active){
+    if(state.dokkaebi.trickActive)cues.push(
+      function(){playTimedClip('childLaugh',.14,.88,1100)},
+      function(){playTimedClip('clownWarning',.10,.82,950)},
+      function(){playTimedClip('horn',.075,.72,520)}
+    );
+    else if(state.dokkaebi.location==='special')cues.push(function(){playTimedClip('giggle',.09,.78,850)});
+  }
+  if(state.maiden&&state.maiden.active&&state.maiden.index>=1)
+    cues.push(function(){playTimedClip('musicBox',.055,.76,1800)});
+  if(state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.yuki.frost>35)
+    cues.push(function(){playTimedClip('frostReal',.10,.8,900)});
+  if(state.egg&&state.egg.active&&state.egg.stare>18)
+    cues.push(function(){playTimedClip('phone',.07,.67,750)});
+  var wr=state.roamers&&state.roamers.wolf;
+  if(wr&&wr.active&&wr.index>=1)cues.push(
+    function(){playTimedClip('run',.11,.86,900)},
+    function(){playTimedClip('howl',.10,.72,1100)}
+  );
+  var rr=state.roamers&&state.roamers.reaper;
+  if(rr&&rr.active&&rr.index>=1)cues.push(function(){sound('bell',rr.side)});
+
+  // 어디서 난 소리인지 알 수 없는 저주파성 괴성. 높은 긴장도에서만 매우 드물게.
+  if(pressure>2.4)cues.push(function(){playTimedClip('croak',.065,.52,700)});
+
+  // 아무 존재도 위협적이지 않을 때도 학교가 완전히 조용하지 않도록 아주 희박한 잔향.
+  if(!cues.length){
+    cues.push(
+      function(){playTimedClip('childLaugh',.045,.62,650)},
+      function(){playTimedClip('phone',.045,.62,650)}
+    );
+  }
+  cues[Math.floor(Math.random()*cues.length)]();
+
+  // 긴장할수록 조금 더 자주, 그래도 최소 간격은 충분히 둔다.
+  var min=pressure>3.4?9:pressure>1.8?13:19;
+  state.nextAudioCue=state.elapsed+min+Math.random()*(pressure>3.4?8:13);
+}
 function fakeScareSafe(){
   if(state.gameOver||state.blackout||state.paused||state.fakeScareActive)return false;
   if(els.cameraView.classList.contains('cam-switching')||els.signalIntrusion.classList.contains('show'))return false;
@@ -1500,7 +1579,11 @@ function triggerFakeScare(){
   els.fakeScare.className='fake-scare show type-'+type;
   if(type==='text')els.fakeScareText.textContent=messages[Math.floor(Math.random()*messages.length)];
   else if(type==='signal')els.fakeScareText.textContent=Math.random()<.5?'UNKNOWN INPUT':'신호가 아닙니다';
-  sound('fake',Math.random()<.5?'left':'right');if(type==='signal'&&Math.random()<.35)sound('phone');else if(type==='shadow'&&Math.random()<.3)sound('cackle');
+  sound('fake',Math.random()<.5?'left':'right');
+  if(type==='signal'&&Math.random()<.35)sound('phone');
+  else if(type==='shadow'&&Math.random()<.3)sound('cackle');
+  else if(type==='eye'&&Math.random()<.18)playTimedClip('croak',.06,.48,550);
+  else if(type==='text'&&Math.random()<.14)playTimedClip('horn',.055,.68,400);
   var duration=type==='eye'?360+Math.random()*180:type==='shadow'?230+Math.random()*140:420+Math.random()*220;
   setTimeout(function(){clearFakeScare(token)},duration);
   scheduleNextFakeScare()
@@ -1638,14 +1721,14 @@ function toggleLight(side){
 function resolveDokkaebi(){
   if(!state.dokkaebi||!state.dokkaebi.active||!state.dokkaebi.trickActive||state.dokkaebi.location!=='korea')return;
   state.dokkaebi.trickActive=false;state.dokkaebi.trickTimer=0;state.dokkaebi.moveClock=state.dokkaebi.moveEvery;
-  state.cleared++;state.score+=120;directorShift(-15);masterGhost('dokkaebi');sound('good');renderCamera()
+  state.cleared++;state.score+=120;directorShift(-15);masterGhost('dokkaebi');sound('good');playTimedClip('cackle',.075,1.18,520);renderCamera()
 }
 function useHeater(){
   if(!(state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.currentCam==='japan'))return;
   if(state.power<7){toast('봉인력이 부족합니다.');return}
   var cold=state.yuki.frost;spend(7);
   var effect=cold>=72?72:(cold>=45?48:24);
-  state.yuki.frost=Math.max(0,state.yuki.frost-effect);discover('yuki');observeGhost('yuki');state.score+=cold>=45?50:20;sound('good');
+  state.yuki.frost=Math.max(0,state.yuki.frost-effect);discover('yuki');observeGhost('yuki');state.score+=cold>=45?50:20;sound('good');playTimedClip('frostReal',.12,1.18,900);
   if(state.yuki.frost<=4){
     state.yuki.frost=10;state.yuki.location='europe';state.yuki.moveClock=0;state.yuki.rest=5+Math.random()*3;
     state.cleared++;state.score+=80;directorShift(-16);masterGhost('yuki');toast('냉기가 중앙 복도로 물러났습니다.')
@@ -1731,7 +1814,7 @@ function reportAnomaly(){
     if(a.ghost){discover(a.ghost);observeGhost(a.ghost)}
     a.active=false;sound('good');toast('이상 기록 완료');renderCamera()
   }else{
-    state.falseReports++;state.score=Math.max(0,state.score-20);spend(2);directorShift(3);sound('warn');toast('이 카메라에서는 이상을 확인하지 못했습니다.')
+    state.falseReports++;state.score=Math.max(0,state.score-20);spend(2);directorShift(3);sound('warn');playTimedClip('sting',.07,.64,520);toast('이 카메라에서는 이상을 확인하지 못했습니다.')
   }
 }
 function updateAnomaly(dt){
@@ -1739,7 +1822,16 @@ function updateAnomaly(dt){
   state.anomaly.life+=dt;
   if(state.anomaly.life>=state.anomaly.duration){
     var a=state.anomaly;a.active=false;
-    if(a.ghost&&castHas(a.ghost)){nudgeGhost(a.ghost);toast('놓친 이상이 무언가의 움직임을 재촉했습니다.')}
+    if(a.ghost&&castHas(a.ghost)){
+      nudgeGhost(a.ghost);
+      if(a.ghost==='dokkaebi')playTimedClip('childLaugh',.10,.78,850);
+      else if(a.ghost==='yuki')playTimedClip('frostReal',.10,.72,850);
+      else if(a.ghost==='wolf')playTimedClip('growl',.10,.7,800);
+      else if(a.ghost==='reaper')sound('bell');
+      else if(a.ghost==='maiden')playTimedClip('musicBox',.045,.68,1100);
+      else if(a.ghost==='egg')playTimedClip('phone',.06,.62,650);
+      toast('놓친 이상이 무언가의 움직임을 재촉했습니다.')
+    }
     else {spend(1.2);directorShift(2)}
     renderAnomaly()
   }
@@ -1761,8 +1853,8 @@ function updateDokkaebi(dt){
   d.moveClock+=dt;
   if(d.location==='korea'){
     d.trickTimer+=dt;
-    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=Math.floor(Math.random()*4);d.trickTimer=0;sound('knock');directorShift(3)}
-    if(d.trickActive&&d.trickTimer>13){d.trickActive=false;d.trickTimer=0;spend(6);state.score=Math.max(0,state.score-40);directorShift(5);sound('warn');d.previous=d.location;d.location='europe';d.moveClock=0}
+    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=Math.floor(Math.random()*4);d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);directorShift(3)}
+    if(d.trickActive&&d.trickTimer>13){d.trickActive=false;d.trickTimer=0;spend(6);state.score=Math.max(0,state.score-40);directorShift(5);sound('warn');playTimedClip('clownWarning',.13,.9,1200);d.previous=d.location;d.location='europe';d.moveClock=0}
   }
   if(!d.trickActive&&d.moveClock>=d.moveEvery){
     d.moveClock=0;
@@ -1798,7 +1890,7 @@ function updateMaiden(dt){
       }
     }else{
       m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?12:Math.max(6.8,10-m.index*.55);
-      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn')}}}
+      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn');if(m.index>=1)playTimedClip('musicBox',.055,.72,1250)}}}
     }
   }else{
     if(state.leftDoor){
@@ -1811,7 +1903,7 @@ function relocateEgg(rewarded){
   var e=state.egg;if(!e)return;
   var options=cameraNeighbors(e.cam);if(!options.length)options=['korea','japan','europe','special','west','east'];
   var next=options[Math.floor(Math.random()*options.length)]||'europe';
-  if(rewarded){state.cleared++;state.score+=85;directorShift(-12);masterGhost('egg');sound('good')}
+  if(rewarded){state.cleared++;state.score+=85;directorShift(-12);masterGhost('egg');sound('good');playTimedClip('phone',.055,1.28,420)}
   e.cam=next;e.life=0;e.stare=0;e.seenThisStop=false;e.moveEvery=5.5+Math.random()*5
 }
 function updateEgg(dt){
@@ -1851,7 +1943,8 @@ function updateRoamer(r,dt){
       if(nextIndex===r.route.length-1&&!roamerCanEnterOffice(r)){r.rest=1.5;return}
       r.index=nextIndex;r.location=r.route[r.index];r.attackTime=0;r.safeTime=0;
       if(r.location==='office'){if(r.type==='wolf')sound('run',r.side);sound(r.type==='wolf'?'growl':'knock',r.side)}
-      else if(r.index===1)sound(r.type==='wolf'?'howl':'bell',r.side)
+      else if(r.index===1){sound(r.type==='wolf'?'howl':'bell',r.side);if(r.type==='wolf')playTimedClip('run',.07,.72,620)}
+      else if(r.type==='wolf'&&r.index>=2)playTimedClip('run',.12,1.02,850)
     }
   }
 }
@@ -1893,7 +1986,7 @@ function tick(now){
     if(state.elapsed>=state.duration){win();requestAnimationFrame(tick);return}
     if(state.blackout)updateBlackout(dt);
     else{
-      drainPower(dt);updateGhosts(dt);updateAnomaly(dt);updateDirector(dt);updateDreadAtmosphere();updateFakeScare();
+      drainPower(dt);updateGhosts(dt);updateAnomaly(dt);updateDirector(dt);updateDreadAtmosphere();updateSoundscape();updateFakeScare();
       if(state.elapsed>=state.nextEvent)scheduleEvent()
     }
     updateHUD();updateOffice();if(state.cameraOpen)renderCamera()
@@ -1909,6 +2002,7 @@ function reset(mode){
   state.masteryCount=Object.assign({},saved.masteryCount||{});state.encounters={};state.nextEvent=10+Math.random()*5;
   state.anomaly=null;state.score=0;state.cleared=0;state.anomaliesFound=0;state.falseReports=0;
   state.director={tension:0,calm:0,lastEvent:'none'};state.blackout=false;state.blackoutElapsed=0;state.blackoutKillAt=0;state.cameraSwitchUntil=0;state.officeLook='center';state.nextDreadCue=12+Math.random()*8;state.signalToken=0;state.nextFakeScare=30+Math.random()*24;state.fakeScareActive=false;state.fakeScareToken=0;
+  state.nextAudioCue=16+Math.random()*12;state.lastAudioHour=-1;state.yukiCueLevel=0;state.eggCueLevel=0;
   initializePersistentGhosts();state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');
   els.scare.className='scare';els.scare.setAttribute('aria-hidden','true');
