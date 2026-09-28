@@ -1,4 +1,5 @@
 import { requireStudent } from './accounts.mjs';
+import { authorizeTeacherAccess } from './teacher-auth.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type':'application/json; charset=utf-8',
@@ -55,8 +56,23 @@ async function recordEarned(request,env) {
   ).bind(auth.row.student_id,weekKey).first();
   return json({ok:true,weekKey,weeklyEarned:Math.max(0,Number(saved?.earned_power||0))});
 }
+async function requireRankingViewer(request,env) {
+  const student=await requireStudent(request,env);
+  if(!student.response)return {
+    classId:student.row.class_id,
+    className:student.row.class_name||'',
+    selfId:String(student.row.student_id||'')
+  };
+  const teacher=await authorizeTeacherAccess(request,env);
+  if(!teacher.response&&!teacher.global)return {
+    classId:teacher.classId,
+    className:teacher.className||'',
+    selfId:''
+  };
+  return {response:student.response};
+}
 async function getRanking(request,env) {
-  const auth=await requireStudent(request,env);
+  const auth=await requireRankingViewer(request,env);
   if(auth.response)return auth.response;
   const weekKey=kstWeekKey();
   const result=await env.DB.prepare(`
@@ -66,13 +82,13 @@ async function getRanking(request,env) {
     FROM student_accounts a
     LEFT JOIN student_sprout_weekly w ON w.student_id=a.id AND w.week_key=?
     WHERE a.class_id=? AND a.disabled=0
-  `).bind(weekKey,auth.row.class_id).all();
+  `).bind(weekKey,auth.classId).all();
   const rows=result?.results||[];
-  const total=rankRows(rows,'total_power',auth.row.student_id);
-  const weekly=rankRows(rows,'weekly_power',auth.row.student_id);
+  const total=rankRows(rows,'total_power',auth.selfId);
+  const weekly=rankRows(rows,'weekly_power',auth.selfId);
   return json({
     ok:true,
-    className:auth.row.class_name||'',
+    className:auth.className||'',
     weekKey,
     memberCount:rows.length,
     total:{top:total.slice(0,10),self:total.find(row=>row.self)||null},
