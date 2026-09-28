@@ -62,6 +62,15 @@ test('teacher accounts can log in from the main Kidscade account UI without beco
   assert.match(client,/account\.role === 'teacher'/);
 });
 
+test('teacher main sidebar groups management and economy shortcuts', () => {
+  const client = fs.readFileSync(path.join(ROOT,'account-client.js'),'utf8');
+  assert.match(client,/kca-teacher-actions/);
+  assert.match(client,/교사 관리/);
+  assert.match(client,/학급경제 관리/);
+  assert.match(client,/\/teacher\/economy\.html\?classId=/);
+  assert.doesNotMatch(client,/href="\/teacher\/"[^>]*>교사 관리<\/a><button/);
+});
+
 test('economy pages use Kidscade visual language', () => {
   const wallet = fs.readFileSync(path.join(ROOT,'economy.html'),'utf8');
   const teacher = fs.readFileSync(path.join(ROOT,'teacher','economy.html'),'utf8');
