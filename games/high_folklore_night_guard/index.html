@@ -688,6 +688,91 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .fake-scare-shadow{width:58vw}
 }
 
+/* v8 · 나폴리탄 야간근무 수칙서 */
+#codexModal{background:#020304e8}
+#codexModal .card{
+  width:min(980px,96vw);background:#17130d;padding:15px;border:1px solid #544a39;
+  box-shadow:0 30px 100px #000,0 0 0 1px #000 inset
+}
+.rulebook-shell{color:#211e19}
+.rulebook-cover{
+  background:#c9c0a5;padding:15px 18px 12px;border:1px solid #756d5c;
+  box-shadow:inset 0 0 28px #635b4740;position:relative;overflow:hidden
+}
+.rulebook-cover::after{
+  content:"시설관리부 보관용";position:absolute;right:18px;top:17px;padding:4px 8px;
+  border:2px solid #794a3f;color:#794a3f;font-weight:900;font-size:10px;transform:rotate(-4deg);opacity:.72
+}
+.rulebook-cover h2{margin:0 0 5px;font-family:serif;letter-spacing:.05em;color:#161512}
+.rulebook-meta{font:11px/1.5 ui-monospace,monospace;color:#4b473e}
+.rulebook-warning{margin-top:9px;padding:8px 10px;border:1px solid #817969;background:#bdb49a;font-size:12px;font-weight:800}
+.rulebook-tabs{
+  display:flex;gap:5px;overflow-x:auto;padding:10px 2px 7px;scrollbar-width:thin
+}
+.rulebook-tab{
+  flex:0 0 auto;border:1px solid #5f5849;background:#2b251d;color:#d8cfb7;padding:8px 10px;
+  font-size:11px;font-weight:900;cursor:pointer
+}
+.rulebook-tab.active{background:#b9ae91;color:#1d1b17;border-color:#d2c8aa}
+.rulebook-paper{
+  display:none;position:relative;min-height:430px;padding:25px clamp(18px,4vw,45px) 34px;
+  background:
+    linear-gradient(#00000005,#00000005),
+    repeating-linear-gradient(0deg,#cfc7aa 0 27px,#bdb597 28px,#cfc7aa 29px);
+  border:1px solid #756d59;box-shadow:inset 0 0 38px #655b4738;color:#24211b;overflow:hidden
+}
+.rulebook-paper.active{display:block}
+.rulebook-paper::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 9% 12%,#5e4a2e18 0 2%,transparent 7%),
+    radial-gradient(circle at 92% 82%,#4d302519 0 3%,transparent 9%);
+  mix-blend-mode:multiply
+}
+.rulebook-page-head{
+  border-bottom:2px solid #3c382f;padding-bottom:8px;margin-bottom:14px;font-family:serif;position:relative;z-index:1
+}
+.rulebook-page-head b{font-size:18px;letter-spacing:.04em}
+.rulebook-page-head small{display:block;font:10px ui-monospace,monospace;color:#5c574b;margin-top:4px}
+.rulebook-rule{
+  position:relative;z-index:1;margin:0 0 12px;padding-left:28px;line-height:1.7;font-size:13px
+}
+.rulebook-rule .no{position:absolute;left:0;top:0;font:900 12px ui-monospace,monospace}
+.rulebook-rule strong{font-weight:950;text-decoration:underline;text-decoration-thickness:1px}
+.rulebook-rule.danger{border-left:3px solid #7b382f;padding:7px 10px 7px 27px;background:#8a463314}
+.rulebook-strike{text-decoration:line-through;text-decoration-thickness:2px;color:#625d52}
+.rulebook-red{color:#752d29;font-weight:950}
+.rulebook-redact{background:#24221e;color:#24221e;padding:0 4px;border-radius:1px;user-select:none}
+.rulebook-note{
+  position:relative;z-index:1;margin:11px 3% 14px 12%;padding:4px 7px;
+  color:#40506d;font:600 13px/1.55 "Comic Sans MS","Nanum Pen Script",cursive;
+  transform:rotate(-1.1deg);border-bottom:1px solid #4c5a7270
+}
+.rulebook-note.pencil{color:#5f5a50;transform:rotate(.7deg);font-weight:500}
+.rulebook-note.red{color:#7e312b;transform:rotate(-.4deg);font-weight:800}
+.rulebook-note.locked{filter:blur(3px);opacity:.28;user-select:none}
+.rulebook-stamp{
+  display:inline-block;margin:6px 4px 9px;padding:3px 7px;border:2px solid #765046;color:#765046;
+  font:900 10px ui-monospace,monospace;transform:rotate(-3deg);opacity:.76
+}
+.rulebook-evidence{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:relative;z-index:1;margin:12px 0
+}
+.rulebook-evidence figure{
+  margin:0;background:#23211e;padding:5px;border:1px solid #5a5549;transform:rotate(var(--r,0deg));
+  box-shadow:0 4px 10px #0004
+}
+.rulebook-evidence img{display:block;width:100%;height:105px;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(.7)}
+.rulebook-evidence figcaption{color:#d2c9af;font:9px ui-monospace,monospace;padding-top:4px}
+.rulebook-foot{
+  position:relative;z-index:1;margin-top:18px;padding-top:8px;border-top:1px dashed #615b4e;
+  font:10px/1.5 ui-monospace,monospace;color:#575145
+}
+.rulebook-close{margin-top:10px;width:100%;background:#5e5443;color:#f0e7cc;border:1px solid #827761}
+@media(max-width:680px){
+  .rulebook-paper{padding:20px 15px 28px;min-height:390px}
+  .rulebook-rule{font-size:12px}.rulebook-note{margin-left:5%;font-size:12px}
+  .rulebook-evidence{grid-template-columns:1fr 1fr}.rulebook-evidence img{height:82px}
+}
 </style>
 </head>
 <body>
@@ -701,7 +786,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
         <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
         <div class="usage-line"><span>사용량</span><strong class="usage-pips" id="usageText">□□□□□</strong></div>
       </div>
-      <button class="topbtn" id="codexBtn" type="button">도감</button>
+      <button class="topbtn" id="codexBtn" type="button">근무수칙</button>
       <button class="topbtn" id="helpBtn" type="button">도움말</button>
       <button class="topbtn" id="exitBtn" type="button">나가기</button>
     </div>
@@ -723,7 +808,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       </div>
 
       <div class="desk"></div>
-      <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 교실과 복도의 이상을 확인하세요.<br>도감은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
+      <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 교실과 복도의 이상을 확인하세요.<br>근무수칙은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
       <div class="toast" id="toast"></div>
 
       <div class="controls">
@@ -774,7 +859,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   <div class="card">
     <h1>괴담 야간경비</h1>
     <p>할로윈 행사가 끝난 학교. 모두 하교한 뒤 빈 교실과 복도에서 이상 현상이 시작됐습니다. 야간 경비실의 CCTV와 문·조명 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
-    <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력, 도감 장비 아이콘"><div class="rules-box">
+    <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력 장비 아이콘"><div class="rules-box">
       <b>야간 경비 원칙</b><br>
       근무에 배치된 존재는 <b>처음부터 학교 어딘가에 있으며 사라지지 않습니다.</b><br>
       CCTV로 “언제 나타났나”가 아니라 <b>“지금 어디에 있나”</b>를 추적하고, 서로 다른 대응 규칙을 구분하세요.
@@ -1048,24 +1133,113 @@ function toast(msg){
 function setPaused(v){state.paused=v}
 function toggleModal(modal,show){modal.classList.toggle('show',show);setPaused(show)}
 function renderHelp(){
-  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="야간 경비 장비"><div class="rules-box"><b>위치 추적</b> · 그날 배치된 존재는 근무 시작부터 끝까지 학교 어딘가에 계속 있습니다.<br><b>CCTV</b> · 화면 전환에는 짧은 신호 잡음이 있으므로 마지막 위치와 이동 방향을 기억하세요.<br><b>좌우 불</b> · 문 앞을 잠깐 확인합니다.<br><b>좌우 문</b> · 닫아 둔 동안 봉인력을 더 사용합니다.<br><b>봉인력</b> · 아무 장치를 쓰지 않아도 기본 소모가 있으며 0%가 되어도 즉사하지는 않지만 언제 침입할지 모르는 암전 상태가 됩니다.<br><b>도감</b> · 모든 괴담의 대응법이 처음부터 공개되어 있으며, 보는 동안 시간은 멈춥니다.</div><p>질문은 “언제 나타났지?”가 아니라 “지금 어디 있지?”입니다. CCTV와 소리를 함께 사용해 이동을 추론하세요.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
+  els.helpContent.innerHTML='<h2>야간 관리 지침</h2><img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="야간 경비 장비"><div class="rules-box"><b>위치 추적</b> · 그날 배치된 존재는 근무 시작부터 끝까지 학교 어딘가에 계속 있습니다.<br><b>CCTV</b> · 화면 전환에는 짧은 신호 잡음이 있으므로 마지막 위치와 이동 방향을 기억하세요.<br><b>좌우 불</b> · 문 앞을 잠깐 확인합니다.<br><b>좌우 문</b> · 닫아 둔 동안 봉인력을 더 사용합니다.<br><b>봉인력</b> · 아무 장치를 쓰지 않아도 기본 소모가 있으며 0%가 되면 감시장치가 붕괴합니다.<br><b>근무수칙</b> · 생존에 필요한 기본 규칙은 처음부터 공개됩니다. 실제 근무 기록에 따라 여백 메모가 추가되며, 수칙서를 보는 동안 시간은 멈춥니다.</div><p>질문은 “언제 나타났지?”가 아니라 “지금 어디 있지?”입니다. CCTV와 소리를 함께 사용해 이동을 추론하세요.</p><button class="primary" id="helpClose" type="button">계속 근무</button>';
   $('helpClose').onclick=function(){toggleModal(els.help,false)};
 }
 function renderCodex(){
   var saved=loadSave();
   var counts=Object.assign({},saved.masteryCount||{},state.masteryCount||{});
-  var html='<h2>세계 괴담 도감</h2><p><b>학생용 전체 공개</b> · 모든 괴담의 이름, 전승 정보, 게임 대응법을 처음부터 확인할 수 있습니다. 숙련 별만 플레이 기록에 따라 올라갑니다.</p><div class="codex-grid">';
-  Object.keys(GHOSTS).forEach(function(id){
-    var g=GHOSTS[id],n=Number(counts[id]||0);
-    var stars=(n>=3?'★★★':n===2?'★★☆':n===1?'★☆☆':'☆☆☆');
-    html+='<article class="codex-card"><h3>'+g.name+'</h3>'+
-      '<span class="tag">'+g.origin+'</span><span class="tag">'+g.kind+'</span>'+
-      '<div class="fact"><b>전승 기록</b><br>'+g.fact+'</div>'+
-      '<div class="game-rule"><b>게임 대응법</b><br>'+g.rule+'</div>'+
-      '<div class="tipline">대응 숙련 '+stars+'</div></article>';
-  });
-  html+='</div><br><button class="primary" id="codexClose" type="button">도감 닫기</button>';
+  function count(id){return Number(counts[id]||0)}
+  function note(id,level,text,cls){
+    var unlocked=count(id)>=level;
+    return '<div class="rulebook-note '+(cls||'')+(unlocked?'':' locked')+'">'+(unlocked?text:'이 메모는 아직 번져 있어 읽을 수 없다.')+'</div>'
+  }
+  function stamp(id){
+    var n=count(id);
+    if(!n)return '';
+    return '<span class="rulebook-stamp">'+(n>=3?'반복 확인됨':n===2?'2회 확인':'1회 관찰')+'</span>'
+  }
+  var pages=[
+    {
+      tab:'기본수칙',title:'제1쪽 · 기본 야간경비 근무수칙',code:'시설-야간-1998-03',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span>본교에는 야간에 학생 및 교직원이 남아 있지 않습니다. CCTV에서 사람을 발견하더라도 <strong>직접 확인하러 가지 마십시오.</strong></div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>근무 시작 직후 각 CCTV의 정상 상태를 확인하십시오. 이전 화면과 다른 물체·문·사진·글씨는 「이상 기록」 대상입니다.</div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span>화면에 사람과 비슷한 것이 보인다고 해서 모두 기록 대상인 것은 아닙니다. 일부 존재는 <strong>기록이 아니라 별도의 대응</strong>이 필요합니다.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">4.</span>서쪽과 동쪽 문은 같은 용도로 사용되지 않습니다. <strong>무엇이 접근 중인지 먼저 확인하십시오.</strong></div>'+
+        '<div class="rulebook-note pencil">“화면을 외워 두세요. 작은 차이를 못 보면 큰 것부터 보이기 시작합니다.”</div>'+
+        '<div class="rulebook-foot">적용시간 00:00–06:00 · 본 문서는 야간 근무자 외 열람 금지</div>'
+    },
+    {
+      tab:'6-1 교실',title:'제2쪽 · 6-1 교실',code:'구역 CAM 01',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span>근무 시작 시 책상, 칠판, 게시 사진과 출입문의 위치를 확인하십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>교실 안의 물건 하나가 이전과 다르게 보일 경우 <strong>변한 물건을 직접 확인하십시오.</strong></div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span>교실 뒤에서 작은 웃음소리가 들리더라도 경비실을 나가지 마십시오.</div>'+
+        '<div class="rulebook-evidence"><figure style="--r:-1deg"><img src="'+ASSET_ROOT+'classroom_base_01.png" alt=""><figcaption>근무 시작 시 정상 화면</figcaption></figure><figure style="--r:1.2deg"><img src="'+ASSET_ROOT+'classroom_photo_extra_student_01.png" alt=""><figcaption>게시 사진 변화 사례</figcaption></figure><figure style="--r:-.6deg"><img src="'+ASSET_ROOT+'classroom_variant_extra_door_01.png" alt=""><figcaption>존재하지 않는 출입문</figcaption></figure></div>'+
+        note('dokkaebi',1,'“바뀐 물건을 찾으면 웃음소리가 멎는다.”','pencil')+
+        note('dokkaebi',2,'“의자만 보지 말 것. 사진, 칠판, 심지어 문도 바뀐다.”','')+
+        note('dokkaebi',3,'“아이들은 이것을 ‘도깨비’라고 불렀다고 한다.”','red')+
+        stamp('dokkaebi')+
+        '<div class="rulebook-foot">수정 흔적 다수 · 작성자 미상</div>'
+    },
+    {
+      tab:'과학실',title:'제3쪽 · 과학실',code:'구역 CAM 02',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span>과학실 창문에 성에가 끼는 현상은 계절과 관계없이 정상적이지 않습니다.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>성에가 조금 생겼다고 즉시 난방기를 작동하지 마십시오. <strong>냉기가 충분히 퍼진 뒤 작동해야 합니다.</strong></div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span>흰 형체가 보여도 가까이 확인하러 가지 마십시오.</div>'+
+        '<div class="rulebook-evidence"><figure style="--r:.8deg"><img src="'+ASSET_ROOT+'science_base_01.png" alt=""><figcaption>정상 과학실</figcaption></figure><figure style="--r:-1.1deg"><img src="'+ASSET_ROOT+'science_window_frost_02.png" alt=""><figcaption>성에 발생</figcaption></figure><figure style="--r:.5deg"><img src="'+ASSET_ROOT+'science_variant_frozen_01.png" alt=""><figcaption>결빙 심화</figcaption></figure></div>'+
+        note('yuki',1,'“너무 일찍 난방기를 켜면 효과가 거의 없다.”','pencil')+
+        note('yuki',2,'“창문 → 온도계 → 방 전체 순서로 얼어붙는다.”','')+
+        note('yuki',3,'“유키온나라고 적힌 오래된 기록을 찾았다. 왜 이 학교에 있는지는 모른다.”','red')+
+        stamp('yuki')+
+        '<div class="rulebook-foot">난방 장치 사용 시 봉인력 추가 소모</div>'
+    },
+    {
+      tab:'복도 대응',title:'제4쪽 · 복도에서 사람을 보았을 때',code:'CAM 03–06',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span><strong>흰 옷의 여자</strong>를 발견하면 카메라를 끄지 말고 계속 관찰하십시오. 충분히 관찰하면 뒤쪽 구역으로 물러납니다. 경비실까지 접근하면 서쪽 문을 닫으십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span><strong>얼굴이 매끈한 학생</strong>을 오래 바라보지 마십시오. 발견 즉시 다른 카메라로 전환하고, 시간이 지난 뒤 다시 확인하십시오.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">3.</span><strong>검은 갓과 등불</strong>이 접근할 경우 해당 문을 <span class="rulebook-red">닫지 마십시오.</span> 지나갈 때까지 열어 두십시오.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">4.</span><strong>긁는 소리와 낮은 위치의 눈</strong>이 가까워질 경우 소리가 나는 쪽의 문을 즉시 닫으십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">5.</span><span class="rulebook-strike">검은 갓을 쓴 사람이 오면 문을 잠그십시오.</span><br><span class="rulebook-red">※ 위 문장은 시설관리부에서 작성한 적이 없습니다.</span></div>'+
+        note('maiden',1,'“흰옷은 보고 있으면 멈춘다. 화면을 돌리면 다시 온다.”','pencil')+
+        note('egg',1,'“얼굴을 확인하려고 하지 마라. 오래 보는 쪽이 위험하다.”','pencil')+
+        note('reaper',1,'“갓은 열어 둔다. 문을 닫으면 안 된다.”','')+
+        note('wolf',1,'“짐승은 반대다. 소리가 나는 쪽을 닫는다.”','red')+
+        note('maiden',3,'“애들이 부르던 이름: 처녀귀신.”','')+
+        note('egg',3,'“기록에는 달걀귀신이라고 적혀 있다.”','')+
+        note('reaper',3,'“저승사자. 경비실을 지나가기만 한다.”','')+
+        note('wolf',3,'“늑대인간. 복도에서 속도가 가장 빠르다.”','')+
+        stamp('maiden')+stamp('egg')+stamp('reaper')+stamp('wolf')+
+        '<div class="rulebook-foot">요약: 갓 = 열어 둔다 · 짐승 = 닫는다 · 흰옷 = 본다 · 얼굴 없는 학생 = 보지 않는다</div>'
+    },
+    {
+      tab:'CCTV 이상',title:'제5쪽 · CCTV 이상현상 기록 기준',code:'감시실 부속 문서',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span><strong>이상 기록 대상:</strong> 존재하지 않던 문, 사진 속 인원 변화, 잘못된 시계, 젖은 발자국, 손자국, 칠판 문구, 물체 위치 변화, 설명할 수 없는 고정 그림자.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span><strong>즉시 기록하지 말 것:</strong> 움직이고 있는 형체, 접근 중인 존재, 등불, 복도 끝의 눈, 흰 옷의 여자. 해당 항목은 개별 대응수칙을 따르십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span>오기록 시 봉인력이 감소합니다. 화면 전환 직후의 신호 잡음과 이상현상을 혼동하지 마십시오.</div>'+
+        '<div class="rulebook-evidence"><figure style="--r:-1deg"><img src="'+ASSET_ROOT+'handprint_02.png" alt=""><figcaption>손자국</figcaption></figure><figure style="--r:.7deg"><img src="'+ASSET_ROOT+'footprints_wet_01.png" alt=""><figcaption>젖은 발자국</figcaption></figure><figure style="--r:-.5deg"><img src="'+ASSET_ROOT+'hall_clock_wrong_01.png" alt=""><figcaption>시각 불일치</figcaption></figure></div>'+
+        '<div class="rulebook-note pencil">“기록 버튼은 귀신을 없애는 버튼이 아닙니다.”</div>'+
+        '<div class="rulebook-foot">오류 신고 누적 시 재교육 권고</div>'
+    },
+    {
+      tab:'추가기록',title:'제6쪽 · 폐기 예정 추가기록',code:'문서번호 없음',
+      body:
+        '<div class="rulebook-rule"><span class="no">1.</span>오전 6시 종이 울린 뒤에는 CCTV를 다시 확인하지 마십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>근무 종료 후 복도에서 학생이 보이더라도 먼저 말을 걸지 마십시오. 실제 등교시간을 확인하십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span><span class="rulebook-strike">오전 3시 33분에 경비실 문을 세 번 두드리면 문을 열어 확인하십시오.</span><br><span class="rulebook-red">이 항목 역시 학교에서 작성한 것이 아닙니다.</span></div>'+
+        '<div class="rulebook-rule danger"><span class="no">4.</span>수칙서의 문장이 바뀌어 보일 수 있습니다. <strong>인쇄 원문보다 반복 확인된 손글씨 메모를 우선하십시오.</strong></div>'+
+        '<div class="rulebook-note red">“근무자가 바뀌어도 이 페이지는 없어지지 않는다.”</div>'+
+        '<div class="rulebook-foot">시설관리부 · 작성일 1998.10.31 · 최종 수정일 <b>2026.09.29</b><br>연필 메모: “내일 날짜인데?”</div>'
+    }
+  ];
+  var tabs=pages.map(function(p,i){return '<button class="rulebook-tab'+(i===0?' active':'')+'" data-rule-page="'+i+'" type="button">'+p.tab+'</button>'}).join('');
+  var sheets=pages.map(function(p,i){
+    return '<section class="rulebook-paper'+(i===0?' active':'')+'" data-rule-sheet="'+i+'">'+
+      '<div class="rulebook-page-head"><b>'+p.title+'</b><small>'+p.code+'</small></div>'+p.body+'</section>'
+  }).join('');
+  var html='<div class="rulebook-shell"><div class="rulebook-cover"><h2>한빛초등학교 야간경비 근무수칙</h2><div class="rulebook-meta">적용시간 00:00–06:00 · 보관등급 내부용 · 무단 반출 금지</div><div class="rulebook-warning">본교에는 야간에 학생 및 교직원이 남아 있지 않습니다. 아래 지침을 순서대로 숙지하십시오.</div></div><nav class="rulebook-tabs">'+tabs+'</nav>'+sheets+'<button class="primary rulebook-close" id="codexClose" type="button">수칙서 덮기</button></div>';
   els.codexContent.innerHTML=html;
+  els.codexContent.querySelectorAll('.rulebook-tab').forEach(function(btn){
+    btn.onclick=function(){
+      var idx=btn.dataset.rulePage;
+      els.codexContent.querySelectorAll('.rulebook-tab').forEach(function(x){x.classList.toggle('active',x===btn)});
+      els.codexContent.querySelectorAll('.rulebook-paper').forEach(function(x){x.classList.toggle('active',x.dataset.ruleSheet===idx)});
+    }
+  });
   $('codexClose').onclick=function(){toggleModal(els.codex,false)};
 }
 function buildCameraMap(){
@@ -1714,7 +1888,7 @@ function showResult(ok,cause){
   var causeText=cause==='power'
     ? '봉인력이 0이 되면서 학교의 모든 감시·차단 장치가 멈췄고, 교실에 남아 있던 것들이 동시에 움직이기 시작했습니다.'
     : '무언가가 관리실까지 도달했습니다. 방금 전 CCTV와 소리에서 어떤 변화가 있었는지 떠올려 보세요.';
-  els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'학교의 아침 조명이 켜졌습니다. 관찰한 단서와 존재의 이동을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 괴담 대응 '+state.cleared+'회 · 이상 기록 '+state.anomaliesFound+'회 · 오기록 '+state.falseReports+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">도감 보기</button></div>';
+  els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'학교의 아침 조명이 켜졌습니다. 관찰한 단서와 존재의 이동을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 괴담 대응 '+state.cleared+'회 · 이상 기록 '+state.anomaliesFound+'회 · 오기록 '+state.falseReports+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">수칙서 보기</button></div>';
   els.result.classList.add('show');
   $('retryBtn').onclick=function(){els.result.classList.remove('show');els.intro.classList.add('show');state.paused=true};
   $('resultCodex').onclick=function(){els.result.classList.remove('show');renderCodex();els.codex.classList.add('show')};
