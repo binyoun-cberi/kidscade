@@ -219,11 +219,11 @@ function normalize(value){
 }
 
 function acceptedAnswers(word,{speech=false}={}){
-  const values=[word.en,...(word.aliases||[])];
+  const canonical=[word.en,...(word.aliases||[])];
+  const values=[...canonical];
   if(speech){
+    for(const value of canonical)values.push(...speechConfusionsFor(value));
     values.push(...(word.speechAliases||[]));
-    const seeds=[...values];
-    for(const value of seeds)values.push(...speechConfusionsFor(value));
   }
   return [...new Set(values.map(normalize))];
 }
