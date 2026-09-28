@@ -1,7 +1,9 @@
 import { WORDS, PACK_LABELS } from './words.js?v=3';
+import { speechConfusionsFor } from './speech-confusions.js?v=1';
 
 const $ = id => document.getElementById(id);
 const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const SpeechRecognitionPhraseCtor = window.SpeechRecognitionPhrase || null;
 
 const ui = {
   menu:$('menuScreen'), game:$('gameScreen'), result:$('resultScreen'),
@@ -218,8 +220,12 @@ function normalize(value){
 
 function acceptedAnswers(word,{speech=false}={}){
   const values=[word.en,...(word.aliases||[])];
-  if(speech)values.push(...(word.speechAliases||[]));
-  return values.map(normalize);
+  if(speech){
+    values.push(...(word.speechAliases||[]));
+    const seeds=[...values];
+    for(const value of seeds)values.push(...speechConfusionsFor(value));
+  }
+  return [...new Set(values.map(normalize))];
 }
 
 function isCorrectTranscript(text,{speech=false}={}){
@@ -400,6 +406,19 @@ function spawnRecognition(session){
   recognition.lang='en-US';
   recognition.interimResults=true;
   recognition.maxAlternatives=5;
+
+  // On supporting browsers, gently bias STT toward the actual answer.
+  // Keep the boost moderate so a wrong utterance is not forced into the expected word.
+  if(SpeechRecognitionPhraseCtor&&state.current&&'phrases' in recognition){
+    try{
+      const canonical=[state.current.en,...(state.current.aliases||[])];
+      recognition.phrases=canonical
+        .filter((value,index,array)=>value&&array.indexOf(value)===index)
+        .slice(0,4)
+        .map((value,index)=>new SpeechRecognitionPhraseCtor(value,index===0?3.5:2.5));
+    }catch(_){}
+  }
+
   const ua=navigator.userAgent||'';
   recognition.continuous=!/Android|iPhone|iPad|iPod/i.test(ua);
 
