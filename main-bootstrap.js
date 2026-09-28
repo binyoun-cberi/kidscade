@@ -141,36 +141,7 @@
     const dashboardStart = '            function renderDashboards() {';
     const dashboardEnd = '\n\n            function trackRecent(id) {';
     const dashboardReplacement = `            function renderDashboards() {
-                if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
-                    return;
-                }
-
-                // 초기 로딩 fallback. dashboard-recent.js가 준비되면 더 이상 cloneNode를 사용하지 않습니다.
-                const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
-                favList.innerHTML = ''; let favCount = 0;
-                favorites.forEach(id => {
-                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
-                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
-                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
-                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
-                        favList.appendChild(clone);
-                        originCard.querySelector('.fav-star').innerText = '★'; originCard.querySelector('.fav-star').classList.add('active');
-                        favCount++;
-                    }
-                });
-                if (favCount > 0) favSection.classList.remove('hidden'); else favSection.classList.add('hidden');
-
-                const recentList = document.getElementById('recent-list'); const recentSection = document.getElementById('recent-section');
-                recentList.innerHTML = ''; let recentCount = 0;
-                recents.forEach(id => {
-                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
-                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
-                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
-                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
-                        recentList.appendChild(clone); recentCount++;
-                    }
-                });
-                if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
+                return window.KidscadeDashboard?.render?.({ age: currentAgeGroup }) === true;
             }`;
     html = replaceBetween(html, dashboardStart, dashboardEnd, dashboardReplacement);
 
@@ -391,7 +362,6 @@
       'seed-house-entry.js',
       'game-registry.js',
       'game-filter.js',
-      'catalog-discovery.js',
       'game-cover-placeholders.js',
       'dashboard-recent.js',
       'game-recommendations.js',

@@ -86,49 +86,9 @@
       #game-list > .game-card.kc-has-cover > .game-icon { display: none !important; }
       #game-list > .game-card.kc-has-cover .game-title { margin-top: 0 !important; }
 
-      .dashboard-container .mini-card.kc-has-cover {
-        width: 154px !important;
-        min-width: 154px !important;
-        max-width: 154px !important;
-        min-height: 0 !important;
-        padding: 7px !important;
-        align-items: stretch !important;
-        overflow: hidden;
-      }
-      .dashboard-container .mini-card.kc-has-cover .game-cover-shell {
-        width: 100% !important;
-        height: auto !important;
-        min-height: 0 !important;
-        margin: 0 0 7px !important;
-        border-radius: 11px;
-      }
-      .dashboard-container .mini-card.kc-has-cover .game-cover-image {
-        position: static !important;
-        width: 100% !important;
-        height: 100% !important;
-      }
-      .dashboard-container .mini-card.kc-has-cover > .game-icon,
-      .dashboard-container .mini-card.kc-has-cover .game-cover-emoji,
-      .dashboard-container .mini-card .game-desc,
-      .dashboard-container .mini-card .fav-star,
-      .dashboard-container .mini-card .badge-container,
-      .dashboard-container .mini-card .cert-btn,
-      .dashboard-container .mini-card .kc-card-meta { display: none !important; }
-      .dashboard-container .mini-card.kc-has-cover .game-title {
-        margin: 0 2px 3px !important;
-        font-size: .76rem !important;
-        line-height: 1.25 !important;
-        text-align: left;
-      }
-
-      @media (max-width: 940px) {
+      @media (max-width: 940px) {      @media (max-width: 940px) {
         #game-list > .game-card.kc-has-cover { padding-left: 8px !important; padding-right: 8px !important; }
         #game-list > .game-card.kc-has-cover .game-cover-shell { border-radius: 13px; margin-bottom: 9px; }
-        .dashboard-container .mini-card.kc-has-cover {
-          width: 142px !important;
-          min-width: 142px !important;
-          max-width: 142px !important;
-        }
       }
     `;
     document.head.appendChild(style);

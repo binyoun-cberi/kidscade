@@ -48,7 +48,6 @@ jobs:
             teacher-accounts.js \
             age-navigation.js \
             main-bootstrap.js \
-            stats-rankings.js \
             server-stats.js \
             worker/index.mjs \
             worker/accounts.mjs \
@@ -67,7 +66,6 @@ jobs:
             worker/main.mjs \
             game-registry.js \
             game-filter.js \
-            catalog-discovery.js \
             game-cover-placeholders.js \
             dashboard-recent.js \
             game-recommendations.js \
