@@ -204,7 +204,6 @@
       }
       #game-list > .game-card .game-title { margin-bottom:5px !important; font-size:.96rem !important; }
       #game-list > .game-card .game-desc { font-size:.71rem !important; line-height:1.4 !important; }
-      #game-list > .game-card .kc-server-card-stats { margin-top:4px !important; font-size:.60rem !important; }
       #game-list > .game-card .kc-card-meta { margin-top:5px !important; min-height:20px !important; }
       #game-list > .game-card .kc-card-meta-chip { padding:4px 7px !important; font-size:.58rem !important; }
 
