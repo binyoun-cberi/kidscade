@@ -18,7 +18,7 @@ test('Factory Tycoon is registered as a high-grade thinking sandbox',()=>{
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'sandbox');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=4');
+  assert.equal(game.href,'games/high_factory_tycoon/index.html?v=5');
 });
 
 test('Factory Tycoon uses the common game shell and local Three runtime',()=>{
@@ -56,6 +56,7 @@ test('Factory Tycoon includes the planned automation systems',()=>{
   assert.match(js,/ROTATABLE_TYPES/);
   assert.match(js,/function rotatePlacedCell/);
   assert.match(js,/rotateArmed=true/);
+  assert.match(js,/const DIR_ANGLE=\[-Math\.PI\/2,0,Math\.PI\/2,Math\.PI\]/);
 });
 
 test('Factory Tycoon supports grab camera movement, three map sizes, and a small-map tutorial',()=>{
