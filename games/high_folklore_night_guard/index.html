@@ -928,6 +928,9 @@ function openCamera(){
 function closeCamera(){
   state.cameraOpen=false;els.cameraShell.classList.remove('open');els.cameraView.classList.remove('cam-switching');sound('cam')
 }
+function cameraFeedLive(cam){
+  return state.cameraOpen&&!state.blackout&&performance.now()>=state.cameraSwitchUntil&&(!cam||state.currentCam===cam)
+}
 function roomPropsVisible(){
   var show=state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive;
   document.querySelectorAll('.prop').forEach(function(p){
@@ -1191,7 +1194,7 @@ function updateMaiden(dt){
   if(m.rest>0){m.rest-=dt;return}
   var loc=currentMaidenCam();
   if(loc!=='office'){
-    var watching=state.cameraOpen&&state.currentCam===loc;
+    var watching=cameraFeedLive(loc);
     if(watching){
       m.viewed+=dt;m.totalViewed+=dt;m.unseen=Math.max(0,m.unseen-dt*2);
       if(m.viewed>2.5){
@@ -1219,7 +1222,7 @@ function relocateEgg(rewarded){
 }
 function updateEgg(dt){
   var e=state.egg;if(!e||!e.active)return;
-  e.life+=dt;var staring=state.cameraOpen&&state.currentCam===e.cam;
+  e.life+=dt;var staring=cameraFeedLive(e.cam);
   if(staring){e.seenThisStop=true;e.stare+=dt*46;if(e.stare>=100){fail('egg');return}}
   else e.stare=Math.max(0,e.stare-dt*58);
   if(!staring&&e.life>=e.moveEvery&&movementRoll('egg'))relocateEgg(e.seenThisStop)
@@ -1245,7 +1248,7 @@ function updateRoamer(r,dt){
     return
   }
   r.moveClock+=dt;
-  var watched=state.cameraOpen&&state.currentCam===r.location;
+  var watched=cameraFeedLive(r.location);
   var interval=r.moveEvery+(watched?1.5:0)+(state.director.tension>75?1.2:0);
   if(r.moveClock>=interval){
     r.moveClock=0;
