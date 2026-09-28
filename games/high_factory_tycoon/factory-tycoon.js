@@ -16,7 +16,7 @@ const ui={
 };
 
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
-const DIR_ANGLE=[-Math.PI/2,Math.PI,Math.PI/2,0];
+const DIR_ANGLE=[-Math.PI/2,0,Math.PI/2,Math.PI];
 const DIR_LABELS=['오른쪽','아래','왼쪽','위'];
 const ROTATABLE_TYPES=new Set(['belt','splitter','merger','cross','assembler','slicer','pan','toaster','packer']);
 const CELL=1.18,TICK=1/20;
