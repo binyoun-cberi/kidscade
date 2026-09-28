@@ -295,7 +295,7 @@ function buildRegions() {
       size++;
       const p = at * 4;
       r += src[p]; g += src[p + 1]; b += src[p + 2];
-      if (x <= 1 || y <= 1 || x >= state.width - 2 || y >= state.height - 2) touch = true;
+      if (x <= 4 || y <= 4 || x >= state.width - 5 || y >= state.height - 5) touch = true;
       if (x > 0) visit(at - 1);
       if (x < state.width - 1) visit(at + 1);
       if (y > 0) visit(at - state.width);
