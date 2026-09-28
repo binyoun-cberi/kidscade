@@ -259,8 +259,6 @@
 
       @media (max-width:${MOBILE_BREAKPOINT}px) {
         .kc-lobby { padding-left:9px !important; padding-right:9px !important; gap:10px !important; }
-        .kc-hero { padding:0 1px 7px !important; }
-        .kc-hero h1 { font-size:1.24rem !important; }
 
         .kc-side-card.avatar-shell {
           grid-template-columns:128px minmax(0,1fr) !important;
@@ -288,6 +286,29 @@
         #kc-activity-strip .kc-activity-title { font-size:.71rem !important; }
         #kc-activity-strip .kc-activity-sub { display:none !important; }
 
+        #game-list > .game-card {
+          min-height:168px !important;
+          padding:34px 7px 8px !important;
+          border-radius:16px !important;
+        }
+        #game-list > .game-card.kc-has-cover { padding-left:6px !important; padding-right:6px !important; }
+        #game-list > .game-card.kc-has-cover .game-cover-shell { margin-bottom:6px !important; border-radius:11px !important; }
+        #game-list > .game-card .game-icon { width:56px !important; height:56px !important; font-size:2.2rem !important; margin-bottom:6px !important; }
+        #game-list > .game-card .game-title { font-size:.76rem !important; line-height:1.2 !important; margin-bottom:3px !important; }
+        #game-list > .game-card .kc-card-meta { margin-top:3px !important; min-height:19px !important; }
+        #game-list > .game-card .kc-card-meta-chip { font-size:.5rem !important; padding:3px 5px !important; }
+
+        #pet-modal { padding:5px !important; }
+        #pet-modal .sook-coach-content { height:calc(100dvh - 10px) !important; border-radius:18px !important; }
+        #pet-modal .sook-coach-header { flex-basis:50px !important; min-height:50px !important; padding:7px 9px !important; }
+        #pet-modal .sook-coach-body { padding:8px !important; }
+      }
+
+      @media (max-width:380px) {
+        .kc-side-card.avatar-shell { grid-template-columns:112px minmax(0,1fr) !important; }
+        .avatar-plaza-preview { height:106px !important; }
+        #kc-activity-strip { grid-template-columns:1fr !important; }
+        #game-list.game-container { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
       }
     `;
     document.head.appendChild(style);
