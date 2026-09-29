@@ -50,6 +50,7 @@ const T3=window.THREE||null,GLTF3=window.GLTFLoader||null,SCALE3=.012;
 const scriptBase3=(()=>{try{return new URL('.',document.currentScript?.src||location.href)}catch(_){return new URL('.',location.href)}})();
 const modelUrl3=p=>new URL('../../assets/game/3d/'+p,scriptBase3).href;
 const gameAssetUrl3=p=>new URL('../../assets/game/'+p,scriptBase3).href;
+const sharedAssetUrl3=p=>new URL('../../assets/'+p,scriptBase3).href;
 const MODEL3={
  police:modelUrl3('vehicles/kenney-car-kit/police.glb'),
  sedan:modelUrl3('vehicles/kenney-car-kit/sedan.glb'),
@@ -70,7 +71,15 @@ const MODEL3={
  pedA:gameAssetUrl3('characters/people/character-male-a.glb'),
  pedB:gameAssetUrl3('characters/people/character-male-b.glb'),
  pedC:gameAssetUrl3('characters/people/character-female-b.glb'),
- pedD:gameAssetUrl3('characters/people/character-female-c.glb')
+ pedD:gameAssetUrl3('characters/people/character-female-c.glb'),
+ sharedTreeA:sharedAssetUrl3('quaternius_cc0-common-tree-849.glb'),
+ sharedTreeB:sharedAssetUrl3('quaternius_cc0-common-tree-855.glb'),
+ sharedPineA:sharedAssetUrl3('quaternius_cc0-pine-tree-1228.glb'),
+ sharedRock:sharedAssetUrl3('quaternius_cc0-mossy-rock-1303.glb'),
+ sharedGrass:sharedAssetUrl3('quaternius_cc0-grass-1070.glb'),
+ sharedWaterTower:sharedAssetUrl3('quaternius_cc0-water-tower-1470.glb'),
+ sharedBus:sharedAssetUrl3('quaternius_cc0-school-bus-1323.glb'),
+ sharedHouse:sharedAssetUrl3('quaternius_cc0-house-1085.glb')
 };
 const MODEL_COLOR3={police:0xf4f7fa,sedan:0x4f86d9,suv:0x45b878,hatch:0xe85d5d,taxi:0xf2c94c,truck:0xe89445,van:0x7d8b98,ambulance:0xf3f5f6,trafficLight:0x34454d,cone:0xf08a36,barrier:0xe7e1d5};
 let scene3=null,cam3=null,renderer3=null,loader3=null,world3=null,cars3=null,people3=null,mission3=null,models3=new Map(),carNodes3=new Map(),pedNodes3=new Map(),prepare3Promise=null,threeReady3=false;
@@ -80,8 +89,33 @@ const v3=(x,y,h=0)=>new T3.Vector3(x*SCALE3,h,y*SCALE3);
 function box3(w,h,d,color,rough=.82){const m=new T3.Mesh(new T3.BoxGeometry(w,h,d),new T3.MeshStandardMaterial({color,roughness:rough,metalness:.02}));m.castShadow=true;m.receiveShadow=true;return m}
 function clear3(g){if(!g)return;while(g.children.length)g.remove(g.children[g.children.length-1])}
 function normalize3(obj,target=1){obj.updateMatrixWorld(true);let b=new T3.Box3().setFromObject(obj),s=b.getSize(new T3.Vector3()),base=Math.max(s.x,s.y,s.z);if(!Number.isFinite(base)||base<=0)base=1;obj.scale.multiplyScalar(target/base);obj.updateMatrixWorld(true);b=new T3.Box3().setFromObject(obj);const c=b.getCenter(new T3.Vector3());obj.position.x-=c.x;obj.position.z-=c.z;obj.position.y-=b.min.y;return obj}
+function sharedRole3(name=''){
+ const n=String(name).toLowerCase();
+ if(/glass|window|windshield|windscreen/.test(n))return'glass';
+ if(/tire|tyre|wheel|rubber/.test(n))return'tire';
+ if(/light|lamp|headlight|taillight/.test(n))return'light';
+ if(/roof|shingle|tile/.test(n))return'roof';
+ if(/wall|brick|plaster|facade|house/.test(n))return'wall';
+ if(/wood|door|frame|beam|bark/.test(n))return'wood';
+ if(/metal|bumper|axle|pipe|rim/.test(n))return'metal';
+ if(/trim|border|step/.test(n))return'trim';
+ return'body'
+}
+function repairShared3(obj,key){
+ const bus={body:0xd9a928,glass:0x6a8fa0,tire:0x25292b,metal:0x7f898c,light:0xffdf86,trim:0x2f3436};
+ const house={body:0xa95843,wall:0xa95843,roof:0x34383c,wood:0x68452f,glass:0x557984,trim:0xd2c4a7,metal:0x747d80};
+ const p=key==='sharedBus'?bus:key==='sharedHouse'?house:null;if(!p)return obj;
+ const fallback=key==='sharedBus'?['body','glass','tire','metal','light','trim']:['wall','roof','wood','glass','trim','metal'],slots=new Map();let cursor=0;
+ obj.traverse(n=>{if(!n.isMesh||!n.material)return;const list=Array.isArray(n.material)?n.material:[n.material];const made=list.map(src=>{
+   const m=src.clone(),label=(n.name||'')+' '+(src?.name||''),semantic=sharedRole3(label),meaningful=/glass|window|windshield|windscreen|tire|tyre|wheel|rubber|light|lamp|headlight|taillight|roof|shingle|tile|wall|brick|plaster|facade|house|wood|door|frame|beam|bark|metal|bumper|axle|pipe|rim|trim|border|step/i.test(label),slot=src?.uuid||label;
+   if(!slots.has(slot))slots.set(slot,fallback[Math.min(cursor++,fallback.length-1)]);const role=meaningful?semantic:slots.get(slot);
+   if(m.color)m.color.setHex(p[role]??p.body);if(!m.map){m.roughness=role==='glass'?.28:role==='metal'?.52:.78;m.metalness=role==='metal'?.28:0}
+   if(role==='glass'){m.transparent=true;m.opacity=.72;m.depthWrite=false}m.needsUpdate=true;return m});
+   n.material=Array.isArray(n.material)?made:made[0]});
+ return obj
+}
 function style3(obj,key,tint=null){obj.traverse(n=>{if(!n.isMesh||!n.material)return;n.castShadow=true;n.receiveShadow=true;const list=Array.isArray(n.material)?n.material:[n.material];const styled=list.map(src=>{const m=src.clone(),name=(n.name||'').toLowerCase(),hasMap=Boolean(m.map?.image);if(tint!=null){m.color.setHex(tint);if(name.includes('wheel'))m.color.setHex(0x242b30)}else if(!hasMap&&MODEL_COLOR3[key]){m.color.setHex(name.includes('wheel')?0x242b30:MODEL_COLOR3[key])}m.roughness=Math.max(.48,m.roughness??.7);m.metalness=Math.min(.18,m.metalness??0);m.needsUpdate=true;return m});n.material=Array.isArray(n.material)?styled:styled[0]});return obj}
-function clone3(key,target=1,tint=null){const g=models3.get(key);if(!g)return null;const raw=window.SkeletonUtils?.clone?window.SkeletonUtils.clone(g.scene):g.scene.clone(true);const obj=style3(raw,key,tint);return normalize3(obj,target)}
+function clone3(key,target=1,tint=null){const g=models3.get(key);if(!g)return null;const raw=window.SkeletonUtils?.clone?window.SkeletonUtils.clone(g.scene):g.scene.clone(true);let obj=style3(raw,key,tint);if(key==='sharedBus'||key==='sharedHouse')obj=repairShared3(obj,key);return normalize3(obj,target)}
 function load3(key,url){return new Promise(resolve=>{loader3.load(url,g=>{models3.set(key,g);resolve(g)},undefined,e=>{console.warn('[Police3D] fallback',key,e);resolve(null)})})}
 function init3D(){
  if(threeReady3||!T3||!GLTF3)return threeReady3;
@@ -169,9 +203,15 @@ function rebuildCity3D(){
    }else if(b.type==='parking'){
      const lot=box3(w,.08,d,0x777e80,.94);lot.position.set(x,.03,z);world3.add(lot);addParkingLines3(world3,b);
      const parked=['sedan','suv','taxi','truck','van'];for(let k=0;k<4;k++){const key=parked[(b.shade+k)%parked.length],car=clone3(key,key==='truck'?1.18:.98);if(car){const row=k<2?-1:1,col=k%2?-1:1;car.position.set(x+col*w*.22,.075,z+row*d*.22);car.rotation.y=row>0?0:Math.PI;world3.add(car)}}
+     if(models3.has('sharedBus')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%2===0)){
+       const bus=clone3('sharedBus',1.72);if(bus){bus.position.set(x,.075,z);bus.rotation.y=b.shade%2?Math.PI/2:0;world3.add(bus)}
+     }
    }else{
-     const landmark=models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
-     if(landmark){
+     const houseSlot=b.edge&&models3.has('sharedHouse')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%4===1);
+     const landmark=!houseSlot&&models3.has('bigBuilding')&&((Math.abs(Math.round(b.x/GRID))+Math.abs(Math.round(b.y/GRID))+b.shade)%3===0);
+     if(houseSlot){
+       const home=clone3('sharedHouse',Math.min(w,d)*.86);if(home){home.position.set(x,.02,z);home.rotation.y=b.shade%2?Math.PI/2:Math.PI;registerBuildingOccluder3(home);world3.add(home)}
+     }else if(landmark){
        const city=clone3('bigBuilding',Math.min(w,d)*.92);if(city){city.position.set(x,.02,z);city.rotation.y=b.shade%2?Math.PI/2:0;registerBuildingOccluder3(city);world3.add(city)}
      }else{
        const h=2.7+b.shade*.55+((Math.abs(Math.floor(b.x+b.y))%3)*.32),g=new T3.Group(),body=box3(w,h,d,buildingColors[b.shade%buildingColors.length],.78);body.position.y=h/2;g.add(body);
@@ -180,8 +220,15 @@ function rebuildCity3D(){
      if(models3.has('dumpster')&&((Math.abs(Math.round(b.x/GRID))+b.shade)%2===0)){const dump=clone3('dumpster',.55);if(dump){dump.position.set(x+w*.43,.07,z+d*.43);dump.rotation.y=b.shade%2?Math.PI/2:0;world3.add(dump)}}
    }
  }
- const treeKeys=['tree','oak','pine'];
+ const treeKeys=['tree','oak','pine','sharedTreeA','sharedTreeB','sharedPineA'];
  for(let i=0;i<decor.length;i++){const d=decor[i],key=treeKeys[i%treeKeys.length],tree=clone3(key,d.small?.75:1.05);if(tree){tree.position.set(d.x*SCALE3,.06,d.y*SCALE3);tree.rotation.y=(i*.73)%TAU;world3.add(tree)}else{const trunk=box3(.16,.75,.16,0x6c4a2e);trunk.position.set(d.x*SCALE3,.38,d.y*SCALE3);world3.add(trunk);const crown=box3(.72,.78,.72,0x418b50);crown.position.set(d.x*SCALE3,1.08,d.y*SCALE3);world3.add(crown)}}
+ const parkBlock=blocks.find(b=>b.type==='park');
+ if(parkBlock){
+   const px=(parkBlock.x+parkBlock.w/2)*SCALE3,pz=(parkBlock.y+parkBlock.h/2)*SCALE3;
+   const tower=clone3('sharedWaterTower',3.25);if(tower){tower.position.set(px,.04,pz);world3.add(tower)}
+   const rock=clone3('sharedRock',.9);if(rock){rock.position.set(px+1.8,.04,pz+1.4);rock.rotation.y=.7;world3.add(rock)}
+   const grass=clone3('sharedGrass',.65);if(grass){grass.position.set(px-1.6,.04,pz+1.1);world3.add(grass)}
+ }
  const inner=[-720,0,720];for(const x of inner)for(const y of inner){const light=clone3('trafficLight',1.25);if(light){light.position.set((x+120)*SCALE3,.05,(y+120)*SCALE3);light.rotation.y=((x+y)/720)%2?Math.PI:0;world3.add(light)}}
 }
 function hash3(s=''){let h=2166136261;for(let i=0;i<s.length;i++)h=(h^s.charCodeAt(i))*16777619;return Math.abs(h|0)}
