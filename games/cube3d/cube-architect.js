@@ -1,12 +1,27 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from '../../assets/vendor/three-r160/three.module.js';
+
+class SimpleOrbit {
+  constructor(camera, dom, target){
+    this.camera=camera;this.dom=dom;this.target=(target||new THREE.Vector3()).clone();
+    this.minDistance=2;this.maxDistance=40;this.maxPolarAngle=Math.PI*.49;this.enabled=true;
+    this.dragging=false;this.moved=false;this.last={x:0,y:0};
+    this.onDown=e=>{if(!this.enabled||e.button!==0)return;this.dragging=true;this.moved=false;this.last={x:e.clientX,y:e.clientY}};
+    this.onMove=e=>{if(!this.enabled||!this.dragging)return;const dx=e.clientX-this.last.x,dy=e.clientY-this.last.y;if(Math.abs(dx)+Math.abs(dy)>1)this.moved=true;this.last={x:e.clientX,y:e.clientY};this.theta-=dx*.008;this.phi=THREE.MathUtils.clamp(this.phi+dy*.008,.12,this.maxPolarAngle);this.updatePosition()};
+    this.onUp=()=>{this.dragging=false};
+    this.onWheel=e=>{if(!this.enabled)return;this.radius=THREE.MathUtils.clamp(this.radius*(e.deltaY>0?1.09:.92),this.minDistance,this.maxDistance);this.updatePosition()};
+    dom.addEventListener('pointerdown',this.onDown);window.addEventListener('pointermove',this.onMove);window.addEventListener('pointerup',this.onUp);dom.addEventListener('wheel',this.onWheel,{passive:true});
+    this.syncFromCamera();
+  }
+  syncFromCamera(){const v=this.camera.position.clone().sub(this.target);this.radius=Math.max(.01,v.length());this.theta=Math.atan2(v.x,v.z);this.phi=Math.acos(THREE.MathUtils.clamp(v.y/this.radius,-1,1));this.updatePosition()}
+  updatePosition(){this.radius=THREE.MathUtils.clamp(this.radius,this.minDistance,this.maxDistance);this.phi=THREE.MathUtils.clamp(this.phi,.12,this.maxPolarAngle);const sp=Math.sin(this.phi);this.camera.position.set(this.target.x+this.radius*sp*Math.sin(this.theta),this.target.y+this.radius*Math.cos(this.phi),this.target.z+this.radius*sp*Math.cos(this.theta));this.camera.lookAt(this.target)}
+  update(){if(this.enabled)this.camera.lookAt(this.target)}
+  dispose(){this.dom.removeEventListener('pointerdown',this.onDown);window.removeEventListener('pointermove',this.onMove);window.removeEventListener('pointerup',this.onUp);this.dom.removeEventListener('wheel',this.onWheel)}
+}
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('gameCanvas');
-const renderer = new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+let renderer = null;
+let loopStarted = false;
 
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.05,220);
@@ -49,8 +64,22 @@ function cleanScene(bg){
   sun.shadow.mapSize.set(1024,1024);scene.add(sun);
 }
 function makeOrbit(target){
-  orbit=new OrbitControls(camera,canvas);orbit.enableDamping=true;orbit.target.copy(target||new THREE.Vector3());orbit.enablePan=false;orbit.maxPolarAngle=Math.PI*.49;
+  orbit=new SimpleOrbit(camera,canvas,target||new THREE.Vector3());
 }
+function ensureRenderer(){
+  if(renderer)return renderer;
+  try{
+    renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    resize();
+    return renderer;
+  }catch(err){
+    renderer=null;
+    throw new Error('3D 화면을 시작하지 못했습니다. 브라우저의 WebGL 설정을 확인해 주세요. '+(err?.message||err));
+  }
+}
+function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
   ['challengePanel','netPanel','freeHud','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   $('topbar').classList.add('hidden');
@@ -60,8 +89,8 @@ function clearModeUi(){
   $('actionSave').classList.add('hidden');
   $('actionXray').classList.add('hidden');
 }
-function showHome(){
-  mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
+export function showHome(){
+  ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
   const g=new THREE.GridHelper(16,16,0xffffff,0xb7cbe0);scene.add(g);
   const mats=[0x5a67f2,0x23b7a4,0xf6c453,0xe9798f,0x7e69d7];
@@ -71,14 +100,13 @@ function showHome(){
   }
   makeOrbit(new THREE.Vector3(0,1,0));
 }
-function enterMode(next){
-  clearModeUi();$('topbar').classList.remove('hidden');mode=next;
+export function enterMode(next){
+  ensureRenderer();ensureLoop();clearModeUi();$('topbar').classList.remove('hidden');mode=next;
   if(document.pointerLockElement===canvas) document.exitPointerLock();
   if(next==='challenge') initChallenge();
   if(next==='net') initNet();
   if(next==='free') initFree();
 }
-document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>enterMode(b.dataset.mode)));
 $('homeBtn').addEventListener('click',showHome);
 
 function roundedRect(ctx,x,y,w,h,r){
@@ -384,12 +412,12 @@ function updateFree(dt,t){
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
-  const once='cubeArchitectTutorial_'+kind;if(localStorage.getItem(once))return;
+  const once='cubeArchitectTutorial_'+kind;try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지</h2><p>왼쪽 겨냥도를 관찰하고 오른쪽 3D 공간에 블록을 쌓아 최대한 닮게 만들어 보세요.</p><div class="keys"><div class="keyrow"><b>좌클릭</b>블록 놓기</div><div class="keyrow"><b>우클릭</b>블록 치우기</div><div class="keyrow"><b>드래그</b>건축물 돌려보기</div><div class="keyrow"><b>검사</b>정답과 겹쳐보기</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
   if(kind==='free')html='<h2>아키텍트 월드</h2><p>작은 큐브 섬을 탐험하고 재료를 발견하면서 자유롭게 건축하세요. 수학 미션은 선택입니다.</p><div class="keys"><div class="keyrow"><b>WASD</b>걷기</div><div class="keyrow"><b>Space</b>점프</div><div class="keyrow"><b>좌/우클릭</b>파괴 / 설치</div><div class="keyrow"><b>1~6 / R / X</b>재료 / 색칠 / 구조 보기</div></div>';
-  $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');localStorage.setItem(once,'1')};
+  $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
 }
 window.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false});
@@ -423,11 +451,11 @@ function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
 }
 function resize(){
-  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  const w=innerWidth,h=innerHeight;if(renderer)renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
-window.addEventListener('resize',resize);resize();
+window.addEventListener('resize',resize);
 let last=performance.now();
 function animate(now){
-  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='free')updateFree(dt,now);renderer.render(scene,camera);
+  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='free')updateFree(dt,now);if(renderer)renderer.render(scene,camera);
 }
-showHome();animate(performance.now());
+window.CubeArchitectReady=true;
