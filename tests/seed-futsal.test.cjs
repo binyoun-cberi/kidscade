@@ -46,5 +46,5 @@ test('Futsal History League exposes direct keyboard and touch controls',()=>{
   assert.match(html,/data-fh-action="through"/);
   assert.match(html,/data-fh-action="lob"/);
   assert.match(html,/data-fh-action="shoot"/);
-  assert.match(html,/futsal-history-match\.js\?v=12/);
+  assert.match(html,/futsal-history-match\.js\?v=13/);
 });
