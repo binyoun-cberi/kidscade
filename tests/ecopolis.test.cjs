@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=3');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=4');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -81,4 +81,16 @@ test('Ecopolis supports procedural regions, analysis views, touch, tutorial and 
   assert.match(html,/data-scenario="valley"/);
   assert.match(html,/data-scenario="marsh"/);
   assert.match(html,/data-scenario="dust"/);
+});
+
+
+test('Ecopolis uses QA-gated shared biome art without swapping in unverified animals',()=>{
+  assert.match(html,/three\/addons\//);
+  assert.match(html,/game\.js\?v=4/);
+  assert.match(js,/shared-community-3d\.js/);
+  assert.match(js,/shared3DIsApproved/);
+  assert.match(js,/normalizeShared/);
+  for(const id of ['nature.commonTreeA','nature.pineTreeA','nature.grass','nature.plant','nature.mossyRockA']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
+  assert.doesNotMatch(js,/sharedModel\('animal\.deer'/);
+  assert.doesNotMatch(js,/sharedModel\('animal\.fish'/);
 });
