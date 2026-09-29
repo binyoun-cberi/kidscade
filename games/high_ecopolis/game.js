@@ -27,7 +27,7 @@ const TOOL={
   wetland:{label:'습지 씨앗',cost:16,radius:1.85,phase:2},
   forest:{label:'숲 묘목장',cost:16,radius:1.8,phase:2},
   meadow:{label:'꽃초원 씨앗',cost:14,radius:1.9,phase:2},
-  recycler:{label:'회수선',cost:0,radius:6.2,phase:4}
+  recycler:{label:'회수선',cost:0,radius:9.2,phase:4}
 };
 const SCENARIOS={
   valley:{name:'마른 강의 골짜기',riverWidth:1,waterPollution:.72,landPollution:.68,windBias:.05},
@@ -148,7 +148,9 @@ function createTileMesh(t){
 function refreshAllTiles(){tiles.forEach(refreshTileVisual)}
 function refreshTileVisual(t){
   let hex=0x81725a;
-  if(t.kind==='water')hex=t.pollution<.25?0x5bb7c2:THREE.MathUtils.lerp(0x5bb7c2,0x4b514d,clamp(t.pollution,0,1));
+  if(t.kind==='water'){
+    const c=new THREE.Color(0x5bb7c2).lerp(new THREE.Color(0x4b514d),clamp(t.pollution,0,1));hex=c.getHex();
+  }
   else if(t.kind==='rock')hex=0x77786e;
   else {
     const base=t.biome==='grass'?0x69a95f:t.biome==='wetland'?0x729e67:t.biome==='forest'?0x3d8154:t.biome==='meadow'?0x8dbf64:0x81725a;
@@ -187,7 +189,8 @@ function buildModel(type,t){
   if(type==='wind'){
     const mast=new THREE.Mesh(geo.mast,mat.white);mast.position.y=.9;const hub=new THREE.Mesh(geo.hub,mat.dark);hub.position.set(0,1.62,0);const rotor=new THREE.Group();rotor.position.set(0,1.62,.08);
     for(let i=0;i<3;i++){const b=new THREE.Mesh(geo.blade,mat.white);b.position.y=.38;b.rotation.z=.06;const arm=new THREE.Group();arm.rotation.z=i*Math.PI*2/3;arm.add(b);rotor.add(arm)}
-    rotor.rotation.x=Math.PI/2;windRotors.push(rotor);g.add(mast,hub,rotor);
+    const powerRing=new THREE.Mesh(new THREE.RingGeometry(TOOL.wind.radius*CELL*.98,TOOL.wind.radius*CELL,64),new THREE.MeshBasicMaterial({color:0xbdf6ff,transparent:true,opacity:.11,side:THREE.DoubleSide,depthWrite:false}));
+    powerRing.rotation.x=-Math.PI/2;powerRing.position.y=-.12;windRotors.push(rotor);g.add(mast,hub,rotor,powerRing);
   }else if(type==='purifier'){
     const box=new THREE.Mesh(geo.box,mat.green);box.position.y=.27;const chimney=new THREE.Mesh(geo.pipe,mat.white);chimney.position.set(.18,.7,.12);g.add(box,chimney);
   }else if(type==='waterfilter'){
@@ -309,7 +312,7 @@ function spawnAnimal(species,loadingPos=null){
 function animalModel(species){
   const g=new THREE.Group();
   if(species==='bee'){
-    const body=new THREE.Mesh(new THREE.SphereGeometry(.13,.2?8:8,6),mat.yellow);body.scale.set(1.4,.8,.8);g.add(body);
+    const body=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),mat.yellow);body.scale.set(1.4,.8,.8);g.add(body);
     const wingMat=new THREE.MeshStandardMaterial({color:0xdff7ff,transparent:true,opacity:.75});for(const s of [-1,1]){const w=new THREE.Mesh(new THREE.SphereGeometry(.1,8,5),wingMat);w.scale.set(.45,.2,1);w.position.set(0,.1,s*.13);g.add(w)}
   }else{
     const body=new THREE.Mesh(geo.animalBody,species==='frog'?mat.green:species==='otter'?mat.trunk:mat.animal);body.scale.set(1.3,.7,.7);const head=new THREE.Mesh(geo.animalHead,body.material);head.position.set(.28,.09,0);g.add(body,head);
@@ -366,7 +369,7 @@ function toggleAnalysis(mode){
 }
 function updatePreview(){
   if(!hoverTile||selectedTool==='inspect'){previewRing.visible=false;return}
-  const def=TOOL[selectedTool];previewRing.visible=true;const p=worldPos(hoverTile);previewRing.position.set(p.x,.37,p.z);const scale=Math.max(.55,def.radius);previewRing.scale.set(scale,scale,scale);
+  const def=TOOL[selectedTool];previewRing.visible=true;const p=worldPos(hoverTile);previewRing.position.set(p.x,.37,p.z);const scale=Math.max(.55,def.radius*CELL);previewRing.scale.set(scale,scale,scale);
   previewRing.material.color.setHex(placementReason(selectedTool,hoverTile)?0xff806d:0xbfffb4);
 }
 
@@ -464,7 +467,7 @@ addEventListener('beforeunload',()=>{if(running)saveGame()});
 function animate(now){
   requestAnimationFrame(animate);const dt=Math.min(.05,(now-(animate.last||now))/1000);animate.last=now;
   if(running){elapsed+=dt;saveTimer+=dt;if(saveTimer>20){saveTimer=0;saveGame()}}
-  windRotors.forEach((r,i)=>r.rotation.y+=dt*(2.2+i%3*.18));
+  windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18));
   animals.forEach((a,i)=>{a.phase+=dt*(1+i*.08);a.mesh.position.y=.46+Math.sin(a.phase*2)*.035;a.mesh.rotation.y=Math.sin(a.phase*.45)*.25});
   [...effectGroup.children].forEach(o=>{o.userData.life-=dt*.7;o.scale.multiplyScalar(1+dt*1.2);o.material.opacity=o.userData.life*.75;if(o.userData.life<=0)effectGroup.remove(o)});
   renderer.render(scene,camera);
