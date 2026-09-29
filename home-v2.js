@@ -647,13 +647,17 @@
             <h2 id="kc-home-rail-title-${index}">${escapeHtml(rail.title)}</h2>
             <p>${escapeHtml(rail.note || '')}</p>
           </div>
-          <div class="kc-home-rail-arrows" aria-label="${escapeAttr(rail.title)} 이동">
-            <button type="button" data-rail-prev aria-label="이전 게임">‹</button>
-            <button type="button" data-rail-next aria-label="다음 게임">›</button>
-          </div>
         </div>
-        <div class="kc-home-rail-track" data-rail-track>
-          ${rail.games.map(game => railCardMarkup(game, rail)).join('')}
+        <div class="kc-home-rail-viewport">
+          <div class="kc-home-rail-track" data-rail-track>
+            ${rail.games.map(game => railCardMarkup(game, rail)).join('')}
+          </div>
+          <button type="button" class="kc-home-rail-nav kc-home-rail-nav-prev" data-rail-prev aria-label="${escapeAttr(rail.title)} 이전 게임 보기">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <button type="button" class="kc-home-rail-nav kc-home-rail-nav-next" data-rail-next aria-label="${escapeAttr(rail.title)} 다음 게임 보기">
+            <span aria-hidden="true">›</span>
+          </button>
         </div>
       </section>
     `;
@@ -819,6 +823,7 @@
 
     wireShell(shell);
     prepareKeyboardNavigation(shell);
+    prepareRailNavigation(shell);
     root.document.body.classList.add('kc-home-v2-ready');
     if (!root.document.body.dataset.kcHomeLayout) {
       setLayout(storedLayout(), { persist: false, scroll: false });
@@ -913,10 +918,47 @@
     target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 
+  function updateRailNavigationState(rail) {
+    const track = rail?.querySelector('[data-rail-track]');
+    if (!track) return false;
+    const prev = rail.querySelector('[data-rail-prev]');
+    const next = rail.querySelector('[data-rail-next]');
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    const scrollable = maxScroll > 8;
+    const canPrev = scrollable && track.scrollLeft > 6;
+    const canNext = scrollable && track.scrollLeft < maxScroll - 6;
+
+    rail.classList.toggle('kc-home-rail-scrollable', scrollable);
+    if (prev) prev.disabled = !canPrev;
+    if (next) next.disabled = !canNext;
+    return scrollable;
+  }
+
+  function prepareRailNavigation(shell) {
+    shell?.querySelectorAll('.kc-home-rail').forEach(rail => {
+      const track = rail.querySelector('[data-rail-track]');
+      if (!track) return;
+
+      let frame = 0;
+      const sync = () => {
+        if (frame) return;
+        const schedule = root?.requestAnimationFrame || (callback => setTimeout(callback, 16));
+        frame = schedule(() => {
+          frame = 0;
+          updateRailNavigationState(rail);
+        });
+      };
+
+      track.addEventListener('scroll', sync, { passive:true });
+      sync();
+    });
+  }
+
   function scrollRail(rail, direction) {
     const track = rail?.querySelector('[data-rail-track]');
     if (!track) return;
-    track.scrollBy({ left: direction * Math.max(260, track.clientWidth * 0.82), behavior: 'smooth' });
+    const distance = Math.max(320, track.clientWidth * 0.9);
+    track.scrollBy({ left: direction * distance, behavior: 'smooth' });
   }
 
   function showLibrary() {
@@ -984,6 +1026,9 @@
     root.document.addEventListener('kidscade:favorites-changed', scheduleRender);
     root.document.addEventListener('kidscade:recents-changed', scheduleRender);
     root.document.addEventListener('kidscade:server-stats-updated', scheduleRender);
+    root.addEventListener?.('resize', () => {
+      root.document.querySelectorAll('.kc-home-rail').forEach(updateRailNavigationState);
+    }, { passive:true });
     root.document.addEventListener('kidscade:game-closed', () => {
       root.KidscadeServerStats?.load?.(false)?.then?.(() => scheduleRender());
       scheduleRender();
@@ -1047,6 +1092,7 @@
     recommendGames,
     deterministicGames,
     diversifyRail,
+    updateRailNavigationState,
     railDefinitions,
     heroGame
   });
