@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kidscade Shared 3D QA</title>
+<style>
+html,body{margin:0;height:100%;font-family:system-ui,sans-serif;background:#111820;color:#eef7f2}
+#app{display:grid;grid-template-columns:minmax(280px,340px) 1fr;height:100%}
+aside{padding:18px;background:#17222c;overflow:auto;border-right:1px solid #30404b}
+main{position:relative;min-width:0}canvas{display:block;width:100%;height:100%}
+h1{font-size:19px;margin:0 0 12px}.muted{color:#9fb0bb;font-size:12px;line-height:1.5}
+select,button{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid #40525e;border-radius:10px;background:#202f3b;color:#eef7f2}
+button{cursor:pointer}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#2a3d4a;font-size:11px;margin:2px}
+#status.approved{color:#82e6a9}#status.review{color:#ffd27a}#status.blocked{color:#ff8c8c}
+dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#9fb0bb}dd{margin:0;word-break:break-word}
+#hint{position:absolute;left:14px;bottom:14px;padding:8px 10px;border-radius:9px;background:#0d151bbb;font-size:12px;color:#c7d4dc}
+</style>
+<script type="importmap">{"imports":{"three":"../assets/vendor/three-r160/three.module.js","three/addons/":"../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<div id="app">
+<aside>
+<h1>공용 3D 에셋 QA</h1>
+<p class="muted">게임에 넣기 전에 재질, 피벗, 크기, 바닥 정렬, 애니메이션을 확인하는 개발용 뷰어입니다.</p>
+<select id="assetSelect"></select>
+<div class="row"><button id="prev">← 이전</button><button id="next">다음 →</button></div>
+<button id="toggleRaw">원본 피벗 보기</button>
+<dl>
+<dt>상태</dt><dd id="status"></dd>
+<dt>파일</dt><dd id="file"></dd>
+<dt>크기</dt><dd id="bytes"></dd>
+<dt>태그</dt><dd id="tags"></dd>
+<dt>메시</dt><dd id="meshes">-</dd>
+<dt>재질</dt><dd id="materials">-</dd>
+<dt>애니메이션</dt><dd id="animations">-</dd>
+<dt>바운드</dt><dd id="bounds">-</dd>
+<dt>메모</dt><dd id="reason">-</dd>
+</dl>
+<p class="muted">회색/무채색 재질, 과도한 파일 크기, 비정상 바운드, 스킨 모델의 깨진 기본 포즈는 <b>review</b> 또는 <b>blocked</b> 상태로 유지합니다.</p>
+</aside>
+<main><canvas id="view"></canvas><div id="hint">드래그: 회전 · 휠: 확대/축소</div></main>
+</div>
+<script type="module" src="shared-3d-review.js?v=1"></script>
+</body>
+</html>
