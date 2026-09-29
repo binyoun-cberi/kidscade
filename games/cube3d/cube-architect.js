@@ -119,20 +119,51 @@ function roundedRect(ctx,x,y,w,h,r){
 const blockGeo=new THREE.BoxGeometry(.96,.96,.96);
 const edgeGeo=new THREE.EdgesGeometry(blockGeo);
 const challengeMat=new THREE.MeshStandardMaterial({color:0xf2d19a,roughness:.78});
-const CHALLENGE_SIZE=16,CHALLENGE_HALF=CHALLENGE_SIZE/2,CHALLENGE_MAX_Y=11;
+const CHALLENGE_SIZE=18,CHALLENGE_HALF=CHALLENGE_SIZE/2,CHALLENGE_MAX_Y=13;
 let challengeBlocks=new Map(),challengeMeshes=[],challengePlane=null,challengeGhost=null,targetGhosts=[],missionIndex=0;
-let challengeYaw=0,challengePitch=0,challengeKeys={};
-function addCuboid(arr,x0,z0,w,d,h){
-  for(let x=x0;x<x0+w;x++)for(let z=z0;z<z0+d;z++)for(let y=0;y<h;y++)arr.push([x,y,z]);
+let challengeYaw=0,challengePitch=0,challengeKeys={},challengeDifficulty='easy';
+
+function makeChallengeShape(build){
+  const map=new Map();
+  const add=(x,y,z)=>map.set(challengeKey(x,y,z),[x,y,z]);
+  const box=(x0,z0,w,d,h,y0=0)=>{
+    for(let x=x0;x<x0+w;x++)for(let z=z0;z<z0+d;z++)for(let y=y0;y<y0+h;y++)add(x,y,z);
+  };
+  const remove=(x,y,z)=>map.delete(challengeKey(x,y,z));
+  build({add,box,remove});
+  return Array.from(map.values());
 }
-const challengeMissions=(()=>{
-  const a=[];
-  let b=[];addCuboid(b,1,1,3,2,2);a.push({name:'작은 도서관',tip:'가로·세로·높이를 먼저 살펴보세요.',blocks:b});
-  b=[];addCuboid(b,1,1,4,2,1);addCuboid(b,2,1,2,2,2);a.push({name:'계단형 전시관',tip:'높이가 달라지는 곳을 찾아보세요.',blocks:b});
-  b=[];addCuboid(b,1,1,4,3,1);addCuboid(b,1,1,1,3,3);a.push({name:'L자 전망대',tip:'보이는 모서리가 어디에서 꺾이는지 보세요.',blocks:b});
-  b=[];addCuboid(b,1,1,4,1,3);addCuboid(b,1,2,1,2,3);addCuboid(b,4,2,1,2,2);a.push({name:'큐브 게이트',tip:'앞쪽 기둥과 뒤쪽 기둥의 높이를 비교하세요.',blocks:b});
-  return a;
-})();
+const challengeMissionSets={
+  easy:[
+    {name:'교과서 1 · 기본 직육면체',kind:'교과서형',tip:'가로 4칸, 세로 3칸, 높이 2칸의 기본 직육면체예요.',blocks:makeChallengeShape(({box})=>box(2,2,4,3,2))},
+    {name:'교과서 2 · 2층 직육면체',kind:'교과서형',tip:'아래층의 크기와 위층이 시작되는 위치를 비교해 보세요.',blocks:makeChallengeShape(({box})=>{box(2,2,5,3,1);box(3,2,3,3,2,1)})},
+    {name:'교과서 3 · 계단 모양',kind:'교과서형',tip:'높이가 1칸, 2칸, 3칸으로 한 단계씩 올라가요.',blocks:makeChallengeShape(({box})=>{box(2,2,1,3,1);box(3,2,1,3,2);box(4,2,1,3,3)})},
+    {name:'교과서 4 · ㄱ자 건물',kind:'교과서형',tip:'위에서 보았을 때 ㄱ자가 되도록 두 직육면체가 만나요.',blocks:makeChallengeShape(({box})=>{box(2,2,5,2,2);box(2,4,2,3,2)})},
+    {name:'교과서 5 · 문이 있는 다리',kind:'교과서형',tip:'양쪽 기둥의 높이가 같고, 위쪽 직육면체가 두 기둥을 연결해요.',blocks:makeChallengeShape(({box})=>{box(2,2,1,3,4);box(6,2,1,3,4);box(3,2,3,3,1,3)})},
+    {name:'교과서 6 · 높이가 다른 두 건물',kind:'교과서형',tip:'같은 바닥 위에 높이가 다른 두 덩어리가 붙어 있어요.',blocks:makeChallengeShape(({box})=>{box(2,2,5,3,1);box(2,2,2,3,3,1);box(5,2,2,3,2,1)})}
+  ],
+  hard:[
+    {name:'랜드마크 · 타지마할',kind:'랜드마크형',tip:'가운데 돔처럼 솟은 부분과 네 모서리의 높은 탑이 핵심이에요.',blocks:makeChallengeShape(({box})=>{box(5,6,7,5,1);box(7,7,3,3,2,1);box(7,7,3,3,1,3);box(8,8,1,1,2,4);[[5,6],[11,6],[5,10],[11,10]].forEach(([x,z])=>box(x,z,1,1,5,1))})},
+    {name:'랜드마크 · 사그라다 파밀리아',kind:'랜드마크형',tip:'여러 높이의 첨탑과 중앙의 가장 높은 탑을 먼저 찾으세요.',blocks:makeChallengeShape(({box})=>{box(5,6,7,5,1);box(7,7,3,3,2,1);[[5,6,6],[7,6,7],[9,6,7],[11,6,6]].forEach(([x,z,h])=>box(x,z,1,1,h,1));box(8,8,1,1,7,3);box(6,10,1,1,5,1);box(10,10,1,1,5,1)})},
+    {name:'랜드마크 · 에펠탑',kind:'랜드마크형',tip:'아래는 넓게 벌어지고 위로 갈수록 폭이 좁아지는 구조예요.',blocks:makeChallengeShape(({box})=>{[[5,5],[11,5],[5,11],[11,11]].forEach(([x,z])=>box(x,z,1,1,3));box(6,6,6,1,1,3);box(6,11,6,1,1,3);box(6,7,1,4,1,3);box(11,7,1,4,1,3);[[7,7],[10,7],[7,10],[10,10]].forEach(([x,z])=>box(x,z,1,1,2,4));box(7,7,4,4,1,6);box(8,8,2,2,3,7);box(8,8,1,1,2,10)})},
+    {name:'랜드마크 · 타워 브리지',kind:'랜드마크형',tip:'긴 다리 상판과 좌우의 쌍둥이 탑, 위쪽 연결 구조를 나눠서 보세요.',blocks:makeChallengeShape(({box})=>{box(3,8,12,2,1,1);[5,12].forEach(x=>{box(x,7,2,4,5);box(x,8,2,2,1,5)});box(7,7,5,1,1,4);box(7,10,5,1,1,4)})},
+    {name:'랜드마크 · 히메지성',kind:'랜드마크형',tip:'아래층은 넓고 위층으로 갈수록 좁아지는 여러 단의 성곽을 살펴보세요.',blocks:makeChallengeShape(({box})=>{box(5,6,8,6,1);box(6,7,6,4,1,1);box(7,7,4,4,1,2);box(7,8,4,2,2,3);box(8,8,2,2,2,5);[[5,6],[11,6],[5,10],[11,10]].forEach(([x,z])=>box(x,z,2,2,2,1))})},
+    {name:'랜드마크 · 앙코르와트',kind:'랜드마크형',tip:'넓은 기단 위에 다섯 개의 탑이 배치된 대칭 구조를 찾아보세요.',blocks:makeChallengeShape(({box})=>{box(4,7,10,5,1);box(6,8,6,3,1,1);[[6,8,4],[10,8,4],[6,10,4],[10,10,4],[8,9,6]].forEach(([x,z,h])=>box(x,z,1,1,h,2))})}
+  ]
+};
+function activeChallengeMissions(){return challengeMissionSets[challengeDifficulty]}
+function currentChallengeMission(){return activeChallengeMissions()[missionIndex]}
+function updateChallengeDifficultyUI(){
+  $('challengeEasy')?.classList.toggle('active',challengeDifficulty==='easy');
+  $('challengeHard')?.classList.toggle('active',challengeDifficulty==='hard');
+  const total=activeChallengeMissions().length;
+  if($('challengeCourseLabel'))$('challengeCourseLabel').textContent=(challengeDifficulty==='easy'?'쉬움 · 교과서형 ':'어려움 · 랜드마크형 ')+(missionIndex+1)+'/'+total;
+  modeTitle('설계도 챌린지',challengeDifficulty==='easy'?'쉬움 · 교과서 겨냥도':'어려움 · 랜드마크 복원');
+}
+function setChallengeDifficulty(level){
+  if(level===challengeDifficulty)return;
+  challengeDifficulty=level;missionIndex=0;clearChallenge();updateChallengeDifficultyUI();drawBlueprint();
+}
 function challengeKey(x,y,z){return x+','+y+','+z}
 function addChallengeBlock(x,y,z,quiet){
   if(x<0||x>=CHALLENGE_SIZE||z<0||z>=CHALLENGE_SIZE||y<0||y>CHALLENGE_MAX_Y)return false;
@@ -149,11 +180,11 @@ function clearChallenge(){
   challengeMeshes.forEach(m=>scene.remove(m));challengeMeshes=[];challengeBlocks.clear();clearTargetGhosts();$('resultCard').classList.add('hidden');updateChallengeStats();
 }
 function updateChallengeStats(){
-  const target=challengeMissions[missionIndex].blocks.length;$('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
+  const target=currentChallengeMission().blocks.length;$('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
 }
 function drawBlueprint(){
-  const c=$('blueprintCanvas'),ctx=c.getContext('2d'),m=challengeMissions[missionIndex];ctx.clearRect(0,0,c.width,c.height);
+  const c=$('blueprintCanvas'),ctx=c.getContext('2d'),m=currentChallengeMission();ctx.clearRect(0,0,c.width,c.height);
   ctx.fillStyle='#eaf5ff';ctx.fillRect(0,0,c.width,c.height);
   ctx.strokeStyle='rgba(74,110,150,.12)';ctx.lineWidth=1;
   for(let x=0;x<c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
@@ -185,8 +216,8 @@ function initChallenge(){
   const grid=new THREE.GridHelper(CHALLENGE_SIZE,CHALLENGE_SIZE,0x5269c7,0xa9c2da);grid.position.y=.01;scene.add(grid);
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];drawBlueprint();updateChallengeStats();
-  $('actionCheck').onclick=checkChallenge;$('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%challengeMissions.length;clearChallenge();drawBlueprint()};
-  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(challengeMissions[missionIndex].tip);
+  $('actionCheck').onclick=checkChallenge;$('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(currentChallengeMission().tip);
   $('challengeLockNotice').classList.remove('hidden');$('challengeLockNotice').onclick=()=>canvas.requestPointerLock();
   showTutorial('challenge');
 }
@@ -225,7 +256,7 @@ function rotateShapeY(points,turn){
 function bestChallengeMatch(){
   const userPoints=Array.from(challengeBlocks.values()).map(m=>[m.userData.cx,m.userData.cy,m.userData.cz]);
   const user=normalizedShape(userPoints);
-  const targetRaw=challengeMissions[missionIndex].blocks.map(p=>p.slice());
+  const targetRaw=currentChallengeMission().blocks.map(p=>p.slice());
   let best={common:0,union:Infinity,score:0,target:null,targetKeys:new Set(),user:user,turn:0};
   for(let turn=0;turn<4;turn++){
     const target=normalizedShape(rotateShapeY(targetRaw,turn));
@@ -1164,8 +1195,8 @@ document.addEventListener('keydown',e=>{
     challengeKeys[e.code]=true;
     if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight')e.preventDefault();
     if(e.code==='KeyC')checkChallenge();
-    if(e.code==='KeyH')toast(challengeMissions[missionIndex].tip);
-    if(e.code==='KeyN'){missionIndex=(missionIndex+1)%challengeMissions.length;clearChallenge();drawBlueprint()}
+    if(e.code==='KeyH')toast(currentChallengeMission().tip);
+    if(e.code==='KeyN'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
     return;
   }
   if(mode!=='free')return;
