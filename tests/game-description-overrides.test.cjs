@@ -57,7 +57,17 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /normalizedShape/);
   assert.match(architect, /rotateShapeY/);
   assert.match(architect, /updateChallengeFly/);
+  assert.match(architect, /BLOCK_DEFS/);
+  assert.match(architect, /terrainHeight/);
+  assert.match(architect, /simulateSand/);
+  assert.match(architect, /simulateLiquids/);
+  assert.match(architect, /reactFluidsNear/);
+  assert.match(architect, /simulateFire/);
+  assert.match(architect, /simulatePlants/);
+  assert.match(architect, /toggleDoorAt/);
   assert.match(blocks, /challengeFlyHud/);
+  assert.match(blocks, /blockInventory/);
+  assert.match(blocks, /worldClock/);
   assert.match(architect, /window\.CubeArchitect/);
   assert.match(architect, /^\(\(\)=>\{/);
   assert.doesNotMatch(architect, /OrbitControls/);
