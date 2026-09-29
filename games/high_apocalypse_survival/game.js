@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { shared3DPath } from '../../assets/game/manifest/shared-community-3d.js';
+import { shared3DPath, shared3DIsApproved, shared3DProfile } from '../../assets/game/manifest/shared-community-3d.js';
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), damp=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
@@ -22,6 +22,23 @@ const ART={
  buildings:'../../assets/game/3d/buildings/kenney-building-kit/'
 };
 const SHARED=id=>shared3DPath(id,'../../');
+const AVATAR_PREVIEW_KEY='kidscade-avatar-studio-preview';
+function kidscadeHost(){try{if(parent&&parent!==window&&parent.location.origin===location.origin)return parent}catch(_){}return window}
+function safeGet(fn,f=''){try{return fn()}catch(_){return f}}
+function currentAvatarSource(){
+ const h=kidscadeHost();
+ const saved=safeGet(()=>localStorage.getItem(AVATAR_PREVIEW_KEY),'')||safeGet(()=>h.localStorage.getItem(AVATAR_PREVIEW_KEY),'');
+ if(saved&&saved.startsWith('data:image'))return saved;
+ const apis=[safeGet(()=>window.KidscadeAvatarShop,null),safeGet(()=>h.KidscadeAvatarShop,null),safeGet(()=>h.document?.getElementById('kidscade-avatar-studio-frame')?.contentWindow?.KidscadeAvatarShop,null)];
+ const api=apis.find(v=>v&&typeof v.renderPreviewFrame==='function');
+ const frame=safeGet(()=>api?.renderPreviewFrame?.('idle',0),'');
+ if(frame&&frame.startsWith('data:image'))return frame;
+ const svg=safeGet(()=>typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG():'','');
+ if(!svg)return '';
+ const embedded=(svg.match(/<image[^>]+href=["']([^"']+)["']/i)||[])[1];
+ if(embedded&&embedded.startsWith('data:image'))return embedded;
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
 const ITEMS={
   wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
   food:['통조림','🥫'],potato:['감자','🥔'],cookedPotato:['구운 감자','🍠'],spoiledFood:['상한 음식','🤢'],cloth:['천','🧵'],
@@ -210,7 +227,21 @@ function createSkyDome(){
  const geo=new THREE.SphereGeometry(165,28,16),mat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color(0x4f8fb6)},horizon:{value:new THREE.Color(0xbfdde3)},ground:{value:new THREE.Color(0x8ea898)}},vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 horizon;uniform vec3 ground;void main(){float h=normalize(vP).y;vec3 c=h>0.0?mix(horizon,top,smoothstep(0.0,.75,h)):mix(horizon,ground,smoothstep(0.0,-.5,h));gl_FragColor=vec4(c,1.0);}'});const sky=new THREE.Mesh(geo,mat);sky.renderOrder=-10;scene.add(sky);scene.userData.sky=sky
 }
 function placeWorldModel(url,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0}={}){
- model(url).then(o=>{if(!o)return;normalize(o,target);o.position.x=x;o.position.z=z;o.position.y=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)}); 
+ model(url).then(o=>{if(!o)return;normalize(o,target);o.position.x=x;o.position.z=z;o.position.y=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
+}
+function normalizeShared(o,target){
+ const b=new THREE.Box3().setFromObject(o),sz=b.getSize(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z)||1;
+ o.scale.multiplyScalar(target/mx);
+ const b2=new THREE.Box3().setFromObject(o),c=b2.getCenter(new THREE.Vector3());
+ o.position.x-=c.x;o.position.z-=c.z;o.position.y-=b2.min.y;
+ o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+ return o;
+}
+function placeSharedWorldModel(id,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0}={}){
+ const profile=shared3DProfile(id);
+ if(!shared3DIsApproved(id)){console.warn('[Kidscade 3D QA] skipped unverified asset',id,profile.reason||'');return}
+ const url=SHARED(id);if(!url)return;
+ model(url).then(o=>{if(!o)return;normalizeShared(o,target);o.position.x+=x;o.position.z+=z;o.position.y+=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
 }
 function upgradePerson(group,fallback,file){
  model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
@@ -229,10 +260,10 @@ function decorateWorld(){
  placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/tent-canvas.glb',{x:-9,z:8,target:3.8,rot:.3});
  placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/box-large.glb',{x:-6,z:8,target:1.5,rot:-.3});
  // 새 공용 자산: 학교 야영지의 생활 흔적과 탈출 실패 흔적을 강화한다.
- placeWorldModel(SHARED('prop.well'),{x:-14,z:15,target:2.5,rot:.35});
- placeWorldModel(SHARED('prop.woodLog'),{x:-11,z:6,target:2.2,rot:1.1});
- placeWorldModel(SHARED('prop.woodLog'),{x:-8,z:5.4,target:1.9,rot:-.6});
- placeWorldModel(SHARED('vehicle.schoolBus'),{x:8.6,z:21,target:6.1,rot:Math.PI*.52});
+ placeSharedWorldModel('prop.well',{x:-14,z:15,target:2.5,rot:.35});
+ placeSharedWorldModel('prop.woodLog',{x:-11,z:6,target:2.2,rot:1.1});
+ placeSharedWorldModel('prop.woodLog',{x:-8,z:5.4,target:1.9,rot:-.6});
+ // schoolBus is intentionally quarantined until its material pass is verified.
 
  // 도로는 검은 띠가 아니라 반복되는 도로 타일과 도시 시설로 보이게 한다.
  for(let z=-52;z<=52;z+=8)placeWorldModel(ART.roads+'road-straight.glb',{x:16,z,target:7.9,y:.035});
@@ -259,9 +290,9 @@ function decorateWorld(){
  [[43,-38,'fence.glb',3.6,.1],[51,-38,'fence-piece.glb',3.4,-.1],[59,-36,'power-box.glb',1.7,.2],[40,-43,'trah-bag-grey.glb',1.4,.4],[52,-31,'cone.glb',1.2,.1]]
   .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
  // 폐허의 실루엣을 멀리서도 읽을 수 있도록 높은 물탑과 외곽 주택을 추가한다.
- placeWorldModel(SHARED('prop.waterTower'),{x:62,z:-40,target:8.8,rot:.15});
- placeWorldModel(SHARED('building.house'),{x:35,z:-51,target:8.2,rot:-.2});
- placeWorldModel(SHARED('prop.crate'),{x:42,z:-29,target:1.45,rot:.18});
+ placeSharedWorldModel('prop.waterTower',{x:62,z:-40,target:8.8,rot:.15});
+ // unverified house model is not auto-placed; existing tested city pack supplies the ruined skyline.
+ placeSharedWorldModel('prop.crate',{x:42,z:-29,target:1.45,rot:.18});
 
  // 강둑: 직선 수로처럼 보이지 않도록 양안의 식생과 돌을 불규칙하게 섞는다.
  const bankZ=[-55,-43,-31,-18,-7,6,19,33,47,59];
@@ -290,11 +321,8 @@ function decorateWorld(){
   [-36,31,'nature.mossyRockA',2.1,.2],[-43,25,'nature.mossyRockB',2.3,1.1],[-51,38,'nature.rock',2.0,.5],
   [-26,35,'nature.grass',1.7,.3],[-40,17,'nature.plant',1.8,.7],[-49,45,'nature.mushroomA',1.15,.1],[-33,19,'nature.mushroomB',1.2,.8]
  ];
- sharedForest.forEach(([x,z,id,t,r])=>placeWorldModel(SHARED(id),{x,z,target:t,rot:r}));
- // 야생동물은 장식 개체로 먼저 사용한다. 게임 규칙과 충돌하지 않고 세계가 살아 있다는 인상을 준다.
- placeWorldModel(SHARED('animal.deer'),{x:-44,z:10,target:2.7,rot:.7});
- placeWorldModel(SHARED('animal.stag'),{x:-55,z:6,target:3.0,rot:-.4});
- placeWorldModel(SHARED('animal.husky'),{x:-18,z:20,target:2.1,rot:1.4});
+ sharedForest.forEach(([x,z,id,t,r])=>placeSharedWorldModel(id,{x,z,target:t,rot:r}));
+ // Large animated animals are quarantined until skinned-model cloning/rest-pose QA is complete.
 }
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
 function label(text,x,y,z){const s=makeLabel(text);s.position.set(x,y,z);groups.dynamic.add(s);return s}
@@ -311,10 +339,17 @@ function spawnResource(type,x,z){
  const labels={tree:'나무 채집',rock:'돌 채집',forage:'야생 감자 채집'};addInteract(r,type,labels[type]||'채집');
  const seed=Math.abs(Math.round(x*17+z*31));
  const assetId=type==='tree'?(seed%3===0?'nature.pineTreeA':seed%3===1?'nature.commonTreeA':'nature.commonTreeB'):type==='rock'?(seed%2?'nature.mossyRockA':'nature.rock'):'nature.plant';
- model(SHARED(assetId)).then(o=>{if(!o)return;r.clear();normalize(o,type==='tree'?5.2:type==='rock'?1.65:1.7);o.rotation.y=(seed%628)/100;r.add(o)})
+ if(!shared3DIsApproved(assetId))return;
+ model(SHARED(assetId)).then(o=>{if(!o)return;r.clear();normalizeShared(o,type==='tree'?5.2:type==='rock'?1.65:1.7);o.rotation.y=(seed%628)/100;r.add(o)})
 }
-function createAvatar(){let src='';try{const h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;if(typeof h.renderAvatarSVG==='function')src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(h.renderAvatarSVG())}catch(_){}
- if(src)new THREE.TextureLoader().load(src,t=>{t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.5,3.35,1);s.position.y=1.6;player.visual.add(s);player.sprite=s},undefined,avatarFallback);else avatarFallback()
+function createAvatar(){
+ const src=currentAvatarSource();
+ if(!src){avatarFallback();return}
+ new THREE.TextureLoader().load(src,t=>{
+   t.colorSpace=THREE.SRGBColorSpace;
+   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,alphaTest:.02}));
+   sprite.scale.set(2.65,3.55,1);sprite.position.y=1.72;player.visual.add(sprite);player.sprite=sprite;
+ },undefined,avatarFallback)
 }
 function avatarFallback(){
  const capsule=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.25,5,8),new THREE.MeshStandardMaterial({color:0x4aa96c,roughness:.7}));capsule.position.y=1.25;player.visual.add(capsule);
@@ -540,5 +575,5 @@ function finish(){if(game.finished)return;game.finished=true;save();running=fals
 async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
 function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
-async function boot(){init3D();ui.loadingText.textContent='공용 3D 숲·폐허·생존 자산을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
+async function boot(){init3D();ui.loadingText.textContent='검수된 3D 숲·폐허 자산과 키즈케이드 아바타를 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
