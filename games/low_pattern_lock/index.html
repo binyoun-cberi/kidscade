@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>패턴 락</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <div class="phone" aria-label="패턴 락 게임">
+    <header class="statusbar" aria-hidden="true">
+      <span id="clock">10:09</span>
+      <div class="status-icons"><span>●●●</span><span>◔</span><span class="battery">87</span></div>
+    </header>
+
+    <section id="menuScreen" class="screen menu-screen">
+      <div class="hero-lock" aria-hidden="true"><div class="lock-shackle"></div><div class="lock-body">✓</div></div>
+      <p class="eyebrow">SW · 알고리즘 퍼즐</p>
+      <h1>패턴 락</h1>
+      <p class="hero-copy">점을 이어 잠금을 풀고 <b>순차 · 조건 · 반복</b> 알고리즘을 익혀요.</p>
+
+      <div class="progress-card">
+        <div><span class="mini-label">진행도</span><strong id="progressText">0 / 12</strong></div>
+        <div><span class="mini-label">모은 별</span><strong><span id="starText">0</span> ★</strong></div>
+      </div>
+
+      <div class="concepts" aria-label="학습 개념">
+        <div class="concept"><span>1</span><b>순차</b><small>순서대로 이동</small></div>
+        <div class="concept"><span>2</span><b>조건</b><small>조건 보고 선택</small></div>
+        <div class="concept"><span>3</span><b>반복</b><small>같은 명령 묶기</small></div>
+      </div>
+
+      <div class="level-select-wrap">
+        <div class="section-head"><b>잠금 단계</b><button id="helpBtn" class="text-btn" type="button">게임 방법</button></div>
+        <div id="levelGrid" class="level-grid" aria-label="단계 선택"></div>
+      </div>
+
+      <button id="continueBtn" class="primary-btn" type="button">이어하기</button>
+      <button id="freeBtn" class="ghost-btn" type="button">내 패턴 만들기</button>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen hidden">
+      <div class="game-head">
+        <button id="backBtn" class="icon-btn" type="button" aria-label="처음 화면으로">‹</button>
+        <div><span id="levelBadge" class="level-badge">순차</span><strong id="levelTitle">첫 번째 잠금</strong></div>
+        <div id="levelCounter" class="counter">1 / 12</div>
+      </div>
+
+      <div class="mission-card">
+        <p id="missionText">시작점에서 출발해 모든 점을 지나 끝점으로 가세요.</p>
+        <div id="commandCard" class="command-card hidden"></div>
+      </div>
+
+      <div id="boardWrap" class="board-wrap">
+        <svg class="trace-layer" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+          <polyline id="traceShadow" class="trace-shadow" points=""></polyline>
+          <polyline id="trace" class="trace" points=""></polyline>
+        </svg>
+        <div id="board" class="board" role="application" aria-label="패턴 잠금판"></div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="algorithm-panel">
+        <div class="panel-title"><span>내 알고리즘</span><small id="moveCount">0칸 이동</small></div>
+        <div id="algorithmText" class="algorithm-text">시작점을 눌러 보세요.</div>
+      </div>
+
+      <div class="controls">
+        <button id="undoBtn" type="button">↶ 되돌리기</button>
+        <button id="resetBtn" type="button">↻ 다시</button>
+        <button id="hintBtn" type="button">💡 힌트</button>
+      </div>
+      <button id="savePatternBtn" class="primary-btn hidden" type="button" disabled>이 패턴을 암호로 저장</button>
+    </section>
+
+    <section id="tutorial" class="overlay hidden" aria-modal="true" role="dialog">
+      <div class="modal tutorial-modal">
+        <div class="tutorial-demo" aria-hidden="true">
+          <span class="demo-dot a"></span><span class="demo-dot b"></span><span class="demo-dot c"></span>
+          <span class="demo-line l1"></span><span class="demo-line l2"></span>
+        </div>
+        <p class="eyebrow">게임 방법</p>
+        <h2>손가락으로 점을 이어요</h2>
+        <div class="tutorial-steps">
+          <p><b>① 시작점</b>에서 손가락이나 마우스를 누르고 이동해요.</p>
+          <p><b>② 한 번에 한 칸</b>씩 상하좌우 또는 대각선으로 움직여요.</p>
+          <p><b>③ 모든 점</b>을 지나 마지막에 끝점에 도착하면 잠금 해제!</p>
+        </div>
+        <p class="keyboard-tip">키보드: <kbd>Space</kbd> 시작 · 방향키 이동 · <kbd>Q E Z C</kbd> 대각선 · <kbd>Backspace</kbd> 되돌리기</p>
+        <button id="tutorialCloseBtn" class="primary-btn" type="button">알겠어요!</button>
+      </div>
+    </section>
+
+    <section id="successOverlay" class="overlay hidden" aria-modal="true" role="dialog">
+      <div class="modal result-modal">
+        <div id="resultLock" class="result-lock" aria-hidden="true">🔓</div>
+        <p class="eyebrow" id="resultEyebrow">잠금 해제</p>
+        <h2 id="resultTitle">성공!</h2>
+        <div id="earnedStars" class="earned-stars">★★★</div>
+        <p id="resultMessage" class="result-message"></p>
+        <div class="result-algorithm"><span>알고리즘</span><strong id="resultAlgorithm"></strong></div>
+        <p id="conceptExplain" class="concept-explain"></p>
+        <button id="nextBtn" class="primary-btn" type="button">다음 잠금</button>
+        <button id="resultMenuBtn" class="ghost-btn" type="button">처음 화면</button>
+      </div>
+      <div id="burst" class="burst" aria-hidden="true"></div>
+    </section>
+  </div>
+</div>
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="low_pattern_lock" data-title="패턴 락" data-shell="true" data-mute="true" data-orientation="portrait"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>
