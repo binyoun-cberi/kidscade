@@ -738,7 +738,15 @@ const rows=[
   ]
 ];
 
-export const SHARED_3D=Object.freeze(Object.fromEntries(rows.map(([id,file,bytes,tags,creator,optimize=false])=>[id,Object.freeze({id,path:'assets/'+file,bytes,tags:Object.freeze(tags),creator,optimize})])));
+function usageMeta(id,bytes,tags){
+  const animatedCandidate=tags.includes('animal')||tags.includes('npc')||tags.includes('enemy');
+  const loadPolicy=bytes>4_000_000?'manual':bytes>900_000?'lazy-heavy':bytes>250_000?'lazy':'normal';
+  const maxInstances=bytes>1_800_000?1:bytes>900_000?2:bytes>350_000?4:bytes>120_000?8:18;
+  return Object.freeze({loadPolicy,maxInstances,cloneMode:animatedCandidate?'skeleton-safe':'static',animatedCandidate});
+}
+export const SHARED_3D=Object.freeze(Object.fromEntries(rows.map(([id,file,bytes,tags,creator,optimize=false])=>[id,Object.freeze({
+  id,path:'assets/'+file,bytes,tags:Object.freeze(tags),creator,optimize,...usageMeta(id,bytes,tags)
+})])));
 
 export const SHARED_3D_GROUPS=Object.freeze({
   "apocalypse": [
@@ -851,6 +859,7 @@ export function shared3DGroup(name){return (SHARED_3D_GROUPS[name]||[]).map(getS
 /*
  * Runtime QA policy.
  * "approved" means safe for automatic placement after center/ground normalization.
+ * "repair" means usable only through a registered runtime material/pivot repair preset.
  * "review" means keep in the catalog but do not auto-place until visually checked in its target game.
  * "blocked" means never load automatically.
  */
