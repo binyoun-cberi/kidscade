@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=7/);
+  assert.match(html,/game\.js\?v=9/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -82,10 +82,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v7',()=>{
+test('game is registered in catalog metadata v9',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=7');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=9');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -102,7 +102,18 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
-  for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','vehicle.schoolBus','animal.deer']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=8/);
-  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=8$/);
+  for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
+  assert.match(html,/game\.js\?v=9/);
+  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=9$/);
+});
+
+
+test('apocalypse quarantines visually unverified shared assets and restores the Kidscade avatar first',()=>{
+  assert.match(js,/shared3DIsApproved/);
+  assert.match(js,/normalizeShared/);
+  assert.match(js,/currentAvatarSource/);
+  assert.match(js,/kidscade-avatar-studio-preview/);
+  assert.doesNotMatch(js,/placeSharedWorldModel\('vehicle\.schoolBus'/);
+  assert.doesNotMatch(js,/placeSharedWorldModel\('building\.house'/);
+  assert.doesNotMatch(js,/placeSharedWorldModel\('animal\.deer'/);
 });
