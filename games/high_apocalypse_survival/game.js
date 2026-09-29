@@ -468,8 +468,23 @@ function updateWeather(dt){
  const w=getWeather(),flood=game.phase==='survival'&&game.day>=7?clamp((game.time-420)/600,0,1):0;game.floodLevel=damp(game.floodLevel||0,flood,1.1,dt);
  const river=scene.userData.river;if(river){river.scale.x=damp(river.scale.x,1+game.floodLevel*.7,2.2,dt);river.position.y=damp(river.position.y,.08+game.floodLevel*.28,2.2,dt);river.material.opacity=.84+game.floodLevel*.1}
  ui.weather.textContent=w==='rain'?(game.phase==='survival'&&game.day>=7?'🌧 폭우 · 수위 '+Math.round(game.floodLevel*100)+'%':'🌧 비'):w==='cloud'?'☁ 흐림':'☀ 맑음';
- const t=w==='rain'?new THREE.Color(0x526b78):w==='cloud'?new THREE.Color(0x91a7ad):new THREE.Color(0x9ac8da);scene.background.lerp(t,dt*.35);scene.fog.color.copy(scene.background);scene.userData.sun.intensity=damp(scene.userData.sun.intensity,w==='rain'?.7:2.3,1.5,dt);
- if(w==='rain'){while(groups.weather.children.length<80){const r=new THREE.Mesh(new THREE.BoxGeometry(.025,.65,.025),new THREE.MeshBasicMaterial({color:0xb9def1,transparent:true,opacity:.5}));r.position.set(Math.random()*34-17,Math.random()*18+3,Math.random()*34-17);groups.weather.add(r)}for(const r of groups.weather.children){r.position.y-=dt*18;if(r.position.y<0)r.position.y=20;r.position.x=player.root.position.x+(r.position.x-player.root.position.x)*.96;r.position.z=player.root.position.z+(r.position.z-player.root.position.z)*.96}}else groups.weather.clear()
+
+ const hour=game.time/60,daylight=clamp(Math.sin(clamp((hour-5.4)/14.8,0,1)*Math.PI),0,1),weatherLight=w==='rain'?.42:w==='cloud'?.72:1;
+ const dayTop=new THREE.Color(0x4f8fb6),dayHorizon=new THREE.Color(0xbfdde3),nightTop=new THREE.Color(0x101a2d),nightHorizon=new THREE.Color(0x405261);
+ const top=nightTop.clone().lerp(dayTop,daylight),horizon=nightHorizon.clone().lerp(dayHorizon,daylight);
+ if(w==='cloud'){top.lerp(new THREE.Color(0x6d8189),.42);horizon.lerp(new THREE.Color(0x9baeb0),.35)}
+ if(w==='rain'){top.lerp(new THREE.Color(0x384d5b),.68);horizon.lerp(new THREE.Color(0x657982),.58)}
+ const bg=horizon.clone().lerp(top,.32);scene.background.lerp(bg,dt*.7);scene.fog.color.copy(scene.background);scene.fog.near=damp(scene.fog.near,w==='rain'?34:daylight<.25?42:52,1.2,dt);scene.fog.far=damp(scene.fog.far,w==='rain'?92:daylight<.25?100:132,1.2,dt);
+ const sun=scene.userData.sun,hemi=scene.userData.hemi;if(sun){sun.intensity=damp(sun.intensity,(.12+2.45*daylight)*weatherLight,1.7,dt);const a=((game.time-360)/900)*Math.PI;sun.position.set(Math.cos(a)*42,8+Math.sin(a)*46,Math.sin(a)*30)}
+ if(hemi)hemi.intensity=damp(hemi.intensity,.48+1.35*daylight*(w==='rain'?.7:1),1.4,dt);
+ const sky=scene.userData.sky?.material?.uniforms;if(sky){sky.top.value.lerp(top,dt*.65);sky.horizon.value.lerp(horizon,dt*.65);sky.ground.value.lerp(new THREE.Color(daylight<.25?0x334137:0x8ea898),dt*.5)}
+ if(river){const waterTarget=new THREE.Color(daylight<.25?0x244d63:w==='rain'?0x47727c:0x4b9fb1);river.material.color.lerp(waterTarget,dt*.7)}
+ const lamp=scene.userData.campLamp;if(lamp){const on=game.flags.power&&game.powerLoads?.light&&powerUse()<=game.powerKw+.001;lamp.intensity=damp(lamp.intensity,on?(1.2+(1-daylight)*4.2):0,4,dt)}
+
+ if(w==='rain'){
+  while(groups.weather.children.length<90){const r=new THREE.Mesh(new THREE.BoxGeometry(.025,.72,.025),new THREE.MeshBasicMaterial({color:0xb9def1,transparent:true,opacity:.48}));r.position.set(player.root.position.x+Math.random()*34-17,Math.random()*18+3,player.root.position.z+Math.random()*34-17);groups.weather.add(r)}
+  for(const r of groups.weather.children){r.position.y-=dt*19;if(r.position.y<terrainHeight(r.position.x,r.position.z)){r.position.y=player.root.position.y+18;r.position.x=player.root.position.x+Math.random()*34-17;r.position.z=player.root.position.z+Math.random()*34-17}}
+ }else groups.weather.clear()
 }
 function updateNeeds(dt){game.playSeconds+=dt;game.time+=dt*(1440/DAY_SECONDS);if(game.time>=1430){game.time=1430;if(missionDone()&&game.day<7&&Math.floor(game.playSeconds)%8===0)toast('오늘의 목표를 마쳤습니다. 캠프나 쉼터에서 쉬어 다음 날로 넘어가세요.')}
  const move=player.speed>1;game.hunger=clamp(game.hunger-dt*(move?.055:.035),0,100);game.thirst=clamp(game.thirst-dt*(move?.085:.052),0,100);const s=placed.find(p=>p.userData.interactable?.building==='shelter'),covered=s&&player.root.position.distanceTo(s.position)<4.8,target=getWeather()==='rain'&&!covered?35.5:36.6;game.temp=damp(game.temp,target,.05,dt);if(game.hunger<=0||game.thirst<=0||game.temp<35.2)game.health=clamp(game.health-dt*.7,0,100);else if(game.hunger>40&&game.thirst>40)game.health=clamp(game.health+dt*(.025+.025*jobPower('medic')),0,100);if(game.health<=0){game.health=60;game.hunger=Math.max(25,game.hunger);game.thirst=Math.max(25,game.thirst);player.root.position.copy(CAMP);toast('구조되었습니다. 발견한 지식은 유지됩니다. 캠프로 돌아왔습니다.','danger',4)}derived()}
