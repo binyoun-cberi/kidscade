@@ -705,18 +705,45 @@ function freeCenterHit(max=6.5){
   const hits=raycaster.intersectObjects(worldInteractables,false);return hits.find(h=>h.distance<=max)||null;
 }
 function placementTarget(hit){
-  if(!hit||!hit.face)return null;
-  const d=hit.object.userData,n=hit.face.normal;if(!d.worldBlock)return null;
-  return {x:d.gx+Math.round(n.x),y:d.gy+Math.round(n.y),z:d.gz+Math.round(n.z)};
+  if(!hit||!hit.face||!hit.object.userData?.worldBlock)return null;
+  const n=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+  return {
+    x:blockCoordFromWorld(hit.point.x+n.x*.56),
+    y:Math.floor(hit.point.y+n.y*.56),
+    z:blockCoordFromWorld(hit.point.z+n.z*.56)
+  };
+}
+function facingFromYaw(){return ((Math.round(yaw/(Math.PI/2))%4)+4)%4}
+function placeCustomCuboid(p){
+  const dims=currentCuboidSpec.dims.map(v=>THREE.MathUtils.clamp(Math.round(v),1,4));
+  for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
+    const x=p.x+dx,y=p.y+dy,z=p.z+dz;if(!inWorld(x,y,z)||getBlock(x,y,z)){toast('직육면체가 들어갈 공간이 부족해요.');return false}
+  }
+  const anchor={type:'cuboid',dims:dims.slice(),faceColors:currentCuboidSpec.faceColors.slice(),playerBuilt:true};
+  setRawBlock(p.x,p.y,p.z,anchor);markEdit(p.x,p.y,p.z,anchor);
+  for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
+    if(dx===0&&dy===0&&dz===0)continue;const data={type:'cuboidPart',anchor:[p.x,p.y,p.z],playerBuilt:true};
+    setRawBlock(p.x+dx,p.y+dy,p.z+dz,data);markEdit(p.x+dx,p.y+dy,p.z+dz,data);
+  }
+  refreshBlockMesh(p.x,p.y,p.z);
+  for(let dx=-1;dx<=dims[0];dx++)for(let dy=-1;dy<=dims[1];dy++)for(let dz=-1;dz<=dims[2];dz++){
+    if(dx>=0&&dx<dims[0]&&dy>=0&&dy<dims[1]&&dz>=0&&dz<dims[2])continue;
+    refreshBlockMesh(p.x+dx,p.y+dy,p.z+dz);
+  }
+  return true;
 }
 function placeFreeBlock(hit){
   if(!hit)return;
-  if(hit.object.userData.type==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
+  const hitType=hit.object.userData.type;
+  if(hitType==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
+  if(hitType==='furnace'){toggleFurnace(true);return}
   const p=placementTarget(hit);if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&p.y>=Math.floor(camera.position.y-1.65)&&p.y<=Math.floor(camera.position.y))return;
-  if(selectedType==='door'){
+  const facing=facingFromYaw();
+  if(selectedType==='cuboid'){
+    if(!placeCustomCuboid(p))return;
+  }else if(selectedType==='door'){
     if(p.y>=WORLD_MAX_Y||getBlock(p.x,p.y+1,p.z)){toast('문을 놓으려면 위쪽 두 칸이 비어 있어야 해요.');return}
-    const facing=((Math.round(yaw/(Math.PI/2))%4)+4)%4;
     setWorldBlock(p.x,p.y,p.z,{type:'door',open:false,facing,playerBuilt:true},true);
     setWorldBlock(p.x,p.y+1,p.z,{type:'doorTop',baseY:p.y,playerBuilt:true},true);
   }else if(selectedType==='water'||selectedType==='lava'){
@@ -725,6 +752,8 @@ function placeFreeBlock(hit){
     setWorldBlock(p.x,p.y,p.z,{type:'fire',age:0,playerBuilt:true},true);
   }else if(selectedType==='sapling'){
     setWorldBlock(p.x,p.y,p.z,{type:'sapling',age:0,playerBuilt:true},true);
+  }else if(['stairs','roof','windowFrame','glassPane','furnace'].includes(selectedType)){
+    setWorldBlock(p.x,p.y,p.z,{type:selectedType,facing,playerBuilt:true},true);
   }else setWorldBlock(p.x,p.y,p.z,{type:selectedType,playerBuilt:true},true);
   sfx('place');saveFreeWorld();
 }
@@ -743,31 +772,110 @@ function toggleDoorAt(x,y,z){
   data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');return true;
 }
 function pickTargetBlock(){
-  const hit=freeCenterHit();if(!hit)return;let type=hit.object.userData.type;
-  if(type==='doorTop')type='door';if(!PLACEABLE_TYPES.includes(type))return;
+  const hit=freeCenterHit();if(!hit)return;let type=hit.object.userData.type,data=getBlock(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);
+  if(type==='doorTop')type='door';
+  if(type==='cuboid'&&data){currentCuboidSpec={dims:(data.dims||[1,1,1]).slice(),faceColors:(data.faceColors||DEFAULT_FACE_COLORS).slice()};syncShapeWorkbench()}
+  if(!PLACEABLE_TYPES.includes(type))return;
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
-function toggleXray(){
-  xray=!xray;
-  for(const mesh of freeMeshes){
-    if(!mesh.material||Array.isArray(mesh.material))continue;
-    const type=mesh.userData.type;if(type==='water'||type==='lava'||type==='fire')continue;
-    mesh.material.wireframe=xray;
+function setupShapeWorkbench(){
+  syncShapeWorkbench();
+  $('shapeToHotbar').onclick=()=>{
+    const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value].map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,4));
+    const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
+    currentCuboidSpec={dims,faceColors};hotbarTypes[selectedHotbarSlot]='cuboid';selectedType='cuboid';buildHotbar();toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');
+  };
+  $('facePaintColor').oninput=e=>{facePaintColor=e.target.value};
+}
+function syncShapeWorkbench(){
+  if(!$('shapeW'))return;
+  $('shapeW').value=currentCuboidSpec.dims[0];$('shapeH').value=currentCuboidSpec.dims[1];$('shapeD').value=currentCuboidSpec.dims[2];
+  currentCuboidSpec.faceColors.forEach((c,i)=>{if($('faceColor'+i))$('faceColor'+i).value=c});
+  $('facePaintColor').value=facePaintColor;
+}
+function paintLookedFace(){
+  const hit=freeCenterHit();if(!hit||hit.face?.materialIndex==null||hit.object.userData.shapeKind!=='cuboid'){toast('정육면체나 직육면체의 한 면을 바라보세요.');return}
+  const x=hit.object.userData.gx,y=hit.object.userData.gy,z=hit.object.userData.gz,data=getBlock(x,y,z);if(!data)return;
+  const fi=THREE.MathUtils.clamp(hit.face.materialIndex,0,5),base='#'+(blockDef(data).color||0xffffff).toString(16).padStart(6,'0');
+  const colors=(data.faceColors||Array(6).fill(base)).slice();colors[fi]=facePaintColor;data.faceColors=colors;
+  setWorldBlock(x,y,z,{...data,faceColors:colors},true);toast(FACE_NAMES[fi]+' 면을 '+facePaintColor+' 색으로 칠했어요.');sfx('place');saveFreeWorld();
+}
+function clearMathOverlay(){
+  if(mathOverlayGroup){scene.remove(mathOverlayGroup);mathOverlayGroup=null}updateMathOverlay.lastSig='';
+}
+function shapeInfoFromHit(hit){
+  if(!hit||hit.object.userData.shapeKind!=='cuboid')return null;
+  const x=hit.object.userData.gx,y=hit.object.userData.gy,z=hit.object.userData.gz,data=getBlock(x,y,z);if(!data)return null;
+  const dims=data.type==='cuboid'?(data.dims||[1,1,1]):[1,1,1];
+  return {x,y,z,dims,data,faceIndex:THREE.MathUtils.clamp(hit.face?.materialIndex??4,0,5)};
+}
+function buildTopologyOverlay(info){
+  clearMathOverlay();if(!info||mathLensMode===0)return;
+  const g=new THREE.Group(),[w,h,d]=info.dims,cx=info.x+(w-1)/2,cy=info.y+h/2,cz=info.z+(d-1)/2;
+  const vm=new Map();for(const v of CUBOID_TOPOLOGY.vertices)vm.set(v.id,new THREE.Vector3(cx+v.s[0]*w/2,cy+v.s[1]*h/2,cz+v.s[2]*d/2));
+  if(mathLensMode===1){
+    const pos=[];CUBOID_TOPOLOGY.edges.forEach(([a,b])=>{const p=vm.get(a),q=vm.get(b);pos.push(p.x,p.y,p.z,q.x,q.y,q.z)});
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    const lines=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xffe45c,depthTest:false,transparent:true,opacity:.98}));lines.renderOrder=20;g.add(lines);
+    $('mathLensBadge').textContent='수학 렌즈 · 모서리 12개';
+  }else if(mathLensMode===2){
+    const pos=[];CUBOID_TOPOLOGY.vertices.forEach(v=>{const p=vm.get(v.id);pos.push(p.x,p.y,p.z)});
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0xff5f76,size:.2,sizeAttenuation:true,depthTest:false}));pts.renderOrder=21;g.add(pts);
+    $('mathLensBadge').textContent='수학 렌즈 · 꼭짓점 A~H (8개)';
+  }else if(mathLensMode===3){
+    const fi=info.faceIndex,opp=fi%2===0?fi+1:fi-1,geo=new THREE.BoxGeometry(w+.025,h+.025,d+.025);
+    const mats=Array.from({length:6},(_,i)=>new THREE.MeshBasicMaterial({color:i===fi?0x59e391:(i===opp?0x6ea8ff:0xffffff),transparent:true,opacity:i===fi?.34:(i===opp?.22:0),depthWrite:false,side:THREE.DoubleSide}));
+    const box=new THREE.Mesh(geo,mats);box.position.set(cx,cy,cz);box.renderOrder=19;g.add(box);
+    $('mathLensBadge').textContent='수학 렌즈 · '+FACE_NAMES[fi]+' ↔ '+FACE_NAMES[opp]+' : 서로 평행';
   }
-  $('actionXray').textContent=xray?'구조 보기 ON':'구조 보기';toast(xray?'블록의 구조선을 표시합니다.':'일반 월드 화면으로 돌아왔어요.');
+  mathOverlayGroup=g;scene.add(g);$('mathLensBadge').classList.remove('hidden');
+}
+function updateMathOverlay(){
+  if(mathLensMode===0){if(mathOverlayGroup)clearMathOverlay();$('mathLensBadge').classList.add('hidden');return}
+  const hit=freeCenterHit(),info=shapeInfoFromHit(hit);
+  if(!info){if(mathOverlayGroup)clearMathOverlay();$('mathLensBadge').textContent='수학 렌즈 · 정육면체/직육면체를 바라보세요';$('mathLensBadge').classList.remove('hidden');return}
+  const sig=[mathLensMode,info.x,info.y,info.z,info.faceIndex,...info.dims].join(':');if(sig!==updateMathOverlay.lastSig){buildTopologyOverlay(info);updateMathOverlay.lastSig=sig}
+}
+function toggleXray(){
+  mathLensMode=(mathLensMode+1)%4;clearMathOverlay();
+  const names=['수학 렌즈','모서리 보기','꼭짓점 보기','평행한 면 보기'];$('actionXray').textContent=names[mathLensMode];
+  if(mathLensMode===0){$('mathLensBadge').classList.add('hidden');toast('수학 렌즈를 껐어요.')}
+  else toast(names[mathLensMode]+' · 바라보는 정육면체/직육면체를 분석합니다.');
+}
+function buildFurnaceRecipes(){
+  const box=$('furnaceRecipes');box.innerHTML='';
+  FURNACE_RECIPES.forEach(recipe=>{const b=document.createElement('button');b.className='furnace-recipe';b.innerHTML='<b>'+recipe.label+'</b><small>'+recipe.note+'</small>';b.onclick=()=>runFurnace(recipe);box.appendChild(b)});
+}
+function toggleFurnace(force){
+  furnaceOpen=typeof force==='boolean'?force:!furnaceOpen;$('furnacePanel').classList.toggle('hidden',!furnaceOpen);
+  if(furnaceOpen&&document.pointerLockElement===canvas)document.exitPointerLock();
+  $('lockNotice').classList.toggle('hidden',furnaceOpen||inventoryOpen||document.pointerLockElement===canvas);
+}
+function runFurnace(recipe){
+  if(runFurnace.busy)return;runFurnace.busy=true;$('furnaceMessage').textContent=blockDef(recipe.input).name+'을(를) 가열하는 중…';$('furnaceProgress').querySelector('i').style.width='0%';
+  const start=performance.now(),dur=1800;const tick=()=>{
+    const p=Math.min(1,(performance.now()-start)/dur);$('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
+    if(p<1)requestAnimationFrame(tick);else{
+      hotbarTypes[selectedHotbarSlot]=recipe.output;selectedType=recipe.output;buildHotbar();$('furnaceMessage').textContent=blockDef(recipe.output).name+' 생성! 현재 핫바 칸에 넣었습니다.';
+      toast(recipe.label+' · 물질 변화 완료');sfx('good');runFurnace.busy=false;saveFreeWorld();
+    }
+  };requestAnimationFrame(tick);
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:2,edits:Array.from(worldEdits.entries()),collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,dayTime};
-  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV2',data))lastFreeSave=performance.now()}catch(e){}
+  const data={version:3,edits:Array.from(worldEdits.entries()),collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,dayTime,cuboidSpec:currentCuboidSpec,facePaintColor};
+  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV3',data))lastFreeSave=performance.now()}catch(e){}
 }
 function loadFreeWorld(){
   worldEdits=new Map();
   try{
-    const d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
+    let d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV3',null);
+    if(!d)d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
     if(d){
       collected=new Set(d.collected||[]);hotbarTypes=Array.isArray(d.hotbar)&&d.hotbar.length===9?d.hotbar:hotbarTypes;
       selectedHotbarSlot=Math.max(0,Math.min(8,d.selected||0));dayTime=Number.isFinite(d.dayTime)?d.dayTime:.28;
+      if(d.cuboidSpec?.dims&&d.cuboidSpec?.faceColors)currentCuboidSpec=d.cuboidSpec;if(d.facePaintColor)facePaintColor=d.facePaintColor;
       for(const [key,value] of d.edits||[]){worldEdits.set(key,value);const [x,y,z]=parseWorldKey(key);setRawBlock(x,y,z,value)}
     }else{
       const old=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
