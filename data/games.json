@@ -3056,6 +3056,33 @@
       ],
       "qualityStatus": "featured",
       "classroom": true
+    },
+    {
+      "id": "low_pattern_lock",
+      "title": "패턴 락",
+      "href": "games/low_pattern_lock/index.html?v=1",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🔐",
+      "description": "휴대폰 패턴 잠금처럼 점을 이어 순차·조건·반복 알고리즘을 익히는 SW 퍼즐! 3×3부터 4×4까지 12개 잠금을 풀고, 반복 명령을 묶어 읽거나 직접 만든 패턴을 다시 풀어 볼 수 있어요.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 7,
+      "players": [
+        "solo",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
