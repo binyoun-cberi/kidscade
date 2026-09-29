@@ -41,12 +41,14 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(byId(sourceCatalog, 'high_kite_wind_rider').description, /줄 장력/);
   assert.match(byId(sourceCatalog, 'high_kite_wind_rider').description, /기록형/);
 
-  const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/3D 전개도 마스터.html'), 'utf8');
+  const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/index.html'), 'utf8');
   const architect = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect.js'), 'utf8');
   assert.match(blocks, /CUBE/);
   assert.match(blocks, /설계도 챌린지/);
   assert.match(blocks, /전개도 연구실/);
   assert.match(blocks, /아키텍트 월드/);
+  assert.match(blocks, /3D 공간 준비 중/);
+  assert.doesNotMatch(blocks, /type="module" src="\.\/cube-architect\.js/);
   assert.match(architect, /겨냥도/);
   assert.match(architect, /foldPreview/);
   assert.match(architect, /saveFreeWorld/);
