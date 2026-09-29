@@ -554,7 +554,8 @@ function makeWorldMesh(x,y,z,data){
     root=new THREE.Mesh(geo,faceMaterials(data.faceColors));root.position.set(x+(dims[0]-1)/2,y+dims[1]/2,z+(dims[2]-1)/2);
     root.userData={shapeKind:'cuboid',dims:dims.slice(),faceIds:FACE_IDS.slice(),topology:CUBOID_TOPOLOGY};
   }else{
-    root=new THREE.Mesh(freeCubeGeo,materialFor(type));root.position.set(x,y+.5,z);
+    root=new THREE.Mesh(freeCubeGeo,data.faceColors?faceMaterials(data.faceColors):materialFor(type));root.position.set(x,y+.5,z);
+    root.userData={shapeKind:'cuboid',dims:[1,1,1],faceIds:FACE_IDS.slice(),topology:CUBOID_TOPOLOGY};
   }
   root.castShadow=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='fire'||type==='windowFrame');
   root.receiveShadow=true;scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);return root;
@@ -571,8 +572,25 @@ function setWorldBlock(x,y,z,data,record=true){
   if(!inWorld(x,y,z))return false;
   setRawBlock(x,y,z,data);if(record)markEdit(x,y,z,data);refreshAround(x,y,z);return true;
 }
+function removeCuboidAt(ax,ay,az,record=true){
+  const anchor=getBlock(ax,ay,az);if(!anchor||anchor.type!=='cuboid')return false;
+  const dims=anchor.dims||[1,1,1];
+  removeWorldMesh(worldKey(ax,ay,az));
+  for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
+    const x=ax+dx,y=ay+dy,z=az+dz;setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);
+  }
+  for(let dx=-1;dx<=dims[0];dx++)for(let dy=-1;dy<=dims[1];dy++)for(let dz=-1;dz<=dims[2];dz++){
+    if(dx>=0&&dx<dims[0]&&dy>=0&&dy<dims[1]&&dz>=0&&dz<dims[2])continue;
+    refreshBlockMesh(ax+dx,ay+dy,az+dz);
+  }
+  return true;
+}
 function removeWorldBlockData(x,y,z,record=true){
   const data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable)return false;
+  if(data.type==='cuboidPart'){
+    const a=data.anchor||[x,y,z];return removeCuboidAt(a[0],a[1],a[2],record);
+  }
+  if(data.type==='cuboid')return removeCuboidAt(x,y,z,record);
   if(data.type==='doorTop')return removeWorldBlockData(x,y-1,z,record);
   if(data.type==='door'){
     setRawBlock(x,y,z,null);setRawBlock(x,y+1,z,null);
@@ -605,8 +623,8 @@ function buildFreeWorld(){
     for(let y=WORLD_MIN_Y;y<=h;y++){
       let type;
       if(y===WORLD_MIN_Y)type='bedrock';
-      else if(y<=h-3)type='stone';
-      else if(y<h)type=(h<=SEA_LEVEL?'sand':'dirt');
+      else if(y<=h-3)type=(y<-1&&hash2(x*3+y,z*5-y)>.91?'ironOre':'stone');
+      else if(y<h)type=(h<=SEA_LEVEL?(hash2(x+17,z-11)>.68?'clay':'sand'):'dirt');
       else type=(h<=SEA_LEVEL||dist>12.5?'sand':'grass');
       setRawBlock(x,y,z,{type,natural:true});
     }
@@ -636,19 +654,20 @@ function initFree(){
   modeTitle('아키텍트 월드','살아있는 복셀 세계 · 탐험 · 건축 · 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');$('actionXray').classList.remove('hidden');
   cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
-  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;freeSimAccum=0;freeSimTick=0;
-  buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();updateFreeMission();
+  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;weather='clear';weatherTimer=18;critters=[];
+  buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();setupWeather();spawnCritters();updateFreeMission();
   const spawnZ=6,ground=getHighestSolidY(0,spawnZ,8);camera.position.set(0,ground+1+1.65,spawnZ);
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
   $('actionXray').onclick=toggleXray;
   $('lockNotice').classList.remove('hidden');$('lockNotice').onclick=()=>{if(!inventoryOpen)canvas.requestPointerLock()};
-  $('inventoryClose').onclick=()=>toggleInventory(false);
+  $('inventoryClose').onclick=()=>toggleInventory(false);$('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
 }
 function blockButtonMarkup(type,index){
   const d=blockDef(type),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
-  return '<span>'+(index||'')+'</span><i style="--swatch:'+hex+'">'+(d.icon||'')+'</i><em>'+d.name+'</em>';
+  const name=type==='cuboid'?('직육면체 '+currentCuboidSpec.dims.join('×')):d.name;
+  return '<span>'+(index||'')+'</span><i style="--swatch:'+hex+'">'+(d.icon||'')+'</i><em>'+name+'</em>';
 }
 function buildHotbar(){
   const h=$('hotbar');h.innerHTML='';
@@ -662,6 +681,7 @@ function buildHotbar(){
 function buildInventory(category='전체'){
   const grid=$('inventoryGrid');if(!grid)return;grid.innerHTML='';
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.classList.toggle('active',b.dataset.invCat===category));
+  $('shapeWorkbench')?.classList.toggle('hidden',!(category==='도형'||category==='전체'));
   PLACEABLE_TYPES.filter(type=>category==='전체'||blockDef(type).category===category).forEach(type=>{
     const d=blockDef(type),b=document.createElement('button');b.className='inventory-item';
     b.innerHTML='<i style="--swatch:#'+(d.color||0xffffff).toString(16).padStart(6,'0')+'">'+(d.icon||'')+'</i><b>'+d.name+'</b><small>'+d.category+'</small>';
@@ -678,7 +698,7 @@ function updateFreeMission(){
   const total=5,done=collected.size;$('adventureCount').textContent=done+'/'+total;$('adventureBar').style.width=(done/total*100)+'%';
   const chosen=blockDef(selectedType).name,flight=freeFlying?'비행 ON':'걷기';
   $('freeState').textContent=flight+' · '+chosen;
-  $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 인벤토리 · F 비행':'E 인벤토리 · F 비행 · R 바라보는 블록 복사 · X 구조 보기';
+  $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 인벤토리 · F 비행':'E 인벤토리 · F 비행 · R 복사 · P 면색칠 · X 수학 렌즈';
 }
 function freeCenterHit(max=6.5){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
