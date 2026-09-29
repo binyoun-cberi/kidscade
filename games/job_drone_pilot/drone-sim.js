@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { shared3DPath, shared3DCanUse } from '../../assets/game/manifest/shared-community-3d.js';
-import { prepareShared3DObject } from '../../assets/game/manifest/shared-community-3d-runtime.js';
+import { prepareShared3DObject, shared3DShouldLoad } from '../../assets/game/manifest/shared-community-3d-runtime.js';
 
 const $ = (s) => document.querySelector(s);
 const ui = {
@@ -311,7 +311,7 @@ function buildWorldFallbacks() {
   scenicObjects.push(tower);
   // Shared decorations use the same collider system as the fallback world.
   for(const [id,x,z,size] of sharedDecorDefs){
-    if(!shared3DCanUse(id))continue;
+    if(!shared3DCanUse(id)||!shared3DShouldLoad(id,{coarse}))continue;
     if(id==='building.house')colliders.push({type:'box',x,z,w:size*.78,d:size*.64,h:size*.72});
     else if(id==='prop.waterTower'){} // the existing tower collider already protects this mission landmark.
     else if(/Tree/.test(id)||/tree/i.test(id))colliders.push({type:'circle',x,z,r:.9,h:size});
@@ -324,7 +324,7 @@ async function loadSharedWorldDecor(){
     if(!shared3DCanUse(id))continue;
     try{
       const gltf=await loader.loadAsync(shared3DPath(id,'../../'));
-      const obj=prepareShared3DObject(gltf.scene.clone(true),id,size);
+      const obj=prepareShared3DObject(gltf.scene.clone(true),id,size,{shadows:!/grass|plant/i.test(id)});
       if(!obj)continue;
       obj.position.x+=x;obj.position.z+=z;obj.rotation.y=rot||0;scene.add(obj);scenicObjects.push(obj);count++;
       if(id==='prop.waterTower')fallbackTowerParts.forEach(o=>o.visible=false);
