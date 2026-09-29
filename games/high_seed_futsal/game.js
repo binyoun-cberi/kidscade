@@ -899,16 +899,29 @@ function basePosition(p){
   if(p.team===AWAY)x=FIELD_W-x;
   return{x:x,y:y};
 }
-function resetKickoff(team){
+function setupKickoff(team){
   allPlayers().forEach(function(p){const b=basePosition(p);p.x=b.x;p.y=b.y;p.vx=p.vy=0;p.tackleTimer=p.kickTimer=p.recover=0;p.oneTwoTimer=0});
   ball.x=FIELD_W/2;ball.y=FIELD_H/2;ball.z=0;ball.vx=ball.vy=ball.vz=0;
   const p=teams[team][4];p.x=FIELD_W/2-teamDir(team)*24;p.y=FIELD_H/2;
   owner=p;lastTouchTeam=team;p.stealProtect=.8;
   controlled=team===HOME?p:teams[HOME][1];
+  cameraX=FIELD_W/2;
+}
+function resetKickoff(team){
+  setupKickoff(team);
   state=mode==='practice'?'practice':'play';statusEl.dataset.banner='';
+  showStatus((team===HOME?'씨앗 FC':'블루 FC')+' 킥오프',.9);
+}
+function startKickoffCountdown(team){
+  setupKickoff(team);
+  kickoffTeam=team;
+  kickoffLabel=team===HOME?'씨앗 FC':'블루 FC';
+  state='countdown';phaseTimer=3.85;countdownLast=4;
+  statusEl.dataset.banner=kickoffLabel+' 킥오프';
 }
 function finishMatch(){
   playing=false;state='fulltime';owner=null;charge=null;
+  finalWhistle();
   result.classList.remove('hidden');
   const title=score[0]>score[1]?'승리!':score[0]<score[1]?'아쉽게 패배':'무승부';
   document.getElementById('resultTitle').textContent=title;
@@ -920,6 +933,20 @@ function finishMatch(){
   if(window.KidscadeGame)window.KidscadeGame.gameOver({score:value,scoreOptions:{unit:'pts',higherIsBetter:true},result:title,goals:score[0]});
 }
 function updatePhase(dt){
+  if(state==='countdown'){
+    phaseTimer-=dt;
+    if(phaseTimer<=3){
+      const n=Math.max(1,Math.ceil(phaseTimer));
+      if(n!==countdownLast){countdownLast=n;countdownBeep(n)}
+    }
+    if(phaseTimer<=0){
+      phaseTimer=0;whistle();
+      state=mode==='practice'?'practice':'play';
+      statusEl.dataset.banner='';
+      showStatus('시작!',.65);
+    }
+    return true;
+  }
   if(state==='goal'||state==='restart'){
     phaseTimer-=dt;
     if(phaseTimer<=0){
@@ -934,6 +961,11 @@ function update(dt){
   if(paused||state==='menu'||state==='fulltime')return;
   simTime+=dt;
   if(updatePhase(dt))return;
+  if(mode==='tutorial'&&tutorialStep===0){
+    const iv=inputVector();
+    if(Math.abs(iv.x)+Math.abs(iv.y)>.1)tutorialMoveTime+=dt;
+    if(tutorialMoveTime>=.7)advanceTutorial('move');
+  }
   ballFree=Math.max(0,ballFree-dt);
   if(pendingPass){pendingPass.life-=dt;if(pendingPass.life<=0)pendingPass=null}
   if(owner)possessionTime[owner.team]+=dt;
@@ -1003,18 +1035,22 @@ function showStatus(text,seconds){
 }
 
 function startGame(){
+  wakeAudio();
   mode=document.querySelector('.mode.active').dataset.mode;
-  difficulty=difficultyEl.value;assist=assistEl.value;
+  difficulty=mode==='tutorial'?'easy':difficultyEl.value;
+  assist=mode==='tutorial'?'high':assistEl.value;
   score=[0,0];stats.shots=[0,0];stats.passes=[0,0];stats.passAttempts=[0,0];stats.saves=[0,0];possessionTime=[0,0];
-  matchTime=mode==='long'?300:180;
+  matchTime=mode==='long'?300:(mode==='tutorial'?120:180);
   playing=true;paused=false;charge=null;particles=[];pendingRestart=null;
+  tutorialStep=0;tutorialMoveTime=0;tutorialFinished=false;
   buildTeams();
   if(mode==='practice')teams[AWAY].forEach(function(p){if(p.role!=='GK')p.active=false});
-  resetKickoff(HOME);
+  kickoffTeam=(mode==='tutorial'||mode==='practice')?HOME:(Math.random()<.5?HOME:AWAY);
+  startKickoffCountdown(kickoffTeam);
   menu.classList.add('hidden');result.classList.add('hidden');pauseLayer.classList.add('hidden');
-  showStatus(mode==='practice'?'자유 연습 · 패스와 슛을 익혀보세요':'킥오프!',1.1);
+  showStatus('첫 공 · '+(kickoffTeam===HOME?'씨앗 FC':'블루 FC'),3.2);
   app.focus();
-  if(window.KidscadeGame)window.KidscadeGame.start({mode:mode,difficulty:difficulty});
+  if(window.KidscadeGame)window.KidscadeGame.start({mode:mode,difficulty:difficulty,kickoff:kickoffLabel});
 }
 function setPaused(value){
   if(!playing||state==='fulltime')return;
@@ -1025,6 +1061,10 @@ function setPaused(value){
 function returnMenu(){
   playing=false;paused=false;state='menu';charge=null;
   result.classList.add('hidden');pauseLayer.classList.add('hidden');menu.classList.remove('hidden');
+  if(mode==='tutorial'&&tutorialFinished){
+    document.querySelectorAll('.mode').forEach(function(b){b.classList.toggle('active',b.dataset.mode==='match')});
+    startBtn.textContent='경기 시작';
+  }
 }
 function rematch(){startGame()}
 
@@ -1032,7 +1072,7 @@ document.querySelectorAll('.mode').forEach(function(btn){
   btn.addEventListener('click',function(){
     document.querySelectorAll('.mode').forEach(function(b){b.classList.remove('active')});
     btn.classList.add('active');
-    startBtn.textContent=btn.dataset.mode==='practice'?'연습 시작':'경기 시작';
+    startBtn.textContent=btn.dataset.mode==='practice'?'연습 시작':(btn.dataset.mode==='tutorial'?'튜토리얼 시작':'경기 시작');
   });
 });
 startBtn.addEventListener('click',startGame);
@@ -1075,6 +1115,13 @@ window.addEventListener('load',function(){
     window.KidscadeGame.registerPauseHandlers({pause:function(){setPaused(true)},resume:function(){setPaused(false)}});
   }
 });
+
+try{
+  if(localStorage.getItem('seedFutsalTutorialDone')==='1'){
+    document.querySelectorAll('.mode').forEach(function(b){b.classList.toggle('active',b.dataset.mode==='match')});
+    startBtn.textContent='경기 시작';
+  }else startBtn.textContent='튜토리얼 시작';
+}catch(_){startBtn.textContent='튜토리얼 시작'}
 
 buildTeams();
 requestAnimationFrame(loop);
