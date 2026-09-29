@@ -7,7 +7,7 @@ const SAVE='kidscade_game_v1:high_apocalypse_survival:save';
 const KNOW='kidscade_game_v1:high_apocalypse_survival:knowledge';
 const DAY_SECONDS=360, CAMP=new THREE.Vector3(0,0,8), RUINS=new THREE.Vector3(43,0,-31), POWER_STATION=new THREE.Vector3(51,0,-27), SURVIVOR_POS=new THREE.Vector3(45,0,-36), RIVER_X=30;
 const ITEMS={
-  wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],cleanWater:['깨끗한 물','💧'],
+  wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
   food:['통조림','🥫'],potato:['감자','🥔'],cookedPotato:['구운 감자','🍠'],cloth:['천','🧵'],
   scrap:['고철','⚙️'],battery:['배터리','🔋'],axe:['돌도끼','🪓']
 };
@@ -24,6 +24,7 @@ const JOBS={
 const KNOWLEDGE=[
  ['waterRisk','과학 · 물질','맑아 보여도 안전한 물은 아니다','자연의 물에는 눈에 보이지 않는 생물학적 위험이 있을 수 있습니다.'],
  ['boiling','과학 · 물질','끓이기는 생물학적 위험을 줄인다','충분히 가열하면 많은 미생물 위험을 줄일 수 있지만 모든 화학 오염을 없애는 만능 정수법은 아닙니다.'],
+ ['chemicalPollution','과학 · 물질','끓여도 사라지지 않는 오염이 있다','일부 화학 오염은 물을 끓여도 안전해지지 않습니다. 오염원을 피하거나 알맞은 정수 방법과 다른 수원을 찾아야 합니다.'],
  ['combustion','과학 · 에너지','불에는 연료와 산소, 충분한 온도가 필요하다','젖은 연료는 불이 붙기 어렵고 연료가 다하면 불도 꺼집니다.'],
  ['insulation','과학 · 열','쉼터는 열 손실을 줄인다','비와 바람을 피하고 열의 이동을 줄이면 체온을 지키기 쉬워집니다.'],
  ['plantGrowth','과학 · 생명','먹을거리도 다시 자라나는 자원이다','식물은 알맞은 환경과 시간이 있으면 다시 자랄 수 있어 지속적인 식량원이 됩니다.'],
@@ -62,7 +63,7 @@ const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3();
 
 function fresh(){
  return {version:1,day:1,time:430,health:100,hunger:82,thirst:72,temp:36.6,pos:{x:0,z:8},yaw:Math.PI,
-  inv:{wood:0,stone:0,dirtyWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,cloth:0,scrap:0,battery:0,axe:0},
+  inv:{wood:0,stone:0,dirtyWater:0,chemWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,cloth:0,scrap:0,battery:0,axe:0},
   flags:{},buildings:[],knowledge:[],survivors:0,job:null,powerKw:0,trust:60,communityHealth:70,productivity:70,morale:70,
   distribution:null,floodLevel:0,playSeconds:0,finished:false};
 }
@@ -105,8 +106,10 @@ function init3D(){
  label('폐허 도시',49,11,-31);
  const crate=box(1.3,1.1,1.3,0x715638,42,.58,-29);addInteract(crate,'crate','폐허 보급 상자 열기');
  const powerbox=box(1.4,1.9,.75,0x51625d,POWER_STATION.x,.95,POWER_STATION.z);addInteract(powerbox,'powerbox','비상 배전반 복구');label('비상 배전반',POWER_STATION.x,2.8,POWER_STATION.z);
+ const wasteTank=box(2.2,2.2,2.2,0x68735f,57,1.1,-42);addInteract(wasteTank,'pollutedWater','이상한 냄새의 물 조사');label('파손된 저장탱크',57,3.2,-42);
  const pole=box(.35,5,.35,0x525d61,-4,2.5,12);addInteract(pole,'radio','비상 무전기 확인');label('비상 무전',-4,5.8,12);
  const npc=new THREE.Group();npc.position.copy(SURVIVOR_POS);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:0xe0a06a}));body.position.y=1.2;npc.add(body);const nl=makeLabel('구조 요청');nl.position.y=3.4;nl.scale.multiplyScalar(.7);npc.add(nl);npc.visible=false;groups.dynamic.add(npc);addInteract(npc,'survivor','생존자 구조');scene.userData.survivor=npc;
+ const campNpc=new THREE.Group();campNpc.position.set(CAMP.x+3,0,CAMP.z+2);const cb=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:0x6ea4d9}));cb.position.y=1.2;campNpc.add(cb);const cn=makeLabel('태호');cn.position.y=3.4;cn.scale.multiplyScalar(.62);campNpc.add(cn);campNpc.visible=false;groups.dynamic.add(campNpc);scene.userData.campSurvivor=campNpc;
  const rz=new THREE.Object3D();rz.position.set(RIVER_X-6.3,0,5);groups.dynamic.add(rz);addInteract(rz,'river','강물 뜨기');
  player.root.position.copy(CAMP);player.root.add(player.visual);scene.add(player.root);createAvatar();
  bindInput();resize();addEventListener('resize',resize);
@@ -150,7 +153,7 @@ function updateCamera(dt){const t=tmp.set(player.root.position.x,1.5,player.root
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
- if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='powerbox')return repairPower();if(t==='survivor')return rescue();if(t==='radio')return useRadio();
+ if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue();if(t==='radio')return useRadio();
  if(t==='rest'){if(missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building)
 }
 function gather(r,t){
@@ -171,13 +174,17 @@ function repairPower(){
  if(game.inv.battery<1||game.inv.scrap<2)return toast('배터리 1개와 고철 2개가 필요합니다. 폐허를 더 조사하세요.','warn');
  game.inv.battery--;game.inv.scrap-=2;game.powerKw=2.4;discover('electricity');flag('power');syncPowerVisual();toast('⚡ 배전반 복구 완료 · 야영지 비상등과 무전기에 전력이 공급됩니다.','normal',4);save();updateUI()
 }
+function samplePollutedWater(){
+ if(game.flags.chemSample)return toast('코를 찌르는 냄새가 납니다. 이 물은 식수로 쓰지 않는 편이 안전해 보입니다.','warn');
+ game.flags.chemSample=true;game.inv.chemWater++;toast('☣️ 공장 오염수 샘플을 얻었습니다. 모닥불에서 가열하면 어떻게 될까요?','warn',3.8);save();updateUI()
+}
 function openCrate(){if(game.flags.crate)return toast('이미 확인한 상자입니다.');game.flags.crate=true;game.inv.scrap+=3;game.inv.battery++;game.inv.cloth++;game.inv.food+=2;flag('battery');toast('🔋 배터리 · 고철 · 천 · 식량을 확보했습니다. 배전반을 찾아 실제로 연결해 보세요.','normal',3);save();updateUI()}
-function rescue(){if(game.day<5)return toast('아직 인기척이 없습니다.');if(game.flags.rescue)return;game.survivors=1;game.job=null;scene.userData.survivor.visible=false;flag('rescue');toast('🧑 생존자 태호를 구조했습니다. 어떤 일을 맡길지 직접 정해 주세요.','normal',3.5);setTimeout(()=>openPanel('settlement'),650)}
+function rescue(){if(game.day<5)return toast('아직 인기척이 없습니다.');if(game.flags.rescue)return;game.survivors=1;game.job=null;scene.userData.survivor.visible=false;if(scene.userData.campSurvivor)scene.userData.campSurvivor.visible=true;flag('rescue');toast('🧑 생존자 태호를 구조했습니다. 캠프로 이동했습니다. 어떤 일을 맡길지 직접 정해 주세요.','normal',3.5);setTimeout(()=>openPanel('settlement'),650)}
 function assignJob(role){
  if(!game.survivors||game.job||!JOBS[role])return;game.job=role;discover('division');flag('job');save();renderOpenPanel();toast(JOBS[role].icon+' 역할 배정 · '+JOBS[role].name+' — '+JOBS[role].desc,'normal',4)
 }
 function useRadio(){if(game.day<7)return toast('…치직… 아직 응답이 없습니다.');if(!game.flags.power)return toast('무전기를 쓸 전력이 없습니다. 폐허의 비상 전력망부터 복구하세요.','warn');if(!readyFlood())return toast('폭우 속 장거리 이동 전에 물 2, 식량 2, 쉼터와 전력을 확보하세요.','warn');discover('flood');flag('radio');finish()}
-function usePlaced(id){if(id==='campfire'){if(game.inv.dirtyWater>0&&game.inv.wood>0){game.inv.dirtyWater--;game.inv.wood--;game.inv.cleanWater++;discover('boiling');flag('boil');toast('🔥 강물을 충분히 끓였습니다. 깨끗한 물 +1');save();return}if(game.inv.potato>0&&game.inv.wood>0){game.inv.potato--;game.inv.wood--;game.inv.cookedPotato++;discover('combustion');flag('cook');toast('🍠 감자를 구웠습니다.');save();return}return toast('끓일 강물이나 익힐 음식, 장작이 필요합니다.','warn')}if(id==='shelter'){if(missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')}else toast('작업대가 준비되었습니다.')}
+function usePlaced(id){if(id==='campfire'){if(game.inv.dirtyWater>0&&game.inv.wood>0){game.inv.dirtyWater--;game.inv.wood--;game.inv.cleanWater++;discover('boiling');flag('boil');toast('🔥 강물을 충분히 끓였습니다. 깨끗한 물 +1');save();return}if(game.inv.chemWater>0&&!game.flags.chemBoilTried){if(game.inv.wood<1)return toast('가열할 장작이 필요합니다.','warn');game.inv.wood--;game.flags.chemBoilTried=true;discover('chemicalPollution');toast('☣️ 물은 끓었지만 이상한 냄새가 남아 있습니다. 화학 오염은 끓이기만 해서는 해결되지 않았습니다.','warn',5);save();return}if(game.inv.potato>0&&game.inv.wood>0){game.inv.potato--;game.inv.wood--;game.inv.cookedPotato++;discover('combustion');flag('cook');toast('🍠 감자를 구웠습니다.');save();return}return toast('끓일 강물이나 익힐 음식, 장작이 필요합니다.','warn')}if(id==='shelter'){if(missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')}else toast('작업대가 준비되었습니다.')}
 function useItem(id){if(!game||!running)return;if(id==='cleanWater'){if(game.inv.cleanWater<1)return toast('깨끗한 물이 없습니다.','warn');game.inv.cleanWater--;game.thirst=clamp(game.thirst+38,0,100);flag('drink');toast('💧 깨끗한 물을 마셨습니다.')}else{const f=game.inv.cookedPotato>0?'cookedPotato':'food';if(game.inv[f]<1)return toast('먹을 것이 없습니다.','warn');game.inv[f]--;game.hunger=clamp(game.hunger+(f==='cookedPotato'?28:35),0,100);toast((ITEMS[f]?.[1]||'🍽')+' 식사했습니다.')}save();updateUI()}
 function openPanel(tab='inventory'){if(!game)return;ui.panel.classList.remove('hidden');ui.panel.dataset.tab=tab;$$('#panel nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));renderPanel(tab)}
 function closePanel(){ui.panel.classList.add('hidden')}
@@ -196,7 +203,7 @@ function renderPanel(tab){
  ui.panelBody.innerHTML='<div class="settlement-card"><h3>한빛 야영지</h3><p>👥 인구 '+(1+game.survivors)+'명 · 🤝 신뢰 '+Math.round(game.trust)+' · ❤️ 공동체 건강 '+Math.round(game.communityHealth)+' · 🛠 생산성 '+Math.round(game.productivity)+' · 🙂 사기 '+Math.round(game.morale)+'</p><p>⚡ 비상 전력 '+(game.flags.power?game.powerKw.toFixed(1)+' kW':'복구 전')+' · ⛺ 쉼터 '+game.buildings.filter(b=>b.id==='shelter').length+'</p><p>'+(game.survivors?(game.job?'태호 역할: '+JOBS[game.job].name:'태호의 역할을 아직 정하지 않았습니다.'):'아직 혼자입니다. 폐허의 구조 신호를 찾아보세요.')+'</p><p>'+(game.distribution?'배분 원칙: '+distributionName(game.distribution):'배분 원칙은 아직 정하지 않았습니다.')+'</p></div>'+jobChoice;
  ui.panelBody.querySelectorAll('[data-job]').forEach(b=>b.addEventListener('click',()=>assignJob(b.dataset.job)))
 }
-function itemHint(id){return {dirtyWater:'바로 마시기 안전하지 않을 수 있습니다.',cleanWater:'갈증을 회복합니다.',wood:'불과 건축의 기본 자원입니다.',stone:'도구와 모닥불에 쓰입니다.',battery:'전기 에너지 저장 장치입니다.',scrap:'기계 제작에 쓸 수 있습니다.',cloth:'쉼터와 생활용품 재료입니다.',axe:'나무 채집량이 증가합니다.'}[id]||'생존에 사용할 수 있는 물자입니다.'}
+function itemHint(id){return {dirtyWater:'바로 마시기 안전하지 않을 수 있습니다.',chemWater:'공장 주변에서 얻었습니다. 끓인다고 반드시 안전해지는 것은 아닙니다.',cleanWater:'갈증을 회복합니다.',wood:'불과 건축의 기본 자원입니다.',stone:'도구와 모닥불에 쓰입니다.',battery:'전기 에너지 저장 장치입니다.',scrap:'기계 제작에 쓸 수 있습니다.',cloth:'쉼터와 생활용품 재료입니다.',axe:'나무 채집량이 증가합니다.'}[id]||'생존에 사용할 수 있는 물자입니다.'}
 function craft(id){if(id!=='axe')return;if(!has({wood:3,stone:2}))return toast('재료가 부족합니다.','warn');pay({wood:3,stone:2});game.inv.axe=1;flag('axe');toast('🪓 돌도끼를 만들었습니다.');renderOpenPanel();save()}
 function beginBuild(id){const d=BUILD[id];if(!d||!has(d.cost))return toast('재료가 부족합니다.','warn');buildMode=id;closePanel();makeGhost(id);toast('건축 위치 선택 · 마우스로 방향을 보고 E로 설치 · Esc 취소')}
 function makeGhost(id){cancelGhost();const d=BUILD[id];ghost=new THREE.Mesh(id==='campfire'?new THREE.CylinderGeometry(1,.9,.25,12):new THREE.BoxGeometry(id==='shelter'?3.8:2.2,id==='shelter'?2.7:1.1,id==='shelter'?3:1.4),new THREE.MeshBasicMaterial({color:0x63e895,transparent:true,opacity:.38,depthWrite:false}));if(id!=='campfire')ghost.position.y=id==='shelter'?1.35:.55;groups.dynamic.add(ghost)}
@@ -213,7 +220,7 @@ function advanceDay(){
  if(game.job==='technician')game.inv.scrap++;if(game.job==='gatherer'){game.inv.wood+=2;game.inv.stone++}if(game.job==='medic')game.health=clamp(game.health+15,0,100);
  player.root.position.copy(CAMP);applyDayStart();save();toast('🌅 멸망 '+game.day+'일째가 시작되었습니다.'+(game.job?' '+JOBS[game.job].icon+' '+JOBS[game.job].name+' 효과가 적용되었습니다.':''),'normal',3)
 }
-function applyDayStart(){if(game.day>=5)scene.userData.survivor.visible=!game.flags.rescue;if(game.day===6&&!game.flags.choice)setTimeout(()=>ui.decision.classList.remove('hidden'),800);if(game.day>=7){discover('riverSettlement');toast('⚠️ 폭우 경보 · 강 수위가 실제로 상승하기 시작합니다.','warn',4)}syncPowerVisual();updateMission()}
+function applyDayStart(){if(game.day>=5)scene.userData.survivor.visible=!game.flags.rescue;if(scene.userData.campSurvivor)scene.userData.campSurvivor.visible=!!game.flags.rescue;if(game.day===6&&!game.flags.choice)setTimeout(()=>ui.decision.classList.remove('hidden'),800);if(game.day>=7){discover('riverSettlement');toast('⚠️ 폭우 경보 · 강 수위가 실제로 상승하기 시작합니다.','warn',4)}syncPowerVisual();updateMission()}
 function chooseDistribution(c){
  const effect={
   equal:{trust:6,health:-2,productivity:0,morale:7,note:'불만은 적지만 몸이 약한 사람에게는 몫이 부족했습니다.'},
@@ -237,6 +244,10 @@ function updateWeather(dt){
 function updateNeeds(dt){game.playSeconds+=dt;game.time+=dt*(1440/DAY_SECONDS);if(game.time>=1430){game.time=1430;if(missionDone()&&game.day<7&&Math.floor(game.playSeconds)%8===0)toast('오늘의 목표를 마쳤습니다. 캠프나 쉼터에서 쉬어 다음 날로 넘어가세요.')}
  const move=player.speed>1;game.hunger=clamp(game.hunger-dt*(move?.055:.035),0,100);game.thirst=clamp(game.thirst-dt*(move?.085:.052),0,100);const s=placed.find(p=>p.userData.interactable?.building==='shelter'),covered=s&&player.root.position.distanceTo(s.position)<4.8,target=getWeather()==='rain'&&!covered?35.5:36.6;game.temp=damp(game.temp,target,.05,dt);if(game.hunger<=0||game.thirst<=0||game.temp<35.2)game.health=clamp(game.health-dt*.7,0,100);else if(game.hunger>40&&game.thirst>40)game.health=clamp(game.health+dt*(game.job==='medic'?.05:.025),0,100);if(game.health<=0){game.health=60;game.hunger=Math.max(25,game.hunger);game.thirst=Math.max(25,game.thirst);player.root.position.copy(CAMP);toast('구조되었습니다. 발견한 지식은 유지됩니다. 캠프로 돌아왔습니다.','danger',4)}derived()}
 function updateResources(dt){resources.forEach(r=>{if(!r.userData.available){r.userData.respawn-=dt;if(r.userData.respawn<=0){r.userData.available=true;r.visible=true}}})}
+function updateNpc(){
+ const n=scene?.userData?.campSurvivor;if(!n?.visible||!game)return;
+ const a=game.playSeconds*.22;n.position.x=CAMP.x+3+Math.sin(a)*2.1;n.position.z=CAMP.z+1.5+Math.cos(a*.82)*1.7;n.rotation.y=a+Math.PI*.5
+}
 function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
  if(game.day===1){if(!game.flags.water)return{name:'강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(!game.flags.boil)return{name:'비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(!game.flags.drink)return{name:'깨끗한 물 마시기',pos:CAMP}}
@@ -252,6 +263,6 @@ function updateUI(){if(!game)return;ui.health.textContent=Math.round(game.health
 function finish(){if(game.finished)return;game.finished=true;save();running=false;ui.hud.classList.add('hidden');ui.ending.classList.remove('hidden');ui.endingText.textContent=(1+game.survivors)+'명이 함께 살아남았습니다. 과학·사회 지식 '+game.knowledge.length+'개를 발견하고 '+game.buildings.length+'개의 시설을 세웠습니다.';ui.endingStats.innerHTML='<div><b>'+(1+game.survivors)+'</b><small>인구</small></div><div><b>'+game.knowledge.length+'</b><small>발견 지식</small></div><div><b>'+game.buildings.length+'</b><small>시설</small></div><div><b>'+Math.round(game.trust)+'</b><small>신뢰</small></div>';window.KidscadeGame?.gameOver?.({score:game.knowledge.length*500+game.buildings.length*200+Math.round(game.trust)*10,day:7})}
 async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,0,game.pos?.z??8);ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
-function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
+function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateNpc();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
 async function boot(){init3D();ui.loadingText.textContent='기존 Kidscade 생존 에셋을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
