@@ -3072,6 +3072,29 @@
       ],
       "qualityStatus": "featured",
       "classroom": true
+    },
+    {
+      "id": "high_ecopolis",
+      "addedAt": "2026-09-29T16:13:00+09:00",
+      "title": "에코폴리스",
+      "href": "games/high_ecopolis/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌱",
+      "description": "황폐한 땅에서 바람을 읽어 풍력 발전기를 세우고 토양·하천을 정화한 뒤 숲·습지·꽃초원을 복원하세요. 벌·개구리·고라니·수달이 돌아오면 마지막에는 모든 시설을 회수해 자연만 남기는 역도시건설 환경 전략 게임!",
+      "subject": "science",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
