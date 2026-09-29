@@ -427,7 +427,7 @@
     {
       "id": "job_drone_pilot",
       "title": "드론조종사 시뮬레이터",
-      "href": "games/job_drone_pilot/index.html?v=3",
+      "href": "games/job_drone_pilot/index.html?v=4",
       "category": "job",
       "age": "job",
       "icon": "🛸",
@@ -450,7 +450,7 @@
     {
       "id": "job_driver_license",
       "title": "운전면허시험장",
-      "href": "games/job_driver_license/index.html?v=15",
+      "href": "games/job_driver_license/index.html?v=16",
       "category": "job",
       "age": "job",
       "icon": "🚗",
