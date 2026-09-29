@@ -15,11 +15,11 @@ const rootEntry=fs.readFileSync(path.join(root,'경찰차 시뮬레이터.html')
 test('Police Patrol loads its local Three.js 3D runtime',()=>{
   assert.match(html,/id="game3d"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/police-patrol-loader\.js\?v=10/);
+  assert.match(html,/police-patrol-loader\.js\?v=11/);
   assert.match(html,/police-patrol\.css\?v=7/);
   assert.match(loader,/GLTFLoader/);
-  assert.match(loader,/police-patrol\.js\?v=10/);
-  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=10/);
+  assert.match(loader,/police-patrol\.js\?v=11/);
+  assert.match(rootEntry,/games\/job_police_car\/police-patrol-loader\.js\?v=11/);
   assert.doesNotMatch(rootEntry,/location\.replace|http-equiv="refresh"/i);
 });
 
@@ -32,7 +32,7 @@ test('Police Patrol startup does not touch 3D lexical state before initializatio
 });
 
 
-test('Police Patrol v10 fades buildings that block the chase camera',()=>{
+test('Police Patrol v11 fades buildings that block the chase camera',()=>{
   assert.match(js,/function registerBuildingOccluder3/);
   assert.match(js,/function updateCameraOcclusion3/);
   assert.match(js,/function restoreOccluders3/);
@@ -40,14 +40,14 @@ test('Police Patrol v10 fades buildings that block the chase camera',()=>{
   assert.match(js,/mat\.opacity=Math\.min\(\.16/);
 });
 
-test('Police Patrol v10 clones skinned pedestrians safely',()=>{
+test('Police Patrol v11 clones skinned pedestrians safely',()=>{
   const loader=fs.readFileSync(path.join(dir,'police-patrol-loader.js'),'utf8');
   assert.match(loader,/SkeletonUtils/);
   assert.match(loader,/window\.SkeletonUtils=SkeletonUtils/);
   assert.match(js,/window\.SkeletonUtils\?\.clone/);
 });
 
-test('Police Patrol v10 adds moving pedestrians using existing people assets',()=>{
+test('Police Patrol v11 adds moving pedestrians using existing people assets',()=>{
   for(const rel of [
     'assets/game/characters/people/character-male-a.glb',
     'assets/game/characters/people/character-male-b.glb',
@@ -62,7 +62,7 @@ test('Police Patrol v10 adds moving pedestrians using existing people assets',()
   assert.match(js,/spawnPedestrians\([^)]*\)/);
 });
 
-test('Police Patrol v10 uses a bounded road graph for traffic and pursuit AI',()=>{
+test('Police Patrol v11 uses a bounded road graph for traffic and pursuit AI',()=>{
   assert.match(js,/function laneOffsetForAngle/);
   assert.match(js,/function roadDirectionsAt/);
   assert.match(js,/function chooseTrafficDirection/);
@@ -75,14 +75,14 @@ test('Police Patrol v10 uses a bounded road graph for traffic and pursuit AI',()
   assert.doesNotMatch(js,/let turn=Math\.random/);
 });
 
-test('Police Patrol v10 fills outer city blocks and parks cars in parking lots',()=>{
+test('Police Patrol v11 fills outer city blocks and parks cars in parking lots',()=>{
   assert.match(js,/function cityIntervals/);
   assert.match(js,/const xs=cityIntervals\(roadXs,halfX\),ys=cityIntervals\(roadYs,halfY\)/);
   assert.match(js,/edge=xi===0\|\|yi===0/);
   assert.match(js,/const parked=\['sedan','suv','taxi','truck','van'\]/);
 });
 
-test('Police Patrol v10 gives traffic real vehicle profiles',()=>{
+test('Police Patrol v11 gives traffic real vehicle profiles',()=>{
   assert.match(js,/const VEHICLE_TYPES=/);
   for(const key of ['sedan','suv','hatch','taxi','truck','van','ambulance'])assert.match(js,new RegExp(key+":\\{key:'"+key+"'"));
   assert.match(js,/label:'화물 트럭'/);
@@ -93,14 +93,14 @@ test('Police Patrol v10 gives traffic real vehicle profiles',()=>{
   assert.match(js,/SUSPECT_TYPE_KEYS/);
 });
 
-test('Police Patrol v10 uses a lower chase camera and human-scale mission distance',()=>{
+test('Police Patrol v11 uses a lower chase camera and human-scale mission distance',()=>{
   assert.match(js,/height=portrait\?5\.15:4\.55/);
   assert.match(js,/Math\.round\(d\*\.12\)/);
   assert.match(js,/bangSprite3/);
   assert.match(js,/missionArrow3\.visible=raw>180/);
 });
 
-test('Police Patrol v10 adds CC0 city landmark props and compact portrait UI',()=>{
+test('Police Patrol v11 adds CC0 city landmark props and compact portrait UI',()=>{
   assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','big-building.glb')));
   assert.ok(fs.existsSync(path.join(root,'assets','game','3d','city','poly-pizza-city-pack','dumpster.glb')));
   assert.match(js,/big-building\.glb/);
@@ -183,10 +183,23 @@ test('Police Patrol only uses valid shared static audio keys',()=>{
   for(const key of keys)assert.ok(audio.sounds[key],'missing audio key '+key);
 });
 
-test('catalog points to Police Patrol v10',()=>{
+test('catalog points to Police Patrol v11',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_police_car');
-  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=10');
-  assert.match(html,/police-patrol-loader\.js\?v=10/);
-  assert.match(loader,/police-patrol\.js\?v=10/);
+  assert.equal(game.href,'games/job_police_car/경찰차 시뮬레이터.html?v=11');
+  assert.match(html,/police-patrol-loader\.js\?v=11/);
+  assert.match(loader,/police-patrol\.js\?v=11/);
+});
+
+
+test('Police Patrol v11 uses repaired shared community scenery',()=>{
+  for(const file of [
+    'assets/quaternius_cc0-common-tree-849.glb',
+    'assets/quaternius_cc0-pine-tree-1228.glb',
+    'assets/quaternius_cc0-water-tower-1470.glb',
+    'assets/quaternius_cc0-school-bus-1323.glb',
+    'assets/quaternius_cc0-house-1085.glb'
+  ]) assert.ok(fs.existsSync(path.join(root,file)),'missing '+file);
+  for(const key of ['sharedTreeA','sharedPineA','sharedWaterTower','sharedBus','sharedHouse'])assert.match(js,new RegExp(key));
+  assert.match(js,/function repairShared3/);
 });
