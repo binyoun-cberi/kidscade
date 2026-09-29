@@ -27,7 +27,7 @@ const SHARED_MATERIAL_PRESETS=Object.freeze({
     body:0xd9a928,glass:0x6a8fa0,tire:0x25292b,metal:0x7f898c,light:0xffdf86,trim:0x2f3436
   },
   ruinedHouse:{
-    wall:0xa95843,roof:0x34383c,wood:0x68452f,glass:0x557984,trim:0xd2c4a7,metal:0x747d80
+    body:0xa95843,wall:0xa95843,roof:0x34383c,wood:0x68452f,glass:0x557984,trim:0xd2c4a7,metal:0x747d80
   }
 });
 function materialRole(name=''){
@@ -44,12 +44,18 @@ function materialRole(name=''){
 }
 function recolorShared(o,presetName){
   const p=SHARED_MATERIAL_PRESETS[presetName];if(!p)return o;
+  const fallbackRoles=presetName==='schoolBus'?['body','glass','tire','metal','light','trim']:['wall','roof','wood','glass','trim','metal'];
+  const slotRoles=new Map();let nextSlot=0;
   o.traverse(n=>{
     if(!n.isMesh)return;
     const original=Array.isArray(n.material)?n.material:[n.material];
-    const next=original.map((m,i)=>{
+    const next=original.map(m=>{
       const q=m?.clone?.()||new THREE.MeshStandardMaterial();
-      const role=materialRole((n.name||'')+' '+(m?.name||''));
+      const label=(n.name||'')+' '+(m?.name||''),semantic=materialRole(label);
+      const meaningful=/glass|window|windshield|windscreen|tire|tyre|wheel|rubber|light|lamp|headlight|taillight|roof|shingle|tile|wall|brick|plaster|facade|house|wood|door|frame|beam|bark|metal|bumper|axle|pipe|rim|trim|border|step/i.test(label);
+      const key=m?.uuid||label;
+      if(!slotRoles.has(key))slotRoles.set(key,fallbackRoles[Math.min(nextSlot++,fallbackRoles.length-1)]);
+      const role=meaningful?semantic:slotRoles.get(key);
       if(q.color)q.color.setHex(p[role]??p.body??0x8c8c8c);
       if(!q.map){q.roughness=role==='glass'?.28:role==='metal'?.52:.78;q.metalness=role==='metal'?.28:0}
       if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}
