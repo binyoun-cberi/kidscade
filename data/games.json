@@ -2413,11 +2413,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=9",
+      "href": "games/cube3d/index.html?v=10",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "겨냥도를 보고 3D 건축물을 복원하고, 전개도의 면을 직육면체에 맞춰 본 뒤 작은 블록 월드에서 탐험·수집·자유 건축까지 즐기는 공간도형 게임!",
+      "description": "겨냥도 복원과 전개도 접기부터, 땅을 파고 나무를 부수며 물·용암·불·식물의 변화를 실험하고 문·유리로 건축하는 살아있는 복셀 월드까지!",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
