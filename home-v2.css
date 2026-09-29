@@ -240,8 +240,8 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
 .kc-home-rail-track {
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:minmax(188px,1fr);
-  gap:10px;
+  grid-auto-columns:minmax(220px,1fr);
+  gap:12px;
   overflow-x:auto;
   padding:2px 2px 8px;
   scroll-snap-type:x proximity;
@@ -351,12 +351,12 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
 }
 .kc-home-card-title {
   display:block;
-  margin:7px 2px 0;
+  margin:8px 2px 0;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   color:var(--kc-ink);
-  font-size:.78rem;
+  font-size:.82rem;
   font-weight:1000;
 }
 .kc-home-card-meta {
@@ -366,7 +366,7 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
   text-overflow:ellipsis;
   white-space:nowrap;
   color:var(--kc-muted);
-  font-size:.58rem;
+  font-size:.61rem;
   font-weight:800;
 }
 
@@ -378,7 +378,19 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
   body.kc-home-v2-ready .kc-side-card.avatar-shell .kc-side-head { padding-top:11px !important; }
   body.kc-home-v2-ready #kc-local-profile-card { display:none !important; }
   body.kc-home-v2-ready #kc-popular-hub { display:none !important; }
-  .kc-home-rail-track { grid-auto-columns:minmax(188px,calc((100% - 40px) / 5)); }
+
+  /* Compact desktop: three large cards per viewport. */
+  .kc-home-rail-track {
+    grid-auto-columns:calc((100% - 24px) / 3);
+    gap:12px;
+  }
+}
+
+@media (min-width:1280px) {
+  /* Wide desktop: four cards is the intentional maximum visible set. */
+  .kc-home-rail-track {
+    grid-auto-columns:calc((100% - 36px) / 4);
+  }
 }
 
 body.dark-mode .kc-home-card-art { background:#263244; }
@@ -405,8 +417,8 @@ body.dark-mode .kc-home-rail-nav:focus-visible { background:rgba(51,65,85,.98); 
   .kc-home-rail-stack { gap:17px; }
   .kc-home-rail-nav { display:none; }
   .kc-home-rail-track {
-    grid-auto-columns:minmax(168px,48vw);
-    gap:9px;
+    grid-auto-columns:minmax(184px,46vw);
+    gap:10px;
     margin-right:-9px;
     padding-right:9px;
     scrollbar-width:none;
@@ -444,7 +456,7 @@ body.dark-mode .kc-home-rail-nav:focus-visible { background:rgba(51,65,85,.98); 
   .kc-home-rail-head h2 { font-size:.93rem; }
   .kc-home-rail-head p { display:none; }
   .kc-home-rail-track {
-    grid-auto-columns:minmax(142px,68vw);
+    grid-auto-columns:minmax(154px,62vw);
     gap:8px;
   }
   .kc-home-card-art { border-radius:13px; }
