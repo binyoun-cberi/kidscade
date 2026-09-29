@@ -54,7 +54,7 @@ test('Ecopolis contains the reverse city-builder loop',()=>{
     /function seedBiome/,
     /function updateSpecies/,
     /function launchRecycler/,
-    /buildings\.length===0/,
+    /humanFootprintCount\(\)===0/,
     /function ecologyTick/,
 /function polluteAround/,
 /function energySummary/,
@@ -140,7 +140,12 @@ test('Ecopolis v7 uses asset-backed connected paths and amenities',()=>{
     /signpost\.glb/,
     /light-square\.glb/,
     /character-female-b\.glb/,
-    /cloneSkeleton/
+    /cloneSkeleton/,
+/big-building\.glb/,
+/dumpster\.glb/,
+/construction-fence\.glb/,
+/electricity-pole\.glb/,
+/road-square\.glb/
   ]) assert.match(js,pattern);
   assert.match(html,/data-tool="trail"/);
   assert.match(html,/data-tool="boardwalk"/);
