@@ -34,7 +34,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
   const base=path.join(root,'assets','game','3d','survival','kenney-survival-kit');
   for(const file of ['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb'])assert.ok(fs.existsSync(path.join(base,file)),'missing '+file);
   assert.match(js,/kenney-survival-kit/);
-  assert.match(js,/kidscade-avatar-studio-preview/);
+  assert.match(js,/renderAvatarSVG/);
 });
 
 test('game is registered in catalog metadata v7',()=>{
