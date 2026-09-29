@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=2');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=3');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -37,6 +37,12 @@ test('Ecopolis contains the reverse city-builder loop',()=>{
 /nuclear:\{label:'원자력 발전소'/,
 /coal:\{label:'화력 발전소'/,
 /carfactory:\{label:'자동차 공장'/,
+/landfill:\{label:'쓰레기 매립지'/,
+/quarry:\{label:'채석장'/,
+/parking:\{label:'대형 주차장'/,
+/channel:\{label:'콘크리트 하천'/,
+/lawn:\{label:'잔디공원'/,
+/plantation:\{label:'단일수종 조림'/,
     /purifier:\{label:'토양 정화기'/,
     /waterfilter:\{label:'하천 정화기'/,
     /wetland:\{label:'습지 씨앗'/,
@@ -52,6 +58,11 @@ test('Ecopolis contains the reverse city-builder loop',()=>{
     /function ecologyTick/,
 /function polluteAround/,
 /function energySummary/,
+/function scarLand/,
+/function paveLand/,
+/function concreteChannel/,
+/habitatStress/,
+/waterStress/,
 /function completeGame/
   ]) assert.match(js,pattern);
 });
