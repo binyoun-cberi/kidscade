@@ -3,7 +3,7 @@
 var S=root.SeedFCSim;
 if(!S)return;
 
-var FIELD_W=1500,FIELD_H=840,GOAL_HALF=125,GOAL_Y1=FIELD_H/2-GOAL_HALF,GOAL_Y2=FIELD_H/2+GOAL_HALF;
+var FIELD_W=1500,FIELD_H=840,GOAL_HALF=110,GOAL_Y1=FIELD_H/2-GOAL_HALF,GOAL_Y2=FIELD_H/2+GOAL_HALF;
 var PLAYER_R=24,BALL_R=10,GRAVITY=980,BALL_DRAG=.985;
 var CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
 var BALL_SRC='../../assets/game/2d/sports/equipment/ball_soccer1.png';
@@ -169,13 +169,13 @@ function create(opts){
   function shoot(p){
     if(!p||m.ball.owner!==p)return false;
     var goalX=oppGoalX(p.side),spread=clamp(250-stat(p.p,'shot')*1.2,120,205),err=(Math.random()*2-1)*spread,targetY=clamp(FIELD_H/2+err,15,FIELD_H-15),distance=Math.abs(goalX-p.x);
-    var xg=clamp(.34-distance/FIELD_W*.28+(stat(p.p,'shot')-70)/310,.04,.38),st=stats[p.id];st.shots++;st.xg+=xg;
+    var xg=clamp(.34-distance/FIELD_W*.28+(stat(p.p,'shot')-70)/310,.04,.38),st=stats[p.id];st.shots++;st.xg+=xg;if(lastCompletedPass&&lastCompletedPass.receiver===p&&lastCompletedPass.age<3&&!lastCompletedPass.event.keyPass){lastCompletedPass.event.keyPass=true;stats[lastCompletedPass.passer.id].keyPasses++;}
     kickBall(p,{x:goalX+teamDir(p.side)*35,y:targetY},720+stat(p.p,'shot')*2.0,45+Math.random()*90,'shot',null);
     emit('shot',display(p)+'의 슛!',p.side,p);return true;
   }
   function tackle(p){
     if(!p||p.tackleCooldown>0||p.recover>0)return false;var target=m.ball.owner;if(!target||target.side===p.side)return false;
-    p.tackleCooldown=.68;p.tackleTimer=.22;var d=dist(p,target);if(d>58)return false;
+    p.tackleCooldown=1.05+Math.random()*.25;p.tackleTimer=.22;var d=dist(p,target);if(d>58)return false;
     var chance=clamp(.40+(stat(p.p,'defense')-stat(target.p,'speed'))/180+p.tend.tackle/420+(58-d)/125,.18,.92);
     if(Math.random()<chance){target.recover=.25;p.protect=.35;givePossession(p);stats[p.id].tackles++;emit('tackle',display(p)+'이(가) 공을 빼앗았습니다!',p.side,p);return true;}
     p.recover=.30;return false;
@@ -243,7 +243,7 @@ function create(opts){
     }
     if(m.ball.owner&&m.ball.owner.side!==a.side){
       var owner=m.ball.owner,presser=nearest(outfield(a.side),owner),shouldPress=presser===a||a.tend.press>88&&dist(a,owner)<190;
-      if(shouldPress&&!(role(a.p)==='anchor'&&dist(a,owner)>145)){move(a,owner.x,owner.y,dt,a.tend.press>75);if(dist(a,owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.65)tackle(a);return;}
+      if(shouldPress&&!(role(a.p)==='anchor'&&dist(a,owner)>145)){move(a,owner.x,owner.y,dt,a.tend.press>75);if(dist(a,owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.20)tackle(a);return;}
     }
     var target=baseTarget(a,m.ball.owner&&m.ball.owner.side===a.side);move(a,target.x,target.y,dt,a.tend.forward>88&&m.ball.owner&&m.ball.owner.side===a.side);
   }
@@ -261,7 +261,7 @@ function create(opts){
     if(controlIdle>1.15&&m.ball.owner===a){aiCarrier(a,dt);return;}
     if(controlIdle>.55&&m.ball.owner!==a){
       if(!m.ball.owner&&m.ball.z<85){var ch=nearest(outfield(userSide),m.ball);if(ch===a){move(a,m.ball.x,m.ball.y,dt,true);return;}}
-      if(m.ball.owner&&m.ball.owner.side!==userSide){var presser=nearest(outfield(userSide),m.ball.owner);if(presser===a){move(a,m.ball.owner.x,m.ball.owner.y,dt,a.tend.press>70);if(dist(a,m.ball.owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.5)tackle(a);return;}}
+      if(m.ball.owner&&m.ball.owner.side!==userSide){var presser=nearest(outfield(userSide),m.ball.owner);if(presser===a){move(a,m.ball.owner.x,m.ball.owner.y,dt,a.tend.press>70);if(dist(a,m.ball.owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.18)tackle(a);return;}}
       var target=baseTarget(a,m.ball.owner&&m.ball.owner.side===userSide);move(a,target.x,target.y,dt,false);return;
     }
     a.vx*=Math.pow(.04,dt);a.vy*=Math.pow(.04,dt);
