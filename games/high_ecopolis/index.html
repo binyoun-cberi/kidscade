@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>에코폴리스</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="에코폴리스 생태 복원 지도"></canvas>
+
+  <header id="hud" class="glass">
+    <div class="brand"><span class="brandIcon">🌍</span><div><small>KIDSCADE ECO LAB</small><b>에코폴리스</b></div></div>
+    <div class="phase"><span>단계</span><b id="phaseName">1 · 되살리기</b></div>
+    <div class="stat"><span>에코 포인트</span><b id="ecoPoints">130</b></div>
+    <div class="stat"><span>땅 복원</span><b id="restoreRate">0%</b></div>
+    <div class="stat"><span>깨끗한 물</span><b id="waterRate">0%</b></div>
+    <div class="stat"><span>생물다양성</span><b id="bioRate">0%</b></div>
+  </header>
+
+  <aside id="mission" class="glass">
+    <div class="missionHead"><div><small id="missionKicker">PHASE 1</small><b id="missionTitle">죽은 땅을 깨워요</b></div><button id="missionCollapse" type="button">›</button></div>
+    <p id="missionText">풍력 발전기로 전력을 만들고 정화기로 오염된 토양을 초원으로 되돌리세요.</p>
+    <div id="objectives"></div>
+    <div class="speciesRow" id="speciesRow"></div>
+  </aside>
+
+  <div id="topActions" class="glass">
+    <button id="windViewBtn" type="button" title="바람 지도">🌬</button>
+    <button id="pollutionViewBtn" type="button" title="오염 지도">☣</button>
+    <button id="homeViewBtn" type="button" title="카메라 원위치">⌂</button>
+    <button id="helpBtn" type="button" title="도움말">?</button>
+  </div>
+
+  <div id="mapLegend" class="glass hidden"></div>
+  <div id="tileInfo" class="glass hidden"></div>
+  <div id="toast" class="glass" aria-live="polite"></div>
+
+  <section id="toolbar" class="glass" aria-label="생태 복원 도구">
+    <div class="toolScroller">
+      <button class="tool active" data-tool="inspect" type="button"><span>🔎</span><b>살펴보기</b><small>무료</small></button>
+      <button class="tool" data-tool="wind" type="button"><span>🌬️</span><b>풍력 발전기</b><small>20P</small></button>
+      <button class="tool" data-tool="purifier" type="button"><span>🌱</span><b>토양 정화기</b><small>18P</small></button>
+      <button class="tool" data-tool="waterfilter" type="button"><span>💧</span><b>하천 정화기</b><small>22P</small></button>
+      <button class="tool phase2 locked" data-tool="wetland" type="button"><span>🪷</span><b>습지 씨앗</b><small>16P</small></button>
+      <button class="tool phase2 locked" data-tool="forest" type="button"><span>🌲</span><b>숲 묘목장</b><small>16P</small></button>
+      <button class="tool phase2 locked" data-tool="meadow" type="button"><span>🌼</span><b>꽃초원 씨앗</b><small>14P</small></button>
+      <button class="tool phase4 locked recycleTool" data-tool="recycler" type="button"><span>♻️</span><b>회수선</b><small>무료</small></button>
+    </div>
+    <div class="toolbarSide">
+      <button id="undoBtn" type="button" title="마지막 건설 되돌리기">↶</button>
+      <button id="saveBtn" type="button">저장</button>
+    </div>
+  </section>
+
+  <div id="intro" class="overlay">
+    <div class="card introCard">
+      <p class="eyebrow">REVERSE CITY BUILDER</p>
+      <div class="ecoLogo">🌱</div>
+      <h1>에코폴리스</h1>
+      <p class="lead">건물을 늘리는 대신, <b>자연이 다시 혼자 살아갈 수 있게 만든 뒤 모든 시설을 걷어내는</b> 생태 복원 건설 게임입니다.</p>
+      <div class="flow"><span>① 전력</span><i>→</i><span>② 정화</span><i>→</i><span>③ 생태계</span><i>→</i><span>④ 야생동물</span><i>→</i><span>⑤ 흔적 없이 철수</span></div>
+      <div class="scenarioTitle"><b>복원할 지역</b><small>지형과 오염 상태가 달라요</small></div>
+      <div class="scenarioGrid">
+        <button class="scenario active" data-scenario="valley" type="button"><span>🏞️</span><b>마른 강의 골짜기</b><small>균형 잡힌 첫 지역</small></button>
+        <button class="scenario" data-scenario="marsh" type="button"><span>🛢️</span><b>검은 물 습지</b><small>물 정화가 더 중요해요</small></button>
+        <button class="scenario" data-scenario="dust" type="button"><span>🌫️</span><b>먼지 평원</b><small>바람과 숲 배치가 중요해요</small></button>
+      </div>
+      <div class="startActions">
+        <button id="tutorialBtn" class="secondary" type="button">튜토리얼로 시작</button>
+        <button id="newBtn" class="primary" type="button">새 복원 시작</button>
+        <button id="continueBtn" class="secondary" type="button">이어하기</button>
+      </div>
+      <small class="tip">드래그: 지도 이동 · 휠/두 손가락: 확대·축소 · 숫자키 1~8: 도구 선택</small>
+    </div>
+  </div>
+
+  <div id="tutorialCoach" class="coach glass hidden">
+    <small id="tutorialStep">튜토리얼 1 / 6</small>
+    <b id="tutorialTitle">먼저 바람을 읽어요</b>
+    <p id="tutorialText">🌬 버튼을 눌러 바람 지도를 켜고, 바람이 강한 곳을 찾아보세요.</p>
+    <div><button id="tutorialSkip" type="button">끝내기</button><button id="tutorialNext" type="button">다음</button></div>
+  </div>
+
+  <div id="help" class="overlay hidden">
+    <div class="card helpCard">
+      <p class="eyebrow">HOW TO RESTORE</p>
+      <h2>자연을 만들고, 마지막에는 떠나요</h2>
+      <div class="helpGrid">
+        <div><b>🌬 1. 바람을 읽기</b><p>풍력 발전기는 바람이 35% 이상인 땅에 놓을 수 있습니다. 발전기 주변 시설만 작동합니다.</p></div>
+        <div><b>🌱 2. 땅 되살리기</b><p>전력 범위 안에 토양 정화기를 세우면 주변 오염이 줄고 초원이 생깁니다.</p></div>
+        <div><b>💧 3. 물 되살리기</b><p>하천 정화기는 깨끗한 강을 만들고 주변 둔치의 오염도 함께 낮춥니다.</p></div>
+        <div><b>🌲 4. 다양한 생태계</b><p>초원을 숲·습지·꽃초원으로 나누어야 여러 동물이 살 수 있습니다.</p></div>
+        <div><b>🦌 5. 동물이 돌아오기</b><p>서식 조건이 맞으면 벌, 개구리, 사슴, 수달이 스스로 돌아옵니다.</p></div>
+        <div><b>♻️ 6. 흔적 없이 철수</b><p>마지막에는 깨끗한 물에 회수선을 보내 주변 시설을 걷어냅니다. 건물이 0개가 되어야 복원이 끝납니다.</p></div>
+      </div>
+      <button id="closeHelpBtn" class="primary" type="button">복원 계속하기</button>
+    </div>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="card resultCard">
+      <div class="resultIcon">🦌🌲🦦</div>
+      <p class="eyebrow">RESTORATION COMPLETE</p>
+      <h2>자연이 다시 스스로 살아갑니다</h2>
+      <p id="resultText" class="lead"></p>
+      <div class="resultStats">
+        <div><span>생태 점수</span><b id="resultScore">0</b></div>
+        <div><span>복원률</span><b id="resultRestore">0%</b></div>
+        <div><span>돌아온 동물</span><b id="resultSpecies">0종</b></div>
+      </div>
+      <div class="startActions"><button id="resultAgain" class="primary" type="button">새 지역 복원</button><button id="resultObserve" class="secondary" type="button">완성된 자연 보기</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_ecopolis" data-title="에코폴리스" data-shell="true" data-orientation="landscape"></script>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
