@@ -247,7 +247,7 @@ test('Home V2 desktop rails use overlay circle arrows instead of visible scrollb
   assert.match(source, /kc-home-rail-viewport/);
   assert.match(source, /kc-home-rail-nav-prev/);
   assert.match(source, /kc-home-rail-nav-next/);
-  assert.match(source, /track\.clientWidth \* 0\.9/);
+  assert.match(source, /track\.clientWidth - 12/);
   assert.match(source, /updateRailNavigationState/);
 
   assert.match(css, /\.kc-home-rail-nav\s*\{/);
@@ -256,4 +256,15 @@ test('Home V2 desktop rails use overlay circle arrows instead of visible scrollb
   assert.match(css, /\.kc-home-rail-track::\-webkit-scrollbar\s*\{\s*display:none/);
   assert.doesNotMatch(css, /scrollbar-width:thin/);
   assert.match(css, /@media \(max-width:940px\)[\s\S]*\.kc-home-rail-nav \{ display:none; \}/);
+});
+
+
+test('Home V2 desktop rails target four visible cards on wide screens', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const css=fs.readFileSync(path.resolve(__dirname,'..','home-v2.css'),'utf8');
+
+  assert.match(css, /@media \(min-width:941px\)[\s\S]*grid-auto-columns:calc\(\(100% - 24px\) \/ 3\)/);
+  assert.match(css, /@media \(min-width:1280px\)[\s\S]*grid-auto-columns:calc\(\(100% - 36px\) \/ 4\)/);
+  assert.doesNotMatch(css, /calc\(\(100% - 40px\) \/ 5\)/);
 });
