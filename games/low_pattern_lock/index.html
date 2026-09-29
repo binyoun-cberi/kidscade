@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>패턴 락</title>
-  <link rel="stylesheet" href="./style.css?v=3">
+  <link rel="stylesheet" href="./style.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -16,10 +16,10 @@
     </header>
 
     <section id="menuScreen" class="screen menu-screen">
-      <div class="hero-lock" aria-hidden="true"><div class="lock-shackle"></div><div class="lock-body">✓</div></div>
-      <p class="eyebrow">SW · 알고리즘 퍼즐</p>
+      <div class="hero-lock" aria-hidden="true"><div class="lock-shackle"></div><div class="lock-body">?</div></div>
+      <p class="eyebrow">SW · 알고리즘 추리 퍼즐</p>
       <h1>패턴 락</h1>
-      <p class="hero-copy"><b>이 사람의 잠금 패턴을 기억해서 똑같이 맞혀 보세요.</b><br>모든 점을 지나는 미로가 아니라, 이동 순서 자체가 정답이에요.</p>
+      <p class="hero-copy"><b>정답 패턴은 보여주지 않아요.</b><br>점 개수, 대각선 횟수, 시작 위치 같은 단서만 보고 이 사람의 잠금 패턴을 예상해 보세요.</p>
 
       <div class="progress-card">
         <div><span class="mini-label">해제한 패턴</span><strong id="progressText">0 / 18</strong></div>
@@ -27,24 +27,24 @@
       </div>
 
       <div class="concepts" aria-label="학습 개념">
-        <div class="concept"><span>1</span><b>순차</b><small>순서 기억하기</small></div>
-        <div class="concept"><span>2</span><b>선택</b><small>조건 보고 갈림길</small></div>
-        <div class="concept"><span>3</span><b>반복</b><small>패턴 묶어 기억하기</small></div>
+        <div class="concept"><span>1</span><b>순차</b><small>순서 단서 추론</small></div>
+        <div class="concept"><span>2</span><b>선택</b><small>조건 단서 활용</small></div>
+        <div class="concept"><span>3</span><b>반복</b><small>반복 구조 찾기</small></div>
       </div>
 
       <div class="level-select-wrap">
-        <div class="section-head"><b>누구의 패턴을 풀까?</b><button id="helpBtn" class="text-btn" type="button">게임 방법</button></div>
+        <div class="section-head"><b>누구의 패턴을 추리할까?</b><button id="helpBtn" class="text-btn" type="button">게임 방법</button></div>
         <div id="levelGrid" class="level-grid" aria-label="단계 선택"></div>
       </div>
 
       <button id="continueBtn" class="primary-btn" type="button">이어하기</button>
-      <button id="freeBtn" class="ghost-btn" type="button">친구에게 내 패턴 내기</button>
+      <button id="freeBtn" class="ghost-btn" type="button">친구에게 비밀 패턴 내기</button>
     </section>
 
     <section id="gameScreen" class="screen game-screen hidden">
       <div class="game-head">
         <button id="backBtn" class="icon-btn" type="button" aria-label="처음 화면으로">‹</button>
-        <div><span id="levelBadge" class="level-badge">관찰</span><strong id="levelTitle">하린의 패턴</strong></div>
+        <div><span id="levelBadge" class="level-badge">추리</span><strong id="levelTitle">하린의 패턴</strong></div>
         <div id="levelCounter" class="counter">1 / 18</div>
       </div>
 
@@ -52,15 +52,16 @@
         <div id="ownerAvatar" class="owner-avatar">🧒</div>
         <div class="owner-copy">
           <span id="ownerLabel">하린의 휴대폰</span>
-          <strong id="phaseText">패턴을 잘 보세요!</strong>
+          <strong id="phaseText">단서만 보고 패턴을 예상하세요</strong>
         </div>
-        <div id="lengthBadge" class="length-badge">6점</div>
+        <div id="attemptBadge" class="length-badge">도전 1</div>
       </div>
 
-      <div class="mission-card">
-        <p id="missionText">잠깐 나타나는 패턴을 기억했다가 똑같이 그리세요.</p>
-        <div id="logicChips" class="logic-chips" aria-label="알고리즘 구조"></div>
-        <div id="commandCard" class="command-card hidden"></div>
+      <div class="mission-card clue-panel">
+        <p id="missionText">정답은 보이지 않습니다. 단서를 조합해 숨은 패턴을 추리하세요.</p>
+        <div id="logicChips" class="logic-chips" aria-label="알고리즘 구조 단서"></div>
+        <div id="clueList" class="clue-list"></div>
+        <div id="feedbackCard" class="feedback-card hidden"></div>
       </div>
 
       <div id="boardWrap" class="board-wrap">
@@ -73,32 +74,32 @@
       </div>
 
       <div class="algorithm-panel">
-        <div class="panel-title"><span>내가 그린 패턴</span><small id="moveCount">0개 점</small></div>
-        <div id="algorithmText" class="algorithm-text">패턴이 사라진 뒤 시작하세요.</div>
+        <div class="panel-title"><span>내 예상 패턴</span><small id="moveCount">0개 점</small></div>
+        <div id="algorithmText" class="algorithm-text">단서를 읽고 시작점을 골라 보세요.</div>
       </div>
 
       <div class="controls">
         <button id="undoBtn" type="button">↶ 되돌리기</button>
         <button id="resetBtn" type="button">↻ 지우기</button>
-        <button id="replayBtn" type="button">👁 다시 보기</button>
+        <button id="clueBtn" type="button">🔎 단서 하나 더</button>
       </div>
-      <p id="releaseTip" class="release-tip">누른 채로 점을 이어 그리고 마지막 점에서 손을 떼면 확인해요.</p>
-      <button id="savePatternBtn" class="primary-btn hidden" type="button" disabled>이 패턴을 문제로 내기</button>
+      <p id="releaseTip" class="release-tip">누른 채로 점을 이어 그린 뒤 손을 떼면 정답과 비교해요. 틀리면 비교 정보가 추가됩니다.</p>
+      <button id="savePatternBtn" class="primary-btn hidden" type="button" disabled>이 패턴을 비밀 문제로 내기</button>
     </section>
 
     <section id="tutorial" class="overlay hidden" aria-modal="true" role="dialog">
       <div class="modal tutorial-modal">
-        <div class="tutorial-demo" aria-hidden="true">
+        <div class="tutorial-demo mystery-demo" aria-hidden="true">
           <span class="demo-dot a"></span><span class="demo-dot b"></span><span class="demo-dot c"></span>
-          <span class="demo-line l1"></span><span class="demo-line l2"></span>
+          <span class="mystery-mark">?</span>
         </div>
         <p class="eyebrow">게임 방법</p>
-        <h2>보고, 기억하고, 똑같이!</h2>
+        <h2>보는 게임이 아니라 추리하는 게임!</h2>
         <div class="tutorial-steps">
-          <p><b>① 관찰</b> 다른 사람이 잠금을 푸는 패턴이 잠깐 보여요.</p>
-          <p><b>② 기억</b> 시작점·이동 순서·대각선·끝점을 기억해요. 모든 점을 지날 필요는 없어요.</p>
-          <p><b>③ 재현</b> 같은 패턴을 그리고 손을 떼면 정답과 한 번에 비교해요. 중간에 어디가 틀렸는지는 알려주지 않아요.</p>
-          <p><b>④ 알고리즘</b> 순차·선택·반복이 몇 번 쓰였는지 단서로 패턴을 묶어 기억해요.</p>
+          <p><b>① 단서 읽기</b> “7개 점”, “대각선 3번”, “시작은 모서리”처럼 정답의 특징만 알려줘요.</p>
+          <p><b>② 예상하기</b> 정답 패턴은 한 번도 보여주지 않습니다. 단서를 조합해 직접 패턴을 그려요.</p>
+          <p><b>③ 비교하기</b> 틀리면 점 개수·대각선 수·시작/끝·같은 순서의 점 수 같은 비교 정보가 나와요.</p>
+          <p><b>④ 추가 단서</b> 막히면 단서를 하나 더 열 수 있어요. 적게 사용할수록 별을 더 많이 받아요.</p>
         </div>
         <p class="keyboard-tip">PC에서는 마우스로 드래그하세요. 키보드는 방향키 + <kbd>Q E Z C</kbd> 대각선, <kbd>Enter</kbd> 제출을 지원해요.</p>
         <button id="tutorialCloseBtn" class="primary-btn" type="button">알겠어요!</button>
@@ -107,22 +108,22 @@
 
     <section id="handoffOverlay" class="overlay hidden" aria-modal="true" role="dialog">
       <div class="modal handoff-modal">
-        <div class="handoff-icon">🙈</div>
-        <p class="eyebrow">친구 도전</p>
-        <h2>패턴을 숨겼어요</h2>
-        <p>만든 사람은 화면을 보지 말고 기기를 친구에게 넘겨주세요.<br>친구가 버튼을 누르면 만든 패턴이 한 번 나타났다가 사라져요.</p>
-        <button id="handoffStartBtn" class="primary-btn" type="button">친구가 도전 시작</button>
+        <div class="handoff-icon">🤫</div>
+        <p class="eyebrow">친구 문제</p>
+        <h2>비밀 패턴 저장 완료</h2>
+        <p>만든 사람만 정답을 알고 있어요.<br>기기를 친구에게 넘기면 게임이 패턴을 보여주지 않고 자동으로 단서만 만들어 줍니다.</p>
+        <button id="handoffStartBtn" class="primary-btn" type="button">친구가 추리 시작</button>
       </div>
     </section>
 
     <section id="successOverlay" class="overlay hidden" aria-modal="true" role="dialog">
       <div class="modal result-modal">
         <div class="result-lock" aria-hidden="true">🔓</div>
-        <p class="eyebrow" id="resultEyebrow">패턴 일치</p>
+        <p class="eyebrow" id="resultEyebrow">추리 성공</p>
         <h2 id="resultTitle">잠금 해제!</h2>
         <div id="earnedStars" class="earned-stars">★★★</div>
         <p id="resultMessage" class="result-message"></p>
-        <div class="result-algorithm"><span>이 패턴의 알고리즘</span><strong id="resultAlgorithm"></strong></div>
+        <div class="result-algorithm"><span>숨겨져 있던 정답 패턴</span><strong id="resultAlgorithm"></strong></div>
         <p id="conceptExplain" class="concept-explain"></p>
         <button id="nextBtn" class="primary-btn" type="button">다음 사람</button>
         <button id="resultMenuBtn" class="ghost-btn" type="button">처음 화면</button>
@@ -133,6 +134,6 @@
 </div>
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="low_pattern_lock" data-title="패턴 락" data-shell="true" data-mute="true" data-orientation="portrait"></script>
-<script src="./game.js?v=3"></script>
+<script src="./game.js?v=4"></script>
 </body>
 </html>
