@@ -258,10 +258,13 @@ class FutsalAvatarActor{
       ctx.fillStyle=kitColor;
       ctx.fillRect(-drawW*.23,-drawH*.57,drawW*.46,drawH*.23);
       ctx.globalAlpha=1;
+      ctx.save();
+      if(p.facing<0)ctx.scale(-1,1);
       ctx.fillStyle='#fff';
       ctx.font='1000 '+Math.max(8,Math.round(10*q.s))+'px system-ui';
       ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(String(p.number),0,-drawH*.455);
+      ctx.restore();
     }else{
       ctx.fillStyle=TEAM_COLOR[p.team];ctx.beginPath();ctx.arc(q.x,q.y-23*q.s,18*q.s,0,Math.PI*2);ctx.fill();
     }
