@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { shared3DPath, shared3DIsApproved } from '../../assets/game/manifest/shared-community-3d.js';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -63,6 +65,44 @@ let rng=Math.random,tutorialIndex=-1,tutorialMode=false;
 let drag={active:false,id:null,x:0,y:0,moved:false},pointers=new Map();
 let toastTimer=0,saveTimer=0,elapsed=0,builtCount=0,ecologyClock=0;
 let ecosystem=makeEcosystem();
+const sharedLoader=new GLTFLoader(),sharedCache=new Map(),sharedPending=new Map();
+const SHARED=id=>shared3DPath(id,'../../');
+function normalizeShared(o,target){
+  const b=new THREE.Box3().setFromObject(o),size=b.getSize(new THREE.Vector3()),mx=Math.max(size.x,size.y,size.z)||1;
+  o.scale.multiplyScalar(target/mx);
+  const b2=new THREE.Box3().setFromObject(o),center=b2.getCenter(new THREE.Vector3());
+  o.position.x-=center.x;o.position.z-=center.z;o.position.y-=b2.min.y;
+  o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+  return o;
+}
+function sharedModel(id,target=1){
+  if(!shared3DIsApproved(id))return Promise.resolve(null);
+  const url=SHARED(id);if(!url)return Promise.resolve(null);
+  if(sharedCache.has(url))return Promise.resolve(normalizeShared(sharedCache.get(url).clone(true),target));
+  if(!sharedPending.has(url))sharedPending.set(url,new Promise(resolve=>sharedLoader.load(url,g=>{sharedCache.set(url,g.scene);resolve(g.scene)},undefined,()=>resolve(null))));
+  return sharedPending.get(url).then(base=>base?normalizeShared(base.clone(true),target):null);
+}
+function addSharedBiomeVisual(t){
+  if(analysisMode!=='none')return;
+  const rev=t.decor.userData.rev,valid=biome=>t.decor.userData.rev===rev&&analysisMode==='none'&&t.biome===biome;
+  if(t.kind==='rock'){
+    const id=noise(t.x,t.z)>.5?'nature.mossyRockA':'nature.rock';
+    sharedModel(id,.72).then(o=>{if(!o||t.decor.userData.rev!==rev||analysisMode!=='none')return;o.rotation.y=noise(t.z,t.x)*Math.PI*2;t.decor.add(o)});
+    return;
+  }
+  if(t.biome==='forest'){
+    const ids=noise(t.x,t.z)>.5?['nature.commonTreeA','nature.pineTreeA']:['nature.commonTreeB','nature.pineTreeB'];
+    Promise.all(ids.map((id,i)=>sharedModel(id,i?.72:.86))).then(list=>{if(!valid('forest'))return;list.filter(Boolean).forEach((o,i)=>{o.position.set(i?.20:-.18,0,i?-.12:.12);o.rotation.y=noise(t.x+i,t.z-i)*Math.PI*2;t.decor.add(o)})});
+  }else if(t.biome==='plantation'){
+    sharedModel('nature.pineTreeA',.76).then(base=>{if(!base||!valid('plantation'))return;[-.24,0,.24].forEach(x=>{const o=base.clone(true);o.position.x=x;o.scale.multiplyScalar(.62);t.decor.add(o)})});
+  }else if(t.biome==='wetland'){
+    sharedModel('nature.plant',.46).then(o=>{if(o&&valid('wetland')){o.rotation.y=noise(t.x,t.z)*Math.PI*2;t.decor.add(o)}});
+  }else if(t.biome==='meadow'){
+    sharedModel('nature.grass',.42).then(o=>{if(o&&valid('meadow')){o.position.z=.08;o.rotation.y=noise(t.x,t.z)*Math.PI*2;t.decor.add(o)}});
+  }else if(t.biome==='grass'&&noise(t.x,t.z)>.72){
+    sharedModel('nature.grass',.32).then(o=>{if(o&&valid('grass'))t.decor.add(o)});
+  }
+}
 function makeEcosystem(input={}){
   return {
     carbon:Number(input.carbon||0),waste:Number(input.waste||0),industryProfit:Number(input.industryProfit||0),
@@ -204,24 +244,25 @@ function refreshTileVisual(t){
   rebuildDecor(t);
 }
 function rebuildDecor(t){
-  clearGroup(t.decor);const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
+  clearGroup(t.decor);t.decor.userData.rev=(t.decor.userData.rev||0)+1;const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
   if(analysisMode!=='none')return;
   if(t.kind==='land'&&t.biome==='barren'&&t.pollution>.55){
     const stick=new THREE.Mesh(new THREE.CylinderGeometry(.025,.04,.38,5),mat.dead);stick.rotation.z=.45;stick.position.set((noise(t.x,t.z)-.5)*.45,.18,(noise(t.z,t.x)-.5)*.45);t.decor.add(stick);
   }
   if(t.biome==='forest'){
-    for(let i=0;i<2;i++){const g=treeModel();g.scale.setScalar(i?0.75:1);g.position.set((i-.5)*.35,0,(i?-.12:.15));t.decor.add(g)}
+    const g=treeModel();g.scale.setScalar(.52);g.position.set(-.12,0,.08);t.decor.add(g);
   }else if(t.biome==='plantation'){
-    for(let i=-1;i<=1;i++){const g=treeModel();g.scale.setScalar(.7);g.position.set(i*.25,0,0);t.decor.add(g)}
+    for(let i=-1;i<=1;i++){const g=treeModel();g.scale.setScalar(.42);g.position.set(i*.25,0,0);t.decor.add(g)}
   }else if(t.biome==='lawn'){
     for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.03,.13,.03),mat.leaf);blade.position.set((i-1)*.18,.06,0);t.decor.add(blade)}
   }else if(t.biome==='paved'){
     const slab=new THREE.Mesh(new THREE.BoxGeometry(.82,.035,.82),mat.dark);slab.position.y=.04;t.decor.add(slab);
   }else if(t.biome==='meadow'){
-    for(let i=0;i<5;i++){const stem=new THREE.Mesh(geo.reed,mat.leaf);stem.scale.y=.35;stem.position.set((noise(t.x+i,t.z)-.5)*.65,.08,(noise(t.z+i,t.x)-.5)*.65);const f=new THREE.Mesh(geo.flower,i%2?mat.flower:mat.pink);f.position.set(stem.position.x,.18,stem.position.z);t.decor.add(stem,f)}
+    for(let i=0;i<3;i++){const stem=new THREE.Mesh(geo.reed,mat.leaf);stem.scale.y=.35;stem.position.set((noise(t.x+i,t.z)-.5)*.65,.08,(noise(t.z+i,t.x)-.5)*.65);const f=new THREE.Mesh(geo.flower,i%2?mat.flower:mat.pink);f.position.set(stem.position.x,.18,stem.position.z);t.decor.add(stem,f)}
   }else if(t.biome==='wetland'){
-    for(let i=0;i<4;i++){const r=new THREE.Mesh(geo.reed,mat.leaf);r.position.set((noise(t.x+i,t.z)-.5)*.55,.18,(noise(t.z,t.x+i)-.5)*.55);r.scale.y=.65;t.decor.add(r)}
+    for(let i=0;i<3;i++){const r=new THREE.Mesh(geo.reed,mat.leaf);r.position.set((noise(t.x+i,t.z)-.5)*.55,.18,(noise(t.z,t.x+i)-.5)*.55);r.scale.y=.58;t.decor.add(r)}
   }
+  addSharedBiomeVisual(t);
 }
 function noise(a,b){const x=Math.sin((a*12.9898+b*78.233+seed*.001))*43758.5453;return x-Math.floor(x)}
 function treeModel(){
