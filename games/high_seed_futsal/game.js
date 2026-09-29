@@ -628,7 +628,7 @@ function aiCarrier(p,dt){
   }
   const centerPull=(FIELD_H/2-p.y)*.34;
   const lane=(Math.sin(simTime*.8+p.index*2.1))*75;
-  moveToward(p,dir,clamp((centerPull+lane)/260,-.55,.55),AI_SPEED*(difficulty==='hard'?1.02:1),dt,780);
+  moveToward(p,dir,clamp((centerPull+lane)/260,-.55,.55),AI_SPEED,dt,780);
   p.facing=dir;
 }
 function updateAIPlayer(p,dt){
@@ -697,7 +697,10 @@ function updateOwnedBall(dt){
 function tryGather(){
   if(owner||ballFree>0||ball.z>52)return;
   const ps=allPlayers().slice().sort(function(a,b){return dist(a,ball)-dist(b,ball)});
-  if(intendedReceiver&&intendedReceiver.active&&dist(intendedReceiver,ball)<36){givePossession(intendedReceiver);return}
+  if(intendedReceiver&&intendedReceiver.active&&dist(intendedReceiver,ball)<36){
+    const receiverDist=dist(intendedReceiver,ball),nearestDist=ps.length?dist(ps[0],ball):Infinity;
+    if(receiverDist<=nearestDist+5){givePossession(intendedReceiver);return}
+  }
   for(let i=0;i<ps.length;i++){
     const p=ps[i],r=p.role==='GK'?41:29;
     if(dist(p,ball)<r){givePossession(p);return}
@@ -816,13 +819,16 @@ function update(dt){
 
   updatePlayers(dt);
   if(owner)updateOwnedBall(dt);else updateLooseBall(dt);
+  if(owner&&(ball.x<0||ball.x>FIELD_W||ball.y<0||ball.y>FIELD_H)){
+    lastTouchTeam=owner.team;owner=null;intendedReceiver=null;
+  }
   if(!owner&&checkOut())return;
 
   particles.forEach(function(p){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=420*dt;p.life-=dt});
   particles=particles.filter(function(p){return p.life>0});
   statusTimer=Math.max(0,statusTimer-dt);if(statusTimer===0)statusEl.classList.remove('show');
   shake=Math.max(0,shake-dt*18);flash=Math.max(0,flash-dt);
-  const target=clamp(ball.x+(owner?teamDir(owner.team)*70:clamp(ball.vx*.08,-100,100)),410,FIELD_W-410);
+  const target=clamp(ball.x+(owner?teamDir(owner.team)*70:clamp(ball.vx*.08,-100,100)),570,FIELD_W-570);
   cameraX=lerp(cameraX,target,clamp(dt*3.5,0,1));
 
   if(mode!=='practice'&&state==='play'){
