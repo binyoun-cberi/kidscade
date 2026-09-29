@@ -16,7 +16,9 @@ const ART={
  city:'../../assets/game/3d/city/poly-pizza-city-pack/',
  roads:'../../assets/game/3d/city/kenney-city-kit-roads/',
  cars:'../../assets/game/3d/vehicles/kenney-car-kit/',
- nature:'../../assets/game/3d/nature/kenney-nature-kit/'
+ nature:'../../assets/game/3d/nature/kenney-nature-kit/',
+ suburban:'../../assets/game/3d/city/kenney-city-kit-suburban/',
+ buildings:'../../assets/game/3d/buildings/kenney-building-kit/'
 };
 const ITEMS={
   wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
@@ -113,6 +115,18 @@ function settlementSteps(){
  ]
 }
 function missionDone(day=game.day){if(game?.phase==='settlement')return settlementSteps().every(s=>s[2]);const m=MISSIONS[day];return !!m&&m.steps.every(([id])=>!!game.flags[id])}
+function groundColor(x,z,h=0){
+ const base=new THREE.Color(0x73915f),forest=new THREE.Color(0x496c4b),hill=new THREE.Color(0x66745a),city=new THREE.Color(0x777b70),camp=new THREE.Color(0x819866),bank=new THREE.Color(0x7d8f63);
+ let out=base.clone();const cityD=Math.hypot((x-49)/35,(z+33)/27),campD=Math.hypot((x+3)/28,(z-14)/24);
+ if(x<-17)out.lerp(forest,clamp((-x-17)/38,0,1));if(x<-42&&z>14)out.lerp(hill,.65);
+ if(cityD<1)out.lerp(city,clamp(1-cityD,0,1)*.72);if(campD<1)out.lerp(camp,clamp(1-campD,0,1)*.32);
+ if(Math.abs(x-RIVER_X)<11)out.lerp(bank,clamp(1-Math.abs(x-RIVER_X)/11,0,1)*.4);
+ const n=(Math.sin(x*.31+z*.17)+Math.sin(x*.11-z*.27))*.018;out.offsetHSL(0,0,n-h*.003);return out
+}
+function makeRiverGeometry(){
+ const seg=40,half=7,verts=[],uv=[],idx=[];for(let i=0;i<=seg;i++){const z=-70+i*(140/seg),center=RIVER_X+Math.sin(z*.055)*.75,width=half+Math.sin(z*.09)*.55;verts.push(center-width,0,z,center+width,0,z);uv.push(0,i/seg,1,i/seg)}
+ for(let i=0;i<seg;i++){const a=i*2,b=a+1,c=a+2,d=a+3;idx.push(a,c,b,b,c,d)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g
+}
 function terrainHeight(x,z){
  let h=0;
  if(x<-15){const t=clamp((-x-15)/52,0,1);h+=t*(.35+.55*(Math.sin(x*.12)+Math.cos(z*.11))*.5+.7*Math.max(0,Math.sin((x+z)*.07)))}
@@ -148,10 +162,9 @@ function init3D(){
  scene.add(new THREE.HemisphereLight(0xe6f7ff,0x607054,1.7));
  const sun=new THREE.DirectionalLight(0xfff0d0,2.55);sun.position.set(-32,48,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-70;sun.shadow.camera.right=70;sun.shadow.camera.top=70;sun.shadow.camera.bottom=-70;sun.shadow.bias=-.00015;sun.shadow.normalBias=.02;scene.add(sun);scene.userData.sun=sun;
  createSkyDome();
- const groundGeo=new THREE.PlaneGeometry(140,140,36,36),gp=groundGeo.attributes.position;for(let i=0;i<gp.count;i++){const x=gp.getX(i),z=-gp.getY(i);gp.setZ(i,terrainHeight(x,z))}gp.needsUpdate=true;groundGeo.computeVertexNormals();
- const ground=new THREE.Mesh(groundGeo,new THREE.MeshStandardMaterial({color:0x66865a,roughness:.95,flatShading:true}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;groups.world.add(ground);
- const river=new THREE.Mesh(new THREE.PlaneGeometry(14,140),new THREE.MeshPhysicalMaterial({color:0x4fabc6,transparent:true,opacity:.84,roughness:.2}));river.rotation.x=-Math.PI/2;river.position.set(RIVER_X,.08,0);groups.world.add(river);scene.userData.river=river;
- box(44,.025,64,0x55764f,-39,.012,16);box(39,.025,48,0x767873,49,.014,-33);
+ const groundGeo=new THREE.PlaneGeometry(140,140,36,36),gp=groundGeo.attributes.position,colors=[];for(let i=0;i<gp.count;i++){const x=gp.getX(i),z=-gp.getY(i),h=terrainHeight(x,z),col=groundColor(x,z,h);gp.setZ(i,h);colors.push(col.r,col.g,col.b)}groundGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));gp.needsUpdate=true;groundGeo.computeVertexNormals();
+ const ground=new THREE.Mesh(groundGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.98}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;groups.world.add(ground);
+ const river=new THREE.Mesh(makeRiverGeometry(),new THREE.MeshPhysicalMaterial({color:0x4b9fb1,transparent:true,opacity:.84,roughness:.18,metalness:.03}));river.position.y=.08;groups.world.add(river);scene.userData.river=river;
  box(7,.08,120,0x454b4b,16,.04,-2);box(95,.08,6,0x454b4b,8,.05,-27);
  for(let z=-54;z<=54;z+=10)box(.12,.012,4.7,0xe7d8a1,16,.092,z);for(let x=-34;x<=54;x+=10)box(4.7,.012,.12,0xe7d8a1,x,.092,-27);
  const bridgeHit=box(15,.35,5.5,0x4b5153,RIVER_X,.3,-4);bridgeHit.material.transparent=true;bridgeHit.material.opacity=.05;
