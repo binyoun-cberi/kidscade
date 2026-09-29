@@ -2391,11 +2391,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=10",
+      "href": "games/cube3d/index.html?v=11",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "겨냥도 복원과 전개도 접기부터, 땅을 파고 나무를 부수며 물·용암·불·식물의 변화를 실험하고 문·유리로 건축하는 살아있는 복셀 월드까지!",
+      "description": "겨냥도·전개도를 3D로 탐구하고, 정육면체와 직육면체의 6면을 따로 색칠하며 모서리·꼭짓점·평행면을 관찰하는 수학 건축 게임. 날씨·크리터·화로·물질 변화가 있는 살아있는 복셀 월드까지!",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
