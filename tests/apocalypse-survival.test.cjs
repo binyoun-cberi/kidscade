@@ -9,7 +9,8 @@ const dir=path.join(root,'games','high_apocalypse_survival');
 const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const js=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const css=fs.readFileSync(path.join(dir,'style.css'),'utf8');
-const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));\nconst home=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
+const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
+const home=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('apocalypse survival module parses and loads Kidscade shell',()=>{
   const stripped=js.replace(/^import .*$/gm,'');
