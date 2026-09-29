@@ -22,6 +22,43 @@ const ART={
  buildings:'../../assets/game/3d/buildings/kenney-building-kit/'
 };
 const SHARED=id=>shared3DPath(id,'../../');
+const SHARED_MATERIAL_PRESETS=Object.freeze({
+  schoolBus:{
+    body:0xd9a928,glass:0x6a8fa0,tire:0x25292b,metal:0x7f898c,light:0xffdf86,trim:0x2f3436
+  },
+  ruinedHouse:{
+    wall:0xa95843,roof:0x34383c,wood:0x68452f,glass:0x557984,trim:0xd2c4a7,metal:0x747d80
+  }
+});
+function materialRole(name=''){
+  const n=String(name).toLowerCase();
+  if(/glass|window|windshield|windscreen/.test(n))return'glass';
+  if(/tire|tyre|wheel|rubber/.test(n))return'tire';
+  if(/light|lamp|headlight|taillight/.test(n))return'light';
+  if(/roof|shingle|tile/.test(n))return'roof';
+  if(/wall|brick|plaster|facade|house/.test(n))return'wall';
+  if(/wood|door|frame|beam|bark/.test(n))return'wood';
+  if(/metal|bumper|axle|pipe|rim/.test(n))return'metal';
+  if(/trim|border|step/.test(n))return'trim';
+  return'body';
+}
+function recolorShared(o,presetName){
+  const p=SHARED_MATERIAL_PRESETS[presetName];if(!p)return o;
+  o.traverse(n=>{
+    if(!n.isMesh)return;
+    const original=Array.isArray(n.material)?n.material:[n.material];
+    const next=original.map((m,i)=>{
+      const q=m?.clone?.()||new THREE.MeshStandardMaterial();
+      const role=materialRole((n.name||'')+' '+(m?.name||''));
+      if(q.color)q.color.setHex(p[role]??p.body??0x8c8c8c);
+      if(!q.map){q.roughness=role==='glass'?.28:role==='metal'?.52:.78;q.metalness=role==='metal'?.28:0}
+      if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}
+      return q
+    });
+    n.material=Array.isArray(n.material)?next:next[0]
+  });
+  return o
+}
 const AVATAR_PREVIEW_KEY='kidscade-avatar-studio-preview';
 function kidscadeHost(){try{if(parent&&parent!==window&&parent.location.origin===location.origin)return parent}catch(_){}return window}
 function safeGet(fn,f=''){try{return fn()}catch(_){return f}}
@@ -237,11 +274,11 @@ function normalizeShared(o,target){
  o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
  return o;
 }
-function placeSharedWorldModel(id,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0}={}){
+function placeSharedWorldModel(id,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0,preset=null,force=false}={}){
  const profile=shared3DProfile(id);
- if(!shared3DIsApproved(id)){console.warn('[Kidscade 3D QA] skipped unverified asset',id,profile.reason||'');return}
+ if(!force&&!shared3DIsApproved(id)){console.warn('[Kidscade 3D QA] skipped unverified asset',id,profile.reason||'');return}
  const url=SHARED(id);if(!url)return;
- model(url).then(o=>{if(!o)return;normalizeShared(o,target);o.position.x+=x;o.position.z+=z;o.position.y+=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
+ model(url).then(o=>{if(!o)return;normalizeShared(o,target);if(preset)recolorShared(o,preset);o.position.x+=x;o.position.z+=z;o.position.y+=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
 }
 function upgradePerson(group,fallback,file){
  model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
@@ -263,7 +300,7 @@ function decorateWorld(){
  placeSharedWorldModel('prop.well',{x:-14,z:15,target:2.5,rot:.35});
  placeSharedWorldModel('prop.woodLog',{x:-11,z:6,target:2.2,rot:1.1});
  placeSharedWorldModel('prop.woodLog',{x:-8,z:5.4,target:1.9,rot:-.6});
- // schoolBus is intentionally quarantined until its material pass is verified.
+ placeSharedWorldModel('vehicle.schoolBus',{x:8.6,z:21,target:6.1,rot:Math.PI*.52,preset:'schoolBus',force:true});
 
  // 도로는 검은 띠가 아니라 반복되는 도로 타일과 도시 시설로 보이게 한다.
  for(let z=-52;z<=52;z+=8)placeWorldModel(ART.roads+'road-straight.glb',{x:16,z,target:7.9,y:.035});
@@ -291,7 +328,7 @@ function decorateWorld(){
   .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
  // 폐허의 실루엣을 멀리서도 읽을 수 있도록 높은 물탑과 외곽 주택을 추가한다.
  placeSharedWorldModel('prop.waterTower',{x:62,z:-40,target:8.8,rot:.15});
- // unverified house model is not auto-placed; existing tested city pack supplies the ruined skyline.
+ placeSharedWorldModel('building.house',{x:35,z:-51,target:8.2,rot:-.2,preset:'ruinedHouse',force:true});
  placeSharedWorldModel('prop.crate',{x:42,z:-29,target:1.45,rot:.18});
 
  // 강둑: 직선 수로처럼 보이지 않도록 양안의 식생과 돌을 불규칙하게 섞는다.
