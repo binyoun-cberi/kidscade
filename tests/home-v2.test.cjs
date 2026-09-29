@@ -153,3 +153,86 @@ test('Home V2 keeps the leading cards diverse across overlapping rails when enou
   const leadIds = rails.flatMap(rail => rail.games.slice(0,3).map(game => game.id));
   assert.equal(new Set(leadIds).size, leadIds.length);
 });
+
+
+test('Home V2 new-release rail follows addedAt and current age', () => {
+  const pool = [
+    { id:'old', age:'high', addedAt:'2026-08-01T09:00:00+09:00' },
+    { id:'new-a', age:'high', addedAt:'2026-09-28T10:00:00+09:00' },
+    { id:'new-b', age:'high', addedAt:'2026-09-29T10:00:00+09:00' },
+    { id:'low-new', age:'low', addedAt:'2026-09-29T11:00:00+09:00' }
+  ];
+  const newest = home.newReleaseGames(pool, 'high', {
+    nowMs:Date.parse('2026-09-29T12:00:00+09:00'),
+    maxAgeDays:30,
+    dateKey:'2026-09-29'
+  });
+  assert.deepEqual(newest.map(game => game.id), ['new-b','new-a']);
+});
+
+test('Home V2 hidden gems prefer underexposed games and exclude new/popular/known games', () => {
+  const pool = ['popular','new','recent','fav','hidden-a','hidden-b','middle','busy'].map(id => ({
+    id, age:'high', qualityStatus:'standard', subject:'thinking', genre:'puzzle',
+    sessionMinutes:10, players:['solo'], cover:`${id}.png`
+  }));
+  const stats = { games:{
+    popular:{weeklyPlays:40,totalPlays:100},
+    new:{weeklyPlays:0,totalPlays:0},
+    recent:{weeklyPlays:1,totalPlays:2},
+    fav:{weeklyPlays:1,totalPlays:1},
+    'hidden-a':{weeklyPlays:0,totalPlays:1},
+    'hidden-b':{weeklyPlays:0,totalPlays:2},
+    middle:{weeklyPlays:2,totalPlays:10},
+    busy:{weeklyPlays:8,totalPlays:30}
+  }};
+  const hidden = home.hiddenGemGames(pool, stats, 'high', {
+    newIds:['new'],
+    recentIds:['recent'],
+    favoriteIds:['fav'],
+    popularIds:['popular'],
+    dateKey:'2026-09-29'
+  });
+  assert.deepEqual(hidden.slice(0,2).map(game => game.id), ['hidden-a','hidden-b']);
+  assert.equal(hidden.some(game => ['popular','new','recent','fav'].includes(game.id)), false);
+});
+
+test('Home V2 hourly hero advances to a different candidate on the next hour', () => {
+  const pool = [
+    { id:'hero-a', age:'high', qualityStatus:'standard' },
+    { id:'hero-b', age:'high', qualityStatus:'standard' },
+    { id:'hero-c', age:'high', qualityStatus:'standard' }
+  ];
+  const first = home.heroGame(pool, 'high', {
+    candidates:pool,
+    dateKey:'2026-09-29',
+    hourSlot:100
+  });
+  const next = home.heroGame(pool, 'high', {
+    candidates:pool,
+    dateKey:'2026-09-29',
+    hourSlot:101
+  });
+  assert.notEqual(first.id, next.id);
+});
+
+test('Home V2 exposes new and hidden discovery rails', () => {
+  const newGames = [
+    { id:'new-1', age:'high' },
+    { id:'new-2', age:'high' }
+  ];
+  const hiddenGames = [
+    { id:'hidden-1', age:'high' },
+    { id:'hidden-2', age:'high' }
+  ];
+  const rails = home.railDefinitions([...newGames,...hiddenGames], {
+    age:'high',
+    dateKey:'2026-09-29',
+    recentGames:[],
+    newGames,
+    popularGames:[],
+    recommendedGames:[],
+    hiddenGames
+  });
+  assert.ok(rails.find(rail => rail.key === 'new'));
+  assert.ok(rails.find(rail => rail.key === 'hidden'));
+});

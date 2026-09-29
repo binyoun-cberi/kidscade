@@ -31,6 +31,10 @@ test('catalog v7 gives every game discovery metadata', () => {
     game.input.forEach(value => assert.ok(INPUTS.has(value), `${game.id}: invalid input ${value}`));
     assert.ok(QUALITY.has(game.qualityStatus), `${game.id}: invalid qualityStatus ${game.qualityStatus}`);
     assert.equal(typeof game.classroom, 'boolean', `${game.id}: classroom must be boolean`);
+    if (game.addedAt !== undefined) {
+      assert.match(game.addedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/, `${game.id}: addedAt must include timezone`);
+      assert.ok(Number.isFinite(Date.parse(game.addedAt)), `${game.id}: invalid addedAt`);
+    }
   }
 });
 
@@ -48,4 +52,20 @@ test('curation status is conservative and rework games are explicit', () => {
   const featured = games.filter(game => game.qualityStatus === 'featured');
   assert.ok(featured.length >= 10 && featured.length <= 25);
   assert.equal(games.find(game => game.id === 'job_teacher_classroom')?.qualityStatus, 'rework');
+});
+
+
+test('recently registered games carry release timestamps for the new-game rail', () => {
+  const recentIds = [
+    'low_pattern_lock',
+    'high_apocalypse_survival',
+    'high_seed_futsal',
+    'high_pass_mafia',
+    'high_fraction_smith',
+    'toddler_photo_coloring'
+  ];
+  for (const id of recentIds) {
+    const game = games.find(entry => entry.id === id);
+    assert.ok(game?.addedAt, `${id}: addedAt missing`);
+  }
 });

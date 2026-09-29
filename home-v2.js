@@ -13,6 +13,10 @@
   const BACKBAR_ID = 'kc-home-backbar';
   const LAYOUT_BUTTON_ID = 'btn-home-layout';
   const MAX_RAIL_GAMES = 12;
+  const HOUR_MS = 60 * 60 * 1000;
+  const DAY_MS = 24 * HOUR_MS;
+  const KST_OFFSET_MS = 9 * HOUR_MS;
+  const NEW_RELEASE_WINDOW_DAYS = 30;
   const HOME_LAYOUTS = Object.freeze({ recommend: 'recommend', classic: 'classic' });
 
   function normalizeLayout(value) {
@@ -61,6 +65,7 @@
   let renderQueued = false;
   let bodyObserver = null;
   let searchBound = false;
+  let heroRotationTimer = null;
 
   const cleanIds = value => Array.isArray(value)
     ? value.map(item => String(item || '')).filter(Boolean)
@@ -97,6 +102,119 @@
       String(kst.getUTCMonth() + 1).padStart(2, '0'),
       String(kst.getUTCDate()).padStart(2, '0')
     ].join('-');
+  }
+
+  function kstHourSlot(input = new Date()) {
+    return Math.floor((input.getTime() + KST_OFFSET_MS) / HOUR_MS);
+  }
+
+  function kstHourLabel(input = new Date()) {
+    const kst = new Date(input.getTime() + KST_OFFSET_MS);
+    return kst.getUTCHours();
+  }
+
+  function addedAtMs(game) {
+    const value = Date.parse(String(game?.addedAt || ''));
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function newReleaseGames(gameList, age, options = {}) {
+    const nowMs = Number(options.nowMs ?? Date.now());
+    const maxAgeDays = Math.max(1, Number(options.maxAgeDays || NEW_RELEASE_WINDOW_DAYS));
+    const minMs = nowMs - maxAgeDays * DAY_MS;
+    const dateKey = options.dateKey || kstDateKey(new Date(nowMs));
+    return gameList
+      .filter(game => {
+        if (!supportsAge(game, age)) return false;
+        const stamp = addedAtMs(game);
+        return stamp > 0 && stamp <= nowMs + DAY_MS && stamp >= minMs;
+      })
+      .sort((a, b) =>
+        addedAtMs(b) - addedAtMs(a) ||
+        dailyHash(`new:${a.id}`, dateKey) - dailyHash(`new:${b.id}`, dateKey)
+      )
+      .slice(0, options.limit || MAX_RAIL_GAMES);
+  }
+
+  function hiddenGemGames(gameList, stats, age, options = {}) {
+    const byId = stats?.games || {};
+    if (!Object.keys(byId).length) return [];
+
+    const excluded = new Set([
+      ...cleanIds(options.newIds),
+      ...cleanIds(options.recentIds),
+      ...cleanIds(options.favoriteIds),
+      ...cleanIds(options.popularIds)
+    ]);
+    const dateKey = options.dateKey || kstDateKey();
+    const eligible = gameList.filter(game =>
+      supportsAge(game, age) &&
+      !excluded.has(String(game.id))
+    );
+    if (!eligible.length) return [];
+
+    const entries = eligible.map(game => {
+      const stat = byId?.[game.id] || {};
+      const weekly = Number(stat.weeklyPlays || 0);
+      const total = Number(stat.totalPlays || 0);
+      const exposure = weekly * 20 + total;
+      const quality = (game.cover ? 2 : 0) +
+        (game.classroom ? 1 : 0) +
+        (game.qualityStatus === 'featured' ? 1 : 0);
+      return { game, weekly, total, exposure, quality };
+    });
+
+    const exposures = entries.map(entry => entry.exposure).sort((a, b) => a - b);
+    const percentileIndex = Math.min(
+      exposures.length - 1,
+      Math.floor((exposures.length - 1) * 0.55)
+    );
+    const threshold = exposures[percentileIndex] ?? Infinity;
+
+    return entries
+      .filter(entry => entry.exposure <= threshold)
+      .sort((a, b) =>
+        a.exposure - b.exposure ||
+        b.quality - a.quality ||
+        dailyHash(`hidden:${a.game.id}`, dateKey) -
+          dailyHash(`hidden:${b.game.id}`, dateKey)
+      )
+      .slice(0, options.limit || MAX_RAIL_GAMES)
+      .map(entry => entry.game);
+  }
+
+  function heroCandidates(gameList, age, options = {}) {
+    const dateKey = options.dateKey || kstDateKey();
+    const sources = [
+      options.newGames || [],
+      options.recommendedGames || [],
+      options.hiddenGames || [],
+      options.popularGames || []
+    ];
+    const result = [];
+    const seen = new Set();
+    const add = game => {
+      const id = String(game?.id || '');
+      if (!id || seen.has(id) || !supportsAge(game, age)) return;
+      seen.add(id);
+      result.push(game);
+    };
+
+    sources.forEach(source => source.slice(0, 5).forEach(add));
+    if (result.length < 6) {
+      deterministicGames(
+        gameList,
+        game => Boolean(game.cover),
+        age,
+        12,
+        dateKey,
+        'hero-fallback'
+      ).forEach(add);
+    }
+    if (!result.length) {
+      deterministicGames(gameList, () => true, age, 12, dateKey, 'hero-any').forEach(add);
+    }
+    return result.slice(0, 16);
   }
 
   function games() {
@@ -247,7 +365,9 @@
     };
 
     const recent = Array.isArray(options.recentGames) ? options.recentGames : [];
+    const newest = Array.isArray(options.newGames) ? options.newGames : [];
     const popular = Array.isArray(options.popularGames) ? options.popularGames : [];
+    const hidden = Array.isArray(options.hiddenGames) ? options.hiddenGames : [];
     const recommended = Array.isArray(options.recommendedGames)
       ? options.recommendedGames
       : recommendGames(gameList, {
@@ -264,6 +384,13 @@
       games:recent
     }, { preserveOrder:true, leadCount:3 });
 
+    if (newest.length) addRail({
+      key:'new',
+      title:'🆕 신작 게임',
+      note:'KIDSCADE에 최근 새로 들어온 게임이에요.',
+      games:newest
+    }, { leadCount:3 });
+
     if (popular.length) addRail({
       key:'popular',
       title:'🔥 지금 많이 하는 게임',
@@ -278,6 +405,13 @@
       note:'최근 취향과 오늘의 추천을 섞어 골랐어요.',
       games:recommended
     }, { leadCount:4 });
+
+    if (hidden.length) addRail({
+      key:'hidden',
+      title:'💎 숨겨진 꿀잼',
+      note:'아직 많이 알려지지 않았지만 다시 발견할 만한 게임이에요.',
+      games:hidden
+    }, { minGames:2, leadCount:3 });
 
     const quick = deterministicGames(
       gameList,
@@ -367,17 +501,29 @@
   function heroGame(gameList, age, options = {}) {
     const dateKey = options.dateKey || kstDateKey();
     const recent = new Set(cleanIds(options.recentIds));
+    const supplied = Array.isArray(options.candidates)
+      ? options.candidates.filter(game => supportsAge(game, age))
+      : [];
     const eligible = gameList.filter(game => supportsAge(game, age));
     const featured = eligible.filter(game => game.qualityStatus === 'featured');
-    const pool = featured.length ? featured : eligible;
-    if (!pool.length) return null;
+    const basePool = supplied.length ? supplied : (featured.length ? featured : eligible);
+    if (!basePool.length) return null;
 
-    return [...pool].sort((a, b) => {
-      const ar = recent.has(String(a.id)) ? 1 : 0;
-      const br = recent.has(String(b.id)) ? 1 : 0;
-      if (ar !== br) return ar - br;
-      return dailyHash(a.id, dateKey) - dailyHash(b.id, dateKey);
-    })[0] || null;
+    const pool = [...basePool]
+      .filter((game, index, list) =>
+        list.findIndex(candidate => String(candidate.id) === String(game.id)) === index
+      )
+      .sort((a, b) => {
+        const ar = recent.has(String(a.id)) ? 1 : 0;
+        const br = recent.has(String(b.id)) ? 1 : 0;
+        if (ar !== br) return ar - br;
+        return dailyHash(`hero:${a.id}`, dateKey) - dailyHash(`hero:${b.id}`, dateKey);
+      });
+
+    const slot = Number.isFinite(Number(options.hourSlot))
+      ? Number(options.hourSlot)
+      : kstHourSlot();
+    return pool[((slot % pool.length) + pool.length) % pool.length] || null;
   }
 
   function metaText(game) {
@@ -464,7 +610,7 @@
         <img class="kc-home-hero-art" src="${escapeAttr(cover)}" alt="" decoding="async">
         <div class="kc-home-hero-shade"></div>
         <div class="kc-home-hero-copy">
-          <div class="kc-home-hero-kicker">KIDSCADE PICK · ${escapeHtml(subject)}</div>
+          <div class="kc-home-hero-kicker">⏰ ${kstHourLabel()}시 KIDSCADE PICK · ${escapeHtml(subject)}</div>
           <h1>${escapeHtml(game.title)}</h1>
           <p>${escapeHtml(game.description || '오늘의 추천 게임을 바로 시작해 보세요.')}</p>
           <div class="kc-home-hero-meta">${escapeHtml(metaText(game))}</div>
@@ -611,23 +757,55 @@
     const list = games();
     if (!list.length) return false;
 
+    const now = new Date();
+    const dateKey = kstDateKey(now);
     const recents = recentGames(age);
     const recentIdList = recentIds();
     const favoriteIdList = favoriteIds();
-    const popular = rankPopular(list, root?.KidscadeServerStats?.current, age, MAX_RAIL_GAMES * 2);
+    const stats = root?.KidscadeServerStats?.current;
+    const newest = newReleaseGames(list, age, {
+      nowMs: now.getTime(),
+      dateKey,
+      limit: MAX_RAIL_GAMES * 2
+    });
+    const popular = rankPopular(list, stats, age, MAX_RAIL_GAMES * 2);
     const recommended = recommendGames(list, {
       age,
       recentIds: recentIdList,
       favoriteIds: favoriteIdList,
+      dateKey,
       limit: MAX_RAIL_GAMES * 2
     });
-    const hero = heroGame(list, age, { recentIds: recentIdList });
+    const hidden = hiddenGemGames(list, stats, age, {
+      dateKey,
+      newIds: newest.map(game => game.id),
+      recentIds: recentIdList,
+      favoriteIds: favoriteIdList,
+      popularIds: popular.slice(0, MAX_RAIL_GAMES).map(game => game.id),
+      limit: MAX_RAIL_GAMES * 2
+    });
+    const heroPool = heroCandidates(list, age, {
+      dateKey,
+      newGames: newest,
+      recommendedGames: recommended,
+      hiddenGames: hidden,
+      popularGames: popular
+    });
+    const hero = heroGame(list, age, {
+      dateKey,
+      hourSlot: kstHourSlot(now),
+      recentIds: recentIdList,
+      candidates: heroPool
+    });
     const rails = railDefinitions(list, {
       age,
+      dateKey,
       heroId: hero?.id || '',
       recentGames: recents,
+      newGames: newest,
       popularGames: popular,
       recommendedGames: recommended,
+      hiddenGames: hidden,
       recentIds: recentIdList,
       favoriteIds: favoriteIdList
     });
@@ -656,6 +834,17 @@
     renderQueued = true;
     const schedule = root.requestAnimationFrame || (callback => setTimeout(callback, 16));
     schedule(() => render());
+  }
+
+  function scheduleHourlyHeroRefresh() {
+    if (!root?.setTimeout) return;
+    if (heroRotationTimer) root.clearTimeout?.(heroRotationTimer);
+    const now = Date.now();
+    const delay = Math.max(1000, HOUR_MS - (now % HOUR_MS) + 250);
+    heroRotationTimer = root.setTimeout(() => {
+      scheduleRender();
+      scheduleHourlyHeroRefresh();
+    }, delay);
   }
 
   function wireShell(shell) {
@@ -794,6 +983,7 @@
   function bindGlobalEvents() {
     root.document.addEventListener('kidscade:favorites-changed', scheduleRender);
     root.document.addEventListener('kidscade:recents-changed', scheduleRender);
+    root.document.addEventListener('kidscade:server-stats-updated', scheduleRender);
     root.document.addEventListener('kidscade:game-closed', () => {
       root.KidscadeServerStats?.load?.(false)?.then?.(() => scheduleRender());
       scheduleRender();
@@ -830,6 +1020,7 @@
       bindLayoutToggle();
       bindGlobalEvents();
       render();
+      scheduleHourlyHeroRefresh();
       refreshStats();
     };
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', attempt, { once: true });
@@ -848,6 +1039,10 @@
     normalizeLayout,
     supportsAge,
     dailyHash,
+    kstHourSlot,
+    newReleaseGames,
+    hiddenGemGames,
+    heroCandidates,
     rankPopular,
     recommendGames,
     deterministicGames,
