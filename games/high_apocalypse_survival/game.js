@@ -164,7 +164,7 @@ function init3D(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9ac8da);scene.fog=new THREE.Fog(0x9ac8da,50,120);
  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,180);clock=new THREE.Clock();loader=new GLTFLoader();
  Object.values(groups).forEach(g=>scene.add(g));
- scene.add(new THREE.HemisphereLight(0xe6f7ff,0x607054,1.7));
+ const hemi=new THREE.HemisphereLight(0xe6f7ff,0x607054,1.7);scene.add(hemi);scene.userData.hemi=hemi;
  const sun=new THREE.DirectionalLight(0xfff0d0,2.55);sun.position.set(-32,48,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-70;sun.shadow.camera.right=70;sun.shadow.camera.top=70;sun.shadow.camera.bottom=-70;sun.shadow.bias=-.00015;sun.shadow.normalBias=.02;scene.add(sun);scene.userData.sun=sun;
  createSkyDome();
  const groundGeo=new THREE.PlaneGeometry(140,140,36,36),gp=groundGeo.attributes.position,colors=[];for(let i=0;i<gp.count;i++){const x=gp.getX(i),z=-gp.getY(i),h=terrainHeight(x,z),col=groundColor(x,z,h);gp.setZ(i,h);colors.push(col.r,col.g,col.b)}groundGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));gp.needsUpdate=true;groundGeo.computeVertexNormals();
@@ -214,18 +214,62 @@ function upgradePerson(group,fallback,file){
  model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
 }
 function decorateWorld(){
+ // 학교 야영지: 운동장과 경계가 보여야 출발 지점의 성격이 바로 읽힌다.
+ box(25,.025,16,0x927d5b,-5,.018,5);box(17,.012,.09,0xd9d0b6,-5,.038,5);box(.09,.012,10,0xd9d0b6,-5,.038,5);
+ for(const [x,z,r] of [[-17,5,Math.PI*.5],[7,5,Math.PI*.5],[-11,-3,0],[-3,-3,0],[5,-3,0]]){
+  placeWorldModel(ART.suburban+'fence-1x4.glb',{x,z,target:4.4,rot:r})
+ }
+ placeWorldModel(ART.nature+'fence-gate.glb',{x:1,z:-3,target:3.3});
+ [-12,-7,-2,3].forEach((x,i)=>placeWorldModel(ART.suburban+(i%2?'path-stones-messy.glb':'path-stones-long.glb'),{x,z:12,target:4.1,rot:Math.PI*.5}));
+ placeWorldModel(ART.city+'bench.glb',{x:3,z:13,target:2.2,rot:Math.PI});
+ placeWorldModel(ART.city+'mailbox.glb',{x:7,z:12,target:1.6,rot:-.2});
+ placeWorldModel(ART.city+'planter-and-bushes.glb',{x:-12,z:13,target:2.8});
+ placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/tent-canvas.glb',{x:-9,z:8,target:3.8,rot:.3});
+ placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/box-large.glb',{x:-6,z:8,target:1.5,rot:-.3});
+
+ // 도로는 검은 띠가 아니라 반복되는 도로 타일과 도시 시설로 보이게 한다.
+ for(let z=-52;z<=52;z+=8)placeWorldModel(ART.roads+'road-straight.glb',{x:16,z,target:7.9,y:.035});
+ for(let x=-32;x<=56;x+=8)placeWorldModel(ART.roads+'road-straight.glb',{x,z:-27,target:7.9,rot:Math.PI*.5,y:.035});
+ placeWorldModel(ART.roads+'road-crossroad-line.glb',{x:16,z:-27,target:8.3,y:.045});
  placeWorldModel(ART.roads+'road-bridge.glb',{x:RIVER_X,z:-4,target:15.2,rot:Math.PI*.5,y:.08});
  const roadProps=[
   [ART.roads+'traffic-light.glb',18,-23,3.8,0],[ART.roads+'road-sign-warning.glb',13,-12,2.3,.1],
-  [ART.roads+'electricity-pole.glb',11,8,5.8,0],[ART.roads+'electricity-pole.glb',11,-18,5.8,0],
+  [ART.roads+'electricity-pole.glb',11,8,5.8,0],[ART.roads+'electricity-pole.glb',11,-18,5.8,0],[ART.roads+'electricity-pole.glb',11,-43,5.8,0],
   [ART.roads+'construction-barrier.glb',35,-29,2.6,.2],[ART.roads+'construction-barrier.glb',37,-30,2.6,-.2],
+  [ART.city+'fire-hydrant.glb',25,-24,1.35,0],[ART.city+'manhole-cover.glb',17,-36,1.6,0],
+  [ART.city+'bus-stop.glb',7,-24,3.1,Math.PI],[ART.city+'bus-stop-sign.glb',4,-24,2.4,Math.PI],
   [ART.city+'dumpster.glb',47,-35,2.3,.4],[ART.city+'trash-can.glb',41,-26,1.35,.2],
   [ART.city+'debris-papers.glb',46,-28,2.2,1.1],[ART.city+'stop-sign.glb',24,-25,2.4,0],
   [ART.cars+'ambulance.glb',55,-20,4.8,-.25],[ART.cars+'sedan.glb',19,-42,4.6,.12],
-  [ART.cars+'van.glb',10,-28,4.8,Math.PI*.52],[ART.cars+'debris-tire.glb',22,-35,1.2,.4]
+  [ART.cars+'van.glb',10,-28,4.8,Math.PI*.52],[ART.cars+'suv.glb',45,-26,4.7,-.06],
+  [ART.cars+'debris-tire.glb',22,-35,1.2,.4]
  ];
  roadProps.forEach(([u,x,z,t,r])=>placeWorldModel(u,{x,z,target:t,rot:r}));
- [[-51,28,'cliff-large-rock.glb',6],[-57,35,'cliff-rock.glb',5],[-45,43,'rock-large-c.glb',3.6],[-33,34,'plant-bush-large.glb',2.5],[-37,20,'plant-bush-detailed.glb',2.4],[-25,38,'grass-large.glb',2.2],[-20,24,'grass-leafs-large.glb',2.2]].forEach(([x,z,file,t])=>placeWorldModel(ART.nature+file,{x,z,target:t,rot:(x+z)*.13}));
+
+ // 폐허 도시: 내부 탐색 건물 뒤로 도시의 잔존 스카이라인을 만들어 깊이를 준다.
+ [[64,-14,'building-green.glb',11,.05],[66,-34,'brown-building.glb',12,-.06],[61,-52,'building-red.glb',11,.03],[38,-57,'building-red-corner.glb',10,.1]]
+  .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
+ [[43,-38,'fence.glb',3.6,.1],[51,-38,'fence-piece.glb',3.4,-.1],[59,-36,'power-box.glb',1.7,.2],[40,-43,'trah-bag-grey.glb',1.4,.4],[52,-31,'cone.glb',1.2,.1]]
+  .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
+
+ // 강둑: 직선 수로처럼 보이지 않도록 양안의 식생과 돌을 불규칙하게 섞는다.
+ const bankZ=[-55,-43,-31,-18,-7,6,19,33,47,59];
+ bankZ.forEach((z,i)=>{
+  const wob=Math.sin(z*.37)*1.25;
+  placeWorldModel(ART.nature+(i%3===0?'rock-small-c.glb':i%3===1?'plant-bush-large.glb':'grass-leafs-large.glb'),{x:RIVER_X-8.7-wob,z,target:i%3===0?1.4:2,rot:i*.73});
+  placeWorldModel(ART.nature+(i%2?'rock-small-flat-b.glb':'plant-bush.glb'),{x:RIVER_X+8.8+wob,z:z+3,target:i%2?1.35:1.8,rot:i*.51})
+ });
+ placeWorldModel(ART.nature+'canoe.glb',{x:RIVER_X-6.2,z:19,target:3.5,rot:.2});
+
+ // 숲은 가장자리의 활엽수에서 깊은 숲의 소나무, 산지 절벽으로 단계적으로 바뀐다.
+ const forestArt=[
+  [-21,46,'tree-default.glb',6],[-27,49,'tree-oak.glb',6.5],[-34,51,'tree-pine-round-a.glb',6.8],[-42,48,'tree-pine-tall-a.glb',7.2],
+  [-53,43,'tree-pine-tall-b.glb',7.4],[-57,30,'tree-pine-round-c.glb',6.6],[-49,18,'tree-oak-dark.glb',6.2],
+  [-51,28,'cliff-large-rock.glb',6],[-57,35,'cliff-rock.glb',5],[-45,43,'rock-large-c.glb',3.6],
+  [-33,34,'plant-bush-large.glb',2.5],[-37,20,'plant-bush-detailed.glb',2.4],[-25,38,'grass-large.glb',2.2],[-20,24,'grass-leafs-large.glb',2.2],
+  [-61,49,'cliff-top-rock.glb',5.4],[-60,18,'rock-tall-c.glb',3.8]
+ ];
+ forestArt.forEach(([x,z,file,t])=>placeWorldModel(ART.nature+file,{x,z,target:t,rot:(x+z)*.13}));
  [[33,15],[34,4],[34,-15],[33,-36]].forEach(([x,z],i)=>placeWorldModel(ART.nature+(i%2?'plant-bush.glb':'grass-large.glb'),{x,z,target:1.7+(i%2)*.4,rot:i*.8}));
 }
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
