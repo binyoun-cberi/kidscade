@@ -44,5 +44,17 @@ test('Byeokrando catalog points at the tutorial-aware launcher revision', () => 
   const catalog = JSON.parse(read('data/games.json'));
   const game = (catalog.games || []).find(item => item && item.id === 'high_byeokrando_voyage');
   assert.ok(game, 'Byeokrando catalog entry missing');
-  assert.match(game.href, /벽란도 상행기-launch\.html\?v=6$/);
+  assert.match(game.href, /벽란도 상행기-launch\.html\?v=7$/);
+});
+
+
+test('Byeokrando v7 adds only historical-safe shared props', () => {
+  const source = read('games/high_byeokrando_voyage/byeokrando-assets.js');
+  assert.doesNotThrow(() => new Function(source));
+  for (const file of ['quaternius_cc0-crate-885.glb','quaternius_cc0-well-1471.glb','quaternius_cc0-wood-log-1520.glb','quaternius_cc0-mossy-rock-1303.glb']) {
+    assert.match(source, new RegExp(file.replace(/\./g,'\\.')));
+  }
+  assert.doesNotMatch(source,/school-bus-1323|water-tower-1470|house-1085/);
+  const launch = read('games/high_byeokrando_voyage/벽란도 상행기-launch.html');
+  assert.match(launch,/byeokrando-assets\.js\?v=4/);
 });
