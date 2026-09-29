@@ -71,7 +71,8 @@ const CPU_AVATAR_PRESETS=[
  {name:'블루 스파이크',equipment:{skin:'skin_warm',hair:'hair_short',top:'top_soccer',bottom:'bottom_track',head:'head_cap',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
  {name:'네온 리베로',equipment:{skin:'skin_peach',hair:'hair_bob',top:'top_hoodie',bottom:'bottom_jeans',head:'head_headphones',face:'face_round',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
  {name:'썬더 세터',equipment:{skin:'skin_deep',hair:'hair_curl',top:'top_uniform',bottom:'bottom_track',head:'head_none',face:'face_sun',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
- {name:'포니 에이스',equipment:{skin:'skin_warm',hair:'hair_pony',top:'top_soccer',bottom:'bottom_shorts',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}}
+ {name:'포니 에이스',equipment:{skin:'skin_warm',hair:'hair_pony',top:'top_soccer',bottom:'bottom_shorts',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}},
+ {name:'씨앗 챔피언',equipment:{skin:'skin_deep',hair:'hair_short',top:'top_soccer',bottom:'bottom_track',head:'head_headphones',face:'face_sun',hand:'hand_none',background:'bg_basic',aura:'aura_none'}}
 ];
 let cpuAvatarPresetIndex=0;
 function cpuAvatarPreset(){return CPU_AVATAR_PRESETS[cpuAvatarPresetIndex%CPU_AVATAR_PRESETS.length]}
@@ -81,8 +82,10 @@ function cpuAvatarSource(){
  return svgDataUrl(svg);
 }
 function rotateCpuAvatarPreset(){
- let next=Math.floor(Math.random()*CPU_AVATAR_PRESETS.length);
- if(CPU_AVATAR_PRESETS.length>1&&next===cpuAvatarPresetIndex)next=(next+1)%CPU_AVATAR_PRESETS.length;
+ if(difficulty==='boss'){cpuAvatarPresetIndex=CPU_AVATAR_PRESETS.length-1;volleyAvatars?.[1]?.refreshStatic(true);return}
+ const normalCount=Math.max(1,CPU_AVATAR_PRESETS.length-1);
+ let next=Math.floor(Math.random()*normalCount);
+ if(normalCount>1&&next===cpuAvatarPresetIndex)next=(next+1)%normalCount;
  cpuAvatarPresetIndex=next;
  volleyAvatars?.[1]?.refreshStatic(true);
 }
@@ -268,6 +271,31 @@ function predictBallLanding(){
 
 const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,aim:0,predX:710,predT:1,shotCooldown:0};
 
+const CPU_LEVELS={
+ easy:{
+   think:.115,err:72,dead:16,behind:18,airTrack:.46,jumpLead:.42,
+   slideMargin:125,slideBuffer:.00,shotCooldown:.20,oppPrediction:0,
+   serveMax:.52,serveStyle:'safe',attackStyle:'safe'
+ },
+ normal:{
+   think:.060,err:30,dead:9,behind:23,airTrack:.68,jumpLead:.50,
+   slideMargin:175,slideBuffer:.035,shotCooldown:.17,oppPrediction:.20,
+   serveMax:.78,serveStyle:'mixed',attackStyle:'mixed'
+ },
+ hard:{
+   think:.030,err:10,dead:5,behind:25,airTrack:.86,jumpLead:.58,
+   slideMargin:225,slideBuffer:.065,shotCooldown:.14,oppPrediction:.55,
+   serveMax:1,serveStyle:'best',attackStyle:'best'
+ },
+ boss:{
+   think:FIXED,err:0,dead:2,behind:27,airTrack:1,jumpLead:.67,
+   slideMargin:275,slideBuffer:.10,shotCooldown:.105,oppPrediction:1,
+   serveMax:1,serveStyle:'predict',attackStyle:'predict'
+ }
+};
+function cpuConfig(){return CPU_LEVELS[difficulty]||CPU_LEVELS.normal}
+
+
 function cpuBallClone(){
  return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||520};
 }
@@ -290,18 +318,26 @@ function simulateCpuSmashLanding(aim){
  return {x:g.x,t,valid:false};
 }
 function chooseCpuAttackAim(){
- const opp=p[0],candidates=[-2,-1,0,1,2].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
+ const cfg=cpuConfig(),opp=p[0],candidates=[-2,-1,0,1,2].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
  const valid=candidates.filter(q=>q.valid);
  if(!valid.length)return 0;
+
+ if(cfg.attackStyle==='safe'){
+   const neutral=valid.find(q=>q.aim===0);
+   if(neutral)return neutral.aim;
+   return valid.slice().sort((a,b)=>Math.abs(a.x-240)-Math.abs(b.x-240))[0].aim;
+ }
+
  valid.forEach(q=>{
-   const separation=Math.abs(q.x-opp.x);
-   const safeCourt=q.x>45&&q.x<NETX-36?22:0;
-   const behindBonus=(opp.x>285&&q.x<220)||(opp.x<210&&q.x>300)?28:0;
-   q.score=separation+safeCourt+behindBonus;
+   const futureOpp=clamp(opp.x+opp.vx*q.t*cfg.oppPrediction,42,NETX-42);
+   const separation=Math.abs(q.x-futureOpp);
+   const safeCourt=q.x>48&&q.x<NETX-42?24:0;
+   const wrongFoot=(opp.vx>45&&q.x<futureOpp)||(opp.vx<-45&&q.x>futureOpp)?18*cfg.oppPrediction:0;
+   const behindBonus=(futureOpp>285&&q.x<220)||(futureOpp<210&&q.x>300)?26:0;
+   q.score=separation+safeCourt+wrongFoot+behindBonus;
  });
  valid.sort((a,b)=>b.score-a.score);
- if(difficulty==='easy'&&valid.length>1&&Math.random()<.32)return valid[1].aim;
- if(difficulty==='normal'&&valid.length>1&&Math.random()<.10)return valid[1].aim;
+ if(cfg.attackStyle==='mixed'&&valid.length>1&&Math.random()<.28)return valid[1].aim;
  return valid[0].aim;
 }
 function predictCpuJumpIntercept(me){
@@ -323,13 +359,7 @@ function predictCpuJumpIntercept(me){
  return null;
 }
 function cpuInput(dt){
- const cfg=difficulty==='easy'
-  ?{think:.080,err:60,offset:18,dead:14,slideMargin:150}
-  :difficulty==='hard'
-  ?{think:.018,err:4,offset:38,dead:4,slideMargin:255}
-  :{think:.035,err:18,offset:30,dead:7,slideMargin:205};
-
- const me=p[1],out=inputCache[1];
+ const cfg=cpuConfig(),me=p[1],out=inputCache[1];
  cpuState.jumpTimer=Math.max(0,cpuState.jumpTimer-dt);
  cpuState.attackTimer=Math.max(0,cpuState.attackTimer-dt);
  cpuState.shotCooldown=Math.max(0,cpuState.shotCooldown-dt);
@@ -340,50 +370,52 @@ function cpuInput(dt){
    const pred=predictBallLanding();
    cpuState.predX=pred.x;cpuState.predT=pred.t;
    const onMySide=pred.x>NETX;
+   const error=(Math.random()-.5)*cfg.err;
+
    if(onMySide){
-     const error=(Math.random()-.5)*cfg.err;
-     const behind=cfg.offset+clamp(Math.abs(ball.vx)*.035,0,16);
-     cpuState.targetX=clamp(pred.x+behind+error,NETX+58,W-44);
+     // All levels use the same correct "slightly behind the landing point" idea.
+     // Difficulty now changes precision and reaction speed, not a contradictory offset.
+     const speedBias=clamp(Math.abs(ball.vx)*.032,0,14);
+     cpuState.targetX=clamp(pred.x+cfg.behind+speedBias+error,NETX+58,W-44);
    }else{
-     // Original Pikachu AI does not chase a ball that belongs to the other side;
-     // it takes a useful standby position and waits for the return.
-     const oppThreat=clamp((p[0].x-250)*.18,-32,32);
-     cpuState.targetX=clamp(720+oppThreat,650,790);
+     const oppThreat=clamp((p[0].x-250)*(.12+.10*cfg.oppPrediction),-38,38);
+     cpuState.targetX=clamp(720+oppThreat+error*.12,646,794);
    }
 
-   // Predict whether jumping now can create an actual contact window.
+   // Once airborne, better levels refresh direct-ball tracking more often and more precisely.
+   // Easy no longer gets the same perfect every-frame tracking as Hard.
+   if(phase==='play'&&!me.onGround&&me.state!=='SLIDE'&&me.recover<=0){
+     const direct=clamp(ball.x+18+error*.18,NETX+56,W-42);
+     cpuState.targetX=lerp(cpuState.targetX,direct,cfg.airTrack);
+   }
+
    if(phase==='play'&&me.onGround&&me.recover<=0&&me.state!=='SLIDE'){
      const intercept=predictCpuJumpIntercept(me);
-     if(intercept&&intercept.t>.10&&intercept.t<.62){
-       cpuState.targetX=clamp(intercept.x+16,NETX+58,W-44);
-       if(intercept.t<.50)cpuState.jumpTimer=.055;
+     if(intercept&&intercept.t>.08&&intercept.t<cfg.jumpLead){
+       cpuState.targetX=clamp(intercept.x+14+error*.10,NETX+58,W-44);
+       cpuState.jumpTimer=.055;
      }
    }
  }
 
- // Pikachu Volleyball switches from landing-point pursuit to direct ball pursuit
- // after jumping. This keeps the CPU under the ball instead of committing to an old prediction.
- if(phase==='play'&&!me.onGround&&me.state!=='SLIDE'&&me.recover<=0){
-   cpuState.targetX=clamp(ball.x+18,NETX+56,W-42);
- }
-
- // Last-chance ground slide: deterministic when running cannot reach but the slide can.
+ // Slide only when running is genuinely becoming too late. Higher difficulties
+ // leave a larger safety buffer, so they rescue borderline balls without random dives.
  if(phase==='play'&&me.onGround&&me.state!=='SLIDE'&&me.recover<=0&&ball.vy>0&&cpuState.predX>NETX){
    const gap=Math.abs(cpuState.predX-me.x);
-   const runReach=PLAYER_MAX*Math.max(0,cpuState.predT)+48;
-   if(cpuState.predT<.50&&gap>runReach*.82&&gap<runReach+cfg.slideMargin){
+   const runNeed=Math.max(0,gap-48)/PLAYER_MAX;
+   const maxSlideReach=PLAYER_MAX*Math.max(0,cpuState.predT)+cfg.slideMargin;
+   if(cpuState.predT<.54&&cpuState.predT<runNeed+cfg.slideBuffer&&gap<maxSlideReach){
      cpuState.targetX=clamp(cpuState.predX,NETX+50,W-38);
      if(!me.smashLatch)cpuState.attackTimer=.045;
    }
  }
 
- // Attack every frame while airborne so a narrow hit window is not missed between AI think ticks.
  const close=Math.abs(ball.x-me.x),vertical=Math.abs(ball.y-(me.y-18));
  const attackWindow=phase==='play'&&!me.onGround&&me.recover<=0&&me.state!=='SLIDE'&&ball.x>NETX-28&&close<92&&vertical<88;
  if(attackWindow&&cpuState.shotCooldown<=0&&!me.smashLatch){
    cpuState.aim=chooseCpuAttackAim();
    cpuState.attackTimer=.045;
-   cpuState.shotCooldown=.16;
+   cpuState.shotCooldown=cfg.shotCooldown;
  }
 
  const dead=cfg.dead;
@@ -394,7 +426,6 @@ function cpuInput(dt){
  out.aim=cpuState.aim;
  return out;
 }
-
 function beginSlide(me,dir){
  me.state='SLIDE';me.slideTimer=.31;me.recover=0;me.onGround=true;me.vy=0;me.vx=dir*640;me.face=dir;me.y=GROUND-me.h*.5;shake=Math.max(shake,.8);sound('jump',.86);
 }
@@ -474,22 +505,30 @@ function simulateServeLanding(power,side=serveSide){
  return {x:g.x,t,valid:false,netHit:true};
 }
 function chooseCpuServePower(){
- const opp=p[0],candidates=[];
+ const cfg=cpuConfig(),opp=p[0],candidates=[];
  for(let i=0;i<=20;i++){
-   const power=i/20,res=simulateServeLanding(power,1);
+   const power=i/20;if(power>cfg.serveMax+.001)continue;
+   const res=simulateServeLanding(power,1);
    if(!res.valid||res.netHit)continue;
    const boundarySafety=Math.min(res.x-38,(NETX-30)-res.x);
-   const separation=Math.abs(res.x-opp.x);
-   const fastBonus=power*18;
-   candidates.push({power,...res,score:separation+Math.min(70,boundarySafety)*.10+fastBonus});
+   const futureOpp=clamp(opp.x+opp.vx*res.t*cfg.oppPrediction,42,NETX-42);
+   const separation=Math.abs(res.x-futureOpp);
+   const fastBonus=power*(cfg.serveStyle==='safe'?2:cfg.serveStyle==='mixed'?8:16);
+   const wrongFoot=(opp.vx>40&&res.x<futureOpp)||(opp.vx<-40&&res.x>futureOpp)?18*cfg.oppPrediction:0;
+   candidates.push({power,...res,score:separation+Math.min(70,boundarySafety)*.10+fastBonus+wrongFoot});
  }
- if(!candidates.length)return .55;
+ if(!candidates.length)return Math.min(.5,cfg.serveMax);
+
+ if(cfg.serveStyle==='safe'){
+   candidates.sort((a,b)=>(Math.abs(a.x-270)+a.power*30)-(Math.abs(b.x-270)+b.power*30));
+   const pool=candidates.slice(0,Math.min(4,candidates.length));
+   return pool[Math.floor(Math.random()*pool.length)].power;
+ }
+
  candidates.sort((a,b)=>b.score-a.score);
- if(difficulty==='easy'){
-   const pool=candidates.slice(0,Math.min(7,candidates.length));
-   return pool[Math.min(pool.length-1,2+Math.floor(Math.random()*Math.max(1,pool.length-2)))].power;
+ if(cfg.serveStyle==='mixed'&&candidates.length>2&&Math.random()<.35){
+   return candidates[1+Math.floor(Math.random()*Math.min(2,candidates.length-1))].power;
  }
- if(difficulty==='normal'&&candidates.length>2&&Math.random()<.18)return candidates[1+Math.floor(Math.random()*2)].power;
  return candidates[0].power;
 }
 function launchServe(power=0){
