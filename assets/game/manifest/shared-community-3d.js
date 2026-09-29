@@ -856,8 +856,8 @@ export function shared3DGroup(name){return (SHARED_3D_GROUPS[name]||[]).map(getS
  */
 export const SHARED_3D_QA=Object.freeze({
   "prop.tinCan":Object.freeze({state:"blocked",reason:"16.6 MB source model; optimize before runtime use"}),
-  "vehicle.schoolBus":Object.freeze({state:"review",reason:"appeared achromatic in Apocalypse v8; material pass required"}),
-  "building.house":Object.freeze({state:"review",reason:"material and pivot/footprint need visual verification"}),
+  "vehicle.schoolBus":Object.freeze({state:"repair",preset:"schoolBus",reason:"source appears achromatic; use Kidscade material palette at runtime"}),
+  "building.house":Object.freeze({state:"repair",preset:"ruinedHouse",reason:"use runtime palette plus center/ground normalization"}),
   "animal.deer":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
   "animal.stag":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
   "animal.husky":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
@@ -879,3 +879,5 @@ export const SHARED_3D_QA=Object.freeze({
 });
 export function shared3DProfile(id){return SHARED_3D_QA[id]||Object.freeze({state:"review",reason:"not visually verified yet"})}
 export function shared3DIsApproved(id){return shared3DProfile(id).state==="approved"}
+export function shared3DCanUse(id){return ["approved","repair"].includes(shared3DProfile(id).state)}
+export function shared3DRepairPreset(id){return shared3DProfile(id).preset||null}
