@@ -342,141 +342,480 @@ function foldPreview(){
   }requestAnimationFrame(step);toast('전개도의 면들이 3D 위치로 접히고 있어요.');
 }
 
-/* ---------------- 자유 건축 월드 ---------------- */
-const freeMaterials=[
-  {name:'잔디',color:0x6fbd63},{name:'나무',color:0xa97449},{name:'돌',color:0x8e98a7},
-  {name:'모래',color:0xe7ca79},{name:'하늘',color:0x66b7e8},{name:'분홍',color:0xe889aa}
-];
+/* ---------------- 아키텍트 월드: 살아있는 복셀 샌드박스 ---------------- */
+const BLOCK_DEFS={
+  grass:{name:'잔디',icon:'🌱',color:0x69b85f,category:'자연',solid:true},
+  dirt:{name:'흙',icon:'🟫',color:0x8b6043,category:'자연',solid:true},
+  stone:{name:'돌',icon:'🪨',color:0x89919d,category:'자연',solid:true},
+  sand:{name:'모래',icon:'🟨',color:0xe4c978,category:'자연',solid:true,gravity:true},
+  log:{name:'원목',icon:'🪵',color:0x8c603d,category:'자연',solid:true,flammable:true},
+  leaves:{name:'나뭇잎',icon:'🍃',color:0x4f9c55,category:'자연',solid:true,flammable:true,transparent:true,opacity:.82},
+  sapling:{name:'묘목',icon:'🌿',color:0x55a65b,category:'자연',solid:false,special:'sapling'},
+  planks:{name:'나무 판자',icon:'▤',color:0xb98554,category:'건축',solid:true,flammable:true},
+  brick:{name:'벽돌',icon:'🧱',color:0xb96757,category:'건축',solid:true},
+  glass:{name:'유리',icon:'◇',color:0xbdefff,category:'건축',solid:true,transparent:true,opacity:.32},
+  obsidian:{name:'흑요석',icon:'◆',color:0x342c4a,category:'건축',solid:true},
+  door:{name:'나무문',icon:'🚪',color:0x9a673f,category:'기능',solid:true,flammable:true,special:'door'},
+  doorTop:{name:'문 윗부분',color:0x9a673f,category:'기능',solid:true,special:'doorTop',hidden:true},
+  torch:{name:'횃불',icon:'🔦',color:0xf0b34e,category:'기능',solid:false,special:'torch'},
+  water:{name:'물',icon:'💧',color:0x4f9fea,category:'실험',solid:false,liquid:true,transparent:true,opacity:.48},
+  lava:{name:'용암',icon:'🔥',color:0xff6f35,category:'실험',solid:false,liquid:true,transparent:true,opacity:.72,emissive:true},
+  fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
+  bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
+};
+const PLACEABLE_TYPES=['grass','dirt','stone','sand','log','leaves','sapling','planks','brick','glass','obsidian','door','torch','water','lava','fire'];
+const WORLD_HALF=16,WORLD_MIN_Y=-5,WORLD_MAX_Y=16,SEA_LEVEL=0;
 const freeCubeGeo=new THREE.BoxGeometry(1,1,1);
-let freeBlocks=new Map(),freeMeshes=[],worldInteractables=[],collectibles=[],collected=new Set(),unlocked=3,selectedMaterial=0;
+const fluidGeo=new THREE.BoxGeometry(1,.84,1);
+const doorGeo=new THREE.BoxGeometry(.14,1.92,.9);
+const torchGeo=new THREE.CylinderGeometry(.065,.09,.58,7);
+const saplingGeo=new THREE.ConeGeometry(.36,.82,6);
+const fireGeo=new THREE.ConeGeometry(.38,.82,7);
+const materialCache=new Map();
+let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
+let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
+let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
+let freeFlying=false,inventoryOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+
 function worldKey(x,y,z){return x+','+y+','+z}
-function freeMat(i){return new THREE.MeshStandardMaterial({color:freeMaterials[i].color,roughness:.86,transparent:true,opacity:1})}
-function addFreeBlock(x,y,z,matIndex,opts){
-  const key=worldKey(x,y,z);if(freeBlocks.has(key)&&!(opts&&opts.scenery))return null;
-  const mesh=new THREE.Mesh(freeCubeGeo,freeMat(matIndex));mesh.position.set(x,y+.5,z);mesh.castShadow=true;mesh.receiveShadow=true;
-  mesh.userData={gx:x,gy:y,gz:z,matIndex:matIndex,playerBuilt:!!(opts&&opts.playerBuilt),breakable:!!(opts&&opts.breakable),scenery:!!(opts&&opts.scenery)};
-  scene.add(mesh);worldInteractables.push(mesh);
-  if(mesh.userData.playerBuilt){freeBlocks.set(key,mesh);freeMeshes.push(mesh)}
+function parseWorldKey(key){return key.split(',').map(Number)}
+function inWorld(x,y,z){return x>=-WORLD_HALF&&x<WORLD_HALF&&z>=-WORLD_HALF&&z<WORLD_HALF&&y>=WORLD_MIN_Y&&y<=WORLD_MAX_Y}
+function cloneBlockData(data){return data?JSON.parse(JSON.stringify(data)):null}
+function blockDef(dataOrType){const type=typeof dataOrType==='string'?dataOrType:dataOrType?.type;return BLOCK_DEFS[type]||BLOCK_DEFS.stone}
+function isTransparentData(data){const d=blockDef(data);return !!(d.transparent||d.liquid||d.special)}
+function isOccluder(data){const d=blockDef(data);return !!(data&&d.solid&&!d.transparent&&!d.special)}
+function materialFor(type){
+  if(materialCache.has(type))return materialCache.get(type);
+  const d=blockDef(type);
+  const m=new THREE.MeshStandardMaterial({
+    color:d.color||0xffffff,roughness:type==='glass'?.18:.86,metalness:type==='glass'?.05:0,
+    transparent:!!d.transparent,opacity:d.opacity??1,depthWrite:!(d.transparent||d.liquid),
+    emissive:d.emissive?(d.color||0):0x000000,emissiveIntensity:d.emissive?.45:0
+  });
+  materialCache.set(type,m);return m;
+}
+function terrainHeight(x,z){
+  const dist=Math.hypot(x,z);
+  let h=1.9+Math.sin(x*.31)*.9+Math.cos(z*.27)*.75+Math.sin((x+z)*.18)*.45-Math.max(0,dist-10)*.36;
+  if(dist>14)h-=1.4;
+  return THREE.MathUtils.clamp(Math.floor(h),-2,3);
+}
+function hash2(x,z){
+  const v=Math.sin(x*127.1+z*311.7)*43758.5453;
+  return v-Math.floor(v);
+}
+function setRawBlock(x,y,z,data){
+  if(!inWorld(x,y,z))return false;
+  if(data)worldData.set(worldKey(x,y,z),data);else worldData.delete(worldKey(x,y,z));
+  return true;
+}
+function getBlock(x,y,z){return worldData.get(worldKey(x,y,z))||null}
+function isSolidData(data,x,y,z){
+  if(!data)return false;
+  if(data.type==='doorTop'){
+    const base=getBlock(x,y-1,z);return !!(base&&base.type==='door'&&!base.open);
+  }
+  if(data.type==='door')return !data.open;
+  return !!blockDef(data).solid;
+}
+function getHighestSolidY(x,z,maxY=WORLD_MAX_Y){
+  for(let y=Math.min(WORLD_MAX_Y,Math.floor(maxY));y>=WORLD_MIN_Y;y--){
+    const d=getBlock(Math.round(x),y,Math.round(z));
+    if(isSolidData(d,Math.round(x),y,Math.round(z)))return y;
+  }
+  return WORLD_MIN_Y;
+}
+function visibleAt(x,y,z,data){
+  if(!data||blockDef(data).hidden)return false;
+  const d=blockDef(data);
+  if(d.transparent||d.liquid||d.special)return true;
+  const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  return dirs.some(v=>!isOccluder(getBlock(x+v[0],y+v[1],z+v[2])));
+}
+function removeWorldMesh(key){
+  const mesh=worldMeshMap.get(key);if(!mesh)return;
+  scene.remove(mesh);worldMeshMap.delete(key);
+  worldInteractables=worldInteractables.filter(x=>x!==mesh);
+  freeMeshes=freeMeshes.filter(x=>x!==mesh);
+}
+function makeWorldMesh(x,y,z,data){
+  const d=blockDef(data),type=data.type;
+  if(d.hidden)return null;
+  let mesh;
+  if(type==='door'){
+    mesh=new THREE.Mesh(doorGeo,materialFor('door'));
+    mesh.position.set(x,y+1,z);
+    const facing=(data.facing||0)*Math.PI/2;
+    mesh.rotation.y=facing+(data.open?Math.PI/2:0);
+  }else if(type==='torch'){
+    mesh=new THREE.Mesh(torchGeo,materialFor('torch'));mesh.position.set(x,y+.34,z);
+    const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;mesh.add(light);
+  }else if(type==='sapling'){
+    mesh=new THREE.Mesh(saplingGeo,materialFor('sapling'));mesh.position.set(x,y+.41,z);
+  }else if(type==='fire'){
+    mesh=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
+    mesh.position.set(x,y+.42,z);
+    const light=new THREE.PointLight(0xff692c,1.4,6,2);light.position.y=.35;mesh.add(light);
+  }else if(type==='water'||type==='lava'){
+    mesh=new THREE.Mesh(fluidGeo,materialFor(type));mesh.position.set(x,y+.42,z);
+  }else{
+    mesh=new THREE.Mesh(freeCubeGeo,materialFor(type));mesh.position.set(x,y+.5,z);
+  }
+  mesh.castShadow=!(type==='water'||type==='glass'||type==='leaves'||type==='fire');
+  mesh.receiveShadow=true;mesh.userData={worldBlock:true,gx:x,gy:y,gz:z,type:type};
+  scene.add(mesh);worldMeshMap.set(worldKey(x,y,z),mesh);worldInteractables.push(mesh);freeMeshes.push(mesh);
   return mesh;
 }
-function initFree(){
-  modeTitle('아키텍트 월드','탐험 · 수집 · 자유 건축');
-  setVisible('freeHud',true);$('actionSave').classList.remove('hidden');$('actionXray').classList.remove('hidden');
-  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,26,58);camera.position.set(0,1.65,7);camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
-  freeBlocks=new Map();freeMeshes=[];worldInteractables=[];collectibles=[];collected=new Set();unlocked=3;xray=false;freeVelocityY=0;onGround=true;
-  buildFreeWorld();loadFreeWorld();buildHotbar();updateFreeMission();
-  $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
-  $('actionXray').onclick=toggleXray;
-  $('lockNotice').classList.remove('hidden');$('lockNotice').onclick=()=>canvas.requestPointerLock();
-  showTutorial('free');
+function refreshBlockMesh(x,y,z){
+  const key=worldKey(x,y,z);removeWorldMesh(key);
+  const data=getBlock(x,y,z);if(data&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
+}
+function refreshAround(x,y,z){
+  [[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(v=>refreshBlockMesh(x+v[0],y+v[1],z+v[2]));
+}
+function markEdit(x,y,z,data){worldEdits.set(worldKey(x,y,z),cloneBlockData(data))}
+function setWorldBlock(x,y,z,data,record=true){
+  if(!inWorld(x,y,z))return false;
+  setRawBlock(x,y,z,data);if(record)markEdit(x,y,z,data);refreshAround(x,y,z);return true;
+}
+function removeWorldBlockData(x,y,z,record=true){
+  const data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable)return false;
+  if(data.type==='doorTop')return removeWorldBlockData(x,y-1,z,record);
+  if(data.type==='door'){
+    setRawBlock(x,y,z,null);setRawBlock(x,y+1,z,null);
+    if(record){markEdit(x,y,z,null);markEdit(x,y+1,z,null)}
+    refreshAround(x,y,z);refreshAround(x,y+1,z);return true;
+  }
+  setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);refreshAround(x,y,z);return true;
+}
+function rebuildAllWorldMeshes(){
+  Array.from(worldMeshMap.keys()).forEach(removeWorldMesh);
+  worldMeshMap=new Map();worldInteractables=[];freeMeshes=[];
+  for(const [key,data] of worldData){const [x,y,z]=parseWorldKey(key);if(visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data)}
+}
+function growTree(x,baseY,z,record){
+  const height=3+(hash2(x+11,z-7)>.62?1:0);
+  for(let i=0;i<height;i++){
+    const d={type:'log',natural:!record};if(record)setWorldBlock(x,baseY+i,z,d,true);else setRawBlock(x,baseY+i,z,d);
+  }
+  const top=baseY+height-1;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    if(Math.abs(dx)+Math.abs(dz)+(dy===1?1:0)>3)continue;
+    const px=x+dx,py=top+dy+1,pz=z+dz;if(!inWorld(px,py,pz)||getBlock(px,py,pz))continue;
+    const d={type:'leaves',natural:!record};if(record)setWorldBlock(px,py,pz,d,true);else setRawBlock(px,py,pz,d);
+  }
 }
 function buildFreeWorld(){
-  const groundMat=new THREE.MeshStandardMaterial({color:0x72b963,roughness:1});
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(44,44,22,22),groundMat);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;ground.userData.ground=true;scene.add(ground);worldInteractables.push(ground);
-  const sand=new THREE.Mesh(new THREE.PlaneGeometry(13,12),new THREE.MeshStandardMaterial({color:0xe5c778,roughness:1}));sand.rotation.x=-Math.PI/2;sand.position.set(13,.012,-11);scene.add(sand);
-  const stone=new THREE.Mesh(new THREE.PlaneGeometry(11,10),new THREE.MeshStandardMaterial({color:0x9aa3ab,roughness:1}));stone.rotation.x=-Math.PI/2;stone.position.set(-14,.014,12);scene.add(stone);
-  const grid=new THREE.GridHelper(44,44,0xffffff,0xffffff);grid.material.opacity=.11;grid.material.transparent=true;grid.position.y=.02;scene.add(grid);
-  const trunkMat=new THREE.MeshStandardMaterial({color:0x8f633f,roughness:1}),leafMat=new THREE.MeshStandardMaterial({color:0x4f9a55,roughness:1});
-  [[-10,-8],[-14,-4],[-8,-14],[11,9],[15,6],[8,14]].forEach(p=>{
-    const tr=new THREE.Mesh(new THREE.BoxGeometry(.75,2.6,.75),trunkMat);tr.position.set(p[0],1.3,p[1]);scene.add(tr);
-    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){if(Math.abs(dx)+Math.abs(dz)>1)continue;const l=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.4),leafMat);l.position.set(p[0]+dx*.8,3,p[1]+dz*.8);scene.add(l)}
-  });
-  const ruinMat=new THREE.MeshStandardMaterial({color:0xb9b0a1,roughness:.95});
-  [[8,0,8],[8,1,8],[8,2,8],[12,0,8],[12,1,8],[12,2,8],[9,2,8],[10,2,8],[11,2,8],[8,0,11],[12,0,11]].forEach(v=>{const m=new THREE.Mesh(freeCubeGeo,ruinMat);m.position.set(v[0],v[1]+.5,v[2]);m.castShadow=true;m.receiveShadow=true;m.userData.ruin=true;scene.add(m)});
-  const sign=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.3,.2),new THREE.MeshStandardMaterial({color:0x5a4635}));sign.position.set(10,1.6,8.6);scene.add(sign);
-  addCollectible('bp1',-12,.7,-11,0x6f72ff,'설계도 조각');
-  addCollectible('c1',13,.8,-12,0xffd65a,'색 결정');
-  addCollectible('bp2',-15,.7,13,0x6f72ff,'설계도 조각');
-  addCollectible('c2',15,.8,8,0xff79a8,'색 결정');
-  addCollectible('bp3',3,.7,-16,0x6f72ff,'설계도 조각');
+  worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
+  for(let x=-WORLD_HALF;x<WORLD_HALF;x++)for(let z=-WORLD_HALF;z<WORLD_HALF;z++){
+    const h=terrainHeight(x,z),dist=Math.hypot(x,z);
+    for(let y=WORLD_MIN_Y;y<=h;y++){
+      let type;
+      if(y===WORLD_MIN_Y)type='bedrock';
+      else if(y<=h-3)type='stone';
+      else if(y<h)type=(h<=SEA_LEVEL?'sand':'dirt');
+      else type=(h<=SEA_LEVEL||dist>12.5?'sand':'grass');
+      setRawBlock(x,y,z,{type,natural:true});
+    }
+    if(h<SEA_LEVEL)for(let y=h+1;y<=SEA_LEVEL;y++)setRawBlock(x,y,z,{type:'water',level:4,naturalSea:true,natural:true});
+  }
+  for(let x=-13;x<=13;x++)for(let z=-13;z<=13;z++){
+    const h=terrainHeight(x,z),dist=Math.hypot(x,z);
+    if(dist<4||dist>12||x>6&&z>6)continue;
+    if(getBlock(x,h,z)?.type==='grass'&&hash2(x,z)>.935)growTree(x,h+1,z,false);
+  }
+  const ruinY=Math.max(terrainHeight(10,10),terrainHeight(8,8))+1;
+  [[8,0,8,'stone'],[8,1,8,'brick'],[8,2,8,'brick'],[12,0,8,'stone'],[12,1,8,'brick'],[12,2,8,'brick'],
+   [9,2,8,'brick'],[10,2,8,'brick'],[11,2,8,'brick'],[8,0,11,'stone'],[12,0,11,'stone'],[10,0,11,'obsidian']].forEach(v=>setRawBlock(v[0],ruinY+v[1],v[2],{type:v[3],ruin:true,natural:true}));
+  addCollectible('bp1',-12,terrainHeight(-12,-11)+1.0,-11,0x6f72ff,'설계도 조각');
+  addCollectible('c1',13,terrainHeight(13,-12)+1.1,-12,0xffd65a,'색 결정');
+  addCollectible('bp2',-14,terrainHeight(-14,12)+1.0,12,0x6f72ff,'설계도 조각');
+  addCollectible('c2',14,terrainHeight(14,7)+1.1,7,0xff79a8,'색 결정');
+  addCollectible('bp3',3,terrainHeight(3,-14)+1.0,-14,0x6f72ff,'설계도 조각');
+  freeHemi=scene.children.find(o=>o.isHemisphereLight)||null;
+  freeSun=scene.children.find(o=>o.isDirectionalLight)||null;
 }
 function addCollectible(id,x,y,z,color,label){
-  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.48),new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:.4,roughness:.35}));
-  m.position.set(x,y,z);m.userData={collectible:id,label:label,baseY:y};m.castShadow=true;scene.add(m);collectibles.push(m);
+  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
+  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;scene.add(m);collectibles.push(m);
+}
+function initFree(){
+  modeTitle('아키텍트 월드','살아있는 복셀 세계 · 탐험 · 건축 · 실험');
+  setVisible('freeHud',true);$('actionSave').classList.remove('hidden');$('actionXray').classList.remove('hidden');
+  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
+  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;freeSimAccum=0;freeSimTick=0;
+  buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();updateFreeMission();
+  const spawnZ=6,ground=getHighestSolidY(0,spawnZ,8);camera.position.set(0,ground+1+1.65,spawnZ);
+  $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
+  $('actionXray').onclick=toggleXray;
+  $('lockNotice').classList.remove('hidden');$('lockNotice').onclick=()=>{if(!inventoryOpen)canvas.requestPointerLock()};
+  $('inventoryClose').onclick=()=>toggleInventory(false);
+  document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
+  showTutorial('free');
+}
+function blockButtonMarkup(type,index){
+  const d=blockDef(type),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
+  return '<span>'+(index||'')+'</span><i style="--swatch:'+hex+'">'+(d.icon||'')+'</i><em>'+d.name+'</em>';
 }
 function buildHotbar(){
   const h=$('hotbar');h.innerHTML='';
-  freeMaterials.forEach((m,i)=>{const b=document.createElement('button');b.className='hot-slot'+(i===selectedMaterial?' active':'');b.style.setProperty('--swatch','#'+m.color.toString(16).padStart(6,'0'));
-    b.innerHTML='<span>'+(i+1)+'</span><i></i>';b.title=i<unlocked?m.name:m.name+' (탐험해서 해금)';
-    b.onclick=()=>{if(i>=unlocked){toast('색 결정을 찾아 이 재료를 해금해 보세요.');return}selectedMaterial=i;buildHotbar()};h.appendChild(b)});
+  hotbarTypes.forEach((type,i)=>{
+    const b=document.createElement('button');b.className='hot-slot'+(i===selectedHotbarSlot?' active':'');
+    b.innerHTML=blockButtonMarkup(type,i+1);b.title=blockDef(type).name;
+    b.onclick=()=>{selectedHotbarSlot=i;selectedType=hotbarTypes[i];buildHotbar();updateFreeMission()};h.appendChild(b);
+  });
+  selectedType=hotbarTypes[selectedHotbarSlot]||'grass';
+}
+function buildInventory(category='전체'){
+  const grid=$('inventoryGrid');if(!grid)return;grid.innerHTML='';
+  document.querySelectorAll('[data-inv-cat]').forEach(b=>b.classList.toggle('active',b.dataset.invCat===category));
+  PLACEABLE_TYPES.filter(type=>category==='전체'||blockDef(type).category===category).forEach(type=>{
+    const d=blockDef(type),b=document.createElement('button');b.className='inventory-item';
+    b.innerHTML='<i style="--swatch:#'+(d.color||0xffffff).toString(16).padStart(6,'0')+'">'+(d.icon||'')+'</i><b>'+d.name+'</b><small>'+d.category+'</small>';
+    b.onclick=()=>{hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(d.name+'을(를) '+(selectedHotbarSlot+1)+'번 칸에 넣었어요.')};grid.appendChild(b);
+  });
+}
+function toggleInventory(force){
+  inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
+  $('blockInventory').classList.toggle('hidden',!inventoryOpen);
+  if(inventoryOpen){if(document.pointerLockElement===canvas)document.exitPointerLock();buildInventory('전체')}
 }
 function updateFreeMission(){
   const total=5,done=collected.size;$('adventureCount').textContent=done+'/'+total;$('adventureBar').style.width=(done/total*100)+'%';
-  $('freeHint').textContent=nearRuin?'E : 폐허의 설계도 챌린지 열기':'좌클릭 파괴 · 우클릭 설치 · R 색칠 · X 구조 보기';
+  const chosen=blockDef(selectedType).name,flight=freeFlying?'비행 ON':'걷기';
+  $('freeState').textContent=flight+' · '+chosen;
+  $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 인벤토리 · F 비행':'E 인벤토리 · F 비행 · R 바라보는 블록 복사 · X 구조 보기';
 }
-function freeCenterHit(max){
-  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);const hits=raycaster.intersectObjects(worldInteractables,false);return hits.find(h=>h.distance<=(max||6))||null;
+function freeCenterHit(max=6.5){
+  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hits=raycaster.intersectObjects(worldInteractables,false);return hits.find(h=>h.distance<=max)||null;
+}
+function placementTarget(hit){
+  if(!hit||!hit.face)return null;
+  const d=hit.object.userData,n=hit.face.normal;if(!d.worldBlock)return null;
+  return {x:d.gx+Math.round(n.x),y:d.gy+Math.round(n.y),z:d.gz+Math.round(n.z)};
 }
 function placeFreeBlock(hit){
   if(!hit)return;
-  let x,y,z;
-  if(hit.object.userData.ground){x=Math.round(hit.point.x);z=Math.round(hit.point.z);y=0}
-  else{
-    const d=hit.object.userData,n=hit.face&&hit.face.normal;if(d.gx===undefined||!n)return;
-    x=d.gx+Math.round(n.x);y=d.gy+Math.round(n.y);z=d.gz+Math.round(n.z);
-  }
-  if(Math.abs(x)>21||Math.abs(z)>21||y<0||y>12)return;
-  if(Math.hypot(camera.position.x-x,camera.position.z-z)<1.1&&y<2){toast('내가 서 있는 자리에는 놓을 수 없어요.');return}
-  if(addFreeBlock(x,y,z,selectedMaterial,{playerBuilt:true,breakable:true})){sfx('place');saveFreeWorld()}
+  if(hit.object.userData.type==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
+  const p=placementTarget(hit);if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
+  if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&p.y>=Math.floor(camera.position.y-1.65)&&p.y<=Math.floor(camera.position.y))return;
+  if(selectedType==='door'){
+    if(p.y>=WORLD_MAX_Y||getBlock(p.x,p.y+1,p.z)){toast('문을 놓으려면 위쪽 두 칸이 비어 있어야 해요.');return}
+    const facing=((Math.round(yaw/(Math.PI/2))%4)+4)%4;
+    setWorldBlock(p.x,p.y,p.z,{type:'door',open:false,facing,playerBuilt:true},true);
+    setWorldBlock(p.x,p.y+1,p.z,{type:'doorTop',baseY:p.y,playerBuilt:true},true);
+  }else if(selectedType==='water'||selectedType==='lava'){
+    setWorldBlock(p.x,p.y,p.z,{type:selectedType,level:4,playerBuilt:true},true);reactFluidsNear(p.x,p.y,p.z);
+  }else if(selectedType==='fire'){
+    setWorldBlock(p.x,p.y,p.z,{type:'fire',age:0,playerBuilt:true},true);
+  }else if(selectedType==='sapling'){
+    setWorldBlock(p.x,p.y,p.z,{type:'sapling',age:0,playerBuilt:true},true);
+  }else setWorldBlock(p.x,p.y,p.z,{type:selectedType,playerBuilt:true},true);
+  sfx('place');saveFreeWorld();
 }
 function breakFreeBlock(hit){
-  if(!hit||!hit.object.userData.playerBuilt)return;const d=hit.object.userData,k=worldKey(d.gx,d.gy,d.gz);
-  scene.remove(hit.object);worldInteractables=worldInteractables.filter(x=>x!==hit.object);freeMeshes=freeMeshes.filter(x=>x!==hit.object);freeBlocks.delete(k);sfx('break');saveFreeWorld();
+  if(!hit||!hit.object.userData.worldBlock)return;
+  const {gx:x,gy:y,gz:z}=hit.object.userData,data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  if(removeWorldBlockData(x,y,z,true)){
+    const neighborWater=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]].map(v=>getBlock(x+v[0],y+v[1],z+v[2])).find(d=>d?.type==='water');
+    if(neighborWater&&!getBlock(x,y,z))setWorldBlock(x,y,z,{type:'water',level:Math.max(2,neighborWater.level||3),flow:true},true);
+    sfx('break');saveFreeWorld();
+  }
 }
-function paintTarget(){
-  if(mode!=='free')return;const hit=freeCenterHit(6);if(!hit||!hit.object.userData.playerBuilt){toast('색칠할 내가 만든 블록을 바라보세요.');return}
-  const m=hit.object;const d=m.userData;m.material.dispose();m.material=freeMat(selectedMaterial);d.matIndex=selectedMaterial;sfx('place');saveFreeWorld();toast(freeMaterials[selectedMaterial].name+' 색으로 칠했어요.');
+function toggleDoorAt(x,y,z){
+  let data=getBlock(x,y,z);if(data?.type==='doorTop'){y-=1;data=getBlock(x,y,z)}
+  if(!data||data.type!=='door')return false;
+  data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');return true;
+}
+function pickTargetBlock(){
+  const hit=freeCenterHit();if(!hit)return;let type=hit.object.userData.type;
+  if(type==='doorTop')type='door';if(!PLACEABLE_TYPES.includes(type))return;
+  hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
 function toggleXray(){
-  xray=!xray;freeMeshes.forEach(m=>{m.material.wireframe=xray;m.material.opacity=xray?.35:1;m.material.transparent=xray});
-  $('actionXray').textContent=xray?'구조 보기 ON':'구조 보기';toast(xray?'장식을 숨기고 블록 구조를 살펴봅니다.':'일반 건축 화면으로 돌아왔어요.');
+  xray=!xray;
+  for(const mesh of freeMeshes){
+    if(!mesh.material||Array.isArray(mesh.material))continue;
+    const type=mesh.userData.type;if(type==='water'||type==='lava'||type==='fire')continue;
+    mesh.material.wireframe=xray;
+  }
+  $('actionXray').textContent=xray?'구조 보기 ON':'구조 보기';toast(xray?'블록의 구조선을 표시합니다.':'일반 월드 화면으로 돌아왔어요.');
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={blocks:freeMeshes.map(m=>[m.userData.gx,m.userData.gy,m.userData.gz,m.userData.matIndex]),collected:Array.from(collected),unlocked:unlocked};
-  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSave',data))lastFreeSave=performance.now()}catch(e){}
+  const data={version:2,edits:Array.from(worldEdits.entries()),collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,dayTime};
+  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV2',data))lastFreeSave=performance.now()}catch(e){}
 }
 function loadFreeWorld(){
+  worldEdits=new Map();
   try{
-    let d=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
-    if(!d){
-      const legacyKey='cubeArchitect'+'WorldV1';const legacyRaw=localStorage.getItem(legacyKey);
-      if(legacyRaw){
-        d=JSON.parse(legacyRaw);
-        window.KidscadeStorage?.setJson('cubeArchitectWorldSave',d);
-        localStorage.removeItem(legacyKey);
+    const d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
+    if(d){
+      collected=new Set(d.collected||[]);hotbarTypes=Array.isArray(d.hotbar)&&d.hotbar.length===9?d.hotbar:hotbarTypes;
+      selectedHotbarSlot=Math.max(0,Math.min(8,d.selected||0));dayTime=Number.isFinite(d.dayTime)?d.dayTime:.28;
+      for(const [key,value] of d.edits||[]){worldEdits.set(key,value);const [x,y,z]=parseWorldKey(key);setRawBlock(x,y,z,value)}
+    }else{
+      const old=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
+      if(old?.blocks){
+        const map=['grass','log','stone','sand','glass','brick'];
+        for(const v of old.blocks){const data={type:map[v[3]]||'planks',playerBuilt:true};setRawBlock(v[0],v[1],v[2],data);markEdit(v[0],v[1],v[2],data)}
+        collected=new Set(old.collected||[]);
       }
     }
-    if(!d)return;
-    unlocked=Math.max(3,Math.min(6,d.unlocked||3));collected=new Set(d.collected||[]);
-    (d.blocks||[]).forEach(v=>addFreeBlock(v[0],v[1],v[2],v[3],{playerBuilt:true,breakable:true}));
     collectibles.forEach(m=>{if(collected.has(m.userData.collectible)){scene.remove(m);m.userData.gone=true}})
-  }catch(e){}
+  }catch(e){console.warn('[Cube Architect save]',e)}
+}
+function reactFluidsNear(x,y,z){
+  const here=getBlock(x,y,z);if(!here||!(here.type==='water'||here.type==='lava'))return;
+  const other=here.type==='water'?'lava':'water',dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  for(const v of dirs){
+    const nx=x+v[0],ny=y+v[1],nz=z+v[2],n=getBlock(nx,ny,nz);if(n?.type!==other)continue;
+    const lavaPos=here.type==='lava'?[x,y,z]:[nx,ny,nz],lava=getBlock(...lavaPos);
+    const result=(lava?.level||0)>=4&&(here.level||n.level||0)>=4?'obsidian':'stone';
+    setWorldBlock(lavaPos[0],lavaPos[1],lavaPos[2],{type:result,formedBy:'water+lava'},true);
+    const now=performance.now();if(now-lastChemToast>1800){toast(result==='obsidian'?'물과 용암이 만나 흑요석이 되었어요!':'물과 용암이 만나 돌이 되었어요!');lastChemToast=now}
+    return;
+  }
+}
+function simulateSand(){
+  const moves=[];
+  for(const [key,d] of worldData){
+    if(d.type!=='sand')continue;const [x,y,z]=parseWorldKey(key);if(y<=WORLD_MIN_Y+1)continue;
+    const below=getBlock(x,y-1,z);if(!below||blockDef(below).liquid||below.type==='fire')moves.push([x,y,z]);
+  }
+  moves.slice(0,40).forEach(([x,y,z])=>{const d=getBlock(x,y,z);if(!d||d.type!=='sand'||getBlock(x,y-1,z)&&!blockDef(getBlock(x,y-1,z)).liquid)return;removeWorldBlockData(x,y,z,true);setWorldBlock(x,y-1,z,{...d,falling:true},true)});
+}
+function flowInto(x,y,z,type,level){
+  if(!inWorld(x,y,z)||level<=0)return false;const at=getBlock(x,y,z);
+  if(at){
+    if((type==='water'&&at.type==='lava')||(type==='lava'&&at.type==='water')){setWorldBlock(x,y,z,{type:level>=4&&(at.level||0)>=4?'obsidian':'stone',formedBy:'water+lava'},true);return true}
+    return false;
+  }
+  setWorldBlock(x,y,z,{type,level,flow:true},true);reactFluidsNear(x,y,z);return true;
+}
+function simulateLiquids(){
+  const liquids=[];
+  for(const [key,d] of worldData)if((d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d]);
+  for(const [key,d] of liquids.slice(0,90)){
+    const [x,y,z]=parseWorldKey(key),level=d.level||1;if(!getBlock(x,y,z))continue;
+    if(!getBlock(x,y-1,z)&&y>WORLD_MIN_Y+1){flowInto(x,y-1,z,d.type,Math.max(level,2));continue}
+    if(level<=1)continue;if(d.type==='lava'&&freeSimTick%2)continue;
+    const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(let i=0;i<dirs.length;i++){
+      const v=dirs[(i+freeSimTick)%4];flowInto(x+v[0],y,z+v[1],d.type,level-1);
+    }
+  }
+}
+function hasNearbyLog(x,y,z,r=4){
+  for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)for(let dz=-r;dz<=r;dz++){
+    if(Math.abs(dx)+Math.abs(dy)+Math.abs(dz)>r+2)continue;if(getBlock(x+dx,y+dy,z+dz)?.type==='log')return true;
+  }return false;
+}
+function simulatePlants(){
+  const dirt=[],grass=[],leaves=[],saplings=[];
+  for(const [key,d] of worldData){
+    if(d.type==='dirt')dirt.push(key);else if(d.type==='grass')grass.push(key);else if(d.type==='leaves')leaves.push(key);else if(d.type==='sapling')saplings.push(key);
+  }
+  grass.slice(0,80).forEach(key=>{const [x,y,z]=parseWorldKey(key),above=getBlock(x,y+1,z);if(above&&isOccluder(above)&&hash2(x+freeSimTick,z)<.08)setWorldBlock(x,y,z,{type:'dirt',natural:true},true)});
+  for(let i=0;i<Math.min(18,dirt.length);i++){
+    const key=dirt[(i*13+freeSimTick*7)%dirt.length],[x,y,z]=parseWorldKey(key);if(getBlock(x,y+1,z))continue;
+    const near=[[1,0],[-1,0],[0,1],[0,-1]].some(v=>getBlock(x+v[0],y,z+v[1])?.type==='grass');
+    if(near&&hash2(x+freeSimTick*.1,z-freeSimTick*.2)>.72)setWorldBlock(x,y,z,{type:'grass',natural:true},true);
+  }
+  for(const key of leaves.slice(0,50)){
+    const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
+    if(hasNearbyLog(x,y,z)){d.decay=0;continue}d.decay=(d.decay||0)+1;if(d.decay>5&&hash2(x+freeSimTick,z)>.48)removeWorldBlockData(x,y,z,true);
+  }
+  for(const key of saplings){
+    const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;d.age=(d.age||0)+1;
+    if(d.age>26&&!getBlock(x,y+1,z)&&!getBlock(x,y+2,z)&&!getBlock(x,y+3,z)){removeWorldBlockData(x,y,z,true);growTree(x,y,z,true);toast('묘목이 나무로 자랐어요.')}
+  }
+}
+function simulateFire(){
+  const fires=[];for(const [key,d] of worldData)if(d.type==='fire')fires.push(key);
+  const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  for(const key of fires.slice(0,40)){
+    const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
+    if(dirs.some(v=>getBlock(x+v[0],y+v[1],z+v[2])?.type==='water')){removeWorldBlockData(x,y,z,true);continue}
+    d.age=(d.age||0)+1;if(d.age>10){removeWorldBlockData(x,y,z,true);continue}
+    const candidates=dirs.map(v=>[x+v[0],y+v[1],z+v[2]]).filter(p=>blockDef(getBlock(...p)).flammable);
+    if(candidates.length&&hash2(x+freeSimTick,y+z)>.55){
+      const p=candidates[freeSimTick%candidates.length];removeWorldBlockData(...p,true);setWorldBlock(p[0],p[1],p[2],{type:'fire',age:0,spread:true},true);
+    }
+  }
+}
+function simulateWorld(){
+  freeSimTick++;simulateSand();simulateLiquids();simulateFire();if(freeSimTick%2===0)simulatePlants();
+}
+function updateDayNight(dt){
+  dayTime=(dayTime+dt/150)%1;
+  const sun=Math.max(.08,Math.sin(dayTime*Math.PI*2-Math.PI/2)*.5+.5),night=1-sun;
+  const sky=new THREE.Color().setRGB(.10+.50*sun,.16+.62*sun,.28+.68*sun);
+  scene.background.copy(sky);if(scene.fog)scene.fog.color.copy(sky);
+  if(freeHemi)freeHemi.intensity=.28+1.15*sun;if(freeSun)freeSun.intensity=.12+1.25*sun;
+  renderer.toneMappingExposure=.62+.48*sun;
+  $('worldClock').textContent=dayTime<.2?'새벽':dayTime<.45?'아침':dayTime<.7?'낮':dayTime<.82?'저녁':'밤';
 }
 function checkCollectibles(t){
   collectibles.forEach(m=>{if(m.userData.gone)return;m.rotation.y+=.02;m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
     if(camera.position.distanceTo(m.position)<1.35){m.userData.gone=true;scene.remove(m);collected.add(m.userData.collectible);
-      if(m.userData.collectible[0]==='c'){unlocked=Math.min(6,unlocked+1);buildHotbar();toast('색 결정 발견! 새 건축 재료가 열렸어요.')}
-      else toast('설계도 조각 발견! 건축학교의 새로운 아이디어를 얻었어요.');
-      sfx('good');updateFreeMission();saveFreeWorld();
-      if(collected.size===5){toast('탐험 목표 완료! 이제 마음껏 건축하거나 폐허 미션에 도전하세요.');reportResult('free',100,true)}
+      toast(m.userData.label+' 발견!');sfx('good');updateFreeMission();saveFreeWorld();
+      if(collected.size===5){toast('섬의 탐험 목표를 모두 찾았어요!');reportResult('free',100,true)}
     }
   });
   nearRuin=Math.hypot(camera.position.x-10,camera.position.z-9.5)<3.3;updateFreeMission();
 }
+function blockCoordFromWorld(v){return Math.floor(v+.5)}
+function playerCollidesAt(px,eyeY,pz){
+  const r=.27,feet=eyeY-1.62;
+  for(const ox of [-r,r])for(const oz of [-r,r])for(const sy of [feet+.08,feet+.82,eyeY-.12]){
+    const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz);
+    if(isSolidData(getBlock(x,y,z),x,y,z))return true;
+  }return false;
+}
+function groundTopBelow(px,eyeY,pz){
+  const x=blockCoordFromWorld(px),z=blockCoordFromWorld(pz),feet=eyeY-1.62;
+  for(let y=Math.min(WORLD_MAX_Y,Math.floor(feet+.15));y>=WORLD_MIN_Y;y--)if(isSolidData(getBlock(x,y,z),x,y,z))return y+1;
+  return WORLD_MIN_Y+1;
+}
+function moveFreeHorizontal(dx,dz){
+  if(!dx&&!dz)return;
+  let nx=camera.position.x+dx;
+  if(!playerCollidesAt(nx,camera.position.y,camera.position.z))camera.position.x=nx;
+  else if(onGround&&!playerCollidesAt(nx,camera.position.y+1,camera.position.z)){camera.position.y+=1;camera.position.x=nx}
+  let nz=camera.position.z+dz;
+  if(!playerCollidesAt(camera.position.x,camera.position.y,nz))camera.position.z=nz;
+  else if(onGround&&!playerCollidesAt(camera.position.x,camera.position.y+1,nz)){camera.position.y+=1;camera.position.z=nz}
+}
 function updateFree(dt,t){
-  const speed=freeKeys.ShiftLeft||freeKeys.ShiftRight?6.2:3.8;
+  updateDayNight(dt);freeSimAccum+=dt;if(freeSimAccum>.48){freeSimAccum=0;simulateWorld()}
+  if(inventoryOpen){checkCollectibles(t);return}
+  const speed=(freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0;
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),move=new THREE.Vector3();
   if(freeKeys.KeyW||freeKeys.ArrowUp)move.addScaledVector(forward,-1);
   if(freeKeys.KeyS||freeKeys.ArrowDown)move.add(forward);
   if(freeKeys.KeyA||freeKeys.ArrowLeft)move.addScaledVector(right,-1);
   if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
-  if(move.lengthSq()>0){move.normalize().multiplyScalar(speed*dt);camera.position.add(move)}
-  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-21,21);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-21,21);
-  freeVelocityY-=13*dt;camera.position.y+=freeVelocityY*dt;if(camera.position.y<=1.65){camera.position.y=1.65;freeVelocityY=0;onGround=true}
+  if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
+  if(freeFlying){
+    camera.position.add(move);if(freeKeys.Space)camera.position.y+=speed*dt;if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
+    freeVelocityY=0;onGround=false;
+  }else{
+    moveFreeHorizontal(move.x,move.z);freeVelocityY-=14*dt;let nextY=camera.position.y+freeVelocityY*dt;
+    if(freeVelocityY<=0){
+      const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
+      if(nextY-1.62<=ground){nextY=ground+1.62;freeVelocityY=0;onGround=true}else onGround=false;
+    }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){freeVelocityY=0;nextY=camera.position.y}
+    camera.position.y=nextY;
+  }
+  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-WORLD_HALF+.7,WORLD_HALF-.7);
+  camera.position.z=THREE.MathUtils.clamp(camera.position.z,-WORLD_HALF+.7,WORLD_HALF-.7);
+  camera.position.y=THREE.MathUtils.clamp(camera.position.y,WORLD_MIN_Y+1.7,WORLD_MAX_Y+8);
   camera.rotation.y=yaw;camera.rotation.x=pitch;checkCollectibles(t);
 }
+
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
