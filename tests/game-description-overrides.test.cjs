@@ -54,6 +54,10 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /겨냥도/);
   assert.match(architect, /foldPreview/);
   assert.match(architect, /saveFreeWorld/);
+  assert.match(architect, /normalizedShape/);
+  assert.match(architect, /rotateShapeY/);
+  assert.match(architect, /updateChallengeFly/);
+  assert.match(blocks, /challengeFlyHud/);
   assert.match(architect, /window\.CubeArchitect/);
   assert.match(architect, /^\(\(\)=>\{/);
   assert.doesNotMatch(architect, /OrbitControls/);
