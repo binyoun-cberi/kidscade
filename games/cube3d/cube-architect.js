@@ -487,38 +487,77 @@ function visibleAt(x,y,z,data){
   return dirs.some(v=>!isOccluder(getBlock(x+v[0],y+v[1],z+v[2])));
 }
 function removeWorldMesh(key){
-  const mesh=worldMeshMap.get(key);if(!mesh)return;
-  scene.remove(mesh);worldMeshMap.delete(key);
-  worldInteractables=worldInteractables.filter(x=>x!==mesh);
-  freeMeshes=freeMeshes.filter(x=>x!==mesh);
+  const root=worldMeshMap.get(key);if(!root)return;
+  scene.remove(root);worldMeshMap.delete(key);
+  worldInteractables=worldInteractables.filter(x=>x.userData?.worldKey!==key);
+  freeMeshes=freeMeshes.filter(x=>x.userData?.worldKey!==key);
+}
+function assignWorldUserData(obj,key,x,y,z,type,extra={}){
+  obj.userData={...obj.userData,worldBlock:true,worldKey:key,gx:x,gy:y,gz:z,type,...extra};
+}
+function registerWorldObject(root,key,x,y,z,type){
+  root.traverse?.(o=>{
+    if(o.isMesh){assignWorldUserData(o,key,x,y,z,type,root.userData||{});worldInteractables.push(o);freeMeshes.push(o)}
+  });
+  if(root.isMesh){assignWorldUserData(root,key,x,y,z,type,root.userData||{});if(!worldInteractables.includes(root))worldInteractables.push(root);if(!freeMeshes.includes(root))freeMeshes.push(root)}
+}
+function faceMaterials(colors){
+  const cs=(colors&&colors.length===6?colors:DEFAULT_FACE_COLORS);
+  return cs.map(c=>new THREE.MeshStandardMaterial({color:new THREE.Color(c),roughness:.72,transparent:false}));
+}
+function makeStairObject(mat,facing=0){
+  const g=new THREE.Group(),bottom=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),mat),top=new THREE.Mesh(new THREE.BoxGeometry(1,.5,.5),mat);
+  bottom.position.y=-.25;top.position.set(0,.25,.25);g.add(bottom,top);g.rotation.y=(facing||0)*Math.PI/2;return g;
+}
+function makeWindowObject(){
+  const g=new THREE.Group(),wood=materialFor('planks'),glass=materialFor('glass');
+  const bars=[new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),
+    new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood)];
+  bars[0].position.z=-.45;bars[1].position.z=.45;bars[2].position.y=.45;bars[3].position.y=-.45;
+  const pane=new THREE.Mesh(new THREE.BoxGeometry(.06,.82,.82),glass);g.add(...bars,pane);return g;
+}
+function makeFurnaceObject(facing=0){
+  const mats=[materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone')];
+  const front=new THREE.MeshStandardMaterial({color:0x31353b,roughness:.92,emissive:0xff6a28,emissiveIntensity:.05});
+  mats[4]=front;const m=new THREE.Mesh(freeCubeGeo,mats);m.rotation.y=(facing||0)*Math.PI/2;return m;
 }
 function makeWorldMesh(x,y,z,data){
-  const d=blockDef(data),type=data.type;
-  if(d.hidden)return null;
-  let mesh;
+  const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden)return null;
+  let root;
   if(type==='door'){
-    mesh=new THREE.Mesh(doorGeo,materialFor('door'));
-    mesh.position.set(x,y+1,z);
-    const facing=(data.facing||0)*Math.PI/2;
-    mesh.rotation.y=facing+(data.open?Math.PI/2:0);
+    root=new THREE.Mesh(doorGeo,materialFor('door'));root.position.set(x,y+1,z);
+    const facing=(data.facing||0)*Math.PI/2;root.rotation.y=facing+(data.open?Math.PI/2:0);
   }else if(type==='torch'){
-    mesh=new THREE.Mesh(torchGeo,materialFor('torch'));mesh.position.set(x,y+.34,z);
-    const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;mesh.add(light);
+    root=new THREE.Mesh(torchGeo,materialFor('torch'));root.position.set(x,y+.34,z);
+    const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;root.add(light);
   }else if(type==='sapling'){
-    mesh=new THREE.Mesh(saplingGeo,materialFor('sapling'));mesh.position.set(x,y+.41,z);
+    root=new THREE.Mesh(saplingGeo,materialFor('sapling'));root.position.set(x,y+.41,z);
   }else if(type==='fire'){
-    mesh=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
-    mesh.position.set(x,y+.42,z);
-    const light=new THREE.PointLight(0xff692c,1.4,6,2);light.position.y=.35;mesh.add(light);
+    root=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
+    root.position.set(x,y+.42,z);const light=new THREE.PointLight(0xff692c,1.4,6,2);light.position.y=.35;root.add(light);
   }else if(type==='water'||type==='lava'){
-    mesh=new THREE.Mesh(fluidGeo,materialFor(type));mesh.position.set(x,y+.42,z);
+    root=new THREE.Mesh(fluidGeo,materialFor(type));root.position.set(x,y+.42,z);
+  }else if(type==='slab'){
+    root=new THREE.Mesh(slabGeo,materialFor('planks'));root.position.set(x,y+.25,z);
+  }else if(type==='glassPane'){
+    root=new THREE.Mesh(paneGeo,materialFor('glass'));root.position.set(x,y+.5,z);root.rotation.y=(data.facing||0)*Math.PI/2;
+  }else if(type==='windowFrame'){
+    root=makeWindowObject();root.position.set(x,y+.5,z);root.rotation.y=(data.facing||0)*Math.PI/2;
+  }else if(type==='stairs'){
+    root=makeStairObject(materialFor('planks'),data.facing||0);root.position.set(x,y+.5,z);
+  }else if(type==='roof'){
+    root=new THREE.Mesh(roofGeo,materialFor('roof'));root.position.set(x,y+.5,z);root.rotation.y=(data.facing||0)*Math.PI/2;
+  }else if(type==='furnace'){
+    root=makeFurnaceObject(data.facing||0);root.position.set(x,y+.5,z);
+  }else if(type==='cuboid'){
+    const dims=data.dims||[1,1,1],geo=new THREE.BoxGeometry(dims[0],dims[1],dims[2]);
+    root=new THREE.Mesh(geo,faceMaterials(data.faceColors));root.position.set(x+(dims[0]-1)/2,y+dims[1]/2,z+(dims[2]-1)/2);
+    root.userData={shapeKind:'cuboid',dims:dims.slice(),faceIds:FACE_IDS.slice(),topology:CUBOID_TOPOLOGY};
   }else{
-    mesh=new THREE.Mesh(freeCubeGeo,materialFor(type));mesh.position.set(x,y+.5,z);
+    root=new THREE.Mesh(freeCubeGeo,materialFor(type));root.position.set(x,y+.5,z);
   }
-  mesh.castShadow=!(type==='water'||type==='glass'||type==='leaves'||type==='fire');
-  mesh.receiveShadow=true;mesh.userData={worldBlock:true,gx:x,gy:y,gz:z,type:type};
-  scene.add(mesh);worldMeshMap.set(worldKey(x,y,z),mesh);worldInteractables.push(mesh);freeMeshes.push(mesh);
-  return mesh;
+  root.castShadow=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='fire'||type==='windowFrame');
+  root.receiveShadow=true;scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);return root;
 }
 function refreshBlockMesh(x,y,z){
   const key=worldKey(x,y,z);removeWorldMesh(key);
