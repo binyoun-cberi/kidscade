@@ -202,3 +202,14 @@ test('Driver License v13 steering returns quickly instead of feeling boat-like',
   assert.match(js,/Math\.pow\(Math\.abs\(rawSteer\),1\.18\)/);
   assert.match(js,/lerp\(500,265,clamp\(steerSpeedKmh\/38,0,1\)\)/);
 });
+
+
+test('driving test uses QA-gated shared community 3D scenery',()=>{
+  assert.match(js,/shared-community-3d\.js/);
+  assert.match(js,/shared-community-3d-runtime\.js/);
+  assert.match(js,/prepareShared3DObject/);
+  for(const id of ['nature.commonTreeA','prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
+  assert.match(js,/sharedHouse/);
+  assert.match(js,/sharedBus/);
+  assert.match(html,/driver-license\.js\?v=15/);
+});
