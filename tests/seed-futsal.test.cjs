@@ -13,7 +13,7 @@ test('Seed Futsal ships as a valid catalog game',()=>{
   const game=catalog.games.find(item=>item.id==='high_seed_futsal');
   assert.ok(game);
   assert.equal(game.genre,'sports');
-  assert.equal(game.href,'games/high_seed_futsal/index.html?v=1');
+  assert.equal(game.href,'games/high_seed_futsal/index.html?v=4');
   assert.deepEqual(game.input,['touch','keyboard']);
 });
 
@@ -37,4 +37,6 @@ test('Seed Futsal is integrated with the shared game SDK',()=>{
   assert.match(html,/data-action="pass"/);
   assert.match(html,/data-action="through"/);
   assert.match(html,/data-action="shoot"/);
+  assert.match(html,/data-mode="tutorial"/);
+  assert.match(html,/game\.js\?v=4/);
 });
