@@ -260,11 +260,11 @@
     {
       "id": "high_seed_futsal",
       "title": "씨앗 풋살",
-      "href": "games/high_seed_futsal/index.html?v=1",
+      "href": "games/high_seed_futsal/index.html?v=4",
       "category": "trivia",
       "age": "high",
       "icon": "⚽",
-      "description": "내 키즈케이드 아바타와 함께 뛰는 5대5 풋살! 좌우 골대를 향해 패스·스루패스·로빙·슛·태클·선수 전환을 직접 조작하고, 팀 AI와 함께 공간을 만들며 3분 경기를 펼칩니다.",
+      "description": "내 키즈케이드 아바타와 함께 뛰는 5대5 풋살! 킥오프 팀 표시와 3·2·1 카운트다운 뒤 경기가 시작되고, 튜토리얼 한 판에서 패스·스루패스·슛을 익힌 뒤 좌우 골대를 향해 팀 AI와 함께 경기합니다.",
       "subject": "thinking",
       "genre": "sports",
       "difficulty": "medium",
