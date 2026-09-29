@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { shared3DPath, shared3DCanUse } from '../../assets/game/manifest/shared-community-3d.js';
+import { prepareShared3DObject } from '../../assets/game/manifest/shared-community-3d-runtime.js';
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -33,6 +35,18 @@ let scene,renderer,camera,leftMirrorCamera,rightMirrorCamera,backupCamera,loader
 let backupGuideLeft,backupGuideRight;
 let sunLight,sunTarget,visualWorld,hoodGroup;
 const visualModels=new Map(),fallbackVisuals=[];
+const SHARED_VISUAL_IDS=Object.freeze({
+  sharedTreeA:'nature.commonTreeA',
+  sharedTreeB:'nature.commonTreeB',
+  sharedPineA:'nature.pineTreeA',
+  sharedRock:'nature.rock',
+  sharedMossyRock:'nature.mossyRockA',
+  sharedGrass:'nature.grass',
+  sharedWaterTower:'prop.waterTower',
+  sharedWell:'prop.well',
+  sharedBus:'vehicle.schoolBus',
+  sharedHouse:'building.house'
+});
 const VISUAL_MODELS={
   tree:'../../assets/game/3d/nature/kenney-nature-kit/tree-default.glb',
   oak:'../../assets/game/3d/nature/kenney-nature-kit/tree-oak.glb',
@@ -54,7 +68,17 @@ const VISUAL_MODELS={
   sedan:'../../assets/game/3d/vehicles/kenney-car-kit/sedan.glb',
   suv:'../../assets/game/3d/vehicles/kenney-car-kit/suv.glb',
   taxi:'../../assets/game/3d/vehicles/kenney-car-kit/taxi.glb',
-  van:'../../assets/game/3d/vehicles/kenney-car-kit/van.glb'
+  van:'../../assets/game/3d/vehicles/kenney-car-kit/van.glb',
+  sharedTreeA:shared3DPath('nature.commonTreeA','../../'),
+  sharedTreeB:shared3DPath('nature.commonTreeB','../../'),
+  sharedPineA:shared3DPath('nature.pineTreeA','../../'),
+  sharedRock:shared3DPath('nature.rock','../../'),
+  sharedMossyRock:shared3DPath('nature.mossyRockA','../../'),
+  sharedGrass:shared3DPath('nature.grass','../../'),
+  sharedWaterTower:shared3DPath('prop.waterTower','../../'),
+  sharedWell:shared3DPath('prop.well','../../'),
+  sharedBus:shared3DPath('vehicle.schoolBus','../../'),
+  sharedHouse:shared3DPath('building.house','../../')
 };
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
@@ -387,12 +411,17 @@ function normalizeVisualModel(obj,target=1){
   return obj;
 }
 function loadVisualModel(key,url){
+  if(!url)return Promise.resolve(false);
+  const sharedId=SHARED_VISUAL_IDS[key];
+  if(sharedId&&!shared3DCanUse(sharedId))return Promise.resolve(false);
   return new Promise(resolve=>{
     loader.load(url,g=>{visualModels.set(key,g.scene);resolve(true)},undefined,()=>resolve(false));
   });
 }
 function cloneVisual(key,target=1){
   const src=visualModels.get(key);if(!src)return null;
+  const sharedId=SHARED_VISUAL_IDS[key];
+  if(sharedId)return prepareShared3DObject(src.clone(true),sharedId,target);
   return normalizeVisualModel(styleVisualModel(src.clone(true)),target);
 }
 function placeVisual(key,target,x,z,rot=0,y=.04,parent=visualWorld){
@@ -458,6 +487,18 @@ function rebuildVisualEnvironment(){
     ['oak',75,-6,4.3,.3],['tree',27,-10,4.0,2.7]
   ];
   for(const [k,x,z,s,r] of trees)placeVisual(k,s,x,z,r);
+
+  // Shared community assets fill the course perimeter without changing the exam geometry.
+  const sharedNature=[
+    ['sharedTreeA',-27,69,4.4,.3],['sharedTreeB',-28,36,4.6,1.2],['sharedPineA',-27,5,5.0,.7],
+    ['sharedTreeA',34,58,4.1,2.0],['sharedTreeB',69,55,4.3,.4],['sharedPineA',111,39,4.8,1.7],
+    ['sharedRock',18,58,1.55,.2],['sharedMossyRock',73,49,1.7,1.1],['sharedGrass',116,34,1.25,.8]
+  ];
+  for(const [k,x,z,size,rot] of sharedNature)placeVisual(k,size,x,z,rot);
+  placeVisual('sharedWell',2.9,31,58,.35);
+  placeVisual('sharedWaterTower',8.5,126,63,.12);
+  placeVisual('sharedBus',6.4,-24,58,Math.PI*.48);
+  placeVisual('sharedHouse',9.2,15,62,Math.PI);
 
   const buildings=[
     ['redBuilding',-12,8,10,0],['greenBuilding',20,51,11,Math.PI],
@@ -582,6 +623,11 @@ function buildCourse(){
   for(const [id,x,z] of [['parkedSedan',-10,17],['parkedTaxi',79,31],['parkedSuv',102,8],['parkedVan',53,34],['parkedSedan2',59,34],['parkedSuv2',65,34]]){
     addCircleObstacle(id,x,z,1.55);
   }
+  // Decorative shared assets outside the marked course are still physically solid when a learner leaves the road.
+  addBoxObstacle('sharedHouse',15,62,8.0,7.2);
+  addBoxObstacle('sharedBus',-24,58,5.8,2.5);
+  addCircleObstacle('sharedWaterTower',126,63,1.8);
+  addCircleObstacle('sharedWell',31,58,1.05);
 }
 function initBackupGuides(){
   const makeGuide=()=>{
