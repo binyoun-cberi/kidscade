@@ -957,7 +957,7 @@
   function scrollRail(rail, direction) {
     const track = rail?.querySelector('[data-rail-track]');
     if (!track) return;
-    const distance = Math.max(320, track.clientWidth * 0.9);
+    const distance = Math.max(320, track.clientWidth - 12);
     track.scrollBy({ left: direction * distance, behavior: 'smooth' });
   }
 
