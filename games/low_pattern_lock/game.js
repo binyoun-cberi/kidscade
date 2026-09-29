@@ -17,7 +17,7 @@ const LEVELS=[
 
 const KIND_META={
  sequence:{label:'순차',explain:'순차 구조는 명령을 정해진 순서대로 하나씩 실행하는 방법이에요.'},
- condition:{label:'조건',explain:'조건 구조는 지금 조건을 확인하고 알맞은 다음 행동을 선택하는 방법이에요.'},
+ condition:{label:'선택',explain:'선택 구조는 조건을 확인하고 알맞은 다음 행동을 고르는 방법이에요.'},
  repeat:{label:'반복',explain:'반복 구조는 같은 명령을 여러 번 다시 쓰지 않고 묶어서 표현하는 방법이에요.'}
 };
 const SAVE_KEY='pattern_lock_v1';
