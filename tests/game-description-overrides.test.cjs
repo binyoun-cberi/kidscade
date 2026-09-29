@@ -57,6 +57,16 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /normalizedShape/);
   assert.match(architect, /rotateShapeY/);
   assert.match(architect, /updateChallengeFly/);
+  assert.match(architect, /challengeMissionSets/);
+  assert.match(architect, /교과서 1/);
+  assert.match(architect, /타지마할/);
+  assert.match(architect, /사그라다 파밀리아/);
+  assert.match(architect, /에펠탑/);
+  assert.match(architect, /타워 브리지/);
+  assert.match(architect, /히메지성/);
+  assert.match(architect, /앙코르와트/);
+  assert.match(architect, /setChallengeDifficulty/);
+  assert.match(architect, /cubeFaces/);
   assert.match(architect, /BLOCK_DEFS/);
   assert.match(architect, /terrainHeight/);
   assert.match(architect, /simulateSand/);
@@ -76,6 +86,9 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /createRabbit/);
   assert.match(architect, /createBird/);
   assert.match(blocks, /challengeFlyHud/);
+  assert.match(blocks, /challengeEasy/);
+  assert.match(blocks, /challengeHard/);
+  assert.match(blocks, /challengeCourseLabel/);
   assert.match(blocks, /blockInventory/);
   assert.match(blocks, /worldClock/);
   assert.match(blocks, /shapeWorkbench/);
