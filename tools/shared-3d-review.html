@@ -26,6 +26,8 @@ dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#
 <select id="assetSelect"></select>
 <div class="row"><button id="prev">← 이전</button><button id="next">다음 →</button></div>
 <button id="toggleRaw">원본 피벗 보기</button>
+<div class="row"><button id="originalMaterial">원본 재질</button><button id="slotMaterial">재질 슬롯 진단</button></div>
+<div class="row"><button id="repairMaterial">임시 색상 복구</button><button id="wireMaterial">와이어프레임</button></div>
 <dl>
 <dt>상태</dt><dd id="status"></dd>
 <dt>파일</dt><dd id="file"></dd>
@@ -33,6 +35,8 @@ dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#
 <dt>태그</dt><dd id="tags"></dd>
 <dt>메시</dt><dd id="meshes">-</dd>
 <dt>재질</dt><dd id="materials">-</dd>
+<dt>재질 상세</dt><dd id="materialDetail">-</dd>
+<dt>판정</dt><dd id="materialVerdict">-</dd>
 <dt>애니메이션</dt><dd id="animations">-</dd>
 <dt>바운드</dt><dd id="bounds">-</dd>
 <dt>메모</dt><dd id="reason">-</dd>
@@ -41,6 +45,6 @@ dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#
 </aside>
 <main><canvas id="view"></canvas><div id="hint">드래그: 회전 · 휠: 확대/축소</div></main>
 </div>
-<script type="module" src="shared-3d-review.js?v=1"></script>
+<script type="module" src="shared-3d-review.js?v=2"></script>
 </body>
 </html>
