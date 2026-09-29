@@ -580,6 +580,7 @@ function toggleInventory(force){
   inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
   $('blockInventory').classList.toggle('hidden',!inventoryOpen);
   if(inventoryOpen){if(document.pointerLockElement===canvas)document.exitPointerLock();buildInventory('전체')}
+  $('lockNotice').classList.toggle('hidden',inventoryOpen||document.pointerLockElement===canvas);
 }
 function updateFreeMission(){
   const total=5,done=collected.size;$('adventureCount').textContent=done+'/'+total;$('adventureBar').style.width=(done/total*100)+'%';
