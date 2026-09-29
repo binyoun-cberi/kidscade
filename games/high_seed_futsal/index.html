@@ -31,7 +31,7 @@ canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778
 .overlay{position:absolute;inset:0;display:grid;place-items:center;padding:18px;background:rgba(2,6,23,.76);z-index:10}
 .panel{width:min(690px,95vw);max-height:93vh;overflow:auto;padding:22px;border-radius:25px;background:rgba(15,23,42,.98);border:1px solid rgba(255,255,255,.14);box-shadow:0 25px 80px rgba(0,0,0,.36)}
 h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,62px);line-height:1}.sub{margin:0 0 16px;color:#cbd5e1;line-height:1.55}
-.modeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.mode{min-height:46px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#facc15;background:#334155}
+.modeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.mode{min-height:46px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#facc15;background:#334155}
 .options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}.field{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;font-weight:800}.field select{padding:11px;border-radius:12px;border:1px solid #475569;background:#0f172a;color:#fff}
 .keys{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}.keys>div{padding:12px;border-radius:15px;background:#111827;font-size:13px;line-height:1.7}.keys strong{color:#fde68a}
 kbd{display:inline-block;min-width:27px;padding:1px 6px;border-radius:6px;text-align:center;background:#e2e8f0;color:#111827;font-weight:1000;box-shadow:inset 0 -2px rgba(0,0,0,.18)}
@@ -86,7 +86,8 @@ kbd{display:inline-block;min-width:27px;padding:1px 6px;border-radius:6px;text-a
     <h1>씨앗 풋살</h1>
     <p class="sub">좌우 골대의 5대5 풋살. 패스하면 받는 선수로 조작이 넘어가고, 팀원들은 스스로 공간을 만들고 수비합니다.</p>
     <div class="modeRow">
-      <button class="mode active" type="button" data-mode="match">3분 경기</button>
+      <button class="mode active" type="button" data-mode="tutorial">⭐ 튜토리얼 경기</button>
+      <button class="mode" type="button" data-mode="match">3분 경기</button>
       <button class="mode" type="button" data-mode="long">5분 경기</button>
       <button class="mode" type="button" data-mode="practice">자유 연습</button>
     </div>
@@ -111,6 +112,8 @@ kbd{display:inline-block;min-width:27px;padding:1px 6px;border-radius:6px;text-a
   <div class="panel">
     <h2>씨앗 풋살 조작</h2>
     <ul class="helpList">
+      <li><b>튜토리얼 경기</b>는 쉬운 CPU와 실제 한 경기를 하면서 이동 → 패스 → 스루패스 → 슛 순서로 익힙니다.</li>
+      <li>경기 시작 전 <b>킥오프 팀 표시 → 3·2·1 → 심판 휘슬</b> 순서로 시작하며, 센터서클의 공을 가진 선수가 첫 킥오프 선수입니다.</li>
       <li><b>S/W/A/D는 누르는 동안 파워가 차고, 떼는 순간 실행</b>됩니다.</li>
       <li><b>S 패스</b>는 입력 방향의 가장 좋은 동료를 찾아 보정하고, 패스 직후 그 선수로 조작이 넘어갑니다.</li>
       <li><b>W 스루패스</b>는 선수의 현재 위치보다 앞 공간으로 공을 보냅니다.</li>
@@ -145,7 +148,7 @@ kbd{display:inline-block;min-width:27px;padding:1px 6px;border-radius:6px;text-a
 </div>
 </div>
 
-<script src="./game.js?v=3"></script>
+<script src="./game.js?v=4"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_futsal" data-title="씨앗 풋살" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
