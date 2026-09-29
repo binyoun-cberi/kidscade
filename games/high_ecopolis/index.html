@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>에코폴리스</title>
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
 </head>
 <body>
@@ -15,6 +15,8 @@
     <div class="brand"><span class="brandIcon">🌍</span><div><small>KIDSCADE ECO LAB</small><b>에코폴리스</b></div></div>
     <div class="phase"><span>단계</span><b id="phaseName">1 · 되살리기</b></div>
     <div class="stat"><span>에코 포인트</span><b id="ecoPoints">130</b></div>
+    <div class="stat"><span>전력</span><b id="energyRate">0 ⚡</b></div>
+    <div class="stat"><span>탄소 부담</span><b id="carbonRate">0</b></div>
     <div class="stat"><span>땅 복원</span><b id="restoreRate">0%</b></div>
     <div class="stat"><span>깨끗한 물</span><b id="waterRate">0%</b></div>
     <div class="stat"><span>생물다양성</span><b id="bioRate">0%</b></div>
@@ -29,6 +31,8 @@
 
   <div id="topActions" class="glass">
     <button id="windViewBtn" type="button" title="바람 지도">🌬</button>
+    <button id="sunViewBtn" type="button" title="햇빛 지도">☀️</button>
+    <button id="geoViewBtn" type="button" title="지열 지도">♨️</button>
     <button id="pollutionViewBtn" type="button" title="오염 지도">☣</button>
     <button id="homeViewBtn" type="button" title="카메라 원위치">⌂</button>
     <button id="helpBtn" type="button" title="도움말">?</button>
@@ -41,7 +45,12 @@
   <section id="toolbar" class="glass" aria-label="생태 복원 도구">
     <div class="toolScroller">
       <button class="tool active" data-tool="inspect" type="button"><span>🔎</span><b>살펴보기</b><small>무료</small></button>
-      <button class="tool" data-tool="wind" type="button"><span>🌬️</span><b>풍력 발전기</b><small>20P</small></button>
+      <button class="tool" data-tool="wind" type="button"><span>🌬️</span><b>풍력 발전기</b><small>20P · 바람</small></button>
+      <button class="tool" data-tool="solar" type="button"><span>☀️</span><b>태양광 발전소</b><small>18P · 햇빛</small></button>
+      <button class="tool" data-tool="geothermal" type="button"><span>♨️</span><b>지열 발전소</b><small>28P · 지열</small></button>
+      <button class="tool" data-tool="nuclear" type="button"><span>⚛️</span><b>원자력 발전소</b><small>55P · 냉각수</small></button>
+      <button class="tool dangerTool" data-tool="coal" type="button"><span>🏭</span><b>화력 발전소</b><small>12P · 강한 오염</small></button>
+      <button class="tool dangerTool" data-tool="carfactory" type="button"><span>🚗</span><b>자동차 공장</b><small>16P · 수익</small></button>
       <button class="tool" data-tool="purifier" type="button"><span>🌱</span><b>토양 정화기</b><small>18P</small></button>
       <button class="tool" data-tool="waterfilter" type="button"><span>💧</span><b>하천 정화기</b><small>22P</small></button>
       <button class="tool phase2 locked" data-tool="wetland" type="button"><span>🪷</span><b>습지 씨앗</b><small>16P</small></button>
@@ -73,7 +82,7 @@
         <button id="newBtn" class="primary" type="button">새 복원 시작</button>
         <button id="continueBtn" class="secondary" type="button">이어하기</button>
       </div>
-      <small class="tip">드래그: 지도 이동 · 휠/두 손가락: 확대·축소 · 숫자키 1~8: 도구 선택</small>
+      <small class="tip">드래그: 지도 이동 · 휠/두 손가락: 확대·축소 · 숫자키 1~9: 주요 도구 선택</small>
     </div>
   </div>
 
@@ -89,9 +98,9 @@
       <p class="eyebrow">HOW TO RESTORE</p>
       <h2>자연을 만들고, 마지막에는 떠나요</h2>
       <div class="helpGrid">
-        <div><b>🌬 1. 바람을 읽기</b><p>풍력 발전기는 바람이 35% 이상인 땅에 놓을 수 있습니다. 발전기 주변 시설만 작동합니다.</p></div>
-        <div><b>🌱 2. 땅 되살리기</b><p>전력 범위 안에 토양 정화기를 세우면 주변 오염이 줄고 초원이 생깁니다.</p></div>
-        <div><b>💧 3. 물 되살리기</b><p>하천 정화기는 깨끗한 강을 만들고 주변 둔치의 오염도 함께 낮춥니다.</p></div>
+        <div><b>⚡ 1. 발전원은 입지가 달라요</b><p>풍력은 바람, 태양광은 햇빛, 지열은 지열대, 원자력은 냉각수가 필요합니다. 아무 발전소나 아무 곳에 놓는 게임이 아닙니다.</p></div>
+        <div><b>🏭 2. 쉬워 보이는 선택을 의심해요</b><p>화력 발전소는 싸고 강력하고, 자동차 공장은 에코 포인트를 벌어 줍니다. 대신 탄소와 주변 오염이 계속 쌓여 되살린 생태계가 다시 무너질 수 있습니다.</p></div>
+        <div><b>🌱 3. 전력을 복원에 써요</b><p>전력 범위 안의 토양·하천 정화기가 오염을 낮춥니다. 숲은 시간이 지나며 탄소 부담도 조금씩 줄여 줍니다.</p></div>
         <div><b>🌲 4. 다양한 생태계</b><p>초원을 숲·습지·꽃초원으로 나누어야 여러 동물이 살 수 있습니다.</p></div>
         <div><b>🦌 5. 동물이 돌아오기</b><p>서식 조건이 맞으면 벌, 개구리, 사슴, 수달이 스스로 돌아옵니다.</p></div>
         <div><b>♻️ 6. 흔적 없이 철수</b><p>마지막에는 깨끗한 물에 회수선을 보내 주변 시설을 걷어냅니다. 건물이 0개가 되어야 복원이 끝납니다.</p></div>
@@ -118,6 +127,6 @@
 
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ecopolis" data-title="에코폴리스" data-shell="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=1"></script>
+<script type="module" src="game.js?v=2"></script>
 </body>
 </html>
