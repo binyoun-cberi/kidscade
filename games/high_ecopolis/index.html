@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>에코폴리스</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
 </head>
 <body>
@@ -14,7 +14,7 @@
   <header id="hud" class="glass">
     <div class="brand"><span class="brandIcon">🌍</span><div><small>KIDSCADE ECO LAB</small><b>에코폴리스</b></div></div>
     <div class="phase"><span>단계</span><b id="phaseName">1 · 되살리기</b></div>
-    <div class="stat"><span>에코 포인트</span><b id="ecoPoints">130</b></div>
+    <div class="stat"><span>복원 예산</span><b id="ecoPoints">130</b></div>
     <div class="stat"><span>전력</span><b id="energyRate">0 ⚡</b></div>
     <div class="stat"><span>탄소 부담</span><b id="carbonRate">0</b></div>
     <div class="stat"><span>땅 복원</span><b id="restoreRate">0%</b></div>
@@ -50,7 +50,13 @@
       <button class="tool" data-tool="geothermal" type="button"><span>♨️</span><b>지열 발전소</b><small>28P · 지열</small></button>
       <button class="tool" data-tool="nuclear" type="button"><span>⚛️</span><b>원자력 발전소</b><small>55P · 냉각수</small></button>
       <button class="tool" data-tool="coal" type="button"><span>🏭</span><b>화력 발전소</b><small>12P · 65⚡</small></button>
-      <button class="tool" data-tool="carfactory" type="button"><span>🚗</span><b>자동차 공장</b><small>16P · +3P</small></button>
+      <button class="tool" data-tool="carfactory" type="button"><span>🚗</span><b>자동차 공장</b><small>16P · 수익</small></button>
+      <button class="tool" data-tool="landfill" type="button"><span>🗑️</span><b>쓰레기 매립지</b><small>6P · 처리수익</small></button>
+      <button class="tool" data-tool="quarry" type="button"><span>⛏️</span><b>채석장</b><small>10P · 자원수익</small></button>
+      <button class="tool" data-tool="parking" type="button"><span>🅿️</span><b>대형 주차장</b><small>7P · 개발수익</small></button>
+      <button class="tool" data-tool="channel" type="button"><span>🌊</span><b>콘크리트 하천</b><small>10P · 즉시 정비</small></button>
+      <button class="tool" data-tool="lawn" type="button"><span>🌿</span><b>잔디공원</b><small>9P · 빠른 녹화</small></button>
+      <button class="tool" data-tool="plantation" type="button"><span>🌲</span><b>단일수종 조림</b><small>10P · 빠른 숲</small></button>
       <button class="tool" data-tool="purifier" type="button"><span>🌱</span><b>토양 정화기</b><small>18P</small></button>
       <button class="tool" data-tool="waterfilter" type="button"><span>💧</span><b>하천 정화기</b><small>22P</small></button>
       <button class="tool phase2 locked" data-tool="wetland" type="button"><span>🪷</span><b>습지 씨앗</b><small>16P</small></button>
@@ -99,7 +105,7 @@
       <h2>자연을 만들고, 마지막에는 떠나요</h2>
       <div class="helpGrid">
         <div><b>⚡ 1. 발전원은 입지가 달라요</b><p>풍력은 바람, 태양광은 햇빛, 지열은 지열대, 원자력은 냉각수가 필요합니다. 아무 발전소나 아무 곳에 놓는 게임이 아닙니다.</p></div>
-        <div><b>🏭 2. 쉬워 보이는 선택을 의심해요</b><p>화력 발전소는 싸고 강력하고, 자동차 공장은 에코 포인트를 벌어 줍니다. 대신 탄소와 주변 오염이 계속 쌓여 되살린 생태계가 다시 무너질 수 있습니다.</p></div>
+        <div><b>🧠 2. 오답도 여러 종류예요</b><p>화력·공장·매립지는 오염을, 채석장·주차장은 서식지 손실을 만듭니다. 잔디공원과 단일수종 조림은 초록색이라 좋아 보여도 생물다양성이 낮고, 콘크리트 하천은 물을 빨리 정리하는 대신 습지와 하천 생물의 자리를 없앱니다.</p></div>
         <div><b>🌱 3. 전력을 복원에 써요</b><p>전력 범위 안의 토양·하천 정화기가 오염을 낮춥니다. 숲은 시간이 지나며 탄소 부담도 조금씩 줄여 줍니다.</p></div>
         <div><b>🌲 4. 다양한 생태계</b><p>초원을 숲·습지·꽃초원으로 나누어야 여러 동물이 살 수 있습니다.</p></div>
         <div><b>🦌 5. 동물이 돌아오기</b><p>서식 조건이 맞으면 벌, 개구리, 사슴, 수달이 스스로 돌아옵니다.</p></div>
@@ -127,6 +133,6 @@
 
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ecopolis" data-title="에코폴리스" data-shell="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=2"></script>
+<script type="module" src="game.js?v=3"></script>
 </body>
 </html>
