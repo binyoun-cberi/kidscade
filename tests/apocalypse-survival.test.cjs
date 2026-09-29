@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=4/);
+  assert.match(html,/game\.js\?v=5/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -44,6 +44,9 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/spoilFood/);
   assert.match(js,/powerUse/);
   assert.match(js,/togglePowerLoad/);
+  assert.match(js,/settlementSteps/);
+  assert.match(js,/continueSettlement/);
+  assert.match(js,/phase:'survival'/);
   assert.match(js,/finish\(\)/);
 });
 
@@ -57,7 +60,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
 test('game is registered in catalog metadata v7',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=4');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=5');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -66,7 +69,7 @@ test('game is registered in catalog metadata v7',()=>{
 });
 
 test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
-  for(const text of ['생존 도감','지도','정착지','공동체 의사결정','멸망 7일째'])assert.ok(html.includes(text),text);
+  for(const text of ['생존 도감','지도','정착지','공동체 의사결정','멸망 7일째','정착지 계속 운영'])assert.ok(html.includes(text),text);
   assert.match(css,/\.mobile-move/);
   assert.match(css,/@media/);
 });
