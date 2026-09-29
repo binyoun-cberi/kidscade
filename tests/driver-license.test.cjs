@@ -211,5 +211,13 @@ test('driving test uses QA-gated shared community 3D scenery',()=>{
   for(const id of ['nature.commonTreeA','prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
   assert.match(js,/sharedHouse/);
   assert.match(js,/sharedBus/);
-  assert.match(html,/driver-license\.js\?v=15/);
+  assert.match(html,/driver-license\.js\?v=16/);
+});
+
+
+test('Driver License v16 respects shared 3D performance policy',()=>{
+  assert.match(js,/shared3DShouldLoad/);
+  assert.match(js,/sharedCoarse/);
+  assert.match(js,/shadows:key!==\'sharedGrass\'/);
+  assert.match(html,/driver-license\.js\?v=16/);
 });
