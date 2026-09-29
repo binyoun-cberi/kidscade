@@ -167,3 +167,15 @@ button{border:0;cursor:pointer;color:inherit}
 .pitch-wrap canvas{image-rendering:auto}
 .pitch-wrap:after{content:"양쪽 사이드라인은 항상 화면 안 · 카메라는 골대↕골대 축만 추적";position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:5px 9px;border-radius:999px;background:rgba(3,10,18,.58);color:rgba(231,245,255,.72);font-size:10px;font-weight:800;pointer-events:none;white-space:nowrap}
 @media(max-width:760px){.pitch-wrap:after{display:none}}
+
+
+/* 풋살 히스토리그 v12 · 5대5 직접 조작 */
+.futsal-touch{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:space-between;align-items:end;padding:0 12px;z-index:5;pointer-events:none}
+.futsal-move-pad,.futsal-action-pad{pointer-events:auto}
+.futsal-move-pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,44px);gap:5px}
+.futsal-move-pad .up{grid-column:2}.futsal-move-pad .left{grid-column:1;grid-row:2}.futsal-move-pad .down{grid-column:2;grid-row:2}.futsal-move-pad .right{grid-column:3;grid-row:2}.futsal-move-pad .sprint{grid-column:2;grid-row:3;font-size:10px}
+.futsal-action-pad{display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+.futsal-touch button{min-width:44px;min-height:42px;border-radius:13px;background:rgba(4,14,26,.78);color:#fff;border:1px solid rgba(255,255,255,.24);font-size:11px;font-weight:900;touch-action:none;user-select:none}
+.futsal-action-pad .shoot{background:rgba(220,38,38,.80)}.futsal-action-pad .pass{background:rgba(22,163,74,.80)}.futsal-action-pad .through{background:rgba(37,99,235,.80)}.futsal-action-pad .lob{background:rgba(217,119,6,.82)}.futsal-action-pad .switch{background:rgba(124,58,237,.82)}
+.futsal-control-help{margin:8px 0 10px;padding:9px 10px;border-radius:12px;background:#0d1b2e}.futsal-control-help b,.futsal-control-help small{display:block}.futsal-control-help small{margin-top:4px;color:#b7c8da;line-height:1.45}
+@media(hover:hover) and (pointer:fine){.futsal-touch{display:none}}

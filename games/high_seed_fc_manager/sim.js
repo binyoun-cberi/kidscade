@@ -51,7 +51,7 @@ function playerScore(p,slot){
 function assignSlots(roster,lineup,formation,formations){
   var selected=lineup.map(function(id){return roster.find(function(p){return p.id===id;});}).filter(Boolean);
   var used={};
-  return (formations[formation]||formations['4-3-3']).map(function(slot){
+  return (formations[formation]||formations['1-2-1']).map(function(slot){
     var best=null,bestScore=-1e9;
     selected.forEach(function(p){
       if(used[p.id])return;
@@ -63,11 +63,11 @@ function assignSlots(roster,lineup,formation,formations){
   }).filter(function(x){return !!x.player;});
 }
 var slotCoords={
-  '4-4-2':[[7,50],[24,31],[24,69],[31,12],[31,88],[48,34],[48,66],[55,12],[55,88],[76,38],[76,62]],
-  '4-3-3':[[7,50],[24,32],[24,68],[31,12],[31,88],[49,28],[46,50],[49,72],[70,14],[70,86],[79,50]],
-  '4-2-3-1':[[7,50],[24,32],[24,68],[31,12],[31,88],[45,36],[45,64],[64,17],[62,50],[64,83],[79,50]],
-  '5-3-2':[[7,50],[22,26],[20,50],[22,74],[34,10],[34,90],[49,28],[48,50],[49,72],[76,38],[76,62]]
-};
+  '1-2-1':[[7,50],[31,50],[52,23],[52,77],[79,50]],
+  '2-2':[[7,50],[32,31],[32,69],[67,29],[67,71]],
+  '3-1':[[7,50],[28,50],[38,22],[38,78],[77,50]],
+  '4-0':[[7,50],[47,20],[44,40],[44,60],[47,80]]
+}
 function tacticsBonus(raw){
   var t=normalizeTactics(raw),b={attack:0,defense:0,mid:0,tempo:1,fatigue:1,linePush:0,passAdjust:0};
   if(t.attack==='short'){b.mid+=4;b.attack+=1;b.tempo=.93;b.passAdjust+=.035;}
@@ -93,7 +93,7 @@ function teamRating(assignments,tactics){
   return {attack:attack,mid:mid,defense:defense,bonus:b};
 }
 function makeActors(assignments,side,formation){
-  var coords=slotCoords[formation]||slotCoords['4-3-3'];
+  var coords=slotCoords[formation]||slotCoords['1-2-1'];
   return assignments.map(function(a,i){
     var c=coords[i]||[50,50],x=side===0?c[0]:100-c[0],y=c[1];
     return {

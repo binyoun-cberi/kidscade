@@ -285,41 +285,18 @@
       "cover": "assets/gate-image/씨앗 배구.png"
     },
     {
-      "id": "high_seed_futsal",
-      "addedAt": "2026-09-29T10:24:15+09:00",
-      "title": "씨앗 풋살",
-      "href": "games/high_seed_futsal/index.html?v=5",
-      "category": "trivia",
-      "age": "high",
-      "icon": "⚽",
-      "description": "내 키즈케이드 아바타와 함께 뛰는 5대5 풋살! 킥오프 팀 표시와 3·2·1 카운트다운 뒤 경기가 시작되고, 튜토리얼 한 판에서 패스·스루패스·슛을 익힌 뒤 좌우 골대를 향해 팀 AI와 함께 경기합니다.",
-      "subject": "thinking",
-      "genre": "sports",
-      "difficulty": "medium",
-      "sessionMinutes": 5,
-      "players": [
-        "solo"
-      ],
-      "input": [
-        "touch",
-        "keyboard"
-      ],
-      "qualityStatus": "standard",
-      "classroom": true
-    },
-    {
       "id": "high_seed_fc_manager",
-      "title": "역사 드림리그: 씨앗 FC 감독",
-      "href": "games/high_seed_fc_manager/index.html?v=11",
+      "title": "풋살 히스토리그",
+      "href": "games/high_seed_fc_manager/index.html?v=12",
       "category": "trivia",
       "age": "high",
       "icon": "⚽",
       "cover": "assets/gate-image/history dream league.png",
-      "description": "한국사 인물마다 다른 가상 플레이 성향을 살려 팀을 꾸리고, 경기 중 공격 방향·압박·라인·템포·개인 지시·직접 교체까지 실시간으로 바꾸는 축구 감독 게임! 상대 감독 AI, 통산 선수 기록, 히트맵·패스맵·xG와 1·2부 승격·강등까지 이어져요.",
+      "description": "역사 인물 5명을 골라 전술을 짜고 경기에서는 직접 선수를 바꿔 조종하는 5대5 풋살 리그. 실제 공 물리와 패스·스루·크로스·슛·태클, 선수별 가상 플레이 성향, 시즌·영입·역사 카드와 경기 분석이 하나로 이어집니다.",
       "subject": "social",
-      "genre": "management",
+      "genre": "sports-management",
       "difficulty": "medium",
-      "sessionMinutes": 25,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],
