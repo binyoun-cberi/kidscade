@@ -751,15 +751,12 @@ export const SHARED_3D_GROUPS=Object.freeze({
     "nature.mossyRockB",
     "nature.grass",
     "nature.plant",
+    "nature.mushroomA",
+    "nature.mushroomB",
     "prop.crate",
     "prop.waterTower",
     "prop.well",
-    "prop.woodLog",
-    "building.house",
-    "vehicle.schoolBus",
-    "animal.deer",
-    "animal.stag",
-    "animal.husky"
+    "prop.woodLog"
   ],
   "ecopolis": [
     "nature.commonTreeA",
@@ -849,3 +846,36 @@ export function getShared3D(id){return SHARED_3D[id]||null}
 export function shared3DPath(id,prefix=''){const a=getShared3D(id);return a?prefix+a.path:null}
 export function shared3DByTag(tag){return Object.values(SHARED_3D).filter(a=>a.tags.includes(tag))}
 export function shared3DGroup(name){return (SHARED_3D_GROUPS[name]||[]).map(getShared3D).filter(Boolean)}
+
+
+/*
+ * Runtime QA policy.
+ * "approved" means safe for automatic placement after center/ground normalization.
+ * "review" means keep in the catalog but do not auto-place until visually checked in its target game.
+ * "blocked" means never load automatically.
+ */
+export const SHARED_3D_QA=Object.freeze({
+  "prop.tinCan":Object.freeze({state:"blocked",reason:"16.6 MB source model; optimize before runtime use"}),
+  "vehicle.schoolBus":Object.freeze({state:"review",reason:"appeared achromatic in Apocalypse v8; material pass required"}),
+  "building.house":Object.freeze({state:"review",reason:"material and pivot/footprint need visual verification"}),
+  "animal.deer":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
+  "animal.stag":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
+  "animal.husky":Object.freeze({state:"review",reason:"large animated/skinned model; use SkeletonUtils and verify rest pose"}),
+  "nature.commonTreeA":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.commonTreeB":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.pineTreeA":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.pineTreeB":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.rock":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.mossyRockA":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.mossyRockB":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.grass":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.plant":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.mushroomA":Object.freeze({state:"approved",centerXZ:true}),
+  "nature.mushroomB":Object.freeze({state:"approved",centerXZ:true}),
+  "prop.crate":Object.freeze({state:"approved",centerXZ:true}),
+  "prop.waterTower":Object.freeze({state:"approved",centerXZ:true}),
+  "prop.well":Object.freeze({state:"approved",centerXZ:true}),
+  "prop.woodLog":Object.freeze({state:"approved",centerXZ:true})
+});
+export function shared3DProfile(id){return SHARED_3D_QA[id]||Object.freeze({state:"review",reason:"not visually verified yet"})}
+export function shared3DIsApproved(id){return shared3DProfile(id).state==="approved"}
