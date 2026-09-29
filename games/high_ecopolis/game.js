@@ -503,7 +503,7 @@ renderer.domElement.addEventListener('pointerleave',()=>{hoverTile=null;previewR
 function toast(msg,type='good',ms=2400){clearTimeout(toastTimer);ui.toast.textContent=msg;ui.toast.style.borderColor=type==='bad'?'rgba(255,122,110,.6)':'rgba(129,230,164,.5)';ui.toast.classList.add('showToast');toastTimer=setTimeout(()=>ui.toast.classList.remove('showToast'),ms)}
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(e){}}
 function sdkStart(){try{window.KidscadeGame?.start?.()}catch(e){}}
-function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
+function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
 function restoreSnapshot(s){
   if(!s)return;phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem=makeEcosystem(s.ecosystem);
   if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;refreshTileVisual(tiles[i])});
