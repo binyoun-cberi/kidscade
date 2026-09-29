@@ -573,7 +573,7 @@ function predictedBallPoint(){
 }
 function switchHint(){
   if(!controlled||owner&&owner.team===HOME)return null;
-  const point=owner&&owner.team===AWAY?{x:owner.x+teamDir(owner.team)*-65,y:owner.y}:predictedBallPoint();
+  const point=owner&&owner.team===AWAY?{x:owner.x+teamDir(owner.team)*65,y:owner.y}:predictedBallPoint();
   const list=outfield(HOME).slice().sort(function(a,b){return dist(a,point)-dist(b,point)});
   if(!list.length)return null;
   return list[0]===controlled?(list[1]||list[0]):list[0];
@@ -684,6 +684,7 @@ function updatePlayers(dt){
       if(b.role!=='GK'){b.x+=nx*push;b.y+=ny*push}
     }
   }
+  ps.forEach(function(p){p.x=clamp(p.x,18,FIELD_W-18);p.y=clamp(p.y,18,FIELD_H-18)});
 }
 function updateOwnedBall(dt){
   const p=owner;if(!p)return;
@@ -740,6 +741,19 @@ function prepareRestart(team,x,y,label,kind){
 }
 function checkOut(){
   if(owner)return;
+  const crossedGoalLine=ball.x<0||ball.x>FIELD_W;
+  if(crossedGoalLine){
+    const onPost=Math.abs(ball.y-GOAL_Y1)<16||Math.abs(ball.y-GOAL_Y2)<16;
+    const onBar=ball.y>GOAL_Y1&&ball.y<GOAL_Y2&&Math.abs(ball.z-GOAL_H)<15;
+    if(onPost&&ball.z<GOAL_H+12){
+      const left=ball.x<0;ball.x=left?3:FIELD_W-3;ball.vx=(left?1:-1)*Math.max(260,Math.abs(ball.vx)*.68);
+      ball.vy+=(ball.y<FIELD_H/2?-1:1)*70;ballFree=.08;shake=Math.max(shake,4);sound('kick',.78);showStatus('골대!',.45);return true;
+    }
+    if(onBar){
+      const left=ball.x<0;ball.x=left?3:FIELD_W-3;ball.vx=(left?1:-1)*Math.max(220,Math.abs(ball.vx)*.48);
+      ball.vz=-Math.max(110,Math.abs(ball.vz)*.55);ballFree=.08;shake=Math.max(shake,4);sound('kick',.82);showStatus('크로스바!',.45);return true;
+    }
+  }
   const inGoal=ball.y>GOAL_Y1&&ball.y<GOAL_Y2&&ball.z<GOAL_H;
   if(ball.x<0&&inGoal){scoreGoal(AWAY);return true}
   if(ball.x>FIELD_W&&inGoal){scoreGoal(HOME);return true}
