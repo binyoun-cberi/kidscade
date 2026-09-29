@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { shared3DPath, shared3DCanUse } from '../../assets/game/manifest/shared-community-3d.js';
+import { prepareShared3DObject } from '../../assets/game/manifest/shared-community-3d-runtime.js';
 
 const $ = (s) => document.querySelector(s);
 const ui = {
@@ -272,6 +274,14 @@ const treeDefs = [
 ];
 const fallbackBuildings = new Map();
 const fallbackTrees = [];
+const fallbackTowerParts = [];
+const sharedDecorDefs=[
+  ['nature.commonTreeA',-70,33,5.2,.25],['nature.commonTreeB',-50,-49,4.7,1.15],
+  ['nature.pineTreeA',-8,-68,5.5,.65],['nature.pineTreeB',55,54,5.1,1.7],
+  ['nature.mossyRockA',-34,58,2.2,.2],['nature.rock',37,-51,1.9,.8],
+  ['nature.grass',52,14,1.35,.35],['nature.plant',-25,30,1.3,1.1],
+  ['building.house',30,-55,10.5,Math.PI],['prop.waterTower',66,55,11.5,.15]
+];
 function buildWorldFallbacks() {
   for (const b of buildingDefs) {
     const body = makeBox(b.w, b.h, b.d, b.color, b.x, b.h / 2, b.z);
@@ -292,15 +302,36 @@ function buildWorldFallbacks() {
     fallbackTrees.push([trunk,crown]);
     colliders.push({ type: 'circle', x, z, r: .85, h: h*.9 });
   }
-  const tower = makeBox(2.2, 11, 2.2, 0x8b9ca8, 66, 5.5, 55);
+  const tower = makeBox(2.2, 11, 2.2, 0x8b9ca8, 66, 5.5, 55); fallbackTowerParts.push(tower);
   colliders.push({ type:'box', x:66, z:55, w:2.4, d:2.4, h:11 });
   for (let y = 2; y < 11; y += 2.1) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(7, .14, .14), new THREE.MeshStandardMaterial({ color: 0xd0d8dd }));
-    bar.position.set(66,y,55); bar.rotation.y = y % 4 > 2 ? .5 : -.5; scene.add(bar);
+    bar.position.set(66,y,55); bar.rotation.y = y % 4 > 2 ? .5 : -.5; scene.add(bar); fallbackTowerParts.push(bar);
   }
   scenicObjects.push(tower);
+  // Shared decorations use the same collider system as the fallback world.
+  for(const [id,x,z,size] of sharedDecorDefs){
+    if(!shared3DCanUse(id))continue;
+    if(id==='building.house')colliders.push({type:'box',x,z,w:size*.78,d:size*.64,h:size*.72});
+    else if(id==='prop.waterTower'){} // the existing tower collider already protects this mission landmark.
+    else if(/Tree/.test(id)||/tree/i.test(id))colliders.push({type:'circle',x,z,r:.9,h:size});
+  }
 }
 
+async function loadSharedWorldDecor(){
+  let count=0;
+  for(const [id,x,z,size,rot] of sharedDecorDefs){
+    if(!shared3DCanUse(id))continue;
+    try{
+      const gltf=await loader.loadAsync(shared3DPath(id,'../../'));
+      const obj=prepareShared3DObject(gltf.scene.clone(true),id,size);
+      if(!obj)continue;
+      obj.position.x+=x;obj.position.z+=z;obj.rotation.y=rot||0;scene.add(obj);scenicObjects.push(obj);count++;
+      if(id==='prop.waterTower')fallbackTowerParts.forEach(o=>o.visible=false);
+    }catch(_){}
+  }
+  return count;
+}
 async function loadWorldAssets() {
   const base = '../../assets/game/3d/city/kenney-city-kit-suburban/';
   let loaded = 0;
@@ -325,8 +356,9 @@ async function loadWorldAssets() {
     });
     loaded++; ui.loadNote.textContent = `3D 에셋 ${loaded}/${buildingDefs.length + 2} 준비 중`;
   })();
-  const droneTask = loadDroneAsset().then(() => { loaded++; ui.loadNote.textContent = `3D 에셋 ${loaded}/${buildingDefs.length + 2} 준비 중`; });
-  await Promise.allSettled([...tasks, treeTask, droneTask]);
+  const droneTask = loadDroneAsset().then(() => { loaded++; ui.loadNote.textContent = `3D 에셋 ${loaded}/${buildingDefs.length + 3} 준비 중`; });
+  const sharedTask = loadSharedWorldDecor().then(n => { loaded++; ui.loadNote.textContent = `공용 3D 풍경 ${n}개 연결 완료`; });
+  await Promise.allSettled([...tasks, treeTask, droneTask, sharedTask]);
 }
 function fitAndGround(obj, targetMax) {
   tempBox.setFromObject(obj);
