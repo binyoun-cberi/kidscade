@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>멸망에서 살아남기</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script src="../../audio-manager.js?v=20260917-1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_apocalypse_survival" data-title="멸망에서 살아남기" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+</head>
+<body>
+<canvas id="game" aria-label="멸망에서 살아남기 3D 월드"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="top-left glass">
+    <div class="day-line"><b id="dayText">멸망 1일째</b><span id="clockText">07:10</span><span id="weatherText">☀ 맑음</span></div>
+    <div class="mission-kicker" id="missionKicker">오늘의 생존 목표</div>
+    <h1 id="missionTitle">깨끗한 물을 확보하라</h1>
+    <p id="missionText">강을 찾아 물을 뜨고 안전하게 마실 방법을 찾아보세요.</p>
+    <div id="missionSteps" class="steps"></div>
+  </div>
+
+  <div class="top-right glass status-panel">
+    <div><span>❤️</span><b id="health">100</b><small>체력</small></div>
+    <div><span>🍗</span><b id="hunger">82</b><small>허기</small></div>
+    <div><span>💧</span><b id="thirst">72</b><small>갈증</small></div>
+    <div><span>🌡️</span><b id="temp">36.6</b><small>체온</small></div>
+  </div>
+
+  <div id="compass" class="glass compass"><b id="zoneText">학교 체육관</b><span id="bearingText">캠프 0m</span></div>
+  <div id="interactPrompt" class="interact hidden"><kbd>E</kbd><span>상호작용</span></div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="crosshair" aria-hidden="true">+</div>
+
+  <div id="hotbar" class="hotbar glass">
+    <button data-use="cleanWater"><kbd>1</kbd><span>💧</span><b id="hotWater">0</b><small>깨끗한 물</small></button>
+    <button data-use="food"><kbd>2</kbd><span>🥫</span><b id="hotFood">1</b><small>식량</small></button>
+    <button data-use="axe"><kbd>3</kbd><span>🪓</span><b id="hotAxe">-</b><small>돌도끼</small></button>
+    <button data-open="inventory"><kbd>I</kbd><span>🎒</span><b id="hotItems">3</b><small>가방</small></button>
+    <button data-open="craft"><kbd>C</kbd><span>🛠️</span><b>제작</b><small>도구</small></button>
+    <button data-open="build"><kbd>B</kbd><span>🏕️</span><b>건축</b><small>시설</small></button>
+  </div>
+
+  <div id="mobileMove" class="mobile-move"><div class="joy-base"><div id="joyKnob" class="joy-knob"></div></div></div>
+  <div id="mobileActions" class="mobile-actions">
+    <button id="mobileInteract">E</button><button id="mobileBuild">B</button><button id="mobileTablet">TAB</button>
+  </div>
+</div>
+
+<aside id="panel" class="panel glass hidden" aria-live="polite">
+  <header><div><small id="panelKicker">생존 태블릿</small><h2 id="panelTitle">가방</h2></div><button id="closePanel" aria-label="닫기">×</button></header>
+  <nav>
+    <button data-tab="inventory" class="active">가방</button>
+    <button data-tab="craft">제작</button>
+    <button data-tab="build">건축</button>
+    <button data-tab="knowledge">생존 도감</button>
+    <button data-tab="settlement">정착지</button>
+  </nav>
+  <div id="panelBody" class="panel-body"></div>
+</aside>
+
+<div id="decision" class="overlay hidden">
+  <div class="overlay-card decision-card">
+    <div class="badge">공동체 의사결정</div>
+    <h1>식량과 물을 어떻게 나눌까요?</h1>
+    <p>구조한 생존자들과 함께 살기 시작했습니다. 자원이 충분하지 않아 오늘의 배분 규칙을 정해야 합니다. 하나의 정답은 없으며 선택에 따라 공동체의 상태가 달라집니다.</p>
+    <div class="choice-grid">
+      <button data-choice="equal"><b>같은 양으로 배분</b><span>모두에게 같은 몫을 나눕니다.</span></button>
+      <button data-choice="need"><b>필요에 따라 배분</b><span>몸이 약하거나 더 필요한 사람에게 우선 배분합니다.</span></button>
+      <button data-choice="work"><b>노동량을 고려해 배분</b><span>오늘 맡은 일을 많이 한 사람의 몫을 늘립니다.</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="start" class="overlay show">
+  <div class="overlay-card start-card">
+    <div class="badge">과학 × 사회 × 3D 생존</div>
+    <h1>멸망에서 살아남기</h1>
+    <p class="lead">전기도 수도도 멈춘 세상. 과학으로 살아남고, 사람들과 힘을 합쳐 문명을 다시 시작하세요.</p>
+    <div class="brief-grid">
+      <div><b>1~4일</b><span>물 · 불 · 쉼터 · 전기</span></div>
+      <div><b>5일</b><span>생존자 구조와 분업</span></div>
+      <div><b>6일</b><span>희소한 자원의 배분</span></div>
+      <div><b>7일</b><span>폭우와 홍수에 대비</span></div>
+    </div>
+    <div class="controls"><span>WASD 이동</span><span>마우스 드래그 시점</span><span>E 상호작용</span><span>C 제작</span><span>B 건축</span><span>TAB 태블릿</span></div>
+    <div class="start-actions"><button id="newGame" class="primary">새 생존 시작</button><button id="continueGame" class="secondary">이어하기</button></div>
+    <small>실패해도 발견한 지식은 세이브에 남습니다. 화면이 작은 기기에서는 터치 조작이 표시됩니다.</small>
+  </div>
+</div>
+
+<div id="ending" class="overlay hidden">
+  <div class="overlay-card ending-card">
+    <div class="badge">멸망 7일째 · 통신 복구</div>
+    <h1>문명을 다시 시작합니다</h1>
+    <p id="endingText">혼자가 아니게 되었습니다.</p>
+    <div id="endingStats" class="ending-stats"></div>
+    <blockquote>📻 “…누구든 듣고 있다면 응답해 주세요. 여기는 새봄 정착지입니다.”</blockquote>
+    <button id="restartGame" class="primary">새로운 세계에서 다시 시작</button>
+  </div>
+</div>
+
+<div id="loading" class="loading"><div class="spinner"></div><b>멸망 이후의 세계를 만드는 중...</b><small id="loadingText">지형과 생존 장비를 준비하고 있어요.</small></div>
+
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
