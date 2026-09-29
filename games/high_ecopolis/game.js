@@ -27,6 +27,12 @@ const TOOL={
   nuclear:{label:'원자력 발전소',cost:55,radius:8.2,power:78},
   coal:{label:'화력 발전소',cost:12,radius:7.0,power:65,harmful:true},
   carfactory:{label:'자동차 공장',cost:16,radius:0,harmful:true,demand:12},
+  landfill:{label:'쓰레기 매립지',cost:6,radius:2.8,harmful:true},
+  quarry:{label:'채석장',cost:10,radius:2.4,harmful:true},
+  parking:{label:'대형 주차장',cost:7,radius:2.2,harmful:true},
+  channel:{label:'콘크리트 하천',cost:10,radius:2.4,harmful:true},
+  lawn:{label:'잔디공원',cost:9,radius:2.1,harmful:true},
+  plantation:{label:'단일수종 조림',cost:10,radius:2.2,harmful:true},
   purifier:{label:'토양 정화기',cost:18,radius:2.65},
   waterfilter:{label:'하천 정화기',cost:22,radius:3.25},
   wetland:{label:'습지 씨앗',cost:16,radius:1.85,phase:2},
@@ -60,6 +66,7 @@ let ecosystem=makeEcosystem();
 function makeEcosystem(input={}){
   return {
     carbon:Number(input.carbon||0),waste:Number(input.waste||0),industryProfit:Number(input.industryProfit||0),
+    habitatStress:Number(input.habitatStress||0),waterStress:Number(input.waterStress||0),
     populations:{bee:0,frog:0,deer:0,otter:0,...(input.populations||{})},
     discovered:{...(input.discovered||{})}
   };
@@ -178,7 +185,7 @@ function refreshTileVisual(t){
   }
   else if(t.kind==='rock')hex=0x77786e;
   else {
-    const base=t.biome==='grass'?0x69a95f:t.biome==='wetland'?0x729e67:t.biome==='forest'?0x3d8154:t.biome==='meadow'?0x8dbf64:0x81725a;
+    const base=t.biome==='grass'?0x69a95f:t.biome==='wetland'?0x729e67:t.biome==='forest'?0x3d8154:t.biome==='meadow'?0x8dbf64:t.biome==='lawn'?0x76b95b:t.biome==='plantation'?0x4f8c50:t.biome==='paved'?0x686d70:0x81725a;
     const c=new THREE.Color(base),dirty=new THREE.Color(0x6d5f4f);c.lerp(dirty,t.pollution*.48);hex=c.getHex();
   }
   if(analysisMode==='wind'&&t.kind!=='water'){
@@ -204,6 +211,12 @@ function rebuildDecor(t){
   }
   if(t.biome==='forest'){
     for(let i=0;i<2;i++){const g=treeModel();g.scale.setScalar(i?0.75:1);g.position.set((i-.5)*.35,0,(i?-.12:.15));t.decor.add(g)}
+  }else if(t.biome==='plantation'){
+    for(let i=-1;i<=1;i++){const g=treeModel();g.scale.setScalar(.7);g.position.set(i*.25,0,0);t.decor.add(g)}
+  }else if(t.biome==='lawn'){
+    for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.03,.13,.03),mat.leaf);blade.position.set((i-1)*.18,.06,0);t.decor.add(blade)}
+  }else if(t.biome==='paved'){
+    const slab=new THREE.Mesh(new THREE.BoxGeometry(.82,.035,.82),mat.dark);slab.position.y=.04;t.decor.add(slab);
   }else if(t.biome==='meadow'){
     for(let i=0;i<5;i++){const stem=new THREE.Mesh(geo.reed,mat.leaf);stem.scale.y=.35;stem.position.set((noise(t.x+i,t.z)-.5)*.65,.08,(noise(t.z+i,t.x)-.5)*.65);const f=new THREE.Mesh(geo.flower,i%2?mat.flower:mat.pink);f.position.set(stem.position.x,.18,stem.position.z);t.decor.add(stem,f)}
   }else if(t.biome==='wetland'){
@@ -237,6 +250,21 @@ function buildModel(type,t){
   }else if(type==='carfactory'){
     const base=new THREE.Mesh(new THREE.BoxGeometry(1.0,.48,.82),mat.dark);base.position.y=.24;
     const roof=new THREE.Mesh(new THREE.BoxGeometry(.9,.08,.72),mat.blue);roof.position.y=.52;g.add(base,roof);
+  }else if(type==='landfill'){
+    const pit=new THREE.Mesh(new THREE.BoxGeometry(.95,.18,.82),mat.dark);pit.position.y=.08;
+    for(let i=0;i<4;i++){const bag=new THREE.Mesh(new THREE.SphereGeometry(.11,7,5),i%2?mat.yellow:mat.trunk);bag.scale.y=.65;bag.position.set((i%2-.5)*.36,.23,(Math.floor(i/2)-.5)*.3);g.add(bag)}g.add(pit);
+  }else if(type==='quarry'){
+    const pit=new THREE.Mesh(new THREE.CylinderGeometry(.46,.3,.2,10),mat.rock);pit.position.y=.02;
+    for(let i=0;i<3;i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.15,0),mat.rock);rock.position.set((i-1)*.22,.2,(i%2)*.18-.08);g.add(rock)}g.add(pit);
+  }else if(type==='parking'){
+    const slab=new THREE.Mesh(new THREE.BoxGeometry(1.0,.08,.86),mat.dark);slab.position.y=.04;
+    for(const x of [-.3,0,.3]){const line=new THREE.Mesh(new THREE.BoxGeometry(.025,.012,.72),mat.white);line.position.set(x,.09,0);g.add(line)}g.add(slab);
+  }else if(type==='channel'){
+    const wall1=new THREE.Mesh(new THREE.BoxGeometry(.95,.18,.12),mat.white),wall2=wall1.clone();wall1.position.set(0,.09,-.34);wall2.position.set(0,.09,.34);g.add(wall1,wall2);
+  }else if(type==='lawn'){
+    const pad=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.09,18),mat.green);pad.position.y=.05;g.add(pad);
+  }else if(type==='plantation'){
+    for(const x of [-.25,0,.25]){const tr=treeModel();tr.scale.setScalar(.65);tr.position.set(x,.05,0);g.add(tr)}
   }else if(type==='purifier'){
     const box=new THREE.Mesh(geo.box,mat.green);box.position.y=.27;const chimney=new THREE.Mesh(geo.pipe,mat.white);chimney.position.set(.18,.7,.12);g.add(box,chimney);
   }else if(type==='waterfilter'){
@@ -287,6 +315,9 @@ function placementReason(type,t){
   if(type==='solar'&&sunAt(t)<.5)return '햇빛이 부족해요. ☀️ 지도를 확인하세요.';
   if(type==='geothermal'&&geothermalAt(t)<.62)return '지열이 약한 곳이에요. ♨️ 지도를 확인하세요.';
   if(type==='nuclear'&&!nearWater(t,false,2.3))return '원자력 발전소는 냉각수를 확보할 수 있는 물가 가까이에 지어야 해요.';
+  if(type==='channel'&&!nearWater(t,false,1.35))return '하천 바로 옆에서만 정비할 수 있어요.';
+  if(type==='lawn'&&t.biome==='barren')return '잔디공원은 이미 정화된 땅에 조성해야 해요.';
+  if(type==='plantation'&&t.biome==='barren')return '조림지는 이미 정화된 땅에 조성해야 해요.';
   if(['purifier','waterfilter','wetland','forest','meadow','carfactory'].includes(type)&&!powered(t))return '발전소의 전력 범위 밖이에요.';
   if(type==='waterfilter'&&!nearWater(t,false,1.6))return '강가에 붙여 설치해야 해요.';
   if(['wetland','forest','meadow'].includes(type)&&t.biome!=='grass')return '먼저 토양을 정화해 초원으로 만들어야 해요.';
@@ -309,8 +340,14 @@ function placeTool(type,t,loading=false){
     if(type==='meadow')seedBiome(t,'meadow',def.radius);
     if(type==='coal'){ecosystem.carbon+=8;polluteAround(t,2.8,.10);toast('전력은 크게 늘었지만 탄소와 주변 오염이 시작됐어요.','bad',3300)}
     if(type==='carfactory'){ecosystem.carbon+=4;polluteAround(t,2.1,.06);toast('공장은 수익을 내지만 주변 생태계에 부담을 줍니다.','bad',3300)}
+    if(type==='landfill'){ecoPoints+=10;ecosystem.habitatStress+=8;polluteAround(t,2.8,.13);toast('처리 예산 +10P. 하지만 땅과 물로 오염이 번지기 시작합니다.','bad',3300)}
+    if(type==='quarry'){ecoPoints+=8;ecosystem.habitatStress+=12;scarLand(t,2.0);toast('자원 판매 +8P. 주변 서식지가 깎여 나갔어요.','bad',3300)}
+    if(type==='parking'){ecoPoints+=6;ecosystem.habitatStress+=10;ecosystem.carbon+=3;paveLand(t,1.7);toast('개발 수익 +6P. 흙이 포장되어 빗물이 스며들 곳이 줄었어요.','bad',3300)}
+    if(type==='channel'){ecoPoints+=4;concreteChannel(t,2.2);ecosystem.habitatStress+=12;toast('물이 금방 정리됐지만 습지와 물가 서식처가 사라졌어요.','bad',3400)}
+    if(type==='lawn'){quickGreen(t,'lawn',2.0);ecosystem.waterStress+=10;ecosystem.habitatStress+=6;toast('금방 초록색이 됐지만 먹이와 숨을 곳이 적은 잔디밭이에요.','bad',3400)}
+    if(type==='plantation'){quickGreen(t,'plantation',2.0);ecosystem.carbon=Math.max(0,ecosystem.carbon-5);ecosystem.habitatStress+=8;toast('나무가 빠르게 늘었지만 한 종류뿐이라 다양한 생물이 살기 어렵습니다.','bad',3400)}
     if(type==='nuclear'){ecosystem.waste+=4;toast('큰 저탄소 전력을 확보했어요. 사용후 연료 관리 부담도 생깁니다.','good',3200)}
-    pulse(t,type==='waterfilter'?0x6cd8f0:POWER_TYPES.has(type)?0xe9fff2:(type==='coal'||type==='carfactory'?0xff806d:0x9cf29c),def.radius||1.2);
+    pulse(t,type==='waterfilter'?0x6cd8f0:POWER_TYPES.has(type)?0xe9fff2:(['coal','carfactory','landfill','quarry','parking','channel'].includes(type)?0xff806d:0x9cf29c),def.radius||1.2);
     sdkSound('click');checkProgress();saveGame();updateUI();
   }
   return true;
@@ -336,6 +373,24 @@ function seedBiome(center,biome,r){
   }});
   ecoPoints+=changed;toast((biome==='forest'?'숲':biome==='wetland'?'습지':'꽃초원')+' '+changed+'칸이 생겼어요 · +'+changed+'P','good');
 }
+function scarLand(center,r){
+  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='barren';t.pollution=clamp(t.pollution+.08,0,1);refreshTileVisual(t)});
+}
+function paveLand(center,r){
+  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='paved';t.pollution=clamp(t.pollution+.04,0,1);t.moisture=Math.max(0,t.moisture-.45);refreshTileVisual(t)});
+}
+function quickGreen(center,biome,r){
+  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r||t.pollution>=.35)return;t.biome=biome;refreshTileVisual(t)});
+}
+function concreteChannel(center,r){
+  tiles.forEach(t=>{if(dist(t,center)>r)return;
+    if(t.kind==='water'){t.pollution=Math.max(0,t.pollution-.28)}
+    if(t.kind==='land'&&t.biome==='wetland')t.biome='grass';
+    refreshTileVisual(t);
+  });
+  ecosystem.populations.frog=Math.max(0,ecosystem.populations.frog-14);
+  ecosystem.populations.otter=Math.max(0,ecosystem.populations.otter-12);
+}
 function polluteAround(center,r,amount){
   tiles.forEach(t=>{const d=dist(t,center);if(d>r||t.kind==='rock')return;const factor=1-d/r;
     t.pollution=clamp(t.pollution+amount*factor,0,1);
@@ -349,12 +404,23 @@ function removeSpecies(species){
   if(gone.length)toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 서식지를 떠났어요.','bad',3000);
 }
 function ecologyTick(){
-  const coal=buildings.filter(b=>b.type==='coal'),factories=buildings.filter(b=>b.type==='carfactory');
-  coal.forEach(b=>{const t=tileAt(b.x,b.z);ecosystem.carbon+=1.9;ecoPoints+=1;polluteAround(t,2.8,.018)});
-  factories.forEach(b=>{const t=tileAt(b.x,b.z);if(powered(t)){ecosystem.carbon+=1.15;ecosystem.industryProfit+=3;ecoPoints+=3;polluteAround(t,2.25,.013)}});
-  ecosystem.waste+=buildings.filter(b=>b.type==='nuclear').length*.06;
-  const forest=tiles.filter(t=>t.biome==='forest'&&t.pollution<.25).length;ecosystem.carbon=Math.max(0,ecosystem.carbon-forest*.035);
-  tiles.forEach(t=>{if(t.kind==='land'&&t.pollution<.25&&t.biome!=='barren')t.pollution=Math.max(0,t.pollution-.003)});
+  const byType=type=>buildings.filter(b=>b.type===type);
+  byType('coal').forEach(b=>{const t=tileAt(b.x,b.z);ecosystem.carbon+=1.9;ecoPoints+=1;polluteAround(t,2.8,.018)});
+  byType('carfactory').forEach(b=>{const t=tileAt(b.x,b.z);if(powered(t)){ecosystem.carbon+=1.15;ecosystem.industryProfit+=3;ecoPoints+=3;polluteAround(t,2.25,.013)}});
+  byType('landfill').forEach(b=>{ecoPoints+=1;ecosystem.habitatStress+=.7;polluteAround(tileAt(b.x,b.z),2.8,.012)});
+  byType('quarry').forEach(b=>{ecoPoints+=2;ecosystem.habitatStress+=.9;scarLand(tileAt(b.x,b.z),1.25)});
+  byType('parking').forEach(b=>{ecoPoints+=1;ecosystem.carbon+=.45;ecosystem.habitatStress+=.65;ecosystem.waterStress+=.35});
+  byType('channel').forEach(()=>{ecosystem.habitatStress+=.45});
+  byType('lawn').forEach(()=>{ecosystem.waterStress+=.85;ecosystem.habitatStress+=.28});
+  byType('plantation').forEach(()=>{ecosystem.carbon=Math.max(0,ecosystem.carbon-.22);ecosystem.habitatStress+=.32});
+  ecosystem.waste+=byType('nuclear').length*.06;
+  const forest=tiles.filter(t=>t.biome==='forest'&&t.pollution<.25).length;
+  const wetland=tiles.filter(t=>t.biome==='wetland'&&t.pollution<.25).length;
+  const meadow=tiles.filter(t=>t.biome==='meadow'&&t.pollution<.25).length;
+  ecosystem.carbon=Math.max(0,ecosystem.carbon-forest*.035);
+  ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-forest*.012-wetland*.018-meadow*.008);
+  ecosystem.waterStress=Math.max(0,ecosystem.waterStress-wetland*.025);
+  tiles.forEach(t=>{if(t.kind==='land'&&t.pollution<.25&&!['barren','paved'].includes(t.biome))t.pollution=Math.max(0,t.pollution-.003)});
   updateSpecies();checkProgress(false);updateUI();
 }
 function launchRecycler(t){
@@ -375,7 +441,7 @@ function pulse(t,color,r){
 
 function counts(){
   const land=tiles.filter(t=>t.kind==='land'),water=tiles.filter(t=>t.kind==='water');
-  const restored=land.filter(t=>t.pollution<.25&&t.biome!=='barren').length,clean=water.filter(t=>t.pollution<.25).length;
+  const restored=land.filter(t=>t.pollution<.25&&!['barren','paved'].includes(t.biome)).length,clean=water.filter(t=>t.pollution<.25).length;
   const forest=land.filter(t=>t.biome==='forest').length,wetland=land.filter(t=>t.biome==='wetland').length,meadow=land.filter(t=>t.biome==='meadow').length;
   return {land:land.length,water:water.length,restored,clean,restorePct:pct(restored,land.length),waterPct:pct(clean,water.length),forestPct:pct(forest,land.length),wetlandPct:pct(wetland,land.length),meadowPct:pct(meadow,land.length)};
 }
@@ -385,11 +451,12 @@ function returnedSpeciesCount(){
 function updateSpecies(){
   const c=counts(),pop=ecosystem.populations;
   const living=tiles.filter(t=>t.kind!=='rock'),avgPollution=living.reduce((s,t)=>s+t.pollution,0)/Math.max(1,living.length);
+  const habitat=ecosystem.habitatStress,waterStress=ecosystem.waterStress;
   const target={
-    bee:clamp(c.meadowPct*4.2-ecosystem.carbon*.23-avgPollution*28,0,100),
-    frog:clamp(c.wetlandPct*4+c.waterPct*.32-ecosystem.carbon*.10-avgPollution*30,0,100),
-    deer:clamp(c.forestPct*4+c.restorePct*.20-ecosystem.carbon*.20-avgPollution*24,0,100),
-    otter:clamp(c.waterPct*.48+c.wetlandPct*2+pop.frog*.18-ecosystem.carbon*.24-avgPollution*35,0,100)
+    bee:clamp(c.meadowPct*4.2-ecosystem.carbon*.23-avgPollution*28-habitat*.28-waterStress*.10,0,100),
+    frog:clamp(c.wetlandPct*4+c.waterPct*.32-ecosystem.carbon*.10-avgPollution*30-habitat*.18-waterStress*.35,0,100),
+    deer:clamp(c.forestPct*4+c.restorePct*.20-ecosystem.carbon*.20-avgPollution*24-habitat*.38,0,100),
+    otter:clamp(c.waterPct*.48+c.wetlandPct*2+pop.frog*.18-ecosystem.carbon*.24-avgPollution*35-habitat*.18-waterStress*.28,0,100)
   };
   for(const species of Object.keys(SPECIES)){
     const delta=clamp(target[species]-pop[species],-4,4);
@@ -455,7 +522,7 @@ function updateUI(){
 function showTileInfo(t){
   if(!t){ui.tileInfo.classList.add('hidden');return}
   const wind=Math.round(windAt(t)*100),sun=Math.round(sunAt(t)*100),geo=Math.round(geothermalAt(t)*100),bld=buildings.find(b=>b.x===t.x&&b.z===t.z);
-  const biome=t.kind==='water'?(t.pollution<.25?'깨끗한 강':'오염된 강'):t.kind==='rock'?'바위':({barren:'메마른 땅',grass:'초원',wetland:'습지',forest:'숲',meadow:'꽃초원'}[t.biome]||t.biome);
+  const biome=t.kind==='water'?(t.pollution<.25?'깨끗한 강':'오염된 강'):t.kind==='rock'?'바위':({barren:'메마른 땅',grass:'초원',wetland:'습지',forest:'숲',meadow:'꽃초원',lawn:'잔디밭',plantation:'단일수종 조림지',paved:'포장지'}[t.biome]||t.biome);
   ui.tileInfo.innerHTML='<b>'+biome+'</b><br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
   ui.tileInfo.classList.remove('hidden');
 }
@@ -530,14 +597,14 @@ function undo(){
 function tryCompleteGame(){
   const c=counts();
   if(buildings.length>0)return false;
-  if(returnedSpeciesCount()<4||ecosystem.carbon>=65||c.restorePct<60||c.waterPct<70){
+  if(returnedSpeciesCount()<4||ecosystem.carbon>=65||ecosystem.habitatStress>=45||ecosystem.waterStress>=35||c.restorePct<60||c.waterPct<70){
     toast('시설은 모두 회수했지만 생태계가 아직 안정되지 않았어요. 탄소·물·야생동물을 회복시키세요.','bad',3600);
     return false;
   }
   completeGame();return true;
 }
 function completeGame(){
-  if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+returnedSpeciesCount()*500+ecoPoints*2+efficiency-ecosystem.waste*3-ecosystem.carbon*4);
+  if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+returnedSpeciesCount()*500+ecoPoints*2+efficiency-ecosystem.waste*3-ecosystem.carbon*4-ecosystem.habitatStress*3-ecosystem.waterStress*2);
   let best=0;try{best=Number(localStorage.getItem(BEST_KEY)||0);if(score>best)localStorage.setItem(BEST_KEY,String(score));localStorage.removeItem(SAVE_KEY)}catch(e){}
   ui.resultScore.textContent=score.toLocaleString();ui.resultRestore.textContent=c.restorePct+'%';ui.resultSpecies.textContent=returnedSpeciesCount()+'종';
   ui.resultText.textContent=SCENARIOS[selectedScenario].name+'에 시설을 하나도 남기지 않았습니다. '+(score>best?'새 최고 기록이에요!':'최고 기록 '+Math.max(best,score).toLocaleString()+'점');
@@ -552,7 +619,7 @@ function continueGame(){
 function showTutorial(){
   const steps=[
     ['발전소도 장소를 골라요','🌬·☀️·♨️ 지도를 바꿔 보세요. 풍력·태양광·지열은 좋은 입지에서만 설치할 수 있고 원자력은 냉각수를 위해 물가가 필요해요.'],
-    ['빠른 길이 항상 좋은 길은 아니에요','화력 발전소는 싸고 강력하지만 탄소와 오염을 계속 만듭니다. 자동차 공장은 포인트를 벌지만 주변 생태계를 압박합니다. 장기 결과를 비교해 보세요.'],
+    ['초록색이라고 모두 정답은 아니에요','화력·공장뿐 아니라 매립지, 채석장, 주차장도 결과를 살펴보세요. 잔디공원과 단일수종 조림은 빠르게 초록색이 되지만 진짜 다양한 생태계와는 다릅니다.'],
     ['오염된 땅을 되살려요','토양 정화기를 풍력 발전기 근처에 설치하세요. 갈색 땅이 초록 초원으로 바뀝니다.'],
     ['강도 함께 살려요','하천 정화기는 강 바로 옆에 세웁니다. 파랗고 깨끗한 물이 늘어나야 다음 단계로 갈 수 있어요.'],
     ['생태계는 다양해야 해요','2단계가 열리면 초원을 숲·습지·꽃초원으로 나누세요. 한 종류만 가득한 곳보다 다양한 곳에 더 많은 동물이 삽니다.'],
