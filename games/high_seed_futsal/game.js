@@ -237,6 +237,9 @@ class FutsalAvatarActor{
     ctx.beginPath();ctx.arc(q.x,by,10,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#fff';ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(p.number),q.x,by+.5);
+    if(state==='countdown'&&owner===p){
+      ctx.font='1000 11px system-ui';ctx.fillStyle='#fef08a';ctx.fillText('KICKOFF',q.x,by-43);
+    }
     if(p===controlled){
       ctx.fillStyle='#facc15';ctx.beginPath();ctx.moveTo(q.x,by-20);ctx.lineTo(q.x-7,by-31);ctx.lineTo(q.x+7,by-31);ctx.closePath();ctx.fill();
     }else if(p===switchHint()){
@@ -411,6 +414,48 @@ function drawParticles(){
   });
   ctx.globalAlpha=1;
 }
+function tutorialMessage(){
+  if(mode!=='tutorial'||tutorialStep>=4)return'';
+  if(tutorialStep===0)return'① 방향키로 움직여 보세요 · E를 누르면 질주합니다';
+  if(tutorialStep===1)return'② 공을 잡고 S를 눌렀다 떼어 동료에게 패스하세요';
+  if(tutorialStep===2)return'③ 공을 잡고 W로 앞 공간에 스루패스를 해보세요';
+  return'④ 마지막! 공을 잡고 D를 눌렀다 떼어 슛하세요';
+}
+function advanceTutorial(kind){
+  if(mode!=='tutorial'||tutorialStep>=4)return;
+  if(tutorialStep===0&&kind==='move')tutorialStep=1;
+  else if(tutorialStep===1&&kind==='pass')tutorialStep=2;
+  else if(tutorialStep===2&&kind==='through')tutorialStep=3;
+  else if(tutorialStep===3&&kind==='shot'){
+    tutorialStep=4;tutorialFinished=true;
+    try{localStorage.setItem('seedFutsalTutorialDone','1')}catch(_){}
+    showStatus('튜토리얼 완료! 이제 자유롭게 경기해 보세요',3);
+  }else return;
+  countdownBeep(2);
+}
+function drawTutorialCoach(){
+  const msg=tutorialMessage();if(!msg)return;
+  ctx.save();
+  ctx.font='900 15px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  const width=Math.min(690,ctx.measureText(msg).width+42);
+  ctx.fillStyle='rgba(2,6,23,.84)';ctx.strokeStyle='rgba(250,204,21,.55)';ctx.lineWidth=2;
+  const x=(W-width)/2,y=H-59,h=38,r=16;
+  ctx.beginPath();ctx.roundRect(x,y,width,h,r);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff';ctx.fillText(msg,W/2,y+h/2);
+  ctx.restore();
+}
+function drawCountdown(){
+  if(state!=='countdown')return;
+  const intro=phaseTimer>3;
+  const main=intro?(kickoffLabel+' 킥오프'):String(Math.max(1,Math.ceil(phaseTimer)));
+  const sub=intro?'센터서클의 공을 가진 선수가 먼저 시작합니다':'휘슬이 울리면 시작!';
+  ctx.save();ctx.fillStyle='rgba(2,6,23,.30)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#fff';ctx.font=intro?'1000 38px system-ui':'1000 108px system-ui';
+  ctx.shadowColor='rgba(0,0,0,.7)';ctx.shadowBlur=20;ctx.fillText(main,W/2,H/2-14);
+  ctx.shadowBlur=0;ctx.font='900 15px system-ui';ctx.fillStyle='#fde68a';ctx.fillText(sub,W/2,H/2+58);
+  ctx.restore();
+}
 function render(){
   const dx=shake>0?(Math.random()-.5)*shake:0,dy=shake>0?(Math.random()-.5)*shake*.45:0;
   ctx.save();ctx.translate(dx,dy);
@@ -428,6 +473,8 @@ function render(){
     ctx.fillStyle='#fff';ctx.font='1000 31px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(statusEl.dataset.banner||'',W/2,255);ctx.restore();
   }
+  drawCountdown();
+  drawTutorialCoach();
 }
 
 function inputVector(){
@@ -538,6 +585,7 @@ function kickBall(p,target,speed,vz,kind,receiver){
   pendingPass=(kind==='pass'||kind==='through'||kind==='lob')?{team:p.team,passer:p,receiver:receiver,life:2.4}:null;
   if(kind==='shot'){stats.shots[p.team]++;intendedReceiver=null;pendingPass=null}
   sound('kick',kind==='shot'?1.12:(kind==='lob'?.92:1));
+  kickThump(clamp((speed-500)/650,0,1));
   for(let i=0;i<5;i++)particles.push({x:ball.x,y:ball.y,z:6+Math.random()*8,vx:(Math.random()-.5)*45,vy:(Math.random()-.5)*45,vz:40+Math.random()*35,life:.35+Math.random()*.2,size:2+Math.random()*2,color:'rgba(255,255,255,.8)'});
 }
 function performPass(type,power,isOneTwo,actor){
@@ -562,6 +610,10 @@ function performPass(type,power,isOneTwo,actor){
   if(p.team===HOME&&receiver&&receiver.role!=='GK'){
     controlled=receiver;receiver.receiveAssist=.72;
   }
+  if(mode==='tutorial'&&p.team===HOME){
+    if(type==='pass')advanceTutorial('pass');
+    else if(type==='through')advanceTutorial('through');
+  }
   if(isOneTwo&&receiver){
     p.oneTwoTimer=1.85;
     p.oneTwoX=clamp(p.x+dir*300,80,FIELD_W-80);
@@ -575,6 +627,7 @@ function performShot(power,actor){
   const targetY=clamp(FIELD_H/2+v.y*105,GOAL_Y1+18,GOAL_Y2-18);
   const error=p.team===AWAY?((Math.random()-.5)*DIFF[difficulty].error):0;
   kickBall(p,{x:oppGoalX(p.team)+dir*45,y:targetY+error},790+power*355,75+power*95,'shot',null);
+  if(mode==='tutorial'&&p.team===HOME)advanceTutorial('shot');
 }
 function aiKickPass(p,type){
   const receiver=aiPassTarget(p);if(!receiver)return false;
@@ -801,11 +854,11 @@ function checkOut(){
     const onBar=ball.y>GOAL_Y1&&ball.y<GOAL_Y2&&Math.abs(ball.z-GOAL_H)<15;
     if(onPost&&ball.z<GOAL_H+12){
       const left=ball.x<0;ball.x=left?3:FIELD_W-3;ball.vx=(left?1:-1)*Math.max(260,Math.abs(ball.vx)*.68);
-      ball.vy+=(ball.y<FIELD_H/2?-1:1)*70;ballFree=.08;shake=Math.max(shake,4);sound('kick',.78);showStatus('골대!',.45);return true;
+      ball.vy+=(ball.y<FIELD_H/2?-1:1)*70;ballFree=.08;shake=Math.max(shake,4);postClang();showStatus('골대!',.45);return true;
     }
     if(onBar){
       const left=ball.x<0;ball.x=left?3:FIELD_W-3;ball.vx=(left?1:-1)*Math.max(220,Math.abs(ball.vx)*.48);
-      ball.vz=-Math.max(110,Math.abs(ball.vz)*.55);ballFree=.08;shake=Math.max(shake,4);sound('kick',.82);showStatus('크로스바!',.45);return true;
+      ball.vz=-Math.max(110,Math.abs(ball.vz)*.55);ballFree=.08;shake=Math.max(shake,4);postClang();showStatus('크로스바!',.45);return true;
     }
   }
   const inGoal=ball.y>GOAL_Y1&&ball.y<GOAL_Y2&&ball.z<GOAL_H;
