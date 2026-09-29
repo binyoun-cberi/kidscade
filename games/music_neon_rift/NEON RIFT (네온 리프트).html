@@ -425,7 +425,7 @@ function reset(){
 let loopRunning=false;
 function ensureLoop(){if(loopRunning)return;loopRunning=true;requestAnimationFrame(loop)}
 function startStage(i=currentStage){
-  initAudio();currentStage=i;closeStageMenu();reset();centerMsg.classList.add('hidden');S.state='playing';S.lastTime=performance.now();
+  initAudio();currentStage=i;menuReturnState=null;stageMenu.classList.add('hidden');reset();centerMsg.classList.add('hidden');S.state='playing';S.lastTime=performance.now();
   const begin=()=>{RhythmClock.start(0);AudioScheduler.reset(0);ensureLoop()};
   if(audio&&audio.state==='suspended')audio.resume().then(begin).catch(begin);else begin();
 }
