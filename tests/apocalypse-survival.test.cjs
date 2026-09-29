@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=6/);
+  assert.match(html,/game\.js\?v=7/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -53,13 +53,31 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/road-bridge\.glb/);
   assert.match(js,/ambulance\.glb/);
   assert.match(js,/addScaledVector\(f,y\)/);
+  assert.match(js,/groundColor/);
+  assert.match(js,/makeRiverGeometry/);
+  assert.match(js,/cameraBlocked/);
+  assert.match(js,/resolveCamera/);
+  assert.match(js,/updateInteriorVisibility/);
+  assert.match(js,/wall-doorway-wide-square\.glb/);
+  assert.match(js,/road-crossroad-line\.glb/);
+  assert.match(js,/fence-1x4\.glb/);
+  assert.match(js,/tree-pine-tall-a\.glb/);
   assert.match(js,/phase:'survival'/);
   assert.match(js,/finish\(\)/);
 });
 
-test('tracked Kidscade survival assets used by the game exist',()=>{
-  const base=path.join(root,'assets','game','3d','survival','kenney-survival-kit');
-  for(const file of ['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb','patch-grass-large.glb','chest.glb','barrel.glb'])assert.ok(fs.existsSync(path.join(base,file)),'missing '+file);
+test('tracked Kidscade 3D assets used by the survival map exist',()=>{
+  const packs=[
+    ['assets/game/3d/survival/kenney-survival-kit',['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb','patch-grass-large.glb','chest.glb','barrel.glb','tent-canvas.glb','box-large.glb']],
+    ['assets/game/characters/people',['character-male-a.glb','character-male-b.glb','character-female-b.glb','character-female-c.glb']],
+    ['assets/game/3d/city/kenney-city-kit-roads',['road-bridge.glb','road-straight.glb','road-crossroad-line.glb','traffic-light.glb','electricity-pole.glb','construction-barrier.glb']],
+    ['assets/game/3d/city/kenney-city-kit-suburban',['fence-1x4.glb','path-stones-long.glb','path-stones-messy.glb']],
+    ['assets/game/3d/buildings/kenney-building-kit',['wall-doorway-wide-square.glb','wall-window-wide-square-detailed.glb','wall-window-square-detailed.glb']],
+    ['assets/game/3d/vehicles/kenney-car-kit',['ambulance.glb','sedan.glb','van.glb','suv.glb','debris-tire.glb']],
+    ['assets/game/3d/nature/kenney-nature-kit',['fence-gate.glb','canoe.glb','cliff-large-rock.glb','tree-pine-tall-a.glb','plant-bush-large.glb','rock-small-c.glb']],
+    ['assets/game/3d/city/poly-pizza-city-pack',['big-building.glb','bench.glb','bus-stop.glb','dumpster.glb','building-green.glb','brown-building.glb']]
+  ];
+  for(const [dir,files] of packs)for(const file of files)assert.ok(fs.existsSync(path.join(root,dir,file)),'missing '+dir+'/'+file);
   assert.match(js,/kenney-survival-kit/);
   assert.match(js,/renderAvatarSVG/);
 });
@@ -67,7 +85,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
 test('game is registered in catalog metadata v7',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=6');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=7');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
