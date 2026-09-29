@@ -80,7 +80,7 @@ function freeCreate(){
 function beginFreeHandoff(){if(state.path.length<4)return;state.freePattern=[...state.path];ui.handoff.classList.remove('hidden')}
 function beginFreeVerify(){
  state.mode='free-verify';state.level={chapter:'친구 도전',owner:'친구',avatar:'🕵️',grid:[4,4],solution:[...state.freePattern],structure:{sequence:state.freePattern.length-1,choice:0,repeat:0},showLength:false,mission:'친구가 만든 패턴을 기억해서 똑같이 맞혀 보세요.'};state.path=[];state.previewPath=[];state.attempts=0;state.rewatches=0;state.previewing=false;
- ui.handoff.classList.add('hidden');ui.badge.textContent='친구 도전';ui.title.textContent='친구의 패턴';ui.ownerAvatar.textContent='🕵️';ui.ownerLabel.textContent='친구의 휴대폰';ui.phase.textContent='패턴을 맞혀 보세요';ui.length.textContent='점 개수 비공개';ui.length.classList.add('mystery');ui.mission.textContent=state.level.mission;renderLogicChips(state.level);ui.command.classList.add('hidden');ui.savePattern.classList.add('hidden');ui.replay.disabled=false;ui.tip.textContent='누른 채로 점을 이어 그리고 마지막 점에서 손을 떼면 확인해요.';buildBoard();renderPlayerPath();
+ ui.handoff.classList.add('hidden');ui.badge.textContent='친구 도전';ui.title.textContent='친구의 패턴';ui.ownerAvatar.textContent='🕵️';ui.ownerLabel.textContent='친구의 휴대폰';ui.phase.textContent='패턴을 잘 보세요';ui.length.textContent='점 개수 비공개';ui.length.classList.add('mystery');ui.mission.textContent=state.level.mission;renderLogicChips(state.level);ui.command.classList.add('hidden');ui.savePattern.classList.add('hidden');ui.replay.disabled=false;ui.tip.textContent='누른 채로 점을 이어 그리고 마지막 점에서 손을 떼면 확인해요.';buildBoard();renderPlayerPath();later(()=>showPreview(false),420);
 }
 
 function buildBoard(){
