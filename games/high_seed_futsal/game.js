@@ -147,22 +147,33 @@ function savedAvatarSource(){
   const svg=safe(function(){return typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG():''},'');
   return svgDataUrl(svg);
 }
-const AVATAR_PRESETS=[
+const SQUAD_KITS=[
+  // 씨앗 FC · GK / FIXO / ALA / ALA / PIVOT(사용자)
+  {skin:'skin_tan',hair:'hair_spike',top:'top_hoodie',bottom:'bottom_track',head:'head_none',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
   {skin:'skin_warm',hair:'hair_short',top:'top_soccer',bottom:'bottom_track',head:'head_cap',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
   {skin:'skin_peach',hair:'hair_bob',top:'top_soccer',bottom:'bottom_shorts',head:'head_none',face:'face_round',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_deep',hair:'hair_curl',top:'top_uniform',bottom:'bottom_track',head:'head_none',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_warm',hair:'hair_pony',top:'top_soccer',bottom:'bottom_shorts',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_peach',hair:'hair_short',top:'top_hoodie',bottom:'bottom_track',head:'head_headphones',face:'face_round',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_deep',hair:'hair_bob',top:'top_varsity',bottom:'bottom_cargo',head:'head_cap',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_warm',hair:'hair_curl',top:'top_hoodie',bottom:'bottom_jeans',head:'head_none',face:'face_sun',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
-  {skin:'skin_peach',hair:'hair_pony',top:'top_uniform',bottom:'bottom_track',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}
+  {skin:'skin_deep',hair:'hair_curl',top:'top_soccer',bottom:'bottom_shorts',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
+  null,
+  // 블루 FC · GK / FIXO / ALA / ALA / PIVOT
+  {skin:'skin_deep',hair:'hair_short',top:'top_uniform',bottom:'bottom_track',head:'head_none',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
+  {skin:'skin_tan',hair:'hair_curl',top:'top_soccer',bottom:'bottom_track',head:'head_headphones',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
+  {skin:'skin_peach',hair:'hair_pony',top:'top_soccer',bottom:'bottom_shorts',head:'head_none',face:'face_round',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
+  {skin:'skin_warm',hair:'hair_spike',top:'top_soccer',bottom:'bottom_shorts',head:'head_cap',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'},
+  {skin:'skin_deep',hair:'hair_bob',top:'top_soccer',bottom:'bottom_track',head:'head_beanie',face:'face_none',hand:'hand_none',background:'bg_basic',aura:'aura_none'}
 ];
+const CHARACTER_ROOT='../../assets/game/characters/people/kenney-platformer-characters/';
+const FALLBACK_CHARACTER_NAMES=['player','female'];
+function squadSlot(p){return p.team*5+p.index}
+function fallbackCharacterName(p){return FALLBACK_CHARACTER_NAMES[(squadSlot(p)+p.index)%FALLBACK_CHARACTER_NAMES.length]}
+function fallbackPoseSource(p,pose){
+  const name=fallbackCharacterName(p);
+  const poseName=pose==='walk'?((Math.floor(performance.now()/150)+p.index)%2?'walk1':'walk2'):(pose==='action'?'action1':(pose==='hurt'?'hurt':'stand'));
+  return CHARACTER_ROOT+name+'/poses/'+name+'-'+poseName+'.png';
+}
 function presetSource(p){
   if(p.team===HOME&&p.index===4)return savedAvatarSource();
-  const h=host();
-  const offset=p.team===HOME?p.index-1:p.index+3;
-  const equip=AVATAR_PRESETS[(offset+AVATAR_PRESETS.length)%AVATAR_PRESETS.length];
-  const svg=safe(function(){return typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG(equip):''},'');
+  const h=host(),equip=SQUAD_KITS[squadSlot(p)];
+  const svg=safe(function(){return equip&&typeof h.renderAvatarSVG==='function'?h.renderAvatarSVG(equip):''},'');
   return svgDataUrl(svg);
 }
 const liveFrameCache=new Map();
