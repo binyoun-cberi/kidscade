@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260929-10">
+<link rel="stylesheet" href="./cube-architect.css?v=20260929-11">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -99,10 +99,10 @@
     <div id="freeMission">
       <b>섬 탐험 기록 <span id="adventureCount">0/5</span></b>
       <small>땅과 나무를 직접 파고, 흐르는 물과 모래·불·식물의 변화를 관찰하며 건축해 보세요.</small>
-      <div class="free-status"><span id="freeState">걷기 · 잔디</span><span id="worldClock">낮</span></div>
+      <div class="free-status"><span id="freeState">걷기 · 잔디</span><span id="worldClock">낮</span><span id="weatherState">맑음</span></div>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
-    <div id="freeHint">E 인벤토리 · F 비행 · R 블록 복사 · X 구조 보기</div>
+    <div id="freeHint">E 인벤토리 · F 비행 · R 복사 · P 면색칠 · X 수학 렌즈</div>
     <div id="hotbar"></div>
     <section id="blockInventory" class="hidden">
       <div class="inventory-head"><div><b>건축 인벤토리</b><small>선택한 재료가 현재 핫바 칸에 들어갑니다.</small></div><button id="inventoryClose">×</button></div>
@@ -112,11 +112,40 @@
         <button data-inv-cat="건축">건축</button>
         <button data-inv-cat="기능">기능</button>
         <button data-inv-cat="실험">실험</button>
+        <button data-inv-cat="도형">도형</button>
       </div>
       <div id="inventoryGrid"></div>
+      <section id="shapeWorkbench" class="shape-workbench">
+        <div class="workbench-title"><b>직육면체 제작대</b><small>정육면체도 가로·높이·세로를 같게 하면 됩니다.</small></div>
+        <div class="dimension-grid">
+          <label>가로 X<input id="shapeW" type="number" min="1" max="4" value="2"></label>
+          <label>높이 Y<input id="shapeH" type="number" min="1" max="4" value="1"></label>
+          <label>세로 Z<input id="shapeD" type="number" min="1" max="4" value="1"></label>
+        </div>
+        <div class="face-color-grid">
+          <label>오른쪽<input id="faceColor0" type="color" value="#ef5350"></label>
+          <label>왼쪽<input id="faceColor1" type="color" value="#42a5f5"></label>
+          <label>위<input id="faceColor2" type="color" value="#ffee58"></label>
+          <label>아래<input id="faceColor3" type="color" value="#8d6e63"></label>
+          <label>앞<input id="faceColor4" type="color" value="#66bb6a"></label>
+          <label>뒤<input id="faceColor5" type="color" value="#ab47bc"></label>
+        </div>
+        <div class="workbench-actions">
+          <button id="shapeToHotbar">현재 칸에 직육면체 담기</button>
+          <label class="paint-color">면 색칠 <input id="facePaintColor" type="color" value="#ff7043"></label>
+        </div>
+        <small class="workbench-help">월드에서 P를 누르면 십자선이 가리키는 직육면체의 그 면만 색칠됩니다.</small>
+      </section>
       <div class="inventory-note">물+용암, 불+나무, 모래의 낙하, 잎의 decay, 묘목 성장처럼 블록마다 서로 다른 성질이 있습니다.</div>
     </section>
-    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · E 인벤토리 · F 비행 · ESC 마우스 해제</small></div>
+    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · E 인벤토리 · F 비행 · P 면색칠 · X 수학 렌즈</small></div>
+    <section id="furnacePanel" class="hidden">
+      <div class="inventory-head"><div><b>화로 실험대</b><small>열을 가하면 물질의 성질이 달라집니다.</small></div><button id="furnaceClose">×</button></div>
+      <div id="furnaceRecipes"></div>
+      <div id="furnaceProgress"><i></i></div>
+      <div id="furnaceMessage">가열할 재료를 선택하세요.</div>
+    </section>
+    <div id="mathLensBadge" class="hidden">수학 렌즈</div>
   </div>
 
   <aside id="resultCard" class="hidden">
@@ -135,7 +164,7 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect.js?v=20260929-10"></script>
+<script src="./cube-architect.js?v=20260929-11"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
