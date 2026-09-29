@@ -1,4 +1,3 @@
-import * as THREE from '../../assets/vendor/three-r160/three.module.js';
 
 class SimpleOrbit {
   constructor(camera, dom, target){
@@ -89,7 +88,7 @@ function clearModeUi(){
   $('actionSave').classList.add('hidden');
   $('actionXray').classList.add('hidden');
 }
-export function showHome(){
+function showHome(){
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
   const g=new THREE.GridHelper(16,16,0xffffff,0xb7cbe0);scene.add(g);
@@ -100,7 +99,7 @@ export function showHome(){
   }
   makeOrbit(new THREE.Vector3(0,1,0));
 }
-export function enterMode(next){
+function enterMode(next){
   ensureRenderer();ensureLoop();clearModeUi();$('topbar').classList.remove('hidden');mode=next;
   if(document.pointerLockElement===canvas) document.exitPointerLock();
   if(next==='challenge') initChallenge();
@@ -459,3 +458,4 @@ function animate(now){
   requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='free')updateFree(dt,now);if(renderer)renderer.render(scene,camera);
 }
 window.CubeArchitectReady=true;
+window.CubeArchitect={enterMode,showHome};
