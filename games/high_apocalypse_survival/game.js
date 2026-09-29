@@ -11,6 +11,13 @@ const RESIDENTS={
  mira:{name:'미라',icon:'🧑‍🌾',color:0xc88b62,field:new THREE.Vector3(-31,0,27),camp:new THREE.Vector3(-3,0,10),preferred:'gatherer'},
  junseo:{name:'준서',icon:'🧑‍⚕️',color:0x8c79c6,field:new THREE.Vector3(57,0,-25),camp:new THREE.Vector3(0,0,13),preferred:'medic'}
 };
+const ART={
+ people:'../../assets/game/characters/people/',
+ city:'../../assets/game/3d/city/poly-pizza-city-pack/',
+ roads:'../../assets/game/3d/city/kenney-city-kit-roads/',
+ cars:'../../assets/game/3d/vehicles/kenney-car-kit/',
+ nature:'../../assets/game/3d/nature/kenney-nature-kit/'
+};
 const ITEMS={
   wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
   food:['통조림','🥫'],potato:['감자','🥔'],cookedPotato:['구운 감자','🍠'],spoiledFood:['상한 음식','🤢'],cloth:['천','🧵'],
@@ -133,22 +140,27 @@ function devicePowered(id){if(!game?.flags?.power)return false;if(id==='light')r
 
 function init3D(){
  renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:!matchMedia('(pointer:coarse)').matches,powerPreference:'high-performance'});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=true;
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9ac8da);scene.fog=new THREE.Fog(0x9ac8da,50,120);
  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,180);clock=new THREE.Clock();loader=new GLTFLoader();
  Object.values(groups).forEach(g=>scene.add(g));
  scene.add(new THREE.HemisphereLight(0xe6f7ff,0x607054,1.7));
- const sun=new THREE.DirectionalLight(0xfff0d0,2.3);sun.position.set(-32,48,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);scene.userData.sun=sun;
+ const sun=new THREE.DirectionalLight(0xfff0d0,2.55);sun.position.set(-32,48,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-70;sun.shadow.camera.right=70;sun.shadow.camera.top=70;sun.shadow.camera.bottom=-70;sun.shadow.bias=-.00015;sun.shadow.normalBias=.02;scene.add(sun);scene.userData.sun=sun;
+ createSkyDome();
  const groundGeo=new THREE.PlaneGeometry(140,140,36,36),gp=groundGeo.attributes.position;for(let i=0;i<gp.count;i++){const x=gp.getX(i),z=-gp.getY(i);gp.setZ(i,terrainHeight(x,z))}gp.needsUpdate=true;groundGeo.computeVertexNormals();
  const ground=new THREE.Mesh(groundGeo,new THREE.MeshStandardMaterial({color:0x66865a,roughness:.95,flatShading:true}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;groups.world.add(ground);
  const river=new THREE.Mesh(new THREE.PlaneGeometry(14,140),new THREE.MeshPhysicalMaterial({color:0x4fabc6,transparent:true,opacity:.84,roughness:.2}));river.rotation.x=-Math.PI/2;river.position.set(RIVER_X,.08,0);groups.world.add(river);scene.userData.river=river;
  box(44,.025,64,0x55764f,-39,.012,16);box(39,.025,48,0x767873,49,.014,-33);
- box(7,.08,120,0x4b5153,16,.04,-2);box(95,.08,6,0x4b5153,8,.05,-27);box(15,.35,5.5,0x765c42,RIVER_X,.3,-4);
- solidBox(13,5.5,9,0xc2aa85,-5,2.75,18,.15);box(14,.8,10,0x586a68,-5,5.9,18);label('폐교 체육관',-5,6.9,18);
+ box(7,.08,120,0x454b4b,16,.04,-2);box(95,.08,6,0x454b4b,8,.05,-27);
+ for(let z=-54;z<=54;z+=10)box(.12,.012,4.7,0xe7d8a1,16,.092,z);for(let x=-34;x<=54;x+=10)box(4.7,.012,.12,0xe7d8a1,x,.092,-27);
+ const bridgeHit=box(15,.35,5.5,0x4b5153,RIVER_X,.3,-4);bridgeHit.material.transparent=true;bridgeHit.material.opacity=.05;
+ const schoolHit=solidBox(13,5.5,9,0xc2aa85,-5,2.75,18,.15);schoolHit.visible=false;label('폐교 체육관',-5,6.9,18);
+ placeWorldModel(ART.city+'big-building.glb',{x:-5,z:18,target:15.5,rot:Math.PI*.5});
  const rest=box(2.4,.12,1.2,0x526c55,1,.08,11);addInteract(rest,'rest','체육관 매트에서 쉬기');
  const burner=box(.8,.38,.7,0x4c5456,2,.19,9.4);addInteract(burner,'burner','비상 버너로 물 끓이기');label('비상 버너',2,1.25,9.4);
  const lampPole=box(.18,4,.18,0x4a5457,-2,2,10);const campLamp=new THREE.PointLight(0xffe2a1,0,18,2);campLamp.position.set(-2,3.8,10);scene.add(campLamp);scene.userData.campLamp=campLamp;
+ decorateWorld();
  for(let i=0;i<18;i++)spawnResource('tree',-57+Math.random()*42,-15+Math.random()*70);
  for(let i=0;i<13;i++)spawnResource('rock',-58+Math.random()*46,-55+Math.random()*39);
  [[-8,8],[-11,13],[-7,3],[-12,5]].forEach(p=>spawnResource('tree',p[0],p[1]));
@@ -165,8 +177,8 @@ function init3D(){
  const pole=box(.35,5,.35,0x525d61,-4,2.5,12);addInteract(pole,'radio','비상 무전기 확인');label('비상 무전',-4,5.8,12);
  scene.userData.survivorNodes={};scene.userData.campResidents={};
  for(const [id,rdef] of Object.entries(RESIDENTS)){
-   const field=new THREE.Group();field.position.copy(rdef.field);field.position.y=terrainHeight(field.position.x,field.position.z);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));body.position.y=1.2;field.add(body);const fl=makeLabel(id==='taeho'?'구조 요청':rdef.name+' 구조 요청');fl.position.y=3.4;fl.scale.multiplyScalar(.66);field.add(fl);field.visible=false;groups.dynamic.add(field);addInteract(field,'survivor',rdef.name+' 구조',{resident:id});scene.userData.survivorNodes[id]=field;
-   const camp=new THREE.Group();camp.position.copy(rdef.camp);const cb=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));cb.position.y=1.2;camp.add(cb);const cn=makeLabel(rdef.name);cn.position.y=3.4;cn.scale.multiplyScalar(.6);camp.add(cn);camp.visible=false;groups.dynamic.add(camp);scene.userData.campResidents[id]=camp;
+   const field=new THREE.Group();field.position.copy(rdef.field);field.position.y=terrainHeight(field.position.x,field.position.z);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));body.position.y=1.2;field.add(body);upgradePerson(field,body,id==='junseo'?'character-female-b.glb':id==='mira'?'character-female-c.glb':'character-male-b.glb');const fl=makeLabel(id==='taeho'?'구조 요청':rdef.name+' 구조 요청');fl.position.y=3.4;fl.scale.multiplyScalar(.66);field.add(fl);field.visible=false;groups.dynamic.add(field);addInteract(field,'survivor',rdef.name+' 구조',{resident:id});scene.userData.survivorNodes[id]=field;
+   const camp=new THREE.Group();camp.position.copy(rdef.camp);const cb=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));cb.position.y=1.2;camp.add(cb);upgradePerson(camp,cb,id==='junseo'?'character-female-b.glb':id==='mira'?'character-female-c.glb':'character-male-b.glb');const cn=makeLabel(rdef.name);cn.position.y=3.4;cn.scale.multiplyScalar(.6);camp.add(cn);camp.visible=false;groups.dynamic.add(camp);scene.userData.campResidents[id]=camp;
  }
  scene.userData.survivor=scene.userData.survivorNodes.taeho;scene.userData.campSurvivor=scene.userData.campResidents.taeho;
  const rz=new THREE.Object3D();rz.position.set(RIVER_X-6.3,0,5);groups.dynamic.add(rz);addInteract(rz,'river','강물 뜨기');
@@ -174,6 +186,30 @@ function init3D(){
  bindInput();resize();addEventListener('resize',resize);
 }
 function box(w,h,d,c,x=0,y=h/2,z=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.9}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;groups.props.add(m);return m}
+function createSkyDome(){
+ const geo=new THREE.SphereGeometry(165,28,16),mat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color(0x4f8fb6)},horizon:{value:new THREE.Color(0xbfdde3)},ground:{value:new THREE.Color(0x8ea898)}},vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 horizon;uniform vec3 ground;void main(){float h=normalize(vP).y;vec3 c=h>0.0?mix(horizon,top,smoothstep(0.0,.75,h)):mix(horizon,ground,smoothstep(0.0,-.5,h));gl_FragColor=vec4(c,1.0);}'});const sky=new THREE.Mesh(geo,mat);sky.renderOrder=-10;scene.add(sky);scene.userData.sky=sky
+}
+function placeWorldModel(url,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0}={}){
+ model(url).then(o=>{if(!o)return;normalize(o,target);o.position.x=x;o.position.z=z;o.position.y=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)}); 
+}
+function upgradePerson(group,fallback,file){
+ model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
+}
+function decorateWorld(){
+ placeWorldModel(ART.roads+'road-bridge.glb',{x:RIVER_X,z:-4,target:15.2,rot:Math.PI*.5,y:.08});
+ const roadProps=[
+  [ART.roads+'traffic-light.glb',18,-23,3.8,0],[ART.roads+'road-sign-warning.glb',13,-12,2.3,.1],
+  [ART.roads+'electricity-pole.glb',11,8,5.8,0],[ART.roads+'electricity-pole.glb',11,-18,5.8,0],
+  [ART.roads+'construction-barrier.glb',35,-29,2.6,.2],[ART.roads+'construction-barrier.glb',37,-30,2.6,-.2],
+  [ART.city+'dumpster.glb',47,-35,2.3,.4],[ART.city+'trash-can.glb',41,-26,1.35,.2],
+  [ART.city+'debris-papers.glb',46,-28,2.2,1.1],[ART.city+'stop-sign.glb',24,-25,2.4,0],
+  [ART.cars+'ambulance.glb',55,-20,4.8,-.25],[ART.cars+'sedan.glb',19,-42,4.6,.12],
+  [ART.cars+'van.glb',10,-28,4.8,Math.PI*.52],[ART.cars+'debris-tire.glb',22,-35,1.2,.4]
+ ];
+ roadProps.forEach(([u,x,z,t,r])=>placeWorldModel(u,{x,z,target:t,rot:r}));
+ [[-51,28,'cliff-large-rock.glb',6],[-57,35,'cliff-rock.glb',5],[-45,43,'rock-large-c.glb',3.6],[-33,34,'plant-bush-large.glb',2.5],[-37,20,'plant-bush-detailed.glb',2.4],[-25,38,'grass-large.glb',2.2],[-20,24,'grass-leafs-large.glb',2.2]].forEach(([x,z,file,t])=>placeWorldModel(ART.nature+file,{x,z,target:t,rot:(x+z)*.13}));
+ [[33,15],[34,4],[34,-15],[33,-36]].forEach(([x,z],i)=>placeWorldModel(ART.nature+(i%2?'plant-bush.glb':'grass-large.glb'),{x,z,target:1.7+(i%2)*.4,rot:i*.8}));
+}
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
 function label(text,x,y,z){const s=makeLabel(text);s.position.set(x,y,z);groups.dynamic.add(s);return s}
 function addInteract(o,type,labelText,data={}){o.userData.interactable={type,label:labelText,...data};interactables.push(o)}
@@ -193,7 +229,10 @@ function spawnResource(type,x,z){
 function createAvatar(){let src='';try{const h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;if(typeof h.renderAvatarSVG==='function')src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(h.renderAvatarSVG())}catch(_){}
  if(src)new THREE.TextureLoader().load(src,t=>{t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.5,3.35,1);s.position.y=1.6;player.visual.add(s);player.sprite=s},undefined,avatarFallback);else avatarFallback()
 }
-function avatarFallback(){const m=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.25,5,8),new THREE.MeshStandardMaterial({color:0x4aa96c}));m.position.y=1.25;player.visual.add(m)}
+function avatarFallback(){
+ const capsule=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.25,5,8),new THREE.MeshStandardMaterial({color:0x4aa96c,roughness:.7}));capsule.position.y=1.25;player.visual.add(capsule);
+ model(ART.people+'character-male-a.glb').then(o=>{if(!o)return;capsule.visible=false;normalize(o,2.9);o.rotation.y=Math.PI;player.visual.add(o)})
+}
 function bindInput(){
  addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target?.tagName))return;keys.add(e.code);if(e.code==='KeyE')interact();if(e.code==='KeyI')openPanel('inventory');if(e.code==='KeyC')openPanel('craft');if(e.code==='KeyB')openPanel('build');if(e.code==='Tab'){e.preventDefault();togglePanel()}if(e.code==='Digit1')useItem('cleanWater');if(e.code==='Digit2')useItem('food');if(e.code==='Escape'){if(buildMode)cancelBuild();else closePanel()}});
  addEventListener('keyup',e=>keys.delete(e.code));
@@ -207,8 +246,8 @@ function bindInput(){
 }
 function bindJoy(){const base=$('.joy-base');if(!base)return;let pid=null;function move(e){const r=base.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=Math.min(42,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);player.touch.set(Math.cos(a)*m/42,Math.sin(a)*m/42);ui.joyKnob.style.transform='translate('+(Math.cos(a)*m)+'px,'+(Math.sin(a)*m)+'px)'}base.addEventListener('pointerdown',e=>{pid=e.pointerId;base.setPointerCapture(pid);move(e)});base.addEventListener('pointermove',e=>{if(e.pointerId===pid)move(e)});function end(e){if(e.pointerId!==pid)return;pid=null;player.touch.set(0,0);ui.joyKnob.style.transform=''}base.addEventListener('pointerup',end);base.addEventListener('pointercancel',end)}
 function riverHalfWidth(){return 7*(scene?.userData?.river?.scale?.x||1)}
-function updatePlayer(dt){if(!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode){player.speed=damp(player.speed,0,10,dt);return}let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}const target=len?(keys.has('ShiftLeft')?8.2:5.4):0;player.speed=damp(player.speed,target,10,dt);if(len){const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,-y).normalize(),ox=player.root.position.x,oz=player.root.position.z;player.root.position.addScaledVector(dir,player.speed*dt);player.root.position.x=clamp(player.root.position.x,-68,68);player.root.position.z=clamp(player.root.position.z,-68,68);const rw=riverHalfWidth(),riverBlocked=Math.abs(player.root.position.x-RIVER_X)<rw&&Math.abs(player.root.position.z+4)>3.5;if(blockedAt(player.root.position.x,player.root.position.z)||riverBlocked){player.root.position.x=ox;player.root.position.z=oz;player.speed*=.45}player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04}player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z)}
-function updateCamera(dt){const t=tmp.set(player.root.position.x,player.root.position.y+1.5,player.root.position.z),cp=Math.cos(camPitch),desired=tmp2.set(t.x+Math.sin(camYaw)*cp*camDist,t.y+Math.sin(camPitch)*camDist,t.z+Math.cos(camYaw)*cp*camDist);camera.position.lerp(desired,1-Math.exp(-8*dt));camera.lookAt(t)}
+function updatePlayer(dt){if(!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode){player.speed=damp(player.speed,0,10,dt);return}let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}const target=len?(keys.has('ShiftLeft')?8.2:5.4):0;player.speed=damp(player.speed,target,10,dt);if(len){const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,y).normalize(),ox=player.root.position.x,oz=player.root.position.z;player.root.position.addScaledVector(dir,player.speed*dt);player.root.position.x=clamp(player.root.position.x,-68,68);player.root.position.z=clamp(player.root.position.z,-68,68);const rw=riverHalfWidth(),riverBlocked=Math.abs(player.root.position.x-RIVER_X)<rw&&Math.abs(player.root.position.z+4)>3.5;if(blockedAt(player.root.position.x,player.root.position.z)||riverBlocked){player.root.position.x=ox;player.root.position.z=oz;player.speed*=.45}player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04}player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z)}
+function updateCamera(dt){const t=tmp.set(player.root.position.x,player.root.position.y+1.5,player.root.position.z),cp=Math.cos(camPitch),desired=tmp2.set(t.x+Math.sin(camYaw)*cp*camDist,t.y+Math.sin(camPitch)*camDist,t.z+Math.cos(camYaw)*cp*camDist);camera.position.lerp(desired,1-Math.exp(-8*dt));camera.lookAt(t);if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position)}
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
