@@ -819,11 +819,11 @@ function updateFree(dt,t){
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
-  const once='cubeArchitectTutorial_'+kind;try{if(localStorage.getItem(once))return}catch(_){};
+  const once='cubeArchitectTutorial_'+kind+(kind==='free'?'_v2':'');try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 크리에이티브 비행</h2><p>겨냥도를 보며 플레이어가 직접 날아다니고 블록을 설치해 건축하세요. 건물의 위치는 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
-  if(kind==='free')html='<h2>아키텍트 월드</h2><p>작은 큐브 섬을 탐험하고 재료를 발견하면서 자유롭게 건축하세요. 수학 미션은 선택입니다.</p><div class="keys"><div class="keyrow"><b>WASD</b>걷기</div><div class="keyrow"><b>Space</b>점프</div><div class="keyrow"><b>좌/우클릭</b>파괴 / 설치</div><div class="keyrow"><b>1~6 / R / X</b>재료 / 색칠 / 구조 보기</div></div>';
+  if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>땅과 나무도 모두 블록입니다. 직접 파고, 짓고, 물·용암·불·모래와 식물의 변화를 실험해 보세요.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>블록 파괴 / 설치·문 열기</div><div class="keyrow"><b>1~9 / E</b>핫바 선택 / 인벤토리</div><div class="keyrow"><b>F / R / X</b>비행 / 블록 복사 / 구조 보기</div><div class="keyrow"><b>물 + 용암</b>돌·흑요석 생성</div><div class="keyrow"><b>불 + 나무</b>연소와 확산</div></div>';
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
 }
 window.addEventListener('contextmenu',e=>e.preventDefault());
@@ -846,9 +846,9 @@ canvas.addEventListener('mousedown',e=>{
   }
   if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
 });
-canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden'))canvas.requestPointerLock()});
+canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&inventoryOpen))canvas.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{
-  if(mode==='free')$('lockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
+  if(mode==='free')$('lockNotice').classList.toggle('hidden',inventoryOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
 });
 document.addEventListener('mousemove',e=>{
@@ -865,11 +865,19 @@ document.addEventListener('keydown',e=>{
     if(e.code==='KeyN'){missionIndex=(missionIndex+1)%challengeMissions.length;clearChallenge();drawBlueprint()}
     return;
   }
-  freeKeys[e.code]=true;if(mode!=='free')return;
-  if(e.code==='Space'&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
-  if(/^Digit[1-6]$/.test(e.code)){const i=Number(e.code.slice(-1))-1;if(i<unlocked){selectedMaterial=i;buildHotbar()}}
-  if(e.code==='KeyR')paintTarget();if(e.code==='KeyX')toggleXray();
-  if(e.code==='KeyE'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
+  if(mode!=='free')return;
+  if(e.code==='KeyE'){e.preventDefault();toggleInventory();return}
+  if(e.code==='Escape'&&inventoryOpen){toggleInventory(false);return}
+  if(inventoryOpen)return;
+  freeKeys[e.code]=true;
+  if(e.code==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
+  if(/^Digit[1-9]$/.test(e.code)){
+    selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot];buildHotbar();updateFreeMission();
+  }
+  if(e.code==='KeyF'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');updateFreeMission()}
+  if(e.code==='KeyR')pickTargetBlock();
+  if(e.code==='KeyX')toggleXray();
+  if(e.code==='KeyQ'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
 function reportResult(kind,score,cleared){
