@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { shared3DPath } from '../../assets/game/manifest/shared-community-3d.js';
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), damp=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
@@ -20,6 +21,7 @@ const ART={
  suburban:'../../assets/game/3d/city/kenney-city-kit-suburban/',
  buildings:'../../assets/game/3d/buildings/kenney-building-kit/'
 };
+const SHARED=id=>shared3DPath(id,'../../');
 const ITEMS={
   wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
   food:['통조림','🥫'],potato:['감자','🥔'],cookedPotato:['구운 감자','🍠'],spoiledFood:['상한 음식','🤢'],cloth:['천','🧵'],
@@ -226,6 +228,11 @@ function decorateWorld(){
  placeWorldModel(ART.city+'planter-and-bushes.glb',{x:-12,z:13,target:2.8});
  placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/tent-canvas.glb',{x:-9,z:8,target:3.8,rot:.3});
  placeWorldModel('../../assets/game/3d/survival/kenney-survival-kit/box-large.glb',{x:-6,z:8,target:1.5,rot:-.3});
+ // 새 공용 자산: 학교 야영지의 생활 흔적과 탈출 실패 흔적을 강화한다.
+ placeWorldModel(SHARED('prop.well'),{x:-14,z:15,target:2.5,rot:.35});
+ placeWorldModel(SHARED('prop.woodLog'),{x:-11,z:6,target:2.2,rot:1.1});
+ placeWorldModel(SHARED('prop.woodLog'),{x:-8,z:5.4,target:1.9,rot:-.6});
+ placeWorldModel(SHARED('vehicle.schoolBus'),{x:8.6,z:21,target:6.1,rot:Math.PI*.52});
 
  // 도로는 검은 띠가 아니라 반복되는 도로 타일과 도시 시설로 보이게 한다.
  for(let z=-52;z<=52;z+=8)placeWorldModel(ART.roads+'road-straight.glb',{x:16,z,target:7.9,y:.035});
@@ -251,6 +258,10 @@ function decorateWorld(){
   .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
  [[43,-38,'fence.glb',3.6,.1],[51,-38,'fence-piece.glb',3.4,-.1],[59,-36,'power-box.glb',1.7,.2],[40,-43,'trah-bag-grey.glb',1.4,.4],[52,-31,'cone.glb',1.2,.1]]
   .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
+ // 폐허의 실루엣을 멀리서도 읽을 수 있도록 높은 물탑과 외곽 주택을 추가한다.
+ placeWorldModel(SHARED('prop.waterTower'),{x:62,z:-40,target:8.8,rot:.15});
+ placeWorldModel(SHARED('building.house'),{x:35,z:-51,target:8.2,rot:-.2});
+ placeWorldModel(SHARED('prop.crate'),{x:42,z:-29,target:1.45,rot:.18});
 
  // 강둑: 직선 수로처럼 보이지 않도록 양안의 식생과 돌을 불규칙하게 섞는다.
  const bankZ=[-55,-43,-31,-18,-7,6,19,33,47,59];
@@ -271,6 +282,19 @@ function decorateWorld(){
  ];
  forestArt.forEach(([x,z,file,t])=>placeWorldModel(ART.nature+file,{x,z,target:t,rot:(x+z)*.13}));
  [[33,15],[34,4],[34,-15],[33,-36]].forEach(([x,z],i)=>placeWorldModel(ART.nature+(i%2?'plant-bush.glb':'grass-large.glb'),{x,z,target:1.7+(i%2)*.4,rot:i*.8}));
+
+ // 공용 Pixabay/CC0 묶음으로 숲의 수종·바위·하층 식생을 다양화한다.
+ const sharedForest=[
+  [-24,44,'nature.commonTreeA',6.2,.1],[-31,45,'nature.commonTreeB',6.4,.7],[-39,39,'nature.pineTreeA',6.8,-.5],
+  [-47,31,'nature.pineTreeB',7.1,.4],[-55,23,'nature.pineTreeA',6.7,.9],[-29,28,'nature.commonTreeA',5.8,-.8],
+  [-36,31,'nature.mossyRockA',2.1,.2],[-43,25,'nature.mossyRockB',2.3,1.1],[-51,38,'nature.rock',2.0,.5],
+  [-26,35,'nature.grass',1.7,.3],[-40,17,'nature.plant',1.8,.7],[-49,45,'nature.mushroomA',1.15,.1],[-33,19,'nature.mushroomB',1.2,.8]
+ ];
+ sharedForest.forEach(([x,z,id,t,r])=>placeWorldModel(SHARED(id),{x,z,target:t,rot:r}));
+ // 야생동물은 장식 개체로 먼저 사용한다. 게임 규칙과 충돌하지 않고 세계가 살아 있다는 인상을 준다.
+ placeWorldModel(SHARED('animal.deer'),{x:-44,z:10,target:2.7,rot:.7});
+ placeWorldModel(SHARED('animal.stag'),{x:-55,z:6,target:3.0,rot:-.4});
+ placeWorldModel(SHARED('animal.husky'),{x:-18,z:20,target:2.1,rot:1.4});
 }
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
 function label(text,x,y,z){const s=makeLabel(text);s.position.set(x,y,z);groups.dynamic.add(s);return s}
@@ -285,8 +309,9 @@ function spawnResource(type,x,z){
  else{fallback=new THREE.Mesh(new THREE.DodecahedronGeometry(.9,1),new THREE.MeshStandardMaterial({color:0x5d8449}));fallback.scale.set(1.5,.65,1.5);fallback.position.y=.48;r.add(fallback)}
  r.userData={resource:type,available:true,respawn:0};resources.push(r);
  const labels={tree:'나무 채집',rock:'돌 채집',forage:'야생 감자 채집'};addInteract(r,type,labels[type]||'채집');
- const file=type==='tree'?'tree.glb':type==='rock'?'rock-a.glb':'patch-grass-large.glb';
- model('../../assets/game/3d/survival/kenney-survival-kit/'+file).then(o=>{if(!o)return;r.clear();normalize(o,type==='tree'?4.7:type==='rock'?1.55:2.2);r.add(o)})
+ const seed=Math.abs(Math.round(x*17+z*31));
+ const assetId=type==='tree'?(seed%3===0?'nature.pineTreeA':seed%3===1?'nature.commonTreeA':'nature.commonTreeB'):type==='rock'?(seed%2?'nature.mossyRockA':'nature.rock'):'nature.plant';
+ model(SHARED(assetId)).then(o=>{if(!o)return;r.clear();normalize(o,type==='tree'?5.2:type==='rock'?1.65:1.7);o.rotation.y=(seed%628)/100;r.add(o)})
 }
 function createAvatar(){let src='';try{const h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;if(typeof h.renderAvatarSVG==='function')src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(h.renderAvatarSVG())}catch(_){}
  if(src)new THREE.TextureLoader().load(src,t=>{t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(2.5,3.35,1);s.position.y=1.6;player.visual.add(s);player.sprite=s},undefined,avatarFallback);else avatarFallback()
@@ -515,5 +540,5 @@ function finish(){if(game.finished)return;game.finished=true;save();running=fals
 async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
 function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
-async function boot(){init3D();ui.loadingText.textContent='기존 Kidscade 생존 에셋을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
+async function boot(){init3D();ui.loadingText.textContent='공용 3D 숲·폐허·생존 자산을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
