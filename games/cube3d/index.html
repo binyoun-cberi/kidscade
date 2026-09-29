@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260929-9">
+<link rel="stylesheet" href="./cube-architect.css?v=20260929-10">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -98,12 +98,25 @@
     <div id="crosshair"></div>
     <div id="freeMission">
       <b>섬 탐험 기록 <span id="adventureCount">0/5</span></b>
-      <small>설계도 조각과 색 결정을 찾아보세요. 색 결정은 새 건축 재료를 열어 줍니다.</small>
+      <small>땅과 나무를 직접 파고, 흐르는 물과 모래·불·식물의 변화를 관찰하며 건축해 보세요.</small>
+      <div class="free-status"><span id="freeState">걷기 · 잔디</span><span id="worldClock">낮</span></div>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
-    <div id="freeHint">좌클릭 파괴 · 우클릭 설치 · R 색칠 · X 구조 보기</div>
+    <div id="freeHint">E 인벤토리 · F 비행 · R 블록 복사 · X 구조 보기</div>
     <div id="hotbar"></div>
-    <div id="lockNotice">화면을 클릭해 탐험 시작<small>ESC를 누르면 마우스가 다시 자유로워져요.</small></div>
+    <section id="blockInventory" class="hidden">
+      <div class="inventory-head"><div><b>건축 인벤토리</b><small>선택한 재료가 현재 핫바 칸에 들어갑니다.</small></div><button id="inventoryClose">×</button></div>
+      <div class="inventory-tabs">
+        <button data-inv-cat="전체" class="active">전체</button>
+        <button data-inv-cat="자연">자연</button>
+        <button data-inv-cat="건축">건축</button>
+        <button data-inv-cat="기능">기능</button>
+        <button data-inv-cat="실험">실험</button>
+      </div>
+      <div id="inventoryGrid"></div>
+      <div class="inventory-note">물+용암, 불+나무, 모래의 낙하, 잎의 decay, 묘목 성장처럼 블록마다 서로 다른 성질이 있습니다.</div>
+    </section>
+    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · E 인벤토리 · F 비행 · ESC 마우스 해제</small></div>
   </div>
 
   <aside id="resultCard" class="hidden">
@@ -122,7 +135,7 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect.js?v=20260929-9"></script>
+<script src="./cube-architect.js?v=20260929-10"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
