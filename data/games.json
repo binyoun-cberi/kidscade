@@ -258,6 +258,28 @@
       "cover": "assets/gate-image/씨앗 배구.png"
     },
     {
+      "id": "high_seed_futsal",
+      "title": "씨앗 풋살",
+      "href": "games/high_seed_futsal/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⚽",
+      "description": "내 키즈케이드 아바타와 함께 뛰는 5대5 풋살! 좌우 골대를 향해 패스·스루패스·로빙·슛·태클·선수 전환을 직접 조작하고, 팀 AI와 함께 공간을 만들며 3분 경기를 펼칩니다.",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_seed_fc_manager",
       "title": "역사 드림리그: 씨앗 FC 감독",
       "href": "games/high_seed_fc_manager/index.html?v=11",
