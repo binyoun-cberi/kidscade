@@ -280,11 +280,20 @@ function normalizeShared(o,target){
  o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
  return o;
 }
-function placeSharedWorldModel(id,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0,preset=null}={}){
+function placeSharedWorldModel(id,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0,preset=null,shadow=true}={}){
  const profile=shared3DProfile(id);
  if(!shared3DCanUse(id)){console.warn('[Kidscade 3D QA] skipped unverified asset',id,profile.reason||'');return}
  const url=SHARED(id);if(!url)return;const usePreset=preset||shared3DRepairPreset(id);
- model(url).then(o=>{if(!o)return;normalizeShared(o,target);if(usePreset)recolorShared(o,usePreset);o.position.x+=x;o.position.z+=z;o.position.y+=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
+ model(url).then(o=>{if(!o)return;normalizeShared(o,target);if(usePreset)recolorShared(o,usePreset);o.traverse(n=>{if(n.isMesh){n.castShadow=!!shadow;n.receiveShadow=true}});o.position.x+=x;o.position.z+=z;o.position.y+=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
+}
+function scatterSharedCluster(cx,cz,items,radius=5,seedBase=1){
+ for(let i=0;i<items.length;i++){
+   const id=items[i],a=(i*2.399963+seedBase*.73)%(Math.PI*2),rr=radius*(.34+.58*((Math.sin((i+1)*(seedBase+1)*12.9898)*43758.5453)%1+1)%1);
+   const x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr;
+   if(Math.abs(x-RIVER_X)<8||Math.abs(z+27)<2.7&&x>-34&&x<58)continue;
+   const small=/grass|plant|mushroom/i.test(id),rock=/rock/i.test(id);
+   placeSharedWorldModel(id,{x,z,target:small?1.15:rock?1.45:2.0,rot:a*.63,shadow:!small});
+ }
 }
 function upgradePerson(group,fallback,file){
  model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
@@ -364,7 +373,13 @@ function decorateWorld(){
   [-36,31,'nature.mossyRockA',2.1,.2],[-43,25,'nature.mossyRockB',2.3,1.1],[-51,38,'nature.rock',2.0,.5],
   [-26,35,'nature.grass',1.7,.3],[-40,17,'nature.plant',1.8,.7],[-49,45,'nature.mushroomA',1.15,.1],[-33,19,'nature.mushroomB',1.2,.8]
  ];
- sharedForest.forEach(([x,z,id,t,r])=>placeSharedWorldModel(id,{x,z,target:t,rot:r}));
+ sharedForest.forEach(([x,z,id,t,r])=>placeSharedWorldModel(id,{x,z,target:t,rot:r,shadow:!/grass|plant|mushroom/i.test(id)}));
+
+ // 2차 아트 패스: 주요 구역 가장자리에 저밀도 군집을 두어 '낱개 소품' 느낌을 줄인다.
+ scatterSharedCluster(-16,20,['nature.grass','nature.plant','nature.mossyRockA','nature.grass'],5.2,2);
+ scatterSharedCluster(-45,36,['nature.mushroomA','nature.grass','nature.plant','nature.mossyRockB','nature.mushroomB','nature.grass'],7.3,5);
+ scatterSharedCluster(20,33,['nature.grass','nature.rock','nature.plant','nature.grass'],5.6,7);
+ scatterSharedCluster(31,-44,['nature.rock','nature.grass','nature.mossyRockA','nature.plant'],4.8,11);
  // Large animated animals are quarantined until skinned-model cloning/rest-pose QA is complete.
 }
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
