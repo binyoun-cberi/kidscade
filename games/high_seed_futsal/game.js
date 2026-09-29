@@ -192,6 +192,11 @@ class FutsalAvatarActor{
     this.lastCapture=0;this.lastStatic=0;
     this.img.onload=()=>{this.ready=true};
     this.img.onerror=()=>{this.ready=false};
+    const name=fallbackCharacterName(p),root=CHARACTER_ROOT+name+'/poses/'+name+'-';
+    this.fallback={};
+    ['stand','walk1','walk2','action1','hurt'].forEach((pose)=>{
+      const img=new Image();img.decoding='async';img.src=root+pose+'.png';this.fallback[pose]=img;
+    });
     this.refresh(true);
   }
   setSource(src){
@@ -210,6 +215,12 @@ class FutsalAvatarActor{
     const src=liveAvatarFrame(modeName,now);
     if(src){this.setSource(src);return true}
     return false;
+  }
+  fallbackFor(modeName,now){
+    if(modeName==='walk')return this.fallback[(Math.floor(now/150)+this.p.index)%2?'walk1':'walk2'];
+    if(this.p.tackleTimer>0)return this.fallback.hurt;
+    if(this.p.kickTimer>0)return this.fallback.action1;
+    return this.fallback.stand;
   }
   render(q){
     const p=this.p,now=performance.now();
@@ -230,14 +241,27 @@ class FutsalAvatarActor{
     ctx.globalAlpha=p===controlled?1:.82;
     ctx.beginPath();ctx.ellipse(q.x,q.y+3,24*q.s,9*q.s,0,0,Math.PI*2);ctx.stroke();
     ctx.globalAlpha=1;
-    if(this.ready&&this.img.naturalWidth){
-      const ratio=this.img.naturalWidth/Math.max(1,this.img.naturalHeight);
+    const fallbackImg=this.fallbackFor(modeName,now);
+    const sprite=(this.ready&&this.img.naturalWidth)?this.img:((fallbackImg&&fallbackImg.complete&&fallbackImg.naturalWidth)?fallbackImg:null);
+    if(sprite){
+      const ratio=sprite.naturalWidth/Math.max(1,sprite.naturalHeight);
       const drawH=baseH*(p.tackleTimer>0?.82:1);
       const drawW=drawH*ratio*(p.tackleTimer>0?1.12:1);
       ctx.translate(q.x,q.y+bob);
       ctx.rotate(actionLean);
       ctx.scale(p.facing>=0?1:-1,1);
-      ctx.drawImage(this.img,-drawW/2,-drawH*.91,drawW,drawH);
+      ctx.drawImage(sprite,-drawW/2,-drawH*.91,drawW,drawH);
+
+      // 팀 구분용 풋살 조끼. 아바타의 얼굴/머리는 그대로 두고 몸통에만 얹는다.
+      const kitColor=p.role==='GK'?(p.team===HOME?'#f59e0b':'#ef4444'):TEAM_COLOR[p.team];
+      ctx.globalAlpha=.72;
+      ctx.fillStyle=kitColor;
+      ctx.fillRect(-drawW*.23,-drawH*.57,drawW*.46,drawH*.23);
+      ctx.globalAlpha=1;
+      ctx.fillStyle='#fff';
+      ctx.font='1000 '+Math.max(8,Math.round(10*q.s))+'px system-ui';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(String(p.number),0,-drawH*.455);
     }else{
       ctx.fillStyle=TEAM_COLOR[p.team];ctx.beginPath();ctx.arc(q.x,q.y-23*q.s,18*q.s,0,Math.PI*2);ctx.fill();
     }
