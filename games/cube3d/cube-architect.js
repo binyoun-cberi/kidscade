@@ -658,7 +658,8 @@ function initFree(){
   buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();setupWeather();spawnCritters();updateFreeMission();
   const spawnZ=6,ground=getHighestSolidY(0,spawnZ,8);camera.position.set(0,ground+1+1.65,spawnZ);
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
-  $('actionXray').onclick=toggleXray;
+  $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
+  $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');$('mathLensBadge').classList.add('hidden');
   $('lockNotice').classList.remove('hidden');$('lockNotice').onclick=()=>{if(!inventoryOpen)canvas.requestPointerLock()};
   $('inventoryClose').onclick=()=>toggleInventory(false);$('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
@@ -690,9 +691,10 @@ function buildInventory(category='전체'){
 }
 function toggleInventory(force){
   inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
+  if(inventoryOpen&&furnaceOpen)toggleFurnace(false);
   $('blockInventory').classList.toggle('hidden',!inventoryOpen);
   if(inventoryOpen){if(document.pointerLockElement===canvas)document.exitPointerLock();buildInventory('전체')}
-  $('lockNotice').classList.toggle('hidden',inventoryOpen||document.pointerLockElement===canvas);
+  $('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
 }
 function updateFreeMission(){
   const total=5,done=collected.size;$('adventureCount').textContent=done+'/'+total;$('adventureBar').style.width=(done/total*100)+'%';
@@ -848,7 +850,9 @@ function buildFurnaceRecipes(){
   FURNACE_RECIPES.forEach(recipe=>{const b=document.createElement('button');b.className='furnace-recipe';b.innerHTML='<b>'+recipe.label+'</b><small>'+recipe.note+'</small>';b.onclick=()=>runFurnace(recipe);box.appendChild(b)});
 }
 function toggleFurnace(force){
-  furnaceOpen=typeof force==='boolean'?force:!furnaceOpen;$('furnacePanel').classList.toggle('hidden',!furnaceOpen);
+  furnaceOpen=typeof force==='boolean'?force:!furnaceOpen;
+  if(furnaceOpen&&inventoryOpen){inventoryOpen=false;$('blockInventory').classList.add('hidden')}
+  $('furnacePanel').classList.toggle('hidden',!furnaceOpen);
   if(furnaceOpen&&document.pointerLockElement===canvas)document.exitPointerLock();
   $('lockNotice').classList.toggle('hidden',furnaceOpen||inventoryOpen||document.pointerLockElement===canvas);
 }
@@ -1118,11 +1122,11 @@ function updateFree(dt,t){
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
-  const once='cubeArchitectTutorial_'+kind+(kind==='free'?'_v2':'');try{if(localStorage.getItem(once))return}catch(_){};
+  const once='cubeArchitectTutorial_'+kind+(kind==='free'?'_v3':'');try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 크리에이티브 비행</h2><p>겨냥도를 보며 플레이어가 직접 날아다니고 블록을 설치해 건축하세요. 건물의 위치는 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
-  if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>땅과 나무도 모두 블록입니다. 직접 파고, 짓고, 물·용암·불·모래와 식물의 변화를 실험해 보세요.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>블록 파괴 / 설치·문 열기</div><div class="keyrow"><b>1~9 / E</b>핫바 선택 / 인벤토리</div><div class="keyrow"><b>F / R / X</b>비행 / 블록 복사 / 구조 보기</div><div class="keyrow"><b>물 + 용암</b>돌·흑요석 생성</div><div class="keyrow"><b>불 + 나무</b>연소와 확산</div></div>';
+  if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>정육면체와 직육면체를 함께 쓰고, 각 면을 따로 칠하며 날씨와 생태·물질 변화를 관찰할 수 있습니다.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치·문·화로</div><div class="keyrow"><b>1~9 / E</b>핫바 / 건축 인벤토리</div><div class="keyrow"><b>F / R</b>비행 / 바라보는 블록 복사</div><div class="keyrow"><b>P</b>바라보는 한 면만 색칠</div><div class="keyrow"><b>X</b>모서리 → 꼭짓점 → 평행면 수학 렌즈</div><div class="keyrow"><b>T</b>날씨 바꾸기</div><div class="keyrow"><b>물·불·화로</b>흐름·연소·물질 변화 실험</div></div>';
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
 }
 window.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1145,9 +1149,9 @@ canvas.addEventListener('mousedown',e=>{
   }
   if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
 });
-canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&inventoryOpen))canvas.requestPointerLock()});
+canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))canvas.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{
-  if(mode==='free')$('lockNotice').classList.toggle('hidden',inventoryOpen||document.pointerLockElement===canvas);
+  if(mode==='free')$('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
 });
 document.addEventListener('mousemove',e=>{
@@ -1165,9 +1169,9 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(mode!=='free')return;
-  if(e.code==='KeyE'){e.preventDefault();toggleInventory();return}
-  if(e.code==='Escape'&&inventoryOpen){toggleInventory(false);return}
-  if(inventoryOpen)return;
+  if(e.code==='KeyE'){e.preventDefault();if(furnaceOpen)toggleFurnace(false);else toggleInventory();return}
+  if(e.code==='Escape'&&(inventoryOpen||furnaceOpen)){if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);return}
+  if(inventoryOpen||furnaceOpen)return;
   freeKeys[e.code]=true;
   if(e.code==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
   if(/^Digit[1-9]$/.test(e.code)){
@@ -1175,7 +1179,9 @@ document.addEventListener('keydown',e=>{
   }
   if(e.code==='KeyF'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');updateFreeMission()}
   if(e.code==='KeyR')pickTargetBlock();
+  if(e.code==='KeyP')paintLookedFace();
   if(e.code==='KeyX')toggleXray();
+  if(e.code==='KeyT')cycleWeather();
   if(e.code==='KeyQ'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
