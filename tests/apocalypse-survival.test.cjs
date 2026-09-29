@@ -98,3 +98,11 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
   assert.match(css,/\.mobile-move/);
   assert.match(css,/@media/);
 });
+
+
+test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
+  assert.match(js,/shared-community-3d\.js/);
+  for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','vehicle.schoolBus','animal.deer']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
+  assert.match(html,/game\.js\?v=8/);
+  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=8$/);
+});
