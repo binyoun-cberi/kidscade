@@ -50,6 +50,7 @@ games/
 - `input`: touch / keyboard 중 지원 입력
 - `qualityStatus`: featured / standard / rework
 - `classroom`: 교사가 함께 운영하기 좋은 게임인지 여부
+- `addedAt`: 새 게임을 카탈로그에 처음 등록한 시각(ISO 8601, 예: `2026-09-29T11:00:00+09:00`). 추천 홈의 `신작 게임` 레일에서 사용합니다.
 
 기존 `category`는 저장·미션·레거시 호환을 위해 남겨 두지만, 새 메인 탐색 UI의 1차 기준으로 사용하지 않습니다.
 
