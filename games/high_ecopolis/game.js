@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { shared3DPath, shared3DIsApproved } from '../../assets/game/manifest/shared-community-3d.js';
 
 const $=id=>document.getElementById(id);
 const ui={
   phaseName:$('phaseName'),ecoPoints:$('ecoPoints'),energyRate:$('energyRate'),carbonRate:$('carbonRate'),restoreRate:$('restoreRate'),waterRate:$('waterRate'),bioRate:$('bioRate'),
-  dayRate:$('dayRate'),visitorRate:$('visitorRate'),servedRate:$('servedRate'),reputationRate:$('reputationRate'),cashflowRate:$('cashflowRate'),guestMood:$('guestMood'),thoughtList:$('thoughtList'),scenarioObjectives:$('scenarioObjectives'),
+  dayRate:$('dayRate'),visitorRate:$('visitorRate'),servedRate:$('servedRate'),reputationRate:$('reputationRate'),cashflowRate:$('cashflowRate'),pathRate:$('pathRate'),guestMood:$('guestMood'),thoughtList:$('thoughtList'),scenarioObjectives:$('scenarioObjectives'),
   mission:$('mission'),missionKicker:$('missionKicker'),missionTitle:$('missionTitle'),missionText:$('missionText'),objectives:$('objectives'),speciesRow:$('speciesRow'),
   missionCollapse:$('missionCollapse'),windViewBtn:$('windViewBtn'),sunViewBtn:$('sunViewBtn'),geoViewBtn:$('geoViewBtn'),pollutionViewBtn:$('pollutionViewBtn'),homeViewBtn:$('homeViewBtn'),helpBtn:$('helpBtn'),
   mapLegend:$('mapLegend'),tileInfo:$('tileInfo'),toast:$('toast'),toolbar:$('toolbar'),undoBtn:$('undoBtn'),saveBtn:$('saveBtn'),
@@ -24,6 +25,9 @@ const PHASES=[
 ];
 const TOOL={
   inspect:{label:'살펴보기',cost:0,radius:0},
+  trail:{label:'자연 탐방로',cost:1,radius:0,phase:2,path:true},
+  boardwalk:{label:'습지 데크길',cost:2,radius:0,phase:2,path:true},
+  pavedwalk:{label:'포장 산책로',cost:1,radius:0,phase:2,path:true},
   wind:{label:'풍력 발전기',cost:20,radius:4.7,power:26},
   solar:{label:'태양광 발전소',cost:18,radius:4.2,power:22},
   geothermal:{label:'지열 발전소',cost:28,radius:5.5,power:38},
@@ -40,6 +44,9 @@ const TOOL={
   observatory:{label:'야생동물 관찰대',cost:16,radius:0,phase:2,appeal:12},
   researchstation:{label:'생태 연구소',cost:28,radius:0,phase:2,appeal:10},
   ecocafe:{label:'로컬 푸드 카페',cost:14,radius:0,phase:2,appeal:8},
+  bench:{label:'쉼터 벤치',cost:4,radius:0,phase:2,appeal:3},
+  signpost:{label:'탐방 안내판',cost:3,radius:0,phase:2,appeal:2},
+  lamp:{label:'저전력 가로등',cost:5,radius:0,phase:2,appeal:2},
   purifier:{label:'토양 정화기',cost:18,radius:2.65},
   waterfilter:{label:'하천 정화기',cost:22,radius:3.25},
   wetland:{label:'습지 씨앗',cost:16,radius:1.85,phase:2},
@@ -57,8 +64,12 @@ const SPECIES={
 };
 const COST_REFUND=.35;
 const POWER_TYPES=new Set(['wind','solar','geothermal','nuclear','coal']);
-const ECO_DEMAND={purifier:8,waterfilter:10,wetland:3,forest:3,meadow:3,carfactory:12,visitorcenter:4,researchstation:5,ecocafe:5};
-const UPKEEP={wind:.6,solar:.4,geothermal:1,nuclear:2.5,coal:2,carfactory:2,landfill:1.2,quarry:1.4,parking:.5,channel:.7,lawn:1.1,plantation:.6,purifier:.8,waterfilter:.9,visitorcenter:1.4,observatory:.6,researchstation:2,ecocafe:1.2};
+const ECO_DEMAND={purifier:8,waterfilter:10,wetland:3,forest:3,meadow:3,carfactory:12,visitorcenter:4,researchstation:5,ecocafe:5,lamp:1};
+const PATH_TYPES=new Set(['trail','boardwalk','pavedwalk']);
+const PATH_SPEED={trail:.9,boardwalk:1,pavedwalk:1.35};
+const PATH_CAPACITY={trail:2,boardwalk:3,pavedwalk:5};
+const AMENITY_TYPES=new Set(['bench','signpost','lamp']);
+const UPKEEP={wind:.6,solar:.4,geothermal:1,nuclear:2.5,coal:2,carfactory:2,landfill:1.2,quarry:1.4,parking:.5,channel:.7,lawn:1.1,plantation:.6,purifier:.8,waterfilter:.9,visitorcenter:1.4,observatory:.6,researchstation:2,ecocafe:1.2,bench:.08,signpost:.04,lamp:.18};
 const VISITOR_TYPES={
   family:{name:'가족',icon:'👨‍👩‍👧',speed:.78},
   student:{name:'학생',icon:'🎒',speed:.86},
@@ -72,7 +83,7 @@ const TYCOON_SCENARIOS={
 };
 
 let scene,camera,renderer,raycaster;
-let groundGroup,decorGroup,buildingGroup,animalGroup,visitorGroup,effectGroup,previewGroup;
+let groundGroup,decorGroup,pathGroup,buildingGroup,animalGroup,visitorGroup,effectGroup,previewGroup;
 let tiles=[],tileMeshes=[],buildings=[],animals=[],visitors=[];
 let selectedTool='inspect',selectedScenario='valley',phase=1,ecoPoints=130,seed=1;
 let analysisMode='none',running=false,completed=false;
@@ -85,6 +96,39 @@ let simSpeed=1;
 let ecosystem=makeEcosystem();
 const sharedLoader=new GLTFLoader(),sharedCache=new Map(),sharedPending=new Map();
 const SHARED=id=>shared3DPath(id,'../../');
+const GAME_ASSET_ROOT='../../assets/game/';
+const ASSET=p=>GAME_ASSET_ROOT+p;
+const ECO_ASSET={
+  trail:ASSET('3d/city/kenney-city-kit-suburban/path-stones-long.glb'),
+  trailMessy:ASSET('3d/city/kenney-city-kit-suburban/path-stones-messy.glb'),
+  boardwalk:ASSET('3d/survival/kenney-survival-kit/structure-floor.glb'),
+  pavedwalk:ASSET('3d/city/kenney-city-kit-suburban/path-long.glb'),
+  visitorcenter:ASSET('3d/city/kenney-city-kit-suburban/building-type-f.glb'),
+  observatory:ASSET('3d/survival/kenney-survival-kit/structure-canvas.glb'),
+  researchstation:ASSET('3d/city/kenney-city-kit-suburban/building-type-h.glb'),
+  ecocafe:ASSET('3d/city/kenney-city-kit-suburban/building-type-d.glb'),
+  bench:ASSET('3d/interiors/kenney-furniture-kit/bench.glb'),
+  signpost:ASSET('3d/survival/kenney-survival-kit/signpost.glb'),
+  lamp:ASSET('3d/city/kenney-city-kit-roads/light-square.glb'),
+  visitor:{family:ASSET('characters/people/character-female-b.glb'),student:ASSET('characters/people/character-male-a.glb'),researcher:ASSET('characters/people/character-female-c.glb'),birder:ASSET('characters/people/character-male-d.glb')}
+};
+const localGltfCache=new Map(),localGltfPending=new Map();
+function loadLocalGLTF(url){
+  if(localGltfCache.has(url))return Promise.resolve(localGltfCache.get(url));
+  if(!localGltfPending.has(url))localGltfPending.set(url,new Promise(resolve=>sharedLoader.load(url,g=>{localGltfCache.set(url,g);resolve(g)},undefined,()=>resolve(null))));
+  return localGltfPending.get(url);
+}
+function normalizeLocal(o,target=1){
+  o.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(o),size=b.getSize(new THREE.Vector3()),mx=Math.max(size.x,size.y,size.z)||1;
+  o.scale.multiplyScalar(target/mx);o.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(o);
+  const center=b.getCenter(new THREE.Vector3());o.position.x-=center.x;o.position.z-=center.z;o.position.y-=b.min.y;
+  o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;if(n.isSkinnedMesh)n.frustumCulled=false}});return o;
+}
+function localModel(url,target=1,skeleton=false){return loadLocalGLTF(url).then(g=>g?normalizeLocal(skeleton?cloneSkeleton(g.scene):g.scene.clone(true),target):null)}
+function attachLocalAsset(group,url,target=1,{y=0,rot=0}={}){
+  const rev=(group.userData.assetRev||0)+1;group.userData.assetRev=rev;
+  localModel(url,target).then(o=>{if(!o||group.userData.assetRev!==rev)return;o.position.y+=y;o.rotation.y=rot;group.add(o)});
+}
 function normalizeShared(o,target){
   const b=new THREE.Box3().setFromObject(o),size=b.getSize(new THREE.Vector3()),mx=Math.max(size.x,size.y,size.z)||1;
   o.scale.multiplyScalar(target/mx);
@@ -200,8 +244,8 @@ function initThree(){
   const sun=new THREE.DirectionalLight(0xfff2d2,2.45);sun.position.set(-10,18,8);sun.castShadow=true;
   sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-20;sun.shadow.camera.right=20;sun.shadow.camera.top=20;sun.shadow.camera.bottom=-20;scene.add(sun);
 
-  groundGroup=new THREE.Group();decorGroup=new THREE.Group();buildingGroup=new THREE.Group();animalGroup=new THREE.Group();visitorGroup=new THREE.Group();effectGroup=new THREE.Group();previewGroup=new THREE.Group();
-  scene.add(groundGroup,decorGroup,buildingGroup,animalGroup,visitorGroup,effectGroup,previewGroup);
+  groundGroup=new THREE.Group();decorGroup=new THREE.Group();pathGroup=new THREE.Group();buildingGroup=new THREE.Group();animalGroup=new THREE.Group();visitorGroup=new THREE.Group();effectGroup=new THREE.Group();previewGroup=new THREE.Group();
+  scene.add(groundGroup,decorGroup,pathGroup,buildingGroup,animalGroup,visitorGroup,effectGroup,previewGroup);
   const base=new THREE.Mesh(new THREE.CylinderGeometry(15,17,1.1,6),new THREE.MeshStandardMaterial({color:0x6c8e72,roughness:1}));
   base.position.y=-.75;base.scale.z=.78;base.receiveShadow=true;scene.add(base);
   previewRing=new THREE.Mesh(new THREE.RingGeometry(.83,.92,44),new THREE.MeshBasicMaterial({color:0xbfffb4,transparent:true,opacity:.65,side:THREE.DoubleSide,depthWrite:false}));
@@ -236,14 +280,14 @@ const mat={
 function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
   seed=worldSeed;rng=mulberry32(seed);tiles=[];tileMeshes=[];buildings=[];animals=[];visitors=[];windRotors.length=0;
-  clearGroup(groundGroup);clearGroup(decorGroup);clearGroup(buildingGroup);clearGroup(animalGroup);clearGroup(visitorGroup);clearGroup(effectGroup);
+  clearGroup(groundGroup);clearGroup(decorGroup);clearGroup(pathGroup);clearGroup(buildingGroup);clearGroup(animalGroup);clearGroup(visitorGroup);clearGroup(effectGroup);
   const sc=SCENARIOS[selectedScenario]||SCENARIOS.valley;
   const riverPhase=rng()*Math.PI*2;
   for(let z=0;z<ROWS;z++)for(let x=0;x<COLS;x++){
     const center=(ROWS-1)/2+Math.sin(x*.56+riverPhase)*1.55+Math.sin(x*.19+riverPhase*.5)*.8;
     const water=Math.abs(z-center)<=sc.riverWidth+.15*Math.sin(x*.8);
     const edgeRock=!water&&(x<2||x>COLS-3||z<2||z>ROWS-3)&&rng()<.28;
-    const t={x,z,kind:water?'water':edgeRock?'rock':'land',biome:water?'water':'barren',pollution:water?clamp(sc.waterPollution+(rng()-.5)*.16,0,1):edgeRock?0:clamp(sc.landPollution+(rng()-.5)*.25,0,1),moisture:water?1:0,mesh:null,decor:new THREE.Group()};
+    const t={x,z,kind:water?'water':edgeRock?'rock':'land',biome:water?'water':'barren',pollution:water?clamp(sc.waterPollution+(rng()-.5)*.16,0,1):edgeRock?0:clamp(sc.landPollution+(rng()-.5)*.25,0,1),moisture:water?1:0,path:null,mesh:null,decor:new THREE.Group(),pathVisual:new THREE.Group()};
     tiles.push(t);
   }
   for(const t of tiles)if(t.kind==='land')t.moisture=nearWater(t,false,1.8)?.8:clamp(.25+rng()*.25,0,1);
@@ -259,7 +303,7 @@ function createTileMesh(t){
   m.position.set(p.x,t.kind==='water'?-.08:height*.05,p.z);
   if(t.kind==='rock')m.scale.y=2.4;
   m.receiveShadow=true;m.castShadow=t.kind==='rock';m.userData.tile=t;groundGroup.add(m);tileMeshes.push(m);t.mesh=m;
-  decorGroup.add(t.decor);
+  decorGroup.add(t.decor);t.pathVisual.position.set(p.x,.15,p.z);pathGroup.add(t.pathVisual);
 }
 function refreshAllTiles(){tiles.forEach(refreshTileVisual)}
 function refreshTileVisual(t){
@@ -313,6 +357,20 @@ function treeModel(){
   const g=new THREE.Group(),tr=new THREE.Mesh(geo.trunk,mat.trunk),cr=new THREE.Mesh(geo.crown,mat.leaf);tr.position.y=.2;cr.position.y=.68;tr.castShadow=cr.castShadow=true;g.add(tr,cr);return g;
 }
 
+function pathNeighbors(t){return [[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dz])=>tileAt(t.x+dx,t.z+dz)).filter(n=>n?.path)}
+function pathCount(){return tiles.filter(t=>t.path).length}
+function humanFootprintCount(){return buildings.length+pathCount()}
+function pathRotation(t){const ns=pathNeighbors(t),h=ns.some(n=>n.x!==t.x),v=ns.some(n=>n.z!==t.z);return h&&!v?Math.PI/2:0}
+function renderPathTile(t){
+  if(!t?.pathVisual)return;clearGroup(t.pathVisual);t.pathVisual.userData.assetRev=(t.pathVisual.userData.assetRev||0)+1;if(!t.path)return;
+  const kind=t.path,rot=pathRotation(t),ns=pathNeighbors(t);
+  const material=kind==='trail'?new THREE.MeshStandardMaterial({color:0xb69b6a,roughness:1}):kind==='boardwalk'?new THREE.MeshStandardMaterial({color:0x9d744b,roughness:.9}):new THREE.MeshStandardMaterial({color:0xc7c2b1,roughness:.85});
+  const base=new THREE.Mesh(new THREE.BoxGeometry(ns.length>=3?CELL*.72:CELL*.84,.035,ns.length>=3?CELL*.72:CELL*.30),material);
+  base.rotation.y=rot;base.position.y=t.kind==='water'?.12:.04;base.receiveShadow=true;t.pathVisual.add(base);
+  const url=kind==='trail'?(ns.length>=3?ECO_ASSET.trailMessy:ECO_ASSET.trail):ECO_ASSET[kind],rev=t.pathVisual.userData.assetRev;
+  localModel(url,kind==='boardwalk'?.82:.72).then(o=>{if(!o||t.pathVisual.userData.assetRev!==rev||t.path!==kind)return;o.rotation.y=rot;o.position.y+=t.kind==='water'?.15:.055;t.pathVisual.add(o)});
+}
+function refreshPathNeighborhood(t){[t,tileAt(t.x+1,t.z),tileAt(t.x-1,t.z),tileAt(t.x,t.z+1),tileAt(t.x,t.z-1)].filter(Boolean).forEach(renderPathTile)}
 function buildModel(type,t){
   const g=new THREE.Group(),p=worldPos(t);g.position.set(p.x,.2,p.z);g.userData.type=type;
   if(type==='wind'){
@@ -350,19 +408,10 @@ function buildModel(type,t){
     const pad=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.09,18),mat.green);pad.position.y=.05;g.add(pad);
   }else if(type==='plantation'){
     for(const x of [-.25,0,.25]){const tr=treeModel();tr.scale.setScalar(.65);tr.position.set(x,.05,0);g.add(tr)}
-  }else if(type==='visitorcenter'){
-    const base=new THREE.Mesh(new THREE.BoxGeometry(.82,.48,.7),mat.white);base.position.y=.24;
-    const roof=new THREE.Mesh(new THREE.ConeGeometry(.58,.3,4),mat.green);roof.position.y=.62;roof.rotation.y=Math.PI/4;g.add(base,roof);
-  }else if(type==='observatory'){
-    const deck=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.12,12),mat.trunk);deck.position.y=.48;
-    for(const x of [-.28,.28]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.04,.05,.8,6),mat.trunk);leg.position.set(x,.4,0);g.add(leg)}
-    const scope=new THREE.Mesh(new THREE.CylinderGeometry(.06,.08,.5,8),mat.dark);scope.rotation.z=Math.PI/2;scope.position.set(0,.7,0);g.add(deck,scope);
-  }else if(type==='researchstation'){
-    const base=new THREE.Mesh(new THREE.BoxGeometry(.82,.44,.7),mat.white);base.position.y=.22;
-    const dome=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8,0,Math.PI*2,0,Math.PI/2),mat.blue);dome.position.set(.12,.5,0);g.add(base,dome);
-  }else if(type==='ecocafe'){
-    const base=new THREE.Mesh(new THREE.BoxGeometry(.75,.4,.68),mat.trunk);base.position.y=.2;
-    const awning=new THREE.Mesh(new THREE.BoxGeometry(.82,.08,.22),mat.yellow);awning.position.set(0,.45,.35);g.add(base,awning);
+  }else if(['visitorcenter','observatory','researchstation','ecocafe','bench','signpost','lamp'].includes(type)){
+    const pad=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.08,10),type==='lamp'?mat.yellow:type==='bench'||type==='signpost'?mat.trunk:mat.green);pad.position.y=.04;g.add(pad);
+    const targets={visitorcenter:1.05,observatory:.95,researchstation:1.05,ecocafe:1.0,bench:.62,signpost:.62,lamp:.9};
+    attachLocalAsset(g,ECO_ASSET[type],targets[type]||.8,{y:.08});
   }else if(type==='purifier'){
     const box=new THREE.Mesh(geo.box,mat.green);box.position.y=.27;const chimney=new THREE.Mesh(geo.pipe,mat.white);chimney.position.set(.18,.7,.12);g.add(box,chimney);
   }else if(type==='waterfilter'){
@@ -402,6 +451,13 @@ function placementReason(type,t){
   if(def?.phase&&phase<def.phase)return '아직 잠긴 도구예요.';
   if(type!=='inspect'&&ecoPoints<(def?.cost||0))return '에코 포인트가 부족해요.';
   if(type==='inspect')return '';
+  if(PATH_TYPES.has(type)){
+    if(t.kind==='rock')return '바위 지형에는 길을 놓을 수 없어요.';
+    if(type!=='boardwalk'&&t.kind==='water')return '물 위에는 습지 데크길을 사용하세요.';
+    if(t.path)return '이미 길이 있는 칸이에요.';
+    if(hasBuilding(t))return '시설이 있는 칸에는 길을 놓을 수 없어요.';
+    return '';
+  }
   if(type==='recycler'){
     if(phase<4)return '동물들이 돌아온 뒤에 철수할 수 있어요.';
     if(t.kind!=='water'||t.pollution>=.25)return '회수선은 깨끗해진 강에만 띄울 수 있어요.';
@@ -418,6 +474,8 @@ function placementReason(type,t){
   if(type==='plantation'&&t.biome==='barren')return '조림지는 이미 정화된 땅에 조성해야 해요.';
   if(['visitorcenter','observatory','researchstation','ecocafe'].includes(type)&&!['grass','forest','meadow','wetland'].includes(t.biome))return '방문객 시설은 먼저 복원된 땅에 설치하세요.';
   if(['visitorcenter','researchstation','ecocafe'].includes(type)&&!powered(t))return '이 시설은 전력이 연결된 곳에 설치해야 해요.';
+  if(AMENITY_TYPES.has(type)&&!t.path)return '벤치·안내판·가로등은 길 위에 설치하세요.';
+  if(type==='lamp'&&!powered(t))return '가로등은 전력 범위 안의 길에 설치하세요.';
   if(['purifier','waterfilter','wetland','forest','meadow','carfactory'].includes(type)&&!powered(t))return '발전소의 전력 범위 밖이에요.';
   if(type==='waterfilter'&&!nearWater(t,false,1.6))return '강가에 붙여 설치해야 해요.';
   if(['wetland','forest','meadow'].includes(type)&&t.biome!=='grass')return '먼저 토양을 정화해 초원으로 만들어야 해요.';
@@ -430,6 +488,17 @@ function placeTool(type,t,loading=false){
   if(type==='recycler'){if(!loading)return launchRecycler(t);return false}
   const reason=placementReason(type,t);if(reason&&!loading){toast(reason,'bad');sdkSound('wrong');return false}
   const def=TOOL[type];const before=loading?null:snapshot();
+  if(PATH_TYPES.has(type)){
+    if(!loading){ecoPoints-=def.cost;builtCount++;lastAction=before}
+    t.path=type;refreshPathNeighborhood(t);
+    if(!loading){
+      if(type==='pavedwalk'){ecosystem.habitatStress+=.65;ecosystem.waterStress+=.35}
+      if(type==='trail'&&t.biome==='wetland')ecosystem.habitatStress+=.45;
+      if(type==='boardwalk'&&(t.kind==='water'||t.biome==='wetland'))ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-.08);
+      sdkSound('click');saveGame();updateUI();
+    }
+    return true;
+  }
   if(!loading){ecoPoints-=def.cost;builtCount++;lastAction=before}
   const b={type,x:t.x,z:t.z,mesh:buildModel(type,t)};buildings.push(b);
   if(!loading){
@@ -503,44 +572,45 @@ function removeSpecies(species){
   const gone=animals.filter(a=>a.species===species);gone.forEach(a=>animalGroup.remove(a.mesh));animals=animals.filter(a=>a.species!==species);
   if(gone.length)toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 서식지를 떠났어요.','bad',3000);
 }
-function visitorWalkable(t){return !!t&&t.kind==='land'&&t.kind!=='rock'}
-function visitorEntryTiles(){return tiles.filter(t=>visitorWalkable(t)&&(t.x===0||t.z===0||t.x===COLS-1||t.z===ROWS-1))}
+function visitorWalkable(t){return !!t?.path}
+function visitorEntryTiles(){return tiles.filter(t=>t.path&&(t.x===0||t.z===0||t.x===COLS-1||t.z===ROWS-1))}
+function adjacentPathTiles(t){return [[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dz])=>tileAt(t.x+dx,t.z+dz)).filter(n=>n?.path)}
+function facilityAccessTiles(b){const t=tileAt(b.x,b.z);return t?adjacentPathTiles(t):[]}
+function naturalPathDestinations(biome){return tiles.filter(t=>t.path&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dz])=>tileAt(t.x+dx,t.z+dz)?.biome===biome))}
 function visitorDestinations(type){
-  const out=[];
-  const preferred=type==='family'?['visitorcenter','ecocafe','observatory']:type==='student'?['visitorcenter','researchstation','observatory']:type==='researcher'?['researchstation','observatory']:['observatory','visitorcenter'];
-  preferred.forEach(kind=>buildings.filter(b=>b.type===kind).forEach(b=>{const t=tileAt(b.x,b.z);if(visitorWalkable(t))out.push(t)}));
+  const out=[],preferred=type==='family'?['visitorcenter','ecocafe','observatory']:type==='student'?['visitorcenter','researchstation','observatory']:type==='researcher'?['researchstation','observatory']:['observatory','visitorcenter'];
+  preferred.forEach(kind=>buildings.filter(b=>b.type===kind).forEach(b=>facilityAccessTiles(b).forEach(t=>out.push(t))));
   const biomes=type==='birder'?['forest','meadow','wetland']:type==='researcher'?['wetland','forest','meadow']:['meadow','forest','wetland'];
-  biomes.forEach(biome=>tiles.filter(t=>t.biome===biome&&t.pollution<.3).slice(0,10).forEach(t=>out.push(t)));
-  return out;
+  biomes.forEach(biome=>naturalPathDestinations(biome).slice(0,10).forEach(t=>out.push(t)));return [...new Set(out)];
 }
 function findVisitorPath(start,goal){
-  if(!start||!goal)return[];if(start===goal)return[goal];
-  const key=t=>t.x+','+t.z,q=[start],came=new Map([[key(start),null]]);
-  for(let qi=0;qi<q.length;qi++){
-    const cur=q[qi];if(cur===goal)break;
-    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      const n=tileAt(cur.x+dx,cur.z+dz);if(!visitorWalkable(n)||came.has(key(n)))continue;
-      came.set(key(n),cur);q.push(n);
-    }
-  }
-  if(!came.has(key(goal)))return[];
-  const path=[];for(let cur=goal;cur&&cur!==start;cur=came.get(key(cur)))path.push(cur);
-  return path.reverse();
+  if(!start||!goal)return[];if(start===goal)return[goal];const key=t=>t.x+','+t.z,q=[start],came=new Map([[key(start),null]]);
+  for(let qi=0;qi<q.length;qi++){const cur=q[qi];if(cur===goal)break;for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=tileAt(cur.x+dx,cur.z+dz);if(!visitorWalkable(n)||came.has(key(n)))continue;came.set(key(n),cur);q.push(n)}}
+  if(!came.has(key(goal)))return[];const path=[];for(let cur=goal;cur&&cur!==start;cur=came.get(key(cur)))path.push(cur);return path.reverse();
 }
+function connectedVisitorCenter(){const entries=visitorEntryTiles();if(!entries.length)return false;return buildings.filter(b=>b.type==='visitorcenter').some(b=>facilityAccessTiles(b).some(access=>entries.some(e=>e===access||findVisitorPath(e,access).length)))}
+function pathCrowd(t){return visitors.filter(v=>v.tile===t).length}
+function pathTravelFactor(t){const kind=t?.path||'trail',cap=PATH_CAPACITY[kind]||2,crowd=pathCrowd(t);return (PATH_SPEED[kind]||1)*(crowd>cap?Math.max(.42,cap/crowd):1)}
 function visitorModel(type){
-  const g=new THREE.Group(),palette={family:0xf0b86e,student:0x6ea9e8,researcher:0xd8e0e7,birder:0x7dc58b};
-  const bodyMat=new THREE.MeshStandardMaterial({color:palette[type]||0xd8d8d8,roughness:.8});
+  const g=new THREE.Group(),palette={family:0xf0b86e,student:0x6ea9e8,researcher:0xd8e0e7,birder:0x7dc58b},fallback=new THREE.Group(),bodyMat=new THREE.MeshStandardMaterial({color:palette[type]||0xd8d8d8,roughness:.8});
   const body=new THREE.Mesh(new THREE.CylinderGeometry(.09,.12,.34,7),bodyMat),head=new THREE.Mesh(new THREE.SphereGeometry(.095,8,6),mat.white);
-  body.position.y=.2;head.position.y=.47;g.add(body,head);g.scale.setScalar(.82);return g;
+  body.position.y=.2;head.position.y=.47;fallback.add(body,head);g.add(fallback);g.scale.setScalar(.82);g.userData.fallback=fallback;return g;
+}
+function attachVisitorAsset(v){
+  const url=ECO_ASSET.visitor[v.type];loadLocalGLTF(url).then(gltf=>{
+    if(!gltf||!visitors.includes(v))return;const model=normalizeLocal(cloneSkeleton(gltf.scene),.72);v.mesh.userData.fallback.visible=false;v.mesh.add(model);
+    const clips=Array.isArray(gltf.animations)?gltf.animations:[],src=clips.find(c=>/walk|run/i.test(c.name))||clips.find(c=>/idle|stand/i.test(c.name))||clips[0];
+    if(src){const clip=src.clone();clip.tracks=clip.tracks.filter(tr=>!/^root\.position$/i.test(tr.name));v.mixer=new THREE.AnimationMixer(model);v.mixer.clipAction(clip).play()}
+  });
 }
 function pickVisitorType(){
   const pool=buildings.some(b=>b.type==='researchstation')?['family','student','researcher','birder']:['family','student','birder'];
   return pool[Math.floor(rng()*pool.length)];
 }
 function targetVisitorCount(){
-  if(!buildings.some(b=>b.type==='visitorcenter')||phase>=4)return 0;
-  const c=counts(),attractions=buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe'].includes(b.type)).length;
-  return clamp(Math.round(2+ecosystem.reputation*.16+c.restorePct*.05+returnedSpeciesCount()*2.5+attractions*2-ecosystem.habitatStress*.05),0,40);
+  if(!connectedVisitorCenter()||phase>=4)return 0;
+  const c=counts(),attractions=buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe','bench','signpost'].includes(b.type)).length;
+  return clamp(Math.round(2+ecosystem.reputation*.14+c.restorePct*.04+returnedSpeciesCount()*2+attractions*1.5-ecosystem.habitatStress*.05),0,28);
 }
 function spawnVisitor(){
   const entries=visitorEntryTiles();if(!entries.length)return;
@@ -548,13 +618,14 @@ function spawnVisitor(){
   if(!destinations.length)return;
   const dest=destinations[Math.floor(rng()*destinations.length)],path=findVisitorPath(start,dest);if(!path.length)return;
   const mesh=visitorModel(type),p=worldPos(start);mesh.position.set(p.x,.34,p.z);visitorGroup.add(mesh);
-  visitors.push({type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5});
+  const v={type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5,mixer:null};visitors.push(v);attachVisitorAsset(v);
 }
 function removeVisitor(v,served=true){
   visitorGroup.remove(v.mesh);visitors=visitors.filter(x=>x!==v);if(served)ecosystem.visitorsServed++;
 }
 function localVisitorThought(v,t){
-  const near=buildings.filter(b=>dist(t,b)<=2.4).map(b=>b.type),pop=ecosystem.populations;
+  const near=buildings.filter(b=>dist(t,b)<=2.4).map(b=>b.type),pop=ecosystem.populations,crowd=pathCrowd(t),cap=PATH_CAPACITY[t.path]||2;
+  if(crowd>cap+1)return['길이 너무 붐벼서 천천히 가야 해.','bad'];
   if(near.includes('coal'))return['공기가 조금 매캐해.','bad'];
   if(near.includes('landfill'))return['여기서는 냄새가 나…','bad'];
   if(near.includes('parking'))return['주차는 편한데 땅이 너무 뜨거워 보여.','bad'];
@@ -565,6 +636,8 @@ function localVisitorThought(v,t){
   if(t.biome==='wetland'&&pop.frog>18)return['개구리 소리가 들려!','good'];
   if(near.includes('observatory')&&returnedSpeciesCount()>=2)return['관찰대에서 야생동물을 봤어!','good'];
   if(near.includes('researchstation'))return['여기서는 생태계를 직접 연구하네.','good'];
+  if(near.includes('bench'))return['잠깐 앉아서 쉬어 갈 수 있어서 좋아.','good'];
+  if(near.includes('signpost'))return['안내판이 있어서 어디로 갈지 알겠어.','good'];
   if(near.includes('ecocafe'))return['걷고 나니 먹을 곳이 있어서 좋다.','good'];
   if(ecosystem.carbon>70)return['경치는 좋은데 공기 상태가 걱정돼.','bad'];
   if(ecosystem.habitatStress>55)return['자연이 너무 잘게 끊겨 있는 느낌이야.','bad'];
@@ -579,6 +652,9 @@ function evaluateVisitor(v,t){
   let target=48+c.restorePct*.18+c.waterPct*.12+returnedSpeciesCount()*5-localPollution*35-ecosystem.carbon*.09-ecosystem.habitatStress*.12-ecosystem.waterStress*.08;
   if(buildings.some(b=>b.type==='observatory'&&dist(t,b)<=2.5))target+=8;
   if(buildings.some(b=>b.type==='ecocafe'&&dist(t,b)<=2.5))target+=5;
+  if(buildings.some(b=>b.type==='bench'&&dist(t,b)<=1.7))target+=4;
+  if(buildings.some(b=>b.type==='signpost'&&dist(t,b)<=1.7))target+=2;
+  if(t.path==='trail')target+=2;if(t.path==='boardwalk'&&(nearWater(t,false,1.3)||t.kind==='water'))target+=4;
   v.targetHappiness=clamp(target,5,100);
   const [text,mood]=localVisitorThought(v,t);pushThought(v,text,mood);
 }
@@ -589,10 +665,10 @@ function chooseNextVisitorPath(v){
 }
 function animateVisitors(dt){
   for(const v of [...visitors]){
-    v.age+=dt;v.thoughtCooldown-=dt;v.happiness+=(v.targetHappiness-v.happiness)*Math.min(1,dt*.5);
+    v.age+=dt;v.thoughtCooldown-=dt;v.happiness+=(v.targetHappiness-v.happiness)*Math.min(1,dt*.5);v.mixer?.update(dt);
     if(v.age>v.maxAge){removeVisitor(v);continue}
     const next=v.path[v.pathIndex];if(!next){evaluateVisitor(v,v.tile);chooseNextVisitorPath(v);continue}
-    const p=worldPos(next),dx=p.x-v.mesh.position.x,dz=p.z-v.mesh.position.z,d=Math.hypot(dx,dz),step=(VISITOR_TYPES[v.type]?.speed||.75)*dt;
+    const p=worldPos(next),dx=p.x-v.mesh.position.x,dz=p.z-v.mesh.position.z,d=Math.hypot(dx,dz),step=(VISITOR_TYPES[v.type]?.speed||.75)*pathTravelFactor(next)*dt;
     if(d<=step+.02){v.mesh.position.x=p.x;v.mesh.position.z=p.z;v.tile=next;v.pathIndex++;if(v.thoughtCooldown<=0){evaluateVisitor(v,next);v.thoughtCooldown=5+rng()*7}}
     else{v.mesh.position.x+=dx/d*step;v.mesh.position.z+=dz/d*step;v.mesh.rotation.y=Math.atan2(dx,dz)}
   }
@@ -630,7 +706,9 @@ function economyTick(){
   const avg=visitors.length?visitors.reduce((s,v)=>s+v.happiness,0)/visitors.length:55;
   const c=counts(),target=clamp(18+c.restorePct*.28+c.waterPct*.16+returnedSpeciesCount()*6+avg*.22-ecosystem.carbon*.08-ecosystem.habitatStress*.13-ecosystem.waterStress*.08,0,100);
   ecosystem.reputation+=(target-ecosystem.reputation)*.18;
-  if(visitors.length>24){ecosystem.habitatStress+=(visitors.length-24)*.025;ecosystem.waterStress+=(visitors.length-24)*.012}
+  if(visitors.length>20){ecosystem.habitatStress+=(visitors.length-20)*.018;ecosystem.waterStress+=(visitors.length-20)*.008}
+  const paved=tiles.filter(t=>t.path==='pavedwalk').length,deck=tiles.filter(t=>t.path==='boardwalk').length;
+  ecosystem.waterStress+=paved*.004;ecosystem.habitatStress+=paved*.003;ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-deck*.001);
   const cfg=TYCOON_SCENARIOS[selectedScenario];
   if(ecosystem.day===cfg.deadline&&!scenarioGoalMet())toast('운영 목표 기한에 도달했어요. 계속 개선해서 목표를 달성할 수 있습니다.','bad',3800);
 }
@@ -657,13 +735,14 @@ function ecologyTick(){
 function launchRecycler(t){
   const reason=placementReason('recycler',t);if(reason){toast(reason,'bad');return false}
   const before=snapshot();lastAction=before;const p=worldPos(t);pulse(t,0x72d9ff,TOOL.recycler.radius);
-  const caught=buildings.filter(b=>Math.hypot(b.x-t.x,b.z-t.z)<=TOOL.recycler.radius);
-  if(!caught.length){toast('이곳에서는 회수할 시설이 없어요. 다른 강 구간을 골라보세요.','bad');return false}
+  const caught=buildings.filter(b=>Math.hypot(b.x-t.x,b.z-t.z)<=TOOL.recycler.radius),caughtPaths=tiles.filter(o=>o.path&&Math.hypot(o.x-t.x,o.z-t.z)<=TOOL.recycler.radius);
+  if(!caught.length&&!caughtPaths.length){toast('이곳에서는 회수할 시설이나 길이 없어요. 다른 강 구간을 골라보세요.','bad');return false}
   caught.forEach(b=>{buildingGroup.remove(b.mesh);const idx=windRotors.findIndex(r=>b.mesh.children.includes(r));if(idx>=0)windRotors.splice(idx,1)});
   buildings=buildings.filter(b=>!caught.includes(b));
-  const refund=Math.round(caught.reduce((s,b)=>s+(TOOL[b.type]?.cost||0),0)*COST_REFUND);ecoPoints+=refund;
-  toast('회수선이 시설 '+caught.length+'개를 걷어냈어요'+(refund?' · +'+refund+'P':''),'good');sdkSound('correct');
-  saveGame();updateUI();if(buildings.length===0)tryCompleteGame();return true;
+  const pathRefund=caughtPaths.reduce((s,o)=>s+(TOOL[o.path]?.cost||0),0);caughtPaths.forEach(o=>{o.path=null;refreshPathNeighborhood(o)});
+  const refund=Math.round((caught.reduce((s,b)=>s+(TOOL[b.type]?.cost||0),0)+pathRefund)*COST_REFUND);ecoPoints+=refund;
+  toast('회수선이 시설 '+caught.length+'개와 길 '+caughtPaths.length+'칸을 걷어냈어요'+(refund?' · +'+refund+'P':''),'good');sdkSound('correct');
+  saveGame();updateUI();if(humanFootprintCount()===0)tryCompleteGame();return true;
 }
 function pulse(t,color,r){
   const p=worldPos(t),ring=new THREE.Mesh(new THREE.RingGeometry(.2,.28,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));
@@ -739,7 +818,7 @@ function updateUI(){
   ui.carbonRate.classList.toggle('warning',ecosystem.carbon>=45&&ecosystem.carbon<85);ui.carbonRate.classList.toggle('danger',ecosystem.carbon>=85);
   ui.restoreRate.textContent=c.restorePct+'%';ui.waterRate.textContent=c.waterPct+'%';ui.bioRate.textContent=returnedSpeciesCount()+'/4';
   const cfg=TYCOON_SCENARIOS[selectedScenario]||TYCOON_SCENARIOS.valley;
-  ui.dayRate.textContent=ecosystem.day+' / '+cfg.deadline+'일';ui.visitorRate.textContent=visitors.length+'명';ui.servedRate.textContent=ecosystem.visitorsServed+'명';
+  ui.dayRate.textContent=ecosystem.day+' / '+cfg.deadline+'일';ui.visitorRate.textContent=visitors.length+'명';ui.servedRate.textContent=ecosystem.visitorsServed+'명';ui.pathRate.textContent=pathCount()+'칸';
   ui.reputationRate.textContent=Math.round(ecosystem.reputation);ui.cashflowRate.textContent=(ecosystem.lastCashflow>=0?'+':'')+ecosystem.lastCashflow.toFixed(1)+'P';
   ui.cashflowRate.classList.toggle('danger',ecosystem.lastCashflow<0);ui.reputationRate.classList.toggle('warning',ecosystem.reputation<55);
   document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===simSpeed));
@@ -750,7 +829,7 @@ function updateUI(){
     ['숲',c.forestPct,10,'%'],['습지',c.wetlandPct,8,'%'],['꽃초원',c.meadowPct,8,'%']
   ]:phase===3?[
     ['돌아온 동물',returnedSpeciesCount(),4,'종'],['깨끗한 물',c.waterPct,70,'%']
-  ]:[['남은 시설',Math.max(0,buildings.length),0,'개',true]];
+  ]:[['남은 시설·길',Math.max(0,humanFootprintCount()),0,'개',true]];
   const scenario=scenarioGoals();
   ui.scenarioObjectives.innerHTML=scenario.map(o=>{const done=o[4]?o[1]<=o[2]:o[1]>=o[2];return '<div class="miniGoal '+(done?'done':'')+'"><span>'+(done?'✓ ':'')+o[0]+'</span><b>'+o[1]+o[3]+' / '+o[2]+o[3]+'</b></div>'}).join('');
   const thoughts=ecosystem.thoughts||[];
@@ -770,7 +849,7 @@ function showTileInfo(t){
   if(!t){ui.tileInfo.classList.add('hidden');return}
   const wind=Math.round(windAt(t)*100),sun=Math.round(sunAt(t)*100),geo=Math.round(geothermalAt(t)*100),bld=buildings.find(b=>b.x===t.x&&b.z===t.z);
   const biome=t.kind==='water'?(t.pollution<.25?'깨끗한 강':'오염된 강'):t.kind==='rock'?'바위':({barren:'메마른 땅',grass:'초원',wetland:'습지',forest:'숲',meadow:'꽃초원',lawn:'잔디밭',plantation:'단일수종 조림지',paved:'포장지'}[t.biome]||t.biome);
-  ui.tileInfo.innerHTML='<b>'+biome+'</b><br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
+  ui.tileInfo.innerHTML='<b>'+biome+'</b><br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(t.path?'<br>길: '+TOOL[t.path].label+' · 혼잡 '+pathCrowd(t)+'/'+(PATH_CAPACITY[t.path]||2):'')+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
   ui.tileInfo.classList.remove('hidden');
 }
 function selectTool(type){
@@ -817,21 +896,21 @@ renderer.domElement.addEventListener('pointerleave',()=>{hoverTile=null;previewR
 function toast(msg,type='good',ms=2400){clearTimeout(toastTimer);ui.toast.textContent=msg;ui.toast.style.borderColor=type==='bad'?'rgba(255,122,110,.6)':'rgba(129,230,164,.5)';ui.toast.classList.add('showToast');toastTimer=setTimeout(()=>ui.toast.classList.remove('showToast'),ms)}
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(e){}}
 function sdkStart(){try{window.KidscadeGame?.start?.()}catch(e){}}
-function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
+function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture,path:t.path})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
 function restoreSnapshot(s){
   if(!s)return;phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem=makeEcosystem(s.ecosystem);clearGroup(visitorGroup);visitors=[];
-  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;refreshTileVisual(tiles[i])});
+  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
   buildings.slice().forEach(b=>buildingGroup.remove(b.mesh));buildings=[];windRotors.length=0;(s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
   clearGroup(animalGroup);animals=[];(s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateUI();
 }
-function serialize(){return {version:3,scenario:selectedScenario,seed,phase,ecoPoints,builtCount,elapsed,simSpeed,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},tiles:tiles.map(t=>({biome:t.biome,pollution:+t.pollution.toFixed(3),moisture:+t.moisture.toFixed(3)})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z})),savedAt:Date.now()}}
+function serialize(){return {version:3,scenario:selectedScenario,seed,phase,ecoPoints,builtCount,elapsed,simSpeed,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},tiles:tiles.map(t=>({biome:t.biome,pollution:+t.pollution.toFixed(3),moisture:+t.moisture.toFixed(3),path:t.path||null})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z})),savedAt:Date.now()}}
 function saveGame(){
   if(!running||completed)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(serialize()));ui.saveBtn.textContent='저장됨';setTimeout(()=>ui.saveBtn.textContent='저장',900)}catch(e){}
 }
 function loadGame(){
   let s;try{s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(e){}if(!s||![1,2,3].includes(s.version))return false;
   selectedScenario=SCENARIOS[s.scenario]?s.scenario:'valley';phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;elapsed=s.elapsed||0;simSpeed=Number.isFinite(s.simSpeed)?s.simSpeed:1;ecosystem=makeEcosystem(s.ecosystem);generateWorld(s.seed||1);
-  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;refreshTileVisual(tiles[i])});
+  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
   (s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
   (s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateSpecies();
   if(s.camera){cameraTarget.x=s.camera.x||0;cameraTarget.z=s.camera.z||0;viewSize=s.camera.view||17;applyCamera()}
@@ -843,7 +922,7 @@ function undo(){
 }
 function tryCompleteGame(){
   const c=counts();
-  if(buildings.length>0)return false;
+  if(humanFootprintCount()>0)return false;
   if(returnedSpeciesCount()<4||ecosystem.carbon>=65||ecosystem.habitatStress>=45||ecosystem.waterStress>=35||c.restorePct<60||c.waterPct<70){
     toast('시설은 모두 회수했지만 생태계가 아직 안정되지 않았어요. 탄소·물·야생동물을 회복시키세요.','bad',3600);
     return false;
@@ -854,7 +933,7 @@ function completeGame(){
   if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+returnedSpeciesCount()*500+ecoPoints*2+efficiency-ecosystem.waste*3-ecosystem.carbon*4-ecosystem.habitatStress*3-ecosystem.waterStress*2);
   let best=0;try{best=Number(localStorage.getItem(BEST_KEY)||0);if(score>best)localStorage.setItem(BEST_KEY,String(score));localStorage.removeItem(SAVE_KEY)}catch(e){}
   ui.resultScore.textContent=score.toLocaleString();ui.resultRestore.textContent=c.restorePct+'%';ui.resultSpecies.textContent=returnedSpeciesCount()+'종';
-  ui.resultText.textContent=SCENARIOS[selectedScenario].name+'에 시설을 하나도 남기지 않았습니다. '+(score>best?'새 최고 기록이에요!':'최고 기록 '+Math.max(best,score).toLocaleString()+'점');
+  ui.resultText.textContent=SCENARIOS[selectedScenario].name+'에 시설과 길을 하나도 남기지 않았습니다. '+(score>best?'새 최고 기록이에요!':'최고 기록 '+Math.max(best,score).toLocaleString()+'점');
   ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:returnedSpeciesCount()})}catch(e){}
 }
 function beginNew(tutorial=false){
@@ -869,11 +948,12 @@ function showTutorial(){
     ['초록색이라고 모두 정답은 아니에요','화력·공장뿐 아니라 매립지, 채석장, 주차장도 결과를 살펴보세요. 잔디공원과 단일수종 조림은 빠르게 초록색이 되지만 진짜 다양한 생태계와는 다릅니다.'],
     ['오염된 땅을 되살려요','토양 정화기를 풍력 발전기 근처에 설치하세요. 갈색 땅이 초록 초원으로 바뀝니다.'],
     ['강도 함께 살려요','하천 정화기는 강 바로 옆에 세웁니다. 파랗고 깨끗한 물이 늘어나야 다음 단계로 갈 수 있어요.'],
-    ['이제 운영을 시작해요','2단계가 열리면 생태 방문자센터와 관찰대도 지을 수 있어요. 방문객의 생각과 평판을 보면서 자연을 훼손하지 않는 관광지를 운영하세요.'],
-    ['마지막 목표를 기억해요','동물 4종이 돌아오면 회수선이 열립니다. 마지막에는 내가 세운 시설을 0개로 만들고 자연만 남겨야 해요.']
+    ['길부터 연결해요','2단계부터 자연 탐방로·습지 데크길·포장 산책로를 놓을 수 있어요. 방문객은 지도 가장자리와 방문자센터가 길로 연결되어야 들어옵니다.'],
+    ['이제 운영을 시작해요','방문자센터와 관찰대도 지어 보세요. 길의 종류와 혼잡, 벤치·안내판까지 방문객 만족에 영향을 줍니다.'],
+    ['마지막 목표를 기억해요','동물 4종과 지역 운영 목표를 달성하면 회수선이 열립니다. 마지막에는 시설과 길을 모두 걷어내 자연만 남겨야 해요.']
   ];tutorialIndex=clamp(tutorialIndex,0,steps.length-1);ui.tutorialStep.textContent='튜토리얼 '+(tutorialIndex+1)+' / '+steps.length;ui.tutorialTitle.textContent=steps[tutorialIndex][0];ui.tutorialText.textContent=steps[tutorialIndex][1];ui.tutorialCoach.classList.remove('hidden');
 }
-function nextTutorial(){tutorialIndex++;if(tutorialIndex>=6){ui.tutorialCoach.classList.add('hidden');tutorialMode=false;return}showTutorial()}
+function nextTutorial(){tutorialIndex++;if(tutorialIndex>=7){ui.tutorialCoach.classList.add('hidden');tutorialMode=false;return}showTutorial()}
 
 document.querySelectorAll('.tool').forEach(btn=>btn.addEventListener('click',()=>selectTool(btn.dataset.tool)));
 document.querySelectorAll('.scenario').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.scenario').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}));
@@ -895,7 +975,7 @@ function animate(now){
   const simDt=running?dt*simSpeed:0;
   if(running){elapsed+=simDt;saveTimer+=dt;ecologyClock+=simDt;economyClock+=simDt;visitorSpawnClock+=simDt;
     if(visitorSpawnClock>1.4){visitorSpawnClock=0;const target=targetVisitorCount();if(visitors.length<target)spawnVisitor();else if(visitors.length>target&&visitors.length)removeVisitor(visitors[0],false)}
-    if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&buildings.length===0)tryCompleteGame()}
+    if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&humanFootprintCount()===0)tryCompleteGame()}
     if(economyClock>5){economyClock=0;economyTick();checkProgress(true);updateUI()}
     if(saveTimer>20){saveTimer=0;saveGame()}}
   windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*simSpeed);
