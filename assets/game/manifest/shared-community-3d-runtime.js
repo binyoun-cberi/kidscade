@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {shared3DProfile,shared3DCanUse,shared3DRepairPreset} from './shared-community-3d.js';
+import {getShared3D,shared3DProfile,shared3DCanUse,shared3DRepairPreset} from './shared-community-3d.js';
 
 export const SHARED_3D_MATERIAL_PRESETS=Object.freeze({
   schoolBus:Object.freeze({body:0xd9a928,glass:0x6a8fa0,tire:0x25292b,metal:0x7f898c,light:0xffdf86,trim:0x2f3436}),
@@ -40,11 +40,26 @@ export function repairShared3DMaterials(obj,presetName){
   });
   return obj;
 }
-export function prepareShared3DObject(obj,id,target=1){
+export function prepareShared3DObject(obj,id,target=1,options={}){
   if(!obj||!shared3DCanUse(id))return null;
   normalizeShared3DObject(obj,target);
   const preset=shared3DRepairPreset(id);if(preset)repairShared3DMaterials(obj,preset);
-  obj.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+  const shadows=options.shadows!==false;
+  obj.traverse(n=>{if(n.isMesh){n.castShadow=shadows;n.receiveShadow=true}});
   return obj;
+}
+export function shared3DSpawnBudget(id,{coarse=false,quality='auto'}={}){
+  const a=getShared3D(id);if(!a)return 0;
+  let n=a.maxInstances||1;
+  if(coarse)n=Math.max(1,Math.floor(n*.55));
+  if(quality==='low')n=Math.max(1,Math.floor(n*.45));
+  if(quality==='high')n=Math.max(n,Math.min(24,n+Math.ceil(n*.25)));
+  return n;
+}
+export function shared3DShouldLoad(id,{coarse=false}={}){
+  const a=getShared3D(id);if(!a||!shared3DCanUse(id))return false;
+  if(a.loadPolicy==='manual')return false;
+  if(coarse&&a.loadPolicy==='lazy-heavy')return false;
+  return true;
 }
 export function shared3DRuntimeState(id){return shared3DProfile(id).state}
