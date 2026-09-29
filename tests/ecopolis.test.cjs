@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=6');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=7');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -86,7 +86,7 @@ test('Ecopolis supports procedural regions, analysis views, touch, tutorial and 
 
 test('Ecopolis uses QA-gated shared biome art without swapping in unverified animals',()=>{
   assert.match(html,/three\/addons\//);
-  assert.match(html,/game\.js\?v=6/);
+  assert.match(html,/game\.js\?v=7/);
   assert.match(js,/shared-community-3d\.js/);
   assert.match(js,/shared3DIsApproved/);
   assert.match(js,/normalizeShared/);
@@ -102,7 +102,7 @@ test('Ecopolis v5 makes ecosystem health change visible density and animal count
   assert.match(js,/function refreshLivingDecor/);
   assert.match(js,/const desired=pop\[species\]<8\?0/);
   assert.match(js,/returnedSpeciesCount\(\),4,'종'/);
-  assert.match(html,/game\.js\?v=6/);
+  assert.match(html,/game\.js\?v=7/);
 });
 
 test('Ecopolis v6 adds RollerCoaster-Tycoon-style environmental management',()=>{
@@ -121,4 +121,29 @@ test('Ecopolis v6 adds RollerCoaster-Tycoon-style environmental management',()=>
     /reputation/,
     /data-speed/
   ]) assert.match(pattern.source.includes('data-speed')?html:js,pattern);
+});
+
+test('Ecopolis v7 uses asset-backed connected paths and amenities',()=>{
+  for(const pattern of [
+    /trail:\{label:'자연 탐방로'/,
+    /boardwalk:\{label:'습지 데크길'/,
+    /pavedwalk:\{label:'포장 산책로'/,
+    /function renderPathTile/,
+    /function connectedVisitorCenter/,
+    /function pathTravelFactor/,
+    /function pathCrowd/,
+    /humanFootprintCount/,
+    /path-stones-long\.glb/,
+    /structure-floor\.glb/,
+    /path-long\.glb/,
+    /bench\.glb/,
+    /signpost\.glb/,
+    /light-square\.glb/,
+    /character-female-b\.glb/,
+    /cloneSkeleton/
+  ]) assert.match(js,pattern);
+  assert.match(html,/data-tool="trail"/);
+  assert.match(html,/data-tool="boardwalk"/);
+  assert.match(html,/data-tool="pavedwalk"/);
+  assert.match(html,/game\.js\?v=7/);
 });
