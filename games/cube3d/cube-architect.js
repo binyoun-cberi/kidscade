@@ -82,7 +82,7 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
-  ['challengePanel','netPanel','freeHud','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  ['challengePanel','challengeFlyHud','netPanel','freeHud','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   $('topbar').classList.add('hidden');
   $('homeScreen').classList.add('hidden');
   $('actionCheck').classList.add('hidden');
@@ -91,6 +91,7 @@ function clearModeUi(){
   $('actionXray').classList.add('hidden');
 }
 function showHome(){
+  if(document.pointerLockElement===canvas)document.exitPointerLock();
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
   const g=new THREE.GridHelper(16,16,0xffffff,0xb7cbe0);scene.add(g);
@@ -118,7 +119,9 @@ function roundedRect(ctx,x,y,w,h,r){
 const blockGeo=new THREE.BoxGeometry(.96,.96,.96);
 const edgeGeo=new THREE.EdgesGeometry(blockGeo);
 const challengeMat=new THREE.MeshStandardMaterial({color:0xf2d19a,roughness:.78});
+const CHALLENGE_SIZE=16,CHALLENGE_HALF=CHALLENGE_SIZE/2,CHALLENGE_MAX_Y=11;
 let challengeBlocks=new Map(),challengeMeshes=[],challengePlane=null,challengeGhost=null,targetGhosts=[],missionIndex=0;
+let challengeYaw=0,challengePitch=0,challengeKeys={};
 function addCuboid(arr,x0,z0,w,d,h){
   for(let x=x0;x<x0+w;x++)for(let z=z0;z<z0+d;z++)for(let y=0;y<h;y++)arr.push([x,y,z]);
 }
@@ -132,10 +135,10 @@ const challengeMissions=(()=>{
 })();
 function challengeKey(x,y,z){return x+','+y+','+z}
 function addChallengeBlock(x,y,z,quiet){
-  if(x<0||x>5||z<0||z>5||y<0||y>4)return false;
+  if(x<0||x>=CHALLENGE_SIZE||z<0||z>=CHALLENGE_SIZE||y<0||y>CHALLENGE_MAX_Y)return false;
   const key=challengeKey(x,y,z);if(challengeBlocks.has(key))return false;
   if(y>0&&!challengeBlocks.has(challengeKey(x,y-1,z))){if(!quiet)toast('공중에는 바로 놓을 수 없어요. 아래 블록부터 쌓아보세요.');return false}
-  const mesh=new THREE.Mesh(blockGeo,challengeMat.clone());mesh.position.set(x-2.5,y+.5,z-2.5);mesh.castShadow=true;mesh.receiveShadow=true;
+  const mesh=new THREE.Mesh(blockGeo,challengeMat.clone());mesh.position.set(x-CHALLENGE_HALF+.5,y+.5,z-CHALLENGE_HALF+.5);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.userData={cx:x,cy:y,cz:z,challenge:true};const line=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:0x8b633c,transparent:true,opacity:.6}));mesh.add(line);
   scene.add(mesh);challengeBlocks.set(key,mesh);challengeMeshes.push(mesh);if(!quiet)sfx('place');return true;
 }
@@ -175,41 +178,107 @@ function drawBlueprint(){
   $('missionName').textContent=m.name;$('missionTip').textContent=m.tip;
 }
 function initChallenge(){
-  modeTitle('설계도 챌린지','겨냥도 → 3D 건축');
-  setVisible('challengePanel',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
-  cleanScene(0xeaf6ff);camera.position.set(7,6.5,8);camera.lookAt(0,1.5,0);makeOrbit(new THREE.Vector3(0,1.4,0));
+  modeTitle('설계도 챌린지','겨냥도 → 3D 크리에이티브 건축');
+  setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
+  cleanScene(0xeaf6ff);
+  camera.position.set(5.5,4.5,7.5);camera.rotation.order='YXZ';challengeYaw=.55;challengePitch=-.28;challengeKeys={};updateChallengeCamera();
   const planeMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.DoubleSide});
-  challengePlane=new THREE.Mesh(new THREE.PlaneGeometry(6,6),planeMat);challengePlane.rotation.x=-Math.PI/2;challengePlane.position.y=.001;challengePlane.userData.base=true;scene.add(challengePlane);
-  const grid=new THREE.GridHelper(6,6,0x5c6fb0,0xb7cbe1);grid.position.y=.01;scene.add(grid);
-  challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.28}));challengeGhost.visible=false;scene.add(challengeGhost);
+  challengePlane=new THREE.Mesh(new THREE.PlaneGeometry(CHALLENGE_SIZE,CHALLENGE_SIZE),planeMat);challengePlane.rotation.x=-Math.PI/2;challengePlane.position.y=.001;challengePlane.userData.base=true;scene.add(challengePlane);
+  const grid=new THREE.GridHelper(CHALLENGE_SIZE,CHALLENGE_SIZE,0x5269c7,0xa9c2da);grid.position.y=.01;scene.add(grid);
+  challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];drawBlueprint();updateChallengeStats();
   $('actionCheck').onclick=checkChallenge;$('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%challengeMissions.length;clearChallenge();drawBlueprint()};
   $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(challengeMissions[missionIndex].tip);
+  $('challengeLockNotice').classList.remove('hidden');$('challengeLockNotice').onclick=()=>canvas.requestPointerLock();
   showTutorial('challenge');
 }
-function challengeHit(ev){
-  const rect=canvas.getBoundingClientRect();mouse.x=((ev.clientX-rect.left)/rect.width)*2-1;mouse.y=-((ev.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(mouse,camera);return raycaster.intersectObjects(challengeMeshes.concat([challengePlane]),false)[0]||null;
+function challengeCenterHit(max=8){
+  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hit=raycaster.intersectObjects(challengeMeshes.concat([challengePlane]),false)[0]||null;
+  return hit&&hit.distance<=max?hit:null;
 }
 function challengePlaceTarget(hit){
   if(!hit)return null;
   if(hit.object===challengePlane){
-    return {x:Math.floor(hit.point.x+3),y:0,z:Math.floor(hit.point.z+3)};
+    return {x:Math.floor(hit.point.x+CHALLENGE_HALF),y:0,z:Math.floor(hit.point.z+CHALLENGE_HALF)};
   }
-  const d=hit.object.userData,n=hit.face.normal;return {x:d.cx+Math.round(n.x),y:d.cy+Math.round(n.y),z:d.cz+Math.round(n.z)};
+  const d=hit.object.userData,n=hit.face&&hit.face.normal;if(!n)return null;
+  return {x:d.cx+Math.round(n.x),y:d.cy+Math.round(n.y),z:d.cz+Math.round(n.z)};
+}
+function updateChallengeGhost(){
+  if(!challengeGhost)return;
+  const hit=challengeCenterHit(),p=challengePlaceTarget(hit);
+  if(p&&p.x>=0&&p.x<CHALLENGE_SIZE&&p.z>=0&&p.z<CHALLENGE_SIZE&&p.y>=0&&p.y<=CHALLENGE_MAX_Y&&!challengeBlocks.has(challengeKey(p.x,p.y,p.z))){
+    challengeGhost.position.set(p.x-CHALLENGE_HALF+.5,p.y+.5,p.z-CHALLENGE_HALF+.5);challengeGhost.visible=true;
+  }else challengeGhost.visible=false;
 }
 function clearTargetGhosts(){targetGhosts.forEach(m=>scene.remove(m));targetGhosts=[]}
+function normalizedShape(points){
+  if(!points.length)return {keys:new Set(),min:[0,0,0],points:[]};
+  const minX=Math.min(...points.map(p=>p[0])),minY=Math.min(...points.map(p=>p[1])),minZ=Math.min(...points.map(p=>p[2]));
+  const norm=points.map(p=>[p[0]-minX,p[1]-minY,p[2]-minZ]);
+  return {keys:new Set(norm.map(p=>challengeKey(...p))),min:[minX,minY,minZ],points:norm};
+}
+function rotateShapeY(points,turn){
+  let out=points.map(p=>p.slice());
+  for(let t=0;t<turn;t++)out=out.map(([x,y,z])=>[-z,y,x]);
+  return normalizedShape(out).points;
+}
+function bestChallengeMatch(){
+  const userPoints=Array.from(challengeBlocks.values()).map(m=>[m.userData.cx,m.userData.cy,m.userData.cz]);
+  const user=normalizedShape(userPoints);
+  const targetRaw=challengeMissions[missionIndex].blocks.map(p=>p.slice());
+  let best={common:0,union:Infinity,score:0,target:null,targetKeys:new Set(),user:user,turn:0};
+  for(let turn=0;turn<4;turn++){
+    const target=normalizedShape(rotateShapeY(targetRaw,turn));
+    let common=0;user.keys.forEach(k=>{if(target.keys.has(k))common++});
+    const union=new Set([...user.keys,...target.keys]).size;
+    const score=union?Math.round(common/union*100):0;
+    if(score>best.score||(score===best.score&&union<best.union))best={common,union,score,target,targetKeys:target.keys,user,turn};
+  }
+  return best;
+}
 function checkChallenge(){
   clearTargetGhosts();
-  const targetSet=new Set(challengeMissions[missionIndex].blocks.map(v=>challengeKey(v[0],v[1],v[2])));
-  const userSet=new Set(challengeBlocks.keys());let common=0;userSet.forEach(k=>{if(targetSet.has(k))common++});
-  const union=new Set([...targetSet,...userSet]).size;const score=union?Math.round(common/union*100):0;
-  challengeMeshes.forEach(m=>{const k=challengeKey(m.userData.cx,m.userData.cy,m.userData.cz);m.material.color.set(targetSet.has(k)?0x56bd91:0xf08a80)});
-  targetSet.forEach(k=>{if(userSet.has(k))return;const a=k.split(',').map(Number),g=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,wireframe:true,transparent:true,opacity:.8}));g.position.set(a[0]-2.5,a[1]+.5,a[2]-2.5);scene.add(g);targetGhosts.push(g)});
-  const missing=targetSet.size-common,extra=userSet.size-common;$('resultCard').classList.remove('hidden');$('resultScore').textContent=score+'%';
-  $('resultText').innerHTML='같은 위치 <b>'+common+'</b>개 · 더 필요한 블록 <b>'+missing+'</b>개 · 다른 위치 블록 <b>'+extra+'</b>개<br>파란 선은 아직 필요한 위치예요.';
-  if(score===100){toast('설계도 완벽 복원! 다음 설계도로 가도 좋아요.');sfx('good');reportResult('challenge',100,true)}
-  else{toast('정답을 겹쳐 봤어요. 다른 부분을 고쳐보세요.');sfx('bad')}
+  const match=bestChallengeMatch(),userPoints=Array.from(challengeBlocks.values()).map(m=>[m.userData.cx,m.userData.cy,m.userData.cz]);
+  const origin=match.user.min;
+  challengeMeshes.forEach(m=>{
+    const k=challengeKey(m.userData.cx-origin[0],m.userData.cy-origin[1],m.userData.cz-origin[2]);
+    m.material.color.set(match.targetKeys.has(k)?0x56bd91:0xf08a80);
+  });
+  match.target.points.forEach(p=>{
+    const k=challengeKey(...p);if(match.user.keys.has(k))return;
+    const gx=origin[0]+p[0],gy=origin[1]+p[1],gz=origin[2]+p[2];
+    const g=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,wireframe:true,transparent:true,opacity:.82}));
+    g.position.set(gx-CHALLENGE_HALF+.5,gy+.5,gz-CHALLENGE_HALF+.5);scene.add(g);targetGhosts.push(g);
+  });
+  const targetCount=match.target.points.length,userCount=userPoints.length,missing=Math.max(0,targetCount-match.common),extra=Math.max(0,userCount-match.common);
+  $('resultCard').classList.remove('hidden');$('resultScore').textContent=match.score+'%';
+  $('resultText').innerHTML=match.score===100
+    ? '건물을 <b>어디에 지었는지는 상관없어요.</b><br>모양과 블록 배치가 설계도와 같습니다.'
+    : '같은 모양 블록 <b>'+match.common+'</b>개 · 더 필요한 블록 <b>'+missing+'</b>개 · 다른 블록 <b>'+extra+'</b>개<br>파란 선은 <b>내 건축물 위치에 맞춰</b> 겹쳐 보여 줍니다.';
+  if(match.score===100){toast('정답! 위치와 방향이 달라도 같은 건축물이면 인정합니다.');sfx('good');reportResult('challenge',100,true)}
+  else{toast('위치는 채점하지 않아요. 모양이 다른 부분만 확인해 보세요.');sfx('bad')}
+}
+function updateChallengeCamera(){
+  camera.rotation.order='YXZ';camera.rotation.y=challengeYaw;camera.rotation.x=challengePitch;
+}
+function updateChallengeFly(dt){
+  const speed=(challengeKeys.ControlLeft||challengeKeys.ControlRight)?8.5:5.2;
+  const forward=new THREE.Vector3(Math.sin(challengeYaw),0,Math.cos(challengeYaw));
+  const right=new THREE.Vector3(Math.cos(challengeYaw),0,-Math.sin(challengeYaw));
+  const move=new THREE.Vector3();
+  if(challengeKeys.KeyW||challengeKeys.ArrowUp)move.addScaledVector(forward,-1);
+  if(challengeKeys.KeyS||challengeKeys.ArrowDown)move.add(forward);
+  if(challengeKeys.KeyA||challengeKeys.ArrowLeft)move.addScaledVector(right,-1);
+  if(challengeKeys.KeyD||challengeKeys.ArrowRight)move.add(right);
+  if(move.lengthSq())camera.position.add(move.normalize().multiplyScalar(speed*dt));
+  if(challengeKeys.Space)camera.position.y+=speed*dt;
+  if(challengeKeys.ShiftLeft||challengeKeys.ShiftRight)camera.position.y-=speed*dt;
+  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-13,13);
+  camera.position.z=THREE.MathUtils.clamp(camera.position.z,-13,13);
+  camera.position.y=THREE.MathUtils.clamp(camera.position.y,.7,14);
+  updateChallengeCamera();updateChallengeGhost();
 }
 
 /* ---------------- 전개도 연구실 ---------------- */
@@ -415,7 +484,7 @@ function updateFree(dt,t){
 function showTutorial(kind){
   const once='cubeArchitectTutorial_'+kind;try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
-  if(kind==='challenge')html='<h2>설계도 챌린지</h2><p>왼쪽 겨냥도를 관찰하고 오른쪽 3D 공간에 블록을 쌓아 최대한 닮게 만들어 보세요.</p><div class="keys"><div class="keyrow"><b>좌클릭</b>블록 놓기</div><div class="keyrow"><b>우클릭</b>블록 치우기</div><div class="keyrow"><b>드래그</b>건축물 돌려보기</div><div class="keyrow"><b>검사</b>정답과 겹쳐보기</div></div>';
+  if(kind==='challenge')html='<h2>설계도 챌린지 · 크리에이티브 비행</h2><p>겨냥도를 보며 플레이어가 직접 날아다니고 블록을 설치해 건축하세요. 건물의 위치는 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
   if(kind==='free')html='<h2>아키텍트 월드</h2><p>작은 큐브 섬을 탐험하고 재료를 발견하면서 자유롭게 건축하세요. 수학 미션은 선택입니다.</p><div class="keys"><div class="keyrow"><b>WASD</b>걷기</div><div class="keyrow"><b>Space</b>점프</div><div class="keyrow"><b>좌/우클릭</b>파괴 / 설치</div><div class="keyrow"><b>1~6 / R / X</b>재료 / 색칠 / 구조 보기</div></div>';
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
@@ -424,30 +493,48 @@ window.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false});
 canvas.addEventListener('pointermove',e=>{
   if(pointerDown&&(Math.abs(e.clientX-pointerDown.x)>5||Math.abs(e.clientY-pointerDown.y)>5))pointerDragged=true;
-  if(mode==='challenge'&&challengeGhost){
-    const h=challengeHit(e),p=challengePlaceTarget(h);if(p&&p.x>=0&&p.x<=5&&p.z>=0&&p.z<=5&&p.y>=0&&p.y<=4){challengeGhost.position.set(p.x-2.5,p.y+.5,p.z-2.5);challengeGhost.visible=true}else challengeGhost.visible=false;
-  }
 });
 canvas.addEventListener('pointerup',e=>{
   if(pointerDragged){pointerDown=null;return}
-  if(mode==='challenge'){const h=challengeHit(e);if(e.button===2&&h&&h.object.userData.challenge)removeChallengeBlock(h.object);else if(e.button===0){const p=challengePlaceTarget(h);if(p)addChallengeBlock(p.x,p.y,p.z)}updateChallengeStats()}
-  else if(mode==='net'&&e.button===0){assignNetFace(netHit(e))}
+  if(mode==='net'&&e.button===0){assignNetFace(netHit(e))}
   pointerDown=null;
 });
 canvas.addEventListener('mousedown',e=>{
-  if(mode!=='free'||document.pointerLockElement!==canvas)return;const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit);
+  if(document.pointerLockElement!==canvas)return;
+  if(mode==='challenge'){
+    const hit=challengeCenterHit(8);
+    if(e.button===0&&hit&&hit.object.userData.challenge)removeChallengeBlock(hit.object);
+    if(e.button===2){const p=challengePlaceTarget(hit);if(p)addChallengeBlock(p.x,p.y,p.z)}
+    updateChallengeStats();updateChallengeGhost();return;
+  }
+  if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
 });
-canvas.addEventListener('click',()=>{if(mode==='free'&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden'))canvas.requestPointerLock()});
-document.addEventListener('pointerlockchange',()=>{if(mode==='free')$('lockNotice').classList.toggle('hidden',document.pointerLockElement===canvas)});
-document.addEventListener('mousemove',e=>{if(mode!=='free'||document.pointerLockElement!==canvas)return;yaw-=e.movementX*.0023;pitch-=e.movementY*.0023;pitch=THREE.MathUtils.clamp(pitch,-1.35,1.35)});
+canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden'))canvas.requestPointerLock()});
+document.addEventListener('pointerlockchange',()=>{
+  if(mode==='free')$('lockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
+  if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
+});
+document.addEventListener('mousemove',e=>{
+  if(document.pointerLockElement!==canvas)return;
+  if(mode==='challenge'){challengeYaw-=e.movementX*.0023;challengePitch-=e.movementY*.0023;challengePitch=THREE.MathUtils.clamp(challengePitch,-1.45,1.45);updateChallengeCamera();return}
+  if(mode==='free'){yaw-=e.movementX*.0023;pitch-=e.movementY*.0023;pitch=THREE.MathUtils.clamp(pitch,-1.35,1.35)}
+});
 document.addEventListener('keydown',e=>{
+  if(mode==='challenge'){
+    challengeKeys[e.code]=true;
+    if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight')e.preventDefault();
+    if(e.code==='KeyC')checkChallenge();
+    if(e.code==='KeyH')toast(challengeMissions[missionIndex].tip);
+    if(e.code==='KeyN'){missionIndex=(missionIndex+1)%challengeMissions.length;clearChallenge();drawBlueprint()}
+    return;
+  }
   freeKeys[e.code]=true;if(mode!=='free')return;
   if(e.code==='Space'&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
   if(/^Digit[1-6]$/.test(e.code)){const i=Number(e.code.slice(-1))-1;if(i<unlocked){selectedMaterial=i;buildHotbar()}}
   if(e.code==='KeyR')paintTarget();if(e.code==='KeyX')toggleXray();
   if(e.code==='KeyE'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
 });
-document.addEventListener('keyup',e=>{freeKeys[e.code]=false});
+document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
 function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
 }
@@ -457,7 +544,7 @@ function resize(){
 window.addEventListener('resize',resize);
 let last=performance.now();
 function animate(now){
-  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='free')updateFree(dt,now);if(renderer)renderer.render(scene,camera);
+  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='challenge')updateChallengeFly(dt);if(mode==='free')updateFree(dt,now);if(renderer)renderer.render(scene,camera);
 }
 window.CubeArchitectReady=true;
 window.CubeArchitect={enterMode,showHome};
