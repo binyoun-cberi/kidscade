@@ -17,6 +17,9 @@ const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;
 const loader=new GLTFLoader();
 const assets=Object.values(SHARED_3D).sort((a,b)=>a.id.localeCompare(b.id));
 let current=0,raw=false,loadToken=0,currentObject=null,currentGltf=null,materialMode='original';
+const AUDIT_KEY='kidscade-shared3d-audit-v1';
+let auditReport=null;
+const auditProgress=document.getElementById('auditProgress'),scanAllBtn=document.getElementById('scanAll'),downloadAuditBtn=document.getElementById('downloadAudit');
 
 for(const [i,a] of assets.entries()){const o=document.createElement('option');o.value=String(i);o.textContent=a.id;select.appendChild(o)}
 function clear(){while(root.children.length)root.remove(root.children[0])}
@@ -80,6 +83,54 @@ function applyMaterialMode(){
   else if(materialMode==='wire')applyWireframe(currentObject);
   else restoreOriginalMaterials(currentObject);
 }
+function objectStructure(o,gltf=null){
+  let meshes=0,skinnedMeshes=0,morphMeshes=0,vertices=0;
+  o.traverse(n=>{
+    if(!n.isMesh)return;meshes++;
+    if(n.isSkinnedMesh)skinnedMeshes++;
+    if(n.morphTargetInfluences?.length)morphMeshes++;
+    const pos=n.geometry?.getAttribute?.('position');if(pos)vertices+=pos.count||0;
+  });
+  const ml=materialList(o),textured=ml.filter(m=>m.map).length;
+  const gray=ml.filter(m=>{if(!m.color||m.color==='-')return false;const c=new THREE.Color(m.color);return Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b)<.08}).length;
+  const b=new THREE.Box3().setFromObject(o),sz=b.getSize(new THREE.Vector3()),center=b.getCenter(new THREE.Vector3());
+  return {meshes,skinnedMeshes,morphMeshes,vertices,materials:ml.length,texturedMaterials:textured,grayMaterials:gray,animations:gltf?.animations?.length||0,bounds:[sz.x,sz.y,sz.z],center:[center.x,center.y,center.z]};
+}
+function auditSuggestion(asset,st){
+  if(asset.bytes>4_000_000)return {state:'blocked',reason:'4MB 초과 — 최적화 전 자동 로딩 금지'};
+  if(st.skinnedMeshes>0||st.animations>0)return {state:'review',reason:'스킨/애니메이션 모델 — SkeletonUtils·기본 포즈·클립 확인 필요'};
+  if(st.materials===0)return {state:'review',reason:'표준 재질 정보가 보이지 않음'};
+  if(st.texturedMaterials===0&&st.grayMaterials===st.materials&&st.materials>0)return {state:'repair',reason:st.materials>1?'무텍스처 무채색 재질 슬롯 — 런타임 팔레트 후보':'단일 무채색 재질 — 부분 채색은 모델 편집 필요'};
+  if(Math.max(...st.bounds)>100||Math.min(...st.bounds)<=0)return {state:'review',reason:'비정상 바운드/스케일 확인 필요'};
+  return {state:'approved-candidate',reason:'구조 검사상 정적 사용 후보 — 최종 육안 확인 필요'};
+}
+function auditLoad(asset){
+  return new Promise(resolve=>{
+    loader.load('../'+asset.path,g=>{
+      const raw=g.scene,st=objectStructure(raw,g),suggestion=auditSuggestion(asset,st);
+      resolve({id:asset.id,path:asset.path,bytes:asset.bytes,tags:asset.tags,usage:{loadPolicy:asset.loadPolicy,maxInstances:asset.maxInstances,cloneMode:asset.cloneMode},...st,suggestion});
+    },undefined,e=>resolve({id:asset.id,path:asset.path,bytes:asset.bytes,error:String(e?.message||e),suggestion:{state:'review',reason:'로드 실패'}}));
+  });
+}
+async function runFullAudit(){
+  scanAllBtn.disabled=true;downloadAuditBtn.disabled=true;
+  const results=[];
+  for(let i=0;i<assets.length;i++){
+    auditProgress.textContent='구조 검사 '+(i+1)+' / '+assets.length+' · '+assets[i].id;
+    results.push(await auditLoad(assets[i]));
+  }
+  const summary={};
+  for(const r of results){const k=r.suggestion?.state||'unknown';summary[k]=(summary[k]||0)+1}
+  auditReport={version:1,generatedAt:new Date().toISOString(),assetCount:results.length,summary,results};
+  try{localStorage.setItem(AUDIT_KEY,JSON.stringify(auditReport))}catch(_){}
+  auditProgress.textContent='검사 완료 · '+Object.entries(summary).map(([k,v])=>k+' '+v).join(' · ');
+  scanAllBtn.disabled=false;downloadAuditBtn.disabled=false;
+}
+function downloadAudit(){
+  if(!auditReport)return;
+  const blob=new Blob([JSON.stringify(auditReport,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='kidscade-shared-3d-audit.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function materialSummary(o){
   const mats=new Set();let meshes=0,gray=0;
   o.traverse(n=>{if(!n.isMesh)return;meshes++;const list=Array.isArray(n.material)?n.material:[n.material];for(const m of list){if(!m)continue;mats.add(m.uuid);const c=m.color;if(c){const max=Math.max(c.r,c.g,c.b),min=Math.min(c.r,c.g,c.b);if(max-min<.08)gray++}}});
@@ -104,5 +155,7 @@ document.getElementById('originalMaterial').onclick=()=>{materialMode='original'
 document.getElementById('slotMaterial').onclick=()=>{materialMode='slot';applyMaterialMode()};
 document.getElementById('repairMaterial').onclick=()=>{materialMode='repair';applyMaterialMode()};
 document.getElementById('wireMaterial').onclick=()=>{materialMode='wire';applyMaterialMode()};
+scanAllBtn.onclick=runFullAudit;downloadAuditBtn.onclick=downloadAudit;
+try{auditReport=JSON.parse(localStorage.getItem(AUDIT_KEY)||'null');if(auditReport?.results?.length===assets.length){downloadAuditBtn.disabled=false;auditProgress.textContent='이전에 검사한 '+auditReport.results.length+'개 결과가 있습니다.'}}catch(_){}
 function resize(){const r=canvas.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera)}loop();loadIndex(0);
