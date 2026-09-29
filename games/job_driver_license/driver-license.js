@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { shared3DPath, shared3DCanUse } from '../../assets/game/manifest/shared-community-3d.js';
-import { prepareShared3DObject } from '../../assets/game/manifest/shared-community-3d-runtime.js';
+import { prepareShared3DObject, shared3DShouldLoad } from '../../assets/game/manifest/shared-community-3d-runtime.js';
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -9,6 +9,7 @@ const approach=(v,target,amount)=>v<target?Math.min(target,v+amount):Math.max(ta
 const deg=r=>r*180/Math.PI;
 const rad=d=>d*Math.PI/180;
 const normAngle=a=>Math.atan2(Math.sin(a),Math.cos(a));
+const sharedCoarse=matchMedia?.('(pointer: coarse)')?.matches||navigator.maxTouchPoints>0;
 
 const ui={
   canvas:document.querySelector('#game'),
@@ -413,7 +414,7 @@ function normalizeVisualModel(obj,target=1){
 function loadVisualModel(key,url){
   if(!url)return Promise.resolve(false);
   const sharedId=SHARED_VISUAL_IDS[key];
-  if(sharedId&&!shared3DCanUse(sharedId))return Promise.resolve(false);
+  if(sharedId&&(!shared3DCanUse(sharedId)||!shared3DShouldLoad(sharedId,{coarse:sharedCoarse})))return Promise.resolve(false);
   return new Promise(resolve=>{
     loader.load(url,g=>{visualModels.set(key,g.scene);resolve(true)},undefined,()=>resolve(false));
   });
@@ -421,7 +422,7 @@ function loadVisualModel(key,url){
 function cloneVisual(key,target=1){
   const src=visualModels.get(key);if(!src)return null;
   const sharedId=SHARED_VISUAL_IDS[key];
-  if(sharedId)return prepareShared3DObject(src.clone(true),sharedId,target);
+  if(sharedId)return prepareShared3DObject(src.clone(true),sharedId,target,{shadows:key!=='sharedGrass'});
   return normalizeVisualModel(styleVisualModel(src.clone(true)),target);
 }
 function placeVisual(key,target,x,z,rot=0,y=.04,parent=visualWorld){
