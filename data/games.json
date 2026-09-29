@@ -2,6 +2,28 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_apocalypse_survival",
+      "title": "멸망에서 살아남기",
+      "href": "games/high_apocalypse_survival/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌎",
+      "description": "전기와 수도가 끊긴 3D 오픈월드에서 물을 정화하고 불·쉼터를 만들며 생존자를 구조해 7일차 폭우까지 버티는 과학·사회 융합 생존 게임. 지식을 퀴즈가 아니라 행동과 결과로 발견하고 공동체의 자원 배분을 직접 결정해요.",
+      "subject": "science",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 30,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_code_quest",
       "title": "버그월드: 코드 원정대",
       "href": "games/high_code_quest/index.html?v=7",
