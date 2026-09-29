@@ -19,13 +19,13 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=3/);
+  assert.match(html,/game\.js\?v=4/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
   for(const day of [1,2,3,4,5,6,7])assert.match(js,new RegExp('\\n '+day+':\\{title:'));
-  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
-  for(const id of ['campfire','shelter','workbench'])assert.ok(js.includes(id),id);
+  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','foodPreservation','waterTreatment','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
+  for(const id of ['campfire','shelter','workbench','farm','cooler','purifier'])assert.ok(js.includes(id),id);
   assert.match(js,/chooseDistribution/);
   assert.match(js,/readyFlood/);
   assert.match(js,/repairPower/);
@@ -34,12 +34,22 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/currentObjective/);
   assert.match(js,/samplePollutedWater/);
   assert.match(js,/updateNpc/);
+  assert.match(js,/terrainHeight/);
+  assert.match(js,/blockedAt/);
+  assert.match(js,/ruinShell/);
+  assert.match(js,/lootRuin/);
+  assert.match(js,/residentCount/);
+  assert.match(js,/jobPower/);
+  assert.match(js,/updateFarms/);
+  assert.match(js,/spoilFood/);
+  assert.match(js,/powerUse/);
+  assert.match(js,/togglePowerLoad/);
   assert.match(js,/finish\(\)/);
 });
 
 test('tracked Kidscade survival assets used by the game exist',()=>{
   const base=path.join(root,'assets','game','3d','survival','kenney-survival-kit');
-  for(const file of ['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb'])assert.ok(fs.existsSync(path.join(base,file)),'missing '+file);
+  for(const file of ['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb','patch-grass-large.glb','chest.glb','barrel.glb'])assert.ok(fs.existsSync(path.join(base,file)),'missing '+file);
   assert.match(js,/kenney-survival-kit/);
   assert.match(js,/renderAvatarSVG/);
 });
@@ -47,7 +57,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
 test('game is registered in catalog metadata v7',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=3');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=4');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
