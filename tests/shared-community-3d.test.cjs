@@ -43,5 +43,6 @@ test('QA viewer can batch inspect the whole shared asset library',()=>{
   assert.match(viewer,/skinnedMeshes/);
   assert.match(viewer,/animations/);
   assert.match(viewer,/texturedMaterials/);
+  assert.match(viewer,/vertexColorMeshes/);
   assert.match(viewer,/kidscade-shared3d-audit-v1/);
 });
