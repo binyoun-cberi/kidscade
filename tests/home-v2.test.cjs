@@ -236,3 +236,24 @@ test('Home V2 exposes new and hidden discovery rails', () => {
   assert.ok(rails.find(rail => rail.key === 'new'));
   assert.ok(rails.find(rail => rail.key === 'hidden'));
 });
+
+
+test('Home V2 desktop rails use overlay circle arrows instead of visible scrollbars', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const source=fs.readFileSync(path.resolve(__dirname,'..','home-v2.js'),'utf8');
+  const css=fs.readFileSync(path.resolve(__dirname,'..','home-v2.css'),'utf8');
+
+  assert.match(source, /kc-home-rail-viewport/);
+  assert.match(source, /kc-home-rail-nav-prev/);
+  assert.match(source, /kc-home-rail-nav-next/);
+  assert.match(source, /track\.clientWidth \* 0\.9/);
+  assert.match(source, /updateRailNavigationState/);
+
+  assert.match(css, /\.kc-home-rail-nav\s*\{/);
+  assert.match(css, /border-radius:999px/);
+  assert.match(css, /scrollbar-width:none/);
+  assert.match(css, /\.kc-home-rail-track::\-webkit-scrollbar\s*\{\s*display:none/);
+  assert.doesNotMatch(css, /scrollbar-width:thin/);
+  assert.match(css, /@media \(max-width:940px\)[\s\S]*\.kc-home-rail-nav \{ display:none; \}/);
+});
