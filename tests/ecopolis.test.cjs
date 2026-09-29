@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=5');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=6');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -86,7 +86,7 @@ test('Ecopolis supports procedural regions, analysis views, touch, tutorial and 
 
 test('Ecopolis uses QA-gated shared biome art without swapping in unverified animals',()=>{
   assert.match(html,/three\/addons\//);
-  assert.match(html,/game\.js\?v=5/);
+  assert.match(html,/game\.js\?v=6/);
   assert.match(js,/shared-community-3d\.js/);
   assert.match(js,/shared3DIsApproved/);
   assert.match(js,/normalizeShared/);
@@ -102,5 +102,23 @@ test('Ecopolis v5 makes ecosystem health change visible density and animal count
   assert.match(js,/function refreshLivingDecor/);
   assert.match(js,/const desired=pop\[species\]<8\?0/);
   assert.match(js,/returnedSpeciesCount\(\),4,'종'/);
-  assert.match(html,/game\.js\?v=5/);
+  assert.match(html,/game\.js\?v=6/);
+});
+
+test('Ecopolis v6 adds RollerCoaster-Tycoon-style environmental management',()=>{
+  for(const pattern of [
+    /visitorcenter:\{label:'생태 방문자센터'/,
+    /observatory:\{label:'야생동물 관찰대'/,
+    /researchstation:\{label:'생태 연구소'/,
+    /ecocafe:\{label:'로컬 푸드 카페'/,
+    /function spawnVisitor/,
+    /function animateVisitors/,
+    /function localVisitorThought/,
+    /function economyTick/,
+    /function scenarioGoals/,
+    /function findVisitorPath/,
+    /visitorsServed/,
+    /reputation/,
+    /data-speed/
+  ]) assert.match(pattern.source.includes('data-speed')?html:js,pattern);
 });
