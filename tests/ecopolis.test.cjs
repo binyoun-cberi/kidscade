@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=1');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=2');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -32,6 +32,11 @@ test('Ecopolis uses the common shell and local Three runtime',()=>{
 test('Ecopolis contains the reverse city-builder loop',()=>{
   for(const pattern of [
     /wind:\{label:'풍력 발전기'/,
+/solar:\{label:'태양광 발전소'/,
+/geothermal:\{label:'지열 발전소'/,
+/nuclear:\{label:'원자력 발전소'/,
+/coal:\{label:'화력 발전소'/,
+/carfactory:\{label:'자동차 공장'/,
     /purifier:\{label:'토양 정화기'/,
     /waterfilter:\{label:'하천 정화기'/,
     /wetland:\{label:'습지 씨앗'/,
@@ -44,13 +49,19 @@ test('Ecopolis contains the reverse city-builder loop',()=>{
     /function updateSpecies/,
     /function launchRecycler/,
     /buildings\.length===0/,
-    /function completeGame/
+    /function ecologyTick/,
+/function polluteAround/,
+/function energySummary/,
+/function completeGame/
   ]) assert.match(js,pattern);
 });
 
 test('Ecopolis supports procedural regions, analysis views, touch, tutorial and saving',()=>{
   assert.match(js,/function mulberry32/);
   assert.match(js,/SCENARIOS/);
+  assert.match(js,/function sunAt/);
+  assert.match(js,/function geothermalAt/);
+  assert.match(js,/ecosystem\.carbon/);
   assert.match(js,/function toggleAnalysis/);
   assert.match(js,/pointerdown/);
   assert.match(js,/function showTutorial/);
