@@ -55,3 +55,6 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
   #guestPanel{display:none}
 }
 @media(max-height:650px){#tycoonBar{top:68px}#mission,#topActions{top:114px}}
+
+.pathTool{background:rgba(210,190,143,.07)}.pathTool.active{background:rgba(210,190,143,.2);border-color:rgba(235,214,164,.75)}
+#tycoonBar{max-width:calc(100% - 32px);overflow-x:auto;scrollbar-width:none}#tycoonBar::-webkit-scrollbar{display:none}
