@@ -52,6 +52,66 @@ function tendencies(p){
 }
 function actorSpeed(a,sprint){var base=175+stat(a.p,'speed')*1.05;return base*(sprint?1.20:1)*(0.72+0.28*a.energy/100);}
 function teamColor(t,side){return t.club&&t.club.accent?t.club.accent:(side===0?'#22c55e':'#3b82f6');}
+function hexRgb(hex){
+  var s=String(hex||'#64748b').replace('#','');
+  if(s.length===3)s=s[0]+s[0]+s[1]+s[1]+s[2]+s[2];
+  var n=parseInt(s,16);if(!Number.isFinite(n))return{r:100,g:116,b:139};
+  return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+}
+function rgbHex(rgb){
+  function h(v){return Math.round(clamp(v,0,255)).toString(16).padStart(2,'0');}
+  return '#'+h(rgb.r)+h(rgb.g)+h(rgb.b);
+}
+function mixColor(a,b,t){
+  var x=hexRgb(a),y=hexRgb(b);return rgbHex({r:lerp(x.r,y.r,t),g:lerp(x.g,y.g,t),b:lerp(x.b,y.b,t)});
+}
+function colorDistance(a,b){
+  var x=hexRgb(a),y=hexRgb(b),dr=x.r-y.r,dg=x.g-y.g,db=x.b-y.b;
+  return Math.sqrt(dr*dr+dg*dg+db*db);
+}
+function readableInk(hex){
+  var c=hexRgb(hex),lum=.2126*c.r+.7152*c.g+.0722*c.b;
+  return lum>155?'#0f172a':'#f8fafc';
+}
+function buildTeamKits(teams){
+  var home=teamColor(teams[0],0),away=teamColor(teams[1],1);
+  if(colorDistance(home,away)<115){
+    var choices=['#2563eb','#dc2626','#7c3aed','#0891b2','#ea580c','#16a34a'];
+    choices.sort(function(a,b){return colorDistance(b,home)-colorDistance(a,home);});
+    away=choices[0];
+  }
+  return [home,away].map(function(field,side){
+    return{
+      field:field,
+      trim:readableInk(field),
+      shorts:mixColor(field,'#0f172a',.42),
+      socks:readableInk(field),
+      keeper:side===0?'#facc15':'#a855f7'
+    };
+  });
+}
+function drawKitOverlay(ctx,x,y,sc,a,kit,number){
+  var body=a.slot==='GK'?kit.keeper:kit.field,trim=a.slot==='GK'?'#111827':kit.trim,shorts=a.slot==='GK'?mixColor(kit.keeper,'#111827',.48):kit.shorts;
+  ctx.save();
+  ctx.globalAlpha=.96;
+  ctx.fillStyle=body;
+  round(ctx,x-12.5*sc,y-56*sc,25*sc,21*sc,5*sc);ctx.fill();
+  round(ctx,x-18*sc,y-54*sc,7*sc,12*sc,3*sc);ctx.fill();
+  round(ctx,x+11*sc,y-54*sc,7*sc,12*sc,3*sc);ctx.fill();
+  ctx.fillStyle=trim;
+  round(ctx,x-12.5*sc,y-48*sc,25*sc,3*sc,1.5*sc);ctx.fill();
+  ctx.fillStyle=shorts;
+  round(ctx,x-11*sc,y-36*sc,22*sc,11*sc,3*sc);ctx.fill();
+  ctx.fillStyle=kit.socks;
+  round(ctx,x-9*sc,y-17*sc,5*sc,11*sc,2*sc);ctx.fill();
+  round(ctx,x+4*sc,y-17*sc,5*sc,11*sc,2*sc);ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=readableInk(body);
+  ctx.font='900 '+Math.max(7,Math.round(8*sc))+'px system-ui';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(number||''),x,y-44*sc);
+  ctx.restore();
+}
 
 function create(opts){
   var userSide=Number(opts.userSide||0);
@@ -69,6 +129,7 @@ function create(opts){
     {club:opts.homeClub,actors:makeActors(homeAssign,0,opts.homeFormation),assign:homeAssign,formation:opts.homeFormation,tactics:Object.assign({},opts.homeTactics||{})},
     {club:opts.awayClub,actors:makeActors(awayAssign,1,opts.awayFormation),assign:awayAssign,formation:opts.awayFormation,tactics:Object.assign({},opts.awayTactics||{})}
   ];
+  var teamKits=buildTeamKits(teams);
   var stats={},heat={},allActors=teams[0].actors.concat(teams[1].actors);
   allActors.forEach(function(a){stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0,tackles:0,crosses:0};heat[a.id]=Array(60).fill(0);});
 
@@ -349,16 +410,45 @@ function create(opts){
     ctx.fillStyle='rgba(5,15,25,.72)';ctx.fillRect(0,0,sidePad-5,H);ctx.fillRect(W-sidePad+5,0,sidePad,H);
 
     var list=[];teams.forEach(function(t,side){t.actors.forEach(function(a){list.push({a:a,t:t,side:side,y:sy(a.x)});});});list.sort(function(a,b){return a.y-b.y;});
-    list.forEach(function(o){var a=o.a,x=sx(a.y),y=o.y;if(y<-65||y>H+70)return;var sc=clamp(.82+(y/H)*.28,.76,1.16),set=spriteSet(a),moving=hypot(a.vx,a.vy)>38,pose=a.tackleTimer>0?'hurt':a.kickTimer>0?'action1':moving?((Math.floor(now/150)+hash(a.id))%2?'walk1':'walk2'):'stand',img=set[pose],color=teamColor(o.t,o.side);
-      ctx.save();ctx.fillStyle='rgba(2,8,16,.26)';ctx.beginPath();ctx.ellipse(x,y+5,18*sc,5*sc,0,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle=color;ctx.lineWidth=a===m.controlled?4:2;ctx.beginPath();ctx.ellipse(x,y+2,24*sc,10*sc,0,0,Math.PI*2);ctx.stroke();
-      if(a===m.controlled){ctx.fillStyle='#fde047';ctx.beginPath();ctx.moveTo(x,y-73*sc);ctx.lineTo(x-9,y-88*sc);ctx.lineTo(x+9,y-88*sc);ctx.closePath();ctx.fill();}
-      if(img&&img.complete&&img.naturalWidth){var dh=72*sc,dw=dh*(img.naturalWidth/Math.max(1,img.naturalHeight));ctx.drawImage(img,x-dw/2,y-dh*.91,dw,dh);}else{ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y-26*sc,17*sc,0,Math.PI*2);ctx.fill();}
-      var label=a.p.name+' · '+(a.p.footballStyle||a.slot);ctx.font='900 '+Math.max(9,Math.round(10*sc))+'px system-ui';ctx.textAlign='center';var tw=Math.min(150,Math.max(46,ctx.measureText(label).width+10));ctx.fillStyle='rgba(3,12,22,.83)';round(ctx,x-tw/2,y+9*sc,tw,18,7);ctx.fill();ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.fillText(label,x,y+18*sc);
-      if(o.side===userSide){ctx.fillStyle='rgba(3,10,18,.7)';ctx.fillRect(x-18*sc,y+31*sc,36*sc,3);ctx.fillStyle=a.energy>55?'#34d399':a.energy>35?'#facc15':'#fb7185';ctx.fillRect(x-18*sc,y+31*sc,36*sc*clamp(a.energy/100,0,1),3);}ctx.restore();
+    list.forEach(function(o){
+      var a=o.a,x=sx(a.y),y=o.y;if(y<-65||y>H+70)return;
+      var sc=clamp(.82+(y/H)*.28,.76,1.16),set=spriteSet(a),moving=hypot(a.vx,a.vy)>38,pose=a.tackleTimer>0?'hurt':a.kickTimer>0?'action1':moving?((Math.floor(now/150)+hash(a.id))%2?'walk1':'walk2'):'stand',img=set[pose],kit=teamKits[o.side],teamRing=kit.field;
+      ctx.save();
+      ctx.fillStyle='rgba(2,8,16,.28)';ctx.beginPath();ctx.ellipse(x,y+5,19*sc,5.5*sc,0,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle=teamRing;ctx.globalAlpha=.18;ctx.beginPath();ctx.ellipse(x,y+2,25*sc,11*sc,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle=teamRing;ctx.lineWidth=a===m.controlled?5:3.3;ctx.beginPath();ctx.ellipse(x,y+2,25*sc,11*sc,0,0,Math.PI*2);ctx.stroke();
+
+      if(a===m.controlled){ctx.fillStyle='#fde047';ctx.beginPath();ctx.moveTo(x,y-76*sc);ctx.lineTo(x-10,y-91*sc);ctx.lineTo(x+10,y-91*sc);ctx.closePath();ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=1.5;ctx.stroke();}
+
+      if(img&&img.complete&&img.naturalWidth){var dh=72*sc,dw=dh*(img.naturalWidth/Math.max(1,img.naturalHeight));ctx.drawImage(img,x-dw/2,y-dh*.91,dw,dh);}
+      else{ctx.fillStyle=teamRing;ctx.beginPath();ctx.arc(x,y-26*sc,17*sc,0,0,Math.PI*2);ctx.fill();}
+
+      drawKitOverlay(ctx,x,y,sc,a,kit,(o.t.actors.indexOf(a)+1));
+
+      var label=a.p.name+' · '+(a.p.footballStyle||a.slot);
+      ctx.font='900 '+Math.max(9,Math.round(10*sc))+'px system-ui';ctx.textAlign='center';
+      var tw=Math.min(158,Math.max(48,ctx.measureText(label).width+12));
+      ctx.fillStyle=teamRing;round(ctx,x-tw/2,y+9*sc,tw,19,7);ctx.fill();
+      ctx.strokeStyle=kit.trim;ctx.globalAlpha=.55;ctx.lineWidth=1;ctx.stroke();ctx.globalAlpha=1;
+      ctx.fillStyle=readableInk(teamRing);ctx.textBaseline='middle';ctx.fillText(label,x,y+18.5*sc);
+
+      if(o.side===userSide){
+        ctx.fillStyle='rgba(3,10,18,.72)';ctx.fillRect(x-18*sc,y+32*sc,36*sc,3.5);
+        ctx.fillStyle=a.energy>55?'#34d399':a.energy>35?'#facc15':'#fb7185';ctx.fillRect(x-18*sc,y+32*sc,36*sc*clamp(a.energy/100,0,1),3.5);
+      }
+      ctx.restore();
     });
     var bx=sx(m.ball.y),by=sy(m.ball.x),lift=m.ball.z*.12;ctx.save();ctx.fillStyle='rgba(2,8,16,.3)';ctx.beginPath();ctx.ellipse(bx,by+4,8,3,0,0,Math.PI*2);ctx.fill();if(ballImg.complete&&ballImg.naturalWidth)ctx.drawImage(ballImg,bx-9,by-lift-9,18,18);else{ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bx,by-lift,8,0,Math.PI*2);ctx.fill();}ctx.restore();
     var c=m.controlled;if(c){ctx.fillStyle='rgba(5,16,28,.84)';round(ctx,18,15,245,42,11);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 13px system-ui';ctx.textAlign='left';ctx.fillText('조작 중 · '+c.p.name,30,32);ctx.font='700 10px system-ui';ctx.fillStyle='#c9d8e8';ctx.fillText((c.p.footballStyle||c.slot)+' · Q 전환 · S 패스 · D 슛/태클',30,47);}
+    var legendY=15,legendW=150;
+    [0,1].forEach(function(side){
+      var lx=side===0?W/2-legendW-6:W/2+6,kit=teamKits[side],club=teams[side].club;
+      ctx.fillStyle='rgba(5,16,28,.86)';round(ctx,lx,legendY,legendW,30,9);ctx.fill();
+      ctx.fillStyle=kit.field;round(ctx,lx+8,legendY+7,16,16,4);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText((club&&club.short)||(club&&club.name)||('팀 '+(side+1)),lx+31,legendY+15);
+    });
   }
   m.render=render;
 
