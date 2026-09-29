@@ -14,7 +14,7 @@ test('drone pilot v3 cockpit controls are present', () => {
   for (const id of ['pipView','armBtn','modeBtn','gimbalUpBtn','gimbalDownBtn','wind','health']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
-  assert.match(html, /drone-sim\.js\?v=20260929-4/);
+  assert.match(html, /drone-sim\.js\?v=20260929-5/);
   assert.match(html, /drone-sim\.css\?v=20260927-3/);
   assert.match(css, /#controllerScreen/);
 });
@@ -53,4 +53,12 @@ test('drone pilot uses QA-gated shared community scenery', () => {
     assert.match(js, new RegExp(id.replace(/\./g, '\\.')));
   }
   assert.match(js, /loadSharedWorldDecor/);
+});
+
+
+test('drone pilot respects shared 3D load policy on coarse devices', () => {
+  assert.match(js,/shared3DShouldLoad/);
+  assert.match(js,/shared3DShouldLoad\(id,\{coarse\}\)/);
+  assert.match(js,/shadows:!\/grass\|plant\//);
+  assert.match(html,/drone-sim\.js\?v=20260929-5/);
 });
