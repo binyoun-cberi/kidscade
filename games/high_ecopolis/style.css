@@ -32,6 +32,6 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
 }
 @media(max-height:650px){#hud{top:6px}#mission,#topActions{top:82px}.introCard{padding:18px}.ecoLogo{font-size:38px}.card h1{font-size:34px}.flow{margin:9px 0}.scenarioTitle{margin-top:9px}.scenario{padding:9px}.startActions{margin-top:10px}}
 
-.dangerTool{border-color:rgba(255,122,110,.24);background:rgba(255,122,110,.07)}
-.dangerTool.active{border-color:rgba(255,122,110,.85);background:rgba(255,122,110,.18);box-shadow:inset 0 0 0 1px rgba(255,122,110,.18)}
 .stat b.warning{color:var(--warn)}.stat b.danger{color:var(--danger)}
+
+.species span{line-height:1}.species small{font-size:9px;color:var(--muted);line-height:1}.species.found small{color:#d7f6df}
