@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=5/);
+  assert.match(html,/game\.js\?v=6/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -46,6 +46,13 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/togglePowerLoad/);
   assert.match(js,/settlementSteps/);
   assert.match(js,/continueSettlement/);
+  assert.match(js,/createSkyDome/);
+  assert.match(js,/decorateWorld/);
+  assert.match(js,/upgradePerson/);
+  assert.match(js,/character-male-a\.glb/);
+  assert.match(js,/road-bridge\.glb/);
+  assert.match(js,/ambulance\.glb/);
+  assert.match(js,/addScaledVector\(f,y\)/);
   assert.match(js,/phase:'survival'/);
   assert.match(js,/finish\(\)/);
 });
@@ -60,7 +67,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
 test('game is registered in catalog metadata v7',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=5');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=6');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
