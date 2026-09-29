@@ -35,3 +35,23 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
 .stat b.warning{color:var(--warn)}.stat b.danger{color:var(--danger)}
 
 .species span{line-height:1}.species small{font-size:9px;color:var(--muted);line-height:1}.species.found small{color:#d7f6df}
+
+#tycoonBar{position:absolute;top:88px;left:50%;transform:translateX(-50%);z-index:5;border-radius:16px;padding:5px 8px;display:flex;gap:4px;align-items:center}
+#tycoonBar>div:not(.speedControls){min-width:82px;padding:4px 9px;border-right:1px solid var(--line);display:grid;gap:1px}
+#tycoonBar span{font-size:9px;color:var(--muted)}#tycoonBar b{font-size:12px}
+.speedControls{display:flex;gap:3px}.speedControls button{border:0;background:rgba(255,255,255,.07);border-radius:8px;min-width:31px;height:31px;cursor:pointer;font-size:10px;font-weight:900}
+.speedControls button.active{background:#d9fff0;color:#18362d}
+#guestPanel{position:absolute;left:16px;top:154px;width:275px;z-index:5;border-radius:17px;padding:11px}
+.guestHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.guestHead>div{display:grid}.guestHead small{font-size:9px;color:#a9d5b7;letter-spacing:.12em}.guestHead b{font-size:13px}.guestHead>span{font-size:25px}
+#thoughtList{display:grid;gap:5px}.thought{display:grid;grid-template-columns:28px 1fr;align-items:start;gap:5px;padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.05)}
+.thought>span{font-size:18px}.thought p{font-size:10px;line-height:1.35;margin:0;color:var(--muted)}.thought p b{display:block;color:var(--text);font-size:9px}.thought.bad{border-left:2px solid var(--danger)}.thought.good{border-left:2px solid var(--mint)}
+.emptyThought{font-size:10px;color:var(--muted);margin:3px 0}
+.scenarioGoalTitle{font-size:9px;font-weight:900;letter-spacing:.12em;color:#a9d5b7;margin-top:11px}.miniGoal{display:flex;justify-content:space-between;font-size:10px;padding:3px 0;color:var(--muted)}.miniGoal.done{color:var(--mint)}.miniGoal b{font-size:10px}
+#mapLegend{top:390px}
+@media(max-width:800px){
+  #tycoonBar{top:70px;left:8px;right:8px;transform:none;overflow-x:auto;justify-content:flex-start}
+  #tycoonBar>div:not(.speedControls){min-width:72px}
+  #mission{top:118px}#topActions{top:118px}
+  #guestPanel{display:none}
+}
+@media(max-height:650px){#tycoonBar{top:68px}#mission,#topActions{top:114px}}
