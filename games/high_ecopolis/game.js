@@ -82,6 +82,21 @@ function sharedModel(id,target=1){
   if(!sharedPending.has(url))sharedPending.set(url,new Promise(resolve=>sharedLoader.load(url,g=>{sharedCache.set(url,g.scene);resolve(g.scene)},undefined,()=>resolve(null))));
   return sharedPending.get(url).then(base=>base?normalizeShared(base.clone(true),target):null);
 }
+function biomeVigor(t){
+  const local=1-clamp(t.pollution,0,1),habitat=1-clamp(ecosystem.habitatStress/140,0,.72),water=1-clamp(ecosystem.waterStress/160,0,.58);
+  const biomeBoost=t.biome==='wetland'?water:t.biome==='forest'?habitat:(habitat+water)*.5;
+  return clamp(local*.62+biomeBoost*.38,0,1);
+}
+function vigorBand(t){const v=biomeVigor(t);return v>.72?2:v>.42?1:0}
+function refreshLivingDecor(){
+  if(analysisMode!=='none')return;
+  for(const t of tiles){
+    if(t.kind==='rock'||['forest','wetland','meadow','grass','plantation'].includes(t.biome)){
+      const band=vigorBand(t);
+      if(t.decor.userData.vigorBand!==band)rebuildDecor(t);
+    }
+  }
+}
 function addSharedBiomeVisual(t){
   if(analysisMode!=='none')return;
   const rev=t.decor.userData.rev,valid=biome=>t.decor.userData.rev===rev&&analysisMode==='none'&&t.biome===biome;
@@ -91,15 +106,22 @@ function addSharedBiomeVisual(t){
     return;
   }
   if(t.biome==='forest'){
-    const ids=noise(t.x,t.z)>.5?['nature.commonTreeA','nature.pineTreeA']:['nature.commonTreeB','nature.pineTreeB'];
-    Promise.all(ids.map((id,i)=>sharedModel(id,i?.72:.86))).then(list=>{if(!valid('forest'))return;list.filter(Boolean).forEach((o,i)=>{o.position.set(i?.20:-.18,0,i?-.12:.12);o.rotation.y=noise(t.x+i,t.z-i)*Math.PI*2;t.decor.add(o)})});
+    const band=vigorBand(t),mix=noise(t.x,t.z)>.5?['nature.commonTreeA','nature.pineTreeA','nature.commonTreeB']:['nature.commonTreeB','nature.pineTreeB','nature.pineTreeA'];
+    const count=band===2?3:band===1?2:1;
+    Promise.all(mix.slice(0,count).map((id,i)=>sharedModel(id,i===0?.82:i===1?.66:.52))).then(list=>{
+      if(!valid('forest'))return;
+      const spots=[[-.18,.14],[.20,-.13],[.04,.25]];
+      list.filter(Boolean).forEach((o,i)=>{o.position.set(spots[i][0],0,spots[i][1]);o.rotation.y=noise(t.x+i,t.z-i)*Math.PI*2;t.decor.add(o)})
+    });
   }else if(t.biome==='plantation'){
-    sharedModel('nature.pineTreeA',.76).then(base=>{if(!base||!valid('plantation'))return;[-.24,0,.24].forEach(x=>{const o=base.clone(true);o.position.x=x;o.scale.multiplyScalar(.62);t.decor.add(o)})});
+    sharedModel('nature.pineTreeA',.76).then(base=>{if(!base||!valid('plantation'))return;[-.24,0,.24].forEach(x=>{const o=base.clone(true);o.position.x=x;o.scale.multiplyScalar(.62);o.rotation.y=0;t.decor.add(o)})});
   }else if(t.biome==='wetland'){
-    sharedModel('nature.plant',.46).then(o=>{if(o&&valid('wetland')){o.rotation.y=noise(t.x,t.z)*Math.PI*2;t.decor.add(o)}});
+    const count=vigorBand(t)===2?2:1;
+    Promise.all(Array.from({length:count},(_,i)=>sharedModel('nature.plant',i?.34:.46))).then(list=>{if(!valid('wetland'))return;list.filter(Boolean).forEach((o,i)=>{o.position.set(i?.2:-.12,0,i?.12:-.08);o.rotation.y=noise(t.x+i,t.z)*Math.PI*2;t.decor.add(o)})});
   }else if(t.biome==='meadow'){
-    sharedModel('nature.grass',.42).then(o=>{if(o&&valid('meadow')){o.position.z=.08;o.rotation.y=noise(t.x,t.z)*Math.PI*2;t.decor.add(o)}});
-  }else if(t.biome==='grass'&&noise(t.x,t.z)>.72){
+    const count=vigorBand(t)===2?2:1;
+    Promise.all(Array.from({length:count},(_,i)=>sharedModel('nature.grass',i?.30:.42))).then(list=>{if(!valid('meadow'))return;list.filter(Boolean).forEach((o,i)=>{o.position.set(i?.18:-.1,0,i?.12:.08);o.rotation.y=noise(t.x,t.z+i)*Math.PI*2;t.decor.add(o)})});
+  }else if(t.biome==='grass'&&noise(t.x,t.z)>(vigorBand(t)===2?.55:.72)){
     sharedModel('nature.grass',.32).then(o=>{if(o&&valid('grass'))t.decor.add(o)});
   }
 }
@@ -244,7 +266,7 @@ function refreshTileVisual(t){
   rebuildDecor(t);
 }
 function rebuildDecor(t){
-  clearGroup(t.decor);t.decor.userData.rev=(t.decor.userData.rev||0)+1;const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
+  clearGroup(t.decor);t.decor.userData.rev=(t.decor.userData.rev||0)+1;t.decor.userData.vigorBand=vigorBand(t);const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
   if(analysisMode!=='none')return;
   if(t.kind==='land'&&t.biome==='barren'&&t.pollution>.55){
     const stick=new THREE.Mesh(new THREE.CylinderGeometry(.025,.04,.38,5),mat.dead);stick.rotation.z=.45;stick.position.set((noise(t.x,t.z)-.5)*.45,.18,(noise(t.z,t.x)-.5)*.45);t.decor.add(stick);
@@ -462,7 +484,7 @@ function ecologyTick(){
   ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-forest*.012-wetland*.018-meadow*.008);
   ecosystem.waterStress=Math.max(0,ecosystem.waterStress-wetland*.025);
   tiles.forEach(t=>{if(t.kind==='land'&&t.pollution<.25&&!['barren','paved'].includes(t.biome))t.pollution=Math.max(0,t.pollution-.003)});
-  updateSpecies();checkProgress(false);updateUI();
+  updateSpecies();refreshLivingDecor();checkProgress(false);updateUI();
 }
 function launchRecycler(t){
   const reason=placementReason('recycler',t);if(reason){toast(reason,'bad');return false}
@@ -502,9 +524,15 @@ function updateSpecies(){
   for(const species of Object.keys(SPECIES)){
     const delta=clamp(target[species]-pop[species],-4,4);
     pop[species]=clamp(pop[species]+delta,0,100);
-    const visible=animals.some(a=>a.species===species);
-    if(pop[species]>=8&&!visible)spawnAnimal(species);
-    if(pop[species]<4&&visible)removeSpecies(species);
+    const current=animals.filter(a=>a.species===species).length;
+    const desired=pop[species]<8?0:clamp(1+Math.floor((pop[species]-8)/24),1,4);
+    if(pop[species]<4&&current)removeSpecies(species);
+    else if(current<desired)for(let i=current;i<desired;i++)spawnAnimal(species);
+    else if(current>desired){
+      const extra=animals.filter(a=>a.species===species).slice(desired);
+      extra.forEach(a=>animalGroup.remove(a.mesh));
+      animals=animals.filter(a=>!extra.includes(a));
+    }
   }
 }
 function spawnAnimal(species,loadingPos=null){
@@ -548,7 +576,7 @@ function updateUI(){
   ]:phase===2?[
     ['숲',c.forestPct,10,'%'],['습지',c.wetlandPct,8,'%'],['꽃초원',c.meadowPct,8,'%']
   ]:phase===3?[
-    ['돌아온 동물',animals.length,4,'종'],['깨끗한 물',c.waterPct,70,'%']
+    ['돌아온 동물',returnedSpeciesCount(),4,'종'],['깨끗한 물',c.waterPct,70,'%']
   ]:[['남은 시설',Math.max(0,buildings.length),0,'개',true]];
   ui.objectives.innerHTML=objs.map(o=>{
     const current=o[1],goal=o[2],reverse=o[4];const done=reverse?current<=goal:current>=goal;const width=reverse?(done?100:Math.max(5,100-current*10)):clamp(current/goal*100,0,100);
