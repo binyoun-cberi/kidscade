@@ -55,6 +55,7 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /foldPreview/);
   assert.match(architect, /saveFreeWorld/);
   assert.match(architect, /window\.CubeArchitect/);
+  assert.match(architect, /^\(\(\)=>\{/);
   assert.doesNotMatch(architect, /OrbitControls/);
   assert.match(byId(sourceCatalog, 'cube3d').title, /큐브 아키텍트/);
   assert.match(byId(sourceCatalog, 'cube3d').description, /겨냥도/);
