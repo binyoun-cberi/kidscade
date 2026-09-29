@@ -67,6 +67,8 @@ let charge=null;
 let mode='match',difficulty='normal',assist='normal';
 let state='menu',paused=false,playing=false;
 let score=[0,0],matchTime=180,phaseTimer=0,kickoffTeam=HOME,pendingRestart=null;
+let countdownLast=0,kickoffLabel='';
+let tutorialStep=0,tutorialMoveTime=0,tutorialFinished=false;
 let statusTimer=0,flash=0,shake=0;
 let last=0,acc=0,simTime=0;
 let cameraX=FIELD_W/2;
@@ -245,24 +247,76 @@ class FutsalAvatarActor{
 }
 
 const ballImg=new Image();
-ballImg.src='../../assets/game/2d/sports/equipment/ball_football.png';
+ballImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
 const audioDefs={
-  kick:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.16],
-  tackle:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.12],
+  kick:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.08],
+  tackle:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.11],
   goal:['../../assets/audio/sfx/success/cheer-yay-01.mp3',.28],
-  save:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.11]
+  save:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.09]
 };
 const audioPools={};
 Object.keys(audioDefs).forEach(function(k){
   const d=audioDefs[k];
   audioPools[k]={i:0,a:Array.from({length:4},function(){const a=new Audio(d[0]);a.preload='auto';a.volume=d[1];return a})};
 });
-function sound(name,rate){
+function muted(){
   const sdk=window.KidscadeGame;
-  if(sdk&&sdk.state&&sdk.state().muted)return;
+  return !!(sdk&&sdk.state&&sdk.state().muted);
+}
+function sound(name,rate){
+  if(muted())return;
   const pool=audioPools[name];if(!pool)return;
   const a=pool.a[pool.i++%pool.a.length];
   try{a.pause();a.currentTime=0;a.playbackRate=rate||1;a.play().catch(function(){})}catch(_){}
+}
+let webAudio=null;
+function audioContext(){
+  if(webAudio)return webAudio;
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C)return null;
+  try{webAudio=new C();return webAudio}catch(_){return null}
+}
+function wakeAudio(){
+  const ac=audioContext();if(ac&&ac.state==='suspended')ac.resume().catch(function(){});
+}
+function tone(freq,duration,delay,type,volume,endFreq){
+  if(muted())return;
+  const ac=audioContext();if(!ac)return;
+  const t=ac.currentTime+(delay||0),osc=ac.createOscillator(),gain=ac.createGain();
+  osc.type=type||'sine';osc.frequency.setValueAtTime(freq,t);
+  if(endFreq)osc.frequency.exponentialRampToValueAtTime(Math.max(30,endFreq),t+duration);
+  gain.gain.setValueAtTime(.0001,t);
+  gain.gain.exponentialRampToValueAtTime(volume||.04,t+.008);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  osc.connect(gain);gain.connect(ac.destination);osc.start(t);osc.stop(t+duration+.03);
+}
+function noiseBurst(duration,volume){
+  if(muted())return;
+  const ac=audioContext();if(!ac)return;
+  const len=Math.max(1,Math.floor(ac.sampleRate*duration)),buffer=ac.createBuffer(1,len,ac.sampleRate),data=buffer.getChannelData(0);
+  for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len);
+  const src=ac.createBufferSource(),gain=ac.createGain(),filter=ac.createBiquadFilter();
+  filter.type='lowpass';filter.frequency.value=720;
+  gain.gain.setValueAtTime(volume||.025,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+duration);
+  src.buffer=buffer;src.connect(filter);filter.connect(gain);gain.connect(ac.destination);src.start();
+}
+function countdownBeep(n){tone(n===1?740:620,.12,0,'sine',.055,n===1?860:690)}
+function whistle(){
+  tone(1850,.20,0,'sine',.052,2350);
+  tone(2280,.24,.13,'sine',.045,1900);
+  noiseBurst(.18,.012);
+}
+function finalWhistle(){
+  whistle();
+  tone(2050,.20,.38,'sine',.045,2420);
+}
+function kickThump(power){
+  tone(105+(power||.5)*28,.075,0,'triangle',.045,65);
+  noiseBurst(.055,.014);
+}
+function postClang(){
+  tone(980,.16,0,'triangle',.045,620);
+  tone(1450,.11,.02,'sine',.025,900);
 }
 
 function project(x,y,z){
