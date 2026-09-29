@@ -943,14 +943,15 @@ function simulatePlants(){
   for(let i=0;i<Math.min(18,dirt.length);i++){
     const key=dirt[(i*13+freeSimTick*7)%dirt.length],[x,y,z]=parseWorldKey(key);if(getBlock(x,y+1,z))continue;
     const near=[[1,0],[-1,0],[0,1],[0,-1]].some(v=>getBlock(x+v[0],y,z+v[1])?.type==='grass');
-    if(near&&hash2(x+freeSimTick*.1,z-freeSimTick*.2)>.72)setWorldBlock(x,y,z,{type:'grass',natural:true},true);
+    const growThreshold=(weather==='rain'||weather==='storm')?.58:.72;
+    if(near&&hash2(x+freeSimTick*.1,z-freeSimTick*.2)>growThreshold)setWorldBlock(x,y,z,{type:'grass',natural:true},true);
   }
   for(const key of leaves.slice(0,50)){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
     if(hasNearbyLog(x,y,z)){d.decay=0;continue}d.decay=(d.decay||0)+1;if(d.decay>5&&hash2(x+freeSimTick,z)>.48)removeWorldBlockData(x,y,z,true);
   }
   for(const key of saplings){
-    const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;d.age=(d.age||0)+1;
+    const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;d.age=(d.age||0)+((weather==='rain'||weather==='storm')?2:1);
     if(d.age>26&&!getBlock(x,y+1,z)&&!getBlock(x,y+2,z)&&!getBlock(x,y+3,z)){removeWorldBlockData(x,y,z,true);growTree(x,y,z,true);toast('묘목이 나무로 자랐어요.')}
   }
 }
@@ -979,6 +980,83 @@ function updateDayNight(dt){
   renderer.toneMappingExposure=.62+.48*sun;
   $('worldClock').textContent=dayTime<.2?'새벽':dayTime<.45?'아침':dayTime<.7?'낮':dayTime<.82?'저녁':'밤';
 }
+function setupWeather(){
+  const count=520;rainPositions=new Float32Array(count*3);
+  for(let i=0;i<count;i++){rainPositions[i*3]=(Math.random()-.5)*28;rainPositions[i*3+1]=Math.random()*22+3;rainPositions[i*3+2]=(Math.random()-.5)*28}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(rainPositions,3));
+  rainSystem=new THREE.Points(geo,new THREE.PointsMaterial({color:0xbfdcff,size:.055,transparent:true,opacity:.72,depthWrite:false}));
+  rainSystem.visible=false;scene.add(rainSystem);setWeather('clear',false);
+}
+function setWeather(next,announce=true){
+  weather=next;weatherTimer=32+Math.random()*36;
+  if(rainSystem)rainSystem.visible=next==='rain'||next==='storm';
+  const labels={clear:'맑음',rain:'비',fog:'안개',storm:'폭풍'};$('weatherState').textContent=labels[next]||next;
+  if(scene.fog){scene.fog.near=next==='fog'?5:(next==='rain'||next==='storm'?12:24);scene.fog.far=next==='fog'?24:(next==='rain'?39:(next==='storm'?32:52))}
+  if(announce)toast('날씨 변화 · '+(labels[next]||next));
+}
+function cycleWeather(){
+  const states=['clear','rain','fog','storm'],i=states.indexOf(weather);setWeather(states[(i+1)%states.length]);
+}
+function updateWeather(dt,t){
+  weatherTimer-=dt;if(weatherTimer<=0){
+    const r=Math.random();setWeather(r<.48?'clear':r<.7?'rain':r<.86?'fog':'storm');
+  }
+  if(rainSystem?.visible){
+    const a=rainSystem.geometry.attributes.position;
+    for(let i=0;i<a.count;i++){
+      let x=a.getX(i),y=a.getY(i),z=a.getZ(i);y-=dt*(weather==='storm'?21:15);x+=dt*(weather==='storm'?1.8:.45);
+      if(y<camera.position.y-7){x=camera.position.x+(Math.random()-.5)*28;y=camera.position.y+10+Math.random()*13;z=camera.position.z+(Math.random()-.5)*28}
+      if(Math.abs(x-camera.position.x)>17)x=camera.position.x+(Math.random()-.5)*26;if(Math.abs(z-camera.position.z)>17)z=camera.position.z+(Math.random()-.5)*26;
+      a.setXYZ(i,x,y,z);
+    }a.needsUpdate=true;
+  }
+  if(weather==='storm'&&Math.random()<dt*.075){lightningFlash=.13;sfx('bad')}
+  if(lightningFlash>0){lightningFlash-=dt;renderer.toneMappingExposure=1.55}
+  const night=dayTime>.76||dayTime<.16;
+  critters.forEach(c=>{if(c.userData.kind==='firefly')c.visible=night&&!['storm'].includes(weather)});
+}
+function critterMaterial(color,emissive=0){return new THREE.MeshStandardMaterial({color,roughness:.85,emissive:emissive||0,emissiveIntensity:emissive?.8:0})}
+function createRabbit(x,z){
+  const g=new THREE.Group(),fur=critterMaterial(0xd9d1c7),pink=critterMaterial(0xf0a8b8);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.62,.42,.42),fur),head=new THREE.Mesh(new THREE.BoxGeometry(.34,.34,.34),fur);
+  body.position.y=.28;head.position.set(0,.42,-.36);
+  const e1=new THREE.Mesh(new THREE.BoxGeometry(.1,.38,.1),pink),e2=e1.clone();e1.position.set(-.1,.72,-.37);e2.position.set(.1,.72,-.37);
+  g.add(body,head,e1,e2);g.position.set(x,getHighestSolidY(x,z,8)+1,z);g.userData={kind:'rabbit',dir:Math.random()*Math.PI,speed:.45+.25*Math.random(),turn:1+Math.random()*3};scene.add(g);return g;
+}
+function createBird(x,z,index){
+  const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(.42,.25,.5),critterMaterial(index%2?0x5f87b8:0xb46f57));
+  const wingMat=critterMaterial(index%2?0xdbe8f5:0xe9c39e),w1=new THREE.Mesh(new THREE.BoxGeometry(.55,.06,.28),wingMat),w2=w1.clone();
+  w1.position.x=-.42;w2.position.x=.42;g.add(body,w1,w2);g.position.set(x,6+Math.random()*3,z);g.userData={kind:'bird',angle:Math.random()*Math.PI*2,radius:4+Math.random()*5,speed:.24+.14*Math.random(),wing1:w1,wing2:w2,centerX:x,centerZ:z};scene.add(g);return g;
+}
+function createFirefly(x,z,index){
+  const g=new THREE.Group(),m=new THREE.Mesh(new THREE.SphereGeometry(.08,7,6),critterMaterial(0xffe761,0xffd938));g.add(m);
+  const light=new THREE.PointLight(0xffdf55,.48,2.6,2);g.add(light);g.position.set(x,2+Math.random()*2,z);g.userData={kind:'firefly',phase:index*.9+Math.random()*3};scene.add(g);return g;
+}
+function spawnCritters(){
+  critters.forEach(c=>scene.remove(c));critters=[];
+  [[-7,-7],[-10,4],[7,10],[11,-5]].forEach(p=>critters.push(createRabbit(p[0],p[1])));
+  [[-6,2],[7,-8],[3,11]].forEach((p,i)=>critters.push(createBird(p[0],p[1],i)));
+  for(let i=0;i<7;i++)critters.push(createFirefly(-9+i*3,-2+(i%3)*4,i));
+}
+function updateCritters(dt,t){
+  critterClock+=dt;
+  for(const c of critters){
+    const u=c.userData;
+    if(u.kind==='rabbit'){
+      u.turn-=dt;if(u.turn<=0){u.turn=1.4+Math.random()*3.2;u.dir+=(Math.random()-.5)*2.2}
+      if(weather==='storm')u.speed=.28;
+      const nx=c.position.x+Math.sin(u.dir)*u.speed*dt,nz=c.position.z+Math.cos(u.dir)*u.speed*dt;
+      if(Math.abs(nx)>14||Math.abs(nz)>14||terrainHeight(Math.round(nx),Math.round(nz))<0){u.dir+=Math.PI*.7;continue}
+      c.position.x=nx;c.position.z=nz;c.position.y=getHighestSolidY(nx,nz,8)+1;c.rotation.y=u.dir+Math.PI;
+    }else if(u.kind==='bird'){
+      u.angle+=dt*u.speed*(weather==='storm'?.6:1);c.position.x=u.centerX+Math.sin(u.angle)*u.radius;c.position.z=u.centerZ+Math.cos(u.angle)*u.radius;
+      c.position.y=6.5+Math.sin(t*.0015+u.angle)*1.2+(weather==='rain'?-1:0);c.rotation.y=u.angle;const flap=Math.sin(t*.014)*.35;u.wing1.rotation.z=flap;u.wing2.rotation.z=-flap;
+    }else if(u.kind==='firefly'){
+      c.position.y=2.2+Math.sin(t*.002+u.phase)*.65;c.position.x+=Math.sin(t*.001+u.phase)*dt*.12;c.position.z+=Math.cos(t*.0012+u.phase)*dt*.12;
+    }
+  }
+}
+
 function checkCollectibles(t){
   collectibles.forEach(m=>{if(m.userData.gone)return;m.rotation.y+=.02;m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
     if(camera.position.distanceTo(m.position)<1.35){m.userData.gone=true;scene.remove(m);collected.add(m.userData.collectible);
@@ -1011,8 +1089,8 @@ function moveFreeHorizontal(dx,dz){
   else if(onGround&&!playerCollidesAt(camera.position.x,camera.position.y+1,nz)){camera.position.y+=1;camera.position.z=nz}
 }
 function updateFree(dt,t){
-  updateDayNight(dt);freeSimAccum+=dt;if(freeSimAccum>.48){freeSimAccum=0;simulateWorld()}
-  if(inventoryOpen){checkCollectibles(t);return}
+  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();freeSimAccum+=dt;if(freeSimAccum>.48){freeSimAccum=0;simulateWorld()}
+  if(inventoryOpen||furnaceOpen){checkCollectibles(t);return}
   const speed=(freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0;
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),move=new THREE.Vector3();
   if(freeKeys.KeyW||freeKeys.ArrowUp)move.addScaledVector(forward,-1);
