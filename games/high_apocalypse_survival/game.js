@@ -75,7 +75,7 @@ const ui={
 };
 let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toastT=0,lastSave=0;
 let camYaw=Math.PI,camPitch=.42,camDist=9,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
-const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], models=new Map();
+const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], models=new Map();
 const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group()};
 const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null};
 const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3();
@@ -124,7 +124,7 @@ function groundColor(x,z,h=0){
  const n=(Math.sin(x*.31+z*.17)+Math.sin(x*.11-z*.27))*.018;out.offsetHSL(0,0,n-h*.003);return out
 }
 function makeRiverGeometry(){
- const seg=40,half=7,verts=[],uv=[],idx=[];for(let i=0;i<=seg;i++){const z=-70+i*(140/seg),center=RIVER_X+Math.sin(z*.055)*.75,width=half+Math.sin(z*.09)*.55;verts.push(center-width,0,z,center+width,0,z);uv.push(0,i/seg,1,i/seg)}
+ const seg=40,half=7,verts=[],uv=[],idx=[];for(let i=0;i<=seg;i++){const z=-70+i*(140/seg),center=Math.sin(z*.055)*.75,width=half+Math.sin(z*.09)*.55;verts.push(center-width,0,z,center+width,0,z);uv.push(0,i/seg,1,i/seg)}
  for(let i=0;i<seg;i++){const a=i*2,b=a+1,c=a+2,d=a+3;idx.push(a,c,b,b,c,d)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g
 }
 function terrainHeight(x,z){
@@ -133,7 +133,7 @@ function terrainHeight(x,z){
  if(x<-42&&z>16)h+=1.25*clamp((-x-42)/22,0,1)*clamp((z-16)/35,0,1);
  return Math.max(0,h)
 }
-function addCollider(x,z,w,d,pad=.55){colliders.push({x,z,hw:w/2+pad,hd:d/2+pad})}
+function addCollider(x,z,w,d,pad=.55){colliders.push({x,z,hw:w/2+pad,hd:d/2+pad,cameraBlocker:w>3||d>3})}
 function blockedAt(x,z){
  if(colliders.some(b=>Math.abs(x-b.x)<b.hw&&Math.abs(z-b.z)<b.hd))return true;
  if(resources.some(r=>r.userData.available&&r.userData.resource!=='forage'&&Math.hypot(x-r.position.x,z-r.position.z)<(r.userData.resource==='tree'?.78:1.05)))return true;
@@ -141,10 +141,15 @@ function blockedAt(x,z){
 }
 function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(x,z,w,d,pad);return m}
 function ruinShell(name,x,z,w,d,c=0x777b78){
- const wall=.45,h=3.8,door=2.2;
- solidBox(w,h,wall,c,x,h/2,z-d/2);solidBox(w,h,wall,c,x,h/2,z+d/2);
- solidBox(wall,h,d,c,x-w/2,h/2,z);solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4);solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4);
- const floor=box(w-.6,.08,d-.6,0x5e625f,x,.04,z);label(name,x,h+1,z);return floor
+ const wall=.45,h=3.8,door=2.2,walls=[];
+ walls.push(solidBox(w,h,wall,c,x,h/2,z-d/2),solidBox(w,h,wall,c,x,h/2,z+d/2));
+ walls.push(solidBox(wall,h,d,c,x-w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4));
+ walls.forEach(m=>{m.material=m.material.clone();m.material.roughness=1;m.material.transparent=true});
+ const floor=box(w-.6,.08,d-.6,0x555b58,x,.04,z);ruinZones.push({x,z,hw:w/2-.4,hd:d/2-.4,walls});
+ placeWorldModel(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2,z,target:4.4,rot:Math.PI*.5});
+ placeWorldModel(ART.buildings+'wall-window-wide-square-detailed.glb',{x,z:z-d/2,target:4.5,rot:0});
+ placeWorldModel(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2,z,target:4.1,rot:Math.PI*.5});
+ label(name,x,h+1,z);return floor
 }
 function residentCount(){return Object.values(game?.residents||{}).filter(r=>r?.rescued).length}
 function jobPower(role){let n=0;for(const [id,r] of Object.entries(game?.residents||{}))if(r?.rescued&&r.job===role)n+=RESIDENTS[id]?.preferred===role?1.25:1;return n}
@@ -164,7 +169,7 @@ function init3D(){
  createSkyDome();
  const groundGeo=new THREE.PlaneGeometry(140,140,36,36),gp=groundGeo.attributes.position,colors=[];for(let i=0;i<gp.count;i++){const x=gp.getX(i),z=-gp.getY(i),h=terrainHeight(x,z),col=groundColor(x,z,h);gp.setZ(i,h);colors.push(col.r,col.g,col.b)}groundGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));gp.needsUpdate=true;groundGeo.computeVertexNormals();
  const ground=new THREE.Mesh(groundGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.98}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;groups.world.add(ground);
- const river=new THREE.Mesh(makeRiverGeometry(),new THREE.MeshPhysicalMaterial({color:0x4b9fb1,transparent:true,opacity:.84,roughness:.18,metalness:.03}));river.position.y=.08;groups.world.add(river);scene.userData.river=river;
+ const river=new THREE.Mesh(makeRiverGeometry(),new THREE.MeshPhysicalMaterial({color:0x4b9fb1,transparent:true,opacity:.84,roughness:.18,metalness:.03}));river.position.set(RIVER_X,.08,0);groups.world.add(river);scene.userData.river=river;
  box(7,.08,120,0x454b4b,16,.04,-2);box(95,.08,6,0x454b4b,8,.05,-27);
  for(let z=-54;z<=54;z+=10)box(.12,.012,4.7,0xe7d8a1,16,.092,z);for(let x=-34;x<=54;x+=10)box(4.7,.012,.12,0xe7d8a1,x,.092,-27);
  const bridgeHit=box(15,.35,5.5,0x4b5153,RIVER_X,.3,-4);bridgeHit.material.transparent=true;bridgeHit.material.opacity=.05;
@@ -259,8 +264,33 @@ function bindInput(){
 }
 function bindJoy(){const base=$('.joy-base');if(!base)return;let pid=null;function move(e){const r=base.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=Math.min(42,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);player.touch.set(Math.cos(a)*m/42,Math.sin(a)*m/42);ui.joyKnob.style.transform='translate('+(Math.cos(a)*m)+'px,'+(Math.sin(a)*m)+'px)'}base.addEventListener('pointerdown',e=>{pid=e.pointerId;base.setPointerCapture(pid);move(e)});base.addEventListener('pointermove',e=>{if(e.pointerId===pid)move(e)});function end(e){if(e.pointerId!==pid)return;pid=null;player.touch.set(0,0);ui.joyKnob.style.transform=''}base.addEventListener('pointerup',end);base.addEventListener('pointercancel',end)}
 function riverHalfWidth(){return 7*(scene?.userData?.river?.scale?.x||1)}
-function updatePlayer(dt){if(!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode){player.speed=damp(player.speed,0,10,dt);return}let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}const target=len?(keys.has('ShiftLeft')?8.2:5.4):0;player.speed=damp(player.speed,target,10,dt);if(len){const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,y).normalize(),ox=player.root.position.x,oz=player.root.position.z;player.root.position.addScaledVector(dir,player.speed*dt);player.root.position.x=clamp(player.root.position.x,-68,68);player.root.position.z=clamp(player.root.position.z,-68,68);const rw=riverHalfWidth(),riverBlocked=Math.abs(player.root.position.x-RIVER_X)<rw&&Math.abs(player.root.position.z+4)>3.5;if(blockedAt(player.root.position.x,player.root.position.z)||riverBlocked){player.root.position.x=ox;player.root.position.z=oz;player.speed*=.45}player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04}player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z)}
-function updateCamera(dt){const t=tmp.set(player.root.position.x,player.root.position.y+1.5,player.root.position.z),cp=Math.cos(camPitch),desired=tmp2.set(t.x+Math.sin(camYaw)*cp*camDist,t.y+Math.sin(camPitch)*camDist,t.z+Math.cos(camYaw)*cp*camDist);camera.position.lerp(desired,1-Math.exp(-8*dt));camera.lookAt(t);if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position)}
+function updatePlayer(dt){
+ if(!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode){player.speed=damp(player.speed,0,10,dt);return}
+ let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;
+ if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}
+ const target=len?(keys.has('ShiftLeft')?8.2:5.4):0;player.speed=damp(player.speed,target,10,dt);
+ if(len){
+  const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,y).normalize();
+  const ox=player.root.position.x,oz=player.root.position.z,oy=terrainHeight(ox,oz),step=player.speed*dt,nx=clamp(ox+dir.x*step,-68,68),nz=clamp(oz+dir.z*step,-68,68),ny=terrainHeight(nx,nz);
+  const rise=ny-oy,slope=rise/Math.max(step,.001),rw=riverHalfWidth(),riverBlocked=Math.abs(nx-RIVER_X)<rw&&Math.abs(nz+4)>3.5;
+  if(blockedAt(nx,nz)||riverBlocked||slope>.78){player.speed*=.42}else{const slopeSlow=clamp(1-Math.max(0,slope)*.48,.58,1);player.root.position.x=ox+(nx-ox)*slopeSlow;player.root.position.z=oz+(nz-oz)*slopeSlow}
+  player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04
+ }
+ player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z)
+}
+function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
+function resolveCamera(t,desired){
+ const out=desired.clone(),steps=22;let safe=.18;
+ for(let i=2;i<=steps;i++){const a=i/steps,x=t.x+(desired.x-t.x)*a,z=t.z+(desired.z-t.z)*a,y=t.y+(desired.y-t.y)*a;if(cameraBlocked(x,z)||y<terrainHeight(x,z)+.45){safe=Math.max(.18,(i-2)/steps);break}else safe=a}
+ out.lerpVectors(t,desired,safe);out.y=Math.max(out.y,terrainHeight(out.x,out.z)+.5);return out
+}
+function updateInteriorVisibility(){
+ const px=player.root.position.x,pz=player.root.position.z;for(const zone of ruinZones){const inside=Math.abs(px-zone.x)<zone.hw&&Math.abs(pz-zone.z)<zone.hd;for(const wall of zone.walls){wall.material.opacity=damp(wall.material.opacity,inside?.18:1,8,.016);wall.material.depthWrite=!inside}}
+}
+function updateCamera(dt){
+ const t=tmp.set(player.root.position.x,player.root.position.y+1.5,player.root.position.z),cp=Math.cos(camPitch),raw=new THREE.Vector3(t.x+Math.sin(camYaw)*cp*camDist,t.y+Math.sin(camPitch)*camDist,t.z+Math.cos(camYaw)*cp*camDist),desired=resolveCamera(t,raw);
+ camera.position.lerp(desired,1-Math.exp(-11*dt));camera.lookAt(t);if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position);updateInteriorVisibility()
+}
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
