@@ -12,7 +12,7 @@ main{position:relative;min-width:0}canvas{display:block;width:100%;height:100%}
 h1{font-size:19px;margin:0 0 12px}.muted{color:#9fb0bb;font-size:12px;line-height:1.5}
 select,button{width:100%;box-sizing:border-box;margin:6px 0;padding:10px;border:1px solid #40525e;border-radius:10px;background:#202f3b;color:#eef7f2}
 button{cursor:pointer}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#2a3d4a;font-size:11px;margin:2px}
-#status.approved{color:#82e6a9}#status.review{color:#ffd27a}#status.blocked{color:#ff8c8c}
+#status.approved{color:#82e6a9}#status.repair{color:#7ec8ff}#status.review{color:#ffd27a}#status.blocked{color:#ff8c8c}
 dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#9fb0bb}dd{margin:0;word-break:break-word}
 #hint{position:absolute;left:14px;bottom:14px;padding:8px 10px;border-radius:9px;background:#0d151bbb;font-size:12px;color:#c7d4dc}
 </style>
@@ -28,6 +28,8 @@ dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#
 <button id="toggleRaw">원본 피벗 보기</button>
 <div class="row"><button id="originalMaterial">원본 재질</button><button id="slotMaterial">재질 슬롯 진단</button></div>
 <div class="row"><button id="repairMaterial">임시 색상 복구</button><button id="wireMaterial">와이어프레임</button></div>
+<div class="row"><button id="scanAll">69개 전체 구조 검사</button><button id="downloadAudit" disabled>검사 JSON 저장</button></div>
+<div id="auditProgress" class="muted">전체 검사는 아직 실행하지 않았습니다.</div>
 <dl>
 <dt>상태</dt><dd id="status"></dd>
 <dt>파일</dt><dd id="file"></dd>
@@ -45,6 +47,6 @@ dl{display:grid;grid-template-columns:90px 1fr;gap:6px;font-size:12px}dt{color:#
 </aside>
 <main><canvas id="view"></canvas><div id="hint">드래그: 회전 · 휠: 확대/축소</div></main>
 </div>
-<script type="module" src="shared-3d-review.js?v=2"></script>
+<script type="module" src="shared-3d-review.js?v=3"></script>
 </body>
 </html>
