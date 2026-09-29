@@ -165,3 +165,14 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   .dimension-grid,.face-color-grid{grid-template-columns:repeat(2,1fr)}
   #furnaceRecipes{grid-template-columns:1fr}
 }
+
+/* Challenge difficulty courses */
+.challenge-difficulty{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0 7px}
+.challenge-difficulty button{border:2px solid #e1e5ed;border-radius:13px;padding:9px 10px;background:#fff;cursor:pointer;text-align:left;color:#475166;transition:.15s}
+.challenge-difficulty button b{display:block;font-size:13px}
+.challenge-difficulty button span{display:block;margin-top:2px;font-size:9px;color:#7b8493}
+.challenge-difficulty button.active{border-color:#5967ee;background:#eef0ff;color:#414bd1;box-shadow:0 0 0 3px rgba(89,103,238,.09)}
+.challenge-difficulty button#challengeHard.active{border-color:#7655b7;background:#f3efff;color:#6949a5;box-shadow:0 0 0 3px rgba(118,85,183,.09)}
+.challenge-course-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+#challengeCourseLabel{font-size:10px;font-weight:950;color:#526078}
+.challenge-course-row small{font-size:8px;color:#8a93a3;text-align:right}
