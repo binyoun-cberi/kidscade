@@ -31,3 +31,7 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
   #tileInfo{bottom:90px;left:8px}.card{padding:22px;border-radius:24px}.card h1{font-size:38px}.scenarioGrid{grid-template-columns:1fr}.scenario{grid-template-columns:auto 1fr;grid-template-rows:auto auto;text-align:left}.scenario span{grid-row:1/3}.helpGrid{grid-template-columns:1fr}.flow{gap:5px}.flow i{display:none}
 }
 @media(max-height:650px){#hud{top:6px}#mission,#topActions{top:82px}.introCard{padding:18px}.ecoLogo{font-size:38px}.card h1{font-size:34px}.flow{margin:9px 0}.scenarioTitle{margin-top:9px}.scenario{padding:9px}.startActions{margin-top:10px}}
+
+.dangerTool{border-color:rgba(255,122,110,.24);background:rgba(255,122,110,.07)}
+.dangerTool.active{border-color:rgba(255,122,110,.85);background:rgba(255,122,110,.18);box-shadow:inset 0 0 0 1px rgba(255,122,110,.18)}
+.stat b.warning{color:var(--warn)}.stat b.danger{color:var(--danger)}
