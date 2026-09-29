@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260929-11">
+<link rel="stylesheet" href="./cube-architect.css?v=20260929-12">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -53,6 +53,14 @@
   <aside id="challengePanel" class="side-panel hidden">
     <div class="panel-title">오늘의 설계도</div>
     <div class="panel-sub">겨냥도를 보고 직접 날아다니며 건축하세요. 건물의 위치와 바닥에서의 방향은 채점하지 않고 모양만 비교합니다.</div>
+    <div class="challenge-difficulty" role="group" aria-label="설계도 난이도">
+      <button id="challengeEasy" class="active"><b>쉬움</b><span>교과서형</span></button>
+      <button id="challengeHard"><b>어려움</b><span>랜드마크형</span></button>
+    </div>
+    <div class="challenge-course-row">
+      <span id="challengeCourseLabel">쉬움 · 교과서형 1/6</span>
+      <small>ESC로 마우스를 풀면 난이도를 바꿀 수 있어요.</small>
+    </div>
     <div class="blueprint-wrap">
       <canvas id="blueprintCanvas" width="320" height="260"></canvas>
     </div>
@@ -164,7 +172,7 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect.js?v=20260929-11"></script>
+<script src="./cube-architect.js?v=20260929-12"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
