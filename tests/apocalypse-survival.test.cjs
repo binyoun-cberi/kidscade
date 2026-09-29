@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=10/);
+  assert.match(html,/game\.js\?v=11/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -82,10 +82,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v10',()=>{
+test('game is registered in catalog metadata v11',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=10');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=11');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -103,8 +103,8 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=10/);
-  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=10$/);
+  assert.match(html,/game\.js\?v=11/);
+  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=11$/);
 });
 
 
