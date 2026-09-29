@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-var D=window.SeedFCData,S=window.SeedFCSim;
+var D=window.SeedFCData,S=window.SeedFCSim,H=window.SeedFutsalHistory;
 if(!D||!S){document.body.innerHTML='<p style="padding:30px">게임 데이터를 불러오지 못했어요.</p>';return;}
 
 var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
@@ -553,7 +553,7 @@ function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==5){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
-  opts.formations=D.formations;opts.seed=seed;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setSpeed(1);updateLiveTactic();cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setSpeed(1);updateLiveTactic();cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
   var log=$('eventLog'),div=document.createElement('div');div.className='event-line '+(e.type==='goal'?'goal':e.type==='fact'?'fact':e.type==='coach'?'coach':'');
@@ -676,7 +676,7 @@ function drawTacticalMatch(){
   else{ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.stroke();}
   ctx.restore();
 }
-function drawMatch(){if(!match)return;if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
+function drawMatch(){if(!match)return;if(typeof match.render==='function'){match.render($('pitch'));return;}if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
   var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();
@@ -685,20 +685,19 @@ function matchLoop(ts){
 }
 function quickSub(){
   if(!match||match.finished)return;
-  if((match.userSubs||0)>=5){toast('이 경기에서는 교체 5번을 모두 썼어요.');return;}
   var side=match.userSide,t=match.teams[side];
   var on=t.actors.slice().sort(function(a,b){return a.energy-b.energy;})[0];
   var ids=t.actors.map(function(a){return a.id;});
   var bench=state.roster.filter(function(p){return ids.indexOf(p.id)<0;}).sort(function(a,b){return S.playerScore(b,on.slot)-S.playerScore(a,on.slot);})[0];
   if(!bench){toast('교체할 후보가 없어요.');return;}
-  if(match.substitute(side,on.id,bench)){match.userSubs=(match.userSubs||0)+1;toast(on.p.name+' → '+bench.name+' · 다음 경기 선발은 그대로예요.');}
+  if(match.substitute(side,on.id,bench)){match.userSubs=(match.userSubs||0)+1;toast(on.p.name+' → '+bench.name+' · 풋살은 자유 교체예요.');}
 }
 function substitutionModal(){
   if(!match||match.finished)return;
   var actors=match.getActors(match.userSide),ids=actors.map(function(a){return a.id;}),bench=state.roster.filter(function(p){return ids.indexOf(p.id)<0;});
   if(!bench.length){toast('교체할 후보가 없어요.');return;}
   var on=actors.slice().sort(function(a,b){return a.energy-b.energy;});
-  modalBody.innerHTML='<h2>선수 교체</h2><p class="muted">지친 선수만이 아니라 전술에 맞춰 직접 바꿀 수 있어요. 이번 경기 교체 '+(match.userSubs||0)+'/5</p><label class="sub-label">나갈 선수<select id="subOut">'+on.map(function(a){return '<option value="'+esc(a.id)+'">'+esc(a.p.name)+' · '+a.slot+' · 체력 '+Math.round(a.energy)+'</option>';}).join('')+'</select></label><label class="sub-label">들어올 선수<select id="subIn">'+bench.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.name)+' · '+esc(p.footballStyle||p.pos)+' · '+p.pos+'</option>';}).join('')+'</select></label><div class="action-row"><button id="doSub" class="primary">교체하기</button><button id="autoSub" class="secondary">추천 교체</button></div>';
+  modalBody.innerHTML='<h2>선수 교체</h2><p class="muted">지친 선수만이 아니라 전술에 맞춰 직접 바꿀 수 있어요. 풋살은 교체 횟수 제한 없음</p><label class="sub-label">나갈 선수<select id="subOut">'+on.map(function(a){return '<option value="'+esc(a.id)+'">'+esc(a.p.name)+' · '+a.slot+' · 체력 '+Math.round(a.energy)+'</option>';}).join('')+'</select></label><label class="sub-label">들어올 선수<select id="subIn">'+bench.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.name)+' · '+esc(p.footballStyle||p.pos)+' · '+p.pos+'</option>';}).join('')+'</select></label><div class="action-row"><button id="doSub" class="primary">교체하기</button><button id="autoSub" class="secondary">추천 교체</button></div>';
   modal.classList.remove('hidden');
   $('doSub').onclick=function(){
     if((match.userSubs||0)>=5){toast('이 경기에서는 교체 5번을 모두 썼어요.');return;}

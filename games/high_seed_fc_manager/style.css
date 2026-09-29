@@ -179,3 +179,6 @@ button{border:0;cursor:pointer;color:inherit}
 .futsal-action-pad .shoot{background:rgba(220,38,38,.80)}.futsal-action-pad .pass{background:rgba(22,163,74,.80)}.futsal-action-pad .through{background:rgba(37,99,235,.80)}.futsal-action-pad .lob{background:rgba(217,119,6,.82)}.futsal-action-pad .switch{background:rgba(124,58,237,.82)}
 .futsal-control-help{margin:8px 0 10px;padding:9px 10px;border-radius:12px;background:#0d1b2e}.futsal-control-help b,.futsal-control-help small{display:block}.futsal-control-help small{margin-top:4px;color:#b7c8da;line-height:1.45}
 @media(hover:hover) and (pointer:fine){.futsal-touch{display:none}}
+
+.futsal-touch button:active{transform:translateY(1px);filter:brightness(1.18)}
+.match-layer .pitch-wrap:after{content:"공을 중심으로 세로 카메라 추적 · 역사 선수 5명을 번갈아 직접 조작"}
