@@ -13,14 +13,14 @@ const BASE={
   ST:{shot:86,pass:58,defense:30,speed:79,stamina:76}
 };
 const COACH_PROFILES=[
-  {name:'전환 설계형',preferredFormations:['4-3-3','4-2-3-1'],adaptability:72,riskTolerance:64,substitutionSpeed:66},
-  {name:'유연한 조율형',preferredFormations:['4-2-3-1','4-3-3'],adaptability:82,riskTolerance:48,substitutionSpeed:70},
-  {name:'조직 압박형',preferredFormations:['4-4-2','4-3-3'],adaptability:68,riskTolerance:58,substitutionSpeed:72},
-  {name:'중앙 장악형',preferredFormations:['4-2-3-1','5-3-2'],adaptability:76,riskTolerance:44,substitutionSpeed:62},
-  {name:'점유 조율형',preferredFormations:['4-2-3-1','4-3-3'],adaptability:86,riskTolerance:38,substitutionSpeed:68},
-  {name:'속도 변화형',preferredFormations:['4-3-3','4-4-2'],adaptability:74,riskTolerance:70,substitutionSpeed:76},
-  {name:'적극 전진형',preferredFormations:['4-3-3','4-2-3-1'],adaptability:79,riskTolerance:78,substitutionSpeed:80},
-  {name:'균형 대응형',preferredFormations:['4-2-3-1','4-3-3','4-4-2'],adaptability:88,riskTolerance:55,substitutionSpeed:74}
+  {name:'전환 설계형',preferredFormations:['1-2-1','3-1'],adaptability:72,riskTolerance:64,substitutionSpeed:66},
+  {name:'유연한 조율형',preferredFormations:['4-0','1-2-1'],adaptability:82,riskTolerance:48,substitutionSpeed:70},
+  {name:'조직 압박형',preferredFormations:['2-2','3-1'],adaptability:68,riskTolerance:58,substitutionSpeed:72},
+  {name:'중앙 장악형',preferredFormations:['3-1','1-2-1'],adaptability:76,riskTolerance:44,substitutionSpeed:62},
+  {name:'점유 조율형',preferredFormations:['4-0','1-2-1'],adaptability:86,riskTolerance:38,substitutionSpeed:68},
+  {name:'속도 변화형',preferredFormations:['2-2','1-2-1'],adaptability:74,riskTolerance:70,substitutionSpeed:76},
+  {name:'적극 전진형',preferredFormations:['3-1','2-2'],adaptability:79,riskTolerance:78,substitutionSpeed:80},
+  {name:'균형 대응형',preferredFormations:['1-2-1','2-2','4-0'],adaptability:88,riskTolerance:55,substitutionSpeed:74}
 ];
 
 const CLUB_DEFS=[
@@ -364,10 +364,11 @@ const WORLD=WORLD_DEFS.map(worldPlayer);
 window.SeedFCData=Object.freeze({
   clubs:CLUBS,world:WORLD,coachProfiles:COACH_PROFILES,positions:POSITIONS,positionKo:POSITION_KO,
   formations:{
-    '4-4-2':['GK','CB','CB','FB','FB','CM','CM','WG','WG','ST','ST'],
-    '4-3-3':['GK','CB','CB','FB','FB','CM','CM','CM','WG','WG','ST'],
-    '4-2-3-1':['GK','CB','CB','FB','FB','CM','CM','WG','CM','WG','ST'],
-    '5-3-2':['GK','CB','CB','CB','FB','FB','CM','CM','CM','ST','ST']
+    '1-2-1':['GK','CB','WG','WG','ST'],
+    '2-2':['GK','CB','FB','WG','ST'],
+    '3-1':['GK','CB','FB','FB','ST'],
+    '4-0':['GK','CM','CM','WG','WG']
   }
+
 });
 })();
