@@ -110,6 +110,11 @@ const ECO_ASSET={
   bench:ASSET('3d/interiors/kenney-furniture-kit/bench.glb'),
   signpost:ASSET('3d/survival/kenney-survival-kit/signpost.glb'),
   lamp:ASSET('3d/city/kenney-city-kit-roads/light-square.glb'),
+  factoryBuilding:ASSET('3d/city/poly-pizza-city-pack/big-building.glb'),
+  dumpster:ASSET('3d/city/kenney-city-kit-roads/dumpster.glb'),
+  constructionFence:ASSET('3d/city/kenney-city-kit-roads/construction-fence.glb'),
+  powerPole:ASSET('3d/city/kenney-city-kit-roads/electricity-pole.glb'),
+  parkingSurface:ASSET('3d/city/kenney-city-kit-roads/road-square.glb'),
   visitor:{family:ASSET('characters/people/character-female-b.glb'),student:ASSET('characters/people/character-male-a.glb'),researcher:ASSET('characters/people/character-female-c.glb'),birder:ASSET('characters/people/character-male-d.glb')}
 };
 const localGltfCache=new Map(),localGltfPending=new Map();
@@ -390,18 +395,20 @@ function buildModel(type,t){
   }else if(type==='coal'){
     const base=new THREE.Mesh(new THREE.BoxGeometry(.9,.5,.72),mat.dark);base.position.y=.25;
     for(const x of [-.23,.23]){const stack=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.85,8),mat.trunk);stack.position.set(x,.82,0);g.add(stack)}g.add(base);
+    const poleAnchor=new THREE.Group();poleAnchor.position.set(.34,.02,-.16);g.add(poleAnchor);attachLocalAsset(poleAnchor,ECO_ASSET.powerPole,.72);
   }else if(type==='carfactory'){
-    const base=new THREE.Mesh(new THREE.BoxGeometry(1.0,.48,.82),mat.dark);base.position.y=.24;
-    const roof=new THREE.Mesh(new THREE.BoxGeometry(.9,.08,.72),mat.blue);roof.position.y=.52;g.add(base,roof);
+    const base=new THREE.Mesh(new THREE.BoxGeometry(1.0,.18,.82),mat.dark);base.position.y=.09;g.add(base);
+    attachLocalAsset(g,ECO_ASSET.factoryBuilding,1.05,{y:.12});
   }else if(type==='landfill'){
-    const pit=new THREE.Mesh(new THREE.BoxGeometry(.95,.18,.82),mat.dark);pit.position.y=.08;
-    for(let i=0;i<4;i++){const bag=new THREE.Mesh(new THREE.SphereGeometry(.11,7,5),i%2?mat.yellow:mat.trunk);bag.scale.y=.65;bag.position.set((i%2-.5)*.36,.23,(Math.floor(i/2)-.5)*.3);g.add(bag)}g.add(pit);
+    const pit=new THREE.Mesh(new THREE.BoxGeometry(.95,.18,.82),mat.dark);pit.position.y=.08;g.add(pit);
+    attachLocalAsset(g,ECO_ASSET.dumpster,.58,{y:.12});
   }else if(type==='quarry'){
     const pit=new THREE.Mesh(new THREE.CylinderGeometry(.46,.3,.2,10),mat.rock);pit.position.y=.02;
     for(let i=0;i<3;i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.15,0),mat.rock);rock.position.set((i-1)*.22,.2,(i%2)*.18-.08);g.add(rock)}g.add(pit);
+    const fenceAnchor=new THREE.Group();fenceAnchor.position.set(0,.02,-.32);g.add(fenceAnchor);attachLocalAsset(fenceAnchor,ECO_ASSET.constructionFence,.72);
   }else if(type==='parking'){
-    const slab=new THREE.Mesh(new THREE.BoxGeometry(1.0,.08,.86),mat.dark);slab.position.y=.04;
-    for(const x of [-.3,0,.3]){const line=new THREE.Mesh(new THREE.BoxGeometry(.025,.012,.72),mat.white);line.position.set(x,.09,0);g.add(line)}g.add(slab);
+    const slab=new THREE.Mesh(new THREE.BoxGeometry(1.0,.06,.86),mat.dark);slab.position.y=.03;g.add(slab);
+    attachLocalAsset(g,ECO_ASSET.parkingSurface,.86,{y:.05});
   }else if(type==='channel'){
     const wall1=new THREE.Mesh(new THREE.BoxGeometry(.95,.18,.12),mat.white),wall2=wall1.clone();wall1.position.set(0,.09,-.34);wall2.position.set(0,.09,.34);g.add(wall1,wall2);
   }else if(type==='lawn'){
