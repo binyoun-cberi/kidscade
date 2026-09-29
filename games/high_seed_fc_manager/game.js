@@ -9,6 +9,7 @@ var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
 var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
+var broadcastRenderer=window.SeedFCBroadcast&&typeof window.SeedFCBroadcast.create==='function'?window.SeedFCBroadcast.create():null;
 var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
 soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
@@ -50,7 +51,7 @@ function load(){
     var v=null;
     if(window.KidscadeStorage&&KidscadeStorage.getJSON)v=KidscadeStorage.getJSON(SAVE_KEY,null);
     else{var raw=localStorage.getItem(SAVE_KEY);v=raw?JSON.parse(raw):null;}
-    if(v&&v.version===2&&clubById(v.clubId))return v;
+    if(v&&(v.version===2||v.version===3)&&clubById(v.clubId))return v;
   }catch(e){}
   return null;
 }
@@ -525,7 +526,7 @@ function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==11){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
-  opts.formations=D.formations;opts.seed=seed;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=S.create(opts);match.userSide=isHome?0:1;match.fixture=f;matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setSpeed(1);updateLiveTactic();cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  opts.formations=D.formations;opts.seed=seed;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setSpeed(1);updateLiveTactic();cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
   var log=$('eventLog'),div=document.createElement('div');div.className='event-line '+(e.type==='goal'?'goal':e.type==='fact'?'fact':e.type==='coach'?'coach':'');
@@ -542,7 +543,7 @@ function updateLiveTactic(){
   $('liveTacticText').innerHTML=group('공격','attack',[['short','연결'],['direct','직선'],['wide','측면']])+group('폭','width',[['narrow','좁게'],['normal','보통'],['wide','넓게']])+group('압박','press',[['press','강하게'],['shape','자리']])+group('라인','line',[['high','높게'],['standard','보통'],['low','낮게']])+group('템포','tempo',[['fast','빠름'],['normal','보통'],['slow','천천히']])+group('태도','mindset',[['attack','공격'],['balanced','균형'],['defend','수비']]);
   $('liveTacticText').querySelectorAll('[data-live]').forEach(function(b){b.onclick=function(){if(!match||match.finished)return;var a=b.dataset.live.split(':');state.tactics[a[0]]=a[1];match.setTactics(match.userSide,clone(state.tactics),'user');save();updateLiveTactic();toast('작전을 바로 바꿨습니다.');};});
 }
-function drawMatch(){
+function drawTacticalMatch(){
   if(!match)return;
   var canvas=$('pitch'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
   ctx.clearRect(0,0,W,H);
@@ -648,6 +649,7 @@ function drawMatch(){
   else{ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.stroke();}
   ctx.restore();
 }
+function drawMatch(){if(!match)return;if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
   var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();
