@@ -56,7 +56,14 @@ let hoverTile=null,previewRing=null,lastAction=null;
 let rng=Math.random,tutorialIndex=-1,tutorialMode=false;
 let drag={active:false,id:null,x:0,y:0,moved:false},pointers=new Map();
 let toastTimer=0,saveTimer=0,elapsed=0,builtCount=0,ecologyClock=0;
-let ecosystem={carbon:0,waste:0,industryProfit:0};
+let ecosystem=makeEcosystem();
+function makeEcosystem(input={}){
+  return {
+    carbon:Number(input.carbon||0),waste:Number(input.waste||0),industryProfit:Number(input.industryProfit||0),
+    populations:{bee:0,frog:0,deer:0,otter:0,...(input.populations||{})},
+    discovered:{...(input.discovered||{})}
+  };
+}
 const windRotors=[];
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('high_ecopolis','world')||'kidscade_game_v1:high_ecopolis:world';
 const BEST_KEY='kidscade_game_v1:high_ecopolis:best';
@@ -359,7 +366,7 @@ function launchRecycler(t){
   buildings=buildings.filter(b=>!caught.includes(b));
   const refund=Math.round(caught.reduce((s,b)=>s+(TOOL[b.type]?.cost||0),0)*COST_REFUND);ecoPoints+=refund;
   toast('회수선이 시설 '+caught.length+'개를 걷어냈어요'+(refund?' · +'+refund+'P':''),'good');sdkSound('correct');
-  saveGame();updateUI();if(buildings.length===0)completeGame();return true;
+  saveGame();updateUI();if(buildings.length===0)tryCompleteGame();return true;
 }
 function pulse(t,color,r){
   const p=worldPos(t),ring=new THREE.Mesh(new THREE.RingGeometry(.2,.28,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));
@@ -372,18 +379,25 @@ function counts(){
   const forest=land.filter(t=>t.biome==='forest').length,wetland=land.filter(t=>t.biome==='wetland').length,meadow=land.filter(t=>t.biome==='meadow').length;
   return {land:land.length,water:water.length,restored,clean,restorePct:pct(restored,land.length),waterPct:pct(clean,water.length),forestPct:pct(forest,land.length),wetlandPct:pct(wetland,land.length),meadowPct:pct(meadow,land.length)};
 }
+function returnedSpeciesCount(){
+  return Object.values(ecosystem.populations).filter(v=>v>=8).length;
+}
 function updateSpecies(){
-  const c=counts(),existing=new Set(animals.map(a=>a.species)),carbon=ecosystem.carbon;
-  const candidates=[
-    ['bee',c.meadowPct>=8&&carbon<85],
-    ['frog',c.wetlandPct>=8&&c.waterPct>=55&&carbon<110],
-    ['deer',c.forestPct>=10&&c.restorePct>=60&&carbon<95],
-    ['otter',c.wetlandPct>=8&&c.waterPct>=70&&carbon<75]
-  ];
-  candidates.forEach(([species,ok])=>{
-    if(ok&&!existing.has(species))spawnAnimal(species);
-    if(!ok&&existing.has(species))removeSpecies(species);
-  });
+  const c=counts(),pop=ecosystem.populations;
+  const living=tiles.filter(t=>t.kind!=='rock'),avgPollution=living.reduce((s,t)=>s+t.pollution,0)/Math.max(1,living.length);
+  const target={
+    bee:clamp(c.meadowPct*4.2-ecosystem.carbon*.23-avgPollution*28,0,100),
+    frog:clamp(c.wetlandPct*4+c.waterPct*.32-ecosystem.carbon*.10-avgPollution*30,0,100),
+    deer:clamp(c.forestPct*4+c.restorePct*.20-ecosystem.carbon*.20-avgPollution*24,0,100),
+    otter:clamp(c.waterPct*.48+c.wetlandPct*2+pop.frog*.18-ecosystem.carbon*.24-avgPollution*35,0,100)
+  };
+  for(const species of Object.keys(SPECIES)){
+    const delta=clamp(target[species]-pop[species],-4,4);
+    pop[species]=clamp(pop[species]+delta,0,100);
+    const visible=animals.some(a=>a.species===species);
+    if(pop[species]>=8&&!visible)spawnAnimal(species);
+    if(pop[species]<4&&visible)removeSpecies(species);
+  }
 }
 function spawnAnimal(species,loadingPos=null){
   const habitat=species==='bee'?'meadow':species==='frog'?'wetland':species==='deer'?'forest':'water';
@@ -392,7 +406,7 @@ function spawnAnimal(species,loadingPos=null){
   const t=loadingPos?tileAt(loadingPos.x,loadingPos.z):options[Math.floor(rng()*options.length)];
   const p=worldPos(t),g=animalModel(species);g.position.set(p.x,.48,p.z);animalGroup.add(g);
   animals.push({species,x:t.x,z:t.z,mesh:g,phase:rng()*Math.PI*2});
-  if(!loadingPos){ecoPoints+=12;toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 돌아왔어요! · +12P','good');sdkSound('correct')}
+  if(!loadingPos&&!ecosystem.discovered[species]){ecosystem.discovered[species]=true;ecoPoints+=12;toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 돌아왔어요! · +12P','good');sdkSound('correct')}
 }
 function animalModel(species){
   const g=new THREE.Group();
@@ -410,7 +424,7 @@ function checkProgress(announce=true){
   if(phase===1&&c.restorePct>=50&&c.waterPct>=55){phase=2;if(announce)unlockToast('2단계 시작! 이제 초원을 여러 생태계로 나눠보세요.')}
   if(phase===2&&c.forestPct>=10&&c.wetlandPct>=8&&c.meadowPct>=8){phase=3;if(announce)unlockToast('3단계 시작! 조건이 맞는 동물들이 스스로 돌아옵니다.')}
   if(phase>=2)updateSpecies();
-  if(phase===3&&animals.length>=4){phase=4;if(announce)unlockToast('마지막 단계! 이제 시설을 모두 회수하고 자연만 남기세요.')}
+  if(phase===3&&returnedSpeciesCount()>=4){phase=4;if(announce)unlockToast('마지막 단계! 이제 시설을 모두 회수하고 자연만 남기세요.')}
   updateUI();
 }
 function unlockToast(msg){toast(msg,'good',3800);sdkSound('success');saveGame()}
@@ -419,7 +433,7 @@ function updateUI(){
   const c=counts(),energy=energySummary();ui.phaseName.textContent=PHASES[phase-1].name;ui.ecoPoints.textContent=ecoPoints;
   ui.energyRate.textContent=energy.supply+' / '+energy.demand+' ⚡';ui.carbonRate.textContent=Math.round(ecosystem.carbon);
   ui.carbonRate.classList.toggle('warning',ecosystem.carbon>=45&&ecosystem.carbon<85);ui.carbonRate.classList.toggle('danger',ecosystem.carbon>=85);
-  ui.restoreRate.textContent=c.restorePct+'%';ui.waterRate.textContent=c.waterPct+'%';ui.bioRate.textContent=animals.length+'/4';
+  ui.restoreRate.textContent=c.restorePct+'%';ui.waterRate.textContent=c.waterPct+'%';ui.bioRate.textContent=returnedSpeciesCount()+'/4';
   ui.missionKicker.textContent='PHASE '+phase;ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
   const objs=phase===1?[
     ['땅 복원',c.restorePct,50,'%'],['깨끗한 물',c.waterPct,55,'%']
@@ -432,7 +446,7 @@ function updateUI(){
     const current=o[1],goal=o[2],reverse=o[4];const done=reverse?current<=goal:current>=goal;const width=reverse?(done?100:Math.max(5,100-current*10)):clamp(current/goal*100,0,100);
     return '<div class="objective"><div class="objectiveTop"><span>'+(done?'✓ ':'')+o[0]+'</span><b>'+current+o[3]+' / '+goal+o[3]+'</b></div><div class="bar"><i style="width:'+width+'%"></i></div></div>'
   }).join('');
-  const have=new Set(animals.map(a=>a.species));ui.speciesRow.innerHTML=Object.entries(SPECIES).map(([id,s])=>'<div class="species '+(have.has(id)?'found':'')+'" title="'+s.name+'">'+(have.has(id)?s.icon:'？')+'</div>').join('');
+  ui.speciesRow.innerHTML=Object.entries(SPECIES).map(([id,s])=>{const p=Math.round(ecosystem.populations[id]||0),found=p>=8;return '<div class="species '+(found?'found':'')+'" title="'+s.name+' 개체수 '+p+'"><span>'+(found?s.icon:'？')+'</span><small>'+p+'</small></div>'}).join('');
   document.querySelectorAll('.tool').forEach(btn=>{
     const def=TOOL[btn.dataset.tool];const locked=def?.phase&&phase<def.phase;btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
   });
@@ -491,7 +505,7 @@ function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(e){}}
 function sdkStart(){try{window.KidscadeGame?.start?.()}catch(e){}}
 function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
 function restoreSnapshot(s){
-  if(!s)return;phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem={carbon:0,waste:0,industryProfit:0,...(s.ecosystem||{})};
+  if(!s)return;phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem=makeEcosystem(s.ecosystem);
   if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;refreshTileVisual(tiles[i])});
   buildings.slice().forEach(b=>buildingGroup.remove(b.mesh));buildings=[];windRotors.length=0;(s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
   clearGroup(animalGroup);animals=[];(s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateUI();
@@ -505,7 +519,7 @@ function loadGame(){
   selectedScenario=SCENARIOS[s.scenario]?s.scenario:'valley';phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;elapsed=s.elapsed||0;ecosystem={carbon:0,waste:0,industryProfit:0,...(s.ecosystem||{})};generateWorld(s.seed||1);
   if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;refreshTileVisual(tiles[i])});
   (s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
-  (s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));
+  (s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateSpecies();
   if(s.camera){cameraTarget.x=s.camera.x||0;cameraTarget.z=s.camera.z||0;viewSize=s.camera.view||17;applyCamera()}
   updateUI();return true;
 }
@@ -513,15 +527,24 @@ function undo(){
   if(!lastAction){toast('되돌릴 건설이 없어요.');return}
   const s=lastAction;lastAction=null;restoreSnapshot(s);saveGame();toast('마지막 건설을 되돌렸어요.');
 }
+function tryCompleteGame(){
+  const c=counts();
+  if(buildings.length>0)return false;
+  if(returnedSpeciesCount()<4||ecosystem.carbon>=65||c.restorePct<60||c.waterPct<70){
+    toast('시설은 모두 회수했지만 생태계가 아직 안정되지 않았어요. 탄소·물·야생동물을 회복시키세요.','bad',3600);
+    return false;
+  }
+  completeGame();return true;
+}
 function completeGame(){
-  if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+animals.length*500+ecoPoints*2+efficiency);
+  if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+returnedSpeciesCount()*500+ecoPoints*2+efficiency-ecosystem.waste*3-ecosystem.carbon*4);
   let best=0;try{best=Number(localStorage.getItem(BEST_KEY)||0);if(score>best)localStorage.setItem(BEST_KEY,String(score));localStorage.removeItem(SAVE_KEY)}catch(e){}
-  ui.resultScore.textContent=score.toLocaleString();ui.resultRestore.textContent=c.restorePct+'%';ui.resultSpecies.textContent=animals.length+'종';
+  ui.resultScore.textContent=score.toLocaleString();ui.resultRestore.textContent=c.restorePct+'%';ui.resultSpecies.textContent=returnedSpeciesCount()+'종';
   ui.resultText.textContent=SCENARIOS[selectedScenario].name+'에 시설을 하나도 남기지 않았습니다. '+(score>best?'새 최고 기록이에요!':'최고 기록 '+Math.max(best,score).toLocaleString()+'점');
-  ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:animals.length})}catch(e){}
+  ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:returnedSpeciesCount()})}catch(e){}
 }
 function beginNew(tutorial=false){
-  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=1;ecoPoints=130;builtCount=0;elapsed=0;ecosystem={carbon:0,waste:0,industryProfit:0};ecologyClock=0;completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
+  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=1;ecoPoints=130;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
   generateWorld();ui.intro.classList.add('hidden');ui.result.classList.add('hidden');running=true;sdkStart();selectTool('inspect');checkProgress();saveGame();if(tutorial)showTutorial();else ui.tutorialCoach.classList.add('hidden');
 }
 function continueGame(){
@@ -554,7 +577,7 @@ addEventListener('beforeunload',()=>{if(running)saveGame()});
 
 function animate(now){
   requestAnimationFrame(animate);const dt=Math.min(.05,(now-(animate.last||now))/1000);animate.last=now;
-  if(running){elapsed+=dt;saveTimer+=dt;ecologyClock+=dt;if(ecologyClock>3){ecologyClock=0;ecologyTick()}if(saveTimer>20){saveTimer=0;saveGame()}}
+  if(running){elapsed+=dt;saveTimer+=dt;ecologyClock+=dt;if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&buildings.length===0)tryCompleteGame()}if(saveTimer>20){saveTimer=0;saveGame()}}
   windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18));
   animals.forEach((a,i)=>{a.phase+=dt*(1+i*.08);a.mesh.position.y=.46+Math.sin(a.phase*2)*.035;a.mesh.rotation.y=Math.sin(a.phase*.45)*.25});
   [...effectGroup.children].forEach(o=>{o.userData.life-=dt*.7;o.scale.multiplyScalar(1+dt*1.2);o.material.opacity=o.userData.life*.75;if(o.userData.life<=0)effectGroup.remove(o)});
