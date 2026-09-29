@@ -1,3 +1,5 @@
+(()=>{
+'use strict';
 
 class SimpleOrbit {
   constructor(camera, dom, target){
@@ -459,3 +461,5 @@ function animate(now){
 }
 window.CubeArchitectReady=true;
 window.CubeArchitect={enterMode,showHome};
+
+})();
