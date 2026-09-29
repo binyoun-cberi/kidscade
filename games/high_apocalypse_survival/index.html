@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>멸망에서 살아남기</title>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_apocalypse_survival" data-title="멸망에서 살아남기" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
 </head>
@@ -97,13 +97,16 @@
     <p id="endingText">혼자가 아니게 되었습니다.</p>
     <div id="endingStats" class="ending-stats"></div>
     <blockquote>📻 “…누구든 듣고 있다면 응답해 주세요. 여기는 새봄 정착지입니다.”</blockquote>
-    <button id="restartGame" class="primary">새로운 세계에서 다시 시작</button>
+    <div class="ending-actions">
+      <button id="continueSettlement" class="primary">정착지 계속 운영</button>
+      <button id="restartGame" class="secondary">새로운 세계에서 다시 시작</button>
+    </div>
   </div>
 </div>
 
 <div id="loading" class="loading"><div class="spinner"></div><b>멸망 이후의 세계를 만드는 중...</b><small id="loadingText">지형과 생존 장비를 준비하고 있어요.</small></div>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="game.js?v=4"></script>
+<script type="module" src="game.js?v=5"></script>
 </body>
 </html>
