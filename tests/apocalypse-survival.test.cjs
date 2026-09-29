@@ -18,12 +18,12 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=2/);
+  assert.match(html,/game\.js\?v=3/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
   for(const day of [1,2,3,4,5,6,7])assert.match(js,new RegExp('\\n '+day+':\\{title:'));
-  for(const id of ['waterRisk','boiling','combustion','insulation','plantGrowth','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
+  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
   for(const id of ['campfire','shelter','workbench'])assert.ok(js.includes(id),id);
   assert.match(js,/chooseDistribution/);
   assert.match(js,/readyFlood/);
@@ -31,6 +31,8 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/assignJob/);
   assert.match(js,/floodLevel/);
   assert.match(js,/currentObjective/);
+  assert.match(js,/samplePollutedWater/);
+  assert.match(js,/updateNpc/);
   assert.match(js,/finish\(\)/);
 });
 
@@ -44,7 +46,7 @@ test('tracked Kidscade survival assets used by the game exist',()=>{
 test('game is registered in catalog metadata v7',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=2');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=3');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
