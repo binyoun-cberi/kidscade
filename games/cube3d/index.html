@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260929-5">
+<link rel="stylesheet" href="./cube-architect.css?v=20260929-6">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -115,40 +115,29 @@
   <div id="toast"></div>
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
+<script src="../../assets/vendor/three-r160/three-global.js?v=160-1"></script>
+<script src="./cube-architect.js?v=20260929-6"></script>
 <script>
 (()=>{
-  let modulePromise=null;
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
   const toast=document.getElementById('toast');
   function say(msg,bad){
     if(!toast)return;
-    toast.textContent=msg;
-    toast.style.background=bad?'#9b3344':'#15233b';
-    toast.classList.add('show');
+    toast.textContent=msg;toast.style.background=bad?'#9b3344':'#15233b';toast.classList.add('show');
     clearTimeout(window.__cubeArchitectBootToast);
-    window.__cubeArchitectBootToast=setTimeout(()=>toast.classList.remove('show'),3200);
+    window.__cubeArchitectBootToast=setTimeout(()=>toast.classList.remove('show'),3400);
   }
-  function loadGame(){
-    if(!modulePromise){
-      modulePromise=import('./cube-architect.js?v=20260929-5').catch(err=>{modulePromise=null;throw err});
+  buttons.forEach(btn=>btn.addEventListener('click',()=>{
+    const game=window.CubeArchitect;
+    if(!game||typeof game.enterMode!=='function'){
+      say('3D 엔진을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.',true);
+      console.error('[Cube Architect boot] runtime unavailable');
+      return;
     }
-    return modulePromise;
-  }
-  buttons.forEach(btn=>btn.addEventListener('click',async()=>{
-    if(btn.dataset.loading==='1')return;
-    btn.dataset.loading='1';
-    const original=btn.innerHTML;
-    btn.innerHTML='<span class="mode-icon">⏳</span><b>3D 공간 준비 중…</b><p>잠시만요. 건축 공간을 열고 있어요.</p>';
-    try{
-      const game=await loadGame();
-      if(!game||typeof game.enterMode!=='function')throw new Error('게임 시작 함수를 찾지 못했습니다.');
-      await game.enterMode(btn.dataset.mode);
-    }catch(err){
-      console.error('[Cube Architect boot]',err);
-      btn.innerHTML=original;
-      say('큐브 아키텍트를 열지 못했어요: '+(err?.message||err),true);
-    }finally{
-      delete btn.dataset.loading;
+    try{ game.enterMode(btn.dataset.mode); }
+    catch(err){
+      console.error('[Cube Architect mode]',err);
+      say('모드를 시작하지 못했어요: '+(err?.message||err),true);
     }
   }));
 })();
