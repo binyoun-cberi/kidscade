@@ -896,9 +896,9 @@ function animate(now){
   if(running){elapsed+=simDt;saveTimer+=dt;ecologyClock+=simDt;economyClock+=simDt;visitorSpawnClock+=simDt;
     if(visitorSpawnClock>1.4){visitorSpawnClock=0;const target=targetVisitorCount();if(visitors.length<target)spawnVisitor();else if(visitors.length>target&&visitors.length)removeVisitor(visitors[0],false)}
     if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&buildings.length===0)tryCompleteGame()}
-    if(economyClock>5){economyClock=0;economyTick();checkProgress(false);updateUI()}
+    if(economyClock>5){economyClock=0;economyTick();checkProgress(true);updateUI()}
     if(saveTimer>20){saveTimer=0;saveGame()}}
-  windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*(simSpeed||.15));
+  windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*simSpeed);
   animals.forEach((a,i)=>{a.phase+=simDt*(1+i*.08);a.mesh.position.y=.46+Math.sin(a.phase*2)*.035;a.mesh.rotation.y=Math.sin(a.phase*.45)*.25});
   animateVisitors(simDt);
   [...effectGroup.children].forEach(o=>{o.userData.life-=dt*.7;o.scale.multiplyScalar(1+dt*1.2);o.material.opacity=o.userData.life*.75;if(o.userData.life<=0)effectGroup.remove(o)});
