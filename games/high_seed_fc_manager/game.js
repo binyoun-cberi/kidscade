@@ -125,7 +125,7 @@ function rows(table){
 }
 function leagueLabel(){
   if(!state.pyramid)return '배치 리그';
-  return state.pyramid.division===1?'역사 드림리그 1부':'역사 드림리그 2부';
+  return state.pyramid.division===1?'풋살 히스토리그 1부':'풋살 히스토리그 2부';
 }
 function leagueGoalText(){
   if(!state.pyramid)return '이번 시즌 상위 4팀은 다음 시즌 1부, 하위 4팀은 2부로 배정돼요.';
@@ -213,7 +213,7 @@ function home(){
       statusText='상위 4팀은 다음 시즌 1부, 하위 4팀은 2부에서 시작해요.';
     }else if(state.pyramid.division===1){
       statusTitle=r===1?'🏆 1부 우승!':r===rs.length?'⬇️ 2부 강등':'1부 잔류';
-      statusText=r===1?'역사 드림리그 정상에 올랐어요.':r===rs.length?'다음 시즌은 2부에서 다시 승격에 도전합니다.':'다음 시즌에도 1부에서 우승을 노려요.';
+      statusText=r===1?'풋살 히스토리그 정상에 올랐어요.':r===rs.length?'다음 시즌은 2부에서 다시 승격에 도전합니다.':'다음 시즌에도 1부에서 우승을 노려요.';
     }else{
       statusTitle=r===1?'⬆️ 1부 승격!':'2부 시즌 완료';
       statusText=r===1?'다음 시즌부터 1부 팀들과 맞붙습니다.':'다음 시즌 다시 승격에 도전해요.';
@@ -263,7 +263,7 @@ function pcard(p,marketMode,scoutLevel){
 }
 function factModal(p){
   var prefs=(p.preferredPositions||[p.pos]).join(' · ');
-  modalBody.innerHTML='<span class="history-tag">'+esc(p.era)+'</span><h2>'+esc(p.name)+'</h2><p><b>'+esc(p.trait)+'</b></p><div class="fact-box">'+esc(p.fact)+'</div><div class="football-profile"><b>⚽ '+esc(p.footballStyle||'균형형')+'</b><span>'+esc(p.footballNote||'상황에 맞춰 움직여요.')+'</span><small>어울리는 자리 · '+esc(prefs)+'</small></div><p class="memory" style="margin-top:12px"><b>기억할 한 줄</b><br>'+esc(p.memory)+'</p><p class="muted" style="font-size:12px">축구 역할과 능력치는 역사적 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
+  modalBody.innerHTML='<span class="history-tag">'+esc(p.era)+'</span><h2>'+esc(p.name)+'</h2><p><b>'+esc(p.trait)+'</b></p><div class="fact-box">'+esc(p.fact)+'</div><div class="football-profile"><b>⚽ '+esc(p.footballStyle||'균형형')+'</b><span>'+esc(p.footballNote||'상황에 맞춰 움직여요.')+'</span><small>어울리는 자리 · '+esc(prefs)+'</small></div><p class="memory" style="margin-top:12px"><b>기억할 한 줄</b><br>'+esc(p.memory)+'</p><p class="muted" style="font-size:12px">풋살 역할과 능력치는 역사적 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
   modal.classList.remove('hidden');
 }
 function bindFact(scope,source){
@@ -362,8 +362,8 @@ function table(){
   if(!state.pyramid)html+=makeTable(rows(),0,'배치 리그');
   else{
     var currentDiv=state.pyramid.division,otherDiv=currentDiv===1?2:1;
-    html+=makeTable(rows(),currentDiv,'역사 드림리그 '+currentDiv+'부');
-    if(state.otherLeague)html+=makeTable(rows(state.otherLeague.table),otherDiv,'역사 드림리그 '+otherDiv+'부');
+    html+=makeTable(rows(),currentDiv,'풋살 히스토리그 '+currentDiv+'부');
+    if(state.otherLeague)html+=makeTable(rows(state.otherLeague.table),otherDiv,'풋살 히스토리그 '+otherDiv+'부');
   }
   html+='</div>';
   if(state.pyramid&&state.pyramid.history&&state.pyramid.history.length){
@@ -700,7 +700,6 @@ function substitutionModal(){
   modalBody.innerHTML='<h2>선수 교체</h2><p class="muted">지친 선수만이 아니라 전술에 맞춰 직접 바꿀 수 있어요. 풋살은 교체 횟수 제한 없음</p><label class="sub-label">나갈 선수<select id="subOut">'+on.map(function(a){return '<option value="'+esc(a.id)+'">'+esc(a.p.name)+' · '+a.slot+' · 체력 '+Math.round(a.energy)+'</option>';}).join('')+'</select></label><label class="sub-label">들어올 선수<select id="subIn">'+bench.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.name)+' · '+esc(p.footballStyle||p.pos)+' · '+p.pos+'</option>';}).join('')+'</select></label><div class="action-row"><button id="doSub" class="primary">교체하기</button><button id="autoSub" class="secondary">추천 교체</button></div>';
   modal.classList.remove('hidden');
   $('doSub').onclick=function(){
-    if((match.userSubs||0)>=5){toast('이 경기에서는 교체 5번을 모두 썼어요.');return;}
     var outId=$('subOut').value,p=playerById($('subIn').value),out=actors.find(function(a){return a.id===outId;});
     if(out&&p&&match.substitute(match.userSide,outId,p)){match.userSubs=(match.userSubs||0)+1;modal.classList.add('hidden');toast(out.p.name+' → '+p.name);}
   };
@@ -725,7 +724,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};if($('resultHistory'))$('resultHistory').onclick=function(){historyCardModal(star.id);};
 }
 function help(){
-  modalBody.innerHTML='<h2>역사 드림리그 하는 법</h2><div class="fact-box"><b>1. 선수단</b><br>역사 인물마다 조율가·지휘관·개척형처럼 서로 다른 가상 플레이 성향이 있어요.<br><br><b>2. 작전</b><br>공격 길·압박·수비 라인·템포·태도를 정해요.<br><br><b>3. 경기 중 지시</b><br>경기가 시작된 뒤에도 전술을 바꾸고 선수를 직접 교체하거나 한 선수에게 개인 지시를 내릴 수 있어요. 상대 감독도 점수와 내 작전에 맞춰 대응합니다.<br><br><b>4. 분석실</b><br>다시보기·히트맵·패스맵·전진 패스·키패스·xG를 보고 다음 경기를 준비하세요.<br><br><b>5. 선수 경력</b><br>출장·골·도움·MOM이 시즌을 넘어 누적됩니다.</div><p class="muted">모든 축구 역할과 능력치는 역사적 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
+  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 5명의 역사 선수</b><br>GK 1명과 필드 선수 4명을 골라 1-2-1·2-2·3-1·4-0 포메이션으로 경기해요.<br><br><b>2. 직접 조작</b><br>방향키로 이동하고 Shift로 질주해요. Q는 조작 선수 전환, S는 패스, W는 스루패스, A는 크로스, D는 슛 또는 태클이에요. 패스하면 받는 선수로 조작이 자연스럽게 넘어갑니다.<br><br><b>3. 선수마다 다른 AI</b><br>조율형은 패스를 돌리고, 개척형은 측면과 크로스를 노리며, 마무리형은 뒷공간 침투와 슛을 우선해요. 지휘형·수비형은 압박과 태클에 더 적극적입니다.<br><br><b>4. 감독 역할도 유지</b><br>경기 중 전술·개인 지시·자유 교체를 바꿀 수 있고, 경기 후에는 패스맵·히트맵과 역사 카드를 확인해요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보게 되고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
   modal.classList.remove('hidden');
 }
 

@@ -243,7 +243,7 @@ function create(opts){
     }
     if(m.ball.owner&&m.ball.owner.side!==a.side){
       var owner=m.ball.owner,presser=nearest(outfield(a.side),owner),shouldPress=presser===a||a.tend.press>88&&dist(a,owner)<190;
-      if(shouldPress&&!(role(a.p)==='anchor'&&dist(a,owner)>145)){move(a,owner.x,owner.y,dt,a.tend.press>75);if(dist(a,owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.20)tackle(a);return;}
+      if(shouldPress&&!(role(a.p)==='anchor'&&dist(a,owner)>145)){move(a,owner.x,owner.y,dt,a.tend.press>75);if(dist(a,owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.08)tackle(a);return;}
     }
     var target=baseTarget(a,m.ball.owner&&m.ball.owner.side===a.side);move(a,target.x,target.y,dt,a.tend.forward>88&&m.ball.owner&&m.ball.owner.side===a.side);
   }
@@ -261,7 +261,7 @@ function create(opts){
     if(controlIdle>1.15&&m.ball.owner===a){aiCarrier(a,dt);return;}
     if(controlIdle>.55&&m.ball.owner!==a){
       if(!m.ball.owner&&m.ball.z<85){var ch=nearest(outfield(userSide),m.ball);if(ch===a){move(a,m.ball.x,m.ball.y,dt,true);return;}}
-      if(m.ball.owner&&m.ball.owner.side!==userSide){var presser=nearest(outfield(userSide),m.ball.owner);if(presser===a){move(a,m.ball.owner.x,m.ball.owner.y,dt,a.tend.press>70);if(dist(a,m.ball.owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.18)tackle(a);return;}}
+      if(m.ball.owner&&m.ball.owner.side!==userSide){var presser=nearest(outfield(userSide),m.ball.owner);if(presser===a){move(a,m.ball.owner.x,m.ball.owner.y,dt,a.tend.press>70);if(dist(a,m.ball.owner)<54&&a.tackleCooldown<=0&&Math.random()*100<a.tend.tackle*.07)tackle(a);return;}}
       var target=baseTarget(a,m.ball.owner&&m.ball.owner.side===userSide);move(a,target.x,target.y,dt,false);return;
     }
     a.vx*=Math.pow(.04,dt);a.vy*=Math.pow(.04,dt);
