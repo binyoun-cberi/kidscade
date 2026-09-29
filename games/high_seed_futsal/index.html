@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>씨앗 풋살</title>
+<style>
+:root{color-scheme:dark;--home:#22c55e;--away:#3b82f6;--accent:#facc15}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111d;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select{font:inherit}
+button{border:0;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#app{position:relative;width:100%;height:100%;min-height:360px;overflow:hidden;background:#07111d;outline:none}
+canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778vh);height:min(100vh,56.25vw);transform:translate(-50%,-50%);touch-action:none}
+#hud{position:absolute;inset:0 0 auto 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:10px 12px;pointer-events:none;z-index:3}
+.teamHud{display:flex;align-items:center;gap:8px;min-width:0}
+.teamHud.away{justify-content:flex-end}
+.badge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:1000;border:2px solid rgba(255,255,255,.88);box-shadow:0 5px 14px rgba(0,0,0,.22)}
+.home .badge{background:var(--home)}.away .badge{background:var(--away)}
+.teamName{font-size:12px;font-weight:950;text-shadow:0 2px 8px #000}
+#scoreboard{display:flex;align-items:center;gap:8px;background:rgba(2,6,23,.84);border:1px solid rgba(255,255,255,.14);border-radius:17px;padding:7px 12px;box-shadow:0 7px 25px rgba(0,0,0,.2);backdrop-filter:blur(8px)}
+#score{font-size:24px;line-height:1;font-weight:1000;letter-spacing:.06em}
+#clock{font-variant-numeric:tabular-nums;font-size:13px;font-weight:950;color:#fde68a}
+#status{position:absolute;left:50%;top:61px;transform:translateX(-50%);max-width:75vw;padding:6px 12px;border-radius:999px;background:rgba(2,6,23,.75);font-size:12px;font-weight:900;text-align:center;opacity:0;transition:opacity .14s;pointer-events:none;z-index:3}
+#status.show{opacity:1}
+#playerCard{position:absolute;left:12px;bottom:12px;z-index:3;min-width:168px;padding:8px 11px;border-radius:14px;background:rgba(2,6,23,.76);border:1px solid rgba(255,255,255,.12);pointer-events:none;backdrop-filter:blur(7px)}
+#playerCard b{display:block;font-size:13px}#playerCard small{display:block;margin-top:2px;color:#cbd5e1;font-weight:800}
+#power{height:5px;margin-top:7px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}
+#powerFill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#facc15,#ef4444);transition:width .03s linear}
+#pauseBtn{position:absolute;right:12px;top:60px;z-index:5;width:42px;height:42px;border-radius:13px;background:rgba(2,6,23,.75);color:#fff;border:1px solid rgba(255,255,255,.14)}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:18px;background:rgba(2,6,23,.76);z-index:10}
+.panel{width:min(690px,95vw);max-height:93vh;overflow:auto;padding:22px;border-radius:25px;background:rgba(15,23,42,.98);border:1px solid rgba(255,255,255,.14);box-shadow:0 25px 80px rgba(0,0,0,.36)}
+h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,62px);line-height:1}.sub{margin:0 0 16px;color:#cbd5e1;line-height:1.55}
+.modeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.mode{min-height:46px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#facc15;background:#334155}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}.field{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;font-weight:800}.field select{padding:11px;border-radius:12px;border:1px solid #475569;background:#0f172a;color:#fff}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}.keys>div{padding:12px;border-radius:15px;background:#111827;font-size:13px;line-height:1.7}.keys strong{color:#fde68a}
+kbd{display:inline-block;min-width:27px;padding:1px 6px;border-radius:6px;text-align:center;background:#e2e8f0;color:#111827;font-weight:1000;box-shadow:inset 0 -2px rgba(0,0,0,.18)}
+.primary,.secondary{width:100%;min-height:48px;border-radius:14px;margin-top:8px}.primary{background:#facc15;color:#111827;font-size:17px}.secondary{background:#334155;color:#fff}
+.hidden{display:none!important}
+#touch{position:absolute;inset:auto 0 8px 0;display:flex;justify-content:space-between;align-items:end;padding:0 10px;z-index:4;pointer-events:none}
+#movePad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:5px;pointer-events:auto}
+#movePad button,#actionPad button{border-radius:16px;background:rgba(2,6,23,.72);color:#fff;border:1px solid rgba(255,255,255,.2);touch-action:none;user-select:none}
+#movePad .up{grid-column:2}.moveLeft{grid-column:1;grid-row:2}.moveDown{grid-column:2;grid-row:2}.moveRight{grid-column:3;grid-row:2}.sprint{grid-column:2;grid-row:3;font-size:11px}
+#actionPad{display:grid;grid-template-columns:repeat(3,58px);gap:6px;pointer-events:auto;align-items:end}
+#actionPad button{width:58px;height:54px;padding:0;font-size:11px;line-height:1.05}
+#actionPad .shoot{background:rgba(239,68,68,.74)}#actionPad .pass{background:rgba(34,197,94,.72)}#actionPad .through{background:rgba(59,130,246,.74)}#actionPad .lob{background:rgba(245,158,11,.74)}#actionPad .switch{background:rgba(139,92,246,.75)}#actionPad .jockey{background:rgba(71,85,105,.78)}
+.helpList{margin:10px 0 0;padding-left:20px;color:#dbeafe;line-height:1.65;font-size:14px}
+#resultStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.stat{padding:12px 8px;border-radius:15px;background:#111827}.stat b{display:block;font-size:20px}.stat small{color:#94a3b8}
+@media (hover:hover) and (pointer:fine){#touch{display:none}}
+@media (max-width:640px){.panel{padding:17px}.modeRow,.options,.keys{grid-template-columns:1fr}.modeRow{grid-template-columns:repeat(3,1fr)}#playerCard{display:none}#movePad{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px)}#actionPad{grid-template-columns:repeat(3,52px)}#actionPad button{width:52px;height:48px}.teamName{display:none}#scoreboard{padding:6px 9px}#score{font-size:21px}}
+</style>
+</head>
+<body>
+<div id="app" tabindex="0" aria-label="씨앗 풋살 게임">
+<canvas id="game" width="960" height="540"></canvas>
+
+<div id="hud">
+  <div class="teamHud home"><div class="badge">S</div><div class="teamName">씨앗 FC</div></div>
+  <div id="scoreboard"><span id="score">0 : 0</span><span id="clock">03:00</span></div>
+  <div class="teamHud away"><div class="teamName">블루 FC</div><div class="badge">B</div></div>
+</div>
+<div id="status"></div>
+<div id="playerCard"><b id="playerName">9 · 나</b><small id="playerRole">PIVOT · 공격</small><div id="power"><div id="powerFill"></div></div></div>
+<button id="pauseBtn" type="button" aria-label="일시정지">⏸</button>
+
+<div id="touch" aria-label="터치 조작">
+  <div id="movePad">
+    <button class="up" type="button" data-hold="up">▲</button>
+    <button class="moveLeft" type="button" data-hold="left">◀</button>
+    <button class="moveDown" type="button" data-hold="down">▼</button>
+    <button class="moveRight" type="button" data-hold="right">▶</button>
+    <button class="sprint" type="button" data-hold="sprint">질주</button>
+  </div>
+  <div id="actionPad">
+    <button class="switch" type="button" data-action="switch">전환<br>Q</button>
+    <button class="lob" type="button" data-action="lob">로빙<br>A</button>
+    <button class="jockey" type="button" data-hold="jockey">조키<br>C</button>
+    <button class="pass" type="button" data-action="pass">패스<br>S</button>
+    <button class="through" type="button" data-action="through">스루<br>W</button>
+    <button class="shoot" type="button" data-action="shoot">슛/태클<br>D</button>
+  </div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="panel">
+    <h1>씨앗 풋살</h1>
+    <p class="sub">좌우 골대의 5대5 풋살. 패스하면 받는 선수로 조작이 넘어가고, 팀원들은 스스로 공간을 만들고 수비합니다.</p>
+    <div class="modeRow">
+      <button class="mode active" type="button" data-mode="match">3분 경기</button>
+      <button class="mode" type="button" data-mode="long">5분 경기</button>
+      <button class="mode" type="button" data-mode="practice">자유 연습</button>
+    </div>
+    <div class="options">
+      <label class="field">CPU 난이도
+        <select id="difficulty"><option value="easy">쉬움</option><option value="normal" selected>보통</option><option value="hard">어려움</option></select>
+      </label>
+      <label class="field">패스 보정
+        <select id="assist"><option value="high">높음</option><option value="normal" selected>보통</option><option value="low">낮음</option></select>
+      </label>
+    </div>
+    <div class="keys">
+      <div><strong>이동</strong><br><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>E</kbd> 질주 · <kbd>C</kbd> 조키</div>
+      <div><strong>공격 / 수비</strong><br><kbd>S</kbd> 패스 · <kbd>W</kbd> 스루 · <kbd>A</kbd> 로빙 · <kbd>D</kbd> 슛/태클 · <kbd>Q</kbd> 선수전환</div>
+    </div>
+    <button class="primary" id="startBtn" type="button">경기 시작</button>
+    <button class="secondary" id="helpBtn" type="button">조작과 규칙 보기</button>
+  </div>
+</div>
+
+<div id="help" class="overlay hidden">
+  <div class="panel">
+    <h2>씨앗 풋살 조작</h2>
+    <ul class="helpList">
+      <li><b>S/W/A/D는 누르는 동안 파워가 차고, 떼는 순간 실행</b>됩니다.</li>
+      <li><b>S 패스</b>는 입력 방향의 가장 좋은 동료를 찾아 보정하고, 패스 직후 그 선수로 조작이 넘어갑니다.</li>
+      <li><b>W 스루패스</b>는 선수의 현재 위치보다 앞 공간으로 공을 보냅니다.</li>
+      <li><b>Q+S</b>로 패스하면 원래 패서가 앞으로 침투해 원투패스를 받을 준비를 합니다.</li>
+      <li>수비 중 <b>D</b>는 태클, <b>C</b>는 몸 방향을 잡는 조키, <b>Q</b>는 다음 수비수 전환입니다.</li>
+      <li>오프사이드는 없으며 터치라인을 나가면 킥인, 골라인에서는 코너 또는 골클리어런스로 빠르게 재개됩니다.</li>
+    </ul>
+    <button class="primary" id="closeHelp" type="button">알겠어요</button>
+  </div>
+</div>
+
+<div id="pauseLayer" class="overlay hidden">
+  <div class="panel" style="text-align:center">
+    <h2>일시정지</h2>
+    <p class="sub">준비되면 이어서 경기하세요.</p>
+    <button class="primary" id="resumeBtn" type="button">계속하기</button>
+  </div>
+</div>
+
+<div id="result" class="overlay hidden">
+  <div class="panel" style="text-align:center">
+    <h2 id="resultTitle">경기 종료</h2>
+    <p id="resultText" class="sub"></p>
+    <div id="resultStats">
+      <div class="stat"><b id="statShots">0</b><small>슛</small></div>
+      <div class="stat"><b id="statPasses">0</b><small>패스 성공</small></div>
+      <div class="stat"><b id="statSaves">0</b><small>선방</small></div>
+    </div>
+    <button class="primary" id="rematchBtn" type="button">다시 경기</button>
+    <button class="secondary" id="menuBtn" type="button">설정으로</button>
+  </div>
+</div>
+</div>
+
+<script src="./game.js?v=1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_seed_futsal" data-title="씨앗 풋살" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+</body>
+</html>
