@@ -24,7 +24,7 @@ test('Pattern Lock is registered with discovery metadata',()=>{
   const game=catalog.games.find(g=>g.id==='low_pattern_lock');
   assert.ok(game);
   assert.equal(game.title,'패턴 락');
-  assert.equal(game.href,'games/low_pattern_lock/index.html?v=1');
+  assert.equal(game.href,'games/low_pattern_lock/index.html?v=2');
   assert.equal(game.subject,'thinking');
   assert.equal(game.genre,'puzzle');
   assert.deepEqual(game.ages,['low','high']);
