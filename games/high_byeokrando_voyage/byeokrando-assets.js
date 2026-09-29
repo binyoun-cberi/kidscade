@@ -40,7 +40,11 @@
     rope3:{preferred:url('../../assets/game/3d/byeokrando/trade_props/fantasy_props/Rope_3.gltf')},
     table:{preferred:url('../../assets/game/3d/byeokrando/trade_props/fantasy_props/Table_Large.gltf')},
     workbench:{preferred:url('../../assets/game/3d/byeokrando/trade_props/fantasy_props/Workbench.gltf')},
-    pouch:{preferred:url('../../assets/game/3d/byeokrando/trade_props/fantasy_props/Pouch_Large.gltf')}
+    pouch:{preferred:url('../../assets/game/3d/byeokrando/trade_props/fantasy_props/Pouch_Large.gltf')},
+    sharedCrate:{preferred:url('../../assets/quaternius_cc0-crate-885.glb'),center:true},
+    sharedWell:{preferred:url('../../assets/quaternius_cc0-well-1471.glb'),center:true},
+    sharedWoodLog:{preferred:url('../../assets/quaternius_cc0-wood-log-1520.glb'),center:true},
+    sharedMossyRock:{preferred:url('../../assets/quaternius_cc0-mossy-rock-1303.glb'),center:true}
   };
 
   const PORT_SCENES={
@@ -152,13 +156,14 @@
     }
   }
 
-  function fit(obj,target){
+  function fit(obj,target,centerXZ=false){
     obj.updateMatrixWorld(true);
     let box=new T.Box3().setFromObject(obj),size=new T.Vector3();
     box.getSize(size);
     obj.scale.multiplyScalar(target/Math.max(size.x,size.y,size.z,.001));
     obj.updateMatrixWorld(true);
     box=new T.Box3().setFromObject(obj);
+    if(centerXZ){const c=box.getCenter(new T.Vector3());obj.position.x-=c.x;obj.position.z-=c.z;obj.updateMatrixWorld(true);box=new T.Box3().setFromObject(obj);}
     obj.position.y-=box.min.y;
     obj.traverse(n=>{
       if(!n.isMesh)return;
@@ -177,7 +182,7 @@
     try{
       const template=await loadModel(key);
       if(!group?.parent)return null;
-      const obj=fit(template.clone(true),size);
+      const obj=fit(template.clone(true),size,!!MODELS[key]?.center);
       obj.position.x+=x;obj.position.y+=y;obj.position.z+=z;
       obj.rotation.y=ry;
       obj.name='byeokrando-'+key;
@@ -207,12 +212,18 @@
       ['crate',-48,0,41,2.8,.18],
       ['bags',-40,0,42,2.35,-.16],
       ['parcel',37,0,41,2.15,.12],
-      ['rope1',-51,0,51,2.2,.08]
+      ['rope1',-51,0,51,2.2,.08],
+      ['sharedCrate',-44,0,37,2.4,-.08],
+      ['sharedCrate',42,0,44,2.1,.22]
     ];
     if(dense>.8)common.push(['crate',44,0,38,2.6,-.18],['bag',31,0,39,2.0,.2]);
     if(dense>1.15)common.push(['parcelAlt',51,0,36,2.1,.1],['bags',-33,0,38,2.3,-.25]);
     common.forEach(a=>jobs.push(place(layer,...a)));
     profile.items.forEach(a=>jobs.push(place(layer,...a)));
+    // 시대 배경을 해치지 않는 공용 자산만 보조 배치한다.
+    if(['byeokrando','donghae','namhae'].includes(which))jobs.push(place(layer,'sharedWell',24,0,27,3.6,.1));
+    if(['tsushima','liaodong','nuzhen'].includes(which))jobs.push(place(layer,'sharedWoodLog',28,0,27,2.8,.35));
+    if(['donghae','tsushima','nuzhen'].includes(which))jobs.push(place(layer,'sharedMossyRock',52,0,47,2.2,.2));
 
     jobs.push(place(layer,'rowSmall',-54,-.18,67,9.5,Math.PI+.12));
     if(dense>=.65)jobs.push(place(layer,'rowLarge',53,-.18,71,12.5,Math.PI-.16));
