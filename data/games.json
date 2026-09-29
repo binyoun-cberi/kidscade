@@ -3071,7 +3071,7 @@
       "id": "low_pattern_lock",
       "addedAt": "2026-09-29T11:04:07+09:00",
       "title": "패턴 락",
-      "href": "games/low_pattern_lock/index.html?v=3",
+      "href": "games/low_pattern_lock/index.html?v=4",
       "category": "trivia",
       "age": "low",
       "ages": [
@@ -3079,11 +3079,11 @@
         "high"
       ],
       "icon": "🔐",
-      "description": "다른 사람이 잠금을 푸는 패턴을 잠깐 보고 시작점·순서·대각선·끝점까지 똑같이 재현하는 SW 알고리즘 기억 게임! 3×3~5×5의 18개 패턴에서 순차·선택·반복 구조를 읽고, 친구에게 직접 만든 패턴을 내는 모드도 즐겨요.",
+      "description": "정답 패턴을 보여주지 않고 점 개수·대각선 횟수·시작 위치·순차/선택/반복 횟수 같은 단서만으로 숨은 잠금 패턴을 예상하는 알고리즘 추리 게임! 오답 비교 정보로 후보를 좁히고, 친구가 만든 비밀 패턴도 자동 단서로 풀어 보세요.",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "easy",
-      "sessionMinutes": 8,
+      "sessionMinutes": 10,
       "players": [
         "solo",
         "classroom"
