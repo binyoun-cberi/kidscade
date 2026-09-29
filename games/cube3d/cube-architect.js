@@ -137,14 +137,12 @@ function challengeKey(x,y,z){return x+','+y+','+z}
 function addChallengeBlock(x,y,z,quiet){
   if(x<0||x>=CHALLENGE_SIZE||z<0||z>=CHALLENGE_SIZE||y<0||y>CHALLENGE_MAX_Y)return false;
   const key=challengeKey(x,y,z);if(challengeBlocks.has(key))return false;
-  if(y>0&&!challengeBlocks.has(challengeKey(x,y-1,z))){if(!quiet)toast('공중에는 바로 놓을 수 없어요. 아래 블록부터 쌓아보세요.');return false}
   const mesh=new THREE.Mesh(blockGeo,challengeMat.clone());mesh.position.set(x-CHALLENGE_HALF+.5,y+.5,z-CHALLENGE_HALF+.5);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.userData={cx:x,cy:y,cz:z,challenge:true};const line=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:0x8b633c,transparent:true,opacity:.6}));mesh.add(line);
   scene.add(mesh);challengeBlocks.set(key,mesh);challengeMeshes.push(mesh);if(!quiet)sfx('place');return true;
 }
 function removeChallengeBlock(mesh){
   const d=mesh.userData;
-  if(challengeBlocks.has(challengeKey(d.cx,d.cy+1,d.cz))){toast('위에 있는 블록부터 치워야 해요.');return}
   scene.remove(mesh);challengeBlocks.delete(challengeKey(d.cx,d.cy,d.cz));challengeMeshes=challengeMeshes.filter(x=>x!==mesh);sfx('break');
 }
 function clearChallenge(){
