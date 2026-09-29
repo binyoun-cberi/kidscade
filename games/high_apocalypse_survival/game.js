@@ -61,7 +61,7 @@ const ui={
  missionSteps:$('#missionSteps'),missionKicker:$('#missionKicker'),health:$('#health'),hunger:$('#hunger'),thirst:$('#thirst'),temp:$('#temp'),
  zone:$('#zoneText'),bearing:$('#bearingText'),interact:$('#interactPrompt'),toast:$('#toast'),panel:$('#panel'),panelTitle:$('#panelTitle'),
  panelBody:$('#panelBody'),closePanel:$('#closePanel'),hotWater:$('#hotWater'),hotFood:$('#hotFood'),hotAxe:$('#hotAxe'),hotItems:$('#hotItems'),
- endingText:$('#endingText'),endingStats:$('#endingStats'),joyKnob:$('#joyKnob'),mobileInteract:$('#mobileInteract'),
+ endingText:$('#endingText'),endingStats:$('#endingStats'),continueSettlement:$('#continueSettlement'),joyKnob:$('#joyKnob'),mobileInteract:$('#mobileInteract'),
  mobileBuild:$('#mobileBuild'),mobileTablet:$('#mobileTablet')
 };
 let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toastT=0,lastSave=0;
@@ -76,7 +76,7 @@ function fresh(){
   inv:{wood:0,stone:0,dirtyWater:0,chemWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,cloth:0,scrap:0,battery:0,axe:0},
   flags:{},buildings:[],knowledge:[],survivors:0,job:null,residents:{taeho:{rescued:false,job:null},mira:{rescued:false,job:null},junseo:{rescued:false,job:null}},
   powerKw:0,powerLoads:{light:true,cooler:true,purifier:true},trust:60,communityHealth:70,productivity:70,morale:70,
-  distribution:null,floodLevel:0,playSeconds:0,finished:false};
+  distribution:null,floodLevel:0,phase:'survival',settlementLevel:0,playSeconds:0,finished:false};
 }
 function parse(v,d){try{return JSON.parse(v)??d}catch(_){return d}}
 function load(){
@@ -95,7 +95,17 @@ function has(cost){return Object.entries(cost).every(([k,v])=>(game.inv[k]||0)>=
 function pay(cost){Object.entries(cost).forEach(([k,v])=>game.inv[k]=Math.max(0,(game.inv[k]||0)-v))}
 function costText(cost){return Object.entries(cost).map(([k,v])=>(ITEMS[k]?.[1]||'•')+' '+(ITEMS[k]?.[0]||k)+' '+v).join(' · ')}
 function addItem(id,n=1){game.inv[id]=(game.inv[id]||0)+n;toast((ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+' +'+n);save();updateUI()}
-function missionDone(day=game.day){const m=MISSIONS[day];return !!m&&m.steps.every(([id])=>!!game.flags[id])}
+function settlementSteps(){
+ return [
+  ['people','주민 3명 구조',residentCount()>=3],
+  ['roles','주민 역할 배정',Object.values(game.residents||{}).filter(r=>r?.rescued).every(r=>!!r.job)],
+  ['farm','텃밭 건설',hasBuilding('farm')],
+  ['waterSystem','전기 정수기 건설',hasBuilding('purifier')&&!!game.flags.power],
+  ['coldStorage','냉장 보관함 건설',hasBuilding('cooler')&&!!game.flags.power],
+  ['reserve','식수 4 · 식량 6 비축',(game.inv.cleanWater||0)>=4&&((game.inv.food||0)+(game.inv.potato||0)+(game.inv.cookedPotato||0))>=6]
+ ]
+}
+function missionDone(day=game.day){if(game?.phase==='settlement')return settlementSteps().every(s=>s[2]);const m=MISSIONS[day];return !!m&&m.steps.every(([id])=>!!game.flags[id])}
 function terrainHeight(x,z){
  let h=0;
  if(x<-15){const t=clamp((-x-15)/52,0,1);h+=t*(.35+.55*(Math.sin(x*.12)+Math.cos(z*.11))*.5+.7*Math.max(0,Math.sin((x+z)*.07)))}
@@ -203,7 +213,7 @@ function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
  if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
- if(t==='rest'){if(missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building,currentInteract)
+ if(t==='rest'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building,currentInteract)
 }
 function gather(r,t){
  if(!r.userData.available)return;r.userData.available=false;r.visible=false;r.userData.respawn=t==='forage'?65:45;
@@ -254,7 +264,7 @@ function usePlaced(id,obj){if(id==='campfire'){if(game.inv.dirtyWater>0&&game.in
  st.planted=false;st.growth=0;game.inv.potato+=4;toast('🥔 감자 4개를 수확했습니다.');save();updateUI();return
  }if(id==='cooler'){toast(devicePowered('cooler')?'🧊 냉장 보관함 작동 중 · 하루가 지나도 식량 부패가 억제됩니다.':'냉장 보관함에 전력이 공급되지 않습니다.','normal',3);return}
  if(id==='purifier'){if(!devicePowered('purifier'))return toast('🚰 정수기에 전력이 공급되지 않습니다.','warn');if(game.inv.dirtyWater<1)return toast('처리할 강물이 없습니다.','warn');game.inv.dirtyWater--;game.inv.cleanWater++;discover('waterTreatment');toast('🚰 여과·소독 장치를 거쳐 깨끗한 물 +1');save();updateUI();return}
- if(id==='shelter'){if(missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')}else toast('작업대가 준비되었습니다.')}
+ if(id==='shelter'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')}else toast('작업대가 준비되었습니다.')}
 function useItem(id){if(!game||!running)return;if(id==='cleanWater'){if(game.inv.cleanWater<1)return toast('깨끗한 물이 없습니다.','warn');game.inv.cleanWater--;game.thirst=clamp(game.thirst+38,0,100);flag('drink');toast('💧 깨끗한 물을 마셨습니다.')}else{const f=game.inv.cookedPotato>0?'cookedPotato':'food';if(game.inv[f]<1)return toast('먹을 것이 없습니다.','warn');game.inv[f]--;game.hunger=clamp(game.hunger+(f==='cookedPotato'?28:35),0,100);toast((ITEMS[f]?.[1]||'🍽')+' 식사했습니다.')}save();updateUI()}
 function openPanel(tab='inventory'){if(!game)return;ui.panel.classList.remove('hidden');ui.panel.dataset.tab=tab;$$('#panel nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));renderPanel(tab)}
 function closePanel(){ui.panel.classList.add('hidden')}
@@ -287,7 +297,13 @@ async function confirmBuild(){if(!buildMode||!ghost?.userData.valid)return toast
 async function spawnPlaced(id,pos,state=null){const d=BUILD[id],r=new THREE.Group();r.position.copy(pos);r.position.y=terrainHeight(pos.x,pos.z);groups.buildings.add(r);placed.push(r);
  const labels={campfire:'모닥불 사용',shelter:'쉼터에서 쉬기',workbench:'작업대 사용',farm:'텃밭 관리',cooler:'냉장 보관함 확인',purifier:'전기 정수기 사용'};r.userData.interactable={type:'placed',label:labels[id]||d.name+' 사용',building:id};r.userData.buildState=state;interactables.push(r);let f=id==='campfire'?new THREE.Mesh(new THREE.CylinderGeometry(.9,.8,.25,12),new THREE.MeshStandardMaterial({color:0x76523a})):id==='farm'?new THREE.Mesh(new THREE.BoxGeometry(4,.18,3.2),new THREE.MeshStandardMaterial({color:0x6a4b32})):new THREE.Mesh(new THREE.BoxGeometry(id==='shelter'?3.5:2.2,id==='shelter'?2.6:1.1,id==='shelter'?2.8:1.3),new THREE.MeshStandardMaterial({color:id==='shelter'?0x9b8964:0x74553b}));f.position.y=id==='campfire'?.15:id==='farm'?.09:(id==='shelter'?1.3:.55);r.add(f);const o=await model('../../assets/game/3d/survival/kenney-survival-kit/'+d.model);if(o){r.clear();normalize(o,id==='shelter'?4:id==='campfire'?1.8:id==='farm'?3.5:2.2);r.add(o)}}
 async function restoreBuildings(){for(const p of placed)groups.buildings.remove(p);placed.length=0;for(let i=interactables.length-1;i>=0;i--)if(interactables[i].userData.interactable?.building)interactables.splice(i,1);for(const b of game.buildings)await spawnPlaced(b.id,new THREE.Vector3(b.x,terrainHeight(b.x,b.z),b.z),b)}
-function updateMission(){if(!game)return;const m=MISSIONS[Math.min(7,game.day)];ui.missionTitle.textContent=m.title;ui.missionText.textContent=m.text;ui.missionSteps.innerHTML=m.steps.map(([id,label])=>'<span class="'+(game.flags[id]?'done':'')+'">'+(game.flags[id]?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=missionDone()&&game.day<7?'오늘의 목표 완료 · 쉬면 다음 날':'오늘의 생존 목표'}
+function updateMission(){
+ if(!game)return;
+ if(game.phase==='settlement'){
+   const steps=settlementSteps(),done=steps.every(s=>s[2]);ui.missionTitle.textContent=done?'정착지 자립 기반 완성':'정착지를 자립시켜라';ui.missionText.textContent=done?'이제 물·식량·주민·전력의 기본 순환이 갖춰졌습니다. 자유롭게 운영하며 문명을 키워 보세요.':'주민을 모으고 식량 생산, 저장, 정수 시설을 연결해 스스로 버틸 수 있는 정착지를 만드세요.';ui.missionSteps.innerHTML=steps.map(([,label,on])=>'<span class="'+(on?'done':'')+'">'+(on?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=done?'문명도 2 · 정착지':'정착지 운영 · 멸망 '+game.day+'일째';if(done&&game.settlementLevel<1){game.settlementLevel=1;save();toast('🏘️ 정착지 자립 기반 완성 · 문명도 2 달성!','normal',5)}return
+ }
+ const m=MISSIONS[Math.min(7,game.day)];ui.missionTitle.textContent=m.title;ui.missionText.textContent=m.text;ui.missionSteps.innerHTML=m.steps.map(([id,label])=>'<span class="'+(game.flags[id]?'done':'')+'">'+(game.flags[id]?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=missionDone()&&game.day<7?'오늘의 목표 완료 · 쉬면 다음 날':'오늘의 생존 목표'
+}
 function togglePowerLoad(id){
  if(!game.flags.power||!(id in game.powerLoads))return;game.powerLoads[id]=!game.powerLoads[id];if(powerUse()>game.powerKw+.001){game.powerLoads[id]=false;toast('⚡ 발전 용량을 넘습니다. 다른 장치를 먼저 꺼 주세요.','warn');return}syncPowerVisual();save();renderOpenPanel()
 }
@@ -299,13 +315,13 @@ function spoilFood(){
  const lost=Math.min(game.inv.potato,Math.max(1,Math.floor(game.inv.potato*.25)));game.inv.potato-=lost;game.inv.spoiledFood=(game.inv.spoiledFood||0)+lost;return lost
 }
 function advanceDay(){
- if(game.day>=7)return;game.day++;game.time=420;game.hunger=clamp(game.hunger-12,0,100);game.thirst=clamp(game.thirst-10,0,100);
+ if(game.phase==='survival'&&game.day>=7)return;game.day++;game.time=420;game.hunger=clamp(game.hunger-12,0,100);game.thirst=clamp(game.thirst-10,0,100);
  const tech=jobPower('technician'),gather=jobPower('gatherer'),medic=jobPower('medic');if(tech)game.inv.scrap+=Math.max(1,Math.floor(tech));if(gather){game.inv.wood+=Math.max(1,Math.floor(gather*2));game.inv.stone+=Math.max(1,Math.floor(gather))}if(medic)game.health=clamp(game.health+Math.round(12*medic),0,100);
  const spoiled=spoilFood();player.root.position.copy(CAMP);player.root.position.y=terrainHeight(CAMP.x,CAMP.z);applyDayStart();save();toast('🌅 멸망 '+game.day+'일째.'+(spoiled?' 냉장되지 않은 감자 '+spoiled+'개가 상했습니다.':'')+(tech||gather||medic?' 주민들의 역할 효과가 적용되었습니다.':''),'normal',4)
 }
 function applyDayStart(){
  for(const [id,rdef] of Object.entries(RESIDENTS)){const state=game.residents?.[id],field=scene.userData.survivorNodes?.[id],camp=scene.userData.campResidents?.[id];if(field)field.visible=game.day>=5&&!state?.rescued;if(camp)camp.visible=!!state?.rescued}
- if(game.day===6&&!game.flags.choice)setTimeout(()=>ui.decision.classList.remove('hidden'),800);if(game.day>=7){discover('riverSettlement');toast('⚠️ 폭우 경보 · 강 수위가 실제로 상승하기 시작합니다.','warn',4)}syncPowerVisual();updateMission()}
+ if(game.day===6&&!game.flags.choice)setTimeout(()=>ui.decision.classList.remove('hidden'),800);if(game.phase==='survival'&&game.day>=7){discover('riverSettlement');toast('⚠️ 폭우 경보 · 강 수위가 실제로 상승하기 시작합니다.','warn',4)}syncPowerVisual();updateMission()}
 function chooseDistribution(c){
  const effect={
   equal:{trust:6,health:-2,productivity:0,morale:7,note:'불만은 적지만 몸이 약한 사람에게는 몫이 부족했습니다.'},
@@ -318,11 +334,14 @@ function chooseDistribution(c){
 function distributionName(c){return c==='equal'?'같은 양':c==='need'?'필요에 따라':c==='work'?'노동량 고려':'미정'}
 function readyFlood(){return game.inv.cleanWater>=2&&(game.inv.food+game.inv.cookedPotato)>=2&&game.buildings.some(b=>b.id==='shelter')&&!!game.flags.power}
 function derived(){if(game.day>=2&&game.inv.axe)flag('axe');if(game.day>=3&&getWeather()==='rain'){const s=placed.find(p=>p.userData.interactable?.building==='shelter');if(s&&player.root.position.distanceTo(s.position)<5)flag('rain')}if(game.day>=4&&player.root.position.distanceTo(RUINS)<15)flag('ruins');if(game.day>=6&&game.inv.cleanWater>=2&&(game.inv.food+game.inv.cookedPotato)>=2)flag('stock');if(game.day>=7&&readyFlood())flag('ready')}
-function getWeather(){if(game.day===3&&game.time>=480)return'rain';if(game.day>=7)return'rain';return game.day===6?'cloud':'clear'}
+function getWeather(){
+ if(game.phase==='settlement'){const cycle=game.day%5;return cycle===0?'rain':cycle===1?'cloud':'clear'}
+ if(game.day===3&&game.time>=480)return'rain';if(game.day>=7)return'rain';return game.day===6?'cloud':'clear'
+}
 function updateWeather(dt){
- const w=getWeather(),flood=game.day>=7?clamp((game.time-420)/600,0,1):0;game.floodLevel=flood;
- const river=scene.userData.river;if(river){river.scale.x=damp(river.scale.x,1+flood*.7,2.2,dt);river.position.y=damp(river.position.y,.08+flood*.28,2.2,dt);river.material.opacity=.84+flood*.1}
- ui.weather.textContent=w==='rain'?(game.day>=7?'🌧 폭우 · 수위 '+Math.round(flood*100)+'%':'🌧 비'):w==='cloud'?'☁ 흐림':'☀ 맑음';
+ const w=getWeather(),flood=game.phase==='survival'&&game.day>=7?clamp((game.time-420)/600,0,1):0;game.floodLevel=damp(game.floodLevel||0,flood,1.1,dt);
+ const river=scene.userData.river;if(river){river.scale.x=damp(river.scale.x,1+game.floodLevel*.7,2.2,dt);river.position.y=damp(river.position.y,.08+game.floodLevel*.28,2.2,dt);river.material.opacity=.84+game.floodLevel*.1}
+ ui.weather.textContent=w==='rain'?(game.phase==='survival'&&game.day>=7?'🌧 폭우 · 수위 '+Math.round(game.floodLevel*100)+'%':'🌧 비'):w==='cloud'?'☁ 흐림':'☀ 맑음';
  const t=w==='rain'?new THREE.Color(0x526b78):w==='cloud'?new THREE.Color(0x91a7ad):new THREE.Color(0x9ac8da);scene.background.lerp(t,dt*.35);scene.fog.color.copy(scene.background);scene.userData.sun.intensity=damp(scene.userData.sun.intensity,w==='rain'?.7:2.3,1.5,dt);
  if(w==='rain'){while(groups.weather.children.length<80){const r=new THREE.Mesh(new THREE.BoxGeometry(.025,.65,.025),new THREE.MeshBasicMaterial({color:0xb9def1,transparent:true,opacity:.5}));r.position.set(Math.random()*34-17,Math.random()*18+3,Math.random()*34-17);groups.weather.add(r)}for(const r of groups.weather.children){r.position.y-=dt*18;if(r.position.y<0)r.position.y=20;r.position.x=player.root.position.x+(r.position.x-player.root.position.x)*.96;r.position.z=player.root.position.z+(r.position.z-player.root.position.z)*.96}}else groups.weather.clear()
 }
@@ -334,6 +353,10 @@ function updateNpc(){
 }
 function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
+ if(game.phase==='settlement'){
+   const steps=settlementSteps();if(!steps[0][2]){for(const [id,r] of Object.entries(game.residents||{}))if(!r?.rescued)return{name:RESIDENTS[id].name+' 구조',pos:RESIDENTS[id].field}}
+   if(!steps[1][2])return{name:'주민 역할 배정',pos:CAMP};if(!steps[2][2])return{name:'텃밭 건설',pos:CAMP};if(!steps[3][2])return{name:'전기 정수기 건설',pos:CAMP};if(!steps[4][2])return{name:'냉장 보관함 건설',pos:CAMP};if(!steps[5][2])return{name:'비상 물자 비축',pos:CAMP};return null
+ }
  if(game.day===1){if(!game.flags.water)return{name:'강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(!game.flags.boil)return{name:'비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(!game.flags.drink)return{name:'깨끗한 물 마시기',pos:CAMP}}
  if(game.day===2){if(!game.flags.axe)return{name:'서쪽 숲·바위',pos:new THREE.Vector3(-12,0,2)};if(!game.flags.campfire)return{name:'캠프 건축 구역',pos:CAMP};if(!game.flags.cook)return{name:'모닥불',pos:nearestBuilding('campfire')}}
  if(game.day===3){if(!game.flags.shelter)return{name:'캠프 건축 구역',pos:CAMP};if(!game.flags.rain)return{name:'쉼터',pos:nearestBuilding('shelter')}}
@@ -344,9 +367,12 @@ function currentObjective(){
  return null
 }
 function updateUI(){if(!game)return;ui.health.textContent=Math.round(game.health);ui.hunger.textContent=Math.round(game.hunger);ui.thirst.textContent=Math.round(game.thirst);ui.temp.textContent=game.temp.toFixed(1);ui.hotWater.textContent=game.inv.cleanWater;ui.hotFood.textContent=game.inv.food+game.inv.cookedPotato;ui.hotAxe.textContent=game.inv.axe?'✓':'-';ui.hotItems.textContent=Object.values(game.inv).reduce((a,b)=>a+b,0);const m=Math.floor(game.time),h=Math.floor(m/60),mm=m%60;ui.day.textContent='멸망 '+game.day+'일째';ui.clock.textContent=String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');const p=player.root.position;if(Math.abs(p.x-RIVER_X)<10)ui.zone.textContent='강변';else if(p.distanceTo(RUINS)<19)ui.zone.textContent='폐허 도시';else if(p.x<-42&&p.z>16)ui.zone.textContent='산비탈';else if(p.x<-18)ui.zone.textContent='서쪽 숲';else ui.zone.textContent='학교 야영지';const o=currentObjective();ui.bearing.textContent=o?'목표 · '+o.name+' '+Math.round(p.distanceTo(o.pos))+'m':'캠프 '+Math.round(p.distanceTo(CAMP))+'m';updateMission()}
+function continueSettlement(){
+ game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420;game.floodLevel=0;player.root.position.copy(CAMP);player.root.position.y=terrainHeight(CAMP.x,CAMP.z);ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;applyDayStart();save();toast('🏘️ 정착지 운영 시작 · 이제 7일 버티기가 아니라 스스로 살아가는 공동체를 만듭니다.','normal',5)
+}
 function finish(){if(game.finished)return;game.finished=true;save();running=false;ui.hud.classList.add('hidden');ui.ending.classList.remove('hidden');ui.endingText.textContent=(1+residentCount())+'명이 함께 살아남았습니다. 과학·사회 지식 '+game.knowledge.length+'개를 발견하고 '+game.buildings.length+'개의 시설을 세웠습니다.';ui.endingStats.innerHTML='<div><b>'+(1+residentCount())+'</b><small>인구</small></div><div><b>'+game.knowledge.length+'</b><small>발견 지식</small></div><div><b>'+game.buildings.length+'</b><small>시설</small></div><div><b>'+Math.round(game.trust)+'</b><small>신뢰</small></div>';window.KidscadeGame?.gameOver?.({score:game.knowledge.length*500+game.buildings.length*200+Math.round(game.trust)*10,day:7})}
-async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
+async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
 function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
-async function boot(){init3D();ui.loadingText.textContent='기존 Kidscade 생존 에셋을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
+async function boot(){init3D();ui.loadingText.textContent='기존 Kidscade 생존 에셋을 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
