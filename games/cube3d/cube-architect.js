@@ -347,36 +347,89 @@ const BLOCK_DEFS={
   grass:{name:'잔디',icon:'🌱',color:0x69b85f,category:'자연',solid:true},
   dirt:{name:'흙',icon:'🟫',color:0x8b6043,category:'자연',solid:true},
   stone:{name:'돌',icon:'🪨',color:0x89919d,category:'자연',solid:true},
+  smoothStone:{name:'매끈한 돌',icon:'▰',color:0xaab0b9,category:'건축',solid:true},
   sand:{name:'모래',icon:'🟨',color:0xe4c978,category:'자연',solid:true,gravity:true},
+  clay:{name:'점토',icon:'◼',color:0x9ca9b4,category:'자연',solid:true},
+  ironOre:{name:'철광석',icon:'⛏',color:0x8a817a,category:'자연',solid:true},
   log:{name:'원목',icon:'🪵',color:0x8c603d,category:'자연',solid:true,flammable:true},
   leaves:{name:'나뭇잎',icon:'🍃',color:0x4f9c55,category:'자연',solid:true,flammable:true,transparent:true,opacity:.82},
   sapling:{name:'묘목',icon:'🌿',color:0x55a65b,category:'자연',solid:false,special:'sapling'},
   planks:{name:'나무 판자',icon:'▤',color:0xb98554,category:'건축',solid:true,flammable:true},
   brick:{name:'벽돌',icon:'🧱',color:0xb96757,category:'건축',solid:true},
   glass:{name:'유리',icon:'◇',color:0xbdefff,category:'건축',solid:true,transparent:true,opacity:.32},
+  glassPane:{name:'유리판',icon:'▯',color:0xc9f3ff,category:'건축',solid:true,transparent:true,opacity:.3,special:'pane'},
+  windowFrame:{name:'창문틀',icon:'▦',color:0x8f6747,category:'건축',solid:true,transparent:true,special:'window'},
+  slab:{name:'반블록',icon:'▂',color:0xb7a28d,category:'건축',solid:true,special:'slab'},
+  stairs:{name:'계단',icon:'▟',color:0xa98260,category:'건축',solid:true,special:'stairs'},
+  roof:{name:'경사지붕',icon:'⌂',color:0xb95353,category:'건축',solid:true,special:'roof'},
+  cuboid:{name:'직육면체',icon:'▭',color:0xf2c86d,category:'도형',solid:true,special:'cuboid'},
+  cuboidPart:{name:'직육면체 내부',color:0xf2c86d,category:'도형',solid:true,hidden:true,special:'cuboidPart'},
   obsidian:{name:'흑요석',icon:'◆',color:0x342c4a,category:'건축',solid:true},
+  ironBlock:{name:'철 블록',icon:'▣',color:0xbec6cc,category:'건축',solid:true,metal:true},
+  charcoal:{name:'숯',icon:'●',color:0x2f3338,category:'실험',solid:true},
   door:{name:'나무문',icon:'🚪',color:0x9a673f,category:'기능',solid:true,flammable:true,special:'door'},
   doorTop:{name:'문 윗부분',color:0x9a673f,category:'기능',solid:true,special:'doorTop',hidden:true},
   torch:{name:'횃불',icon:'🔦',color:0xf0b34e,category:'기능',solid:false,special:'torch'},
+  furnace:{name:'화로',icon:'♨',color:0x62676e,category:'기능',solid:true,special:'furnace'},
   water:{name:'물',icon:'💧',color:0x4f9fea,category:'실험',solid:false,liquid:true,transparent:true,opacity:.48},
   lava:{name:'용암',icon:'🔥',color:0xff6f35,category:'실험',solid:false,liquid:true,transparent:true,opacity:.72,emissive:true},
   fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
-const PLACEABLE_TYPES=['grass','dirt','stone','sand','log','leaves','sapling','planks','brick','glass','obsidian','door','torch','water','lava','fire'];
+const PLACEABLE_TYPES=['grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
 const WORLD_HALF=16,WORLD_MIN_Y=-5,WORLD_MAX_Y=16,SEA_LEVEL=0;
+const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
+const FACE_IDS=['R','L','U','D','F','B'];
+const CUBOID_TOPOLOGY={
+  vertices:[
+    {id:'A',s:[-1,-1,-1]},{id:'B',s:[1,-1,-1]},{id:'C',s:[1,-1,1]},{id:'D',s:[-1,-1,1]},
+    {id:'E',s:[-1,1,-1]},{id:'F',s:[1,1,-1]},{id:'G',s:[1,1,1]},{id:'H',s:[-1,1,1]}
+  ],
+  edges:[['A','B'],['B','C'],['C','D'],['D','A'],['E','F'],['F','G'],['G','H'],['H','E'],['A','E'],['B','F'],['C','G'],['D','H']],
+  faces:[
+    {id:'R',vertices:['B','C','G','F'],parallel:'L'},
+    {id:'L',vertices:['A','D','H','E'],parallel:'R'},
+    {id:'U',vertices:['E','F','G','H'],parallel:'D'},
+    {id:'D',vertices:['A','B','C','D'],parallel:'U'},
+    {id:'F',vertices:['D','C','G','H'],parallel:'B'},
+    {id:'B',vertices:['A','B','F','E'],parallel:'F'}
+  ]
+};
+const DEFAULT_FACE_COLORS=['#ef5350','#42a5f5','#ffee58','#8d6e63','#66bb6a','#ab47bc'];
 const freeCubeGeo=new THREE.BoxGeometry(1,1,1);
 const fluidGeo=new THREE.BoxGeometry(1,.84,1);
 const doorGeo=new THREE.BoxGeometry(.14,1.92,.9);
+const slabGeo=new THREE.BoxGeometry(1,.5,1);
+const paneGeo=new THREE.BoxGeometry(.12,.92,1);
 const torchGeo=new THREE.CylinderGeometry(.065,.09,.58,7);
 const saplingGeo=new THREE.ConeGeometry(.36,.82,6);
 const fireGeo=new THREE.ConeGeometry(.38,.82,7);
+function makeRoofGeometry(){
+  const v=new Float32Array([
+    -.5,-.5,-.5, .5,-.5,-.5,  .5,-.5,.5, -.5,-.5,.5,
+     0,.5,-.5,   0,.5,.5
+  ]);
+  const idx=[0,1,2,0,2,3, 0,4,1, 3,2,5, 0,3,5,0,5,4, 1,4,5,1,5,2];
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();return g;
+}
+const roofGeo=makeRoofGeometry();
 const materialCache=new Map();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
-let freeFlying=false,inventoryOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
+let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
+let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
+let critters=[],critterClock=0;
+const FURNACE_RECIPES=[
+  {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
+  {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
+  {input:'clay',output:'brick',label:'점토 → 벽돌',note:'점토를 가열해 단단한 건축 재료로 바꿉니다.'},
+  {input:'ironOre',output:'ironBlock',label:'철광석 → 철',note:'게임에서는 제련 과정을 간단히 표현합니다.'},
+  {input:'stone',output:'smoothStone',label:'돌 → 매끈한 돌',note:'가열·가공된 건축용 돌을 표현합니다.'}
+];
 
 function worldKey(x,y,z){return x+','+y+','+z}
 function parseWorldKey(key){return key.split(',').map(Number)}
