@@ -185,29 +185,44 @@ function updateChallengeStats(){
 }
 function drawBlueprint(){
   const c=$('blueprintCanvas'),ctx=c.getContext('2d'),m=currentChallengeMission();ctx.clearRect(0,0,c.width,c.height);
-  ctx.fillStyle='#eaf5ff';ctx.fillRect(0,0,c.width,c.height);
-  ctx.strokeStyle='rgba(74,110,150,.12)';ctx.lineWidth=1;
+  const hard=challengeDifficulty==='hard';
+  ctx.fillStyle=hard?'#f4f0ff':'#eaf5ff';ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle=hard?'rgba(111,82,173,.11)':'rgba(74,110,150,.12)';ctx.lineWidth=1;
   for(let x=0;x<c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
   for(let y=0;y<c.height;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
-  const unit=24,faces=m.blocks.slice().sort((a,b)=>(a[0]+a[2]+a[1])-(b[0]+b[2]+b[1]));
-  const pts=faces.map(v=>[(v[0]-v[2])*unit,(v[0]+v[2])*unit*.5-v[1]*unit]);
-  let minX=Math.min(...pts.map(p=>p[0]))-unit,maxX=Math.max(...pts.map(p=>p[0]))+unit,minY=Math.min(...pts.map(p=>p[1]))-unit,maxY=Math.max(...pts.map(p=>p[1]))+unit;
-  const ox=c.width/2-(minX+maxX)/2,oy=c.height/2-(minY+maxY)/2+8;
-  function poly(points,fill){
-    ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#34445d';ctx.lineWidth=1.15;ctx.stroke();
+
+  const blockSet=new Set(m.blocks.map(v=>challengeKey(v[0],v[1],v[2])));
+  const cubes=m.blocks.slice().sort((a,b)=>(a[0]+a[2]+a[1])-(b[0]+b[2]+b[1]));
+  const visible=[];
+  function cubeFaces(v){
+    const [x,y,z]=v,sx=x-z,sy=(x+z)*.5-y,out=[];
+    if(!blockSet.has(challengeKey(x,y+1,z)))out.push({kind:'top',pts:[[sx,sy-1],[sx+1,sy-.5],[sx,sy],[sx-1,sy-.5]]});
+    if(!blockSet.has(challengeKey(x,y,z+1)))out.push({kind:'left',pts:[[sx-1,sy-.5],[sx,sy],[sx,sy+1],[sx-1,sy+.5]]});
+    if(!blockSet.has(challengeKey(x+1,y,z)))out.push({kind:'right',pts:[[sx+1,sy-.5],[sx,sy],[sx,sy+1],[sx+1,sy+.5]]});
+    return out;
   }
-  faces.forEach(v=>{
-    const X=ox+(v[0]-v[2])*unit,Y=oy+(v[0]+v[2])*unit*.5-v[1]*unit;
-    poly([[X,Y-unit],[X+unit,Y-unit*.5],[X,Y],[X-unit,Y-unit*.5]],'#fff2c8');
-    poly([[X-unit,Y-unit*.5],[X,Y],[X,Y+unit],[X-unit,Y+unit*.5]],'#dcae72');
-    poly([[X+unit,Y-unit*.5],[X,Y],[X,Y+unit],[X+unit,Y+unit*.5]],'#efc98d');
-  });
-  ctx.fillStyle='#24344d';ctx.font='900 18px system-ui';ctx.fillText(m.name,14,24);
-  ctx.font='700 11px system-ui';ctx.fillStyle='#60708a';ctx.fillText('겨냥도를 보고 가장 닮은 건축물을 만들어 보세요.',14,43);
-  $('missionName').textContent=m.name;$('missionTip').textContent=m.tip;
+  cubes.forEach(v=>visible.push(...cubeFaces(v)));
+  const all=visible.flatMap(f=>f.pts),xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const availW=c.width-28,availH=c.height-74;
+  const unit=Math.max(7,Math.min(27,availW/Math.max(1,maxX-minX),availH/Math.max(1,maxY-minY)));
+  const ox=c.width/2-((minX+maxX)/2)*unit;
+  const oy=58+availH/2-((minY+maxY)/2)*unit;
+
+  function poly(points,fill){
+    ctx.beginPath();ctx.moveTo(ox+points[0][0]*unit,oy+points[0][1]*unit);
+    for(let i=1;i<points.length;i++)ctx.lineTo(ox+points[i][0]*unit,oy+points[i][1]*unit);
+    ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=hard?'#4d4567':'#34445d';ctx.lineWidth=Math.max(.75,unit/19);ctx.stroke();
+  }
+  const palette=hard?{top:'#eadcff',left:'#bda6e8',right:'#d4c0f2'}:{top:'#fff2c8',left:'#dcae72',right:'#efc98d'};
+  cubes.forEach(v=>cubeFaces(v).forEach(f=>poly(f.pts,palette[f.kind])));
+
+  ctx.fillStyle='#24344d';ctx.font='900 '+(m.name.length>18?14:16)+'px system-ui';ctx.fillText(m.name,14,22);
+  ctx.font='800 10px system-ui';ctx.fillStyle=hard?'#785ca2':'#60708a';
+  ctx.fillText(hard?'랜드마크의 특징을 단순화한 고난도 겨냥도':'교과서에서 만나는 기본 직육면체 조합',14,40);
+  $('missionName').textContent=m.name;$('missionTip').textContent=m.tip;updateChallengeDifficultyUI();updateChallengeStats();
 }
 function initChallenge(){
-  modeTitle('설계도 챌린지','겨냥도 → 3D 크리에이티브 건축');
   setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
   cleanScene(0xeaf6ff);
   camera.position.set(5.5,4.5,7.5);camera.rotation.order='YXZ';challengeYaw=.55;challengePitch=-.28;challengeKeys={};updateChallengeCamera();
@@ -215,8 +230,10 @@ function initChallenge(){
   challengePlane=new THREE.Mesh(new THREE.PlaneGeometry(CHALLENGE_SIZE,CHALLENGE_SIZE),planeMat);challengePlane.rotation.x=-Math.PI/2;challengePlane.position.y=.001;challengePlane.userData.base=true;scene.add(challengePlane);
   const grid=new THREE.GridHelper(CHALLENGE_SIZE,CHALLENGE_SIZE,0x5269c7,0xa9c2da);grid.position.y=.01;scene.add(grid);
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
-  challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];drawBlueprint();updateChallengeStats();
-  $('actionCheck').onclick=checkChallenge;$('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+  challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];updateChallengeDifficultyUI();drawBlueprint();
+  $('challengeEasy').onclick=()=>setChallengeDifficulty('easy');$('challengeHard').onclick=()=>setChallengeDifficulty('hard');
+  $('actionCheck').onclick=checkChallenge;
+  $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
   $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(currentChallengeMission().tip);
   $('challengeLockNotice').classList.remove('hidden');$('challengeLockNotice').onclick=()=>canvas.requestPointerLock();
   showTutorial('challenge');
@@ -1155,7 +1172,7 @@ function updateFree(dt,t){
 function showTutorial(kind){
   const once='cubeArchitectTutorial_'+kind+(kind==='free'?'_v3':'');try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
-  if(kind==='challenge')html='<h2>설계도 챌린지 · 크리에이티브 비행</h2><p>겨냥도를 보며 플레이어가 직접 날아다니고 블록을 설치해 건축하세요. 건물의 위치는 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
+  if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
   if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>정육면체와 직육면체를 함께 쓰고, 각 면을 따로 칠하며 날씨와 생태·물질 변화를 관찰할 수 있습니다.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치·문·화로</div><div class="keyrow"><b>1~9 / E</b>핫바 / 건축 인벤토리</div><div class="keyrow"><b>F / R</b>비행 / 바라보는 블록 복사</div><div class="keyrow"><b>P</b>바라보는 한 면만 색칠</div><div class="keyrow"><b>X</b>모서리 → 꼭짓점 → 평행면 수학 렌즈</div><div class="keyrow"><b>T</b>날씨 바꾸기</div><div class="keyrow"><b>물·불·화로</b>흐름·연소·물질 변화 실험</div></div>';
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
