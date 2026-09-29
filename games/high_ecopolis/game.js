@@ -652,7 +652,7 @@ function ecologyTick(){
   ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-forest*.012-wetland*.018-meadow*.008);
   ecosystem.waterStress=Math.max(0,ecosystem.waterStress-wetland*.025);
   tiles.forEach(t=>{if(t.kind==='land'&&t.pollution<.25&&!['barren','paved'].includes(t.biome))t.pollution=Math.max(0,t.pollution-.003)});
-  updateSpecies();refreshLivingDecor();checkProgress(false);updateUI();
+  updateSpecies();refreshLivingDecor();checkProgress(true);updateUI();
 }
 function launchRecycler(t){
   const reason=placementReason('recycler',t);if(reason){toast(reason,'bad');return false}
@@ -734,7 +734,7 @@ function checkProgress(announce=true){
 function unlockToast(msg){toast(msg,'good',3800);sdkSound('success');saveGame()}
 
 function updateUI(){
-  const c=counts(),energy=energySummary();ui.phaseName.textContent=PHASES[phase-1].name;ui.ecoPoints.textContent=ecoPoints;
+  const c=counts(),energy=energySummary();ui.phaseName.textContent=PHASES[phase-1].name;ui.ecoPoints.textContent=(Math.round(ecoPoints*10)/10).toFixed(Number.isInteger(Math.round(ecoPoints*10)/10)?0:1);
   ui.energyRate.textContent=energy.supply+' / '+energy.demand+' ⚡';ui.carbonRate.textContent=Math.round(ecosystem.carbon);
   ui.carbonRate.classList.toggle('warning',ecosystem.carbon>=45&&ecosystem.carbon<85);ui.carbonRate.classList.toggle('danger',ecosystem.carbon>=85);
   ui.restoreRate.textContent=c.restorePct+'%';ui.waterRate.textContent=c.waterPct+'%';ui.bioRate.textContent=returnedSpeciesCount()+'/4';
@@ -742,6 +742,7 @@ function updateUI(){
   ui.dayRate.textContent=ecosystem.day+' / '+cfg.deadline+'일';ui.visitorRate.textContent=visitors.length+'명';ui.servedRate.textContent=ecosystem.visitorsServed+'명';
   ui.reputationRate.textContent=Math.round(ecosystem.reputation);ui.cashflowRate.textContent=(ecosystem.lastCashflow>=0?'+':'')+ecosystem.lastCashflow.toFixed(1)+'P';
   ui.cashflowRate.classList.toggle('danger',ecosystem.lastCashflow<0);ui.reputationRate.classList.toggle('warning',ecosystem.reputation<55);
+  document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===simSpeed));
   ui.missionKicker.textContent='PHASE '+phase+' · '+cfg.title;ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
   const objs=phase===1?[
     ['땅 복원',c.restorePct,50,'%'],['깨끗한 물',c.waterPct,55,'%']
