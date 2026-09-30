@@ -94,7 +94,7 @@ const BUILD={
   farm:{name:'작은 텃밭',icon:'🌱',cost:{wood:4,stone:1},model:'patch-grass-large.glb',radius:2.4},
   cooler:{name:'냉장 보관함',icon:'🧊',cost:{wood:2,scrap:3,battery:1},model:'chest.glb',radius:1.3},
   purifier:{name:'전기 정수기',icon:'🚰',cost:{cloth:2,scrap:2,stone:2},model:'barrel.glb',radius:1.3},
-  storehouse:{name:'공동창고',icon:'📦',cost:{wood:4,scrap:1},model:'chest.glb',radius:1.6}
+  storehouse:{name:'공동창고',icon:'📦',cost:{wood:3,scrap:1},model:'chest.glb',radius:1.6}
 };
 const ROAD_NODES={
  camp:{x:0,z:8}, forest:{x:-12,z:8}, schoolRoad:{x:16,z:8}, mainCross:{x:16,z:BRIDGE_Z},
