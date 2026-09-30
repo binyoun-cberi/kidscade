@@ -153,7 +153,7 @@ async function buildProductViews(){
  for(const p of PRODUCTS){
   let root;
   try{root=(await fitted(FOOD+p.model,.72,p.pal)).root}catch(_){root=new THREE.Group();root.add(new THREE.Mesh(new THREE.SphereGeometry(.28,12,9),new THREE.MeshStandardMaterial({color:p.pal[0]})))}
-  root.position.set(p.pos[0],1.02,p.pos[1]);root.rotation.y=(hash(p.id)%628)/100;root.userData.productId=p.id;root.traverse(o=>{if(o.isMesh)o.userData.productId=p.id});productGroup.add(root);
+  root.position.set(p.pos[0],.58,p.pos[1]);root.rotation.y=(hash(p.id)%628)/100;root.userData.productId=p.id;root.traverse(o=>{if(o.isMesh)o.userData.productId=p.id});productGroup.add(root);
   const pedestal=box([.72,.54,.72],[p.pos[0],.27,p.pos[1]],0xf2e6c9,.82,productGroup);pedestal.userData.productId=p.id;
   const label=document.createElement('button');label.className='productTag';label.innerHTML=p.name+'<small>'+fmt(p.price)+'</small>';label.onclick=()=>tryPick(p.id);ui.labels.appendChild(label);
   productViews.set(p.id,{root,label,p});
