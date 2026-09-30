@@ -180,7 +180,18 @@
       childWorkUntil: 0, childWorkWeeks: 0, childLaborReviewed: false,
       forcedLaborUntil: 0, forcedLaborWeeks: 0, laborReviewed: false,
       exclusionUntil: 0, exclusionWeeks: 0, exclusionReviewed: false,
-      rightsHistory: [], crisisHistory: []
+      rightsHistory: [], crisisHistory: [],
+      // 여러 재난은 일수 대신 각 재난의 발동 조건·기간으로 관리한다.
+      water: 74, air: 100, sick: 0, disasterSeen: {},
+      disasters: { heat: 0, flood: 0, dust: 0, epidemic: 0 },
+      disasterUnanswered: { heat: false, flood: false, dust: false, epidemic: false },
+      nextDisasters: { heat: 32, flood: 45, dust: 59, epidemic: 75 },
+      disasterCare: { heat: 0, dust: 0, epidemic: 0 }, floodDamageUntil: 0,
+      // 주민 단체는 별도의 요구와 실제 행동을 갖는다.
+      groups: { workers: 0, families: 0, carers: 0 },
+      strikes: { workers: 0, families: 0, carers: 0 },
+      arrivalsPausedUntil: 0, mandateRestrictedUntil: 0,
+      disputeDelayUntil: 0, civicDebates: 0
     };
   }
   function normalize(s) {
@@ -216,6 +227,19 @@
     if (!Array.isArray(d.rightsHistory)) d.rightsHistory = [];
     if (!Array.isArray(d.crisisHistory)) d.crisisHistory = [];
     if (!d.actionCooldowns || typeof d.actionCooldowns !== "object") d.actionCooldowns = {};
+    d.water = clamp(d.water == null ? 74 : d.water);
+    d.air = clamp(d.air == null ? 100 : d.air);
+    d.sick = clamp(d.sick || 0, 0, d.population);
+    d.disasterSeen = d.disasterSeen && typeof d.disasterSeen === "object" ? d.disasterSeen : {};
+    d.disasters = { ...initial().disasters, ...(d.disasters || {}) };
+    d.disasterUnanswered = { ...initial().disasterUnanswered, ...(d.disasterUnanswered || {}) };
+    d.disasterCare = { ...initial().disasterCare, ...(d.disasterCare || {}) };
+    d.nextDisasters = { ...initial().nextDisasters, ...(d.nextDisasters || {}) };
+    if (!s.nextDisasters) for (const [kind, delay] of Object.entries({ heat: 8, flood: 17, dust: 26, epidemic: 36 }))
+      d.nextDisasters[kind] = d.tick + delay;
+    d.groups = { ...initial().groups, ...(d.groups || {}) };
+    d.strikes = { ...initial().strikes, ...(d.strikes || {}) };
+    for (const key of Object.keys(d.groups)) d.groups[key] = clamp(d.groups[key], 0, 10);
     // 구버전 저장 중 주민 합류 창이 열려 있어도 플레이를 방해하지 않는다.
     d.pending = d.pending === "new_resident" ? null : (EVENTS.some(e => e.id === d.pending) ? d.pending : null);
     d.arrivalNotice = null;
@@ -234,6 +258,17 @@
   function adultCapacity(s) { return Math.max(0, s.population - childCount(s)); }
   function unused(s) { return Math.max(0, adultCapacity(s) - s.jobs.gather - s.jobs.wood); }
   function winterActive(s) { return s.coldUntil > s.tick; }
+  const DISASTER_NAMES = { heat: "폭염", flood: "홍수", dust: "황사", epidemic: "전염병" };
+  function disasterActive(s, kind) { return (s.disasters?.[kind] || 0) > s.tick; }
+  function activeDisasters(s) { return Object.keys(DISASTER_NAMES).filter(kind => disasterActive(s, kind)); }
+  function groupStatus(s) {
+    const g = s.groups || {};
+    return Object.keys(g).map(kind => ({
+      kind, name: ({workers:"노동 주민",families:"가족",carers:"돌봄 주민"})[kind],
+      grievance: Number(g[kind].toFixed(1)),
+      action: (s.strikes?.[kind] || 0) > s.tick ? ({workers:"작업 중단",families:"집단 항의·합류 중단",carers:"돌봄 서비스 중단"})[kind] : "협의 중"
+    }));
+  }
   function rightsConcerns(s) { return [s.childWorkUntil > s.tick ? "어린이 위험 노동" : null,
     s.forcedLaborUntil > s.tick ? "강제 노동" : null,
     s.exclusionUntil > s.tick ? "일부 주민 배급 제외" : null].filter(Boolean); }
@@ -247,22 +282,36 @@
     const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
     const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
     const coldFactor = winterActive(s) ? Math.max(.52, .68 - Math.max(0, (s.winterCount || 1) - 1) * .05) : 1;
-    const illnessFactor = s.health < 45 ? .75 : s.health < 65 ? .88 : 1;
+    const illnessFactor = (s.health < 45 ? .75 : s.health < 65 ? .88 : 1) *
+      (s.sick >= 6 ? .73 : s.sick >= 3 ? .87 : 1);
     const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
-    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor;
+    const climateFactor = (disasterActive(s,"heat") ? (s.disasterCare?.heat > s.tick ? .88 : .73) : 1) *
+      (disasterActive(s,"dust") ? (s.disasterCare?.dust > s.tick ? .94 : .81) : 1) *
+      (disasterActive(s,"flood") ? .82 : 1) *
+      (s.floodDamageUntil > s.tick ? .80 : 1);
+    const strikeFactor = (s.strikes?.workers || 0) > s.tick ? .53 : 1;
+    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) *
+      fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor * climateFactor * strikeFactor;
     const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
     const cut = s.jobs.wood * .48 * production + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
-    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) * (winterActive(s) ? 1.13 : 1) - (s.exclusionUntil > s.tick ? 1.25 : 0);
+    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
+      (winterActive(s) ? 1.13 : 1) * (disasterActive(s,"heat") ? 1.10 : 1) -
+      (s.exclusionUntil > s.tick ? 1.25 : 0);
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
-    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue,
+    const waterUse = s.population * .14 + (disasterActive(s,"heat") ? 2.65 : 0) +
+      (disasterActive(s,"epidemic") ? .6 : 0);
+    const waterGain = disasterActive(s,"flood") ? .1 : 2.55;
+    const careCost = disasterActive(s,"epidemic") && s.disasterCare?.epidemic > s.tick && s.stage >= 2 ? .75 : 0;
+    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost - careCost,
+      water: waterGain - waterUse, gather, foodUse, fatigue,
       heating: winterActive(s) ? (s.winterPrepared === 2 ? 2.15 : 3.25) + Math.min(1.6, Math.max(0, (s.winterCount || 1) - 1) * .55) : 0 };
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
-    if (!b || b.stage > s.stage || s.buildings[id] >= b.max) return false;
+    if (!b || b.stage > s.stage || s.buildings[id] >= b.max || s.mandateRestrictedUntil > s.tick) return false;
     return Object.entries(b.cost).every(([key, amount]) => s[key] >= amount);
   }
   function build(s, id) {
@@ -461,7 +510,7 @@
   }
   function enact(s, id, optionId) {
     const law = LAWS[id], option = law?.options.find(o => o.id === optionId);
-    if (s.pending || !law || law.stage > s.stage || !option || s.laws[id] === optionId)
+    if (s.pending || s.mandateRestrictedUntil > s.tick || !law || law.stage > s.stage || !option || s.laws[id] === optionId)
       return { ok: false, reason: "선택할 수 없는 규칙입니다." };
     const procedure = ruleProcedure(s, id, optionId);
     if (procedure === "vote" && (s.voteCooldownUntil || 0) > s.tick)
@@ -513,8 +562,8 @@
   }
   function effect(s, changes) {
     for (const [key, delta] of Object.entries(changes || {})) {
-      if (["food", "wood", "trust", "treasury", "health", "warmth", "education", "childWellbeing"].includes(key))
-        s[key] = clamp(s[key] + delta, 0, key === "food" ? s.foodCap : key === "wood" ? s.woodCap : ["trust", "health", "warmth", "education", "childWellbeing"].includes(key) ? 100 : 9999);
+      if (["food", "wood", "trust", "treasury", "health", "warmth", "education", "childWellbeing", "water", "air"].includes(key))
+        s[key] = clamp(s[key] + delta, 0, key === "food" ? s.foodCap : key === "wood" ? s.woodCap : ["trust", "health", "warmth", "education", "childWellbeing", "water", "air"].includes(key) ? 100 : 9999);
     }
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
