@@ -144,8 +144,8 @@ const ui={
  mobileBuild:$('#mobileBuild'),mobileTablet:$('#mobileTablet'),tutorial:$('#tutorialCoach'),tutorialStep:$('#tutorialStep'),tutorialTitle:$('#tutorialTitle'),tutorialText:$('#tutorialText'),tutorialHint:$('#tutorialHint'),tutorialSkip:$('#tutorialSkip')
 };
 let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toastT=0,lastSave=0;
-let camYaw=Math.PI,camPitch=.42,camDist=9,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
-const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], models=new Map();
+let camYaw=Math.PI,camPitch=.31,camDist=6.8,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
+const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], artFootprints=[], models=new Map();
 const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group()};
 const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0};
 const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3();
@@ -270,12 +270,21 @@ function init3D(){
  }
  scene.userData.survivor=scene.userData.survivorNodes.taeho;scene.userData.campSurvivor=scene.userData.campResidents.taeho;
  const rz=new THREE.Object3D();rz.position.set(RIVER_X-6.3,0,5);groups.dynamic.add(rz);addInteract(rz,'river','강물 뜨기');
- player.root.position.copy(CAMP);player.root.add(player.visual);scene.add(player.root);createAvatar();
+ player.root.position.copy(CAMP);player.root.add(player.visual);
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(.62,20),new THREE.MeshBasicMaterial({color:0x132018,transparent:true,opacity:.28,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.025;player.root.add(shadow);player.userShadow=shadow;
+ scene.add(player.root);createAvatar();
  bindInput();resize();addEventListener('resize',resize);
 }
 function box(w,h,d,c,x=0,y=h/2,z=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.9}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;groups.props.add(m);return m}
 function createSkyDome(){
  const geo=new THREE.SphereGeometry(165,28,16),mat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color(0x4f8fb6)},horizon:{value:new THREE.Color(0xbfdde3)},ground:{value:new THREE.Color(0x8ea898)}},vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec3 vP;uniform vec3 top;uniform vec3 horizon;uniform vec3 ground;void main(){float h=normalize(vP).y;vec3 c=h>0.0?mix(horizon,top,smoothstep(0.0,.75,h)):mix(horizon,ground,smoothstep(0.0,-.5,h));gl_FragColor=vec4(c,1.0);}'});const sky=new THREE.Mesh(geo,mat);sky.renderOrder=-10;scene.add(sky);scene.userData.sky=sky
+}
+function footprintOverlaps(x,z,w,d,pad=.35,ignoreTag=''){
+ return artFootprints.some(f=>f.tag!==ignoreTag&&Math.abs(x-f.x)<(w+f.w)/2+pad&&Math.abs(z-f.z)<(d+f.d)/2+pad)
+}
+function reserveFootprint(x,z,w,d,tag='decor'){if(footprintOverlaps(x,z,w,d,.18,tag))return false;artFootprints.push({x,z,w,d,tag});return true}
+function placeWorldModelSafe(url,{x=0,z=0,target=3,rot=0,y=0,w=2,d=2,tag='decor',parent=groups.props,tiltX=0,tiltZ=0,allowOverlap=false}={}){
+ if(!allowOverlap&&!reserveFootprint(x,z,w,d,tag))return false;placeWorldModel(url,{x,z,target,rot,y,parent,tiltX,tiltZ});return true
 }
 function placeWorldModel(url,{x=0,z=0,target=3,rot=0,y=0,parent=groups.props,tiltX=0,tiltZ=0}={}){
  model(url).then(o=>{if(!o)return;normalize(o,target);o.position.x=x;o.position.z=z;o.position.y=terrainHeight(x,z)+y;o.rotation.y=rot;o.rotation.x=tiltX;o.rotation.z=tiltZ;parent.add(o)});
@@ -481,7 +490,7 @@ function bindInput(){
  addEventListener('keyup',e=>keys.delete(e.code));
  ui.canvas.addEventListener('pointerdown',e=>{drag=true;lastPointer=[e.clientX,e.clientY];ui.canvas.setPointerCapture?.(e.pointerId)});
  ui.canvas.addEventListener('pointermove',e=>{if(!drag||!lastPointer)return;const dx=e.clientX-lastPointer[0],dy=e.clientY-lastPointer[1];camYaw-=dx*.005;camPitch=clamp(camPitch+dy*.003,.18,.82);if(Math.abs(dx)+Math.abs(dy)>8)tutorialSignal('camera');lastPointer=[e.clientX,e.clientY]});
- ui.canvas.addEventListener('pointerup',()=>{drag=false;lastPointer=null});ui.canvas.addEventListener('wheel',e=>camDist=clamp(camDist+e.deltaY*.008,5.8,12),{passive:true});
+ ui.canvas.addEventListener('pointerup',()=>{drag=false;lastPointer=null});ui.canvas.addEventListener('wheel',e=>camDist=clamp(camDist+e.deltaY*.008,4.8,9.5),{passive:true});
  ui.mobileInteract?.addEventListener('click',interact);ui.mobileBuild?.addEventListener('click',()=>openPanel('build'));ui.mobileTablet?.addEventListener('click',togglePanel);
  ui.closePanel.addEventListener('click',closePanel);document.querySelectorAll('#hotbar button').forEach(b=>b.addEventListener('click',()=>b.dataset.use?useItem(b.dataset.use):openPanel(b.dataset.open)));
  document.querySelectorAll('#panel nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.tab,true)));document.querySelectorAll('#decision [data-choice]').forEach(b=>b.addEventListener('click',()=>chooseDistribution(b.dataset.choice)));ui.tutorialSkip?.addEventListener('click',skipTutorial);
@@ -513,8 +522,14 @@ function updateInteriorVisibility(){
  const px=player.root.position.x,pz=player.root.position.z;for(const zone of ruinZones){const inside=Math.abs(px-zone.x)<zone.hw&&Math.abs(pz-zone.z)<zone.hd;for(const wall of zone.walls){wall.material.opacity=damp(wall.material.opacity,inside?.18:1,8,.016);wall.material.depthWrite=!inside}}
 }
 function updateCamera(dt){
- const t=tmp.set(player.root.position.x,player.root.position.y+1.5,player.root.position.z),cp=Math.cos(camPitch),raw=new THREE.Vector3(t.x+Math.sin(camYaw)*cp*camDist,t.y+Math.sin(camPitch)*camDist,t.z+Math.cos(camYaw)*cp*camDist),desired=resolveCamera(t,raw);
- camera.position.lerp(desired,1-Math.exp(-11*dt));camera.lookAt(t);if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position);updateInteriorVisibility()
+ const orbit=new THREE.Vector3(Math.sin(camYaw),0,Math.cos(camYaw)),screenForward=orbit.clone().multiplyScalar(-1),screenRight=new THREE.Vector3(screenForward.z,0,-screenForward.x);
+ const pivot=new THREE.Vector3(player.root.position.x,player.root.position.y+1.25,player.root.position.z);
+ const lookAt=pivot.clone().addScaledVector(screenForward,2.15).add(new THREE.Vector3(0,.28,0));
+ const cp=Math.cos(camPitch),raw=pivot.clone().addScaledVector(orbit,cp*camDist).addScaledVector(screenRight,.58);raw.y+=2.25+Math.sin(camPitch)*camDist;
+ const desired=resolveCamera(pivot,raw),minDist=2.75,actual=desired.distanceTo(pivot);
+ if(actual<minDist){desired.copy(pivot).addScaledVector(orbit,minDist*.86).addScaledVector(screenRight,.42);desired.y=pivot.y+2.15}
+ camera.position.lerp(desired,1-Math.exp(-12*dt));camera.lookAt(lookAt);
+ if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position);updateInteriorVisibility()
 }
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
