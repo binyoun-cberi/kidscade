@@ -255,7 +255,7 @@
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
-    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue, heating: winterActive(s) ? (s.winterPrepared === 2 ? 1.35 : 2.15) : 0 };
+    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue, heating: winterActive(s) ? (s.winterPrepared === 2 ? 2.15 : 3.25) : 0 };
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
@@ -638,6 +638,100 @@
     if (event.repeat && s.eventsLast[event.id] != null && s.tick - s.eventsLast[event.id] < event.repeat) return false;
     return true;
   }
+
+  function rightsHistory(s, kind, status, detail) {
+    if (!Array.isArray(s.rightsHistory)) s.rightsHistory = [];
+    s.rightsHistory.unshift({ tick: s.tick, kind, status, detail });
+    if (s.rightsHistory.length > 28) s.rightsHistory.length = 28;
+    recordDecision(s, kind + (status === "시작" ? " 발생" : " 검토"), detail);
+  }
+  function endChildLabor(s) {
+    if (s.childWorkUntil > s.tick) {
+      s.childWorkUntil = 0;
+      rightsHistory(s, "어린이 위험 노동", "종료", "어린이의 위험 작업을 중단하고 회복·학습을 지원합니다.");
+      record(s, "어린이의 위험 작업을 중단했습니다. 건강과 학습은 서서히 회복됩니다.");
+    }
+    s.childWorkWeeks = 0;
+    s.childLaborReviewed = true;
+  }
+  function endForcedLabor(s) {
+    if (s.forcedLaborUntil > s.tick) {
+      s.forcedLaborUntil = 0;
+      rightsHistory(s, "강제 노동", "종료", "동의 없는 강제 근무를 종료했습니다.");
+    }
+    s.forcedLaborWeeks = 0;
+  }
+  function endExclusion(s) {
+    if (s.exclusionUntil > s.tick) {
+      s.exclusionUntil = 0;
+      rightsHistory(s, "일부 주민 배급 제외", "종료", "배급에서 제외된 주민의 기본 배급을 회복했습니다.");
+    }
+    s.exclusionWeeks = 0;
+  }
+  function startWinter(s) {
+    s.winterEver = true;
+    s.winterStartedAt = s.tick;
+    s.coldUntil = s.tick + 14;
+    s.nextWinterAt += 34;
+    s.warmth = clamp(Math.max(s.warmth, s.winterPrepared === 2 ? 82 : s.winterPrepared === 1 ? 72 : 64));
+    s.crisisHistory.unshift({ tick: s.tick, type: "한파", text: "한파 시작 · 앞으로 14주 동안 식량 생산이 감소하고 난방에 물자가 소모됩니다." });
+    record(s, "❄️ 한파가 시작되었습니다. 난방 물자가 매주 소모되고 식량 생산이 줄어듭니다.");
+  }
+  function advanceWinterAndRights(s) {
+    if (s.tick >= s.nextWinterAt) startWinter(s);
+    if (s.coldUntil && s.tick >= s.coldUntil) {
+      s.coldUntil = 0;
+      s.winterPrepared = null;
+      record(s, "한파가 물러갔습니다. 하지만 떨어진 건강과 학습 기회는 천천히 회복됩니다.");
+    }
+    if (s.childWorkUntil > 0 && s.tick >= s.childWorkUntil) endChildLabor({ ...s, childWorkUntil: s.tick + 1, rightsHistory: s.rightsHistory, decisions: s.decisions, log: s.log });
+    if (s.childWorkUntil > 0 && s.tick >= s.childWorkUntil) { s.childWorkUntil = 0; s.childWorkWeeks = 0; }
+    if (s.forcedLaborUntil > 0 && s.tick >= s.forcedLaborUntil) {
+      s.forcedLaborUntil = 0; s.forcedLaborWeeks = 0;
+      rightsHistory(s, "강제 노동", "종료", "비상 강제 근무의 시행 기한이 종료되었습니다.");
+      record(s, "강제 근무의 기한이 끝났습니다.");
+    }
+    if (s.exclusionUntil > 0 && s.tick >= s.exclusionUntil) {
+      s.exclusionUntil = 0; s.exclusionWeeks = 0;
+      rightsHistory(s, "일부 주민 배급 제외", "종료", "배급 제외의 시행 기한이 종료되었습니다.");
+      record(s, "일부 주민에 대한 배급 제외가 종료되었습니다.");
+    }
+  }
+  function advanceHealthAndFuel(s, rates, producedWood) {
+    if (winterActive(s)) {
+      const adequateFuel = producedWood + .00001 >= rates.heating;
+      s.wood = clamp(producedWood - rates.heating, 0, 999);
+      s.warmth = clamp(s.warmth + (adequateFuel ? -.8 : -5.1));
+      if (s.warmth < 48) s.health = clamp(s.health - (s.warmth < 25 ? 2.4 : 1.2));
+      if (s.warmth < 38) s.childWellbeing = clamp(s.childWellbeing - 1.1);
+    } else {
+      s.wood = clamp(producedWood, 0, 999);
+      s.warmth = clamp(s.warmth + 1.7);
+    }
+    if (s.food < 20) { s.health = clamp(s.health - .9); s.childWellbeing = clamp(s.childWellbeing - .7); }
+    else if (!winterActive(s) && s.food > 40) {
+      s.health = clamp(s.health + (s.buildings.clinic && s.treasury >= 1 ? .55 : .22));
+      s.childWellbeing = clamp(s.childWellbeing + .32);
+    }
+    if (s.childWorkUntil > s.tick) {
+      s.childWorkWeeks++;
+      s.childWellbeing = clamp(s.childWellbeing - 2.3);
+      s.education = clamp(s.education - 2.8);
+      s.trust = clamp(s.trust - .48);
+    } else if (s.food > 30) s.education = clamp(s.education + (winterActive(s) ? .14 : .38));
+    if (s.forcedLaborUntil > s.tick) {
+      s.forcedLaborWeeks++;
+      s.health = clamp(s.health - .48);
+      s.workStrain = clamp(s.workStrain + .4, 0, 10);
+      s.trust = clamp(s.trust - .52);
+    }
+    if (s.exclusionUntil > s.tick) {
+      s.exclusionWeeks++;
+      s.health = clamp(s.health - 1.1);
+      s.trust = clamp(s.trust - .72);
+    }
+  }
+
   function chooseEvent(s) {
     if (s.pending || s.cooldown > 0) return null;
     const possible = EVENTS.filter(e => allowedEvent(s, e) && (!e.randomChance || random(s) < e.randomChance))
@@ -692,6 +786,7 @@
   function tick(s) {
     if (s.pending) return s;
     s.tick++;
+    advanceWinterAndRights(s);
     if (s.stormUntil && s.tick >= s.stormUntil) {
       s.stormUntil = 0;
       const aftermathLoss = s.laws.storage === "reserve" ? 3 : s.laws.storage === "exchange" ? 11 : s.laws.storage === "share" ? 13 : 9;
@@ -701,7 +796,7 @@
     advanceConsequences(s);
     const r = rates(s);
     s.food = clamp(s.food + r.food, 0, s.foodCap);
-    s.wood = clamp(s.wood + r.wood, 0, 999);
+    advanceHealthAndFuel(s, r, s.wood + r.wood);
     if (s.stage >= 2) s.treasury = clamp(s.treasury + r.treasury, 0, 9999);
     if (s.laws.process === "delegate" && s.stage >= 2 && !s.processReviewAt) s.processReviewAt = s.tick + 18;
     if (s.laws.storage === "reserve" && s.food > 75 && s.reserveFood < 28) {
@@ -716,7 +811,7 @@
     else if (s.food > 55 && s.trust < 70) s.trust = clamp(s.trust + .10);
     if (s.treasury < 1 && s.stage >= 2 && (s.buildings.clinic || s.buildings.hall)) s.trust = clamp(s.trust - .24);
     if (s.buildings.clinic && s.treasury >= 1) s.trust = clamp(s.trust + .06);
-    if (s.population < capacity(s) && s.food >= 53 && s.trust >= 42 && s.tick - s.lastBirth >= 7) {
+    if (s.population < capacity(s) && s.food >= 53 && s.trust >= 42 && s.health >= 46 && s.tick - s.lastBirth >= 7) {
       const newcomer = createCitizen(s.nextCitizenIndex++, "arrival", s.tick);
       s.citizens.push(newcomer);
       s.population++;
@@ -755,5 +850,5 @@
   }
   return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES,
     policyEffect, ruleProcedure, votePosition, recordDecision, advanceConsequences, applySafeguard,
-    availableActions, performAction });
+    availableActions, performAction, adultCapacity, childCount, winterActive, rightsConcerns });
 });
