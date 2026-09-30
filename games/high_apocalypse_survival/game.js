@@ -290,6 +290,16 @@ function settlementSteps(){
   ['reserve','식수 4 · 식량 6 비축',stock('cleanWater')>=4&&(stock('food')+stock('potato')+stock('cookedPotato'))>=6]
  ]
 }
+function villageSteps(){
+ const ruinDone=['market','clinic','garage'].every(site=>ruinSearchProgress(site).done===ruinSearchProgress(site).total),stored=Object.values(game.storage||{}).reduce((a,b)=>a+(Number(b)||0),0);
+ return [
+  ['warehouse','공동창고 건설',hasBuilding('storehouse')],
+  ['housing','쉼터 2개 확보',game.buildings.filter(b=>b.id==='shelter').length>=2],
+  ['survey','폐허 3곳 완전 수색',ruinDone],
+  ['villageReserve','식수 6 · 식량 8 비축',stock('cleanWater')>=6&&(stock('food')+stock('potato')+stock('cookedPotato'))>=8],
+  ['logistics','공동창고 물자 6개 이상',stored>=6]
+ ]
+}
 function missionDone(day=game.day){if(game?.phase==='settlement')return settlementSteps().every(s=>s[2]);const m=MISSIONS[day];return !!m&&m.steps.every(([id])=>!!game.flags[id])}
 function groundColor(x,z,h=0){
  const base=new THREE.Color(0x73915f),forest=new THREE.Color(0x496c4b),hill=new THREE.Color(0x66745a),city=new THREE.Color(0x777b70),camp=new THREE.Color(0x819866),bank=new THREE.Color(0x7d8f63);
@@ -900,7 +910,11 @@ async function restoreBuildings(){for(const p of placed)groups.buildings.remove(
 function updateMission(){
  if(!game)return;
  if(game.phase==='settlement'){
-   const steps=settlementSteps(),done=steps.every(s=>s[2]);ui.missionTitle.textContent=done?'정착지 자립 기반 완성':'정착지를 자립시켜라';ui.missionText.textContent=done?'이제 물·식량·주민·전력의 기본 순환이 갖춰졌습니다. 자유롭게 운영하며 문명을 키워 보세요.':'주민을 모으고 식량 생산, 저장, 정수 시설을 연결해 스스로 버틸 수 있는 정착지를 만드세요.';ui.missionSteps.innerHTML=steps.map(([,label,on])=>'<span class="'+(on?'done':'')+'">'+(on?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=done?'문명도 2 · 정착지':'정착지 운영 · 멸망 '+game.day+'일째';if(done&&game.settlementLevel<1){game.settlementLevel=1;save();toast('🏘️ 정착지 자립 기반 완성 · 문명도 2 달성!','normal',5)}return
+   const baseDone=settlementSteps().every(s=>s[2]);
+   if(game.settlementLevel<1){
+    const steps=settlementSteps(),done=steps.every(s=>s[2]);ui.missionTitle.textContent=done?'정착지 자립 기반 완성':'정착지를 자립시켜라';ui.missionText.textContent=done?'물·식량·주민·전력의 기본 순환이 갖춰졌습니다. 이제 생활권을 넓혀 마을을 만드세요.':'주민을 모으고 식량 생산, 저장, 정수 시설을 연결해 스스로 버틸 수 있는 정착지를 만드세요.';ui.missionSteps.innerHTML=steps.map(([,label,on])=>'<span class="'+(on?'done':'')+'">'+(on?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=done?'문명도 2 · 정착지':'정착지 운영 · 멸망 '+game.day+'일째';if(done){game.settlementLevel=1;save();toast('🏘️ 정착지 자립 기반 완성 · 문명도 2 달성! 다음 목표: 마을 만들기','normal',5)}return
+   }
+   const steps=villageSteps(),done=steps.every(s=>s[2]);ui.missionTitle.textContent=done?'마을 생활권 완성':'정착지를 마을로 키워라';ui.missionText.textContent=done?'주거·물류·원정·비축이 연결되어 야영지가 하나의 마을로 기능하기 시작합니다.':'공동창고를 만들고 주거를 늘린 뒤, 폐허 생활권을 조사해 물자 흐름을 안정시키세요.';ui.missionSteps.innerHTML=steps.map(([,label,on])=>'<span class="'+(on?'done':'')+'">'+(on?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=done?'문명도 3 · 마을':'마을 건설 · 멸망 '+game.day+'일째';if(done&&game.settlementLevel<2){game.settlementLevel=2;save();toast('🏡 마을 생활권 완성 · 문명도 3 달성!','normal',5)}return
  }
  const m=MISSIONS[Math.min(7,game.day)];ui.missionTitle.textContent=m.title;ui.missionText.textContent=m.text;ui.missionSteps.innerHTML=m.steps.map(([id,label])=>'<span class="'+(game.flags[id]?'done':'')+'">'+(game.flags[id]?'✓':'○')+' '+label+'</span>').join('');ui.missionKicker.textContent=missionDone()&&game.day<7?'오늘의 목표 완료 · 쉬면 다음 날':'오늘의 생존 목표'
 }
