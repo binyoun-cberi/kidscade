@@ -1685,6 +1685,10 @@ function buildInventory(category='전체'){
     $('survivalCraftHint').textContent=hasWorkbench()?
       '제작대 근처예요. 재료가 모이면 제작 버튼이 활성화돼요.':
       '가방에 든 제작대를 땅에 설치하고 가까이 다가가세요.';
+    const techLabels=poiRules.POIS.filter(p=>unlockedTech.has(p.tech.id)).map(p=>p.tech.label);
+    $('survivalTechs').textContent=techLabels.length?
+      '설계도 기술 · '+techLabels.join(' · '):
+      '설계도 기술 · 랜드마크 폐허를 복원하면 고급 건축이 열려요.';
     return;
   }
   document.querySelectorAll('[data-inv-cat]').forEach(b=>
