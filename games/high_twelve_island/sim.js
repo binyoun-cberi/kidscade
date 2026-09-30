@@ -283,7 +283,7 @@
     const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
     const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
     const coldFactor = winterActive(s) ? Math.max(.52, .68 - Math.max(0, (s.winterCount || 1) - 1) * .05) : 1;
-    const illnessFactor = (s.health < 45 ? .75 : s.health < 65 ? .88 : 1) *
+    const illnessFactor = (s.health <= 10 ? .25 : s.health < 25 ? .42 : s.health < 45 ? .68 : s.health < 65 ? .88 : 1) *
       (s.sick >= 6 ? .73 : s.sick >= 3 ? .87 : 1);
     const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
     const climateFactor = (disasterActive(s,"heat") ? (s.disasterCare?.heat > s.tick ? .88 : .73) : 1) *
@@ -1154,14 +1154,19 @@
     const g = s.groups, foodLow = s.food < 25, waterLow = s.water < 27;
     g.workers = clamp(g.workers +
       (s.forcedLaborUntil > s.tick ? .56 : 0) + (s.workStrain > 5 ? .20 : 0) +
-      (foodLow ? .12 : 0) + (s.health < 30 ? .14 : 0) + (s.strikes.workers > s.tick ? -.16 : -.14), 0, 10);
+      (foodLow ? .12 : 0) + (s.health < 30 ? .14 : 0) +
+      (s.stage >= 2 && s.laws.tax === "high" ? .23 : 0) +
+      (s.wood < 24 ? .16 : 0) + (s.strikes.workers > s.tick ? -.16 : -.14), 0, 10);
     g.families = clamp(g.families +
       (s.childWorkUntil > s.tick ? .53 : 0) + (s.childWellbeing < 57 ? .20 : 0) +
-      (waterLow ? .18 : 0) + (s.health < 35 ? .12 : 0) + (disasterActive(s,"epidemic") && s.sick>=5 ? .12 : 0) +
+      (waterLow ? .18 : s.water < 52 ? .20 : 0) + (s.health < 35 ? .12 : 0) +
+      (s.laws.ration === "effort" ? .15 : 0) + (disasterActive(s,"epidemic") && s.sick>=5 ? .12 : 0) +
       (s.strikes.families > s.tick ? -.12 : -.15), 0, 10);
     g.carers = clamp(g.carers +
       (s.exclusionUntil > s.tick ? .54 : 0) + (s.sick >= 4 ? .21 : 0) +
-      (s.health < 48 ? .16 : 0) + (s.water < 20 ? .10 : 0) + (s.strikes.carers > s.tick ? -.10 : -.15), 0, 10);
+      (s.health < 48 ? .16 : 0) + (s.water < 20 ? .10 : 0) +
+      (s.stage >= 2 && s.laws.tax === "low" && !s.buildings.clinic ? .22 : 0) +
+      (s.strikes.carers > s.tick ? -.10 : -.15), 0, 10);
     if (g.workers >= 7.2 && s.strikes.workers <= s.tick) s.trust = clamp(s.trust - .30);
     if (g.families >= 7.2 && s.strikes.families <= s.tick) s.trust = clamp(s.trust - .30);
     if (g.carers >= 7.2 && s.strikes.carers <= s.tick) s.trust = clamp(s.trust - .30);
