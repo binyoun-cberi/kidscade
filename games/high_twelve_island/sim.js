@@ -191,7 +191,8 @@
       groups: { workers: 0, families: 0, carers: 0 },
       strikes: { workers: 0, families: 0, carers: 0 },
       arrivalsPausedUntil: 0, mandateRestrictedUntil: 0,
-      disputeDelayUntil: 0, civicDebates: 0
+      disputeDelayUntil: 0, civicDebates: 0,
+      collapseWeeks: 0, rescueCount: 0, ended: false
     };
   }
   function normalize(s) {
@@ -311,7 +312,7 @@
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
-    if (!b || b.stage > s.stage || s.buildings[id] >= b.max || s.mandateRestrictedUntil > s.tick) return false;
+    if (!b || b.stage > s.stage || s.ended || s.buildings[id] >= b.max || s.mandateRestrictedUntil > s.tick) return false;
     return Object.entries(b.cost).every(([key, amount]) => s[key] >= amount);
   }
   function build(s, id) {
@@ -481,14 +482,14 @@
     return ACTIONS.filter(a => a.when(s)).map(a => ({
       id: a.id, label: a.label, icon: a.icon, description: a.description,
       cooldown: Math.max(0, (s.actionCooldowns?.[a.id] || 0) - s.tick),
-      enabled: !s.pending && s[a.key] >= a.minimum && (a.id !== "familyMediation" || s.food >= 5) &&
+      enabled: !s.pending && !s.ended && s[a.key] >= a.minimum && (a.id !== "familyMediation" || s.food >= 5) &&
         (a.id !== "carerMediation" || s.food >= 6) && (s.actionCooldowns?.[a.id] || 0) <= s.tick,
       shortfall: Math.max(0, a.minimum - (s[a.key] || 0))
     }));
   }
   function performAction(s, id) {
     const action = ACTIONS.find(a => a.id === id);
-    if (!action || !action.when(s) || s.pending) return { ok: false, reason: "지금은 선택할 수 없는 행동입니다." };
+    if (!action || !action.when(s) || s.pending || s.ended) return { ok: false, reason: "지금은 선택할 수 없는 행동입니다." };
     if (s[action.key] < action.minimum || (id === "familyMediation" && s.food<5) || (id === "carerMediation" && s.food<6)) return { ok: false, reason: "필요한 자원이 부족합니다." };
     if ((s.actionCooldowns?.[id] || 0) > s.tick) return { ok: false, reason: "이전 행동을 정리하는 기간입니다." };
     let note = action.description;
@@ -537,7 +538,7 @@
   }
   function enact(s, id, optionId) {
     const law = LAWS[id], option = law?.options.find(o => o.id === optionId);
-    if (s.pending || s.mandateRestrictedUntil > s.tick || !law || law.stage > s.stage || !option || s.laws[id] === optionId)
+    if (s.pending || s.ended || s.mandateRestrictedUntil > s.tick || !law || law.stage > s.stage || !option || s.laws[id] === optionId)
       return { ok: false, reason: "선택할 수 없는 규칙입니다." };
     const procedure = ruleProcedure(s, id, optionId);
     if (procedure === "vote" && (s.voteCooldownUntil || 0) > s.tick)
@@ -595,6 +596,19 @@
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
+
+    { id:"community_collapse",priority:135,emergency:true,repeat:25,
+      when:s=>s.collapseWeeks>=3&&!s.ended,
+      title:"🚨 공동체의 생존이 위태롭습니다",speaker:"하나",
+      body:"주민들의 건강이 심각하게 악화되어 정상적인 생산과 생활을 이어가기 어렵습니다. 지역 밖에 지원을 요청하거나 운영을 일시적으로 마무리해야 할 상황입니다.",
+      options:[
+        {label:"구조선을 요청하고 주민 한 명이 도움을 구하러 떠나요.",rescueTeam:true,
+          note:"성인 주민 한 명이 지원을 요청하러 떠납니다. 식량·식수·건강을 일부 회복하지만 공동체는 노동력을 잃습니다."},
+        {label:"식량 8과 물자 8을 사용해 공동 거처에서 재건해요.",cost:{food:8,wood:8},localRebuild:true,
+          note:"6주 동안 생산을 줄이는 대신 식수와 건강을 회복합니다."},
+        {label:"외부 지원을 받아 섬 운영을 마무리해요.",endSettlement:true,
+          note:"현재 플레이를 종료하고 공동체의 결정 기록을 확인할 수 있습니다. 언제든 다시 시작할 수 있습니다."}
+      ]},
 
     { id:"heat_alert", priority:119, emergency:true, when:s=>s.disasterUnanswered.heat,
       title:"☀️ 폭염, 그늘 밖에서 일하기 어렵습니다", speaker:"미래",
@@ -1234,6 +1248,24 @@
     }
     if (choice.groupChanges) for (const [kind, amount] of Object.entries(choice.groupChanges))
       s.groups[kind] = clamp(s.groups[kind] + amount, 0, 10);
+    if (choice.rescueTeam) {
+      departResidents(s, 1, "긴급 구조와 지원을 요청하기 위해");
+      s.food=clamp(s.food+22,0,s.foodCap);
+      s.water=clamp(s.water+28);
+      s.health=clamp(s.health+18);
+      s.trust=clamp(s.trust-5);
+      s.rescueCount=(s.rescueCount||0)+1;
+      s.collapseWeeks=0;
+    }
+    if (choice.localRebuild) {
+      s.health=clamp(s.health+14);s.water=clamp(s.water+15);
+      s.workReliefUntil=Math.max(s.workReliefUntil,s.tick+6);
+      s.collapseWeeks=0;
+    }
+    if (choice.endSettlement) {
+      s.ended=true;
+      record(s,"공동체가 외부의 지원을 받아 섬 운영을 마무리했습니다. 지금까지의 선택은 기록에 남습니다.");
+    }
     if (choice.disasterResponse) s.disasterUnanswered[choice.disasterResponse] = false;
   }
 
@@ -1351,7 +1383,7 @@
     return { ok: true, note: choice.note };
   }
   function tick(s) {
-    if (s.pending) return s;
+    if (s.pending || s.ended) return s;
     s.tick++;
     advanceWinterAndRights(s);
     advanceDisasters(s);
@@ -1367,6 +1399,7 @@
     s.water = clamp(s.water + r.water);
     advanceHealthAndFuel(s, r, s.wood + r.wood);
     advanceGroupPressure(s);
+    s.collapseWeeks = s.health <= 7 ? (s.collapseWeeks || 0) + 1 : 0;
     if (s.stage >= 2) s.treasury = clamp(s.treasury + r.treasury, 0, 9999);
     if (s.laws.process === "delegate" && s.stage >= 2 && !s.processReviewAt) s.processReviewAt = s.tick + 18;
     if (s.laws.storage === "reserve" && s.food > 75 && s.reserveFood < 28) {
