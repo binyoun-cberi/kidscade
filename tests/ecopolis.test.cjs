@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=8');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=9');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -86,7 +86,7 @@ test('Ecopolis supports procedural regions, analysis views, touch, tutorial and 
 
 test('Ecopolis uses QA-gated shared biome art without swapping in unverified animals',()=>{
   assert.match(html,/three\/addons\//);
-  assert.match(html,/game\.js\?v=8/);
+  assert.match(html,/game\.js\?v=9/);
   assert.match(js,/shared-community-3d\.js/);
   assert.match(js,/shared3DIsApproved/);
   assert.match(js,/normalizeShared/);
@@ -102,7 +102,7 @@ test('Ecopolis v5 makes ecosystem health change visible density and animal count
   assert.match(js,/function refreshLivingDecor/);
   assert.match(js,/const desired=pop\[species\]<8\?0/);
   assert.match(js,/returnedSpeciesCount\(\),4,'종'/);
-  assert.match(html,/game\.js\?v=8/);
+  assert.match(html,/game\.js\?v=9/);
 });
 
 test('Ecopolis v6 adds RollerCoaster-Tycoon-style environmental management',()=>{
@@ -150,7 +150,7 @@ test('Ecopolis v7 uses asset-backed connected paths and amenities',()=>{
   assert.match(html,/data-tool="trail"/);
   assert.match(html,/data-tool="boardwalk"/);
   assert.match(html,/data-tool="pavedwalk"/);
-  assert.match(html,/game\.js\?v=8/);
+  assert.match(html,/game\.js\?v=9/);
 });
 
 test('Ecopolis binds renderer events only after renderer initialization',()=>{
@@ -161,4 +161,18 @@ test('Ecopolis binds renderer events only after renderer initialization',()=>{
   const directBind=js.indexOf("renderer.domElement.addEventListener('pointerdown'");
   assert.equal(directBind,-1);
   assert.ok(initCall>0);
+});
+
+test('Ecopolis v9 gives elementary players guided progression',()=>{
+  assert.match(html,/id="nextActionCard"/);
+  assert.match(html,/id="moreToolsBtn"/);
+  assert.match(js,/function currentGuide/);
+  assert.match(js,/function updateToolVisibility/);
+  assert.match(js,/hasType\('purifier'\)/);
+  assert.match(js,/hasType\('waterfilter'\)/);
+  assert.match(js,/hasType\('forest'\).*hasType\('wetland'\).*hasType\('meadow'\)/s);
+  assert.match(js,/ecosystem\.visitorsServed>=10/);
+  assert.match(js,/if\(phase>=3\)economyTick\(\)/);
+  assert.match(css,/\.contextHidden/);
+  assert.match(css,/\.tool\.recommended/);
 });
