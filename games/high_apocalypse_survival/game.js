@@ -707,8 +707,18 @@ function canBuild(pos,d){if(Math.abs(pos.x-RIVER_X)<8||new THREE.Vector2(pos.x-C
 function cancelGhost(){if(ghost){groups.dynamic.remove(ghost);ghost.geometry.dispose();ghost.material.dispose();ghost=null}}
 function cancelBuild(){buildMode=null;cancelGhost();toast('건축을 취소했습니다.')}
 async function confirmBuild(){if(!buildMode||!ghost?.userData.valid)return toast('여기에는 설치하기 어렵습니다.','warn');const id=buildMode,d=BUILD[id];if(!has(d.cost)){cancelBuild();return toast('재료가 부족합니다.','warn')}pay(d.cost);const pos=ghost.position.clone();cancelGhost();buildMode=null;const state={id,x:pos.x,z:pos.z,planted:false,growth:0};game.buildings.push(state);await spawnPlaced(id,pos,state);flag(id);if(id==='shelter')discover('insulation');if(id==='campfire')discover('combustion');toast(d.icon+' '+d.name+' 설치 완료');save()}
-async function spawnPlaced(id,pos,state=null){const d=BUILD[id],r=new THREE.Group();r.position.copy(pos);r.position.y=terrainHeight(pos.x,pos.z);groups.buildings.add(r);placed.push(r);
- const labels={campfire:'모닥불 사용',shelter:'쉼터에서 쉬기',workbench:'작업대 사용',farm:'텃밭 관리',cooler:'냉장 보관함 확인',purifier:'전기 정수기 사용'};r.userData.interactable={type:'placed',label:labels[id]||d.name+' 사용',building:id};r.userData.buildState=state;interactables.push(r);let f=id==='campfire'?new THREE.Mesh(new THREE.CylinderGeometry(.9,.8,.25,12),new THREE.MeshStandardMaterial({color:0x76523a})):id==='farm'?new THREE.Mesh(new THREE.BoxGeometry(4,.18,3.2),new THREE.MeshStandardMaterial({color:0x6a4b32})):new THREE.Mesh(new THREE.BoxGeometry(id==='shelter'?3.5:2.2,id==='shelter'?2.6:1.1,id==='shelter'?2.8:1.3),new THREE.MeshStandardMaterial({color:id==='shelter'?0x9b8964:0x74553b}));f.position.y=id==='campfire'?.15:id==='farm'?.09:(id==='shelter'?1.3:.55);r.add(f);const o=await model('../../assets/game/3d/survival/kenney-survival-kit/'+d.model);if(o){r.clear();normalize(o,id==='shelter'?4:id==='campfire'?1.8:id==='farm'?3.5:2.2);r.add(o)}}
+async function spawnPlaced(id,pos,state=null){
+ const d=BUILD[id],r=new THREE.Group();r.position.copy(pos);r.position.y=terrainHeight(pos.x,pos.z);groups.buildings.add(r);placed.push(r);
+ const labels={campfire:'모닥불 사용',shelter:'쉼터에서 쉬기',workbench:'작업대 사용',farm:'텃밭 관리',cooler:'냉장 보관함 확인',purifier:'전기 정수기 사용'};r.userData.interactable={type:'placed',label:labels[id]||d.name+' 사용',building:id};r.userData.buildState=state;interactables.push(r);
+ let f=id==='campfire'?new THREE.Mesh(new THREE.CylinderGeometry(.9,.8,.25,12),new THREE.MeshStandardMaterial({color:0x76523a})):id==='farm'?new THREE.Mesh(new THREE.BoxGeometry(4,.18,3.2),new THREE.MeshStandardMaterial({color:0x6a4b32})):new THREE.Mesh(new THREE.BoxGeometry(id==='shelter'?3.5:2.2,id==='shelter'?2.6:1.1,id==='shelter'?2.8:1.3),new THREE.MeshStandardMaterial({color:id==='shelter'?0x9b8964:0x74553b}));
+ f.position.y=id==='campfire'?.15:id==='farm'?.09:(id==='shelter'?1.3:.55);r.add(f);
+ const o=await model('../../assets/game/3d/survival/kenney-survival-kit/'+d.model);if(o){r.clear();normalize(o,id==='shelter'?4:id==='campfire'?1.8:id==='farm'?3.5:2.2);r.add(o)}
+ if(id==='campfire'){
+  const light=new THREE.PointLight(0xff9b4a,2.4,11,2),flame=new THREE.Mesh(new THREE.ConeGeometry(.18,.62,8),new THREE.MeshBasicMaterial({color:0xffb04c,transparent:true,opacity:.9}));light.position.set(0,1.05,0);flame.position.set(0,.66,0);r.add(light,flame);r.userData.fireLight=light;r.userData.fireFlame=flame
+ }else if(id==='cooler'||id==='purifier'){
+  const indicator=new THREE.Mesh(new THREE.SphereGeometry(.08,8,6),new THREE.MeshStandardMaterial({color:0x31403b,emissive:0x000000,emissiveIntensity:0}));indicator.position.set(.35,.8,.55);r.add(indicator);r.userData.powerIndicator=indicator
+ }
+}
 async function restoreBuildings(){for(const p of placed)groups.buildings.remove(p);placed.length=0;for(let i=interactables.length-1;i>=0;i--)if(interactables[i].userData.interactable?.building)interactables.splice(i,1);for(const b of game.buildings)await spawnPlaced(b.id,new THREE.Vector3(b.x,terrainHeight(b.x,b.z),b.z),b)}
 function updateMission(){
  if(!game)return;
@@ -723,6 +733,12 @@ function togglePowerLoad(id){
 function updateFarms(dt){
  const gameMinutes=dt*(1440/DAY_SECONDS);for(const b of game.buildings||[])if(b.id==='farm'&&b.planted)b.growth=Math.min(360,(b.growth||0)+gameMinutes*(getWeather()==='rain'?1.25:1))
 }
+function updateBuildingFx(dt){
+ const t=performance.now()*.001;for(const r of placed){const id=r.userData.interactable?.building;
+  if(id==='campfire'&&r.userData.fireLight){const flick=.82+Math.sin(t*9+r.position.x)*.12+Math.sin(t*17+r.position.z)*.06;r.userData.fireLight.intensity=2.45*flick;r.userData.fireFlame.scale.set(.92+Math.sin(t*13)*.08,1+Math.sin(t*11)*.13,.92+Math.cos(t*15)*.08);r.userData.fireFlame.material.opacity=.74+.18*flick}
+  if((id==='cooler'||id==='purifier')&&r.userData.powerIndicator){const on=devicePowered(id),m=r.userData.powerIndicator.material;m.color.setHex(on?0x75dca1:0x4a5551);m.emissive.setHex(on?0x2bc968:0x000000);m.emissiveIntensity=on?1.4:0}
+ }}
+
 function spoilFood(){
  if(devicePowered('cooler')){discover('foodPreservation');return 0}if((game.inv.potato||0)<1)return 0;
  const lost=Math.min(game.inv.potato,Math.max(1,Math.floor(game.inv.potato*.25)));game.inv.potato-=lost;game.inv.spoiledFood=(game.inv.spoiledFood||0)+lost;return lost
@@ -799,9 +815,9 @@ function residentTarget(id){
  if(r.job==='technician')return new THREE.Vector3(4,0,9);
  return new THREE.Vector3(0,0,11.5)
 }
-function updateNpc(){
+function updateNpc(dt){
  if(!game)return;let i=0;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
-  const target=residentTarget(id),dx=target.x-n.position.x,dz=target.z-n.position.z,dist=Math.hypot(dx,dz),speed=dist>3?1.15:.72,step=Math.min(dist,speed/60);
+  const target=residentTarget(id),dx=target.x-n.position.x,dz=target.z-n.position.z,dist=Math.hypot(dx,dz),speed=dist>3?1.15:.72,step=Math.min(dist,speed*dt);
   if(dist>.12){n.position.x+=dx/dist*step;n.position.z+=dz/dist*step;n.rotation.y=Math.atan2(dx,dz);n.userData.walk=(n.userData.walk||0)+.13;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
   else{n.userData.idle=(n.userData.idle||0)+.03;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
   const status=residentActivity(id),labelNode=n.userData.statusLabel;if(labelNode&&labelNode.userData.labelText!==RESIDENTS[id].name+' · '+status)drawLabel(labelNode,RESIDENTS[id].name+' · '+status);
@@ -831,6 +847,6 @@ function continueSettlement(){
 function finish(){if(game.finished)return;game.finished=true;save();running=false;ui.hud.classList.add('hidden');ui.ending.classList.remove('hidden');ui.endingText.textContent=(1+residentCount())+'명이 함께 살아남았습니다. 과학·사회 지식 '+game.knowledge.length+'개를 발견하고 '+game.buildings.length+'개의 시설을 세웠습니다.';ui.endingStats.innerHTML='<div><b>'+(1+residentCount())+'</b><small>인구</small></div><div><b>'+game.knowledge.length+'</b><small>발견 지식</small></div><div><b>'+game.buildings.length+'</b><small>시설</small></div><div><b>'+Math.round(game.trust)+'</b><small>신뢰</small></div>';window.KidscadeGame?.gameOver?.({score:game.knowledge.length*500+game.buildings.length*200+Math.round(game.trust)*10,day:7})}
 async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();renderTutorial();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
-function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWorldLabels();updateTutorial();updateWeather(dt);updateFx(dt);updateAudio(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
+function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateBuildingFx(dt);updateNpc(dt);updateWorldLabels();updateTutorial();updateWeather(dt);updateFx(dt);updateAudio(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
 async function boot(){init3D();ui.loadingText.textContent='검수된 3D 숲·폐허 자산과 키즈케이드 아바타를 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
