@@ -498,24 +498,37 @@ function drawBall(x,y,r=7){
 }
 
 function drawPlateView(isBatting){
- ctx.fillStyle='#10253c';ctx.fillRect(0,0,W,H);ctx.fillStyle='#1f3852';ctx.fillRect(0,80,W,115);
- for(let y=95;y<180;y+=22)for(let x=20;x<W;x+=34){ctx.fillStyle=((x+y)%3===0)?'#f59e0b':'#94a3b8';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()}
- const g=ctx.createLinearGradient(0,185,0,H);g.addColorStop(0,'#37814c');g.addColorStop(1,'#1f6038');ctx.fillStyle=g;ctx.fillRect(0,185,W,H-185);
- ctx.fillStyle='#c89f68';ctx.beginPath();ctx.ellipse(480,230,78,35,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(480,445,130,80,0,0,Math.PI*2);ctx.fill();
- const zx=405,zy=268,zw=150,zh=114;ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.strokeRect(zx,zy,zw,zh);
- ctx.strokeStyle='rgba(255,255,255,.17)';for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(zx+i*50,zy);ctx.lineTo(zx+i*50,zy+zh);ctx.stroke();ctx.beginPath();ctx.moveTo(zx,zy+i*38);ctx.lineTo(zx+zw,zy+i*38);ctx.stroke()}
+ drawPlateBackdrop();
+ const zx=405,zy=268,zw=150,zh=114;
+ ctx.save();ctx.fillStyle='rgba(6,24,40,.12)';ctx.fillRect(zx,zy,zw,zh);
+ ctx.strokeStyle='rgba(255,255,255,.62)';ctx.lineWidth=2;ctx.strokeRect(zx,zy,zw,zh);
+ ctx.strokeStyle='rgba(255,255,255,.17)';
+ for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(zx+i*50,zy);ctx.lineTo(zx+i*50,zy+zh);ctx.stroke();ctx.beginPath();ctx.moveTo(zx,zy+i*38);ctx.lineTo(zx+zw,zy+i*38);ctx.stroke()}
+ ctx.restore();
  if(isBatting){
-  drawPlayer(sprites.cpu.stand,480,244,.86,false,'#2563eb');
-  const batter=avatarImg&&avatarImg.complete?avatarImg:sprites.user.stand;drawPlayer(batter,620,438,1.15,true,'#16a34a');
-  if(batImg.complete&&batImg.naturalWidth){ctx.save();ctx.translate(588,374);ctx.rotate(-.62);ctx.drawImage(batImg,-6,-42,12,84);ctx.restore()}
-  ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cursor.x,cursor.y,17,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(cursor.x-24,cursor.y);ctx.lineTo(cursor.x+24,cursor.y);ctx.moveTo(cursor.x,cursor.y-24);ctx.lineTo(cursor.x,cursor.y+24);ctx.stroke();
+  const throwing=pitch&&pitch.owner==='cpu'&&pitch.t<.38;
+  drawPlayer(throwing?sprites.cpu.action:sprites.cpu.stand,480,254,.9,false,'#2563eb',true,1);
+  const batter=readyImage(avatarImg)?avatarImg:(chargeActive?sprites.user.action:sprites.user.stand);
+  drawPlayer(batter,620,447,1.2,true,'#16a34a',true,4);
+  ctx.save();ctx.translate(603,386);ctx.rotate(.64+(chargeActive?Math.sin(simTime*8)*.055:0));ctx.scale(-1,1);
+  if(readyImage(batImg))ctx.drawImage(batImg,-6,-10,96,26);
+  else{ctx.strokeStyle='#a26b37';ctx.lineWidth=12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(86,0);ctx.stroke()}
+  ctx.restore();
+  ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cursor.x,cursor.y,17,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cursor.x-24,cursor.y);ctx.lineTo(cursor.x+24,cursor.y);ctx.moveTo(cursor.x,cursor.y-24);ctx.lineTo(cursor.x,cursor.y+24);ctx.stroke();
  }else{
-  drawPlayer(sprites.user.stand,480,242,.9,false,'#16a34a');drawPlayer(sprites.cpu.stand,590,440,1.15,true,'#2563eb');
+  const throwing=pitch&&pitch.owner==='user'&&pitch.t<.38;
+  drawPlayer(throwing?sprites.user.action:sprites.user.stand,480,254,.9,false,'#16a34a',true,1);
+  const batting=pitch&&pitch.owner==='user'&&pitch.t>.78&&pitch.cpuDecision;
+  drawPlayer(batting?sprites.cpu.action:sprites.cpu.stand,590,447,1.2,true,'#2563eb',true,4);
+  ctx.save();ctx.translate(577,387);ctx.rotate(.58);ctx.scale(-1,1);if(readyImage(metalBatImg))ctx.drawImage(metalBatImg,-6,-10,93,24);ctx.restore();
   ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.arc(pitchAim.x,pitchAim.y,12,0,Math.PI*2);ctx.stroke();
  }
  if(pitch){
   const p=pitch,t=clamp(p.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=p.actual.x+p.breakX*curve,ty=p.actual.y+p.breakY*curve;let x,y,r;
-  if(p.owner==='cpu'){x=lerp(480,tx,t);y=lerp(228,ty,t);r=lerp(5,14,t)}else{x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(11,5,t)}drawBall(x,y,r);
+  if(p.owner==='cpu'){x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(5,14,t)}
+  else{x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(11,5,t)}
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,.27)';ctx.lineWidth=r*.8;ctx.beginPath();ctx.moveTo(x-((tx-480)*.08),y-(p.owner==='cpu'?14:7));ctx.lineTo(x,y);ctx.stroke();ctx.restore();drawBall(x,y,r);
  }
 }
 function drawField(){
