@@ -89,7 +89,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .camera-shell{
-  position:absolute;z-index:20;inset:0;background:#050709f5;display:none;grid-template-columns:minmax(0,1fr) 250px;
+  position:absolute;z-index:20;inset:0;background:#050709f5;display:none;grid-template-columns:minmax(0,1fr) 340px;
   gap:10px;padding:12px
 }
 .camera-shell.open{display:grid}
@@ -133,9 +133,47 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 }
 .special.show{display:block}.special.warn{background:#56393a;border-color:#ad6767}
 .cam-side{border:1px solid #33404a;background:#0d1216;padding:10px;display:flex;flex-direction:column;gap:9px;overflow:auto}
-.cam-side h3{margin:2px 0 3px;font-size:13px}.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.cam-btn{min-height:52px;border:1px solid #36454f;background:#151c21;cursor:pointer;text-align:left;padding:7px}
-.cam-btn b{display:block;font-size:11px}.cam-btn small{font-size:9px;color:#80909b}.cam-btn.active{background:#31434b;border-color:#7d9aa8}
+.cam-side h3{margin:2px 0 3px;font-size:13px}
+.map{
+  position:relative;flex:0 0 auto;width:100%;height:390px;border:1px solid #2d3a42;
+  background:
+    radial-gradient(circle at 50% 13%,#1e2b3038,transparent 26%),
+    linear-gradient(180deg,#0b1013,#080c0f);
+  overflow:hidden;box-shadow:inset 0 0 35px #0008
+}
+.cam-map-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.cam-map-line{stroke:#35454e;stroke-width:1.5;vector-effect:non-scaling-stroke;transition:.18s;opacity:.72}
+.cam-map-line.route-active{stroke:#d6bc67;stroke-width:3;opacity:1;filter:drop-shadow(0 0 4px #d6bc6766)}
+.cam-btn{
+  position:absolute;z-index:3;transform:translate(-50%,-50%);width:86px;min-height:45px;
+  border:1px solid #40515b;background:#141c21eF;cursor:pointer;text-align:center;padding:5px 5px;
+  box-shadow:0 4px 10px #0008;transition:.15s transform,.15s background,.15s border-color,.15s opacity
+}
+.cam-btn:hover,.cam-btn:focus-visible{transform:translate(-50%,-50%) scale(1.07);z-index:6;outline:none}
+.cam-btn b{display:block;font-size:9px;color:#d8e1e5;line-height:1.15}
+.cam-btn strong{display:block;font-size:10px;line-height:1.15;margin-top:2px;color:#aebbc2}
+.cam-btn small{display:block;font-size:8px;color:#697a83;margin-top:2px}
+.cam-btn.neighbor{border-color:#758b96;background:#1d2a30}
+.cam-btn.active{
+  background:#58491f;border-color:#e1c56e;box-shadow:0 0 0 2px #e1c56e33,0 0 18px #d6b95655;
+  transform:translate(-50%,-50%) scale(1.08);z-index:7
+}
+.cam-btn.active b,.cam-btn.active strong{color:#fff2c3}
+.cam-office{
+  position:absolute;z-index:3;transform:translate(-50%,-50%);width:100px;min-height:42px;
+  left:50%;top:91%;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  border:2px solid #795858;background:#27191b;color:#e8d5d5;box-shadow:0 5px 14px #0009;
+  font-size:10px;font-weight:950;letter-spacing:.04em
+}
+.cam-office small{font-size:8px;color:#a98686;margin-top:2px}
+.cam-office.neighbor{border-color:#c08773;background:#3a2320;box-shadow:0 0 14px #c0877355}
+.map-help{
+  border:1px solid #394952;background:#10181c;padding:7px 8px;font-size:9px;line-height:1.4;color:#9cabb3
+}
+.map-help b{display:block;color:#e3d7ac;font-size:10px;margin-bottom:2px}
+.map-help span{display:block}
+.route-note{font-size:9px;line-height:1.45;color:#82939c;padding:2px 1px}
+.route-note b{color:#d6b768}
 .camera-close{margin-top:auto;padding:11px;border:1px solid #5d4949;background:#291c1e;font-weight:900;cursor:pointer}
 .legend{font-size:10px;color:#81909b;line-height:1.5;border-top:1px solid #27323a;padding-top:8px}
 .modal{
@@ -171,7 +209,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .desk{left:8%;right:8%;height:35%}.monitor{width:50vw;height:155px;bottom:16%}
   .controls{bottom:7px}.control-pair{width:39%}.ctrl{min-height:50px;font-size:11px}.cam-open{min-width:105px;height:56px;font-size:11px}
   .camera-shell.open{grid-template-columns:1fr;grid-template-rows:minmax(350px,1fr) auto;padding:7px}
-  .camera-view{min-height:350px}.cam-side{max-height:210px}.map{grid-template-columns:repeat(3,1fr)}.camera-close{margin-top:2px}
+  .camera-view{min-height:350px}.cam-side{max-height:340px}.map{height:275px}.cam-btn{width:76px;min-height:38px;padding:3px}.cam-btn b{font-size:8px}.cam-btn strong{font-size:9px}.cam-btn small{display:none}.cam-office{width:88px;min-height:34px}.camera-close{margin-top:2px}
   .room-scene{padding:60px 15px 70px}.entity-cam{width:190px;height:230px}.prop{font-size:31px}
   .codex-grid,.mode-grid{grid-template-columns:1fr}.card{padding:16px}
 }
@@ -1080,9 +1118,10 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
         </div>
       </div>
       <aside class="cam-side">
-        <h3>학교 CCTV</h3>
+        <h3>학교 CCTV 지도</h3>
         <div class="map" id="cameraMap"></div>
-        <div class="route-note">모든 존재는 근무 시작부터 학교 안에 있습니다. 6-1 · 과학실 ↔ 중앙복도 ↔ 방송실/좌우복도 ↔ 경비실 경로를 따라 계속 이동하므로 마지막으로 본 위치와 이동 방향을 기억하세요.</div>
+        <div class="map-help"><b>선으로 이어진 곳끼리 이동합니다.</b><span>현재 CAM을 선택하면 바로 이어진 구역이 함께 밝아집니다.</span></div>
+        <div class="route-note">아래쪽 <b>관리실</b>과 바로 이어진 CAM 05·06은 문 바로 앞 구역입니다.</div>
         <button class="anomaly-report" id="reportBtn" type="button">이상 기록</button>
         <div class="legend">학교 전력을 무작정 쓰면 봉인력이 줄어듭니다. 작은 변화는 공격의 전조일 수도, 단순한 이상현상일 수도 있습니다.</div>
         <button class="camera-close" id="camClose" type="button">모니터 내리기</button>
@@ -1169,6 +1208,18 @@ var CAMERAS=[
   {id:'prep',code:'CAM 09',name:'준비실 앞',bg:ASSET_ROOT+'broadcast_front_base_01.png',pos:'62% center'}
 ];
 
+var CAM_MAP_POS={
+  korea:[14,10],
+  europe:[50,12],
+  japan:[86,10],
+  special:[50,31],
+  stairs:[17,48],
+  prep:[50,51],
+  library:[83,48],
+  west:[22,72],
+  east:[78,72],
+  office:[50,91]
+};
 var SCHOOL_GRAPH={
   korea:['europe'],
   japan:['europe'],
@@ -1637,13 +1688,67 @@ function renderCodex(){
     if(!state.running)els.intro.classList.add('show');
   };
 }
+function mapEdgeKey(a,b){return [a,b].sort().join('--')}
+function mapNeighbors(id){return (SCHOOL_GRAPH[id]||[]).slice()}
+function updateCameraMapFocus(focusId){
+  var id=focusId||state.currentCam;
+  var neighbors=mapNeighbors(id);
+  els.cameraMap.querySelectorAll('.cam-btn').forEach(function(b){
+    b.classList.toggle('active',b.dataset.cam===state.currentCam);
+    b.classList.toggle('neighbor',neighbors.indexOf(b.dataset.cam)>=0);
+  });
+  var office=els.cameraMap.querySelector('.cam-office');
+  if(office)office.classList.toggle('neighbor',neighbors.indexOf('office')>=0);
+  els.cameraMap.querySelectorAll('.cam-map-line').forEach(function(line){
+    line.classList.toggle('route-active',line.dataset.a===id||line.dataset.b===id);
+  });
+}
 function buildCameraMap(){
   els.cameraMap.innerHTML='';
-  CAMERAS.forEach(function(c){
-    var b=document.createElement('button');b.type='button';b.className='cam-btn';b.dataset.cam=c.id;
-    b.innerHTML='<b>'+c.code+' · '+c.name+'</b><small>신호 확인</small>';
-    b.onclick=function(){setCamera(c.id)};els.cameraMap.appendChild(b);
+
+  var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','cam-map-lines');
+  svg.setAttribute('viewBox','0 0 100 100');
+  svg.setAttribute('preserveAspectRatio','none');
+
+  var seen={};
+  Object.keys(SCHOOL_GRAPH).forEach(function(a){
+    (SCHOOL_GRAPH[a]||[]).forEach(function(b){
+      var key=mapEdgeKey(a,b);
+      if(seen[key]||!CAM_MAP_POS[a]||!CAM_MAP_POS[b])return;
+      seen[key]=true;
+      var line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',CAM_MAP_POS[a][0]);line.setAttribute('y1',CAM_MAP_POS[a][1]);
+      line.setAttribute('x2',CAM_MAP_POS[b][0]);line.setAttribute('y2',CAM_MAP_POS[b][1]);
+      line.setAttribute('class','cam-map-line');
+      line.dataset.a=a;line.dataset.b=b;
+      svg.appendChild(line);
+    })
   });
+  els.cameraMap.appendChild(svg);
+
+  CAMERAS.forEach(function(c){
+    var pos=CAM_MAP_POS[c.id]||[50,50];
+    var b=document.createElement('button');
+    b.type='button';b.className='cam-btn';b.dataset.cam=c.id;
+    b.style.left=pos[0]+'%';b.style.top=pos[1]+'%';
+    b.innerHTML='<b>'+c.code+'</b><strong>'+c.name+'</strong><small>신호 확인</small>';
+    b.onclick=function(){setCamera(c.id)};
+    b.onmouseenter=function(){updateCameraMapFocus(c.id)};
+    b.onmouseleave=function(){updateCameraMapFocus(state.currentCam)};
+    b.onfocus=function(){updateCameraMapFocus(c.id)};
+    b.onblur=function(){updateCameraMapFocus(state.currentCam)};
+    els.cameraMap.appendChild(b);
+  });
+
+  var office=document.createElement('div');
+  office.className='cam-office';
+  office.innerHTML='<b>관리실</b><small>현재 위치 · 문 앞</small>';
+  office.onmouseenter=function(){updateCameraMapFocus('office')};
+  office.onmouseleave=function(){updateCameraMapFocus(state.currentCam)};
+  els.cameraMap.appendChild(office);
+
+  updateCameraMapFocus(state.currentCam);
 }
 function finishCameraAcquire(token){
   setTimeout(function(){
@@ -1914,7 +2019,7 @@ function renderCamera(){
   els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+bg+'")';
   els.roomScene.style.backgroundPosition=c.pos||'center';
   els.roomScene.dataset.room=state.currentCam;
-  document.querySelectorAll('.cam-btn').forEach(function(b){b.classList.toggle('active',b.dataset.cam===state.currentCam)});
+  updateCameraMapFocus(state.currentCam);
   renderAtmosphere();roomPropsVisible();cameraGhost();renderAnomaly();
   var frost=state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.currentCam==='japan'?Math.min(1,state.yuki.frost/100):0;
   els.frost.style.opacity=String(frost*.95);
