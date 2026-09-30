@@ -411,7 +411,8 @@ function genericRole(label='',url=''){
 }
 function repairAchromaticModel(o,url=''){
  const p=genericPalette(url);let slot=0;
- o.traverse(n=>{if(!n.isMesh)return;const src=Array.isArray(n.material)?n.material:[n.material];const next=src.map(m=>{const q=m?.clone?.()||new THREE.MeshStandardMaterial(),hsl={h:0,s:0,l:0};q.color?.getHSL(hsl);const blank=!q.map&&q.color&&hsl.s<.075;if(blank){const role=genericRole((n.name||'')+' '+(m?.name||''),url),fallback=['body','trim','metal','wood'][slot++%4],hex=p[role]??p[fallback]??0x7d827d;q.color.setHex(hex);q.roughness=role==='glass'?.3:role==='metal'?.55:.82;q.metalness=role==='metal'?.22:0;if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}}return q});n.material=Array.isArray(n.material)?next:next[0]});
+ const fallbackRoles=url.includes('/people/')?['skin','body','pants','hair','shoe']:url.includes('/nature/')?['leaf','wood','rock','grass']:url.includes('city-kit-roads')?['body','trim','metal']:url.includes('/vehicles/')?['body','glass','tire','metal','light']:url.includes('/survival/')?['body','wood','metal','cloth','trim']:['wall','roof','trim','glass','wood','metal'];
+ o.traverse(n=>{if(!n.isMesh)return;const src=Array.isArray(n.material)?n.material:[n.material];const next=src.map(m=>{const q=m?.clone?.()||new THREE.MeshStandardMaterial(),hsl={h:0,s:0,l:0};q.color?.getHSL(hsl);const blank=!q.map&&q.color&&hsl.s<.075;if(blank){const semantic=genericRole((n.name||'')+' '+(m?.name||''),url),fallback=fallbackRoles[slot++%fallbackRoles.length],role=p[semantic]!=null?semantic:fallback,hex=p[role]??0x7d827d;q.color.setHex(hex);q.roughness=role==='glass'?.3:role==='metal'?.55:.82;q.metalness=role==='metal'?.22:0;if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}}return q});n.material=Array.isArray(n.material)?next:next[0]});
  return o
 }
 function clonePrepared(base,url){const o=base.clone(true);repairAchromaticModel(o,url);return o}
