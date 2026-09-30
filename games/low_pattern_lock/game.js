@@ -114,15 +114,15 @@ function repeatedPath(cols,unitLen,times,rng){
  return null;
 }
 function mixedPath(cols,rng){
- for(let attempt=0;attempt<250;attempt++){
-   const rep=repeatedPath(cols,2,3,rng);if(!rep)continue;
-   const path=[...rep.path],used=new Set(path);let last=path[path.length-1],need=13-path.length;
+ for(let attempt=0;attempt<300;attempt++){
+   const times=2+int(rng,2),unit=2+int(rng,2),rep=repeatedPath(cols,unit,times,rng);if(!rep)continue;
+   const path=[...rep.path],used=new Set(path);let last=path[path.length-1],targetLen=10+int(rng,5),need=targetLen-path.length;
    while(need>0){
      const r=Math.floor(last/cols),c=last%cols;
      const choices=shuffle(DIRS.map(([dr,dc])=>[r+dr,c+dc]).filter(([nr,nc])=>nr>=0&&nc>=0&&nr<cols&&nc<cols).map(([nr,nc])=>nr*cols+nc).filter(i=>!used.has(i)),rng);
      if(!choices.length)break;last=choices[0];path.push(last);used.add(last);need--;
    }
-   if(path.length>=11){const choice=1+int(rng,3),sequence=Math.max(1,path.length-1-choice-3);return{path,structure:{sequence,choice,repeat:3,unit:2}}}
+   if(path.length>=9){const choice=1+int(rng,3),sequence=Math.max(1,path.length-1-choice-times);return{path,structure:{sequence,choice,repeat:times,unit}}}
  }
  return null;
 }
@@ -143,8 +143,10 @@ function generateBank(level){
  let guard=0;
  while(map.size<180&&guard++<5000){
    let item=null;
-   if(level.chapter.includes('반복'))item=repeatedPath(cols,level.structure.unit||2,level.structure.repeat||2,rng);
-   else if(level.chapter.includes('종합'))item=mixedPath(cols,rng);
+   if(level.chapter.includes('반복')){
+     const unit=2+int(rng,2),times=2+int(rng,2);
+     item=repeatedPath(cols,unit,times,rng);
+   }else if(level.chapter.includes('종합'))item=mixedPath(cols,rng);
    else{
      const min=Math.max(4,targetLen-2),max=Math.min(cols*cols,targetLen+2),len=min+int(rng,max-min+1),path=randomSimplePath(cols,len,rng);
      if(path){
@@ -187,6 +189,7 @@ function chooseBestClue(list,pool,target,level,allowStrong){
  for(const d of pool){
    if(!allowStrong&&['startExact','endExact','nodeAt','dirAt'].includes(d.kind))continue;
    const count=filterByClue(list,d,target,level).length;
+   if(!allowStrong&&count<=1)continue;
    if(count>0&&count<bestCount){best=d;bestCount=count}
  }
  return best;
@@ -199,19 +202,9 @@ function prepareDeduction(level){
    const d=chooseBestClue(state.candidates,state.available,state.target,level,false);if(!d)break;applyClue(d);
  }
  while(state.candidates.length>18&&state.revealed.length<5){const d=chooseBestClue(state.candidates,state.available,state.target,level,false);if(!d)break;applyClue(d)}
- ensureUniquenessRoute();
  renderClues();renderStructureChips();updateCandidateBadge();
 }
 function applyClue(desc){state.revealed.push(desc);state.available=state.available.filter(d=>d.id!==desc.id);state.candidates=filterByClue(state.candidates,desc,state.target,state.level)}
-function ensureUniquenessRoute(){
- if(state.candidates.length<=1)return;
- const simulated=[...state.candidates],remaining=[...state.available];let list=simulated;
- while(list.length>1&&remaining.length){
-   const d=chooseBestClue(list,remaining,state.target,state.level,true);if(!d)break;
-   list=filterByClue(list,d,state.target,state.level);remaining.splice(remaining.findIndex(x=>x.id===d.id),1);
- }
- state.available=remaining.concat(state.available.filter(d=>!remaining.some(x=>x.id===d.id)&&!state.revealed.some(x=>x.id===d.id)));
-}
 function renderStructureChips(){
  const shown=new Set(state.revealed.map(d=>d.kind)),s=state.target.structure||{},items=[];
  if(shown.has('sequenceCount'))items.push('<span class="logic-chip seq">순차 <b>'+s.sequence+'회</b></span>');
