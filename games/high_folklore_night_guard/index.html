@@ -922,6 +922,49 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .quick-rule-grid{grid-template-columns:1fr}
   .quick-rule-card.special-card{grid-column:auto}
 }
+/* v13 · science-room thermostat control */
+.thermostat-panel{
+  position:absolute;z-index:19;right:18px;bottom:18px;width:min(300px,42vw);
+  padding:10px;border:1px solid #697781;background:#10171be8;box-shadow:0 12px 28px #000b;
+  display:none;color:#dfe8eb
+}
+.thermostat-panel.show{display:block}
+.thermo-title{
+  font:900 11px/1.2 ui-monospace,monospace;letter-spacing:.08em;color:#b8c5cb;
+  padding-bottom:7px;border-bottom:1px solid #39464c;margin-bottom:8px
+}
+.thermo-body{display:grid;grid-template-columns:44px 1fr 74px;gap:9px;align-items:center}
+.thermo-visual{position:relative;width:34px;height:100px;margin:auto}
+.thermo-tube{
+  position:absolute;left:12px;top:2px;width:10px;height:77px;border:2px solid #c6d0d4;
+  border-radius:8px 8px 3px 3px;background:#152027;overflow:hidden
+}
+.thermo-fill{
+  position:absolute;left:0;right:0;bottom:0;height:56%;background:linear-gradient(#efc45b,#d85b4e);
+  transition:height .25s
+}
+.thermo-bulb{
+  position:absolute;left:6px;bottom:1px;width:22px;height:22px;border:2px solid #c6d0d4;
+  border-radius:50%;background:#d85b4e;box-shadow:inset 0 0 0 4px #8c302c
+}
+.thermo-readout span{display:block;font-size:10px;color:#8ea0a8}
+.thermo-readout strong{display:block;font-size:25px;line-height:1.1;color:#f2ead0;margin:2px 0 4px}
+.thermo-readout small{display:block;color:#98a8ae}.thermo-readout small b{color:#d7b85e}
+.thermo-controls{display:grid;gap:5px}
+.thermo-controls button{
+  min-height:42px;border:1px solid #4d6069;background:#1a262c;color:#eef4f6;
+  font-size:18px;font-weight:950;cursor:pointer
+}
+.thermo-controls button:hover{background:#26373f}
+.thermo-controls button small{display:block;font-size:9px;color:#aebbc1}
+.thermo-hint{margin-top:8px;font-size:10px;line-height:1.4;color:#9eabb1;border-top:1px solid #36434a;padding-top:6px}
+.thermostat-panel.cold{border-color:#86b9cc;box-shadow:0 12px 28px #000b,0 0 18px #92d8ef22}
+.thermostat-panel.danger{border-color:#b9e3f0;box-shadow:0 12px 28px #000b,0 0 26px #bceeff44}
+@media(max-width:780px){
+  .thermostat-panel{right:8px;bottom:8px;width:min(270px,72vw)}
+  .thermo-body{grid-template-columns:38px 1fr 68px}
+  .thermo-visual{height:88px}.thermo-tube{height:67px}
+}
 </style>
 </head>
 <body>
@@ -990,7 +1033,25 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
           <div class="stare-vignette" id="stareVignette"></div>
           <div class="anomaly-layer" id="anomalyLayer" aria-hidden="true"></div>
         </div>
-        <button class="special" id="specialBtn" type="button"></button>
+        <div class="thermostat-panel" id="thermostatPanel" aria-hidden="true">
+          <div class="thermo-title">과학실 온도 조절</div>
+          <div class="thermo-body">
+            <div class="thermo-visual" aria-hidden="true">
+              <div class="thermo-tube"><div class="thermo-fill" id="thermoFill"></div></div>
+              <div class="thermo-bulb"></div>
+            </div>
+            <div class="thermo-readout">
+              <span>현재 온도</span>
+              <strong id="roomTemp">18°C</strong>
+              <small>설정 <b id="setTemp">18°C</b></small>
+            </div>
+            <div class="thermo-controls">
+              <button id="tempUp" type="button" aria-label="설정 온도 올리기">▲<small>올리기</small></button>
+              <button id="tempDown" type="button" aria-label="설정 온도 내리기">▼<small>내리기</small></button>
+            </div>
+          </div>
+          <div class="thermo-hint" id="thermoHint">성에가 심해진 뒤 온도를 올리면 효과가 큽니다.</div>
+        </div>
       </div>
       <aside class="cam-side">
         <h3>학교 CCTV</h3>
@@ -1279,7 +1340,7 @@ var els={
   camOpen:$('camOpen'),cameraShell:$('cameraShell'),cameraView:$('cameraView'),camClose:$('camClose'),cameraMap:$('cameraMap'),
   camCode:$('camCode'),camName:$('camName'),roomScene:$('roomScene'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
   ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),
-  special:$('specialBtn'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
+  thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
   fakeScare:$('fakeScare'),fakeScareText:$('fakeScareText'),fakeScareEye:$('fakeScareEye'),fakeScareShadow:$('fakeScareShadow'),
   scare:$('scare'),scareArt:$('scareArt'),scareName:$('scareName'),
@@ -1403,7 +1464,7 @@ function renderCodex(){
           '<div class="quick-rule-card"><div class="who">얼굴 없는 학생 · 달걀귀신</div><div class="do">다른 CAM 보기</div><div class="hint">오래 보면 위험함</div></div>'+
           '<div class="quick-rule-card safe"><div class="who">검은 갓 · 저승사자</div><div class="do">문 열어두기</div><div class="hint">막지 말고 지나가게 하기</div></div>'+
           '<div class="quick-rule-card"><div class="who">눈 · 긁는 소리 · 늑대인간</div><div class="do">그쪽 문 닫기</div><div class="hint">소리가 난 방향을 막기</div></div>'+
-          '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">많이 얼면 난방</div><div class="hint">너무 일찍 켜면 효과가 약함</div></div>'+
+          '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">많이 얼면 온도 올리기</div><div class="hint">너무 일찍 켜면 효과가 약함</div></div>'+
           '<div class="quick-rule-card"><div class="who">6-1 물건이 달라짐 · 도깨비</div><div class="do">바뀐 물건 누르기</div><div class="hint">책상·사진·칠판·문을 비교</div></div>'+
           '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
         '</div>'+
@@ -1427,14 +1488,14 @@ function renderCodex(){
       tab:'과학실',title:'제3쪽 · 과학실',code:'구역 CAM 02',
       body:
         '<div class="rulebook-rule"><span class="no">1.</span>과학실 창문에 성에가 끼는 현상은 계절과 관계없이 정상적이지 않습니다.</div>'+
-        '<div class="rulebook-rule"><span class="no">2.</span>성에가 조금 생겼다고 즉시 난방기를 작동하지 마십시오. <strong>냉기가 충분히 퍼진 뒤 작동해야 합니다.</strong></div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>성에가 조금 생겼다고 즉시 온도를 바로 높이지 마십시오. <strong>냉기가 충분히 퍼진 뒤 작동해야 합니다.</strong></div>'+
         '<div class="rulebook-rule"><span class="no">3.</span>흰 형체가 보여도 가까이 확인하러 가지 마십시오.</div>'+
         '<div class="rulebook-evidence"><figure style="--r:.8deg"><img src="'+ASSET_ROOT+'science_base_01.png" alt=""><figcaption>정상 과학실</figcaption></figure><figure style="--r:-1.1deg"><img src="'+ASSET_ROOT+'science_window_frost_02.png" alt=""><figcaption>성에 발생</figcaption></figure><figure style="--r:.5deg"><img src="'+ASSET_ROOT+'science_variant_frozen_01.png" alt=""><figcaption>결빙 심화</figcaption></figure></div>'+
-        note('yuki',1,'“너무 일찍 난방기를 켜면 효과가 거의 없다.”','pencil')+
+        note('yuki',1,'“너무 일찍 온도를 너무 일찍 올리면 효과가 거의 없다.”','pencil')+
         note('yuki',2,'“창문 → 온도계 → 방 전체 순서로 얼어붙는다.”','')+
         note('yuki',3,'“유키온나라고 적힌 오래된 기록을 찾았다. 왜 이 학교에 있는지는 모른다.”','red')+
         stamp('yuki')+
-        '<div class="rulebook-foot">난방 장치 사용 시 봉인력 추가 소모</div>'
+        '<div class="rulebook-foot">설정 온도를 높이면 봉인력이 더 소모됩니다</div>'
     },
     {
       tab:'복도 대응',title:'제4쪽 · 복도에서 사람을 보았을 때',code:'CAM 03–06',
@@ -1777,10 +1838,20 @@ function renderCamera(){
   els.frost.style.opacity=String(frost*.95);
   var stare=state.egg&&state.egg.active&&state.currentCam===state.egg.cam?Math.min(.85,state.egg.stare/100):0;
   els.stare.style.opacity=String(stare);
-  els.special.className='special';els.special.textContent='';
-  if(state.currentCam==='japan'&&state.yuki&&state.yuki.active&&state.yuki.location==='japan'){
-    els.special.classList.add('show');if(state.yuki.frost>72)els.special.classList.add('warn');
-    els.special.textContent='난방 작동 · 봉인력 7';
+  els.thermostat.className='thermostat-panel';
+  if(state.currentCam==='japan'){
+    els.thermostat.classList.add('show');
+    var frostLevel=state.yuki&&state.yuki.active&&state.yuki.location==='japan'?state.yuki.frost:0;
+    var currentTemp=Math.round(18-frostLevel*.42);
+    var target=state.thermostatTarget==null?18:state.thermostatTarget;
+    els.roomTemp.textContent=currentTemp+'°C';
+    els.setTemp.textContent=target+'°C';
+    els.thermoFill.style.height=Math.max(6,Math.min(94,((currentTemp+25)/53)*100))+'%';
+    if(currentTemp<=0)els.thermostat.classList.add('cold');
+    if(currentTemp<=-12)els.thermostat.classList.add('danger');
+    if(frostLevel>=72)els.thermoHint.textContent='지금 온도를 올리면 냉기를 크게 밀어낼 수 있습니다.';
+    else if(frostLevel>=45)els.thermoHint.textContent='냉기가 충분히 퍼졌습니다. 온도를 올려도 좋습니다.';
+    else els.thermoHint.textContent='아직 많이 얼지 않았습니다. 높은 설정은 봉인력만 더 씁니다.';
   }
 }
 function updateOffice(){
@@ -1830,16 +1901,29 @@ function resolveDokkaebi(){
   state.dokkaebi.trickActive=false;state.dokkaebi.trickTimer=0;state.dokkaebi.moveClock=state.dokkaebi.moveEvery;
   state.cleared++;state.score+=120;directorShift(-15);masterGhost('dokkaebi');sound('good');playTimedClip('cackle',.075,1.18,520);renderCamera()
 }
-function useHeater(){
-  if(!(state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.currentCam==='japan'))return;
-  if(state.power<7){toast('봉인력이 부족합니다.');return}
-  var cold=state.yuki.frost;spend(7);
-  var effect=cold>=72?72:(cold>=45?48:24);
-  state.yuki.frost=Math.max(0,state.yuki.frost-effect);discover('yuki');observeGhost('yuki');state.score+=cold>=45?50:20;sound('good');playTimedClip('frostReal',.12,1.18,900);
-  if(state.yuki.frost<=4){
-    state.yuki.frost=10;state.yuki.location='europe';state.yuki.moveClock=0;state.yuki.rest=5+Math.random()*3;
-    state.cleared++;state.score+=80;directorShift(-16);masterGhost('yuki');toast('냉기가 중앙 복도로 물러났습니다.')
-  }else if(cold<45)toast('아직 온도가 충분히 내려가지 않았습니다. 난방 효율이 낮았습니다.');
+function adjustThermostat(delta){
+  if(!state.running||state.gameOver||state.blackout||state.currentCam!=='japan')return;
+  var old=state.thermostatTarget==null?18:state.thermostatTarget;
+  var next=Math.max(12,Math.min(28,old+delta));
+  if(next===old)return;
+  state.thermostatTarget=next;
+  sound('click');
+  if(delta>0&&state.yuki&&state.yuki.active&&state.yuki.location==='japan'){
+    var cold=state.yuki.frost;
+    var cost=cold>=72?2.2:(cold>=45?2.7:3.4);
+    if(state.power<cost){state.thermostatTarget=old;toast('봉인력이 부족합니다.');renderCamera();return}
+    spend(cost);
+    var effect=cold>=72?22:(cold>=45?14:5);
+    state.yuki.frost=Math.max(0,state.yuki.frost-effect);
+    discover('yuki');observeGhost('yuki');
+    state.score+=cold>=45?16:4;
+    playTimedClip('frostReal',.09,1.12,700);
+    if(state.yuki.frost<=5&&cold>=45){
+      state.yuki.frost=10;state.yuki.location='europe';state.yuki.moveClock=0;state.yuki.rest=6+Math.random()*4;
+      state.cleared++;state.score+=80;directorShift(-16);masterGhost('yuki');
+      toast('온도가 올라가며 냉기가 중앙 복도로 물러났습니다.');
+    }else if(cold<45)toast('아직 충분히 얼지 않아 온도를 올려도 효과가 작습니다.');
+  }
   renderCamera()
 }
 function currentConfig(){return NIGHT_CONFIGS[state.mode]||NIGHT_CONFIGS.full}
@@ -1967,7 +2051,11 @@ function updateDokkaebi(dt){
 }
 function updateYuki(dt){
   var y=state.yuki;if(!y||!y.active)return;
-  if(y.location==='japan'){y.frost+=dt*(state.mode==='practice'?2.4:3.0);if(y.frost>=100){fail('yuki');return}}
+  if(y.location==='japan'){
+    var heatSlow=Math.max(0,(state.thermostatTarget-18)*.055);
+    y.frost+=dt*Math.max(1.6,(state.mode==='practice'?2.4:3.0)-heatSlow);
+    if(y.frost>=100){fail('yuki');return}
+  }
   else y.frost=Math.max(8,y.frost-dt*1.25);
   if(y.rest>0){y.rest-=dt;return}
   y.moveClock+=dt;
@@ -2072,7 +2160,11 @@ function currentUsage(){
 }
 function drainPower(dt){
   if(state.blackout)return;
-  var rates=[.018,.050,.110,.205,.345,.560];spend((rates[currentUsage()]||.560)*dt)
+  var rates=[.018,.050,.110,.205,.345,.560],extra=0;
+  if(state.thermostatTarget>18&&state.yuki&&state.yuki.active&&state.yuki.location==='japan'){
+    extra=(state.thermostatTarget-18)*.004;
+  }
+  spend(((rates[currentUsage()]||.560)+extra)*dt)
 }
 function updateBlackout(dt){
   if(!state.blackout)return;
@@ -2113,6 +2205,7 @@ function reset(mode){
   state.anomaly=null;state.score=0;state.cleared=0;state.anomaliesFound=0;state.falseReports=0;
   state.director={tension:0,calm:0,lastEvent:'none'};state.blackout=false;state.blackoutElapsed=0;state.blackoutKillAt=0;state.cameraSwitchUntil=0;state.officeLook='center';state.nextDreadCue=12+Math.random()*8;state.signalToken=0;state.nextFakeScare=30+Math.random()*24;state.fakeScareActive=false;state.fakeScareToken=0;
   state.nextAudioCue=16+Math.random()*12;state.lastAudioHour=-1;state.yukiCueLevel=0;state.eggCueLevel=0;
+  state.thermostatTarget=18;
   initializePersistentGhosts();state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');
   els.scare.className='scare';els.scare.setAttribute('aria-hidden','true');
@@ -2290,7 +2383,9 @@ document.querySelectorAll('.mode').forEach(function(b){b.onclick=function(){star
 els.camOpen.onclick=openCamera;els.camClose.onclick=closeCamera;
 els.leftDoor.onclick=function(){toggleDoor('left')};els.rightDoor.onclick=function(){toggleDoor('right')};
 els.leftLight.onclick=function(){toggleLight('left')};els.rightLight.onclick=function(){toggleLight('right')};
-els.special.onclick=useHeater;els.reportBtn.onclick=reportAnomaly;
+els.tempUp.onclick=function(){adjustThermostat(2)};
+els.tempDown.onclick=function(){adjustThermostat(-2)};
+els.reportBtn.onclick=reportAnomaly;
 document.querySelectorAll('.prop').forEach(function(p){p.onclick=function(){
   if(state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive&&Number(p.dataset.prop)===state.dokkaebi.prop)resolveDokkaebi();
 }});
