@@ -89,3 +89,13 @@
 .rights-alert{flex:1 1 100%;padding:9px 10px;border:1px solid #d3a77c;border-radius:9px;color:#ffe6c1;background:#564944;font-size:11px;line-height:1.55}
 .child-label{font-weight:700;display:inline-block;background:#416a65;color:#ddf3d7;border-radius:6px;padding:2px 5px;font-size:10px;vertical-align:middle}
 @media(max-width:520px){.crisis-head{align-items:flex-start;flex-direction:column;gap:3px}.crisis-meter{min-width:90px;max-width:none;flex-basis:calc(50% - 7px)}}
+
+/* v7: 다중 재난 및 실제 집단행동 상태를 표시한다. */
+.group-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+.group-card{display:flex;flex-direction:column;gap:5px;padding:9px 7px;background:#234c52;border:1px solid #538078;border-radius:10px;min-width:0}
+.group-card strong{font-size:11px;color:#ecf3dc}
+.group-card span{font-size:10px;color:#bbd8cf;font-variant-numeric:tabular-nums}
+.group-card small{font-size:10px;color:#dce8d6;line-height:1.45}
+.group-card.urgent{border-color:#dfae7b;background:#5d4941}
+.group-card.urgent strong,.group-card.urgent small{color:#ffedd4}
+@media(max-width:410px){.group-list{grid-template-columns:1fr}.group-card{flex-direction:row;align-items:center;flex-wrap:wrap;gap:5px 9px}}
