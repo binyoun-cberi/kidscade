@@ -921,6 +921,7 @@ let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
 let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
+let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
 let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
 let critters=[],critterClock=0;
 const FURNACE_RECIPES=[
@@ -1154,7 +1155,7 @@ function initFree(){
   modeTitle('아키텍트 월드','살아있는 복셀 세계 · 탐험 · 건축 · 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');$('actionXray').classList.remove('hidden');
   cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
-  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;weather='clear';weatherTimer=18;critters=[];
+  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();setupWeather();spawnCritters();updateFreeMission();
   const spawnZ=6,ground=getHighestSolidY(0,spawnZ,8);camera.position.set(0,ground+1+1.65,spawnZ);
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
@@ -1282,6 +1283,11 @@ function pickTargetBlock(){
 }
 function setupShapeWorkbench(){
   syncShapeWorkbench();
+  $('freeSelectShape').onclick=selectFreeGeometry;
+  $('freeEdgeMode').onclick=()=>{freeElementMode='edge';updateFreeGeometryEditor()};
+  $('freeVertexMode').onclick=()=>{freeElementMode='vertex';updateFreeGeometryEditor()};
+  $('freeElementColor').oninput=e=>{freeElementColor=e.target.value};
+  updateFreeGeometryEditor();
   $('shapeToHotbar').onclick=()=>{
     const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value].map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,4));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
@@ -1294,6 +1300,42 @@ function syncShapeWorkbench(){
   $('shapeW').value=currentCuboidSpec.dims[0];$('shapeH').value=currentCuboidSpec.dims[1];$('shapeD').value=currentCuboidSpec.dims[2];
   currentCuboidSpec.faceColors.forEach((c,i)=>{if($('faceColor'+i))$('faceColor'+i).value=c});
   $('facePaintColor').value=facePaintColor;
+}
+function selectFreeGeometry(){
+  const hit=freeCenterHit(9);
+  if(!hit?.object?.userData?.shapeKind||hit.object.userData.shapeKind!=='cuboid'){
+    toast('정육면체나 직육면체를 십자선으로 가리킨 뒤 선택해 주세요.');return;
+  }
+  const u=hit.object.userData;freeSelectedShapeKey=worldKey(u.gx,u.gy,u.gz);
+  updateFreeGeometryEditor();toast('도형을 선택했어요. 모서리나 꼭짓점에 색을 지정해 보세요.');
+}
+function updateFreeGeometryEditor(){
+  $('freeEdgeMode').classList.toggle('active',freeElementMode==='edge');
+  $('freeVertexMode').classList.toggle('active',freeElementMode==='vertex');
+  $('freeElementColor').value=freeElementColor;
+  const data=freeSelectedShapeKey?worldData.get(freeSelectedShapeKey):null;
+  $('freeSelectedShape').textContent=data?'선택: '+(data.type==='cuboid'?(data.dims||[1,1,1]).join('×'):'1×1×1'):
+    '선택한 도형 없음';
+  const root=$('freeElementChoices');root.innerHTML='';
+  const names=freeElementMode==='edge'?CUBOID_TOPOLOGY.edges.map(e=>e.join('')):
+    CUBOID_TOPOLOGY.vertices.map(v=>v.id);
+  const colors=data?.[freeElementMode==='edge'?'edgeColors':'vertexColors']||[];
+  names.forEach((name,i)=>{
+    const b=document.createElement('button');b.type='button';
+    const chip=document.createElement('i');chip.style.background=colors[i]||'#cbd5e1';
+    b.appendChild(chip);b.appendChild(document.createTextNode(name));
+    b.onclick=()=>applyFreeGeometryColor(i);root.appendChild(b);
+  });
+}
+function applyFreeGeometryColor(index){
+  if(!freeSelectedShapeKey||!worldData.has(freeSelectedShapeKey)){
+    toast('먼저 바라보는 도형을 선택해 주세요.');return;
+  }
+  const p=parseWorldKey(freeSelectedShapeKey),data=worldData.get(freeSelectedShapeKey);
+  const field=freeElementMode==='edge'?'edgeColors':'vertexColors',total=freeElementMode==='edge'?12:8;
+  const colors=Array.isArray(data[field])?data[field].slice():Array(total).fill(null);
+  colors[index]=freeElementColor;setWorldBlock(...p,{...data,[field]:colors},true);
+  clearMathOverlay();updateFreeGeometryEditor();saveFreeWorld();sfx('place');
 }
 function paintLookedFace(){
   const hit=freeCenterHit();if(!hit||hit.face?.materialIndex==null||hit.object.userData.shapeKind!=='cuboid'){toast('정육면체나 직육면체의 한 면을 바라보세요.');return}
@@ -1316,15 +1358,21 @@ function buildTopologyOverlay(info){
   const g=new THREE.Group(),[w,h,d]=info.dims,cx=info.x+(w-1)/2,cy=info.y+h/2,cz=info.z+(d-1)/2;
   const vm=new Map();for(const v of CUBOID_TOPOLOGY.vertices)vm.set(v.id,new THREE.Vector3(cx+v.s[0]*w/2,cy+v.s[1]*h/2,cz+v.s[2]*d/2));
   if(mathLensMode===1){
-    const pos=[];CUBOID_TOPOLOGY.edges.forEach(([a,b])=>{const p=vm.get(a),q=vm.get(b);pos.push(p.x,p.y,p.z,q.x,q.y,q.z)});
-    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    const lines=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xffe45c,depthTest:false,transparent:true,opacity:.98}));lines.renderOrder=20;g.add(lines);
-    $('mathLensBadge').textContent='수학 렌즈 · 모서리 12개';
+    CUBOID_TOPOLOGY.edges.forEach(([a,b],i)=>{
+      const p=vm.get(a),q=vm.get(b),geo=new THREE.BufferGeometry().setFromPoints([p,q]);
+      const color=info.data.edgeColors?.[i]||'#ffe45c';
+      const line=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color,depthTest:false}));
+      line.renderOrder=20;g.add(line);
+    });
+    $('mathLensBadge').textContent='수학 렌즈 · 모서리 12개 (저장된 강조 색 포함)';
   }else if(mathLensMode===2){
-    const pos=[];CUBOID_TOPOLOGY.vertices.forEach(v=>{const p=vm.get(v.id);pos.push(p.x,p.y,p.z)});
-    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0xff5f76,size:.2,sizeAttenuation:true,depthTest:false}));pts.renderOrder=21;g.add(pts);
-    $('mathLensBadge').textContent='수학 렌즈 · 꼭짓점 A~H (8개)';
+    CUBOID_TOPOLOGY.vertices.forEach((v,i)=>{
+      const color=info.data.vertexColors?.[i]||'#ff5f76';
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),
+        new THREE.MeshBasicMaterial({color,depthTest:false}));
+      dot.position.copy(vm.get(v.id));dot.renderOrder=21;g.add(dot);
+    });
+    $('mathLensBadge').textContent='수학 렌즈 · 꼭짓점 A~H (저장된 강조 색 포함)';
   }else if(mathLensMode===3){
     const fi=info.faceIndex,opp=fi%2===0?fi+1:fi-1,geo=new THREE.BoxGeometry(w+.025,h+.025,d+.025);
     const mats=Array.from({length:6},(_,i)=>new THREE.MeshBasicMaterial({color:i===fi?0x59e391:(i===opp?0x6ea8ff:0xffffff),transparent:true,opacity:i===fi?.34:(i===opp?.22:0),depthWrite:false,side:THREE.DoubleSide}));
