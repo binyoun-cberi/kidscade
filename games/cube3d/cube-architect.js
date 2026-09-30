@@ -162,22 +162,54 @@ function updateChallengeDifficultyUI(){
 }
 function setChallengeDifficulty(level){
   if(level===challengeDifficulty)return;
-  challengeDifficulty=level;missionIndex=0;clearChallenge();updateChallengeDifficultyUI();drawBlueprint();
+  challengeDifficulty=level;missionIndex=0;
+  // The hard course has its own 32×32 building area and 28-cell height.
+  enterMode('challenge');
 }
 function challengeKey(x,y,z){return x+','+y+','+z}
-function addChallengeBlock(x,y,z,quiet){
-  if(x<0||x>=CHALLENGE_SIZE||z<0||z>=CHALLENGE_SIZE||y<0||y>CHALLENGE_MAX_Y)return false;
-  const key=challengeKey(x,y,z);if(challengeBlocks.has(key))return false;
-  const mesh=new THREE.Mesh(blockGeo,challengeMat.clone());mesh.position.set(x-CHALLENGE_HALF+.5,y+.5,z-CHALLENGE_HALF+.5);mesh.castShadow=true;mesh.receiveShadow=true;
-  mesh.userData={cx:x,cy:y,cz:z,challenge:true};const line=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:0x8b633c,transparent:true,opacity:.6}));mesh.add(line);
-  scene.add(mesh);challengeBlocks.set(key,mesh);challengeMeshes.push(mesh);if(!quiet)sfx('place');return true;
+function challengeDims(){
+  if(challengeShapeMode==='cube')return [1,1,1];
+  return [$('challengeDimX').value,$('challengeDimY').value,$('challengeDimZ').value]
+    .map(n=>THREE.MathUtils.clamp(Math.round(Number(n)||1),1,8));
+}
+function addChallengeCuboid(x,y,z,dims=[1,1,1],quiet=false){
+  const [dx,dy,dz]=dims;
+  for(let a=x;a<x+dx;a++)for(let b=y;b<y+dy;b++)for(let c=z;c<z+dz;c++){
+    if(a<0||a>=CHALLENGE_SIZE||c<0||c>=CHALLENGE_SIZE||b<0||b>CHALLENGE_MAX_Y)return false;
+    if(challengeBlocks.has(challengeKey(a,b,c)))return false;
+  }
+  const geo=new THREE.BoxGeometry(dx-.04,dy-.04,dz-.04);
+  const faceColors=Array(6).fill('#f2d19a');
+  const mesh=new THREE.Mesh(geo,faceColors.map(color=>new THREE.MeshStandardMaterial({color,roughness:.77})));
+  mesh.position.set(x-CHALLENGE_HALF+dx/2,y+dy/2,z-CHALLENGE_HALF+dz/2);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  const members=[];
+  for(let a=x;a<x+dx;a++)for(let b=y;b<y+dy;b++)for(let c=z;c<z+dz;c++){
+    const k=challengeKey(a,b,c);members.push(k);challengeBlocks.set(k,mesh);
+  }
+  mesh.userData={cx:x,cy:y,cz:z,challenge:true,dims:dims.slice(),members,
+    faceColors,edgeColors:Array(12).fill(null),vertexColors:Array(8).fill(null)};
+  const border=new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:0x8b633c,transparent:true,opacity:.57}));
+  mesh.add(border);
+  scene.add(mesh);challengeMeshes.push(mesh);
+  if(!quiet)sfx('place');return true;
+}
+function addChallengeBlock(x,y,z,quiet){return addChallengeCuboid(x,y,z,[1,1,1],quiet)}
+function clearChallengeOverlay(){
+  if(challengeOverlay){scene.remove(challengeOverlay);challengeOverlay=null}
 }
 function removeChallengeBlock(mesh){
-  const d=mesh.userData;
-  scene.remove(mesh);challengeBlocks.delete(challengeKey(d.cx,d.cy,d.cz));challengeMeshes=challengeMeshes.filter(x=>x!==mesh);sfx('break');
+  if(!mesh?.userData?.challenge)return;
+  for(const key of mesh.userData.members)challengeBlocks.delete(key);
+  scene.remove(mesh);challengeMeshes=challengeMeshes.filter(item=>item!==mesh);
+  if(challengeSelected===mesh){challengeSelected=null;clearChallengeOverlay();updateChallengeEditor()}
+  sfx('break');
 }
 function clearChallenge(){
-  challengeMeshes.forEach(m=>scene.remove(m));challengeMeshes=[];challengeBlocks.clear();clearTargetGhosts();$('resultCard').classList.add('hidden');updateChallengeStats();
+  challengeMeshes.forEach(m=>scene.remove(m));challengeMeshes=[];challengeBlocks.clear();
+  challengeSelected=null;clearChallengeOverlay();clearTargetGhosts();
+  $('resultCard').classList.add('hidden');updateChallengeEditor();updateChallengeStats();
 }
 function updateChallengeStats(){
   const target=currentChallengeMission().blocks.length;$('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
@@ -224,17 +256,30 @@ function drawBlueprint(){
 }
 function initChallenge(){
   setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
+  CHALLENGE_SIZE=challengeDifficulty==='hard'?32:18;
+  CHALLENGE_HALF=CHALLENGE_SIZE/2;CHALLENGE_MAX_Y=challengeDifficulty==='hard'?27:13;
   cleanScene(0xeaf6ff);
-  camera.position.set(5.5,4.5,7.5);camera.rotation.order='YXZ';challengeYaw=.55;challengePitch=-.28;challengeKeys={};updateChallengeCamera();
+  camera.position.set(1.5,3.1,6);camera.rotation.order='YXZ';challengeYaw=.25;challengePitch=-.50;challengeKeys={};updateChallengeCamera();
   const planeMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.DoubleSide});
   challengePlane=new THREE.Mesh(new THREE.PlaneGeometry(CHALLENGE_SIZE,CHALLENGE_SIZE),planeMat);challengePlane.rotation.x=-Math.PI/2;challengePlane.position.y=.001;challengePlane.userData.base=true;scene.add(challengePlane);
   const grid=new THREE.GridHelper(CHALLENGE_SIZE,CHALLENGE_SIZE,0x5269c7,0xa9c2da);grid.position.y=.01;scene.add(grid);
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
-  challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];updateChallengeDifficultyUI();drawBlueprint();
+  challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];challengeSelected=null;challengeShapeMode='cube';challengeTool='build';challengeSelectedElement=0;
+  $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
+  updateChallengeDifficultyUI();drawBlueprint();
   $('challengeEasy').onclick=()=>setChallengeDifficulty('easy');$('challengeHard').onclick=()=>setChallengeDifficulty('hard');
   $('actionCheck').onclick=checkChallenge;
   $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
-  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(currentChallengeMission().tip);
+  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
+  $('blueprintView').onchange=e=>{blueprintAngle=e.target.value;drawBlueprint()};
+  $('blueprintZoom').onclick=()=>toggleBlueprintModal(true);
+  $('blueprintClose').onclick=()=>toggleBlueprintModal(false);
+  $('challengeCube').onclick=()=>{challengeShapeMode='cube';updateChallengeEditor()};
+  $('challengeCuboid').onclick=()=>{challengeShapeMode='cuboid';updateChallengeEditor()};
+  [['challengeToolBuild','build'],['challengeToolFace','face'],['challengeToolEdge','edge'],['challengeToolVertex','vertex']]
+    .forEach(([id,name])=>$(id).onclick=()=>setChallengeTool(name));
+  $('challengeSelect').onclick=selectLookedChallengePiece;
+  $('challengeColor').oninput=e=>{challengeTint=e.target.value};
   configureMobileMode('challenge');$('challengeLockNotice').onclick=requestGamePointerLock;
   showTutorial('challenge');
 }
@@ -245,18 +290,30 @@ function challengeCenterHit(max=8){
 }
 function challengePlaceTarget(hit){
   if(!hit)return null;
-  if(hit.object===challengePlane){
+  if(hit.object===challengePlane)
     return {x:Math.floor(hit.point.x+CHALLENGE_HALF),y:0,z:Math.floor(hit.point.z+CHALLENGE_HALF)};
-  }
-  const d=hit.object.userData,n=hit.face&&hit.face.normal;if(!n)return null;
-  return {x:d.cx+Math.round(n.x),y:d.cy+Math.round(n.y),z:d.cz+Math.round(n.z)};
+  const n=hit.face?.normal;
+  if(!n)return null;
+  const p=hit.point.clone().addScaledVector(n,.53);
+  return {x:Math.floor(p.x+CHALLENGE_HALF),y:Math.floor(p.y),z:Math.floor(p.z+CHALLENGE_HALF)};
 }
 function updateChallengeGhost(){
   if(!challengeGhost)return;
-  const hit=challengeCenterHit(),p=challengePlaceTarget(hit);
-  if(p&&p.x>=0&&p.x<CHALLENGE_SIZE&&p.z>=0&&p.z<CHALLENGE_SIZE&&p.y>=0&&p.y<=CHALLENGE_MAX_Y&&!challengeBlocks.has(challengeKey(p.x,p.y,p.z))){
-    challengeGhost.position.set(p.x-CHALLENGE_HALF+.5,p.y+.5,p.z-CHALLENGE_HALF+.5);challengeGhost.visible=true;
-  }else challengeGhost.visible=false;
+  const hit=challengeCenterHit(),p=challengePlaceTarget(hit),dims=challengeDims();
+  const valid=p&&p.x>=0&&p.x+dims[0]<=CHALLENGE_SIZE&&p.z>=0&&p.z+dims[2]<=CHALLENGE_SIZE&&
+    p.y>=0&&p.y+dims[1]-1<=CHALLENGE_MAX_Y;
+  let available=!!valid;
+  if(available)for(let a=p.x;a<p.x+dims[0];a++)for(let b=p.y;b<p.y+dims[1];b++)
+    for(let c=p.z;c<p.z+dims[2];c++)if(challengeBlocks.has(challengeKey(a,b,c)))available=false;
+  challengeGhost.visible=available&&challengeTool==='build';
+  if(available){
+    const prior=challengeGhost.userData.dims||[];
+    if(dims.some((d,i)=>d!==prior[i])){
+      challengeGhost.geometry.dispose();challengeGhost.geometry=new THREE.BoxGeometry(dims[0]-.04,dims[1]-.04,dims[2]-.04);
+      challengeGhost.userData.dims=dims.slice();
+    }
+    challengeGhost.position.set(p.x-CHALLENGE_HALF+dims[0]/2,p.y+dims[1]/2,p.z-CHALLENGE_HALF+dims[2]/2);
+  }
 }
 function clearTargetGhosts(){targetGhosts.forEach(m=>scene.remove(m));targetGhosts=[]}
 function normalizedShape(points){
