@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=15/);
+  assert.match(html,/game\.js\?v=16/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v15',()=>{
+test('game is registered in catalog metadata v16',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=15');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=16');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,7 +109,7 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=15/);
+  assert.match(html,/game\.js\?v=16/);
   assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=12$/);
 });
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v15 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v16 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=15/);
+  assert.match(html,/game\.js\?v=16/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -170,4 +170,18 @@ test('third-person camera and deterministic city lots are enforced',()=>{
   assert.match(js,/GARAGE_POS/);
   assert.match(js,/m\.visible=false/);
   assert.match(js,/updateWorldLabels/);
+});
+
+
+test('game feel layer provides audio, impact feedback and living residents',()=>{
+  for(const token of ['ensureAudio','noiseHit','sfx','spawnImpact','updateFx','updateAudio','cameraKick','residentActivity','residentTarget','updateBuildingFx'])assert.match(js,new RegExp(token));
+  assert.match(js,/sfx\('step'\)/);
+  assert.match(js,/sfx\(t==='tree'\?'chop':t==='rock'\?'mine':'pickup'\)/);
+  assert.match(js,/PointLight\(0xff9b4a,2\.4,11,2\)/);
+  assert.match(js,/powerIndicator/);
+  assert.match(js,/function updateNpc\(dt\)/);
+  assert.match(js,/speed\*dt/);
+  assert.match(js,/fovTarget=player\.speed>7\?59:55/);
+  assert.match(css,/\.interact\.pop/);
+  assert.match(css,/\.resident-row span small/);
 });
