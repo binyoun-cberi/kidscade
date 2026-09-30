@@ -1274,28 +1274,137 @@ function initFree(){
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
 }
+function bagCount(type){return Math.max(0,Number(survivalBag[type])||0)}
+function hasWorkbench(){
+  if(bagCount('workbench'))return true;
+  const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
+  for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++)
+    for(let dy=-2;dy<=2;dy++)
+      if(getBlock(x+dx,Math.floor(freePhysicsY-1.62)+dy,z+dz)?.type==='workbench')return true;
+  return false;
+}
+function advanceSurvival(){
+  if(gameFreeMode!=='survival')return;
+  let progressed=false;
+  while(survivalStage<worldRules.GOALS.length-1&&
+    worldRules.GOALS[survivalStage].test(survivalBag)){
+    survivalStage++;progressed=true;
+  }
+  if(progressed){
+    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title);
+    sfx('good');
+  }
+  $('actionXray').classList.toggle('hidden',survivalStage<3);
+  updateFreeMission();
+}
+function putOnHotbar(type){
+  if(gameFreeMode==='survival'){
+    if(type==='hand'){selectedHotbarSlot=0;selectedType='hand';buildHotbar();return}
+    const vacant=hotbarTypes.findIndex((v,i)=>i>0&&!v);
+    if(vacant>=0)hotbarTypes[vacant]=type;
+    else hotbarTypes[selectedHotbarSlot]=type;
+  }else hotbarTypes[selectedHotbarSlot]=type;
+  selectedType=type;buildHotbar();updateFreeMission();
+}
+function addToBag(type,n=1){
+  if(gameFreeMode!=='survival'||!type)return;
+  const first=bagCount(type)===0;
+  survivalBag[type]=bagCount(type)+n;
+  if(first&&PLACEABLE_TYPES.includes(type)&&!hotbarTypes.includes(type)){
+    const empty=hotbarTypes.findIndex((item,i)=>i>0&&!item);
+    if(empty>=0)hotbarTypes[empty]=type;
+  }
+  advanceSurvival();buildHotbar();
+  if(inventoryOpen)buildInventory();
+}
+function consumeBag(type,n=1){
+  if(bagCount(type)<n)return false;
+  survivalBag[type]-=n;
+  if(inventoryOpen)buildInventory();
+  return true;
+}
+function recipePossible(recipe){
+  return (!recipe.bench||hasWorkbench())&&
+    Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
+}
+function craftSurvival(recipe){
+  if(gameFreeMode!=='survival'||!recipePossible(recipe)){
+    toast('재료가 부족하거나 제작대가 필요해요.');return;
+  }
+  for(const [type,amount] of Object.entries(recipe.needs))consumeBag(type,amount);
+  for(const [type,amount] of Object.entries(recipe.gives))addToBag(type,amount);
+  advanceSurvival();buildInventory();saveFreeWorld();
+  toast(recipe.name+' 제작 완료!');
+}
 function blockButtonMarkup(type,index){
-  const d=blockDef(type),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
-  const name=type==='cuboid'?('직육면체 '+currentCuboidSpec.dims.join('×')):d.name;
-  return '<span>'+(index||'')+'</span><i style="--swatch:'+hex+'">'+(d.icon||'')+'</i><em>'+name+'</em>';
+  const d=blockDef(type||'hand'),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
+  const name=!type?'빈 칸':type==='cuboid'?('직육면체 '+currentCuboidSpec.dims.join('×')):d.name;
+  const count=gameFreeMode==='survival'&&type&&type!=='hand'?
+    '<small class="hot-count">'+bagCount(type)+'</small>':'';
+  return '<span>'+(index||'')+'</span><i style="--swatch:'+hex+'">'+(type?d.icon||'':'')+'</i><em>'+name+'</em>'+count;
 }
 function buildHotbar(){
   const h=$('hotbar');h.innerHTML='';
   hotbarTypes.forEach((type,i)=>{
-    const b=document.createElement('button');b.className='hot-slot'+(i===selectedHotbarSlot?' active':'');
-    b.innerHTML=blockButtonMarkup(type,i+1);b.title=blockDef(type).name;
-    b.onclick=()=>{selectedHotbarSlot=i;selectedType=hotbarTypes[i];buildHotbar();updateFreeMission()};h.appendChild(b);
+    const b=document.createElement('button');
+    b.className='hot-slot'+(i===selectedHotbarSlot?' active':'');
+    b.innerHTML=blockButtonMarkup(type,i+1);b.title=type?blockDef(type).name:'빈 칸';
+    b.onclick=()=>{selectedHotbarSlot=i;selectedType=hotbarTypes[i]||'hand';buildHotbar();updateFreeMission()};
+    h.appendChild(b);
   });
-  selectedType=hotbarTypes[selectedHotbarSlot]||'grass';
+  selectedType=hotbarTypes[selectedHotbarSlot]||'hand';
 }
 function buildInventory(category='전체'){
   const grid=$('inventoryGrid');if(!grid)return;grid.innerHTML='';
-  document.querySelectorAll('[data-inv-cat]').forEach(b=>b.classList.toggle('active',b.dataset.invCat===category));
-  $('shapeWorkbench')?.classList.toggle('hidden',!(category==='도형'||category==='전체'));
+  const survival=gameFreeMode==='survival';
+  $('blockInventory').classList.toggle('survival-inventory',survival);
+  $('inventoryTitle').textContent=survival?'가방 · 제작':'건축 인벤토리';
+  $('inventorySubtitle').textContent=survival?'지금 얻은 재료와 만들 수 있는 물건만 보여요.':
+    '선택한 재료가 현재 핫바 칸에 들어갑니다.';
+  $('survivalCraftPanel').classList.toggle('hidden',!survival);
+  $('shapeWorkbench').classList.toggle('hidden',survival?
+    survivalStage<3:!(category==='도형'||category==='전체'));
+  $('inventoryNote').textContent=survival?
+    '나무에서 시작해 차례대로 제작해 보세요. 제작대를 얻으면 도형 편집 기능도 열려요.':
+    '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
+  if(survival){
+    const resources=Object.entries(survivalBag).filter(([type,n])=>n>0)
+      .sort((a,b)=>a[0].localeCompare(b[0]));
+    for(const [type,n] of resources){
+      const d=blockDef(type),b=document.createElement('button');
+      b.className='inventory-item';const hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
+      b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개</small>';
+      if(PLACEABLE_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
+      else b.disabled=true;
+      grid.appendChild(b);
+    }
+    if(!resources.length)grid.textContent='가방이 비어 있어요. 먼저 주변의 나무를 채집해 보세요.';
+    const list=$('survivalCraftList');list.innerHTML='';
+    const visible=worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&
+      (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id)));
+    for(const recipe of visible.slice(0,6)){
+      const b=document.createElement('button'),possible=recipePossible(recipe);
+      b.className='survival-recipe'+(possible?' can-craft':'');
+      b.disabled=!possible;
+      const costs=Object.entries(recipe.needs).map(([type,n])=>blockDef(type).name+' '+bagCount(type)+'/'+n).join(' · ');
+      b.innerHTML=recipe.name+'<small>'+costs+
+        (recipe.bench?' · 제작대 필요':'')+'</small>';
+      b.onclick=()=>craftSurvival(recipe);list.appendChild(b);
+    }
+    $('survivalCraftHint').textContent=hasWorkbench()?
+      '제작대 사용 가능 · 재료가 모이면 버튼이 활성화돼요.':
+      '나무 판자를 모아 제작대를 만들어 보세요.';
+    return;
+  }
+  document.querySelectorAll('[data-inv-cat]').forEach(b=>
+    b.classList.toggle('active',b.dataset.invCat===category));
   PLACEABLE_TYPES.filter(type=>category==='전체'||blockDef(type).category===category).forEach(type=>{
-    const d=blockDef(type),b=document.createElement('button');b.className='inventory-item';
+    const d=blockDef(type),b=document.createElement('button');
+    b.className='inventory-item';
     b.innerHTML='<i style="--swatch:#'+(d.color||0xffffff).toString(16).padStart(6,'0')+'">'+(d.icon||'')+'</i><b>'+d.name+'</b><small>'+d.category+'</small>';
-    b.onclick=()=>{hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(d.name+'을(를) '+(selectedHotbarSlot+1)+'번 칸에 넣었어요.')};grid.appendChild(b);
+    b.onclick=()=>{hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();
+      toast(d.name+'을(를) '+(selectedHotbarSlot+1)+'번 칸에 넣었어요.')};
+    grid.appendChild(b);
   });
 }
 function toggleInventory(force){
@@ -1306,10 +1415,31 @@ function toggleInventory(force){
   $('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
 }
 function updateFreeMission(){
-  const total=5,done=collected.size;$('adventureCount').textContent=done+'/'+total;$('adventureBar').style.width=(done/total*100)+'%';
-  const chosen=blockDef(selectedType).name,flight=freeFlying?'비행 ON':'걷기';
-  $('freeState').textContent=flight+' · '+chosen;
-  $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 인벤토리 · F 비행':'E 인벤토리 · F 비행 · R 복사 · P 면색칠 · X 수학 렌즈';
+  const biome=currentBiome(Math.round(camera.position.x),Math.round(camera.position.z));
+  $('biomeState').textContent=biome.name;
+  const chosen=blockDef(selectedType||'hand').name;
+  if(gameFreeMode==='survival'){
+    const goal=worldRules.GOALS[survivalStage];
+    $('freeQuestTitle').textContent=goal.title;
+    $('freeQuestDescription').textContent=goal.description;
+    $('adventureCount').textContent=survivalStage===0?
+      bagCount('log')+'/3':(survivalStage+1)+'/'+worldRules.GOALS.length;
+    $('adventureBar').style.width=(survivalStage===0?
+      Math.min(100,bagCount('log')/3*100):
+      survivalStage/(worldRules.GOALS.length-1)*100)+'%';
+    $('freeState').textContent='생존 · '+chosen;
+    $('freeHint').textContent=survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프':
+      '좌클릭 채집 · E 제작·도형 편집 · P 면 색칠 · X 수학 렌즈';
+  }else{
+    const total=5,done=collected.size;
+    $('freeQuestTitle').textContent='월드 탐험 기록';
+    $('freeQuestDescription').textContent='서로 다른 바이옴에서 설계도 조각과 색 결정을 찾아보세요.';
+    $('adventureCount').textContent=done+'/'+total;
+    $('adventureBar').style.width=(done/total*100)+'%';
+    $('freeState').textContent=(freeFlying?'비행':'걷기')+' · '+chosen;
+    $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행':
+      'E 가방 · F 비행 · R 복사 · P 면 색칠 · X 수학 렌즈';
+  }
 }
 function freeCenterHit(max=6.5){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
