@@ -316,9 +316,13 @@ function updateDefenseField(dt){
  if(!fieldBall.owner){
   const candidates=fielders.map((f,i)=>({f,i,d:Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)})).sort((a,b)=>a.d-b.d),c=candidates[0];
   if(c&&fieldBall.z<26&&c.d<27){
-   c.f.hasBall=true;fieldBall.owner=c.f;activeFielder=c.i;const caught=!fieldBall.bounced&&fieldBall.z>4;fieldBall.vx=fieldBall.vy=fieldBall.vz=0;
-   if(caught){outs++;message('플라이 아웃!',1.25);defenseRunners=[];afterOutOrPlay();return}
-   message('잡았다! 어느 베이스로 던질까?',1.4);setControls('');setControls('field');
+   let mayCatch=true;
+   if(c.i!==activeFielder&&!fieldBall.bounced){mayCatch=!fieldBall.assistAttempted&&Math.random()<(difficulty==='easy'?.8:difficulty==='normal'?.42:.18);fieldBall.assistAttempted=true}
+   if(mayCatch){
+    c.f.hasBall=true;fieldBall.owner=c.f;activeFielder=c.i;const caught=!fieldBall.bounced&&fieldBall.z>4;fieldBall.vx=fieldBall.vy=fieldBall.vz=0;
+    if(caught){outs++;message('플라이 아웃!',1.25);defenseRunners=[];afterOutOrPlay();return}
+    message('잡았다! 어느 베이스로 던질까?',1.4);setControls('');setControls('field');
+   }
   }
  }
  if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
