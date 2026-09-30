@@ -355,8 +355,8 @@ function setCompanion(id){
  if(!id){game.companion=null;save();renderPanel('settlement');return toast('원정 동행을 해제했습니다.')}
  const r=game.residents?.[id];if(!r?.rescued)return;if(game.companion===id){game.companion=null;toast(RESIDENTS[id].name+'이(가) 야영지로 돌아갑니다.')}else{game.companion=id;toast('🎒 '+RESIDENTS[id].name+'이(가) 원정에 동행합니다.');discover('division')}save();renderPanel('settlement')
 }
-function emitRuinNoise(amount,label=''){
- const zone=currentRuinZone();if(!zone||!game)return;game.ruinNoise=clamp((game.ruinNoise||0)+amount,0,100);if(label&&amount>=12)toast('🔊 '+label+' · 폐허 소음 '+Math.round(game.ruinNoise),'warn',1.5);if(game.ruinNoise>=70)triggerRuinEvent(zone.site)
+function emitRuinNoise(amount,label='',siteOverride=null){
+ const zone=siteOverride?ruinZones.find(z=>z.site===siteOverride):currentRuinZone();if(!zone||!game)return;game.ruinNoise=clamp((game.ruinNoise||0)+amount,0,100);if(label&&amount>=12)toast('🔊 '+label+' · 폐허 소음 '+Math.round(game.ruinNoise),'warn',1.5);if(game.ruinNoise>=70)triggerRuinEvent(zone.site)
 }
 function triggerRuinEvent(site){
  const key='ruinEvent_'+site;if(game.flags[key])return;const ev=ruinEventFor(site);if(!ev)return;game.flags[key]=ev.id;
@@ -400,7 +400,7 @@ function createRuinSpot(key,x,z,w=1.5,h=1.1,d=.6,color=0x6f6250){
 }
 function toggleRuinDoor(site){
  const d=scene?.userData?.ruinDoors?.[site];if(!d)return;if(d.open&&player.root.position.distanceTo(d.pivot.position)<1.35)return toast('문간에서 조금 떨어져야 닫을 수 있습니다.','warn');
- d.open=!d.open;d.target=d.open?d.openAngle:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door');if(d.open)emitRuinNoise(8)
+ d.open=!d.open;d.target=d.open?d.openAngle:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door');if(d.open)emitRuinNoise(8,'',site)
 }
 function searchRuinSpot(key){
  const info=RUIN_SPOTS[key];if(!info)return;const done='search_'+key,inspect='inspect_'+key;if(game.flags[done])return toast('이미 수색한 곳입니다.');
@@ -868,7 +868,7 @@ function usePlaced(id,obj){if(id==='campfire'){if(game.inv.dirtyWater>0&&game.in
    if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')
  }else toast('작업대가 준비되었습니다.')}
 function useItem(id){
- if(!game||!running)return;if(id==='flashlight')return toggleFlashlight();
+ if(!game||!running)return;if(id==='flashlight')return toggleFlashlight();if(id==='axe')return toast(game.inv.axe?'🪓 돌도끼를 장비하고 있습니다. 나무 채집량이 증가합니다.':'돌도끼가 없습니다.','normal',2.2);
  if(id==='cleanWater'){if(game.inv.cleanWater<1)return toast('깨끗한 물이 없습니다.','warn');game.inv.cleanWater--;game.thirst=clamp(game.thirst+38,0,100);flag('drink');tutorialSignal('drink');toast('💧 깨끗한 물을 마셨습니다.')}
  else{const f=game.inv.cookedPotato>0?'cookedPotato':'food';if(game.inv[f]<1)return toast('먹을 것이 없습니다.','warn');game.inv[f]--;game.hunger=clamp(game.hunger+(f==='cookedPotato'?28:35),0,100);toast((ITEMS[f]?.[1]||'🍽')+' 식사했습니다.')}save();updateUI()
 }
@@ -914,8 +914,10 @@ function updateBuildingFx(dt){
  }}
 
 function spoilFood(){
- if(devicePowered('cooler')){discover('foodPreservation');return 0}if((game.inv.potato||0)<1)return 0;
- const lost=Math.min(game.inv.potato,Math.max(1,Math.floor(game.inv.potato*.25)));game.inv.potato-=lost;game.inv.spoiledFood=(game.inv.spoiledFood||0)+lost;return lost
+ if(devicePowered('cooler')){discover('foodPreservation');return 0}const total=stock('potato');if(total<1)return 0;
+ let lost=Math.min(total,Math.max(1,Math.floor(total*.25))),remain=lost,takeInv=Math.min(game.inv.potato||0,remain);game.inv.potato-=takeInv;remain-=takeInv;
+ if(remain>0){game.storage.potato=Math.max(0,(game.storage.potato||0)-remain)}
+ game.inv.spoiledFood=(game.inv.spoiledFood||0)+lost;return lost
 }
 function advanceDay(){
  if(game.phase==='survival'&&game.day>=7)return;game.day++;game.time=420;game.hunger=clamp(game.hunger-12,0,100);game.thirst=clamp(game.thirst-10,0,100);
