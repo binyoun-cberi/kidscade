@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>이야기 조립소</title>
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">KIDSCADE · 국어 창작</div>
+      <h1>🧩 이야기 조립소</h1>
+      <p>주어진 그림 카드를 모두 넣어 나만의 이야기를 완성해요.</p>
+    </div>
+    <div class="top-actions">
+      <button id="bookshelfBtn" class="ghost-btn" type="button">📚 내 이야기책 <span id="bookCount">0</span></button>
+      <button id="helpBtn" class="ghost-btn" type="button">? 방법</button>
+    </div>
+  </header>
+
+  <section id="setupScreen" class="screen active">
+    <div class="hero-card">
+      <div class="hero-copy">
+        <span class="pill">정답 없는 글쓰기 게임</span>
+        <h2>그림 몇 장이면<br>이야기가 시작돼요.</h2>
+        <p>맞춤법은 글을 다 쓴 뒤에 살펴봐요. 처음부터 완벽하게 쓸 필요는 없어요.</p>
+      </div>
+      <div class="sample-stack" aria-hidden="true">
+        <div class="sample-card rotate-a">🐰<small>토끼</small></div>
+        <div class="sample-card rotate-b">🌧️<small>비</small></div>
+        <div class="sample-card rotate-c">🎂<small>케이크</small></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3>난이도를 골라요</h3>
+      <div class="difficulty-grid">
+        <button class="difficulty selected" data-level="easy" type="button">
+          <b>🌱 가볍게</b><span>카드 2장 · 2문장</span><small>처음 쓰기 좋아요</small>
+        </button>
+        <button class="difficulty" data-level="normal" type="button">
+          <b>✏️ 이야기</b><span>카드 3장 · 3문장</span><small>추가 미션 1개</small>
+        </button>
+        <button class="difficulty" data-level="hard" type="button">
+          <b>🔥 도전</b><span>카드 4장 · 4문장</span><small>추가 미션 2개</small>
+        </button>
+      </div>
+      <button id="startBtn" class="primary big" type="button">카드 뽑고 시작하기</button>
+    </div>
+  </section>
+
+  <section id="writeScreen" class="screen">
+    <div class="workspace">
+      <aside class="mission-panel">
+        <div class="panel-head">
+          <div><span class="step">1</span><b>이야기 재료</b></div>
+          <button id="shuffleBtn" class="mini-btn" type="button">↻ 다시 뽑기</button>
+        </div>
+        <p class="muted">아래 카드가 <b>모두</b> 이야기 속에 나오게 해 보세요.</p>
+        <div id="cardList" class="card-list"></div>
+        <div id="challengeBox" class="challenge-box"></div>
+      </aside>
+
+      <section class="writing-panel">
+        <div class="panel-head writing-head">
+          <div><span class="step">2</span><b>이야기 쓰기</b></div>
+          <div class="live-stats"><span id="sentenceStat">0문장</span><span id="charStat">0자</span></div>
+        </div>
+        <input id="titleInput" class="title-input" maxlength="40" placeholder="제목을 붙여 볼까요? (선택)">
+        <textarea id="storyInput" spellcheck="false" placeholder="그림을 보고 떠오르는 이야기를 자유롭게 써 보세요.&#10;&#10;처음에는 맞춤법을 걱정하지 않아도 괜찮아요."></textarea>
+        <div id="missionStatus" class="mission-status"></div>
+        <button id="inspectBtn" class="primary" type="button">🔎 이야기 확인하기</button>
+      </section>
+    </div>
+  </section>
+
+  <section id="reviewScreen" class="screen">
+    <div class="review-layout">
+      <section class="section-card review-main">
+        <div class="panel-head">
+          <div><span class="step">3</span><b>글 다듬기</b></div>
+          <span id="accuracyBadge" class="accuracy-badge">점검 중</span>
+        </div>
+        <p class="muted">내용은 그대로 두고, 글자만 천천히 살펴봐요. 발견된 곳은 <b>힌트</b>일 뿐이에요.</p>
+        <textarea id="reviewInput" spellcheck="false"></textarea>
+        <div class="review-actions">
+          <button id="recheckBtn" class="secondary" type="button">↻ 다시 검사</button>
+          <button id="finishBtn" class="primary" type="button">📖 이야기 완성</button>
+        </div>
+      </section>
+      <aside class="section-card issues-panel">
+        <h3>🔍 살펴볼 곳</h3>
+        <div id="issueSummary" class="issue-summary"></div>
+        <div id="issuesList" class="issues-list"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="resultScreen" class="screen">
+    <div class="result-wrap">
+      <div class="book">
+        <div id="bookVisuals" class="book-visuals"></div>
+        <div class="book-label">나의 이야기</div>
+        <h2 id="resultTitle">제목 없는 이야기</h2>
+        <div id="resultStory" class="result-story"></div>
+      </div>
+      <div class="result-side">
+        <span class="pill">완성!</span>
+        <h2>한 편의 이야기가<br>책이 되었어요.</h2>
+        <div class="result-stats">
+          <div><span>🧩</span><b id="resultCards">모든 카드 사용</b></div>
+          <div><span>📝</span><b id="resultSentences">0문장</b></div>
+          <div><span>🔎</span><b id="resultAccuracy">맞춤법 100%</b></div>
+        </div>
+        <div id="growthNote" class="growth-note"></div>
+        <div class="result-actions">
+          <button id="newStoryBtn" class="primary" type="button">🎲 새 이야기 만들기</button>
+          <button id="openBooksBtn" class="secondary" type="button">📚 내 이야기책 보기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status"></div>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <button id="modalClose" class="modal-close" type="button">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script src="../../kidscade-game-sdk.js" data-game-id="high_story_builder" data-title="이야기 조립소" data-shell="true" data-orientation="any"></script>
+<script src="../../data/spelling-quiz-expanded.js?v=20260930-1"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>
