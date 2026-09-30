@@ -472,41 +472,94 @@ function rotateShapeY(points,turn){
   for(let t=0;t<turn;t++)out=out.map(([x,y,z])=>[-z,y,x]);
   return normalizedShape(out).points;
 }
+function projectionSet(points,view){
+  const result=new Set();
+  for(const [x,y,z] of points)
+    result.add(view==='top'?x+','+z:view==='front'?x+','+y:z+','+y);
+  return result;
+}
+function overlapScore(a,b){
+  if(!a.size&&!b.size)return 100;
+  let matching=0;for(const key of a)if(b.has(key))matching++;
+  return Math.round(matching/Math.max(1,a.size+b.size-matching)*100);
+}
 function bestChallengeMatch(){
-  const userPoints=Array.from(challengeBlocks.values()).map(m=>[m.userData.cx,m.userData.cy,m.userData.cz]);
-  const user=normalizedShape(userPoints);
-  const targetRaw=currentChallengeMission().blocks.map(p=>p.slice());
-  let best={common:0,union:Infinity,score:0,target:null,targetKeys:new Set(),user:user,turn:0};
+  const userPoints=Array.from(challengeBlocks.keys(),key=>key.split(',').map(Number));
+  const user=normalizedShape(userPoints),mission=currentChallengeMission(),targetRaw=mission.blocks;
+  const hard=challengeDifficulty==='hard',views=['top','front','side'];
+  const userProjections=hard?views.map(view=>projectionSet(user.points,view)):null;
+  let best={common:0,union:Infinity,score:-1,target:null,targetKeys:new Set(),user,turn:0,views:[]};
   for(let turn=0;turn<4;turn++){
     const target=normalizedShape(rotateShapeY(targetRaw,turn));
-    let common=0;user.keys.forEach(k=>{if(target.keys.has(k))common++});
+    let common=0;for(const key of user.keys)if(target.keys.has(key))common++;
     const union=new Set([...user.keys,...target.keys]).size;
-    const score=union?Math.round(common/union*100):0;
-    if(score>best.score||(score===best.score&&union<best.union))best={common,union,score,target,targetKeys:target.keys,user,turn};
+    const viewScores=hard?views.map((view,i)=>overlapScore(userProjections[i],projectionSet(target.points,view))):[];
+    const score=hard?Math.round(viewScores.reduce((a,b)=>a+b,0)/viewScores.length):
+      (union?Math.round(common/union*100):0);
+    if(score>best.score||(score===best.score&&common>best.common))
+      best={common,union,score,target,targetKeys:target.keys,user,turn,views:viewScores};
   }
   return best;
 }
+function isOuterVoxel(set,p){
+  const [x,y,z]=p;
+  return [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
+    .some(d=>!set.has(challengeKey(x+d[0],y+d[1],z+d[2])));
+}
 function checkChallenge(){
   clearTargetGhosts();
-  const match=bestChallengeMatch(),userPoints=Array.from(challengeBlocks.values()).map(m=>[m.userData.cx,m.userData.cy,m.userData.cz]);
-  const origin=match.user.min;
-  challengeMeshes.forEach(m=>{
-    const k=challengeKey(m.userData.cx-origin[0],m.userData.cy-origin[1],m.userData.cz-origin[2]);
-    m.material.color.set(match.targetKeys.has(k)?0x56bd91:0xf08a80);
-  });
-  match.target.points.forEach(p=>{
-    const k=challengeKey(...p);if(match.user.keys.has(k))return;
-    const gx=origin[0]+p[0],gy=origin[1]+p[1],gz=origin[2]+p[2];
-    const g=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,wireframe:true,transparent:true,opacity:.82}));
-    g.position.set(gx-CHALLENGE_HALF+.5,gy+.5,gz-CHALLENGE_HALF+.5);scene.add(g);targetGhosts.push(g);
-  });
-  const targetCount=match.target.points.length,userCount=userPoints.length,missing=Math.max(0,targetCount-match.common),extra=Math.max(0,userCount-match.common);
+  const match=bestChallengeMatch(),hard=challengeDifficulty==='hard';
   $('resultCard').classList.remove('hidden');$('resultScore').textContent=match.score+'%';
-  $('resultText').innerHTML=match.score===100
-    ? '건물을 <b>어디에 지었는지는 상관없어요.</b><br>모양과 블록 배치가 설계도와 같습니다.'
-    : '같은 모양 블록 <b>'+match.common+'</b>개 · 더 필요한 블록 <b>'+missing+'</b>개 · 다른 블록 <b>'+extra+'</b>개<br>파란 선은 <b>내 건축물 위치에 맞춰</b> 겹쳐 보여 줍니다.';
-  if(match.score===100){toast('정답! 위치와 방향이 달라도 같은 건축물이면 인정합니다.');sfx('good');reportResult('challenge',100,true)}
-  else{toast('위치는 채점하지 않아요. 모양이 다른 부분만 확인해 보세요.');sfx('bad')}
+  if(!match.user.keys.size){
+    $('resultText').textContent='아직 건축한 블록이 없어요. 설계도를 보고 첫 직육면체부터 만들어 보세요.';
+    return;
+  }
+  const origin=match.user.min;
+  if(match.score<100){
+    if(!hard){
+      // Do not overwrite any painted face. Error indications are separate outlines.
+      let shown=0;
+      for(const mesh of challengeMeshes){
+        if(shown>=65)break;
+        if(mesh.userData.members.every(k=>{
+          const [x,y,z]=k.split(',').map(Number);
+          return match.targetKeys.has(challengeKey(x-origin[0],y-origin[1],z-origin[2]));
+        }))continue;
+        const outline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),
+          new THREE.LineBasicMaterial({color:0xe76b71,depthTest:false}));
+        outline.position.copy(mesh.position);outline.renderOrder=25;scene.add(outline);targetGhosts.push(outline);shown++;
+      }
+    }
+    // Draw only a sample of missing outside blocks to avoid thousands of overlapping lines.
+    const missing=match.target.points.filter(p=>!match.user.keys.has(challengeKey(...p))&&
+      isOuterVoxel(match.targetKeys,p));
+    const stride=Math.max(1,Math.ceil(missing.length/170));
+    for(let i=0;i<missing.length;i+=stride){
+      const [x,y,z]=missing[i],ghost=new THREE.Mesh(blockGeo,
+        new THREE.MeshBasicMaterial({color:0x5a67f2,wireframe:true,transparent:true,opacity:.72}));
+      ghost.position.set(origin[0]+x-CHALLENGE_HALF+.5,origin[1]+y+.5,
+        origin[2]+z-CHALLENGE_HALF+.5);
+      scene.add(ghost);targetGhosts.push(ghost);
+    }
+  }
+  if(hard){
+    const [top,front,side]=match.views;
+    $('resultText').innerHTML=
+      '윗면 <b>'+top+'%</b> · 정면 <b>'+front+'%</b> · 측면 <b>'+side+'%</b><br>'+
+      '기단·본체·탑·지붕의 외형을 비교합니다. 내부가 달라도 세 방향의 형태가 같으면 정답입니다.'+
+      (match.score<100?'<br>파란 선은 부족한 바깥 구조의 일부만 표시합니다.':'');
+  }else{
+    const targetCount=match.target.points.length,userCount=match.user.keys.size;
+    $('resultText').innerHTML=match.score===100?
+      '위치와 바닥 방향이 달라도 같은 입체도형이면 정답이에요.':
+      '같은 블록 '+match.common+'개 · 부족한 블록 '+Math.max(0,targetCount-match.common)+
+      '개 · 다른 블록 '+Math.max(0,userCount-match.common)+'개<br>파란 선을 보고 모양을 다시 확인하세요.';
+  }
+  if(match.score===100){
+    toast('설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');sfx('good');reportResult('challenge',100,true);
+  }else{
+    toast(hard?'세 방향의 외형을 비교했어요. 색칠은 별도 꾸미기예요.':'부족한 부분을 확인해 보세요.');sfx('bad');
+  }
 }
 function updateChallengeCamera(){
   camera.rotation.order='YXZ';camera.rotation.y=challengeYaw;camera.rotation.x=challengePitch;
