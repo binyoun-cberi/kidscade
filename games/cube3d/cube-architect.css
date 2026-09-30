@@ -263,3 +263,28 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   #challengeEditor{margin-top:10px}
   .challenge-tool-tabs button{font-size:10px;padding:7px 2px}
 }
+
+
+/* Face / edge / vertex net reasoning */
+.net-mode-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:9px 0}
+.net-mode-tabs button{border:1px solid #d9dfe9;border-radius:10px;background:#fff;color:#566175;font-size:10px;font-weight:900;padding:9px 2px;cursor:pointer}
+.net-mode-tabs button.active{background:#5265e4;border-color:#5265e4;color:#fff}
+#netQuizCard{padding:9px 0}
+.net-quiz-prompt{border-radius:12px;background:#eef2ff;padding:11px;font-weight:900;font-size:12px;line-height:1.55;color:#2b3556}
+.net-quiz-options{display:grid;grid-template-columns:1fr;gap:6px;margin-top:9px}
+.net-quiz-options button{border:1px solid #d5ddeb;border-radius:10px;background:#fff;color:#354155;padding:10px 9px;text-align:left;font-size:12px;font-weight:800;cursor:pointer}
+.net-quiz-options button.active{border:2px solid #5967ee;background:#eef0ff}
+.net-quiz-options button.correct{border-color:#24a77b;background:#e9fff4}
+.net-quiz-options button.wrong{border-color:#e16d78;background:#fff0f0}
+.net-face{position:relative}
+.net-face.quiz-target{border-color:#5a67ee;background:#ecedff;box-shadow:0 0 0 2px rgba(89,103,238,.22)}
+.net-face{font-size:12px;font-weight:900}
+.net-face[data-quiz-edge="top"]{border-top:4px solid #e94774}
+.net-face[data-quiz-edge="right"]{border-right:4px solid #e94774}
+.net-face[data-quiz-edge="bottom"]{border-bottom:4px solid #e94774}
+.net-face[data-quiz-edge="left"]{border-left:4px solid #e94774}
+.net-corner-mark{position:absolute;width:9px;height:9px;border-radius:50%;background:#e94774;border:1px solid white;box-shadow:0 0 0 2px rgba(233,71,116,.22)}
+.net-corner-mark[data-corner="0"]{left:-5px;top:-5px}
+.net-corner-mark[data-corner="1"]{right:-5px;top:-5px}
+.net-corner-mark[data-corner="2"]{right:-5px;bottom:-5px}
+.net-corner-mark[data-corner="3"]{left:-5px;bottom:-5px}
