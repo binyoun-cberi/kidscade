@@ -109,6 +109,7 @@
     }
     const next = (state.pledges || []).filter(p => !p.fulfilled).sort((a,b) => a.due-b.due)[0];
     if (next) parts.push('<span class="issue-chip alert">📌 ' + escapeHTML(next.title) + ' · ' + Math.max(0, next.due - state.tick) + '주 남음</span>');
+    for (const issue of S.rightsConcerns(state)) parts.push('<span class="issue-chip alert">⚠️ ' + escapeHTML(issue) + '</span>');
     if (state.laws.storage === "reserve") parts.push('<span class="issue-chip">📦 비상식량 ' + number(state.reserveFood || 0) + '/28</span>');
     if (state.boostUntil > state.tick) parts.push('<span class="issue-chip">⚒️ 집중 생산 · ' + (state.boostUntil - state.tick) + '주 남음</span>');
     if (state.laws.process === "delegate" && state.authorityUses)
@@ -120,8 +121,32 @@
     const ongoing = (state.pledges || []).filter(p => !p.fulfilled);
     return '<div class="consequence-board"><strong>🔗 선택이 남긴 결과</strong>' +
       (ongoing.length ? ongoing.map(p => '<div class="pledge-line">📌 ' + escapeHTML(p.title) + ' · ' + Math.max(0, p.due - state.tick) + '주 남음</div>').join("") : '') +
+      ((state.rightsHistory || []).length ? '<div class="decision-line"><small>권리와 복구 기록</small>' + (state.rightsHistory || []).slice(0, 3).map(h => escapeHTML(h.kind + " · " + h.status + " · " + h.detail)).join("<br>") + "</div>" : "") +
       (latest.length ? latest.map(d => '<div class="decision-line"><small>' + (d.tick + 1) + '번째 주</small>' + escapeHTML(d.title) + ' — ' + escapeHTML(d.detail) + '</div>').join("") :
         '<small>법률 제정이나 중요한 사건의 결과가 여기에 쌓여요.</small>') + '</div>';
+  }
+
+  function renderCrisis() {
+    const active = S.winterActive(state);
+    const forecast = state.nextWinterAt - state.tick;
+    const rights = S.rightsConcerns(state);
+    const known = active || state.winterEver || forecast <= 5 || rights.length || (state.rightsHistory || []).length;
+    const zone = $("crisisStrip");
+    if (!zone) return;
+    if (!known) { zone.classList.add("hidden"); zone.innerHTML = ""; return; }
+    zone.classList.remove("hidden");
+    const season = active ? '❄️ 한파 · ' + (state.coldUntil - state.tick) + '주 남음' :
+      '🌤️ 다음 한파까지 ' + Math.max(0, forecast) + '주';
+    const meter = (icon, title, value, warning) =>
+      '<div class="crisis-meter' + (value <= warning ? ' urgent' : '') + '">' +
+      '<span>' + icon + ' ' + title + '</span><strong>' + number(value) + '</strong>' +
+      '<i><b style="width:' + Math.max(0, Math.min(100, value)) + '%"></b></i></div>';
+    zone.innerHTML = '<div class="crisis-head"><strong>' + season + '</strong>' +
+      '<small>한파에는 생산이 줄고 난방에 목재가 필요해요.</small></div>' +
+      meter('🔥', '체온', state.warmth, 36) + meter('❤️', '건강', state.health, 48) +
+      (state.eventsSeen.child_labor_debate || state.childWorkUntil > state.tick || (state.rightsHistory || []).some(h => h.kind === "어린이 위험 노동") ?
+        meter('📚', '어린이 학습', state.education, 65) + meter('🧒', '어린이 건강', state.childWellbeing, 60) : '') +
+      (rights.length ? '<div class="rights-alert">현재 권리 문제: ' + rights.map(escapeHTML).join(' · ') + '</div>' : '');
   }
   function renderVillage() {
     window.IslandArt?.setState(state);
@@ -129,7 +154,7 @@
     element.name.textContent = state.stage === 1 ? "새싹섬 · 작은 야영지" : "새싹섬 · 자치 마을";
     element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명" + (state.stage === 1 && state.population >= S.capacity(state) ? " · 주거 부족" : "");
     element.clock.textContent = state.tick + 1 + "번째 주";
-    element.scene.textContent = state.stage === 1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." : "국고를 관리하고 마을의 공공시설을 운영하세요.";
+    element.scene.textContent = S.winterActive(state) ? "❄️ 거센 한파로 식량 생산이 줄고 난방 물자가 소모되고 있어요." : state.stage === 1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." : "국고를 관리하고 마을의 공공시설을 운영하세요.";
   }
   function renderMission() {
     if (state.stage === 1) {
@@ -192,12 +217,11 @@
     const citizen = state.citizens.find(p => p.id === selectedCitizenId);
     const v = S.residentView(state, citizen);
     const pulse = S.communityPulse(state);
-    const last = state.arrivalLog?.find(item => state.citizens.some(person => person.id === item.citizenId));
+
     return '<h2>우리 마을 주민</h2><p class="intro">주민마다 이전 경험과 중요하게 생각하는 일이 달라요. 자원과 규칙에 따라 생각도 바뀝니다.</p>' +
       '<div class="citizen-pulse"><span>👥 ' + state.citizens.length + '명</span><span>🌿 안정 ' + pulse.안정 + '명</span><span>💭 걱정 ' + pulse.걱정 + '명</span></div>' +
-      (last ? '<div class="arrival-summary"><strong>⛵ 최근 합류: ' + escapeHTML(last.name) + '</strong><small>' + escapeHTML(last.origin) + '</small></div>' : '') +
       '<div class="resident-detail"><div class="resident-detail-head">' + characterPortrait(citizen.name, true) +
-      '<div><h3>' + escapeHTML(citizen.name) + '</h3><small>' + escapeHTML(citizen.experience) + ' · 관심사: ' + escapeHTML(v.topic) + '</small><span class="resident-status' + (v.mood === "걱정" ? " anxious" : "") + '">' + escapeHTML(v.mood) + '</span></div></div>' +
+      '<div><h3>' + escapeHTML(citizen.name) + (citizen.isChild ? ' <small class="child-label">어린 주민</small>' : '') + '</h3><small>' + escapeHTML(citizen.experience) + ' · 관심사: ' + escapeHTML(v.topic) + '</small><span class="resident-status' + (v.mood === "걱정" ? " anxious" : "") + '">' + escapeHTML(v.mood) + '</span></div></div>' +
       '<div class="resident-quote">“' + escapeHTML(v.thought) + '”<small>지금의 생각 · ' + escapeHTML(v.reason) + '</small></div>' +
       '<div class="resident-origin"><strong>' + (citizen.source === "founder" ? "🏝️ 처음 함께 온 주민" : "⛵ 합류 이야기 · " + (citizen.joinedWeek + 1) + "번째 주") + '</strong><p>' + escapeHTML(citizen.origin) + '</p></div></div>' +
       '<div class="panel-subhead">전체 주민 <span>선택해서 자세히 보기</span></div>' +
@@ -233,7 +257,7 @@
     } else if (activeTab === "residents") {
       p.innerHTML = renderResidents();
     } else {
-      p.innerHTML = '<h2>우리들의 기록</h2><p class="intro">어떤 결정을 내렸고 그 영향이 어떻게 이어지는지 살펴보세요.</p>' + consequenceBoard() +
+      p.innerHTML = '<h2>우리들의 기록</h2><p class="intro">주민의 합류 사연과 중요한 선택의 결과를 확인할 수 있어요.</p>' + consequenceBoard() +
         (state.log.length ? state.log.map(item => '<div class="history-row"><small>' + (item.tick + 1) + '번째 주</small>' + escapeHTML(item.text) + '</div>').join("") : '<div class="locked-card">아직 기록이 없어요.</div>') +
         '<div class="locked-card">📚 다음 확장에서는 대표자 선출과 의회, 새로운 정치제도가 등장합니다.</div>';
     }
@@ -268,11 +292,10 @@
     element.modal.classList.remove("hidden");
     $("modalLabel").textContent = "공동체 사건";
     $("eventWeek").textContent = state.tick + 1 + "번째 주";
-    const arriving = id === "new_resident" ? state.citizens.find(p => p.id === state.arrivalNotice?.citizenId) : null;
-    $("speaker").innerHTML = characterPortrait(arriving ? arriving.name : event.speaker);
-    $("modalTitle").textContent = arriving ? arriving.name + "님이 마을에 합류했습니다!" : event.title;
-    $("modalBody").textContent = arriving ? arriving.origin + " 이전 경험: " + arriving.experience + ". 관심사: " + S.PRIORITY_TITLES[arriving.focus] + "." : (typeof event.body === "function" ? event.body(state) : event.body);
-    $("modalHint").textContent = arriving ? "주민 명부에서 새로운 주민의 현재 생각을 확인할 수 있습니다." : "중요한 선택은 이후 사건과 공동체의 운영방식을 바꿉니다. 결과는 규칙·기록 탭에서 확인하세요.";
+    $("speaker").innerHTML = characterPortrait(event.speaker);
+    $("modalTitle").textContent = event.title;
+    $("modalBody").textContent = typeof event.body === "function" ? event.body(state) : event.body;
+    $("modalHint").textContent = "이 선택은 다음 자원 상태와 후속 사건을 바꿉니다. 피해가 발생하면 회복에는 시간이 필요합니다.";
     element.modalOptions.innerHTML = event.options.map((o, i) => {
       const afford = !o.cost || Object.entries(o.cost).every(([key, n]) => state[key] >= n);
       return '<button class="choice" data-event-option="' + i + '" ' + (afford ? "" : "disabled") + '><b>' + escapeHTML(o.label) + '</b><small>' + escapeHTML(o.note) + (afford ? "" : " · 자원이 부족합니다.") + "</small></button>";
@@ -281,6 +304,7 @@
   }
   function render() {
     renderStats();
+    renderCrisis();
     renderPolicyStatus();
     renderVillage();
     renderMission();
@@ -339,19 +363,8 @@
   element.modalOptions.addEventListener("click", e => {
     const choice = e.target.closest("[data-event-option]");
     if (!choice || choice.disabled) return;
-    const isArrival = state.pending === "new_resident";
-    const arrivingId = isArrival ? state.arrivalNotice?.citizenId : null;
     const result = S.resolveEvent(state, Number(choice.dataset.eventOption));
     if (result.ok) {
-      if (isArrival) {
-        selectedCitizenId = arrivingId;
-        activeTab = "residents";
-        document.querySelectorAll("[data-tab]").forEach(x => {
-          x.classList.toggle("active", x.dataset.tab === "residents");
-          x.setAttribute("aria-selected", String(x.dataset.tab === "residents"));
-        });
-        element.panel.scrollTop = 0;
-      }
       sdk("sound", "success");
       toast(result.note || "시민들이 결정을 확인했습니다.");
       save(); render();
