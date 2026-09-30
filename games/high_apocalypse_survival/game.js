@@ -6,9 +6,9 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), damp=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
 const SAVE='kidscade_game_v1:high_apocalypse_survival:save';
 const KNOW='kidscade_game_v1:high_apocalypse_survival:knowledge';
-const DAY_SECONDS=360, CAMP=new THREE.Vector3(0,0,8), RUINS=new THREE.Vector3(43,0,-31), POWER_STATION=new THREE.Vector3(51,0,-27), SURVIVOR_POS=new THREE.Vector3(45,0,-36), RIVER_X=30;
+const DAY_SECONDS=360, CAMP=new THREE.Vector3(0,0,8), CITY_CENTER=new THREE.Vector3(52,0,-40), RUINS=CITY_CENTER.clone(), MARKET_POS=new THREE.Vector3(43,0,-35), CLINIC_POS=new THREE.Vector3(61,0,-35), GARAGE_POS=new THREE.Vector3(43,0,-51), POWER_STATION=new THREE.Vector3(59,0,-50), CRATE_POS=new THREE.Vector3(38.5,0,-31), WASTE_POS=new THREE.Vector3(64,0,-51), SURVIVOR_POS=new THREE.Vector3(54,0,-39), RIVER_X=30;
 const RESIDENTS={
- taeho:{name:'태호',icon:'🧑‍🔧',color:0x6ea4d9,field:new THREE.Vector3(45,0,-36),camp:new THREE.Vector3(3,0,10),preferred:'technician'},
+ taeho:{name:'태호',icon:'🧑‍🔧',color:0x6ea4d9,field:SURVIVOR_POS.clone(),camp:new THREE.Vector3(3,0,10),preferred:'technician'},
  mira:{name:'미라',icon:'🧑‍🌾',color:0xc88b62,field:new THREE.Vector3(-31,0,27),camp:new THREE.Vector3(-3,0,10),preferred:'gatherer'},
  junseo:{name:'준서',icon:'🧑‍⚕️',color:0x8c79c6,field:new THREE.Vector3(57,0,-25),camp:new THREE.Vector3(0,0,13),preferred:'medic'}
 };
@@ -211,15 +211,17 @@ function blockedAt(x,z){
 }
 function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(x,z,w,d,pad);return m}
 function ruinShell(name,x,z,w,d,c=0x777b78){
- const wall=.45,h=3.8,door=2.2,walls=[];
+ const wall=.45,h=3.4,door=2.4,walls=[];
  walls.push(solidBox(w,h,wall,c,x,h/2,z-d/2),solidBox(w,h,wall,c,x,h/2,z+d/2));
  walls.push(solidBox(wall,h,d,c,x-w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4));
- walls.forEach(m=>{m.material=m.material.clone();m.material.roughness=1;m.material.transparent=true});
- const floor=box(w-.6,.08,d-.6,0x555b58,x,.04,z);ruinZones.push({x,z,hw:w/2-.4,hd:d/2-.4,walls});
- placeWorldModel(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2,z,target:4.4,rot:Math.PI*.5});
- placeWorldModel(ART.buildings+'wall-window-wide-square-detailed.glb',{x,z:z-d/2,target:4.5,rot:0});
- placeWorldModel(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2,z,target:4.1,rot:Math.PI*.5});
- label(name,x,h+1,z);return floor
+ walls.forEach(m=>{m.visible=false;m.material.transparent=true;m.material.opacity=0});
+ const floor=box(w-.5,.07,d-.5,0x555b58,x,.035,z);ruinZones.push({x,z,hw:w/2-.4,hd:d/2-.4,walls});
+ const panel=3.35;
+ placeWorldModelSafe(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2-.15,z,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+name,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-window-wide-square-detailed.glb',{x:x-w*.18,z:z-d/2+.1,target:panel,rot:0,w:3.2,d:1,tag:'ruin-'+name,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2+.1,z:z+d*.15,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+name,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall.glb',{x:x+w*.22,z:z+d/2-.1,target:panel,rot:Math.PI,w:3.2,d:1,tag:'ruin-'+name,allowOverlap:true});
+ label(name,x,h+1.1,z);return floor
 }
 function residentCount(){return Object.values(game?.residents||{}).filter(r=>r?.rescued).length}
 function jobPower(role){let n=0;for(const [id,r] of Object.entries(game?.residents||{}))if(r?.rescued&&r.job===role)n+=RESIDENTS[id]?.preferred===role?1.25:1;return n}
