@@ -1172,6 +1172,12 @@ function growTree(x,baseY,z,record,kind='forest'){
     const d={type:foliage,natural:!record};if(record)setWorldBlock(px,py,pz,d,true);else setRawBlock(px,py,pz,d);
   }
 }
+function addCollectible(id,x,y,z,color,label){
+  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),
+    new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
+  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;
+  scene.add(m);collectibles.push(m);
+}
 function buildFreeWorld(){
   worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
   const heights=new Map();
