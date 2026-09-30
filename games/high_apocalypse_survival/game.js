@@ -257,7 +257,7 @@ function updateFx(dt){
 }
 function updateAudio(dt){
  if(!audioCtx)return;const w=getWeather(),hour=game?.time/60||12,night=hour<6.5||hour>19.5;
- const indoor=currentRuinZone(),muffle=indoor?.site?.28:1;if(windGain)windGain.gain.setTargetAtTime(((w==='rain'?.022:night?.012:.008)+(player.root.position.x<-18?.006:0))*muffle,audioCtx.currentTime,.35);
+ const indoor=currentRuinZone(),muffle=indoor?.site ? .28 : 1;if(windGain)windGain.gain.setTargetAtTime(((w==='rain'?.022:night?.012:.008)+(player.root.position.x<-18?.006:0))*muffle,audioCtx.currentTime,.35);
  if(rainGain)rainGain.gain.setTargetAtTime((w==='rain'?.045:0)*muffle,audioCtx.currentTime,.22)
 }
 function has(cost){return Object.entries(cost).every(([k,v])=>(game.inv[k]||0)>=v)}
@@ -363,7 +363,7 @@ function emitRuinNoise(amount,label='',siteOverride=null){
 }
 function triggerRuinEvent(site){
  const key='ruinEvent_'+site;if(game.flags[key])return;const ev=ruinEventFor(site);if(!ev)return;game.flags[key]=ev.id;
- const help=companionMatches(site),damage=help?Math.ceil(ev.damage*.25):ev.damage;game.health=clamp(game.health-damage,0,100);cameraKick=Math.max(cameraKick,.16);spawnImpact(player.root.position.clone(),site==='garage'?'rock':'tree',14);sfx('mine');
+ const help=companionMatches(site),damage=help?Math.ceil(ev.damage*.25):ev.damage;discover('vibrationRisk');game.health=clamp(game.health-damage,0,100);cameraKick=Math.max(cameraKick,.16);spawnImpact(player.root.position.clone(),site==='garage'?'rock':'tree',14);sfx('mine');
  toast('⚠️ '+ev.text+(help?' '+companionName()+'이(가) 위험을 먼저 알려 피해를 줄였습니다.':' 체력 -'+damage),'danger',5);game.ruinNoise=28;save();updateUI()
 }
 function ruinSearchBonus(key){
@@ -960,8 +960,8 @@ function updateWeather(dt){
  if(w==='cloud'){top.lerp(new THREE.Color(0x6d8189),.42);horizon.lerp(new THREE.Color(0x9baeb0),.35)}
  if(w==='rain'){top.lerp(new THREE.Color(0x384d5b),.68);horizon.lerp(new THREE.Color(0x657982),.58)}
  const bg=horizon.clone().lerp(top,.32);scene.background.lerp(bg,dt*.7);scene.fog.color.copy(scene.background);scene.fog.near=damp(scene.fog.near,w==='rain'?34:daylight<.25?42:52,1.2,dt);scene.fog.far=damp(scene.fog.far,w==='rain'?92:daylight<.25?100:132,1.2,dt);
- const sun=scene.userData.sun,hemi=scene.userData.hemi,indoor=currentRuinZone(),interiorLight=indoor?.site?.42:1;if(sun){sun.intensity=damp(sun.intensity,(.12+2.45*daylight)*weatherLight*interiorLight,1.7,dt);const a=((game.time-360)/900)*Math.PI;sun.position.set(Math.cos(a)*42,8+Math.sin(a)*46,Math.sin(a)*30)}
- if(hemi)hemi.intensity=damp(hemi.intensity,(.48+1.35*daylight*(w==='rain'?.7:1))*(indoor?.site?.55:1),1.4,dt);
+ const sun=scene.userData.sun,hemi=scene.userData.hemi,indoor=currentRuinZone(),interiorLight=indoor?.site ? .42 : 1;if(sun){sun.intensity=damp(sun.intensity,(.12+2.45*daylight)*weatherLight*interiorLight,1.7,dt);const a=((game.time-360)/900)*Math.PI;sun.position.set(Math.cos(a)*42,8+Math.sin(a)*46,Math.sin(a)*30)}
+ if(hemi)hemi.intensity=damp(hemi.intensity,(.48+1.35*daylight*(w==='rain'?.7:1))*(indoor?.site ? .55 : 1),1.4,dt);
  const sky=scene.userData.sky?.material?.uniforms;if(sky){sky.top.value.lerp(top,dt*.65);sky.horizon.value.lerp(horizon,dt*.65);sky.ground.value.lerp(new THREE.Color(daylight<.25?0x334137:0x8ea898),dt*.5)}
  if(river){const waterTarget=new THREE.Color(daylight<.25?0x244d63:w==='rain'?0x47727c:0x4b9fb1);river.material.color.lerp(waterTarget,dt*.7)}
  const lamp=scene.userData.campLamp;if(lamp){const on=game.flags.power&&game.powerLoads?.light&&powerUse()<=game.powerKw+.001;lamp.intensity=damp(lamp.intensity,on?(1.2+(1-daylight)*4.2):0,4,dt)}
