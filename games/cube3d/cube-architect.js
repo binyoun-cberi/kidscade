@@ -1054,6 +1054,7 @@ function setLandmarkPoiBlocks(poi,full=false,onlyChunk=null){
   }
 }
 function generateLandmarkPoiChunk(cx,cz){
+  if(gameFreeMode!=='survival')return;
   const chunk=cx+','+cz;
   for(const poi of poiRules.poisForChunk(cx,cz,WORLD_CHUNK_SIZE))
     setLandmarkPoiBlocks(poi,restoredLandmarks.has(poi.id),chunk);
