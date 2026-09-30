@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const S = window.IslandSim;
-  if (!S) throw new Error("열두 명의 섬 시뮬레이션 엔진을 불러오지 못했습니다.");
+  if (!S) throw new Error("촌장 시뮬레이터 엔진을 불러오지 못했습니다.");
   const $ = id => document.getElementById(id);
   const STORAGE = "kidscade_game_v1:high_twelve_island:world";
   const escapeHTML = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -343,6 +343,7 @@
     const id = state.pending;
     if (!id) {
       element.modal.classList.add("hidden");
+      window.IslandArt?.setPreview(null);
       currentModal = "";
       return;
     }
@@ -356,7 +357,7 @@
     $("speaker").innerHTML = characterPortrait(event.speaker);
     $("modalTitle").textContent = event.title;
     $("modalBody").textContent = typeof event.body === "function" ? event.body(state) : event.body;
-    $("modalHint").textContent = "이 선택은 다음 자원 상태와 후속 사건을 바꿉니다. 피해가 발생하면 회복에는 시간이 필요합니다.";
+    $("modalHint").textContent = "선택지를 가리키면 섬에서 예상 변화를 볼 수 있어요. 어느 선택도 공짜가 아니며, 지금 얻는 것과 나중에 치를 대가가 다릅니다.";
     element.modalOptions.innerHTML = event.options.map((o, i) => {
       const afford = !o.cost || Object.entries(o.cost).every(([key, n]) => state[key] >= n);
       return '<button class="choice" data-event-option="' + i + '" ' + (afford ? "" : "disabled") + '><b>' + escapeHTML(o.label) + '</b><small>' + escapeHTML(o.note) + (afford ? "" : " · 자원이 부족합니다.") + "</small></button>";
@@ -421,6 +422,26 @@
     drafts[option.dataset.lawOption] = option.value;
     renderPanel();
   });
+  function previewEventChoice(button) {
+    if (!button || button.disabled) { window.IslandArt?.setPreview(null); return; }
+    const event = S.EVENTS.find(item => item.id === state.pending);
+    const picked = event?.options[Number(button.dataset.eventOption)];
+    window.IslandArt?.setPreview(picked || null);
+  }
+  element.modalOptions.addEventListener("pointerover", e => {
+    const button = e.target.closest("[data-event-option]");
+    if (button && !button.contains(e.relatedTarget)) previewEventChoice(button);
+  });
+  element.modalOptions.addEventListener("pointerout", e => {
+    const button = e.target.closest("[data-event-option]");
+    if (button && !button.contains(e.relatedTarget)) window.IslandArt?.setPreview(null);
+  });
+  element.modalOptions.addEventListener("focusin", e => previewEventChoice(e.target.closest("[data-event-option]")));
+  element.modalOptions.addEventListener("focusout", e => {
+    if (e.target.closest("[data-event-option]")) window.IslandArt?.setPreview(null);
+  });
+  element.modalOptions.addEventListener("pointerdown", e => previewEventChoice(e.target.closest("[data-event-option]")));
+
   element.modalOptions.addEventListener("click", e => {
     const choice = e.target.closest("[data-event-option]");
     if (!choice || choice.disabled) return;
@@ -428,9 +449,11 @@
     const picked = event?.options[Number(choice.dataset.eventOption)];
     const highImpact = picked && (picked.startChildLabor || picked.continueChildLabor ||
       picked.startForcedLabor || picked.extendForcedLabor || picked.startExclusion || picked.extendExclusion);
+    window.IslandArt?.setPreview(null);
     const result = S.resolveEvent(state, Number(choice.dataset.eventOption));
     if (result.ok) {
       sdk("sound", highImpact ? "click" : "success");
+      window.IslandArt?.impactChoice(picked, picked?.label || event?.title || "결정");
       toast(result.note || "시민들이 결정을 확인했습니다.");
       save(); render();
     } else toast(result.reason);
