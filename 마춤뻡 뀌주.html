@@ -57,7 +57,7 @@ button,select{font:inherit}.hidden{display:none!important}.screen{min-height:100
 <section id="play" class="screen hidden">
  <div class="game-wrap">
   <div class="hud">
-    <div class="hud-left"><span id="hearts">❤️❤️❤️</span><br><small id="round-label">1 / 20</small></div>
+    <div class="hud-left"><span id="hearts">오답 0</span><br><small id="round-label">1 / 20</small></div>
     <div class="hud-center"><div id="score" class="score">0</div><div id="rank" class="rank">맞춤법 새싹</div></div>
     <div class="combo"><span id="combo">0 COMBO</span> <button id="btn-sound" class="sound">🔊</button></div>
   </div>
@@ -97,7 +97,7 @@ const QUESTION_BANK=[{"c":"지금 가면 안 돼","w":"지금 가면 안 되","c
 const ROUND_SIZE=20;
 const STORE={score:"swipeSpellingScore",rank:"swipeSpellingRank",mistakes:"swipeSpellingMistakesV2",rounds:"swipeSpellingRoundsV2",title:"swipeSpellingTitleLevel",sound:"swipeSpellingSoundV2"};
 let selectedDifficulty="전체",selectedCategory="전체",practiceWrongOnly=false;
-let queue=[],cursor=0,score=0,combo=0,lives=3,baseAnswered=0,firstCorrect=0,recovered=0,current=null,locked=false;
+let queue=[],cursor=0,score=0,combo=0,mistakesThisRound=0,baseAnswered=0,firstCorrect=0,recovered=0,current=null,locked=false;
 let roundWrong=[],categoryStats={},soundOn=localStorage.getItem(STORE.sound)!=="off",audioCtx=null;
 
 const $=id=>document.getElementById(id);
@@ -115,23 +115,23 @@ function populateCategories(){const cats=["전체",...new Set(QUESTION_BANK.map(
 function filteredBank(){let bank=QUESTION_BANK.filter(q=>(selectedDifficulty==="전체"||q.difficulty===selectedDifficulty)&&(selectedCategory==="전체"||q.category===selectedCategory));if(practiceWrongOnly){const m=getMistakes();bank=bank.filter(q=>m[q.c]?.wrong>0)}return bank}
 function updateBankCount(){const n=filteredBank().length;$("bank-count").textContent=practiceWrongOnly?"내 오답 "+n+"개":"출제 가능 "+n+"개"}
 function setScreen(id){for(const x of ["start","play","result"])$(x).classList.toggle("hidden",x!==id)}
-function startGame(wrongOnly=false){practiceWrongOnly=wrongOnly;let bank=filteredBank();if(bank.length<2){practiceWrongOnly=false;bank=filteredBank();alert("이 조건의 문제가 너무 적어 전체 문제에서 출제할게요.")}const base=shuffle(bank).slice(0,Math.min(ROUND_SIZE,bank.length));queue=base.map(q=>({...q,isRetry:false,retryScheduled:false}));cursor=0;score=0;combo=0;lives=3;baseAnswered=0;firstCorrect=0;recovered=0;roundWrong=[];categoryStats={};locked=false;setScreen("play");showQuestion();updateHUD()}
+function startGame(wrongOnly=false){practiceWrongOnly=wrongOnly;let bank=filteredBank();if(bank.length<2){practiceWrongOnly=false;bank=filteredBank();alert("이 조건의 문제가 너무 적어 전체 문제에서 출제할게요.")}const base=shuffle(bank).slice(0,Math.min(ROUND_SIZE,bank.length));queue=base.map(q=>({...q,isRetry:false,retryScheduled:false}));cursor=0;score=0;combo=0;mistakesThisRound=0;baseAnswered=0;firstCorrect=0;recovered=0;roundWrong=[];categoryStats={};locked=false;setScreen("play");showQuestion();updateHUD()}
 function showQuestion(){if(cursor>=queue.length)return finishGame();current=queue[cursor];const leftCorrect=Math.random()<.5;current.answer=leftCorrect?"left":"right";current.left=leftCorrect?current.c:current.w;current.right=leftCorrect?current.w:current.c;$("left").textContent=current.left;$("right").textContent=current.right;$("left").className="choice";$("right").className="choice";$("card").style.transform="";$("card").classList.remove("dragging");$("feedback").classList.add("hidden");$("difficulty-tag").textContent=current.isRetry?"복습":current.difficulty;$("category-tag").textContent=current.category;locked=false;updateHUD()}
-function updateHUD(){const displayIndex=Math.min(baseAnswered+1,ROUND_SIZE);$("round-label").textContent=(current?.isRetry?"복습 · ":"")+displayIndex+" / "+Math.min(ROUND_SIZE,queue.filter(q=>!q.isRetry).length);$("score").textContent=score;$("rank").textContent=rankFor(score);$("combo").textContent=combo+" COMBO";$("hearts").textContent="❤️".repeat(Math.max(0,lives))+"🖤".repeat(Math.max(0,3-lives));$("progress-bar").style.width=(Math.min(baseAnswered,ROUND_SIZE)/ROUND_SIZE*100)+"%"}
+function updateHUD(){const displayIndex=Math.min(baseAnswered+1,ROUND_SIZE);$("round-label").textContent=(current?.isRetry?"복습 · ":"")+displayIndex+" / "+Math.min(ROUND_SIZE,queue.filter(q=>!q.isRetry).length);$("score").textContent=score;$("rank").textContent=rankFor(score);$("combo").textContent=combo+" COMBO";$("hearts").textContent="오답 "+mistakesThisRound;$("progress-bar").style.width=(Math.min(baseAnswered,ROUND_SIZE)/ROUND_SIZE*100)+"%"}
 function statFor(q){categoryStats[q.category] ||= {seen:0,correct:0};return categoryStats[q.category]}
 function recordMistake(q,correct){const m=getMistakes();m[q.c] ||= {wrong:0,correct:0,last:0};if(correct)m[q.c].correct++;else m[q.c].wrong++;m[q.c].last=Date.now();if(m[q.c].correct>=2&&m[q.c].wrong>0)m[q.c].mastered=true;saveMistakes(m)}
 function answer(dir){if(locked||!current)return;locked=true;const ok=dir===current.answer;const correctEl=current.answer==="left"?$("left"):$("right"),wrongEl=current.answer==="left"?$("right"):$("left");correctEl.classList.add("good");if(!ok)wrongEl.classList.add("bad");
  const s=statFor(current);
  if(!current.isRetry){baseAnswered++;s.seen++;if(ok){s.correct++;firstCorrect++}}
  if(ok){soundCorrect();score+=10+Math.min(combo,10)*5;combo++;if(current.isRetry){recovered++;recordMistake(current,true)}showFeedback(true,current.isRetry?"복습 성공!":"정답!",current.explain);setTimeout(next,650)}
- else{soundWrong();combo=0;lives=Math.max(0,lives-1);recordMistake(current,false);if(!roundWrong.some(x=>x.c===current.c))roundWrong.push(current);
+ else{soundWrong();combo=0;mistakesThisRound++;recordMistake(current,false);if(!roundWrong.some(x=>x.c===current.c))roundWrong.push(current);
    if(!current.isRetry&&!current.retryScheduled){current.retryScheduled=true;const retry={...current,isRetry:true,retryScheduled:true};delete retry.answer;delete retry.left;delete retry.right;const gap=3+Math.floor(Math.random()*3);queue.splice(Math.min(queue.length,cursor+gap+1),0,retry)}
    showFeedback(false,"정답: "+current.c,current.explain);setTimeout(next,1450)}
  updateHUD()}
 function showFeedback(ok,title,msg){const f=$("feedback");f.className="feedback "+(ok?"good":"bad");f.innerHTML="<b>"+title+"</b><br>"+msg}
-function next(){cursor++;if(cursor>=queue.length||lives<=0&&baseAnswered>=ROUND_SIZE)return finishGame();showQuestion()}
+function next(){cursor++;if(cursor>=queue.length)return finishGame();showQuestion()}
 function finishGame(){const attempted=Math.max(1,baseAnswered),accuracy=Math.round(firstCorrect/attempted*100),best=Math.max(Number(localStorage.getItem(STORE.score)||0)||0,score);localStorage.setItem(STORE.score,String(best));localStorage.setItem(STORE.rank,rankFor(score));
- const rounds=Number(localStorage.getItem(STORE.rounds)||0)+1;localStorage.setItem(STORE.rounds,String(rounds));let lv=Number(localStorage.getItem(STORE.title)||0);if(lv<1)lv=1;if(lv<2&&(rounds>=3||accuracy>=90))lv=2;localStorage.setItem(STORE.title,String(lv));
+ const rounds=Number(localStorage.getItem(STORE.rounds)||0)+1;localStorage.setItem(STORE.rounds,String(rounds));let lv=Number(localStorage.getItem(STORE.title)||0);if(lv===0)lv=1;else if(lv===1&&(rounds>=3||accuracy>=90))lv=2;localStorage.setItem(STORE.title,String(lv));
  $("result-accuracy").textContent=accuracy+"%";$("result-recovered").textContent=recovered;$("result-score").textContent=score;$("result-best").textContent=best;$("result-message").textContent=accuracy>=90?"정확도가 아주 높아요. 헷갈린 표현만 한 번 더 보면 좋아요.":accuracy>=70?"좋아요. 틀린 표현은 복습에서 다시 만나도록 저장했어요.":"오답을 저장했어요. ‘오답만 다시’로 바로 복습할 수 있어요.";
  $("category-result").innerHTML=Object.entries(categoryStats).sort((a,b)=>b[1].seen-a[1].seen).map(([k,v])=>'<div class="row"><span>'+k+'</span><b>'+v.correct+' / '+v.seen+'</b></div>').join("")||'<div class="row"><span>기록 없음</span><b>-</b></div>';
  $("wrong-list").innerHTML=roundWrong.length?roundWrong.map(q=>'<div class="wrong-item"><b>'+q.c+' ← '+q.w+'</b><span>'+q.explain+'</span></div>').join(""):'<div class="row"><span>이번 판은 오답이 없어요!</span><b>🎉</b></div>';
