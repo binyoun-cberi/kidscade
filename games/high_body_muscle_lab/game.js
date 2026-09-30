@@ -12,7 +12,8 @@ const ui={
   incomingTitle:$('incomingTitle'),incomingHint:$('incomingHint'),coach:$('coach'),impact:$('impact'),
   xrayBtn:$('xrayBtn'),resetBtn:$('resetBtn'),helpBtn:$('helpBtn'),leftArmState:$('leftArmState'),rightArmState:$('rightArmState'),
   coreLock:$('coreLock'),legLock:$('legLock'),resultCard:$('resultCard'),resultIcon:$('resultIcon'),resultTitle:$('resultTitle'),
-  resultText:$('resultText'),scienceText:$('scienceText'),nextBtn:$('nextBtn'),tutorial:$('tutorial'),tutorialStart:$('tutorialStart')
+  resultText:$('resultText'),scienceText:$('scienceText'),nextBtn:$('nextBtn'),tutorial:$('tutorial'),tutorialStart:$('tutorialStart'),
+  firstGuide:document.getElementById('firstGuide'),guideAction:document.getElementById('guideAction'),guideNext:document.getElementById('guideNext'),guideProgress:document.getElementById('guideProgress')
 };
 
 const STAGES=[
