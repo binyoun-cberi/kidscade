@@ -120,3 +120,6 @@ button{border:0;cursor:pointer}
  .story-card{min-height:120px}.story-card img{width:58px;height:58px}.story-card .emoji{font-size:50px}
  .book{padding:34px 24px 34px 39px}.result-story{font-size:16px}
 }
+.accept-btn{margin:9px 0 0 7px;border-radius:10px;padding:7px 10px;background:#f5f1e9;color:#685a45;font-size:12px;font-weight:900;border:1px solid #e1d7c6}
+.accept-btn:hover{background:#ebf5eb;color:#246341}
+.issue-card:has(.accept-btn){border-color:#edc88a;background:#fffcf3}
