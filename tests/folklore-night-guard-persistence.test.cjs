@@ -63,12 +63,14 @@ test('Night Guard hallucination fake scares are cosmetic and protected from unfa
 });
 
 
-test('Night Guard keeps classroom-length nights and repeated Yuki heating', () => {
+test('Night Guard keeps classroom-length nights and real-time Yuki heat battle', () => {
   assert.match(html, /night1:\{duration:180/);
   assert.match(html, /night5:\{duration:180/);
   assert.match(html, /full:\{duration:210/);
-  assert.match(html, /heatHits:0/);
-  assert.match(html, /y\.heatHits=Math\.min\(3/);
-  assert.match(html, /if\(y\.heatHits>=3\)/);
-  assert.match(html, /난방 3\/3|유키온나가 물러났습니다/);
+  assert.match(html, /heatBattle:0/);
+  assert.match(html, /y\.heatBattle=Math\.min\(100/);
+  assert.match(html, /coldPush=/);
+  assert.match(html, /if\(y\.heatBattle>=100\)/);
+  assert.match(html, /난방 승리|유키온나 우세/);
+  assert.match(html, /id="heatBattleFill"/);
 });
