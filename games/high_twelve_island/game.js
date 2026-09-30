@@ -221,7 +221,7 @@
     const arriving = id === "new_resident" ? state.citizens.find(p => p.id === state.arrivalNotice?.citizenId) : null;
     $("speaker").innerHTML = characterPortrait(arriving ? arriving.name : event.speaker);
     $("modalTitle").textContent = arriving ? arriving.name + "님이 마을에 합류했습니다!" : event.title;
-    $("modalBody").textContent = arriving ? arriving.origin + " " + arriving.experience + "이(가) 있으며, " + S.PRIORITY_TITLES[arriving.focus] + "에 관심이 있습니다." : event.body;
+    $("modalBody").textContent = arriving ? arriving.origin + " 이전에는 " + arriving.experience + "을(를) 쌓았고, " + S.PRIORITY_TITLES[arriving.focus] + "에 관심이 있습니다." : event.body;
     $("modalHint").textContent = arriving ? "주민 명부에서 새로운 주민의 현재 생각을 확인할 수 있습니다." : "선택에 따라 자원과 시민들의 반응이 달라집니다. 사건을 해결하면 시간이 다시 흐릅니다.";
     element.modalOptions.innerHTML = event.options.map((o, i) => {
       const afford = !o.cost || Object.entries(o.cost).every(([key, n]) => state[key] >= n);
