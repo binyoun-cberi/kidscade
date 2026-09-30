@@ -1072,7 +1072,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   <div class="card">
     <h1>괴담 야간경비</h1>
     <p>할로윈 행사가 끝난 학교. 모두 하교한 뒤 빈 교실과 복도에서 이상 현상이 시작됐습니다. 야간 경비실의 CCTV와 문·조명 장치를 이용해 <b>자정부터 오전 6시까지</b> 버티세요.</p>
-    <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 난방기, 경고, 봉인력 장비 아이콘"><div class="rules-box">
+    <img class="asset-strip" src="../../assets/game/2d/instruments.png" alt="CCTV, 문, 손전등, 온도계, 경고, 봉인력 장비 아이콘"><div class="rules-box">
       <b>야간 경비 원칙</b><br>
       근무에 배치된 존재는 <b>처음부터 학교 어딘가에 있으며 사라지지 않습니다.</b><br>
       CCTV로 “언제 나타났나”가 아니라 <b>“지금 어디에 있나”</b>를 추적하고, 서로 다른 대응 규칙을 구분하세요.
@@ -1250,7 +1250,7 @@ var GHOSTS={
     svg:'dokkaebi'},
   yuki:{name:'유키온나',origin:'일본',kind:'요괴·전승',
     fact:'유키온나는 일본의 눈과 겨울에 관련된 이야기에서 등장하는 존재로 전승에 따라 모습과 이야기가 달라집니다.',
-    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. CCTV 화면이 얼기 전에 난방을 작동시키세요.',
+    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. 충분히 얼었을 때 온도계의 ▲로 설정 온도를 올리세요.',
     svg:'yuki'},
   maiden:{name:'처녀귀신',origin:'한국',kind:'괴담·대중문화 이미지',
     fact:'미혼으로 죽은 여성의 원혼 이야기는 한국의 여러 괴담과 설화에 나타나며, 흰옷과 긴 머리 이미지는 후대 대중문화에서 더욱 정형화되었습니다.',
@@ -1468,7 +1468,7 @@ function renderCodex(){
           '<div class="quick-rule-card"><div class="who">6-1 물건이 달라짐 · 도깨비</div><div class="do">바뀐 물건 누르기</div><div class="hint">책상·사진·칠판·문을 비교</div></div>'+
           '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
         '</div>'+
-        '<div class="quick-rule-memory">한 줄 암기: <b>흰옷은 본다 · 얼굴 없으면 돌린다 · 갓은 연다 · 짐승은 닫는다 · 얼면 난방 · 교실 물건은 찾는다.</b></div>'+
+        '<div class="quick-rule-memory">한 줄 암기: <b>흰옷은 본다 · 얼굴 없으면 돌린다 · 갓은 연다 · 짐승은 닫는다 · 얼면 온도 올리기 · 교실 물건은 찾는다.</b></div>'+
         '<div class="rulebook-foot">더 자세한 설명은 위쪽 탭에서 확인할 수 있습니다.</div>'
     },
     {
@@ -2344,7 +2344,7 @@ function quizHtml(){
   var q=[
     {q:'눈과 추위와 관련된 일본 전승의 존재는?',a:['도깨비','유키온나','저승사자'],ok:1},
     {q:'게임에서 검은 갓과 긴 옷의 저승사자가 문 앞에 왔다면?',a:['문을 열어 둔다','문을 닫는다','CCTV만 계속 본다'],ok:0},
-    {q:'달걀귀신의 게임 규칙은?',a:['오래 바라본다','발견하면 다른 카메라로 돌린다','난방을 켠다'],ok:1}
+    {q:'달걀귀신의 게임 규칙은?',a:['오래 바라본다','발견하면 다른 카메라로 돌린다','온도를 올린다'],ok:1}
   ];
   return '<div class="quiz"><h3>짧은 근무 보고서</h3>'+q.map(function(x,i){return '<div class="quiz-q"><b>'+(i+1)+'. '+x.q+'</b><div class="answers">'+x.a.map(function(a,j){return '<button class="answer" data-q="'+i+'" data-a="'+j+'" data-ok="'+x.ok+'" type="button">'+a+'</button>'}).join('')+'</div></div>'}).join('')+'</div>';
 }
