@@ -48,6 +48,8 @@ Promise.all(parts.map(src=>fetch(src,{cache:'no-store'}).then(r=>{
   missions.forEach((m,i)=>{const p=stageProfile(i),b=document.createElement('button');b.className='mission-item'+(i>=progress.unlocked?' locked':'')+(progress.completed[i]?' done':'');b.disabled=i>=progress.unlocked;b.innerHTML='<b>'+(progress.completed[i]?'✓ ':'')+(i+1)+'. '+(p.boss?'코어 보스전':'탑뷰 코드 작전')+'</b><span>'+(arcNames[m.arc]||'버그 월드')+' · '+(m.concept||'알고리즘')+'</span>';b.onclick=()=>loadMission(i);r.append(b)});
 }`;
  source=source.replace(/function renderMissionGrid\(\)\{.*?\}\nfunction renderMap/s,gridRenderer+'\nfunction renderMap');
+ source=source.replace("world.guard=Math.max(0,world.guard);world.evade=Math.max(0,world.evade);","world.guard=Math.max(0,world.guard);world.evade=0;");
+ source=source.replace("e.rule&&e.rule.includes(c.split(' ')[0])","e.rule&&e.rule.includes(c)");
  const blob=new Blob([source],{type:'text/javascript'});
  const url=URL.createObjectURL(blob);
  return import(url).finally(()=>URL.revokeObjectURL(url));
