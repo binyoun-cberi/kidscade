@@ -909,7 +909,7 @@ let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
-let worldChunkIndex=new Map();
+let worldChunkIndex=new Map(),worldChunksGenerated=new Set(),worldChunkGenerationDepth=0;
 const WORLD_CHUNK_SIZE=16;
 function worldChunkKey(x,z){
   return Math.floor(x/WORLD_CHUNK_SIZE)+','+Math.floor(z/WORLD_CHUNK_SIZE);
@@ -1038,7 +1038,13 @@ function setRawBlock(x,y,z,data){
   }
   return true;
 }
-function getBlock(x,y,z){return worldData.get(worldKey(x,y,z))||null}
+function getBlock(x,y,z){
+  if(!inWorld(x,y,z))return null;
+  const chunk=worldChunkKey(x,z);
+  if(worldChunkGenerationDepth===0&&!worldChunksGenerated.has(chunk))
+    generateWorldChunk(Math.floor(x/WORLD_CHUNK_SIZE),Math.floor(z/WORLD_CHUNK_SIZE));
+  return worldData.get(worldKey(x,y,z))||null;
+}
 function isSolidData(data,x,y,z){
   if(!data)return false;
   if(data.type==='doorTop'){
@@ -1197,6 +1203,7 @@ function streamWorldMeshes(force=false){
   const minZ=Math.floor((cz-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   const maxZ=Math.floor((cz+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+    generateWorldChunk(bx,bz);
     const keys=worldChunkIndex.get(bx+','+bz);
     if(!keys)continue;
     for(const key of keys){
@@ -1236,46 +1243,76 @@ function addCollectible(id,x,y,z,color,label){
   m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;
   scene.add(m);collectibles.push(m);
 }
-function buildFreeWorld(){
-  worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();worldChunkIndex=new Map();
-  const heights=new Map();
-  for(let x=-WORLD_HALF;x<WORLD_HALF;x++)for(let z=-WORLD_HALF;z<WORLD_HALF;z++){
-    const h=terrainHeight(x,z),biomeId=worldRules.region(x,z),biome=worldRules.BIOMES[biomeId];
-    heights.set(x+','+z,h);
-    for(let y=WORLD_MIN_Y;y<=h;y++){
-      let type;
-      if(y===WORLD_MIN_Y)type='bedrock';
-      else if(y<=h-3){
-        type=y<4&&hash2(x*3+y,z*5-y)>.945?'ironOre':
-          biomeId==='badlands'&&y>1?'redSand':hash2(x+y*7,z-y*11)>.965?'gravel':'stone';
-      }else if(y<h)type=biome.sub;
-      else type=biome.ground;
-      setRawBlock(x,y,z,{type,natural:true});
-    }
-    if(h<SEA_LEVEL)for(let y=h+1;y<=SEA_LEVEL;y++)
-      setRawBlock(x,y,z,{type:'water',level:4,naturalSea:true,natural:true});
-  }
-  for(let x=-WORLD_HALF+3;x<WORLD_HALF-3;x++)for(let z=-WORLD_HALF+3;z<WORLD_HALF-3;z++){
-    const h=heights.get(x+','+z),kind=worldRules.region(x,z),b=worldRules.BIOMES[kind];
-    const r=Math.hypot(x,z),roll=hash2(x*13+7,z*17-11);
-    if(r<4||getBlock(x,h+1,z)||h<0)continue;
-    if(kind==='flowers'&&roll>.74){
-      setRawBlock(x,h+1,z,{type:'flower',natural:true});
-    }else if(kind==='desert'||kind==='badlands'){
-      if(roll>.985&&getBlock(x,h,z)?.type!=='water'){
-        for(let y=1;y<=2+Math.floor(hash2(x,z)*2);y++)
-          setRawBlock(x,h+y,z,{type:'cactus',natural:true});
+function generateWorldChunk(cx,cz){
+  const chunk=cx+','+cz;
+  if(worldChunksGenerated.has(chunk))return;
+  const minX=cx*WORLD_CHUNK_SIZE,minZ=cz*WORLD_CHUNK_SIZE;
+  if(minX>=WORLD_HALF||minZ>=WORLD_HALF||
+    minX+WORLD_CHUNK_SIZE<=-WORLD_HALF||minZ+WORLD_CHUNK_SIZE<=-WORLD_HALF)return;
+  worldChunksGenerated.add(chunk);worldChunkGenerationDepth++;
+  try{
+    const heights=new Map();
+    for(let x=Math.max(-WORLD_HALF,minX);x<Math.min(WORLD_HALF,minX+WORLD_CHUNK_SIZE);x++)
+      for(let z=Math.max(-WORLD_HALF,minZ);z<Math.min(WORLD_HALF,minZ+WORLD_CHUNK_SIZE);z++){
+        const h=terrainHeight(x,z),id=worldRules.region(x,z),biome=worldRules.BIOMES[id];
+        heights.set(x+','+z,h);
+        for(let y=WORLD_MIN_Y;y<=h;y++){
+          let type;
+          if(y===WORLD_MIN_Y)type='bedrock';
+          else if(y<=h-3)type=y<4&&hash2(x*3+y,z*5-y)>.945?'ironOre':
+            id==='badlands'&&y>1?'redSand':hash2(x+y*7,z-y*11)>.965?'gravel':'stone';
+          else if(y<h)type=biome.sub;
+          else type=biome.ground;
+          // Preserve leaves of neighboring chunks above the ground.
+          setRawBlock(x,y,z,{type,natural:true});
+        }
+        if(h<SEA_LEVEL)for(let y=h+1;y<=SEA_LEVEL;y++)
+          setRawBlock(x,y,z,{type:'water',level:4,naturalSea:true,natural:true});
       }
-    }else if(kind==='marsh'){
-      if(roll>.966)for(let y=1;y<=2;y++)setRawBlock(x,h+y,z,{type:'reed',natural:true});
-      else if(roll>.987)growTree(x,h+1,z,false,'forest');
-    }else if(roll>1-b.trees&&!(x%3===0&&z%3===0)){
-      growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
+    for(let x=Math.max(-WORLD_HALF+3,minX);x<Math.min(WORLD_HALF-3,minX+WORLD_CHUNK_SIZE);x++)
+      for(let z=Math.max(-WORLD_HALF+3,minZ);z<Math.min(WORLD_HALF-3,minZ+WORLD_CHUNK_SIZE);z++){
+        const h=heights.get(x+','+z),kind=worldRules.region(x,z),b=worldRules.BIOMES[kind];
+        const r=Math.hypot(x,z),roll=hash2(x*13+7,z*17-11);
+        if(r<4||getBlock(x,h+1,z)||h<0)continue;
+        if(kind==='flowers'&&roll>.74){
+          setRawBlock(x,h+1,z,{type:'flower',natural:true});
+        }else if(kind==='desert'||kind==='badlands'){
+          if(roll>.985&&getBlock(x,h,z)?.type!=='water')
+            for(let y=1;y<=2+Math.floor(hash2(x,z)*2);y++)
+              setRawBlock(x,h+y,z,{type:'cactus',natural:true});
+        }else if(kind==='marsh'){
+          if(roll>.966)
+            for(let y=1;y<=2;y++)setRawBlock(x,h+y,z,{type:'reed',natural:true});
+          else if(roll>.987)growTree(x,h+1,z,false,'forest');
+        }else if(roll>1-b.trees&&!(x%3===0&&z%3===0)){
+          growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
+        }
+      }
+    // Save files store only changes. Reapply those changes after natural terrain.
+    if(worldEdits?.size)for(const [key,change] of worldEdits){
+      const [x,y,z]=parseWorldKey(key);
+      if(worldChunkKey(x,z)===chunk)setRawBlock(x,y,z,change);
     }
-  }
-  // Guarantee accessible timber during the very first survival objective.
+  }finally{worldChunkGenerationDepth--}
+}
+function addCollectible(id,x,y,z,color,label){
+  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),
+    new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
+  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;
+  scene.add(m);collectibles.push(m);
+}
+function buildFreeWorld(){
+  worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
+  worldChunkIndex=new Map();worldChunksGenerated=new Set();worldChunkGenerationDepth=0;
+  const radius=WORLD_VIEW_RADIUS+5;
+  const xMin=Math.floor(-radius/WORLD_CHUNK_SIZE),xMax=Math.floor(radius/WORLD_CHUNK_SIZE);
+  const zMin=Math.floor((5-radius)/WORLD_CHUNK_SIZE);
+  const zMax=Math.floor((5+radius)/WORLD_CHUNK_SIZE);
+  for(let cx=xMin;cx<=xMax;cx++)for(let cz=zMin;cz<=zMax;cz++)
+    generateWorldChunk(cx,cz);
+  // Always provide a few nearby trees even when procedural vegetation is sparse.
   for(const [x,z] of [[6,3],[-6,4],[5,-6]]){
-    const y=heights.get(x+','+z);
+    const y=terrainHeight(x,z);
     if(y>=0&&!getBlock(x,y+1,z))growTree(x,y+1,z,false,'forest');
   }
   const ruinY=Math.max(terrainHeight(10,10),terrainHeight(8,8))+1;
@@ -1291,7 +1328,7 @@ function buildFreeWorld(){
     ['bp3',43,23,0x6f72ff,'협곡의 설계도 조각']
   ];
   for(const [id,x,z,color,label] of discoveries)
-    addCollectible(id,x,terrainHeight(x,z)+1.15,z,color,label);
+    addCollectible(id,x,terrainHeight(x,z)+1.8,z,color,label);
   freeHemi=scene.children.find(o=>o.isHemisphereLight)||null;
   freeSun=scene.children.find(o=>o.isDirectionalLight)||null;
 }
