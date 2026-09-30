@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=16/);
+  assert.match(html,/game\.js\?v=17/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -57,7 +57,7 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/character-male-a\.glb/);
   assert.match(js,/road-bridge\.glb/);
   assert.match(js,/ambulance\.glb/);
-  assert.match(js,/addScaledVector\(f,y\)/);
+  assert.match(js,/player\.wishDir\.addScaledVector\(right,x\)\.addScaledVector\(forward,-y\)/);
   assert.match(js,/groundColor/);
   assert.match(js,/makeRiverGeometry/);
   assert.match(js,/cameraBlocked/);
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v16',()=>{
+test('game is registered in catalog metadata v17',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=16');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=17');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,8 +109,8 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=16/);
-  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=12$/);
+  assert.match(html,/game\.js\?v=17/);
+  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=17$/);
 });
 
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v16 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v17 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=16/);
+  assert.match(html,/game\.js\?v=17/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -184,4 +184,33 @@ test('game feel layer provides audio, impact feedback and living residents',()=>
   assert.match(js,/fovTarget=player\.speed>7\?59:55/);
   assert.match(css,/\.interact\.pop/);
   assert.match(css,/\.resident-row span small/);
+});
+
+
+test('controller architecture follows the reference projects without regressing classroom controls',()=>{
+  assert.match(js,/velocity:new THREE\.Vector3\(\)/);
+  assert.match(js,/wishDir:new THREE\.Vector3\(\)/);
+  assert.match(js,/locomotion:'idle'/);
+  assert.match(js,/function setLocomotion/);
+  assert.match(js,/function dampAngle/);
+  assert.match(js,/function tryPlayerMove/);
+  assert.match(js,/player\.velocity\.x=damp/);
+  assert.match(js,/sprinting&&player\.speed>5\.8\?'sprint':'walk'/);
+  assert.match(js,/circleAabbHit/);
+  assert.match(js,/segmentAabbT/);
+  assert.match(js,/interactionLineClear/);
+  assert.match(js,/facing<-\.18/);
+});
+
+test('resident simulation is schedule-driven and settlement metrics come from live world state',()=>{
+  assert.match(js,/const JOB_SCHEDULES=/);
+  assert.match(js,/function residentSchedule/);
+  assert.match(js,/function settlementMetrics/);
+  assert.match(js,/function residentTryStep/);
+  assert.match(js,/detourSide/);
+  assert.match(js,/stuck=\(n\.userData\.stuck\|\|0\)\+dt/);
+  assert.match(js,/resilience=Math\.round/);
+  assert.match(js,/생활 압박/);
+  assert.match(css,/\.settlement-metrics/);
+  assert.match(css,/\.settlement-bars/);
 });
