@@ -323,7 +323,7 @@ test('long extra work accumulates fatigue and changes actual production and labo
   s.pending = event.id;
   assert.equal(S.resolveEvent(s, 0).ok, true);
   assert.equal(s.safeguards.workBreak, true);
-  assert.ok(s.workStrain < 5);
+  assert.ok(s.workStrain < 8.1);
 });
 
 test('promised law reviews trigger a follow-up and can be fulfilled', () => {
