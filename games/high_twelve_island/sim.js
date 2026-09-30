@@ -569,38 +569,51 @@
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
 
+    { id:"basic_water_supply", priority:65, repeat:18,
+      when:s=>s.tick>=23 && s.water<48 && s.wood>=4,
+      title:"💧 안정적인 식수 확보 계획",speaker:"미래",
+      body:"다음 재난을 대비하려면 마실 물을 보충해야 합니다. 식량 생산에 쓰던 시간과 물자를 일부 사용해야 합니다.",
+      options:[
+        {label:"물자 4를 사용해 간이 수로를 청소해요.",cost:{wood:4},changes:{water:26},
+          note:"식수 26을 확보하지만 다른 시설에 쓸 물자가 줄어듭니다."},
+        {label:"성인 일꾼을 물 긷기로 잠시 돌려요.",waterFetch:19,quietRest:3,
+          note:"물 19를 얻고 작업 피로가 늘며 3주 동안 생산량이 감소합니다."},
+        {label:"일단 저장량을 지켜보며 생산을 계속해요.",changes:{trust:-1},
+          note:"다른 자원을 쓰지 않지만 식수가 더 줄어들 수 있습니다."}
+      ]},
+
     { id:"heat_alert", priority:119, emergency:true, when:s=>s.disasterUnanswered.heat,
       title:"☀️ 폭염, 그늘 밖에서 일하기 어렵습니다", speaker:"미래",
       body:"식수가 빠르게 줄고 작업 효율이 떨어졌습니다. 햇볕 아래서 채집을 계속할지, 그늘과 휴식을 마련할지 정해야 합니다.",
       options:[
-        {label:"목재 12로 그늘막과 급수소를 설치해요.",cost:{wood:12},disasterResponse:"heat",climateCare:{kind:"heat",duration:13},
+        {label:"목재 12로 그늘막과 급수소를 설치해요.",cost:{wood:12},disasterResponse:"heat",groupChanges:{workers:.55,families:-.8},climateCare:{kind:"heat",duration:13},
           changes:{water:12,trust:2},note:"폭염 동안 생산 감소를 줄이고 식수를 확보하지만 목재 비축량이 감소합니다."},
-        {label:"야외 작업 시간을 줄이고 물을 길어 와요.",disasterResponse:"heat",quietRest:5,waterFetch:13,
+        {label:"야외 작업 시간을 줄이고 물을 길어 와요.",disasterResponse:"heat",groupChanges:{workers:.15,families:-.65},quietRest:5,waterFetch:13,
           climateCare:{kind:"heat",duration:8},note:"식수 13을 확보하고 열 노출을 줄이지만 5주간 생산량이 감소합니다."},
-        {label:"평소처럼 계속 작업해요.",disasterResponse:"heat",changes:{water:-8,health:-6,trust:-3},
+        {label:"평소처럼 계속 작업해요.",disasterResponse:"heat",groupChanges:{families:1.4,carers:.55,workers:.3},changes:{water:-8,health:-6,trust:-3},
           note:"당장 목재는 아끼지만 식수와 건강이 줄고 가족들이 대응을 요구할 수 있습니다."}
       ]},
     { id:"flood_alert",priority:118,emergency:true,when:s=>s.disasterUnanswered.flood,
       title:"🌊 홍수가 농지와 창고를 덮쳤습니다",speaker:"태오",
       body:"홍수로 식량과 물자 일부가 유실됐고 식수가 오염됐습니다. 농지와 거처가 정상화될 때까지 생산이 감소합니다.",
       options:[
-        {label:"목재 14로 배수로와 방벽을 보강해요.",cost:{wood:14},disasterResponse:"flood",floodRepair:4,
+        {label:"목재 14로 배수로와 방벽을 보강해요.",cost:{wood:14},disasterResponse:"flood",groupChanges:{workers:.45,families:-.5},floodRepair:4,
           changes:{water:8,trust:2},note:"손실된 물자는 돌아오지 않지만 시설 피해 기간을 줄이고 식수 일부를 복구합니다."},
-        {label:"주민을 안전한 곳으로 옮기고 급한 부분부터 복구해요.",disasterResponse:"flood",floodRelocate:true,
+        {label:"주민을 안전한 곳으로 옮기고 급한 부분부터 복구해요.",disasterResponse:"flood",groupChanges:{families:.28,workers:.2},floodRelocate:true,
           waterFetch:5,note:"별도 목재 없이 대피하고 물을 확보합니다. 작업 피로가 늘고 시설 복구는 더 오래 걸립니다."},
-        {label:"재해가 지나갈 때까지 시설을 그대로 둬요.",disasterResponse:"flood",
+        {label:"재해가 지나갈 때까지 시설을 그대로 둬요.",disasterResponse:"flood",groupChanges:{families:1,carers:.9},
           changes:{health:-7,water:-9,trust:-3},note:"즉각적인 추가 지출은 없지만 오염된 식수와 긴 복구 기간으로 건강이 악화됩니다."}
       ]},
     { id:"dust_alert",priority:117,emergency:true,when:s=>s.disasterUnanswered.dust,
       title:"🌫️ 황사가 섬을 뒤덮었습니다",speaker:"하나",
       body:"먼지가 심해 야외 작업과 이동이 어렵습니다. 공기 질이 계속 떨어지면 건강과 어린이들의 생활에도 영향이 생깁니다.",
       options:[
-        {label:"목재 9로 필터와 실내 대피 공간을 마련해요.",cost:{wood:9},disasterResponse:"dust",
+        {label:"목재 9로 필터와 실내 대피 공간을 마련해요.",cost:{wood:9},disasterResponse:"dust",groupChanges:{workers:.28,families:-.65},
           climateCare:{kind:"dust",duration:14},changes:{air:14,trust:2},
           note:"공기 질의 악화 속도를 줄이고 건강 피해를 완화하지만 목재가 필요합니다."},
-        {label:"야외 작업을 줄이고 실내에서 쉬어요.",disasterResponse:"dust",quietRest:5,
+        {label:"야외 작업을 줄이고 실내에서 쉬어요.",disasterResponse:"dust",groupChanges:{workers:.2,families:-.6},quietRest:5,
           climateCare:{kind:"dust",duration:11},changes:{air:6},note:"5주간 생산량이 감소하는 대신 야외 노출을 줄입니다."},
-        {label:"작업을 그대로 이어가요.",disasterResponse:"dust",changes:{air:-11,health:-5,childWellbeing:-3},
+        {label:"작업을 그대로 이어가요.",disasterResponse:"dust",groupChanges:{families:1.2,carers:.7},changes:{air:-11,health:-5,childWellbeing:-3},
           note:"목재와 당장 생산은 유지하지만 공기 오염과 건강 피해가 커질 수 있습니다."}
       ]},
     { id:"epidemic_alert",priority:120,emergency:true,when:s=>s.disasterUnanswered.epidemic,
@@ -608,12 +621,12 @@
       body:s=>"증상이 있는 주민이 " + Math.ceil(s.sick) + "명 있습니다. 돌봄을 지원하면 전파를 늦출 수 있지만 인력과 예산에 부담이 생깁니다.",
       options:[
         {label:"식량 10과 물자 7로 가정 돌봄과 위생용품을 지원해요.",cost:{food:10,wood:7},
-          disasterResponse:"epidemic",climateCare:{kind:"epidemic",duration:16},medicine:1,
+          disasterResponse:"epidemic",groupChanges:{carers:-.7,workers:.45},climateCare:{kind:"epidemic",duration:16},medicine:1,
           changes:{trust:2},note:"감염 확산을 늦추고 회복을 돕지만 당장의 식량과 물자가 부족해집니다."},
-        {label:"증상이 있는 주민이 자발적으로 쉬도록 업무를 조정해요.",disasterResponse:"epidemic",
+        {label:"증상이 있는 주민이 자발적으로 쉬도록 업무를 조정해요.",disasterResponse:"epidemic",groupChanges:{carers:-.5,workers:.35},
           climateCare:{kind:"epidemic",duration:11},quietRest:6,changes:{trust:1},
           note:"감염 확산을 완화하지만 6주 동안 생산량이 감소합니다."},
-        {label:"평소 업무를 유지하고 상황을 지켜봐요.",disasterResponse:"epidemic",
+        {label:"평소 업무를 유지하고 상황을 지켜봐요.",disasterResponse:"epidemic",groupChanges:{carers:1.2,families:.8},
           changes:{health:-5,trust:-2},sickness:2,
           note:"즉시 투입하는 자원은 없지만 감염이 확산되면 생산과 돌봄 기능에 영향을 줍니다."}
       ]},
@@ -1113,14 +1126,14 @@
     const g = s.groups, foodLow = s.food < 25, waterLow = s.water < 27;
     g.workers = clamp(g.workers +
       (s.forcedLaborUntil > s.tick ? .56 : 0) + (s.workStrain > 5 ? .20 : 0) +
-      (foodLow ? .12 : 0) + (s.strikes.workers > s.tick ? -.16 : -.14), 0, 10);
+      (foodLow ? .12 : 0) + (s.health < 30 ? .14 : 0) + (s.strikes.workers > s.tick ? -.16 : -.14), 0, 10);
     g.families = clamp(g.families +
       (s.childWorkUntil > s.tick ? .53 : 0) + (s.childWellbeing < 57 ? .20 : 0) +
-      (waterLow ? .18 : 0) + (s.health < 35 ? .12 : 0) +
+      (waterLow ? .18 : 0) + (s.health < 35 ? .12 : 0) + (disasterActive(s,"epidemic") && s.sick>=5 ? .12 : 0) +
       (s.strikes.families > s.tick ? -.12 : -.15), 0, 10);
     g.carers = clamp(g.carers +
       (s.exclusionUntil > s.tick ? .54 : 0) + (s.sick >= 4 ? .21 : 0) +
-      (s.health < 48 ? .12 : 0) + (s.strikes.carers > s.tick ? -.10 : -.15), 0, 10);
+      (s.health < 48 ? .16 : 0) + (s.water < 20 ? .10 : 0) + (s.strikes.carers > s.tick ? -.10 : -.15), 0, 10);
     if (g.workers >= 7.2 && s.strikes.workers <= s.tick) s.trust = clamp(s.trust - .30);
     if (g.families >= 7.2 && s.strikes.families <= s.tick) s.trust = clamp(s.trust - .30);
     if (g.carers >= 7.2 && s.strikes.carers <= s.tick) s.trust = clamp(s.trust - .30);
@@ -1205,6 +1218,8 @@
       s.groups.carers = clamp(s.groups.carers + .75, 0, 10);
       s.strikes.workers = Math.max(s.strikes.workers, s.tick + 5);
     }
+    if (choice.groupChanges) for (const [kind, amount] of Object.entries(choice.groupChanges))
+      s.groups[kind] = clamp(s.groups[kind] + amount, 0, 10);
     if (choice.disasterResponse) s.disasterUnanswered[choice.disasterResponse] = false;
   }
 
@@ -1252,12 +1267,14 @@
       if (choice.coldShelter === 1) s.workStrain = clamp(s.workStrain + 1.2, 0, 10);
     }
     if (choice.startChildLabor) {
+      s.groups.families = clamp(s.groups.families + 2.5, 0, 10);
       s.childWorkUntil = s.tick + choice.startChildLabor;
       s.childWorkWeeks = 0; s.childLaborReviewed = false;
       rightsHistory(s, "어린이 위험 노동", "시작", "어린이에게 위험한 야외 채집을 지시했습니다.");
     }
     if (choice.stopChildLabor) endChildLabor(s);
     if (choice.continueChildLabor) {
+      s.groups.families = clamp(s.groups.families + 1.6, 0, 10);
       s.childWorkUntil = s.tick + choice.continueChildLabor;
       s.childWellbeing = clamp(s.childWellbeing - 9);
       s.education = clamp(s.education - 8);
@@ -1266,22 +1283,27 @@
       record(s, "위험 작업이 계속되면서 어린이의 건강과 학습 기회가 더 줄었습니다.");
     }
     if (choice.startForcedLabor) {
+      s.groups.workers = clamp(s.groups.workers + 2.6, 0, 10);
       s.forcedLaborUntil = s.tick + choice.startForcedLabor;
       s.forcedLaborWeeks = 0; s.laborReviewed = false;
       rightsHistory(s, "강제 노동", "시작", "동의 없는 성인 강제 근무를 시행했습니다.");
     }
     if (choice.endForcedLabor) endForcedLabor(s);
     if (choice.extendForcedLabor) {
+      s.groups.workers = clamp(s.groups.workers + 1.5, 0, 10);
       s.forcedLaborUntil = s.tick + choice.extendForcedLabor;
       s.forcedLaborWeeks = 0; s.laborReviewed = false;
     }
     if (choice.startExclusion) {
+      s.groups.carers = clamp(s.groups.carers + 2.6, 0, 10);
+      s.groups.families = clamp(s.groups.families + 1.0, 0, 10);
       s.exclusionUntil = s.tick + choice.startExclusion;
       s.exclusionWeeks = 0; s.exclusionReviewed = false;
       rightsHistory(s, "일부 주민 배급 제외", "시작", "일할 수 없는 주민 일부를 배급에서 제외했습니다.");
     }
     if (choice.endExclusion) endExclusion(s);
     if (choice.extendExclusion) {
+      s.groups.carers = clamp(s.groups.carers + 1.3, 0, 10);
       s.exclusionUntil = s.tick + choice.extendExclusion;
       s.exclusionWeeks = 0; s.exclusionReviewed = false;
     }
