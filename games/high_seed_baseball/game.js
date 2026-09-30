@@ -95,6 +95,53 @@ function pitchScreenPoint(p,t=clamp(p.t,0,1)){
  const targetX=p.actual.x+p.breakX*curve,targetY=p.actual.y+p.breakY*curve;
  return{x:lerp(480,targetX,u),y:lerp(235,targetY,u)};
 }
+const TRAIL_STYLE={
+ fastball:{rgb:'219,234,254',interval:.018,bonus:0},
+ curve:{rgb:'253,230,138',interval:.026,bonus:2},
+ change:{rgb:'186,230,253',interval:.034,bonus:0},
+ slider:{rgb:'221,214,254',interval:.022,bonus:1},
+ hit:{rgb:'255,244,202',interval:.030,bonus:0},
+ throw:{rgb:'226,232,240',interval:.022,bonus:0}
+};
+function trailVisibility(){return difficulty==='easy'?1:difficulty==='normal'?.72:.46}
+function pitchTrailLimit(type){
+ const base=difficulty==='easy'?7:difficulty==='normal'?6:4;
+ return base+(TRAIL_STYLE[type]?.bonus||0);
+}
+function recordPitchTrail(p,dt){
+ const style=TRAIL_STYLE[p.type]||TRAIL_STYLE.fastball;
+ p.trailClock=(p.trailClock||0)+dt;
+ if(p.trailClock<style.interval)return;
+ p.trailClock=0;p.trail=p.trail||[];
+ const pt=pitchScreenPoint(p),r=p.owner==='cpu'?lerp(5,14,clamp(p.t,0,1)):lerp(11,5,clamp(p.t,0,1));
+ p.trail.push({x:pt.x,y:pt.y,r});
+ const max=pitchTrailLimit(p.type);if(p.trail.length>max)p.trail.splice(0,p.trail.length-max);
+}
+function recordFieldTrail(ball,dt){
+ if(!ball||ball.owner)return;
+ const style=TRAIL_STYLE.hit;ball.trailClock=(ball.trailClock||0)+dt;
+ if(ball.trailClock<style.interval)return;
+ ball.trailClock=0;ball.trail=ball.trail||[];
+ ball.trail.push({x:ball.x,y:ball.y-ball.z*.23,r:5+Math.min(3,ball.z*.008)});
+ const max=ball.trailMax||4;if(ball.trail.length>max)ball.trail.splice(0,ball.trail.length-max);
+}
+function drawTrajectoryTrail(points,type='fastball',intensity=1){
+ if(!points||points.length<2)return;
+ const style=TRAIL_STYLE[type]||TRAIL_STYLE.fastball,vis=trailVisibility()*intensity;
+ ctx.save();ctx.lineCap='round';
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1],b=points[i],k=i/(points.length-1);
+  ctx.strokeStyle='rgba('+style.rgb+','+(.04+.25*k)*vis+')';
+  ctx.lineWidth=Math.max(1,(b.r||6)*(.28+.30*k));
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+ }
+ for(let i=0;i<points.length;i++){
+  const p=points[i],k=(i+1)/points.length;
+  ctx.fillStyle='rgba('+style.rgb+','+(.035+.18*k)*vis+')';
+  ctx.beginPath();ctx.arc(p.x,p.y,Math.max(1,(p.r||5)*(.18+.32*k)),0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+}
 function batTip(angle=batAngle){return{x:BAT.px-BAT.length*Math.cos(angle),y:BAT.py+BAT.length*Math.sin(angle)}}
 function batDistance(x,y,angle=batAngle){return closestBatPoint(x,y,angle).distance}
 function setBatAngle(next){
@@ -233,7 +280,7 @@ function spawnCpuPitch(){
   if(side===3){tx=rand(410,550);ty=rand(390,420)}
  }
  if(lessonActive&&inning===1&&half==='top'&&lessonPitchCount===0){tx=480;ty=330}
- pitch={owner:'cpu',type,t:0,duration:(1.06/p.speed)/cfg().pitchSpeed*(lessonActive&&inning===1&&half==='top'?1.16:1),target:{x:tx,y:ty},actual:{x:tx,y:ty},breakX:p.breakX,breakY:p.breakY,swung:false};
+ pitch={owner:'cpu',type,t:0,duration:(1.06/p.speed)/cfg().pitchSpeed*(lessonActive&&inning===1&&half==='top'?1.16:1),target:{x:tx,y:ty},actual:{x:tx,y:ty},breakX:p.breakX,breakY:p.breakY,swung:false,trail:[],trailClock:0};
  lessonPitchCount++;message(p.label,.7);
 }
 function beginSwing(){swingNow('contact')}
@@ -311,7 +358,7 @@ function startOffenseBall(q,power,timing,verticalErr,sweet=.75){
  const centerFactor=.68+.32*sweet;
  const rawDist=(65+q*170+power*145+rand(-21,21))*centerFactor;
  const distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
- fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:170+launch*260,bounced:false,owner:null,age:0,maxDist:rawDist};
+ fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:170+launch*260,bounced:false,owner:null,age:0,maxDist:rawDist,trail:[],trailClock:0,trailMax:q>.72?8:q>.45?6:4,trailStrength:clamp(.42+q*.64,0,1)};
  offenseOutcome={q,power,rawDist,distanceM,launch,spray};offenseTimer=0;offenseDecision='stop';makeFielders(false);
  message(rawDist>325&&launch>.32?'담장까지 간다! 더 달릴까?':'타구가 날아갑니다! 주루를 판단하세요.',1.6);
 }
@@ -387,7 +434,7 @@ function throwBall(accuracy){
  const zone=pitchZone(pitchAim.x,pitchAim.y),readability=cpuReadability(selectedPitch,zone);
  pitch={owner:'user',type:selectedPitch,t:0,duration:(1.05/prof.speed)/cfg().pitchSpeed,
  target:{...pitchAim},actual:{x:ax,y:ay},breakX:prof.breakX,breakY:prof.breakY,accuracy,
- readability,swung:false,cpuDecision:null};
+ readability,swung:false,cpuDecision:null,trail:[],trailClock:0};
  cpuPitchHistory.push({type:selectedPitch,zone});if(cpuPitchHistory.length>8)cpuPitchHistory.shift();
  sound('pitch',.8+prof.speed*.16);decideCpuSwing();
  message(readability>.18?'타자가 반복된 구종·코스를 눈치챘어요!':prof.label+' 간다!',readability>.18?1.4:.7);
@@ -423,7 +470,7 @@ function startDefenseBall(contact,accuracy,fx,fy){
  state='defenseField';hint(lessonActive&&inning===1?'가까운 수비수를 움직여 공을 잡으세요':'');makeFielders(true);updateLesson();
  const spray=clamp((fx-480)/150+rand(-.42,.42),-.9,.9),launch=clamp((350-fy)/170+rand(.08,.38),.08,.72),power=clamp(contact+rand(-.18,.26)+(1-accuracy)*.18,.25,.95),rawDist=120+power*235;
  const dir=Math.PI/2+spray,speed=rawDist/(1.2+launch*1.55);
- fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:160+launch*250,bounced:false,owner:null,age:0,maxDist:rawDist};
+ fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:160+launch*250,bounced:false,owner:null,age:0,maxDist:rawDist,trail:[],trailClock:0,trailMax:power>.72?7:5,trailStrength:clamp(.40+power*.48,0,1)};
  defenseRunners=[];bases.forEach((on,i)=>{if(on)defenseRunners.push({from:i+1,to:i+2,p:0,speed:cfg().runnerSpeed*(.95+Math.random()*.12),running:true})});
  defenseRunners.push({from:0,to:1,p:0,speed:cfg().runnerSpeed*(.96+Math.random()*.1),running:true,batter:true});
  activeFielder=nearestFielder(predictedLanding());setControls('field');message('타구! 직접 잡아 송구하세요.',1.4);
@@ -487,7 +534,7 @@ function settleDefenseHit(n){
 }
 function updateBallPhysics(dt){
  if(!fieldBall||fieldBall.owner)return;
- fieldBall.age+=dt;fieldBall.x+=fieldBall.vx*dt;fieldBall.y+=fieldBall.vy*dt;fieldBall.z+=fieldBall.vz*dt;fieldBall.vz-=390*dt;
+ fieldBall.age+=dt;fieldBall.x+=fieldBall.vx*dt;fieldBall.y+=fieldBall.vy*dt;fieldBall.z+=fieldBall.vz*dt;fieldBall.vz-=390*dt;recordFieldTrail(fieldBall,dt);
  fieldBall.vx*=Math.pow(.994,dt*60);fieldBall.vy*=Math.pow(.994,dt*60);
  if(fieldBall.z<=0){fieldBall.z=0;if(Math.abs(fieldBall.vz)>55){fieldBall.vz=-fieldBall.vz*.34;fieldBall.bounced=true}else fieldBall.vz=0}
  fieldBall.x=clamp(fieldBall.x,115,845);fieldBall.y=clamp(fieldBall.y,105,490);
@@ -522,7 +569,7 @@ function endGame(){
 
 function updatePitch(dt){
  if(!pitch||(pitch.owner==='cpu'&&swing?.contact))return;
- pitch.t+=dt/pitch.duration;
+ pitch.t+=dt/pitch.duration;recordPitchTrail(pitch,dt);
  if(pitch.owner==='cpu'){if(pitch.t>=1&&!pitch.swung){calledUserPitch();pitch=null}}
  else{
   if(pitch.t>=.91&&!pitch.swung&&pitch.cpuDecision){pitch.swung=true;setTimeoutLike(()=>resolveCpuAtPlate(),.05)}
