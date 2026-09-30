@@ -56,7 +56,7 @@ function survivalSimulation(){
 }
 
 test('conservative seven-day route reaches the settlement without negative resources',()=>{
-  assert.match(js,/id==='garage'\?\{scrap:2,wood:1,battery:1\}/);
+  assert.match(js,/garageLocker:\{site:'garage',name:'금속 보관함',loot:\{wood:1,battery:1\}/);
   const s=survivalSimulation();
   for(const key of ['wood','stone','dirty','clean','food','potato','cooked','scrap','battery','cloth'])assert.ok(s[key]>=0,key);
 });
@@ -78,4 +78,19 @@ test('tutorial is action-driven and cannot deadlock after doing an action early'
   assert.match(js,/s===4&&game\.flags\.boil/);
   assert.match(js,/s===5&&game\.flags\.drink/);
   assert.match(js,/skipTutorial/);
+});
+
+
+test('road graph crosses the bridge before entering the ruined city',()=>{
+  for(const token of ["['mainCross','bridgeW']","['bridgeW','bridgeE']","['bridgeE','cityWest']","['cityMid','clinic']","['citySouth','garage']"])assert.ok(js.includes(token),token);
+  assert.match(js,/BRIDGE_Z=-27/);
+  assert.match(js,/Math\.abs\(z-BRIDGE_Z\)>3\.5/);
+});
+
+test('ruin exploration preserves the settlement-critical loot budget',()=>{
+  assert.match(js,/marketShelf:\{site:'market'.*loot:\{food:2\}/s);
+  assert.match(js,/marketBack:\{site:'market'.*loot:\{potato:2\}/s);
+  assert.match(js,/clinicCabinet:\{site:'clinic'.*loot:\{cloth:2\}/s);
+  assert.match(js,/garageBench:\{site:'garage'.*loot:\{scrap:2\}/s);
+  assert.match(js,/garageLocker:\{site:'garage'.*battery:1/s);
 });
