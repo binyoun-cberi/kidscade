@@ -323,7 +323,7 @@ function cityLot(x,z,w,d,labelText=''){
  box(w,.035,d,0x6d716c,x,.025,z);if(labelText)label(labelText,x,1.0,z)
 }
 function cityBuilding(file,x,z,target,w,d,rot=0,tag='city-building'){
- return placeWorldModelSafe(ART.city+file,{x,z,target,rot,w,d,tag})
+ const ok=placeWorldModelSafe(ART.city+file,{x,z,target,rot,w,d,tag});if(ok)addCollider(x,z,w*.82,d*.82,.12);return ok
 }
 function decorateWorld(){
  // 학교 야영지: 운동장과 경계가 보여야 출발 지점의 성격이 바로 읽힌다.
