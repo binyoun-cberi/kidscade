@@ -168,7 +168,8 @@ function setControls(mode){
   if(difficulty!=='easy')add('💥 강타','power','powerSwing');
  }else if(mode==='pitch'){
   ['fastball:직구','curve:커브','change:체인지업','slider:슬라이더'].forEach(pair=>{const [a,t]=pair.split(':');add(t,a===selectedPitch?'active':'','pitch:'+a)});
-  const th=add('던지기','primary','throw',true);th.addEventListener('pointerdown',()=>beginThrow());th.addEventListener('pointerup',()=>releaseThrow());th.addEventListener('pointercancel',()=>releaseThrow());
+  if(difficulty==='hard'){const th=add('충전 후 던지기','primary','throw',true);th.addEventListener('pointerdown',()=>beginThrow());th.addEventListener('pointerup',()=>releaseThrow());th.addEventListener('pointercancel',()=>releaseThrow())}
+  else add('⚾ 던지기','primary','pitchNow');
  }else if(mode==='field'){
   add('◀','', 'left',true);add('▲','', 'up',true);add('▼','', 'down',true);add('▶','', 'right',true);
   if(activeFielder>=0&&fielders[activeFielder]?.hasBall){add('1루','blue','base1');add('2루','blue','base2');add('3루','blue','base3');add('홈','red','base4')}
@@ -179,6 +180,7 @@ function setControls(mode){
 function controlAction(a){
  if(a==='swing'){swingNow('contact');return}
  if(a==='powerSwing'){swingNow('power');return}
+ if(a==='pitchNow'){beginThrow();return}
  sound('click');
  if(a.startsWith('pitch:')){selectedPitch=a.split(':')[1];lessonPitchSelected=true;updateLesson();setControls('');setControls('pitch');return}
  if(/^base[1-4]$/.test(a)){throwToBase(Number(a.slice(-1)));return}
@@ -362,23 +364,41 @@ function advanceRunners(side,n){
 
 function startPitching(){
  state='pitching';if(lessonActive&&inning===1&&half==='bottom'&&!lessonPitchSelected)selectedPitch='fastball';
- pitchAim.x=480;pitchAim.y=325;setControls('pitch');hint(lessonActive&&inning===1?'구종 선택 → 코스 터치 → 70%까지 누른 뒤 던지기':'');
+ pitchAim.x=480;pitchAim.y=325;setControls('pitch');hint(lessonActive&&inning===1?(difficulty==='hard'?'코스를 고르고 70%까지 충전':'코스를 고르고 던지기 한 번 누르기'):'');
  if(lessonActive&&inning===1&&half==='bottom'&&!lessonThrown)message('투수 연습! 구종을 고르고 코스를 누른 뒤 던지세요.',2.2);
  updateLesson();
 }
-function beginThrow(){if(state!=='pitching'||pitch)return;throwHold=0;chargeActive=true}
+function beginThrow(){
+ if(state!=='pitching'||pitch||chargeActive)return;
+ if(difficulty!=='hard'){throwBall(difficulty==='easy'?1:clamp(.76+rand(-.09,.09),.55,.91));return}
+ throwHold=0;chargeActive=true;
+}
 function releaseThrow(){
- if(state!=='pitching'||pitch||!chargeActive)return;chargeActive=false;hideCharge();lessonThrown=true;lessonPitchSelected=true;lessonAimSelected=true;updateLesson();
- const charge=clamp(throwHold/1.05,0,1),accuracy=clamp(1-Math.abs(charge-.72)/.72,0,1),err=cfg().error*(1-accuracy),prof=pitchProfile(selectedPitch);
+ if(difficulty!=='hard'||state!=='pitching'||pitch||!chargeActive)return;
+ chargeActive=false;hideCharge();
+ const charge=clamp(throwHold/1.05,0,1);
+ throwBall(clamp(1-Math.abs(charge-.72)/.72,0,1));
+}
+function throwBall(accuracy){
+ if(state!=='pitching'||pitch)return;
+ chargeActive=false;hideCharge();lessonThrown=true;lessonPitchSelected=true;lessonAimSelected=true;updateLesson();
+ const err=cfg().error*(1-accuracy),prof=pitchProfile(selectedPitch);
  const ax=pitchAim.x+rand(-err,err),ay=pitchAim.y+rand(-err,err);
- pitch={owner:'user',type:selectedPitch,t:0,duration:(1.05/prof.speed)/cfg().pitchSpeed,target:{...pitchAim},actual:{x:ax,y:ay},breakX:prof.breakX,breakY:prof.breakY,accuracy,swung:false,cpuDecision:null};sound('pitch',.8+prof.speed*.16);
- decideCpuSwing();message(prof.label+' 간다!',.7);
+ const zone=pitchZone(pitchAim.x,pitchAim.y),readability=cpuReadability(selectedPitch,zone);
+ pitch={owner:'user',type:selectedPitch,t:0,duration:(1.05/prof.speed)/cfg().pitchSpeed,
+ target:{...pitchAim},actual:{x:ax,y:ay},breakX:prof.breakX,breakY:prof.breakY,accuracy,
+ readability,swung:false,cpuDecision:null};
+ cpuPitchHistory.push({type:selectedPitch,zone});if(cpuPitchHistory.length>8)cpuPitchHistory.shift();
+ sound('pitch',.8+prof.speed*.16);decideCpuSwing();
+ message(readability>.18?'타자가 반복된 구종·코스를 눈치챘어요!':prof.label+' 간다!',readability>.18?1.4:.7);
 }
 function decideCpuSwing(){
  const p=pitch,fx=p.actual.x+p.breakX,fy=p.actual.y+p.breakY,inside=zoneInside(fx,fy);
  let chance=inside?.80:clamp(.33-cfg().cpuDiscipline*.25,.08,.24);
- if(selectedPitch==='change'||selectedPitch==='curve')chance+=.04;
- if(!inside&&Math.random()<cfg().cpuDiscipline*.55)chance*=.35;p.cpuDecision=Math.random()<chance;
+ if(p.type==='change'||p.type==='curve')chance+=.04;
+ chance+=p.readability*.13;
+ if(!inside&&Math.random()<cfg().cpuDiscipline*.55)chance*=.35;
+ p.cpuDecision=Math.random()<clamp(chance,.04,.95);
 }
 function resolveCpuAtPlate(){
  const p=pitch,fx=p.actual.x+p.breakX,fy=p.actual.y+p.breakY,inside=zoneInside(fx,fy);
@@ -389,8 +409,8 @@ function resolveCpuAtPlate(){
   else{pitch=null;setTimeoutLike(()=>{if(state==='pitching')setControls('pitch')},.55)}
   return;
  }
- const locPenalty=clamp(Math.hypot(fx-480,fy-325)/150,0,1),stuff=(selectedPitch==='fastball'?.12:selectedPitch==='change'?.08:.1)+p.accuracy*.12;
- const contactChance=clamp(cfg().cpuContact+.16*(1-locPenalty)-stuff,.22,.86);
+ const locPenalty=clamp(Math.hypot(fx-480,fy-325)/150,0,1),stuff=(p.type==='fastball'?.12:p.type==='change'?.08:.1)+p.accuracy*.12;
+ const contactChance=clamp(cfg().cpuContact+.16*(1-locPenalty)-stuff+p.readability*.36,.22,.92);
  if(Math.random()>contactChance){
   strikes++;sound('fail',1.2);message('헛스윙!',.9);updateHud();
   if(strikes>=3){outs++;gameStats.pitchKs++;clearCounts();message('삼진 아웃!',1.3);afterOutOrPlay()}
@@ -421,15 +441,16 @@ function updateDefenseField(dt){
  if(!fieldBall)return;updateBallPhysics(dt);defenseRunners.forEach(r=>{if(r.running)r.p=clamp(r.p+r.speed*dt,0,1)});
  if(activeFielder<0)activeFielder=nearestFielder();const a=fielders[activeFielder];
  if(a&&!a.hasBall){
-  const dx=(held.right?1:0)-(held.left?1:0),dy=(held.down?1:0)-(held.up?1:0),l=Math.hypot(dx,dy)||1;
-  a.x=clamp(a.x+dx/l*a.speed*dt,185,775);a.y=clamp(a.y+dy/l*a.speed*dt,125,470);
+  let dx=(held.right?1:0)-(held.left?1:0),dy=(held.down?1:0)-(held.up?1:0),assist=1;
+  if(!dx&&!dy&&fieldCfg().assist&&!fieldBall.owner){const dest=fieldBall.z>30?predictedLanding():fieldBall;dx=dest.x-a.x;dy=dest.y-a.y;assist=fieldCfg().assist}
+  const l=Math.hypot(dx,dy)||1;a.x=clamp(a.x+dx/l*a.speed*assist*dt,185,775);a.y=clamp(a.y+dy/l*a.speed*assist*dt,125,470);
  }
  fielders.forEach((f,i)=>{if(i===activeFielder||f.hasBall)return;const target=fieldBall.owner?{x:f.homeX,y:f.homeY}:fieldBall,dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1;f.x+=dx/l*f.speed*.48*dt;f.y+=dy/l*f.speed*.48*dt});
  if(!fieldBall.owner){
   const candidates=fielders.map((f,i)=>({f,i,d:Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)})).sort((a,b)=>a.d-b.d),c=candidates[0];
   if(c&&fieldBall.z<26&&c.d<27){
    let mayCatch=true;
-   if(c.i!==activeFielder&&!fieldBall.bounced){mayCatch=!fieldBall.assistAttempted&&Math.random()<(difficulty==='easy'?.8:difficulty==='normal'?.42:.18);fieldBall.assistAttempted=true}
+   if(c.i!==activeFielder&&!fieldBall.bounced){mayCatch=!fieldBall.assistAttempted&&Math.random()<fieldCfg().flyCatch;fieldBall.assistAttempted=true}
    if(mayCatch){
     sound('catch');c.f.hasBall=true;fieldBall.owner=c.f;activeFielder=c.i;const caught=!fieldBall.bounced&&fieldBall.z>4;fieldBall.vx=fieldBall.vy=fieldBall.vz=0;
     if(caught){outs++;message('플라이 아웃!',1.25);defenseRunners=[];afterOutOrPlay();return}
@@ -437,7 +458,9 @@ function updateDefenseField(dt){
    }
   }
  }
- if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
+ if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;
+  if(fieldDifficulty==='easy'&&!lessonActive&&fieldBall.heldTime>.72)throwToBase(1);
+  if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
  if(throwPlay){throwPlay.t-=dt;if(throwPlay.t<=0){resolveThrowPlay();return}}
  if(fieldBall.age>5.2&&!fieldBall.owner){message('타구가 빠져나갔다!',1.1);settleDefenseHit(2)}
 }
@@ -515,7 +538,7 @@ function update(dt){
   if(a&&!swing)setBatAngle(batAngle+a*BAT.speed*dt);
   updatePitch(dt);updateSwing(dt);
  }else if(state==='pitching'){
-  if(chargeActive){throwHold+=dt;showCharge('정확도 — 70% 부근에서 놓기',clamp(throwHold/1.05,0,1))}updatePitch(dt);
+  if(difficulty==='hard'&&chargeActive){throwHold+=dt;showCharge('정확도 — 70% 부근에서 놓기',clamp(throwHold/1.05,0,1))}updatePitch(dt);
  }else if(state==='offenseField')updateOffenseField(dt);
  else if(state==='defenseField')updateDefenseField(dt);
 }
@@ -747,6 +770,7 @@ window.addEventListener('keyup',e=>{
 });
 
 document.querySelectorAll('[data-diff]').forEach(b=>b.addEventListener('click',()=>{difficulty=b.dataset.diff;document.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('active',x===b));sound('click')}));
+document.querySelectorAll('[data-fielddiff]').forEach(b=>b.addEventListener('click',()=>{fieldDifficulty=b.dataset.fielddiff;document.querySelectorAll('[data-fielddiff]').forEach(x=>x.classList.toggle('active',x===b));sound('click')}));
 $('#startBtn').addEventListener('click',startGame);
 $('#tutorialBtn').addEventListener('click',()=>{lessonReplay=true;startGame()});
 $('#recordsBtn').addEventListener('click',showRecords);
