@@ -43,11 +43,13 @@ test('corrected descriptions match the current game implementations', () => {
 
   const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/index.html'), 'utf8');
   const architect = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect.js'), 'utf8');
+  const landmarks = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect-landmarks.js'), 'utf8');
   assert.match(blocks, /CUBE/);
   assert.match(blocks, /설계도 챌린지/);
   assert.match(blocks, /전개도 연구실/);
   assert.match(blocks, /아키텍트 월드/);
   assert.match(blocks, /three-global\.js/);
+  assert.match(blocks, /cube-architect-landmarks\.js/);
   assert.match(blocks, /cube-architect\.js/);
   assert.doesNotMatch(blocks, /type="module"/);
   assert.doesNotMatch(blocks, /type="module" src="\.\/cube-architect\.js/);
@@ -59,14 +61,17 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /updateChallengeFly/);
   assert.match(architect, /challengeMissionSets/);
   assert.match(architect, /교과서 1/);
-  assert.match(architect, /타지마할/);
-  assert.match(architect, /사그라다 파밀리아/);
-  assert.match(architect, /에펠탑/);
-  assert.match(architect, /타워 브리지/);
-  assert.match(architect, /히메지성/);
-  assert.match(architect, /앙코르와트/);
+  assert.match(landmarks, /타지마할/);
+  assert.match(landmarks, /사그라다 파밀리아/);
+  assert.match(landmarks, /에펠탑/);
+  assert.match(landmarks, /타워 브리지/);
+  assert.match(landmarks, /히메지성/);
+  assert.match(landmarks, /앙코르와트/);
   assert.match(architect, /setChallengeDifficulty/);
-  assert.match(architect, /cubeFaces/);
+  assert.match(architect, /renderBlueprint/);
+  assert.match(architect, /addChallengeCuboid/);
+  assert.match(architect, /makeNetQuiz/);
+  assert.match(architect, /applyChallengeElement/);
   assert.match(architect, /BLOCK_DEFS/);
   assert.match(architect, /terrainHeight/);
   assert.match(architect, /simulateSand/);
