@@ -502,6 +502,103 @@
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
 
+    { id: "winter_warning", priority: 92, repeat: 28,
+      when: s => s.tick >= s.nextWinterAt - 4 && s.tick < s.nextWinterAt && s.winterPrepared == null,
+      title: "❄️ 거센 한파가 다가옵니다", speaker: "미래",
+      body: "해안의 기온이 급격히 떨어지고 있습니다. 한파가 시작되면 14주 동안 생산량이 감소하고 매주 난방 물자가 필요합니다. 무엇을 준비할까요?",
+      options: [
+        { label: "목재 12를 사용해 거처를 보강해요.", cost: { wood: 12 }, winterPrep: 2,
+          note: "한파 시작 시 체온을 더 높게 유지하고 매주 필요한 난방 물자가 약 3.25에서 2.15로 줄어듭니다." },
+        { label: "식량 10을 사용해 난방 거처를 함께 운영해요.", cost: { food: 10 }, winterPrep: 1,
+          note: "한파 시작 시 체온을 보통 수준으로 유지합니다. 대신 식량 비축량이 줄어듭니다." },
+        { label: "지금은 자원을 아껴 두고 한파에 대응해요.", winterPrep: 0,
+          note: "자원을 미리 사용하지 않지만 한파가 시작될 때 체온이 낮고 난방에 많은 물자가 필요합니다." }
+      ] },
+    { id: "cold_emergency", priority: 111, repeat: 11,
+      when: s => winterActive(s) && s.warmth <= 30,
+      title: "🥶 거처 안까지 추위가 들어왔습니다", speaker: "하나",
+      body: "난방 물자가 부족해 체온이 떨어졌습니다. 추위가 계속되면 주민들의 건강과 생산량이 악화됩니다.",
+      options: [
+        { label: "공동 거처에 모여 남은 열을 나눠요.", coldShelter: 1,
+          note: "새로운 자원 없이 체온을 16 회복합니다. 좁은 거처에서 지내느라 피로가 증가합니다." },
+        { label: "자원 수집 인원을 긴급히 재배치해요.", crisisWood: true, coldShelter: 2,
+          note: "작업 인원을 물자 수집에 우선 배치하고 체온을 8 회복합니다. 식량 생산에 영향이 생길 수 있습니다." },
+        { label: "비축 물자를 사용해 난방을 강화해요.", cost: { wood: 10 }, coldShelter: 3,
+          note: "목재 10을 사용해 체온을 30 회복합니다." }
+      ] },
+    { id: "child_labor_debate", priority: 87, once: true,
+      when: s => winterActive(s) && s.tick >= 16 && childCount(s) > 0 && s.food < 115,
+      title: "어린 주민도 위험한 채집에 나가야 할까요?", speaker: "나래",
+      body: "한파로 식량 생산이 줄었습니다. 일부 어른들은 어린이도 해변의 위험한 채집 작업에 보내자고 말합니다. 나래는 '저희도 학교에 가고 안전하게 지낼 수 있나요?'라고 묻습니다.",
+      options: [
+        { label: "어른들의 작업을 다시 나누고 어린이는 보호해요.", adultGather: true, childProtect: true,
+          note: "성인 일꾼을 채집에 우선 배치합니다. 물자 수집량이 줄 수 있지만 어린이의 교육·안전은 유지됩니다." },
+        { label: "자발적인 성인 비상 근무로 대응해요.", adultVolunteer: "food", childProtect: true,
+          note: "어른들의 피로가 늘고 목재 수집에 영향을 줄 수 있습니다. 식량 생산을 우선합니다." },
+        { label: "어린이에게 위험한 야외 채집을 지시해요.", startChildLabor: 7, changes: { trust: -5 },
+          note: "7주 동안 식량 생산이 늘지만, 어린이의 안전과 학습 기회가 악화됩니다. 이후 주민들이 문제를 제기합니다." }
+      ] },
+    { id: "child_labor_harm", priority: 106, repeat: 5,
+      when: s => s.childWorkUntil > s.tick && s.childWorkWeeks >= 3 && !s.childLaborReviewed,
+      title: "어린 주민들이 지쳐 돌아왔습니다", speaker: "현우",
+      body: "현우와 나래가 연일 채집에 나가면서 수업을 놓치고 건강이 악화됐습니다. '쉬고 싶다'는 요청이 들어왔습니다. 이전 선택의 결과를 검토할 때입니다.",
+      options: [
+        { label: "위험한 작업을 즉시 중단하고 회복을 지원해요.", stopChildLabor: true,
+          changes: { trust: 3 }, note: "어린이 노동으로 얻던 추가 생산이 사라집니다. 건강과 교육은 천천히 회복됩니다." },
+        { label: "위험 작업을 종료하고 성인 일꾼을 다시 배치해요.", stopChildLabor: true, adultGather: true,
+          changes: { trust: 2 }, note: "성인의 물자 수집 인원이 줄 수 있으나 어린이의 위험 작업은 종료됩니다." },
+        { label: "위험한 작업을 계속하도록 지시해요.", continueChildLabor: 6,
+          changes: { trust: -8, health: -3 }, note: "식량 추가 생산은 이어지지만 어린이의 건강·교육 악화와 갈등이 누적됩니다." }
+      ] },
+    { id: "forced_labor_debate", priority: 80, once: true,
+      when: s => winterActive(s) && s.tick >= 18 && s.wood <= 24 && adultCapacity(s) >= 4,
+      title: "난방을 위해 주민을 강제로 일하게 할까요?", speaker: "태오",
+      body: "연료가 부족해지고 있습니다. 일부 주민은 야외 작업을 자원했지만, 모두를 동의 없이 강제로 투입하자는 제안도 나왔습니다.",
+      options: [
+        { label: "자발적 비상 근무에 식량 보상을 제공해요.", cost: { food: 8 },
+          volunteerWood: true, changes: { trust: 2 }, note: "식량 8을 사용하고 물자 10을 확보합니다. 성인 노동 피로가 증가합니다." },
+        { label: "작업 인원을 재배치하고 난방을 집중해요.", crisisWood: true, coldShelter: 2,
+          note: "물자 수집 인원을 늘리고 체온을 회복합니다. 식량 생산이 줄 수 있습니다." },
+        { label: "모든 성인에게 강제 야외 작업을 명령해요.", startForcedLabor: 8,
+          changes: { trust: -6 }, note: "8주간 물자 수집량이 늘지만 동의 없는 강제 노동으로 건강과 신뢰가 악화되며 후속 갈등이 생깁니다." }
+      ] },
+    { id: "forced_labor_protest", priority: 105, repeat: 5,
+      when: s => s.forcedLaborUntil > s.tick && s.forcedLaborWeeks >= 3 && !s.laborReviewed,
+      title: "동의 없는 노동을 중단해 달라는 청원", speaker: "태오",
+      body: "강제로 일하던 주민들이 피로와 건강 악화를 호소하며 노동 중단을 요구합니다. 강제 근무를 유지할지, 자발적 협력으로 바꿀지 결정해야 합니다.",
+      options: [
+        { label: "강제 근무를 끝내고 주민의 동의를 구해요.", endForcedLabor: true,
+          changes: { trust: 3 }, note: "강제 근무로 얻던 추가 물자 생산이 종료됩니다. 주민들의 건강은 서서히 회복됩니다." },
+        { label: "강제 근무를 끝내고 작업 순서를 다시 정해요.", endForcedLabor: true, crisisWood: true,
+          changes: { trust: 1 }, note: "물자 수집 인력을 재배치하되 강제 근무는 종료합니다." },
+        { label: "비상 명령을 연장해요.", extendForcedLabor: 5,
+          changes: { trust: -8, health: -4 }, note: "추가 물자 생산이 이어지지만 노동 피로와 주민들의 피해가 누적됩니다." }
+      ] },
+    { id: "ration_exclusion_debate", priority: 94, once: true,
+      when: s => winterActive(s) && s.food <= 24 && s.exclusionUntil <= s.tick && s.tick >= 19,
+      title: "아픈 주민에게도 식량을 나눠야 할까요?", speaker: "하나",
+      body: "먹을 것이 거의 없습니다. 일부 주민은 일을 못 하는 사람의 배급을 끊자고 주장합니다. 대상자가 식량을 받지 못하면 건강이 더 나빠질 수 있습니다.",
+      options: [
+        { label: "모든 주민의 최소 배급을 유지하고 생산을 재배치해요.", adultGather: true,
+          changes: { trust: 2 }, note: "배급을 유지하되 다른 작업에서 성인 일꾼을 채집으로 옮겨야 합니다." },
+        { label: "비상 창고에서 식량 8을 꺼내 함께 나눠요.", cost: { reserveFood: 8 }, changes: { food: 8 },
+          note: "실제로 저장한 비상식량 8을 사용합니다. 모두의 배급은 유지됩니다." },
+        { label: "일할 수 없는 일부 주민을 배급에서 제외해요.", startExclusion: 6,
+          changes: { trust: -8 }, note: "6주간 식량 소비는 조금 줄지만 배제된 주민의 건강이 악화되고 이의 제기가 발생합니다." }
+      ] },
+    { id: "ration_exclusion_appeal", priority: 104, repeat: 5,
+      when: s => s.exclusionUntil > s.tick && s.exclusionWeeks >= 3 && !s.exclusionReviewed,
+      title: "배급에서 제외된 주민들의 이의 신청", speaker: "하나",
+      body: "식량을 받지 못한 주민들의 건강이 나빠지고 있습니다. 배급 기준을 다시 검토해 달라는 이의 신청이 접수됐습니다.",
+      options: [
+        { label: "배급 제외를 종료하고 최소 배급을 회복해요.", endExclusion: true,
+          changes: { trust: 3 }, note: "식량 소비량은 다시 증가하지만 더 이상 특정 주민을 배급에서 제외하지 않습니다." },
+        { label: "배급 제외를 종료하고 채집 일꾼을 늘려요.", endExclusion: true, adultGather: true,
+          changes: { trust: 2 }, note: "최소 배급을 회복하고 다른 작업 인력을 식량 생산으로 이동합니다." },
+        { label: "배급 제외를 더 유지해요.", extendExclusion: 4,
+          changes: { trust: -7, health: -4 }, note: "식량 절감이 이어지지만 주민들의 건강과 공동체 신뢰가 추가로 악화됩니다." }
+      ] },
+
     { id: "ration_equal_petition", priority: 72, repeat: 28, when: s => s.laws.ration === "equal" && s.tick >= 10 && s.pressure.ration >= 3.2, title: "같이 나눠도, 일한 몫은요?", speaker: "태오",
       body: "같은 양을 나누는 규칙을 유지하되 추가로 일한 사람의 몫을 어떻게 다룰지 의견이 나왔습니다. 지금 정하는 방법은 앞으로의 배급에도 적용됩니다.", options: [
       { label: "추가 노동에 대한 보상 배급을 허용해요.", safeguard: "fairBonus", changes: { trust: 2 }, note: "생산량을 유지하지만 매주 보상용 식량이 더 필요합니다. 새로운 운영 규칙이 계속 적용됩니다." },
@@ -684,8 +781,11 @@
       s.winterPrepared = null;
       record(s, "한파가 물러갔습니다. 하지만 떨어진 건강과 학습 기회는 천천히 회복됩니다.");
     }
-    if (s.childWorkUntil > 0 && s.tick >= s.childWorkUntil) endChildLabor({ ...s, childWorkUntil: s.tick + 1, rightsHistory: s.rightsHistory, decisions: s.decisions, log: s.log });
-    if (s.childWorkUntil > 0 && s.tick >= s.childWorkUntil) { s.childWorkUntil = 0; s.childWorkWeeks = 0; }
+    if (s.childWorkUntil > 0 && s.tick >= s.childWorkUntil) {
+      s.childWorkUntil = 0; s.childWorkWeeks = 0; s.childLaborReviewed = true;
+      rightsHistory(s, "어린이 위험 노동", "종료", "위험한 작업의 시행 기한이 종료되었습니다. 건강과 학습의 회복은 이어집니다.");
+      record(s, "어린이 위험 노동의 시행 기한이 종료되었습니다.");
+    }
     if (s.forcedLaborUntil > 0 && s.tick >= s.forcedLaborUntil) {
       s.forcedLaborUntil = 0; s.forcedLaborWeeks = 0;
       rightsHistory(s, "강제 노동", "종료", "비상 강제 근무의 시행 기한이 종료되었습니다.");
@@ -754,6 +854,60 @@
       if (!r.ok) return r;
     }
     effect(s, choice.changes);
+
+    if (choice.winterPrep != null) s.winterPrepared = choice.winterPrep;
+    if (choice.adultGather) {
+      if (unused(s) > 0) s.jobs.gather++;
+      else if (s.jobs.wood > 0) { s.jobs.wood--; s.jobs.gather++; }
+      s.workStrain = clamp(s.workStrain + .7, 0, 10);
+    }
+    if (choice.crisisWood) {
+      if (unused(s) > 0) s.jobs.wood++;
+      else if (s.jobs.gather > 1) { s.jobs.gather--; s.jobs.wood++; }
+    }
+    if (choice.adultVolunteer) {
+      s.workStrain = clamp(s.workStrain + 1.6, 0, 10);
+      if (choice.adultVolunteer === "food" && unused(s) > 0) s.jobs.gather++;
+    }
+    if (choice.volunteerWood) { s.wood += 10; s.workStrain = clamp(s.workStrain + 1.4, 0, 10); }
+    if (choice.coldShelter) {
+      s.warmth = clamp(s.warmth + (choice.coldShelter === 3 ? 30 : choice.coldShelter === 2 ? 8 : 16));
+      if (choice.coldShelter === 1) s.workStrain = clamp(s.workStrain + 1.2, 0, 10);
+    }
+    if (choice.startChildLabor) {
+      s.childWorkUntil = s.tick + choice.startChildLabor;
+      s.childWorkWeeks = 0; s.childLaborReviewed = false;
+      rightsHistory(s, "어린이 위험 노동", "시작", "어린이에게 위험한 야외 채집을 지시했습니다.");
+    }
+    if (choice.stopChildLabor) endChildLabor(s);
+    if (choice.continueChildLabor) {
+      s.childWorkUntil = s.tick + choice.continueChildLabor;
+      s.childWellbeing = clamp(s.childWellbeing - 9);
+      s.education = clamp(s.education - 8);
+      s.childWorkWeeks = 0;
+      s.childLaborReviewed = false;
+      record(s, "위험 작업이 계속되면서 어린이의 건강과 학습 기회가 더 줄었습니다.");
+    }
+    if (choice.startForcedLabor) {
+      s.forcedLaborUntil = s.tick + choice.startForcedLabor;
+      s.forcedLaborWeeks = 0; s.laborReviewed = false;
+      rightsHistory(s, "강제 노동", "시작", "동의 없는 성인 강제 근무를 시행했습니다.");
+    }
+    if (choice.endForcedLabor) endForcedLabor(s);
+    if (choice.extendForcedLabor) {
+      s.forcedLaborUntil = s.tick + choice.extendForcedLabor;
+      s.forcedLaborWeeks = 0; s.laborReviewed = false;
+    }
+    if (choice.startExclusion) {
+      s.exclusionUntil = s.tick + choice.startExclusion;
+      s.exclusionWeeks = 0; s.exclusionReviewed = false;
+      rightsHistory(s, "일부 주민 배급 제외", "시작", "일할 수 없는 주민 일부를 배급에서 제외했습니다.");
+    }
+    if (choice.endExclusion) endExclusion(s);
+    if (choice.extendExclusion) {
+      s.exclusionUntil = s.tick + choice.extendExclusion;
+      s.exclusionWeeks = 0; s.exclusionReviewed = false;
+    }
     if (choice.jobs && unused(s) > 0) s.jobs[choice.jobs] += Math.min(3, unused(s));
     if (choice.jobs === "gather" && unused(s) === 0 && s.jobs.wood > 1) { s.jobs.wood--; s.jobs.gather++; }
     if (choice.storm) { s.stormUntil = s.tick + choice.storm; s.stormAftermathAt = s.stormUntil; s.stormAftermathChoice = index; }
