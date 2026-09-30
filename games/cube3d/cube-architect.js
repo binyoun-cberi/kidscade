@@ -908,6 +908,7 @@ const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
+let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
 let worldChunkIndex=new Map();
 const WORLD_CHUNK_SIZE=16;
 function worldChunkKey(x,z){
@@ -1307,7 +1308,7 @@ function initFree(){
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;dayTime=.28;
-  survivalTimeAcc=0;firstNightStarted=false;
+  survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   selectedHotbarSlot=0;
   hotbarTypes=survival?['hand',null,null,null,null,null,null,null,null]:
     ['grass','dirt','stone','sand','log','planks','glass','door','water'];
@@ -1339,6 +1340,8 @@ function initFree(){
   $('mathLensBadge').classList.add('hidden');
   configureMobileMode('free');
   $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
+  $('survivalReturn').onclick=emergencyReturn;
+  renderSurvivalSafety(null);
   $('inventoryClose').onclick=()=>toggleInventory(false);
   $('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
@@ -1989,7 +1992,16 @@ function simulateWorld(){
   freeSimTick++;simulateSand();simulateLiquids();simulateFire();if(freeSimTick%2===0)simulatePlants();
 }
 function updateDayNight(dt){
-  dayTime=(dayTime+dt/150)%1;
+  const cycle=gameFreeMode==='survival'&&!firstNightStarted?780:420;
+  dayTime=(dayTime+dt/cycle)%1;
+  if(gameFreeMode==='survival'){
+    if(dayTime>=.73&&!firstDuskWarned){
+      firstDuskWarned=true;
+      toast('해가 지고 있어요. 지붕과 벽이 있는 곳에서 밤을 보내 보세요.');
+    }
+    if(dayTime>=.82&&!firstNightStarted)firstNightStarted=true;
+    if(dayTime>.3&&dayTime<.5)firstDuskWarned=false;
+  }
   const sun=Math.max(.08,Math.sin(dayTime*Math.PI*2-Math.PI/2)*.5+.5),night=1-sun;
   const sky=new THREE.Color().setRGB(.10+.50*sun,.16+.62*sun,.28+.68*sun);
   scene.background.copy(sky);if(scene.fog)scene.fog.color.copy(sky);
@@ -2140,8 +2152,96 @@ function moveFreeHorizontal(dx,dz){
     camera.position.y+=1;camera.position.z=nz;freeVelocityY=0;
   }
 }
+function nearestUndiscoveredRegion(x,z){
+  const seen=new Set(visitedBiomes),centers=[
+    [-27,-9,'forest'],[-41,-38,'pine'],[-5,-44,'snow'],[32,-28,'desert'],
+    [43,23,'badlands'],[5,39,'marsh'],[-34,30,'flowers']
+  ];
+  return centers.filter(([, ,id])=>!seen.has(id))
+    .map(([cx,cz,id])=>({cx,cz,id,dist:Math.round(Math.hypot(cx-x,cz-z))}))
+    .sort((a,b)=>a.dist-b.dist)[0]||null;
+}
+function renderExplorationHint(){
+  if(gameFreeMode!=='survival'){
+    $('explorationHint').classList.add('hidden');return;
+  }
+  const show=survivalStage>=4;
+  $('explorationHint').classList.toggle('hidden',!show);
+  if(!show)return;
+  const x=Math.round(camera.position.x),z=Math.round(camera.position.z),target=nearestUndiscoveredRegion(x,z);
+  if(!target){
+    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요! 좋아하는 지역에 거점을 지어 보세요.';
+    return;
+  }
+  const dx=target.cx-x,dz=target.cz-z;
+  const directions=(dz< -5?'북':dz>5?'남':'')+(dx>5?'동':dx< -5?'서':'');
+  const info=worldRules.BIOME_REWARDS[target.id];
+  $('explorationHint').textContent='다음 발견: '+worldRules.BIOMES[target.id].name+
+    ' · '+(directions||'근처')+'쪽 약 '+target.dist+'칸 · '+info.resource;
+}
+function renderSurvivalSafety(shelter){
+  if(gameFreeMode!=='survival'){
+    $('survivalSafety').classList.add('hidden');
+    $('exposureBar').classList.add('hidden');
+    $('survivalReturn').classList.add('hidden');
+    return;
+  }
+  const night=dayTime>=.82||dayTime<.16;
+  const danger=survivalExposure>=70;
+  $('survivalSafety').classList.remove('hidden');
+  $('survivalSafety').textContent=shelter?.sheltered?'거점 안 · 안전':
+    survivalExposure>=85?'매우 추움 · 귀환 가능':
+    danger?'추위 심함':survivalExposure>=30?'추위 주의':
+    night?'밤 · 야외':weather==='rain'||weather==='storm'?'비 · 야외':'안전함';
+  $('exposureBar').classList.toggle('hidden',survivalExposure<1);
+  $('exposureFill').style.width=Math.round(survivalExposure)+'%';
+  $('exposureBar').setAttribute('aria-valuenow',String(Math.round(survivalExposure)));
+  $('survivalReturn').classList.toggle('hidden',survivalExposure<85||
+    performance.now()-lastEmergencyReturn<90000);
+}
+function emergencyReturn(){
+  if(gameFreeMode!=='survival'||survivalExposure<85||
+    performance.now()-lastEmergencyReturn<90000)return;
+  camera.position.set(0,terrainHeight(0,5)+2.62,5);
+  freePhysicsY=camera.position.y;
+  freeVelocityY=0;onGround=true;survivalExposure=15;
+  lastEmergencyReturn=performance.now();streamWorldMeshes(true);
+  toast('시작 지점으로 귀환했어요. 재료는 잃지 않아요. 지붕과 벽을 지어 보세요.');
+  renderSurvivalSafety(null);saveFreeWorld();
+}
+function updateSurvivalEnvironment(dt){
+  if(gameFreeMode!=='survival')return;
+  survivalTimeAcc+=dt;
+  if(survivalTimeAcc<.5)return;
+  const delta=survivalTimeAcc;survivalTimeAcc=0;
+  const biomeId=worldRules.region(Math.round(camera.position.x),Math.round(camera.position.z));
+  const night=dayTime>=.82||dayTime<.16,storm=weather==='storm';
+  const feet=freePhysicsY-1.62;
+  const shelter=worldRules.shelterAt(getBlock,camera.position.x,feet,camera.position.z);
+  const px=Math.round(camera.position.x),pz=Math.round(camera.position.z),py=Math.floor(feet);
+  let lit=false;
+  for(let dx=-3;dx<=3&&!lit;dx++)for(let dz=-3;dz<=3&&!lit;dz++)
+    if(dx*dx+dz*dz<=10)for(let dy=0;dy<=3;dy++){
+      const d=getBlock(px+dx,py+dy,pz+dz);
+      if(d&&(d.type==='torch'||d.type==='furnace'||d.type==='fire')){
+        lit=true;break;
+      }
+    }
+  const before=survivalExposure;
+  survivalExposure=worldRules.exposureStep(survivalExposure,delta,{
+    night,storm,rain:weather==='rain',cold:biomeId==='snow',sheltered:shelter.sheltered,lit
+  });
+  if(shelter.sheltered&&night&&!nightShelterNotice){
+    nightShelterNotice=true;toast('내가 지은 거점이 밤의 추위를 막아 주고 있어요.');
+  }
+  if(!night)nightShelterNotice=false;
+  if(before<35&&survivalExposure>=35)toast('추위가 느껴져요. 지붕을 찾거나 횃불 가까이 가 보세요.');
+  if(before<75&&survivalExposure>=75)toast('많이 추워요. 거점에 들어가거나 귀환할 수 있어요.');
+  renderSurvivalSafety(shelter);
+}
 function updateFree(dt,t){
   updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();
+  updateSurvivalEnvironment(dt);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
   if(inventoryOpen||furnaceOpen){checkCollectibles(t);return}
@@ -2149,7 +2249,8 @@ function updateFree(dt,t){
   // Physics and visual camera heights are intentionally separate. A one-cell
   // step is immediate for collision, gradual for the player's view.
   camera.position.y=freePhysicsY;
-  const speed=(freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0;
+  const speed=((freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0)*
+    (gameFreeMode==='survival'&&survivalExposure>=70?.83:1);
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
   const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
   const move=new THREE.Vector3();
