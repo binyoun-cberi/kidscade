@@ -372,9 +372,13 @@
   element.modalOptions.addEventListener("click", e => {
     const choice = e.target.closest("[data-event-option]");
     if (!choice || choice.disabled) return;
+    const event = S.EVENTS.find(item => item.id === state.pending);
+    const picked = event?.options[Number(choice.dataset.eventOption)];
+    const highImpact = picked && (picked.startChildLabor || picked.continueChildLabor ||
+      picked.startForcedLabor || picked.extendForcedLabor || picked.startExclusion || picked.extendExclusion);
     const result = S.resolveEvent(state, Number(choice.dataset.eventOption));
     if (result.ok) {
-      sdk("sound", "success");
+      sdk("sound", highImpact ? "click" : "success");
       toast(result.note || "시민들이 결정을 확인했습니다.");
       save(); render();
     } else toast(result.reason);
@@ -425,7 +429,12 @@
       });
     }
     r.classList.remove("hidden");
-    $("reportBody").innerHTML = '<div class="report-stats"><span>👥 주민 ' + state.population + '명</span><span>📜 규칙 ' + state.passed.length + '개</span><span>🏠 인구 수용 ' + S.capacity(state) + '명</span><span>🌱 ' + (state.stage === 1 ? "생존 공동체" : "자치 마을") + '</span></div><div class="report-list">' + state.log.slice(0, 8).map(i => '<div class="report-item">' + escapeHTML(i.text) + "</div>").join("") + '</div><p class="subtle">어떤 규칙이 어떤 시민들에게 영향을 주었을까요? 다음에는 다른 선택도 시도해 보세요.</p>';
+    $("reportBody").innerHTML = '<div class="report-stats"><span>👥 주민 ' + state.population + '명</span><span>📜 규칙 ' + state.passed.length + '개</span><span>❄️ 겪은 한파 ' + (state.winterCount || 0) + '회</span><span>❤️ 건강 ' + number(state.health) + '</span>' +
+      (state.eventsSeen.child_labor_debate ? '<span>📚 어린이 학습 ' + number(state.education) + '</span><span>🧒 어린이 건강 ' + number(state.childWellbeing) + '</span>' : '') +
+      '</div>' + (state.rightsHistory?.length ?
+        '<div class="report-list"><strong>권리 제한과 회복 기록</strong>' + state.rightsHistory.slice(0, 6).map(h => '<div class="report-item">' + escapeHTML(h.kind + ' · ' + h.status + ' — ' + h.detail) + '</div>').join("") + '</div>' : '') +
+      '<div class="report-list"><strong>최근 마을 기록</strong>' + state.log.slice(0, 8).map(i => '<div class="report-item">' + escapeHTML(i.text) + "</div>").join("") +
+      '</div><p class="subtle">어떤 결정을 통해 위기에 대응했고, 그 결과가 주민들의 생활에 어떻게 이어졌나요?</p>';
   });
   $("resetBtn").addEventListener("click", () => {
     if (!window.confirm("마을을 처음부터 다시 시작할까요? 현재 기록을 덮어씁니다.")) return;
