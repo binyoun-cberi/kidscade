@@ -2485,11 +2485,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=15",
+      "href": "games/cube3d/index.html?v=16",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "32×32 대형 랜드마크 복원과 직육면체 자유 건축! 6면 개별 색칠, 모서리·꼭짓점 강조, 전개도 접기 퀴즈와 살아있는 복셀 월드를 함께 즐겨요.",
+      "description": "교과서 겨냥도·대형 랜드마크 복원부터 자유 건축까지! 128×128 월드의 8개 바이옴에서 생존 채집·단계별 제작을 하거나 크리에이티브로 직육면체 6면 색칠과 전개도를 탐구해요.",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
