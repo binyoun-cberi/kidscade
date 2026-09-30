@@ -897,7 +897,7 @@ const PLACEABLE_TYPES=['snow','redSand','gravel','pineLog','pineLeaves','cactus'
 const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=22,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
-let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0;
+let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null;
 const worldRules=window.CubeArchitectWorld;
 const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
 const FACE_IDS=['R','L','U','D','F','B'];
@@ -970,7 +970,16 @@ function materialFor(type){
   });
   materialCache.set(type,m);return m;
 }
-function terrainHeight(x,z){return worldRules.height(x,z)}
+function terrainHeight(x,z){
+  const h=worldRules.height(x,z);
+  if(!legacyWorld)return h;
+  const dist=Math.hypot(x,z),old=THREE.MathUtils.clamp(Math.floor(
+    1.9+Math.sin(x*.31)*.9+Math.cos(z*.27)*.75+
+    Math.sin((x+z)*.18)*.45-Math.max(0,dist-10)*.36-(dist>14?1.4:0)
+  ),-2,3);
+  const blend=THREE.MathUtils.clamp((dist-14)/9,0,1);
+  return Math.round(old*(1-blend)+h*blend);
+}
 function currentBiome(x,z){return worldRules.biomeAt(x,z)}
 function hash2(x,z){
   const v=Math.sin(x*127.1+z*311.7)*43758.5453;
@@ -1221,17 +1230,47 @@ function buildFreeWorld(){
   freeSun=scene.children.find(o=>o.isDirectionalLight)||null;
 }
 function initFree(){
-  modeTitle('아키텍트 월드','살아있는 복셀 세계 · 탐험 · 건축 · 실험');
-  setVisible('freeHud',true);$('actionSave').classList.remove('hidden');$('actionXray').classList.remove('hidden');
-  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
-  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
-  buildFreeWorld();loadFreeWorld();rebuildAllWorldMeshes();buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();setupWeather();spawnCritters();updateFreeMission();
-  const spawnZ=6,ground=getHighestSolidY(0,spawnZ,8);camera.position.set(0,ground+1+1.65,spawnZ);
+  const survival=gameFreeMode==='survival';
+  modeTitle(survival?'생존 탐험':'크리에이티브 월드',
+    survival?'나무 채집 → 제작 → 새로운 바이옴 탐험':'모든 건축 재료 · 비행 · 물질 실험');
+  setVisible('freeHud',true);$('actionSave').classList.remove('hidden');
+  $('actionXray').classList.toggle('hidden',survival);
+  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);
+  camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
+  collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
+  inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
+  freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
+  survivalBag={};survivalStage=0;savedFreePosition=null;
+  selectedHotbarSlot=0;
+  hotbarTypes=survival?['hand',null,null,null,null,null,null,null,null]:
+    ['grass','dirt','stone','sand','log','planks','glass','door','water'];
+  let previous=null;
+  try{
+    if(!survival&&!window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV4_creative',null))
+      previous=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV3',null)||
+        window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
+  }catch(_){}
+  legacyWorld=!!previous;
+  buildFreeWorld();loadFreeWorld();
+  const ground=getHighestSolidY(0,5,10);
+  const spawn=savedFreePosition&&savedFreePosition.length===3?savedFreePosition:
+    [0,ground+1+1.62,5];
+  camera.position.set(
+    THREE.MathUtils.clamp(spawn[0],-WORLD_HALF+1,WORLD_HALF-1),
+    THREE.MathUtils.clamp(spawn[1],WORLD_MIN_Y+1.7,WORLD_MAX_Y+8),
+    THREE.MathUtils.clamp(spawn[2],-WORLD_HALF+1,WORLD_HALF-1)
+  );
+  freePhysicsY=camera.position.y;rebuildAllWorldMeshes();
+  buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
+  setupWeather();spawnCritters();updateFreeMission();
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
-  $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');$('mathLensBadge').classList.add('hidden');
-  configureMobileMode('free');$('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
-  $('inventoryClose').onclick=()=>toggleInventory(false);$('furnaceClose').onclick=()=>toggleFurnace(false);
+  $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');
+  $('mathLensBadge').classList.add('hidden');
+  configureMobileMode('free');
+  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
+  $('inventoryClose').onclick=()=>toggleInventory(false);
+  $('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
 }
@@ -1485,29 +1524,57 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:3,edits:Array.from(worldEdits.entries()),collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,dayTime,cuboidSpec:currentCuboidSpec,facePaintColor};
-  try{if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV3',data))lastFreeSave=performance.now()}catch(e){}
+  const data={version:4,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+    collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
+    dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
+    position:[camera.position.x,freePhysicsY,camera.position.z],
+    bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld};
+  try{
+    if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data))
+      lastFreeSave=performance.now();
+  }catch(e){console.warn('[Cube Architect save]',e)}
 }
 function loadFreeWorld(){
   worldEdits=new Map();
   try{
-    let d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV3',null);
-    if(!d)d=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
-    if(d){
-      collected=new Set(d.collected||[]);hotbarTypes=Array.isArray(d.hotbar)&&d.hotbar.length===9?d.hotbar:hotbarTypes;
-      selectedHotbarSlot=Math.max(0,Math.min(8,d.selected||0));dayTime=Number.isFinite(d.dayTime)?d.dayTime:.28;
-      if(d.cuboidSpec?.dims&&d.cuboidSpec?.faceColors)currentCuboidSpec=d.cuboidSpec;if(d.facePaintColor)facePaintColor=d.facePaintColor;
-      for(const [key,value] of d.edits||[]){worldEdits.set(key,value);const [x,y,z]=parseWorldKey(key);setRawBlock(x,y,z,value)}
-    }else{
+    let data=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV4_'+gameFreeMode,null);
+    if(!data&&gameFreeMode==='creative')
+      data=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV3',null)||
+        window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
+    if(data){
+      legacyWorld=!!(data.legacyTerrain||(data.version||0)<4);
+      collected=new Set(data.collected||[]);
+      if(Array.isArray(data.hotbar)&&data.hotbar.length===9)hotbarTypes=data.hotbar;
+      selectedHotbarSlot=Math.max(0,Math.min(8,data.selected||0));
+      dayTime=Number.isFinite(data.dayTime)?data.dayTime:.28;
+      if(data.cuboidSpec?.dims&&data.cuboidSpec?.faceColors)currentCuboidSpec=data.cuboidSpec;
+      if(data.facePaintColor)facePaintColor=data.facePaintColor;
+      if(Array.isArray(data.position)&&data.position.length===3&&data.position.every(Number.isFinite))
+        savedFreePosition=data.position;
+      if(gameFreeMode==='survival'){
+        survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
+        survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
+      }
+      for(const [key,value] of data.edits||[]){
+        const [x,y,z]=parseWorldKey(key);
+        if(!inWorld(x,y,z))continue;
+        worldEdits.set(key,value);setRawBlock(x,y,z,value);
+      }
+    }else if(gameFreeMode==='creative'){
       const old=window.KidscadeStorage?.getJson('cubeArchitectWorldSave',null);
       if(old?.blocks){
         const map=['grass','log','stone','sand','glass','brick'];
-        for(const v of old.blocks){const data={type:map[v[3]]||'planks',playerBuilt:true};setRawBlock(v[0],v[1],v[2],data);markEdit(v[0],v[1],v[2],data)}
+        for(const v of old.blocks){
+          const data={type:map[v[3]]||'planks',playerBuilt:true};
+          setRawBlock(v[0],v[1],v[2],data);markEdit(v[0],v[1],v[2],data);
+        }
         collected=new Set(old.collected||[]);
       }
     }
-    collectibles.forEach(m=>{if(collected.has(m.userData.collectible)){scene.remove(m);m.userData.gone=true}})
-  }catch(e){console.warn('[Cube Architect save]',e)}
+    collectibles.forEach(m=>{
+      if(collected.has(m.userData.collectible)){scene.remove(m);m.userData.gone=true}
+    });
+  }catch(e){console.warn('[Cube Architect load]',e)}
 }
 function reactFluidsNear(x,y,z){
   const here=getBlock(x,y,z);if(!here||!(here.type==='water'||here.type==='lava'))return;
