@@ -2485,11 +2485,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=14",
+      "href": "games/cube3d/index.html?v=15",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "교과서형 겨냥도부터 타지마할·사그라다 파밀리아 같은 랜드마크 복원까지, 전개도와 정육면체·직육면체를 3D로 탐구하는 수학 건축 게임!",
+      "description": "32×32 대형 랜드마크 복원과 직육면체 자유 건축! 6면 개별 색칠, 모서리·꼭짓점 강조, 전개도 접기 퀴즈와 살아있는 복셀 월드를 함께 즐겨요.",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
