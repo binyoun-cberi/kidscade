@@ -285,7 +285,7 @@ test('ration routes have different weekly economics and dedicated follow-up peti
     s.pending = event.id;
     assert.equal(S.resolveEvent(s, 0).ok, true);
     assert.equal(s.passed.includes('ration'), true);
-    assert.ok(s.decisions.some(d => d.title.includes('배급') || d.title.includes('일한 몫') || d.title.includes('지원')));
+    assert.ok(s.decisions.some(d => d.title === event.title), 'selected branch must be recorded');
     if (law === 'equal') assert.equal(s.safeguards.fairBonus, true);
     if (law === 'effort') assert.equal(s.safeguards.effortCare, true);
     if (law === 'needs') assert.equal(s.safeguards.needsAudit, true);
