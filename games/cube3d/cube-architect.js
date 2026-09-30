@@ -986,6 +986,19 @@ function rebuildLandmarkPoi(poi){
     if(worldChunksGenerated.has(cx+','+cz))setLandmarkPoiBlocks(poi,true,cx+','+cz);
   streamWorldMeshes(true);
 }
+function applyRestoredLandmarksToLoadedWorld(){
+  for(const id of restoredLandmarks){
+    const poi=poiRules.poiById(id);if(!poi)continue;
+    const remove=[];
+    for(const [key,data] of worldData)if(data?.landmarkPoi===id)remove.push(key);
+    for(const key of remove){const [x,y,z]=parseWorldKey(key);setRawBlock(x,y,z,null)}
+    const [ox,oz]=poi.origin,[w,,d]=poi.compact.size;
+    const minCX=Math.floor(ox/WORLD_CHUNK_SIZE),maxCX=Math.floor((ox+w)/WORLD_CHUNK_SIZE);
+    const minCZ=Math.floor(oz/WORLD_CHUNK_SIZE),maxCZ=Math.floor((oz+d)/WORLD_CHUNK_SIZE);
+    for(let cx=minCX;cx<=maxCX;cx++)for(let cz=minCZ;cz<=maxCZ;cz++)
+      if(worldChunksGenerated.has(cx+','+cz))setLandmarkPoiBlocks(poi,true,cx+','+cz);
+  }
+}
 function completeLandmarkPoi(id){
   const poi=poiRules.poiById(id);if(!poi||restoredLandmarks.has(id))return;
   restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);
@@ -1446,7 +1459,9 @@ function initFree(){
     THREE.MathUtils.clamp(spawn[1],WORLD_MIN_Y+1.7,WORLD_MAX_Y+8),
     THREE.MathUtils.clamp(spawn[2],-WORLD_HALF+1,WORLD_HALF-1)
   );
-  freePhysicsY=camera.position.y;rebuildAllWorldMeshes();
+  freePhysicsY=camera.position.y;
+  applyRestoredLandmarksToLoadedWorld();
+  rebuildAllWorldMeshes();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
   setupWeather();spawnCritters();updateFreeMission();
@@ -1584,7 +1599,7 @@ function buildInventory(category='전체'){
     const list=$('survivalCraftList');list.innerHTML='';
     const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
       snowBrick:'snow',cactusDye:'desert'};
-    const visible=worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&
+    const visible=worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&recipeUnlocked(r.id)&&
       (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id))&&
       (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
         Object.keys(r.needs).some(item=>bagCount(item)>0)))
@@ -1679,7 +1694,7 @@ function placementTarget(hit){
 }
 function facingFromYaw(){return ((Math.round(yaw/(Math.PI/2))%4)+4)%4}
 function placeCustomCuboid(p){
-  const dims=currentCuboidSpec.dims.map(v=>THREE.MathUtils.clamp(Math.round(v),1,4));
+  const dims=currentCuboidSpec.dims.map(v=>THREE.MathUtils.clamp(Math.round(v),1,survivalCuboidMax()));
   for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
     const x=p.x+dx,y=p.y+dy,z=p.z+dz;if(!inWorld(x,y,z)||getBlock(x,y,z)){toast('직육면체가 들어갈 공간이 부족해요.');return false}
   }
@@ -1803,7 +1818,9 @@ function setupShapeWorkbench(){
   $('freeElementColor').oninput=e=>{freeElementColor=e.target.value};
   updateFreeGeometryEditor();
   $('shapeToHotbar').onclick=()=>{
-    const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value].map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,4));
+    const limit=survivalCuboidMax();
+    const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value]
+      .map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,limit));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
     currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');
   };
@@ -1811,7 +1828,11 @@ function setupShapeWorkbench(){
 }
 function syncShapeWorkbench(){
   if(!$('shapeW'))return;
-  $('shapeW').value=currentCuboidSpec.dims[0];$('shapeH').value=currentCuboidSpec.dims[1];$('shapeD').value=currentCuboidSpec.dims[2];
+  const max=survivalCuboidMax();
+  for(const id of ['shapeW','shapeH','shapeD'])$(id).max=String(max);
+  $('shapeW').value=Math.min(max,currentCuboidSpec.dims[0]);
+  $('shapeH').value=Math.min(max,currentCuboidSpec.dims[1]);
+  $('shapeD').value=Math.min(max,currentCuboidSpec.dims[2]);
   currentCuboidSpec.faceColors.forEach((c,i)=>{if($('faceColor'+i))$('faceColor'+i).value=c});
   $('facePaintColor').value=facePaintColor;
 }
