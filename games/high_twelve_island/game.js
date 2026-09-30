@@ -116,7 +116,7 @@
     ].join("");
     element.stage.textContent = state.stage === 1 ? "1단계 · 생존 공동체" : "2단계 · 자치 마을";
     element.name.textContent = state.stage === 1 ? "새싹섬 · 작은 야영지" : "새싹섬 · 자치 마을";
-    element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명";
+    element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명" + (state.stage === 1 && state.population >= S.capacity(state) ? " · 주거 부족" : "");
     element.clock.textContent = state.tick + 1 + "번째 주";
     element.scene.textContent = state.stage === 1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." : "국고를 관리하고 마을의 공공시설을 운영하세요.";
   }
@@ -124,7 +124,7 @@
     if (state.stage === 1) {
       const done = [state.buildings.farm >= 1, state.population >= 18, state.passed.length >= 1];
       element.progress.textContent = done.filter(Boolean).length + "/3 완료";
-      element.missionText.innerHTML = (done[0] ? "✅" : "⬜") + " 농장 1개　" + (done[1] ? "✅" : "⬜") + " 인구 18명　" + (done[2] ? "✅" : "⬜") + " 규칙 1개";
+      element.missionText.innerHTML = (done[0] ? "✅" : "⬜") + " 농장 1개　" + (done[1] ? "✅" : "⬜") + " 인구 18명　" + (done[2] ? "✅" : "⬜") + " 규칙 1개" + (state.population >= S.capacity(state) ? '<div class="mission-alert">⚠️ 주민이 더 늘어나려면 건설 탭에서 공동 주거지를 지으세요.</div>' : state.population >= S.capacity(state) - 1 ? '<div class="mission-alert">🏠 집이 거의 찼어요. 주민을 더 받으려면 공동 주거지가 필요해요.</div>' : !state.buildings.farm ? '<div class="mission-alert">🌾 먼저 건설 탭에서 농장 1개를 만들어 보세요.</div>' : '');
       element.missionBar.style.width = done.filter(Boolean).length / 3 * 100 + "%";
     } else {
       const done = [state.buildings.clinic >= 1, state.buildings.hall >= 1, state.passed.includes("tax")];
