@@ -321,6 +321,7 @@ function updateDefenseField(dt){
    message('잡았다! 어느 베이스로 던질까?',1.4);setControls('');setControls('field');
   }
  }
+ if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
  if(throwPlay){throwPlay.t-=dt;if(throwPlay.t<=0){resolveThrowPlay();return}}
  if(fieldBall.age>5.2&&!fieldBall.owner){message('타구가 빠져나갔다!',1.1);settleDefenseHit(2)}
 }
@@ -443,7 +444,7 @@ function drawField(){
  });
  if(fieldBall){
   if(fieldBall.z>0){ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(fieldBall.x,fieldBall.y,9,4,0,0,Math.PI*2);ctx.fill()}
-  drawBall(fieldBall.x,fieldBall.y-fieldBall.z*.23,7+Math.min(4,fieldBall.z*.01));
+  drawBall(fieldBall.owner?fieldBall.owner.x:fieldBall.x,(fieldBall.owner?fieldBall.owner.y:fieldBall.y)-fieldBall.z*.23,7+Math.min(4,fieldBall.z*.01));
  }
  if(state==='defenseField')drawDefenseRunners();
  if(throwPlay&&activeFielder>=0){const f=fielders[activeFielder],bp=basePoint(throwPlay.base),k=1-throwPlay.t/throwPlay.total;drawBall(lerp(f.x,bp.x,k),lerp(f.y,bp.y,k)-18,6)}
