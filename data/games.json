@@ -358,7 +358,7 @@
     {
       "id": "high_folklore_night_guard",
       "title": "괴담 야간경비",
-      "href": "games/high_folklore_night_guard/index.html?v=17",
+      "href": "games/high_folklore_night_guard/index.html?v=18",
       "category": "trivia",
       "age": "high",
       "icon": "👻",
@@ -367,7 +367,7 @@
       "subject": "thinking",
       "genre": "simulation",
       "difficulty": "hard",
-      "sessionMinutes": 15,
+      "sessionMinutes": 10,
       "players": [
         "solo"
       ],
