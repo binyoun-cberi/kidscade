@@ -53,7 +53,24 @@ test('combat actions are consequences of muscle-driven pose, not action buttons'
   assert.match(runtime,/state\.pose\.lean/);
   assert.match(runtime,/resolvePlayerPunch/);
   assert.match(runtime,/resolveEnemyAttack/);
+  assert.match(runtime,/flex<\.18&&speed>\.55/);
   assert.match(runtime,/state\.enemy\.phase==='recover'/);
+});
+
+test('first stage gives explicit guard-counter guidance and highlights the recommended muscle',()=>{
+  assert.match(html,/id="firstGuide"/);
+  assert.match(runtime,/firstRoundControls/);
+  assert.match(runtime,/firstRoundRecommendation/);
+  assert.match(runtime,/counterKey/);
+  assert.match(css,/muscle\.recommended/);
+});
+
+test('camera is first-person from the player's head while self head and torso are hidden',()=>{
+  assert.match(runtime,/PerspectiveCamera\(70/);
+  assert.match(runtime,/playerVisual\.head\.visible=false/);
+  assert.match(runtime,/playerVisual\.torso\.visible=false/);
+  assert.match(runtime,/const eye=worldPos\(playerVisual\.root,playerVisual\.lastKin\.head\)/);
+  assert.match(runtime,/camera\.lookAt\(target\)/);
 });
 
 test('progressively unlocks arms, trunk and legs across three opponents',()=>{
@@ -69,7 +86,7 @@ test('progressively unlocks arms, trunk and legs across three opponents',()=>{
 test('catalog describes the 3D slow-motion science action game',()=>{
   const game=catalog.games.find(x=>x.id==='high_body_muscle_lab');
   assert.ok(game);
-  assert.equal(game.href,'games/high_body_muscle_lab/index.html?v=7');
+  assert.equal(game.href,'games/high_body_muscle_lab/index.html?v=8');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sports');
   assert.equal(game.classroom,true);
