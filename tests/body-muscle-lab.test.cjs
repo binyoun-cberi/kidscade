@@ -13,7 +13,7 @@ const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'ut
 test('keeps the stable Kidscade id and local Three r160 runtime',()=>{
   assert.match(html,/data-game-id="high_body_muscle_lab"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/type="module" src="game\.js\?v=7"/);
+  assert.match(html,/type="module" src="game\.js\?v=8"/);
   assert.doesNotMatch(html+runtime,/postMessage\([^\n]+['"]\*['"]\)/);
 });
 
