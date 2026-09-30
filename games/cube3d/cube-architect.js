@@ -414,10 +414,14 @@ function drawBlueprint(){
 }
 
 function restorationKeep(role,x,y,z){
-  const rate=role==='base'?.96:role==='body'?.76:
-    (role==='tower'||role==='arch')?.58:
-    (role==='roof'||role==='dome'||role==='spire')?.42:.22;
-  return hash2(x*17+y*5,z*19-y*3)<rate;
+  const rate=role==='base'?.93:role==='body'?.72:
+    (role==='tower'||role==='arch')?.56:
+    (role==='roof'||role==='dome'||role==='spire')?.42:.24;
+  // Remove coherent architectural chunks rather than random individual voxels.
+  // This keeps the starting ruin readable and lets the greedy cuboid pass collapse
+  // thousands of preserved blocks into roughly 60–130 editable pieces.
+  const gx=Math.floor(x/4),gy=Math.floor(y/3),gz=Math.floor(z/4);
+  return hash2(gx*17+gy*5,gz*19-gy*3)<rate;
 }
 function decomposeVoxelSet(points){
   const remaining=new Set(points.map(p=>challengeKey(...p))),boxes=[];
