@@ -299,41 +299,69 @@ function cpuConfig(){return CPU_LEVELS[difficulty]||CPU_LEVELS.normal}
 function cpuBallClone(){
  return {x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap||520};
 }
-function simulateCpuSmashLanding(aim){
- const g=cpuBallClone(),courtDir=-1;
- const profiles={
-   '-2':{vx:300,vy:285},
-   '-1':{vx:340,vy:245},
-   '0':{vx:405,vy:195},
-   '1':{vx:450,vy:150},
-   '2':{vx:485,vy:115}
- },profile=profiles[String(aim)]||profiles['0'];
- const targetVX=courtDir*profile.vx,targetVY=profile.vy;
- g.vx=lerp(g.vx,targetVX,.72);g.vy=lerp(g.vy,targetVY,.78);g.speedCap=520;capBallBody(g);
- let t=0;
- for(let i=0;i<240;i++){
-   stepBallBody(g,1/120);t+=1/120;
-   if(g.y+g.r>=GROUND)return {x:g.x,t,valid:g.x<NETX-10};
+function simulateCpuSmashLanding(me,aim){
+ // Simulate the actual upcoming player/ball contact, not just the pre-contact ball.
+ // The old version changed raw ball velocity before collision, so its predicted shot
+ // could disagree completely with the real smash and even drive the ball into its own court.
+ const g=cpuBallClone(),m={...me,attack:.18,state:'ATTACK',onGround:false};
+ let contacted=false,t=0;
+ for(let i=0;i<24;i++){
+   // Approximate the airborne player's next position during the short contact window.
+   m.vy+=PLAYER_GRAVITY*FIXED;m.x+=m.vx*FIXED;m.y+=m.vy*FIXED;
+   const floorY=GROUND-m.h*.5;if(m.y>floorY){m.y=floorY;m.vy=0;m.onGround=true}
+   stepBallBody(g,FIXED);t+=FIXED;
+
+   const c=colliderFor(m),ex=c.rx+g.r,ey=c.ry+g.r,qx=(g.x-c.cx)/ex,qy=(g.y-c.cy)/ey,d2=qx*qx+qy*qy;
+   if(d2>=1)continue;
+
+   const qlen=Math.sqrt(d2)||.0001,ux=qx/qlen,uy=qy/qlen;
+   g.x=c.cx+ux*ex;g.y=c.cy+uy*ey;
+   let nx=ux/ex,ny=uy/ey,nlen=Math.hypot(nx,ny)||1;nx/=nlen;ny/=nlen;
+
+   let rvx=g.vx-m.vx,rvy=g.vy-m.vy,vn=rvx*nx+rvy*ny;
+   if(vn<0){rvx-=(1+1.06)*vn*nx;rvy-=(1+1.06)*vn*ny}
+   else{rvx+=nx*92;rvy+=ny*92}
+   g.vx=rvx+m.vx*.42;g.vy=rvy+m.vy*.18;
+
+   const courtDir=m.side===0?1:-1,profiles={
+     '-2':{vx:300,vy:285},'-1':{vx:340,vy:245},'0':{vx:405,vy:195},'1':{vx:450,vy:150},'2':{vx:485,vy:115}
+   },profile=profiles[String(aim)]||profiles['0'];
+   g.vx=lerp(g.vx,courtDir*profile.vx,.72);g.vy=lerp(g.vy,profile.vy,.78);g.speedCap=520;capBallBody(g);
+   contacted=true;break;
  }
- return {x:g.x,t,valid:false};
+ if(!contacted)return {x:g.x,t,valid:false,contacted:false};
+
+ for(let i=0;i<300;i++){
+   stepBallBody(g,FIXED);t+=FIXED;
+   if(g.y+g.r>=GROUND){
+     const valid=me.side===0?g.x>NETX+34:g.x<NETX-34;
+     return {x:g.x,t,valid,contacted:true};
+   }
+ }
+ return {x:g.x,t,valid:false,contacted:true};
 }
-function chooseCpuAttackAim(){
- const cfg=cpuConfig(),opp=p[0],candidates=[-2,-1,0,1,2].map(aim=>({aim,...simulateCpuSmashLanding(aim)}));
- const valid=candidates.filter(q=>q.valid);
- if(!valid.length)return 0;
+function chooseCpuAttackAim(me){
+ const cfg=cpuConfig(),opp=p[1-me.side],candidates=[-2,-1,0,1,2].map(aim=>({aim,...simulateCpuSmashLanding(me,aim)}));
+ const valid=candidates.filter(q=>q.valid&&q.contacted);
+ if(!valid.length)return null;
 
  if(cfg.attackStyle==='safe'){
    const neutral=valid.find(q=>q.aim===0);
    if(neutral)return neutral.aim;
-   return valid.slice().sort((a,b)=>Math.abs(a.x-240)-Math.abs(b.x-240))[0].aim;
+   const center=me.side===0?720:240;
+   return valid.slice().sort((a,b)=>Math.abs(a.x-center)-Math.abs(b.x-center))[0].aim;
  }
 
  valid.forEach(q=>{
-   const futureOpp=clamp(opp.x+opp.vx*q.t*cfg.oppPrediction,42,NETX-42);
+   const lo=opp.side===0?42:NETX+42,hi=opp.side===0?NETX-42:W-42;
+   const futureOpp=clamp(opp.x+opp.vx*q.t*cfg.oppPrediction,lo,hi);
    const separation=Math.abs(q.x-futureOpp);
-   const safeCourt=q.x>48&&q.x<NETX-42?24:0;
+   const safeCourt=me.side===0
+     ?(q.x>NETX+42&&q.x<W-48?24:0)
+     :(q.x>48&&q.x<NETX-42?24:0);
+   const mirroredOpp=me.side===0?W-futureOpp:futureOpp,mirroredX=me.side===0?W-q.x:q.x;
+   const behindBonus=(mirroredOpp>285&&mirroredX<220)||(mirroredOpp<210&&mirroredX>300)?26:0;
    const wrongFoot=(opp.vx>45&&q.x<futureOpp)||(opp.vx<-45&&q.x>futureOpp)?18*cfg.oppPrediction:0;
-   const behindBonus=(futureOpp>285&&q.x<220)||(futureOpp<210&&q.x>300)?26:0;
    q.score=separation+safeCourt+wrongFoot+behindBonus;
  });
  valid.sort((a,b)=>b.score-a.score);
@@ -413,9 +441,16 @@ function cpuInput(dt){
  const close=Math.abs(ball.x-me.x),vertical=Math.abs(ball.y-(me.y-18));
  const attackWindow=phase==='play'&&!me.onGround&&me.recover<=0&&me.state!=='SLIDE'&&ball.x>NETX-28&&close<92&&vertical<88;
  if(attackWindow&&cpuState.shotCooldown<=0&&!me.smashLatch){
-   cpuState.aim=chooseCpuAttackAim();
-   cpuState.attackTimer=.045;
-   cpuState.shotCooldown=cfg.shotCooldown;
+   const plannedAim=chooseCpuAttackAim(me);
+   if(plannedAim!==null){
+     cpuState.aim=plannedAim;
+     cpuState.attackTimer=.045;
+     cpuState.shotCooldown=cfg.shotCooldown;
+   }else{
+     // A bad smash is worse than a controlled receive. If no simulated attack
+     // clears the net, stay passive and let the normal contact pop the ball up.
+     cpuState.attackTimer=0;
+   }
  }
 
  const dead=cfg.dead;
