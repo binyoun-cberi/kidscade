@@ -888,17 +888,22 @@ function panBy(dx,dy){
   const scale=viewSize/Math.max(500,innerHeight);const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0),up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
   cameraTarget.addScaledVector(right,-dx*scale);cameraTarget.addScaledVector(up,dy*scale);cameraTarget.y=0;cameraTarget.x=clamp(cameraTarget.x,-7,7);cameraTarget.z=clamp(cameraTarget.z,-5.5,5.5);applyCamera();
 }
-renderer.domElement.addEventListener('pointerdown',e=>{renderer.domElement.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)drag={active:true,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};});
-renderer.domElement.addEventListener('pointermove',e=>{
-  if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(pointers.size===2){const ps=[...pointers.values()];const d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);if(renderer.domElement._pinch){const delta=d-renderer.domElement._pinch;viewSize=clamp(viewSize-delta*.018,10,25);resize()}renderer.domElement._pinch=d;return}
-  if(drag.active&&e.pointerId===drag.id){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>3)drag.moved=true;if(drag.moved)panBy(dx,dy);drag.x=e.clientX;drag.y=e.clientY}
-  else hoverAt(e.clientX,e.clientY);
-});
-renderer.domElement.addEventListener('pointerup',e=>{const wasTap=drag.active&&e.pointerId===drag.id&&!drag.moved;if(wasTap)handleTap(e.clientX,e.clientY);pointers.delete(e.pointerId);renderer.domElement._pinch=null;if(e.pointerId===drag.id)drag.active=false;});
-renderer.domElement.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);drag.active=false;renderer.domElement._pinch=null});
-renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,10,25);resize()},{passive:false});
-renderer.domElement.addEventListener('pointerleave',()=>{hoverTile=null;previewRing.visible=false;if(selectedTool==='inspect')ui.tileInfo.classList.add('hidden')});
+function bindRendererEvents(){
+  const canvas=renderer?.domElement;
+  if(!canvas||canvas.dataset.ecopolisBound==='1')return;
+  canvas.dataset.ecopolisBound='1';
+  canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)drag={active:true,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};});
+  canvas.addEventListener('pointermove',e=>{
+    if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===2){const ps=[...pointers.values()];const d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);if(canvas._pinch){const delta=d-canvas._pinch;viewSize=clamp(viewSize-delta*.018,10,25);resize()}canvas._pinch=d;return}
+    if(drag.active&&e.pointerId===drag.id){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>3)drag.moved=true;if(drag.moved)panBy(dx,dy);drag.x=e.clientX;drag.y=e.clientY}
+    else hoverAt(e.clientX,e.clientY);
+  });
+  canvas.addEventListener('pointerup',e=>{const wasTap=drag.active&&e.pointerId===drag.id&&!drag.moved;if(wasTap)handleTap(e.clientX,e.clientY);pointers.delete(e.pointerId);canvas._pinch=null;if(e.pointerId===drag.id)drag.active=false;});
+  canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);drag.active=false;canvas._pinch=null});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,10,25);resize()},{passive:false});
+  canvas.addEventListener('pointerleave',()=>{hoverTile=null;previewRing.visible=false;if(selectedTool==='inspect')ui.tileInfo.classList.add('hidden')});
+}
 
 function toast(msg,type='good',ms=2400){clearTimeout(toastTimer);ui.toast.textContent=msg;ui.toast.style.borderColor=type==='bad'?'rgba(255,122,110,.6)':'rgba(129,230,164,.5)';ui.toast.classList.add('showToast');toastTimer=setTimeout(()=>ui.toast.classList.remove('showToast'),ms)}
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(e){}}
@@ -991,4 +996,4 @@ function animate(now){
   [...effectGroup.children].forEach(o=>{o.userData.life-=dt*.7;o.scale.multiplyScalar(1+dt*1.2);o.material.opacity=o.userData.life*.75;if(o.userData.life<=0)effectGroup.remove(o)});
   renderer.render(scene,camera);
 }
-initThree();generateWorld(123456);ui.continueBtn.disabled=!localStorage.getItem(SAVE_KEY);ui.continueBtn.style.opacity=ui.continueBtn.disabled?.35:1;updateUI();requestAnimationFrame(animate);
+initThree();bindRendererEvents();generateWorld(123456);ui.continueBtn.disabled=!localStorage.getItem(SAVE_KEY);ui.continueBtn.style.opacity=ui.continueBtn.disabled?.35:1;updateUI();requestAnimationFrame(animate);
