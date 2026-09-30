@@ -425,6 +425,7 @@ function drawHost(h){
  if(stage().blanket){
   ctx.fillStyle=stage().blanket===2?"#7d6da6":"#6e7f9c";
   ctx.beginPath();ctx.roundRect(-165,250,330,stage().blanket===2?455:350,44);ctx.fill();
+  if(stage().blanket===2){ctx.fillStyle="#f1c7a5";ctx.beginPath();ctx.arc(62,675,43,0,Math.PI*2);ctx.fill();}
  }
  ctx.fillStyle="#684f4f";ctx.beginPath();ctx.arc(24,84,4,0,Math.PI*2);ctx.fill();
  ctx.restore();
