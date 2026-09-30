@@ -95,7 +95,7 @@
     const cut = s.jobs.wood * .48 * production;
     const foodUse = s.population * .30 * (ration.foodUse || 1) * (labor.foodUse || 1);
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
-    const serviceCost = s.stage >= 2 ? .50 + s.buildings.clinic * .28 + (care.upkeep || 0) : 0;
+    const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) : 0;
     return { food: gather - foodUse, wood: cut, treasury: taxIncome - serviceCost, gather, foodUse };
   }
   function canBuild(s, id) {
