@@ -338,6 +338,19 @@ function companionMatches(site){
  const id=game?.companion,r=id&&game?.residents?.[id];return !!(r?.rescued&&r.job&&r.job===SITE_SKILL[site])
 }
 function companionName(){return game?.companion?RESIDENTS[game.companion]?.name||'동행 주민':null}
+function toggleFlashlight(){
+ if(!game?.inv?.flashlight)return toast('손전등이 없습니다. 폐허 바깥 보급상자를 찾아보세요.','warn');
+ if((game.flashlightCharge||0)<=0)return toast('🔦 손전등 충전이 없습니다. 전력이 있는 야영지에서 쉬면 충전됩니다.','warn');
+ game.flashlightOn=!game.flashlightOn;sfx('power');toast('🔦 손전등 '+(game.flashlightOn?'켜짐':'꺼짐'));save()
+}
+function updateFlashlight(dt){
+ const rig=scene?.userData?.flashlightRig;if(!rig||!game)return;const on=!!game.flashlightOn&&!!game.inv.flashlight&&(game.flashlightCharge||0)>0;
+ if(on){game.flashlightCharge=Math.max(0,(game.flashlightCharge||0)-dt*.075);if(game.flashlightCharge<=0){game.flashlightOn=false;toast('🔦 손전등 충전이 다 되었습니다.','warn',3)}}
+ const dir=new THREE.Vector3();camera.getWorldDirection(dir);rig.light.position.copy(camera.position);rig.target.position.copy(camera.position).addScaledVector(dir,12);rig.light.intensity=damp(rig.light.intensity,on?(currentRuinZone()?7.5:4.2):0,8,dt);
+}
+function updateRuinStatus(){
+ if(!ui.ruinStatus||!game)return;const zone=currentRuinZone();ui.ruinStatus.classList.toggle('hidden',!zone);if(!zone)return;const p=ruinSearchProgress(zone.site);ui.ruinStatus.innerHTML='<span>🔦 '+(game.inv.flashlight?Math.round(game.flashlightCharge||0)+'%':'없음')+'</span><span>🔊 '+Math.round(game.ruinNoise||0)+'</span><span>🔎 '+p.done+'/'+p.total+'</span>'
+}
 function setCompanion(id){
  if(!id){game.companion=null;save();renderPanel('settlement');return toast('원정 동행을 해제했습니다.')}
  const r=game.residents?.[id];if(!r?.rescued)return;if(game.companion===id){game.companion=null;toast(RESIDENTS[id].name+'이(가) 야영지로 돌아갑니다.')}else{game.companion=id;toast('🎒 '+RESIDENTS[id].name+'이(가) 원정에 동행합니다.');discover('division')}save();renderPanel('settlement')
@@ -387,16 +400,20 @@ function createRuinSpot(key,x,z,w=1.5,h=1.1,d=.6,color=0x6f6250){
 }
 function toggleRuinDoor(site){
  const d=scene?.userData?.ruinDoors?.[site];if(!d)return;if(d.open&&player.root.position.distanceTo(d.pivot.position)<1.35)return toast('문간에서 조금 떨어져야 닫을 수 있습니다.','warn');
- d.open=!d.open;d.target=d.open?d.openAngle:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door')
+ d.open=!d.open;d.target=d.open?d.openAngle:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door');if(d.open)emitRuinNoise(8)
 }
 function searchRuinSpot(key){
  const info=RUIN_SPOTS[key];if(!info)return;const done='search_'+key,inspect='inspect_'+key;if(game.flags[done])return toast('이미 수색한 곳입니다.');
- if(info.hazard&&!game.flags[inspect]){
-  game.flags[inspect]=true;discover('ruinSafety');const msg=info.hazard==='unstable'?'⚠️ 선반이 기울어져 있습니다. 먼저 무너지지 않는 쪽에서 접근해야 합니다.':'⚠️ 날카로운 금속과 깨진 조각이 있습니다. 손을 넣기 전에 주변을 치웠습니다.';sfx('search');toast(msg,'warn',4);save();return
+ const specialist=companionMatches(info.site);if(info.hazard&&!game.flags[inspect]){
+  game.flags[inspect]=true;discover('ruinSafety');sfx('search');
+  if(!specialist){const msg=info.hazard==='unstable'?'⚠️ 선반이 기울어져 있습니다. 먼저 무너지지 않는 쪽에서 접근해야 합니다.':'⚠️ 날카로운 금속과 깨진 조각이 있습니다. 손을 넣기 전에 주변을 치웠습니다.';emitRuinNoise(10);toast(msg,'warn',4);save();return}
+  toast('🧭 '+companionName()+'이(가) '+(info.hazard==='unstable'?'무게 중심을 확인해 선반을 안전하게 지지했습니다.':'날카로운 조각을 먼저 치워 안전한 수색 공간을 만들었습니다.'),'normal',3.5)
  }
- sfx('search');for(const [item,n] of Object.entries(info.loot||{}))game.inv[item]=(game.inv[item]||0)+n;game.flags[done]=true;
+ sfx('search');emitRuinNoise(specialist?10:18,'수색 소리');
+ const found={...(info.loot||{})},bonus=ruinSearchBonus(key);if(bonus)found[bonus.id]=(found[bonus.id]||0)+bonus.n;
+ for(const [item,n] of Object.entries(found))game.inv[item]=(game.inv[item]||0)+n;game.flags[done]=true;
  const same=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===info.site).map(([id])=>id),complete=same.every(id=>game.flags['search_'+id]);if(complete)game.flags['loot_'+info.site]=true;
- toast('🎒 '+info.name+' · '+Object.entries(info.loot||{}).map(([k,n])=>(ITEMS[k]?.[0]||k)+' +'+n).join(' · '),'normal',3.5);save();updateUI()
+ toast('🎒 '+info.name+' · '+Object.entries(found).map(([k,n])=>(ITEMS[k]?.[0]||k)+' +'+n).join(' · ')+(specialist?' · 전문 동행 보너스':''),'normal',3.8);save();updateUI()
 }
 function ruinSearchProgress(site){
  const ids=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===site).map(([id])=>id),done=ids.filter(id=>game?.flags?.['search_'+id]).length;return {done,total:ids.length}
@@ -752,7 +769,7 @@ function updatePlayer(dt){
  if(moved){tutorialSignal('move',player.speed*dt);const desiredYaw=Math.atan2(player.velocity.x,player.velocity.z);player.root.rotation.y=dampAngle(player.root.rotation.y,desiredYaw,sprinting?13:10,dt)}
  player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);
  const nextState=player.speed<.18?'idle':sprinting&&player.speed>5.8?'sprint':'walk';setLocomotion(nextState);player.stateTime+=dt;updatePlayerVisual(dt,nextState);
- if(player.speed>.35&&moved){player.stepClock+=dt*player.speed;const stride=nextState==='sprint'?2.75:2.18;if(player.stepClock>stride){player.stepClock=0;sfx('step')}}else player.stepClock=Math.min(player.stepClock,.8)
+ if(player.speed>.35&&moved){player.stepClock+=dt*player.speed;const stride=nextState==='sprint'?2.75:2.18;if(player.stepClock>stride){player.stepClock=0;sfx('step')}if(nextState==='sprint'&&currentRuinZone())emitRuinNoise(dt*7.5)}else player.stepClock=Math.min(player.stepClock,.8)
 }
 
 function segmentAabbT(x0,z0,x1,z1,b,expand=.18){
@@ -821,7 +838,7 @@ function samplePollutedWater(){
  if(game.flags.chemSample)return toast('코를 찌르는 냄새가 납니다. 이 물은 식수로 쓰지 않는 편이 안전해 보입니다.','warn');
  game.flags.chemSample=true;game.inv.chemWater++;toast('☣️ 공장 오염수 샘플을 얻었습니다. 모닥불에서 가열하면 어떻게 될까요?','warn',3.8);save();updateUI()
 }
-function openCrate(){if(game.flags.crate)return toast('이미 확인한 상자입니다.');game.flags.crate=true;game.inv.scrap+=3;game.inv.battery++;game.inv.cloth++;game.inv.food+=2;flag('battery');toast('🔋 배터리 · 고철 · 천 · 식량을 확보했습니다. 배전반을 찾아 실제로 연결해 보세요.','normal',3);save();updateUI()}
+function openCrate(){if(game.flags.crate)return toast('이미 확인한 상자입니다.');game.flags.crate=true;game.inv.scrap+=3;game.inv.battery++;game.inv.cloth++;game.inv.food+=2;game.inv.flashlight=1;game.flashlightCharge=Math.max(100,game.flashlightCharge||0);flag('battery');toast('🔦 손전등 · 배터리 · 고철 · 천 · 식량을 확보했습니다. F로 손전등을 켤 수 있습니다.','normal',4);save();updateUI()}
 function rescue(id='taeho'){
  if(game.day<5)return toast('아직 인기척이 없습니다.');const r=game.residents?.[id],def=RESIDENTS[id];if(!r||!def||r.rescued)return;
  r.rescued=true;sfx('rescue');game.survivors=residentCount();if(id==='taeho')game.job=null;
@@ -997,7 +1014,7 @@ function residentSchedule(id){
  const r=game?.residents?.[id];if(!r?.rescued||!r.job)return null;let h=(game.time||720)/60;if(h<6.5)h+=24;const list=JOB_SCHEDULES[r.job]||[];return list.find(([,a,b])=>h>=a&&h<b)||list[list.length-1]||null
 }
 function residentActivity(id){
- const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';if(!r.job)return'역할 대기';return residentSchedule(id)?.[0]||'공동체 작업'
+ const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';if(game?.companion===id)return'원정 동행';if(!r.job)return'역할 대기';return residentSchedule(id)?.[0]||'공동체 작업'
 }
 function residentWorkTarget(id){
  const r=game?.residents?.[id],activity=residentActivity(id);let p=null;if(!r?.job)return null;
