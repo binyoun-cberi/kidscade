@@ -334,34 +334,51 @@ function enterReview(){
 function renderIssues(){
   const text=$('reviewInput').value;
   const issues=inspectSpelling(text),accuracy=accuracyFor(text,issues);
-  $('accuracyBadge').textContent='맞춤법 정확도 '+accuracy+'%';
-  const total=issues.reduce((n,x)=>n+x.count,0);
-  $('issueSummary').innerHTML=total
-    ? `<b>${total}곳</b>을 살펴보면 더 좋아질 수 있어요.<br>정답을 바로 바꾸지 않고, 먼저 직접 고쳐 보세요.`
-    : '<b>지금 찾을 수 있는 오류가 없어요.</b><br>이 검사는 모든 한국어 오류를 찾는 완전한 검사기는 아니에요.';
+  const errors=issues.filter(x=>x.type==='error');
+  const checks=issues.filter(x=>x.type==='check');
+  const errorTotal=errors.reduce((n,x)=>n+x.count,0);
+  const checkTotal=checks.reduce((n,x)=>n+x.count,0);
+  $('accuracyBadge').textContent='검사 기준 '+accuracy+'점'+(checkTotal?' · 확인 '+checkTotal+'곳':'');
+  $('issueSummary').innerHTML=errorTotal||checkTotal
+    ? (errorTotal?'<b>고쳐 볼 곳 '+errorTotal+'곳</b><br>':'')
+      +(checkTotal?'<b>뜻을 확인할 곳 '+checkTotal+'곳</b><br>':'')
+      +'힌트를 보고 스스로 고쳐 보세요. 모호한 표현은 감점하지 않아요.'
+    : '<b>등록된 규칙에서 발견된 오류는 없어요.</b><br>모든 한국어 오류를 검사하지는 못해요. 직접 한 번 더 읽어 보세요.';
   $('issuesList').innerHTML=issues.length?issues.map((x,i)=>`
     <div class="issue-card answer-hidden" data-issue="${i}">
-      <div class="issue-top"><span class="wrong">${escapeHtml(x.bad)}</span><span class="arrow">→</span><span class="right">${escapeHtml(x.good)}</span>${x.count>1?`<small>×${x.count}</small>`:''}</div>
+      <div class="issue-top">
+        <span class="wrong">${escapeHtml(x.bad)}</span>
+        <span class="arrow">→</span>
+        <span class="right">${escapeHtml(x.good)}</span>
+        ${x.count>1?`<small>×${x.count}</small>`:''}
+      </div>
       <p>${escapeHtml(x.explain)}</p>
-      <button class="reveal-btn" type="button">힌트 보기</button>
-    </div>`).join(''):'<div class="no-issue">✨ 좋아요!<br>발견된 곳을 모두 다듬었어요.</div>';
-  document.querySelectorAll('.reveal-btn').forEach(btn=>btn.onclick=()=>{btn.parentElement.classList.remove('answer-hidden');btn.remove()});
-  return {issues,accuracy};
+      <button class="reveal-btn" type="button">${x.type==='check'?'가능한 표현 보기':'힌트 보기'}</button>
+      ${x.type==='check'?`<button class="accept-btn" type="button" data-ignore="${escapeHtml(x.bad)}">의도한 표현이에요</button>`:''}
+    </div>`).join('')
+    : '<div class="no-issue">현재 검사 규칙에서 찾은 오류는 없어요.<br><small>마지막으로 직접 읽어 보세요.</small></div>';
+  document.querySelectorAll('.reveal-btn').forEach(btn=>btn.onclick=()=>{
+    btn.parentElement.classList.remove('answer-hidden');btn.remove();
+  });
+  document.querySelectorAll('.accept-btn').forEach(btn=>btn.onclick=()=>{
+    ignoredChecks.add(btn.dataset.ignore);renderIssues();
+  });
+  return {issues,accuracy,errorTotal,checkTotal};
 }
 function finishStory(){
   const text=$('reviewInput').value.trim();if(!text){toast('이야기가 비어 있어요.');return}
   const final=renderIssues();
   const title=$('titleInput').value.trim()||makeTitle();
-  const record={id:Date.now(),title,text,cards:mission.cards.map(c=>c.id),level:mission.level,accuracy:final.accuracy,createdAt:new Date().toISOString()};
+  const record={id:Date.now(),title,text,cards:mission.cards.map(c=>c.id),level:mission.level,accuracy:final.accuracy,checkTotal:final.checkTotal,createdAt:new Date().toISOString()};
   const list=[record,...books()].slice(0,20);saveState({books:list,draft:null});
   $('resultTitle').textContent=title;$('resultStory').textContent=text;
   $('bookVisuals').innerHTML=mission.cards.map(c=>`<div class="book-visual">${c.image?`<img src="${c.image}" alt="${c.label}">`:c.emoji}</div>`).join('');
   $('resultCards').textContent=mission.cards.length+'개 카드 모두 사용';
   $('resultSentences').textContent=sentenceCount(text)+'문장 · '+text.replace(/\s/g,'').length+'자';
-  $('resultAccuracy').textContent='맞춤법 정확도 '+final.accuracy+'%';
-  $('growthNote').textContent=initialAccuracy!=null&&final.accuracy>initialAccuracy
-    ? `초고 ${initialAccuracy}% → 지금 ${final.accuracy}% · 직접 고치며 더 정확해졌어요.`
-    : final.accuracy===100?'현재 검사 기준으로 살펴볼 표현을 모두 정리했어요.':'고치지 않은 곳이 있어도 이야기는 완성할 수 있어요.';
+  $('resultAccuracy').textContent='검사 기준 '+final.accuracy+'점'+(final.checkTotal?' · 확인 '+final.checkTotal+'곳':'');
+  $('growthNote').textContent=final.checkTotal?'뜻을 확인해야 할 표현이 남아 있어요. 완성 후에도 다시 읽어 보세요.':initialAccuracy!=null&&final.accuracy>initialAccuracy
+    ? `초고 ${initialAccuracy}점 → 지금 ${final.accuracy}점 · 직접 고치며 더 정확해졌어요.`
+    : final.accuracy===100?'등록된 검사 규칙에서는 오류가 더 발견되지 않았어요. 직접 한 번 더 읽어 보세요.':'고치지 않은 곳이 있어도 이야기는 완성할 수 있어요.';
   updateBookCount();showScreen('resultScreen');
 }
 function makeTitle(){
@@ -391,7 +408,7 @@ function showBooks(){
 }
 function openSavedBook(id){
   const b=books().find(x=>x.id===id);if(!b)return;
-  openModal(`<div class="book-label">내 이야기책</div><h2>${escapeHtml(b.title)}</h2><div class="result-story">${escapeHtml(b.text)}</div><div class="growth-note">맞춤법 정확도 ${b.accuracy}%</div>`);
+  openModal(`<div class="book-label">내 이야기책</div><h2>${escapeHtml(b.title)}</h2><div class="result-story">${escapeHtml(b.text)}</div><div class="growth-note">검사 기준 ${b.accuracy}점</div>`);
 }
 
 document.querySelectorAll('.difficulty').forEach(btn=>btn.onclick=()=>{
