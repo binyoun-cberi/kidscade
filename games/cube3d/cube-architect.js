@@ -86,7 +86,8 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
-  ['challengePanel','challengeFlyHud','netPanel','freeHud','mobileControls','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  ['challengePanel','challengeFlyHud','netPanel','freeHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  blueprintModalOpen=false;
   resetMobileInput();
   $('topbar').classList.add('hidden');
   $('homeScreen').classList.add('hidden');
@@ -565,7 +566,7 @@ function updateChallengeCamera(){
   camera.rotation.order='YXZ';camera.rotation.y=challengeYaw;camera.rotation.x=challengePitch;
 }
 function updateChallengeFly(dt){
-  const speed=(challengeKeys.ControlLeft||challengeKeys.ControlRight)?8.5:5.2;
+  const speed=(challengeKeys.ControlLeft||challengeKeys.ControlRight)?10:(challengeDifficulty==='hard'?7.4:5.2);
   const forward=new THREE.Vector3(Math.sin(challengeYaw),0,Math.cos(challengeYaw));
   const right=new THREE.Vector3(Math.cos(challengeYaw),0,-Math.sin(challengeYaw));
   const move=new THREE.Vector3();
@@ -577,9 +578,10 @@ function updateChallengeFly(dt){
   if(move.lengthSq())camera.position.add(move.normalize().multiplyScalar(speed*dt));
   if(challengeKeys.Space)camera.position.y+=speed*dt;
   if(challengeKeys.ShiftLeft||challengeKeys.ShiftRight)camera.position.y-=speed*dt;
-  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-13,13);
-  camera.position.z=THREE.MathUtils.clamp(camera.position.z,-13,13);
-  camera.position.y=THREE.MathUtils.clamp(camera.position.y,.7,14);
+  const limit=CHALLENGE_HALF+3;
+  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-limit,limit);
+  camera.position.z=THREE.MathUtils.clamp(camera.position.z,-limit,limit);
+  camera.position.y=THREE.MathUtils.clamp(camera.position.y,.7,CHALLENGE_MAX_Y+5);
   updateChallengeCamera();updateChallengeGhost();
 }
 
@@ -1440,6 +1442,7 @@ function configureMobileMode(target){
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free');
   $('mobileCheck').classList.toggle('hidden',target!=='challenge');
+  $('mobileSelect').classList.toggle('hidden',target!=='challenge');
   $('mobileNext').classList.toggle('hidden',target!=='challenge');
   $('mobileCopy').classList.toggle('hidden',target!=='free');
   $('mobileWeather').classList.toggle('hidden',target!=='free');
@@ -1470,9 +1473,13 @@ function refreshMobileFly(){
 }
 function mobileBlockAction(action){
   if(mode==='challenge'){
-    const hit=challengeCenterHit(8);
+    const hit=challengeCenterHit(12);
     if(action==='break'&&hit?.object.userData.challenge)removeChallengeBlock(hit.object);
-    if(action==='place'){const p=challengePlaceTarget(hit);if(p)addChallengeBlock(p.x,p.y,p.z)}
+    if(action==='place'){
+      if(challengeTool==='face')paintLookedChallengeFace();
+      else if(challengeTool==='edge'||challengeTool==='vertex')selectLookedChallengePiece();
+      else{const p=challengePlaceTarget(hit);if(p&&!addChallengeCuboid(p.x,p.y,p.z,challengeDims()))toast('도형이 들어갈 공간을 확인해 보세요.')}
+    }
     updateChallengeStats();updateChallengeGhost();return;
   }
   if(mode==='free'&&!inventoryOpen&&!furnaceOpen){
@@ -1509,6 +1516,7 @@ function initMobileControls(){
   tap('mobileBreak',()=>mobileBlockAction('break'));
   tap('mobilePlace',()=>mobileBlockAction('place'));
   tap('mobileCheck',()=>{if(mode==='challenge')checkChallenge()});
+  tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
   tap('mobileNext',()=>{if(mode==='challenge'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}});
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
@@ -1589,9 +1597,17 @@ canvas.addEventListener('pointercancel',e=>{
 canvas.addEventListener('mousedown',e=>{
   if(document.pointerLockElement!==canvas)return;
   if(mode==='challenge'){
-    const hit=challengeCenterHit(8);
-    if(e.button===0&&hit&&hit.object.userData.challenge)removeChallengeBlock(hit.object);
-    if(e.button===2){const p=challengePlaceTarget(hit);if(p)addChallengeBlock(p.x,p.y,p.z)}
+    const hit=challengeCenterHit(12);
+    if(e.button===0){
+      if(challengeTool==='face')paintLookedChallengeFace();
+      else if(challengeTool==='edge'||challengeTool==='vertex')selectLookedChallengePiece();
+      else if(hit?.object.userData.challenge)removeChallengeBlock(hit.object);
+    }
+    if(e.button===2){
+      if(challengeTool==='face')paintLookedChallengeFace();
+      else if(challengeTool==='edge'||challengeTool==='vertex')selectLookedChallengePiece();
+      else{const p=challengePlaceTarget(hit);if(p&&!addChallengeCuboid(p.x,p.y,p.z,challengeDims()))toast('공간이 부족하거나 다른 도형과 겹쳐요.')}
+    }
     updateChallengeStats();updateChallengeGhost();return;
   }
   if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
@@ -1611,7 +1627,10 @@ document.addEventListener('keydown',e=>{
     challengeKeys[e.code]=true;
     if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight')e.preventDefault();
     if(e.code==='KeyC')checkChallenge();
-    if(e.code==='KeyH')toast(currentChallengeMission().tip);
+    if(e.code==='KeyH'){$('blueprintView').value='top';blueprintAngle='top';drawBlueprint()}
+    if(e.code==='KeyG')selectLookedChallengePiece();
+    if(e.code==='KeyP')paintLookedChallengeFace();
+    if(e.code==='KeyB')setChallengeTool('build');
     if(e.code==='KeyN'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
     return;
   }
