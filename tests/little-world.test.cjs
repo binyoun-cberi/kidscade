@@ -32,3 +32,22 @@ test('game supports touch camera time acceleration tutorial and saving',()=>{
   for(const token of ['pointerdown','pointermove','pointerup','wheel','function saveGame','function loadGame','TUTORIAL','localStorage'])assert.ok(game.includes(token),token);
   assert.match(html,/data-speed="6"/);
 });
+
+test('Little World browser modules parse after removing ESM declarations',()=>{
+  assert.doesNotThrow(()=>new Function(sim.replace(/^export /gm,'')));
+  assert.doesNotThrow(()=>new Function(game.replace(/^import .*;$/gm,'')));
+});
+test('Little World simulation survives a deterministic ecosystem smoke run',()=>{
+  const make=new Function(sim.replace(/^export /gm,'')+';return {WorldSim,COLS,ROWS};');
+  const {WorldSim,COLS,ROWS}=make(),world=new WorldSim(12345);
+  world.applyPower('raise',16,12);world.applyPower('rain',16,12);world.applyPower('plants',16,12);
+  for(let i=0;i<25;i++)world.step();
+  const home=world.cells.find(c=>!c.sea&&[c,...world.neighbors(c)].some(q=>q.sea||q.water>.13));
+  assert.ok(home);
+  world.applyPower('herbivore',home.x,home.z);world.applyPower('human',home.x,home.z);
+  for(let i=0;i<120;i++)world.step();
+  assert.equal(world.cells.length,COLS*ROWS);
+  assert.ok(world.cells.every(c=>['height','water','moisture','fertility','temperature','vegetation','herb','pred','fire'].every(k=>Number.isFinite(c[k]))));
+  assert.ok(world.settlements.every(s=>Number.isFinite(s.pop)&&Number.isFinite(s.food)));
+  assert.ok(world.stats().herb>=0);
+});
