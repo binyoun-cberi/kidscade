@@ -1290,11 +1290,17 @@ initMobileControls();
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
-  const once='cubeArchitectTutorial_'+kind+(kind==='free'?'_v3':'');try{if(localStorage.getItem(once))return}catch(_){};
+  const once='cubeArchitectTutorial_'+kind+(mobileModeEnabled?'_touch_v1':(kind==='free'?'_v3':''));try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
   if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>정육면체와 직육면체를 함께 쓰고, 각 면을 따로 칠하며 날씨와 생태·물질 변화를 관찰할 수 있습니다.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치·문·화로</div><div class="keyrow"><b>1~9 / E</b>핫바 / 건축 인벤토리</div><div class="keyrow"><b>F / R</b>비행 / 바라보는 블록 복사</div><div class="keyrow"><b>P</b>바라보는 한 면만 색칠</div><div class="keyrow"><b>X</b>모서리 → 꼭짓점 → 평행면 수학 렌즈</div><div class="keyrow"><b>T</b>날씨 바꾸기</div><div class="keyrow"><b>물·불·화로</b>흐름·연소·물질 변화 실험</div></div>';
+  if(mobileModeEnabled&&kind==='challenge'){
+    html='<h2>설계도 챌린지 · 모바일 조작</h2><p>화면을 밀어 보는 방향을 바꾸고 왼쪽 원형 스틱으로 움직이세요. 오른쪽 버튼으로 블록을 설치·파괴합니다. 건물의 위치는 채점하지 않아요.</p><div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>앞뒤좌우 이동</div><div class="keyrow"><b>화면 드래그</b>시점 돌리기</div><div class="keyrow"><b>↑ / ↓</b>상승 / 하강</div><div class="keyrow"><b>설치 / 파괴</b>십자선이 가리키는 곳에 건축</div><div class="keyrow"><b>검사 / 다음</b>채점 / 다음 설계도</div></div>';
+  }
+  if(mobileModeEnabled&&kind==='free'){
+    html='<h2>아키텍트 월드 · 모바일 조작</h2><p>마우스나 키보드 없이도 건축할 수 있어요. 재료는 화면 아래 핫바를 좌우로 넘겨 고르세요.</p><div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>앞뒤좌우 이동</div><div class="keyrow"><b>화면 드래그</b>시점 돌리기</div><div class="keyrow"><b>설치 / 파괴</b>십자선이 가리키는 블록</div><div class="keyrow"><b>점프 / 비행</b>점프하거나 날아다니기</div><div class="keyrow"><b>가방</b>블록과 직육면체 제작대</div><div class="keyrow"><b>색칠 / 수학</b>여섯 면 색칠 / 수학 렌즈</div></div>';
+  }
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
 }
 window.addEventListener('contextmenu',e=>e.preventDefault());
