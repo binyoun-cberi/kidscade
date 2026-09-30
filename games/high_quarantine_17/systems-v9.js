@@ -23,54 +23,54 @@ const DOC_ISSUES=[
 
 const RULESETS=[
  [
-  {result:'quarantine',reason:'고열 + 지속 기침 복합 기준',when:p=>p.temp>=38&&p.cough}
+  {result:'quarantine',reason:'고열 + 지속 기침 · 즉시 격리/소각 기준',when:p=>p.temp>=38&&p.cough}
  ],
  [
-  {result:'quarantine',reason:'고열 + 지속 기침 복합 기준',when:p=>p.temp>=38&&p.cough},
-  {result:'quarantine',reason:'UV 형광 반응 격리 기준',when:p=>p.uv}
+  {result:'quarantine',reason:'고열 + 지속 기침 · 즉시 격리/소각 기준',when:p=>p.temp>=38&&p.cough},
+  {result:'quarantine',reason:'UV 형광 반응 · 즉시 격리/소각 기준',when:p=>p.uv}
  ],
  [
-  {result:'quarantine',reason:'고열 + 지속 기침 복합 기준',when:p=>p.temp>=38&&p.cough},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.district!=='D-7'&&p.uv}
+  {result:'quarantine',reason:'고열 + 지속 기침 · 즉시 격리/소각 기준',when:p=>p.temp>=38&&p.cough},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.district!=='D-7'&&p.uv}
  ],
  [
-  {result:'quarantine',reason:'고열 + 지속 기침 복합 기준',when:p=>p.temp>=38&&p.cough},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'retest',reason:'통행증 이상으로 추가 대조 필요',when:p=>p.forged},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.uv}
+  {result:'quarantine',reason:'고열 + 지속 기침 · 즉시 격리/소각 기준',when:p=>p.temp>=38&&p.cough},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'retest',reason:'통행증 이상 · 추가검사/관찰 필요',when:p=>p.forged},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.uv}
  ],
  [
-  {result:'quarantine',reason:'오염 생체시료 반입 규정에 따라 격리',when:p=>p.bioSample},
-  {result:'quarantine',reason:'고열 + 지속 기침 복합 기준',when:p=>p.temp>=38&&p.cough},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'retest',reason:'통행증 이상으로 추가 대조 필요',when:p=>p.forged},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.uv}
+  {result:'quarantine',reason:'오염 생체시료 반입 · 즉시 격리/소각',when:p=>p.bioSample},
+  {result:'quarantine',reason:'고열 + 지속 기침 · 즉시 격리/소각 기준',when:p=>p.temp>=38&&p.cough},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'retest',reason:'통행증 이상 · 추가검사/관찰 필요',when:p=>p.forged},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.uv}
  ],
  [
-  {result:'quarantine',reason:'오염 생체시료 반입 규정에 따라 격리',when:p=>p.bioSample},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'quarantine',reason:'기침 + 비정상 호흡 복합 기준',when:p=>p.cough&&p.resp},
-  {result:'retest',reason:'통행증 이상으로 추가 대조 필요',when:p=>p.forged},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.uv},
+  {result:'quarantine',reason:'오염 생체시료 반입 · 즉시 격리/소각',when:p=>p.bioSample},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'quarantine',reason:'기침 + 비정상 호흡 · 즉시 격리/소각 기준',when:p=>p.cough&&p.resp},
+  {result:'retest',reason:'통행증 이상 · 추가검사/관찰 필요',when:p=>p.forged},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.uv},
   {result:'retest',reason:'고열·기침은 있으나 호흡 정상',when:p=>p.temp>=38&&p.cough&&!p.resp}
  ],
  [
-  {result:'quarantine',reason:'오염 생체시료 반입 규정에 따라 격리',when:p=>p.bioSample},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'quarantine',reason:'기침 + 비정상 호흡 복합 기준',when:p=>p.cough&&p.resp},
-  {result:'retest',reason:'통행증 이상으로 추가 대조 필요',when:p=>p.forged},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.uv},
-  {result:'retest',reason:'D-7 외 혈액 단독 양성은 교차반응 가능',when:p=>p.blood&&p.district!=='D-7'}
+  {result:'quarantine',reason:'오염 생체시료 반입 · 즉시 격리/소각',when:p=>p.bioSample},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'quarantine',reason:'기침 + 비정상 호흡 · 즉시 격리/소각 기준',when:p=>p.cough&&p.resp},
+  {result:'retest',reason:'통행증 이상 · 추가검사/관찰 필요',when:p=>p.forged},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.uv},
+  {result:'retest',reason:'D-7 외 혈액 단독 양성 · 추가검사/관찰 필요',when:p=>p.blood&&p.district!=='D-7'}
  ],
  [
-  {result:'quarantine',reason:'오염 생체시료 반입 규정에 따라 격리',when:p=>p.bioSample},
-  {result:'quarantine',reason:'D-7 의무 혈액검사 양성',when:p=>p.district==='D-7'&&p.blood},
-  {result:'quarantine',reason:'기침 + 비정상 호흡 복합 기준',when:p=>p.cough&&p.resp},
-  {result:'quarantine',reason:'혈액 양성 + 추가 이상 소견 복합 기준',when:p=>p.blood&&(p.resp||p.uv)},
-  {result:'retest',reason:'통행증 이상으로 추가 대조 필요',when:p=>p.forged},
-  {result:'retest',reason:'D-7 외 단독 UV 반응은 추가검사 대상',when:p=>p.uv},
-  {result:'retest',reason:'D-7 외 혈액 단독 양성은 교차반응 가능',when:p=>p.blood&&p.district!=='D-7'},
+  {result:'quarantine',reason:'오염 생체시료 반입 · 즉시 격리/소각',when:p=>p.bioSample},
+  {result:'quarantine',reason:'D-7 혈액 양성 · 즉시 격리/소각',when:p=>p.district==='D-7'&&p.blood},
+  {result:'quarantine',reason:'기침 + 비정상 호흡 · 즉시 격리/소각 기준',when:p=>p.cough&&p.resp},
+  {result:'quarantine',reason:'혈액 양성 + 추가 이상 소견 · 즉시 격리/소각 기준',when:p=>p.blood&&(p.resp||p.uv)},
+  {result:'retest',reason:'통행증 이상 · 추가검사/관찰 필요',when:p=>p.forged},
+  {result:'retest',reason:'D-7 외 단독 UV 반응 · 추가검사/관찰 대상',when:p=>p.uv},
+  {result:'retest',reason:'D-7 외 혈액 단독 양성 · 추가검사/관찰 필요',when:p=>p.blood&&p.district!=='D-7'},
   {result:'retest',reason:'고열·기침은 있으나 호흡 정상',when:p=>p.temp>=38&&p.cough&&!p.resp}
  ]
 ];
@@ -90,7 +90,7 @@ const INCIDENTS=[
  {id:'flu',label:'계절성 감기 유행',desc:'정상 시민 사이에서도 기침이 늘었습니다. 기침 하나만으로 감염을 단정하지 마십시오.',minWeek:1},
  {id:'heat',label:'폭염 경보',desc:'더위로 체온이 평소보다 높게 측정되는 시민이 있습니다. 복합 기준을 확인하십시오.',minWeek:1},
  {id:'supply',label:'혈액 키트 배송 지연',desc:'이번 주 혈액 검사 키트가 1개 적게 지급됩니다.',minWeek:2,bloodKitsDelta:-1,needsBlood:true},
- {id:'vent',label:'격리동 환기 고장',desc:'A/B 격리동 내부 노출 위험이 증가했습니다. 감염 의심자는 방을 분산 배치하십시오.',minWeek:4,facilityRisk:1.5}
+ {id:'vent',label:'고위험 격리실 환기 고장',desc:'B 고위험실 환기 이상으로 내부 노출 위험이 증가했습니다. 양성자를 신속히 처리하고 A 관찰실과 분리하십시오.',minWeek:4,facilityRisk:1.5}
 ];
 
 function hashString(s){
@@ -236,8 +236,8 @@ function reason(p,wi){
   if(p.forged&&hit.reason.indexOf('통행증')>=0&&p.docIssueLabel)return p.docIssueLabel+' · 추가검사 대상';
   return hit.reason;
  }
- if(p.district==='D-7')return'D-7 의무 혈액검사 음성 및 다른 격리 기준 없음';
- return'현행 격리·추가검사 기준에 해당하지 않음';
+ if(p.district==='D-7')return'D-7 의무 혈액검사 음성 및 즉시 소각 기준 없음';
+ return'현행 즉시 격리/소각·추가검사 기준에 해당하지 않음';
 }
 function documentCheck(p){
  if(!p)return{ok:true,label:'문서 이상 없음',detail:'통행증 항목이 현행 규정과 일치합니다.'};
@@ -273,7 +273,7 @@ function applyDecision(payload,districtText){
   pushCityLog(origin.label+' 감염 의심자 차단');
  }else if(payload.wrongQuarantine){
   origin.panic=clamp(origin.panic+5,0,100);
-  pushCityLog(origin.label+' 정상 시민 과잉 격리 → 불안 증가');
+  pushCityLog(origin.label+' 정상 시민 오판 소각 → 불안 급증');
  }else if(payload.ok){
   origin.panic=clamp(origin.panic-1,0,100);
  }
