@@ -102,7 +102,7 @@ if(window.Q17Bridge&&typeof window.Q17Bridge.applyOutbreakResult==='function'){
   if(overlay&&overlay.classList.contains('show')){
    const title=(document.getElementById('q17CombatTitle')||{}).textContent||'';
    if(title.indexOf('생존자 캠프')>=0)context='camp';
-   else if(title.indexOf('격리실')>=0)context='isolation';
+   else if(title.indexOf('격리시설')>=0||title.indexOf('격리실')>=0)context='isolation';
   }
   const v=originalApply.apply(this,arguments);
   if(context)try{window.Q17Systems.applyCombat(result,context)}catch(_){}
