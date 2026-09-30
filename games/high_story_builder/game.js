@@ -231,17 +231,43 @@ function buildSpellRules(){
   });
   spellRules=[...map.values()].sort((a,b)=>b.bad.length-a.bad.length);
 }
-function inspectSpelling(text){
-  const found=[];
+function inspectSpelling(text,ignore=ignoredChecks){
+  // 긴 표현을 먼저 처리하고 같은 부분의 중복 감점을 방지합니다.
+  const occupied=new Set(),matches=[];
   for(const rule of spellRules){
-    const n=countOccur(text,rule.bad);
-    if(n>0) found.push({...rule,count:n});
+    let pos=0;
+    while((pos=text.indexOf(rule.bad,pos))>=0){
+      const overlapping=Array.from({length:rule.bad.length},(_,i)=>pos+i).some(i=>occupied.has(i));
+      if(!overlapping){
+        matches.push({...rule,type:'error',count:1});
+        for(let i=pos;i<pos+rule.bad.length;i++)occupied.add(i);
+      }
+      pos+=Math.max(1,rule.bad.length);
+    }
   }
-  return found.filter((r,i,arr)=>!arr.some((x,j)=>j<i&&x.bad.includes(r.bad)&&x.good.includes(r.good)));
+  for(const rule of CHECK_WORDS){
+    if(ignore.has(rule.bad))continue;
+    let pos=0;
+    while((pos=text.indexOf(rule.bad,pos))>=0){
+      const overlapping=Array.from({length:rule.bad.length},(_,i)=>pos+i).some(i=>occupied.has(i));
+      if(!overlapping){
+        matches.push({...rule,type:'check',count:1});
+        for(let i=pos;i<pos+rule.bad.length;i++)occupied.add(i);
+      }
+      pos+=rule.bad.length;
+    }
+  }
+  const combined=new Map();
+  matches.forEach(item=>{
+    const key=item.type+':'+item.bad+':'+item.good;
+    if(combined.has(key))combined.get(key).count+=item.count;
+    else combined.set(key,{...item});
+  });
+  return [...combined.values()];
 }
 function accuracyFor(text,issues){
   const words=Math.max(1,countWords(text));
-  const errors=issues.reduce((n,x)=>n+x.count,0);
+  const errors=issues.filter(x=>x.type==='error').reduce((n,x)=>n+x.count,0);
   return Math.max(0,Math.min(100,Math.round((1-errors/words)*100)));
 }
 
@@ -300,6 +326,7 @@ function enterReview(){
   if(!validateStory())return;
   const text=$('storyInput').value.trim();
   $('reviewInput').value=text;
+  ignoredChecks.clear();
   const issues=inspectSpelling(text);initialAccuracy=accuracyFor(text,issues);
   renderIssues();
   showScreen('reviewScreen');
