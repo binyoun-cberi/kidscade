@@ -1512,20 +1512,29 @@ function updateFreeMission(){
   if(!visitedBiomes.has(region)){
     const alreadyExplored=visitedBiomes.size>0;
     visitedBiomes.add(region);
-    if(alreadyExplored){toast('새로운 바이옴 발견 · '+biome.name);saveFreeWorld()}
+    if(gameFreeMode==='survival')trackSurvival('biome',region);
+    if(alreadyExplored){
+      const hint=worldRules.BIOME_REWARDS[region];
+      toast('새로운 바이옴 발견 · '+biome.name+'! '+hint.hint);
+      saveFreeWorld();
+    }
   }
   const chosen=blockDef(selectedType||'hand').name;
   if(gameFreeMode==='survival'){
     const goal=worldRules.GOALS[survivalStage];
-    $('freeQuestTitle').textContent=goal.title;
-    $('freeQuestDescription').textContent=goal.description;
-    $('adventureCount').textContent=survivalStage===0?
-      bagCount('log')+'/3':(survivalStage+1)+'/'+worldRules.GOALS.length;
-    $('adventureBar').style.width=(survivalStage===0?
-      Math.min(100,bagCount('log')/3*100):
-      survivalStage/(worldRules.GOALS.length-1)*100)+'%';
+    const progress=survivalFinished?goal.need:worldRules.goalProgress(goal,survivalStats);
+    $('freeQuestTitle').textContent=survivalFinished?
+      '생존 원정 완료 · 자유 탐험':goal.title;
+    $('freeQuestDescription').textContent=survivalFinished?
+      '이제 원하는 바이옴을 탐험하고 나만의 건축물을 계속 발전시켜 보세요.':
+      goal.description;
+    $('adventureCount').textContent=survivalFinished?'완료':
+      progress+'/'+goal.need+' · '+(survivalStage+1)+'/'+worldRules.GOALS.length;
+    $('adventureBar').style.width=(survivalFinished?100:
+      Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+chosen;
-    $('freeHint').textContent=survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프':
+    $('freeHint').textContent=survivalStage<3?
+      '좌클릭 채집 · E 가방·제작 · Space 점프':
       '좌클릭 채집 · E 제작·도형 편집 · P 면 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
@@ -1537,6 +1546,7 @@ function updateFreeMission(){
     $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행':
       'E 가방 · F 비행 · R 복사 · P 면 색칠 · X 수학 렌즈';
   }
+  renderExplorationHint();
 }
 function freeCenterHit(max=6.5){
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
@@ -2240,11 +2250,14 @@ function updateSurvivalEnvironment(dt){
   renderSurvivalSafety(shelter);
 }
 function updateFree(dt,t){
+  // Pause the world while young players are reading recipes or using the furnace.
+  if(inventoryOpen||furnaceOpen){
+    updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
+  }
   updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();
   updateSurvivalEnvironment(dt);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
-  if(inventoryOpen||furnaceOpen){checkCollectibles(t);return}
   const displayEye=camera.position.y;
   // Physics and visual camera heights are intentionally separate. A one-cell
   // step is immediate for collision, gradual for the player's view.
@@ -2420,7 +2433,7 @@ initMobileControls();
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
   const once='cubeArchitectTutorial_'+kind+
-    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v16':'_v16'):
+    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v17':'_v17'):
       (mobileModeEnabled?'_touch_v1':''));try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
