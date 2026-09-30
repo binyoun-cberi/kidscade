@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260930-16">
+<link rel="stylesheet" href="./cube-architect.css?v=20260930-17">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -171,7 +171,9 @@
     <div id="freeMission">
       <b><span id="freeQuestTitle">첫날 · 나무 채집</span> <span id="adventureCount">0/3</span></b>
       <small id="freeQuestDescription">나무를 파괴해 첫 원목을 얻으세요.</small>
-      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span></div>
+      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalSafety" class="hidden">안전함</span></div>
+      <small id="explorationHint" class="hidden">새로운 지역을 발견하면 고유한 재료를 얻을 수 있어요.</small>
+      <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
     <div id="freeHint">나무를 모으고 E로 가방과 제작법을 확인하세요.</div>
@@ -280,9 +282,9 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20260930-15"></script>
-<script src="./cube-architect-world.js?v=20260930-16"></script>
-<script src="./cube-architect.js?v=20260930-16"></script>
+<script src="./cube-architect-landmarks.js?v=20260930-17"></script>
+<script src="./cube-architect-world.js?v=20260930-17"></script>
+<script src="./cube-architect.js?v=20260930-17"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
