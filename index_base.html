@@ -138,7 +138,6 @@
     </div>
 
     <div id="main-app">
-        <div id="attendance-stamp">참 잘했어요!<br>출석 완료!</div>
 
         <div id="certificate-area">
             <div class="cert-title">상 장</div>
@@ -2209,6 +2208,12 @@ ${getEvolutionHintText()}
                 if (granted) {
                     if (window.KidscadeDaily?.markDailyRewardClaimed) window.KidscadeDaily.markDailyRewardClaimed();
                     else localStorage.setItem('kidscade_daily_reward_claimed', today);
+                    window.KidscadeActivity?.record?.('reward', {
+                        title: '오늘의 보상 수령',
+                        summary: item.name + (item.rewardType === 'exp' ? ' · 쑥쑥이 경험치 +' : ' · 씨앗 +') + item.amount,
+                        place: '키즈케이드 상점',
+                        dedupeKey: 'daily-reward-' + new Date().toLocaleDateString('sv-SE')
+                    });
                 }
                 renderShop();
                 updatePetUI();
@@ -2365,6 +2370,11 @@ ${getEvolutionHintText()}
                     const power = Math.max(5, Math.round(Number(mission.reward || 0) / 5));
                     window.KidscadeSproutPower?.earn?.(power, '일일 미션 · ' + mission.title);
                     showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개 · 새싹력 +${power}`, true);
+                    window.KidscadeActivity?.record?.('mission', {
+                        title: mission.title + ' 완료!',
+                        summary: '씨앗 +' + mission.reward + ' · 새싹력 +' + power,
+                        place: '오늘의 미션', gameId: gameId || ''
+                    });
                 });
                 renderDailyMissions();
             }
@@ -3499,15 +3509,18 @@ ${getEvolutionHintText()}
                 const attendanceClaimed = window.KidscadeDaily?.isAttendanceClaimed?.() ?? (localStorage.getItem('kidscade_attendance') === todayStr);
                 if (!attendanceClaimed && !attendanceRewardPending) {
                     attendanceRewardPending = true;
-                    const stamp = document.getElementById('attendance-stamp'); stamp.classList.add('animate-stamp');
-                    playUISound('open');
                     // 씨앗을 실제 저장한 뒤 출석 완료 날짜를 기록합니다.
                     if (addCoins(30, "오늘의 출석 씨앗")) {
                         pet.affection = Math.min(100, pet.affection + 20);
                         savePet(); updatePetUI();
                         if (window.KidscadeDaily?.markAttendanceClaimed) window.KidscadeDaily.markAttendanceClaimed();
                         else localStorage.setItem('kidscade_attendance', todayStr);
-                        showToast("쑥쑥이가 오늘의 도전을 기대하고 있어요! 🌱");
+                        window.KidscadeActivity?.record?.('attendance', {
+                            title: '오늘의 출석 완료!',
+                            summary: '씨앗 +30 · 쑥쑥이 친밀도 +20',
+                            place: '키즈케이드',
+                            dedupeKey: 'attendance-' + new Date().toLocaleDateString('sv-SE')
+                        });
                     }
                     attendanceRewardPending = false;
                 }
