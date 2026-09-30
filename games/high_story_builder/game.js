@@ -105,6 +105,13 @@ function saveState(patch){
   const prev=loadState();
   localStorage.setItem(STORAGE_KEY,JSON.stringify({...prev,...patch}));
 }
+function hydrateMission(raw){
+  if(!raw)return null;
+  const cards=(raw.cards||[]).map(c=>CARD_POOL.find(x=>x.id===c.id)).filter(Boolean);
+  const challenges=(raw.challenges||[]).map(c=>CHALLENGES.find(x=>x.id===c.id)).filter(Boolean);
+  if(!cards.length)return null;
+  return {...raw,cards,challenges};
+}
 function books(){return Array.isArray(loadState().books)?loadState().books:[]}
 function updateBookCount(){$('bookCount').textContent=books().length}
 function showScreen(id){
@@ -310,7 +317,7 @@ $('modalClose').onclick=closeModal;$('modal').addEventListener('click',e=>{if(e.
 buildSpellRules();updateBookCount();
 const saved=loadState().draft;
 if(saved?.mission&&saved?.text){
-  mission=saved.mission;level=mission.level||'easy';
+  mission=hydrateMission(saved.mission);level=mission?.level||'easy';
   document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('selected',x.dataset.level===level));
   $('titleInput').value=saved.title||'';$('storyInput').value=saved.text||'';
 }
