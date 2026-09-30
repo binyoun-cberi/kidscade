@@ -241,11 +241,17 @@
     const p = element.panel, scroll = p.scrollTop;
     if (activeTab === "work") {
       const rates = S.rates(state);
-      p.innerHTML = '<h2>일꾼 배치</h2><p class="intro">주민은 매주 식량을 소비합니다. 일하지 않는 주민을 배치하고 생산량을 살펴보세요.</p>' +
-        '<div class="panel-subhead">배치하지 않은 주민 <span>' + S.unused(state) + "명</span></div>" +
+      const urgent = S.winterActive(state) || S.rightsConcerns(state).length > 0 ||
+        state.health < 55 || state.childWellbeing < 55;
+      p.innerHTML = '<h2>일꾼 배치</h2><p class="intro">성인 일꾼을 식량과 물자 수집에 배치하세요. 어린이 ' +
+        S.childCount(state) + '명은 기본 노동력에 포함되지 않습니다.</p>' +
+        (urgent ? operationCards() : '') +
+        '<div class="panel-subhead">배치하지 않은 성인 <span>' + S.unused(state) + "명</span></div>" +
         workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주") +
         workerRow("wood", "🪵", "물자 수집", state.jobs.wood, "생산 " + number(rates.wood) + " / 주") +
-        '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) + "/주 · 주민이 늘면 소비량도 증가합니다. 농장은 채집 일꾼의 효율을 높입니다.</div>" + operationCards();
+        '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) +
+        "/주 · 한파에는 생산이 줄고 난방 물자가 소모됩니다. 위기 때 운영 행동으로 대응할 수 있어요.</div>" +
+        (urgent ? '' : operationCards());
     } else if (activeTab === "build") {
       p.innerHTML = '<h2>공동시설 건설</h2><p class="intro">자동 배치되는 시설을 지어 마을을 발전시키세요. 비용은 즉시 차감됩니다.</p>' +
         Object.entries(S.BUILDINGS).filter(([, b]) => b.stage <= state.stage).map(([id, b]) => buildCard(id, b)).join("") +
