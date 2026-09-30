@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>작은 세계</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="world" aria-label="작은 세계 신 시뮬레이션"></canvas>
+  <header class="topbar glass">
+    <div class="brand"><span>🌍</span><div><b>작은 세계</b><small id="eraLabel">태초 · 0년</small></div></div>
+    <div class="stats">
+      <div><span>🌿 식생</span><b id="vegStat">0%</b></div><div><span>🦌 초식</span><b id="herbStat">0</b></div><div><span>🦊 포식</span><b id="predStat">0</b></div><div><span>👥 사람</span><b id="humanStat">0</b></div><div><span>🏘️ 정착지</span><b id="settlementStat">0</b></div>
+    </div>
+    <div class="speed"><button data-speed="0" type="button" aria-label="일시정지">⏸</button><button data-speed="1" class="active" type="button">1×</button><button data-speed="2" type="button">2×</button><button data-speed="3" type="button">3×</button><button data-speed="6" type="button">6×</button></div>
+  </header>
+  <aside id="guide" class="guide glass"><small id="guideStep">세계 관찰</small><b id="guideTitle">산을 만들고 비를 내려 보세요</b><p id="guideText">세상에 명령하는 대신 환경을 바꾸세요. 생명과 사람들은 그 결과에 스스로 반응합니다.</p></aside>
+  <aside id="inspector" class="inspector glass hidden"><button id="closeInspector" type="button" aria-label="정보 닫기">×</button><b id="tileTitle">초원</b><p id="tileInfo"></p></aside>
+  <aside class="timeline glass"><b>세계의 기록</b><div id="eventLog"><p>아직 특별한 사건이 없어요.</p></div></aside>
+  <button id="helpBtn" class="roundBtn" type="button" aria-label="도움말">?</button><button id="saveBtn" class="saveBtn glass" type="button">저장</button>
+  <section class="powers glass">
+    <div class="categories" role="tablist" aria-label="신의 힘 종류">
+      <button class="active" data-category="terrain" type="button">⛰️ 창조</button><button data-category="climate" type="button">🌦️ 자연</button><button data-category="life" type="button">🌱 생명</button><button data-category="civilization" type="button">🏘️ 문명</button><button data-category="disaster" type="button">⚡ 재해</button>
+    </div>
+    <div id="powerScroller" class="powerScroller">
+      <button class="power active" data-power="raise" data-category="terrain" type="button"><span>⛰️</span><b>땅 올리기</b><small>산과 언덕</small></button><button class="power" data-power="lower" data-category="terrain" type="button"><span>🕳️</span><b>땅 내리기</b><small>계곡과 바다</small></button><button class="power" data-power="inspect" data-category="terrain" type="button"><span>🔎</span><b>살펴보기</b><small>이곳의 상태</small></button>
+      <button class="power categoryHidden" data-power="rain" data-category="climate" type="button"><span>🌧️</span><b>비</b><small>물이 낮은 곳으로</small></button><button class="power categoryHidden" data-power="sun" data-category="climate" type="button"><span>☀️</span><b>햇빛</b><small>따뜻하게·건조하게</small></button><button class="power categoryHidden" data-power="drought" data-category="climate" type="button"><span>🏜️</span><b>가뭄</b><small>넓은 지역 건조</small></button>
+      <button class="power categoryHidden" data-power="plants" data-category="life" type="button"><span>🌱</span><b>식물</b><small>조건이 맞으면 확산</small></button><button class="power categoryHidden" data-power="herbivore" data-category="life" type="button"><span>🦌</span><b>초식동물</b><small>풀을 먹고 번식</small></button><button class="power categoryHidden" data-power="predator" data-category="life" type="button"><span>🦊</span><b>포식동물</b><small>개체수 균형</small></button>
+      <button class="power categoryHidden" data-power="human" data-category="civilization" type="button"><span>👥</span><b>사람</b><small>정착지는 스스로 성장</small></button><button class="power categoryHidden" data-power="blessing" data-category="civilization" type="button"><span>✨</span><b>축복</b><small>식량·지식 도움</small></button>
+      <button class="power categoryHidden" data-power="lightning" data-category="disaster" type="button"><span>⚡</span><b>번개</b><small>건조하면 불이 번져요</small></button><button class="power categoryHidden" data-power="fire" data-category="disaster" type="button"><span>🔥</span><b>불</b><small>숲과 마을 위협</small></button><button class="power categoryHidden" data-power="meteor" data-category="disaster" type="button"><span>☄️</span><b>운석</b><small>지형까지 바꿈</small></button>
+    </div>
+    <div class="powerFooter"><span id="selectedLabel">⛰️ 땅 올리기</span><small>탭: 힘 사용 · 드래그: 지도 이동 · 휠/두 손가락: 확대</small></div>
+  </section>
+  <div id="toast" class="toast"></div>
+  <div id="intro" class="overlay">
+    <div class="card introCard"><p class="eyebrow">GOD SANDBOX · SCIENCE SIMULATION</p><div class="planet">🌍</div><h1>작은 세계</h1><p class="lead">건물을 직접 짓는 게임이 아닙니다. <b>산을 만들고, 비를 내리고, 생명을 놓아 주세요.</b> 물은 낮은 곳으로 흐르고, 숲과 동물과 사람은 환경을 보고 스스로 살아갑니다.</p>
+      <div class="flow"><span>⛰️ 지형</span><i>→</i><span>🌧️ 물</span><i>→</i><span>🌱 생태계</span><i>→</i><span>👥 사람</span><i>→</i><span>🏘️ 문명</span></div>
+      <div class="startActions"><button id="tutorialBtn" class="secondary" type="button">안내와 함께 시작</button><button id="newBtn" class="primary" type="button">자유 창조 시작</button><button id="continueBtn" class="secondary" type="button">이어하기</button></div><small class="tip">정답은 없습니다. 너무 많은 비, 너무 많은 동물, 너무 강한 햇빛도 세상을 바꿉니다.</small>
+    </div>
+  </div>
+  <div id="help" class="overlay hidden">
+    <div class="card helpCard"><p class="eyebrow">HOW THE WORLD WORKS</p><h2>명령하지 말고 조건을 바꿔 보세요</h2>
+      <div class="helpGrid"><div><b>💧 물</b><p>비가 내리면 높은 곳의 물이 낮은 곳으로 흘러 계곡과 웅덩이를 만듭니다. 따뜻하면 더 빨리 증발합니다.</p></div><div><b>🌱 식생</b><p>물·온도·비옥도가 맞으면 식물이 자라고 주변으로 퍼집니다. 너무 젖거나 너무 마르면 줄어듭니다.</p></div><div><b>🦌 먹이사슬</b><p>초식동물이 너무 많으면 식물이 줄고, 포식자가 늘면 초식동물이 감소합니다. 한 종만 많이 놓아도 균형이 깨집니다.</p></div><div><b>🏘️ 문명</b><p>사람은 물과 먹이가 있는 곳에 정착합니다. 플레이어가 집을 짓지 않아도 인구가 늘면 야영지→마을→도시로 발전합니다.</p></div><div><b>🔥 재해</b><p>건조한 숲에 불이 붙으면 주변으로 번집니다. 운석은 생물을 해치지만 땅을 파고 이후 새로운 호수를 만들 수도 있습니다.</p></div><div><b>⏩ 시간</b><p>변화가 느리면 3×·6×를 사용하세요. 변화 과정을 보고 싶으면 일시정지 후 한 지역을 살펴볼 수 있습니다.</p></div></div>
+      <button id="closeHelpBtn" class="primary" type="button">세계로 돌아가기</button>
+    </div>
+  </div>
+</div>
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_little_world" data-title="작은 세계" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
