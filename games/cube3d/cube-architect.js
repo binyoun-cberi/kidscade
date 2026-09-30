@@ -2224,7 +2224,7 @@ function renderExplorationHint(){
   const directions=(dz< -5?'북':dz>5?'남':'')+(dx>5?'동':dx< -5?'서':'');
   const info=worldRules.BIOME_REWARDS[target.id];
   $('explorationHint').textContent='다음 발견: '+worldRules.BIOMES[target.id].name+
-    ' · '+(directions||'근처')+'쪽 약 '+target.dist+'칸 · '+info.resource;
+    ' · '+(directions||'근처')+'쪽 약 '+target.dist+'칸 · '+blockDef(info.resource).name;
 }
 function renderSurvivalSafety(shelter){
   if(gameFreeMode!=='survival'){
