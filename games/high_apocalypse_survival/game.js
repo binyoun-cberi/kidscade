@@ -419,8 +419,9 @@ function ruinSearchProgress(site){
  const ids=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===site).map(([id])=>id),done=ids.filter(id=>game?.flags?.['search_'+id]).length;return {done,total:ids.length}
 }
 function updateRuinInteriors(dt){
- const inside=currentRuinZone(),site=inside?.site||null;if(scene.userData.activeRuinSite!==site){scene.userData.activeRuinSite=site;if(site){const p=ruinSearchProgress(site);game.flags['entered_'+site]=true;toast('🏚 '+inside.name+' 내부 · 수색 '+p.done+'/'+p.total,'normal',2.8);save()}}
- for(const z of ruinZones){const here=inside===z;if(z.roof){z.roof.material.opacity=damp(z.roof.material.opacity,here?.06:.94,8,dt);z.roof.material.depthWrite=!here}if(z.light)z.light.intensity=damp(z.light.intensity,here?.75:.16,5,dt)}
+ const inside=currentRuinZone(),site=inside?.site||null;if(scene.userData.activeRuinSite!==site){scene.userData.activeRuinSite=site;if(site){const p=ruinSearchProgress(site);game.flags['entered_'+site]=true;toast('🏚 '+inside.name+' 내부 · 수색 '+p.done+'/'+p.total+(game.companion?' · '+companionName()+' 동행':''),'normal',2.8);save()}}
+ game.ruinNoise=Math.max(0,(game.ruinNoise||0)-dt*(inside?2.6:12));updateRuinStatus();
+ for(const z of ruinZones){const here=inside===z;if(z.roof){z.roof.material.opacity=damp(z.roof.material.opacity,here?.06:.94,8,dt);z.roof.material.depthWrite=!here}if(z.light)z.light.intensity=damp(z.light.intensity,here?.2:.1,5,dt)}
  for(const d of Object.values(scene?.userData?.ruinDoors||{}))d.pivot.rotation.y=dampAngle(d.pivot.rotation.y,d.target,10,dt)
 }
 
@@ -1057,10 +1058,16 @@ function residentTryStep(n,target,id,dt){
  if((n.userData.stuck||0)>2.1){n.userData.detourSide=-(n.userData.detourSide||1);n.userData.stuck=0;n.userData.prevDist=Infinity}
  return moved
 }
+function companionTarget(id){
+ const a=player.root.rotation.y,f=new THREE.Vector3(Math.sin(a),0,Math.cos(a)),r=new THREE.Vector3(f.z,0,-f.x),side=id==='mira'?-1:1;return player.root.position.clone().addScaledVector(f,-1.65).addScaledVector(r,.75*side)
+}
 function updateNpc(dt){
  if(!game)return;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
-  const target=residentTarget(id),waypoint=residentWaypoint(n,target,id),moved=residentTryStep(n,waypoint,id,dt);
-  if(moved){n.userData.walk=(n.userData.walk||0)+dt*8.4;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
+  const following=game.companion===id;let target,waypoint;
+  if(following){target=companionTarget(id);const dist=n.position.distanceTo(player.root.position);if(dist>18){n.position.copy(target);n.position.y=terrainHeight(n.position.x,n.position.z);n.userData.route=[]}waypoint=target}
+  else{target=residentTarget(id);waypoint=residentWaypoint(n,target,id)}
+  const moved=residentTryStep(n,waypoint,id,dt);
+  if(moved){n.userData.walk=(n.userData.walk||0)+dt*(following?10:8.4);n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
   else{n.userData.idle=(n.userData.idle||0)+dt*2;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
   const status=residentActivity(id),labelNode=n.userData.statusLabel;if(labelNode&&labelNode.userData.labelText!==RESIDENTS[id].name+' · '+status)drawLabel(labelNode,RESIDENTS[id].name+' · '+status);
   if(labelNode)labelNode.visible=player.root.position.distanceTo(n.position)<15
