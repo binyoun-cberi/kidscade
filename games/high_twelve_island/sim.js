@@ -910,9 +910,155 @@
     }
   }
 
+
+  function advanceDisasters(s) {
+    const schedule = { heat: [10, 58], flood: [8, 67], dust: [11, 56], epidemic: [14, 74] };
+    for (const [kind, [length, interval]] of Object.entries(schedule)) {
+      if (s.tick >= s.nextDisasters[kind] && !disasterActive(s,kind)) {
+        s.disasters[kind] = s.tick + length;
+        s.disasterUnanswered[kind] = true;
+        s.disasterSeen[kind] = (s.disasterSeen[kind] || 0) + 1;
+        s.nextDisasters[kind] = s.tick + interval + Math.floor(random(s)*7) - 3;
+        s.crisisHistory.unshift({ tick:s.tick, type:DISASTER_NAMES[kind], text:DISASTER_NAMES[kind] + "이(가) 시작됐습니다. " + length + "주 동안 영향을 줍니다." });
+        record(s, "⚠️ " + DISASTER_NAMES[kind] + " 발생. 주민과 자원을 보호할 방안을 선택해야 합니다.");
+        if (kind === "flood") {
+          s.food = clamp(s.food - (s.buildings.store ? 6 : 11), 0, s.foodCap);
+          s.wood = clamp(s.wood - 5, 0, s.woodCap);
+          s.water = clamp(s.water - 15);
+          s.floodDamageUntil = s.tick + 12;
+        }
+        if (kind === "epidemic") s.sick = Math.min(s.population, Math.max(s.sick, 2));
+      }
+      if (s.crisisHistory.length > 35) s.crisisHistory.length = 35;
+    }
+    const hasHeat = disasterActive(s, "heat"), hasDust = disasterActive(s, "dust");
+    if (hasHeat && s.water < 38) {
+      s.health = clamp(s.health - (s.water < 14 ? 2 : .7));
+      s.childWellbeing = clamp(s.childWellbeing - .6);
+    }
+    if (hasDust) {
+      const protectedDust = s.disasterCare.dust > s.tick;
+      s.air = clamp(s.air - (protectedDust ? 2.8 : 6.3));
+      if (s.air < 48) {
+        s.health = clamp(s.health - (protectedDust ? .25 : .83));
+        s.childWellbeing = clamp(s.childWellbeing - .42);
+      }
+    } else s.air = clamp(s.air + (s.disasterSeen.dust ? 4.1 : 1.6));
+    if (disasterActive(s, "flood") && s.water < 30) s.health = clamp(s.health - .45);
+    if (disasterActive(s, "epidemic")) {
+      const cared = s.disasterCare.epidemic > s.tick;
+      const caregiversAbsent = s.strikes.carers > s.tick;
+      const sickGrowth = cared ? .08 : (caregiversAbsent ? .85 : .47);
+      const recovery = s.buildings.clinic && s.stage >= 2 && s.treasury > 1 && !caregiversAbsent ? .65 : .22;
+      s.sick = clamp(s.sick + sickGrowth - recovery, 0, s.population);
+      s.health = clamp(s.health - s.sick * (cared ? .035 : .065));
+    } else if (s.sick > 0) s.sick = clamp(s.sick - (s.strikes.carers > s.tick ? .12 : s.buildings.clinic ? .57 : .25), 0, s.population);
+    if (s.strikes.carers > s.tick && s.sick >= 2) s.health = clamp(s.health - .28);
+    if (s.strikes.families > s.tick) {
+      s.education = clamp(s.education - .48);
+    }
+  }
+  function advanceGroupPressure(s) {
+    const g = s.groups, foodLow = s.food < 25, waterLow = s.water < 27;
+    g.workers = clamp(g.workers +
+      (s.forcedLaborUntil > s.tick ? .56 : 0) + (s.workStrain > 5 ? .20 : 0) +
+      (foodLow ? .12 : 0) + (s.strikes.workers > s.tick ? -.16 : -.14), 0, 10);
+    g.families = clamp(g.families +
+      (s.childWorkUntil > s.tick ? .53 : 0) + (s.childWellbeing < 57 ? .20 : 0) +
+      (waterLow ? .18 : 0) + (s.health < 35 ? .12 : 0) +
+      (s.strikes.families > s.tick ? -.12 : -.15), 0, 10);
+    g.carers = clamp(g.carers +
+      (s.exclusionUntil > s.tick ? .54 : 0) + (s.sick >= 4 ? .21 : 0) +
+      (s.health < 48 ? .12 : 0) + (s.strikes.carers > s.tick ? -.10 : -.15), 0, 10);
+    if (g.workers >= 7.2 && s.strikes.workers <= s.tick) s.trust = clamp(s.trust - .30);
+    if (g.families >= 7.2 && s.strikes.families <= s.tick) s.trust = clamp(s.trust - .30);
+    if (g.carers >= 7.2 && s.strikes.carers <= s.tick) s.trust = clamp(s.trust - .30);
+  }
+  function departResidents(s, amount, reason) {
+    let removed = 0;
+    while (removed < amount && s.population > 3) {
+      const idx = s.citizens.findLastIndex(p => !p.isChild);
+      const chosen = s.citizens.splice(idx >= 0 ? idx : s.citizens.length - 1, 1)[0];
+      s.population--;
+      removed++;
+      record(s, "⛵ " + chosen.name + "이(가) " + reason + " 때문에 다른 거처를 찾아 떠났습니다.");
+    }
+    s.jobs.gather = Math.min(s.jobs.gather, adultCapacity(s));
+    s.jobs.wood = Math.min(s.jobs.wood, Math.max(0, adultCapacity(s) - s.jobs.gather));
+    return removed;
+  }
+  function applyCrisisDecision(s, choice, event) {
+    if (choice.climateCare) {
+      const { kind, duration } = choice.climateCare;
+      s.disasterCare[kind] = Math.max(s.disasterCare[kind], s.tick + duration);
+    }
+    if (choice.floodRepair) {
+      s.floodDamageUntil = Math.min(s.floodDamageUntil, s.tick + choice.floodRepair);
+      s.water = clamp(s.water + 9);
+    }
+    if (choice.floodRelocate) {
+      s.health = clamp(s.health - .6);
+      s.floodDamageUntil = Math.min(s.floodDamageUntil, s.tick + 9);
+    }
+    if (choice.waterFetch) { s.water = clamp(s.water + choice.waterFetch); s.workStrain = clamp(s.workStrain + .75, 0, 10); }
+    if (choice.quietRest) s.workReliefUntil = Math.max(s.workReliefUntil, s.tick + choice.quietRest);
+    if (choice.medicine) {
+      s.sick = clamp(s.sick - choice.medicine, 0, s.population);
+      s.health = clamp(s.health + 4);
+    }
+    if (choice.groupSettlement) {
+      const kind = choice.groupSettlement;
+      s.groups[kind] = clamp(s.groups[kind] - 3, 0, 10);
+      s.strikes[kind] = 0;
+      if (kind === "families") { s.arrivalsPausedUntil = 0; s.familyExitAt = 0; }
+      if (kind === "workers" && s.food < 30) s.groups.carers = clamp(s.groups.carers + .55, 0, 10);
+      if (kind === "carers" && s.wood < 22) s.groups.workers = clamp(s.groups.workers + .55, 0, 10);
+    }
+    if (choice.groupStrike) {
+      const kind = choice.groupStrike;
+      s.groups[kind] = clamp(s.groups[kind] + 1.1, 0, 10);
+      s.strikes[kind] = s.tick + 8;
+      if (kind === "families") { s.arrivalsPausedUntil = s.tick + 9; s.familyExitAt = s.tick + 6; }
+      record(s, ({workers:"노동 주민이 작업을 중단했습니다. 생산량이 줄어듭니다.",
+        families:"가족들이 공동활동을 거부하고 새로운 주민의 합류를 멈췄습니다.",
+        carers:"돌봄 주민들이 서비스를 중단했습니다. 건강 회복과 전염병 대응에 영향을 줍니다."})[kind]);
+    }
+    if (choice.groupPartial) {
+      const kind = choice.groupPartial;
+      s.groups[kind] = clamp(s.groups[kind] - 1.4, 0, 10);
+      s.strikes[kind] = s.tick + 3;
+      if (kind === "families") { s.arrivalsPausedUntil = s.tick + 3; s.familyExitAt = 0; }
+    }
+    if (choice.familyDeparture) {
+      departResidents(s, choice.familyDeparture, "해결되지 않은 가족들의 요구");
+      s.groups.families = clamp(s.groups.families - 3, 0, 10);
+      s.strikes.families = 0; s.familyExitAt = 0; s.arrivalsPausedUntil = s.tick + 7;
+    }
+    if (choice.caretaker) {
+      s.mandateRestrictedUntil = s.tick + 7;
+      s.groups.workers = clamp(s.groups.workers - 1, 0, 10);
+      s.groups.families = clamp(s.groups.families - 1, 0, 10);
+      s.groups.carers = clamp(s.groups.carers - 1, 0, 10);
+      record(s, "주민의 요구로 7주간 임시 운영 체제에 들어갔습니다. 새 건설과 일반 법률 제정이 제한됩니다.");
+    }
+    if (choice.openCouncil) {
+      s.groups.workers = clamp(s.groups.workers - .9, 0, 10);
+      s.groups.families = clamp(s.groups.families - .9, 0, 10);
+      s.groups.carers = clamp(s.groups.carers - .9, 0, 10);
+      s.civicDebates++;
+    }
+    if (choice.rejectCouncil) {
+      s.groups.workers = clamp(s.groups.workers + .75, 0, 10);
+      s.groups.families = clamp(s.groups.families + .75, 0, 10);
+      s.groups.carers = clamp(s.groups.carers + .75, 0, 10);
+      s.strikes.workers = Math.max(s.strikes.workers, s.tick + 5);
+    }
+    if (choice.disasterResponse) s.disasterUnanswered[choice.disasterResponse] = false;
+  }
+
   function chooseEvent(s) {
-    if (s.pending || s.cooldown > 0) return null;
-    const possible = EVENTS.filter(e => allowedEvent(s, e) && (!e.randomChance || random(s) < e.randomChance))
+    if (s.pending) return null;
+    const possible = EVENTS.filter(e => (s.cooldown <= 0 || e.emergency) && allowedEvent(s, e) && (!e.randomChance || random(s) < e.randomChance))
       .sort((a, b) => b.priority - a.priority);
     return possible[0] || null;
   }
@@ -932,6 +1078,7 @@
       if (!r.ok) return r;
     }
     effect(s, choice.changes);
+    applyCrisisDecision(s, choice, event);
 
     if (choice.winterPrep != null) s.winterPrepared = choice.winterPrep;
     if (choice.adultGather) {
@@ -1019,6 +1166,7 @@
     if (s.pending) return s;
     s.tick++;
     advanceWinterAndRights(s);
+    advanceDisasters(s);
     if (s.stormUntil && s.tick >= s.stormUntil) {
       s.stormUntil = 0;
       const aftermathLoss = s.laws.storage === "reserve" ? 3 : s.laws.storage === "exchange" ? 11 : s.laws.storage === "share" ? 13 : 9;
@@ -1028,7 +1176,9 @@
     advanceConsequences(s);
     const r = rates(s);
     s.food = clamp(s.food + r.food, 0, s.foodCap);
+    s.water = clamp(s.water + r.water);
     advanceHealthAndFuel(s, r, s.wood + r.wood);
+    advanceGroupPressure(s);
     if (s.stage >= 2) s.treasury = clamp(s.treasury + r.treasury, 0, 9999);
     if (s.laws.process === "delegate" && s.stage >= 2 && !s.processReviewAt) s.processReviewAt = s.tick + 18;
     if (s.laws.storage === "reserve" && s.food > 75 && s.reserveFood < 28) {
@@ -1043,7 +1193,8 @@
     else if (s.food > 55 && s.trust < 70) s.trust = clamp(s.trust + .10);
     if (s.treasury < 1 && s.stage >= 2 && (s.buildings.clinic || s.buildings.hall)) s.trust = clamp(s.trust - .24);
     if (s.buildings.clinic && s.treasury >= 1) s.trust = clamp(s.trust + .06);
-    if (s.population < capacity(s) && s.food >= 53 && s.trust >= 42 && s.health >= 46 && s.tick - s.lastBirth >= 7) {
+    if (s.population < capacity(s) && s.food >= 53 && s.water >= 27 && s.trust >= 42 &&
+      s.health >= 46 && s.tick >= s.arrivalsPausedUntil && s.mandateRestrictedUntil <= s.tick && s.tick - s.lastBirth >= 7) {
       const newcomer = createCitizen(s.nextCitizenIndex++, "arrival", s.tick);
       s.citizens.push(newcomer);
       s.population++;
@@ -1083,5 +1234,6 @@
   }
   return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES,
     policyEffect, ruleProcedure, votePosition, recordDecision, advanceConsequences, applySafeguard,
-    availableActions, performAction, adultCapacity, childCount, winterActive, rightsConcerns });
+    availableActions, performAction, adultCapacity, childCount, winterActive, rightsConcerns,
+    disasterActive, activeDisasters, groupStatus, DISASTER_NAMES, advanceDisasters, advanceGroupPressure });
 });
