@@ -44,6 +44,7 @@ test('corrected descriptions match the current game implementations', () => {
   const blocks = fs.readFileSync(path.join(ROOT, 'games/cube3d/index.html'), 'utf8');
   const architect = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect.js'), 'utf8');
   const landmarks = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect-landmarks.js'), 'utf8');
+  const pois = fs.readFileSync(path.join(ROOT, 'games/cube3d/cube-architect-poi.js'), 'utf8');
   assert.match(blocks, /CUBE/);
   assert.match(blocks, /설계도 챌린지/);
   assert.match(blocks, /전개도 연구실/);
@@ -51,6 +52,7 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(blocks, /크리에이티브 월드/);
   assert.match(blocks, /three-global\.js/);
   assert.match(blocks, /cube-architect-world\.js/);
+  assert.match(blocks, /cube-architect-poi\.js/);
   assert.match(blocks, /cube-architect-landmarks\.js/);
   assert.match(blocks, /cube-architect\.js/);
   assert.doesNotMatch(blocks, /type="module"/);
@@ -90,6 +92,12 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /setupWeather/);
   assert.match(architect, /updateWeather/);
   assert.match(architect, /spawnCritters/);
+  assert.match(architect, /generateLandmarkPoiChunk/);
+  assert.match(architect, /seedRestorationChallenge/);
+  assert.match(architect, /completeLandmarkPoi/);
+  assert.match(pois, /타지마할 폐허/);
+  assert.match(pois, /히메지성 터/);
+  assert.match(pois, /앙코르와트 유적/);
   assert.match(architect, /createRabbit/);
   assert.match(architect, /createBird/);
   assert.match(blocks, /challengeFlyHud/);
