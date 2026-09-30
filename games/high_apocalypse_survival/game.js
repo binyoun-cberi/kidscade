@@ -337,8 +337,12 @@ function searchRuinSpot(key){
  const same=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===info.site).map(([id])=>id),complete=same.every(id=>game.flags['search_'+id]);if(complete)game.flags['loot_'+info.site]=true;
  toast('🎒 '+info.name+' · '+Object.entries(info.loot||{}).map(([k,n])=>(ITEMS[k]?.[0]||k)+' +'+n).join(' · '),'normal',3.5);save();updateUI()
 }
+function ruinSearchProgress(site){
+ const ids=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===site).map(([id])=>id),done=ids.filter(id=>game?.flags?.['search_'+id]).length;return {done,total:ids.length}
+}
 function updateRuinInteriors(dt){
- const inside=currentRuinZone();for(const z of ruinZones){const here=inside===z;if(z.roof){z.roof.material.opacity=damp(z.roof.material.opacity,here?.06:.94,8,dt);z.roof.material.depthWrite=!here}if(z.light)z.light.intensity=damp(z.light.intensity,here?.75:.16,5,dt)}
+ const inside=currentRuinZone(),site=inside?.site||null;if(scene.userData.activeRuinSite!==site){scene.userData.activeRuinSite=site;if(site){const p=ruinSearchProgress(site);game.flags['entered_'+site]=true;toast('🏚 '+inside.name+' 내부 · 수색 '+p.done+'/'+p.total,'normal',2.8);save()}}
+ for(const z of ruinZones){const here=inside===z;if(z.roof){z.roof.material.opacity=damp(z.roof.material.opacity,here?.06:.94,8,dt);z.roof.material.depthWrite=!here}if(z.light)z.light.intensity=damp(z.light.intensity,here?.75:.16,5,dt)}
  for(const d of Object.values(scene?.userData?.ruinDoors||{}))d.pivot.rotation.y=dampAngle(d.pivot.rotation.y,d.target,10,dt)
 }
 
@@ -791,7 +795,7 @@ function renderPanel(tab){
  if(tab==='knowledge'){ui.panelBody.innerHTML='<div class="grid-cards">'+KNOWLEDGE.map(k=>{const on=game.knowledge.includes(k.id);return '<div class="knowledge-card '+(on?'':'locked')+'"><small>'+(on?k.subject:'???')+'</small><b>'+(on?k.title:'아직 발견하지 못한 지식')+'</b><p>'+(on?k.text:'게임 속 행동과 결과를 통해 직접 발견해 보세요.')+'</p></div>'}).join('')+'</div>';return}
  if(tab==='map'){
    const px=clamp((player.root.position.x+70)/140*100,4,96),pz=clamp((player.root.position.z+70)/140*100,4,96),o=currentObjective();
-   ui.panelBody.innerHTML='<div class="map-board"><span class="map-zone forest">서쪽 숲</span><span class="map-zone hills">산비탈</span><span class="map-zone city">폐허 도시</span><span class="map-zone river">강</span><span class="map-landmark camp">⌂ 야영지</span><span class="map-landmark ruins">▦ 폐허</span><span class="map-player" style="left:'+px+'%;top:'+pz+'%">●</span></div><div class="settlement-card"><b>현재 위치 · '+ui.zone.textContent+'</b><p>'+(o?'다음 목표: '+o.name+' · 약 '+Math.round(player.root.position.distanceTo(o.pos))+'m':'오늘의 주요 목표를 모두 해결했습니다.')+'</p><p>강은 동쪽을 남북으로 가로지르고, 다리는 중앙 도로에 있습니다. 폭우 때에는 강폭이 넓어집니다.</p></div>';return
+   ui.panelBody.innerHTML='<div class="map-board"><span class="map-zone forest">서쪽 숲</span><span class="map-zone hills">산비탈</span><span class="map-zone city">폐허 도시</span><span class="map-zone river">강</span><span class="map-landmark camp">⌂ 야영지</span><span class="map-landmark ruins">▦ 폐허</span><span class="map-player" style="left:'+px+'%;top:'+pz+'%">●</span></div><div class="settlement-card"><b>현재 위치 · '+ui.zone.textContent+'</b><p>'+(o?'다음 목표: '+o.name+' · 약 '+Math.round(player.root.position.distanceTo(o.pos))+'m':'오늘의 주요 목표를 모두 해결했습니다.')+'</p><p>강은 동쪽을 남북으로 가로지르고, 다리는 중앙 도로에 있습니다. 폭우 때에는 강폭이 넓어집니다.<br>폐허 수색 · 마트 '+ruinSearchProgress('market').done+'/'+ruinSearchProgress('market').total+' · 진료소 '+ruinSearchProgress('clinic').done+'/'+ruinSearchProgress('clinic').total+' · 정비창고 '+ruinSearchProgress('garage').done+'/'+ruinSearchProgress('garage').total+'</p></div>';return
  }
  const metrics=settlementMetrics();
  const residentRows=Object.entries(game.residents||{}).filter(([,r])=>r?.rescued).map(([id,r])=>'<div class="resident-row"><b>'+RESIDENTS[id].icon+' '+RESIDENTS[id].name+'</b><span>'+(r.job?(JOBS[r.job]?.name||r.job):'역할 미정')+(r.job===RESIDENTS[id].preferred?' · 특기 일치':'')+'<small>'+residentActivity(id)+'</small></span></div>').join('');
