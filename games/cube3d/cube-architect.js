@@ -30,6 +30,10 @@ let orbit = null;
 let mode = 'home';
 let pointerDown = null;
 let pointerDragged = false;
+let mobileModeEnabled=typeof canvas.requestPointerLock!=='function'||
+  (typeof window.matchMedia==='function'&&window.matchMedia('(pointer: coarse)').matches);
+let mobileMove={x:0,y:0};
+let mobileLookPointerId=null,mobileLookLast=null,mobileJoyPointerId=null;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let toastTimer = null;
@@ -71,7 +75,7 @@ function ensureRenderer(){
   if(renderer)return renderer;
   try{
     renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobileModeEnabled?1.5:2));
     renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     resize();
     return renderer;
@@ -82,7 +86,8 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
-  ['challengePanel','challengeFlyHud','netPanel','freeHud','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  ['challengePanel','challengeFlyHud','netPanel','freeHud','mobileControls','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  resetMobileInput();
   $('topbar').classList.add('hidden');
   $('homeScreen').classList.add('hidden');
   $('actionCheck').classList.add('hidden');
@@ -91,7 +96,7 @@ function clearModeUi(){
   $('actionXray').classList.add('hidden');
 }
 function showHome(){
-  if(document.pointerLockElement===canvas)document.exitPointerLock();
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
   const g=new THREE.GridHelper(16,16,0xffffff,0xb7cbe0);scene.add(g);
@@ -104,7 +109,7 @@ function showHome(){
 }
 function enterMode(next){
   ensureRenderer();ensureLoop();clearModeUi();$('topbar').classList.remove('hidden');mode=next;
-  if(document.pointerLockElement===canvas) document.exitPointerLock();
+  if(document.pointerLockElement===canvas) document.exitPointerLock?.();
   if(next==='challenge') initChallenge();
   if(next==='net') initNet();
   if(next==='free') initFree();
@@ -235,7 +240,7 @@ function initChallenge(){
   $('actionCheck').onclick=checkChallenge;
   $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
   $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>toast(currentChallengeMission().tip);
-  $('challengeLockNotice').classList.remove('hidden');$('challengeLockNotice').onclick=()=>canvas.requestPointerLock();
+  configureMobileMode('challenge');$('challengeLockNotice').onclick=requestGamePointerLock;
   showTutorial('challenge');
 }
 function challengeCenterHit(max=8){
@@ -318,6 +323,7 @@ function updateChallengeFly(dt){
   if(challengeKeys.KeyS||challengeKeys.ArrowDown)move.add(forward);
   if(challengeKeys.KeyA||challengeKeys.ArrowLeft)move.addScaledVector(right,-1);
   if(challengeKeys.KeyD||challengeKeys.ArrowRight)move.add(right);
+  if(mobileModeEnabled){move.addScaledVector(forward,mobileMove.y);move.addScaledVector(right,mobileMove.x)}
   if(move.lengthSq())camera.position.add(move.normalize().multiplyScalar(speed*dt));
   if(challengeKeys.Space)camera.position.y+=speed*dt;
   if(challengeKeys.ShiftLeft||challengeKeys.ShiftRight)camera.position.y-=speed*dt;
@@ -708,7 +714,7 @@ function initFree(){
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');$('mathLensBadge').classList.add('hidden');
-  $('lockNotice').classList.remove('hidden');$('lockNotice').onclick=()=>{if(!inventoryOpen)canvas.requestPointerLock()};
+  configureMobileMode('free');$('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
   $('inventoryClose').onclick=()=>toggleInventory(false);$('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
@@ -1149,6 +1155,7 @@ function updateFree(dt,t){
   if(freeKeys.KeyS||freeKeys.ArrowDown)move.add(forward);
   if(freeKeys.KeyA||freeKeys.ArrowLeft)move.addScaledVector(right,-1);
   if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
+  if(mobileModeEnabled){move.addScaledVector(forward,mobileMove.y);move.addScaledVector(right,mobileMove.x)}
   if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
   if(freeFlying){
     camera.position.add(move);if(freeKeys.Space)camera.position.y+=speed*dt;if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
@@ -1167,6 +1174,113 @@ function updateFree(dt,t){
   camera.rotation.y=yaw;camera.rotation.x=pitch;checkCollectibles(t);
 }
 
+
+/* Pointer-lock is optional. Safari on iPhone uses touch-look and these controls. */
+function resetMobileInput(){
+  mobileMove.x=0;mobileMove.y=0;mobileLookPointerId=null;mobileLookLast=null;mobileJoyPointerId=null;
+  if($('mobileJoystickKnob'))$('mobileJoystickKnob').style.transform='translate(-50%,-50%)';
+  if(typeof challengeKeys!=='undefined'){challengeKeys.Space=false;challengeKeys.ShiftLeft=false}
+  if(typeof freeKeys!=='undefined'){freeKeys.Space=false;freeKeys.ShiftLeft=false}
+}
+function configureMobileMode(target){
+  const active=mobileModeEnabled&&(target==='challenge'||target==='free');
+  setVisible('mobileControls',active);
+  $('mobileControls').classList.toggle('challenge-mobile',active&&target==='challenge');
+  $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
+  $('mobileInventory').classList.toggle('hidden',target!=='free');
+  $('mobileFly').classList.toggle('hidden',target!=='free');
+  $('mobileCheck').classList.toggle('hidden',target!=='challenge');
+  $('mobilePaint').classList.toggle('hidden',target!=='free');
+  $('mobileLens').classList.toggle('hidden',target!=='free');
+  $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
+  $('lockNotice').classList.toggle('hidden',active||target!=='free'||inventoryOpen||furnaceOpen);
+  if(target==='free')refreshMobileFly();
+}
+function enableMobileFallback(){
+  mobileModeEnabled=true;configureMobileMode(mode);
+  toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
+}
+function requestGamePointerLock(){
+  if(mode!=='challenge'&&mode!=='free')return;
+  if(mobileModeEnabled){configureMobileMode(mode);return}
+  if(typeof canvas.requestPointerLock!=='function'){enableMobileFallback();return}
+  try{
+    const result=canvas.requestPointerLock();
+    if(result&&typeof result.catch==='function')result.catch(()=>enableMobileFallback());
+  }catch(e){enableMobileFallback()}
+}
+function refreshMobileFly(){
+  if(mode!=='free')return;
+  $('mobileFly').textContent=freeFlying?'걷기':'비행';
+  $('mobileDown').classList.toggle('hidden',!freeFlying);
+  $('mobileUp').querySelector('small').textContent=freeFlying?'상승':'점프';
+}
+function mobileBlockAction(action){
+  if(mode==='challenge'){
+    const hit=challengeCenterHit(8);
+    if(action==='break'&&hit?.object.userData.challenge)removeChallengeBlock(hit.object);
+    if(action==='place'){const p=challengePlaceTarget(hit);if(p)addChallengeBlock(p.x,p.y,p.z)}
+    updateChallengeStats();updateChallengeGhost();return;
+  }
+  if(mode==='free'&&!inventoryOpen&&!furnaceOpen){
+    const hit=freeCenterHit(6);
+    if(action==='break')breakFreeBlock(hit);
+    if(action==='place')placeFreeBlock(hit);
+  }
+}
+function initMobileControls(){
+  const joystick=$('mobileJoystick'),knob=$('mobileJoystickKnob');
+  function setJoystick(ev){
+    const r=joystick.getBoundingClientRect(),radius=Math.max(1,r.width*.5-25);
+    let dx=ev.clientX-(r.left+r.width*.5),dy=ev.clientY-(r.top+r.height*.5);
+    const len=Math.hypot(dx,dy);if(len>radius){dx*=radius/len;dy*=radius/len}
+    mobileMove={x:dx/radius,y:dy/radius};
+    knob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+  }
+  joystick.addEventListener('pointerdown',ev=>{
+    if(!mobileModeEnabled)return;ev.preventDefault();mobileJoyPointerId=ev.pointerId;
+    joystick.setPointerCapture?.(ev.pointerId);setJoystick(ev);
+  });
+  joystick.addEventListener('pointermove',ev=>{
+    if(ev.pointerId===mobileJoyPointerId){ev.preventDefault();setJoystick(ev)}
+  });
+  const stopJoy=ev=>{if(ev.pointerId!==mobileJoyPointerId)return;mobileJoyPointerId=null;mobileMove={x:0,y:0};knob.style.transform='translate(-50%,-50%)'};
+  joystick.addEventListener('pointerup',stopJoy);
+  joystick.addEventListener('pointercancel',stopJoy);
+  joystick.addEventListener('lostpointercapture',stopJoy);
+  function tap(id,cb){
+    $(id).addEventListener('pointerdown',ev=>{
+      ev.preventDefault();ev.stopPropagation();if(mobileModeEnabled)cb();
+    });
+  }
+  tap('mobileBreak',()=>mobileBlockAction('break'));
+  tap('mobilePlace',()=>mobileBlockAction('place'));
+  tap('mobileCheck',()=>{if(mode==='challenge')checkChallenge()});
+  tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
+  tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
+  tap('mobileLens',()=>{if(mode==='free')toggleXray()});
+  tap('mobileFly',()=>{
+    if(mode!=='free')return;
+    freeFlying=!freeFlying;freeVelocityY=0;refreshMobileFly();updateFreeMission();
+    toast(freeFlying?'비행 모드 · 상승/하강 버튼 사용':'걷기 모드 · 점프 버튼 사용');
+  });
+  function heightButton(id,key){
+    const b=$(id);
+    b.addEventListener('pointerdown',ev=>{
+      if(!mobileModeEnabled)return;ev.preventDefault();ev.stopPropagation();
+      b.setPointerCapture?.(ev.pointerId);b.classList.add('pressed');
+      if(mode==='challenge')challengeKeys[key]=true;
+      else if(mode==='free'){
+        if(key==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false}
+        else freeKeys[key]=true;
+      }
+    });
+    const release=()=>{b.classList.remove('pressed');challengeKeys[key]=false;freeKeys[key]=false};
+    b.addEventListener('pointerup',release);b.addEventListener('pointercancel',release);b.addEventListener('lostpointercapture',release);
+  }
+  heightButton('mobileUp','Space');heightButton('mobileDown','ShiftLeft');
+}
+initMobileControls();
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
