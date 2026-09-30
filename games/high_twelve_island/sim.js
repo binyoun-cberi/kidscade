@@ -79,7 +79,8 @@
         "red/redMan1.png", "brown-2/brown2Woman1.png", "grey/greyMan1.png"][index % 6],
       shirt: ["green/greenShirt1.png", "red/redShirt1.png", "blue/blueShirt1.png"][index % 3]
     };
-    return { id, name, focus, experience, origin, joinedWeek: week, source, appearance };
+    return { id, name, focus, experience, origin, joinedWeek: week, source, appearance,
+      isChild: source === "founder" && (index === 10 || index === 11) };
   }
   function ensureCitizens(s) {
     if (!Array.isArray(s.citizens)) s.citizens = [];
@@ -135,7 +136,19 @@
         else if (s.laws.tax === "high") { thought = "부담금이 늘어난 만큼 예산을 어디에 썼는지 자세히 알고 싶어요."; reason = "현재 공동 부담금"; }
         else { thought = "공공시설을 오래 운영할 수 있도록 비용과 혜택을 함께 살펴봐요."; reason = "공동시설 운영"; }
     }
-    if (food <= 12 && person.focus !== "food" && person.focus !== "work") {
+    if (person.isChild) {
+      if (s.childWorkUntil > s.tick) { mood = "걱정"; thought = "오늘도 수업에 가지 못하고 위험한 채집 일을 해야 하나요? 너무 지쳐요."; reason = "위험한 어린이 노동"; }
+      else if (s.education < 70) { mood = "걱정"; thought = "지난번 일을 하느라 공부를 많이 놓쳤어요. 다시 배울 시간을 갖고 싶어요."; reason = "학습 기회 감소"; }
+      else if (winterActive(s)) { thought = "밖이 너무 추워요. 안전한 곳에서 친구들과 공부하고 싶어요."; reason = "겨울철 생활"; }
+      else { thought = "마을이 안정되면 공부하고 친구들과 놀 수 있는 시간을 갖고 싶어요."; reason = "어린이의 생활"; }
+    }
+    if (s.forcedLaborUntil > s.tick && person.focus === "work") {
+      mood = "걱정"; thought = "동의하지 않은 사람도 일을 해야 하나요? 몸이 좋지 않은 사람도 쉬지 못하고 있어요."; reason = "강제 노동";
+    }
+    if (s.exclusionUntil > s.tick && person.focus === "fairness") {
+      mood = "걱정"; thought = "일부 주민은 식량을 받지 못하고 있어요. 그분들은 어떻게 살아가야 하나요?"; reason = "배급에서의 배제";
+    }
+    if (food <= 12 && person.focus !== "food" && person.focus !== "work" && !person.isChild) {
       mood = "걱정";
       thought = "지금은 먹을 것이 너무 부족해요. 우선 긴급한 식량 문제를 함께 해결하고 싶어요.";
       reason = "긴급 식량 위기";
@@ -159,7 +172,15 @@
       safeguards: { fairBonus: false, effortCare: false, needsAudit: false, workBreak: false },
       pledges: [], decisions: [], authorityUses: 0, voteCooldownUntil: 0,
       workReliefUntil: 0, stormAftermathAt: 0, stormAftermathChoice: null,
-      reserveFood: 0, boostUntil: 0, actionCooldowns: {}
+      reserveFood: 0, boostUntil: 0, actionCooldowns: {},
+      // 한파와 인권 관련 상태는 실제 위기가 닥쳤을 때 HUD에 공개한다.
+      warmth: 73, health: 85, education: 95, childWellbeing: 95,
+      nextWinterAt: 16, coldUntil: 0, winterPrepared: null, winterEver: false,
+      winterStartedAt: 0, winterWarnings: 0,
+      childWorkUntil: 0, childWorkWeeks: 0, childLaborReviewed: false,
+      forcedLaborUntil: 0, forcedLaborWeeks: 0, laborReviewed: false,
+      exclusionUntil: 0, exclusionWeeks: 0, exclusionReviewed: false,
+      rightsHistory: [], crisisHistory: []
     };
   }
   function normalize(s) {
@@ -172,12 +193,13 @@
     d.trust = clamp(d.trust);
     d.treasury = clamp(d.treasury, 0, 9999);
     d.jobs = { gather: Math.max(0, Math.floor(d.jobs.gather || 0)), wood: Math.max(0, Math.floor(d.jobs.wood || 0)) };
-    const workers = d.jobs.gather + d.jobs.wood;
-    if (workers > d.population) {
-      d.jobs.gather = Math.min(d.jobs.gather, d.population);
-      d.jobs.wood = Math.max(0, d.population - d.jobs.gather);
-    }
     ensureCitizens(d);
+    d.citizens.forEach((p,i) => { if (p.isChild == null) p.isChild = i === 10 || i === 11; });
+    const workers = d.jobs.gather + d.jobs.wood;
+    if (workers > adultCapacity(d)) {
+      d.jobs.gather = Math.min(d.jobs.gather, adultCapacity(d));
+      d.jobs.wood = Math.max(0, adultCapacity(d) - d.jobs.gather);
+    }
     d.nextCitizenIndex = Math.max(d.nextCitizenIndex || 12, d.citizens.length);
     d.pressure = { ration: clamp(d.pressure?.ration || 0, 0, 8), labor: clamp(d.pressure?.labor || 0, 0, 8) };
     d.workStrain = clamp(d.workStrain || 0, 0, 10);
@@ -185,6 +207,12 @@
     if (!Array.isArray(d.pledges)) d.pledges = [];
     if (!Array.isArray(d.decisions)) d.decisions = [];
     d.reserveFood = clamp(d.reserveFood || 0, 0, 28);
+    d.warmth = clamp(d.warmth == null ? 73 : d.warmth);
+    d.health = clamp(d.health == null ? 85 : d.health);
+    d.education = clamp(d.education == null ? 95 : d.education);
+    d.childWellbeing = clamp(d.childWellbeing == null ? 95 : d.childWellbeing);
+    if (!Array.isArray(d.rightsHistory)) d.rightsHistory = [];
+    if (!Array.isArray(d.crisisHistory)) d.crisisHistory = [];
     if (!d.actionCooldowns || typeof d.actionCooldowns !== "object") d.actionCooldowns = {};
     // 구버전 저장 중 주민 합류 창이 열려 있어도 플레이를 방해하지 않는다.
     d.pending = null;
@@ -200,7 +228,13 @@
     if (s.log.length > 35) s.log.length = 35;
   }
   function capacity(s) { return 16 + s.buildings.hut * 6; }
-  function unused(s) { return Math.max(0, s.population - s.jobs.gather - s.jobs.wood); }
+  function childCount(s) { return (s.citizens || []).filter(p => p.isChild).length; }
+  function adultCapacity(s) { return Math.max(0, s.population - childCount(s)); }
+  function unused(s) { return Math.max(0, adultCapacity(s) - s.jobs.gather - s.jobs.wood); }
+  function winterActive(s) { return s.coldUntil > s.tick; }
+  function rightsConcerns(s) { return [s.childWorkUntil > s.tick ? "어린이 위험 노동" : null,
+    s.forcedLaborUntil > s.tick ? "강제 노동" : null,
+    s.exclusionUntil > s.tick ? "일부 주민 배급 제외" : null].filter(Boolean); }
   function getLaw(s, id) { return LAWS[id]?.options.find(x => x.id === s.laws[id]) || null; }
   function rates(s) {
     const ration = getLaw(s, "ration") || {};
@@ -210,16 +244,18 @@
     const fatigue = 1 - Math.min(.33, (s.workStrain || 0) * .032);
     const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
     const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
+    const coldFactor = winterActive(s) ? .68 : 1;
+    const illnessFactor = s.health < 45 ? .75 : s.health < 65 ? .88 : 1;
     const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
-    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork;
-    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production;
-    const cut = s.jobs.wood * .48 * production;
+    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor;
+    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick ? Math.min(2, childCount(s)) * 1.25 : 0);
+    const cut = s.jobs.wood * .48 * production + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
-    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras);
+    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) * (winterActive(s) ? 1.13 : 1) - (s.exclusionUntil > s.tick ? 1.25 : 0);
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
-    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue };
+    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue, heating: winterActive(s) ? (s.winterPrepared === 2 ? 1.35 : 2.15) : 0 };
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
