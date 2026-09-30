@@ -17,13 +17,14 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=5/);
-  assert.match(html, /art.js\?v=2/);
-  assert.match(html, /game.js\?v=5/);
+  assert.match(html, /sim.js\?v=6/);
+  assert.match(html, /art.js\?v=6/);
+  assert.match(html, /game.js\?v=6/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
-  assert.ok(entry.href.endsWith("?v=5"));
+  assert.match(html, /id="crisisStrip"/);
+  assert.ok(entry.href.endsWith("?v=6"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -33,14 +34,16 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.existsSync(path.join(ROOT, asset)), asset);
 });
 
-test('initial state has three visible resources and four free workers', () => {
+test('initial state keeps two children out of the regular adult work roster', () => {
   const s = S.initial(7);
   assert.equal(s.population, 12);
   assert.equal(s.stage, 1);
   assert.equal(s.food, 65);
   assert.equal(s.wood, 40);
   assert.equal(s.trust, 65);
-  assert.equal(S.unused(s), 4);
+  assert.equal(S.unused(s), 2);
+  assert.equal(S.childCount(s), 2);
+  assert.equal(S.adultCapacity(s), 10);
   assert.equal(S.capacity(s), 16);
 });
 
@@ -209,29 +212,27 @@ test('founders have names and different viewpoints react to laws and scarce food
   assert.ok(S.communityPulse(s).걱정 > 0);
 });
 
-test('newcomer arrival pauses time, records their backstory and opens their profile', () => {
+test('newcomers quietly join, stay in the roster and leave their origin in records', () => {
   const s = S.initial(42);
   for (let i = 0; i < 3; i++) S.tick(s);
   assert.equal(S.resolveEvent(s, 0).ok, true);
-  for (let i = 0; i < 7 && !s.arrivalNotice; i++) {
+  for (let i = 0; i < 7 && s.arrivalLog.length === 0; i++) {
     S.tick(s);
-    if (s.pending && s.pending !== 'new_resident') {
-      assert.equal(S.resolveEvent(s, 0).ok, true);
-    }
+    if (s.pending) assert.equal(S.resolveEvent(s, 0).ok, true);
   }
-  assert.equal(s.pending, 'new_resident');
   assert.equal(s.citizens.length, 13);
   assert.equal(s.population, 13);
   assert.equal(s.arrivalLog.length, 1);
-  assert.ok(s.arrivalNotice.origin.length > 10);
+  assert.equal(s.pending, null, 'joining must not open a blocking event');
+  assert.equal(s.arrivalNotice, null);
+  const joined = s.arrivalLog[0];
+  assert.ok(joined.origin.length > 10);
+  assert.ok(s.log.some(line => line.text.includes(joined.name) && line.text.includes(joined.origin)));
   const week = s.tick;
   S.tick(s);
-  assert.equal(s.tick, week);
-  const reloaded = S.normalize(JSON.parse(JSON.stringify(s)));
-  assert.equal(reloaded.pending, 'new_resident');
-  assert.equal(reloaded.arrivalNotice.name, s.citizens[12].name);
-  assert.equal(S.resolveEvent(reloaded, 0).ok, true);
-  assert.equal(reloaded.arrivalNotice, null);
+  assert.equal(s.tick, week + 1, 'time must continue after a newcomer joins');
+  const restored = S.normalize(JSON.parse(JSON.stringify(s)));
+  assert.equal(restored.arrivalLog[0].name, joined.name);
 });
 
 test('legacy save gains matching resident records but does not invent old backstories', () => {
@@ -261,13 +262,14 @@ test('citizen ID is not reused after a departure', () => {
   assert.equal(s.citizens.length, s.population);
 });
 
-test('resident UI renders live thoughts and newcomer details', () => {
+test('resident UI shows live thoughts and keeps arrival records separate', () => {
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   assert.match(js, /function renderResidents\(/);
   assert.match(js, /S\.residentView\(state, citizen\)/);
   assert.match(js, /S\.communityPulse\(state\)/);
-  assert.match(js, /selectedCitizenId = arrivingId/);
-  assert.match(js, /arriving\.origin/);
+  assert.match(js, /state\.arrivalLog/);
+  assert.match(js, /escapeHTML\(item\.origin\)/);
+  assert.doesNotMatch(js, /selectedCitizenId = arrivingId/);
 });
 
 
@@ -279,6 +281,7 @@ test('ration routes have different weekly economics and dedicated follow-up peti
     assert.equal(enacted.ok, true);
     outcomes[law] = S.rates(s);
     s.tick = 12;
+    s.winterPrepared = 0;
     s.pressure.ration = 3.5;
     const event = S.chooseEvent(s);
     assert.equal(event.id, 'ration_' + law + '_petition');
@@ -513,4 +516,167 @@ test('work screen displays unlocked management actions and emergency reserve sta
   assert.match(js, /S\.availableActions\(state\)/);
   assert.match(js, /S\.performAction\(state, operation\.dataset\.operation\)/);
   assert.match(js, /state\.reserveFood/);
+});
+
+
+test('a forecast appears before the first winter and winter consumes fuel each week', () => {
+  const s = S.initial(10);
+  S.enact(s, 'ration', 'equal');
+  while (s.tick < 8 && !s.pending) S.tick(s);
+  assert.equal(s.pending, 'winter_warning');
+  assert.equal(S.resolveEvent(s, 0).ok, true);
+  assert.equal(s.winterPrepared, 2);
+  while (s.tick < 16) {
+    if (s.pending) S.resolveEvent(s, 0);
+    S.tick(s);
+  }
+  assert.equal(s.winterCount, 1);
+  assert.equal(s.coldUntil, 30);
+  assert.equal(S.winterActive(s), true);
+  const r = S.rates(s);
+  assert.ok(r.heating >= 2);
+  assert.ok(s.wood >= 0);
+});
+
+test('later winters last longer and require more fuel while reducing food output', () => {
+  const s = S.initial(9);
+  s.tick = 40;
+  s.nextWinterAt = 70;
+  s.coldUntil = 55;
+  s.winterPrepared = 2;
+  s.winterCount = 1;
+  const first = S.rates(s);
+  s.winterCount = 4;
+  const later = S.rates(s);
+  assert.ok(later.heating > first.heating);
+  assert.ok(later.gather < first.gather);
+});
+
+test('fuel shortage lowers warmth and eventually affects resident health', () => {
+  const s = S.initial(30);
+  S.enact(s, 'ration', 'equal');
+  s.tick = 22;
+  s.nextWinterAt = 55;
+  s.coldUntil = 38;
+  s.winterPrepared = 0;
+  s.winterCount = 1;
+  s.warmth = 48;
+  s.wood = 0;
+  s.cooldown = 100;
+  const h = s.health;
+  for (let i = 0; i < 3; i++) S.tick(s);
+  assert.ok(s.warmth < 48);
+  assert.ok(s.health < h);
+});
+
+test('forcing children into dangerous work raises output but removes study and harms wellbeing', () => {
+  const s = S.initial(17);
+  s.tick = 20;
+  s.coldUntil = 36;
+  s.nextWinterAt = 50;
+  s.winterPrepared = 0;
+  s.food = 50;
+  s.eventsSeen.first_rule = true;
+  assert.equal(S.chooseEvent(s).id, 'child_labor_debate');
+  const normal = S.rates(s).gather;
+  s.pending = 'child_labor_debate';
+  assert.equal(S.resolveEvent(s, 2).ok, true);
+  assert.ok(S.rates(s).gather > normal);
+  assert.ok(S.rightsConcerns(s).includes('어린이 위험 노동'));
+  const education = s.education, wellbeing = s.childWellbeing;
+  S.tick(s);
+  S.tick(s);
+  assert.ok(s.education < education);
+  assert.ok(s.childWellbeing < wellbeing);
+  const afterWork = s.education;
+  assert.equal(S.performAction(s, 'stopChildWork').ok, true);
+  assert.ok(!S.rightsConcerns(s).includes('어린이 위험 노동'));
+  assert.equal(s.education, afterWork, 'ending forced work does not instantly restore education');
+  s.education = 60;
+  s.wood = 15;
+  assert.equal(S.performAction(s, 'resumeLearning').ok, true);
+  assert.equal(s.education, 69);
+});
+
+test('dangerous child work automatically stops when children become too unwell to work', () => {
+  const s = S.initial(21);
+  s.tick = 21;
+  s.nextWinterAt = 50;
+  s.coldUntil = 36;
+  s.winterCount = 1;
+  s.childWorkUntil = 29;
+  s.childWellbeing = 26;
+  s.cooldown = 100;
+  const before = s.health;
+  S.tick(s);
+  assert.equal(s.childWorkUntil, 0);
+  assert.ok(s.health < before);
+  assert.ok(s.rightsHistory.some(h => h.status === '건강 악화로 중단'));
+});
+
+test('adult forced work creates lasting health costs and can be ended directly', () => {
+  const s = S.initial(6);
+  s.tick = 25;
+  s.coldUntil = 39;
+  s.nextWinterAt = 50;
+  s.winterCount = 1;
+  s.winterPrepared = 0;
+  s.wood = 11;
+  s.eventsSeen.child_labor_debate = true;
+  s.pending = 'forced_labor_debate';
+  const baseline = S.rates(s).wood;
+  assert.equal(S.resolveEvent(s, 2).ok, true);
+  assert.ok(S.rates(s).wood > baseline);
+  const health = s.health;
+  S.tick(s);
+  assert.ok(s.health < health);
+  assert.ok(S.rightsConcerns(s).includes('강제 노동'));
+  assert.equal(S.performAction(s, 'stopForcedWork').ok, true);
+  assert.equal(S.rightsConcerns(s).includes('강제 노동'), false);
+  assert.ok(s.health < health);
+});
+
+test('excluding residents from rations saves food but harms health and may be reversed', () => {
+  const s = S.initial(71);
+  s.tick = 23;
+  s.nextWinterAt = 50;
+  s.coldUntil = 35;
+  s.winterCount = 1;
+  s.food = 22;
+  const beforeUse = S.rates(s).foodUse;
+  s.pending = 'ration_exclusion_debate';
+  assert.equal(S.resolveEvent(s, 2).ok, true);
+  assert.ok(S.rates(s).foodUse < beforeUse);
+  assert.ok(S.rightsConcerns(s).includes('일부 주민 배급 제외'));
+  const health = s.health;
+  S.tick(s);
+  assert.ok(s.health < health);
+  assert.equal(S.performAction(s, 'restoreRations').ok, true);
+  assert.equal(S.rightsConcerns(s).includes('일부 주민 배급 제외'), false);
+});
+
+test('legacy v5 saves postpone newly introduced winter rather than chaining old winters', () => {
+  const old = S.initial(7);
+  old.tick = 211;
+  old.wood = 425;
+  delete old.nextWinterAt;
+  delete old.woodCap;
+  delete old.winterCount;
+  old.pending = 'new_resident';
+  const d = S.normalize(JSON.parse(JSON.stringify(old)));
+  assert.equal(d.pending, null);
+  assert.ok(d.nextWinterAt >= d.tick + 8);
+  assert.ok(d.woodCap >= 425);
+  assert.equal(d.wood, 425);
+});
+
+test('the crisis HUD, winter scenery and arrival history are connected', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
+  assert.match(html, /id="crisisStrip"/);
+  assert.match(js, /S\.rightsConcerns\(state\)/);
+  assert.match(js, /state\.arrivalLog/);
+  assert.match(js, /function renderCrisis\(/);
+  assert.match(art, /latest\.coldUntil > latest\.tick/);
 });
