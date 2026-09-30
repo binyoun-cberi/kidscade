@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260929-12">
+<link rel="stylesheet" href="./cube-architect.css?v=20260930-13">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -156,6 +156,30 @@
     <div id="mathLensBadge" class="hidden">수학 렌즈</div>
   </div>
 
+  <section id="mobileControls" class="hidden" aria-label="모바일 건축 조작">
+    <div id="mobileViewHint">화면을 밀어 시점 돌리기</div>
+    <div class="mobile-top-actions">
+      <button id="mobileInventory" class="mobile-button" type="button">가방</button>
+      <button id="mobileFly" class="mobile-button" type="button">비행</button>
+      <button id="mobileCheck" class="mobile-button" type="button">검사</button>
+      <button id="mobilePaint" class="mobile-button" type="button">색칠</button>
+      <button id="mobileLens" class="mobile-button" type="button">수학</button>
+    </div>
+    <div id="mobileJoystick" class="mobile-joystick" role="group" aria-label="이동 조이스틱">
+      <div id="mobileJoystickKnob" class="mobile-joystick-knob"></div>
+    </div>
+    <div class="mobile-build-actions">
+      <div class="mobile-height-actions">
+        <button id="mobileUp" class="mobile-button" type="button">↑<small>점프·상승</small></button>
+        <button id="mobileDown" class="mobile-button" type="button">↓<small>하강</small></button>
+      </div>
+      <div class="mobile-block-actions">
+        <button id="mobileBreak" class="mobile-button mobile-break" type="button">파괴</button>
+        <button id="mobilePlace" class="mobile-button mobile-place" type="button">설치</button>
+      </div>
+    </div>
+  </section>
+
   <aside id="resultCard" class="hidden">
     <h3>검사 결과</h3>
     <div id="resultScore" class="score-big">0%</div>
@@ -172,7 +196,7 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect.js?v=20260929-12"></script>
+<script src="./cube-architect.js?v=20260930-13"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
