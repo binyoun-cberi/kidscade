@@ -171,7 +171,7 @@ function resolveUserSwing(power){
  if(q<.31&&Math.random()<.62){
   sound('hit',1.5);message('파울!',.8);if(strikes<2)strikes++;updateHud();setTimeoutLike(()=>{if(state==='batting')spawnCpuPitch()},.75);return;
  }
- sound('hit',.86+q*.32);gameStats.atBats++;startOffenseBall(q,power,timing,cursor.y-by);
+ sound('hit',.86+q*.32);startOffenseBall(q,power,timing,cursor.y-by);
 }
 function finishCountPitch(){
  updateHud();
@@ -197,12 +197,11 @@ function walkRunner(side){
 
 function startOffenseBall(q,power,timing,verticalErr){
  state='offenseField';setControls('run');hint('');
- const spray=clamp(timing*420,-.86,.86),launch=clamp(.33-verticalErr/180+rand(-.05,.05),.05,.76);
- const rawDist=95+q*245+power*95+rand(-18,20),distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
+ const spray=clamp(timing/cfg().batWindow*1.1+rand(-.075,.075),-.95,.95),launch=clamp(.33-verticalErr/180+rand(-.05,.05),.05,.76);
+ const rawDist=65+q*170+power*145+rand(-24,24),distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
  fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:170+launch*260,bounced:false,owner:null,age:0,maxDist:rawDist};
  offenseOutcome={q,power,rawDist,distanceM,launch,spray};offenseTimer=0;offenseDecision='stop';makeFielders(false);
- gameStats.bestDistance=Math.max(gameStats.bestDistance,distanceM);
- message(rawDist>365&&launch>.32?'담장까지 간다! 더 달릴까?':'타구가 날아갑니다! 주루를 판단하세요.',1.6);
+ message(rawDist>325&&launch>.32?'담장까지 간다! 더 달릴까?':'타구가 날아갑니다! 주루를 판단하세요.',1.6);
 }
 function makeFielders(userDefense){
  const pos=[[480,405,'P'],[625,365,'1B'],[545,315,'2B'],[415,315,'SS'],[335,365,'3B'],[300,205,'LF'],[480,160,'CF'],[660,205,'RF']];
@@ -212,26 +211,33 @@ function makeFielders(userDefense){
 function updateOffenseField(dt){
  if(!fieldBall)return;offenseTimer+=dt;updateBallPhysics(dt);
  let nearest=-1,nd=1e9;fielders.forEach((f,i)=>{const d=Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y);if(d<nd){nd=d;nearest=i}});
- fielders.forEach((f,i)=>{const target=i===nearest?fieldBall:{x:f.homeX,y:f.homeY},dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1,sp=f.speed*(i===nearest?1:.45);f.x+=dx/l*sp*dt;f.y+=dy/l*sp*dt});
+ if(offenseTimer>(difficulty==='easy'?.42:difficulty==='normal'?.3:.2))fielders.forEach((f,i)=>{const target=i===nearest?fieldBall:{x:f.homeX,y:f.homeY},dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1,sp=f.speed*(i===nearest?1:.45);f.x+=dx/l*sp*dt;f.y+=dy/l*sp*dt});
  const f=fielders[nearest];
- if(f&&fieldBall.z<30&&Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)<28){f.hasBall=true;fieldBall.owner=f;fieldBall.vx=fieldBall.vy=fieldBall.vz=0}
+ if(f&&fieldBall.z<24&&Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)<20){
+  let caught=fieldBall.bounced;
+  if(!caught&&!fieldBall.catchAttempted){fieldBall.catchAttempted=true;caught=Math.random()<(difficulty==='easy'?.58:difficulty==='normal'?.75:.87)}
+  if(caught){f.hasBall=true;fieldBall.owner=f;fieldBall.vx=fieldBall.vy=fieldBall.vz=0}
+ }
  if(offenseTimer>2.6||fieldBall.owner||fieldBall.y<130||fieldBall.x<160||fieldBall.x>800)resolveOffenseBall();
 }
 function resolveOffenseBall(){
  if(state!=='offenseField')return;
  const o=offenseOutcome;let basesEarned=1,out=false,hr=false;const fair=Math.abs(o.spray)<.82;
  if(!fair){message('파울!',.9);state='batting';if(strikes<2)strikes++;updateHud();setControls('bat');setTimeoutLike(()=>spawnCpuPitch(),.8);return}
+ gameStats.atBats++;gameStats.bestDistance=Math.max(gameStats.bestDistance,o.distanceM);
  state='between';setControls('');hint('');
- if(o.rawDist>365&&o.launch>.30){hr=true;basesEarned=4}
+ if(o.rawDist>325&&o.launch>.30){hr=true;basesEarned=4}
+ else if(fieldBall?.owner&&!fieldBall.bounced)out=true;
+ else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<(difficulty==='easy'?.34:difficulty==='normal'?.47:.58))out=true;
  else if(o.q<.28&&o.launch<.22&&Math.random()<.62+(difficulty==='hard'?.12:0))out=true;
  else if(o.launch>.42&&o.q<.58&&Math.random()<.52+(difficulty==='hard'?.1:0))out=true;
- else if(o.rawDist>295)basesEarned=3;
- else if(o.rawDist>205)basesEarned=2;
+ else if(o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
+ else if(o.rawDist>260)basesEarned=2;
  if(!out&&offenseDecision==='go'&&!hr){
   const risk=clamp(.58-o.q*.28+(difficulty==='hard'?.12:0),.18,.66);
   if(Math.random()<risk){out=true;message('욕심냈다가 주루사!',1.3)}else basesEarned=Math.min(4,basesEarned+1);
  }
- if(out){outs++;message(o.launch>.35?'외야 플라이 아웃!':'땅볼 아웃!',1.25);afterOutOrPlay();return}
+ if(out){outs++;message(fieldBall?.owner&&!fieldBall.bounced||o.launch>.35?'외야 플라이 아웃!':'땅볼 아웃!',1.25);afterOutOrPlay();return}
  const before=score[0];advanceRunners(0,basesEarned);const rbi=score[0]-before;
  gameStats.hits++;
  if(hr){gameStats.hr++;sound('cheer');message('HOME RUN! '+o.distanceM+'m',2.1);burst(480,230,42)}
@@ -288,11 +294,16 @@ function startDefenseBall(contact,accuracy,fx,fy){
  fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:160+launch*250,bounced:false,owner:null,age:0,maxDist:rawDist};
  defenseRunners=[];bases.forEach((on,i)=>{if(on)defenseRunners.push({from:i+1,to:i+2,p:0,speed:cfg().runnerSpeed*(.95+Math.random()*.12),running:true})});
  defenseRunners.push({from:0,to:1,p:0,speed:cfg().runnerSpeed*(.96+Math.random()*.1),running:true,batter:true});
- activeFielder=nearestFielder();setControls('field');message('타구! 직접 잡아 송구하세요.',1.4);
+ activeFielder=nearestFielder(predictedLanding());setControls('field');message('타구! 직접 잡아 송구하세요.',1.4);
 }
-function nearestFielder(){
- if(!fieldBall||!fielders.length)return -1;let bi=0,bd=1e9;
- fielders.forEach((f,i)=>{const d=Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y);if(d<bd){bd=d;bi=i}});return bi;
+function predictedLanding(){
+ if(!fieldBall)return{x:480,y:315};
+ const t=(fieldBall.vz+Math.sqrt(fieldBall.vz*fieldBall.vz+780*fieldBall.z))/390;
+ return{x:clamp(fieldBall.x+fieldBall.vx*t*.9,185,775),y:clamp(fieldBall.y+fieldBall.vy*t*.9,125,470)};
+}
+function nearestFielder(target=fieldBall){
+ if(!target||!fielders.length)return -1;let bi=0,bd=1e9;
+ fielders.forEach((f,i)=>{const d=Math.hypot(f.x-target.x,f.y-target.y);if(d<bd){bd=d;bi=i}});return bi;
 }
 function updateDefenseField(dt){
  if(!fieldBall)return;updateBallPhysics(dt);defenseRunners.forEach(r=>{if(r.running)r.p=clamp(r.p+r.speed*dt,0,1)});
@@ -347,7 +358,7 @@ function afterOutOrPlay(){
 }
 function finishHalf(){
  outs=0;bases=[false,false,false];clearCounts();
- if(half==='top'){half='bottom';message(inning+'회말 — 수비!',1.25);updateHud();setTimeoutLike(()=>nextPlateAppearance(),1.0);return}
+ if(half==='top'){if(inning>=3&&score[1]>score[0]){endGame();return}half='bottom';message(inning+'회말 — 수비!',1.25);updateHud();setTimeoutLike(()=>nextPlateAppearance(),1.0);return}
  half='top';inning++;
  if(inning>3&&score[0]!==score[1]){endGame();return}
  if(inning>5){endGame();return}
@@ -449,7 +460,7 @@ function loop(now){const dt=Math.min(.05,(now-last)/1000||0);last=now;acc+=dt;wh
 requestAnimationFrame(loop);
 
 function logicalPos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);if(state==='batting'){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}});
+canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);if(state==='batting'){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}else if(state==='defenseField'&&fielders.length){let best=-1,dist=50;fielders.forEach((f,i)=>{const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<dist){dist=d;best=i}});if(best>=0){activeFielder=best;setControls('field');message(fielders[best].role+' 선택',.7)}}});
 canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons){const p=logicalPos(e);if(state==='batting'){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}}});
 
 window.addEventListener('keydown',e=>{
@@ -458,6 +469,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')held.aimLeft=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')held.aimRight=true;if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')held.aimUp=true;if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')held.aimDown=true;if(e.code==='Space'&&!e.repeat)beginSwing();
  }else if(state==='pitching'){if(e.code==='Space'&&!e.repeat)beginThrow()}
  else if(state==='defenseField'){
+  if(e.key==='Tab'){e.preventDefault();activeFielder=(activeFielder+1)%fielders.length;message(fielders[activeFielder].role+' 선택',.7)}
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')held.left=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')held.right=true;if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')held.up=true;if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')held.down=true;
   if(e.key==='1')throwToBase(1);if(e.key==='2')throwToBase(2);if(e.key==='3')throwToBase(3);if(e.key==='4')throwToBase(4);
  }
