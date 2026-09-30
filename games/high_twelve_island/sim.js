@@ -355,7 +355,7 @@
   function expectedVotes(s, id, optionId) {
     const law = LAWS[id], option = law?.options.find(o => o.id === optionId);
     if (!law || !option) return null;
-    const voters = (s.citizens || []).slice(0, Math.min(12, s.population));
+    const voters = (s.citizens || []).slice(0, s.population);
     const members = voters.map(person => votePosition(s, person, id, option));
     const yes = members.filter(person => person.yes).length;
     return { yes, no: members.length - yes, total: members.length, passed: yes > members.length / 2, members };
