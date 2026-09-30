@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="씨앗 베이스볼 게임 대문">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07172c"/><stop offset=".55" stop-color="#153b53"/><stop offset="1" stop-color="#135038"/></linearGradient>
+ <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b9958"/><stop offset="1" stop-color="#145d36"/></linearGradient>
+ <linearGradient id="dirt" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#eecb8b"/><stop offset="1" stop-color="#b77b45"/></linearGradient>
+ <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#905329"/><stop offset="1" stop-color="#ffdfa0"/></linearGradient>
+ <radialGradient id="glow"><stop offset="0" stop-color="#f5d582" stop-opacity=".27"/><stop offset="1" stop-color="#f5d582" stop-opacity="0"/></radialGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#061626" flood-opacity=".65"/></filter>
+ <pattern id="seat" width="32" height="24" patternUnits="userSpaceOnUse"><path d="M0 0H32M0 23H32" stroke="#29445c" stroke-width="2"/><circle cx="8" cy="10" r="3.5" fill="#f0d0a4"/><circle cx="24" cy="10" r="3.5" fill="#83a9bf"/><circle cx="8" cy="19" r="3" fill="#e8a78c"/><circle cx="24" cy="19" r="3" fill="#d5d9d4"/></pattern>
+</defs>
+<rect width="1280" height="720" fill="url(#sky)"/>
+<circle cx="963" cy="231" r="315" fill="url(#glow)"/>
+<path d="M0 235Q640 110 1280 235V390H0Z" fill="#102539"/><path d="M0 248Q640 123 1280 248V380H0Z" fill="url(#seat)" opacity=".8"/>
+<path d="M0 330Q640 165 1280 330V720H0Z" fill="url(#grass)"/>
+<path d="M0 433Q640 290 1280 433" fill="none" stroke="#ded0a9" stroke-width="7" opacity=".67"/>
+<path d="M0 613Q640 465 1280 613" fill="none" stroke="#4da068" stroke-width="22" opacity=".44"/>
+<path d="M572 720L927 354L1280 720Z" fill="url(#dirt)"/><path d="M703 720L927 453L1153 720Z" fill="#318b50"/>
+<path d="M927 361l15 14-15 15-15-15zM758 539l15 14-15 15-15-15zM1096 539l15 14-15 15-15-15z" fill="#f9f6e9"/>
+<path d="M758 539L927 361L1096 539" fill="none" stroke="#fbf4d8" stroke-width="4" opacity=".75"/>
+<g filter="url(#shadow)">
+ <rect x="75" y="72" width="232" height="47" rx="23" fill="#f5bd51"/>
+ <text x="191" y="103" text-anchor="middle" font-family="system-ui,sans-serif" font-size="23" font-weight="900" fill="#142b35">KIDSCade SPORTS</text>
+ <text x="72" y="260" font-family="system-ui,'Noto Sans KR',sans-serif" font-size="125" font-weight="1000" fill="#fff9dc" stroke="#112b39" stroke-width="12" paint-order="stroke">씨앗</text>
+ <text x="67" y="400" font-family="system-ui,'Noto Sans KR',sans-serif" font-size="140" font-weight="1000" fill="#fff9dc" stroke="#112b39" stroke-width="13" paint-order="stroke">베이스볼</text>
+ <rect x="74" y="439" width="435" height="62" rx="19" fill="#10374d" stroke="#9fdbb5" stroke-width="3"/>
+ <text x="291" y="480" font-family="system-ui,sans-serif" font-size="29" text-anchor="middle" font-weight="900" fill="#d9ffdb">3 INNINGS · PLAY BALL!</text>
+</g>
+<g transform="translate(930 355)" filter="url(#shadow)">
+ <ellipse cx="12" cy="293" rx="114" ry="19" fill="#08271c" opacity=".38"/>
+ <path d="M-48 161L-98 278L-63 289L12 195M34 164L87 282L123 268L79 156" fill="#e7e8df" stroke="#274450" stroke-width="12" stroke-linecap="round"/>
+ <path d="M-84 279l-9 23 39-2 9-20M89 274l22 26 36-12-21-18" fill="#132b41"/>
+ <path d="M-63 68Q11 38 84 77l27 114-55 26-45-29-38 24-74-27z" fill="#24b455" stroke="#0c5639" stroke-width="11" stroke-linejoin="round"/>
+ <path d="M12 121l17 0m-9-9v24" stroke="#effce5" stroke-width="9" stroke-linecap="round"/>
+ <path d="M-56 80L-132 151l23 27 80-54M75 83l91 48-13 32-88-30" fill="none" stroke="#edb792" stroke-width="33" stroke-linecap="round"/>
+ <path d="M-58 1Q-57-52 5-65Q66-59 77 4L68 65Q0 100-57 61Z" fill="#edbd97" stroke="#a4795e" stroke-width="5"/>
+ <path d="M-67 2Q-57-89 12-90Q89-82 87 9L38-15Q-6-12-67 2Z" fill="#fff8e8" stroke="#135b45" stroke-width="7"/>
+ <path d="M-65-3Q-28-35 55-27" fill="none" stroke="#26ac64" stroke-width="13" stroke-linecap="round"/>
+ <circle cx="-22" cy="18" r="5" fill="#233444"/><circle cx="36" cy="18" r="5" fill="#233444"/>
+ <path d="M-10 47q20 18 37 0" fill="none" stroke="#ab6959" stroke-width="5" stroke-linecap="round"/>
+ <path d="M122 133L209-89" stroke="url(#wood)" stroke-width="27" stroke-linecap="round"/>
+ <path d="M122 133L143 78" stroke="#936033" stroke-width="13" stroke-linecap="round"/>
+</g>
+<g transform="translate(1102 116) rotate(-18)" filter="url(#shadow)">
+ <circle r="69" fill="#fdfbf2" stroke="#e6e5df" stroke-width="3"/>
+ <path d="M-22-46Q8-7-22 45M22-46Q-8-7 22 45" stroke="#d95353" stroke-width="4" stroke-dasharray="7 6" fill="none" stroke-linecap="round"/>
+</g>
+<path d="M1040 199Q939 260 794 219" fill="none" stroke="#f7e7b8" stroke-width="5" stroke-dasharray="12 15" opacity=".8"/>
+</svg>
