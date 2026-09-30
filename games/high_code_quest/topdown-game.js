@@ -61,7 +61,14 @@ let runtime=null,selectionEnemyId='',stepActive=false;
 
 function defaultProgress(){return{current:0,unlocked:1,completed:{},programs:{},best:{},attempts:{},wins:0};}
 function loadProgress(){
- let raw={};try{raw=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')}catch(_){}
+ let raw={};
+ try{
+  raw=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+  if(!Object.keys(raw).length){
+   const legacy=JSON.parse(localStorage.getItem('kidscade_game_v1:high_code_quest:progress_v3')||'{}');
+   if(Object.keys(legacy).length)raw={current:Number(legacy.current)||0,unlocked:Math.max(1,Number(legacy.unlocked)||1),completed:legacy.completed||{},programs:{},best:{},attempts:{},wins:0};
+  }
+ }catch(_){}
  return {...defaultProgress(),...raw,completed:raw.completed||{},programs:raw.programs||{},best:raw.best||{},attempts:raw.attempts||{}};
 }
 function saveProgress(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(progress))}catch(_){}}
