@@ -1478,33 +1478,83 @@ function placeFreeBlock(hit){
   const hitType=hit.object.userData.type;
   if(hitType==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
   if(hitType==='furnace'){toggleFurnace(true);return}
-  const p=placementTarget(hit);if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
-  if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&p.y>=Math.floor(camera.position.y-1.65)&&p.y<=Math.floor(camera.position.y))return;
+  if(hitType==='workbench'){toggleInventory(true);return}
+  if(gameFreeMode==='survival'&&(!selectedType||selectedType==='hand'||
+    ['woodPick','stonePick','ironPick','sticks'].includes(selectedType))){
+    toast('E를 눌러 가방에서 설치할 재료를 골라 보세요.');return;
+  }
+  const p=placementTarget(hit);
+  if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
+  if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
+    p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return;
+  const survival=gameFreeMode==='survival';
+  if(survival){
+    if(selectedType==='cuboid'){
+      const volume=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);
+      if(survivalStage<3||bagCount('planks')<volume){
+        toast('제작대와 판자 '+volume+'개가 필요해요.');return;
+      }
+    }else if(bagCount(selectedType)<1){
+      toast(blockDef(selectedType).name+'이(가) 부족해요.');return;
+    }
+  }
   const facing=facingFromYaw();
   if(selectedType==='cuboid'){
     if(!placeCustomCuboid(p))return;
   }else if(selectedType==='door'){
-    if(p.y>=WORLD_MAX_Y||getBlock(p.x,p.y+1,p.z)){toast('문을 놓으려면 위쪽 두 칸이 비어 있어야 해요.');return}
+    if(p.y>=WORLD_MAX_Y||getBlock(p.x,p.y+1,p.z)){
+      toast('문을 놓으려면 위쪽 두 칸이 비어 있어야 해요.');return;
+    }
     setWorldBlock(p.x,p.y,p.z,{type:'door',open:false,facing,playerBuilt:true},true);
     setWorldBlock(p.x,p.y+1,p.z,{type:'doorTop',baseY:p.y,playerBuilt:true},true);
   }else if(selectedType==='water'||selectedType==='lava'){
-    setWorldBlock(p.x,p.y,p.z,{type:selectedType,level:4,playerBuilt:true},true);reactFluidsNear(p.x,p.y,p.z);
+    setWorldBlock(p.x,p.y,p.z,{type:selectedType,level:4,playerBuilt:true},true);
+    reactFluidsNear(p.x,p.y,p.z);
   }else if(selectedType==='fire'){
     setWorldBlock(p.x,p.y,p.z,{type:'fire',age:0,playerBuilt:true},true);
   }else if(selectedType==='sapling'){
     setWorldBlock(p.x,p.y,p.z,{type:'sapling',age:0,playerBuilt:true},true);
-  }else if(['stairs','roof','windowFrame','glassPane','furnace'].includes(selectedType)){
+  }else if(['stairs','roof','windowFrame','glassPane','furnace','workbench'].includes(selectedType)){
     setWorldBlock(p.x,p.y,p.z,{type:selectedType,facing,playerBuilt:true},true);
   }else setWorldBlock(p.x,p.y,p.z,{type:selectedType,playerBuilt:true},true);
+  if(survival){
+    if(selectedType==='cuboid'){
+      const count=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);consumeBag('planks',count);
+    }else consumeBag(selectedType,1);
+    buildHotbar();updateFreeMission();
+  }
   sfx('place');saveFreeWorld();
 }
 function breakFreeBlock(hit){
   if(!hit||!hit.object.userData.worldBlock)return;
-  const {gx:x,gy:y,gz:z}=hit.object.userData,data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  const {gx:x,gy:y,gz:z}=hit.object.userData;
+  const data=getBlock(x,y,z);
+  if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  const survival=gameFreeMode==='survival';
+  let type=data.type==='doorTop'?'door':data.type;
+  if(type==='cuboidPart'){
+    const anchor=getBlock(...(data.anchor||[x,y,z]));type=anchor?.type||type;
+  }
+  if(survival){
+    const required=worldRules.toolNeeded(type);
+    if(required&&!bagCount(required)){
+      toast(blockDef(required).name+'이(가) 있어야 '+blockDef(type).name+'을(를) 캘 수 있어요.');
+      return;
+    }
+  }
+  const resource=type==='cuboid'?'planks':worldRules.dropFor(type);
+  const volume=type==='cuboid'?(data.dims||[1,1,1]).reduce((a,b)=>a*b,1):1;
   if(removeWorldBlockData(x,y,z,true)){
-    const neighborWater=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]].map(v=>getBlock(x+v[0],y+v[1],z+v[2])).find(d=>d?.type==='water');
-    if(neighborWater&&!getBlock(x,y,z))setWorldBlock(x,y,z,{type:'water',level:Math.max(2,neighborWater.level||3),flow:true},true);
-    sfx('break');saveFreeWorld();
+    if(survival&&resource&&!['water','lava','fire','doorTop','cuboidPart'].includes(resource)){
+      if(type!=='leaves'&&type!=='pineLeaves')addToBag(resource,volume);
+      else if(hash2(x*7+y,z*11-y)>.72)addToBag('sapling',1);
+    }
+    const nearby=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]]
+      .map(v=>getBlock(x+v[0],y+v[1],z+v[2]))
+      .find(d=>d?.type==='water');
+    if(nearby&&!getBlock(x,y,z))
+      setWorldBlock(x,y,z,{type:'water',level:Math.max(2,nearby.level||3),flow:true},true);
+    sfx('break');updateFreeMission();saveFreeWorld();
   }
 }
 function toggleDoorAt(x,y,z){
@@ -1643,14 +1693,34 @@ function toggleFurnace(force){
   $('lockNotice').classList.toggle('hidden',furnaceOpen||inventoryOpen||document.pointerLockElement===canvas);
 }
 function runFurnace(recipe){
-  if(runFurnace.busy)return;runFurnace.busy=true;$('furnaceMessage').textContent=blockDef(recipe.input).name+'을(를) 가열하는 중…';$('furnaceProgress').querySelector('i').style.width='0%';
-  const start=performance.now(),dur=1800;const tick=()=>{
-    const p=Math.min(1,(performance.now()-start)/dur);$('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
-    if(p<1)requestAnimationFrame(tick);else{
-      hotbarTypes[selectedHotbarSlot]=recipe.output;selectedType=recipe.output;buildHotbar();$('furnaceMessage').textContent=blockDef(recipe.output).name+' 생성! 현재 핫바 칸에 넣었습니다.';
-      toast(recipe.label+' · 물질 변화 완료');sfx('good');runFurnace.busy=false;saveFreeWorld();
+  if(runFurnace.busy)return;
+  const survival=gameFreeMode==='survival';
+  if(survival){
+    if(bagCount(recipe.input)<1){toast(blockDef(recipe.input).name+'이(가) 필요해요.');return}
+    if(bagCount('log')<1&&bagCount('charcoal')<1){
+      toast('불을 피울 원목이나 숯이 필요해요.');return;
     }
-  };requestAnimationFrame(tick);
+    consumeBag(recipe.input,1);
+    consumeBag(bagCount('charcoal')?'charcoal':'log',1);
+  }
+  runFurnace.busy=true;
+  $('furnaceMessage').textContent=blockDef(recipe.input).name+'을(를) 가열하는 중…';
+  $('furnaceProgress').querySelector('i').style.width='0%';
+  const start=performance.now(),duration=1800;
+  const tick=()=>{
+    const p=Math.min(1,(performance.now()-start)/duration);
+    $('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
+    if(p<1)requestAnimationFrame(tick);
+    else{
+      if(survival)addToBag(recipe.output,1);
+      else {hotbarTypes[selectedHotbarSlot]=recipe.output;selectedType=recipe.output;buildHotbar()}
+      $('furnaceMessage').textContent=blockDef(recipe.output).name+
+        ' 생성! '+(survival?'가방에 넣었어요.':'현재 핫바 칸에 넣었습니다.');
+      toast(recipe.label+' · 물질 변화 완료');sfx('good');
+      runFurnace.busy=false;saveFreeWorld();
+    }
+  };
+  requestAnimationFrame(tick);
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
