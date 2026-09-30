@@ -1,0 +1,94 @@
+y<GRID_H-2;y++)if(!gaps.includes(y))walls.add(key(x,y))};
+ const addH=(y,gaps)=>{for(let x=2;x<GRID_W-2;x++)if(!gaps.includes(x))walls.add(key(x,y))};
+ if(pat===0){addV(7,[3,9]);addV(13,[5,10])}
+ if(pat===1){addH(4,[5,15]);addH(8,[8,16])}
+ if(pat===2){addV(6,[6,10]);addH(6,[6,12,16]);addV(14,[3,8])}
+ if(pat===3){addH(3,[4,11,17]);addV(10,[3,7,10]);addH(9,[6,10,15])}
+ if(pat===4){for(let x=5;x<=15;x+=5)for(let y=3;y<=9;y+=3)if((x+y+i)%2)walls.add(key(x,y))}
+ const start={x:2,y:GRID_H-2},exit={x:GRID_W-3,y:1};
+ walls.delete(key(start.x,start.y));walls.delete(key(exit.x,exit.y));
+ const forbidden=new Set([key(start.x,start.y),key(exit.x,exit.y)]);
+ const openCell=(nearExit=false)=>{
+  for(let k=0;k<100;k++){
+   const x=2+Math.floor(rng()*(GRID_W-4)),y=2+Math.floor(rng()*(GRID_H-4));
+   const q=key(x,y);if(walls.has(q)||forbidden.has(q))continue;
+   if(mdist({x,y},start)<4)continue;if(nearExit&&mdist({x,y},exit)>8)continue;
+   forbidden.add(q);return{x,y};
+  }
+  return{x:3+forbidden.size%12,y:3+forbidden.size%7};
+ };
+ const enemies=[];
+ const source=mission?.enemies||[];
+ const n=Math.max(p.enemyCount,Math.min(4,source.length));
+ for(let e=0;e<n;e++){
+  const pos=openCell(e===n-1),src=source[e]||{},boss=Boolean(src.boss||(p.boss&&e===n-1));
+  const kind=boss?'boss':e%4===0&&i>=14?'shooter':e%4===1&&i>=10?'shield':e%4===2&&i>=20?'glitch':'crawler';
+  const base=boss?11+Math.floor(i/8):2+Math.floor(i/12)+(kind==='shield'?1:0);
+  enemies.push({id:'e'+e,x:pos.x,y:pos.y,kind,hp:Math.max(base,Number(src.hp)||0),maxHp:Math.max(base,Number(src.hp)||0),dead:false,guard:0,cast:0,rule:'',cooldown:0,phase:0,face:'left'});
+ }
+ const data=[],chargers=[],switches=[],terminals=[];
+ if(p.resource){for(let d=0;d<3;d++)data.push({...openCell(),id:'d'+d,taken:false});terminals.push({...openCell(true),id:'term',need:3,uploaded:false})}
+ if(p.energy){chargers.push({...openCell(),id:'charge'})}
+ if(p.gates){switches.push({...openCell(),id:'sw',on:false})}
+ return{walls,start,exit,enemies,data,chargers,switches,terminals};
+}
+function buildWorld(){
+ mission=missions[missionIndex];const variant=(progress.attempts[missionIndex]||0)%3,p=stageProfile(missionIndex),a=buildArena(missionIndex,variant);
+ world={
+  x:a.start.x,y:a.start.y,drawX:a.start.x,drawY:a.start.y,facing:'right',hp:p.hp,maxHp:p.hp,energy:6,maxEnergy:6,potions:2,guard:0,evade:0,pose:'idle',fx:[],
+  walls:a.walls,exit:a.exit,enemies:a.enemies,projectiles:[],data:a.data,dataCount:0,chargers:a.chargers,switches:a.switches,terminals:a.terminals,
+  requireUpload:p.resource,turn:0,variant,profile:p,lastAction:'',lastEnemyMessage:''
+ };
+ selectionEnemyId=world.enemies[0]?.id||'';updateHUD();updateBossHud();renderEnemyCode();
+ setExec('코드를 만들고 실행해 보세요.','이제 전장은 위·아래·왼쪽·오른쪽으로 펼쳐집니다.');
+}
+function occupied(x,y,ignoreEnemy=null){return world.walls.has(key(x,y))||world.enemies.some(e=>!e.dead&&e!==ignoreEnemy&&e.x===x&&e.y===y)}
+function canMove(x,y,ignoreEnemy=null){return x>0&&y>0&&x<GRID_W-1&&y<GRID_H-1&&!occupied(x,y,ignoreEnemy)}
+function frontCell(dist=1){const d=DIRS[world.facing];return{x:world.x+d.x*dist,y:world.y+d.y*dist}}
+function enemyNear(range=2){return world.enemies.filter(e=>!e.dead&&mdist(e,world)<=range).sort((a,b)=>mdist(a,world)-mdist(b,world))[0]||null}
+function clearLine(a,b,max=8){
+ if(a.x!==b.x&&a.y!==b.y)return false;const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y),dist=mdist(a,b);if(dist>max)return false;
+ let x=a.x+dx,y=a.y+dy;while(x!==b.x||y!==b.y){if(world.walls.has(key(x,y)))return false;x+=dx;y+=dy}return true;
+}
+function enemyInLine(max=7){
+ const d=DIRS[world.facing];const candidates=world.enemies.filter(e=>!e.dead&&clearLine(world,e,max)&&((e.x-world.x)*d.x+(e.y-world.y)*d.y)>0);
+ candidates.sort((a,b)=>mdist(a,world)-mdist(b,world));return candidates[0]||null;
+}
+function dataHere(){return world.data.find(d=>!d.taken&&d.x===world.x&&d.y===world.y)}
+function terminalHere(){return world.terminals.find(t=>t.x===world.x&&t.y===world.y)}
+function chargerHere(){return world.chargers.find(t=>t.x===world.x&&t.y===world.y)}
+function switchHere(){return world.switches.find(t=>t.x===world.x&&t.y===world.y)}
+function spend(n){if(world.energy<n)return false;world.energy-=n;return true}
+function addFx(type,x,y,extra={}){world.fx.push({type,x,y,t:performance.now(),...extra})}
+function selectNearestEnemy(){const e=enemyNear(99);if(e)selectionEnemyId=e.id;renderEnemyCode()}
+function damageEnemy(e,n){if(!e||e.dead)return 0;if(e.guard>0){e.guard=0;addFx('block',e.x,e.y);sound('ui.error');return 0}e.hp=Math.max(0,e.hp-n);addFx('hit',e.x,e.y,{n});sound('combat.impact_heavy');if(e.hp<=0){e.dead=true;addFx('burst',e.x,e.y);sound('success.correct')}selectNearestEnemy();updateBossHud();return n}
+function hurtPlayer(n){if(world.evade>0){world.evade=0;addFx('dodge',world.x,world.y);return 0}if(world.guard>0){world.guard=0;n=Math.max(0,n-2);addFx('block',world.x,world.y)}if(n>0){world.hp=Math.max(0,world.hp-n);addFx('hurt',world.x,world.y,{n});sound('combat.hurt_voice')}updateHUD();return n}
+function animateMove(nx,ny,ms=180){const sx=world.drawX,sy=world.drawY;return tween(ms,q=>{world.drawX=sx+(nx-sx)*q;world.drawY=sy+(ny-sy)*q}).then(()=>{world.x=nx;world.y=ny;world.drawX=nx;world.drawY=ny})}
+function tween(ms,fn){ms=Math.max(35,ms/runSpeed);return new Promise(res=>{const st=performance.now();function f(t){const q=Math.min(1,(t-st)/ms);fn(1-Math.pow(1-q,3),q);if(q<1)requestAnimationFrame(f);else res()}requestAnimationFrame(f)})}
+
+const worldAPI={
+ getTraceState(){return{x:world.x,y:world.y,hp:world.hp,energy:world.energy,data:world.dataCount,enemies:world.enemies.filter(e=>!e.dead).map(e=>({x:e.x,y:e.y,hp:e.hp,kind:e.kind,rule:e.rule})),projectiles:world.projectiles.map(p=>({x:p.x,y:p.y}))}},
+ checkCondition(c){
+  if(c==='enemyNear')return Boolean(enemyNear(2));
+  if(c==='enemyLine')return Boolean(enemyInLine(7));
+  if(c==='projectileThreat')return world.projectiles.some(p=>{let x=p.x,y=p.y;for(let k=0;k<3;k++){x+=p.dx;y+=p.dy;if(x===world.x&&y===world.y)return true;if(world.walls.has(key(x,y)))break}return false});
+  if(c==='enemyCast')return world.enemies.some(e=>!e.dead&&e.cast>0&&mdist(e,world)<=6);
+  if(c==='wallAhead'){const f=frontCell();return!canMove(f.x,f.y)}
+  if(c==='hpLow')return world.hp<=3;
+  if(c==='dataHere')return Boolean(dataHere());
+  if(c==='terminalHere')return Boolean(terminalHere());
+  if(c==='chargerHere')return Boolean(chargerHere());
+  if(c==='switchHere')return Boolean(switchHere());
+  if(c==='atGoal')return world.x===world.exit.x&&world.y===world.exit.y;
+  if(c==='enemiesGone')return!world.enemies.some(e=>!e.dead);
+  return false;
+ },
+ async applyAction(type){
+  errorNodeId='';world.lastAction=type;
+  const moveMap={MOVE_UP:'up',MOVE_RIGHT:'right',MOVE_DOWN:'down',MOVE_LEFT:'left'};
+  if(moveMap[type]){const dir=moveMap[type],d=DIRS[dir],nx=world.x+d.x,ny=world.y+d.y;world.facing=dir;if(!canMove(nx,ny))return{ok:false,message:'그 방향은 벽이나 버그 몬스터가 막고 있어요.'};await animateMove(nx,ny);sound('ui.tick');updateHUD();return{ok:true}}
+  if(type==='DASH'){if(!spend(1))return{ok:false,message:'대시할 에너지가 부족해요.'};const d=DIRS[world.facing];let nx=world.x,ny=world.y;for(let i=0;i<2;i++){const tx=nx+d.x,ty=ny+d.y;if(!canMove(tx,ty))break;nx=tx;ny=ty}if(nx===world.x&&ny===world.y)return{ok:false,message:'대시할 길이 막혀 있어요.'};await animateMove(nx,ny,120);addFx('dash',nx,ny);updateHUD();return{ok:true}}
+  if(type==='SLASH'){
+   world.pose='slash';const d=DIRS[world.facing],targets=world.enemies.filter(e=>!e.dead&&cheb(e,world)<=1&&((e.x-world.x)*d.x+(e.y-world.y)*d.y)>=0);if(!targets.length){await tween(120,()=>{});world.pose='idle';return{ok:true}};targets.sort((a,b)=>mdist(a,world)-mdist(b,world));damageEnemy(targets[0],2);await tween(140,()=>{});world.pose='idle';return{ok:true};
+  }
+  if(type==='SPIN'){if(!spend(2))return{ok:false,message:'회전 베기에 필요한 에너지가 부족해요.'};world.pose='spin';let hit=0;world.enemies.forEach(e=>{if(!e.dead&&cheb(e,world)<=1)hit+=damageEnemy(e,2)});addFx('spin',world.x,world.y);await tw
