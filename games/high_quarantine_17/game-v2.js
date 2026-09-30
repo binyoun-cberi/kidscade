@@ -49,7 +49,7 @@ function p(name,age,district,job,sprite,temp,cough,uv,blood,opt){
 
 const weeks=[
  {week:1,title:'초기 감염 기준',rev:'01',newTool:'체온계',bloodKits:0,time:46,
-  rules:['모든 시민은 체온을 측정한다.','38.0℃ 이상 고열과 지속 기침이 함께 확인되면 격리한다.','발열 또는 기침 중 하나만 있는 경우 통과시킨다.'],
+  rules:['모든 시민은 체온을 측정한다.','38.0℃ 이상 고열과 지속 기침이 함께 확인되면 즉시 격리·소각한다.','발열 또는 기침 중 하나만 있는 경우 통과시킨다.'],
   memo:'첫 주입니다. 눈으로 아파 보인다는 이유만으로 격리하지 마십시오.',
   citizens:[
    p('김도윤',31,'A-2','정비사','player',36.7,false,false,false,{dialogue:'아침부터 줄이 길군요.'}),
@@ -60,7 +60,7 @@ const weeks=[
    p('윤서아',52,'B-1','조리사','adventurer',36.9,false,false,false,{dialogue:'검사 끝나면 바로 출근해야 해요.'})
   ]},
  {week:2,title:'형광성 피부 반응',rev:'02',newTool:'UV 검사기',bloodKits:0,time:55,
-  rules:['모든 시민에게 체온 및 UV 검사를 실시한다.','고열 + 기침 복합 기준은 유지한다.','UV 조사에서 청록색 형광 반점이 확인되면 즉시 격리한다.'],
+  rules:['모든 시민에게 체온 및 UV 검사를 실시한다.','고열 + 기침 복합 기준은 유지한다.','UV 조사에서 청록색 형광 반점이 확인되면 즉시 격리·소각한다.'],
   memo:'신규 B형 변이는 피부 아래에 형광성 병변을 만듭니다. 일반 얼룩은 빛나지 않습니다.',
   citizens:[
    p('이주원',29,'A-4','우편원','player',36.6,false,false,false,{}),
@@ -72,7 +72,7 @@ const weeks=[
    p('배시우',33,'A-7','회계사','player',36.5,false,false,false,{})
   ]},
  {week:3,title:'무증상 변이와 특별구역',rev:'03',newTool:'혈액 검사',bloodKits:5,time:62,
-  rules:['체온과 UV 검사는 계속 실시한다.','D-7 거주자는 증상과 무관하게 혈액검사가 의무다. 혈액 양성이면 격리한다.','D-7 외 시민의 단독 UV 반응은 즉시 격리하지 말고 추가검사로 보낸다.','고열 + 기침이 함께 있으면 즉시 격리한다.'],
+  rules:['체온과 UV 검사는 계속 실시한다.','D-7 거주자는 증상과 무관하게 혈액검사가 의무다. 혈액 양성이면 즉시 격리·소각한다.','D-7 외 시민의 단독 UV 반응은 즉시 소각하지 말고 추가검사·관찰로 보낸다.','고열 + 기침이 함께 있으면 즉시 격리·소각한다.'],
   memo:'K형 무증상 사례가 보고되었습니다. 혈액 키트는 제한되어 있습니다.',
   citizens:[
    p('남지안',26,'D-7','연구보조','female',36.6,false,false,true,{infected:true,dialogue:'전 아무 증상도 없는데요.'}),
@@ -85,7 +85,7 @@ const weeks=[
    p('차시온',35,'D-7','공무원','player',36.5,false,false,false,{})
   ]},
  {week:4,title:'위조 통행증 단속',rev:'04',newTool:'신원 대조',bloodKits:5,time:68,
-  rules:['모든 시민의 통행증 사진과 실제 얼굴을 대조한다. 불일치하면 추가검사로 보낸다.','D-7 거주자는 혈액검사 의무를 유지한다.','고열 + 기침은 격리, D-7 외 단독 UV 반응은 추가검사다.','감염 격리 기준과 신원 이상이 동시에 있으면 감염 격리를 우선한다.'],
+  rules:['모든 시민의 통행증 사진과 실제 얼굴을 대조한다. 불일치하면 추가검사로 보낸다.','D-7 거주자는 혈액검사 의무를 유지한다.','고열 + 기침은 즉시 격리·소각, D-7 외 단독 UV 반응은 추가검사·관찰이다.','즉시 소각 기준과 신원 이상이 동시에 있으면 즉시 격리·소각을 우선한다.'],
   memo:'봉쇄구역 이탈을 위해 타인의 통행증을 사용하는 사례가 발견되었습니다.',
   citizens:[
    p('유채원',28,'A-2','사서','female',36.8,false,false,false,{forged:true,docSprite:'player',dialogue:'사진이 좀 옛날 거예요.'}),
@@ -98,7 +98,7 @@ const weeks=[
    p('문태양',34,'C-6','목수','adventurer',38.1,false,false,false,{})
   ]},
  {week:5,title:'오염 물품 반입',rev:'05',newTool:'소지품 검사',bloodKits:5,time:76,
-  rules:['통행증에 노란 「소지품 검사」 표식이 있는 시민은 가방 검사가 의무다.','봉인되지 않은 생체시료 또는 오염 샘플이 발견되면 즉시 격리한다.','신원 불일치는 추가검사, D-7 혈액 양성은 격리한다.','고열 + 기침은 격리하고, D-7 외 단독 UV 반응은 추가검사한다.'],
+  rules:['통행증에 노란 「소지품 검사」 표식이 있는 시민은 가방 검사가 의무다.','봉인되지 않은 생체시료 또는 오염 샘플이 발견되면 즉시 격리·소각한다.','신원 불일치는 추가검사·관찰, D-7 혈액 양성은 즉시 격리·소각한다.','고열 + 기침은 즉시 격리·소각하고, D-7 외 단독 UV 반응은 추가검사·관찰한다.'],
   memo:'감염보다 물품 운반이 더 위험할 수 있습니다. 노란 표식을 놓치지 마십시오.',
   citizens:[
    p('서민준',40,'B-1','실험기자재원','player',36.8,false,false,false,{bagRequired:true,bioSample:true,infected:true,bagItems:['작업 장갑','깨진 샘플병','봉인 안 된 생체시료'],dialogue:'회사 물건뿐입니다.'}),
@@ -111,7 +111,7 @@ const weeks=[
    p('한도윤',50,'C-3','운송기사','adventurer',36.5,false,false,false,{bagRequired:true,bioSample:true,infected:true,bagItems:['배송 전표','냉각팩','미신고 조직 샘플']})
   ]},
  {week:6,title:'호흡기 변이',rev:'06',newTool:'호흡 검사',bloodKits:5,time:82,
-  rules:['기침 증상이 있는 시민은 반드시 호흡 검사를 실시한다.','기침 + 비정상 호흡이 확인되면 체온과 무관하게 격리한다.','고열 + 기침이라도 호흡이 정상이면 즉시 격리하지 말고 추가검사로 보낸다.','D-7 혈액검사, 신원 대조, 표식 시민의 소지품 검사는 계속 유지한다.'],
+  rules:['기침 증상이 있는 시민은 반드시 호흡 검사를 실시한다.','기침 + 비정상 호흡이 확인되면 체온과 무관하게 즉시 격리·소각한다.','고열 + 기침이라도 호흡이 정상이면 즉시 소각하지 말고 추가검사·관찰로 보낸다.','D-7 혈액검사, 신원 대조, 표식 시민의 소지품 검사는 계속 유지한다.'],
   memo:'새 변이는 열보다 호흡 기능을 먼저 떨어뜨립니다. 기존 고열 중심 규칙이 변경되었습니다.',
   citizens:[
    p('배지훈',30,'A-4','택배기사','player',37.1,true,false,false,{resp:true,infected:true,dialogue:'콜록… 숨이 조금 찹니다.'}),
@@ -171,10 +171,10 @@ const reviewBtn=document.createElement('button');reviewBtn.type='button';reviewB
 const tag=document.createElement('div');tag.className='case-tag';tag.id='caseTag';booth.appendChild(tag);
 const bulletin=document.createElement('div');bulletin.className='city-bulletin';bulletin.id='cityBulletin';document.querySelector('.rules-panel .rulebook').insertBefore(bulletin,document.querySelector('.rules-panel .paper'));
 const meters=document.querySelector('.meters');meters.insertAdjacentHTML('beforeend','<div class="meter" id="timeMeter">교대 여유 <strong id="shiftTime">0</strong></div><div class="meter">연속 정확 <strong id="streak">0</strong></div>');
-document.querySelector('.footer-note').textContent='확장판 v9 · 절차 생성 시민 + 문서 대조 + 구역 감염 + A/B 격리동';
+document.querySelector('.footer-note').textContent='확장판 v10 · 절차 생성 시민 + 추가검사 관찰실 + 고위험 격리실';
 
 const introText=document.querySelector('#introModal .briefing > div');
-if(introText)introText.innerHTML='<h1>격리구역 17 : 제17구역 검역 작전 v9</h1><p>매 캠페인마다 시민의 <b>이름·직업·출신구역·통행증</b>이 다시 구성됩니다. 사람을 외우지 말고 현재 지침과 검사 결과로 판정하세요.</p><p>판정 결과는 구역별 감염도와 CAMP-17에 이어지고, 격리자는 A/B 격리동에서 서로 다른 위험에 놓입니다.</p><div class="brief-rules"><b>조작</b><br>I 신분증 · D 문서 대조 · T 체온 · U UV · B 혈액 · R 호흡 · G 소지품<br>V 검사기록 · 판정은 1 통과 · 2 추가검사 · 3 격리</div><button class="primary" id="startBtnV2" type="button">8주 근무 시작</button>';
+if(introText)introText.innerHTML='<h1>격리구역 17 : 제17구역 검역 작전 v10</h1><p>매 캠페인마다 시민의 <b>이름·직업·출신구역·통행증</b>이 다시 구성됩니다. 사람을 외우지 말고 현재 지침과 검사 결과로 판정하세요.</p><p><b>추가검사</b>는 A 관찰실에서 정밀검사를 받는 보류 판정이고, <b>격리</b>는 검역대에서 즉시 소각되는 최종 판정입니다. 양성자는 B 고위험실로 분리되며 관리가 늦으면 시설 내부 감염이 생길 수 있습니다.</p><div class="brief-rules"><b>조작</b><br>I 신분증 · D 문서 대조 · T 체온 · U UV · B 혈액 · R 호흡 · G 소지품<br>V 검사기록 · 판정은 <b>1 통과 · 2 추가검사·관찰 · 3 격리·소각</b></div><button class="primary" id="startBtnV2" type="button">8주 근무 시작</button>';
 
 let state={weekIndex:0,caseIndex:0,trust:82,infection:9,score:0,bloodKits:0,records:[],tests:{},locked:false,started:false,time:0,streak:0,bestStreak:0,totalCorrect:0,totalCases:0,emergencyUsed:false};
 function currentWeek(){return weeks[state.weekIndex]}function current(){return currentWeek().citizens[state.caseIndex]}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
