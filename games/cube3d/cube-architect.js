@@ -163,10 +163,17 @@ function updateChallengeDifficultyUI(){
   $('challengeEasy')?.classList.toggle('active',challengeDifficulty==='easy');
   $('challengeHard')?.classList.toggle('active',challengeDifficulty==='hard');
   const total=activeChallengeMissions().length;
-  if($('challengeCourseLabel'))$('challengeCourseLabel').textContent=(challengeDifficulty==='easy'?'쉬움 · 교과서형 ':'어려움 · 랜드마크형 ')+(missionIndex+1)+'/'+total;
-  modeTitle('설계도 챌린지',challengeDifficulty==='easy'?'쉬움 · 교과서 겨냥도':'어려움 · 랜드마크 복원');
+  if(restorationSession){
+    const poi=poiRules.poiById(restorationSession.poiId);
+    if($('challengeCourseLabel'))$('challengeCourseLabel').textContent='생존 원정 · '+poi.name+' 복원';
+    modeTitle('랜드마크 복원',poi.name+' · '+poi.tech.label+' 해금');
+  }else{
+    if($('challengeCourseLabel'))$('challengeCourseLabel').textContent=(challengeDifficulty==='easy'?'쉬움 · 교과서형 ':'어려움 · 랜드마크형 ')+(missionIndex+1)+'/'+total;
+    modeTitle('설계도 챌린지',challengeDifficulty==='easy'?'쉬움 · 교과서 겨냥도':'어려움 · 랜드마크 복원');
+  }
 }
 function setChallengeDifficulty(level){
+  if(restorationSession)return;
   if(level===challengeDifficulty)return;
   challengeDifficulty=level;missionIndex=0;
   // The hard course has its own 32×32 building area and 28-cell height.
@@ -406,6 +413,7 @@ function drawBlueprint(){
 }
 
 function initChallenge(){
+  if(restorationSession){challengeDifficulty='hard';missionIndex=restorationSession.missionIndex}
   setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
   CHALLENGE_SIZE=challengeDifficulty==='hard'?32:18;
   CHALLENGE_HALF=CHALLENGE_SIZE/2;CHALLENGE_MAX_Y=challengeDifficulty==='hard'?27:13;
@@ -418,9 +426,15 @@ function initChallenge(){
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];challengeSelected=null;challengeShapeMode='cube';challengeTool='build';challengeSelectedElement=0;
   $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
   updateChallengeDifficultyUI();drawBlueprint();
+  $('challengeEasy').disabled=!!restorationSession;$('challengeHard').disabled=!!restorationSession;
   $('challengeEasy').onclick=()=>setChallengeDifficulty('easy');$('challengeHard').onclick=()=>setChallengeDifficulty('hard');
-  $('actionCheck').onclick=checkChallenge;
-  $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+  $('actionCheck').textContent='검사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=checkChallenge;
+  if(restorationSession){
+    $('actionNext').textContent='월드로 돌아가기';$('actionNext').onclick=returnFromRestoration;
+  }else{
+    $('actionNext').textContent='다음 미션';
+    $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+  }
   $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
   $('blueprintView').onchange=e=>{blueprintAngle=e.target.value;drawBlueprint()};
   $('blueprintZoom').onclick=()=>toggleBlueprintModal(true);
@@ -579,7 +593,8 @@ function checkChallenge(){
   }
   if(completed){
     toast(hard?'랜드마크 외형 복원 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
-    sfx('good');reportResult('challenge',match.score,true);
+    if(restorationSession)markRestorationSuccess(match.score);
+    sfx('good');reportResult(restorationSession?'survival-landmark':'challenge',match.score,true);
   }else{
     toast(hard?'세 방향의 외형을 비교했어요. 색칠은 별도 꾸미기예요.':'부족한 부분을 확인해 보세요.');sfx('bad');
   }
