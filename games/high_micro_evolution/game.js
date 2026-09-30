@@ -108,11 +108,13 @@ function startGame(biome){
   resetState();
   env={...biome.env};
   $('startScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('editorScreen').classList.add('hidden');
+  resize();
   setupWorld();
   refreshHud(true);
   running=true;paused=false;last=performance.now();
   sdkStart();
-  cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+  cancelAnimationFrame(raf);
+  requestAnimationFrame(()=>{ resize(); last=performance.now(); raf=requestAnimationFrame(loop); });
   toast(biome.icon+' '+biome.name+' — 환경을 읽고 살아남아 보세요!');
 }
 function goHome(){
@@ -750,7 +752,9 @@ function render(){
   if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);drawBackground();drawBiomeScenery();drawPatches();drawFoods();drawCreatures();drawEffects();drawPlayer();
 }
 function loop(ts){
-  if(!running)return;const dt=Math.min(.034,(ts-last)/1000||0);last=ts;update(dt);render();raf=requestAnimationFrame(loop);
+  if(!running)return;
+  if(viewW<10||viewH<10||canvas.width<10||canvas.height<10){resize();last=ts;raf=requestAnimationFrame(loop);return}
+  const dt=Math.min(.034,(ts-last)/1000||0);last=ts;update(dt);render();raf=requestAnimationFrame(loop);
 }
 
 function refreshEnvBars(){
