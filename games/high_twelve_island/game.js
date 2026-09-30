@@ -46,6 +46,7 @@
     }
   }
   function start() {
+    window.IslandArt?.mount($("islandCanvas"));
     const old = load();
     state = old || S.initial();
     started = true;
@@ -95,25 +96,7 @@
     ).join("");
   }
   function renderVillage() {
-    const b = state.buildings;
-    element.people.innerHTML = Array.from({ length: Math.min(state.population, 23) }, (_, i) => {
-      const t = i * 2.39996;
-      const radius = 10 + Math.sqrt(i / Math.max(1, state.population)) * 23;
-      const x = 50 + Math.cos(t) * radius;
-      const y = 51 + Math.sin(t) * radius * .55;
-      return '<span class="villager" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%;animation-delay:-' + (i % 5) + 's">' + ["🧑", "👩", "👨", "🧒", "👩‍🌾", "👨‍🌾"][i % 6] + "</span>";
-    }).join("");
-    const houseAsset = "../../assets/game/2d/platformer-art/expansions/buildings/house-beige.png";
-    const rockAsset = "../../assets/game/2d/platformer-art/expansions/buildings/rock-moss.png";
-    element.sprites.innerHTML = [
-      b.farm ? '<div class="building farm" data-count="' + b.farm + '"><span class="visual">🌾</span><small>농장 ×' + b.farm + "</small></div>" : "",
-      b.hut ? '<div class="building hut" data-count="' + b.hut + '"><span class="visual">🏠</span><small>집 ×' + b.hut + "</small></div>" : "",
-      b.store ? '<div class="building store" data-count="' + b.store + '"><span class="visual">📦</span><small>창고 ×' + b.store + "</small></div>" : "",
-      b.clinic ? '<div class="building clinic"><span class="visual">🏥</span><small>진료소</small></div>' : "",
-      b.hall ? '<div class="building hall"><span class="visual">🏛️</span><small>마을 회관</small></div>' : "",
-      '<img src="' + rockAsset + '" alt="" aria-hidden="true" class="asset-pixel" style="position:absolute;left:72%;top:74%;width:15px;height:15px;opacity:.8">',
-      b.hut ? '<img src="' + houseAsset + '" alt="" aria-hidden="true" class="asset-pixel" style="position:absolute;left:51%;top:45%;width:18px;height:18px;opacity:.75">' : ""
-    ].join("");
+    window.IslandArt?.setState(state);
     element.stage.textContent = state.stage === 1 ? "1단계 · 생존 공동체" : "2단계 · 자치 마을";
     element.name.textContent = state.stage === 1 ? "새싹섬 · 작은 야영지" : "새싹섬 · 자치 마을";
     element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명" + (state.stage === 1 && state.population >= S.capacity(state) ? " · 주거 부족" : "");
@@ -174,6 +157,21 @@
     }
     p.scrollTop = scroll;
   }
+  const NPC_ASSET = "../../assets/game/2d/characters/kenney-modular-characters/";
+  function characterPortrait(name) {
+    const people = {
+      "하나": { skin: 3, hair: "brown-1/brown1Woman1.png", shirt: "green/greenShirt1.png" },
+      "태오": { skin: 5, hair: "black/blackMan1.png", shirt: "red/redShirt1.png" },
+      "미래": { skin: 2, hair: "blonde/blondeWoman1.png", shirt: "blue/blueShirt1.png" }
+    };
+    const p = people[name] || people["하나"];
+    return '<span class="npc-portrait" aria-hidden="true">' +
+      '<img class="npc-shirt" alt="" src="' + NPC_ASSET + 'shirts/' + p.shirt + '">' +
+      '<img class="npc-head" alt="" src="' + NPC_ASSET + 'skin/tint-' + p.skin + '/tint' + p.skin + '_head.png">' +
+      '<img class="npc-face" alt="" src="' + NPC_ASSET + 'face/completes/face1.png">' +
+      '<img class="npc-hair" alt="" src="' + NPC_ASSET + 'hair/' + p.hair + '">' +
+      '</span><span>' + escapeHTML(name) + '의 이야기</span>';
+  }
   function renderEvent() {
     const id = state.pending;
     if (!id) {
@@ -188,7 +186,7 @@
     element.modal.classList.remove("hidden");
     $("modalLabel").textContent = "공동체 사건";
     $("eventWeek").textContent = state.tick + 1 + "번째 주";
-    $("speaker").textContent = "💬 " + event.speaker + "의 이야기";
+    $("speaker").innerHTML = characterPortrait(event.speaker);
     $("modalTitle").textContent = event.title;
     $("modalBody").textContent = event.body;
     $("modalHint").textContent = "선택에 따라 자원과 시민들의 반응이 달라집니다. 사건을 해결하면 시간이 다시 흐릅니다.";
