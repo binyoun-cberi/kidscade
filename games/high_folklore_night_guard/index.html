@@ -870,6 +870,58 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 .ambient-layer.room-prep::after{
   background:linear-gradient(90deg,#000b,transparent 38% 62%,#000c),radial-gradient(circle at 50% 70%,#0000,#000b 72%)
 }
+/* v12 · student-friendly rulebook discoverability */
+.rulebook-topbtn{
+  border-color:#c9a95c!important;background:#4a3c1e!important;color:#fff3c9!important;
+  box-shadow:0 0 0 1px #e0c16a33,0 0 12px #d6b45222!important
+}
+.rulebook-fab{
+  position:fixed;z-index:55;right:14px;top:78px;min-width:118px;padding:10px 14px;
+  border:2px solid #d2b25e;background:#49391b;color:#fff3c8;border-radius:8px;
+  box-shadow:0 8px 22px #0009,0 0 18px #d5ad4a22;cursor:pointer;text-align:left
+}
+.rulebook-fab b{display:block;font-size:15px;line-height:1.1}
+.rulebook-fab small{display:block;margin-top:3px;font-size:10px;color:#ead9a2}
+.rulebook-fab.unread{animation:rulebookAttention 1.4s ease-in-out infinite}
+.rulebook-fab:hover{background:#604b23}
+.intro-rulebook-btn{
+  width:100%;margin:10px 0 13px;padding:13px 15px;border:2px solid #c8aa5c;background:#3d321d;
+  color:#fff0bf;text-align:left;cursor:pointer;box-shadow:0 6px 18px #0006
+}
+.intro-rulebook-btn b{display:block;font-size:16px}
+.intro-rulebook-btn small{display:block;margin-top:4px;color:#d6c99f}
+.quick-rules-title{
+  position:relative;z-index:1;margin:0 0 10px;font-size:16px;font-weight:950;color:#2a261e
+}
+.quick-rules-sub{
+  position:relative;z-index:1;margin:0 0 14px;padding:8px 10px;background:#a99d7b66;
+  border-left:4px solid #73423a;font-size:12px;font-weight:800;line-height:1.5
+}
+.quick-rule-grid{
+  position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+.quick-rule-card{
+  background:#ddd4b8;border:2px solid #6e6654;padding:10px 11px;min-height:86px;
+  box-shadow:2px 3px 0 #6a604a33
+}
+.quick-rule-card .who{font-size:12px;font-weight:950;color:#383126;margin-bottom:6px}
+.quick-rule-card .do{font-size:17px;font-weight:1000;color:#6c2e28;line-height:1.25}
+.quick-rule-card .hint{font-size:10px;color:#5b5548;margin-top:5px;line-height:1.4}
+.quick-rule-card.safe .do{color:#285440}
+.quick-rule-card.special-card{grid-column:1/-1;background:#c9bea0}
+.quick-rule-memory{
+  position:relative;z-index:1;margin-top:13px;padding:10px;border:2px dashed #675f50;
+  background:#c1b694;font-size:12px;line-height:1.6;font-weight:900
+}
+@keyframes rulebookAttention{
+  0%,100%{transform:scale(1);box-shadow:0 8px 22px #0009,0 0 8px #d5ad4a22}
+  50%{transform:scale(1.04);box-shadow:0 8px 22px #0009,0 0 24px #e0b84f88}
+}
+@media(max-width:780px){
+  .rulebook-fab{top:auto;right:8px;bottom:78px;min-width:102px;padding:8px 10px}
+  .quick-rule-grid{grid-template-columns:1fr}
+  .quick-rule-card.special-card{grid-column:auto}
+}
 </style>
 </head>
 <body>
@@ -883,7 +935,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
         <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
         <div class="usage-line"><span>사용량</span><strong class="usage-pips" id="usageText">□□□□□</strong></div>
       </div>
-      <button class="topbtn" id="codexBtn" type="button">근무수칙</button>
+      <button class="topbtn rulebook-topbtn" id="codexBtn" type="button">수칙서</button>
       <button class="topbtn" id="helpBtn" type="button">도움말</button>
       <button class="topbtn" id="exitBtn" type="button">나가기</button>
     </div>
@@ -950,6 +1002,9 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       </aside>
     </section>
   </main>
+  <button class="rulebook-fab unread" id="rulebookFab" type="button">
+    <b>수칙서</b><small>막히면 여기!</small>
+  </button>
 </div>
 
 <div class="modal show" id="introModal">
@@ -961,6 +1016,10 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       근무에 배치된 존재는 <b>처음부터 학교 어딘가에 있으며 사라지지 않습니다.</b><br>
       CCTV로 “언제 나타났나”가 아니라 <b>“지금 어디에 있나”</b>를 추적하고, 서로 다른 대응 규칙을 구분하세요.
     </div>
+    <button class="intro-rulebook-btn" id="introRulebookBtn" type="button">
+      <b>게임 시작 전 수칙서 보기</b>
+      <small>귀신별 대응법을 먼저 확인할 수 있어요</small>
+    </button>
     <div class="mode-grid">
       <button class="mode" data-mode="practice" type="button"><b>연습 근무</b><small>도깨비 · 유키온나<br>3분 · CCTV와 이상 기록 연습</small></button>
       <button class="mode" data-mode="night1" type="button"><b>1일차</b><small>도깨비 · 유키온나<br>4분 30초</small></button>
@@ -1335,14 +1394,21 @@ function renderCodex(){
   }
   var pages=[
     {
-      tab:'기본수칙',title:'제1쪽 · 기본 야간경비 근무수칙',code:'시설-야간-1998-03',
+      tab:'★ 한눈 수칙',title:'제1쪽 · 15초 생존 수칙',code:'시설-야간-1998-03',
       body:
-        '<div class="rulebook-rule"><span class="no">1.</span>본교에는 야간에 학생 및 교직원이 남아 있지 않습니다. CCTV에서 사람을 발견하더라도 <strong>직접 확인하러 가지 마십시오.</strong></div>'+
-        '<div class="rulebook-rule"><span class="no">2.</span>근무 시작 직후 각 CCTV의 정상 상태를 확인하십시오. 이전 화면과 다른 물체·문·사진·글씨는 「이상 기록」 대상입니다.</div>'+
-        '<div class="rulebook-rule"><span class="no">3.</span>화면에 사람과 비슷한 것이 보인다고 해서 모두 기록 대상인 것은 아닙니다. 일부 존재는 <strong>기록이 아니라 별도의 대응</strong>이 필요합니다.</div>'+
-        '<div class="rulebook-rule danger"><span class="no">4.</span>서쪽과 동쪽 문은 같은 용도로 사용되지 않습니다. <strong>무엇이 접근 중인지 먼저 확인하십시오.</strong></div>'+
-        '<div class="rulebook-note pencil">“화면을 외워 두세요. 작은 차이를 못 보면 큰 것부터 보이기 시작합니다.”</div>'+
-        '<div class="rulebook-foot">적용시간 00:00–06:00 · 본 문서는 야간 근무자 외 열람 금지</div>'
+        '<div class="quick-rules-title">처음엔 이것만 기억하세요</div>'+
+        '<div class="quick-rules-sub">귀신을 봤다고 「이상 기록」을 누르는 게 아닙니다. 귀신마다 대응법이 다릅니다.</div>'+
+        '<div class="quick-rule-grid">'+
+          '<div class="quick-rule-card"><div class="who">흰 옷 여자 · 처녀귀신</div><div class="do">계속 바라보기</div><div class="hint">CCTV로 보고 있으면 뒤로 물러남</div></div>'+
+          '<div class="quick-rule-card"><div class="who">얼굴 없는 학생 · 달걀귀신</div><div class="do">다른 CAM 보기</div><div class="hint">오래 보면 위험함</div></div>'+
+          '<div class="quick-rule-card safe"><div class="who">검은 갓 · 저승사자</div><div class="do">문 열어두기</div><div class="hint">막지 말고 지나가게 하기</div></div>'+
+          '<div class="quick-rule-card"><div class="who">눈 · 긁는 소리 · 늑대인간</div><div class="do">그쪽 문 닫기</div><div class="hint">소리가 난 방향을 막기</div></div>'+
+          '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">많이 얼면 난방</div><div class="hint">너무 일찍 켜면 효과가 약함</div></div>'+
+          '<div class="quick-rule-card"><div class="who">6-1 물건이 달라짐 · 도깨비</div><div class="do">바뀐 물건 누르기</div><div class="hint">책상·사진·칠판·문을 비교</div></div>'+
+          '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
+        '</div>'+
+        '<div class="quick-rule-memory">한 줄 암기: <b>흰옷은 본다 · 얼굴 없으면 돌린다 · 갓은 연다 · 짐승은 닫는다 · 얼면 난방 · 교실 물건은 찾는다.</b></div>'+
+        '<div class="rulebook-foot">더 자세한 설명은 위쪽 탭에서 확인할 수 있습니다.</div>'
     },
     {
       tab:'6-1 교실',title:'제2쪽 · 6-1 교실',code:'구역 CAM 01',
@@ -1373,10 +1439,10 @@ function renderCodex(){
     {
       tab:'복도 대응',title:'제4쪽 · 복도에서 사람을 보았을 때',code:'CAM 03–06',
       body:
-        '<div class="rulebook-rule"><span class="no">1.</span><strong>흰 옷의 여자</strong>를 발견하면 카메라를 끄지 말고 계속 관찰하십시오. 충분히 관찰하면 뒤쪽 구역으로 물러납니다. 경비실까지 접근하면 서쪽 문을 닫으십시오.</div>'+
-        '<div class="rulebook-rule"><span class="no">2.</span><strong>얼굴이 매끈한 학생</strong>을 오래 바라보지 마십시오. 발견 즉시 다른 카메라로 전환하고, 시간이 지난 뒤 다시 확인하십시오.</div>'+
-        '<div class="rulebook-rule danger"><span class="no">3.</span><strong>검은 갓과 등불</strong>이 접근할 경우 해당 문을 <span class="rulebook-red">닫지 마십시오.</span> 지나갈 때까지 열어 두십시오.</div>'+
-        '<div class="rulebook-rule danger"><span class="no">4.</span><strong>긁는 소리와 낮은 위치의 눈</strong>이 가까워질 경우 소리가 나는 쪽의 문을 즉시 닫으십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">1.</span><strong>흰 옷의 여자</strong> → CCTV로 <strong>계속 바라보세요.</strong> 보고 있으면 뒤로 물러납니다. 문 앞까지 오면 서쪽 문을 닫으세요.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span><strong>얼굴 없는 학생</strong> → <strong>바로 다른 카메라로 돌리세요.</strong> 오래 보면 위험합니다.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">3.</span><strong>검은 갓</strong> → <span class="rulebook-red">문을 열어 두세요.</span> 지나가게 두면 됩니다.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">4.</span><strong>긁는 소리·낮은 눈</strong> → <strong>소리가 난 쪽 문을 닫으세요.</strong></div>'+
         '<div class="rulebook-rule"><span class="no">5.</span><span class="rulebook-strike">검은 갓을 쓴 사람이 오면 문을 잠그십시오.</span><br><span class="rulebook-red">※ 위 문장은 시설관리부에서 작성한 적이 없습니다.</span></div>'+
         note('maiden',1,'“흰옷은 보고 있으면 멈춘다. 화면을 돌리면 다시 온다.”','pencil')+
         note('egg',1,'“얼굴을 확인하려고 하지 마라. 오래 보는 쪽이 위험하다.”','pencil')+
@@ -1424,7 +1490,10 @@ function renderCodex(){
       els.codexContent.querySelectorAll('.rulebook-paper').forEach(function(x){x.classList.toggle('active',x.dataset.ruleSheet===idx)});
     }
   });
-  $('codexClose').onclick=function(){toggleModal(els.codex,false)};
+  $('codexClose').onclick=function(){
+    toggleModal(els.codex,false);
+    if(!state.running)els.intro.classList.add('show');
+  };
 }
 function buildCameraMap(){
   els.cameraMap.innerHTML='';
@@ -2193,7 +2262,7 @@ function showResult(ok,cause){
   els.resultContent.innerHTML='<h2>'+(ok?'오전 6시 · 근무 완료':'근무 실패')+'</h2><p>'+(ok?'학교의 아침 조명이 켜졌습니다. 관찰한 단서와 존재의 이동을 구분하며 밤을 버텼습니다.':causeText)+'</p><div class="rules-box"><b>점수 '+state.score+'</b> · 괴담 대응 '+state.cleared+'회 · 이상 기록 '+state.anomaliesFound+'회 · 오기록 '+state.falseReports+'회 · 남은 봉인력 '+Math.ceil(state.power)+'%</div>'+(ok?quizHtml():'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="primary" id="retryBtn" type="button">다시 근무</button><button class="secondary" id="resultCodex" type="button">수칙서 보기</button></div>';
   els.result.classList.add('show');
   $('retryBtn').onclick=function(){els.result.classList.remove('show');els.intro.classList.add('show');state.paused=true};
-  $('resultCodex').onclick=function(){els.result.classList.remove('show');renderCodex();els.codex.classList.add('show')};
+  $('resultCodex').onclick=function(){els.result.classList.remove('show');openRulebook()};
   els.resultContent.querySelectorAll('.answer').forEach(function(b){b.onclick=function(){
     var wrap=b.parentElement;wrap.querySelectorAll('.answer').forEach(function(x){x.disabled=true;if(Number(x.dataset.a)===Number(x.dataset.ok))x.classList.add('good')});
     if(Number(b.dataset.a)!==Number(b.dataset.ok))b.classList.add('bad');else state.score+=30;
@@ -2225,7 +2294,13 @@ els.special.onclick=useHeater;els.reportBtn.onclick=reportAnomaly;
 document.querySelectorAll('.prop').forEach(function(p){p.onclick=function(){
   if(state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive&&Number(p.dataset.prop)===state.dokkaebi.prop)resolveDokkaebi();
 }});
-$('codexBtn').onclick=function(){renderCodex();toggleModal(els.codex,true)};
+function openRulebook(){
+  renderCodex();toggleModal(els.codex,true);
+  var fab=$('rulebookFab');if(fab)fab.classList.remove('unread');
+}
+$('codexBtn').onclick=openRulebook;
+$('rulebookFab').onclick=openRulebook;
+$('introRulebookBtn').onclick=function(){els.intro.classList.remove('show');openRulebook()};
 $('helpBtn').onclick=function(){renderHelp();toggleModal(els.help,true)};
 $('exitBtn').onclick=exitGame;
 
