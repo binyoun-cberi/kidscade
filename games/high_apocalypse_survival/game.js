@@ -100,12 +100,12 @@ const ROAD_NODES={
  bridgeW:{x:25,z:BRIDGE_Z}, bridgeE:{x:35,z:BRIDGE_Z}, cityWest:{x:44,z:BRIDGE_Z}, cityNorth:{x:52,z:BRIDGE_Z},
  cityMid:{x:52,z:-35}, cityCross:{x:52,z:-44}, citySouth:{x:52,z:-52},
  eastNorth:{x:60,z:BRIDGE_Z}, eastMid:{x:60,z:-35}, eastCross:{x:60,z:-44}, eastSouth:{x:60,z:-52},
- market:{x:48.6,z:-35}, clinic:{x:66.1,z:-35}, garage:{x:48.6,z:-51}, power:{x:59,z:-50}
+ market:{x:48.6,z:-35}, clinic:{x:55.8,z:-35}, garage:{x:48.6,z:-51}, power:{x:57.4,z:-48.7}
 };
 const ROAD_EDGES=[
  ['camp','forest'],['camp','schoolRoad'],['schoolRoad','mainCross'],['mainCross','bridgeW'],['bridgeW','bridgeE'],['bridgeE','cityWest'],['cityWest','cityNorth'],
  ['cityNorth','cityMid'],['cityMid','cityCross'],['cityCross','citySouth'],['cityNorth','eastNorth'],['cityMid','eastMid'],['cityCross','eastCross'],['citySouth','eastSouth'],
- ['eastNorth','eastMid'],['eastMid','eastCross'],['eastCross','eastSouth'],['cityMid','market'],['eastMid','clinic'],['citySouth','garage'],['eastSouth','power']
+ ['eastNorth','eastMid'],['eastMid','eastCross'],['eastCross','eastSouth'],['cityMid','market'],['cityMid','clinic'],['citySouth','garage'],['eastSouth','power']
 ];
 const RUIN_SPOTS={
  marketShelf:{site:'market',name:'식품 진열대',loot:{food:2}},
@@ -300,24 +300,28 @@ function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(
 function currentRuinZone(){
  const px=player?.root?.position?.x??999,pz=player?.root?.position?.z??999;return ruinZones.find(z=>Math.abs(px-z.x)<z.hw&&Math.abs(pz-z.z)<z.hd)||null
 }
-function ruinShell(site,name,x,z,w,d,c=0x777b78){
- const wall=.45,h=3.4,door=2.4,walls=[];
+function ruinShell(site,name,x,z,w,d,c=0x777b78,doorSide='east'){
+ const wall=.45,h=3.4,door=2.4,walls=[],east=doorSide==='east';
  walls.push(solidBox(w,h,wall,c,x,h/2,z-d/2),solidBox(w,h,wall,c,x,h/2,z+d/2));
- walls.push(solidBox(wall,h,d,c,x-w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4));
+ if(east){
+  walls.push(solidBox(wall,h,d,c,x-w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4))
+ }else{
+  walls.push(solidBox(wall,h,d,c,x+w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x-w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x-w/2,h/2,z+(d+door)/4))
+ }
  walls.forEach(m=>{m.visible=false;m.material.transparent=true;m.material.opacity=0});
  const floor=box(w-.5,.07,d-.5,0x555b58,x,.035,z),roof=box(w,.15,d,0x303635,x,h+.08,z);roof.material=roof.material.clone();roof.material.transparent=true;roof.material.opacity=.94;roof.castShadow=true;
  const zone={site,name,x,z,hw:w/2-.4,hd:d/2-.4,walls,roof,light:null};ruinZones.push(zone);
- const panel=3.35;
- placeWorldModelSafe(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2-.15,z,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
+ const panel=3.35,doorX=x+(east?w/2-.15:-w/2+.15),doorRot=east?Math.PI*.5:-Math.PI*.5;
+ placeWorldModelSafe(ART.buildings+'wall-doorway-wide-square.glb',{x:doorX,z,target:panel,rot:doorRot,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
  placeWorldModelSafe(ART.buildings+'wall-window-wide-square-detailed.glb',{x:x-w*.18,z:z-d/2+.1,target:panel,rot:0,w:3.2,d:1,tag:'ruin-'+site,allowOverlap:true});
- placeWorldModelSafe(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2+.1,z:z+d*.15,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-window-square-detailed.glb',{x:x+(east?-w/2+.1:w/2-.1),z:z+d*.15,target:panel,rot:doorRot,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
  placeWorldModelSafe(ART.buildings+'wall.glb',{x:x+w*.22,z:z+d/2-.1,target:panel,rot:Math.PI,w:3.2,d:1,tag:'ruin-'+site,allowOverlap:true});
  scene.userData.ruinDoors=scene.userData.ruinDoors||{};
- const pivot=new THREE.Group();pivot.position.set(x+w/2-.12,0,z-door*.45);groups.dynamic.add(pivot);
+ const pivot=new THREE.Group();pivot.position.set(x+(east?w/2-.12:-w/2+.12),0,z-door*.45);groups.dynamic.add(pivot);
  const fallback=new THREE.Mesh(new THREE.BoxGeometry(.13,2.55,door*.9),new THREE.MeshStandardMaterial({color:0x6d5239,roughness:.86}));fallback.position.set(0,1.28,door*.45);fallback.castShadow=true;pivot.add(fallback);
- model(ART.buildings+'door-rotate-square-b.glb').then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.7);o.position.z=door*.42;o.rotation.y=Math.PI*.5;pivot.add(o)});
- const blocker=addCollider(x+w/2-.08,z,.32,door*.9,.02);blocker.cameraBlocker=false;addInteract(pivot,'ruinDoor',name+' 문 열기',{site});
- scene.userData.ruinDoors[site]={pivot,blocker,open:false,target:0,interactable:pivot};
+ model(ART.buildings+'door-rotate-square-b.glb').then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.7);o.position.z=door*.42;o.rotation.y=doorRot;pivot.add(o)});
+ const blocker=addCollider(pivot.position.x,z,.32,door*.9,.02);blocker.cameraBlocker=false;addInteract(pivot,'ruinDoor',name+' 문 열기',{site});
+ scene.userData.ruinDoors[site]={pivot,blocker,open:false,target:0,openAngle:east?-Math.PI*.5:Math.PI*.5,interactable:pivot};
  const light=new THREE.PointLight(site==='clinic'?0xc8e1ff:site==='garage'?0xffc37d:0xffe0aa,.18,8,2);light.position.set(x,2.45,z);scene.add(light);zone.light=light;
  label(name,x,h+1.1,z);return floor
 }
@@ -326,7 +330,7 @@ function createRuinSpot(key,x,z,w=1.5,h=1.1,d=.6,color=0x6f6250){
 }
 function toggleRuinDoor(site){
  const d=scene?.userData?.ruinDoors?.[site];if(!d)return;if(d.open&&player.root.position.distanceTo(d.pivot.position)<1.35)return toast('문간에서 조금 떨어져야 닫을 수 있습니다.','warn');
- d.open=!d.open;d.target=d.open?-Math.PI*.5:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door')
+ d.open=!d.open;d.target=d.open?d.openAngle:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door')
 }
 function searchRuinSpot(key){
  const info=RUIN_SPOTS[key];if(!info)return;const done='search_'+key,inspect='inspect_'+key;if(game.flags[done])return toast('이미 수색한 곳입니다.');
@@ -379,7 +383,7 @@ function init3D(){
  [[-8,8],[-11,13],[-7,3],[-12,5]].forEach(p=>spawnResource('tree',p[0],p[1]));
  [[-8,-2],[-12,-4],[-6,-6],[-14,0],[-10,2]].forEach(p=>spawnResource('rock',p[0],p[1]));
  [[-22,18],[-28,8],[-34,22],[-18,30],[-40,5],[-25,-8]].forEach(p=>spawnResource('forage',p[0],p[1]));
- ruinShell('market','폐마트',MARKET_POS.x,MARKET_POS.z,11,9,0x8b8375);ruinShell('clinic','폐진료소',CLINIC_POS.x,CLINIC_POS.z,10,9,0x7a8587);ruinShell('garage','정비 창고',GARAGE_POS.x,GARAGE_POS.z,11,8,0x6f7778);
+ ruinShell('market','폐마트',MARKET_POS.x,MARKET_POS.z,11,9,0x8b8375,'east');ruinShell('clinic','폐진료소',CLINIC_POS.x,CLINIC_POS.z,10,9,0x7a8587,'west');ruinShell('garage','정비 창고',GARAGE_POS.x,GARAGE_POS.z,11,8,0x6f7778,'east');
  label('폐허 도시',CITY_CENTER.x,9,CITY_CENTER.z);
  createRuinSpot('marketShelf',MARKET_POS.x-2.3,MARKET_POS.z-1.4,1.9,1.45,.65,0x775b3e);
  createRuinSpot('marketBack',MARKET_POS.x-2.5,MARKET_POS.z+2.1,1.7,1.55,.7,0x66503b);
@@ -930,9 +934,9 @@ function residentActivity(id){
 }
 function residentWorkTarget(id){
  const r=game?.residents?.[id],activity=residentActivity(id);let p=null;if(!r?.job)return null;
- if(r.job==='technician'&&activity.includes('전력')&&game.flags.power)return POWER_STATION.clone();
+ if(r.job==='technician'&&activity.includes('전력')&&game.flags.power)return POWER_STATION.clone().add(new THREE.Vector3(-1.7,0,1.4));
  if(r.job==='gatherer'&&activity.includes('숲'))return roadNodeVector('forest');
- if(r.job==='medic'&&activity.includes('진료소')&&game.flags.ruins)return CLINIC_POS.clone().add(new THREE.Vector3(5.2,0,0));
+ if(r.job==='medic'&&activity.includes('진료소')&&game.flags.ruins)return CLINIC_POS.clone().add(new THREE.Vector3(-5.2,0,0));
  if(r.job==='technician')p=nearestPlaced('workbench')?.position;
  else if(r.job==='gatherer')p=nearestPlaced('farm')?.position;
  else if(r.job==='medic')p=nearestPlaced('shelter')?.position;
