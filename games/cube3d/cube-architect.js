@@ -908,6 +908,8 @@ const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
+let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
+let nearLandmarkPoi=null,restorationSession=null;
 let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
 let worldChunkIndex=new Map(),worldChunksGenerated=new Set(),worldChunkGenerationDepth=0;
 const WORLD_CHUNK_SIZE=16;
@@ -916,7 +918,7 @@ function worldChunkKey(x,z){
 }
 function newSurvivalStats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
-    paintedFaces:[],smelted:{},biomes:[],found:[]};
+    paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
 }
 function trackSurvival(action,type,n=1){
   if(gameFreeMode!=='survival')return;
@@ -933,11 +935,86 @@ function trackSurvival(action,type,n=1){
     if(!survivalStats.biomes.includes(type))survivalStats.biomes.push(type);
   }else if(action==='find'){
     if(!survivalStats.found.includes(type))survivalStats.found.push(type);
+  }else if(action==='restore'){
+    if(!survivalStats.restored.includes(type))survivalStats.restored.push(type);
   }
   advanceSurvival();
 }
 
 const worldRules=window.CubeArchitectWorld;
+const poiRules=window.CubeArchitectPOI;
+function recipeTech(recipeId){
+  for(const poi of poiRules.POIS)if((poi.tech.recipes||[]).includes(recipeId))return poi.tech.id;
+  return null;
+}
+function recipeUnlocked(recipeId){
+  const tech=recipeTech(recipeId);
+  return !tech||unlockedTech.has(tech)||gameFreeMode==='creative';
+}
+function survivalCuboidMax(){
+  return gameFreeMode==='creative'?8:(unlockedTech.has('largeCuboid')?6:3);
+}
+function landmarkPoiBaseY(poi){
+  const [ox,oz]=poi.origin,[w,,d]=poi.compact.size;
+  let top=-Infinity;
+  for(let x=ox;x<ox+w;x++)for(let z=oz;z<oz+d;z++)top=Math.max(top,terrainHeight(x,z));
+  return Math.min(WORLD_MAX_Y-poi.compact.size[1]-1,top+1);
+}
+function setLandmarkPoiBlocks(poi,full=false,onlyChunk=null){
+  const baseY=landmarkPoiBaseY(poi),[ox,oz]=poi.origin;
+  const blocks=full?poi.compact.fullShell:poi.compact.blocks;
+  for(const v of blocks){
+    const x=ox+v.p[0],y=baseY+v.p[1],z=oz+v.p[2];
+    if(!inWorld(x,y,z))continue;
+    if(onlyChunk&&worldChunkKey(x,z)!==onlyChunk)continue;
+    setRawBlock(x,y,z,{type:v.type,landmarkPoi:poi.id,landmarkRole:v.role,natural:true,protectedPoi:true});
+  }
+}
+function generateLandmarkPoiChunk(cx,cz){
+  const chunk=cx+','+cz;
+  for(const poi of poiRules.poisForChunk(cx,cz,WORLD_CHUNK_SIZE))
+    setLandmarkPoiBlocks(poi,restoredLandmarks.has(poi.id),chunk);
+}
+function rebuildLandmarkPoi(poi){
+  const keys=[];
+  for(const [key,data] of worldData)if(data?.landmarkPoi===poi.id)keys.push(key);
+  for(const key of keys){const [x,y,z]=parseWorldKey(key);setRawBlock(x,y,z,null);removeWorldMesh(key)}
+  const [ox,oz]=poi.origin,[w,,d]=poi.compact.size;
+  const minCX=Math.floor(ox/WORLD_CHUNK_SIZE),maxCX=Math.floor((ox+w)/WORLD_CHUNK_SIZE);
+  const minCZ=Math.floor(oz/WORLD_CHUNK_SIZE),maxCZ=Math.floor((oz+d)/WORLD_CHUNK_SIZE);
+  for(let cx=minCX;cx<=maxCX;cx++)for(let cz=minCZ;cz<=maxCZ;cz++)
+    if(worldChunksGenerated.has(cx+','+cz))setLandmarkPoiBlocks(poi,true,cx+','+cz);
+  streamWorldMeshes(true);
+}
+function completeLandmarkPoi(id){
+  const poi=poiRules.poiById(id);if(!poi||restoredLandmarks.has(id))return;
+  restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);
+  for(const [type,n] of Object.entries(poi.tech.reward||{}))addToBag(type,n);
+  trackSurvival('restore',id);
+  rebuildLandmarkPoi(poi);
+  buildInventory();updateFreeMission();saveFreeWorld();
+  toast(poi.name+' 복원 완료 · '+poi.tech.label+' 해금!');
+}
+function returnFromRestoration(){
+  const session=restorationSession;
+  restorationSession=null;
+  enterMode('free');
+  if(session?.completed)completeLandmarkPoi(session.poiId);
+}
+function openLandmarkRestoration(poi){
+  if(!poi||gameFreeMode!=='survival')return;
+  saveFreeWorld();
+  challengeDifficulty='hard';missionIndex=poi.missionIndex;
+  restorationSession={poiId:poi.id,missionIndex:poi.missionIndex,completed:false};
+  enterMode('challenge');
+}
+function markRestorationSuccess(score){
+  if(!restorationSession||restorationSession.completed)return;
+  restorationSession.completed=true;
+  const poi=poiRules.poiById(restorationSession.poiId);
+  $('actionNext').textContent='보상 받고 월드로 돌아가기';
+  $('resultText').innerHTML+='<br><b>'+poi.tech.label+'</b> 기술을 해금할 수 있어요.';
+}
 const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
 const FACE_IDS=['R','L','U','D','F','B'];
 const CUBOID_TOPOLOGY={
