@@ -1494,15 +1494,17 @@ function buildFreeWorld(){
    [12,1,8,'brick'],[12,2,8,'brick'],[9,2,8,'brick'],[10,2,8,'brick'],
    [11,2,8,'brick'],[8,0,11,'stone'],[12,0,11,'stone'],[10,0,11,'obsidian']]
     .forEach(v=>setRawBlock(v[0],ruinY+v[1],v[2],{type:v[3],ruin:true,natural:true}));
-  const discoveries=[
-    ['bp1',-27,-9,0x6f72ff,'숲의 설계도 조각'],
-    ['c1',32,-28,0xffd65a,'사막의 색 결정'],
-    ['bp2',-5,-44,0x6f72ff,'설원의 설계도 조각'],
-    ['c2',5,39,0xff79a8,'습지의 색 결정'],
-    ['bp3',43,23,0x6f72ff,'협곡의 설계도 조각']
-  ];
-  for(const [id,x,z,color,label] of discoveries)
-    addCollectible(id,x,terrainHeight(x,z)+1.8,z,color,label);
+  if(gameFreeMode==='creative'){
+    const discoveries=[
+      ['bp1',-27,-9,0x6f72ff,'숲의 설계도 조각'],
+      ['c1',32,-28,0xffd65a,'사막의 색 결정'],
+      ['bp2',-5,-44,0x6f72ff,'설원의 설계도 조각'],
+      ['c2',5,39,0xff79a8,'습지의 색 결정'],
+      ['bp3',43,23,0x6f72ff,'협곡의 설계도 조각']
+    ];
+    for(const [id,x,z,color,label] of discoveries)
+      addCollectible(id,x,terrainHeight(x,z)+1.8,z,color,label);
+  }
   freeHemi=scene.children.find(o=>o.isHemisphereLight)||null;
   freeSun=scene.children.find(o=>o.isDirectionalLight)||null;
 }
@@ -1747,6 +1749,7 @@ function updateFreeMission(){
     if(close&&close.distance<=close.radius+9){
       if(!discoveredLandmarks.has(close.id)){
         discoveredLandmarks.add(close.id);
+        trackSurvival('find','landmark:'+close.id);
         toast('랜드마크 발견 · '+close.name+'! 폐허의 겨냥도를 복원할 수 있어요.');
         saveFreeWorld();
       }
@@ -2090,7 +2093,7 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:5,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:6,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
