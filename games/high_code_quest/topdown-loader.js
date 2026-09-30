@@ -7,6 +7,21 @@ const parts=[
  './topdown-game.part6.txt?v=2'
 ];
 document.body.classList.add('topdown-code-quest');
+try{
+ const nextKey='kidscade_game_v1:high_code_quest:topdown_v1';
+ const oldKey='kidscade_game_v1:high_code_quest:progress_v3';
+ if(!localStorage.getItem(nextKey)){
+  const old=JSON.parse(localStorage.getItem(oldKey)||'{}');
+  if(old&&Object.keys(old).length){
+   localStorage.setItem(nextKey,JSON.stringify({
+    current:Number(old.current)||0,
+    unlocked:Math.max(1,Number(old.unlocked)||1),
+    completed:old.completed||{},
+    programs:{},best:{},attempts:{},wins:0
+   }));
+  }
+ }
+}catch(_){}
 Promise.all(parts.map(src=>fetch(src,{cache:'no-store'}).then(r=>{
  if(!r.ok)throw new Error('Top-view engine part failed: '+src);
  return r.text();
