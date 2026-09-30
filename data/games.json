@@ -3095,6 +3095,33 @@
       ],
       "qualityStatus": "standard",
       "classroom": true
+    },
+    {
+      "id": "high_micro_evolution",
+      "addedAt": "2026-09-30T10:50:00+09:00",
+      "title": "마이크로 에볼루션",
+      "href": "games/high_micro_evolution/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🦠",
+      "description": "스포어의 세포 단계처럼 작은 생명체로 시작해 편모·섬모·위족·감각기관·광합성·포식·여과·기생 기관을 직접 조합하세요. 7개 생태계의 빛·온도·산소·염도·먹이·물살이 달라지고, AI 종과 환경도 세대마다 함께 변하는 과학 진화 샌드박스!",
+      "subject": "science",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": true
     }
   ],
   "taxonomy": {
