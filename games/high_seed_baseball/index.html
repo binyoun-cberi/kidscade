@@ -20,9 +20,9 @@ canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778
 #controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;display:flex;gap:8px;align-items:end;justify-content:center;width:min(900px,96vw);pointer-events:none}
 .controlGroup{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .ctrl{min-width:80px;padding:11px 13px;border-radius:14px;color:#fff;background:rgba(15,23,42,.87);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(0,0,0,.17);touch-action:none;user-select:none}
-.ctrl.primary{background:#fbbf24;color:#172554}.ctrl.power{background:#f87171;color:#27131b}.ctrl.green{background:#16a34a}.ctrl.red{background:#dc2626}.ctrl.blue{background:#2563eb}
+.ctrl.primary{background:#fbbf24;color:#172554}.ctrl.angle{min-width:105px;background:rgba(47,87,109,.95);border:2px solid #88bdce}.ctrl.power{background:#f87171;color:#27131b}.ctrl.green{background:#16a34a}.ctrl.red{background:#dc2626}.ctrl.blue{background:#2563eb}
 .ctrl.active{outline:3px solid #fff;transform:translateY(-2px)}
-.controlGroup[data-mode="bat"]{width:min(750px,96vw);align-items:center}.controlGroup[data-mode="bat"] .ctrl.primary{min-width:clamp(180px,34vw,300px);padding:17px 28px;font-size:19px;border-radius:18px;box-shadow:0 7px 0 #ad7d13}.controlGroup[data-mode="bat"] .ctrl.power{min-width:110px;padding:17px 16px;font-size:17px;border-radius:18px;box-shadow:0 7px 0 #be5252}.controlGroup[data-mode="bat"] .ctrl:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.controlGroup[data-mode="bat"]{width:min(750px,96vw);align-items:center;flex-wrap:nowrap}.controlGroup[data-mode="bat"] .ctrl.primary{min-width:clamp(180px,34vw,300px);padding:17px 28px;font-size:19px;border-radius:18px;box-shadow:0 7px 0 #ad7d13}.controlGroup[data-mode="bat"] .ctrl.power{min-width:110px;padding:17px 16px;font-size:17px;border-radius:18px;box-shadow:0 7px 0 #be5252}.controlGroup[data-mode="bat"] .ctrl:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.3)}
 #chargeWrap{position:absolute;left:50%;bottom:82px;transform:translateX(-50%);z-index:5;width:min(440px,78vw);padding:8px 10px;border-radius:14px;background:rgba(2,6,23,.82);display:none}
 #chargeTrack{height:16px;border-radius:999px;background:#334155;overflow:hidden;border:1px solid rgba(255,255,255,.28)}
 #chargeFill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#fbbf24,#ef4444)}
@@ -38,8 +38,10 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 #bases{display:inline-grid;grid-template-columns:repeat(3,12px);grid-template-rows:repeat(2,12px);gap:2px;transform:rotate(45deg);margin-left:8px;vertical-align:middle}
 .base{width:10px;height:10px;border:1px solid #fff;background:#334155}.base.on{background:#fbbf24}.b2{grid-column:2;grid-row:1}.b3{grid-column:1;grid-row:2}.b1{grid-column:3;grid-row:2}
 #zoneHint{position:absolute;left:50%;top:29%;transform:translate(-50%,-50%);z-index:4;color:#fff;font-weight:900;pointer-events:none;text-shadow:0 2px 8px #000}
+#lessonBanner{position:absolute;z-index:6;left:12px;top:74px;width:min(365px,76vw);padding:9px 12px;border-radius:14px;background:rgba(7,24,41,.92);border:1px solid rgba(250,204,21,.75);box-shadow:0 5px 20px rgba(0,0,0,.22);pointer-events:none;font-size:13px;line-height:1.5}#lessonBanner b{display:block;color:#fcd34d;font-size:13px;margin-bottom:2px}#lessonBanner span{display:block;color:#eff6ff}
 @media (hover:hover) and (pointer:fine){.touchOnly{display:none}}
-@media(max-width:620px){.panel{padding:18px}.tipgrid{grid-template-columns:1fr}.scorebox{min-width:145px}.countbox{min-width:125px}.ctrl{min-width:65px;padding:10px 9px;font-size:12px}#hud{left:5px;right:5px}.scorebox,.countbox{padding:6px 8px}}
+@media(max-width:620px){.controlGroup[data-mode="bat"]{gap:5px}.controlGroup[data-mode="bat"] .ctrl{min-width:0;padding:12px 7px;font-size:12px}.controlGroup[data-mode="bat"] .ctrl.angle{min-width:58px}.controlGroup[data-mode="bat"] .ctrl.primary{min-width:92px;padding:14px 10px;font-size:16px}.controlGroup[data-mode="bat"] .ctrl.power{min-width:60px;padding:13px 8px;font-size:12px}.panel{padding:18px}.tipgrid{grid-template-columns:1fr}.scorebox{min-width:145px}.countbox{min-width:125px}.ctrl{min-width:65px;padding:10px 9px;font-size:12px}#hud{left:5px;right:5px}.scorebox,.countbox{padding:6px 8px}}
+@media(max-width:620px) and (orientation:portrait){canvas{top:42%}#hud{top:calc(42% - 28.125vw - 68px)}#lessonBanner{left:4%;top:calc(42% - 28.125vw - 38px);width:92%;padding:6px 9px;font-size:11px}#lessonBanner b{font-size:11px}#controls{top:calc(42% + 28.125vw + 9px);bottom:auto;width:98vw}#chargeWrap{top:calc(42% + 28.125vw + 76px);bottom:auto}#message{top:calc(42% - 28.125vw + 5px);max-width:90vw;font-size:12px}#zoneHint{top:calc(42% - 28.125vw + 28px);font-size:11px}#app{min-height:420px}}
 </style>
 </head>
 <body>
@@ -55,32 +57,34 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 </div>
 <div id="message"></div>
 <div id="zoneHint"></div>
+<div id="lessonBanner" class="hidden" aria-live="polite"></div>
 <div id="chargeWrap"><div id="chargeText">파워</div><div id="chargeTrack"><div id="chargeFill"></div></div></div>
 <div id="controls"><div id="controlGroup" class="controlGroup"></div></div>
 
 <div id="menu" class="overlay">
  <div class="panel">
   <h1>씨앗 베이스볼</h1>
-  <p class="sub">3이닝 아케이드 야구! 쉬움에서는 공을 따라가는 자동 조준을 켜고, 공이 가까워질 때 스윙 버튼을 딱 한 번 누르면 돼요.</p>
+  <p class="sub">배트를 부채꼴로 위아래 움직이고 공의 높이에 맞춰요. 초록색 타이밍에 스윙! 처음에는 1회초 타격과 1회말 투구·수비를 연습해요.</p>
   <div class="modegrid" id="difficultyGrid">
-   <button class="mode active" data-diff="easy">쉬움<br><small>자동 조준·느린 공</small></button>
-   <button class="mode" data-diff="normal">보통<br><small>자동 조준·강타</small></button>
-   <button class="mode" data-diff="hard">어려움<br><small>직접 조준</small></button>
+   <button class="mode active" data-diff="easy">쉬움<br><small>느린 공·넓은 타격 범위</small></button>
+   <button class="mode" data-diff="normal">보통<br><small>배트 각도·강타</small></button>
+   <button class="mode" data-diff="hard">어려움<br><small>빠른 공·정교한 각도</small></button>
   </div>
   <div class="tipgrid">
-   <div class="tip"><b>⚾ 공격</b><br>쉬움·보통은 타격 위치를 자동으로 맞춰요. <b>공이 가까워지고 막대가 초록색이 되면 화면이나 스윙 버튼을 한 번 터치!</b> 보통부터는 강타도 선택할 수 있어요.</div>
+   <div class="tip"><b>⚾ 타격</b><br>배트 ▲▼를 누르거나 타격 화면을 위아래로 드래그해 배트 각도를 바꿔요. <b>공이 배트에 들어올 때 스윙을 한 번 터치!</b> 초록 막대는 좋은 타격 타이밍이에요.</div>
    <div class="tip"><b>🥎 수비</b><br>투구 코스를 찍고 구종을 고른 뒤 던져요. 타구가 나오면 가까운 수비수를 직접 움직이고 베이스로 송구합니다.</div>
    <div class="tip"><b>🏃 주루</b><br>주자는 기본적으로 안전하게 달려요. 외야를 가르면 <b>더 간다!</b>로 한 베이스 더 노릴 수 있어요.</div>
    <div class="tip"><b>📊 기록</b><br>안타·홈런·삼진·최장 타구와 승패를 기기에 저장해 다음 경기에서도 이어서 볼 수 있어요.</div>
   </div>
   <button id="startBtn" class="start">플레이볼!</button>
+  <button id="tutorialBtn" class="secondary">1회씩 연습하기 · 타격과 투구</button>
   <button id="recordsBtn" class="secondary">내 기록 보기</button>
  </div>
 </div>
 <div id="records" class="overlay hidden"><div class="panel"><h2>내 야구 기록</h2><p id="recordsText" class="sub"></p><button id="closeRecords" class="start">돌아가기</button></div></div>
 <div id="result" class="overlay hidden"><div class="panel" style="text-align:center"><h2 id="resultTitle">경기 종료</h2><p id="resultText" class="sub"></p><button id="rematchBtn" class="start">다시 경기</button><button id="menuBtn" class="secondary">설정으로</button></div></div>
 </div>
-<script src="./game.js?v=7"></script>
+<script src="./game.js?v=8"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_baseball" data-title="씨앗 베이스볼" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
