@@ -67,3 +67,29 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
 .toolbarSide{flex:0 0 112px;grid-template-columns:1fr 1fr}.toolbarSide #moreToolsBtn{grid-column:1 / -1;width:auto;height:28px;font-size:9px}
 #mission{width:310px}
 @media(max-width:800px){#mission{width:min(300px,calc(100% - 16px))}#nextActionCard{grid-template-columns:36px 1fr}#nextActionCard em{display:none}}
+
+/* v10 build palette: category tabs + swipeable paged rail */
+#toolbar{width:min(1280px,calc(100% - 28px));min-height:118px;padding:8px 10px;display:grid;grid-template-rows:28px 1fr 24px;gap:5px}
+.toolCategoryBar{display:flex;gap:5px;justify-content:center;overflow-x:auto;scrollbar-width:none}
+.toolCategoryBar::-webkit-scrollbar{display:none}
+.toolCategoryBar button{border:0;border-radius:999px;padding:5px 13px;background:rgba(255,255,255,.06);font-size:10px;cursor:pointer;white-space:nowrap}
+.toolCategoryBar button.active{background:#d9fff0;color:#18362d;font-weight:900}
+.toolRail{min-width:0;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;gap:6px;align-items:stretch}
+.toolNav{border:0;border-radius:14px;background:rgba(255,255,255,.08);font-size:30px;font-weight:700;cursor:pointer}
+.toolNav:hover{background:rgba(255,255,255,.14)}
+.toolScroller{min-width:0;display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
+.toolScroller::-webkit-scrollbar{display:none}
+.tool{flex:0 0 112px;scroll-snap-align:start;min-height:64px}
+.toolbarFooter{display:flex;align-items:center;justify-content:space-between;padding:0 2px 0 48px}
+#toolPageLabel{font-size:9px;color:var(--muted);letter-spacing:.08em}
+.toolbarSide{flex:0 0 auto!important;display:flex!important;grid-template-columns:none!important;border-left:0!important;padding-left:0!important;gap:5px!important}
+.toolbarSide button{width:42px;height:24px!important}
+#nextActionCard.uiHidden{display:none!important}
+@media(max-width:800px){
+  #toolbar{min-height:108px;grid-template-rows:25px 1fr 20px;padding:6px;width:calc(100% - 12px)}
+  .toolRail{grid-template-columns:34px minmax(0,1fr) 34px;gap:4px}
+  .toolNav{font-size:24px;border-radius:11px}
+  .tool{flex-basis:92px}
+  .toolbarFooter{padding-left:38px}
+  .toolCategoryBar{justify-content:flex-start}
+}
