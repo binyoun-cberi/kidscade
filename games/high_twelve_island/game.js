@@ -65,8 +65,9 @@
     if (timer) clearInterval(timer);
     timer = setInterval(() => {
       if (paused || state.pending || !element.help.classList.contains("hidden") || document.hidden) return;
+      const arrivalCount = state.arrivalLog?.length || 0;
       S.tick(state);
-      if (state.tick % 3 === 0 || state.pending || state.stage === 2) save();
+      if (state.tick % 3 === 0 || state.pending || state.stage === 2 || (state.arrivalLog?.length || 0) !== arrivalCount) save();
       render();
     }, speed === 2 ? 1250 : 2400);
   }
@@ -130,7 +131,7 @@
     const active = S.winterActive(state);
     const forecast = state.nextWinterAt - state.tick;
     const rights = S.rightsConcerns(state);
-    const known = active || state.winterEver || forecast <= 5 || rights.length || (state.rightsHistory || []).length;
+    const known = active || state.winterEver || forecast <= 8 || state.winterPrepared != null || rights.length || (state.rightsHistory || []).length;
     const zone = $("crisisStrip");
     if (!zone) return;
     if (!known) { zone.classList.add("hidden"); zone.innerHTML = ""; return; }
