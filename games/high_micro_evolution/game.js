@@ -45,18 +45,20 @@ const PARTS = {
 };
 
 const CATS = ['먹이','이동','감각','방어'];
-const WORLD = {w:2600,h:1900};
+const CAMERA_ZOOM = 1.55;
+const WORLD = {w:2300,h:1650};
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('high_micro_evolution','save') || 'kidscade_game_v1:high_micro_evolution:save';
 
 let canvas,ctx,dpr=1,viewW=0,viewH=0,last=0,raf=0;
 let running=false,paused=false,toastTimer=0,eventTimer=0,senseTimer=0;
 let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null;
 let keys={},pointerTarget=null,joy={active:false,x:0,y:0,pid:null};
-let foods=[],creatures=[],lightPatches=[],ripples=[],particles=[];
+let foods=[],creatures=[],lightPatches=[],biomeProps=[],ripples=[],particles=[];
 let env={...BIOMES[0].env};
 let state = {
-  generation:1,generationClock:0,eventClock:0,dna:12,score:0,survival:0,
-  player:null,mission:0,discovered:{},facts:{},started:false
+  generation:1,generationClock:0,eventClock:0,dna:6,score:0,survival:0,
+  player:null,mission:0,discovered:{},facts:{},started:false,reproductions:0,
+  activeEvent:null,activeEventLife:0,editorMode:null
 };
 
 function freshPlayer(){
@@ -65,10 +67,10 @@ function freshPlayer(){
   slots[6]='flagellum';
   return {x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:0,radius:30,energy:100,health:100,biomass:0,
     slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0},
-    pulseCd:0,biteCd:0,attached:null,lastMove:0};
+    pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0};
 }
 function resetState(){
-  state={generation:1,generationClock:0,eventClock:0,dna:12,score:0,survival:0,player:freshPlayer(),mission:0,discovered:{},facts:{},started:true};
+  state={generation:1,generationClock:0,eventClock:0,dna:6,score:0,survival:0,player:freshPlayer(),mission:0,discovered:{},facts:{},started:true,reproductions:0,activeEvent:null,activeEventLife:0,editorMode:null};
 }
 function countPart(type,p=state.player){
   return p.slots.filter(x=>x===type).length + Number(p.inside[type]||0);
@@ -118,35 +120,74 @@ function goHome(){
 }
 
 function setupWorld(){
-  foods=[];creatures=[];lightPatches=[];ripples=[];particles=[];
+  foods=[];creatures=[];lightPatches=[];biomeProps=[];ripples=[];particles=[];
   state.player.x=WORLD.w/2;state.player.y=WORLD.h/2;
-  const patchCount=5;
-  for(let i=0;i<patchCount;i++)lightPatches.push({x:rand(WORLD.w-400,200),y:rand(WORLD.h-400,200),r:rand(360,180),strength:rand(1,.55)});
-  const foodN=Math.round(55+env.food*.75);
-  for(let i=0;i<foodN;i++)spawnFood();
-  for(let i=0;i<24;i++)spawnCreature(i%6);
+  const patchCount=selectedBiome.id==='deep'||selectedBiome.id==='vent'?4:6;
+  for(let i=0;i<patchCount;i++)lightPatches.push({x:rand(WORLD.w-320,160),y:rand(WORLD.h-320,160),r:rand(330,190),strength:rand(1,.55)});
+  buildBiomeProps();
+
+  const foodN=Math.round(115+env.food*1.15);
+  for(let i=0;i<foodN;i++){
+    if(i<70){
+      const a=rand(TAU),d=rand(620,80);
+      spawnFood(null,(state.player.x+Math.cos(a)*d+WORLD.w)%WORLD.w,(state.player.y+Math.sin(a)*d+WORLD.h)%WORLD.h);
+    }else spawnFood();
+  }
+
+  for(let i=0;i<46;i++){
+    if(i<16){
+      const a=rand(TAU),d=rand(650,180);
+      spawnCreature(i%6,(state.player.x+Math.cos(a)*d+WORLD.w)%WORLD.w,(state.player.y+Math.sin(a)*d+WORLD.h)%WORLD.h);
+    }else spawnCreature(i%6);
+  }
 }
-function spawnFood(type){
+function buildBiomeProps(){
+  biomeProps=[];
+  const types={
+    pond:['plant','bubble','leaf'],swamp:['reed','debris','murk'],coast:['kelp','sand','bubble'],
+    deep:['glow','rock','glow'],vent:['vent','rock','plume'],ice:['ice','bubble','crystal'],salt:['crystal','salt','salt']
+  }[selectedBiome.id]||['bubble'];
+  const count=selectedBiome.id==='deep'?58:46;
+  for(let i=0;i<count;i++){
+    biomeProps.push({x:rand(WORLD.w),y:rand(WORLD.h),type:pick(types),size:rand(32,10),phase:rand(TAU)});
+  }
+}
+function spawnFood(type,x,y){
   const roll=Math.random();
   type=type||(roll<.56?'plankton':roll<.88?'nutrient':'meat');
-  foods.push({x:rand(WORLD.w),y:rand(WORLD.h),type,r:type==='plankton'?4:type==='nutrient'?6:8,phase:rand(TAU)});
+  foods.push({x:x==null?rand(WORLD.w):x,y:y==null?rand(WORLD.h):y,type,r:type==='plankton'?4:type==='nutrient'?6:8,phase:rand(TAU)});
 }
 function speciesTemplate(seed){
   const diets=['grazer','filter','hunter','photo','scavenger','parasite'];
   const diet=diets[seed%diets.length];
   return {diet,speed:.7+(seed%3)*.18,armor:.5+(seed%4)*.13,sense:.7+(seed%5)*.12,toxin:seed%4===0?.6:0,photo:diet==='photo'?1:0,filter:diet==='filter'?1:0,gen:1};
 }
-function spawnCreature(seed=0){
-  const s=speciesTemplate(seed),r=rand(41,18);
-  creatures.push({x:rand(WORLD.w),y:rand(WORLD.h),vx:0,vy:0,angle:rand(TAU),r,energy:100,health:100,species:seed,traits:s,age:0,flash:0});
+function spawnCreature(seed=0,x,y){
+  const traits=speciesTemplate(seed);
+  let r=rand(42,18);
+  if(traits.diet==='hunter')r=rand(52,28);
+  if(traits.diet==='filter')r=rand(38,22);
+  creatures.push({x:x==null?rand(WORLD.w):x,y:y==null?rand(WORLD.h):y,vx:0,vy:0,angle:rand(TAU),r,energy:100,health:100,species:seed,traits,age:0,flash:0});
 }
 
 function resize(){
   canvas=$('world');dpr=Math.min(2,window.devicePixelRatio||1);viewW=canvas.clientWidth;viewH=canvas.clientHeight;
   canvas.width=Math.round(viewW*dpr);canvas.height=Math.round(viewH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-function worldToScreen(x,y){ const p=state.player; return {x:x-p.x+viewW/2,y:y-p.y+viewH/2}; }
-function screenToWorld(x,y){ const p=state.player; return {x:x-viewW/2+p.x,y:y-viewH/2+p.y}; }
+function wrappedDelta(v,center,size){
+  let d=v-center;
+  if(d>size/2)d-=size;
+  if(d<-size/2)d+=size;
+  return d;
+}
+function worldToScreen(x,y){
+  const p=state.player;
+  return {x:wrappedDelta(x,p.x,WORLD.w)*CAMERA_ZOOM+viewW/2,y:wrappedDelta(y,p.y,WORLD.h)*CAMERA_ZOOM+viewH/2};
+}
+function screenToWorld(x,y){
+  const p=state.player;
+  return {x:(p.x+(x-viewW/2)/CAMERA_ZOOM+WORLD.w)%WORLD.w,y:(p.y+(y-viewH/2)/CAMERA_ZOOM+WORLD.h)%WORLD.h};
+}
 
 function movementStats(p=state.player){
   const parts=allParts(p);
@@ -204,6 +245,18 @@ function lightSenseData(p=state.player){
   }
   const angle=target?Math.atan2(target.y-p.y,target.x-p.x):null;
   return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
+}
+function reproductionRequirement(){
+  return 12+Math.min(16,(state.generation-1)*2);
+}
+function reproductionProgress(){
+  if(!state.player)return 0;
+  const biomass=clamp(state.player.biomass/reproductionRequirement(),0,1);
+  const energy=clamp(state.player.energy/78,0,1);
+  return Math.min(biomass,energy);
+}
+function canReproduce(){
+  return !!state.player&&state.player.biomass>=reproductionRequirement()&&state.player.energy>=78;
 }
 function salinityStress(){
   const membrane=countPart('membrane'),target=50+membrane*13;
@@ -278,6 +331,7 @@ function updatePlayer(dt){
   }
 
   p.pulseCd=Math.max(0,p.pulseCd-dt);p.biteCd=Math.max(0,p.biteCd-dt);
+  p.feedFlash=Math.max(0,p.feedFlash-dt*2.4);p.divisionFx=Math.max(0,p.divisionFx-dt);
   p.energy=clamp(p.energy,0,135);
   if(p.energy<=0)p.health-=7*dt; else if(p.energy>75&&p.health<100)p.health+=.9*dt;
   p.health=clamp(p.health,0,100);
@@ -289,7 +343,7 @@ function updatePlayer(dt){
 function consumeFood(index,mult=1,why='mouth'){
   const f=foods[index],p=state.player;
   const base=f.type==='meat'?9:f.type==='nutrient'?6:4;
-  p.energy+=base*mult;p.biomass+=base*.35*mult;state.dna+=base*.11*mult;state.score+=base*mult;
+  p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.11*mult;state.score+=base*mult;p.feedFlash=.8;
   foods.splice(index,1);spawnFood();
   burst(f.x,f.y,f.type==='meat'?'#ff8eb0':'#b9ef78');
   if(why==='filter'&&!state.discovered.filter){state.discovered.filter=1;toast('여과섭식 성공! 작은 입자를 걸러 먹었어요.')}
@@ -319,52 +373,90 @@ function nearestFood(c){
   for(const f of foods){const d=dist2(c,f);if(d<bd){bd=d;best=f}}
   return best;
 }
+function scanCreatureRelations(c,idx){
+  let danger=null,dangerD=Infinity,prey=null,preyD=Infinity,host=null,hostD=Infinity;
+  for(let j=0;j<creatures.length;j++){
+    if(j===idx)continue;
+    const o=creatures[j];if(!o||o.health<=0)continue;
+    const d=Math.sqrt(dist2(c,o));
+    if(o.traits.diet==='hunter'&&o.r>c.r*1.16&&d<dangerD){danger=o;dangerD=d}
+    if(c.traits.diet==='hunter'&&o.r<c.r*.76&&d<preyD){prey=o;preyD=d}
+    if(c.traits.diet==='parasite'&&o.r>c.r*1.15&&d<hostD){host=o;hostD=d}
+  }
+  return {danger,dangerD,prey,preyD,host,hostD};
+}
+function respawnCreature(c,seed){
+  const base=speciesTemplate(seed%6);
+  const inherited=mutateTraits({...base,speed:(base.speed+c.traits.speed)/2,armor:(base.armor+c.traits.armor)/2,sense:(base.sense+c.traits.sense)/2},.1);
+  let r=inherited.diet==='hunter'?rand(52,28):rand(41,18);
+  Object.assign(c,{x:rand(WORLD.w),y:rand(WORLD.h),vx:0,vy:0,angle:rand(TAU),r,energy:100,health:100,traits:inherited,age:0,flash:0});
+}
 function updateCreatures(dt){
   const p=state.player;
   creatures.forEach((c,idx)=>{
     c.age+=dt;c.flash=Math.max(0,c.flash-dt);
-    let tx=0,ty=0;
+    let tx=0,ty=0,goalStrength=1;
     const dp=Math.sqrt(dist2(c,p));
     const hunter=c.traits.diet==='hunter',parasite=c.traits.diet==='parasite';
-    if((hunter&&c.r>p.radius*.78)||parasite){
-      const see=180+c.traits.sense*100;
-      if(dp<see){tx=(p.x-c.x)/Math.max(1,dp);ty=(p.y-c.y)/Math.max(1,dp)}
-    }else if(c.r<p.radius*.82&&dp<150){
-      tx=(c.x-p.x)/Math.max(1,dp);ty=(c.y-p.y)/Math.max(1,dp);
+    const rel=scanCreatureRelations(c,idx);
+    const see=190+c.traits.sense*120;
+
+    if(rel.danger&&rel.dangerD<300+c.traits.sense*35){
+      tx=(c.x-rel.danger.x)/Math.max(1,rel.dangerD);ty=(c.y-rel.danger.y)/Math.max(1,rel.dangerD);goalStrength=1.28;
+    }else if(hunter&&rel.prey&&rel.preyD<see){
+      tx=(rel.prey.x-c.x)/Math.max(1,rel.preyD);ty=(rel.prey.y-c.y)/Math.max(1,rel.preyD);goalStrength=1.16;
+    }else if(parasite&&rel.host&&rel.hostD<see){
+      tx=(rel.host.x-c.x)/Math.max(1,rel.hostD);ty=(rel.host.y-c.y)/Math.max(1,rel.hostD);
+    }else if(hunter&&c.r>p.radius*.9&&dp<see*1.15){
+      tx=(p.x-c.x)/Math.max(1,dp);ty=(p.y-c.y)/Math.max(1,dp);goalStrength=1.12;
+    }else if(c.r<p.radius*.84&&dp<300){
+      tx=(c.x-p.x)/Math.max(1,dp);ty=(c.y-p.y)/Math.max(1,dp);goalStrength=1.2;
     }else{
       const f=nearestFood(c);
       if(f){const d=Math.sqrt(dist2(c,f));tx=(f.x-c.x)/Math.max(1,d);ty=(f.y-c.y)/Math.max(1,d)}
+      else{tx=Math.cos(c.angle);ty=Math.sin(c.angle)}
     }
-    if(c.traits.photo>0&&lightAt(c.x,c.y)>.65){tx*=.25;ty*=.25;c.energy+=.4*dt}
-    c.angle+=clamp(angleDiff(Math.atan2(ty,tx),c.angle),-2.2*dt,2.2*dt);
-    const sp=(36+c.traits.speed*43)/(1+c.traits.armor*.16);
-    c.vx=lerp(c.vx,Math.cos(c.angle)*sp,clamp(dt*2.8,0,1));c.vy=lerp(c.vy,Math.sin(c.angle)*sp,clamp(dt*2.8,0,1));
+
+    if(c.traits.photo>0&&lightAt(c.x,c.y)>.65){tx*=.28;ty*=.28;c.energy+=.5*dt}
+    const desired=Math.atan2(ty,tx);
+    c.angle+=clamp(angleDiff(desired,c.angle),-2.5*dt,2.5*dt);
+    const sp=(38+c.traits.speed*46)/(1+c.traits.armor*.16)*goalStrength;
+    c.vx=lerp(c.vx,Math.cos(c.angle)*sp,clamp(dt*3.2,0,1));c.vy=lerp(c.vy,Math.sin(c.angle)*sp,clamp(dt*3.2,0,1));
     c.x=(c.x+c.vx*dt+WORLD.w)%WORLD.w;c.y=(c.y+c.vy*dt+WORLD.h)%WORLD.h;
 
     const f=nearestFood(c);
     if(f&&dist2(c,f)<Math.pow(c.r+f.r,2)){const i=foods.indexOf(f);if(i>=0){foods.splice(i,1);spawnFood();c.energy+=8}}
 
+    if(hunter&&rel.prey&&rel.preyD<c.r+rel.prey.r+5){
+      rel.prey.health-=(15+Math.max(0,c.r-rel.prey.r)*.22)*dt;
+      rel.prey.flash=.12;c.energy+=1.2*dt;
+      if(rel.prey.health<=0){
+        burst(rel.prey.x,rel.prey.y,'#aef18a');c.r=clamp(c.r+1.1,18,58);
+        respawnCreature(rel.prey,rel.prey.species);
+      }
+    }
+
     const rr=c.r+p.radius,hit=dist2(c,p)<rr*rr;
     if(hit){
       if(hunter&&c.r>p.radius*.86){
-        let dmg=(7+c.r*.08)*dt/(1+countPart('membrane')*.32);
+        let dmg=(8+c.r*.1)*dt/(1+countPart('membrane')*.32);
         if(countPart('camouflage')&&Math.hypot(p.vx,p.vy)<12)dmg*=.45;
         p.health-=dmg;c.flash=.12;
-        if(countPart('spike'))c.health-=countPart('spike')*2.2*dt;
+        if(countPart('spike')){c.health-=countPart('spike')*2.5*dt;c.vx*=-.75;c.vy*=-.75}
       }
       if(countPart('predatorMouth')&&p.radius>c.r*.78&&p.biteCd<=0){
-        const front=Math.abs(angleDiff(Math.atan2(c.y-p.y,c.x-p.x),p.angle));
-        if(front<1.05){c.health-=18+countPart('predatorMouth')*8;p.biteCd=.75;burst(c.x,c.y,'#ff889e')}
+        const front=Math.abs(angleDiff(Math.atan2(wrappedDelta(c.y,p.y,WORLD.h),wrappedDelta(c.x,p.x,WORLD.w)),p.angle));
+        if(front<1.05){c.health-=20+countPart('predatorMouth')*8;p.biteCd=.58;p.feedFlash=.55;burst(c.x,c.y,'#ff889e')}
       }
       if(countPart('parasite')&&c.r>p.radius*.9&&!p.attached)p.attached=c;
     }
     if(c.health<=0){
-      state.dna+=2.4;state.score+=25;p.energy+=12;p.biomass+=4;
+      state.dna+=2.4;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
       burst(c.x,c.y,'#ff78a4');
-      Object.assign(c,{x:rand(WORLD.w),y:rand(WORLD.h),health:100,energy:100,r:rand(41,18),traits:mutateTraits(speciesTemplate(idx%6),.22)});
-      if(!state.discovered.predator){state.discovered.predator=1;toast('포식 성공! 다른 생물을 먹는 것도 하나의 생태 전략입니다.')}
+      respawnCreature(c,idx%6);
+      if(!state.discovered.predator){state.discovered.predator=1;toast('포식 성공! 작은 생물은 먹이가 되고, 큰 포식자는 반대로 나를 노립니다.')}
     }
-    if(c.age>70){c.age=0;c.traits=mutateTraits(c.traits,.08)}
+    if(c.age>72){c.age=0;c.traits=mutateTraits(c.traits,.08)}
   });
 }
 function mutateTraits(t,amount=.15){
@@ -383,42 +475,48 @@ function updateParticles(dt){
 }
 
 const EVENTS=[
-  {icon:'🌧️',title:'폭우',desc:'영양분이 흘러들어오지만 물살이 강해졌어요.',apply(){env.food=clamp(env.food+18,0,100);env.current=clamp(env.current+24,0,100)}},
-  {icon:'☀️',title:'강한 햇빛',desc:'빛은 늘었지만 수온도 함께 올랐어요.',apply(){env.light=clamp(env.light+22,0,100);env.temp=clamp(env.temp+13,0,100)}},
-  {icon:'🌫️',title:'탁도 증가',desc:'물이 탁해져 빛을 이용하기 어려워졌어요.',apply(){env.turbidity=clamp(env.turbidity+25,0,100);env.light=clamp(env.light-16,0,100)}},
-  {icon:'🫧',title:'산소 증가',desc:'물속 산소가 늘어 활발한 생물이 많아집니다.',apply(){env.oxygen=clamp(env.oxygen+20,0,100)}},
-  {icon:'🧂',title:'증발',desc:'물이 줄며 염도가 올라갔어요.',apply(){env.salt=clamp(env.salt+19,0,100);env.food=clamp(env.food-8,0,100)}},
-  {icon:'🌱',title:'플랑크톤 번성',desc:'작은 먹이 입자가 크게 늘어났어요.',apply(){env.food=clamp(env.food+26,0,100);for(let i=0;i<22;i++)spawnFood('plankton')}}
+  {id:'rain',icon:'🌧️',title:'폭우',desc:'영양분이 흘러들어오고 화면의 입자들이 빠르게 휩쓸립니다.',apply(){env.food=clamp(env.food+18,0,100);env.current=clamp(env.current+24,0,100)}},
+  {id:'sun',icon:'☀️',title:'강한 햇빛',desc:'빛이 강해지고 밝은 수역이 넓어집니다.',apply(){env.light=clamp(env.light+22,0,100);env.temp=clamp(env.temp+13,0,100)}},
+  {id:'murk',icon:'🌫️',title:'탁도 증가',desc:'부유물이 퍼져 멀리 보기 어려워졌어요.',apply(){env.turbidity=clamp(env.turbidity+25,0,100);env.light=clamp(env.light-16,0,100)}},
+  {id:'oxygen',icon:'🫧',title:'산소 증가',desc:'기포가 늘고 활발한 생물 활동이 이어집니다.',apply(){env.oxygen=clamp(env.oxygen+20,0,100)}},
+  {id:'evaporate',icon:'🧂',title:'증발',desc:'물이 농축되어 염도가 올라갑니다.',apply(){env.salt=clamp(env.salt+19,0,100);env.food=clamp(env.food-8,0,100)}},
+  {id:'bloom',icon:'🌱',title:'플랑크톤 번성',desc:'작은 먹이 입자가 눈에 띄게 폭발적으로 늘어났어요.',apply(){env.food=clamp(env.food+26,0,100);for(let i=0;i<40;i++)spawnFood('plankton')}}
 ];
 function triggerEvent(){
-  const e=pick(EVENTS);e.apply();$('eventIcon').textContent=e.icon;$('eventTitle').textContent=e.title;$('eventDesc').textContent=e.desc;
+  const e=pick(EVENTS);e.apply();state.activeEvent=e.id;state.activeEventLife=8;
+  $('eventIcon').textContent=e.icon;$('eventTitle').textContent=e.title;$('eventDesc').textContent=e.desc;
   $('eventBanner').classList.remove('hidden');clearTimeout(eventTimer);eventTimer=setTimeout(()=>$('eventBanner').classList.add('hidden'),4000);
   refreshEnvBars();
 }
 function advanceGeneration(){
-  state.generation++;state.generationClock=0;state.dna+=5;state.score+=50;
+  state.generation++;state.reproductions++;state.generationClock=0;state.dna+=3;state.score+=75;
+  const p=state.player;
+  p.biomass=0;p.energy=clamp(p.energy-18,62,100);p.health=100;p.radius=30;p.divisionFx=1.5;p.attached=null;
   creatures.forEach((c,i)=>{
-    const pressure=(env.current>65?.07:0)+(env.food<40?.05:0)+(env.turbidity>65?.04:0);
-    c.traits=mutateTraits(c.traits,.09+pressure);c.traits.gen=state.generation;
-    if(env.current>65)c.traits.speed=clamp(c.traits.speed+.05,.3,2);
-    if(env.food<40)c.traits.sense=clamp(c.traits.sense+.05,.3,2);
+    const pressure=(env.current>65?.08:0)+(env.food<40?.06:0)+(env.turbidity>65?.05:0);
+    c.traits=mutateTraits(c.traits,.1+pressure);c.traits.gen=state.generation;
+    if(env.current>65)c.traits.speed=clamp(c.traits.speed+.06,.3,2);
+    if(env.food<40)c.traits.sense=clamp(c.traits.sense+.06,.3,2);
+    if(state.discovered.predator&&c.r<34)c.traits.armor=clamp(c.traits.armor+.035,.25,2);
   });
-  triggerEvent();toast('🧬 '+state.generation+'세대 — AI 생물도 살아남은 방향으로 조금씩 변이합니다. +DNA 5');
+  burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
+  if(state.generation%2===0)triggerEvent();
+  toast('🧬 '+state.generation+'세대 탄생! 자손의 몸이 바뀌었고 AI 종도 함께 변이했습니다. +DNA 3');
   sound('levelup');save();
 }
 function updateMissions(){
-  const m=state.mission,p=state.player;
-  if(m===0&&state.dna>=8){state.mission=1;toast('미션 완료! 이제 감각기관을 하나 달아 보세요.')}
-  else if(m===1&&(countPart('eyespot')+countPart('chemo')+countPart('mechano')+countPart('tactile'))>0){state.mission=2;state.dna+=2;toast('감각기관 획득! +DNA 2')}
-  else if(m===2&&state.generation>=2){state.mission=3;state.dna+=3;toast('한 세대를 생존했어요! +DNA 3')}
+  const m=state.mission;
+  if(m===0&&canReproduce()){state.mission=1;toast('충분히 성장했어요! 이제 번식 · 진화로 다음 세대를 만들어 보세요.')}
+  else if(m===1&&state.generation>=2){state.mission=2;state.dna+=2;toast('첫 번식 성공! +DNA 2 · 다음 세대에는 감각기관도 시험해 보세요.')}
+  else if(m===2&&(countPart('eyespot')+countPart('chemo')+countPart('mechano')+countPart('tactile'))>0){state.mission=3;state.dna+=2;toast('감각기관 획득! 환경을 읽는 방법이 달라졌어요. +DNA 2')}
   else if(m===3&&classifyNiche().name!=='초기 미생물'){state.mission=4;state.dna+=4;toast('새 생태적 지위를 만들었어요! +DNA 4')}
 }
 function missionText(){
-  if(state.mission===0)return ['첫 DNA 모으기','먹이를 먹어 DNA 8을 모아 보세요.'];
-  if(state.mission===1)return ['세상을 느껴 보기','진화 편집기에서 감각기관을 하나 달아 보세요.'];
-  if(state.mission===2)return ['한 세대 살아남기','환경 사건을 버티고 다음 세대까지 생존하세요.'];
+  if(state.mission===0)return ['먹고 성장하기','먹이와 사냥으로 생체량을 모아 번식할 준비를 하세요.'];
+  if(state.mission===1)return ['첫 번식','아래 번식 · 진화 버튼으로 자손의 몸을 설계하세요.'];
+  if(state.mission===2)return ['새 감각 시험하기','다음 번식에서 광수용기·화학수용체 같은 감각기관을 달아 보세요.'];
   if(state.mission===3)return ['나만의 생존 전략','기관을 조합해 뚜렷한 생태적 지위를 만들어 보세요.'];
-  return ['자유 진화','환경 변화와 다른 종의 진화에 맞서 오래 살아남아 보세요.'];
+  return ['자유 진화','먹고, 번식하고, 환경과 다른 종의 변화에 맞춰 계통을 이어가세요.'];
 }
 function classifyNiche(){
   const c=t=>countPart(t),scores=[
@@ -436,20 +534,78 @@ function classifyNiche(){
 function update(dt){
   if(paused)return;
   state.survival+=dt;state.generationClock+=dt;state.eventClock+=dt;
+  state.activeEventLife=Math.max(0,state.activeEventLife-dt);if(state.activeEventLife<=0)state.activeEvent=null;
   updatePlayer(dt);updateFoods(dt);updateCreatures(dt);updateParticles(dt);updateMissions();
-  if(state.generationClock>=55)advanceGeneration();
-  else if(state.eventClock>=27){state.eventClock=0;triggerEvent()}
-  if(Math.random()<dt*.8&&foods.length<160)spawnFood();
-  if(Math.random()<dt*.15&&countPart('mechano')){const source=pick(creatures);if(source)ripples.push({x:source.x,y:source.y,r:5,life:1});}
+  if(state.eventClock>=30){state.eventClock=0;triggerEvent()}
+  if(Math.random()<dt*1.2&&foods.length<245)spawnFood();
+  if(Math.random()<dt*.18&&countPart('mechano')){const source=pick(creatures);if(source)ripples.push({x:source.x,y:source.y,r:5,life:1});}
   if(state.survival-senseTimer>.15){senseTimer=state.survival;updateSenseOverlay()}
   refreshHud(false);
 }
 
 function drawBackground(){
   const g=ctx.createLinearGradient(0,0,viewW,viewH);g.addColorStop(0,selectedBiome.color[0]);g.addColorStop(1,selectedBiome.color[1]);ctx.fillStyle=g;ctx.fillRect(0,0,viewW,viewH);
-  ctx.globalAlpha=.12;
-  for(let i=0;i<22;i++){const x=(i*179+state.survival*4)%(viewW+100)-50,y=(i*83)%viewH;ctx.beginPath();ctx.arc(x,y,3+(i%5),0,TAU);ctx.fillStyle='#dffeff';ctx.fill()}
+
+  if(selectedBiome.id==='deep'){
+    const vignette=ctx.createRadialGradient(viewW/2,viewH/2,40,viewW/2,viewH/2,Math.max(viewW,viewH)*.66);
+    vignette.addColorStop(0,'rgba(4,23,48,.02)');vignette.addColorStop(1,'rgba(0,3,15,.52)');ctx.fillStyle=vignette;ctx.fillRect(0,0,viewW,viewH);
+  }else if(selectedBiome.id==='vent'){
+    const hot=ctx.createRadialGradient(viewW*.55,viewH*.82,0,viewW*.55,viewH*.82,viewH*.62);
+    hot.addColorStop(0,'rgba(255,104,54,.13)');hot.addColorStop(1,'rgba(255,104,54,0)');ctx.fillStyle=hot;ctx.fillRect(0,0,viewW,viewH);
+  }else if(selectedBiome.id==='ice'){
+    ctx.fillStyle='rgba(188,232,255,.06)';ctx.fillRect(0,0,viewW,viewH);
+  }else if(selectedBiome.id==='swamp'){
+    ctx.fillStyle='rgba(79,87,33,.08)';ctx.fillRect(0,0,viewW,viewH);
+  }
+
+  ctx.globalAlpha=.16;
+  for(let i=0;i<34;i++){
+    const speed=state.activeEvent==='rain'?18:5;
+    const x=(i*179+state.survival*speed)%(viewW+120)-60,y=(i*83+Math.sin(i)*30)%viewH;
+    ctx.beginPath();ctx.arc(x,y,2+(i%4),0,TAU);ctx.fillStyle=selectedBiome.id==='deep'?'#5bd9ef':'#dffeff';ctx.fill();
+  }
   ctx.globalAlpha=1;
+
+  if(state.activeEvent==='rain'){
+    ctx.strokeStyle='rgba(168,226,240,.22)';ctx.lineWidth=1.5;
+    for(let i=0;i<28;i++){const x=(i*83+state.survival*170)%viewW,y=(i*47+state.survival*90)%viewH;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+42,y+9);ctx.stroke()}
+  }else if(state.activeEvent==='sun'){
+    ctx.fillStyle='rgba(255,244,145,.07)';ctx.fillRect(0,0,viewW,viewH);
+  }else if(state.activeEvent==='murk'){
+    ctx.fillStyle='rgba(79,92,57,.16)';ctx.fillRect(0,0,viewW,viewH);
+  }else if(state.activeEvent==='evaporate'){
+    ctx.strokeStyle='rgba(255,224,184,.11)';for(let y=20;y<viewH;y+=28){ctx.beginPath();ctx.moveTo(0,y+Math.sin(state.survival*2+y)*4);ctx.lineTo(viewW,y);ctx.stroke()}
+  }
+}
+function drawBiomeScenery(){
+  biomeProps.forEach(q=>{
+    const p=worldToScreen(q.x,q.y),z=CAMERA_ZOOM,sz=q.size*z;
+    if(p.x<-80||p.x>viewW+80||p.y<-80||p.y>viewH+80)return;
+    ctx.save();ctx.translate(p.x,p.y);const wave=Math.sin(state.survival*1.8+q.phase);
+    if(q.type==='plant'||q.type==='kelp'||q.type==='reed'){
+      ctx.strokeStyle=q.type==='reed'?'rgba(177,190,102,.42)':'rgba(92,205,145,.42)';ctx.lineWidth=Math.max(2,sz*.1);ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(0,sz*.55);ctx.quadraticCurveTo(wave*sz*.18,0,wave*sz*.26,-sz*.65);ctx.stroke();
+      if(q.type!=='reed'){ctx.fillStyle='rgba(112,224,157,.26)';ctx.beginPath();ctx.ellipse(wave*sz*.18,-sz*.18,sz*.26,sz*.09,wave*.3,0,TAU);ctx.fill()}
+    }else if(q.type==='bubble'){
+      ctx.strokeStyle='rgba(196,242,255,.23)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,-((state.survival*9+q.phase*13)%(sz*2)),Math.max(2,sz*.14),0,TAU);ctx.stroke();
+    }else if(q.type==='leaf'||q.type==='debris'||q.type==='murk'){
+      ctx.fillStyle=q.type==='leaf'?'rgba(147,195,92,.24)':'rgba(163,137,91,.2)';ctx.beginPath();ctx.ellipse(0,0,sz*.5,sz*.17,q.phase+wave*.08,0,TAU);ctx.fill();
+    }else if(q.type==='glow'){
+      const rg=ctx.createRadialGradient(0,0,0,0,0,sz);rg.addColorStop(0,'rgba(94,239,255,.38)');rg.addColorStop(1,'rgba(94,239,255,0)');ctx.fillStyle=rg;ctx.beginPath();ctx.arc(0,0,sz,0,TAU);ctx.fill();
+      ctx.fillStyle='rgba(190,255,255,.65)';ctx.beginPath();ctx.arc(0,0,Math.max(2,sz*.08),0,TAU);ctx.fill();
+    }else if(q.type==='rock'||q.type==='sand'||q.type==='salt'){
+      ctx.fillStyle=q.type==='sand'?'rgba(225,210,153,.13)':q.type==='salt'?'rgba(233,238,255,.17)':'rgba(119,139,146,.2)';
+      ctx.beginPath();ctx.ellipse(0,0,sz*.65,sz*.34,q.phase,0,TAU);ctx.fill();
+    }else if(q.type==='vent'){
+      ctx.fillStyle='rgba(67,66,66,.5)';ctx.beginPath();ctx.moveTo(-sz*.35,sz*.55);ctx.lineTo(-sz*.18,-sz*.5);ctx.lineTo(sz*.18,-sz*.62);ctx.lineTo(sz*.38,sz*.55);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,124,73,.18)';ctx.beginPath();ctx.arc(0,-sz*.62,sz*.28+wave*2,0,TAU);ctx.fill();
+    }else if(q.type==='plume'){
+      ctx.fillStyle='rgba(214,202,180,.08)';for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(wave*sz*.2,-k*sz*.3,sz*(.24+k*.08),0,TAU);ctx.fill()}
+    }else if(q.type==='ice'||q.type==='crystal'){
+      ctx.fillStyle=q.type==='ice'?'rgba(187,236,255,.23)':'rgba(241,247,255,.28)';ctx.beginPath();ctx.moveTo(0,-sz*.7);ctx.lineTo(sz*.38,0);ctx.lineTo(0,sz*.55);ctx.lineTo(-sz*.35,0);ctx.closePath();ctx.fill();
+    }
+    ctx.restore();
+  });
 }
 function drawPatches(){
   const sense=state.player?lightSenseData(state.player):{eyes:0,target:null};
@@ -463,19 +619,25 @@ function drawPatches(){
   });
 }
 function drawFoods(){
-  foods.forEach(f=>{const s=worldToScreen(f.x,f.y);if(s.x<-20||s.x>viewW+20||s.y<-20||s.y>viewH+20)return;
-    ctx.beginPath();ctx.arc(s.x,s.y,f.r,0,TAU);
-    ctx.fillStyle=f.type==='meat'?'#ff8ca7':f.type==='nutrient'?'#ffe08a':'#a8ed7b';ctx.globalAlpha=.82;ctx.fill();ctx.globalAlpha=1;
+  foods.forEach(f=>{
+    const p=worldToScreen(f.x,f.y);if(p.x<-28||p.x>viewW+28||p.y<-28||p.y>viewH+28)return;
+    const pulse=1+Math.sin(state.survival*3+f.phase)*.12,r=f.r*CAMERA_ZOOM*pulse;
+    ctx.save();ctx.globalAlpha=.9;ctx.shadowBlur=8;ctx.shadowColor=f.type==='meat'?'#ff8ca7':f.type==='nutrient'?'#ffe08a':'#a8ed7b';
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,TAU);ctx.fillStyle=f.type==='meat'?'#ff8ca7':f.type==='nutrient'?'#ffe08a':'#a8ed7b';ctx.fill();
+    if(f.type==='plankton'){ctx.globalAlpha=.38;ctx.beginPath();ctx.arc(p.x+Math.cos(f.phase)*r*1.6,p.y+Math.sin(f.phase)*r*1.6,r*.45,0,TAU);ctx.fill()}
+    ctx.restore();
   });
 }
-function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0){
+function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null){
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   const camo=(inside&&inside.camouflage)||0,armor=(inside&&inside.membrane)||0;
   ctx.globalAlpha=isPlayer?1:clamp(.9-camo*.12,.52,.92);
-  const body=ctx.createRadialGradient(-r*.25,-r*.25,r*.08,0,0,r);body.addColorStop(0,isPlayer?'#6ef6dd':'#73cfe8');body.addColorStop(.58,isPlayer?'#239e9a':'#2b829e');body.addColorStop(1,flash>0?'#fff':'#124f62');
+  const colors=tint||{hi:'#73cfe8',mid:'#2b829e',lo:'#124f62'};
+  const body=ctx.createRadialGradient(-r*.25,-r*.25,r*.08,0,0,r);body.addColorStop(0,isPlayer?'#8cffe9':colors.hi);body.addColorStop(.58,isPlayer?'#29b5a7':colors.mid);body.addColorStop(1,flash>0?'#fff':isPlayer?'#0c6570':colors.lo);
+  if(isPlayer){ctx.shadowBlur=22;ctx.shadowColor='rgba(95,255,229,.55)'}
   ctx.fillStyle=body;ctx.beginPath();ctx.ellipse(0,0,r*1.08,r*.9,0,0,TAU);ctx.fill();
   ctx.lineWidth=2+armor*1.6;ctx.strokeStyle=armor?'rgba(202,247,255,.75)':'rgba(255,255,255,.22)';ctx.stroke();
-  if(inside&&inside.chloroplast){ctx.fillStyle='#8ce66a';for(let i=0;i<inside.chloroplast*2;i++){const a=i*2.4;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.42,Math.sin(a)*r*.35,5,3,a,0,TAU);ctx.fill()}}
+  if(inside&&inside.chloroplast){ctx.fillStyle='#8ce66a';ctx.shadowBlur=10;ctx.shadowColor='#8ce66a';for(let i=0;i<inside.chloroplast*2;i++){const a=i*2.4+state.survival*.08;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.42,Math.sin(a)*r*.35,Math.max(4,r*.1),Math.max(3,r*.06),a,0,TAU);ctx.fill()}ctx.shadowBlur=0}
   ctx.fillStyle=isPlayer?'#c26ea8':'#7165aa';ctx.beginPath();ctx.arc(-r*.08,2,r*.28,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=2;ctx.stroke();
 
   (slots||[]).forEach((type,i)=>{
@@ -485,45 +647,77 @@ function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0){
   ctx.restore();
 }
 function drawPart(type,r,isPlayer){
+  const k=clamp(r/30,.75,2.35),t=state.survival;
   ctx.lineCap='round';ctx.lineJoin='round';
-  if(type==='flagellum'){ctx.strokeStyle=isPlayer?'#7affec':'#8bd8ee';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(18,8,30,-10,48+Math.sin(state.survival*8)*7,4);ctx.stroke()}
-  else if(type==='cilia'||type==='tactile'){ctx.strokeStyle=type==='tactile'?'#ffe492':'#b6fff5';ctx.lineWidth=2;for(let k=-1;k<=1;k++){ctx.beginPath();ctx.moveTo(0,k*5);ctx.lineTo(17+Math.sin(state.survival*10+k)*3,k*7);ctx.stroke()}}
-  else if(type==='pseudopod'){ctx.fillStyle='#49b8a8';ctx.beginPath();ctx.ellipse(12,0,19,8,0,0,TAU);ctx.fill()}
-  else if(type==='anchor'){ctx.strokeStyle='#c8e4e8';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(20,0);ctx.lineTo(15,-8);ctx.moveTo(20,0);ctx.lineTo(15,8);ctx.stroke()}
-  else if(type==='predatorMouth'){ctx.fillStyle='#fff2df';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(18,-3);ctx.lineTo(4,1);ctx.lineTo(18,8);ctx.lineTo(0,10);ctx.closePath();ctx.fill()}
-  else if(type==='filter'){ctx.strokeStyle='#d5ffb1';ctx.lineWidth=2;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(19,k*5);ctx.stroke()}}
-  else if(type==='parasite'){ctx.strokeStyle='#ffb2cd';ctx.lineWidth=4;ctx.beginPath();ctx.arc(11,0,10,-1.3,1.3);ctx.stroke()}
-  else if(type==='spike'){ctx.fillStyle='#d8fbff';ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(24,0);ctx.lineTo(0,6);ctx.closePath();ctx.fill()}
-  else if(type==='eyespot'){ctx.fillStyle='#eaff7a';ctx.beginPath();ctx.arc(7,0,6,0,TAU);ctx.fill();ctx.fillStyle='#153b42';ctx.beginPath();ctx.arc(9,0,2.5,0,TAU);ctx.fill()}
-  else if(type==='chemo'){ctx.fillStyle='#9af6ff';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(5+i*6,(i-1)*4,3,0,TAU);ctx.fill()}}
-  else if(type==='mechano'){ctx.strokeStyle='#ffdda3';ctx.lineWidth=2;ctx.beginPath();ctx.arc(5,0,8,-1.1,1.1);ctx.arc(9,0,13,-1.1,1.1);ctx.stroke()}
-  else if(type==='electro'){ctx.strokeStyle='#fff47d';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(7,0);ctx.lineTo(2,5);ctx.lineTo(15,2);ctx.stroke()}
+  if(type==='flagellum'){
+    ctx.strokeStyle=isPlayer?'#8effef':'#8bd8ee';ctx.lineWidth=3.2*k;ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(12*k,Math.sin(t*7)*5*k,27*k,-10*k,43*k+Math.sin(t*8)*6*k,Math.cos(t*8)*5*k);ctx.stroke();
+  }else if(type==='cilia'||type==='tactile'){
+    ctx.strokeStyle=type==='tactile'?'#ffe492':'#b6fff5';ctx.lineWidth=1.5*k;for(let j=-1;j<=1;j++){ctx.beginPath();ctx.moveTo(0,j*4*k);ctx.lineTo((14+Math.sin(t*11+j)*3)*k,j*6*k);ctx.stroke()}
+  }else if(type==='pseudopod'){
+    const stretch=(1.05+Math.sin(t*4)*.18)*k;ctx.fillStyle='#49b8a8';ctx.beginPath();ctx.ellipse(12*k*stretch,0,18*k*stretch,7*k,0,0,TAU);ctx.fill();
+  }else if(type==='anchor'){
+    ctx.strokeStyle='#c8e4e8';ctx.lineWidth=3*k;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(18*k,0);ctx.lineTo(13*k,-7*k);ctx.moveTo(18*k,0);ctx.lineTo(13*k,7*k);ctx.stroke();
+  }else if(type==='predatorMouth'){
+    const gape=(8+Math.sin(t*7)*3)*k;ctx.fillStyle='#fff2df';ctx.beginPath();ctx.moveTo(0,-gape);ctx.lineTo(18*k,-3*k);ctx.lineTo(5*k,0);ctx.lineTo(18*k,7*k);ctx.lineTo(0,gape);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(100,35,50,.45)';ctx.lineWidth=1.2*k;ctx.beginPath();ctx.moveTo(4*k,0);ctx.lineTo(17*k,0);ctx.stroke();
+  }else if(type==='filter'){
+    ctx.strokeStyle='#d5ffb1';ctx.lineWidth=1.5*k;for(let j=-2;j<=2;j++){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo((18+Math.sin(t*6+j)*2)*k,j*4.5*k);ctx.stroke()}
+  }else if(type==='parasite'){
+    ctx.strokeStyle='#ffb2cd';ctx.lineWidth=3*k;ctx.beginPath();ctx.arc(9*k,0,(8+Math.sin(t*5)*1.5)*k,-1.3,1.3);ctx.stroke();
+  }else if(type==='spike'){
+    ctx.fillStyle='#d8fbff';ctx.beginPath();ctx.moveTo(0,-5*k);ctx.lineTo(22*k,0);ctx.lineTo(0,5*k);ctx.closePath();ctx.fill();
+  }else if(type==='eyespot'){
+    ctx.shadowBlur=8*k;ctx.shadowColor='#eaff7a';ctx.fillStyle='#eaff7a';ctx.beginPath();ctx.arc(6*k,0,5*k,0,TAU);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#153b42';ctx.beginPath();ctx.arc(8*k,0,2.2*k,0,TAU);ctx.fill();
+  }else if(type==='chemo'){
+    ctx.fillStyle='#9af6ff';for(let j=0;j<3;j++){ctx.globalAlpha=.65+.25*Math.sin(t*4+j);ctx.beginPath();ctx.arc((4+j*5)*k,(j-1)*3.5*k,2.5*k,0,TAU);ctx.fill()}ctx.globalAlpha=1;
+  }else if(type==='mechano'){
+    ctx.strokeStyle='#ffdda3';ctx.lineWidth=1.6*k;ctx.beginPath();ctx.arc(4*k,0,7*k,-1.1,1.1);ctx.arc(8*k,0,12*k,-1.1,1.1);ctx.stroke();
+  }else if(type==='electro'){
+    ctx.strokeStyle='#fff47d';ctx.lineWidth=2.4*k;ctx.beginPath();ctx.moveTo(0,-5*k);ctx.lineTo(6*k,0);ctx.lineTo(2*k,4*k);ctx.lineTo(14*k,2*k);ctx.stroke();
+  }
 }
 function creatureSlots(c){
-  const s=Array(12).fill(null),diet=c.traits.diet;
-  if(diet==='hunter'){s[0]='predatorMouth';s[6]='flagellum';if(c.traits.speed>1)s[5]='flagellum'}
-  if(diet==='filter'){s[0]='filter';s[1]='filter';s[6]='cilia';s[7]='cilia'}
-  if(diet==='parasite'){s[0]='parasite';s[6]='flagellum';s[5]='chemo'}
-  if(diet==='photo'){s[5]='eyespot';s[6]='flagellum'}
-  if(c.traits.sense>1.15)s[11]='mechano';if(c.traits.armor>1.1)s[3]='spike';
-  return s;
+  const slots=Array(12).fill(null),diet=c.traits.diet;
+  if(diet==='hunter'){slots[0]='predatorMouth';slots[6]='flagellum';if(c.traits.speed>1.02)slots[5]='flagellum';if(c.traits.speed>1.32)slots[7]='flagellum'}
+  if(diet==='filter'){slots[0]='filter';slots[1]='filter';slots[6]='cilia';slots[7]='cilia';if(c.traits.filter>1)slots[11]='filter'}
+  if(diet==='parasite'){slots[0]='parasite';slots[6]='flagellum';slots[5]='chemo'}
+  if(diet==='photo'){slots[5]='eyespot';slots[6]='flagellum';if(c.traits.sense>1.05)slots[11]='eyespot'}
+  if(diet==='grazer'){slots[0]='pseudopod';slots[6]='cilia'}
+  if(c.traits.sense>1.08&&!slots[11])slots[11]='mechano';
+  if(c.traits.armor>1.0)slots[3]='spike';
+  if(c.traits.armor>1.35)slots[9]='spike';
+  return slots;
 }
-function drawCreatures(){
-  creatures.forEach(c=>{const s=worldToScreen(c.x,c.y);if(s.x<-80||s.x>viewW+80||s.y<-80||s.y>viewH+80)return;
-    const inside={chloroplast:c.traits.photo?2:0,membrane:c.traits.armor>1.25?1:0,camouflage:0};drawOrganism(s.x,s.y,c.r,c.angle,creatureSlots(c),inside,false,c.flash);
-  });
-}
-function drawPlayer(){
-  const p=state.player;drawOrganism(viewW/2,viewH/2,p.radius,p.angle,p.slots,p.inside,true,0);
-  const range=movementStats(p).sense;ctx.strokeStyle='rgba(102,245,231,.08)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(viewW/2,viewH/2,Math.min(range,280),0,TAU);ctx.stroke();
-  if(p.attached){ctx.strokeStyle='rgba(255,153,190,.5)';ctx.setLineDash([5,5]);ctx.beginPath();const s=worldToScreen(p.attached.x,p.attached.y);ctx.moveTo(viewW/2,viewH/2);ctx.lineTo(s.x,s.y);ctx.stroke();ctx.setLineDash([])}
+function creatureTint(c){
+  if(c.traits.diet==='hunter')return {hi:'#ff9aa7',mid:'#b84d68',lo:'#63273e'};
+  if(c.traits.diet==='photo')return {hi:'#b6f28a',mid:'#5eac67',lo:'#2f6247'};
+  if(c.traits.diet==='filter')return {hi:'#9ce9ff',mid:'#4f9bc0',lo:'#27516d'};
+  if(c.traits.diet==='parasite')return {hi:'#ffaffunction drawPlayer(){
+  const p=state.player,vr=p.radius*CAMERA_ZOOM;
+  ctx.save();
+  const halo=ctx.createRadialGradient(viewW/2,viewH/2,vr*.5,viewW/2,viewH/2,vr*2.25);
+  halo.addColorStop(0,'rgba(83,255,224,.14)');halo.addColorStop(1,'rgba(83,255,224,0)');
+  ctx.fillStyle=halo;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr*2.25,0,TAU);ctx.fill();
+  if(p.divisionFx>0){ctx.strokeStyle='rgba(220,255,151,'+clamp(p.divisionFx/1.5,0,1)+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr+(1.5-p.divisionFx)*70,0,TAU);ctx.stroke()}
+  ctx.restore();
+
+  drawOrganism(viewW/2,viewH/2,vr,p.angle,p.slots,p.inside,true,p.feedFlash,null);
+  const range=movementStats(p).sense*CAMERA_ZOOM;ctx.strokeStyle='rgba(102,245,231,.07)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(viewW/2,viewH/2,Math.min(range,360),0,TAU);ctx.stroke();
+
+  if(countPart('filter')){
+    ctx.save();ctx.fillStyle='rgba(207,255,177,.48)';
+    for(let i=0;i<8;i++){const a=i*.79+state.survival*.35,d=vr+18+(i%3)*8;ctx.beginPath();ctx.arc(viewW/2+Math.cos(a)*d,viewH/2+Math.sin(a)*d,2+(i%2),0,TAU);ctx.fill()}
+    ctx.restore();
+  }
+  if(p.attached){ctx.strokeStyle='rgba(255,153,190,.55)';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.beginPath();const q=worldToScreen(p.attached.x,p.attached.y);ctx.moveTo(viewW/2,viewH/2);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.setLineDash([])}
+  ctx.save();ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(226,255,250,.74)';ctx.fillText('나',viewW/2,viewH/2-vr-12);ctx.restore();
 }
 function drawEffects(){
-  particles.forEach(q=>{const s=worldToScreen(q.x,q.y);ctx.globalAlpha=clamp(q.life*2,0,1);ctx.fillStyle=q.color;ctx.beginPath();ctx.arc(s.x,s.y,3,0,TAU);ctx.fill()});ctx.globalAlpha=1;
-  ripples.forEach(q=>{const s=worldToScreen(q.x,q.y);ctx.globalAlpha=q.life;ctx.strokeStyle='#ffd99b';ctx.beginPath();ctx.arc(s.x,s.y,q.r,0,TAU);ctx.stroke()});ctx.globalAlpha=1;
+  particles.forEach(q=>{const p=worldToScreen(q.x,q.y);ctx.globalAlpha=clamp(q.life*2,0,1);ctx.fillStyle=q.color;ctx.beginPath();ctx.arc(p.x,p.y,3*CAMERA_ZOOM,0,TAU);ctx.fill()});ctx.globalAlpha=1;
+  ripples.forEach(q=>{const p=worldToScreen(q.x,q.y);ctx.globalAlpha=q.life;ctx.strokeStyle='#ffd99b';ctx.beginPath();ctx.arc(p.x,p.y,q.r*CAMERA_ZOOM,0,TAU);ctx.stroke()});ctx.globalAlpha=1;
 }
 function render(){
-  if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);drawBackground();drawPatches();drawFoods();drawCreatures();drawEffects();drawPlayer();
+  if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);drawBackground();drawBiomeScenery();drawPatches();drawFoods();drawCreatures();drawEffects();drawPlayer();
 }
 function loop(ts){
   if(!running)return;const dt=Math.min(.034,(ts-last)/1000||0);last=ts;update(dt);render();raf=requestAnimationFrame(loop);
@@ -559,10 +753,12 @@ function updateLightSensor(){
 }
 function refreshHud(force){
   if(!state.player)return;
-  $('biomeIcon').textContent=selectedBiome.icon;$('biomeName').textContent=selectedBiome.name;$('generationText').textContent=state.generation+'세대 · '+Math.max(0,Math.ceil(55-state.generationClock))+'초';
+  const grow=Math.round(reproductionProgress()*100),req=reproductionRequirement(),ready=canReproduce();
+  $('biomeIcon').textContent=selectedBiome.icon;$('biomeName').textContent=selectedBiome.name;$('generationText').textContent=state.generation+'세대 · 성장 '+grow+'%';
   $('dnaText').textContent=Math.floor(state.dna);$('energyText').textContent=Math.round(state.player.energy);$('healthText').textContent=Math.round(state.player.health);
   const n=classifyNiche();$('nicheName').textContent=n.name;$('nicheDesc').textContent=n.desc;
   const m=missionText();$('missionTitle').textContent=m[0];$('missionDesc').textContent=m[1];
+  const btn=$('editorBtn');if(btn){btn.classList.toggle('ready',ready);$('editorBtnLabel').textContent=ready?'번식 · 진화':'성장 중';$('editorBtnSub').textContent=ready?'다음 세대 만들기':'생체량 '+Math.floor(state.player.biomass)+'/'+req+' · 에너지 78+'}
   if(force){refreshEnvBars();updateLightSensor();}
 }
 function updateSenseOverlay(){
@@ -598,16 +794,21 @@ function useSpecial(){
 }
 
 function openEditor(){
-  if(!state.started)return;
-  paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,dna:state.dna}));
+  if(!state.started||!$('editorScreen').classList.contains('hidden'))return;
+  if(!canReproduce()){
+    const req=reproductionRequirement();
+    toast('아직 번식할 수 없어요 · 생체량 '+Math.floor(state.player.biomass)+'/'+req+', 에너지 '+Math.round(state.player.energy)+'/78');
+    return;
+  }
+  state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,dna:state.dna}));
   $('gameScreen').classList.add('hidden');$('editorScreen').classList.remove('hidden');
   selectedPart=null;activeTab='먹이';renderEditor();
 }
 function closeEditor(saveChanges){
   if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna}
   $('editorScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');paused=false;selectedPart=null;
-  if(saveChanges){save();const n=classifyNiche();toast('🧬 진화 완료 — '+n.name);sound('success')}
-  updateLightSensor();updateSenseOverlay();last=performance.now();
+  if(saveChanges&&state.editorMode==='reproduction'){const n=classifyNiche();advanceGeneration();save();toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.');sound('success')}
+  state.editorMode=null;updateLightSensor();updateSenseOverlay();last=performance.now();
 }
 function renderEditor(){
   $('editorDnaText').textContent=Math.floor(state.dna);
