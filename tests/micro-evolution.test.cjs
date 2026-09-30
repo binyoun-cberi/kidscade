@@ -111,3 +111,23 @@ test('Evolution editing is tied to reproduction readiness',()=>{
   assert.match(js,/p\.biomass=0/);
   assert.match(css,/\.evolve-btn\.ready/);
 });
+
+test('Canvas is resized after the hidden game screen becomes visible',()=>{
+  assert.match(html,/id="gameScreen" class="screen game-screen hidden"/);
+  const start=js.slice(js.indexOf('function startGame'),js.indexOf('function goHome'));
+  const showIndex=start.indexOf("classList.remove('hidden')");
+  const resizeIndex=start.indexOf('resize()');
+  assert.ok(showIndex>=0);
+  assert.ok(resizeIndex>showIndex,'resize must happen after gameScreen becomes visible');
+  assert.match(js,/viewW<10\|\|viewH<10\|\|canvas\.width<10\|\|canvas\.height<10/);
+});
+
+test('First play is populated and tells the player what to do',()=>{
+  assert.match(js,/if\(i<70\)/);
+  assert.match(js,/if\(i<16\)/);
+  assert.match(html,/id="starterGuide"/);
+  assert.match(html,/먼저 먹이를 먹어 보세요/);
+  assert.match(js,/function updateStarterGuide/);
+  assert.match(js,/state\.discovered\.firstFood=1/);
+  assert.match(js,/첫 먹이/);
+});
