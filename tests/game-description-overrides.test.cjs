@@ -88,6 +88,14 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(blocks, /challengeFlyHud/);
   assert.match(blocks, /challengeEasy/);
   assert.match(blocks, /challengeHard/);
+  assert.match(blocks, /mobileControls/);
+  assert.match(blocks, /mobileJoystick/);
+  assert.match(blocks, /mobileBreak/);
+  assert.match(blocks, /mobilePlace/);
+  assert.match(architect, /function requestGamePointerLock/);
+  assert.match(architect, /typeof canvas.requestPointerLock/);
+  assert.match(architect, /mobileLookPointerId/);
+  assert.match(architect, /configureMobileMode/);
   assert.match(blocks, /challengeCourseLabel/);
   assert.match(blocks, /blockInventory/);
   assert.match(blocks, /worldClock/);
