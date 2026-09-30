@@ -72,3 +72,20 @@
 .operation-card .secondary-btn{align-self:center;grid-column:2;grid-row:2;white-space:nowrap;font-size:11px;max-width:113px}
 .operation-card button:disabled{white-space:normal;line-height:1.25}
 @media(max-width:390px){.operation-card{grid-template-columns:1fr;gap:8px}.operation-card small,.operation-card .secondary-btn{grid-column:1;grid-row:auto}.operation-card .secondary-btn{width:100%;max-width:none}}
+
+/* v6: 위험 상태는 점수나 정치 평가가 아닌 생활·권리 상태로 표시 */
+.crisis-strip{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:-3px 0 13px;border:1px solid #708e91;background:linear-gradient(130deg,#24444f,#22343f);border-radius:14px;padding:10px}
+.crisis-strip.hidden{display:none}
+.crisis-head{flex:1 1 100%;display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:3px}
+.crisis-head strong{font-size:13px;color:#ecf2e7}
+.crisis-head small{font-size:10px;color:#b9d4d4}
+.crisis-meter{flex:1 1 104px;min-width:105px;max-width:190px;display:grid;grid-template-columns:1fr auto;gap:5px 8px;background:#244955;border:1px solid #4f7b81;padding:8px 9px;border-radius:9px}
+.crisis-meter span{font-size:11px;color:#d3e4db}
+.crisis-meter strong{font-size:12px;font-variant-numeric:tabular-nums}
+.crisis-meter i{grid-column:1 / -1;display:block;background:#16353e;height:5px;border-radius:7px;overflow:hidden}
+.crisis-meter i b{display:block;height:100%;background:#9fcbac;border-radius:7px}
+.crisis-meter.urgent{border-color:#daae7a;background:#554c48}
+.crisis-meter.urgent i b{background:#edba7a}
+.rights-alert{flex:1 1 100%;padding:9px 10px;border:1px solid #d3a77c;border-radius:9px;color:#ffe6c1;background:#564944;font-size:11px;line-height:1.55}
+.child-label{font-weight:700;display:inline-block;background:#416a65;color:#ddf3d7;border-radius:6px;padding:2px 5px;font-size:10px;vertical-align:middle}
+@media(max-width:520px){.crisis-head{align-items:flex-start;flex-direction:column;gap:3px}.crisis-meter{min-width:90px;max-width:none;flex-basis:calc(50% - 7px)}}
