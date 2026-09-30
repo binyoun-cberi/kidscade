@@ -320,5 +320,6 @@ if(saved?.mission&&saved?.text){
   mission=hydrateMission(saved.mission);level=mission?.level||'easy';
   document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('selected',x.dataset.level===level));
   $('titleInput').value=saved.title||'';$('storyInput').value=saved.text||'';
+  if(mission){renderMission();updateWriteStatus();showScreen('writeScreen');toast('쓰던 이야기를 다시 펼쳤어요.')}
 }
 })();
