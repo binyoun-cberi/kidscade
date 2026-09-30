@@ -10,6 +10,16 @@ var lerp = function(a,b,t){ return a+(b-a)*t; };
 var dist = function(ax,ay,bx,by){ var dx=ax-bx,dy=ay-by; return Math.sqrt(dx*dx+dy*dy); };
 var rand = function(a,b){ return a+Math.random()*(b-a); };
 
+var STAGE_TIPS = [
+ "오른쪽 침대 쪽에서 CO₂ 반응이 느껴집니다. 먼저 사람을 찾아보세요.",
+ "선풍기 앞의 푸른 바람길에서는 비행이 밀립니다. 바람을 가로질러 접근하세요.",
+ "초록빛 연기 안에 오래 머물면 위험합니다. 연기 가장자리를 돌아가세요.",
+ "이불 때문에 노출된 곳이 적습니다. 얼굴과 밖으로 나온 오른발목을 찾아보세요.",
+ "사람이 주기적으로 뒤척입니다. 한 자리에서 너무 오래 빨지 마세요.",
+ "두 사람이 있습니다. 경계가 낮은 쪽의 노출 피부를 빠르게 골라 접근하세요.",
+ "노란 경고선 뒤에는 전기 모기채가 지나갑니다. 흡혈보다 생존을 먼저 생각하세요."
+];
+
 var STAGES = [
  {title:"첫 번째 밤",sub:"잠든 사람",target:55,aware:1.00,attack:5.5,blanket:0,fact:"사람이나 동물의 피를 빠는 것은 암컷 모기입니다. 많은 암컷 모기는 알을 만들기 위해 혈액이 필요해요."},
  {title:"두 번째 밤",sub:"선풍기 바람",target:65,aware:1.05,attack:5.0,blanket:0,fan:true,fact:"모기는 사람의 숨에서 나오는 이산화탄소를 중요한 단서로 이용합니다. 흰 숨결을 따라 사람의 위치를 찾아보세요."},
@@ -80,7 +90,7 @@ function setupStage(index, keepScore){
  game.stageIndex=clamp(index,0,STAGES.length-1);
  game.stage=stage();
  game.blood=0; game.alert=0; game.time=0; game.returning=false; game.attacks=[]; game.particles=[];
- game.attackClock=stage().attack; game.smoke=0; game.racketClock=0; game.hostPulse=0;
+ game.attackClock=stage().attack; game.smoke=0; game.racketClock=0; game.hostPulse=0; game.tipTimer=5.2;
  if(!keepScore) game.totalScore=0;
  mosquito.x=nest.x; mosquito.y=nest.y; mosquito.vx=0; mosquito.vy=0; mosquito.feeding=false;
  mosquito.stun=0; mosquito.glance=0; mosquito.swelling=0;
@@ -323,6 +333,7 @@ function updateCamera(){
 
 function update(dt){
  game.time+=dt;
+ game.tipTimer=Math.max(0,game.tipTimer-dt);
  updateMosquito(dt);
  if(game.mode!=="playing") return;
  updateHazards(dt);
@@ -352,6 +363,8 @@ function updateUI(){
  $("stageIntro").textContent=stage().title+" · "+stage().sub;
  if(game.returning){
   $("hint").innerHTML="<b>배가 찼어요!</b> 왼쪽 위 커튼의 둥지로 돌아가세요. 피를 많이 먹어 비행 속도가 느려졌습니다.";
+ }else if(game.tipTimer>0){
+  $("hint").innerHTML="<b>"+STAGE_TIPS[game.stageIndex]+"</b>";
  }else{
   var z=currentZone();
   if(z) $("hint").innerHTML="<b>"+z.label+"</b> · 흡혈 가능 · 위험도 "+(z.risk>1.3?"높음":z.risk<0.8?"낮음":"보통");
@@ -502,11 +515,30 @@ function drawMosquito(){
  ctx.restore();
 }
 
+function drawSenseCompass(){
+ if(game.mode!=="playing"||game.returning)return;
+ var best=null,bd=1e9;
+ game.hosts.forEach(function(h){
+  var o=hostOffset(h),tx=h.x+o.x+28,ty=h.y+o.y+92,d=dist(mosquito.x,mosquito.y,tx,ty);
+  if(d<bd){bd=d;best={x:tx,y:ty};}
+ });
+ if(!best||bd<520)return;
+ var a=Math.atan2(best.y-mosquito.y,best.x-mosquito.x);
+ var cx=W/2,cy=H-86;
+ ctx.save();ctx.translate(cx,cy);ctx.rotate(a);
+ ctx.fillStyle="rgba(235,245,248,.82)";
+ ctx.beginPath();ctx.moveTo(34,0);ctx.lineTo(-8,-15);ctx.lineTo(-8,15);ctx.closePath();ctx.fill();
+ ctx.strokeStyle="rgba(235,245,248,.35)";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-42,0);ctx.lineTo(18,0);ctx.stroke();
+ ctx.restore();
+ ctx.fillStyle="rgba(235,245,248,.9)";ctx.font="bold 13px sans-serif";ctx.textAlign="center";ctx.fillText("CO₂ 감지",cx,cy+30);ctx.textAlign="left";
+}
+
 function draw(){
  ctx.clearRect(0,0,W,H);
  ctx.save();ctx.translate(-game.camera.x,-game.camera.y);
  drawRoom();drawHosts();drawCO2();drawRacket();drawAttacks();drawMosquito();
  ctx.restore();
+ drawSenseCompass();
  if(game.mode==="playing"&&stage().moving&&game.hostPulse>5.2){
   ctx.fillStyle="rgba(255,255,255,.7)";ctx.font="bold 23px sans-serif";ctx.textAlign="center";
   ctx.fillText("뒤척…",W/2,95);ctx.textAlign="left";
