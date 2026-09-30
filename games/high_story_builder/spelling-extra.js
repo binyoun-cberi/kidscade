@@ -4857,5 +4857,110 @@ window.KIDSCADE_WRITING_RULES = [
     "category": "그림 카드 낱말",
     "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
     "match": "word"
+  },
+  {
+    "bad": "어재도",
+    "good": "어제도",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재는",
+    "good": "어제는",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재에",
+    "good": "어제에",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재부터",
+    "good": "어제부터",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재까지",
+    "good": "어제까지",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재와",
+    "good": "어제와",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "어재의",
+    "good": "어제의",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌도",
+    "good": "오늘도",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌은",
+    "good": "오늘은",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌에",
+    "good": "오늘에",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌부터",
+    "good": "오늘부터",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌까지",
+    "good": "오늘까지",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "오눌의",
+    "good": "오늘의",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게처럼",
+    "good": "무지개처럼",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게의",
+    "good": "무지개의",
+    "category": "낱말 표기",
+    "explain": "낱말의 올바른 표기를 확인해 봐요.",
+    "match": "word"
   }
 ];
