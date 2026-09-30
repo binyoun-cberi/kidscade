@@ -1,0 +1,83 @@
+een(180,()=>{});world.pose='idle';updateHUD();return{ok:true,events:hit?[{message:'주변 버그를 한꺼번에 베었어요.'}]:[]}}
+  if(type==='BOLT'){if(!spend(2))return{ok:false,message:'코드 볼트를 쓸 에너지가 부족해요.'};const e=enemyInLine(7);world.pose='bolt';addFx('bolt',world.x,world.y,{facing:world.facing});await tween(150,()=>{});if(e)damageEnemy(e,2);world.pose='idle';updateHUD();return{ok:true}}
+  if(type==='GUARD'){world.guard=1;addFx('guard',world.x,world.y);await tween(100,()=>{});return{ok:true}}
+  if(type==='DODGE'){world.evade=1;const d=DIRS[world.facing],nx=world.x-d.x,ny=world.y-d.y;if(canMove(nx,ny))await animateMove(nx,ny,105);addFx('dodge',world.x,world.y);return{ok:true}}
+  if(type==='WAIT'){await tween(110,()=>{});return{ok:true}}
+  if(type==='HEAL'){if(world.potions<=0||world.hp>=world.maxHp)return{ok:true};world.potions--;world.hp=Math.min(world.maxHp,world.hp+3);addFx('heal',world.x,world.y);sound('success.correct');updateHUD();return{ok:true}}
+  if(type==='COLLECT_DATA'){const d=dataHere();if(!d)return{ok:false,message:'현재 칸에는 데이터가 없어요.'};d.taken=true;world.dataCount++;addFx('collect',world.x,world.y);sound('collect.coin_pickup');updateHUD();return{ok:true}}
+  if(type==='UPLOAD'){const t=terminalHere();if(!t)return{ok:false,message:'현재 칸에는 업로드 단말기가 없어요.'};if(world.dataCount<t.need)return{ok:false,message:'데이터가 '+t.need+'개 필요해요.'};world.dataCount-=t.need;t.uploaded=true;addFx('upload',world.x,world.y);sound('success.correct');updateHUD();return{ok:true}}
+  if(type==='CHARGE'){if(!chargerHere())return{ok:false,message:'현재 칸에는 충전 패드가 없어요.'};world.energy=world.maxEnergy;addFx('charge',world.x,world.y);sound('success.correct');updateHUD();return{ok:true}}
+  if(type==='TOGGLE'){const s=switchHere();if(!s)return{ok:false,message:'현재 칸에는 스위치가 없어요.'};s.on=!s.on;addFx('switch',world.x,world.y);sound('ui.confirm');return{ok:true}}
+  return{ok:false,message:'이 전장에서는 사용할 수 없는 명령이에요.'};
+ },
+ async afterPlayerAction(){world.turn++;tickProjectiles();await tickEnemies();tickProjectiles();world.guard=Math.max(0,world.guard);world.evade=Math.max(0,world.evade);updateHUD();updateBossHud();renderEnemyCode();return{defeat:world.hp<=0,event:world.lastEnemyMessage?{message:world.lastEnemyMessage}:null}},
+ isComplete(){const at=world.x===world.exit.x&&world.y===world.exit.y,bossAlive=world.enemies.some(e=>e.kind==='boss'&&!e.dead),uploadOk=!world.requireUpload||world.terminals.some(t=>t.uploaded);return at&&!bossAlive&&uploadOk}
+};
+
+function tickProjectiles(){
+ const next=[];for(const p of world.projectiles){const nx=p.x+p.dx,ny=p.y+p.dy;if(world.walls.has(key(nx,ny)))continue;if(nx===world.x&&ny===world.y){hurtPlayer(p.damage||1);world.lastEnemyMessage='코드 탄환에 맞았어요!';continue}next.push({...p,x:nx,y:ny,life:p.life-1})}world.projectiles=next.filter(p=>p.life>0);
+}
+function stepToward(e,target,away=false){
+ const opts=DIR_ORDER.map(n=>({n,...DIRS[n]})).map(d=>({d,x:e.x+d.x,y:e.y+d.y})).filter(v=>canMove(v.x,v.y,e));if(!opts.length)return false;
+ opts.sort((a,b)=>(away?-1:1)*(mdist(a,target)-mdist(b,target)));
+ const v=opts[0];e.x=v.x;e.y=v.y;e.face=v.d.n;return true;
+}
+function strafe(e){const opts=DIR_ORDER.map(n=>({n,...DIRS[n]})).map(d=>({d,x:e.x+d.x,y:e.y+d.y})).filter(v=>canMove(v.x,v.y,e)&&mdist(v,world)>=2);if(!opts.length)return stepToward(e,world);const v=opts[(world.turn+e.x+e.y)%opts.length];e.x=v.x;e.y=v.y;e.face=v.d.n;return true}
+function fireAt(e){const dx=Math.sign(world.x-e.x),dy=Math.sign(world.y-e.y);if(e.x!==world.x&&e.y!==world.y)return false;world.projectiles.push({x:e.x,y:e.y,dx,dy,life:8,damage:e.kind==='boss'?2:1});addFx('shot',e.x,e.y,{dx,dy});return true}
+function enemyProgram(e){
+ if(e.kind==='crawler')return[['거리 ≤ 1','공격'],['거리 ≤ 6','추적'],['그 외','순찰']];
+ if(e.kind==='shooter')return[['직선 시야','코드 탄환'],['거리 ≤ 2','후퇴'],['그 외','측면 이동']];
+ if(e.kind==='shield')return[['공격 준비 턴','방패 들기'],['거리 ≤ 1','밀치기'],['그 외','추적']];
+ if(e.kind==='glitch')return[['HP 절반 이하','순간 이동'],['거리 ≤ 1','오류 폭발'],['그 외','추적']];
+ return[['HP 50% 이하','2단계 패턴'],['직선 시야','강화 탄환'],['거리 ≤ 1','코어 강타'],['그 외','추적']];
+}
+async function tickEnemies(){
+ world.lastEnemyMessage='';
+ for(const e of world.enemies){
+  if(e.dead)continue;e.cast=Math.max(0,e.cast-1);e.guard=Math.max(0,e.guard-1);const d=mdist(e,world),line=clearLine(e,world,8);
+  if(e.kind==='crawler'){
+   if(d<=1){e.rule='거리 ≤ 1 → 공격';hurtPlayer(1);world.lastEnemyMessage='추적 버그가 공격했어요!'}
+   else if(d<=6){e.rule='거리 ≤ 6 → 추적';stepToward(e,world)}
+   else{e.rule='그 외 → 순찰';if((world.turn+e.x)%2===0)strafe(e)}
+  }else if(e.kind==='shooter'){
+   if(line&&d<=7){e.rule='직선 시야 → 코드 탄환';e.cast=1;fireAt(e)}
+   else if(d<=2){e.rule='거리 ≤ 2 → 후퇴';stepToward(e,world,true)}
+   else{e.rule='그 외 → 측면 이동';strafe(e)}
+  }else if(e.kind==='shield'){
+   if((world.turn+e.x)%3===0){e.rule='공격 준비 턴 → 방패';e.guard=2;e.cast=1}
+   else if(d<=1){e.rule='거리 ≤ 1 → 밀치기';hurtPlayer(2);world.lastEnemyMessage='방패 버그가 밀쳐냈어요!'}
+   else{e.rule='그 외 → 추적';stepToward(e,world)}
+  }else if(e.kind==='glitch'){
+   if(e.hp<=e.maxHp/2&&(world.turn+e.y)%3===0){e.rule='HP 절반 이하 → 순간 이동';const spots=DIR_ORDER.map(n=>DIRS[n]).map(v=>({x:world.x+v.x*2,y:world.y+v.y*2})).filter(v=>canMove(v.x,v.y,e));if(spots.length){const v=spots[world.turn%spots.length];e.x=v.x;e.y=v.y;addFx('teleport',e.x,e.y)}}
+   else if(d<=1){e.rule='거리 ≤ 1 → 오류 폭발';hurtPlayer(2);world.lastEnemyMessage='글리치 폭발에 휘말렸어요!'}
+   else{e.rule='그 외 → 추적';stepToward(e,world)}
+  }else{
+   const phase=e.hp<=e.maxHp/2?2:1;e.phase=phase;
+   if(line&&d<=8&&(world.turn%2===0)){e.rule=(phase===2?'2단계 · ':'')+'직선 시야 → 강화 탄환';e.cast=1;fireAt(e);if(phase===2)fireAt(e)}
+   else if(d<=1){e.rule='거리 ≤ 1 → 코어 강타';hurtPlayer(phase===2?3:2);world.lastEnemyMessage='보스의 코어 강타!'}
+   else{e.rule=(phase===2?'2단계 · ':'')+'추적';stepToward(e,world);if(phase===2&&d>4)stepToward(e,world)}
+  }
+  await tween(55,()=>{});if(world.hp<=0)break;
+ }
+ selectNearestEnemy();
+}
+
+function setExec(title,detail,mode='idle'){const b=$('execBar');$('execTitle').textContent=title;$('execDetail').textContent=detail||'';$('execIcon').textContent=mode==='running'?'▶':mode==='error'?'!':'●';b.classList.toggle('running',mode==='running');b.classList.toggle('error',mode==='error')}
+function runtimeEvent(ev){
+ if(ev.node?.id)executingNodeId=ev.node.id;refreshExecutionHighlights();
+ if(ev.kind==='check')setExec((B[ev.node.type]?.label||'조건')+' '+(ev.result?'✓':'✕'),'조건을 확인하고 분기합니다.','running');
+ if(ev.kind==='loop')setExec(B[ev.node.type]?.label||'반복','반복 '+ev.index+'회째','running');
+ if(ev.kind==='call')setExec('나의 기술 '+String(ev.slot||'a').toUpperCase(),'저장된 행동 묶음을 호출합니다.','running');
+ if(ev.kind==='action')setExec(B[ev.node.type]?.label||ev.node.type,'전장에서 실행 중','running');
+}
+function makeRuntime(){return new RuntimeAPI.Runtime({world:worldAPI,delay:Math.max(25,170/runSpeed),onEvent:runtimeEvent,onError(node,msg){errorNodeId=node?.id||executingNodeId;refreshExecutionHighlights();setExec('여기서 코드가 멈췄어요',msg,'error');toast(msg,true);setRunButtons(false);document.body.classList.remove('executing')},onDone(){missionClear()}})}
+async function runProgram(step=false){
+ if(!mainProgram.length){toast('먼저 명령을 넣어 주세요.',true);return}
+ if(!step||!stepActive){buildWorld();runtime=makeRuntime();errorNodeId='';executingNodeId='';stepActive=Boolean(step)}
+ setRunButtons(true);document.body.classList.add('executing');
+ if(step){const result=await runtime.step(mainProgram,functionPrograms);if(result?.done)stepActive=false;setRunButtons(false);document.body.classList.remove('executing')}
+ else{stepActive=false;await runtime.run(mainProgram,functionPrograms)}
+}
+function stopRun(){runtime?.stop();stepActive=false;setRunButtons(false);document.body.classList.remove('executing');setExec('실행을 멈췄어요.','코드를 고치고 다시 실행할 수 있어요.')}
+function setRunButtons(running){$('runBtn').classList.toggle('hidden',running);$('stepBtn').classList.toggle('hidden',running);$('stopBtn').classList.toggle('hidden',!running)}
+function invalidateExecution(){runtime?.stop();stepActive=false;executingNodeId='';errorNodeId='';set
