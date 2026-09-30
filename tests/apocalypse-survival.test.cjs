@@ -19,12 +19,12 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=18/);
+  assert.match(html,/game\.js\?v=19/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
   for(const day of [1,2,3,4,5,6,7])assert.match(js,new RegExp('\\n '+day+':\\{title:'));
-  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','foodPreservation','waterTreatment','ruinSafety','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
+  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','foodPreservation','waterTreatment','ruinSafety','vibrationRisk','electricity','division','logistics','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
   for(const id of ['campfire','shelter','workbench','farm','cooler','purifier'])assert.ok(js.includes(id),id);
   assert.match(js,/chooseDistribution/);
   assert.match(js,/readyFlood/);
@@ -77,7 +77,7 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
     ['assets/game/characters/people',['character-female-a.glb','character-male-a.glb','character-female-d.glb','character-male-d.glb','character-male-b.glb','character-female-b.glb','character-female-c.glb']],
     ['assets/game/3d/city/kenney-city-kit-roads',['road-bridge.glb','road-straight.glb','road-crossroad-line.glb','traffic-light.glb','electricity-pole.glb','construction-barrier.glb']],
     ['assets/game/3d/city/kenney-city-kit-suburban',['fence-1x4.glb','path-stones-long.glb','path-stones-messy.glb']],
-    ['assets/game/3d/buildings/kenney-building-kit',['wall-doorway-wide-square.glb','wall-window-wide-square-detailed.glb','wall-window-square-detailed.glb']],
+    ['assets/game/3d/buildings/kenney-building-kit',['wall-doorway-wide-square.glb','wall-window-wide-square-detailed.glb','wall-window-square-detailed.glb','door-rotate-square-b.glb']],
     ['assets/game/3d/vehicles/kenney-car-kit',['ambulance.glb','sedan.glb','van.glb','suv.glb','debris-tire.glb']],
     ['assets/game/3d/nature/kenney-nature-kit',['fence-gate.glb','canoe.glb','cliff-large-rock.glb','tree-pine-tall-a.glb','plant-bush-large.glb','rock-small-c.glb']],
     ['assets/game/3d/city/poly-pizza-city-pack',['big-building.glb','bench.glb','bus-stop.glb','dumpster.glb','building-green.glb','brown-building.glb']]
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v18',()=>{
+test('game is registered in catalog metadata v19',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=18');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=19');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,7 +109,7 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=18/);
+  assert.match(html,/game\.js\?v=19/);
   assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=17$/);
 });
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v18 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v19 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=18/);
+  assert.match(html,/game\.js\?v=19/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -237,4 +237,43 @@ test('road graph and ruined interiors form a navigable exploration layer',()=>{
   assert.match(js,/ruinSearchProgress/);
   assert.match(js,/문간에서 조금 떨어져야 닫을 수 있습니다/);
   assert.match(js,/indoor=currentRuinZone/);
+});
+
+
+test('expedition survival loop connects darkness noise companions and storage',()=>{
+  assert.match(js,/flashlight:\['손전등','🔦'\]/);
+  assert.match(js,/storehouse:\{name:'공동창고'/);
+  assert.match(js,/function toggleFlashlight/);
+  assert.match(js,/function updateFlashlight/);
+  assert.match(js,/SpotLight\(0xfff3cf,0,30/);
+  assert.match(js,/flashlightCharge/);
+  assert.match(js,/function emitRuinNoise/);
+  assert.match(js,/function triggerRuinEvent/);
+  assert.match(js,/game\.ruinNoise>=70/);
+  assert.match(js,/const RUIN_EVENTS=/);
+  assert.match(js,/const SITE_SKILL=/);
+  assert.match(js,/function companionMatches/);
+  assert.match(js,/function setCompanion/);
+  assert.match(js,/function companionTarget/);
+  assert.match(js,/function ruinSearchBonus/);
+  assert.match(js,/specialist\?' · 전문 동행 보너스'/);
+  assert.match(js,/function storageBuilt/);
+  assert.match(js,/function depositStorage/);
+  assert.match(js,/function withdrawStorage/);
+  assert.match(js,/data-tab="storage"/);
+  assert.match(html,/id="ruinStatus"/);
+  assert.match(html,/id="mobileFlashlight"/);
+  assert.match(html,/id="hotFlashlight"/);
+  assert.match(css,/\.storage-list/);
+  assert.match(css,/\.companion-btn/);
+  assert.match(css,/\.ruin-status/);
+});
+
+test('legacy saves migrate into flashlight and split ruin-search progression',()=>{
+  assert.match(js,/merged\.flags\.crate&&!merged\.inv\.flashlight/);
+  assert.match(js,/merged\.inv\.flashlight=1/);
+  assert.match(js,/market:\['marketShelf','marketBack'\]/);
+  assert.match(js,/clinic:\['clinicCabinet','clinicSupply'\]/);
+  assert.match(js,/garage:\['garageBench','garageLocker'\]/);
+  assert.match(js,/Number\.isFinite\(s\.worldSeed\)/);
 });
