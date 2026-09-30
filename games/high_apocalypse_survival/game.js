@@ -317,6 +317,14 @@ function scatterSharedCluster(cx,cz,items,radius=5,seedBase=1){
 function upgradePerson(group,fallback,file){
  model(ART.people+file).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.75);o.rotation.y=Math.PI;group.add(o)})
 }
+function cityRoad(x,z,rot=0,type='road-straight.glb'){placeWorldModel(ART.roads+type,{x,z,target:7.9,rot,y:.035})}
+function citySidewalk(x,z,rot=0){placeWorldModel(ART.roads+'road-side.glb',{x,z,target:7.9,rot,y:.045})}
+function cityLot(x,z,w,d,labelText=''){
+ box(w,.035,d,0x6d716c,x,.025,z);if(labelText)label(labelText,x,1.0,z)
+}
+function cityBuilding(file,x,z,target,w,d,rot=0,tag='city-building'){
+ return placeWorldModelSafe(ART.city+file,{x,z,target,rot,w,d,tag})
+}
 function decorateWorld(){
  // 학교 야영지: 운동장과 경계가 보여야 출발 지점의 성격이 바로 읽힌다.
  box(25,.025,16,0x927d5b,-5,.018,5);box(17,.012,.09,0xd9d0b6,-5,.038,5);box(.09,.012,10,0xd9d0b6,-5,.038,5);
@@ -336,34 +344,67 @@ function decorateWorld(){
  placeSharedWorldModel('prop.woodLog',{x:-8,z:5.4,target:1.9,rot:-.6});
  placeSharedWorldModel('vehicle.schoolBus',{x:8.6,z:21,target:6.1,rot:Math.PI*.52});
 
- // 도로는 검은 띠가 아니라 반복되는 도로 타일과 도시 시설로 보이게 한다.
- for(let z=-52;z<=52;z+=8)placeWorldModel(ART.roads+'road-straight.glb',{x:16,z,target:7.9,y:.035});
- for(let x=-32;x<=56;x+=8)placeWorldModel(ART.roads+'road-straight.glb',{x,z:-27,target:7.9,rot:Math.PI*.5,y:.035});
+ // 도시 블루프린트: 도로 → 보도 → 필지 → 건물 → 차량/잔해 순으로 배치한다.
+ reserveFootprint(MARKET_POS.x,MARKET_POS.z,12,10,'interactive-market');
+ reserveFootprint(CLINIC_POS.x,CLINIC_POS.z,11,10,'interactive-clinic');
+ reserveFootprint(GARAGE_POS.x,GARAGE_POS.z,12,9,'interactive-garage');
+ reserveFootprint(POWER_STATION.x,POWER_STATION.z,3.5,3,'interactive-power');
+ reserveFootprint(WASTE_POS.x,WASTE_POS.z,3.2,3.2,'interactive-waste');
+
+ // 학교에서 도시로 이어지는 간선도로.
+ for(let z=-52;z<=52;z+=8)cityRoad(16,z,0);
+ for(let x=-32;x<=68;x+=8)cityRoad(x,-27,Math.PI*.5);
  placeWorldModel(ART.roads+'road-crossroad-line.glb',{x:16,z:-27,target:8.3,y:.045});
  placeWorldModel(ART.roads+'road-bridge.glb',{x:RIVER_X,z:-4,target:15.2,rot:Math.PI*.5,y:.08});
- const roadProps=[
-  [ART.roads+'traffic-light.glb',18,-23,3.8,0],[ART.roads+'road-sign-warning.glb',13,-12,2.3,.1],
-  [ART.roads+'electricity-pole.glb',11,8,5.8,0],[ART.roads+'electricity-pole.glb',11,-18,5.8,0],[ART.roads+'electricity-pole.glb',11,-43,5.8,0],
-  [ART.roads+'construction-barrier.glb',35,-29,2.6,.2],[ART.roads+'construction-barrier.glb',37,-30,2.6,-.2],
-  [ART.city+'fire-hydrant.glb',25,-24,1.35,0],[ART.city+'manhole-cover.glb',17,-36,1.6,0],
-  [ART.city+'bus-stop.glb',7,-24,3.1,Math.PI],[ART.city+'bus-stop-sign.glb',4,-24,2.4,Math.PI],
-  [ART.city+'dumpster.glb',47,-35,2.3,.4],[ART.city+'trash-can.glb',41,-26,1.35,.2],
-  [ART.city+'debris-papers.glb',46,-28,2.2,1.1],[ART.city+'stop-sign.glb',24,-25,2.4,0],
-  [ART.cars+'ambulance.glb',55,-20,4.8,-.25],[ART.cars+'sedan.glb',19,-42,4.6,.12],
-  [ART.cars+'van.glb',10,-28,4.8,Math.PI*.52],[ART.cars+'suv.glb',45,-26,4.7,-.06],
-  [ART.cars+'debris-tire.glb',22,-35,1.2,.4]
- ];
- roadProps.forEach(([u,x,z,t,r])=>placeWorldModel(u,{x,z,target:t,rot:r}));
 
- // 폐허 도시: 내부 탐색 건물 뒤로 도시의 잔존 스카이라인을 만들어 깊이를 준다.
- [[64,-14,'building-green.glb',11,.05],[66,-34,'brown-building.glb',12,-.06],[61,-52,'building-red.glb',11,.03],[38,-57,'building-red-corner.glb',10,.1]]
-  .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
- [[43,-38,'fence.glb',3.6,.1],[51,-38,'fence-piece.glb',3.4,-.1],[59,-36,'power-box.glb',1.7,.2],[40,-43,'trah-bag-grey.glb',1.4,.4],[52,-31,'cone.glb',1.2,.1]]
-  .forEach(([x,z,file,t,r])=>placeWorldModel(ART.city+file,{x,z,target:t,rot:r}));
- // 폐허의 실루엣을 멀리서도 읽을 수 있도록 높은 물탑과 외곽 주택을 추가한다.
- placeSharedWorldModel('prop.waterTower',{x:62,z:-40,target:8.8,rot:.15});
- placeSharedWorldModel('building.house',{x:35,z:-51,target:8.2,rot:-.2});
- placeSharedWorldModel('prop.crate',{x:42,z:-29,target:1.45,rot:.18});
+ // 폐허 도시 안쪽의 작은 격자도로. 건물은 이 도로를 기준으로 필지 안에만 놓인다.
+ for(let z=-55;z<=-19;z+=8)cityRoad(52,z,0);
+ for(let x=36;x<=68;x+=8)cityRoad(x,-44,Math.PI*.5);
+ placeWorldModel(ART.roads+'road-crossroad-path.glb',{x:52,z:-27,target:8.2,y:.05});
+ placeWorldModel(ART.roads+'road-crossroad-path.glb',{x:52,z:-44,target:8.2,y:.05});
+ for(let x=36;x<=68;x+=8){citySidewalk(x,-31.3,Math.PI*.5);citySidewalk(x,-39.7,Math.PI*.5)}
+ for(let z=-51;z<=-19;z+=8){citySidewalk(47.7,z,0);citySidewalk(56.3,z,0)}
+
+ // 네 개의 명확한 필지. 세 곳은 직접 들어가 조사하는 장소다.
+ cityLot(MARKET_POS.x,MARKET_POS.z,13,11);
+ cityLot(CLINIC_POS.x,CLINIC_POS.z,12,11);
+ cityLot(GARAGE_POS.x,GARAGE_POS.z,13,10);
+ cityLot(61,-51,12,10);
+
+ // 배경 건물은 예약된 필지와 겹치지 않을 때만 생성한다.
+ cityBuilding('building-red.glb',40,-19,9.5,8,7,.03,'north-row');
+ cityBuilding('brown-building.glb',60,-19,10.5,8,7,-.04,'north-row');
+ cityBuilding('building-green.glb',68,-36,10,7,9,.02,'east-row');
+ cityBuilding('building-red-corner.glb',67,-55,9.2,7,8,.08,'south-row');
+ cityBuilding('big-building.glb',38,-58,10.5,9,8,-.04,'south-row');
+ placeSharedWorldModel('prop.waterTower',{x:61,z:-51,target:8.4,rot:.15});
+ placeSharedWorldModel('building.house',{x:34,z:-48,target:7.2,rot:-.14});
+
+ // 도로시설과 차량은 차도 또는 보도 가장자리에 정렬한다.
+ const cityProps=[
+  [ART.roads+'traffic-light.glb',50,-25,3.6,0,1.2,1.2,'street-prop'],
+  [ART.roads+'traffic-light.glb',54,-46,3.6,Math.PI,1.2,1.2,'street-prop'],
+  [ART.roads+'road-sign-warning.glb',36,-25,2.3,.1,1,1,'street-prop'],
+  [ART.roads+'construction-barrier.glb',35,-29,2.5,.15,2.2,.7,'street-prop'],
+  [ART.city+'fire-hydrant.glb',57,-31,1.25,0,.8,.8,'street-prop'],
+  [ART.city+'bus-stop.glb',35,-24,3.0,Math.PI,3,1.5,'street-prop'],
+  [ART.city+'bus-stop-sign.glb',32.8,-24,2.3,Math.PI,.8,.8,'street-prop'],
+  [ART.city+'dumpster.glb',36,-38,2.0,.35,2.1,1.2,'street-prop'],
+  [ART.city+'trash-can.glb',57,-40,1.25,.2,.8,.8,'street-prop'],
+  [ART.cars+'ambulance.glb',63,-29,4.5,Math.PI*.5,4.5,2.1,'vehicle'],
+  [ART.cars+'sedan.glb',48,-46.5,4.25,Math.PI*.5,4.2,2.0,'vehicle'],
+  [ART.cars+'van.glb',55,-54,4.5,0,2.2,4.6,'vehicle'],
+  [ART.cars+'debris-tire.glb',37,-42,1.1,.4,1.2,1.2,'debris']
+ ];
+ cityProps.forEach(([u,x,z,t,r,w,d,tag])=>placeWorldModelSafe(u,{x,z,target:t,rot:r,w,d,tag}));
+ placeWorldModelSafe(ART.city+'debris-papers.glb',{x:56.8,z:-39,target:1.8,rot:1.1,w:1.6,d:1.2,tag:'debris'});
+ placeSharedWorldModel('prop.crate',{x:CRATE_POS.x,z:CRATE_POS.z,target:1.4,rot:.18});
+
+ // 간선도로의 생활 흔적. 도시 밖에서는 간격을 넓혀 시야를 확보한다.
+ [[11,8],[11,-18],[11,-43]].forEach(([x,z])=>placeWorldModelSafe(ART.roads+'electricity-pole.glb',{x,z,target:5.8,w:1.2,d:1.2,tag:'utility'}));
+ placeWorldModelSafe(ART.city+'stop-sign.glb',{x:24,z:-25,target:2.4,w:1,d:1,tag:'street-prop'});
+ placeWorldModelSafe(ART.cars+'sedan.glb',{x:19,z:-42,target:4.4,rot:.12,w:4.3,d:2.1,tag:'vehicle'});
+ placeWorldModelSafe(ART.cars+'van.glb',{x:10,z:-28,target:4.6,rot:Math.PI*.52,w:2.2,d:4.6,tag:'vehicle'});
 
  // 강둑: 직선 수로처럼 보이지 않도록 양안의 식생과 돌을 불규칙하게 섞는다.
  const bankZ=[-55,-43,-31,-18,-7,6,19,33,47,59];
