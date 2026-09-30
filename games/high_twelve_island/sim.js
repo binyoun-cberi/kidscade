@@ -104,21 +104,24 @@
         else { thought = "지금처럼 꾸준히 수확하면 좋겠어요. 인구가 늘어날 때 필요한 양도 살펴봐요."; reason = "식량 생산과 소비"; }
         break;
       case "fairness":
-        if (trust <= 40) { mood = "걱정"; thought = "중요한 결정을 왜 내렸는지 우리에게도 알려 주면 좋겠어요."; reason = "낮은 공동체 신뢰"; }
+        if (s.pressure?.ration >= 2.5) { mood = "걱정"; thought = "지금의 배분법에 대한 청원이 늘고 있어요. 다른 주민들과 다시 논의하면 좋겠어요."; reason = "누적된 배급 관련 청원"; }
+        else if (trust <= 40) { mood = "걱정"; thought = "중요한 결정을 왜 내렸는지 우리에게도 알려 주면 좋겠어요."; reason = "낮은 공동체 신뢰"; }
         else if (!s.laws.ration) { thought = "먹을 것을 어떻게 나눌지 다 같이 납득할 수 있는 규칙이 필요해요."; reason = "배분 규칙 미제정"; }
         else if (s.laws.ration === "effort") { thought = "기본 배급은 유지하되 일하기 어려운 사람의 사정도 살펴보면 좋겠어요."; reason = "현재 식량 배급법"; }
         else if (s.laws.ration === "needs") { thought = "추가 지원이 필요한 사람을 정하는 기준을 모두에게 설명해 주세요."; reason = "현재 식량 배급법"; }
         else { thought = "모두에게 같은 양을 나누고 있군요. 각자의 사정도 계속 살펴봐야겠어요."; reason = "현재 식량 배급법"; }
         break;
       case "work":
-        if (food <= 20) { mood = "걱정"; thought = "일손을 어디에 배치하면 먹을 것을 더 빨리 확보할 수 있을까요?"; reason = "식량 위기"; }
+        if (s.workStrain >= 4) { mood = "걱정"; thought = "추가 근무가 오래 이어져 모두가 지쳤어요. 휴식과 근무 방법을 다시 의논해 주세요."; reason = "누적된 노동 피로"; }
+        else if (food <= 20) { mood = "걱정"; thought = "일손을 어디에 배치하면 먹을 것을 더 빨리 확보할 수 있을까요?"; reason = "식량 위기"; }
         else if (idle >= 4) { mood = "걱정"; thought = "일할 사람이 기다리고 있어요. 역할을 함께 정해 보면 좋겠어요."; reason = "배치되지 않은 주민"; }
         else if (s.laws.labor === "short") { thought = "쉬는 시간이 생긴 만큼 현재 인원으로 필요한 일을 마칠 수 있을지 살펴봐요."; reason = "노동 규칙"; }
         else if (s.laws.labor === "extra") { thought = "더 일한 사람에게 주기로 한 보상이 제대로 전달되는지 궁금해요."; reason = "노동 규칙"; }
         else { thought = "일한 만큼 어떤 역할을 맡는지 분명하면 서로 도울 수 있을 것 같아요."; reason = "일과 보상"; }
         break;
       case "safety":
-        if (s.stormUntil > s.tick) { mood = "걱정"; thought = "폭풍이 지나갈 때까지 식량과 집을 안전하게 지켜야 해요."; reason = "진행 중인 폭풍"; }
+        if (s.stormAftermathAt && s.tick >= s.stormAftermathAt) { mood = "걱정"; thought = "폭풍이 지나갔어요. 실제 피해를 보고 비축 방식을 다시 점검하면 좋겠어요."; reason = "폭풍 이후 복구"; }
+        else if (s.stormUntil > s.tick) { mood = "걱정"; thought = "폭풍이 지나갈 때까지 식량과 집을 안전하게 지켜야 해요."; reason = "진행 중인 폭풍"; }
         else if (food <= 35 || s.wood <= 20) { mood = "걱정"; thought = "비상시에 쓸 자원이 부족해 보여요. 미리 대비했으면 좋겠어요."; reason = "낮은 비축량"; }
         else if (!s.buildings.store) { thought = "공동 창고가 있으면 식량과 도구를 보관하기 편할 것 같아요."; reason = "창고 미건설"; }
         else { thought = "창고가 생겼으니 비상 물자가 얼마나 남았는지 정기적으로 확인해요."; reason = "안전과 비축"; }
@@ -127,6 +130,7 @@
         if (s.stage === 1) { thought = "마을이 커지면 모두 함께 사용할 시설도 필요해지겠죠?"; reason = "공동체 성장"; }
         else if (s.treasury <= 10) { mood = "걱정"; thought = "마을 운영비가 빠듯하군요. 지금 꼭 필요한 지출부터 의논해요."; reason = "낮은 국고"; }
         else if (!s.laws.tax) { thought = "함께 낼 부담금의 기준을 정하고, 어디에 쓸지 의논하고 싶어요."; reason = "공동 부담금 미제정"; }
+        else if (s.laws.process === "delegate" && s.authorityUses >= 2) { mood = "걱정"; thought = "대표에게 맡긴 결정이 쌓였어요. 어떤 근거로 결정했는지 듣고 싶어요."; reason = "위임 권한의 검토"; }
         else if (!s.buildings.clinic) { thought = "공동기금이 생겼으니 진료소를 세울지도 논의해 보고 싶어요."; reason = "진료소 미건설"; }
         else if (s.laws.tax === "high") { thought = "부담금이 늘어난 만큼 예산을 어디에 썼는지 자세히 알고 싶어요."; reason = "현재 공동 부담금"; }
         else { thought = "공공시설을 오래 운영할 수 있도록 비용과 혜택을 함께 살펴봐요."; reason = "공동시설 운영"; }
