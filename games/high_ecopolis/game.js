@@ -309,9 +309,22 @@ function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
   const sc=SCENARIOS[selectedScenario]||SCENARIOS.valley;
   const riverPhase=rng()*Math.PI*2;
   for(let z=0;z<ROWS;z++)for(let x=0;x<COLS;x++){
-    const center=(ROWS-1)/2+Math.sin(x*.56+riverPhase)*1.55+Math.sin(x*.19+riverPhase*.5)*.8;
-    const water=Math.abs(z-center)<=sc.riverWidth+.15*Math.sin(x*.8);
-    const edgeRock=!water&&(x<2||x>COLS-3||z<2||z>ROWS-3)&&rng()<.28;
+    const center=(ROWS-1)/2+Math.sin(x*.46+riverPhase)*1.75+Math.sin(x*.17+riverPhase*.5)*.9;
+    let water=false;
+    if(selectedScenario==='marsh'){
+      const main=Math.abs(z-center)<=1.65+.22*Math.sin(x*.7);
+      const branch=Math.abs(z-((ROWS*.28)+Math.sin(x*.31+riverPhase)*1.2))<=(x>COLS*.38&&x<COLS*.88?.62:-1);
+      const pool=Math.hypot(x-COLS*.72,z-ROWS*.7)<=2.1;
+      water=main||branch||pool;
+    }else if(selectedScenario==='dust'){
+      const arroyo=Math.abs(z-center)<=.75+.12*Math.sin(x*.9);
+      const oasis=Math.hypot(x-COLS*.73,z-ROWS*.28)<=1.65;
+      water=arroyo||oasis;
+    }else{
+      water=Math.abs(z-center)<=1.05+.18*Math.sin(x*.8);
+    }
+    const edgeChance=selectedScenario==='dust'?.38:selectedScenario==='valley'?.31:.18;
+    const edgeRock=!water&&(x<2||x>COLS-3||z<2||z>ROWS-3)&&rng()<edgeChance;
     const t={x,z,kind:water?'water':edgeRock?'rock':'land',biome:water?'water':'barren',pollution:water?clamp(sc.waterPollution+(rng()-.5)*.16,0,1):edgeRock?0:clamp(sc.landPollution+(rng()-.5)*.25,0,1),moisture:water?1:0,path:null,mesh:null,decor:new THREE.Group(),pathVisual:new THREE.Group()};
     tiles.push(t);
   }
@@ -666,7 +679,7 @@ function pickVisitorType(){
 function targetVisitorCount(){
   if(!connectedVisitorCenter()||phase>=4)return 0;
   const c=counts(),attractions=buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe','bench','signpost'].includes(b.type)).length;
-  return clamp(Math.round(2+ecosystem.reputation*.14+c.restorePct*.04+returnedSpeciesCount()*2+attractions*1.5-ecosystem.habitatStress*.05),0,28);
+  return clamp(Math.round(3+ecosystem.reputation*.16+c.restorePct*.045+returnedSpeciesCount()*2.2+attractions*1.7+cityDiversityScore()*.05-ecosystem.habitatStress*.05),0,42);
 }
 function spawnVisitor(){
   const entries=visitorEntryTiles();if(!entries.length)return;
@@ -810,7 +823,7 @@ function launchRecycler(t){
   const pathRefund=caughtPaths.reduce((s,o)=>s+(TOOL[o.path]?.cost||0),0);caughtPaths.forEach(o=>{o.path=null;refreshPathNeighborhood(o)});
   const refund=Math.round((caught.reduce((s,b)=>s+(TOOL[b.type]?.cost||0),0)+pathRefund)*COST_REFUND);ecoPoints+=refund;
   toast('회수선이 시설 '+caught.length+'개와 길 '+caughtPaths.length+'칸을 걷어냈어요'+(refund?' · +'+refund+'P':''),'good');sdkSound('correct');
-  saveGame();updateUI();if(humanFootprintCount()===0)tryCompleteGame();return true;
+  saveGame();updateUI();if(tutorialMode&&humanFootprintCount()===0)tryCompleteGame();return true;
 }
 function pulse(t,color,r){
   const p=worldPos(t),ring=new THREE.Mesh(new THREE.RingGeometry(.2,.28,48),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));
@@ -930,15 +943,16 @@ function updateToolVisibility(){
 }
 function checkProgress(announce=true){
   const c=counts();
+  if(!tutorialMode){if(phase>=2)updateSpecies();updateUI();return;}
   if(phase===1&&buildings.some(b=>POWER_TYPES.has(b.type))&&hasType('purifier')&&hasType('waterfilter')){
-    phase=2;showAdvancedTools=false;if(announce)unlockToast('좋아요! 2단계가 열렸어요. 이제 숲·습지·꽃초원을 하나씩 만들어 봐요.')
+    phase=2;if(announce)unlockToast('좋아요! 2단계가 열렸어요. 이제 숲·습지·꽃초원을 하나씩 만들어 봐요.')
   }
   if(phase===2&&hasType('forest')&&hasType('wetland')&&hasType('meadow')){
-    phase=3;showAdvancedTools=false;if(announce)unlockToast('3단계 시작! 이제 길을 연결하고 방문객을 맞아 봐요.')
+    phase=3;if(announce)unlockToast('3단계 시작! 이제 길을 연결하고 방문객을 맞아 봐요.')
   }
   if(phase>=2)updateSpecies();
   if(phase===3&&pathCount()>=3&&hasType('visitorcenter')&&connectedVisitorCenter()&&ecosystem.visitorsServed>=10){
-    phase=4;showAdvancedTools=false;if(announce)unlockToast('운영 성공! 마지막에는 시설과 길을 모두 회수하면 돼요.')
+    phase=4;if(announce)unlockToast('운영 성공! 마지막에는 시설과 길을 모두 회수하면 돼요.')
   }
   updateUI();
 }
@@ -969,7 +983,7 @@ function updateUI(){
   }).join('');
   ui.speciesRow.innerHTML=Object.entries(SPECIES).map(([id,s])=>{const p=Math.round(ecosystem.populations[id]||0),found=p>=8;return '<div class="species '+(found?'found':'')+'" title="'+s.name+' 개체수 '+p+'"><span>'+(found?s.icon:'？')+'</span><small>'+p+'</small></div>'}).join('');
   document.querySelectorAll('.tool').forEach(btn=>{
-    const def=TOOL[btn.dataset.tool];const locked=btn.dataset.tool==='recycler'?phase<4:(tutorialMode&&def?.phase&&phase<def.phase);btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
+    const def=TOOL[btn.dataset.tool];const locked=tutorialMode&&((btn.dataset.tool==='recycler'&&phase<4)||(btn.dataset.tool!=='recycler'&&def?.phase&&phase<def.phase));btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
   });
   updateToolVisibility();updateGuidedUI();
   if(TOOL[selectedTool]?.phase&&phase<TOOL[selectedTool].phase)selectTool('inspect');
@@ -1105,7 +1119,7 @@ function animate(now){
   const simDt=running?dt*simSpeed:0;
   if(running){elapsed+=simDt;saveTimer+=dt;ecologyClock+=simDt;economyClock+=simDt;visitorSpawnClock+=simDt;
     if(visitorSpawnClock>1.4){visitorSpawnClock=0;const target=targetVisitorCount();if(visitors.length<target)spawnVisitor();else if(visitors.length>target&&visitors.length)removeVisitor(visitors[0],false)}
-    if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&humanFootprintCount()===0)tryCompleteGame()}
+    if(ecologyClock>3){ecologyClock=0;ecologyTick();if(tutorialMode&&phase===4&&humanFootprintCount()===0)tryCompleteGame()}
     if(economyClock>5){economyClock=0;if(phase>=3)economyTick();checkProgress(true);updateUI()}
     if(saveTimer>20){saveTimer=0;saveGame()}}
   windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*simSpeed);
