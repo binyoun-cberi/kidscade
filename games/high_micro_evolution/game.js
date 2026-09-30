@@ -696,7 +696,33 @@ function creatureTint(c){
   if(c.traits.diet==='hunter')return {hi:'#ff9aa7',mid:'#b84d68',lo:'#63273e'};
   if(c.traits.diet==='photo')return {hi:'#b6f28a',mid:'#5eac67',lo:'#2f6247'};
   if(c.traits.diet==='filter')return {hi:'#9ce9ff',mid:'#4f9bc0',lo:'#27516d'};
-  if(c.traits.diet==='parasite')return {hi:'#ffaffunction drawPlayer(){
+  if(c.traits.diet==='parasite')return {hi:'#ffafd6',mid:'#af6494',lo:'#5e365d'};
+  if(c.traits.diet==='scavenger')return {hi:'#ffe198',mid:'#b79754',lo:'#68512c'};
+  return {hi:'#a2e6dd',mid:'#4faaa2',lo:'#285e66'};
+}
+function drawCreatures(){
+  const player=state.player;
+  creatures.forEach(c=>{
+    const p=worldToScreen(c.x,c.y),vr=c.r*CAMERA_ZOOM;
+    if(p.x<-100||p.x>viewW+100||p.y<-100||p.y>viewH+100)return;
+    const prey=c.r<player.radius*.78;
+    const danger=c.traits.diet==='hunter'&&c.r>player.radius*.92;
+    if(prey||danger){
+      ctx.save();
+      ctx.strokeStyle=prey?'rgba(185,239,120,.32)':'rgba(255,108,125,.48)';
+      ctx.lineWidth=danger?3:2;
+      ctx.setLineDash(danger?[6,6]:[3,7]);
+      ctx.beginPath();ctx.arc(p.x,p.y,vr+9,0,TAU);ctx.stroke();ctx.restore();
+    }
+    const inside={chloroplast:c.traits.photo?2:0,membrane:c.traits.armor>1.25?1:0,camouflage:0};
+    drawOrganism(p.x,p.y,vr,c.angle,creatureSlots(c),inside,false,c.flash,creatureTint(c));
+    if(danger&&Math.sqrt(dist2(c,player))<320){
+      ctx.save();ctx.fillStyle='rgba(255,133,147,.9)';ctx.font='900 12px system-ui';ctx.textAlign='center';
+      ctx.fillText('!',p.x,p.y-vr-14);ctx.restore();
+    }
+  });
+}
+function drawPlayer(){
   const p=state.player,vr=p.radius*CAMERA_ZOOM;
   ctx.save();
   const halo=ctx.createRadialGradient(viewW/2,viewH/2,vr*.5,viewW/2,viewH/2,vr*2.25);
