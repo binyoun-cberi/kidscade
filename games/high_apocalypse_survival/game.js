@@ -724,7 +724,7 @@ function updateInteract(){
 }
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;sfx('water');discover('waterRisk');flag('water');tutorialSignal('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
- if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
+ if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinDoor')return toggleRuinDoor(d.site);if(t==='ruinSearch')return searchRuinSpot(d.spot);if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
  if(t==='rest'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building,currentInteract)
 }
 function gather(r,t){
