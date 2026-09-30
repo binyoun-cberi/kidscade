@@ -422,6 +422,7 @@
       }
     }
     const revised = Boolean(s.laws[id]);
+    const oldStorage = s.laws.storage;
     s.laws[id] = optionId;
     if (!s.passed.includes(id)) s.passed.push(id);
     if (id === "ration") {
@@ -442,6 +443,15 @@
     if (procedure === "vote" && s.laws.process === "meeting" && id !== "process") s.voteCooldownUntil = s.tick + 3;
     s.trust = clamp(s.trust + (revised ? -1 : 2));
     s.foodCap = 100 + s.buildings.store * 45 + (s.laws.storage === "reserve" ? 35 : 0);
+    if (id === "storage" && oldStorage === "reserve" && optionId !== "reserve" && s.reserveFood > 0) {
+      const stored = s.reserveFood;
+      const kept = Math.min(stored, Math.max(0, s.foodCap - s.food));
+      s.food += kept;
+      s.reserveFood = 0;
+      record(s, "비상 창고를 폐쇄하며 식량 " + Number(kept.toFixed(1)) + "을(를) 일반 창고로 옮겼습니다." +
+        (kept < stored ? " 저장 공간을 넘는 식량은 보관하지 못했습니다." : ""));
+    }
+    s.food = clamp(s.food, 0, s.foodCap);
     record(s, option.title + " 규칙이 " + (revised ? "개정" : "제정") + "되었습니다.");
     recordDecision(s, law.title, option.title + " · " + (procedure === "vote" ? "주민투표 " + vote.yes + "/" + vote.total : "위임된 권한으로 결정"));
     return { ok: true, vote, procedure };
