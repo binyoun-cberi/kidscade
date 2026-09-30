@@ -256,14 +256,14 @@ function init3D(){
  [[-8,8],[-11,13],[-7,3],[-12,5]].forEach(p=>spawnResource('tree',p[0],p[1]));
  [[-8,-2],[-12,-4],[-6,-6],[-14,0],[-10,2]].forEach(p=>spawnResource('rock',p[0],p[1]));
  [[-22,18],[-28,8],[-34,22],[-18,30],[-40,5],[-25,-8]].forEach(p=>spawnResource('forage',p[0],p[1]));
- ruinShell('폐마트',44,-32,12,10,0x8b8375);ruinShell('폐진료소',58,-25,10,9,0x7a8587);ruinShell('정비 창고',50,-47,11,8,0x6f7778);
- solidBox(6,7,6,0x85817a,62,3.5,-43,.2);solidBox(7,5,5,0x737c80,39,2.5,-48,.2);label('폐허 도시',49,9,-31);
- const shelfA=box(1.8,1.4,.6,0x6f573e,41,.7,-31);addInteract(shelfA,'ruinCache','마트 진열대 뒤지기',{cache:'market'});
- const shelfB=box(1.5,1.1,.55,0xd5d8d2,56,.55,-25);addInteract(shelfB,'ruinCache','진료소 캐비닛 뒤지기',{cache:'clinic'});
- const shelfC=box(1.7,1.2,.7,0x596064,48,.6,-46);addInteract(shelfC,'ruinCache','정비함 뒤지기',{cache:'garage'});
- const crate=box(1.3,1.1,1.3,0x715638,42,.58,-29);addInteract(crate,'crate','폐허 보급 상자 열기');
+ ruinShell('폐마트',MARKET_POS.x,MARKET_POS.z,11,9,0x8b8375);ruinShell('폐진료소',CLINIC_POS.x,CLINIC_POS.z,10,9,0x7a8587);ruinShell('정비 창고',GARAGE_POS.x,GARAGE_POS.z,11,8,0x6f7778);
+ label('폐허 도시',CITY_CENTER.x,9,CITY_CENTER.z);
+ const shelfA=box(1.8,1.4,.6,0x6f573e,MARKET_POS.x-2.3,.7,MARKET_POS.z);addInteract(shelfA,'ruinCache','마트 진열대 뒤지기',{cache:'market'});
+ const shelfB=box(1.5,1.1,.55,0xd5d8d2,CLINIC_POS.x-1.8,.55,CLINIC_POS.z);addInteract(shelfB,'ruinCache','진료소 캐비닛 뒤지기',{cache:'clinic'});
+ const shelfC=box(1.7,1.2,.7,0x596064,GARAGE_POS.x-2,.6,GARAGE_POS.z);addInteract(shelfC,'ruinCache','정비함 뒤지기',{cache:'garage'});
+ const crate=box(1.3,1.1,1.3,0x715638,CRATE_POS.x,.58,CRATE_POS.z);addInteract(crate,'crate','폐허 보급 상자 열기');
  const powerbox=solidBox(1.4,1.9,.75,0x51625d,POWER_STATION.x,.95,POWER_STATION.z,.1);addInteract(powerbox,'powerbox','비상 배전반 복구');label('비상 배전반',POWER_STATION.x,2.8,POWER_STATION.z);
- const wasteTank=solidBox(2.2,2.2,2.2,0x68735f,57,1.1,-42,.1);addInteract(wasteTank,'pollutedWater','이상한 냄새의 물 조사');label('파손된 저장탱크',57,3.2,-42);
+ const wasteTank=solidBox(2.2,2.2,2.2,0x68735f,WASTE_POS.x,1.1,WASTE_POS.z,.1);addInteract(wasteTank,'pollutedWater','이상한 냄새의 물 조사');label('파손된 저장탱크',57,3.2,-42);
  const pole=box(.35,5,.35,0x525d61,-4,2.5,12);addInteract(pole,'radio','비상 무전기 확인');label('비상 무전',-4,5.8,12);
  scene.userData.survivorNodes={};scene.userData.campResidents={};
  for(const [id,rdef] of Object.entries(RESIDENTS)){
@@ -700,7 +700,7 @@ function currentObjective(){
  if(game.day===1){if(!game.flags.water)return{name:'강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(!game.flags.boil)return{name:'비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(!game.flags.drink)return{name:'깨끗한 물 마시기',pos:CAMP}}
  if(game.day===2){if(!game.flags.axe)return{name:'서쪽 숲·바위',pos:new THREE.Vector3(-12,0,2)};if(!game.flags.campfire)return{name:'캠프 건축 구역',pos:CAMP};if(!game.flags.cook)return{name:'모닥불',pos:nearestBuilding('campfire')}}
  if(game.day===3){if(!game.flags.shelter)return{name:'캠프 건축 구역',pos:CAMP};if(!game.flags.rain)return{name:'쉼터',pos:nearestBuilding('shelter')}}
- if(game.day===4){if(!game.flags.ruins)return{name:'폐허 도시',pos:RUINS};if(!game.flags.battery)return{name:'보급 상자',pos:new THREE.Vector3(42,0,-29)};if(!game.flags.power)return{name:'비상 배전반',pos:POWER_STATION}}
+ if(game.day===4){if(!game.flags.ruins)return{name:'폐허 도시',pos:RUINS};if(!game.flags.battery)return{name:'보급 상자',pos:CRATE_POS};if(!game.flags.power)return{name:'비상 배전반',pos:POWER_STATION}}
  if(game.day===5){if(!game.flags.rescue)return{name:'구조 요청',pos:SURVIVOR_POS};if(!game.flags.job)return{name:'정착지 태블릿',pos:CAMP}}
  if(game.day===6){if(!game.flags.choice)return{name:'공동체 회의',pos:CAMP};if(!game.flags.stock)return{name:'비상 물자 비축',pos:CAMP}}
  if(game.day===7){if(!game.flags.ready)return{name:'폭우 대비',pos:CAMP};if(!game.flags.radio)return{name:'비상 무전기',pos:new THREE.Vector3(-4,0,12)}}
