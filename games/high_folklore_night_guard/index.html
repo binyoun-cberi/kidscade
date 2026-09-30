@@ -998,6 +998,17 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 .thermo-controls button:hover{background:#26373f}
 .thermo-controls button small{display:block;font-size:9px;color:#aebbc1}
 .thermo-hint{margin-top:8px;font-size:10px;line-height:1.4;color:#9eabb1;border-top:1px solid #36434a;padding-top:6px}
+.heat-battle{display:none;margin-top:8px}
+.heat-battle-head{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:900;color:#aebbc1;margin-bottom:4px}
+.heat-battle-track{position:relative;height:15px;border:1px solid #52636d;background:linear-gradient(90deg,#d8f6ff22,#151b1e 48%,#ffbf6324);overflow:hidden}
+.heat-battle-track::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#ffffff44}
+.heat-battle-fill{height:100%;width:0;background:linear-gradient(90deg,#bcf2ff,#ffe187,#ff9d56);box-shadow:0 0 12px #ffb45d88;transition:width .08s linear}
+.heat-battle-text{margin-top:4px;text-align:center;font-size:10px;font-weight:950;color:#e9edf1}
+.thermostat-panel.battle .heat-battle{display:block}
+.thermostat-panel.battle .thermo-controls{grid-template-rows:1fr}
+.thermostat-panel.battle #tempDown{display:none}
+.thermostat-panel.battle #tempUp{min-height:92px;font-size:28px;background:#3b2719;border-color:#a76b38;box-shadow:inset 0 -5px #0005,0 0 14px #e98e4033}
+.thermostat-panel.battle #tempUp:active{transform:scale(.96);background:#6a3a1f}
 .thermostat-panel.cold{border-color:#86b9cc;box-shadow:0 12px 28px #000b,0 0 18px #92d8ef22}
 .thermostat-panel.danger{border-color:#b9e3f0;box-shadow:0 12px 28px #000b,0 0 26px #bceeff44}
 @media(max-width:780px){
@@ -1112,9 +1123,14 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
               <small>설정 <b id="setTemp">18°C</b></small>
             </div>
             <div class="thermo-controls">
-              <button id="tempUp" type="button" aria-label="설정 온도 올리기">▲<small>올리기</small></button>
+              <button id="tempUp" type="button" aria-label="난방 올리기">▲<small>난방!</small></button>
               <button id="tempDown" type="button" aria-label="설정 온도 내리기">▼<small>내리기</small></button>
             </div>
+          </div>
+          <div class="heat-battle" id="heatBattle" aria-live="polite">
+            <div class="heat-battle-head"><span>❄ 유키온나</span><span>🔥 난방</span></div>
+            <div class="heat-battle-track"><div class="heat-battle-fill" id="heatBattleFill"></div></div>
+            <div class="heat-battle-text" id="heatBattleText">난방 버튼을 연타하세요!</div>
           </div>
           <div class="thermo-hint" id="thermoHint">성에가 심해진 뒤 온도를 올리면 효과가 큽니다.</div>
         </div>
@@ -1329,7 +1345,7 @@ var GHOSTS={
     svg:'dokkaebi'},
   yuki:{name:'유키온나',origin:'일본',kind:'요괴·전승',
     fact:'유키온나는 일본의 눈과 겨울에 관련된 이야기에서 등장하는 존재로 전승에 따라 모습과 이야기가 달라집니다.',
-    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. 온도계의 ▲를 여러 번 눌러 난방을 충분히 올리면 유키온나가 물러납니다.',
+    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. 유키온나의 냉기가 계속 난방을 되밀어냅니다. ▲ 난방 버튼을 빠르게 연타해 힘겨루기 게이지를 끝까지 밀어내세요.',
     svg:'yuki'},
   maiden:{name:'처녀귀신',origin:'한국',kind:'괴담·대중문화 이미지',
     fact:'미혼으로 죽은 여성의 원혼 이야기는 한국의 여러 괴담과 설화에 나타나며, 흰옷과 긴 머리 이미지는 후대 대중문화에서 더욱 정형화되었습니다.',
@@ -1451,7 +1467,7 @@ var els={
   camOpen:$('camOpen'),cameraShell:$('cameraShell'),cameraView:$('cameraView'),camClose:$('camClose'),cameraMap:$('cameraMap'),
   camCode:$('camCode'),camName:$('camName'),roomScene:$('roomScene'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
   ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),
-  thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),ghostWhisper:$('ghostWhisper'),ghostWhisperText:$('ghostWhisperText'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
+  thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),heatBattle:$('heatBattle'),heatBattleFill:$('heatBattleFill'),heatBattleText:$('heatBattleText'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),ghostWhisper:$('ghostWhisper'),ghostWhisperText:$('ghostWhisperText'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
   fakeScare:$('fakeScare'),fakeScareText:$('fakeScareText'),fakeScareEye:$('fakeScareEye'),fakeScareShadow:$('fakeScareShadow'),
   scare:$('scare'),scareArt:$('scareArt'),scareName:$('scareName'),
@@ -2033,14 +2049,23 @@ function renderCamera(){
     var frostLevel=state.yuki&&state.yuki.active&&state.yuki.location==='japan'?state.yuki.frost:0;
     var currentTemp=Math.round(18-frostLevel*.42);
     var target=state.thermostatTarget==null?18:state.thermostatTarget;
+    var battling=state.yuki&&state.yuki.active&&state.yuki.location==='japan';
+    var heat=battling?(state.yuki.heatBattle||0):0;
     els.roomTemp.textContent=currentTemp+'°C';
-    els.setTemp.textContent=target+'°C';
+    els.setTemp.textContent=Math.round(target)+'°C';
     els.thermoFill.style.height=Math.max(6,Math.min(94,((currentTemp+25)/53)*100))+'%';
     if(currentTemp<=0)els.thermostat.classList.add('cold');
     if(currentTemp<=-12)els.thermostat.classList.add('danger');
-    var heatHits=state.yuki&&state.yuki.active&&state.yuki.location==='japan'?(state.yuki.heatHits||0):0;
-    if(frostLevel>0)els.thermoHint.textContent='▲ 난방을 연속으로 올려 밀어내세요 · '+heatHits+'/3';
-    else els.thermoHint.textContent='온도 변화를 지켜보세요. 차가워지면 ▲를 여러 번 누르세요.';
+    els.thermostat.classList.toggle('battle',!!battling);
+    els.heatBattleFill.style.width=Math.max(0,Math.min(100,heat))+'%';
+    if(battling){
+      var battleText=heat>=75?'🔥 난방 우세! 계속 연타!':heat>=42?'팽팽합니다! 더 빠르게!':heat>=15?'❄ 냉기가 되밀고 있어요!':'❄ 유키온나 우세! 난방 연타!';
+      els.heatBattleText.textContent=battleText;
+      els.thermoHint.textContent='손을 멈추면 냉기가 다시 밀어냅니다. ▲ 난방을 빠르게 연타하세요.';
+    }else{
+      els.heatBattleText.textContent='난방 버튼을 연타하세요!';
+      els.thermoHint.textContent='온도 변화를 지켜보세요. 유키온나가 오면 난방으로 맞서세요.';
+    }
   }
 }
 function updateOffice(){
@@ -2096,34 +2121,35 @@ function resolveDokkaebi(){
   state.dokkaebi.trickActive=false;state.dokkaebi.trickTimer=0;state.dokkaebi.moveClock=state.dokkaebi.moveEvery;
   state.cleared++;state.score+=120;directorShift(-15);masterGhost('dokkaebi');sound('good');playTimedClip('cackle',.075,1.18,520);renderCamera()
 }
+function retreatYukiFromHeat(y){
+  var cold=y.frost;
+  var retreatTime=cold>=72?(14+Math.random()*3):(cold>=45?(11+Math.random()*3):(8+Math.random()*2));
+  y.previous='japan';y.location='hidden';y.retreat=retreatTime;y.moveClock=0;y.rest=0;y.heatBattle=0;
+  state.thermostatTarget=18;
+  state.cleared++;state.score+=55;directorShift(-11);masterGhost('yuki');sound('good');
+  playTimedClip('frostReal',.16,1.22,850);
+  toast('🔥 난방 승리! 유키온나를 밀어냈습니다.');
+}
 function adjustThermostat(delta){
   if(!state.running||state.gameOver||state.blackout||state.currentCam!=='japan')return;
   var old=state.thermostatTarget==null?18:state.thermostatTarget;
+  var y=state.yuki;
+  if(delta>0&&y&&y.active&&y.location==='japan'){
+    var cost=.48+nightHour()*.035;
+    if(state.power<cost){toast('봉인력이 부족합니다.');renderCamera();return}
+    spend(cost);sound('click');
+    state.thermostatTarget=Math.min(28,old+2);
+    y.heatBattle=Math.min(100,(y.heatBattle||0)+13.5);
+    y.frost=Math.max(8,y.frost-3.8);
+    discover('yuki');observeGhost('yuki');
+    state.score+=2;directorShift(-1.2);
+    if(y.heatBattle>=100){retreatYukiFromHeat(y);renderCamera();return}
+    if(y.heatBattle>=72)playTimedClip('frostReal',.07,1.16,360);
+    renderCamera();return
+  }
   var next=Math.max(12,Math.min(28,old+delta));
   if(next===old)return;
-  state.thermostatTarget=next;
-  sound('click');
-  if(delta>0&&state.yuki&&state.yuki.active&&state.yuki.location==='japan'){
-    var y=state.yuki,cold=y.frost;
-    var cost=cold>=72?2.0:(cold>=45?1.7:1.4);
-    if(state.power<cost){state.thermostatTarget=old;toast('봉인력이 부족합니다.');renderCamera();return}
-    spend(cost);
-    y.heatHits=Math.min(3,(y.heatHits||0)+1);
-    y.frost=Math.max(8,y.frost-(cold>=72?18:cold>=45?16:13));
-    discover('yuki');observeGhost('yuki');
-    state.score+=6;directorShift(-3);
-    playTimedClip('frostReal',.10,1.12,650);
-    if(y.heatHits>=3){
-      var retreatTime=cold>=72?(13+Math.random()*3):(cold>=45?(10+Math.random()*3):(7+Math.random()*2));
-      y.previous='japan';y.location='hidden';y.retreat=retreatTime;y.moveClock=0;y.rest=0;y.heatHits=0;
-      state.thermostatTarget=18;
-      state.cleared++;state.score+=48;directorShift(-9);masterGhost('yuki');sound('good');
-      toast('난방을 충분히 올렸습니다. 유키온나가 물러났습니다!');
-    }else{
-      toast('난방 '+y.heatHits+'/3 · ▲를 더 눌러 온도를 올리세요.');
-    }
-  }
-  renderCamera()
+  state.thermostatTarget=next;sound('click');renderCamera()
 }
 function currentConfig(){return NIGHT_CONFIGS[state.mode]||NIGHT_CONFIGS.full}
 function castHas(id){return currentConfig().pool.indexOf(id)>=0}
@@ -2158,7 +2184,7 @@ function resetRoamer(r,rewarded){
 }
 function initializePersistentGhosts(){
   state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:3}:null;
-  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5,retreat:0,heatHits:0}:null;
+  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5,retreat:0,heatBattle:0}:null;
   state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:6}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
   if(castHas('egg')){
     var occupied=['special','japan'];if(state.maiden.active)occupied.push('korea');
@@ -2254,20 +2280,28 @@ function updateYuki(dt){
   if(y.retreat>0||y.location==='hidden'){
     y.retreat=Math.max(0,(y.retreat||0)-dt);
     y.frost=Math.max(8,y.frost-dt*2.4);
+    y.heatBattle=0;
     if(y.retreat<=0){
-      y.location='europe';y.previous='japan';y.moveClock=0;y.rest=5+Math.random()*3;y.heatHits=0;state.thermostatTarget=18;
+      y.location='europe';y.previous='japan';y.moveClock=0;y.rest=5+Math.random()*3;y.heatBattle=0;state.thermostatTarget=18;
       toast('멀리서 다시 차가운 기운이 느껴집니다.');
     }
     return
   }
   if(y.location==='japan'){
-    if(y.frost>=45&&y.frost-dt*3<45)whisperGhost('yuki',1);
-    if(y.frost>=72&&y.frost-dt*3<72)whisperGhost('yuki',2);
-    var heatSlow=Math.max(0,(state.thermostatTarget-18)*.055);
-    y.frost+=dt*Math.max(1.6,(state.mode==='practice'?2.4:3.0)-heatSlow);
+    var beforeFrost=y.frost;
+    var coldPush=5.3+nightHour()*.45+Math.max(0,y.frost-45)*.032;
+    y.heatBattle=Math.max(0,(y.heatBattle||0)-dt*coldPush);
+    state.thermostatTarget=Math.max(18,(state.thermostatTarget||18)-dt*2.6);
+    var battleBrake=(y.heatBattle/100)*1.55;
+    y.frost+=dt*Math.max(1.05,(state.mode==='practice'?2.35:3.05)-battleBrake);
+    if(beforeFrost<45&&y.frost>=45)whisperGhost('yuki',1);
+    if(beforeFrost<72&&y.frost>=72)whisperGhost('yuki',2);
     if(y.frost>=100){fail('yuki');return}
   }
-  else y.frost=Math.max(8,y.frost-dt*1.25);
+  else{
+    y.frost=Math.max(8,y.frost-dt*1.25);
+    y.heatBattle=Math.max(0,(y.heatBattle||0)-dt*8);
+  }
   if(y.rest>0){y.rest-=dt;return}
   y.moveClock+=dt;
   if(y.moveClock>=y.moveEvery&&y.frost<58){
@@ -2282,7 +2316,8 @@ function updateYuki(dt){
       else next='europe';
       var leavingJapan=y.location==='japan';
       y.previous=y.location;y.location=next;y.rest=2+Math.random()*2;
-      if(leavingJapan){y.heatHits=0;state.thermostatTarget=18}
+      if(leavingJapan){y.heatBattle=0;state.thermostatTarget=18}
+      else if(next==='japan'){y.heatBattle=0;state.thermostatTarget=18;toast('❄ 과학실 온도가 급격히 떨어집니다!')}
     }
   }
 }
