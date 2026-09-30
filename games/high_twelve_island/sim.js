@@ -186,7 +186,9 @@
     if (!Array.isArray(d.decisions)) d.decisions = [];
     d.reserveFood = clamp(d.reserveFood || 0, 0, 28);
     if (!d.actionCooldowns || typeof d.actionCooldowns !== "object") d.actionCooldowns = {};
-    d.pending = d.pending === "new_resident" && d.arrivalNotice ? d.pending : null;
+    // 구버전 저장 중 주민 합류 창이 열려 있어도 플레이를 방해하지 않는다.
+    d.pending = null;
+    d.arrivalNotice = null;
     return d;
   }
   function random(s) {
@@ -521,9 +523,6 @@
         { label: "공공시설 개선에 물자를 사용해요.", cost: { wood: 8 }, changes: { trust: 5 }, note: "물자를 사용해 공공시설을 개선합니다." },
         { label: "현재 예산 운영을 계속해요.", changes: { trust: -3 }, note: "즉각적인 지출은 없지만 관련 요구가 남을 수 있습니다." }
       ] },
-    { id: "new_resident", priority: 120, when: () => false, title: "새로운 주민이 도착했습니다", speaker: "하나", body: "새로운 주민이 합류했습니다.", options: [
-      { label: "새 주민의 이야기를 확인했어요.", note: "주민 탭에서 이 사람의 관심사와 생각을 확인할 수 있어요." }
-    ] },
     { id: "first_rule", priority: 78, once: true, when: s => s.tick >= 3 && !s.laws.ration, title: "누가 식량을 얼마나 받을까요?", speaker: "하나", body: "모두가 먹을 식량을 모았습니다. 이제 함께 지킬 배분 규칙을 정해야 합니다.", options: [
       { label: "모두에게 같은 양을 나눠요.", law: ["ration", "equal"], note: "균등 배급 규칙을 제정합니다." },
       { label: "기본량에 일한 사람의 몫을 더해요.", law: ["ration", "effort"], note: "기본 배급과 노동 보상을 함께 적용합니다." },
@@ -646,13 +645,12 @@
     if (event.id.startsWith("ration_") && event.id.endsWith("_petition")) s.pressure.ration = clamp(s.pressure.ration - 2.8, 0, 8);
     if (event.id === "labor_fatigue") s.pressure.labor = clamp(s.pressure.labor - 3, 0, 8);
     if (event.id === "storm_aftermath") s.stormAftermathAt = 0;
-    if (event.id === "new_resident") s.arrivalNotice = null;
     s.eventsSeen[event.id] = true;
     s.eventsLast[event.id] = s.tick;
     s.pending = null;
     s.cooldown = 5;
     record(s, event.title + " — " + choice.label);
-    if (event.id !== "new_resident") recordDecision(s, event.title, choice.label);
+    recordDecision(s, event.title, choice.label);
     return { ok: true, note: choice.note };
   }
   function tick(s) {
@@ -690,8 +688,8 @@
       s.arrivalNotice = { citizenId: newcomer.id, name: newcomer.name, origin: newcomer.origin, joinedWeek: s.tick };
       s.arrivalLog.unshift({ ...s.arrivalNotice });
       if (s.arrivalLog.length > 30) s.arrivalLog.length = 30;
-      s.pending = "new_resident";
-      record(s, newcomer.name + " 합류 — " + newcomer.origin + " 현재 " + s.population + "명.");
+      record(s, "⛵ " + newcomer.name + " 합류 — " + newcomer.origin + " 현재 " + s.population + "명.");
+      s.arrivalNotice = null;
     }
     if (s.population > 2 && s.food < 1 && s.tick % 10 === 0) {
       s.population--;
