@@ -115,22 +115,22 @@
         <div class="paper" id="paper" data-rev="01"><h2 id="ruleTitle">초기 감염 기준</h2><ol class="rules" id="rules"></ol><div class="memo" id="memo"></div></div>
         <div class="decision"><h3>최종 판정</h3><div class="decision-grid">
           <button type="button" class="decide pass" data-action="pass">1 · 통과</button>
-          <button type="button" class="decide retest" data-action="retest">2 · 추가검사</button>
-          <button type="button" class="decide quarantine" data-action="quarantine">3 · 격리</button>
+          <button type="button" class="decide retest" data-action="retest">2 · 추가검사 · 관찰</button>
+          <button type="button" class="decide quarantine" data-action="quarantine">3 · 격리 · 소각</button>
         </div></div>
       </div>
     </aside>
   </main>
-  <div class="footer-note">확장판 v9 · 절차 생성 검역 + 구역 감염 + A/B 격리시설 + 후속 진압</div>
+  <div class="footer-note">확장판 v10 · 절차 생성 검역 + 추가검사 관찰실 + 고위험 격리실 + 후속 진압</div>
 </div>
 
 <div class="modal show" id="introModal">
   <div class="modal-card">
     <div class="briefing"><img src="../../assets/game/2d/items/kenney-generic-items/colored/generic-item-color-102.png" alt="의료 가방"><div>
       <h1>격리구역 17 : 검역 판정소</h1>
-      <p>도시 외곽 제17검역소에 배치되었습니다. 시민의 증상을 확인하고, 매주 바뀌는 규정을 적용해 <b>통과 / 추가검사 / 격리</b> 중 하나를 판정하세요.</p>
-      <p>초기에는 단순하지만 2주차부터 새로운 검사법이 추가됩니다. 감염자를 놓치면 생존자 캠프까지 감염이 번질 수 있고, 정상인을 과잉 격리하면 공동 격리실에서 위험에 노출될 수 있습니다.</p>
-      <div class="brief-rules"><b>조작</b><br>도구 클릭 또는 <b>I/T/U/B</b> · 판정은 <b>1/2/3</b><br>신분증과 검사 결과를 지침서와 대조하세요.</div>
+      <p>도시 외곽 제17검역소에 배치되었습니다. 시민의 증상을 확인하고, 매주 바뀌는 규정을 적용해 <b>통과 / 추가검사·관찰 / 격리·소각</b> 중 하나를 판정하세요.</p>
+      <p>초기에는 단순하지만 2주차부터 새로운 검사법이 추가됩니다. <b>추가검사</b>는 A 관찰실에서 정밀검사를 거쳐 음성/양성을 가리는 보류 판정이며, <b>격리</b>는 즉시 소각되는 최종 판정입니다. 감염자를 통과시키면 생존자 캠프까지 감염이 번질 수 있습니다.</p>
+      <div class="brief-rules"><b>조작</b><br>도구 클릭 또는 <b>I/T/U/B</b> · <b>1 통과 / 2 추가검사·관찰 / 3 격리·소각</b><br>신분증과 검사 결과를 지침서와 대조하세요.</div>
       <button class="primary" id="startBtn" type="button">근무 시작</button>
     </div></div>
   </div>
@@ -140,8 +140,8 @@
 <div class="modal" id="reportModal"><div class="modal-card" id="reportContent"></div></div>
 
 <script src="./systems-v9.js?v=2"></script>
-<script src="./game-v2.js?v=10"></script>
-<script src="./outbreak-v3.js?v=10"></script>
-<script src="./rework-v9.js?v=2"></script>
+<script src="./game-v2.js?v=11"></script>
+<script src="./outbreak-v3.js?v=11"></script>
+<script src="./rework-v9.js?v=3"></script>
 </body>
 </html>
