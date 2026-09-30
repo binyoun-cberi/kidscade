@@ -19,12 +19,12 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=17/);
+  assert.match(html,/game\.js\?v=18/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
   for(const day of [1,2,3,4,5,6,7])assert.match(js,new RegExp('\\n '+day+':\\{title:'));
-  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','foodPreservation','waterTreatment','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
+  for(const id of ['waterRisk','boiling','chemicalPollution','combustion','insulation','plantGrowth','foodPreservation','waterTreatment','ruinSafety','electricity','division','scarcity','community','riverSettlement','flood'])assert.ok(js.includes("'"+id+"'"),id);
   for(const id of ['campfire','shelter','workbench','farm','cooler','purifier'])assert.ok(js.includes(id),id);
   assert.match(js,/chooseDistribution/);
   assert.match(js,/readyFlood/);
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v17',()=>{
+test('game is registered in catalog metadata v18',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=17');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=18');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,7 +109,7 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=17/);
+  assert.match(html,/game\.js\?v=18/);
   assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=17$/);
 });
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v17 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v18 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=17/);
+  assert.match(html,/game\.js\?v=18/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -213,4 +213,28 @@ test('resident simulation is schedule-driven and settlement metrics come from li
   assert.match(js,/생활 압박/);
   assert.match(css,/\.settlement-metrics/);
   assert.match(css,/\.settlement-bars/);
+});
+
+
+test('road graph and ruined interiors form a navigable exploration layer',()=>{
+  assert.match(js,/const ROAD_NODES=/);
+  assert.match(js,/const ROAD_EDGES=/);
+  assert.match(js,/BRIDGE_Z=-27/);
+  assert.match(js,/function findRoadPath/);
+  assert.match(js,/function residentWaypoint/);
+  assert.match(js,/bridgeW/);
+  assert.match(js,/bridgeE/);
+  assert.match(js,/function currentRuinZone/);
+  assert.match(js,/function toggleRuinDoor/);
+  assert.match(js,/function searchRuinSpot/);
+  assert.match(js,/function updateRuinInteriors/);
+  assert.match(js,/door-rotate-square-b\.glb/);
+  assert.match(js,/marketShelf/);
+  assert.match(js,/clinicSupply/);
+  assert.match(js,/garageLocker/);
+  assert.match(js,/hazard:'unstable'/);
+  assert.match(js,/hazard:'sharp'/);
+  assert.match(js,/ruinSearchProgress/);
+  assert.match(js,/문간에서 조금 떨어져야 닫을 수 있습니다/);
+  assert.match(js,/indoor=currentRuinZone/);
 });
