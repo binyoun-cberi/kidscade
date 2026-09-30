@@ -10,6 +10,7 @@ const TEST_FILES = [
   "tests/game-cover-overrides.test.cjs",
   "tests/game-description-overrides.test.cjs",
   "tests/profile-history.test.cjs",
+  "tests/activity-feed.test.cjs",
   "tests/playtime-state.test.cjs",
   "tests/index-base-playtime.test.cjs",
   "tests/seed-wallet.test.cjs",
