@@ -13,15 +13,21 @@ test('Twelve Island registers a complete accessible game and uses existing asset
   assert.ok(entry);
   assert.equal(entry.subject, 'social');
   assert.equal(entry.age, 'high');
-  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js'])
+  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js', 'art.js'])
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
   assert.match(html, /sim.js\?v=1/);
-  assert.match(html, /game.js\?v=1/);
+  assert.match(html, /art.js\?v=2/);
+  assert.match(html, /game.js\?v=2/);
+  assert.match(html, /id="islandCanvas"/);
+  assert.match(entry.href, /\\?v=2$/);
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
-  for (const asset of ['assets/game/2d/platformer-art/expansions/buildings/house-beige.png',
-    'assets/game/2d/platformer-art/expansions/buildings/rock-moss.png'])
+  for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
+    'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
+    'assets/game/2d/characters/kenney-modular-characters/face/completes/face1.png',
+    'assets/game/2d/characters/kenney-modular-characters/skin/tint-3/tint3_head.png',
+    'assets/game/2d/characters/kenney-modular-characters/hair/brown-1/brown1Woman1.png'])
     assert.ok(fs.existsSync(path.join(ROOT, asset)), asset);
 });
 
@@ -139,4 +145,49 @@ test('long autonomous runs have valid resources, time-pause and no unwinnable ev
     assert.equal(resumed.stage, s.stage);
     assert.equal(resumed.population, s.population);
   }
+});
+
+
+test('pixel-art renderer uses the real packed atlases for scene, buildings and citizens', () => {
+  const vm = require('node:vm');
+  const script = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
+  const drawn = [];
+  class FakeImage {
+    set src(value) { this.url = value; this.onload?.(); }
+  }
+  const ctx = {
+    clearRect() {}, fillRect() {}, beginPath() {}, ellipse() {}, fill() {}, stroke() {},
+    moveTo() {}, lineTo() {}, save() {}, restore() {}, clip() {},
+    drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) {
+      drawn.push({ path: img.url, sx, sy, sw, sh, dx, dy, dw, dh });
+      assert.ok(sw === 16 && sh === 16);
+      assert.ok(sx >= 0 && sx < 192 && sy >= 0 && sy < 176);
+      assert.ok(dw > 0 && dh > 0);
+    }
+  };
+  const root = { requestAnimationFrame() { return 1; } };
+  vm.runInNewContext(script, { window: root, document: { hidden: false }, Image: FakeImage });
+  const canvas = { getContext: () => ctx, width: 0, height: 0 };
+  assert.equal(root.IslandArt.mount(canvas), true);
+  const state = S.initial(7);
+  root.IslandArt.setState(state);
+  assert.equal(canvas.width, 720);
+  assert.ok(drawn.some(item => item.path.includes('kenney-tiny-town')), 'town terrain and trees');
+  assert.ok(drawn.some(item => item.path.includes('kenney-tiny-farm')), 'farm residents and supplies');
+  const firstCount = drawn.length;
+  state.buildings.farm = 2;
+  state.buildings.hut = 1;
+  state.buildings.store = 1;
+  state.buildings.clinic = 1;
+  state.buildings.hall = 1;
+  state.stage = 2;
+  root.IslandArt.setState(state);
+  assert.ok(drawn.length > firstCount, 'building sprites appear as progress increases');
+});
+
+test('modular character portraits are wired into the event dialogue', () => {
+  const script = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(script, /function characterPortrait\(/);
+  assert.match(script, /NPC_ASSET.*kenney-modular-characters/);
+  assert.match(script, /speaker"\)\.innerHTML = characterPortrait/);
 });
