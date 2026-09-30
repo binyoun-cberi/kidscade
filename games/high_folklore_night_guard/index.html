@@ -1329,7 +1329,7 @@ var GHOSTS={
     svg:'dokkaebi'},
   yuki:{name:'유키온나',origin:'일본',kind:'요괴·전승',
     fact:'유키온나는 일본의 눈과 겨울에 관련된 이야기에서 등장하는 존재로 전승에 따라 모습과 이야기가 달라집니다.',
-    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. 충분히 얼었을 때 온도계의 ▲로 설정 온도를 올리세요.',
+    rule:'게임에서는 과학실의 온도를 떨어뜨립니다. 온도계의 ▲를 누르면 잠시 사라지며, 많이 얼었을수록 더 오래 물러납니다.',
     svg:'yuki'},
   maiden:{name:'처녀귀신',origin:'한국',kind:'괴담·대중문화 이미지',
     fact:'미혼으로 죽은 여성의 원혼 이야기는 한국의 여러 괴담과 설화에 나타나며, 흰옷과 긴 머리 이미지는 후대 대중문화에서 더욱 정형화되었습니다.',
@@ -1597,7 +1597,7 @@ function renderCodex(){
           '<div class="quick-rule-card"><div class="who">흰 옷 여자 · 처녀귀신</div><div class="do">계속 바라보기</div><div class="hint">CCTV로 보고 있으면 뒤로 물러남</div></div>'+
           '<div class="quick-rule-card"><div class="who">얼굴 없는 학생 · 달걀귀신</div><div class="do">다른 CAM 보기</div><div class="hint">오래 보면 위험함</div></div>'+
           '<div class="quick-rule-card"><div class="who">복도 귀신 · 저승사자 / 늑대인간</div><div class="do">문 앞에 오면 그쪽 문 닫기</div><div class="hint">서쪽이면 서쪽 문, 동쪽이면 동쪽 문</div></div>'+
-          '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">많이 얼면 온도 올리기</div><div class="hint">너무 일찍 켜면 효과가 약함</div></div>'+
+          '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">▲ 온도 올리기</div><div class="hint">누르면 잠시 사라짐 · 많이 얼었을수록 오래 물러남</div></div>'+
           '<div class="quick-rule-card"><div class="who">6-1 물건이 달라짐 · 도깨비</div><div class="do">바뀐 물건 누르기</div><div class="hint">책상·사진·칠판·문을 비교</div></div>'+
           '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
         '</div>'+
@@ -1621,7 +1621,7 @@ function renderCodex(){
       tab:'과학실',title:'제3쪽 · 과학실',code:'구역 CAM 02',
       body:
         '<div class="rulebook-rule"><span class="no">1.</span>과학실 창문에 성에가 끼는 현상은 계절과 관계없이 정상적이지 않습니다.</div>'+
-        '<div class="rulebook-rule"><span class="no">2.</span>성에가 조금 생겼다고 바로 온도를 올리지 마십시오. <strong>충분히 얼었을 때 ▲로 올리세요.</strong></div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>▲로 온도를 올리면 유키온나는 <strong>잠시 모습을 감춥니다.</strong> 충분히 얼었을 때 올리면 더 오래 물러납니다.</div>'+
         '<div class="rulebook-rule"><span class="no">3.</span>흰 형체가 보여도 가까이 확인하러 가지 마십시오.</div>'+
         '<div class="rulebook-evidence"><figure style="--r:.8deg"><img src="'+ASSET_ROOT+'science_base_01.png" alt=""><figcaption>정상 과학실</figcaption></figure><figure style="--r:-1.1deg"><img src="'+ASSET_ROOT+'science_window_frost_02.png" alt=""><figcaption>성에 발생</figcaption></figure><figure style="--r:.5deg"><img src="'+ASSET_ROOT+'science_variant_frozen_01.png" alt=""><figcaption>결빙 심화</figcaption></figure></div>'+
         note('yuki',1,'“너무 일찍 온도를 올리면 효과가 거의 없다.”','pencil')+
@@ -2038,9 +2038,9 @@ function renderCamera(){
     els.thermoFill.style.height=Math.max(6,Math.min(94,((currentTemp+25)/53)*100))+'%';
     if(currentTemp<=0)els.thermostat.classList.add('cold');
     if(currentTemp<=-12)els.thermostat.classList.add('danger');
-    if(frostLevel>=72)els.thermoHint.textContent='지금 온도를 올리면 냉기를 크게 밀어낼 수 있습니다.';
-    else if(frostLevel>=45)els.thermoHint.textContent='냉기가 충분히 퍼졌습니다. 온도를 올려도 좋습니다.';
-    else els.thermoHint.textContent='아직 많이 얼지 않았습니다. 높은 설정은 봉인력만 더 씁니다.';
+    if(frostLevel>=72)els.thermoHint.textContent='▲ 온도를 올리면 유키온나가 오래 물러납니다.';
+    else if(frostLevel>=45)els.thermoHint.textContent='▲ 온도를 올리면 유키온나가 잠시 사라집니다.';
+    else els.thermoHint.textContent='▲를 눌러도 잠깐 사라지지만, 너무 일찍 올리면 봉인력이 아깝습니다.';
   }
 }
 function updateOffice(){
@@ -2108,16 +2108,20 @@ function adjustThermostat(delta){
     var cost=cold>=72?2.2:(cold>=45?2.7:3.4);
     if(state.power<cost){state.thermostatTarget=old;toast('봉인력이 부족합니다.');renderCamera();return}
     spend(cost);
-    var effect=cold>=72?22:(cold>=45?14:5);
-    state.yuki.frost=Math.max(0,state.yuki.frost-effect);
+    var effect=cold>=72?28:(cold>=45?20:10);
+    var retreatTime=cold>=72?(14+Math.random()*3):(cold>=45?(10+Math.random()*3):(6+Math.random()*2));
+    state.yuki.frost=Math.max(8,state.yuki.frost-effect);
+    state.yuki.previous='japan';
+    state.yuki.location='hidden';
+    state.yuki.retreat=retreatTime;
+    state.yuki.moveClock=0;
+    state.yuki.rest=0;
     discover('yuki');observeGhost('yuki');
-    state.score+=cold>=45?16:4;
-    playTimedClip('frostReal',.09,1.12,700);
-    if(state.yuki.frost<=5&&cold>=45){
-      state.yuki.frost=10;state.yuki.location='europe';state.yuki.moveClock=0;state.yuki.rest=6+Math.random()*4;
-      state.cleared++;state.score+=80;directorShift(-16);masterGhost('yuki');
-      toast('온도가 올라가며 냉기가 중앙 복도로 물러났습니다.');
-    }else if(cold<45)toast('아직 충분히 얼지 않아 온도를 올려도 효과가 작습니다.');
+    state.score+=cold>=45?24:8;
+    directorShift(cold>=45?-10:-6);
+    playTimedClip('frostReal',.12,1.18,900);
+    if(cold>=45){state.cleared++;masterGhost('yuki')}
+    toast(cold>=72?'유키온나가 한동안 모습을 감췄습니다.':cold>=45?'유키온나가 잠시 물러났습니다.':'유키온나가 잠깐 사라졌습니다.');
   }
   renderCamera()
 }
@@ -2154,7 +2158,7 @@ function resetRoamer(r,rewarded){
 }
 function initializePersistentGhosts(){
   state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:3}:null;
-  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5}:null;
+  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5,retreat:0}:null;
   state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:6}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
   if(castHas('egg')){
     var occupied=['special','japan'];if(state.maiden.active)occupied.push('korea');
@@ -2247,6 +2251,15 @@ function updateDokkaebi(dt){
 }
 function updateYuki(dt){
   var y=state.yuki;if(!y||!y.active)return;
+  if(y.retreat>0||y.location==='hidden'){
+    y.retreat=Math.max(0,(y.retreat||0)-dt);
+    y.frost=Math.max(8,y.frost-dt*2.4);
+    if(y.retreat<=0){
+      y.location='europe';y.previous='japan';y.moveClock=0;y.rest=5+Math.random()*3;
+      toast('멀리서 다시 차가운 기운이 느껴집니다.');
+    }
+    return
+  }
   if(y.location==='japan'){
     if(y.frost>=45&&y.frost-dt*3<45)whisperGhost('yuki',1);
     if(y.frost>=72&&y.frost-dt*3<72)whisperGhost('yuki',2);
