@@ -17,12 +17,13 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=3/);
+  assert.match(html, /sim.js\?v=4/);
   assert.match(html, /art.js\?v=2/);
-  assert.match(html, /game.js\?v=3/);
+  assert.match(html, /game.js\?v=4/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
-  assert.ok(entry.href.endsWith("?v=3"));
+  assert.match(html, /id="policyNotice"/);
+  assert.ok(entry.href.endsWith("?v=4"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -267,4 +268,171 @@ test('resident UI renders live thoughts and newcomer details', () => {
   assert.match(js, /S\.communityPulse\(state\)/);
   assert.match(js, /selectedCitizenId = arrivingId/);
   assert.match(js, /arriving\.origin/);
+});
+
+
+test('ration routes have different weekly economics and dedicated follow-up petitions', () => {
+  const outcomes = {};
+  for (const law of ['equal', 'effort', 'needs']) {
+    const s = S.initial(20);
+    const enacted = S.enact(s, 'ration', law);
+    assert.equal(enacted.ok, true);
+    outcomes[law] = S.rates(s);
+    s.tick = 12;
+    s.pressure.ration = 3.5;
+    const event = S.chooseEvent(s);
+    assert.equal(event.id, 'ration_' + law + '_petition');
+    s.pending = event.id;
+    assert.equal(S.resolveEvent(s, 0).ok, true);
+    assert.equal(s.passed.includes('ration'), true);
+    assert.ok(s.decisions.some(d => d.title.includes('배급') || d.title.includes('일한 몫') || d.title.includes('지원')));
+    if (law === 'equal') assert.equal(s.safeguards.fairBonus, true);
+    if (law === 'effort') assert.equal(s.safeguards.effortCare, true);
+    if (law === 'needs') assert.equal(s.safeguards.needsAudit, true);
+  }
+  assert.ok(outcomes.effort.gather > outcomes.equal.gather);
+  assert.ok(outcomes.effort.foodUse > outcomes.equal.foodUse);
+  assert.ok(outcomes.needs.foodUse > outcomes.equal.foodUse);
+  assert.ok(outcomes.needs.wood < outcomes.equal.wood);
+});
+
+test('recurring petitions allow renewed review of already-active safeguards', () => {
+  const s = S.initial(12);
+  S.enact(s, 'ration', 'effort');
+  s.safeguards.effortCare = true;
+  s.pressure.ration = 4.5;
+  s.tick = 25;
+  s.pending = 'ration_effort_petition';
+  assert.equal(S.resolveEvent(s, 0).ok, true);
+  assert.equal(s.pending, null);
+  assert.ok(s.pressure.ration < 2);
+});
+
+test('long extra work accumulates fatigue and changes actual production and labor events', () => {
+  const s = S.initial(7);
+  S.enact(s, 'labor', 'extra');
+  const before = S.rates(s).gather;
+  for (let i = 0; i < 30; i++) {
+    S.advanceConsequences(s);
+    s.tick++;
+  }
+  assert.ok(s.workStrain >= 5);
+  assert.ok(S.rates(s).gather < before);
+  const event = S.chooseEvent(s);
+  assert.equal(event.id, 'labor_fatigue');
+  s.pending = event.id;
+  assert.equal(S.resolveEvent(s, 0).ok, true);
+  assert.equal(s.safeguards.workBreak, true);
+  assert.ok(s.workStrain < 5);
+});
+
+test('promised law reviews trigger a follow-up and can be fulfilled', () => {
+  const s = S.initial(8);
+  S.enact(s, 'ration', 'equal');
+  s.tick = 18;
+  s.pressure.ration = 3.5;
+  s.pending = 'ration_equal_petition';
+  assert.equal(S.resolveEvent(s, 2).ok, true);
+  assert.equal(s.pledges.length, 1);
+  const due = s.pledges[0].due;
+  s.tick = due;
+  s.cooldown = 0;
+  const followup = S.chooseEvent(s);
+  assert.equal(followup.id, 'unkept_pledge');
+  s.pending = followup.id;
+  assert.equal(S.resolveEvent(s, 0).ok, true);
+  assert.equal(s.safeguards.fairBonus, true);
+  assert.equal(s.pledges.length, 0);
+});
+
+test('a previously enacted ration reform fulfills the active pledge', () => {
+  const s = S.initial(7);
+  S.enact(s, 'ration', 'equal');
+  s.pledges.push({ kind: 'ration', title: '배급법 재검토', due: 30 });
+  const before = s.trust;
+  assert.equal(S.enact(s, 'ration', 'needs').ok, true);
+  assert.equal(s.pledges.length, 0);
+  assert.ok(s.trust > before);
+});
+
+test('reserve, exchange and sharing laws alter storm aftermath in different ways', () => {
+  const losses = {};
+  for (const policy of ['reserve', 'exchange', 'share']) {
+    const s = S.initial(19);
+    S.enact(s, 'storage', policy);
+    s.food = 87;
+    s.stormUntil = s.tick + 1;
+    s.stormAftermathAt = s.stormUntil;
+    S.tick(s);
+    losses[policy] = s.food;
+    assert.equal(s.stormUntil, 0);
+    assert.equal(s.stormAftermathAt, 1);
+  }
+  assert.ok(losses.reserve > losses.exchange);
+  assert.ok(losses.exchange > losses.share);
+});
+
+test('public decision procedure changes whether care law needs voting and waiting', () => {
+  const meeting = S.initial(9);
+  meeting.stage = 2;
+  assert.equal(S.enact(meeting, 'process', 'meeting').ok, true);
+  assert.equal(S.ruleProcedure(meeting, 'care', 'basic'), 'vote');
+  const voted = S.enact(meeting, 'care', 'basic');
+  assert.equal(voted.ok, true);
+  assert.ok(voted.vote && voted.vote.total === 12);
+  assert.ok(meeting.voteCooldownUntil > meeting.tick);
+  assert.equal(S.enact(meeting, 'care', 'medical').ok, false);
+
+  const delegated = S.initial(9);
+  delegated.stage = 2;
+  assert.equal(S.enact(delegated, 'process', 'delegate').ok, true);
+  assert.equal(S.ruleProcedure(delegated, 'care', 'basic'), 'direct');
+  const result = S.enact(delegated, 'care', 'basic');
+  assert.equal(result.ok, true);
+  assert.equal(result.vote, null);
+  assert.equal(delegated.authorityUses, 1);
+  assert.equal(S.ruleProcedure(delegated, 'tax', 'low'), 'vote');
+});
+
+test('voters have distinct interests and their viewpoints alter the fictional vote', () => {
+  const s = S.initial(50);
+  s.stage = 2;
+  s.trust = 80;
+  s.buildings.clinic = 1;
+  s.citizens.forEach(p => { p.focus = 'work'; });
+  const allWork = S.expectedVotes(s, 'tax', 'high');
+  s.citizens.forEach(p => { p.focus = 'public'; });
+  const publicServices = S.expectedVotes(s, 'tax', 'high');
+  assert.ok(publicServices.yes > allWork.yes);
+  assert.equal(publicServices.members.length, 12);
+  assert.equal(publicServices.members[0].name, '하나');
+});
+
+test('legacy v3 saves acquire new consequences without losing citizen or building data', () => {
+  const prior = S.initial(24);
+  prior.buildings.farm = 2;
+  prior.laws.ration = 'effort';
+  delete prior.pressure;
+  delete prior.workStrain;
+  delete prior.safeguards;
+  delete prior.pledges;
+  delete prior.decisions;
+  const loaded = S.normalize(JSON.parse(JSON.stringify(prior)));
+  assert.equal(loaded.buildings.farm, 2);
+  assert.equal(loaded.laws.ration, 'effort');
+  assert.equal(loaded.citizens.length, loaded.population);
+  assert.equal(loaded.pressure.ration, 0);
+  assert.equal(loaded.safeguards.effortCare, false);
+  assert.deepEqual(loaded.pledges, []);
+});
+
+test('v4 UI shows continuing effects, deadlines, personal votes and dynamic event descriptions', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(html, /id="policyNotice"/);
+  assert.match(js, /function renderPolicyStatus/);
+  assert.match(js, /function consequenceBoard/);
+  assert.match(js, /S\.policyEffect\(id, option.id\)/);
+  assert.match(js, /vote\.members/);
+  assert.match(js, /typeof event\.body === "function"/);
 });
