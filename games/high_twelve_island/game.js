@@ -110,6 +110,13 @@
     }
     const next = (state.pledges || []).filter(p => !p.fulfilled).sort((a,b) => a.due-b.due)[0];
     if (next) parts.push('<span class="issue-chip alert">📌 ' + escapeHTML(next.title) + ' · ' + Math.max(0, next.due - state.tick) + '주 남음</span>');
+    for (const kind of S.activeDisasters(state))
+      parts.push('<span class="issue-chip alert">' + escapeHTML(S.DISASTER_NAMES[kind]) +
+        ' ' + (state.disasters[kind] - state.tick) + '주 남음</span>');
+    for (const group of S.groupStatus(state)) if (group.action !== "협의 중")
+      parts.push('<span class="issue-chip alert">📣 ' + escapeHTML(group.name + ' · ' + group.action) + '</span>');
+    if (state.mandateRestrictedUntil > state.tick) parts.push('<span class="issue-chip alert">🏛️ 임시 운영 · ' +
+      (state.mandateRestrictedUntil-state.tick) + '주 남음</span>');
     for (const issue of S.rightsConcerns(state)) parts.push('<span class="issue-chip alert">⚠️ ' + escapeHTML(issue) + '</span>');
     if (state.laws.storage === "reserve") parts.push('<span class="issue-chip">📦 비상식량 ' + number(state.reserveFood || 0) + '/28</span>');
     if (state.boostUntil > state.tick) parts.push('<span class="issue-chip">⚒️ 집중 생산 · ' + (state.boostUntil - state.tick) + '주 남음</span>');
@@ -128,26 +135,48 @@
   }
 
   function renderCrisis() {
-    const active = S.winterActive(state);
-    const forecast = state.nextWinterAt - state.tick;
+    const winter = S.winterActive(state), ongoing = S.activeDisasters(state);
+    const winterForecast = state.nextWinterAt - state.tick;
+    const upcoming = Object.entries(state.nextDisasters || {}).filter(([,week]) => week > state.tick)
+      .map(([kind,week]) => ({kind,remaining:week-state.tick})).sort((a,b)=>a.remaining-b.remaining)[0];
     const rights = S.rightsConcerns(state);
-    const known = active || state.winterEver || forecast <= 8 || state.winterPrepared != null || rights.length || (state.rightsHistory || []).length;
+    const angry = S.groupStatus(state).filter(g => g.grievance >= 3 || g.action !== "협의 중");
+    const known = winter || state.winterEver || winterForecast<=8 || state.winterPrepared != null ||
+      ongoing.length || (upcoming && upcoming.remaining<=6) || Object.keys(state.disasterSeen||{}).length ||
+      rights.length || (state.rightsHistory || []).length || angry.length;
     const zone = $("crisisStrip");
     if (!zone) return;
-    if (!known) { zone.classList.add("hidden"); zone.innerHTML = ""; return; }
+    if (!known) { zone.classList.add("hidden"); zone.innerHTML=""; return; }
     zone.classList.remove("hidden");
-    const season = active ? '❄️ ' + (state.winterCount || 1) + '번째 한파 · ' + (state.coldUntil - state.tick) + '주 남음' :
-      '🌤️ 다음 한파까지 ' + Math.max(0, forecast) + '주';
-    const meter = (icon, title, value, warning) =>
-      '<div class="crisis-meter' + (value <= warning ? ' urgent' : '') + '">' +
-      '<span>' + icon + ' ' + title + '</span><strong>' + number(value) + '</strong>' +
-      '<i><b style="width:' + Math.max(0, Math.min(100, value)) + '%"></b></i></div>';
-    zone.innerHTML = '<div class="crisis-head"><strong>' + season + '</strong>' +
-      '<small>' + (active ? '난방 연료 ' + number(S.rates(state).heating) + '/주 필요' : '한파에는 생산이 줄고 난방에 목재가 필요해요.') + '</small></div>' +
-      meter('🔥', '체온', state.warmth, 36) + meter('❤️', '건강', state.health, 48) +
-      (state.eventsSeen.child_labor_debate || state.childWorkUntil > state.tick || (state.rightsHistory || []).some(h => h.kind === "어린이 위험 노동") ?
-        meter('📚', '어린이 학습', state.education, 65) + meter('🧒', '어린이 건강', state.childWellbeing, 60) : '') +
-      (rights.length ? '<div class="rights-alert">현재 권리 문제: ' + rights.map(escapeHTML).join(' · ') + '</div>' : '');
+    const icons={heat:"☀️",flood:"🌊",dust:"🌫️",epidemic:"🦠"};
+    const climate = ongoing.map(kind => icons[kind] + ' ' + S.DISASTER_NAMES[kind] +
+      ' ' + (state.disasters[kind] - state.tick) + '주').join(' · ');
+    const season = (winter ? '❄️ 한파 ' + (state.coldUntil-state.tick) + '주' :
+      '❄️ 다음 한파 ' + Math.max(0,winterForecast) + '주') +
+      (climate ? ' · ' + climate : '');
+    const forecastText = upcoming?.remaining<=6 ? icons[upcoming.kind] + ' ' + S.DISASTER_NAMES[upcoming.kind] +
+      ' 예상: ' + upcoming.remaining + '주 후' : '재난이 겹칠 수 있습니다. 비축량을 확인하세요.';
+    const meter = (icon,title,value,warning,max=100) =>
+      '<div class="crisis-meter' + (value<=warning?' urgent':'') + '"><span>' + icon + ' ' + title +
+      '</span><strong>' + number(value) + (max===100?'':'/'+max) + '</strong>' +
+      '<i><b style="width:' + Math.max(0,Math.min(100,value/max*100)) + '%"></b></i></div>';
+    zone.innerHTML='<div class="crisis-head"><strong>' + season + '</strong><small>' +
+      (winter?'난방 물자 '+number(S.rates(state).heating)+'/주 · ':'') +
+      forecastText + '</small></div>' +
+      meter('🔥','체온',state.warmth,36) + meter('❤️','건강',state.health,48) +
+      (state.tick>=24 || ongoing.length || state.water<55 ? meter('💧','식수',state.water,28) : '') +
+      ((state.disasterSeen.dust || S.disasterActive(state,'dust') || state.air<80) ?
+        meter('🌫️','공기 질',state.air,40) : '') +
+      ((state.disasterSeen.epidemic || state.sick>0) ?
+        meter('🩺','감염자',state.sick,state.population+1,state.population) : '') +
+      ((state.eventsSeen.child_labor_debate || state.childWorkUntil>state.tick ||
+        (state.rightsHistory||[]).some(h=>h.kind==='어린이 위험 노동')) ?
+        meter('📚','어린이 학습',state.education,65) +
+        meter('🧒','어린이 건강',state.childWellbeing,60) : '') +
+      (rights.length ? '<div class="rights-alert">현재 권리 문제: ' +
+        rights.map(escapeHTML).join(' · ') + '</div>' : '') +
+      (angry.length ? '<div class="rights-alert">주민 집단의 요구: ' +
+        angry.map(g=>escapeHTML(g.name+' · '+g.action)).join(' / ') + '</div>' : '');
   }
   function renderVillage() {
     window.IslandArt?.setState(state);
@@ -155,7 +184,12 @@
     element.name.textContent = state.stage === 1 ? "새싹섬 · 작은 야영지" : "새싹섬 · 자치 마을";
     element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명" + (state.stage === 1 && state.population >= S.capacity(state) ? " · 주거 부족" : "");
     element.clock.textContent = state.tick + 1 + "번째 주";
-    element.scene.textContent = S.winterActive(state) ? "❄️ 거센 한파로 식량 생산이 줄고 난방 물자가 소모되고 있어요." : state.stage === 1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." : "국고를 관리하고 마을의 공공시설을 운영하세요.";
+    const hazards = S.activeDisasters(state).map(kind=>S.DISASTER_NAMES[kind]);
+    if(S.winterActive(state)) hazards.unshift("한파");
+    element.scene.textContent = hazards.length ? '⚠️ 현재 재난: ' + hazards.join(' · ') +
+      '. 아래 상태를 확인해 대응하세요.' :
+      state.stage===1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." :
+      "국고를 관리하고 마을의 공공시설을 운영하세요.";
   }
   function renderMission() {
     if (state.stage === 1) {
@@ -219,7 +253,12 @@
     const v = S.residentView(state, citizen);
     const pulse = S.communityPulse(state);
 
-    return '<h2>우리 마을 주민</h2><p class="intro">주민마다 이전 경험과 중요하게 생각하는 일이 달라요. 자원과 규칙에 따라 생각도 바뀝니다.</p>' +
+    const groups = S.groupStatus(state).map(g=>'<div class="group-card' +
+      (g.grievance>=3.8?' urgent':'') + '"><strong>' + escapeHTML(g.name) +
+      '</strong><span>요구 누적 ' + number(g.grievance) + '/10</span><small>' +
+      escapeHTML(g.action) + '</small></div>').join("");
+    return '<h2>우리 마을 주민</h2><p class="intro">주민의 요구가 쌓이면 생산 중단·집단 항의·돌봄 중단 같은 행동으로 이어집니다.</p>' +
+      '<div class="group-list">' + groups + '</div>' +
       '<div class="citizen-pulse"><span>👥 ' + state.citizens.length + '명</span><span>🌿 안정 ' + pulse.안정 + '명</span><span>💭 걱정 ' + pulse.걱정 + '명</span></div>' +
       '<div class="resident-detail"><div class="resident-detail-head">' + characterPortrait(citizen.name, true) +
       '<div><h3>' + escapeHTML(citizen.name) + (citizen.isChild ? ' <small class="child-label">어린 주민</small>' : '') + '</h3><small>' + escapeHTML(citizen.experience) + ' · 관심사: ' + escapeHTML(v.topic) + '</small><span class="resident-status' + (v.mood === "걱정" ? " anxious" : "") + '">' + escapeHTML(v.mood) + '</span></div></div>' +
@@ -242,8 +281,9 @@
     const p = element.panel, scroll = p.scrollTop;
     if (activeTab === "work") {
       const rates = S.rates(state);
-      const urgent = S.winterActive(state) || S.rightsConcerns(state).length > 0 ||
-        state.health < 55 || state.childWellbeing < 55;
+      const urgent = S.winterActive(state) || S.activeDisasters(state).length>0 ||
+        S.groupStatus(state).some(g=>g.action!=="협의 중") || state.water < 50 ||
+        S.rightsConcerns(state).length>0 || state.health<55 || state.childWellbeing<55;
       p.innerHTML = '<h2>일꾼 배치</h2><p class="intro">성인 일꾼을 식량과 물자 수집에 배치하세요. 어린이 ' +
         S.childCount(state) + '명은 기본 노동력에 포함되지 않습니다.</p>' +
         (urgent ? operationCards() : '') +
@@ -251,7 +291,7 @@
         workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주") +
         workerRow("wood", "🪵", "물자 수집", state.jobs.wood, "생산 " + number(rates.wood) + " / 주") +
         '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) +
-        "/주 · 한파에는 생산이 줄고 난방 물자가 소모됩니다. 위기 때 운영 행동으로 대응할 수 있어요.</div>" +
+        "/주 · 재난이 겹치면 생산과 식수, 돌봄에 영향을 줍니다. 위기 때 운영 행동으로 대응할 수 있어요.</div>" +
         (urgent ? '' : operationCards());
     } else if (activeTab === "build") {
       p.innerHTML = '<h2>공동시설 건설</h2><p class="intro">자동 배치되는 시설을 지어 마을을 발전시키세요. 비용은 즉시 차감됩니다.</p>' +
