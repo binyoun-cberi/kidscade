@@ -7,7 +7,7 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const dir=path.join(root,'games','high_code_quest');
 const parts=[
- 'topdown-game.js',
+ 'topdown-game.part1.txt',
  'topdown-game.part2.txt',
  'topdown-game.part3.txt',
  'topdown-game.part4.txt',
