@@ -206,6 +206,16 @@
     buildings(latest);
     citizens(latest, t);
     storm(latest, t);
+    if (latest.coldUntil > latest.tick) {
+      rect(0, 0, WIDTH, HEIGHT, "rgba(215,232,241,.14)");
+      ctx.fillStyle = "rgba(245,252,253,.9)";
+      for (let i = 0; i < 46; i++) {
+        const x = (i * 109 + t * .019) % (WIDTH + 15);
+        const y = (i * 73 + t * .037) % (HEIGHT + 15);
+        ctx.fillRect(Math.round(x), Math.round(y), 2 + (i % 2), 2 + (i % 2));
+      }
+      if (latest.warmth < 35) rect(0, 0, WIDTH, HEIGHT, "rgba(52,81,105,.16)");
+    }
   }
   function loop(t) {
     // 장시간 실행 시 불필요한 렌더링을 줄인다 (약 12fps).
