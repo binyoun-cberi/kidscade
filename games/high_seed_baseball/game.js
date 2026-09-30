@@ -50,31 +50,55 @@ const rand=(a,b)=>a+Math.random()*(b-a);
 function dotString(n,max){let s='';for(let i=0;i<max;i++)s+=i<n?'●':'○';return s}
 function zoneInside(x,y){return x>=405&&x<=555&&y>=268&&y<=382}
 
-let difficulty='easy',playing=false,last=0,acc=0,simTime=0;
+let difficulty='easy',fieldDifficulty='easy',playing=false,last=0,acc=0,simTime=0;
 let state='menu',inning=1,half='top',outs=0,balls=0,strikes=0,bases=[false,false,false],score=[0,0];
 // The tutorial flag is stored in the existing career record, not a new storage key.
 let lessonActive=false,lessonReplay=false,lessonPitchCount=0,lessonBatAdjusted=false,lessonPitchSelected=false,lessonAimSelected=false,lessonThrown=false,lessonFieldTouched=false;
-let messageTimer=0,controlMode='',throwHold=0,chargeActive=false,swingAnimationUntil=0;
+let messageTimer=0,controlMode='',throwHold=0,chargeActive=false,swingAnimationUntil=0,swing=null;
 const BAT={px:608,py:400,length:242,min:-1.20,max:.30,speed:1.27};
 let batAngle=Math.atan2(328-BAT.py,BAT.px-480);
 let cursor={x:480,y:328},pitchAim={x:480,y:325},selectedPitch='fastball';
 let pitch=null,fieldBall=null,fielders=[],activeFielder=-1,defenseRunners=[],throwPlay=null;
 let offenseDecision='stop',offenseOutcome=null,offenseTimer=0,particles=[];
-let gameStats=null;
+let gameStats=null,cpuPitchHistory=[];
 
 const DIFF={
- easy:{pitchSpeed:.57,batWindow:.33,batReach:72,cpuContact:.50,cpuDiscipline:.56,fieldSpeed:150,runnerSpeed:.32,error:44},
- normal:{pitchSpeed:.75,cpuContact:.63,cpuDiscipline:.68,batWindow:.255,batReach:49,fieldSpeed:175,runnerSpeed:.36,error:32},
- hard:{pitchSpeed:1.04,cpuContact:.75,cpuDiscipline:.79,batWindow:.17,batReach:32,fieldSpeed:205,runnerSpeed:.40,error:22}
+ easy:{pitchSpeed:.57,batWindow:.33,batReach:51,cpuContact:.50,cpuDiscipline:.56,fieldSpeed:150,runnerSpeed:.32,error:44},
+ normal:{pitchSpeed:.75,cpuContact:.63,cpuDiscipline:.68,batWindow:.255,batReach:34,fieldSpeed:175,runnerSpeed:.36,error:36},
+ hard:{pitchSpeed:1.04,cpuContact:.75,cpuDiscipline:.79,batWindow:.17,batReach:23,fieldSpeed:205,runnerSpeed:.40,error:26}
 };
 function cfg(){return DIFF[difficulty]}
-function batTip(angle=batAngle){return{x:BAT.px-BAT.length*Math.cos(angle),y:BAT.py+BAT.length*Math.sin(angle)}}
-function batDistance(x,y,angle=batAngle){
- const tip=batTip(angle),dx=tip.x-BAT.px,dy=tip.y-BAT.py;
- const t=clamp(((x-BAT.px)*dx+(y-BAT.py)*dy)/(dx*dx+dy*dy),0,1);
- return Math.hypot(x-(BAT.px+dx*t),y-(BAT.py+dy*t));
+const FIELD_DIFF={
+ easy:{assist:.80,flyCatch:.84,speed:170},
+ normal:{assist:.33,flyCatch:.46,speed:185},
+ hard:{assist:0,flyCatch:.18,speed:200}
+};
+function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
+function pitchZone(x,y){return (x<448?0:x>512?2:1)+(y<298?0:y>350?6:3)}
+function cpuReadability(type,zone){
+ const recent=cpuPitchHistory.slice(-4);
+ const sameType=recent.filter(x=>x.type===type).length,sameZone=recent.filter(x=>x.zone===zone).length;
+ return clamp((sameType-1)*.105+(sameZone-1)*.07,0,.36);
 }
+function currentBatAngle(){return swing?batSwingAngle(swing):batAngle}
+function batSwingAngle(sw){
+ const u=clamp(sw.elapsed/sw.duration,0,1),smooth=u*u*(3-2*u);
+ return sw.baseAngle+(sw.mode==='power'?.24:.18)*(smooth-.5);
+}
+function closestBatPoint(x,y,angle=currentBatAngle()){
+ const tip=batTip(angle),dx=tip.x-BAT.px,dy=tip.y-BAT.py,t=clamp(((x-BAT.px)*dx+(y-BAT.py)*dy)/(dx*dx+dy*dy),0,1);
+ const px=BAT.px+dx*t,py=BAT.py+dy*t;
+ return{x:px,y:py,position:t,distance:Math.hypot(x-px,y-py)};
+}
+function pitchScreenPoint(p,t=clamp(p.t,0,1)){
+ const u=clamp(t,0,1),curve=Math.max(0,(u-.48)/.52);
+ const targetX=p.actual.x+p.breakX*curve,targetY=p.actual.y+p.breakY*curve;
+ return{x:lerp(480,targetX,u),y:lerp(235,targetY,u)};
+}
+function batTip(angle=batAngle){return{x:BAT.px-BAT.length*Math.cos(angle),y:BAT.py+BAT.length*Math.sin(angle)}}
+function batDistance(x,y,angle=batAngle){return closestBatPoint(x,y,angle).distance}
 function setBatAngle(next){
+ if(swing)return;
  const old=batAngle;batAngle=clamp(next,BAT.min,BAT.max);
  if(lessonActive&&Math.abs(batAngle-old)>.001){lessonBatAdjusted=true;updateLesson()}
 }
@@ -167,7 +191,7 @@ function setTimeoutLike(fn,t){delayed.push({fn,t})}
 function updateDelayed(dt){for(let i=delayed.length-1;i>=0;i--){delayed[i].t-=dt;if(delayed[i].t<=0){const fn=delayed[i].fn;delayed.splice(i,1);try{fn()}catch(e){console.error(e)}}}}
 
 function startGame(){
- delayed=[];score=[0,0];inning=1;half='top';outs=0;bases=[false,false,false];clearCounts();resetStats();playing=true;state='between';
+ delayed=[];score=[0,0];inning=1;half='top';outs=0;bases=[false,false,false];clearCounts();resetStats();playing=true;state='between';swing=null;cpuPitchHistory=[];
  lessonActive=lessonReplay||!isLessonDone();lessonReplay=false;lessonPitchCount=0;lessonBatAdjusted=false;lessonPitchSelected=false;lessonAimSelected=false;lessonThrown=false;lessonFieldTouched=false;
  batAngle=Math.atan2(328-BAT.py,BAT.px-480);
  menu.classList.add('hidden');result.classList.add('hidden');
@@ -176,7 +200,7 @@ function startGame(){
 }
 function nextPlateAppearance(){
  if(!playing)return;
- clearCounts();pitch=null;fieldBall=null;throwPlay=null;hideCharge();offenseOutcome=null;offenseDecision='stop';
+ clearCounts();pitch=null;swing=null;fieldBall=null;throwPlay=null;hideCharge();offenseOutcome=null;offenseDecision='stop';
  if(half==='top')startBatting();else startPitching();
 }
 function startBatting(){
@@ -213,28 +237,46 @@ function spawnCpuPitch(){
 function beginSwing(){swingNow('contact')}
 function releaseSwing(){} // A single press is a complete swing; keyboard keyup changes nothing.
 function swingNow(mode='contact'){
- if(state!=='batting'||!pitch||pitch.swung)return;
- const isPower=mode==='power',p=pitch,t=clamp(p.t,0,1),curve=Math.max(0,(t-.48)/.52);
- const tx=p.actual.x+p.breakX*curve,ty=p.actual.y+p.breakY*curve;
- // Calculate collision against the rendered ball and the actual rotated bat segment.
- const bx=lerp(480,tx,t),by=lerp(235,ty,t);
- const gap=batDistance(bx,by);
- const timing=t-.88,window=cfg().batWindow*(isPower?.82:1);
- const timingScore=clamp(1-Math.abs(timing)/window,0,1);
- const angleScore=clamp(1-gap/cfg().batReach,0,1);
- const q=timingScore*angleScore;
- const power=isPower?.97:(.53+.2*timingScore);
- pitch.swung=true;swingAnimationUntil=simTime+.28;sound('swing',isPower?.82:1.04);
- if(q<.16){
-  strikes++;sound('fail',1.15);
-  message(angleScore<.20?'배트 높이가 달라요!':timing<-.025?'너무 빨랐어요!':'조금 늦었어요!',1.2);
-  finishCountPitch();return;
+ if(state!=='batting'||!pitch||pitch.swung||swing)return;
+ pitch.swung=true;
+ swing={mode,baseAngle:batAngle,elapsed:0,duration:mode==='power'?.27:.23,
+        contact:null,startT:pitch.t,ballOnContact:null};
+ swingAnimationUntil=simTime+swing.duration;
+ sound('swing',mode==='power'?.84:1.04);
+}
+function updateSwing(dt){
+ if(!swing||!pitch||state!=='batting')return;
+ const sw=swing,p=pitch;
+ sw.elapsed+=dt;
+ const t=clamp(p.t,0,1),angle=batSwingAngle(sw);
+ if(!sw.contact&&sw.elapsed>=.016&&t>=.68&&t<=1.065){
+  const ball=pitchScreenPoint(p,t),near=closestBatPoint(ball.x,ball.y,angle);
+  const isPower=sw.mode==='power',reach=Math.max(12,cfg().batReach-(isPower?6:0));
+  const timing=t-.88,window=cfg().batWindow*(isPower?.82:1);
+  const timeScore=clamp(1-Math.abs(timing)/window,0,1);
+  if(near.distance<=reach&&timeScore>.16){
+   const center=clamp(1-Math.abs(near.position-.64)/.64,0,1);
+   const angleScore=clamp(1-near.distance/reach,0,1);
+   const quality=clamp(timeScore*(.57+.43*angleScore)*(.73+.27*center),.08,1);
+   sw.contact={q:quality,power:isPower?.98:.56+.19*timeScore,
+     timing,verticalErr:ball.y-near.y,sweet:center,gap:near.distance};
+   sw.ballOnContact={...ball,t};sound('hit',.86+quality*.32);
+   burst(ball.x,ball.y,8);
+  }
  }
- if(q<.28&&Math.random()<(isPower?.72:.45)){
-  sound('hit',1.35);message('파울! 배트 각도와 타이밍을 다시 맞춰요.',.9);
-  if(strikes<2)strikes++;updateHud();setTimeoutLike(()=>{if(state==='batting')spawnCpuPitch()},.7);return;
+ if(sw.elapsed<sw.duration)return;
+ swing=null;
+ if(sw.contact){
+  const c=sw.contact;
+  if(c.q<.22&&Math.random()<(sw.mode==='power'?.7:.46)){
+   pitch=null;if(strikes<2)strikes++;updateHud();message('배트 끝에 맞아 파울!',.9);
+   setTimeoutLike(()=>{if(state==='batting')spawnCpuPitch()},.7);return;
+  }
+  startOffenseBall(c.q,c.power,c.timing,c.verticalErr,c.sweet);return;
  }
- sound('hit',.86+q*.32);const batAtBallX=BAT.py+(BAT.px-bx)*Math.tan(batAngle);startOffenseBall(q,power,timing,by-batAtBallX);
+ pitch=null;strikes++;sound('fail',1.13);
+ message(sw.startT<.65?'너무 일찍 휘둘렀어요!':sw.startT>.98?'조금 늦었어요!':'배트 각도를 맞춰 보세요!',1.1);
+ finishCountPitch();
 }
 function finishCountPitch(){
  updateHud();
@@ -258,17 +300,22 @@ function walkRunner(side){
  updateHud();
 }
 
-function startOffenseBall(q,power,timing,verticalErr){
+function startOffenseBall(q,power,timing,verticalErr,sweet=.75){
  state='offenseField';setControls('run');hint('');
- const spray=clamp(timing/cfg().batWindow*1.1+rand(-.075,.075),-.95,.95),launch=clamp(.33-verticalErr/180+rand(-.05,.05),.05,.76);
- const rawDist=65+q*170+power*145+rand(-24,24),distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
+ // Early contact pulls into left field; late contact pushes into right field.
+ const spray=clamp(-timing/cfg().batWindow*.80+rand(-.065,.065),-.87,.87);
+ // Hitting below the ball produces loft; hitting above produces a grounder.
+ const launch=clamp(.32-verticalErr/64+rand(-.033,.033),.04,.79);
+ const centerFactor=.68+.32*sweet;
+ const rawDist=(65+q*170+power*145+rand(-21,21))*centerFactor;
+ const distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
  fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:170+launch*260,bounced:false,owner:null,age:0,maxDist:rawDist};
  offenseOutcome={q,power,rawDist,distanceM,launch,spray};offenseTimer=0;offenseDecision='stop';makeFielders(false);
  message(rawDist>325&&launch>.32?'담장까지 간다! 더 달릴까?':'타구가 날아갑니다! 주루를 판단하세요.',1.6);
 }
 function makeFielders(userDefense){
  const pos=[[480,405,'P'],[625,365,'1B'],[545,315,'2B'],[415,315,'SS'],[335,365,'3B'],[300,205,'LF'],[480,160,'CF'],[660,205,'RF']];
- fielders=pos.map((p,i)=>({x:p[0],y:p[1],homeX:p[0],homeY:p[1],role:p[2],hasBall:false,user:userDefense,speed:(userDefense?cfg().fieldSpeed:cfg().fieldSpeed*.92)*(i===6?1.03:1)}));
+ fielders=pos.map((p,i)=>({x:p[0],y:p[1],homeX:p[0],homeY:p[1],role:p[2],hasBall:false,user:userDefense,speed:(userDefense?fieldCfg().speed:cfg().fieldSpeed*.92)*(i===6?1.03:1)}));
  activeFielder=-1;
 }
 function updateOffenseField(dt){
@@ -465,8 +512,8 @@ function update(dt){
  if(!playing)return;
  if(state==='batting'){
   const a=(held.batDown?1:0)-(held.batUp?1:0);
-  if(a)setBatAngle(batAngle+a*BAT.speed*dt);
-  updatePitch(dt);
+  if(a&&!swing)setBatAngle(batAngle+a*BAT.speed*dt);
+  updatePitch(dt);updateSwing(dt);
  }else if(state==='pitching'){
   if(chargeActive){throwHold+=dt;showCharge('정확도 — 70% 부근에서 놓기',clamp(throwHold/1.05,0,1))}updatePitch(dt);
  }else if(state==='offenseField')updateOffenseField(dt);
