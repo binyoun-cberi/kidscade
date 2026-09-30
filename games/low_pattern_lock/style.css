@@ -52,3 +52,16 @@
 @media(max-width:390px){.clue-list{grid-template-columns:1fr}.clue-panel{max-height:190px}}
 @media(max-height:760px){.clue-panel{max-height:135px}.clue-item{padding:5px 7px}.clue-item b{font-size:9px}}
 
+/* Pattern Deduction v5 */
+.deduction-owner{grid-template-columns:42px 1fr auto}
+.owner-badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.candidate-badge{padding:5px 8px;border-radius:999px;background:rgba(92,225,230,.12);color:var(--cyan);font-size:9px;font-weight:1000;white-space:nowrap}
+.candidate-badge.one{background:rgba(95,226,154,.16);color:var(--green);box-shadow:0 0 14px rgba(95,226,154,.14)}
+.deduction-controls{grid-template-columns:1fr 1fr}
+.deduction-controls .submit-guess{background:linear-gradient(135deg,var(--cyan),#5fa8ff);color:#062136;border-color:transparent}
+.deduction-controls .submit-guess:disabled{opacity:.35}
+.node.cursor{box-shadow:0 0 0 5px rgba(255,214,107,.18),0 0 20px rgba(255,214,107,.32);border-color:var(--amber)}
+.clue-item{transition:background .15s,border-color .15s}
+.clue-item:last-child{border-color:rgba(255,214,107,.26);background:rgba(255,214,107,.08)}
+@media(max-height:760px){.deduction-controls button{min-height:34px}.owner-badges{gap:2px}}
+
