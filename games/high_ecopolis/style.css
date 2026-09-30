@@ -58,3 +58,12 @@ button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #fff;ou
 
 .pathTool{background:rgba(210,190,143,.07)}.pathTool.active{background:rgba(210,190,143,.2);border-color:rgba(235,214,164,.75)}
 #tycoonBar{max-width:calc(100% - 32px);overflow-x:auto;scrollbar-width:none}#tycoonBar::-webkit-scrollbar{display:none}
+
+#nextActionCard{width:100%;display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:9px;text-align:left;border:2px solid rgba(198,243,137,.55);background:rgba(198,243,137,.12);border-radius:15px;padding:10px;margin:8px 0 12px;cursor:pointer}
+#nextActionCard>span{font-size:27px;text-align:center}#nextActionCard>div{display:grid;gap:2px}#nextActionCard small{font-size:9px;color:#bfe5c7}#nextActionCard b{font-size:13px}#nextActionCard p{margin:0;font-size:10px;line-height:1.4;color:#c6d7cf}#nextActionCard em{font-size:10px;font-style:normal;color:var(--lime);white-space:nowrap}
+.tool.recommended{border-color:#f2f7a6;box-shadow:0 0 0 3px rgba(242,247,166,.18),0 0 18px rgba(242,247,166,.22);animation:guidePulse 1.5s ease-in-out infinite}
+@keyframes guidePulse{50%{transform:translateY(-3px)}}
+.contextHidden,.uiHidden{display:none!important}
+.toolbarSide{flex:0 0 112px;grid-template-columns:1fr 1fr}.toolbarSide #moreToolsBtn{grid-column:1 / -1;width:auto;height:28px;font-size:9px}
+#mission{width:310px}
+@media(max-width:800px){#mission{width:min(300px,calc(100% - 16px))}#nextActionCard{grid-template-columns:36px 1fr}#nextActionCard em{display:none}}
