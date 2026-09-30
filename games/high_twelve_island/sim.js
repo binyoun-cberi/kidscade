@@ -215,7 +215,7 @@
     if (!Array.isArray(d.crisisHistory)) d.crisisHistory = [];
     if (!d.actionCooldowns || typeof d.actionCooldowns !== "object") d.actionCooldowns = {};
     // 구버전 저장 중 주민 합류 창이 열려 있어도 플레이를 방해하지 않는다.
-    d.pending = null;
+    d.pending = d.pending === "new_resident" ? null : (EVENTS.some(e => e.id === d.pending) ? d.pending : null);
     d.arrivalNotice = null;
     return d;
   }
@@ -496,7 +496,8 @@
   }
   function effect(s, changes) {
     for (const [key, delta] of Object.entries(changes || {})) {
-      if (["food", "wood", "trust", "treasury"].includes(key)) s[key] = clamp(s[key] + delta, 0, key === "trust" ? 100 : key === "food" ? s.foodCap : 9999);
+      if (["food", "wood", "trust", "treasury", "health", "warmth", "education", "childWellbeing"].includes(key))
+        s[key] = clamp(s[key] + delta, 0, key === "food" ? s.foodCap : ["trust", "health", "warmth", "education", "childWellbeing"].includes(key) ? 100 : 9999);
     }
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
@@ -978,9 +979,10 @@
     }
     if (s.population > 2 && s.food < 1 && s.tick % 10 === 0) {
       s.population--;
-      const leaving = s.citizens.pop();
-      if (s.jobs.gather > s.population) s.jobs.gather = s.population;
-      if (s.jobs.gather + s.jobs.wood > s.population) s.jobs.wood = Math.max(0, s.population - s.jobs.gather);
+      const adultIndex = s.citizens.findLastIndex(person => !person.isChild);
+      const leaving = s.citizens.splice(adultIndex >= 0 ? adultIndex : s.citizens.length - 1, 1)[0];
+      if (s.jobs.gather > adultCapacity(s)) s.jobs.gather = adultCapacity(s);
+      if (s.jobs.gather + s.jobs.wood > adultCapacity(s)) s.jobs.wood = Math.max(0, adultCapacity(s) - s.jobs.gather);
       record(s, "오랜 식량 부족으로 " + (leaving?.name || "주민 한 명") + "이(가) 섬을 떠났습니다.");
     }
     if (s.stage === 1 && s.population >= 18 && s.passed.length >= 1 && s.buildings.farm >= 1) {
