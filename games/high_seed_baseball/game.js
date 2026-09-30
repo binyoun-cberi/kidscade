@@ -155,7 +155,7 @@ function setControls(mode){
  const add=(text,cls,action,hold=false)=>{
   const b=document.createElement('button');b.type='button';b.className='ctrl '+(cls||'');b.textContent=text;b.dataset.action=action;
   if(hold){
-   const down=e=>{e.preventDefault();held[action]=true;b.classList.add('active')};
+   const down=e=>{e.preventDefault();held[action]=true;b.classList.add('active');try{b.setPointerCapture?.(e.pointerId)}catch(_){}};
    const up=e=>{e.preventDefault();held[action]=false;b.classList.remove('active')};
    b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',e=>{if(e.buttons===0)up(e)});
   }else b.addEventListener('click',e=>{e.preventDefault();controlAction(action)});
