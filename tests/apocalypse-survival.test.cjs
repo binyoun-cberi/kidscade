@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=14/);
+  assert.match(html,/game\.js\?v=15/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v14',()=>{
+test('game is registered in catalog metadata v15',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=14');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=15');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,7 +109,7 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=14/);
+  assert.match(html,/game\.js\?v=15/);
   assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=12$/);
 });
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v14 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v15 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=14/);
+  assert.match(html,/game\.js\?v=15/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -149,4 +149,25 @@ test('boot bindings use selector lists rather than single-element helpers',()=>{
   assert.match(js,/document\.querySelectorAll\('#panel nav button'\)\.forEach/);
   assert.match(js,/document\.querySelectorAll\('#decision \[data-choice\]'\)\.forEach/);
   assert.doesNotMatch(js,/(^|[^$])\$\([^)]*\)\.(forEach|map|filter|some|every|find)\b/m);
+});
+
+
+test('third-person camera and deterministic city lots are enforced',()=>{
+  assert.match(js,/camPitch=\.31,camDist=6\.8/);
+  assert.match(js,/screenForward=orbit\.clone\(\)\.multiplyScalar\(-1\)/);
+  assert.match(js,/addScaledVector\(screenRight,\.58\)/);
+  assert.match(js,/minDist=2\.75/);
+  assert.match(js,/player\.root\.add\(player\.visual\)/);
+  assert.match(js,/CircleGeometry\(\.62,20\)/);
+  assert.match(js,/artFootprints/);
+  assert.match(js,/footprintOverlaps/);
+  assert.match(js,/reserveFootprint/);
+  assert.match(js,/placeWorldModelSafe/);
+  assert.match(js,/cityBuilding/);
+  assert.match(js,/road-crossroad-path\.glb/);
+  assert.match(js,/MARKET_POS/);
+  assert.match(js,/CLINIC_POS/);
+  assert.match(js,/GARAGE_POS/);
+  assert.match(js,/m\.visible=false/);
+  assert.match(js,/updateWorldLabels/);
 });
