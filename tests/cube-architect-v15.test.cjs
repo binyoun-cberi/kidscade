@@ -6,6 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const main=fs.readFileSync(path.join(ROOT,'games/cube3d/cube-architect.js'),'utf8');
 const landmarkJs=fs.readFileSync(path.join(ROOT,'games/cube3d/cube-architect-landmarks.js'),'utf8');
+const worldJs=fs.readFileSync(path.join(ROOT,'games/cube3d/cube-architect-world.js'),'utf8');
 const html=fs.readFileSync(path.join(ROOT,'games/cube3d/index.html'),'utf8');
 const css=fs.readFileSync(path.join(ROOT,'games/cube3d/cube-architect.css'),'utf8');
 const cache={};
@@ -27,8 +28,10 @@ function quizRules(){
 test('v15 scripts parse and the launcher loads landmarks before the game',()=>{
   assert.doesNotThrow(()=>new Function(main));
   assert.doesNotThrow(()=>new Function(landmarkJs));
+  assert.doesNotThrow(()=>new Function(worldJs));
+  assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.ok(html.indexOf('cube-architect-landmarks.js')<html.indexOf('cube-architect.js'));
-  assert.match(html,/cube-architect\.js\?v=20260930-15/);
+  assert.match(html,/cube-architect\.js\?v=20260930-16/);
   assert.match(css,/\.challenge-element-choices/);
   assert.match(html,/challengeDimX/);
   assert.match(html,/blueprintLargeCanvas/);
