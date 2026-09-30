@@ -191,3 +191,9 @@ test('modular character portraits are wired into the event dialogue', () => {
   assert.match(script, /NPC_ASSET.*kenney-modular-characters/);
   assert.match(script, /speaker"\)\.innerHTML = characterPortrait/);
 });
+
+## 주민 시스템 (v3)
+- 최초 12명은 고유 이름, 관심사, 이전 경험을 갖고 시작한다. 직업만으로 정책 선호를 단정하지 않는다.
+- 새로운 주민이 합류하면 발견 경위와 고유 ID를 저장하고 시간 일시 정지 소개 사건을 연다. 확인하면 주민 탭에서 해당 주민을 선택한다.
+- 자원 부족, 현재의 배급·노동 규칙, 창고·진료소·국고 상태에 따라 주민별 의견이 매번 재계산된다. 주민의 현재 걱정은 그 사람의 관심사와 상태를 나타내며 실제 주민투표 의향을 의미하지 않는다.
+- 기존 v1·v2 저장 파일은 인구수에 맞춰 주민 명부를 복원하되, 과거에 기록되지 않은 합류 경위는 임의로 만들어 내지 않는다.
