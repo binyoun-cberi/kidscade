@@ -1335,7 +1335,6 @@ function initFree(){
 }
 function bagCount(type){return Math.max(0,Number(survivalBag[type])||0)}
 function hasWorkbench(){
-  if(bagCount('workbench'))return true;
   const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
   for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++)
     for(let dy=-2;dy<=2;dy++)
@@ -1343,16 +1342,21 @@ function hasWorkbench(){
   return false;
 }
 function advanceSurvival(){
-  if(gameFreeMode!=='survival')return;
+  if(gameFreeMode!=='survival'||survivalFinished)return;
   let progressed=false;
   while(survivalStage<worldRules.GOALS.length-1&&
-    worldRules.GOALS[survivalStage].test(survivalBag)){
+    worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=
+      worldRules.GOALS[survivalStage].need){
     survivalStage++;progressed=true;
   }
-  if(progressed){
-    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title);
-    sfx('good');
-  }
+  if(survivalStage===worldRules.GOALS.length-1&&
+    worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=
+      worldRules.GOALS[survivalStage].need){
+    survivalFinished=true;progressed=true;
+    toast('생존 원정 완료! 이제 자유롭게 더 탐험하고 건축해 보세요.');
+    reportResult('free-survival',100,true);
+  }else if(progressed)toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title);
+  if(progressed){sfx('good');saveFreeWorld()}
   $('actionXray').classList.toggle('hidden',survivalStage<3);
   configureMobileMode('free');updateFreeMission();
 }
@@ -1397,8 +1401,12 @@ function craftSurvival(recipe){
   }
   for(const [type,amount] of Object.entries(recipe.needs))consumeBag(type,amount);
   for(const [type,amount] of Object.entries(recipe.gives))addToBag(type,amount);
-  advanceSurvival();buildInventory();saveFreeWorld();
-  toast(recipe.name+' 제작 완료!');
+  if(recipe.id==='flowerDye'){$('facePaintColor').value='#e75aab';facePaintColor='#e75aab'}
+  if(recipe.id==='cactusDye'){$('facePaintColor').value='#67a74a';facePaintColor='#67a74a'}
+  trackSurvival('craft',recipe.id);
+  buildInventory();saveFreeWorld();
+  toast(recipe.name+' 제작 완료!'+
+    (recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
 }
 function blockButtonMarkup(type,index){
   const d=blockDef(type||'hand'),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
@@ -1427,7 +1435,7 @@ function buildInventory(category='전체'){
     '선택한 재료가 현재 핫바 칸에 들어갑니다.';
   $('survivalCraftPanel').classList.toggle('hidden',!survival);
   $('shapeWorkbench').classList.toggle('hidden',survival?
-    survivalStage<3:!(category==='도형'||category==='전체'));
+    survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
     '나무에서 시작해 차례대로 제작해 보세요. 제작대를 얻으면 도형 편집 기능도 열려요.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
@@ -1444,9 +1452,14 @@ function buildInventory(category='전체'){
     }
     if(!resources.length)grid.textContent='가방이 비어 있어요. 먼저 주변의 나무를 채집해 보세요.';
     const list=$('survivalCraftList');list.innerHTML='';
+    const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
+      snowBrick:'snow',cactusDye:'desert'};
     const visible=worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&
-      (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id)));
-    for(const recipe of visible.slice(0,6)){
+      (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id))&&
+      (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
+        Object.keys(r.needs).some(item=>bagCount(item)>0)))
+      .sort((a,b)=>Number(recipePossible(b))-Number(recipePossible(a))||a.stage-b.stage);
+    for(const recipe of visible){
       const b=document.createElement('button'),possible=recipePossible(recipe);
       b.className='survival-recipe'+(possible?' can-craft':'');
       b.disabled=!possible;
@@ -1456,8 +1469,8 @@ function buildInventory(category='전체'){
       b.onclick=()=>craftSurvival(recipe);list.appendChild(b);
     }
     $('survivalCraftHint').textContent=hasWorkbench()?
-      '제작대 사용 가능 · 재료가 모이면 버튼이 활성화돼요.':
-      '나무 판자를 모아 제작대를 만들어 보세요.';
+      '제작대 근처예요. 재료가 모이면 제작 버튼이 활성화돼요.':
+      '가방에 든 제작대를 땅에 설치하고 가까이 다가가세요.';
     return;
   }
   document.querySelectorAll('[data-inv-cat]').forEach(b=>
@@ -1561,7 +1574,7 @@ function placeFreeBlock(hit){
   if(survival){
     if(selectedType==='cuboid'){
       const volume=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);
-      if(survivalStage<3||bagCount('planks')<volume){
+      if(survivalStage<3||!hasWorkbench()||bagCount('planks')<volume){
         toast('제작대와 판자 '+volume+'개가 필요해요.');return;
       }
     }else if(bagCount(selectedType)<1){
