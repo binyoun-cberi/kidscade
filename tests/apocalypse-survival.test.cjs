@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=12/);
+  assert.match(html,/game\.js\?v=13/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -48,6 +48,11 @@ test('seven-day science and social survival loop is wired',()=>{
   assert.match(js,/continueSettlement/);
   assert.match(js,/createSkyDome/);
   assert.match(js,/decorateWorld/);
+  assert.match(js,/const TUTORIAL=/);
+  assert.match(js,/tutorialSignal/);
+  assert.match(js,/tutorialActive/);
+  assert.match(js,/repairAchromaticModel/);
+  assert.match(js,/updatePlayerVisual/);
   assert.match(js,/upgradePerson/);
   assert.match(js,/character-male-a\.glb/);
   assert.match(js,/road-bridge\.glb/);
@@ -69,7 +74,7 @@ test('seven-day science and social survival loop is wired',()=>{
 test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   const packs=[
     ['assets/game/3d/survival/kenney-survival-kit',['tree.glb','rock-a.glb','campfire-pit.glb','structure.glb','workbench.glb','patch-grass-large.glb','chest.glb','barrel.glb','tent-canvas.glb','box-large.glb']],
-    ['assets/game/characters/people',['character-male-a.glb','character-male-b.glb','character-female-b.glb','character-female-c.glb']],
+    ['assets/game/characters/people',['character-female-a.glb','character-male-a.glb','character-female-d.glb','character-male-d.glb','character-male-b.glb','character-female-b.glb','character-female-c.glb']],
     ['assets/game/3d/city/kenney-city-kit-roads',['road-bridge.glb','road-straight.glb','road-crossroad-line.glb','traffic-light.glb','electricity-pole.glb','construction-barrier.glb']],
     ['assets/game/3d/city/kenney-city-kit-suburban',['fence-1x4.glb','path-stones-long.glb','path-stones-messy.glb']],
     ['assets/game/3d/buildings/kenney-building-kit',['wall-doorway-wide-square.glb','wall-window-wide-square-detailed.glb','wall-window-square-detailed.glb']],
@@ -82,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v12',()=>{
+test('game is registered in catalog metadata v13',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=12');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=13');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -94,7 +99,8 @@ test('game is registered in catalog metadata v12',()=>{
 });
 
 test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
-  for(const text of ['생존 도감','지도','정착지','공동체 의사결정','멸망 7일째','정착지 계속 운영'])assert.ok(html.includes(text),text);
+  for(const text of ['생존 도감','지도','정착지','공동체 의사결정','멸망 7일째','정착지 계속 운영','tutorialCoach','건너뛰기'])assert.ok(html.includes(text),text);
+  assert.match(css,/\.tutorial-coach/);
   assert.match(css,/\.mobile-move/);
   assert.match(css,/@media/);
 });
@@ -103,12 +109,12 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=12/);
+  assert.match(html,/game\.js\?v=13/);
   assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=12$/);
 });
 
 
-test('apocalypse repairs usable achromatic assets and restores the Kidscade avatar first',()=>{
+test('apocalypse repairs achromatic assets and renders a real 3D survivor player',()=>{
   assert.match(js,/shared3DCanUse/);
   assert.match(js,/shared3DRepairPreset/);
   assert.match(js,/normalizeShared/);
@@ -119,14 +125,21 @@ test('apocalypse repairs usable achromatic assets and restores the Kidscade avat
   assert.match(js,/placeSharedWorldModel\('building\.house'/);
   assert.match(js,/currentAvatarSource/);
   assert.match(js,/kidscade-avatar-studio-preview/);
+  assert.match(js,/repairAchromaticModel/);
+  assert.match(js,/genericPalette/);
+  assert.match(js,/playerModelFile/);
+  assert.match(js,/character-female-a\.glb/);
+  assert.match(js,/character-male-d\.glb/);
+  assert.match(js,/makeSurvivorFallback/);
+  assert.doesNotMatch(js,/new THREE\.Sprite\(new THREE\.SpriteMaterial\(\{map:t/);
   assert.doesNotMatch(js,/placeSharedWorldModel\('animal\.deer'/);
 });
 
 
-test('apocalypse v12 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v13 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=12/);
+  assert.match(html,/game\.js\?v=13/);
 });
