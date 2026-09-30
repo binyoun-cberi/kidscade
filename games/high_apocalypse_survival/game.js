@@ -310,7 +310,7 @@ function init3D(){
  scene.userData.survivorNodes={};scene.userData.campResidents={};
  for(const [id,rdef] of Object.entries(RESIDENTS)){
    const field=new THREE.Group();field.position.copy(rdef.field);field.position.y=terrainHeight(field.position.x,field.position.z);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));body.position.y=1.2;field.add(body);upgradePerson(field,body,id==='junseo'?'character-female-b.glb':id==='mira'?'character-female-c.glb':'character-male-b.glb');const fl=makeLabel(id==='taeho'?'구조 요청':rdef.name+' 구조 요청');fl.position.y=3.4;fl.scale.multiplyScalar(.66);field.add(fl);field.visible=false;groups.dynamic.add(field);addInteract(field,'survivor',rdef.name+' 구조',{resident:id});scene.userData.survivorNodes[id]=field;
-   const camp=new THREE.Group();camp.position.copy(rdef.camp);const cb=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));cb.position.y=1.2;camp.add(cb);upgradePerson(camp,cb,id==='junseo'?'character-female-b.glb':id==='mira'?'character-female-c.glb':'character-male-b.glb');const cn=makeLabel(rdef.name);cn.position.y=3.4;cn.scale.multiplyScalar(.6);camp.add(cn);camp.visible=false;groups.dynamic.add(camp);scene.userData.campResidents[id]=camp;
+   const camp=new THREE.Group();camp.position.copy(rdef.camp);const cb=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.35,4,8),new THREE.MeshStandardMaterial({color:rdef.color}));cb.position.y=1.2;camp.add(cb);upgradePerson(camp,cb,id==='junseo'?'character-female-b.glb':id==='mira'?'character-female-c.glb':'character-male-b.glb');const cn=makeLabel(rdef.name);cn.position.y=3.4;cn.scale.multiplyScalar(.6);cn.userData.residentName=rdef.name;camp.add(cn);camp.userData.statusLabel=cn;camp.visible=false;groups.dynamic.add(camp);scene.userData.campResidents[id]=camp;
  }
  scene.userData.survivor=scene.userData.survivorNodes.taeho;scene.userData.campSurvivor=scene.userData.campResidents.taeho;
  const rz=new THREE.Object3D();rz.position.set(RIVER_X-6.3,0,5);groups.dynamic.add(rz);addInteract(rz,'river','강물 뜨기');
@@ -484,7 +484,10 @@ function decorateWorld(){
  scatterSharedCluster(31,-44,['nature.rock','nature.grass','nature.mossyRockA','nature.plant'],4.8,11);
  // Large animated animals are quarantined until skinned-model cloning/rest-pose QA is complete.
 }
-function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
+function drawLabel(sprite,text){
+ const c=sprite?.userData?.labelCanvas,x=sprite?.userData?.labelCtx;if(!c||!x)return;x.clearRect(0,0,c.width,c.height);x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 24px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);sprite.material.map.needsUpdate=true;sprite.userData.labelText=text
+}
+function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d'),t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);s.userData.labelCanvas=c;s.userData.labelCtx=x;drawLabel(s,text);return s}
 function label(text,x,y,z){const s=makeLabel(text);s.position.set(x,y,z);s.userData.worldLabel=true;s.userData.labelRange=text==='폐허 도시'?36:22;s.scale.multiplyScalar(.72);groups.dynamic.add(s);return s}
 function addInteract(o,type,labelText,data={}){o.userData.interactable={type,label:labelText,...data};interactables.push(o)}
 const GENERIC_PALETTES={
@@ -689,7 +692,7 @@ function renderPanel(tab){
    const px=clamp((player.root.position.x+70)/140*100,4,96),pz=clamp((player.root.position.z+70)/140*100,4,96),o=currentObjective();
    ui.panelBody.innerHTML='<div class="map-board"><span class="map-zone forest">서쪽 숲</span><span class="map-zone hills">산비탈</span><span class="map-zone city">폐허 도시</span><span class="map-zone river">강</span><span class="map-landmark camp">⌂ 야영지</span><span class="map-landmark ruins">▦ 폐허</span><span class="map-player" style="left:'+px+'%;top:'+pz+'%">●</span></div><div class="settlement-card"><b>현재 위치 · '+ui.zone.textContent+'</b><p>'+(o?'다음 목표: '+o.name+' · 약 '+Math.round(player.root.position.distanceTo(o.pos))+'m':'오늘의 주요 목표를 모두 해결했습니다.')+'</p><p>강은 동쪽을 남북으로 가로지르고, 다리는 중앙 도로에 있습니다. 폭우 때에는 강폭이 넓어집니다.</p></div>';return
  }
- const residentRows=Object.entries(game.residents||{}).filter(([,r])=>r?.rescued).map(([id,r])=>'<div class="resident-row"><b>'+RESIDENTS[id].icon+' '+RESIDENTS[id].name+'</b><span>'+(r.job?(JOBS[r.job]?.name||r.job):'역할 미정')+(r.job===RESIDENTS[id].preferred?' · 특기 일치':'')+'</span></div>').join('');
+ const residentRows=Object.entries(game.residents||{}).filter(([,r])=>r?.rescued).map(([id,r])=>'<div class="resident-row"><b>'+RESIDENTS[id].icon+' '+RESIDENTS[id].name+'</b><span>'+(r.job?(JOBS[r.job]?.name||r.job):'역할 미정')+(r.job===RESIDENTS[id].preferred?' · 특기 일치':'')+'<small>'+residentActivity(id)+'</small></span></div>').join('');
  const jobChoice=Object.entries(game.residents||{}).filter(([,r])=>r?.rescued&&!r.job).map(([rid])=>'<div class="job-choice"><h3>'+RESIDENTS[rid].name+'의 역할 정하기</h3><p>특기는 '+JOBS[RESIDENTS[rid].preferred].name+'이지만 다른 역할도 맡길 수 있습니다.</p>'+Object.entries(JOBS).map(([id,j])=>'<button data-resident="'+rid+'" data-job="'+id+'"><b>'+j.icon+' '+j.name+'</b><span>'+j.desc+(RESIDENTS[rid].preferred===id?' · 특기 보너스':'')+'</span></button>').join('')+'</div>').join('');
  const powerCard=game.flags.power?'<div class="power-card"><h3>⚡ 전력망 '+powerUse().toFixed(1)+' / '+game.powerKw.toFixed(1)+' kW</h3><p>무전 송신에는 순간적으로 0.8kW의 여유 전력이 필요합니다.</p>'+[['light','야영지 조명','.2'],['cooler','냉장 보관함','.8'],['purifier','전기 정수기','1.2']].map(([id,n,kw])=>{const exists=id==='light'||hasBuilding(id);return exists?'<button data-power="'+id+'">'+(game.powerLoads[id]?'ON':'OFF')+' · '+n+' ('+kw+'kW)</button>':''}).join('')+'</div>':'';
  ui.panelBody.innerHTML='<div class="settlement-card"><h3>한빛 야영지</h3><p>👥 인구 '+(1+residentCount())+'명 · 🤝 신뢰 '+Math.round(game.trust)+' · ❤️ 공동체 건강 '+Math.round(game.communityHealth)+' · 🛠 생산성 '+Math.round(game.productivity)+' · 🙂 사기 '+Math.round(game.morale)+'</p><p>⚡ 비상 전력 '+(game.flags.power?game.powerKw.toFixed(1)+' kW':'복구 전')+' · ⛺ 쉼터 '+game.buildings.filter(b=>b.id==='shelter').length+' · 🌱 텃밭 '+game.buildings.filter(b=>b.id==='farm').length+'</p><div class="resident-list">'+(residentRows||'<p>아직 혼자입니다. 구조 신호를 찾아보세요.</p>')+'</div><p>'+(game.distribution?'배분 원칙: '+distributionName(game.distribution):'배분 원칙은 아직 정하지 않았습니다.')+'</p></div>'+powerCard+jobChoice;
@@ -776,9 +779,35 @@ function updateResources(dt){resources.forEach(r=>{if(!r.userData.available){r.u
 function updateWorldLabels(){
  if(!game)return;for(const o of groups.dynamic.children){if(!o.userData?.worldLabel)continue;const d=o.position.distanceTo(player.root.position),range=o.userData.labelRange||22;o.visible=d<range;if(o.visible){const a=clamp((range-d)/6,0,1);o.material.opacity=.28+.72*a}}
 }
-function updateNpc(){
- if(!game)return;let i=0;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;const a=game.playSeconds*(.16+i*.025)+i*2.1,base=RESIDENTS[id].camp;n.position.x=base.x+Math.sin(a)*1.45;n.position.z=base.z+Math.cos(a*.82)*1.25;n.position.y=terrainHeight(n.position.x,n.position.z);n.rotation.y=a+Math.PI*.5;i++}
+function nearestPlaced(id){return placed.find(p=>p.userData.interactable?.building===id)||null}
+function residentActivity(id){
+ const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';const hour=(game.time||720)/60,work=hour>=8&&hour<18;if(!work)return hour>=18?'휴식':'아침 준비';if(!r.job)return'역할 대기';
+ if(r.job==='technician')return nearestPlaced('workbench')?'작업대 점검':'전력 장비 점검';
+ if(r.job==='gatherer')return nearestPlaced('farm')?'텃밭 돌보기':'장작·채집물 정리';
+ if(r.job==='medic')return nearestPlaced('shelter')?'쉼터 건강 확인':'의료 물품 정리';
+ return'공동체 작업'
 }
+function residentTarget(id){
+ const def=RESIDENTS[id],r=game?.residents?.[id],hour=(game.time||720)/60,work=hour>=8&&hour<18;if(!def)return CAMP;
+ if(!work||!r?.job)return def.camp.clone();
+ let p=null;
+ if(r.job==='technician')p=nearestPlaced('workbench')?.position;
+ else if(r.job==='gatherer')p=nearestPlaced('farm')?.position;
+ else if(r.job==='medic')p=nearestPlaced('shelter')?.position;
+ if(p){const off=id==='taeho'?new THREE.Vector3(1.5,0,.8):id==='mira'?new THREE.Vector3(-1.3,0,1):new THREE.Vector3(1.1,0,-1.1);return p.clone().add(off)}
+ if(r.job==='gatherer')return new THREE.Vector3(-10,0,8);
+ if(r.job==='technician')return new THREE.Vector3(4,0,9);
+ return new THREE.Vector3(0,0,11.5)
+}
+function updateNpc(){
+ if(!game)return;let i=0;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
+  const target=residentTarget(id),dx=target.x-n.position.x,dz=target.z-n.position.z,dist=Math.hypot(dx,dz),speed=dist>3?1.15:.72,step=Math.min(dist,speed/60);
+  if(dist>.12){n.position.x+=dx/dist*step;n.position.z+=dz/dist*step;n.rotation.y=Math.atan2(dx,dz);n.userData.walk=(n.userData.walk||0)+.13;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
+  else{n.userData.idle=(n.userData.idle||0)+.03;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
+  const status=residentActivity(id),labelNode=n.userData.statusLabel;if(labelNode&&labelNode.userData.labelText!==RESIDENTS[id].name+' · '+status)drawLabel(labelNode,RESIDENTS[id].name+' · '+status);
+  if(labelNode)labelNode.visible=player.root.position.distanceTo(n.position)<15;i++
+ }}
+
 function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
  if(tutorialActive()){const s=game.tutorial.step||0;if(s===2||s===3)return{name:'튜토리얼 · 강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(s===4)return{name:'튜토리얼 · 비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(s===5)return{name:'튜토리얼 · 깨끗한 물',pos:CAMP}}
