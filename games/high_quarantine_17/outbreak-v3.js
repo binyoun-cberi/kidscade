@@ -229,7 +229,7 @@ function moveDetainee(id){
 }
 function releaseDetainee(id){
  const d=isolation.find(function(x){return x.id===id});if(!d||d.status!=='cleared')return;isolation=isolation.filter(function(x){return x.id!==id});
- addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 음성 · 생존자 캠프로 퇴실');const b=bridge();if(b)b.applyOutbreakResult({trustDelta:2,scoreDelta:70});notify(d.name+' · 음성 확인, 퇴실 완료');renderIsolation();
+ addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 음성 · 생존자 캠프로 퇴실');const b=bridge();if(b)b.applyOutbreakResult(d.wrong?{trustDelta:0,scoreDelta:0}:{trustDelta:2,scoreDelta:70});notify(d.name+(d.wrong?' · 불필요 추가검사 종료':' · 음성 확인, 퇴실 완료'));renderIsolation();
 }
 function expediteDetainee(id){
  const d=isolation.find(function(x){return x.id===id});if(!d||!(d.status==='testing'||d.status==='exposed'))return;const b=bridge();if(b)b.applyOutbreakResult({scoreDelta:-30});resolveLab(d);
