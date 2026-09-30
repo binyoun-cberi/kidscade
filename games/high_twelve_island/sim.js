@@ -398,6 +398,13 @@
 
   // 법률이 새로운 운영 행동을 해금한다. 행동은 비용/기한을 갖고 다음 틱의 자원 흐름을 바꾼다.
   const ACTIONS = [
+    { id: "stopChildWork", label: "어린이 위험 작업 중단", icon: "🧒", description: "즉시 위험 작업을 중단합니다. 추가 식량 생산이 사라지며 건강과 교육은 서서히 회복됩니다.", repeat: 1, key: "food", minimum: 0, when: s => s.childWorkUntil > s.tick },
+    { id: "stopForcedWork", label: "강제 근무 중단", icon: "🤝", description: "동의 없는 노동을 즉시 종료합니다. 강제 근무에 따른 물자 수집 증가 효과가 사라집니다.", repeat: 1, key: "food", minimum: 0, when: s => s.forcedLaborUntil > s.tick },
+    { id: "restoreRations", label: "기본 배급 회복", icon: "🍞", description: "배급 제외를 즉시 종료합니다. 식량 소비는 다시 증가하지만 주민들이 배급을 받을 수 있게 됩니다.", repeat: 1, key: "food", minimum: 0, when: s => s.exclusionUntil > s.tick },
+    { id: "fuelFires", label: "난방 연료 보충", icon: "🔥", description: "목재 10을 사용해 체온을 24 회복합니다.", repeat: 5, key: "wood", minimum: 10, when: s => winterActive(s) && s.warmth < 83 },
+    { id: "communityCare", label: "긴급 건강·돌봄 지원", icon: "❤️", description: "식량 8을 사용해 마을의 건강을 7, 어린이 건강을 9 회복합니다.", repeat: 9, key: "food", minimum: 8, when: s => s.health < 64 || s.childWellbeing < 65 },
+    { id: "resumeLearning", label: "어린이 학습·회복 시간", icon: "📚", description: "물자 6을 사용해 학습 기회를 9, 어린이 건강을 3 회복합니다. 어린이 위험 노동이 중단된 뒤 사용할 수 있습니다.", repeat: 10, key: "wood", minimum: 6,
+      when: s => childCount(s) > 0 && s.education < 90 && s.childWorkUntil <= s.tick },
     { id: "communalMeal", label: "공동 급식 운영", icon: "🍲", description: "식량 12를 사용해 주민들과 식사를 나누고 신뢰를 4 회복합니다. 배급 관련 청원도 완화합니다.", repeat: 12, key: "food", minimum: 12, when: s => s.laws.ration === "equal" },
     { id: "focusedHarvest", label: "집중 생산 기간", icon: "⚒️", description: "식량 10을 투자해 5주 동안 생산을 23% 높입니다. 피로와 배급 관련 요구가 누적됩니다.", repeat: 13, key: "food", minimum: 10, when: s => s.laws.ration === "effort" },
     { id: "supportReview", label: "추가 지원 현황 확인", icon: "📋", description: "물자 7을 사용해 지원 내역을 살펴봅니다. 신뢰를 3 회복하고 배급 관련 청원을 완화합니다.", repeat: 12, key: "wood", minimum: 7, when: s => s.laws.ration === "needs" },
@@ -428,6 +435,12 @@
       note = "비상식량 " + Number(amount.toFixed(1)) + "을(를) 꺼내 긴급 배급했습니다.";
     }
     else if (id === "recoveryWeek") { s.food -= 8; s.workReliefUntil = s.tick + 4; s.workStrain = clamp(s.workStrain - 3.2, 0, 10); s.pressure.labor = clamp(s.pressure.labor - 1.5, 0, 8); }
+    else if (id === "stopChildWork") endChildLabor(s);
+    else if (id === "stopForcedWork") endForcedLabor(s);
+    else if (id === "restoreRations") endExclusion(s);
+    else if (id === "fuelFires") { s.wood -= 10; s.warmth = clamp(s.warmth + 24); }
+    else if (id === "communityCare") { s.food -= 8; s.health = clamp(s.health + 7); s.childWellbeing = clamp(s.childWellbeing + 9); }
+    else if (id === "resumeLearning") { s.wood -= 6; s.education = clamp(s.education + 9); s.childWellbeing = clamp(s.childWellbeing + 3); }
     s.actionCooldowns[id] = s.tick + action.repeat;
     recordDecision(s, "직접 운영: " + action.label, note);
     record(s, action.label + " — " + note);
