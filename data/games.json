@@ -2,6 +2,30 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_twelve_island",
+      "addedAt": "2026-09-30T17:22:00+09:00",
+      "title": "열두 명의 섬",
+      "href": "games/high_twelve_island/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🏝️",
+      "cover": "assets/gate-image/열두 명의 섬.svg",
+      "description": "12명의 생존자와 무인도 공동체를 운영하세요. 일꾼을 배치해 식량과 물자를 모으고, 시민들의 요구에 응답하며 법률을 정해 자치 마을로 성장하는 조건부 사건·정치 시뮬레이션.",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_little_world",
       "addedAt": "2026-09-30T16:25:00+09:00",
       "title": "작은 세계",
