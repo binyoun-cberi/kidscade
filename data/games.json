@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_story_builder",
+      "addedAt": "2026-09-30T15:44:00+09:00",
+      "title": "이야기 조립소",
+      "href": "games/high_story_builder/index.html?v=1",
+      "category": "korean",
+      "age": "high",
+      "icon": "🧩",
+      "description": "그림·이모지 카드를 모두 넣어 이야기를 쓰고, 마지막에 맞춤법 힌트를 보며 직접 고쳐 한 편의 이야기책을 완성하는 창작 글쓰기 게임. 외부 API 없이 작동해요.",
+      "subject": "korean",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_apocalypse_survival",
       "addedAt": "2026-09-29T10:59:34+09:00",
       "title": "멸망에서 살아남기",
