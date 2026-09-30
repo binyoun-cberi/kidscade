@@ -938,8 +938,8 @@ function chooseDistribution(c){
  discover('scarcity');discover('community');ui.decision.classList.add('hidden');flag('choice');toast('배분 결과 · '+effect.note,'normal',4.5);save()
 }
 function distributionName(c){return c==='equal'?'같은 양':c==='need'?'필요에 따라':c==='work'?'노동량 고려':'미정'}
-function readyFlood(){return game.inv.cleanWater>=2&&(game.inv.food+game.inv.cookedPotato)>=2&&game.buildings.some(b=>b.id==='shelter')&&!!game.flags.power}
-function derived(){if(game.day>=2&&game.inv.axe)flag('axe');if(game.day>=3&&getWeather()==='rain'){const s=placed.find(p=>p.userData.interactable?.building==='shelter');if(s&&player.root.position.distanceTo(s.position)<5)flag('rain')}if(game.day>=4&&player.root.position.distanceTo(RUINS)<15)flag('ruins');if(game.day>=6&&game.inv.cleanWater>=2&&(game.inv.food+game.inv.cookedPotato)>=2)flag('stock');if(game.day>=7&&readyFlood())flag('ready')}
+function readyFlood(){return stock('cleanWater')>=2&&(stock('food')+stock('cookedPotato')+stock('potato'))>=2&&game.buildings.some(b=>b.id==='shelter')&&!!game.flags.power}
+function derived(){if(game.day>=2&&game.inv.axe)flag('axe');if(game.day>=3&&getWeather()==='rain'){const s=placed.find(p=>p.userData.interactable?.building==='shelter');if(s&&player.root.position.distanceTo(s.position)<5)flag('rain')}if(game.day>=4&&player.root.position.distanceTo(RUINS)<15)flag('ruins');if(game.day>=6&&stock('cleanWater')>=2&&(stock('food')+stock('cookedPotato')+stock('potato'))>=2)flag('stock');if(game.day>=7&&readyFlood())flag('ready')}
 function getWeather(){
  if(game.phase==='settlement'){const cycle=game.day%5;return cycle===0?'rain':cycle===1?'cloud':'clear'}
  if(game.day===3&&game.time>=480)return'rain';if(game.day>=7)return'rain';return game.day===6?'cloud':'clear'
