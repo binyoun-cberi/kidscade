@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>멸망에서 살아남기</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_apocalypse_survival" data-title="멸망에서 살아남기" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
 </head>
@@ -30,6 +30,12 @@
   <div id="compass" class="glass compass"><b id="zoneText">학교 체육관</b><span id="bearingText">캠프 0m</span></div>
   <div id="interactPrompt" class="interact hidden"><kbd>E</kbd><span>상호작용</span></div>
   <div id="toast" class="toast" role="status"></div>
+  <section id="tutorialCoach" class="tutorial-coach glass hidden" aria-live="polite">
+    <div class="tutorial-head"><span id="tutorialStep">1 / 6</span><button id="tutorialSkip" type="button">건너뛰기</button></div>
+    <b id="tutorialTitle">이동해 보기</b>
+    <p id="tutorialText">WASD 또는 방향키로 캐릭터를 움직여 보세요.</p>
+    <small id="tutorialHint">앞으로 가는 W는 화면이 바라보는 방향으로 이동합니다.</small>
+  </section>
   <div id="crosshair" aria-hidden="true">+</div>
 
   <div id="hotbar" class="hotbar glass">
@@ -85,6 +91,7 @@
       <div><b>7일</b><span>폭우와 홍수에 대비</span></div>
     </div>
     <div class="controls"><span>WASD 이동</span><span>마우스 드래그 시점</span><span>E 상호작용</span><span>C 제작</span><span>B 건축</span><span>TAB 태블릿</span></div>
+    <p class="tutorial-note">새 생존에서는 짧은 실전 튜토리얼이 시작되며 언제든 건너뛸 수 있습니다.</p>
     <div class="start-actions"><button id="newGame" class="primary">새 생존 시작</button><button id="continueGame" class="secondary">이어하기</button></div>
     <small>실패해도 발견한 지식은 세이브에 남습니다. 화면이 작은 기기에서는 터치 조작이 표시됩니다.</small>
   </div>
@@ -107,6 +114,6 @@
 <div id="loading" class="loading"><div class="spinner"></div><b>멸망 이후의 세계를 만드는 중...</b><small id="loadingText">지형과 생존 장비를 준비하고 있어요.</small></div>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="game.js?v=12"></script>
+<script type="module" src="game.js?v=13"></script>
 </body>
 </html>
