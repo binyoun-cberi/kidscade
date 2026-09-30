@@ -39,9 +39,9 @@ const css=[
 '.q17-iso-note{margin:12px 14px;background:#251e18;border-left:4px solid #b99847;padding:9px 11px;color:#c9c0ae;font-size:11px;line-height:1.55}',
 '.q17-iso-room{margin:12px 14px;padding:18px;background:linear-gradient(#202930 0 16%,#11171b 16% 82%,#28231d 82%);border:9px solid #333c43;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;min-height:270px;position:relative}.q17-iso-room:before{content:"격리동 A · 안전문 / 차단벽 / 관찰창";position:absolute;left:12px;top:8px;color:#7f8b94;font-size:9px;letter-spacing:.08em}.q17-iso-room:after{content:"";position:absolute;left:0;right:0;bottom:42px;height:10px;background:repeating-linear-gradient(135deg,#c2a843 0 14px,#202326 14px 28px);opacity:.6;pointer-events:none}',
 '.q17-detainee{position:relative;background:#0d1115cc;border:1px solid #46515a;min-height:180px;padding:7px;text-align:center;overflow:hidden}.q17-detainee:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 24px,#86919a36 24px 27px);pointer-events:none}',
-'.q17-detainee img{height:105px;max-width:90%;object-fit:contain;filter:drop-shadow(0 6px 5px #0008)}.q17-detainee.zombie{border-color:#873f43;background:#241315cc}.q17-detainee.exposed{border-color:#9c7e3e}',
+'.q17-detainee img{height:105px;max-width:90%;object-fit:contain;filter:drop-shadow(0 6px 5px #0008)}.q17-detainee.zombie{border-color:#873f43;background:#241315cc}.q17-detainee.positive{border-color:#a44d52;background:#211517cc}.q17-detainee.testing{border-color:#557483}.q17-detainee.cleared{border-color:#477b58}.q17-detainee.exposed{border-color:#9c7e3e}',
 '.q17-detainee b{display:block;font-size:11px}.q17-detainee small{display:block;color:#9da7af;font-size:9px;margin-top:2px}.q17-detainee .q17-status{margin-top:5px;font-size:10px;font-weight:900;color:#d8c46b}.q17-detainee.zombie .q17-status{color:#ff7777}',
-'.q17-wrong{display:inline-block;margin-top:4px;background:#71383b;color:#ffd5d5;font-size:8px;font-weight:900;padding:2px 4px}.q17-detainee-actions{position:relative;z-index:2;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:7px}.q17-detainee-actions button{border:1px solid #56616b;background:#1a2026;color:#e2e7ea;padding:4px 6px;font-size:9px;font-weight:850;cursor:pointer}.q17-detainee-actions .release{border-color:#477b58;background:#183021;color:#9ee0af}.q17-detainee-actions .burn{border-color:#8c4449;background:#33191c;color:#ff9da2}',
+'.q17-wrong{display:inline-block;margin-top:4px;background:#71383b;color:#ffd5d5;font-size:8px;font-weight:900;padding:2px 4px}.q17-detainee-actions{position:relative;z-index:2;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:7px}.q17-detainee-actions button{border:1px solid #56616b;background:#1a2026;color:#e2e7ea;padding:4px 6px;font-size:9px;font-weight:850;cursor:pointer}.q17-detainee-actions .release{border-color:#477b58;background:#183021;color:#9ee0af}.q17-detainee-actions .lab{border-color:#4f7184;background:#172630;color:#a9d7e8}.q17-detainee-actions .move{border-color:#8c7540;background:#302714;color:#ead27e}.q17-detainee-actions .burn{border-color:#8c4449;background:#33191c;color:#ff9da2}.q17-lab-result{display:block;margin-top:4px;font-size:9px;font-weight:900}.q17-lab-result.pending{color:#9cc9d8}.q17-lab-result.positive{color:#ff8e93}.q17-lab-result.negative{color:#8ed7a1}',
 '.q17-iso-log{margin:12px 14px 16px;background:#0b0f12;border:1px solid #343d45;padding:10px;max-height:150px;overflow:auto;font-size:10px;color:#aeb7be;line-height:1.6}.q17-iso-log b{color:#e7c65c}',
 '.q17-camp-label{position:absolute;left:14px;top:14px;color:#c7d0d6;font-size:10px;background:#111a;padding:5px 7px;border:1px solid #4a555e}',
 '.q17-help-btn{border:1px solid #65717c;background:#202830;color:#e8edf0;padding:6px 9px;font-size:11px;font-weight:900;cursor:pointer}.q17-help-btn:hover{background:#303b45}',
@@ -60,17 +60,17 @@ const dead=document.createElement('div');dead.className='q17-dead';dead.id='q17D
 dead.innerHTML='<div class="q17-dead-card"><h1 id="q17DeadTitle">검역소 함락</h1><p id="q17DeadText"></p><p><b>검역 단계의 한 번의 판정이 뒤쪽 생존 상황까지 이어집니다.</b></p><button type="button" id="q17Restart">처음부터 다시</button></div>';
 document.body.appendChild(dead);
 
-const metersHost=document.querySelector('.meters')||document.body;const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='격리실 0/6 · CCTV';metersHost.appendChild(isoBtn);const helpBtn=document.createElement('button');helpBtn.type='button';helpBtn.className='q17-help-btn';helpBtn.textContent='튜토리얼';metersHost.appendChild(helpBtn);
+const metersHost=document.querySelector('.meters')||document.body;const isoBtn=document.createElement('button');isoBtn.type='button';isoBtn.className='q17-iso-btn';isoBtn.id='q17IsoBtn';isoBtn.textContent='추가검사실 0/6 · CCTV';metersHost.appendChild(isoBtn);const helpBtn=document.createElement('button');helpBtn.type='button';helpBtn.className='q17-help-btn';helpBtn.textContent='튜토리얼';metersHost.appendChild(helpBtn);
 const iso=document.createElement('div');iso.id='q17Isolation';
-iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>격리시설 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-iso-close" id="q17FightRoom">직접 진입 · 좀비 소탕</button><button type="button" class="q17-burn-room" id="q17BurnRoom">격리시설 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note"><b>A실 / B실은 각각 3명</b>까지 수용합니다. 좀비가 생겨도 같은 방의 시민만 직접 노출됩니다. CCTV에서 시민을 다른 방으로 옮겨 위험을 분산할 수 있습니다. <b>비상 소각은 두 방 전체</b>에 적용됩니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
+iso.innerHTML='<div class="q17-iso-card"><div class="q17-iso-head"><h2>추가검사 · 격리시설 CCTV · <span id="q17IsoCapacity">0 / 6</span></h2><div class="q17-iso-head-actions"><button type="button" class="q17-iso-close" id="q17FightRoom">직접 진입 · 좀비 소탕</button><button type="button" class="q17-burn-room" id="q17BurnRoom">B실 비상 소각</button><button type="button" class="q17-iso-close" id="q17IsoClose">닫기</button></div></div><div class="q17-iso-note"><b>A실은 추가검사·관찰 4명</b>, <b>B실은 양성·고위험 격리 2명</b> 전용입니다. 추가검사 판정자는 A실에서 정밀검사를 받고, 음성은 퇴실·양성은 B실로 분리합니다. B실이 가득 차면 양성자가 A실에 남아 다른 대기자를 노출시킬 수 있습니다. <b>격리 판정은 이 시설을 거치지 않고 즉시 소각 처리</b>됩니다.</div><div class="q17-iso-room" id="q17IsoRoom"></div><div class="q17-iso-log" id="q17IsoLog"></div></div>';
 document.body.appendChild(iso);
 
 const tutorial=document.createElement('div');tutorial.id='q17Tutorial';
 tutorial.innerHTML='<div class="q17-tutorial-card"><div class="q17-tutorial-progress" id="q17TutProgress"></div><h2 id="q17TutTitle"></h2><p id="q17TutText"></p><div class="q17-tutorial-demo" id="q17TutDemo"></div><div class="q17-tutorial-nav"><button type="button" id="q17TutPrev">이전</button><button type="button" id="q17TutClose">닫기</button><button type="button" class="next" id="q17TutNext">다음</button></div></div>';
 document.body.appendChild(tutorial);
 const tutorialSteps=[
- {title:'1. 검역 판정',text:'시민을 바로 찍어 맞히는 게임이 아니라, 필요한 검사를 하고 현재 주차의 지침과 대조하는 게임입니다.',demo:'<b>I/T/U/B/R/G</b>로 검사 · <b>V</b>로 지금까지 본 검사 결과 다시보기 · <b>1/2/3</b>으로 통과/추가검사/격리'},
- {title:'2. 격리실 관리',text:'격리 판정을 받은 시민은 A실과 B실 중 한 곳으로 들어갑니다. 각 방은 3명까지 수용하며, 같은 방에 좀비가 생겼을 때만 정상 시민이 직접 노출됩니다.',demo:'상단의 <b>격리실 CCTV</b>에서 상태와 방 배치를 확인하세요. 시민을 A/B실 사이로 옮겨 위험을 분산할 수 있고, 좀비가 생기면 소각하거나 <b>직접 진입</b>해 소탕할 수 있습니다.'},
+ {title:'1. 검역 판정',text:'검사 결과와 이번 주 지침을 대조해 세 가지 처분을 고릅니다. 추가검사와 격리는 이제 서로 다른 단계입니다.',demo:'<b>1 통과</b> · <b>2 추가검사→A 관찰실</b> · <b>3 격리→즉시 소각</b><br>I/T/U/B/R/G로 검사 · V로 지금까지 본 결과 다시보기'},
+ {title:'2. 추가검사실 관리',text:'추가검사 판정자는 A 관찰실에서 정밀검사를 받습니다. 검사 결과가 음성이면 퇴실시키고, 양성이면 B 고위험실로 분리한 뒤 처리해야 합니다.',demo:'정밀검사는 시간이 지나면 자동 완료됩니다. 급하면 <b>우선 분석</b>으로 결과를 앞당길 수 있습니다. B실이 만실이면 양성자가 A실에 남아 다른 시민을 감염시킬 수 있습니다.'},
  {title:'3. 잘못 통과시키면',text:'감염자를 통과시키면 생존자 캠프로 들어가 버립니다. 캠프에 들어가 직접 제압해야 하며, 늦으면 시민이 물리고 시간이 지난 뒤 새 좀비가 됩니다.',demo:'생존자 한 명이 감염되는 순간 즉시 모두 좀비가 되지는 않습니다. 도망칠 시간과 구조할 시간이 있습니다.'},
  {title:'4. 전투',text:'전투는 넓은 횡스크롤 구역입니다. 플레이어는 좀비보다 훨씬 빠르고, 좀비는 시민보다 조금 빠릅니다. 장애물과 발판을 넘나들며 거리를 벌리세요.',demo:'<b>A/D</b> 달리기 · <b>W/↑/Space</b> 점프 · <b>마우스 클릭 또는 J</b> 사격 · <b>F</b> 근접 타격 · <b>R</b> 재장전<br>총은 안전하지만 탄약과 재장전이 필요하고, 근접 공격은 강하지만 가까이 가야 해서 위험합니다.'}
 ];
@@ -126,7 +126,8 @@ function playGunshot(){
 let active=false,started=false,last=0,player=null,zombies=[],bullets=[],survivors=[],reload=0,shootCd=0,meleeCd=0,autoTarget=null;let cameraX=0,worldW=0,worldH=0,groundY=0,obstacles=[];
 let mode='outbreak',continuation=null,campLosses=0,currentIncidentInf=0,currentIntruder='';
 let combatTime=0,muzzle=0,screenShake=0,damageFlash=0,particles=[];
-const ISOLATION_CAPACITY=6;
+const ROOM_CAPACITY={A:4,B:2};
+const ISOLATION_CAPACITY=ROOM_CAPACITY.A+ROOM_CAPACITY.B;
 let isolation=[],isoLog=[],isoSeq=0;
 
 function bridge(){return window.Q17Bridge||null}
@@ -137,118 +138,123 @@ function notify(text){
  m.textContent=text;m.classList.add('show','big');clearTimeout(notify.t);notify.t=setTimeout(function(){m.classList.remove('show','big')},1900);
 }
 function addIsoLog(text){isoLog.unshift(text);if(isoLog.length>12)isoLog.length=12}
+function roomCapacity(name){return ROOM_CAPACITY[name]||0}
+function roomCount(name){return isolation.filter(function(d){return(d.room||'A')===name}).length}
+function roomHasSpace(name){return roomCount(name)<roomCapacity(name)}
+function roomForNewDetainee(){return roomHasSpace('A')?'A':null}
 function isoStatus(d){
  if(d.status==='zombie')return d.acquired?'격리 중 감염 → 좀비화':'좀비화';
- if(d.status==='turning')return'변이 진행 중';
- if(d.status==='infected')return d.acquired?'격리 중 감염':'증상 악화';
- if(d.status==='exposed')return'감염자에게 노출됨';
- if(d.status==='cleared')return'이상 없음 · 퇴실 가능';
- return d.wrong?'정상 · 관찰 '+Math.min(2,d.stage)+'/2':'관찰 '+Math.min(2,d.stage)+'/2';
+ if(d.status==='turning')return'변이 진행 중 · 즉시 처리 필요';
+ if(d.status==='positive')return d.acquired?'접촉 감염 양성 · 고위험':'정밀검사 양성 · 고위험';
+ if(d.status==='exposed')return'양성자 접촉 · 재검사 필요';
+ if(d.status==='cleared')return'정밀검사 음성 · 퇴실 가능';
+ if(d.status==='testing')return'정밀검사 분석 '+Math.min(2,Math.max(1,d.labStage||1))+'/2';
+ return'추가 관찰 중';
 }
-function roomCount(name){return isolation.filter(function(d){return(d.room||'A')===name}).length}
-function roomHasSpace(name){return roomCount(name)<3}
-function roomForNewDetainee(){const a=roomCount('A'),b=roomCount('B');return a<=b&&a<3?'A':b<3?'B':'A'}
+function evidenceSummary(d){
+ const p=d.caseData||{},out=[];
+ if(p.uv)out.push('UV+');if(p.blood)out.push('혈액+');if(p.resp)out.push('호흡 이상');if(p.cough&&p.temp>=38)out.push('고열+기침');if(p.forged)out.push('문서 이상');if(p.bioSample)out.push('오염 시료');
+ return out.length?out.slice(0,2).join(' · '):'단독/불확실 소견';
+}
+function labResultHtml(d){
+ if(d.labResult==='positive')return'<span class="q17-lab-result positive">정밀검사: 양성</span>';
+ if(d.labResult==='negative')return'<span class="q17-lab-result negative">정밀검사: 음성</span>';
+ return'<span class="q17-lab-result pending">정밀검사: 분석 중</span>';
+}
 function renderDetainee(d){
  const img=d.status==='zombie'?SPRITES.zombie:spriteUrl(d.sprite);
- const cls=d.status==='zombie'?' zombie':(d.status==='exposed'||d.acquired?' exposed':'');
- const release=d.status==='cleared'?'<button type="button" class="release" data-iso-action="release" data-id="'+d.id+'">생존자 캠프로 보내기</button>':'';
- const target=(d.room||'A')==='A'?'B':'A';
- const move=d.status==='zombie'?'':(roomHasSpace(target)?'<button type="button" class="move" data-iso-action="move" data-id="'+d.id+'">'+target+'실로 이동</button>':'');
- const burn='<button type="button" class="burn" data-iso-action="burn" data-id="'+d.id+'">소각실 이송</button>';
- return '<div class="q17-detainee'+cls+'"><img src="'+img+'" alt=""><b>'+escapeHtml(d.name)+'</b><span class="q17-room-badge">'+escapeHtml(d.room||'A')+'실</span><small>'+(d.infectedAtEntry?'입실 당시 감염 의심':'입실 당시 정상')+'</small><div class="q17-status">'+escapeHtml(isoStatus(d))+'</div>'+(d.wrong?'<span class="q17-wrong">오판 격리</span>':'')+'<div class="q17-detainee-actions">'+release+move+burn+'</div></div>';
+ const cls=d.status==='zombie'?' zombie':d.status==='positive'||d.status==='turning'?' positive':d.status==='cleared'?' cleared':d.status==='testing'?' testing':d.status==='exposed'?' exposed':'';
+ const release=d.status==='cleared'?'<button type="button" class="release" data-iso-action="release" data-id="'+d.id+'">음성 · 퇴실</button>':'';
+ const expedite=(d.status==='testing'||d.status==='exposed')?'<button type="button" class="lab" data-iso-action="expedite" data-id="'+d.id+'">우선 분석 (-30)</button>':'';
+ const move=(d.room||'A')==='A'&&(d.status==='positive'||d.status==='turning')&&roomHasSpace('B')?'<button type="button" class="move" data-iso-action="move" data-id="'+d.id+'">B 고위험실로 이동</button>':'';
+ const burn=(d.status==='positive'||d.status==='turning'||d.status==='zombie')?'<button type="button" class="burn" data-iso-action="burn" data-id="'+d.id+'">확진 소각</button>':'';
+ return '<div class="q17-detainee'+cls+'"><img src="'+img+'" alt=""><b>'+escapeHtml(d.name)+'</b><span class="q17-room-badge">'+escapeHtml(d.room||'A')+'실</span><small>'+escapeHtml(evidenceSummary(d))+'</small><div class="q17-status">'+escapeHtml(isoStatus(d))+'</div>'+labResultHtml(d)+(d.wrong?'<span class="q17-wrong">불필요 추가검사</span>':'')+'<div class="q17-detainee-actions">'+release+expedite+move+burn+'</div></div>';
 }
 function renderRoom(name){
  const list=isolation.filter(function(d){return(d.room||'A')===name});
- return '<section class="q17-room-zone" data-room="'+name+'"><h3>'+name+'실 · '+list.length+' / 3</h3>'+(list.length?list.map(renderDetainee).join(''):'<div class="q17-room-empty">빈 격리실</div>')+'</section>';
+ const label=name==='A'?'A 관찰·검사실':'B 고위험 격리실';
+ return '<section class="q17-room-zone" data-room="'+name+'"><h3>'+label+' · '+list.length+' / '+roomCapacity(name)+'</h3>'+(list.length?list.map(renderDetainee).join(''):'<div class="q17-room-empty">'+(name==='A'?'추가검사 대기 없음':'양성·고위험 대상 없음')+'</div>')+'</section>';
 }
 function renderIsolation(){
- isoBtn.textContent='격리실 '+isolation.length+'/'+ISOLATION_CAPACITY+' · CCTV';
- const cap=document.getElementById('q17IsoCapacity');if(cap)cap.textContent=isolation.length+' / '+ISOLATION_CAPACITY+' · A '+roomCount('A')+'/3 · B '+roomCount('B')+'/3';
- const zombiesHere=isolation.filter(function(d){return d.status==='zombie'}).length;const fightBtn=document.getElementById('q17FightRoom');if(fightBtn){fightBtn.disabled=zombiesHere===0;fightBtn.textContent=zombiesHere?'직접 진입 · 좀비 '+zombiesHere+'명 소탕':'직접 진입 · 좀비 없음'}
- isoBtn.classList.toggle('alert',zombiesHere>0||isolation.some(function(d){return d.status==='exposed'||d.acquired}));
- const room=document.getElementById('q17IsoRoom');
- room.innerHTML=renderRoom('A')+renderRoom('B');
- document.getElementById('q17IsoLog').innerHTML=isoLog.length?isoLog.map(function(x){return '• '+x}).join('<br>'):'아직 격리실 기록이 없습니다.';
+ isoBtn.textContent='추가검사실 '+isolation.length+'/'+ISOLATION_CAPACITY+' · CCTV';
+ const cap=document.getElementById('q17IsoCapacity');if(cap)cap.textContent=isolation.length+' / '+ISOLATION_CAPACITY+' · A '+roomCount('A')+'/'+ROOM_CAPACITY.A+' · B '+roomCount('B')+'/'+ROOM_CAPACITY.B;
+ const zombiesHere=isolation.filter(function(d){return d.status==='zombie'}).length;
+ const dangerHere=isolation.filter(function(d){return d.status==='positive'||d.status==='turning'||d.status==='zombie'}).length;
+ const fightBtn=document.getElementById('q17FightRoom');if(fightBtn){fightBtn.disabled=zombiesHere===0;fightBtn.textContent=zombiesHere?'직접 진입 · 좀비 '+zombiesHere+'명 소탕':'직접 진입 · 좀비 없음'}
+ isoBtn.classList.toggle('alert',dangerHere>0||isolation.some(function(d){return d.status==='exposed'||d.acquired}));
+ const room=document.getElementById('q17IsoRoom');if(room)room.innerHTML=renderRoom('A')+renderRoom('B');
+ const log=document.getElementById('q17IsoLog');if(log)log.innerHTML=isoLog.length?isoLog.map(function(x){return '• '+x}).join('<br>'):'아직 추가검사 기록이 없습니다.';
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
+function autoRoutePositive(d){
+ if((d.room||'A')==='A'&&roomHasSpace('B')){d.room='B';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 양성 → B 고위험실 자동 분리');return true}
+ return false;
+}
+function resolveLab(d){
+ if(!d)return;
+ const positive=!!(d.infectedAtEntry||d.acquired);d.labResult=positive?'positive':'negative';d.stage=0;
+ if(positive){d.status='positive';const moved=autoRoutePositive(d);addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 양성'+(moved?'':' · B실 만실로 A실 잔류'))}
+ else{d.status='cleared';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 음성 · 퇴실 가능')}
+}
 function addDetainee(p){
- if(isolation.length>=ISOLATION_CAPACITY){notify('격리실 정원 초과 · 먼저 자리를 확보하세요.');openIsolation();return false}
- const d={id:++isoSeq,name:p.name,sprite:p.sprite||'player',room:roomForNewDetainee(),infectedAtEntry:!!p.infected,wrong:!!p.wrongQuarantine,status:p.infected?'infected':'stable',stage:0,exposure:0,acquired:false};
- isolation.push(d);
- addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+d.room+'실 입실'+(d.wrong?' · 정상인을 잘못 격리함':''));
- renderIsolation();return true;
+ const room=roomForNewDetainee();if(!room){notify('A 관찰실 정원 초과 · 음성 판정자를 퇴실시키거나 양성자를 B실로 보내세요.');openIsolation();return false}
+ const d={id:++isoSeq,name:p.name,sprite:p.sprite||'player',room:room,infectedAtEntry:!!p.infected,wrong:p.correct!=='retest',status:'testing',stage:0,labStage:1,labResult:'pending',exposure:0,acquired:false,caseData:p.caseData||{}};
+ isolation.push(d);addIsoLog('<b>'+escapeHtml(d.name)+'</b> A 관찰실 입실 · 정밀검사 자동 접수'+(d.wrong?' · 지침상 추가검사 불필요':''));renderIsolation();return true;
 }
 function advanceIsolation(){
- if(!isolation.length)return;
- let eventText='';
+ if(!isolation.length)return;let eventText='';
  isolation.forEach(function(d){
-  if(d.status==='stable'){
-   d.stage++;
-   if(d.stage>=2){d.status='cleared';eventText=d.name+'의 관찰 결과 이상이 없습니다. 퇴실시킬 수 있습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 관찰 종료 · 이상 없음')}
-  }else if(d.status==='infected'){
-   d.stage++;
-   if(d.stage>=3){d.status='zombie';eventText=d.name+'이(가) '+(d.room||'A')+'실에서 좀비로 변했습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 좀비화 확인')}
-   else if(d.stage>=2){d.status='turning';eventText=d.name+'의 상태가 급격히 악화되고 있습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 변이 징후 발생')}
-  }else if(d.status==='turning'){
-   d.stage++;
-   if(d.stage>=3){d.status='zombie';eventText=d.name+'이(가) '+(d.room||'A')+'실에서 좀비로 변했습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 좀비화 확인')}
-  }
+  if(d.status==='testing'){d.labStage=(d.labStage||1)+1;if(d.labStage>=3){resolveLab(d);eventText=d.name+' 정밀검사 결과가 나왔습니다.'}}
+  else if(d.status==='positive'){d.stage++;if(d.stage>=2){d.status='turning';eventText=d.name+'의 상태가 급격히 악화되고 있습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 변이 징후 발생')}}
+  else if(d.status==='turning'){d.stage++;if(d.stage>=4){d.status='zombie';eventText=d.name+'이(가) '+(d.room||'A')+'실에서 좀비로 변했습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 좀비화 확인')}}
  });
- const zombieRooms=new Set(isolation.filter(function(d){return d.status==='zombie'}).map(function(d){return d.room||'A'}));
- if(zombieRooms.size){
+ const dangerRooms=new Set(isolation.filter(function(d){return d.status==='positive'||d.status==='turning'||d.status==='zombie'}).map(function(d){return d.room||'A'}));
+ if(dangerRooms.size){
   const risk=window.Q17Systems&&window.Q17Systems.facilityExposureStep?window.Q17Systems.facilityExposureStep():1;
   isolation.forEach(function(d){
-   if(!zombieRooms.has(d.room||'A'))return;
-   if(!d.wrong||d.infectedAtEntry||d.acquired||d.status==='zombie'||d.status==='infected'||d.status==='turning')return;
-   const before=d.exposure;d.exposure+=risk;
-   if(d.exposure>=3){d.status='infected';d.acquired=true;d.stage=0;eventText=d.name+'이(가) '+(d.room||'A')+'실에서 감염되었습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 격리 중 감염 확인');const b=bridge();if(b)b.applyOutbreakResult({trustDelta:-4,scoreDelta:-120})}
-   else if(before<1&&d.exposure>=1){d.status='exposed';eventText=d.name+'이(가) 같은 방의 감염자에게 노출됐습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 감염자 접촉')}
+   if(!dangerRooms.has(d.room||'A'))return;
+   if(d.infectedAtEntry||d.acquired||d.status==='positive'||d.status==='turning'||d.status==='zombie')return;
+   const before=d.exposure||0;d.exposure=before+risk;
+   if(d.exposure>=2){d.acquired=true;d.labResult='positive';d.status='positive';d.stage=0;const moved=autoRoutePositive(d);eventText=d.name+'이(가) 격리 중 접촉 감염되었습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> 격리 중 접촉 감염 확인'+(moved?' · B실 분리':''));const b=bridge();if(b)b.applyOutbreakResult({trustDelta:-4,scoreDelta:-120})}
+   else if(before<1){d.status='exposed';d.labResult='pending';eventText=d.name+'이(가) 같은 방의 양성자에게 노출됐습니다.';addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+(d.room||'A')+'실 양성자 접촉 · 재검사 필요')}
   });
  }
- renderIsolation();
- if(eventText)notify('격리실 경보 · '+eventText);
+ renderIsolation();if(eventText)notify('추가검사실 경보 · '+eventText);
 }
 function openIsolation(){renderIsolation();iso.classList.add('show')}
 function moveDetainee(id){
- const d=isolation.find(function(x){return x.id===id});if(!d||d.status==='zombie')return;
- const target=(d.room||'A')==='A'?'B':'A';
- if(!roomHasSpace(target)){notify(target+'실 정원이 가득 찼습니다.');return}
- const from=d.room||'A';d.room=target;
- addIsoLog('<b>'+escapeHtml(d.name)+'</b> '+from+'실 → '+target+'실 이동');
- notify(d.name+' · '+target+'실로 이동');renderIsolation();
+ const d=isolation.find(function(x){return x.id===id});if(!d)return;if((d.room||'A')!=='A'||!(d.status==='positive'||d.status==='turning'))return;
+ if(!roomHasSpace('B')){notify('B 고위험실 정원이 가득 찼습니다.');return}
+ d.room='B';addIsoLog('<b>'+escapeHtml(d.name)+'</b> A 관찰실 → B 고위험실 분리');notify(d.name+' · B 고위험실로 이동');renderIsolation();
 }
 function releaseDetainee(id){
- const d=isolation.find(function(x){return x.id===id});if(!d||d.status!=='cleared')return;
- isolation=isolation.filter(function(x){return x.id!==id});
- addIsoLog('<b>'+escapeHtml(d.name)+'</b> 관찰 종료 · 생존자 캠프로 이동');
- const b=bridge();if(b)b.applyOutbreakResult({trustDelta:2,scoreDelta:70});
- notify(d.name+' · 이상 없음 확인, 생존자 캠프로 이동');renderIsolation();
+ const d=isolation.find(function(x){return x.id===id});if(!d||d.status!=='cleared')return;isolation=isolation.filter(function(x){return x.id!==id});
+ addIsoLog('<b>'+escapeHtml(d.name)+'</b> 정밀검사 음성 · 생존자 캠프로 퇴실');const b=bridge();if(b)b.applyOutbreakResult({trustDelta:2,scoreDelta:70});notify(d.name+' · 음성 확인, 퇴실 완료');renderIsolation();
+}
+function expediteDetainee(id){
+ const d=isolation.find(function(x){return x.id===id});if(!d||!(d.status==='testing'||d.status==='exposed'))return;const b=bridge();if(b)b.applyOutbreakResult({scoreDelta:-30});resolveLab(d);
+ addIsoLog('<b>'+escapeHtml(d.name)+'</b> 검사실 우선 분석 사용 · 점수 -30');notify(d.name+' · 정밀검사 결과 즉시 확인');renderIsolation();
 }
 function burnDetainee(id){
- const d=isolation.find(function(x){return x.id===id});if(!d)return;
- if(!window.confirm(d.name+'을(를) 소각실로 이송하시겠습니까? 되돌릴 수 없습니다.'))return;
- const infected=!!(d.infectedAtEntry||d.acquired||d.status==='infected'||d.status==='turning'||d.status==='zombie');
- isolation=isolation.filter(function(x){return x.id!==id});
- addIsoLog('<b>'+escapeHtml(d.name)+'</b> 소각실 이송'+(infected?' · 감염원 제거':' · 정상인 소각'));
- const b=bridge();if(b)b.applyOutbreakResult(infected?{infectionDelta:-1,trustDelta:-1,scoreDelta:60}:{trustDelta:-14,scoreDelta:-260});
- notify(infected?'감염원 소각 완료':'정상인을 소각했습니다 · 시민 신뢰 급락');renderIsolation();
+ const d=isolation.find(function(x){return x.id===id});if(!d)return;if(!(d.status==='positive'||d.status==='turning'||d.status==='zombie')){notify('정밀검사 양성 또는 변이 확인 후 소각할 수 있습니다.');return}
+ if(!window.confirm(d.name+'을(를) 확진 소각 처리하시겠습니까?'))return;isolation=isolation.filter(function(x){return x.id!==id});addIsoLog('<b>'+escapeHtml(d.name)+'</b> 확진 소각 · 감염원 제거');
+ const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-1,trustDelta:-1,scoreDelta:80});notify('확진 소각 완료 · '+d.name);renderIsolation();
+}
+function immediateIncinerate(p){
+ const infected=!!p.infected;addIsoLog('<b>'+escapeHtml(p.name)+'</b> 검역대 즉시 격리 판정 → 소각'+(infected?' · 감염원 제거':' · 정상 시민 오판'));notify(infected?'격리 판정 · 즉시 소각 완료':'오판 격리 · 정상 시민을 소각했습니다');
 }
 function burnRoom(){
- if(!isolation.length){notify('격리실이 비어 있습니다.');return}
- if(!window.confirm('격리실 전체를 비상 소각하시겠습니까? 정상인도 함께 사망할 수 있습니다.'))return;
- const healthy=isolation.filter(function(d){return !(d.infectedAtEntry||d.acquired||d.status==='infected'||d.status==='turning'||d.status==='zombie')}).length;
- const infected=isolation.length-healthy;
- addIsoLog('<b>비상 소각 실시</b> · 감염 '+infected+'명 / 정상 '+healthy+'명');
- isolation=[];
- const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-Math.min(8,infected*2),trustDelta:-(healthy*12+2),scoreDelta:infected*80-healthy*260});
- notify(healthy?'격리실 소각 · 정상인 '+healthy+'명 희생':'격리실 소각 · 감염원 제거');renderIsolation();
+ const list=isolation.filter(function(d){return(d.room||'A')==='B'});if(!list.length){notify('B 고위험실이 비어 있습니다.');return}if(!window.confirm('B 고위험실 전체를 비상 소각하시겠습니까?'))return;
+ const healthy=list.filter(function(d){return !(d.infectedAtEntry||d.acquired||d.status==='positive'||d.status==='turning'||d.status==='zombie')}).length,infected=list.length-healthy;
+ addIsoLog('<b>B실 비상 소각</b> · 감염 '+infected+'명 / 비감염 '+healthy+'명');const ids=new Set(list.map(function(d){return d.id}));isolation=isolation.filter(function(d){return!ids.has(d.id)});
+ const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-Math.min(5,infected*2),trustDelta:-(healthy*12+1),scoreDelta:infected*80-healthy*260});notify(healthy?'B실 비상 소각 · 비감염 '+healthy+'명 희생':'B실 비상 소각 · 감염원 제거');renderIsolation();
 }
 function resetIsolation(){isolation=[];isoLog=[];isoSeq=0;renderIsolation();iso.classList.remove('show')}
 
 isoBtn.addEventListener('click',openIsolation);
 document.getElementById('q17IsoClose').addEventListener('click',function(){iso.classList.remove('show')});
 document.getElementById('q17FightRoom').addEventListener('click',showIsolationFight);document.getElementById('q17BurnRoom').addEventListener('click',burnRoom);
-document.getElementById('q17IsoRoom').addEventListener('click',function(e){const btn=e.target.closest('button[data-iso-action]');if(!btn)return;const id=Number(btn.dataset.id);if(btn.dataset.isoAction==='release')releaseDetainee(id);else if(btn.dataset.isoAction==='move')moveDetainee(id);else if(btn.dataset.isoAction==='burn')burnDetainee(id)});
+document.getElementById('q17IsoRoom').addEventListener('click',function(e){const btn=e.target.closest('button[data-iso-action]');if(!btn)return;const id=Number(btn.dataset.id);if(btn.dataset.isoAction==='release')releaseDetainee(id);else if(btn.dataset.isoAction==='expedite')expediteDetainee(id);else if(btn.dataset.isoAction==='move')moveDetainee(id);else if(btn.dataset.isoAction==='burn')burnDetainee(id)});
 iso.addEventListener('click',function(e){if(e.target===iso)iso.classList.remove('show')});
 renderIsolation();
 
@@ -594,11 +600,13 @@ document.getElementById('q17Reload').addEventListener('pointerdown',function(e){
 window.addEventListener('resize',function(){if(active){resizeCanvas();makeWorld(mode);if(player){player.y=groundY;survivors.forEach(function(x){x.y=groundY});zombies.forEach(function(x){x.y=groundY})}}});
 
 window.Q17Outbreak={
- canQuarantine:function(){return isolation.length<ISOLATION_CAPACITY},
+ canQuarantine:function(){return true},
+ canRetest:function(){return roomHasSpace('A')},
  openIsolation:openIsolation,
  onDecision:function(payload,next){
   advanceIsolation();
-  if(payload.action==='quarantine')addDetainee(payload);
+  if(payload.action==='retest')addDetainee(payload);
+  if(payload.action==='quarantine')immediateIncinerate(payload);
   if(payload.action==='pass'&&payload.infected&&!payload.ok){
    setTimeout(function(){showCampBreach(payload,next)},650);
    return true;
