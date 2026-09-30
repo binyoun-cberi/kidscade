@@ -296,9 +296,9 @@
     const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
     const cut = s.jobs.wood * .48 * production + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
-    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
+    const foodUse = Math.max(0, s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
       (winterActive(s) ? 1.13 : 1) * (disasterActive(s,"heat") ? 1.10 : 1) -
-      (s.exclusionUntil > s.tick ? 1.25 : 0);
+      (s.exclusionUntil > s.tick ? 1.25 : 0));
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
@@ -1177,6 +1177,7 @@
     }
     s.jobs.gather = Math.min(s.jobs.gather, adultCapacity(s));
     s.jobs.wood = Math.min(s.jobs.wood, Math.max(0, adultCapacity(s) - s.jobs.gather));
+    s.sick = clamp(s.sick, 0, s.population);
     return removed;
   }
   function applyCrisisDecision(s, choice, event) {
@@ -1249,6 +1250,11 @@
     if (choice.groupChanges) for (const [kind, amount] of Object.entries(choice.groupChanges))
       s.groups[kind] = clamp(s.groups[kind] + amount, 0, 10);
     if (choice.rescueTeam) {
+      if ((s.rescueCount || 0) >= 2 || s.population <= 4) {
+        s.ended = true;
+        s.rescueCount = (s.rescueCount || 0) + 1;
+        record(s, "반복된 긴급 구조 이후 공동체가 외부 지원을 받아 섬 운영을 마무리했습니다.");
+      } else {
       departResidents(s, 1, "긴급 구조와 지원을 요청하기 위해");
       s.food=clamp(s.food+22,0,s.foodCap);
       s.water=clamp(s.water+28);
@@ -1256,6 +1262,7 @@
       s.trust=clamp(s.trust-5);
       s.rescueCount=(s.rescueCount||0)+1;
       s.collapseWeeks=0;
+      }
     }
     if (choice.localRebuild) {
       s.health=clamp(s.health+14);s.water=clamp(s.water+15);
@@ -1428,6 +1435,7 @@
     }
     if (s.population > 2 && s.food < 1 && s.tick % 10 === 0) {
       s.population--;
+      s.sick = clamp(s.sick,0,s.population);
       const adultIndex = s.citizens.findLastIndex(person => !person.isChild);
       const leaving = s.citizens.splice(adultIndex >= 0 ? adultIndex : s.citizens.length - 1, 1)[0];
       if (s.jobs.gather > adultCapacity(s)) s.jobs.gather = adultCapacity(s);
