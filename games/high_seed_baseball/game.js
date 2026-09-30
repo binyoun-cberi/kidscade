@@ -143,7 +143,7 @@ function nextPlateAppearance(){
 }
 function startBatting(){
  state='batting';cursor.x=480;cursor.y=330;setControls('bat');hint(difficulty==='hard'?'공의 위치를 조준하고 초록 구간에 스윙!':'위치는 자동으로 맞춰요 · 초록 구간에 스윙!');
- if(tutorialStep===0){message('공이 가까워져 막대가 초록색이면 ⚾ 스윙을 한 번 누르세요!',3);tutorialStep=1}
+ if(tutorialStep===0){message('초록색 타이밍에 화면이나 ⚾ 스윙을 한 번 터치하세요!',3);tutorialStep=1}
  setTimeoutLike(()=>spawnCpuPitch(),.75);
 }
 function pitchProfile(type){
@@ -598,7 +598,7 @@ function loop(now){const dt=Math.min(.05,(now-last)/1000||0);last=now;acc+=dt;wh
 requestAnimationFrame(loop);
 
 function logicalPos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);if(state==='batting'&&!cfg().autoAim){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}else if(state==='defenseField'&&fielders.length){let best=-1,dist=50;fielders.forEach((f,i)=>{const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<dist){dist=d;best=i}});if(best>=0){activeFielder=best;setControls('field');message(fielders[best].role+' 선택',.7)}}});
+canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);if(state==='batting'&&!cfg().autoAim){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='batting'&&cfg().autoAim){swingNow('contact')}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}else if(state==='defenseField'&&fielders.length){let best=-1,dist=50;fielders.forEach((f,i)=>{const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<dist){dist=d;best=i}});if(best>=0){activeFielder=best;setControls('field');message(fielders[best].role+' 선택',.7)}}});
 canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons){const p=logicalPos(e);if(state==='batting'&&!cfg().autoAim){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}}});
 
 window.addEventListener('keydown',e=>{
