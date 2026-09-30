@@ -108,6 +108,9 @@
       bridge.remember?.(gameId);
       bridge.updateModalTitle?.(`진행 중: ${title}`);
       bridge.afterOpen?.(activatedSession);
+      if (typeof window !== 'undefined') window.KidscadeActivity?.record?.('start', {
+        title: title + ' 플레이 시작', place: title, gameId
+      });
       return activatedSession;
     };
 
@@ -177,6 +180,11 @@
               seconds: reward.sessionSec
             });
             window.KidscadeProfileHistory?.renderBrowserUI?.();
+            window.KidscadeActivity?.record?.('play', {
+              title: session.title + ' 플레이 완료',
+              summary: reward.durationText + ' 플레이 · 씨앗 +' + reward.rewardSeeds,
+              place: session.title, gameId: session.id
+            });
           } catch (profileError) {
             console.warn('[KidscadeGameLauncher] local profile history write failed:', profileError);
           }
