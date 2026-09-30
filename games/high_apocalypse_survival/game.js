@@ -297,19 +297,51 @@ function tryPlayerMove(dx,dz){
  player.velocity.x*=.18;player.velocity.z*=.18;return false
 }
 function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(x,z,w,d,pad);return m}
-function ruinShell(name,x,z,w,d,c=0x777b78){
+function currentRuinZone(){
+ const px=player?.root?.position?.x??999,pz=player?.root?.position?.z??999;return ruinZones.find(z=>Math.abs(px-z.x)<z.hw&&Math.abs(pz-z.z)<z.hd)||null
+}
+function ruinShell(site,name,x,z,w,d,c=0x777b78){
  const wall=.45,h=3.4,door=2.4,walls=[];
  walls.push(solidBox(w,h,wall,c,x,h/2,z-d/2),solidBox(w,h,wall,c,x,h/2,z+d/2));
  walls.push(solidBox(wall,h,d,c,x-w/2,h/2,z),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z-(d+door)/4),solidBox(wall,h,(d-door)/2,c,x+w/2,h/2,z+(d+door)/4));
  walls.forEach(m=>{m.visible=false;m.material.transparent=true;m.material.opacity=0});
- const floor=box(w-.5,.07,d-.5,0x555b58,x,.035,z);ruinZones.push({x,z,hw:w/2-.4,hd:d/2-.4,walls});
+ const floor=box(w-.5,.07,d-.5,0x555b58,x,.035,z),roof=box(w,.15,d,0x303635,x,h+.08,z);roof.material=roof.material.clone();roof.material.transparent=true;roof.material.opacity=.94;roof.castShadow=true;
+ const zone={site,name,x,z,hw:w/2-.4,hd:d/2-.4,walls,roof,light:null};ruinZones.push(zone);
  const panel=3.35;
- placeWorldModelSafe(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2-.15,z,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+name,allowOverlap:true});
- placeWorldModelSafe(ART.buildings+'wall-window-wide-square-detailed.glb',{x:x-w*.18,z:z-d/2+.1,target:panel,rot:0,w:3.2,d:1,tag:'ruin-'+name,allowOverlap:true});
- placeWorldModelSafe(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2+.1,z:z+d*.15,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+name,allowOverlap:true});
- placeWorldModelSafe(ART.buildings+'wall.glb',{x:x+w*.22,z:z+d/2-.1,target:panel,rot:Math.PI,w:3.2,d:1,tag:'ruin-'+name,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-doorway-wide-square.glb',{x:x+w/2-.15,z,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-window-wide-square-detailed.glb',{x:x-w*.18,z:z-d/2+.1,target:panel,rot:0,w:3.2,d:1,tag:'ruin-'+site,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall-window-square-detailed.glb',{x:x-w/2+.1,z:z+d*.15,target:panel,rot:Math.PI*.5,w:1,d:3.2,tag:'ruin-'+site,allowOverlap:true});
+ placeWorldModelSafe(ART.buildings+'wall.glb',{x:x+w*.22,z:z+d/2-.1,target:panel,rot:Math.PI,w:3.2,d:1,tag:'ruin-'+site,allowOverlap:true});
+ scene.userData.ruinDoors=scene.userData.ruinDoors||{};
+ const pivot=new THREE.Group();pivot.position.set(x+w/2-.12,0,z-door*.45);groups.dynamic.add(pivot);
+ const fallback=new THREE.Mesh(new THREE.BoxGeometry(.13,2.55,door*.9),new THREE.MeshStandardMaterial({color:0x6d5239,roughness:.86}));fallback.position.set(0,1.28,door*.45);fallback.castShadow=true;pivot.add(fallback);
+ model(ART.buildings+'door-rotate-square-b.glb').then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.7);o.position.z=door*.42;o.rotation.y=Math.PI*.5;pivot.add(o)});
+ const blocker=addCollider(x+w/2-.08,z,.32,door*.9,.02);blocker.cameraBlocker=false;addInteract(pivot,'ruinDoor',name+' 문 열기',{site});
+ scene.userData.ruinDoors[site]={pivot,blocker,open:false,target:0,interactable:pivot};
+ const light=new THREE.PointLight(site==='clinic'?0xc8e1ff:site==='garage'?0xffc37d:0xffe0aa,.18,8,2);light.position.set(x,2.45,z);scene.add(light);zone.light=light;
  label(name,x,h+1.1,z);return floor
 }
+function createRuinSpot(key,x,z,w=1.5,h=1.1,d=.6,color=0x6f6250){
+ const info=RUIN_SPOTS[key];if(!info)return null;const o=box(w,h,d,color,x,h/2,z);o.userData.ruinSpot=key;addInteract(o,'ruinSearch',info.name+' 조사',{spot:key});return o
+}
+function toggleRuinDoor(site){
+ const d=scene?.userData?.ruinDoors?.[site];if(!d)return;if(d.open&&player.root.position.distanceTo(d.pivot.position)<1.35)return toast('문간에서 조금 떨어져야 닫을 수 있습니다.','warn');
+ d.open=!d.open;d.target=d.open?-Math.PI*.5:0;d.blocker.enabled=!d.open;d.interactable.userData.interactable.label=(ruinZones.find(z=>z.site===site)?.name||'폐허')+(d.open?' 문 닫기':' 문 열기');sfx('door')
+}
+function searchRuinSpot(key){
+ const info=RUIN_SPOTS[key];if(!info)return;const done='search_'+key,inspect='inspect_'+key;if(game.flags[done])return toast('이미 수색한 곳입니다.');
+ if(info.hazard&&!game.flags[inspect]){
+  game.flags[inspect]=true;discover('ruinSafety');const msg=info.hazard==='unstable'?'⚠️ 선반이 기울어져 있습니다. 먼저 무너지지 않는 쪽에서 접근해야 합니다.':'⚠️ 날카로운 금속과 깨진 조각이 있습니다. 손을 넣기 전에 주변을 치웠습니다.';sfx('search');toast(msg,'warn',4);save();return
+ }
+ sfx('search');for(const [item,n] of Object.entries(info.loot||{}))game.inv[item]=(game.inv[item]||0)+n;game.flags[done]=true;
+ const same=Object.entries(RUIN_SPOTS).filter(([,v])=>v.site===info.site).map(([id])=>id),complete=same.every(id=>game.flags['search_'+id]);if(complete)game.flags['loot_'+info.site]=true;
+ toast('🎒 '+info.name+' · '+Object.entries(info.loot||{}).map(([k,n])=>(ITEMS[k]?.[0]||k)+' +'+n).join(' · '),'normal',3.5);save();updateUI()
+}
+function updateRuinInteriors(dt){
+ const inside=currentRuinZone();for(const z of ruinZones){const here=inside===z;if(z.roof){z.roof.material.opacity=damp(z.roof.material.opacity,here?.06:.94,8,dt);z.roof.material.depthWrite=!here}if(z.light)z.light.intensity=damp(z.light.intensity,here?.75:.16,5,dt)}
+ for(const d of Object.values(scene?.userData?.ruinDoors||{}))d.pivot.rotation.y=dampAngle(d.pivot.rotation.y,d.target,10,dt)
+}
+
 function residentCount(){return Object.values(game?.residents||{}).filter(r=>r?.rescued).length}
 function jobPower(role){let n=0;for(const [id,r] of Object.entries(game?.residents||{}))if(r?.rescued&&r.job===role)n+=RESIDENTS[id]?.preferred===role?1.25:1;return n}
 function hasBuilding(id){return game?.buildings?.some(b=>b.id===id)}
