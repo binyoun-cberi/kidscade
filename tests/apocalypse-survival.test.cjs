@@ -277,3 +277,16 @@ test('legacy saves migrate into flashlight and split ruin-search progression',()
   assert.match(js,/garage:\['garageBench','garageLocker'\]/);
   assert.match(js,/Number\.isFinite\(s\.worldSeed\)/);
 });
+
+
+test('village civilization milestone is driven by housing exploration stock and logistics',()=>{
+  assert.match(js,/function villageSteps/);
+  assert.match(js,/공동창고 건설/);
+  assert.match(js,/쉼터 2개 확보/);
+  assert.match(js,/폐허 3곳 완전 수색/);
+  assert.match(js,/식수 6 · 식량 8 비축/);
+  assert.match(js,/공동창고 물자 6개 이상/);
+  assert.match(js,/settlementLevel<2/);
+  assert.match(js,/문명도 3 · 마을/);
+  assert.match(js,/storehouse:\{name:'공동창고',icon:'📦',cost:\{wood:3,scrap:1\}/);
+});
