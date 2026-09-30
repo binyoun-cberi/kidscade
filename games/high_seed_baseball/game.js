@@ -508,13 +508,17 @@ function updateDefenseField(dt){
  if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;
   if(fieldDifficulty==='easy'&&!lessonActive&&fieldBall.heldTime>.72)throwToBase(1);
   if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
- if(throwPlay){throwPlay.t-=dt;if(throwPlay.t<=0){resolveThrowPlay();return}}
+ if(throwPlay){
+  throwPlay.t-=dt;throwPlay.trailClock+=dt;
+  if(throwPlay.trailClock>=TRAIL_STYLE.throw.interval){throwPlay.trailClock=0;const bp=basePoint(throwPlay.base),k=clamp(1-throwPlay.t/throwPlay.total,0,1);throwPlay.trail.push({x:lerp(throwPlay.startX,bp.x,k),y:lerp(throwPlay.startY,bp.y,k)-18,r:6});if(throwPlay.trail.length>5)throwPlay.trail.shift()}
+  if(throwPlay.t<=0){resolveThrowPlay();return}
+ }
  if(fieldBall.age>5.2&&!fieldBall.owner){message('타구가 빠져나갔다!',1.1);settleDefenseHit(2)}
 }
 function basePoint(n){return n===1?{x:650,y:345}:n===2?{x:480,y:215}:n===3?{x:310,y:345}:{x:480,y:470}}
 function throwToBase(n){
  if(state!=='defenseField'||activeFielder<0)return;const f=fielders[activeFielder];if(!f?.hasBall||throwPlay)return;
- const bp=basePoint(n),d=Math.hypot(f.x-bp.x,f.y-bp.y);throwPlay={base:n,t:.34+d/620,total:.34+d/620};message((n===4?'홈':n+'루')+' 송구!',.8);sound('throw',1.15)
+ const bp=basePoint(n),d=Math.hypot(f.x-bp.x,f.y-bp.y);throwPlay={base:n,t:.34+d/620,total:.34+d/620,startX:f.x,startY:f.y,trail:[],trailClock:0};message((n===4?'홈':n+'루')+' 송구!',.8);sound('throw',1.15)
 }
 function resolveThrowPlay(){
  if(!throwPlay)return;const n=throwPlay.base;throwPlay=null;
@@ -759,7 +763,8 @@ function drawPlateView(isBatting){
   const p=pitch,t=clamp(p.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=p.actual.x+p.breakX*curve,ty=p.actual.y+p.breakY*curve;let x,y,r;
   if(p.owner==='cpu'){x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(5,14,t)}
   else{x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(11,5,t)}
-  ctx.save();ctx.strokeStyle='rgba(255,255,255,.23)';ctx.lineWidth=r*.8;ctx.beginPath();ctx.moveTo(x-((tx-480)*.08),y-(p.owner==='cpu'?14:7));ctx.lineTo(x,y);ctx.stroke();ctx.restore();drawBall(x,y,r);
+  drawTrajectoryTrail(p.trail,p.type,1);
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=r*.55;ctx.beginPath();ctx.moveTo(x-((tx-480)*.06),y-(p.owner==='cpu'?10:5));ctx.lineTo(x,y);ctx.stroke();ctx.restore();drawBall(x,y,r);
  }
 }
 function drawField(){
@@ -778,11 +783,12 @@ function drawField(){
   ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.93)';ctx.fillText(f.role,f.x,f.y-32);
  });
  if(fieldBall){
-  if(fieldBall.z>0){ctx.fillStyle='rgba(0,0,0,.23)';ctx.beginPath();ctx.ellipse(fieldBall.x,fieldBall.y,9,4,0,0,Math.PI*2);ctx.fill()}
+  if(fieldBall.z>0){ctx.fillStyle='rgba(0,0,0,.23)';ctx.beginPath();ctx.ellipse(fieldBall.x,fieldBall.y,9,4,0,Math.PI*2);ctx.fill()}
+  if(!fieldBall.owner)drawTrajectoryTrail(fieldBall.trail,'hit',fieldBall.trailStrength||.55);
   if(!throwPlay)drawBall(fieldBall.owner?fieldBall.owner.x+12:fieldBall.x,(fieldBall.owner?fieldBall.owner.y-13:fieldBall.y)-fieldBall.z*.23,7+Math.min(4,fieldBall.z*.01));
  }
  if(state==='defenseField')drawDefenseRunners();
- if(throwPlay&&activeFielder>=0){const f=fielders[activeFielder],bp=basePoint(throwPlay.base),k=clamp(1-throwPlay.t/throwPlay.total,0,1);drawBall(lerp(f.x,bp.x,k),lerp(f.y,bp.y,k)-18,6)}
+ if(throwPlay&&activeFielder>=0){const bp=basePoint(throwPlay.base),k=clamp(1-throwPlay.t/throwPlay.total,0,1),x=lerp(throwPlay.startX,bp.x,k),y=lerp(throwPlay.startY,bp.y,k)-18;drawTrajectoryTrail(throwPlay.trail,'throw',.65);drawBall(x,y,6)}
 }
 function runnerPoint(r){const pts=[basePoint(4),basePoint(1),basePoint(2),basePoint(3),basePoint(4)],a=pts[r.from],b=pts[r.to];return{x:lerp(a.x,b.x,r.p),y:lerp(a.y,b.y,r.p)}}
 function drawDefenseRunners(){
