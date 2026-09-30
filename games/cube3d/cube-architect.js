@@ -312,45 +312,93 @@ function toggleBlueprintModal(open){
     renderBlueprint($('blueprintLargeCanvas'),blueprintAngle);
   }
 }
-function drawBlueprint(){
-  const c=$('blueprintCanvas'),ctx=c.getContext('2d'),m=currentChallengeMission();ctx.clearRect(0,0,c.width,c.height);
-  const hard=challengeDifficulty==='hard';
-  ctx.fillStyle=hard?'#f4f0ff':'#eaf5ff';ctx.fillRect(0,0,c.width,c.height);
-  ctx.strokeStyle=hard?'rgba(111,82,173,.11)':'rgba(74,110,150,.12)';ctx.lineWidth=1;
-  for(let x=0;x<c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
-  for(let y=0;y<c.height;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
-
-  const blockSet=new Set(m.blocks.map(v=>challengeKey(v[0],v[1],v[2])));
-  const cubes=m.blocks.slice().sort((a,b)=>(a[0]+a[2]+a[1])-(b[0]+b[2]+b[1]));
-  const visible=[];
-  function cubeFaces(v){
-    const [x,y,z]=v,sx=x-z,sy=(x+z)*.5-y,out=[];
-    if(!blockSet.has(challengeKey(x,y+1,z)))out.push({kind:'top',pts:[[sx,sy-1],[sx+1,sy-.5],[sx,sy],[sx-1,sy-.5]]});
-    if(!blockSet.has(challengeKey(x,y,z+1)))out.push({kind:'left',pts:[[sx-1,sy-.5],[sx,sy],[sx,sy+1],[sx-1,sy+.5]]});
-    if(!blockSet.has(challengeKey(x+1,y,z)))out.push({kind:'right',pts:[[sx+1,sy-.5],[sx,sy],[sx,sy+1],[sx+1,sy+.5]]});
-    return out;
-  }
-  cubes.forEach(v=>visible.push(...cubeFaces(v)));
-  const all=visible.flatMap(f=>f.pts),xs=all.map(p=>p[0]),ys=all.map(p=>p[1]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-  const availW=c.width-28,availH=c.height-74;
-  const unit=Math.max(7,Math.min(27,availW/Math.max(1,maxX-minX),availH/Math.max(1,maxY-minY)));
-  const ox=c.width/2-((minX+maxX)/2)*unit;
-  const oy=58+availH/2-((minY+maxY)/2)*unit;
-
-  function poly(points,fill){
-    ctx.beginPath();ctx.moveTo(ox+points[0][0]*unit,oy+points[0][1]*unit);
-    for(let i=1;i<points.length;i++)ctx.lineTo(ox+points[i][0]*unit,oy+points[i][1]*unit);
-    ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=hard?'#4d4567':'#34445d';ctx.lineWidth=Math.max(.75,unit/19);ctx.stroke();
-  }
-  const palette=hard?{top:'#eadcff',left:'#bda6e8',right:'#d4c0f2'}:{top:'#fff2c8',left:'#dcae72',right:'#efc98d'};
-  cubes.forEach(v=>cubeFaces(v).forEach(f=>poly(f.pts,palette[f.kind])));
-
-  ctx.fillStyle='#24344d';ctx.font='900 '+(m.name.length>18?14:16)+'px system-ui';ctx.fillText(m.name,14,22);
-  ctx.font='800 10px system-ui';ctx.fillStyle=hard?'#785ca2':'#60708a';
-  ctx.fillText(hard?'랜드마크의 특징을 단순화한 고난도 겨냥도':'교과서에서 만나는 기본 직육면체 조합',14,40);
-  $('missionName').textContent=m.name;$('missionTip').textContent=m.tip;updateChallengeDifficultyUI();updateChallengeStats();
+function shadedHex(hex,shade=1){
+  const n=parseInt((hex||'#d7c09a').replace('#',''),16);
+  return '#'+[16,8,0].map(shift=>Math.min(255,Math.max(0,Math.round(((n>>shift)&255)*shade)))
+    .toString(16).padStart(2,'0')).join('');
 }
+function renderBlueprint(canvas,angle='iso'){
+  const ctx=canvas.getContext('2d'),m=currentChallengeMission(),hard=challengeDifficulty==='hard';
+  const w=canvas.width,h=canvas.height,blocks=m.blocks;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle=hard?'#f5f0ff':'#ebf6ff';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=hard?'rgba(107,80,160,.10)':'rgba(74,110,150,.10)';ctx.lineWidth=1;
+  for(let x=0;x<w;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  const lookup=m._blockSet||(m._blockSet=new Set(blocks.map(p=>challengeKey(...p))));
+  const labelH=h>450?85:62,margin=w>500?26:13;
+  const baseColor=p=>hard?(m.colors?.[challengeKey(...p)]||'#ddc9a8'):'#edc88f';
+  function header(){
+    ctx.fillStyle='#283349';ctx.font='900 '+(w>500?24:15)+'px system-ui';
+    ctx.fillText(m.name,margin,w>500?34:22);
+    ctx.fillStyle=hard?'#7b60a2':'#65758b';ctx.font='800 '+(w>500?14:10)+'px system-ui';
+    ctx.fillText(angle==='iso'?'겨냥도 · 외부에서 보이는 면':angle==='front'?'정면도 · 추가 힌트':
+      angle==='side'?'측면도 · 추가 힌트':'윗면도 · 추가 힌트',margin,w>500?59:41);
+  }
+  if(angle!=='iso'){
+    const chosen=new Map();
+    // Furthest surface in the chosen viewing direction wins per projected cell.
+    for(const p of blocks){
+      const [x,y,z]=p;
+      const coords=angle==='top'?[x,z,y,[0,1,0]]:
+        angle==='front'?[x,-y,z,[0,0,1]]:[z,-y,x,[1,0,0]];
+      const [a,b,depth,dir]=coords,k=a+','+b;
+      if(lookup.has(challengeKey(x+dir[0],y+dir[1],z+dir[2])))continue;
+      if(!chosen.has(k)||chosen.get(k).depth<depth)chosen.set(k,{a,b,depth,p});
+    }
+    const cells=[...chosen.values()];
+    if(cells.length){
+      const minX=Math.min(...cells.map(c=>c.a)),maxX=Math.max(...cells.map(c=>c.a));
+      const minY=Math.min(...cells.map(c=>c.b)),maxY=Math.max(...cells.map(c=>c.b));
+      const unit=Math.min(w>500?34:22,(w-2*margin)/(maxX-minX+1),
+        (h-labelH-margin)/(maxY-minY+1));
+      const ox=(w-(maxX-minX+1)*unit)/2,oy=labelH+(h-labelH-(maxY-minY+1)*unit)/2;
+      for(const c of cells){
+        ctx.fillStyle=shadedHex(baseColor(c.p),angle==='top'?1.06:angle==='side'?.78:.92);
+        const px=ox+(c.a-minX)*unit,py=oy+(c.b-minY)*unit;
+        ctx.fillRect(px,py,unit,unit);
+        if(unit>=7){ctx.strokeStyle='rgba(48,57,75,.42)';ctx.lineWidth=w>500?1.2:.7;ctx.strokeRect(px,py,unit,unit)}
+      }
+    }
+  }else{
+    const faces=[];
+    const cubes=blocks.slice().sort((a,b)=>(a[0]+a[2]+a[1])-(b[0]+b[2]+b[1]));
+    for(const p of cubes){
+      const [x,y,z]=p,sx=x-z,sy=(x+z)*.5-y;
+      if(!lookup.has(challengeKey(x,y+1,z)))faces.push({kind:'top',pts:[[sx,sy-1],[sx+1,sy-.5],[sx,sy],[sx-1,sy-.5]],p});
+      if(!lookup.has(challengeKey(x,y,z+1)))faces.push({kind:'left',pts:[[sx-1,sy-.5],[sx,sy],[sx,sy+1],[sx-1,sy+.5]],p});
+      if(!lookup.has(challengeKey(x+1,y,z)))faces.push({kind:'right',pts:[[sx+1,sy-.5],[sx,sy],[sx,sy+1],[sx+1,sy+.5]],p});
+    }
+    const pts=faces.flatMap(f=>f.pts);
+    if(pts.length){
+      const minX=Math.min(...pts.map(p=>p[0])),maxX=Math.max(...pts.map(p=>p[0]));
+      const minY=Math.min(...pts.map(p=>p[1])),maxY=Math.max(...pts.map(p=>p[1]));
+      const unit=Math.min(w>500?30:23,(w-2*margin)/Math.max(1,maxX-minX),
+        (h-labelH-margin)/Math.max(1,maxY-minY));
+      const ox=w/2-(minX+maxX)*unit/2,oy=labelH+(h-labelH)/2-(minY+maxY)*unit/2;
+      for(const f of faces){
+        const shade=f.kind==='top'?1.09:f.kind==='left'?.75:.90;
+        const fill=hard?shadedHex(baseColor(f.p),shade):
+          (f.kind==='top'?'#fff1c5':f.kind==='left'?'#dcae72':'#efc98d');
+        ctx.beginPath();ctx.moveTo(ox+f.pts[0][0]*unit,oy+f.pts[0][1]*unit);
+        for(let i=1;i<f.pts.length;i++)ctx.lineTo(ox+f.pts[i][0]*unit,oy+f.pts[i][1]*unit);
+        ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+        ctx.strokeStyle=hard?'rgba(69,62,80,.65)':'#4b5b72';
+        ctx.lineWidth=Math.max(.52,unit/24);ctx.stroke();
+      }
+    }
+  }
+  header();
+}
+function drawBlueprint(){
+  const m=currentChallengeMission();renderBlueprint($('blueprintCanvas'),blueprintAngle);
+  if(blueprintModalOpen){
+    $('blueprintModalTitle').textContent=m.name+' · '+$('blueprintView').selectedOptions[0].text;
+    renderBlueprint($('blueprintLargeCanvas'),blueprintAngle);
+  }
+  $('missionName').textContent=m.name;$('missionTip').textContent=m.tip;
+  updateChallengeDifficultyUI();updateChallengeStats();
+}
+
 function initChallenge(){
   setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
   CHALLENGE_SIZE=challengeDifficulty==='hard'?32:18;
