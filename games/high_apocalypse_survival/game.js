@@ -147,7 +147,7 @@ let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toas
 let camYaw=Math.PI,camPitch=.31,camDist=6.8,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
 const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], artFootprints=[], models=new Map();
 const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group(),fx:new THREE.Group()};
-const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0,stepClock:0};
+const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,velocity:new THREE.Vector3(),wishDir:new THREE.Vector3(),touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0,stepClock:0,locomotion:'idle',stateTime:0,cameraArm:6.8};
 const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3(),fxParticles=[];
 let audioCtx=null,audioMaster=null,windGain=null,rainGain=null,cameraKick=0;
 
@@ -246,10 +246,27 @@ function terrainHeight(x,z){
  return Math.max(0,h)
 }
 function addCollider(x,z,w,d,pad=.55){colliders.push({x,z,hw:w/2+pad,hd:d/2+pad,cameraBlocker:w>3||d>3})}
-function blockedAt(x,z){
- if(colliders.some(b=>Math.abs(x-b.x)<b.hw&&Math.abs(z-b.z)<b.hd))return true;
- if(resources.some(r=>r.userData.available&&r.userData.resource!=='forage'&&Math.hypot(x-r.position.x,z-r.position.z)<(r.userData.resource==='tree'?.78:1.05)))return true;
- return placed.some(p=>{const id=p.userData.interactable?.building;if(id==='campfire'||id==='farm')return false;const r=(BUILD[id]?.radius||1)+.45;return Math.hypot(x-p.position.x,z-p.position.z)<r})
+function circleAabbHit(x,z,r,b){const nx=clamp(x,b.x-b.hw,b.x+b.hw),nz=clamp(z,b.z-b.hd,b.z+b.hd);return (x-nx)*(x-nx)+(z-nz)*(z-nz)<r*r}
+function blockedAt(x,z,r=.42){
+ if(colliders.some(b=>circleAabbHit(x,z,r,b)))return true;
+ if(resources.some(o=>o.userData.available&&o.userData.resource!=='forage'&&Math.hypot(x-o.position.x,z-o.position.z)<r+(o.userData.resource==='tree'?.68:.94)))return true;
+ return placed.some(p=>{const id=p.userData.interactable?.building;if(id==='campfire'||id==='farm')return false;const pr=(BUILD[id]?.radius||1)+.28;return Math.hypot(x-p.position.x,z-p.position.z)<r+pr})
+}
+function angleDelta(a,b){let d=(b-a+Math.PI)%(Math.PI*2)-Math.PI;if(d<-Math.PI)d+=Math.PI*2;return d}
+function dampAngle(a,b,lambda,dt){return a+angleDelta(a,b)*(1-Math.exp(-lambda*dt))}
+function setLocomotion(next){if(player.locomotion===next)return;player.locomotion=next;player.stateTime=0}
+function riverBlocks(x,z,r=.42){return Math.abs(x-RIVER_X)<riverHalfWidth()+r&&Math.abs(z+4)>3.5}
+function slopeAllowed(x0,z0,x1,z1){
+ const d=Math.max(.001,Math.hypot(x1-x0,z1-z0)),rise=terrainHeight(x1,z1)-terrainHeight(x0,z0);return {ok:rise/d<=.72,slow:clamp(1-Math.max(0,rise/d)*.42,.62,1)}
+}
+function tryPlayerMove(dx,dz){
+ const ox=player.root.position.x,oz=player.root.position.z,fullX=clamp(ox+dx,-68,68),fullZ=clamp(oz+dz,-68,68),fullSlope=slopeAllowed(ox,oz,fullX,fullZ);
+ if(fullSlope.ok&&!blockedAt(fullX,fullZ)&&!riverBlocks(fullX,fullZ)){player.root.position.x=ox+dx*fullSlope.slow;player.root.position.z=oz+dz*fullSlope.slow;return true}
+ const sx=clamp(ox+dx,-68,68),slopeX=slopeAllowed(ox,oz,sx,oz);
+ if(Math.abs(dx)>.0001&&slopeX.ok&&!blockedAt(sx,oz)&&!riverBlocks(sx,oz)){player.root.position.x=ox+dx*slopeX.slow;player.velocity.z*=.35;return true}
+ const sz=clamp(oz+dz,-68,68),slopeZ=slopeAllowed(ox,oz,ox,sz);
+ if(Math.abs(dz)>.0001&&slopeZ.ok&&!blockedAt(ox,sz)&&!riverBlocks(ox,sz)){player.root.position.z=oz+dz*slopeZ.slow;player.velocity.x*=.35;return true}
+ player.velocity.x*=.18;player.velocity.z*=.18;return false
 }
 function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(x,z,w,d,pad);return m}
 function ruinShell(name,x,z,w,d,c=0x777b78){
@@ -544,8 +561,13 @@ function makeSurvivorFallback(){
  for(const sx of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.72,3,7),jacket);arm.position.set(.52*sx,1.62,0);arm.rotation.z=.1*sx;g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.15,.76,3,7),pants);leg.position.set(.21*sx,.62,0);g.add(leg);const shoe=new THREE.Mesh(new THREE.BoxGeometry(.32,.18,.52),dark);shoe.position.set(.21*sx,.1,.1);g.add(shoe)}
  g.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});return g
 }
-function updatePlayerVisual(dt,moving){
- if(!player.model)return;player.walkPhase+=dt*(moving?9:3);const a=moving?Math.sin(player.walkPhase)*.035:Math.sin(player.walkPhase*.45)*.012;player.model.position.y=a;player.model.rotation.z=damp(player.model.rotation.z,moving?Math.sin(player.walkPhase)*.025:0,8,dt)
+function updatePlayerVisual(dt,state=player.locomotion){
+ const moving=state!=='idle',sprint=state==='sprint',speed01=clamp(player.speed/(sprint?8.15:5.15),0,1);player.walkPhase+=dt*(moving?(sprint?12.2:8.7):2.2);
+ const phase=player.walkPhase,amp=moving?speed01*(sprint?.052:.034):.009,breathe=Math.sin(phase*.42)*.006;
+ player.visual.position.y=damp(player.visual.position.y,moving?Math.abs(Math.sin(phase))*amp:breathe,10,dt);
+ player.visual.rotation.x=damp(player.visual.rotation.x,sprint?-.105:moving?-.025:0,8,dt);
+ player.visual.rotation.z=damp(player.visual.rotation.z,moving?Math.sin(phase)*(.018+.018*speed01):0,9,dt);
+ if(player.model){player.model.rotation.x=damp(player.model.rotation.x,0,10,dt);player.model.rotation.z=damp(player.model.rotation.z,0,10,dt)}
 }
 function tutorialActive(){return !!game&&!game.tutorial?.done&&game.phase==='survival'&&game.day===1}
 function renderTutorial(){
@@ -587,20 +609,21 @@ function bindInput(){const unlockAudio=()=>ensureAudio();window.addEventListener
 function bindJoy(){const base=$('.joy-base');if(!base)return;let pid=null;function move(e){const r=base.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=Math.min(42,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);player.touch.set(Math.cos(a)*m/42,Math.sin(a)*m/42);ui.joyKnob.style.transform='translate('+(Math.cos(a)*m)+'px,'+(Math.sin(a)*m)+'px)'}base.addEventListener('pointerdown',e=>{pid=e.pointerId;base.setPointerCapture(pid);move(e)});base.addEventListener('pointermove',e=>{if(e.pointerId===pid)move(e)});function end(e){if(e.pointerId!==pid)return;pid=null;player.touch.set(0,0);ui.joyKnob.style.transform=''}base.addEventListener('pointerup',end);base.addEventListener('pointercancel',end)}
 function riverHalfWidth(){return 7*(scene?.userData?.river?.scale?.x||1)}
 function updatePlayer(dt){
- if(!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode){player.speed=damp(player.speed,0,10,dt);return}
- let x=0,y=0;if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;
- if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}const len=Math.hypot(x,y);if(len>1){x/=len;y/=len}
- const target=len?(keys.has('ShiftLeft')?8.2:5.4):0;player.speed=damp(player.speed,target,10,dt);
- if(len){
-  const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,y).normalize();
-  const ox=player.root.position.x,oz=player.root.position.z,oy=terrainHeight(ox,oz),step=player.speed*dt,nx=clamp(ox+dir.x*step,-68,68),nz=clamp(oz+dir.z*step,-68,68),ny=terrainHeight(nx,nz);
-  const rise=ny-oy,slope=rise/Math.max(step,.001),rw=riverHalfWidth(),riverBlocked=Math.abs(nx-RIVER_X)<rw&&Math.abs(nz+4)>3.5;
-  if(blockedAt(nx,nz)||riverBlocked||slope>.78){player.speed*=.42}else{const slopeSlow=clamp(1-Math.max(0,slope)*.48,.58,1);player.root.position.x=ox+(nx-ox)*slopeSlow;player.root.position.z=oz+(nz-oz)*slopeSlow;tutorialSignal('move',Math.hypot(player.root.position.x-ox,player.root.position.z-oz))}
-  player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04
- }
- player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);const moving=len>0&&player.speed>.3;updatePlayerVisual(dt,moving);
- if(moving){player.stepClock+=dt*player.speed;if(player.stepClock>2.25){player.stepClock=0;sfx('step')}}else player.stepClock=Math.min(player.stepClock,.8)
+ const controlsLocked=!running||paused||!ui.panel.classList.contains('hidden')||!ui.decision.classList.contains('hidden')||buildMode;
+ let x=0,y=0;if(!controlsLocked){if(keys.has('KeyA')||keys.has('ArrowLeft'))x--;if(keys.has('KeyD')||keys.has('ArrowRight'))x++;if(keys.has('KeyW')||keys.has('ArrowUp'))y--;if(keys.has('KeyS')||keys.has('ArrowDown'))y++;if(Math.abs(player.touch.x)>.05||Math.abs(player.touch.y)>.05){x+=player.touch.x;y+=player.touch.y}}
+ const inputLen=Math.hypot(x,y);if(inputLen>1){x/=inputLen;y/=inputLen}
+ const orbit=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),forward=tmp2.set(-orbit.x,0,-orbit.z),right=new THREE.Vector3(forward.z,0,-forward.x);
+ player.wishDir.set(0,0,0);if(inputLen>.01)player.wishDir.addScaledVector(right,x).addScaledVector(forward,-y).normalize();
+ const sprinting=inputLen>.01&&keys.has('ShiftLeft'),targetSpeed=inputLen>.01?(sprinting?8.15:5.15):0,accel=inputLen>.01?(sprinting?7.5:9.5):13;
+ const targetVX=player.wishDir.x*targetSpeed,targetVZ=player.wishDir.z*targetSpeed;
+ player.velocity.x=damp(player.velocity.x,targetVX,accel,dt);player.velocity.z=damp(player.velocity.z,targetVZ,accel,dt);player.speed=Math.hypot(player.velocity.x,player.velocity.z);
+ const moved=player.speed>.06&&tryPlayerMove(player.velocity.x*dt,player.velocity.z*dt);
+ if(moved){tutorialSignal('move',player.speed*dt);const desiredYaw=Math.atan2(player.velocity.x,player.velocity.z);player.root.rotation.y=dampAngle(player.root.rotation.y,desiredYaw,sprinting?13:10,dt)}
+ player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);
+ const nextState=player.speed<.18?'idle':sprinting&&player.speed>5.8?'sprint':'walk';setLocomotion(nextState);player.stateTime+=dt;updatePlayerVisual(dt,nextState);
+ if(player.speed>.35&&moved){player.stepClock+=dt*player.speed;const stride=nextState==='sprint'?2.75:2.18;if(player.stepClock>stride){player.stepClock=0;sfx('step')}}else player.stepClock=Math.min(player.stepClock,.8)
 }
+
 function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
 function resolveCamera(t,desired){
  const out=desired.clone(),steps=22;let safe=.18;
