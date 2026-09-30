@@ -62,8 +62,8 @@ const RECIPES=[
  {id:'ironPick',name:'철 곡괭이',needs:{ironBlock:3,sticks:2},gives:{ironPick:1},stage:6,bench:true}
 ];
 const GOALS=[
- {title:'첫날 · 나무 3개 채집',description:'근처 나무를 바라보고 파괴해 원목을 모으세요.',test:bag=>(bag.log||0)>=3},
- {title:'판자 제작',description:'E → 제작에서 원목을 나무 판자로 바꿔 보세요.',test:bag=>(bag.planks||0)>=4},
+ {title:'첫날 · 나무 3개 채집',description:'근처 나무를 바라보고 파괴해 원목을 모으세요.',test:bag=>(bag.log||0)>=3||(bag.planks||0)>=4||(bag.workbench||0)>=1},
+ {title:'판자 제작',description:'E → 제작에서 원목을 나무 판자로 바꿔 보세요.',test:bag=>(bag.planks||0)>=4||(bag.workbench||0)>=1},
  {title:'제작대 만들기',description:'판자 4개로 제작대를 만들면 도구 제작이 열려요.',test:bag=>(bag.workbench||0)>=1},
  {title:'나무 곡괭이',description:'판자와 막대로 곡괭이를 만들면 돌을 캘 수 있어요.',test:bag=>(bag.woodPick||0)>=1},
  {title:'돌과 새로운 바이옴',description:'돌 8개를 모아 화로를 만들고 다른 지역도 가 보세요.',test:bag=>(bag.furnace||0)>=1},
