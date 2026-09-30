@@ -138,6 +138,7 @@ const KNOWLEDGE=[
  ['ruinSafety','과학 · 안전','폐허에서는 물자보다 위험을 먼저 살핀다','무너진 구조물과 깨진 유리, 날카로운 금속은 보이지 않는 위험이 될 수 있습니다. 먼저 주변을 관찰하고 안전한 접근 경로를 찾는 것이 중요합니다.'],
  ['electricity','과학 · 전기','전기는 생산·저장·사용이 연결된다','배터리는 에너지를 저장하지만 필요한 곳에 우선순위를 정해 써야 합니다.'],
  ['division','사회 · 공동체','분업은 서로 다른 능력을 연결한다','각자가 잘하는 일을 맡으면 공동체 전체가 더 많은 일을 해낼 수 있습니다.'],
+ ['logistics','사회 · 경제생활','생산한 물자는 보관하고 옮겨야 쓸 수 있다','공동체의 생산은 물자를 만드는 것에서 끝나지 않습니다. 필요한 곳에 저장하고 운반하는 물류가 있어야 실제 생활에 사용할 수 있습니다.'],
  ['scarcity','사회 · 경제생활','자원이 부족하면 선택이 필요하다','희소한 자원을 어디에 먼저 쓸지 정하면 얻는 것과 포기하는 것이 함께 생깁니다.'],
  ['community','사회 · 공동체','규칙은 함께 살아가기 위한 약속이다','공동체의 규칙은 사람들의 필요와 자원의 상태에 따라 서로 다른 결과를 만들 수 있습니다.'],
  ['riverSettlement','사회 · 지리','강은 정착에 유리하지만 위험도 있다','물과 농업·이동에 유리하지만 홍수 피해에 대비해야 합니다.'],
@@ -243,6 +244,22 @@ function updateAudio(dt){
 }
 function has(cost){return Object.entries(cost).every(([k,v])=>(game.inv[k]||0)>=v)}
 function pay(cost){Object.entries(cost).forEach(([k,v])=>game.inv[k]=Math.max(0,(game.inv[k]||0)-v))}
+function stock(id){return (game.inv[id]||0)+(game.storage?.[id]||0)}
+function storageItems(){return Object.keys(ITEMS).filter(id=>!['axe','flashlight','chemWater','spoiledFood'].includes(id))}
+function storageBuilt(){return hasBuilding('storehouse')}
+function storeItem(id,n=1){if(!storageBuilt())return false;game.storage[id]=(game.storage[id]||0)+n;return true}
+function deliverResource(id,n,source='주민 작업'){
+ if(n<=0)return;if(storageBuilt()){storeItem(id,n);discover('logistics');toast('📦 '+source+' · '+(ITEMS[id]?.[0]||id)+' '+n+'개가 공동창고에 들어왔습니다.','normal',2.8)}
+ else game.inv[id]=(game.inv[id]||0)+n
+}
+function depositStorage(){
+ if(!storageBuilt())return toast('공동창고를 먼저 건설해야 합니다.','warn');let moved=0;
+ for(const id of storageItems()){const n=game.inv[id]||0;if(n>0){game.storage[id]=(game.storage[id]||0)+n;game.inv[id]=0;moved+=n}}
+ if(moved){discover('logistics');toast('📦 가방의 물자를 공동창고에 정리했습니다. 총 '+moved+'개','normal',3);save();renderPanel('storage');updateUI()}else toast('보관할 물자가 없습니다.')
+}
+function withdrawStorage(id,n=1){
+ if(!storageBuilt())return;const have=game.storage[id]||0,take=Math.min(have,n);if(take<1)return toast('창고에 해당 물자가 없습니다.','warn');game.storage[id]-=take;game.inv[id]=(game.inv[id]||0)+take;toast((ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+' '+take+'개 꺼냄');save();renderPanel('storage');updateUI()
+}
 function costText(cost){return Object.entries(cost).map(([k,v])=>(ITEMS[k]?.[1]||'•')+' '+(ITEMS[k]?.[0]||k)+' '+v).join(' · ')}
 function addItem(id,n=1){game.inv[id]=(game.inv[id]||0)+n;sfx('pickup');toast((ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+' +'+n);save();updateUI()}
 function settlementSteps(){
@@ -252,7 +269,7 @@ function settlementSteps(){
   ['farm','텃밭 건설',hasBuilding('farm')],
   ['waterSystem','전기 정수기 건설',hasBuilding('purifier')&&!!game.flags.power],
   ['coldStorage','냉장 보관함 건설',hasBuilding('cooler')&&!!game.flags.power],
-  ['reserve','식수 4 · 식량 6 비축',(game.inv.cleanWater||0)>=4&&((game.inv.food||0)+(game.inv.potato||0)+(game.inv.cookedPotato||0))>=6]
+  ['reserve','식수 4 · 식량 6 비축',stock('cleanWater')>=4&&(stock('food')+stock('potato')+stock('cookedPotato'))>=6]
  ]
 }
 function missionDone(day=game.day){if(game?.phase==='settlement')return settlementSteps().every(s=>s[2]);const m=MISSIONS[day];return !!m&&m.steps.every(([id])=>!!game.flags[id])}
@@ -951,7 +968,7 @@ function residentTarget(id){
  return residentWorkTarget(id)||def.camp.clone()
 }
 function settlementMetrics(){
- const population=1+residentCount(),shelters=game.buildings.filter(b=>b.id==='shelter').length,farms=game.buildings.filter(b=>b.id==='farm').length,food=(game.inv.food||0)+(game.inv.potato||0)+(game.inv.cookedPotato||0),water=game.inv.cleanWater||0;
+ const population=1+residentCount(),shelters=game.buildings.filter(b=>b.id==='shelter').length,farms=game.buildings.filter(b=>b.id==='farm').length,food=stock('food')+stock('potato')+stock('cookedPotato'),water=stock('cleanWater');
  const housing=clamp((1+shelters*2)/Math.max(1,population),0,1),foodDays=food/Math.max(1,population),waterDays=water/Math.max(1,population),supply=clamp(Math.min(foodDays/2,waterDays/1.5),0,1);
  const powered=!!game.flags.power,margin=powered?Math.max(0,game.powerKw-powerUse()):0,power=powered?clamp(.45+margin/1.8,0,1):0;
  const purifierBuilt=hasBuilding('purifier'),coolerBuilt=hasBuilding('cooler'),waterSystem=purifierBuilt?(devicePowered('purifier')?1:.45):0,cold=coolerBuilt?(devicePowered('cooler')?1:.4):0,foodProd=farms?clamp(.5+farms*.25,0,1):0;
