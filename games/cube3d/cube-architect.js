@@ -898,6 +898,35 @@ const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=22,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
+let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
+let worldChunkIndex=new Map();
+const WORLD_CHUNK_SIZE=16;
+function worldChunkKey(x,z){
+  return Math.floor(x/WORLD_CHUNK_SIZE)+','+Math.floor(z/WORLD_CHUNK_SIZE);
+}
+function newSurvivalStats(){
+  return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
+    paintedFaces:[],smelted:{},biomes:[],found:[]};
+}
+function trackSurvival(action,type,n=1){
+  if(gameFreeMode!=='survival')return;
+  if(action==='harvest'){
+    if(type==='log'||type==='pineLog')survivalStats.harvestedWood+=n;
+    if(type==='stone')survivalStats.harvestedStone+=n;
+  }else if(action==='craft'||action==='place'||action==='smelt'){
+    const field=action==='craft'?'crafted':action==='place'?'placed':'smelted';
+    survivalStats[field][type]=(survivalStats[field][type]||0)+n;
+    if(action==='place')survivalStats.placedBlocks++;
+  }else if(action==='paint'){
+    const id=String(type);if(!survivalStats.paintedFaces.includes(id))survivalStats.paintedFaces.push(id);
+  }else if(action==='biome'){
+    if(!survivalStats.biomes.includes(type))survivalStats.biomes.push(type);
+  }else if(action==='find'){
+    if(!survivalStats.found.includes(type))survivalStats.found.push(type);
+  }
+  advanceSurvival();
+}
+
 const worldRules=window.CubeArchitectWorld;
 const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
 const FACE_IDS=['R','L','U','D','F','B'];
@@ -987,7 +1016,16 @@ function hash2(x,z){
 }
 function setRawBlock(x,y,z,data){
   if(!inWorld(x,y,z))return false;
-  if(data)worldData.set(worldKey(x,y,z),data);else worldData.delete(worldKey(x,y,z));
+  const key=worldKey(x,y,z),chunk=worldChunkKey(x,z);
+  if(data){
+    worldData.set(key,data);
+    if(!worldChunkIndex.has(chunk))worldChunkIndex.set(chunk,new Set());
+    worldChunkIndex.get(chunk).add(key);
+  }else{
+    worldData.delete(key);
+    const bucket=worldChunkIndex.get(chunk);
+    if(bucket){bucket.delete(key);if(!bucket.size)worldChunkIndex.delete(chunk)}
+  }
   return true;
 }
 function getBlock(x,y,z){return worldData.get(worldKey(x,y,z))||null}
@@ -1144,10 +1182,20 @@ function streamWorldMeshes(force=false){
     worldInteractables=worldInteractables.filter(m=>!stale.has(m.userData.worldKey));
     freeMeshes=freeMeshes.filter(m=>!stale.has(m.userData.worldKey));
   }
-  for(const [key,data] of worldData){
-    const [x,y,z]=parseWorldKey(key);
-    if(inRenderRange(x,z)&&!worldMeshMap.has(key)&&visibleAt(x,y,z,data))
-      makeWorldMesh(x,y,z,data);
+  const minX=Math.floor((cx-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const maxX=Math.floor((cx+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const minZ=Math.floor((cz-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const maxZ=Math.floor((cz+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+    const keys=worldChunkIndex.get(bx+','+bz);
+    if(!keys)continue;
+    for(const key of keys){
+      if(worldMeshMap.has(key))continue;
+      const [x,y,z]=parseWorldKey(key);
+      if(!inRenderRange(x,z))continue;
+      const data=worldData.get(key);
+      if(data&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
+    }
   }
 }
 function rebuildAllWorldMeshes(){
@@ -1179,7 +1227,7 @@ function addCollectible(id,x,y,z,color,label){
   scene.add(m);collectibles.push(m);
 }
 function buildFreeWorld(){
-  worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
+  worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();worldChunkIndex=new Map();
   const heights=new Map();
   for(let x=-WORLD_HALF;x<WORLD_HALF;x++)for(let z=-WORLD_HALF;z<WORLD_HALF;z++){
     const h=terrainHeight(x,z),biomeId=worldRules.region(x,z),biome=worldRules.BIOMES[biomeId];
@@ -1247,6 +1295,8 @@ function initFree(){
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
+  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;
+  survivalTimeAcc=0;firstNightStarted=false;
   selectedHotbarSlot=0;
   hotbarTypes=survival?['hand',null,null,null,null,null,null,null,null]:
     ['grass','dirt','stone','sand','log','planks','glass','door','water'];
