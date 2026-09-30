@@ -56,6 +56,20 @@ test('Sensory organs change the information available to the player',()=>{
   assert.match(js,/sense-label/);
 });
 
+test('Photoreceptors expose local light intensity and two-receptor direction sensing',()=>{
+  assert.match(html,/id="lightSensor"/);
+  assert.match(html,/id="localLightLevel"/);
+  assert.match(js,/function lightSenseData/);
+  assert.match(js,/function updateLightSensor/);
+  assert.match(js,/sense\.eyes===1/);
+  assert.match(js,/sense\.eyes>=2/);
+  assert.match(js,/lightDirectionArrow/);
+  assert.match(js,/현재 위치/);
+  assert.match(js,/평균빛/);
+  assert.match(css,/\.light-sensor/);
+  assert.match(css,/\.sense-arrow\.light-arrow/);
+});
+
 test('Micro Evolution is registered as a science sandbox',()=>{
   const game=catalog.games.find(g=>g.id==='high_micro_evolution');
   assert.ok(game);
