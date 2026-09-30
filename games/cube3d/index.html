@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260930-14">
+<link rel="stylesheet" href="./cube-architect.css?v=20260930-15">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -61,8 +61,19 @@
       <span id="challengeCourseLabel">쉬움 · 교과서형 1/6</span>
       <small>ESC로 마우스를 풀면 난이도를 바꿀 수 있어요.</small>
     </div>
+    <div class="blueprint-toolbar">
+      <label>설계도 시점
+        <select id="blueprintView" aria-label="설계도 시점">
+          <option value="iso">겨냥도</option>
+          <option value="front">정면도 · 힌트</option>
+          <option value="side">측면도 · 힌트</option>
+          <option value="top">윗면도 · 힌트</option>
+        </select>
+      </label>
+      <button id="blueprintZoom" type="button" title="설계도를 크게 보기">⛶ 크게</button>
+    </div>
     <div class="blueprint-wrap">
-      <canvas id="blueprintCanvas" width="320" height="260"></canvas>
+      <canvas id="blueprintCanvas" width="420" height="330" aria-label="현재 건축 설계도"></canvas>
     </div>
     <div class="metric-row">
       <div class="metric"><b id="placedCount">0</b><span>놓은 블록</span></div>
@@ -74,7 +85,43 @@
       <button id="hintChallenge" class="btn-soft">힌트</button>
       <button id="clearChallenge" class="btn-main">모두 지우기</button>
     </div>
+    <section id="challengeEditor" class="challenge-editor">
+      <div class="panel-title">건축 · 도형 편집기</div>
+      <div class="challenge-tool-tabs" role="group" aria-label="건축 편집 모드">
+        <button id="challengeToolBuild" class="active" type="button">건축</button>
+        <button id="challengeToolFace" type="button">면</button>
+        <button id="challengeToolEdge" type="button">선</button>
+        <button id="challengeToolVertex" type="button">점</button>
+      </div>
+      <div id="challengeBuildOptions">
+        <div class="challenge-shape-presets">
+          <button id="challengeCube" class="active" type="button">정육면체</button>
+          <button id="challengeCuboid" type="button">직육면체</button>
+        </div>
+        <div id="challengeDims" class="dimension-grid hidden">
+          <label>가로 <input id="challengeDimX" type="number" min="1" max="8" value="3"></label>
+          <label>높이 <input id="challengeDimY" type="number" min="1" max="8" value="2"></label>
+          <label>세로 <input id="challengeDimZ" type="number" min="1" max="8" value="2"></label>
+        </div>
+        <div class="panel-sub">우클릭/설치: 한 번에 생성 · 좌클릭/파괴: 선택한 도형 제거</div>
+      </div>
+      <div id="challengeDetailOptions" class="hidden">
+        <div class="panel-sub">십자선을 도형에 맞추고 <b>선택</b>을 누르면 편집할 수 있어요.</div>
+        <button id="challengeSelect" class="btn-soft challenge-select" type="button">십자선의 도형 선택 (G)</button>
+        <div id="challengeSelectedName" class="panel-sub">선택한 도형 없음</div>
+        <label class="challenge-color-label">강조/색칠 색상 <input id="challengeColor" type="color" value="#ff7043"></label>
+        <div id="challengeElementChoices" class="challenge-element-choices"></div>
+      </div>
+    </section>
   </aside>
+
+  <section id="blueprintModal" class="hidden" role="dialog" aria-label="확대된 설계도">
+    <div class="blueprint-modal-card">
+      <div class="inventory-head"><b id="blueprintModalTitle">랜드마크 설계도</b><button id="blueprintClose" type="button">닫기 ×</button></div>
+      <canvas id="blueprintLargeCanvas" width="960" height="700"></canvas>
+      <div class="panel-sub">설계도 시점은 왼쪽 패널에서 변경할 수 있어요.</div>
+    </div>
+  </section>
 
   <div id="challengeFlyHud" class="hidden">
     <div id="challengeCrosshair"></div>
@@ -162,6 +209,7 @@
       <button id="mobileInventory" class="mobile-button" type="button">가방</button>
       <button id="mobileFly" class="mobile-button" type="button">비행</button>
       <button id="mobileCheck" class="mobile-button" type="button">검사</button>
+      <button id="mobileSelect" class="mobile-button" type="button">선택</button>
       <button id="mobileNext" class="mobile-button" type="button">다음</button>
       <button id="mobilePaint" class="mobile-button" type="button">색칠</button>
       <button id="mobileLens" class="mobile-button" type="button">수학</button>
@@ -199,7 +247,8 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect.js?v=20260930-14"></script>
+<script src="./cube-architect-landmarks.js?v=20260930-15"></script>
+<script src="./cube-architect.js?v=20260930-15"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
