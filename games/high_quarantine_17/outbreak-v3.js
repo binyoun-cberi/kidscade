@@ -315,7 +315,8 @@ function setupCombat(kind,payload){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer'];
   const xs=[760,900,1030,1160,1280,1380];
   xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,vy:0,onGround:true,jumpCd:0,bite:0,bitten:false,turnTimer:0})});
-  spawnZombie(560*dpr,groundY,2,126*dpr,currentIntruder,2.1);
+  const threatCount=Math.max(1,Math.min(6,Number(payload&&payload.threatCount)||1));
+  for(let i=0;i<threatCount;i++)spawnZombie((520+i*105)*dpr,groundY,2,126*dpr*(.96+i*.015),i===0?currentIntruder:'캠프 감염자',1.6+i*.18);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
   document.getElementById('q17SurvivorStat').style.display='';
  }else{
@@ -343,6 +344,10 @@ function showIsolationFight(){
 function showGlobalOutbreak(){
  if(active||!bridge())return;
  const d=difficulty();if(d.inf<20)return;
+ if(window.Q17Surveillance&&typeof window.Q17Surveillance.registerGlobalOutbreak==='function'){
+  window.Q17Surveillance.registerGlobalOutbreak({infection:d.inf,count:d.count,severity:d.inf>=40?'대규모 붕괴':d.inf>=30?'중대 경보':'국지적 돌파'});
+  return;
+ }
  active=true;started=false;continuation=null;wrap.classList.add('show');setupCombat('outbreak',{});
  const severity=d.inf>=40?'대규모 붕괴':d.inf>=30?'중대 경보':'국지적 돌파';
  document.getElementById('q17AlertTitle').textContent=severity;
@@ -569,10 +574,11 @@ function win(){
   const reduction=losses===0?4:Math.max(1,3-losses);
   if(b)b.applyOutbreakResult({won:true,infectionDelta:-reduction,trustDelta:-(1+losses*2),scoreDelta:Math.max(60,320-losses*70)});
   notify(losses===0?'생존자 캠프 진압 성공 · 추가 감염 없음':'생존자 캠프 진압 성공 · 추가 감염 '+losses+'명');
-  if(next)setTimeout(next,350);
+  if(next)setTimeout(function(){next({won:true,mode:'camp',losses:losses})},350);
  }else{
   if(b)b.applyOutbreakResult({won:true,infectionDelta:-Math.min(10,4+Math.floor(inf/8)),trustDelta:-2,scoreDelta:450+inf*8});
   notify('격리선 진압 성공 · 도시 감염률 감소');
+  if(next)setTimeout(function(){next({won:true,mode:'outbreak',losses:0})},350);
  }
 }
 function lose(){
@@ -582,7 +588,7 @@ function lose(){
  if(lostMode==='camp'){
   if(b)b.applyOutbreakResult({won:false,infectionDelta:5,trustDelta:-7,scoreDelta:-240});
   notify('캠프 진압 실패 · 감염률 상승');
-  if(next)setTimeout(next,450);
+  if(next)setTimeout(function(){next({won:false,mode:'camp',losses:campLosses})},450);
   return;
  }
  if(lostMode==='isolation'){
@@ -591,6 +597,7 @@ function lose(){
   return;
  }
  if(b)b.applyOutbreakResult({won:false,infectionDelta:8,trustDelta:-15,scoreDelta:-500,gameOver:true});
+ if(next)setTimeout(function(){next({won:false,mode:'outbreak',losses:0})},350);
  document.getElementById('q17DeadTitle').textContent='검역소 함락';
  document.getElementById('q17DeadText').innerHTML='격리선이 무너졌고 감염자들이 검역소 안까지 들어왔습니다.<br>대규모 진압에 실패해 제17구역은 폐쇄되었습니다.';
  dead.classList.add('show');
@@ -623,13 +630,23 @@ window.Q17Outbreak={
  canQuarantine:function(){return true},
  canRetest:function(){return roomHasSpace('A')},
  openIsolation:openIsolation,
+ tickIsolation:function(){if(!active)advanceIsolation()},
+ getIsolationSnapshot:function(){return isolation.map(function(d){return{id:d.id,name:d.name,room:d.room,status:d.status,labResult:d.labResult,infectedAtEntry:d.infectedAtEntry,acquired:d.acquired,stage:d.stage,labStage:d.labStage,exposure:d.exposure,sprite:d.sprite}})},
+ isCombatActive:function(){return !!active},
+ respondCamp:function(payload,done){if(active)return false;return showCampBreach(payload||{name:'캠프 감염자',threatCount:1},typeof done==='function'?done:null)},
+ respondGlobal:function(done){
+  if(active||!bridge())return false;
+  const d=difficulty();active=true;started=false;continuation=typeof done==='function'?done:null;wrap.classList.add('show');setupCombat('outbreak',{});
+  document.getElementById('q17AlertTitle').textContent=d.inf>=40?'대규모 붕괴':d.inf>=30?'중대 경보':'국지적 돌파';
+  document.getElementById('q17AlertText').innerHTML='격리선 바깥 감염자 <b>'+d.count+'명</b>을 직접 진압합니다.<br>검역소·격리시설·캠프를 살피다 필요할 때 출동할 수 있습니다.';
+  document.getElementById('q17Alert').classList.add('show');return true;
+ },
  onDecision:function(payload,next){
-  advanceIsolation();
   if(payload.action==='retest')addDetainee(payload);
   if(payload.action==='quarantine')immediateIncinerate(payload);
   if(payload.action==='pass'&&payload.infected&&!payload.ok){
-   setTimeout(function(){showCampBreach(payload,next)},650);
-   return true;
+   if(window.Q17Surveillance&&typeof window.Q17Surveillance.onCampBreach==='function')window.Q17Surveillance.onCampBreach(payload);
+   else setTimeout(function(){showCampBreach(payload,null)},650);
   }
   return false;
  },
