@@ -86,7 +86,7 @@
     const r = S.rates(state);
     const desc = [
       { key: "food", icon: "🍞", title: "식량", value: state.food, cap: state.foodCap, delta: r.food, low: 35 },
-      { key: "wood", icon: "🪵", title: "물자", value: state.wood, cap: 100, delta: r.wood, low: 15 },
+      { key: "wood", icon: "🪵", title: "물자", value: state.wood, cap: state.woodCap || 130, delta: r.wood - r.heating, low: 15 },
       { key: "trust", icon: "🤝", title: "신뢰", value: state.trust, cap: 100, delta: null, low: 40 }
     ];
     if (state.stage >= 2) desc.push({ key: "treasury", icon: "🪙", title: "국고", value: state.treasury, cap: 100, delta: r.treasury, low: 10 });
@@ -135,14 +135,14 @@
     if (!zone) return;
     if (!known) { zone.classList.add("hidden"); zone.innerHTML = ""; return; }
     zone.classList.remove("hidden");
-    const season = active ? '❄️ 한파 · ' + (state.coldUntil - state.tick) + '주 남음' :
+    const season = active ? '❄️ ' + (state.winterCount || 1) + '번째 한파 · ' + (state.coldUntil - state.tick) + '주 남음' :
       '🌤️ 다음 한파까지 ' + Math.max(0, forecast) + '주';
     const meter = (icon, title, value, warning) =>
       '<div class="crisis-meter' + (value <= warning ? ' urgent' : '') + '">' +
       '<span>' + icon + ' ' + title + '</span><strong>' + number(value) + '</strong>' +
       '<i><b style="width:' + Math.max(0, Math.min(100, value)) + '%"></b></i></div>';
     zone.innerHTML = '<div class="crisis-head"><strong>' + season + '</strong>' +
-      '<small>한파에는 생산이 줄고 난방에 목재가 필요해요.</small></div>' +
+      '<small>' + (active ? '난방 연료 ' + number(S.rates(state).heating) + '/주 필요' : '한파에는 생산이 줄고 난방에 목재가 필요해요.') + '</small></div>' +
       meter('🔥', '체온', state.warmth, 36) + meter('❤️', '건강', state.health, 48) +
       (state.eventsSeen.child_labor_debate || state.childWorkUntil > state.tick || (state.rightsHistory || []).some(h => h.kind === "어린이 위험 노동") ?
         meter('📚', '어린이 학습', state.education, 65) + meter('🧒', '어린이 건강', state.childWellbeing, 60) : '') +
@@ -263,7 +263,10 @@
     } else if (activeTab === "residents") {
       p.innerHTML = renderResidents();
     } else {
-      p.innerHTML = '<h2>우리들의 기록</h2><p class="intro">주민의 합류 사연과 중요한 선택의 결과를 확인할 수 있어요.</p>' + consequenceBoard() +
+      p.innerHTML = '<h2>우리들의 기록</h2><p class="intro">주민의 합류 사연과 중요한 선택의 결과를 확인할 수 있어요. 합류할 때마다 별도의 확인 창은 뜨지 않아요.</p>' + consequenceBoard() +
+        '<div class="panel-subhead">⛵ 주민 합류 기록 <span>최근 ' + (state.arrivalLog || []).length + '명</span></div>' +
+        ((state.arrivalLog || []).length ? state.arrivalLog.map(item => '<div class="history-row"><small>' + (item.joinedWeek + 1) + '번째 주 · ' + escapeHTML(item.name) + '</small>' + escapeHTML(item.origin) + '</div>').join("") : '<div class="locked-card">아직 새로 합류한 주민이 없어요.</div>') +
+        '<div class="panel-subhead">마을 활동 기록</div>' +
         (state.log.length ? state.log.map(item => '<div class="history-row"><small>' + (item.tick + 1) + '번째 주</small>' + escapeHTML(item.text) + '</div>').join("") : '<div class="locked-card">아직 기록이 없어요.</div>') +
         '<div class="locked-card">📚 다음 확장에서는 대표자 선출과 의회, 새로운 정치제도가 등장합니다.</div>';
     }
