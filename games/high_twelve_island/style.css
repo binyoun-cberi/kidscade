@@ -64,3 +64,11 @@
 .law-impact{padding:8px 10px;margin:8px 0 0 25px;border-left:3px solid #e3ba72;color:#f1e5c5;background:#2a4547;font-size:11px;line-height:1.65}
 .vote-people{display:block;color:#c5d6c5;font-size:10px;margin-top:5px;line-height:1.4}
 @media(max-width:380px){.policy-notice{gap:4px;padding:2px 8px 9px}.issue-chip{font-size:10px;padding:5px 6px}}
+
+/* v5: 정책별 능동적 운영 행동. 작은 화면에서도 비용과 대가를 읽을 수 있도록 한다. */
+.operation-card{position:relative;border:1px solid #54727d;border-radius:12px;background:linear-gradient(135deg,#24505b,#1b434c);padding:11px 12px;margin:8px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:5px}
+.operation-title{font-size:13px;font-weight:850;grid-column:1 / -1;color:#f6e9c9}
+.operation-card small{display:block;font-size:11px;line-height:1.55;color:#c8ddd6;grid-column:1;min-width:0}
+.operation-card .secondary-btn{align-self:center;grid-column:2;grid-row:2;white-space:nowrap;font-size:11px;max-width:113px}
+.operation-card button:disabled{white-space:normal;line-height:1.25}
+@media(max-width:390px){.operation-card{grid-template-columns:1fr;gap:8px}.operation-card small,.operation-card .secondary-btn{grid-column:1;grid-row:auto}.operation-card .secondary-btn{width:100%;max-width:none}}
