@@ -1292,13 +1292,36 @@ function showTutorial(kind){
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
 }
 window.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false});
+canvas.addEventListener('pointerdown',e=>{
+  pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false;
+  if(mobileModeEnabled&&(mode==='challenge'||mode==='free')){
+    e.preventDefault();mobileLookPointerId=e.pointerId;mobileLookLast={x:e.clientX,y:e.clientY};
+    canvas.setPointerCapture?.(e.pointerId);
+  }
+});
 canvas.addEventListener('pointermove',e=>{
+  if(mobileModeEnabled&&(mode==='challenge'||mode==='free')&&mobileLookPointerId===e.pointerId&&mobileLookLast){
+    e.preventDefault();
+    const dx=e.clientX-mobileLookLast.x,dy=e.clientY-mobileLookLast.y;
+    mobileLookLast={x:e.clientX,y:e.clientY};
+    if(mode==='challenge'){
+      challengeYaw-=dx*.004;challengePitch=THREE.MathUtils.clamp(challengePitch-dy*.004,-1.45,1.45);
+      updateChallengeCamera();updateChallengeGhost();
+    }else{
+      yaw-=dx*.004;pitch=THREE.MathUtils.clamp(pitch-dy*.004,-1.35,1.35);
+      camera.rotation.y=yaw;camera.rotation.x=pitch;
+    }
+  }
   if(pointerDown&&(Math.abs(e.clientX-pointerDown.x)>5||Math.abs(e.clientY-pointerDown.y)>5))pointerDragged=true;
 });
 canvas.addEventListener('pointerup',e=>{
+  if(e.pointerId===mobileLookPointerId){mobileLookPointerId=null;mobileLookLast=null}
   if(pointerDragged){pointerDown=null;return}
   if(mode==='net'&&e.button===0){assignNetFace(netHit(e))}
+  pointerDown=null;
+});
+canvas.addEventListener('pointercancel',e=>{
+  if(e.pointerId===mobileLookPointerId){mobileLookPointerId=null;mobileLookLast=null}
   pointerDown=null;
 });
 canvas.addEventListener('mousedown',e=>{
@@ -1311,10 +1334,10 @@ canvas.addEventListener('mousedown',e=>{
   }
   if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
 });
-canvas.addEventListener('click',()=>{if((mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))canvas.requestPointerLock()});
+canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
-  if(mode==='free')$('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
-  if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',document.pointerLockElement===canvas);
+  if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
+  if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);
 });
 document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement!==canvas)return;
@@ -1339,7 +1362,7 @@ document.addEventListener('keydown',e=>{
   if(/^Digit[1-9]$/.test(e.code)){
     selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot];buildHotbar();updateFreeMission();
   }
-  if(e.code==='KeyF'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');updateFreeMission()}
+  if(e.code==='KeyF'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
   if(e.code==='KeyR')pickTargetBlock();
   if(e.code==='KeyP')paintLookedFace();
   if(e.code==='KeyX')toggleXray();
@@ -1347,6 +1370,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyQ'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
+window.addEventListener('blur',()=>{resetMobileInput();challengeKeys={};freeKeys={}});
 function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
 }
