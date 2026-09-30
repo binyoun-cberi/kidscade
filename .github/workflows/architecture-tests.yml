@@ -83,6 +83,7 @@ jobs:
             seed-house-entry.js \
             games/low_cleanup_squad/cleanup-squad.js \
             games/high_bridge_builder/bridge-builder.js \
+            games/math_base10_blocks/market-walk.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
             scripts/inject-game-integrations.cjs \
