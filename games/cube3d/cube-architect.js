@@ -744,18 +744,40 @@ function symbolMaterial(symbol,bg){
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function initNet(){
-  modeTitle('전개도 연구실','2D 전개도 → 3D 면 찾기');
+  modeTitle('전개도 연구실','2D 전개도 → 3D 관계 찾기');
   setVisible('netPanel',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
-  cleanScene(0xfff5dc);camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
+  foldNonce++;foldPieces=[];netQuizMode='decorate';netQuiz=null;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
+  cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
   netBox=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.9,1.55),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
   const floor=new THREE.Mesh(new THREE.CircleGeometry(4.5,64),new THREE.MeshStandardMaterial({color:0xf0dfb7,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.15;floor.receiveShadow=true;scene.add(floor);
-  $('actionCheck').onclick=checkNet;$('actionNext').onclick=()=>initNet();$('foldNet').onclick=foldPreview;
+  $('actionCheck').onclick=checkNet;
+  $('actionNext').onclick=()=>netQuizMode==='decorate'?initNet():nextNetQuiz();
+  $('foldNet').onclick=foldPreview;
+  document.querySelectorAll('[data-net-mode]').forEach(btn=>{
+    btn.onclick=()=>setNetQuizMode(btn.dataset.netMode);
+    btn.classList.toggle('active',btn.dataset.netMode==='decorate');
+  });
+  ['netDecorateInstructions','stickerPalette','selectedFace'].forEach(id=>$(id).classList.remove('hidden'));
+  $('netQuizCard').classList.add('hidden');
   $('resultCard').classList.add('hidden');showTutorial('net');
 }
 function buildNetBoard(){
-  document.querySelectorAll('.net-face').forEach(el=>{const f=Number(el.dataset.face);el.textContent=netTarget[f]});
-  $('netMission').textContent='전개도의 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
+  document.querySelectorAll('.net-face').forEach(el=>{
+    const f=Number(el.dataset.face);
+    el.textContent=netQuizMode==='decorate'?netTarget[f]:faceNames[f];
+    el.classList.remove('quiz-target');el.removeAttribute('data-quiz-edge');
+    if(netQuizMode!=='decorate'&&netQuiz?.source?.face===f){
+      el.classList.add('quiz-target');
+      if(netQuizMode==='edge')el.dataset.quizEdge=['top','right','bottom','left'][netQuiz.source.side];
+      if(netQuizMode==='vertex'){
+        const dot=document.createElement('span');dot.className='net-corner-mark';
+        dot.dataset.corner=String(netQuiz.source.corner);el.appendChild(dot);
+      }
+    }
+    if(netQuizMode==='face'&&netQuiz?.source===f)el.classList.add('quiz-target');
+  });
+  if(netQuizMode==='decorate')$('netMission').textContent='전개도의 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
 }
 function buildPalette(){
   const p=$('stickerPalette');p.innerHTML='';
@@ -766,11 +788,12 @@ function netHit(ev){
   raycaster.setFromCamera(mouse,camera);return raycaster.intersectObject(netBox,false)[0]||null;
 }
 function assignNetFace(hit){
-  if(!hit||!hit.face)return;const idx=hit.face.materialIndex;netAssigned[idx]=selectedSymbol;
+  if(netQuizMode!=='decorate'||!hit||!hit.face)return;const idx=hit.face.materialIndex;netAssigned[idx]=selectedSymbol;
   netBox.material[idx].dispose();netBox.material[idx]=symbolMaterial(selectedSymbol,'#ffffff');netBox.material.needsUpdate=true;sfx('place');
   $('selectedFace').textContent=faceNames[idx]+' 면 ← '+selectedSymbol;
 }
 function checkNet(){
+  if(netQuizMode!=='decorate'){checkNetQuiz();return}
   let good=0;for(let i=0;i<6;i++)if(netAssigned[i]===netTarget[i])good++;
   $('resultCard').classList.remove('hidden');$('resultScore').textContent=good+'/6';
   const wrong=[];for(let i=0;i<6;i++)if(netAssigned[i]!==netTarget[i])wrong.push(faceNames[i]);
@@ -779,7 +802,8 @@ function checkNet(){
   else{sfx('bad');toast('몇 면의 위치가 달라요. 전개도의 붙어 있는 면을 따라가 보세요.')}
 }
 function foldPreview(){
-  if(!netBox)return;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];netBox.visible=false;
+  if(!netBox)return;const ticket=++foldNonce;
+  foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();netBox.visible=false;
   const starts=[new THREE.Vector3(2.6,0,0),new THREE.Vector3(-2.6,0,0),new THREE.Vector3(0,1.85,0),new THREE.Vector3(0,-1.85,0),new THREE.Vector3(0,0,0),new THREE.Vector3(5.2,0,0)];
   const ends=[new THREE.Vector3(1.41,0,0),new THREE.Vector3(-1.41,0,0),new THREE.Vector3(0,.96,0),new THREE.Vector3(0,-.96,0),new THREE.Vector3(0,0,.79),new THREE.Vector3(0,0,-.79)];
   const rots=[
@@ -790,9 +814,14 @@ function foldPreview(){
     p.position.copy(starts[i]);p.userData.start=starts[i].clone();p.userData.end=ends[i].clone();p.userData.rot=rots[i];scene.add(p);foldPieces.push(p);
   }
   const start=performance.now();function step(now){
+    if(ticket!==foldNonce)return;
     const q=Math.min(1,(now-start)/1250),e=1-Math.pow(1-q,3);
     foldPieces.forEach(p=>{p.position.lerpVectors(p.userData.start,p.userData.end,e);p.rotation.set(p.userData.rot.x*e,p.userData.rot.y*e,p.userData.rot.z*e)});
-    if(q<1)requestAnimationFrame(step);else setTimeout(()=>{foldPieces.forEach(x=>scene.remove(x));foldPieces=[];netBox.visible=true},900);
+    if(q<1)requestAnimationFrame(step);else setTimeout(()=>{
+      if(ticket!==foldNonce)return;
+      foldPieces.forEach(x=>scene.remove(x));foldPieces=[];netBox.visible=true;
+      if(netQuizMode!=='decorate')showNetProof();
+    },550);
   }requestAnimationFrame(step);toast('전개도의 면들이 3D 위치로 접히고 있어요.');
 }
 
