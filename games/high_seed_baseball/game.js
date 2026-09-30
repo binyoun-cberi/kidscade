@@ -408,13 +408,59 @@ function update(dt){
 }
 function burst(x,y,n){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-170,170),vy:rand(-230,-50),life:rand(.6,1.3),r:rand(2,6)})}
 
-function drawStadium(){
- const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#16304e');g.addColorStop(.48,'#244968');g.addColorStop(.49,'#3d7d45');g.addColorStop(1,'#276438');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- ctx.fillStyle='#d7b47a';ctx.beginPath();ctx.ellipse(480,412,285,150,0,Math.PI,Math.PI*2);ctx.fill();
- ctx.fillStyle='#2f7d43';ctx.beginPath();ctx.moveTo(480,470);ctx.lineTo(650,345);ctx.lineTo(480,215);ctx.lineTo(310,345);ctx.closePath();ctx.fill();
- ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(480,470);ctx.lineTo(805,150);ctx.moveTo(480,470);ctx.lineTo(155,150);ctx.stroke();
- ctx.strokeStyle='#cbd5e1';ctx.lineWidth=5;ctx.beginPath();ctx.arc(480,470,330,Math.PI*1.15,Math.PI*1.85);ctx.stroke();
+// The ballpark backdrop is static and cached, so detailed scenery costs only one draw per frame.
+function stadiumBackdrop(){
+ const c=document.createElement('canvas');c.width=W;c.height=H;const b=c.getContext('2d');
+ const sky=b.createLinearGradient(0,0,0,170);sky.addColorStop(0,'#071729');sky.addColorStop(1,'#153959');
+ b.fillStyle=sky;b.fillRect(0,0,W,165);
+ b.fillStyle='#091522';b.fillRect(0,49,W,88);
+ b.fillStyle='#1f354c';
+ for(let row=0;row<4;row++){
+  b.fillRect(0,58+row*19,W,2);
+  for(let x=11;x<W;x+=14){const k=(x*17+row*13)%7;b.fillStyle=['#f8d87b','#95acbb','#e4a98d','#8ec2cf','#c2d4cf','#738eae','#cfd7dc'][k];b.fillRect(x+(row%2)*6,62+row*19,5,6)}
+  b.fillStyle='#253e56';
+ }
+ b.fillStyle='#0e2537';b.fillRect(0,129,W,25);b.fillStyle='#1a4e3e';b.fillRect(0,147,W,14);
+ b.fillStyle='#e2b65e';b.font='900 14px system-ui';b.textAlign='center';b.fillText('★ SEED BALLPARK ★',480,29);
+ b.fillStyle='#dbeafe';b.font='700 9px system-ui';b.fillText('KIDSCade · PLAY BALL!',480,45);
+ for(const x of [72,888]){
+  b.strokeStyle='#8299aa';b.lineWidth=4;b.beginPath();b.moveTo(x,125);b.lineTo(x,31);b.stroke();
+  b.fillStyle='#fff5be';b.fillRect(x-26,23,52,10);
+  for(let i=0;i<6;i++){b.fillStyle='#fffde8';b.fillRect(x-23+i*8,25,5,6)}
+ }
+ for(const [x,label,w] of [[68,'KIDSCade',126],[750,'PLAY BALL',134],[362,'SEED LEAGUE',236]]){
+  b.fillStyle='#173449';b.fillRect(x,126,w,22);b.strokeStyle='#50766c';b.lineWidth=2;b.strokeRect(x,126,w,22);b.fillStyle='#fef3c7';b.font='900 11px system-ui';b.textAlign='center';b.fillText(label,x+w/2,141);
+ }
+ b.fillStyle='#316b48';b.fillRect(0,156,W,H-156);
+ for(let y=156;y<H;y+=27){b.fillStyle=(Math.floor(y/27)%2)?'rgba(255,255,255,.045)':'rgba(3,38,20,.07)';b.fillRect(0,y,W,27)}
+ b.strokeStyle='#d0c0a0';b.lineWidth=5;b.beginPath();b.moveTo(105,158);b.quadraticCurveTo(480,95,855,158);b.stroke();
+ b.fillStyle='#c39561';b.beginPath();b.moveTo(480,472);b.lineTo(681,345);b.lineTo(480,201);b.lineTo(279,345);b.closePath();b.fill();
+ b.fillStyle='#367e4b';b.beginPath();b.moveTo(480,429);b.lineTo(626,345);b.lineTo(480,257);b.lineTo(334,345);b.closePath();b.fill();
+ b.fillStyle='#b18457';b.beginPath();b.ellipse(480,353,33,19,0,0,Math.PI*2);b.fill();
+ b.strokeStyle='rgba(255,255,255,.83)';b.lineWidth=2.5;b.beginPath();b.moveTo(480,470);b.lineTo(109,153);b.moveTo(480,470);b.lineTo(851,153);b.stroke();
+ b.fillStyle='#f5e6c6';b.beginPath();b.moveTo(480,468);b.lineTo(471,461);b.lineTo(489,461);b.closePath();b.fill();
+ b.fillStyle='#fdf1d2';b.fillRect(474,350,12,3);b.fillStyle='#fbbf24';b.font='900 12px system-ui';b.textAlign='center';b.fillText('330',146,163);b.fillText('400',480,168);b.fillText('330',813,163);
+ return c;
 }
+const fieldBackdrop=stadiumBackdrop();
+function drawStadium(){ctx.drawImage(fieldBackdrop,0,0)}
+function drawPlateBackdrop(){
+ ctx.fillStyle='#0c2339';ctx.fillRect(0,0,W,H);
+ const grad=ctx.createLinearGradient(0,0,0,192);grad.addColorStop(0,'#0c2339');grad.addColorStop(1,'#285375');ctx.fillStyle=grad;ctx.fillRect(0,0,W,192);
+ ctx.fillStyle='#102338';ctx.fillRect(0,55,W,137);
+ for(let row=0;row<4;row++)for(let x=16;x<W;x+=24){const v=(x*13+row*23)%5;ctx.fillStyle=['#d8a877','#f3d49b','#8db1c6','#a2bcaa','#d6d7dc'][v];ctx.beginPath();ctx.arc(x+(row%2)*11,78+row*23,4,0,Math.PI*2);ctx.fill()}
+ ctx.fillStyle='#163f35';ctx.fillRect(0,182,W,14);
+ ctx.fillStyle='#327a49';ctx.fillRect(0,196,W,344);
+ for(let y=198;y<H;y+=28){ctx.fillStyle=Math.floor(y/28)%2?'rgba(255,255,255,.044)':'rgba(4,45,24,.045)';ctx.fillRect(0,y,W,28)}
+ ctx.fillStyle='#bd905c';ctx.beginPath();ctx.moveTo(480,215);ctx.lineTo(960,480);ctx.lineTo(960,540);ctx.lineTo(0,540);ctx.lineTo(0,480);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#337b49';ctx.beginPath();ctx.moveTo(480,247);ctx.lineTo(960,530);ctx.lineTo(0,530);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#c89b62';ctx.beginPath();ctx.ellipse(480,247,65,30,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#b98d5e';ctx.beginPath();ctx.ellipse(480,440,157,76,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(555,394);ctx.lineTo(630,453);ctx.lineTo(630,504);ctx.moveTo(405,394);ctx.lineTo(330,453);ctx.lineTo(330,504);ctx.stroke();
+ ctx.fillStyle='#faf7ed';ctx.beginPath();ctx.moveTo(468,439);ctx.lineTo(492,439);ctx.lineTo(494,446);ctx.lineTo(480,454);ctx.lineTo(466,446);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#fff2b8';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('KIDSCade BASEBALL',480,32);
+}
+
 function drawBase(x,y,on=false){ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.fillStyle=on?'#fbbf24':'#fff';ctx.fillRect(-8,-8,16,16);ctx.restore()}
 function drawPlayer(img,x,y,scale=1,flip=false,jersey='#16a34a'){
  ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);
