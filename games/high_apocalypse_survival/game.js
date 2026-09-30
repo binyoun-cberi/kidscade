@@ -109,13 +109,28 @@ const ROAD_EDGES=[
  ['eastNorth','eastMid'],['eastMid','eastCross'],['eastCross','eastSouth'],['cityMid','market'],['cityMid','clinic'],['citySouth','garage'],['eastSouth','power']
 ];
 const RUIN_SPOTS={
- marketShelf:{site:'market',name:'식품 진열대',loot:{food:2}},
- marketBack:{site:'market',name:'무너진 뒤편 선반',loot:{potato:2},hazard:'unstable'},
- clinicCabinet:{site:'clinic',name:'진료소 캐비닛',loot:{cloth:2}},
- clinicSupply:{site:'clinic',name:'응급 보급함',loot:{food:1,cloth:1}},
- garageBench:{site:'garage',name:'정비 작업대',loot:{scrap:2}},
- garageLocker:{site:'garage',name:'금속 보관함',loot:{wood:1,battery:1},hazard:'sharp'}
+ marketShelf:{site:'market',name:'식품 진열대',loot:{food:2},bonus:'food'},
+ marketBack:{site:'market',name:'무너진 뒤편 선반',loot:{potato:2},hazard:'unstable',bonus:'potato'},
+ clinicCabinet:{site:'clinic',name:'진료소 캐비닛',loot:{cloth:2},bonus:'cloth'},
+ clinicSupply:{site:'clinic',name:'응급 보급함',loot:{food:1,cloth:1},bonus:'cloth'},
+ garageBench:{site:'garage',name:'정비 작업대',loot:{scrap:2},bonus:'scrap'},
+ garageLocker:{site:'garage',name:'금속 보관함',loot:{wood:1,battery:1},hazard:'sharp',bonus:'scrap'}
 };
+const RUIN_EVENTS={
+ market:[
+  {id:'shelfCrash',text:'진동 때문에 오래된 진열대가 무너졌습니다.',damage:7},
+  {id:'canFall',text:'쌓여 있던 통조림 상자가 크게 쏟아졌습니다.',damage:4}
+ ],
+ clinic:[
+  {id:'glassFall',text:'깨진 유리 조각이 선반에서 떨어졌습니다.',damage:6},
+  {id:'ceilingDust',text:'천장 일부가 흔들리며 먼지와 파편이 떨어졌습니다.',damage:5}
+ ],
+ garage:[
+  {id:'metalCrash',text:'느슨한 금속판이 바닥으로 떨어졌습니다.',damage:9},
+  {id:'toolFall',text:'공구 선반이 흔들리며 무거운 공구가 떨어졌습니다.',damage:7}
+ ]
+};
+const SITE_SKILL={market:'gatherer',clinic:'medic',garage:'technician'};
 const JOBS={
   technician:{name:'기술 담당',icon:'⚙️',desc:'하루가 바뀔 때 수리에 쓸 고철을 1개 확보합니다.'},
   gatherer:{name:'채집 담당',icon:'🪓',desc:'함께 채집해 나무·돌·먹을거리 획득량이 1개 늘어납니다.'},
@@ -315,6 +330,30 @@ function tryPlayerMove(dx,dz){
  player.velocity.x*=.18;player.velocity.z*=.18;return false
 }
 function solidBox(w,h,d,c,x,y,z,pad=.25){const m=box(w,h,d,c,x,y,z);addCollider(x,z,w,d,pad);return m}
+function seedHash(text){
+ let h=(game?.worldSeed||1)>>>0;for(let i=0;i<text.length;i++){h=Math.imul(h^text.charCodeAt(i),16777619)>>>0}return h>>>0
+}
+function ruinEventFor(site){const list=RUIN_EVENTS[site]||[];return list.length?list[seedHash('event:'+site)%list.length]:null}
+function companionMatches(site){
+ const id=game?.companion,r=id&&game?.residents?.[id];return !!(r?.rescued&&r.job&&r.job===SITE_SKILL[site])
+}
+function companionName(){return game?.companion?RESIDENTS[game.companion]?.name||'동행 주민':null}
+function setCompanion(id){
+ if(!id){game.companion=null;save();renderPanel('settlement');return toast('원정 동행을 해제했습니다.')}
+ const r=game.residents?.[id];if(!r?.rescued)return;if(game.companion===id){game.companion=null;toast(RESIDENTS[id].name+'이(가) 야영지로 돌아갑니다.')}else{game.companion=id;toast('🎒 '+RESIDENTS[id].name+'이(가) 원정에 동행합니다.');discover('division')}save();renderPanel('settlement')
+}
+function emitRuinNoise(amount,label=''){
+ const zone=currentRuinZone();if(!zone||!game)return;game.ruinNoise=clamp((game.ruinNoise||0)+amount,0,100);if(label&&amount>=12)toast('🔊 '+label+' · 폐허 소음 '+Math.round(game.ruinNoise),'warn',1.5);if(game.ruinNoise>=70)triggerRuinEvent(zone.site)
+}
+function triggerRuinEvent(site){
+ const key='ruinEvent_'+site;if(game.flags[key])return;const ev=ruinEventFor(site);if(!ev)return;game.flags[key]=ev.id;
+ const help=companionMatches(site),damage=help?Math.ceil(ev.damage*.25):ev.damage;game.health=clamp(game.health-damage,0,100);cameraKick=Math.max(cameraKick,.16);spawnImpact(player.root.position.clone(),site==='garage'?'rock':'tree',14);sfx('mine');
+ toast('⚠️ '+ev.text+(help?' '+companionName()+'이(가) 위험을 먼저 알려 피해를 줄였습니다.':' 체력 -'+damage),'danger',5);game.ruinNoise=28;save();updateUI()
+}
+function ruinSearchBonus(key){
+ const info=RUIN_SPOTS[key];if(!info?.bonus)return null;const specialist=companionMatches(info.site),roll=(seedHash('loot:'+key)%100)/100;if(!specialist&&roll>=.28)return null;
+ const n=specialist?1:(roll<.1?2:1);return {id:info.bonus,n}
+}
 function currentRuinZone(){
  const px=player?.root?.position?.x??999,pz=player?.root?.position?.z??999;return ruinZones.find(z=>Math.abs(px-z.x)<z.hw&&Math.abs(pz-z.z)<z.hd)||null
 }
