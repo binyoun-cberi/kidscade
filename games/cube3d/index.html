@@ -202,6 +202,18 @@
           <label class="paint-color">면 색칠 <input id="facePaintColor" type="color" value="#ff7043"></label>
         </div>
         <small class="workbench-help">월드에서 P를 누르면 십자선이 가리키는 직육면체의 그 면만 색칠됩니다.</small>
+        <div class="free-geometry-details">
+          <b>모서리·꼭짓점 편집</b>
+          <button id="freeSelectShape" type="button">바라보는 도형 선택</button>
+          <span id="freeSelectedShape">선택한 도형 없음</span>
+          <div class="challenge-tool-tabs">
+            <button id="freeEdgeMode" class="active" type="button">모서리 12개</button>
+            <button id="freeVertexMode" type="button">꼭짓점 8개</button>
+          </div>
+          <label class="challenge-color-label">강조 색상 <input id="freeElementColor" type="color" value="#ff7043"></label>
+          <div id="freeElementChoices" class="challenge-element-choices"></div>
+          <small class="workbench-help">강조 색은 월드에 저장되며 X를 눌러 해당 요소를 볼 수 있어요.</small>
+        </div>
       </section>
       <div class="inventory-note">물+용암, 불+나무, 모래의 낙하, 잎의 decay, 묘목 성장처럼 블록마다 서로 다른 성질이 있습니다.</div>
     </section>
