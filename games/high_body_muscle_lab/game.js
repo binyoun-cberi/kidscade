@@ -16,9 +16,9 @@ const ui={
 };
 
 const STAGES=[
-  {name:'팔의 길항근',enemy:'기본 복서',hp:70,attacks:['leftStraight','rightStraight'],telegraph:.30,strike:.18,recover:.34,damage:18,feint:0},
-  {name:'몸통 회피',enemy:'훅 복서',hp:90,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.26,strike:.16,recover:.30,damage:20,feint:0},
-  {name:'온몸 카운터',enemy:'페인트 복서',hp:110,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.22,strike:.145,recover:.27,damage:23,feint:.38}
+  {name:'팔의 길항근',enemy:'기본 복서',hp:70,attacks:['leftStraight','rightStraight'],telegraph:.18,strike:.10,recover:.65,damage:18,feint:0},
+  {name:'몸통 회피',enemy:'훅 복서',hp:90,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.17,strike:.095,recover:.58,damage:20,feint:0},
+  {name:'온몸 카운터',enemy:'페인트 복서',hp:110,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.16,strike:.09,recover:.52,damage:23,feint:.38}
 ];
 
 const MUSCLES={
@@ -198,7 +198,7 @@ function chooseAttack(except=''){
 function beginAttack(){
   const cfg=activeStage(),actual=chooseAttack(state.enemy.attack),feint=Math.random()<cfg.feint;
   const fake=feint?chooseAttack(actual):actual;
-  state.enemy={phase:'telegraph',t:.30,attack:actual,shownAttack:fake,resolved:false,feint,switched:false,counter:false};
+  state.enemy={phase:'telegraph',t:.50,attack:actual,shownAttack:fake,resolved:false,feint,switched:false,counter:false};
   syncIncoming();
 }
 function syncIncoming(){
@@ -294,7 +294,7 @@ function updatePlayer(realDt){
     Math.abs(state.pose.twist-state.prevPose.twist)*1.8+
     Math.abs(state.pose.drive-state.prevPose.drive)*2.0;
   const speed=realDt>0?d/realDt:0;
-  state.worldScale=state.impactBoost>0?1:(speed<.035?0:clamp(speed*.24,.08,1));
+  state.worldScale=state.impactBoost>0?1:(speed<.035?0:clamp(speed*.24,.08,.82));
   state.impactBoost=Math.max(0,state.impactBoost-realDt);
   state.arms.left.cooldown=Math.max(0,state.arms.left.cooldown-realDt);state.arms.right.cooldown=Math.max(0,state.arms.right.cooldown-realDt);
   checkPunch('left',realDt);checkPunch('right',realDt);
