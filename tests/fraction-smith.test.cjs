@@ -48,3 +48,16 @@ test('Fraction Smith is registered in the game catalog',()=>{
   assert.equal(game.genre,'puzzle');
   assert.ok(game.input.includes('touch'));
 });
+
+test('Fraction Smith forge scene has immersive workshop layers and strike lighting',()=>{
+  const dir=path.join(root,'games','high_fraction_smith');
+  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+  const css=fs.readFileSync(path.join(dir,'style.css'),'utf8');
+  const js=fs.readFileSync(path.join(dir,'game.js'),'utf8');
+  assert.match(html,/class="furnace"/);
+  assert.match(html,/class="anvil-stump"/);
+  assert.match(html,/class="wall-rack"/);
+  assert.match(css,/\.forge-wall/);
+  assert.match(css,/body\[data-heat="5"\] \.furnace-mouth/);
+  assert.match(js,/classList\.add\('forge-hit'\)/);
+});
