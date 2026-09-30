@@ -52,7 +52,7 @@ function zoneInside(x,y){return x>=405&&x<=555&&y>=268&&y<=382}
 
 let difficulty='easy',playing=false,last=0,acc=0,simTime=0;
 let state='menu',inning=1,half='top',outs=0,balls=0,strikes=0,bases=[false,false,false],score=[0,0];
-const TRAINING_KEY='seedBaseballBatPitchLessonV1';
+// The tutorial flag is stored in the existing career record, not a new storage key.
 let lessonActive=false,lessonReplay=false,lessonPitchCount=0,lessonBatAdjusted=false,lessonPitchSelected=false,lessonAimSelected=false,lessonThrown=false,lessonFieldTouched=false;
 let messageTimer=0,controlMode='',throwHold=0,chargeActive=false,swingAnimationUntil=0;
 const BAT={px:608,py:400,length:242,min:-1.20,max:.30,speed:1.27};
@@ -80,7 +80,7 @@ function setBatAngle(next){
 }
 function nudgeBat(step){setBatAngle(batAngle+step)}
 function setBatFromPoint(p){setBatAngle(Math.atan2(p.y-BAT.py,BAT.px-480))}
-function isLessonDone(){try{return localStorage.getItem(TRAINING_KEY)==='done'}catch(_){return false}}
+function isLessonDone(){return !!career().batPitchLessonDone}
 function updateLesson(){
  if(!lessonEl)return;
  if(!lessonActive||inning!==1||!playing){lessonEl.classList.add('hidden');lessonEl.textContent='';return}
@@ -435,7 +435,7 @@ function finishHalf(){
  }
  half='top';inning++;
  const trainingFinished=lessonActive&&inning===2;
- if(trainingFinished){lessonActive=false;try{localStorage.setItem(TRAINING_KEY,'done')}catch(_){}}
+ if(trainingFinished){lessonActive=false;try{const saved=career();saved.batPitchLessonDone=true;localStorage.setItem('seedBaseballCareerV1',JSON.stringify(saved))}catch(_){}}
  updateLesson();
  if(inning>3&&score[0]!==score[1]){endGame();return}
  if(inning>5){endGame();return}
