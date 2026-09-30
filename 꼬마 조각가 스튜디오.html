@@ -203,6 +203,116 @@
       display: none;
     }
 
+    .materialHint {
+      margin-top: 7px;
+      min-height: 34px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: #fff8e8;
+      color: #76531e;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(24, 39, 66, 0.38);
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .overlayCard {
+      width: min(720px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      padding: 22px;
+      border-radius: 28px;
+      background: rgba(255,255,255,0.97);
+      box-shadow: 0 24px 70px rgba(20, 36, 64, 0.28);
+      text-align: center;
+    }
+
+    .overlayCard h2 {
+      margin: 0 0 7px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .overlayCard p {
+      margin: 0 0 18px;
+      color: #64748b;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .challengeGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .challengeCard {
+      min-height: 108px;
+      padding: 14px 8px;
+      border-radius: 20px;
+      background: #f3f7ff;
+    }
+
+    .challengeCard strong,
+    .challengeCard small {
+      display: block;
+    }
+
+    .challengeCard strong {
+      margin-top: 5px;
+      font-size: 15px;
+    }
+
+    .challengeCard small {
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .challengeEmoji {
+      font-size: 30px;
+    }
+
+    .finishInput {
+      width: 100%;
+      margin: 4px 0 14px;
+      padding: 13px 15px;
+      border: 2px solid #d8e4f7;
+      border-radius: 16px;
+      outline: none;
+      font: inherit;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .finishInput:focus {
+      border-color: #3972ff;
+    }
+
+    .overlayActions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
     @media (max-width: 720px) {
       .panel {
         top: 10px;
@@ -239,6 +349,19 @@
       .materialSwatch {
         min-width: auto;
       }
+
+      .challengeGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .overlayCard {
+        padding: 16px;
+        border-radius: 22px;
+      }
+
+      .overlayCard h2 {
+        font-size: 22px;
+      }
     }
   </style>
 </head>
@@ -257,8 +380,11 @@
         <button id="toolPush">부풀리기</button>
         <button id="toolPress">누르기</button>
         <button id="toolCarve">깎기</button>
+        <button id="toolGrab">🤏 당기기</button>
+        <button id="toolPinch">🤌 모으기</button>
         <button id="toolSmooth">문지르기</button>
         <button id="toolFlatten">평평하게</button>
+        <button id="symmetryBtn">🪞 양쪽 똑같이</button>
       </div>
     </div>
 
@@ -267,12 +393,12 @@
       <div class="sliderBox">
         <span>크기</span>
         <input id="radiusSlider" type="range" min="0.25" max="1.4" step="0.05" value="0.65" />
-        <span id="radiusValue">0.65</span>
+        <span id="radiusValue">보통</span>
       </div>
       <div class="sliderBox">
         <span>힘</span>
         <input id="strengthSlider" type="range" min="0.01" max="0.22" step="0.01" value="0.08" />
-        <span id="strengthValue">0.08</span>
+        <span id="strengthValue">보통</span>
       </div>
     </div>
 
@@ -285,13 +411,16 @@
         <button class="materialSwatch" data-material="stone">돌<small>거친 표면</small></button>
         <button class="materialSwatch" data-material="plaster">석고<small>무광</small></button>
       </div>
+      <div id="materialHint" class="materialHint">찰흙은 가장 부드러워서 자유롭게 빚기 좋아요.</div>
     </div>
 
     <div class="section">
       <div class="label">작품</div>
       <div class="row">
-        <button id="undoBtn" class="small">되돌리기</button>
+        <button id="undoBtn" class="small">↶ 되돌리기</button>
+        <button id="redoBtn" class="small">↷ 다시하기</button>
         <button id="resetBtn" class="small danger">처음부터</button>
+        <button id="finishBtn" class="small">✨ 완성</button>
         <button id="savePngBtn" class="small">사진 저장</button>
         <button id="saveJsonBtn" class="small">파일 저장</button>
         <button id="loadJsonBtn" class="small">불러오기</button>
@@ -301,20 +430,63 @@
 
     <div class="hint">
       <b>사용법</b><br>
-      ① 돌려보기로 작품을 회전해요.<br>
-      ② 부풀리기/누르기/깎기/문지르기로 표면을 만져요.<br>
-      ③ 재료를 바꾸면 찰흙·나무·대리석 조각처럼 보여요.<br>
-      키보드: 1 돌려보기, 2 부풀리기, 3 누르기, 4 깎기, 5 문지르기
+      ① <b>당기기</b>로 귀·코·꼬리처럼 길게 뽑아보세요.<br>
+      ② <b>모으기</b>로 귀 끝이나 코끝을 뾰족하게 만들 수 있어요.<br>
+      ③ 🪞 <b>양쪽 똑같이</b>를 켜면 얼굴과 동물을 만들기 쉬워요.<br>
+      ④ 재료마다 단단함이 달라 같은 힘으로 만져도 느낌이 달라요.<br>
+      키보드: 1 회전 · 2 부풀리기 · 3 누르기 · 4 깎기 · 5 문지르기 · 6 평평 · 7 당기기 · 8 모으기
     </div>
   </div>
 
-  <div id="counter" class="counter">정점 0개</div>
+  <div id="counter" class="counter">자유 작품 · 마음껏 만들어봐요</div>
 
   <div class="bottomBar">
     <button id="rotLeft" class="small">↶</button>
     <button id="zoomIn" class="small">＋</button>
     <button id="zoomOut" class="small">－</button>
     <button id="rotRight" class="small">↷</button>
+  </div>
+
+  <div id="startOverlay" class="overlay show">
+    <div class="overlayCard">
+      <h2>오늘은 무엇을 만들어볼까?</h2>
+      <p>정답은 없어요. 마음에 드는 주제를 고르고 내 방식대로 빚어보세요.</p>
+      <div class="challengeGrid">
+        <button class="challengeCard" data-challenge="고양이 얼굴" data-hint="양쪽 똑같이를 켜고 귀 두 개를 길게 당겨보세요.">
+          <span class="challengeEmoji">🐱</span><strong>고양이 얼굴</strong><small>귀를 당기고 눈을 눌러봐요</small>
+        </button>
+        <button class="challengeCard" data-challenge="도깨비 가면" data-hint="코와 뿔을 크게 당기고 눈 주변을 깊게 눌러보세요.">
+          <span class="challengeEmoji">👹</span><strong>도깨비 가면</strong><small>크고 과장된 얼굴을 만들어요</small>
+        </button>
+        <button class="challengeCard" data-challenge="우주 괴물" data-hint="대칭을 끄고 한쪽만 길게 당기면 더 기괴한 모습도 만들 수 있어요.">
+          <span class="challengeEmoji">👾</span><strong>우주 괴물</strong><small>눈도 뿔도 마음대로!</small>
+        </button>
+        <button class="challengeCard" data-challenge="달 항아리" data-hint="가운데를 부풀리고 위쪽을 눌러 입구를 표현해보세요.">
+          <span class="challengeEmoji">🏺</span><strong>달 항아리</strong><small>둥글고 부드러운 형태에 도전</small>
+        </button>
+        <button class="challengeCard" data-challenge="상상 동물" data-hint="귀·뿔·코·꼬리를 당기기로 자유롭게 만들어보세요.">
+          <span class="challengeEmoji">🦄</span><strong>상상 동물</strong><small>세상에 없는 동물을 만들어요</small>
+        </button>
+        <button class="challengeCard" data-challenge="자유 작품" data-hint="어떤 모양이든 괜찮아요. 도구를 섞어서 실험해보세요.">
+          <span class="challengeEmoji">✨</span><strong>자유 작품</strong><small>아무 규칙 없이 마음대로</small>
+        </button>
+      </div>
+      <div class="overlayActions">
+        <button id="continueBtn">이어 만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="finishOverlay" class="overlay">
+    <div class="overlayCard" style="max-width:460px">
+      <h2>작품 완성!</h2>
+      <p id="finishSummary">멋진 작품이 완성됐어요.</p>
+      <input id="finishName" class="finishInput" maxlength="30" placeholder="작품 이름을 지어주세요" />
+      <div class="overlayActions">
+        <button id="finishPhotoBtn">📷 사진 저장</button>
+        <button id="finishContinueBtn">조금 더 다듬기</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -388,6 +560,11 @@
   let brushRadius = 0.65;
   let brushStrength = 0.08;
   let currentMaterialName = "clay";
+  let symmetryX = false;
+  let challengeName = "자유 작품";
+  let challengeHint = "마음껏 만들어봐요.";
+  let strokeCount = 0;
+  let lastGrabLocal = null;
 
   let yaw = Math.PI * 0.18;
   let pitch = 0.8;
@@ -401,6 +578,7 @@
   let lastSculptTime = 0;
 
   const undoStack = [];
+  const redoStack = [];
   const maxUndo = 25;
 
   const tempVertex = new THREE.Vector3();
@@ -606,7 +784,7 @@
   scene.add(brushRing);
 
   function updateCounter() {
-    counter.textContent = `정점 ${sculptMesh.geometry.attributes.position.count.toLocaleString("ko-KR")}개`;
+    counter.textContent = `${challengeName} · ${challengeHint}`;
   }
 
   updateCounter();
@@ -618,6 +796,8 @@
       push: "toolPush",
       press: "toolPress",
       carve: "toolCarve",
+      grab: "toolGrab",
+      pinch: "toolPinch",
       smooth: "toolSmooth",
       flatten: "toolFlatten"
     };
@@ -631,22 +811,45 @@
   document.getElementById("toolPush").onclick = () => setTool("push");
   document.getElementById("toolPress").onclick = () => setTool("press");
   document.getElementById("toolCarve").onclick = () => setTool("carve");
+  document.getElementById("toolGrab").onclick = () => setTool("grab");
+  document.getElementById("toolPinch").onclick = () => setTool("pinch");
   document.getElementById("toolSmooth").onclick = () => setTool("smooth");
   document.getElementById("toolFlatten").onclick = () => setTool("flatten");
+
+  const symmetryBtn = document.getElementById("symmetryBtn");
+  function setSymmetry(enabled) {
+    symmetryX = !!enabled;
+    symmetryBtn.classList.toggle("active", symmetryX);
+    symmetryBtn.textContent = symmetryX ? "🪞 양쪽 똑같이 ✓" : "🪞 양쪽 똑같이";
+    saveLocal();
+  }
+  symmetryBtn.onclick = () => setSymmetry(!symmetryX);
 
   const radiusSlider = document.getElementById("radiusSlider");
   const strengthSlider = document.getElementById("strengthSlider");
   const radiusValue = document.getElementById("radiusValue");
   const strengthValue = document.getElementById("strengthValue");
 
+  function radiusLabel(v) {
+    if (v < 0.5) return "작게";
+    if (v < 0.9) return "보통";
+    return "크게";
+  }
+
+  function strengthLabel(v) {
+    if (v < 0.06) return "살짝";
+    if (v < 0.13) return "보통";
+    return "세게";
+  }
+
   radiusSlider.oninput = () => {
     brushRadius = Number(radiusSlider.value);
-    radiusValue.textContent = brushRadius.toFixed(2);
+    radiusValue.textContent = radiusLabel(brushRadius);
   };
 
   strengthSlider.oninput = () => {
     brushStrength = Number(strengthSlider.value);
-    strengthValue.textContent = brushStrength.toFixed(2);
+    strengthValue.textContent = strengthLabel(brushStrength);
   };
 
   document.querySelectorAll("[data-material]").forEach(btn => {
@@ -658,10 +861,23 @@
     });
   });
 
+  const materialHints = {
+    clay: "찰흙은 가장 부드러워서 자유롭게 빚기 좋아요.",
+    plaster: "석고는 찰흙보다 조금 단단해서 모양을 천천히 다듬게 돼요.",
+    wood: "나무는 단단해서 같은 힘으로 만져도 조금씩 변해요.",
+    stone: "돌은 꽤 단단해요. 여러 번 깎고 눌러 형태를 만들어보세요.",
+    marble: "대리석은 가장 단단해요. 세밀하게 조금씩 조각해보세요."
+  };
+
+  function materialStrengthMultiplier(kind) {
+    return ({ clay: 1, plaster: 0.78, wood: 0.66, stone: 0.54, marble: 0.46 })[kind] || 1;
+  }
+
   function setMaterial(kind) {
     currentMaterialName = kind;
     if (sculptMesh.material) sculptMesh.material.dispose();
     sculptMesh.material = makeMaterial(kind);
+    document.getElementById("materialHint").textContent = materialHints[kind] || "";
     saveLocal();
   }
 
@@ -695,27 +911,43 @@
     brushRing.scale.setScalar(brushRadius);
   }
 
-  function pushUndo() {
-    const pos = sculptMesh.geometry.attributes.position.array;
-    undoStack.push(new Float32Array(pos));
+  function snapshotPositions() {
+    return new Float32Array(sculptMesh.geometry.attributes.position.array);
+  }
 
-    if (undoStack.length > maxUndo) {
-      undoStack.shift();
-    }
+  function restorePositions(snapshot) {
+    const attr = sculptMesh.geometry.attributes.position;
+    if (!snapshot || snapshot.length !== attr.array.length) return false;
+    attr.array.set(snapshot);
+    attr.needsUpdate = true;
+    sculptMesh.geometry.computeVertexNormals();
+    return true;
+  }
+
+  function pushUndo() {
+    undoStack.push(snapshotPositions());
+    redoStack.length = 0;
+    if (undoStack.length > maxUndo) undoStack.shift();
   }
 
   function undo() {
     if (!undoStack.length) return;
+    redoStack.push(snapshotPositions());
+    if (redoStack.length > maxUndo) redoStack.shift();
+    restorePositions(undoStack.pop());
+    saveLocal();
+  }
 
-    const previous = undoStack.pop();
-    const attr = sculptMesh.geometry.attributes.position;
-    attr.array.set(previous);
-    attr.needsUpdate = true;
-    sculptMesh.geometry.computeVertexNormals();
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(snapshotPositions());
+    if (undoStack.length > maxUndo) undoStack.shift();
+    restorePositions(redoStack.pop());
     saveLocal();
   }
 
   document.getElementById("undoBtn").onclick = undo;
+  document.getElementById("redoBtn").onclick = redo;
 
   function applySculpt(hit) {
     if (!hit || tool === "orbit") return;
@@ -727,75 +959,116 @@
     tempHit.copy(hit.point);
     sculptMesh.worldToLocal(tempHit);
 
-    const hitNormal = hit.face.normal.clone().normalize();
+    const baseNormal = hit.face.normal.clone().normalize();
     const radius = brushRadius;
-    const strength = brushStrength;
+    const strength = brushStrength * materialStrengthMultiplier(currentMaterialName);
 
-    let localAverageRadius = 0;
-    let averageWeight = 0;
-
-    if (tool === "smooth") {
-      for (let i = 0; i < pos.count; i++) {
-        tempVertex.fromBufferAttribute(pos, i);
-        const d = tempVertex.distanceTo(tempHit);
-        if (d <= radius) {
-          const t = 0.5 + 0.5 * Math.cos((d / radius) * Math.PI);
-          localAverageRadius += tempVertex.length() * t;
-          averageWeight += t;
-        }
+    let grabDelta = null;
+    if (tool === "grab") {
+      if (!lastGrabLocal) {
+        lastGrabLocal = tempHit.clone();
+        return;
       }
-      if (averageWeight > 0) {
-        localAverageRadius /= averageWeight;
+      grabDelta = tempHit.clone().sub(lastGrabLocal);
+      if (grabDelta.lengthSq() < 0.000001) return;
+      lastGrabLocal.copy(tempHit);
+    }
+
+    const targets = [{
+      point: tempHit.clone(),
+      normal: baseNormal.clone(),
+      mirrored: false
+    }];
+
+    if (symmetryX && Math.abs(tempHit.x) > radius * 0.12) {
+      targets.push({
+        point: new THREE.Vector3(-tempHit.x, tempHit.y, tempHit.z),
+        normal: new THREE.Vector3(-baseNormal.x, baseNormal.y, baseNormal.z).normalize(),
+        mirrored: true
+      });
+    }
+
+    const smoothRadii = [];
+    if (tool === "smooth") {
+      for (const targetInfo of targets) {
+        let localAverageRadius = 0;
+        let averageWeight = 0;
+        for (let i = 0; i < pos.count; i++) {
+          tempVertex.fromBufferAttribute(pos, i);
+          const d = tempVertex.distanceTo(targetInfo.point);
+          if (d <= radius) {
+            const t = 0.5 + 0.5 * Math.cos((d / radius) * Math.PI);
+            localAverageRadius += tempVertex.length() * t;
+            averageWeight += t;
+          }
+        }
+        smoothRadii.push(averageWeight > 0 ? localAverageRadius / averageWeight : 0);
       }
     }
 
-    for (let i = 0; i < pos.count; i++) {
-      tempVertex.fromBufferAttribute(pos, i);
-      const d = tempVertex.distanceTo(tempHit);
-      if (d > radius) continue;
+    for (let ti = 0; ti < targets.length; ti++) {
+      const targetInfo = targets[ti];
+      const targetPoint = targetInfo.point;
+      const targetNormal = targetInfo.normal;
 
-      const falloff = 0.5 + 0.5 * Math.cos((d / radius) * Math.PI);
+      let localGrabDelta = grabDelta ? grabDelta.clone() : null;
+      if (localGrabDelta && targetInfo.mirrored) localGrabDelta.x *= -1;
 
-      if (tool === "push") {
-        tempNormal.fromBufferAttribute(normalAttr, i).normalize();
-        tempVertex.addScaledVector(tempNormal, strength * falloff);
-      }
+      for (let i = 0; i < pos.count; i++) {
+        tempVertex.fromBufferAttribute(pos, i);
+        const d = tempVertex.distanceTo(targetPoint);
+        if (d > radius) continue;
 
-      if (tool === "press") {
-        tempVertex.addScaledVector(hitNormal, -strength * falloff);
-      }
+        const falloff = 0.5 + 0.5 * Math.cos((d / radius) * Math.PI);
 
-      if (tool === "carve") {
-        tempVertex.addScaledVector(hitNormal, -strength * 1.8 * falloff);
-      }
-
-      if (tool === "smooth") {
-        const currentRadius = tempVertex.length();
-        if (currentRadius > 0 && averageWeight > 0) {
-          const target = tempVertex.clone().normalize().multiplyScalar(localAverageRadius);
-          tempVertex.lerp(target, Math.min(0.8, strength * 4) * falloff);
+        if (tool === "push") {
+          tempNormal.fromBufferAttribute(normalAttr, i).normalize();
+          tempVertex.addScaledVector(tempNormal, strength * falloff);
         }
+
+        if (tool === "press") {
+          tempVertex.addScaledVector(targetNormal, -strength * falloff);
+        }
+
+        if (tool === "carve") {
+          tempVertex.addScaledVector(targetNormal, -strength * 1.8 * falloff);
+        }
+
+        if (tool === "grab" && localGrabDelta) {
+          tempVertex.addScaledVector(localGrabDelta, Math.min(1.15, 0.55 + strength * 5) * falloff);
+        }
+
+        if (tool === "pinch") {
+          const toward = targetPoint.clone().sub(tempVertex);
+          const normalAmount = toward.dot(targetNormal);
+          toward.addScaledVector(targetNormal, -normalAmount);
+          tempVertex.addScaledVector(toward, Math.min(0.42, strength * 3.2) * falloff);
+        }
+
+        if (tool === "smooth") {
+          const localAverageRadius = smoothRadii[ti];
+          const currentRadius = tempVertex.length();
+          if (currentRadius > 0 && localAverageRadius > 0) {
+            const smoothTarget = tempVertex.clone().normalize().multiplyScalar(localAverageRadius);
+            tempVertex.lerp(smoothTarget, Math.min(0.8, strength * 4) * falloff);
+          }
+        }
+
+        if (tool === "flatten") {
+          tempDir.subVectors(tempVertex, targetPoint);
+          const amount = tempDir.dot(targetNormal);
+          tempVertex.addScaledVector(targetNormal, -amount * Math.min(0.85, strength * 5) * falloff);
+        }
+
+        const maxDist = 4.2;
+        const minDist = 0.45;
+        const len = tempVertex.length();
+
+        if (len > maxDist) tempVertex.multiplyScalar(maxDist / len);
+        if (len < minDist) tempVertex.multiplyScalar(minDist / Math.max(0.001, len));
+
+        pos.setXYZ(i, tempVertex.x, tempVertex.y, tempVertex.z);
       }
-
-      if (tool === "flatten") {
-        tempDir.subVectors(tempVertex, tempHit);
-        const amount = tempDir.dot(hitNormal);
-        tempVertex.addScaledVector(hitNormal, -amount * Math.min(0.85, strength * 5) * falloff);
-      }
-
-      const maxDist = 3.05;
-      const minDist = 0.75;
-      const len = tempVertex.length();
-
-      if (len > maxDist) {
-        tempVertex.multiplyScalar(maxDist / len);
-      }
-
-      if (len < minDist) {
-        tempVertex.multiplyScalar(minDist / Math.max(0.001, len));
-      }
-
-      pos.setXYZ(i, tempVertex.x, tempVertex.y, tempVertex.z);
     }
 
     pos.needsUpdate = true;
@@ -816,6 +1089,7 @@
 
     if (sculpting) {
       pushUndo();
+      lastGrabLocal = null;
       const hit = getHit(event);
       alignBrushRing(hit);
       applySculpt(hit);
@@ -853,8 +1127,10 @@
   });
 
   renderer.domElement.addEventListener("pointerup", event => {
+    if (sculpting) strokeCount++;
     isPointerDown = false;
     sculpting = false;
+    lastGrabLocal = null;
 
     try {
       renderer.domElement.releasePointerCapture(event.pointerId);
@@ -866,6 +1142,7 @@
   renderer.domElement.addEventListener("pointercancel", () => {
     isPointerDown = false;
     sculpting = false;
+    lastGrabLocal = null;
     saveLocal();
   });
 
@@ -901,6 +1178,10 @@
       material: currentMaterialName,
       radius: brushRadius,
       strength: brushStrength,
+      symmetryX,
+      challengeName,
+      challengeHint,
+      strokeCount,
       positions: Array.from(sculptMesh.geometry.attributes.position.array)
     };
   }
@@ -937,14 +1218,20 @@
     if (typeof data.radius === "number") {
       brushRadius = data.radius;
       radiusSlider.value = brushRadius;
-      radiusValue.textContent = brushRadius.toFixed(2);
+      radiusValue.textContent = radiusLabel(brushRadius);
     }
 
     if (typeof data.strength === "number") {
       brushStrength = data.strength;
       strengthSlider.value = brushStrength;
-      strengthValue.textContent = brushStrength.toFixed(2);
+      strengthValue.textContent = strengthLabel(brushStrength);
     }
+
+    if (typeof data.symmetryX === "boolean") setSymmetry(data.symmetryX);
+    if (typeof data.challengeName === "string" && data.challengeName) challengeName = data.challengeName;
+    if (typeof data.challengeHint === "string" && data.challengeHint) challengeHint = data.challengeHint;
+    if (Number.isFinite(data.strokeCount)) strokeCount = Math.max(0, Number(data.strokeCount));
+    updateCounter();
 
     if (save) saveLocal();
   }
@@ -959,6 +1246,8 @@
   }
 
   loadLocal();
+  document.getElementById("materialHint").textContent = materialHints[currentMaterialName] || materialHints.clay;
+  updateCounter();
 
   document.getElementById("resetBtn").onclick = () => {
     if (!confirm("지금 만든 조각을 지우고 새 덩어리로 시작할까요?")) return;
@@ -967,6 +1256,9 @@
 
     sculptMesh.geometry.dispose();
     sculptMesh.geometry = makeSculptGeometry();
+    redoStack.length = 0;
+    strokeCount = 0;
+    lastGrabLocal = null;
     updateCounter();
     saveLocal();
   };
@@ -1016,6 +1308,49 @@
     event.target.value = "";
   });
 
+  const startOverlay = document.getElementById("startOverlay");
+  const finishOverlay = document.getElementById("finishOverlay");
+
+  function chooseChallenge(name, hint) {
+    challengeName = name || "자유 작품";
+    challengeHint = hint || "마음껏 만들어봐요.";
+    if (challengeName === "고양이 얼굴") setSymmetry(true);
+    updateCounter();
+    startOverlay.classList.remove("show");
+    saveLocal();
+  }
+
+  document.querySelectorAll("[data-challenge]").forEach(btn => {
+    btn.addEventListener("click", () => chooseChallenge(btn.dataset.challenge, btn.dataset.hint));
+  });
+
+  document.getElementById("continueBtn").onclick = () => {
+    startOverlay.classList.remove("show");
+    updateCounter();
+  };
+
+  document.getElementById("finishBtn").onclick = () => {
+    const finishName = document.getElementById("finishName");
+    finishName.value = challengeName === "자유 작품" ? "" : challengeName;
+    document.getElementById("finishSummary").textContent =
+      `${challengeName} · ${strokeCount}번 손질해서 완성했어요!`;
+    finishOverlay.classList.add("show");
+    setTimeout(() => finishName.focus(), 30);
+  };
+
+  document.getElementById("finishContinueBtn").onclick = () => {
+    finishOverlay.classList.remove("show");
+  };
+
+  document.getElementById("finishPhotoBtn").onclick = () => {
+    const name = document.getElementById("finishName").value.trim();
+    if (name) challengeName = name;
+    updateCounter();
+    saveLocal();
+    document.getElementById("savePngBtn").click();
+    finishOverlay.classList.remove("show");
+  };
+
   window.addEventListener("keydown", event => {
     const key = event.key.toLowerCase();
 
@@ -1025,7 +1360,11 @@
     if (key === "4") setTool("carve");
     if (key === "5") setTool("smooth");
     if (key === "6") setTool("flatten");
-    if (key === "z" && (event.ctrlKey || event.metaKey)) undo();
+    if (key === "7") setTool("grab");
+    if (key === "8") setTool("pinch");
+    if (key === "z" && (event.ctrlKey || event.metaKey) && !event.shiftKey) undo();
+    if ((key === "z" && (event.ctrlKey || event.metaKey) && event.shiftKey) ||
+        (key === "y" && (event.ctrlKey || event.metaKey))) redo();
 
     if (key === "r") {
       yaw += 0.35;
