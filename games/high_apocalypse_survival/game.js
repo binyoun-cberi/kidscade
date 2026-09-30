@@ -411,7 +411,7 @@ function genericRole(label='',url=''){
 }
 function repairAchromaticModel(o,url=''){
  const p=genericPalette(url);let slot=0;
- o.traverse(n=>{if(!n.isMesh)return;const src=Array.isArray(n.material)?n.material:[n.material];const next=src.map(m=>{const q=m?.clone?.()||new THREE.MeshStandardMaterial(),hsl={h:0,s:0,l:0};q.color?.getHSL(hsl);const blank=!q.map&&q.color&&hsl.s<.075&&(hsl.l>.18||url.includes('/people/'));if(blank){const role=genericRole((n.name||'')+' '+(m?.name||''),url),fallback=['body','trim','metal','wood'][slot++%4],hex=p[role]??p[fallback]??0x7d827d;q.color.setHex(hex);q.roughness=role==='glass'?.3:role==='metal'?.55:.82;q.metalness=role==='metal'?.22:0;if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}}return q});n.material=Array.isArray(n.material)?next:next[0]});
+ o.traverse(n=>{if(!n.isMesh)return;const src=Array.isArray(n.material)?n.material:[n.material];const next=src.map(m=>{const q=m?.clone?.()||new THREE.MeshStandardMaterial(),hsl={h:0,s:0,l:0};q.color?.getHSL(hsl);const blank=!q.map&&q.color&&hsl.s<.075;if(blank){const role=genericRole((n.name||'')+' '+(m?.name||''),url),fallback=['body','trim','metal','wood'][slot++%4],hex=p[role]??p[fallback]??0x7d827d;q.color.setHex(hex);q.roughness=role==='glass'?.3:role==='metal'?.55:.82;q.metalness=role==='metal'?.22:0;if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}}return q});n.material=Array.isArray(n.material)?next:next[0]});
  return o
 }
 function clonePrepared(base,url){const o=base.clone(true);repairAchromaticModel(o,url);return o}
@@ -468,7 +468,11 @@ function tutorialSignal(type,value=1){
  else if(s===5&&type==='drink')tutorialNext('drink')
 }
 function updateTutorial(){
- if(!tutorialActive())return;const s=game.tutorial.step||0;if(s===2&&player.root.position.distanceTo(new THREE.Vector3(RIVER_X-6.3,terrainHeight(RIVER_X-6.3,5),5))<10)tutorialNext('river')
+ if(!tutorialActive())return;const s=game.tutorial.step||0;
+ if(s===2&&(game.flags.water||player.root.position.distanceTo(new THREE.Vector3(RIVER_X-6.3,terrainHeight(RIVER_X-6.3,5),5))<10))tutorialNext('river');
+ else if(s===3&&game.flags.water)tutorialNext('water');
+ else if(s===4&&game.flags.boil)tutorialNext('boil');
+ else if(s===5&&game.flags.drink)tutorialNext('drink')
 }
 function skipTutorial(){if(!game)return;game.tutorial={...(game.tutorial||{}),done:true,step:TUTORIAL.length};save();renderTutorial();toast('튜토리얼을 건너뛰었습니다. TAB에서 지도와 생존 도감을 언제든 확인할 수 있습니다.')}
 function bindInput(){
