@@ -93,6 +93,8 @@ const MANUAL_RULES = [
 ];
 
 
+// Do not flag real Korean words that sound like a different inflected verb.
+const PHONETIC_EXCLUSIONS=new Set(['바다','자바','저버']);
 const PHONETIC_WORDS=[
  '먹어','먹어요','먹었어','먹었어요','받아','받아요','받았어','받았어요',
  '찾아','찾아요','찾았어','찾았어요','맞아','맞아요','맞았어','맞았어요',
@@ -214,7 +216,7 @@ function buildSpellRules(){
     spokenMap.get(b).add(g);
   });
   spokenMap.forEach((corrects,b)=>{
-    if(corrects.size===1)add(b,[...corrects][0],'소리 나는 대로 쓰지 않고 원래 낱말의 형태를 살려 써요.');
+    if(corrects.size===1&&!PHONETIC_EXCLUSIONS.has(b))add(b,[...corrects][0],'소리 나는 대로 쓰지 않고 원래 낱말의 형태를 살려 써요.');
   });
   (window.KIDSCADE_SPELLING_EXTRA||[]).forEach(q=>{
     const cq=String(q.c||'').match(/‘([^’]+)’/);
