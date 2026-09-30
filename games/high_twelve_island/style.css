@@ -50,3 +50,17 @@
 .resident-row-text strong{font-size:12px}
 .resident-row-text small{font-size:10px;color:#b5d7d0;white-space:normal;line-height:1.4}
 @media(max-width:380px){.tab{font-size:11px;padding:9px 1px}.panel{padding:12px}}
+
+/* v4: 서로 다른 법률의 지속적인 효과와 미해결 약속을 가시화한다. */
+.policy-notice{display:flex;flex-wrap:wrap;gap:6px;padding:2px 12px 12px}
+.issue-chip{font-size:10px;line-height:1.45;border:1px solid #557680;background:#234b52;color:#d9e9db;border-radius:9px;padding:6px 8px}
+.issue-chip.alert{border-color:#b59b69;background:#574e3d;color:#ffe9b8}
+.consequence-board{border-radius:12px;background:#203f47;border:1px solid #51747a;padding:12px;margin:11px 0 17px}
+.consequence-board>strong{display:block;color:#f2deaf;font-size:12px;margin-bottom:9px}
+.consequence-board>small{display:block;color:#b9d2cc;font-size:11px}
+.decision-line{padding:7px 0;border-top:1px solid #365961;color:#e2eee2;line-height:1.6;font-size:11px}
+.decision-line small{display:block;color:#a7c5be;font-size:10px}
+.pledge-line{font-size:11px;border:1px solid #ab9261;border-radius:7px;background:#4e4a39;color:#ffe5ae;padding:7px;margin-bottom:7px}
+.law-impact{padding:8px 10px;margin:8px 0 0 25px;border-left:3px solid #e3ba72;color:#f1e5c5;background:#2a4547;font-size:11px;line-height:1.65}
+.vote-people{display:block;color:#c5d6c5;font-size:10px;margin-top:5px;line-height:1.4}
+@media(max-width:380px){.policy-notice{gap:4px;padding:2px 8px 9px}.issue-chip{font-size:10px;padding:5px 6px}}
