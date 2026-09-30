@@ -12,10 +12,16 @@ test('catalog covers point directly to real gate images', () => {
 
   for (const game of gamesWithCovers) {
     const cover = String(game.cover || '').split(/[?#]/, 1)[0];
-    assert.match(cover, /^assets\/gate-image\/.+\.(?:png|jpe?g|webp)$/i, `invalid cover path: ${game.id} -> ${game.cover}`);
+    assert.match(cover, /^assets\/gate-image\/.+\.(?:png|jpe?g|webp|svg)$/i, `invalid cover path: ${game.id} -> ${game.cover}`);
     const file = path.join(ROOT, cover);
     assert.equal(fs.existsSync(file), true, `missing cover image: ${game.id} -> ${cover}`);
     assert.equal(fs.statSync(file).isFile(), true, `cover is not a file: ${game.id} -> ${cover}`);
+    if (/\.svg$/i.test(cover)) {
+      const svg = fs.readFileSync(file, 'utf8');
+      assert.match(svg, /^\s*<svg\b/i, `SVG cover must have an SVG root: ${cover}`);
+      assert.doesNotMatch(svg, /<\s*(?:script|foreignObject)\b|\bon[a-z]+\s*=/i, `SVG cover contains active content: ${cover}`);
+      assert.doesNotMatch(svg, /(?:href|xlink:href)\s*=\s*["'](?:https?:|javascript:|data:)/i, `SVG cover must not load remote or inline active resources: ${cover}`);
+    }
   }
 });
 
