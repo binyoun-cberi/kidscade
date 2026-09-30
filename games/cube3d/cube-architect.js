@@ -1928,38 +1928,47 @@ function createRabbit(x,z){
   const body=new THREE.Mesh(new THREE.BoxGeometry(.62,.42,.42),fur),head=new THREE.Mesh(new THREE.BoxGeometry(.34,.34,.34),fur);
   body.position.y=.28;head.position.set(0,.42,-.36);
   const e1=new THREE.Mesh(new THREE.BoxGeometry(.1,.38,.1),pink),e2=e1.clone();e1.position.set(-.1,.72,-.37);e2.position.set(.1,.72,-.37);
-  g.add(body,head,e1,e2);g.position.set(x,getHighestSolidY(x,z,8)+1,z);g.userData={kind:'rabbit',dir:Math.random()*Math.PI,speed:.45+.25*Math.random(),turn:1+Math.random()*3};scene.add(g);return g;
+  g.add(body,head,e1,e2);g.position.set(x,getHighestSolidY(x,z,8)+1,z);g.userData={kind:'rabbit',homeX:x,homeZ:z,dir:Math.random()*Math.PI,speed:.45+.25*Math.random(),turn:1+Math.random()*3};scene.add(g);return g;
 }
 function createBird(x,z,index){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(.42,.25,.5),critterMaterial(index%2?0x5f87b8:0xb46f57));
   const wingMat=critterMaterial(index%2?0xdbe8f5:0xe9c39e),w1=new THREE.Mesh(new THREE.BoxGeometry(.55,.06,.28),wingMat),w2=w1.clone();
-  w1.position.x=-.42;w2.position.x=.42;g.add(body,w1,w2);g.position.set(x,6+Math.random()*3,z);g.userData={kind:'bird',angle:Math.random()*Math.PI*2,radius:4+Math.random()*5,speed:.24+.14*Math.random(),wing1:w1,wing2:w2,centerX:x,centerZ:z};scene.add(g);return g;
+  w1.position.x=-.42;w2.position.x=.42;g.add(body,w1,w2);g.position.set(x,getHighestSolidY(x,z)+5+Math.random()*2,z);g.userData={baseY:g.position.y,kind:'bird',angle:Math.random()*Math.PI*2,radius:4+Math.random()*5,speed:.24+.14*Math.random(),wing1:w1,wing2:w2,centerX:x,centerZ:z};scene.add(g);return g;
 }
 function createFirefly(x,z,index){
   const g=new THREE.Group(),m=new THREE.Mesh(new THREE.SphereGeometry(.08,7,6),critterMaterial(0xffe761,0xffd938));g.add(m);
-  const light=new THREE.PointLight(0xffdf55,.48,2.6,2);g.add(light);g.position.set(x,2+Math.random()*2,z);g.userData={kind:'firefly',phase:index*.9+Math.random()*3};scene.add(g);return g;
+  const light=new THREE.PointLight(0xffdf55,.48,2.6,2);g.add(light);g.position.set(x,getHighestSolidY(x,z)+1.8+Math.random()*2,z);g.userData={baseY:g.position.y,kind:'firefly',phase:index*.9+Math.random()*3};scene.add(g);return g;
 }
 function spawnCritters(){
   critters.forEach(c=>scene.remove(c));critters=[];
-  [[-7,-7],[-10,4],[7,10],[11,-5]].forEach(p=>critters.push(createRabbit(p[0],p[1])));
-  [[-6,2],[7,-8],[3,11]].forEach((p,i)=>critters.push(createBird(p[0],p[1],i)));
+  [[-7,-7],[-10,4],[7,10],[11,-5],[-28,-12],[-35,-34],[-3,-39],[7,36],[29,-24]]
+    .forEach(p=>critters.push(createRabbit(p[0],p[1])));
+  [[-6,2],[7,-8],[3,11],[-26,-7],[30,-26],[4,36]]
+    .forEach((p,i)=>critters.push(createBird(p[0],p[1],i)));
   for(let i=0;i<7;i++)critters.push(createFirefly(-9+i*3,-2+(i%3)*4,i));
+  for(let i=0;i<5;i++)critters.push(createFirefly(1+i*2,34+(i%3)*2,i+8));
 }
 function updateCritters(dt,t){
   critterClock+=dt;
   for(const c of critters){
+    if(Math.hypot(c.position.x-camera.position.x,c.position.z-camera.position.z)>38)continue;
     const u=c.userData;
     if(u.kind==='rabbit'){
       u.turn-=dt;if(u.turn<=0){u.turn=1.4+Math.random()*3.2;u.dir+=(Math.random()-.5)*2.2}
       if(weather==='storm')u.speed=.28;
       const nx=c.position.x+Math.sin(u.dir)*u.speed*dt,nz=c.position.z+Math.cos(u.dir)*u.speed*dt;
-      if(Math.abs(nx)>14||Math.abs(nz)>14||terrainHeight(Math.round(nx),Math.round(nz))<0){u.dir+=Math.PI*.7;continue}
-      c.position.x=nx;c.position.z=nz;c.position.y=getHighestSolidY(nx,nz,8)+1;c.rotation.y=u.dir+Math.PI;
+      if(Math.abs(nx-u.homeX)>7||Math.abs(nz-u.homeZ)>7||
+        !inWorld(Math.round(nx),0,Math.round(nz))||
+        terrainHeight(Math.round(nx),Math.round(nz))<0){
+        u.dir+=Math.PI*.7;continue;
+      }
+      c.position.x=nx;c.position.z=nz;
+      c.position.y=getHighestSolidY(nx,nz)+1;c.rotation.y=u.dir+Math.PI;
     }else if(u.kind==='bird'){
       u.angle+=dt*u.speed*(weather==='storm'?.6:1);c.position.x=u.centerX+Math.sin(u.angle)*u.radius;c.position.z=u.centerZ+Math.cos(u.angle)*u.radius;
-      c.position.y=6.5+Math.sin(t*.0015+u.angle)*1.2+(weather==='rain'?-1:0);c.rotation.y=u.angle;const flap=Math.sin(t*.014)*.35;u.wing1.rotation.z=flap;u.wing2.rotation.z=-flap;
+      c.position.y=u.baseY+Math.sin(t*.0015+u.angle)*1.2+(weather==='rain'?-1:0);c.rotation.y=u.angle;const flap=Math.sin(t*.014)*.35;u.wing1.rotation.z=flap;u.wing2.rotation.z=-flap;
     }else if(u.kind==='firefly'){
-      c.position.y=2.2+Math.sin(t*.002+u.phase)*.65;c.position.x+=Math.sin(t*.001+u.phase)*dt*.12;c.position.z+=Math.cos(t*.0012+u.phase)*dt*.12;
+      c.position.y=u.baseY+Math.sin(t*.002+u.phase)*.65;c.position.x+=Math.sin(t*.001+u.phase)*dt*.12;c.position.z+=Math.cos(t*.0012+u.phase)*dt*.12;
     }
   }
 }
