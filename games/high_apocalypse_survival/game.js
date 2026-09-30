@@ -836,24 +836,34 @@ function updateWorldLabels(){
  if(!game)return;for(const o of groups.dynamic.children){if(!o.userData?.worldLabel)continue;const d=o.position.distanceTo(player.root.position),range=o.userData.labelRange||22;o.visible=d<range;if(o.visible){const a=clamp((range-d)/6,0,1);o.material.opacity=.28+.72*a}}
 }
 function nearestPlaced(id){return placed.find(p=>p.userData.interactable?.building===id)||null}
-function residentActivity(id){
- const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';const hour=(game.time||720)/60,work=hour>=8&&hour<18;if(!work)return hour>=18?'휴식':'아침 준비';if(!r.job)return'역할 대기';
- if(r.job==='technician')return nearestPlaced('workbench')?'작업대 점검':'전력 장비 점검';
- if(r.job==='gatherer')return nearestPlaced('farm')?'텃밭 돌보기':'장작·채집물 정리';
- if(r.job==='medic')return nearestPlaced('shelter')?'쉼터 건강 확인':'의료 물품 정리';
- return'공동체 작업'
+function residentSchedule(id){
+ const r=game?.residents?.[id];if(!r?.rescued||!r.job)return null;let h=(game.time||720)/60;if(h<6.5)h+=24;const list=JOB_SCHEDULES[r.job]||[];return list.find(([,a,b])=>h>=a&&h<b)||list[list.length-1]||null
 }
-function residentTarget(id){
- const def=RESIDENTS[id],r=game?.residents?.[id],hour=(game.time||720)/60,work=hour>=8&&hour<18;if(!def)return CAMP;
- if(!work||!r?.job)return def.camp.clone();
- let p=null;
+function residentActivity(id){
+ const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';if(!r.job)return'역할 대기';return residentSchedule(id)?.[0]||'공동체 작업'
+}
+function residentWorkTarget(id){
+ const r=game?.residents?.[id];let p=null;if(!r?.job)return null;
  if(r.job==='technician')p=nearestPlaced('workbench')?.position;
  else if(r.job==='gatherer')p=nearestPlaced('farm')?.position;
  else if(r.job==='medic')p=nearestPlaced('shelter')?.position;
  if(p){const off=id==='taeho'?new THREE.Vector3(1.5,0,.8):id==='mira'?new THREE.Vector3(-1.3,0,1):new THREE.Vector3(1.1,0,-1.1);return p.clone().add(off)}
- if(r.job==='gatherer')return new THREE.Vector3(-10,0,8);
- if(r.job==='technician')return new THREE.Vector3(4,0,9);
- return new THREE.Vector3(0,0,11.5)
+ if(r.job==='gatherer')return new THREE.Vector3(-10,0,8);if(r.job==='technician')return new THREE.Vector3(4,0,9);return new THREE.Vector3(0,0,11.5)
+}
+function residentTarget(id){
+ const def=RESIDENTS[id],slot=residentSchedule(id);if(!def)return CAMP;if(!slot)return def.camp.clone();const mode=slot[3];
+ if(mode==='home')return def.camp.clone();
+ if(mode==='meal'){const fire=nearestPlaced('campfire')?.position;return fire?fire.clone().add(new THREE.Vector3(id==='mira'?-1.2:1.1,0,id==='junseo'?1.2:-.7)):CAMP.clone()}
+ return residentWorkTarget(id)||def.camp.clone()
+}
+function settlementMetrics(){
+ const population=1+residentCount(),shelters=game.buildings.filter(b=>b.id==='shelter').length,farms=game.buildings.filter(b=>b.id==='farm').length,food=(game.inv.food||0)+(game.inv.potato||0)+(game.inv.cookedPotato||0),water=game.inv.cleanWater||0;
+ const housing=clamp((1+shelters*2)/Math.max(1,population),0,1),foodDays=food/Math.max(1,population),waterDays=water/Math.max(1,population),supply=clamp(Math.min(foodDays/2,waterDays/1.5),0,1);
+ const powered=!!game.flags.power,margin=powered?Math.max(0,game.powerKw-powerUse()):0,power=powered?clamp(.45+margin/1.8,0,1):0;
+ const purifierBuilt=hasBuilding('purifier'),coolerBuilt=hasBuilding('cooler'),waterSystem=purifierBuilt?(devicePowered('purifier')?1:.45):0,cold=coolerBuilt?(devicePowered('cooler')?1:.4):0,foodProd=farms?clamp(.5+farms*.25,0,1):0;
+ const health=clamp((game.communityHealth||70)/100,0,1),morale=clamp((game.morale||70)/100,0,1),resilience=Math.round(100*(housing*.18+supply*.23+power*.14+waterSystem*.13+cold*.08+foodProd*.09+health*.1+morale*.05));
+ const pressure=Math.round(100*clamp((1-housing)*.34+(1-supply)*.46+(powered?0:.2),0,1)),label=resilience>=72?'안정':resilience>=48?'긴장':'위기';
+ return {population,shelters,farms,food,water,housing,supply,power,waterSystem,cold,foodProd,resilience,pressure,label}
 }
 function updateNpc(dt){
  if(!game)return;let i=0;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
