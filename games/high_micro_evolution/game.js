@@ -21,27 +21,27 @@ const BIOMES = [
 ];
 
 const PARTS = {
-  predatorMouth:{id:'predatorMouth',cat:'먹이',icon:'🦷',name:'포식 입',cost:5,external:true,max:2,desc:'작은 생물을 물어뜯어 에너지와 DNA를 얻어요.',science:'포식자는 다른 생물을 먹어 유기물에서 에너지를 얻습니다. 입의 위치가 진행 방향과 잘 맞을수록 사냥하기 편해집니다.'},
-  filter:{id:'filter',cat:'먹이',icon:'🪭',name:'여과기관',cost:5,external:true,max:3,desc:'주변의 작은 플랑크톤을 자동으로 걸러 먹어요.',science:'여과섭식은 물을 통과시키며 작은 먹이 입자를 걸러 먹는 방식입니다.'},
-  chloroplast:{id:'chloroplast',cat:'먹이',icon:'🌱',name:'광합성체',cost:7,external:false,max:4,desc:'빛이 강한 곳에서 천천히 에너지를 만들어요.',science:'광합성 생물은 빛 에너지를 이용해 유기물을 만듭니다. 빛이 부족하면 같은 기관도 큰 도움이 되지 않습니다.'},
-  parasite:{id:'parasite',cat:'먹이',icon:'🪝',name:'기생 흡착기',cost:7,external:true,max:2,desc:'큰 생물에 붙어 에너지를 조금씩 빼앗아요.',science:'기생은 숙주에게서 자원이나 영양을 얻는 생활 방식입니다. 숙주와 가까이 붙어 있어야 합니다.'},
+  predatorMouth:{id:'predatorMouth',cat:'먹이',icon:'🦷',name:'포식 입',cost:10,external:true,max:2,desc:'작은 생물을 물어뜯어 에너지와 DNA를 얻어요.',science:'포식자는 다른 생물을 먹어 유기물에서 에너지를 얻습니다. 입의 위치가 진행 방향과 잘 맞을수록 사냥하기 편해집니다.'},
+  filter:{id:'filter',cat:'먹이',icon:'🪭',name:'여과기관',cost:10,external:true,max:3,desc:'주변의 작은 플랑크톤을 자동으로 걸러 먹어요.',science:'여과섭식은 물을 통과시키며 작은 먹이 입자를 걸러 먹는 방식입니다.'},
+  chloroplast:{id:'chloroplast',cat:'먹이',icon:'🌱',name:'광합성체',cost:14,external:false,max:4,desc:'빛이 강한 곳에서 천천히 에너지를 만들어요.',science:'광합성 생물은 빛 에너지를 이용해 유기물을 만듭니다. 빛이 부족하면 같은 기관도 큰 도움이 되지 않습니다.'},
+  parasite:{id:'parasite',cat:'먹이',icon:'🪝',name:'기생 흡착기',cost:14,external:true,max:2,desc:'큰 생물에 붙어 에너지를 조금씩 빼앗아요.',science:'기생은 숙주에게서 자원이나 영양을 얻는 생활 방식입니다. 숙주와 가까이 붙어 있어야 합니다.'},
 
-  flagellum:{id:'flagellum',cat:'이동',icon:'〰️',name:'편모',cost:4,external:true,max:6,desc:'긴 채찍 모양 기관. 뒤쪽에 달수록 직진 추진력이 커져요.',science:'편모는 회전하거나 휘어지며 세포를 추진합니다. 이 게임에서는 배치 방향이 추진 효율에 영향을 줍니다.'},
-  cilia:{id:'cilia',cat:'이동',icon:'≋',name:'섬모',cost:4,external:true,max:6,desc:'짧은 털을 움직여 방향 전환과 미세 이동을 도와요.',science:'섬모는 짧은 털 모양 구조가 함께 움직여 이동과 물질 운반을 돕습니다.'},
-  pseudopod:{id:'pseudopod',cat:'이동',icon:'🫧',name:'위족',cost:6,external:true,max:3,desc:'몸을 늘여 움직이고 가까운 먹이를 감싸 먹기 쉬워져요.',science:'아메바처럼 세포질을 한쪽으로 내밀어 만드는 돌기를 위족이라고 합니다. 이동과 포식에 함께 쓰일 수 있습니다.'},
-  anchor:{id:'anchor',cat:'이동',icon:'⚓',name:'부착기관',cost:5,external:true,max:2,desc:'물살에 밀리는 힘을 줄이고 잠깐 고정할 수 있어요.',science:'많은 미생물은 표면에 달라붙어 물살에 휩쓸리는 것을 줄입니다.'},
+  flagellum:{id:'flagellum',cat:'이동',icon:'〰️',name:'편모',cost:8,external:true,max:6,desc:'긴 채찍 모양 기관. 뒤쪽에 달수록 직진 추진력이 커져요.',science:'편모는 회전하거나 휘어지며 세포를 추진합니다. 이 게임에서는 배치 방향이 추진 효율에 영향을 줍니다.'},
+  cilia:{id:'cilia',cat:'이동',icon:'≋',name:'섬모',cost:9,external:true,max:6,desc:'짧은 털을 움직여 방향 전환과 미세 이동을 도와요.',science:'섬모는 짧은 털 모양 구조가 함께 움직여 이동과 물질 운반을 돕습니다.'},
+  pseudopod:{id:'pseudopod',cat:'이동',icon:'🫧',name:'위족',cost:12,external:true,max:3,desc:'몸을 늘여 움직이고 가까운 먹이를 감싸 먹기 쉬워져요.',science:'아메바처럼 세포질을 한쪽으로 내밀어 만드는 돌기를 위족이라고 합니다. 이동과 포식에 함께 쓰일 수 있습니다.'},
+  anchor:{id:'anchor',cat:'이동',icon:'⚓',name:'부착기관',cost:10,external:true,max:2,desc:'물살에 밀리는 힘을 줄이고 잠깐 고정할 수 있어요.',science:'많은 미생물은 표면에 달라붙어 물살에 휩쓸리는 것을 줄입니다.'},
 
-  eyespot:{id:'eyespot',cat:'감각',icon:'👁️',name:'광수용기',cost:4,external:true,max:4,desc:'1개만 있어도 현재 밝기를 느끼고, 2개부터는 밝기 차이를 비교해 더 밝은 방향까지 알아내요.',science:'광수용 구조는 빛의 세기에 반응할 수 있습니다. 여러 수용기가 서로 다른 방향의 빛을 비교하면 빛이 강한 쪽을 더 잘 구별할 수 있습니다.'},
-  chemo:{id:'chemo',cat:'감각',icon:'👃',name:'화학수용체',cost:4,external:true,max:4,desc:'먹이와 생물이 남기는 화학 신호를 멀리서 찾아요.',science:'세포도 주변 화학물질의 농도 차이를 감지해 먹이나 위험 쪽으로 이동하거나 피할 수 있습니다.'},
-  mechano:{id:'mechano',cat:'감각',icon:'👂',name:'기계수용체',cost:5,external:true,max:4,desc:'물의 진동으로 가까워지는 큰 생물을 미리 느껴요.',science:'기계수용은 압력·진동·늘어남 같은 물리적 변화를 감지하는 방식입니다. 귀의 먼 조상 기능과 연결해 생각할 수 있습니다.'},
-  tactile:{id:'tactile',cat:'감각',icon:'✋',name:'촉각섬모',cost:3,external:true,max:6,desc:'아주 가까운 물체와 물살 변화를 빠르게 알아차려요.',science:'세포막과 섬모는 접촉이나 흐름 변화에 반응할 수 있습니다. 가까운 위험을 알아차리는 데 유리합니다.'},
-  thermo:{id:'thermo',cat:'감각',icon:'🌡️',name:'온도수용체',cost:4,external:false,max:2,desc:'위험한 온도 구역에서 경고를 받고 적응력이 좋아져요.',science:'생물은 온도 변화에 따라 단백질 작동과 대사 속도가 달라집니다. 온도를 감지하고 반응하는 것은 중요한 생존 전략입니다.'},
-  electro:{id:'electro',cat:'감각',icon:'⚡',name:'전기 감각',cost:7,external:true,max:2,desc:'가까운 생물의 미세한 전기 변화를 감지해요.',science:'일부 동물은 전기장을 감지합니다. 게임에서는 진화가 많이 진행된 감각 계열의 특수 기관으로 단순화했습니다.'},
+  eyespot:{id:'eyespot',cat:'감각',icon:'👁️',name:'광수용기',cost:8,external:true,max:4,desc:'1개만 있어도 현재 밝기를 느끼고, 2개부터는 밝기 차이를 비교해 더 밝은 방향까지 알아내요.',science:'광수용 구조는 빛의 세기에 반응할 수 있습니다. 여러 수용기가 서로 다른 방향의 빛을 비교하면 빛이 강한 쪽을 더 잘 구별할 수 있습니다.'},
+  chemo:{id:'chemo',cat:'감각',icon:'👃',name:'화학수용체',cost:8,external:true,max:4,desc:'먹이와 생물이 남기는 화학 신호를 멀리서 찾아요.',science:'세포도 주변 화학물질의 농도 차이를 감지해 먹이나 위험 쪽으로 이동하거나 피할 수 있습니다.'},
+  mechano:{id:'mechano',cat:'감각',icon:'👂',name:'기계수용체',cost:10,external:true,max:4,desc:'물의 진동으로 가까워지는 큰 생물을 미리 느껴요.',science:'기계수용은 압력·진동·늘어남 같은 물리적 변화를 감지하는 방식입니다. 귀의 먼 조상 기능과 연결해 생각할 수 있습니다.'},
+  tactile:{id:'tactile',cat:'감각',icon:'✋',name:'촉각섬모',cost:7,external:true,max:6,desc:'아주 가까운 물체와 물살 변화를 빠르게 알아차려요.',science:'세포막과 섬모는 접촉이나 흐름 변화에 반응할 수 있습니다. 가까운 위험을 알아차리는 데 유리합니다.'},
+  thermo:{id:'thermo',cat:'감각',icon:'🌡️',name:'온도수용체',cost:8,external:false,max:2,desc:'위험한 온도 구역에서 경고를 받고 적응력이 좋아져요.',science:'생물은 온도 변화에 따라 단백질 작동과 대사 속도가 달라집니다. 온도를 감지하고 반응하는 것은 중요한 생존 전략입니다.'},
+  electro:{id:'electro',cat:'감각',icon:'⚡',name:'전기 감각',cost:16,external:true,max:2,desc:'가까운 생물의 미세한 전기 변화를 감지해요.',science:'일부 동물은 전기장을 감지합니다. 게임에서는 진화가 많이 진행된 감각 계열의 특수 기관으로 단순화했습니다.'},
 
-  membrane:{id:'membrane',cat:'방어',icon:'🛡️',name:'두꺼운 막',cost:5,external:false,max:4,desc:'공격과 염도 변화에 강해지지만 몸이 조금 무거워져요.',science:'세포막은 물질 출입을 조절합니다. 실제 생물의 세포벽·막 조성 변화처럼 환경에 대한 보호 기능을 게임식으로 단순화했습니다.'},
-  spike:{id:'spike',cat:'방어',icon:'🔺',name:'가시',cost:5,external:true,max:6,desc:'몸에 부딪힌 포식자에게 피해를 주고 접근을 어렵게 해요.',science:'가시와 돌기는 포식자가 삼키거나 접근하기 어렵게 만드는 방어 형질이 될 수 있습니다.'},
-  toxin:{id:'toxin',cat:'방어',icon:'☠️',name:'독소낭',cost:7,external:false,max:3,desc:'특수 행동으로 주변에 독소를 방출할 수 있어요.',science:'미생물도 다른 생물의 성장을 억제하거나 공격하는 화학물질을 만들 수 있습니다.'},
-  camouflage:{id:'camouflage',cat:'방어',icon:'🫥',name:'위장색소',cost:6,external:false,max:3,desc:'가만히 있으면 포식자가 나를 알아채기 어려워져요.',science:'몸의 색이나 투명도는 배경과 비슷해져 발견될 가능성을 낮추는 데 도움이 될 수 있습니다.'}
+  membrane:{id:'membrane',cat:'방어',icon:'🛡️',name:'두꺼운 막',cost:10,external:false,max:4,desc:'공격과 염도 변화에 강해지지만 몸이 조금 무거워져요.',science:'세포막은 물질 출입을 조절합니다. 실제 생물의 세포벽·막 조성 변화처럼 환경에 대한 보호 기능을 게임식으로 단순화했습니다.'},
+  spike:{id:'spike',cat:'방어',icon:'🔺',name:'가시',cost:10,external:true,max:6,desc:'몸에 부딪힌 포식자에게 피해를 주고 접근을 어렵게 해요.',science:'가시와 돌기는 포식자가 삼키거나 접근하기 어렵게 만드는 방어 형질이 될 수 있습니다.'},
+  toxin:{id:'toxin',cat:'방어',icon:'☠️',name:'독소낭',cost:14,external:false,max:3,desc:'특수 행동으로 주변에 독소를 방출할 수 있어요.',science:'미생물도 다른 생물의 성장을 억제하거나 공격하는 화학물질을 만들 수 있습니다.'},
+  camouflage:{id:'camouflage',cat:'방어',icon:'🫥',name:'위장색소',cost:12,external:false,max:3,desc:'가만히 있으면 포식자가 나를 알아채기 어려워져요.',science:'몸의 색이나 투명도는 배경과 비슷해져 발견될 가능성을 낮추는 데 도움이 될 수 있습니다.'}
 };
 
 const CATS = ['먹이','이동','감각','방어'];
@@ -56,7 +56,7 @@ let keys={},pointerTarget=null,joy={active:false,x:0,y:0,pid:null};
 let foods=[],creatures=[],lightPatches=[],biomeProps=[],ripples=[],particles=[];
 let env={...BIOMES[0].env};
 let state = {
-  generation:1,generationClock:0,eventClock:0,dna:6,score:0,survival:0,
+  generation:1,generationClock:0,eventClock:0,dna:4,score:0,survival:0,
   player:null,mission:0,discovered:{},facts:{},started:false,reproductions:0,
   activeEvent:null,activeEventLife:0,editorMode:null
 };
@@ -70,7 +70,7 @@ function freshPlayer(){
     pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0};
 }
 function resetState(){
-  state={generation:1,generationClock:0,eventClock:0,dna:6,score:0,survival:0,player:freshPlayer(),mission:0,discovered:{},facts:{},started:true,reproductions:0,activeEvent:null,activeEventLife:0,editorMode:null};
+  state={generation:1,generationClock:0,eventClock:0,dna:4,score:0,survival:0,player:freshPlayer(),mission:0,discovered:{},facts:{},started:true,reproductions:0,activeEvent:null,activeEventLife:0,editorMode:null};
 }
 function countPart(type,p=state.player){
   return p.slots.filter(x=>x===type).length + Number(p.inside[type]||0);
@@ -249,7 +249,15 @@ function lightSenseData(p=state.player){
   return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
 }
 function reproductionRequirement(){
-  return 12+Math.min(16,(state.generation-1)*2);
+  return 28+Math.min(42,(state.generation-1)*6);
+}
+function partPurchaseCost(part){
+  const owned=countPart(part.id);
+  const duplicateScale=1+owned*.32;
+  return Math.ceil(part.cost*duplicateScale);
+}
+function partRefundValue(part){
+  return Math.max(1,Math.floor(part.cost*.45));
 }
 function reproductionProgress(){
   if(!state.player)return 0;
@@ -328,7 +336,7 @@ function updatePlayer(dt){
     if(!creatures.includes(c)||dist2(p,c)>Math.pow(p.radius+c.r+20,2)){p.attached=null}
     else if(countPart('parasite')){
       const gain=countPart('parasite')*.9*dt;
-      p.energy+=gain;c.health-=gain*.35;state.dna+=gain*.035;state.score+=gain*.25;
+      p.energy+=gain;c.health-=gain*.35;state.dna+=gain*.012;state.score+=gain*.25;
     }
   }
 
@@ -345,7 +353,7 @@ function updatePlayer(dt){
 function consumeFood(index,mult=1,why='mouth'){
   const f=foods[index],p=state.player;
   const base=f.type==='meat'?9:f.type==='nutrient'?6:4;
-  p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.11*mult;state.score+=base*mult;p.feedFlash=.8;
+  p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.04*mult;state.score+=base*mult;p.feedFlash=.8;
   state.discovered.firstFood=1;
   foods.splice(index,1);spawnFood();
   burst(f.x,f.y,f.type==='meat'?'#ff8eb0':'#b9ef78');
@@ -454,7 +462,8 @@ function updateCreatures(dt){
       if(countPart('parasite')&&c.r>p.radius*.9&&!p.attached)p.attached=c;
     }
     if(c.health<=0){
-      state.dna+=2.4;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
+      const huntReward=1.2+clamp((c.r-18)/34,0,1)*.9;
+      state.dna+=huntReward;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
       burst(c.x,c.y,'#ff78a4');
       respawnCreature(c,idx%6);
       state.discovered.firstPrey=1;
@@ -493,7 +502,7 @@ function triggerEvent(){
   refreshEnvBars();
 }
 function advanceGeneration(){
-  state.generation++;state.reproductions++;state.generationClock=0;state.dna+=3;state.score+=75;
+  state.generation++;state.reproductions++;state.generationClock=0;state.dna+=2;state.score+=75;
   const p=state.player;
   p.biomass=0;p.energy=clamp(p.energy-18,62,100);p.health=100;p.radius=30;p.divisionFx=1.5;p.attached=null;
   creatures.forEach((c,i)=>{
@@ -505,15 +514,15 @@ function advanceGeneration(){
   });
   burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
   if(state.generation%2===0)triggerEvent();
-  toast('🧬 '+state.generation+'세대 탄생! 자손의 몸이 바뀌었고 AI 종도 함께 변이했습니다. +DNA 3');
+  toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 큰 진화는 여러 세대에 걸쳐 모아야 합니다.');
   sound('levelup');save();
 }
 function updateMissions(){
   const m=state.mission;
   if(m===0&&canReproduce()){state.mission=1;toast('충분히 성장했어요! 이제 번식 · 진화로 다음 세대를 만들어 보세요.')}
-  else if(m===1&&state.generation>=2){state.mission=2;state.dna+=2;toast('첫 번식 성공! +DNA 2 · 다음 세대에는 감각기관도 시험해 보세요.')}
-  else if(m===2&&(countPart('eyespot')+countPart('chemo')+countPart('mechano')+countPart('tactile'))>0){state.mission=3;state.dna+=2;toast('감각기관 획득! 환경을 읽는 방법이 달라졌어요. +DNA 2')}
-  else if(m===3&&classifyNiche().name!=='초기 미생물'){state.mission=4;state.dna+=4;toast('새 생태적 지위를 만들었어요! +DNA 4')}
+  else if(m===1&&state.generation>=2){state.mission=2;state.dna+=1;toast('첫 번식 성공! DNA +1 · 다음 세대에는 감각기관도 시험해 보세요.')}
+  else if(m===2&&(countPart('eyespot')+countPart('chemo')+countPart('mechano')+countPart('tactile'))>0){state.mission=3;state.dna+=1;toast('감각기관 획득! 환경을 읽는 방법이 달라졌어요. DNA +1')}
+  else if(m===3&&classifyNiche().name!=='초기 미생물'){state.mission=4;state.dna+=2;toast('새 생태적 지위를 만들었어요! DNA +2')}
 }
 function missionText(){
   if(state.mission===0)return ['먹고 성장하기','먹이와 사냥으로 생체량을 모아 번식할 준비를 하세요.'];
@@ -799,7 +808,7 @@ function updateStarterGuide(){
   }else if(!canReproduce()){
     step.textContent='2';title.textContent='먹으면서 성장하세요 · '+grow+'%';
     textEl.textContent='먹이를 계속 먹거나, 나보다 작은 초록 테두리 생물을 앞쪽 입으로 쫓아가세요.';
-    hint.textContent='DNA는 즉시 쓰는 점수가 아니라 번식할 때 새로운 기관을 다는 재료예요.';
+    hint.textContent='DNA는 장기 진화 자원이에요. 한 세대에 다 쓰기보다 여러 세대 동안 모아 큰 기관을 노려도 돼요.';
   }else if(state.generation===1){
     step.textContent='3';title.textContent='번식 준비 완료!';
     textEl.textContent='아래에서 빛나는 “번식 · 진화” 버튼을 눌러 다음 세대의 몸을 설계하세요.';
@@ -887,9 +896,9 @@ function renderEditor(){
   CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;renderEditor()});tabs.appendChild(b)});
   const list=$('partList');list.innerHTML='';
   Object.values(PARTS).filter(p=>p.cat===activeTab).forEach(part=>{
-    const count=countPart(part.id),locked=count>=part.max;
+    const count=countPart(part.id),locked=count>=part.max,cost=partPurchaseCost(part);
     const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+(locked?' locked':'');b.type='button';
-    b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+part.cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+'</small>';
+    b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+(count?' · 같은 기관을 더 달면 DNA 비용이 증가해요.':'')+'</small>';
     b.addEventListener('click',()=>choosePart(part));list.appendChild(b);
   });
   renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();
@@ -897,10 +906,11 @@ function renderEditor(){
 function choosePart(part){
   updateScienceCard(part);
   if(countPart(part.id)>=part.max){toast('이 기관은 더 이상 달 수 없어요.');return}
-  if(state.dna<part.cost){toast('DNA가 부족해요. 먹고 살아남아 DNA를 더 모아 보세요.');return}
-  if(part.external){selectedPart=selectedPart===part.id?null:part.id;$('placementTip').textContent=selectedPart?part.icon+' '+part.name+'을(를) 둘레 슬롯에 배치하세요.':'부품을 선택하면 배치 가능한 위치가 빛나요.';renderEditor()}
+  const cost=partPurchaseCost(part);
+  if(state.dna<cost){toast('DNA가 '+(cost-state.dna).toFixed(1)+' 부족해요. 여러 세대 동안 모으거나 큰 먹이를 노려 보세요.');return}
+  if(part.external){selectedPart=selectedPart===part.id?null:part.id;$('placementTip').textContent=selectedPart?part.icon+' '+part.name+' 배치 · 필요 DNA '+cost:'부품을 선택하면 배치 가능한 위치가 빛나요.';renderEditor()}
   else{
-    state.player.inside[part.id]=(state.player.inside[part.id]||0)+1;state.dna-=part.cost;selectedPart=null;sound('click');renderEditor();toast(part.icon+' '+part.name+' 추가');
+    state.player.inside[part.id]=(state.player.inside[part.id]||0)+1;state.dna-=cost;selectedPart=null;sound('click');renderEditor();toast(part.icon+' '+part.name+' 추가 · DNA -'+cost);
   }
 }
 function renderSlots(){
@@ -915,11 +925,11 @@ function renderSlots(){
 function slotClick(i){
   const old=state.player.slots[i];
   if(selectedPart){
-    const part=PARTS[selectedPart];if(state.dna<part.cost){toast('DNA가 부족해요.');return}
-    if(old){state.dna+=Math.ceil(PARTS[old].cost*.7)}
-    state.player.slots[i]=selectedPart;state.dna-=part.cost;sound('click');selectedPart=null;renderEditor();
+    const part=PARTS[selectedPart],cost=partPurchaseCost(part);if(state.dna<cost){toast('DNA가 부족해요. 필요 '+cost);return}
+    if(old){state.dna+=partRefundValue(PARTS[old])}
+    state.player.slots[i]=selectedPart;state.dna-=cost;sound('click');selectedPart=null;renderEditor();
   }else if(old){
-    state.player.slots[i]=null;state.dna+=Math.ceil(PARTS[old].cost*.7);toast(PARTS[old].name+' 제거 · DNA 일부 회수');renderEditor();
+    const refund=partRefundValue(PARTS[old]);state.player.slots[i]=null;state.dna+=refund;toast(PARTS[old].name+' 제거 · DNA '+refund+' 회수');renderEditor();
   }
 }
 function updateScienceCard(part){
