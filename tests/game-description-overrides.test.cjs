@@ -47,8 +47,10 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(blocks, /CUBE/);
   assert.match(blocks, /설계도 챌린지/);
   assert.match(blocks, /전개도 연구실/);
-  assert.match(blocks, /아키텍트 월드/);
+  assert.match(blocks, /생존 탐험/);
+  assert.match(blocks, /크리에이티브 월드/);
   assert.match(blocks, /three-global\.js/);
+  assert.match(blocks, /cube-architect-world\.js/);
   assert.match(blocks, /cube-architect-landmarks\.js/);
   assert.match(blocks, /cube-architect\.js/);
   assert.doesNotMatch(blocks, /type="module"/);
