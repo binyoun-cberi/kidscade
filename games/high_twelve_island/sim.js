@@ -47,12 +47,106 @@
     ] }
   });
   const LAW_KEYS = Object.keys(LAWS);
+
+  // 주민은 직업이 아니라 개별적인 경험과 관심사로 의견을 갖는다.
+  const FOUNDER_NAMES = ["하나", "태오", "미래", "소라", "준", "다온", "유나", "도윤", "아린", "지후", "나래", "현우"];
+  const NEW_NAMES = ["세아", "윤서", "재민", "가온", "하람", "수아", "시온", "예린", "우진", "단비",
+    "민서", "하린", "서우", "지안", "은호", "채원", "시우", "이든", "유림", "노아",
+    "라온", "수현", "찬", "율", "봄", "서진", "도하", "희수", "이솔", "재이"];
+  const PRIORITIES = ["food", "fairness", "work", "safety", "public"];
+  const PRIORITY_TITLES = { food: "식량과 생활", fairness: "배분과 절차", work: "일과 보상", safety: "안전과 비축", public: "공동시설과 예산" };
+  const SKILLS = ["농사 경험", "목공 경험", "요리 경험", "돌봄 경험", "도구 수리 경험", "낚시 경험", "기록 정리 경험", "항해 경험"];
+  const ORIGINS = [
+    "해변에서 작은 구조 신호를 발견하고 구명보트를 타고 도착했습니다.",
+    "다른 작은 섬에서 뗏목을 만들어 건너왔습니다.",
+    "낚시를 하다 항로를 잃고 해안을 따라 이곳에 도착했습니다.",
+    "먼바다의 폭풍을 피해 작은 배를 타고 섬으로 들어왔습니다.",
+    "가까운 해역의 지나가는 배에서 섬의 모닥불을 발견하고 내려왔습니다.",
+    "먼 해변에서 표류하다 마을 주민들의 구조 신호를 보고 찾아왔습니다."
+  ];
+  function createCitizen(index, source = "founder", week = 0) {
+    const name = source === "founder" ? FOUNDER_NAMES[index] :
+      NEW_NAMES[(index - FOUNDER_NAMES.length) % NEW_NAMES.length];
+    const id = "islander-" + (index + 1);
+    const focus = index < 3 ? ["fairness", "work", "safety"][index] : PRIORITIES[(index * 7 + 1) % PRIORITIES.length];
+    const experience = SKILLS[(index * 3 + 2) % SKILLS.length];
+    const origin = source === "founder" ? "난파된 배에서 다른 생존자들과 함께 이 섬에 도착했습니다." :
+      ORIGINS[(index * 5 + 2) % ORIGINS.length];
+    const appearance = {
+      skin: [3, 5, 2, 4, 1, 6, 3, 5, 2, 7, 4, 1][index % 12],
+      hair: ["brown-1/brown1Woman1.png", "black/blackMan1.png", "blonde/blondeWoman1.png",
+        "red/redMan1.png", "brown-2/brown2Woman1.png", "grey/greyMan1.png"][index % 6],
+      shirt: ["green/greenShirt1.png", "red/redShirt1.png", "blue/blueShirt1.png"][index % 3]
+    };
+    return { id, name, focus, experience, origin, joinedWeek: week, source, appearance };
+  }
+  function ensureCitizens(s) {
+    if (!Array.isArray(s.citizens)) s.citizens = [];
+    s.citizens = s.citizens.filter(p => p && typeof p.name === "string" && p.id);
+    while (s.citizens.length < s.population) {
+      const n = s.citizens.length;
+      const older = createCitizen(n, n < 12 ? "founder" : "arrival", n < 12 ? 0 : s.tick);
+      if (n >= 12) older.origin = "이전 저장 기록에서 이어진 주민입니다. 당시의 합류 사연은 남아 있지 않습니다.";
+      s.citizens.push(older);
+    }
+    if (s.citizens.length > s.population) s.citizens.length = s.population;
+    if (!Array.isArray(s.arrivalLog)) s.arrivalLog = [];
+    if (s.arrivalLog.length > 30) s.arrivalLog = s.arrivalLog.slice(0, 30);
+  }
+  function residentView(s, person) {
+    const food = s.food, trust = s.trust, idle = Math.max(0, s.population - s.jobs.gather - s.jobs.wood);
+    let mood = "안정", thought = "", reason = "";
+    switch (person.focus) {
+      case "food":
+        if (food <= 35) { mood = "걱정"; thought = "다음 주에 먹을 식량이 충분할까요? 우선 먹을거리를 더 모으고 싶어요."; reason = "식량 부족"; }
+        else if (food >= 85) { thought = "식량이 넉넉해졌네요. 일부는 다음 위기에 대비해 남겨 두면 좋겠어요."; reason = "넉넉한 식량"; }
+        else { thought = "지금처럼 꾸준히 수확하면 좋겠어요. 인구가 늘어날 때 필요한 양도 살펴봐요."; reason = "식량 생산과 소비"; }
+        break;
+      case "fairness":
+        if (trust <= 40) { mood = "걱정"; thought = "중요한 결정을 왜 내렸는지 우리에게도 알려 주면 좋겠어요."; reason = "낮은 공동체 신뢰"; }
+        else if (!s.laws.ration) { thought = "먹을 것을 어떻게 나눌지 다 같이 납득할 수 있는 규칙이 필요해요."; reason = "배분 규칙 미제정"; }
+        else if (s.laws.ration === "effort") { thought = "기본 배급은 유지하되 일하기 어려운 사람의 사정도 살펴보면 좋겠어요."; reason = "현재 식량 배급법"; }
+        else if (s.laws.ration === "needs") { thought = "추가 지원이 필요한 사람을 정하는 기준을 모두에게 설명해 주세요."; reason = "현재 식량 배급법"; }
+        else { thought = "모두에게 같은 양을 나누고 있군요. 각자의 사정도 계속 살펴봐야겠어요."; reason = "현재 식량 배급법"; }
+        break;
+      case "work":
+        if (food <= 20) { mood = "걱정"; thought = "일손을 어디에 배치하면 먹을 것을 더 빨리 확보할 수 있을까요?"; reason = "식량 위기"; }
+        else if (idle >= 4) { mood = "걱정"; thought = "일할 사람이 기다리고 있어요. 역할을 함께 정해 보면 좋겠어요."; reason = "배치되지 않은 주민"; }
+        else if (s.laws.labor === "short") { thought = "쉬는 시간이 생긴 만큼 현재 인원으로 필요한 일을 마칠 수 있을지 살펴봐요."; reason = "노동 규칙"; }
+        else if (s.laws.labor === "extra") { thought = "더 일한 사람에게 주기로 한 보상이 제대로 전달되는지 궁금해요."; reason = "노동 규칙"; }
+        else { thought = "일한 만큼 어떤 역할을 맡는지 분명하면 서로 도울 수 있을 것 같아요."; reason = "일과 보상"; }
+        break;
+      case "safety":
+        if (s.stormUntil > s.tick) { mood = "걱정"; thought = "폭풍이 지나갈 때까지 식량과 집을 안전하게 지켜야 해요."; reason = "진행 중인 폭풍"; }
+        else if (food <= 35 || s.wood <= 20) { mood = "걱정"; thought = "비상시에 쓸 자원이 부족해 보여요. 미리 대비했으면 좋겠어요."; reason = "낮은 비축량"; }
+        else if (!s.buildings.store) { thought = "공동 창고가 있으면 식량과 도구를 보관하기 편할 것 같아요."; reason = "창고 미건설"; }
+        else { thought = "창고가 생겼으니 비상 물자가 얼마나 남았는지 정기적으로 확인해요."; reason = "안전과 비축"; }
+        break;
+      default:
+        if (s.stage === 1) { thought = "마을이 커지면 모두 함께 사용할 시설도 필요해지겠죠?"; reason = "공동체 성장"; }
+        else if (s.treasury <= 10) { mood = "걱정"; thought = "마을 운영비가 빠듯하군요. 지금 꼭 필요한 지출부터 의논해요."; reason = "낮은 국고"; }
+        else if (!s.buildings.clinic) { thought = "공동기금이 생겼으니 진료소를 세울지도 논의해 보고 싶어요."; reason = "진료소 미건설"; }
+        else { thought = "공공시설을 오래 운영할 수 있도록 비용과 혜택을 함께 살펴봐요."; reason = "공동시설 운영"; }
+    }
+    if (food <= 12 && person.focus !== "food" && person.focus !== "work") {
+      mood = "걱정";
+      thought = "지금은 먹을 것이 너무 부족해요. 우선 긴급한 식량 문제를 함께 해결하고 싶어요.";
+      reason = "긴급 식량 위기";
+    }
+    return { mood, thought, reason, topic: PRIORITY_TITLES[person.focus] || "공동체" };
+  }
+  function communityPulse(s) {
+    const result = { 걱정: 0, 안정: 0 };
+    for (const citizen of s.citizens || []) result[residentView(s, citizen).mood]++;
+    return result;
+  }
   function initial(seed = 8429) {
     return {
       version: VERSION, seed: seed >>> 0, tick: 0, stage: 1, population: 12,
       food: 65, wood: 40, trust: 65, treasury: 0, foodCap: 100,
       jobs: { gather: 5, wood: 3 }, buildings: { farm: 0, hut: 0, store: 0, clinic: 0, hall: 0 },
       laws: {}, passed: [], eventsSeen: {}, eventsLast: {}, pending: null, cooldown: 0, log: [],
+      citizens: FOUNDER_NAMES.map((_, index) => createCitizen(index)), arrivalLog: [], arrivalNotice: null,
       stormUntil: 0, lastBirth: 0, lastRelief: -99, score: 0
     };
   }
@@ -71,7 +165,8 @@
       d.jobs.gather = Math.min(d.jobs.gather, d.population);
       d.jobs.wood = Math.max(0, d.population - d.jobs.gather);
     }
-    d.pending = null; // 중단된 사건은 저장 직후 이어서 재발생시키지 않고 다음 틱에 재평가.
+    ensureCitizens(d);
+    d.pending = d.pending === "new_resident" && d.arrivalNotice ? d.pending : null;
     return d;
   }
   function random(s) {
@@ -155,6 +250,9 @@
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
+    { id: "new_resident", priority: 120, when: () => false, title: "새로운 주민이 도착했습니다", speaker: "하나", body: "새로운 주민이 합류했습니다.", options: [
+      { label: "새 주민의 이야기를 확인했어요.", note: "주민 탭에서 이 사람의 관심사와 생각을 확인할 수 있어요." }
+    ] },
     { id: "first_rule", priority: 78, once: true, when: s => s.tick >= 3 && !s.laws.ration, title: "누가 식량을 얼마나 받을까요?", speaker: "하나", body: "모두가 먹을 식량을 모았습니다. 이제 함께 지킬 배분 규칙을 정해야 합니다.", options: [
       { label: "모두에게 같은 양을 나눠요.", law: ["ration", "equal"], note: "균등 배급 규칙을 제정합니다." },
       { label: "기본량에 일한 사람의 몫을 더해요.", law: ["ration", "effort"], note: "기본 배급과 노동 보상을 함께 적용합니다." },
@@ -258,6 +356,7 @@
     if (choice.jobs && unused(s) > 0) s.jobs[choice.jobs] += Math.min(3, unused(s));
     if (choice.jobs === "gather" && unused(s) === 0 && s.jobs.wood > 1) { s.jobs.wood--; s.jobs.gather++; }
     if (choice.storm) s.stormUntil = s.tick + choice.storm;
+    if (event.id === "new_resident") s.arrivalNotice = null;
     s.eventsSeen[event.id] = true;
     s.eventsLast[event.id] = s.tick;
     s.pending = null;
@@ -281,14 +380,22 @@
     if (s.treasury < 1 && s.stage >= 2 && (s.buildings.clinic || s.buildings.hall)) s.trust = clamp(s.trust - .24);
     if (s.buildings.clinic && s.treasury >= 1) s.trust = clamp(s.trust + .06);
     if (s.population < capacity(s) && s.food >= 53 && s.trust >= 42 && s.tick - s.lastBirth >= 7) {
+      const newcomer = createCitizen(s.citizens.length, "arrival", s.tick);
+      s.citizens.push(newcomer);
       s.population++;
       s.lastBirth = s.tick;
-      record(s, "새로운 주민이 합류했습니다. 현재 " + s.population + "명입니다.");
+      s.arrivalNotice = { citizenId: newcomer.id, name: newcomer.name, origin: newcomer.origin, joinedWeek: s.tick };
+      s.arrivalLog.unshift({ ...s.arrivalNotice });
+      if (s.arrivalLog.length > 30) s.arrivalLog.length = 30;
+      s.pending = "new_resident";
+      record(s, newcomer.name + " 합류 — " + newcomer.origin + " 현재 " + s.population + "명.");
     }
     if (s.population > 2 && s.food < 1 && s.tick % 10 === 0) {
       s.population--;
+      const leaving = s.citizens.pop();
+      if (s.jobs.gather > s.population) s.jobs.gather = s.population;
       if (s.jobs.gather + s.jobs.wood > s.population) s.jobs.wood = Math.max(0, s.population - s.jobs.gather);
-      record(s, "오랜 식량 부족으로 주민 한 명이 떠났습니다.");
+      record(s, "오랜 식량 부족으로 " + (leaving?.name || "주민 한 명") + "이(가) 섬을 떠났습니다.");
     }
     if (s.stage === 1 && s.population >= 18 && s.passed.length >= 1 && s.buildings.farm >= 1) {
       s.stage = 2;
@@ -309,5 +416,5 @@
     record(s, "긴급 채집으로 식량 18을 확보했습니다.");
     return true;
   }
-  return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp });
+  return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES });
 });
