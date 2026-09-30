@@ -1262,6 +1262,7 @@ function initFree(){
   );
   freePhysicsY=camera.position.y;rebuildAllWorldMeshes();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
+  $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
   setupWeather();spawnCritters();updateFreeMission();
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
@@ -1295,14 +1296,19 @@ function advanceSurvival(){
     sfx('good');
   }
   $('actionXray').classList.toggle('hidden',survivalStage<3);
-  updateFreeMission();
+  configureMobileMode('free');updateFreeMission();
 }
 function putOnHotbar(type){
   if(gameFreeMode==='survival'){
     if(type==='hand'){selectedHotbarSlot=0;selectedType='hand';buildHotbar();return}
-    const vacant=hotbarTypes.findIndex((v,i)=>i>0&&!v);
-    if(vacant>=0)hotbarTypes[vacant]=type;
-    else hotbarTypes[selectedHotbarSlot]=type;
+    const existing=hotbarTypes.indexOf(type);
+    if(existing>=1)selectedHotbarSlot=existing;
+    else{
+      const vacant=hotbarTypes.findIndex((item,i)=>i>0&&!item);
+      if(vacant>=0)selectedHotbarSlot=vacant;
+      else if(selectedHotbarSlot===0)selectedHotbarSlot=1;
+      hotbarTypes[selectedHotbarSlot]=type;
+    }
   }else hotbarTypes[selectedHotbarSlot]=type;
   selectedType=type;buildHotbar();updateFreeMission();
 }
@@ -1579,7 +1585,7 @@ function setupShapeWorkbench(){
   $('shapeToHotbar').onclick=()=>{
     const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value].map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,4));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
-    currentCuboidSpec={dims,faceColors};hotbarTypes[selectedHotbarSlot]='cuboid';selectedType='cuboid';buildHotbar();toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');
+    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');
   };
   $('facePaintColor').oninput=e=>{facePaintColor=e.target.value};
 }
@@ -1697,7 +1703,8 @@ function runFurnace(recipe){
   const survival=gameFreeMode==='survival';
   if(survival){
     if(bagCount(recipe.input)<1){toast(blockDef(recipe.input).name+'이(가) 필요해요.');return}
-    if(bagCount('log')<1&&bagCount('charcoal')<1){
+    if(bagCount('charcoal')<1&&
+      bagCount('log')<(recipe.input==='log'?2:1)){
       toast('불을 피울 원목이나 숯이 필요해요.');return;
     }
     consumeBag(recipe.input,1);
@@ -2057,14 +2064,14 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('challenge-mobile',active&&target==='challenge');
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
-  $('mobileFly').classList.toggle('hidden',target!=='free');
+  $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   $('mobileCheck').classList.toggle('hidden',target!=='challenge');
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
   $('mobileNext').classList.toggle('hidden',target!=='challenge');
-  $('mobileCopy').classList.toggle('hidden',target!=='free');
-  $('mobileWeather').classList.toggle('hidden',target!=='free');
-  $('mobilePaint').classList.toggle('hidden',target!=='free');
-  $('mobileLens').classList.toggle('hidden',target!=='free');
+  $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
+  $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
+  $('mobilePaint').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
+  $('mobileLens').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
   $('lockNotice').classList.toggle('hidden',active||target!=='free'||inventoryOpen||furnaceOpen);
   if(target==='free')refreshMobileFly();
@@ -2141,7 +2148,7 @@ function initMobileControls(){
   tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
   tap('mobileLens',()=>{if(mode==='free')toggleXray()});
   tap('mobileFly',()=>{
-    if(mode!=='free')return;
+    if(mode!=='free'||gameFreeMode==='survival')return;
     freeFlying=!freeFlying;freeVelocityY=0;refreshMobileFly();updateFreeMission();
     toast(freeFlying?'비행 모드 · 상승/하강 버튼 사용':'걷기 모드 · 점프 버튼 사용');
   });
@@ -2260,11 +2267,11 @@ document.addEventListener('keydown',e=>{
   if(/^Digit[1-9]$/.test(e.code)){
     selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot];buildHotbar();updateFreeMission();
   }
-  if(e.code==='KeyF'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
-  if(e.code==='KeyR')pickTargetBlock();
-  if(e.code==='KeyP')paintLookedFace();
-  if(e.code==='KeyX')toggleXray();
-  if(e.code==='KeyT')cycleWeather();
+  if(e.code==='KeyF'&&gameFreeMode==='creative'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
+  if(e.code==='KeyR'&&gameFreeMode==='creative')pickTargetBlock();
+  if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
+  if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
+  if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
   if(e.code==='KeyQ'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
