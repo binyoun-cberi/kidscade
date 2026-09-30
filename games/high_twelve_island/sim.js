@@ -191,11 +191,12 @@
     d.food = clamp(d.food, 0, 200);
     d.wood = clamp(d.wood, 0, 999);
     d.woodCap = Math.max(130 + d.buildings.store * 70, s.woodCap || Math.ceil(d.wood / 10) * 10);
+    if (s.nextWinterAt == null) d.nextWinterAt = Math.max(16, d.tick + 10);
     d.trust = clamp(d.trust);
     d.treasury = clamp(d.treasury, 0, 9999);
     d.jobs = { gather: Math.max(0, Math.floor(d.jobs.gather || 0)), wood: Math.max(0, Math.floor(d.jobs.wood || 0)) };
     ensureCitizens(d);
-    d.citizens.forEach((p,i) => { if (p.isChild == null) p.isChild = i === 10 || i === 11; });
+    d.citizens.forEach(p => { if (p.isChild == null) p.isChild = p.source === "founder" && ["나래", "현우"].includes(p.name); });
     const workers = d.jobs.gather + d.jobs.wood;
     if (workers > adultCapacity(d)) {
       d.jobs.gather = Math.min(d.jobs.gather, adultCapacity(d));
@@ -249,7 +250,7 @@
     const illnessFactor = s.health < 45 ? .75 : s.health < 65 ? .88 : 1;
     const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
     const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor;
-    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick ? Math.min(2, childCount(s)) * 1.25 : 0);
+    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
     const cut = s.jobs.wood * .48 * production + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
     const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) * (winterActive(s) ? 1.13 : 1) - (s.exclusionUntil > s.tick ? 1.25 : 0);
@@ -837,6 +838,15 @@
       s.childWellbeing = clamp(s.childWellbeing - 2.3);
       s.education = clamp(s.education - 2.8);
       s.trust = clamp(s.trust - .48);
+      if (s.childWellbeing <= 25) {
+        s.childWorkUntil = 0;
+        s.childWorkWeeks = 0;
+        s.childLaborReviewed = true;
+        s.health = clamp(s.health - 5);
+        s.trust = clamp(s.trust - 6);
+        rightsHistory(s, "어린이 위험 노동", "건강 악화로 중단", "어린이의 건강이 악화되어 작업을 중단했습니다. 추가 생산이 사라지고 회복 지원이 필요합니다.");
+        record(s, "어린이의 건강이 악화되어 위험 작업이 중단되었습니다. 돌봄과 학습 회복이 필요합니다.");
+      }
     } else if (s.food > 30) s.education = clamp(s.education + (winterActive(s) ? .14 : .38));
     if (s.forcedLaborUntil > s.tick) {
       s.forcedLaborWeeks++;
