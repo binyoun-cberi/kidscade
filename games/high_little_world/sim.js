@@ -155,13 +155,13 @@ export class WorldSim{
     for(const s of this.settlements){
       s.age+=.5;if(s.blessed>0)s.blessed--;
       const r=2+s.level,area=this.cellsInRadius(s.x,s.z,r),water=area.some(c=>c.sea||c.water>.13);
-      const foodPotential=area.reduce((sum,c)=>sum+c.vegetation*.5+c.herb*.035+(c.biome==='wetland' ? .16 : 0),0);
+      const foodPotential=area.reduce((sum,c)=>sum+c.vegetation*.46+c.fertility*.14+c.herb*.035+(c.biome==='wetland' ? .18 : 0),0);
       const woodPotential=area.reduce((sum,c)=>sum+(c.biome==='forest'?c.vegetation*.36:c.vegetation*.08),0);
-      s.food=Math.max(-12,s.food+foodPotential*.045+s.blessed*.4-s.pop*.018);
+      s.food=Math.max(-12,s.food+(water ? .12 : 0)+foodPotential*.06+s.blessed*.4-s.pop*.012);
       s.wood=Math.max(0,s.wood+woodPotential*.016);
       s.knowledge+=s.pop*.004+(s.blessed>0 ? .12 : 0);
       const good=water&&s.food>Math.max(2,s.pop*.08);
-      if(good)s.pop+=Math.max(.08,s.pop*(.008+s.level*.0015));else s.pop-=Math.max(.06,s.pop*.006);
+      if(good)s.pop+=Math.max(.11,s.pop*(.01+s.level*.0018));else s.pop-=Math.max(.05,s.pop*.005);
       if(s.food>8){const harvest=Math.min(s.food-8,s.pop*.035);s.food-=harvest}
       const old=s.level;s.level=s.pop>=70?3:s.pop>=28?2:s.pop>=12?1:0;
       if(s.level>old)this.log('🏘️ '+s.name+'이 '+this.settlementStage(s)+' 단계로 발전했습니다.');
