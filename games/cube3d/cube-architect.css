@@ -176,3 +176,39 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
 .challenge-course-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 #challengeCourseLabel{font-size:10px;font-weight:950;color:#526078}
 .challenge-course-row small{font-size:8px;color:#8a93a3;text-align:right}
+
+/* Touch-first controls for iPhone/iPad and pointer-lock-free browsers. */
+#mobileControls{position:absolute;inset:0;z-index:19;pointer-events:none;touch-action:none}
+#mobileControls button,#mobileJoystick{pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+#mobileViewHint{position:absolute;left:50%;bottom:115px;transform:translateX(-50%);padding:5px 10px;border-radius:999px;background:rgba(20,31,52,.67);color:white;font-size:10px;font-weight:800;white-space:nowrap;pointer-events:none}
+.mobile-button{border:1.5px solid rgba(255,255,255,.55);border-radius:14px;background:rgba(29,42,68,.84);color:#fff;font-size:13px;font-weight:950;box-shadow:0 3px 12px rgba(12,20,39,.24);min-width:48px;min-height:44px;cursor:pointer}
+.mobile-button:active,.mobile-button.pressed{transform:scale(.95);background:rgba(77,96,166,.96)}
+.mobile-button small{display:block;font-size:9px;font-weight:700}
+.mobile-top-actions{position:absolute;top:77px;right:12px;display:flex;gap:5px;max-width:60vw;flex-wrap:wrap;justify-content:flex-end}
+.mobile-joystick{position:absolute;left:19px;bottom:20px;width:116px;height:116px;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:rgba(28,42,69,.47);box-shadow:0 0 0 9px rgba(19,30,50,.1),inset 0 0 20px rgba(255,255,255,.08)}
+.mobile-joystick-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.88);border-radius:50%;background:rgba(135,169,234,.78);box-shadow:0 4px 12px rgba(17,27,44,.25)}
+.mobile-build-actions{position:absolute;bottom:18px;right:16px;display:flex;gap:8px;align-items:flex-end}
+.mobile-height-actions,.mobile-block-actions{display:flex;flex-direction:column;gap:8px}
+.mobile-height-actions .mobile-button{width:68px;height:48px}
+.mobile-block-actions .mobile-button{width:67px;height:55px}
+.mobile-break{background:rgba(189,69,89,.9)}.mobile-place{background:rgba(69,105,228,.93)}
+#mobileControls .hidden{display:none!important}
+#mobileControls.challenge-mobile #mobileJoystick,#mobileControls.challenge-mobile .mobile-build-actions{bottom:20px}
+#mobileControls.free-mobile #mobileViewHint{bottom:98px}
+@media(max-width:600px){
+  #mobileControls.challenge-mobile #mobileJoystick,#mobileControls.challenge-mobile .mobile-build-actions{bottom:calc(44vh + 12px)}
+  #mobileControls.challenge-mobile #mobileViewHint{bottom:calc(44vh + 123px)}
+  #mobileControls.challenge-mobile .mobile-top-actions{top:68px;right:8px}
+  #mobileControls .mobile-top-actions .mobile-button{min-width:40px;min-height:39px;font-size:11px;padding:5px}
+  #mobileJoystick{width:104px;height:104px;left:12px}
+  .mobile-build-actions{right:10px;gap:5px}
+  .mobile-height-actions .mobile-button{width:58px;height:44px}
+  .mobile-block-actions .mobile-button{width:57px;height:49px}
+  #freeHint,#challengeFlyTip{display:none}
+}
+@media(max-height:620px){
+  .mobile-top-actions{top:65px}
+  #mobileJoystick{width:92px;height:92px;bottom:10px}
+  .mobile-build-actions{bottom:10px}
+  #mobileViewHint{display:none}
+}
