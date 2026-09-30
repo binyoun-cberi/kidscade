@@ -202,13 +202,21 @@ function cleanToken(s){return String(s||'').replace(/^[^가-힣A-Za-z0-9]+|[^가
 
 function buildSpellRules(){
   const map=new Map();
-  const add=(bad,good,explain)=>{
+  const add=(bad,good,explain,match='fragment')=>{
     bad=cleanToken(bad);good=cleanToken(good);
     if(!bad||!good||bad===good||bad.length<2||bad.length>18||good.length>22)return;
     if(!/[가-힣]/.test(bad)||!/[가-힣]/.test(good))return;
-    if(!map.has(bad))map.set(bad,{bad,good,explain:explain||'표기를 한 번 살펴보세요.'});
+    if(!map.has(bad))map.set(bad,{bad,good,explain:explain||'표기를 한 번 살펴보세요.',match});
   };
-  MANUAL_RULES.forEach(([b,g,e])=>{if(b!==g&&!CONTEXTUAL_WORDS.has(b))add(b,g,e)});
+  // 초등학생이 자주 쓰는 표기 오류는 단어 경계를 확인하여 과도한 교정을 막습니다.
+  (window.KIDSCADE_WRITING_RULES||[]).forEach(r=>{
+    if(r&&r.bad&&r.good)add(r.bad,r.good,r.explain,r.match||'word');
+  });
+  MANUAL_RULES.forEach(([b,g,e])=>{
+    if(b===g||CONTEXTUAL_WORDS.has(b))return;
+    const wholeOnly=new Set(['할수','갈수','될수','먹을수']);
+    add(b,g,e,wholeOnly.has(b)?'word':'fragment');
+  });
   SPOKEN_ERRORS.forEach(([b,g,e])=>add(b,g,e));
   const spokenMap=new Map();
   PHONETIC_WORDS.forEach(g=>{
@@ -248,6 +256,13 @@ function inspectSpelling(text,ignore=ignoredChecks){
   for(const rule of spellRules){
     let pos=0;
     while((pos=text.indexOf(rule.bad,pos))>=0){
+      if(rule.match==='word'){
+        const isLetter=c=>c!==undefined&&/[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9]/.test(c);
+        if(isLetter(text[pos-1])||isLetter(text[pos+rule.bad.length])){
+          pos+=Math.max(1,rule.bad.length);
+          continue;
+        }
+      }
       const overlapping=Array.from({length:rule.bad.length},(_,i)=>pos+i).some(i=>occupied.has(i));
       if(!overlapping){
         matches.push({...rule,type:'error',count:1});
