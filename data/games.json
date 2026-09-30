@@ -2485,11 +2485,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=17",
+      "href": "games/cube3d/index.html?v=18",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "겨냥도·전개도·직육면체 건축과 8개 바이옴의 생존 탐험! 나무 채집부터 거점 짓기, 날씨 대비, 고유 자원·제작·설계도 발견까지 단계별로 즐겨요.",
+      "description": "겨냥도에서 만든 타지마할·사그라다 파밀리아·에펠탑 등 6개 랜드마크가 생존 월드의 폐허로 등장! 탐험해 복원 설계도를 완성하고 새로운 건축 기술을 해금해요.",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
