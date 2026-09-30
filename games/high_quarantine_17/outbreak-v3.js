@@ -314,7 +314,8 @@ function setupCombat(kind,payload){
  }else if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer'];
   const xs=[760,900,1030,1160,1280,1380];
-  xs.forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,vy:0,onGround:true,jumpCd:0,bite:0,bitten:false,turnTimer:0})});
+  const survivorCount=Math.max(0,Math.min(xs.length,payload&&payload.survivorCount!=null?Number(payload.survivorCount):xs.length));
+  xs.slice(0,survivorCount).forEach(function(x,i){survivors.push({x:x*dpr,y:groundY,r:18*dpr,sprite:survivorSprites[i],alive:true,speed:(84+(i%3)*5)*dpr,dir:i%2?1:-1,vy:0,onGround:true,jumpCd:0,bite:0,bitten:false,turnTimer:0})});
   const threatCount=Math.max(1,Math.min(6,Number(payload&&payload.threatCount)||1));
   for(let i=0;i<threatCount;i++)spawnZombie((520+i*105)*dpr,groundY,2,126*dpr*(.96+i*.015),i===0?currentIntruder:'캠프 감염자',1.6+i*.18);
   document.getElementById('q17CombatTitle').textContent='⚠ 생존자 캠프 침입 · 감염자 추격';
