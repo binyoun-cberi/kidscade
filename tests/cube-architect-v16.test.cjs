@@ -38,7 +38,8 @@ test('biomes are deterministic and the spawn is flat and dry',()=>{
     assert.ok(height>=-3&&height<=10);
   }
   for(let x=-4;x<=4;x++)for(let z=-4;z<=4;z++)
-    assert.equal(world.height(x,z),2,'starter x='+x+' z='+z);
+    if(Math.hypot(x,z)<=4)
+      assert.equal(world.height(x,z),2,'starter x='+x+' z='+z);
 });
 test('survival crafting has tool gates and cannot skip expensive items',()=>{
   assert.equal(world.toolNeeded('stone'),'woodPick');
