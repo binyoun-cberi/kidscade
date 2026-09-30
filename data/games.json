@@ -2488,7 +2488,7 @@
       "category": "korean",
       "age": "high",
       "icon": "📖",
-      "description": "국어 실력 바탕이 되는 단어 퀴즈!",
+      "description": "뜻·문맥·초성으로 익히는 적응형 어휘 탐험!",
       "scoreKey": "speedQuizBestScore",
       "rankKey": "speedQuizRank",
       "subject": "korean",
