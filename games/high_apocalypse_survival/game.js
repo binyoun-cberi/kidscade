@@ -866,15 +866,26 @@ function settlementMetrics(){
  const pressure=Math.round(100*clamp((1-housing)*.34+(1-supply)*.46+(powered?0:.2),0,1)),label=resilience>=72?'안정':resilience>=48?'긴장':'위기';
  return {population,shelters,farms,food,water,housing,supply,power,waterSystem,cold,foodProd,resilience,pressure,label}
 }
+function residentTryStep(n,target,id,dt){
+ const dx=target.x-n.position.x,dz=target.z-n.position.z,dist=Math.hypot(dx,dz);if(dist<=.12)return false;
+ const speed=dist>3?1.25:.78,step=Math.min(dist,speed*dt),ux=dx/dist,uz=dz/dist,side=n.userData.detourSide||1;
+ const candidates=[[ux,uz],[uz*side,-ux*side],[-uz*side,ux*side]];
+ let moved=false;
+ for(const [vx,vz] of candidates){const nx=n.position.x+vx*step,nz=n.position.z+vz*step;if(blockedAt(nx,nz,.26)||riverBlocks(nx,nz,.26))continue;n.position.x=nx;n.position.z=nz;n.rotation.y=Math.atan2(vx,vz);moved=true;break}
+ const newDist=Math.hypot(target.x-n.position.x,target.z-n.position.z),progress=(n.userData.prevDist??dist)-newDist;n.userData.prevDist=newDist;
+ if(moved&&progress>.006)n.userData.stuck=0;else n.userData.stuck=(n.userData.stuck||0)+dt;
+ if((n.userData.stuck||0)>2.1){n.userData.detourSide=-(n.userData.detourSide||1);n.userData.stuck=0;n.userData.prevDist=Infinity}
+ return moved
+}
 function updateNpc(dt){
- if(!game)return;let i=0;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
-  const target=residentTarget(id),dx=target.x-n.position.x,dz=target.z-n.position.z,dist=Math.hypot(dx,dz),speed=dist>3?1.15:.72,step=Math.min(dist,speed*dt);
-  if(dist>.12){n.position.x+=dx/dist*step;n.position.z+=dz/dist*step;n.rotation.y=Math.atan2(dx,dz);n.userData.walk=(n.userData.walk||0)+.13;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
-  else{n.userData.idle=(n.userData.idle||0)+.03;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
+ if(!game)return;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
+  const target=residentTarget(id),moved=residentTryStep(n,target,id,dt);
+  if(moved){n.userData.walk=(n.userData.walk||0)+dt*8.4;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
+  else{n.userData.idle=(n.userData.idle||0)+dt*2;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
   const status=residentActivity(id),labelNode=n.userData.statusLabel;if(labelNode&&labelNode.userData.labelText!==RESIDENTS[id].name+' · '+status)drawLabel(labelNode,RESIDENTS[id].name+' · '+status);
-  if(labelNode)labelNode.visible=player.root.position.distanceTo(n.position)<15;i++
- }}
-
+  if(labelNode)labelNode.visible=player.root.position.distanceTo(n.position)<15
+ }
+}
 function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
  if(tutorialActive()){const s=game.tutorial.step||0;if(s===2||s===3)return{name:'튜토리얼 · 강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(s===4)return{name:'튜토리얼 · 비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(s===5)return{name:'튜토리얼 · 깨끗한 물',pos:CAMP}}
