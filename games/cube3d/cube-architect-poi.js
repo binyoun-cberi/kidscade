@@ -70,6 +70,8 @@ function compress(plan,target=17){
 }
 const POIS=CONFIG.map(config=>{
   const compact=compress(plans[config.missionIndex]);
+  compact.blocks=compact.blocks.map(v=>({...v,type:materialFor(v.role,config.biome)}));
+  compact.fullShell=compact.fullShell.map(v=>({...v,type:materialFor(v.role,config.biome)}));
   const [w,h,d]=compact.size,[cx,cz]=config.center;
   return {...config,sourceName:plans[config.missionIndex].name,
     tip:plans[config.missionIndex].tip,compact,
