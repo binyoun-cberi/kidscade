@@ -1048,8 +1048,8 @@ function makeWorldMesh(x,y,z,data){
   }else if(type==='torch'){
     root=new THREE.Mesh(torchGeo,materialFor('torch'));root.position.set(x,y+.34,z);
     const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;root.add(light);
-  }else if(type==='sapling'){
-    root=new THREE.Mesh(saplingGeo,materialFor('sapling'));root.position.set(x,y+.41,z);
+  }else if(type==='sapling'||type==='reed'){
+    root=new THREE.Mesh(saplingGeo,materialFor(type));root.position.set(x,y+.41,z);
   }else if(type==='fire'){
     root=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
     root.position.set(x,y+.42,z);const light=new THREE.PointLight(0xff692c,1.4,6,2);light.position.y=.35;root.add(light);
@@ -1079,7 +1079,9 @@ function makeWorldMesh(x,y,z,data){
   root.receiveShadow=true;scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);return root;
 }
 function refreshBlockMesh(x,y,z){
-  const key=worldKey(x,y,z);removeWorldMesh(key);
+  const key=worldKey(x,y,z);
+  if(!inRenderRange(x,z)){if(worldMeshMap.has(key))removeWorldMesh(key);return}
+  removeWorldMesh(key);
   const data=getBlock(x,y,z);if(data&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
 }
 function refreshAround(x,y,z){
@@ -1117,21 +1119,48 @@ function removeWorldBlockData(x,y,z,record=true){
   }
   setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);refreshAround(x,y,z);return true;
 }
-function rebuildAllWorldMeshes(){
-  Array.from(worldMeshMap.keys()).forEach(removeWorldMesh);
-  worldMeshMap=new Map();worldInteractables=[];freeMeshes=[];
-  for(const [key,data] of worldData){const [x,y,z]=parseWorldKey(key);if(visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data)}
+function inRenderRange(x,z){
+  return Math.abs(x-streamCenterX)<=WORLD_VIEW_RADIUS&&Math.abs(z-streamCenterZ)<=WORLD_VIEW_RADIUS;
 }
-function growTree(x,baseY,z,record){
-  const height=3+(hash2(x+11,z-7)>.62?1:0);
+function streamWorldMeshes(force=false){
+  const cx=Math.round(camera.position.x),cz=Math.round(camera.position.z);
+  if(!force&&Math.abs(cx-streamCenterX)<7&&Math.abs(cz-streamCenterZ)<7)return;
+  streamCenterX=cx;streamCenterZ=cz;
+  const stale=new Set();
+  for(const [key,mesh] of worldMeshMap){
+    const [x,,z]=parseWorldKey(key);
+    if(!inRenderRange(x,z)){scene.remove(mesh);worldMeshMap.delete(key);stale.add(key)}
+  }
+  if(stale.size){
+    worldInteractables=worldInteractables.filter(m=>!stale.has(m.userData.worldKey));
+    freeMeshes=freeMeshes.filter(m=>!stale.has(m.userData.worldKey));
+  }
+  for(const [key,data] of worldData){
+    const [x,y,z]=parseWorldKey(key);
+    if(inRenderRange(x,z)&&!worldMeshMap.has(key)&&visibleAt(x,y,z,data))
+      makeWorldMesh(x,y,z,data);
+  }
+}
+function rebuildAllWorldMeshes(){
+  // The world data covers 128×128 cells, but only nearby blocks have 3D meshes.
+  for(const mesh of worldMeshMap.values())scene.remove(mesh);
+  worldMeshMap=new Map();worldInteractables=[];freeMeshes=[];
+  streamCenterX=Infinity;streamCenterZ=Infinity;streamWorldMeshes(true);
+}
+function growTree(x,baseY,z,record,kind='forest'){
+  const conifer=kind==='pine'||kind==='snow';
+  const height=(conifer?5:3)+(hash2(x+11,z-7)>.62?1:0);
+  const bark=conifer?'pineLog':'log',foliage=conifer?'pineLeaves':'leaves';
   for(let i=0;i<height;i++){
-    const d={type:'log',natural:!record};if(record)setWorldBlock(x,baseY+i,z,d,true);else setRawBlock(x,baseY+i,z,d);
+    const d={type:bark,natural:!record};if(record)setWorldBlock(x,baseY+i,z,d,true);else setRawBlock(x,baseY+i,z,d);
   }
   const top=baseY+height-1;
-  for(let dy=-1;dy<=1;dy++)for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
-    if(Math.abs(dx)+Math.abs(dz)+(dy===1?1:0)>3)continue;
-    const px=x+dx,py=top+dy+1,pz=z+dz;if(!inWorld(px,py,pz)||getBlock(px,py,pz))continue;
-    const d={type:'leaves',natural:!record};if(record)setWorldBlock(px,py,pz,d,true);else setRawBlock(px,py,pz,d);
+  for(let dy=-2;dy<=1;dy++)for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    const range=conifer?(dy===-2?2:dy===-1?1:0):dy===-2?0:dy===1?1:2;
+    if(Math.abs(dx)+Math.abs(dz)>range+1)continue;
+    const px=x+dx,py=top+dy+1,pz=z+dz;
+    if(!inWorld(px,py,pz)||getBlock(px,py,pz))continue;
+    const d={type:foliage,natural:!record};if(record)setWorldBlock(px,py,pz,d,true);else setRawBlock(px,py,pz,d);
   }
 }
 function buildFreeWorld(){
