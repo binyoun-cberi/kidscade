@@ -122,8 +122,8 @@ const JOBS={
 };
 const JOB_SCHEDULES={
  technician:[['아침 준비',6.5,8,'home'],['전력 장비 점검',8,12,'work'],['점심과 휴식',12,13,'meal'],['작업대 정비',13,18,'work'],['저녁 귀가',18,22,'home'],['수면',22,30,'home']],
- gatherer:[['아침 준비',6.5,8,'home'],['텃밭·채집 작업',8,12,'work'],['점심과 휴식',12,13,'meal'],['수확물 정리',13,18,'work'],['저녁 귀가',18,22,'home'],['수면',22,30,'home']],
- medic:[['아침 건강 확인',6.5,8,'work'],['쉼터 진료',8,12,'work'],['점심과 휴식',12,13,'meal'],['의료 물품 정리',13,18,'work'],['저녁 귀가',18,22,'home'],['수면',22,30,'home']]
+ gatherer:[['아침 준비',6.5,8,'home'],['텃밭·채집 작업',8,12,'work'],['점심과 휴식',12,13,'meal'],['숲 채집·운반',13,18,'work'],['저녁 귀가',18,22,'home'],['수면',22,30,'home']],
+ medic:[['아침 건강 확인',6.5,8,'work'],['쉼터 진료',8,12,'work'],['점심과 휴식',12,13,'meal'],['진료소 물품 회수',13,18,'work'],['저녁 귀가',18,22,'home'],['수면',22,30,'home']]
 };
 const KNOWLEDGE=[
  ['waterRisk','과학 · 물질','맑아 보여도 안전한 물은 아니다','자연의 물에는 눈에 보이지 않는 생물학적 위험이 있을 수 있습니다.'],
@@ -857,6 +857,26 @@ function updateWorldLabels(){
  if(!game)return;for(const o of groups.dynamic.children){if(!o.userData?.worldLabel)continue;const d=o.position.distanceTo(player.root.position),range=o.userData.labelRange||22;o.visible=d<range;if(o.visible){const a=clamp((range-d)/6,0,1);o.material.opacity=.28+.72*a}}
 }
 function nearestPlaced(id){return placed.find(p=>p.userData.interactable?.building===id)||null}
+function roadNodeVector(id){const n=ROAD_NODES[id];return n?new THREE.Vector3(n.x,terrainHeight(n.x,n.z),n.z):null}
+function nearestRoadNode(pos){
+ let best=null,bd=Infinity;for(const [id,n] of Object.entries(ROAD_NODES)){const d=(pos.x-n.x)*(pos.x-n.x)+(pos.z-n.z)*(pos.z-n.z);if(d<bd){bd=d;best=id}}return best
+}
+function roadAdjacency(){
+ const adj={};for(const id of Object.keys(ROAD_NODES))adj[id]=[];for(const [a,b] of ROAD_EDGES){const na=ROAD_NODES[a],nb=ROAD_NODES[b];if(!na||!nb)continue;const w=Math.hypot(na.x-nb.x,na.z-nb.z);adj[a].push([b,w]);adj[b].push([a,w])}return adj
+}
+function findRoadPath(from,target){
+ if(Math.hypot(from.x-target.x,from.z-target.z)<9)return[target.clone()];
+ const start=nearestRoadNode(from),goal=nearestRoadNode(target),adj=roadAdjacency(),dist={},prev={},open=new Set(Object.keys(ROAD_NODES));for(const id of open)dist[id]=Infinity;dist[start]=0;
+ while(open.size){let u=null,best=Infinity;for(const id of open)if(dist[id]<best){best=dist[id];u=id}if(u==null||u===goal)break;open.delete(u);for(const [v,w] of adj[u]||[]){if(!open.has(v))continue;const nd=dist[u]+w;if(nd<dist[v]){dist[v]=nd;prev[v]=u}}}
+ const ids=[];let cur=goal;while(cur){ids.push(cur);if(cur===start)break;cur=prev[cur]}ids.reverse();if(ids[0]!==start)return[target.clone()];
+ const route=ids.map(roadNodeVector).filter(Boolean);route.push(target.clone());return route
+}
+function residentWaypoint(n,target,id){
+ const key=id+'|'+residentActivity(id)+'|'+Math.round(target.x*2)/2+'|'+Math.round(target.z*2)/2;
+ if(n.userData.routeKey!==key||!Array.isArray(n.userData.route)){n.userData.routeKey=key;n.userData.route=findRoadPath(n.position,target);n.userData.prevDist=Infinity}
+ while(n.userData.route.length&&n.position.distanceTo(n.userData.route[0])<.65)n.userData.route.shift();
+ return n.userData.route[0]||target
+}
 function residentSchedule(id){
  const r=game?.residents?.[id];if(!r?.rescued||!r.job)return null;let h=(game.time||720)/60;if(h<6.5)h+=24;const list=JOB_SCHEDULES[r.job]||[];return list.find(([,a,b])=>h>=a&&h<b)||list[list.length-1]||null
 }
@@ -864,7 +884,10 @@ function residentActivity(id){
  const r=game?.residents?.[id];if(!r?.rescued)return'구조 대기';if(!r.job)return'역할 대기';return residentSchedule(id)?.[0]||'공동체 작업'
 }
 function residentWorkTarget(id){
- const r=game?.residents?.[id];let p=null;if(!r?.job)return null;
+ const r=game?.residents?.[id],activity=residentActivity(id);let p=null;if(!r?.job)return null;
+ if(r.job==='technician'&&activity.includes('전력')&&game.flags.power)return POWER_STATION.clone();
+ if(r.job==='gatherer'&&activity.includes('숲'))return roadNodeVector('forest');
+ if(r.job==='medic'&&activity.includes('진료소')&&game.flags.ruins)return CLINIC_POS.clone().add(new THREE.Vector3(5.2,0,0));
  if(r.job==='technician')p=nearestPlaced('workbench')?.position;
  else if(r.job==='gatherer')p=nearestPlaced('farm')?.position;
  else if(r.job==='medic')p=nearestPlaced('shelter')?.position;
@@ -899,7 +922,7 @@ function residentTryStep(n,target,id,dt){
 }
 function updateNpc(dt){
  if(!game)return;for(const [id,n] of Object.entries(scene?.userData?.campResidents||{})){if(!n?.visible)continue;
-  const target=residentTarget(id),moved=residentTryStep(n,target,id,dt);
+  const target=residentTarget(id),waypoint=residentWaypoint(n,target,id),moved=residentTryStep(n,waypoint,id,dt);
   if(moved){n.userData.walk=(n.userData.walk||0)+dt*8.4;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.abs(Math.sin(n.userData.walk))*.025}
   else{n.userData.idle=(n.userData.idle||0)+dt*2;n.position.y=terrainHeight(n.position.x,n.position.z)+Math.sin(n.userData.idle)*.012}
   const status=residentActivity(id),labelNode=n.userData.statusLabel;if(labelNode&&labelNode.userData.labelText!==RESIDENTS[id].name+' · '+status)drawLabel(labelNode,RESIDENTS[id].name+' · '+status);
