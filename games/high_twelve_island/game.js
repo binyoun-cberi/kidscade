@@ -64,7 +64,7 @@
   function restartTimer() {
     if (timer) clearInterval(timer);
     timer = setInterval(() => {
-      if (paused || state.pending || !element.help.classList.contains("hidden") || document.hidden) return;
+      if (paused || state.pending || state.ended || !element.help.classList.contains("hidden") || document.hidden) return;
       const arrivalCount = state.arrivalLog?.length || 0;
       S.tick(state);
       if (state.tick % 3 === 0 || state.pending || state.stage === 2 || (state.arrivalLog?.length || 0) !== arrivalCount) save();
@@ -75,7 +75,8 @@
     $("pauseBtn").textContent = paused ? "▶" : "⏸";
     $("pauseBtn").setAttribute("aria-label", paused ? "시간 계속" : "시간 일시정지");
     $("speedBtn").textContent = speed + "×";
-    $("speedBtn").disabled = !!state.pending;
+    $("speedBtn").disabled = !!state.pending || !!state.ended;
+    $("pauseBtn").disabled = !!state.ended;
   }
   function toast(message) {
     element.toast.textContent = message;
@@ -100,6 +101,7 @@
 
   function renderPolicyStatus() {
     const parts = [];
+    if (state.ended) parts.push('<span class="issue-chip alert">공동체 운영 종료 · 기록을 확인하거나 처음부터 다시 시작하세요.</span>');
     if (state.laws.ration) {
       const pressure = Math.min(100, (state.pressure?.ration || 0) / 3.2 * 100);
       parts.push('<span class="issue-chip ' + (pressure >= 70 ? 'alert' : '') + '">🍞 배급 청원 ' + Math.round(pressure) + '%</span>');
@@ -168,7 +170,10 @@
       ((state.disasterSeen.dust || S.disasterActive(state,'dust') || state.air<80) ?
         meter('🌫️','공기 질',state.air,40) : '') +
       ((state.disasterSeen.epidemic || state.sick>0) ?
-        meter('🩺','감염자',state.sick,state.population+1,state.population) : '') +
+        '<div class="crisis-meter' + (state.sick>=Math.max(3,state.population*.28)?' urgent':'') +
+        '"><span>🩺 감염자</span><strong>' + number(state.sick) + '/' + state.population +
+        '</strong><i><b style="width:' +
+        Math.max(0,Math.min(100,state.sick/Math.max(1,state.population)*100)) + '%"></b></i></div>' : '') +
       ((state.eventsSeen.child_labor_debate || state.childWorkUntil>state.tick ||
         (state.rightsHistory||[]).some(h=>h.kind==='어린이 위험 노동')) ?
         meter('📚','어린이 학습',state.education,65) +
@@ -186,13 +191,19 @@
     element.clock.textContent = state.tick + 1 + "번째 주";
     const hazards = S.activeDisasters(state).map(kind=>S.DISASTER_NAMES[kind]);
     if(S.winterActive(state)) hazards.unshift("한파");
-    element.scene.textContent = hazards.length ? '⚠️ 현재 재난: ' + hazards.join(' · ') +
+    element.scene.textContent = state.ended ?
+      "공동체 운영이 종료됐어요. 기록을 확인하고 처음부터 다시 시작할 수 있어요." :
+      hazards.length ? '⚠️ 현재 재난: ' + hazards.join(' · ') +
       '. 아래 상태를 확인해 대응하세요.' :
       state.stage===1 ? "식량을 확보하고 함께 지킬 규칙을 만드세요." :
       "국고를 관리하고 마을의 공공시설을 운영하세요.";
   }
   function renderMission() {
-    if (state.stage === 1) {
+    if (state.ended) {
+      element.progress.textContent = "운영 종료";
+      element.missionText.textContent = "공동체 기록을 확인하고 '처음부터' 버튼으로 다시 도전할 수 있어요.";
+      element.missionBar.style.width = "100%";
+    } else if (state.stage === 1) {
       const done = [state.buildings.farm >= 1, state.population >= 18, state.passed.length >= 1];
       element.progress.textContent = done.filter(Boolean).length + "/3 완료";
       element.missionText.innerHTML = (done[0] ? "✅" : "⬜") + " 농장 1개　" + (done[1] ? "✅" : "⬜") + " 인구 18명　" + (done[2] ? "✅" : "⬜") + " 규칙 1개" + (state.population >= S.capacity(state) ? '<div class="mission-alert">⚠️ 주민이 더 늘어나려면 건설 탭에서 공동 주거지를 지으세요.</div>' : state.population >= S.capacity(state) - 1 ? '<div class="mission-alert">🏠 집이 거의 찼어요. 주민을 더 받으려면 공동 주거지가 필요해요.</div>' : !state.buildings.farm ? '<div class="mission-alert">🌾 먼저 건설 탭에서 농장 1개를 만들어 보세요.</div>' : '');
