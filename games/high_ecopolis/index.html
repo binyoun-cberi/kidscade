@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>에코폴리스</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -69,8 +69,17 @@
   <div id="tileInfo" class="glass hidden"></div>
   <div id="toast" class="glass" aria-live="polite"></div>
 
-  <section id="toolbar" class="glass" aria-label="생태 복원 도구">
-    <div class="toolScroller">
+  <section id="toolbar" class="glass" aria-label="건설 도구">
+    <div class="toolCategoryBar" id="toolCategoryBar">
+      <button type="button" data-toolcat="restore" class="active">복원</button>
+      <button type="button" data-toolcat="path">길·공원</button>
+      <button type="button" data-toolcat="operate">운영</button>
+      <button type="button" data-toolcat="energy">에너지</button>
+      <button type="button" data-toolcat="develop">개발</button>
+    </div>
+    <div class="toolRail">
+      <button id="toolPrev" class="toolNav" type="button" aria-label="이전 건설 도구">‹</button>
+      <div class="toolScroller" id="toolScroller">
       <button class="tool active" data-tool="inspect" type="button"><span>🔎</span><b>살펴보기</b><small>무료</small></button>
       <button class="tool phase2 locked pathTool" data-tool="trail" type="button"><span>🥾</span><b>자연 탐방로</b><small>1P · 친환경</small></button>
       <button class="tool phase2 locked pathTool" data-tool="boardwalk" type="button"><span>🪵</span><b>습지 데크길</b><small>2P · 물 위 가능</small></button>
@@ -100,11 +109,15 @@
       <button class="tool phase2 locked" data-tool="forest" type="button"><span>🌲</span><b>숲 묘목장</b><small>16P</small></button>
       <button class="tool phase2 locked" data-tool="meadow" type="button"><span>🌼</span><b>꽃초원 씨앗</b><small>14P</small></button>
       <button class="tool phase4 locked recycleTool" data-tool="recycler" type="button"><span>♻️</span><b>회수선</b><small>무료</small></button>
+      </div>
+      <button id="toolNext" class="toolNav" type="button" aria-label="다음 건설 도구">›</button>
     </div>
-    <div class="toolbarSide">
-      <button id="moreToolsBtn" type="button" title="더 많은 선택 보기">+ 도구</button>
-      <button id="undoBtn" type="button" title="마지막 건설 되돌리기">↶</button>
-      <button id="saveBtn" type="button">저장</button>
+    <div class="toolbarFooter">
+      <span id="toolPageLabel">복원 도구</span>
+      <div class="toolbarSide">
+        <button id="undoBtn" type="button" title="마지막 건설 되돌리기">↶</button>
+        <button id="saveBtn" type="button">저장</button>
+      </div>
     </div>
   </section>
 
@@ -172,6 +185,6 @@
 
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ecopolis" data-title="에코폴리스" data-shell="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=9"></script>
+<script type="module" src="game.js?v=10"></script>
 </body>
 </html>
