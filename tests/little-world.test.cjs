@@ -58,5 +58,6 @@ test('Little World simulation survives a deterministic ecosystem smoke run',()=>
   assert.equal(world.cells.length,COLS*ROWS);
   assert.ok(world.cells.every(c=>['height','water','moisture','fertility','temperature','vegetation','herb','pred','fire'].every(k=>Number.isFinite(c[k]))));
   assert.ok(world.settlements.every(s=>Number.isFinite(s.pop)&&Number.isFinite(s.food)));
+  assert.ok(world.settlements.some(s=>s.level>=1),'settlement should reach village level during the smoke run');
   assert.ok(world.stats().herb>=0);
 });
