@@ -212,3 +212,12 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   .mobile-build-actions{bottom:10px}
   #mobileViewHint{display:none}
 }
+
+/* Keep the full nine-slot toolbar usable on narrow touchscreens. */
+@media(pointer:coarse){
+  #freeHud #hotbar{bottom:150px;width:min(94vw,530px);max-width:94vw;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;scrollbar-width:none;touch-action:pan-x}
+  #freeHud #hotbar::-webkit-scrollbar{display:none}
+  #freeHud .hot-slot{flex:0 0 48px}
+  #mobileControls.free-mobile #mobileViewHint{display:none}
+  #freeMission{max-width:min(235px,53vw)}
+}
