@@ -413,6 +413,48 @@ function drawBlueprint(){
   updateChallengeDifficultyUI();updateChallengeStats();
 }
 
+function restorationKeep(role,x,y,z){
+  const rate=role==='base'?.96:role==='body'?.76:
+    (role==='tower'||role==='arch')?.58:
+    (role==='roof'||role==='dome'||role==='spire')?.42:.22;
+  return hash2(x*17+y*5,z*19-y*3)<rate;
+}
+function decomposeVoxelSet(points){
+  const remaining=new Set(points.map(p=>challengeKey(...p))),boxes=[];
+  const sorted=()=>[...remaining].map(k=>k.split(',').map(Number))
+    .sort((a,b)=>a[1]-b[1]||a[2]-b[2]||a[0]-b[0]);
+  while(remaining.size){
+    const [x0,y0,z0]=sorted()[0];
+    let dx=1,dz=1,dy=1;
+    while(remaining.has(challengeKey(x0+dx,y0,z0)))dx++;
+    outerZ:while(true){
+      for(let x=x0;x<x0+dx;x++)
+        if(!remaining.has(challengeKey(x,y0,z0+dz)))break outerZ;
+      dz++;
+    }
+    outerY:while(true){
+      for(let x=x0;x<x0+dx;x++)for(let z=z0;z<z0+dz;z++)
+        if(!remaining.has(challengeKey(x,y0+dy,z)))break outerY;
+      dy++;
+    }
+    boxes.push([x0,y0,z0,dx,dy,dz]);
+    for(let x=x0;x<x0+dx;x++)for(let y=y0;y<y0+dy;y++)for(let z=z0;z<z0+dz;z++)
+      remaining.delete(challengeKey(x,y,z));
+  }
+  return boxes;
+}
+function seedRestorationChallenge(){
+  if(!restorationSession)return;
+  const mission=currentChallengeMission(),kept=[];
+  for(const p of mission.blocks){
+    const role=mission.roles?.[challengeKey(...p)]||'body';
+    if(restorationKeep(role,...p))kept.push(p);
+  }
+  for(const [x,y,z,dx,dy,dz] of decomposeVoxelSet(kept))
+    addChallengeCuboid(x,y,z,[dx,dy,dz],true);
+  const pct=Math.round(kept.length/mission.blocks.length*100);
+  restorationSession.seedPercent=pct;
+}
 function initChallenge(){
   if(restorationSession){challengeDifficulty='hard';missionIndex=restorationSession.missionIndex}
   setVisible('challengePanel',true);setVisible('challengeFlyHud',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
@@ -425,8 +467,13 @@ function initChallenge(){
   const grid=new THREE.GridHelper(CHALLENGE_SIZE,CHALLENGE_SIZE,0x5269c7,0xa9c2da);grid.position.y=.01;scene.add(grid);
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];challengeSelected=null;challengeShapeMode='cube';challengeTool='build';challengeSelectedElement=0;
+  if(restorationSession)seedRestorationChallenge();
   $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
   updateChallengeDifficultyUI();drawBlueprint();
+  if(restorationSession){
+    $('missionTip').textContent='폐허의 남은 구조는 이미 배치되어 있어요. '+restorationSession.seedPercent+
+      '%에서 시작해 외형 85% 이상을 복원하세요. '+currentChallengeMission().tip;
+  }
   $('challengeEasy').disabled=!!restorationSession;$('challengeHard').disabled=!!restorationSession;
   $('challengeEasy').onclick=()=>setChallengeDifficulty('easy');$('challengeHard').onclick=()=>setChallengeDifficulty('hard');
   $('actionCheck').textContent='검사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=checkChallenge;
