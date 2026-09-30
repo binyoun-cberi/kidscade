@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>에코폴리스</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -39,7 +39,12 @@
 
   <aside id="mission" class="glass">
     <div class="missionHead"><div><small id="missionKicker">PHASE 1</small><b id="missionTitle">죽은 땅을 깨워요</b></div><button id="missionCollapse" type="button">›</button></div>
-    <p id="missionText">풍력 발전기로 전력을 만들고 정화기로 오염된 토양을 초원으로 되돌리세요.</p>
+    <p id="missionText">먼저 전기를 만들고, 땅과 강을 한 번씩 정화해 보세요.</p>
+    <button id="nextActionCard" type="button">
+      <span id="nextActionIcon">⚡</span>
+      <div><small>지금 할 일</small><b id="nextActionTitle">발전소 하나 세우기</b><p id="nextActionText">아래에서 풍력 발전기를 눌러 바람이 있는 땅에 놓아 보세요.</p></div>
+      <em>도구 선택 ›</em>
+    </button>
     <div id="objectives"></div>
     <div class="scenarioGoalTitle">운영 목표</div>
     <div id="scenarioObjectives"></div>
@@ -97,6 +102,7 @@
       <button class="tool phase4 locked recycleTool" data-tool="recycler" type="button"><span>♻️</span><b>회수선</b><small>무료</small></button>
     </div>
     <div class="toolbarSide">
+      <button id="moreToolsBtn" type="button" title="더 많은 선택 보기">+ 도구</button>
       <button id="undoBtn" type="button" title="마지막 건설 되돌리기">↶</button>
       <button id="saveBtn" type="button">저장</button>
     </div>
@@ -166,6 +172,6 @@
 
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ecopolis" data-title="에코폴리스" data-shell="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=8"></script>
+<script type="module" src="game.js?v=9"></script>
 </body>
 </html>
