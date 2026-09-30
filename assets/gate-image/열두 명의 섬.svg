@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
-<title id="title">열두 명의 섬 — 생존에서 자치 마을로 발전하는 게임</title>
+<title id="title">촌장 시뮬레이터 — 생존에서 자치 마을로 발전하는 게임</title>
 <defs>
  <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#174d61"/><stop offset="1" stop-color="#25868e"/></linearGradient>
  <linearGradient id="land" x2="0" y2="1"><stop stop-color="#9fbd75"/><stop offset="1" stop-color="#638e59"/></linearGradient>
@@ -30,7 +30,7 @@
 <rect x="0" y="0" width="960" height="540" fill="#092a36" opacity=".13"/>
 <rect x="29" y="31" width="420" height="468" rx="25" fill="#103a43" opacity=".91" stroke="#5e978b" stroke-width="2"/>
 <text x="63" y="94" fill="#e8c47d" font-size="19" font-weight="700" font-family="sans-serif" letter-spacing="3">KIDSCADE · SOCIETY</text>
-<text x="60" y="183" fill="#fff4db" font-size="65" font-weight="900" font-family="sans-serif">열두 명의 섬</text>
+<text x="60" y="183" fill="#fff4db" font-size="65" font-weight="900" font-family="sans-serif">촌장 시뮬레이터</text>
 <text x="63" y="226" fill="#d4e9dc" font-size="22" font-family="sans-serif">열두 사람, 하나의 공동체</text>
 <text x="63" y="263" fill="#d4e9dc" font-size="22" font-family="sans-serif">우리의 첫 번째 규칙을 만들자</text>
 <g font-family="sans-serif" font-size="24" font-weight="700">

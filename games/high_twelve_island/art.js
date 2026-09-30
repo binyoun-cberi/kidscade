@@ -1,4 +1,4 @@
-/* 열두 명의 섬 — 기존 Kenney Tiny Town/Farm의 16px 타일을 사용하는 마을 렌더러. */
+/* 촌장 시뮬레이터 — 기존 Kenney Tiny Town/Farm의 16px 타일을 사용하는 마을 렌더러. */
 ((root) => {
   "use strict";
   const BASE = "../../assets/game/2d/tilesets/";
@@ -7,7 +7,7 @@
     farm: BASE + "kenney-tiny-farm/atlas/tilemap-packed.png"
   };
   const images = {};
-  let canvas = null, ctx = null, latest = null, ready = false, elapsed = 0, frame = 0;
+  let canvas = null, ctx = null, latest = null, ready = false, elapsed = 0, frame = 0, preview = null, impact = null;
   for (const [name, path] of Object.entries(MAPS)) {
     const img = new Image();
     img.onload = () => { images[name] = img; redraw(); };
@@ -171,6 +171,24 @@
       sprite("farm", 75, 364, 280, 1.4);
     }
   }
+  function badge(x, y, text, fill = "rgba(30,49,55,.90)") {
+    ctx.save();
+    ctx.font = "700 13px system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    const w = Math.ceil(ctx.measureText(text).width) + 14;
+    rect(x, y, w, 24, fill);
+    ctx.fillStyle = "#fffdf3";
+    ctx.fillText(text, Math.round(x + 7), Math.round(y + 12));
+    ctx.restore();
+  }
+  function zone(x, y, w, h, label, fill = "rgba(255,244,196,.18)") {
+    ctx.save();
+    ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = "rgba(255,255,255,.82)"; ctx.lineWidth = 2; ctx.setLineDash([6,5]);
+    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2); ctx.setLineDash([]);
+    ctx.restore();
+    badge(x + 4, Math.max(4, y - 27), label);
+  }
   function citizens(s, t) {
     const N = Math.min(s.population, 16);
     const spots = [
@@ -178,11 +196,94 @@
       [247,291],[463,206],[274,173],[441,165],[364,305],[216,246],
       [475,288],[356,167],[525,219],[305,314]
     ];
+    const childWork = s.childWorkUntil > s.tick;
+    const forced = s.forcedLaborUntil > s.tick;
+    const excluded = s.exclusionUntil > s.tick;
+    const workerStrike = (s.strikes?.workers || 0) > s.tick;
+    const familyStrike = (s.strikes?.families || 0) > s.tick;
+    const carerStrike = (s.strikes?.carers || 0) > s.tick;
+    const protestSpots = [[320,238],[350,229],[383,239],[414,226]];
+    const forcedSpots = [[118,105],[155,86],[196,105],[594,116]];
+    const familySpots = [[590,295],[620,274],[552,310]];
+    const childSpots = [[150,279],[182,296]];
     for (let i = 0; i < N; i++) {
-      const [px, py] = spots[i], wiggle = s.pending ? 0 : Math.sin(t * .0013 + i * 2) * 4;
+      let pos = spots[i];
+      if (childWork && (i === 10 || i === 11)) pos = childSpots[i - 10];
+      else if (workerStrike && i < 4) pos = protestSpots[i];
+      else if (forced && i < 4) pos = forcedSpots[i];
+      else if (familyStrike && i >= 4 && i <= 6) pos = familySpots[i - 4];
+      else if (excluded && i === 2) pos = [102, 225];
+      else if (carerStrike && i === 7) pos = [540, 168];
+      const [px, py] = pos, wiggle = s.pending ? 0 : Math.sin(t * .0013 + i * 2) * 4;
       const x = px + (i % 2 ? wiggle : -wiggle), y = py + Math.sin(t * .001 + i) * 2;
       sprite("farm", i % 3 === 0 ? 108 : 109, x, y, 1.65);
+      if (forced && i < 4) badge(x - 3, y - 19, "!");
     }
+    if (workerStrike) {
+      for (let i = 0; i < 3; i++) {
+        rect(322 + i * 36, 211 + (i % 2) * 5, 18, 12, "#e9dfc1");
+        rect(330 + i * 36, 223 + (i % 2) * 5, 3, 13, "#73583f");
+      }
+    }
+    if (familyStrike) {
+      sprite("farm", 74, 558, 328, 1.25);
+      sprite("farm", 72, 602, 315, 1.25);
+    }
+  }
+  function stateSignals(s) {
+    if (s.childWorkUntil > s.tick) {
+      zone(124, 248, 100, 70, "아이들이 채집 중", "rgba(217,142,84,.20)");
+    }
+    if (s.forcedLaborUntil > s.tick) {
+      zone(104, 66, 122, 78, "강제 작업", "rgba(185,94,79,.18)");
+    }
+    if (s.exclusionUntil > s.tick) {
+      zone(86, 202, 70, 78, "배급 제외", "rgba(188,91,79,.18)");
+    }
+    if ((s.strikes?.workers || 0) > s.tick) badge(306, 192, "노동 주민 작업 중단", "rgba(118,69,62,.92)");
+    if ((s.strikes?.families || 0) > s.tick) badge(520, 339, "가족들이 떠날 준비", "rgba(118,69,62,.92)");
+    if ((s.strikes?.carers || 0) > s.tick && s.buildings.clinic) {
+      rect(507, 124, 69, 72, "rgba(50,54,54,.34)");
+      badge(488, 102, "돌봄 서비스 중단", "rgba(118,69,62,.92)");
+    }
+    if (s.food < 18) badge(133, 144, "식량 바닥", "rgba(127,66,56,.92)");
+    if (s.water < 18) badge(332, 325, "식수 부족", "rgba(56,83,112,.94)");
+    if (s.trust < 28 && (s.strikes?.workers || 0) <= s.tick) badge(298, 191, "주민 항의", "rgba(126,76,55,.92)");
+    if (s.sick >= 3) {
+      const q = Math.min(4, Math.ceil(s.sick / 2));
+      for (let i = 0; i < q; i++) sprite("farm", 109, 455 - i * 18, 155 + i * 13, 1.2);
+      badge(455, 128, "진료 대기 " + Math.ceil(s.sick) + "명", "rgba(55,84,78,.92)");
+    }
+  }
+  function previewOverlay(s, choice) {
+    if (!choice) return;
+    badge(18, 16, "선택하면 이렇게 바뀝니다", "rgba(24,45,52,.94)");
+    if (choice.cost?.food) badge(135, 154, "식량 -" + choice.cost.food, "rgba(91,70,52,.93)");
+    if (choice.cost?.wood) badge(548, 79, "물자 -" + choice.cost.wood, "rgba(91,70,52,.93)");
+    if (choice.changes?.food) badge(135, 181, "식량 " + (choice.changes.food > 0 ? "+" : "") + choice.changes.food, "rgba(69,91,65,.94)");
+    if (choice.changes?.wood) badge(548, 106, "물자 " + (choice.changes.wood > 0 ? "+" : "") + choice.changes.wood, "rgba(69,91,65,.94)");
+    if (choice.changes?.water) badge(326, 327, "식수 " + (choice.changes.water > 0 ? "+" : "") + choice.changes.water, "rgba(55,87,112,.94)");
+    if (choice.changes?.health) badge(343, 256, "건강 " + (choice.changes.health > 0 ? "+" : "") + choice.changes.health, "rgba(105,69,69,.94)");
+    if (choice.quietRest) zone(126, 176, 108, 84, "생산 ↓ " + choice.quietRest + "주", "rgba(103,122,77,.17)");
+    if (choice.startChildLabor) zone(124, 248, 100, 70, "아이 투입", "rgba(217,142,84,.22)");
+    if (choice.startForcedLabor) zone(104, 66, 122, 78, "강제 작업", "rgba(185,94,79,.22)");
+    if (choice.startExclusion) zone(86, 202, 70, 78, "배급 제외", "rgba(188,91,79,.22)");
+    if (choice.floodRepair) zone(79, 310, 565, 59, "방벽·배수로", "rgba(62,120,142,.18)");
+    if (choice.floodRelocate) zone(392, 83, 182, 195, "주민 대피", "rgba(100,113,133,.17)");
+    if (choice.climateCare?.kind === "heat") zone(300, 188, 122, 70, "그늘·급수소", "rgba(205,166,76,.17)");
+    if (choice.climateCare?.kind === "epidemic" || choice.medicine) zone(480, 104, 105, 96, "돌봄 강화", "rgba(88,127,117,.18)");
+    if (choice.groupStrike === "workers") zone(284, 191, 158, 87, "작업 중단", "rgba(185,94,79,.20)");
+    if (choice.groupStrike === "families") zone(520, 270, 115, 82, "이탈 준비", "rgba(185,94,79,.20)");
+    if (choice.groupStrike === "carers") zone(478, 105, 110, 95, "진료 중단", "rgba(185,94,79,.20)");
+  }
+  function impactOverlay(data) {
+    if (!data) return;
+    if (Date.now() > data.until) { impact = null; return; }
+    rect(165, 367, 390, 37, "rgba(18,41,47,.90)");
+    ctx.save();
+    ctx.font = "700 14px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#fffdf2"; ctx.fillText("결정 적용 · " + data.label, 360, 386);
+    ctx.restore();
   }
   function storm(s, t) {
     if (!(s.stormUntil > s.tick)) return;
@@ -234,6 +335,9 @@
     citizens(latest, t);
     climate(latest, t);
     storm(latest, t);
+    stateSignals(latest);
+    if (preview) previewOverlay(latest, preview);
+    if (impact) impactOverlay(impact);
     if (latest.coldUntil > latest.tick) {
       rect(0, 0, WIDTH, HEIGHT, "rgba(215,232,241,.14)");
       ctx.fillStyle = "rgba(245,252,253,.9)";
@@ -261,5 +365,11 @@
     return true;
   }
   function setState(s) { latest = s; if (ready) redraw(); }
-  root.IslandArt = Object.freeze({ mount, setState, redraw, MAPS });
+  function setPreview(choice) { preview = choice || null; if (ready) redraw(); }
+  function impactChoice(choice, label) {
+    preview = null;
+    impact = { choice: choice || null, label: label || "선택", until: Date.now() + 1800 };
+    if (ready) redraw();
+  }
+  root.IslandArt = Object.freeze({ mount, setState, setPreview, impactChoice, redraw, MAPS });
 })(window);
