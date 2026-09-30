@@ -783,7 +783,7 @@ function drawField(){
   ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.93)';ctx.fillText(f.role,f.x,f.y-32);
  });
  if(fieldBall){
-  if(fieldBall.z>0){ctx.fillStyle='rgba(0,0,0,.23)';ctx.beginPath();ctx.ellipse(fieldBall.x,fieldBall.y,9,4,0,Math.PI*2);ctx.fill()}
+  if(fieldBall.z>0){ctx.fillStyle='rgba(0,0,0,.23)';ctx.beginPath();ctx.ellipse(fieldBall.x,fieldBall.y,9,4,0,0,Math.PI*2);ctx.fill()}
   if(!fieldBall.owner)drawTrajectoryTrail(fieldBall.trail,'hit',fieldBall.trailStrength||.55);
   if(!throwPlay)drawBall(fieldBall.owner?fieldBall.owner.x+12:fieldBall.x,(fieldBall.owner?fieldBall.owner.y-13:fieldBall.y)-fieldBall.z*.23,7+Math.min(4,fieldBall.z*.01));
  }
