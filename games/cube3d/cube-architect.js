@@ -516,7 +516,8 @@ function checkChallenge(){
     return;
   }
   const origin=match.user.min;
-  if(match.score<100){
+  const completed=hard?match.score>=85:match.score===100;
+  if(!completed){
     if(!hard){
       // Do not overwrite any painted face. Error indications are separate outlines.
       let shown=0;
@@ -545,10 +546,25 @@ function checkChallenge(){
   }
   if(hard){
     const [top,front,side]=match.views;
+    const groups={base:['기단',0,0],body:['본체',0,0],tower:['탑',0,0],roof:['지붕',0,0],detail:['장식',0,0]};
+    const raw=currentChallengeMission();
+    for(let i=0;i<raw.blocks.length;i++){
+      const role=raw.roles?.[challengeKey(...raw.blocks[i])];
+      const category=role==='base'?'base':role==='tower'||role==='spire'?'tower':
+        role==='roof'||role==='dome'?'roof':role==='detail'||role==='arch'||role==='window'?'detail':'body';
+      const p=match.target.points[i];
+      if(!isOuterVoxel(match.targetKeys,p))continue;
+      groups[category][1]++;
+      if(match.user.keys.has(challengeKey(...p)))groups[category][2]++;
+    }
+    const sections=Object.values(groups).filter(g=>g[1]).map(g=>
+      g[0]+' '+Math.round(g[2]/g[1]*100)+'%').join(' · ');
     $('resultText').innerHTML=
       '윗면 <b>'+top+'%</b> · 정면 <b>'+front+'%</b> · 측면 <b>'+side+'%</b><br>'+
-      '기단·본체·탑·지붕의 외형을 비교합니다. 내부가 달라도 세 방향의 형태가 같으면 정답입니다.'+
-      (match.score<100?'<br>파란 선은 부족한 바깥 구조의 일부만 표시합니다.':'');
+      '<small>주요 부위 참고: '+sections+'</small><br>'+
+      (completed?'외형 복원 완료! 어려움은 85% 이상이면 통과해요.':
+      '세 방향의 외형을 비교해요. 파란 선은 아직 부족한 바깥 구조의 일부예요.')+
+      '<br>보이지 않는 내부와 면 색칠은 외형 점수에서 제외합니다.';
   }else{
     const targetCount=match.target.points.length,userCount=match.user.keys.size;
     $('resultText').innerHTML=match.score===100?
@@ -556,8 +572,9 @@ function checkChallenge(){
       '같은 블록 '+match.common+'개 · 부족한 블록 '+Math.max(0,targetCount-match.common)+
       '개 · 다른 블록 '+Math.max(0,userCount-match.common)+'개<br>파란 선을 보고 모양을 다시 확인하세요.';
   }
-  if(match.score===100){
-    toast('설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');sfx('good');reportResult('challenge',100,true);
+  if(completed){
+    toast(hard?'랜드마크 외형 복원 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
+    sfx('good');reportResult('challenge',match.score,true);
   }else{
     toast(hard?'세 방향의 외형을 비교했어요. 색칠은 별도 꾸미기예요.':'부족한 부분을 확인해 보세요.');sfx('bad');
   }
