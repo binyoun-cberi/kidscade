@@ -8,8 +8,10 @@ const ui={
   phaseName:$('phaseName'),ecoPoints:$('ecoPoints'),energyRate:$('energyRate'),carbonRate:$('carbonRate'),restoreRate:$('restoreRate'),waterRate:$('waterRate'),bioRate:$('bioRate'),
   dayRate:$('dayRate'),visitorRate:$('visitorRate'),servedRate:$('servedRate'),reputationRate:$('reputationRate'),cashflowRate:$('cashflowRate'),pathRate:$('pathRate'),guestMood:$('guestMood'),thoughtList:$('thoughtList'),scenarioObjectives:$('scenarioObjectives'),
   mission:$('mission'),missionKicker:$('missionKicker'),missionTitle:$('missionTitle'),missionText:$('missionText'),objectives:$('objectives'),speciesRow:$('speciesRow'),
+  nextActionCard:$('nextActionCard'),nextActionIcon:$('nextActionIcon'),nextActionTitle:$('nextActionTitle'),nextActionText:$('nextActionText'),
   missionCollapse:$('missionCollapse'),windViewBtn:$('windViewBtn'),sunViewBtn:$('sunViewBtn'),geoViewBtn:$('geoViewBtn'),pollutionViewBtn:$('pollutionViewBtn'),homeViewBtn:$('homeViewBtn'),helpBtn:$('helpBtn'),
-  mapLegend:$('mapLegend'),tileInfo:$('tileInfo'),toast:$('toast'),toolbar:$('toolbar'),undoBtn:$('undoBtn'),saveBtn:$('saveBtn'),
+  mapLegend:$('mapLegend'),tileInfo:$('tileInfo'),toast:$('toast'),toolbar:$('toolbar'),undoBtn:$('undoBtn'),saveBtn:$('saveBtn'),moreToolsBtn:$('moreToolsBtn'),
+  tycoonBar:$('tycoonBar'),guestPanel:$('guestPanel'),
   intro:$('intro'),tutorialBtn:$('tutorialBtn'),newBtn:$('newBtn'),continueBtn:$('continueBtn'),
   tutorialCoach:$('tutorialCoach'),tutorialStep:$('tutorialStep'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialNext:$('tutorialNext'),tutorialSkip:$('tutorialSkip'),
   help:$('help'),closeHelpBtn:$('closeHelpBtn'),result:$('result'),resultText:$('resultText'),resultScore:$('resultScore'),resultRestore:$('resultRestore'),resultSpecies:$('resultSpecies'),
@@ -18,17 +20,17 @@ const ui={
 
 const COLS=18,ROWS=14,CELL=1.18;
 const PHASES=[
-  {name:'1 · 되살리기',title:'죽은 땅을 깨워요',text:'풍력 발전기로 전력을 만들고 정화기로 오염된 토양과 강을 되살리세요.'},
-  {name:'2 · 다양하게 만들기',title:'한 가지 초원으로는 부족해요',text:'습지·숲·꽃초원을 골고루 만들어 서로 다른 생물이 살 자리를 마련하세요.'},
-  {name:'3 · 야생의 귀환',title:'동물들이 돌아올 조건을 만들어요',text:'서식 조건이 맞으면 동물은 직접 데려오지 않아도 스스로 돌아옵니다.'},
-  {name:'4 · 흔적 없이 철수',title:'이제 인간의 흔적을 걷어내요',text:'깨끗한 강에 회수선을 보내 주변 시설을 전부 회수하세요. 건물 0개가 최종 목표입니다.'}
+  {name:'1 · 되살리기',title:'전기 → 땅 → 강, 세 가지만 해봐요',text:'발전소 1개, 토양 정화기 1개, 하천 정화기 1개를 차례로 설치하세요.'},
+  {name:'2 · 생태계 만들기',title:'숲·습지·꽃초원을 하나씩 만들어요',text:'정화된 초원에 세 종류의 서식지를 하나씩 만들어 보세요.'},
+  {name:'3 · 생태공원 운영',title:'길을 잇고 방문객을 맞아요',text:'지도 가장자리에서 방문자센터까지 길을 연결하고 방문객 10명을 맞으면 됩니다.'},
+  {name:'4 · 흔적 없이 철수',title:'마지막에는 우리가 만든 것을 걷어내요',text:'깨끗한 강에 회수선을 보내 시설과 길을 모두 회수하세요.'}
 ];
 const TOOL={
   inspect:{label:'살펴보기',cost:0,radius:0},
   trail:{label:'자연 탐방로',cost:1,radius:0,phase:2,path:true},
   boardwalk:{label:'습지 데크길',cost:2,radius:0,phase:2,path:true},
   pavedwalk:{label:'포장 산책로',cost:1,radius:0,phase:2,path:true},
-  wind:{label:'풍력 발전기',cost:20,radius:4.7,power:26},
+  wind:{label:'풍력 발전기',cost:20,radius:6.0,power:26},
   solar:{label:'태양광 발전소',cost:18,radius:4.2,power:22},
   geothermal:{label:'지열 발전소',cost:28,radius:5.5,power:38},
   nuclear:{label:'원자력 발전소',cost:55,radius:8.2,power:78},
@@ -47,8 +49,8 @@ const TOOL={
   bench:{label:'쉼터 벤치',cost:4,radius:0,phase:2,appeal:3},
   signpost:{label:'탐방 안내판',cost:3,radius:0,phase:2,appeal:2},
   lamp:{label:'저전력 가로등',cost:5,radius:0,phase:2,appeal:2},
-  purifier:{label:'토양 정화기',cost:18,radius:2.65},
-  waterfilter:{label:'하천 정화기',cost:22,radius:3.25},
+  purifier:{label:'토양 정화기',cost:18,radius:3.4},
+  waterfilter:{label:'하천 정화기',cost:22,radius:4.1},
   wetland:{label:'습지 씨앗',cost:16,radius:1.85,phase:2},
   forest:{label:'숲 묘목장',cost:16,radius:1.8,phase:2},
   meadow:{label:'꽃초원 씨앗',cost:14,radius:1.9,phase:2},
@@ -92,7 +94,7 @@ let hoverTile=null,previewRing=null,lastAction=null;
 let rng=Math.random,tutorialIndex=-1,tutorialMode=false;
 let drag={active:false,id:null,x:0,y:0,moved:false},pointers=new Map();
 let toastTimer=0,saveTimer=0,elapsed=0,builtCount=0,ecologyClock=0,economyClock=0,visitorSpawnClock=0;
-let simSpeed=1;
+let simSpeed=1,showAdvancedTools=false,lastGuideKey='';
 let ecosystem=makeEcosystem();
 const sharedLoader=new GLTFLoader(),sharedCache=new Map(),sharedPending=new Map();
 const SHARED=id=>shared3DPath(id,'../../');
@@ -456,7 +458,7 @@ function hasBuilding(t){return buildings.some(b=>b.x===t.x&&b.z===t.z)}
 function placementReason(type,t){
   const def=TOOL[type];if(!t)return '지도 안쪽을 선택하세요.';
   if(def?.phase&&phase<def.phase)return '아직 잠긴 도구예요.';
-  if(type!=='inspect'&&ecoPoints<(def?.cost||0))return '에코 포인트가 부족해요.';
+  if(type!=='inspect'&&ecoPoints<(def?.cost||0))return '복원 예산이 부족해요.';
   if(type==='inspect')return '';
   if(PATH_TYPES.has(type)){
     if(t.kind==='rock')return '바위 지형에는 길을 놓을 수 없어요.';
@@ -809,12 +811,77 @@ function animalModel(species){
   }
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g;
 }
+function hasType(type){return buildings.some(b=>b.type===type)}
+function phaseChecklist(){
+  if(phase===1)return [
+    ['발전소 세우기',buildings.some(b=>POWER_TYPES.has(b.type))?1:0,1,'개'],
+    ['토양 정화하기',hasType('purifier')?1:0,1,'번'],
+    ['강 정화하기',hasType('waterfilter')?1:0,1,'번']
+  ];
+  if(phase===2)return [
+    ['숲 만들기',hasType('forest')?1:0,1,'곳'],
+    ['습지 만들기',hasType('wetland')?1:0,1,'곳'],
+    ['꽃초원 만들기',hasType('meadow')?1:0,1,'곳']
+  ];
+  if(phase===3)return [
+    ['길 3칸 이상',pathCount(),3,'칸'],
+    ['방문자센터',hasType('visitorcenter')?1:0,1,'개'],
+    ['누적 방문객',ecosystem.visitorsServed,10,'명']
+  ];
+  return [['남은 시설·길',humanFootprintCount(),0,'개',true]];
+}
+function currentGuide(){
+  if(phase===1){
+    if(!buildings.some(b=>POWER_TYPES.has(b.type)))return {key:'p1-power',tool:'wind',icon:'⚡',title:'1. 발전소를 하나 세워요',text:'풍력 발전기를 누르고 바람이 있는 땅에 놓아 보세요.'};
+    if(!hasType('purifier'))return {key:'p1-land',tool:'purifier',icon:'🌱',title:'2. 토양 정화기를 세워요',text:'발전소 가까운 갈색 땅에 놓으세요. 주변 땅이 초록색으로 바뀝니다.'};
+    if(!hasType('waterfilter'))return {key:'p1-water',tool:'waterfilter',icon:'💧',title:'3. 하천 정화기를 세워요',text:'발전소 전력 범위 안에서 강 바로 옆 땅에 놓으세요. 이것만 하면 2단계가 열립니다.'};
+  }
+  if(phase===2){
+    if(!hasType('forest'))return {key:'p2-forest',tool:'forest',icon:'🌲',title:'숲을 하나 만들어요',text:'초록색으로 정화된 땅에 숲 묘목장을 놓으세요.'};
+    if(!hasType('wetland'))return {key:'p2-wetland',tool:'wetland',icon:'🪷',title:'습지를 하나 만들어요',text:'깨끗한 강 가까이의 초원에 습지 씨앗을 놓으세요.'};
+    if(!hasType('meadow'))return {key:'p2-meadow',tool:'meadow',icon:'🌼',title:'꽃초원을 하나 만들어요',text:'남은 초원에 꽃초원 씨앗을 놓으면 다음 단계가 열립니다.'};
+  }
+  if(phase===3){
+    if(pathCount()<3)return {key:'p3-path',tool:'trail',icon:'🥾',title:'길을 3칸 이상 이어 보세요',text:'자연 탐방로를 지도 가장자리에서 안쪽으로 이어 주세요.'};
+    if(!hasType('visitorcenter'))return {key:'p3-center',tool:'visitorcenter',icon:'🏡',title:'방문자센터를 세워요',text:'길 바로 옆의 복원된 땅에 방문자센터를 세우세요.'};
+    if(!connectedVisitorCenter())return {key:'p3-connect',tool:'trail',icon:'🔗',title:'입구와 방문자센터를 길로 연결해요',text:'지도 가장자리 길과 방문자센터 옆 길이 끊기지 않게 이어 주세요.'};
+    if(ecosystem.visitorsServed<10)return {key:'p3-visitors',tool:'observatory',icon:'👥',title:'방문객 10명을 맞아요',text:'사람들이 길을 따라 들어옵니다. 2×나 3× 속도로 기다리거나 관찰대를 더해 보세요.'};
+  }
+  return {key:'p4-recycle',tool:'recycler',icon:'♻️',title:'시설과 길을 모두 회수해요',text:'깨끗한 강에 회수선을 띄우면 주변 시설과 길을 한꺼번에 걷어냅니다.'};
+}
+function updateGuidedUI(){
+  const guide=currentGuide();
+  ui.nextActionIcon.textContent=guide.icon;ui.nextActionTitle.textContent=guide.title;ui.nextActionText.textContent=guide.text;ui.nextActionCard.dataset.tool=guide.tool;
+  document.querySelectorAll('.tool').forEach(btn=>btn.classList.toggle('recommended',btn.dataset.tool===guide.tool));
+  if(guide.key!==lastGuideKey){lastGuideKey=guide.key;const b=document.querySelector('.tool[data-tool="'+guide.tool+'"]');if(b&&!b.classList.contains('contextHidden'))b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+}
+function updateToolVisibility(){
+  const core=phase===1
+    ?new Set(['inspect','wind','solar','geothermal','purifier','waterfilter'])
+    :phase===2
+      ?new Set(['inspect','purifier','waterfilter','forest','wetland','meadow'])
+      :phase===3
+        ?new Set(['inspect','trail','boardwalk','pavedwalk','visitorcenter','observatory','researchstation','ecocafe','bench','signpost','lamp','forest','wetland','meadow','purifier','waterfilter'])
+        :new Set(['inspect','recycler']);
+  const advanced=new Set(['nuclear','coal','carfactory','landfill','quarry','parking','channel','lawn','plantation']);
+  document.querySelectorAll('.tool').forEach(btn=>{
+    const type=btn.dataset.tool,show=core.has(type)||(showAdvancedTools&&phase>=2&&advanced.has(type));
+    btn.classList.toggle('contextHidden',!show);
+  });
+  ui.moreToolsBtn.classList.toggle('uiHidden',phase<2||phase===4);ui.moreToolsBtn.textContent=showAdvancedTools?'− 도구':'+ 도구';
+}
 function checkProgress(announce=true){
   const c=counts();
-  if(phase===1&&c.restorePct>=50&&c.waterPct>=55){phase=2;if(announce)unlockToast('2단계 시작! 이제 초원을 여러 생태계로 나눠보세요.')}
-  if(phase===2&&c.forestPct>=10&&c.wetlandPct>=8&&c.meadowPct>=8){phase=3;if(announce)unlockToast('3단계 시작! 조건이 맞는 동물들이 스스로 돌아옵니다.')}
+  if(phase===1&&buildings.some(b=>POWER_TYPES.has(b.type))&&hasType('purifier')&&hasType('waterfilter')){
+    phase=2;showAdvancedTools=false;if(announce)unlockToast('좋아요! 2단계가 열렸어요. 이제 숲·습지·꽃초원을 하나씩 만들어 봐요.')
+  }
+  if(phase===2&&hasType('forest')&&hasType('wetland')&&hasType('meadow')){
+    phase=3;showAdvancedTools=false;if(announce)unlockToast('3단계 시작! 이제 길을 연결하고 방문객을 맞아 봐요.')
+  }
   if(phase>=2)updateSpecies();
-  if(phase===3&&returnedSpeciesCount()>=4&&scenarioGoalMet()){phase=4;if(announce)unlockToast('운영 목표까지 달성했어요! 마지막에는 시설을 회수하고 자연만 남기세요.')}
+  if(phase===3&&pathCount()>=3&&hasType('visitorcenter')&&connectedVisitorCenter()&&ecosystem.visitorsServed>=10){
+    phase=4;showAdvancedTools=false;if(announce)unlockToast('운영 성공! 마지막에는 시설과 길을 모두 회수하면 돼요.')
+  }
   updateUI();
 }
 function unlockToast(msg){toast(msg,'good',3800);sdkSound('success');saveGame()}
@@ -829,15 +896,11 @@ function updateUI(){
   ui.reputationRate.textContent=Math.round(ecosystem.reputation);ui.cashflowRate.textContent=(ecosystem.lastCashflow>=0?'+':'')+ecosystem.lastCashflow.toFixed(1)+'P';
   ui.cashflowRate.classList.toggle('danger',ecosystem.lastCashflow<0);ui.reputationRate.classList.toggle('warning',ecosystem.reputation<55);
   document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===simSpeed));
-  ui.missionKicker.textContent='PHASE '+phase+' · '+cfg.title;ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
-  const objs=phase===1?[
-    ['땅 복원',c.restorePct,50,'%'],['깨끗한 물',c.waterPct,55,'%']
-  ]:phase===2?[
-    ['숲',c.forestPct,10,'%'],['습지',c.wetlandPct,8,'%'],['꽃초원',c.meadowPct,8,'%']
-  ]:phase===3?[
-    ['돌아온 동물',returnedSpeciesCount(),4,'종'],['깨끗한 물',c.waterPct,70,'%']
-  ]:[['남은 시설·길',Math.max(0,humanFootprintCount()),0,'개',true]];
-  const scenario=scenarioGoals();
+  ui.missionKicker.textContent='단계 '+phase+' / 4';ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
+  const objs=phaseChecklist(),scenario=scenarioGoals();
+  ui.tycoonBar.classList.toggle('uiHidden',phase<3);ui.guestPanel.classList.toggle('uiHidden',phase<3);
+  document.querySelector('.scenarioGoalTitle')?.classList.toggle('uiHidden',phase<3);ui.scenarioObjectives.classList.toggle('uiHidden',phase<3);
+  ui.carbonRate.closest('.stat')?.classList.toggle('uiHidden',phase<3);ui.bioRate.closest('.stat')?.classList.toggle('uiHidden',phase<2);
   ui.scenarioObjectives.innerHTML=scenario.map(o=>{const done=o[4]?o[1]<=o[2]:o[1]>=o[2];return '<div class="miniGoal '+(done?'done':'')+'"><span>'+(done?'✓ ':'')+o[0]+'</span><b>'+o[1]+o[3]+' / '+o[2]+o[3]+'</b></div>'}).join('');
   const thoughts=ecosystem.thoughts||[];
   ui.thoughtList.innerHTML=thoughts.length?thoughts.map(x=>'<div class="thought '+x.mood+'"><span>'+x.icon+'</span><p><b>'+x.who+'</b>'+x.text+'</p></div>').join(''):'<p class="emptyThought">방문자센터를 세우면 사람들이 찾아옵니다.</p>';
@@ -850,6 +913,7 @@ function updateUI(){
   document.querySelectorAll('.tool').forEach(btn=>{
     const def=TOOL[btn.dataset.tool];const locked=def?.phase&&phase<def.phase;btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
   });
+  updateToolVisibility();updateGuidedUI();
   if(TOOL[selectedTool]?.phase&&phase<TOOL[selectedTool].phase)selectTool('inspect');
 }
 function showTileInfo(t){
@@ -932,15 +996,7 @@ function undo(){
   if(!lastAction){toast('되돌릴 건설이 없어요.');return}
   const s=lastAction;lastAction=null;restoreSnapshot(s);saveGame();toast('마지막 건설을 되돌렸어요.');
 }
-function tryCompleteGame(){
-  const c=counts();
-  if(humanFootprintCount()>0)return false;
-  if(returnedSpeciesCount()<4||ecosystem.carbon>=65||ecosystem.habitatStress>=45||ecosystem.waterStress>=35||c.restorePct<60||c.waterPct<70){
-    toast('시설은 모두 회수했지만 생태계가 아직 안정되지 않았어요. 탄소·물·야생동물을 회복시키세요.','bad',3600);
-    return false;
-  }
-  completeGame();return true;
-}
+function tryCompleteGame(){if(humanFootprintCount()>0)return false;completeGame();return true;}
 function completeGame(){
   if(completed)return;completed=true;running=false;const c=counts();const efficiency=Math.max(0,260-builtCount*6),score=Math.round(c.restorePct*18+c.waterPct*10+returnedSpeciesCount()*500+ecoPoints*2+efficiency-ecosystem.waste*3-ecosystem.carbon*4-ecosystem.habitatStress*3-ecosystem.waterStress*2);
   let best=0;try{best=Number(localStorage.getItem(BEST_KEY)||0);if(score>best)localStorage.setItem(BEST_KEY,String(score));localStorage.removeItem(SAVE_KEY)}catch(e){}
@@ -949,7 +1005,7 @@ function completeGame(){
   ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:returnedSpeciesCount()})}catch(e){}
 }
 function beginNew(tutorial=false){
-  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=1;ecoPoints=130;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;economyClock=0;visitorSpawnClock=0;simSpeed=1;completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
+  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=1;ecoPoints=130;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;economyClock=0;visitorSpawnClock=0;simSpeed=1;showAdvancedTools=false;lastGuideKey='';completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
   generateWorld();ui.intro.classList.add('hidden');ui.result.classList.add('hidden');running=true;sdkStart();selectTool('inspect');checkProgress();saveGame();if(tutorial)showTutorial();else ui.tutorialCoach.classList.add('hidden');
 }
 function continueGame(){
@@ -973,6 +1029,8 @@ ui.newBtn.addEventListener('click',()=>beginNew(false));ui.tutorialBtn.addEventL
 ui.windViewBtn.addEventListener('click',()=>toggleAnalysis('wind'));ui.sunViewBtn.addEventListener('click',()=>toggleAnalysis('sun'));ui.geoViewBtn.addEventListener('click',()=>toggleAnalysis('geo'));ui.pollutionViewBtn.addEventListener('click',()=>toggleAnalysis('pollution'));ui.homeViewBtn.addEventListener('click',resetCamera);
 ui.helpBtn.addEventListener('click',()=>ui.help.classList.remove('hidden'));ui.closeHelpBtn.addEventListener('click',()=>ui.help.classList.add('hidden'));
 ui.missionCollapse.addEventListener('click',()=>ui.mission.classList.toggle('collapsed'));ui.undoBtn.addEventListener('click',undo);ui.saveBtn.addEventListener('click',saveGame);
+ui.nextActionCard.addEventListener('click',()=>{const tool=ui.nextActionCard.dataset.tool;if(tool){selectTool(tool);document.querySelector('.tool[data-tool="'+tool+'"]')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}});
+ui.moreToolsBtn.addEventListener('click',()=>{showAdvancedTools=!showAdvancedTools;updateUI()});
 ui.tutorialNext.addEventListener('click',nextTutorial);ui.tutorialSkip.addEventListener('click',()=>{tutorialMode=false;ui.tutorialCoach.classList.add('hidden')});
 ui.resultAgain.addEventListener('click',()=>{ui.result.classList.add('hidden');ui.intro.classList.remove('hidden')});ui.resultObserve.addEventListener('click',()=>ui.result.classList.add('hidden'));
 document.querySelectorAll('[data-speed]').forEach(btn=>btn.addEventListener('click',()=>{simSpeed=Number(btn.dataset.speed);document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',b===btn));toast(simSpeed===0?'운영을 일시정지했어요.':simSpeed+'배속으로 운영합니다.')}));
@@ -988,7 +1046,7 @@ function animate(now){
   if(running){elapsed+=simDt;saveTimer+=dt;ecologyClock+=simDt;economyClock+=simDt;visitorSpawnClock+=simDt;
     if(visitorSpawnClock>1.4){visitorSpawnClock=0;const target=targetVisitorCount();if(visitors.length<target)spawnVisitor();else if(visitors.length>target&&visitors.length)removeVisitor(visitors[0],false)}
     if(ecologyClock>3){ecologyClock=0;ecologyTick();if(phase===4&&humanFootprintCount()===0)tryCompleteGame()}
-    if(economyClock>5){economyClock=0;economyTick();checkProgress(true);updateUI()}
+    if(economyClock>5){economyClock=0;if(phase>=3)economyTick();checkProgress(true);updateUI()}
     if(saveTimer>20){saveTimer=0;saveGame()}}
   windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*simSpeed);
   animals.forEach((a,i)=>{a.phase+=simDt*(1+i*.08);a.mesh.position.y=.46+Math.sin(a.phase*2)*.035;a.mesh.rotation.y=Math.sin(a.phase*.45)*.25});
