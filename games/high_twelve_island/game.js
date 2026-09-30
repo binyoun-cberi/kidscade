@@ -109,6 +109,8 @@
     }
     const next = (state.pledges || []).filter(p => !p.fulfilled).sort((a,b) => a.due-b.due)[0];
     if (next) parts.push('<span class="issue-chip alert">📌 ' + escapeHTML(next.title) + ' · ' + Math.max(0, next.due - state.tick) + '주 남음</span>');
+    if (state.laws.storage === "reserve") parts.push('<span class="issue-chip">📦 비상식량 ' + number(state.reserveFood || 0) + '/28</span>');
+    if (state.boostUntil > state.tick) parts.push('<span class="issue-chip">⚒️ 집중 생산 · ' + (state.boostUntil - state.tick) + '주 남음</span>');
     if (state.laws.process === "delegate" && state.authorityUses)
       parts.push('<span class="issue-chip">🏛️ 위임 결정 ' + state.authorityUses + '회</span>');
     $("policyNotice").innerHTML = parts.length ? parts.join("") : '<span class="issue-chip">📘 규칙을 정하면 시민들의 요구와 후속 사건이 표시됩니다.</span>';
@@ -202,6 +204,15 @@
       '<div class="resident-list">' + state.citizens.map(residentCard).join("") + '</div>' +
       '<div class="locked-card">💡 이 의견은 주민의 관심사와 현재 마을 상태로 계산돼요. 실제 주민투표의 찬반과는 다를 수 있습니다.</div>';
   }
+
+  function operationCards() {
+    const actions = S.availableActions(state);
+    if (!actions.length) return '<div class="locked-card">🔒 배급·노동·비축 규칙을 정하면 그 규칙에서만 가능한 운영 행동이 열려요.</div>';
+    return '<div class="panel-subhead">규칙으로 열린 운영 행동 <span>선택에 따라 사용 가능</span></div>' +
+      actions.map(a => '<div class="operation-card"><div class="operation-title">' + escapeHTML(a.icon) + ' ' + escapeHTML(a.label) +
+      '</div><small>' + escapeHTML(a.description) + '</small><button class="secondary-btn" data-operation="' + escapeHTML(a.id) + '" ' +
+      (!a.enabled ? 'disabled' : '') + '>' + (a.cooldown ? a.cooldown + '주 후 사용' : a.shortfall > 0 ? '자원 부족' : '실행') + '</button></div>').join('');
+  }
   function renderPanel() {
     const p = element.panel, scroll = p.scrollTop;
     if (activeTab === "work") {
@@ -210,7 +221,7 @@
         '<div class="panel-subhead">배치하지 않은 주민 <span>' + S.unused(state) + "명</span></div>" +
         workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주") +
         workerRow("wood", "🪵", "물자 수집", state.jobs.wood, "생산 " + number(rates.wood) + " / 주") +
-        '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) + "/주 · 주민이 늘면 소비량도 증가합니다. 농장은 채집 일꾼의 효율을 높입니다.</div>";
+        '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) + "/주 · 주민이 늘면 소비량도 증가합니다. 농장은 채집 일꾼의 효율을 높입니다.</div>" + operationCards();
     } else if (activeTab === "build") {
       p.innerHTML = '<h2>공동시설 건설</h2><p class="intro">자동 배치되는 시설을 지어 마을을 발전시키세요. 비용은 즉시 차감됩니다.</p>' +
         Object.entries(S.BUILDINGS).filter(([, b]) => b.stage <= state.stage).map(([id, b]) => buildCard(id, b)).join("") +
@@ -294,6 +305,13 @@
     const job = e.target.closest("[data-job]");
     if (job) {
       if (S.assign(state, job.dataset.job, Number(job.dataset.delta))) { sdk("sound", "click"); save(); render(); }
+      return;
+    }
+    const operation = e.target.closest("[data-operation]");
+    if (operation) {
+      const result = S.performAction(state, operation.dataset.operation);
+      if (result.ok) { sdk("sound", "success"); toast(result.note); save(); render(); }
+      else toast(result.reason);
       return;
     }
     const builder = e.target.closest("[data-build]");
