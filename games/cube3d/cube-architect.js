@@ -848,6 +848,13 @@ function foldPreview(){
 /* ---------------- 아키텍트 월드: 살아있는 복셀 샌드박스 ---------------- */
 const BLOCK_DEFS={
   snow:{name:'눈',icon:'❄',color:0xe8eff5,category:'자연',solid:true},
+  flower:{name:'들꽃',icon:'🌸',color:0xe68fbb,category:'자연',solid:false,special:'flower'},
+  sandstone:{name:'사암',icon:'▤',color:0xd6b477,category:'건축',solid:true},
+  snowBrick:{name:'눈 벽돌',icon:'▦',color:0xd9e9f1,category:'건축',solid:true},
+  reedMat:{name:'갈대 장식',icon:'▧',color:0xa6ad6d,category:'건축',solid:true},
+  flowerDye:{name:'꽃 안료',icon:'🎨',color:0xe75aab,category:'실험',solid:false,hidden:true},
+  cactusDye:{name:'선인장 안료',icon:'🎨',color:0x67a74a,category:'실험',solid:false,hidden:true},
+  blueprintFragment:{name:'설계도 조각',icon:'📜',color:0x8d7ce8,category:'기능',solid:false,hidden:true},
   redSand:{name:'붉은 모래',icon:'🟧',color:0xb76e46,category:'자연',solid:true,gravity:true},
   gravel:{name:'자갈',icon:'▥',color:0x85817d,category:'자연',solid:true,gravity:true},
   pineLog:{name:'소나무 원목',icon:'🪵',color:0x64513b,category:'자연',solid:true,flammable:true},
@@ -893,7 +900,7 @@ const BLOCK_DEFS={
   fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
-const PLACEABLE_TYPES=['snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
+const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
 const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=22,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
@@ -1095,7 +1102,7 @@ function makeWorldMesh(x,y,z,data){
   }else if(type==='torch'){
     root=new THREE.Mesh(torchGeo,materialFor('torch'));root.position.set(x,y+.34,z);
     const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;root.add(light);
-  }else if(type==='sapling'||type==='reed'){
+  }else if(type==='sapling'||type==='reed'||type==='flower'){
     root=new THREE.Mesh(saplingGeo,materialFor(type));root.position.set(x,y+.41,z);
   }else if(type==='fire'){
     root=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
@@ -1249,7 +1256,9 @@ function buildFreeWorld(){
     const h=heights.get(x+','+z),kind=worldRules.region(x,z),b=worldRules.BIOMES[kind];
     const r=Math.hypot(x,z),roll=hash2(x*13+7,z*17-11);
     if(r<4||getBlock(x,h+1,z)||h<0)continue;
-    if(kind==='desert'||kind==='badlands'){
+    if(kind==='flowers'&&roll>.74){
+      setRawBlock(x,h+1,z,{type:'flower',natural:true});
+    }else if(kind==='desert'||kind==='badlands'){
       if(roll>.985&&getBlock(x,h,z)?.type!=='water'){
         for(let y=1;y<=2+Math.floor(hash2(x,z)*2);y++)
           setRawBlock(x,h+y,z,{type:'cactus',natural:true});
@@ -1604,6 +1613,7 @@ function placeFreeBlock(hit){
     if(selectedType==='cuboid'){
       const count=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);consumeBag('planks',count);
     }else consumeBag(selectedType,1);
+    trackSurvival('place',selectedType);
     buildHotbar();updateFreeMission();
   }
   sfx('place');saveFreeWorld();
@@ -1629,8 +1639,10 @@ function breakFreeBlock(hit){
   const volume=type==='cuboid'?(data.dims||[1,1,1]).reduce((a,b)=>a*b,1):1;
   if(removeWorldBlockData(x,y,z,true)){
     if(survival&&resource&&!['water','lava','fire','doorTop','cuboidPart'].includes(resource)){
-      if(type!=='leaves'&&type!=='pineLeaves')addToBag(resource,volume);
-      else if(hash2(x*7+y,z*11-y)>.72)addToBag('sapling',1);
+      if(type!=='leaves'&&type!=='pineLeaves'){
+        addToBag(resource,volume);
+        trackSurvival('harvest',type,volume);
+      }else if(hash2(x*7+y,z*11-y)>.72)addToBag('sapling',1);
     }
     const nearby=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]]
       .map(v=>getBlock(x+v[0],y+v[1],z+v[2]))
@@ -1713,7 +1725,9 @@ function paintLookedFace(){
   const x=hit.object.userData.gx,y=hit.object.userData.gy,z=hit.object.userData.gz,data=getBlock(x,y,z);if(!data)return;
   const fi=THREE.MathUtils.clamp(hit.face.materialIndex,0,5),base='#'+(blockDef(data).color||0xffffff).toString(16).padStart(6,'0');
   const colors=(data.faceColors||Array(6).fill(base)).slice();colors[fi]=facePaintColor;data.faceColors=colors;
-  setWorldBlock(x,y,z,{...data,faceColors:colors},true);toast(FACE_NAMES[fi]+' 면을 '+facePaintColor+' 색으로 칠했어요.');sfx('place');saveFreeWorld();
+  setWorldBlock(x,y,z,{...data,faceColors:colors},true);
+  if(data.type==='cuboid')trackSurvival('paint',worldKey(x,y,z)+':'+fi);
+  toast(FACE_NAMES[fi]+' 면을 '+facePaintColor+' 색으로 칠했어요.');sfx('place');saveFreeWorld();
 }
 function clearMathOverlay(){
   if(mathOverlayGroup){scene.remove(mathOverlayGroup);mathOverlayGroup=null}updateMathOverlay.lastSig='';
@@ -1796,7 +1810,7 @@ function runFurnace(recipe){
     $('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
     if(p<1)requestAnimationFrame(tick);
     else{
-      if(survival)addToBag(recipe.output,1);
+      if(survival){addToBag(recipe.output,1);trackSurvival('smelt',recipe.output)}
       else {hotbarTypes[selectedHotbarSlot]=recipe.output;selectedType=recipe.output;buildHotbar()}
       $('furnaceMessage').textContent=blockDef(recipe.output).name+
         ' 생성! '+(survival?'가방에 넣었어요.':'현재 핫바 칸에 넣었습니다.');
@@ -2043,13 +2057,31 @@ function updateCritters(dt,t){
 }
 
 function checkCollectibles(t){
-  collectibles.forEach(m=>{if(m.userData.gone)return;m.rotation.y+=.02;m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
-    if(camera.position.distanceTo(m.position)<1.35){m.userData.gone=true;scene.remove(m);collected.add(m.userData.collectible);
-      toast(m.userData.label+' 발견!');sfx('good');updateFreeMission();saveFreeWorld();
-      if(collected.size===5){toast('섬의 탐험 목표를 모두 찾았어요!');reportResult('free',100,true)}
+  for(const m of collectibles){
+    if(m.userData.gone)continue;
+    m.rotation.y+=.02;
+    m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
+    const dx=camera.position.x-m.position.x,dz=camera.position.z-m.position.z;
+    if(Math.hypot(dx,dz)<1.65&&Math.abs(freePhysicsY-m.position.y)<2.8){
+      m.userData.gone=true;scene.remove(m);
+      const id=m.userData.collectible;collected.add(id);
+      if(gameFreeMode==='survival'){
+        const prizes={bp1:{roof:2},bp2:{snowBrick:2},bp3:{sandstone:2},
+          c1:{cactusDye:2},c2:{flowerDye:2}};
+        for(const [type,n] of Object.entries(prizes[id]||{blueprintFragment:1}))
+          addToBag(type,n);
+        trackSurvival('find',id);
+      }
+      toast(m.userData.label+' 발견! 건축 보상을 가방에 넣었어요.');
+      sfx('good');updateFreeMission();saveFreeWorld();
+      if(collected.size===5){
+        toast('세계의 다섯 발견물을 모두 찾았어요!');
+        reportResult('free-exploration',100,true);
+      }
     }
-  });
-  nearRuin=Math.hypot(camera.position.x-10,camera.position.z-9.5)<3.3;updateFreeMission();
+  }
+  nearRuin=Math.hypot(camera.position.x-10,camera.position.z-9.5)<3.3;
+  updateFreeMission();
 }
 function blockCoordFromWorld(v){return Math.floor(v+.5)}
 function playerCollidesAt(px,eyeY,pz){
