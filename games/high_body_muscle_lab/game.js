@@ -114,7 +114,7 @@ function createFighter(kind){
   return{root,torso,pelvis,head,limbs,gloves,bones,joints,muscle,skinMats,lastKin:null,flash:0};
 }
 const playerVisual=createFighter('player'),enemyVisual=createFighter('enemy');
-playerVisual.root.position.z=.82;enemyVisual.root.position.z=-.82;enemyVisual.root.rotation.y=Math.PI;
+playerVisual.root.position.z=.82;enemyVisual.root.position.z=-.82;
 
 function rotXZ(x,z,a){const c=Math.cos(a),s=Math.sin(a);return{x:x*c-z*s,z:x*s+z*c}}
 function computeKinematics(p,facing=-1){
@@ -227,7 +227,7 @@ function updateTrajectory(){
 }
 
 function setPressed(id,on){
-  const meta=MUSCLES[id];if(!meta||meta.unlock>state.stage||!state.running)return;
+  const meta=MUSCLES[id];if(!meta||meta.unlock>state.stage||(!state.running&&on))return;
   pressed[id]=Boolean(on);
   syncButtons();
 }
@@ -410,7 +410,7 @@ ui.nextBtn.addEventListener('click',()=>{
 });
 ui.resetBtn.addEventListener('click',resetStage);
 ui.xrayBtn.addEventListener('click',()=>{state.xray=!state.xray;applyXray()});
-ui.helpBtn.addEventListener('click',()=>{ui.tutorial.classList.remove('hidden');state.running=false});
+ui.helpBtn.addEventListener('click',()=>{ui.tutorial.classList.remove('hidden');state.running=false;state.worldScale=0;Object.keys(pressed).forEach(k=>pressed[k]=false);syncButtons()});
 ui.tutorialStart.addEventListener('click',()=>{ui.tutorial.classList.add('hidden');state.running=true;state.last=performance.now();try{localStorage.setItem('kidscade_body_slow3d_tutorial','1')}catch(_){};ensureAudio()});
 
 function resize(){
@@ -423,9 +423,9 @@ function tick(now){
   const realDt=Math.min(.04,Math.max(.001,(now-state.last)/1000));state.last=now;
   if(state.running){
     updatePlayer(realDt);
-    updateFighter(playerVisual,state.pose,-1,activation);
     updateEnemy(realDt*state.worldScale);
   }
+  updateFighter(playerVisual,state.pose,-1,activation);
   const ep=enemyPose();updateFighter(enemyVisual,ep,1,{});
   if(playerVisual.flash>0)playerVisual.flash=Math.max(0,playerVisual.flash-realDt);
   if(enemyVisual.flash>0)enemyVisual.flash=Math.max(0,enemyVisual.flash-realDt);
