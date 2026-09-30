@@ -349,3 +349,10 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
  #survivalCraftList{max-height:28vh}
  #freeMission #survivalReturn{font-size:9px;padding:6px 3px}
 }
+
+
+/* v18 · landmark restoration loop */
+#survivalTechs{display:block;margin:7px 0 9px;padding:7px 8px;border-radius:9px;
+  background:#eef1ff;color:#4b5791;font-size:10px;font-weight:850;line-height:1.35}
+.challenge-difficulty button:disabled{opacity:.52;cursor:not-allowed}
+#actionCheck:not(.hidden){white-space:nowrap}
