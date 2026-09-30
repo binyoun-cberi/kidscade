@@ -171,10 +171,10 @@ const reviewBtn=document.createElement('button');reviewBtn.type='button';reviewB
 const tag=document.createElement('div');tag.className='case-tag';tag.id='caseTag';booth.appendChild(tag);
 const bulletin=document.createElement('div');bulletin.className='city-bulletin';bulletin.id='cityBulletin';document.querySelector('.rules-panel .rulebook').insertBefore(bulletin,document.querySelector('.rules-panel .paper'));
 const meters=document.querySelector('.meters');meters.insertAdjacentHTML('beforeend','<div class="meter" id="timeMeter">교대 여유 <strong id="shiftTime">0</strong></div><div class="meter">연속 정확 <strong id="streak">0</strong></div>');
-document.querySelector('.footer-note').textContent='확장판 v10 · 절차 생성 시민 + 추가검사 관찰실 + 고위험 격리실';
+document.querySelector('.footer-note').textContent='확장판 v11 · 검역소 + 실시간 격리시설 + 생존자 캠프 감시';
 
 const introText=document.querySelector('#introModal .briefing > div');
-if(introText)introText.innerHTML='<h1>격리구역 17 : 제17구역 검역 작전 v10</h1><p>매 캠페인마다 시민의 <b>이름·직업·출신구역·통행증</b>이 다시 구성됩니다. 사람을 외우지 말고 현재 지침과 검사 결과로 판정하세요.</p><p><b>추가검사</b>는 A 관찰실에서 정밀검사를 받는 보류 판정이고, <b>격리</b>는 검역대에서 즉시 소각되는 최종 판정입니다. 양성자는 B 고위험실로 분리되며 관리가 늦으면 시설 내부 감염이 생길 수 있습니다.</p><div class="brief-rules"><b>조작</b><br>I 신분증 · D 문서 대조 · T 체온 · U UV · B 혈액 · R 호흡 · G 소지품<br>V 검사기록 · 판정은 <b>1 통과 · 2 추가검사·관찰 · 3 격리·소각</b></div><button class="primary" id="startBtnV2" type="button">8주 근무 시작</button>';
+if(introText)introText.innerHTML='<h1>격리구역 17 : 제17구역 검역 작전 v11</h1><p>매 캠페인마다 시민의 <b>이름·직업·출신구역·통행증</b>이 다시 구성됩니다. 사람을 외우지 말고 현재 지침과 검사 결과로 판정하세요.</p><p><b>추가검사</b>는 A 관찰실에서 정밀검사를 받는 보류 판정이고, <b>격리</b>는 검역대에서 즉시 소각되는 최종 판정입니다. 화면 아래의 <b>검역소 / 격리시설 / 생존자 캠프</b>를 오가며 시설 상황을 실시간으로 감시하고, 필요할 때만 직접 출동하세요.</p><div class="brief-rules"><b>조작</b><br>I 신분증 · D 문서 대조 · T 체온 · U UV · B 혈액 · R 호흡 · G 소지품<br>V 검사기록 · 판정은 <b>1 통과 · 2 추가검사·관찰 · 3 격리·소각</b></div><button class="primary" id="startBtnV2" type="button">8주 근무 시작</button>';
 
 let state={weekIndex:0,caseIndex:0,trust:82,infection:9,score:0,bloodKits:0,records:[],tests:{},locked:false,started:false,time:0,streak:0,bestStreak:0,totalCorrect:0,totalCases:0,emergencyUsed:false};
 function currentWeek(){return weeks[state.weekIndex]}function current(){return currentWeek().citizens[state.caseIndex]}function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
