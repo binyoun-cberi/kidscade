@@ -181,7 +181,7 @@ function nextPlateAppearance(){
 }
 function startBatting(){
  state='batting';setControls('bat');
- hint('배트 ▲▼로 높이를 맞추고, 초록 타이밍에 스윙!');
+ hint(lessonActive&&inning===1?'배트 ▲▼로 높이를 맞추고, 초록 타이밍에 스윙!':'');
  if(lessonActive&&inning===1&&half==='top'&&lessonPitchCount===0)message('배트 각도를 먼저 바꿔 보고, 초록 구간에 스윙하세요.',2.3);
  updateLesson();setTimeoutLike(()=>spawnCpuPitch(),.85);
 }
@@ -315,7 +315,7 @@ function advanceRunners(side,n){
 
 function startPitching(){
  state='pitching';if(lessonActive&&inning===1&&half==='bottom'&&!lessonPitchSelected)selectedPitch='fastball';
- pitchAim.x=480;pitchAim.y=325;setControls('pitch');hint('구종 선택 → 코스 터치 → 70%까지 누른 뒤 던지기');
+ pitchAim.x=480;pitchAim.y=325;setControls('pitch');hint(lessonActive&&inning===1?'구종 선택 → 코스 터치 → 70%까지 누른 뒤 던지기':'');
  if(lessonActive&&inning===1&&half==='bottom'&&!lessonThrown)message('투수 연습! 구종을 고르고 코스를 누른 뒤 던지세요.',2.2);
  updateLesson();
 }
@@ -353,7 +353,7 @@ function resolveCpuAtPlate(){
  sound('hit',.95);startDefenseBall(contactChance,p.accuracy,fx,fy);
 }
 function startDefenseBall(contact,accuracy,fx,fy){
- state='defenseField';hint('가까운 수비수를 움직여 공을 잡으세요');makeFielders(true);updateLesson();
+ state='defenseField';hint(lessonActive&&inning===1?'가까운 수비수를 움직여 공을 잡으세요':'');makeFielders(true);updateLesson();
  const spray=clamp((fx-480)/150+rand(-.42,.42),-.9,.9),launch=clamp((350-fy)/170+rand(.08,.38),.08,.72),power=clamp(contact+rand(-.18,.26)+(1-accuracy)*.18,.25,.95),rawDist=120+power*235;
  const dir=Math.PI/2+spray,speed=rawDist/(1.2+launch*1.55);
  fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:160+launch*250,bounced:false,owner:null,age:0,maxDist:rawDist};
