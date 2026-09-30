@@ -151,7 +151,7 @@
     const citizen = state.citizens.find(p => p.id === selectedCitizenId);
     const v = S.residentView(state, citizen);
     const pulse = S.communityPulse(state);
-    const last = state.arrivalLog?.[0];
+    const last = state.arrivalLog?.find(item => state.citizens.some(person => person.id === item.citizenId));
     return '<h2>우리 마을 주민</h2><p class="intro">주민마다 이전 경험과 중요하게 생각하는 일이 달라요. 자원과 규칙에 따라 생각도 바뀝니다.</p>' +
       '<div class="citizen-pulse"><span>👥 ' + state.citizens.length + '명</span><span>🌿 안정 ' + pulse.안정 + '명</span><span>💭 걱정 ' + pulse.걱정 + '명</span></div>' +
       (last ? '<div class="arrival-summary"><strong>⛵ 최근 합류: ' + escapeHTML(last.name) + '</strong><small>' + escapeHTML(last.origin) + '</small></div>' : '') +
@@ -202,7 +202,7 @@
       '<img class="npc-head" alt="" src="' + NPC_ASSET + 'skin/tint-' + p.skin + '/tint' + p.skin + '_head.png">' +
       '<img class="npc-face" alt="" src="' + NPC_ASSET + 'face/completes/face1.png">' +
       '<img class="npc-hair" alt="" src="' + NPC_ASSET + 'hair/' + p.hair + '">' +
-      '</span><span>' + escapeHTML(name) + '의 이야기</span>';
+      '</span>' + (compact ? '' : '<span>' + escapeHTML(name) + '의 이야기</span>');
   }
   function renderEvent() {
     const id = state.pending;
@@ -221,7 +221,7 @@
     const arriving = id === "new_resident" ? state.citizens.find(p => p.id === state.arrivalNotice?.citizenId) : null;
     $("speaker").innerHTML = characterPortrait(arriving ? arriving.name : event.speaker);
     $("modalTitle").textContent = arriving ? arriving.name + "님이 마을에 합류했습니다!" : event.title;
-    $("modalBody").textContent = arriving ? arriving.origin + " 이전에는 " + arriving.experience + "을(를) 쌓았고, " + S.PRIORITY_TITLES[arriving.focus] + "에 관심이 있습니다." : event.body;
+    $("modalBody").textContent = arriving ? arriving.origin + " 이전 경험: " + arriving.experience + ". 관심사: " + S.PRIORITY_TITLES[arriving.focus] + "." : event.body;
     $("modalHint").textContent = arriving ? "주민 명부에서 새로운 주민의 현재 생각을 확인할 수 있습니다." : "선택에 따라 자원과 시민들의 반응이 달라집니다. 사건을 해결하면 시간이 다시 흐릅니다.";
     element.modalOptions.innerHTML = event.options.map((o, i) => {
       const afford = !o.cost || Object.entries(o.cost).every(([key, n]) => state[key] >= n);
