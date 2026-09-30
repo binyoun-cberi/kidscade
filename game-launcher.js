@@ -172,7 +172,17 @@
           seconds: reward.sessionSec
         });
         if (typeof window !== 'undefined') {
-          window.KidscadeServerStats?.recordPlay?.(session.id, reward.sessionSec);
+          try {
+            window.KidscadeActivity?.record?.('play', {
+              title: session.title + ' 플레이 완료',
+              summary: reward.durationText + ' 플레이 · 씨앗 +' + reward.rewardSeeds,
+              place: session.title, gameId: session.id
+            });
+          } catch (activityError) {
+            console.warn('[KidscadeGameLauncher] local activity write failed:', activityError);
+          }
+          try { window.KidscadeServerStats?.recordPlay?.(session.id, reward.sessionSec); }
+          catch (statsError) { console.warn('[KidscadeGameLauncher] server stats failed:', statsError); }
           try {
             window.KidscadeProfileHistory?.recordSession?.({
               id: session.id,
@@ -180,11 +190,6 @@
               seconds: reward.sessionSec
             });
             window.KidscadeProfileHistory?.renderBrowserUI?.();
-            window.KidscadeActivity?.record?.('play', {
-              title: session.title + ' 플레이 완료',
-              summary: reward.durationText + ' 플레이 · 씨앗 +' + reward.rewardSeeds,
-              place: session.title, gameId: session.id
-            });
           } catch (profileError) {
             console.warn('[KidscadeGameLauncher] local profile history write failed:', profileError);
           }
