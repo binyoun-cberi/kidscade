@@ -270,17 +270,17 @@ function terrainHeight(x,z){
  if(x<-42&&z>16)h+=1.25*clamp((-x-42)/22,0,1)*clamp((z-16)/35,0,1);
  return Math.max(0,h)
 }
-function addCollider(x,z,w,d,pad=.55){colliders.push({x,z,hw:w/2+pad,hd:d/2+pad,cameraBlocker:w>3||d>3})}
+function addCollider(x,z,w,d,pad=.55){const b={x,z,hw:w/2+pad,hd:d/2+pad,cameraBlocker:w>3||d>3,enabled:true};colliders.push(b);return b}
 function circleAabbHit(x,z,r,b){const nx=clamp(x,b.x-b.hw,b.x+b.hw),nz=clamp(z,b.z-b.hd,b.z+b.hd);return (x-nx)*(x-nx)+(z-nz)*(z-nz)<r*r}
 function blockedAt(x,z,r=.42){
- if(colliders.some(b=>circleAabbHit(x,z,r,b)))return true;
+ if(colliders.some(b=>b.enabled!==false&&circleAabbHit(x,z,r,b)))return true;
  if(resources.some(o=>o.userData.available&&o.userData.resource!=='forage'&&Math.hypot(x-o.position.x,z-o.position.z)<r+(o.userData.resource==='tree'?.68:.94)))return true;
  return placed.some(p=>{const id=p.userData.interactable?.building;if(id==='campfire'||id==='farm')return false;const pr=(BUILD[id]?.radius||1)+.28;return Math.hypot(x-p.position.x,z-p.position.z)<r+pr})
 }
 function angleDelta(a,b){let d=(b-a+Math.PI)%(Math.PI*2)-Math.PI;if(d<-Math.PI)d+=Math.PI*2;return d}
 function dampAngle(a,b,lambda,dt){return a+angleDelta(a,b)*(1-Math.exp(-lambda*dt))}
 function setLocomotion(next){if(player.locomotion===next)return;player.locomotion=next;player.stateTime=0}
-function riverBlocks(x,z,r=.42){return Math.abs(x-RIVER_X)<riverHalfWidth()+r&&Math.abs(z+4)>3.5}
+function riverBlocks(x,z,r=.42){return Math.abs(x-RIVER_X)<riverHalfWidth()+r&&Math.abs(z-BRIDGE_Z)>3.5}
 function slopeAllowed(x0,z0,x1,z1){
  const d=Math.max(.001,Math.hypot(x1-x0,z1-z0)),rise=terrainHeight(x1,z1)-terrainHeight(x0,z0);return {ok:rise/d<=.72,slow:clamp(1-Math.max(0,rise/d)*.42,.62,1)}
 }
@@ -328,7 +328,7 @@ function init3D(){
  const river=new THREE.Mesh(makeRiverGeometry(),new THREE.MeshPhysicalMaterial({color:0x4b9fb1,transparent:true,opacity:.84,roughness:.18,metalness:.03}));river.position.set(RIVER_X,.08,0);groups.world.add(river);scene.userData.river=river;
  box(7,.08,120,0x454b4b,16,.04,-2);box(95,.08,6,0x454b4b,8,.05,-27);
  for(let z=-54;z<=54;z+=10)box(.12,.012,4.7,0xe7d8a1,16,.092,z);for(let x=-34;x<=54;x+=10)box(4.7,.012,.12,0xe7d8a1,x,.092,-27);
- const bridgeHit=box(15,.35,5.5,0x4b5153,RIVER_X,.3,-4);bridgeHit.material.transparent=true;bridgeHit.material.opacity=.05;
+ const bridgeHit=box(15,.35,5.5,0x4b5153,RIVER_X,.3,BRIDGE_Z);bridgeHit.material.transparent=true;bridgeHit.material.opacity=.05;
  const schoolHit=solidBox(13,5.5,9,0xc2aa85,-5,2.75,18,.15);schoolHit.visible=false;label('폐교 체육관',-5,6.9,18);
  placeWorldModel(ART.city+'big-building.glb',{x:-5,z:18,target:15.5,rot:Math.PI*.5});
  const rest=box(2.4,.12,1.2,0x526c55,1,.08,11);addInteract(rest,'rest','체육관 매트에서 쉬기');
@@ -439,7 +439,7 @@ function decorateWorld(){
  for(let z=-52;z<=52;z+=8)cityRoad(16,z,0);
  for(let x=-32;x<=68;x+=8)cityRoad(x,-27,Math.PI*.5);
  placeWorldModel(ART.roads+'road-crossroad-line.glb',{x:16,z:-27,target:8.3,y:.045});
- placeWorldModel(ART.roads+'road-bridge.glb',{x:RIVER_X,z:-4,target:15.2,rot:Math.PI*.5,y:.08});
+ placeWorldModel(ART.roads+'road-bridge.glb',{x:RIVER_X,z:BRIDGE_Z,target:15.2,rot:Math.PI*.5,y:.08});
 
  // 폐허 도시 안쪽의 작은 격자도로. 건물은 이 도로를 기준으로 필지 안에만 놓인다.
  for(let z=-55;z<=-19;z+=8)cityRoad(52,z,0);
@@ -652,16 +652,16 @@ function updatePlayer(dt){
 function segmentAabbT(x0,z0,x1,z1,b,expand=.18){
  const dx=x1-x0,dz=z1-z0;let tmin=0,tmax=1;for(const [o,d,min,max] of [[x0,dx,b.x-b.hw-expand,b.x+b.hw+expand],[z0,dz,b.z-b.hd-expand,b.z+b.hd+expand]]){if(Math.abs(d)<1e-9){if(o<min||o>max)return-1;continue}let t1=(min-o)/d,t2=(max-o)/d;if(t1>t2)[t1,t2]=[t2,t1];tmin=Math.max(tmin,t1);tmax=Math.min(tmax,t2);if(tmin>tmax)return-1}return tmin
 }
-function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
+function cameraBlocked(x,z){return colliders.some(b=>b.enabled!==false&&b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
 function resolveCamera(t,desired){
  const dist=desired.distanceTo(t);let safe=1;
- for(const b of colliders){if(!b.cameraBlocker)continue;const hit=segmentAabbT(t.x,t.z,desired.x,desired.z,b,.28);if(hit>=0&&hit<safe)safe=hit}
+ for(const b of colliders){if(b.enabled===false||!b.cameraBlocker)continue;const hit=segmentAabbT(t.x,t.z,desired.x,desired.z,b,.28);if(hit>=0&&hit<safe)safe=hit}
  if(safe<1)safe=Math.max(.2,safe-.38/Math.max(dist,.01));
  for(let i=2;i<=18;i++){const a=(i/18)*safe,x=t.x+(desired.x-t.x)*a,z=t.z+(desired.z-t.z)*a,y=t.y+(desired.y-t.y)*a;if(y<terrainHeight(x,z)+.42){safe=Math.max(.2,a-.06);break}}
  const out=new THREE.Vector3().lerpVectors(t,desired,safe);out.y=Math.max(out.y,terrainHeight(out.x,out.z)+.48);return out
 }
 function interactionLineClear(origin,target,targetObj=null){
- for(const b of colliders){const cx=b.x,cz=b.z;if(targetObj&&Math.hypot(cx-target.x,cz-target.z)<1.45)continue;const hit=segmentAabbT(origin.x,origin.z,target.x,target.z,b,.05);if(hit>=.02&&hit<.92)return false}return true
+ for(const b of colliders){if(b.enabled===false)continue;const cx=b.x,cz=b.z;if(targetObj&&Math.hypot(cx-target.x,cz-target.z)<1.45)continue;const hit=segmentAabbT(origin.x,origin.z,target.x,target.z,b,.05);if(hit>=.02&&hit<.92)return false}return true
 }
 function updateInteriorVisibility(){
  const px=player.root.position.x,pz=player.root.position.z;for(const zone of ruinZones){const inside=Math.abs(px-zone.x)<zone.hw&&Math.abs(pz-zone.z)<zone.hd;for(const wall of zone.walls){wall.material.opacity=damp(wall.material.opacity,inside?.18:1,8,.016);wall.material.depthWrite=!inside}}
