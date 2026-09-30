@@ -98,6 +98,7 @@ function clearModeUi(){
 }
 function showHome(){
   if(mode==='free')saveFreeWorld();
+  if(mode==='challenge'&&restorationSession)restorationSession=null;
   if(document.pointerLockElement===canvas)document.exitPointerLock?.();
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
@@ -1651,6 +1652,11 @@ function toggleInventory(force){
   if(inventoryOpen){if(document.pointerLockElement===canvas)document.exitPointerLock();buildInventory('전체')}
   $('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
 }
+function nearestUnrestoredLandmark(x,z){
+  return poiRules.POIS.filter(p=>!restoredLandmarks.has(p.id))
+    .map(p=>({...p,distance:Math.round(Math.hypot(x-p.center[0],z-p.center[1]))}))
+    .sort((a,b)=>a.distance-b.distance)[0]||null;
+}
 function updateFreeMission(){
   const bx=Math.round(camera.position.x),bz=Math.round(camera.position.z);
   const region=worldRules.region(bx,bz),biome=worldRules.BIOMES[region];
@@ -1661,26 +1667,41 @@ function updateFreeMission(){
     if(gameFreeMode==='survival')trackSurvival('biome',region);
     if(alreadyExplored){
       const hint=worldRules.BIOME_REWARDS[region];
-      toast('새로운 바이옴 발견 · '+biome.name+'! '+hint.hint);
-      saveFreeWorld();
+      toast('새로운 바이옴 발견 · '+biome.name+'! '+hint.hint);saveFreeWorld();
     }
+  }
+  nearLandmarkPoi=null;
+  if(gameFreeMode==='survival'){
+    const close=poiRules.poiAt(bx,bz,30);
+    if(close&&close.distance<=close.radius+9){
+      if(!discoveredLandmarks.has(close.id)){
+        discoveredLandmarks.add(close.id);
+        toast('랜드마크 발견 · '+close.name+'! 폐허의 겨냥도를 복원할 수 있어요.');
+        saveFreeWorld();
+      }
+      if(close.distance<=close.radius+3)nearLandmarkPoi=close;
+    }
+  }
+  const canRestore=gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  $('actionCheck').classList.toggle('hidden',!canRestore);
+  if(canRestore){
+    $('actionCheck').textContent='복원 설계도';
+    $('actionCheck').disabled=false;
+    $('actionCheck').onclick=()=>openLandmarkRestoration(nearLandmarkPoi);
   }
   const chosen=blockDef(selectedType||'hand').name;
   if(gameFreeMode==='survival'){
     const goal=worldRules.GOALS[survivalStage];
     const progress=survivalFinished?goal.need:worldRules.goalProgress(goal,survivalStats);
-    $('freeQuestTitle').textContent=survivalFinished?
-      '생존 원정 완료 · 자유 탐험':goal.title;
+    $('freeQuestTitle').textContent=survivalFinished?'생존 원정 완료 · 자유 탐험':goal.title;
     $('freeQuestDescription').textContent=survivalFinished?
-      '이제 원하는 바이옴을 탐험하고 나만의 건축물을 계속 발전시켜 보세요.':
-      goal.description;
+      '복원한 랜드마크와 해금된 건축 기술로 월드를 계속 발전시켜 보세요.':goal.description;
     $('adventureCount').textContent=survivalFinished?'완료':
       progress+'/'+goal.need+' · '+(survivalStage+1)+'/'+worldRules.GOALS.length;
-    $('adventureBar').style.width=(survivalFinished?100:
-      Math.round(progress/goal.need*100))+'%';
+    $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+chosen;
-    $('freeHint').textContent=survivalStage<3?
-      '좌클릭 채집 · E 가방·제작 · Space 점프':
+    $('freeHint').textContent=canRestore?'Q · 랜드마크 복원 설계도':
+      survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프':
       '좌클릭 채집 · E 제작·도형 편집 · P 면 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
@@ -1784,6 +1805,11 @@ function breakFreeBlock(hit){
   const {gx:x,gy:y,gz:z}=hit.object.userData;
   const data=getBlock(x,y,z);
   if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  if(data.protectedPoi){
+    const poi=poiRules.poiById(data.landmarkPoi);
+    toast((poi?.name||'랜드마크')+'은 탐험 유적이에요. 가까이 가서 복원 설계도를 이용하세요.');
+    return;
+  }
   const survival=gameFreeMode==='survival';
   let type=data.type==='doorTop'?'door':data.type;
   if(type==='cuboidPart'){
@@ -2339,15 +2365,33 @@ function renderExplorationHint(){
   const show=survivalStage>=4;
   $('explorationHint').classList.toggle('hidden',!show);
   if(!show)return;
-  const x=Math.round(camera.position.x),z=Math.round(camera.position.z),target=nearestUndiscoveredRegion(x,z);
+  const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
+  if(nearLandmarkPoi){
+    if(restoredLandmarks.has(nearLandmarkPoi.id))
+      $('explorationHint').textContent='복원 완료 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
+    else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
+      ' · Q 또는 상단의 ‘복원 설계도’를 눌러 도전';
+    return;
+  }
+  const landmark=nearestUnrestoredLandmark(x,z);
+  if(landmark&&survivalStage>=5){
+    const dx=landmark.center[0]-x,dz=landmark.center[1]-z;
+    const direction=(dz<-5?'북':dz>5?'남':'')+(dx>5?'동':dx<-5?'서':'');
+    const known=discoveredLandmarks.has(landmark.id);
+    $('explorationHint').textContent=(known?landmark.name:'멀리서 특이한 건축 흔적')+
+      ' · '+(direction||'근처')+'쪽 약 '+landmark.distance+'칸'+
+      (known?' · 복원 보상 '+landmark.tech.label:'');
+    return;
+  }
+  const target=nearestUndiscoveredRegion(x,z);
   if(!target){
-    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요! 좋아하는 지역에 거점을 지어 보세요.';
+    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요. 이제 랜드마크 흔적을 찾아보세요.';
     return;
   }
   const dx=target.cx-x,dz=target.cz-z;
   const directions=(dz< -5?'북':dz>5?'남':'')+(dx>5?'동':dx< -5?'서':'');
   const info=worldRules.BIOME_REWARDS[target.id];
-  $('explorationHint').textContent='다음 발견: '+worldRules.BIOMES[target.id].name+
+  $('explorationHint').textContent='다음 지역: '+worldRules.BIOMES[target.id].name+
     ' · '+(directions||'근처')+'쪽 약 '+target.dist+'칸 · '+blockDef(info.resource).name;
 }
 function renderSurvivalSafety(shelter){
@@ -2697,7 +2741,7 @@ document.addEventListener('keydown',e=>{
     if(e.code==='KeyG')selectLookedChallengePiece();
     if(e.code==='KeyP')paintLookedChallengeFace();
     if(e.code==='KeyB')setChallengeTool('build');
-    if(e.code==='KeyN'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
+    if(e.code==='KeyN'&&!restorationSession){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
     return;
   }
   if(mode!=='free')return;
@@ -2714,7 +2758,12 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
   if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
-  if(e.code==='KeyQ'&&nearRuin){toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)}
+  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+    openLandmarkRestoration(nearLandmarkPoi);return;
+  }
+  if(e.code==='KeyQ'&&gameFreeMode==='creative'&&nearRuin){
+    toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)
+  }
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
 window.addEventListener('blur',()=>{resetMobileInput();challengeKeys={};freeKeys={}});
