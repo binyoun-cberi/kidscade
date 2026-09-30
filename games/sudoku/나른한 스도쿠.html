@@ -1,726 +1,552 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>심플 스도쿠</title>
-    <!-- 폭죽 이펙트 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <style>
-        /* 기본 리셋 및 폰트 */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: manipulation;
-        }
-
-        body {
-            background-color: #f8f9fa;
-            color: #212529;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px 10px;
-        }
-
-        /* 상단 UI */
-        .header {
-            width: 100%;
-            max-width: 360px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .title { font-size: 24px; font-weight: bold; color: #6f42c1; }
-        
-        .bgm-btn {
-            background: #e9ecef;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #495057;
-            transition: all 0.2s;
-        }
-        .bgm-btn.on { background: #6f42c1; color: white; }
-
-        /* 정보 패널 */
-        .info-panel {
-            width: 100%;
-            max-width: 360px;
-            display: flex;
-            justify-content: space-between;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .info-box { flex: 1; }
-        .info-label { font-size: 11px; color: #868e96; display: block; margin-bottom: 4px; }
-        .info-value { font-size: 16px; font-weight: bold; }
-        .time-val { color: #212529; }
-        .best-val { color: #2b8a3e; }
-        .hint-val { color: #f59f00; }
-
-        /* 완벽한 비율의 3x3 중첩 그리드 보드 */
-        .board-container {
-            width: 360px;
-            height: 360px;
-            background: #343a40;
-            border: 3px solid #343a40;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 2px; /* 3x3 블록 사이의 굵은 선 역할 */
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .block {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 1px; /* 개별 셀 사이의 얇은 선 역할 */
-            background: #dee2e6;
-        }
-
-        .cell {
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 22px;
-            cursor: pointer;
-            user-select: none;
-            color: #495057;
-            transition: background-color 0.1s;
-        }
-
-        /* 셀 상태 스타일 */
-        .cell.fixed { font-weight: bold; color: #212529; }
-        .cell.input { font-weight: bold; color: #339af0; }
-        
-        /* 하이라이트 효과 */
-        .cell.related { background-color: #f1f3f5; } /* 같은 행,열,블록 */
-        .cell.highlight { background-color: #e3fafc; font-weight: bold; color: #0b7285;} /* 동일한 숫자 */
-        .cell.selected { background-color: #d0ebff !important; font-weight: bold; } /* 선택된 칸 */
-        .cell.error { color: #fa5252; background-color: #ffe3e3 !important; } /* 오류 칸 */
-
-        .cell.hint-anim { animation: hintPop 1s ease; }
-        @keyframes hintPop {
-            0% { transform: scale(1); background-color: #fff3bf; }
-            50% { transform: scale(1.1); background-color: #fcc419; color: white; }
-            100% { transform: scale(1); }
-        }
-
-        /* 컨트롤 버튼 (숫자패드) */
-        .controls {
-            width: 100%;
-            max-width: 360px;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .n-btn {
-            background: white;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            height: 48px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 0 #ced4da;
-            transition: opacity 0.2s, transform 0.1s;
-            color: #495057;
-        }
-        .n-btn:active { transform: translateY(2px); box-shadow: none; }
-        .n-btn.completed { opacity: 0.3; background-color: #f8f9fa; cursor: default; }
-        .erase-btn { color: #fa5252; font-size: 16px; }
-
-        /* 힌트 버튼 */
-        .hint-btn {
-            width: 100%;
-            max-width: 360px;
-            background: #fff3bf;
-            border: 1px solid #fcc419;
-            color: #d9480f;
-            height: 48px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 0 #fcc419;
-        }
-        .hint-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
-        .hint-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: translateY(2px); }
-
-        /* 결과 모달 */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            text-align: center;
-            width: 90%;
-            max-width: 300px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        .modal-title { font-size: 24px; margin-bottom: 10px; }
-        .rank-text { font-size: 28px; font-weight: bold; margin: 15px 0; color: #6f42c1; }
-        .restart-btn {
-            width: 100%;
-            padding: 12px;
-            background: #6f42c1;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        /* 모바일 대응 스케일링 */
-        @media (max-width: 380px) {
-            .board-container { width: 320px; height: 320px; }
-            .cell { font-size: 18px; }
-            .header, .info-panel, .controls, .hint-btn { max-width: 320px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>나른한 스도쿠 | 키즈케이드</title>
+<style>
+:root{
+  --ink:#2f3542;--muted:#7b8190;--paper:#fffdf9;--line:#d9d4ca;--strong:#756a83;
+  --lav:#eee8f7;--lav2:#ddd1ee;--blue:#dff1f4;--mint:#e6f3e7;--yellow:#fff3c9;
+  --red:#d95555;--redbg:#fde8e5;--shadow:0 14px 40px rgba(74,66,82,.10)
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;color:var(--ink)}
+body{
+  min-height:100vh;padding:18px 12px 34px;
+  background:
+    radial-gradient(circle at 10% 0%,rgba(238,232,247,.95),transparent 35%),
+    radial-gradient(circle at 95% 12%,rgba(223,241,244,.85),transparent 32%),
+    linear-gradient(180deg,#fbfaf6 0%,#f6f4ef 100%);
+}
+button{font:inherit}
+button:focus-visible,.cell:focus-visible{outline:3px solid #9e8bc1;outline-offset:2px}
+.app{width:min(100%,520px);margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.brand{min-width:0}
+.brand h1{font-size:clamp(24px,6vw,32px);line-height:1.05;margin:0;font-weight:900;letter-spacing:-1.2px}
+.brand p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.top-actions{display:flex;gap:8px;flex-shrink:0}
+.icon-btn{
+  width:42px;height:42px;border:1px solid #ddd7ce;border-radius:14px;background:rgba(255,255,255,.78);
+  box-shadow:0 4px 12px rgba(74,66,82,.06);cursor:pointer
+}
+.icon-btn:hover{background:#fff}
+.mode-card,.status-card,.board-shell,.tools-card,.rule-card{
+  background:rgba(255,255,255,.82);border:1px solid rgba(212,205,195,.78);box-shadow:var(--shadow)
+}
+.mode-card{border-radius:18px;padding:10px;margin-bottom:10px}
+.mode-label{font-size:11px;font-weight:800;color:var(--muted);margin:0 0 7px 3px}
+.difficulty{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.diff-btn{
+  border:0;border-radius:12px;padding:10px 6px;background:#f3f1ec;color:#6f6a72;cursor:pointer;font-weight:800;font-size:13px
+}
+.diff-btn small{display:block;font-size:10px;font-weight:600;opacity:.72;margin-top:2px}
+.diff-btn.active{background:var(--lav2);color:#51445f;box-shadow:inset 0 0 0 1px #c8b7df}
+.status-card{
+  border-radius:18px;padding:11px 12px;display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:10px
+}
+.stat{text-align:center;position:relative}
+.stat+ .stat:before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:1px;background:#ece7de}
+.stat-label{display:block;font-size:10px;font-weight:800;color:#92909a;margin-bottom:2px}
+.stat-value{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums}
+.guide{
+  min-height:38px;display:flex;align-items:center;justify-content:center;text-align:center;
+  margin:0 6px 9px;padding:7px 12px;border-radius:12px;color:#68636f;font-size:12px;font-weight:700
+}
+.guide.note{background:var(--yellow);color:#80651c}
+.guide.warn{background:var(--redbg);color:#9f3f3f}
+.guide.good{background:var(--mint);color:#3f7445}
+.board-shell{border-radius:22px;padding:10px;margin-bottom:10px}
+.board{
+  width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+  overflow:hidden;border:2px solid var(--strong);border-radius:13px;background:var(--strong)
+}
+.cell{
+  position:relative;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--paper);display:flex;align-items:center;justify-content:center;padding:0;
+  color:#4d4d57;font-size:clamp(18px,5.6vw,27px);font-weight:780;cursor:pointer;user-select:none
+}
+.cell.fixed{color:#31323a;font-weight:950;background:#fbfaf7}
+.cell.input{color:#557f91}
+.cell.hinted{color:#7e6b2d;background:#fff8df}
+.cell.related{background:#f3f0f7}
+.cell.same{background:#e9e1f5;color:#5f4b75}
+.cell.selected{background:#dfeaf6!important;box-shadow:inset 0 0 0 2px #8aa7c2;z-index:2}
+.cell.conflict{color:var(--red)!important;background:var(--redbg)!important}
+.cell.block-r{border-right:2px solid var(--strong)}
+.cell.block-b{border-bottom:2px solid var(--strong)}
+.cell.last-r{border-right:0}
+.cell.last-b{border-bottom:0}
+.notes{position:absolute;inset:2px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;font-size:clamp(7px,2.1vw,10px);font-weight:800;color:#8a8492;line-height:1}
+.note-n.off{visibility:hidden}
+.loading{
+  grid-column:1/-1;grid-row:1/-1;display:flex;align-items:center;justify-content:center;background:#fffdf9;
+  font-size:14px;font-weight:800;color:#9a94a0
+}
+.numpad{
+  display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-bottom:8px
+}
+.num-btn{
+  min-width:0;height:48px;border:1px solid #d9d3cb;border-radius:12px;background:#fff;font-size:20px;
+  font-weight:900;color:#4c525d;cursor:pointer;box-shadow:0 2px 0 #ddd7cf
+}
+.num-btn:active:not(:disabled),.tool-btn:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+.num-btn:disabled{opacity:.28;cursor:default}
+.tools-card{border-radius:18px;padding:9px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
+.tool-btn{
+  min-height:46px;border:0;border-radius:12px;background:#f1efeb;color:#5d5a61;font-weight:850;cursor:pointer;
+  box-shadow:0 2px 0 #ded9d1;font-size:13px
+}
+.tool-btn.note-on{background:var(--yellow);color:#775e18;box-shadow:0 2px 0 #ead180}
+.tool-btn.hint{background:#e8f2ea;color:#426a48;box-shadow:0 2px 0 #c9dfcd}
+.tool-btn.erase{background:#f8eded;color:#9b4a4a;box-shadow:0 2px 0 #e9d0d0}
+.rule-card{border-radius:18px;padding:12px 14px}
+.rule-card summary{cursor:pointer;font-weight:900;font-size:13px}
+.rules{color:#6f6c75;font-size:12px;line-height:1.65;padding-top:7px}
+kbd{padding:1px 5px;border-radius:5px;background:#efede8;border:1px solid #ddd8cf;font-size:10px}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translate(-50%,14px);z-index:30;
+  max-width:min(90vw,430px);padding:10px 14px;border-radius:999px;background:#403b46;color:#fff;
+  font-size:12px;font-weight:800;opacity:0;pointer-events:none;transition:.2s
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal{
+  position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(42,39,46,.45);backdrop-filter:blur(5px)
+}
+.modal.show{display:flex}
+.modal-card{
+  width:min(100%,360px);background:#fffdf9;border-radius:24px;padding:24px;text-align:center;
+  border:1px solid #e4ded5;box-shadow:0 24px 70px rgba(40,35,47,.24)
+}
+.finish-icon{font-size:42px}
+.modal h2{margin:8px 0 5px;font-size:25px}
+.modal p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:17px 0}
+.result-box{background:#f4f1ec;border-radius:12px;padding:9px 4px}
+.result-box b{display:block;font-size:15px}
+.result-box span{font-size:10px;color:var(--muted)}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal-actions button{border:0;border-radius:13px;padding:12px;font-weight:900;cursor:pointer}
+.secondary{background:#efede8;color:#5f5b63}
+.primary{background:#77648d;color:#fff}
+.petal{
+  position:fixed;z-index:50;top:-20px;width:10px;height:16px;border-radius:70% 30% 70% 30%;
+  background:#d8c8e8;pointer-events:none;animation:fall 2.6s linear forwards
+}
+@keyframes fall{to{transform:translate(var(--drift),110vh) rotate(540deg);opacity:.15}}
+@media(max-width:460px){
+  body{padding:11px 8px 24px}.brand p{display:none}.mode-card{padding:8px}.board-shell{padding:7px;border-radius:17px}
+  .numpad{grid-template-columns:repeat(5,1fr);gap:6px}.num-btn{height:43px;font-size:18px}
+  .tools-card{padding:7px}.tool-btn{min-height:43px}.status-card{padding:9px 7px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
 </head>
 <body>
-
-    <!-- Header -->
-    <div class="header">
-        <div class="title">나른한 스도쿠</div>
-        <button class="bgm-btn" id="bgmBtn" onclick="toggleBGM()">🎵 BGM OFF</button>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>나른한 스도쿠</h1>
+      <p>서두르지 말고, 한 칸씩 논리로 채워요.</p>
     </div>
-
-    <!-- Info Panel -->
-    <div class="info-panel">
-        <div class="info-box">
-            <span class="info-label">진행 시간</span>
-            <span class="info-value time-val" id="timeDisplay">00:00</span>
-        </div>
-        <div class="info-box" style="border-left: 1px solid #eee; border-right: 1px solid #eee;">
-            <span class="info-label">최고 기록</span>
-            <span class="info-value best-val" id="bestDisplay">--:--</span>
-        </div>
-        <div class="info-box">
-            <span class="info-label">남은 힌트</span>
-            <span class="info-value hint-val" id="hintDisplay">3</span>
-        </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundBtn" type="button" aria-label="배경음악 켜기" title="배경음악">♪</button>
+      <button class="icon-btn" id="newBtn" type="button" aria-label="새 퍼즐" title="새 퍼즐">↻</button>
     </div>
+  </header>
 
-    <!-- Board -->
-    <div class="board-container" id="board"></div>
-
-    <!-- Controls -->
-    <div class="controls">
-        <button class="n-btn" id="btn-1" onclick="inputNum(1)">1</button>
-        <button class="n-btn" id="btn-2" onclick="inputNum(2)">2</button>
-        <button class="n-btn" id="btn-3" onclick="inputNum(3)">3</button>
-        <button class="n-btn" id="btn-4" onclick="inputNum(4)">4</button>
-        <button class="n-btn" id="btn-5" onclick="inputNum(5)">5</button>
-        <button class="n-btn" id="btn-6" onclick="inputNum(6)">6</button>
-        <button class="n-btn" id="btn-7" onclick="inputNum(7)">7</button>
-        <button class="n-btn" id="btn-8" onclick="inputNum(8)">8</button>
-        <button class="n-btn" id="btn-9" onclick="inputNum(9)">9</button>
-        <button class="n-btn erase-btn" onclick="inputNum(0)">지우기</button>
+  <section class="mode-card" aria-label="난이도 선택">
+    <div class="mode-label">오늘은 얼마나 느긋하게?</div>
+    <div class="difficulty">
+      <button class="diff-btn" data-level="easy" type="button">쉬움<small>빈칸 적게 · 힌트 5</small></button>
+      <button class="diff-btn active" data-level="normal" type="button">보통<small>균형 잡힌 퍼즐</small></button>
+      <button class="diff-btn" data-level="hard" type="button">어려움<small>빈칸 많게 · 힌트 2</small></button>
     </div>
-    
-    <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 힌트 사용하기</button>
+  </section>
 
-    <!-- Modal -->
-    <div class="modal" id="resultModal">
-        <div class="modal-content">
-            <div class="modal-title">성공! 🎉</div>
-            <div style="color:#868e96">소요 시간: <span id="resultTime" style="font-weight:bold; color:#212529;"></span></div>
-            <div class="rank-text" id="resultRank">랭크</div>
-            <button class="restart-btn" onclick="startNewGame()">새 게임 시작</button>
-        </div>
+  <section class="status-card" aria-label="게임 정보">
+    <div class="stat"><span class="stat-label">진행 시간</span><span class="stat-value" id="timeDisplay">00:00</span></div>
+    <div class="stat"><span class="stat-label">이 난이도 최고</span><span class="stat-value" id="bestDisplay">--:--</span></div>
+    <div class="stat"><span class="stat-label">남은 힌트</span><span class="stat-value" id="hintDisplay">3</span></div>
+  </section>
+
+  <div class="guide" id="guide" aria-live="polite">칸을 누르고 숫자를 골라 보세요. 메모도 할 수 있어요.</div>
+
+  <section class="board-shell">
+    <div class="board" id="board" role="grid" aria-label="9×9 스도쿠 보드"></div>
+  </section>
+
+  <div class="numpad" id="numpad" aria-label="숫자 입력">
+    <button class="num-btn" data-num="1" type="button">1</button><button class="num-btn" data-num="2" type="button">2</button>
+    <button class="num-btn" data-num="3" type="button">3</button><button class="num-btn" data-num="4" type="button">4</button>
+    <button class="num-btn" data-num="5" type="button">5</button><button class="num-btn" data-num="6" type="button">6</button>
+    <button class="num-btn" data-num="7" type="button">7</button><button class="num-btn" data-num="8" type="button">8</button>
+    <button class="num-btn" data-num="9" type="button">9</button>
+  </div>
+
+  <section class="tools-card" aria-label="도구">
+    <button class="tool-btn" id="noteBtn" type="button">✎ 메모 OFF</button>
+    <button class="tool-btn hint" id="hintBtn" type="button">💡 힌트</button>
+    <button class="tool-btn erase" id="eraseBtn" type="button">⌫ 지우기</button>
+  </section>
+
+  <details class="rule-card">
+    <summary>처음이라면 규칙 보기</summary>
+    <div class="rules">
+      가로줄, 세로줄, 굵은 선으로 나뉜 3×3 상자마다 <b>1부터 9까지 한 번씩</b> 들어가야 해요.
+      빨간 칸은 같은 줄이나 상자에 같은 숫자가 겹쳤다는 뜻이에요. 정답 자체를 바로 판정하지 않으니 시행착오보다 추론에 집중할 수 있어요.<br>
+      PC에서는 숫자키 입력, 방향키 이동, <kbd>M</kbd> 메모, <kbd>H</kbd> 힌트를 사용할 수 있어요.
     </div>
+  </details>
+</main>
 
-    <script>
-        // 변수 초기화
-        let solvedGrid = [];
-        let playerGrid = [];
-        let initialGrid = [];
-        let selected = null;
-        let timer = 0;
-        let interval = null;
-        let hintsLeft = 3;
-        let isPlaying = false;
-        let isLoading = false;
-        let bestTime = localStorage.getItem('simpleSudokuBest');
+<div class="toast" id="toast"></div>
 
-        // DOM 요소
-        const boardEl = document.getElementById('board');
-        const timeEl = document.getElementById('timeDisplay');
-        const bestEl = document.getElementById('bestDisplay');
-        const hintEl = document.getElementById('hintDisplay');
-        const hintBtn = document.getElementById('hintBtn');
-        const modal = document.getElementById('resultModal');
+<div class="modal" id="finishModal" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
+  <div class="modal-card">
+    <div class="finish-icon">☁️</div>
+    <h2 id="finishTitle">느긋하게 완성했어요!</h2>
+    <p id="finishMessage">천천히 채워도 논리는 정확했어요.</p>
+    <div class="result-grid">
+      <div class="result-box"><b id="resultLevel">보통</b><span>난이도</span></div>
+      <div class="result-box"><b id="resultTime">00:00</b><span>시간</span></div>
+      <div class="result-box"><b id="resultHints">0</b><span>사용 힌트</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="secondary" id="closeModalBtn" type="button">완성판 보기</button>
+      <button class="primary" id="againBtn" type="button">새 퍼즐</button>
+    </div>
+  </div>
+</div>
 
-        window.onload = () => {
-            if (bestTime) bestEl.innerText = formatTime(bestTime);
-            document.addEventListener('keydown', handleKeys);
-            startNewGame();
-        };
+<script>
+(function(){
+"use strict";
 
-        // --- 스도쿠 생성 및 검증 핵심 로직 ---
-        function createEmptyGrid() {
-            return Array.from({length: 9}, () => Array(9).fill(0));
-        }
+var LEVELS={
+  easy:{label:"쉬움",blanks:36,hints:5},
+  normal:{label:"보통",blanks:44,hints:3},
+  hard:{label:"어려움",blanks:50,hints:2}
+};
+var STATE_KEY="kidscadeSudokuStateV2";
+var LEGACY_BEST_KEY="simpleSudokuBest";
+var level="normal",solvedGrid=[],initialGrid=[],playerGrid=[],notes=[];
+var selected=null,noteMode=false,timer=0,interval=null,isPlaying=false,isLoading=false,isComplete=false;
+var hintsLeft=3,hintsUsed=0,guideTimer=null,toastTimer=null;
+var board=document.getElementById("board"),guide=document.getElementById("guide");
+var timeDisplay=document.getElementById("timeDisplay"),bestDisplay=document.getElementById("bestDisplay"),hintDisplay=document.getElementById("hintDisplay");
+var hintBtn=document.getElementById("hintBtn"),noteBtn=document.getElementById("noteBtn"),modal=document.getElementById("finishModal");
 
-        // Fisher-Yates 셔플 알고리즘 (균등한 랜덤 분배)
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+function deepCopy(g){return g.map(function(row){return row.slice();});}
+function emptyNotes(){return Array.from({length:9},function(){return Array.from({length:9},function(){return [];});});}
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+function pattern(r,c){return (r*3+Math.floor(r/3)+c)%9;}
+function buildSolved(){
+  var rBase=[0,1,2],rows=[],cols=[],nums=shuffle([1,2,3,4,5,6,7,8,9]);
+  shuffle(rBase.slice()).forEach(function(g){shuffle(rBase.slice()).forEach(function(r){rows.push(g*3+r);});});
+  shuffle(rBase.slice()).forEach(function(g){shuffle(rBase.slice()).forEach(function(c){cols.push(g*3+c);});});
+  return rows.map(function(r){return cols.map(function(c){return nums[pattern(r,c)];});});
+}
+function canPlace(g,r,c,n){
+  for(var i=0;i<9;i++) if(g[r][i]===n||g[i][c]===n) return false;
+  var br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  for(var rr=br;rr<br+3;rr++) for(var cc=bc;cc<bc+3;cc++) if(g[rr][cc]===n) return false;
+  return true;
+}
+function candidatesFor(g,r,c){
+  if(g[r][c]!==0) return [];
+  var out=[];for(var n=1;n<=9;n++) if(canPlace(g,r,c,n)) out.push(n);return out;
+}
+function countSolutions(g,limit){
+  var count=0;
+  function rec(){
+    if(count>=limit)return;
+    var bestR=-1,bestC=-1,best=null;
+    for(var r=0;r<9;r++){
+      for(var c=0;c<9;c++){
+        if(g[r][c]!==0)continue;
+        var cand=candidatesFor(g,r,c);
+        if(cand.length===0)return;
+        if(best===null||cand.length<best.length){best=cand;bestR=r;bestC=c;if(best.length===1)break;}
+      }
+      if(best&&best.length===1)break;
+    }
+    if(bestR===-1){count++;return;}
+    for(var i=0;i<best.length;i++){
+      g[bestR][bestC]=best[i];rec();g[bestR][bestC]=0;if(count>=limit)return;
+    }
+  }
+  rec();return count;
+}
+function makePuzzle(solution,target){
+  var puzzle=deepCopy(solution),pairs=[];
+  for(var p=0;p<=40;p++)pairs.push([p,80-p]);
+  shuffle(pairs);var removed=0;
+  for(var i=0;i<pairs.length&&removed<target;i++){
+    var a=pairs[i][0],b=pairs[i][1],cells=a===b?[a]:[a,b],backup=[];
+    for(var k=0;k<cells.length;k++){
+      var pos=cells[k],r=Math.floor(pos/9),c=pos%9;backup.push(puzzle[r][c]);puzzle[r][c]=0;
+    }
+    if(countSolutions(deepCopy(puzzle),2)===1&&removed+cells.length<=target){removed+=cells.length;}
+    else{
+      for(var x=0;x<cells.length;x++){var po=cells[x],rr=Math.floor(po/9),cc=po%9;puzzle[rr][cc]=backup[x];}
+    }
+  }
+  return puzzle;
+}
+function bestKey(){return "simpleSudokuBest-"+level;}
+function formatTime(sec){
+  sec=Math.max(0,Number(sec)||0);var m=String(Math.floor(sec/60)).padStart(2,"0"),s=String(sec%60).padStart(2,"0");return m+":"+s;
+}
+function updateBest(){
+  var best=localStorage.getItem(bestKey());bestDisplay.textContent=best?formatTime(best):"--:--";
+}
+function hasProgress(){
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(initialGrid[r]&&initialGrid[r][c]===0&&playerGrid[r][c]!==0)return true;
+  return timer>0;
+}
+function setGuide(text,type,sticky){
+  clearTimeout(guideTimer);guide.textContent=text;guide.className="guide"+(type?" "+type:"");
+  if(!sticky){guideTimer=setTimeout(function(){guide.textContent=noteMode?"메모 모드예요. 후보 숫자를 여러 개 적어둘 수 있어요.":"칸을 누르고 숫자를 골라 보세요. 메모도 할 수 있어요.";guide.className="guide"+(noteMode?" note":"");},2600);}
+}
+function toast(text){
+  var el=document.getElementById("toast");clearTimeout(toastTimer);el.textContent=text;el.classList.add("show");
+  toastTimer=setTimeout(function(){el.classList.remove("show");},1900);
+}
+function findConflicts(){
+  var bad=new Set();
+  function key(r,c){return r+"-"+c;}
+  for(var r=0;r<9;r++){
+    for(var c=0;c<9;c++){
+      var v=playerGrid[r][c];if(!v)continue;
+      for(var i=0;i<9;i++){
+        if(i!==c&&playerGrid[r][i]===v){bad.add(key(r,c));bad.add(key(r,i));}
+        if(i!==r&&playerGrid[i][c]===v){bad.add(key(r,c));bad.add(key(i,c));}
+      }
+      var br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+      for(var rr=br;rr<br+3;rr++)for(var cc=bc;cc<bc+3;cc++){
+        if((rr!==r||cc!==c)&&playerGrid[rr][cc]===v){bad.add(key(r,c));bad.add(key(rr,cc));}
+      }
+    }
+  }
+  return bad;
+}
+function drawBoard(){
+  board.innerHTML="";
+  if(isLoading){var load=document.createElement("div");load.className="loading";load.textContent="퍼즐을 조용히 섞는 중…";board.appendChild(load);return;}
+  var conflicts=findConflicts(),selectedVal=selected?playerGrid[selected.r][selected.c]:0;
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++){
+    var cell=document.createElement("button");cell.type="button";cell.className="cell";cell.setAttribute("role","gridcell");
+    cell.setAttribute("aria-label",(r+1)+"행 "+(c+1)+"열"+(playerGrid[r][c]?" 숫자 "+playerGrid[r][c]:" 빈칸"));
+    if(c===2||c===5)cell.classList.add("block-r");if(r===2||r===5)cell.classList.add("block-b");
+    if(c===8)cell.classList.add("last-r");if(r===8)cell.classList.add("last-b");
+    var v=playerGrid[r][c];
+    if(initialGrid[r][c]!==0)cell.classList.add("fixed");
+    else if(v!==0)cell.classList.add("input");
+    if(cell.dataset&&cell.dataset.hinted==="1")cell.classList.add("hinted");
+    if(selected){
+      var related=r===selected.r||c===selected.c||(Math.floor(r/3)===Math.floor(selected.r/3)&&Math.floor(c/3)===Math.floor(selected.c/3));
+      if(related&&(r!==selected.r||c!==selected.c))cell.classList.add("related");
+      if(r===selected.r&&c===selected.c)cell.classList.add("selected");
+      else if(selectedVal&&v===selectedVal)cell.classList.add("same");
+    }
+    if(conflicts.has(r+"-"+c))cell.classList.add("conflict");
+    if(v!==0)cell.textContent=String(v);
+    else if(notes[r][c]&&notes[r][c].length){
+      var ng=document.createElement("span");ng.className="notes";var set=new Set(notes[r][c]);
+      for(var n=1;n<=9;n++){var ns=document.createElement("span");ns.className="note-n"+(set.has(n)?"":" off");ns.textContent=n;ng.appendChild(ns);}
+      cell.appendChild(ng);
+    }
+    (function(rr,cc){cell.addEventListener("click",function(){selectCell(rr,cc,true);});})(r,c);
+    board.appendChild(cell);
+  }
+  updatePad();
+}
+function selectCell(r,c,start){
+  if(isLoading||isComplete)return;selected={r:r,c:c};if(start)startTimer();drawBoard();
+}
+function updatePad(){
+  var counts=Array(10).fill(0);
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(playerGrid[r][c])counts[playerGrid[r][c]]++;
+  document.querySelectorAll(".num-btn").forEach(function(btn){
+    var n=Number(btn.dataset.num);btn.disabled=!noteMode&&counts[n]>=9;
+  });
+  hintDisplay.textContent=hintsLeft;hintBtn.disabled=hintsLeft<=0||isComplete;
+  noteBtn.classList.toggle("note-on",noteMode);noteBtn.textContent=noteMode?"✎ 메모 ON":"✎ 메모 OFF";
+}
+function pruneNotes(r,c,num){
+  for(var i=0;i<9;i++){
+    notes[r][i]=notes[r][i].filter(function(n){return n!==num;});
+    notes[i][c]=notes[i][c].filter(function(n){return n!==num;});
+  }
+  var br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+  for(var rr=br;rr<br+3;rr++)for(var cc=bc;cc<bc+3;cc++)notes[rr][cc]=notes[rr][cc].filter(function(n){return n!==num;});
+}
+function inputNum(num){
+  if(!selected||isLoading||isComplete)return;
+  var r=selected.r,c=selected.c;if(initialGrid[r][c]!==0){toast("처음부터 적힌 숫자는 바꿀 수 없어요.");return;}
+  startTimer();
+  if(noteMode&&num!==0){
+    if(playerGrid[r][c]!==0){toast("숫자가 적힌 칸은 먼저 지워 주세요.");return;}
+    var arr=notes[r][c],idx=arr.indexOf(num);if(idx>=0)arr.splice(idx,1);else{arr.push(num);arr.sort();}
+    setGuide("후보 "+num+(idx>=0?"를 지웠어요.":"를 메모했어요."),"note");saveState();drawBoard();return;
+  }
+  playerGrid[r][c]=num;notes[r][c]=[];
+  if(num)pruneNotes(r,c,num);
+  var conflicts=findConflicts();
+  if(conflicts.has(r+"-"+c))setGuide("같은 가로·세로·3×3 상자 안에 "+num+"이 겹쳐 있어요.","warn");
+  else if(num)setGuide("좋아요. 겹치는 숫자는 없어요.","good");
+  saveState();drawBoard();checkWin();
+}
+function eraseSelected(){
+  if(!selected||isLoading||isComplete)return;
+  var r=selected.r,c=selected.c;if(initialGrid[r][c]!==0){toast("처음 숫자는 지울 수 없어요.");return;}
+  playerGrid[r][c]=0;notes[r][c]=[];saveState();drawBoard();
+}
+function toggleNote(){
+  if(isLoading||isComplete)return;noteMode=!noteMode;updatePad();
+  setGuide(noteMode?"메모 모드예요. 정답 후보를 여러 개 적어두세요.":"숫자 입력 모드로 돌아왔어요.",noteMode?"note":"good",true);
+}
+function useHint(){
+  if(isLoading||isComplete||hintsLeft<=0)return;
+  var conflicts=findConflicts();
+  if(conflicts.size){setGuide("빨간 충돌 칸을 먼저 고치면 힌트가 더 정확해져요.","warn");return;}
+  startTimer();
+  var options=[];
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(initialGrid[r][c]===0&&playerGrid[r][c]!==solvedGrid[r][c]){
+    if(playerGrid[r][c]===0){var cand=candidatesFor(playerGrid,r,c);options.push({r:r,c:c,cand:cand});}
+  }
+  if(!options.length){checkWin();return;}
+  options.sort(function(a,b){return a.cand.length-b.cand.length;});
+  var target=null;
+  if(selected){
+    for(var i=0;i<options.length;i++)if(options[i].r===selected.r&&options[i].c===selected.c){target=options[i];break;}
+  }
+  if(!target)target=options[0];
+  selected={r:target.r,c:target.c};var ans=solvedGrid[target.r][target.c];
+  playerGrid[target.r][target.c]=ans;notes[target.r][target.c]=[];pruneNotes(target.r,target.c,ans);
+  hintsLeft--;hintsUsed++;
+  if(target.cand.length===1)setGuide("힌트: 이 칸에는 "+ans+"만 들어갈 수 있어요.","good",true);
+  else setGuide("힌트: 이 칸의 가능한 수를 좁혀 보면 "+ans+"이 남아요.","good",true);
+  saveState();drawBoard();checkWin();
+}
+function checkWin(){
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(playerGrid[r][c]!==solvedGrid[r][c])return;
+  clearInterval(interval);interval=null;isPlaying=false;isComplete=true;
+  var old=Number(localStorage.getItem(bestKey())||0);
+  if(!old||timer<old)localStorage.setItem(bestKey(),String(timer));
+  var legacy=Number(localStorage.getItem(LEGACY_BEST_KEY)||0);
+  if(!legacy||timer<legacy)localStorage.setItem(LEGACY_BEST_KEY,String(timer));
+  localStorage.removeItem(STATE_KEY);updateBest();
+  document.getElementById("resultLevel").textContent=LEVELS[level].label;
+  document.getElementById("resultTime").textContent=formatTime(timer);
+  document.getElementById("resultHints").textContent=String(hintsUsed);
+  document.getElementById("finishMessage").textContent=hintsUsed===0?"힌트 없이 끝까지 논리로 풀었어요.":"힌트 "+hintsUsed+"번과 함께 차근차근 완성했어요.";
+  modal.classList.add("show");celebrate();updatePad();
+}
+function startTimer(){
+  if(isPlaying||isLoading||isComplete)return;isPlaying=true;
+  interval=setInterval(function(){timer++;timeDisplay.textContent=formatTime(timer);if(timer%5===0)saveState();},1000);
+}
+function saveState(){
+  if(isLoading||isComplete||!initialGrid.length)return;
+  try{
+    localStorage.setItem(STATE_KEY,JSON.stringify({
+      v:2,level:level,solved:solvedGrid,initial:initialGrid,player:playerGrid,notes:notes,timer:timer,
+      hintsLeft:hintsLeft,hintsUsed:hintsUsed,selected:selected,noteMode:noteMode
+    }));
+  }catch(e){}
+}
+function validGrid(g){return Array.isArray(g)&&g.length===9&&g.every(function(row){return Array.isArray(row)&&row.length===9;});}
+function restoreState(){
+  try{
+    var raw=localStorage.getItem(STATE_KEY);if(!raw)return false;var s=JSON.parse(raw);
+    if(s.v!==2||!LEVELS[s.level]||!validGrid(s.solved)||!validGrid(s.initial)||!validGrid(s.player))return false;
+    level=s.level;solvedGrid=s.solved;initialGrid=s.initial;playerGrid=s.player;
+    notes=validGrid(s.notes)?s.notes:emptyNotes();timer=Number(s.timer)||0;hintsLeft=Number.isFinite(s.hintsLeft)?s.hintsLeft:LEVELS[level].hints;
+    hintsUsed=Number(s.hintsUsed)||0;selected=s.selected&&Number.isInteger(s.selected.r)&&Number.isInteger(s.selected.c)?s.selected:null;
+    noteMode=!!s.noteMode;isComplete=false;isLoading=false;timeDisplay.textContent=formatTime(timer);updateLevelButtons();updateBest();drawBoard();
+    setGuide("이전에 풀던 퍼즐을 이어서 열었어요.","good");return true;
+  }catch(e){return false;}
+}
+function newGame(force){
+  if(!force&&hasProgress()&&!isComplete&&!confirm("풀던 퍼즐을 두고 새 퍼즐을 시작할까요?"))return;
+  clearInterval(interval);interval=null;isPlaying=false;isComplete=false;isLoading=true;selected=null;noteMode=false;timer=0;
+  hintsLeft=LEVELS[level].hints;hintsUsed=0;timeDisplay.textContent="00:00";modal.classList.remove("show");drawBoard();updateLevelButtons();updateBest();
+  setGuide("새 퍼즐을 만들고 있어요. 잠깐만요.","note",true);
+  setTimeout(function(){
+    solvedGrid=buildSolved();initialGrid=makePuzzle(solvedGrid,LEVELS[level].blanks);playerGrid=deepCopy(initialGrid);notes=emptyNotes();
+    isLoading=false;drawBoard();saveState();setGuide("준비됐어요. 가장 확실한 칸부터 천천히 찾아보세요.","good");
+  },30);
+}
+function updateLevelButtons(){
+  document.querySelectorAll(".diff-btn").forEach(function(btn){btn.classList.toggle("active",btn.dataset.level===level);});
+}
+function changeLevel(next){
+  if(next===level)return;
+  if(hasProgress()&&!isComplete&&!confirm("난이도를 바꾸면 새 퍼즐이 시작돼요. 바꿀까요?"))return;
+  level=next;newGame(true);
+}
+function celebrate(){
+  if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  for(var i=0;i<26;i++){
+    (function(idx){setTimeout(function(){
+      var p=document.createElement("i");p.className="petal";p.style.left=(5+Math.random()*90)+"vw";p.style.setProperty("--drift",(-80+Math.random()*160)+"px");
+      p.style.animationDuration=(2+Math.random()*1.6)+"s";p.style.background=["#d8c8e8","#c9e2dd","#f0ddad","#cbdced"][idx%4];
+      document.body.appendChild(p);setTimeout(function(){p.remove();},3800);
+    },idx*35);})(i);
+  }
+}
 
-        function checkValid(grid, r, c, num) {
-            for (let i = 0; i < 9; i++) {
-                if (grid[r][i] === num || grid[i][c] === num) return false;
-            }
-            let br = Math.floor(r / 3) * 3;
-            let bc = Math.floor(c / 3) * 3;
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (grid[br + i][bc + j] === num) return false;
-                }
-            }
-            return true;
-        }
+var audioCtx=null,master=null,bgmOn=false,bgmToken=0,activeOsc=new Set();
+function initAudio(){
+  if(audioCtx)return;audioCtx=new (window.AudioContext||window.webkitAudioContext)();master=audioCtx.createGain();master.gain.value=.08;
+  var filter=audioCtx.createBiquadFilter();filter.type="lowpass";filter.frequency.value=650;master.connect(filter);filter.connect(audioCtx.destination);
+}
+function scheduleTone(token){
+  if(!bgmOn||token!==bgmToken)return;
+  var osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),freqs=[130.81,146.83,164.81,196,220];
+  osc.type="sine";osc.frequency.value=freqs[Math.floor(Math.random()*freqs.length)];osc.connect(gain);gain.connect(master);activeOsc.add(osc);
+  var now=audioCtx.currentTime,dur=5+Math.random()*2;gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.055,now+1.6);
+  gain.gain.linearRampToValueAtTime(0,now+dur);osc.start(now);osc.stop(now+dur+.05);
+  osc.onended=function(){activeOsc.delete(osc);};
+  setTimeout(function(){scheduleTone(token);},2800+Math.random()*1700);
+}
+function toggleBgm(){
+  initAudio();bgmOn=!bgmOn;bgmToken++;var btn=document.getElementById("soundBtn");
+  if(bgmOn){if(audioCtx.state==="suspended")audioCtx.resume();btn.textContent="♫";btn.setAttribute("aria-label","배경음악 끄기");scheduleTone(bgmToken);setTimeout(function(){scheduleTone(bgmToken);},900);}
+  else{btn.textContent="♪";btn.setAttribute("aria-label","배경음악 켜기");activeOsc.forEach(function(o){try{o.stop();}catch(e){}});activeOsc.clear();}
+}
+function handleKey(e){
+  if(modal.classList.contains("show"))return;
+  if(e.key>="1"&&e.key<="9"){inputNum(Number(e.key));return;}
+  if(e.key==="Backspace"||e.key==="Delete"||e.key==="0"){e.preventDefault();eraseSelected();return;}
+  if(e.key.toLowerCase()==="m"){toggleNote();return;}
+  if(e.key.toLowerCase()==="h"){useHint();return;}
+  if(!selected)return;var r=selected.r,c=selected.c;
+  if(e.key==="ArrowUp")r=Math.max(0,r-1);else if(e.key==="ArrowDown")r=Math.min(8,r+1);
+  else if(e.key==="ArrowLeft")c=Math.max(0,c-1);else if(e.key==="ArrowRight")c=Math.min(8,c+1);else return;
+  e.preventDefault();selectCell(r,c,true);
+}
 
-        // 완성된 스도쿠 보드를 생성하는 백트래킹 솔버
-        function solve(grid) {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (grid[r][c] === 0) {
-                        let nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-                        for (let n of nums) {
-                            if (checkValid(grid, r, c, n)) {
-                                grid[r][c] = n;
-                                if (solve(grid)) return true;
-                                grid[r][c] = 0;
-                            }
-                        }
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
+document.querySelectorAll(".num-btn").forEach(function(btn){btn.addEventListener("click",function(){inputNum(Number(btn.dataset.num));});});
+document.querySelectorAll(".diff-btn").forEach(function(btn){btn.addEventListener("click",function(){changeLevel(btn.dataset.level);});});
+document.getElementById("eraseBtn").addEventListener("click",eraseSelected);
+noteBtn.addEventListener("click",toggleNote);hintBtn.addEventListener("click",useHint);
+document.getElementById("newBtn").addEventListener("click",function(){newGame(false);});
+document.getElementById("soundBtn").addEventListener("click",toggleBgm);
+document.getElementById("againBtn").addEventListener("click",function(){newGame(true);});
+document.getElementById("closeModalBtn").addEventListener("click",function(){modal.classList.remove("show");});
+document.addEventListener("keydown",handleKey);
+window.addEventListener("beforeunload",saveState);
 
-        // 해답이 유일한지(1개인지) 카운트하는 솔버 (유일해 보장용 알고리즘)
-        function countSolutions(g, limit = 2) {
-            let count = 0;
-            function solveRec(r, c) {
-                if (r === 9) {
-                    count++;
-                    return;
-                }
-                let nextC = (c + 1) % 9;
-                let nextR = r + (c === 8 ? 1 : 0);
-                
-                if (g[r][c] !== 0) {
-                    solveRec(nextR, nextC);
-                    return;
-                }
-                
-                for (let num = 1; num <= 9; num++) {
-                    if (checkValid(g, r, c, num)) {
-                        g[r][c] = num;
-                        solveRec(nextR, nextC);
-                        g[r][c] = 0;
-                        if (count >= limit) return;
-                    }
-                }
-            }
-            solveRec(0, 0);
-            return count;
-        }
-
-        // --- 게임 라이프사이클 ---
-        function startNewGame() {
-            if (isLoading) return;
-            isLoading = true;
-
-            clearInterval(interval);
-            timer = 0;
-            hintsLeft = 3;
-            isPlaying = false;
-            selected = null;
-            
-            timeEl.innerText = "00:00";
-            hintEl.innerText = hintsLeft;
-            hintBtn.disabled = false;
-            modal.style.display = "none";
-            boardEl.innerHTML = '<div style="color:#adb5bd; margin-top:160px; grid-column: 1/4; font-weight:bold;">새로운 퍼즐 생성 중...</div>';
-            
-            // UI 렌더링 후 연산 진행을 위해 setTimeout 사용
-            setTimeout(() => {
-                let grid = createEmptyGrid();
-                solve(grid);
-                solvedGrid = JSON.parse(JSON.stringify(grid));
-
-                // 81개의 위치를 랜덤하게 섞음
-                let positions = [];
-                for(let i=0; i<81; i++) positions.push(i);
-                shuffle(positions);
-
-                let removedCount = 0;
-                let targetBlanks = 43; // 난이도 밸런스 조정 (쉬움~보통 수준)
-
-                // 해답 유일성을 보장하며 빈칸(hole) 뚫기
-                for(let i=0; i<81; i++) {
-                    let pos = positions[i];
-                    let r = Math.floor(pos / 9);
-                    let c = pos % 9;
-                    
-                    let backup = grid[r][c];
-                    grid[r][c] = 0;
-                    
-                    let copy = JSON.parse(JSON.stringify(grid));
-                    if (countSolutions(copy, 2) === 1) {
-                        removedCount++;
-                        if (removedCount >= targetBlanks) break;
-                    } else {
-                        grid[r][c] = backup; // 유일해가 아니면 복구
-                    }
-                }
-                
-                playerGrid = JSON.parse(JSON.stringify(grid));
-                initialGrid = JSON.parse(JSON.stringify(grid));
-
-                drawBoard();
-                updateNumberPad();
-                isLoading = false;
-            }, 50);
-        }
-
-        // 그리드 렌더링 (3x3 중첩 CSS Grid 반영)
-        function drawBoard() {
-            boardEl.innerHTML = '';
-            for (let b = 0; b < 9; b++) {
-                let block = document.createElement('div');
-                block.className = 'block';
-                let br = Math.floor(b / 3) * 3;
-                let bc = (b % 3) * 3;
-                
-                for (let i = 0; i < 9; i++) {
-                    let r = br + Math.floor(i / 3);
-                    let c = bc + (i % 3);
-                    let cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.id = `cell-${r}-${c}`;
-                    
-                    let val = playerGrid[r][c];
-                    if (val !== 0) {
-                        cell.innerText = val;
-                        if (initialGrid[r][c] !== 0) cell.classList.add('fixed');
-                        else cell.classList.add('input');
-                    }
-                    cell.onclick = () => selectCell(r, c);
-                    block.appendChild(cell);
-                }
-                boardEl.appendChild(block);
-            }
-            checkErrors();
-        }
-
-        // 셀 선택 및 관계된 셀 하이라이트
-        function selectCell(r, c) {
-            if (isLoading) return;
-            if (!isPlaying) startTimer();
-            selected = {r, c};
-            
-            // 기존 효과 지우기
-            document.querySelectorAll('.cell').forEach(el => el.classList.remove('selected', 'highlight', 'related'));
-            
-            document.getElementById(`cell-${r}-${c}`).classList.add('selected');
-
-            let val = playerGrid[r][c];
-            
-            // 가로, 세로, 3x3 박스 및 동일 숫자 하이라이트
-            for(let i = 0; i < 9; i++) {
-                for(let j = 0; j < 9; j++) {
-                    let isRelated = (i === r) || (j === c) || (Math.floor(i/3) === Math.floor(r/3) && Math.floor(j/3) === Math.floor(c/3));
-                    if (isRelated && (i !== r || j !== c)) {
-                        document.getElementById(`cell-${i}-${j}`).classList.add('related');
-                    }
-                    if (val !== 0 && playerGrid[i][j] === val && (i !== r || j !== c)) {
-                        document.getElementById(`cell-${i}-${j}`).classList.add('highlight');
-                    }
-                }
-            }
-        }
-
-        // 숫자 입력
-        function inputNum(num) {
-            if (!selected || isLoading) return;
-            if (!isPlaying) startTimer();
-            
-            let {r, c} = selected;
-            if (initialGrid[r][c] !== 0) return; // 기본 고정 숫자는 수정 불가
-
-            playerGrid[r][c] = num;
-            let cell = document.getElementById(`cell-${r}-${c}`);
-            cell.innerText = num === 0 ? '' : num;
-            
-            if (num !== 0) cell.classList.add('input');
-            else cell.classList.remove('input');
-
-            let hasError = checkErrors();
-            selectCell(r, c); // 하이라이트 갱신
-            if (!hasError) checkWin(); // 에러가 없을 때만 승리 체크
-        }
-
-        // 보드의 모든 에러(충돌) 검사 및 넘버패드 상태 업데이트
-        function checkErrors() {
-            document.querySelectorAll('.cell').forEach(el => el.classList.remove('error'));
-            let hasError = false;
-            
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    let val = playerGrid[r][c];
-                    if (val === 0) continue;
-                    
-                    let isError = false;
-                    for (let i = 0; i < 9; i++) {
-                        if (i !== c && playerGrid[r][i] === val) isError = true;
-                        if (i !== r && playerGrid[i][c] === val) isError = true;
-                    }
-                    let br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
-                    for (let i = 0; i < 3; i++) {
-                        for (let j = 0; j < 3; j++) {
-                            if ((br+i !== r || bc+j !== c) && playerGrid[br+i][bc+j] === val) isError = true;
-                        }
-                    }
-                    if (isError) {
-                        document.getElementById(`cell-${r}-${c}`).classList.add('error');
-                        hasError = true;
-                    }
-                }
-            }
-            updateNumberPad();
-            return hasError;
-        }
-
-        // 넘버패드 진행상황 표시 (특정 숫자가 9개 다 채워졌는지 확인)
-        function updateNumberPad() {
-            let counts = Array(10).fill(0);
-            for(let r=0; r<9; r++) {
-                for(let c=0; c<9; c++) {
-                    if (playerGrid[r][c] !== 0 && !document.getElementById(`cell-${r}-${c}`).classList.contains('error')) {
-                        counts[playerGrid[r][c]]++;
-                    }
-                }
-            }
-            for(let i=1; i<=9; i++) {
-                let btn = document.getElementById(`btn-${i}`);
-                if(btn) {
-                    if(counts[i] >= 9) btn.classList.add('completed');
-                    else btn.classList.remove('completed');
-                }
-            }
-        }
-
-        // 힌트 시스템 (유일해가 보장되므로 안심하고 사용 가능)
-        function useHint() {
-            if (hintsLeft <= 0 || isLoading) return;
-            if (!isPlaying) startTimer();
-            
-            let tr = -1, tc = -1;
-            
-            // 우선순위 1: 현재 선택된 셀이 틀렸거나 비어있는 경우
-            if (selected) {
-                let {r, c} = selected;
-                if (initialGrid[r][c] === 0 && playerGrid[r][c] !== solvedGrid[r][c]) {
-                    tr = r; tc = c;
-                }
-            }
-
-            // 우선순위 2: 그 외 랜덤하게 틀렸거나 비어있는 셀 하나 찾기
-            if (tr === -1) {
-                let emptyCells = [];
-                for (let r = 0; r < 9; r++) {
-                    for (let c = 0; c < 9; c++) {
-                        if (initialGrid[r][c] === 0 && playerGrid[r][c] !== solvedGrid[r][c]) {
-                            emptyCells.push({r, c});
-                        }
-                    }
-                }
-                if (emptyCells.length > 0) {
-                    let rand = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    tr = rand.r; tc = rand.c;
-                }
-            }
-
-            if (tr !== -1) {
-                hintsLeft--;
-                hintEl.innerText = hintsLeft;
-                if (hintsLeft === 0) hintBtn.disabled = true;
-
-                selectCell(tr, tc);
-                inputNum(solvedGrid[tr][tc]);
-                
-                // 힌트로 채워진 칸 애니메이션 효과
-                let cell = document.getElementById(`cell-${tr}-${tc}`);
-                cell.classList.add('hint-anim');
-                setTimeout(() => cell.classList.remove('hint-anim'), 1000);
-            }
-        }
-
-        // 키보드 이벤트
-        function handleKeys(e) {
-            if (!selected || isLoading || (!isPlaying && timer > 0)) return;
-            if (e.key >= '1' && e.key <= '9') inputNum(parseInt(e.key));
-            if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') inputNum(0);
-            
-            let {r, c} = selected;
-            if (e.key === 'ArrowUp' && r > 0) selectCell(r - 1, c);
-            if (e.key === 'ArrowDown' && r < 8) selectCell(r + 1, c);
-            if (e.key === 'ArrowLeft' && c > 0) selectCell(r, c - 1);
-            if (e.key === 'ArrowRight' && c < 8) selectCell(r, c + 1);
-        }
-
-        function startTimer() {
-            if (isPlaying) return;
-            isPlaying = true;
-            interval = setInterval(() => {
-                timer++;
-                timeEl.innerText = formatTime(timer);
-            }, 1000);
-        }
-
-        function formatTime(sec) {
-            let m = Math.floor(sec / 60).toString().padStart(2, '0');
-            let s = (sec % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-
-        // 랭크 계산
-        function getRankInfo(sec) {
-            if(sec < 180) return {name: "챌린저", color: "#e03131"};
-            if(sec < 300) return {name: "그랜드마스터", color: "#c2255c"};
-            if(sec < 480) return {name: "마스터", color: "#9c36b5"};
-            if(sec < 720) return {name: "다이아몬드", color: "#1c7ed6"};
-            if(sec < 900) return {name: "플래티넘", color: "#0ca678"};
-            if(sec < 1200) return {name: "골드", color: "#f59f00"};
-            if(sec < 1500) return {name: "실버", color: "#adb5bd"};
-            if(sec < 1800) return {name: "브론즈", color: "#d9480f"};
-            return {name: "아이언", color: "#495057"};
-        }
-
-        function checkWin() {
-            for (let r=0; r<9; r++) {
-                for (let c=0; c<9; c++) {
-                    if (playerGrid[r][c] === 0) return;
-                }
-            }
-
-            clearInterval(interval);
-            isPlaying = false;
-
-            if (!bestTime || timer < bestTime) {
-                bestTime = timer;
-                localStorage.setItem('simpleSudokuBest', bestTime);
-                bestEl.innerText = formatTime(bestTime);
-            }
-
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-
-            document.getElementById('resultTime').innerText = formatTime(timer);
-            let rank = getRankInfo(timer);
-            let rankEl = document.getElementById('resultRank');
-            rankEl.innerText = rank.name;
-            rankEl.style.color = rank.color;
-            modal.style.display = "flex";
-        }
-
-        // --- 나른한 BGM (Web Audio API) ---
-        let audioCtx, masterGain;
-        let isBgmOn = false;
-        const notes = [130.81, 146.83, 164.81, 196.00, 220.00]; 
-
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.1; 
-            
-            let filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = 500; 
-            
-            masterGain.connect(filter);
-            filter.connect(audioCtx.destination);
-        }
-
-        function playDrone() {
-            if(!isBgmOn) return;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-
-            osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
-            osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
-
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            let now = audioCtx.currentTime;
-            let attack = 2 + Math.random() * 3;
-            let release = 3 + Math.random() * 4;
-            
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.05, now + attack);
-            gain.gain.linearRampToValueAtTime(0, now + attack + release);
-
-            osc.start(now);
-            osc.stop(now + attack + release);
-
-            setTimeout(playDrone, (attack + Math.random() * 2) * 1000);
-        }
-
-        function toggleBGM() {
-            if(!audioCtx) initAudio();
-            
-            let btn = document.getElementById('bgmBtn');
-            isBgmOn = !isBgmOn;
-            
-            if(isBgmOn) {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                playDrone(); playDrone();
-                btn.innerText = '🎵 BGM ON';
-                btn.classList.add('on');
-            } else {
-                btn.innerText = '🎵 BGM OFF';
-                btn.classList.remove('on');
-            }
-        }
-    </script>
+if(!restoreState()){updateLevelButtons();updateBest();newGame(true);}
+})();
+</script>
 </body>
 </html>
