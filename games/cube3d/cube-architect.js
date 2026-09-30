@@ -1190,6 +1190,9 @@ function configureMobileMode(target){
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free');
   $('mobileCheck').classList.toggle('hidden',target!=='challenge');
+  $('mobileNext').classList.toggle('hidden',target!=='challenge');
+  $('mobileCopy').classList.toggle('hidden',target!=='free');
+  $('mobileWeather').classList.toggle('hidden',target!=='free');
   $('mobilePaint').classList.toggle('hidden',target!=='free');
   $('mobileLens').classList.toggle('hidden',target!=='free');
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
@@ -1256,6 +1259,9 @@ function initMobileControls(){
   tap('mobileBreak',()=>mobileBlockAction('break'));
   tap('mobilePlace',()=>mobileBlockAction('place'));
   tap('mobileCheck',()=>{if(mode==='challenge')checkChallenge()});
+  tap('mobileNext',()=>{if(mode==='challenge'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}});
+  tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
+  tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
   tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
   tap('mobileLens',()=>{if(mode==='free')toggleXray()});
