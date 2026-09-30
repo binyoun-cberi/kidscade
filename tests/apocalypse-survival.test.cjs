@@ -19,7 +19,7 @@ test('apocalypse survival module parses and loads Kidscade shell',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="high_apocalypse_survival"/);
   assert.match(html,/type="importmap"/);
-  assert.match(html,/game\.js\?v=20/);
+  assert.match(html,/game\.js\?v=21/);
 });
 
 test('seven-day science and social survival loop is wired',()=>{
@@ -87,10 +87,10 @@ test('tracked Kidscade 3D assets used by the survival map exist',()=>{
   assert.match(js,/renderAvatarSVG/);
 });
 
-test('game is registered in catalog metadata v20',()=>{
+test('game is registered in catalog metadata v21',()=>{
   const game=catalog.games.find(g=>g.id==='high_apocalypse_survival');
   assert.ok(game,'catalog entry missing');
-  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=20');
+  assert.equal(game.href,'games/high_apocalypse_survival/index.html?v=21');
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'sandbox');
   assert.ok(game.players.includes('solo'));
@@ -109,8 +109,8 @@ test('responsive classroom UI exposes survival tablet and mobile controls',()=>{
 test('apocalypse survival uses the shared 3D asset catalog for the map art rework',()=>{
   assert.match(js,/shared-community-3d\.js/);
   for(const id of ['nature.commonTreeA','nature.pineTreeA','prop.waterTower','prop.well','prop.woodLog']) assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/game\.js\?v=20/);
-  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=17$/);
+  assert.match(html,/game\.js\?v=21/);
+  assert.match(catalog.games.find(g=>g.id==='high_apocalypse_survival').href,/\?v=21$/);
 });
 
 
@@ -136,12 +136,12 @@ test('apocalypse repairs achromatic assets and renders a real 3D survivor player
 });
 
 
-test('apocalypse v20 uses clustered scenery and disables tiny decor shadows',()=>{
+test('apocalypse v21 uses clustered scenery and disables tiny decor shadows',()=>{
   assert.match(js,/function scatterSharedCluster/);
   assert.match(js,/shadow:true/);
   assert.match(js,/shadow:!\/grass\|plant\|mushroom/);
   assert.match(js,/scatterSharedCluster\(-45,36/);
-  assert.match(html,/game\.js\?v=20/);
+  assert.match(html,/game\.js\?v=21/);
 });
 
 test('boot bindings use selector lists rather than single-element helpers',()=>{
@@ -260,7 +260,7 @@ test('expedition survival loop connects darkness noise companions and storage',(
   assert.match(js,/function storageBuilt/);
   assert.match(js,/function depositStorage/);
   assert.match(js,/function withdrawStorage/);
-  assert.match(js,/data-tab="storage"/);
+  assert.match(html,/data-tab="storage"/);
   assert.match(html,/id="ruinStatus"/);
   assert.match(html,/id="mobileFlashlight"/);
   assert.match(html,/id="hotFlashlight"/);
@@ -289,4 +289,37 @@ test('village civilization milestone is driven by housing exploration stock and 
   assert.match(js,/settlementLevel<2/);
   assert.match(js,/문명도 3 · 마을/);
   assert.match(js,/storehouse:\{name:'공동창고',icon:'📦',cost:\{wood:3,scrap:1\}/);
+});
+
+
+test('tablet boot regression: all panel handlers are declared and tabs are connected',()=>{
+ for(const fn of ['openPanel','closePanel','togglePanel','renderOpenPanel','renderPanel'])assert.match(js,new RegExp('function '+fn+'\\s*\\('),fn);
+ for(const tab of ['inventory','craft','build','knowledge','map','storage','settlement'])assert.ok(html.includes('data-tab="'+tab+'"'),tab);
+ assert.match(js,/addEventListener\('click',togglePanel\)/);
+ assert.match(js,/addEventListener\('click',closePanel\)/);
+ assert.match(js,/renderPanel\('storage'\)/);
+});
+
+test('tablet handlers can open all seven tabs and toggle without runtime errors',()=>{
+ const a=js.indexOf("let activePanelTab='inventory';"),b=js.indexOf('function updateUI(){',a);
+ assert.ok(a>=0&&b>a,'tablet function block missing');
+ const names=new Set(['hidden']),classList={contains:k=>names.has(k),add:k=>names.add(k),remove:k=>names.delete(k)};
+ const nav=['inventory','craft','build','knowledge','map','storage','settlement'].map(tab=>({dataset:{tab},classList:{toggle:()=>{}}}));
+ const body={innerHTML:'',querySelectorAll:()=>[],querySelector:()=>null};
+ const ctx={ui:{panel:{classList,querySelectorAll:()=>nav},panelBody:body,panelTitle:{textContent:''},zone:{textContent:'야영지'}},
+   game:{inv:{wood:1},storage:{},residents:{},flags:{power:false},knowledge:[],trust:60,communityHealth:70,morale:70,buildings:[],distribution:null,powerKw:0},
+   running:true,buildMode:null,cancelBuild:()=>{},ITEMS:{wood:['목재','🪵']},BUILD:{shelter:{name:'쉼터',icon:'⛺',cost:{wood:1}}},
+   KNOWLEDGE:[{id:'water',subject:'과학',title:'물',text:'물'}],itemHint:()=>'',has:()=>true,costText:()=>'',craft:()=>{},beginBuild:()=>{},
+   clamp:(n,a,b)=>Math.max(a,Math.min(n,b)),player:{root:{position:{x:0,z:8}}},currentObjective:()=>null,
+   ruinSearchProgress:()=>({done:0,total:2}),storageBuilt:()=>false,storageItems:()=>[],residentCount:()=>0,
+   settlementMetrics:()=>({label:'긴장',resilience:40,pressure:30,water:1,food:1,housing:.5,supply:.5,power:0,population:1,shelters:0,farms:0}),
+   RESIDENTS:{},JOBS:{},powerUse:()=>0,hasBuilding:()=>false,distributionName:()=>''};
+ const actions=new Function('ctx','with(ctx){'+js.slice(a,b)+'return {openPanel,closePanel,togglePanel,renderOpenPanel,renderPanel};}')(ctx);
+ for(const tab of ['inventory','craft','build','knowledge','map','storage','settlement']){
+   assert.doesNotThrow(()=>{actions.openPanel(tab);actions.renderOpenPanel()},'failed to open '+tab);
+   assert.equal(classList.contains('hidden'),false,tab);
+ }
+ actions.closePanel();assert.equal(classList.contains('hidden'),true);
+ actions.togglePanel();assert.equal(classList.contains('hidden'),false);
+ actions.togglePanel();assert.equal(classList.contains('hidden'),true);
 });
