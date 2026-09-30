@@ -452,8 +452,11 @@ function seedRestorationChallenge(){
   }
   for(const [x,y,z,dx,dy,dz] of decomposeVoxelSet(kept))
     addChallengeCuboid(x,y,z,[dx,dy,dz],true);
-  const pct=Math.round(kept.length/mission.blocks.length*100);
-  restorationSession.seedPercent=pct;
+  const targetSet=new Set(mission.blocks.map(p=>challengeKey(...p)));
+  const outer=mission.blocks.filter(p=>isOuterVoxel(targetSet,p));
+  const keptSet=new Set(kept.map(p=>challengeKey(...p)));
+  restorationSession.seedPercent=Math.round(
+    outer.filter(p=>keptSet.has(challengeKey(...p))).length/Math.max(1,outer.length)*100);
 }
 function initChallenge(){
   if(restorationSession){challengeDifficulty='hard';missionIndex=restorationSession.missionIndex}
@@ -577,13 +580,20 @@ function isOuterVoxel(set,p){
 function checkChallenge(){
   clearTargetGhosts();
   const match=bestChallengeMatch(),hard=challengeDifficulty==='hard';
-  $('resultCard').classList.remove('hidden');$('resultScore').textContent=match.score+'%';
+  let restorationScore=null;
+  if(restorationSession&&hard){
+    const outer=match.target.points.filter(p=>isOuterVoxel(match.targetKeys,p));
+    const common=outer.filter(p=>match.user.keys.has(challengeKey(...p))).length;
+    restorationScore=Math.round(common/Math.max(1,outer.length)*100);
+  }
+  const shownScore=restorationScore===null?match.score:restorationScore;
+  $('resultCard').classList.remove('hidden');$('resultScore').textContent=shownScore+'%';
   if(!match.user.keys.size){
     $('resultText').textContent='아직 건축한 블록이 없어요. 설계도를 보고 첫 직육면체부터 만들어 보세요.';
     return;
   }
   const origin=match.user.min;
-  const completed=hard?match.score>=85:match.score===100;
+  const completed=restorationSession?restorationScore>=85:(hard?match.score>=85:match.score===100);
   if(!completed){
     if(!hard){
       // Do not overwrite any painted face. Error indications are separate outlines.
@@ -627,9 +637,11 @@ function checkChallenge(){
     const sections=Object.values(groups).filter(g=>g[1]).map(g=>
       g[0]+' '+Math.round(g[2]/g[1]*100)+'%').join(' · ');
     $('resultText').innerHTML=
+      (restorationSession?'<b>폐허 복원도 '+restorationScore+'%</b><br>':'')+
       '윗면 <b>'+top+'%</b> · 정면 <b>'+front+'%</b> · 측면 <b>'+side+'%</b><br>'+
       '<small>주요 부위 참고: '+sections+'</small><br>'+
-      (completed?'외형 복원 완료! 어려움은 85% 이상이면 통과해요.':
+      (completed?'외형 복원 완료! 85% 이상이면 통과해요.':
+      restorationSession?'현재 남아 있는 폐허에 부족한 바깥 구조를 더 복원해 보세요.':
       '세 방향의 외형을 비교해요. 파란 선은 아직 부족한 바깥 구조의 일부예요.')+
       '<br>보이지 않는 내부와 면 색칠은 외형 점수에서 제외합니다.';
   }else{
@@ -641,7 +653,7 @@ function checkChallenge(){
   }
   if(completed){
     toast(hard?'랜드마크 외형 복원 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
-    if(restorationSession)markRestorationSuccess(match.score);
+    if(restorationSession)markRestorationSuccess(restorationScore);
     sfx('good');reportResult(restorationSession?'survival-landmark':'challenge',match.score,true);
   }else{
     toast(hard?'세 방향의 외형을 비교했어요. 색칠은 별도 꾸미기예요.':'부족한 부분을 확인해 보세요.');sfx('bad');
