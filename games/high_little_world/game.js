@@ -66,7 +66,7 @@ function syncTerrain(){
   const dummy=new THREE.Object3D(),color=new THREE.Color();
   sim.cells.forEach((c,i)=>{
     const p=worldPos(c),h=.22+c.height*HEIGHT_STEP;dummy.position.set(p.x,h/2-.22,p.z);dummy.scale.set(1,h,1);dummy.rotation.set(0,0,0);dummy.updateMatrix();landMesh.setMatrixAt(i,dummy.matrix);landMesh.setColorAt(i,color.setHex(biomeColor(c)));
-    const show=c.sea||c.water>.035;dummy.position.set(p.x,groundTop(c)+.025+c.water*.03,p.z);dummy.scale.set(show?1:.001,show?1:.001,.001+(show?.999:0));dummy.updateMatrix();waterMesh.setMatrixAt(i,dummy.matrix);
+    const show=c.sea||c.water>.035;dummy.position.set(p.x,groundTop(c)+.025+c.water*.03,p.z);dummy.scale.set(show?1:.001,show?1:.001,.001+(show ? .999 : 0));dummy.updateMatrix();waterMesh.setMatrixAt(i,dummy.matrix);
   });
   landMesh.instanceMatrix.needsUpdate=true;landMesh.instanceColor.needsUpdate=true;waterMesh.instanceMatrix.needsUpdate=true;
 }
