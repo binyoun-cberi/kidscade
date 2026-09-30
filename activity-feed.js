@@ -109,6 +109,47 @@
       }
     }
 
+    // Carry forward the existing local play history so the new tab is useful
+    // immediately. Imported events are already read and never award currency.
+    function migrateExistingHistory() {
+      if (typeof window === 'undefined') return false;
+      try {
+        const existing = storageApi?.getRaw
+          ? storageApi.getRaw('activityFeed', null)
+          : storage?.getItem?.(KEY);
+        if (existing !== null && existing !== undefined) return false;
+        const history = window.KidscadeProfileHistory?.loadHistory?.();
+        const events = (Array.isArray(history?.recent) ? history.recent : []).map(item => {
+          const at = new Date(item.at).getTime();
+          if (!item.id || !Number.isFinite(at) || at <= 0) return null;
+          const gameId = clean(item.id, 90);
+          const title = clean(gameMeta(gameId)?.title || gameId, 70);
+          const seconds = Math.max(0, Math.floor(Number(item.seconds) || 0));
+          const minutes = Math.floor(seconds / 60);
+          return {
+            id: clean('legacy-' + gameId + '-' + at, 90), at, type: 'play',
+            title: title + ' 플레이 완료',
+            summary: minutes > 0 ? minutes + '분 ' + (seconds % 60) + '초 플레이' : seconds + '초 플레이',
+            place: title, gameId
+          };
+        }).filter(Boolean);
+        if (window.KidscadeDaily?.isAttendanceClaimed?.()) {
+          const date = new Date();
+          const id = 'attendance-' + dateKey(date.getTime());
+          events.push({
+            id, at: date.getTime(), type: 'attendance', title: '오늘의 출석 완료!',
+            summary: '씨앗 +30 · 쑥쑥이 친밀도 +20', place: '키즈케이드', gameId: ''
+          });
+        }
+        const state = normalizeState({ events });
+        state.lastReadId = state.events[0]?.id || '';
+        return write(state);
+      } catch (error) {
+        console.warn('[KidscadeActivity] old play history migration failed:', error);
+        return false;
+      }
+    }
+
     function record(type, detail = {}) {
       if (!TYPES[type]) return null;
       const state = read();
@@ -329,6 +370,7 @@
 
     function startBrowserUI() {
       if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+      migrateExistingHistory();
       document.addEventListener('click', event => {
         const button = event.target.closest?.('.kc-mobile-nav-btn');
         if (!button) return;
@@ -361,7 +403,7 @@
     }
 
     return Object.freeze({
-      key: KEY, types: TYPES, read, record, markRead, countUnread: () => countUnread(read()),
+      key: KEY, types: TYPES, read, record, migrateExistingHistory, markRead, countUnread: () => countUnread(read()),
       render, open, close, handleGameMessage, startBrowserUI
     });
   }
