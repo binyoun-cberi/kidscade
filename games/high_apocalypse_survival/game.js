@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), damp=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
 const SAVE='kidscade_game_v1:high_apocalypse_survival:save';
 const KNOW='kidscade_game_v1:high_apocalypse_survival:knowledge';
-const DAY_SECONDS=360, CAMP=new THREE.Vector3(0,0,8), CITY_CENTER=new THREE.Vector3(52,0,-40), RUINS=CITY_CENTER.clone(), MARKET_POS=new THREE.Vector3(43,0,-35), CLINIC_POS=new THREE.Vector3(61,0,-35), GARAGE_POS=new THREE.Vector3(43,0,-51), POWER_STATION=new THREE.Vector3(59,0,-50), CRATE_POS=new THREE.Vector3(38.5,0,-31), WASTE_POS=new THREE.Vector3(64,0,-51), SURVIVOR_POS=new THREE.Vector3(54,0,-39), RIVER_X=30;
+const DAY_SECONDS=360, CAMP=new THREE.Vector3(0,0,8), CITY_CENTER=new THREE.Vector3(52,0,-40), RUINS=CITY_CENTER.clone(), MARKET_POS=new THREE.Vector3(43,0,-35), CLINIC_POS=new THREE.Vector3(61,0,-35), GARAGE_POS=new THREE.Vector3(43,0,-51), POWER_STATION=new THREE.Vector3(59,0,-50), CRATE_POS=new THREE.Vector3(38.5,0,-31), WASTE_POS=new THREE.Vector3(64,0,-51), SURVIVOR_POS=new THREE.Vector3(54,0,-39), RIVER_X=30, BRIDGE_Z=-27;
 const RESIDENTS={
  taeho:{name:'태호',icon:'🧑‍🔧',color:0x6ea4d9,field:SURVIVOR_POS.clone(),camp:new THREE.Vector3(3,0,10),preferred:'technician'},
  mira:{name:'미라',icon:'🧑‍🌾',color:0xc88b62,field:new THREE.Vector3(-31,0,27),camp:new THREE.Vector3(-3,0,10),preferred:'gatherer'},
@@ -94,6 +94,26 @@ const BUILD={
   farm:{name:'작은 텃밭',icon:'🌱',cost:{wood:4,stone:1},model:'patch-grass-large.glb',radius:2.4},
   cooler:{name:'냉장 보관함',icon:'🧊',cost:{wood:2,scrap:3,battery:1},model:'chest.glb',radius:1.3},
   purifier:{name:'전기 정수기',icon:'🚰',cost:{cloth:2,scrap:2,stone:2},model:'barrel.glb',radius:1.3}
+};
+const ROAD_NODES={
+ camp:{x:0,z:8}, forest:{x:-12,z:8}, schoolRoad:{x:16,z:8}, mainCross:{x:16,z:BRIDGE_Z},
+ bridgeW:{x:25,z:BRIDGE_Z}, bridgeE:{x:35,z:BRIDGE_Z}, cityWest:{x:44,z:BRIDGE_Z}, cityNorth:{x:52,z:BRIDGE_Z},
+ cityMid:{x:52,z:-35}, cityCross:{x:52,z:-44}, citySouth:{x:52,z:-52},
+ eastNorth:{x:60,z:BRIDGE_Z}, eastMid:{x:60,z:-35}, eastCross:{x:60,z:-44}, eastSouth:{x:60,z:-52},
+ market:{x:48.6,z:-35}, clinic:{x:66.1,z:-35}, garage:{x:48.6,z:-51}, power:{x:59,z:-50}
+};
+const ROAD_EDGES=[
+ ['camp','forest'],['camp','schoolRoad'],['schoolRoad','mainCross'],['mainCross','bridgeW'],['bridgeW','bridgeE'],['bridgeE','cityWest'],['cityWest','cityNorth'],
+ ['cityNorth','cityMid'],['cityMid','cityCross'],['cityCross','citySouth'],['cityNorth','eastNorth'],['cityMid','eastMid'],['cityCross','eastCross'],['citySouth','eastSouth'],
+ ['eastNorth','eastMid'],['eastMid','eastCross'],['eastCross','eastSouth'],['cityMid','market'],['eastMid','clinic'],['citySouth','garage'],['eastSouth','power']
+];
+const RUIN_SPOTS={
+ marketShelf:{site:'market',name:'식품 진열대',loot:{food:2}},
+ marketBack:{site:'market',name:'무너진 뒤편 선반',loot:{potato:2},hazard:'unstable'},
+ clinicCabinet:{site:'clinic',name:'진료소 캐비닛',loot:{cloth:2}},
+ clinicSupply:{site:'clinic',name:'응급 보급함',loot:{food:1,cloth:1}},
+ garageBench:{site:'garage',name:'정비 작업대',loot:{scrap:2}},
+ garageLocker:{site:'garage',name:'금속 보관함',loot:{wood:1,battery:1},hazard:'sharp'}
 };
 const JOBS={
   technician:{name:'기술 담당',icon:'⚙️',desc:'하루가 바뀔 때 수리에 쓸 고철을 1개 확보합니다.'},
