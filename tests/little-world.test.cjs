@@ -37,6 +37,15 @@ test('Little World browser modules parse after removing ESM declarations',()=>{
   assert.doesNotThrow(()=>new Function(sim.replace(/^export /gm,'')));
   assert.doesNotThrow(()=>new Function(game.replace(/^import .*;$/gm,'')));
 });
+test('animals do not appear from vegetation until introduced',()=>{
+  const make=new Function(sim.replace(/^export /gm,'')+';return {WorldSim};');
+  const {WorldSim}=make(),world=new WorldSim(77);
+  world.applyPower('plants',16,12);
+  for(let i=0;i<80;i++)world.step();
+  assert.equal(world.stats().herb,0);
+  assert.equal(world.stats().pred,0);
+});
+
 test('Little World simulation survives a deterministic ecosystem smoke run',()=>{
   const make=new Function(sim.replace(/^export /gm,'')+';return {WorldSim,COLS,ROWS};');
   const {WorldSim,COLS,ROWS}=make(),world=new WorldSim(12345);
