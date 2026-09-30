@@ -1,4 +1,4 @@
-/* 열두 명의 섬 — 독립적인 규칙 엔진 (브라우저/Node 공용). */
+/* 촌장 시뮬레이터 — 독립적인 규칙 엔진 (브라우저/Node 공용). */
 ((root, factory) => {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -298,7 +298,7 @@
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
     const foodUse = Math.max(0, s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
       (winterActive(s) ? 1.13 : 1) * (disasterActive(s,"heat") ? 1.10 : 1) -
-      (s.exclusionUntil > s.tick ? 1.25 : 0));
+      (s.exclusionUntil > s.tick ? 2.15 : 0));
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
@@ -614,23 +614,23 @@
       title:"☀️ 폭염, 그늘 밖에서 일하기 어렵습니다", speaker:"미래",
       body:"식수가 빠르게 줄고 작업 효율이 떨어졌습니다. 햇볕 아래서 채집을 계속할지, 그늘과 휴식을 마련할지 정해야 합니다.",
       options:[
-        {label:"목재 12로 그늘막과 급수소를 설치해요.",cost:{wood:12},disasterResponse:"heat",groupChanges:{workers:.55,families:-.8},climateCare:{kind:"heat",duration:13},
-          changes:{water:12,trust:2},note:"폭염 동안 생산 감소를 줄이고 식수를 확보하지만 목재 비축량이 감소합니다."},
+        {label:"목재 12로 그늘막과 급수소를 설치해요.",cost:{wood:12},disasterResponse:"heat",groupChanges:{workers:.2,families:-.8},climateCare:{kind:"heat",duration:13},quietRest:2,
+          changes:{water:12,trust:2},note:"폭염 피해를 크게 줄이지만 건설 때문에 2주 동안 생산이 감소하고 목재 12를 사용합니다."},
         {label:"야외 작업 시간을 줄이고 물을 길어 와요.",disasterResponse:"heat",groupChanges:{workers:.15,families:-.65},quietRest:5,waterFetch:13,
           climateCare:{kind:"heat",duration:8},note:"식수 13을 확보하고 열 노출을 줄이지만 5주간 생산량이 감소합니다."},
-        {label:"평소처럼 계속 작업해요.",disasterResponse:"heat",groupChanges:{families:1.4,carers:.55,workers:.3},changes:{water:-8,health:-6,trust:-3},
-          note:"당장 목재는 아끼지만 식수와 건강이 줄고 가족들이 대응을 요구할 수 있습니다."}
+        {label:"수확을 포기하지 않고 계속 작업해요.",disasterResponse:"heat",groupChanges:{families:1.4,carers:.55,workers:.3},changes:{food:8,wood:4,water:-8,health:-6,trust:-3},
+          note:"식량 8과 물자 4를 더 확보하지만 식수와 건강이 줄고 가족·돌봄 주민의 반발이 커집니다."}
       ]},
     { id:"flood_alert",priority:118,emergency:true,when:s=>s.disasterUnanswered.flood,
       title:"🌊 홍수가 농지와 창고를 덮쳤습니다",speaker:"태오",
       body:"홍수로 식량과 물자 일부가 유실됐고 식수가 오염됐습니다. 농지와 거처가 정상화될 때까지 생산이 감소합니다.",
       options:[
-        {label:"목재 14로 배수로와 방벽을 보강해요.",cost:{wood:14},disasterResponse:"flood",groupChanges:{workers:.45,families:-.5},floodRepair:4,
-          changes:{water:8,trust:2},note:"손실된 물자는 돌아오지 않지만 시설 피해 기간을 줄이고 식수 일부를 복구합니다."},
-        {label:"주민을 안전한 곳으로 옮기고 급한 부분부터 복구해요.",disasterResponse:"flood",groupChanges:{families:.28,workers:.2},floodRelocate:true,
-          waterFetch:5,note:"별도 목재 없이 대피하고 물을 확보합니다. 작업 피로가 늘고 시설 복구는 더 오래 걸립니다."},
-        {label:"재해가 지나갈 때까지 시설을 그대로 둬요.",disasterResponse:"flood",groupChanges:{families:1,carers:.9},
-          changes:{health:-7,water:-9,trust:-3},note:"즉각적인 추가 지출은 없지만 오염된 식수와 긴 복구 기간으로 건강이 악화됩니다."}
+        {label:"목재 14로 배수로와 방벽을 보강해요.",cost:{wood:14},disasterResponse:"flood",groupChanges:{workers:.35,families:-.5},floodRepair:4,quietRest:3,
+          changes:{water:8,trust:2},note:"시설 피해 기간을 크게 줄이지만 목재 14와 3주간의 생산 차질을 감수합니다."},
+        {label:"주민을 안전한 곳으로 옮기고 농지는 나중에 복구해요.",disasterResponse:"flood",groupChanges:{families:-.35,workers:.55},floodRelocate:true,
+          waterFetch:5,quietRest:5,note:"사람을 우선 보호하고 식수 5를 확보하지만 5주 동안 생산이 줄고 시설 복구가 늦어집니다."},
+        {label:"침수된 창고에서 물자를 먼저 건져요.",disasterResponse:"flood",groupChanges:{families:1,carers:.9},
+          changes:{food:7,wood:7,health:-7,water:-9,trust:-3},note:"식량 7과 물자 7을 건지지만 오염된 물과 위험한 작업 때문에 건강과 신뢰가 크게 악화됩니다."}
       ]},
     { id:"dust_alert",priority:117,emergency:true,when:s=>s.disasterUnanswered.dust,
       title:"🌫️ 황사가 섬을 뒤덮었습니다",speaker:"하나",
@@ -654,9 +654,9 @@
         {label:"증상이 있는 주민이 자발적으로 쉬도록 업무를 조정해요.",disasterResponse:"epidemic",groupChanges:{carers:-.5,workers:.35},
           climateCare:{kind:"epidemic",duration:11},quietRest:6,changes:{trust:1},
           note:"감염 확산을 완화하지만 6주 동안 생산량이 감소합니다."},
-        {label:"평소 업무를 유지하고 상황을 지켜봐요.",disasterResponse:"epidemic",groupChanges:{carers:1.2,families:.8},
-          changes:{health:-5,trust:-2},sickness:2,
-          note:"즉시 투입하는 자원은 없지만 감염이 확산되면 생산과 돌봄 기능에 영향을 줍니다."}
+        {label:"아픈 사람도 가능한 일은 계속 맡아요.",disasterResponse:"epidemic",groupChanges:{carers:1.2,families:.8},
+          changes:{food:7,wood:5,health:-5,trust:-2},sickness:2,
+          note:"식량 7과 물자 5를 확보하지만 감염자가 늘고 건강·돌봄 체계가 악화될 수 있습니다."}
       ]},
     { id:"water_emergency",priority:114,emergency:true,repeat:10,
       when:s=>s.tick>=28 && s.water<=13,
@@ -790,12 +790,12 @@
       title: "어린 주민도 위험한 채집에 나가야 할까요?", speaker: "나래",
       body: "한파로 식량 생산이 줄었습니다. 일부 어른들은 어린이도 해변의 위험한 채집 작업에 보내자고 말합니다. 나래는 '저희도 학교에 가고 안전하게 지낼 수 있나요?'라고 묻습니다.",
       options: [
-        { label: "어른들의 작업을 다시 나누고 어린이는 보호해요.", adultGather: true, childProtect: true,
-          note: "성인 일꾼을 채집에 우선 배치합니다. 물자 수집량이 줄 수 있지만 어린이의 교육·안전은 유지됩니다." },
-        { label: "자발적인 성인 비상 근무로 대응해요.", adultVolunteer: "food", childProtect: true,
-          note: "어른들의 피로가 늘고 목재 수집에 영향을 줄 수 있습니다. 식량 생산을 우선합니다." },
-        { label: "어린이에게 위험한 야외 채집을 지시해요.", startChildLabor: 7, changes: { trust: -5 },
-          note: "7주 동안 식량 생산이 늘지만, 어린이의 안전과 학습 기회가 악화됩니다. 이후 주민들이 문제를 제기합니다." }
+        { label: "어른들의 작업을 다시 나누고 어린이는 보호해요.", adultGather: true, childProtect: true, quietRest: 2,
+          note: "성인을 채집에 우선 배치해 어린이를 보호합니다. 대신 물자 수집과 2주간의 전체 생산에 부담이 생깁니다." },
+        { label: "자발적인 성인 비상 근무로 대응해요.", adultVolunteer: "food", childProtect: true, changes: { food: 6 },
+          note: "식량 6을 즉시 확보하지만 노동 피로가 크게 늘어 다음 위기 때 작업 중단 위험이 커집니다." },
+        { label: "어린이에게도 위험한 야외 채집을 맡겨요.", startChildLabor: 7, changes: { food: 10, trust: -5 },
+          note: "식량 10을 즉시 확보하고 7주 동안 생산이 늘지만 어린이의 건강·학습과 가족들의 신뢰가 크게 악화됩니다." }
       ] },
     { id: "child_labor_harm", priority: 106, repeat: 5,
       when: s => s.childWorkUntil > s.tick && s.childWorkWeeks >= 3 && !s.childLaborReviewed,
@@ -819,7 +819,7 @@
         { label: "작업 인원을 재배치하고 난방을 집중해요.", crisisWood: true, coldShelter: 2,
           note: "물자 수집 인원을 늘리고 체온을 회복합니다. 식량 생산이 줄 수 있습니다." },
         { label: "모든 성인에게 강제 야외 작업을 명령해요.", startForcedLabor: 8,
-          changes: { trust: -6 }, note: "8주간 물자 수집량이 늘지만 동의 없는 강제 노동으로 건강과 신뢰가 악화되며 후속 갈등이 생깁니다." }
+          changes: { wood: 12, trust: -6 }, note: "물자 12를 즉시 확보하고 8주간 수집량이 늘지만 건강·신뢰 악화와 노동 주민의 집단행동 위험이 커집니다." }
       ] },
     { id: "forced_labor_protest", priority: 105, repeat: 5,
       when: s => s.forcedLaborUntil > s.tick && s.forcedLaborWeeks >= 3 && !s.laborReviewed,
@@ -843,7 +843,7 @@
         { label: "비상 창고에서 식량 8을 꺼내 함께 나눠요.", cost: { reserveFood: 8 }, changes: { food: 8 },
           note: "실제로 저장한 비상식량 8을 사용합니다. 모두의 배급은 유지됩니다." },
         { label: "일할 수 없는 일부 주민을 배급에서 제외해요.", startExclusion: 6,
-          changes: { trust: -8 }, note: "6주간 식량 소비는 조금 줄지만 배제된 주민의 건강이 악화되고 이의 제기가 발생합니다." }
+          changes: { food: 5, trust: -8 }, note: "식량 5를 당장 아끼고 6주 동안 주당 소비가 크게 줄지만 배제된 주민의 건강 악화와 이의 제기가 이어집니다." }
       ] },
     { id: "ration_exclusion_appeal", priority: 104, repeat: 5,
       when: s => s.exclusionUntil > s.tick && s.exclusionWeeks >= 3 && !s.exclusionReviewed,
