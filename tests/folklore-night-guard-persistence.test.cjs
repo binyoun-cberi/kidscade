@@ -61,3 +61,14 @@ test('Night Guard hallucination fake scares are cosmetic and protected from unfa
   const fakeScareBody = html.slice(start, end);
   assert.doesNotMatch(fakeScareBody, /\bfail\(/);
 });
+
+
+test('Night Guard keeps classroom-length nights and repeated Yuki heating', () => {
+  assert.match(html, /night1:\{duration:180/);
+  assert.match(html, /night5:\{duration:180/);
+  assert.match(html, /full:\{duration:210/);
+  assert.match(html, /heatHits:0/);
+  assert.match(html, /y\.heatHits=Math\.min\(3/);
+  assert.match(html, /if\(y\.heatHits>=3\)/);
+  assert.match(html, /난방 3\/3|유키온나가 물러났습니다/);
+});
