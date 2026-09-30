@@ -965,6 +965,29 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .thermo-body{grid-template-columns:38px 1fr 68px}
   .thermo-visual{height:88px}.thermo-tube{height:67px}
 }
+/* v14 · contextual ghost whispers */
+.ghost-whisper{
+  position:fixed;z-index:48;left:50%;top:23%;transform:translate(-50%,-8px);
+  width:min(720px,82vw);padding:10px 18px;text-align:center;pointer-events:none;
+  opacity:0;transition:opacity .18s,transform .18s;
+  color:#e9e4d7;text-shadow:0 2px 8px #000,0 0 15px #000;
+  font-family:Georgia,"Times New Roman",serif;font-size:clamp(18px,2.6vw,31px);
+  font-weight:700;letter-spacing:.035em
+}
+.ghost-whisper.show{opacity:1;transform:translate(-50%,0)}
+.ghost-whisper::before,.ghost-whisper::after{color:#8d9296;font-size:.8em;opacity:.7}
+.ghost-whisper::before{content:"“"}.ghost-whisper::after{content:"”"}
+.ghost-whisper.ghost-yuki{color:#edfaff;text-shadow:0 2px 8px #000,0 0 18px #b8ecff77}
+.ghost-whisper.ghost-egg{color:#efe8db;filter:contrast(1.08)}
+.ghost-whisper.ghost-maiden{color:#ded9d4;font-style:italic}
+.ghost-whisper.ghost-reaper{color:#d7d0ba;font-family:serif;letter-spacing:.09em}
+.ghost-whisper.ghost-wolf{color:#d9c8be;font-family:ui-monospace,monospace;font-size:clamp(16px,2.3vw,27px)}
+.ghost-whisper.ghost-dokkaebi{color:#ead5a4;transform:translate(-50%,-8px) rotate(-.5deg)}
+.ghost-whisper.ghost-dokkaebi.show{transform:translate(-50%,0) rotate(-.5deg)}
+.ghost-whisper.danger{font-size:clamp(21px,3.2vw,36px);text-shadow:0 2px 9px #000,0 0 20px #7b181888}
+@media(max-width:780px){
+  .ghost-whisper{top:18%;width:88vw;padding:8px 10px}
+}
 </style>
 </head>
 <body>
@@ -1002,6 +1025,9 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       <div class="desk"></div>
       <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 교실과 복도의 이상을 확인하세요.<br>근무수칙은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
       <div class="toast" id="toast"></div>
+      <div class="ghost-whisper" id="ghostWhisper" aria-live="polite" aria-hidden="true">
+        <span id="ghostWhisperText"></span>
+      </div>
 
       <div class="controls">
         <div class="control-pair">
@@ -1278,7 +1304,39 @@ var state={
   director:{tension:0,calm:0,lastEvent:'none'},
   blackout:false,blackoutElapsed:0,blackoutKillAt:0,cameraSwitchUntil:0,officeLook:'center',
   nextDreadCue:12,signalToken:0,nextFakeScare:34,fakeScareActive:false,fakeScareToken:0,
-  nextAudioCue:18,lastAudioHour:-1,yukiCueLevel:0,eggCueLevel:0
+  nextAudioCue:18,lastAudioHour:-1,yukiCueLevel:0,eggCueLevel:0,whisperSeen:{},nextWhisperAt:0
+};
+var GHOST_WHISPERS={
+  yuki:[
+    ['여기 너무 추워요.','손이 너무 차가워요.'],
+    ['안아주세요.','조금만 가까이 와주세요.'],
+    ['당신은 따뜻하네요.','이제 조금도 안 추워요.']
+  ],
+  egg:[
+    ['내 얼굴… 예쁘니?','나 예뻐 보여?'],
+    ['조금만 더 봐줘.','가까이서 보면 더 예쁜데.'],
+    ['왜 눈을 피하니?','끝까지 봐줘.']
+  ],
+  maiden:[
+    ['나 여기 있잖아.','나 보고 있지?'],
+    ['왜 자꾸 눈을 돌려?','저 혼자 두지 마세요.'],
+    ['나 두고 가지 마.','계속 나만 봐.']
+  ],
+  reaper:[
+    ['잠깐 지나가겠습니다.','지나가기만 하겠습니다.'],
+    ['길 좀 비켜주시겠습니까?','문 앞까지 왔습니다.'],
+    ['문 좀 열어주시겠습니까?','왜 길을 막으셨습니까?']
+  ],
+  wolf:[
+    ['냄새가 나.','거기 있지?'],
+    ['조금 가까워졌어.','숨소리가 들려.'],
+    ['문이 열려 있네.','나 들어가도 돼?']
+  ],
+  dokkaebi:[
+    ['내가 하나 바꿨어.','뭐가 달라졌게?'],
+    ['못 찾겠어?','아니야, 그거 말고.'],
+    ['하나뿐인데.','이번엔 쉬운 건데.']
+  ]
 };
 var audioCtx=null;
 var ambientAudio=null;
@@ -1340,7 +1398,7 @@ var els={
   camOpen:$('camOpen'),cameraShell:$('cameraShell'),cameraView:$('cameraView'),camClose:$('camClose'),cameraMap:$('cameraMap'),
   camCode:$('camCode'),camName:$('camName'),roomScene:$('roomScene'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
   ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),
-  thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
+  thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),ghostWhisper:$('ghostWhisper'),ghostWhisperText:$('ghostWhisperText'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
   fakeScare:$('fakeScare'),fakeScareText:$('fakeScareText'),fakeScareEye:$('fakeScareEye'),fakeScareShadow:$('fakeScareShadow'),
   scare:$('scare'),scareArt:$('scareArt'),scareName:$('scareName'),
@@ -1433,6 +1491,29 @@ function masterGhost(id){
 function toast(msg){
   els.toast.textContent=msg;els.toast.classList.add('show');clearTimeout(toast._t);
   toast._t=setTimeout(function(){els.toast.classList.remove('show')},1800);
+}
+function whisperGhost(id,stage,forceText){
+  if((!state.running||state.gameOver||state.paused)&&!forceText)return;
+  stage=Math.max(0,Math.min(2,Number(stage)||0));
+  var key=id+':'+stage;
+  var now=state.elapsed||0;
+  if(!forceText&&state.whisperSeen&&state.whisperSeen[key])return;
+  if(!forceText&&now<(state.nextWhisperAt||0))return;
+  var list=(GHOST_WHISPERS[id]&&GHOST_WHISPERS[id][stage])||[];
+  var text=forceText||list[Math.floor(Math.random()*list.length)];
+  if(!text)return;
+  state.whisperSeen=state.whisperSeen||{};
+  state.whisperSeen[key]=true;
+  state.nextWhisperAt=now+4.2;
+  els.ghostWhisperText.textContent=text;
+  els.ghostWhisper.className='ghost-whisper show ghost-'+id+(stage>=2?' danger':'');
+  els.ghostWhisper.setAttribute('aria-hidden','false');
+  clearTimeout(whisperGhost._t);
+  whisperGhost._t=setTimeout(function(){
+    els.ghostWhisper.className='ghost-whisper';
+    els.ghostWhisper.setAttribute('aria-hidden','true');
+    els.ghostWhisperText.textContent='';
+  },stage>=2?1900:1650);
 }
 function setPaused(v){state.paused=v}
 function toggleModal(modal,show){modal.classList.toggle('show',show);setPaused(show)}
@@ -1797,6 +1878,7 @@ function cameraGhost(){
   els.presenceLayer.innerHTML='';els.presenceLayer.className='presence-layer';
   if(id){
     discover(id);observeGhost(id);
+    whisperGhost(id,stage);
     var p=presenceAsset(id,state.currentCam,stage);
     if(p){
       els.presenceLayer.innerHTML='<img class="anomaly-asset presence-asset '+p.cls+' presence-stage-'+stage+'" src="'+ASSET_ROOT+p.asset+'" alt="" draggable="false">';
@@ -2041,7 +2123,8 @@ function updateDokkaebi(dt){
   d.moveClock+=dt;
   if(d.location==='korea'){
     d.trickTimer+=dt;
-    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=Math.floor(Math.random()*4);d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);directorShift(3)}
+    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=Math.floor(Math.random()*4);d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);whisperGhost('dokkaebi',0);directorShift(3)}
+    if(d.trickActive&&d.trickTimer>8.7&&d.trickTimer-dt<=8.7)whisperGhost('dokkaebi',2);
     if(d.trickActive&&d.trickTimer>13){d.trickActive=false;d.trickTimer=0;spend(6);state.score=Math.max(0,state.score-40);directorShift(5);sound('warn');playTimedClip('clownWarning',.13,.9,1200);d.previous=d.location;d.location='europe';d.moveClock=0}
   }
   if(!d.trickActive&&d.moveClock>=d.moveEvery){
@@ -2052,6 +2135,8 @@ function updateDokkaebi(dt){
 function updateYuki(dt){
   var y=state.yuki;if(!y||!y.active)return;
   if(y.location==='japan'){
+    if(y.frost>=45&&y.frost-dt*3<45)whisperGhost('yuki',1);
+    if(y.frost>=72&&y.frost-dt*3<72)whisperGhost('yuki',2);
     var heatSlow=Math.max(0,(state.thermostatTarget-18)*.055);
     y.frost+=dt*Math.max(1.6,(state.mode==='practice'?2.4:3.0)-heatSlow);
     if(y.frost>=100){fail('yuki');return}
@@ -2088,7 +2173,7 @@ function updateMaiden(dt){
       }
     }else{
       m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?14:Math.max(9.4,12.8-m.index*.5);
-      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn');if(m.index>=1)playTimedClip('musicBox',.055,.72,1250)}}}
+      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn');if(m.index>=1){playTimedClip('musicBox',.055,.72,1250);whisperGhost('maiden',Math.min(2,m.index))}}}}
     }
   }else{
     if(state.leftDoor){
@@ -2107,7 +2192,13 @@ function relocateEgg(rewarded){
 function updateEgg(dt){
   var e=state.egg;if(!e||!e.active)return;
   e.life+=dt;var staring=cameraFeedLive(e.cam);
-  if(staring){e.seenThisStop=true;e.stare+=dt*38;if(e.stare>=100){fail('egg');return}}
+  if(staring){
+    e.seenThisStop=true;
+    var before=e.stare;e.stare+=dt*38;
+    if(before<34&&e.stare>=34)whisperGhost('egg',1);
+    if(before<68&&e.stare>=68)whisperGhost('egg',2);
+    if(e.stare>=100){fail('egg');return}
+  }
   else e.stare=Math.max(0,e.stare-dt*58);
   if(!staring&&e.life>=e.moveEvery&&movementRoll('egg'))relocateEgg(e.seenThisStop)
 }
@@ -2140,8 +2231,16 @@ function updateRoamer(r,dt){
       var nextIndex=Math.min(r.route.length-1,r.index+1);
       if(nextIndex===r.route.length-1&&!roamerCanEnterOffice(r)){r.rest=1.5;return}
       r.index=nextIndex;r.location=r.route[r.index];r.attackTime=0;r.safeTime=0;
-      if(r.location==='office'){if(r.type==='wolf')sound('run',r.side);sound(r.type==='wolf'?'growl':'knock',r.side)}
-      else if(r.index===1){sound(r.type==='wolf'?'howl':'bell',r.side);if(r.type==='wolf')playTimedClip('run',.07,.72,620)}
+      if(r.location==='office'){
+        if(r.type==='wolf')sound('run',r.side);
+        sound(r.type==='wolf'?'growl':'knock',r.side);
+        whisperGhost(r.type,2);
+      }
+      else if(r.index===1){
+        sound(r.type==='wolf'?'howl':'bell',r.side);
+        if(r.type==='wolf')playTimedClip('run',.07,.72,620);
+        whisperGhost(r.type,1);
+      }
       else if(r.type==='wolf'&&r.index>=2)playTimedClip('run',.12,1.02,850)
     }
   }
@@ -2205,7 +2304,7 @@ function reset(mode){
   state.anomaly=null;state.score=0;state.cleared=0;state.anomaliesFound=0;state.falseReports=0;
   state.director={tension:0,calm:0,lastEvent:'none'};state.blackout=false;state.blackoutElapsed=0;state.blackoutKillAt=0;state.cameraSwitchUntil=0;state.officeLook='center';state.nextDreadCue=12+Math.random()*8;state.signalToken=0;state.nextFakeScare=30+Math.random()*24;state.fakeScareActive=false;state.fakeScareToken=0;
   state.nextAudioCue=16+Math.random()*12;state.lastAudioHour=-1;state.yukiCueLevel=0;state.eggCueLevel=0;
-  state.thermostatTarget=18;
+  state.whisperSeen={};state.nextWhisperAt=2;state.thermostatTarget=18;
   initializePersistentGhosts();state.lastTick=performance.now();
   closeCamera();updateOffice();updateHUD();renderCamera();els.result.classList.remove('show');
   els.scare.className='scare';els.scare.setAttribute('aria-hidden','true');
@@ -2213,7 +2312,8 @@ function reset(mode){
   document.getElementById('app').classList.remove('power-dead','low-seal','critical-seal');
   els.signalIntrusion.className='signal-intrusion';els.signalIntrusion.innerHTML='';
   els.presenceLayer.innerHTML='';els.presenceLayer.className='presence-layer';
-  els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');els.fakeScareText.textContent=''
+  els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');els.fakeScareText.textContent='';
+  els.ghostWhisper.className='ghost-whisper';els.ghostWhisper.setAttribute('aria-hidden','true');els.ghostWhisperText.textContent=''
 }
 function start(mode){
   ensureAudio();els.intro.classList.remove('show');reset(mode);startAmbient();window.KidscadeGame?.start?.({mode:mode});
@@ -2248,6 +2348,12 @@ function startGhostJumpscare(id){
   els.scareArt.innerHTML=ghostImageHtml(id,0);
   els.scareName.textContent='';
   els.scare.className='scare pre show ghost-'+id;
+  if(id==='yuki')whisperGhost('yuki',2,'이제 안 추워요. 당신이 있으니까.');
+  else if(id==='egg')whisperGhost('egg',2,'가까이서 보니까… 더 예쁘지?');
+  else if(id==='maiden')whisperGhost('maiden',2,'이제 눈 돌리면 안 돼.');
+  else if(id==='reaper')whisperGhost('reaper',2,'제가 들어가겠습니다.');
+  else if(id==='wolf')whisperGhost('wolf',2,'찾았다.');
+  else if(id==='dokkaebi')whisperGhost('dokkaebi',2,'이제 내가 찾을 차례야.');
 
   if(id==='maiden'){playClip('musicBox',.09);sound('static')}
   else if(id==='egg'){sound('phone');sound('static')}
