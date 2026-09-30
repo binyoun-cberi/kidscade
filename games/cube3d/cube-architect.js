@@ -124,7 +124,9 @@ function roundedRect(ctx,x,y,w,h,r){
 const blockGeo=new THREE.BoxGeometry(.96,.96,.96);
 const edgeGeo=new THREE.EdgesGeometry(blockGeo);
 const challengeMat=new THREE.MeshStandardMaterial({color:0xf2d19a,roughness:.78});
-const CHALLENGE_SIZE=18,CHALLENGE_HALF=CHALLENGE_SIZE/2,CHALLENGE_MAX_Y=13;
+let CHALLENGE_SIZE=18,CHALLENGE_HALF=CHALLENGE_SIZE/2,CHALLENGE_MAX_Y=13;
+let challengeShapeMode='cube',challengeTool='build',challengeSelected=null,challengeOverlay=null,challengeSelectedElement=0;
+let challengeTint='#ff7043',blueprintAngle='iso',blueprintModalOpen=false;
 let challengeBlocks=new Map(),challengeMeshes=[],challengePlane=null,challengeGhost=null,targetGhosts=[],missionIndex=0;
 let challengeYaw=0,challengePitch=0,challengeKeys={},challengeDifficulty='easy';
 
@@ -147,14 +149,7 @@ const challengeMissionSets={
     {name:'교과서 5 · 문이 있는 다리',kind:'교과서형',tip:'양쪽 기둥의 높이가 같고, 위쪽 직육면체가 두 기둥을 연결해요.',blocks:makeChallengeShape(({box})=>{box(2,2,1,3,4);box(6,2,1,3,4);box(3,2,3,3,1,3)})},
     {name:'교과서 6 · 높이가 다른 두 건물',kind:'교과서형',tip:'같은 바닥 위에 높이가 다른 두 덩어리가 붙어 있어요.',blocks:makeChallengeShape(({box})=>{box(2,2,5,3,1);box(2,2,2,3,3,1);box(5,2,2,3,2,1)})}
   ],
-  hard:[
-    {name:'랜드마크 · 타지마할',kind:'랜드마크형',tip:'가운데 돔처럼 솟은 부분과 네 모서리의 높은 탑이 핵심이에요.',blocks:makeChallengeShape(({box})=>{box(5,6,7,5,1);box(7,7,3,3,2,1);box(7,7,3,3,1,3);box(8,8,1,1,2,4);[[5,6],[11,6],[5,10],[11,10]].forEach(([x,z])=>box(x,z,1,1,5,1))})},
-    {name:'랜드마크 · 사그라다 파밀리아',kind:'랜드마크형',tip:'여러 높이의 첨탑과 중앙의 가장 높은 탑을 먼저 찾으세요.',blocks:makeChallengeShape(({box})=>{box(5,6,7,5,1);box(7,7,3,3,2,1);[[5,6,6],[7,6,7],[9,6,7],[11,6,6]].forEach(([x,z,h])=>box(x,z,1,1,h,1));box(8,8,1,1,7,3);box(6,10,1,1,5,1);box(10,10,1,1,5,1)})},
-    {name:'랜드마크 · 에펠탑',kind:'랜드마크형',tip:'아래는 넓게 벌어지고 위로 갈수록 폭이 좁아지는 구조예요.',blocks:makeChallengeShape(({box})=>{[[5,5],[11,5],[5,11],[11,11]].forEach(([x,z])=>box(x,z,1,1,3));box(6,6,6,1,1,3);box(6,11,6,1,1,3);box(6,7,1,4,1,3);box(11,7,1,4,1,3);[[7,7],[10,7],[7,10],[10,10]].forEach(([x,z])=>box(x,z,1,1,2,4));box(7,7,4,4,1,6);box(8,8,2,2,3,7);box(8,8,1,1,2,10)})},
-    {name:'랜드마크 · 타워 브리지',kind:'랜드마크형',tip:'긴 다리 상판과 좌우의 쌍둥이 탑, 위쪽 연결 구조를 나눠서 보세요.',blocks:makeChallengeShape(({box})=>{box(3,8,12,2,1,1);[5,12].forEach(x=>{box(x,7,2,4,5);box(x,8,2,2,1,5)});box(7,7,5,1,1,4);box(7,10,5,1,1,4)})},
-    {name:'랜드마크 · 히메지성',kind:'랜드마크형',tip:'아래층은 넓고 위층으로 갈수록 좁아지는 여러 단의 성곽을 살펴보세요.',blocks:makeChallengeShape(({box})=>{box(5,6,8,6,1);box(6,7,6,4,1,1);box(7,7,4,4,1,2);box(7,8,4,2,2,3);box(8,8,2,2,2,5);[[5,6],[11,6],[5,10],[11,10]].forEach(([x,z])=>box(x,z,2,2,2,1))})},
-    {name:'랜드마크 · 앙코르와트',kind:'랜드마크형',tip:'넓은 기단 위에 다섯 개의 탑이 배치된 대칭 구조를 찾아보세요.',blocks:makeChallengeShape(({box})=>{box(4,7,10,5,1);box(6,8,6,3,1,1);[[6,8,4],[10,8,4],[6,10,4],[10,10,4],[8,9,6]].forEach(([x,z,h])=>box(x,z,1,1,h,2))})}
-  ]
+  hard:window.CubeArchitectLandmarks()
 };
 function activeChallengeMissions(){return challengeMissionSets[challengeDifficulty]}
 function currentChallengeMission(){return activeChallengeMissions()[missionIndex]}
