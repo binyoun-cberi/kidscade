@@ -2485,11 +2485,11 @@
     {
       "id": "cube3d",
       "title": "큐브 아키텍트",
-      "href": "games/cube3d/index.html?v=16",
+      "href": "games/cube3d/index.html?v=17",
       "category": "math",
       "age": "high",
       "icon": "🏗️",
-      "description": "교과서 겨냥도·대형 랜드마크 복원부터 자유 건축까지! 128×128 월드의 8개 바이옴에서 생존 채집·단계별 제작을 하거나 크리에이티브로 직육면체 6면 색칠과 전개도를 탐구해요.",
+      "description": "겨냥도·전개도·직육면체 건축과 8개 바이옴의 생존 탐험! 나무 채집부터 거점 짓기, 날씨 대비, 고유 자원·제작·설계도 발견까지 단계별로 즐겨요.",
       "subject": "math",
       "genre": "sandbox",
       "difficulty": "medium",
