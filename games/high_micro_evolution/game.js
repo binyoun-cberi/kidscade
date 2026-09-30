@@ -31,7 +31,7 @@ const PARTS = {
   pseudopod:{id:'pseudopod',cat:'이동',icon:'🫧',name:'위족',cost:6,external:true,max:3,desc:'몸을 늘여 움직이고 가까운 먹이를 감싸 먹기 쉬워져요.',science:'아메바처럼 세포질을 한쪽으로 내밀어 만드는 돌기를 위족이라고 합니다. 이동과 포식에 함께 쓰일 수 있습니다.'},
   anchor:{id:'anchor',cat:'이동',icon:'⚓',name:'부착기관',cost:5,external:true,max:2,desc:'물살에 밀리는 힘을 줄이고 잠깐 고정할 수 있어요.',science:'많은 미생물은 표면에 달라붙어 물살에 휩쓸리는 것을 줄입니다.'},
 
-  eyespot:{id:'eyespot',cat:'감각',icon:'👁️',name:'광수용기',cost:4,external:true,max:4,desc:'밝은 방향과 빛이 좋은 구역을 더 멀리 감지해요.',science:'눈이 생기기 전에도 빛의 세기나 방향에 반응하는 광수용 구조가 존재합니다.'},
+  eyespot:{id:'eyespot',cat:'감각',icon:'👁️',name:'광수용기',cost:4,external:true,max:4,desc:'1개만 있어도 현재 밝기를 느끼고, 2개부터는 밝기 차이를 비교해 더 밝은 방향까지 알아내요.',science:'광수용 구조는 빛의 세기에 반응할 수 있습니다. 여러 수용기가 서로 다른 방향의 빛을 비교하면 빛이 강한 쪽을 더 잘 구별할 수 있습니다.'},
   chemo:{id:'chemo',cat:'감각',icon:'👃',name:'화학수용체',cost:4,external:true,max:4,desc:'먹이와 생물이 남기는 화학 신호를 멀리서 찾아요.',science:'세포도 주변 화학물질의 농도 차이를 감지해 먹이나 위험 쪽으로 이동하거나 피할 수 있습니다.'},
   mechano:{id:'mechano',cat:'감각',icon:'👂',name:'기계수용체',cost:5,external:true,max:4,desc:'물의 진동으로 가까워지는 큰 생물을 미리 느껴요.',science:'기계수용은 압력·진동·늘어남 같은 물리적 변화를 감지하는 방식입니다. 귀의 먼 조상 기능과 연결해 생각할 수 있습니다.'},
   tactile:{id:'tactile',cat:'감각',icon:'✋',name:'촉각섬모',cost:3,external:true,max:6,desc:'아주 가까운 물체와 물살 변화를 빠르게 알아차려요.',science:'세포막과 섬모는 접촉이나 흐름 변화에 반응할 수 있습니다. 가까운 위험을 알아차리는 데 유리합니다.'},
@@ -166,12 +166,44 @@ function movementStats(p=state.player){
   return {speed,turn,sense,armor,thrust};
 }
 function lightAt(x,y){
-  let best=env.light/100*.35;
+  const ambient=env.light/100*(1-env.turbidity/100*.38)*.42;
+  let best=ambient;
   for(const q of lightPatches){
     const d=Math.hypot(x-q.x,y-q.y);
-    if(d<q.r)best=Math.max(best,(1-d/q.r)*q.strength*(env.light/100));
+    if(d<q.r)best=Math.max(best,ambient+(1-d/q.r)*q.strength*(env.light/100)*(1-env.turbidity/100*.24)*.72);
   }
   return clamp(best,0,1);
+}
+function lightLevelLabel(percent){
+  if(percent<12)return '거의 없음';
+  if(percent<30)return '아주 어두움';
+  if(percent<48)return '어두움';
+  if(percent<67)return '보통';
+  if(percent<84)return '밝음';
+  return '매우 밝음';
+}
+function lightCompass(angle){
+  if(angle==null)return '·';
+  const arrows=['→','↘','↓','↙','←','↖','↑','↗'];
+  return arrows[Math.round((((angle%TAU)+TAU)%TAU)/(TAU/8))%8];
+}
+function lightSenseData(p=state.player){
+  const eyes=p?countPart('eyespot',p):0;
+  const local=p?lightAt(p.x,p.y):0;
+  const percent=Math.round(local*100);
+  const range=eyes?210+eyes*175:0;
+  let target=null,bestScore=0,distance=Infinity;
+  if(p&&eyes>=2){
+    for(const q of lightPatches){
+      const d=Math.sqrt(dist2(p,q));
+      const edge=Math.max(0,d-q.r);
+      if(edge>range)continue;
+      const score=(q.strength*env.light/100)/(1+edge/170);
+      if(score>bestScore){bestScore=score;target=q;distance=d;}
+    }
+  }
+  const angle=target?Math.atan2(target.y-p.y,target.x-p.x):null;
+  return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
 }
 function salinityStress(){
   const membrane=countPart('membrane'),target=50+membrane*13;
@@ -420,8 +452,14 @@ function drawBackground(){
   ctx.globalAlpha=1;
 }
 function drawPatches(){
+  const sense=state.player?lightSenseData(state.player):{eyes:0,target:null};
   lightPatches.forEach(q=>{const s=worldToScreen(q.x,q.y);if(s.x<-q.r||s.x>viewW+q.r||s.y<-q.r||s.y>viewH+q.r)return;
-    const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,q.r);g.addColorStop(0,'rgba(244,255,166,'+(q.strength*.13*env.light/100)+')');g.addColorStop(1,'rgba(244,255,166,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,q.r,0,TAU);ctx.fill();
+    const sensoryBoost=sense.eyes?Math.min(.16,sense.eyes*.055):0;
+    const alpha=q.strength*(.12+sensoryBoost)*env.light/100;
+    const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,q.r);g.addColorStop(0,'rgba(244,255,166,'+alpha+')');g.addColorStop(1,'rgba(244,255,166,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,q.r,0,TAU);ctx.fill();
+    if(sense.eyes>=2&&q===sense.target){
+      ctx.save();ctx.strokeStyle='rgba(239,255,133,.26)';ctx.lineWidth=2;ctx.setLineDash([7,9]);ctx.beginPath();ctx.arc(s.x,s.y,q.r*.72,0,TAU);ctx.stroke();ctx.restore();
+    }
   });
 }
 function drawFoods(){
@@ -492,8 +530,32 @@ function loop(ts){
 }
 
 function refreshEnvBars(){
-  const labels={light:'빛',temp:'온도',oxygen:'산소',salt:'염도',food:'먹이',current:'물살'};
+  const labels={light:'평균빛',temp:'온도',oxygen:'산소',salt:'염도',food:'먹이',current:'물살'};
   $('envBars').innerHTML=Object.entries(labels).map(([k,n])=>'<div class="env-row"><span>'+n+'</span><div class="bar"><i style="width:'+env[k]+'%"></i></div><b>'+Math.round(env[k])+'</b></div>').join('');
+}
+function updateLightSensor(){
+  const box=$('lightSensor');if(!box||!state.player)return;
+  const sense=lightSenseData(state.player);
+  if(!sense.eyes){box.classList.add('hidden');return}
+  box.classList.remove('hidden');
+  $('eyeCountText').textContent='×'+sense.eyes;
+  $('localLightFill').style.width=sense.percent+'%';
+  if(sense.eyes===1){
+    $('localLightLevel').textContent=sense.label;
+    $('localLightLabel').textContent='현재 밝기';
+    $('lightDirectionArrow').textContent='?';
+    $('lightDirectionText').textContent='광수용기 하나로는 밝은 방향 비교가 어려워요';
+  }else{
+    $('localLightLevel').textContent=sense.percent+'%';
+    $('localLightLabel').textContent=sense.label+' · 현재 위치';
+    $('lightDirectionArrow').textContent=sense.arrow;
+    if(sense.target){
+      const extra=sense.eyes>=3?' · 약 '+Math.round(sense.distance/50)*50+' 거리':'';
+      $('lightDirectionText').textContent=sense.arrow+' 쪽이 더 밝아요'+extra;
+    }else{
+      $('lightDirectionText').textContent='주변 광량이 비슷해 뚜렷한 방향이 없어요';
+    }
+  }
 }
 function refreshHud(force){
   if(!state.player)return;
@@ -501,18 +563,22 @@ function refreshHud(force){
   $('dnaText').textContent=Math.floor(state.dna);$('energyText').textContent=Math.round(state.player.energy);$('healthText').textContent=Math.round(state.player.health);
   const n=classifyNiche();$('nicheName').textContent=n.name;$('nicheDesc').textContent=n.desc;
   const m=missionText();$('missionTitle').textContent=m[0];$('missionDesc').textContent=m[1];
-  if(force)refreshEnvBars();
+  if(force){refreshEnvBars();updateLightSensor();}
 }
 function updateSenseOverlay(){
   const el=$('senseOverlay');if(!state.player){el.innerHTML='';return}
+  updateLightSensor();
   let html='',p=state.player,range=movementStats(p).sense;
   if(countPart('chemo')){
     let target=null,bd=Infinity;for(const f of foods){const d=dist2(p,f);if(d<bd){bd=d;target=f}}
     if(target&&Math.sqrt(bd)<range*2.1){const a=Math.atan2(target.y-p.y,target.x-p.x);html+='<div class="sense-arrow" style="transform:translate(-4px,-2px) rotate('+a+'rad);background:linear-gradient(90deg,rgba(168,237,123,.9),transparent)"></div>'}
   }
-  if(countPart('eyespot')){
-    let best=null,bv=-1;lightPatches.forEach(q=>{const v=q.strength/(1+Math.sqrt(dist2(p,q))/300);if(v>bv){bv=v;best=q}});
-    if(best){const a=Math.atan2(best.y-p.y,best.x-p.x);html+='<div class="sense-arrow" style="transform:translate(-4px,-2px) rotate('+a+'rad)"></div>'}
+  const lightSense=lightSenseData(p);
+  if(lightSense.eyes>=2&&lightSense.angle!=null){
+    const a=lightSense.angle,width=lightSense.eyes>=3?145:118;
+    const lx=viewW/2+Math.cos(a)*(width+24),ly=viewH/2+Math.sin(a)*(width+24);
+    html+='<div class="sense-arrow light-arrow" style="width:'+width+'px;--counter-rotate:'+(-a)+'rad;transform:translate(-4px,-3px) rotate('+a+'rad)"></div>';
+    html+='<span class="sense-label light-label" style="left:'+lx+'px;top:'+ly+'px">'+lightSense.percent+'% · '+lightSense.label+'</span>';
   }
   if(countPart('mechano')||countPart('electro')){
     creatures.forEach(c=>{const d=Math.sqrt(dist2(p,c));if(d>range*1.2||d<5)return;if(c.r<p.radius*.9&&!countPart('electro'))return;const s=worldToScreen(c.x,c.y);if(s.x<0||s.x>viewW||s.y<0||s.y>viewH)return;html+='<span class="sense-label" style="left:'+s.x+'px;top:'+s.y+'px">'+(c.r>p.radius?'〰 큰 진동':'⚡ 생체 신호')+'</span>'});
@@ -541,7 +607,7 @@ function closeEditor(saveChanges){
   if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna}
   $('editorScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');paused=false;selectedPart=null;
   if(saveChanges){save();const n=classifyNiche();toast('🧬 진화 완료 — '+n.name);sound('success')}
-  last=performance.now();
+  updateLightSensor();updateSenseOverlay();last=performance.now();
 }
 function renderEditor(){
   $('editorDnaText').textContent=Math.floor(state.dna);
