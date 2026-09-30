@@ -112,7 +112,7 @@ function registerGlobalOutbreak(info){
 }
 function responsePayload(){
  const active=threats.filter(function(t){return t.phase==='infected'||t.phase==='zombie'});
- return{name:active.length?active[0].name:'캠프 감염자',threatCount:Math.max(1,active.length)};
+ return{name:active.length?active[0].name:'캠프 감염자',threatCount:Math.max(1,active.length),survivorCount:livingCount()};
 }
 function applyCombatLosses(n){
  let candidates=residents.filter(function(r){return r.status==='safe'||r.status==='bitten'});
@@ -173,7 +173,7 @@ function renderCamp(){
  host.innerHTML=ZONES.map(zoneHtml).join('');
  const safe=document.getElementById('q17CampSafe'),bitten=document.getElementById('q17CampBitten'),z=document.getElementById('q17CampZombie');
  if(safe)safe.textContent=safeCount();if(bitten)bitten.textContent=residents.filter(function(r){return r.status==='bitten'}).length;
- if(z)z.textContent=threats.filter(function(t){return t.phase==='zombie'}).length+residents.filter(function(r){return r.status==='zombie'}).length;
+ if(z)z.textContent=threats.filter(function(t){return t.phase==='zombie'}).length;
  const log=document.getElementById('q17CampLog');if(log)log.innerHTML=campLog.length?campLog.map(function(x){return '• '+x}).join('<br>'):'• 캠프 기록 없음';
  const state=document.getElementById('q17CampState');if(state)state.textContent=campCollapsed?'붕괴':dangerCount()?'감염 경보':'정상 운영';
  const respond=document.getElementById('q17CampRespond');if(respond){respond.disabled=!dangerCount();respond.textContent=dangerCount()?'현장 출동 · 위험 '+dangerCount()+'건':'현장 출동 · 위험 없음'}
