@@ -624,11 +624,19 @@ function updatePlayer(dt){
  if(player.speed>.35&&moved){player.stepClock+=dt*player.speed;const stride=nextState==='sprint'?2.75:2.18;if(player.stepClock>stride){player.stepClock=0;sfx('step')}}else player.stepClock=Math.min(player.stepClock,.8)
 }
 
+function segmentAabbT(x0,z0,x1,z1,b,expand=.18){
+ const dx=x1-x0,dz=z1-z0;let tmin=0,tmax=1;for(const [o,d,min,max] of [[x0,dx,b.x-b.hw-expand,b.x+b.hw+expand],[z0,dz,b.z-b.hd-expand,b.z+b.hd+expand]]){if(Math.abs(d)<1e-9){if(o<min||o>max)return-1;continue}let t1=(min-o)/d,t2=(max-o)/d;if(t1>t2)[t1,t2]=[t2,t1];tmin=Math.max(tmin,t1);tmax=Math.min(tmax,t2);if(tmin>tmax)return-1}return tmin
+}
 function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
 function resolveCamera(t,desired){
- const out=desired.clone(),steps=22;let safe=.18;
- for(let i=2;i<=steps;i++){const a=i/steps,x=t.x+(desired.x-t.x)*a,z=t.z+(desired.z-t.z)*a,y=t.y+(desired.y-t.y)*a;if(cameraBlocked(x,z)||y<terrainHeight(x,z)+.45){safe=Math.max(.18,(i-2)/steps);break}else safe=a}
- out.lerpVectors(t,desired,safe);out.y=Math.max(out.y,terrainHeight(out.x,out.z)+.5);return out
+ const dist=desired.distanceTo(t);let safe=1;
+ for(const b of colliders){if(!b.cameraBlocker)continue;const hit=segmentAabbT(t.x,t.z,desired.x,desired.z,b,.28);if(hit>=0&&hit<safe)safe=hit}
+ if(safe<1)safe=Math.max(.2,safe-.38/Math.max(dist,.01));
+ for(let i=2;i<=18;i++){const a=(i/18)*safe,x=t.x+(desired.x-t.x)*a,z=t.z+(desired.z-t.z)*a,y=t.y+(desired.y-t.y)*a;if(y<terrainHeight(x,z)+.42){safe=Math.max(.2,a-.06);break}}
+ const out=new THREE.Vector3().lerpVectors(t,desired,safe);out.y=Math.max(out.y,terrainHeight(out.x,out.z)+.48);return out
+}
+function interactionLineClear(origin,target,targetObj=null){
+ for(const b of colliders){const cx=b.x,cz=b.z;if(targetObj&&Math.hypot(cx-target.x,cz-target.z)<1.45)continue;const hit=segmentAabbT(origin.x,origin.z,target.x,target.z,b,.05);if(hit>=.02&&hit<.92)return false}return true
 }
 function updateInteriorVisibility(){
  const px=player.root.position.x,pz=player.root.position.z;for(const zone of ruinZones){const inside=Math.abs(px-zone.x)<zone.hw&&Math.abs(pz-zone.z)<zone.hd;for(const wall of zone.walls){wall.material.opacity=damp(wall.material.opacity,inside?.18:1,8,.016);wall.material.depthWrite=!inside}}
@@ -643,7 +651,11 @@ function updateCamera(dt){
  camera.position.lerp(desired,1-Math.exp(-12*dt));if(cameraKick>.003){camera.position.x+=(Math.random()-.5)*cameraKick;camera.position.y+=(Math.random()-.5)*cameraKick*.65}const fovTarget=player.speed>7?59:55;camera.fov=damp(camera.fov,fovTarget,5,dt);camera.updateProjectionMatrix();camera.lookAt(lookAt);
  if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position);updateInteriorVisibility()
 }
-function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}if(best!==currentInteract&&best){ui.interact.classList.remove('pop');void ui.interact.offsetWidth;ui.interact.classList.add('pop')}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
+function updateInteract(){
+ if(!running||buildMode)return;let best=null,bestScore=Infinity;const origin=new THREE.Vector3(player.root.position.x,player.root.position.y+1.35,player.root.position.z),screenForward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw));
+ for(const o of interactables){if(!o.visible)continue;const p=o.getWorldPosition(new THREE.Vector3()),d=p.distanceTo(player.root.position);if(d>3.9)continue;const flat=new THREE.Vector3(p.x-origin.x,0,p.z-origin.z),len=flat.length();if(len<.001)continue;flat.multiplyScalar(1/len);const facing=flat.dot(screenForward);if(facing<-.18)continue;if(!interactionLineClear(origin,p,o))continue;const score=d-facing*.85;if(score<bestScore){best=o;bestScore=score}}
+ if(best!==currentInteract&&best){ui.interact.classList.remove('pop');void ui.interact.offsetWidth;ui.interact.classList.add('pop')}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'
+}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
  if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;sfx('water');discover('waterRisk');flag('water');tutorialSignal('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
  if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
