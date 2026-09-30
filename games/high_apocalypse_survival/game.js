@@ -1074,8 +1074,13 @@ function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
  if(tutorialActive()){const s=game.tutorial.step||0;if(s===2||s===3)return{name:'튜토리얼 · 강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(s===4)return{name:'튜토리얼 · 비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(s===5)return{name:'튜토리얼 · 깨끗한 물',pos:CAMP}}
  if(game.phase==='settlement'){
-   const steps=settlementSteps();if(!steps[0][2]){for(const [id,r] of Object.entries(game.residents||{}))if(!r?.rescued)return{name:RESIDENTS[id].name+' 구조',pos:RESIDENTS[id].field}}
-   if(!steps[1][2])return{name:'주민 역할 배정',pos:CAMP};if(!steps[2][2])return{name:'텃밭 건설',pos:CAMP};if(!steps[3][2])return{name:'전기 정수기 건설',pos:CAMP};if(!steps[4][2])return{name:'냉장 보관함 건설',pos:CAMP};if(!steps[5][2])return{name:'비상 물자 비축',pos:CAMP};return null
+   if(game.settlementLevel<1){
+    const steps=settlementSteps();if(!steps[0][2]){for(const [id,r] of Object.entries(game.residents||{}))if(!r?.rescued)return{name:RESIDENTS[id].name+' 구조',pos:RESIDENTS[id].field}}
+    if(!steps[1][2])return{name:'주민 역할 배정',pos:CAMP};if(!steps[2][2])return{name:'텃밭 건설',pos:CAMP};if(!steps[3][2])return{name:'전기 정수기 건설',pos:CAMP};if(!steps[4][2])return{name:'냉장 보관함 건설',pos:CAMP};if(!steps[5][2])return{name:'비상 물자 비축',pos:CAMP};return null
+   }
+   const steps=villageSteps();if(!steps[0][2])return{name:'공동창고 건설',pos:CAMP};if(!steps[1][2])return{name:'추가 쉼터 건설',pos:CAMP};
+   if(!steps[2][2]){for(const site of ['market','clinic','garage']){const p=ruinSearchProgress(site);if(p.done<p.total)return{name:SITE_LABEL[site]+' 완전 수색',pos:site==='market'?MARKET_POS:site==='clinic'?CLINIC_POS:GARAGE_POS}}}
+   if(!steps[3][2])return{name:'마을 비상 물자 비축',pos:CAMP};if(!steps[4][2])return{name:'공동창고 물류 정리',pos:nearestBuilding('storehouse')};return null
  }
  if(game.day===1){if(!game.flags.water)return{name:'강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(!game.flags.boil)return{name:'비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(!game.flags.drink)return{name:'깨끗한 물 마시기',pos:CAMP}}
  if(game.day===2){if(!game.flags.axe)return{name:'서쪽 숲·바위',pos:new THREE.Vector3(-12,0,2)};if(!game.flags.campfire)return{name:'캠프 건축 구역',pos:CAMP};if(!game.flags.cook)return{name:'모닥불',pos:nearestBuilding('campfire')}}
