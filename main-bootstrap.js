@@ -395,11 +395,13 @@
       'game-cover-placeholders.js',
       'dashboard-recent.js',
       'game-recommendations.js',
+      'activity-feed.js',
       'game-frame-shell.js',
       'game-launcher.js',
       'home-v2.js'
     ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
-    return html.replace('</body>', scripts + '</body>');
+    const activityStyles = '<link rel="stylesheet" href="' + withVersion('activity-feed.css') + '">';
+    return html.replace('</body>', activityStyles + scripts + '</body>');
   }
 
   function showLoadError(error) {
