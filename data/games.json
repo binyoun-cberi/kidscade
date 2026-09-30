@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_little_world",
+      "addedAt": "2026-09-30T16:25:00+09:00",
+      "title": "작은 세계",
+      "href": "games/high_little_world/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "신처럼 산을 만들고 비를 내리면 물·식생·먹이사슬·사람과 문명이 스스로 반응하는 3D 과학 샌드박스. 건물을 직접 짓지 않고 자연 법칙과 결과를 관찰하며 작은 세계를 키워요.",
+      "subject": "science",
+      "genre": "sandbox",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_story_builder",
       "addedAt": "2026-09-30T15:44:00+09:00",
       "title": "이야기 조립소",
