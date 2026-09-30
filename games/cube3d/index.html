@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260930-17">
+<link rel="stylesheet" href="./cube-architect.css?v=20260930-18">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -191,6 +191,7 @@
       </div>
       <section id="survivalCraftPanel" class="hidden">
         <b>제작할 수 있는 물건</b><small id="survivalCraftHint">나무를 먼저 모아 보세요.</small>
+        <small id="survivalTechs">설계도 기술 · 아직 없음</small>
         <div id="survivalCraftList"></div>
       </section>
       <div id="inventoryGrid"></div>
@@ -283,9 +284,10 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20260930-17"></script>
-<script src="./cube-architect-world.js?v=20260930-17"></script>
-<script src="./cube-architect.js?v=20260930-17"></script>
+<script src="./cube-architect-landmarks.js?v=20260930-18"></script>
+<script src="./cube-architect-world.js?v=20260930-18"></script>
+<script src="./cube-architect-poi.js?v=20260930-18"></script>
+<script src="./cube-architect.js?v=20260930-18"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
