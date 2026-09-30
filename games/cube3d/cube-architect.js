@@ -1165,37 +1165,60 @@ function growTree(x,baseY,z,record,kind='forest'){
 }
 function buildFreeWorld(){
   worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
+  const heights=new Map();
   for(let x=-WORLD_HALF;x<WORLD_HALF;x++)for(let z=-WORLD_HALF;z<WORLD_HALF;z++){
-    const h=terrainHeight(x,z),dist=Math.hypot(x,z);
+    const h=terrainHeight(x,z),biomeId=worldRules.region(x,z),biome=worldRules.BIOMES[biomeId];
+    heights.set(x+','+z,h);
     for(let y=WORLD_MIN_Y;y<=h;y++){
       let type;
       if(y===WORLD_MIN_Y)type='bedrock';
-      else if(y<=h-3)type=(y<-1&&hash2(x*3+y,z*5-y)>.91?'ironOre':'stone');
-      else if(y<h)type=(h<=SEA_LEVEL?(hash2(x+17,z-11)>.68?'clay':'sand'):'dirt');
-      else type=(h<=SEA_LEVEL||dist>12.5?'sand':'grass');
+      else if(y<=h-3){
+        type=y<4&&hash2(x*3+y,z*5-y)>.945?'ironOre':
+          biomeId==='badlands'&&y>1?'redSand':hash2(x+y*7,z-y*11)>.965?'gravel':'stone';
+      }else if(y<h)type=biome.sub;
+      else type=biome.ground;
       setRawBlock(x,y,z,{type,natural:true});
     }
-    if(h<SEA_LEVEL)for(let y=h+1;y<=SEA_LEVEL;y++)setRawBlock(x,y,z,{type:'water',level:4,naturalSea:true,natural:true});
+    if(h<SEA_LEVEL)for(let y=h+1;y<=SEA_LEVEL;y++)
+      setRawBlock(x,y,z,{type:'water',level:4,naturalSea:true,natural:true});
   }
-  for(let x=-13;x<=13;x++)for(let z=-13;z<=13;z++){
-    const h=terrainHeight(x,z),dist=Math.hypot(x,z);
-    if(dist<4||dist>12||x>6&&z>6)continue;
-    if(getBlock(x,h,z)?.type==='grass'&&hash2(x,z)>.935)growTree(x,h+1,z,false);
+  for(let x=-WORLD_HALF+3;x<WORLD_HALF-3;x++)for(let z=-WORLD_HALF+3;z<WORLD_HALF-3;z++){
+    const h=heights.get(x+','+z),kind=worldRules.region(x,z),b=worldRules.BIOMES[kind];
+    const r=Math.hypot(x,z),roll=hash2(x*13+7,z*17-11);
+    if(r<4||getBlock(x,h+1,z)||h<0)continue;
+    if(kind==='desert'||kind==='badlands'){
+      if(roll>.985&&getBlock(x,h,z)?.type!=='water'){
+        for(let y=1;y<=2+Math.floor(hash2(x,z)*2);y++)
+          setRawBlock(x,h+y,z,{type:'cactus',natural:true});
+      }
+    }else if(kind==='marsh'){
+      if(roll>.966)for(let y=1;y<=2;y++)setRawBlock(x,h+y,z,{type:'reed',natural:true});
+      else if(roll>.987)growTree(x,h+1,z,false,'forest');
+    }else if(roll>1-b.trees&&!(x%3===0&&z%3===0)){
+      growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
+    }
+  }
+  // Guarantee accessible timber during the very first survival objective.
+  for(const [x,z] of [[6,3],[-6,4],[5,-6]]){
+    const y=heights.get(x+','+z);
+    if(y>=0&&!getBlock(x,y+1,z))growTree(x,y+1,z,false,'forest');
   }
   const ruinY=Math.max(terrainHeight(10,10),terrainHeight(8,8))+1;
-  [[8,0,8,'stone'],[8,1,8,'brick'],[8,2,8,'brick'],[12,0,8,'stone'],[12,1,8,'brick'],[12,2,8,'brick'],
-   [9,2,8,'brick'],[10,2,8,'brick'],[11,2,8,'brick'],[8,0,11,'stone'],[12,0,11,'stone'],[10,0,11,'obsidian']].forEach(v=>setRawBlock(v[0],ruinY+v[1],v[2],{type:v[3],ruin:true,natural:true}));
-  addCollectible('bp1',-12,terrainHeight(-12,-11)+1.0,-11,0x6f72ff,'설계도 조각');
-  addCollectible('c1',13,terrainHeight(13,-12)+1.1,-12,0xffd65a,'색 결정');
-  addCollectible('bp2',-14,terrainHeight(-14,12)+1.0,12,0x6f72ff,'설계도 조각');
-  addCollectible('c2',14,terrainHeight(14,7)+1.1,7,0xff79a8,'색 결정');
-  addCollectible('bp3',3,terrainHeight(3,-14)+1.0,-14,0x6f72ff,'설계도 조각');
+  [[8,0,8,'stone'],[8,1,8,'brick'],[8,2,8,'brick'],[12,0,8,'stone'],
+   [12,1,8,'brick'],[12,2,8,'brick'],[9,2,8,'brick'],[10,2,8,'brick'],
+   [11,2,8,'brick'],[8,0,11,'stone'],[12,0,11,'stone'],[10,0,11,'obsidian']]
+    .forEach(v=>setRawBlock(v[0],ruinY+v[1],v[2],{type:v[3],ruin:true,natural:true}));
+  const discoveries=[
+    ['bp1',-27,-9,0x6f72ff,'숲의 설계도 조각'],
+    ['c1',32,-28,0xffd65a,'사막의 색 결정'],
+    ['bp2',-5,-44,0x6f72ff,'설원의 설계도 조각'],
+    ['c2',5,39,0xff79a8,'습지의 색 결정'],
+    ['bp3',43,23,0x6f72ff,'협곡의 설계도 조각']
+  ];
+  for(const [id,x,z,color,label] of discoveries)
+    addCollectible(id,x,terrainHeight(x,z)+1.15,z,color,label);
   freeHemi=scene.children.find(o=>o.isHemisphereLight)||null;
   freeSun=scene.children.find(o=>o.isDirectionalLight)||null;
-}
-function addCollectible(id,x,y,z,color,label){
-  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
-  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;scene.add(m);collectibles.push(m);
 }
 function initFree(){
   modeTitle('아키텍트 월드','살아있는 복셀 세계 · 탐험 · 건축 · 실험');
