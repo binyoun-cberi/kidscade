@@ -7,7 +7,7 @@ const S = require('../games/high_twelve_island/sim.js');
 const ROOT = path.resolve(__dirname, '..');
 const gameDir = path.join(ROOT, 'games/high_twelve_island');
 
-test('Twelve Island registers a complete accessible game and uses existing assets', () => {
+test('Village Chief Simulator registers a complete accessible game and uses existing assets', () => {
   const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
   const entry = data.games.find(g => g.id === 'high_twelve_island');
   assert.ok(entry);
@@ -17,14 +17,14 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=7/);
-  assert.match(html, /art.js\?v=7/);
-  assert.match(html, /game.js\?v=7/);
+  assert.match(html, /sim.js\?v=8/);
+  assert.match(html, /art.js\?v=8/);
+  assert.match(html, /game.js\?v=8/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=7"));
+  assert.ok(entry.href.endsWith("?v=8"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -788,4 +788,127 @@ test('v7 interface exposes live disaster, infection, grievance and art effects',
   assert.match(art,/s\.disasters\?\.heat/);
   assert.match(art,/s\.disasters\?\.flood/);
   assert.match(art,/s\.disasters\?\.dust/);
+});
+
+
+test('v8 choice preview and persistent village consequences are wired into the renderer', () => {
+  const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
+  const entry = data.games.find(g => g.id === 'high_twelve_island');
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
+  assert.equal(entry.title, '촌장 시뮬레이터');
+  assert.match(html, /<h1>촌장 시뮬레이터<\/h1>/);
+  assert.match(js, /setPreview/);
+  assert.match(js, /impactChoice/);
+  assert.match(art, /function previewOverlay/);
+  assert.match(art, /아이들이 채집 중/);
+  assert.match(art, /노동 주민 작업 중단/);
+  assert.match(art, /가족들이 떠날 준비/);
+});
+
+test('v8 crisis choices trade immediate survival gains against delayed social and health costs', () => {
+  const child = S.initial(17);
+  child.tick = 20; child.coldUntil = 36; child.nextWinterAt = 50; child.food = 50;
+  child.pending = 'child_labor_debate';
+  const childFood = child.food;
+  assert.equal(S.resolveEvent(child, 2).ok, true);
+  assert.equal(child.food, childFood + 10);
+  assert.ok(child.groups.families >= 2.5);
+  assert.ok(S.rightsConcerns(child).includes('어린이 위험 노동'));
+
+  const forced = S.initial(6);
+  forced.tick = 25; forced.coldUntil = 39; forced.nextWinterAt = 50; forced.wood = 11;
+  forced.pending = 'forced_labor_debate';
+  assert.equal(S.resolveEvent(forced, 2).ok, true);
+  assert.ok(forced.wood >= 23);
+  assert.ok(forced.groups.workers >= 2.6);
+
+  const excluded = S.initial(71);
+  excluded.tick = 23; excluded.coldUntil = 35; excluded.nextWinterAt = 50; excluded.food = 22;
+  const beforeUse = S.rates(excluded).foodUse;
+  excluded.pending = 'ration_exclusion_debate';
+  assert.equal(S.resolveEvent(excluded, 2).ok, true);
+  assert.equal(excluded.food, 27);
+  assert.ok(beforeUse - S.rates(excluded).foodUse >= 2);
+});
+
+test('v8 simulation makes safe, production-first and compromise chiefs create different villages', () => {
+  function affordable(s, o) {
+    return !o.cost || Object.entries(o.cost).every(([k, n]) => (s[k] || 0) >= n);
+  }
+  function pick(s, event, style) {
+    const list = event.options.map((o, i) => ({ o, i })).filter(x => affordable(s, x.o));
+    const value = ({food: 1.25, wood: 1, water: .55, health: .8, trust: .55});
+    function immediate(o) {
+      let n = 0;
+      for (const [k, v] of Object.entries(o.changes || {})) n += (value[k] || 0) * v;
+      return n;
+    }
+    function risk(o) {
+      return (o.startChildLabor ? 12 : 0) + (o.startForcedLabor ? 10 : 0) + (o.startExclusion ? 10 : 0) +
+        (o.groupStrike ? 9 : 0) + (o.rejectCouncil ? 7 : 0);
+    }
+    function protect(o) {
+      return (o.childProtect ? 7 : 0) + (o.climateCare ? 6 : 0) + (o.floodRelocate ? 5 : 0) +
+        (o.floodRepair ? 4 : 0) + (o.medicine ? 5 : 0) + (o.groupSettlement ? 5 : 0) +
+        (o.stopChildLabor || o.endForcedLabor || o.endExclusion ? 8 : 0);
+    }
+    return list.sort((a, b) => {
+      const score = x => style === 'safe' ? protect(x.o) - risk(x.o) + immediate(x.o) * .15 :
+        style === 'production' ? immediate(x.o) + risk(x.o) * .85 - (x.o.quietRest || 0) * 1.2 :
+        protect(x.o) * .4 + immediate(x.o) * .45 - risk(x.o) * .35 - Math.abs(x.i - 1) * .25;
+      return score(b) - score(a);
+    })[0]?.i ?? 0;
+  }
+  function run(style) {
+    const s = S.initial(2026);
+    S.build(s, 'farm'); S.build(s, 'hut');
+    S.enact(s, 'ration', style === 'production' ? 'effort' : style === 'safe' ? 'needs' : 'equal');
+    S.enact(s, 'labor', style === 'production' ? 'extra' : style === 'safe' ? 'short' : 'balanced');
+    S.enact(s, 'storage', style === 'safe' ? 'reserve' : style === 'production' ? 'exchange' : 'share');
+    let risky = 0, events = 0, strikes = 0, departures = 0;
+    let prevPop = s.population;
+    for (let guard = 0; guard < 260 && s.tick < 120 && !s.ended; guard++) {
+      if (s.pending) {
+        const e = S.EVENTS.find(x => x.id === s.pending);
+        const ix = pick(s, e, style), o = e.options[ix];
+        if (o.startChildLabor || o.startForcedLabor || o.startExclusion || o.groupStrike || o.rejectCouncil) risky++;
+        const result = S.resolveEvent(s, ix);
+        assert.equal(result.ok, true, style + ' failed event ' + e.id);
+        events++;
+      } else {
+        if (s.stage >= 2) {
+          if (!s.laws.tax) S.enact(s, 'tax', style === 'production' ? 'low' : 'medium');
+          if (!s.laws.process) S.enact(s, 'process', style === 'safe' ? 'meeting' : style === 'production' ? 'delegate' : 'mixed');
+          if (!s.buildings.clinic && S.canBuild(s, 'clinic')) S.build(s, 'clinic');
+          if (!s.buildings.hall && S.canBuild(s, 'hall')) S.build(s, 'hall');
+        }
+        const urgent = S.availableActions(s).filter(a => a.enabled);
+        if (style === 'safe') {
+          const action = urgent.find(a => ['stopChildWork','stopForcedWork','restoreRations','communityCare','supportSick','fuelFires','familyMediation','carerMediation','workerMediation'].includes(a.id));
+          if (action) S.performAction(s, action.id);
+        }
+        S.tick(s);
+        if (Object.values(s.strikes || {}).some(until => until > s.tick)) strikes++;
+        if (s.population < prevPop) departures += prevPop - s.population;
+        prevPop = s.population;
+      }
+    }
+    return {
+      style, week:s.tick, population:s.population, food:+s.food.toFixed(1), wood:+s.wood.toFixed(1),
+      trust:+s.trust.toFixed(1), health:+s.health.toFixed(1), education:+s.education.toFixed(1),
+      child:+s.childWellbeing.toFixed(1), water:+s.water.toFixed(1), sick:+s.sick.toFixed(1),
+      grievances:+Object.values(s.groups).reduce((a,b)=>a+b,0).toFixed(1), risky, events, strikes, departures, ended:s.ended
+    };
+  }
+  const results = ['safe','production','compromise'].map(run);
+  console.log('V8_SIMULATION ' + JSON.stringify(results));
+  const signatures = new Set(results.map(x => [x.population,x.food,x.wood,x.trust,x.health,x.education,x.grievances,x.ended].join('|')));
+  assert.equal(signatures.size, 3, 'styles should lead to three materially different village states');
+  const safe = results.find(x => x.style === 'safe');
+  const prod = results.find(x => x.style === 'production');
+  assert.ok(prod.risky > safe.risky, 'production-first chief should take more high-risk shortcuts');
+  assert.ok(Math.abs(prod.health - safe.health) >= 5 || Math.abs(prod.trust - safe.trust) >= 8 ||
+    Math.abs(prod.grievances - safe.grievances) >= 3, 'chief styles should create visible long-term consequences');
 });
