@@ -168,7 +168,7 @@
       '"><label><input type="radio" name="law-' + id + '" data-law-option="' + id + '" value="' + option.id + '" ' +
       (drafts[id] === option.id ? "checked" : "") + '><span>' + escapeHTML(option.title) +
       '</span></label><p>' + escapeHTML(option.desc) + '</p>' +
-      (drafts[id] === option.id ? '<div class="law-impact">' + escapeHTML(S.policyEffect(id, option.id)) + '</div>' : '') +
+      (drafts[id] === option.id ? '<div class="law-impact">' + escapeHTML(S.policyEffect(id, option.id) + (id === "storage" && state.laws.storage === "reserve" && option.id !== "reserve" ? " 현재 비상 창고를 폐쇄하면 넘치는 식량은 보관하지 못할 수 있습니다." : "")) + '</div>' : '') +
       "</div>").join("") +
       '<div class="actions"><span class="vote-note">' + escapeHTML(cooldown ? cooldown + '주 후 주민투표 가능' : forecast) +
       (voterExamples ? '<small class="vote-people">의견 예시: ' + escapeHTML(voterExamples) + '</small>' : '') +
