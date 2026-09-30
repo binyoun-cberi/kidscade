@@ -131,7 +131,10 @@ function respondCamp(){
   if(result&&result.won){
    applyCombatLosses(result.losses||0);
    threats=[];
-   residents.forEach(function(r){if(r.status==='bitten'){r.status='safe';r.turn=0;r.task='응급 처치 후 안정'}});
+   residents.forEach(function(r){
+    if(r.status==='bitten'){r.status='safe';r.turn=0;r.task='응급 처치 후 안정'}
+    else if(r.status==='zombie'){r.status='lost';r.task='진압 과정에서 제거됨'}
+   });
    addCampLog('현장 진압 완료 · 캠프 내부 감염원 제거');
   }else{
    applyCombatLosses(result&&result.losses||0);
@@ -161,7 +164,7 @@ function threatHtml(t){
  return '<div class="q17-camp-person threat '+t.phase+'"><img src="'+spriteFor(t.phase==='zombie'?'zombie':t.sprite)+'" alt=""><b>'+esc(t.name)+'</b><small>검역 누락자</small><span>'+esc(zoneInfo(t.zone).name)+'</span><em>'+label+'</em></div>';
 }
 function zoneHtml(z){
- const people=residents.filter(function(r){return r.zone===z.id&&r.status!=='lost'}).map(residentHtml).join('');
+ const people=residents.filter(function(r){return r.zone===z.id&&r.status!=='lost'&&r.status!=='zombie'}).map(residentHtml).join('');
  const danger=threats.filter(function(t){return t.zone===z.id}).map(threatHtml).join('');
  return '<section class="q17-camp-zone '+(danger?'danger':'')+'"><div class="q17-camp-zone-head"><b>'+z.name+'</b><small>'+z.desc+'</small></div><div class="q17-camp-people">'+(people+danger||'<div class="q17-camp-empty">현재 인원 없음</div>')+'</div></section>';
 }
@@ -228,7 +231,7 @@ function mount(){
 
  const dock=document.createElement('div');dock.id='q17ViewDock';
  dock.innerHTML='<button type="button" class="q17-view-btn active" data-view="station">검역소<em class="q17-view-badge" id="q17ViewStationBadge" hidden></em></button><button type="button" class="q17-view-btn" data-view="isolation">격리시설<em class="q17-view-badge" id="q17ViewIsoBadge" hidden></em></button><button type="button" class="q17-view-btn" data-view="camp">생존자 캠프<em class="q17-view-badge" id="q17ViewCampBadge" hidden></em></button>';
- document.body.appendChild(dock);
+ dock.style.display='none';document.body.appendChild(dock);
 
  const camp=document.createElement('div');camp.id='q17Camp';
  camp.innerHTML='<div class="q17-camp-card"><div class="q17-camp-head"><div><h2>CAMP-17 생존자 캠프</h2><span class="q17-live">LIVE CCTV</span></div><b id="q17CampState">정상 운영</b></div><div class="q17-camp-stats"><div class="q17-camp-stat">안전<b id="q17CampSafe">0</b></div><div class="q17-camp-stat">물림<b id="q17CampBitten">0</b></div><div class="q17-camp-stat">좀비<b id="q17CampZombie">0</b></div><div class="q17-camp-stat">운영 상태<b>자동 순환</b></div></div><div class="q17-camp-zones" id="q17CampZones"></div><div class="q17-camp-bottom"><div class="q17-camp-log" id="q17CampLog"></div><div class="q17-camp-actions"><button type="button" class="q17-camp-respond" id="q17CampRespond">현장 출동 · 위험 없음</button></div></div></div>';
@@ -243,6 +246,8 @@ function mount(){
  document.getElementById('q17GlobalRespond').addEventListener('click',respondGlobal);
  camp.addEventListener('click',function(e){if(e.target===camp)switchView('station')});
 
+ const oldIsoBtn=document.getElementById('q17IsoBtn');
+ if(oldIsoBtn)oldIsoBtn.addEventListener('click',function(){currentView='isolation';renderDock()});
  const oldIsoClose=document.getElementById('q17IsoClose');
  if(oldIsoClose)oldIsoClose.addEventListener('click',function(){currentView='station';renderDock()});
  const iso=document.getElementById('q17Isolation');
@@ -252,6 +257,11 @@ function mount(){
   const oldReset=window.Q17Outbreak.reset;
   window.Q17Outbreak.reset=function(){const v=oldReset.apply(this,arguments);resetCamp();return v};
  }
+ const activate=function(){dock.style.display='flex';renderAll()};
+ const startV2=document.getElementById('startBtnV2'),startLegacy=document.getElementById('startBtn');
+ if(startV2)startV2.addEventListener('click',function(){setTimeout(activate,80)});
+ else if(startLegacy)startLegacy.addEventListener('click',function(){setTimeout(activate,80)});
+ else activate();
  resetCamp();
  setInterval(campTick,3200);
  setInterval(isolationTick,5000);
