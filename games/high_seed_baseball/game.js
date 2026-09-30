@@ -234,7 +234,7 @@ function swingNow(mode='contact'){
   sound('hit',1.35);message('파울! 배트 각도와 타이밍을 다시 맞춰요.',.9);
   if(strikes<2)strikes++;updateHud();setTimeoutLike(()=>{if(state==='batting')spawnCpuPitch()},.7);return;
  }
- sound('hit',.86+q*.32);startOffenseBall(q,power,timing,by-batTip().y);
+ sound('hit',.86+q*.32);const batAtBallX=BAT.py+(BAT.px-bx)*Math.tan(batAngle);startOffenseBall(q,power,timing,by-batAtBallX);
 }
 function finishCountPitch(){
  updateHud();
@@ -563,11 +563,29 @@ function drawBall(x,y,r=7){
  ctx.beginPath();ctx.arc(x+r*.20,y,r*.64,2.03,4.26);ctx.stroke();ctx.restore();
 }
 
+function drawBatFan(){
+ // The translucent sector and its rotating line share the same geometry as batDistance().
+ const steps=30;ctx.save();
+ ctx.fillStyle='rgba(250,204,21,.085)';ctx.strokeStyle='rgba(250,204,21,.21)';ctx.lineWidth=1.5;
+ ctx.beginPath();ctx.moveTo(BAT.px,BAT.py);
+ for(let i=0;i<=steps;i++){const tip=batTip(BAT.min+(BAT.max-BAT.min)*i/steps);ctx.lineTo(tip.x,tip.y)}
+ ctx.closePath();ctx.fill();ctx.stroke();
+ const hit=simTime<swingAnimationUntil;
+ if(hit){const sh=batTip(batAngle);ctx.strokeStyle='rgba(255,224,119,.30)';ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(BAT.px,BAT.py);ctx.lineTo(sh.x,sh.y);ctx.stroke()}
+ ctx.translate(BAT.px,BAT.py);ctx.rotate(-batAngle);ctx.scale(-1,1);
+ if(readyImage(batImg))ctx.drawImage(batImg,0,-12,BAT.length,24);
+ else{ctx.strokeStyle='#d1a067';ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(BAT.length,0);ctx.stroke()}
+ ctx.restore();
+ ctx.save();ctx.fillStyle='#ffe19a';ctx.beginPath();ctx.arc(BAT.px,BAT.py,5,0,Math.PI*2);ctx.fill();
+ const target=batTip(),markerX=BAT.px+(target.x-BAT.px)*.70,markerY=BAT.py+(target.y-BAT.py)*.70;
+ ctx.fillStyle='#fef3c7';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('배트 각도',BAT.px+54,BAT.py-44);
+ ctx.fillStyle='#fdedaa';ctx.beginPath();ctx.arc(markerX,markerY,3,0,Math.PI*2);ctx.fill();ctx.restore();
+}
 function drawPlateView(isBatting){
  drawPlateBackdrop();
  const zx=405,zy=268,zw=150,zh=114;
- ctx.save();ctx.fillStyle='rgba(6,24,40,.12)';ctx.fillRect(zx,zy,zw,zh);
- ctx.strokeStyle='rgba(255,255,255,.62)';ctx.lineWidth=2;ctx.strokeRect(zx,zy,zw,zh);
+ ctx.save();ctx.fillStyle='rgba(6,24,40,.11)';ctx.fillRect(zx,zy,zw,zh);
+ ctx.strokeStyle='rgba(255,255,255,.58)';ctx.lineWidth=2;ctx.strokeRect(zx,zy,zw,zh);
  ctx.strokeStyle='rgba(255,255,255,.17)';
  for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(zx+i*50,zy);ctx.lineTo(zx+i*50,zy+zh);ctx.stroke();ctx.beginPath();ctx.moveTo(zx,zy+i*38);ctx.lineTo(zx+zw,zy+i*38);ctx.stroke()}
  ctx.restore();
@@ -575,39 +593,40 @@ function drawPlateView(isBatting){
   const throwing=pitch&&pitch.owner==='cpu'&&pitch.t<.38;
   drawPlayer(throwing?sprites.cpu.action:sprites.cpu.stand,480,254,.9,false,'#2563eb',true,1);
   const batter=readyImage(avatarImg)?avatarImg:(simTime<swingAnimationUntil?sprites.user.action:sprites.user.stand);
-  drawPlayer(batter,620,447,1.2,true,'#16a34a',true,4);
-  ctx.save();ctx.translate(603,386);ctx.rotate(.64+(chargeActive?Math.sin(simTime*8)*.055:0));ctx.scale(-1,1);
-  if(readyImage(batImg))ctx.drawImage(batImg,-6,-10,96,26);
-  else{ctx.strokeStyle='#a26b37';ctx.lineWidth=12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(86,0);ctx.stroke()}
-  ctx.restore();
-  const cueStart=.88-cfg().batWindow*.55,cueEnd=Math.min(.99,.88+cfg().batWindow*.55);
-  const inTiming=pitch&&pitch.owner==='cpu'&&!pitch.swung&&pitch.t>=cueStart&&pitch.t<=cueEnd;
-  ctx.strokeStyle=inTiming?'#4ade80':'#fbbf24';ctx.lineWidth=inTiming?5:3;
-  ctx.beginPath();ctx.arc(cursor.x,cursor.y,inTiming?23:17,0,Math.PI*2);ctx.stroke();
-  if(inTiming){ctx.fillStyle='#bbf7d0';ctx.font='900 17px system-ui';ctx.textAlign='center';ctx.fillText('지금!',cursor.x,cursor.y-32)}
-  ctx.beginPath();ctx.moveTo(cursor.x-24,cursor.y);ctx.lineTo(cursor.x+24,cursor.y);ctx.moveTo(cursor.x,cursor.y-24);ctx.lineTo(cursor.x,cursor.y+24);ctx.stroke();
+  drawPlayer(batter,626,449,1.2,true,'#16a34a',true,4);
+  drawBatFan();
+  const cueStart=.88-cfg().batWindow*.52,cueEnd=Math.min(.99,.88+cfg().batWindow*.52);
+  if(pitch&&pitch.owner==='cpu'&&!pitch.swung){
+   const t=clamp(pitch.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=pitch.actual.x+pitch.breakX*curve,ty=pitch.actual.y+pitch.breakY*curve;
+   const ballX=lerp(480,tx,t),ballY=lerp(235,ty,t),gap=batDistance(ballX,ballY);
+   const rightTime=t>=cueStart&&t<=cueEnd,aligned=gap<cfg().batReach*.65;
+   if(rightTime){
+    ctx.fillStyle=aligned?'#bbf7d0':'#fef08a';ctx.font='900 16px system-ui';ctx.textAlign='center';
+    ctx.fillText(aligned?'지금 스윙!':'배트 각도를 맞춰요!',475,240);
+   }
+   ctx.save();ctx.strokeStyle=aligned?'rgba(74,222,128,.7)':'rgba(253,224,71,.48)';ctx.lineWidth=2;
+   ctx.beginPath();ctx.arc(ballX,ballY,16,0,Math.PI*2);ctx.stroke();ctx.restore();
+   // Fixed position makes the changing flight speed easy to read on mobile.
+   const bx=383,by=408,bw=194;
+   ctx.fillStyle='rgba(8,25,41,.88)';ctx.beginPath();ctx.roundRect(bx-8,by-7,bw+16,30,10);ctx.fill();
+   ctx.fillStyle='#486173';ctx.fillRect(bx,by,bw,10);ctx.fillStyle='#4ade80';ctx.fillRect(bx+bw*cueStart,by,bw*(cueEnd-cueStart),10);
+   ctx.fillStyle='#fff9db';ctx.fillRect(bx+bw*t-2,by-4,4,18);
+   ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillText(rightTime?'지금!':'공을 기다리세요',bx+bw/2,by+22);
+  }
  }else{
   const throwing=pitch&&pitch.owner==='user'&&pitch.t<.38;
   drawPlayer(throwing?sprites.user.action:sprites.user.stand,480,254,.9,false,'#16a34a',true,1);
   const batting=pitch&&pitch.owner==='user'&&pitch.t>.78&&pitch.cpuDecision;
   drawPlayer(batting?sprites.cpu.action:sprites.cpu.stand,590,447,1.2,true,'#2563eb',true,4);
-  ctx.save();ctx.translate(577,387);ctx.rotate(.58);ctx.scale(-1,1);if(readyImage(metalBatImg))ctx.drawImage(metalBatImg,-6,-10,93,24);ctx.restore();
+  ctx.save();ctx.translate(577,387);ctx.rotate(.58);ctx.scale(-1,1);
+  if(readyImage(metalBatImg))ctx.drawImage(metalBatImg,-6,-10,93,24);ctx.restore();
   ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.beginPath();ctx.arc(pitchAim.x,pitchAim.y,12,0,Math.PI*2);ctx.stroke();
- }
- if(isBatting&&pitch&&pitch.owner==='cpu'&&!pitch.swung){
-  const t=clamp(pitch.t,0,1),bx=383,by=401,bw=194;
-  const start=.88-cfg().batWindow*.55,end=Math.min(.99,.88+cfg().batWindow*.55);
-  ctx.fillStyle='rgba(8,25,41,.88)';ctx.beginPath();ctx.roundRect(bx-8,by-7,bw+16,30,10);ctx.fill();
-  ctx.fillStyle='#486173';ctx.fillRect(bx,by,bw,10);
-  ctx.fillStyle='#4ade80';ctx.fillRect(bx+bw*start,by,bw*(end-start),10);
-  ctx.fillStyle='#fdf6dc';ctx.fillRect(bx+bw*t-2,by-4,4,18);
-  ctx.fillStyle='#e9f2f8';ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillText(t>=start&&t<=end?'지금 스윙!':'공을 기다리세요',bx+bw/2,by+22);
  }
  if(pitch){
   const p=pitch,t=clamp(p.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=p.actual.x+p.breakX*curve,ty=p.actual.y+p.breakY*curve;let x,y,r;
   if(p.owner==='cpu'){x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(5,14,t)}
   else{x=lerp(480,tx,t);y=lerp(235,ty,t);r=lerp(11,5,t)}
-  ctx.save();ctx.strokeStyle='rgba(255,255,255,.27)';ctx.lineWidth=r*.8;ctx.beginPath();ctx.moveTo(x-((tx-480)*.08),y-(p.owner==='cpu'?14:7));ctx.lineTo(x,y);ctx.stroke();ctx.restore();drawBall(x,y,r);
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,.23)';ctx.lineWidth=r*.8;ctx.beginPath();ctx.moveTo(x-((tx-480)*.08),y-(p.owner==='cpu'?14:7));ctx.lineTo(x,y);ctx.stroke();ctx.restore();drawBall(x,y,r);
  }
 }
 function drawField(){
@@ -649,13 +668,22 @@ function loop(now){const dt=Math.min(.05,(now-last)/1000||0);last=now;acc+=dt;wh
 requestAnimationFrame(loop);
 
 function logicalPos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);if(state==='batting'&&!cfg().autoAim){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='batting'&&cfg().autoAim){swingNow('contact')}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}else if(state==='defenseField'&&fielders.length){let best=-1,dist=50;fielders.forEach((f,i)=>{const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<dist){dist=d;best=i}});if(best>=0){activeFielder=best;setControls('field');message(fielders[best].role+' 선택',.7)}}});
-canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons){const p=logicalPos(e);if(state==='batting'&&!cfg().autoAim){cursor.x=clamp(p.x,380,580);cursor.y=clamp(p.y,235,420)}else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420)}}});
+canvas.addEventListener('pointerdown',e=>{const p=logicalPos(e);
+ if(state==='batting'){setBatFromPoint(p);try{canvas.setPointerCapture?.(e.pointerId)}catch(_){}}
+ else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420);lessonAimSelected=true;updateLesson()}
+ else if(state==='defenseField'&&fielders.length){let best=-1,dist=50;fielders.forEach((f,i)=>{const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<dist){dist=d;best=i}});if(best>=0){activeFielder=best;lessonFieldTouched=true;setControls('field');updateLesson();message(fielders[best].role+' 선택',.7)}}
+});
+canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons){const p=logicalPos(e);
+ if(state==='batting')setBatFromPoint(p);
+ else if(state==='pitching'&&!pitch){pitchAim.x=clamp(p.x,370,590);pitchAim.y=clamp(p.y,230,420);lessonAimSelected=true;updateLesson()}
+}});
 
 window.addEventListener('keydown',e=>{
  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w','s','A','D','W','S'].includes(e.key))e.preventDefault();
  if(state==='batting'){
-  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')held.aimLeft=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')held.aimRight=true;if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')held.aimUp=true;if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')held.aimDown=true;if(e.code==='Space'&&!e.repeat)swingNow(e.shiftKey?'power':'contact');
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')held.batUp=true;
+  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')held.batDown=true;
+  if(e.code==='Space'&&!e.repeat)swingNow(e.shiftKey&&difficulty!=='easy'?'power':'contact');
  }else if(state==='pitching'){if(e.code==='Space'&&!e.repeat)beginThrow()}
  else if(state==='defenseField'){
   if(e.key==='Tab'){e.preventDefault();activeFielder=(activeFielder+1)%fielders.length;message(fielders[activeFielder].role+' 선택',.7)}
@@ -664,15 +692,16 @@ window.addEventListener('keydown',e=>{
  }
 });
 window.addEventListener('keyup',e=>{
- if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){held.aimLeft=false;held.left=false}
- if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){held.aimRight=false;held.right=false}
- if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){held.aimUp=false;held.up=false}
- if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){held.aimDown=false;held.down=false}
+ if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')held.left=false;
+ if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')held.right=false;
+ if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){held.batUp=false;held.up=false}
+ if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){held.batDown=false;held.down=false}
  if(e.code==='Space'&&state==='pitching')releaseThrow()
 });
 
 document.querySelectorAll('[data-diff]').forEach(b=>b.addEventListener('click',()=>{difficulty=b.dataset.diff;document.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('active',x===b));sound('click')}));
 $('#startBtn').addEventListener('click',startGame);
+$('#tutorialBtn').addEventListener('click',()=>{lessonReplay=true;startGame()});
 $('#recordsBtn').addEventListener('click',showRecords);
 $('#closeRecords').addEventListener('click',()=>records.classList.add('hidden'));
 $('#rematchBtn').addEventListener('click',()=>{result.classList.add('hidden');startGame()});
