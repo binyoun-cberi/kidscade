@@ -150,7 +150,11 @@
       jobs: { gather: 5, wood: 3 }, buildings: { farm: 0, hut: 0, store: 0, clinic: 0, hall: 0 },
       laws: {}, passed: [], eventsSeen: {}, eventsLast: {}, pending: null, cooldown: 0, log: [],
       citizens: FOUNDER_NAMES.map((_, index) => createCitizen(index)), arrivalLog: [], arrivalNotice: null, nextCitizenIndex: 12,
-      stormUntil: 0, lastBirth: 0, lastRelief: -99, score: 0
+      stormUntil: 0, lastBirth: 0, lastRelief: -99, score: 0,
+      pressure: { ration: 0, labor: 0 }, workStrain: 0,
+      safeguards: { fairBonus: false, effortCare: false, needsAudit: false, workBreak: false },
+      pledges: [], decisions: [], authorityUses: 0, voteCooldownUntil: 0,
+      workReliefUntil: 0, stormAftermathAt: 0, stormAftermathChoice: null
     };
   }
   function normalize(s) {
@@ -170,6 +174,11 @@
     }
     ensureCitizens(d);
     d.nextCitizenIndex = Math.max(d.nextCitizenIndex || 12, d.citizens.length);
+    d.pressure = { ration: clamp(d.pressure?.ration || 0, 0, 8), labor: clamp(d.pressure?.labor || 0, 0, 8) };
+    d.workStrain = clamp(d.workStrain || 0, 0, 10);
+    d.safeguards = { ...initial().safeguards, ...(d.safeguards || {}) };
+    if (!Array.isArray(d.pledges)) d.pledges = [];
+    if (!Array.isArray(d.decisions)) d.decisions = [];
     d.pending = d.pending === "new_resident" && d.arrivalNotice ? d.pending : null;
     return d;
   }
@@ -189,13 +198,18 @@
     const labor = getLaw(s, "labor") || {};
     const tax = getLaw(s, "tax") || {};
     const care = getLaw(s, "care") || {};
-    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1);
+    const fatigue = 1 - Math.min(.33, (s.workStrain || 0) * .032);
+    const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
+    const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
+    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest;
     const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production;
     const cut = s.jobs.wood * .48 * production;
-    const foodUse = s.population * .30 * (ration.foodUse || 1) * (labor.foodUse || 1);
+    const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
+    const foodUse = s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras);
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
-    const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) : 0;
-    return { food: gather - foodUse, wood: cut, treasury: taxIncome - serviceCost, gather, foodUse };
+    const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
+    const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
+    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue };
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
@@ -218,34 +232,171 @@
     s.jobs[job] += delta;
     return true;
   }
+
+  const BRANCH_EFFECTS = {
+    ration: {
+      equal: "모두에게 일정량을 배급합니다. 식량 소비를 예측하기 쉽지만 노동 보상이나 개인별 필요를 둘러싼 청원이 나올 수 있습니다.",
+      effort: "추가 배급으로 생산이 증가하지만 식량 소비도 늘어납니다. 노동에 참여하기 어려운 주민을 위한 예외 규정이 쟁점이 됩니다.",
+      needs: "필요에 따른 추가 지원으로 배급량과 관리 물자가 소모됩니다. 지원 기준을 확인하고 설명하는 절차가 필요합니다."
+    },
+    labor: {
+      balanced: "기본 생산량을 유지하며 누적 피로를 완화합니다.",
+      short: "생산량이 감소하지만 누적 피로가 빠르게 회복됩니다.",
+      extra: "단기 생산량이 늘지만 피로가 누적됩니다. 피로가 높으면 실제 생산량이 다시 떨어지고 노동 관련 청원이 발생합니다."
+    },
+    storage: {
+      reserve: "비축 공간이 35 증가하고 폭풍이 지나간 뒤 식량 피해가 크게 줄어듭니다.",
+      exchange: "저장 공간이 거의 가득 차면 식량을 물자로 교환합니다. 폭풍 이후 비축 식량이 부족할 수 있습니다.",
+      share: "잉여 식량을 추가 배급해 신뢰를 쌓습니다. 폭풍이 지나간 뒤 사용할 비축량이 적어질 수 있습니다."
+    },
+    tax: {
+      low: "국고 수입이 적어 공공시설의 유지비를 더 신중하게 조달해야 합니다.",
+      medium: "국고 수입과 주민의 부담이 함께 달라집니다. 주민들의 우선순위에 따라 투표 결과가 달라집니다.",
+      high: "국고 수입이 늘어납니다. 지출 내역 공개와 주민 부담에 대한 청원이 이어질 수 있습니다."
+    },
+    care: {
+      basic: "기본적인 운영비를 사용하고 현재 시설을 유지합니다.",
+      medical: "의료 서비스에 예산을 우선 투입합니다. 진료소가 있으면 신뢰 회복에 도움이 됩니다.",
+      housing: "주거 지원에 예산을 사용합니다. 인구 수용 여유가 없을 때 합류를 돕습니다."
+    },
+    process: {
+      meeting: "공동 부담금과 공공 지원의 변경을 주민투표로 결정합니다. 표결 후 다음 안건까지 준비 기간이 필요합니다.",
+      delegate: "대표가 공공 지원 범위에서 집행 방침을 직접 결정합니다. 일정한 결정이 쌓이면 권한 검토가 요구됩니다. 세금 변경에는 투표가 필요합니다.",
+      mixed: "일상적 공공 지원은 위임하되 큰 지출과 공동 부담금에는 주민투표를 실시합니다."
+    }
+  };
+  function policyEffect(id, optionId) { return BRANCH_EFFECTS[id]?.[optionId] || ""; }
+  function ruleProcedure(s, id, optionId) {
+    const law = LAWS[id];
+    if (!law?.vote) return "direct";
+    if (id === "process" || id === "tax") return "vote";
+    if (id !== "care") return "vote";
+    if (s.laws.process === "delegate") return "direct";
+    if (s.laws.process === "mixed" && optionId !== "medical") return "direct";
+    return "vote";
+  }
+  function recordDecision(s, title, detail) {
+    if (!Array.isArray(s.decisions)) s.decisions = [];
+    s.decisions.unshift({ tick: s.tick, title, detail });
+    if (s.decisions.length > 36) s.decisions.length = 36;
+  }
+  function settlePledges(s, id) {
+    for (const pledge of s.pledges || []) {
+      if (pledge.kind !== id) continue;
+      pledge.fulfilled = true;
+      record(s, "주민들과 한 " + pledge.title + " 약속을 지켰습니다.");
+      s.trust = clamp(s.trust + 3);
+    }
+    s.pledges = (s.pledges || []).filter(p => !p.fulfilled);
+  }
+  function applySafeguard(s, key) {
+    const branch = { fairBonus: "equal", effortCare: "effort", needsAudit: "needs", workBreak: "extra" };
+    if (!Object.hasOwn(branch, key)) return false;
+    if (key === "workBreak" ? s.laws.labor !== branch[key] : s.laws.ration !== branch[key]) return false;
+    if (s.safeguards[key]) return false;
+    s.safeguards[key] = true;
+    if (key === "workBreak") s.workStrain = clamp(s.workStrain - 3, 0, 10);
+    else s.pressure.ration = clamp(s.pressure.ration - 2.4, 0, 8);
+    settlePledges(s, key === "workBreak" ? "labor" : "ration");
+    return true;
+  }
+  function advanceConsequences(s) {
+    if (s.laws.labor === "extra") {
+      s.workStrain = clamp(s.workStrain + (s.food < 45 ? .58 : .27) - (s.safeguards.workBreak ? .37 : 0), 0, 10);
+    } else s.workStrain = clamp(s.workStrain - (s.laws.labor === "short" ? .8 : .46), 0, 10);
+    const active = s.laws.ration;
+    if (active === "equal") {
+      const busy = s.jobs.gather + s.jobs.wood >= s.population * .72;
+      s.pressure.ration = clamp(s.pressure.ration + (busy && s.laws.labor === "extra" ? .32 : .12) - (s.safeguards.fairBonus ? .24 : 0), 0, 8);
+    } else if (active === "effort") {
+      s.pressure.ration = clamp(s.pressure.ration + (s.food < 58 || unused(s) >= 3 ? .36 : .22) - (s.safeguards.effortCare ? .33 : 0), 0, 8);
+    } else if (active === "needs") {
+      s.pressure.ration = clamp(s.pressure.ration + (s.wood < 25 || (s.stage >= 2 && s.treasury < 10) ? .35 : .18) - (s.safeguards.needsAudit ? .3 : 0), 0, 8);
+    } else s.pressure.ration = clamp(s.pressure.ration - .12, 0, 8);
+    if (s.laws.labor === "extra") s.pressure.labor = clamp(s.pressure.labor + (s.workStrain >= 3 ? .42 : .16) - (s.safeguards.workBreak ? .35 : 0), 0, 8);
+    else s.pressure.labor = clamp(s.pressure.labor - .3, 0, 8);
+    if (s.safeguards.needsAudit && s.wood < .3 && s.tick % 6 === 0) {
+      s.trust = clamp(s.trust - .4);
+    }
+    if (s.laws.ration === "needs" && s.food > 36 && s.wood >= .2) s.trust = clamp(s.trust + .06);
+    if (s.laws.ration === "equal" && s.food > 46 && s.trust < 67) s.trust = clamp(s.trust + .035);
+    if (s.laws.labor === "short" && s.workStrain < 2 && s.trust < 70) s.trust = clamp(s.trust + .025);
+    if (s.laws.care === "medical" && s.buildings.clinic && s.treasury > 1) s.trust = clamp(s.trust + .06);
+    if (s.laws.care === "housing" && s.population >= capacity(s) - 1 && s.treasury > 1 && s.trust < 65) s.trust = clamp(s.trust + .04);
+  }
+  function votePosition(s, citizen, id, option) {
+    let support = option.support == null ? .7 : option.support;
+    const focus = citizen.focus;
+    if (id === "tax") {
+      if (option.id === "high") support += focus === "public" && s.buildings.clinic ? .17 : focus === "work" ? -.13 : focus === "food" ? -.05 : 0;
+      if (option.id === "low") support += focus === "work" ? .10 : focus === "public" && s.treasury < 14 ? -.12 : 0;
+      if (option.id === "medium" && focus === "public" && s.treasury < 14) support += .09;
+    }
+    if (id === "care") {
+      if (option.id === "medical") support += focus === "public" || focus === "safety" ? .14 : focus === "work" ? -.06 : 0;
+      if (option.id === "housing") support += s.population >= capacity(s) - 1 ? .11 : -.045;
+      if (option.id === "basic" && s.treasury < 14) support += .075;
+    }
+    if (id === "process") {
+      if (option.id === "meeting" && focus === "fairness") support += .16;
+      if (option.id === "delegate" && focus === "fairness") support -= .12;
+      if (option.id === "mixed" && focus === "safety") support += .055;
+    }
+    support += (s.trust - 55) / 500 + (s.buildings.hall ? .035 : 0);
+    const n = Number(String(citizen.id || "").replace(/\D/g, "")) || 1;
+    const threshold = .43 + ((n * 3) % 6) * .037;
+    return { id: citizen.id, name: citizen.name, yes: support >= threshold, focus, topic: PRIORITY_TITLES[focus], support: Math.round(clamp(support, 0, 1) * 100) };
+  }
+
   function expectedVotes(s, id, optionId) {
     const law = LAWS[id], option = law?.options.find(o => o.id === optionId);
     if (!law || !option) return null;
-    const total = Math.min(12, s.population);
-    let approval = option.support == null ? .7 : option.support;
-    approval += (s.trust - 55) / 500;
-    if (s.buildings.hall) approval += .035;
-    const yes = Math.round(total * clamp(approval, .08, .92));
-    return { yes, no: total - yes, total, passed: yes > total / 2 };
+    const voters = (s.citizens || []).slice(0, Math.min(12, s.population));
+    const members = voters.map(person => votePosition(s, person, id, option));
+    const yes = members.filter(person => person.yes).length;
+    return { yes, no: members.length - yes, total: members.length, passed: yes > members.length / 2, members };
   }
   function enact(s, id, optionId) {
     const law = LAWS[id], option = law?.options.find(o => o.id === optionId);
-    if (s.pending || !law || law.stage > s.stage || !option || s.laws[id] === optionId) return { ok: false, reason: "선택할 수 없는 규칙입니다." };
-    if (law.vote) {
-      const vote = expectedVotes(s, id, optionId);
+    if (s.pending || !law || law.stage > s.stage || !option || s.laws[id] === optionId)
+      return { ok: false, reason: "선택할 수 없는 규칙입니다." };
+    const procedure = ruleProcedure(s, id, optionId);
+    if (procedure === "vote" && (s.voteCooldownUntil || 0) > s.tick)
+      return { ok: false, reason: "앞선 주민투표의 정리 기간입니다. " + (s.voteCooldownUntil - s.tick) + "주 후 다시 표결할 수 있습니다." };
+    let vote = null;
+    if (procedure === "vote") {
+      vote = expectedVotes(s, id, optionId);
       if (!vote.passed) {
-        s.trust = clamp(s.trust - 2);
+        s.trust = clamp(s.trust - 1.5);
         record(s, option.title + " 제안이 주민투표에서 통과되지 않았습니다. (찬성 " + vote.yes + "/" + vote.total + ")");
+        recordDecision(s, "법률 제안 부결", option.title + " · 찬성 " + vote.yes + "명");
         return { ok: false, vote, reason: "주민투표에서 통과되지 않았습니다." };
       }
     }
     const revised = Boolean(s.laws[id]);
     s.laws[id] = optionId;
     if (!s.passed.includes(id)) s.passed.push(id);
-    s.trust = clamp(s.trust + (revised ? -2 : 2));
+    if (id === "ration") {
+      s.pressure.ration = 0;
+      s.safeguards.fairBonus = false;
+      s.safeguards.effortCare = false;
+      s.safeguards.needsAudit = false;
+      settlePledges(s, "ration");
+    }
+    if (id === "labor") {
+      s.pressure.labor = 0;
+      s.safeguards.workBreak = false;
+      settlePledges(s, "labor");
+      if (optionId !== "extra") s.workStrain = clamp(s.workStrain - 1.5, 0, 10);
+    }
+    if (id === "process") { s.authorityUses = 0; s.voteCooldownUntil = 0; }
+    if (procedure === "direct" && law.vote && id === "care") s.authorityUses++;
+    if (procedure === "vote" && s.laws.process === "meeting" && id !== "process") s.voteCooldownUntil = s.tick + 3;
+    s.trust = clamp(s.trust + (revised ? -1 : 2));
     s.foodCap = 100 + s.buildings.store * 45 + (s.laws.storage === "reserve" ? 35 : 0);
     record(s, option.title + " 규칙이 " + (revised ? "개정" : "제정") + "되었습니다.");
-    return { ok: true, vote: law.vote ? expectedVotes(s, id, optionId) : null };
+    recordDecision(s, law.title, option.title + " · " + (procedure === "vote" ? "주민투표 " + vote.yes + "/" + vote.total : "위임된 권한으로 결정"));
+    return { ok: true, vote, procedure };
   }
   function effect(s, changes) {
     for (const [key, delta] of Object.entries(changes || {})) {
