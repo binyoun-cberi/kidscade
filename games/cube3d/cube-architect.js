@@ -919,7 +919,7 @@ const BLOCK_DEFS={
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
 const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
-const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=22,SEA_LEVEL=0;
+const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=34,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
@@ -983,6 +983,12 @@ function setLandmarkPoiBlocks(poi,full=false,onlyChunk=null){
     const x=ox+v.p[0],y=baseY+v.p[1],z=oz+v.p[2];
     if(!inWorld(x,y,z))continue;
     if(onlyChunk&&worldChunkKey(x,z)!==onlyChunk)continue;
+    if(v.p[1]===0){
+      const ground=terrainHeight(x,z);
+      for(let fy=ground+1;fy<baseY;fy++)
+        setRawBlock(x,fy,z,{type:v.type==='redSand'?'redSand':'stone',
+          landmarkPoi:poi.id,landmarkRole:'foundation',natural:true,protectedPoi:true});
+    }
     setRawBlock(x,y,z,{type:v.type,landmarkPoi:poi.id,landmarkRole:v.role,natural:true,protectedPoi:true});
   }
 }
