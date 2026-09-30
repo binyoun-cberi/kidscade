@@ -227,3 +227,39 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   #freeMission small{display:none}
   #mobileControls.free-mobile .mobile-top-actions{max-width:49vw;right:7px;top:74px}
 }
+
+
+/* Cube Architect v15 · large landmark blueprint and math editing */
+.blueprint-toolbar{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:9px 0}
+.blueprint-toolbar label{font-size:10px;font-weight:900;display:flex;align-items:center;gap:6px}
+.blueprint-toolbar select{min-width:96px;max-width:138px;border:1px solid #cdd6e9;background:white;border-radius:9px;padding:6px;font-size:11px}
+.blueprint-toolbar button{border:0;background:#e8edff;color:#4957c4;font-size:11px;font-weight:900;border-radius:9px;padding:8px;cursor:pointer}
+#blueprintCanvas{aspect-ratio:420/330}
+#blueprintModal{position:absolute;inset:0;z-index:55;background:rgba(15,23,42,.72);display:flex;justify-content:center;align-items:center;padding:16px;pointer-events:auto}
+.blueprint-modal-card{width:min(1050px,95vw);max-height:92vh;overflow:auto;border-radius:20px;background:#fff;padding:16px;box-shadow:0 24px 64px rgba(0,0,0,.3)}
+#blueprintLargeCanvas{display:block;width:100%;max-height:73vh;aspect-ratio:960/700;object-fit:contain;border-radius:12px;background:#eff6ff}
+#blueprintClose{border:0;border-radius:10px;background:#e5e9f3;padding:8px 12px;font-weight:900;cursor:pointer}
+.challenge-editor{margin-top:14px;padding:12px 10px;border:1px solid #dce3f1;border-radius:14px;background:rgba(244,247,254,.95)}
+.challenge-editor .panel-title{font-size:14px}
+.challenge-tool-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:9px 0}
+.challenge-tool-tabs button,.challenge-shape-presets button{border:1px solid #d3dbeb;border-radius:10px;padding:9px 3px;background:#fff;color:#526077;font-size:11px;font-weight:900;cursor:pointer}
+.challenge-tool-tabs button.active,.challenge-shape-presets button.active{background:#5867ee;border-color:#5867ee;color:#fff}
+.challenge-shape-presets{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0}
+.challenge-editor .dimension-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.challenge-editor .dimension-grid label{display:block;font-size:10px;padding:6px 4px;text-align:center}
+.challenge-editor .dimension-grid input{display:block;width:100%;min-width:0;margin-top:5px;text-align:center}
+.challenge-select{border:0;border-radius:10px;padding:9px;background:#e5eaf7;color:#40517d;font-weight:900;width:100%;cursor:pointer}
+.challenge-color-label{display:flex;align-items:center;justify-content:space-between;margin:8px 0;font-size:11px;font-weight:900}
+.challenge-color-label input{width:56px;height:32px;border:0;background:transparent}
+.challenge-element-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:9px}
+.challenge-element-choices button{border:1px solid #d3dbe8;border-radius:9px;background:#fff;color:#334155;padding:7px 4px;font-size:11px;font-weight:900;cursor:pointer}
+.challenge-element-choices button.active{border-color:#5967ee;box-shadow:0 0 0 2px rgba(89,103,238,.16)}
+.challenge-element-choices button i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:middle}
+#challengeSelectedName{margin-top:8px;margin-bottom:3px;line-height:1.4}
+@media(max-width:600px){
+  #blueprintModal{padding:6px}
+  .blueprint-modal-card{padding:10px;width:100%;max-height:88vh}
+  #blueprintLargeCanvas{max-height:64vh}
+  #challengeEditor{margin-top:10px}
+  .challenge-tool-tabs button{font-size:10px;padding:7px 2px}
+}
