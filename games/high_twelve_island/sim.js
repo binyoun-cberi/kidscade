@@ -158,7 +158,8 @@
       pressure: { ration: 0, labor: 0 }, workStrain: 0,
       safeguards: { fairBonus: false, effortCare: false, needsAudit: false, workBreak: false },
       pledges: [], decisions: [], authorityUses: 0, voteCooldownUntil: 0,
-      workReliefUntil: 0, stormAftermathAt: 0, stormAftermathChoice: null
+      workReliefUntil: 0, stormAftermathAt: 0, stormAftermathChoice: null,
+      reserveFood: 0, boostUntil: 0, actionCooldowns: {}
     };
   }
   function normalize(s) {
@@ -183,6 +184,8 @@
     d.safeguards = { ...initial().safeguards, ...(d.safeguards || {}) };
     if (!Array.isArray(d.pledges)) d.pledges = [];
     if (!Array.isArray(d.decisions)) d.decisions = [];
+    d.reserveFood = clamp(d.reserveFood || 0, 0, 28);
+    if (!d.actionCooldowns || typeof d.actionCooldowns !== "object") d.actionCooldowns = {};
     d.pending = d.pending === "new_resident" && d.arrivalNotice ? d.pending : null;
     return d;
   }
@@ -205,7 +208,8 @@
     const fatigue = 1 - Math.min(.33, (s.workStrain || 0) * .032);
     const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
     const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
-    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest;
+    const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
+    const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork;
     const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production;
     const cut = s.jobs.wood * .48 * production;
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
@@ -249,7 +253,7 @@
       extra: "단기 생산량이 늘지만 피로가 누적됩니다. 피로가 높으면 실제 생산량이 다시 떨어지고 노동 관련 청원이 발생합니다."
     },
     storage: {
-      reserve: "비축 공간이 35 증가하고 폭풍이 지나간 뒤 식량 피해가 크게 줄어듭니다.",
+      reserve: "비축 공간이 35 증가합니다. 식량이 넉넉하면 매주 최대 1.5씩 비상식량을 별도로 적립하고, 부족할 때 직접 꺼내 쓸 수 있습니다. 폭풍 피해도 줄어듭니다.",
       exchange: "저장 공간이 거의 가득 차면 식량을 물자로 교환합니다. 폭풍 이후 비축 식량이 부족할 수 있습니다.",
       share: "잉여 식량을 추가 배급해 신뢰를 쌓습니다. 폭풍이 지나간 뒤 사용할 비축량이 적어질 수 있습니다."
     },
@@ -317,6 +321,7 @@
     } else if (active === "needs") {
       s.pressure.ration = clamp(s.pressure.ration + (s.wood < 25 || (s.stage >= 2 && s.treasury < 10) ? .35 : .18) - (s.safeguards.needsAudit ? .3 : 0), 0, 8);
     } else s.pressure.ration = clamp(s.pressure.ration - .12, 0, 8);
+    if (s.laws.ration === "effort" && s.boostUntil > s.tick) { s.workStrain = clamp(s.workStrain + .35, 0, 10); s.pressure.ration = clamp(s.pressure.ration + .13, 0, 8); }
     if (s.laws.labor === "extra") s.pressure.labor = clamp(s.pressure.labor + (s.workStrain >= 3 ? .42 : .16) - (s.safeguards.workBreak ? .35 : 0), 0, 8);
     else s.pressure.labor = clamp(s.pressure.labor - .3, 0, 8);
     if (s.safeguards.needsAudit && s.wood < .3 && s.tick % 6 === 0) {
@@ -350,6 +355,45 @@
     const n = Number(String(citizen.id || "").replace(/\D/g, "")) || 1;
     const threshold = .43 + ((n * 3) % 6) * .037;
     return { id: citizen.id, name: citizen.name, yes: support >= threshold, focus, topic: PRIORITY_TITLES[focus], support: Math.round(clamp(support, 0, 1) * 100) };
+  }
+
+
+  // 법률이 새로운 운영 행동을 해금한다. 행동은 비용/기한을 갖고 다음 틱의 자원 흐름을 바꾼다.
+  const ACTIONS = [
+    { id: "communalMeal", label: "공동 급식 운영", icon: "🍲", description: "식량 12를 사용해 주민들과 식사를 나누고 신뢰를 4 회복합니다. 배급 관련 청원도 완화합니다.", repeat: 12, key: "food", minimum: 12, when: s => s.laws.ration === "equal" },
+    { id: "focusedHarvest", label: "집중 생산 기간", icon: "⚒️", description: "식량 10을 투자해 5주 동안 생산을 23% 높입니다. 피로와 배급 관련 요구가 누적됩니다.", repeat: 13, key: "food", minimum: 10, when: s => s.laws.ration === "effort" },
+    { id: "supportReview", label: "추가 지원 현황 확인", icon: "📋", description: "물자 7을 사용해 지원 내역을 살펴봅니다. 신뢰를 3 회복하고 배급 관련 청원을 완화합니다.", repeat: 12, key: "wood", minimum: 7, when: s => s.laws.ration === "needs" },
+    { id: "openReserve", label: "비상식량 개방", icon: "📦", description: "실제로 보관한 비상식량에서 최대 18을 꺼내 긴급 배급합니다.", repeat: 3, key: "reserveFood", minimum: 8, when: s => s.laws.storage === "reserve" && s.food < 48 },
+    { id: "recoveryWeek", label: "회복 근무 주간", icon: "🛏️", description: "식량 8을 사용하고 4주 동안 생산을 낮춰 누적된 피로를 완화합니다.", repeat: 12, key: "food", minimum: 8, when: s => s.laws.labor === "extra" && s.workStrain >= 3 }
+  ];
+  function availableActions(s) {
+    return ACTIONS.filter(a => a.when(s)).map(a => ({
+      id: a.id, label: a.label, icon: a.icon, description: a.description,
+      cooldown: Math.max(0, (s.actionCooldowns?.[a.id] || 0) - s.tick),
+      enabled: !s.pending && s[a.key] >= a.minimum && (s.actionCooldowns?.[a.id] || 0) <= s.tick,
+      shortfall: Math.max(0, a.minimum - (s[a.key] || 0))
+    }));
+  }
+  function performAction(s, id) {
+    const action = ACTIONS.find(a => a.id === id);
+    if (!action || !action.when(s) || s.pending) return { ok: false, reason: "지금은 선택할 수 없는 행동입니다." };
+    if (s[action.key] < action.minimum) return { ok: false, reason: "필요한 자원이 부족합니다." };
+    if ((s.actionCooldowns?.[id] || 0) > s.tick) return { ok: false, reason: "이전 행동을 정리하는 기간입니다." };
+    let note = action.description;
+    if (id === "communalMeal") { s.food -= 12; s.trust = clamp(s.trust + 4); s.pressure.ration = clamp(s.pressure.ration - 1.3, 0, 8); }
+    else if (id === "focusedHarvest") { s.food -= 10; s.boostUntil = s.tick + 5; s.workStrain = clamp(s.workStrain + 1.2, 0, 10); s.pressure.ration = clamp(s.pressure.ration + .4, 0, 8); }
+    else if (id === "supportReview") { s.wood -= 7; s.trust = clamp(s.trust + 3); s.pressure.ration = clamp(s.pressure.ration - 1.6, 0, 8); }
+    else if (id === "openReserve") {
+      const amount = Math.min(18, s.reserveFood, Math.max(0, s.foodCap - s.food));
+      if (amount < 1) return { ok: false, reason: "현재 창고에 식량을 더 넣을 수 없습니다." };
+      s.reserveFood -= amount; s.food = clamp(s.food + amount, 0, s.foodCap);
+      note = "비상식량 " + Number(amount.toFixed(1)) + "을(를) 꺼내 긴급 배급했습니다.";
+    }
+    else if (id === "recoveryWeek") { s.food -= 8; s.workReliefUntil = s.tick + 4; s.workStrain = clamp(s.workStrain - 3.2, 0, 10); s.pressure.labor = clamp(s.pressure.labor - 1.5, 0, 8); }
+    s.actionCooldowns[id] = s.tick + action.repeat;
+    recordDecision(s, "직접 운영: " + action.label, note);
+    record(s, action.label + " — " + note);
+    return { ok: true, note };
   }
 
   function expectedVotes(s, id, optionId) {
@@ -616,6 +660,11 @@
     s.wood = clamp(s.wood + r.wood, 0, 999);
     if (s.stage >= 2) s.treasury = clamp(s.treasury + r.treasury, 0, 9999);
     if (s.laws.process === "delegate" && s.stage >= 2 && !s.processReviewAt) s.processReviewAt = s.tick + 18;
+    if (s.laws.storage === "reserve" && s.food > 75 && s.reserveFood < 28) {
+      const packed = Math.min(1.5, s.food - 75, 28 - s.reserveFood);
+      s.food -= packed;
+      s.reserveFood += packed;
+    }
     if (s.laws.storage === "exchange" && s.food >= s.foodCap - 5) { s.food -= 8; s.wood += 5; }
     if (s.laws.storage === "share" && s.food >= s.foodCap - 5) { s.food -= 7; s.trust = clamp(s.trust + .32); }
     if (s.food < 15) s.trust = clamp(s.trust - .95);
@@ -661,5 +710,6 @@
     return true;
   }
   return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES,
-    policyEffect, ruleProcedure, votePosition, recordDecision, advanceConsequences, applySafeguard });
+    policyEffect, ruleProcedure, votePosition, recordDecision, advanceConsequences, applySafeguard,
+    availableActions, performAction });
 });
