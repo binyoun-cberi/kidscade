@@ -117,7 +117,7 @@ function updateLesson(){
   if(state==='defenseField')detail='타구를 쫓아 공을 잡고, 포구했다면 1·2·3루나 홈으로 송구하세요.';
   else if(!lessonPitchSelected)detail='직구·커브·체인지업·슬라이더 중 던질 구종을 골라 보세요.';
   else if(!lessonAimSelected)detail='스트라이크 존을 터치해 공이 향할 코스를 정해 보세요.';
-  else if(!lessonThrown)detail='던지기를 꾹 누르고 게이지가 약 70%일 때 놓으세요.';
+  else if(!lessonThrown)detail=difficulty==='hard'?'던지기를 꾹 누르고 게이지 70%에 놓으세요.':'던지기 버튼을 한 번 누르면 공이 나가요.';
   else detail='좋아요! 타자를 상대해서 3아웃을 만들면 연습 완료예요.';
  }
  lessonEl.innerHTML='<b>'+title+'</b><span>'+detail+'</span>';lessonEl.classList.remove('hidden');
@@ -521,7 +521,8 @@ function endGame(){
 }
 
 function updatePitch(dt){
- if(!pitch)return;pitch.t+=dt/pitch.duration;
+ if(!pitch||(pitch.owner==='cpu'&&swing?.contact))return;
+ pitch.t+=dt/pitch.duration;
  if(pitch.owner==='cpu'){if(pitch.t>=1&&!pitch.swung){calledUserPitch();pitch=null}}
  else{
   if(pitch.t>=.91&&!pitch.swung&&pitch.cpuDecision){pitch.swung=true;setTimeoutLike(()=>resolveCpuAtPlate(),.05)}
@@ -634,23 +635,32 @@ function drawBall(x,y,r=7){
 }
 
 function drawBatFan(){
- // The translucent sector and its rotating line share the same geometry as batDistance().
+ // The angle guide stays fixed; the physical bat is rendered at the current swing angle.
  const steps=30;ctx.save();
- ctx.fillStyle='rgba(250,204,21,.085)';ctx.strokeStyle='rgba(250,204,21,.21)';ctx.lineWidth=1.5;
+ ctx.fillStyle='rgba(250,204,21,.065)';ctx.strokeStyle='rgba(250,204,21,.20)';ctx.lineWidth=1.5;
  ctx.beginPath();ctx.moveTo(BAT.px,BAT.py);
  for(let i=0;i<=steps;i++){const tip=batTip(BAT.min+(BAT.max-BAT.min)*i/steps);ctx.lineTo(tip.x,tip.y)}
  ctx.closePath();ctx.fill();ctx.stroke();
- const hit=simTime<swingAnimationUntil;
- if(hit){const sh=batTip(batAngle);ctx.strokeStyle='rgba(255,224,119,.30)';ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(BAT.px,BAT.py);ctx.lineTo(sh.x,sh.y);ctx.stroke()}
- ctx.translate(BAT.px,BAT.py);ctx.rotate(-batAngle);ctx.scale(-1,1);
+ const angle=currentBatAngle();
+ if(swing){
+  const trail=[.055,.032,.012];
+  trail.forEach((delta,i)=>{
+   const phase=clamp((swing.elapsed-delta)/swing.duration,0,1),s=phase*phase*(3-2*phase);
+   const oldAngle=swing.baseAngle+(swing.mode==='power'?.24:.18)*(s-.5),tip=batTip(oldAngle);
+   ctx.strokeStyle='rgba(255,224,119,'+(.13+i*.07)+')';ctx.lineWidth=17-i*3;
+   ctx.beginPath();ctx.moveTo(BAT.px,BAT.py);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+  });
+ }
+ ctx.translate(BAT.px,BAT.py);ctx.rotate(-angle);ctx.scale(-1,1);
  if(readyImage(batImg))ctx.drawImage(batImg,0,-12,BAT.length,24);
  else{ctx.strokeStyle='#d1a067';ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(BAT.length,0);ctx.stroke()}
  ctx.restore();
  ctx.save();ctx.fillStyle='#ffe19a';ctx.beginPath();ctx.arc(BAT.px,BAT.py,5,0,Math.PI*2);ctx.fill();
- const target=batTip(),markerX=BAT.px+(target.x-BAT.px)*.70,markerY=BAT.py+(target.y-BAT.py)*.70;
+ const target=batTip(angle),markerX=BAT.px+(target.x-BAT.px)*.70,markerY=BAT.py+(target.y-BAT.py)*.70;
  ctx.fillStyle='#fef3c7';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('배트 각도',BAT.px+54,BAT.py-44);
  ctx.fillStyle='#fdedaa';ctx.beginPath();ctx.arc(markerX,markerY,3,0,Math.PI*2);ctx.fill();ctx.restore();
 }
+
 function drawPlateView(isBatting){
  drawPlateBackdrop();
  const zx=405,zy=268,zw=150,zh=114;
@@ -665,6 +675,12 @@ function drawPlateView(isBatting){
   const batter=readyImage(avatarImg)?avatarImg:(simTime<swingAnimationUntil?sprites.user.action:sprites.user.stand);
   drawPlayer(batter,626,449,1.2,true,'#16a34a',true,4);
   drawBatFan();
+  if(swing?.contact){
+   const c=swing.contact;
+   ctx.save();ctx.fillStyle=c.q>.66&&c.sweet>.55?'#bbf7d0':'#fde68a';
+   ctx.font='900 21px system-ui';ctx.textAlign='center';
+   ctx.fillText(c.q>.66&&c.sweet>.55?'정타!':'맞혔다!',475,240);ctx.restore();
+  }
   const cueStart=.88-cfg().batWindow*.52,cueEnd=Math.min(.99,.88+cfg().batWindow*.52);
   if(pitch&&pitch.owner==='cpu'&&!pitch.swung){
    const t=clamp(pitch.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=pitch.actual.x+pitch.breakX*curve,ty=pitch.actual.y+pitch.breakY*curve;
