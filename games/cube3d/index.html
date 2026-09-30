@@ -131,6 +131,12 @@
 
   <aside id="netPanel" class="side-panel hidden">
     <div class="panel-title">전개도 연구실</div>
+    <div class="net-mode-tabs" role="group" aria-label="전개도 활동 종류">
+      <button data-net-mode="decorate" class="active">그림 배치</button>
+      <button data-net-mode="face">면 관계</button>
+      <button data-net-mode="edge">모서리</button>
+      <button data-net-mode="vertex">꼭짓점</button>
+    </div>
     <div id="netMission" class="panel-sub">전개도의 그림이 직육면체의 어느 면으로 오는지 찾아보세요.</div>
     <div id="netBoard" aria-label="직육면체 전개도">
       <div class="net-face" data-face="2"></div>
@@ -140,9 +146,15 @@
       <div class="net-face" data-face="5"></div>
       <div class="net-face" data-face="3"></div>
     </div>
-    <div class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 직육면체의 면을 클릭하세요.</div>
+    <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 직육면체의 면을 클릭하세요.</div>
     <div id="stickerPalette"></div>
     <div class="hint-box" id="selectedFace">그림을 고른 뒤 직육면체의 면을 클릭해 보세요.</div>
+    <div id="netQuizCard" class="hidden">
+      <div class="challenge-course-row"><b id="netQuizStatus">문제 1</b><small>접힌 뒤 관계를 생각해 보세요.</small></div>
+      <div id="netQuizPrompt" class="net-quiz-prompt"></div>
+      <div id="netQuizOptions" class="net-quiz-options"></div>
+      <div id="netQuizFeedback" class="hint-box hidden"></div>
+    </div>
     <div class="face-legend"><span>앞·뒤는 마주 보는 면</span><span>위·아래도 마주 보는 면</span></div>
     <div class="panel-buttons">
       <button id="foldNet" class="btn-main">접어 보기</button>
