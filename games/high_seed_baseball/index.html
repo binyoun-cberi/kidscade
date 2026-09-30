@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>씨앗 베이스볼</title>
+<style>
+:root{color-scheme:dark;--panel:rgba(8,18,32,.94);--ink:#f8fafc;--gold:#fbbf24;--green:#22c55e;--red:#ef4444}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071423;color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select{font:inherit}button{border:0;cursor:pointer;font-weight:900}
+#app{position:relative;width:100%;height:100%;min-height:360px;overflow:hidden;background:#071423}
+canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778vh);height:min(100vh,56.25vw);transform:translate(-50%,-50%);touch-action:none}
+#hud{position:absolute;left:10px;right:10px;top:8px;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.scorebox,.countbox{background:rgba(2,6,23,.78);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:8px 11px;backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.scorebox{display:flex;align-items:center;gap:10px;min-width:205px}.team{font-size:12px;color:#cbd5e1}.runs{font-size:28px;font-weight:1000;line-height:1}.inning{font-size:12px;font-weight:900;color:#fde68a}
+.countbox{text-align:right;min-width:162px;font-size:12px;line-height:1.55}.dots{letter-spacing:3px}
+#message{position:absolute;left:50%;top:17%;transform:translateX(-50%);z-index:4;max-width:min(720px,88vw);text-align:center;padding:8px 14px;border-radius:999px;background:rgba(2,6,23,.78);font-weight:950;font-size:clamp(13px,2vw,18px);opacity:0;transition:opacity .14s;pointer-events:none}
+#message.show{opacity:1}
+#controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;display:flex;gap:8px;align-items:end;justify-content:center;width:min(900px,96vw);pointer-events:none}
+.controlGroup{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
+.ctrl{min-width:80px;padding:11px 13px;border-radius:14px;color:#fff;background:rgba(15,23,42,.87);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(0,0,0,.17);touch-action:none;user-select:none}
+.ctrl.primary{background:#fbbf24;color:#172554}.ctrl.green{background:#16a34a}.ctrl.red{background:#dc2626}.ctrl.blue{background:#2563eb}
+.ctrl.active{outline:3px solid #fff;transform:translateY(-2px)}
+#chargeWrap{position:absolute;left:50%;bottom:82px;transform:translateX(-50%);z-index:5;width:min(440px,78vw);padding:8px 10px;border-radius:14px;background:rgba(2,6,23,.82);display:none}
+#chargeTrack{height:16px;border-radius:999px;background:#334155;overflow:hidden;border:1px solid rgba(255,255,255,.28)}
+#chargeFill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#fbbf24,#ef4444)}
+#chargeText{text-align:center;font-size:12px;font-weight:900;margin-bottom:5px}
+.overlay{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:rgba(2,6,23,.78);padding:18px}
+.panel{width:min(720px,95vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;box-shadow:0 26px 80px rgba(0,0,0,.4)}
+h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{color:#cbd5e1;margin:0 0 18px;line-height:1.55}
+.modegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.mode{padding:11px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#fbbf24;background:#334155}
+.tipgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.tip{background:#111827;border-radius:16px;padding:12px;font-size:13px;line-height:1.55}
+.start{width:100%;padding:14px;border-radius:16px;background:#fbbf24;color:#172554;font-size:18px;margin-top:8px}
+.secondary{width:100%;padding:12px;border-radius:14px;background:#334155;color:#fff;margin-top:8px}
+.hidden{display:none!important}
+#bases{display:inline-grid;grid-template-columns:repeat(3,12px);grid-template-rows:repeat(2,12px);gap:2px;transform:rotate(45deg);margin-left:8px;vertical-align:middle}
+.base{width:10px;height:10px;border:1px solid #fff;background:#334155}.base.on{background:#fbbf24}.b2{grid-column:2;grid-row:1}.b3{grid-column:1;grid-row:2}.b1{grid-column:3;grid-row:2}
+#zoneHint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;color:#fff;font-weight:900;pointer-events:none;text-shadow:0 2px 8px #000}
+@media (hover:hover) and (pointer:fine){.touchOnly{display:none}}
+@media(max-width:620px){.panel{padding:18px}.tipgrid{grid-template-columns:1fr}.scorebox{min-width:145px}.countbox{min-width:125px}.ctrl{min-width:65px;padding:10px 9px;font-size:12px}#hud{left:5px;right:5px}.scorebox,.countbox{padding:6px 8px}}
+</style>
+</head>
+<body>
+<div id="app" tabindex="0" aria-label="씨앗 베이스볼 게임">
+<canvas id="game" width="960" height="540"></canvas>
+<div id="hud">
+  <div class="scorebox"><div><div class="team">씨앗 올스타</div><div class="runs"><span id="userRuns">0</span> : <span id="cpuRuns">0</span></div></div><div class="inning" id="inningText">1회초</div></div>
+  <div class="countbox">
+    <div>B <span id="balls" class="dots">○○○</span></div>
+    <div>S <span id="strikes" class="dots">○○</span></div>
+    <div>O <span id="outs" class="dots">○○</span><span id="bases"><i class="base b2"></i><i class="base b3"></i><i class="base b1"></i></span></div>
+  </div>
+</div>
+<div id="message"></div>
+<div id="zoneHint"></div>
+<div id="chargeWrap"><div id="chargeText">파워</div><div id="chargeTrack"><div id="chargeFill"></div></div></div>
+<div id="controls"><div id="controlGroup" class="controlGroup"></div></div>
+
+<div id="menu" class="overlay">
+ <div class="panel">
+  <h1>씨앗 베이스볼</h1>
+  <p class="sub">3이닝 동안 직접 치고, 던지고, 수비하는 키즈케이드 아케이드 야구. 처음에는 필요한 조작만 차례로 알려줘요.</p>
+  <div class="modegrid" id="difficultyGrid">
+   <button class="mode" data-diff="easy">쉬움</button>
+   <button class="mode active" data-diff="normal">보통</button>
+   <button class="mode" data-diff="hard">어려움</button>
+  </div>
+  <div class="tipgrid">
+   <div class="tip"><b>⚾ 공격</b><br>커서로 공의 높이·코스를 맞추고 <b>스윙</b>. 오래 누를수록 강하지만 타이밍이 어려워져요.</div>
+   <div class="tip"><b>🥎 수비</b><br>투구 코스를 찍고 구종을 고른 뒤 던져요. 타구가 나오면 가까운 수비수를 직접 움직이고 베이스로 송구합니다.</div>
+   <div class="tip"><b>🏃 주루</b><br>주자는 기본적으로 안전하게 달려요. 외야를 가르면 <b>더 간다!</b>로 한 베이스 더 노릴 수 있어요.</div>
+   <div class="tip"><b>📊 기록</b><br>안타·홈런·삼진·최장 타구와 승패를 기기에 저장해 다음 경기에서도 이어서 볼 수 있어요.</div>
+  </div>
+  <button id="startBtn" class="start">플레이볼!</button>
+  <button id="recordsBtn" class="secondary">내 기록 보기</button>
+ </div>
+</div>
+<div id="records" class="overlay hidden"><div class="panel"><h2>내 야구 기록</h2><p id="recordsText" class="sub"></p><button id="closeRecords" class="start">돌아가기</button></div></div>
+<div id="result" class="overlay hidden"><div class="panel" style="text-align:center"><h2 id="resultTitle">경기 종료</h2><p id="resultText" class="sub"></p><button id="rematchBtn" class="start">다시 경기</button><button id="menuBtn" class="secondary">설정으로</button></div></div>
+</div>
+<script src="./game.js?v=1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_seed_baseball" data-title="씨앗 베이스볼" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+</body>
+</html>
