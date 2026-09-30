@@ -125,3 +125,8 @@ h1{margin:2px 0 8px;font-size:clamp(46px,7vw,78px);line-height:.9;letter-spacing
 @media(max-height:600px) and (orientation:landscape){
   .top-hud{height:52px}.env-hud,.strategy-hud{top:74px}.light-sensor{top:231px}.bottom-dock{bottom:7px}.joystick{bottom:72px;width:96px;height:96px}.cell-editor{width:min(60vh,370px)}.editor-layout{grid-template-columns:1fr 1fr}.parts-panel{min-height:0}.editor-top{margin-bottom:5px}.editor-bottom{margin-top:5px}
 }
+/* Field rework v3 */
+.evolve-btn{transition:.18s transform,.18s box-shadow,.18s border-color}
+.evolve-btn.ready{border-color:rgba(185,239,120,.65);box-shadow:0 0 0 3px rgba(185,239,120,.08),0 0 24px rgba(88,229,213,.22);background:linear-gradient(135deg,rgba(88,229,213,.35),rgba(185,239,120,.22))}
+.evolve-btn.ready:hover{transform:translateY(-2px)}
+.evolve-btn.ready small{color:#e8ffba}

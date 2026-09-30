@@ -38,13 +38,17 @@ test('Cell editor contains feeding, movement, sensing and defense adaptations',(
   assert.match(js,/movementStats/);
 });
 
-test('Ecology loop includes environmental pressure, generations, events and AI mutation',()=>{
+test('Ecology loop includes environmental pressure, reproduction, events and AI mutation',()=>{
   assert.match(js,/function advanceGeneration/);
   assert.match(js,/function mutateTraits/);
   assert.match(js,/const EVENTS=/);
   assert.match(js,/salinityStress/);
   assert.match(js,/temperatureStress/);
-  assert.match(js,/state\.generationClock>=55/);
+  assert.match(js,/function reproductionRequirement/);
+  assert.match(js,/function reproductionProgress/);
+  assert.match(js,/function canReproduce/);
+  assert.doesNotMatch(js,/state\.generationClock>=55/);
+  assert.match(js,/state\.editorMode='reproduction'/);
 });
 
 test('Sensory organs change the information available to the player',()=>{
@@ -78,4 +82,32 @@ test('Micro Evolution is registered as a science sandbox',()=>{
   assert.equal(game.genre,'sandbox');
   assert.ok(game.input.includes('touch'));
   assert.ok(game.input.includes('keyboard'));
+});
+
+test('Field rework keeps the play area dense, zoomed and biologically legible',()=>{
+  assert.match(js,/const CAMERA_ZOOM = 1\.55/);
+  assert.match(js,/for\(let i=0;i<46;i\+\+\)/);
+  assert.match(js,/115\+env\.food\*1\.15/);
+  assert.match(js,/function wrappedDelta/);
+  assert.match(js,/function drawBiomeScenery/);
+  assert.match(js,/function creatureTint/);
+  assert.match(js,/function scanCreatureRelations/);
+  assert.match(js,/c\.traits\.diet==='hunter'/);
+  assert.match(js,/c\.r<player\.radius\*\.78/);
+});
+
+test('Biome events have visible field effects instead of only changing numbers',()=>{
+  for(const id of ["rain","sun","murk","oxygen","evaporate","bloom"]) assert.match(js,new RegExp("id:'"+id+"'"));
+  assert.match(js,/state\.activeEvent=e\.id/);
+  assert.match(js,/state\.activeEvent==='rain'/);
+  assert.match(js,/state\.activeEvent==='murk'/);
+});
+
+test('Evolution editing is tied to reproduction readiness',()=>{
+  assert.match(html,/id="editorBtnLabel"/);
+  assert.match(html,/번식하며 진화하기/);
+  assert.match(js,/if\(!canReproduce\(\)\)/);
+  assert.match(js,/advanceGeneration\(\);save\(\)/);
+  assert.match(js,/p\.biomass=0/);
+  assert.match(css,/\.evolve-btn\.ready/);
 });
