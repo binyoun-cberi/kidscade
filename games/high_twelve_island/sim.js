@@ -569,6 +569,157 @@
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
 
+    { id:"heat_alert", priority:119, emergency:true, when:s=>s.disasterUnanswered.heat,
+      title:"☀️ 폭염, 그늘 밖에서 일하기 어렵습니다", speaker:"미래",
+      body:"식수가 빠르게 줄고 작업 효율이 떨어졌습니다. 햇볕 아래서 채집을 계속할지, 그늘과 휴식을 마련할지 정해야 합니다.",
+      options:[
+        {label:"목재 12로 그늘막과 급수소를 설치해요.",cost:{wood:12},disasterResponse:"heat",climateCare:{kind:"heat",duration:13},
+          changes:{water:12,trust:2},note:"폭염 동안 생산 감소를 줄이고 식수를 확보하지만 목재 비축량이 감소합니다."},
+        {label:"야외 작업 시간을 줄이고 물을 길어 와요.",disasterResponse:"heat",quietRest:5,waterFetch:13,
+          climateCare:{kind:"heat",duration:8},note:"식수 13을 확보하고 열 노출을 줄이지만 5주간 생산량이 감소합니다."},
+        {label:"평소처럼 계속 작업해요.",disasterResponse:"heat",changes:{water:-8,health:-6,trust:-3},
+          note:"당장 목재는 아끼지만 식수와 건강이 줄고 가족들이 대응을 요구할 수 있습니다."}
+      ]},
+    { id:"flood_alert",priority:118,emergency:true,when:s=>s.disasterUnanswered.flood,
+      title:"🌊 홍수가 농지와 창고를 덮쳤습니다",speaker:"태오",
+      body:"홍수로 식량과 물자 일부가 유실됐고 식수가 오염됐습니다. 농지와 거처가 정상화될 때까지 생산이 감소합니다.",
+      options:[
+        {label:"목재 14로 배수로와 방벽을 보강해요.",cost:{wood:14},disasterResponse:"flood",floodRepair:4,
+          changes:{water:8,trust:2},note:"손실된 물자는 돌아오지 않지만 시설 피해 기간을 줄이고 식수 일부를 복구합니다."},
+        {label:"주민을 안전한 곳으로 옮기고 급한 부분부터 복구해요.",disasterResponse:"flood",floodRelocate:true,
+          waterFetch:5,note:"별도 목재 없이 대피하고 물을 확보합니다. 작업 피로가 늘고 시설 복구는 더 오래 걸립니다."},
+        {label:"재해가 지나갈 때까지 시설을 그대로 둬요.",disasterResponse:"flood",
+          changes:{health:-7,water:-9,trust:-3},note:"즉각적인 추가 지출은 없지만 오염된 식수와 긴 복구 기간으로 건강이 악화됩니다."}
+      ]},
+    { id:"dust_alert",priority:117,emergency:true,when:s=>s.disasterUnanswered.dust,
+      title:"🌫️ 황사가 섬을 뒤덮었습니다",speaker:"하나",
+      body:"먼지가 심해 야외 작업과 이동이 어렵습니다. 공기 질이 계속 떨어지면 건강과 어린이들의 생활에도 영향이 생깁니다.",
+      options:[
+        {label:"목재 9로 필터와 실내 대피 공간을 마련해요.",cost:{wood:9},disasterResponse:"dust",
+          climateCare:{kind:"dust",duration:14},changes:{air:14,trust:2},
+          note:"공기 질의 악화 속도를 줄이고 건강 피해를 완화하지만 목재가 필요합니다."},
+        {label:"야외 작업을 줄이고 실내에서 쉬어요.",disasterResponse:"dust",quietRest:5,
+          climateCare:{kind:"dust",duration:11},changes:{air:6},note:"5주간 생산량이 감소하는 대신 야외 노출을 줄입니다."},
+        {label:"작업을 그대로 이어가요.",disasterResponse:"dust",changes:{air:-11,health:-5,childWellbeing:-3},
+          note:"목재와 당장 생산은 유지하지만 공기 오염과 건강 피해가 커질 수 있습니다."}
+      ]},
+    { id:"epidemic_alert",priority:120,emergency:true,when:s=>s.disasterUnanswered.epidemic,
+      title:"🦠 공동체에 전염병이 퍼지기 시작합니다",speaker:"미래",
+      body:s=>"증상이 있는 주민이 " + Math.ceil(s.sick) + "명 있습니다. 돌봄을 지원하면 전파를 늦출 수 있지만 인력과 예산에 부담이 생깁니다.",
+      options:[
+        {label:"식량 10과 물자 7로 가정 돌봄과 위생용품을 지원해요.",cost:{food:10,wood:7},
+          disasterResponse:"epidemic",climateCare:{kind:"epidemic",duration:16},medicine:1,
+          changes:{trust:2},note:"감염 확산을 늦추고 회복을 돕지만 당장의 식량과 물자가 부족해집니다."},
+        {label:"증상이 있는 주민이 자발적으로 쉬도록 업무를 조정해요.",disasterResponse:"epidemic",
+          climateCare:{kind:"epidemic",duration:11},quietRest:6,changes:{trust:1},
+          note:"감염 확산을 완화하지만 6주 동안 생산량이 감소합니다."},
+        {label:"평소 업무를 유지하고 상황을 지켜봐요.",disasterResponse:"epidemic",
+          changes:{health:-5,trust:-2},sickness:2,
+          note:"즉시 투입하는 자원은 없지만 감염이 확산되면 생산과 돌봄 기능에 영향을 줍니다."}
+      ]},
+    { id:"water_emergency",priority:114,emergency:true,repeat:10,
+      when:s=>s.tick>=28 && s.water<=13,
+      title:"🚰 마실 물이 거의 남지 않았습니다",speaker:"하나",
+      body:"식수가 부족해 주민들이 불안해하고 있습니다. 물을 확보하려면 인력이나 물자가 필요합니다.",
+      options:[
+        {label:"물자 5로 간이 정수 장치를 만들어 물을 확보해요.",cost:{wood:5},changes:{water:23},
+          note:"식수 23을 확보하지만 물자가 줄어듭니다."},
+        {label:"채집 인력을 잠시 물 긷기에 투입해요.",waterFetch:16,quietRest:3,
+          note:"식수 16을 확보하지만 피로가 증가하고 일시적으로 생산량이 줄어듭니다."},
+        {label:"식수를 모아 긴급 배급하고 다른 활동을 줄여요.",changes:{water:8,health:-2,trust:-2},
+          note:"당장 위험을 늦추지만 주민들의 건강과 신뢰에 부담이 생깁니다."}
+      ]},
+    { id:"air_emergency",priority:113,emergency:true,repeat:11,
+      when:s=>disasterActive(s,"dust") && s.air<=22,
+      title:"😷 실내에도 먼지가 들어옵니다",speaker:"미래",
+      body:"공기 질이 위험 수준으로 떨어졌습니다. 작업 방식을 바꾸거나 자재를 사용해 실내 공간을 보호해야 합니다.",
+      options:[
+        {label:"물자 7로 보호용 필터를 보강해요.",cost:{wood:7},climateCare:{kind:"dust",duration:10},
+          changes:{air:21},note:"공기 질을 회복시키고 남은 황사 기간의 피해를 완화합니다."},
+        {label:"공동 거처에서 잠시 쉬어요.",quietRest:4,changes:{air:11},
+          climateCare:{kind:"dust",duration:6},note:"일시적으로 생산량이 감소하지만 먼지 노출을 줄입니다."},
+        {label:"최소한의 작업을 유지해요.",changes:{health:-4,air:5},
+          note:"작업은 지속되지만 주민들의 건강 회복이 더 어려워질 수 있습니다."}
+      ]},
+    { id:"epidemic_followup",priority:112,emergency:true,repeat:12,
+      when:s=>s.sick>=Math.min(5,s.population*.36) && s.tick>=75 && s.disasterSeen.epidemic,
+      title:"🏥 아픈 주민을 돌볼 사람이 부족합니다",speaker:"미래",
+      body:s=>"현재 증상이 있는 주민은 약 " + Math.ceil(s.sick) + "명입니다. 돌봄 인력이 부족해지면 건강과 생산량이 함께 떨어집니다.",
+      options:[
+        {label:"식량 9와 물자 6을 사용해 돌봄을 지원해요.",cost:{food:9,wood:6},medicine:2,
+          climateCare:{kind:"epidemic",duration:10},changes:{trust:2},
+          note:"감염 인원을 줄이고 돌봄 부담을 완화하지만 다른 주민에게 돌아갈 자원이 줄어듭니다."},
+        {label:"일을 줄이고 증상이 있는 주민의 휴식을 우선해요.",quietRest:5,
+          climateCare:{kind:"epidemic",duration:8},medicine:1,
+          note:"5주간 생산량이 감소하는 대신 확산과 건강 피해를 줄입니다."},
+        {label:"현재의 돌봄 체계를 유지해요.",changes:{trust:-3,health:-3},
+          note:"즉각적인 비용은 없지만 전염병이 이어질 수 있습니다."}
+      ]},
+    { id:"workers_collective",priority:104,emergency:true,repeat:23,
+      when:s=>s.tick>=18 && s.groups.workers>=3.8 && s.strikes.workers<=s.tick,
+      title:"📣 노동 주민들이 작업 중단을 예고합니다",speaker:"태오",
+      body:"잦은 추가 근무와 부족한 물자에 대한 불만이 쌓였습니다. 주민들은 노동 조건을 논의해 달라고 요구합니다.",
+      options:[
+        {label:"식량 10으로 보상하고 작업 조건을 함께 정해요.",cost:{food:10},
+          groupSettlement:"workers",changes:{trust:2},note:"작업 중단을 피하지만 비축 식량이 줄고 다른 집단의 요구가 늘 수 있습니다."},
+        {label:"당분간 작업량을 줄여 협의를 이어가요.",groupPartial:"workers",quietRest:5,
+          note:"3주 동안 생산 차질이 생기고 5주간 작업 속도가 줄지만 일부 불만이 완화됩니다."},
+        {label:"요구를 받아들이지 않아요.",groupStrike:"workers",changes:{trust:-4},
+          note:"8주 동안 작업이 중단돼 식량과 물자 생산 효율이 크게 떨어집니다."}
+      ]},
+    { id:"families_collective",priority:104,emergency:true,repeat:23,
+      when:s=>s.tick>=18 && s.groups.families>=3.8 && s.strikes.families<=s.tick,
+      title:"👨‍👩‍👧 가족들이 공동생활에 항의합니다",speaker:"나래",
+      body:"어린이의 안전, 식수, 학습 문제를 둘러싼 요구가 쌓였습니다. 가족들이 생활 조건을 바꾸지 않으면 마을을 떠날 수 있다고 말합니다.",
+      options:[
+        {label:"식량 8과 물자 8을 사용해 가족 지원 공간을 마련해요.",cost:{food:8,wood:8},
+          groupSettlement:"families",changes:{childWellbeing:7,education:5,trust:2},
+          note:"가족들의 요구를 일부 해결하지만 공동 물자와 식량이 줄어듭니다."},
+        {label:"공동시설 운영을 조정하며 다시 협의해요.",groupPartial:"families",
+          changes:{childWellbeing:3},note:"일정 기간 새로운 주민의 합류가 느려지고 교육 활동이 줄어듭니다."},
+        {label:"기존 운영 방침을 그대로 유지해요.",groupStrike:"families",changes:{trust:-4},
+          note:"가족들의 공동활동이 중단되고 합류가 막힙니다. 미해결 시 주민이 마을을 떠날 수 있습니다."}
+      ]},
+    { id:"carers_collective",priority:104,emergency:true,repeat:23,
+      when:s=>s.tick>=20 && s.groups.carers>=3.8 && s.strikes.carers<=s.tick,
+      title:"🩺 돌봄 주민들이 지원을 요청합니다",speaker:"미래",
+      body:"건강이 나빠지는 주민이 늘었지만 돌봄에 필요한 시간과 자원이 부족합니다. 담당자들이 업무와 시설을 재조정해 달라고 요청합니다.",
+      options:[
+        {label:"식량 8과 물자 6을 사용해 돌봄 인력을 지원해요.",cost:{food:8,wood:6},
+          groupSettlement:"carers",medicine:1,changes:{trust:2},
+          note:"돌봄이 계속되지만 다른 활동에 사용할 자원이 줄어듭니다."},
+        {label:"필수 돌봄만 운영하며 업무를 재조정해요.",groupPartial:"carers",medicine:1,
+          note:"3주간 일부 돌봄 서비스에 차질이 생깁니다. 감염 위험을 완전히 해결하지는 못합니다."},
+        {label:"추가 지원 없이 기존 업무를 유지해요.",groupStrike:"carers",changes:{trust:-4},
+          note:"8주 동안 돌봄 서비스가 중단돼 감염과 건강 회복에 영향을 줍니다."}
+      ]},
+    { id:"family_departure",priority:110,emergency:true,repeat:12,
+      when:s=>s.familyExitAt>0 && s.tick>=s.familyExitAt && s.strikes.families>s.tick,
+      title:"⛵ 가족들이 마을을 떠날 배를 준비합니다",speaker:"하나",
+      body:"가족들의 요청이 해결되지 않아 일부 주민들이 다른 거처로 이주하려 합니다. 남은 시간에 합의하거나 떠나는 결정을 존중해야 합니다.",
+      options:[
+        {label:"식량 10과 물자 10을 사용해 긴급 지원에 합의해요.",cost:{food:10,wood:10},
+          groupSettlement:"families",changes:{trust:2,childWellbeing:4},
+          note:"이주를 막고 공동활동을 회복하지만 자원이 크게 줄어듭니다."},
+        {label:"요구 사항을 받아들이고 일시적으로 공공 활동을 조정해요.",groupSettlement:"families",
+          quietRest:5,changes:{trust:1},note:"5주 동안 생산이 감소하는 대신 가족들은 마을에 남습니다."},
+        {label:"떠나려는 주민의 선택을 존중해요.",familyDeparture:1,changes:{trust:-5},
+          note:"성인 주민 한 명이 마을을 떠나며 해당 노동력도 상실할 수 있습니다."}
+      ]},
+    { id:"confidence_crisis",priority:108,emergency:true,repeat:48,
+      when:s=>s.stage>=2 && s.tick>=35 && s.trust<24 &&
+        (s.groups.workers+s.groups.families+s.groups.carers)>=9 && s.mandateRestrictedUntil<=s.tick,
+      title:"🏛️ 주민들이 운영 방식의 재검토를 요구합니다",speaker:"하나",
+      body:"여러 주민 집단의 요구가 충돌하며 현재 운영 방식에 대한 신뢰가 낮아졌습니다. 공동체는 앞으로 누가 어떤 범위에서 결정을 내릴지 논의하려 합니다.",
+      options:[
+        {label:"7주간 임시 운영 체제로 전환하고 새 결정을 제한해요.",caretaker:true,changes:{trust:3},
+          note:"새 건설과 일반 법률 제정이 잠시 제한됩니다. 일꾼 배치와 긴급 구조는 계속 가능합니다."},
+        {label:"주민 공개회의를 열고 공동으로 운영 계획을 조정해요.",openCouncil:true,
+          changes:{trust:2},note:"의견 차이가 일부 완화되지만 당장의 식량·물자 부족은 별도로 해결해야 합니다."},
+        {label:"기존 운영 방침을 유지해요.",rejectCouncil:true,changes:{trust:-5},
+          note:"노동 주민의 작업 중단이 발생해 생산에 타격을 줍니다."}
+      ]},
+
     { id: "winter_warning", priority: 92, repeat: 28,
       when: s => s.tick >= s.nextWinterAt - 8 && s.tick < s.nextWinterAt && s.winterPrepared == null,
       title: "❄️ 거센 한파가 다가옵니다", speaker: "미래",
@@ -1006,6 +1157,7 @@
       s.sick = clamp(s.sick - choice.medicine, 0, s.population);
       s.health = clamp(s.health + 4);
     }
+    if (choice.sickness) s.sick = clamp(s.sick + choice.sickness, 0, s.population);
     if (choice.groupSettlement) {
       const kind = choice.groupSettlement;
       s.groups[kind] = clamp(s.groups[kind] - 3, 0, 10);
