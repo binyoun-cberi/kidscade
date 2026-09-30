@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>프랙션 스미스</title>
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <div class="game-shell">
@@ -20,6 +20,49 @@
   </header>
 
   <main class="forge-room">
+    <div class="forge-bg" aria-hidden="true">
+      <div class="forge-wall"></div>
+      <div class="forge-beam beam-top"></div>
+      <div class="forge-beam beam-left"></div>
+      <div class="forge-beam beam-right"></div>
+      <div class="hanging-chain chain-a"></div>
+      <div class="hanging-chain chain-b"></div>
+      <div class="forge-floor"></div>
+      <div class="floor-glow"></div>
+      <div class="forge-smoke"></div>
+      <div class="forge-vignette"></div>
+      <div class="ambient-embers">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+    </div>
+
+    <div class="forge-decor decor-left" aria-hidden="true">
+      <div class="furnace">
+        <div class="furnace-stack"></div>
+        <div class="furnace-shell">
+          <div class="furnace-rivets"><i></i><i></i><i></i><i></i></div>
+          <div class="furnace-mouth">
+            <span></span><span></span><span></span>
+            <div class="coal-bed"></div>
+          </div>
+        </div>
+        <div class="bellows"><i></i></div>
+      </div>
+    </div>
+
+    <div class="forge-decor decor-right" aria-hidden="true">
+      <div class="workshop-sign">FRACTION<br><b>FORGE</b></div>
+      <div class="wall-rack">
+        <div class="rack-bar"></div>
+        <span class="hanging-tool tongs">⌇</span>
+        <span class="hanging-tool hook">J</span>
+        <span class="hanging-tool hammer">T</span>
+      </div>
+      <div class="ingot-shelf">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
     <section class="order-board" aria-live="polite">
       <span class="order-label">오늘의 주문</span>
       <strong id="targetValue">3/4</strong>
@@ -38,12 +81,13 @@
       </div>
 
       <div class="anvil-zone">
-        <div class="forge-fire" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="equation-line" id="equationLine">재료 두 개를 모루에 올려요</div>
         <div class="anvil" id="anvil" aria-label="작업 모루">
           <button class="slot" id="slotA" data-slot="0" aria-label="첫 번째 재료"><span>1</span></button>
           <div class="op-badge" id="opBadge">?</div>
           <button class="slot" id="slotB" data-slot="1" aria-label="두 번째 재료"><span>2</span></button>
+          <div class="anvil-shadow"></div>
+          <div class="anvil-stump"><i></i><i></i><i></i></div>
           <div class="anvil-top"></div>
           <div class="anvil-body"><div class="anvil-logo">F</div></div>
           <div class="anvil-foot"></div>
@@ -99,6 +143,6 @@
 <script src="fraction-engine.js?v=1"></script>
 <script src="puzzle-generator.js?v=1"></script>
 <script src="fraction-smith-avatar.js?v=1"></script>
-<script src="game.js?v=1"></script>
+<script src="game.js?v=2"></script>
 </body>
 </html>
