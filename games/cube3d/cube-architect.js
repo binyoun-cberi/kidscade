@@ -1104,6 +1104,9 @@ function returnFromRestoration(){
 }
 function openLandmarkRestoration(poi){
   if(!poi||gameFreeMode!=='survival')return;
+  if(survivalStage<5){
+    toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return;
+  }
   saveFreeWorld();
   challengeDifficulty='hard';missionIndex=poi.missionIndex;
   restorationSession={poiId:poi.id,missionIndex:poi.missionIndex,completed:false};
@@ -1761,7 +1764,7 @@ function updateFreeMission(){
       if(close.distance<=close.radius+3)nearLandmarkPoi=close;
     }
   }
-  const canRestore=gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const canRestore=gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('actionCheck').classList.toggle('hidden',!canRestore);
   if(canRestore){
     $('actionCheck').textContent='복원 설계도';
@@ -2453,7 +2456,8 @@ function renderExplorationHint(){
     if(restoredLandmarks.has(nearLandmarkPoi.id))
       $('explorationHint').textContent='복원 완료 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
     else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
-      ' · Q 또는 상단의 ‘복원 설계도’를 눌러 도전';
+      (survivalStage>=5?' · Q 또는 상단의 ‘복원 설계도’를 눌러 도전':
+      ' · 첫 거점과 돌 도구를 준비하면 복원에 도전할 수 있어요.');
     return;
   }
   const landmark=nearestUnrestoredLandmark(x,z);
@@ -2613,7 +2617,7 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  const poiRestore=target==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore);
   $('mobileCheck').textContent=poiRestore?'복원':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
@@ -2691,7 +2695,7 @@ function initMobileControls(){
   tap('mobilePlace',()=>mobileBlockAction('place'));
   tap('mobileCheck',()=>{
     if(mode==='challenge')checkChallenge();
-    else if(mode==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
+    else if(mode==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
       openLandmarkRestoration(nearLandmarkPoi);
   });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
@@ -2850,7 +2854,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
   if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
-  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkRestoration(nearLandmarkPoi);return;
   }
   if(e.code==='KeyQ'&&gameFreeMode==='creative'&&nearRuin){
