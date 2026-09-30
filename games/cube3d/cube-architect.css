@@ -296,3 +296,25 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
 #freeSelectedShape{display:block;margin:7px 0;font-size:10px;color:#5f6d80}
 .free-geometry-details .challenge-tool-tabs{grid-template-columns:1fr 1fr}
 .free-geometry-details .challenge-element-choices{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+
+/* Architect World v16 · survival has a focused backpack instead of a full creative inventory. */
+#survivalCraftPanel{margin:0 0 12px;padding:10px;border:1px solid #d5dfeb;border-radius:13px;background:#f5f8ff}
+#survivalCraftPanel>b{display:block;font-size:13px;color:#273a57}
+#survivalCraftHint{display:block;margin:4px 0 9px;font-size:10px;color:#69778b}
+#survivalCraftList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.survival-recipe{border:1px solid #d2dce9;border-radius:10px;padding:9px;background:#fff;text-align:left;cursor:pointer;font-weight:900;font-size:12px;color:#2b3d56}
+.survival-recipe small{display:block;margin-top:5px;font-size:10px;font-weight:700;color:#68788b;line-height:1.4}
+.survival-recipe:disabled{opacity:.52;cursor:not-allowed}
+.survival-recipe.can-craft{border-color:#51a883;background:#f0fff7}
+#blockInventory.survival-inventory #inventoryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-height:24vh}
+#blockInventory.survival-inventory .inventory-item{min-height:76px}
+#freeMission{max-width:min(265px,55vw)}
+#biomeState{background:rgba(46,133,88,.24)}
+#mobileControls.free-mobile #mobileFly.hidden{display:none!important}
+@media(max-width:650px){
+  #survivalCraftList{grid-template-columns:1fr}
+  #blockInventory.survival-inventory #inventoryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #freeMission{max-width:49vw}
+  #freeMission .free-status{flex-wrap:wrap;gap:3px}
+}
