@@ -55,9 +55,9 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xcbd9df);
 scene.fog=new THREE.Fog(0xcbd9df,8,18);
-const camera=new THREE.PerspectiveCamera(44,1,.1,50);
-camera.position.set(4.2,3.05,5.1);
-camera.lookAt(0,1.35,0);
+const camera=new THREE.PerspectiveCamera(70,1,.035,50);
+camera.position.set(0,2.1,.92);
+camera.lookAt(0,1.9,-.8);
 
 scene.add(new THREE.HemisphereLight(0xf5fbff,0x52636d,1.8));
 const keyLight=new THREE.DirectionalLight(0xffffff,2.2);keyLight.position.set(3,6,4);keyLight.castShadow=true;keyLight.shadow.mapSize.set(1024,1024);scene.add(keyLight);
@@ -115,6 +115,9 @@ function createFighter(kind){
 }
 const playerVisual=createFighter('player'),enemyVisual=createFighter('enemy');
 playerVisual.root.position.z=.82;enemyVisual.root.position.z=-.82;
+// First-person: the camera occupies the player's head, so hide geometry that would clip the view.
+playerVisual.head.visible=false;playerVisual.torso.visible=false;playerVisual.pelvis.visible=false;
+for(const n of ['lThigh','lShin','rThigh','rShin'])playerVisual.limbs[n].visible=false;
 
 function rotXZ(x,z,a){const c=Math.cos(a),s=Math.sin(a);return{x:x*c-z*s,z:x*s+z*c}}
 function computeKinematics(p,facing=-1){
@@ -175,8 +178,8 @@ function updateMuscleMaterials(v,acts){
 function applyXray(){
   for(const v of [playerVisual,enemyVisual]){
     v.skinMats.forEach(m=>{m.transparent=state.xray;m.opacity=state.xray?.23:1;m.depthWrite=!state.xray;m.needsUpdate=true});
-    Object.values(v.bones).forEach(m=>m.visible=state.xray);
-    v.joints.forEach(m=>m.visible=state.xray);
+    Object.entries(v.bones).forEach(([name,m])=>m.visible=state.xray&&(v!==playerVisual||!['lThigh','lShin','rThigh','rShin'].includes(name)));
+    v.joints.forEach((m,i)=>m.visible=state.xray&&(v!==playerVisual||i<4));
   }
   ui.xrayBtn.classList.toggle('on',state.xray);ui.xrayBtn.setAttribute('aria-pressed',state.xray?'true':'false');
 }
@@ -201,10 +204,41 @@ function beginAttack(){
   state.enemy={phase:'telegraph',t:.50,attack:actual,shownAttack:fake,resolved:false,feint,switched:false,counter:false};
   syncIncoming();
 }
+function firstRoundControls(attackId=state.enemy.shownAttack){
+  const enemySide=attackInfo(attackId).side;
+  const side=enemySide==='left'?'right':'left';
+  return side==='left'
+    ?{side,sideKo:'왼팔',biceps:'leftBiceps',triceps:'leftTriceps',guardKey:'Q',counterKey:'W'}
+    :{side,sideKo:'오른팔',biceps:'rightBiceps',triceps:'rightTriceps',guardKey:'E',counterKey:'R'};
+}
+function firstRoundRecommendation(){
+  if(state.stage!==0||!state.running)return'';
+  const c=firstRoundControls(state.enemy.shownAttack);
+  return state.enemy.counter&&state.enemy.phase==='recover'?c.triceps:c.biceps;
+}
+function updateFirstGuide(){
+  if(!ui.firstGuide)return;
+  ui.firstGuide.classList.toggle('hidden',state.stage!==0);
+  if(state.stage!==0)return;
+  const c=firstRoundControls(state.enemy.shownAttack);
+  const counterNow=state.enemy.counter&&state.enemy.phase==='recover';
+  if(counterNow){
+    ui.guideAction.textContent='② '+c.counterKey+' · '+c.sideKo+' 상완삼두근으로 카운터!';
+    ui.guideNext.textContent=c.guardKey+'에서 손을 떼고 '+c.counterKey+'를 눌러 같은 팔을 빠르게 펴세요.';
+  }else{
+    ui.guideAction.textContent='① '+c.guardKey+' · '+c.sideKo+' 상완이두근으로 가드!';
+    ui.guideNext.textContent='막히면 '+c.guardKey+'에서 손을 떼고 '+c.counterKey+' 삼두근으로 바로 반격하세요.';
+  }
+  ui.guideProgress.textContent='상대 HP '+Math.ceil(state.enemyHp)+' / '+activeStage().hp+' · 카운터 '+state.stats.counters+'회';
+}
 function syncIncoming(){
   const a=attackInfo(state.enemy.shownAttack);
   ui.incomingTitle.textContent=(state.enemy.feint&&!state.enemy.switched?'? ':'')+a.name;
-  ui.incomingHint.textContent=state.stage===0?'이두근으로 팔을 굽혀 주먹을 막아 보세요.':a.hook?'복근으로 숙이거나 복사근으로 몸통을 피하세요.':'가드하거나 몸통을 옆으로 피하세요.';
+  if(state.stage===0){
+    const c=firstRoundControls(state.enemy.shownAttack);
+    ui.incomingHint.textContent=a.name+' → '+c.guardKey+' '+c.sideKo+' 이두근으로 막기';
+  }else ui.incomingHint.textContent=a.hook?'복근으로 숙이거나 복사근으로 몸통을 피하세요.':'가드하거나 몸통을 옆으로 피하세요.';
+  updateFirstGuide();
 }
 function enemyPose(){
   const e=state.enemy,a=attackInfo(e.shownAttack);let strike=0,twist=0,crouch=0,lean=0;
@@ -234,7 +268,7 @@ function setPressed(id,on){
 function syncButtons(){
   for(const b of buttons){
     const id=b.dataset.muscle,meta=MUSCLES[id],locked=meta.unlock>state.stage;
-    b.classList.toggle('locked',locked);b.disabled=locked;b.classList.toggle('active',!locked&&pressed[id]);
+    b.classList.toggle('locked',locked);b.disabled=locked;b.classList.toggle('active',!locked&&pressed[id]);b.classList.toggle('recommended',!locked&&id===firstRoundRecommendation());
     b.setAttribute('aria-pressed',pressed[id]?'true':'false');
     const em=b.querySelector('em');if(em)em.style.width=Math.round((activation[id]||0)*100)+'%';
   }
@@ -304,7 +338,7 @@ function checkPunch(side,dt){
   if(flex>.72)arm.cocked=true;
   const speed=(prev-flex)/Math.max(.001,dt);
   const tri=activation[side+'Triceps'];
-  if(arm.cocked&&arm.cooldown<=0&&prev>.22&&flex<.16&&speed>.72&&tri>.3){
+  if(arm.cocked&&arm.cooldown<=0&&flex<.18&&speed>.55&&tri>.3){
     arm.cocked=false;arm.cooldown=.36;resolvePlayerPunch(side,speed);
   }
 }
@@ -335,7 +369,10 @@ function resolveEnemyAttack(){
   }else if(guarded){
     state.stats.guards++;state.enemy.counter=true;
     const chip=a.hook&&state.stage>0?5:0;if(chip){state.playerHp=Math.max(0,state.playerHp-chip)}
-    flashImpact(chip?'가드 -5':'가드!',true);tone(260,.05,'triangle',.04);ui.coach.textContent='이두근으로 팔꿈치를 굽혀 얼굴 앞에 가드를 만들었어요. 카운터!';ui.coach.className='coach counter';
+    flashImpact(chip?'가드 -5':'가드!',true);tone(260,.05,'triangle',.04);
+    if(state.stage===0){const c=firstRoundControls(state.enemy.attack);ui.coach.textContent='가드 성공! '+c.guardKey+'에서 손을 떼고 '+c.counterKey+' 삼두근으로 같은 팔을 펴세요!';}
+    else ui.coach.textContent='이두근으로 팔꿈치를 굽혀 얼굴 앞에 가드를 만들었어요. 카운터!';
+    ui.coach.className='coach counter';updateFirstGuide();
   }else{
     const dmg=activeStage().damage;state.playerHp=Math.max(0,state.playerHp-dmg);state.stats.taken++;state.impactBoost=.12;playerVisual.flash=.16;
     flashImpact('-'+dmg,false);tone(70,.12,'sawtooth',.055);ui.coach.textContent=state.stage===0?'공격하는 쪽 반대 팔의 이두근을 수축해 얼굴 앞을 막아 보세요.':'복사근으로 옆으로 피하거나 복근으로 몸을 낮출 수도 있어요.';ui.coach.className='coach';
@@ -376,7 +413,7 @@ function syncHud(){
   ui.enemyHp.style.width=(state.enemyHp/cfg.hp*100)+'%';ui.enemyHpText.textContent=Math.round(state.enemyHp);ui.enemyName.textContent=cfg.enemy;
   ui.stageLabel.textContent=(state.stage+1)+' · '+cfg.name;ui.timeScale.textContent=Math.round(state.worldScale*100)+'%';
   ui.timeState.textContent=state.worldScale===0?'세계 정지':'몸이 움직이는 중';ui.timeState.parentElement.classList.toggle('moving',state.worldScale>0);
-  syncArmLabels();syncButtons();
+  syncArmLabels();syncButtons();updateFirstGuide();
 }
 function finishStage(won){
   state.running=false;Object.keys(pressed).forEach(k=>pressed[k]=false);state.worldScale=0;syncButtons();
@@ -400,7 +437,7 @@ function resetStage(){
   state.stats={hits:0,counters:0,guards:0,dodges:0,taken:0,coContract:0};
   for(const k of Object.keys(pressed)){pressed[k]=false;activation[k]=0}
   ui.resultCard.classList.add('hidden');ui.coach.className='coach';
-  ui.coach.textContent=state.stage===0?'Q/E 이두근으로 팔을 굽혀 보세요. 몸이 움직이는 동안에만 상대도 움직입니다.':state.stage===1?'A/D 복사근과 S 복근이 열렸어요. 훅은 막기보다 피하면 더 안전합니다.':'F로 다리를 밀어 펀치 힘을 보태세요. 페인트 뒤 진짜 공격 방향도 확인하세요.';
+  ui.coach.textContent=state.stage===0?'첫 판 목표: 상대 HP를 0으로! 표시된 이두근으로 막고, 카운터가 뜨면 같은 팔 삼두근으로 반격하세요.':state.stage===1?'A/D 복사근과 S 복근이 열렸어요. 훅은 막기보다 피하면 더 안전합니다.':'F로 다리를 밀어 펀치 힘을 보태세요. 페인트 뒤 진짜 공격 방향도 확인하세요.';
   beginAttack();syncHud();
 }
 ui.nextBtn.addEventListener('click',()=>{
@@ -432,7 +469,15 @@ function tick(now){
   playerVisual.head.material.emissive.setHex(playerVisual.flash>0?0x7d1f1f:0x000000);playerVisual.head.material.emissiveIntensity=playerVisual.flash>0?1.2:0;
   enemyVisual.head.material.emissive.setHex(enemyVisual.flash>0?0xffb14e:0x000000);enemyVisual.head.material.emissiveIntensity=enemyVisual.flash>0?1.4:0;
   updateTrajectory();syncHud();
-  const sway=state.pose.lean*.22;camera.position.x=approach(camera.position.x,4.2+sway,3,realDt);camera.lookAt(state.pose.lean*.12,1.34,0);
+  if(playerVisual.lastKin&&enemyVisual.lastKin){
+    const eye=worldPos(playerVisual.root,playerVisual.lastKin.head);
+    eye.y+=.015;eye.z+=.065;
+    camera.position.lerp(eye,clamp(realDt*18,0,1));
+    const target=worldPos(enemyVisual.root,enemyVisual.lastKin.head);
+    target.y-=.02;
+    camera.lookAt(target);
+    camera.rotation.z=-state.pose.lean*.18;
+  }
   renderer.render(scene,camera);requestAnimationFrame(tick);
 }
 
