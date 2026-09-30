@@ -529,7 +529,8 @@ function drawPlateView(isBatting){
   if(readyImage(batImg))ctx.drawImage(batImg,-6,-10,96,26);
   else{ctx.strokeStyle='#a26b37';ctx.lineWidth=12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(86,0);ctx.stroke()}
   ctx.restore();
-  const inTiming=pitch&&pitch.owner==='cpu'&&!pitch.swung&&pitch.t>=.72&&pitch.t<=.98;
+  const cueStart=.88-cfg().batWindow*.55,cueEnd=Math.min(.99,.88+cfg().batWindow*.55);
+  const inTiming=pitch&&pitch.owner==='cpu'&&!pitch.swung&&pitch.t>=cueStart&&pitch.t<=cueEnd;
   ctx.strokeStyle=inTiming?'#4ade80':'#fbbf24';ctx.lineWidth=inTiming?5:3;
   ctx.beginPath();ctx.arc(cursor.x,cursor.y,inTiming?23:17,0,Math.PI*2);ctx.stroke();
   if(inTiming){ctx.fillStyle='#bbf7d0';ctx.font='900 17px system-ui';ctx.textAlign='center';ctx.fillText('지금!',cursor.x,cursor.y-32)}
@@ -544,11 +545,12 @@ function drawPlateView(isBatting){
  }
  if(isBatting&&pitch&&pitch.owner==='cpu'&&!pitch.swung){
   const t=clamp(pitch.t,0,1),bx=383,by=401,bw=194;
+  const start=.88-cfg().batWindow*.55,end=Math.min(.99,.88+cfg().batWindow*.55);
   ctx.fillStyle='rgba(8,25,41,.88)';ctx.beginPath();ctx.roundRect(bx-8,by-7,bw+16,30,10);ctx.fill();
   ctx.fillStyle='#486173';ctx.fillRect(bx,by,bw,10);
-  ctx.fillStyle='#4ade80';ctx.fillRect(bx+bw*.72,by,bw*.26,10);
+  ctx.fillStyle='#4ade80';ctx.fillRect(bx+bw*start,by,bw*(end-start),10);
   ctx.fillStyle='#fdf6dc';ctx.fillRect(bx+bw*t-2,by-4,4,18);
-  ctx.fillStyle='#e9f2f8';ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillText(t>=.72&&t<=.98?'지금 스윙!':'공을 기다리세요',bx+bw/2,by+22);
+  ctx.fillStyle='#e9f2f8';ctx.font='800 10px system-ui';ctx.textAlign='center';ctx.fillText(t>=start&&t<=end?'지금 스윙!':'공을 기다리세요',bx+bw/2,by+22);
  }
  if(pitch){
   const p=pitch,t=clamp(p.t,0,1),curve=Math.max(0,(t-.48)/.52),tx=p.actual.x+p.breakX*curve,ty=p.actual.y+p.breakY*curve;let x,y,r;
