@@ -1081,7 +1081,7 @@ function beginNew(tutorial=false){
   generateWorld();ui.intro.classList.add('hidden');ui.result.classList.add('hidden');running=true;sdkStart();selectTool('inspect');checkProgress();saveGame();if(tutorial)showTutorial();else ui.tutorialCoach.classList.add('hidden');
 }
 function continueGame(){
-  tutorialMode=false;activeToolCategory='restore';ui.intro.classList.add('hidden');ui.result.classList.add('hidden');completed=false;running=true;if(!loadGame()){ui.intro.classList.remove('hidden');running=false;toast('저장된 복원 지역이 없어요.','bad');return}sdkStart();toast('저장된 지역을 이어서 복원합니다.')}
+  tutorialMode=false;activeToolCategory='restore';ui.intro.classList.add('hidden');ui.result.classList.add('hidden');completed=false;running=true;if(!loadGame()){ui.intro.classList.remove('hidden');running=false;toast('저장된 복원 지역이 없어요.','bad');return}phase=Math.max(3,phase);updateUI();sdkStart();toast('저장된 지역을 자유 운영으로 이어갑니다.')}
 function showTutorial(){
   const steps=[
     ['발전소도 장소를 골라요','🌬·☀️·♨️ 지도를 바꿔 보세요. 풍력·태양광·지열은 좋은 입지에서만 설치할 수 있고 원자력은 냉각수를 위해 물가가 필요해요.'],
