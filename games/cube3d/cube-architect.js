@@ -215,6 +215,103 @@ function updateChallengeStats(){
   const target=currentChallengeMission().blocks.length;$('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
 }
+function setChallengeTool(tool){
+  challengeTool=tool;challengeSelectedElement=0;updateChallengeEditor();drawChallengeSelection();
+  updateChallengeGhost();
+}
+function selectLookedChallengePiece(){
+  const hit=challengeCenterHit(12);
+  if(!hit?.object?.userData?.challenge){toast('편집할 정육면체나 직육면체를 십자선으로 가리켜 주세요.');return}
+  challengeSelected=hit.object;
+  updateChallengeEditor();drawChallengeSelection();
+  toast('도형 선택: '+challengeSelected.userData.dims.join('×')+' · 면 6개, 모서리 12개, 꼭짓점 8개');
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+}
+function applyChallengeElement(index){
+  if(!challengeSelected||!challengeMeshes.includes(challengeSelected)){toast('먼저 도형을 선택해 주세요.');return}
+  const data=challengeSelected.userData;challengeSelectedElement=index;
+  if(challengeTool==='face'){
+    data.faceColors[index]=challengeTint;
+    challengeSelected.material[index].color.set(challengeTint);
+  }else if(challengeTool==='edge')data.edgeColors[index]=challengeTint;
+  else if(challengeTool==='vertex')data.vertexColors[index]=challengeTint;
+  updateChallengeEditor();drawChallengeSelection();sfx('place');
+}
+function paintLookedChallengeFace(){
+  const hit=challengeCenterHit(12);
+  if(!hit?.object?.userData?.challenge||!hit.face){toast('색칠할 면을 십자선으로 가리켜 주세요.');return}
+  challengeSelected=hit.object;
+  setChallengeTool('face');
+  applyChallengeElement(THREE.MathUtils.clamp(hit.face.materialIndex??0,0,5));
+}
+function updateChallengeEditor(){
+  for(const [id,tool] of [['challengeToolBuild','build'],['challengeToolFace','face'],
+    ['challengeToolEdge','edge'],['challengeToolVertex','vertex']])
+    $(id).classList.toggle('active',challengeTool===tool);
+  $('challengeBuildOptions').classList.toggle('hidden',challengeTool!=='build');
+  $('challengeDetailOptions').classList.toggle('hidden',challengeTool==='build');
+  $('challengeCube').classList.toggle('active',challengeShapeMode==='cube');
+  $('challengeCuboid').classList.toggle('active',challengeShapeMode==='cuboid');
+  $('challengeDims').classList.toggle('hidden',challengeShapeMode!=='cuboid');
+  $('challengeColor').value=challengeTint;
+  const selected=challengeSelected&&challengeMeshes.includes(challengeSelected)?challengeSelected:null;
+  $('challengeSelectedName').textContent=selected?
+    '선택: '+selected.userData.dims.join('×')+' · 면 6 / 모서리 12 / 꼭짓점 8':'선택한 도형 없음';
+  const choices=$('challengeElementChoices');choices.innerHTML='';
+  if(challengeTool==='build')return;
+  const names=challengeTool==='face'?['오른쪽','왼쪽','위','아래','앞','뒤']:
+    challengeTool==='edge'?CUBOID_TOPOLOGY.edges.map(edge=>edge.join('')):CUBOID_TOPOLOGY.vertices.map(v=>v.id);
+  const colors=selected?.userData[challengeTool==='face'?'faceColors':challengeTool==='edge'?'edgeColors':'vertexColors']||[];
+  names.forEach((name,i)=>{
+    const b=document.createElement('button');
+    b.type='button';b.className=challengeSelectedElement===i?'active':'';
+    const color=colors[i]||'#dce2eb';
+    const chip=document.createElement('i');chip.style.background=color;b.appendChild(chip);
+    b.appendChild(document.createTextNode(name));b.onclick=()=>applyChallengeElement(i);
+    choices.appendChild(b);
+  });
+}
+function drawChallengeSelection(){
+  clearChallengeOverlay();
+  if(!challengeSelected||!challengeMeshes.includes(challengeSelected)||challengeTool==='build')return;
+  const piece=challengeSelected,data=piece.userData,[dx,dy,dz]=data.dims;
+  const group=new THREE.Group(),verts=new Map();
+  for(const v of CUBOID_TOPOLOGY.vertices)
+    verts.set(v.id,new THREE.Vector3(piece.position.x+v.s[0]*dx/2,
+      piece.position.y+v.s[1]*dy/2,piece.position.z+v.s[2]*dz/2));
+  if(challengeTool==='edge'){
+    CUBOID_TOPOLOGY.edges.forEach(([a,b],i)=>{
+      const c=data.edgeColors[i]||(i===challengeSelectedElement?'#f49b46':'#bbc5d4');
+      const geometry=new THREE.BufferGeometry().setFromPoints([verts.get(a),verts.get(b)]);
+      const line=new THREE.Line(geometry,new THREE.LineBasicMaterial({
+        color:c,transparent:true,opacity:data.edgeColors[i]||i===challengeSelectedElement?1:.62,depthTest:false
+      }));
+      line.renderOrder=45;group.add(line);
+    });
+  }else if(challengeTool==='vertex'){
+    CUBOID_TOPOLOGY.vertices.forEach((v,i)=>{
+      const color=data.vertexColors[i]||(i===challengeSelectedElement?'#f49b46':'#b6c1d3');
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),
+        new THREE.MeshBasicMaterial({color,depthTest:false,transparent:true,
+          opacity:data.vertexColors[i]||i===challengeSelectedElement?1:.68}));
+      dot.position.copy(verts.get(v.id));dot.renderOrder=46;group.add(dot);
+    });
+  }else{
+    const outline=new THREE.LineSegments(new THREE.EdgesGeometry(piece.geometry),
+      new THREE.LineBasicMaterial({color:0x5967ee,depthTest:false}));
+    outline.position.copy(piece.position);outline.renderOrder=44;group.add(outline);
+  }
+  challengeOverlay=group;scene.add(group);
+}
+function toggleBlueprintModal(open){
+  blueprintModalOpen=!!open;
+  $('blueprintModal').classList.toggle('hidden',!blueprintModalOpen);
+  if(blueprintModalOpen){
+    $('blueprintModalTitle').textContent=currentChallengeMission().name+' · '+$('blueprintView').selectedOptions[0].text;
+    if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+    renderBlueprint($('blueprintLargeCanvas'),blueprintAngle);
+  }
+}
 function drawBlueprint(){
   const c=$('blueprintCanvas'),ctx=c.getContext('2d'),m=currentChallengeMission();ctx.clearRect(0,0,c.width,c.height);
   const hard=challengeDifficulty==='hard';
