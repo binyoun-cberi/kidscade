@@ -21,7 +21,7 @@ test('Twelve Island registers a complete accessible game and uses existing asset
   assert.match(html, /art.js\?v=2/);
   assert.match(html, /game.js\?v=2/);
   assert.match(html, /id="islandCanvas"/);
-  assert.match(entry.href, /\\?v=2$/);
+  assert.ok(entry.href.endsWith("?v=2"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
