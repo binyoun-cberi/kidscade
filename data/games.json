@@ -3046,6 +3046,30 @@
       "classroom": false
     },
     {
+      "id": "high_emergency_escape",
+      "addedAt": "2026-09-30T15:57:00+09:00",
+      "title": "10초 위기탈출",
+      "href": "games/high_emergency_escape/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🚨",
+      "description": "갑자기 닥친 화재·지진·호우·교통·물놀이·응급처치 상황에서 여러 행동 중 지금 해야 할 한 가지를 빠르게 고르는 3D 안전 마이크로게임. 50개 상황과 CPR·AED·기도폐쇄 절차 훈련을 담았습니다.",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "featured",
+      "classroom": true
+    },
+    {
       "id": "high_history_map",
       "title": "통일전쟁",
       "href": "games/high_history_map/index.html?v=25",
