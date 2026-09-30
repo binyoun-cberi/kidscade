@@ -23,6 +23,7 @@
   let lastSavedTick = -1;
   let started = false;
   let drafts = {};
+  let selectedCitizenId = null;
   function sdk(method, arg) {
     try {
       const fn = window.KidscadeGame?.[method];
@@ -133,6 +134,35 @@
       law.options.map(option => '<div class="law-option ' + (drafts[id] === option.id ? "selected" : "") + '"><label><input type="radio" name="law-' + id + '" data-law-option="' + id + '" value="' + option.id + '" ' + (drafts[id] === option.id ? "checked" : "") + '><span>' + escapeHTML(option.title) + '</span></label><p>' + escapeHTML(option.desc) + "</p></div>").join("") +
       '<div class="actions"><span class="vote-note">' + (vote ? "예상 찬성 " + vote.yes + "/" + vote.total + "명" : "책임자 권한으로 제정") + '</span><button class="primary" data-enact="' + id + '" ' + (active?.id === drafts[id] || !!state.pending ? "disabled" : "") + ">" + (active ? "개정" : "제정") + "</button></div></div>";
   }
+
+  function residentCard(person) {
+    const v = S.residentView(state, person);
+    const selected = person.id === selectedCitizenId;
+    return '<button type="button" class="resident-row' + (selected ? ' picked' : '') + '" data-citizen="' + escapeHTML(person.id) + '" aria-pressed="' + selected + '">' +
+      '<span class="resident-avatar">' + characterPortrait(person.name, true) + '</span>' +
+      '<span class="resident-row-text"><strong>' + escapeHTML(person.name) + '</strong><small>' +
+      escapeHTML(v.topic) + ' · ' + escapeHTML(person.experience) + '</small></span>' +
+      '<span class="resident-status' + (v.mood === "걱정" ? ' anxious' : '') + '">' + escapeHTML(v.mood) + '</span></button>';
+  }
+  function renderResidents() {
+    if (!state.citizens?.length) return '<h2>주민 명부</h2><p class="intro">등록된 주민이 없습니다.</p>';
+    if (!selectedCitizenId || !state.citizens.some(p => p.id === selectedCitizenId))
+      selectedCitizenId = state.citizens[0].id;
+    const citizen = state.citizens.find(p => p.id === selectedCitizenId);
+    const v = S.residentView(state, citizen);
+    const pulse = S.communityPulse(state);
+    const last = state.arrivalLog?.[0];
+    return '<h2>우리 마을 주민</h2><p class="intro">주민마다 이전 경험과 중요하게 생각하는 일이 달라요. 자원과 규칙에 따라 생각도 바뀝니다.</p>' +
+      '<div class="citizen-pulse"><span>👥 ' + state.citizens.length + '명</span><span>🌿 안정 ' + pulse.안정 + '명</span><span>💭 걱정 ' + pulse.걱정 + '명</span></div>' +
+      (last ? '<div class="arrival-summary"><strong>⛵ 최근 합류: ' + escapeHTML(last.name) + '</strong><small>' + escapeHTML(last.origin) + '</small></div>' : '') +
+      '<div class="resident-detail"><div class="resident-detail-head">' + characterPortrait(citizen.name, true) +
+      '<div><h3>' + escapeHTML(citizen.name) + '</h3><small>' + escapeHTML(citizen.experience) + ' · 관심사: ' + escapeHTML(v.topic) + '</small><span class="resident-status' + (v.mood === "걱정" ? " anxious" : "") + '">' + escapeHTML(v.mood) + '</span></div></div>' +
+      '<div class="resident-quote">“' + escapeHTML(v.thought) + '”<small>지금의 생각 · ' + escapeHTML(v.reason) + '</small></div>' +
+      '<div class="resident-origin"><strong>' + (citizen.source === "founder" ? "🏝️ 처음 함께 온 주민" : "⛵ 합류 이야기 · " + (citizen.joinedWeek + 1) + "번째 주") + '</strong><p>' + escapeHTML(citizen.origin) + '</p></div></div>' +
+      '<div class="panel-subhead">전체 주민 <span>선택해서 자세히 보기</span></div>' +
+      '<div class="resident-list">' + state.citizens.map(residentCard).join("") + '</div>' +
+      '<div class="locked-card">💡 이 의견은 주민의 관심사와 현재 마을 상태로 계산돼요. 실제 주민투표의 찬반과는 다를 수 있습니다.</div>';
+  }
   function renderPanel() {
     const p = element.panel, scroll = p.scrollTop;
     if (activeTab === "work") {
@@ -150,6 +180,8 @@
       p.innerHTML = '<h2>마을의 규칙</h2><p class="intro">법률은 제정 후 계속 적용됩니다. 상황이 달라지면 선택한 규칙을 개정할 수 있어요.</p>' +
         Object.entries(S.LAWS).filter(([, law]) => law.stage <= state.stage).map(([id, law]) => lawCard(id, law)).join("") +
         (state.stage === 1 ? '<div class="locked-card">🔒 부담금·공공 지원·결정 절차는 자치 마을에서 열려요.</div>' : "");
+    } else if (activeTab === "residents") {
+      p.innerHTML = renderResidents();
     } else {
       p.innerHTML = '<h2>우리들의 기록</h2><p class="intro">어떤 결정을 내렸는지 시간순으로 살펴보세요.</p>' +
         (state.log.length ? state.log.map(item => '<div class="history-row"><small>' + (item.tick + 1) + '번째 주</small>' + escapeHTML(item.text) + '</div>').join("") : '<div class="locked-card">아직 기록이 없어요.</div>') +
@@ -158,14 +190,14 @@
     p.scrollTop = scroll;
   }
   const NPC_ASSET = "../../assets/game/2d/characters/kenney-modular-characters/";
-  function characterPortrait(name) {
+  function characterPortrait(name, compact = false) {
     const people = {
       "하나": { skin: 3, hair: "brown-1/brown1Woman1.png", shirt: "green/greenShirt1.png" },
       "태오": { skin: 5, hair: "black/blackMan1.png", shirt: "red/redShirt1.png" },
       "미래": { skin: 2, hair: "blonde/blondeWoman1.png", shirt: "blue/blueShirt1.png" }
     };
-    const p = people[name] || people["하나"];
-    return '<span class="npc-portrait" aria-hidden="true">' +
+    const p = state?.citizens?.find(person => person.name === name)?.appearance || people[name] || people["하나"];
+    return '<span class="npc-portrait' + (compact ? ' compact' : '') + '" aria-hidden="true">' +
       '<img class="npc-shirt" alt="" src="' + NPC_ASSET + 'shirts/' + p.shirt + '">' +
       '<img class="npc-head" alt="" src="' + NPC_ASSET + 'skin/tint-' + p.skin + '/tint' + p.skin + '_head.png">' +
       '<img class="npc-face" alt="" src="' + NPC_ASSET + 'face/completes/face1.png">' +
@@ -186,10 +218,11 @@
     element.modal.classList.remove("hidden");
     $("modalLabel").textContent = "공동체 사건";
     $("eventWeek").textContent = state.tick + 1 + "번째 주";
-    $("speaker").innerHTML = characterPortrait(event.speaker);
-    $("modalTitle").textContent = event.title;
-    $("modalBody").textContent = event.body;
-    $("modalHint").textContent = "선택에 따라 자원과 시민들의 반응이 달라집니다. 사건을 해결하면 시간이 다시 흐릅니다.";
+    const arriving = id === "new_resident" ? state.citizens.find(p => p.id === state.arrivalNotice?.citizenId) : null;
+    $("speaker").innerHTML = characterPortrait(arriving ? arriving.name : event.speaker);
+    $("modalTitle").textContent = arriving ? arriving.name + "님이 마을에 합류했습니다!" : event.title;
+    $("modalBody").textContent = arriving ? arriving.origin + " " + arriving.experience + "이(가) 있으며, " + S.PRIORITY_TITLES[arriving.focus] + "에 관심이 있습니다." : event.body;
+    $("modalHint").textContent = arriving ? "주민 명부에서 새로운 주민의 현재 생각을 확인할 수 있습니다." : "선택에 따라 자원과 시민들의 반응이 달라집니다. 사건을 해결하면 시간이 다시 흐릅니다.";
     element.modalOptions.innerHTML = event.options.map((o, i) => {
       const afford = !o.cost || Object.entries(o.cost).every(([key, n]) => state[key] >= n);
       return '<button class="choice" data-event-option="' + i + '" ' + (afford ? "" : "disabled") + '><b>' + escapeHTML(o.label) + '</b><small>' + escapeHTML(o.note) + (afford ? "" : " · 자원이 부족합니다.") + "</small></button>";
@@ -211,6 +244,13 @@
     }
   }
   element.panel.addEventListener("click", e => {
+    const resident = e.target.closest("[data-citizen]");
+    if (resident) {
+      selectedCitizenId = resident.dataset.citizen;
+      renderPanel();
+      element.panel.scrollTop = 0;
+      return;
+    }
     const job = e.target.closest("[data-job]");
     if (job) {
       if (S.assign(state, job.dataset.job, Number(job.dataset.delta))) { sdk("sound", "click"); save(); render(); }
@@ -241,8 +281,19 @@
   element.modalOptions.addEventListener("click", e => {
     const choice = e.target.closest("[data-event-option]");
     if (!choice || choice.disabled) return;
+    const isArrival = state.pending === "new_resident";
+    const arrivingId = isArrival ? state.arrivalNotice?.citizenId : null;
     const result = S.resolveEvent(state, Number(choice.dataset.eventOption));
     if (result.ok) {
+      if (isArrival) {
+        selectedCitizenId = arrivingId;
+        activeTab = "residents";
+        document.querySelectorAll("[data-tab]").forEach(x => {
+          x.classList.toggle("active", x.dataset.tab === "residents");
+          x.setAttribute("aria-selected", String(x.dataset.tab === "residents"));
+        });
+        element.panel.scrollTop = 0;
+      }
       sdk("sound", "success");
       toast(result.note || "시민들이 결정을 확인했습니다.");
       save(); render();
@@ -300,6 +351,7 @@
     if (!window.confirm("마을을 처음부터 다시 시작할까요? 현재 기록을 덮어씁니다.")) return;
     state = S.initial();
     drafts = {};
+    selectedCitizenId = null;
     currentModal = "";
     paused = false;
     save();
