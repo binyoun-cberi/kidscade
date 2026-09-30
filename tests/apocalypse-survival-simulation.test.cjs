@@ -141,3 +141,23 @@ test('ruin noise produces a deterministic one-time hazard per site',()=>{
   assert.match(js,/const key='ruinEvent_'\+site/);
   assert.match(js,/discover\('vibrationRisk'\)/);
 });
+
+
+test('village milestone remains achievable after the settlement milestone',()=>{
+  const s={wood:1,stone:0,clean:6,food:6,potato:2,cooked:1,scrap:0,battery:0,cloth:2,storage:{}};
+  // Four ordinary resident-work days: technician +1 scrap, gatherer +2 wood/+1 stone.
+  for(let d=0;d<4;d++){s.scrap+=1;s.wood+=2;s.stone+=1}
+  const spend=(cost,label)=>{for(const[k,v]of Object.entries(cost))assert.ok((s[k]||0)>=v,label+' lacks '+k);for(const[k,v]of Object.entries(cost))s[k]-=v};
+  spend({wood:8,stone:4},'second shelter');
+  s.wood+=2; // one axe-assisted tree
+  spend({wood:3,scrap:1},'storehouse');
+  s.potato+=6; // two farm cycles, net reserve
+  s.clean+=2;
+  for(const id of ['wood','stone','scrap','clean','food','potato','cooked']){s.storage[id]=(s.storage[id]||0)+(s[id]||0);s[id]=0}
+  const food=(s.storage.food||0)+(s.storage.potato||0)+(s.storage.cooked||0),stored=Object.values(s.storage).reduce((a,b)=>a+b,0);
+  assert.ok((s.storage.clean||0)>=6,'village water reserve');
+  assert.ok(food>=8,'village food reserve');
+  assert.ok(stored>=6,'village logistics reserve');
+  assert.match(js,/function villageSteps/);
+  assert.match(js,/cost:\{wood:3,scrap:1\},model:'chest\.glb'/);
+});
