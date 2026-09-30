@@ -3807,5 +3807,1055 @@ window.KIDSCADE_WRITING_RULES = [
     "explain": "그림 카드에 있는 낱말의 바른 표기를 확인해 봐요.",
     "category": "그림 카드 낱말",
     "match": "word"
+  },
+  {
+    "bad": "아이스크린이",
+    "good": "아이스크림이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린은",
+    "good": "아이스크림은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린을",
+    "good": "아이스크림을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린도",
+    "good": "아이스크림도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린과",
+    "good": "아이스크림과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린에게",
+    "good": "아이스크림에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린한테",
+    "good": "아이스크림한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린에서",
+    "good": "아이스크림에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린이랑",
+    "good": "아이스크림이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크린에",
+    "good": "아이스크림에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링이",
+    "good": "아이스크림이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링은",
+    "good": "아이스크림은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링을",
+    "good": "아이스크림을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링도",
+    "good": "아이스크림도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링과",
+    "good": "아이스크림과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링에게",
+    "good": "아이스크림에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링한테",
+    "good": "아이스크림한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링에서",
+    "good": "아이스크림에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링이랑",
+    "good": "아이스크림이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "아이스크링에",
+    "good": "아이스크림에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이가",
+    "good": "떡볶이가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이는",
+    "good": "떡볶이는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이를",
+    "good": "떡볶이를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이도",
+    "good": "떡볶이도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이와",
+    "good": "떡볶이와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이에게",
+    "good": "떡볶이에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이한테",
+    "good": "떡볶이한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이에서",
+    "good": "떡볶이에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이랑",
+    "good": "떡볶이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡복이에",
+    "good": "떡볶이에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기가",
+    "good": "떡볶이가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기는",
+    "good": "떡볶이는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기를",
+    "good": "떡볶이를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기도",
+    "good": "떡볶이도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기와",
+    "good": "떡볶이와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기에게",
+    "good": "떡볶이에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기한테",
+    "good": "떡볶이한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기에서",
+    "good": "떡볶이에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기랑",
+    "good": "떡볶이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "떡볶기에",
+    "good": "떡볶이에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게가",
+    "good": "무지개가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게는",
+    "good": "무지개는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게를",
+    "good": "무지개를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게도",
+    "good": "무지개도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게와",
+    "good": "무지개와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게에게",
+    "good": "무지개에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게한테",
+    "good": "무지개한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게에서",
+    "good": "무지개에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게랑",
+    "good": "무지개랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "무지게에",
+    "good": "무지개에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게가",
+    "good": "베개가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게는",
+    "good": "베개는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게를",
+    "good": "베개를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게도",
+    "good": "베개도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게와",
+    "good": "베개와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게에게",
+    "good": "베개에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게한테",
+    "good": "베개한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게에서",
+    "good": "베개에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게랑",
+    "good": "베개랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "베게에",
+    "good": "베개에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게가",
+    "good": "베개가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게는",
+    "good": "베개는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게를",
+    "good": "베개를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게도",
+    "good": "베개도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게와",
+    "good": "베개와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게에게",
+    "good": "베개에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게한테",
+    "good": "베개한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게에서",
+    "good": "베개에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게랑",
+    "good": "베개랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "배게에",
+    "good": "베개에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게가",
+    "good": "지우개가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게는",
+    "good": "지우개는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게를",
+    "good": "지우개를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게도",
+    "good": "지우개도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게와",
+    "good": "지우개와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게에게",
+    "good": "지우개에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게한테",
+    "good": "지우개한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게에서",
+    "good": "지우개에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게랑",
+    "good": "지우개랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "지우게에",
+    "good": "지우개에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛이",
+    "good": "초콜릿이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛은",
+    "good": "초콜릿은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛을",
+    "good": "초콜릿을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛도",
+    "good": "초콜릿도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛과",
+    "good": "초콜릿과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛에게",
+    "good": "초콜릿에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛한테",
+    "good": "초콜릿한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛에서",
+    "good": "초콜릿에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛이랑",
+    "good": "초콜릿이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코렛에",
+    "good": "초콜릿에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿이",
+    "good": "초콜릿이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿은",
+    "good": "초콜릿은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿을",
+    "good": "초콜릿을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿도",
+    "good": "초콜릿도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿과",
+    "good": "초콜릿과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿에게",
+    "good": "초콜릿에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿한테",
+    "good": "초콜릿한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿에서",
+    "good": "초콜릿에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿이랑",
+    "good": "초콜릿이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "초코릿에",
+    "good": "초콜릿에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜이",
+    "good": "장난감이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜은",
+    "good": "장난감은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜을",
+    "good": "장난감을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜도",
+    "good": "장난감도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜과",
+    "good": "장난감과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜에게",
+    "good": "장난감에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜한테",
+    "good": "장난감한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜에서",
+    "good": "장난감에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜이랑",
+    "good": "장난감이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "장난깜에",
+    "good": "장난감에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이가",
+    "good": "연필깎이가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이는",
+    "good": "연필깎이는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이를",
+    "good": "연필깎이를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이도",
+    "good": "연필깎이도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이와",
+    "good": "연필깎이와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이에게",
+    "good": "연필깎이에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이한테",
+    "good": "연필깎이한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이에서",
+    "good": "연필깎이에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이랑",
+    "good": "연필깎이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "연필깍이에",
+    "good": "연필깎이에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠가",
+    "good": "스파게티가",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠는",
+    "good": "스파게티는",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠를",
+    "good": "스파게티를",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠도",
+    "good": "스파게티도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠와",
+    "good": "스파게티와",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠에게",
+    "good": "스파게티에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠한테",
+    "good": "스파게티한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠에서",
+    "good": "스파게티에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠랑",
+    "good": "스파게티랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "스파게띠에",
+    "good": "스파게티에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간이",
+    "good": "도서관이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간은",
+    "good": "도서관은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간을",
+    "good": "도서관을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간도",
+    "good": "도서관도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간과",
+    "good": "도서관과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간에게",
+    "good": "도서관에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간한테",
+    "good": "도서관한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간에서",
+    "good": "도서관에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간이랑",
+    "good": "도서관이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "도서간에",
+    "good": "도서관에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언이",
+    "good": "식물원이",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언은",
+    "good": "식물원은",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언을",
+    "good": "식물원을",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언도",
+    "good": "식물원도",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언과",
+    "good": "식물원과",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언에게",
+    "good": "식물원에게",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언한테",
+    "good": "식물원한테",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언에서",
+    "good": "식물원에서",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언이랑",
+    "good": "식물원이랑",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
+  },
+  {
+    "bad": "식물언에",
+    "good": "식물원에",
+    "category": "그림 카드 낱말",
+    "explain": "틀리기 쉬운 낱말의 표기를 살펴봐요.",
+    "match": "word"
   }
 ];
