@@ -346,6 +346,7 @@ function consumeFood(index,mult=1,why='mouth'){
   const f=foods[index],p=state.player;
   const base=f.type==='meat'?9:f.type==='nutrient'?6:4;
   p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.11*mult;state.score+=base*mult;p.feedFlash=.8;
+  state.discovered.firstFood=1;
   foods.splice(index,1);spawnFood();
   burst(f.x,f.y,f.type==='meat'?'#ff8eb0':'#b9ef78');
   if(why==='filter'&&!state.discovered.filter){state.discovered.filter=1;toast('여과섭식 성공! 작은 입자를 걸러 먹었어요.')}
@@ -456,6 +457,7 @@ function updateCreatures(dt){
       state.dna+=2.4;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
       burst(c.x,c.y,'#ff78a4');
       respawnCreature(c,idx%6);
+      state.discovered.firstPrey=1;
       if(!state.discovered.predator){state.discovered.predator=1;toast('포식 성공! 작은 생물은 먹이가 되고, 큰 포식자는 반대로 나를 노립니다.')}
     }
     if(c.age>72){c.age=0;c.traits=mutateTraits(c.traits,.08)}
@@ -785,6 +787,30 @@ function updateLightSensor(){
     }
   }
 }
+function updateStarterGuide(){
+  const box=$('starterGuide');if(!box||!state.player)return;
+  const step=$('starterStep'),title=$('starterTitle'),textEl=$('starterText'),hint=$('starterHint');
+  const grow=Math.round(reproductionProgress()*100);
+  box.classList.remove('done');
+  if(!state.discovered.firstFood){
+    step.textContent='1';title.textContent='반짝이는 먹이부터 먹어 보세요';
+    textEl.textContent='WASD·방향키·마우스로 움직여 초록·노랑 점에 닿으세요. 가운데의 “나”가 내 세포예요.';
+    hint.textContent='화면의 초록 테두리 작은 생물도 먹을 수 있고, 붉은 ! 표시는 피해야 해요.';
+  }else if(!canReproduce()){
+    step.textContent='2';title.textContent='먹으면서 성장하세요 · '+grow+'%';
+    textEl.textContent='먹이를 계속 먹거나, 나보다 작은 초록 테두리 생물을 앞쪽 입으로 쫓아가세요.';
+    hint.textContent='DNA는 즉시 쓰는 점수가 아니라 번식할 때 새로운 기관을 다는 재료예요.';
+  }else if(state.generation===1){
+    step.textContent='3';title.textContent='번식 준비 완료!';
+    textEl.textContent='아래에서 빛나는 “번식 · 진화” 버튼을 눌러 다음 세대의 몸을 설계하세요.';
+    hint.textContent='편모·감각기관·방어기관을 고르면 다음 세대의 생활 방식이 달라져요.';
+  }else{
+    step.textContent='✓';title.textContent=state.generation+'세대 생존 중';
+    textEl.textContent='먹기 → 성장 → 번식 · 진화를 반복하며 환경 변화에 맞춰 계통을 이어가세요.';
+    hint.textContent='작은 생물은 먹이, 큰 포식자는 위험. 환경에 따라 유리한 기관이 달라집니다.';
+    box.classList.add('done');
+  }
+}
 function refreshHud(force){
   if(!state.player)return;
   const grow=Math.round(reproductionProgress()*100),req=reproductionRequirement(),ready=canReproduce();
@@ -793,12 +819,23 @@ function refreshHud(force){
   const n=classifyNiche();$('nicheName').textContent=n.name;$('nicheDesc').textContent=n.desc;
   const m=missionText();$('missionTitle').textContent=m[0];$('missionDesc').textContent=m[1];
   const btn=$('editorBtn');if(btn){btn.classList.toggle('ready',ready);$('editorBtnLabel').textContent=ready?'번식 · 진화':'성장 중';$('editorBtnSub').textContent=ready?'다음 세대 만들기':'생체량 '+Math.floor(state.player.biomass)+'/'+req+' · 에너지 78+'}
+  updateStarterGuide();
   if(force){refreshEnvBars();updateLightSensor();}
 }
 function updateSenseOverlay(){
   const el=$('senseOverlay');if(!state.player){el.innerHTML='';return}
   updateLightSensor();
   let html='',p=state.player,range=movementStats(p).sense;
+  if(!state.discovered.firstFood){
+    let target=null,bd=Infinity;
+    for(const f of foods){const d=dist2(p,f);if(d<bd){bd=d;target=f}}
+    if(target){
+      const dx=wrappedDelta(target.x,p.x,WORLD.w),dy=wrappedDelta(target.y,p.y,WORLD.h),a=Math.atan2(dy,dx);
+      const lx=viewW/2+Math.cos(a)*100,ly=viewH/2+Math.sin(a)*100;
+      html+='<div class="sense-arrow" style="width:88px;height:5px;transform:translate(-4px,-2px) rotate('+a+'rad);background:linear-gradient(90deg,rgba(185,239,120,.98),transparent)"></div>';
+      html+='<span class="sense-label" style="left:'+lx+'px;top:'+ly+'px;color:#eaffad;border-color:rgba(185,239,120,.4)">첫 먹이</span>';
+    }
+  }
   if(countPart('chemo')){
     let target=null,bd=Infinity;for(const f of foods){const d=dist2(p,f);if(d<bd){bd=d;target=f}}
     if(target&&Math.sqrt(bd)<range*2.1){const a=Math.atan2(target.y-p.y,target.x-p.x);html+='<div class="sense-arrow" style="transform:translate(-4px,-2px) rotate('+a+'rad);background:linear-gradient(90deg,rgba(168,237,123,.9),transparent)"></div>'}
