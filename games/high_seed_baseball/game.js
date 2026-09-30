@@ -321,7 +321,7 @@ function startPitching(){
 }
 function beginThrow(){if(state!=='pitching'||pitch)return;throwHold=0;chargeActive=true}
 function releaseThrow(){
- if(state!=='pitching'||pitch||!chargeActive)return;chargeActive=false;hideCharge();lessonThrown=true;updateLesson();
+ if(state!=='pitching'||pitch||!chargeActive)return;chargeActive=false;hideCharge();lessonThrown=true;lessonPitchSelected=true;lessonAimSelected=true;updateLesson();
  const charge=clamp(throwHold/1.05,0,1),accuracy=clamp(1-Math.abs(charge-.72)/.72,0,1),err=cfg().error*(1-accuracy),prof=pitchProfile(selectedPitch);
  const ax=pitchAim.x+rand(-err,err),ay=pitchAim.y+rand(-err,err);
  pitch={owner:'user',type:selectedPitch,t:0,duration:(1.05/prof.speed)/cfg().pitchSpeed,target:{...pitchAim},actual:{x:ax,y:ay},breakX:prof.breakX,breakY:prof.breakY,accuracy,swung:false,cpuDecision:null};sound('pitch',.8+prof.speed*.16);
