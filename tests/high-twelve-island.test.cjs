@@ -17,13 +17,13 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=4/);
+  assert.match(html, /sim.js\?v=5/);
   assert.match(html, /art.js\?v=2/);
-  assert.match(html, /game.js\?v=4/);
+  assert.match(html, /game.js\?v=5/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
-  assert.ok(entry.href.endsWith("?v=4"));
+  assert.ok(entry.href.endsWith("?v=5"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -435,4 +435,82 @@ test('v4 UI shows continuing effects, deadlines, personal votes and dynamic even
   assert.match(js, /S\.policyEffect\(id, option.id\)/);
   assert.match(js, /vote\.members/);
   assert.match(js, /typeof event\.body === "function"/);
+});
+
+
+test('law routes unlock exclusive active operations with costs and waiting periods', () => {
+  const equal = S.initial(1);
+  S.enact(equal, 'ration', 'equal');
+  assert.ok(S.availableActions(equal).some(a => a.id === 'communalMeal' && a.enabled));
+  assert.ok(!S.availableActions(equal).some(a => a.id === 'focusedHarvest'));
+  const beforeFood = equal.food, beforeTrust = equal.trust;
+  assert.equal(S.performAction(equal, 'communalMeal').ok, true);
+  assert.equal(equal.food, beforeFood - 12);
+  assert.equal(equal.trust, beforeTrust + 4);
+  assert.equal(S.performAction(equal, 'communalMeal').ok, false);
+
+  const effort = S.initial(2);
+  S.enact(effort, 'ration', 'effort');
+  const before = S.rates(effort).gather;
+  assert.ok(!S.availableActions(effort).some(a => a.id === 'communalMeal'));
+  assert.equal(S.performAction(effort, 'focusedHarvest').ok, true);
+  assert.ok(effort.boostUntil > effort.tick);
+  assert.ok(S.rates(effort).gather > before);
+  assert.ok(effort.workStrain > 0);
+
+  const needs = S.initial(3);
+  S.enact(needs, 'ration', 'needs');
+  const wood = needs.wood;
+  assert.equal(S.performAction(needs, 'supportReview').ok, true);
+  assert.equal(needs.wood, wood - 7);
+  assert.ok(needs.decisions.some(x => x.title.includes('추가 지원 현황 확인')));
+});
+
+test('reserve food is actually saved and emergency withdrawal transfers rather than creates it', () => {
+  const s = S.initial(42);
+  S.enact(s, 'storage', 'reserve');
+  s.food = 110;
+  S.tick(s);
+  assert.ok(s.reserveFood > 0);
+  s.food = 18;
+  s.reserveFood = 16;
+  const before = s.food + s.reserveFood;
+  const action = S.availableActions(s).find(a => a.id === 'openReserve');
+  assert.ok(action && action.enabled);
+  assert.equal(S.performAction(s, 'openReserve').ok, true);
+  assert.equal(s.food + s.reserveFood, before);
+  assert.equal(s.reserveFood, 0);
+  assert.equal(S.performAction(s, 'openReserve').ok, false);
+});
+
+test('repealing the reserve law releases stored food and respects lower warehouse capacity', () => {
+  const s = S.initial(99);
+  S.enact(s, 'storage', 'reserve');
+  s.food = 90;
+  s.reserveFood = 20;
+  assert.equal(S.enact(s, 'storage', 'exchange').ok, true);
+  assert.equal(s.foodCap, 100);
+  assert.equal(s.food, 100);
+  assert.equal(s.reserveFood, 0);
+});
+
+test('extra-work recovery operation spends food and trades immediate output for lower strain', () => {
+  const s = S.initial(88);
+  S.enact(s, 'labor', 'extra');
+  s.workStrain = 5;
+  const before = S.rates(s).gather;
+  const food = s.food;
+  assert.equal(S.performAction(s, 'recoveryWeek').ok, true);
+  assert.equal(s.food, food - 8);
+  assert.ok(s.workStrain < 5);
+  assert.ok(S.rates(s).gather < before);
+  assert.ok(s.workReliefUntil > s.tick);
+});
+
+test('work screen displays unlocked management actions and emergency reserve status', () => {
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(js, /function operationCards/);
+  assert.match(js, /S\.availableActions\(state\)/);
+  assert.match(js, /S\.performAction\(state, operation\.dataset\.operation\)/);
+  assert.match(js, /state\.reserveFood/);
 });
