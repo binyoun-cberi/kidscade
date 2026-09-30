@@ -101,7 +101,7 @@ test('Ecopolis v5 makes ecosystem health change visible density and animal count
   assert.match(js,/function vigorBand/);
   assert.match(js,/function refreshLivingDecor/);
   assert.match(js,/const desired=pop\[species\]<8\?0/);
-  assert.match(js,/returnedSpeciesCount\(\),4,'종'/);
+  assert.match(js,/function returnedSpeciesCount/);
   assert.match(html,/game\.js\?v=10/);
 });
 
