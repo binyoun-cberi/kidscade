@@ -130,3 +130,10 @@ h1{margin:2px 0 8px;font-size:clamp(46px,7vw,78px);line-height:.9;letter-spacing
 .evolve-btn.ready{border-color:rgba(185,239,120,.65);box-shadow:0 0 0 3px rgba(185,239,120,.08),0 0 24px rgba(88,229,213,.22);background:linear-gradient(135deg,rgba(88,229,213,.35),rgba(185,239,120,.22))}
 .evolve-btn.ready:hover{transform:translateY(-2px)}
 .evolve-btn.ready small{color:#e8ffba}
+
+.starter-guide{position:absolute;z-index:13;left:50%;top:94px;transform:translateX(-50%);width:min(520px,calc(100% - 390px));min-width:320px;display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:16px;background:rgba(7,29,37,.94);border:1px solid rgba(185,239,120,.32);box-shadow:0 12px 36px rgba(0,0,0,.25);backdrop-filter:blur(14px);pointer-events:none}
+.starter-step{flex:0 0 auto;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(185,239,120,.16);border:1px solid rgba(185,239,120,.38);color:#eaffad;font-size:13px;font-weight:950}
+.starter-guide b{display:block;font-size:12px;color:#f3fff4}.starter-guide small{display:block;margin-top:3px;color:#c7dde0;font-size:9px;line-height:1.4}.starter-guide em{display:block;margin-top:5px;color:#d9ef9d;font-size:8px;line-height:1.35;font-style:normal}
+.starter-guide.done{border-color:rgba(88,229,213,.28);opacity:.72}
+@media(max-width:850px){.starter-guide{top:142px;width:min(460px,calc(100% - 180px));min-width:0}}
+@media(max-width:620px){.starter-guide{left:8px;right:8px;top:143px;transform:none;width:auto;padding:9px 10px}.starter-guide small{font-size:8px}.starter-guide em{font-size:7px}}
