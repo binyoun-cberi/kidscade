@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#061923">
+  <title>마이크로 에볼루션</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <section id="startScreen" class="screen start-screen">
+    <div class="start-shell">
+      <div class="hero-cell" aria-hidden="true">
+        <span class="nucleus"></span><span class="tail t1"></span><span class="tail t2"></span>
+        <span class="eye e1"></span><span class="eye e2"></span>
+      </div>
+      <p class="eyebrow">SCIENCE · EVOLUTION SANDBOX</p>
+      <h1>마이크로<br>에볼루션</h1>
+      <p class="lead">먹고, 느끼고, 움직이고, 살아남으며 <b>환경에 맞는 생명체</b>를 직접 진화시켜 보세요.</p>
+
+      <div class="mode-row">
+        <button id="randomStartBtn" class="primary huge" type="button">🎲 무작위 생태계에서 시작</button>
+        <button id="toggleBiomeBtn" class="secondary" type="button">🌍 환경 직접 선택</button>
+      </div>
+
+      <div id="biomePanel" class="biome-panel hidden">
+        <div class="panel-head">
+          <div><span class="kicker">생명의 터전</span><strong>어디에서 시작할까?</strong></div>
+          <button id="rerollBtn" class="round-btn" type="button" title="환경 다시 섞기">↻</button>
+        </div>
+        <div id="biomeGrid" class="biome-grid"></div>
+      </div>
+
+      <div class="concept-strip">
+        <div><span>👁️</span><b>감각</b><small>빛·화학·진동</small></div>
+        <div><span>〰️</span><b>이동</b><small>편모·섬모·위족</small></div>
+        <div><span>🧬</span><b>진화</b><small>DNA로 몸 편집</small></div>
+        <div><span>🌿</span><b>생태</b><small>환경에 따라 달라짐</small></div>
+      </div>
+      <button id="openTutorialBtn" class="text-button" type="button">게임 방법과 과학 개념 보기</button>
+    </div>
+  </section>
+
+  <section id="gameScreen" class="screen game-screen hidden">
+    <canvas id="world" aria-label="미생물 생태계"></canvas>
+
+    <header class="hud top-hud">
+      <button id="homeBtn" class="hud-btn" type="button" aria-label="처음 화면">⌂</button>
+      <div class="biome-badge">
+        <span id="biomeIcon">☀️</span>
+        <div><b id="biomeName">햇빛 연못</b><small id="generationText">1세대</small></div>
+      </div>
+      <div class="resources">
+        <div><span>🧬</span><b id="dnaText">0</b><small>DNA</small></div>
+        <div><span>⚡</span><b id="energyText">100</b><small>에너지</small></div>
+        <div><span>❤</span><b id="healthText">100</b><small>생명</small></div>
+      </div>
+    </header>
+
+    <aside class="hud env-hud">
+      <div class="env-title"><span>환경</span><button id="envInfoBtn" type="button">?</button></div>
+      <div id="envBars" class="env-bars"></div>
+    </aside>
+
+    <aside class="hud strategy-hud">
+      <span class="kicker">현재 생태적 지위</span>
+      <strong id="nicheName">초기 미생물</strong>
+      <small id="nicheDesc">아직 뚜렷한 생활 방식이 없어요.</small>
+    </aside>
+
+    <div id="senseOverlay" class="sense-overlay" aria-hidden="true"></div>
+    <div id="eventBanner" class="event-banner hidden"><span id="eventIcon">🌧️</span><div><b id="eventTitle"></b><small id="eventDesc"></small></div></div>
+
+    <div class="bottom-dock">
+      <div class="mission">
+        <span class="mission-dot"></span>
+        <div><b id="missionTitle">첫 DNA 모으기</b><small id="missionDesc">먹이를 먹어 DNA 8을 모아 보세요.</small></div>
+      </div>
+      <div class="dock-actions">
+        <button id="editorBtn" class="evolve-btn" type="button"><span>🧬</span><b>진화 편집</b><small>몸을 바꾸기</small></button>
+        <button id="pulseBtn" class="action-btn" type="button"><span>💥</span><b>특수 행동</b><small id="pulseLabel">회피 분출</small></button>
+        <button id="pauseBtn" class="action-btn" type="button"><span>Ⅱ</span><b>일시정지</b><small>생태계 멈춤</small></button>
+      </div>
+    </div>
+
+    <div id="joystick" class="joystick" aria-label="이동 조이스틱">
+      <div id="stick" class="stick"></div>
+    </div>
+    <div class="key-tip">WASD / 방향키 · 마우스 방향 이동 · E 진화</div>
+  </section>
+
+  <section id="editorScreen" class="screen editor-screen hidden" aria-modal="true">
+    <div class="editor-top">
+      <button id="editorCloseBtn" class="hud-btn" type="button">‹</button>
+      <div><span class="kicker">DNA 편집기</span><h2>내 세포를 진화시키기</h2></div>
+      <div class="editor-dna">🧬 <b id="editorDnaText">0</b></div>
+    </div>
+
+    <div class="editor-layout">
+      <div class="cell-workbench">
+        <div class="preview-title"><b>몸 설계</b><small>부품을 고른 뒤 둘레의 슬롯을 누르세요.</small></div>
+        <div id="cellEditor" class="cell-editor" aria-label="세포 부품 배치 편집기">
+          <canvas id="editorCanvas" width="520" height="520"></canvas>
+          <div id="slotLayer" class="slot-layer"></div>
+        </div>
+        <div id="placementTip" class="placement-tip">부품을 선택하면 배치 가능한 위치가 빛나요.</div>
+        <div class="trait-summary">
+          <div><span>속도</span><b id="traitSpeed">1.0</b></div>
+          <div><span>회전</span><b id="traitTurn">1.0</b></div>
+          <div><span>감지</span><b id="traitSense">1.0</b></div>
+          <div><span>방어</span><b id="traitArmor">1.0</b></div>
+        </div>
+      </div>
+
+      <div class="parts-panel">
+        <div class="part-tabs" id="partTabs"></div>
+        <div id="partList" class="part-list"></div>
+        <div id="scienceCard" class="science-card">
+          <span class="kicker">과학 노트</span>
+          <b>부품을 골라 보세요</b>
+          <p>기관마다 실제 생물에서 하는 일이 달라요.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-bottom">
+      <button id="undoEvolutionBtn" class="secondary" type="button">↶ 이번 편집 되돌리기</button>
+      <button id="finishEvolutionBtn" class="primary" type="button">이 모습으로 생존하기</button>
+    </div>
+  </section>
+
+  <section id="tutorial" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal wide">
+      <button id="tutorialCloseBtn" class="modal-close" type="button">×</button>
+      <p class="eyebrow">HOW TO SURVIVE</p>
+      <h2>좋은 진화는 환경이 정한다</h2>
+      <div class="tutorial-grid">
+        <article><span>1</span><b>환경을 읽기</b><p>빛·온도·산소·염도·먹이·물살이 서로 달라요. 모든 곳에서 최고인 몸은 없습니다.</p></article>
+        <article><span>2</span><b>먹고 DNA 모으기</b><p>먹이, 광합성, 사냥, 여과섭식 등 자신의 몸에 맞는 방법으로 에너지를 얻어요.</p></article>
+        <article><span>3</span><b>몸을 직접 설계</b><p>편모의 위치는 추진 방향에 영향을 주고, 섬모는 회전을 돕습니다. 감각기관은 세상을 알아차리는 범위를 넓혀요.</p></article>
+        <article><span>4</span><b>세대가 바뀌기</b><p>환경 사건과 경쟁 때문에 유리한 형질이 계속 달라집니다. AI 종도 살아남은 방향으로 변이해요.</p></article>
+      </div>
+      <div class="sense-legend">
+        <div><b>👁 광수용기</b><small>밝은 방향을 감지</small></div>
+        <div><b>👃 화학수용체</b><small>먹이·독·생물의 화학 신호 감지</small></div>
+        <div><b>👂 기계수용체</b><small>물의 진동과 접근하는 생물 감지</small></div>
+        <div><b>✋ 촉각섬모</b><small>아주 가까운 접촉과 흐름 감지</small></div>
+      </div>
+      <button id="tutorialPlayBtn" class="primary" type="button">무작위 생태계로 시작</button>
+    </div>
+  </section>
+
+  <section id="infoModal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal">
+      <button id="infoCloseBtn" class="modal-close" type="button">×</button>
+      <p class="eyebrow">ENVIRONMENT</p>
+      <h2 id="infoTitle">환경 읽는 법</h2>
+      <div id="infoBody" class="info-body"></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_micro_evolution" data-title="마이크로 에볼루션" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>
