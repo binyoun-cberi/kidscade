@@ -64,6 +64,7 @@ const MANUAL_RULES = [
  ['됬','됐','‘되었다’가 줄어 ‘됐다/됐어요’가 돼요.'],
  ['안되','안 되','‘안 되다’는 보통 띄어 써요.'],
  ['않되','안 되','‘않다’가 아니라 ‘안 되다’를 써요.'],
+ ['안되요','안 돼요','‘안’과 ‘돼요’를 바르게 쓰면 ‘안 돼요’예요.'],
  ['않가','안 가','‘가지 않다’는 ‘안 가다’처럼 쓸 수 있어요.'],
  ['않해','안 해','‘하지 않다’는 ‘안 하다/안 해’로 쓸 수 있어요.'],
  ['어떻해','어떡해','‘어떻게 해’가 줄어든 말은 ‘어떡해’예요.'],
@@ -112,7 +113,6 @@ const SPOKEN_ERRORS=[
  ['머거써요','먹었어요','소리대로 쓰지 않고 ‘먹었어요’라고 써요.'],
  ['마싯게','맛있게','‘맛있게’가 바른 표기예요.'],
  ['마싯께','맛있게','‘맛있게’가 바른 표기예요.'],
- ['마시께','맛있게','‘맛있게’가 바른 표기예요.'],
  ['마싯어요','맛있어요','‘맛있어요’가 바른 표기예요.'],
  ['마시써요','맛있어요','‘맛있어요’가 바른 표기예요.'],
  ['안자요','앉아요','‘앉아요’가 바른 표기예요.'],
@@ -131,7 +131,9 @@ const SPOKEN_ERRORS=[
  ['써써요','썼어요','‘썼어요’가 바른 표기예요.'],
  ['봐써요','봤어요','‘봤어요’가 바른 표기예요.']
 ];
+const CONTEXTUAL_WORDS=new Set(['낳았어요','맞췄어요','바래요','안되']);
 const CHECK_WORDS=[
+ {bad:'마시께',good:'맛있게 / 마실게',explain:'‘맛있게’인지 ‘마실게’인지 말하려는 뜻을 확인해 보세요.'},
  {bad:'말인게',good:'말인데 / 말인 게 / 맛있게',explain:'무슨 뜻인지 확인해 보세요. 말하려는 뜻에 따라 다르게 쓸 수 있어요.'},
  {bad:'맛인게',good:'맛있는 게 / 맛있게',explain:'어떤 뜻으로 썼는지 살펴보세요.'}
 ];
@@ -206,7 +208,7 @@ function buildSpellRules(){
     if(!/[가-힣]/.test(bad)||!/[가-힣]/.test(good))return;
     if(!map.has(bad))map.set(bad,{bad,good,explain:explain||'표기를 한 번 살펴보세요.'});
   };
-  MANUAL_RULES.forEach(([b,g,e])=>{if(b!==g)add(b,g,e)});
+  MANUAL_RULES.forEach(([b,g,e])=>{if(b!==g&&!CONTEXTUAL_WORDS.has(b))add(b,g,e)});
   SPOKEN_ERRORS.forEach(([b,g,e])=>add(b,g,e));
   const spokenMap=new Map();
   PHONETIC_WORDS.forEach(g=>{
@@ -218,16 +220,23 @@ function buildSpellRules(){
   spokenMap.forEach((corrects,b)=>{
     if(corrects.size===1&&!PHONETIC_EXCLUSIONS.has(b))add(b,[...corrects][0],'소리 나는 대로 쓰지 않고 원래 낱말의 형태를 살려 써요.');
   });
+  const correctForms=new Set();
   (window.KIDSCADE_SPELLING_EXTRA||[]).forEach(q=>{
+    String(q.c||'').split(/\\s+/).forEach(token=>correctForms.add(cleanToken(token)));
+    const match=String(q.c||'').match(/‘([^’]+)’/);
+    if(match)correctForms.add(match[1]);
+  });
+  (window.KIDSCADE_SPELLING_EXTRA||[]).forEach(q=>{
+    if(q.category==='뜻이 다른 말')return;
     const cq=String(q.c||'').match(/‘([^’]+)’/);
     const wq=String(q.w||'').match(/‘([^’]+)’/);
-    if(cq&&wq&&cq[1]!==wq[1]) add(wq[1],cq[1],q.explain);
+    if(cq&&wq&&cq[1]!==wq[1]&&!correctForms.has(wq[1])) add(wq[1],cq[1],q.explain);
     const cTokens=String(q.c||'').split(/\s+/);
     const wTokens=String(q.w||'').split(/\s+/);
     if(cTokens.length===wTokens.length){
       for(let i=0;i<cTokens.length;i++){
         const c=cleanToken(cTokens[i]),w=cleanToken(wTokens[i]);
-        if(c&&w&&c!==w) add(w,c,q.explain);
+        if(c&&w&&c!==w&&!correctForms.has(w)) add(w,c,q.explain);
       }
     }
   });
