@@ -2,106 +2,127 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>내 몸아 움직여! 근육 복싱</title>
-<link rel="stylesheet" href="style.css?v=6">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>내 몸아 움직여! · 슬로모션 근육 전투</title>
+<link rel="stylesheet" href="style.css?v=7">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
 <div id="app">
-  <header class="fight-bar">
-    <div class="fighter-status player-status">
-      <span>나</span>
-      <i><b id="playerHp"></b></i>
-      <strong id="playerHpText">100</strong>
+  <header class="topbar">
+    <div class="fighter player">
+      <span>나</span><div class="hp"><i id="playerHp"></i></div><b id="playerHpText">100</b>
     </div>
-    <div class="round-status">
-      <small id="roundLabel">1라운드</small>
-      <b id="timer">45</b>
-      <span id="fightState">상완이두근으로 팔을 접어 가드하세요</span>
+    <div class="centerHud">
+      <small id="stageLabel">1 · 팔의 길항근</small>
+      <strong id="timeState">세계 정지</strong>
+      <span id="timeScale">0%</span>
     </div>
-    <div class="fighter-status enemy-status">
-      <strong id="enemyHpText">100</strong>
-      <i><b id="enemyHp"></b></i>
-      <span>상대</span>
+    <div class="fighter enemy">
+      <b id="enemyHpText">70</b><div class="hp"><i id="enemyHp"></i></div><span id="enemyName">기본 복서</span>
     </div>
-    <button id="helpBtn" class="icon-btn" type="button" aria-label="도움말">?</button>
+    <button id="helpBtn" class="roundBtn" type="button" aria-label="도움말">?</button>
   </header>
 
-  <main class="game-layout">
-    <section class="play-stage">
-      <div class="canvas-wrap">
-        <video id="cameraPreview" class="camera-preview hidden" autoplay muted playsinline aria-label="몸 인식 카메라 미리보기"></video>\n        <canvas id="game" width="960" height="560" aria-label="상완이두근과 상완삼두근을 직접 수축시켜 복싱하는 과학 게임"></canvas>
-        <button id="xrayBtn" class="xray-fab" type="button" aria-pressed="false" aria-label="근육과 뼈 보기">🩻</button>
-        <div id="cue" class="cue" aria-live="polite">팔을 접으면 자동 가드 · 팔을 빠르게 펴서 닿으면 펀치!</div>
-        <div id="toast" class="toast" aria-live="polite"></div>
-        <div id="combo" class="combo hidden"><b id="comboCount">2</b> 연속 적중!</div>
+  <main class="layout">
+    <section class="stage">
+      <canvas id="game" aria-label="근육을 수축시켜 3D 몸을 움직이고 공격을 피하거나 막는 과학 액션 게임"></canvas>
 
-        <div id="resultCard" class="result-card hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
-          <div id="resultIcon" class="result-icon">🥊</div>
-          <h2 id="resultTitle">라운드 종료</h2>
-          <p id="resultText"></p>
-          <div class="science-note">
-            <b id="scienceTitle">근육 포인트</b>
-            <p id="scienceText"></p>
-          </div>
-          <button id="nextBtn" class="primary" type="button">다음 라운드</button>
+      <div id="incoming" class="incoming">
+        <small>상대 움직임</small>
+        <b id="incomingTitle">오른손 스트레이트</b>
+        <span id="incomingHint">팔을 굽혀 막거나 몸을 피하세요.</span>
+      </div>
+
+      <div class="stageActions">
+        <button id="xrayBtn" class="roundBtn xray on" type="button" aria-pressed="true" title="근육·뼈 보기">🩻</button>
+        <button id="resetBtn" class="roundBtn" type="button" title="현재 상대 다시 시작">↻</button>
+      </div>
+
+      <div id="coach" class="coach" aria-live="polite">Q/E로 팔을 먼저 굽혀 보세요. 몸이 움직이는 동안에만 상대도 움직입니다.</div>
+      <div id="impact" class="impact" aria-live="polite"></div>
+
+      <div id="resultCard" class="result hidden" role="dialog" aria-modal="true">
+        <div id="resultIcon" class="resultIcon">🥊</div>
+        <h2 id="resultTitle">상대 제압!</h2>
+        <p id="resultText"></p>
+        <div class="science">
+          <b>이번에 몸에서 일어난 일</b>
+          <p id="scienceText"></p>
         </div>
+        <button id="nextBtn" class="primary" type="button">다음 상대</button>
       </div>
     </section>
 
-    <aside class="controls-panel">
-      <div class="input-mode-panel">
-        <div class="mode-buttons" role="group" aria-label="조작 방식">
-          <button id="manualModeBtn" class="mode-btn active" type="button">⌨️ 키·터치</button>
-          <button id="cameraModeBtn" class="mode-btn" type="button">📷 몸으로</button>
-        </div>
-        <span id="cameraStatus" class="camera-status">키보드 · 터치</span>
-      </div>
-      <div id="muscleCoach" class="muscle-coach" aria-live="polite">Q/W/E/R 또는 화면 버튼으로 근육을 직접 수축시키세요.</div>
-      <div class="muscle-group">
-        <div class="group-title"><b>왼팔</b><span id="leftState">가드</span></div>
-        <button class="muscle-key flexor" data-key="q" type="button">
-          <kbd>Q</kbd><b>상완이두근</b><small>수축 → 팔꿈치 굽힘</small><i><span></span></i>
-        </button>
-        <button class="muscle-key extensor" data-key="w" type="button">
-          <kbd>W</kbd><b>상완삼두근</b><small>수축 → 팔꿈치 폄</small><i><span></span></i>
-        </button>
+    <aside class="musclePanel">
+      <div class="panelHead">
+        <div><small>BODY CONTROL</small><b>근육을 눌러 수축</b></div>
+        <span>놓으면 이완</span>
       </div>
 
-      <div class="muscle-group">
-        <div class="group-title"><b>오른팔</b><span id="rightState">가드</span></div>
-        <button class="muscle-key flexor" data-key="e" type="button">
-          <kbd>E</kbd><b>상완이두근</b><small>수축 → 팔꿈치 굽힘</small><i><span></span></i>
+      <section class="muscleSection">
+        <div class="sectionTitle"><b>왼팔</b><span id="leftArmState">중립</span></div>
+        <button class="muscle biceps" data-muscle="leftBiceps" data-key="q" data-unlock="0" type="button">
+          <kbd>Q</kbd><span><b>상완이두근</b><small>팔꿈치를 굽힘 · 가드</small></span><i><em></em></i>
         </button>
-        <button class="muscle-key extensor" data-key="r" type="button">
-          <kbd>R</kbd><b>상완삼두근</b><small>수축 → 팔꿈치 폄</small><i><span></span></i>
+        <button class="muscle triceps" data-muscle="leftTriceps" data-key="w" data-unlock="0" type="button">
+          <kbd>W</kbd><span><b>상완삼두근</b><small>팔꿈치를 폄 · 공격</small></span><i><em></em></i>
         </button>
-      </div>
-      <button id="resetBtn" class="reset-compact" type="button">↻ 경기 다시 시작</button>
+      </section>
+
+      <section class="muscleSection">
+        <div class="sectionTitle"><b>오른팔</b><span id="rightArmState">중립</span></div>
+        <button class="muscle biceps" data-muscle="rightBiceps" data-key="e" data-unlock="0" type="button">
+          <kbd>E</kbd><span><b>상완이두근</b><small>팔꿈치를 굽힘 · 가드</small></span><i><em></em></i>
+        </button>
+        <button class="muscle triceps" data-muscle="rightTriceps" data-key="r" data-unlock="0" type="button">
+          <kbd>R</kbd><span><b>상완삼두근</b><small>팔꿈치를 폄 · 공격</small></span><i><em></em></i>
+        </button>
+      </section>
+
+      <section class="muscleSection coreSection">
+        <div class="sectionTitle"><b>몸통</b><span id="coreLock">2단계 해금</span></div>
+        <div class="twoCol">
+          <button class="muscle core locked" data-muscle="leftOblique" data-key="a" data-unlock="1" type="button">
+            <kbd>A</kbd><span><b>왼쪽 복사근</b><small>몸통 기울이기</small></span><i><em></em></i>
+          </button>
+          <button class="muscle core locked" data-muscle="rightOblique" data-key="d" data-unlock="1" type="button">
+            <kbd>D</kbd><span><b>오른쪽 복사근</b><small>몸통 기울이기</small></span><i><em></em></i>
+          </button>
+        </div>
+        <button class="muscle abs locked" data-muscle="abs" data-key="s" data-unlock="1" type="button">
+          <kbd>S</kbd><span><b>복근</b><small>몸을 낮춰 덕킹</small></span><i><em></em></i>
+        </button>
+      </section>
+
+      <section class="muscleSection legSection">
+        <div class="sectionTitle"><b>다리</b><span id="legLock">3단계 해금</span></div>
+        <button class="muscle legs locked" data-muscle="legs" data-key="f" data-unlock="2" type="button">
+          <kbd>F</kbd><span><b>대퇴사두근 · 둔근</b><small>다리를 펴며 몸을 밀어 공격 강화</small></span><i><em></em></i>
+        </button>
+      </section>
+
+      <p class="tinyNote">근육이 수축된 채 자세가 멈추면 세계도 멈춥니다. 이 게임은 주요 근육 작용을 이해하기 위한 단순화된 인체 모델입니다.</p>
     </aside>
   </main>
 </div>
 
 <div id="tutorial" class="overlay hidden">
   <div class="dialog">
-    <span class="eyebrow">근육을 직접 움직이는 복싱</span>
-    <h1>펀치 버튼은 없어요</h1>
-    <div class="tutorial-muscles">
-      <div><kbd>Q</kbd><b>왼팔 상완이두근</b><span>팔을 굽혀 가드</span></div>
-      <div><kbd>W</kbd><b>왼팔 상완삼두근</b><span>팔을 펴서 공격</span></div>
-      <div><kbd>E</kbd><b>오른팔 상완이두근</b><span>팔을 굽혀 가드</span></div>
-      <div><kbd>R</kbd><b>오른팔 상완삼두근</b><span>팔을 펴서 공격</span></div>
+    <small class="eyebrow">3D SLOW BODY LAB</small>
+    <h1>내 몸이 움직일 때만<br>세계도 움직여요</h1>
+    <div class="ruleGrid">
+      <div><b>① 근육을 누르기</b><span>누르는 동안 수축, 놓으면 이완</span></div>
+      <div><b>② 몸의 변화를 보기</b><span>관절이 움직이는 만큼만 시간이 흐름</span></div>
+      <div><b>③ 막기 · 피하기</b><span>이두근으로 가드, 복사근·복근으로 회피</span></div>
+      <div><b>④ 카운터</b><span>가드나 회피 뒤 삼두근을 수축해 반격</span></div>
     </div>
-    <p>
-      상대 주먹이 닿는 순간 그쪽 팔이 충분히 굽혀져 있으면 <strong>자동으로 가드</strong>해요.
-      팔을 먼저 접었다가 상완삼두근을 수축해 <strong>빠르게 쭉 펴서</strong> 상대에게 닿으면 펀치가 됩니다.
-      이 게임은 팔꿈치 굽힘·폄에 집중한 단순화된 모델이며, 실제 복싱에서는 어깨·가슴·몸통·다리 근육도 함께 사용합니다.
-    </p>
-    <button id="tutorialStart" class="primary wide" type="button">링에 올라가기</button>
+    <p>처음에는 <strong>상완이두근과 상완삼두근</strong>만 사용합니다. 다음 상대부터 몸통과 다리가 하나씩 열립니다. 이두근과 삼두근을 동시에 강하게 수축하면 팔이 단단해지지만 빠르게 움직이기 어려워집니다.</p>
+    <button id="tutorialStart" class="primary" type="button">첫 상대 시작</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="game.js?v=6"></script>
+<script type="module" src="game.js?v=7"></script>
 </body>
 </html>
