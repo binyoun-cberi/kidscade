@@ -326,7 +326,7 @@
     return true;
   }
   function assign(s, job, delta) {
-    if (s.pending || !["gather", "wood"].includes(job) || ![-1, 1].includes(delta)) return false;
+    if (s.pending || s.ended || !["gather", "wood"].includes(job) || ![-1, 1].includes(delta)) return false;
     if (delta > 0 && unused(s) === 0) return false;
     if (delta < 0 && s.jobs[job] <= 0) return false;
     s.jobs[job] += delta;
