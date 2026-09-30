@@ -248,7 +248,10 @@
     if (choice.cost && Object.entries(choice.cost).some(([k, v]) => s[k] < v)) return { ok: false, reason: "필요한 자원이 부족합니다." };
     if (choice.cost) Object.entries(choice.cost).forEach(([k, v]) => { s[k] -= v; });
     if (choice.law) {
-      const r = enact({ ...s, pending: null, laws: s.laws, passed: s.passed, log: s.log }, choice.law[0], choice.law[1]);
+      const previousPending = s.pending;
+      s.pending = null;
+      const r = enact(s, choice.law[0], choice.law[1]);
+      s.pending = previousPending;
       if (!r.ok) return r;
     }
     effect(s, choice.changes);
