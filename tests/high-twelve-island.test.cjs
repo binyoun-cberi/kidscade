@@ -61,9 +61,10 @@ test('resource costs are enforced and insufficient resource options cannot be se
   const failure = S.resolveEvent(s, 0);
   assert.equal(failure.ok, false);
   assert.equal(s.pending, 'emergency');
+  const woodAfterTick = s.wood;
   assert.equal(S.resolveEvent(s, 2).ok, true);
   assert.ok(s.food > 0);
-  assert.equal(s.wood, 0);
+  assert.equal(s.wood, woodAfterTick, "rescue cannot conjure or spend additional wood");
 });
 
 test('buildings and lasting laws change the simulator calculation', () => {
