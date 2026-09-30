@@ -49,6 +49,16 @@ function height(x,z){
  if(Math.hypot(x,z)>13&&Math.abs(z-river)<1.5&&kind!=='badlands')h=Math.min(h,-1);
  return Math.max(-3,Math.min(10,Math.floor(h)));
 }
+const BIOME_REWARDS={
+ meadow:{resource:'log',hint:'거점을 짓고 도구를 제작하기 좋은 안전한 출발 지역'},
+ forest:{resource:'log',hint:'나무가 풍부하고 첫 설계도 조각이 숨겨져 있어요.'},
+ pine:{resource:'pineLog',hint:'짙은 소나무를 채집하면 원목을 얻을 수 있어요.'},
+ snow:{resource:'snow',hint:'눈 블록과 설계도 조각을 찾아보세요.'},
+ desert:{resource:'cactus',hint:'선인장과 모래를 모아 새로운 건축 재료를 만들어요.'},
+ badlands:{resource:'redSand',hint:'붉은 모래와 협곡의 설계도 조각을 발견해 보세요.'},
+ marsh:{resource:'reed',hint:'갈대와 점토를 모아 특별한 장식 재료를 만들어요.'},
+ flowers:{resource:'flower',hint:'꽃으로 색 안료를 제작해 직육면체를 꾸며 보세요.'}
+};
 const RECIPES=[
  {id:'planks',name:'나무 판자 ×4',needs:{log:1},gives:{planks:4},stage:0},
  {id:'sticks',name:'막대 ×4',needs:{planks:1},gives:{sticks:4},stage:1},
@@ -59,17 +69,55 @@ const RECIPES=[
  {id:'torch',name:'횃불 ×4',needs:{charcoal:1,sticks:1},gives:{torch:4},stage:5,bench:true},
  {id:'door',name:'나무문',needs:{planks:4},gives:{door:1},stage:3,bench:true},
  {id:'glassPane',name:'유리판 ×2',needs:{glass:2},gives:{glassPane:2},stage:5,bench:true},
- {id:'ironPick',name:'철 곡괭이',needs:{ironBlock:3,sticks:2},gives:{ironPick:1},stage:6,bench:true}
+ {id:'ironPick',name:'철 곡괭이',needs:{ironBlock:3,sticks:2},gives:{ironPick:1},stage:7,bench:true},
+ {id:'roof',name:'경사지붕 ×2',needs:{planks:3},gives:{roof:2},stage:3,bench:true},
+ {id:'stairs',name:'계단 ×2',needs:{planks:3},gives:{stairs:2},stage:3,bench:true},
+ {id:'slab',name:'반블록 ×4',needs:{planks:2},gives:{slab:4},stage:3,bench:true},
+ {id:'flowerDye',name:'꽃 안료 ×2',needs:{flower:2},gives:{flowerDye:2},stage:5},
+ {id:'reedMat',name:'갈대 장식 ×2',needs:{reed:3},gives:{reedMat:2},stage:5,bench:true},
+ {id:'sandstone',name:'사암 ×2',needs:{sand:4},gives:{sandstone:2},stage:5,bench:true},
+ {id:'snowBrick',name:'눈 벽돌 ×2',needs:{snow:4},gives:{snowBrick:2},stage:5},
+ {id:'cactusDye',name:'선인장 안료 ×2',needs:{cactus:2},gives:{cactusDye:2},stage:5,bench:true},
+ {id:'windowFrame',name:'창문틀 ×2',needs:{planks:3,glass:1},gives:{windowFrame:2},stage:7,bench:true}
 ];
 const GOALS=[
- {title:'첫날 · 나무 3개 채집',description:'근처 나무를 바라보고 파괴해 원목을 모으세요.',test:bag=>(bag.log||0)>=3||(bag.planks||0)>=4||(bag.workbench||0)>=1},
- {title:'판자 제작',description:'E → 제작에서 원목을 나무 판자로 바꿔 보세요.',test:bag=>(bag.planks||0)>=4||(bag.workbench||0)>=1},
- {title:'제작대 만들기',description:'판자 4개로 제작대를 만들면 도구 제작이 열려요.',test:bag=>(bag.workbench||0)>=1},
- {title:'나무 곡괭이',description:'판자와 막대로 곡괭이를 만들면 돌을 캘 수 있어요.',test:bag=>(bag.woodPick||0)>=1},
- {title:'돌과 새로운 바이옴',description:'돌 8개를 모아 화로를 만들고 다른 지역도 가 보세요.',test:bag=>(bag.furnace||0)>=1},
- {title:'화로와 물질 변화',description:'모래를 유리로 가공하거나 철광석을 제련해 보세요.',test:bag=>(bag.glass||0)>=1||(bag.ironBlock||0)>=1},
- {title:'나만의 기하학 건축',description:'정육면체·직육면체를 짓고 여섯 면을 색칠해 보세요.',test:()=>false}
+ {title:'첫날 · 원목 3개 채집',description:'나무를 파괴해 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
+ {title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
+ {title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
+ {title:'나무 곡괭이',description:'막대를 만들고 제작대 근처에서 나무 곡괭이를 제작하세요.',need:1,progress:s=>s.crafted?.woodPick||0},
+ {title:'첫 거점 만들기',description:'흙이나 판자 등 블록 6개를 설치해 비와 밤을 피할 거점을 만드세요.',need:6,progress:s=>s.placedBlocks||0},
+ {title:'돌과 새로운 지역',description:'돌 8개를 캐고 출발 초원 이외의 바이옴을 발견하세요.',need:2,
+  progress:s=>Number((s.harvestedStone||0)>=8)+Number((s.biomes||[]).some(b=>b!=='meadow'))},
+ {title:'화로 제작과 설치',description:'돌 8개로 화로를 제작해 거점 근처에 설치하세요.',need:1,progress:s=>s.placed?.furnace||0},
+ {title:'가열로 새 재료 만들기',description:'모래를 유리로 만들거나 철광석을 제련해 보세요.',need:1,
+  progress:s=>Number((s.smelted?.glass||0)+(s.smelted?.ironBlock||0)>0)},
+ {title:'나만의 직육면체 건축',description:'직육면체를 1개 배치하고 서로 다른 면을 2개 이상 색칠해 보세요.',need:2,
+  progress:s=>Number((s.placed?.cuboid||0)>0)+Number((s.paintedFaces||[]).length>=2)},
+ {title:'새로운 탐험가',description:'총 3개 이상의 바이옴을 탐험하거나 숨겨진 설계도 조각 1개를 발견하세요.',need:1,
+  progress:s=>Number((s.biomes||[]).length>=3||(s.found||[]).length>=1)}
 ];
+function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
+function shelterAt(getBlock,x,feetY,z){
+ const p=Math.round(x),q=Math.round(z),feet=Math.floor(feetY);
+ // A real roof above the player's head, made of natural rock or placed blocks.
+ let roof=false;
+ for(let y=feet+2;y<=feet+4;y++){
+   const d=getBlock(p,y,q);
+   if(d&& !['air','water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){
+     roof=true;break;
+   }
+ }
+ let walls=0;
+ for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]])
+   if([0,1].some(dy=>{const d=getBlock(p+dx,feet+dy,q+dz);return d&&
+     !['water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)}))walls++;
+ return {roof,walls,sheltered:roof&&walls>=2};
+}
+function exposureStep(exposure,dt,{night=false,storm=false,rain=false,cold=false,sheltered=false,lit=false}={}){
+ if(sheltered||lit)return Math.max(0,exposure-dt*(sheltered?19:10));
+ const intensity=(night?1:0)+(storm?1.0:rain?.45:0)+(cold?.55:0);
+ return Math.max(0,Math.min(100,exposure+dt*(intensity?1.8+intensity*1.7:-7)));
+}
 const RESOURCE_ALIAS={grass:'dirt',pineLog:'log',pineLeaves:'leaves',snow:'snow',redSand:'redSand',ironOre:'ironOre'};
 function dropFor(type){return RESOURCE_ALIAS[type]||type}
 function toolNeeded(type){
@@ -78,5 +126,5 @@ function toolNeeded(type){
  if(['stone','smoothStone','brick','ironBlock','furnace'].includes(type))return 'woodPick';
  return null;
 }
-window.CubeArchitectWorld={BIOMES,region,biomeAt,height,noise,hash,RECIPES,GOALS,dropFor,toolNeeded};
+window.CubeArchitectWorld={BIOMES,BIOME_REWARDS,region,biomeAt,height,noise,hash,RECIPES,GOALS,goalProgress,shelterAt,exposureStep,dropFor,toolNeeded};
 })();
