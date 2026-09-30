@@ -30,7 +30,7 @@ canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778
 .overlay{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:rgba(2,6,23,.78);padding:18px}
 .panel{width:min(720px,95vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;box-shadow:0 26px 80px rgba(0,0,0,.4)}
 h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{color:#cbd5e1;margin:0 0 18px;line-height:1.55}
-.modegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.mode{padding:11px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#fbbf24;background:#334155}.mode small{display:block;margin-top:5px;font-size:10px;font-weight:700;line-height:1.4;color:#cbd5e1}
+.modegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.mode{padding:11px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#fbbf24;background:#334155}.mode small{display:block;margin-top:5px;font-size:10px;font-weight:700;line-height:1.4;color:#cbd5e1}.settingsCaption{font-weight:900;font-size:13px;margin-top:12px;color:#fde68a}.fieldMode{font-size:13px;padding:8px 5px}
 .tipgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.tip{background:#111827;border-radius:16px;padding:12px;font-size:13px;line-height:1.55}
 .start{width:100%;padding:14px;border-radius:16px;background:#fbbf24;color:#172554;font-size:18px;margin-top:8px}
 .secondary{width:100%;padding:12px;border-radius:14px;background:#334155;color:#fff;margin-top:8px}
@@ -64,15 +64,22 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 <div id="menu" class="overlay">
  <div class="panel">
   <h1>씨앗 베이스볼</h1>
-  <p class="sub">배트를 부채꼴로 위아래 움직이고 공의 높이에 맞춰요. 초록색 타이밍에 스윙! 처음에는 1회초 타격과 1회말 투구·수비를 연습해요.</p>
+  <p class="sub">배트의 각도를 정한 뒤 타이밍에 맞춰 스윙! 실제 배트가 휘둘러지면서 공에 닿는 위치에 따라 타구가 달라져요. 처음에는 타격과 투구를 한 이닝씩 연습합니다.</p>
+  <div class="settingsCaption">타격 · 투구 난이도</div>
   <div class="modegrid" id="difficultyGrid">
-   <button class="mode active" data-diff="easy">쉬움<br><small>느린 공·넓은 타격 범위</small></button>
-   <button class="mode" data-diff="normal">보통<br><small>배트 각도·강타</small></button>
-   <button class="mode" data-diff="hard">어려움<br><small>빠른 공·정교한 각도</small></button>
+   <button class="mode active" data-diff="easy">쉬움<br><small>느린 공 · 원터치 투구</small></button>
+   <button class="mode" data-diff="normal">보통<br><small>강타 · 제구 오차</small></button>
+   <button class="mode" data-diff="hard">어려움<br><small>정밀 타격 · 충전 투구</small></button>
+  </div>
+  <div class="settingsCaption">수비 난이도 · 독립 선택</div>
+  <div class="modegrid" id="fieldingGrid">
+   <button class="mode fieldMode active" data-fielddiff="easy">쉬움<br><small>자동 추적 · 송구 보조</small></button>
+   <button class="mode fieldMode" data-fielddiff="normal">보통<br><small>가벼운 이동 보조</small></button>
+   <button class="mode fieldMode" data-fielddiff="hard">어려움<br><small>직접 이동 · 송구</small></button>
   </div>
   <div class="tipgrid">
-   <div class="tip"><b>⚾ 타격</b><br>배트 ▲▼를 누르거나 타격 화면을 위아래로 드래그해 배트 각도를 바꿔요. <b>공이 배트에 들어올 때 스윙을 한 번 터치!</b> 초록 막대는 좋은 타격 타이밍이에요.</div>
-   <div class="tip"><b>🥎 수비</b><br>투구 코스를 찍고 구종을 고른 뒤 던져요. 타구가 나오면 가까운 수비수를 직접 움직이고 베이스로 송구합니다.</div>
+   <div class="tip"><b>⚾ 타격</b><br>배트 ▲▼나 드래그로 높이를 정하고, 초록 구간에서 스윙을 한 번 터치! <b>배트 중심은 강타, 끝은 약한 타구</b>가 나와요. 조금 일찍 치면 당겨치고 늦으면 밀어쳐요.</div>
+   <div class="tip"><b>🥎 투구·수비</b><br>구종과 코스를 고르고 쉬움·보통은 던지기 한 번, 어려움은 70%까지 누른 뒤 놓아요. 같은 공을 계속 던지면 CPU가 익숙해져요. 수비는 난이도에 따라 자동 도움을 받을 수 있어요.</div>
    <div class="tip"><b>🏃 주루</b><br>주자는 기본적으로 안전하게 달려요. 외야를 가르면 <b>더 간다!</b>로 한 베이스 더 노릴 수 있어요.</div>
    <div class="tip"><b>📊 기록</b><br>안타·홈런·삼진·최장 타구와 승패를 기기에 저장해 다음 경기에서도 이어서 볼 수 있어요.</div>
   </div>
@@ -84,7 +91,7 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 <div id="records" class="overlay hidden"><div class="panel"><h2>내 야구 기록</h2><p id="recordsText" class="sub"></p><button id="closeRecords" class="start">돌아가기</button></div></div>
 <div id="result" class="overlay hidden"><div class="panel" style="text-align:center"><h2 id="resultTitle">경기 종료</h2><p id="resultText" class="sub"></p><button id="rematchBtn" class="start">다시 경기</button><button id="menuBtn" class="secondary">설정으로</button></div></div>
 </div>
-<script src="./game.js?v=8"></script>
+<script src="./game.js?v=9"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_baseball" data-title="씨앗 베이스볼" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
