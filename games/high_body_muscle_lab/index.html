@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>내 몸아 움직여! · 슬로모션 근육 전투</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -32,6 +32,13 @@
         <small>상대 움직임</small>
         <b id="incomingTitle">오른손 스트레이트</b>
         <span id="incomingHint">팔을 굽혀 막거나 몸을 피하세요.</span>
+      </div>
+
+      <div id="firstGuide" class="firstGuide">
+        <small>첫 판 목표 · 상대 HP를 0으로 만들기</small>
+        <b id="guideAction">① 공격 방향에 맞는 이두근으로 가드</b>
+        <span id="guideNext">막히면 같은 팔의 삼두근으로 바로 카운터하세요.</span>
+        <em id="guideProgress">상대 HP 70 / 70 · 카운터 0회</em>
       </div>
 
       <div class="stageActions">
@@ -115,14 +122,14 @@
       <div><b>① 근육을 누르기</b><span>누르는 동안 수축, 놓으면 이완</span></div>
       <div><b>② 몸의 변화를 보기</b><span>관절이 움직이는 만큼만 시간이 흐름</span></div>
       <div><b>③ 막기 · 피하기</b><span>이두근으로 가드, 복사근·복근으로 회피</span></div>
-      <div><b>④ 카운터</b><span>가드나 회피 뒤 삼두근을 수축해 반격</span></div>
+      <div><b>④ 카운터</b><span>가드 성공 뒤 같은 팔의 삼두근을 수축해 반격</span></div>
     </div>
-    <p>처음에는 <strong>상완이두근과 상완삼두근</strong>만 사용합니다. 다음 상대부터 몸통과 다리가 하나씩 열립니다. 이두근과 삼두근을 동시에 강하게 수축하면 팔이 단단해지지만 빠르게 움직이기 어려워집니다.</p>
+    <p>첫 판의 승리 조건은 <strong>상대 HP를 0으로 만드는 것</strong>입니다. 공격이 오면 이두근으로 막고, <strong>카운터!</strong>가 뜨면 같은 팔의 삼두근으로 팔을 펴서 때리세요. 보통 카운터 3번이면 첫 상대를 이길 수 있습니다.<br><br>처음에는 <strong>상완이두근과 상완삼두근</strong>만 사용합니다. 다음 상대부터 몸통과 다리가 하나씩 열립니다. 이두근과 삼두근을 동시에 강하게 수축하면 팔이 단단해지지만 빠르게 움직이기 어려워집니다.</p>
     <button id="tutorialStart" class="primary" type="button">첫 상대 시작</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_body_muscle_lab" data-title="내 몸아 움직여!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=7"></script>
+<script type="module" src="game.js?v=8"></script>
 </body>
 </html>
