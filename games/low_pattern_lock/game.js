@@ -194,14 +194,28 @@ function chooseBestClue(list,pool,target,level,allowStrong){
  }
  return best;
 }
+function chooseBalancedClue(list,pool,target,level,desired=12,minRemaining=4){
+ let best=null,bestScore=Infinity;
+ for(const d of pool){
+   if(['startExact','endExact','nodeAt','dirAt','firstDir','lastDir'].includes(d.kind))continue;
+   const count=filterByClue(list,d,target,level).length;
+   if(count<minRemaining||count>=list.length)continue;
+   const score=Math.abs(count-desired);
+   if(score<bestScore){best=d;bestScore=score}
+ }
+ return best;
+}
 function prepareDeduction(level){
  state.bank=generateBank(level);state.target=state.bank.find(c=>samePath(c.path,level.solution))||{path:[...level.solution],structure:{...level.structure}};
  state.candidates=[...state.bank];state.revealed=[];state.available=cluePool(level);
- let minClues=level.id<=3?3:4;
- for(let i=0;i<minClues;i++){
-   const d=chooseBestClue(state.candidates,state.available,state.target,level,false);if(!d)break;applyClue(d);
+ const addKind=kind=>{const d=state.available.find(x=>x.kind===kind);if(d)applyClue(d)};
+ addKind('points');
+ if(level.chapter.includes('선택'))addKind('choiceCount');
+ if(level.chapter.includes('반복')||level.chapter.includes('종합'))addKind('repeatCount');
+ if(level.chapter.includes('반복'))addKind('repeatUnit');
+ while(state.candidates.length>20&&state.revealed.length<5){
+   const d=chooseBalancedClue(state.candidates,state.available,state.target,level,12,4);if(!d)break;applyClue(d);
  }
- while(state.candidates.length>18&&state.revealed.length<5){const d=chooseBestClue(state.candidates,state.available,state.target,level,false);if(!d)break;applyClue(d)}
  renderClues();renderStructureChips();updateCandidateBadge();
 }
 function applyClue(desc){state.revealed.push(desc);state.available=state.available.filter(d=>d.id!==desc.id);state.candidates=filterByClue(state.candidates,desc,state.target,state.level)}
@@ -278,7 +292,17 @@ function finishAttempt(){
 }
 function revealClue(){
  if(state.candidates.length<=1)return;
- const d=chooseBestClue(state.candidates,state.available,state.target,state.level,true);if(!d)return;state.extraClues++;applyClue(d);sound('click');renderClues();ui.phase.textContent='가장 정보량이 큰 단서를 열었어요';toast('후보가 '+state.candidates.length+'개로 줄었어요.');
+ const current=state.candidates.length,desired=current>4?Math.max(2,Math.ceil(current/2)):1;
+ let d=null,bestScore=Infinity;
+ for(const clue of state.available){
+   const count=filterByClue(state.candidates,clue,state.target,state.level).length;
+   if(count<=0||count>=current)continue;
+   if(current>4&&count<2)continue;
+   const score=Math.abs(count-desired);
+   if(score<bestScore){d=clue;bestScore=score}
+ }
+ if(!d)d=chooseBestClue(state.candidates,state.available,state.target,state.level,true);
+ if(!d)return;state.extraClues++;applyClue(d);sound('click');renderClues();ui.phase.textContent='새 단서로 후보를 더 좁혔어요';toast('후보가 '+state.candidates.length+'개로 줄었어요.');
 }
 function rating(){const cost=state.attempts+state.extraClues;if(cost<=1)return 3;if(cost<=4)return 2;return 1}
 function answerSummary(l){const a=analyze(l.solution,l.grid[0]);return directionsText(l.solution)+' · '+a.points+'점 · 대각선 '+a.diagonals+'번'}
