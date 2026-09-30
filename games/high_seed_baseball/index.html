@@ -20,8 +20,9 @@ canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778
 #controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;display:flex;gap:8px;align-items:end;justify-content:center;width:min(900px,96vw);pointer-events:none}
 .controlGroup{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .ctrl{min-width:80px;padding:11px 13px;border-radius:14px;color:#fff;background:rgba(15,23,42,.87);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 24px rgba(0,0,0,.17);touch-action:none;user-select:none}
-.ctrl.primary{background:#fbbf24;color:#172554}.ctrl.green{background:#16a34a}.ctrl.red{background:#dc2626}.ctrl.blue{background:#2563eb}
+.ctrl.primary{background:#fbbf24;color:#172554}.ctrl.power{background:#f87171;color:#27131b}.ctrl.green{background:#16a34a}.ctrl.red{background:#dc2626}.ctrl.blue{background:#2563eb}
 .ctrl.active{outline:3px solid #fff;transform:translateY(-2px)}
+.controlGroup[data-mode="bat"]{width:min(750px,96vw);align-items:center}.controlGroup[data-mode="bat"] .ctrl.primary{min-width:clamp(180px,34vw,300px);padding:17px 28px;font-size:19px;border-radius:18px;box-shadow:0 7px 0 #ad7d13}.controlGroup[data-mode="bat"] .ctrl.power{min-width:110px;padding:17px 16px;font-size:17px;border-radius:18px;box-shadow:0 7px 0 #be5252}.controlGroup[data-mode="bat"] .ctrl:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.3)}
 #chargeWrap{position:absolute;left:50%;bottom:82px;transform:translateX(-50%);z-index:5;width:min(440px,78vw);padding:8px 10px;border-radius:14px;background:rgba(2,6,23,.82);display:none}
 #chargeTrack{height:16px;border-radius:999px;background:#334155;overflow:hidden;border:1px solid rgba(255,255,255,.28)}
 #chargeFill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#fbbf24,#ef4444)}
@@ -29,7 +30,7 @@ canvas{position:absolute;left:50%;top:50%;display:block;width:min(100vw,177.7778
 .overlay{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:rgba(2,6,23,.78);padding:18px}
 .panel{width:min(720px,95vw);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;box-shadow:0 26px 80px rgba(0,0,0,.4)}
 h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{color:#cbd5e1;margin:0 0 18px;line-height:1.55}
-.modegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.mode{padding:11px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#fbbf24;background:#334155}
+.modegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.mode{padding:11px;border-radius:14px;background:#1e293b;color:#fff;border:2px solid transparent}.mode.active{border-color:#fbbf24;background:#334155}.mode small{display:block;margin-top:5px;font-size:10px;font-weight:700;line-height:1.4;color:#cbd5e1}
 .tipgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.tip{background:#111827;border-radius:16px;padding:12px;font-size:13px;line-height:1.55}
 .start{width:100%;padding:14px;border-radius:16px;background:#fbbf24;color:#172554;font-size:18px;margin-top:8px}
 .secondary{width:100%;padding:12px;border-radius:14px;background:#334155;color:#fff;margin-top:8px}
@@ -60,14 +61,14 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 <div id="menu" class="overlay">
  <div class="panel">
   <h1>씨앗 베이스볼</h1>
-  <p class="sub">3이닝 동안 직접 치고, 던지고, 수비하는 키즈케이드 아케이드 야구. 처음에는 필요한 조작만 차례로 알려줘요.</p>
+  <p class="sub">3이닝 아케이드 야구! 쉬움에서는 공을 따라가는 자동 조준을 켜고, 공이 가까워질 때 스윙 버튼을 딱 한 번 누르면 돼요.</p>
   <div class="modegrid" id="difficultyGrid">
-   <button class="mode" data-diff="easy">쉬움</button>
-   <button class="mode active" data-diff="normal">보통</button>
-   <button class="mode" data-diff="hard">어려움</button>
+   <button class="mode active" data-diff="easy">쉬움<br><small>자동 조준·느린 공</small></button>
+   <button class="mode" data-diff="normal">보통<br><small>자동 조준·강타</small></button>
+   <button class="mode" data-diff="hard">어려움<br><small>직접 조준</small></button>
   </div>
   <div class="tipgrid">
-   <div class="tip"><b>⚾ 공격</b><br>커서로 공의 높이·코스를 맞추고 <b>스윙</b>. 오래 누를수록 강하지만 타이밍이 어려워져요.</div>
+   <div class="tip"><b>⚾ 공격</b><br>쉬움·보통은 타격 위치를 자동으로 맞춰요. <b>공이 가까워지고 막대가 초록색이 되면 스윙을 한 번 터치!</b> 보통부터는 강타도 선택할 수 있어요.</div>
    <div class="tip"><b>🥎 수비</b><br>투구 코스를 찍고 구종을 고른 뒤 던져요. 타구가 나오면 가까운 수비수를 직접 움직이고 베이스로 송구합니다.</div>
    <div class="tip"><b>🏃 주루</b><br>주자는 기본적으로 안전하게 달려요. 외야를 가르면 <b>더 간다!</b>로 한 베이스 더 노릴 수 있어요.</div>
    <div class="tip"><b>📊 기록</b><br>안타·홈런·삼진·최장 타구와 승패를 기기에 저장해 다음 경기에서도 이어서 볼 수 있어요.</div>
@@ -79,7 +80,7 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 <div id="records" class="overlay hidden"><div class="panel"><h2>내 야구 기록</h2><p id="recordsText" class="sub"></p><button id="closeRecords" class="start">돌아가기</button></div></div>
 <div id="result" class="overlay hidden"><div class="panel" style="text-align:center"><h2 id="resultTitle">경기 종료</h2><p id="resultText" class="sub"></p><button id="rematchBtn" class="start">다시 경기</button><button id="menuBtn" class="secondary">설정으로</button></div></div>
 </div>
-<script src="./game.js?v=6"></script>
+<script src="./game.js?v=7"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_baseball" data-title="씨앗 베이스볼" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
