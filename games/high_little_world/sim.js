@@ -140,10 +140,13 @@ export class WorldSim{
   ecologyStep(){
     for(const c of this.cells){
       if(c.sea||c.water>.78){c.herb*=.94;c.pred*=.95;continue}
-      const herbBirth=c.vegetation*.075*(1-c.herb/13),predation=c.pred*.055,starve=c.vegetation<.12?.09:0;
-      c.herb=clamp(c.herb+herbBirth-predation-c.herb*(.018+starve),0,14);
+      const starve=c.vegetation<.12?.09:0;
+      const herbBirth=c.herb>0?c.herb*(.012+c.vegetation*.018)*(1-c.herb/13):0;
+      const predation=c.pred*.055;
+      c.herb=clamp(c.herb+herbBirth-predation-c.herb*(.012+starve),0,14);
       c.vegetation=Math.max(0,c.vegetation-c.herb*.0024);
-      c.pred=clamp(c.pred+c.herb*.008*(1-c.pred/5.5)-c.pred*.032,0,6);
+      const predatorBirth=c.pred>0?c.pred*(.007+c.herb*.002)*(1-c.pred/5.5):0;
+      c.pred=clamp(c.pred+predatorBirth-c.pred*.018,0,6);
       if(c.herb>.5&&this.rng()<.08){const n=this.neighbors(c).filter(q=>!q.sea&&q.vegetation>.18).sort((a,b)=>b.vegetation-a.vegetation)[0];if(n){const moved=c.herb*.05;c.herb-=moved;n.herb=Math.min(14,n.herb+moved)}}
     }
   }
