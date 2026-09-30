@@ -146,9 +146,10 @@ const ui={
 let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toastT=0,lastSave=0;
 let camYaw=Math.PI,camPitch=.31,camDist=6.8,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
 const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], artFootprints=[], models=new Map();
-const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group()};
-const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0};
-const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3();
+const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group(),fx:new THREE.Group()};
+const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0,stepClock:0};
+const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3(),fxParticles=[];
+let audioCtx=null,audioMaster=null,windGain=null,rainGain=null,cameraKick=0;
 
 function fresh(){
  return {version:1,day:1,time:430,health:100,hunger:82,thirst:72,temp:36.6,pos:{x:0,z:8},yaw:Math.PI,
@@ -168,12 +169,53 @@ function load(){
 function save(){if(!game)return;game.pos={x:player.root.position.x,z:player.root.position.z};game.yaw=camYaw;localStorage.setItem(SAVE,JSON.stringify(game));localStorage.setItem(KNOW,JSON.stringify([...new Set(game.knowledge)]))}
 function withOldKnowledge(g){const old=parse(localStorage.getItem(KNOW),'[]');if(Array.isArray(old))g.knowledge=[...new Set([...g.knowledge,...old])];return g}
 function flag(id,val=true){if(game.flags[id]===val)return false;game.flags[id]=val;save();updateMission();return true}
-function discover(id){if(game.knowledge.includes(id))return;game.knowledge.push(id);const k=KNOWLEDGE.find(v=>v.id===id);if(k)toast('📖 지식 발견 · '+k.title,'normal',3.2);save();renderOpenPanel()}
+function discover(id){if(game.knowledge.includes(id))return;game.knowledge.push(id);const k=KNOWLEDGE.find(v=>v.id===id);if(k){sfx('discover');toast('📖 지식 발견 · '+k.title,'normal',3.2)}save();renderOpenPanel()}
 function toast(text,tone='normal',sec=2.3){ui.toast.textContent=text;ui.toast.style.borderColor=tone==='danger'?'rgba(255,100,100,.6)':tone==='warn'?'rgba(255,211,106,.6)':'rgba(128,227,162,.42)';ui.toast.classList.add('show');toastT=sec}
+function ensureAudio(){
+ try{
+  if(audioCtx){if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}
+  const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;audioCtx=new A();audioMaster=audioCtx.createGain();audioMaster.gain.value=.48;audioMaster.connect(audioCtx.destination);
+  const makeLoop=(kind,cutoff)=>{const len=Math.max(1,Math.floor(audioCtx.sampleRate*2)),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++){const white=Math.random()*2-1;d[i]=kind==='rain'?white*.52:(white*.55+Math.sin(i*.0009)*.12)}const src=audioCtx.createBufferSource(),flt=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();src.buffer=buf;src.loop=true;flt.type='lowpass';flt.frequency.value=cutoff;gain.gain.value=0;src.connect(flt).connect(gain).connect(audioMaster);src.start();return gain};
+  windGain=makeLoop('wind',720);rainGain=makeLoop('rain',2200);return audioCtx
+ }catch(_){return null}
+}
+function tone(freq,d=.08,type='sine',vol=.04,slide=1){
+ const a=ensureAudio();if(!a||!audioMaster)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*slide),t+d);g.gain.setValueAtTime(Math.max(.0001,vol),t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(audioMaster);o.start(t);o.stop(t+d+.02)
+}
+function noiseHit(d=.07,vol=.025,cutoff=900){
+ const a=ensureAudio();if(!a||!audioMaster)return;const n=Math.max(1,Math.floor(a.sampleRate*d)),buf=a.createBuffer(1,n,a.sampleRate),arr=buf.getChannelData(0);for(let i=0;i<n;i++)arr[i]=(Math.random()*2-1)*(1-i/n);const src=a.createBufferSource(),flt=a.createBiquadFilter(),g=a.createGain();src.buffer=buf;flt.type='lowpass';flt.frequency.value=cutoff;g.gain.value=vol;src.connect(flt).connect(g).connect(audioMaster);src.start()
+}
+function sfx(kind){
+ if(kind==='step'){noiseHit(.045,.018,520);tone(88,.045,'sine',.012,.82)}
+ else if(kind==='chop'){noiseHit(.07,.04,760);tone(138,.09,'square',.026,.54)}
+ else if(kind==='mine'){noiseHit(.075,.035,1500);tone(330,.11,'triangle',.032,.72)}
+ else if(kind==='pickup'){tone(520,.065,'sine',.027,1.45);tone(760,.07,'sine',.018,1.1)}
+ else if(kind==='water'){noiseHit(.13,.024,2200);tone(620,.12,'sine',.018,.72)}
+ else if(kind==='fire'){tone(210,.08,'triangle',.023,.62);noiseHit(.055,.02,1100)}
+ else if(kind==='power'){tone(180,.1,'sine',.03,1.8);tone(420,.18,'triangle',.026,1.3)}
+ else if(kind==='rescue'){tone(440,.1,'sine',.025,1.25);tone(660,.18,'sine',.03,1.3)}
+ else if(kind==='discover'){tone(660,.08,'triangle',.024,1.15);tone(920,.16,'triangle',.027,1.08)}
+}
+function surfaceKind(){
+ const p=player.root.position;if(Math.abs(p.x-16)<4.2||Math.abs(p.z+27)<3.8&&p.x>-35&&p.x<70)return'road';if(p.distanceTo(CITY_CENTER)<25)return'city';return p.x<-18?'forest':'ground'
+}
+function spawnImpact(pos,kind,count=9){
+ const pal=kind==='tree'?[0x8d5d3b,0x5b7d45,0xa87547]:kind==='rock'?[0x8b8e88,0xb3b4ae,0x666b68]:[0x6fa6c2,0xbde7ee,0x4f8ca9];
+ for(let i=0;i<count;i++){const geo=new THREE.BoxGeometry(.05+Math.random()*.08,.05+Math.random()*.09,.05+Math.random()*.08),m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:pal[i%pal.length],transparent:true}));m.position.copy(pos).add(new THREE.Vector3((Math.random()-.5)*.7,.5+Math.random()*.8,(Math.random()-.5)*.7));groups.fx.add(m);fxParticles.push({m,v:new THREE.Vector3((Math.random()-.5)*2.2,1.4+Math.random()*2.4,(Math.random()-.5)*2.2),life:.45+Math.random()*.28})}
+}
+function updateFx(dt){
+ for(let i=fxParticles.length-1;i>=0;i--){const p=fxParticles[i];p.life-=dt;p.v.y-=5.8*dt;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*7;p.m.rotation.z+=dt*5;p.m.material.opacity=clamp(p.life/.22,0,1);if(p.life<=0){groups.fx.remove(p.m);p.m.geometry.dispose();p.m.material.dispose();fxParticles.splice(i,1)}}
+ cameraKick=damp(cameraKick,0,10,dt)
+}
+function updateAudio(dt){
+ if(!audioCtx)return;const w=getWeather(),hour=game?.time/60||12,night=hour<6.5||hour>19.5;
+ if(windGain)windGain.gain.setTargetAtTime((w==='rain'?.022:night?.012:.008)+(player.root.position.x<-18?.006:0),audioCtx.currentTime,.35);
+ if(rainGain)rainGain.gain.setTargetAtTime(w==='rain'?.045:0,audioCtx.currentTime,.22)
+}
 function has(cost){return Object.entries(cost).every(([k,v])=>(game.inv[k]||0)>=v)}
 function pay(cost){Object.entries(cost).forEach(([k,v])=>game.inv[k]=Math.max(0,(game.inv[k]||0)-v))}
 function costText(cost){return Object.entries(cost).map(([k,v])=>(ITEMS[k]?.[1]||'•')+' '+(ITEMS[k]?.[0]||k)+' '+v).join(' · ')}
-function addItem(id,n=1){game.inv[id]=(game.inv[id]||0)+n;toast((ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+' +'+n);save();updateUI()}
+function addItem(id,n=1){game.inv[id]=(game.inv[id]||0)+n;sfx('pickup');toast((ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+' +'+n);save();updateUI()}
 function settlementSteps(){
  return [
   ['people','주민 3명 구조',residentCount()>=3],
@@ -528,7 +570,7 @@ function updateTutorial(){
  else if(s===5&&game.flags.drink)tutorialNext('drink')
 }
 function skipTutorial(){if(!game)return;game.tutorial={...(game.tutorial||{}),done:true,step:TUTORIAL.length};save();renderTutorial();toast('튜토리얼을 건너뛰었습니다. TAB에서 지도와 생존 도감을 언제든 확인할 수 있습니다.')}
-function bindInput(){
+function bindInput(){const unlockAudio=()=>ensureAudio();window.addEventListener('pointerdown',unlockAudio,{once:true});window.addEventListener('keydown',unlockAudio,{once:true});
  addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target?.tagName))return;keys.add(e.code);if(e.code==='KeyE')interact();if(e.code==='KeyI')openPanel('inventory');if(e.code==='KeyC')openPanel('craft');if(e.code==='KeyB')openPanel('build');if(e.code==='Tab'){e.preventDefault();togglePanel()}if(e.code==='Digit1')useItem('cleanWater');if(e.code==='Digit2')useItem('food');if(e.code==='Escape'){if(buildMode)cancelBuild();else closePanel()}});
  addEventListener('keyup',e=>keys.delete(e.code));
  ui.canvas.addEventListener('pointerdown',e=>{drag=true;lastPointer=[e.clientX,e.clientY];ui.canvas.setPointerCapture?.(e.pointerId)});
@@ -553,7 +595,8 @@ function updatePlayer(dt){
   if(blockedAt(nx,nz)||riverBlocked||slope>.78){player.speed*=.42}else{const slopeSlow=clamp(1-Math.max(0,slope)*.48,.58,1);player.root.position.x=ox+(nx-ox)*slopeSlow;player.root.position.z=oz+(nz-oz)*slopeSlow;tutorialSignal('move',Math.hypot(player.root.position.x-ox,player.root.position.z-oz))}
   player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04
  }
- player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);updatePlayerVisual(dt,len>0&&player.speed>.3)
+ player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);const moving=len>0&&player.speed>.3;updatePlayerVisual(dt,moving);
+ if(moving){player.stepClock+=dt*player.speed;if(player.stepClock>2.25){player.stepClock=0;sfx('step')}}else player.stepClock=Math.min(player.stepClock,.8)
 }
 function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
 function resolveCamera(t,desired){
@@ -571,32 +614,34 @@ function updateCamera(dt){
  const cp=Math.cos(camPitch),raw=pivot.clone().addScaledVector(orbit,cp*camDist).addScaledVector(screenRight,.58);raw.y+=2.25+Math.sin(camPitch)*camDist;
  const desired=resolveCamera(pivot,raw),minDist=2.75,actual=desired.distanceTo(pivot);
  if(actual<minDist){desired.copy(pivot).addScaledVector(orbit,minDist*.86).addScaledVector(screenRight,.42);desired.y=pivot.y+2.15}
- camera.position.lerp(desired,1-Math.exp(-12*dt));camera.lookAt(lookAt);
+ camera.position.lerp(desired,1-Math.exp(-12*dt));if(cameraKick>.003){camera.position.x+=(Math.random()-.5)*cameraKick;camera.position.y+=(Math.random()-.5)*cameraKick*.65}camera.lookAt(lookAt);
  if(scene?.userData?.sky)scene.userData.sky.position.copy(camera.position);updateInteriorVisibility()
 }
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
- if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');tutorialSignal('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
+ if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;sfx('water');discover('waterRisk');flag('water');tutorialSignal('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
  if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
  if(t==='rest'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building,currentInteract)
 }
 function gather(r,t){
- if(!r.userData.available)return;r.userData.available=false;r.visible=false;r.userData.respawn=t==='forage'?65:45;
- const id=t==='tree'?'wood':t==='rock'?'stone':'potato';
+ if(!r.userData.available)return;r.userData.available=false;r.userData.respawn=t==='forage'?65:45;
+ const pos=r.getWorldPosition(new THREE.Vector3()),id=t==='tree'?'wood':t==='rock'?'stone':'potato';
  let n=t==='tree'&&game.inv.axe?2:1;const gatherBonus=jobPower('gatherer');if(gatherBonus)n+=Math.max(1,Math.floor(gatherBonus));
- if(t==='forage')discover('plantGrowth');addItem(id,n)
+ sfx(t==='tree'?'chop':t==='rock'?'mine':'pickup');spawnImpact(pos,t, t==='forage'?6:11);cameraKick=Math.max(cameraKick,t==='rock'?.095:.06);
+ const baseScale=r.scale.clone();r.scale.multiplyScalar(.88);setTimeout(()=>{r.scale.copy(baseScale);r.visible=false},120);
+ if(t==='forage')discover('plantGrowth');setTimeout(()=>addItem(id,n),90)
 }
 function useBurner(){
  if(game.flags.burnerSpent)return toast('비상 버너의 남은 연료가 없습니다. 이제 직접 불을 피워야 합니다.','warn');
  if(game.inv.dirtyWater<1)return toast('먼저 강에서 물을 떠 오세요.','warn');
- game.inv.dirtyWater--;game.inv.cleanWater++;game.flags.burnerSpent=true;discover('boiling');flag('boil');tutorialSignal('boil');toast('🔥 남은 연료로 강물을 충분히 끓였습니다. 깨끗한 물 +1','normal',3);save();updateUI()
+ game.inv.dirtyWater--;game.inv.cleanWater++;game.flags.burnerSpent=true;sfx('fire');discover('boiling');flag('boil');tutorialSignal('boil');toast('🔥 남은 연료로 강물을 충분히 끓였습니다. 깨끗한 물 +1','normal',3);save();updateUI()
 }
 function syncPowerVisual(){if(scene?.userData?.campLamp)scene.userData.campLamp.intensity=game?.flags?.power&&game.powerLoads?.light&&powerUse()<=game.powerKw+.001?3.2:0}
 function repairPower(){
  if(game.day<4)return toast('배전반은 고장 나 있습니다. 먼저 필요한 부품을 찾아야 합니다.','warn');
  if(game.flags.power)return toast('⚡ 비상 전력망이 안정적으로 작동 중입니다. '+game.powerKw.toFixed(1)+' kW');
  if(game.inv.battery<1||game.inv.scrap<2)return toast('배터리 1개와 고철 2개가 필요합니다. 폐허를 더 조사하세요.','warn');
- game.inv.battery--;game.inv.scrap-=2;game.powerKw=2.4;discover('electricity');flag('power');syncPowerVisual();toast('⚡ 배전반 복구 완료 · 야영지 비상등과 무전기에 전력이 공급됩니다.','normal',4);save();updateUI()
+ game.inv.battery--;game.inv.scrap-=2;game.powerKw=2.4;sfx('power');discover('electricity');flag('power');syncPowerVisual();toast('⚡ 배전반 복구 완료 · 야영지 비상등과 무전기에 전력이 공급됩니다.','normal',4);save();updateUI()
 }
 function lootRuin(id){
  const key='loot_'+id;if(game.flags[key])return toast('이미 필요한 물자를 챙겼습니다.');
@@ -610,7 +655,7 @@ function samplePollutedWater(){
 function openCrate(){if(game.flags.crate)return toast('이미 확인한 상자입니다.');game.flags.crate=true;game.inv.scrap+=3;game.inv.battery++;game.inv.cloth++;game.inv.food+=2;flag('battery');toast('🔋 배터리 · 고철 · 천 · 식량을 확보했습니다. 배전반을 찾아 실제로 연결해 보세요.','normal',3);save();updateUI()}
 function rescue(id='taeho'){
  if(game.day<5)return toast('아직 인기척이 없습니다.');const r=game.residents?.[id],def=RESIDENTS[id];if(!r||!def||r.rescued)return;
- r.rescued=true;game.survivors=residentCount();if(id==='taeho')game.job=null;
+ r.rescued=true;sfx('rescue');game.survivors=residentCount();if(id==='taeho')game.job=null;
  const field=scene.userData.survivorNodes?.[id],camp=scene.userData.campResidents?.[id];if(field)field.visible=false;if(camp)camp.visible=true;
  if(id==='taeho')flag('rescue');toast(def.icon+' '+def.name+'를 구조했습니다. 캠프로 이동했습니다. 역할을 정해 주세요.','normal',3.5);save();setTimeout(()=>openPanel('settlement'),550)
 }
@@ -757,6 +802,6 @@ function continueSettlement(){
 function finish(){if(game.finished)return;game.finished=true;save();running=false;ui.hud.classList.add('hidden');ui.ending.classList.remove('hidden');ui.endingText.textContent=(1+residentCount())+'명이 함께 살아남았습니다. 과학·사회 지식 '+game.knowledge.length+'개를 발견하고 '+game.buildings.length+'개의 시설을 세웠습니다.';ui.endingStats.innerHTML='<div><b>'+(1+residentCount())+'</b><small>인구</small></div><div><b>'+game.knowledge.length+'</b><small>발견 지식</small></div><div><b>'+game.buildings.length+'</b><small>시설</small></div><div><b>'+Math.round(game.trust)+'</b><small>신뢰</small></div>';window.KidscadeGame?.gameOver?.({score:game.knowledge.length*500+game.buildings.length*200+Math.round(game.trust)*10,day:7})}
 async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();renderTutorial();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
-function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWorldLabels();updateTutorial();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
+function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWorldLabels();updateTutorial();updateWeather(dt);updateFx(dt);updateAudio(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
 async function boot(){init3D();ui.loadingText.textContent='검수된 3D 숲·폐허 자산과 키즈케이드 아바타를 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
