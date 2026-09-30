@@ -210,7 +210,8 @@ function prepareDeduction(level){
  state.candidates=[...state.bank];state.revealed=[];state.available=cluePool(level);
  const addKind=kind=>{const d=state.available.find(x=>x.kind===kind);if(d)applyClue(d)};
  addKind('points');
- if(level.chapter.includes('선택'))addKind('choiceCount');
+ if(level.chapter.includes('기초'))addKind('sequenceCount');
+ if(level.chapter.includes('선택')){addKind('choiceCount');addKind('sequenceCount')}
  if(level.chapter.includes('반복')||level.chapter.includes('종합'))addKind('repeatCount');
  if(level.chapter.includes('반복'))addKind('repeatUnit');
  while(state.candidates.length>20&&state.revealed.length<5){
