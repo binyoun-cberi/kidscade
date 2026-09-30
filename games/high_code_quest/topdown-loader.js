@@ -1,10 +1,10 @@
 const parts=[
- './topdown-game.js?v=2',
- './topdown-game.part2.txt?v=2',
- './topdown-game.part3.txt?v=2',
- './topdown-game.part4.txt?v=2',
- './topdown-game.part5.txt?v=2',
- './topdown-game.part6.txt?v=2'
+ './topdown-game.part1.txt?v=3',
+ './topdown-game.part2.txt?v=3',
+ './topdown-game.part3.txt?v=3',
+ './topdown-game.part4.txt?v=3',
+ './topdown-game.part5.txt?v=3',
+ './topdown-game.part6.txt?v=3'
 ];
 document.body.classList.add('topdown-code-quest');
 try{
