@@ -230,7 +230,7 @@ function buildSpellRules(){
   });
   const correctForms=new Set();
   (window.KIDSCADE_SPELLING_EXTRA||[]).forEach(q=>{
-    String(q.c||'').split(/\\s+/).forEach(token=>correctForms.add(cleanToken(token)));
+    String(q.c||'').split(/\s+/).forEach(token=>correctForms.add(cleanToken(token)));
     const match=String(q.c||'').match(/‘([^’]+)’/);
     if(match)correctForms.add(match[1]);
   });
