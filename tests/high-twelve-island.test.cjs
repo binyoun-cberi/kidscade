@@ -17,14 +17,14 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=6/);
-  assert.match(html, /art.js\?v=6/);
-  assert.match(html, /game.js\?v=6/);
+  assert.match(html, /sim.js\?v=7/);
+  assert.match(html, /art.js\?v=7/);
+  assert.match(html, /game.js\?v=7/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=6"));
+  assert.ok(entry.href.endsWith("?v=7"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -679,4 +679,113 @@ test('the crisis HUD, winter scenery and arrival history are connected', () => {
   assert.match(js, /state\.arrivalLog/);
   assert.match(js, /function renderCrisis\(/);
   assert.match(art, /latest\.coldUntil > latest\.tick/);
+});
+
+
+test('heat, flood, dust and epidemic have separate emergency choices and lasting effects', () => {
+  for (const [kind,id] of [['heat','heat_alert'],['flood','flood_alert'],['dust','dust_alert'],['epidemic','epidemic_alert']]) {
+    const s=S.initial(31);
+    s.eventsSeen.first_rule=true;s.nextWinterAt=900;s.tick=s.nextDisasters[kind]-1;
+    for(const x of Object.keys(s.nextDisasters)) if(x!==kind)s.nextDisasters[x]=900;
+    const food=s.food,water=s.water;
+    S.tick(s);
+    assert.equal(S.disasterActive(s,kind),true);
+    assert.equal(s.pending,id);
+    assert.ok(s.crisisHistory.some(c=>c.type===S.DISASTER_NAMES[kind]));
+    assert.equal(S.resolveEvent(s,1).ok,true);
+    assert.equal(s.disasterUnanswered[kind],false);
+    if(kind==='flood'){assert.ok(s.food<food);assert.ok(s.water<water);assert.ok(s.floodDamageUntil>s.tick);}
+    if(kind==='epidemic') assert.ok(s.sick>0);
+  }
+});
+
+test('heat consumes water, polluted air and infection reduce production', () => {
+  const a=S.initial(1),b=S.initial(1),c=S.initial(1),d=S.initial(1);
+  a.tick=b.tick=c.tick=d.tick=33;
+  b.disasters.heat=40;c.disasters.dust=40;d.disasters.epidemic=40;d.sick=7;
+  assert.ok(S.rates(b).water<S.rates(a).water);
+  assert.ok(S.rates(b).food<S.rates(a).food);
+  assert.ok(S.rates(c).gather<S.rates(a).gather);
+  assert.ok(S.rates(d).gather<S.rates(a).gather);
+});
+
+test('flood damage persists and player can spend wood to shorten the recovery', () => {
+  const s=S.initial(10);s.tick=47;s.floodDamageUntil=60;s.wood=40;s.nextWinterAt=900;
+  const original=s.floodDamageUntil;
+  assert.equal(S.performAction(s,'repairFlood').ok,true);
+  assert.ok(s.floodDamageUntil<original);
+  assert.equal(s.wood,31);
+});
+
+test('worker strike removes real production and an agreement can end it', () => {
+  const s=S.initial(10);s.tick=24;s.nextWinterAt=900;s.eventsSeen.first_rule=true;s.groups.workers=5;
+  assert.equal(S.chooseEvent(s).id,'workers_collective');
+  const production=S.rates(s).gather;
+  s.pending='workers_collective';assert.equal(S.resolveEvent(s,2).ok,true);
+  assert.ok(s.strikes.workers>s.tick);assert.ok(S.rates(s).gather<production);
+  assert.equal(S.performAction(s,'workerMediation').ok,true);
+  assert.equal(s.strikes.workers,0);assert.ok(S.rates(s).gather>=production);
+});
+
+test('unresolved family boycott stops arrivals and can result in emigration', () => {
+  const s=S.initial(11);s.tick=25;s.nextWinterAt=900;s.eventsSeen.first_rule=true;s.groups.families=5;
+  assert.equal(S.chooseEvent(s).id,'families_collective');
+  s.pending='families_collective';assert.equal(S.resolveEvent(s,2).ok,true);
+  assert.ok(s.arrivalsPausedUntil>s.tick);
+  const pop=s.population;s.tick=s.familyExitAt;
+  assert.equal(S.chooseEvent(s).id,'family_departure');
+  s.pending='family_departure';assert.equal(S.resolveEvent(s,2).ok,true);
+  assert.equal(s.population,pop-1);assert.equal(s.citizens.length,s.population);
+});
+
+test('caregiver walkout raises infection numbers during an epidemic', () => {
+  const normal=S.initial(4),strike=S.initial(4);
+  for(const s of [normal,strike]){
+    s.tick=78;s.nextWinterAt=900;s.nextDisasters={heat:900,flood:900,dust:900,epidemic:900};
+    s.disasters.epidemic=95;s.sick=4;s.stage=2;s.buildings.clinic=1;s.treasury=50;
+  }
+  strike.strikes.carers=88;
+  S.tick(normal);S.tick(strike);
+  assert.ok(strike.sick>normal.sick);
+});
+
+test('loss of trust can trigger a real caretaker period limiting legal authority', () => {
+  const s=S.initial(5);s.stage=2;s.tick=37;s.nextWinterAt=900;
+  s.trust=16;s.groups={workers:4,families:4,carers:4};s.eventsSeen.first_rule=true;
+  assert.equal(S.chooseEvent(s).id,'confidence_crisis');
+  s.pending='confidence_crisis';assert.equal(S.resolveEvent(s,0).ok,true);
+  assert.ok(s.mandateRestrictedUntil>s.tick);
+  assert.equal(S.canBuild(s,'farm'),false);
+  assert.equal(S.enact(s,'labor','balanced').ok,false);
+  s.water=19;assert.equal(S.performAction(s,'fetchWater').ok,true);
+});
+
+test('settlement collapse allows recorded ending while blocking further simulation', () => {
+  const s=S.initial(5);s.tick=98;s.health=1;s.collapseWeeks=3;s.nextWinterAt=900;
+  assert.equal(S.chooseEvent(s).id,'community_collapse');
+  s.pending='community_collapse';assert.equal(S.resolveEvent(s,2).ok,true);
+  assert.equal(s.ended,true);
+  const previous=s.tick;S.tick(s);assert.equal(s.tick,previous);
+  assert.equal(S.assign(s,'gather',1),false);
+});
+
+test('older save acquires future disaster schedules and untroubled population groups', () => {
+  const old=S.initial(9);old.tick=200;
+  delete old.nextDisasters;delete old.disasters;delete old.groups;delete old.strikes;
+  delete old.water;delete old.air;
+  const s=S.normalize(JSON.parse(JSON.stringify(old)));
+  assert.ok(s.nextDisasters.heat>=s.tick+8);
+  assert.equal(s.water,74);assert.equal(s.air,100);
+  assert.equal(s.groups.families,0);assert.equal(S.activeDisasters(s).length,0);
+});
+
+test('v7 interface exposes live disaster, infection, grievance and art effects', () => {
+  const js=fs.readFileSync(path.join(gameDir,'game.js'),'utf8');
+  const art=fs.readFileSync(path.join(gameDir,'art.js'),'utf8');
+  assert.match(js,/S\.activeDisasters\(state\)/);
+  assert.match(js,/S\.groupStatus\(state\)/);
+  assert.match(js,/S\.performAction\(state/);
+  assert.match(art,/s\.disasters\?\.heat/);
+  assert.match(art,/s\.disasters\?\.flood/);
+  assert.match(art,/s\.disasters\?\.dust/);
 });
