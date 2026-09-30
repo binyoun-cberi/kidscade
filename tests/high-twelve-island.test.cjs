@@ -17,11 +17,12 @@ test('Twelve Island registers a complete accessible game and uses existing asset
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=1/);
+  assert.match(html, /sim.js\?v=3/);
   assert.match(html, /art.js\?v=2/);
-  assert.match(html, /game.js\?v=2/);
+  assert.match(html, /game.js\?v=3/);
   assert.match(html, /id="islandCanvas"/);
-  assert.ok(entry.href.endsWith("?v=2"));
+  assert.match(html, /data-tab="residents"/);
+  assert.ok(entry.href.endsWith("?v=3"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -192,8 +193,78 @@ test('modular character portraits are wired into the event dialogue', () => {
   assert.match(script, /speaker"\)\.innerHTML = characterPortrait/);
 });
 
-## 주민 시스템 (v3)
-- 최초 12명은 고유 이름, 관심사, 이전 경험을 갖고 시작한다. 직업만으로 정책 선호를 단정하지 않는다.
-- 새로운 주민이 합류하면 발견 경위와 고유 ID를 저장하고 시간 일시 정지 소개 사건을 연다. 확인하면 주민 탭에서 해당 주민을 선택한다.
-- 자원 부족, 현재의 배급·노동 규칙, 창고·진료소·국고 상태에 따라 주민별 의견이 매번 재계산된다. 주민의 현재 걱정은 그 사람의 관심사와 상태를 나타내며 실제 주민투표 의향을 의미하지 않는다.
-- 기존 v1·v2 저장 파일은 인구수에 맞춰 주민 명부를 복원하되, 과거에 기록되지 않은 합류 경위는 임의로 만들어 내지 않는다.
+
+test('founders have names and different viewpoints react to laws and scarce food', () => {
+  const s = S.initial(7);
+  assert.equal(s.citizens.length, 12);
+  assert.deepEqual(s.citizens.slice(0, 3).map(p => p.name), ['하나', '태오', '미래']);
+  assert.equal(s.citizens[0].focus, 'fairness');
+  const person = s.citizens[0], before = S.residentView(s, person);
+  assert.equal(S.enact(s, 'ration', 'equal').ok, true);
+  assert.notEqual(S.residentView(s, person).thought, before.thought);
+  const foodCitizen = s.citizens.find(p => p.focus === 'food');
+  s.food = 9;
+  assert.equal(S.residentView(s, foodCitizen).mood, '걱정');
+  assert.ok(S.communityPulse(s).걱정 > 0);
+});
+
+test('newcomer arrival pauses time, records their backstory and opens their profile', () => {
+  const s = S.initial(42);
+  for (let i = 0; i < 3; i++) S.tick(s);
+  assert.equal(S.resolveEvent(s, 0).ok, true);
+  for (let i = 0; i < 7 && !s.arrivalNotice; i++) {
+    S.tick(s);
+    if (s.pending && s.pending !== 'new_resident') {
+      assert.equal(S.resolveEvent(s, 0).ok, true);
+    }
+  }
+  assert.equal(s.pending, 'new_resident');
+  assert.equal(s.citizens.length, 13);
+  assert.equal(s.population, 13);
+  assert.equal(s.arrivalLog.length, 1);
+  assert.ok(s.arrivalNotice.origin.length > 10);
+  const week = s.tick;
+  S.tick(s);
+  assert.equal(s.tick, week);
+  const reloaded = S.normalize(JSON.parse(JSON.stringify(s)));
+  assert.equal(reloaded.pending, 'new_resident');
+  assert.equal(reloaded.arrivalNotice.name, s.citizens[12].name);
+  assert.equal(S.resolveEvent(reloaded, 0).ok, true);
+  assert.equal(reloaded.arrivalNotice, null);
+});
+
+test('legacy save gains matching resident records but does not invent old backstories', () => {
+  const old = S.initial(7);
+  old.population = 18;
+  delete old.citizens;
+  delete old.arrivalLog;
+  delete old.nextCitizenIndex;
+  const restored = S.normalize(old);
+  assert.equal(restored.citizens.length, 18);
+  assert.equal(restored.nextCitizenIndex, 18);
+  assert.match(restored.citizens[12].origin, /이전 저장 기록/);
+  assert.deepEqual(restored.arrivalLog, []);
+});
+
+test('citizen ID is not reused after a departure', () => {
+  const s = S.initial(7);
+  const first = S.createCitizen(s.nextCitizenIndex++, 'arrival', 8);
+  s.citizens.push(first);
+  s.population++;
+  s.citizens.pop();
+  s.population--;
+  const next = S.createCitizen(s.nextCitizenIndex++, 'arrival', 16);
+  s.citizens.push(next);
+  s.population++;
+  assert.notEqual(first.id, next.id);
+  assert.equal(s.citizens.length, s.population);
+});
+
+test('resident UI renders live thoughts and newcomer details', () => {
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(js, /function renderResidents\(/);
+  assert.match(js, /S\.residentView\(state, citizen\)/);
+  assert.match(js, /S\.communityPulse\(state\)/);
+  assert.match(js, /selectedCitizenId = arrivingId/);
+  assert.match(js, /arriving\.origin/);
+});
