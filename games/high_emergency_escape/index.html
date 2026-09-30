@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>10초 위기탈출</title>
+<link rel="stylesheet" href="./style.css?v=1">
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_emergency_escape" data-title="10초 위기탈출" data-shell="true" data-mute="true" data-orientation="landscape"></script>
+</head>
+<body>
+<main id="app">
+  <canvas id="scene3d" aria-label="위기 상황 3D 장면"></canvas>
+  <div id="sceneTint"></div>
+  <header id="hud">
+    <div class="brand"><b>10초 위기탈출</b><span id="domainChip">안전</span></div>
+    <div class="meter"><span>상황 <b id="roundText">0/0</b></span><span>점수 <b id="scoreText">0</b></span><span>생명 <b id="livesText">♥♥♥</b></span></div>
+  </header>
+  <div id="timerTrack"><i id="timerBar"></i></div>
+  <section id="challenge" class="hidden" aria-live="polite">
+    <div id="command">판단해!</div>
+    <h1 id="title"></h1>
+    <p id="prompt"></p>
+    <div id="avatarStage"><img id="playerAvatar" alt="내 아바타"><span id="avatarFallback">🧑‍🚒</span></div>
+    <div id="interaction"></div>
+  </section>
+  <section id="feedback" class="hidden">
+    <div id="feedbackIcon">✓</div>
+    <h2 id="feedbackTitle">정답!</h2>
+    <p id="feedbackText"></p>
+    <small id="feedbackSource"></small>
+    <button id="nextBtn" type="button">다음 상황</button>
+  </section>
+  <section id="menu" class="overlay show">
+    <div class="menuCard">
+      <div class="eyebrow">KIDSCADE SAFETY MICROGAMES</div>
+      <h1>10초 위기탈출</h1>
+      <p>상황은 갑자기 시작됩니다. 여러 행동 중 <b>지금 해야 할 행동 하나</b>를 빠르게 골라 보세요.</p>
+      <div class="featureGrid"><div><b>50</b><span>실전 상황</span></div><div><b>10초</b><span>판단 시간</span></div><div><b>7+</b><span>조작 유형 확장</span></div></div>
+      <div class="modeGrid">
+        <button class="modeBtn selected" data-mode="quick" type="button"><b>빠른 훈련</b><span>무작위 15상황</span></button>
+        <button class="modeBtn" data-mode="full" type="button"><b>50개 도전</b><span>모든 상황 한 번씩</span></button>
+      </div>
+      <div class="difficulty">
+        <button class="diffBtn" data-diff="easy" type="button">연습 10초</button>
+        <button class="diffBtn selected" data-diff="normal" type="button">실전 8초</button>
+        <button class="diffBtn" data-diff="hard" type="button">급박 6초</button>
+      </div>
+      <button id="startBtn" class="primary" type="button">위기 대응 시작</button>
+      <small class="notice">응급처치 파트는 질병관리청 2025 한국 심폐소생술 가이드라인을 기준으로 구성했습니다. 디지털 게임은 실제 실습교육을 대신하지 않습니다.</small>
+    </div>
+  </section>
+  <section id="result" class="overlay">
+    <div class="menuCard resultCard">
+      <div class="eyebrow">훈련 종료</div><h1 id="resultTitle">안전 판단 완료!</h1>
+      <div class="resultGrid"><div><b id="finalScore">0</b><span>점수</span></div><div><b id="correctCount">0</b><span>정답</span></div><div><b id="bestStreak">0</b><span>최고 연속</span></div></div>
+      <div id="review"></div><button id="retryBtn" class="primary" type="button">다시 도전</button>
+    </div>
+  </section>
+</main>
+<script src="./scenarios.js?v=1"></script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="./game.js?v=1"></script>
+</body>
+</html>
