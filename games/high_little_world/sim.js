@@ -107,7 +107,7 @@ export class WorldSim{
       if(c.sea||c.water<.025)continue;
       const surface=c.height*HEIGHT_STEP+c.water*.28;
       let target=null,targetSurface=surface;
-      for(const n of this.neighbors(c)){const ns=n.height*HEIGHT_STEP+n.water*.28-(n.sea?.12:0);if(ns<targetSurface){target=n;targetSurface=ns}}
+      for(const n of this.neighbors(c)){const ns=n.height*HEIGHT_STEP+n.water*.28-(n.sea ? .12 : 0);if(ns<targetSurface){target=n;targetSurface=ns}}
       if(target){const flow=Math.min(c.water*.38,Math.max(0,(surface-targetSurface)*.24));if(flow>.003){delta[this.index(c.x,c.z)]-=flow;delta[this.index(target.x,target.z)]+=flow}}
     }
     this.cells.forEach((c,i)=>{c.water=clamp(c.water+delta[i],0,1.7);if(c.sea)c.water=Math.max(.68,c.water)});
@@ -117,13 +117,13 @@ export class WorldSim{
       const lat=Math.abs(c.z-(ROWS-1)/2)/(ROWS/2),nearWater=this.neighbors(c).some(n=>n.sea||n.water>.18);
       c.sunHeat*=.86;c.temperature=clamp(.76-lat*.14-c.height*.055+c.sunHeat,.08,1);
       if(c.sea){c.moisture=1;c.fertility=0;continue}
-      c.moisture=clamp(c.moisture+c.water*.055+(nearWater?.018:0)-(.011+c.temperature*.011));
+      c.moisture=clamp(c.moisture+c.water*.055+(nearWater ? .018 : 0)-(.011+c.temperature*.011));
       c.water=Math.max(0,c.water-(.008+c.temperature*.009));
-      c.fertility=clamp(c.fertility+(c.moisture>.3&&c.moisture<.82?.002:-.001)+c.vegetation*.0015);
+      c.fertility=clamp(c.fertility+(c.moisture>.3&&c.moisture<.82 ? .002 : -.001)+c.vegetation*.0015);
       if(c.fire<.08){
         const comfort=clamp(1-Math.abs(c.temperature-.58)*2.1)*clamp(1-Math.abs(c.moisture-.55)*1.65);
         const ns=this.neighbors(c),spread=ns.reduce((s,n)=>s+n.vegetation,0)/Math.max(1,ns.length);
-        c.vegetation=clamp(c.vegetation+comfort*c.fertility*(1-c.vegetation)*.032+spread*.006-c.herb*.0018-(c.water>.72?.035:0));
+        c.vegetation=clamp(c.vegetation+comfort*c.fertility*(1-c.vegetation)*.032+spread*.006-c.herb*.0018-(c.water>.72 ? .035 : 0));
       }
     }
   }
@@ -152,11 +152,11 @@ export class WorldSim{
     for(const s of this.settlements){
       s.age+=.5;if(s.blessed>0)s.blessed--;
       const r=2+s.level,area=this.cellsInRadius(s.x,s.z,r),water=area.some(c=>c.sea||c.water>.13);
-      const foodPotential=area.reduce((sum,c)=>sum+c.vegetation*.5+c.herb*.035+(c.biome==='wetland'?.16:0),0);
+      const foodPotential=area.reduce((sum,c)=>sum+c.vegetation*.5+c.herb*.035+(c.biome==='wetland' ? .16 : 0),0);
       const woodPotential=area.reduce((sum,c)=>sum+(c.biome==='forest'?c.vegetation*.36:c.vegetation*.08),0);
       s.food=Math.max(-12,s.food+foodPotential*.045+s.blessed*.4-s.pop*.018);
       s.wood=Math.max(0,s.wood+woodPotential*.016);
-      s.knowledge+=s.pop*.004+(s.blessed>0?.12:0);
+      s.knowledge+=s.pop*.004+(s.blessed>0 ? .12 : 0);
       const good=water&&s.food>Math.max(2,s.pop*.08);
       if(good)s.pop+=Math.max(.08,s.pop*(.008+s.level*.0015));else s.pop-=Math.max(.06,s.pop*.006);
       if(s.food>8){const harvest=Math.min(s.food-8,s.pop*.035);s.food-=harvest}
