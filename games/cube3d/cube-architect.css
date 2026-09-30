@@ -221,3 +221,9 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   #mobileControls.free-mobile #mobileViewHint{display:none}
   #freeMission{max-width:min(235px,53vw)}
 }
+
+@media(max-width:600px){
+  #freeMission{width:42vw;max-width:42vw;padding:8px 9px}
+  #freeMission small{display:none}
+  #mobileControls.free-mobile .mobile-top-actions{max-width:49vw;right:7px;top:74px}
+}
