@@ -483,7 +483,7 @@ function bindInput(){
  ui.canvas.addEventListener('pointermove',e=>{if(!drag||!lastPointer)return;const dx=e.clientX-lastPointer[0],dy=e.clientY-lastPointer[1];camYaw-=dx*.005;camPitch=clamp(camPitch+dy*.003,.18,.82);if(Math.abs(dx)+Math.abs(dy)>8)tutorialSignal('camera');lastPointer=[e.clientX,e.clientY]});
  ui.canvas.addEventListener('pointerup',()=>{drag=false;lastPointer=null});ui.canvas.addEventListener('wheel',e=>camDist=clamp(camDist+e.deltaY*.008,5.8,12),{passive:true});
  ui.mobileInteract?.addEventListener('click',interact);ui.mobileBuild?.addEventListener('click',()=>openPanel('build'));ui.mobileTablet?.addEventListener('click',togglePanel);
- ui.closePanel.addEventListener('click',closePanel);$$('#hotbar button').forEach(b=>b.addEventListener('click',()=>b.dataset.use?useItem(b.dataset.use):openPanel(b.dataset.open)));
+ ui.closePanel.addEventListener('click',closePanel);$('#hotbar button').forEach(b=>b.addEventListener('click',()=>b.dataset.use?useItem(b.dataset.use):openPanel(b.dataset.open)));
  $('#panel nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.tab,true)));$('#decision [data-choice]').forEach(b=>b.addEventListener('click',()=>chooseDistribution(b.dataset.choice)));ui.tutorialSkip?.addEventListener('click',skipTutorial);
  bindJoy();
 }
