@@ -288,8 +288,10 @@ const CPU_LEVELS={
    serveMax:1,serveStyle:'best',attackStyle:'best'
  },
  boss:{
-   think:FIXED,err:0,dead:2,behind:27,airTrack:1,jumpLead:.67,
-   slideMargin:275,slideBuffer:.10,shotCooldown:.105,oppPrediction:1,
+   // Boss wins by reading the play, not by twitching every physics frame.
+   // Self-play showed that hyper-reactive movement jumped/slid too early and became weaker than Hard.
+   think:.025,err:0,dead:5,behind:27,airTrack:.88,jumpLead:.55,
+   slideMargin:215,slideBuffer:.02,shotCooldown:.105,oppPrediction:1,
    serveMax:1,serveStyle:'predict',attackStyle:'predict'
  }
 };
