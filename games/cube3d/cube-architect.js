@@ -113,7 +113,10 @@ function enterMode(next){
   if(document.pointerLockElement===canvas) document.exitPointerLock?.();
   if(next==='challenge') initChallenge();
   if(next==='net') initNet();
-  if(next==='free') initFree();
+  if(next==='free'||next==='creative'){
+    gameFreeMode=next==='creative'?'creative':'survival';
+    mode='free';initFree();
+  }
 }
 $('homeBtn').addEventListener('click',showHome);
 
@@ -844,6 +847,20 @@ function foldPreview(){
 
 /* ---------------- 아키텍트 월드: 살아있는 복셀 샌드박스 ---------------- */
 const BLOCK_DEFS={
+  snow:{name:'눈',icon:'❄',color:0xe8eff5,category:'자연',solid:true},
+  redSand:{name:'붉은 모래',icon:'🟧',color:0xb76e46,category:'자연',solid:true,gravity:true},
+  gravel:{name:'자갈',icon:'▥',color:0x85817d,category:'자연',solid:true,gravity:true},
+  pineLog:{name:'소나무 원목',icon:'🪵',color:0x64513b,category:'자연',solid:true,flammable:true},
+  pineLeaves:{name:'침엽수 잎',icon:'🌲',color:0x31624a,category:'자연',solid:true,flammable:true,transparent:true,opacity:.86},
+  cactus:{name:'선인장',icon:'🌵',color:0x477a42,category:'자연',solid:true},
+  reed:{name:'갈대',icon:'🌾',color:0x9cab64,category:'자연',solid:false,special:'reed'},
+  workbench:{name:'제작대',icon:'🛠',color:0x9b744b,category:'기능',solid:true},
+  hand:{name:'맨손',icon:'✊',color:0x8fa3b7,category:'기능',solid:false,hidden:true},
+  sticks:{name:'막대',icon:'╱',color:0x9b744b,category:'기능',solid:false,hidden:true},
+  woodPick:{name:'나무 곡괭이',icon:'⛏',color:0xad906c,category:'기능',solid:false,hidden:true},
+  stonePick:{name:'돌 곡괭이',icon:'⛏',color:0x818c92,category:'기능',solid:false,hidden:true},
+  ironPick:{name:'철 곡괭이',icon:'⛏',color:0xcbd4db,category:'기능',solid:false,hidden:true},
+
   grass:{name:'잔디',icon:'🌱',color:0x69b85f,category:'자연',solid:true},
   dirt:{name:'흙',icon:'🟫',color:0x8b6043,category:'자연',solid:true},
   stone:{name:'돌',icon:'🪨',color:0x89919d,category:'자연',solid:true},
@@ -876,8 +893,12 @@ const BLOCK_DEFS={
   fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
-const PLACEABLE_TYPES=['grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
-const WORLD_HALF=16,WORLD_MIN_Y=-5,WORLD_MAX_Y=16,SEA_LEVEL=0;
+const PLACEABLE_TYPES=['snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
+const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=22,SEA_LEVEL=0;
+const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
+let streamCenterX=Infinity,streamCenterZ=Infinity;
+let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0;
+const worldRules=window.CubeArchitectWorld;
 const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
 const FACE_IDS=['R','L','U','D','F','B'];
 const CUBOID_TOPOLOGY={
@@ -949,12 +970,8 @@ function materialFor(type){
   });
   materialCache.set(type,m);return m;
 }
-function terrainHeight(x,z){
-  const dist=Math.hypot(x,z);
-  let h=1.9+Math.sin(x*.31)*.9+Math.cos(z*.27)*.75+Math.sin((x+z)*.18)*.45-Math.max(0,dist-10)*.36;
-  if(dist>14)h-=1.4;
-  return THREE.MathUtils.clamp(Math.floor(h),-2,3);
-}
+function terrainHeight(x,z){return worldRules.height(x,z)}
+function currentBiome(x,z){return worldRules.biomeAt(x,z)}
 function hash2(x,z){
   const v=Math.sin(x*127.1+z*311.7)*43758.5453;
   return v-Math.floor(v);
