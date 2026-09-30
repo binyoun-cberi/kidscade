@@ -1,1196 +1,443 @@
-(()=>{
-'use strict';
+import * as THREE from 'three';
 
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-const $=sel=>document.querySelector(sel);
-const els={
-  playerHp:$('#playerHp'),playerHpText:$('#playerHpText'),enemyHp:$('#enemyHp'),enemyHpText:$('#enemyHpText'),
-  roundLabel:$('#roundLabel'),timer:$('#timer'),fightState:$('#fightState'),leftState:$('#leftState'),rightState:$('#rightState'),
-  xrayBtn:$('#xrayBtn'),helpBtn:$('#helpBtn'),resetBtn:$('#resetBtn'),cue:$('#cue'),toast:$('#toast'),
-  combo:$('#combo'),comboCount:$('#comboCount'),card:$('#resultCard'),resultIcon:$('#resultIcon'),
-  resultTitle:$('#resultTitle'),resultText:$('#resultText'),scienceTitle:$('#scienceTitle'),
-  scienceText:$('#scienceText'),nextBtn:$('#nextBtn'),tutorial:$('#tutorial'),tutorialStart:$('#tutorialStart')
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const approach=(v,t,rate,dt)=>v+(t-v)*(1-Math.exp(-rate*dt));
+const canvas=$('game');
+
+const ui={
+  playerHp:$('playerHp'),playerHpText:$('playerHpText'),enemyHp:$('enemyHp'),enemyHpText:$('enemyHpText'),
+  enemyName:$('enemyName'),stageLabel:$('stageLabel'),timeState:$('timeState'),timeScale:$('timeScale'),
+  incomingTitle:$('incomingTitle'),incomingHint:$('incomingHint'),coach:$('coach'),impact:$('impact'),
+  xrayBtn:$('xrayBtn'),resetBtn:$('resetBtn'),helpBtn:$('helpBtn'),leftArmState:$('leftArmState'),rightArmState:$('rightArmState'),
+  coreLock:$('coreLock'),legLock:$('legLock'),resultCard:$('resultCard'),resultIcon:$('resultIcon'),resultTitle:$('resultTitle'),
+  resultText:$('resultText'),scienceText:$('scienceText'),nextBtn:$('nextBtn'),tutorial:$('tutorial'),tutorialStart:$('tutorialStart')
 };
 
-const keyButtons=[...document.querySelectorAll('.muscle-key')];
-const inputs={q:false,w:false,e:false,r:false};
-const activation={q:0,w:0,e:0,r:0};
-const MUSCLES={
-  q:{side:'left',role:'flexor',name:'왼팔 상완이두근'},
-  w:{side:'left',role:'extensor',name:'왼팔 상완삼두근'},
-  e:{side:'right',role:'flexor',name:'오른팔 상완이두근'},
-  r:{side:'right',role:'extensor',name:'오른팔 상완삼두근'}
-};
-const ROUND_CONFIG=[
-  {seconds:45,enemyWait:[1.25,1.9],telegraph:.58,power:10,enemyGuard:.76},
-  {seconds:45,enemyWait:[.95,1.55],telegraph:.48,power:12,enemyGuard:.80},
-  {seconds:50,enemyWait:[.72,1.28],telegraph:.40,power:15,enemyGuard:.84}
+const STAGES=[
+  {name:'팔의 길항근',enemy:'기본 복서',hp:70,attacks:['leftStraight','rightStraight'],telegraph:.30,strike:.18,recover:.34,damage:18,feint:0},
+  {name:'몸통 회피',enemy:'훅 복서',hp:90,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.26,strike:.16,recover:.30,damage:20,feint:0},
+  {name:'온몸 카운터',enemy:'페인트 복서',hp:110,attacks:['leftStraight','rightStraight','leftHook','rightHook'],telegraph:.22,strike:.145,recover:.27,damage:23,feint:.38}
 ];
-const SCIENCE_TEXT='상완이두근은 팔꿈치를 굽히는 데 크게 작용하고, 상완삼두근은 팔꿈치를 펴는 데 크게 작용하는 길항근입니다. 이 게임은 팔꿈치 굽힘·폄에 집중한 단순화된 모델이며 실제 복싱은 어깨·가슴·몸통·다리 근육도 함께 사용합니다.';
+
+const MUSCLES={
+  leftBiceps:{key:'q',unlock:0,label:'왼팔 상완이두근'},
+  leftTriceps:{key:'w',unlock:0,label:'왼팔 상완삼두근'},
+  rightBiceps:{key:'e',unlock:0,label:'오른팔 상완이두근'},
+  rightTriceps:{key:'r',unlock:0,label:'오른팔 상완삼두근'},
+  leftOblique:{key:'a',unlock:1,label:'왼쪽 복사근'},
+  rightOblique:{key:'d',unlock:1,label:'오른쪽 복사근'},
+  abs:{key:'s',unlock:1,label:'복근'},
+  legs:{key:'f',unlock:2,label:'대퇴사두근·둔근'}
+};
+const keyToMuscle=Object.fromEntries(Object.entries(MUSCLES).map(([id,m])=>[m.key,id]));
+const pressed=Object.fromEntries(Object.keys(MUSCLES).map(k=>[k,false]));
+const activation=Object.fromEntries(Object.keys(MUSCLES).map(k=>[k,0]));
+const buttons=[...document.querySelectorAll('.muscle')];
 
 const state={
-  round:0,running:false,paused:false,helpOpen:false,xray:false,lastTime:performance.now(),
-  timeLeft:45,playerHp:100,enemyHp:100,toastTimer:0,comboTimer:0,roundWon:false,final:false,
-  arms:{
-    left:{flex:.78,vel:0,cocked:true,cooldown:0,lastFlex:.78,flash:0},
-    right:{flex:.78,vel:0,cocked:true,cooldown:0,lastFlex:.78,flash:0}
-  },
-  enemy:{phase:'idle',timer:1.4,target:'left',extension:0,hitDone:false,flash:0},
-  stats:{hits:0,guards:0,taken:0,blocked:0,wins:0,combo:0,maxCombo:0}
+  stage:0,running:false,xray:true,playerHp:100,enemyHp:70,worldScale:0,impactBoost:0,last:performance.now(),
+  pose:{leftFlex:.55,rightFlex:.55,lean:0,crouch:0,twist:0,drive:0},
+  prevPose:{leftFlex:.55,rightFlex:.55,lean:0,crouch:0,twist:0,drive:0},
+  arms:{left:{cocked:false,cooldown:0},right:{cocked:false,cooldown:0}},
+  enemy:{phase:'telegraph',t:.32,attack:'rightStraight',shownAttack:'rightStraight',resolved:false,feint:false,switched:false,counter:false},
+  stats:{hits:0,counters:0,guards:0,dodges:0,taken:0,coContract:0},
+  impactTimer:0
 };
 
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function lerp(a,b,t){return a+(b-a)*t}
-function rand(a,b){return a+Math.random()*(b-a)}
-function roundCfg(){return ROUND_CONFIG[state.round]||ROUND_CONFIG[0]}
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
-function showToast(message){
-  els.toast.textContent=message;
-  els.toast.classList.add('show');
-  clearTimeout(state.toastTimer);
-  state.toastTimer=setTimeout(()=>els.toast.classList.remove('show'),950);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xcbd9df);
+scene.fog=new THREE.Fog(0xcbd9df,8,18);
+const camera=new THREE.PerspectiveCamera(44,1,.1,50);
+camera.position.set(4.2,3.05,5.1);
+camera.lookAt(0,1.35,0);
+
+scene.add(new THREE.HemisphereLight(0xf5fbff,0x52636d,1.8));
+const keyLight=new THREE.DirectionalLight(0xffffff,2.2);keyLight.position.set(3,6,4);keyLight.castShadow=true;keyLight.shadow.mapSize.set(1024,1024);scene.add(keyLight);
+const rimLight=new THREE.DirectionalLight(0xffd9bf,1.0);rimLight.position.set(-4,3,-4);scene.add(rimLight);
+
+const floor=new THREE.Mesh(new THREE.CircleGeometry(5.3,64),new THREE.MeshStandardMaterial({color:0xeaf0f2,roughness:.88}));
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+for(let r=1.3;r<=3.9;r+=1.3){
+  const ring=new THREE.Mesh(new THREE.RingGeometry(r,r+.018,96),new THREE.MeshBasicMaterial({color:0x9bb0ba,transparent:true,opacity:.45,side:THREE.DoubleSide}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.006;scene.add(ring);
+}
+for(const x of [-3.8,3.8]){
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,2.2,16),new THREE.MeshStandardMaterial({color:0x6e8591,roughness:.7}));
+  post.position.set(x,1.1,-.2);scene.add(post);
 }
 
-function sound(name){
-  try{window.KidscadeGame?.sound?.(name)}catch(_){}
-}
+const cylGeo=new THREE.CylinderGeometry(1,1,1,18);
+const sphereGeo=new THREE.SphereGeometry(1,20,14);
+const torsoGeo=new THREE.BoxGeometry(1,1,1);
 
-function setInput(key,on){
-  if(!(key in inputs)||state.final)return;
-  inputs[key]=Boolean(on);
-  syncControls();
+function mat(color,opts={}){return new THREE.MeshStandardMaterial({color,roughness:opts.roughness??.6,metalness:0,transparent:Boolean(opts.transparent),opacity:opts.opacity??1,emissive:opts.emissive??0x000000,emissiveIntensity:opts.emissiveIntensity??0})}
+function mesh(geo,material,parent){const m=new THREE.Mesh(geo,material);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function setSegment(m,a,b,r=.1){
+  const A=new THREE.Vector3(a.x,a.y,a.z),B=new THREE.Vector3(b.x,b.y,b.z),d=B.clone().sub(A),len=Math.max(.001,d.length());
+  m.position.copy(A.add(B).multiplyScalar(.5));
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());
+  m.scale.set(r,len,r);
 }
+function setOrb(m,p,sx,sy,sz){m.position.set(p.x,p.y,p.z);m.scale.set(sx,sy,sz)}
 
-function syncControls(){
-  keyButtons.forEach(btn=>{
-    const key=btn.dataset.key;
-    btn.classList.toggle('active',Boolean(inputs[key]));
-    btn.setAttribute('aria-pressed',inputs[key]?'true':'false');
-  });
-  syncArmLabel('left');
-  syncArmLabel('right');
-}
-
-function syncArmLabel(side){
-  const arm=state.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extendKey=side==='left'?'w':'r';
-  const el=side==='left'?els.leftState:els.rightState;
-  if(!el)return;
-  el.classList.remove('guard','attack','tense');
-  if(activation[flexKey]>.55&&activation[extendKey]>.55){
-    el.textContent='동시 수축';
-    el.classList.add('tense');
-  }else if(arm.flex>=.68){
-    el.textContent='자동 가드';
-    el.classList.add('guard');
-  }else if(arm.flex<=.2&&arm.vel<-.45){
-    el.textContent='펀치';
-    el.classList.add('attack');
-  }else{
-    el.textContent='팔꿈치 '+Math.round(arm.flex*130)+'°';
+function createFighter(kind){
+  const root=new THREE.Group();scene.add(root);
+  const player=kind==='player';
+  const base=player?0x397fbd:0xc95656,skin=player?0xe7b38b:0xd99b79;
+  const skinMats=[mat(base),mat(base),mat(skin),mat(skin),mat(skin),mat(skin),mat(0x273743)];
+  const torso=mesh(torsoGeo,skinMats[0],root),pelvis=mesh(torsoGeo,skinMats[1],root),head=mesh(sphereGeo,skinMats[2],root);
+  const limbNames=['lUpper','lFore','rUpper','rFore','lThigh','lShin','rThigh','rShin'];
+  const limbs={};for(const n of limbNames)limbs[n]=mesh(cylGeo,skinMats[n.includes('Thigh')||n.includes('Shin')?1:3],root);
+  const gloves={left:mesh(sphereGeo,mat(player?0x2b6ba8:0xb33434),root),right:mesh(sphereGeo,mat(player?0x2b6ba8:0xb33434),root)};
+  const boneMat=mat(0xeef8fb,{roughness:.8}),bones={};
+  for(const n of limbNames){bones[n]=mesh(cylGeo,boneMat.clone(),root);bones[n].visible=false}
+  const jointMat=mat(0xf5fcff),joints=[];
+  for(let i=0;i<8;i++){const j=mesh(sphereGeo,jointMat.clone(),root);j.visible=false;joints.push(j)}
+  const muscleColors={biceps:0xf3a61f,triceps:0xef5550,core:0x8767d7,abs:0x4c9f70,legs:0x2f8fa8};
+  const muscle={};
+  for(const id of ['leftBiceps','leftTriceps','rightBiceps','rightTriceps']){
+    muscle[id]=mesh(cylGeo,mat(id.includes('Biceps')?muscleColors.biceps:muscleColors.triceps,{transparent:true,opacity:.9,emissive:id.includes('Biceps')?muscleColors.biceps:muscleColors.triceps}),root);
   }
+  muscle.leftOblique=mesh(torsoGeo,mat(muscleColors.core,{transparent:true,opacity:.82,emissive:muscleColors.core}),root);
+  muscle.rightOblique=mesh(torsoGeo,mat(muscleColors.core,{transparent:true,opacity:.82,emissive:muscleColors.core}),root);
+  muscle.abs=mesh(torsoGeo,mat(muscleColors.abs,{transparent:true,opacity:.82,emissive:muscleColors.abs}),root);
+  muscle.legsLeft=mesh(cylGeo,mat(muscleColors.legs,{transparent:true,opacity:.86,emissive:muscleColors.legs}),root);
+  muscle.legsRight=mesh(cylGeo,mat(muscleColors.legs,{transparent:true,opacity:.86,emissive:muscleColors.legs}),root);
+  return{root,torso,pelvis,head,limbs,gloves,bones,joints,muscle,skinMats,lastKin:null,flash:0};
+}
+const playerVisual=createFighter('player'),enemyVisual=createFighter('enemy');
+playerVisual.root.position.z=.82;enemyVisual.root.position.z=-.82;enemyVisual.root.rotation.y=Math.PI;
+
+function rotXZ(x,z,a){const c=Math.cos(a),s=Math.sin(a);return{x:x*c-z*s,z:x*s+z*c}}
+function computeKinematics(p,facing=-1){
+  const crouch=p.crouch,lean=p.lean,tw=p.twist*facing,drive=p.drive;
+  const hipY=.88-crouch*.28;
+  const torsoCenter={x:lean*.18,y:1.39-crouch*.31,z:facing*drive*.08};
+  const shoulderBaseY=1.70-crouch*.32;
+  const head={x:lean*.42,y:2.07-crouch*.44,z:facing*(.02+drive*.07)};
+  const hipL={x:-.19+lean*.08,y:hipY,z:0},hipR={x:.19+lean*.08,y:hipY,z:0};
+  const kneeZ=facing*.22*crouch;
+  const kneeL={x:-.2+lean*.06,y:.48-crouch*.08,z:kneeZ},kneeR={x:.2+lean*.06,y:.48-crouch*.08,z:kneeZ};
+  const ankleL={x:-.22,y:.08,z:0},ankleR={x:.22,y:.08,z:0};
+  function arm(side,flex){
+    const sign=side==='left'?-1:1;
+    const shRot=rotXZ(sign*.36,0,tw);
+    const shoulder={x:shRot.x+lean*.18,y:shoulderBaseY,z:shRot.z+facing*drive*.08};
+    const t=1-flex;
+    const guard=rotXZ(sign*.18,facing*.18,tw*.55);
+    const ext=rotXZ(sign*.27,facing*(1.45+drive*.16),tw*.8);
+    const elbowGuard=rotXZ(sign*.56,facing*.09,tw*.65);
+    const elbowExt=rotXZ(sign*.42,facing*.76,tw*.78);
+    const hand={x:lerp(guard.x,ext.x,t)+lean*.15,y:lerp(1.92-crouch*.30,1.72-crouch*.26,t),z:lerp(guard.z,ext.z,t)};
+    const elbow={x:lerp(elbowGuard.x,elbowExt.x,t)+lean*.16,y:lerp(1.43-crouch*.30,1.66-crouch*.27,t),z:lerp(elbowGuard.z,elbowExt.z,t)};
+    return{shoulder,elbow,hand};
+  }
+  return{torsoCenter,head,hipL,hipR,kneeL,kneeR,ankleL,ankleR,left:arm('left',p.leftFlex),right:arm('right',p.rightFlex)};
 }
 
-function resetArms(){
-  state.arms.left={flex:.78,vel:0,cocked:true,cooldown:0,lastFlex:.78,flash:0};
-  state.arms.right={flex:.78,vel:0,cocked:true,cooldown:0,lastFlex:.78,flash:0};
-  Object.keys(inputs).forEach(k=>inputs[k]=false);
-  Object.keys(activation).forEach(k=>activation[k]=0);
+function updateFighter(v,p,facing,acts={}){
+  const k=computeKinematics(p,facing);v.lastKin=k;
+  v.torso.position.set(k.torsoCenter.x,k.torsoCenter.y,k.torsoCenter.z);v.torso.scale.set(.68,.82,.38);v.torso.rotation.set(-p.crouch*.18,p.twist*facing,p.lean*.22);
+  v.pelvis.position.set(p.lean*.09,.91-p.crouch*.28,0);v.pelvis.scale.set(.62,.27,.34);v.pelvis.rotation.y=p.twist*facing*.35;
+  setOrb(v.head,k.head,.23,.25,.22);
+  const segs=[
+    ['lUpper',k.left.shoulder,k.left.elbow,.13],['lFore',k.left.elbow,k.left.hand,.115],['rUpper',k.right.shoulder,k.right.elbow,.13],['rFore',k.right.elbow,k.right.hand,.115],
+    ['lThigh',k.hipL,k.kneeL,.15],['lShin',k.kneeL,k.ankleL,.12],['rThigh',k.hipR,k.kneeR,.15],['rShin',k.kneeR,k.ankleR,.12]
+  ];
+  for(const [n,a,b,r] of segs){setSegment(v.limbs[n],a,b,r);setSegment(v.bones[n],a,b,r*.34)}
+  setOrb(v.gloves.left,k.left.hand,.17,.15,.18);setOrb(v.gloves.right,k.right.hand,.17,.15,.18);
+  const jointPts=[k.left.shoulder,k.left.elbow,k.right.shoulder,k.right.elbow,k.hipL,k.kneeL,k.hipR,k.kneeR];
+  jointPts.forEach((p0,i)=>setOrb(v.joints[i],p0,.06,.06,.06));
+  setSegment(v.muscle.leftBiceps,k.left.shoulder,k.left.elbow,.085*(1+(acts.leftBiceps||0)*.45));
+  setSegment(v.muscle.leftTriceps,k.left.shoulder,k.left.elbow,.075*(1+(acts.leftTriceps||0)*.45));
+  setSegment(v.muscle.rightBiceps,k.right.shoulder,k.right.elbow,.085*(1+(acts.rightBiceps||0)*.45));
+  setSegment(v.muscle.rightTriceps,k.right.shoulder,k.right.elbow,.075*(1+(acts.rightTriceps||0)*.45));
+  v.muscle.leftBiceps.position.x-=.035;v.muscle.leftTriceps.position.x+=.035;v.muscle.rightBiceps.position.x+=.035;v.muscle.rightTriceps.position.x-=.035;
+  v.muscle.leftOblique.position.set(k.torsoCenter.x-.26,k.torsoCenter.y-.02,k.torsoCenter.z+facing*.12);v.muscle.leftOblique.scale.set(.13,.48,.10);
+  v.muscle.rightOblique.position.set(k.torsoCenter.x+.26,k.torsoCenter.y-.02,k.torsoCenter.z+facing*.12);v.muscle.rightOblique.scale.set(.13,.48,.10);
+  v.muscle.abs.position.set(k.torsoCenter.x,k.torsoCenter.y-.03,k.torsoCenter.z+facing*.20);v.muscle.abs.scale.set(.23,.52,.08);
+  setSegment(v.muscle.legsLeft,k.hipL,k.kneeL,.095*(1+(acts.legs||0)*.35));setSegment(v.muscle.legsRight,k.hipR,k.kneeR,.095*(1+(acts.legs||0)*.35));
+  updateMuscleMaterials(v,acts);
+}
+function updateMuscleMaterials(v,acts){
+  const ids=['leftBiceps','leftTriceps','rightBiceps','rightTriceps','leftOblique','rightOblique','abs'];
+  for(const id of ids){const a=acts[id]||0,m=v.muscle[id];m.visible=state.xray||a>.06;m.material.emissiveIntensity=.15+a*1.5;m.material.opacity=state.xray?.88:.72}
+  for(const id of ['legsLeft','legsRight']){const m=v.muscle[id];m.visible=state.xray||(acts.legs||0)>.06;m.material.emissiveIntensity=.15+(acts.legs||0)*1.5}
+}
+function applyXray(){
+  for(const v of [playerVisual,enemyVisual]){
+    v.skinMats.forEach(m=>{m.transparent=state.xray;m.opacity=state.xray?.23:1;m.depthWrite=!state.xray;m.needsUpdate=true});
+    Object.values(v.bones).forEach(m=>m.visible=state.xray);
+    v.joints.forEach(m=>m.visible=state.xray);
+  }
+  ui.xrayBtn.classList.toggle('on',state.xray);ui.xrayBtn.setAttribute('aria-pressed',state.xray?'true':'false');
+}
+applyXray();
+
+const trajectory=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xe33d3d,transparent:true,opacity:.68}));
+scene.add(trajectory);
+const targetMarker=new THREE.Mesh(new THREE.SphereGeometry(.28,18,12),new THREE.MeshBasicMaterial({color:0xff5a52,wireframe:true,transparent:true,opacity:.45}));
+scene.add(targetMarker);
+
+function attackInfo(id){
+  const side=id.startsWith('left')?'left':'right',hook=id.includes('Hook');
+  return{side,hook,name:(side==='left'?'왼손 ':'오른손 ')+(hook?'훅':'스트레이트')};
+}
+function activeStage(){return STAGES[state.stage]}
+function chooseAttack(except=''){
+  const arr=activeStage().attacks.filter(x=>x!==except);return arr[Math.floor(Math.random()*arr.length)]||activeStage().attacks[0];
+}
+function beginAttack(){
+  const cfg=activeStage(),actual=chooseAttack(state.enemy.attack),feint=Math.random()<cfg.feint;
+  const fake=feint?chooseAttack(actual):actual;
+  state.enemy={phase:'telegraph',t:.30,attack:actual,shownAttack:fake,resolved:false,feint,switched:false,counter:false};
+  syncIncoming();
+}
+function syncIncoming(){
+  const a=attackInfo(state.enemy.shownAttack);
+  ui.incomingTitle.textContent=(state.enemy.feint&&!state.enemy.switched?'? ':'')+a.name;
+  ui.incomingHint.textContent=state.stage===0?'이두근으로 팔을 굽혀 주먹을 막아 보세요.':a.hook?'복근으로 숙이거나 복사근으로 몸통을 피하세요.':'가드하거나 몸통을 옆으로 피하세요.';
+}
+function enemyPose(){
+  const e=state.enemy,a=attackInfo(e.shownAttack);let strike=0,twist=0,crouch=0,lean=0;
+  if(e.phase==='telegraph')strike=0;
+  else if(e.phase==='strike')strike=Math.sin(clamp(e.t,0,1)*Math.PI/2);
+  else if(e.phase==='recover')strike=1-clamp(e.t,0,1);
+  const leftFlex=a.side==='left'?lerp(.88,.04,strike):.78;
+  const rightFlex=a.side==='right'?lerp(.88,.04,strike):.78;
+  if(a.hook){twist=(a.side==='left'?-1:1)*.42*strike;lean=(a.side==='left'?-1:1)*.08*strike}
+  return{leftFlex,rightFlex,lean,crouch,twist,drive:.08*strike};
+}
+function worldPos(root,p){return new THREE.Vector3(p.x+root.position.x,p.y+root.position.y,p.z+root.position.z)}
+
+function updateTrajectory(){
+  if(!enemyVisual.lastKin||!playerVisual.lastKin)return;
+  const a=attackInfo(state.enemy.shownAttack),hand=enemyVisual.lastKin[a.side].hand,target=playerVisual.lastKin.head;
+  const hp=worldPos(enemyVisual.root,hand),tp=worldPos(playerVisual.root,target);
+  trajectory.geometry.setFromPoints([hp,tp]);trajectory.material.opacity=state.enemy.phase==='strike'?.86:.45;
+  targetMarker.position.copy(tp);targetMarker.scale.setScalar(a.hook?1.12:.9);
 }
 
-function resetEnemy(){
-  const cfg=roundCfg();
-  state.enemy={phase:'idle',timer:rand(cfg.enemyWait[0],cfg.enemyWait[1]),target:Math.random()<.5?'left':'right',extension:0,hitDone:false,flash:0};
+function setPressed(id,on){
+  const meta=MUSCLES[id];if(!meta||meta.unlock>state.stage||!state.running)return;
+  pressed[id]=Boolean(on);
+  syncButtons();
+}
+function syncButtons(){
+  for(const b of buttons){
+    const id=b.dataset.muscle,meta=MUSCLES[id],locked=meta.unlock>state.stage;
+    b.classList.toggle('locked',locked);b.disabled=locked;b.classList.toggle('active',!locked&&pressed[id]);
+    b.setAttribute('aria-pressed',pressed[id]?'true':'false');
+    const em=b.querySelector('em');if(em)em.style.width=Math.round((activation[id]||0)*100)+'%';
+  }
+  ui.coreLock.textContent=state.stage>=1?'사용 가능':'2단계 해금';ui.legLock.textContent=state.stage>=2?'사용 가능':'3단계 해금';
+}
+buttons.forEach(b=>{
+  const id=b.dataset.muscle;
+  b.addEventListener('pointerdown',e=>{if(b.disabled)return;e.preventDefault();b.setPointerCapture?.(e.pointerId);setPressed(id,true);ensureAudio()});
+  const up=e=>{e.preventDefault();setPressed(id,false)};
+  b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',()=>setPressed(id,false));
+});
+window.addEventListener('keydown',e=>{const id=keyToMuscle[e.key.toLowerCase()];if(!id||e.repeat)return;e.preventDefault();setPressed(id,true);ensureAudio()});
+window.addEventListener('keyup',e=>{const id=keyToMuscle[e.key.toLowerCase()];if(!id)return;e.preventDefault();setPressed(id,false)});
+
+let audio=null;
+function ensureAudio(){if(!audio)try{audio=new (window.AudioContext||window.webkitAudioContext)()}catch(_){}}
+function tone(freq=.0,dur=.06,type='sine',gain=.045){
+  if(!audio||!freq)return;const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur);
+}
+function flashImpact(text,good=true){
+  ui.impact.textContent=text;ui.impact.classList.add('show');ui.impact.style.color=good?'#fff4b0':'#ffd0d0';clearTimeout(state.impactTimer);state.impactTimer=setTimeout(()=>ui.impact.classList.remove('show'),430);
 }
 
-function resetRound(){
-  const cfg=roundCfg();
-  state.timeLeft=cfg.seconds;
-  state.playerHp=100;
-  state.enemyHp=100;
-  state.roundWon=false;
-  state.final=false;
-  state.running=true;
-  state.stats.combo=0;
-  resetArms();
-  resetEnemy();
-  els.card.classList.add('hidden');
-  els.combo.classList.add('hidden');
-  els.cue.textContent='팔을 접으면 자동 가드 · 접었다가 빠르게 펴서 닿으면 펀치!';
-  syncHud();
-  syncControls();
-}
-
-function resetRun(){
-  state.round=0;
-  state.stats={hits:0,guards:0,taken:0,blocked:0,wins:0,combo:0,maxCombo:0};
-  resetRound();
-  try{window.KidscadeGame?.start?.({restart:true,mode:'muscle-boxing'})}catch(_){}
-}
-
-function startFight(){
-  if(state.running)return;
-  state.running=true;
-  state.lastTime=performance.now();
-  try{window.KidscadeGame?.start?.({round:state.round+1,mode:'muscle-boxing'})}catch(_){}
-}
-
-function playerArmPose(side){
-  const arm=state.arms[side];
-  const isLeft=side==='left';
-  const shoulder={x:330,y:isLeft?252:322};
-  const guardHand={x:402,y:isLeft?215:272};
-  const extendedHand={x:575,y:isLeft?255:306};
-  const guardElbow={x:365,y:isLeft?315:375};
-  const extendedElbow={x:455,y:isLeft?265:320};
-  const t=1-arm.flex;
+function poseTargets(){
+  const p=state.pose;
+  const lb=activation.leftBiceps,lt=activation.leftTriceps,rb=activation.rightBiceps,rt=activation.rightTriceps;
+  function armTarget(b,t,current){
+    if(Math.min(b,t)>.56&&Math.abs(b-t)<.25)return current;
+    if(b>t+.08)return .94;if(t>b+.08)return .04;return .55;
+  }
   return{
-    shoulder,
-    elbow:{x:lerp(guardElbow.x,extendedElbow.x,t),y:lerp(guardElbow.y,extendedElbow.y,t)},
-    hand:{x:lerp(guardHand.x,extendedHand.x,t),y:lerp(guardHand.y,extendedHand.y,t)}
+    leftFlex:armTarget(lb,lt,p.leftFlex),rightFlex:armTarget(rb,rt,p.rightFlex),
+    lean:clamp((activation.rightOblique-activation.leftOblique)*.58,-.58,.58),
+    crouch:activation.abs*.75,
+    twist:clamp((activation.rightOblique-activation.leftOblique)*.42,-.42,.42),
+    drive:activation.legs*.58
   };
 }
-
-function enemyGuardFlex(side){
-  const e=state.enemy;
-  const attacking=e.target===side&&(e.phase==='telegraph'||e.phase==='extend'||e.phase==='retract');
-  if(!attacking)return 1;
-  if(e.phase==='telegraph')return lerp(1,.45,clamp(e.extension,0,1));
-  return 1-e.extension;
+function updatePlayer(realDt){
+  for(const id of Object.keys(activation))activation[id]=approach(activation[id],pressed[id]?1:0,pressed[id]?8:5.5,realDt);
+  state.prevPose={...state.pose};
+  const t=poseTargets();
+  const leftCo=Math.min(activation.leftBiceps,activation.leftTriceps),rightCo=Math.min(activation.rightBiceps,activation.rightTriceps);
+  const leftRate=leftCo>.5?2.0:6.0,rightRate=rightCo>.5?2.0:6.0;
+  state.pose.leftFlex=approach(state.pose.leftFlex,t.leftFlex,leftRate,realDt);
+  state.pose.rightFlex=approach(state.pose.rightFlex,t.rightFlex,rightRate,realDt);
+  state.pose.lean=approach(state.pose.lean,t.lean,5.0,realDt);
+  state.pose.crouch=approach(state.pose.crouch,t.crouch,5.0,realDt);
+  state.pose.twist=approach(state.pose.twist,t.twist,5.2,realDt);
+  state.pose.drive=approach(state.pose.drive,t.drive,5.5,realDt);
+  if(leftCo>.55||rightCo>.55)state.stats.coContract+=realDt;
+  const d=
+    Math.abs(state.pose.leftFlex-state.prevPose.leftFlex)*2.1+
+    Math.abs(state.pose.rightFlex-state.prevPose.rightFlex)*2.1+
+    Math.abs(state.pose.lean-state.prevPose.lean)*2.6+
+    Math.abs(state.pose.crouch-state.prevPose.crouch)*2.5+
+    Math.abs(state.pose.twist-state.prevPose.twist)*1.8+
+    Math.abs(state.pose.drive-state.prevPose.drive)*2.0;
+  const speed=realDt>0?d/realDt:0;
+  state.worldScale=state.impactBoost>0?1:(speed<.035?0:clamp(speed*.24,.08,1));
+  state.impactBoost=Math.max(0,state.impactBoost-realDt);
+  state.arms.left.cooldown=Math.max(0,state.arms.left.cooldown-realDt);state.arms.right.cooldown=Math.max(0,state.arms.right.cooldown-realDt);
+  checkPunch('left',realDt);checkPunch('right',realDt);
 }
-
-function enemyArmPose(side){
-  const isLeft=side==='left';
-  const flex=enemyGuardFlex(side);
-  const shoulder={x:630,y:isLeft?252:322};
-  const guardHand={x:558,y:isLeft?215:272};
-  const extendedHand={x:385,y:isLeft?255:306};
-  const guardElbow={x:595,y:isLeft?315:375};
-  const extendedElbow={x:505,y:isLeft?265:320};
-  const t=1-flex;
-  return{
-    shoulder,
-    elbow:{x:lerp(guardElbow.x,extendedElbow.x,t),y:lerp(guardElbow.y,extendedElbow.y,t)},
-    hand:{x:lerp(guardHand.x,extendedHand.x,t),y:lerp(guardHand.y,extendedHand.y,t)}
-  };
-}
-
-function updateActivation(dt){
-  for(const key of Object.keys(activation)){
-    const target=inputs[key]?1:0;
-    activation[key]=lerp(activation[key],target,clamp(dt*(inputs[key]?11:8),0,1));
+function checkPunch(side,dt){
+  const flex=state.pose[side+'Flex'],prev=state.prevPose[side+'Flex'],arm=state.arms[side];
+  if(flex>.72)arm.cocked=true;
+  const speed=(prev-flex)/Math.max(.001,dt);
+  const tri=activation[side+'Triceps'];
+  if(arm.cocked&&arm.cooldown<=0&&prev>.22&&flex<.16&&speed>.72&&tri>.3){
+    arm.cocked=false;arm.cooldown=.36;resolvePlayerPunch(side,speed);
   }
 }
-
-function updatePlayerArm(side,dt){
-  const arm=state.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extendKey=side==='left'?'w':'r';
-  const biceps=activation[flexKey];
-  const triceps=activation[extendKey];
-  const co=Math.min(biceps,triceps);
-  const drive=(biceps-triceps)*(1-co*.62);
-  const relax=(.48-arm.flex)*.34;
-  arm.vel+=(drive*4.9+relax-arm.vel*5.1)*dt;
-  arm.lastFlex=arm.flex;
-  arm.flex=clamp(arm.flex+arm.vel*dt,0,1);
-  if(arm.flex===0&&arm.vel<0)arm.vel=0;
-  if(arm.flex===1&&arm.vel>0)arm.vel=0;
-  arm.cooldown=Math.max(0,arm.cooldown-dt);
-  arm.flash=Math.max(0,arm.flash-dt);
-
-  if(arm.flex>.64)arm.cocked=true;
-  const crossedContact=arm.lastFlex>.18&&arm.flex<=.18;
-  const fastExtension=arm.vel<-.55||triceps>.84;
-  if(state.running&&crossedContact&&fastExtension&&arm.cocked&&arm.cooldown<=0){
-    resolvePlayerPunch(side,Math.abs(arm.vel)+triceps);
-    arm.cocked=false;
-    arm.cooldown=.36;
-  }
-}
-
 function resolvePlayerPunch(side,speed){
-  const enemySide=side;
-  const enemyGuard=enemyGuardFlex(enemySide);
-  const blocked=enemyGuard>.72;
-  const arm=state.arms[side];
-  arm.flash=.16;
-  if(blocked){
-    const chip=2;
-    state.enemyHp=clamp(state.enemyHp-chip,0,100);
-    state.stats.blocked++;
-    state.stats.combo=0;
-    showToast('상대 가드에 막혔어요');
-    sound('click');
+  if(!playerVisual.lastKin||!enemyVisual.lastKin)return;
+  const hand=worldPos(playerVisual.root,playerVisual.lastKin[side].hand),head=worldPos(enemyVisual.root,enemyVisual.lastKin.head);
+  const dist=hand.distanceTo(head);
+  if(dist>.78){flashImpact('헛스윙',false);tone(180,.05,'sine',.025);return}
+  const counter=state.enemy.phase==='recover'&&state.enemy.counter;
+  const twistBonus=Math.abs(state.pose.twist)>.2?4:0,driveBonus=state.pose.drive>.25?5:0;
+  let damage=(counter?26:14)+twistBonus+driveBonus+Math.min(4,Math.max(0,speed-1));
+  if(!counter&&state.enemy.phase==='telegraph')damage*=.65;
+  damage=Math.round(damage);state.enemyHp=Math.max(0,state.enemyHp-damage);state.stats.hits++;if(counter)state.stats.counters++;
+  state.impactBoost=.16;enemyVisual.flash=.18;flashImpact(counter?'⚡ COUNTER '+damage:'퍽! '+damage,true);tone(counter?95:125,.08,'square',.06);
+  ui.coach.textContent=counter?'좋아요! 방어 뒤 열린 틈을 바로 공격했어요.':'팔을 굽혀 장전한 뒤 삼두근으로 빠르게 폈어요.';
+  ui.coach.className='coach '+(counter?'counter':'good');
+  if(state.enemyHp<=0)finishStage(true);
+}
+
+function resolveEnemyAttack(){
+  const a=attackInfo(state.enemy.attack);
+  const guardFlex=a.side==='left'?state.pose.rightFlex:state.pose.leftFlex;
+  const guarded=guardFlex>.73;
+  const dodged=a.hook?(state.pose.crouch>.43||Math.abs(state.pose.lean)>.37):(state.pose.crouch>.52||Math.abs(state.pose.lean)>.30);
+  state.enemy.counter=false;
+  if(dodged){
+    state.stats.dodges++;state.enemy.counter=true;flashImpact('회피!',true);tone(420,.06,'sine',.035);ui.coach.textContent='공격이 빗나갔어요. 지금이 카운터 기회!';ui.coach.className='coach counter';
+  }else if(guarded){
+    state.stats.guards++;state.enemy.counter=true;
+    const chip=a.hook&&state.stage>0?5:0;if(chip){state.playerHp=Math.max(0,state.playerHp-chip)}
+    flashImpact(chip?'가드 -5':'가드!',true);tone(260,.05,'triangle',.04);ui.coach.textContent='이두근으로 팔꿈치를 굽혀 얼굴 앞에 가드를 만들었어요. 카운터!';ui.coach.className='coach counter';
   }else{
-    const damage=clamp(Math.round(8+speed*3),9,15);
-    state.enemyHp=clamp(state.enemyHp-damage,0,100);
-    state.enemy.flash=.18;
-    state.stats.hits++;
-    state.stats.combo++;
-    state.stats.maxCombo=Math.max(state.stats.maxCombo,state.stats.combo);
-    els.comboCount.textContent=state.stats.combo;
-    els.combo.classList.toggle('hidden',state.stats.combo<2);
-    clearTimeout(state.comboTimer);
-    state.comboTimer=setTimeout(()=>els.combo.classList.add('hidden'),900);
-    showToast(side==='left'?'왼팔 펀치 적중!':'오른팔 펀치 적중!');
-    sound('correct');
+    const dmg=activeStage().damage;state.playerHp=Math.max(0,state.playerHp-dmg);state.stats.taken++;state.impactBoost=.12;playerVisual.flash=.16;
+    flashImpact('-'+dmg,false);tone(70,.12,'sawtooth',.055);ui.coach.textContent=state.stage===0?'공격하는 쪽 반대 팔의 이두근을 수축해 얼굴 앞을 막아 보세요.':'복사근으로 옆으로 피하거나 복근으로 몸을 낮출 수도 있어요.';ui.coach.className='coach';
+    if(state.playerHp<=0){finishStage(false);return}
   }
   syncHud();
-  if(state.enemyHp<=0)finishRound(true,'KO!');
 }
 
-function beginEnemyPunch(){
-  state.enemy.phase='telegraph';
-  state.enemy.target=Math.random()<.5?'left':'right';
-  state.enemy.timer=roundCfg().telegraph;
-  state.enemy.extension=0;
-  state.enemy.hitDone=false;
-  const sideText=state.enemy.target==='left'?'왼팔':'오른팔';
-  els.fightState.textContent=`상대 펀치! ${sideText}을 접어 가드`;
-  els.cue.textContent=`${sideText} 상완이두근을 수축해서 얼굴 앞에 붙이세요!`;
-}
-
-function resolveEnemyPunch(){
-  if(state.enemy.hitDone)return;
-  state.enemy.hitDone=true;
-  const side=state.enemy.target;
-  const arm=state.arms[side];
-  const guarded=arm.flex>=.66;
-  if(guarded){
-    state.stats.guards++;
-    arm.flash=.14;
-    showToast('자동 가드 성공!');
-    sound('correct');
-  }else{
-    const damage=roundCfg().power;
-    state.playerHp=clamp(state.playerHp-damage,0,100);
-    state.stats.taken++;
-    state.stats.combo=0;
-    els.combo.classList.add('hidden');
-    showToast('가드가 늦었어요!');
-    sound('wrong');
-  }
-  syncHud();
-  if(state.playerHp<=0)finishRound(false,'다운!');
-}
-
-function updateEnemy(dt){
-  const e=state.enemy;
-  if(!state.running)return;
-  e.flash=Math.max(0,e.flash-dt);
-  e.timer-=dt;
-
-  if(e.phase==='idle'){
-    if(e.timer<=0)beginEnemyPunch();
-    return;
-  }
+function updateEnemy(worldDt){
+  if(!state.running||worldDt<=0)return;
+  const cfg=activeStage(),e=state.enemy;
   if(e.phase==='telegraph'){
-    e.extension=clamp(1-e.timer/roundCfg().telegraph,0,1)*.28;
-    if(e.timer<=0){
-      e.phase='extend';
-      e.timer=.24;
-      e.extension=.28;
-    }
-    return;
-  }
-  if(e.phase==='extend'){
-    e.extension=clamp(1-e.timer/.24,0,1);
-    if(e.extension>=.84)resolveEnemyPunch();
-    if(e.timer<=0){
-      e.phase='retract';
-      e.timer=.30;
-      e.extension=1;
-    }
-    return;
-  }
-  if(e.phase==='retract'){
-    e.extension=clamp(e.timer/.30,0,1);
-    if(e.timer<=0){
-      const cfg=roundCfg();
-      e.phase='idle';
-      e.timer=rand(cfg.enemyWait[0],cfg.enemyWait[1]);
-      e.extension=0;
-      e.hitDone=false;
-      els.fightState.textContent='상대 움직임을 보고 가드와 펀치를 바꿔 보세요';
-      els.cue.textContent='상대가 공격할 때 한쪽 가드가 열립니다. 접었다가 빠르게 펴 보세요!';
-    }
+    e.t+=worldDt/cfg.telegraph;
+    if(e.feint&&!e.switched&&e.t>.58){e.switched=true;e.shownAttack=e.attack;syncIncoming();flashImpact('페인트!',false);tone(220,.04,'square',.025)}
+    if(e.t>=1){e.phase='strike';e.t=0;e.resolved=false}
+  }else if(e.phase==='strike'){
+    e.t+=worldDt/cfg.strike;
+    if(!e.resolved&&e.t>=.73){e.resolved=true;resolveEnemyAttack()}
+    if(e.t>=1){e.phase='recover';e.t=0}
+  }else if(e.phase==='recover'){
+    e.t+=worldDt/cfg.recover;
+    if(e.t>=1)beginAttack();
   }
 }
 
-function update(dt){
-  if(!state.running||state.paused||state.helpOpen||state.final)return;
-  updateActivation(dt);
-  updatePlayerArm('left',dt);
-  updatePlayerArm('right',dt);
-  updateEnemy(dt);
-  state.timeLeft=Math.max(0,state.timeLeft-dt);
-  if(state.timeLeft<=0){
-    finishRound(state.enemyHp<state.playerHp,state.enemyHp===state.playerHp?'무승부':(state.enemyHp<state.playerHp?'판정승':'판정패'));
+function syncArmLabels(){
+  function text(side){
+    const flex=state.pose[side+'Flex'],b=activation[side+'Biceps'],t=activation[side+'Triceps'];
+    if(b>.55&&t>.55)return'동시 수축';
+    if(flex>.72)return'가드';
+    if(flex<.18)return'펴짐';
+    return'중립';
   }
-  syncHud();
-  syncControls();
+  ui.leftArmState.textContent=text('left');ui.rightArmState.textContent=text('right');
 }
-
-function finishRound(won,label){
-  if(!state.running)return;
-  state.running=false;
-  state.roundWon=Boolean(won);
-  Object.keys(inputs).forEach(k=>inputs[k]=false);
-  state.stats.combo=0;
-  els.combo.classList.add('hidden');
-  syncControls();
-
-  if(won)state.stats.wins++;
-  const finalWin=won&&state.round===ROUND_CONFIG.length-1;
-  const title=finalWin?'3라운드 승리!':won?`${state.round+1}라운드 승리!`:`${state.round+1}라운드 아쉬운 종료`;
-  els.resultIcon.textContent=won?'🥊':'🛡️';
-  els.resultTitle.textContent=title;
-  els.resultText.textContent=`${label} · 적중 ${state.stats.hits}회 · 가드 ${state.stats.guards}회 · 피격 ${state.stats.taken}회`;
-  els.scienceTitle.textContent='근육 포인트';
-  els.scienceText.textContent=SCIENCE_TEXT;
-
-  if(finalWin){
-    state.final=true;
-    els.nextBtn.textContent='처음부터 다시';
-    const score=Math.max(100,1000+state.stats.hits*70+state.stats.guards*55-state.stats.taken*35-state.stats.blocked*8);
-    try{
-      window.KidscadeGame?.score?.(score);
-      window.KidscadeGame?.gameOver?.({score,rounds:3,...state.stats});
-    }catch(_){}
-  }else if(won){
-    els.nextBtn.textContent='다음 라운드';
-  }else{
-    els.nextBtn.textContent='이 라운드 다시';
-  }
-  els.card.classList.remove('hidden');
-}
-
-function nextRound(){
-  if(state.final){
-    resetRun();
-    return;
-  }
-  if(state.roundWon)state.round=Math.min(ROUND_CONFIG.length-1,state.round+1);
-  resetRound();
-  state.lastTime=performance.now();
-  try{window.KidscadeGame?.start?.({round:state.round+1})}catch(_){}
-}
-
 function syncHud(){
-  const player=Math.round(state.playerHp);
-  const enemy=Math.round(state.enemyHp);
-  els.playerHp.style.width=player+'%';
-  els.enemyHp.style.width=enemy+'%';
-  els.playerHpText.textContent=player;
-  els.enemyHpText.textContent=enemy;
-  els.roundLabel.textContent=`${state.round+1}라운드`;
-  els.timer.textContent=Math.ceil(state.timeLeft);
+  const cfg=activeStage();ui.playerHp.style.width=state.playerHp+'%';ui.playerHpText.textContent=Math.round(state.playerHp);
+  ui.enemyHp.style.width=(state.enemyHp/cfg.hp*100)+'%';ui.enemyHpText.textContent=Math.round(state.enemyHp);ui.enemyName.textContent=cfg.enemy;
+  ui.stageLabel.textContent=(state.stage+1)+' · '+cfg.name;ui.timeScale.textContent=Math.round(state.worldScale*100)+'%';
+  ui.timeState.textContent=state.worldScale===0?'세계 정지':'몸이 움직이는 중';ui.timeState.parentElement.classList.toggle('moving',state.worldScale>0);
+  syncArmLabels();syncButtons();
 }
-
-function drawRing(){
-  const g=ctx.createLinearGradient(0,0,0,560);
-  g.addColorStop(0,'#dff4fb');
-  g.addColorStop(.56,'#f8fbfd');
-  g.addColorStop(.57,'#dce8ed');
-  g.addColorStop(1,'#cbd9df');
-  ctx.fillStyle=g;ctx.fillRect(0,0,960,560);
-  ctx.strokeStyle='#d9465f';ctx.lineWidth=5;
-  for(const y of [128,178,228]){
-    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke();
-  }
-  ctx.strokeStyle='#f8fafc';ctx.lineWidth=4;
-  ctx.beginPath();ctx.moveTo(480,360);ctx.lineTo(480,560);ctx.stroke();
-  ctx.globalAlpha=.12;ctx.fillStyle='#2563eb';
-  ctx.beginPath();ctx.arc(480,440,95,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;
-}
-
-function line(a,b,width,color){
-  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-}
-
-function circle(p,r,color){
-  ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
-}
-
-function drawFighterBase(x,faceRight,color,flash){
-  const dir=faceRight?1:-1;
-  ctx.save();
-  if(flash>0){ctx.shadowColor='#fff';ctx.shadowBlur=22}
-  circle({x,y:185},46,'#f0c59b');
-  ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(x,169,42,Math.PI,0);ctx.fill();
-  ctx.fillStyle=color;
-  ctx.beginPath();ctx.roundRect(x-58,235,116,150,38);ctx.fill();
-  ctx.fillStyle='#263238';ctx.fillRect(x-55,370,48,115);ctx.fillRect(x+7,370,48,115);
-  ctx.fillStyle='#f8fafc';ctx.fillRect(x-61,477,54,16);ctx.fillRect(x+7,477,54,16);
-  ctx.fillStyle='#183246';ctx.beginPath();ctx.arc(x+dir*16,184,4,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-}
-
-function drawPlayerArm(side){
-  const pose=playerArmPose(side);
-  const arm=state.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extKey=side==='left'?'w':'r';
-  const activeB=activation[flexKey],activeT=activation[extKey];
-  const skin='#e6ad82';
-  if(state.xray){
-    line(pose.shoulder,pose.elbow,12,'#d8eef8');
-    line(pose.elbow,pose.hand,10,'#d8eef8');
-    line(pose.shoulder,pose.elbow,7+activeB*9,'#f59e0b');
-    line(pose.shoulder,{x:pose.elbow.x-3,y:pose.elbow.y+7},6+activeT*9,'#ef4444');
+function finishStage(won){
+  state.running=false;Object.keys(pressed).forEach(k=>pressed[k]=false);state.worldScale=0;syncButtons();
+  ui.resultCard.classList.remove('hidden');
+  if(won){
+    ui.resultIcon.textContent=state.stage===2?'🏆':'🥊';ui.resultTitle.textContent=state.stage===2?'온몸 전투 완료!':'상대 제압!';
+    ui.resultText.textContent='적중 '+state.stats.hits+' · 가드 '+state.stats.guards+' · 회피 '+state.stats.dodges+' · 카운터 '+state.stats.counters;
+    ui.scienceText.textContent=state.stage===0?'상완이두근이 팔꿈치를 굽히고 상완삼두근이 펴는 길항 작용을 이용해 가드와 펀치를 만들었습니다.':state.stage===1?'복사근과 복근을 더해 몸통을 기울이고 낮추며 공격 궤도에서 벗어났습니다. 팔만 움직일 때보다 선택지가 늘었습니다.':'팔·몸통·다리 근육군을 함께 사용했습니다. 실제 움직임은 훨씬 많은 근육과 관절이 협력하지만, 여러 근육이 함께 힘과 방향을 만든다는 원리는 같습니다.';
+    ui.nextBtn.textContent=state.stage===2?'처음부터 다시':'다음 상대';
   }else{
-    line(pose.shoulder,pose.elbow,25,skin);
-    line(pose.elbow,pose.hand,21,skin);
+    ui.resultIcon.textContent='💫';ui.resultTitle.textContent='다시 자세를 만들어 봐요';ui.resultText.textContent='피격 '+state.stats.taken+'회 · 가드 '+state.stats.guards+'회 · 회피 '+state.stats.dodges+'회';
+    ui.scienceText.textContent='세계는 내 몸이 움직이는 동안에만 흐릅니다. 공격 궤적을 보고 어떤 관절을 먼저 움직일지 결정한 뒤 천천히 자세를 만들어 보세요.';
+    ui.nextBtn.textContent='이 상대 다시';
   }
-  circle(pose.hand,23,arm.flash>0?'#ffe082':'#2563eb');
-  if(state.xray){
-    ctx.font='800 12px system-ui';
-    ctx.fillStyle='#9a6400';ctx.fillText('상완이두근',pose.shoulder.x-44,pose.shoulder.y-20);
-    ctx.fillStyle='#b91c1c';ctx.fillText('상완삼두근',pose.shoulder.x-44,pose.shoulder.y+42);
-  }
+  ui.nextBtn.dataset.win=won?'1':'0';
 }
-
-function drawEnemyArm(side){
-  const pose=enemyArmPose(side);
-  const skin='#d79b72';
-  if(state.xray){
-    line(pose.shoulder,pose.elbow,12,'#d8eef8');
-    line(pose.elbow,pose.hand,10,'#d8eef8');
-    const flex=enemyGuardFlex(side);
-    line(pose.shoulder,pose.elbow,7+flex*5,'#f59e0b');
-    line(pose.shoulder,{x:pose.elbow.x+3,y:pose.elbow.y+7},7+(1-flex)*7,'#ef4444');
-  }else{
-    line(pose.shoulder,pose.elbow,25,skin);
-    line(pose.elbow,pose.hand,21,skin);
-  }
-  circle(pose.hand,23,state.enemy.flash>0?'#ffe082':'#ef4444');
+function resetStage(){
+  const cfg=activeStage();state.playerHp=100;state.enemyHp=cfg.hp;state.running=true;state.worldScale=0;state.impactBoost=0;
+  state.pose={leftFlex:.55,rightFlex:.55,lean:0,crouch:0,twist:0,drive:0};state.prevPose={...state.pose};
+  state.arms={left:{cocked:false,cooldown:0},right:{cocked:false,cooldown:0}};
+  state.stats={hits:0,counters:0,guards:0,dodges:0,taken:0,coContract:0};
+  for(const k of Object.keys(pressed)){pressed[k]=false;activation[k]=0}
+  ui.resultCard.classList.add('hidden');ui.coach.className='coach';
+  ui.coach.textContent=state.stage===0?'Q/E 이두근으로 팔을 굽혀 보세요. 몸이 움직이는 동안에만 상대도 움직입니다.':state.stage===1?'A/D 복사근과 S 복근이 열렸어요. 훅은 막기보다 피하면 더 안전합니다.':'F로 다리를 밀어 펀치 힘을 보태세요. 페인트 뒤 진짜 공격 방향도 확인하세요.';
+  beginAttack();syncHud();
 }
+ui.nextBtn.addEventListener('click',()=>{
+  const won=ui.nextBtn.dataset.win==='1';
+  if(won){state.stage=state.stage===2?0:state.stage+1}
+  resetStage();
+});
+ui.resetBtn.addEventListener('click',resetStage);
+ui.xrayBtn.addEventListener('click',()=>{state.xray=!state.xray;applyXray()});
+ui.helpBtn.addEventListener('click',()=>{ui.tutorial.classList.remove('hidden');state.running=false});
+ui.tutorialStart.addEventListener('click',()=>{ui.tutorial.classList.add('hidden');state.running=true;state.last=performance.now();try{localStorage.setItem('kidscade_body_slow3d_tutorial','1')}catch(_){};ensureAudio()});
 
-function drawLabels(){
-  if(!state.xray)return;
-  ctx.save();
-  ctx.fillStyle='rgba(255,255,255,.9)';
-  ctx.fillRect(355,505,250,35);
-  ctx.font='800 12px system-ui';
-  ctx.fillStyle='#8a6100';ctx.fillText('주황 = 상완이두근(굽힘)',370,527);
-  ctx.fillStyle='#b91c1c';ctx.fillText('빨강 = 상완삼두근(폄)',490,527);
-  ctx.restore();
+function resize(){
+  const rect=canvas.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height);
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
-
-function render(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawRing();
-  drawFighterBase(310,true,'#437bd9',state.arms.left.flash+state.arms.right.flash);
-  drawFighterBase(650,false,'#e35b63',state.enemy.flash);
-  drawPlayerArm('right');
-  drawEnemyArm('right');
-  drawPlayerArm('left');
-  drawEnemyArm('left');
-  drawLabels();
-
-  if(state.enemy.phase==='telegraph'){
-    const side=state.enemy.target==='left'?'왼팔':'오른팔';
-    ctx.save();
-    ctx.font='1000 25px system-ui';
-    ctx.textAlign='center';
-    ctx.fillStyle='#c2410c';
-    ctx.fillText(`⚠ ${side} 가드!`,480,92);
-    ctx.restore();
-  }
-}
+new ResizeObserver(resize).observe(canvas);resize();
 
 function tick(now){
-  const dt=clamp((now-state.lastTime)/1000,0,.034);
-  state.lastTime=now;
-  update(dt);
-  render();
-  requestAnimationFrame(tick);
-}
-
-function toggleXray(){
-  state.xray=!state.xray;
-  els.xrayBtn.classList.toggle('on',state.xray);
-  els.xrayBtn.setAttribute('aria-pressed',state.xray?'true':'false');
-  showToast(state.xray?'뼈와 근육 표시 켜짐':'일반 화면');
-}
-
-function showTutorial(){
-  state.helpOpen=true;
-  els.tutorial.classList.remove('hidden');
-}
-
-function hideTutorial(){
-  els.tutorial.classList.add('hidden');
-  state.helpOpen=false;
-  try{localStorage.setItem('kidscade_body_boxing_tutorial_v1','1')}catch(_){}
-  if(!state.running)startFight();
-  state.lastTime=performance.now();
-}
-
-window.addEventListener('keydown',event=>{
-  const key=event.key.toLowerCase();
-  if(key in inputs){
-    event.preventDefault();
-    if(!event.repeat)setInput(key,true);
+  const realDt=Math.min(.04,Math.max(.001,(now-state.last)/1000));state.last=now;
+  if(state.running){
+    updatePlayer(realDt);
+    updateFighter(playerVisual,state.pose,-1,activation);
+    updateEnemy(realDt*state.worldScale);
   }
-});
-window.addEventListener('keyup',event=>{
-  const key=event.key.toLowerCase();
-  if(key in inputs){
-    event.preventDefault();
-    setInput(key,false);
-  }
-});
-window.addEventListener('blur',()=>Object.keys(inputs).forEach(k=>setInput(k,false)));
-
-keyButtons.forEach(btn=>{
-  const key=btn.dataset.key;
-  const on=event=>{event.preventDefault();btn.setPointerCapture?.(event.pointerId);setInput(key,true)};
-  const off=event=>{event.preventDefault();setInput(key,false)};
-  btn.addEventListener('pointerdown',on);
-  btn.addEventListener('pointerup',off);
-  btn.addEventListener('pointercancel',off);
-  btn.addEventListener('lostpointercapture',off);
-});
-
-els.xrayBtn.addEventListener('click',toggleXray);
-els.helpBtn.addEventListener('click',showTutorial);
-els.resetBtn.addEventListener('click',resetRun);
-els.nextBtn.addEventListener('click',nextRound);
-els.tutorialStart.addEventListener('click',hideTutorial);
-
-try{
-  window.KidscadeGame?.registerPauseHandlers?.({
-    pause(){state.paused=true;Object.keys(inputs).forEach(k=>inputs[k]=false);syncControls()},
-    resume(){state.paused=false;state.lastTime=performance.now()}
-  });
-}catch(_){}
-
-
-// ============================================================
-// REWORK V6 — pattern boxing + live muscle feedback + camera input
-// References: JustMove pose scoring, Punch-Out state telegraphs,
-// browser pose games, and anatomy visualization projects.
-// ============================================================
-
-const modeEls={
-  manual:document.getElementById('manualModeBtn'),
-  camera:document.getElementById('cameraModeBtn'),
-  status:document.getElementById('cameraStatus'),
-  preview:document.getElementById('cameraPreview'),
-  coach:document.getElementById('muscleCoach')
-};
-
-const REWORK_ENEMIES=[
-  {name:'기본 자세',comboChance:0,feintChance:0,recovery:.62},
-  {name:'연속 공격',comboChance:.58,feintChance:0,recovery:.54},
-  {name:'페인트 마스터',comboChance:.48,feintChance:.42,recovery:.46}
-];
-
-const cameraInput={
-  mode:'manual',stream:null,detector:null,loading:false,active:false,busy:false,raf:0,
-  arms:{
-    left:{angle:120,lastAngle:120,seen:false,confidence:0},
-    right:{angle:120,lastAngle:120,seen:false,confidence:0}
-  }
-};
-
-let coachCooldown=0;
-
-function ensureReworkStats(){
-  const defaults={counters:0,perfectGuards:0,feintsRead:0,coContractTime:0};
-  for(const [key,value] of Object.entries(defaults)){
-    if(!Number.isFinite(state.stats[key]))state.stats[key]=value;
-  }
+  const ep=enemyPose();updateFighter(enemyVisual,ep,1,{});
+  if(playerVisual.flash>0)playerVisual.flash=Math.max(0,playerVisual.flash-realDt);
+  if(enemyVisual.flash>0)enemyVisual.flash=Math.max(0,enemyVisual.flash-realDt);
+  playerVisual.head.material.emissive.setHex(playerVisual.flash>0?0x7d1f1f:0x000000);playerVisual.head.material.emissiveIntensity=playerVisual.flash>0?1.2:0;
+  enemyVisual.head.material.emissive.setHex(enemyVisual.flash>0?0xffb14e:0x000000);enemyVisual.head.material.emissiveIntensity=enemyVisual.flash>0?1.4:0;
+  updateTrajectory();syncHud();
+  const sway=state.pose.lean*.22;camera.position.x=approach(camera.position.x,4.2+sway,3,realDt);camera.lookAt(state.pose.lean*.12,1.34,0);
+  renderer.render(scene,camera);requestAnimationFrame(tick);
 }
 
-function setCoach(text,tone=''){
-  if(!modeEls.coach)return;
-  modeEls.coach.textContent=text;
-  modeEls.coach.className='muscle-coach'+(tone?' '+tone:'');
-}
-
-function setModeStatus(text,tone=''){
-  if(!modeEls.status)return;
-  modeEls.status.textContent=text;
-  modeEls.status.className='camera-status'+(tone?' '+tone:'');
-}
-
-function syncModeButtons(){
-  modeEls.manual?.classList.toggle('active',cameraInput.mode==='manual');
-  modeEls.camera?.classList.toggle('active',cameraInput.mode==='camera');
-}
-
-function loadExternalScript(src,id){
-  return new Promise((resolve,reject)=>{
-    if(document.getElementById(id)){resolve();return}
-    const script=document.createElement('script');
-    script.id=id;script.src=src;script.async=true;
-    script.onload=()=>resolve();
-    script.onerror=()=>reject(new Error('script load failed'));
-    document.head.appendChild(script);
-  });
-}
-
-async function ensurePoseDetector(){
-  if(cameraInput.detector)return cameraInput.detector;
-  if(cameraInput.loading)return null;
-  cameraInput.loading=true;
-  setModeStatus('몸 인식 준비 중…','loading');
-  try{
-    await loadExternalScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js','bodyTfjs');
-    await loadExternalScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.0/dist/pose-detection.js','bodyPoseDetection');
-    await window.tf.ready();
-    const pd=window.poseDetection;
-    const model=pd.SupportedModels.MoveNet;
-    cameraInput.detector=await pd.createDetector(model,{
-      modelType:pd.movenet.modelType.SINGLEPOSE_LIGHTNING,
-      enableSmoothing:true
-    });
-    return cameraInput.detector;
-  }finally{
-    cameraInput.loading=false;
-  }
-}
-
-async function startCameraMode(){
-  if(cameraInput.active)return;
-  try{
-    const detector=await ensurePoseDetector();
-    if(!detector)throw new Error('pose detector unavailable');
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{width:{ideal:640},height:{ideal:480},facingMode:'user'},audio:false
-    });
-    cameraInput.stream=stream;
-    if(modeEls.preview){
-      modeEls.preview.srcObject=stream;
-      await modeEls.preview.play();
-      modeEls.preview.classList.remove('hidden');
-    }
-    cameraInput.mode='camera';
-    cameraInput.active=true;
-    Object.keys(inputs).forEach(k=>inputs[k]=false);
-    cameraInput.arms.left.seen=false;
-    cameraInput.arms.right.seen=false;
-    syncModeButtons();
-    setModeStatus('몸 인식 켜짐','ok');
-    setCoach('팔꿈치를 굽혔다가 빠르게 펴 보세요. 실제 팔 움직임이 캐릭터에 연결돼요.','good');
-    runPoseLoop();
-  }catch(error){
-    stopCameraMode(false);
-    cameraInput.mode='manual';
-    syncModeButtons();
-    setModeStatus('카메라 사용 불가 · 키/터치로 계속','warn');
-    showToast('카메라를 쓸 수 없어 키/터치 모드로 돌아왔어요');
-  }
-}
-
-function stopCameraMode(showMessage=true){
-  cameraInput.active=false;
-  if(cameraInput.raf)cancelAnimationFrame(cameraInput.raf);
-  cameraInput.raf=0;
-  if(cameraInput.stream){
-    cameraInput.stream.getTracks().forEach(track=>track.stop());
-    cameraInput.stream=null;
-  }
-  if(modeEls.preview){
-    modeEls.preview.pause?.();
-    modeEls.preview.srcObject=null;
-    modeEls.preview.classList.add('hidden');
-  }
-  cameraInput.mode='manual';
-  Object.keys(activation).forEach(k=>activation[k]=0);
-  syncModeButtons();
-  setModeStatus('키보드 · 터치','');
-  if(showMessage)setCoach('Q/W/E/R 또는 화면 버튼으로 근육을 직접 수축시키세요.');
-}
-
-function keypointByName(pose,name){
-  return pose?.keypoints?.find(point=>point.name===name);
-}
-
-function jointAngle(a,b,c){
-  if(!a||!b||!c)return null;
-  const abx=a.x-b.x,aby=a.y-b.y,cbx=c.x-b.x,cby=c.y-b.y;
-  const den=Math.hypot(abx,aby)*Math.hypot(cbx,cby);
-  if(den<1e-5)return null;
-  const cosine=clamp((abx*cbx+aby*cby)/den,-1,1);
-  return Math.acos(cosine)*180/Math.PI;
-}
-
-function updateCameraPose(pose){
-  for(const side of ['left','right']){
-    const shoulder=keypointByName(pose,side+'_shoulder');
-    const elbow=keypointByName(pose,side+'_elbow');
-    const wrist=keypointByName(pose,side+'_wrist');
-    const confidence=Math.min(shoulder?.score||0,elbow?.score||0,wrist?.score||0);
-    const angle=jointAngle(shoulder,elbow,wrist);
-    const slot=cameraInput.arms[side];
-    if(angle!==null&&confidence>.28){
-      slot.lastAngle=slot.seen?slot.angle:angle;
-      slot.angle=angle;
-      slot.confidence=confidence;
-      slot.seen=true;
-    }else{
-      slot.confidence=0;
-    }
-  }
-}
-
-async function runPoseLoop(){
-  if(!cameraInput.active)return;
-  if(!cameraInput.busy&&cameraInput.detector&&modeEls.preview?.readyState>=2){
-    cameraInput.busy=true;
-    try{
-      const poses=await cameraInput.detector.estimatePoses(modeEls.preview,{flipHorizontal:false});
-      if(poses?.[0])updateCameraPose(poses[0]);
-    }catch(_){}
-    cameraInput.busy=false;
-  }
-  if(cameraInput.active)cameraInput.raf=requestAnimationFrame(runPoseLoop);
-}
-
-function enemyProfile(){
-  return REWORK_ENEMIES[state.round]||REWORK_ENEMIES[0];
-}
-
-function buildEnemySequence(){
-  const profile=enemyProfile();
-  const first=Math.random()<.5?'left':'right';
-  if(state.round===2&&Math.random()<profile.feintChance){
-    return[
-      {target:first,fake:true},
-      {target:first==='left'?'right':'left',fake:false}
-    ];
-  }
-  if(Math.random()<profile.comboChance){
-    return[
-      {target:first,fake:false},
-      {target:first==='left'?'right':'left',fake:false}
-    ];
-  }
-  return[{target:first,fake:false}];
-}
-
-function startEnemyAction(action){
-  const cfg=roundCfg();
-  state.enemy.target=action.target;
-  state.enemy.fake=Boolean(action.fake);
-  state.enemy.phase='telegraph';
-  state.enemy.timer=state.enemy.fake?cfg.telegraph*.72:cfg.telegraph;
-  state.enemy.extension=0;
-  state.enemy.hitDone=false;
-  const sideText=state.enemy.target==='left'?'왼팔':'오른팔';
-  if(state.enemy.fake){
-    els.fightState.textContent='페인트! 너무 일찍 풀지 마세요';
-    els.cue.textContent=sideText+' 쪽 움직임을 끝까지 보고 판단!';
-  }else{
-    els.fightState.textContent='상대 펀치! '+sideText+'을 접어 가드';
-    els.cue.textContent=sideText+' 상완이두근을 수축해서 얼굴 앞에 붙이세요!';
-  }
-}
-
-function beginEnemyPunch(){
-  state.enemy.sequence=buildEnemySequence();
-  state.enemy.sequenceIndex=0;
-  startEnemyAction(state.enemy.sequence[0]);
-}
-
-function enemyGuardFlex(side){
-  const e=state.enemy;
-  if((e.vulnerable||0)>0)return .08;
-  const attacking=e.target===side&&(e.phase==='telegraph'||e.phase==='extend'||e.phase==='retract');
-  if(!attacking)return 1;
-  if(e.phase==='telegraph')return lerp(1,.45,clamp(e.extension,0,1));
-  return 1-e.extension;
-}
-
-function resetEnemy(){
-  const cfg=roundCfg();
-  state.enemy={
-    phase:'idle',timer:rand(cfg.enemyWait[0],cfg.enemyWait[1]),
-    target:Math.random()<.5?'left':'right',extension:0,hitDone:false,flash:0,
-    vulnerable:0,sequence:[],sequenceIndex:0,fake:false,lastOutcome:'none'
-  };
-}
-
-function updateActivation(dt){
-  if(cameraInput.mode==='camera'){
-    for(const key of Object.keys(activation))activation[key]=lerp(activation[key],0,clamp(dt*6,0,1));
-    return;
-  }
-  for(const key of Object.keys(activation)){
-    const target=inputs[key]?1:0;
-    activation[key]=lerp(activation[key],target,clamp(dt*(inputs[key]?11:8),0,1));
-  }
-}
-
-function updateCameraArm(side,dt){
-  const arm=state.arms[side];
-  const slot=cameraInput.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extendKey=side==='left'?'w':'r';
-  arm.cooldown=Math.max(0,arm.cooldown-dt);
-  arm.flash=Math.max(0,arm.flash-dt);
-  arm.lastFlex=arm.flex;
-
-  if(!slot.seen||slot.confidence<.28){
-    activation[flexKey]=lerp(activation[flexKey],0,clamp(dt*7,0,1));
-    activation[extendKey]=lerp(activation[extendKey],0,clamp(dt*7,0,1));
-    return;
-  }
-
-  const targetFlex=clamp((165-slot.angle)/110,0,1);
-  arm.flex=lerp(arm.flex,targetFlex,clamp(dt*13,0,1));
-  arm.vel=(arm.flex-arm.lastFlex)/Math.max(dt,.001);
-
-  const angularDelta=slot.angle-slot.lastAngle;
-  const flexDrive=clamp((-angularDelta-1.2)/8,0,1);
-  const extendDrive=clamp((angularDelta-1.2)/8,0,1);
-  const holdFlex=arm.flex>.66?.42:0;
-  const holdExtend=arm.flex<.18?.18:0;
-  activation[flexKey]=lerp(activation[flexKey],Math.max(flexDrive,holdFlex),clamp(dt*12,0,1));
-  activation[extendKey]=lerp(activation[extendKey],Math.max(extendDrive,holdExtend),clamp(dt*12,0,1));
-
-  if(arm.flex>.64)arm.cocked=true;
-  const crossedContact=arm.lastFlex>.18&&arm.flex<=.18;
-  const fastExtension=arm.vel<-.55||extendDrive>.7;
-  if(state.running&&crossedContact&&fastExtension&&arm.cocked&&arm.cooldown<=0){
-    resolvePlayerPunch(side,Math.abs(arm.vel)+extendDrive);
-    arm.cocked=false;
-    arm.cooldown=.38;
-  }
-  slot.lastAngle=slot.angle;
-}
-
-function updatePlayerArm(side,dt){
-  if(cameraInput.mode==='camera'){
-    updateCameraArm(side,dt);
-    return;
-  }
-  const arm=state.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extendKey=side==='left'?'w':'r';
-  const biceps=activation[flexKey];
-  const triceps=activation[extendKey];
-  const co=Math.min(biceps,triceps);
-  const drive=(biceps-triceps)*(1-co*.68);
-  const relax=(.48-arm.flex)*.34;
-  arm.vel+=(drive*4.9+relax-arm.vel*5.1)*dt;
-  arm.lastFlex=arm.flex;
-  arm.flex=clamp(arm.flex+arm.vel*dt,0,1);
-  if(arm.flex===0&&arm.vel<0)arm.vel=0;
-  if(arm.flex===1&&arm.vel>0)arm.vel=0;
-  arm.cooldown=Math.max(0,arm.cooldown-dt);
-  arm.flash=Math.max(0,arm.flash-dt);
-
-  ensureReworkStats();
-  if(co>.58)state.stats.coContractTime+=dt;
-
-  if(arm.flex>.64)arm.cocked=true;
-  const crossedContact=arm.lastFlex>.18&&arm.flex<=.18;
-  const fastExtension=arm.vel<-.55||triceps>.84;
-  if(state.running&&crossedContact&&fastExtension&&arm.cocked&&arm.cooldown<=0){
-    resolvePlayerPunch(side,Math.abs(arm.vel)+triceps);
-    arm.cocked=false;
-    arm.cooldown=.36;
-  }
-}
-
-function resolvePlayerPunch(side,speed){
-  ensureReworkStats();
-  const arm=state.arms[side];
-  const counter=(state.enemy.vulnerable||0)>0;
-  const enemyGuard=enemyGuardFlex(side);
-  const blocked=!counter&&enemyGuard>.72;
-  arm.flash=.16;
-
-  if(blocked){
-    state.enemyHp=clamp(state.enemyHp-2,0,100);
-    state.stats.blocked++;
-    state.stats.combo=0;
-    showToast('상대 가드에 막혔어요 · 공격 뒤 빈틈을 노려요');
-    sound('click');
-  }else{
-    let damage=clamp(Math.round(8+speed*3),9,15);
-    if(counter){
-      damage=Math.round(damage*1.55);
-      state.stats.counters++;
-      state.enemy.vulnerable=0;
-      showToast('카운터! 열린 가드를 정확히 맞혔어요');
-    }else{
-      showToast(side==='left'?'왼팔 펀치 적중!':'오른팔 펀치 적중!');
-    }
-    state.enemyHp=clamp(state.enemyHp-damage,0,100);
-    state.enemy.flash=.18;
-    state.stats.hits++;
-    state.stats.combo++;
-    state.stats.maxCombo=Math.max(state.stats.maxCombo,state.stats.combo);
-    els.comboCount.textContent=state.stats.combo;
-    els.combo.classList.toggle('hidden',state.stats.combo<2);
-    clearTimeout(state.comboTimer);
-    state.comboTimer=setTimeout(()=>els.combo.classList.add('hidden'),900);
-    sound('correct');
-  }
-  syncHud();
-  if(state.enemyHp<=0)finishRound(true,'KO!');
-}
-
-function resolveEnemyPunch(){
-  if(state.enemy.hitDone)return;
-  state.enemy.hitDone=true;
-  ensureReworkStats();
-  const side=state.enemy.target;
-  const arm=state.arms[side];
-  const guarded=arm.flex>=.66;
-  if(guarded){
-    state.stats.guards++;
-    arm.flash=.14;
-    const perfect=arm.flex>=.82;
-    if(perfect){
-      state.stats.perfectGuards++;
-      state.enemy.lastOutcome='perfect';
-      showToast('완벽 가드! 곧 카운터 기회!');
-    }else{
-      state.enemy.lastOutcome='blocked';
-      showToast('가드 성공!');
-    }
-    sound('correct');
-  }else{
-    const damage=roundCfg().power;
-    state.playerHp=clamp(state.playerHp-damage,0,100);
-    state.stats.taken++;
-    state.stats.combo=0;
-    state.enemy.lastOutcome='hit';
-    els.combo.classList.add('hidden');
-    showToast('가드가 늦었어요!');
-    sound('wrong');
-  }
-  syncHud();
-  if(state.playerHp<=0)finishRound(false,'다운!');
-}
-
-function finishEnemySequence(){
-  const cfg=roundCfg();
-  const profile=enemyProfile();
-  if(state.enemy.lastOutcome==='perfect')state.enemy.vulnerable=.95;
-  else if(state.enemy.lastOutcome==='blocked')state.enemy.vulnerable=.68;
-  else state.enemy.vulnerable=.34;
-  state.enemy.phase='idle';
-  state.enemy.timer=rand(cfg.enemyWait[0],cfg.enemyWait[1])+profile.recovery;
-  state.enemy.extension=0;
-  state.enemy.hitDone=false;
-  state.enemy.sequence=[];
-  state.enemy.sequenceIndex=0;
-  state.enemy.fake=false;
-  els.fightState.textContent=state.enemy.vulnerable>.5?'상대 가드가 열렸어요 · 지금 카운터!':'상대 움직임을 보고 다음 공격을 준비하세요';
-  els.cue.textContent=state.enemy.vulnerable>.5?'접어 둔 팔을 삼두근으로 빠르게 펴세요!':'팔을 접어 준비하고 상대의 어깨 움직임을 보세요.';
-}
-
-function advanceEnemySequence(){
-  state.enemy.sequenceIndex++;
-  if(state.enemy.sequenceIndex<state.enemy.sequence.length){
-    state.enemy.phase='gap';
-    state.enemy.timer=.16;
-    state.enemy.extension=0;
-  }else{
-    finishEnemySequence();
-  }
-}
-
-function updateEnemy(dt){
-  const e=state.enemy;
-  if(!state.running)return;
-  e.flash=Math.max(0,e.flash-dt);
-  e.vulnerable=Math.max(0,(e.vulnerable||0)-dt);
-  e.timer-=dt;
-
-  if(e.phase==='idle'){
-    if(e.timer<=0)beginEnemyPunch();
-    return;
-  }
-
-  if(e.phase==='gap'){
-    if(e.timer<=0)startEnemyAction(e.sequence[e.sequenceIndex]);
-    return;
-  }
-
-  if(e.phase==='telegraph'){
-    const tele=e.fake?roundCfg().telegraph*.72:roundCfg().telegraph;
-    e.extension=clamp(1-e.timer/tele,0,1)*.28;
-    if(e.timer<=0){
-      if(e.fake){
-        ensureReworkStats();
-        state.stats.feintsRead++;
-        showToast('페인트였어요! 다음 동작을 봐요');
-        e.lastOutcome='feint';
-        advanceEnemySequence();
-      }else{
-        e.phase='extend';
-        e.timer=.24;
-        e.extension=.28;
-      }
-    }
-    return;
-  }
-
-  if(e.phase==='extend'){
-    e.extension=clamp(1-e.timer/.24,0,1);
-    if(e.extension>=.84)resolveEnemyPunch();
-    if(e.timer<=0){
-      e.phase='retract';
-      e.timer=.30;
-      e.extension=1;
-    }
-    return;
-  }
-
-  if(e.phase==='retract'){
-    e.extension=clamp(e.timer/.30,0,1);
-    if(e.timer<=0)advanceEnemySequence();
-  }
-}
-
-function syncControls(){
-  keyButtons.forEach(btn=>{
-    const key=btn.dataset.key;
-    const value=clamp(activation[key]||0,0,1);
-    btn.classList.toggle('active',value>.35);
-    btn.classList.toggle('camera-driven',cameraInput.mode==='camera');
-    btn.setAttribute('aria-pressed',value>.35?'true':'false');
-    btn.style.setProperty('--muscle-level',String(value));
-    const bar=btn.querySelector('i span');
-    if(bar)bar.style.width=Math.round(value*100)+'%';
-  });
-  syncArmLabel('left');
-  syncArmLabel('right');
-  syncCoach();
-}
-
-function syncCoach(){
-  if(!modeEls.coach)return;
-  const lCo=Math.min(activation.q,activation.w);
-  const rCo=Math.min(activation.e,activation.r);
-  const vulnerable=(state.enemy.vulnerable||0)>.08;
-  if(vulnerable){
-    setCoach('카운터 기회! 상대 가드가 열렸어요. 접어 둔 팔을 빠르게 펴세요.','counter');
-  }else if(Math.max(lCo,rCo)>.6){
-    setCoach('이두근과 삼두근이 함께 강하게 수축 중! 팔 움직임이 둔해져요.','warn');
-  }else if(cameraInput.mode==='camera'){
-    const seen=cameraInput.arms.left.confidence>.28||cameraInput.arms.right.confidence>.28;
-    if(!seen)setCoach('팔이 잘 보이도록 카메라에서 조금 떨어져 서 보세요.','warn');
-  }
-}
-
-function syncHud(){
-  const player=Math.round(state.playerHp);
-  const enemy=Math.round(state.enemyHp);
-  els.playerHp.style.width=player+'%';
-  els.enemyHp.style.width=enemy+'%';
-  els.playerHpText.textContent=player;
-  els.enemyHpText.textContent=enemy;
-  els.roundLabel.textContent=(state.round+1)+'라운드 · '+enemyProfile().name;
-  els.timer.textContent=Math.ceil(state.timeLeft);
-}
-
-function drawPlayerArm(side){
-  const pose=playerArmPose(side);
-  const arm=state.arms[side];
-  const flexKey=side==='left'?'q':'e';
-  const extKey=side==='left'?'w':'r';
-  const activeB=activation[flexKey],activeT=activation[extKey];
-  const skin='#e6ad82';
-
-  if(state.xray){
-    line(pose.shoulder,pose.elbow,12,'#d8eef8');
-    line(pose.elbow,pose.hand,10,'#d8eef8');
-    line(pose.shoulder,pose.elbow,7+activeB*11,'#f59e0b');
-    line(pose.shoulder,{x:pose.elbow.x-3,y:pose.elbow.y+7},6+activeT*11,'#ef4444');
-    if(activeB>.3)circle({x:lerp(pose.shoulder.x,pose.elbow.x,.55),y:lerp(pose.shoulder.y,pose.elbow.y,.55)},5+activeB*7,'rgba(245,158,11,.42)');
-    if(activeT>.3)circle({x:lerp(pose.shoulder.x,pose.elbow.x,.62),y:lerp(pose.shoulder.y,pose.elbow.y,.62)+7},5+activeT*7,'rgba(239,68,68,.35)');
-  }else{
-    line(pose.shoulder,pose.elbow,25+activeB*2,skin);
-    line(pose.elbow,pose.hand,21+activeT*2,skin);
-  }
-  circle(pose.hand,23,arm.flash>0?'#ffe082':'#2563eb');
-
-  if(state.xray){
-    ctx.font='800 12px system-ui';
-    ctx.fillStyle=activeB>.45?'#7c4a00':'#9a6400';
-    ctx.fillText('상완이두근',pose.shoulder.x-44,pose.shoulder.y-20);
-    ctx.fillStyle=activeT>.45?'#991b1b':'#b91c1c';
-    ctx.fillText('상완삼두근',pose.shoulder.x-44,pose.shoulder.y+42);
-  }
-}
-
-function drawEnemyArm(side){
-  const pose=enemyArmPose(side);
-  const skin='#d79b72';
-  if(state.xray){
-    line(pose.shoulder,pose.elbow,12,'#d8eef8');
-    line(pose.elbow,pose.hand,10,'#d8eef8');
-    const flex=enemyGuardFlex(side);
-    line(pose.shoulder,pose.elbow,7+flex*5,'#f59e0b');
-    line(pose.shoulder,{x:pose.elbow.x+3,y:pose.elbow.y+7},7+(1-flex)*7,'#ef4444');
-  }else{
-    line(pose.shoulder,pose.elbow,25,skin);
-    line(pose.elbow,pose.hand,21,skin);
-  }
-  circle(pose.hand,23,state.enemy.flash>0?'#ffe082':'#ef4444');
-}
-
-const originalRender=render;
-render=function(){
-  originalRender();
-  if((state.enemy.vulnerable||0)>0){
-    ctx.save();
-    ctx.textAlign='center';
-    ctx.font='1000 23px system-ui';
-    ctx.fillStyle='#b45309';
-    ctx.fillText('⚡ COUNTER!',650,112);
-    ctx.restore();
-  }
-};
-
-const originalResetRun=resetRun;
-resetRun=function(){
-  originalResetRun();
-  ensureReworkStats();
-  setCoach(cameraInput.mode==='camera'
-    ?'팔꿈치를 굽혔다가 빠르게 펴 보세요. 실제 팔 움직임이 캐릭터에 연결돼요.'
-    :'Q/W/E/R 또는 화면 버튼으로 근육을 직접 수축시키세요.');
-};
-
-const originalFinishRound=finishRound;
-finishRound=function(won,label){
-  ensureReworkStats();
-  originalFinishRound(won,label);
-  els.resultText.textContent=
-    label+' · 적중 '+state.stats.hits+'회 · 가드 '+state.stats.guards+'회 · 카운터 '+state.stats.counters+'회 · 피격 '+state.stats.taken+'회';
-  els.scienceText.textContent=
-    '상완이두근은 팔꿈치를 굽히고 상완삼두근은 펴는 데 크게 작용하는 길항근입니다. '+
-    '이번 경기에서는 완벽 가드 '+state.stats.perfectGuards+'회, 카운터 '+state.stats.counters+'회를 기록했어요. '+
-    '두 근육을 동시에 강하게 수축하면 관절이 단단해지지만 빠른 움직임은 어려워집니다. 실제 복싱은 어깨·가슴·몸통·다리 근육도 함께 사용합니다.';
-};
-
-modeEls.manual?.addEventListener('click',()=>stopCameraMode());
-modeEls.camera?.addEventListener('click',()=>startCameraMode());
-window.addEventListener('beforeunload',()=>stopCameraMode(false));
-
-syncModeButtons();
-setModeStatus('키보드 · 터치','');
-setCoach('Q/W/E/R 또는 화면 버튼으로 근육을 직접 수축시키세요.');
-
-resetRound();
-state.running=false;
-let seen=false;
-try{seen=localStorage.getItem('kidscade_body_boxing_tutorial_v1')==='1'}catch(_){}
-if(!seen)showTutorial();
-else startFight();
-requestAnimationFrame(tick);
-})();
+let seen=false;try{seen=localStorage.getItem('kidscade_body_slow3d_tutorial')==='1'}catch(_){}
+if(!seen)ui.tutorial.classList.remove('hidden');
+resetStage();
+if(!seen)state.running=false;
+applyXray();requestAnimationFrame(tick);
