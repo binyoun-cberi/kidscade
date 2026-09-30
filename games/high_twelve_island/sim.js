@@ -166,13 +166,13 @@
       { label: "당장 배급량을 줄여 비축해요.", changes: { food: 5, trust: -4 }, note: "단기적으로 식량을 아끼지만 시민들의 불만이 커집니다." }
     ] },
     { id: "emergency", priority: 110, repeat: 10, when: s => s.food <= 15, title: "창고에 식량이 거의 없습니다!", speaker: "하나", body: "생존을 위해 즉시 식량을 확보해야 합니다. 채집 인원을 늘리는 것도 잊지 마세요.", options: [
-      { label: "다른 작업을 멈추고 긴급 채집해요.", changes: { food: 19, wood: -6 }, jobs: "gather", note: "물자를 사용하고 일꾼을 식량 생산으로 옮깁니다." },
-      { label: "구호 물자를 교환해요.", changes: { food: 25, treasury: -8, trust: 1 }, note: "가용한 국고를 사용해 부족한 식량을 확보합니다." },
+      { label: "다른 작업을 멈추고 긴급 채집해요.", cost: { wood: 6 }, changes: { food: 19 }, jobs: "gather", note: "물자를 사용하고 일꾼을 식량 생산으로 옮깁니다." },
+      { label: "구호 물자를 교환해요.", cost: { treasury: 8 }, changes: { food: 25, trust: 1 }, note: "가용한 국고를 사용해 부족한 식량을 확보합니다." },
       { label: "남은 식량을 모아 나눠요.", changes: { food: 12, trust: -5 }, note: "긴급 배급으로 시간을 벌지만 여전히 생산 확대가 필요합니다." }
     ] },
     { id: "low_wood", priority: 84, repeat: 15, when: s => s.wood <= 14, title: "고칠 도구가 부족해요", speaker: "태오", body: "집과 농장을 고치기 위한 물자가 부족합니다.", options: [
       { label: "물자 수집에 일꾼을 더 배치해요.", jobs: "wood", changes: { wood: 4 }, note: "긴급 수집을 시작합니다." },
-      { label: "남는 식량과 물자를 교환해요.", changes: { wood: 14, food: -12 }, note: "식량을 물자로 교환합니다." },
+      { label: "남는 식량과 물자를 교환해요.", cost: { food: 12 }, changes: { wood: 14 }, note: "식량을 물자로 교환합니다." },
       { label: "사용하던 재료를 재활용해요.", changes: { wood: 8, trust: -1 }, note: "당장은 버틸 수 있지만 충분한 수집이 필요합니다." }
     ] },
     { id: "trust_warning", priority: 96, repeat: 18, when: s => s.trust <= 40 && s.trust > 20, title: "시민들이 공개회의를 요구합니다", speaker: "하나", body: "결정 이유를 알고 싶다는 시민들이 늘고 있습니다.", options: [
@@ -212,10 +212,10 @@
     { id: "low_budget", priority: 83, repeat: 19, when: s => s.stage === 2 && s.treasury <= 8, title: "마을 운영비가 부족해요", speaker: "미래", body: "공공시설을 운영하려면 국고 수입과 지출을 점검해야 합니다.", options: [
       { label: "운영 비용을 절약해요.", changes: { treasury: 10, trust: -2 }, note: "긴급 지출 조정으로 국고를 확보합니다." },
       { label: "시민들과 부담금 규칙을 논의해요.", changes: { treasury: 6, trust: 1 }, note: "법률 탭에서 세금을 검토할 수 있습니다." },
-      { label: "가지고 있는 물자를 활용해요.", changes: { treasury: 12, wood: -12 }, note: "물자를 처분해 부족한 국고를 메웁니다." }
+      { label: "가지고 있는 물자를 활용해요.", cost: { wood: 12 }, changes: { treasury: 12 }, note: "물자를 처분해 부족한 국고를 메웁니다." }
     ] },
     { id: "storm", priority: 76, repeat: 40, when: s => s.tick >= 19 && s.stormUntil === 0, randomChance: .035, title: "거센 폭풍이 다가옵니다", speaker: "태오", body: "다음 몇 차례 동안 채집과 수집이 어려워집니다. 지금 대비할까요?", options: [
-      { label: "비축 물자를 사용해 시설을 보호해요.", changes: { wood: -9, trust: 3 }, storm: 3, note: "폭풍 피해를 완화합니다." },
+      { label: "비축 물자를 사용해 시설을 보호해요.", cost: { wood: 9 }, changes: { trust: 3 }, storm: 3, note: "폭풍 피해를 완화합니다." },
       { label: "식량을 나누어 두고 버텨요.", changes: { food: -8, trust: 1 }, storm: 5, note: "폭풍 동안 생산량이 줄어듭니다." },
       { label: "당장 작업을 계속해요.", changes: { wood: 4, trust: -3 }, storm: 7, note: "물자를 얻지만 폭풍의 영향이 오래 지속됩니다." }
     ] },
