@@ -405,6 +405,64 @@
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
+
+    { id: "ration_equal_petition", priority: 72, repeat: 28, when: s => s.laws.ration === "equal" && s.tick >= 10 && s.pressure.ration >= 3.2, title: "같이 나눠도, 일한 몫은요?", speaker: "태오",
+      body: "같은 양을 나누는 규칙을 유지하되 추가로 일한 사람의 몫을 어떻게 다룰지 의견이 나왔습니다. 지금 정하는 방법은 앞으로의 배급에도 적용됩니다.", options: [
+      { label: "추가 노동에 대한 보상 배급을 허용해요.", safeguard: "fairBonus", changes: { trust: 2 }, note: "생산량을 유지하지만 매주 보상용 식량이 더 필요합니다. 새로운 운영 규칙이 계속 적용됩니다." },
+      { label: "배급법 자체를 노동 보상 방식으로 개정해요.", law: ["ration", "effort"], note: "전체 생산과 식량 소비 방식이 달라집니다. 이후에는 노동 참여가 어려운 주민의 요구가 생길 수 있습니다." },
+      { label: "9주 안에 배급법을 다시 검토하겠다고 약속해요.", pledge: { kind: "ration", title: "배급법 재검토", delay: 9 }, changes: { trust: 1 }, note: "당장 법을 바꾸지 않지만, 약속을 지키지 않으면 후속 사건이 발생합니다." }
+    ] },
+    { id: "ration_effort_petition", priority: 74, repeat: 27, when: s => s.laws.ration === "effort" && s.tick >= 10 && s.pressure.ration >= 3.2, title: "일하기 어려운 주민은 어떻게 하나요?", speaker: "하나",
+      body: "노동에 따른 추가 배급을 운영하고 있지만 돌봄이나 다른 사정으로 추가 노동에 참여하기 어려운 주민이 있습니다. 예외 규정을 논의해 달라는 청원이 들어왔습니다.", options: [
+      { label: "기본 배급과 추가 지원을 함께 보장해요.", safeguard: "effortCare", changes: { trust: 2 }, note: "매주 식량 소비가 늘고 노동 보상에 따른 생산 증가폭이 일부 줄어듭니다. 추가 지원 규정이 유지됩니다." },
+      { label: "필요에 따른 배급법으로 개정해요.", law: ["ration", "needs"], note: "노동 보상 대신 지원 대상 확인과 물자 관리가 중요해집니다." },
+      { label: "9주 안에 예외 규정을 다시 검토하겠다고 약속해요.", pledge: { kind: "ration", title: "배급 예외 검토", delay: 9 }, changes: { trust: 1 }, note: "미루는 동안 현재 배급법을 유지합니다. 약속 기한이 오면 후속 사건이 발생합니다." }
+    ] },
+    { id: "ration_needs_petition", priority: 74, repeat: 27, when: s => s.laws.ration === "needs" && s.tick >= 10 && s.pressure.ration >= 3.2, title: "추가 지원의 기준을 알려 주세요", speaker: "미래",
+      body: "추가 지원을 누가 받는지 확인하고 관리하는 데 물자가 듭니다. 일부 주민은 기준과 배급 내역을 더 투명하게 알려 달라고 제안했습니다.", options: [
+      { label: "지원 대상과 배급 내역을 정기적으로 확인해요.", safeguard: "needsAudit", changes: { trust: 3 }, note: "청원은 줄지만 매주 행정 물자와 자치 마을의 운영비가 추가로 필요합니다." },
+      { label: "기본 균등 배급으로 법을 개정해요.", law: ["ration", "equal"], note: "행정 부담이 줄지만 개인별 필요를 다루는 방식이 달라집니다." },
+      { label: "9주 안에 지원 기준을 다시 검토하겠다고 약속해요.", pledge: { kind: "ration", title: "추가 지원 기준 검토", delay: 9 }, changes: { trust: 1 }, note: "기한 전까지 다른 조치를 하지 않으면 약속 이행을 요구받습니다." }
+    ] },
+    { id: "labor_fatigue", priority: 85, repeat: 29, when: s => s.laws.labor === "extra" && (s.workStrain >= 5.2 || s.pressure.labor >= 3.6),
+      title: "추가 근무가 오래 이어지고 있어요", speaker: "태오",
+      body: "처음에는 생산이 늘었지만 피로가 누적되며 작업 속도가 떨어지고 있습니다. 주민들이 휴식과 보상을 논의하고 싶어 합니다.", options: [
+        { label: "추가 근무마다 쉬는 시간과 간식을 보장해요.", safeguard: "workBreak", changes: { trust: 3 }, note: "식량 소비가 조금 늘지만 피로가 줄고 장기적인 생산 하락을 완화합니다." },
+        { label: "일과 휴식이 균형을 이루도록 법을 개정해요.", law: ["labor", "balanced"], note: "추가 근무에 따른 생산 효과는 사라지지만 피로가 회복됩니다." },
+        { label: "6주 동안 추가 근무를 잠시 줄여요.", restWeeks: 6, changes: { trust: 1 }, note: "일시적으로 생산량이 떨어지고 피로가 줄어듭니다. 기존 노동 규칙은 유지됩니다." }
+      ] },
+    { id: "unkept_pledge", priority: 98, repeat: 6, when: s => (s.pledges || []).some(p => s.tick >= p.due),
+      title: "약속한 검토 기한이 지났습니다", speaker: "하나",
+      body: "주민들이 기다려 온 법률 검토의 기한이 지났습니다. 약속을 어떻게 처리할지 결정해야 합니다.", options: [
+        { label: "현재 배급법에 필요한 보호 규정을 추가해요.", fulfillSafeguard: true, changes: { trust: -1 }, note: "기존 법을 유지하되 주민들의 요구에 대응할 영구적인 규정을 추가합니다." },
+        { label: "기한을 넘긴 이유를 공개하고 다시 논의해요.", postponePledge: 7, changes: { trust: -4 }, note: "검토 기한을 한 번 더 연장합니다. 다시 기한을 놓치면 주민들의 신뢰가 감소합니다." },
+        { label: "약속을 철회하고 기존 방침을 유지해요.", abandonPledge: true, changes: { trust: -9 }, note: "약속을 철회합니다. 기존 규칙은 유지되지만 갈등이 다시 커질 수 있습니다." }
+      ] },
+    { id: "storm_aftermath", priority: 79, repeat: 12, when: s => !!s.stormAftermathAt && s.tick >= s.stormAftermathAt,
+      title: "폭풍이 지나간 뒤, 우리 마을은?", speaker: "미래",
+      body: s => s.laws.storage === "reserve" ? "비축 식량 덕분에 폭풍 이후의 피해를 줄일 수 있었습니다. 이제 부족한 물자를 복구할 차례입니다." :
+        s.laws.storage === "exchange" ? "평소 교역으로 물자를 얻었지만 폭풍 때는 교역이 끊겼습니다. 식량 재고와 다음 폭풍에 대한 준비를 점검해야 합니다." :
+        s.laws.storage === "share" ? "남는 식량을 추가로 배급해 왔지만 폭풍 이후에는 저장된 양이 적습니다. 앞으로의 비축 방법을 논의합니다." :
+        "폭풍이 지나갔습니다. 사전에 충분한 비축 규칙을 마련하지 못해 식량과 물자 상태를 확인해야 합니다.",
+      options: [
+        { label: "복구 작업에 물자를 우선 사용해요.", changes: { trust: 2 }, restoration: true, note: "자원이 허락하는 범위에서 시설 복구에 투자하고 생산량 회복을 돕습니다." },
+        { label: "앞으로의 비축 규칙을 검토해요.", changes: { trust: 2 }, reviewStorage: true, note: "현재 법률을 유지하되 비축법 개정의 필요성을 기록합니다." },
+        { label: "지금의 운영방식을 유지해요.", changes: { trust: -1 }, note: "추가 지출 없이 현재의 생산과 배급을 이어갑니다." }
+      ] },
+    { id: "delegation_review", priority: 78, repeat: 29, when: s => s.stage >= 2 && s.laws.process === "delegate" && (s.authorityUses >= 2 || (s.processReviewAt || 0) > 0 && s.tick >= s.processReviewAt),
+      title: "위임한 권한을 다시 확인해요", speaker: "하나",
+      body: "대표자에게 맡긴 공공 지원 결정이 누적되었습니다. 주민들이 결정 근거와 지출 내역을 보고, 위임 범위를 다시 확인하려 합니다.", options: [
+        { label: "결정 내역을 공개하고 주민 의견을 들어요.", changes: { trust: 4 }, reviewAuthority: true, note: "대표에게 위임한 운영 방식은 유지하면서 결정 내역을 공개하고 정기 검토를 다시 시작합니다." },
+        { label: "앞으로의 의사결정 절차를 주민투표로 제안해요.", changes: { trust: 2 }, reviewAuthority: true, note: "법률 탭에서 공동체 결정 절차를 변경할 수 있습니다." },
+        { label: "기존 위임을 유지하고 다음 검토를 예약해요.", changes: { trust: -3 }, reviewAuthority: true, note: "대표자 권한은 유지됩니다. 이후 정기 검토를 다시 진행합니다." }
+      ] },
+    { id: "tax_accounts", priority: 54, once: true, when: s => s.stage >= 2 && s.laws.tax === "high" && s.tick >= 17,
+      title: "공동기금은 어디에 쓰이고 있나요?", speaker: "미래",
+      body: "공동 부담금이 높아지면서 시민들이 최근 지출과 앞으로의 투자 계획을 알고 싶어 합니다.", options: [
+        { label: "공동기금의 수입과 지출을 공개해요.", changes: { trust: 4 }, note: "기록을 공개하고 예산 관련 주민 의견을 듣습니다." },
+        { label: "공공시설 개선에 물자를 사용해요.", cost: { wood: 8 }, changes: { trust: 5 }, note: "물자를 사용해 공공시설을 개선합니다." },
+        { label: "현재 예산 운영을 계속해요.", changes: { trust: -3 }, note: "즉각적인 지출은 없지만 관련 요구가 남을 수 있습니다." }
+      ] },
     { id: "new_resident", priority: 120, when: () => false, title: "새로운 주민이 도착했습니다", speaker: "하나", body: "새로운 주민이 합류했습니다.", options: [
       { label: "새 주민의 이야기를 확인했어요.", note: "주민 탭에서 이 사람의 관심사와 생각을 확인할 수 있어요." }
     ] },
@@ -499,6 +557,7 @@
     const choice = event?.options[index];
     if (!choice) return { ok: false, reason: "선택지를 찾을 수 없습니다." };
     if (choice.cost && Object.entries(choice.cost).some(([k, v]) => s[k] < v)) return { ok: false, reason: "필요한 자원이 부족합니다." };
+    if (choice.safeguard && s.safeguards[choice.safeguard]) return { ok: false, reason: "이미 시행 중인 규정입니다." };
     if (choice.cost) Object.entries(choice.cost).forEach(([k, v]) => { s[k] -= v; });
     if (choice.law) {
       const previousPending = s.pending;
@@ -510,23 +569,43 @@
     effect(s, choice.changes);
     if (choice.jobs && unused(s) > 0) s.jobs[choice.jobs] += Math.min(3, unused(s));
     if (choice.jobs === "gather" && unused(s) === 0 && s.jobs.wood > 1) { s.jobs.wood--; s.jobs.gather++; }
-    if (choice.storm) s.stormUntil = s.tick + choice.storm;
+    if (choice.storm) { s.stormUntil = s.tick + choice.storm; s.stormAftermathAt = s.stormUntil; s.stormAftermathChoice = index; }
+    if (choice.safeguard) applySafeguard(s, choice.safeguard);
+    if (choice.restWeeks) { s.workReliefUntil = s.tick + choice.restWeeks; s.workStrain = clamp(s.workStrain - 2.5, 0, 10); }
+    if (choice.pledge) { s.pledges = s.pledges.filter(p => p.kind !== choice.pledge.kind); s.pledges.push({ kind: choice.pledge.kind, title: choice.pledge.title, due: s.tick + choice.pledge.delay, postponements: 0 }); }
+    if (choice.fulfillSafeguard) { const key = ({ equal: "fairBonus", effort: "effortCare", needs: "needsAudit" })[s.laws.ration]; if (key && !s.safeguards[key]) applySafeguard(s, key); s.pledges = s.pledges.filter(p => p.kind !== "ration"); s.pressure.ration = 0; }
+    if (choice.postponePledge) { const p = s.pledges.find(p => s.tick >= p.due); if (p) { p.due = s.tick + choice.postponePledge; p.postponements = (p.postponements || 0) + 1; } }
+    if (choice.abandonPledge) { s.pledges = s.pledges.filter(p => s.tick < p.due); s.pressure.ration = clamp(s.pressure.ration + 2, 0, 8); }
+    if (choice.reviewAuthority) { s.authorityUses = 0; s.processReviewAt = s.tick + 19; }
+    if (choice.reviewStorage) record(s, "폭풍 이후 비축 규칙의 재검토가 제안되었습니다.");
+    if (choice.restoration && s.wood >= 5) { s.wood -= 5; s.food = clamp(s.food + 3, 0, s.foodCap); }
+    if (event.id.startsWith("ration_") && event.id.endsWith("_petition")) s.pressure.ration = clamp(s.pressure.ration - 2.8, 0, 8);
+    if (event.id === "labor_fatigue") s.pressure.labor = clamp(s.pressure.labor - 3, 0, 8);
+    if (event.id === "storm_aftermath") s.stormAftermathAt = 0;
     if (event.id === "new_resident") s.arrivalNotice = null;
     s.eventsSeen[event.id] = true;
     s.eventsLast[event.id] = s.tick;
     s.pending = null;
     s.cooldown = 5;
     record(s, event.title + " — " + choice.label);
+    if (event.id !== "new_resident") recordDecision(s, event.title, choice.label);
     return { ok: true, note: choice.note };
   }
   function tick(s) {
     if (s.pending) return s;
     s.tick++;
-    if (s.stormUntil && s.tick >= s.stormUntil) s.stormUntil = 0;
+    if (s.stormUntil && s.tick >= s.stormUntil) {
+      s.stormUntil = 0;
+      const aftermathLoss = s.laws.storage === "reserve" ? 3 : s.laws.storage === "exchange" ? 11 : s.laws.storage === "share" ? 13 : 9;
+      s.food = clamp(s.food - aftermathLoss, 0, s.foodCap);
+      record(s, "폭풍이 지나가면서 비축 방식에 따라 식량 " + aftermathLoss + "이 소모되었습니다.");
+    }
+    advanceConsequences(s);
     const r = rates(s);
     s.food = clamp(s.food + r.food, 0, s.foodCap);
     s.wood = clamp(s.wood + r.wood, 0, 999);
     if (s.stage >= 2) s.treasury = clamp(s.treasury + r.treasury, 0, 9999);
+    if (s.laws.process === "delegate" && s.stage >= 2 && !s.processReviewAt) s.processReviewAt = s.tick + 18;
     if (s.laws.storage === "exchange" && s.food >= s.foodCap - 5) { s.food -= 8; s.wood += 5; }
     if (s.laws.storage === "share" && s.food >= s.foodCap - 5) { s.food -= 7; s.trust = clamp(s.trust + .32); }
     if (s.food < 15) s.trust = clamp(s.trust - .95);
@@ -571,5 +650,6 @@
     record(s, "긴급 채집으로 식량 18을 확보했습니다.");
     return true;
   }
-  return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES });
+  return Object.freeze({ VERSION, BUILDINGS, LAWS, EVENTS, LAW_KEYS, initial, normalize, capacity, unused, rates, canBuild, build, assign, getLaw, expectedVotes, enact, chooseEvent, resolveEvent, tick, relief, record, clamp, createCitizen, ensureCitizens, residentView, communityPulse, PRIORITY_TITLES,
+    policyEffect, ruleProcedure, votePosition, recordDecision, advanceConsequences, applySafeguard });
 });
