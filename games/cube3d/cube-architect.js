@@ -1365,7 +1365,8 @@ function generateWorldChunk(cx,cz){
           growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
         }
       }
-    // Save files store only changes. Reapply those changes after natural terrain.
+    generateLandmarkPoiChunk(cx,cz);
+    // Save files store only changes. Reapply those changes after natural terrain and POIs.
     if(worldEdits?.size)for(const [key,change] of worldEdits){
       const [x,y,z]=parseWorldKey(key);
       if(worldChunkKey(x,z)===chunk)setRawBlock(x,y,z,change);
@@ -1423,6 +1424,7 @@ function initFree(){
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
+  discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
   hotbarTypes=survival?['hand',null,null,null,null,null,null,null,null]:
     ['grass','dirt','stone','sand','log','planks','glass','door','water'];
@@ -1957,7 +1959,9 @@ function saveFreeWorld(){
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
-    firstNightStarted,dayTime};
+    firstNightStarted,dayTime,
+    discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
+    unlockedTech:[...unlockedTech]};
   try{
     if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data))
       lastFreeSave=performance.now();
@@ -1983,12 +1987,19 @@ function loadFreeWorld(){
         savedFreePosition=data.position;
       if(gameFreeMode==='survival'){
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
+        discoveredLandmarks=new Set(data.discoveredLandmarks||[]);
+        restoredLandmarks=new Set(data.restoredLandmarks||[]);
+        unlockedTech=new Set(data.unlockedTech||[]);
+        for(const id of restoredLandmarks){
+          const poi=poiRules.poiById(id);if(poi)unlockedTech.add(poi.tech.id);
+        }
         if(data.stats){
           survivalStats={...newSurvivalStats(),...data.stats,
             crafted:{...(data.stats.crafted||{})},
             placed:{...(data.stats.placed||{})},smelted:{...(data.stats.smelted||{})},
             paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
-            biomes:[...visitedBiomes],found:[...collected]};
+            biomes:[...visitedBiomes],found:[...collected],
+            restored:Array.isArray(data.stats.restored)?data.stats.restored:[...restoredLandmarks]};
           survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
           survivalFinished=!!data.finished;
         }else{
@@ -2003,7 +2014,7 @@ function loadFreeWorld(){
               furnace:oldStage>=6?1:0},
             placedBlocks:oldStage>=4?6:0,
             smelted:{glass:oldStage>=6?1:0},
-            biomes:[...visitedBiomes],found:[...collected]};
+            biomes:[...visitedBiomes],found:[...collected],restored:[...restoredLandmarks]};
         }
         survivalExposure=Math.max(0,Math.min(100,Number(data.exposure)||0));
         firstNightStarted=!!data.firstNightStarted;
