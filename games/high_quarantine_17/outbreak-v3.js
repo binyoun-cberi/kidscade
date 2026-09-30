@@ -290,7 +290,7 @@ function setupCombat(kind,payload){
  player={x:150*dpr,y:groundY,r:22*dpr,hp:100,ammo:12,maxAmmo:12,vx:0,vy:0,onGround:true,facing:1,iframes:0,hurt:0,shot:0};
  zombies=[];bullets=[];survivors=[];reload=0;shootCd=0;meleeCd=0;autoTarget=null;cameraX=0;combatTime=0;muzzle=0;screenShake=0;damageFlash=0;particles=[];
  if(kind==='isolation'){
-  const roomZombies=isolation.filter(function(d){return d.status==='zombie'});roomZombies.forEach(function(d,i){spawnZombie((540+i*210)*dpr,groundY,2,118*dpr,d.name,1+i*.16)});document.getElementById('q17CombatTitle').textContent='⚠ 격리실 직접 진입 · 좀비 소탕';document.getElementById('q17SurvivorStat').style.display='none';
+  const roomZombies=isolation.filter(function(d){return d.status==='zombie'});roomZombies.forEach(function(d,i){spawnZombie((540+i*210)*dpr,groundY,2,118*dpr,d.name,1+i*.16)});document.getElementById('q17CombatTitle').textContent='⚠ 격리시설 직접 진입 · 좀비 소탕';document.getElementById('q17SurvivorStat').style.display='none';
  }else if(kind==='camp'){
   const survivorSprites=['female','adventurer','soldier','player','female','adventurer'];
   const xs=[760,900,1030,1160,1280,1380];
@@ -317,7 +317,7 @@ function showIsolationFight(){
  const count=isolation.filter(function(d){return d.status==='zombie'}).length;if(!count){notify('격리실에 좀비가 없습니다.');return}
  if(active)return;active=true;started=false;continuation=null;iso.classList.remove('show');wrap.classList.add('show');setupCombat('isolation',{});
  document.getElementById('q17AlertTitle').textContent='격리실 진입';
- document.getElementById('q17AlertText').innerHTML='격리실 내부에 <b>'+count+'명</b>의 좀비가 확인됐습니다.<br>소각 대신 직접 진입합니다. 장애물 위로 뛰어넘고 거리를 벌리며 제압하세요. <b>F 근접 타격</b>은 강하지만 물릴 위험이 큽니다.';
+ document.getElementById('q17AlertText').innerHTML='격리시설 내부에 <b>'+count+'명</b>의 좀비가 확인됐습니다.<br>소각 대신 직접 진입합니다. 장애물 위로 뛰어넘고 거리를 벌리며 제압하세요. <b>F 근접 타격</b>은 강하지만 물릴 위험이 큽니다.';
  document.getElementById('q17Alert').classList.add('show');
 }
 function showGlobalOutbreak(){
