@@ -206,6 +206,9 @@ function load(){
  const s=parse(localStorage.getItem(SAVE),null);if(!s||s.version!==1)return null;const f=fresh();
  const merged={...f,...s,inv:{...f.inv,...s.inv},storage:{...f.storage,...(s.storage||{})},flags:{...s.flags},powerLoads:{...f.powerLoads,...(s.powerLoads||{})},tutorial:{...f.tutorial,...(s.tutorial||{})},buildings:Array.isArray(s.buildings)?s.buildings:[],knowledge:Array.isArray(s.knowledge)?s.knowledge:[],residents:{...f.residents,...(s.residents||{})}};
  if(s.survivors>0&&!merged.residents.taeho?.rescued)merged.residents.taeho={rescued:true,job:s.job||null};
+ if(merged.flags.crate&&!merged.inv.flashlight){merged.inv.flashlight=1;merged.flashlightCharge=100}
+ for(const [site,ids] of Object.entries({market:['marketShelf','marketBack'],clinic:['clinicCabinet','clinicSupply'],garage:['garageBench','garageLocker']}))if(merged.flags['loot_'+site])for(const id of ids)merged.flags['search_'+id]=true;
+ if(merged.companion&&!merged.residents?.[merged.companion]?.rescued)merged.companion=null;
  merged.survivors=Object.values(merged.residents).filter(r=>r?.rescued).length;merged.job=merged.residents.taeho?.job||s.job||null;
  return merged
 }
