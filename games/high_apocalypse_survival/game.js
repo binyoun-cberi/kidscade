@@ -85,7 +85,7 @@ function currentAvatarSource(){
 const ITEMS={
   wood:['목재','🪵'],stone:['돌','🪨'],dirtyWater:['강물','🫗'],chemWater:['공장 오염수','☣️'],cleanWater:['깨끗한 물','💧'],
   food:['통조림','🥫'],potato:['감자','🥔'],cookedPotato:['구운 감자','🍠'],spoiledFood:['상한 음식','🤢'],cloth:['천','🧵'],
-  scrap:['고철','⚙️'],battery:['배터리','🔋'],axe:['돌도끼','🪓']
+  scrap:['고철','⚙️'],battery:['배터리','🔋'],flashlight:['손전등','🔦'],axe:['돌도끼','🪓']
 };
 const BUILD={
   campfire:{name:'모닥불',icon:'🔥',cost:{wood:3,stone:4},model:'campfire-pit.glb',radius:1.2},
@@ -93,7 +93,8 @@ const BUILD={
   workbench:{name:'작업대',icon:'🛠️',cost:{wood:5,stone:2},model:'workbench.glb',radius:1.2},
   farm:{name:'작은 텃밭',icon:'🌱',cost:{wood:4,stone:1},model:'patch-grass-large.glb',radius:2.4},
   cooler:{name:'냉장 보관함',icon:'🧊',cost:{wood:2,scrap:3,battery:1},model:'chest.glb',radius:1.3},
-  purifier:{name:'전기 정수기',icon:'🚰',cost:{cloth:2,scrap:2,stone:2},model:'barrel.glb',radius:1.3}
+  purifier:{name:'전기 정수기',icon:'🚰',cost:{cloth:2,scrap:2,stone:2},model:'barrel.glb',radius:1.3},
+  storehouse:{name:'공동창고',icon:'📦',cost:{wood:6,scrap:2},model:'chest.glb',radius:1.6}
 };
 const ROAD_NODES={
  camp:{x:0,z:8}, forest:{x:-12,z:8}, schoolRoad:{x:16,z:8}, mainCross:{x:16,z:BRIDGE_Z},
@@ -179,15 +180,15 @@ let audioCtx=null,audioMaster=null,windGain=null,rainGain=null,cameraKick=0;
 
 function fresh(){
  return {version:1,day:1,time:430,health:100,hunger:82,thirst:72,temp:36.6,pos:{x:0,z:8},yaw:Math.PI,
-  inv:{wood:0,stone:0,dirtyWater:0,chemWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,cloth:0,scrap:0,battery:0,axe:0},
+  inv:{wood:0,stone:0,dirtyWater:0,chemWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,spoiledFood:0,cloth:0,scrap:0,battery:0,flashlight:0,axe:0},
   flags:{},buildings:[],knowledge:[],survivors:0,job:null,residents:{taeho:{rescued:false,job:null},mira:{rescued:false,job:null},junseo:{rescued:false,job:null}},
   powerKw:0,powerLoads:{light:true,cooler:true,purifier:true},trust:60,communityHealth:70,productivity:70,morale:70,
-  distribution:null,floodLevel:0,phase:'survival',settlementLevel:0,tutorial:{step:0,done:false,move:0,camera:false},playSeconds:0,finished:false};
+  distribution:null,floodLevel:0,phase:'survival',settlementLevel:0,storage:{},companion:null,flashlightOn:false,flashlightCharge:100,ruinNoise:0,worldSeed:Math.floor(Math.random()*1000000000),tutorial:{step:0,done:false,move:0,camera:false},playSeconds:0,finished:false};
 }
 function parse(v,d){try{return JSON.parse(v)??d}catch(_){return d}}
 function load(){
  const s=parse(localStorage.getItem(SAVE),null);if(!s||s.version!==1)return null;const f=fresh();
- const merged={...f,...s,inv:{...f.inv,...s.inv},flags:{...s.flags},powerLoads:{...f.powerLoads,...(s.powerLoads||{})},tutorial:{...f.tutorial,...(s.tutorial||{})},buildings:Array.isArray(s.buildings)?s.buildings:[],knowledge:Array.isArray(s.knowledge)?s.knowledge:[],residents:{...f.residents,...(s.residents||{})}};
+ const merged={...f,...s,inv:{...f.inv,...s.inv},storage:{...f.storage,...(s.storage||{})},flags:{...s.flags},powerLoads:{...f.powerLoads,...(s.powerLoads||{})},tutorial:{...f.tutorial,...(s.tutorial||{})},buildings:Array.isArray(s.buildings)?s.buildings:[],knowledge:Array.isArray(s.knowledge)?s.knowledge:[],residents:{...f.residents,...(s.residents||{})}};
  if(s.survivors>0&&!merged.residents.taeho?.rescued)merged.residents.taeho={rescued:true,job:s.job||null};
  merged.survivors=Object.values(merged.residents).filter(r=>r?.rescued).length;merged.job=merged.residents.taeho?.job||s.job||null;
  return merged
