@@ -196,6 +196,33 @@
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 9, y + 17); ctx.stroke();
     }
   }
+  function climate(s,t) {
+    if (s.disasters?.flood > s.tick) {
+      rect(65, 321, 590, 55, "rgba(70,145,169,.34)");
+      ctx.strokeStyle="rgba(199,235,239,.72)";ctx.lineWidth=2;
+      for(let i=0;i<12;i++){
+        const y=330+i*4,x=80+(i*79+t*.012)%540;
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+20,y);ctx.stroke();
+      }
+    }
+    if (s.disasters?.heat > s.tick) {
+      rect(0,0,WIDTH,HEIGHT,"rgba(232,159,76,.11)");
+      rect(610,27,28,28,"rgba(255,225,151,.65)");
+      rect(603,20,42,42,"rgba(244,183,109,.13)");
+    }
+    if (s.disasters?.dust > s.tick) {
+      rect(0,0,WIDTH,HEIGHT,"rgba(172,141,89,.19)");
+      for(let i=0;i<34;i++){
+        const x=(i*131+t*.035)%(WIDTH+20),y=(i*83+t*.012)%(HEIGHT+20);
+        rect(x,y,3,2,"rgba(218,193,142,.55)");
+      }
+    }
+    if (s.disasters?.epidemic > s.tick && s.sick>0) {
+      rect(0,0,WIDTH,HEIGHT,"rgba(113,137,133,.08)");
+      // 진료소의 표시만 바꾸고 주민에게 병적 이미지를 붙이지 않는다.
+      if (s.buildings.clinic) rect(528,141,7,7,"rgba(211,229,228,.90)");
+    }
+  }
   function redraw(t = elapsed) {
     if (!ctx || !latest) return;
     elapsed = t;
@@ -205,6 +232,7 @@
     landscape(latest);
     buildings(latest);
     citizens(latest, t);
+    climate(latest, t);
     storm(latest, t);
     if (latest.coldUntil > latest.tick) {
       rect(0, 0, WIDTH, HEIGHT, "rgba(215,232,241,.14)");
