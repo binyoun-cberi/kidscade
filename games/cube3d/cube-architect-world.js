@@ -94,7 +94,9 @@ const GOALS=[
  {title:'나만의 직육면체 건축',description:'직육면체를 1개 배치하고 서로 다른 면을 2개 이상 색칠해 보세요.',need:2,
   progress:s=>Number((s.placed?.cuboid||0)>0)+Number((s.paintedFaces||[]).length>=2)},
  {title:'새로운 탐험가',description:'총 3개 이상의 바이옴을 탐험하거나 숨겨진 설계도 조각 1개를 발견하세요.',need:1,
-  progress:s=>Number((s.biomes||[]).length>=3||(s.found||[]).length>=1)}
+  progress:s=>Number((s.biomes||[]).length>=3||(s.found||[]).length>=1)},
+ {title:'첫 랜드마크 복원',description:'월드의 랜드마크 폐허를 찾아 복원 설계도에서 외형 85% 이상을 완성하세요.',need:1,
+  progress:s=>(s.restored||[]).length}
 ];
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
 function shelterAt(getBlock,x,feetY,z){
