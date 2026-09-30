@@ -3000,11 +3000,11 @@
     {
       "id": "high_body_muscle_lab",
       "title": "내 몸아 움직여!",
-      "href": "games/high_body_muscle_lab/index.html?v=7",
+      "href": "games/high_body_muscle_lab/index.html?v=8",
       "category": "trivia",
       "age": "high",
       "icon": "🥊",
-      "description": "3D 인체에서 상완이두근·상완삼두근·복사근·복근·다리 근육군을 직접 수축시켜 가드·회피·카운터를 만드는 슬로모션 과학 액션. 내 몸의 관절이 실제로 움직이는 동안에만 상대와 세계의 시간이 흐릅니다.",
+      "description": "1인칭 3D 시야에서 상완이두근·상완삼두근·복사근·복근·다리 근육군을 직접 수축시켜 가드·회피·카운터를 만드는 슬로모션 과학 액션. 첫 상대는 눌러야 할 근육을 실시간으로 안내하고, 내 몸의 관절이 실제로 움직이는 동안에만 상대와 세계의 시간이 흐릅니다.",
       "subject": "science",
       "genre": "sports",
       "difficulty": "medium",
