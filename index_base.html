@@ -3510,7 +3510,7 @@ ${getEvolutionHintText()}
                 if (!attendanceClaimed && !attendanceRewardPending) {
                     attendanceRewardPending = true;
                     // 씨앗을 실제 저장한 뒤 출석 완료 날짜를 기록합니다.
-                    if (addCoins(30, "오늘의 출석 씨앗")) {
+                    if (changeSeeds(30, "오늘의 출석 씨앗", { toast: false })) {
                         pet.affection = Math.min(100, pet.affection + 20);
                         savePet(); updatePetUI();
                         if (window.KidscadeDaily?.markAttendanceClaimed) window.KidscadeDaily.markAttendanceClaimed();
