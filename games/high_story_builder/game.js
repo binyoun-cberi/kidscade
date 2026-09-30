@@ -92,11 +92,68 @@ const MANUAL_RULES = [
  ['바래요','바라요','원하거나 기대한다는 뜻은 ‘바라요’예요.']
 ];
 
+
+const PHONETIC_WORDS=[
+ '먹어','먹어요','먹었어','먹었어요','받아','받아요','받았어','받았어요',
+ '찾아','찾아요','찾았어','찾았어요','맞아','맞아요','맞았어','맞았어요',
+ '씻어','씻어요','씻었어','씻었어요','웃어','웃어요','웃었어','웃었어요',
+ '있어','있어요','있었어','있었어요','갔어','갔어요','왔어','왔어요',
+ '했어','했어요','됐어','됐어요','봤어','봤어요','썼어','썼어요',
+ '잡아','잡아요','잡았어','잡았어요','입어','입어요','입었어','입었어요',
+ '접어','접어요','접었어','접었어요','걸어','걸어요','걸었어','걸었어요'
+];
+const SPOKEN_ERRORS=[
+ ['머거요','먹어요','소리와 표기가 달라요. ‘먹어요’라고 써요.'],
+ ['머거','먹어','‘먹다’에 ‘-어’가 붙으면 ‘먹어’예요.'],
+ ['머것어요','먹었어요','‘먹다’의 과거형은 ‘먹었어요’예요.'],
+ ['머겄어요','먹었어요','‘먹었어요’가 바른 표기예요.'],
+ ['머거써요','먹었어요','소리대로 쓰지 않고 ‘먹었어요’라고 써요.'],
+ ['마싯게','맛있게','‘맛있게’가 바른 표기예요.'],
+ ['마싯께','맛있게','‘맛있게’가 바른 표기예요.'],
+ ['마시께','맛있게','‘맛있게’가 바른 표기예요.'],
+ ['마싯어요','맛있어요','‘맛있어요’가 바른 표기예요.'],
+ ['마시써요','맛있어요','‘맛있어요’가 바른 표기예요.'],
+ ['안자요','앉아요','‘앉아요’가 바른 표기예요.'],
+ ['안자','앉아','‘앉아’가 바른 표기예요.'],
+ ['업서요','없어요','‘없어요’가 바른 표기예요.'],
+ ['업써요','없어요','‘없어요’가 바른 표기예요.'],
+ ['조아요','좋아요','‘좋아요’가 바른 표기예요.'],
+ ['마나요','많아요','‘많아요’가 바른 표기예요.'],
+ ['시러요','싫어요','‘싫어요’가 바른 표기예요.'],
+ ['괜찬아요','괜찮아요','‘괜찮아요’가 바른 표기예요.'],
+ ['일거요','읽어요','‘읽어요’가 바른 표기예요.'],
+ ['이써요','있어요','‘있어요’가 바른 표기예요.'],
+ ['가써요','갔어요','‘갔어요’가 바른 표기예요.'],
+ ['와써요','왔어요','‘왔어요’가 바른 표기예요.'],
+ ['해써요','했어요','‘했어요’가 바른 표기예요.'],
+ ['써써요','썼어요','‘썼어요’가 바른 표기예요.'],
+ ['봐써요','봤어요','‘봤어요’가 바른 표기예요.']
+];
+const CHECK_WORDS=[
+ {bad:'말인게',good:'말인데 / 말인 게 / 맛있게',explain:'무슨 뜻인지 확인해 보세요. 말하려는 뜻에 따라 다르게 쓸 수 있어요.'},
+ {bad:'맛인게',good:'맛있는 게 / 맛있게',explain:'어떤 뜻으로 썼는지 살펴보세요.'}
+];
+// 단일 받침이 다음 모음으로 이어져 들리는 형태를 일부 기본 활용형에만 적용합니다.
+const FINAL_TO_INITIAL={1:0,2:1,4:2,7:3,8:5,16:6,17:7,19:9,20:10,21:11,22:12,23:14,24:15,25:16,26:17,27:18};
+function asSpoken(word){
+ const chars=Array.from(word);
+ for(let i=0;i<chars.length-1;i++){
+   const a=chars[i].charCodeAt(0)-44032,b=chars[i+1].charCodeAt(0)-44032;
+   if(a<0||a>=11172||b<0||b>=11172||Math.floor(b/588)!==11)continue;
+   const final=a%28;
+   if(!Object.prototype.hasOwnProperty.call(FINAL_TO_INITIAL,final))continue;
+   chars[i]=String.fromCharCode(44032+a-final);
+   chars[i+1]=String.fromCharCode(44032+FINAL_TO_INITIAL[final]*588+b%588);
+ }
+ return chars.join('');
+}
+
 let level='easy';
 let mission=null;
 let initialAccuracy=null;
 let spellRules=[];
 let draftTimer=null;
+const ignoredChecks=new Set();
 
 function loadState(){
   try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch(_){return {}}
@@ -148,6 +205,17 @@ function buildSpellRules(){
     if(!map.has(bad))map.set(bad,{bad,good,explain:explain||'표기를 한 번 살펴보세요.'});
   };
   MANUAL_RULES.forEach(([b,g,e])=>{if(b!==g)add(b,g,e)});
+  SPOKEN_ERRORS.forEach(([b,g,e])=>add(b,g,e));
+  const spokenMap=new Map();
+  PHONETIC_WORDS.forEach(g=>{
+    const b=asSpoken(g);
+    if(b===g)return;
+    if(!spokenMap.has(b))spokenMap.set(b,new Set());
+    spokenMap.get(b).add(g);
+  });
+  spokenMap.forEach((corrects,b)=>{
+    if(corrects.size===1)add(b,[...corrects][0],'소리 나는 대로 쓰지 않고 원래 낱말의 형태를 살려 써요.');
+  });
   (window.KIDSCADE_SPELLING_EXTRA||[]).forEach(q=>{
     const cq=String(q.c||'').match(/‘([^’]+)’/);
     const wq=String(q.w||'').match(/‘([^’]+)’/);
