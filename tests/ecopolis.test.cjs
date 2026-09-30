@@ -152,3 +152,13 @@ test('Ecopolis v7 uses asset-backed connected paths and amenities',()=>{
   assert.match(html,/data-tool="pavedwalk"/);
   assert.match(html,/game\.js\?v=7/);
 });
+
+test('Ecopolis binds renderer events only after renderer initialization',()=>{
+  assert.match(js,/function bindRendererEvents\(\)/);
+  assert.match(js,/const canvas=renderer\?\.domElement/);
+  assert.match(js,/initThree\(\);bindRendererEvents\(\);generateWorld/);
+  const initCall=js.lastIndexOf('initThree();bindRendererEvents();generateWorld');
+  const directBind=js.indexOf("renderer.domElement.addEventListener('pointerdown'");
+  assert.equal(directBind,-1);
+  assert.ok(initCall>0);
+});
