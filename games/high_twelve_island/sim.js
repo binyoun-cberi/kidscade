@@ -126,7 +126,9 @@
       default:
         if (s.stage === 1) { thought = "마을이 커지면 모두 함께 사용할 시설도 필요해지겠죠?"; reason = "공동체 성장"; }
         else if (s.treasury <= 10) { mood = "걱정"; thought = "마을 운영비가 빠듯하군요. 지금 꼭 필요한 지출부터 의논해요."; reason = "낮은 국고"; }
+        else if (!s.laws.tax) { thought = "함께 낼 부담금의 기준을 정하고, 어디에 쓸지 의논하고 싶어요."; reason = "공동 부담금 미제정"; }
         else if (!s.buildings.clinic) { thought = "공동기금이 생겼으니 진료소를 세울지도 논의해 보고 싶어요."; reason = "진료소 미건설"; }
+        else if (s.laws.tax === "high") { thought = "부담금이 늘어난 만큼 예산을 어디에 썼는지 자세히 알고 싶어요."; reason = "현재 공동 부담금"; }
         else { thought = "공공시설을 오래 운영할 수 있도록 비용과 혜택을 함께 살펴봐요."; reason = "공동시설 운영"; }
     }
     if (food <= 12 && person.focus !== "food" && person.focus !== "work") {
