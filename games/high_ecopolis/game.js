@@ -6,11 +6,12 @@ import { shared3DPath, shared3DIsApproved } from '../../assets/game/manifest/sha
 const $=id=>document.getElementById(id);
 const ui={
   phaseName:$('phaseName'),ecoPoints:$('ecoPoints'),energyRate:$('energyRate'),carbonRate:$('carbonRate'),restoreRate:$('restoreRate'),waterRate:$('waterRate'),bioRate:$('bioRate'),
-  dayRate:$('dayRate'),visitorRate:$('visitorRate'),servedRate:$('servedRate'),reputationRate:$('reputationRate'),cashflowRate:$('cashflowRate'),pathRate:$('pathRate'),guestMood:$('guestMood'),thoughtList:$('thoughtList'),scenarioObjectives:$('scenarioObjectives'),
+  dayRate:$('dayRate'),visitorRate:$('visitorRate'),servedRate:$('servedRate'),reputationRate:$('reputationRate'),cashflowRate:$('cashflowRate'),pathRate:$('pathRate'),cityStyleRate:$('cityStyleRate'),guestMood:$('guestMood'),thoughtList:$('thoughtList'),scenarioObjectives:$('scenarioObjectives'),
   mission:$('mission'),missionKicker:$('missionKicker'),missionTitle:$('missionTitle'),missionText:$('missionText'),objectives:$('objectives'),speciesRow:$('speciesRow'),
   nextActionCard:$('nextActionCard'),nextActionIcon:$('nextActionIcon'),nextActionTitle:$('nextActionTitle'),nextActionText:$('nextActionText'),
   missionCollapse:$('missionCollapse'),windViewBtn:$('windViewBtn'),sunViewBtn:$('sunViewBtn'),geoViewBtn:$('geoViewBtn'),pollutionViewBtn:$('pollutionViewBtn'),homeViewBtn:$('homeViewBtn'),helpBtn:$('helpBtn'),
-  mapLegend:$('mapLegend'),tileInfo:$('tileInfo'),toast:$('toast'),toolbar:$('toolbar'),undoBtn:$('undoBtn'),saveBtn:$('saveBtn'),moreToolsBtn:$('moreToolsBtn'),
+  mapLegend:$('mapLegend'),tileInfo:$('tileInfo'),toast:$('toast'),toolbar:$('toolbar'),undoBtn:$('undoBtn'),saveBtn:$('saveBtn'),
+  toolScroller:$('toolScroller'),toolPrev:$('toolPrev'),toolNext:$('toolNext'),toolPageLabel:$('toolPageLabel'),toolCategoryBar:$('toolCategoryBar'),
   tycoonBar:$('tycoonBar'),guestPanel:$('guestPanel'),
   intro:$('intro'),tutorialBtn:$('tutorialBtn'),newBtn:$('newBtn'),continueBtn:$('continueBtn'),
   tutorialCoach:$('tutorialCoach'),tutorialStep:$('tutorialStep'),tutorialTitle:$('tutorialTitle'),tutorialText:$('tutorialText'),tutorialNext:$('tutorialNext'),tutorialSkip:$('tutorialSkip'),
@@ -18,7 +19,7 @@ const ui={
   resultAgain:$('resultAgain'),resultObserve:$('resultObserve')
 };
 
-const COLS=18,ROWS=14,CELL=1.18;
+const COLS=24,ROWS=18,CELL=1.05;
 const PHASES=[
   {name:'1 · 되살리기',title:'전기 → 땅 → 강, 세 가지만 해봐요',text:'발전소 1개, 토양 정화기 1개, 하천 정화기 1개를 차례로 설치하세요.'},
   {name:'2 · 생태계 만들기',title:'숲·습지·꽃초원을 하나씩 만들어요',text:'정화된 초원에 세 종류의 서식지를 하나씩 만들어 보세요.'},
@@ -68,6 +69,14 @@ const COST_REFUND=.35;
 const POWER_TYPES=new Set(['wind','solar','geothermal','nuclear','coal']);
 const ECO_DEMAND={purifier:8,waterfilter:10,wetland:3,forest:3,meadow:3,carfactory:12,visitorcenter:4,researchstation:5,ecocafe:5,lamp:1};
 const PATH_TYPES=new Set(['trail','boardwalk','pavedwalk']);
+const TOOL_CATEGORY={
+  inspect:'restore',purifier:'restore',waterfilter:'restore',wetland:'restore',forest:'restore',meadow:'restore',recycler:'restore',
+  trail:'path',boardwalk:'path',pavedwalk:'path',bench:'path',signpost:'path',lamp:'path',
+  visitorcenter:'operate',observatory:'operate',researchstation:'operate',ecocafe:'operate',
+  wind:'energy',solar:'energy',geothermal:'energy',nuclear:'energy',
+  coal:'develop',carfactory:'develop',landfill:'develop',quarry:'develop',parking:'develop',channel:'develop',lawn:'develop',plantation:'develop'
+};
+const TOOL_CATEGORY_LABEL={restore:'복원',path:'길·공원',operate:'운영',energy:'에너지',develop:'개발'};
 const PATH_SPEED={trail:.9,boardwalk:1,pavedwalk:1.35};
 const PATH_CAPACITY={trail:2,boardwalk:3,pavedwalk:5};
 const AMENITY_TYPES=new Set(['bench','signpost','lamp']);
@@ -89,22 +98,31 @@ let groundGroup,decorGroup,pathGroup,buildingGroup,animalGroup,visitorGroup,effe
 let tiles=[],tileMeshes=[],buildings=[],animals=[],visitors=[];
 let selectedTool='inspect',selectedScenario='valley',phase=1,ecoPoints=130,seed=1;
 let analysisMode='none',running=false,completed=false;
-let cameraTarget=new THREE.Vector3(0,0,0),viewSize=17;
+let cameraTarget=new THREE.Vector3(0,0,0),viewSize=22;
 let hoverTile=null,previewRing=null,lastAction=null;
 let rng=Math.random,tutorialIndex=-1,tutorialMode=false;
 let drag={active:false,id:null,x:0,y:0,moved:false},pointers=new Map();
 let toastTimer=0,saveTimer=0,elapsed=0,builtCount=0,ecologyClock=0,economyClock=0,visitorSpawnClock=0;
-let simSpeed=1,showAdvancedTools=false,lastGuideKey='';
+let simSpeed=1,lastGuideKey='',activeToolCategory='restore';
 let ecosystem=makeEcosystem();
 const sharedLoader=new GLTFLoader(),sharedCache=new Map(),sharedPending=new Map();
 const SHARED=id=>shared3DPath(id,'../../');
 const GAME_ASSET_ROOT='../../assets/game/';
 const ASSET=p=>GAME_ASSET_ROOT+p;
 const ECO_ASSET={
-  trail:ASSET('3d/city/kenney-city-kit-suburban/path-stones-long.glb'),
-  trailMessy:ASSET('3d/city/kenney-city-kit-suburban/path-stones-messy.glb'),
-  boardwalk:ASSET('3d/survival/kenney-survival-kit/structure-floor.glb'),
-  pavedwalk:ASSET('3d/city/kenney-city-kit-suburban/path-long.glb'),
+  trail:ASSET('3d/nature/kenney-nature-kit/ground-path-straight.glb'),
+  trailEnd:ASSET('3d/nature/kenney-nature-kit/ground-path-end.glb'),
+  trailBend:ASSET('3d/nature/kenney-nature-kit/ground-path-bend.glb'),
+  trailSplit:ASSET('3d/nature/kenney-nature-kit/ground-path-split.glb'),
+  trailCross:ASSET('3d/nature/kenney-nature-kit/ground-path-cross.glb'),
+  boardwalk:ASSET('3d/nature/kenney-nature-kit/path-wood.glb'),
+  boardwalkEnd:ASSET('3d/nature/kenney-nature-kit/path-wood-end.glb'),
+  boardwalkBend:ASSET('3d/nature/kenney-nature-kit/path-wood-corner.glb'),
+  pavedwalk:ASSET('3d/city/kenney-city-kit-roads/road-straight.glb'),
+  pavedwalkEnd:ASSET('3d/city/kenney-city-kit-roads/road-end.glb'),
+  pavedwalkBend:ASSET('3d/city/kenney-city-kit-roads/road-bend.glb'),
+  pavedwalkSplit:ASSET('3d/city/kenney-city-kit-roads/road-intersection.glb'),
+  pavedwalkCross:ASSET('3d/city/kenney-city-kit-roads/road-crossroad.glb'),
   visitorcenter:ASSET('3d/city/kenney-city-kit-suburban/building-type-f.glb'),
   observatory:ASSET('3d/survival/kenney-survival-kit/structure-canvas.glb'),
   researchstation:ASSET('3d/city/kenney-city-kit-suburban/building-type-h.glb'),
@@ -239,7 +257,7 @@ function pct(n,d){return d?Math.round(n/d*100):0}
 function initThree(){
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0xb9d9ca);
-  scene.fog=new THREE.Fog(0xb9d9ca,18,38);
+  scene.fog=new THREE.Fog(0xb9d9ca,24,52);
   camera=new THREE.OrthographicCamera(-12,12,8,-8,.1,100);
   camera.position.set(13,16,14);camera.lookAt(0,0,0);
   renderer=new THREE.WebGLRenderer({canvas:$('game'),antialias:true,powerPreference:'high-performance'});
@@ -249,11 +267,11 @@ function initThree(){
 
   scene.add(new THREE.HemisphereLight(0xeafff4,0x486553,2.15));
   const sun=new THREE.DirectionalLight(0xfff2d2,2.45);sun.position.set(-10,18,8);sun.castShadow=true;
-  sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-20;sun.shadow.camera.right=20;sun.shadow.camera.top=20;sun.shadow.camera.bottom=-20;scene.add(sun);
+  sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-28;sun.shadow.camera.right=28;sun.shadow.camera.top=28;sun.shadow.camera.bottom=-28;scene.add(sun);
 
   groundGroup=new THREE.Group();decorGroup=new THREE.Group();pathGroup=new THREE.Group();buildingGroup=new THREE.Group();animalGroup=new THREE.Group();visitorGroup=new THREE.Group();effectGroup=new THREE.Group();previewGroup=new THREE.Group();
   scene.add(groundGroup,decorGroup,pathGroup,buildingGroup,animalGroup,visitorGroup,effectGroup,previewGroup);
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(15,17,1.1,6),new THREE.MeshStandardMaterial({color:0x6c8e72,roughness:1}));
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(20,22,1.1,6),new THREE.MeshStandardMaterial({color:0x6c8e72,roughness:1}));
   base.position.y=-.75;base.scale.z=.78;base.receiveShadow=true;scene.add(base);
   previewRing=new THREE.Mesh(new THREE.RingGeometry(.83,.92,44),new THREE.MeshBasicMaterial({color:0xbfffb4,transparent:true,opacity:.65,side:THREE.DoubleSide,depthWrite:false}));
   previewRing.rotation.x=-Math.PI/2;previewRing.visible=false;previewGroup.add(previewRing);
@@ -364,18 +382,47 @@ function treeModel(){
   const g=new THREE.Group(),tr=new THREE.Mesh(geo.trunk,mat.trunk),cr=new THREE.Mesh(geo.crown,mat.leaf);tr.position.y=.2;cr.position.y=.68;tr.castShadow=cr.castShadow=true;g.add(tr,cr);return g;
 }
 
-function pathNeighbors(t){return [[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dz])=>tileAt(t.x+dx,t.z+dz)).filter(n=>n?.path)}
+function pathNeighbors(t){return [[0,-1,'n'],[1,0,'e'],[0,1,'s'],[-1,0,'w']].map(([dx,dz,key])=>({tile:tileAt(t.x+dx,t.z+dz),key})).filter(o=>o.tile?.path)}
 function pathCount(){return tiles.filter(t=>t.path).length}
 function humanFootprintCount(){return buildings.length+pathCount()}
-function pathRotation(t){const ns=pathNeighbors(t),h=ns.some(n=>n.x!==t.x),v=ns.some(n=>n.z!==t.z);return h&&!v?Math.PI/2:0}
+function pathMask(t){
+  const keys=new Set(pathNeighbors(t).map(o=>o.key));return {n:keys.has('n'),e:keys.has('e'),s:keys.has('s'),w:keys.has('w')};
+}
+function pathShape(t){
+  const m=pathMask(t),dirs=['n','e','s','w'].filter(k=>m[k]),count=dirs.length;
+  if(count<=1)return {shape:'end',dirs,rot:dirs[0]==='e'?Math.PI/2:dirs[0]==='s'?Math.PI:dirs[0]==='w'?-Math.PI/2:0};
+  if(count===2){
+    if((m.n&&m.s)||(m.e&&m.w))return {shape:'straight',dirs,rot:m.e&&m.w?Math.PI/2:0};
+    if(m.n&&m.e)return {shape:'bend',dirs,rot:0};
+    if(m.e&&m.s)return {shape:'bend',dirs,rot:Math.PI/2};
+    if(m.s&&m.w)return {shape:'bend',dirs,rot:Math.PI};
+    return {shape:'bend',dirs,rot:-Math.PI/2};
+  }
+  if(count===3){
+    const missing=!m.s?'s':!m.w?'w':!m.n?'n':'e';
+    return {shape:'split',dirs,rot:missing==='s'?0:missing==='w'?Math.PI/2:missing==='n'?Math.PI:-Math.PI/2};
+  }
+  return {shape:'cross',dirs,rot:0};
+}
+function pathAsset(kind,shape){
+  if(kind==='trail')return ECO_ASSET[shape==='end'?'trailEnd':shape==='bend'?'trailBend':shape==='split'?'trailSplit':shape==='cross'?'trailCross':'trail'];
+  if(kind==='boardwalk')return ECO_ASSET[shape==='end'?'boardwalkEnd':shape==='bend'?'boardwalkBend':'boardwalk'];
+  return ECO_ASSET[shape==='end'?'pavedwalkEnd':shape==='bend'?'pavedwalkBend':shape==='split'?'pavedwalkSplit':shape==='cross'?'pavedwalkCross':'pavedwalk'];
+}
 function renderPathTile(t){
   if(!t?.pathVisual)return;clearGroup(t.pathVisual);t.pathVisual.userData.assetRev=(t.pathVisual.userData.assetRev||0)+1;if(!t.path)return;
-  const kind=t.path,rot=pathRotation(t),ns=pathNeighbors(t);
-  const material=kind==='trail'?new THREE.MeshStandardMaterial({color:0xb69b6a,roughness:1}):kind==='boardwalk'?new THREE.MeshStandardMaterial({color:0x9d744b,roughness:.9}):new THREE.MeshStandardMaterial({color:0xc7c2b1,roughness:.85});
-  const base=new THREE.Mesh(new THREE.BoxGeometry(ns.length>=3?CELL*.72:CELL*.84,.035,ns.length>=3?CELL*.72:CELL*.30),material);
-  base.rotation.y=rot;base.position.y=t.kind==='water'?.12:.04;base.receiveShadow=true;t.pathVisual.add(base);
-  const url=kind==='trail'?(ns.length>=3?ECO_ASSET.trailMessy:ECO_ASSET.trail):ECO_ASSET[kind],rev=t.pathVisual.userData.assetRev;
-  localModel(url,kind==='boardwalk'?.82:.72).then(o=>{if(!o||t.pathVisual.userData.assetRev!==rev||t.path!==kind)return;o.rotation.y=rot;o.position.y+=t.kind==='water'?.15:.055;t.pathVisual.add(o)});
+  const kind=t.path,shape=pathShape(t),m=pathMask(t),y=t.kind==='water'?.12:.04;
+  const material=kind==='trail'?new THREE.MeshStandardMaterial({color:0xb49a68,roughness:1}):kind==='boardwalk'?new THREE.MeshStandardMaterial({color:0x956c45,roughness:.92}):new THREE.MeshStandardMaterial({color:0x8f9496,roughness:.9});
+  const center=new THREE.Mesh(new THREE.BoxGeometry(CELL*.34,.038,CELL*.34),material);center.position.y=y;center.receiveShadow=true;t.pathVisual.add(center);
+  const arm=(dx,dz)=>{
+    const horizontal=dx!==0,mesh=new THREE.Mesh(new THREE.BoxGeometry(horizontal?CELL*.42:CELL*.30,.038,horizontal?CELL*.30:CELL*.42),material);
+    mesh.position.set(dx*CELL*.25,y,dz*CELL*.25);mesh.receiveShadow=true;t.pathVisual.add(mesh);
+  };
+  if(m.n)arm(0,-1);if(m.e)arm(1,0);if(m.s)arm(0,1);if(m.w)arm(-1,0);
+  const url=pathAsset(kind,shape.shape),rev=t.pathVisual.userData.assetRev;
+  localModel(url,kind==='pavedwalk'?.9:kind==='boardwalk'?.76:.72).then(o=>{
+    if(!o||t.pathVisual.userData.assetRev!==rev||t.path!==kind)return;o.rotation.y=shape.rot;o.position.y+=t.kind==='water'?.15:.055;t.pathVisual.add(o);
+  });
 }
 function refreshPathNeighborhood(t){[t,tileAt(t.x+1,t.z),tileAt(t.x-1,t.z),tileAt(t.x,t.z+1),tileAt(t.x,t.z-1)].filter(Boolean).forEach(renderPathTile)}
 function buildModel(type,t){
@@ -647,6 +694,7 @@ function localVisitorThought(v,t){
   if(near.includes('researchstation'))return['여기서는 생태계를 직접 연구하네.','good'];
   if(near.includes('bench'))return['잠깐 앉아서 쉬어 갈 수 있어서 좋아.','good'];
   if(near.includes('signpost'))return['안내판이 있어서 어디로 갈지 알겠어.','good'];
+  if(cityDiversityScore()>=60)return['구역마다 분위기가 달라서 둘러보는 재미가 있어!','good'];
   if(near.includes('ecocafe'))return['걷고 나니 먹을 곳이 있어서 좋다.','good'];
   if(ecosystem.carbon>70)return['경치는 좋은데 공기 상태가 걱정돼.','bad'];
   if(ecosystem.habitatStress>55)return['자연이 너무 잘게 끊겨 있는 느낌이야.','bad'];
@@ -704,16 +752,27 @@ function scenarioGoals(){
   ];
 }
 function scenarioGoalMet(){return scenarioGoals().every(g=>g[4]?g[1]<=g[2]:g[1]>=g[2])}
+function cityDiversityScore(){
+  const score=[
+    new Set(buildings.filter(b=>POWER_TYPES.has(b.type)).map(b=>b.type)).size*5,
+    new Set(tiles.filter(t=>['forest','wetland','meadow','lawn','plantation'].includes(t.biome)).map(t=>t.biome)).size*5,
+    new Set(tiles.filter(t=>t.path).map(t=>t.path)).size*6,
+    new Set(buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe'].includes(b.type)).map(b=>b.type)).size*5,
+    new Set(buildings.filter(b=>AMENITY_TYPES.has(b.type)).map(b=>b.type)).size*4,
+    new Set(buildings.filter(b=>['coal','carfactory','landfill','quarry','parking','channel'].includes(b.type)).map(b=>b.type)).size*2
+  ].reduce((a,b)=>a+b,0);
+  return clamp(Math.round(score),0,100);
+}
 function economyTick(){
   ecosystem.day++;
   const industry=buildings.reduce((s,b)=>s+({coal:1,carfactory:3,landfill:1,quarry:2,parking:1}[b.type]||0),0);
-  const tourism=visitors.length*.22+buildings.filter(b=>b.type==='ecocafe').length*Math.min(18,visitors.length)*.07;
+  const diversity=cityDiversityScore(),tourism=visitors.length*.22+buildings.filter(b=>b.type==='ecocafe').length*Math.min(18,visitors.length)*.07+diversity*.015;
   const research=buildings.filter(b=>b.type==='researchstation').length*(1+returnedSpeciesCount()*.55);
   const income=industry+tourism+research,expense=buildings.reduce((s,b)=>s+(UPKEEP[b.type]||0),0);
   const flow=income-expense;ecoPoints+=flow;
   ecosystem.lastIncome=income;ecosystem.lastExpense=expense;ecosystem.lastCashflow=flow;ecosystem.tourismRevenue+=tourism;ecosystem.maintenanceSpent+=expense;
   const avg=visitors.length?visitors.reduce((s,v)=>s+v.happiness,0)/visitors.length:55;
-  const c=counts(),target=clamp(18+c.restorePct*.28+c.waterPct*.16+returnedSpeciesCount()*6+avg*.22-ecosystem.carbon*.08-ecosystem.habitatStress*.13-ecosystem.waterStress*.08,0,100);
+  const c=counts(),target=clamp(18+c.restorePct*.28+c.waterPct*.16+returnedSpeciesCount()*6+avg*.22+diversity*.12-ecosystem.carbon*.08-ecosystem.habitatStress*.13-ecosystem.waterStress*.08,0,100);
   ecosystem.reputation+=(target-ecosystem.reputation)*.18;
   if(visitors.length>20){ecosystem.habitatStress+=(visitors.length-20)*.018;ecosystem.waterStress+=(visitors.length-20)*.008}
   const paved=tiles.filter(t=>t.path==='pavedwalk').length,deck=tiles.filter(t=>t.path==='boardwalk').length;
@@ -850,25 +909,24 @@ function currentGuide(){
   return {key:'p4-recycle',tool:'recycler',icon:'♻️',title:'시설과 길을 모두 회수해요',text:'깨끗한 강에 회수선을 띄우면 주변 시설과 길을 한꺼번에 걷어냅니다.'};
 }
 function updateGuidedUI(){
+  ui.nextActionCard.classList.toggle('uiHidden',!tutorialMode);
+  document.querySelectorAll('.tool').forEach(btn=>btn.classList.remove('recommended'));
+  if(!tutorialMode)return;
   const guide=currentGuide();
   ui.nextActionIcon.textContent=guide.icon;ui.nextActionTitle.textContent=guide.title;ui.nextActionText.textContent=guide.text;ui.nextActionCard.dataset.tool=guide.tool;
   document.querySelectorAll('.tool').forEach(btn=>btn.classList.toggle('recommended',btn.dataset.tool===guide.tool));
   if(guide.key!==lastGuideKey){lastGuideKey=guide.key;const b=document.querySelector('.tool[data-tool="'+guide.tool+'"]');if(b&&!b.classList.contains('contextHidden'))b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
 }
 function updateToolVisibility(){
-  const core=phase===1
-    ?new Set(['inspect','wind','solar','geothermal','purifier','waterfilter'])
-    :phase===2
-      ?new Set(['inspect','purifier','waterfilter','forest','wetland','meadow'])
-      :phase===3
-        ?new Set(['inspect','trail','boardwalk','pavedwalk','visitorcenter','observatory','researchstation','ecocafe','bench','signpost','lamp','forest','wetland','meadow','purifier','waterfilter'])
-        :new Set(['inspect','recycler']);
-  const advanced=new Set(['nuclear','coal','carfactory','landfill','quarry','parking','channel','lawn','plantation']);
+  document.querySelectorAll('[data-toolcat]').forEach(b=>b.classList.toggle('active',b.dataset.toolcat===activeToolCategory));
+  ui.toolCategoryBar.classList.toggle('uiHidden',tutorialMode);
   document.querySelectorAll('.tool').forEach(btn=>{
-    const type=btn.dataset.tool,show=core.has(type)||(showAdvancedTools&&phase>=2&&advanced.has(type));
-    btn.classList.toggle('contextHidden',!show);
+    const type=btn.dataset.tool,def=TOOL[type],locked=type==='recycler'?phase<4:(tutorialMode&&def?.phase&&phase<def.phase);
+    const tutorialShow=!tutorialMode||type==='inspect'||type===currentGuide().tool||(['wind','solar','geothermal','purifier','waterfilter'].includes(type)&&phase===1)||(['forest','wetland','meadow'].includes(type)&&phase===2)||(['trail','boardwalk','pavedwalk','visitorcenter'].includes(type)&&phase===3);
+    const categoryShow=tutorialMode||TOOL_CATEGORY[type]===activeToolCategory;
+    btn.classList.toggle('contextHidden',!tutorialShow||!categoryShow);btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;
   });
-  ui.moreToolsBtn.classList.toggle('uiHidden',phase<2||phase===4);ui.moreToolsBtn.textContent=showAdvancedTools?'− 도구':'+ 도구';
+  ui.toolPageLabel.textContent=tutorialMode?'튜토리얼 도구':(TOOL_CATEGORY_LABEL[activeToolCategory]||'건설')+' 도구';
 }
 function checkProgress(announce=true){
   const c=counts();
@@ -887,16 +945,16 @@ function checkProgress(announce=true){
 function unlockToast(msg){toast(msg,'good',3800);sdkSound('success');saveGame()}
 
 function updateUI(){
-  const c=counts(),energy=energySummary();ui.phaseName.textContent=PHASES[phase-1].name;ui.ecoPoints.textContent=(Math.round(ecoPoints*10)/10).toFixed(Number.isInteger(Math.round(ecoPoints*10)/10)?0:1);
+  const c=counts(),energy=energySummary();ui.phaseName.textContent=tutorialMode?PHASES[phase-1].name:(phase>=4?'철수 가능':'자유 운영');ui.ecoPoints.textContent=(Math.round(ecoPoints*10)/10).toFixed(Number.isInteger(Math.round(ecoPoints*10)/10)?0:1);
   ui.energyRate.textContent=energy.supply+' / '+energy.demand+' ⚡';ui.carbonRate.textContent=Math.round(ecosystem.carbon);
   ui.carbonRate.classList.toggle('warning',ecosystem.carbon>=45&&ecosystem.carbon<85);ui.carbonRate.classList.toggle('danger',ecosystem.carbon>=85);
   ui.restoreRate.textContent=c.restorePct+'%';ui.waterRate.textContent=c.waterPct+'%';ui.bioRate.textContent=returnedSpeciesCount()+'/4';
   const cfg=TYCOON_SCENARIOS[selectedScenario]||TYCOON_SCENARIOS.valley;
-  ui.dayRate.textContent=ecosystem.day+' / '+cfg.deadline+'일';ui.visitorRate.textContent=visitors.length+'명';ui.servedRate.textContent=ecosystem.visitorsServed+'명';ui.pathRate.textContent=pathCount()+'칸';
+  ui.dayRate.textContent=ecosystem.day+' / '+cfg.deadline+'일';ui.visitorRate.textContent=visitors.length+'명';ui.servedRate.textContent=ecosystem.visitorsServed+'명';ui.pathRate.textContent=pathCount()+'칸';ui.cityStyleRate.textContent=cityDiversityScore();
   ui.reputationRate.textContent=Math.round(ecosystem.reputation);ui.cashflowRate.textContent=(ecosystem.lastCashflow>=0?'+':'')+ecosystem.lastCashflow.toFixed(1)+'P';
   ui.cashflowRate.classList.toggle('danger',ecosystem.lastCashflow<0);ui.reputationRate.classList.toggle('warning',ecosystem.reputation<55);
   document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===simSpeed));
-  ui.missionKicker.textContent='단계 '+phase+' / 4';ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
+  ui.mission.classList.toggle('uiHidden',!tutorialMode);ui.missionKicker.textContent='단계 '+phase+' / 4';ui.missionTitle.textContent=PHASES[phase-1].title;ui.missionText.textContent=PHASES[phase-1].text;
   const objs=phaseChecklist(),scenario=scenarioGoals();
   ui.tycoonBar.classList.toggle('uiHidden',phase<3);ui.guestPanel.classList.toggle('uiHidden',phase<3);
   document.querySelector('.scenarioGoalTitle')?.classList.toggle('uiHidden',phase<3);ui.scenarioObjectives.classList.toggle('uiHidden',phase<3);
@@ -911,7 +969,7 @@ function updateUI(){
   }).join('');
   ui.speciesRow.innerHTML=Object.entries(SPECIES).map(([id,s])=>{const p=Math.round(ecosystem.populations[id]||0),found=p>=8;return '<div class="species '+(found?'found':'')+'" title="'+s.name+' 개체수 '+p+'"><span>'+(found?s.icon:'？')+'</span><small>'+p+'</small></div>'}).join('');
   document.querySelectorAll('.tool').forEach(btn=>{
-    const def=TOOL[btn.dataset.tool];const locked=def?.phase&&phase<def.phase;btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
+    const def=TOOL[btn.dataset.tool];const locked=btn.dataset.tool==='recycler'?phase<4:(tutorialMode&&def?.phase&&phase<def.phase);btn.classList.toggle('locked',!!locked);btn.disabled=!!locked;btn.classList.toggle('active',btn.dataset.tool===selectedTool);
   });
   updateToolVisibility();updateGuidedUI();
   if(TOOL[selectedTool]?.phase&&phase<TOOL[selectedTool].phase)selectTool('inspect');
@@ -939,7 +997,7 @@ function updatePreview(){
   previewRing.material.color.setHex(placementReason(selectedTool,hoverTile)?0xff806d:0xbfffb4);
 }
 
-function resetCamera(){cameraTarget.set(0,0,0);viewSize=17;applyCamera()}
+function resetCamera(){cameraTarget.set(0,0,0);viewSize=22;applyCamera()}
 function applyCamera(){
   camera.position.set(cameraTarget.x+13,cameraTarget.y+16,cameraTarget.z+14);camera.lookAt(cameraTarget);resize();
 }
@@ -950,7 +1008,7 @@ function hoverAt(x,y){const hit=screenRay(x,y);hoverTile=hit?.object?.userData?.
 function handleTap(x,y){const hit=screenRay(x,y),t=hit?.object?.userData?.tile;if(!t)return;placeTool(selectedTool,t)}
 function panBy(dx,dy){
   const scale=viewSize/Math.max(500,innerHeight);const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0),up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-  cameraTarget.addScaledVector(right,-dx*scale);cameraTarget.addScaledVector(up,dy*scale);cameraTarget.y=0;cameraTarget.x=clamp(cameraTarget.x,-7,7);cameraTarget.z=clamp(cameraTarget.z,-5.5,5.5);applyCamera();
+  cameraTarget.addScaledVector(right,-dx*scale);cameraTarget.addScaledVector(up,dy*scale);cameraTarget.y=0;cameraTarget.x=clamp(cameraTarget.x,-COLS*CELL*.34,COLS*CELL*.34);cameraTarget.z=clamp(cameraTarget.z,-ROWS*CELL*.34,ROWS*CELL*.34);applyCamera();
 }
 function bindRendererEvents(){
   const canvas=renderer?.domElement;
@@ -959,13 +1017,13 @@ function bindRendererEvents(){
   canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)drag={active:true,id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};});
   canvas.addEventListener('pointermove',e=>{
     if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pointers.size===2){const ps=[...pointers.values()];const d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);if(canvas._pinch){const delta=d-canvas._pinch;viewSize=clamp(viewSize-delta*.018,10,25);resize()}canvas._pinch=d;return}
+    if(pointers.size===2){const ps=[...pointers.values()];const d=Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);if(canvas._pinch){const delta=d-canvas._pinch;viewSize=clamp(viewSize-delta*.018,11,30);resize()}canvas._pinch=d;return}
     if(drag.active&&e.pointerId===drag.id){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>3)drag.moved=true;if(drag.moved)panBy(dx,dy);drag.x=e.clientX;drag.y=e.clientY}
     else hoverAt(e.clientX,e.clientY);
   });
   canvas.addEventListener('pointerup',e=>{const wasTap=drag.active&&e.pointerId===drag.id&&!drag.moved;if(wasTap)handleTap(e.clientX,e.clientY);pointers.delete(e.pointerId);canvas._pinch=null;if(e.pointerId===drag.id)drag.active=false;});
   canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);drag.active=false;canvas._pinch=null});
-  canvas.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,10,25);resize()},{passive:false});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,11,30);resize()},{passive:false});
   canvas.addEventListener('pointerleave',()=>{hoverTile=null;previewRing.visible=false;if(selectedTool==='inspect')ui.tileInfo.classList.add('hidden')});
 }
 
@@ -1005,11 +1063,11 @@ function completeGame(){
   ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:returnedSpeciesCount()})}catch(e){}
 }
 function beginNew(tutorial=false){
-  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=1;ecoPoints=130;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;economyClock=0;visitorSpawnClock=0;simSpeed=1;showAdvancedTools=false;lastGuideKey='';completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
+  selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=tutorial?1:3;ecoPoints=tutorial?160:220;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;economyClock=0;visitorSpawnClock=0;simSpeed=1;activeToolCategory='restore';lastGuideKey='';completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
   generateWorld();ui.intro.classList.add('hidden');ui.result.classList.add('hidden');running=true;sdkStart();selectTool('inspect');checkProgress();saveGame();if(tutorial)showTutorial();else ui.tutorialCoach.classList.add('hidden');
 }
 function continueGame(){
-  ui.intro.classList.add('hidden');ui.result.classList.add('hidden');completed=false;running=true;if(!loadGame()){ui.intro.classList.remove('hidden');running=false;toast('저장된 복원 지역이 없어요.','bad');return}sdkStart();toast('저장된 지역을 이어서 복원합니다.')}
+  tutorialMode=false;activeToolCategory='restore';ui.intro.classList.add('hidden');ui.result.classList.add('hidden');completed=false;running=true;if(!loadGame()){ui.intro.classList.remove('hidden');running=false;toast('저장된 복원 지역이 없어요.','bad');return}sdkStart();toast('저장된 지역을 이어서 복원합니다.')}
 function showTutorial(){
   const steps=[
     ['발전소도 장소를 골라요','🌬·☀️·♨️ 지도를 바꿔 보세요. 풍력·태양광·지열은 좋은 입지에서만 설치할 수 있고 원자력은 냉각수를 위해 물가가 필요해요.'],
@@ -1030,7 +1088,9 @@ ui.windViewBtn.addEventListener('click',()=>toggleAnalysis('wind'));ui.sunViewBt
 ui.helpBtn.addEventListener('click',()=>ui.help.classList.remove('hidden'));ui.closeHelpBtn.addEventListener('click',()=>ui.help.classList.add('hidden'));
 ui.missionCollapse.addEventListener('click',()=>ui.mission.classList.toggle('collapsed'));ui.undoBtn.addEventListener('click',undo);ui.saveBtn.addEventListener('click',saveGame);
 ui.nextActionCard.addEventListener('click',()=>{const tool=ui.nextActionCard.dataset.tool;if(tool){selectTool(tool);document.querySelector('.tool[data-tool="'+tool+'"]')?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})}});
-ui.moreToolsBtn.addEventListener('click',()=>{showAdvancedTools=!showAdvancedTools;updateUI()});
+document.querySelectorAll('[data-toolcat]').forEach(btn=>btn.addEventListener('click',()=>{activeToolCategory=btn.dataset.toolcat;ui.toolScroller.scrollTo({left:0,behavior:'smooth'});updateUI()}));
+const scrollTools=dir=>ui.toolScroller.scrollBy({left:dir*Math.max(420,ui.toolScroller.clientWidth*.82),behavior:'smooth'});
+ui.toolPrev.addEventListener('click',()=>scrollTools(-1));ui.toolNext.addEventListener('click',()=>scrollTools(1));
 ui.tutorialNext.addEventListener('click',nextTutorial);ui.tutorialSkip.addEventListener('click',()=>{tutorialMode=false;ui.tutorialCoach.classList.add('hidden')});
 ui.resultAgain.addEventListener('click',()=>{ui.result.classList.add('hidden');ui.intro.classList.remove('hidden')});ui.resultObserve.addEventListener('click',()=>ui.result.classList.add('hidden'));
 document.querySelectorAll('[data-speed]').forEach(btn=>btn.addEventListener('click',()=>{simSpeed=Number(btn.dataset.speed);document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',b===btn));toast(simSpeed===0?'운영을 일시정지했어요.':simSpeed+'배속으로 운영합니다.')}));
