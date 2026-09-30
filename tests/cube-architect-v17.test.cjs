@@ -12,22 +12,22 @@ const w={};new Function('window',worldJs)(w);
 const rules=w.CubeArchitectWorld;
 function stats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},
-    placedBlocks:0,paintedFaces:[],smelted:{},biomes:['meadow'],found:[]};
+    placedBlocks:0,paintedFaces:[],smelted:{},biomes:['meadow'],found:[],restored:[]};
 }
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(worldJs));
-  assert.match(html,/cube-architect\.js\?v=20260930-17/);
+  assert.match(html,/cube-architect\.js\?v=20260930-18/);
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="survivalSafety"/);
   assert.match(html,/id="survivalReturn"/);
   assert.match(css,/#survivalReturn/);
   assert.match(js,/worldChunksGenerated=new Set/);
   assert.match(js,/generateWorldChunk\(bx,bz\)/);
-  assert.match(js,/version:5/);
+  assert.match(js,/version:6/);
 });
 test('survival has a finishable, action-driven sequence',()=>{
-  assert.equal(rules.GOALS.length,10);
+  assert.ok(rules.GOALS.length>=11);
   const s=stats();
   assert.equal(rules.goalProgress(rules.GOALS[0],s),0);
   s.harvestedWood=3;
@@ -35,7 +35,7 @@ test('survival has a finishable, action-driven sequence',()=>{
   s.crafted.planks=1;s.placed.workbench=1;s.crafted.woodPick=1;
   s.placedBlocks=6;s.harvestedStone=8;s.biomes.push('forest');
   s.placed.furnace=1;s.smelted.glass=1;s.placed.cuboid=1;
-  s.paintedFaces=['block:0','block:2'];s.found=['bp1'];
+  s.paintedFaces=['block:0','block:2'];s.found=['bp1'];s.restored=['taj'];
   for(const goal of rules.GOALS)
     assert.equal(rules.goalProgress(goal,s),goal.need,goal.title);
   const empty=stats();empty.harvestedStone=8;
