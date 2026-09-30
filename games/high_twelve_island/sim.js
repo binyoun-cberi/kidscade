@@ -52,7 +52,8 @@
   const FOUNDER_NAMES = ["하나", "태오", "미래", "소라", "준", "다온", "유나", "도윤", "아린", "지후", "나래", "현우"];
   const NEW_NAMES = ["세아", "윤서", "재민", "가온", "하람", "수아", "시온", "예린", "우진", "단비",
     "민서", "하린", "서우", "지안", "은호", "채원", "시우", "이든", "유림", "노아",
-    "라온", "수현", "찬", "율", "봄", "서진", "도하", "희수", "이솔", "재이"];
+    "라온", "수현", "찬", "율", "봄", "서진", "도하", "희수", "이솔", "재이",
+    "하진", "성민", "나윤", "주원", "은채", "해솔"];
   const PRIORITIES = ["food", "fairness", "work", "safety", "public"];
   const PRIORITY_TITLES = { food: "식량과 생활", fairness: "배분과 절차", work: "일과 보상", safety: "안전과 비축", public: "공동시설과 예산" };
   const SKILLS = ["농사 경험", "목공 경험", "요리 경험", "돌봄 경험", "도구 수리 경험", "낚시 경험", "기록 정리 경험", "항해 경험"];
@@ -146,7 +147,7 @@
       food: 65, wood: 40, trust: 65, treasury: 0, foodCap: 100,
       jobs: { gather: 5, wood: 3 }, buildings: { farm: 0, hut: 0, store: 0, clinic: 0, hall: 0 },
       laws: {}, passed: [], eventsSeen: {}, eventsLast: {}, pending: null, cooldown: 0, log: [],
-      citizens: FOUNDER_NAMES.map((_, index) => createCitizen(index)), arrivalLog: [], arrivalNotice: null,
+      citizens: FOUNDER_NAMES.map((_, index) => createCitizen(index)), arrivalLog: [], arrivalNotice: null, nextCitizenIndex: 12,
       stormUntil: 0, lastBirth: 0, lastRelief: -99, score: 0
     };
   }
@@ -166,6 +167,7 @@
       d.jobs.wood = Math.max(0, d.population - d.jobs.gather);
     }
     ensureCitizens(d);
+    d.nextCitizenIndex = Math.max(d.nextCitizenIndex || 12, d.citizens.length);
     d.pending = d.pending === "new_resident" && d.arrivalNotice ? d.pending : null;
     return d;
   }
@@ -380,7 +382,7 @@
     if (s.treasury < 1 && s.stage >= 2 && (s.buildings.clinic || s.buildings.hall)) s.trust = clamp(s.trust - .24);
     if (s.buildings.clinic && s.treasury >= 1) s.trust = clamp(s.trust + .06);
     if (s.population < capacity(s) && s.food >= 53 && s.trust >= 42 && s.tick - s.lastBirth >= 7) {
-      const newcomer = createCitizen(s.citizens.length, "arrival", s.tick);
+      const newcomer = createCitizen(s.nextCitizenIndex++, "arrival", s.tick);
       s.citizens.push(newcomer);
       s.population++;
       s.lastBirth = s.tick;
