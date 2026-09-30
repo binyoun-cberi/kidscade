@@ -125,6 +125,14 @@ const MISSIONS={
  6:{title:'부족한 자원을 함께 나눠라',text:'공동체의 식량과 물이 넉넉하지 않습니다. 배분 원칙을 정하세요.',steps:[['choice','배분 원칙 정하기'],['stock','공동 비축 확보']]},
  7:{title:'강이 넘치기 전에 대비하라',text:'폭우가 계속됩니다. 식수·식량·쉼터를 확인한 뒤 무전기로 구조 신호를 보내세요.',steps:[['ready','비상 물자 준비'],['radio','무전 송신']]}
 };
+const TUTORIAL=[
+ {title:'이동해 보기',text:'WASD 또는 방향키로 캐릭터를 움직여 보세요.',hint:'앞으로 가는 W는 화면이 바라보는 방향으로 이동합니다.'},
+ {title:'주변 둘러보기',text:'마우스를 누른 채 드래그해서 카메라를 돌려 보세요.',hint:'휠을 굴리면 카메라 거리를 바꿀 수 있습니다.'},
+ {title:'강을 찾아가기',text:'화면 위 목표 표시를 따라 강변까지 이동하세요.',hint:'목표까지 거리가 점점 줄어드는지 확인하세요.'},
+ {title:'강물 뜨기',text:'강변의 상호작용 표시가 뜨면 E를 눌러 물을 뜨세요.',hint:'맑아 보여도 바로 마시는 물은 아닙니다.'},
+ {title:'물을 끓이기',text:'학교 야영지의 비상 버너로 돌아와 E를 눌러 물을 끓이세요.',hint:'처음 한 번은 비상 버너의 남은 연료를 사용할 수 있습니다.'},
+ {title:'깨끗한 물 마시기',text:'하단 1번 슬롯 또는 숫자 1을 눌러 끓인 물을 마셔 보세요.',hint:'이 행동까지 마치면 조작 튜토리얼이 끝납니다.'}
+];
 const ui={
  canvas:$('#game'),hud:$('#hud'),start:$('#start'),loading:$('#loading'),loadingText:$('#loadingText'),ending:$('#ending'),decision:$('#decision'),
  newGame:$('#newGame'),continueGame:$('#continueGame'),restartGame:$('#restartGame'),
@@ -133,13 +141,13 @@ const ui={
  zone:$('#zoneText'),bearing:$('#bearingText'),interact:$('#interactPrompt'),toast:$('#toast'),panel:$('#panel'),panelTitle:$('#panelTitle'),
  panelBody:$('#panelBody'),closePanel:$('#closePanel'),hotWater:$('#hotWater'),hotFood:$('#hotFood'),hotAxe:$('#hotAxe'),hotItems:$('#hotItems'),
  endingText:$('#endingText'),endingStats:$('#endingStats'),continueSettlement:$('#continueSettlement'),joyKnob:$('#joyKnob'),mobileInteract:$('#mobileInteract'),
- mobileBuild:$('#mobileBuild'),mobileTablet:$('#mobileTablet')
+ mobileBuild:$('#mobileBuild'),mobileTablet:$('#mobileTablet'),tutorial:$('#tutorialCoach'),tutorialStep:$('#tutorialStep'),tutorialTitle:$('#tutorialTitle'),tutorialText:$('#tutorialText'),tutorialHint:$('#tutorialHint'),tutorialSkip:$('#tutorialSkip')
 };
 let scene,camera,renderer,loader,clock,game=null,running=false,paused=false,toastT=0,lastSave=0;
 let camYaw=Math.PI,camPitch=.42,camDist=9,drag=false,lastPointer=null,buildMode=null,ghost=null,currentInteract=null;
 const keys=new Set(), interactables=[], resources=[], placed=[], colliders=[], ruinZones=[], models=new Map();
 const groups={world:new THREE.Group(),props:new THREE.Group(),dynamic:new THREE.Group(),buildings:new THREE.Group(),weather:new THREE.Group()};
-const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null};
+const player={root:new THREE.Group(),visual:new THREE.Group(),speed:0,touch:new THREE.Vector2(),sprite:null,model:null,walkPhase:0};
 const tmp=new THREE.Vector3(),tmp2=new THREE.Vector3();
 
 function fresh(){
@@ -147,12 +155,12 @@ function fresh(){
   inv:{wood:0,stone:0,dirtyWater:0,chemWater:0,cleanWater:0,food:1,potato:1,cookedPotato:0,cloth:0,scrap:0,battery:0,axe:0},
   flags:{},buildings:[],knowledge:[],survivors:0,job:null,residents:{taeho:{rescued:false,job:null},mira:{rescued:false,job:null},junseo:{rescued:false,job:null}},
   powerKw:0,powerLoads:{light:true,cooler:true,purifier:true},trust:60,communityHealth:70,productivity:70,morale:70,
-  distribution:null,floodLevel:0,phase:'survival',settlementLevel:0,playSeconds:0,finished:false};
+  distribution:null,floodLevel:0,phase:'survival',settlementLevel:0,tutorial:{step:0,done:false,move:0,camera:false},playSeconds:0,finished:false};
 }
 function parse(v,d){try{return JSON.parse(v)??d}catch(_){return d}}
 function load(){
  const s=parse(localStorage.getItem(SAVE),null);if(!s||s.version!==1)return null;const f=fresh();
- const merged={...f,...s,inv:{...f.inv,...s.inv},flags:{...s.flags},powerLoads:{...f.powerLoads,...(s.powerLoads||{})},buildings:Array.isArray(s.buildings)?s.buildings:[],knowledge:Array.isArray(s.knowledge)?s.knowledge:[],residents:{...f.residents,...(s.residents||{})}};
+ const merged={...f,...s,inv:{...f.inv,...s.inv},flags:{...s.flags},powerLoads:{...f.powerLoads,...(s.powerLoads||{})},tutorial:{...f.tutorial,...(s.tutorial||{})},buildings:Array.isArray(s.buildings)?s.buildings:[],knowledge:Array.isArray(s.knowledge)?s.knowledge:[],residents:{...f.residents,...(s.residents||{})}};
  if(s.survivors>0&&!merged.residents.taeho?.rescued)merged.residents.taeho={rescued:true,job:s.job||null};
  merged.survivors=Object.values(merged.residents).filter(r=>r?.rescued).length;merged.job=merged.residents.taeho?.job||s.job||null;
  return merged
@@ -385,7 +393,29 @@ function decorateWorld(){
 function makeLabel(text){const c=document.createElement('canvas');c.width=320;c.height=72;const x=c.getContext('2d');x.fillStyle='rgba(5,12,15,.76)';x.roundRect(4,4,312,64,18);x.fill();x.strokeStyle='rgba(255,255,255,.22)';x.stroke();x.fillStyle='#eef8ef';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,160,36);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));s.scale.set(6.6,1.48,1);return s}
 function label(text,x,y,z){const s=makeLabel(text);s.position.set(x,y,z);groups.dynamic.add(s);return s}
 function addInteract(o,type,labelText,data={}){o.userData.interactable={type,label:labelText,...data};interactables.push(o)}
-async function model(url){if(models.has(url))return models.get(url).clone(true);return new Promise(resolve=>loader.load(url,g=>{models.set(url,g.scene);resolve(g.scene.clone(true))},undefined,()=>resolve(null)))}
+const GENERIC_PALETTES={
+ people:{skin:0xd9a67d,hair:0x382d2a,body:0x3f6e91,cloth:0x557a9a,pants:0x34424d,shoe:0x25292b,metal:0x747f84},
+ city:{body:0xa66f58,wall:0xb28b6c,roof:0x4a5154,glass:0x668c9c,wood:0x74513a,metal:0x747d80,trim:0xc8b99b},
+ roads:{body:0x4e5558,metal:0x7f898c,light:0xe9c96e,trim:0xd7d0b8},
+ cars:{body:0x9c493d,glass:0x587d8e,tire:0x25292b,metal:0x81898b,light:0xf2d47a,trim:0x30373a},
+ nature:{leaf:0x52784d,grass:0x668851,wood:0x6e4c35,rock:0x777d75,body:0x668851},
+ survival:{cloth:0x7c825e,wood:0x70503a,metal:0x747d80,body:0x7f765f,trim:0xb8aa87},
+ buildings:{wall:0x9a765f,roof:0x3f4649,glass:0x607f8e,wood:0x71503a,metal:0x747d80,trim:0xc4b697,body:0x95735d}
+};
+function genericPalette(url=''){if(url.includes('/characters/')||url.includes('/people/'))return GENERIC_PALETTES.people;if(url.includes('/nature/'))return GENERIC_PALETTES.nature;if(url.includes('city-kit-roads'))return GENERIC_PALETTES.roads;if(url.includes('/vehicles/'))return GENERIC_PALETTES.cars;if(url.includes('/buildings/'))return GENERIC_PALETTES.buildings;if(url.includes('/survival/'))return GENERIC_PALETTES.survival;return GENERIC_PALETTES.city}
+function genericRole(label='',url=''){
+ const n=String(label).toLowerCase();
+ if(/skin|face|head|hand|arm/.test(n))return'skin';if(/hair|brow/.test(n))return'hair';if(/shirt|jacket|coat|torso|body/.test(n))return'body';if(/pants|trouser|leg/.test(n))return'pants';if(/shoe|boot|foot/.test(n))return'shoe';
+ if(/leaf|foliage|crown|bush/.test(n))return'leaf';if(/grass|plant/.test(n))return'grass';if(/rock|stone|cliff/.test(n))return'rock';
+ if(/glass|window|windshield/.test(n))return'glass';if(/tire|wheel|rubber/.test(n))return'tire';if(/light|lamp/.test(n))return'light';if(/roof/.test(n))return'roof';if(/wall|brick|facade/.test(n))return'wall';if(/wood|door|frame|bark|log/.test(n))return'wood';if(/metal|pipe|rim|axle/.test(n))return'metal';if(/trim|border/.test(n))return'trim';if(url.includes('/nature/'))return'body';return'body'
+}
+function repairAchromaticModel(o,url=''){
+ const p=genericPalette(url);let slot=0;
+ o.traverse(n=>{if(!n.isMesh)return;const src=Array.isArray(n.material)?n.material:[n.material];const next=src.map(m=>{const q=m?.clone?.()||new THREE.MeshStandardMaterial(),hsl={h:0,s:0,l:0};q.color?.getHSL(hsl);const blank=!q.map&&q.color&&hsl.s<.075&&(hsl.l>.18||url.includes('/people/'));if(blank){const role=genericRole((n.name||'')+' '+(m?.name||''),url),fallback=['body','trim','metal','wood'][slot++%4],hex=p[role]??p[fallback]??0x7d827d;q.color.setHex(hex);q.roughness=role==='glass'?.3:role==='metal'?.55:.82;q.metalness=role==='metal'?.22:0;if(role==='glass'){q.transparent=true;q.opacity=.72;q.depthWrite=false}}return q});n.material=Array.isArray(n.material)?next:next[0]});
+ return o
+}
+function clonePrepared(base,url){const o=base.clone(true);repairAchromaticModel(o,url);return o}
+async function model(url){if(models.has(url))return clonePrepared(models.get(url),url);return new Promise(resolve=>loader.load(url,g=>{models.set(url,g.scene);resolve(clonePrepared(g.scene,url))},undefined,()=>resolve(null)))}
 function normalize(o,target){const b=new THREE.Box3().setFromObject(o),sz=b.getSize(tmp),mx=Math.max(sz.x,sz.y,sz.z)||1;o.scale.multiplyScalar(target/mx);const b2=new THREE.Box3().setFromObject(o);o.position.y-=b2.min.y;o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}})}
 function spawnResource(type,x,z){
  const r=new THREE.Group();r.position.set(x,terrainHeight(x,z),z);groups.props.add(r);
@@ -400,28 +430,56 @@ function spawnResource(type,x,z){
  if(!shared3DIsApproved(assetId))return;
  model(SHARED(assetId)).then(o=>{if(!o)return;r.clear();normalizeShared(o,type==='tree'?5.2:type==='rock'?1.65:1.7);o.rotation.y=(seed%628)/100;r.add(o)})
 }
+function playerModelFile(){
+ const src=currentAvatarSource()||'kidscade-survivor';let hash=0;for(let i=0;i<src.length;i++)hash=(hash*31+src.charCodeAt(i))>>>0;
+ return ['character-female-a.glb','character-male-a.glb','character-female-d.glb','character-male-d.glb'][hash%4]
+}
 function createAvatar(){
- const src=currentAvatarSource();
- if(!src){avatarFallback();return}
- new THREE.TextureLoader().load(src,t=>{
-   t.colorSpace=THREE.SRGBColorSpace;
-   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,alphaTest:.02}));
-   sprite.scale.set(2.65,3.55,1);sprite.position.y=1.72;player.visual.add(sprite);player.sprite=sprite;
- },undefined,avatarFallback)
+ player.visual.clear();player.sprite=null;player.model=null;
+ const fallback=makeSurvivorFallback();player.visual.add(fallback);
+ model(ART.people+playerModelFile()).then(o=>{if(!o)return;fallback.visible=false;normalize(o,2.95);o.rotation.y=Math.PI;player.visual.add(o);player.model=o})
 }
-function avatarFallback(){
- const capsule=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.25,5,8),new THREE.MeshStandardMaterial({color:0x4aa96c,roughness:.7}));capsule.position.y=1.25;player.visual.add(capsule);
- model(ART.people+'character-male-a.glb').then(o=>{if(!o)return;capsule.visible=false;normalize(o,2.9);o.rotation.y=Math.PI;player.visual.add(o)})
+function makeSurvivorFallback(){
+ const g=new THREE.Group(),skin=new THREE.MeshStandardMaterial({color:0xd5a078,roughness:.85}),jacket=new THREE.MeshStandardMaterial({color:0x3e7188,roughness:.8}),pants=new THREE.MeshStandardMaterial({color:0x33414b,roughness:.85}),dark=new THREE.MeshStandardMaterial({color:0x292d30,roughness:.9});
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.33,14,10),skin);head.position.y=2.48;g.add(head);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.72,4,8),jacket);torso.position.y=1.58;g.add(torso);
+ for(const sx of [-1,1]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.72,3,7),jacket);arm.position.set(.52*sx,1.62,0);arm.rotation.z=.1*sx;g.add(arm);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.15,.76,3,7),pants);leg.position.set(.21*sx,.62,0);g.add(leg);const shoe=new THREE.Mesh(new THREE.BoxGeometry(.32,.18,.52),dark);shoe.position.set(.21*sx,.1,.1);g.add(shoe)}
+ g.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});return g
 }
+function updatePlayerVisual(dt,moving){
+ if(!player.model)return;player.walkPhase+=dt*(moving?9:3);const a=moving?Math.sin(player.walkPhase)*.035:Math.sin(player.walkPhase*.45)*.012;player.model.position.y=a;player.model.rotation.z=damp(player.model.rotation.z,moving?Math.sin(player.walkPhase)*.025:0,8,dt)
+}
+function tutorialActive(){return !!game&&!game.tutorial?.done&&game.phase==='survival'&&game.day===1}
+function renderTutorial(){
+ if(!ui.tutorial||!game)return;const active=tutorialActive();ui.tutorial.classList.toggle('hidden',!active);if(!active)return;
+ const step=clamp(game.tutorial.step||0,0,TUTORIAL.length-1),t=TUTORIAL[step];ui.tutorialStep.textContent=(step+1)+' / '+TUTORIAL.length;ui.tutorialTitle.textContent=t.title;ui.tutorialText.textContent=t.text;ui.tutorialHint.textContent=t.hint
+}
+function tutorialNext(reason=''){
+ if(!tutorialActive())return;game.tutorial.step=Math.min(TUTORIAL.length,Number(game.tutorial.step||0)+1);
+ if(game.tutorial.step>=TUTORIAL.length){game.tutorial.done=true;toast('✅ 조작 튜토리얼 완료 · 이제 오늘의 생존 목표를 이어가세요.','normal',4)}
+ save();renderTutorial()
+}
+function tutorialSignal(type,value=1){
+ if(!tutorialActive())return;const s=game.tutorial.step||0;
+ if(s===0&&type==='move'){game.tutorial.move=(game.tutorial.move||0)+value;if(game.tutorial.move>=3)tutorialNext('move')}
+ else if(s===1&&type==='camera')tutorialNext('camera');
+ else if(s===3&&type==='water')tutorialNext('water');
+ else if(s===4&&type==='boil')tutorialNext('boil');
+ else if(s===5&&type==='drink')tutorialNext('drink')
+}
+function updateTutorial(){
+ if(!tutorialActive())return;const s=game.tutorial.step||0;if(s===2&&player.root.position.distanceTo(new THREE.Vector3(RIVER_X-6.3,terrainHeight(RIVER_X-6.3,5),5))<10)tutorialNext('river')
+}
+function skipTutorial(){if(!game)return;game.tutorial={...(game.tutorial||{}),done:true,step:TUTORIAL.length};save();renderTutorial();toast('튜토리얼을 건너뛰었습니다. TAB에서 지도와 생존 도감을 언제든 확인할 수 있습니다.')}
 function bindInput(){
  addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(e.target?.tagName))return;keys.add(e.code);if(e.code==='KeyE')interact();if(e.code==='KeyI')openPanel('inventory');if(e.code==='KeyC')openPanel('craft');if(e.code==='KeyB')openPanel('build');if(e.code==='Tab'){e.preventDefault();togglePanel()}if(e.code==='Digit1')useItem('cleanWater');if(e.code==='Digit2')useItem('food');if(e.code==='Escape'){if(buildMode)cancelBuild();else closePanel()}});
  addEventListener('keyup',e=>keys.delete(e.code));
  ui.canvas.addEventListener('pointerdown',e=>{drag=true;lastPointer=[e.clientX,e.clientY];ui.canvas.setPointerCapture?.(e.pointerId)});
- ui.canvas.addEventListener('pointermove',e=>{if(!drag||!lastPointer)return;camYaw-=(e.clientX-lastPointer[0])*.005;camPitch=clamp(camPitch+(e.clientY-lastPointer[1])*.003,.18,.82);lastPointer=[e.clientX,e.clientY]});
+ ui.canvas.addEventListener('pointermove',e=>{if(!drag||!lastPointer)return;const dx=e.clientX-lastPointer[0],dy=e.clientY-lastPointer[1];camYaw-=dx*.005;camPitch=clamp(camPitch+dy*.003,.18,.82);if(Math.abs(dx)+Math.abs(dy)>8)tutorialSignal('camera');lastPointer=[e.clientX,e.clientY]});
  ui.canvas.addEventListener('pointerup',()=>{drag=false;lastPointer=null});ui.canvas.addEventListener('wheel',e=>camDist=clamp(camDist+e.deltaY*.008,5.8,12),{passive:true});
  ui.mobileInteract?.addEventListener('click',interact);ui.mobileBuild?.addEventListener('click',()=>openPanel('build'));ui.mobileTablet?.addEventListener('click',togglePanel);
  ui.closePanel.addEventListener('click',closePanel);$$('#hotbar button').forEach(b=>b.addEventListener('click',()=>b.dataset.use?useItem(b.dataset.use):openPanel(b.dataset.open)));
- $$('#panel nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.tab,true)));$$('#decision [data-choice]').forEach(b=>b.addEventListener('click',()=>chooseDistribution(b.dataset.choice)));
+ $('#panel nav button').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.tab,true)));$('#decision [data-choice]').forEach(b=>b.addEventListener('click',()=>chooseDistribution(b.dataset.choice)));ui.tutorialSkip?.addEventListener('click',skipTutorial);
  bindJoy();
 }
 function bindJoy(){const base=$('.joy-base');if(!base)return;let pid=null;function move(e){const r=base.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=Math.min(42,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);player.touch.set(Math.cos(a)*m/42,Math.sin(a)*m/42);ui.joyKnob.style.transform='translate('+(Math.cos(a)*m)+'px,'+(Math.sin(a)*m)+'px)'}base.addEventListener('pointerdown',e=>{pid=e.pointerId;base.setPointerCapture(pid);move(e)});base.addEventListener('pointermove',e=>{if(e.pointerId===pid)move(e)});function end(e){if(e.pointerId!==pid)return;pid=null;player.touch.set(0,0);ui.joyKnob.style.transform=''}base.addEventListener('pointerup',end);base.addEventListener('pointercancel',end)}
@@ -435,10 +493,10 @@ function updatePlayer(dt){
   const f=tmp.set(Math.sin(camYaw),0,Math.cos(camYaw)),r=tmp2.set(f.z,0,-f.x),dir=new THREE.Vector3().addScaledVector(r,x).addScaledVector(f,y).normalize();
   const ox=player.root.position.x,oz=player.root.position.z,oy=terrainHeight(ox,oz),step=player.speed*dt,nx=clamp(ox+dir.x*step,-68,68),nz=clamp(oz+dir.z*step,-68,68),ny=terrainHeight(nx,nz);
   const rise=ny-oy,slope=rise/Math.max(step,.001),rw=riverHalfWidth(),riverBlocked=Math.abs(nx-RIVER_X)<rw&&Math.abs(nz+4)>3.5;
-  if(blockedAt(nx,nz)||riverBlocked||slope>.78){player.speed*=.42}else{const slopeSlow=clamp(1-Math.max(0,slope)*.48,.58,1);player.root.position.x=ox+(nx-ox)*slopeSlow;player.root.position.z=oz+(nz-oz)*slopeSlow}
+  if(blockedAt(nx,nz)||riverBlocked||slope>.78){player.speed*=.42}else{const slopeSlow=clamp(1-Math.max(0,slope)*.48,.58,1);player.root.position.x=ox+(nx-ox)*slopeSlow;player.root.position.z=oz+(nz-oz)*slopeSlow;tutorialSignal('move',Math.hypot(player.root.position.x-ox,player.root.position.z-oz))}
   player.root.rotation.y=Math.atan2(dir.x,dir.z);if(player.sprite)player.sprite.position.y=1.6+Math.sin(performance.now()*.012)*.04
  }
- player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z)
+ player.root.position.y=terrainHeight(player.root.position.x,player.root.position.z);updatePlayerVisual(dt,len>0&&player.speed>.3)
 }
 function cameraBlocked(x,z){return colliders.some(b=>b.cameraBlocker&&Math.abs(x-b.x)<b.hw+.2&&Math.abs(z-b.z)<b.hd+.2)}
 function resolveCamera(t,desired){
@@ -455,7 +513,7 @@ function updateCamera(dt){
 }
 function updateInteract(){if(!running||buildMode)return;let best=null,bd=3.6;for(const o of interactables){if(!o.visible)continue;const d=o.getWorldPosition(tmp).distanceTo(player.root.position);if(d<bd){best=o;bd=d}}currentInteract=best;ui.interact.classList.toggle('hidden',!best);if(best)ui.interact.querySelector('span').textContent=best.userData.interactable?.label||'상호작용'}
 function interact(){if(!running||paused)return;if(buildMode){confirmBuild();return}if(!currentInteract)return;const d=currentInteract.userData.interactable||{},t=d.type;
- if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
+ if(t==='river'){if(game.inv.dirtyWater>=4)return toast('들고 있는 강물이 많습니다. 먼저 처리해 보세요.','warn');game.inv.dirtyWater++;discover('waterRisk');flag('water');tutorialSignal('water');toast('🫗 강물을 떴습니다. 비상 버너나 모닥불에서 끓여 보세요.');save();return}
  if(t==='tree'||t==='rock'||t==='forage')return gather(currentInteract,t);if(t==='burner')return useBurner();if(t==='crate')return openCrate();if(t==='ruinCache')return lootRuin(d.cache);if(t==='powerbox')return repairPower();if(t==='pollutedWater')return samplePollutedWater();if(t==='survivor')return rescue(d.resident||'taeho');if(t==='radio')return useRadio();
  if(t==='rest'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 생존 목표를 먼저 해결해 보세요.','warn');return}if(t==='placed')usePlaced(d.building,currentInteract)
 }
@@ -468,7 +526,7 @@ function gather(r,t){
 function useBurner(){
  if(game.flags.burnerSpent)return toast('비상 버너의 남은 연료가 없습니다. 이제 직접 불을 피워야 합니다.','warn');
  if(game.inv.dirtyWater<1)return toast('먼저 강에서 물을 떠 오세요.','warn');
- game.inv.dirtyWater--;game.inv.cleanWater++;game.flags.burnerSpent=true;discover('boiling');flag('boil');toast('🔥 남은 연료로 강물을 충분히 끓였습니다. 깨끗한 물 +1','normal',3);save();updateUI()
+ game.inv.dirtyWater--;game.inv.cleanWater++;game.flags.burnerSpent=true;discover('boiling');flag('boil');tutorialSignal('boil');toast('🔥 남은 연료로 강물을 충분히 끓였습니다. 깨끗한 물 +1','normal',3);save();updateUI()
 }
 function syncPowerVisual(){if(scene?.userData?.campLamp)scene.userData.campLamp.intensity=game?.flags?.power&&game.powerLoads?.light&&powerUse()<=game.powerKw+.001?3.2:0}
 function repairPower(){
@@ -479,7 +537,7 @@ function repairPower(){
 }
 function lootRuin(id){
  const key='loot_'+id;if(game.flags[key])return toast('이미 필요한 물자를 챙겼습니다.');
- const loot=id==='market'?{food:2,potato:2}:id==='clinic'?{cloth:2,food:1}:id==='garage'?{scrap:2,wood:1}:{scrap:1};
+ const loot=id==='market'?{food:2,potato:2}:id==='clinic'?{cloth:2,food:1}:id==='garage'?{scrap:2,wood:1,battery:1}:{scrap:1};
  for(const [item,n] of Object.entries(loot))game.inv[item]=(game.inv[item]||0)+n;game.flags[key]=true;toast('🎒 폐허 수색 · '+Object.entries(loot).map(([k,n])=>(ITEMS[k]?.[0]||k)+' +'+n).join(' · '),'normal',3.5);save();updateUI()
 }
 function samplePollutedWater(){
@@ -509,7 +567,7 @@ function usePlaced(id,obj){if(id==='campfire'){if(game.inv.dirtyWater>0&&game.in
  }if(id==='cooler'){toast(devicePowered('cooler')?'🧊 냉장 보관함 작동 중 · 하루가 지나도 식량 부패가 억제됩니다.':'냉장 보관함에 전력이 공급되지 않습니다.','normal',3);return}
  if(id==='purifier'){if(!devicePowered('purifier'))return toast('🚰 정수기에 전력이 공급되지 않습니다.','warn');if(game.inv.dirtyWater<1)return toast('처리할 강물이 없습니다.','warn');game.inv.dirtyWater--;game.inv.cleanWater++;discover('waterTreatment');toast('🚰 여과·소독 장치를 거쳐 깨끗한 물 +1');save();updateUI();return}
  if(id==='shelter'){if(game.phase==='settlement'||missionDone())advanceDay();else toast('오늘의 목표를 조금 더 해결해 보세요.','warn')}else toast('작업대가 준비되었습니다.')}
-function useItem(id){if(!game||!running)return;if(id==='cleanWater'){if(game.inv.cleanWater<1)return toast('깨끗한 물이 없습니다.','warn');game.inv.cleanWater--;game.thirst=clamp(game.thirst+38,0,100);flag('drink');toast('💧 깨끗한 물을 마셨습니다.')}else{const f=game.inv.cookedPotato>0?'cookedPotato':'food';if(game.inv[f]<1)return toast('먹을 것이 없습니다.','warn');game.inv[f]--;game.hunger=clamp(game.hunger+(f==='cookedPotato'?28:35),0,100);toast((ITEMS[f]?.[1]||'🍽')+' 식사했습니다.')}save();updateUI()}
+function useItem(id){if(!game||!running)return;if(id==='cleanWater'){if(game.inv.cleanWater<1)return toast('깨끗한 물이 없습니다.','warn');game.inv.cleanWater--;game.thirst=clamp(game.thirst+38,0,100);flag('drink');tutorialSignal('drink');toast('💧 깨끗한 물을 마셨습니다.')}else{const f=game.inv.cookedPotato>0?'cookedPotato':'food';if(game.inv[f]<1)return toast('먹을 것이 없습니다.','warn');game.inv[f]--;game.hunger=clamp(game.hunger+(f==='cookedPotato'?28:35),0,100);toast((ITEMS[f]?.[1]||'🍽')+' 식사했습니다.')}save();updateUI()}
 function openPanel(tab='inventory'){if(!game)return;ui.panel.classList.remove('hidden');ui.panel.dataset.tab=tab;$$('#panel nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));renderPanel(tab)}
 function closePanel(){ui.panel.classList.add('hidden')}
 function togglePanel(){ui.panel.classList.contains('hidden')?openPanel('inventory'):closePanel()}
@@ -612,6 +670,7 @@ function updateNpc(){
 }
 function currentObjective(){
  if(!game)return null;const nearestBuilding=id=>placed.find(p=>p.userData.interactable?.building===id)?.position||CAMP;
+ if(tutorialActive()){const s=game.tutorial.step||0;if(s===2||s===3)return{name:'튜토리얼 · 강',pos:new THREE.Vector3(RIVER_X-6.3,0,5)};if(s===4)return{name:'튜토리얼 · 비상 버너',pos:new THREE.Vector3(2,0,9.4)};if(s===5)return{name:'튜토리얼 · 깨끗한 물',pos:CAMP}}
  if(game.phase==='settlement'){
    const steps=settlementSteps();if(!steps[0][2]){for(const [id,r] of Object.entries(game.residents||{}))if(!r?.rescued)return{name:RESIDENTS[id].name+' 구조',pos:RESIDENTS[id].field}}
    if(!steps[1][2])return{name:'주민 역할 배정',pos:CAMP};if(!steps[2][2])return{name:'텃밭 건설',pos:CAMP};if(!steps[3][2])return{name:'전기 정수기 건설',pos:CAMP};if(!steps[4][2])return{name:'냉장 보관함 건설',pos:CAMP};if(!steps[5][2])return{name:'비상 물자 비축',pos:CAMP};return null
@@ -630,8 +689,8 @@ function continueSettlement(){
  game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420;game.floodLevel=0;player.root.position.copy(CAMP);player.root.position.y=terrainHeight(CAMP.x,CAMP.z);ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;applyDayStart();save();toast('🏘️ 정착지 운영 시작 · 이제 7일 버티기가 아니라 스스로 살아가는 공동체를 만듭니다.','normal',5)
 }
 function finish(){if(game.finished)return;game.finished=true;save();running=false;ui.hud.classList.add('hidden');ui.ending.classList.remove('hidden');ui.endingText.textContent=(1+residentCount())+'명이 함께 살아남았습니다. 과학·사회 지식 '+game.knowledge.length+'개를 발견하고 '+game.buildings.length+'개의 시설을 세웠습니다.';ui.endingStats.innerHTML='<div><b>'+(1+residentCount())+'</b><small>인구</small></div><div><b>'+game.knowledge.length+'</b><small>발견 지식</small></div><div><b>'+game.buildings.length+'</b><small>시설</small></div><div><b>'+Math.round(game.trust)+'</b><small>신뢰</small></div>';window.KidscadeGame?.gameOver?.({score:game.knowledge.length*500+game.buildings.length*200+Math.round(game.trust)*10,day:7})}
-async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
+async function start(freshRun){game=freshRun?withOldKnowledge(fresh()):withOldKnowledge(load()||fresh());if(!freshRun&&game.finished&&game.phase==='survival'){game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420}camYaw=game.yaw||Math.PI;player.root.position.set(game.pos?.x||0,terrainHeight(game.pos?.x||0,game.pos?.z??8),game.pos?.z??8);game.survivors=residentCount();ui.start.classList.add('hidden');ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;await restoreBuildings();applyDayStart();syncPowerVisual();updateUI();renderTutorial();window.KidscadeGame?.start?.({day:game.day});toast('E 상호작용 · C 제작 · B 건축 · TAB 생존 태블릿','normal',4)}
 function resize(){renderer?.setSize(innerWidth,innerHeight,false);if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}}
-function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
+function loop(){requestAnimationFrame(loop);if(!renderer)return;const dt=Math.min(.05,clock.getDelta());if(running&&!paused){updatePlayer(dt);updateCamera(dt);updateInteract();updateGhost();updateNeeds(dt);updateResources(dt);updateFarms(dt);updateNpc();updateTutorial();updateWeather(dt);if(performance.now()-lastSave>20000){lastSave=performance.now();save()}if(toastT>0){toastT-=dt;if(toastT<=0)ui.toast.classList.remove('show')}updateUI()}else updateCamera(dt);renderer.render(scene,camera)}
 async function boot(){init3D();ui.loadingText.textContent='검수된 3D 숲·폐허 자산과 키즈케이드 아바타를 연결하고 있어요.';await Promise.all(['campfire-pit.glb','structure.glb','workbench.glb'].map(f=>model('../../assets/game/3d/survival/kenney-survival-kit/'+f)));ui.loading.classList.add('hidden');ui.continueGame.disabled=!load();ui.continueGame.textContent=load()?'이어하기':'저장된 생존 없음';ui.newGame.addEventListener('click',()=>{localStorage.removeItem(SAVE);start(true)});ui.continueGame.addEventListener('click',()=>load()&&start(false));ui.restartGame.addEventListener('click',()=>{ui.ending.classList.add('hidden');localStorage.removeItem(SAVE);start(true)});ui.continueSettlement?.addEventListener('click',continueSettlement);window.KidscadeGame?.registerPauseHandlers?.({pause(){paused=true},resume(){paused=false;clock.getDelta()}});loop()}
 boot().catch(err=>{console.error(err);ui.loadingText.textContent='월드를 준비하지 못했습니다. 새로고침해 주세요.';window.KidscadeGame?.reportError?.(err,{code:'APOCALYPSE_BOOT',fatal:true})});
