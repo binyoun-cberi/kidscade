@@ -10,7 +10,7 @@
   const BUILDINGS = Object.freeze({
     farm: { title: "작은 농장", icon: "🌾", cost: { wood: 18 }, stage: 1, max: 4, desc: "식량 생산량이 증가합니다." },
     hut: { title: "공동 주거지", icon: "🏠", cost: { wood: 16 }, stage: 1, max: 5, desc: "최대 인구가 6명 증가합니다." },
-    store: { title: "공동 창고", icon: "📦", cost: { wood: 22 }, stage: 1, max: 2, desc: "식량 저장 한도가 45 증가합니다." },
+    store: { title: "공동 창고", icon: "📦", cost: { wood: 22 }, stage: 1, max: 2, desc: "식량 저장 한도 45, 물자 저장 한도 70이 증가합니다." },
     clinic: { title: "작은 진료소", icon: "🏥", cost: { wood: 12, treasury: 24 }, stage: 2, max: 1, desc: "운영비가 들지만 시민의 생활이 안정됩니다." },
     hall: { title: "마을 회관", icon: "🏛️", cost: { wood: 20, treasury: 22 }, stage: 2, max: 1, desc: "마을 회의와 의견 수렴에 사용됩니다." }
   });
@@ -163,7 +163,7 @@
   function initial(seed = 8429) {
     return {
       version: VERSION, seed: seed >>> 0, tick: 0, stage: 1, population: 12,
-      food: 65, wood: 40, trust: 65, treasury: 0, foodCap: 100,
+      food: 65, wood: 40, trust: 65, treasury: 0, foodCap: 100, woodCap: 130,
       jobs: { gather: 5, wood: 3 }, buildings: { farm: 0, hut: 0, store: 0, clinic: 0, hall: 0 },
       laws: {}, passed: [], eventsSeen: {}, eventsLast: {}, pending: null, cooldown: 0, log: [],
       citizens: FOUNDER_NAMES.map((_, index) => createCitizen(index)), arrivalLog: [], arrivalNotice: null, nextCitizenIndex: 12,
@@ -175,7 +175,7 @@
       reserveFood: 0, boostUntil: 0, actionCooldowns: {},
       // 한파와 인권 관련 상태는 실제 위기가 닥쳤을 때 HUD에 공개한다.
       warmth: 73, health: 85, education: 95, childWellbeing: 95,
-      nextWinterAt: 16, coldUntil: 0, winterPrepared: null, winterEver: false,
+      nextWinterAt: 16, coldUntil: 0, winterPrepared: null, winterEver: false, winterCount: 0,
       winterStartedAt: 0, winterWarnings: 0,
       childWorkUntil: 0, childWorkWeeks: 0, childLaborReviewed: false,
       forcedLaborUntil: 0, forcedLaborWeeks: 0, laborReviewed: false,
@@ -190,6 +190,7 @@
     d.population = Math.round(clamp(d.population, 1, 99));
     d.food = clamp(d.food, 0, 200);
     d.wood = clamp(d.wood, 0, 999);
+    d.woodCap = Math.max(130 + d.buildings.store * 70, s.woodCap || Math.ceil(d.wood / 10) * 10);
     d.trust = clamp(d.trust);
     d.treasury = clamp(d.treasury, 0, 9999);
     d.jobs = { gather: Math.max(0, Math.floor(d.jobs.gather || 0)), wood: Math.max(0, Math.floor(d.jobs.wood || 0)) };
@@ -244,7 +245,7 @@
     const fatigue = 1 - Math.min(.33, (s.workStrain || 0) * .032);
     const effortAdapt = s.laws.ration === "effort" && s.safeguards?.effortCare ? .955 : 1;
     const shortRest = s.workReliefUntil > s.tick ? .75 : 1;
-    const coldFactor = winterActive(s) ? .68 : 1;
+    const coldFactor = winterActive(s) ? Math.max(.52, .68 - Math.max(0, (s.winterCount || 1) - 1) * .05) : 1;
     const illnessFactor = s.health < 45 ? .75 : s.health < 65 ? .88 : 1;
     const focusedWork = s.laws.ration === "effort" && s.boostUntil > s.tick ? 1.23 : 1;
     const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) * fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor;
@@ -255,7 +256,8 @@
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
-    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue, heating: winterActive(s) ? (s.winterPrepared === 2 ? 2.15 : 3.25) : 0 };
+    return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost, gather, foodUse, fatigue,
+      heating: winterActive(s) ? (s.winterPrepared === 2 ? 2.15 : 3.25) + Math.min(1.6, Math.max(0, (s.winterCount || 1) - 1) * .55) : 0 };
   }
   function canBuild(s, id) {
     const b = BUILDINGS[id];
@@ -268,6 +270,7 @@
     Object.entries(b.cost).forEach(([key, amount]) => { s[key] -= amount; });
     s.buildings[id]++;
     s.foodCap = 100 + s.buildings.store * 45 + (s.laws.storage === "reserve" ? 35 : 0);
+    s.woodCap = Math.max(s.woodCap, 130 + s.buildings.store * 70);
     record(s, b.title + "을(를) 만들었습니다.");
     return true;
   }
@@ -510,19 +513,19 @@
   function effect(s, changes) {
     for (const [key, delta] of Object.entries(changes || {})) {
       if (["food", "wood", "trust", "treasury", "health", "warmth", "education", "childWellbeing"].includes(key))
-        s[key] = clamp(s[key] + delta, 0, key === "food" ? s.foodCap : ["trust", "health", "warmth", "education", "childWellbeing"].includes(key) ? 100 : 9999);
+        s[key] = clamp(s[key] + delta, 0, key === "food" ? s.foodCap : key === "wood" ? s.woodCap : ["trust", "health", "warmth", "education", "childWellbeing"].includes(key) ? 100 : 9999);
     }
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
 
     { id: "winter_warning", priority: 92, repeat: 28,
-      when: s => s.tick >= s.nextWinterAt - 4 && s.tick < s.nextWinterAt && s.winterPrepared == null,
+      when: s => s.tick >= s.nextWinterAt - 8 && s.tick < s.nextWinterAt && s.winterPrepared == null,
       title: "❄️ 거센 한파가 다가옵니다", speaker: "미래",
-      body: "해안의 기온이 급격히 떨어지고 있습니다. 한파가 시작되면 14주 동안 생산량이 감소하고 매주 난방 물자가 필요합니다. 무엇을 준비할까요?",
+      body: s => "해안의 기온이 급격히 떨어지고 있습니다. 다가오는 한파는 " + Math.min(20, 14 + (s.winterCount || 0) * 2) + "주 동안 이어질 전망입니다. 생산량이 감소하고 매주 난방 물자가 필요합니다. 무엇을 준비할까요?",
       options: [
         { label: "목재 12를 사용해 거처를 보강해요.", cost: { wood: 12 }, winterPrep: 2,
-          note: "한파 시작 시 체온을 더 높게 유지하고 매주 필요한 난방 물자가 약 3.25에서 2.15로 줄어듭니다." },
+          note: "한파 시작 시 체온을 더 높게 유지하고, 매주 필요한 난방 물자가 줄어듭니다." },
         { label: "식량 10을 사용해 난방 거처를 함께 운영해요.", cost: { food: 10 }, winterPrep: 1,
           note: "한파 시작 시 체온을 보통 수준으로 유지합니다. 대신 식량 비축량이 줄어듭니다." },
         { label: "지금은 자원을 아껴 두고 한파에 대응해요.", winterPrep: 0,
@@ -541,7 +544,7 @@
           note: "목재 10을 사용해 체온을 30 회복합니다." }
       ] },
     { id: "child_labor_debate", priority: 87, once: true,
-      when: s => winterActive(s) && s.tick >= 16 && childCount(s) > 0 && s.food < 115,
+      when: s => winterActive(s) && s.tick >= 16 && childCount(s) > 0 && s.food <= 72,
       title: "어린 주민도 위험한 채집에 나가야 할까요?", speaker: "나래",
       body: "한파로 식량 생산이 줄었습니다. 일부 어른들은 어린이도 해변의 위험한 채집 작업에 보내자고 말합니다. 나래는 '저희도 학교에 가고 안전하게 지낼 수 있나요?'라고 묻습니다.",
       options: [
@@ -782,10 +785,12 @@
   function startWinter(s) {
     s.winterEver = true;
     s.winterStartedAt = s.tick;
-    s.coldUntil = s.tick + 14;
+    s.winterCount = (s.winterCount || 0) + 1;
+    const duration = Math.min(20, 12 + s.winterCount * 2);
+    s.coldUntil = s.tick + duration;
     s.nextWinterAt += 34;
-    s.warmth = clamp(Math.max(s.warmth, s.winterPrepared === 2 ? 82 : s.winterPrepared === 1 ? 72 : 64));
-    s.crisisHistory.unshift({ tick: s.tick, type: "한파", text: "한파 시작 · 앞으로 14주 동안 식량 생산이 감소하고 난방에 물자가 소모됩니다." });
+    s.warmth = s.winterPrepared === 2 ? 84 : s.winterPrepared === 1 ? 72 : 62;
+    s.crisisHistory.unshift({ tick: s.tick, type: "한파", text: "한파 시작 · " + duration + "주 동안 생산량이 감소하고 난방 물자가 소모됩니다." });
     record(s, "❄️ 한파가 시작되었습니다. 난방 물자가 매주 소모되고 식량 생산이 줄어듭니다.");
   }
   function advanceWinterAndRights(s) {
@@ -814,12 +819,12 @@
   function advanceHealthAndFuel(s, rates, producedWood) {
     if (winterActive(s)) {
       const adequateFuel = producedWood + .00001 >= rates.heating;
-      s.wood = clamp(producedWood - rates.heating, 0, 999);
+      s.wood = clamp(producedWood - rates.heating, 0, s.woodCap);
       s.warmth = clamp(s.warmth + (adequateFuel ? -.8 : -5.1));
       if (s.warmth < 48) s.health = clamp(s.health - (s.warmth < 25 ? 2.4 : 1.2));
       if (s.warmth < 38) s.childWellbeing = clamp(s.childWellbeing - 1.1);
     } else {
-      s.wood = clamp(producedWood, 0, 999);
+      s.wood = clamp(producedWood, 0, s.woodCap);
       s.warmth = clamp(s.warmth + 1.7);
     }
     if (s.food < 20) { s.health = clamp(s.health - .9); s.childWellbeing = clamp(s.childWellbeing - .7); }
@@ -883,7 +888,7 @@
       s.workStrain = clamp(s.workStrain + 1.6, 0, 10);
       if (choice.adultVolunteer === "food" && unused(s) > 0) s.jobs.gather++;
     }
-    if (choice.volunteerWood) { s.wood += 10; s.workStrain = clamp(s.workStrain + 1.4, 0, 10); }
+    if (choice.volunteerWood) { s.wood = clamp(s.wood + 10, 0, s.woodCap); s.workStrain = clamp(s.workStrain + 1.4, 0, 10); }
     if (choice.coldShelter) {
       s.warmth = clamp(s.warmth + (choice.coldShelter === 3 ? 30 : choice.coldShelter === 2 ? 8 : 16));
       if (choice.coldShelter === 1) s.workStrain = clamp(s.workStrain + 1.2, 0, 10);
@@ -972,7 +977,7 @@
       s.food -= packed;
       s.reserveFood += packed;
     }
-    if (s.laws.storage === "exchange" && s.food >= s.foodCap - 5) { s.food -= 8; s.wood += 5; }
+    if (s.laws.storage === "exchange" && s.food >= s.foodCap - 5 && s.wood < s.woodCap) { s.food -= 8; s.wood = clamp(s.wood + 5, 0, s.woodCap); }
     if (s.laws.storage === "share" && s.food >= s.foodCap - 5) { s.food -= 7; s.trust = clamp(s.trust + .32); }
     if (s.food < 15) s.trust = clamp(s.trust - .95);
     else if (s.food < 30) s.trust = clamp(s.trust - .40);
