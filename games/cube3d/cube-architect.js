@@ -97,6 +97,7 @@ function clearModeUi(){
   $('actionXray').classList.add('hidden');
 }
 function showHome(){
+  if(mode==='free')saveFreeWorld();
   if(document.pointerLockElement===canvas)document.exitPointerLock?.();
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
@@ -109,6 +110,7 @@ function showHome(){
   makeOrbit(new THREE.Vector3(0,1,0));
 }
 function enterMode(next){
+  if(mode==='free')saveFreeWorld();
   ensureRenderer();ensureLoop();clearModeUi();$('topbar').classList.remove('hidden');mode=next;
   if(document.pointerLockElement===canvas) document.exitPointerLock?.();
   if(next==='challenge') initChallenge();
@@ -1304,7 +1306,7 @@ function initFree(){
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
-  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;
+  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;
   selectedHotbarSlot=0;
   hotbarTypes=survival?['hand',null,null,null,null,null,null,null,null]:
@@ -1822,11 +1824,13 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:4,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:5,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
-    bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes]};
+    bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
+    stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
+    firstNightStarted,dayTime};
   try{
     if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data))
       lastFreeSave=performance.now();
@@ -1852,7 +1856,30 @@ function loadFreeWorld(){
         savedFreePosition=data.position;
       if(gameFreeMode==='survival'){
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
-        survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
+        if(data.stats){
+          survivalStats={...newSurvivalStats(),...data.stats,
+            crafted:{...(data.stats.crafted||{})},
+            placed:{...(data.stats.placed||{})},smelted:{...(data.stats.smelted||{})},
+            paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
+            biomes:[...visitedBiomes],found:[...collected]};
+          survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
+          survivalFinished=!!data.finished;
+        }else{
+          const oldStage=Math.max(0,Math.min(6,Number(data.stage)||0));
+          survivalStage=[0,1,2,3,5,7,8][oldStage];
+          survivalStats={...newSurvivalStats(),
+            harvestedWood:oldStage>=1?3:bagCount('log'),
+            harvestedStone:oldStage>=5?8:bagCount('stone'),
+            crafted:{planks:oldStage>=2?1:0,
+              woodPick:oldStage>=4?1:0},
+            placed:{workbench:oldStage>=3?1:0,
+              furnace:oldStage>=6?1:0},
+            placedBlocks:oldStage>=4?6:0,
+            smelted:{glass:oldStage>=6?1:0},
+            biomes:[...visitedBiomes],found:[...collected]};
+        }
+        survivalExposure=Math.max(0,Math.min(100,Number(data.exposure)||0));
+        firstNightStarted=!!data.firstNightStarted;
       }
       for(const [key,value] of data.edits||[]){
         const [x,y,z]=parseWorldKey(key);
@@ -2425,7 +2452,15 @@ function resize(){
 window.addEventListener('resize',resize);
 let last=performance.now();
 function animate(now){
-  requestAnimationFrame(animate);const dt=Math.min(.04,(now-last)/1000);last=now;if(orbit)orbit.update();if(mode==='challenge')updateChallengeFly(dt);if(mode==='free')updateFree(dt,now);if(renderer)renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+  const dt=Math.min(.04,(now-last)/1000);last=now;
+  if(orbit)orbit.update();
+  if(mode==='challenge')updateChallengeFly(dt);
+  if(mode==='free'){
+    updateFree(dt,now);
+    if(now-lastFreeSave>30000)saveFreeWorld();
+  }
+  if(renderer)renderer.render(scene,camera);
 }
 window.CubeArchitectReady=true;
 window.CubeArchitect={enterMode,showHome};
