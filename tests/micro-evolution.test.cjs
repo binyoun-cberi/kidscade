@@ -131,3 +131,18 @@ test('First play is populated and tells the player what to do',()=>{
   assert.match(js,/state\.discovered\.firstFood=1/);
   assert.match(js,/첫 먹이/);
 });
+
+
+test('DNA economy requires multi-generation saving and escalating duplicate costs',()=>{
+  assert.match(js,/generation:1,generationClock:0,eventClock:0,dna:4/);
+  assert.match(js,/return 28\+Math\.min\(42,\(state\.generation-1\)\*6\)/);
+  assert.match(js,/function partPurchaseCost/);
+  assert.match(js,/1\+owned\*\.32/);
+  assert.match(js,/state\.dna\+=base\*\.04\*mult/);
+  assert.match(js,/const huntReward=1\.2/);
+  assert.match(js,/state\.generation\+\+;state\.reproductions\+\+;state\.generationClock=0;state\.dna\+=2/);
+  assert.match(js,/predatorMouth:\{id:'predatorMouth'.*cost:10/);
+  assert.match(js,/chloroplast:\{id:'chloroplast'.*cost:14/);
+  assert.match(js,/electro:\{id:'electro'.*cost:16/);
+  assert.match(html,/여러 세대에 걸쳐 모으는 장기 진화 자원/);
+});
