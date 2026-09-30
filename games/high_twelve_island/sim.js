@@ -458,6 +458,19 @@
     { id: "communityCare", label: "긴급 건강·돌봄 지원", icon: "❤️", description: "식량 8을 사용해 마을의 건강을 7, 어린이 건강을 9 회복합니다.", repeat: 9, key: "food", minimum: 8, when: s => s.health < 64 || s.childWellbeing < 65 },
     { id: "resumeLearning", label: "어린이 학습·회복 시간", icon: "📚", description: "물자 6을 사용해 학습 기회를 9, 어린이 건강을 3 회복합니다. 어린이 위험 노동이 중단된 뒤 사용할 수 있습니다.", repeat: 10, key: "wood", minimum: 6,
       when: s => childCount(s) > 0 && s.education < 90 && s.childWorkUntil <= s.tick },
+
+    { id:"fetchWater",label:"식수 확보",icon:"💧",description:"목재 4를 사용하고 작업 피로를 감수해 식수 24를 확보합니다. 6주마다 실행 가능.",repeat:6,key:"wood",minimum:4,
+      when:s=>s.tick>=23 && s.water<86 },
+    { id:"repairFlood",label:"홍수 피해 복구",icon:"🛠️",description:"목재 9를 사용해 농지·창고의 피해 기간을 줄이고 식수를 일부 복구합니다.",repeat:8,key:"wood",minimum:9,
+      when:s=>s.floodDamageUntil>s.tick+2 },
+    { id:"supportSick",label:"감염자 돌봄",icon:"🩺",description:"식량 7을 사용해 감염자를 돌보고 치료를 지원합니다. 다른 주민에게 돌아갈 식량이 줄어듭니다.",repeat:9,key:"food",minimum:7,
+      when:s=>s.sick>=1.5 },
+    { id:"workerMediation",label:"노동 주민과 협상",icon:"🤝",description:"식량 8을 사용해 작업 중단을 마치고 노동 주민의 요구를 일부 수용합니다.",repeat:13,key:"food",minimum:8,
+      when:s=>s.strikes.workers>s.tick },
+    { id:"familyMediation",label:"가족들과 협상",icon:"🏠",description:"식량 5와 물자 8을 사용해 집단 항의를 마치고 합류 중단을 해제합니다.",repeat:13,key:"wood",minimum:8,
+      when:s=>s.strikes.families>s.tick },
+    { id:"carerMediation",label:"돌봄 주민과 협상",icon:"🩹",description:"식량 6과 물자 4를 사용해 중단된 돌봄 서비스를 다시 시작합니다.",repeat:13,key:"wood",minimum:4,
+      when:s=>s.strikes.carers>s.tick },
     { id: "communalMeal", label: "공동 급식 운영", icon: "🍲", description: "식량 12를 사용해 주민들과 식사를 나누고 신뢰를 4 회복합니다. 배급 관련 청원도 완화합니다.", repeat: 12, key: "food", minimum: 12, when: s => s.laws.ration === "equal" },
     { id: "focusedHarvest", label: "집중 생산 기간", icon: "⚒️", description: "식량 10을 투자해 5주 동안 생산을 23% 높입니다. 피로와 배급 관련 요구가 누적됩니다.", repeat: 13, key: "food", minimum: 10, when: s => s.laws.ration === "effort" },
     { id: "supportReview", label: "추가 지원 현황 확인", icon: "📋", description: "물자 7을 사용해 지원 내역을 살펴봅니다. 신뢰를 3 회복하고 배급 관련 청원을 완화합니다.", repeat: 12, key: "wood", minimum: 7, when: s => s.laws.ration === "needs" },
@@ -468,14 +481,15 @@
     return ACTIONS.filter(a => a.when(s)).map(a => ({
       id: a.id, label: a.label, icon: a.icon, description: a.description,
       cooldown: Math.max(0, (s.actionCooldowns?.[a.id] || 0) - s.tick),
-      enabled: !s.pending && s[a.key] >= a.minimum && (s.actionCooldowns?.[a.id] || 0) <= s.tick,
+      enabled: !s.pending && s[a.key] >= a.minimum && (a.id !== "familyMediation" || s.food >= 5) &&
+        (a.id !== "carerMediation" || s.food >= 6) && (s.actionCooldowns?.[a.id] || 0) <= s.tick,
       shortfall: Math.max(0, a.minimum - (s[a.key] || 0))
     }));
   }
   function performAction(s, id) {
     const action = ACTIONS.find(a => a.id === id);
     if (!action || !action.when(s) || s.pending) return { ok: false, reason: "지금은 선택할 수 없는 행동입니다." };
-    if (s[action.key] < action.minimum) return { ok: false, reason: "필요한 자원이 부족합니다." };
+    if (s[action.key] < action.minimum || (id === "familyMediation" && s.food<5) || (id === "carerMediation" && s.food<6)) return { ok: false, reason: "필요한 자원이 부족합니다." };
     if ((s.actionCooldowns?.[id] || 0) > s.tick) return { ok: false, reason: "이전 행동을 정리하는 기간입니다." };
     let note = action.description;
     if (id === "communalMeal") { s.food -= 12; s.trust = clamp(s.trust + 4); s.pressure.ration = clamp(s.pressure.ration - 1.3, 0, 8); }
@@ -488,6 +502,19 @@
       note = "비상식량 " + Number(amount.toFixed(1)) + "을(를) 꺼내 긴급 배급했습니다.";
     }
     else if (id === "recoveryWeek") { s.food -= 8; s.workReliefUntil = s.tick + 4; s.workStrain = clamp(s.workStrain - 3.2, 0, 10); s.pressure.labor = clamp(s.pressure.labor - 1.5, 0, 8); }
+    else if (id === "fetchWater") { s.wood -= 4; s.water = clamp(s.water + 24); s.workStrain = clamp(s.workStrain + .6, 0, 10); }
+    else if (id === "repairFlood") { s.wood -= 9; s.floodDamageUntil = Math.min(s.floodDamageUntil, s.tick + 2); s.water = clamp(s.water + 8); }
+    else if (id === "supportSick") { s.food -= 7; s.sick = clamp(s.sick - 1.5, 0, s.population); s.health = clamp(s.health + 2); }
+    else if (id === "workerMediation") { s.food -= 8; s.groups.workers = clamp(s.groups.workers - 2.4, 0, 10); s.strikes.workers = 0; if (s.food<30) s.groups.carers = clamp(s.groups.carers + .4,0,10); }
+    else if (id === "familyMediation") {
+      if (s.food<5) return {ok:false,reason:"식량 5가 더 필요합니다."};
+      s.food-=5;s.wood-=8;s.groups.families=clamp(s.groups.families-2.4,0,10);
+      s.strikes.families=0;s.arrivalsPausedUntil=0;s.familyExitAt=0;
+    }
+    else if (id === "carerMediation") {
+      if (s.food<6) return {ok:false,reason:"식량 6이 더 필요합니다."};
+      s.food-=6;s.wood-=4;s.groups.carers=clamp(s.groups.carers-2.4,0,10);s.strikes.carers=0;
+    }
     else if (id === "stopChildWork") endChildLabor(s);
     else if (id === "stopForcedWork") endForcedLabor(s);
     else if (id === "restoreRations") endExclusion(s);
@@ -568,19 +595,6 @@
   }
   // 사건 선택지는 일회성 변화, 건설, 법률 또는 후속 사건 플래그로 이어진다.
   const EVENTS = [
-
-    { id:"basic_water_supply", priority:65, repeat:18,
-      when:s=>s.tick>=23 && s.water<48 && s.wood>=4,
-      title:"💧 안정적인 식수 확보 계획",speaker:"미래",
-      body:"다음 재난을 대비하려면 마실 물을 보충해야 합니다. 식량 생산에 쓰던 시간과 물자를 일부 사용해야 합니다.",
-      options:[
-        {label:"물자 4를 사용해 간이 수로를 청소해요.",cost:{wood:4},changes:{water:26},
-          note:"식수 26을 확보하지만 다른 시설에 쓸 물자가 줄어듭니다."},
-        {label:"성인 일꾼을 물 긷기로 잠시 돌려요.",waterFetch:19,quietRest:3,
-          note:"물 19를 얻고 작업 피로가 늘며 3주 동안 생산량이 감소합니다."},
-        {label:"일단 저장량을 지켜보며 생산을 계속해요.",changes:{trust:-1},
-          note:"다른 자원을 쓰지 않지만 식수가 더 줄어들 수 있습니다."}
-      ]},
 
     { id:"heat_alert", priority:119, emergency:true, when:s=>s.disasterUnanswered.heat,
       title:"☀️ 폭염, 그늘 밖에서 일하기 어렵습니다", speaker:"미래",
