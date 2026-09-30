@@ -1,0 +1,39 @@
+/* Bug World: Code Expedition - top-view action RPG */
+body.topdown-code-quest{--td-cyan:#76f2dc;--td-gold:#ffd66b;--td-red:#ff7380}
+body.topdown-code-quest #world{image-rendering:auto;background:#101927}
+body.topdown-code-quest .mission-card{width:min(300px,28vw);background:linear-gradient(145deg,#0d1a2be8,#101e2de8)}
+body.topdown-code-quest .code-panel{width:min(360px,32vw)}
+body.topdown-code-quest .stats span:first-child{display:block}
+body.topdown-code-quest .stats span:nth-child(2):before{content:"ENERGY / DATA · ";font-size:8px;color:#7f9bae}
+.enemy-code-hud{position:fixed;z-index:6;left:16px;bottom:82px;width:min(286px,27vw);padding:12px 13px;border-radius:17px;pointer-events:none}
+.enemy-code-hud>small{display:block;color:#ff9eb7;letter-spacing:1.8px;font-size:8px;font-weight:950}
+.enemy-code-hud>b{display:block;font-size:15px;margin:2px 0}
+.enemy-code-hud>span{display:block;color:#c8d7e5;font:800 10px/1.4 ui-monospace,monospace;margin-bottom:7px}
+#enemyCodeLines{display:grid;gap:4px}
+#enemyCodeLines div{display:grid;grid-template-columns:1fr auto;gap:6px;padding:5px 7px;border-radius:8px;background:#07131daa;border:1px solid #ffffff10;font:800 9px/1.35 ui-monospace,monospace;color:#89a3b8}
+#enemyCodeLines div b{color:#c9e3f5}
+#enemyCodeLines div.active{background:#4a3620;border-color:#ffd66b77;color:#ffe5a1;box-shadow:inset 3px 0 #ffd66b}
+#enemyCodeLines em{font-style:normal;color:#ffd66b;font-size:9px;padding:4px 6px}
+body.topdown-code-quest .boss-hud{top:90px;width:min(430px,40vw)}
+body.topdown-code-quest .mission-card{top:90px}
+body.topdown-code-quest .exec-bar{width:min(580px,50vw)}
+body.topdown-code-quest .node.action{border-left-color:#57aef2}
+body.topdown-code-quest .palette button.action{background:#122b43}
+body.topdown-code-quest .node.condition{border-left-color:#ffd66b}
+body.topdown-code-quest .node.until{border-left-color:#76f2dc}
+body.topdown-code-quest .map-note:after{content:" · 각 지역은 이제 사방으로 이동하는 탑뷰 전장입니다."}
+body.topdown-code-quest .intro-panel .lead{max-width:480px;margin-left:auto;margin-right:auto}
+@media(max-width:1100px){
+ body.topdown-code-quest .mission-card{width:250px}
+ .enemy-code-hud{width:235px}
+ body.topdown-code-quest .code-panel{width:340px}
+}
+@media(max-width:780px),(orientation:portrait){
+ body.topdown-code-quest .mission-card{top:68px;width:calc(100vw - 16px)}
+ body.topdown-code-quest .code-panel{width:auto}
+ .enemy-code-hud{left:8px;right:8px;top:108px;bottom:auto;width:auto;max-height:112px;overflow:hidden}
+ #enemyCodeLines{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #enemyCodeLines em{display:none}
+ body.topdown-code-quest .boss-hud{top:108px;width:calc(100vw - 20px)}
+ body.topdown-code-quest .exec-bar{width:calc(100vw - 20px)}
+}
