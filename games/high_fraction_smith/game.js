@@ -36,6 +36,7 @@ function newPuzzle(){
  if(state.orders===0&&state.mode==='practice')toast('먼저 숫자 조각 두 개를 모루에 올려 보세요!',2200)
 }
 function render(){
+ document.body.dataset.heat=String(Math.max(1,state.heat));
  el.order.textContent=state.orders;el.score.textContent=state.score;el.heat.textContent='🔥'.repeat(Math.max(1,state.heat));el.timer.textContent=state.mode==='rush'?Math.max(0,Math.ceil(state.time)):'∞';
  el.timer.classList.toggle('danger',state.mode==='rush'&&state.time<=10);
  el.tray.innerHTML='';
@@ -80,6 +81,7 @@ function bindTools(){
 }
 function impactFx(){
  const r=el.anvil.getBoundingClientRect(),x=r.left+r.width*.54,y=r.top+r.height*.55;el.anvil.classList.remove('strike');void el.anvil.offsetWidth;el.anvil.classList.add('strike');
+ document.body.classList.add('forge-hit');clearTimeout(impactFx._flash);impactFx._flash=setTimeout(()=>document.body.classList.remove('forge-hit'),150);
  for(let i=0;i<11;i++){const img=document.createElement('img');img.className='spark';img.src=SPARKS[i%SPARKS.length];img.style.left=x+'px';img.style.top=y+'px';img.style.setProperty('--dx',(Math.random()*180-90)+'px');img.style.setProperty('--dy',(-30-Math.random()*120)+'px');el.fx.appendChild(img);setTimeout(()=>img.remove(),700)}
 }
 function showResult(p,op){el.result.textContent=E.display(p.value,p.prefer);el.result.classList.remove('show');void el.result.offsetWidth;el.result.classList.add('show');el.op.textContent=op}
