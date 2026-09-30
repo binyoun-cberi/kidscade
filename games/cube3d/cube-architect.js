@@ -589,6 +589,154 @@ function updateChallengeFly(dt){
 const symbols=['☀️','🌳','⭐','🚪','❤️','⚽'];
 const faceNames=['오른쪽','왼쪽','위','아래','앞','뒤'];
 let netBox=null,netTarget=[],netAssigned=[],selectedSymbol='☀️',foldPieces=[];
+const NET_FACE_CORNERS=[
+  ['G','F','B','C'], // right  (+X)
+  ['E','H','D','A'], // left   (-X)
+  ['E','F','G','H'], // top    (+Y)
+  ['D','C','B','A'], // bottom (-Y)
+  ['H','G','C','D'], // front  (+Z)
+  ['F','E','A','B']  // back   (-Z)
+];
+const NET_LAYOUT=[[2,1],[0,1],[1,0],[1,2],[1,1],[3,1]];
+const NET_SIDES=['윗쪽','오른쪽','아랫쪽','왼쪽'];
+const NET_CORNER_NAMES=['왼쪽 위','오른쪽 위','오른쪽 아래','왼쪽 아래'];
+const NET_EDGE_CORNERS=[[0,1],[1,2],[3,2],[0,3]];
+let netQuizMode='decorate',netQuiz=null,netQuizChoice=null,netQuizRevealed=false;
+let netQuizAnswered=0,netQuizCorrect=0,netQuizProof=null,foldNonce=0;
+function netEdgeData(){
+  const result=[];
+  for(let f=0;f<6;f++)for(let side=0;side<4;side++){
+    const corners=NET_EDGE_CORNERS[side].map(c=>NET_FACE_CORNERS[f][c]);
+    result.push({face:f,side,vertices:corners,edgeKey:corners.slice().sort().join('')});
+  }
+  return result;
+}
+function flatNetNeighbors(a,b){
+  const x=NET_LAYOUT[a.face][0],y=NET_LAYOUT[a.face][1],xx=NET_LAYOUT[b.face][0],yy=NET_LAYOUT[b.face][1];
+  const dx=[0,1,0,-1],dy=[-1,0,1,0];
+  return xx===x+dx[a.side]&&yy===y+dy[a.side];
+}
+function netChoiceLabel(item,kind){
+  if(kind==='face')return faceNames[item];
+  if(kind==='edge')return faceNames[item.face]+' 면의 '+NET_SIDES[item.side]+' 모서리';
+  return faceNames[item.face]+' 면의 '+NET_CORNER_NAMES[item.corner]+' 점';
+}
+function makeNetQuiz(kind){
+  if(kind==='face'){
+    const source=Math.floor(Math.random()*6),opposite=source%2===0?source+1:source-1;
+    const distractors=shuffle([0,1,2,3,4,5].filter(i=>i!==source&&i!==opposite)).slice(0,3);
+    return {kind,source,correct:opposite,options:shuffle([opposite,...distractors]),
+      prompt:faceNames[source]+' 면과 평행한 면은 어느 면일까요?',
+      explanation:faceNames[source]+' 면과 '+faceNames[opposite]+' 면은 서로 마주 보고 평행해요.'};
+  }
+  if(kind==='edge'){
+    const all=netEdgeData();
+    const cuts=all.filter(a=>all.some(b=>b.face!==a.face&&b.edgeKey===a.edgeKey&&!flatNetNeighbors(a,b)));
+    const source=cuts[Math.floor(Math.random()*cuts.length)];
+    const mate=all.find(b=>b.face!==source.face&&b.edgeKey===source.edgeKey);
+    const distractors=shuffle(all.filter(a=>a!==source&&a!==mate&&a.face!==source.face)).slice(0,3);
+    return {kind,source,correct:mate,options:shuffle([mate,...distractors]),
+      prompt:netChoiceLabel(source,kind)+'와 전개도를 접었을 때 겹치는 모서리는?',
+      explanation:netChoiceLabel(source,kind)+'와 '+netChoiceLabel(mate,kind)+
+        '는 접으면 하나의 모서리('+source.edgeKey+')가 돼요.',
+      proofEdge:source.vertices};
+  }
+  const corners=[];
+  for(let f=0;f<6;f++)for(let corner=0;corner<4;corner++){
+    const [col,row]=NET_LAYOUT[f],dc=[0,1,1,0][corner],dr=[0,0,1,1][corner];
+    corners.push({face:f,corner,vertex:NET_FACE_CORNERS[f][corner],xy:[col+dc,row+dr].join(',')});
+  }
+  const eligible=corners.filter(a=>corners.some(b=>b.face!==a.face&&b.vertex===a.vertex&&b.xy!==a.xy));
+  const source=eligible[Math.floor(Math.random()*eligible.length)];
+  const mates=corners.filter(b=>b.face!==source.face&&b.vertex===source.vertex&&b.xy!==source.xy);
+  const mate=mates[Math.floor(Math.random()*mates.length)];
+  const distractors=shuffle(corners.filter(b=>b.vertex!==source.vertex&&b.face!==source.face)).slice(0,3);
+  return {kind,source,correct:mate,options:shuffle([mate,...distractors]),
+    prompt:netChoiceLabel(source,kind)+'과 접었을 때 같은 꼭짓점이 되는 점은?',
+    explanation:netChoiceLabel(source,kind)+'과 '+netChoiceLabel(mate,kind)+
+      '은 접으면 꼭짓점 '+source.vertex+'에서 만나요.',proofVertex:source.vertex};
+}
+function setNetQuizMode(kind){
+  netQuizMode=kind;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
+  document.querySelectorAll('[data-net-mode]').forEach(b=>b.classList.toggle('active',b.dataset.netMode===kind));
+  const decorate=kind==='decorate';
+  ['netDecorateInstructions','stickerPalette','selectedFace','netQuizCard'].forEach(id=>{
+    $(id).classList.toggle('hidden',id==='netQuizCard'?decorate:!decorate);
+  });
+  $('resultCard').classList.add('hidden');
+  clearNetProof();
+  if(decorate){netQuiz=null;buildNetBoard();return}
+  nextNetQuiz();
+}
+function clearNetProof(){
+  if(netQuizProof){scene.remove(netQuizProof);netQuizProof=null}
+}
+function nextNetQuiz(){
+  foldNonce++;
+  foldPieces.forEach(piece=>scene.remove(piece));foldPieces=[];if(netBox)netBox.visible=true;
+  clearNetProof();netQuiz=makeNetQuiz(netQuizMode);netQuizChoice=null;netQuizRevealed=false;
+  $('resultCard').classList.add('hidden');
+  $('netQuizStatus').textContent='문제 '+(netQuizAnswered+1)+' · 지금까지 '+netQuizCorrect+'/'+netQuizAnswered+' 정답';
+  $('netQuizPrompt').textContent=netQuiz.prompt;$('netQuizFeedback').classList.add('hidden');
+  const box=$('netQuizOptions');box.innerHTML='';
+  netQuiz.options.forEach((option,i)=>{
+    const b=document.createElement('button');b.type='button';b.textContent=(i+1)+'. '+netChoiceLabel(option,netQuizMode);
+    b.onclick=()=>{if(netQuizRevealed)return;netQuizChoice=option;
+      Array.from(box.children).forEach(el=>el.classList.remove('active'));b.classList.add('active')};
+    box.appendChild(b);
+  });
+  buildNetBoard();
+  $('netMission').textContent=netQuizMode==='face'?'마주 보는 면의 평행 관계를 생각해 보세요.':
+    netQuizMode==='edge'?'평면에서 떨어져 있는 두 모서리가 접으면 어디서 만날까요?':
+      '서로 떨어져 그려진 점들이 접으면 같은 꼭짓점이 될 수 있어요.';
+}
+function checkNetQuiz(){
+  if(!netQuiz||netQuizChoice===null){toast('먼저 답을 하나 선택해 주세요.');return}
+  if(netQuizRevealed)return;
+  netQuizRevealed=true;netQuizAnswered++;
+  const correct=netQuizChoice===netQuiz.correct;if(correct)netQuizCorrect++;
+  const options=$('netQuizOptions').children;
+  Array.from(options).forEach((el,i)=>{
+    if(netQuiz.options[i]===netQuiz.correct)el.classList.add('correct');
+    else if(netQuiz.options[i]===netQuizChoice)el.classList.add('wrong');
+  });
+  $('netQuizStatus').textContent='지금까지 '+netQuizCorrect+'/'+netQuizAnswered+' 정답';
+  $('netQuizFeedback').textContent=(correct?'정답! ':'다시 생각해 보세요. 정답은 '+
+    netChoiceLabel(netQuiz.correct,netQuizMode)+'이에요. ')+netQuiz.explanation;
+  $('netQuizFeedback').classList.remove('hidden');
+  $('resultCard').classList.remove('hidden');$('resultScore').textContent=correct?'정답':'확인';
+  $('resultText').textContent=netQuiz.explanation;
+  if(correct){sfx('good');reportResult('net-'+netQuizMode,100,true)}else sfx('bad');
+  foldPreview();
+}
+function showNetProof(){
+  clearNetProof();if(!netQuizRevealed||!netQuiz)return;
+  const g=new THREE.Group();
+  if(netQuiz.kind==='face'){
+    const f=netQuiz.source,o=netQuiz.correct;
+    const mats=Array.from({length:6},(_,i)=>new THREE.MeshBasicMaterial({
+      color:i===f?0x4fd49e:i===o?0x668bff:0xffffff,
+      transparent:true,opacity:i===f||i===o?.32:0,depthWrite:false,side:THREE.DoubleSide
+    }));
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.83,1.93,1.58),mats);mesh.renderOrder=20;g.add(mesh);
+  }else{
+    const names=netQuiz.kind==='edge'?netQuiz.proofEdge:[netQuiz.proofVertex];
+    const points=names.map(name=>{
+      const v=CUBOID_TOPOLOGY.vertices.find(item=>item.id===name);
+      return new THREE.Vector3(v.s[0]*1.4,v.s[1]*.95,v.s[2]*.775);
+    });
+    if(netQuiz.kind==='edge'){
+      const geometry=new THREE.BufferGeometry().setFromPoints(points);
+      const line=new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0xf04b73,linewidth:4,depthTest:false}));
+      line.renderOrder=25;g.add(line);
+    }else{
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),
+        new THREE.MeshBasicMaterial({color:0xf04b73,depthTest:false}));
+      dot.position.copy(points[0]);dot.renderOrder=25;g.add(dot);
+    }
+  }
+  netQuizProof=g;scene.add(g);
+}
 function symbolMaterial(symbol,bg){
   const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle=bg||'#ffffff';x.fillRect(0,0,256,256);
   x.strokeStyle='#cbd2df';x.lineWidth=10;x.strokeRect(5,5,246,246);x.font='118px "Apple Color Emoji","Segoe UI Emoji",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(symbol||'',128,132);
