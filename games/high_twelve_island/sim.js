@@ -561,7 +561,7 @@
     const choice = event?.options[index];
     if (!choice) return { ok: false, reason: "선택지를 찾을 수 없습니다." };
     if (choice.cost && Object.entries(choice.cost).some(([k, v]) => s[k] < v)) return { ok: false, reason: "필요한 자원이 부족합니다." };
-    if (choice.safeguard && s.safeguards[choice.safeguard]) return { ok: false, reason: "이미 시행 중인 규정입니다." };
+
     if (choice.cost) Object.entries(choice.cost).forEach(([k, v]) => { s[k] -= v; });
     if (choice.law) {
       const previousPending = s.pending;
@@ -574,7 +574,13 @@
     if (choice.jobs && unused(s) > 0) s.jobs[choice.jobs] += Math.min(3, unused(s));
     if (choice.jobs === "gather" && unused(s) === 0 && s.jobs.wood > 1) { s.jobs.wood--; s.jobs.gather++; }
     if (choice.storm) { s.stormUntil = s.tick + choice.storm; s.stormAftermathAt = s.stormUntil; s.stormAftermathChoice = index; }
-    if (choice.safeguard) applySafeguard(s, choice.safeguard);
+    if (choice.safeguard) {
+      if (s.safeguards[choice.safeguard]) {
+        if (choice.safeguard === "workBreak") s.workStrain = clamp(s.workStrain - 2, 0, 10);
+        else s.pressure.ration = clamp(s.pressure.ration - 2, 0, 8);
+        record(s, "기존 보호 규정의 운영 상태를 점검하고 추가 조정을 했습니다.");
+      } else applySafeguard(s, choice.safeguard);
+    }
     if (choice.restWeeks) { s.workReliefUntil = s.tick + choice.restWeeks; s.workStrain = clamp(s.workStrain - 2.5, 0, 10); }
     if (choice.pledge) { s.pledges = s.pledges.filter(p => p.kind !== choice.pledge.kind); s.pledges.push({ kind: choice.pledge.kind, title: choice.pledge.title, due: s.tick + choice.pledge.delay, postponements: 0 }); }
     if (choice.fulfillSafeguard) { const key = ({ equal: "fairBonus", effort: "effortCare", needs: "needsAudit" })[s.laws.ration]; if (key && !s.safeguards[key]) applySafeguard(s, key); s.pledges = s.pledges.filter(p => p.kind !== "ration"); s.pressure.ration = 0; }
