@@ -482,7 +482,9 @@ function initChallenge(){
   $('actionCheck').textContent='검사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=checkChallenge;
   if(restorationSession){
     $('actionNext').textContent='월드로 돌아가기';$('actionNext').onclick=returnFromRestoration;
+    $('mobileNext').textContent='귀환';
   }else{
+    $('mobileNext').textContent='다음';
     $('actionNext').textContent='다음 미션';
     $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
   }
@@ -1758,6 +1760,10 @@ function updateFreeMission(){
     $('actionCheck').disabled=false;
     $('actionCheck').onclick=()=>openLandmarkRestoration(nearLandmarkPoi);
   }
+  if(mobileModeEnabled){
+    $('mobileCheck').classList.toggle('hidden',!canRestore);
+    $('mobileCheck').textContent=canRestore?'복원':'검사';
+  }
   const chosen=blockDef(selectedType||'hand').name;
   if(gameFreeMode==='survival'){
     const goal=worldRules.GOALS[survivalStage];
@@ -2599,7 +2605,9 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  $('mobileCheck').classList.toggle('hidden',target!=='challenge');
+  const poiRestore=target==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore);
+  $('mobileCheck').textContent=poiRestore?'복원':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
   $('mobileNext').classList.toggle('hidden',target!=='challenge');
   $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
@@ -2673,9 +2681,16 @@ function initMobileControls(){
   }
   tap('mobileBreak',()=>mobileBlockAction('break'));
   tap('mobilePlace',()=>mobileBlockAction('place'));
-  tap('mobileCheck',()=>{if(mode==='challenge')checkChallenge()});
+  tap('mobileCheck',()=>{
+    if(mode==='challenge')checkChallenge();
+    else if(mode==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
+      openLandmarkRestoration(nearLandmarkPoi);
+  });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
-  tap('mobileNext',()=>{if(mode==='challenge'){missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}});
+  tap('mobileNext',()=>{if(mode==='challenge'){
+    if(restorationSession)returnFromRestoration();
+    else{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
+  }});
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
