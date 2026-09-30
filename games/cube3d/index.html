@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260930-15">
+<link rel="stylesheet" href="./cube-architect.css?v=20260930-16">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -30,9 +30,14 @@
           <span class="tag">2D → 3D</span>
         </button>
         <button class="mode-card" data-mode="free">
-          <span class="mode-icon">🌎</span><b>아키텍트 월드</b>
-          <p>작은 블록 세계를 탐험하고 재료를 찾으며 마음껏 짓고 부수고 색칠합니다.</p>
-          <span class="tag">자유 건축 · 탐험</span>
+          <span class="mode-icon">🌲</span><b>생존 탐험</b>
+          <p>맨손으로 나무를 모아 시작해 도구와 화로를 만들고, 서로 다른 바이옴을 탐험합니다.</p>
+          <span class="tag">단계별 제작 · 생존</span>
+        </button>
+        <button class="mode-card" data-mode="creative">
+          <span class="mode-icon">🌎</span><b>크리에이티브 월드</b>
+          <p>모든 재료·직육면체 제작대·비행을 처음부터 사용하며 마음껏 건축합니다.</p>
+          <span class="tag">자유 건축 · 실험</span>
         </button>
       </div>
       <div class="home-note"><b>학습 모드는 정확하게, 자유 모드는 자유롭게.</b> 객관식 문제 대신 직접 돌리고·접고·짓는 공간 경험에 집중합니다. 자유 월드의 수학 미션은 선택할 수 있습니다.</div>
@@ -164,15 +169,15 @@
   <div id="freeHud" class="hidden">
     <div id="crosshair"></div>
     <div id="freeMission">
-      <b>섬 탐험 기록 <span id="adventureCount">0/5</span></b>
-      <small>땅과 나무를 직접 파고, 흐르는 물과 모래·불·식물의 변화를 관찰하며 건축해 보세요.</small>
-      <div class="free-status"><span id="freeState">걷기 · 잔디</span><span id="worldClock">낮</span><span id="weatherState">맑음</span></div>
+      <b id="freeQuestTitle">첫날 · 나무 채집 <span id="adventureCount">0/3</span></b>
+      <small id="freeQuestDescription">나무를 파괴해 첫 원목을 얻으세요.</small>
+      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span></div>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
-    <div id="freeHint">E 인벤토리 · F 비행 · R 복사 · P 면색칠 · X 수학 렌즈</div>
+    <div id="freeHint">나무를 모으고 E로 가방과 제작법을 확인하세요.</div>
     <div id="hotbar"></div>
     <section id="blockInventory" class="hidden">
-      <div class="inventory-head"><div><b>건축 인벤토리</b><small>선택한 재료가 현재 핫바 칸에 들어갑니다.</small></div><button id="inventoryClose">×</button></div>
+      <div class="inventory-head"><div><b id="inventoryTitle">가방 · 제작</b><small id="inventorySubtitle">필요한 재료를 모아 새 도구를 만들어 보세요.</small></div><button id="inventoryClose">×</button></div>
       <div class="inventory-tabs">
         <button data-inv-cat="전체" class="active">전체</button>
         <button data-inv-cat="자연">자연</button>
@@ -181,6 +186,10 @@
         <button data-inv-cat="실험">실험</button>
         <button data-inv-cat="도형">도형</button>
       </div>
+      <section id="survivalCraftPanel" class="hidden">
+        <b>제작할 수 있는 물건</b><small id="survivalCraftHint">나무를 먼저 모아 보세요.</small>
+        <div id="survivalCraftList"></div>
+      </section>
       <div id="inventoryGrid"></div>
       <section id="shapeWorkbench" class="shape-workbench">
         <div class="workbench-title"><b>직육면체 제작대</b><small>정육면체도 가로·높이·세로를 같게 하면 됩니다.</small></div>
@@ -215,9 +224,9 @@
           <small class="workbench-help">강조 색은 월드에 저장되며 X를 눌러 해당 요소를 볼 수 있어요.</small>
         </div>
       </section>
-      <div class="inventory-note">물+용암, 불+나무, 모래의 낙하, 잎의 decay, 묘목 성장처럼 블록마다 서로 다른 성질이 있습니다.</div>
+      <div class="inventory-note" id="inventoryNote">물+용암, 불+나무, 모래의 낙하, 잎의 변화처럼 블록마다 다른 성질이 있습니다.</div>
     </section>
-    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · E 인벤토리 · F 비행 · P 면색칠 · X 수학 렌즈</small></div>
+    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · 좌클릭 채집 · E 가방·제작</small></div>
     <section id="furnacePanel" class="hidden">
       <div class="inventory-head"><div><b>화로 실험대</b><small>열을 가하면 물질의 성질이 달라집니다.</small></div><button id="furnaceClose">×</button></div>
       <div id="furnaceRecipes"></div>
@@ -272,7 +281,8 @@
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
 <script src="./cube-architect-landmarks.js?v=20260930-15"></script>
-<script src="./cube-architect.js?v=20260930-15"></script>
+<script src="./cube-architect-world.js?v=20260930-16"></script>
+<script src="./cube-architect.js?v=20260930-16"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
