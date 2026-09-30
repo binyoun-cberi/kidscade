@@ -331,6 +331,29 @@
       "cover": "assets/gate-image/씨앗 배구.png"
     },
     {
+      "id": "high_seed_baseball",
+      "addedAt": "2026-09-30T16:20:00+09:00",
+      "title": "씨앗 베이스볼",
+      "href": "games/high_seed_baseball/index.html?v=2",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⚾",
+      "description": "3이닝 동안 직접 투구·타격·수비·주루 판단을 모두 경험하는 아케이드 야구. 4구종과 코스 공략, 조준·충전 스윙, 타구 추적과 베이스 송구, 로컬 통산 기록을 지원합니다.",
+      "subject": "thinking",
+      "genre": "sports",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_seed_fc_manager",
       "title": "풋살 히스토리그",
       "href": "games/high_seed_fc_manager/index.html?v=13",
