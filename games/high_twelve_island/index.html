@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102d34">
+<title>열두 명의 섬</title>
+<link rel="stylesheet" href="./style.css?v=1">
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_twelve_island" data-title="열두 명의 섬" data-shell="true" data-mute="true"></script>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <div class="brand"><div class="brand-icon">🏝️</div><div><span class="eyebrow">KIDSCADE · 사회 시뮬레이션</span><h1>열두 명의 섬</h1><small id="stageTitle">1단계 · 생존 공동체</small></div></div>
+    <div class="controls"><span class="clock" id="clock">첫 번째 주</span><button id="pauseBtn" class="iconbtn" type="button" aria-label="시간 일시정지">⏸</button><button id="speedBtn" class="iconbtn" type="button" aria-label="속도 조절">1×</button><button id="helpBtn" class="iconbtn" type="button" aria-label="게임 안내">?</button></div>
+  </header>
+  <section id="stats" class="stats" aria-label="공동체 자원"></section>
+  <main class="layout">
+    <section class="world-col">
+      <div class="island-wrap">
+        <div class="island-heading"><span id="villageName">새싹섬 · 작은 야영지</span><span id="population">👥 12 / 16명</span></div>
+        <div class="ocean">
+          <div class="wave wave-a"></div><div class="wave wave-b"></div>
+          <div class="island" id="island">
+            <div class="shore"></div><div class="ground"></div><div class="path"></div>
+            <span class="tree tree-a">🌴</span><span class="tree tree-b">🌳</span><span class="tree tree-c">🌴</span>
+            <span class="terrain-rock">🪨</span><span class="boat">🛶</span>
+            <div class="camp"><span>🔥</span><small>공동 모닥불</small></div>
+            <div id="buildingSprites" class="building-sprites"></div>
+            <div class="people" id="people"></div>
+          </div>
+        </div>
+        <div class="scene-caption" id="sceneCaption">시민들이 작은 야영지에서 새로운 생활을 시작했습니다.</div>
+      </div>
+      <section class="mission" aria-live="polite"><div class="mission-head"><b>🎯 다음 목표</b><span id="progressText">준비 중</span></div><div id="missionText"></div><div class="progress"><i id="missionBar"></i></div></section>
+      <div class="ticker" id="ticker" aria-live="polite">모두가 함께 살아갈 방법을 찾아보세요.</div>
+    </section>
+    <section class="work-col">
+      <div class="tabs" role="tablist" aria-label="운영 메뉴">
+        <button class="tab active" type="button" data-tab="work" role="tab" aria-selected="true">👥 일꾼</button>
+        <button class="tab" type="button" data-tab="build" role="tab" aria-selected="false">🏗️ 건설</button>
+        <button class="tab" type="button" data-tab="law" role="tab" aria-selected="false">📜 규칙</button>
+        <button class="tab" type="button" data-tab="log" role="tab" aria-selected="false">📖 기록</button>
+      </div>
+      <div id="panel" class="panel" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer class="footer"><span id="saveNotice">자동 저장 사용</span><div><button id="reportBtn" class="quiet" type="button">공동체 보고서</button><button id="resetBtn" class="quiet" type="button">처음부터</button></div></footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-backdrop"></div><div class="modal-card"><div class="modal-top"><span class="eyebrow" id="modalLabel">공동체 사건</span><span id="eventWeek" class="event-week"></span></div><div class="speaker" id="speaker"></div><h2 id="modalTitle"></h2><p id="modalBody"></p><div id="modalOptions" class="modal-options"></div><div class="modal-hint" id="modalHint"></div></div></div>
+<div id="help" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal-backdrop" data-close-help="1"></div><div class="modal-card help-card"><span class="eyebrow">게임 방법</span><h2 id="helpTitle">열두 명의 섬에 오신 걸 환영해요!</h2><p>일꾼을 배치해 식량과 물자를 모으세요. 자원이 충분하면 집과 농장을 지을 수 있어요. 공동체가 성장하면 새로운 수치와 규칙이 열립니다.</p><ol><li>먼저 일꾼이 몇 명 배치되었는지 살펴보세요.</li><li>식량 생산이 소비보다 적다면 채집 인원을 늘리거나 농장을 지으세요.</li><li>사건이 나타나면 시민들의 입장을 읽고 선택하세요.</li><li>규칙은 한 번 정하면 앞으로도 적용되며 언제든 개정할 수 있어요.</li></ol><p class="subtle">첫 번째 목표: 농장 1개 · 주민 18명 · 규칙 1개를 달성해 자치 마을을 만드세요.</p><button id="helpClose" class="primary" type="button">시작하기</button></div></div>
+<script src="./sim.js?v=1"></script><script src="./game.js?v=1"></script>
+</body>
+</html>
