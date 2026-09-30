@@ -28,6 +28,7 @@ jobs:
             touch-interaction-guard.js \
             game-audio-hooks.js \
             profile-history.js \
+            activity-feed.js \
             account-client.js \
             account-session-safety.js \
             account-ui-runtime.js \
