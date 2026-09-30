@@ -133,7 +133,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 }
 .special.show{display:block}.special.warn{background:#56393a;border-color:#ad6767}
 .cam-side{border:1px solid #33404a;background:#0d1216;padding:10px;display:flex;flex-direction:column;gap:9px;overflow:auto}
-.cam-side h3{margin:2px 0 3px;font-size:13px}.map{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.cam-side h3{margin:2px 0 3px;font-size:13px}.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .cam-btn{min-height:52px;border:1px solid #36454f;background:#151c21;cursor:pointer;text-align:left;padding:7px}
 .cam-btn b{display:block;font-size:11px}.cam-btn small{font-size:9px;color:#80909b}.cam-btn.active{background:#31434b;border-color:#7d9aa8}
 .camera-close{margin-top:auto;padding:11px;border:1px solid #5d4949;background:#291c1e;font-weight:900;cursor:pointer}
@@ -848,6 +848,28 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 @keyframes pngReaperAdvance{0%{transform:translateX(-50%) scale(.8);opacity:.25}100%{transform:translateX(-50%) scale(1.15);opacity:1}}
 @keyframes pngWolfLunge{0%{transform:translate(15%,12%) scale(.72) rotate(-5deg)}100%{transform:translate(-50%,0) scale(1.28) rotate(1deg)}}
 @keyframes pngDokkaebiPop{0%{transform:translate(-85%,12%) scale(.75) rotate(8deg)}100%{transform:translate(-50%,0) scale(1.2) rotate(-1deg)}}
+/* v11 · expanded 9-camera school layout */
+.room-scene[data-room="stairs"]{
+  background-position:left center!important;
+  filter:saturate(.46) brightness(.62) contrast(1.22)
+}
+.room-scene[data-room="library"]{
+  background-position:right center!important;
+  filter:saturate(.58) brightness(.7) contrast(1.16)
+}
+.room-scene[data-room="prep"]{
+  background-position:62% center!important;
+  filter:saturate(.5) brightness(.65) contrast(1.2)
+}
+.ambient-layer.room-stairs::after{
+  background:linear-gradient(90deg,#000d 0 20%,transparent 44%,#0007 82%),linear-gradient(180deg,#0003,#000b)
+}
+.ambient-layer.room-library::after{
+  background:linear-gradient(270deg,#000d 0 20%,transparent 43%,#0008 82%),radial-gradient(circle at 72% 45%,#b6a77a12,transparent 22%)
+}
+.ambient-layer.room-prep::after{
+  background:linear-gradient(90deg,#000b,transparent 38% 62%,#000c),radial-gradient(circle at 50% 70%,#0000,#000b 72%)
+}
 </style>
 </head>
 <body>
@@ -946,7 +968,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       <button class="mode" data-mode="night3" type="button"><b>3일차</b><small>달걀귀신 합류<br>5분</small></button>
       <button class="mode" data-mode="night4" type="button"><b>4일차</b><small>저승사자 합류<br>5분 30초</small></button>
       <button class="mode" data-mode="night5" type="button"><b>5일차</b><small>늑대인간 합류<br>6분</small></button>
-      <button class="mode" data-mode="full" type="button"><b>특별 근무</b><small>6종 전체 · 감독 AI 강화<br>6분</small></button>
+      <button class="mode" data-mode="full" type="button"><b>6일차 · 특별 근무</b><small>6종 전체 · 확장 감시구역<br>6분</small></button>
     </div>
     <div class="tipline">고어 표현 없이 조명·소리·실루엣 중심으로 구성된 공포 게임입니다.</div>
   </div>
@@ -995,26 +1017,32 @@ var CAMERAS=[
   {id:'europe',code:'CAM 03',name:'2층 중앙 복도',bg:ASSET_ROOT+'hall_center_base_01.png',pos:'center'},
   {id:'special',code:'CAM 04',name:'방송실 앞',bg:ASSET_ROOT+'broadcast_front_base_01.png',pos:'center'},
   {id:'west',code:'CAM 05',name:'서쪽 복도',bg:ASSET_ROOT+'hall_west_base_01.png',pos:'center'},
-  {id:'east',code:'CAM 06',name:'동쪽 복도',bg:ASSET_ROOT+'hall_east_base_01.png',pos:'center'}
+  {id:'east',code:'CAM 06',name:'동쪽 복도',bg:ASSET_ROOT+'hall_east_base_01.png',pos:'center'},
+  {id:'stairs',code:'CAM 07',name:'서쪽 계단참',bg:'../../assets/game/2d/hallway.png',pos:'left center'},
+  {id:'library',code:'CAM 08',name:'도서실 앞',bg:'../../assets/game/2d/hallway.png',pos:'right center'},
+  {id:'prep',code:'CAM 09',name:'준비실 앞',bg:ASSET_ROOT+'broadcast_front_base_01.png',pos:'62% center'}
 ];
 
 var SCHOOL_GRAPH={
   korea:['europe'],
   japan:['europe'],
-  europe:['korea','japan','special','west','east'],
-  special:['europe','west'],
-  west:['europe','special','office'],
-  east:['europe','office'],
+  europe:['korea','japan','special','stairs','library'],
+  special:['europe','prep'],
+  stairs:['europe','prep','west'],
+  library:['europe','prep','east'],
+  prep:['special','stairs','library'],
+  west:['stairs','office'],
+  east:['library','office'],
   office:['west','east']
 };
 var NIGHT_CONFIGS={
-  practice:{duration:180,pool:['dokkaebi','yuki'],budget:4,eventBase:12},
-  night1:{duration:270,pool:['dokkaebi','yuki'],budget:5,eventBase:11},
-  night2:{duration:270,pool:['dokkaebi','yuki','maiden'],budget:6,eventBase:10.5},
-  night3:{duration:300,pool:['dokkaebi','yuki','maiden','egg'],budget:7,eventBase:10},
-  night4:{duration:330,pool:['dokkaebi','yuki','maiden','egg','reaper'],budget:8,eventBase:9.5},
-  night5:{duration:360,pool:['dokkaebi','yuki','maiden','egg','reaper','wolf'],budget:9,eventBase:9},
-  full:{duration:360,pool:['dokkaebi','yuki','maiden','egg','reaper','wolf'],budget:10,eventBase:8.5}
+  practice:{duration:180,pool:['dokkaebi','yuki'],budget:4,eventBase:12.5},
+  night1:{duration:270,pool:['dokkaebi','yuki'],budget:5,eventBase:11.5},
+  night2:{duration:270,pool:['dokkaebi','yuki','maiden'],budget:6,eventBase:11},
+  night3:{duration:300,pool:['dokkaebi','yuki','maiden','egg'],budget:7,eventBase:10.5},
+  night4:{duration:330,pool:['dokkaebi','yuki','maiden','egg','reaper'],budget:8,eventBase:10},
+  night5:{duration:360,pool:['dokkaebi','yuki','maiden','egg','reaper','wolf'],budget:9,eventBase:9.8},
+  full:{duration:360,pool:['dokkaebi','yuki','maiden','egg','reaper','wolf'],budget:10,eventBase:10.2}
 };
 var THREAT_COST={dokkaebi:2,yuki:3,maiden:4,egg:3,reaper:4,wolf:5};
 function shortestRoute(start,target){
@@ -1083,7 +1111,17 @@ var ANOMALIES=[
   {id:'east-lantern',cam:'east',asset:'east_reaper_lantern_01.png',assetClass:'east-lantern ghostly',ghost:'reaper'},
   {id:'east-eyes',cam:'east',asset:'eyes_02.png',assetClass:'hall-eyes ghostly',ghost:'wolf'},
   {id:'east-handprint',cam:'east',asset:'handprint_02.png',assetClass:'handprint',ghost:null},
-  {id:'east-extra-door',cam:'east',variantBg:'hall_east_variant_extra_door_01.png',ghost:null}
+  {id:'east-extra-door',cam:'east',variantBg:'hall_east_variant_extra_door_01.png',ghost:null},
+
+  // CAM 07~09 · 확장 구역
+  {id:'stairs-handprint',cam:'stairs',asset:'handprint_02.png',assetClass:'handprint subtle',ghost:null},
+  {id:'stairs-scratch',cam:'stairs',asset:'scratch_02.png',assetClass:'scratch subtle',ghost:'wolf'},
+  {id:'stairs-shadow',cam:'stairs',asset:'hall_long_shadow_01.png',assetClass:'hall-shadow subtle',ghost:'reaper'},
+  {id:'library-footprints',cam:'library',asset:'footprints_wet_01.png',assetClass:'footprints floor',ghost:null},
+  {id:'library-eyes',cam:'library',asset:'eyes_02.png',assetClass:'hall-eyes ghostly',ghost:'wolf'},
+  {id:'library-hair',cam:'library',asset:'broadcast_hair_frame_01.png',assetClass:'broadcast-hair ghostly',ghost:'maiden'},
+  {id:'prep-handprint',cam:'prep',asset:'handprint_02.png',assetClass:'handprint subtle',ghost:null},
+  {id:'prep-shadow',cam:'prep',asset:'broadcast_shadow_door_01.png',assetClass:'broadcast-shadow ghostly',ghost:'reaper'}
 ];
 var GHOSTS={
   dokkaebi:{name:'도깨비',origin:'한국',kind:'설화 속 존재',
@@ -1741,8 +1779,8 @@ function directorShift(v){state.director.tension=Math.max(0,Math.min(100,state.d
 function nightHour(){return Math.min(5,Math.floor(state.elapsed/(state.duration/6)))}
 var AI_BASE={dokkaebi:5,yuki:4,maiden:5,egg:6,reaper:5,wolf:7};
 function ghostAI(id){
-  var modeBoost={practice:-4,night1:-2,night2:0,night3:1,night4:2,night5:3,full:4}[state.mode]||0;
-  return Math.max(1,Math.min(20,(AI_BASE[id]||5)+modeBoost+nightHour()*1.35))
+  var modeBoost={practice:-4,night1:-2.4,night2:-.8,night3:0,night4:.5,night5:1.0,full:1.35}[state.mode]||0;
+  return Math.max(1,Math.min(20,(AI_BASE[id]||5)+modeBoost+nightHour()*.8))
 }
 function movementRoll(id){return Math.random()*20<ghostAI(id)}
 function cameraNeighbors(loc){return (SCHOOL_GRAPH[loc]||[]).filter(function(x){return x!=='office'})}
@@ -1759,28 +1797,25 @@ function chooseRoamerSide(type){
 function makeRoamer(type,delay){
   if(!castHas(type))return null;
   var side=chooseRoamerSide(type),doorCam=side==='left'?'west':'east';
-  return {active:true,type:type,side:side,route:routeVia('europe',[doorCam,'office']),index:0,location:'europe',moveClock:0,moveEvery:type==='wolf'?4.8:6.4,safeTime:0,attackTime:0,rest:delay||0}
+  return {active:true,type:type,side:side,route:routeVia('europe',[doorCam,'office']),index:0,location:'europe',moveClock:0,moveEvery:type==='wolf'?6.4:8.1,safeTime:0,attackTime:0,rest:delay||0}
 }
 function resetRoamer(r,rewarded){
   if(rewarded){state.score+=110;state.cleared++;masterGhost(r.type);directorShift(r.type==='wolf'?-17:-15);sound('good')}
   r.side=chooseRoamerSide(r.type);var doorCam=r.side==='left'?'west':'east';
-  r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.rest=4+Math.random()*4
+  r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.rest=6+Math.random()*5
 }
 function initializePersistentGhosts(){
-  state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:8.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:2}:null;
-  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:12.5,frost:18,rest:4}:null;
-  state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:5}:{active:false,path:routeVia('korea',['special','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
+  state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:3}:null;
+  state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5}:null;
+  state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:6}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
   if(castHas('egg')){
     var occupied=['special','japan'];if(state.maiden.active)occupied.push('korea');
-    var eggCams=['west','east','europe','korea','special','japan'].filter(function(cam){return occupied.indexOf(cam)<0});
-    state.egg={active:true,cam:eggCams[Math.floor(Math.random()*eggCams.length)]||'west',life:0,stare:0,seenThisStop:false,moveEvery:6.5+Math.random()*4}
+    var eggCams=['west','east','stairs','library','prep','europe','korea','special','japan'].filter(function(cam){return occupied.indexOf(cam)<0});
+    state.egg={active:true,cam:eggCams[Math.floor(Math.random()*eggCams.length)]||'west',life:0,stare:0,seenThisStop:false,moveEvery:8.5+Math.random()*5}
   }else state.egg=null;
   state.roamers={reaper:null,wolf:null};
-  if(castHas('reaper'))state.roamers.reaper=makeRoamer('reaper',7);
-  if(castHas('wolf')){
-    state.roamers.wolf=makeRoamer('wolf',10);
-    if(state.roamers.wolf){state.roamers.wolf.index=1;state.roamers.wolf.location=state.roamers.wolf.route[1];state.roamers.wolf.moveClock=0}
-  }
+  if(castHas('reaper'))state.roamers.reaper=makeRoamer('reaper',10);
+  if(castHas('wolf'))state.roamers.wolf=makeRoamer('wolf',13);
 }
 function threatPressure(){
   var n=0;
@@ -1800,11 +1835,11 @@ function spawnAnomaly(){
   directorShift(3);state.director.lastEvent='anomaly';return true
 }
 function nudgeGhost(id){
-  if(id==='dokkaebi'&&state.dokkaebi){state.dokkaebi.moveClock+=4;state.dokkaebi.trickTimer+=2}
-  else if(id==='yuki'&&state.yuki){state.yuki.moveClock+=4;if(state.yuki.location==='japan')state.yuki.frost=Math.min(96,state.yuki.frost+9)}
-  else if(id==='maiden'&&state.maiden.active){state.maiden.unseen+=3}
-  else if(id==='egg'&&state.egg){state.egg.life+=3}
-  else if((id==='reaper'||id==='wolf')&&state.roamers[id])state.roamers[id].moveClock+=3
+  if(id==='dokkaebi'&&state.dokkaebi){state.dokkaebi.moveClock+=2.4;state.dokkaebi.trickTimer+=1.2}
+  else if(id==='yuki'&&state.yuki){state.yuki.moveClock+=2.4;if(state.yuki.location==='japan')state.yuki.frost=Math.min(96,state.yuki.frost+6)}
+  else if(id==='maiden'&&state.maiden.active){state.maiden.unseen+=1.8}
+  else if(id==='egg'&&state.egg){state.egg.life+=1.8}
+  else if((id==='reaper'||id==='wolf')&&state.roamers[id])state.roamers[id].moveClock+=1.8
 }
 function reportAnomaly(){
   if(!state.running||state.gameOver||state.blackout||!state.cameraOpen)return;
@@ -1863,14 +1898,20 @@ function updateDokkaebi(dt){
 }
 function updateYuki(dt){
   var y=state.yuki;if(!y||!y.active)return;
-  if(y.location==='japan'){y.frost+=dt*(state.mode==='practice'?2.9:3.6);if(y.frost>=100){fail('yuki');return}}
+  if(y.location==='japan'){y.frost+=dt*(state.mode==='practice'?2.4:3.0);if(y.frost>=100){fail('yuki');return}}
   else y.frost=Math.max(8,y.frost-dt*1.25);
   if(y.rest>0){y.rest-=dt;return}
   y.moveClock+=dt;
   if(y.moveClock>=y.moveEvery&&y.frost<58){
     y.moveClock=0;
     if(movementRoll('yuki')){
-      var next;if(y.location==='japan')next='europe';else if(y.location==='east')next='europe';else if(y.location==='europe')next=Math.random()<.58?'japan':'east';else next='europe';
+      var next;
+      if(y.location==='japan')next='europe';
+      else if(y.location==='east')next='library';
+      else if(y.location==='library')next=Math.random()<.65?'europe':'east';
+      else if(y.location==='prep')next=Math.random()<.5?'library':'stairs';
+      else if(y.location==='europe')next=Math.random()<.62?'japan':(Math.random()<.5?'library':'prep');
+      else next='europe';
       y.previous=y.location;y.location=next;y.rest=2+Math.random()*2
     }
   }
@@ -1889,14 +1930,14 @@ function updateMaiden(dt){
         else if(m.totalViewed>5.5){m.totalViewed=0;m.rest=5+Math.random()*3;state.cleared++;state.score+=120;directorShift(-15);masterGhost('maiden');sound('good');toast('처녀귀신은 사라진 것이 아니라 6-1 교실에 머물렀습니다.')}
       }
     }else{
-      m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?12:Math.max(6.8,10-m.index*.55);
+      m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?14:Math.max(9.4,12.8-m.index*.5);
       if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn');if(m.index>=1)playTimedClip('musicBox',.055,.72,1250)}}}
     }
   }else{
     if(state.leftDoor){
       m.viewed+=dt;m.unseen=0;
       if(m.viewed>2){m.index=0;m.unseen=0;m.viewed=0;m.totalViewed=0;m.rest=5+Math.random()*3;state.cleared++;state.score+=120;directorShift(-16);masterGhost('maiden');sound('good')}
-    }else{m.viewed=0;m.unseen+=dt;if(m.unseen>4.6){fail('maiden');return}}
+    }else{m.viewed=0;m.unseen+=dt;if(m.unseen>5.8){fail('maiden');return}}
   }
 }
 function relocateEgg(rewarded){
@@ -1904,12 +1945,12 @@ function relocateEgg(rewarded){
   var options=cameraNeighbors(e.cam);if(!options.length)options=['korea','japan','europe','special','west','east'];
   var next=options[Math.floor(Math.random()*options.length)]||'europe';
   if(rewarded){state.cleared++;state.score+=85;directorShift(-12);masterGhost('egg');sound('good');playTimedClip('phone',.055,1.28,420)}
-  e.cam=next;e.life=0;e.stare=0;e.seenThisStop=false;e.moveEvery=5.5+Math.random()*5
+  e.cam=next;e.life=0;e.stare=0;e.seenThisStop=false;e.moveEvery=8+Math.random()*5
 }
 function updateEgg(dt){
   var e=state.egg;if(!e||!e.active)return;
   e.life+=dt;var staring=cameraFeedLive(e.cam);
-  if(staring){e.seenThisStop=true;e.stare+=dt*46;if(e.stare>=100){fail('egg');return}}
+  if(staring){e.seenThisStop=true;e.stare+=dt*38;if(e.stare>=100){fail('egg');return}}
   else e.stare=Math.max(0,e.stare-dt*58);
   if(!staring&&e.life>=e.moveEvery&&movementRoll('egg'))relocateEgg(e.seenThisStop)
 }
@@ -1926,10 +1967,10 @@ function updateRoamer(r,dt){
     r.attackTime+=dt;var closed=r.side==='left'?state.leftDoor:state.rightDoor;
     if(r.type==='wolf'){
       if(closed){r.safeTime+=dt;if(r.safeTime>1.55){resetRoamer(r,true);return}}else r.safeTime=0;
-      if(r.attackTime>3.2&&!closed){fail('wolf');return}
+      if(r.attackTime>4.4&&!closed){fail('wolf');return}
     }else{
       if(!closed){r.safeTime+=dt;if(r.safeTime>2){resetRoamer(r,true);return}}else r.safeTime=0;
-      if(r.attackTime>3.7&&closed){fail('reaper');return}
+      if(r.attackTime>5.1&&closed){fail('reaper');return}
     }
     return
   }
@@ -2014,7 +2055,7 @@ function reset(mode){
 }
 function start(mode){
   ensureAudio();els.intro.classList.remove('show');reset(mode);startAmbient();window.KidscadeGame?.start?.({mode:mode});
-  var label=mode==='practice'?'연습 근무':mode==='full'?'특별 근무':mode.replace('night','')+'일차 근무';
+  var label=mode==='practice'?'연습 근무':mode==='full'?'6일차 특별 근무':mode.replace('night','')+'일차 근무';
   toast(label+'를 시작합니다.');sound('good')
 }
 function fail(id){
