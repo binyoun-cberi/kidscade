@@ -189,7 +189,7 @@ applyXray();
 const trajectory=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xe33d3d,transparent:true,opacity:.68}));
 scene.add(trajectory);
 const targetMarker=new THREE.Mesh(new THREE.SphereGeometry(.28,18,12),new THREE.MeshBasicMaterial({color:0xff5a52,wireframe:true,transparent:true,opacity:.45}));
-scene.add(targetMarker);
+scene.add(targetMarker);targetMarker.visible=false;
 
 function attackInfo(id){
   const side=id.startsWith('left')?'left':'right',hook=id.includes('Hook');
@@ -353,7 +353,7 @@ function resolvePlayerPunch(side,speed){
   let damage=(counter?26:14)+twistBonus+driveBonus+Math.min(4,Math.max(0,speed-1));
   if(!counter&&state.enemy.phase==='telegraph')damage*=.65;
   damage=Math.round(damage);state.enemyHp=Math.max(0,state.enemyHp-damage);state.stats.hits++;if(counter)state.stats.counters++;
-  state.impactBoost=.16;enemyVisual.flash=.18;flashImpact(counter?'⚡ COUNTER '+damage:'퍽! '+damage,true);tone(counter?95:125,.08,'square',.06);
+  state.impactBoost=.16;enemyVisual.flash=.18;if(counter){state.enemy.counter=false;state.enemy.t=Math.max(state.enemy.t,.82)}flashImpact(counter?'⚡ COUNTER '+damage:'퍽! '+damage,true);tone(counter?95:125,.08,'square',.06);
   ui.coach.textContent=counter?'좋아요! 방어 뒤 열린 틈을 바로 공격했어요.':'팔을 굽혀 장전한 뒤 삼두근으로 빠르게 폈어요.';
   ui.coach.className='coach '+(counter?'counter':'good');
   if(state.enemyHp<=0)finishStage(true);
