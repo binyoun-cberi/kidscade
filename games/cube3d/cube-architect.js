@@ -1720,11 +1720,11 @@ function reactFluidsNear(x,y,z){
 }
 function simulateSand(){
   const moves=[];
-  for(const [key,d] of worldData){
-    if(d.type!=='sand')continue;const [x,y,z]=parseWorldKey(key);if(y<=WORLD_MIN_Y+1)continue;
+  for(const key of worldMeshMap.keys()){
+    const d=worldData.get(key);if(!d||!(d.type==='sand'||d.type==='redSand'||d.type==='gravel'))continue;const [x,y,z]=parseWorldKey(key);if(y<=WORLD_MIN_Y+1)continue;
     const below=getBlock(x,y-1,z);if(!below||blockDef(below).liquid||below.type==='fire')moves.push([x,y,z]);
   }
-  moves.slice(0,40).forEach(([x,y,z])=>{const d=getBlock(x,y,z);if(!d||d.type!=='sand'||getBlock(x,y-1,z)&&!blockDef(getBlock(x,y-1,z)).liquid)return;removeWorldBlockData(x,y,z,true);setWorldBlock(x,y-1,z,{...d,falling:true},true)});
+  moves.slice(0,40).forEach(([x,y,z])=>{const d=getBlock(x,y,z);if(!d||!blockDef(d).gravity||getBlock(x,y-1,z)&&!blockDef(getBlock(x,y-1,z)).liquid)return;removeWorldBlockData(x,y,z,true);setWorldBlock(x,y-1,z,{...d,falling:true},true)});
 }
 function flowInto(x,y,z,type,level){
   if(!inWorld(x,y,z)||level<=0)return false;const at=getBlock(x,y,z);
@@ -1736,7 +1736,7 @@ function flowInto(x,y,z,type,level){
 }
 function simulateLiquids(){
   const liquids=[];
-  for(const [key,d] of worldData)if((d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d]);
+  for(const key of worldMeshMap.keys()){const d=worldData.get(key);if(d&&(d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d])}
   for(const [key,d] of liquids.slice(0,90)){
     const [x,y,z]=parseWorldKey(key),level=d.level||1;if(!getBlock(x,y,z))continue;
     if(!getBlock(x,y-1,z)&&y>WORLD_MIN_Y+1){flowInto(x,y-1,z,d.type,Math.max(level,2));continue}
@@ -1749,13 +1749,16 @@ function simulateLiquids(){
 }
 function hasNearbyLog(x,y,z,r=4){
   for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++)for(let dz=-r;dz<=r;dz++){
-    if(Math.abs(dx)+Math.abs(dy)+Math.abs(dz)>r+2)continue;if(getBlock(x+dx,y+dy,z+dz)?.type==='log')return true;
+    if(Math.abs(dx)+Math.abs(dy)+Math.abs(dz)>r+2)continue;if(['log','pineLog'].includes(getBlock(x+dx,y+dy,z+dz)?.type))return true;
   }return false;
 }
 function simulatePlants(){
   const dirt=[],grass=[],leaves=[],saplings=[];
-  for(const [key,d] of worldData){
-    if(d.type==='dirt')dirt.push(key);else if(d.type==='grass')grass.push(key);else if(d.type==='leaves')leaves.push(key);else if(d.type==='sapling')saplings.push(key);
+  for(const key of worldMeshMap.keys()){
+    const d=worldData.get(key);if(!d)continue;
+    if(d.type==='dirt')dirt.push(key);else if(d.type==='grass')grass.push(key);
+    else if(d.type==='leaves'||d.type==='pineLeaves')leaves.push(key);
+    else if(d.type==='sapling')saplings.push(key);
   }
   grass.slice(0,80).forEach(key=>{const [x,y,z]=parseWorldKey(key),above=getBlock(x,y+1,z);if(above&&isOccluder(above)&&hash2(x+freeSimTick,z)<.08)setWorldBlock(x,y,z,{type:'dirt',natural:true},true)});
   for(let i=0;i<Math.min(18,dirt.length);i++){
@@ -1774,7 +1777,7 @@ function simulatePlants(){
   }
 }
 function simulateFire(){
-  const fires=[];for(const [key,d] of worldData)if(d.type==='fire')fires.push(key);
+  const fires=[];for(const key of worldMeshMap.keys()){const d=worldData.get(key);if(d?.type==='fire')fires.push(key)}
   const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
   for(const key of fires.slice(0,40)){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
@@ -1899,41 +1902,77 @@ function groundTopBelow(px,eyeY,pz){
 }
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
-  let nx=camera.position.x+dx;
+  // A diagonal move must not step the player upward twice in one frame.
+  let stepped=false;
+  const nx=camera.position.x+dx;
   if(!playerCollidesAt(nx,camera.position.y,camera.position.z))camera.position.x=nx;
-  else if(onGround&&!playerCollidesAt(nx,camera.position.y+1,camera.position.z)){camera.position.y+=1;camera.position.x=nx}
-  let nz=camera.position.z+dz;
+  else if(onGround&&!stepped&&
+    !playerCollidesAt(nx,camera.position.y+1,camera.position.z)){
+    camera.position.y+=1;camera.position.x=nx;stepped=true;freeVelocityY=0;
+  }
+  const nz=camera.position.z+dz;
   if(!playerCollidesAt(camera.position.x,camera.position.y,nz))camera.position.z=nz;
-  else if(onGround&&!playerCollidesAt(camera.position.x,camera.position.y+1,nz)){camera.position.y+=1;camera.position.z=nz}
+  else if(onGround&&!stepped&&
+    !playerCollidesAt(camera.position.x,camera.position.y+1,nz)){
+    camera.position.y+=1;camera.position.z=nz;freeVelocityY=0;
+  }
 }
 function updateFree(dt,t){
-  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();freeSimAccum+=dt;if(freeSimAccum>.48){freeSimAccum=0;simulateWorld()}
+  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();
+  freeSimAccum+=dt;
+  if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
   if(inventoryOpen||furnaceOpen){checkCollectibles(t);return}
+  const displayEye=camera.position.y;
+  // Physics and visual camera heights are intentionally separate. A one-cell
+  // step is immediate for collision, gradual for the player's view.
+  camera.position.y=freePhysicsY;
   const speed=(freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0;
-  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),move=new THREE.Vector3();
+  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  const move=new THREE.Vector3();
   if(freeKeys.KeyW||freeKeys.ArrowUp)move.addScaledVector(forward,-1);
   if(freeKeys.KeyS||freeKeys.ArrowDown)move.add(forward);
   if(freeKeys.KeyA||freeKeys.ArrowLeft)move.addScaledVector(right,-1);
   if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
-  if(mobileModeEnabled){move.addScaledVector(forward,mobileMove.y);move.addScaledVector(right,mobileMove.x)}
+  if(mobileModeEnabled){
+    move.addScaledVector(forward,mobileMove.y);
+    move.addScaledVector(right,mobileMove.x);
+  }
   if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
-  if(freeFlying){
-    camera.position.add(move);if(freeKeys.Space)camera.position.y+=speed*dt;if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
+  if(freeFlying&&gameFreeMode==='creative'){
+    camera.position.add(move);
+    if(freeKeys.Space)camera.position.y+=speed*dt;
+    if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
     freeVelocityY=0;onGround=false;
   }else{
-    moveFreeHorizontal(move.x,move.z);freeVelocityY-=14*dt;let nextY=camera.position.y+freeVelocityY*dt;
+    moveFreeHorizontal(move.x,move.z);
+    freeVelocityY-=14*dt;
+    let nextY=camera.position.y+freeVelocityY*dt;
     if(freeVelocityY<=0){
       const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
-      if(nextY-1.62<=ground){nextY=ground+1.62;freeVelocityY=0;onGround=true}else onGround=false;
-    }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){freeVelocityY=0;nextY=camera.position.y}
+      if(nextY-1.62<=ground){
+        nextY=ground+1.62;freeVelocityY=0;onGround=true;
+      }else onGround=false;
+    }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){
+      freeVelocityY=0;nextY=camera.position.y;
+    }
     camera.position.y=nextY;
   }
   camera.position.x=THREE.MathUtils.clamp(camera.position.x,-WORLD_HALF+.7,WORLD_HALF-.7);
   camera.position.z=THREE.MathUtils.clamp(camera.position.z,-WORLD_HALF+.7,WORLD_HALF-.7);
   camera.position.y=THREE.MathUtils.clamp(camera.position.y,WORLD_MIN_Y+1.7,WORLD_MAX_Y+8);
-  camera.rotation.y=yaw;camera.rotation.x=pitch;checkCollectibles(t);
+  freePhysicsY=camera.position.y;
+  if(freeFlying&&gameFreeMode==='creative')camera.position.y=freePhysicsY;
+  else{
+    const delta=freePhysicsY-displayEye;
+    const maxChange=(delta>=0?4.5:5.1)*Math.min(dt,.055);
+    camera.position.y=displayEye+THREE.MathUtils.clamp(delta,-maxChange,maxChange);
+    if(Math.abs(freePhysicsY-camera.position.y)<.008)camera.position.y=freePhysicsY;
+  }
+  camera.rotation.y=yaw;camera.rotation.x=pitch;
+  streamWorldMeshes();
+  checkCollectibles(t);
 }
-
 
 /* Pointer-lock is optional. Safari on iPhone uses touch-look and these controls. */
 function resetMobileInput(){
