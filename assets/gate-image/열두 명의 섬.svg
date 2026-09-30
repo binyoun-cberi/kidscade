@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+<title id="title">열두 명의 섬 — 생존에서 자치 마을로 발전하는 게임</title>
+<defs>
+ <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#174d61"/><stop offset="1" stop-color="#25868e"/></linearGradient>
+ <linearGradient id="land" x2="0" y2="1"><stop stop-color="#9fbd75"/><stop offset="1" stop-color="#638e59"/></linearGradient>
+ <linearGradient id="glow" x2="0" y2="1"><stop stop-color="#fce1a3"/><stop offset="1" stop-color="#e7b75c"/></linearGradient>
+ <filter id="shadow" x="-40%" y="-60%" width="180%" height="220%"><feDropShadow dx="0" dy="13" stdDeviation="12" flood-color="#0c3945" flood-opacity=".5"/></filter>
+</defs>
+<rect width="960" height="540" fill="url(#sea)"/>
+<g opacity=".17" fill="none" stroke="#b6e6d5" stroke-width="4">
+<ellipse cx="650" cy="285" rx="470" ry="140" transform="rotate(-9 650 285)"/>
+<ellipse cx="620" cy="285" rx="395" ry="113" transform="rotate(-9 620 285)"/>
+<ellipse cx="627" cy="285" rx="317" ry="88" transform="rotate(-9 627 285)"/>
+</g>
+<g filter="url(#shadow)">
+<path d="M347 225Q390 125 576 122Q740 114 805 238Q840 363 722 404Q582 452 416 391Q284 340 347 225Z" fill="#e2d19a"/>
+<path d="M390 237Q423 163 557 160Q702 148 754 244Q777 332 691 366Q568 405 441 351Q361 312 390 237Z" fill="url(#land)"/>
+<path d="M490 238Q565 226 617 254" fill="none" stroke="#d6c493" stroke-width="18" stroke-linecap="round" opacity=".75"/>
+</g>
+<g stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(439 199)"><path d="M0 80L5 25" stroke="#775831" stroke-width="13"/><path d="M6 30Q-31-2-62 27Q-18 29 6 34Q-21-17 4-24Q27 9 8 32Q48-3 70 24Q36 23 8 35" fill="#397d4f" stroke="#2a6b48" stroke-width="3"/></g>
+<g transform="translate(712 181) scale(.74)"><path d="M0 80L5 25" stroke="#775831" stroke-width="13"/><path d="M6 30Q-31-2-62 27Q-18 29 6 34Q-21-17 4-24Q27 9 8 32Q48-3 70 24Q36 23 8 35" fill="#397d4f" stroke="#2a6b48" stroke-width="3"/></g>
+<g transform="translate(574 242)"><path d="M-41 8L0-23L44 8Z" fill="#ab6950" stroke="#734b40" stroke-width="5"/><rect x="-32" y="8" width="66" height="49" rx="5" fill="#e8c68f" stroke="#86613d" stroke-width="5"/><rect x="-1" y="25" width="20" height="32" rx="3" fill="#7a5b43"/><rect x="-23" y="18" width="14" height="15" fill="#75b3b9"/></g>
+<g transform="translate(682 283) scale(.72)"><path d="M-41 8L0-23L44 8Z" fill="#b47857" stroke="#734b40" stroke-width="5"/><rect x="-32" y="8" width="66" height="49" rx="5" fill="#e8c68f" stroke="#86613d" stroke-width="5"/><rect x="-1" y="25" width="20" height="32" rx="3" fill="#7a5b43"/></g>
+<g transform="translate(458 313)"><rect x="-34" y="-13" width="72" height="49" rx="5" fill="#806e42"/><g stroke="#bdc26b" stroke-width="9"><path d="M-19 20V-2M0 20V-9M18 20V-2"/></g></g>
+<g transform="translate(531 340)"><path d="M-18 13L0-10L18 13Z" fill="#eebd5b"/><path d="M-11 16L-3-25L14 17Z" fill="#ed773f"/><path d="M-4 15L4-9L10 15Z" fill="#fff0b5"/><path d="M-30 19L31 19" stroke="#604b34" stroke-width="7"/></g>
+<g fill="#edd6a3" stroke="#765b43" stroke-width="3"><circle cx="609" cy="347" r="11"/><circle cx="638" cy="350" r="11"/><circle cx="653" cy="338" r="11"/><circle cx="555" cy="383" r="11"/><circle cx="579" cy="389" r="11"/></g>
+<g fill="#56765d"><path d="M600 358L593 375L615 375Z"/><path d="M629 361L622 378L644 378Z"/><path d="M647 349L640 366L662 366Z"/><path d="M550 394L543 411L565 411Z"/><path d="M574 400L567 417L589 417Z"/></g>
+</g>
+<rect x="0" y="0" width="960" height="540" fill="#092a36" opacity=".13"/>
+<rect x="29" y="31" width="420" height="468" rx="25" fill="#103a43" opacity=".91" stroke="#5e978b" stroke-width="2"/>
+<text x="63" y="94" fill="#e8c47d" font-size="19" font-weight="700" font-family="sans-serif" letter-spacing="3">KIDSCADE · SOCIETY</text>
+<text x="60" y="183" fill="#fff4db" font-size="65" font-weight="900" font-family="sans-serif">열두 명의 섬</text>
+<text x="63" y="226" fill="#d4e9dc" font-size="22" font-family="sans-serif">열두 사람, 하나의 공동체</text>
+<text x="63" y="263" fill="#d4e9dc" font-size="22" font-family="sans-serif">우리의 첫 번째 규칙을 만들자</text>
+<g font-family="sans-serif" font-size="24" font-weight="700">
+<rect x="59" y="325" width="112" height="58" rx="15" fill="#2d6061"/><text x="74" y="363" fill="#fff7df">🍞 식량</text>
+<rect x="180" y="325" width="115" height="58" rx="15" fill="#2d6061"/><text x="193" y="363" fill="#fff7df">🪵 물자</text>
+<rect x="304" y="325" width="113" height="58" rx="15" fill="#2d6061"/><text x="316" y="363" fill="#fff7df">🤝 신뢰</text>
+</g>
+<text x="64" y="449" fill="#f1c782" font-size="19" font-family="sans-serif" font-weight="700">생존 → 자치 마을 → 공동체의 성장</text>
+</svg>
