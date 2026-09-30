@@ -1091,6 +1091,62 @@ function currentObjective(){
  if(game.day===7){if(!game.flags.ready)return{name:'폭우 대비',pos:CAMP};if(!game.flags.radio)return{name:'비상 무전기',pos:new THREE.Vector3(-4,0,12)}}
  return null
 }
+let activePanelTab='inventory';
+function openPanel(tab='inventory'){
+ if(!game||!running||!ui.panel)return;
+ if(buildMode)cancelBuild();
+ ui.panel.classList.remove('hidden');renderPanel(tab);
+}
+function closePanel(){ui.panel?.classList.add('hidden')}
+function togglePanel(){
+ if(!game||!running||!ui.panel)return;
+ if(ui.panel.classList.contains('hidden'))openPanel(activePanelTab);
+ else closePanel()
+}
+function renderOpenPanel(){
+ if(ui.panel&&!ui.panel.classList.contains('hidden')&&game)renderPanel(activePanelTab)
+}
+function renderPanel(tab='inventory'){
+ if(!game||!ui.panelBody)return;
+ const titles={inventory:'가방',craft:'제작',build:'건축',knowledge:'생존 도감',map:'지도',storage:'공동창고',settlement:'정착지'};
+ activePanelTab=titles[tab]?tab:'inventory';
+ ui.panelTitle.textContent=titles[activePanelTab];
+ ui.panel.querySelectorAll('nav [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===activePanelTab));
+ const body=ui.panelBody;
+ if(activePanelTab==='inventory'){
+  body.innerHTML='<div class="grid-cards">'+Object.entries(ITEMS).map(([id,d])=>'<div class="item-card"><b>'+d[1]+' '+d[0]+'</b><strong>'+(game.inv[id]||0)+'</strong><span>'+itemHint(id)+'</span></div>').join('')+'</div><p>공동창고의 물자는 공동창고 탭에서 꺼낼 수 있습니다.</p>';return
+ }
+ if(activePanelTab==='craft'||activePanelTab==='build'){
+  const build=activePanelTab==='build',recipes=build?Object.entries(BUILD).map(([id,d])=>({id,...d,desc:'캠프에 설치하는 생존 시설입니다.'})):[{id:'axe',name:'돌도끼',icon:'🪓',cost:{wood:3,stone:2},desc:'나무 채집량을 늘립니다.'}];
+  body.innerHTML='<div class="grid-cards">'+recipes.map(r=>'<div class="recipe-card"><b>'+r.icon+' '+r.name+'</b><p>'+r.desc+'<br><small>'+costText(r.cost)+'</small></p><button data-recipe="'+r.id+'" '+(!has(r.cost)||(!build&&r.id==='axe'&&game.inv.axe)?'disabled':'')+'>'+(build?'배치하기':'제작하기')+'</button></div>').join('')+'</div>';
+  body.querySelectorAll('[data-recipe]').forEach(b=>b.addEventListener('click',()=>build?beginBuild(b.dataset.recipe):craft(b.dataset.recipe)));return
+ }
+ if(activePanelTab==='knowledge'){
+  body.innerHTML='<div class="grid-cards">'+KNOWLEDGE.map(k=>{const found=game.knowledge.includes(k.id);return '<div class="knowledge-card '+(found?'':'locked')+'"><small>'+(found?k.subject:'???')+'</small><b>'+(found?k.title:'아직 발견하지 못한 지식')+'</b><p>'+(found?k.text:'게임 속 행동과 결과를 통해 발견해 보세요.')+'</p></div>'}).join('')+'</div>';return
+ }
+ if(activePanelTab==='map'){
+  const p=player.root.position,px=clamp((p.x+70)/140*100,4,96),pz=clamp((p.z+70)/140*100,4,96),objective=currentObjective();
+  body.innerHTML='<div class="map-board"><span class="map-zone forest">서쪽 숲</span><span class="map-zone hills">산비탈</span><span class="map-zone city">폐허 도시</span><span class="map-zone river">강</span><span class="map-landmark camp">⌂ 야영지</span><span class="map-landmark ruins">▦ 폐허</span><span class="map-player" style="left:'+px+'%;top:'+pz+'%">●</span></div><div class="settlement-card"><b>현재 위치 · '+ui.zone.textContent+'</b><p>'+(objective?'다음 목표: '+objective.name+' · 약 '+Math.round(p.distanceTo(objective.pos))+'m':'현재 주요 목표를 완료했습니다.')+'</p><p>강은 동쪽을 남북으로 가로지르며 중앙 도로의 다리로 건널 수 있습니다.<br>폐허 수색 · 마트 '+ruinSearchProgress('market').done+'/'+ruinSearchProgress('market').total+' · 진료소 '+ruinSearchProgress('clinic').done+'/'+ruinSearchProgress('clinic').total+' · 정비창고 '+ruinSearchProgress('garage').done+'/'+ruinSearchProgress('garage').total+'</p></div>';return
+ }
+ if(activePanelTab==='storage'){
+  if(!storageBuilt()){body.innerHTML='<div class="settlement-card"><h3>📦 공동창고</h3><p>건축 메뉴에서 공동창고를 지으면 물자를 보관하고 주민이 생산한 자원을 수령할 수 있습니다.</p></div>';return}
+  const items=storageItems(),stored=items.reduce((sum,id)=>sum+(game.storage?.[id]||0),0);
+  body.innerHTML='<div class="settlement-card"><h3>📦 공동창고 · '+stored+'개</h3><p>가방의 자원을 보관하거나 필요한 만큼 꺼낼 수 있습니다. 도구와 손전등은 가방에 남습니다.</p><button data-deposit="all">가방 물자 모두 맡기기</button></div><div class="storage-list">'+items.map(id=>'<div class="resident-row"><b>'+(ITEMS[id]?.[1]||'📦')+' '+(ITEMS[id]?.[0]||id)+'</b><span>가방 '+(game.inv[id]||0)+' · 창고 '+(game.storage?.[id]||0)+'<small><button data-withdraw="'+id+'" data-count="1" '+((game.storage?.[id]||0)<1?'disabled':'')+'>1개 꺼내기</button> <button data-withdraw="'+id+'" data-count="all" '+((game.storage?.[id]||0)<1?'disabled':'')+'>전부 꺼내기</button></small></span></div>').join('')+'</div>';
+  body.querySelector('[data-deposit]')?.addEventListener('click',depositStorage);
+  body.querySelectorAll('[data-withdraw]').forEach(b=>b.addEventListener('click',()=>withdrawStorage(b.dataset.withdraw,b.dataset.count==='all'?(game.storage?.[b.dataset.withdraw]||0):1)));return
+ }
+ const metrics=settlementMetrics();
+ const residents=Object.entries(game.residents||{}).filter(([,r])=>r?.rescued);
+ const residentRows=residents.map(([id,r])=>'<div class="resident-row"><b>'+RESIDENTS[id].icon+' '+RESIDENTS[id].name+'</b><span>'+(r.job?(JOBS[r.job]?.name||r.job):'역할 미정')+(r.job===RESIDENTS[id].preferred?' · 특기 일치':'')+'<small>'+residentActivity(id)+'</small></span></div>').join('');
+ const jobChoice=residents.filter(([,r])=>!r.job).map(([id])=>'<div class="job-choice"><h3>'+RESIDENTS[id].name+'의 역할 정하기</h3><p>특기는 '+JOBS[RESIDENTS[id].preferred].name+'이지만 다른 역할도 가능합니다.</p>'+Object.entries(JOBS).map(([job,j])=>'<button data-resident="'+id+'" data-job="'+job+'"><b>'+j.icon+' '+j.name+'</b><span>'+j.desc+(RESIDENTS[id].preferred===job?' · 특기 보너스':'')+'</span></button>').join('')+'</div>').join('');
+ const companion=residentCount()?'<div class="settlement-card"><h3>🎒 원정 동행</h3><p>동행 주민은 폐허 탐색에 함께 참여하고 전공 분야에서 도움을 줍니다.</p><button class="companion-btn" data-companion="">'+(game.companion?'동행 해제':'혼자 탐험')+'</button>'+residents.map(([id])=>'<button class="companion-btn" data-companion="'+id+'" '+(game.companion===id?'disabled':'')+'>'+RESIDENTS[id].icon+' '+RESIDENTS[id].name+(game.companion===id?' · 동행 중':'')+'</button>').join('')+'</div>':'';
+ const powerCard=game.flags.power?'<div class="power-card"><h3>⚡ 전력망 '+powerUse().toFixed(1)+' / '+game.powerKw.toFixed(1)+' kW</h3><p>무전 송신에는 순간적으로 0.8kW의 여유 전력이 필요합니다.</p>'+[['light','야영지 조명','0.2'],['cooler','냉장 보관함','0.8'],['purifier','전기 정수기','1.2']].filter(([id])=>id==='light'||hasBuilding(id)).map(([id,name,kw])=>'<button data-power="'+id+'">'+(game.powerLoads[id]?'ON':'OFF')+' · '+name+' ('+kw+'kW)</button>').join('')+'</div>':'';
+ body.innerHTML='<div class="settlement-card"><h3>한빛 야영지 · '+metrics.label+'</h3><div class="settlement-metrics"><b>자립력 '+metrics.resilience+'</b><span>생활 압박 '+metrics.pressure+'</span><span>식수 '+metrics.water+' · 식량 '+metrics.food+'</span></div><div class="settlement-bars"><label>주거<i style="width:'+Math.round(metrics.housing*100)+'%"></i></label><label>비축<i style="width:'+Math.round(metrics.supply*100)+'%"></i></label><label>전력<i style="width:'+Math.round(metrics.power*100)+'%"></i></label></div><p>👥 인구 '+metrics.population+'명 · 🤝 신뢰 '+Math.round(game.trust)+' · ❤️ 공동체 건강 '+Math.round(game.communityHealth)+' · 🙂 사기 '+Math.round(game.morale)+'</p><p>⚡ '+(game.flags.power?game.powerKw.toFixed(1)+' kW':'전력 복구 전')+' · ⛺ 쉼터 '+metrics.shelters+' · 🌱 텃밭 '+metrics.farms+'</p><div class="resident-list">'+(residentRows||'<p>아직 혼자입니다. 구조 신호를 찾아보세요.</p>')+'</div><p>'+(game.distribution?'배분 원칙: '+distributionName(game.distribution):'배분 원칙은 아직 정하지 않았습니다.')+'</p></div>'+companion+powerCard+jobChoice;
+ body.querySelectorAll('[data-job]').forEach(b=>b.addEventListener('click',()=>assignJob(b.dataset.resident,b.dataset.job)));
+ body.querySelectorAll('[data-power]').forEach(b=>b.addEventListener('click',()=>togglePowerLoad(b.dataset.power)));
+ body.querySelectorAll('[data-companion]').forEach(b=>b.addEventListener('click',()=>setCompanion(b.dataset.companion||null)))
+}
+
 function updateUI(){if(!game)return;ui.health.textContent=Math.round(game.health);ui.hunger.textContent=Math.round(game.hunger);ui.thirst.textContent=Math.round(game.thirst);ui.temp.textContent=game.temp.toFixed(1);ui.hotWater.textContent=game.inv.cleanWater;ui.hotFood.textContent=game.inv.food+game.inv.cookedPotato;ui.hotAxe.textContent=game.inv.axe?'✓':'-';if(ui.hotFlashlight)ui.hotFlashlight.textContent=game.inv.flashlight?Math.round(game.flashlightCharge||0)+'%':'-';ui.hotItems.textContent=Object.values(game.inv).reduce((a,b)=>a+b,0);const m=Math.floor(game.time),h=Math.floor(m/60),mm=m%60;ui.day.textContent='멸망 '+game.day+'일째';ui.clock.textContent=String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');const p=player.root.position;if(Math.abs(p.x-RIVER_X)<10)ui.zone.textContent='강변';else if(p.distanceTo(RUINS)<19)ui.zone.textContent='폐허 도시';else if(p.x<-42&&p.z>16)ui.zone.textContent='산비탈';else if(p.x<-18)ui.zone.textContent='서쪽 숲';else ui.zone.textContent='학교 야영지';const o=currentObjective();ui.bearing.textContent=o?'목표 · '+o.name+' '+Math.round(p.distanceTo(o.pos))+'m':'캠프 '+Math.round(p.distanceTo(CAMP))+'m';updateMission()}
 function continueSettlement(){
  game.finished=false;game.phase='settlement';game.day=Math.max(8,game.day+1);game.time=420;game.floodLevel=0;player.root.position.copy(CAMP);player.root.position.y=terrainHeight(CAMP.x,CAMP.z);ui.ending.classList.add('hidden');ui.hud.classList.remove('hidden');running=true;paused=false;applyDayStart();save();toast('🏘️ 정착지 운영 시작 · 이제 7일 버티기가 아니라 스스로 살아가는 공동체를 만듭니다.','normal',5)
