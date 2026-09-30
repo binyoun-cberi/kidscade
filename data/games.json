@@ -3049,7 +3049,7 @@
       "id": "low_pattern_lock",
       "addedAt": "2026-09-29T11:04:07+09:00",
       "title": "패턴 락",
-      "href": "games/low_pattern_lock/index.html?v=4",
+      "href": "games/low_pattern_lock/index.html?v=5",
       "category": "trivia",
       "age": "low",
       "ages": [
@@ -3057,10 +3057,10 @@
         "high"
       ],
       "icon": "🔐",
-      "description": "정답 패턴을 보여주지 않고 점 개수·대각선 횟수·시작 위치·순차/선택/반복 횟수 같은 단서만으로 숨은 잠금 패턴을 예상하는 알고리즘 추리 게임! 오답 비교 정보로 후보를 좁히고, 친구가 만든 비밀 패턴도 자동 단서로 풀어 보세요.",
+      "description": "정답을 보여주지 않고 점 개수·대각선·순차/선택/반복 같은 단서로 후보 패턴을 실제로 줄여 가는 알고리즘 추리 게임! 오답 비교도 정보가 되며, 단서를 모두 열면 후보가 1개로 좁혀져요. 친구가 만든 비밀 패턴도 자동 추리 문제로 바꿀 수 있어요.",
       "subject": "thinking",
       "genre": "puzzle",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "sessionMinutes": 10,
       "players": [
         "solo",
