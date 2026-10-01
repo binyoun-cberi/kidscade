@@ -1,4 +1,4 @@
-/* Cube Architect v22 creature roster and fallback voxel models. */
+/* Cube Architect v24 creature roster and fallback voxel models. */
 (()=>{
 'use strict';
 
