@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 AVATAR = ROOT / "assets/game/characters/kidscade-avatar-v1"
 SOURCE = AVATAR / "source/hair/front-sheets"
 OUT = AVATAR / "runtime/hair/front"
+QA = AVATAR / "qa/hair-front"
+BASE = AVATAR / "runtime/base/master-base-128.png"
+
 COLS, ROWS, RUNTIME = 6, 4, 128
 SHEETS = {
     "male": SOURCE / "front-hair-male-24-brown.png",
@@ -61,6 +64,7 @@ def extract(kind, source):
     w, h = image.size
     if w % COLS or h % ROWS:
         raise RuntimeError(f"{source.name}: expected 6x4 grid, got {w}x{h}")
+
     cw, ch = w // COLS, h // ROWS
     target = OUT / kind
     target.mkdir(parents=True, exist_ok=True)
@@ -79,12 +83,22 @@ def extract(kind, source):
             name = f"hair-front-{kind}-{n:02d}.png"
             path = target / name
             tile.save(path, optimize=True)
+
             bbox = tile.getchannel("A").getbbox()
+            touches = []
+            if bbox:
+                if bbox[0] <= 0: touches.append("left")
+                if bbox[1] <= 0: touches.append("top")
+                if bbox[2] >= RUNTIME: touches.append("right")
+                if bbox[3] >= RUNTIME: touches.append("bottom")
+
             items.append({
                 "id": name[:-4],
                 "file": f"{kind}/{name}",
                 "sourceCell": [col, row],
                 "bbox": list(bbox) if bbox else None,
+                "touchesCanvasEdge": touches,
+                "needsLayerReview": bool(touches),
             })
             n += 1
 
@@ -96,10 +110,37 @@ def extract(kind, source):
         "items": items,
     }
 
+def build_contact(kind):
+    if not BASE.exists():
+        raise FileNotFoundError(BASE)
+
+    base = Image.open(BASE).convert("RGBA")
+    if base.size != (RUNTIME, RUNTIME):
+        base = base.resize((RUNTIME, RUNTIME), Image.Resampling.NEAREST)
+
+    cell = RUNTIME
+    sheet = Image.new("RGBA", (COLS * cell, ROWS * cell), (242, 242, 242, 255))
+    draw = ImageDraw.Draw(sheet)
+    target = OUT / kind
+
+    for i in range(24):
+        row, col = divmod(i, COLS)
+        hair = Image.open(target / f"hair-front-{kind}-{i+1:02d}.png").convert("RGBA")
+        preview = base.copy()
+        preview.alpha_composite(hair)
+        x, y = col * cell, row * cell
+        sheet.alpha_composite(preview, (x, y))
+        draw.rectangle((x, y, x + cell - 1, y + cell - 1), outline=(190, 190, 190, 255))
+
+    QA.mkdir(parents=True, exist_ok=True)
+    path = QA / f"front-hair-{kind}-contact.png"
+    sheet.save(path, optimize=True)
+    return str(path.relative_to(AVATAR))
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     result = {
-        "version": 1,
+        "version": 2,
         "type": "kidscade-front-hair-pack",
         "canvas": [128, 128],
         "compositeAt": [0, 0],
@@ -108,14 +149,17 @@ def main():
         "palette": "warm-medium-brown",
         "sets": {},
         "qa": {
-            "status": "auto-extracted-needs-overlay-review",
+            "status": "auto-extracted-awaiting-visual-approval",
             "checks": [
                 "equal 6x4 source grid",
                 "edge-connected background removal",
                 "nearest-neighbor resize",
                 "hard alpha",
                 "128x128 common canvas",
+                "master-base overlay contact sheets",
+                "canvas-edge flags for suspicious front-hair pieces",
             ],
+            "contacts": {},
         },
     }
 
@@ -123,12 +167,13 @@ def main():
         if not source.exists():
             raise FileNotFoundError(source)
         result["sets"][kind] = extract(kind, source)
+        result["qa"]["contacts"][kind] = build_contact(kind)
 
     (OUT / "hair-front-manifest.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    print("Generated 48 front-hair runtime parts.")
+    print("Generated 48 front-hair runtime parts and 2 overlay contact sheets.")
 
 if __name__ == "__main__":
     main()
