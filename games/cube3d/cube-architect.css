@@ -114,6 +114,28 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
 #challengeLockNotice small{display:block;margin-top:6px;font-weight:600;color:#d6e0ef;line-height:1.45}
 @media(max-width:700px){#challengeFlyTip{max-width:88vw;white-space:normal;text-align:center;bottom:12px}}
 
+
+/* Landmark dungeon v19 */
+#dungeonHud{position:absolute;z-index:17;inset:0;pointer-events:none}
+#dungeonCrosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
+#dungeonCrosshair:before,#dungeonCrosshair:after{content:"";position:absolute;background:#fff;box-shadow:0 0 4px #09101c}
+#dungeonCrosshair:before{left:10px;top:2px;width:2px;height:18px}
+#dungeonCrosshair:after{left:2px;top:10px;width:18px;height:2px}
+#dungeonMission{position:absolute;left:14px;top:78px;width:min(340px,42vw);padding:13px 15px;border:1px solid rgba(255,255,255,.14);border-radius:17px;background:rgba(10,18,31,.88);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.24);backdrop-filter:blur(9px)}
+.dungeon-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dungeon-head b{font-size:15px;font-weight:950}
+#dungeonProgress{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:rgba(120,224,255,.18);color:#bcefff;font-size:11px;font-weight:950}
+#dungeonObjective{display:block;margin-top:6px;color:#d8e4f2;font-size:11px;line-height:1.55}
+#dungeonPrompt{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);padding:9px 14px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(8,15,27,.9);color:#fff;font-size:12px;font-weight:950;box-shadow:0 7px 20px rgba(0,0,0,.24)}
+#mobileControls.dungeon-mobile #mobileViewHint{bottom:92px}
+@media(max-width:600px){
+  #dungeonMission{left:8px;top:68px;width:min(280px,62vw);padding:10px 12px}
+  #dungeonPrompt{bottom:132px;max-width:65vw;text-align:center}
+}
+@media(pointer:coarse){
+  #dungeonPrompt{bottom:145px}
+}
+
 /* Architect World v2 */
 .free-status{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;font-weight:900;color:#dce9f7}
 .free-status span{padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.12)}
