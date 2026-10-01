@@ -95,6 +95,8 @@ function clearModeUi(){
   $('actionNext').classList.add('hidden');
   $('actionSave').classList.add('hidden');
   $('actionXray').classList.add('hidden');
+  $('actionAvatar')?.classList.add('hidden');
+  $('actionView')?.classList.add('hidden');
 }
 function showHome(){
   if(mode==='free')saveFreeWorld();
@@ -1382,6 +1384,7 @@ let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
 let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
 let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
@@ -1395,6 +1398,81 @@ const FURNACE_RECIPES=[
   {input:'stone',output:'smoothStone',label:'돌 → 매끈한 돌',note:'가열·가공된 건축용 돌을 표현합니다.'}
 ];
 
+function freeAvatarApi(){return window.CubeArchitectAvatar||null}
+function refreshFreeAvatar(force=false){
+  if(mode!=='free'&&!force)return;
+  const api=freeAvatarApi();if(!api)return;
+  const equipment=api.readEquipment(),sig=api.signature(equipment);
+  if(!force&&freeAvatarRoot&&sig===freeAvatarSignature)return;
+  if(freeAvatarRoot?.parent)freeAvatarRoot.parent.remove(freeAvatarRoot);
+  freeAvatarRoot=api.create(equipment);freeAvatarSignature=sig;
+  freeAvatarRoot.visible=freeViewMode==='third';
+  scene.add(freeAvatarRoot);
+}
+function updateFreeViewButtons(){
+  const third=freeViewMode==='third';
+  if($('actionView'))$('actionView').textContent=third?'1인칭':'3인칭';
+  if($('mobileView'))$('mobileView').textContent=third?'1인칭':'3인칭';
+}
+function setFreeView(next,announce=true){
+  freeViewMode=next==='first'?'first':'third';
+  if(freeAvatarRoot)freeAvatarRoot.visible=freeViewMode==='third';
+  updateFreeViewButtons();
+  if(announce)toast(freeViewMode==='third'?'3인칭 · 내 캐릭터를 보며 탐험해요.':'1인칭 · 정밀하게 건축해요.');
+}
+function cycleFreeView(){if(mode==='free')setFreeView(freeViewMode==='third'?'first':'third')}
+function openAvatarCustomizer(){
+  if(mode!=='free')return;
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+  try{
+    const h=parent&&parent!==window&&parent.location.origin===location.origin?parent:null;
+    const button=h?.document?.getElementById('avatar-open-btn');
+    if(button){button.click();toast('키즈케이드 캐릭터 아틀리에를 열었어요.');return}
+  }catch(_){}
+  const win=window.open('../../avatar-studio.html','kidscadeAvatarStudio');
+  if(win)toast('캐릭터 아틀리에에서 꾸민 모습이 자동으로 연결돼요.');
+  else toast('팝업이 차단되었어요. 메인 화면의 ‘꾸미기’를 이용해 주세요.');
+}
+function thirdPersonCameraPoint(eye,desired){
+  const delta=desired.clone().sub(eye),steps=12;
+  let safe=eye.clone();
+  for(let i=1;i<=steps;i++){
+    const p=eye.clone().addScaledVector(delta,i/steps);
+    const x=blockCoordFromWorld(p.x),y=Math.floor(p.y),z=blockCoordFromWorld(p.z);
+    if(isSolidData(getBlock(x,y,z),x,y,z))break;
+    safe=p;
+  }
+  return safe;
+}
+function prepareFreeAvatar(now){
+  const api=freeAvatarApi();if(!api)return;
+  if(now>=freeAvatarSyncAt){
+    freeAvatarSyncAt=now+1200;
+    const sig=api.signature(api.readEquipment());
+    if(!freeAvatarRoot||sig!==freeAvatarSignature)refreshFreeAvatar(true);
+  }
+  if(!freeAvatarRoot)return;
+  const moving=!!(freeKeys.KeyW||freeKeys.KeyS||freeKeys.KeyA||freeKeys.KeyD||
+    freeKeys.ArrowUp||freeKeys.ArrowDown||freeKeys.ArrowLeft||freeKeys.ArrowRight||
+    Math.hypot(mobileMove.x,mobileMove.y)>.08);
+  freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62,camera.position.z);
+  freeAvatarRoot.rotation.y=yaw;
+  freeAvatarRoot.visible=freeViewMode==='third';
+  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying);
+}
+function renderFreeScene(now){
+  prepareFreeAvatar(now);
+  if(freeViewMode!=='third'){renderer.render(scene,camera);return}
+  const savedPos=camera.position.clone(),savedQuat=camera.quaternion.clone();
+  const euler=new THREE.Euler(pitch,yaw,0,'YXZ');
+  const look=new THREE.Vector3(0,0,-1).applyEuler(euler);
+  const desired=savedPos.clone().addScaledVector(look,-4.1);
+  desired.y+=.72;
+  camera.position.copy(thirdPersonCameraPoint(savedPos,desired));
+  camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
+  renderer.render(scene,camera);
+  camera.position.copy(savedPos);camera.quaternion.copy(savedQuat);
+}
 function worldKey(x,y,z){return x+','+y+','+z}
 function parseWorldKey(key){return key.split(',').map(Number)}
 function inWorld(x,y,z){return x>=-WORLD_HALF&&x<WORLD_HALF&&z>=-WORLD_HALF&&z<WORLD_HALF&&y>=WORLD_MIN_Y&&y<=WORLD_MAX_Y}
@@ -1747,6 +1825,7 @@ function initFree(){
   modeTitle(survival?'생존 탐험':'크리에이티브 월드',
     survival?'나무 채집 → 제작 → 새로운 바이옴 탐험':'모든 건축 재료 · 비행 · 물질 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');
+  $('actionAvatar')?.classList.remove('hidden');$('actionView')?.classList.remove('hidden');
   $('actionXray').classList.toggle('hidden',survival);
   cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,30,68);
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
@@ -1779,12 +1858,15 @@ function initFree(){
     THREE.MathUtils.clamp(spawn[2],-WORLD_HALF+1,WORLD_HALF-1)
   );
   freePhysicsY=camera.position.y;
+  freeAvatarRoot=null;freeAvatarSignature='';freeAvatarSyncAt=0;
+  setFreeView('third',false);refreshFreeAvatar(true);
   applyRestoredLandmarksToLoadedWorld();
   rebuildAllWorldMeshes();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
   setupWeather();spawnCritters();updateFreeMission();
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
+  $('actionAvatar').onclick=openAvatarCustomizer;$('actionView').onclick=cycleFreeView;updateFreeViewButtons();
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');
   $('mathLensBadge').classList.add('hidden');
@@ -2841,6 +2923,8 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileControls').classList.toggle('dungeon-mobile',active&&target==='dungeon');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
+  $('mobileView').classList.toggle('hidden',target!=='free');
+  $('mobileAvatar').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
@@ -2858,7 +2942,7 @@ function configureMobileMode(target){
   $('mobileDown').classList.toggle('hidden',target==='dungeon');
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
   $('lockNotice').classList.toggle('hidden',active||target!=='free'||inventoryOpen||furnaceOpen);
-  if(target==='free')refreshMobileFly();
+  if(target==='free'){refreshMobileFly();updateFreeViewButtons()}
 }
 function enableMobileFallback(){
   mobileModeEnabled=true;configureMobileMode(mode);
@@ -2940,6 +3024,8 @@ function initMobileControls(){
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
+  tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
+  tap('mobileAvatar',()=>{if(mode==='free')openAvatarCustomizer()});
   tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
   tap('mobileLens',()=>{if(mode==='free')toggleXray()});
   tap('mobileFly',()=>{
@@ -2980,6 +3066,7 @@ function showTutorial(kind){
       '<div class="keyrow"><b>좌클릭</b>바라보는 블록 채집</div>'+
       '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
       '<div class="keyrow"><b>1~9 / 우클릭</b>획득한 재료 선택 / 설치</div>'+
+      '<div class="keyrow"><b>V / 꾸미기</b>1·3인칭 전환 / 내 캐릭터 변경</div>'+
       '<div class="keyrow"><b>목표</b>나무 → 판자 → 제작대 → 곡괭이</div></div>';
   }
   if(mobileModeEnabled&&kind==='challenge'){
@@ -2990,13 +3077,14 @@ function showTutorial(kind){
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>이동</div>'+
       '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
       '<div class="keyrow"><b>파괴 / 설치</b>채집 / 핫바 블록 설치</div>'+
-      '<div class="keyrow"><b>가방</b>획득한 재료와 제작법</div>'+
-      '<div class="keyrow"><b>점프</b>지형 올라가기</div></div>';
+      '<div class="keyrow"><b>가방 / 꾸미기</b>제작 / 내 캐릭터 변경</div>'+
+      '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div></div>';
   }else if(mobileModeEnabled&&kind==='free'){
     html='<h2>크리에이티브 월드 · 모바일</h2><p>모든 재료를 자유롭게 쓰고 날아다닐 수 있어요. 핫바를 좌우로 넘겨 재료를 선택하세요.</p>'+
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱 / 드래그</b>이동 / 시점</div>'+
       '<div class="keyrow"><b>설치 / 파괴</b>블록 건축</div>'+
       '<div class="keyrow"><b>비행 / 가방</b>이동 방식 / 모든 재료</div>'+
+      '<div class="keyrow"><b>시점 / 꾸미기</b>1·3인칭 / 내 캐릭터</div>'+
       '<div class="keyrow"><b>색칠 / 수학</b>여섯 면 / 모서리·꼭짓점</div></div>';
   }
   $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
@@ -3098,6 +3186,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
   if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
+  if(e.code==='KeyV'){cycleFreeView();return}
   if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return;
   }
@@ -3125,7 +3214,10 @@ function animate(now){
     updateFree(dt,now);
     if(now-lastFreeSave>30000)saveFreeWorld();
   }
-  if(renderer)renderer.render(scene,camera);
+  if(renderer){
+    if(mode==='free')renderFreeScene(now);
+    else renderer.render(scene,camera);
+  }
 }
 window.CubeArchitectReady=true;
 window.CubeArchitect={enterMode,showHome};
