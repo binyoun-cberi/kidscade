@@ -67,7 +67,7 @@ function freshPlayer(){
   slots[6]='flagellum';
   return {x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:0,radius:30,energy:100,health:100,biomass:0,
     slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0},
-    pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0};
+    pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0,feedAudioCd:0,hurtAudioCd:0};
 }
 function resetState(){
   state={generation:1,generationClock:0,eventClock:0,dna:4,score:0,survival:0,player:freshPlayer(),mission:0,discovered:{},facts:{},started:true,reproductions:0,activeEvent:null,activeEventLife:0,editorMode:null};
@@ -86,7 +86,45 @@ function toast(msg){
   const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),1800);
 }
-function sound(name){ try{window.KidscadeGame&&KidscadeGame.sound(name)}catch(_){} }
+const AUDIO_KEYS=Object.freeze({
+  click:'ui.click',
+  select:'ui.select',
+  confirm:'ui.confirm',
+  error:'ui.error',
+  eat:'collect.coin_pickup',
+  reward:'collect.coin_drop',
+  bite:'combat.impact_heavy',
+  hurt:'combat.hurt_grunt',
+  dash:'combat.projectile_whoosh',
+  event:'ui.open',
+  generation:'ui.confirm'
+});
+const GAME_AUDIO_KEYS=[...new Set([...Object.values(AUDIO_KEYS),'ambient.underwater'])];
+let ambienceHandle=null,ambienceToken=0;
+function audioApi(){ return window.KidscadeAudio||null; }
+function sound(name,options={}){
+  const key=AUDIO_KEYS[name]||name;
+  try{return audioApi()?.play?.(key,options)?.catch?.(()=>{})}catch(_){}
+}
+function preloadAudio(){
+  try{return audioApi()?.preload?.(GAME_AUDIO_KEYS)?.catch?.(()=>{})}catch(_){}
+}
+function stopAmbience(){
+  ambienceToken++;
+  try{ambienceHandle?.stop?.()}catch(_){}
+  ambienceHandle=null;
+}
+async function startAmbience(){
+  const audio=audioApi();if(!audio?.play)return;
+  stopAmbience();const token=ambienceToken;
+  const volume=selectedBiome.id==='deep'?0.18:selectedBiome.id==='vent'?0.15:selectedBiome.id==='coast'?0.13:0.10;
+  const rate=selectedBiome.id==='deep'?0.92:selectedBiome.id==='ice'?1.05:1;
+  try{
+    const handle=await audio.play('ambient.underwater',{loop:true,volume,rate});
+    if(token!==ambienceToken){handle?.stop?.();return}
+    ambienceHandle=handle?.ok?handle:null;
+  }catch(_){}
+}
 function sdkStart(){ try{window.KidscadeGame&&KidscadeGame.start({mode:'microbe-evolution',biome:selectedBiome.id})}catch(_){} }
 function sdkScore(){ try{window.KidscadeGame&&KidscadeGame.score(Math.round(state.score))}catch(_){} }
 
@@ -113,12 +151,14 @@ function startGame(biome){
   refreshHud(true);
   running=true;paused=false;last=performance.now();
   sdkStart();
+  preloadAudio();sound('confirm',{volume:.20,rate:1.04});startAmbience();
   cancelAnimationFrame(raf);
   requestAnimationFrame(()=>{ resize(); last=performance.now(); raf=requestAnimationFrame(loop); });
   toast(biome.icon+' '+biome.name+' — 환경을 읽고 살아남아 보세요!');
 }
 function goHome(){
-  running=false;cancelAnimationFrame(raf);$('gameScreen').classList.add('hidden');$('editorScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');
+  running=false;cancelAnimationFrame(raf);stopAmbience();sound('click',{volume:.16});
+  $('gameScreen').classList.add('hidden');$('editorScreen').classList.add('hidden');$('startScreen').classList.remove('hidden');
 }
 
 function setupWorld(){
@@ -341,6 +381,7 @@ function updatePlayer(dt){
   }
 
   p.pulseCd=Math.max(0,p.pulseCd-dt);p.biteCd=Math.max(0,p.biteCd-dt);
+  p.feedAudioCd=Math.max(0,p.feedAudioCd-dt);p.hurtAudioCd=Math.max(0,p.hurtAudioCd-dt);
   p.feedFlash=Math.max(0,p.feedFlash-dt*2.4);p.divisionFx=Math.max(0,p.divisionFx-dt);
   p.energy=clamp(p.energy,0,135);
   if(p.energy<=0)p.health-=7*dt; else if(p.energy>75&&p.health<100)p.health+=.9*dt;
@@ -355,13 +396,18 @@ function consumeFood(index,mult=1,why='mouth'){
   const base=f.type==='meat'?9:f.type==='nutrient'?6:4;
   p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.04*mult;state.score+=base*mult;p.feedFlash=.8;
   state.discovered.firstFood=1;
+  if(p.feedAudioCd<=0){
+    const rate=f.type==='meat'?.72:f.type==='nutrient'?.90:1.12;
+    sound('eat',{volume:f.type==='meat'?.17:.12,rate,rateJitter:.045,cooldownMs:70});
+    p.feedAudioCd=.075;
+  }
   foods.splice(index,1);spawnFood();
   burst(f.x,f.y,f.type==='meat'?'#ff8eb0':'#b9ef78');
   if(why==='filter'&&!state.discovered.filter){state.discovered.filter=1;toast('여과섭식 성공! 작은 입자를 걸러 먹었어요.')}
 }
 function respawnPlayer(){
   state.player.health=100;state.player.energy=82;state.player.biomass*=.72;state.dna=Math.max(0,state.dna-4);
-  state.player.x=WORLD.w/2;state.player.y=WORLD.h/2;toast('세포가 크게 손상되어 안전한 곳에서 다시 시작했어요. DNA 4를 잃었습니다.');
+  state.player.x=WORLD.w/2;state.player.y=WORLD.h/2;sound('error',{volume:.18,rate:.78});toast('세포가 크게 손상되어 안전한 곳에서 다시 시작했어요. DNA 4를 잃었습니다.');
 }
 
 function updateFoods(dt){
@@ -453,17 +499,19 @@ function updateCreatures(dt){
         let dmg=(8+c.r*.1)*dt/(1+countPart('membrane')*.32);
         if(countPart('camouflage')&&Math.hypot(p.vx,p.vy)<12)dmg*=.45;
         p.health-=dmg;c.flash=.12;
+        if(p.hurtAudioCd<=0){sound('hurt',{volume:.17,rate:.92,rateJitter:.07,cooldownMs:420});p.hurtAudioCd=.44}
         if(countPart('spike')){c.health-=countPart('spike')*2.5*dt;c.vx*=-.75;c.vy*=-.75}
       }
       if(countPart('predatorMouth')&&p.radius>c.r*.78&&p.biteCd<=0){
         const front=Math.abs(angleDiff(Math.atan2(wrappedDelta(c.y,p.y,WORLD.h),wrappedDelta(c.x,p.x,WORLD.w)),p.angle));
-        if(front<1.05){c.health-=20+countPart('predatorMouth')*8;p.biteCd=.58;p.feedFlash=.55;burst(c.x,c.y,'#ff889e')}
+        if(front<1.05){c.health-=20+countPart('predatorMouth')*8;p.biteCd=.58;p.feedFlash=.55;sound('bite',{volume:.16,rate:.82,rateJitter:.06,cooldownMs:180});burst(c.x,c.y,'#ff889e')}
       }
       if(countPart('parasite')&&c.r>p.radius*.9&&!p.attached)p.attached=c;
     }
     if(c.health<=0){
       const huntReward=1.2+clamp((c.r-18)/34,0,1)*.9;
       state.dna+=huntReward;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
+      sound('reward',{volume:.15,rate:.78+Math.min(.3,huntReward*.08),rateJitter:.04,cooldownMs:160});
       burst(c.x,c.y,'#ff78a4');
       respawnCreature(c,idx%6);
       state.discovered.firstPrey=1;
@@ -497,6 +545,9 @@ const EVENTS=[
 ];
 function triggerEvent(){
   const e=pick(EVENTS);e.apply();state.activeEvent=e.id;state.activeEventLife=8;
+  if(e.id==='rain')sound('dash',{volume:.10,rate:.66});
+  else if(e.id==='bloom')sound('eat',{volume:.12,rate:1.18});
+  else sound('event',{volume:.16,rate:e.id==='sun'?1.12:e.id==='murk'?.86:1});
   $('eventIcon').textContent=e.icon;$('eventTitle').textContent=e.title;$('eventDesc').textContent=e.desc;
   $('eventBanner').classList.remove('hidden');clearTimeout(eventTimer);eventTimer=setTimeout(()=>$('eventBanner').classList.add('hidden'),4000);
   refreshEnvBars();
@@ -515,11 +566,11 @@ function advanceGeneration(){
   burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
   if(state.generation%2===0)triggerEvent();
   toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 큰 진화는 여러 세대에 걸쳐 모아야 합니다.');
-  sound('levelup');save();
+  sound('generation',{volume:.28,rate:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:.84}),70);save();
 }
 function updateMissions(){
   const m=state.mission;
-  if(m===0&&canReproduce()){state.mission=1;toast('충분히 성장했어요! 이제 번식 · 진화로 다음 세대를 만들어 보세요.')}
+  if(m===0&&canReproduce()){state.mission=1;sound('confirm',{volume:.24,rate:1.12});toast('충분히 성장했어요! 이제 번식 · 진화로 다음 세대를 만들어 보세요.')}
   else if(m===1&&state.generation>=2){state.mission=2;state.dna+=1;toast('첫 번식 성공! DNA +1 · 다음 세대에는 감각기관도 시험해 보세요.')}
   else if(m===2&&(countPart('eyespot')+countPart('chemo')+countPart('mechano')+countPart('tactile'))>0){state.mission=3;state.dna+=1;toast('감각기관 획득! 환경을 읽는 방법이 달라졌어요. DNA +1')}
   else if(m===3&&classifyNiche().name!=='초기 미생물'){state.mission=4;state.dna+=2;toast('새 생태적 지위를 만들었어요! DNA +2')}
@@ -863,37 +914,38 @@ function updateSenseOverlay(){
 }
 
 function useSpecial(){
-  const p=state.player;if(p.pulseCd>0){toast('특수 행동 재사용까지 '+p.pulseCd.toFixed(1)+'초');return}
+  const p=state.player;if(p.pulseCd>0){sound('error',{volume:.10,rate:1.2});toast('특수 행동 재사용까지 '+p.pulseCd.toFixed(1)+'초');return}
   if(countPart('toxin')){
-    p.pulseCd=8;creatures.forEach(c=>{const d=Math.sqrt(dist2(p,c));if(d<150)c.health-=12+countPart('toxin')*10});ripples.push({x:p.x,y:p.y,r:10,life:1.7});toast('☠️ 독소를 방출했습니다.');
+    p.pulseCd=8;sound('bite',{volume:.18,rate:.58});creatures.forEach(c=>{const d=Math.sqrt(dist2(p,c));if(d<150)c.health-=12+countPart('toxin')*10});ripples.push({x:p.x,y:p.y,r:10,life:1.7});toast('☠️ 독소를 방출했습니다.');
   }else if(countPart('anchor')&&env.current>40){
-    p.pulseCd=5;p.vx*=.1;p.vy*=.1;toast('⚓ 부착기관으로 물살을 버팁니다.');
+    p.pulseCd=5;p.vx*=.1;p.vy*=.1;sound('confirm',{volume:.14,rate:.75});toast('⚓ 부착기관으로 물살을 버팁니다.');
   }else{
-    p.pulseCd=4;p.vx+=Math.cos(p.angle)*150;p.vy+=Math.sin(p.angle)*150;p.energy-=5;toast('💥 순간적으로 몸을 수축해 빠르게 벗어났어요.');
+    p.pulseCd=4;p.vx+=Math.cos(p.angle)*150;p.vy+=Math.sin(p.angle)*150;p.energy-=5;sound('dash',{volume:.14,rate:1.08,rateJitter:.03});toast('💥 순간적으로 몸을 수축해 빠르게 벗어났어요.');
   }
 }
 
 function openEditor(){
   if(!state.started||!$('editorScreen').classList.contains('hidden'))return;
   if(!canReproduce()){
-    const req=reproductionRequirement();
+    const req=reproductionRequirement();sound('error',{volume:.13});
     toast('아직 번식할 수 없어요 · 생체량 '+Math.floor(state.player.biomass)+'/'+req+', 에너지 '+Math.round(state.player.energy)+'/78');
     return;
   }
   state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,dna:state.dna}));
   $('gameScreen').classList.add('hidden');$('editorScreen').classList.remove('hidden');
-  selectedPart=null;activeTab='먹이';renderEditor();
+  sound('event',{volume:.16,rate:1.08});selectedPart=null;activeTab='먹이';renderEditor();
 }
 function closeEditor(saveChanges){
   if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna}
   $('editorScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');paused=false;selectedPart=null;
-  if(saveChanges&&state.editorMode==='reproduction'){const n=classifyNiche();advanceGeneration();save();toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.');sound('success')}
+  if(saveChanges&&state.editorMode==='reproduction'){const n=classifyNiche();advanceGeneration();save();toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.')}
+  else if(!saveChanges){sound('click',{volume:.12})}
   state.editorMode=null;updateLightSensor();updateSenseOverlay();last=performance.now();
 }
 function renderEditor(){
   $('editorDnaText').textContent=Math.floor(state.dna);
   const tabs=$('partTabs');tabs.innerHTML='';
-  CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;renderEditor()});tabs.appendChild(b)});
+  CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;sound('select',{volume:.09});renderEditor()});tabs.appendChild(b)});
   const list=$('partList');list.innerHTML='';
   Object.values(PARTS).filter(p=>p.cat===activeTab).forEach(part=>{
     const count=countPart(part.id),locked=count>=part.max,cost=partPurchaseCost(part);
@@ -905,12 +957,12 @@ function renderEditor(){
 }
 function choosePart(part){
   updateScienceCard(part);
-  if(countPart(part.id)>=part.max){toast('이 기관은 더 이상 달 수 없어요.');return}
+  if(countPart(part.id)>=part.max){sound('error',{volume:.12});toast('이 기관은 더 이상 달 수 없어요.');return}
   const cost=partPurchaseCost(part);
-  if(state.dna<cost){toast('DNA가 '+(cost-state.dna).toFixed(1)+' 부족해요. 여러 세대 동안 모으거나 큰 먹이를 노려 보세요.');return}
-  if(part.external){selectedPart=selectedPart===part.id?null:part.id;$('placementTip').textContent=selectedPart?part.icon+' '+part.name+' 배치 · 필요 DNA '+cost:'부품을 선택하면 배치 가능한 위치가 빛나요.';renderEditor()}
+  if(state.dna<cost){sound('error',{volume:.12});toast('DNA가 '+(cost-state.dna).toFixed(1)+' 부족해요. 여러 세대 동안 모으거나 큰 먹이를 노려 보세요.');return}
+  if(part.external){selectedPart=selectedPart===part.id?null:part.id;sound('select',{volume:.12,rate:selectedPart?1.04:.92});$('placementTip').textContent=selectedPart?part.icon+' '+part.name+' 배치 · 필요 DNA '+cost:'부품을 선택하면 배치 가능한 위치가 빛나요.';renderEditor()}
   else{
-    state.player.inside[part.id]=(state.player.inside[part.id]||0)+1;state.dna-=cost;selectedPart=null;sound('click');renderEditor();toast(part.icon+' '+part.name+' 추가 · DNA -'+cost);
+    state.player.inside[part.id]=(state.player.inside[part.id]||0)+1;state.dna-=cost;selectedPart=null;sound('confirm',{volume:.18,rate:1.04});renderEditor();toast(part.icon+' '+part.name+' 추가 · DNA -'+cost);
   }
 }
 function renderSlots(){
@@ -925,11 +977,11 @@ function renderSlots(){
 function slotClick(i){
   const old=state.player.slots[i];
   if(selectedPart){
-    const part=PARTS[selectedPart],cost=partPurchaseCost(part);if(state.dna<cost){toast('DNA가 부족해요. 필요 '+cost);return}
+    const part=PARTS[selectedPart],cost=partPurchaseCost(part);if(state.dna<cost){sound('error',{volume:.12});toast('DNA가 부족해요. 필요 '+cost);return}
     if(old){state.dna+=partRefundValue(PARTS[old])}
-    state.player.slots[i]=selectedPart;state.dna-=cost;sound('click');selectedPart=null;renderEditor();
+    state.player.slots[i]=selectedPart;state.dna-=cost;sound('confirm',{volume:.17,rate:1.08});selectedPart=null;renderEditor();
   }else if(old){
-    const refund=partRefundValue(PARTS[old]);state.player.slots[i]=null;state.dna+=refund;toast(PARTS[old].name+' 제거 · DNA '+refund+' 회수');renderEditor();
+    const refund=partRefundValue(PARTS[old]);state.player.slots[i]=null;state.dna+=refund;sound('click',{volume:.12,rate:.86});toast(PARTS[old].name+' 제거 · DNA '+refund+' 회수');renderEditor();
   }
 }
 function updateScienceCard(part){
@@ -961,11 +1013,11 @@ function save(){
 
 function setupControls(){
   buildBiomeCards();
-  $('randomStartBtn').addEventListener('click',randomBiome);$('toggleBiomeBtn').addEventListener('click',toggleBiomePanel);$('rerollBtn').addEventListener('click',()=>{buildBiomeCards();toast('생태계 목록을 다시 살펴보세요.')});
-  $('openTutorialBtn').addEventListener('click',()=>$('tutorial').classList.remove('hidden'));$('tutorialCloseBtn').addEventListener('click',()=>$('tutorial').classList.add('hidden'));$('tutorialPlayBtn').addEventListener('click',()=>{$('tutorial').classList.add('hidden');randomBiome()});
+  $('randomStartBtn').addEventListener('click',randomBiome);$('toggleBiomeBtn').addEventListener('click',()=>{sound('click',{volume:.10});toggleBiomePanel()});$('rerollBtn').addEventListener('click',()=>{sound('select',{volume:.10});buildBiomeCards();toast('생태계 목록을 다시 살펴보세요.')});
+  $('openTutorialBtn').addEventListener('click',()=>{sound('event',{volume:.12});$('tutorial').classList.remove('hidden')});$('tutorialCloseBtn').addEventListener('click',()=>{sound('click',{volume:.10});$('tutorial').classList.add('hidden')});$('tutorialPlayBtn').addEventListener('click',()=>{$('tutorial').classList.add('hidden');randomBiome()});
   $('homeBtn').addEventListener('click',goHome);$('editorBtn').addEventListener('click',openEditor);$('editorCloseBtn').addEventListener('click',()=>closeEditor(false));$('finishEvolutionBtn').addEventListener('click',()=>closeEditor(true));$('undoEvolutionBtn').addEventListener('click',()=>{if(editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna;selectedPart=null;renderEditor();toast('이번 편집을 처음 상태로 되돌렸어요.')}});
-  $('pulseBtn').addEventListener('click',useSpecial);$('pauseBtn').addEventListener('click',()=>{paused=!paused;$('pauseBtn').querySelector('b').textContent=paused?'계속하기':'일시정지';last=performance.now()});
-  $('envInfoBtn').addEventListener('click',openEnvInfo);$('infoCloseBtn').addEventListener('click',()=>$('infoModal').classList.add('hidden'));
+  $('pulseBtn').addEventListener('click',useSpecial);$('pauseBtn').addEventListener('click',()=>{paused=!paused;sound('click',{volume:.10});if(paused)stopAmbience();else startAmbience();$('pauseBtn').querySelector('b').textContent=paused?'계속하기':'일시정지';last=performance.now()});
+  $('envInfoBtn').addEventListener('click',()=>{sound('event',{volume:.10});openEnvInfo()});$('infoCloseBtn').addEventListener('click',()=>{sound('click',{volume:.09});$('infoModal').classList.add('hidden')});
 
   window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')openEditor();if(e.key===' ')useSpecial();if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
   window.addEventListener('keyup',e=>{keys[e.key]=false});
@@ -983,6 +1035,12 @@ function setupControls(){
   joyEl.addEventListener('pointermove',joyMove);
   function joyEnd(e){if(e.pointerId!==joy.pid)return;joy.active=false;joy.x=joy.y=0;joy.pid=null;stick.style.transform='translate(-50%,-50%)'}
   joyEl.addEventListener('pointerup',joyEnd);joyEl.addEventListener('pointercancel',joyEnd);
+  try{
+    KidscadeGame?.registerPauseHandlers?.({
+      pause(){paused=true;stopAmbience();$('pauseBtn')?.querySelector('b')&&( $('pauseBtn').querySelector('b').textContent='계속하기');},
+      resume(){paused=false;if(running)startAmbience();last=performance.now();$('pauseBtn')?.querySelector('b')&&( $('pauseBtn').querySelector('b').textContent='일시정지');}
+    });
+  }catch(_){}
 }
 
 document.addEventListener('DOMContentLoaded',()=>{canvas=$('world');resize();setupControls();refreshEnvBars();});

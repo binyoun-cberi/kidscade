@@ -85,7 +85,7 @@
   }
 
   function catalogUrl() {
-    return new URL('assets/audio/audio-catalog.json', scriptBaseUrl()).href;
+    return new URL('assets/audio/audio-catalog.json?v=2', scriptBaseUrl()).href;
   }
 
   function normalizeCatalog(input) {

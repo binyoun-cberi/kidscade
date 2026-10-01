@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "basePath": "assets/audio/",
   "notes": "경로는 Kidscade 저장소 루트 기준. 같은 키에 여러 파일을 추가하면 Audio Manager에서 랜덤 재생 가능.",
   "sounds": {
@@ -80,6 +80,9 @@
     "ui.select": [
       "ui/kenney_interface/select_002.ogg",
       "ui/kenney_interface/select_006.ogg"
+    ],
+    "ambient.underwater": [
+      "incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3"
     ]
   }
 }
