@@ -17,14 +17,14 @@ function stats(){
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(worldJs));
-  assert.match(html,/cube-architect\.js\?v=20261001-23/);
+  assert.match(html,/cube-architect\.js\?v=20261001-24/);
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="survivalSafety"/);
   assert.match(html,/id="survivalReturn"/);
   assert.match(css,/#survivalReturn/);
   assert.match(js,/worldChunksGenerated=new Set/);
   assert.match(js,/generateWorldChunk\(bx,bz\)/);
-  assert.match(js,/version:10/);
+  assert.match(js,/version:11/);
 });
 test('survival has a finishable, action-driven sequence',()=>{
   assert.ok(rules.GOALS.length>=11);
