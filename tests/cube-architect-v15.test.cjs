@@ -31,7 +31,7 @@ test('v15 scripts parse and the launcher loads landmarks before the game',()=>{
   assert.doesNotThrow(()=>new Function(worldJs));
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.ok(html.indexOf('cube-architect-landmarks.js')<html.indexOf('cube-architect.js'));
-  assert.match(html,/cube-architect\.js\?v=20261001-20/);
+  assert.match(html,/cube-architect\.js\?v=20261001-21/);
   assert.match(css,/\.challenge-element-choices/);
   assert.match(html,/challengeDimX/);
   assert.match(html,/blueprintLargeCanvas/);
