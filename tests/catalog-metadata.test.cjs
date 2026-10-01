@@ -58,7 +58,6 @@ test('curation status is conservative and rework games are explicit', () => {
 test('recently registered games carry release timestamps for the new-game rail', () => {
   const recentIds = [
     'low_pattern_lock',
-    'high_apocalypse_survival',
     'high_seed_fc_manager',
     'high_pass_mafia',
     'high_fraction_smith',
