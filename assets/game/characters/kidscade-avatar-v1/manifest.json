@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "source-assets-organized",
+  "status": "runtime-face-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -47,9 +47,21 @@
       "female": "source/hair/front-sheets/front-hair-female-24-brown.png"
     }
   },
+  "runtimeFiles": {
+    "base": "runtime/base/master-base-128.png",
+    "faceManifest": "runtime/face/face-manifest.json",
+    "face": {
+      "eyes": 8,
+      "eyebrows": 6,
+      "noses": 4,
+      "mouths": 8,
+      "blush": 4,
+      "total": 30
+    }
+  },
   "sourceSets": {
     "base": {
-      "status": "missing-from-canonical-root"
+      "status": "runtime-ready"
     },
     "animation": {
       "idleFrames": 4,
@@ -57,7 +69,7 @@
       "status": "organized-needs-normalization"
     },
     "face": {
-      "status": "reference-only-needs-transparent-extraction"
+      "status": "runtime-ready"
     },
     "hairFront": {
       "maleCount": 24,
@@ -72,6 +84,10 @@
     }
   },
   "runtime": {
-    "status": "empty-needs-production-assets"
+    "status": "base-and-face-ready",
+    "compositeAt": [
+      0,
+      0
+    ]
   }
 }
