@@ -2996,7 +2996,9 @@ function updateWildCreatures(dt,t){
     }else{
       const lightSource=spec.id==='shadowBug'?nearestCreatureLight(root.position.x,root.position.z,7):null; const torchFear=!!lightSource;
       const hardGround=spec.id==='burrower'&&!['sand','redSand'].includes(standing);
-      if(torchFear||hardGround){
+      if(torchFear){
+        dir=Math.atan2(root.position.x-lightSource.x,root.position.z-lightSource.z);speed*=1.72;
+      }else if(hardGround){
         dir=Math.atan2(-dx,-dz);speed*=1.55;
       }else if(dist<spec.radius+3&&(!spec.elite||survivalStage>=4)){
         dir=Math.atan2(dx,dz);speed*=1.55;
