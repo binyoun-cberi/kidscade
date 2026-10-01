@@ -206,7 +206,7 @@ class RamenKitchen3D{
   const pot=v.potGroup,startPos=pot.position.clone(),startRot=pot.rotation.clone(),started=performance.now();
   const run=now=>{
    const t=Math.min(1,(now-started)/820),up=Math.sin(Math.PI*t);
-   pot.position.set(startPos.x+(t<.58?1.05*t:1.05*(1-t)),startPos.y+.32*up,startPos.z-.18*up);
+   pot.position.set(startPos.x+.72*up,startPos.y+.32*up,startPos.z-.18*up);
    pot.rotation.z=-.95*Math.sin(Math.PI*Math.min(1,t*1.25));
    if(t>.48&&this.serviceMeal)this.serviceMeal.visible=true;
    if(t<1){requestAnimationFrame(run);return}
