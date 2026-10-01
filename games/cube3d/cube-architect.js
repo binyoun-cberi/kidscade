@@ -3014,7 +3014,7 @@ function updateWildCreatures(dt,t){
       if(u.attackUntil>t)animState='attack';
     }
     u.dir=dir;
-    if(!walkCreature(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime'))u.dir+=Math.PI*.55;
+    if(!walkCreatureWithDetour(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime',t))u.dir+=Math.PI*.55;
     if(u.hurtUntil<t&&root.scale.x!==1)root.scale.setScalar(1);
     window.CubeArchitectCreatureAssets?.update?.(u.visual,dt,animState);
   }
