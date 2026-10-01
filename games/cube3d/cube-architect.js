@@ -2830,16 +2830,19 @@ function upgradeWildCreatureAssets(){
 }
 window.addEventListener('cube-architect-creature-assets-ready',upgradeWildCreatureAssets);
 
-function nearbyLight(x,z,r=5){
+function nearestCreatureLight(x,z,r=7){
   const cx=Math.round(x),cz=Math.round(z),cy=Math.floor(creatureGroundY(x,z));
-  for(let dx=-r;dx<=r;dx+=2)for(let dz=-r;dz<=r;dz+=2){
-    if(dx*dx+dz*dz>r*r)continue;
+  let best=null,bestD=Infinity;
+  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+    const d2=dx*dx+dz*dz;if(d2>r*r||d2>=bestD)continue;
     for(let dy=-1;dy<=3;dy++){
       const t=getBlock(cx+dx,cy+dy,cz+dz)?.type;
-      if(t==='torch'||t==='fire'||t==='lava')return true;
+      if(t==='torch'||t==='fire'||t==='lava'){
+        best={x:cx+dx,z:cz+dz,type:t};bestD=d2;break;
+      }
     }
   }
-  return false;
+  return best;
 }
 function playerStandingMaterial(){
   const x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
