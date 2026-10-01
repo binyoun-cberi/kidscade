@@ -95,9 +95,13 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /generateLandmarkPoiChunk/);
   assert.match(architect, /seedRestorationChallenge/);
   assert.match(architect, /completeLandmarkPoi/);
-  assert.match(pois, /타지마할 폐허/);
-  assert.match(pois, /히메지성 터/);
-  assert.match(pois, /앙코르와트 유적/);
+  assert.match(architect, /openLandmarkDungeon/);
+  assert.match(architect, /dungeonInteract/);
+  assert.match(architect, /openDungeonBlueprint/);
+  assert.match(pois, /name:'타지마할'/);
+  assert.match(pois, /name:'히메지성'/);
+  assert.match(pois, /name:'앙코르와트'/);
+  assert.match(pois, /isLandmarkClearZone/);
   assert.match(architect, /createRabbit/);
   assert.match(architect, /createBird/);
   assert.match(blocks, /challengeFlyHud/);
