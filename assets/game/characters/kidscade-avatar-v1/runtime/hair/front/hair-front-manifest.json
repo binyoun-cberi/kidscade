@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "type": "kidscade-front-hair-pack",
   "canvas": [
     128,
@@ -40,7 +40,9 @@
             25,
             125,
             115
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-02",
@@ -54,7 +56,9 @@
             25,
             120,
             110
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-03",
@@ -68,7 +72,9 @@
             25,
             118,
             110
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-04",
@@ -82,7 +88,9 @@
             17,
             125,
             110
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-05",
@@ -96,7 +104,9 @@
             22,
             120,
             109
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-06",
@@ -110,7 +120,11 @@
             22,
             123,
             110
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-male-07",
@@ -124,7 +138,9 @@
             21,
             125,
             109
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-08",
@@ -138,7 +154,9 @@
             23,
             121,
             109
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-09",
@@ -152,7 +170,9 @@
             23,
             120,
             113
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-10",
@@ -166,7 +186,11 @@
             23,
             124,
             109
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-male-11",
@@ -180,7 +204,9 @@
             20,
             125,
             109
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-12",
@@ -194,7 +220,9 @@
             24,
             117,
             105
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-13",
@@ -208,7 +236,9 @@
             19,
             125,
             108
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-14",
@@ -222,7 +252,9 @@
             18,
             124,
             108
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-15",
@@ -236,7 +268,9 @@
             22,
             119,
             106
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-16",
@@ -250,7 +284,9 @@
             22,
             123,
             105
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-17",
@@ -264,7 +300,9 @@
             21,
             118,
             106
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-18",
@@ -278,7 +316,11 @@
             12,
             122,
             108
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-male-19",
@@ -292,7 +334,9 @@
             20,
             120,
             101
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-20",
@@ -306,7 +350,9 @@
             15,
             124,
             102
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-21",
@@ -320,7 +366,9 @@
             16,
             122,
             101
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-22",
@@ -334,7 +382,11 @@
             14,
             123,
             106
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-male-23",
@@ -348,7 +400,9 @@
             15,
             123,
             105
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         },
         {
           "id": "hair-front-male-24",
@@ -362,7 +416,9 @@
             14,
             122,
             105
-          ]
+          ],
+          "touchesCanvasEdge": [],
+          "needsLayerReview": false
         }
       ]
     },
@@ -390,7 +446,12 @@
             10,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-02",
@@ -404,7 +465,12 @@
             17,
             125,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-03",
@@ -418,7 +484,13 @@
             14,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-04",
@@ -432,7 +504,13 @@
             16,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-05",
@@ -446,7 +524,13 @@
             15,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-06",
@@ -460,7 +544,12 @@
             12,
             121,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-07",
@@ -474,7 +563,11 @@
             4,
             128,
             120
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "right"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-08",
@@ -488,7 +581,11 @@
             9,
             126,
             120
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-09",
@@ -502,7 +599,12 @@
             0,
             124,
             120
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-10",
@@ -516,7 +618,13 @@
             0,
             128,
             123
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "right"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-11",
@@ -530,7 +638,14 @@
             0,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-12",
@@ -544,7 +659,13 @@
             0,
             126,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-13",
@@ -558,7 +679,11 @@
             9,
             127,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-14",
@@ -572,7 +697,11 @@
             5,
             127,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-15",
@@ -586,7 +715,11 @@
             3,
             121,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-16",
@@ -600,7 +733,12 @@
             3,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-17",
@@ -614,7 +752,14 @@
             0,
             128,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "right",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-18",
@@ -628,7 +773,13 @@
             0,
             120,
             128
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "bottom"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-19",
@@ -642,7 +793,11 @@
             0,
             126,
             117
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "top"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-20",
@@ -656,7 +811,11 @@
             0,
             122,
             104
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "top"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-21",
@@ -670,7 +829,12 @@
             0,
             127,
             103
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-22",
@@ -684,7 +848,13 @@
             0,
             128,
             108
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "right"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-23",
@@ -698,7 +868,13 @@
             0,
             128,
             111
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top",
+            "right"
+          ],
+          "needsLayerReview": true
         },
         {
           "id": "hair-front-female-24",
@@ -712,19 +888,30 @@
             0,
             123,
             103
-          ]
+          ],
+          "touchesCanvasEdge": [
+            "left",
+            "top"
+          ],
+          "needsLayerReview": true
         }
       ]
     }
   },
   "qa": {
-    "status": "auto-extracted-needs-overlay-review",
+    "status": "auto-extracted-awaiting-visual-approval",
     "checks": [
       "equal 6x4 source grid",
       "edge-connected background removal",
       "nearest-neighbor resize",
       "hard alpha",
-      "128x128 common canvas"
-    ]
+      "128x128 common canvas",
+      "master-base overlay contact sheets",
+      "canvas-edge flags for suspicious front-hair pieces"
+    ],
+    "contacts": {
+      "male": "qa/hair-front/front-hair-male-contact.png",
+      "female": "qa/hair-front/front-hair-female-contact.png"
+    }
   }
 }
