@@ -48,6 +48,8 @@
     <button id="homeBtn" class="icon-btn" aria-label="시작 화면">⌂</button>
     <div id="modeTitle"><b>큐브 아키텍트</b><small>3D 직육면체 놀이터</small></div>
     <div class="top-actions">
+      <button id="actionAvatar" class="pill-btn hidden">캐릭터 꾸미기</button>
+      <button id="actionView" class="pill-btn hidden">3인칭</button>
       <button id="actionXray" class="pill-btn hidden">구조 보기</button>
       <button id="actionSave" class="pill-btn good hidden">월드 저장</button>
       <button id="actionNext" class="pill-btn warn hidden">다음 미션</button>
@@ -253,6 +255,8 @@
     <div id="mobileViewHint">화면을 밀어 시점 돌리기</div>
     <div class="mobile-top-actions">
       <button id="mobileInventory" class="mobile-button" type="button">가방</button>
+      <button id="mobileView" class="mobile-button" type="button">시점</button>
+      <button id="mobileAvatar" class="mobile-button" type="button">꾸미기</button>
       <button id="mobileFly" class="mobile-button" type="button">비행</button>
       <button id="mobileCheck" class="mobile-button" type="button">검사</button>
       <button id="mobileSelect" class="mobile-button" type="button">선택</button>
@@ -293,10 +297,11 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20261001-20"></script>
-<script src="./cube-architect-world.js?v=20261001-20"></script>
-<script src="./cube-architect-poi.js?v=20261001-20"></script>
-<script src="./cube-architect.js?v=20261001-20"></script>
+<script src="./cube-architect-landmarks.js?v=20261001-21"></script>
+<script src="./cube-architect-world.js?v=20261001-21"></script>
+<script src="./cube-architect-poi.js?v=20261001-21"></script>
+<script src="./cube-architect-avatar.js?v=20261001-21"></script>
+<script src="./cube-architect.js?v=20261001-21"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
