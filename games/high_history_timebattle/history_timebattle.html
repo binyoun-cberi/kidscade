@@ -18,6 +18,18 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:12px}.era{display:inline-block;padding:8px 12px;border-radius:999px;background:#21456f;font-weight:900}.tiny{font-size:13px;color:var(--muted);margin-top:8px}.timer{width:78px;height:78px;border:7px solid var(--gold);border-radius:50%;display:grid;place-items:center;background:#091c31;font-size:29px;font-weight:1000}.question{font-size:clamp(24px,4vw,42px);line-height:1.28;font-weight:1000;margin:22px 0}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.answers.ox{grid-template-columns:1fr 1fr;max-width:760px;margin-left:auto;margin-right:auto}.answers.ox .answer{min-height:140px;text-align:center;font-size:clamp(42px,8vw,76px);display:grid;place-items:center}.answer{min-height:94px;border:0;border-radius:18px;color:white;padding:16px;font-size:clamp(17px,2.4vw,24px);font-weight:1000;text-align:left}.answer:nth-child(1){background:#d44d59}.answer:nth-child(2){background:#3979d6}.answer:nth-child(3){background:#c98d25}.answer:nth-child(4){background:#38966e}.answer:disabled{opacity:.62;filter:saturate(.5)}.answer.selected{outline:5px solid white;opacity:1}.answer.correct{outline:6px solid #6bf2af;opacity:1;filter:none}.answer.wrong{opacity:.3}
 .notice{text-align:center;padding:25px;font-size:20px;font-weight:900}.score{font-size:36px;font-weight:1000;color:var(--gold)}.explain{margin-top:16px;padding:16px;border-radius:16px;background:#0b2038;color:#dcecff;line-height:1.55;font-weight:750}.rank{display:grid;gap:8px}.rankrow{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:#132f50;font-weight:900}.rankrow.me{outline:2px solid var(--gold)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 @media(max-width:760px){.top-actions{gap:4px}.sound-toggle{padding:9px 10px;font-size:13px}.wrap{padding:10px 10px 28px}.top{position:relative;z-index:5}.grid,.actions,.answers{grid-template-columns:1fr}.card{border-radius:18px;padding:16px}.hero{padding:24px 12px}.big,.btn{min-height:54px;padding:15px 16px}.answer{min-height:72px;padding:16px 14px}.timer{width:62px;height:62px;font-size:23px;border-width:6px}.toolbar{gap:8px}.toolbar .btn{flex:1 1 140px}.field input,.field select{min-height:52px;font-size:16px}.question{margin:16px 0}.roomcode{font-size:clamp(42px,15vw,70px);overflow-wrap:anywhere}}@media(hover:none) and (pointer:coarse){button,.big,.btn,.answer{cursor:default}.answer:active,.big:active,.btn:active{transform:scale(.985);filter:brightness(1.08)}}@media(prefers-reduced-motion:reduce){.fx-flash,.fx-toast,.confetti-piece,.answer,.question,.rankrow,.combo-chip{animation:none!important;transition:none!important}}
+.solo-review{margin-top:16px;padding-top:16px;border-top:1px solid #31506f}
+.solo-qlog,.solo-history-list{display:grid;gap:10px;margin-top:12px}
+.solo-qitem,.solo-run{border:1px solid #31506f;border-radius:14px;background:#0b1c31;overflow:hidden}
+.solo-qitem>summary,.solo-run>summary{cursor:pointer;list-style:none;padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-weight:900}
+.solo-qitem>summary::-webkit-details-marker,.solo-run>summary::-webkit-details-marker{display:none}
+.solo-qitem>summary span,.solo-run>summary span{min-width:0;text-align:left}
+.solo-qbody{padding:0 14px 14px;display:grid;gap:7px;color:var(--muted);line-height:1.5}
+.solo-qbody b{color:var(--text)}
+.solo-answer.correct{color:#6ee7b7}.solo-answer.wrong{color:#ff9aa5}.solo-answer.timeout{color:#ffd75e}
+.solo-run-body{padding:0 12px 12px}.solo-history-list{max-height:70vh;overflow:auto;padding-right:2px}
+.solo-empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed #31506f;border-radius:14px}
+@media(max-width:640px){.solo-qitem>summary,.solo-run>summary{align-items:flex-start;flex-direction:column}.solo-history-list{max-height:65vh}}
 </style>
 </head>
 <body>
@@ -64,6 +76,8 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       </div>
       <div class="field"><label>연습할 시대</label><div class="era-tools"><button type="button" class="mini" onclick="setEraPreset('soloEraPicker','all')">전체</button><button type="button" class="mini" onclick="setEraPreset('soloEraPicker','ancient')">선사·고대</button><button type="button" class="mini" onclick="setEraPreset('soloEraPicker','goryeo')">고려</button><button type="button" class="mini" onclick="setEraPreset('soloEraPicker','joseon')">조선</button><button type="button" class="mini" onclick="setEraPreset('soloEraPicker','modern')">근현대</button></div><div id="soloEraPicker" class="era-picker"><label class="era-chip"><input type="checkbox" value="선사" checked><span>선사</span></label><label class="era-chip"><input type="checkbox" value="고조선" checked><span>고조선</span></label><label class="era-chip"><input type="checkbox" value="삼국" checked><span>삼국</span></label><label class="era-chip"><input type="checkbox" value="남북국" checked><span>남북국</span></label><label class="era-chip"><input type="checkbox" value="고려" checked><span>고려</span></label><label class="era-chip"><input type="checkbox" value="조선 전기" checked><span>조선 전기</span></label><label class="era-chip"><input type="checkbox" value="조선 후기" checked><span>조선 후기</span></label><label class="era-chip"><input type="checkbox" value="개항기" checked><span>개항기</span></label><label class="era-chip"><input type="checkbox" value="대한제국" checked><span>대한제국</span></label><label class="era-chip"><input type="checkbox" value="국권 피탈" checked><span>국권 피탈</span></label><label class="era-chip"><input type="checkbox" value="일제강점기" checked><span>일제강점기</span></label><label class="era-chip"><input type="checkbox" value="광복 이후" checked><span>광복 이후</span></label><label class="era-chip"><input type="checkbox" value="6·25 전쟁" checked><span>6·25 전쟁</span></label></div></div>
       <button class="btn primary" style="width:100%" onclick="startSolo()">혼자 시작하기</button>
+      <div class="toolbar" style="justify-content:center;margin-top:8px"><button class="btn" type="button" onclick="openSoloHistory()">지난 혼자 기록 보기</button></div>
+      <div class="tiny" style="text-align:center">최근 20판의 문제별 선택과 정답·오답 기록이 이 기기에만 저장됩니다.</div>
     </div>
     <div id="joinSetup" class="hidden">
       <h2>게임 입장</h2>
@@ -74,6 +88,14 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
     </div>
     <div class="toolbar"><button class="btn" onclick="showOnly('landing')">뒤로</button></div>
   </section>
+
+  <div id="soloHistoryPanel" class="recovery-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="soloHistoryTitle">
+    <div class="card recovery-card" style="width:min(920px,96vw)">
+      <div class="qhead"><div><span class="badge">이 기기에 저장됨</span><h2 id="soloHistoryTitle" style="margin:8px 0 0">혼자 연습 기록</h2></div><button class="btn" type="button" onclick="closeSoloHistory()">닫기</button></div>
+      <p class="recovery-help">최근 20판을 저장합니다. 각 판을 펼치면 어떤 문제에서 무엇을 골랐는지, 정답과 오답 선택지, 획득점수를 다시 볼 수 있어요.</p>
+      <div id="soloHistoryList" class="solo-history-list"></div>
+    </div>
+  </div>
 
   <div id="recoveryPanel" class="recovery-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="recoveryTitle">
     <div class="card recovery-card">
@@ -169,6 +191,10 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
   <section id="finished" class="card hidden" style="max-width:820px;margin:18px auto">
     <div class="hero" style="padding:10px"><span id="finishedBadge" class="badge">시간 여행 완료</span><h1 style="font-size:48px">최종 결과</h1></div>
     <div id="results" class="rank" style="max-height:520px;overflow:auto"></div>
+    <div id="soloReview" class="solo-review hidden">
+      <div class="qhead"><div><span class="badge">문제별 복기</span><h2 style="margin:8px 0 0">이번 판 풀이 기록</h2></div><button class="btn" type="button" onclick="openSoloHistory()">지난 기록</button></div>
+      <div id="soloReviewList" class="solo-qlog"></div>
+    </div>
     <div id="finishedHostButtons" class="toolbar hidden"><button class="btn primary" onclick="openRoundSetup()">같은 방에서 다음 판</button><button class="btn danger" onclick="closeRoom()">수업 방 닫기</button><button class="btn" type="button" onclick="exitKidscade()">게임 목록</button></div>
     <div id="finishedPlayerWait" class="notice hidden">선생님이 다음 판을 설정하면 같은 방에서 바로 이어서 할 수 있어요.</div>
     <div id="finishedSoloButtons" class="toolbar hidden"><a class="btn primary" href="history_timebattle.html" onclick="clearSession()" style="text-decoration:none">다시 설정</a><button class="btn" type="button" onclick="exitKidscade()">게임 목록</button></div>
@@ -178,6 +204,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 <script src="../../history-live-realtime.js?v=1"></script>
 <script>
 const API='/api/history-live';
+const SOLO_HISTORY_KEY='kidscade_game_v1:high_history_timebattle_live:solo-history-v1';
 let session=null,poller=null,lastState=null,timerRAF=null,answeredFor=-1,serverOffset=0;
 let soloGame=null,bankModule=null,soloTimeoutHandled=false,roundEditing=false;
 let lastFxState='',lastTimerTick=-1,lastChosenOption=-1,previousRanks=new Map(),audioReady=false;
@@ -438,7 +465,7 @@ async function startSolo(){
     const bank=await loadBank(),count=+$('soloQuestionCount').value,seconds=+$('soloSeconds').value,nickname=$('soloNickname').value.trim()||'나';
     const orderMode=$('soloOrderMode').value,questionMode=$('soloQuestionMode').value,eras=selectedEras('soloEraPicker');if(!eras.length)return alert('연습할 시대를 하나 이상 선택해 주세요.');const questions=bank.pickHistoryQuestions(count,Math.random,orderMode,questionMode,eras);
     session={role:'solo',playerId:'solo',nickname}; answeredFor=-1;
-    soloGame={questions,index:0,seconds,score:0,streak:0,correct:0,totalAnswered:0,last:null};
+    soloGame={questions,index:0,seconds,score:0,streak:0,correct:0,totalAnswered:0,last:null,answers:[],saved:false,runStartedAt:Date.now(),settings:{count,seconds,orderMode,questionMode,eras:[...eras]}};
     startSoloQuestion();
   }catch(e){console.error(e);alert('혼자 연습 문제를 불러오지 못했어요. 페이지를 새로고침해 주세요.')}
 }
@@ -464,19 +491,58 @@ function submitSoloAnswer(option,timeout=false){
   const correct=!timeout&&option===q.a,speed=Math.round(500*(remaining/duration));
   soloGame.streak=correct?soloGame.streak+1:0;
   const bonus=correct&&soloGame.streak>=2?Math.min(300,(soloGame.streak-1)*100):0,points=correct?1000+speed+bonus:0;
-  soloGame.score+=points;soloGame.correct+=correct?1:0;soloGame.totalAnswered+=1;soloGame.last={option:timeout?-1:option,correct,points};
+  const chosenIndex=timeout?-1:option,chosenText=chosenIndex>=0?(q.o[chosenIndex]??''):null,correctText=q.o[q.a]??'';
+  const answerRecord={number:soloGame.index+1,questionId:q.id||null,era:q.era||'',difficulty:q.difficulty||'',prompt:q.q,options:[...q.o],chosenIndex,chosenText,correctIndex:q.a,correctText,wrongOptions:q.o.filter((_,idx)=>idx!==q.a),correct,timeout:!!timeout,points,responseMs:Math.max(0,now-soloGame.startedAt),explanation:q.e||''};
+  soloGame.score+=points;soloGame.correct+=correct?1:0;soloGame.totalAnswered+=1;soloGame.last={option:chosenIndex,correct,points};soloGame.answers.push(answerRecord);
   answeredFor=soloGame.index+1;renderReveal(soloState('reveal'));
+}
+function readSoloHistory(){
+  try{const value=JSON.parse(localStorage.getItem(SOLO_HISTORY_KEY)||'[]');return Array.isArray(value)?value:[]}catch(_){return []}
+}
+function writeSoloHistory(runs){
+  try{localStorage.setItem(SOLO_HISTORY_KEY,JSON.stringify(runs.slice(0,20)));return true}catch(_){return false}
+}
+function buildSoloRunRecord(){
+  const total=soloGame?.questions?.length||0,correct=soloGame?.correct||0;
+  return {version:1,id:'solo-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),playedAt:new Date().toISOString(),nickname:session?.nickname||'나',score:soloGame?.score||0,correctCount:correct,total,accuracy:total?Math.round(correct/total*100):0,durationMs:Math.max(0,Date.now()-(soloGame?.runStartedAt||Date.now())),settings:{...(soloGame?.settings||{})},questions:(soloGame?.answers||[]).map(item=>({...item,options:[...(item.options||[])],wrongOptions:[...(item.wrongOptions||[])]}))};
+}
+function saveSoloRun(){
+  if(!soloGame)return null;if(soloGame.saved&&soloGame.savedRecord)return soloGame.savedRecord;
+  const record=buildSoloRunRecord(),history=readSoloHistory();history.unshift(record);writeSoloHistory(history);
+  soloGame.saved=true;soloGame.savedRecord=record;return record;
+}
+function formatSoloDate(value){
+  try{return new Date(value).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}catch(_){return String(value||'')}
+}
+function soloAnswerClass(item){return item.timeout?'timeout':item.correct?'correct':'wrong'}
+function soloAnswerLabel(item){return item.timeout?'시간 초과':item.correct?'정답':'오답'}
+function soloQuestionDetailsHtml(item){
+  const choice=item.timeout?'미응답':(item.chosenText||'미응답'),wrong=(item.wrongOptions||[]).join(' · ')||'-';
+  return '<details class="solo-qitem"><summary><span>'+item.number+'. '+esc(item.prompt)+'</span><b class="solo-answer '+soloAnswerClass(item)+'">'+soloAnswerLabel(item)+' · +'+Number(item.points||0).toLocaleString()+'점</b></summary><div class="solo-qbody"><div><b>내 선택</b> · '+esc(choice)+'</div><div><b>정답</b> · '+esc(item.correctText||'')+'</div><div><b>오답 선택지</b> · '+esc(wrong)+'</div><div><b>응답시간</b> · '+(Number(item.responseMs||0)/1000).toFixed(1)+'초</div>'+(item.explanation?'<div><b>해설</b> · '+esc(item.explanation)+'</div>':'')+'</div></details>';
+}
+function renderSoloReview(record){
+  const box=$('soloReview'),list=$('soloReviewList');if(!box||!list)return;
+  if(!record){box.classList.add('hidden');list.innerHTML='';return}
+  box.classList.remove('hidden');list.innerHTML=(record.questions||[]).map(soloQuestionDetailsHtml).join('');
+}
+function renderSoloHistory(){
+  const box=$('soloHistoryList');if(!box)return;const history=readSoloHistory();
+  if(!history.length){box.innerHTML='<div class="solo-empty">아직 저장된 혼자 연습 기록이 없어요.</div>';return}
+  box.innerHTML=history.map(run=>'<details class="solo-run"><summary><span>'+esc(formatSoloDate(run.playedAt))+' · '+esc(run.nickname||'나')+'</span><b>'+Number(run.score||0).toLocaleString()+'점 · '+Number(run.correctCount||0)+'/'+Number(run.total||0)+' 정답</b></summary><div class="solo-run-body"><div class="tiny" style="margin:0 2px 10px">정답률 '+Number(run.accuracy||0)+'% · 문제당 '+Number(run.settings?.seconds||0)+'초</div><div class="solo-qlog">'+(run.questions||[]).map(soloQuestionDetailsHtml).join('')+'</div></div></details>').join('');
+}
+function openSoloHistory(){$('soloHistoryPanel')?.classList.remove('hidden');renderSoloHistory()}
+function closeSoloHistory(){$('soloHistoryPanel')?.classList.add('hidden')}
+function finishSoloRun(){
+  showOnly('finished');cancelAnimationFrame(timerRAF);
+  const h=$('finished').querySelector('h1');if(h)h.textContent='혼자 연습 완료';
+  const record=saveSoloRun(),accuracy=record?.accuracy??0;
+  $('results').innerHTML='<div class="rankrow me"><b>완료</b><span>'+esc(session.nickname)+' · 정답률 '+accuracy+'% · '+Number(record?.correctCount||0)+'/'+Number(record?.total||0)+' 정답</span><b>'+soloGame.score.toLocaleString()+'점</b></div>';
+  $('finishedBadge').textContent='혼자 연습 완료';$('finishedHostButtons').classList.add('hidden');$('finishedPlayerWait').classList.add('hidden');$('finishedSoloButtons').classList.remove('hidden');
+  renderSoloReview(record);fxOnce('finish:solo:'+String(record?.id||''),()=>{playSfx('victory',{volume:.4,cooldownMs:1800});flashFx('gold');confettiFx(40);toastFx('결과를 이 기기에 저장했어요!')});
 }
 function soloNext(){
   if(!soloGame)return;
-  if(soloGame.index+1>=soloGame.questions.length){
-    showOnly('finished');cancelAnimationFrame(timerRAF);
-    const h=$('finished').querySelector('h1');if(h)h.textContent='혼자 연습 완료';
-    const accuracy=Math.round((soloGame.correct/soloGame.questions.length)*100);
-    $('results').innerHTML='<div class="rankrow me"><b>완료</b><span>'+esc(session.nickname)+' · 정답률 '+accuracy+'%</span><b>'+soloGame.score.toLocaleString()+'점</b></div>';
-    $('finishedBadge').textContent='혼자 연습 완료';$('finishedHostButtons').classList.add('hidden');$('finishedPlayerWait').classList.add('hidden');$('finishedSoloButtons').classList.remove('hidden');
-    return;
-  }
+  if(soloGame.index+1>=soloGame.questions.length){finishSoloRun();return}
   soloGame.index+=1;lastFxState='';startSoloQuestion();
 }
 
@@ -593,8 +659,9 @@ function renderFinished(s){
   showOnly('finished');cancelAnimationFrame(timerRAF);const h=$('finished').querySelector('h1');fxOnce('finish:'+String(s.room?.round||'solo'),()=>{playSfx('victory',{volume:.4,cooldownMs:1800});flashFx('gold');confettiFx(40);toastFx('최종 결과!')});
   if(session?.role==='solo'){
     clearTimeout(poller);if(h)h.textContent='혼자 연습 완료';$('finishedBadge').textContent='혼자 연습 완료';
-    $('finishedHostButtons').classList.add('hidden');$('finishedPlayerWait').classList.add('hidden');$('finishedSoloButtons').classList.remove('hidden');
+    $('finishedHostButtons').classList.add('hidden');$('finishedPlayerWait').classList.add('hidden');$('finishedSoloButtons').classList.remove('hidden');renderSoloReview(soloGame?.savedRecord||null);
   }else{
+    renderSoloReview(null);
     if(h)h.textContent='제 '+Number(s.room.round||1)+'판 결과';$('finishedBadge').textContent=s.room.scoreMode==='cumulative'?'누적 점수 결과':'이번 판 결과';
     $('finishedHostButtons').classList.toggle('hidden',session.role!=='host');$('finishedPlayerWait').classList.toggle('hidden',session.role!=='player');$('finishedSoloButtons').classList.add('hidden');
   }
