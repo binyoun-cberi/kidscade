@@ -126,8 +126,8 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /^\(\(\)=>\{/);
   assert.doesNotMatch(architect, /OrbitControls/);
   assert.match(byId(sourceCatalog, 'cube3d').title, /큐브 아키텍트/);
-  assert.match(byId(sourceCatalog, 'cube3d').description, /겨냥도/);
-  assert.match(byId(sourceCatalog, 'cube3d').description, /자유 건축/);
+  assert.match(byId(sourceCatalog, 'cube3d').description, /랜드마크/);
+  assert.match(byId(sourceCatalog, 'cube3d').description, /던전/);
 });
 
 test('Cloudflare artifact preserves the source card descriptions', () => {
