@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#090b18">
-  <title>무한 구구단: 무한루 - 에너지 대결</title>
+  <title>무한 곱셈: 무한루 - 에너지 대결</title>
   <style>
     :root{
       --bg:#080a16;--panel:#12172b;--panel2:#191f38;--line:rgba(255,255,255,.11);
@@ -193,6 +193,22 @@
     .battle-screen.local-battle .local-controls{flex:1;min-height:0}
     .battle-screen.local-battle .duel-card{min-height:0}
     .battle-screen.local-battle .mini-pad button{min-height:0}
+    .skill-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .skill-choice{min-height:58px;padding:9px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(255,255,255,.055);font-weight:900;cursor:pointer}
+    .skill-choice b,.skill-choice small{display:block}.skill-choice small{margin-top:3px;color:var(--muted);font-size:.65rem;line-height:1.25}
+    .skill-choice.active{color:#08111a;background:linear-gradient(180deg,#fff0ae,#ffca61);border-color:#ffe39b;box-shadow:0 0 22px rgba(255,209,102,.16)}
+    .skill-choice.active small{color:#513500}
+    .skill-hint{margin-top:10px;min-height:42px;padding:9px 10px;border-radius:12px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.17);color:#ffeeb1;font-size:.72rem;font-weight:800;line-height:1.4}
+    .pad,.mini-pad{grid-template-rows:none}
+    .pad .zero,.mini-pad .zero{grid-column:auto}
+    .pad .enter,.mini-pad .enter{grid-column:span 2;color:#08111a;background:linear-gradient(180deg,#a7f3d0,#55d99d);border-color:#c9ffe5;box-shadow:0 3px 0 #21845b;font-size:clamp(.92rem,2.2vw,1.18rem)}
+    .pad .special,.mini-pad .special{color:#172033;background:linear-gradient(180deg,#fff1b9,#f7c95e);border-color:#fff0ad}
+    .pad button.key-off,.mini-pad button.key-off{opacity:.22;filter:grayscale(.7);pointer-events:none}
+    .question .frac,.duel-question .frac,.entry .frac,.duel-entry .frac{display:inline-grid;grid-template-rows:auto 2px auto;vertical-align:middle;min-width:1.1em;margin:0 .08em;line-height:1}
+    .question .frac .bar,.duel-question .frac .bar,.entry .frac .bar,.duel-entry .frac .bar{height:2px;background:currentColor;margin:2px 0}
+    .question .frac span,.duel-question .frac span{font-size:.72em;padding:0 .08em}
+    .entry .frac span,.duel-entry .frac span{font-size:.82em;padding:0 .08em}
+    .entry .cursor-part,.duel-entry .cursor-part{opacity:.45}
     @media(max-width:720px){
       .setup-grid{grid-template-columns:1fr}
       .rules{grid-template-columns:1fr 1fr 1fr}
@@ -259,8 +275,8 @@
     <section class="screen" id="menuScreen">
       <div class="brand">
         <div class="eyebrow">MULTIPLICATION ENERGY DUEL</div>
-        <h1>무한 구구단 <span>무한루</span></h1>
-        <p class="subtitle">곱셈을 빨리 풀수록 에너지 출력이 강해집니다. 상대의 에너지파를 끝까지 밀어내 먼저 2라운드를 가져가세요.</p>
+        <h1>무한 곱셈 <span>무한루</span></h1>
+        <p class="subtitle">구구단부터 소수·분수의 곱셈까지. 정확하고 빠르게 풀어 에너지파를 상대 끝까지 밀어내세요.</p>
       </div>
 
       <div class="setup-grid">
@@ -281,24 +297,34 @@
         </div>
 
         <div class="panel setup-card">
-          <h2>출제 범위</h2>
-          <div class="tables" id="tableChoices">
-            <button class="table-chip active" data-table="all">2~9단</button>
-            <button class="table-chip" data-table="2">2단</button>
-            <button class="table-chip" data-table="3">3단</button>
-            <button class="table-chip" data-table="4">4단</button>
-            <button class="table-chip" data-table="5">5단</button>
-            <button class="table-chip" data-table="6">6단</button>
-            <button class="table-chip" data-table="7">7단</button>
-            <button class="table-chip" data-table="8">8단</button>
-            <button class="table-chip" data-table="9">9단</button>
+          <h2>수련법</h2>
+          <div class="skill-grid" id="skillChoices">
+            <button class="skill-choice active" data-skill="gugudan"><b>구구단</b><small>2~9단 빠른 곱셈</small></button>
+            <button class="skill-choice" data-skill="decimal"><b>소수</b><small>소수 × 자연수 · 소수 × 소수</small></button>
+            <button class="skill-choice" data-skill="fraction"><b>분수</b><small>분수 × 자연수 · 분수 × 분수</small></button>
+            <button class="skill-choice" data-skill="mixed"><b>혼합</b><small>세 수련이 번갈아 등장</small></button>
           </div>
+          <div id="tableOptions" style="margin-top:12px">
+            <h2>구구단 범위</h2>
+            <div class="tables" id="tableChoices">
+              <button class="table-chip active" data-table="all">2~9단</button>
+              <button class="table-chip" data-table="2">2단</button>
+              <button class="table-chip" data-table="3">3단</button>
+              <button class="table-chip" data-table="4">4단</button>
+              <button class="table-chip" data-table="5">5단</button>
+              <button class="table-chip" data-table="6">6단</button>
+              <button class="table-chip" data-table="7">7단</button>
+              <button class="table-chip" data-table="8">8단</button>
+              <button class="table-chip" data-table="9">9단</button>
+            </div>
+          </div>
+          <div class="skill-hint" id="skillHint">기본 무한루. 빠른 구구단으로 에너지 출력을 높여요.</div>
         </div>
       </div>
 
       <div class="panel rules">
-        <div class="rule"><b>빠른 정답 = 강한 출력</b><span>1.4초 안쪽이면 PERFECT 출력</span></div>
-        <div class="rule"><b>연속 정답 = 콤보</b><span>콤보가 이어질수록 조금 더 강해져요</span></div>
+        <div class="rule"><b>빠른 정답 = 강한 출력</b><span id="speedRule">구구단은 1.4초 안쪽이면 PERFECT</span></div>
+        <div class="rule"><b id="skillRuleTitle">연속 정답 = 콤보</b><span id="skillRule">콤보가 이어질수록 조금 더 강해져요</span></div>
         <div class="rule"><b>3판 2선승</b><span>에너지 충돌점을 상대 끝까지 밀면 승리</span></div>
       </div>
 
@@ -361,7 +387,8 @@
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
             <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button class="zero" data-key="0">0</button><button class="del" data-key="del">삭제</button>
+            <button class="special key-dot" data-key=".">.</button><button data-key="0">0</button><button class="special key-frac" data-key="/">⁄</button>
+            <button class="del" data-key="del">삭제</button><button class="enter" data-key="enter">확인</button>
           </div>
         </div>
         <button class="quit-btn" id="quitBtn">나가기</button>
@@ -376,7 +403,8 @@
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
             <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button class="zero" data-key="0">0</button><button data-key="del">삭제</button>
+            <button class="special key-dot" data-key=".">.</button><button data-key="0">0</button><button class="special key-frac" data-key="/">⁄</button>
+            <button class="del" data-key="del">삭제</button><button class="enter" data-key="enter">확인</button>
           </div>
         </div>
         <div class="panel duel-card p2">
@@ -387,7 +415,8 @@
             <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
             <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
             <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-            <button class="zero" data-key="0">0</button><button data-key="del">삭제</button>
+            <button class="special key-dot" data-key=".">.</button><button data-key="0">0</button><button class="special key-frac" data-key="/">⁄</button>
+            <button class="del" data-key="del">삭제</button><button class="enter" data-key="enter">확인</button>
           </div>
         </div>
         <button class="quit-btn" id="localQuitBtn">나가기</button>
@@ -471,7 +500,7 @@
       }
     };
     var state = {
-      mode:"cpu",cpu:"easy",table:"all",sound:true,
+      mode:"cpu",cpu:"easy",table:"all",skill:"gugudan",sound:true,
       round:1,wins:[0,0],active:false,paused:false,ending:false,
       target:0,visual:0,cpuTimer:0,countdownTimer:0,raf:0,
       fighters:[makeFighter(),makeFighter()],lastResult:null
@@ -480,18 +509,28 @@
     var audioCtx = null;
 
     function makeFighter(){
-      return {a:2,b:2,answer:4,entry:"",started:0,combo:0,maxCombo:0,correct:0,wrong:0,totalMs:0,answered:0};
+      return {kind:"gugudan",a:2,b:2,answer:4,answerValue:4,answerNum:4,answerDen:1,entry:"",questionHtml:"2 × 2",questionText:"2 × 2",perfectMs:1400,hint:"",questionIndex:0,started:0,combo:0,maxCombo:0,correct:0,wrong:0,totalMs:0,answered:0};
     }
     function $(id){return document.getElementById(id)}
     function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
     function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+    function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t}return a||1}
+    function decimalText(n,scale){var d=scale===100?2:scale===10?1:0;return (n/scale).toFixed(d).replace(/\.0+$/,"").replace(/(\.\d*?)0+$/,"$1")}
+    function fracHtml(n,d){return '<span class="frac"><span>'+n+'</span><i class="bar"></i><span>'+d+'</span></span>'}
+    function reduced(n,d){var g=gcd(n,d);return {n:n/g,d:d/g}}
+    function skillName(kind){return kind==="decimal"?"소수 곱셈":kind==="fraction"?"분수 곱셈":kind==="mixed"?"혼합 곱셈":"구구단"}
+    function questionTypeFor(side){
+      if(state.skill!=="mixed")return state.skill;
+      var f=state.fighters[side],order=["gugudan","decimal","fraction"];
+      return order[(f.questionIndex||0)%order.length];
+    }
 
     function init(){
       ["menuScreen","battleScreen","resultScreen","cpuOptions","startBtn","soundBtn","recordLine","leftName","rightName","roundLabel","modeLabel",
        "battleStatus","cpuQuestion","leftFighter","rightFighter","rightAvatar","leftComboLabel","rightComboLabel","leftBeam","rightBeam",
        "soloControls","localControls","soloQuestion","soloEntry","soloFeedback","p1Question","p1Entry","p2Question","p2Entry","quitBtn",
        "localQuitBtn","pauseOverlay","resumeBtn","confirmQuitBtn","menuBtn","retryBtn","resultIcon","resultTitle","resultSub","statCorrect",
-       "statCombo","statSpeed","statScore","flash","doors"].forEach(function(id){els[id]=$(id)});
+       "statCombo","statSpeed","statScore","flash","doors","tableOptions","skillHint","speedRule","skillRuleTitle","skillRule"].forEach(function(id){els[id]=$(id)});
       loadSettings();
       preloadCharacterSprites();
       bind();
@@ -515,11 +554,12 @@
         if(saved.mode==="cpu"||saved.mode==="local")state.mode=saved.mode;
         if(CPU[saved.cpu])state.cpu=saved.cpu;
         if(saved.table==="all"||(+saved.table>=2&&+saved.table<=9))state.table=String(saved.table);
+        if(["gugudan","decimal","fraction","mixed"].indexOf(saved.skill)>=0)state.skill=saved.skill;
         if(typeof saved.sound==="boolean")state.sound=saved.sound;
       }catch(e){}
     }
     function saveSettings(){
-      try{localStorage.setItem(GUGU_SETTINGS_KEY,JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,sound:state.sound}))}catch(e){}
+      try{localStorage.setItem(GUGU_SETTINGS_KEY,JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,skill:state.skill,sound:state.sound}))}catch(e){}
     }
     function getWins(){
       try{var raw=localStorage.getItem(GUGU_WINS_KEY)||localStorage.getItem(GUGU_WINS_OLD)||'{"easy":0,"normal":0,"hard":0}';if(!localStorage.getItem(GUGU_WINS_KEY)&&localStorage.getItem(GUGU_WINS_OLD))localStorage.setItem(GUGU_WINS_KEY,raw);return JSON.parse(raw)}catch(e){return{easy:0,normal:0,hard:0}}
@@ -599,6 +639,8 @@
         if(c){state.cpu=c.dataset.cpu;saveSettings();updateMenu();return}
         var t=e.target.closest("[data-table]");
         if(t){state.table=t.dataset.table;saveSettings();updateMenu();return}
+        var s=e.target.closest("[data-skill]");
+        if(s){state.skill=s.dataset.skill;saveSettings();updateMenu();return}
 
       });
 
@@ -652,7 +694,19 @@
       document.querySelectorAll("[data-mode]").forEach(function(b){b.classList.toggle("active",b.dataset.mode===state.mode)});
       document.querySelectorAll("[data-cpu]").forEach(function(b){b.classList.toggle("active",b.dataset.cpu===state.cpu)});
       document.querySelectorAll("[data-table]").forEach(function(b){b.classList.toggle("active",b.dataset.table===state.table)});
+      document.querySelectorAll("[data-skill]").forEach(function(b){b.classList.toggle("active",b.dataset.skill===state.skill)});
       els.cpuOptions.classList.toggle("hidden",state.mode!=="cpu");
+      els.tableOptions.classList.toggle("hidden",state.skill!=="gugudan");
+      var hints={
+        gugudan:"기본 무한루. 빠른 구구단으로 에너지 출력을 높여요.",
+        decimal:"소수점 버튼을 사용해 답을 입력해요. 소수 × 자연수부터 소수 × 소수까지 나옵니다.",
+        fraction:"분자와 분모를 ⁄ 버튼으로 나눠 입력해요. 기약분수로 답하면 약분 보너스가 붙습니다.",
+        mixed:"구구단 → 소수 → 분수가 번갈아 나옵니다. 문제 형태를 보고 계산법을 빠르게 바꿔 보세요."
+      };
+      els.skillHint.textContent=hints[state.skill];
+      els.speedRule.textContent=state.skill==="gugudan"?"구구단은 1.4초 안쪽이면 PERFECT":state.skill==="decimal"?"문제에 따라 약 3~4.5초가 PERFECT":state.skill==="fraction"?"문제에 따라 약 5~7초가 PERFECT":"문제 종류마다 PERFECT 기준이 자동 조정";
+      els.skillRuleTitle.textContent=state.skill==="fraction"?"약분 = 강화 출력":"연속 정답 = 콤보";
+      els.skillRule.textContent=state.skill==="fraction"?"동치 분수도 정답! 기약분수면 출력 +25%":state.skill==="mixed"?"종류가 바뀌어도 콤보는 계속 이어져요":"콤보가 이어질수록 조금 더 강해져요";
       els.soundBtn.textContent=state.sound?"🔊":"🔇";
       var w=getWins();
       els.recordLine.textContent="CPU 승리  ·  초급 "+(w.easy||0)+"회  ·  중급 "+(w.normal||0)+"회  ·  고급 "+(w.hard||0)+"회";
@@ -690,7 +744,7 @@
       els.leftName.textContent=state.mode==="cpu"?"나":"PLAYER 1";
       els.rightName.textContent=state.mode==="cpu"?"CPU "+CPU[state.cpu].label:"PLAYER 2";
       els.cpuQuestion.classList.toggle("hidden",state.mode!=="cpu");
-      els.modeLabel.textContent=(state.mode==="cpu"?"CPU "+CPU[state.cpu].label:"1 : 1")+" · "+tableLabel();
+      els.modeLabel.textContent=(state.mode==="cpu"?"CPU "+CPU[state.cpu].label:"1 : 1")+" · "+trainingLabel();
       updateRoundHud();
       startRound();
     }
@@ -723,31 +777,70 @@
     }
 
     function makeQuestion(side){
-      var a,b;
-      if(state.table==="all"){a=rand(2,9);b=rand(2,9)}
-      else{
-        a=+state.table;b=rand(2,9);
-        if(side===1&&Math.random()<.5){var tmp=a;a=b;b=tmp}
-        else if(side===0&&Math.random()<.3){var tmp2=a;a=b;b=tmp2}
+      var kind=questionTypeFor(side);
+      if(kind==="gugudan"){
+        var a,b;
+        if(state.table==="all"||state.skill==="mixed"){a=rand(2,9);b=rand(2,9)}
+        else{
+          a=+state.table;b=rand(2,9);
+          if(side===1&&Math.random()<.5){var tmp=a;a=b;b=tmp}
+          else if(side===0&&Math.random()<.3){var tmp2=a;a=b;b=tmp2}
+        }
+        return{kind:kind,a:a,b:b,answer:a*b,answerValue:a*b,answerNum:a*b,answerDen:1,questionHtml:a+" × "+b,questionText:a+" × "+b,perfectMs:1400,hint:""};
       }
-      return{a:a,b:b,answer:a*b};
+      if(kind==="decimal"){
+        var both=Math.random()<.48;
+        var hundredths=Math.random()<.18;
+        var aScale=hundredths?100:10;
+        var aInt=hundredths?rand(12,95):rand(2,99);
+        var bScale=both?10:1;
+        var bInt=both?rand(2,25):rand(2,9);
+        var value=(aInt*bInt)/(aScale*bScale);
+        var at=decimalText(aInt,aScale),bt=decimalText(bInt,bScale);
+        return{kind:kind,a:at,b:bt,answer:value,answerValue:value,answerNum:aInt*bInt,answerDen:aScale*bScale,questionHtml:at+" × "+bt,questionText:at+" × "+bt,perfectMs:both||hundredths?4500:3000,hint:"소수점 위치를 확인하고 계산!"};
+      }
+      var timesWhole=Math.random()<.42;
+      var n1=rand(1,8),d1=rand(Math.max(2,n1+1),9);
+      var n2=timesWhole?rand(2,8):rand(1,8),d2=timesWhole?1:rand(Math.max(2,n2+1),9);
+      var rawN=n1*n2,rawD=d1*d2,ans=reduced(rawN,rawD);
+      var cross=gcd(n1,d2)>1||gcd(n2,d1)>1;
+      var left=fracHtml(n1,d1),right=timesWhole?String(n2):fracHtml(n2,d2);
+      var text=n1+"/"+d1+" × "+(timesWhole?n2:n2+"/"+d2);
+      return{kind:"fraction",a:n1,b:n2,answer:ans.n/ans.d,answerValue:ans.n/ans.d,answerNum:ans.n,answerDen:ans.d,rawNum:rawN,rawDen:rawD,questionHtml:left+" × "+right,questionText:text,perfectMs:timesWhole?5000:7000,hint:cross?"⚡ 먼저 약분하면 계산이 빨라져요!":"분자끼리 · 분모끼리 곱해 보세요."};
     }
     function newQuestion(side){
-      var q=makeQuestion(side),f=state.fighters[side];
-      f.a=q.a;f.b=q.b;f.answer=q.answer;f.entry="";f.started=performance.now();
+      var f=state.fighters[side],q=makeQuestion(side);
+      ["kind","a","b","answer","answerValue","answerNum","answerDen","rawNum","rawDen","questionHtml","questionText","perfectMs","hint"].forEach(function(k){f[k]=q[k]});
+      f.entry="";f.started=performance.now();f.questionIndex=(f.questionIndex||0)+1;
       updateQuestions();
+    }
+    function entryHtml(f){
+      if(f.kind!=="fraction")return f.entry||"?";
+      var parts=(f.entry||"").split("/");
+      if(!f.entry)return "?";
+      if(parts.length===1)return fracHtml(parts[0]||"?","?");
+      return fracHtml(parts[0]||"?",parts[1]||"?");
+    }
+    function updatePadKeys(side){
+      var f=state.fighters[side],pad=document.querySelector('[data-pad="'+side+'"]');
+      if(!pad)return;
+      var dot=pad.querySelector('[data-key="."]'),slash=pad.querySelector('[data-key="/"]');
+      if(dot)dot.classList.toggle("key-off",f.kind!=="decimal");
+      if(slash)slash.classList.toggle("key-off",f.kind!=="fraction");
     }
     function updateQuestions(){
       var a=state.fighters[0],b=state.fighters[1];
-      els.soloQuestion.textContent=a.a+" × "+a.b;
-      els.soloEntry.textContent=a.entry||"?";
-      els.p1Question.textContent=a.a+" × "+a.b;
-      els.p1Entry.textContent=a.entry||"?";
-      els.p2Question.textContent=b.a+" × "+b.b;
-      els.p2Entry.textContent=b.entry||"?";
-      if(state.mode==="cpu")els.cpuQuestion.textContent="CPU  "+b.a+" × "+b.b;
+      els.soloQuestion.innerHTML=a.questionHtml;
+      els.soloEntry.innerHTML=entryHtml(a);
+      els.p1Question.innerHTML=a.questionHtml;
+      els.p1Entry.innerHTML=entryHtml(a);
+      els.p2Question.innerHTML=b.questionHtml;
+      els.p2Entry.innerHTML=entryHtml(b);
+      updatePadKeys(0);updatePadKeys(1);
+      if(state.mode==="cpu")els.cpuQuestion.textContent="CPU  "+b.questionText;
+      if(state.mode==="cpu")els.soloFeedback.textContent=a.hint||(a.combo>=3?a.combo+"콤보! 출력 보너스 상승":"빠르게 풀수록 강해져요!");
     }
-    function tableLabel(){return state.table==="all"?"2~9단":state.table+"단 집중"}
+    function trainingLabel(){return skillName(state.skill)+(state.skill==="gugudan"?" · "+(state.table==="all"?"2~9단":state.table+"단 집중"):"")}
 
     function pressKey(side,key){
       if(!state.active||state.paused||state.ending)return;
@@ -755,10 +848,18 @@
       var f=state.fighters[side];
       if(key==="del"){f.entry=f.entry.slice(0,-1);updateQuestions();return}
       if(key==="enter"){submit(side);return}
+      if(key==="."){
+        if(f.kind!=="decimal"||f.entry.indexOf(".")>=0||f.entry.length>=7)return;
+        f.entry=f.entry?f.entry+".":"0.";updateQuestions();return;
+      }
+      if(key==="/"){
+        if(f.kind!=="fraction"||f.entry.indexOf("/")>=0||!f.entry||f.entry.length>=7)return;
+        f.entry+="/";updateQuestions();return;
+      }
       if(!/^\d$/.test(key))return;
-      if(f.entry.length>=3)return;
+      if(f.entry.length>=7)return;
       f.entry+=key;updateQuestions();
-      if(f.entry.length>=String(f.answer).length)submit(side);
+      if(f.kind==="gugudan"&&f.entry.length>=String(f.answer).length)submit(side);
     }
 
     function handleKeyboard(e){
@@ -766,28 +867,47 @@
       if(state.mode==="cpu"){
         if(e.code.indexOf("Numpad")===0&&/Numpad[0-9]/.test(e.code)){pressKey(0,e.code.replace("Numpad",""));e.preventDefault();return}
         if(/^[0-9]$/.test(e.key)){pressKey(0,e.key);e.preventDefault();return}
+        if(e.key==="."||e.key===","){pressKey(0,".");e.preventDefault();return}
+        if(e.key==="/"){pressKey(0,"/");e.preventDefault();return}
         if(e.key==="Backspace"){pressKey(0,"del");e.preventDefault();return}
         if(e.key==="Enter"){pressKey(0,"enter");e.preventDefault();return}
       }else{
         if(e.code.indexOf("Numpad")===0&&/Numpad[0-9]/.test(e.code)){pressKey(1,e.code.replace("Numpad",""));e.preventDefault();return}
         if(e.code==="NumpadEnter"){pressKey(1,"enter");e.preventDefault();return}
-        if(e.code==="NumpadDecimal"){pressKey(1,"del");e.preventDefault();return}
+        if(e.code==="NumpadDecimal"){pressKey(1,".");e.preventDefault();return}
+        if(e.code==="NumpadDivide"){pressKey(1,"/");e.preventDefault();return}
+        if(e.code==="NumpadSubtract"){pressKey(1,"del");e.preventDefault();return}
         if(/^[0-9]$/.test(e.key)&&e.code.indexOf("Numpad")!==0){pressKey(0,e.key);e.preventDefault();return}
+        if(e.key==="."||e.key===","){pressKey(0,".");e.preventDefault();return}
+        if(e.key==="/"){pressKey(0,"/");e.preventDefault();return}
         if(e.key==="Backspace"){pressKey(0,"del");e.preventDefault();return}
         if(e.key==="Enter"){pressKey(0,"enter");e.preventDefault();return}
       }
     }
 
+    function checkAnswer(f){
+      if(f.kind==="fraction"){
+        var m=f.entry.match(/^(\d+)\/(\d+)$/);
+        if(!m||+m[2]===0)return{ok:false,bonus:1,reduced:false};
+        var n=+m[1],d=+m[2],ok=n*f.answerDen===d*f.answerNum;
+        var simple=ok&&gcd(n,d)===1;
+        return{ok:ok,bonus:simple?1.25:1,reduced:simple};
+      }
+      var value=Number(f.entry);
+      return{ok:f.entry!==""&&Number.isFinite(value)&&Math.abs(value-f.answerValue)<1e-9,bonus:1,reduced:false};
+    }
     function submit(side){
       var f=state.fighters[side];
       if(!f.entry)return;
-      var value=+f.entry;
-      if(value===f.answer){
+      var result=checkAnswer(f);
+      if(result.ok){
         var elapsed=Math.max(250,performance.now()-f.started);
         f.correct++;f.answered++;f.totalMs+=elapsed;f.combo++;f.maxCombo=Math.max(f.maxCombo,f.combo);
-        var p=powerFor(elapsed,f.combo);
+        var p=powerFor(elapsed,f.combo,f)*result.bonus;
         applyForce(side,p);
-        feedback(side,speedWord(elapsed)+"  +"+Math.round(p)+" 출력",true);
+        var msg=speedWord(elapsed,f)+"  +"+Math.round(p)+" 출력";
+        if(f.kind==="fraction")msg=result.reduced?"⚡ 약분 완성!  +"+Math.round(p)+" 출력":"정답! 기약분수면 출력 +25%";
+        feedback(side,msg,true);
         pulseState(side,"fire",210,"idle");
         showImpact();
         sfxCorrect(side,f.combo);
@@ -796,7 +916,7 @@
       }else{
         f.wrong++;f.combo=0;
         applyPenalty(side,5.5);
-        feedback(side,"오답! 출력이 흔들렸어요",false);
+        feedback(side,f.kind==="fraction"&&f.entry.indexOf("/")<0?"분수는 ⁄ 버튼으로 분자와 분모를 나눠요":"오답! 출력이 흔들렸어요",false);
         pulseState(side,"hit",290,"idle");
         sfxWrong();
         hitFighter(side);
@@ -807,11 +927,12 @@
       updateCombo();
     }
 
-    function powerFor(ms,combo){
-      var base=ms<=1400?16:ms<=2300?13:ms<=3800?10:ms<=5500?8:6.5;
+    function powerFor(ms,combo,f){
+      var perfect=(f&&f.perfectMs)||1400;
+      var base=ms<=perfect?16:ms<=perfect*1.65?13:ms<=perfect*2.7?10:ms<=perfect*3.9?8:6.5;
       return base+Math.min(4.5,Math.max(0,combo-1)*.55);
     }
-    function speedWord(ms){return ms<=1400?"PERFECT":ms<=2300?"GREAT":ms<=3800?"GOOD":"HIT"}
+    function speedWord(ms,f){var perfect=(f&&f.perfectMs)||1400;return ms<=perfect?"PERFECT":ms<=perfect*1.65?"GREAT":ms<=perfect*2.7?"GOOD":"HIT"}
 
     function applyForce(side,amount){
       if(!state.active||state.ending)return;
@@ -838,8 +959,9 @@
       if(state.mode!=="cpu"||!state.active)return;
       var d=CPU[state.cpu];
       var f=state.fighters[1];
-      var problem=f.a*f.b>=56?260:f.a>=7&&f.b>=7?170:0;
-      var delay=Math.max(850,d.base+problem+(Math.random()*2-1)*d.jitter);
+      var typeScale=f.kind==="fraction"?(f.perfectMs>=7000?2.45:1.9):f.kind==="decimal"?(f.perfectMs>=4500?1.65:1.35):1;
+      var problem=f.kind==="gugudan"&&(+f.a)*(+f.b)>=56?260:0;
+      var delay=Math.max(850,d.base*typeScale+problem+(Math.random()*2-1)*d.jitter);
       f.started=performance.now();
       state.cpuTimer=setTimeout(function(){
         if(!state.active||state.paused||state.ending)return;
@@ -849,8 +971,8 @@
         }else{
           var elapsed=performance.now()-f.started;
           f.correct++;f.answered++;f.totalMs+=elapsed;f.combo++;f.maxCombo=Math.max(f.maxCombo,f.combo);
-          var p=powerFor(elapsed,f.combo);
-          applyForce(1,p);feedback(1,"CPU "+speedWord(elapsed),true);pulseState(1,"fire",210,"idle");showImpact();sfxCorrect(1,f.combo);boostBeam(1);
+          var p=powerFor(elapsed,f.combo,f);
+          applyForce(1,p);feedback(1,"CPU "+speedWord(elapsed,f),true);pulseState(1,"fire",210,"idle");showImpact();sfxCorrect(1,f.combo);boostBeam(1);
         }
         updateCombo();
         if(state.active){newQuestion(1);scheduleCpu()}
@@ -910,7 +1032,7 @@
       var a=state.fighters[0],b=state.fighters[1];
       els.leftComboLabel.textContent="COMBO "+a.combo;
       els.rightComboLabel.textContent="COMBO "+b.combo;
-      if(state.mode==="cpu")els.soloFeedback.textContent=a.combo>=3?a.combo+"콤보! 출력 보너스 상승":"빠르게 풀수록 강해져요!";
+      if(state.mode==="cpu")els.soloFeedback.textContent=a.hint||(a.combo>=3?a.combo+"콤보! 출력 보너스 상승":"빠르게 풀수록 강해져요!");
     }
     function feedback(side,text,good){
       if(side===0||state.mode==="local")els.battleStatus.textContent=text;
