@@ -71,7 +71,7 @@
   .holesBar{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;z-index:4;pointer-events:auto}
   .holeBtn{width:38px;height:38px;border-radius:12px;border:3px solid #68402c;background:#fff8e5;font-weight:1000;box-shadow:0 3px 0 rgba(88,44,21,.18)}
   .holeBtn.active{background:#38a7ef;color:white;border-color:#166ca5;transform:translateY(2px);box-shadow:0 1px 0 rgba(88,44,21,.18)}
-  .holeBtn.locked{display:none}
+  .holeBtn.locked{opacity:.38;filter:saturate(.25);background:#d8d0c8;border-color:#8c8179;color:#665b54;box-shadow:none}
   .holeBtn.ready{background:#dff7dc}.holeBtn.burning{background:#ffd3ca}
   .keyboard{display:none}
   .popupLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
@@ -324,8 +324,8 @@
 
 
 /* Keep the pan as the main play surface. */
-.app{min-width:0;height:100dvh;grid-template-rows:58px minmax(0,1fr);padding:10px}.top{grid-template-columns:minmax(180px,1fr) minmax(130px,1fr) auto}.titleCard h1{font-size:20px}.main{grid-template-columns:210px minmax(0,1fr)}.infoPanel,.bottom,.recipeMini,.dayRibbon,.queuePanel .panelTitle,.statsCard .pill:nth-child(n+3){display:none}.card{border-width:2px;box-shadow:none}.stageCard{min-height:340px}.holesBar{bottom:16px;gap:8px}.holeBtn{width:auto;min-width:90px;height:46px;padding:4px 12px;font-size:13px}.holeBtn.ready{background:#d5f7c3;border-color:#26854d;color:#164426}.queuePanel{padding:8px}.orderWait,.waitBar{display:none}.orderName{font-size:19px}.orderNeed{font-size:14px;line-height:1.5}.stageOverlay{right:14px}.notice{max-width:100%;font-size:14px}
-@media(max-width:700px){.app{padding:6px;gap:6px}.top{grid-template-columns:1fr auto}.dayCard{display:none}.main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.queuePanel{padding:0;background:none;border:0}.orders{display:block}.orderCard{padding:8px;margin:0}.orderTop{margin:0}.orderNeed{font-size:12px}.tags{display:none}.stageCard{min-height:300px}.holeBtn{min-width:80px;padding:4px 6px}.holesBar{left:6px;right:6px;bottom:8px;gap:4px}.titleCard{padding:6px 10px}.notice{font-size:12px}}
+.app{min-width:0;height:100dvh;grid-template-rows:58px minmax(0,1fr);padding:10px}.top{grid-template-columns:minmax(180px,1fr) minmax(130px,1fr) auto}.titleCard h1{font-size:20px}.main{grid-template-columns:210px minmax(0,1fr)}.infoPanel,.bottom,.recipeMini,.dayRibbon,.queuePanel .panelTitle,.statsCard .pill:nth-child(n+3){display:none}.card{border-width:2px;box-shadow:none}.stageCard{min-height:340px}.holesBar{bottom:16px;gap:8px}.holeBtn{width:44px;min-width:44px;height:44px;padding:0;font-size:15px}.holeBtn.ready{background:#d5f7c3;border-color:#26854d;color:#164426}.queuePanel{padding:8px}.orderWait,.waitBar{display:none}.orderName{font-size:19px}.orderNeed{font-size:14px;line-height:1.5}.stageOverlay{right:14px}.notice{max-width:100%;font-size:14px}
+@media(max-width:700px){.app{padding:6px;gap:6px}.top{grid-template-columns:1fr auto}.dayCard{display:none}.main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.queuePanel{padding:0;background:none;border:0}.orders{display:block}.orderCard{padding:8px;margin:0}.orderTop{margin:0}.orderNeed{font-size:12px}.tags{display:none}.stageCard{min-height:300px}.holeBtn{width:40px;min-width:40px;height:40px;padding:0}.holesBar{left:6px;right:6px;bottom:8px;gap:4px}.titleCard{padding:6px 10px}.notice{font-size:12px}}
 
 </style>
 </head>
@@ -427,13 +427,13 @@
 <div class="startScreen" id="startScreen">
   <div class="startCard">
     <h2>빙글빙글 타코야키집</h2>
-    <p class="lead">팬의 각 구를 직접 눌러요. 반죽과 속재료는 한 번에 들어가고, 노릇할 때 뒤집어 완성된 알을 담아요.</p>
+    <p class="lead">처음에는 딱 1구만 열려 있어요. 타코야키를 완성하면 다음 판에 새 구가 하나씩 열리고, 마지막에는 12구 팬을 모두 쓸 수 있어요.</p>
     <div class="how">
-      <div><b>1. 조리</b><br>빈 구를 누르면 반죽과 속재료가 들어가요.</div>
-      <div><b>2. 굴리기</b><br>가장자리가 노릇해질 때 굴립니다.</div>
-      <div><b>3. 마무리</b><br>완성된 알을 누르면 담겨요. 주문 수량을 채우면 자동으로 포장해요.</div>
+      <div><b>1. 빈 구 누르기</b><br>반죽과 속재료가 한 번에 쏙 들어가요.</div>
+      <div><b>2. 노릇하면 또 누르기</b><br>같은 구를 눌러 빙글빙글 뒤집어요.</div>
+      <div><b>3. 주문 1개 완성</b><br>성공하면 다음 구가 하나 열려요. 12구까지 모아봐요!</div>
     </div>
-    <button class="bigBtn" id="startBtn">영업 시작</button>
+    <button class="bigBtn" id="startBtn">1구부터 시작</button>
   </div>
 </div>
 
@@ -476,17 +476,37 @@ const ORDER_NAMES = {
 
 const daySettings = [
   null,
-  {day:1, duration:120, holes:4, queueMax:2, orderGap:[22,30], menu:['basic'], pieces:[4], guide:'첫날은 4구 팬과 기본 타코야키만 사용합니다. 굴리기 타이밍만 익혀보세요.'},
-  {day:2, duration:125, holes:4, queueMax:2, orderGap:[18,26], menu:['basic','mayo','classic'], pieces:[4], guide:'마요와 소스마요 주문이 추가됩니다. 토핑은 필요한 것만 올리세요.'},
-  {day:3, duration:135, holes:6, queueMax:2, orderGap:[15,23], menu:['basic','mayo','classic','katsu','aonori'], pieces:[4,6], guide:'6구 팬이 열립니다. 가쓰오와 파래 주문이 등장합니다.'},
-  {day:4, duration:145, holes:6, queueMax:3, orderGap:[12,20], menu:['classic','katsu','aonori','cheese','hot','crispy'], pieces:[4,6], guide:'치즈와 매운속이 등장합니다. 주문표의 속재료만 확인하세요.'},
-  {day:5, duration:155, holes:8, queueMax:3, orderGap:[10,17], menu:['classic','katsu','aonori','cheese','hot','octoPlus','crispy','mix'], pieces:[4,6,8], guide:'8구 팬까지 사용합니다. 주문은 쌓이지만 화면은 필요한 정보만 보여줍니다.'}
+  {day:1, duration:65, holes:1, queueMax:1, orderGap:[5,7], menu:['basic'], pieces:[1], guide:'1구부터 시작해요. 빈 구를 누르고, 노릇해지면 같은 구를 다시 눌러요.'},
+  {day:2, duration:65, holes:2, queueMax:1, orderGap:[5,7], menu:['basic'], pieces:[2], guide:'2구가 열렸어요. 두 구를 차례로 눌러 한 번에 2알을 만들어봐요.'},
+  {day:3, duration:68, holes:3, queueMax:1, orderGap:[5,7], menu:['basic','mayo'], pieces:[3], guide:'3구가 열렸어요. 주문이 달라도 조작은 똑같아요. 구만 눌러주면 됩니다.'},
+  {day:4, duration:70, holes:4, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic'], pieces:[4], guide:'4구 팬 완성! 노릇해지는 구부터 천천히 눌러주세요.'},
+  {day:5, duration:72, holes:5, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu'], pieces:[5], guide:'5구가 열렸어요. 초록색이 되면 뒤집을 차례예요.'},
+  {day:6, duration:74, holes:6, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori'], pieces:[6], guide:'절반인 6구까지 왔어요. 여러 구를 차례로 살펴보며 눌러봐요.'},
+  {day:7, duration:76, holes:7, queueMax:1, orderGap:[5,7], menu:['basic','classic','katsu','aonori','cheese'], pieces:[7], guide:'7구가 열렸어요. 치즈 주문도 구를 누르기만 하면 자동으로 들어가요.'},
+  {day:8, duration:78, holes:8, queueMax:1, orderGap:[5,7], menu:['basic','classic','aonori','cheese','hot'], pieces:[8], guide:'8구가 열렸어요. 이제 팬이 제법 북적북적해졌어요.'},
+  {day:9, duration:80, holes:9, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','octoPlus'], pieces:[9], guide:'9구가 열렸어요. 익은 구부터 하나씩 눌러도 충분해요.'},
+  {day:10, duration:82, holes:10, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','crispy'], pieces:[10], guide:'10구 도전! 서두르지 말고 초록색 구를 찾아 눌러봐요.'},
+  {day:11, duration:84, holes:11, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','hot','mix'], pieces:[11], guide:'11구가 열렸어요. 이제 마지막 한 구만 남았어요.'},
+  {day:12, duration:90, holes:12, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori','cheese','hot','octoPlus','crispy','mix'], pieces:[12], guide:'12구 팬 완성! 모든 구를 자유롭게 사용하며 계속 놀 수 있어요.'}
 ];
+
+const SAVE_KEY = 'kidscade_takoyaki_holes_v1';
+function loadUnlockedHoles(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+    return clamp(Number(raw.unlockedHoles)||1,1,12);
+  }catch(_){ return 1; }
+}
+function saveUnlockedHoles(value){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({unlockedHoles:clamp(value,1,12)})); }catch(_){}
+}
+const savedUnlockedHoles = loadUnlockedHoles();
 
 const game = {
   started:false,
   paused:false,
-  day:1,
+  day:savedUnlockedHoles,
+  maxUnlockedHoles:savedUnlockedHoles,
   dayStart:0,
   lastTime:0,
   dayScore:0,
@@ -537,7 +557,7 @@ function resetSlots(){
   game.selected = 0;
 }
 
-function getCfg(){ return {...daySettings[Math.min(game.day,5)],holes:game.day<3?4:6,pieces:game.day<3?[4]:[6],queueMax:1}; }
+function getCfg(){ return daySettings[clamp(game.day,1,12)]; }
 function rand(a,b){ return a + Math.random()*(b-a); }
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
@@ -577,7 +597,7 @@ function addOrder(force){
   if(force || game.orders.length < cfg.queueMax){
     const order = makeOrder();
     if(force && game.day===1 && game.dayServed===0 && game.orders.length===0){
-      Object.assign(order, {type:'basic', pieces:4, filling:'octopus', extraOcto:false, cheese:false, hot:false, crispy:false, sauce:1, mayo:0, katsu:0, aonori:0, maxWait:105});
+      Object.assign(order, {type:'basic', pieces:1, filling:'octopus', extraOcto:false, cheese:false, hot:false, crispy:false, sauce:1, mayo:0, katsu:0, aonori:0, maxWait:105});
     }
     game.orders.push(order);
     setNotice('새 주문이 들어왔습니다.', 'warn');
@@ -606,8 +626,8 @@ function startDay(){
   elems.resultModal.classList.remove('show');
   elems.startScreen.style.display = 'none';
   elems.dayGuide.textContent = cfg.guide;
-  elems.todaySummary.textContent = `${game.day}일차 · ${cfg.holes}구`;
-  elems.dayRibbon.textContent = game.day === 1 ? '1일차 연습 영업' : `${game.day}일차 영업`;
+  elems.todaySummary.textContent = `${cfg.holes}구 도전 · 12구까지 하나씩 열기`;
+  elems.dayRibbon.textContent = `${cfg.holes}구 팬 도전`;
   elems.queueLimitText.textContent = `${cfg.queueMax}개까지`;
   setNotice('빈 구를 클릭해 시작! 노릇해지면 같은 구를 다시 눌러요.', 'good');
   buildHoleButtons();
@@ -619,16 +639,33 @@ function startDay(){
 function endDay(){
   game.paused = true;
   const rank = getRank(game.totalScore);
-  elems.resultTitle.textContent = `${game.day}일차 영업 끝`;
+  const passed = game.dayServed >= 1;
   elems.dayScoreText.textContent = game.dayScore.toString();
   elems.dayServedText.textContent = game.dayServed.toString();
   elems.bestComboText.textContent = game.bestCombo.toString();
   elems.dayRankText.textContent = rank;
-  let comment = '좋아요. 내일은 조금 더 빠르게 주문이 들어옵니다.';
-  if(game.dayServed>=8) comment = '손님들이 만족했어요. 굴리기 타이밍이 점점 좋아지고 있습니다.';
-  if(game.dayServed>=12) comment = '대단해요. 오늘은 줄 서서 먹는 타코야키집이었습니다.';
-  if(game.day===1) comment = '첫날 연습 영업을 마쳤습니다. 다음날부터 토핑 주문이 조금씩 늘어납니다.';
-  elems.resultComment.textContent = comment;
+  if(passed && game.day < 12){
+    const next = game.day + 1;
+    game.maxUnlockedHoles = Math.max(game.maxUnlockedHoles,next);
+    saveUnlockedHoles(game.maxUnlockedHoles);
+    elems.resultTitle.textContent = `${next}구 해금!`;
+    elems.resultComment.textContent = `${game.day}구 도전 성공! 팬에 새 구가 하나 열렸어요.`;
+    elems.nextDayBtn.textContent = `${next}구 팬으로 놀기`;
+    spawnSparkBurst();
+    playSound('success');
+  }else if(passed){
+    game.maxUnlockedHoles = 12;
+    saveUnlockedHoles(12);
+    elems.resultTitle.textContent = '12구 팬 완성!';
+    elems.resultComment.textContent = '모든 구를 열었어요. 이제 12구 팬으로 계속 타코야키를 만들 수 있어요.';
+    elems.nextDayBtn.textContent = '12구로 계속 놀기';
+    spawnSparkBurst();
+    playSound('success');
+  }else{
+    elems.resultTitle.textContent = `${game.day}구 다시 도전!`;
+    elems.resultComment.textContent = '주문 하나만 완성하면 다음 구가 열려요. 같은 단계에서 천천히 다시 해봐요.';
+    elems.nextDayBtn.textContent = `${game.day}구 다시 해보기`;
+  }
   elems.resultModal.classList.add('show');
 }
 
@@ -762,8 +799,9 @@ function buildHoleButtons(){
   game.slots.forEach((s,i)=>{
     const btn = document.createElement('button');
     btn.className = 'holeBtn' + (i===game.selected?' active':'') + (!s.unlocked?' locked':'');
-    btn.textContent = i+1;
+    btn.textContent = s.unlocked ? i+1 : '🔒';
     btn.disabled = !s.unlocked;
+    btn.title = s.unlocked ? `${i+1}번 구` : `${i+1}번 구 · 아직 잠김`;
     btn.addEventListener('click',()=>tapSlot(i));
     elems.holesBar.appendChild(btn);
   });
@@ -772,9 +810,11 @@ function buildHoleButtons(){
 function refreshHoleButtons(){
   Array.from(elems.holesBar.children).forEach((btn,i)=>{
     const s = game.slots[i];
-    btn.className = 'holeBtn' + (!s.unlocked?' locked':'') + (s.finished||isReady(s)||s.phaseCook>=7?' ready':'') + (s.burn>35?' burning':'');
-    btn.textContent = `${i+1} · ${s.finished?'담음':!s.batter?'반죽 넣기':s.burn>=82?'다시 굽기':isReady(s)&&s.rollCount>=3?'담기':s.phaseCook>=7?'뒤집기':'익는 중'}`;
-    btn.setAttribute('aria-label',`${i+1}번 구 ${btn.textContent.split(' · ')[1]}`);
+    const stateText = !s.unlocked ? '아직 잠김' : s.finished?'담음':!s.batter?'반죽 넣기':s.burn>=82?'다시 굽기':isReady(s)&&s.rollCount>=3?'담기':s.phaseCook>=7?'뒤집기':'익는 중';
+    btn.className = 'holeBtn' + (!s.unlocked?' locked':'') + (s.unlocked&&(s.finished||isReady(s)||s.phaseCook>=7)?' ready':'') + (s.unlocked&&s.burn>35?' burning':'') + (i===game.selected&&s.unlocked?' active':'');
+    btn.textContent = s.unlocked ? i+1 : '🔒';
+    btn.title = `${i+1}번 구 · ${stateText}`;
+    btn.setAttribute('aria-label',`${i+1}번 구 ${stateText}`);
   });
 }
 
@@ -1022,7 +1062,7 @@ function updateDayProgress(){
   const elapsed = now()-game.dayStart;
   const remain = clamp(1-elapsed/cfg.duration,0,1);
   elems.timeFill.style.width = `${remain*100}%`;
-  elems.dayLabel.textContent = `${game.day}일차 장사 시간 · 남은 ${Math.ceil(cfg.duration-elapsed)}초`;
+  elems.dayLabel.textContent = `${cfg.holes}구 도전 · 남은 ${Math.ceil(cfg.duration-elapsed)}초`;
   if(elapsed>=cfg.duration) endDay();
 }
 
@@ -1096,7 +1136,7 @@ function updateFireUI(){
 }
 function setFire(v){ game.fire=v; updateFireUI(); playSound('click'); }
 
-function showHelp(){ alert('빈 구 클릭: 반죽 넣기 / 노릇해진 구 클릭: 뒤집기 3회 / 완성된 알 클릭: 담기 / 탄 알 클릭: 정리. 숫자 1~6도 사용할 수 있어요.'); }
+function showHelp(){ alert('빈 구를 누르면 재료가 자동으로 들어가요. 초록색 구는 다시 눌러 뒤집고, 다 익은 구를 누르면 접시에 담겨요. 주문 하나를 완성하면 다음 구가 하나씩 열립니다.'); }
 
 // ----- Three.js -----
 let scene, camera, renderer, raycaster, pointer;
@@ -1433,7 +1473,10 @@ function bindControls(){
   $('btnClean').onclick=cleanSlot; $('btnPack').onclick=actionPack; $('btnHelp').onclick=showHelp; $('miniHelp').onclick=showHelp;
   $('fire0').onclick=()=>setFire(0); $('fire1').onclick=()=>setFire(1); $('fire2').onclick=()=>setFire(2);
   elems.startBtn.onclick=()=>{ ensureAudio(); startDay(); };
-  elems.nextDayBtn.onclick=()=>{ game.day++; startDay(); };
+  elems.nextDayBtn.onclick=()=>{
+    if(game.dayServed>=1 && game.day<12) game.day++;
+    startDay();
+  };
   window.addEventListener('keydown',(e)=>{
     if(e.repeat||!game.started||game.paused||e.target.closest('button'))return;
     if(/^[1-6]$/.test(e.key)){e.preventDefault();tapSlot(Number(e.key)-1);}
@@ -1462,6 +1505,8 @@ function loop(){
 let hiddenAt=null;
 document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=now();}else if(hiddenAt!==null){const delta=now()-game.lastTime;game.dayStart+=delta;game.nextOrderAt+=delta;game.lastTime=now();hiddenAt=null;}});
 function boot(){
+  elems.startBtn.textContent = game.day>1 ? `${game.day}구에서 이어하기` : '1구부터 시작';
+  elems.todaySummary.textContent = `${game.day}구부터 시작 · 최고 ${game.maxUnlockedHoles}구`;
   resetSlots();
   bindControls();
   initThree();
