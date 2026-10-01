@@ -1130,7 +1130,7 @@ const DUNGEON_THEMES={
   jungle:{bg:0x101b16,floor:0x6e7450,wall:0x8c8060,accent:0x9fe36b}
 };
 function dungeonMaterial(color,emissive=0){
-  return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?.35:0});
+  return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?0.35:0});
 }
 function addDungeonBox(x,y,z,w,h,d,color,userData=null){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),dungeonMaterial(color));
