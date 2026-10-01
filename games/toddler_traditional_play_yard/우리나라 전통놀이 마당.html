@@ -3,408 +3,207 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#f7ead0">
+<meta name="theme-color" content="#ead9ad">
 <title>우리나라 전통놀이 마당 | Kidscade</title>
 <style>
-:root{--ink:#3f3329;--paper:#fffaf0;--cream:#f8efd9;--red:#c94b43;--blue:#3d74a8;--green:#5e8d58;--gold:#d6a53b;--line:#d8c7a6;--shadow:0 12px 30px rgba(74,53,29,.14)}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:#efe4cd;color:var(--ink);font-family:"Pretendard","Noto Sans KR",system-ui,-apple-system,sans-serif}
-body{background:linear-gradient(#cce6ef 0 24%,#e8d9b8 24% 100%);overflow-x:hidden}
-button{font:inherit;color:inherit;touch-action:manipulation}
-button:focus-visible{outline:4px solid #1d74d5;outline-offset:3px}
-.hidden{display:none!important}
-.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:max(8px,env(safe-area-inset-top)) 12px 9px;background:rgba(255,250,240,.94);border-bottom:2px solid var(--line);backdrop-filter:blur(8px)}
-.topbar .brand{min-width:0;flex:1}
-.topbar b{display:block;font-size:clamp(16px,4vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar small{display:block;color:#806c56;font-weight:800}
-.iconBtn,.pillBtn{min-height:46px;border:2px solid var(--line);background:#fff;border-radius:16px;font-weight:950;box-shadow:0 3px 0 #cdb991}
-.iconBtn{width:48px;font-size:21px}
-.pillBtn{padding:0 13px}
-.shell{width:min(1080px,100%);margin:0 auto;padding:14px 12px 34px}
-.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#fff9e9,#f4e0b6);border:3px solid #cda86a;border-radius:28px;padding:20px;box-shadow:var(--shadow)}
-.hero:before{content:"";position:absolute;left:-20px;right:-20px;bottom:-9px;height:58px;background:repeating-linear-gradient(90deg,#bc5d43 0 34px,#d77952 34px 68px);clip-path:polygon(0 42%,100% 0,100% 100%,0 100%);opacity:.17}
-.heroKicker{display:inline-flex;align-items:center;gap:7px;background:#fff;border:2px solid var(--line);border-radius:999px;padding:7px 11px;font-weight:900;color:#72573b}
-.hero h1{margin:10px 0 8px;font-size:clamp(28px,7vw,48px);line-height:1.02}
-.hero p{max-width:720px;margin:0;font-weight:800;line-height:1.6;color:#6d5b49}
-.stampBoard{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
-.stamp{width:52px;height:52px;display:grid;place-items:center;border-radius:50%;border:3px dashed #b79f7c;background:#fffdf6;font-size:24px;filter:grayscale(1);opacity:.5;transition:.25s}
-.stamp.done{filter:none;opacity:1;border-style:solid;border-color:#c94b43;background:#fff1df;transform:rotate(-5deg) scale(1.05)}
-.masterBanner{margin-top:14px;padding:13px 15px;border-radius:18px;background:#fff6cb;border:2px solid #d7ad43;font-weight:950;text-align:center}
-.courtyard{position:relative;margin-top:14px;border-radius:28px;min-height:178px;border:3px solid #9d815c;overflow:hidden;background:linear-gradient(#bfe3ef 0 42%,#d7c198 42% 100%);box-shadow:var(--shadow)}
-.mountain{position:absolute;left:-6%;right:-6%;top:35px;height:75px;background:#7fa67b;clip-path:polygon(0 100%,0 67%,14% 31%,26% 72%,41% 22%,58% 75%,73% 34%,86% 70%,100% 38%,100% 100%);opacity:.65}
-.hanok{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:210px;height:92px;background:#e8d2a8;border:5px solid #6d4a31}
-.hanok:before{content:"";position:absolute;left:-32px;right:-32px;top:-36px;height:40px;background:#4b4238;clip-path:polygon(8% 56%,42% 35%,50% 0,58% 35%,92% 56%,100% 100%,0 100%)}
-.hanok:after{content:"";position:absolute;left:15px;right:15px;top:12px;bottom:8px;background:repeating-linear-gradient(90deg,#70462d 0 8px,#f5e3bd 8px 35px);border:3px solid #70462d}
-.tree{position:absolute;bottom:33px;width:18px;height:70px;background:#7a5637;border-radius:8px}
-.tree:before{content:"";position:absolute;width:80px;height:70px;border-radius:50%;background:#61935b;left:-31px;top:-44px;box-shadow:25px 8px 0 #75a669,-20px 16px 0 #7eaa69}
-.tree.left{left:9%}.tree.right{right:9%}
-.games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}
-.gameCard{position:relative;min-height:164px;border:3px solid var(--line);border-radius:24px;background:rgba(255,252,243,.96);padding:14px;text-align:left;cursor:pointer;box-shadow:0 7px 0 #cdb991;transition:.15s transform,.15s box-shadow}
-.gameCard:active{transform:translateY(4px);box-shadow:0 3px 0 #cdb991}
-.gameCard.done{border-color:#c94b43;background:#fff7e9}
-.gameCard .emoji{font-size:42px;display:block;margin-bottom:7px}
-.gameCard b{display:block;font-size:19px}
-.gameCard small{display:block;margin-top:5px;color:#78644f;font-weight:800;line-height:1.4}
-.gameCard .seal{position:absolute;right:11px;top:10px;font-size:25px;opacity:0;transform:scale(.6) rotate(18deg)}
-.gameCard.done .seal{opacity:1;transform:scale(1) rotate(-8deg)}
-.edu{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:14px}
-.edu span{background:rgba(255,255,255,.82);border:2px solid var(--line);border-radius:999px;padding:7px 10px;font-weight:900;font-size:13px}
-.playShell{width:min(940px,100%);margin:0 auto;padding:12px 12px 34px}
-.gameHead{display:flex;align-items:center;gap:9px;background:#fff9ea;border:3px solid var(--line);border-radius:22px;padding:10px 12px;box-shadow:var(--shadow)}
-.gameHead .title{flex:1;min-width:0}
-.gameHead .title b{display:block;font-size:clamp(18px,5vw,27px)}
-.gameHead .title small{display:block;color:#7b6753;font-weight:800}
-.stage{margin-top:12px;min-height:520px;border:3px solid #a78962;border-radius:28px;background:linear-gradient(#cae8f2 0 28%,#e7d2aa 28% 100%);overflow:hidden;box-shadow:var(--shadow);padding:15px;position:relative}
-.panel{background:rgba(255,252,242,.94);border:3px solid var(--line);border-radius:24px;padding:15px}
-.mission{text-align:center;margin-bottom:12px}
-.mission b{display:block;font-size:clamp(19px,5vw,29px)}
-.mission span{display:block;margin-top:5px;font-weight:850;color:#75624f}
-.bigAction{display:block;width:min(360px,100%);min-height:68px;margin:14px auto 0;border:0;border-radius:22px;background:#c94b43;color:white;font-size:22px;font-weight:1000;box-shadow:0 7px 0 #8d312d;cursor:pointer}
-.bigAction:active{transform:translateY(4px);box-shadow:0 3px 0 #8d312d}
-.bigAction.blue{background:#3d74a8;box-shadow:0 7px 0 #285478}
-.bigAction.green{background:#5e8d58;box-shadow:0 7px 0 #3d6639}
-.meter{position:relative;width:min(560px,92%);height:44px;margin:15px auto;border:4px solid #6d5b48;border-radius:999px;background:linear-gradient(90deg,#e57165 0 25%,#f5d772 25% 40%,#72b96a 40% 60%,#f5d772 60% 75%,#e57165 75%);overflow:hidden}
-.marker{position:absolute;top:-4px;width:13px;height:44px;border-radius:8px;background:#1d2730;border:2px solid #fff;transform:translateX(-50%)}
-.scoreline{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0}
-.scoreline span{min-width:92px;background:#fff;border:2px solid var(--line);border-radius:15px;padding:8px;text-align:center;font-weight:950}
-.feedback{min-height:34px;text-align:center;font-weight:1000;font-size:19px;margin-top:8px}
-.tuhoScene{height:255px;position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(#d7eef6 0 55%,#c9b184 55%)}
-.jar{position:absolute;right:15%;bottom:24px;width:82px;height:105px;border-radius:24px 24px 34px 34px;background:#9f633f;border:6px solid #5f3c29}
-.jar:before{content:"";position:absolute;left:10px;right:10px;top:-14px;height:24px;border-radius:50%;background:#34261f;border:6px solid #6a432c}
-.jar:after{content:"福";position:absolute;inset:27px 0 auto;text-align:center;font-size:28px;font-weight:1000;color:#f0d5a6}
-.kid{position:absolute;left:13%;bottom:25px;font-size:74px}
-.arrow{position:absolute;left:26%;bottom:90px;font-size:45px;transition:.58s cubic-bezier(.2,.8,.2,1)}
-.jegiArea{height:260px;display:grid;place-items:end center;position:relative;overflow:hidden}
-.jegiKid{font-size:92px;position:absolute;bottom:18px;left:50%;transform:translateX(-50%)}
-.jegi{position:absolute;font-size:46px;left:50%;top:22px;transform:translateX(-50%) rotate(0deg);will-change:top,transform}
-.jegiHitLine{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:min(330px,82%);height:50px;border-radius:999px;border:4px dashed rgba(78,128,70,.55);background:rgba(111,179,98,.13);pointer-events:none}
-.jegiHitLine:after{content:"여기에서 차요!";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:1000;color:#477840;white-space:nowrap}
-.powerMeter{position:relative;width:min(560px,92%);height:46px;margin:15px auto;border:4px solid #6d5b48;border-radius:999px;background:#eadfc8;overflow:hidden}
-.powerMeter:before{content:"";position:absolute;left:42%;width:36%;top:0;bottom:0;background:#79b76e}
-.powerFill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(201,75,67,.78);transition:.04s width linear}
-.powerNeedle{position:absolute;top:0;bottom:0;width:5px;background:#2b2b2b;left:0;transform:translateX(-50%)}
-.ddakjiArea{height:250px;display:flex;align-items:flex-end;justify-content:center;gap:34px;padding-bottom:34px;perspective:600px}
-.ddakji{width:116px;height:116px;display:grid;place-items:center;font-size:52px;font-weight:1000;border:6px solid #fff;box-shadow:0 9px 18px rgba(65,42,24,.2);transform-style:preserve-3d;transition:.6s transform}
-.ddakji.mine{background:#3d74a8;transform:rotate(8deg)}
-.ddakji.enemy{background:#d96455;transform:rotate(-7deg)}
-.ddakji.enemy.flip{transform:rotateX(180deg) rotate(-7deg)}
-.hopWrap{display:grid;grid-template-columns:minmax(0,430px) minmax(170px,1fr);gap:14px;align-items:center}
-.hopGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:410px;margin:0 auto}
-.hop{min-height:78px;border:4px solid #fff;border-radius:18px;background:#e5b85a;font-size:30px;font-weight:1000;box-shadow:0 5px 0 #9b7736}
-.hop.visited{background:#79b76e;color:#fff}
-.hop.next{outline:6px solid rgba(201,75,67,.35)}
-.hop.wrong{animation:shake .3s}
-@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
-.hopKid{font-size:86px;text-align:center;transition:.25s transform}
-.redScene{height:330px;position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(#cceaf3 0 58%,#b8d28d 58%)}
-.finishLine{position:absolute;right:66px;top:80px;bottom:20px;width:10px;background:repeating-linear-gradient(#fff 0 12px,#d24f45 12px 24px)}
-.doll{position:absolute;right:12px;top:38px;font-size:76px;transform-origin:center;transition:.2s}
-.doll.stop{transform:rotateY(180deg)}
-.runner{position:absolute;left:20px;bottom:34px;font-size:68px;transition:.06s left linear}
-.light{position:absolute;left:15px;top:14px;padding:9px 15px;border-radius:999px;background:#5c9b54;color:#fff;font-weight:1000;font-size:18px}
-.light.stop{background:#c94843}
-.holdBtn{user-select:none;-webkit-user-select:none}
-.track{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-width:540px;margin:12px auto}
-.trackCell{min-height:72px;display:grid;place-items:center;border:3px solid #92764e;border-radius:16px;background:#fff7df;font-weight:1000;font-size:19px;position:relative}
-.trackCell.on{background:#f4d06b}
-.trackCell .piece{position:absolute;font-size:34px;transform:translateY(-20px)}
-.yutSticks{display:flex;justify-content:center;gap:9px;height:125px;align-items:center}
-.yutStick{position:relative;width:28px;height:94px;border-radius:16px;background:#d7a765;border:4px solid #744f31;transition:.45s transform,.2s background}
-.yutStick.flat{background:#f4dba9}
-.yutStick.flat:after{content:"●";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:14px;color:#754b2d}
-.yutSticks.throw .yutStick:nth-child(1){transform:translateY(-25px) rotate(180deg)}
-.yutSticks.throw .yutStick:nth-child(2){transform:translateY(-40px) rotate(360deg)}
-.yutSticks.throw .yutStick:nth-child(3){transform:translateY(-18px) rotate(270deg)}
-.yutSticks.throw .yutStick:nth-child(4){transform:translateY(-34px) rotate(450deg)}
-.resultOverlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(39,30,24,.55);padding:16px}
-.resultCard{width:min(470px,100%);background:#fffaf0;border:4px solid #c59c57;border-radius:30px;padding:23px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.25)}
-.resultIcon{font-size:70px}.resultCard h2{margin:4px 0 7px;font-size:30px}.resultCard p{font-weight:850;line-height:1.5;color:#735f4c}
-.resultBtns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
-.resultBtns button{min-height:55px;border:0;border-radius:17px;font-weight:1000;background:#ead8b5}
-.resultBtns .primary{background:#c94b43;color:#fff}
-.confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
-.confetti i{position:absolute;top:-20px;width:11px;height:20px;border-radius:3px;animation:fall 1.8s linear forwards}
-@keyframes fall{to{transform:translateY(110vh) rotate(700deg)}}
-@media(max-width:760px){.games{grid-template-columns:repeat(2,minmax(0,1fr))}.gameCard{min-height:150px}.hopWrap{grid-template-columns:1fr}.hopKid{font-size:62px}.stage{min-height:560px}.tuhoScene{height:230px}.jar{right:8%}.kid{left:7%}.redScene{height:310px}}
-@media(max-width:390px){.games{gap:9px}.gameCard{padding:11px;min-height:145px}.gameCard .emoji{font-size:35px}.gameCard b{font-size:16px}.topbar small{display:none}.pillBtn{padding:0 9px}.trackCell{min-height:61px}.stage{padding:10px}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}
+:root{--ink:#3d3023;--paper:#fffaf0;--red:#cf4f43;--blue:#3f78ad;--green:#5f9557;--gold:#d5a43a;--line:#c9ad7a;--shadow:0 12px 30px #51381722}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;color:var(--ink);background:#e9d8ad}button{font:inherit;color:inherit;touch-action:manipulation}.hidden{display:none!important}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;padding:max(8px,env(safe-area-inset-top)) 10px 8px;background:#fffaf0ee;border-bottom:2px solid #cfbd97;backdrop-filter:blur(8px)}
+.icon,.pill{min-height:44px;border:2px solid #cfbd97;background:#fff;border-radius:15px;font-weight:950;box-shadow:0 3px 0 #b89d6b}.icon{width:46px;font-size:21px}.pill{padding:0 11px}.brand{flex:1;min-width:0}.brand b{display:block;font-size:clamp(15px,4vw,21px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand small{font-weight:850;color:#80694f}
+.hud{display:flex;gap:6px;flex-wrap:wrap}.hud .pill{min-width:78px}
+#yard{min-height:calc(100vh - 62px);position:relative;overflow:hidden;background:linear-gradient(#a9dced 0 25%,#90b878 25% 31%,#d9bc80 31% 100%)}
+.mountains{position:absolute;left:-4%;right:-4%;top:8%;height:22%;background:#779f72;clip-path:polygon(0 100%,0 64%,12% 35%,23% 71%,39% 18%,55% 70%,70% 38%,83% 76%,100% 40%,100% 100%);opacity:.72}
+.sun{position:absolute;right:8%;top:5%;width:55px;height:55px;border-radius:50%;background:#f4cb58;box-shadow:0 0 0 12px #f4cb5830}
+.hanok{position:absolute;left:50%;top:22%;transform:translateX(-50%);width:min(310px,56vw);height:112px;background:#e8d0a2;border:5px solid #68462e;border-radius:4px}.hanok:before{content:"";position:absolute;left:-35px;right:-35px;top:-42px;height:48px;background:#4d453d;clip-path:polygon(0 72%,36% 42%,50% 0,64% 42%,100% 72%,94% 100%,6% 100%)}.hanok:after{content:"";position:absolute;left:18px;right:18px;top:18px;bottom:12px;background:repeating-linear-gradient(90deg,#6f472e 0 10px,#f4e2b9 10px 44px);border:3px solid #6f472e}
+.wall{position:absolute;left:0;right:0;top:36%;height:18px;background:repeating-linear-gradient(90deg,#cab07d 0 34px,#b89964 34px 38px);box-shadow:0 5px 0 #8b6c45}
+.yardTitle{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);z-index:4;background:#fff8e7e8;border:3px solid #b68c4c;border-radius:18px;padding:8px 16px;text-align:center;box-shadow:var(--shadow);pointer-events:none}.yardTitle b{display:block;font-size:clamp(19px,5vw,30px)}.yardTitle small{font-weight:850;color:#786247}
+.spot{position:absolute;transform:translate(-50%,-50%);width:112px;min-height:92px;border:3px solid #8e7149;border-radius:22px;background:#fff9e7e8;box-shadow:0 7px 0 #a98a59;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-weight:1000;z-index:8;padding:8px;cursor:pointer}.spot:active{transform:translate(-50%,calc(-50% + 4px));box-shadow:0 3px 0 #a98a59}.spot .emoji{font-size:33px}.spot small{font-size:11px;color:#755f46}.spot.locked{filter:grayscale(.55);opacity:.68;background:#e9dfc8}.spot.new{animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 7px 0 #a98a59,0 0 0 12px #ffd45e55}}
+#spot-tuho{left:18%;top:56%}#spot-jegi{left:48%;top:61%}#spot-hop{left:80%;top:56%}#spot-ddakji{left:18%;top:82%}#spot-flower{left:50%;top:84%}#spot-yut{left:82%;top:82%}
+.player{position:absolute;left:50%;top:73%;transform:translate(-50%,-85%);z-index:15;width:70px;height:90px;display:grid;place-items:end center;transition:left .34s ease,top .34s ease;pointer-events:none;filter:drop-shadow(0 7px 5px #51381733)}.player img{max-width:74px;max-height:88px;object-fit:contain}.player .fallback{font-size:63px}.player:after{content:"";position:absolute;left:13px;right:13px;bottom:-3px;height:13px;border-radius:50%;background:#553b2535;z-index:-1}
+.prompt{position:absolute;z-index:19;transform:translate(-50%,-100%);min-width:155px;max-width:210px;padding:9px 10px;border:3px solid #87663f;border-radius:17px;background:#fffdf5;box-shadow:var(--shadow);text-align:center;font-weight:950}.prompt button{margin-top:6px;min-height:38px;border:0;border-radius:12px;background:#cf4f43;color:#fff;font-weight:1000;width:100%}
+.yardFooter{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;background:#fff8e9ed;border:2px solid #bca071;border-radius:999px;padding:7px 12px;font-weight:900;font-size:13px;box-shadow:var(--shadow);white-space:nowrap}
+.decor{position:absolute;z-index:3;font-size:42px;filter:drop-shadow(0 5px 4px #51381733)}.jarDecor{left:6%;top:69%}.flagDecor{right:5%;top:68%}.kiteDecor{right:8%;top:41%}
+#play{min-height:calc(100vh - 62px);background:linear-gradient(#b9e2ef 0 24%,#e3c98f 24% 100%);padding:12px}.playCard{width:min(900px,100%);margin:auto;background:#fff9eb;border:3px solid #aa8b5d;border-radius:26px;padding:14px;box-shadow:var(--shadow)}.playHead{display:flex;align-items:center;gap:8px}.playHead h2{margin:0;flex:1;font-size:clamp(21px,5vw,31px)}.mission{margin:10px 0;padding:11px 13px;border-radius:18px;background:#fff;border:2px solid #d8c39b;text-align:center;font-weight:900}.mission b{display:block;font-size:19px}.mission span{display:block;margin-top:4px;color:#796249}.scoreline{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:9px 0}.scoreline span{background:#fff;border:2px solid #d8c39b;border-radius:14px;padding:7px 10px;font-weight:1000}
+.feedback{text-align:center;min-height:31px;font-weight:1000;font-size:18px;margin:8px 0}
+.bigBtn{display:block;width:min(340px,100%);min-height:60px;margin:10px auto;border:0;border-radius:20px;background:#cf4f43;color:#fff;font-weight:1000;font-size:20px;box-shadow:0 6px 0 #92372f}.bigBtn.blue{background:#3f78ad;box-shadow:0 6px 0 #295879}
+.tuhoField{position:relative;height:360px;border-radius:22px;overflow:hidden;background:linear-gradient(#c7eaf3 0 66%,#c7ad77 66%);touch-action:none}.tuhoJar{position:absolute;left:50%;top:45px;transform:translateX(-50%);width:102px;height:118px;border-radius:26px 26px 38px 38px;background:#9c613d;border:6px solid #5e3d2a}.tuhoJar:before{content:"";position:absolute;left:10px;right:10px;top:-15px;height:24px;border:6px solid #6a442c;border-radius:50%;background:#35271f}.tuhoStick{position:absolute;left:50%;bottom:34px;width:18px;height:122px;border-radius:12px;background:linear-gradient(90deg,#c8995d,#edd29a,#a97643);border:3px solid #6b482d;transform:translateX(-50%) rotate(0deg);transform-origin:50% 85%;cursor:grab;z-index:6}.aimHint{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);font-size:13px;font-weight:950;background:#fff9;padding:4px 8px;border-radius:999px}.trailDot{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff9;border:2px solid #6e5235;pointer-events:none}
+.jegiField{height:390px;position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(#c7eaf3 0 72%,#c2a76f 72%)}.jegiPlayer{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:76px;transition:left .14s}.jegiObj{position:absolute;top:20px;left:50%;font-size:42px;transform:translateX(-50%);filter:drop-shadow(0 5px 3px #0002)}.kickZone{position:absolute;left:8%;right:8%;bottom:80px;height:56px;border:4px dashed #5f955780;border-radius:999px;background:#5f95571c}.controls{display:grid;grid-template-columns:70px 1fr 1fr 70px;gap:8px;margin-top:10px}.controls button{min-height:58px;border:0;border-radius:18px;font-weight:1000;font-size:18px;background:#ead8b5;box-shadow:0 5px 0 #bca071}.controls .kick{background:#3f78ad;color:#fff;box-shadow:0 5px 0 #295879}
+.hopField{display:grid;grid-template-columns:minmax(0,520px) 1fr;gap:13px;align-items:center}.hopBoard{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;max-width:480px;margin:auto;position:relative}.hopCell{min-height:86px;border:4px solid #fff;border-radius:17px;background:#e0ad4c;box-shadow:0 5px 0 #9b7130;font-size:28px;font-weight:1000;position:relative}.hopCell.goal{outline:7px solid #cf4f4360}.hopCell.done{background:#70aa64;color:#fff}.hopCell.skip{background:#d9d0b9;color:#755}.stone{position:absolute;font-size:31px;z-index:6;transform:translate(-50%,-50%);cursor:grab;touch-action:none}.stoneDock{height:74px;display:flex;align-items:center;justify-content:center;border:3px dashed #b59969;border-radius:18px;background:#fff6dc;font-weight:950}.hopKid{font-size:86px;text-align:center}.hopSide{text-align:center}
+.overlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:#241a13aa;padding:15px}.modal{width:min(460px,100%);background:#fffaf0;border:4px solid #c49a55;border-radius:28px;padding:22px;text-align:center;box-shadow:0 22px 70px #0005}.modal .iconBig{font-size:64px}.modal h2{margin:4px 0 7px;font-size:28px}.modal p{font-weight:850;line-height:1.55;color:#725c45}.modalBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modalBtns button{min-height:52px;border:0;border-radius:16px;background:#ead7b1;font-weight:1000}.modalBtns .primary{background:#cf4f43;color:#fff}
+.tutorialFinger{position:absolute;z-index:30;font-size:42px;animation:hand 1.1s ease-in-out infinite;pointer-events:none}@keyframes hand{50%{transform:translateY(10px) scale(.92)}}
+.confetti{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}.confetti i{position:absolute;top:-20px;width:11px;height:18px;border-radius:3px;animation:fall 1.7s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(700deg)}}
+@media(max-width:700px){.brand small{display:none}.hud .pill{min-width:auto;padding:0 8px}.spot{width:88px;min-height:78px;border-radius:18px;padding:6px}.spot .emoji{font-size:28px}.spot b{font-size:13px}.spot small{display:none}.yardTitle{top:39%}.player{width:58px;height:76px}.player img{max-width:60px;max-height:73px}.player .fallback{font-size:52px}.hopField{grid-template-columns:1fr}.hopSide{display:grid;grid-template-columns:90px 1fr;align-items:center}.hopKid{font-size:65px}.controls{grid-template-columns:58px 1fr 1fr 58px}.yardFooter{font-size:11px}.tuhoField{height:330px}.jegiField{height:340px}}
+@media(max-width:390px){#spot-tuho{left:16%}#spot-hop{left:84%}#spot-ddakji{left:16%}#spot-yut{left:84%}.spot{width:78px}.topbar{gap:5px}.pill{font-size:12px}.hud{gap:3px}}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <button class="iconBtn" id="exitBtn" aria-label="키즈케이드로 나가기">←</button>
-  <div class="brand"><b>우리나라 전통놀이 마당</b><small>놀이하고 도장을 모아요</small></div>
-  <button class="pillBtn" id="soundBtn">🔊 소리</button>
-  <button class="pillBtn" id="stampBtn">도장 <span id="stampCount">0</span>/6</button>
+  <button class="icon" id="exitBtn" aria-label="나가기">←</button>
+  <div class="brand"><b>우리나라 전통놀이 마당</b><small>직접 돌아다니며 놀아요</small></div>
+  <div class="hud"><button class="pill" id="soundBtn">🔊</button><button class="pill" id="coinBtn">🪙 <span id="coinCount">0</span></button><button class="pill" id="stampBtn">🔴 <span id="stampCount">0</span>/3</button></div>
 </header>
 
-<main id="yard" class="shell">
-  <section class="hero">
-    <div class="heroKicker">🇰🇷 우리 문화 · 몸과 마음 놀이</div>
-    <h1>전통놀이 마당</h1>
-    <p>하고 싶은 놀이를 골라 신나게 해 봐요. 놀이 하나를 끝낼 때마다 빨간 도장이 하나씩 생겨요!</p>
-    <div class="stampBoard" id="stampBoard"></div>
-    <div class="masterBanner hidden" id="masterBanner">🎉 여섯 놀이를 모두 해냈어요! 전통놀이 달인!</div>
-    <button class="pillBtn hidden" id="resetProgressBtn" type="button" style="margin-top:10px">↻ 도장판 새로 시작</button>
-  </section>
-
-  <section class="courtyard" aria-label="한옥 마당 풍경">
-    <div class="mountain"></div><div class="tree left"></div><div class="tree right"></div><div class="hanok"></div>
-  </section>
-
-  <section class="games" id="gameGrid"></section>
-
-  <div class="edu">
-    <span>🎯 눈-손 협응</span><span>🔢 수 세기</span><span>⏱️ 타이밍</span><span>👀 관찰</span><span>🇰🇷 전통문화</span>
-  </div>
+<main id="yard" aria-label="전통놀이 마당">
+  <div class="mountains"></div><div class="sun"></div><div class="hanok"></div><div class="wall"></div>
+  <div class="yardTitle"><b>전통놀이 마당</b><small id="yardMessage">마당을 눌러 걸어가 보세요!</small></div>
+  <button class="spot" id="spot-tuho" data-game="tuho"><span class="emoji">🏺</span><b>투호</b><small>당겨서 던지기</small></button>
+  <button class="spot" id="spot-jegi" data-game="jegi"><span class="emoji">🪶</span><b>제기차기</b><small>움직여서 발로 톡</small></button>
+  <button class="spot locked" id="spot-hop" data-game="hop"><span class="emoji">🟨</span><b>사방치기</b><small>도장 1개 필요</small></button>
+  <button class="spot locked" id="spot-ddakji" disabled><span class="emoji">🟥</span><b>딱지치기</b><small>다음 리워크</small></button>
+  <button class="spot locked" id="spot-flower" disabled><span class="emoji">🌺</span><b>무궁화</b><small>다음 리워크</small></button>
+  <button class="spot locked" id="spot-yut" disabled><span class="emoji">🎋</span><b>윷놀이</b><small>다음 리워크</small></button>
+  <div class="decor jarDecor hidden" id="decor1">🏺🏺</div><div class="decor flagDecor hidden" id="decor2">🚩</div><div class="decor kiteDecor hidden" id="decor3">🪁</div>
+  <div class="player" id="player"><img id="avatarImg" alt="내 캐릭터" hidden><div class="fallback" id="avatarFallback">🧒</div></div>
+  <div class="prompt hidden" id="prompt"><div id="promptText">놀이해 볼까요?</div><button id="promptPlay">놀기!</button></div>
+  <div class="yardFooter">빈 마당을 눌러 이동 · 놀이기구를 누르면 가까이 가요</div>
 </main>
 
-<main id="play" class="playShell hidden">
-  <section class="gameHead">
-    <button class="iconBtn" id="backBtn" aria-label="전통놀이 마당으로">←</button>
-    <div class="title"><b id="gameTitle">놀이</b><small id="gameSub">짧고 쉽게 즐겨요</small></div>
-    <button class="iconBtn" id="restartBtn" aria-label="다시 시작">↻</button>
+<main id="play" class="hidden">
+  <section class="playCard">
+    <div class="playHead"><button class="icon" id="backBtn">←</button><h2 id="gameTitle">놀이</h2><button class="icon" id="restartBtn">↻</button></div>
+    <div id="stage"></div>
   </section>
-  <section class="stage" id="stage"></section>
 </main>
 
-<div class="resultOverlay hidden" id="resultOverlay">
-  <div class="resultCard">
-    <div class="resultIcon" id="resultIcon">🏅</div>
-    <h2 id="resultTitle">참 잘했어요!</h2>
-    <p id="resultText"></p>
-    <div class="resultBtns">
-      <button id="againBtn">한 번 더</button>
-      <button class="primary" id="yardBtn">마당으로</button>
-    </div>
-  </div>
-</div>
+<div class="overlay hidden" id="overlay"><div class="modal"><div class="iconBig" id="resultIcon">🏅</div><h2 id="resultTitle">참 잘했어요!</h2><p id="resultText"></p><div class="modalBtns"><button id="againBtn">한 번 더</button><button class="primary" id="yardBtn">마당으로</button></div></div></div>
 <div class="confetti" id="confetti"></div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="toddler_traditional_play_yard" data-title="우리나라 전통놀이 마당" data-shell="false"></script>
 <script>
 (function(){
 'use strict';
-var gameDefs=[
-  {id:'tuho',emoji:'🏺',title:'투호',sub:'움직이는 눈금을 보고 막대를 항아리에 쏙!'},
-  {id:'jegi',emoji:'🪶',title:'제기차기',sub:'좋은 순간에 발을 톡 눌러 제기를 차요.'},
-  {id:'ddakji',emoji:'🟥',title:'딱지치기',sub:'힘을 잘 맞춰 상대 딱지를 뒤집어요.'},
-  {id:'hop',emoji:'🔢',title:'사방치기',sub:'1부터 차례대로 칸을 밟아 건너가요.'},
-  {id:'flower',emoji:'🌺',title:'무궁화 꽃이 피었습니다',sub:'갈 때는 가고, 돌아보면 딱 멈춰요.'},
-  {id:'yut',emoji:'🎋',title:'쉬운 윷놀이',sub:'윷을 던지고 나온 수만큼 말을 옮겨요.'}
-];
-var SAVE_KEY='kidscade_game_v1:toddler_traditional_play_yard:progress';
-function readSave(){try{var raw=localStorage.getItem(SAVE_KEY);var v=raw?JSON.parse(raw):{};return v&&typeof v==='object'?v:{}}catch(e){return {}}}
-function saveProgress(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({stamps:Array.from(stamps),soundOn:soundOn}))}catch(e){}}
-var saved=readSave();
-var stamps=new Set(Array.isArray(saved.stamps)?saved.stamps.filter(function(id){return gameDefs.some(function(g){return g.id===id})}):[]);
-var current=null;
-var soundOn=saved.soundOn!==false;
-var raf=0;
-var timers=[];
-var audioCtx=null;
+var SAVE_KEY='kidscade_game_v2:toddler_traditional_play_yard:yard';
 var $=function(id){return document.getElementById(id)};
-var stage=$('stage');
-var overlay=$('resultOverlay');
+var stage=$('stage'),overlay=$('overlay'),current=null,raf=0,timers=[],audioCtx=null;
+var state=loadState(),soundOn=state.soundOn!==false,nearGame=null;
+var playerPos={x:50,y:73};
+var spots={tuho:{x:18,y:56,title:'투호'},jegi:{x:48,y:61,title:'제기차기'},hop:{x:80,y:56,title:'사방치기'}};
 
-function cleanup(){
-  if(raf){cancelAnimationFrame(raf);raf=0}
-  timers.forEach(function(t){clearTimeout(t)});timers=[];
-}
+function loadState(){try{var s=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');return {stamps:Array.isArray(s.stamps)?s.stamps:[],coins:Number(s.coins)||0,soundOn:s.soundOn!==false,tutorials:s.tutorials||{}}}catch(e){return {stamps:[],coins:0,soundOn:true,tutorials:{}}}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
+function cleanup(){if(raf){cancelAnimationFrame(raf);raf=0}timers.forEach(clearTimeout);timers=[]}
 function later(fn,ms){var t=setTimeout(fn,ms);timers.push(t);return t}
-function tone(freq,dur,type){
-  if(!soundOn)return;
-  try{
-    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    var o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.type=type||'sine';o.frequency.value=freq;g.gain.value=.055;o.connect(g);g.connect(audioCtx.destination);
-    o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+(dur||.12));o.stop(audioCtx.currentTime+(dur||.12));
-  }catch(e){}
+function hasStamp(id){return state.stamps.indexOf(id)>=0}
+function unlocked(id){return id!=='hop'||state.stamps.length>=1}
+function tone(f,d,type){if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=.045;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+(d||.1));o.stop(audioCtx.currentTime+(d||.1))}catch(e){}}
+function successSound(){tone(660,.1);later(function(){tone(880,.16)},90)}
+function missSound(){tone(170,.1,'square')}
+function confetti(){var box=$('confetti');box.innerHTML='';var c=['#c94b43','#3d74a8','#e0b13f','#5e8d58','#8d5ca6'];for(var i=0;i<36;i++){var p=document.createElement('i');p.style.left=(Math.random()*100)+'%';p.style.background=c[i%c.length];p.style.animationDelay=(Math.random()*.25)+'s';box.appendChild(p)}later(function(){box.innerHTML=''},2000)}
+function avatarSource(){var key='kidscade-avatar-studio-preview',src='';try{var h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;src=h.localStorage&&h.localStorage.getItem(key)||localStorage.getItem(key)||'';if(!src&&typeof h.renderAvatarSVG==='function'){src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(h.renderAvatarSVG())}}catch(e){}return src}
+function loadAvatar(){var src=avatarSource();if(src&&src.indexOf('data:image')===0){$('avatarImg').src=src;$('avatarImg').hidden=false;$('avatarFallback').hidden=true}else{$('avatarImg').hidden=true;$('avatarFallback').hidden=false}}
+function updateHud(){
+ $('coinCount').textContent=state.coins;$('stampCount').textContent=Math.min(3,state.stamps.length);
+ var hop=$('spot-hop'),wasLocked=hop.classList.contains('locked');
+ hop.classList.toggle('locked',!unlocked('hop'));hop.disabled=!unlocked('hop');
+ hop.querySelector('small').textContent=unlocked('hop')?'돌 던지고 콩콩':'도장 1개 필요';
+ if(wasLocked&&unlocked('hop')&&!hasStamp('hop')){hop.classList.add('new');later(function(){hop.classList.remove('new')},3500)}
+ $('decor1').classList.toggle('hidden',state.stamps.length<1);$('decor2').classList.toggle('hidden',state.stamps.length<2);$('decor3').classList.toggle('hidden',state.stamps.length<3);
+ $('yardMessage').textContent=state.stamps.length===0?'투호나 제기차기부터 해 볼까요?':state.stamps.length===1?'새 놀이 사방치기가 열렸어요!':state.stamps.length===2?'마당이 점점 신나졌어요!':'세 놀이를 모두 해냈어요! 다음 마당도 준비 중!';
 }
-function successSound(){tone(660,.12);later(function(){tone(880,.18)},100)}
-function missSound(){tone(180,.12,'square')}
-function confetti(){
-  var box=$('confetti');box.innerHTML='';
-  var colors=['#c94b43','#3d74a8','#e0b13f','#5e8d58','#8d5ca6'];
-  for(var i=0;i<44;i++){
-    var p=document.createElement('i');p.style.left=(Math.random()*100)+'%';p.style.background=colors[i%colors.length];
-    p.style.animationDelay=(Math.random()*.35)+'s';box.appendChild(p);
-  }
-  later(function(){box.innerHTML=''},2300);
+function movePlayer(x,y,game){
+ x=Math.max(7,Math.min(93,x));y=Math.max(45,Math.min(92,y));playerPos={x:x,y:y};$('player').style.left=x+'%';$('player').style.top=y+'%';nearGame=null;$('prompt').classList.add('hidden');
+ if(game){later(function(){if(!unlocked(game))return;nearGame=game;var s=spots[game];$('promptText').textContent=s.title+' 해 볼까요?';var p=$('prompt');p.style.left=s.x+'%';p.style.top=(s.y-7)+'%';p.classList.remove('hidden')},360)}
 }
-function postResult(id){
-  try{if(parent&&parent!==window)parent.postMessage({type:'kidscade:game-result',gameId:'toddler_traditional_play_yard',miniGame:id,stamps:stamps.size,cleared:stamps.size===6},location.origin)}catch(e){}
+function showYard(){cleanup();current=null;overlay.classList.add('hidden');$('play').classList.add('hidden');$('yard').classList.remove('hidden');updateHud();window.scrollTo(0,0)}
+function openGame(id){if(!unlocked(id))return;cleanup();current=id;$('yard').classList.add('hidden');$('play').classList.remove('hidden');overlay.classList.add('hidden');renderCurrent();window.scrollTo(0,0);tone(520,.06)}
+function complete(id,text){
+ cleanup();var first=!hasStamp(id);if(first){state.stamps.push(id);state.coins+=3}else state.coins+=1;save();updateHud();
+ try{if(parent&&parent!==window)parent.postMessage({type:'kidscade:game-result',gameId:'toddler_traditional_play_yard',miniGame:id,stamps:state.stamps.length,coins:state.coins},location.origin)}catch(e){}
+ $('resultIcon').textContent=first?'🔴':'🪙';$('resultTitle').textContent=first?'새 도장을 받았어요!':'또 성공했어요!';
+ $('resultText').textContent=text+(first?' 엽전 3개도 받았어요.':' 엽전 1개를 더 받았어요.');overlay.classList.remove('hidden');successSound();confetti()
 }
-function renderYard(){
-  $('stampCount').textContent=stamps.size;
-  $('stampBoard').innerHTML=gameDefs.map(function(g){return '<div class="stamp '+(stamps.has(g.id)?'done':'')+'" title="'+g.title+'">'+g.emoji+'</div>'}).join('');
-  $('masterBanner').classList.toggle('hidden',stamps.size<6);
-  $('resetProgressBtn').classList.toggle('hidden',stamps.size===0);
-  $('gameGrid').innerHTML=gameDefs.map(function(g){
-    return '<button class="gameCard '+(stamps.has(g.id)?'done':'')+'" data-game="'+g.id+'"><span class="emoji">'+g.emoji+'</span><b>'+g.title+'</b><small>'+g.sub+'</small><span class="seal">🔴</span></button>';
-  }).join('');
-}
-function showYard(){
-  cleanup();current=null;overlay.classList.add('hidden');$('play').classList.add('hidden');$('yard').classList.remove('hidden');renderYard();window.scrollTo(0,0);
-}
-function openGame(id){
-  var def=gameDefs.find(function(g){return g.id===id});if(!def)return;
-  cleanup();current=id;$('yard').classList.add('hidden');$('play').classList.remove('hidden');$('gameTitle').textContent=def.emoji+' '+def.title;$('gameSub').textContent=def.sub;
-  renderCurrent();window.scrollTo(0,0);tone(520,.08);
-}
-function completeGame(id,text){
-  cleanup();
-  var first=!stamps.has(id);stamps.add(id);saveProgress();renderYard();postResult(id);successSound();confetti();
-  var all=stamps.size===6;
-  $('resultIcon').textContent=all?'🏆':'🏅';
-  $('resultTitle').textContent=all?'전통놀이 달인!':'도장을 받았어요!';
-  $('resultText').textContent=all?'여섯 가지 전통놀이를 모두 해냈어요. 마당에 도장이 가득 찼어요!':text+(first?' 새 도장도 하나 생겼어요!':' 이번 놀이도 다시 멋지게 해냈어요!');
-  overlay.classList.remove('hidden');
-}
-function retryMessage(text){
-  cleanup();$('resultIcon').textContent='💪';$('resultTitle').textContent='조금만 더!';$('resultText').textContent=text;overlay.classList.remove('hidden');
-}
-function renderCurrent(){
-  if(current==='tuho')renderTuho();
-  else if(current==='jegi')renderJegi();
-  else if(current==='ddakji')renderDdakji();
-  else if(current==='hop')renderHop();
-  else if(current==='flower')renderFlower();
-  else if(current==='yut')renderYut();
-}
+function tutorialOnce(id,html,left,top){if(state.tutorials[id])return;state.tutorials[id]=true;save();var h=document.createElement('div');h.className='tutorialFinger';h.innerHTML='☝️';h.style.left=left;h.style.top=top;stage.appendChild(h);var note=document.createElement('div');note.className='feedback';note.textContent=html;stage.appendChild(note);later(function(){h.remove();note.remove()},2600)}
+function renderCurrent(){if(current==='tuho')renderTuho();else if(current==='jegi')renderJegi();else if(current==='hop')renderHop()}
 
 function renderTuho(){
-  var tries=0,hits=0,pos=5,dir=1,last=performance.now();
-  stage.innerHTML='<div class="panel mission"><b>🏺 항아리에 막대를 넣어 봐!</b><span>검은 눈금이 가운데 초록색에 왔을 때 던져요.</span></div><div class="tuhoScene"><div class="kid">🧒</div><div class="jar"></div><div id="arrowFx" class="arrow">🥢</div></div><div class="scoreline"><span>던진 막대 <b id="tuhoTry">0/5</b></span><span>성공 <b id="tuhoHit">0</b></span></div><div class="meter"><div id="tuhoMarker" class="marker"></div></div><div id="tuhoFb" class="feedback">가운데를 잘 보고 준비!</div><button id="tuhoThrow" class="bigAction">막대 던지기!</button>';
-  function loop(now){var dt=Math.min(.035,(now-last)/1000);last=now;pos+=dir*55*dt;if(pos>=96){pos=96;dir=-1}if(pos<=4){pos=4;dir=1}$('tuhoMarker').style.left=pos+'%';raf=requestAnimationFrame(loop)}
-  raf=requestAnimationFrame(loop);
-  $('tuhoThrow').addEventListener('click',function(){
-    if(tries>=5)return;tries++;var diff=Math.abs(pos-50),hit=diff<20,perfect=diff<8;if(hit)hits++;
-    $('tuhoTry').textContent=tries+'/5';$('tuhoHit').textContent=hits;$('tuhoFb').textContent=perfect?'쏙! 한가운데 성공!':hit?'쏙! 들어갔어요!':'아깝다! 조금 옆으로 갔어요.';
-    var a=$('arrowFx');a.style.transition='none';a.style.left='26%';a.style.bottom='90px';a.style.transform='rotate(-18deg)';void a.offsetWidth;a.style.transition='.58s cubic-bezier(.2,.8,.2,1)';a.style.left=(hit?'77%':'72%');a.style.bottom=(hit?'70px':'32px');a.style.transform='rotate(75deg)';
-    hit?successSound():missSound();
-    if(tries===5)later(function(){hits>=2?completeGame('tuho','막대를 '+hits+'번 항아리에 넣었어요!'):retryMessage('다섯 번 중 두 번만 넣으면 도장을 받을 수 있어요. 다시 해 볼까요?')},700);
-  });
-}
-function renderJegi(){
-  var good=0,last=performance.now(),phase=0,y=24,cool=false;
-  stage.innerHTML='<div class="panel mission"><b>🪶 내려오는 제기를 발로 톡!</b><span>제기가 초록 점선 가까이 내려왔을 때 눌러요. 5번 차면 성공!</span></div><div class="jegiArea"><div class="jegiHitLine"></div><div class="jegiKid">🧒</div><span id="jegiFx" class="jegi">🪶</span></div><div class="scoreline"><span>성공 <b id="jegiScore">0/5</b></span></div><div id="jegiFb" class="feedback">제기가 아래로 내려오는 걸 잘 봐요!</div><button id="jegiKick" class="bigAction blue">발로 톡!</button>';
-  function loop(now){
-    var dt=Math.min(.04,(now-last)/1000);last=now;phase+=dt*(2.25+good*.12);
-    var wave=(Math.sin(phase)+1)/2;y=22+wave*150;
-    var fx=$('jegiFx');fx.style.top=y+'px';fx.style.transform='translateX(-50%) rotate('+(phase*45)+'deg)';
-    raf=requestAnimationFrame(loop)
-  }
-  raf=requestAnimationFrame(loop);
-  $('jegiKick').addEventListener('click',function(){
-    if(cool)return;cool=true;var ok=y>126;
-    if(ok){good++;$('jegiScore').textContent=good+'/5';$('jegiFb').textContent='톡! 좋아요! '+good+'번';successSound();phase=-Math.PI/2}
-    else{$('jegiFb').textContent='아직 높아요. 조금 더 내려왔을 때 톡!';missSound()}
-    later(function(){cool=false},180);
-    if(good>=5)later(function(){completeGame('jegi','내려오는 제기를 보고 다섯 번 멋지게 찼어요!')},420);
-  });
-}
-function renderDdakji(){
-  var flips=0,tries=0,power=0,charging=false,chargeStart=0;
-  stage.innerHTML='<div class="panel mission"><b>🟥 딱지를 힘껏 내려쳐요!</b><span>버튼을 꾹 누르다가 초록 구간에 힘이 찼을 때 손을 떼요. 두 번 뒤집으면 성공!</span></div><div class="ddakjiArea"><div class="ddakji mine">내</div><div id="enemyDdakji" class="ddakji enemy">상대</div></div><div class="scoreline"><span>뒤집기 <b id="flipScore">0/2</b></span><span>기회 <b id="flipTry">0/5</b></span></div><div class="powerMeter"><div id="powerFill" class="powerFill"></div><div id="powerNeedle" class="powerNeedle"></div></div><div id="flipFb" class="feedback">꾹 누르고 힘을 모아 봐요!</div><button id="flipBtn" class="bigAction">꾹 눌렀다 떼기!</button>';
-  var btn=$('flipBtn');
-  function charge(now){
-    if(!charging)return;
-    power=Math.min(100,(now-chargeStart)/13);
-    $('powerFill').style.width=power+'%';$('powerNeedle').style.left=power+'%';
-    if(power<100)raf=requestAnimationFrame(charge);
-  }
-  function start(e){if(e)e.preventDefault();if(charging||tries>=5)return;charging=true;chargeStart=performance.now();power=0;raf=requestAnimationFrame(charge);$('flipFb').textContent='힘을 모으는 중… 초록색에서 떼요!';tone(260,.05,'square')}
-  function release(e){
-    if(e)e.preventDefault();if(!charging)return;charging=false;if(raf){cancelAnimationFrame(raf);raf=0}
-    tries++;var ok=power>=42&&power<=78;$('flipTry').textContent=tries+'/5';
-    var d=$('enemyDdakji');d.classList.remove('flip');void d.offsetWidth;
-    if(ok){flips++;d.classList.add('flip');$('flipScore').textContent=flips+'/2';$('flipFb').textContent='딱! 뒤집혔어요!';successSound()}
-    else if(power<42){$('flipFb').textContent='조금 약했어요. 더 오래 꾹!';missSound()}
-    else{$('flipFb').textContent='힘이 너무 셌어요. 초록색에서 떼요!';missSound()}
-    later(function(){$('powerFill').style.width='0%';$('powerNeedle').style.left='0%';power=0},360);
-    if(flips>=2)later(function(){completeGame('ddakji','힘을 조절해 상대 딱지를 두 번 뒤집었어요!')},650);
-    else if(tries>=5)later(function(){retryMessage('두 번만 뒤집으면 도장을 받아요. 초록색 힘에서 손을 떼 볼까요?')},650);
-  }
-  btn.addEventListener('pointerdown',start);btn.addEventListener('pointerup',release);btn.addEventListener('pointercancel',release);btn.addEventListener('pointerleave',function(e){if(charging)release(e)});
-  btn.addEventListener('keydown',function(e){if((e.code==='Space'||e.code==='Enter')&&!e.repeat)start(e)});
-  btn.addEventListener('keyup',function(e){if(e.code==='Space'||e.code==='Enter')release(e)});
-}
-function renderHop(){
-  var next=1;
-  stage.innerHTML='<div class="panel mission"><b>🔢 1부터 차례대로 콩콩!</b><span>숫자를 1 → 2 → 3 순서로 눌러 8까지 가요.</span></div><div class="hopWrap"><div id="hopGrid" class="hopGrid"></div><div><div id="hopKid" class="hopKid">🧒</div><div id="hopFb" class="feedback">먼저 1을 찾아요!</div></div></div>';
-  function draw(){
-    $('hopGrid').innerHTML='';for(var i=1;i<=8;i++){var b=document.createElement('button');b.className='hop '+(i<next?'visited ':'')+(i===next?'next':'');b.textContent=i;b.dataset.n=i;$('hopGrid').appendChild(b)}
-  }draw();
-  $('hopGrid').addEventListener('click',function(e){
-    var b=e.target.closest('.hop');if(!b)return;var n=Number(b.dataset.n);
-    if(n===next){successSound();$('hopKid').style.transform='translateY(-10px) rotate('+(next%2?'-5':'5')+'deg)';later(function(){$('hopKid').style.transform=''},160);next++;$('hopFb').textContent=next<=8?'좋아! 이제 '+next+'!':'끝까지 콩콩!';draw();if(next===9)later(function(){completeGame('hop','1부터 8까지 순서대로 모두 건넜어요!')},320)}
-    else{b.classList.add('wrong');$('hopFb').textContent='지금은 '+next+' 차례예요!';missSound();later(function(){b.classList.remove('wrong')},320)}
-  });
-}
-function renderFlower(){
-  var progress=0,moving=false,last=performance.now(),start=last,caughtCycle=-1,strikes=0;
-  stage.innerHTML='<div class="panel mission"><b>🌺 갈 때는 가고, 돌아보면 멈춰!</b><span>초록불에는 버튼을 꾹 누르고, 빨간불에는 손을 떼요.</span></div><div class="redScene"><div id="redLight" class="light">초록불 · 가요!</div><div id="doll" class="doll">🙈</div><div class="finishLine"></div><div id="runner" class="runner">🧒</div></div><div class="scoreline"><span>도착 <b id="runPct">0%</b></span><span>들킨 횟수 <b id="strike">0</b></span></div><div id="flowerFb" class="feedback">초록불! 버튼을 꾹 눌러요.</div><button id="holdMove" class="bigAction green holdBtn">꾹 누르고 가기</button>';
-  var btn=$('holdMove');
-  function down(e){if(e)e.preventDefault();moving=true;tone(430,.05)}
-  function up(e){if(e)e.preventDefault();moving=false}
-  btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('pointerleave',up);
-  btn.addEventListener('keydown',function(e){if(e.code==='Space'||e.code==='Enter')moving=true});
-  btn.addEventListener('keyup',function(e){if(e.code==='Space'||e.code==='Enter')moving=false});
-  function loop(now){
-    var dt=Math.min(.04,(now-last)/1000);last=now;var cycle=Math.floor((now-start)/5000),phase=(now-start)%5000,safe=phase<3200;
-    $('redLight').textContent=safe?'초록불 · 가요!':'빨간불 · 멈춰!';$('redLight').classList.toggle('stop',!safe);$('doll').classList.toggle('stop',!safe);
-    if(safe&&moving){progress=Math.min(100,progress+dt*19)}
-    if(!safe&&moving&&caughtCycle!==cycle){caughtCycle=cycle;strikes++;progress=Math.max(0,progress-9);moving=false;$('strike').textContent=strikes;$('flowerFb').textContent='앗, 술래가 봤어요! 손을 떼고 다시!';missSound()}
-    else if(safe)$('flowerFb').textContent=moving?'좋아, 앞으로 앞으로!':'초록불! 꾹 누르면 앞으로 가요.';
-    $('runPct').textContent=Math.floor(progress)+'%';$('runner').style.left='calc(20px + '+(progress*.72)+'%)';
-    if(progress>=100){completeGame('flower','술래에게 잘 멈추며 끝까지 도착했어요!');return}
-    raf=requestAnimationFrame(loop)
-  }raf=requestAnimationFrame(loop);
-}
-function renderYut(){
-  var pos=0,busy=false;
-  var names={1:'도',2:'개',3:'걸',4:'윷',5:'모'};
-  stage.innerHTML='<div class="panel mission"><b>🎋 윷을 던져 말을 집까지 보내요!</b><span>도 1칸 · 개 2칸 · 걸 3칸 · 윷 4칸 · 모 5칸. 나온 윷의 면도 함께 봐요.</span></div><div id="yutSticks" class="yutSticks"><i class="yutStick"></i><i class="yutStick"></i><i class="yutStick"></i><i class="yutStick"></i></div><div id="yutFb" class="feedback">윷을 힘차게 던져 볼까요?</div><div id="track" class="track"></div><div class="scoreline"><span>현재 <b id="yutPos">0/12칸</b></span><span>결과 <b id="yutResult">-</b></span></div><button id="yutBtn" class="bigAction blue">윷 던지기!</button>';
-  function draw(){
-    $('track').innerHTML='';for(var i=0;i<12;i++){var c=document.createElement('div');c.className='trackCell '+(i<pos?'on':'');c.textContent=(i+1);if(i===Math.min(11,Math.max(0,pos-1))&&pos>0)c.innerHTML+='<span class="piece">🐯</span>';$('track').appendChild(c)}
-    $('yutPos').textContent=pos+'/12칸';
-  }
-  function showFaces(n){
-    var flat=n===5?0:n;var sticks=Array.from($('yutSticks').children);
-    sticks.forEach(function(s,i){s.classList.toggle('flat',i<flat)});
-  }
-  draw();
-  $('yutBtn').addEventListener('click',function(){
-    if(busy)return;busy=true;var sticks=$('yutSticks');sticks.classList.add('throw');Array.from(sticks.children).forEach(function(s){s.classList.remove('flat')});tone(300,.08,'square');
-    later(function(){
-      var pool=[1,1,1,2,2,2,3,3,4,5],n=pool[Math.floor(Math.random()*pool.length)];pos=Math.min(12,pos+n);sticks.classList.remove('throw');showFaces(n);draw();
-      $('yutResult').textContent=names[n];$('yutFb').textContent=names[n]+'! '+n+'칸 앞으로!'+(n>=4?' 윷이나 모가 나오면 원래 윷놀이에서는 한 번 더 던져요.':'');successSound();
-      if(pos>=12)later(function(){completeGame('yut','도·개·걸·윷·모를 보며 말을 무사히 집까지 보냈어요!')},500);else busy=false;
-    },520);
-  });
+ var tries=0,hits=0,dragging=false,start=null,cur=null,flight=false;
+ $('gameTitle').textContent='🏺 투호 · 당겨서 던지기';
+ stage.innerHTML='<div class="mission"><b>막대를 잡아 뒤로 당겼다가 놓아요!</b><span>가운데를 향하고, 너무 살살 당기지만 않으면 돼요.</span></div><div class="scoreline"><span>성공 <b id="tuhoHit">0</b>/2</span><span>기회 <b id="tuhoTry">0</b>/6</span></div><div id="tuhoField" class="tuhoField"><div class="tuhoJar"></div><div id="tuhoStick" class="tuhoStick"></div><div class="aimHint">막대를 잡아 아래로 당겨요 ↓</div></div><div id="tuhoFb" class="feedback">막대를 직접 잡아 보세요.</div>';
+ var field=$('tuhoField'),stick=$('tuhoStick');
+ function pt(e){var r=field.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top,w:r.width,h:r.height}}
+ function drawAim(){
+  field.querySelectorAll('.trailDot').forEach(function(d){d.remove()});if(!start||!cur)return;
+  var pull=Math.min(130,Math.hypot(cur.x-start.x,cur.y-start.y));if(pull<10)return;
+  var aim=(start.x-cur.x)*1.25,landX=start.x+aim;
+  for(var i=1;i<=5;i++){var t=i/6,d=document.createElement('i');d.className='trailDot';d.style.left=(start.x+(landX-start.x)*t)+'px';d.style.top=(field.clientHeight-95-(260*t)+95*Math.sin(Math.PI*t))+'px';field.appendChild(d)}
+ }
+ function down(e){if(flight)return;e.preventDefault();dragging=true;stick.setPointerCapture&&stick.setPointerCapture(e.pointerId);start=pt(e);cur=start;stick.style.cursor='grabbing'}
+ function move(e){if(!dragging)return;e.preventDefault();cur=pt(e);var dx=Math.max(-85,Math.min(85,cur.x-start.x)),dy=Math.max(0,Math.min(120,cur.y-start.y));stick.style.transform='translateX(calc(-50% + '+dx+'px)) translateY('+dy*.35+'px) rotate('+(-dx*.22)+'deg)';drawAim()}
+ function up(e){
+  if(!dragging||flight)return;dragging=false;flight=true;stick.style.cursor='grab';var p=pt(e),dx=p.x-start.x,dy=Math.max(0,p.y-start.y),power=Math.min(1,Math.hypot(dx,dy)/95),aim=(-dx)*1.22;
+  tries++;$('tuhoTry').textContent=tries;field.querySelectorAll('.trailDot').forEach(function(d){d.remove()});
+  var r=field.getBoundingClientRect(),sx=r.width/2,sy=r.height-95,ex=sx+aim,ey=96,t0=performance.now(),dur=650;
+  function fly(now){var t=Math.min(1,(now-t0)/dur),x=sx+(ex-sx)*t,y=sy+(ey-sy)*t-105*Math.sin(Math.PI*t);stick.style.left=x+'px';stick.style.bottom='auto';stick.style.top=y+'px';stick.style.transform='translate(-50%,-50%) rotate('+(t*260)+'deg)';if(t<1){raf=requestAnimationFrame(fly);return}
+    var jarCenter=r.width/2,ok=Math.abs(ex-jarCenter)<58&&power>.46;
+    if(ok){hits++;$('tuhoHit').textContent=hits;$('tuhoFb').textContent='쏙! 항아리에 들어갔어요!';successSound()}else{$('tuhoFb').textContent=power<=.46?'조금 더 힘껏 당겨 볼까요?':'항아리 가운데를 향해 당겨 봐요!';missSound()}
+    later(function(){stick.style.left='50%';stick.style.top='auto';stick.style.bottom='34px';stick.style.transform='translateX(-50%)';flight=false;if(hits>=2)complete('tuho','막대를 직접 던져 두 번 항아리에 넣었어요!');else if(tries>=6){tries=0;$('tuhoTry').textContent=0;$('tuhoFb').textContent='괜찮아요! 다시 여섯 번 해 볼 수 있어요.'}},520)
+  }raf=requestAnimationFrame(fly)
+ }
+ stick.addEventListener('pointerdown',down);field.addEventListener('pointermove',move);field.addEventListener('pointerup',up);field.addEventListener('pointercancel',up);
+ tutorialOnce('tuho','막대를 잡고 아래로 당긴 뒤 손을 떼요.','48%','66%')
 }
 
-$('gameGrid').addEventListener('click',function(e){var b=e.target.closest('[data-game]');if(b)openGame(b.dataset.game)});
-$('backBtn').addEventListener('click',showYard);
-$('restartBtn').addEventListener('click',function(){cleanup();renderCurrent()});
-$('againBtn').addEventListener('click',function(){overlay.classList.add('hidden');cleanup();renderCurrent()});
-$('yardBtn').addEventListener('click',showYard);
-$('stampBtn').addEventListener('click',function(){showYard();$('stampBoard').scrollIntoView({behavior:'smooth',block:'center'})});
-$('soundBtn').addEventListener('click',function(){soundOn=!soundOn;this.textContent=soundOn?'🔊 소리':'🔇 소리';saveProgress();if(soundOn)tone(660,.08)});
-$('exitBtn').addEventListener('click',function(){
-  try{if(window.KidscadeGame&&KidscadeGame.exit()){return}}catch(e){}
-  try{if(parent&&parent!==window){parent.postMessage({type:'kidscade:close-game'},location.origin);return}}catch(e){}
-  location.href='../../';
+function renderJegi(){
+ var x=50,jx=50,jy=8,vy=22,drift=7,last=performance.now(),score=0,cool=false,lastFoot='';
+ $('gameTitle').textContent='🪶 제기차기 · 움직여서 발로 톡';
+ stage.innerHTML='<div class="mission"><b>제기 아래로 움직여서 발로 톡!</b><span>왼발·오른발을 번갈아 차면 제기가 가운데로 돌아와요.</span></div><div class="scoreline"><span>연속 <b id="jegiScore">0</b>/5</span></div><div id="jegiField" class="jegiField"><div class="kickZone"></div><div id="jegiPlayer" class="jegiPlayer">🧒</div><div id="jegiObj" class="jegiObj">🪶</div></div><div class="controls"><button id="leftBtn">◀</button><button class="kick" data-foot="L">왼발 톡!</button><button class="kick" data-foot="R">오른발 톡!</button><button id="rightBtn">▶</button></div><div id="jegiFb" class="feedback">제기 아래로 움직여 보세요!</div>';
+ var field=$('jegiField');
+ function place(){ $('jegiPlayer').style.left=x+'%';$('jegiObj').style.left=jx+'%';$('jegiObj').style.top=jy+'%'}
+ function move(dx){x=Math.max(10,Math.min(90,x+dx));place();tone(320,.04)}
+ function kick(foot){
+  if(cool)return;cool=true;var close=Math.abs(jx-x)<18,low=jy>61&&jy<83;
+  if(close&&low){score++;$('jegiScore').textContent=score;vy=-(34+score*1.2);jy=Math.max(48,jy-2);drift+=(foot==='L'?4:-4);drift*=.7;if(lastFoot===foot)drift+=(foot==='L'?5:-5);lastFoot=foot;$('jegiFb').textContent='톡! '+score+'번 연속!';successSound();if(score>=5)later(function(){complete('jegi','제기를 따라 움직이며 다섯 번 연속 찼어요!')},450)}
+  else{ $('jegiFb').textContent=!close?'제기 아래로 먼저 움직여요!':'조금 더 내려왔을 때 톡!';missSound()}
+  later(function(){cool=false},150)
+ }
+ $('leftBtn').onclick=function(){move(-10)};$('rightBtn').onclick=function(){move(10)};Array.from(stage.querySelectorAll('[data-foot]')).forEach(function(b){b.onclick=function(){kick(b.dataset.foot)}});
+ function loop(now){var dt=Math.min(.04,(now-last)/1000);last=now;vy+=42*dt;jy+=vy*dt;jx+=drift*dt;if(jx<9||jx>91){drift*=-1;jx=Math.max(9,Math.min(91,jx))}
+  if(jy>86){score=0;$('jegiScore').textContent=0;$('jegiFb').textContent='툭! 떨어졌어요. 다시 이어서 차 봐요!';jy=8;vy=22;drift=(Math.random()>.5?1:-1)*(5+Math.random()*5);missSound()}
+  place();raf=requestAnimationFrame(loop)
+ }place();raf=requestAnimationFrame(loop);
+ window.onkeydown=function(e){if(current!=='jegi')return;if(e.key==='ArrowLeft')move(-8);if(e.key==='ArrowRight')move(8);if(e.key==='z'||e.key==='Z')kick('L');if(e.key==='x'||e.key==='X')kick('R')};
+ tutorialOnce('jegi','화살표로 아래에 가고, 발 버튼으로 톡!','49%','70%')
+}
+
+function renderHop(){
+ var target=1,stonePlaced=false,next=1,stoneCell=0;
+ $('gameTitle').textContent='🟨 사방치기 · 돌 던지고 콩콩';
+ stage.innerHTML='<div class="mission"><b>먼저 돌을 '+target+'번 칸에 넣어요!</b><span>돌이 들어가면 그 칸은 밟지 않고 1부터 끝까지 콩콩!</span></div><div class="hopField"><div><div id="hopBoard" class="hopBoard"></div><div id="stoneDock" class="stoneDock"><span id="stone" class="stone">🪨</span>돌을 잡아 목표 칸으로 옮겨요</div></div><div class="hopSide"><div class="hopKid">🧒</div><div><div class="scoreline"><span>판 <b id="hopRound">1</b>/3</span></div><div id="hopFb" class="feedback">돌부터 던져 볼까요?</div></div></div></div>';
+ var board=$('hopBoard'),stone=$('stone'),drag=false;
+ function draw(){
+  board.innerHTML='';for(var i=1;i<=6;i++){var b=document.createElement('button');b.className='hopCell'+(i===target&&!stonePlaced?' goal':'')+(stonePlaced&&i===stoneCell?' skip':'')+(stonePlaced&&i<next&&i!==stoneCell?' done':'');b.dataset.n=i;b.textContent=i;board.appendChild(b)}
+ }
+ function resetStone(){stone.style.left='50%';stone.style.top='50%';stone.style.position='absolute';$('stoneDock').appendChild(stone)}
+ function stoneDown(e){if(stonePlaced)return;drag=true;e.preventDefault();stone.setPointerCapture&&stone.setPointerCapture(e.pointerId)}
+ function stoneMove(e){if(!drag)return;var r=document.body.getBoundingClientRect();stone.style.position='fixed';stone.style.left=e.clientX+'px';stone.style.top=e.clientY+'px';stone.style.zIndex=100}
+ function stoneUp(e){
+  if(!drag)return;drag=false;var el=document.elementFromPoint(e.clientX,e.clientY),cell=el&&el.closest&&el.closest('.hopCell');
+  if(cell&&Number(cell.dataset.n)===target){stonePlaced=true;stoneCell=target;next=1;while(next===stoneCell)next++;$('hopFb').textContent='좋아요! '+next+'번부터 콩콩!';successSound();stone.style.position='absolute';stone.style.left='50%';stone.style.top='50%';cell.appendChild(stone);draw();board.querySelector('[data-n="'+stoneCell+'"]').appendChild(stone)}
+  else{$('hopFb').textContent=target+'번 칸에 돌을 넣어 봐요!';missSound();resetStone()}
+ }
+ stone.addEventListener('pointerdown',stoneDown);document.addEventListener('pointermove',stoneMove);document.addEventListener('pointerup',stoneUp);
+ board.addEventListener('click',function(e){
+  var b=e.target.closest('.hopCell');if(!b||!stonePlaced)return;var n=Number(b.dataset.n);if(n===stoneCell){$('hopFb').textContent='돌이 있는 칸은 건너뛰어요!';missSound();return}
+  if(n!==next){$('hopFb').textContent='지금은 '+next+'번 차례예요!';missSound();return}
+  successSound();next++;while(next===stoneCell)next++;if(next<=6){$('hopFb').textContent='콩! 이제 '+next+'번!';draw();board.querySelector('[data-n="'+stoneCell+'"]').appendChild(stone);return}
+  if(target>=3){later(function(){complete('hop','돌을 던지고, 돌이 있는 칸을 건너뛰며 세 판을 완주했어요!')},350);return}
+  target++;stonePlaced=false;stoneCell=0;next=1;$('hopRound').textContent=target;$('hopFb').textContent='좋아! 이번에는 '+target+'번 칸에 돌을 던져요.';draw();resetStone()
+ });
+ draw();resetStone();tutorialOnce('hop','돌을 목표 숫자 칸으로 끌어 놓아요.','45%','68%')
+}
+
+$('yard').addEventListener('click',function(e){
+ var s=e.target.closest&&e.target.closest('.spot');if(s){var id=s.dataset.game;if(!id||!unlocked(id))return;var p=spots[id];movePlayer(p.x,p.y+8,id);return}
+ if(e.target.closest&&e.target.closest('.prompt'))return;var r=$('yard').getBoundingClientRect();movePlayer((e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100)
 });
-$('resetProgressBtn').addEventListener('click',function(){
-  if(!confirm('모은 도장을 모두 지우고 새로 시작할까요?'))return;
-  stamps.clear();saveProgress();renderYard();tone(420,.08);
-});
+$('promptPlay').onclick=function(){if(nearGame)openGame(nearGame)};
+$('backBtn').onclick=showYard;$('restartBtn').onclick=function(){cleanup();renderCurrent()};$('againBtn').onclick=function(){overlay.classList.add('hidden');cleanup();renderCurrent()};$('yardBtn').onclick=showYard;
+$('stampBtn').onclick=function(){showYard();$('yardMessage').textContent=state.stamps.length+'/3 도장 · 마당 장식 '+state.stamps.length+'개'};
+$('coinBtn').onclick=function(){$('yardMessage').textContent='엽전은 첫 성공 3개, 다시 성공하면 1개씩 받아요!'};
+$('soundBtn').onclick=function(){soundOn=!soundOn;state.soundOn=soundOn;save();this.textContent=soundOn?'🔊':'🔇';if(soundOn)tone(660,.08)};
+$('exitBtn').onclick=function(){try{if(window.KidscadeGame&&KidscadeGame.exit())return}catch(e){}try{if(parent&&parent!==window){parent.postMessage({type:'kidscade:close-game'},location.origin);return}}catch(e){}location.href='../../'};
 window.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!overlay.classList.contains('hidden'))overlay.classList.add('hidden');else if(current)showYard()}});
-$('soundBtn').textContent=soundOn?'🔊 소리':'🔇 소리';
-try{window.KidscadeGame&&KidscadeGame.start({mode:'traditional-play-yard'})}catch(e){}
-renderYard();
+$('soundBtn').textContent=soundOn?'🔊':'🔇';loadAvatar();updateHud();movePlayer(50,73);try{window.KidscadeGame&&KidscadeGame.start({mode:'traditional-yard-rework'})}catch(e){}
 })();
 </script>
 </body>
