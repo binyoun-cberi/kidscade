@@ -26,7 +26,7 @@ test('v20 keeps Minecraft-like player proportions while expanding the world',()=
   assert.match(js,/feet=eyeY-1\.62/);
   assert.match(js,/const r=\.27/);
   assert.match(js,/new THREE\.BoxGeometry\(\.14,1\.92,\.9\)/);
-  assert.match(html,/cube-architect\.js\?v=20261001-21/);
+  assert.match(html,/cube-architect\.js\?v=20261001-22/);
 });
 
 test('biomes stretch horizontally instead of making blocks or the player smaller',()=>{
@@ -68,5 +68,5 @@ test('v20 keeps the v19 dungeon loop and advances save schema',()=>{
   assert.match(js,/function dungeonInteract/);
   assert.match(js,/function openDungeonBlueprint/);
   assert.match(js,/const DUNGEON_SPECS=/);
-  assert.match(js,/version:8/);
+  assert.match(js,/version:9/);
 });
