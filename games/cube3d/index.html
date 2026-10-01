@@ -182,7 +182,7 @@
     <div id="freeMission">
       <b><span id="freeQuestTitle">첫날 · 나무 채집</span> <span id="adventureCount">0/3</span></b>
       <small id="freeQuestDescription">나무를 파괴해 첫 원목을 얻으세요.</small>
-      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalSafety" class="hidden">안전함</span></div>
+      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalHealth" class="hidden">♥♥♥♥♥</span><span id="survivalSafety" class="hidden">안전함</span></div>
       <small id="explorationHint" class="hidden">새로운 지역을 발견하면 고유한 재료를 얻을 수 있어요.</small>
       <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
       <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 시작 지점으로 귀환</button>
@@ -296,12 +296,15 @@
   <div id="toast"></div>
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20261001-21"></script>
-<script src="./cube-architect-world.js?v=20261001-21"></script>
-<script src="./cube-architect-poi.js?v=20261001-21"></script>
-<script src="./cube-architect-avatar.js?v=20261001-21"></script>
-<script src="./cube-architect.js?v=20261001-21"></script>
+<script src="./cube-architect-landmarks.js?v=20261001-22"></script>
+<script src="./cube-architect-world.js?v=20261001-22"></script>
+<script src="./cube-architect-poi.js?v=20261001-22"></script>
+<script src="./cube-architect-avatar.js?v=20261001-22"></script>
+<script src="./cube-architect-creatures.js?v=20261001-22"></script>
+<script type="module" src="./cube-architect-creature-assets.js?v=20261001-22"></script>
+<script src="./cube-architect.js?v=20261001-22"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
