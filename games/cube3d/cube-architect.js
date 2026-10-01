@@ -1391,6 +1391,7 @@ let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
 let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
 let critters=[],critterClock=0;
 let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0;
+let seenCreatureKinds=new Set(),lastCreatureHintAt=0;
 const FURNACE_RECIPES=[
   {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
   {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
@@ -1836,7 +1837,7 @@ function initFree(){
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
-  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;dayTime=.28;
+  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;seenCreatureKinds=new Set();lastCreatureHintAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -2723,12 +2724,11 @@ function upgradeWildCreatureAssets(){
 window.addEventListener('cube-architect-creature-assets-ready',upgradeWildCreatureAssets);
 
 function nearbyLight(x,z,r=5){
-  const cx=Math.round(x),cz=Math.round(z);
-  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+  const cx=Math.round(x),cz=Math.round(z),cy=Math.floor(creatureGroundY(x,z));
+  for(let dx=-r;dx<=r;dx+=2)for(let dz=-r;dz<=r;dz+=2){
     if(dx*dx+dz*dz>r*r)continue;
-    const top=getHighestSolidY(cx+dx,cz+dz);
-    for(let y=Math.max(WORLD_MIN_Y,top-2);y<=Math.min(WORLD_MAX_Y,top+3);y++){
-      const t=getBlock(cx+dx,y,cz+dz)?.type;
+    for(let dy=-1;dy<=3;dy++){
+      const t=getBlock(cx+dx,cy+dy,cz+dz)?.type;
       if(t==='torch'||t==='fire'||t==='lava')return true;
     }
   }
@@ -2738,6 +2738,23 @@ function playerStandingMaterial(){
   const x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
   const y=Math.floor(freePhysicsY-1.7);
   return getBlock(x,y,z)?.type||'';
+}
+function creatureStandingMaterial(root){
+  const x=blockCoordFromWorld(root.position.x),z=blockCoordFromWorld(root.position.z);
+  const y=Math.floor(root.position.y-1);
+  return getBlock(x,y,z)?.type||'';
+}
+function creatureHint(spec){
+  const hints={
+    deer:'사슴은 가까이 다가가면 도망가요.',
+    frog:'개구리는 습지에서 폴짝이며 돌아다녀요.',
+    lizard:'사막도마뱀은 모래와 바위 사이를 빠르게 달려요.',
+    shadowBug:'그림자 벌레는 밤에 나타나지만 횃불과 불빛을 싫어해요.',
+    slime:'늪 슬라임은 모래·자갈 위에서는 움직임이 둔해져요.',
+    burrower:'모래잠복충은 모래에서 강해요. 돌·판자 바닥 위로 올라가면 물러나요.',
+    cubeGolem:'큐브 골렘은 강하지만 두 칸 높이 벽과 문으로 길을 막을 수 있어요.'
+  };
+  return hints[spec.id]||spec.name;
 }
 function walkCreature(root,dir,speed,dt,allowWater=false){
   const nx=root.position.x+Math.sin(dir)*speed*dt,nz=root.position.z+Math.cos(dir)*speed*dt;
@@ -2809,6 +2826,9 @@ function updateWildCreatures(dt,t){
     const spec=u.spec,dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
     if(dist>42){root.visible=false;continue}
     upgradeWildCreatureAsset(root);
+    if(dist<7&&!seenCreatureKinds.has(spec.id)&&t-lastCreatureHintAt>2400){
+      seenCreatureKinds.add(spec.id);lastCreatureHintAt=t;toast('생물 발견 · '+spec.name+' · '+creatureHint(spec));
+    }
     const active=spec.kind!=='hostile'||(spec.id==='shadowBug'?night:true);
     root.visible=active;
     if(!active)continue;
@@ -2837,7 +2857,7 @@ function updateWildCreatures(dt,t){
       }
       if(spec.id==='slime'){
         const bob=Math.abs(Math.sin(t*.006+u.phase));u.visual.scale.y=.82+bob*.25;u.visual.scale.x=u.visual.scale.z=1.08-bob*.08;
-        if(['sand','gravel'].includes(standing))speed*=.62;
+        if(['sand','gravel','redSand'].includes(creatureStandingMaterial(root)))speed*=.62;
       }
       if(spec.id==='burrower')u.visual.position.y=Math.sin(t*.01+u.phase)*.09;
       if(dist<.92+(spec.elite?.22:0)&&!torchFear&&!hardGround)damageByCreature(root,t);
