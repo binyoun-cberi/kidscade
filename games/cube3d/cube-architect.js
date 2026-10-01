@@ -1836,7 +1836,7 @@ function initFree(){
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
-  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;dayTime=.28;
+  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -1867,7 +1867,7 @@ function initFree(){
   rebuildAllWorldMeshes();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
-  setupWeather();spawnCritters();updateFreeMission();
+  setupWeather();spawnCritters();updateCreatureHealthUi();updateFreeMission();
   $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
   $('actionAvatar').onclick=openAvatarCustomizer;$('actionView').onclick=cycleFreeView;updateFreeViewButtons();
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
@@ -2418,7 +2418,7 @@ function saveFreeWorld(){
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
-    firstNightStarted,dayTime,
+    firstNightStarted,dayTime,health:survivalHealth,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
@@ -2476,6 +2476,7 @@ function loadFreeWorld(){
             biomes:[...visitedBiomes],found:[...collected],restored:[...restoredLandmarks]};
         }
         survivalExposure=Math.max(0,Math.min(100,Number(data.exposure)||0));
+        survivalHealth=Math.max(1,Math.min(5,Number(data.health)||5));
         firstNightStarted=!!data.firstNightStarted;
       }
       for(const [key,value] of data.edits||[]){
@@ -2968,11 +2969,13 @@ function renderExplorationHint(){
 }
 function renderSurvivalSafety(shelter){
   if(gameFreeMode!=='survival'){
+    $('survivalHealth')?.classList.add('hidden');
     $('survivalSafety').classList.add('hidden');
     $('exposureBar').classList.add('hidden');
     $('survivalReturn').classList.add('hidden');
     return;
   }
+  updateCreatureHealthUi();
   const night=dayTime>=.82||dayTime<.16;
   const danger=survivalExposure>=70;
   $('survivalSafety').classList.remove('hidden');
@@ -3031,7 +3034,7 @@ function updateFree(dt,t){
   if(inventoryOpen||furnaceOpen){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
   }
-  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateMathOverlay();
+  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
   updateSurvivalEnvironment(dt);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
@@ -3155,7 +3158,7 @@ function mobileBlockAction(action){
   }
   if(mode==='free'&&!inventoryOpen&&!furnaceOpen){
     const hit=freeCenterHit(6);
-    if(action==='break')breakFreeBlock(hit);
+    if(action==='break'){if(hitWildCreature())return;breakFreeBlock(hit)}
     if(action==='place')placeFreeBlock(hit);
   }
 }
@@ -3319,7 +3322,7 @@ canvas.addEventListener('mousedown',e=>{
     }
     updateChallengeStats();updateChallengeGhost();return;
   }
-  if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
+  if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0){if(!hitWildCreature())breakFreeBlock(hit)}if(e.button===2)placeFreeBlock(hit)}
 });
 canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
