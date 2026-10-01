@@ -1,0 +1,41 @@
+name: Build avatar animation runtime assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/avatar-animation-normalize.yml'
+      - 'scripts/normalize-avatar-animation.py'
+      - 'assets/game/characters/kidscade-avatar-v1/source/animation/**'
+      - 'assets/game/characters/kidscade-avatar-v1/runtime/base/master-base-128.png'
+      - 'assets/game/characters/kidscade-avatar-v1/runtime/face/**'
+      - 'assets/game/characters/kidscade-avatar-v1/runtime/hair/**'
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check pillow
+      - run: python scripts/normalize-avatar-animation.py
+      - shell: bash
+        run: |
+          TARGETS="assets/game/characters/kidscade-avatar-v1/runtime/animation assets/game/characters/kidscade-avatar-v1/qa/animation"
+          if [ -z "$(git status --porcelain -- $TARGETS)" ]; then
+            echo "No generated changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A $TARGETS
+          git commit -m "Build avatar animation runtime assets"
+          git pull --rebase origin main
+          git push
