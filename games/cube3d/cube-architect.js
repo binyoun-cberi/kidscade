@@ -986,8 +986,8 @@ const BLOCK_DEFS={
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
 const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
-const WORLD_HALF=64,WORLD_MIN_Y=-6,WORLD_MAX_Y=34,SEA_LEVEL=0;
-const WORLD_VIEW_RADIUS=mobileModeEnabled?19:26;
+const WORLD_HALF=96,WORLD_MIN_Y=-6,WORLD_MAX_Y=48,SEA_LEVEL=0;
+const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
@@ -1626,7 +1626,8 @@ function rebuildAllWorldMeshes(){
 }
 function growTree(x,baseY,z,record,kind='forest'){
   const conifer=kind==='pine'||kind==='snow';
-  const height=(conifer?5:3)+(hash2(x+11,z-7)>.62?1:0);
+  // Minecraft-like scale: a 1.8-block player should read as clearly smaller than normal trees.
+  const height=(conifer?7:5)+Math.floor(hash2(x+11,z-7)*3);
   const bark=conifer?'pineLog':'log',foliage=conifer?'pineLeaves':'leaves';
   for(let i=0;i<height;i++){
     const d={type:bark,natural:!record};if(record)setWorldBlock(x,baseY+i,z,d,true);else setRawBlock(x,baseY+i,z,d);
@@ -1727,12 +1728,13 @@ function buildFreeWorld(){
    [11,2,8,'brick'],[8,0,11,'stone'],[12,0,11,'stone'],[10,0,11,'obsidian']]
     .forEach(v=>setRawBlock(v[0],ruinY+v[1],v[2],{type:v[3],ruin:true,natural:true}));
   if(gameFreeMode==='creative'){
+    const ws=worldRules.WORLD_SCALE||1;
     const discoveries=[
-      ['bp1',-27,-9,0x6f72ff,'숲의 설계도 조각'],
-      ['c1',32,-28,0xffd65a,'사막의 색 결정'],
-      ['bp2',-5,-44,0x6f72ff,'설원의 설계도 조각'],
-      ['c2',5,39,0xff79a8,'습지의 색 결정'],
-      ['bp3',43,23,0x6f72ff,'협곡의 설계도 조각']
+      ['bp1',Math.round(-27*ws),Math.round(-9*ws),0x6f72ff,'숲의 설계도 조각'],
+      ['c1',Math.round(32*ws),Math.round(-28*ws),0xffd65a,'사막의 색 결정'],
+      ['bp2',Math.round(-5*ws),Math.round(-44*ws),0x6f72ff,'설원의 설계도 조각'],
+      ['c2',Math.round(5*ws),Math.round(39*ws),0xff79a8,'습지의 색 결정'],
+      ['bp3',Math.round(43*ws),Math.round(23*ws),0x6f72ff,'협곡의 설계도 조각']
     ];
     for(const [id,x,z,color,label] of discoveries)
       addCollectible(id,x,terrainHeight(x,z)+1.8,z,color,label);
@@ -1746,7 +1748,7 @@ function initFree(){
     survival?'나무 채집 → 제작 → 새로운 바이옴 탐험':'모든 건축 재료 · 비행 · 물질 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');
   $('actionXray').classList.toggle('hidden',survival);
-  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,24,52);
+  cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,30,68);
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
@@ -1977,7 +1979,7 @@ function updateFreeMission(){
   }
   nearLandmarkPoi=null;
   if(gameFreeMode==='survival'){
-    const close=poiRules.poiAt(bx,bz,30);
+    const close=poiRules.poiAt(bx,bz,46);
     if(close&&close.distance<=close.radius+9){
       if(!discoveredLandmarks.has(close.id)){
         discoveredLandmarks.add(close.id);
@@ -2325,7 +2327,7 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:7,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:8,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
@@ -2660,10 +2662,8 @@ function moveFreeHorizontal(dx,dz){
   }
 }
 function nearestUndiscoveredRegion(x,z){
-  const seen=new Set(visitedBiomes),centers=[
-    [-27,-9,'forest'],[-41,-38,'pine'],[-5,-44,'snow'],[32,-28,'desert'],
-    [43,23,'badlands'],[5,39,'marsh'],[-34,30,'flowers']
-  ];
+  const seen=new Set(visitedBiomes);
+  const centers=(worldRules.CENTERS||[]).filter(([, ,id])=>id!=='meadow');
   return centers.filter(([, ,id])=>!seen.has(id))
     .map(([cx,cz,id])=>({cx,cz,id,dist:Math.round(Math.hypot(cx-x,cz-z))}))
     .sort((a,b)=>a.dist-b.dist)[0]||null;
