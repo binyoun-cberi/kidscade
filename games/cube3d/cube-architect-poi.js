@@ -59,9 +59,9 @@ function compress(plan,target=17){
   // available in challenge mode.
   const ruin=shell.filter(v=>{
     const [x,y,z]=v.p;
-    const keep=v.role==='base'?.93:
-      (v.role==='tower'||v.role==='spire'||v.role==='dome')?.84:
-      v.role==='roof'?.78:.70;
+    const keep=v.role==='base'?.88:
+      (v.role==='tower'||v.role==='spire'||v.role==='dome')?.72:
+      v.role==='roof'?.62:.54;
     return hash(x,z,y)<keep;
   });
   const maxX=Math.max(...shell.map(v=>v.p[0])),maxY=Math.max(...shell.map(v=>v.p[1])),
