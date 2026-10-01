@@ -1,169 +1,117 @@
+function ensureRuntimeState(){
+ if(!state)return;
+ state.eco=Number.isFinite(state.eco)?state.eco:86;
+ state.skills=Object.assign({gather:0,fish:0,farm:0,repair:0},state.skills||{});
+ state.knowledge=Object.assign({...KNOW},state.knowledge||{});
+ state.built=Object.assign({shelter:0,fire:false,rain:false,field:false,drying:false,storage:false,sos:false},state.built||{});
+ state.tools=Object.assign({rod:false,radio:false,lighthouse:false,boat:false,mirror:false},state.tools||{});
+ state.scouted=Object.assign({beach:0,forest:0,cliff:0},state.scouted||{});
+ state.farmStage=state.farmStage||0;state.farmCare=state.farmCare||0;
+}
 function move(to){
+ ensureRuntimeState();
  if(!state.unlocked[to]){toast('ì•„ì§ ê°ˆ ìˆ˜ ì—†ëŠ” ê³³ì´ì—ìš”.');return}
- if(!LINKS[state.place].includes(to)){toast('í˜„ì¬ ìœ„ì¹˜ì™€ ë°”ë¡œ ì—°ê²°ë˜ì§€ ì•Šì•˜ì–´ìš”.');return}
+ if(!LINKS[state.place]||!LINKS[state.place].includes(to)){toast('í˜„ì¬ ìœ„ì¹˜ì™€ ë°”ë¡œ ì—°ê²°ë˜ì§€ ì•Šì•˜ì–´ìš”.');return}
  if(to==='cliff'&&!state.inv.rope){toast('ì ˆë²½ì€ ë°§ì¤„ì´ ìˆì–´ì•¼ ì•ˆì „í•˜ê²Œ ì˜¤ë¥¼ ìˆ˜ ìˆì–´ìš”.');return}
- state.place=to;advance(.5,5);log(`${PLACE[to].name}(ìœ¼)ë¡œ ì´ë™í–ˆë‹¤.`);render();
+ const from=PLACE[state.place].name;state.place=to;advance(.5,5);log(from+' â†’ '+PLACE[to].name+' ì´ë™.');render();
 }
 function scout(place){
- state.scouted[place]=(state.scouted[place]||0)+1;
- if(place==='beach'){state.unlocked.cove=true;addItem('metal',1);addItem('wood',1);state.knowledge.tide=true;log('í•´ë³€ì˜ ì –ì€ ì„ ì„ ë”°ë¼ ì¡°ì‚¬í•´ ë°”ìœ„ ë§Œìœ¼ë¡œ ê°€ëŠ” ê¸¸ê³¼ ì“¸ ë§Œí•œ ë¶€í’ˆì„ ì°¾ì•˜ë‹¤.')}
- if(place==='forest'){
-  state.knowledge.forest=true;addItem('vine',2);addItem('wood',2);
-  if(!state.unlocked.stream){state.unlocked.stream=true;log('ìˆ² ì•ˆìª½ì—ì„œ ë¬¼ì†Œë¦¬ë¥¼ ë“¤ì—ˆë‹¤. ì‘ì€ ê³„ê³¡ìœ¼ë¡œ ì´ì–´ì§€ëŠ” ê¸¸ì„ ì°¾ê³  ë§ˆë¥¸ ê°€ì§€ì™€ ë©êµ´ì„ ì±™ê²¼ë‹¤.')}
-  else if(!state.unlocked.cliff){state.unlocked.cliff=true;log('ê³„ê³¡ ë„ˆë¨¸ ëŠ¥ì„ ì„ ë”°ë¼ê°€ ë°”ëŒ ì ˆë²½ìœ¼ë¡œ ì˜¤ë¥´ëŠ” ê¸¸ì„ ì°¾ì•˜ë‹¤. ê²½ì‚¬ê°€ ê°€íŒ”ë¼ ë°§ì¤„ì´ í•„ìš”í•´ ë³´ì¸ë‹¤.')}
-  else log('ìˆ²ì„ ë‹¤ì‹œ ì‚´í´ ë§ˆë¥¸ ê°€ì§€ì™€ ë©êµ´ì„ ë” í™•ë³´í–ˆë‹¤.');
+ ensureRuntimeState();state.scouted[place]=(state.scouted[place]||0)+1;
+ if(place==='beach'){
+  if(!state.unlocked.cove){state.unlocked.cove=true;state.knowledge.tide=true;addItem('metal',1);addItem('wood',1);log('í•´ì•ˆì„ ì„ ì¡°ì‚¬í•´ ë°”ìœ„ ë§Œìœ¼ë¡œ ê°€ëŠ” ê¸¸ê³¼ ì“¸ ë§Œí•œ ë¶€í’ˆì„ ì°¾ì•˜ë‹¤.');}
+  else{addItem('wood',1);addItem(state.scouted.beach%2?'cloth':'metal',1);log('ë°€ë¬¼ì„ ê³¼ í‘œë¥˜ë¬¼ì„ ë‹¤ì‹œ ì‚´í´ í•„ìš”í•œ ì¬ë£Œë¥¼ ì±™ê²¼ë‹¤.');}
  }
- if(place==='cliff'){state.unlocked.lighthouse=true;state.wreck=true;state.knowledge.signal=true;log('ì ˆë²½ ìœ„ì—ì„œ ë‚¡ì€ ë“±ëŒ€ì™€ ë°”ë‹¤ ìª½ì— ë°˜ì¯¤ ì ê¸´ ì–´ì„ ì˜ ìœ„ì¹˜ë¥¼ í™•ì¸í–ˆë‹¤.')}
+ if(place==='forest'){
+  state.knowledge.forest=true;
+  if(!state.unlocked.stream){state.unlocked.stream=true;addItem('wood',1);addItem('vine',1);log('ìˆ² ì•ˆìª½ì—ì„œ ë¬¼ì†Œë¦¬ë¥¼ ë”°ë¼ ì‘ì€ ê³„ê³¡ìœ¼ë¡œ ê°€ëŠ” ê¸¸ì„ ì°¾ì•˜ë‹¤.');}
+  else if(!state.unlocked.cliff){state.unlocked.cliff=true;addItem('vine',2);log('ê³„ê³¡ ë„ˆë¨¸ ëŠ¥ì„ ì—ì„œ ë°”ëŒ ì ˆë²½ìœ¼ë¡œ ì˜¤ë¥´ëŠ” ê¸¸ì„ ì°¾ì•˜ë‹¤. ê²½ì‚¬ê°€ ê°€íŒ”ë¼ ë°§ì¤„ì´ í•„ìš”í•˜ë‹¤.');}
+  else{addItem('wood',1);addItem('vine',1);log('ìˆ²ì˜ ìµìˆ™í•œ ê¸¸ì„ ëŒì•„ ë§ˆë¥¸ ê°€ì§€ì™€ ë©êµ´ì„ ì¡°ê¸ˆ ë” í™•ë³´í–ˆë‹¤.');}
+ }
+ if(place==='cliff'){
+  if(!state.unlocked.lighthouse){state.unlocked.lighthouse=true;state.wreck=true;state.knowledge.signal=true;log('ìˆ˜í‰ì„ ì„ ì‚´í”¼ë‹¤ ë‚¡ì€ ë“±ëŒ€ì™€ ë°˜ì¯¤ ì ê¸´ ì–´ì„ ì˜ ìœ„ì¹˜ë¥¼ ë°œê²¬í–ˆë‹¤.');}
+  else{state.knowledge.weather=true;state.rescue=clamp(state.rescue+3,0,100);log('ë°”ëŒê³¼ êµ¬ë¦„, ì„ ë°• í†µí–‰ ë°©í–¥ì„ ê¸°ë¡í–ˆë‹¤. êµ¬ì¡° ì‹ í˜¸ ê³„íšì´ ì¡°ê¸ˆ ì„ ëª…í•´ì¡Œë‹¤.');}
+ }
  advance(2,16);render();
 }
-function rest(){const gain=state.built.shelter?34:24;state.fatigue=clamp(state.fatigue-gain,0,100);advance(1.5,0);log(`ì•¼ì˜ì§€ì—ì„œ ì‰¬ì—ˆë‹¤. í”¼ë¡œ -${gain}.`);render()}
+function rest(){ensureRuntimeState();const gain=state.built.shelter>=2?42:state.built.shelter?34:24;state.fatigue=clamp(state.fatigue-gain,0,100);state.hp=clamp(state.hp+(state.built.fire?4:0),0,100);advance(1.5,0);log('ì•¼ì˜ì§€ì—ì„œ ì‰¬ì—ˆë‹¤. í”¼ë¡œ -'+gain+(state.built.fire?' Â· ì²´ë ¥ +4':'')+'.');render()}
 function drink(){if(state.water<.5)return toast('ë§ˆì‹¤ ë¬¼ì´ ë¶€ì¡±í•´ìš”.');state.water=round1(state.water-.5);state.hp=clamp(state.hp+6,0,100);state.fatigue=clamp(state.fatigue-6,0,100);advance(.25,0);log('ë¬¼ì„ ì¡°ê¸ˆ ë§ˆì‹œê³  ìˆ¨ì„ ëŒë ¸ë‹¤.');render()}
 function eat(){if(state.food<.5)return toast('ë¨¹ì„ ê²ƒì´ ë¶€ì¡±í•´ìš”.');state.food=round1(state.food-.5);state.hp=clamp(state.hp+8,0,100);state.fatigue=clamp(state.fatigue-5,0,100);advance(.5,0);log('ê°„ë‹¨íˆ ì‹ì‚¬í–ˆë‹¤.');render()}
-function collectWater(){state.knowledge.water=true;state.water=round1(state.water+2.5);advance(1.25,8);log('ê³„ê³¡ë¬¼ì„ ë“ì´ê±°ë‚˜ ì •ìˆ˜í•´ ì‹ìˆ˜ë¡œ ë³´ê´€í–ˆë‹¤. +ë¬¼ 2.5');render()}
-function beachSearch(){const gain=state.scouted.beach%2?{cloth:1,wood:1}:{metal:1,wood:1};Object.entries(gain).forEach(([k,v])=>addItem(k,v));state.scouted.beach++;advance(1.25,9);log(`í•´ë³€ì„ ìˆ˜ìƒ‰í•´ ${Object.keys(gain).map(k=>ITEM[k][1]).join('Â·')}ì„ ì°¾ì•˜ë‹¤.`);render()}
+function collectWater(){ensureRuntimeState();state.knowledge.water=true;const cap=state.built.storage?8:6;const gain=Math.max(0,Math.min(2.5,cap-state.water));if(gain<=0)return toast('ë¬¼ ì €ì¥ ê³µê°„ì´ ê°€ë“ ì°¼ì–´ìš”.');state.water=round1(state.water+gain);advance(1.25,8);log('ê³„ê³¡ë¬¼ì„ ë“ì´ê±°ë‚˜ ì •ìˆ˜í•´ ì‹ìˆ˜ë¡œ ë³´ê´€í–ˆë‹¤. +ë¬¼ '+gain.toFixed(1));render()}
+function beachSearch(){ensureRuntimeState();const cycle=state.scouted.beach%3;const gain=cycle===0?{metal:1,wood:1}:cycle===1?{cloth:1,wood:1}:{stone:1,metal:1};Object.entries(gain).forEach(function(x){addItem(x[0],x[1])});state.scouted.beach++;advance(1.25,9);log('í•´ë³€ì„ ìˆ˜ìƒ‰í•´ '+Object.keys(gain).map(function(k){return ITEM[k][1]}).join('Â·')+'ì„ ì°¾ì•˜ë‹¤.');render()}
 function startGather(){
- openModal('ì±„ì§‘ ë¯¸ë‹ˆê²Œì„','FOREST CHOICE',`<p>ì„¸ ê³³ ì¤‘ <b>ë‘ ê³³</b>ë§Œ ì‚´í´ë³¼ ìˆ˜ ìˆì–´ìš”. ìì›ê³¼ ìƒíƒœ ì¤‘ ë¬´ì—‡ì„ ì±™ê¸¸ì§€ ì„ íƒí•˜ì„¸ìš”.</p><div class="cards" id="gatherCards">
- <button class="choice-card" data-g="fallen"><div class="big">ğŸªµ</div><b>ë°”ë‹¥ì˜ ë§ˆë¥¸ ê°€ì§€</b><small>ë‚˜ë¬´ +2 Â· ìƒíƒœ ì˜í–¥ ê±°ì˜ ì—†ìŒ</small></button>
- <button class="choice-card" data-g="vine"><div class="big">ğŸª¢</div><b>ë°”ìœ„ì˜ ë©êµ´</b><small>ë©êµ´ +2 Â· ë°§ì¤„ ì œì‘ ê°€ëŠ¥</small></button>
- <button class="choice-card" data-g="nest"><div class="big">ğŸªº</div><b>ìƒˆ ë‘¥ì§€ ì£¼ë³€</b><small>ìì›ì€ ë§ì•„ ë³´ì´ì§€ë§Œ ê±´ë“œë¦¬ì§€ ì•ŠëŠ” ê²Œ ì¢‹ì•„ìš”</small></button></div><div class="modal-actions"><button id="gatherDone" class="primary">ì„ íƒ ì™„ë£Œ</button></div>`);
- const picked=new Set();$$('#gatherCards button').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.g;if(picked.has(v)){picked.delete(v);b.classList.remove('selected')}else if(picked.size<2){picked.add(v);b.classList.add('selected')}}));
- $('#gatherDone').onclick=()=>{if(picked.size!==2)return toast('ë‘ ê³³ì„ ì„ íƒí•˜ì„¸ìš”.');let eco=0;if(picked.has('fallen'))addItem('wood',2);if(picked.has('vine'))addItem('vine',2);if(picked.has('nest')){addItem('wood',1);addItem('seed',1);eco=-8}else eco=2;state.eco=clamp(state.eco+eco,0,100);state.skills.gather++;state.knowledge.forest=true;advance(1.75,12);log(`ìˆ²ì—ì„œ ì±„ì§‘í–ˆë‹¤. ìƒíƒœ ì§€ìˆ˜ ${eco>=0?'+':''}${eco}.`);closeModal();render()}
+ ensureRuntimeState();
+ openModal('ì±„ì§‘ ë¯¸ë‹ˆê²Œì„','FOREST CHOICE','<p>ì„¸ ê³³ ì¤‘ <b>ë‘ ê³³</b>ë§Œ ì‚´í´ë³¼ ìˆ˜ ìˆì–´ìš”. ë‹¹ì¥ í•„ìš”í•œ ìì›ê³¼ ìˆ²ì˜ ìƒíƒœë¥¼ í•¨ê»˜ ìƒê°í•˜ì„¸ìš”.</p><div class="cards" id="gatherCards"><button class="choice-card" data-g="fallen"><div class="big">ğŸªµ</div><b>ë°”ë‹¥ì˜ ë§ˆë¥¸ ê°€ì§€</b><small>ë‚˜ë¬´ +2 Â· ìƒíƒœ ì˜í–¥ ê±°ì˜ ì—†ìŒ</small></button><button class="choice-card" data-g="vine"><div class="big">ğŸª¢</div><b>ë°”ìœ„ì˜ ë©êµ´</b><small>ë©êµ´ +2 Â· ë°§ì¤„ ì œì‘ ê°€ëŠ¥</small></button><button class="choice-card" data-g="nest"><div class="big">ğŸªº</div><b>ìƒˆ ë‘¥ì§€ ì£¼ë³€</b><small>ë‚˜ë¬´Â·ì”¨ì•—ì„ ì–»ì§€ë§Œ ìƒíƒœê°€ í¬ê²Œ ë‚˜ë¹ ì§</small></button></div><div class="modal-actions"><button id="gatherDone" class="primary">ì„ íƒ ì™„ë£Œ</button></div>');
+ const picked=new Set();$$('#gatherCards button').forEach(function(b){b.addEventListener('click',function(){const v=b.dataset.g;if(picked.has(v)){picked.delete(v);b.classList.remove('selected')}else if(picked.size<2){picked.add(v);b.classList.add('selected')}})});
+ $('#gatherDone').onclick=function(){if(picked.size!==2)return toast('ë‘ ê³³ì„ ì„ íƒí•˜ì„¸ìš”.');let eco=0;if(picked.has('fallen'))addItem('wood',2);if(picked.has('vine'))addItem('vine',2);if(picked.has('nest')){addItem('wood',1);addItem('seed',1);eco=-8}else eco=2;state.eco=clamp(state.eco+eco,0,100);state.skills.gather++;state.knowledge.forest=true;advance(1.75,12);log('ìˆ²ì—ì„œ ì±„ì§‘í–ˆë‹¤. ìƒíƒœ ì§€ìˆ˜ '+(eco>=0?'+':'')+eco+'.');closeModal();render()};
 }
 function startFishing(){
- if(!state.tools.rod)return toast('ë‚šì‹¯ëŒ€ê°€ í•„ìš”í•´ìš”.');
- openModal('ë‚šì‹œ ë¯¸ë‹ˆê²Œì„','TIDE TIMING',`<p>í° í‘œì‹œê°€ <b>ì´ˆë¡ êµ¬ê°„</b>ì— ìˆì„ ë•Œ ì¤„ì„ ë‹¹ê¸°ì„¸ìš”. ë„ˆë¬´ ê¸‰í•˜ë©´ ë¬¼ê³ ê¸°ê°€ ë¹ ì ¸ë‚˜ê°‘ë‹ˆë‹¤.</p><div class="fish-track"><div id="fishMarker" class="fish-marker"></div></div><div class="modal-actions"><button id="reelBtn" class="primary">ğŸ£ ì§€ê¸ˆ ë‹¹ê¸°ê¸°</button></div>`);
- fishPos=5;fishDir=1;clearInterval(fishTimer);fishTimer=setInterval(()=>{fishPos+=fishDir*3;if(fishPos>=97||fishPos<=3)fishDir*=-1;const m=$('#fishMarker');if(m)m.style.left=fishPos+'%'},45);
- $('#reelBtn').onclick=()=>{clearInterval(fishTimer);const good=fishPos>=38&&fishPos<=62,okay=fishPos>=24&&fishPos<=76;let n=0;if(good)n=2;else if(okay)n=1;if(n){addItem('fish',n);state.food=round1(state.food+n*.6);state.skills.fish++;state.knowledge.fish=true;log(`ë‚šì‹œì— ì„±ê³µí–ˆë‹¤. ìƒì„  +${n}.`)}else log('ë‚šì‹¯ì¤„ì„ ë„ˆë¬´ ê¸‰í•˜ê²Œ ë‹¹ê²¨ ë¬¼ê³ ê¸°ë¥¼ ë†“ì³¤ë‹¤.');advance(1.75,15);closeModal();render();toast(n?'ë‚šì‹œ ì„±ê³µ!':'ë¬¼ê³ ê¸°ë¥¼ ë†“ì³¤ì–´ìš”.')}
+ ensureRuntimeState();if(!state.tools.rod)return toast('ë‚šì‹¯ëŒ€ê°€ í•„ìš”í•´ìš”.');
+ openModal('ë‚šì‹œ ë¯¸ë‹ˆê²Œì„','TIDE TIMING','<p>í° í‘œì‹œê°€ <b>ì´ˆë¡ êµ¬ê°„</b>ì— ìˆì„ ë•Œ ì¤„ì„ ë‹¹ê¸°ì„¸ìš”. ë°”ëŒì´ ì„¼ ë‚ ì—ëŠ” ì¢‹ì€ êµ¬ê°„ì´ ë” ì§§ì•„ì§‘ë‹ˆë‹¤.</p><div class="fish-track"><div id="fishMarker" class="fish-marker"></div></div><div class="modal-actions"><button id="reelBtn" class="primary">ğŸ£ ì§€ê¸ˆ ë‹¹ê¸°ê¸°</button></div>');
+ fishPos=5;fishDir=1;clearInterval(fishTimer);fishTimer=setInterval(function(){fishPos+=fishDir*3;if(fishPos>=97||fishPos<=3)fishDir*=-1;const m=$('#fishMarker');if(m)m.style.left=fishPos+'%'},45);
+ $('#reelBtn').onclick=function(){clearInterval(fishTimer);const windy=weather().n==='ê°•í’',good=fishPos>=(windy?43:38)&&fishPos<=(windy?57:62),okay=fishPos>=25&&fishPos<=75;let n=good?2:okay?1:0;if(n){addItem('fish',n);state.food=round1(state.food+n*(state.built.drying?.9:.6));state.skills.fish++;state.knowledge.fish=true;log('ë‚šì‹œì— ì„±ê³µí–ˆë‹¤. ìƒì„  +'+n+(state.built.drying?' Â· ê±´ì¡°ëŒ€ë¡œ ì‹ëŸ‰ íš¨ìœ¨ ìƒìŠ¹':'')+'.');}else log('ë‚šì‹¯ì¤„ì„ ë„ˆë¬´ ê¸‰í•˜ê²Œ ë‹¹ê²¨ ë¬¼ê³ ê¸°ë¥¼ ë†“ì³¤ë‹¤.');advance(1.75,15);closeModal();render();toast(n?'ë‚šì‹œ ì„±ê³µ!':'ë¬¼ê³ ê¸°ë¥¼ ë†“ì³¤ì–´ìš”.')};
 }
 function startRepair(kind){
- const info={rod:['ë‚šì‹¯ëŒ€','wood:1,vine:1,metal:1'],radio:['ë¬´ì „ê¸°','metal:2,battery:1'],lighthouse:['ë“±ëŒ€ ì¥ì¹˜','metal:3,wood:2'],boat:['ë‚¡ì€ ì–´ì„ ','metal:4,wood:4,cloth:1']}[kind];
- const order=[0,3,1,2];let step=0;
- openModal(`${info[0]} ìˆ˜ë¦¬`,'CIRCUIT REPAIR',`<p>ì „ì›ì´ íë¥´ë„ë¡ <b>ì˜¬ë°”ë¥¸ ìˆœì„œ</b>ë¡œ ì—°ê²°í•˜ì„¸ìš”. í‹€ë¦¬ë©´ ì²˜ìŒë¶€í„° ë‹¤ì‹œ ì—°ê²°í•©ë‹ˆë‹¤.</p><div class="repair-grid">${['ğŸ”‹','âš¡','ğŸ”§','ğŸ”Œ'].map((x,i)=>`<button class="wire" data-wire="${i}">${x}</button>`).join('')}</div><p id="repairHint" class="muted">ì‹œì‘ì ì€ ì „ì›ì…ë‹ˆë‹¤.</p>`);
- $$('.wire').forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.wire;if(n===order[step]){b.classList.add('on');step++;$('#repairHint').textContent=`${step}/4 ì—°ê²°`;if(step===4)setTimeout(()=>completeRepair(kind),250)}else{step=0;$$('.wire').forEach(x=>x.classList.remove('on'));$('#repairHint').textContent='ì—°ê²°ì´ ëŠê²¼ì–´ìš”. ì „ì›ë¶€í„° ë‹¤ì‹œ!'}}));
+ ensureRuntimeState();const labels={rod:'ë‚šì‹¯ëŒ€',radio:'ë¬´ì „ê¸°',lighthouse:'ë“±ëŒ€ ì¥ì¹˜',boat:'ë‚¡ì€ ì–´ì„ '},costs={rod:{wood:1,vine:1,metal:1},radio:{metal:2,battery:1},lighthouse:{metal:3,wood:2},boat:{metal:4,wood:4,cloth:1}};
+ if(state.tools[kind])return toast(labels[kind]+' ìˆ˜ë¦¬ëŠ” ì´ë¯¸ ëë‚¬ì–´ìš”.');
+ if(!has(costs[kind]))return toast('ì¬ë£Œê°€ ë¶€ì¡±í•´ìš”. '+costText(costs[kind]));
+ const order=kind==='rod'?[2,3,0,1]:kind==='boat'?[2,0,3,1]:[0,3,2,1];let step=0;
+ openModal(labels[kind]+' ìˆ˜ë¦¬','REPAIR SEQUENCE','<p><b>ë„êµ¬ â†’ ì—°ê²° â†’ ì „ì› â†’ ì‘ë™</b> íë¦„ì„ ìƒê°í•˜ë©° ìˆœì„œë¥¼ ë§ì¶”ì„¸ìš”. í‹€ë¦¬ë©´ ì²˜ìŒë¶€í„° ë‹¤ì‹œ ì—°ê²°í•©ë‹ˆë‹¤.</p><div class="repair-grid">'+['ğŸ”‹','âš¡','ğŸ”§','ğŸ”Œ'].map(function(x,i){return '<button class="wire" data-wire="'+i+'">'+x+'</button>'}).join('')+'</div><p id="repairHint" class="muted">ì¥ì¹˜ë¥¼ ì‚´í´ë³´ê³  ì²« ë¶€í’ˆì„ ì„ íƒí•˜ì„¸ìš”.</p>');
+ $$('.wire').forEach(function(b){b.addEventListener('click',function(){const n=Number(b.dataset.wire);if(n===order[step]){b.classList.add('on');step++;$('#repairHint').textContent=step+'/4 ì—°ê²°';if(step===4)setTimeout(function(){completeRepair(kind)},220)}else{step=0;$$('.wire').forEach(function(x){x.classList.remove('on')});$('#repairHint').textContent='ì—°ê²°ì´ ëŠê²¼ì–´ìš”. ìˆœì„œë¥¼ ë‹¤ì‹œ ìƒê°í•´ ë³´ì„¸ìš”.'}})});
 }
 function completeRepair(kind){
- const costs={rod:{wood:1,vine:1,metal:1},radio:{metal:2,battery:1},lighthouse:{metal:3,wood:2},boat:{metal:4,wood:4,cloth:1}};
+ const costs={rod:{wood:1,vine:1,metal:1},radio:{metal:2,battery:1},lighthouse:{metal:3,wood:2},boat:{metal:4,wood:4,cloth:1}},labels={rod:'ë‚šì‹¯ëŒ€',radio:'ë¬´ì „ê¸°',lighthouse:'ë“±ëŒ€ ì¥ì¹˜',boat:'ë‚¡ì€ ì–´ì„ '};
  if(!has(costs[kind])){closeModal();toast('í•„ìš”í•œ ì¬ë£Œê°€ ë¶€ì¡±í•´ìš”.');return}
- pay(costs[kind]);state.tools[kind]=true;state.skills.repair++;state.knowledge.circuit=true;advance(kind==='rod'?1.5:3,kind==='rod'?10:20);log(`${{rod:'ë‚šì‹¯ëŒ€',radio:'ë¬´ì „ê¸°',lighthouse:'ë“±ëŒ€ ì¥ì¹˜',boat:'ë‚¡ì€ ì–´ì„ '}[kind]} ìˆ˜ë¦¬ë¥¼ ë§ˆì³¤ë‹¤.`);closeModal();render();
- if(kind==='radio'){state.rescue=100;finish('radio')} if(kind==='lighthouse'){state.rescue=Math.max(state.rescue,85)}
+ pay(costs[kind]);state.tools[kind]=true;state.skills.repair++;state.knowledge.circuit=true;advance(kind==='rod'?1.5:3,kind==='rod'?10:20);log(labels[kind]+' ìˆ˜ë¦¬ë¥¼ ë§ˆì³¤ë‹¤.');closeModal();render();
+ if(kind==='radio'){state.rescue=100;finish('radio')}else if(kind==='lighthouse'){state.rescue=Math.max(state.rescue,70);toast('ë“±ëŒ€ê°€ ì¼œì¡Œì–´ìš”. ì´ì œ ë°˜ë³µí•´ì„œ ì‹ í˜¸ë¥¼ ë³´ë‚´ì„¸ìš”.')}
 }
 function startFarm(){
- if(!state.built.field)return toast('ë¨¼ì € ì‘ì€ ë°­ì„ ë§Œë“¤ì–´ì•¼ í•´ìš”.');
- openModal('ë°­ ëŒë³´ê¸°','FARM MINI GAME',`<p>ë°°ìˆ˜ê°€ ì¢‹ê³  í–‡ë¹›ì´ ë“œëŠ” înŒú¬ìÏØ»'a:¬ê:ço;%*;%eû'a;"ë;'/;!.;&¥Ü]ˆÛ\ÜÏH™˜\›KYÜšYˆYH™˜\›QÜšY‰ÖÂˆÉø¦ ;î#ÉË	úéâ:én;gfI×KÉü'ä©ÉË	úë/;'m:¬è;'¡	×KÉü'ã);î#ÉË	û( zâî{eg;gfI×KÉü'ã$IË	ú­î:â¦	×KÉø¦ ;î#ÉË	úí :äç:çë;&­;gfI×KÉü'ä©‰Ë	û)á;gfI×WK›X\
-
-JOO˜]ÛˆÛ\ÜÏHœİˆ]K\H‰Ú_H‰ŞÌ_OØÜ[‰ŞÌW_OÜÜ[Ø]Û˜
-Kš›Ú[Š	ÉÊ_OÙ]]ˆÛ\ÜÏH›[Ù[XXİ[ÛœÈ]ÛˆYH™˜\›QÛ™HˆÛ\ÜÏHœš[X\H»"ë:®,Ø]ÛÙ]˜
-NÂˆÛÛœİÛÛÙ[™]ÈÙ]
-Ì‹JKXÚÏ[™]ÈÙ]
-
-NÉ	
-	Ëœİ	ÊK™›Ü‘XXÚ
-O˜‹›Û˜ÛXÚÏJ
-OOØÛÛœİJØ‹™]\Ù]œÚYŠXÚËš\ÊŠJ^ÜXÚË™[]JŠNØ‹˜Û\ÜÓ\İœ™[[İ™J	ÙÛÛÙ	Ê_Y[ÙHYŠXÚËœÚ^™OÊ^ÜXÚË˜Y
-ŠNØ‹˜Û\ÜÓ\İ˜Y
-	ÙÛÛÙ	Ê__JNÂˆ	
-	ÈÙ˜\›QÛ™IÊK›Û˜ÛXÚÏJ
-OOÚYŠXÚËœÚ^™HOOLÊ\™]\›ˆØ\İ
-	û!.;.n;'a;!(;`ç{ef;!.;&¥‰ÊNØÛÛœİØÛÜ™OVË‹‹œXÚ×K™š[\ŠO™ÛÛÙš\ÊŠJK›[™İÚYŠİ]Kš[‹œÙYYL
-^ØÛÜÙS[Ù[
-
-NÜ™]\›ˆØ\İ
-	û%*;%eû'm;%á»%­;&¥‰Ê_\İ]Kš[‹œÙYYKNÜİ]K™˜\›PØ\™O\ØÛÜ™OLÌŒNÜİ]KœÚÚ[Ë™˜\›JÊÎÜİ]KšÛ›İÛYÙK™˜\›O]YNØY˜[˜ÙJKKL
-NÛÙÊ:ì+{'a:ãã:í):âéˆ;%c:éç»'`;'¤:é«	ÜØÛÜ™_KÌË˜
-NØÛÜÙS[Ù[
-
-NÜ™[™\Š
-NİØ\İ
-ØÛÜ™OOOLÏÉû%a;(ï;(¢û'`;'¤:é«;&";&¥IÎ‰úâé;'c;%ä:â¥:ì,;"&;&`;e¡úîfû'a:ãe; ­;c­:ìí;!.;&¥‰Ê_BŸB™[˜İ[ÛˆZ[
-Ú[™
-^ÂˆÛÛœİÙ™Ï^ÂˆÚ[\ØÛÜİİÛÛÙŒËš[™NŒ_K\ÙÎ‰ú¬l;,¦:éo:ìí:¬%{e¢:âéˆ:ì);'f;e/:èg;)§z¬ :¬ ;)!;%­:äè:âé‰ßK˜Z[ØÛÜİİÛÛÙŒ‹ÛİŒ_K\ÙÎ‰úîeúë/;( ;'©{a­{'a:éã:äé;%â:âéˆ:îa;&):â¥:à¨;'¤:ãæ{'/:èg:ë/;'m:êª;'n:âé‰ßKšY[ØÛÜİİÛÛÙŒ‹İÛ™NŒŸK\ÙÎ‰ú¬á:¬èH:¬ :®c;'m;%ä;'¤{'`:ì+{'a:éã:äé;%â:âé‰ßKZ[™ÎØÛÜİİÛÛÙŒËš[™NŒŸK\ÙÎ‰ú¬m;(l:ã :éo:éã:äé;%â:âéˆ; ç{!(:¬ï;"&;fezë/:ìí:­ ;'m;"k;&ã;(c:âé‰ßKÛÜÎØÛÜİİÛÛÙŒËİÛ™NŒßK\ÙÎ‰ûem:ìà;%ä;`lÓÔÈ;dg;"ç{'a:éã:äé;%â:âéˆ:­k;(l;"è;f.:¬ :â";%ä:ça:®,;"k;&ã;(c:âé‰ßKš\™NØÛÜİİÛÛÙŒ‹İÛ™NŒŸK\ÙÎ‰û%b;(!;eg;fe:ãe{'a:éã:äé;%â:âé‰ßBˆVÚÚ[™NÂˆYŠZ\ÊÙ™Ë˜ÛÜİ
-J\™]\›ˆØ\İ
-	û'«:èã:¬ :í ;(l{em;&¥‰ÊNÜ^JÙ™Ë˜ÛÜİ
-NÚYŠÚ[™OOIÜÚ[\‰Ê\İ]K˜Z[œÚ[\SX]›Z[Š‹İ]K˜Z[œÚ[\ŠÌJNÙ[ÙHİ]K˜Z[ÚÚ[™O]YNÚYŠÚ[™OOIÜÛÜÉÊ\İ]Kœ™\ØİYOXÛ[\
-İ]Kœ™\ØİYJÌKL
-NØY˜[˜ÙJKKLJNÛÙÊÙ™Ë›\ÙÊNÜ™[™\Š
-NÂŸB™[˜İ[ÛˆÜ˜Y
-Ú[™
-^ÂˆÛÛœİÏ^Ü›ÜNØÛÜİİš[™NŒŸKÎŠ
-OO˜Y][J	Ü›ÜIËJK˜[YN‰úì)û)!	ßK›ÙØÛÜİİÛÛÙŒKš[™NŒKY][Œ_KÎŠ
-OOØÛÜÙS[Ù[
-
-NÜİ\™\Z\Š	Ü›Ù	ÊNÜ™]\›ˆ˜[Ù_K˜[YN‰úà¦»"ëúã 	ßKZ\œ›ÜØÛÜİÛY][Œ_KÎŠ
-OOÜİ]KÛÛË›Z\œ›Ü]YNÜİ]Kœ™\ØİYJÏLLK˜[YN‰úì&; «;"è;f.;c$	ß_VÚÚ[™NÂˆYŠXßZ\ÊË˜ÛÜİ
-J\™]\›ˆØ\İ
-	û'«:èã:¬ :í ;(l{em;&¥‰ÊNÚYŠÚ[™OOIÜ›Ù	Ê\^JË˜ÛÜİ
-NØÛÛœİÛÏXË™Ê
-NÚYŠÛÈOOY˜[ÙJ^ØY˜[˜ÙJÍKJNÛÙÊ	ØË›˜[Y_{'a:éã:äé;%â:âé˜
-NØÛÜÙS[Ù[
-
-NÜ™[™\Š
-_BŸB™[˜İ[ÛˆÜ[Ü˜Y
-
-^ÛÜ[“[Ù[
-	û ç{(m;(';'¤IË	Ô‘TÓÕTÑHÒRS‰Ë]ˆÛ\ÜÏH˜Ü˜Y[\İ‚ˆ	ØÜ˜Y›İÊ	ü'éíIË	úì)û)!	Ë	úãjz­mˆ8¡¤ˆ;(":ì¯H;'m:ãæH:¬ :â©IË	Ü›ÜIËİš[™NŒŸKİ]Kš[‹œ›ÜOŒ
-_Bˆ	ØÜ˜Y›İÊ	ü'ã¨ÉË	úà¦»"ëúã 	Ë	úà¦:ë-H
-È:ãjz­mH
-È:®";!£HH8¡¤ˆ:à¦»"ç	Ë	Ü›Ù	ËİÛÛÙŒKš[™NŒKY][Œ_Kİ]KÛÛËœ›Ù
-_Bˆ	ØÜ˜Y›İÊ	ø§*	Ë	úì&; «;"è;f.;c$	Ë	ú®";!£HH8¡¤ˆ:­k;(l;"è;f.
-ÌL	Ë	ÛZ\œ›Ü‰ËÛY][Œ_Kİ]KÛÛË›Z\œ›ÜŠ_BˆÙ]˜
-NÉ	
-	ÖÙ]KXÜ˜YIÊK™›Ü‘XXÚ
-O˜‹›Û˜ÛXÚÏJ
-OO˜Ü˜Y
-‹™]\Ù]˜Ü˜Y
-J_B™[˜İ[ÛˆÜ˜Y›İÊXÛÛ‹˜[YK\ØËYÛÜİÛ™J^Ü™]\›ˆ]ˆÛ\ÜÏH˜Ü˜Y\›İÈÜ[ˆİ[OH™›Û\Ú^™NŒKÜ™[H‰ÚXÛÛŸOÜÜ[]‰Û˜[Y_OØ]ˆÛ\ÜÏH›]]Yˆİ[OH™›Û\Ú^™N‹Íœ™[NÛX\™Ú[‹]ÜŒÜ‰Ù\ØßOÙ]Ù]]ÛˆÛ\ÜÏH‰ÙÛ™OÉÜÙXÛÛ™\IÎ‰Üš[X\IßHˆ]KXÜ˜YH‰ÚYHˆ	ÙÛ™OÉÙ\ØX›Y	Î‰ÉßO‰ÙÛ™OÉû&a:èã	Î‰û(';'¤IßOØ]ÛÙ]˜B™[˜İ[ÛˆÚYÛ˜[
-
-^ÚYŠİ]KÛÛË›YÚİ\ÙI‰œİ]Kœ™\ØİYONJ\™]\›ˆš[š\Ú
-	ÛYÚİ\ÙIÊNÚYŠİ]K˜Z[œÛÜÊ^Üİ]Kœ™\ØİYOXÛ[\
-İ]Kœ™\ØİYJÌL‹L
-NØY˜[˜ÙJKÊNÛÙÊ	úá¤»'`:¬ìú¬ï;em:ìà;'fÓÔúéo;'m;&ª{em:­k;(l;"è;f.:éo:ì&:ìí{e¢:âé‰ÊNÚYŠİ]Kœ™\ØİYOLL
-Yš[š\Ú
-	ÛYÚİ\ÙIÊNÙ[ÙH™[™\Š
-_Y[ÙHØ\İ
-	úê/;( ;em:ìà;%äÓÔÈ;dg;"ç{'a:éã:äé;%­:ìí;!.;&¥‰Ê_B™[˜İ[ÛˆÙ]J
-^ÚYŠİ]K™^O
-\™]\›ˆØ\İ
-	û(%{,*{'a:¬¬;(%{ef:®,;%å;%a;)àH;'m:én:¬ È:¬&{%a;&¥‰ÊNÙš[š\Ú
-ÚÛÜÙTÙ][Y[
-
-J_B™[˜İ[ÛˆÚÛÜÙTÙ][Y[
-
-^ØÛÛœİÏ\İ]KœÚÚ[ÎÚYŠİ]KÛÛË›YÚİ\ÙI‰œËœ™\Z\LÉ‰œİ]K˜Z[œ˜Z[Š\™]\›‰ÚÙY\\‰ÎÚYŠİ]K˜Z[™šY[	‰œİ]K˜Z[™Z[™É‰œİ]K˜Z[œ˜Z[‰‰œİ]K˜Z[œÚ[\L‰‰œÙ[”İY™šXÚY[˜ŞJ
-OMÍJ\™]\›‰İš[YÙIÎÚYŠØš™Xİ˜[Y\Êİ]KšÛ›İÛYÙJK™š[\Š›ÛÛX[ŠK›[™İMÉ‰œİ]K™XÛÏNŠ\™]\›‰Ü™\ÙX\˜Ú\‰ÎÚYŠË™˜\›OLÊ\™]\›‰Ù˜\›Y\‰ÎÚYŠË™š\ÚLÊ\™]\›‰Ùš\Ú\‰ÎÚYŠË™Ø]\LÉ‰œİ]K™XÛÏMÍJ\™]\›‰ÙØ]\™\‰ÎÜ™]\›‰Üİ\š]›Ü‰ßB™[˜İ[ÛˆÙ[”İY™šXÚY[˜ŞJ
-^Ü™]\›ˆÛ[\
-İ]K˜Z[œÚ[\ŠŒL
-Êİ]K˜Z[œ˜Z[ÌLŒ
-JÊİ]K˜Z[™šY[ÌMNŒ
-JÊİ]K˜Z[™Z[™ÏÌLŒ
-JÊİ]KÛÛËœ›ÙÎŒ
-JÓX]›Z[ŠŒ
-İ]KØ]\ŠÜİ]K™›ÛÙ
-JŒŠJÓØš™Xİ˜[Y\Êİ]KœÚÚ[ÊKœ™YXÙJ
-KŠOO˜JØ‹
-JŒËL
-_B™[˜İ[Ûˆš[š\Ú
-Y
-^ÚYŠİ]K™[™Y
-\™]\›Üİ]K™[™Y]YNÜØ]™Q[™[™ÊY
-NÜØ]™JYJNØÛÛœİOQS‘S‘ÔÖÚYNÛÜ[“[Ù[
-VÌWK	ÑS‘S‘È	ÊÔİš[™ÊØš™XİšÙ^\ÊS‘S‘ÔÊKš[™^ÙŠY
-JÌJKœYİ\
-‹	Ì	ÊK]ˆÛ\ÜÏH™[™[™Ë\™]™X[]ˆÛ\ÜÏHšXÛÛˆ‰ÙVÌ_OÙ]‰ÙVÌW_OÚ‰ÙVÌ—_OÜ]ˆÛ\ÜÏH™[™[™Ë\][İH¸ '	ÙVÌ×_x 'OÙ]Û\ÜÏH›]]Y» ç{(m	Üİ]K™^_{'o0­È;'¤:®"zãá	ÜÙ[”İY™šXÚY[˜ŞJ
-_H0­È; ç{`ç	Üİ]K™XÛßOÜ]ˆÛ\ÜÏH›[Ù[XXİ[ÛœÈ]ÛˆYH™[™[™ÒÛYHˆÛ\ÜÏHœÙXÛÛ™\H»%å:å*H:ãá:¬$:ìí:®,Ø]Û]ÛˆYH™[™[™ĞYØZ[ˆˆÛ\ÜÏHœš[X\Hºâé;"ç;dg:éf;ef:®,Ø]ÛÙ]Ù]˜
-NÉ
-	ÈÙ[™[™ĞYØZ[‰ÊK›Û˜ÛXÚÏJ
-OOØÛÜÙS[Ù[
-
-NÜÚİÔİ\
-
-_NÉ
-	ÈÙ[™[™ÒÛYIÊK›Û˜ÛXÚÏ\ÚİÑ[™[™ÜÎÜ™[™\Š
-_B™[˜İ[ÛˆØ[YSİ™\Š
-^Üİ]K™[™Y]YNÜØ]™JYJNÛÜ[“[Ù[
-	ú­k;(l:éo:®,:âé:é«;)à:ê®ûe¢:âé	Ë	ÔÕT•’USRSQ	Ë]ˆÛ\ÜÏH™[™[™Ë\™]™X[]ˆÛ\ÜÏHšXÛÛˆ¼'ã$OÙ]» ç{(m;"é;c*Ú»%­:å©;'¤;&ä;'m:ê/;( :í ;(l{em;(c:â¥;)à;'o;)à:éo;fe{'n;em:ìí;!.;&¥ˆ:âé;'c;dg:éf;%ä;!/:â¥;ef:èê;%g»'a:à­:âé:ìí:â¥;!(;`ç{'m;ea;&¥;ejzââ:âéÜ]ˆÛ\ÜÏH›[Ù[XXİ[ÛœÈ]ÛˆYHœ™]PˆˆÛ\ÜÏHœš[X\Hºâé;"ç:ãá;(!Ø]ÛÙ]Ù]˜
-NÉ
-	ÈÜ™]P‰ÊK›Û˜ÛXÚÏJ
-OOØÛÜÙS[Ù[
-
-NÜİ\
-Ù[XİYY™Š__B
+ ensureRuntimeState();if(!state.built.field)return toast('ë¨¼ì € ì‘ì€ ë°­ì„ ë§Œë“¤ì–´ì•¼ í•´ìš”.');if((state.inv.seed||0)<1)return toast('ì‹¬ì„ ì”¨ì•—ì´ ì—†ì–´ìš”.');
+ const plots=[['â˜€ï¸','í–‡ë¹› ì¢‹ìŒ Â· ë°°ìˆ˜ ì¢‹ìŒ',1],['ğŸŒ«ï¸','ê·¸ëŠ˜ Â· ìŠµí•¨',0],['ğŸŒ¤ï¸','í–‡ë¹› ì¢‹ìŒ Â· ë°°ìˆ˜ ì¢‹ìŒ',1],['ğŸ’¦','ë¬¼ì´ ê³ ì„',0],['ğŸŒ±','ë¶€ë“œëŸ¬ìš´ í™ Â· í–‡ë¹› ì¢‹ìŒ',1],['ğŸª¨','ëŒì´ ë§ê³  ë©”ë§ˆë¦„',0]];
+ openModal('ë°­ ëŒë³´ê¸°','FARM MINI GAME','<p>ì”¨ì•—ì„ ì‹¬ì„ <b>ë‘ ì¹¸</b>ì„ ê³ ë¥´ì„¸ìš”. í–‡ë¹›ê³¼ ë°°ìˆ˜ê°€ ëª¨ë‘ ì¢‹ì€ ê³³ì¼ìˆ˜ë¡ ì˜ ìëë‹ˆë‹¤.</p><div class="farm-grid" id="farmGrid">'+plots.map(function(p,i){return '<button class="plot" data-plot="'+i+'"><b>'+p[0]+'</b><small>'+p[1]+'</small></button>'}).join('')+'</div><div class="modal-actions"><button id="farmDone" class="primary">ğŸŒ± ì‹¬ê¸°</button></div>');
+ const picked=new Set();$$('#farmGrid .plot').forEach(function(b){b.onclick=function(){const i=Number(b.dataset.plot);if(picked.has(i)){picked.delete(i);b.classList.remove('good')}else if(picked.size<2){picked.add(i);b.classList.add('good')}}});
+ $('#farmDone').onclick=function(){if(picked.size!==2)return toast('ë‘ ì¹¸ì„ ê³¨ë¼ ì£¼ì„¸ìš”.');state.inv.seed--;let good=0;picked.forEach(function(i){good+=plots[i][2]});state.skills.farm++;state.knowledge.farm=true;state.farmCare=Math.max(state.farmCare,good===2?3:good===1?2:1);if(good===2){state.eco=clamp(state.eco+2,0,100);log('í–‡ë¹›ê³¼ ë°°ìˆ˜ê°€ ì¢‹ì€ ê³³ì— ì”¨ì•—ì„ ì‹¬ì—ˆë‹¤. ìˆ˜í™• ê°€ëŠ¥ì„±ì´ ë†’ë‹¤.')}else if(good===1)log('í•œ ê³³ì€ ê´œì°®ì§€ë§Œ ë‹¤ë¥¸ ê³³ì˜ ì¡°ê±´ì´ ì•„ì‰½ë‹¤. ê·¸ë˜ë„ ì‘ë¬¼ì€ ìë„ ìˆ˜ ìˆë‹¤.');else log('ë¬¼ì´ ê³ ì´ê±°ë‚˜ ë©”ë§ˆë¥¸ ê³³ì„ ê³¨ëë‹¤. ì´ë²ˆ ì‘ë¬¼ì€ ì„±ì¥ì´ ë”ë””ê² ë‹¤.');advance(1.5,9);closeModal();render()};
+}
+function costText(cost){return Object.entries(cost||{}).map(function(x){return (ITEM[x[0]]?ITEM[x[0]][1]:x[0])+' '+x[1]}).join(' Â· ')}
+function build(kind){
+ ensureRuntimeState();const labels={shelter:'ê±°ì²˜',rain:'ë¹—ë¬¼ ì €ì¥í†µ',fire:'ì•ˆì „í•œ í™”ë•',field:'ì‘ì€ ë°­',drying:'ê±´ì¡°ëŒ€',storage:'ì €ì¥ ì„ ë°˜',sos:'ëŒ€í˜• SOS í‘œì‹'};
+ let cost;if(kind==='shelter')cost=state.built.shelter?{wood:3,stone:2,cloth:1}:{wood:3,vine:1};else cost={rain:{wood:2,cloth:1},fire:{wood:2,stone:2},field:{wood:2,stone:2},drying:{wood:3,vine:2},storage:{wood:2,cloth:1},sos:{wood:3,stone:3}}[kind];
+ if(!cost)return;if(!has(cost))return toast('ì¬ë£Œê°€ ë¶€ì¡±í•´ìš”. '+costText(cost));pay(cost);
+ if(kind==='shelter')state.built.shelter=Math.min(2,(state.built.shelter||0)+1);else state.built[kind]=true;
+ if(kind==='sos'){state.rescue=clamp(state.rescue+15,0,100);state.knowledge.signal=true}
+ advance(kind==='shelter'?2:1.5,kind==='shelter'?12:9);log(labels[kind]+'ì„(ë¥¼) ë§ˆë ¨í–ˆë‹¤.');render();toast(labels[kind]+' ì™„ì„±!')
+}
+function craftItem(kind){
+ ensureRuntimeState();const defs={rope:{cost:{vine:3},label:'ë°§ì¤„'},mirror:{cost:{metal:1},label:'ë°˜ì‚¬ ì‹ í˜¸íŒ'},storage:{cost:{wood:2,cloth:1},label:'ì €ì¥ ì„ ë°˜'}};const d=defs[kind];if(!d)return;
+ if(kind==='rope'&&state.inv.rope>0)return toast('ì´ë¯¸ ì“¸ ìˆ˜ ìˆëŠ” ë°§ì¤„ì´ ìˆì–´ìš”.');if(kind==='mirror'&&state.tools.mirror)return toast('ì´ë¯¸ ë°˜ì‚¬ ì‹ í˜¸íŒì´ ìˆì–´ìš”.');if(kind==='storage'&&state.built.storage)return toast('ì´ë¯¸ ì €ì¥ ì„ ë°˜ì´ ìˆì–´ìš”.');if(!has(d.cost))return toast('ì¬ë£Œê°€ ë¶€ì¡±í•´ìš”. '+costText(d.cost));pay(d.cost);
+ if(kind==='rope')addItem('rope',1);if(kind==='mirror')state.tools.mirror=true;if(kind==='storage')state.built.storage=true;advance(1,6);log(d.label+'ì„(ë¥¼) ë§Œë“¤ì—ˆë‹¤.');closeModal();render();toast(d.label+' ì œì‘ ì™„ë£Œ!')
+}
+function openCraft(){
+ ensureRuntimeState();const rows=[['ğŸ§µ','íŠ¼íŠ¼í•œ ë°§ì¤„','ë©êµ´ 3','rope',state.inv.rope>0],['ğŸ£','ë‚šì‹¯ëŒ€ ìˆ˜ë¦¬','ë‚˜ë¬´1 Â· ë©êµ´1 Â· ê¸ˆì†1','rod',state.tools.rod],['âœ¨','ë°˜ì‚¬ ì‹ í˜¸íŒ','ê¸ˆì† 1','mirror',state.tools.mirror],['ğŸ“¦','ì €ì¥ ì„ ë°˜','ë‚˜ë¬´2 Â· ì²œ1','storage',state.built.storage]];
+ openModal('ì œì‘ëŒ€','RESOURCE CHAIN','<p>ì§€ê¸ˆ ê°€ì§„ ìì›ì„ <b>ë‹¤ìŒ ì§€ì—­ê³¼ ë‹¤ìŒ í–‰ë™</b>ì„ ì—¬ëŠ” ë„êµ¬ë¡œ ë°”ê¾¸ì„¸ìš”.</p><div class="craft-list">'+rows.map(function(r){return '<div class="craft-row"><span style="font-size:1.7rem">'+r[0]+'</span><div><b>'+r[1]+'</b><small>'+r[2]+'</small></div><button class="secondary" data-craft="'+r[3]+'" '+(r[4]?'disabled':'')+'>'+(r[4]?'ì™„ë£Œ':'ë§Œë“¤ê¸°')+'</button></div>'}).join('')+'</div>');
+ $$('[data-craft]').forEach(function(b){b.onclick=function(){const k=b.dataset.craft;if(k==='rod'){closeModal();startRepair('rod')}else craftItem(k)}});
+}
+function signal(){
+ ensureRuntimeState();let gain=5,parts=[];if(state.built.sos){gain+=6;parts.push('SOS')}if(state.tools.lighthouse){gain+=12;parts.push('ë“±ëŒ€')}if(state.tools.mirror){gain+=4;parts.push('ë°˜ì‚¬íŒ')}if(['ë§‘ìŒ','êµ¬ë¦„'].includes(weather().n)){gain+=3;parts.push('ì¢‹ì€ ì‹œì•¼')}if(state.day===7){gain+=10;parts.push('ì„ ë°• í†µí–‰ ê¸°íšŒ')}
+ state.rescue=clamp(state.rescue+gain,0,100);state.knowledge.signal=true;advance(1,7);log((parts.length?parts.join('Â·'):'ì—°ê¸°ì™€ ëª¸ì§“')+'ìœ¼ë¡œ êµ¬ì¡° ì‹ í˜¸ë¥¼ ë³´ëƒˆë‹¤. êµ¬ì¡°ë„ +'+gain+'%.');render();if(state.rescue>=100&&state.tools.lighthouse)finish('lighthouse')
+}
+function selfSufficiency(){
+ ensureRuntimeState();let score=0;score+=Math.min(16,(state.built.shelter||0)*8);if(state.built.rain)score+=14;if(state.built.fire)score+=8;if(state.built.field)score+=16;if(state.built.drying)score+=12;if(state.built.storage)score+=7;if(state.water>=2)score+=8;if(state.food>=2)score+=8;if(state.eco>=75)score+=6;score+=Math.min(5,state.skills.farm)+Math.min(5,state.skills.fish)+Math.min(5,state.skills.gather);return clamp(score,0,100)
+}
+function settlementCheck(id){
+ ensureRuntimeState();const known=Object.values(state.knowledge).filter(Boolean).length;const checks={farmer:[state.built.field&&state.skills.farm>=2,'ë°­ê³¼ ë†ì‚¬ ê²½í—˜ 2ê°€ í•„ìš”í•´ìš”.'],fisher:[state.tools.rod&&state.skills.fish>=3,'ë‚šì‹¯ëŒ€ì™€ ë‚šì‹œ ì„±ê³µ 3íšŒê°€ í•„ìš”í•´ìš”.'],gatherer:[state.skills.gather>=3&&state.eco>=80,'ì±„ì§‘ 3íšŒì™€ ìƒíƒœ 80 ì´ìƒì´ í•„ìš”í•´ìš”.'],keeper:[state.tools.lighthouse&&state.built.rain&&state.built.field,'ë“±ëŒ€Â·ë¹—ë¬¼ ì €ì¥í†µÂ·ë°­ì´ í•„ìš”í•´ìš”.'],village:[selfSufficiency()>=70&&state.built.shelter>=2,'ìê¸‰ë„ 70ê³¼ 2ë‹¨ê³„ ê±°ì²˜ê°€ í•„ìš”í•´ìš”.'],researcher:[known>=6,'ì„¬ì— ëŒ€í•œ ì§€ì‹ 6ê°€ì§€ë¥¼ ë°œê²¬í•´ì•¼ í•´ìš”.']};return checks[id]||[false,'ì•„ì§ ì¡°ê±´ì„ ì•Œ ìˆ˜ ì—†ì–´ìš”.']
+}
+function settle(){
+ ensureRuntimeState();if(state.day<8)return toast('ì •ì°©ì„ ê²°ì •í•˜ê¸°ì—” ì•„ì§ ì´ë¦…ë‹ˆë‹¤. 8ì¼ ì´í›„ ë‹¤ì‹œ ìƒê°í•´ ë³´ì„¸ìš”.');const score=selfSufficiency(),known=Object.values(state.knowledge).filter(Boolean).length;
+ const opts=[['farmer','ğŸŒ±','ë†ë¶€','ë°­ì„ ì¤‘ì‹¬ìœ¼ë¡œ ë¨¹ê±°ë¦¬ë¥¼ ìˆœí™˜ì‹œí‚¨ë‹¤.'],['fisher','ğŸ£','ì–´ë¶€','ë¬¼ë•Œì™€ ë°”ëŒì„ ì½ìœ¼ë©° ë°”ë‹¤ì—ì„œ ì‚´ì•„ê°„ë‹¤.'],['gatherer','ğŸŒ¿','ìˆ²ì˜ ì§€í˜œ','ìƒíƒœë¥¼ ì§€í‚¤ë©° í•„ìš”í•œ ë§Œí¼ë§Œ ì–»ëŠ”ë‹¤.'],['keeper','ğŸ®','ë“±ëŒ€ì§€ê¸°','ë“±ëŒ€ì™€ ìƒí™œ ê¸°ë°˜ì„ í•¨ê»˜ ì§€í‚¨ë‹¤.'],['village','ğŸ¡','ì‘ì€ ë§ˆì„','ì—¬ëŸ¬ ì‹œì„¤ì„ ì—°ê²°í•´ ìê¸‰ ìƒí™œì„ ë§Œë“ ë‹¤.'],['researcher','ğŸ”¬','ìƒíƒœ ì—°êµ¬ì†Œ','ì„¬ì˜ ë‚ ì”¨ì™€ ìƒë¬¼ì„ ê³„ì† ê¸°ë¡í•œë‹¤.']];
+ openModal('ì„¬ì— ì •ì°©í•˜ê¸°','DAY '+state.day+' Â· ìê¸‰ë„ '+score+' Â· ì§€ì‹ '+known+'/8','<p>êµ¬ì¡°ë¥¼ ê¸°ë‹¤ë¦¬ëŠ” ëŒ€ì‹  ì§€ê¸ˆê¹Œì§€ ë§Œë“  ìƒí™œ ë°©ì‹ì„ í•˜ë‚˜ì˜ <b>ì •ì°© ì—”ë”©</b>ìœ¼ë¡œ ì™„ì„±í•  ìˆ˜ ìˆì–´ìš”.</p><div class="ending-grid">'+opts.map(function(o){const c=settlementCheck(o[0]);return '<button class="ending-card" data-settle="'+o[0]+'" '+(c[0]?'':'disabled')+'><div style="font-size:1.8rem">'+o[1]+'</div><h3>'+o[2]+'</h3><p>'+(c[0]?o[3]:c[1])+'</p></button>'}).join('')+'</div>');
+ $$('[data-settle]').forEach(function(b){b.onclick=function(){chooseSettlement(b.dataset.settle)}})
+}
+function chooseSettlement(id){const c=settlementCheck(id);if(!c[0]){toast(c[1]);return null}finish(id);return id}
+function finish(id){
+ if(!state||state.ended)return;const e=ENDINGS[id];if(!e)return;state.ended=true;saveEnding(id);try{localStorage.removeItem(SAVE)}catch(_){};
+ openModal(e[1],'ENDING Â· '+endingList().length+' / 10','<div class="ending-reveal"><div class="icon">'+e[0]+'</div><h2>'+e[1]+'</h2><p>'+e[2]+'</p><div class="ending-quote">'+e[3]+'</div><p class="muted">ìƒì¡´ '+state.day+'ì¼ Â· ìê¸‰ë„ '+selfSufficiency()+' Â· êµ¬ì¡°ë„ '+Math.round(state.rescue)+'% Â· ìƒíƒœ '+Math.round(state.eco)+'</p><div class="modal-actions"><button id="endingHome" class="secondary">ì²˜ìŒ í™”ë©´</button><button id="endingAgain" class="primary">ë‹¤ì‹œ í‘œë¥˜í•˜ê¸°</button></div></div>');
+ $('#endingHome').onclick=showStart;$('#endingAgain').onclick=function(){start(selectedDiff)};try{parent.postMessage({type:'kidscade:game-result',gameId:'trivia_drift_survival',ending:id,day:state.day,cleared:true},'*')}catch(_){}
+}
+function gameOver(){
+ if(!state||state.ended)return;state.ended=true;try{localStorage.removeItem(SAVE)}catch(_){};openModal('ìƒì¡´ ì‹¤íŒ¨','TRY AGAIN','<div class="ending-reveal"><div class="icon">ğŸŒ§ï¸</div><h2>ì´ë²ˆ í‘œë¥˜ëŠ” ì—¬ê¸°ê¹Œì§€</h2><p>ë¬¼Â·ì‹ëŸ‰Â·í”¼ë¡œ ì¤‘ í•˜ë‚˜ê°€ ë¬´ë„ˆì§€ë©´ ë‹¤ë¥¸ ìì›ë„ ë¹ ë¥´ê²Œ í”ë“¤ë¦½ë‹ˆë‹¤. ë‹¤ìŒì—ëŠ” í•˜ë£¨ ë’¤ì˜ ì†Œë¹„ëŸ‰ê¹Œì§€ ë‚¨ê²¨ ë‘ì„¸ìš”.</p><p class="muted">ë²„í‹´ ë‚  '+state.day+'ì¼ Â· ìƒíƒœ '+Math.round(state.eco)+'</p><div class="modal-actions"><button id="failHome" class="secondary">ì²˜ìŒ í™”ë©´</button><button id="failAgain" class="primary">ê°™ì€ ë‚œì´ë„ë¡œ ì¬ë„ì „</button></div></div>');$('#failHome').onclick=showStart;$('#failAgain').onclick=function(){start(selectedDiff)}
+}
