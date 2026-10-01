@@ -2362,31 +2362,6 @@
       "classroom": false
     },
     {
-      "id": "swipe_fraction",
-      "title": "프랙션 대시",
-      "href": "games/swipe_fraction/index.html?v=5",
-      "category": "math",
-      "age": "high",
-      "icon": "🏃",
-      "description": "장애물이 빼곡한 3D 숫자 도시를 질주하며 기차·차량·바리케이드를 피하고, 자주 등장하는 분수·소수 비교 게이트에서 더 큰 수를 골라 콤보를 이어 가는 수학 액션 러너!",
-      "scoreKey": "swipeFractionScore",
-      "rankKey": "swipeFractionRank",
-      "subject": "math",
-      "genre": "action",
-      "difficulty": "medium",
-      "sessionMinutes": 5,
-      "players": [
-        "solo"
-      ],
-      "input": [
-        "touch",
-        "keyboard"
-      ],
-      "qualityStatus": "featured",
-      "classroom": false,
-      "cover": "assets/gate-image/프랙션 대시.png"
-    },
-    {
       "id": "high_fraction_smith",
       "addedAt": "2026-09-28T23:14:33+09:00",
       "title": "프랙션 스미스",
