@@ -7,6 +7,8 @@ const cache=new Map();
 const ROOT='../../assets/game/';
 const SPECS={
   deer:{url:ROOT+'characters/pets/animal-deer.glb',height:1.28},
+  fox:{url:ROOT+'characters/pets/animal-fox.glb',height:.72},
+  snowFox:{url:ROOT+'characters/pets/animal-fox.glb',height:.72,tint:0xe8eef2},
   frog:{url:ROOT+'3d/characters/quaternius/frog.glb',height:.62},
   slime:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/green-blob.glb',height:.9},
   burrower:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/green-spiky-blob.glb',height:.78,tint:0xd6a458},
