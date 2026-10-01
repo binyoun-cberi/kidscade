@@ -2794,7 +2794,8 @@ function configureMobileMode(target){
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
   $('mobileCheck').textContent=target==='dungeon'?'조사':poiRestore?'던전':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
-  $('mobileNext').classList.toggle('hidden',target!=='challenge');
+  $('mobileNext').classList.toggle('hidden',target!=='challenge'&&target!=='dungeon');
+  if(target==='dungeon')$('mobileNext').textContent='귀환';
   $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   $('mobilePaint').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
@@ -2877,10 +2878,13 @@ function initMobileControls(){
       openLandmarkDungeon(nearLandmarkPoi);
   });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
-  tap('mobileNext',()=>{if(mode==='challenge'){
-    if(restorationSession)returnFromRestoration();
-    else{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
-  }});
+  tap('mobileNext',()=>{
+    if(mode==='dungeon'){returnFromDungeon();return}
+    if(mode==='challenge'){
+      if(restorationSession)returnFromRestoration();
+      else{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()}
+    }
+  });
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
