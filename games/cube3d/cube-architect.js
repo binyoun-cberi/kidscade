@@ -3054,7 +3054,7 @@ initMobileControls();
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
   const once='cubeArchitectTutorial_'+kind+
-    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v17':'_v17'):
+    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v21':'_v21'):
       (mobileModeEnabled?'_touch_v1':''));try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
