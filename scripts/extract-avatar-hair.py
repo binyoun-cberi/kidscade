@@ -277,10 +277,26 @@ def main():
         )
         result["qa"]["contacts"][kind]=build_contact(kind,base,face_parts)
 
-    (BACK_OUT/"hair-split-manifest.json").write_text(
+    hair_root = AVATAR / "runtime/hair"
+    hair_root.mkdir(parents=True, exist_ok=True)
+    (hair_root/"hair-manifest.json").write_text(
         json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8"
     )
-    print("Generated 48 hairBack + 48 hairFront assets and split-layer QA previews.")
+
+    # Remove superseded intermediate manifests/previews from earlier passes.
+    for stale in [
+        FRONT_OUT/"hair-front-manifest.json",
+        BACK_OUT/"hair-split-manifest.json",
+    ]:
+        if stale.exists():
+            stale.unlink()
+
+    legacy_qa = AVATAR/"qa/hair-front"
+    if legacy_qa.exists():
+        for p in legacy_qa.glob("*.png"):
+            p.unlink()
+
+    print("Generated 48 hairBack + 48 hairFront assets, unified manifest, and QA previews.")
 
 if __name__=="__main__":
     main()
