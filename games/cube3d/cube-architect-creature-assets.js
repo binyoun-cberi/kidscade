@@ -54,14 +54,18 @@ async function template(key){
 }
 async function load(key){
   const data=await template(key);
-  const root=data.root.clone(true);
-  root.traverse?.(o=>{
+  const model=data.root.clone(true);
+  model.traverse?.(o=>{
     if(o.isMesh&&o.material){
       if(Array.isArray(o.material))o.material=o.material.map(m=>m?.clone?m.clone():m);
       else if(o.material.clone)o.material=o.material.clone();
     }
   });
-  return root;
+  // Keep normalization transforms on the model while movement squash/hop animates the wrapper.
+  const wrapper=new THREE.Group();
+  wrapper.name='KidscadeCreatureAsset_'+key;
+  wrapper.add(model);
+  return wrapper;
 }
 window.CubeArchitectCreatureAssets={SPECS,load};
 window.dispatchEvent(new CustomEvent('cube-architect-creature-assets-ready'));
