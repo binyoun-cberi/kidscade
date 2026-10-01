@@ -2496,6 +2496,7 @@ function loadFreeWorld(){
         survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
         creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
         seenCreatureKinds=new Set(Array.isArray(data.seenCreatures)?data.seenCreatures:[]);
+        nextEliteSpawnCheckAt=Math.max(survivalWorldTime,Number(data.nextEliteSpawnCheckAt)||0);
         firstNightStarted=!!data.firstNightStarted;
       }
       for(const [key,value] of data.edits||[]){
