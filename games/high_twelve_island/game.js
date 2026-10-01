@@ -85,20 +85,46 @@
     toastTimeout = setTimeout(() => element.toast.classList.remove("show"), 2800);
   }
   function renderStats() {
-    const r = S.rates(state);
-    const desc = [
-      { key: "food", icon: "🍞", title: "식량", value: state.food, cap: state.foodCap, delta: r.food, low: 35 },
-      { key: "wood", icon: "🪵", title: "물자", value: state.wood, cap: state.woodCap || 130, delta: r.wood - r.heating, low: 15 },
-      { key: "trust", icon: "🤝", title: "신뢰", value: state.trust, cap: 100, delta: null, low: 40 }
-    ];
-    if (state.stage >= 2) desc.push({ key: "treasury", icon: "🪙", title: "국고", value: state.treasury, cap: 100, delta: r.treasury, low: 10 });
-    else desc.push({ key: "treasury", icon: "🔒", title: "국고", locked: true });
-    element.stats.innerHTML = desc.map(d => d.locked ?
-      '<div class="stat locked"><div class="stat-head"><span>🔒 국고</span></div><div class="stat-track"><i style="width:0"></i></div><small>자치 마을에서 열려요.</small></div>' :
-      '<div class="stat ' + (d.value <= d.low ? "warn" : "") + '"><div class="stat-head"><span>' + d.icon + " " + d.title + '</span><b>' + number(d.value) + '</b></div><div class="stat-track"><i style="width:' + Math.min(100, d.value / d.cap * 100) + '%"></i></div><small>' + (d.delta == null ? "시민들이 느끼는 신뢰" : (d.delta >= 0 ? "+" : "") + number(d.delta) + " / 주") + '</small></div>'
-    ).join("");
-  }
+    const rates = S.rates(state);
+    const capacity = Math.max(1, S.capacity(state));
+    const woodCap = Math.max(1, state.woodCap || 130);
+    const foodCap = Math.max(1, state.foodCap || 120);
+    const foodDelta = rates.food;
+    const woodDelta = rates.wood - rates.heating;
 
+    const pips = (value, cap) => {
+      const filled = Math.max(0, Math.min(5, Math.ceil((Math.max(0, value) / Math.max(1, cap)) * 5)));
+      return Array.from({ length: 5 }, (_, i) => '<i class="' + (i < filled ? 'on' : '') + '"></i>').join('');
+    };
+    const resourceTone = (value, low, critical) => value <= critical ? ' danger' : value <= low ? ' warn' : '';
+    const deltaText = value => (value >= 0 ? '+' : '') + number(value) + '/주';
+    const statusButton = (key, icon, label, value, bars, note, tone, tab, aria) =>
+      '<button type="button" class="stat hud-stat' + tone + '" data-stat-key="' + key +
+      '" data-open-tab="' + tab + '" aria-label="' + escapeHTML(aria) + '">' +
+      '<span class="hud-symbol" aria-hidden="true">' + icon + '</span>' +
+      '<span class="hud-pips" aria-hidden="true">' + bars + '</span>' +
+      '<span class="hud-copy"><small>' + label + '</small><b>' + escapeHTML(value) + '</b></span>' +
+      '<span class="hud-note">' + escapeHTML(note) + '</span></button>';
+
+    const housingLeft = capacity - state.population;
+    const populationFill = pips(state.population, capacity);
+    const populationTone = housingLeft < 0 ? ' danger' : housingLeft <= 1 ? ' warn' : '';
+    const trustTone = resourceTone(state.trust, 45, 28);
+
+    element.stats.innerHTML =
+      statusButton('food', '🍞', '식량', number(state.food), pips(state.food, foodCap),
+        deltaText(foodDelta), resourceTone(state.food, 35, 18), 'work',
+        '식량 ' + number(state.food) + ', 주간 변화 ' + deltaText(foodDelta) + '. 자세히 보기') +
+      statusButton('wood', '🪵', '물자', number(state.wood), pips(state.wood, woodCap),
+        deltaText(woodDelta), resourceTone(state.wood, 18, 8), 'work',
+        '물자 ' + number(state.wood) + ', 주간 변화 ' + deltaText(woodDelta) + '. 자세히 보기') +
+      statusButton('population', '👥', '주민', state.population + '/' + capacity, populationFill,
+        housingLeft >= 0 ? '자리 ' + housingLeft : '주거 부족', populationTone, 'residents',
+        '주민 ' + state.population + '명, 수용 가능 ' + capacity + '명. 주민 보기') +
+      statusButton('trust', '🤝', '신뢰', number(state.trust), pips(state.trust, 100),
+        state.trust < 40 ? '불안' : state.trust < 65 ? '주의' : '안정', trustTone, 'law',
+        '공동체 신뢰 ' + number(state.trust) + '. 규칙과 결과 보기');
+  }
   function renderPolicyStatus() {
     const parts = [];
     if (state.ended) parts.push('<span class="issue-chip alert">공동체 운영 종료 · 기록을 확인하거나 처음부터 다시 시작하세요.</span>');
@@ -150,37 +176,45 @@
     if (!zone) return;
     if (!known) { zone.classList.add("hidden"); zone.innerHTML=""; return; }
     zone.classList.remove("hidden");
+
     const icons={heat:"☀️",flood:"🌊",dust:"🌫️",epidemic:"🦠"};
     const climate = ongoing.map(kind => icons[kind] + ' ' + S.DISASTER_NAMES[kind] +
       ' ' + (state.disasters[kind] - state.tick) + '주').join(' · ');
     const season = (winter ? '❄️ 한파 ' + (state.coldUntil-state.tick) + '주' :
-      '❄️ 다음 한파 ' + Math.max(0,winterForecast) + '주') +
-      (climate ? ' · ' + climate : '');
+      '❄️ 다음 한파 ' + Math.max(0,winterForecast) + '주') + (climate ? ' · ' + climate : '');
     const forecastText = upcoming?.remaining<=6 ? icons[upcoming.kind] + ' ' + S.DISASTER_NAMES[upcoming.kind] +
-      ' 예상: ' + upcoming.remaining + '주 후' : '재난이 겹칠 수 있습니다. 비축량을 확인하세요.';
+      ' 예상 ' + upcoming.remaining + '주 후' : '겹치는 재난에 대비하세요.';
+
+    const pipBar = (value, max=100) => {
+      const filled = Math.max(0, Math.min(5, Math.ceil((Math.max(0, value) / Math.max(1, max)) * 5)));
+      return Array.from({length:5}, (_,i)=>'<i class="' + (i < filled ? 'on' : '') + '"></i>').join('');
+    };
     const meter = (icon,title,value,warning,max=100) =>
-      '<div class="crisis-meter' + (value<=warning?' urgent':'') + '"><span>' + icon + ' ' + title +
-      '</span><strong>' + number(value) + (max===100?'':'/'+max) + '</strong>' +
-      '<i><b style="width:' + Math.max(0,Math.min(100,value/max*100)) + '%"></b></i></div>';
+      '<div class="crisis-indicator' + (value<=warning?' urgent':'') + '" title="' + escapeHTML(title + ' ' + number(value)) + '">' +
+      '<span class="crisis-symbol" aria-hidden="true">' + icon + '</span>' +
+      '<span class="crisis-pips" aria-hidden="true">' + pipBar(value,max) + '</span>' +
+      '<span class="crisis-copy"><small>' + title + '</small><b>' + number(value) + (max===100?'':'/'+max) + '</b></span></div>';
+    const sickMeter = () => {
+      const ratio = state.sick / Math.max(1,state.population);
+      return '<div class="crisis-indicator' + (ratio>=.28?' urgent':'') + '" title="감염자 ' + number(state.sick) + '명">' +
+        '<span class="crisis-symbol" aria-hidden="true">🦠</span><span class="crisis-pips" aria-hidden="true">' +
+        pipBar(state.sick, Math.max(1,state.population)) + '</span><span class="crisis-copy"><small>감염</small><b>' +
+        number(state.sick) + '/' + state.population + '</b></span></div>';
+    };
+
     zone.innerHTML='<div class="crisis-head"><strong>' + season + '</strong><small>' +
-      (winter?'난방 물자 '+number(S.rates(state).heating)+'/주 · ':'') +
-      forecastText + '</small></div>' +
+      (winter?'난방 물자 '+number(S.rates(state).heating)+'/주 · ':'') + forecastText + '</small></div>' +
+      '<div class="crisis-icons">' +
       meter('🔥','체온',state.warmth,36) + meter('❤️','건강',state.health,48) +
       (state.tick>=24 || ongoing.length || state.water<55 ? meter('💧','식수',state.water,28) : '') +
-      ((state.disasterSeen.dust || S.disasterActive(state,'dust') || state.air<80) ?
-        meter('🌫️','공기 질',state.air,40) : '') +
-      ((state.disasterSeen.epidemic || state.sick>0) ?
-        '<div class="crisis-meter' + (state.sick>=Math.max(3,state.population*.28)?' urgent':'') +
-        '"><span>🩺 감염자</span><strong>' + number(state.sick) + '/' + state.population +
-        '</strong><i><b style="width:' +
-        Math.max(0,Math.min(100,state.sick/Math.max(1,state.population)*100)) + '%"></b></i></div>' : '') +
+      ((state.disasterSeen.dust || S.disasterActive(state,'dust') || state.air<80) ? meter('🌫️','공기',state.air,40) : '') +
+      ((state.disasterSeen.epidemic || state.sick>0) ? sickMeter() : '') +
       ((state.eventsSeen.child_labor_debate || state.childWorkUntil>state.tick ||
         (state.rightsHistory||[]).some(h=>h.kind==='어린이 위험 노동')) ?
-        meter('📚','어린이 학습',state.education,65) +
-        meter('🧒','어린이 건강',state.childWellbeing,60) : '') +
-      (rights.length ? '<div class="rights-alert">현재 권리 문제: ' +
-        rights.map(escapeHTML).join(' · ') + '</div>' : '') +
-      (angry.length ? '<div class="rights-alert">주민 집단의 요구: ' +
+        meter('📚','학습',state.education,65) + meter('🧒','아동 건강',state.childWellbeing,60) : '') +
+      '</div>' +
+      (rights.length ? '<div class="rights-alert">⚠️ ' + rights.map(escapeHTML).join(' · ') + '</div>' : '') +
+      (angry.length ? '<div class="rights-alert">📣 ' +
         angry.map(g=>escapeHTML(g.name+' · '+g.action)).join(' / ') + '</div>' : '');
   }
   function renderVillage() {
@@ -294,6 +328,33 @@
       '</div><small>' + escapeHTML(a.description) + '</small><button class="secondary-btn" data-operation="' + escapeHTML(a.id) + '" ' +
       (!a.enabled ? 'disabled' : '') + '>' + (a.cooldown ? a.cooldown + '주 후 사용' : a.shortfall > 0 ? '자원 부족' : '실행') + '</button></div>').join('');
   }
+  function villageStatusBoard(rates) {
+    const cap = S.capacity(state);
+    const groups = S.groupStatus(state);
+    const activeGroups = groups.filter(g => g.action !== "협의 중").length;
+    const detail = (icon, label, value, note, tone = "") =>
+      '<div class="detail-stat' + tone + '"><span aria-hidden="true">' + icon + '</span><div><small>' +
+      escapeHTML(label) + '</small><strong>' + escapeHTML(value) + '</strong><em>' + escapeHTML(note) + '</em></div></div>';
+    const netWood = rates.wood - rates.heating;
+    let html = '<section class="village-status-board"><div class="panel-subhead">마을 현황 <span>정확한 수치</span></div><div class="detail-stat-grid">' +
+      detail('🍞','식량',number(state.food) + ' / ' + number(state.foodCap), (rates.food>=0?'+':'') + number(rates.food) + '/주', state.food<20?' danger':state.food<35?' warn':'') +
+      detail('🪵','물자',number(state.wood) + ' / ' + number(state.woodCap || 130), (netWood>=0?'+':'') + number(netWood) + '/주 · 난방 ' + number(rates.heating), state.wood<9?' danger':state.wood<18?' warn':'') +
+      detail('👥','주민',state.population + ' / ' + cap + '명', '성인 ' + (state.population-S.childCount(state)) + ' · 어린이 ' + S.childCount(state), state.population>cap?' danger':state.population>=cap?' warn':'') +
+      detail('🤝','신뢰',number(state.trust) + ' / 100', activeGroups ? '집단행동 ' + activeGroups + '건' : '현재 집단행동 없음', state.trust<28?' danger':state.trust<45?' warn':'') +
+      detail('❤️','건강',number(state.health) + ' / 100', '감염 ' + number(state.sick) + '명', state.health<40?' danger':state.health<55?' warn':'') +
+      detail('🔥','체온',number(state.warmth) + ' / 100', S.winterActive(state) ? '한파 진행 중' : '평상시', state.warmth<36?' danger':state.warmth<50?' warn':'') +
+      detail('💧','식수',number(state.water) + ' / 100', (rates.water>=0?'+':'') + number(rates.water) + '/주', state.water<28?' danger':state.water<45?' warn':'') +
+      detail('🌫️','공기 질',number(state.air) + ' / 100', S.disasterActive(state,'dust') ? '황사 영향 중' : '현재 상태', state.air<40?' danger':state.air<65?' warn':'');
+    if (state.stage >= 2) {
+      html += detail('🪙','국고',number(state.treasury), (rates.treasury>=0?'+':'') + number(rates.treasury) + '/주', state.treasury<10?' warn':'');
+    }
+    if (state.eventsSeen.child_labor_debate || state.childWorkUntil > state.tick || state.education < 85 || state.childWellbeing < 85) {
+      html += detail('📚','어린이 학습',number(state.education) + ' / 100', '교육 상태', state.education<55?' danger':state.education<70?' warn':'') +
+        detail('🧒','어린이 건강',number(state.childWellbeing) + ' / 100', '생활·노동 영향', state.childWellbeing<50?' danger':state.childWellbeing<65?' warn':'');
+    }
+    return html + '</div><p class="detail-hint">상단 아이콘은 빠른 상태 확인용이고, 정확한 변화량과 위기 수치는 이 운영 창에서 확인합니다.</p></section>';
+  }
+
   function renderPanel() {
     const p = element.panel, scroll = p.scrollTop;
     if (activeTab === "work") {
@@ -301,8 +362,8 @@
       const urgent = S.winterActive(state) || S.activeDisasters(state).length>0 ||
         S.groupStatus(state).some(g=>g.action!=="협의 중") || state.water < 50 ||
         S.rightsConcerns(state).length>0 || state.health<55 || state.childWellbeing<55;
-      p.innerHTML = '<h2>일꾼 배치</h2><p class="intro">성인 일꾼을 식량과 물자 수집에 배치하세요. 어린이 ' +
-        S.childCount(state) + '명은 기본 노동력에 포함되지 않습니다.</p>' +
+      p.innerHTML = '<h2>마을 운영</h2><p class="intro">상단 아이콘은 빠르게 상태만 보여줍니다. 이곳에서 정확한 수치와 일꾼 배치를 함께 확인하세요.</p>' +
+        villageStatusBoard(rates) +
         (urgent ? operationCards() : '') +
         '<div class="panel-subhead">배치하지 않은 성인 <span>' + S.unused(state) + "명</span></div>" +
         workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주") +
