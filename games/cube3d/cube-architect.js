@@ -2657,12 +2657,188 @@ function createFirefly(x,z,index){
 }
 function spawnCritters(){
   critters.forEach(c=>scene.remove(c));critters=[];
+  const ws=worldRules.WORLD_SCALE||1;
   [[-7,-7],[-10,4],[7,10],[11,-5],[-28,-12],[-35,-34],[-3,-39],[7,36],[29,-24]]
-    .forEach(p=>critters.push(createRabbit(p[0],p[1])));
+    .forEach(p=>critters.push(createRabbit(Math.round(p[0]*ws),Math.round(p[1]*ws))));
   [[-6,2],[7,-8],[3,11],[-26,-7],[30,-26],[4,36]]
-    .forEach((p,i)=>critters.push(createBird(p[0],p[1],i)));
-  for(let i=0;i<7;i++)critters.push(createFirefly(-9+i*3,-2+(i%3)*4,i));
-  for(let i=0;i<5;i++)critters.push(createFirefly(1+i*2,34+(i%3)*2,i+8));
+    .forEach((p,i)=>critters.push(createBird(Math.round(p[0]*ws),Math.round(p[1]*ws),i)));
+  for(let i=0;i<7;i++)critters.push(createFirefly(Math.round((-9+i*3)*ws),Math.round((-2+(i%3)*4)*ws),i));
+  for(let i=0;i<5;i++)critters.push(createFirefly(Math.round((1+i*2)*ws),Math.round((34+(i%3)*2)*ws),i+8));
+  spawnWildCreatures();
+}
+
+function biomeCenter(id,index=0){
+  const rows=(worldRules.CENTERS||[]).filter(v=>v[2]===id);
+  return rows[Math.min(index,Math.max(0,rows.length-1))]||[0,0,id];
+}
+function registerCreatureMeshes(root){
+  creatureInteractables=creatureInteractables.filter(m=>m.userData?.creatureRoot!==root);
+  root.traverse?.(o=>{
+    if(!o.isMesh)return;
+    o.userData={...o.userData,creaturePart:true,creatureRoot:root};
+    creatureInteractables.push(o);
+  });
+}
+function creatureGroundY(x,z){
+  return getHighestSolidY(x,z,WORLD_MAX_Y)+1;
+}
+function placeWildCreature(id,x,z){
+  const api=window.CubeArchitectCreatures,root=api?.create?.(id);if(!root)return null;
+  const u=root.userData;
+  u.homeX=x;u.homeZ=z;u.baseY=creatureGroundY(x,z);root.position.set(x,u.baseY,z);
+  scene.add(root);wildCreatures.push(root);registerCreatureMeshes(root);upgradeWildCreatureAsset(root);return root;
+}
+function spawnWildCreatures(){
+  for(const c of wildCreatures)scene.remove(c);
+  wildCreatures=[];creatureInteractables=[];
+  if(gameFreeMode!=='survival')return;
+  const forest=biomeCenter('forest'),flowers=biomeCenter('flowers'),marsh=biomeCenter('marsh'),
+    desert=biomeCenter('desert'),badlands=biomeCenter('badlands'),pine=biomeCenter('pine');
+  [
+    ['deer',forest[0]-5,forest[1]+4],['deer',flowers[0]+6,flowers[1]-4],
+    ['frog',marsh[0]-4,marsh[1]+2],['frog',marsh[0]+3,marsh[1]+5],['frog',marsh[0]+6,marsh[1]-3],
+    ['lizard',desert[0]-5,desert[1]+4],['lizard',badlands[0]+6,badlands[1]-4],
+    ['shadowBug',forest[0]+4,forest[1]-5],['shadowBug',pine[0]-3,pine[1]+5],
+    ['slime',marsh[0]-7,marsh[1]-3],['slime',marsh[0]+7,marsh[1]+3],
+    ['burrower',desert[0]+7,desert[1]-5],['burrower',badlands[0]-6,badlands[1]+4],
+    ['cubeGolem',badlands[0]+10,badlands[1]-8]
+  ].forEach(v=>placeWildCreature(v[0],Math.round(v[1]),Math.round(v[2])));
+}
+async function upgradeWildCreatureAsset(root){
+  const u=root?.userData,spec=u?.spec,loader=window.CubeArchitectCreatureAssets;
+  if(!root||!spec?.asset||!loader?.load||u.assetPending||u.assetReady)return;
+  u.assetPending=true;
+  try{
+    const model=await loader.load(spec.asset);
+    if(!root.parent||u.dead)return;
+    if(u.visual)root.remove(u.visual);
+    u.visual=model;root.add(model);u.assetReady=true;registerCreatureMeshes(root);
+  }catch(e){console.warn('[Cube Architect creature asset]',spec.asset,e)}
+  finally{u.assetPending=false}
+}
+function upgradeWildCreatureAssets(){
+  wildCreatures.forEach(upgradeWildCreatureAsset);
+}
+window.addEventListener('cube-architect-creature-assets-ready',upgradeWildCreatureAssets);
+
+function nearbyLight(x,z,r=5){
+  const cx=Math.round(x),cz=Math.round(z);
+  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+    if(dx*dx+dz*dz>r*r)continue;
+    const top=getHighestSolidY(cx+dx,cz+dz);
+    for(let y=Math.max(WORLD_MIN_Y,top-2);y<=Math.min(WORLD_MAX_Y,top+3);y++){
+      const t=getBlock(cx+dx,y,cz+dz)?.type;
+      if(t==='torch'||t==='fire'||t==='lava')return true;
+    }
+  }
+  return false;
+}
+function playerStandingMaterial(){
+  const x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
+  const y=Math.floor(freePhysicsY-1.7);
+  return getBlock(x,y,z)?.type||'';
+}
+function walkCreature(root,dir,speed,dt,allowWater=false){
+  const nx=root.position.x+Math.sin(dir)*speed*dt,nz=root.position.z+Math.cos(dir)*speed*dt;
+  if(!inWorld(Math.round(nx),0,Math.round(nz)))return false;
+  const nextY=creatureGroundY(nx,nz),dy=Math.abs(nextY-root.position.y);
+  const ground=getBlock(Math.round(nx),Math.max(WORLD_MIN_Y,Math.floor(nextY-1)),Math.round(nz));
+  if(dy>1.15||(!allowWater&&ground?.type==='water'))return false;
+  root.position.x=nx;root.position.z=nz;root.position.y=nextY;root.rotation.y=dir+Math.PI;return true;
+}
+function updateCreatureHealthUi(){
+  const el=$('survivalHealth');if(!el)return;
+  el.classList.toggle('hidden',gameFreeMode!=='survival');
+  el.textContent='♥'.repeat(Math.max(0,survivalHealth))+'♡'.repeat(Math.max(0,5-survivalHealth));
+  el.title='생명 '+survivalHealth+'/5';
+}
+function returnAfterCreatureDefeat(){
+  camera.position.set(0,terrainHeight(0,5)+2.62,5);freePhysicsY=camera.position.y;
+  freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;streamWorldMeshes(true);
+  toast('기절해서 시작 지점으로 돌아왔어요. 가방의 재료는 그대로예요.');
+  updateCreatureHealthUi();saveFreeWorld();
+}
+function damageByCreature(root,t){
+  if(gameFreeMode!=='survival'||t-lastCreatureDamage<1250||root.userData.dead)return;
+  lastCreatureDamage=t;
+  const amount=Math.max(1,root.userData.spec.damage||1);
+  survivalHealth=Math.max(0,survivalHealth-amount);
+  const dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,len=Math.hypot(dx,dz)||1;
+  const push=.62;moveFreeHorizontal(dx/len*push,dz/len*push);
+  toast(root.userData.spec.name+'에게 부딪혔어요! '+('♥'.repeat(survivalHealth)||'생명 0'));
+  updateCreatureHealthUi();
+  if(survivalHealth<=0)returnAfterCreatureDefeat();
+}
+function creatureRayHit(max=4.8){
+  if(!creatureInteractables.length)return null;
+  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+  return raycaster.intersectObjects(creatureInteractables,false).find(h=>h.distance<=max)||null;
+}
+function creatureReward(root){
+  for(const [type,n] of Object.entries(root.userData.spec.reward||{}))addToBag(type,n);
+}
+function hitWildCreature(){
+  if(gameFreeMode!=='survival')return false;
+  const hit=creatureRayHit();if(!hit)return false;
+  const root=hit.object.userData.creatureRoot,u=root?.userData;if(!root||u.dead)return false;
+  if(u.spec.kind!=='hostile'){
+    u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
+    u.turn=.1;toast(u.spec.name+'이(가) 놀라서 도망갔어요.');return true;
+  }
+  const tool=selectedType||'hand',power=['stonePick','ironPick'].includes(tool)?2:1;
+  u.hp-=power;u.hurtUntil=performance.now()+280;
+  root.scale.setScalar(1.08);setTimeout(()=>{if(root.parent)root.scale.setScalar(1)},160);
+  if(u.hp>0){toast(u.spec.name+' 밀어내기 · '+u.hp+'/'+u.maxHp);u.dir+=Math.PI;return true}
+  u.dead=true;creatureReward(root);scene.remove(root);
+  creatureInteractables=creatureInteractables.filter(m=>m.userData?.creatureRoot!==root);
+  toast(u.spec.name+'을(를) 물리쳤어요! 건축 재료를 얻었어요.');sfx('good');saveFreeWorld();return true;
+}
+function updateWildCreatures(dt,t){
+  if(gameFreeMode!=='survival')return;
+  const night=dayTime>=.82||dayTime<.16,standing=playerStandingMaterial();
+  healthRegenClock+=dt;
+  if(survivalHealth<5&&healthRegenClock>28&&(dayTime>=.16&&dayTime<.82)){
+    survivalHealth++;healthRegenClock=0;updateCreatureHealthUi();
+  }
+  for(const root of wildCreatures){
+    const u=root.userData;if(u.dead)continue;
+    const spec=u.spec,dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
+    const active=spec.kind!=='hostile'||(spec.id==='shadowBug'?night:true);
+    root.visible=active;
+    if(!active)continue;
+    u.turn-=dt;
+    if(u.turn<=0){u.turn=1.1+Math.random()*2.6;u.dir+=(Math.random()-.5)*1.9}
+    let dir=u.dir,speed=spec.speed;
+    if(spec.kind==='passive'){
+      if(dist<5){dir=Math.atan2(-dx,-dz);speed*=1.65}
+      else if(Math.hypot(root.position.x-u.homeX,root.position.z-u.homeZ)>spec.radius){
+        dir=Math.atan2(u.homeX-root.position.x,u.homeZ-root.position.z);
+      }
+      if(spec.id==='frog'){
+        const hop=Math.max(0,Math.sin(t*.008+u.phase));u.visual.position.y=hop*.18;
+        speed*=.75+.65*hop;
+      }
+    }else{
+      const torchFear=spec.id==='shadowBug'&&nearbyLight(root.position.x,root.position.z,6);
+      const hardGround=spec.id==='burrower'&&!['sand','redSand'].includes(standing);
+      if(torchFear||hardGround){
+        dir=Math.atan2(-dx,-dz);speed*=1.55;
+      }else if(dist<spec.radius+3&&(!spec.elite||survivalStage>=4)){
+        dir=Math.atan2(dx,dz);
+      }else if(Math.hypot(root.position.x-u.homeX,root.position.z-u.homeZ)>spec.radius){
+        dir=Math.atan2(u.homeX-root.position.x,u.homeZ-root.position.z);
+      }
+      if(spec.id==='slime'){
+        const bob=Math.abs(Math.sin(t*.006+u.phase));u.visual.scale.y=.82+bob*.25;u.visual.scale.x=u.visual.scale.z=1.08-bob*.08;
+        if(['sand','gravel'].includes(standing))speed*=.62;
+      }
+      if(spec.id==='burrower')u.visual.position.y=Math.sin(t*.01+u.phase)*.09;
+      if(dist<.92+(spec.elite?.22:0)&&!torchFear&&!hardGround)damageByCreature(root,t);
+    }
+    u.dir=dir;
+    if(!walkCreature(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime'))u.dir+=Math.PI*.55;
+    if(u.hurtUntil<t&&root.scale.x!==1)root.scale.setScalar(1);
+  }
 }
 function updateCritters(dt,t){
   critterClock+=dt;
