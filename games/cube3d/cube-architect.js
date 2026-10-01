@@ -1850,7 +1850,7 @@ function initFree(){
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
-  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;dayTime=.28;
+  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
