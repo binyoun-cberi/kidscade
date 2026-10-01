@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b2530">
+  <meta name="description" content="지도 위에서 이동하고 자원을 연결해 구조 또는 정착을 노리는 턴제 무인도 생존 게임">
+  <title>표류생존기 V2</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+  <main id="app">
+    <section id="startScreen" class="start-screen">
+      <div class="start-hero">
+        <span class="eyebrow">KOREAN ISLAND SURVIVAL · REWORK</span>
+        <h1>표류<br><b>생존기</b></h1>
+        <p>폭풍 뒤 이름 없는 섬. 이제 버튼 목록이 아니라 <strong>섬 자체</strong>가 게임판입니다. 어디로 갈지, 무엇을 포기할지 정하세요.</p>
+        <div class="chips"><span>🗺️ 지도형 턴제</span><span>🧩 4종 미니게임</span><span>⛓️ 자원 연쇄</span><span>🏁 10가지 엔딩</span></div>
+      </div>
+      <div class="start-panel">
+        <h2>새로운 표류</h2>
+        <p class="muted">난이도는 시작 물품과 하루 소비량을 바꿉니다.</p>
+        <div id="difficulty" class="difficulty">
+          <button data-diff="easy"><b>🌤️ 연습</b><small>자원 넉넉 · 위험 완만</small></button>
+          <button data-diff="normal" class="selected"><b>🧭 탐험</b><small>기본 생존 균형</small></button>
+          <button data-diff="hard"><b>🌊 도전</b><small>자원 적음 · 소비 큼</small></button>
+        </div>
+        <button id="newBtn" class="primary big">새로운 표류 시작</button>
+        <button id="continueBtn" class="secondary big hidden">저장한 생존 이어하기</button>
+        <div id="endingCollection" class="collection">발견한 엔딩 0 / 10</div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="game-screen hidden">
+      <header class="hud glass">
+        <div class="brand"><b>漂</b><span>표류생존기</span></div>
+        <div class="clock"><strong id="dayText">DAY 1 · 08:00</strong><span id="weatherText">☀️ 맑음</span></div>
+        <div class="hud-actions"><button id="saveBtn" title="저장">💾</button><button id="guideBtn" title="도움말">?</button><button id="homeBtn" title="처음 화면">⌂</button></div>
+      </header>
+
+      <section class="survival-strip glass" aria-label="생존 상태">
+        <div><span>❤️ 체력</span><b id="hpText">100</b><i><em id="hpBar"></em></i></div>
+        <div><span>💧 물</span><b id="waterText">3.0</b><i><em id="waterBar"></em></i></div>
+        <div><span>🍚 식량</span><b id="foodText">4.0</b><i><em id="foodBar"></em></i></div>
+        <div><span>😮‍💨 피로</span><b id="fatigueText">10</b><i><em id="fatigueBar"></em></i></div>
+        <div><span>📡 구조</span><b id="rescueText">0%</b><i><em id="rescueBar"></em></i></div>
+      </section>
+
+      <div class="layout">
+        <section class="map-card glass">
+          <div class="map-heading"><div><span class="eyebrow">ISLAND MAP</span><h2>이름 없는 섬</h2></div><div id="objective" class="objective">오늘은 식수원을 찾자.</div></div>
+          <div id="islandMap" class="island-map" tabindex="0" aria-label="무인도 지도">
+            <svg class="terrain" viewBox="0 0 760 560" role="img" aria-label="섬 지형">
+              <defs><linearGradient id="land" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#6e8b5f"/><stop offset=".55" stop-color="#416b54"/><stop offset="1" stop-color="#2e5148"/></linearGradient></defs>
+              <path class="sea-ring" d="M92 313C72 196 159 87 286 54c130-34 301 6 367 111 69 111 32 253-64 324-100 74-246 74-361 27C121 472 101 369 92 313Z"/>
+              <path class="land" d="M119 310C100 208 176 112 294 81c116-30 271 7 330 100 61 97 30 221-57 286-91 68-222 67-327 25-97-39-113-132-121-182Z"/>
+              <path class="river" d="M377 145c8 59-20 91-34 126-14 34-10 72-41 113"/>
+              <path class="trail" d="M212 406L290 340L327 244L406 178M291 340L483 392M406 178L548 128"/>
+              <path class="cliff" d="M495 130c40-24 88-18 126 10"/>
+            </svg>
+            <button class="place-node" data-place="beach" style="--x:20%;--y:72%"><span>🏝️</span><b>자갈 해변</b><small>난파 흔적</small></button>
+            <button class="place-node" data-place="camp" style="--x:35%;--y:62%"><span>⛺</span><b>야영지</b><small>휴식·제작</small></button>
+            <button class="place-node" data-place="forest" style="--x:42%;--y:42%"><span>🌲</span><b>곰솔 숲</b><small>나무·덩굴</small></button>
+            <button class="place-node locked" data-place="stream" style="--x:53%;--y:29%"><span>💧</span><b>작은 계곡</b><small>식수원</small></button>
+            <button class="place-node locked" data-place="cove" style="--x:64%;--y:71%"><span>🎣</span><b>바위 만</b><small>낚시</small></button>
+            <button class="place-node locked" data-place="cliff" style="--x:72%;--y:37%"><span>🧗</span><b>바람 절벽</b><small>밧줄 필요</small></button>
+            <button class="place-node locked" data-place="lighthouse" style="--x:80%;--y:19%"><span>🔦</span><b>등대 언덕</b><small>멀리 닿는 신호</small></button>
+            <div id="playerMarker" class="player-marker" aria-label="현재 위치">🧍</div>
+          </div>
+          <div class="map-legend"><span>● 현재 위치</span><span>🔒 미발견/조건 부족</span><span>이동도 시간·피로를 사용합니다.</span></div>
+        </section>
+
+        <aside class="side-stack">
+          <section class="place-panel glass">
+            <div class="place-title"><span id="placeIcon">🏝️</span><div><span class="eyebrow">CURRENT PLACE</span><h2 id="placeName">자갈 해변</h2></div></div>
+            <p id="placeDesc">부서진 배의 흔적과 떠밀려온 물건이 보인다.</p>
+            <div id="actionList" class="action-list"></div>
+          </section>
+
+          <section class="inventory-panel glass">
+            <div class="section-row"><h3>🎒 배낭</h3><button id="craftBtn" class="text-btn">제작</button></div>
+            <div id="inventory" class="inventory"></div>
+          </section>
+        </aside>
+      </div>
+
+      <section class="bottom-grid">
+        <div class="journal glass"><div class="section-row"><h3>📖 생존 일지</h3><span id="logCount"></span></div><div id="log"></div></div>
+        <div class="progress glass"><div class="section-row"><h3>🧭 생존 목표</h3><button id="endingsBtn" class="text-btn">엔딩 도감</button></div><div id="milestones"></div></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card glass"><div class="modal-head"><div><span id="modalKicker" class="eyebrow"></span><h2 id="modalTitle"></h2></div><button id="modalClose" aria-label="닫기">×</button></div><div id="modalBody" class="modal-body"></div></div>
+  </div>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <script src="./game-1.js?v=2"></script><script src="./game-2.js?v=2"></script><script src="./game-3.js?v=2"></script><script src="./game-4.js?v=2"></script>
+</body>
+</html>
