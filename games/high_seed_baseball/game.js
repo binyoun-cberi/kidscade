@@ -63,16 +63,16 @@ let offenseDecision='stop',offenseOutcome=null,offenseTimer=0,particles=[];
 let gameStats=null,cpuPitchHistory=[];
 
 const DIFF={
- easy:{pitchSpeed:.57,batWindow:.33,batReach:51,cpuContact:.50,cpuDiscipline:.56,fieldSpeed:150,runnerSpeed:.32,error:44},
- normal:{pitchSpeed:.75,cpuContact:.63,cpuDiscipline:.68,batWindow:.255,batReach:34,fieldSpeed:175,runnerSpeed:.36,error:36},
- hard:{pitchSpeed:1.04,cpuContact:.75,cpuDiscipline:.79,batWindow:.17,batReach:23,fieldSpeed:205,runnerSpeed:.40,error:26}
+ easy:{pitchSpeed:.57,batWindow:.31,batReach:40,cpuContact:.50,cpuDiscipline:.56,fieldSpeed:150,runnerSpeed:.32,error:44},
+ normal:{pitchSpeed:.75,cpuContact:.63,cpuDiscipline:.68,batWindow:.23,batReach:27,fieldSpeed:175,runnerSpeed:.36,error:36},
+ hard:{pitchSpeed:1.04,cpuContact:.75,cpuDiscipline:.79,batWindow:.15,batReach:18,fieldSpeed:205,runnerSpeed:.40,error:26}
 };
 function cfg(){return DIFF[difficulty]}
 const FIELD_DIFF={
  // Assist should help the player reach the ball, not play defense for them.
- easy:{assist:.35,flyCatch:.45,speed:160},
- normal:{assist:.12,flyCatch:.22,speed:178},
- hard:{assist:0,flyCatch:.08,speed:195}
+ easy:{assist:.20,flyCatch:.32,speed:160},
+ normal:{assist:.07,flyCatch:.18,speed:178},
+ hard:{assist:0,flyCatch:.07,speed:195}
 };
 const OPPONENT_FIELD={reaction:.31,speed:168};
 function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
@@ -389,7 +389,7 @@ function updateOffenseField(dt){
    const o=offenseOutcome||{q:.5,sweet:.5,rawDist:220};
    // Good contact is difficult to turn into an automatic fly out on every difficulty.
    const quality=clamp(o.q*.68+o.sweet*.32,0,1);
-   const catchChance=clamp(.86-quality*.43-(o.rawDist>285?.08:0),.34,.82);
+   const catchChance=clamp(.74-quality*.32-(o.rawDist>285?.07:0),.30,.68);
    caught=Math.random()<catchChance;
   }
   if(caught){f.hasBall=true;fieldBall.owner=f;fieldBall.vx=fieldBall.vy=fieldBall.vz=0}
@@ -404,11 +404,13 @@ function resolveOffenseBall(){
  state='between';setControls('');hint('');
  if(o.rawDist>325&&o.launch>.30){hr=true;basesEarned=4}
  else if(fieldBall?.owner&&!fieldBall.bounced)out=true;
- else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<clamp(.62-o.q*.25-o.sweet*.10,.28,.56))out=true;
  else {
-  const shapePenalty=(o.launch<.20||o.launch>.52)?.08:0;
-  const weakPenalty=o.q<.45?.12:0;
-  const fieldOut=clamp(.72-o.q*.34-o.sweet*.16+shapePenalty+weakPenalty,.24,.68);
+  const shapePenalty=(o.launch<.18||o.launch>.56)?.06:0;
+  const weakPenalty=o.q<.45?.09:0;
+  let fieldOut=.52-o.q*.28-o.sweet*.10+shapePenalty+weakPenalty;
+  if(fieldBall?.owner&&fieldBall.bounced)fieldOut+=.18;
+  else if(!fieldBall?.owner)fieldOut-=.08;
+  fieldOut=clamp(fieldOut,.12,.58);
   if(Math.random()<fieldOut)out=true;
  }
  if(!out&&o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
