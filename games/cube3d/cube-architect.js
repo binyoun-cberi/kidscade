@@ -1825,7 +1825,8 @@ function initFree(){
   modeTitle(survival?'생존 탐험':'크리에이티브 월드',
     survival?'나무 채집 → 제작 → 새로운 바이옴 탐험':'모든 건축 재료 · 비행 · 물질 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');
-  $('actionAvatar')?.classList.remove('hidden');$('actionView')?.classList.remove('hidden');
+  $('actionAvatar')?.classList.toggle('hidden',mobileModeEnabled);
+  $('actionView')?.classList.toggle('hidden',mobileModeEnabled);
   $('actionXray').classList.toggle('hidden',survival);
   cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,30,68);
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
@@ -2095,8 +2096,8 @@ function updateFreeMission(){
     $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
-      survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프':
-      '좌클릭 채집 · E 제작·도형 편집 · P 면 색칠 · X 수학 렌즈';
+      survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프 · V 시점':
+      '좌클릭 채집 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
     $('freeQuestTitle').textContent='월드 탐험 기록';
@@ -2104,8 +2105,8 @@ function updateFreeMission(){
     $('adventureCount').textContent=done+'/'+total;
     $('adventureBar').style.width=(done/total*100)+'%';
     $('freeState').textContent=(freeFlying?'비행':'걷기')+' · '+chosen;
-    $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행':
-      'E 가방 · F 비행 · R 복사 · P 면 색칠 · X 수학 렌즈';
+    $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행 · V 시점':
+      'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
   renderExplorationHint();
 }
