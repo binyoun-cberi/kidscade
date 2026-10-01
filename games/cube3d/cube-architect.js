@@ -2434,7 +2434,7 @@ function saveFreeWorld(){
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
-    creatureDefeats:{...creatureDefeats},seenCreatures:[...seenCreatureKinds],
+    creatureDefeats:{...creatureDefeats},seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
