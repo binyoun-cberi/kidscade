@@ -1129,6 +1129,40 @@ const DUNGEON_THEMES={
   castle:{bg:0x111820,floor:0xd8dde0,wall:0xb8c0c5,accent:0xf1b55b},
   jungle:{bg:0x101b16,floor:0x6e7450,wall:0x8c8060,accent:0x9fe36b}
 };
+const DUNGEON_SPECS={
+  taj:{
+    objectives:['대칭의 홀 · 좌우 반사경을 모두 깨워 중앙 봉인을 푸세요.','빛의 회랑 · 거울을 왼쪽 → 오른쪽 → 가운데 순서로 작동시키세요.','최심부 설계실 · 빛나는 문으로 들어가 대칭 건축의 원리를 해독하세요.'],
+    seals:['왼쪽 반사경 조사','오른쪽 반사경 조사'],mirrors:['왼쪽 거울 작동','가운데 거울 작동','오른쪽 거울 작동'],
+    order:['left','right','center'],hint:'왼쪽 → 오른쪽 → 가운데 순서예요.',portal:'타지마할 설계실 입장'
+  },
+  sagrada:{
+    objectives:['쌍둥이 종탑 · 양쪽 종을 울려 중앙 첨탑의 문을 여세요.','첨탑의 합창 · 낮은 종 → 높은 종 → 중앙 종 순서로 울리세요.','최상층 설계실 · 첨탑 구조를 해독하세요.'],
+    seals:['서쪽 종탑 울리기','동쪽 종탑 울리기'],mirrors:['낮은 종 울리기','중앙 종 울리기','높은 종 울리기'],
+    order:['left','right','center'],hint:'낮은 종 → 높은 종 → 중앙 종 순서예요.',portal:'성당 설계실 입장'
+  },
+  eiffel:{
+    objectives:['기계실 · 좌우 발전기를 모두 켜 승강기를 복구하세요.','철골 제어층 · 서쪽 → 중앙 → 동쪽 제어기를 연결하세요.','정상 설계실 · 철골 구조의 원리를 해독하세요.'],
+    seals:['서쪽 발전기 가동','동쪽 발전기 가동'],mirrors:['서쪽 제어기 연결','중앙 제어기 연결','동쪽 제어기 연결'],
+    order:['left','center','right'],hint:'서쪽 → 중앙 → 동쪽 순서예요.',portal:'정상 설계실 입장'
+  },
+  towerBridge:{
+    objectives:['교량 제어실 · 양쪽 수압 장치를 모두 켜세요.','개폐교 제어 · 왼쪽 → 가운데 → 오른쪽 밸브를 맞추세요.','중앙 기관실 · 다리 구조의 설계를 해독하세요.'],
+    seals:['서쪽 수압 장치','동쪽 수압 장치'],mirrors:['왼쪽 밸브 조작','가운데 밸브 조작','오른쪽 밸브 조작'],
+    order:['left','center','right'],hint:'왼쪽 → 가운데 → 오른쪽 순서예요.',portal:'중앙 기관실 입장'
+  },
+  himeji:{
+    objectives:['성문 · 좌우 샤치호코 봉인을 찾아 해제하세요.','백로성 회랑 · 오른쪽 → 왼쪽 → 가운데 문장을 맞추세요.','천수각 설계실 · 겹지붕의 원리를 해독하세요.'],
+    seals:['서쪽 성문 봉인','동쪽 성문 봉인'],mirrors:['왼쪽 문장 맞추기','가운데 문장 맞추기','오른쪽 문장 맞추기'],
+    order:['right','left','center'],hint:'오른쪽 → 왼쪽 → 가운데 순서예요.',portal:'천수각 설계실 입장'
+  },
+  angkor:{
+    objectives:['수호자의 회랑 · 양쪽 수호상을 깨워 석문을 여세요.','고대 문양 · 가운데 → 왼쪽 → 오른쪽 룬을 밟으세요.','중앙 성소 · 석조 건축의 원리를 해독하세요.'],
+    seals:['서쪽 수호상 깨우기','동쪽 수호상 깨우기'],mirrors:['왼쪽 룬 활성화','가운데 룬 활성화','오른쪽 룬 활성화'],
+    order:['center','left','right'],hint:'가운데 → 왼쪽 → 오른쪽 순서예요.',portal:'중앙 성소 설계실 입장'
+  }
+};
+function dungeonSpec(poi){return DUNGEON_SPECS[poi?.id]||DUNGEON_SPECS.taj}
+
 function dungeonMaterial(color,emissive=0){
   return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?0.35:0});
 }
@@ -1160,13 +1194,10 @@ function updateDungeonCamera(){
 function updateDungeonHud(){
   if(!dungeonSession)return;
   const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
-  const stage=dungeonSession.stage||0;
+  const stage=dungeonSession.stage||0,spec=dungeonSpec(poi);
   $('dungeonTitle').textContent=poi.name+' · '+poi.dungeon.title;
   $('dungeonProgress').textContent=(stage+1)+'/3';
-  $('dungeonObjective').textContent=stage===0?
-    '대칭의 홀 · 좌우 봉인 장치 두 개를 모두 조사하세요.':
-    stage===1?'빛의 회랑 · 거울 장치를 왼쪽 → 오른쪽 → 가운데 순서로 작동시키세요.':
-    '최심부 설계실 · 빛나는 문으로 들어가 건축 원리를 해독하세요.';
+  $('dungeonObjective').textContent=spec.objectives[stage]||spec.objectives[2];
   const near=nearestDungeonTarget(2.4);
   $('dungeonPrompt').classList.toggle('hidden',!near);
   if(near)$('dungeonPrompt').textContent='E · '+near.userData.label;
@@ -1190,12 +1221,13 @@ function dungeonInteract(){
     updateDungeonHud();return;
   }
   if(data.targetKind==='mirror'&&stage===1){
-    const order=['left','right','center'],seq=dungeonSession.mirrors||(dungeonSession.mirrors=[]);
+    const poi=poiRules.poiById(dungeonSession.poiId),spec=dungeonSpec(poi);
+    const order=spec.order,seq=dungeonSession.mirrors||(dungeonSession.mirrors=[]);
     const expected=order[seq.length];
     if(data.targetId!==expected){
       seq.length=0;
       dungeonTargets.filter(m=>m.userData.targetKind==='mirror').forEach(m=>{glowDungeonTarget(m,false);glowDungeonTarget(m.userData.base,false)});
-      toast('빛의 순서가 끊겼어요. 왼쪽 → 오른쪽 → 가운데 순서예요.');sfx('bad');return;
+      toast('순서가 끊겼어요. '+spec.hint);sfx('bad');return;
     }
     seq.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good');
     if(seq.length===3){
@@ -1223,14 +1255,34 @@ function buildLandmarkDungeonScene(poi){
     addDungeonBox(5.5,1.5,z,.7,3,.7,theme.accent);
   }
   dungeonTargets=[];dungeonGates=[];
-  addDungeonTarget('left','seal',-3.2,3,theme.accent,'왼쪽 봉인 장치 조사');
-  addDungeonTarget('right','seal',3.2,3,theme.accent,'오른쪽 봉인 장치 조사');
+  const spec=dungeonSpec(poi);
+  addDungeonTarget('left','seal',-3.2,3,theme.accent,spec.seals[0]);
+  addDungeonTarget('right','seal',3.2,3,theme.accent,spec.seals[1]);
   dungeonGate(-1.2,theme.wall);
-  addDungeonTarget('left','mirror',-3.1,-8,theme.accent,'왼쪽 거울 작동');
-  addDungeonTarget('center','mirror',0,-10.5,theme.accent,'가운데 거울 작동');
-  addDungeonTarget('right','mirror',3.1,-8,theme.accent,'오른쪽 거울 작동');
+  addDungeonTarget('left','mirror',-3.1,-8,theme.accent,spec.mirrors[0]);
+  addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
+  addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
   dungeonGate(-14.2,theme.wall);
-  const portal=addDungeonTarget('blueprint','portal',0,-23,theme.accent,'최심부 설계실 입장');
+  const portal=addDungeonTarget('blueprint','portal',0,-23,theme.accent,spec.portal);
+  // Landmark-specific silhouettes make the same three-room rules read as different places.
+  if(poi.id==='taj'){
+    for(const x of [-4.3,4.3])for(const z of [5,-5,-17])addDungeonBox(x,2,z,.55,4,.55,theme.wall);
+    addDungeonBox(0,4.15,-22,5.5,.35,3.5,theme.accent);
+  }else if(poi.id==='sagrada'){
+    for(const x of [-4.8,-2.4,2.4,4.8])addDungeonBox(x,3.2,-9,.5,6.4,.5,theme.accent);
+    addDungeonBox(0,5.5,-21,4.5,1,1.2,theme.wall);
+  }else if(poi.id==='eiffel'){
+    for(const z of [5,-5,-17,-24]){addDungeonBox(-4.4,2,z,.38,4,6,theme.accent);addDungeonBox(4.4,2,z,.38,4,6,theme.accent)}
+  }else if(poi.id==='towerBridge'){
+    addDungeonBox(-5.2,.08,-9,2.4,.12,28,0x4b9bd8);addDungeonBox(5.2,.08,-9,2.4,.12,28,0x4b9bd8);
+    addDungeonBox(0,3.4,-21,8,.5,.8,theme.accent);
+  }else if(poi.id==='himeji'){
+    for(const [x,z] of [[-2.7,-4],[2.7,-9],[-2.7,-15],[2.7,-20]])addDungeonBox(x,1.5,z,5.5,3,.25,theme.wall);
+    addDungeonBox(0,4,-23,6,.4,3,0xf2f4f5);
+  }else if(poi.id==='angkor'){
+    for(const [x,z] of [[-4.6,4],[4.6,4],[-4.6,-8],[4.6,-8],[-4.6,-20],[4.6,-20]])addDungeonBox(x,1.4,z,1.4,2.8,1.4,theme.wall);
+    addDungeonBox(0,.08,-19,8,.12,4,0x607d45);
+  }
   if((dungeonSession.stage||0)<2){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
   if((dungeonSession.stage||0)>=1&&dungeonGates[0])dungeonGates[0].visible=false;
   if((dungeonSession.stage||0)>=2&&dungeonGates[1])dungeonGates[1].visible=false;
