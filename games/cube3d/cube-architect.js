@@ -2913,7 +2913,7 @@ function damageByCreature(root,t){
   updateCreatureHealthUi();
   if(survivalHealth<=0)returnAfterCreatureDefeat();
 }
-function creatureRayHit(max=4.8){
+function creatureRayHit(max=2.35){
   if(!creatureInteractables.length)return null;
   const {eye,maxFromPlayer}=setFreeInteractionRay(max);
   const creature=raycaster.intersectObjects(creatureInteractables,false)
