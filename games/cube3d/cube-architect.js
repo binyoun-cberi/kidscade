@@ -2995,7 +2995,7 @@ function updateWildCreatures(dt,t){
         speed*=.75+.65*hop;animState='hop';
       }
     }else{
-      const lightSource=spec.id==='shadowBug'?nearestCreatureLight(root.position.x,root.position.z,7):null; const torchFear=!!lightSource;
+      if(spec.id==='shadowBug'&&t>=(u.nextLightScanAt||0)){u.nextLightScanAt=t+280;u.lightSource=nearestCreatureLight(root.position.x,root.position.z,7)} const lightSource=spec.id==='shadowBug'?u.lightSource:null; const torchFear=!!lightSource;
       const hardGround=spec.id==='burrower'&&!['sand','redSand'].includes(standing);
       if(torchFear){
         dir=Math.atan2(root.position.x-lightSource.x,root.position.z-lightSource.z);speed*=1.72;
