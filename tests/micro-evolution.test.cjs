@@ -9,6 +9,7 @@ const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const css=fs.readFileSync(path.join(dir,'style.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
+const audioCatalog=JSON.parse(fs.readFileSync(path.join(ROOT,'assets','audio','audio-catalog.json'),'utf8'));
 
 test('Micro Evolution files are parseable and wired to the game SDK',()=>{
   assert.doesNotThrow(()=>new Function(js));
@@ -145,4 +146,26 @@ test('DNA economy requires multi-generation saving and escalating duplicate cost
   assert.match(js,/chloroplast:\{id:'chloroplast'.*cost:14/);
   assert.match(js,/electro:\{id:'electro'.*cost:16/);
   assert.match(html,/여러 세대에 걸쳐 모으는 장기 진화 자원/);
+});
+
+
+test('Micro Evolution uses the shared asset-backed audio system',()=>{
+  assert.match(html,/audio-manager\.js\?v=20260917-1/);
+  assert.match(js,/const AUDIO_KEYS=Object\.freeze/);
+  assert.match(js,/function preloadAudio\(\)/);
+  assert.match(js,/function startAmbience\(\)/);
+  assert.match(js,/ambient\.underwater/);
+  assert.deepEqual(audioCatalog.sounds['ambient.underwater'],['incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3']);
+  for(const key of [
+    'ui.click','ui.select','ui.confirm','ui.error',
+    'collect.coin_pickup','collect.coin_drop',
+    'combat.impact_heavy','combat.hurt_grunt','combat.projectile_whoosh',
+    'ui.open','ambient.underwater'
+  ]) assert.ok(audioCatalog.sounds[key]?.length,'missing audio catalog key '+key);
+  assert.match(js,/sound\('eat'/);
+  assert.match(js,/sound\('bite'/);
+  assert.match(js,/sound\('hurt'/);
+  assert.match(js,/sound\('dash'/);
+  assert.match(js,/sound\('generation'/);
+  assert.match(js,/stopAmbience\(\)/);
 });
