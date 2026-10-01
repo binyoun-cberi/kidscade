@@ -70,9 +70,9 @@ const DIFF={
 function cfg(){return DIFF[difficulty]}
 const FIELD_DIFF={
  // Assist should help the player reach the ball, not play defense for them.
- easy:{assist:.20,flyCatch:.32,groundPickup:.62,support:.30,speed:160},
- normal:{assist:.07,flyCatch:.18,groundPickup:.42,support:.19,speed:178},
- hard:{assist:0,flyCatch:.07,groundPickup:.24,support:.10,speed:195}
+ easy:{assist:.12,flyCatch:.26,groundPickup:.50,support:.18,speed:160},
+ normal:{assist:.04,flyCatch:.15,groundPickup:.34,support:.12,speed:178},
+ hard:{assist:0,flyCatch:.07,groundPickup:.22,support:.08,speed:195}
 };
 const OPPONENT_FIELD={reaction:.38,speed:154};
 function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
