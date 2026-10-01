@@ -21,7 +21,7 @@ const poiApi=sandbox.CubeArchitectPOI;
 const pois=poiApi.POIS;
 const key=p=>p.p.join(',');
 
-test('v19 loads intact landmark POIs and the dungeon runtime',()=>{
+test('v20 loads scaled intact landmark POIs and the dungeon runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(poiJs));
   assert.match(html,/cube-architect-poi\.js\?v=20261001-20/);
@@ -47,7 +47,8 @@ test('all six hard blueprints appear intact and recognisable in the survival wor
     assert.ok(poi.compact.blocks.length>=250,poi.name);
     assert.equal(poi.compact.blocks.length,poi.compact.fullShell.length,poi.name);
     assert.deepEqual(new Set(poi.compact.blocks.map(key)),new Set(poi.compact.fullShell.map(key)),poi.name);
-    assert.ok(Math.max(...poi.compact.size)<=24,poi.name);
+    assert.ok(Math.max(...poi.compact.size)<=30,poi.name);
+    assert.ok(Math.max(...poi.compact.size)>=22,poi.name);
     assert.ok(poi.dungeon?.title,poi.name);
     assert.ok(poi.dungeon?.theme,poi.name);
     assert.ok(poi.tech.id);
@@ -99,7 +100,7 @@ test('dungeon clear unlocks construction tech while retaining save compatibility
   assert.match(js,/unlockedTech\.add\(poi\.tech\.id\)/);
   assert.match(js,/trackSurvival\('restore',id\)/);
   assert.match(js,/던전 클리어/);
-  assert.match(js,/version:7/);
+  assert.match(js,/version:8/);
   assert.match(js,/restoredLandmarks/);
   assert.match(js,/protectedPoi/);
 });
