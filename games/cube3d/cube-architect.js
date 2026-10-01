@@ -1391,7 +1391,7 @@ let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
 let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
 let critters=[],critterClock=0;
 let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0,lastCreatureAttackAt=0;
-let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0;
+let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0,nextEliteSpawnCheckAt=0;
 const FURNACE_RECIPES=[
   {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
   {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
