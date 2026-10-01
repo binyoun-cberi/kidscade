@@ -2699,7 +2699,7 @@ function spawnWildCreatures(){
   [
     ['deer',forest[0]-5,forest[1]+4],['deer',flowers[0]+6,flowers[1]-4],
     ['frog',marsh[0]-4,marsh[1]+2],['frog',marsh[0]+3,marsh[1]+5],['frog',marsh[0]+6,marsh[1]-3],
-    ['lizard',desert[0]-5,desert[1]+4],['lizard',badlands[0]+6,badlands[1]-4],
+    ['camel',desert[0]-5,desert[1]+4],['camel',badlands[0]+6,badlands[1]-4],
     ['shadowBug',forest[0]+4,forest[1]-5],['shadowBug',pine[0]-3,pine[1]+5],
     ['slime',marsh[0]-7,marsh[1]-3],['slime',marsh[0]+7,marsh[1]+3],
     ['burrower',desert[0]+7,desert[1]-5],['burrower',badlands[0]-6,badlands[1]+4],
@@ -2748,7 +2748,7 @@ function creatureHint(spec){
   const hints={
     deer:'사슴은 가까이 다가가면 도망가요.',
     frog:'개구리는 습지에서 폴짝이며 돌아다녀요.',
-    lizard:'사막도마뱀은 모래와 바위 사이를 빠르게 달려요.',
+    camel:'낙타는 사막을 천천히 돌아다녀요. 가까이 가면 놀라서 거리를 둡니다.',
     shadowBug:'그림자 벌레는 밤에 나타나지만 횃불과 불빛을 싫어해요.',
     slime:'늪 슬라임은 모래·자갈 위에서는 움직임이 둔해져요.',
     burrower:'모래잠복충은 모래에서 강해요. 돌·판자 바닥 위로 올라가면 물러나요.',
