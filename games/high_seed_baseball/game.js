@@ -69,10 +69,12 @@ const DIFF={
 };
 function cfg(){return DIFF[difficulty]}
 const FIELD_DIFF={
- easy:{assist:.80,flyCatch:.84,speed:170},
- normal:{assist:.33,flyCatch:.46,speed:185},
- hard:{assist:0,flyCatch:.18,speed:200}
+ // Assist should help the player reach the ball, not play defense for them.
+ easy:{assist:.56,flyCatch:.58,speed:165},
+ normal:{assist:.22,flyCatch:.30,speed:180},
+ hard:{assist:0,flyCatch:.10,speed:195}
 };
+const OPPONENT_FIELD={reaction:.31,speed:168};
 function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
 function pitchZone(x,y){return (x<448?0:x>512?2:1)+(y<298?0:y>350?6:3)}
 function cpuReadability(type,zone){
@@ -83,7 +85,8 @@ function cpuReadability(type,zone){
 function currentBatAngle(){return swing?batSwingAngle(swing):batAngle}
 function batSwingAngle(sw){
  const u=clamp(sw.elapsed/sw.duration,0,1),smooth=u*u*(3-2*u);
- return sw.baseAngle+(sw.mode==='power'?.24:.18)*(smooth-.5);
+ // A visibly readable 22–29 degree sweep instead of a tiny 10 degree twitch.
+ return sw.baseAngle+(sw.mode==='power'?.50:.38)*(smooth-.5);
 }
 function closestBatPoint(x,y,angle=currentBatAngle()){
  const tip=batTip(angle),dx=tip.x-BAT.px,dy=tip.y-BAT.py,t=clamp(((x-BAT.px)*dx+(y-BAT.py)*dy)/(dx*dx+dy*dy),0,1);
@@ -97,9 +100,10 @@ function pitchScreenPoint(p,t=clamp(p.t,0,1)){
 }
 const TRAIL_STYLE={
  fastball:{rgb:'219,234,254',interval:.018,bonus:0},
- curve:{rgb:'253,230,138',interval:.026,bonus:2},
- change:{rgb:'186,230,253',interval:.034,bonus:0},
- slider:{rgb:'221,214,254',interval:.022,bonus:1},
+ // Breaking pitches keep a longer, fainter history so their bend is visible rather than just the latest direction.
+ curve:{rgb:'253,230,138',interval:.028,bonus:6},
+ change:{rgb:'186,230,253',interval:.034,bonus:1},
+ slider:{rgb:'221,214,254',interval:.026,bonus:5},
  hit:{rgb:'255,244,202',interval:.030,bonus:0},
  throw:{rgb:'226,232,240',interval:.022,bonus:0}
 };
@@ -364,17 +368,24 @@ function startOffenseBall(q,power,timing,verticalErr,sweet=.75){
 }
 function makeFielders(userDefense){
  const pos=[[480,405,'P'],[625,365,'1B'],[545,315,'2B'],[415,315,'SS'],[335,365,'3B'],[300,205,'LF'],[480,160,'CF'],[660,205,'RF']];
- fielders=pos.map((p,i)=>({x:p[0],y:p[1],homeX:p[0],homeY:p[1],role:p[2],hasBall:false,user:userDefense,speed:(userDefense?fieldCfg().speed:cfg().fieldSpeed*.92)*(i===6?1.03:1)}));
+ fielders=pos.map((p,i)=>({x:p[0],y:p[1],homeX:p[0],homeY:p[1],role:p[2],hasBall:false,user:userDefense,speed:(userDefense?fieldCfg().speed:OPPONENT_FIELD.speed)*(i===6?1.03:1)}));
  activeFielder=-1;
 }
 function updateOffenseField(dt){
  if(!fieldBall)return;offenseTimer+=dt;updateBallPhysics(dt);
  let nearest=-1,nd=1e9;fielders.forEach((f,i)=>{const d=Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y);if(d<nd){nd=d;nearest=i}});
- if(offenseTimer>(difficulty==='easy'?.42:difficulty==='normal'?.3:.2))fielders.forEach((f,i)=>{const target=i===nearest?fieldBall:{x:f.homeX,y:f.homeY},dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1,sp=f.speed*(i===nearest?1:.45);f.x+=dx/l*sp*dt;f.y+=dy/l*sp*dt});
+ if(offenseTimer>OPPONENT_FIELD.reaction)fielders.forEach((f,i)=>{const target=i===nearest?fieldBall:{x:f.homeX,y:f.homeY},dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1,sp=f.speed*(i===nearest?1:.45);f.x+=dx/l*sp*dt;f.y+=dy/l*sp*dt});
  const f=fielders[nearest];
  if(f&&fieldBall.z<24&&Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)<20){
   let caught=fieldBall.bounced;
-  if(!caught&&!fieldBall.catchAttempted){fieldBall.catchAttempted=true;caught=Math.random()<(difficulty==='easy'?.58:difficulty==='normal'?.75:.87)}
+  if(!caught&&!fieldBall.catchAttempted){
+   fieldBall.catchAttempted=true;
+   const o=offenseOutcome||{q:.5,sweet:.5,rawDist:220};
+   // Good contact is difficult to turn into an automatic fly out on every difficulty.
+   const quality=clamp(o.q*.68+o.sweet*.32,0,1);
+   const catchChance=clamp(.86-quality*.43-(o.rawDist>285?.08:0),.34,.82);
+   caught=Math.random()<catchChance;
+  }
   if(caught){f.hasBall=true;fieldBall.owner=f;fieldBall.vx=fieldBall.vy=fieldBall.vz=0}
  }
  if(offenseTimer>2.6||fieldBall.owner||fieldBall.y<130||fieldBall.x<160||fieldBall.x>800)resolveOffenseBall();
@@ -387,13 +398,13 @@ function resolveOffenseBall(){
  state='between';setControls('');hint('');
  if(o.rawDist>325&&o.launch>.30){hr=true;basesEarned=4}
  else if(fieldBall?.owner&&!fieldBall.bounced)out=true;
- else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<(difficulty==='easy'?.34:difficulty==='normal'?.47:.58))out=true;
- else if(o.q<.28&&o.launch<.22&&Math.random()<.62+(difficulty==='hard'?.12:0))out=true;
- else if(o.launch>.42&&o.q<.58&&Math.random()<.52+(difficulty==='hard'?.1:0))out=true;
+ else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<clamp(.54-o.q*.28, .22,.48))out=true;
+ else if(o.q<.28&&o.launch<.22&&Math.random()<.62)out=true;
+ else if(o.launch>.42&&o.q<.58&&Math.random()<.52)out=true;
  else if(o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
  else if(o.rawDist>260)basesEarned=2;
  if(!out&&offenseDecision==='go'&&!hr){
-  const risk=clamp(.58-o.q*.28+(difficulty==='hard'?.12:0),.18,.66);
+  const risk=clamp(.58-o.q*.28,.18,.60);
   if(Math.random()<risk){out=true;message('욕심냈다가 주루사!',1.3)}else basesEarned=Math.min(4,basesEarned+1);
  }
  if(out){outs++;message(fieldBall?.owner&&!fieldBall.bounced||o.launch>.35?'외야 플라이 아웃!':'땅볼 아웃!',1.25);afterOutOrPlay();return}
@@ -506,7 +517,6 @@ function updateDefenseField(dt){
   }
  }
  if(fieldBall.owner&&!throwPlay){fieldBall.heldTime=(fieldBall.heldTime||0)+dt;
-  if(fieldDifficulty==='easy'&&!lessonActive&&fieldBall.heldTime>.72)throwToBase(1);
   if(fieldBall.heldTime>2.4){message('송구가 너무 늦었다!',1.2);settleDefenseHit(fieldBall.maxDist>285?2:1);return}}
  if(throwPlay){
   throwPlay.t-=dt;throwPlay.trailClock+=dt;
