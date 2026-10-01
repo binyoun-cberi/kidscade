@@ -7,6 +7,7 @@ on:
       - '.github/workflows/avatar-hair-extract.yml'
       - 'scripts/extract-avatar-hair.py'
       - 'assets/game/characters/kidscade-avatar-v1/source/hair/front-sheets/**'
+      - 'assets/game/characters/kidscade-avatar-v1/runtime/base/master-base-128.png'
 
 permissions:
   contents: write
@@ -25,13 +26,14 @@ jobs:
       - run: python scripts/extract-avatar-hair.py
       - shell: bash
         run: |
-          if [ -z "$(git status --porcelain -- assets/game/characters/kidscade-avatar-v1/runtime/hair/front)" ]; then
+          if [ -z "$(git status --porcelain -- assets/game/characters/kidscade-avatar-v1/runtime/hair/front assets/game/characters/kidscade-avatar-v1/qa/hair-front)" ]; then
             echo "No generated changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/game/characters/kidscade-avatar-v1/runtime/hair/front
-          git commit -m "Build runtime avatar front-hair parts"
+          git add assets/game/characters/kidscade-avatar-v1/qa/hair-front
+          git commit -m "Build avatar hair runtime and QA previews"
           git pull --rebase origin main
           git push
