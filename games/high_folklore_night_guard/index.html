@@ -535,15 +535,88 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 .room-scene .prop{
   display:none;position:absolute;z-index:10;margin:0;padding:0;border:0;background-color:transparent;
   background-repeat:no-repeat;background-position:center;background-size:contain;font-size:0;color:transparent;
-  opacity:0;cursor:pointer;filter:none;text-shadow:none;transition:opacity .16s,filter .16s,transform .16s
+  opacity:0;cursor:pointer;filter:none;text-shadow:none;transition:opacity .16s,filter .16s,transform .16s;
+  overflow:visible
 }
-.room-scene .prop:hover{transform:none}
-.room-scene .prop.changed{opacity:.88;animation:dokkaebiObject .75s ease-in-out infinite alternate;filter:drop-shadow(0 0 9px #d7a04d55) brightness(.82)}
-.room-scene .prop[data-prop="0"]{left:34%;bottom:12%;width:25%;height:34%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_desk_shift_01.png")}
-.room-scene .prop[data-prop="1"]{left:5%;top:15%;width:20%;height:27%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_photo_extra_student_01.png")}
-.room-scene .prop[data-prop="2"]{left:23%;top:14%;width:39%;height:20%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_board_text_02.png")}
-.room-scene .prop[data-prop="3"]{left:14%;top:17%;width:17%;height:60%;background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_extra_door_01.png")}
-@keyframes dokkaebiObject{from{filter:drop-shadow(0 0 3px #d7a04d22) brightness(.72)}to{filter:drop-shadow(0 0 11px #d7a04d55) brightness(.9)}}
+.room-scene .prop::before,.room-scene .prop::after{pointer-events:none}
+.room-scene .prop:hover{filter:brightness(1.12) drop-shadow(0 0 9px #e0bd6b66)}
+.room-scene .prop.changed{
+  opacity:1;animation:dokkaebiObject 1.05s ease-in-out infinite alternate;
+  filter:drop-shadow(0 4px 7px #000b) brightness(.94) contrast(1.08)
+}
+.room-scene .prop.changed.fresh{animation:dokkaebiReveal .18s steps(2,end) 7,dokkaebiObject 1.05s ease-in-out 1.3s infinite alternate}
+
+/* 도깨비 전용 장난 8종. 사진·칠판·가짜 문은 일반 이상현상과 겹치므로 사용하지 않는다. */
+.room-scene .prop[data-prop="0"]{
+  left:29%;bottom:8%;width:31%;height:40%;
+  background-image:url("../../assets/kidscade_folklore_night_guard_renamed_assets/classroom_desk_shift_01.png")
+}
+/* 거꾸로 선 의자 */
+.room-scene .prop[data-prop="1"]{left:59%;bottom:20%;width:13%;height:24%}
+.room-scene .prop[data-prop="1"]::before{
+  content:"";position:absolute;inset:3% 8%;background:linear-gradient(#6a4b34 0 34%,transparent 34% 43%,#4b3425 43% 55%,transparent 55%),
+  linear-gradient(90deg,#4b3425 0 15%,transparent 15% 85%,#4b3425 85%);
+  border:2px solid #251b15;border-radius:4px;transform:rotate(180deg);box-shadow:0 5px 10px #0009
+}
+/* 제멋대로 도는 시계 */
+.room-scene .prop[data-prop="2"]{right:4%;top:8%;width:14%;height:21%}
+.room-scene .prop[data-prop="2"]::before{
+  content:"";position:absolute;left:15%;top:10%;width:70%;aspect-ratio:1;border-radius:50%;
+  border:5px solid #6d6250;background:radial-gradient(circle,#d6cfb6 0 10%,#b6ad91 11% 67%,#474137 68% 73%,#17191a 74%);
+  box-shadow:0 4px 13px #000c
+}
+.room-scene .prop[data-prop="2"]::after{
+  content:"";position:absolute;left:49%;top:27%;width:4px;height:39%;background:#34231b;
+  transform-origin:50% 58%;transform:rotate(128deg);box-shadow:9px 10px 0 -1px #34231b
+}
+/* 천장에 거꾸로 붙은 화분 */
+.room-scene .prop[data-prop="3"]{right:21%;top:0;width:14%;height:25%}
+.room-scene .prop[data-prop="3"]::before{
+  content:"";position:absolute;inset:3% 5%;
+  background:
+    radial-gradient(ellipse at 26% 34%,#5e7b50 0 17%,transparent 18%),
+    radial-gradient(ellipse at 49% 22%,#718d5f 0 19%,transparent 20%),
+    radial-gradient(ellipse at 73% 36%,#526e48 0 17%,transparent 18%),
+    linear-gradient(#76513a,#3f2b21) 50% 83%/50% 31% no-repeat;
+  transform:rotate(180deg);filter:drop-shadow(0 5px 5px #000b)
+}
+/* 공중에 떠 있는 긴 자 */
+.room-scene .prop[data-prop="4"]{left:27%;top:48%;width:35%;height:10%}
+.room-scene .prop[data-prop="4"]::before{
+  content:"";position:absolute;left:2%;right:2%;top:34%;height:27%;
+  background:repeating-linear-gradient(90deg,#3e2a18 0 1px,transparent 1px 8px),linear-gradient(#d0aa54,#8d672d);
+  border:2px solid #5e421f;transform:rotate(-9deg);box-shadow:0 8px 9px #0008
+}
+/* 천장에 붙은 가방 */
+.room-scene .prop[data-prop="5"]{left:44%;top:0;width:17%;height:23%}
+.room-scene .prop[data-prop="5"]::before{
+  content:"";position:absolute;left:18%;right:18%;top:18%;bottom:8%;border-radius:12px 12px 7px 7px;
+  background:linear-gradient(90deg,#253f4b,#385966 48%,#203640);border:3px solid #16252c;box-shadow:0 6px 11px #000a
+}
+.room-scene .prop[data-prop="5"]::after{
+  content:"";position:absolute;left:34%;right:34%;top:3%;height:33%;border:4px solid #263c46;border-bottom:0;border-radius:14px 14px 0 0
+}
+/* 책상 위에 가지런히 올라간 신발 */
+.room-scene .prop[data-prop="6"]{left:9%;bottom:25%;width:19%;height:13%}
+.room-scene .prop[data-prop="6"]::before,.room-scene .prop[data-prop="6"]::after{
+  content:"";position:absolute;bottom:18%;width:42%;height:45%;border-radius:65% 25% 22% 35%;
+  background:linear-gradient(#4f5252 0 58%,#d2cec0 59% 72%,#393b3b 73%);border:2px solid #222;box-shadow:0 5px 7px #000a
+}
+.room-scene .prop[data-prop="6"]::before{left:5%;transform:rotate(7deg)}
+.room-scene .prop[data-prop="6"]::after{right:5%;transform:scaleX(-1) rotate(7deg)}
+/* 아무 지지대 없이 떠 있는 빗자루 */
+.room-scene .prop[data-prop="7"]{right:8%;top:34%;width:12%;height:42%;transform:rotate(13deg)}
+.room-scene .prop[data-prop="7"]::before{
+  content:"";position:absolute;left:47%;top:0;width:7%;height:73%;background:linear-gradient(90deg,#6d4b29,#ad8050,#5b3e24);
+  border-radius:5px;box-shadow:0 4px 6px #0008
+}
+.room-scene .prop[data-prop="7"]::after{
+  content:"";position:absolute;left:22%;bottom:0;width:57%;height:31%;
+  background:repeating-linear-gradient(90deg,#735329 0 5px,#9b743b 5px 9px);
+  clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);border-radius:3px
+}
+@keyframes dokkaebiObject{from{transform:translateY(0) rotate(-.35deg)}to{transform:translateY(-2px) rotate(.35deg)}}
+@keyframes dokkaebiReveal{0%,100%{filter:brightness(.82) drop-shadow(0 3px 6px #000a)}50%{filter:brightness(1.34) drop-shadow(0 0 18px #d7a04daa)}}
 @media(max-width:780px){
   .anomaly-asset.class-photo{width:21%}.anomaly-asset.class-board{width:41%}
   .anomaly-asset.west-reaper,.anomaly-asset.east-shadow{width:19%}
@@ -1101,10 +1174,14 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
           <div class="ambient-layer" id="ambientLayer" aria-hidden="true"></div>
           <div class="presence-layer" id="presenceLayer" aria-hidden="true"></div>
           <div class="signal-intrusion" id="signalIntrusion" aria-hidden="true"></div>
-          <button class="prop p1" data-prop="0" type="button" aria-label="변한 책상"></button>
-          <button class="prop p2" data-prop="1" type="button" aria-label="변한 사진"></button>
-          <button class="prop p3" data-prop="2" type="button" aria-label="변한 칠판"></button>
-          <button class="prop p4" data-prop="3" type="button" aria-label="새로 생긴 문"></button>
+          <button class="prop" data-prop="0" type="button" aria-label="자리에서 크게 밀려난 책상"></button>
+          <button class="prop" data-prop="1" type="button" aria-label="거꾸로 선 의자"></button>
+          <button class="prop" data-prop="2" type="button" aria-label="제멋대로 돌아간 시계"></button>
+          <button class="prop" data-prop="3" type="button" aria-label="천장에 거꾸로 붙은 화분"></button>
+          <button class="prop" data-prop="4" type="button" aria-label="공중에 떠 있는 자"></button>
+          <button class="prop" data-prop="5" type="button" aria-label="천장에 붙은 가방"></button>
+          <button class="prop" data-prop="6" type="button" aria-label="책상 위에 올라간 신발"></button>
+          <button class="prop" data-prop="7" type="button" aria-label="공중에 떠 있는 빗자루"></button>
           <div class="entity-cam" id="camEntity"></div>
           <div class="frost" id="frost"></div>
           <div class="stare-vignette" id="stareVignette"></div>
@@ -1338,10 +1415,12 @@ var ANOMALIES=[
   {id:'prep-handprint',cam:'prep',asset:'handprint_02.png',assetClass:'handprint subtle',ghost:null},
   {id:'prep-shadow',cam:'prep',asset:'broadcast_shadow_door_01.png',assetClass:'broadcast-shadow ghostly',ghost:'reaper'}
 ];
+var DOKKAEBI_PRANK_COUNT=8;
+function randomDokkaebiPrank(){return Math.floor(Math.random()*DOKKAEBI_PRANK_COUNT)}
 var GHOSTS={
   dokkaebi:{name:'도깨비',origin:'한국',kind:'설화 속 존재',
     fact:'한국 설화의 도깨비는 한 가지 모습으로만 전해지지 않으며, 사람에게 장난을 치거나 겨루는 이야기 등 다양한 전승이 있습니다.',
-    rule:'게임에서는 빈 교실의 물건을 몰래 옮깁니다. CCTV에서 혼자 흔들리는 물건을 찾아 눌러 제자리로 돌려놓으세요.',
+    rule:'게임에서는 6-1 교실에 도깨비만의 장난을 남깁니다. 밀린 책상, 거꾸로 된 의자·화분, 이상한 시계, 공중에 뜬 자·가방·신발·빗자루를 찾아 직접 누르세요. 사진·칠판·가짜 문 변화는 「이상 기록」 대상입니다.',
     svg:'dokkaebi'},
   yuki:{name:'유키온나',origin:'일본',kind:'요괴·전승',
     fact:'유키온나는 일본의 눈과 겨울에 관련된 이야기에서 등장하는 존재로 전승에 따라 모습과 이야기가 달라집니다.',
@@ -1614,7 +1693,7 @@ function renderCodex(){
           '<div class="quick-rule-card"><div class="who">얼굴 없는 학생 · 달걀귀신</div><div class="do">다른 CAM 보기</div><div class="hint">오래 보면 위험함</div></div>'+
           '<div class="quick-rule-card"><div class="who">복도 귀신 · 저승사자 / 늑대인간</div><div class="do">문 앞에 오면 그쪽 문 닫기</div><div class="hint">서쪽이면 서쪽 문, 동쪽이면 동쪽 문</div></div>'+
           '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">▲ 온도 올리기</div><div class="hint">누르면 잠시 사라짐 · 많이 얼었을수록 오래 물러남</div></div>'+
-          '<div class="quick-rule-card"><div class="who">6-1 물건이 달라짐 · 도깨비</div><div class="do">바뀐 물건 누르기</div><div class="hint">책상·사진·칠판·문을 비교</div></div>'+
+          '<div class="quick-rule-card"><div class="who">6-1 장난 물건 · 도깨비</div><div class="do">장난친 물건 직접 누르기</div><div class="hint">책상·의자·시계·화분·자·가방·신발·빗자루</div></div>'+
           '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
         '</div>'+
         '<div class="quick-rule-memory">한 줄 암기: <b>흰옷은 본다 · 달걀은 피한다 · 얼면 온도 올린다 · 물건 바뀌면 누른다 · 문 앞은 닫는다 · 배경 변화는 기록한다.</b></div>'+
@@ -1623,12 +1702,12 @@ function renderCodex(){
     {
       tab:'6-1 교실',title:'제2쪽 · 6-1 교실',code:'구역 CAM 01',
       body:
-        '<div class="rulebook-rule"><span class="no">1.</span>근무 시작 시 책상, 칠판, 게시 사진과 출입문의 위치를 확인하십시오.</div>'+
-        '<div class="rulebook-rule"><span class="no">2.</span>교실 안의 물건 하나가 이전과 다르게 보일 경우 <strong>변한 물건을 직접 확인하십시오.</strong></div>'+
-        '<div class="rulebook-rule"><span class="no">3.</span>교실 뒤에서 작은 웃음소리가 들리더라도 경비실을 나가지 마십시오.</div>'+
-        '<div class="rulebook-evidence"><figure style="--r:-1deg"><img src="'+ASSET_ROOT+'classroom_base_01.png" alt=""><figcaption>근무 시작 시 정상 화면</figcaption></figure><figure style="--r:1.2deg"><img src="'+ASSET_ROOT+'classroom_photo_extra_student_01.png" alt=""><figcaption>게시 사진 변화 사례</figcaption></figure><figure style="--r:-.6deg"><img src="'+ASSET_ROOT+'classroom_variant_extra_door_01.png" alt=""><figcaption>존재하지 않는 출입문</figcaption></figure></div>'+
-        note('dokkaebi',1,'“바뀐 물건을 찾으면 웃음소리가 멎는다.”','pencil')+
-        note('dokkaebi',2,'“의자만 보지 말 것. 사진, 칠판, 심지어 문도 바뀐다.”','')+
+        '<div class="rulebook-rule"><span class="no">1.</span>6-1에서 웃음소리가 들리면 책상, 의자, 시계, 화분과 작은 소품을 확인하십시오.</div>'+
+        '<div class="rulebook-rule"><span class="no">2.</span>도깨비 장난은 <strong>물건 자체를 직접 누르십시오.</strong> 처음 바뀌는 순간에는 잠깐 크게 흔들립니다.</div>'+
+        '<div class="rulebook-rule"><span class="no">3.</span><strong>사진·칠판 글씨·새 문</strong> 같은 배경 변화는 도깨비 장난이 아닙니다. 그 경우에는 「이상 기록」을 사용하십시오.</div>'+
+        '<div class="rulebook-evidence"><figure style="--r:-1deg"><img src="'+ASSET_ROOT+'classroom_base_01.png" alt=""><figcaption>근무 시작 시 정상 화면</figcaption></figure><figure style="--r:1.1deg"><img src="'+ASSET_ROOT+'classroom_desk_shift_01.png" alt=""><figcaption>도깨비 장난 예시 · 밀려난 책상</figcaption></figure></div>'+
+        note('dokkaebi',1,'“웃음이 들린 뒤 이상하게 놓인 물건은 직접 눌러라.”','pencil')+
+        note('dokkaebi',2,'“사진·칠판·새 문은 누르지 말고 이상 기록으로 남길 것.”','')+
         note('dokkaebi',3,'“아이들은 이것을 ‘도깨비’라고 불렀다고 한다.”','red')+
         stamp('dokkaebi')+
         '<div class="rulebook-foot">수정 흔적 다수 · 작성자 미상</div>'
@@ -1969,6 +2048,7 @@ function roomPropsVisible(){
     var changed=show&&Number(p.dataset.prop)===state.dokkaebi.prop;
     p.style.display=changed?'block':'none';
     p.classList.toggle('changed',!!changed);
+    p.classList.toggle('fresh',!!changed&&state.dokkaebi.trickTimer<1.6);
   });
 }
 function currentMaidenCam(){
@@ -2183,7 +2263,8 @@ function resetRoamer(r,rewarded){
   r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.rest=6+Math.random()*5
 }
 function initializePersistentGhosts(){
-  state.dokkaebi=castHas('dokkaebi')?{active:true,location:'special',previous:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:0,prop:Math.floor(Math.random()*4),rest:3}:null;
+  var practiceDokkaebi=state.mode==='practice';
+  state.dokkaebi=castHas('dokkaebi')?{active:true,location:practiceDokkaebi?'korea':'special',previous:practiceDokkaebi?null:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:practiceDokkaebi?4.2:0,prop:randomDokkaebiPrank(),rest:practiceDokkaebi?7:3}:null;
   state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5,retreat:0,heatBattle:0}:null;
   state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:6}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
   if(castHas('egg')){
@@ -2266,7 +2347,7 @@ function updateDokkaebi(dt){
   d.moveClock+=dt;
   if(d.location==='korea'){
     d.trickTimer+=dt;
-    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=Math.floor(Math.random()*4);d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);whisperGhost('dokkaebi',0);directorShift(3)}
+    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=randomDokkaebiPrank();d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);whisperGhost('dokkaebi',0);directorShift(3)}
     if(d.trickActive&&d.trickTimer>8.7&&d.trickTimer-dt<=8.7)whisperGhost('dokkaebi',2);
     if(d.trickActive&&d.trickTimer>13){d.trickActive=false;d.trickTimer=0;spend(6);state.score=Math.max(0,state.score-40);directorShift(5);sound('warn');playTimedClip('clownWarning',.13,.9,1200);d.previous=d.location;d.location='europe';d.moveClock=0}
   }
