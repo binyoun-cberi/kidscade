@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "runtime-base-face-hair-animation-ready",
+  "status": "runtime-base-face-hair-animation-lower-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -19,10 +19,11 @@
   "layerOrder": [
     "hairBack",
     "base",
+    "lowerClothes",
+    "upperClothes",
     "face",
     "hairSide",
     "hairFront",
-    "clothes",
     "shoes",
     "accessories"
   ],
@@ -45,6 +46,9 @@
     "hairSheets": {
       "male": "source/hair/front-sheets/front-hair-male-24-brown.png",
       "female": "source/hair/front-sheets/front-hair-female-24-brown.png"
+    },
+    "lowerClothing": {
+      "denimCuffedJeans01": "source/clothes/lower/animated/denim-cuffed-jeans-01-sheet.png"
     }
   },
   "runtimeFiles": {
@@ -76,6 +80,18 @@
       "idleFps": 3,
       "walkFps": 6,
       "baselineY": 124
+    },
+    "lowerClothing": {
+      "count": 1,
+      "items": [
+        {
+          "id": "denim-cuffed-jeans-01",
+          "manifest": "runtime/clothes/lower/denim-cuffed-jeans-01/manifest.json",
+          "static": "runtime/clothes/lower/denim-cuffed-jeans-01/static.png",
+          "idleFrames": 4,
+          "walkFrames": 6
+        }
+      ]
     }
   },
   "qa": {
@@ -88,7 +104,11 @@
       "qa/animation/idle-default-composite-contact.png",
       "qa/animation/walk-default-composite-contact.png"
     ],
-    "animationStatus": "visual-contact-reviewed"
+    "animationStatus": "visual-contact-reviewed",
+    "lowerClothingContacts": [
+      "qa/clothes/lower/denim-cuffed-jeans-01-contact.png"
+    ],
+    "lowerClothingStatus": "visual-contact-reviewed"
   },
   "sourceSets": {
     "base": {
@@ -112,7 +132,13 @@
       "status": "reserved-not-created"
     },
     "clothes": {
-      "status": "not-created"
+      "lower": {
+        "count": 1,
+        "status": "runtime-ready"
+      },
+      "upper": {
+        "status": "not-created"
+      }
     },
     "shoes": {
       "status": "not-created"
@@ -122,7 +148,7 @@
     }
   },
   "runtime": {
-    "status": "base-face-hair-animation-ready",
+    "status": "base-face-hair-animation-lower-ready",
     "compositeAt": [
       0,
       0
