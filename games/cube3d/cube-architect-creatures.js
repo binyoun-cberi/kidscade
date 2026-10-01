@@ -3,9 +3,11 @@
 'use strict';
 
 const SPECIES={
-  deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8},
-  frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6},
-  camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9},
+  deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8,spawnCap:2},
+  fox:{id:'fox',name:'숲여우',kind:'passive',biomes:['pine'],asset:'fox',hp:1,speed:.72,radius:9,spawnCap:2},
+  snowFox:{id:'snowFox',name:'설원여우',kind:'passive',biomes:['snow'],asset:'snowFox',hp:1,speed:.68,radius:9,spawnCap:2},
+  frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6,spawnCap:3},
+  camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9,spawnCap:2},
   shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:3,speed:1.45,radius:10,nocturnal:true,damage:1,respawn:45,reward:{charcoal:1}},
   slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:3,speed:.9,radius:9,damage:1,respawn:70,reward:{clay:2}},
   burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:4,speed:1.9,radius:11,damage:1,respawn:90,reward:{sand:3}},
