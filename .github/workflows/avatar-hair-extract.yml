@@ -25,7 +25,7 @@ jobs:
       - run: python scripts/extract-avatar-hair.py
       - shell: bash
         run: |
-          if git diff --quiet -- assets/game/characters/kidscade-avatar-v1/runtime/hair/front; then
+          if [ -z "$(git status --porcelain -- assets/game/characters/kidscade-avatar-v1/runtime/hair/front)" ]; then
             echo "No generated changes."
             exit 0
           fi
