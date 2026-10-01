@@ -95,7 +95,7 @@ const GOALS=[
   progress:s=>Number((s.placed?.cuboid||0)>0)+Number((s.paintedFaces||[]).length>=2)},
  {title:'새로운 탐험가',description:'총 3개 이상의 바이옴을 탐험하거나 숨겨진 설계도 조각 1개를 발견하세요.',need:1,
   progress:s=>Number((s.biomes||[]).length>=3||(s.found||[]).length>=1)},
- {title:'첫 랜드마크 복원',description:'월드의 랜드마크 폐허를 찾아 복원 설계도에서 외형 85% 이상을 완성하세요.',need:1,
+ {title:'첫 랜드마크 던전',description:'월드의 온전한 랜드마크를 찾아 내부 던전을 돌파하고 최심부 설계실을 해독하세요.',need:1,
   progress:s=>(s.restored||[]).length}
 ];
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
