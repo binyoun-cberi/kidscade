@@ -70,11 +70,11 @@ const DIFF={
 function cfg(){return DIFF[difficulty]}
 const FIELD_DIFF={
  // Assist should help the player reach the ball, not play defense for them.
- easy:{assist:.20,flyCatch:.32,speed:160},
- normal:{assist:.07,flyCatch:.18,speed:178},
- hard:{assist:0,flyCatch:.07,speed:195}
+ easy:{assist:.20,flyCatch:.32,groundPickup:.62,support:.30,speed:160},
+ normal:{assist:.07,flyCatch:.18,groundPickup:.42,support:.19,speed:178},
+ hard:{assist:0,flyCatch:.07,groundPickup:.24,support:.10,speed:195}
 };
-const OPPONENT_FIELD={reaction:.31,speed:168};
+const OPPONENT_FIELD={reaction:.38,speed:154};
 function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
 function pitchZone(x,y){return (x<448?0:x>512?2:1)+(y<298?0:y>350?6:3)}
 function cpuReadability(type,zone){
@@ -389,7 +389,7 @@ function updateOffenseField(dt){
    const o=offenseOutcome||{q:.5,sweet:.5,rawDist:220};
    // Good contact is difficult to turn into an automatic fly out on every difficulty.
    const quality=clamp(o.q*.68+o.sweet*.32,0,1);
-   const catchChance=clamp(.74-quality*.32-(o.rawDist>285?.07:0),.30,.68);
+   const catchChance=clamp(.62-quality*.28-(o.rawDist>285?.06:0),.24,.58);
    caught=Math.random()<catchChance;
   }
   if(caught){f.hasBall=true;fieldBall.owner=f;fieldBall.vx=fieldBall.vy=fieldBall.vz=0}
@@ -407,10 +407,10 @@ function resolveOffenseBall(){
  else {
   const shapePenalty=(o.launch<.18||o.launch>.56)?.06:0;
   const weakPenalty=o.q<.45?.09:0;
-  let fieldOut=.52-o.q*.28-o.sweet*.10+shapePenalty+weakPenalty;
-  if(fieldBall?.owner&&fieldBall.bounced)fieldOut+=.18;
+  let fieldOut=.45-o.q*.22-o.sweet*.08+shapePenalty+(o.q<.45?.07:0);
+  if(fieldBall?.owner&&fieldBall.bounced)fieldOut+=.14;
   else if(!fieldBall?.owner)fieldOut-=.08;
-  fieldOut=clamp(fieldOut,.12,.58);
+  fieldOut=clamp(fieldOut,.10,.54);
   if(Math.random()<fieldOut)out=true;
  }
  if(!out&&o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
@@ -515,12 +515,12 @@ function updateDefenseField(dt){
   if(!dx&&!dy&&fieldCfg().assist&&!fieldBall.owner){const dest=fieldBall.z>30?predictedLanding():fieldBall;dx=dest.x-a.x;dy=dest.y-a.y;assist=fieldCfg().assist}
   const l=Math.hypot(dx,dy)||1;a.x=clamp(a.x+dx/l*a.speed*assist*dt,185,775);a.y=clamp(a.y+dy/l*a.speed*assist*dt,125,470);
  }
- fielders.forEach((f,i)=>{if(i===activeFielder||f.hasBall)return;const target=fieldBall.owner?{x:f.homeX,y:f.homeY}:fieldBall,dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1;f.x+=dx/l*f.speed*.48*dt;f.y+=dy/l*f.speed*.48*dt});
+ fielders.forEach((f,i)=>{if(i===activeFielder||f.hasBall)return;const target=fieldBall.owner?{x:f.homeX,y:f.homeY}:fieldBall,dx=target.x-f.x,dy=target.y-f.y,l=Math.hypot(dx,dy)||1,rate=fieldBall.owner?.32:fieldCfg().support;f.x+=dx/l*f.speed*rate*dt;f.y+=dy/l*f.speed*rate*dt});
  if(!fieldBall.owner){
   const candidates=fielders.map((f,i)=>({f,i,d:Math.hypot(f.x-fieldBall.x,f.y-fieldBall.y)})).sort((a,b)=>a.d-b.d),c=candidates[0];
   if(c&&fieldBall.z<26&&c.d<27){
    let mayCatch=true;
-   if(c.i!==activeFielder&&!fieldBall.bounced){mayCatch=!fieldBall.assistAttempted&&Math.random()<fieldCfg().flyCatch;fieldBall.assistAttempted=true}
+   if(c.i!==activeFielder){const chance=fieldBall.bounced?fieldCfg().groundPickup:fieldCfg().flyCatch;mayCatch=!fieldBall.assistAttempted&&Math.random()<chance;fieldBall.assistAttempted=true}
    if(mayCatch){
     sound('catch');c.f.hasBall=true;fieldBall.owner=c.f;activeFielder=c.i;const caught=!fieldBall.bounced&&fieldBall.z>4;fieldBall.vx=fieldBall.vy=fieldBall.vz=0;
     if(caught){outs++;message('플라이 아웃!',1.25);defenseRunners=[];afterOutOrPlay();return}
