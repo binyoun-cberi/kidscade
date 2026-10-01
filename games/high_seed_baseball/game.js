@@ -70,9 +70,9 @@ const DIFF={
 function cfg(){return DIFF[difficulty]}
 const FIELD_DIFF={
  // Assist should help the player reach the ball, not play defense for them.
- easy:{assist:.56,flyCatch:.58,speed:165},
- normal:{assist:.22,flyCatch:.30,speed:180},
- hard:{assist:0,flyCatch:.10,speed:195}
+ easy:{assist:.35,flyCatch:.45,speed:160},
+ normal:{assist:.12,flyCatch:.22,speed:178},
+ hard:{assist:0,flyCatch:.08,speed:195}
 };
 const OPPONENT_FIELD={reaction:.31,speed:168};
 function fieldCfg(){return FIELD_DIFF[fieldDifficulty]}
@@ -133,6 +133,12 @@ function drawTrajectoryTrail(points,type='fastball',intensity=1){
  if(!points||points.length<2)return;
  const style=TRAIL_STYLE[type]||TRAIL_STYLE.fastball,vis=trailVisibility()*intensity;
  ctx.save();ctx.lineCap='round';
+ if((type==='curve'||type==='slider')&&points.length>=4){
+  ctx.strokeStyle='rgba('+style.rgb+','+(.10*vis)+')';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length-1;i++){const p=points[i],n=points[i+1],mx=(p.x+n.x)/2,my=(p.y+n.y)/2;ctx.quadraticCurveTo(p.x,p.y,mx,my)}
+  ctx.lineTo(points.at(-1).x,points.at(-1).y);ctx.stroke();
+ }
  for(let i=1;i<points.length;i++){
   const a=points[i-1],b=points[i],k=i/(points.length-1);
   ctx.strokeStyle='rgba('+style.rgb+','+(.04+.25*k)*vis+')';
@@ -363,7 +369,7 @@ function startOffenseBall(q,power,timing,verticalErr,sweet=.75){
  const rawDist=(65+q*170+power*145+rand(-21,21))*centerFactor;
  const distanceM=Math.round(rawDist*.31+32),dir=Math.PI/2+spray,speed=rawDist/(1.15+launch*1.7);
  fieldBall={x:480,y:470,z:10,vx:Math.cos(dir)*speed,vy:-Math.sin(dir)*speed,vz:170+launch*260,bounced:false,owner:null,age:0,maxDist:rawDist,trail:[],trailClock:0,trailMax:q>.72?8:q>.45?6:4,trailStrength:clamp(.42+q*.64,0,1)};
- offenseOutcome={q,power,rawDist,distanceM,launch,spray};offenseTimer=0;offenseDecision='stop';makeFielders(false);
+ offenseOutcome={q,power,sweet,rawDist,distanceM,launch,spray};offenseTimer=0;offenseDecision='stop';makeFielders(false);
  message(rawDist>325&&launch>.32?'담장까지 간다! 더 달릴까?':'타구가 날아갑니다! 주루를 판단하세요.',1.6);
 }
 function makeFielders(userDefense){
@@ -398,11 +404,15 @@ function resolveOffenseBall(){
  state='between';setControls('');hint('');
  if(o.rawDist>325&&o.launch>.30){hr=true;basesEarned=4}
  else if(fieldBall?.owner&&!fieldBall.bounced)out=true;
- else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<clamp(.54-o.q*.28, .22,.48))out=true;
- else if(o.q<.28&&o.launch<.22&&Math.random()<.62)out=true;
- else if(o.launch>.42&&o.q<.58&&Math.random()<.52)out=true;
- else if(o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
- else if(o.rawDist>260)basesEarned=2;
+ else if(fieldBall?.owner&&fieldBall.bounced&&o.rawDist<245&&Math.random()<clamp(.62-o.q*.25-o.sweet*.10,.28,.56))out=true;
+ else {
+  const shapePenalty=(o.launch<.20||o.launch>.52)?.08:0;
+  const weakPenalty=o.q<.45?.12:0;
+  const fieldOut=clamp(.72-o.q*.34-o.sweet*.16+shapePenalty+weakPenalty,.24,.68);
+  if(Math.random()<fieldOut)out=true;
+ }
+ if(!out&&o.rawDist>280&&o.launch<.25&&Math.abs(o.spray)>.35)basesEarned=3;
+ else if(!out&&o.rawDist>260)basesEarned=2;
  if(!out&&offenseDecision==='go'&&!hr){
   const risk=clamp(.58-o.q*.28,.18,.60);
   if(Math.random()<risk){out=true;message('욕심냈다가 주루사!',1.3)}else basesEarned=Math.min(4,basesEarned+1);
