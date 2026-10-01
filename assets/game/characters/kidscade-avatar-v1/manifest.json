@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "runtime-face-ready",
+  "status": "runtime-base-face-hair-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -42,7 +42,7 @@
       "source/animation/walk/walk-06.png"
     ],
     "faceReference": "source/face/face-parts-reference.jpg",
-    "hairFrontSheets": {
+    "hairSheets": {
       "male": "source/hair/front-sheets/front-hair-male-24-brown.png",
       "female": "source/hair/front-sheets/front-hair-female-24-brown.png"
     }
@@ -50,6 +50,7 @@
   "runtimeFiles": {
     "base": "runtime/base/master-base-128.png",
     "faceManifest": "runtime/face/face-manifest.json",
+    "hairManifest": "runtime/hair/hair-manifest.json",
     "face": {
       "eyes": 8,
       "eyebrows": 6,
@@ -57,7 +58,23 @@
       "mouths": 8,
       "blush": 4,
       "total": 30
+    },
+    "hair": {
+      "styles": 48,
+      "maleStyles": 24,
+      "femaleStyles": 24,
+      "backLayers": 48,
+      "frontLayers": 48,
+      "totalLayerPngs": 96,
+      "palette": "warm-medium-brown"
     }
+  },
+  "qa": {
+    "hairContacts": [
+      "qa/hair/hair-split-male-contact.png",
+      "qa/hair/hair-split-female-contact.png"
+    ],
+    "hairStatus": "visual-contact-reviewed"
   },
   "sourceSets": {
     "base": {
@@ -71,20 +88,27 @@
     "face": {
       "status": "runtime-ready"
     },
-    "hairFront": {
-      "maleCount": 24,
-      "femaleCount": 24,
-      "status": "organized-needs-cell-extraction"
-    },
     "hairBack": {
-      "status": "not-created"
+      "status": "runtime-ready"
+    },
+    "hairFront": {
+      "status": "runtime-ready"
     },
     "hairSide": {
+      "status": "reserved-not-created"
+    },
+    "clothes": {
+      "status": "not-created"
+    },
+    "shoes": {
+      "status": "not-created"
+    },
+    "accessories": {
       "status": "not-created"
     }
   },
   "runtime": {
-    "status": "base-and-face-ready",
+    "status": "base-face-hair-ready",
     "compositeAt": [
       0,
       0
