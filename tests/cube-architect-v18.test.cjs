@@ -53,17 +53,40 @@ test('six survival ruins come from the six hard blueprint plans',()=>{
     assert.ok(Object.keys(poi.tech.reward||{}).length>=1);
   }
 });
-test('restoration starts as a substantial ruin but cannot pass immediately',()=>{
+test('world POIs look ruined and restoration challenges also start below pass score',()=>{
   for(const poi of pois){
+    const worldCoverage=Math.round(poi.compact.blocks.length/poi.compact.fullShell.length*100);
+    assert.ok(worldCoverage>=55,poi.name+' world ruin should remain recognisable');
+    assert.ok(worldCoverage<=82,poi.name+' world ruin should have obvious missing structure');
     const plan=plans[poi.missionIndex],all=new Set(plan.blocks.map(p=>key(...p)));
     const outer=plan.blocks.filter(([x,y,z])=>dirs.some(([a,b,c])=>!all.has(key(x+a,y+b,z+c))));
     const kept=new Set(plan.blocks.filter(p=>keep(plan.roles?.[key(...p)]||'body',...p)).map(p=>key(...p)));
-    const coverage=Math.round(outer.filter(p=>kept.has(key(...p))).length/outer.length*100);
-    assert.ok(coverage>=50,poi.name+' ruin should be recognisable');
-    assert.ok(coverage<85,poi.name+' ruin must still need restoration');
+    const challengeCoverage=Math.round(outer.filter(p=>kept.has(key(...p))).length/outer.length*100);
+    assert.ok(challengeCoverage>=50,poi.name+' restoration seed should be recognisable');
+    assert.ok(challengeCoverage<85,poi.name+' restoration seed must not auto-pass');
   }
   assert.match(js,/restorationScore>=85/);
   assert.match(js,/seedRestorationChallenge/);
+});
+test('Taj Mahal survival POI maps to its desert chunks and unlocks glass construction',()=>{
+  const taj=pois.find(p=>p.id==='taj');
+  assert.ok(taj);
+  assert.equal(taj.sourceName,'랜드마크 · 타지마할');
+  assert.equal(world.region(...taj.center),'desert');
+  assert.deepEqual(taj.tech.recipes,['glassPane','windowFrame']);
+  assert.equal(taj.tech.reward.glass,4);
+  const [ox,oz]=taj.origin,[w,,d]=taj.compact.size;
+  const minCX=Math.floor(ox/16),maxCX=Math.floor((ox+w-1)/16);
+  const minCZ=Math.floor(oz/16),maxCZ=Math.floor((oz+d-1)/16);
+  let chunkHits=0;
+  for(let cx=minCX;cx<=maxCX;cx++)for(let cz=minCZ;cz<=maxCZ;cz++){
+    const ids=sandbox.CubeArchitectPOI.poisForChunk(cx,cz,16).map(p=>p.id);
+    assert.ok(ids.includes('taj'),'taj should load in intersecting chunk '+cx+','+cz);
+    chunkHits++;
+  }
+  assert.ok(chunkHits>=2);
+  assert.match(js,/setLandmarkPoiBlocks\(poi,restoredLandmarks\.has\(poi\.id\),chunk\)/);
+  assert.match(js,/completeLandmarkPoi\(session\.poiId\)/);
 });
 test('landmark restoration unlocks real building technology and finishes the campaign',()=>{
   assert.ok(world.GOALS.length>=11);
