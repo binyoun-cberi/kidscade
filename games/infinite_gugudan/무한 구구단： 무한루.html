@@ -209,6 +209,21 @@
     .question .frac span,.duel-question .frac span{font-size:.72em;padding:0 .08em}
     .entry .frac span,.duel-entry .frac span{font-size:.82em;padding:0 .08em}
     .entry .cursor-part,.duel-entry .cursor-part{opacity:.45}
+    .operation-options{margin-top:12px}
+    .op-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+    .op-grid.three{grid-template-columns:repeat(3,1fr)}
+    .op-choice,.time-choice{min-height:48px;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.055);font-weight:900;cursor:pointer}
+    .op-choice small{display:block;margin-top:3px;color:var(--muted);font-size:.62rem;line-height:1.2}
+    .op-choice.active,.time-choice.active{color:#08111a;background:linear-gradient(180deg,#c9f4ff,#6ed9ff);border-color:#a8eaff}
+    .op-choice.active small{color:#12354a}
+    .time-panel{padding:12px 14px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px}
+    .time-title b,.time-title span{display:block}.time-title b{font-size:.85rem}.time-title span{margin-top:2px;color:var(--muted);font-size:.65rem;line-height:1.3}
+    .time-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+    .time-choice{min-height:42px;padding:6px;font-size:.78rem}
+    .round-center{display:grid;grid-template-columns:auto auto;justify-content:center;column-gap:6px;align-items:center}
+    .round-center strong{grid-column:1}.round-center .round-timer{grid-column:2;color:#ffd166;font-size:.78rem;font-weight:1000;font-variant-numeric:tabular-nums}
+    .round-center #modeLabel{grid-column:1/3}
+    @media(max-width:560px){.time-panel{grid-template-columns:1fr}.time-grid{grid-template-columns:repeat(5,1fr)}.op-grid.three{grid-template-columns:1fr 1fr 1fr}.op-choice{padding:7px 4px}}
     @media(max-width:720px){
       .setup-grid{grid-template-columns:1fr}
       .rules{grid-template-columns:1fr 1fr 1fr}
@@ -300,9 +315,9 @@
           <h2>수련법</h2>
           <div class="skill-grid" id="skillChoices">
             <button class="skill-choice active" data-skill="gugudan"><b>구구단</b><small>2~9단 빠른 곱셈</small></button>
-            <button class="skill-choice" data-skill="decimal"><b>소수</b><small>소수 × 자연수 · 소수 × 소수</small></button>
-            <button class="skill-choice" data-skill="fraction"><b>분수</b><small>분수 × 자연수 · 분수 × 분수</small></button>
-            <button class="skill-choice" data-skill="mixed"><b>혼합</b><small>세 수련이 번갈아 등장</small></button>
+            <button class="skill-choice" data-skill="decimal"><b>소수</b><small>덧셈·뺄셈 · 곱셈</small></button>
+            <button class="skill-choice" data-skill="fraction"><b>분수</b><small>덧셈·뺄셈 · 곱셈 · 나눗셈</small></button>
+            <button class="skill-choice" data-skill="mixed"><b>혼합</b><small>구구단·소수·분수 전체 연산</small></button>
           </div>
           <div id="tableOptions" style="margin-top:12px">
             <h2>구구단 범위</h2>
@@ -318,14 +333,40 @@
               <button class="table-chip" data-table="9">9단</button>
             </div>
           </div>
+          <div id="decimalOpOptions" class="operation-options hidden">
+            <h2>소수 연산</h2>
+            <div class="op-grid">
+              <button class="op-choice active" data-decimal-op="addsub">덧셈·뺄셈<small>+, −가 섞여 나와요</small></button>
+              <button class="op-choice" data-decimal-op="multiply">곱셈<small>대부분 소수 × 자연수</small></button>
+            </div>
+          </div>
+          <div id="fractionOpOptions" class="operation-options hidden">
+            <h2>분수 연산</h2>
+            <div class="op-grid three">
+              <button class="op-choice active" data-fraction-op="addsub">덧셈·뺄셈<small>+, − 혼합</small></button>
+              <button class="op-choice" data-fraction-op="multiply">곱셈<small>약분 보너스</small></button>
+              <button class="op-choice" data-fraction-op="divide">나눗셈<small>뒤집어 곱하기</small></button>
+            </div>
+          </div>
           <div class="skill-hint" id="skillHint">기본 무한루. 빠른 구구단으로 에너지 출력을 높여요.</div>
+        </div>
+      </div>
+
+      <div class="panel time-panel">
+        <div class="time-title"><b>라운드 제한 시간</b><span>시간이 끝나면 에너지 충돌점을 더 밀어낸 쪽이 승리</span></div>
+        <div class="time-grid">
+          <button class="time-choice" data-time="1">1분</button>
+          <button class="time-choice active" data-time="2">2분</button>
+          <button class="time-choice" data-time="3">3분</button>
+          <button class="time-choice" data-time="5">5분</button>
+          <button class="time-choice" data-time="0">무제한</button>
         </div>
       </div>
 
       <div class="panel rules">
         <div class="rule"><b>빠른 정답 = 강한 출력</b><span id="speedRule">구구단은 1.4초 안쪽이면 PERFECT</span></div>
         <div class="rule"><b id="skillRuleTitle">연속 정답 = 콤보</b><span id="skillRule">콤보가 이어질수록 조금 더 강해져요</span></div>
-        <div class="rule"><b>3판 2선승</b><span>에너지 충돌점을 상대 끝까지 밀면 승리</span></div>
+        <div class="rule"><b>3판 2선승</b><span>끝까지 밀거나 제한 시간 판정으로 라운드 승리</span></div>
       </div>
 
       <div class="record-line" id="recordLine">CPU 승리 기록을 불러오는 중...</div>
@@ -341,7 +382,7 @@
           <div class="hud-name" id="leftName">나</div>
           <div class="round-pips"><i class="pip p1"></i><i class="pip p1"></i></div>
         </div>
-        <div class="round-center"><strong id="roundLabel">ROUND 1</strong><span id="modeLabel">CPU 초급 · 2~9단</span></div>
+        <div class="round-center"><strong id="roundLabel">ROUND 1</strong><span class="round-timer" id="roundTimer">02:00</span><span id="modeLabel">CPU 초급 · 2~9단</span></div>
         <div class="hud-side right">
           <div class="hud-name" id="rightName">CPU 초급</div>
           <div class="round-pips"><i class="pip p2"></i><i class="pip p2"></i></div>
@@ -500,9 +541,9 @@
       }
     };
     var state = {
-      mode:"cpu",cpu:"easy",table:"all",skill:"gugudan",sound:true,
+      mode:"cpu",cpu:"easy",table:"all",skill:"gugudan",decimalOp:"addsub",fractionOp:"addsub",roundLimit:2,sound:true,
       round:1,wins:[0,0],active:false,paused:false,ending:false,
-      target:0,visual:0,cpuTimer:0,countdownTimer:0,raf:0,
+      target:0,visual:0,cpuTimer:0,countdownTimer:0,roundTimerId:0,roundEndAt:0,roundRemainingMs:0,raf:0,
       fighters:[makeFighter(),makeFighter()],lastResult:null
     };
     var els = {};
@@ -518,11 +559,28 @@
     function decimalText(n,scale){var d=scale===100?2:scale===10?1:0;return (n/scale).toFixed(d).replace(/\.0+$/,"").replace(/(\.\d*?)0+$/,"$1")}
     function fracHtml(n,d){return '<span class="frac"><span>'+n+'</span><i class="bar"></i><span>'+d+'</span></span>'}
     function reduced(n,d){var g=gcd(n,d);return {n:n/g,d:d/g}}
-    function skillName(kind){return kind==="decimal"?"소수 곱셈":kind==="fraction"?"분수 곱셈":kind==="mixed"?"혼합 곱셈":"구구단"}
+    function skillName(kind){return kind==="decimal"?"소수 연산":kind==="fraction"?"분수 연산":kind==="mixed"?"혼합 연산":"구구단"}
+    function opName(kind){
+      if(kind==="decimal")return state.decimalOp==="multiply"?"곱셈":"덧셈·뺄셈";
+      if(kind==="fraction")return state.fractionOp==="multiply"?"곱셈":state.fractionOp==="divide"?"나눗셈":"덧셈·뺄셈";
+      return "";
+    }
     function questionTypeFor(side){
       if(state.skill!=="mixed")return state.skill;
       var f=state.fighters[side],order=["gugudan","decimal","fraction"];
       return order[(f.questionIndex||0)%order.length];
+    }
+    function operationFor(kind){
+      if(state.skill!=="mixed")return kind==="decimal"?state.decimalOp:kind==="fraction"?state.fractionOp:"multiply";
+      if(kind==="decimal")return Math.random()<.5?"addsub":"multiply";
+      if(kind==="fraction"){var ops=["addsub","multiply","divide"];return ops[rand(0,ops.length-1)]}
+      return "multiply";
+    }
+    function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}
+    function formatTime(ms){
+      if(state.roundLimit===0)return "∞";
+      var total=Math.max(0,Math.ceil(ms/1000)),m=Math.floor(total/60),s=total%60;
+      return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
     }
 
     function init(){
@@ -530,7 +588,7 @@
        "battleStatus","cpuQuestion","leftFighter","rightFighter","rightAvatar","leftComboLabel","rightComboLabel","leftBeam","rightBeam",
        "soloControls","localControls","soloQuestion","soloEntry","soloFeedback","p1Question","p1Entry","p2Question","p2Entry","quitBtn",
        "localQuitBtn","pauseOverlay","resumeBtn","confirmQuitBtn","menuBtn","retryBtn","resultIcon","resultTitle","resultSub","statCorrect",
-       "statCombo","statSpeed","statScore","flash","doors","tableOptions","skillHint","speedRule","skillRuleTitle","skillRule"].forEach(function(id){els[id]=$(id)});
+       "statCombo","statSpeed","statScore","flash","doors","tableOptions","decimalOpOptions","fractionOpOptions","skillHint","speedRule","skillRuleTitle","skillRule","roundTimer"].forEach(function(id){els[id]=$(id)});
       loadSettings();
       preloadCharacterSprites();
       bind();
@@ -555,11 +613,14 @@
         if(CPU[saved.cpu])state.cpu=saved.cpu;
         if(saved.table==="all"||(+saved.table>=2&&+saved.table<=9))state.table=String(saved.table);
         if(["gugudan","decimal","fraction","mixed"].indexOf(saved.skill)>=0)state.skill=saved.skill;
+        if(["addsub","multiply"].indexOf(saved.decimalOp)>=0)state.decimalOp=saved.decimalOp;
+        if(["addsub","multiply","divide"].indexOf(saved.fractionOp)>=0)state.fractionOp=saved.fractionOp;
+        if([0,1,2,3,5].indexOf(+saved.roundLimit)>=0)state.roundLimit=+saved.roundLimit;
         if(typeof saved.sound==="boolean")state.sound=saved.sound;
       }catch(e){}
     }
     function saveSettings(){
-      try{localStorage.setItem(GUGU_SETTINGS_KEY,JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,skill:state.skill,sound:state.sound}))}catch(e){}
+      try{localStorage.setItem(GUGU_SETTINGS_KEY,JSON.stringify({mode:state.mode,cpu:state.cpu,table:state.table,skill:state.skill,decimalOp:state.decimalOp,fractionOp:state.fractionOp,roundLimit:state.roundLimit,sound:state.sound}))}catch(e){}
     }
     function getWins(){
       try{var raw=localStorage.getItem(GUGU_WINS_KEY)||localStorage.getItem(GUGU_WINS_OLD)||'{"easy":0,"normal":0,"hard":0}';if(!localStorage.getItem(GUGU_WINS_KEY)&&localStorage.getItem(GUGU_WINS_OLD))localStorage.setItem(GUGU_WINS_KEY,raw);return JSON.parse(raw)}catch(e){return{easy:0,normal:0,hard:0}}
@@ -641,6 +702,12 @@
         if(t){state.table=t.dataset.table;saveSettings();updateMenu();return}
         var s=e.target.closest("[data-skill]");
         if(s){state.skill=s.dataset.skill;saveSettings();updateMenu();return}
+        var dop=e.target.closest("[data-decimal-op]");
+        if(dop){state.decimalOp=dop.dataset.decimalOp;saveSettings();updateMenu();return}
+        var fop=e.target.closest("[data-fraction-op]");
+        if(fop){state.fractionOp=fop.dataset.fractionOp;saveSettings();updateMenu();return}
+        var tm=e.target.closest("[data-time]");
+        if(tm){state.roundLimit=+tm.dataset.time;saveSettings();updateMenu();return}
 
       });
 
@@ -695,18 +762,23 @@
       document.querySelectorAll("[data-cpu]").forEach(function(b){b.classList.toggle("active",b.dataset.cpu===state.cpu)});
       document.querySelectorAll("[data-table]").forEach(function(b){b.classList.toggle("active",b.dataset.table===state.table)});
       document.querySelectorAll("[data-skill]").forEach(function(b){b.classList.toggle("active",b.dataset.skill===state.skill)});
+      document.querySelectorAll("[data-decimal-op]").forEach(function(b){b.classList.toggle("active",b.dataset.decimalOp===state.decimalOp)});
+      document.querySelectorAll("[data-fraction-op]").forEach(function(b){b.classList.toggle("active",b.dataset.fractionOp===state.fractionOp)});
+      document.querySelectorAll("[data-time]").forEach(function(b){b.classList.toggle("active",+b.dataset.time===state.roundLimit)});
       els.cpuOptions.classList.toggle("hidden",state.mode!=="cpu");
       els.tableOptions.classList.toggle("hidden",state.skill!=="gugudan");
+      els.decimalOpOptions.classList.toggle("hidden",state.skill!=="decimal");
+      els.fractionOpOptions.classList.toggle("hidden",state.skill!=="fraction");
       var hints={
         gugudan:"기본 무한루. 빠른 구구단으로 에너지 출력을 높여요.",
-        decimal:"소수점 버튼을 사용해 답을 입력해요. 소수 × 자연수부터 소수 × 소수까지 나옵니다.",
-        fraction:"분자와 분모를 ⁄ 버튼으로 나눠 입력해요. 기약분수로 답하면 약분 보너스가 붙습니다.",
-        mixed:"구구단 → 소수 → 분수가 번갈아 나옵니다. 문제 형태를 보고 계산법을 빠르게 바꿔 보세요."
+        decimal:state.decimalOp==="multiply"?"곱셈의 약 90%는 소수 × 자연수, 약 10%만 간단한 소수 × 소수로 나옵니다.":"소수의 덧셈과 뺄셈이 번갈아 나옵니다. 자릿값과 소수점을 잘 맞춰 보세요.",
+        fraction:state.fractionOp==="multiply"?"분모를 먼저 입력해요. 곱셈은 기약분수로 답하면 출력 +25% 보너스!":state.fractionOp==="divide"?"분모 → ⁄ → 분자 순서로 답을 입력해요. 나눗셈은 두 번째 분수를 뒤집어 곱해 보세요.":"분모 → ⁄ → 분자 순서로 답을 입력해요. 덧셈과 뺄셈이 섞여 나옵니다.",
+        mixed:"구구단 → 소수 → 분수가 번갈아 나오고, 소수·분수 연산 종류도 계속 바뀝니다."
       };
       els.skillHint.textContent=hints[state.skill];
-      els.speedRule.textContent=state.skill==="gugudan"?"구구단은 1.4초 안쪽이면 PERFECT":state.skill==="decimal"?"문제에 따라 약 3~4.5초가 PERFECT":state.skill==="fraction"?"문제에 따라 약 5~7초가 PERFECT":"문제 종류마다 PERFECT 기준이 자동 조정";
-      els.skillRuleTitle.textContent=state.skill==="fraction"?"약분 = 강화 출력":"연속 정답 = 콤보";
-      els.skillRule.textContent=state.skill==="fraction"?"동치 분수도 정답! 기약분수면 출력 +25%":state.skill==="mixed"?"종류가 바뀌어도 콤보는 계속 이어져요":"콤보가 이어질수록 조금 더 강해져요";
+      els.speedRule.textContent=state.skill==="gugudan"?"구구단은 1.4초 안쪽이면 PERFECT":state.skill==="decimal"?"덧뺄셈 약 3초 · 곱셈 약 3~4.5초 PERFECT":state.skill==="fraction"?"연산에 따라 약 5~8초가 PERFECT":"문제 종류마다 PERFECT 기준이 자동 조정";
+      els.skillRuleTitle.textContent=state.skill==="fraction"?"분모부터 입력":"연속 정답 = 콤보";
+      els.skillRule.textContent=state.skill==="fraction"?"분모 → ⁄ → 분자 · 기약분수면 출력 +25%":state.skill==="mixed"?"종류가 바뀌어도 콤보는 계속 이어져요":"콤보가 이어질수록 조금 더 강해져요";
       els.soundBtn.textContent=state.sound?"🔊":"🔇";
       var w=getWins();
       els.recordLine.textContent="CPU 승리  ·  초급 "+(w.easy||0)+"회  ·  중급 "+(w.normal||0)+"회  ·  고급 "+(w.hard||0)+"회";
@@ -749,11 +821,47 @@
       startRound();
     }
 
+    function stopRoundTimer(){
+      if(state.roundTimerId){clearInterval(state.roundTimerId);state.roundTimerId=0}
+    }
+    function startRoundTimer(){
+      stopRoundTimer();
+      if(state.roundLimit===0){state.roundEndAt=0;state.roundRemainingMs=0;els.roundTimer.textContent="∞";return}
+      state.roundRemainingMs=state.roundLimit*60000;
+      state.roundEndAt=performance.now()+state.roundRemainingMs;
+      els.roundTimer.textContent=formatTime(state.roundRemainingMs);
+      state.roundTimerId=setInterval(function(){
+        if(!state.active||state.paused||state.ending)return;
+        var remain=Math.max(0,state.roundEndAt-performance.now());
+        state.roundRemainingMs=remain;
+        els.roundTimer.textContent=formatTime(remain);
+        if(remain<=0){stopRoundTimer();resolveTimeUp()}
+      },200);
+    }
+    function resolveTimeUp(){
+      if(state.ending||!state.active)return;
+      var winner;
+      if(state.target>0.01)winner=0;
+      else if(state.target<-.01)winner=1;
+      else{
+        var a=state.fighters[0],b=state.fighters[1];
+        var ac=a.correct-(state.roundStartCorrect?state.roundStartCorrect[0]:0),bc=b.correct-(state.roundStartCorrect?state.roundStartCorrect[1]:0);
+        if(ac!==bc)winner=ac>bc?0:1;
+        else{
+          var aw=a.wrong-(state.roundStartWrong?state.roundStartWrong[0]:0),bw=b.wrong-(state.roundStartWrong?state.roundStartWrong[1]:0);
+          winner=aw!==bw?(aw<bw?0:1):(a.combo>=b.combo?0:1);
+        }
+      }
+      els.battleStatus.textContent="시간 종료! 에너지 우세 판정";
+      endRound(winner,true);
+    }
     function startRound(){
-      clearCpu();
+      clearCpu();stopRoundTimer();
       state.active=false;state.ending=false;state.target=0;
       setFighterState(0,"charge");setFighterState(1,"charge");
       state.fighters[0].combo=0;state.fighters[1].combo=0;
+      state.roundStartCorrect=[state.fighters[0].correct,state.fighters[1].correct];
+      state.roundStartWrong=[state.fighters[0].wrong,state.fighters[1].wrong];
       newQuestion(0);newQuestion(1);
       updateQuestions();updateCombo();
       var n=3;
@@ -770,6 +878,7 @@
           state.active=true;
           state.fighters[0].started=performance.now();
           state.fighters[1].started=performance.now();
+          startRoundTimer();
           if(state.mode==="cpu")scheduleCpu();
           setTimeout(function(){if(state.active)els.battleStatus.textContent="빠르게 풀어서 밀어내세요!"},550);
         }
@@ -777,7 +886,7 @@
     }
 
     function makeQuestion(side){
-      var kind=questionTypeFor(side);
+      var kind=questionTypeFor(side),op=operationFor(kind);
       if(kind==="gugudan"){
         var a,b;
         if(state.table==="all"||state.skill==="mixed"){a=rand(2,9);b=rand(2,9)}
@@ -786,43 +895,72 @@
           if(side===1&&Math.random()<.5){var tmp=a;a=b;b=tmp}
           else if(side===0&&Math.random()<.3){var tmp2=a;a=b;b=tmp2}
         }
-        return{kind:kind,a:a,b:b,answer:a*b,answerValue:a*b,answerNum:a*b,answerDen:1,questionHtml:a+" × "+b,questionText:a+" × "+b,perfectMs:1400,hint:""};
+        return{kind:kind,operation:"multiply",a:a,b:b,answer:a*b,answerValue:a*b,answerNum:a*b,answerDen:1,questionHtml:a+" × "+b,questionText:a+" × "+b,perfectMs:1400,hint:""};
       }
       if(kind==="decimal"){
-        var both=Math.random()<.48;
-        var hundredths=Math.random()<.18;
-        var aScale=hundredths?100:10;
-        var aInt=hundredths?rand(12,95):rand(2,99);
-        var bScale=both?10:1;
-        var bInt=both?rand(2,25):rand(2,9);
+        if(op==="addsub"){
+          var scale=Math.random()<.78?10:100;
+          var max=scale===10?99:999;
+          var ai=rand(scale===10?2:12,max),bi=rand(scale===10?1:10,Math.min(max,scale===10?80:500));
+          var minus=Math.random()<.5;
+          if(minus&&bi>ai){var sw=ai;ai=bi;bi=sw}
+          var av=ai/scale,bv=bi/scale,resultInt=minus?ai-bi:ai+bi;
+          var at=decimalText(ai,scale),bt=decimalText(bi,scale),sym=minus?"−":"+";
+          return{kind:kind,operation:"addsub",a:at,b:bt,answer:resultInt/scale,answerValue:resultInt/scale,answerNum:resultInt,answerDen:scale,questionHtml:at+" "+sym+" "+bt,questionText:at+" "+sym+" "+bt,perfectMs:3000,hint:"소수점을 세로로 맞춘다고 생각해 보세요."};
+        }
+        var both=Math.random()<.10;
+        var aInt=rand(2,49),aScale=10;
+        var bInt=both?rand(2,19):rand(2,9),bScale=both?10:1;
         var value=(aInt*bInt)/(aScale*bScale);
         var at=decimalText(aInt,aScale),bt=decimalText(bInt,bScale);
-        return{kind:kind,a:at,b:bt,answer:value,answerValue:value,answerNum:aInt*bInt,answerDen:aScale*bScale,questionHtml:at+" × "+bt,questionText:at+" × "+bt,perfectMs:both||hundredths?4500:3000,hint:"소수점 위치를 확인하고 계산!"};
+        return{kind:kind,operation:"multiply",a:at,b:bt,answer:value,answerValue:value,answerNum:aInt*bInt,answerDen:aScale*bScale,questionHtml:at+" × "+bt,questionText:at+" × "+bt,perfectMs:both?4500:3200,hint:both?"소수 × 소수! 자연수처럼 곱한 뒤 소수점 자릿수를 확인해요.":"소수 × 자연수! 먼저 자연수 곱셈처럼 계산해 보세요."};
       }
-      var timesWhole=Math.random()<.42;
-      var n1=rand(1,8),d1=rand(Math.max(2,n1+1),9);
-      var n2=timesWhole?rand(2,8):rand(1,8),d2=timesWhole?1:rand(Math.max(2,n2+1),9);
-      if(timesWhole){
-        for(var tries=0;tries<10&&n1*n2%d1===0;tries++)n2=rand(2,8);
+
+      // fraction
+      for(var attempt=0;attempt<30;attempt++){
+        var n1=rand(1,7),d1=rand(Math.max(2,n1+1),9);
+        var n2=rand(1,7),d2=rand(Math.max(2,n2+1),9);
+        var rawN,rawD,sym,hint,perfect;
+        if(op==="addsub"){
+          var minus=Math.random()<.5;
+          var common=lcm(d1,d2);
+          var x=n1*(common/d1),y=n2*(common/d2);
+          if(minus&&x<=y){var tn=n1,td=d1;n1=n2;d1=d2;n2=tn;d2=td;common=lcm(d1,d2);x=n1*(common/d1);y=n2*(common/d2)}
+          rawN=minus?x-y:x+y;rawD=common;sym=minus?"−":"+";
+          if(rawN<=0)continue;
+          hint=d1===d2?"분모가 같아요. 분자끼리 계산해 보세요.":"먼저 공통분모를 찾아 보세요.";
+          perfect=d1===d2?4800:6500;
+        }else if(op==="divide"){
+          if(Math.random()<.35){n2=rand(2,6);d2=1}
+          rawN=n1*d2;rawD=d1*n2;sym="÷";
+          hint="두 번째 수를 뒤집어서 곱해 보세요.";
+          perfect=7800;
+        }else{
+          if(Math.random()<.42){n2=rand(2,8);d2=1}
+          rawN=n1*n2;rawD=d1*d2;sym="×";
+          hint=(gcd(n1,d2)>1||gcd(n2,d1)>1)?"⚡ 곱하기 전에 약분하면 계산이 빨라져요!":"분자끼리 · 분모끼리 곱해 보세요.";
+          perfect=d2===1?5200:7000;
+        }
+        var ans=reduced(rawN,rawD);
+        if(ans.d===1&&attempt<22)continue;
+        var left=fracHtml(n1,d1),right=d2===1?String(n2):fracHtml(n2,d2);
+        var text=n1+"/"+d1+" "+sym+" "+(d2===1?n2:n2+"/"+d2);
+        return{kind:"fraction",operation:op,a:n1,b:n2,answer:ans.n/ans.d,answerValue:ans.n/ans.d,answerNum:ans.n,answerDen:ans.d,rawNum:rawN,rawDen:rawD,questionHtml:left+" "+sym+" "+right,questionText:text,perfectMs:perfect,hint:hint};
       }
-      var rawN=n1*n2,rawD=d1*d2,ans=reduced(rawN,rawD);
-      var cross=gcd(n1,d2)>1||gcd(n2,d1)>1;
-      var left=fracHtml(n1,d1),right=timesWhole?String(n2):fracHtml(n2,d2);
-      var text=n1+"/"+d1+" × "+(timesWhole?n2:n2+"/"+d2);
-      return{kind:"fraction",a:n1,b:n2,answer:ans.n/ans.d,answerValue:ans.n/ans.d,answerNum:ans.n,answerDen:ans.d,rawNum:rawN,rawDen:rawD,questionHtml:left+" × "+right,questionText:text,perfectMs:timesWhole?5000:7000,hint:cross?"⚡ 먼저 약분하면 계산이 빨라져요!":"분자끼리 · 분모끼리 곱해 보세요."};
+      return{kind:"fraction",operation:"multiply",a:1,b:1,answer:1/6,answerValue:1/6,answerNum:1,answerDen:6,rawNum:1,rawDen:6,questionHtml:fracHtml(1,2)+" × "+fracHtml(1,3),questionText:"1/2 × 1/3",perfectMs:6500,hint:"분자끼리 · 분모끼리 곱해 보세요."};
     }
     function newQuestion(side){
       var f=state.fighters[side],q=makeQuestion(side);
-      ["kind","a","b","answer","answerValue","answerNum","answerDen","rawNum","rawDen","questionHtml","questionText","perfectMs","hint"].forEach(function(k){f[k]=q[k]});
+      ["kind","operation","a","b","answer","answerValue","answerNum","answerDen","rawNum","rawDen","questionHtml","questionText","perfectMs","hint"].forEach(function(k){f[k]=q[k]});
       f.entry="";f.started=performance.now();f.questionIndex=(f.questionIndex||0)+1;
       updateQuestions();
     }
     function entryHtml(f){
       if(f.kind!=="fraction")return f.entry||"?";
       var parts=(f.entry||"").split("/");
-      if(!f.entry)return "?";
-      if(parts.length===1)return fracHtml(parts[0]||"?","?");
-      return fracHtml(parts[0]||"?",parts[1]||"?");
+      if(!f.entry)return fracHtml("?","?");
+      var den=parts[0]||"?",num=parts.length>1?(parts[1]||"?"):"?";
+      return fracHtml(num,den);
     }
     function updatePadKeys(side){
       var f=state.fighters[side],pads=document.querySelectorAll('[data-pad="'+side+'"]');
@@ -844,7 +982,14 @@
       if(state.mode==="cpu")els.cpuQuestion.textContent="CPU  "+b.questionText;
       if(state.mode==="cpu")els.soloFeedback.textContent=a.hint||(a.combo>=3?a.combo+"콤보! 출력 보너스 상승":"빠르게 풀수록 강해져요!");
     }
-    function trainingLabel(){return skillName(state.skill)+(state.skill==="gugudan"?" · "+(state.table==="all"?"2~9단":state.table+"단 집중"):"")}
+    function trainingLabel(){
+      var label=skillName(state.skill);
+      if(state.skill==="gugudan")label+=" · "+(state.table==="all"?"2~9단":state.table+"단 집중");
+      else if(state.skill==="decimal"||state.skill==="fraction")label+=" · "+opName(state.skill);
+      if(state.roundLimit)label+=" · "+state.roundLimit+"분";
+      else label+=" · 무제한";
+      return label;
+    }
 
     function pressKey(side,key){
       if(!state.active||state.paused||state.ending)return;
@@ -892,8 +1037,8 @@
     function checkAnswer(f){
       if(f.kind==="fraction"){
         var m=f.entry.match(/^(\d+)\/(\d+)$/);
-        if(!m||+m[2]===0)return{ok:false,bonus:1,reduced:false};
-        var n=+m[1],d=+m[2],ok=n*f.answerDen===d*f.answerNum;
+        if(!m||+m[1]===0)return{ok:false,bonus:1,reduced:false};
+        var d=+m[1],n=+m[2],ok=n*f.answerDen===d*f.answerNum;
         var simple=ok&&gcd(n,d)===1;
         return{ok:ok,bonus:simple?1.25:1,reduced:simple};
       }
@@ -920,7 +1065,7 @@
       }else{
         f.wrong++;f.combo=0;
         applyPenalty(side,5.5);
-        feedback(side,f.kind==="fraction"&&f.entry.indexOf("/")<0?"분수는 ⁄ 버튼으로 분자와 분모를 나눠요":"오답! 출력이 흔들렸어요",false);
+        feedback(side,f.kind==="fraction"&&f.entry.indexOf("/")<0?"분모를 먼저 입력하고 ⁄ 버튼을 누른 뒤 분자를 입력해요":"오답! 출력이 흔들렸어요",false);
         pulseState(side,"hit",290,"idle");
         sfxWrong();
         hitFighter(side);
@@ -963,7 +1108,7 @@
       if(state.mode!=="cpu"||!state.active)return;
       var d=CPU[state.cpu];
       var f=state.fighters[1];
-      var typeScale=f.kind==="fraction"?(f.perfectMs>=7000?2.45:1.9):f.kind==="decimal"?(f.perfectMs>=4500?1.65:1.35):1;
+      var typeScale=f.kind==="fraction"?(f.perfectMs>=7500?2.55:f.perfectMs>=6200?2.25:1.9):f.kind==="decimal"?(f.perfectMs>=4300?1.65:1.35):1;
       var problem=f.kind==="gugudan"&&(+f.a)*(+f.b)>=56?260:0;
       var delay=Math.max(850,d.base*typeScale+problem+(Math.random()*2-1)*d.jitter);
       f.started=performance.now();
@@ -983,15 +1128,15 @@
       },delay);
     }
 
-    function endRound(winner){
+    function endRound(winner,timed){
       if(state.ending)return;
-      state.ending=true;state.active=false;clearCpu();
+      state.ending=true;state.active=false;clearCpu();stopRoundTimer();
       state.wins[winner]++;
       setFighterState(winner,"win");
       setFighterState(winner===0?1:0,"lose");
       state.target=winner===0?105:-105;
       updateRoundHud();
-      els.battleStatus.textContent=(winner===0?(state.mode==="cpu"?"내":"PLAYER 1"):(state.mode==="cpu"?"CPU":"PLAYER 2"))+" 라운드 승리!";
+      els.battleStatus.textContent=(timed?"⏱️ 판정 승리 · ":"")+(winner===0?(state.mode==="cpu"?"내":"PLAYER 1"):(state.mode==="cpu"?"CPU":"PLAYER 2"))+" 라운드 승리!";
       tone(winner===0?760:240,.28,winner===0?"triangle":"sawtooth");
       setTimeout(function(){
         if(state.wins[winner]>=2)finishMatch(winner);
@@ -1028,6 +1173,7 @@
 
     function updateRoundHud(){
       els.roundLabel.textContent="ROUND "+state.round;
+      if(!state.active)els.roundTimer.textContent=state.roundLimit?String(state.roundLimit).padStart(2,"0")+":00":"∞";
       var p1=document.querySelectorAll(".pip.p1"),p2=document.querySelectorAll(".pip.p2");
       p1.forEach(function(p,i){p.classList.toggle("on",i<state.wins[0])});
       p2.forEach(function(p,i){p.classList.toggle("on",i<state.wins[1])});
@@ -1062,6 +1208,8 @@
     function openQuit(){
       if(!state.active&&state.ending)return;
       state.paused=true;
+      if(state.roundLimit&&state.active)state.roundRemainingMs=Math.max(0,state.roundEndAt-performance.now());
+      stopRoundTimer();
       if(state.cpuTimer){clearTimeout(state.cpuTimer);state.cpuTimer=0}
       els.pauseOverlay.classList.remove("hidden");
     }
@@ -1071,6 +1219,15 @@
         state.paused=false;
         state.fighters[0].started=performance.now();
         state.fighters[1].started=performance.now();
+        if(state.roundLimit&&state.active){
+          state.roundEndAt=performance.now()+Math.max(0,state.roundRemainingMs);
+          state.roundTimerId=setInterval(function(){
+            if(!state.active||state.paused||state.ending)return;
+            var remain=Math.max(0,state.roundEndAt-performance.now());
+            state.roundRemainingMs=remain;els.roundTimer.textContent=formatTime(remain);
+            if(remain<=0){stopRoundTimer();resolveTimeUp()}
+          },200);
+        }
         if(state.mode==="cpu"&&state.active)scheduleCpu();
       }
     }
@@ -1079,6 +1236,7 @@
     function clearTimers(){
       clearCpu();
       if(state.countdownTimer){clearInterval(state.countdownTimer);state.countdownTimer=0}
+      stopRoundTimer();
     }
 
     function animate(){
