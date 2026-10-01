@@ -2876,6 +2876,20 @@ function walkCreature(root,dir,speed,dt,allowWater=false){
   if(dy>1.15||(!allowWater&&fluid?.type==='water'))return false;
   root.position.x=nx;root.position.z=nz;root.position.y=nextY;root.rotation.y=dir+Math.PI;return true;
 }
+function walkCreatureWithDetour(root,dir,speed,dt,allowWater,t){
+  const u=root.userData;
+  if(u.detourUntil>t&&Number.isFinite(u.detourDir)&&walkCreature(root,u.detourDir,speed,dt,allowWater))return true;
+  if(walkCreature(root,dir,speed,dt,allowWater)){
+    u.detourUntil=0;u.detourDir=null;return true;
+  }
+  const side=u.detourSide||((Math.random()<.5)?1:-1);
+  const tries=[dir+side*Math.PI/2,dir-side*Math.PI/2,dir+side*Math.PI/4,dir-side*Math.PI/4];
+  for(const candidate of tries){
+    if(!walkCreature(root,candidate,speed*.94,dt,allowWater))continue;
+    u.detourSide=side;u.detourDir=candidate;u.detourUntil=t+650;return true;
+  }
+  u.detourSide=-side;u.detourUntil=t+260;return false;
+}
 function updateCreatureHealthUi(){
   const el=$('survivalHealth');if(!el)return;
   el.classList.toggle('hidden',gameFreeMode!=='survival');
