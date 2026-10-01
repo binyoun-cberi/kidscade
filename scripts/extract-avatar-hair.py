@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 AVATAR = ROOT / "assets/game/characters/kidscade-avatar-v1"
@@ -93,7 +93,22 @@ def build_head_mask(base):
             dst[x, y] = 255
     return mask
 
-def split_full_hair(full, head_mask):
+def build_face_masks(face_parts):
+    critical = Image.new("L", (RUNTIME, RUNTIME), 0)
+    for part in face_parts:
+        critical = ImageChops.lighter(critical, part.getchannel("A"))
+
+    # A shared face opening keeps eyes/nose/mouth readable when a generated
+    # hairstyle accidentally contains a solid interior fill. The ellipse is
+    # intentionally narrower at the forehead so bangs can still exist.
+    aperture = Image.new("L", (RUNTIME, RUNTIME), 0)
+    draw = ImageDraw.Draw(aperture)
+    draw.ellipse((42, 33, 86, 69), fill=255)
+    # Preserve a little fringe at the very top of the forehead.
+    draw.rectangle((42, 33, 86, 38), fill=0)
+    return critical, aperture
+
+def split_full_hair(full, head_mask, critical_mask, aperture_mask):
     # Back keeps the full hairstyle. Drawing the base over it naturally hides
     # hair that should sit behind the head/body.
     back = full.copy()
@@ -103,8 +118,20 @@ def split_full_hair(full, head_mask):
     front = full.copy()
     a = front.getchannel("A")
     a = Image.composite(a, Image.new("L", a.size, 0), head_mask)
+
+    # Generated sheets sometimes have a solid opaque fill inside the hairstyle
+    # instead of a true face opening. Only cut an aperture when that fill would
+    # cover a meaningful share of the default eyes/nose/mouth pixels.
+    overlap = ImageChops.multiply(a, critical_mask)
+    overlap_count = sum(1 for v in overlap.getdata() if v > 0)
+    critical_count = max(1, sum(1 for v in critical_mask.getdata() if v > 0))
+    overlap_ratio = overlap_count / critical_count
+    aperture_applied = overlap_ratio > 0.15
+    if aperture_applied:
+        a = ImageChops.subtract(a, aperture_mask)
+
     front.putalpha(a)
-    return back, front
+    return back, front, overlap_ratio, aperture_applied
 
 def touches(bbox):
     if not bbox:
@@ -116,7 +143,7 @@ def touches(bbox):
     if bbox[3] >= RUNTIME: out.append("bottom")
     return out
 
-def extract(kind, source, head_mask):
+def extract(kind, source, head_mask, critical_mask, aperture_mask):
     image = Image.open(source).convert("RGBA")
     w, h = image.size
     if w % COLS or h % ROWS:
@@ -137,7 +164,9 @@ def extract(kind, source, head_mask):
         for col in range(COLS):
             tile=image.crop((col*cw,row*ch,(col+1)*cw,(row+1)*ch))
             full=hard_alpha(clear_bg(tile).resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST))
-            back,front=split_full_hair(full,head_mask)
+            back,front,overlap_ratio,aperture_applied=split_full_hair(
+                full,head_mask,critical_mask,aperture_mask
+            )
 
             front_name=f"hair-front-{kind}-{n:02d}.png"
             back_name=f"hair-back-{kind}-{n:02d}.png"
@@ -154,6 +183,8 @@ def extract(kind, source, head_mask):
                 "frontBBox":list(fb) if fb else None,
                 "backBBox":list(bb) if bb else None,
                 "backTouchesCanvasEdge":touches(bb),
+                "criticalFaceOverlap":round(overlap_ratio,3),
+                "faceApertureApplied":aperture_applied,
             })
             n+=1
 
@@ -203,12 +234,13 @@ def main():
         base=base.resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST)
     head_mask=build_head_mask(base)
     face_parts=load_face_defaults()
+    critical_mask,aperture_mask=build_face_masks(face_parts)
 
     FRONT_OUT.mkdir(parents=True,exist_ok=True)
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":3,
+        "version":4,
         "type":"kidscade-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
@@ -218,7 +250,8 @@ def main():
         "palette":"warm-medium-brown",
         "headMask":{
             "bottomY":HEAD_BOTTOM,
-            "earSafe":{"y":[EAR_Y0,EAR_Y1],"innerX":[EAR_INNER_LEFT,EAR_INNER_RIGHT]}
+            "earSafe":{"y":[EAR_Y0,EAR_Y1],"innerX":[EAR_INNER_LEFT,EAR_INNER_RIGHT]},
+            "conditionalFaceAperture":{"ellipse":[42,33,86,69],"preserveTopUntilY":38,"criticalOverlapThreshold":0.15}
         },
         "sets":{},
         "qa":{
@@ -229,7 +262,8 @@ def main():
                 "full hairstyle retained as hairBack",
                 "hairFront clipped to master-base head mask",
                 "ear-safe front mask",
-                "base + default face + hairBack + hairFront contact previews"
+                "base + default face + hairBack + hairFront contact previews",
+                "conditional face aperture when generated hair covers critical facial features"
             ],
             "contacts":{}
         }
@@ -238,7 +272,9 @@ def main():
     for kind,source in SHEETS.items():
         if not source.exists():
             raise FileNotFoundError(source)
-        result["sets"][kind]=extract(kind,source,head_mask)
+        result["sets"][kind]=extract(
+            kind,source,head_mask,critical_mask,aperture_mask
+        )
         result["qa"]["contacts"][kind]=build_contact(kind,base,face_parts)
 
     (BACK_OUT/"hair-split-manifest.json").write_text(
