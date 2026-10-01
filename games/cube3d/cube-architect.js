@@ -2686,8 +2686,8 @@ function creatureGroundY(x,z){
 function placeWildCreature(id,x,z){
   const api=window.CubeArchitectCreatures,root=api?.create?.(id);if(!root)return null;
   const u=root.userData;
-  u.homeX=x;u.homeZ=z;u.baseY=creatureGroundY(x,z);root.position.set(x,u.baseY,z);
-  scene.add(root);wildCreatures.push(root);registerCreatureMeshes(root);upgradeWildCreatureAsset(root);return root;
+  u.homeX=x;u.homeZ=z;u.baseY=terrainHeight(x,z)+1;root.position.set(x,u.baseY,z);
+  scene.add(root);wildCreatures.push(root);registerCreatureMeshes(root);return root;
 }
 function spawnWildCreatures(){
   for(const c of wildCreatures)scene.remove(c);
@@ -2773,7 +2773,10 @@ function damageByCreature(root,t){
 function creatureRayHit(max=4.8){
   if(!creatureInteractables.length)return null;
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-  return raycaster.intersectObjects(creatureInteractables,false).find(h=>h.distance<=max)||null;
+  const creature=raycaster.intersectObjects(creatureInteractables,false).find(h=>h.distance<=max)||null;
+  if(!creature)return null;
+  const wall=raycaster.intersectObjects(worldInteractables,false).find(h=>h.distance<=max)||null;
+  return wall&&wall.distance<creature.distance-.08?null:creature;
 }
 function creatureReward(root){
   for(const [type,n] of Object.entries(root.userData.spec.reward||{}))addToBag(type,n);
@@ -2804,9 +2807,12 @@ function updateWildCreatures(dt,t){
   for(const root of wildCreatures){
     const u=root.userData;if(u.dead)continue;
     const spec=u.spec,dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
+    if(dist>42){root.visible=false;continue}
+    upgradeWildCreatureAsset(root);
     const active=spec.kind!=='hostile'||(spec.id==='shadowBug'?night:true);
     root.visible=active;
     if(!active)continue;
+    root.position.y=creatureGroundY(root.position.x,root.position.z);
     u.turn-=dt;
     if(u.turn<=0){u.turn=1.1+Math.random()*2.6;u.dir+=(Math.random()-.5)*1.9}
     let dir=u.dir,speed=spec.speed;
