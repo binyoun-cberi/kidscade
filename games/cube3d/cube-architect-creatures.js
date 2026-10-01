@@ -36,6 +36,15 @@ function fallbackDeer(){
   g.add(box(.05,.05,.035,dark,-.09,1.0,-.55),box(.05,.05,.035,dark,.09,1.0,-.55));
   g.add(box(.18,.12,.06,light,0,.86,-.56));return g;
 }
+function fallbackFox(snow=false){
+  const g=holder(),fur=mat(snow?0xe8eef2:0xb96f3d),light=mat(snow?0xffffff:0xf0c39a),dark=mat(0x30251f);
+  g.add(box(.7,.34,.34,fur,0,.46,.05),box(.34,.34,.32,fur,0,.66,-.43));
+  const tail=box(.22,.22,.7,fur,0,.48,.48);tail.rotation.x=-.22;g.add(tail);
+  for(const x of [-.24,.24])for(const z of [-.1,.18])g.add(box(.1,.42,.1,dark,x,.22,z));
+  const e1=box(.11,.24,.1,fur,-.12,.94,-.43),e2=box(.11,.24,.1,fur,.12,.94,-.43);e1.rotation.z=-.2;e2.rotation.z=.2;g.add(e1,e2);
+  g.add(box(.05,.05,.03,dark,-.09,.7,-.6),box(.05,.05,.03,dark,.09,.7,-.6),box(.1,.07,.04,dark,0,.58,-.61));
+  g.add(box(.24,.12,.05,light,0,.54,-.59));return g;
+}
 function fallbackFrog(){
   const g=holder(),green=mat(0x68a64c),belly=mat(0xc9d88b),dark=mat(0x172b1a);
   g.add(box(.55,.28,.48,green,0,.22,0),box(.48,.25,.42,green,0,.42,-.18));
@@ -84,6 +93,8 @@ function fallbackGolem(){
 }
 function makeFallback(id){
   if(id==='deer')return fallbackDeer();
+  if(id==='fox')return fallbackFox(false);
+  if(id==='snowFox')return fallbackFox(true);
   if(id==='frog')return fallbackFrog();
   if(id==='camel')return fallbackCamel();
   if(id==='shadowBug')return fallbackShadowBug();
