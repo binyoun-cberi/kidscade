@@ -86,7 +86,7 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
-  ['challengePanel','challengeFlyHud','netPanel','freeHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
+  ['challengePanel','challengeFlyHud','netPanel','freeHud','dungeonHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   blueprintModalOpen=false;
   resetMobileInput();
   $('topbar').classList.add('hidden');
@@ -99,6 +99,7 @@ function clearModeUi(){
 function showHome(){
   if(mode==='free')saveFreeWorld();
   if(mode==='challenge'&&restorationSession)restorationSession=null;
+  if(mode==='dungeon')dungeonSession=null;
   if(document.pointerLockElement===canvas)document.exitPointerLock?.();
   ensureRenderer();ensureLoop();mode='home';clearModeUi();$('homeScreen').classList.remove('hidden');
   cleanScene(0xd6efff);camera.position.set(8,7,9);camera.lookAt(0,1,0);
@@ -115,6 +116,7 @@ function enterMode(next){
   ensureRenderer();ensureLoop();clearModeUi();$('topbar').classList.remove('hidden');mode=next;
   if(document.pointerLockElement===canvas) document.exitPointerLock?.();
   if(next==='challenge') initChallenge();
+  if(next==='dungeon') initDungeon();
   if(next==='net') initNet();
   if(next==='free'||next==='creative'){
     gameFreeMode=next==='creative'?'creative':'survival';
@@ -166,8 +168,8 @@ function updateChallengeDifficultyUI(){
   const total=activeChallengeMissions().length;
   if(restorationSession){
     const poi=poiRules.poiById(restorationSession.poiId);
-    if($('challengeCourseLabel'))$('challengeCourseLabel').textContent='생존 원정 · '+poi.name+' 복원';
-    modeTitle('랜드마크 복원',poi.name+' · '+poi.tech.label+' 해금');
+    if($('challengeCourseLabel'))$('challengeCourseLabel').textContent='던전 최심부 · '+poi.name+' 설계실';
+    modeTitle('고대 설계실',poi.name+' · '+poi.tech.label+' 해금');
   }else{
     if($('challengeCourseLabel'))$('challengeCourseLabel').textContent=(challengeDifficulty==='easy'?'쉬움 · 교과서형 ':'어려움 · 랜드마크형 ')+(missionIndex+1)+'/'+total;
     modeTitle('설계도 챌린지',challengeDifficulty==='easy'?'쉬움 · 교과서 겨냥도':'어려움 · 랜드마크 복원');
@@ -478,8 +480,8 @@ function initChallenge(){
   $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
   updateChallengeDifficultyUI();drawBlueprint();
   if(restorationSession){
-    $('missionTip').textContent='폐허의 남은 구조는 이미 배치되어 있어요. '+restorationSession.seedPercent+
-      '%에서 시작해 외형 85% 이상을 복원하세요. '+currentChallengeMission().tip;
+    $('missionTip').textContent='설계실의 손상된 축소 모형이 '+restorationSession.seedPercent+
+      '%까지 남아 있어요. 외형 85% 이상으로 완성해 건축 원리를 해독하세요. '+currentChallengeMission().tip;
   }
   $('challengeEasy').disabled=!!restorationSession;$('challengeHard').disabled=!!restorationSession;
   $('challengeEasy').onclick=()=>setChallengeDifficulty('easy');$('challengeHard').onclick=()=>setChallengeDifficulty('hard');
@@ -643,11 +645,11 @@ function checkChallenge(){
     const sections=Object.values(groups).filter(g=>g[1]).map(g=>
       g[0]+' '+Math.round(g[2]/g[1]*100)+'%').join(' · ');
     $('resultText').innerHTML=
-      (restorationSession?'<b>폐허 복원도 '+restorationScore+'%</b><br>':'')+
+      (restorationSession?'<b>설계 해독도 '+restorationScore+'%</b><br>':'')+
       '윗면 <b>'+top+'%</b> · 정면 <b>'+front+'%</b> · 측면 <b>'+side+'%</b><br>'+
       '<small>주요 부위 참고: '+sections+'</small><br>'+
-      (completed?'외형 복원 완료! 85% 이상이면 통과해요.':
-      restorationSession?'현재 남아 있는 폐허에 부족한 바깥 구조를 더 복원해 보세요.':
+      (completed?'설계 해독 완료! 85% 이상이면 통과해요.':
+      restorationSession?'축소 모형의 부족한 바깥 구조를 더 완성해 보세요.':
       '세 방향의 외형을 비교해요. 파란 선은 아직 부족한 바깥 구조의 일부예요.')+
       '<br>보이지 않는 내부와 면 색칠은 외형 점수에서 제외합니다.';
   }else{
@@ -658,7 +660,7 @@ function checkChallenge(){
       '개 · 다른 블록 '+Math.max(0,userCount-match.common)+'개<br>파란 선을 보고 모양을 다시 확인하세요.';
   }
   if(completed){
-    toast(hard?'랜드마크 외형 복원 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
+    toast(hard?'설계실 해독 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
     if(restorationSession)markRestorationSuccess(restorationScore);
     sfx('good');reportResult(restorationSession?'survival-landmark':'challenge',match.score,true);
   }else{
@@ -990,7 +992,8 @@ let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
-let nearLandmarkPoi=null,restorationSession=null;
+let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
+let dungeonYaw=0,dungeonPitch=0,dungeonKeys={},dungeonTargets=[],dungeonGates=[];
 let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
 let worldChunkIndex=new Map(),worldChunksGenerated=new Set(),worldChunkGenerationDepth=0;
 const WORLD_CHUNK_SIZE=16;
@@ -1041,9 +1044,10 @@ function landmarkPoiBaseY(poi){
   for(let x=ox;x<ox+w;x++)for(let z=oz;z<oz+d;z++)top=Math.max(top,terrainHeight(x,z));
   return Math.min(WORLD_MAX_Y-poi.compact.size[1]-1,top+1);
 }
-function setLandmarkPoiBlocks(poi,full=false,onlyChunk=null){
+function setLandmarkPoiBlocks(poi,full=true,onlyChunk=null){
   const baseY=landmarkPoiBaseY(poi),[ox,oz]=poi.origin;
-  const blocks=full?poi.compact.fullShell:poi.compact.blocks;
+  // v19: overworld landmarks are always intact. Dungeon progress changes activation, not the silhouette.
+  const blocks=poi.compact.fullShell;
   for(const v of blocks){
     const x=ox+v.p[0],y=baseY+v.p[1],z=oz+v.p[2];
     if(!inWorld(x,y,z))continue;
@@ -1061,7 +1065,7 @@ function generateLandmarkPoiChunk(cx,cz){
   if(gameFreeMode!=='survival')return;
   const chunk=cx+','+cz;
   for(const poi of poiRules.poisForChunk(cx,cz,WORLD_CHUNK_SIZE))
-    setLandmarkPoiBlocks(poi,restoredLandmarks.has(poi.id),chunk);
+    setLandmarkPoiBlocks(poi,true,chunk);
 }
 function rebuildLandmarkPoi(poi){
   const keys=[];
@@ -1089,35 +1093,201 @@ function applyRestoredLandmarksToLoadedWorld(){
 }
 function completeLandmarkPoi(id){
   const poi=poiRules.poiById(id);if(!poi||restoredLandmarks.has(id))return;
+  // Keep the old save-field name for backward compatibility; it now means dungeon cleared.
   restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);
   for(const [type,n] of Object.entries(poi.tech.reward||{}))addToBag(type,n);
   trackSurvival('restore',id);
-  rebuildLandmarkPoi(poi);
   buildInventory();updateFreeMission();saveFreeWorld();
-  toast(poi.name+' 복원 완료 · '+poi.tech.label+' 해금!');
+  toast(poi.name+' 던전 클리어 · '+poi.tech.label+' 해금!');
 }
 function returnFromRestoration(){
   const session=restorationSession;
   restorationSession=null;
-  enterMode('free');
-  if(session?.completed)completeLandmarkPoi(session.poiId);
-}
-function openLandmarkRestoration(poi){
-  if(!poi||gameFreeMode!=='survival')return;
-  if(survivalStage<5){
-    toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return;
+  if(session?.completed){
+    dungeonSession=null;
+    enterMode('free');
+    completeLandmarkPoi(session.poiId);
+    return;
   }
-  saveFreeWorld();
-  challengeDifficulty='hard';missionIndex=poi.missionIndex;
-  restorationSession={poiId:poi.id,missionIndex:poi.missionIndex,completed:false};
-  enterMode('challenge');
+  if(session?.fromDungeon&&dungeonSession){enterMode('dungeon');return}
+  enterMode('free');
 }
+function openLandmarkRestoration(poi){openLandmarkDungeon(poi)}
 function markRestorationSuccess(score){
   if(!restorationSession||restorationSession.completed)return;
   restorationSession.completed=true;
   const poi=poiRules.poiById(restorationSession.poiId);
   $('actionNext').textContent='보상 받고 월드로 돌아가기';
   $('resultText').innerHTML+='<br><b>'+poi.tech.label+'</b> 기술을 해금할 수 있어요.';
+}
+
+const DUNGEON_THEMES={
+  marble:{bg:0x101b2a,floor:0xe7edf2,wall:0xcbd8e1,accent:0x7fe7ff},
+  cathedral:{bg:0x151827,floor:0xc9bfae,wall:0x8d7a72,accent:0xffc875},
+  iron:{bg:0x101419,floor:0x59636c,wall:0x303942,accent:0x9ee7ff},
+  bridge:{bg:0x111a24,floor:0x765b50,wall:0x924e45,accent:0x73cfff},
+  castle:{bg:0x111820,floor:0xd8dde0,wall:0xb8c0c5,accent:0xf1b55b},
+  jungle:{bg:0x101b16,floor:0x6e7450,wall:0x8c8060,accent:0x9fe36b}
+};
+function dungeonMaterial(color,emissive=0){
+  return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?.35:0});
+}
+function addDungeonBox(x,y,z,w,h,d,color,userData=null){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),dungeonMaterial(color));
+  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;
+  if(userData)Object.assign(m.userData,userData);
+  scene.add(m);return m;
+}
+function glowDungeonTarget(mesh,on){
+  if(!mesh?.material)return;
+  mesh.material.emissive.setHex(on?0x49d8ff:0x000000);
+  mesh.material.emissiveIntensity=on?.9:0;
+}
+function addDungeonTarget(id,kind,x,z,color,label){
+  const base=addDungeonBox(x,.55,z,1.15,1.1,1.15,color,{dungeonTarget:true,targetId:id,targetKind:kind,label});
+  const orb=new THREE.Mesh(new THREE.OctahedronGeometry(.38,0),dungeonMaterial(color));
+  orb.position.set(x,1.48,z);orb.userData={dungeonTarget:true,targetId:id,targetKind:kind,label,base};
+  scene.add(orb);dungeonTargets.push(orb);
+  return orb;
+}
+function dungeonGate(z,color){
+  const gate=addDungeonBox(0,2.25,z,11.8,4.5,.35,color,{dungeonGate:true});
+  dungeonGates.push(gate);return gate;
+}
+function updateDungeonCamera(){
+  camera.rotation.order='YXZ';camera.rotation.y=dungeonYaw;camera.rotation.x=dungeonPitch;
+}
+function updateDungeonHud(){
+  if(!dungeonSession)return;
+  const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
+  const stage=dungeonSession.stage||0;
+  $('dungeonTitle').textContent=poi.name+' · '+poi.dungeon.title;
+  $('dungeonProgress').textContent=(stage+1)+'/3';
+  $('dungeonObjective').textContent=stage===0?
+    '대칭의 홀 · 좌우 봉인 장치 두 개를 모두 조사하세요.':
+    stage===1?'빛의 회랑 · 거울 장치를 왼쪽 → 오른쪽 → 가운데 순서로 작동시키세요.':
+    '최심부 설계실 · 빛나는 문으로 들어가 건축 원리를 해독하세요.';
+  const near=nearestDungeonTarget(2.4);
+  $('dungeonPrompt').classList.toggle('hidden',!near);
+  if(near)$('dungeonPrompt').textContent='E · '+near.userData.label;
+}
+function nearestDungeonTarget(max=2.4){
+  if(!dungeonSession)return null;
+  return dungeonTargets.map(m=>({m,d:camera.position.distanceTo(m.position)}))
+    .filter(v=>v.d<=max).sort((a,b)=>a.d-b.d)[0]?.m||null;
+}
+function dungeonInteract(){
+  const target=nearestDungeonTarget(2.6);
+  if(!target){toast('조사할 장치에 조금 더 가까이 가 보세요.');return}
+  const data=target.userData,stage=dungeonSession.stage||0;
+  if(data.targetKind==='seal'&&stage===0){
+    const active=dungeonSession.seals||(dungeonSession.seals=[]);
+    if(!active.includes(data.targetId)){active.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good')}
+    if(active.length>=2){
+      dungeonSession.stage=1;if(dungeonGates[0])dungeonGates[0].visible=false;
+      toast('대칭 봉인이 풀렸어요. 빛의 회랑이 열립니다.');
+    }else toast('반대편의 봉인 장치도 찾아보세요.');
+    updateDungeonHud();return;
+  }
+  if(data.targetKind==='mirror'&&stage===1){
+    const order=['left','right','center'],seq=dungeonSession.mirrors||(dungeonSession.mirrors=[]);
+    const expected=order[seq.length];
+    if(data.targetId!==expected){
+      seq.length=0;
+      dungeonTargets.filter(m=>m.userData.targetKind==='mirror').forEach(m=>{glowDungeonTarget(m,false);glowDungeonTarget(m.userData.base,false)});
+      toast('빛의 순서가 끊겼어요. 왼쪽 → 오른쪽 → 가운데 순서예요.');sfx('bad');return;
+    }
+    seq.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good');
+    if(seq.length===3){
+      dungeonSession.stage=2;if(dungeonGates[1])dungeonGates[1].visible=false;
+      const portal=dungeonTargets.find(m=>m.userData.targetKind==='portal');if(portal){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
+      toast('빛의 길이 완성됐어요. 최심부 설계실이 열렸습니다.');
+    }
+    updateDungeonHud();return;
+  }
+  if(data.targetKind==='portal'&&stage>=2){openDungeonBlueprint();return}
+  toast('아직 이 장치를 사용할 수 없어요.');
+}
+function buildLandmarkDungeonScene(poi){
+  const theme=DUNGEON_THEMES[poi.dungeon?.theme]||DUNGEON_THEMES.marble;
+  cleanScene(theme.bg);scene.fog=new THREE.Fog(theme.bg,18,48);
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(14,.35,40),dungeonMaterial(theme.floor));
+  floor.position.set(0,-.18,-8);floor.receiveShadow=true;scene.add(floor);
+  addDungeonBox(-7,2.4,-8,.45,4.8,40,theme.wall);
+  addDungeonBox(7,2.4,-8,.45,4.8,40,theme.wall);
+  addDungeonBox(0,4.8,-8,14,.35,40,theme.wall);
+  addDungeonBox(0,2.4,12,14,4.8,.45,theme.wall);
+  addDungeonBox(0,2.4,-28,14,4.8,.45,theme.wall);
+  for(const z of [7,2,-7,-12,-20,-25]){
+    addDungeonBox(-5.5,1.5,z,.7,3,.7,theme.accent);
+    addDungeonBox(5.5,1.5,z,.7,3,.7,theme.accent);
+  }
+  dungeonTargets=[];dungeonGates=[];
+  addDungeonTarget('left','seal',-3.2,3,theme.accent,'왼쪽 봉인 장치 조사');
+  addDungeonTarget('right','seal',3.2,3,theme.accent,'오른쪽 봉인 장치 조사');
+  dungeonGate(-1.2,theme.wall);
+  addDungeonTarget('left','mirror',-3.1,-8,theme.accent,'왼쪽 거울 작동');
+  addDungeonTarget('center','mirror',0,-10.5,theme.accent,'가운데 거울 작동');
+  addDungeonTarget('right','mirror',3.1,-8,theme.accent,'오른쪽 거울 작동');
+  dungeonGate(-14.2,theme.wall);
+  const portal=addDungeonTarget('blueprint','portal',0,-23,theme.accent,'최심부 설계실 입장');
+  if((dungeonSession.stage||0)<2){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
+  if((dungeonSession.stage||0)>=1&&dungeonGates[0])dungeonGates[0].visible=false;
+  if((dungeonSession.stage||0)>=2&&dungeonGates[1])dungeonGates[1].visible=false;
+  for(const id of dungeonSession.seals||[]){
+    const m=dungeonTargets.find(t=>t.userData.targetKind==='seal'&&t.userData.targetId===id);
+    if(m){glowDungeonTarget(m,true);glowDungeonTarget(m.userData.base,true)}
+  }
+  for(const id of dungeonSession.mirrors||[]){
+    const m=dungeonTargets.find(t=>t.userData.targetKind==='mirror'&&t.userData.targetId===id);
+    if(m){glowDungeonTarget(m,true);glowDungeonTarget(m.userData.base,true)}
+  }
+}
+function initDungeon(){
+  const poi=dungeonSession&&poiRules.poiById(dungeonSession.poiId);
+  if(!poi){dungeonSession=null;enterMode('free');return}
+  modeTitle('랜드마크 던전',poi.name+' · '+poi.dungeon.title);
+  setVisible('dungeonHud',true);
+  $('actionNext').classList.remove('hidden');$('actionNext').textContent='월드로 귀환';$('actionNext').onclick=returnFromDungeon;
+  $('actionCheck').classList.remove('hidden');$('actionCheck').textContent='조사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=dungeonInteract;
+  buildLandmarkDungeonScene(poi);
+  camera.position.set(0,1.65,10);dungeonYaw=0;dungeonPitch=0;dungeonKeys={};updateDungeonCamera();
+  configureMobileMode('dungeon');updateDungeonHud();
+  if(!mobileModeEnabled)toast('WASD로 탐험 · 마우스로 시점 · E로 장치 조사');
+}
+function openLandmarkDungeon(poi){
+  if(!poi||gameFreeMode!=='survival')return;
+  if(survivalStage<5){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
+  saveFreeWorld();
+  dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[]};
+  enterMode('dungeon');
+}
+function returnFromDungeon(){
+  dungeonSession=null;enterMode('free');
+}
+function openDungeonBlueprint(){
+  if(!dungeonSession)return;
+  const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
+  challengeDifficulty='hard';missionIndex=poi.missionIndex;
+  restorationSession={poiId:poi.id,missionIndex:poi.missionIndex,completed:false,fromDungeon:true};
+  enterMode('challenge');
+}
+function updateDungeon(dt){
+  if(!dungeonSession)return;
+  const speed=(dungeonKeys.ControlLeft||dungeonKeys.ControlRight)?6.5:4.2;
+  const forward=new THREE.Vector3(Math.sin(dungeonYaw),0,Math.cos(dungeonYaw));
+  const right=new THREE.Vector3(Math.cos(dungeonYaw),0,-Math.sin(dungeonYaw));
+  const move=new THREE.Vector3();
+  if(dungeonKeys.KeyW||dungeonKeys.ArrowUp)move.addScaledVector(forward,-1);
+  if(dungeonKeys.KeyS||dungeonKeys.ArrowDown)move.add(forward);
+  if(dungeonKeys.KeyA||dungeonKeys.ArrowLeft)move.addScaledVector(right,-1);
+  if(dungeonKeys.KeyD||dungeonKeys.ArrowRight)move.add(right);
+  if(mobileModeEnabled){move.addScaledVector(forward,mobileMove.y);move.addScaledVector(right,mobileMove.x)}
+  if(move.lengthSq())camera.position.add(move.normalize().multiplyScalar(speed*dt));
+  const stage=dungeonSession.stage||0,minZ=stage>=2?-26.2:stage>=1?-13.5:-.4;
+  camera.position.x=THREE.MathUtils.clamp(camera.position.x,-6.1,6.1);
+  camera.position.z=THREE.MathUtils.clamp(camera.position.z,minZ,10.6);
+  camera.position.y=1.65;updateDungeonCamera();updateDungeonHud();
 }
 const FACE_NAMES=['오른쪽','왼쪽','위','아래','앞','뒤'];
 const FACE_IDS=['R','L','U','D','F','B'];
@@ -1455,6 +1625,8 @@ function generateWorldChunk(cx,cz){
         const h=heights.get(x+','+z),kind=worldRules.region(x,z),b=worldRules.BIOMES[kind];
         const r=Math.hypot(x,z),roll=hash2(x*13+7,z*17-11);
         if(r<4||getBlock(x,h+1,z)||h<0)continue;
+        // Keep a readable silhouette and approach path around landmark POIs.
+        if(gameFreeMode==='survival'&&poiRules.isLandmarkClearZone?.(x,z,2))continue;
         if(kind==='flowers'&&roll>.74){
           setRawBlock(x,h+1,z,{type:'flower',natural:true});
         }else if(kind==='desert'||kind==='badlands'){
@@ -1758,7 +1930,7 @@ function updateFreeMission(){
       if(!discoveredLandmarks.has(close.id)){
         discoveredLandmarks.add(close.id);
         trackSurvival('find','landmark:'+close.id);
-        toast('랜드마크 발견 · '+close.name+'! 폐허의 겨냥도를 복원할 수 있어요.');
+        toast('랜드마크 발견 · '+close.name+'! 내부 던전의 비밀을 탐험할 수 있어요.');
         saveFreeWorld();
       }
       if(close.distance<=close.radius+3)nearLandmarkPoi=close;
@@ -1767,13 +1939,13 @@ function updateFreeMission(){
   const canRestore=gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('actionCheck').classList.toggle('hidden',!canRestore);
   if(canRestore){
-    $('actionCheck').textContent='복원 설계도';
+    $('actionCheck').textContent='던전 입장';
     $('actionCheck').disabled=false;
-    $('actionCheck').onclick=()=>openLandmarkRestoration(nearLandmarkPoi);
+    $('actionCheck').onclick=()=>openLandmarkDungeon(nearLandmarkPoi);
   }
   if(mobileModeEnabled){
     $('mobileCheck').classList.toggle('hidden',!canRestore);
-    $('mobileCheck').textContent=canRestore?'복원':'검사';
+    $('mobileCheck').textContent=canRestore?'던전':'검사';
   }
   const chosen=blockDef(selectedType||'hand').name;
   if(gameFreeMode==='survival'){
@@ -1781,12 +1953,12 @@ function updateFreeMission(){
     const progress=survivalFinished?goal.need:worldRules.goalProgress(goal,survivalStats);
     $('freeQuestTitle').textContent=survivalFinished?'생존 원정 완료 · 자유 탐험':goal.title;
     $('freeQuestDescription').textContent=survivalFinished?
-      '복원한 랜드마크와 해금된 건축 기술로 월드를 계속 발전시켜 보세요.':goal.description;
+      '클리어한 랜드마크 던전과 해금된 건축 기술로 월드를 계속 발전시켜 보세요.':goal.description;
     $('adventureCount').textContent=survivalFinished?'완료':
       progress+'/'+goal.need+' · '+(survivalStage+1)+'/'+worldRules.GOALS.length;
     $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+chosen;
-    $('freeHint').textContent=canRestore?'Q · 랜드마크 복원 설계도':
+    $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
       survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프':
       '좌클릭 채집 · E 제작·도형 편집 · P 면 색칠 · X 수학 렌즈';
   }else{
@@ -2101,7 +2273,7 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:6,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:7,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
@@ -2454,10 +2626,10 @@ function renderExplorationHint(){
   const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
   if(nearLandmarkPoi){
     if(restoredLandmarks.has(nearLandmarkPoi.id))
-      $('explorationHint').textContent='복원 완료 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
+      $('explorationHint').textContent='던전 클리어 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
     else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
-      (survivalStage>=5?' · Q 또는 상단의 ‘복원 설계도’를 눌러 도전':
-      ' · 첫 거점과 돌 도구를 준비하면 복원에 도전할 수 있어요.');
+      (survivalStage>=5?' · Q 또는 상단의 ‘던전 입장’을 눌러 탐험':
+      ' · 첫 거점과 돌 도구를 준비하면 던전에 들어갈 수 있어요.');
     return;
   }
   const landmark=nearestUnrestoredLandmark(x,z);
@@ -2467,12 +2639,12 @@ function renderExplorationHint(){
     const known=discoveredLandmarks.has(landmark.id);
     $('explorationHint').textContent=(known?landmark.name:'멀리서 특이한 건축 흔적')+
       ' · '+(direction||'근처')+'쪽 약 '+landmark.distance+'칸'+
-      (known?' · 복원 보상 '+landmark.tech.label:'');
+      (known?' · 던전 보상 '+landmark.tech.label:'');
     return;
   }
   const target=nearestUndiscoveredRegion(x,z);
   if(!target){
-    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요. 이제 랜드마크 흔적을 찾아보세요.';
+    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요. 이제 멀리 보이는 랜드마크를 찾아 던전을 탐험해 보세요.';
     return;
   }
   const dx=target.cx-x,dz=target.cz-z;
@@ -2611,21 +2783,26 @@ function resetMobileInput(){
   if(typeof freeKeys!=='undefined'){freeKeys.Space=false;freeKeys.ShiftLeft=false}
 }
 function configureMobileMode(target){
-  const active=mobileModeEnabled&&(target==='challenge'||target==='free');
+  const active=mobileModeEnabled&&(target==='challenge'||target==='free'||target==='dungeon');
   setVisible('mobileControls',active);
   $('mobileControls').classList.toggle('challenge-mobile',active&&target==='challenge');
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
+  $('mobileControls').classList.toggle('dungeon-mobile',active&&target==='dungeon');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
-  $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore);
-  $('mobileCheck').textContent=poiRestore?'복원':'검사';
+  $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
+  $('mobileCheck').textContent=target==='dungeon'?'조사':poiRestore?'던전':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
   $('mobileNext').classList.toggle('hidden',target!=='challenge');
   $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   $('mobilePaint').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
   $('mobileLens').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
+  $('mobileBreak').classList.toggle('hidden',target==='dungeon');
+  $('mobilePlace').classList.toggle('hidden',target==='dungeon');
+  $('mobileUp').classList.toggle('hidden',target==='dungeon');
+  $('mobileDown').classList.toggle('hidden',target==='dungeon');
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
   $('lockNotice').classList.toggle('hidden',active||target!=='free'||inventoryOpen||furnaceOpen);
   if(target==='free')refreshMobileFly();
@@ -2635,7 +2812,7 @@ function enableMobileFallback(){
   toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
 }
 function requestGamePointerLock(){
-  if(mode!=='challenge'&&mode!=='free')return;
+  if(mode!=='challenge'&&mode!=='free'&&mode!=='dungeon')return;
   if(mobileModeEnabled){configureMobileMode(mode);return}
   if(typeof canvas.requestPointerLock!=='function'){enableMobileFallback();return}
   try{
@@ -2695,8 +2872,9 @@ function initMobileControls(){
   tap('mobilePlace',()=>mobileBlockAction('place'));
   tap('mobileCheck',()=>{
     if(mode==='challenge')checkChallenge();
+    else if(mode==='dungeon')dungeonInteract();
     else if(mode==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
-      openLandmarkRestoration(nearLandmarkPoi);
+      openLandmarkDungeon(nearLandmarkPoi);
   });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
   tap('mobileNext',()=>{if(mode==='challenge'){
@@ -2770,19 +2948,21 @@ function showTutorial(kind){
 window.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
   pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false;
-  if(mobileModeEnabled&&(mode==='challenge'||mode==='free')){
+  if(mobileModeEnabled&&(mode==='challenge'||mode==='free'||mode==='dungeon')){
     e.preventDefault();mobileLookPointerId=e.pointerId;mobileLookLast={x:e.clientX,y:e.clientY};
     canvas.setPointerCapture?.(e.pointerId);
   }
 });
 canvas.addEventListener('pointermove',e=>{
-  if(mobileModeEnabled&&(mode==='challenge'||mode==='free')&&mobileLookPointerId===e.pointerId&&mobileLookLast){
+  if(mobileModeEnabled&&(mode==='challenge'||mode==='free'||mode==='dungeon')&&mobileLookPointerId===e.pointerId&&mobileLookLast){
     e.preventDefault();
     const dx=e.clientX-mobileLookLast.x,dy=e.clientY-mobileLookLast.y;
     mobileLookLast={x:e.clientX,y:e.clientY};
     if(mode==='challenge'){
       challengeYaw-=dx*.004;challengePitch=THREE.MathUtils.clamp(challengePitch-dy*.004,-1.45,1.45);
       updateChallengeCamera();updateChallengeGhost();
+    }else if(mode==='dungeon'){
+      dungeonYaw-=dx*.004;dungeonPitch=THREE.MathUtils.clamp(dungeonPitch-dy*.004,-1.25,1.25);updateDungeonCamera();
     }else{
       yaw-=dx*.004;pitch=THREE.MathUtils.clamp(pitch-dy*.004,-1.35,1.35);
       camera.rotation.y=yaw;camera.rotation.x=pitch;
@@ -2818,17 +2998,25 @@ canvas.addEventListener('mousedown',e=>{
   }
   if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0)breakFreeBlock(hit);if(e.button===2)placeFreeBlock(hit)}
 });
-canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
+canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);
+  if(mode==='dungeon')$('dungeonPrompt').classList.toggle('hidden',document.pointerLockElement!==canvas&&!mobileModeEnabled);
 });
 document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement!==canvas)return;
   if(mode==='challenge'){challengeYaw-=e.movementX*.0023;challengePitch-=e.movementY*.0023;challengePitch=THREE.MathUtils.clamp(challengePitch,-1.45,1.45);updateChallengeCamera();return}
+  if(mode==='dungeon'){dungeonYaw-=e.movementX*.0023;dungeonPitch-=e.movementY*.0023;dungeonPitch=THREE.MathUtils.clamp(dungeonPitch,-1.25,1.25);updateDungeonCamera();return}
   if(mode==='free'){yaw-=e.movementX*.0023;pitch-=e.movementY*.0023;pitch=THREE.MathUtils.clamp(pitch,-1.35,1.35)}
 });
 document.addEventListener('keydown',e=>{
+  if(mode==='dungeon'){
+    dungeonKeys[e.code]=true;
+    if(e.code==='KeyE'||e.code==='KeyQ'){e.preventDefault();dungeonInteract()}
+    if(e.code==='Escape'){returnFromDungeon();return}
+    return;
+  }
   if(mode==='challenge'){
     challengeKeys[e.code]=true;
     if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight')e.preventDefault();
@@ -2855,14 +3043,14 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
   if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
-    openLandmarkRestoration(nearLandmarkPoi);return;
+    openLandmarkDungeon(nearLandmarkPoi);return;
   }
   if(e.code==='KeyQ'&&gameFreeMode==='creative'&&nearRuin){
     toast('폐허에서 발견한 겨냥도를 복원해 보세요.');missionIndex=3;setTimeout(()=>enterMode('challenge'),450)
   }
 });
-document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false});
-window.addEventListener('blur',()=>{resetMobileInput();challengeKeys={};freeKeys={}});
+document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false;dungeonKeys[e.code]=false});
+window.addEventListener('blur',()=>{resetMobileInput();challengeKeys={};freeKeys={};dungeonKeys={}});
 function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
 }
@@ -2876,6 +3064,7 @@ function animate(now){
   const dt=Math.min(.04,(now-last)/1000);last=now;
   if(orbit)orbit.update();
   if(mode==='challenge')updateChallengeFly(dt);
+  if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
     updateFree(dt,now);
     if(now-lastFreeSave>30000)saveFreeWorld();
