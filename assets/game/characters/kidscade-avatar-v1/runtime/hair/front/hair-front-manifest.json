@@ -1,0 +1,730 @@
+{
+  "version": 1,
+  "type": "kidscade-front-hair-pack",
+  "canvas": [
+    128,
+    128
+  ],
+  "compositeAt": [
+    0,
+    0
+  ],
+  "imageSmoothing": false,
+  "grid": [
+    6,
+    4
+  ],
+  "palette": "warm-medium-brown",
+  "sets": {
+    "male": {
+      "source": "front-hair-male-24-brown.png",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "cellSize": [
+        256,
+        256
+      ],
+      "count": 24,
+      "items": [
+        {
+          "id": "hair-front-male-01",
+          "file": "male/hair-front-male-01.png",
+          "sourceCell": [
+            0,
+            0
+          ],
+          "bbox": [
+            8,
+            25,
+            125,
+            115
+          ]
+        },
+        {
+          "id": "hair-front-male-02",
+          "file": "male/hair-front-male-02.png",
+          "sourceCell": [
+            1,
+            0
+          ],
+          "bbox": [
+            9,
+            25,
+            120,
+            110
+          ]
+        },
+        {
+          "id": "hair-front-male-03",
+          "file": "male/hair-front-male-03.png",
+          "sourceCell": [
+            2,
+            0
+          ],
+          "bbox": [
+            9,
+            25,
+            118,
+            110
+          ]
+        },
+        {
+          "id": "hair-front-male-04",
+          "file": "male/hair-front-male-04.png",
+          "sourceCell": [
+            3,
+            0
+          ],
+          "bbox": [
+            1,
+            17,
+            125,
+            110
+          ]
+        },
+        {
+          "id": "hair-front-male-05",
+          "file": "male/hair-front-male-05.png",
+          "sourceCell": [
+            4,
+            0
+          ],
+          "bbox": [
+            5,
+            22,
+            120,
+            109
+          ]
+        },
+        {
+          "id": "hair-front-male-06",
+          "file": "male/hair-front-male-06.png",
+          "sourceCell": [
+            5,
+            0
+          ],
+          "bbox": [
+            0,
+            22,
+            123,
+            110
+          ]
+        },
+        {
+          "id": "hair-front-male-07",
+          "file": "male/hair-front-male-07.png",
+          "sourceCell": [
+            0,
+            1
+          ],
+          "bbox": [
+            6,
+            21,
+            125,
+            109
+          ]
+        },
+        {
+          "id": "hair-front-male-08",
+          "file": "male/hair-front-male-08.png",
+          "sourceCell": [
+            1,
+            1
+          ],
+          "bbox": [
+            7,
+            23,
+            121,
+            109
+          ]
+        },
+        {
+          "id": "hair-front-male-09",
+          "file": "male/hair-front-male-09.png",
+          "sourceCell": [
+            2,
+            1
+          ],
+          "bbox": [
+            4,
+            23,
+            120,
+            113
+          ]
+        },
+        {
+          "id": "hair-front-male-10",
+          "file": "male/hair-front-male-10.png",
+          "sourceCell": [
+            3,
+            1
+          ],
+          "bbox": [
+            0,
+            23,
+            124,
+            109
+          ]
+        },
+        {
+          "id": "hair-front-male-11",
+          "file": "male/hair-front-male-11.png",
+          "sourceCell": [
+            4,
+            1
+          ],
+          "bbox": [
+            4,
+            20,
+            125,
+            109
+          ]
+        },
+        {
+          "id": "hair-front-male-12",
+          "file": "male/hair-front-male-12.png",
+          "sourceCell": [
+            5,
+            1
+          ],
+          "bbox": [
+            8,
+            24,
+            117,
+            105
+          ]
+        },
+        {
+          "id": "hair-front-male-13",
+          "file": "male/hair-front-male-13.png",
+          "sourceCell": [
+            0,
+            2
+          ],
+          "bbox": [
+            5,
+            19,
+            125,
+            108
+          ]
+        },
+        {
+          "id": "hair-front-male-14",
+          "file": "male/hair-front-male-14.png",
+          "sourceCell": [
+            1,
+            2
+          ],
+          "bbox": [
+            5,
+            18,
+            124,
+            108
+          ]
+        },
+        {
+          "id": "hair-front-male-15",
+          "file": "male/hair-front-male-15.png",
+          "sourceCell": [
+            2,
+            2
+          ],
+          "bbox": [
+            8,
+            22,
+            119,
+            106
+          ]
+        },
+        {
+          "id": "hair-front-male-16",
+          "file": "male/hair-front-male-16.png",
+          "sourceCell": [
+            3,
+            2
+          ],
+          "bbox": [
+            3,
+            22,
+            123,
+            105
+          ]
+        },
+        {
+          "id": "hair-front-male-17",
+          "file": "male/hair-front-male-17.png",
+          "sourceCell": [
+            4,
+            2
+          ],
+          "bbox": [
+            6,
+            21,
+            118,
+            106
+          ]
+        },
+        {
+          "id": "hair-front-male-18",
+          "file": "male/hair-front-male-18.png",
+          "sourceCell": [
+            5,
+            2
+          ],
+          "bbox": [
+            0,
+            12,
+            122,
+            108
+          ]
+        },
+        {
+          "id": "hair-front-male-19",
+          "file": "male/hair-front-male-19.png",
+          "sourceCell": [
+            0,
+            3
+          ],
+          "bbox": [
+            8,
+            20,
+            120,
+            101
+          ]
+        },
+        {
+          "id": "hair-front-male-20",
+          "file": "male/hair-front-male-20.png",
+          "sourceCell": [
+            1,
+            3
+          ],
+          "bbox": [
+            3,
+            15,
+            124,
+            102
+          ]
+        },
+        {
+          "id": "hair-front-male-21",
+          "file": "male/hair-front-male-21.png",
+          "sourceCell": [
+            2,
+            3
+          ],
+          "bbox": [
+            4,
+            16,
+            122,
+            101
+          ]
+        },
+        {
+          "id": "hair-front-male-22",
+          "file": "male/hair-front-male-22.png",
+          "sourceCell": [
+            3,
+            3
+          ],
+          "bbox": [
+            0,
+            14,
+            123,
+            106
+          ]
+        },
+        {
+          "id": "hair-front-male-23",
+          "file": "male/hair-front-male-23.png",
+          "sourceCell": [
+            4,
+            3
+          ],
+          "bbox": [
+            2,
+            15,
+            123,
+            105
+          ]
+        },
+        {
+          "id": "hair-front-male-24",
+          "file": "male/hair-front-male-24.png",
+          "sourceCell": [
+            5,
+            3
+          ],
+          "bbox": [
+            1,
+            14,
+            122,
+            105
+          ]
+        }
+      ]
+    },
+    "female": {
+      "source": "front-hair-female-24-brown.png",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "cellSize": [
+        256,
+        256
+      ],
+      "count": 24,
+      "items": [
+        {
+          "id": "hair-front-female-01",
+          "file": "female/hair-front-female-01.png",
+          "sourceCell": [
+            0,
+            0
+          ],
+          "bbox": [
+            6,
+            10,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-02",
+          "file": "female/hair-front-female-02.png",
+          "sourceCell": [
+            1,
+            0
+          ],
+          "bbox": [
+            0,
+            17,
+            125,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-03",
+          "file": "female/hair-front-female-03.png",
+          "sourceCell": [
+            2,
+            0
+          ],
+          "bbox": [
+            0,
+            14,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-04",
+          "file": "female/hair-front-female-04.png",
+          "sourceCell": [
+            3,
+            0
+          ],
+          "bbox": [
+            0,
+            16,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-05",
+          "file": "female/hair-front-female-05.png",
+          "sourceCell": [
+            4,
+            0
+          ],
+          "bbox": [
+            0,
+            15,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-06",
+          "file": "female/hair-front-female-06.png",
+          "sourceCell": [
+            5,
+            0
+          ],
+          "bbox": [
+            0,
+            12,
+            121,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-07",
+          "file": "female/hair-front-female-07.png",
+          "sourceCell": [
+            0,
+            1
+          ],
+          "bbox": [
+            4,
+            4,
+            128,
+            120
+          ]
+        },
+        {
+          "id": "hair-front-female-08",
+          "file": "female/hair-front-female-08.png",
+          "sourceCell": [
+            1,
+            1
+          ],
+          "bbox": [
+            0,
+            9,
+            126,
+            120
+          ]
+        },
+        {
+          "id": "hair-front-female-09",
+          "file": "female/hair-front-female-09.png",
+          "sourceCell": [
+            2,
+            1
+          ],
+          "bbox": [
+            0,
+            0,
+            124,
+            120
+          ]
+        },
+        {
+          "id": "hair-front-female-10",
+          "file": "female/hair-front-female-10.png",
+          "sourceCell": [
+            3,
+            1
+          ],
+          "bbox": [
+            0,
+            0,
+            128,
+            123
+          ]
+        },
+        {
+          "id": "hair-front-female-11",
+          "file": "female/hair-front-female-11.png",
+          "sourceCell": [
+            4,
+            1
+          ],
+          "bbox": [
+            0,
+            0,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-12",
+          "file": "female/hair-front-female-12.png",
+          "sourceCell": [
+            5,
+            1
+          ],
+          "bbox": [
+            0,
+            0,
+            126,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-13",
+          "file": "female/hair-front-female-13.png",
+          "sourceCell": [
+            0,
+            2
+          ],
+          "bbox": [
+            9,
+            9,
+            127,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-14",
+          "file": "female/hair-front-female-14.png",
+          "sourceCell": [
+            1,
+            2
+          ],
+          "bbox": [
+            1,
+            5,
+            127,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-15",
+          "file": "female/hair-front-female-15.png",
+          "sourceCell": [
+            2,
+            2
+          ],
+          "bbox": [
+            6,
+            3,
+            121,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-16",
+          "file": "female/hair-front-female-16.png",
+          "sourceCell": [
+            3,
+            2
+          ],
+          "bbox": [
+            1,
+            3,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-17",
+          "file": "female/hair-front-female-17.png",
+          "sourceCell": [
+            4,
+            2
+          ],
+          "bbox": [
+            0,
+            0,
+            128,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-18",
+          "file": "female/hair-front-female-18.png",
+          "sourceCell": [
+            5,
+            2
+          ],
+          "bbox": [
+            0,
+            0,
+            120,
+            128
+          ]
+        },
+        {
+          "id": "hair-front-female-19",
+          "file": "female/hair-front-female-19.png",
+          "sourceCell": [
+            0,
+            3
+          ],
+          "bbox": [
+            10,
+            0,
+            126,
+            117
+          ]
+        },
+        {
+          "id": "hair-front-female-20",
+          "file": "female/hair-front-female-20.png",
+          "sourceCell": [
+            1,
+            3
+          ],
+          "bbox": [
+            6,
+            0,
+            122,
+            104
+          ]
+        },
+        {
+          "id": "hair-front-female-21",
+          "file": "female/hair-front-female-21.png",
+          "sourceCell": [
+            2,
+            3
+          ],
+          "bbox": [
+            0,
+            0,
+            127,
+            103
+          ]
+        },
+        {
+          "id": "hair-front-female-22",
+          "file": "female/hair-front-female-22.png",
+          "sourceCell": [
+            3,
+            3
+          ],
+          "bbox": [
+            0,
+            0,
+            128,
+            108
+          ]
+        },
+        {
+          "id": "hair-front-female-23",
+          "file": "female/hair-front-female-23.png",
+          "sourceCell": [
+            4,
+            3
+          ],
+          "bbox": [
+            0,
+            0,
+            128,
+            111
+          ]
+        },
+        {
+          "id": "hair-front-female-24",
+          "file": "female/hair-front-female-24.png",
+          "sourceCell": [
+            5,
+            3
+          ],
+          "bbox": [
+            0,
+            0,
+            123,
+            103
+          ]
+        }
+      ]
+    }
+  },
+  "qa": {
+    "status": "auto-extracted-needs-overlay-review",
+    "checks": [
+      "equal 6x4 source grid",
+      "edge-connected background removal",
+      "nearest-neighbor resize",
+      "hard alpha",
+      "128x128 common canvas"
+    ]
+  }
+}
