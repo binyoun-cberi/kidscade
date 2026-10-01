@@ -19,7 +19,7 @@ test('v22 creature roster is wired before the main runtime',()=>{
   assert.match(html,/cube-architect\.js\?v=20261001-22/);
   assert.ok(html.indexOf('cube-architect-creatures.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/type="importmap"/);
-  assert.match(html,/GLTFLoader/);
+  assert.match(assetJs,/GLTFLoader/);
 });
 
 test('seven new biome creatures cover peaceful wildlife and build-reactive monsters',()=>{
