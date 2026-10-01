@@ -24,8 +24,8 @@ const key=p=>p.p.join(',');
 test('v20 loads scaled intact landmark POIs and the dungeon runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(poiJs));
-  assert.match(html,/cube-architect-poi\.js\?v=20261001-22/);
-  assert.match(html,/cube-architect\.js\?v=20261001-22/);
+  assert.match(html,/cube-architect-poi\.js\?v=20261001-23/);
+  assert.match(html,/cube-architect\.js\?v=20261001-23/);
   assert.ok(html.indexOf('cube-architect-landmarks.js')<html.indexOf('cube-architect-poi.js'));
   assert.ok(html.indexOf('cube-architect-poi.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="dungeonHud"/);
@@ -100,7 +100,7 @@ test('dungeon clear unlocks construction tech while retaining save compatibility
   assert.match(js,/unlockedTech\.add\(poi\.tech\.id\)/);
   assert.match(js,/trackSurvival\('restore',id\)/);
   assert.match(js,/던전 클리어/);
-  assert.match(js,/version:9/);
+  assert.match(js,/version:10/);
   assert.match(js,/restoredLandmarks/);
   assert.match(js,/protectedPoi/);
 });
