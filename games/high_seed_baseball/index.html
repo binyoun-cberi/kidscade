@@ -73,13 +73,13 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
   </div>
   <div class="settingsCaption">수비 난이도 · 독립 선택</div>
   <div class="modegrid" id="fieldingGrid">
-   <button class="mode fieldMode active" data-fielddiff="easy">쉬움<br><small>자동 추적 · 송구 보조</small></button>
-   <button class="mode fieldMode" data-fielddiff="normal">보통<br><small>가벼운 이동 보조</small></button>
+   <button class="mode fieldMode active" data-fielddiff="easy">쉬움<br><small>이동 방향을 살짝 보조</small></button>
+   <button class="mode fieldMode" data-fielddiff="normal">보통<br><small>약한 이동 보조</small></button>
    <button class="mode fieldMode" data-fielddiff="hard">어려움<br><small>직접 이동 · 송구</small></button>
   </div>
   <div class="tipgrid">
    <div class="tip"><b>⚾ 타격</b><br>배트 ▲▼나 드래그로 높이를 정하고, 초록 구간에서 스윙을 한 번 터치! <b>배트 중심은 강타, 끝은 약한 타구</b>가 나와요. 조금 일찍 치면 당겨치고 늦으면 밀어쳐요.</div>
-   <div class="tip"><b>🥎 투구·수비</b><br>구종과 코스를 고르고 쉬움·보통은 던지기 한 번, 어려움은 70%까지 누른 뒤 놓아요. <b>공의 짧은 꼬리로 속도와 변화 방향을 읽을 수 있어요.</b> 같은 공을 계속 던지면 CPU가 익숙해져요.</div>
+   <div class="tip"><b>🥎 투구·수비</b><br>구종과 코스를 고르고 쉬움·보통은 던지기 한 번, 어려움은 70%까지 누른 뒤 놓아요. <b>공의 꼬리로 속도와 변화 방향을 읽을 수 있어요.</b> 같은 공을 계속 던지면 CPU가 익숙해져요. 수비 보조는 이동 방향만 도와주고 송구는 직접 선택해요.</div>
    <div class="tip"><b>🏃 주루</b><br>주자는 기본적으로 안전하게 달려요. 외야를 가르면 <b>더 간다!</b>로 한 베이스 더 노릴 수 있어요.</div>
    <div class="tip"><b>📊 기록</b><br>안타·홈런·삼진·최장 타구와 승패를 기기에 저장해 다음 경기에서도 이어서 볼 수 있어요.</div>
   </div>
@@ -91,8 +91,8 @@ h1,h2{margin:0 0 8px}h1{font-size:clamp(36px,7vw,68px);line-height:.95}.sub{colo
 <div id="records" class="overlay hidden"><div class="panel"><h2>내 야구 기록</h2><p id="recordsText" class="sub"></p><button id="closeRecords" class="start">돌아가기</button></div></div>
 <div id="result" class="overlay hidden"><div class="panel" style="text-align:center"><h2 id="resultTitle">경기 종료</h2><p id="resultText" class="sub"></p><button id="rematchBtn" class="start">다시 경기</button><button id="menuBtn" class="secondary">설정으로</button></div></div>
 </div>
-<!-- v10: trajectory tails for pitch, batted ball, and throws -->
-<script src="./game.js?v=10"></script>
+<!-- v11: balance pass, wider swing arc, curved breaking-ball trails -->
+<script src="./game.js?v=11"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_baseball" data-title="씨앗 베이스볼" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
