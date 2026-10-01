@@ -802,6 +802,9 @@
       var timesWhole=Math.random()<.42;
       var n1=rand(1,8),d1=rand(Math.max(2,n1+1),9);
       var n2=timesWhole?rand(2,8):rand(1,8),d2=timesWhole?1:rand(Math.max(2,n2+1),9);
+      if(timesWhole){
+        for(var tries=0;tries<10&&n1*n2%d1===0;tries++)n2=rand(2,8);
+      }
       var rawN=n1*n2,rawD=d1*d2,ans=reduced(rawN,rawD);
       var cross=gcd(n1,d2)>1||gcd(n2,d1)>1;
       var left=fracHtml(n1,d1),right=timesWhole?String(n2):fracHtml(n2,d2);
@@ -822,11 +825,12 @@
       return fracHtml(parts[0]||"?",parts[1]||"?");
     }
     function updatePadKeys(side){
-      var f=state.fighters[side],pad=document.querySelector('[data-pad="'+side+'"]');
-      if(!pad)return;
-      var dot=pad.querySelector('[data-key="."]'),slash=pad.querySelector('[data-key="/"]');
-      if(dot)dot.classList.toggle("key-off",f.kind!=="decimal");
-      if(slash)slash.classList.toggle("key-off",f.kind!=="fraction");
+      var f=state.fighters[side],pads=document.querySelectorAll('[data-pad="'+side+'"]');
+      pads.forEach(function(pad){
+        var dot=pad.querySelector('[data-key="."]'),slash=pad.querySelector('[data-key="/"]');
+        if(dot)dot.classList.toggle("key-off",f.kind!=="decimal");
+        if(slash)slash.classList.toggle("key-off",f.kind!=="fraction");
+      });
     }
     function updateQuestions(){
       var a=state.fighters[0],b=state.fighters[1];
