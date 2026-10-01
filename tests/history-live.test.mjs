@@ -44,6 +44,14 @@ test('solo practice runs locally while live mode keeps server play', () => {
   assert.match(html, /pickHistoryQuestions/);
   assert.match(html, /function submitSoloAnswer/);
   assert.match(html, /function soloNext/);
+  assert.match(html, /SOLO_HISTORY_KEY='kidscade_game_v1:high_history_timebattle_live:solo-history-v1'/);
+  assert.match(html, /function saveSoloRun/);
+  assert.match(html, /answers:\[\]/);
+  assert.match(html, /wrongOptions/);
+  assert.match(html, /runs\.slice\(0,20\)/);
+  assert.match(html, /내 선택/);
+  assert.match(html, /오답 선택지/);
+  assert.match(html, /지난 혼자 기록 보기/);
   assert.doesNotMatch(html, /api\('\/solo'/);
   assert.match(html, /<option>40<\/option>/);
   assert.match(html, /checkpointMode/);
