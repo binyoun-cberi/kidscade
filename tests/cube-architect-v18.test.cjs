@@ -75,7 +75,11 @@ test('landmarks lead into a three-stage dungeon and then the existing blueprint 
   assert.match(js,/대칭의 홀/);
   assert.match(js,/빛의 회랑/);
   assert.match(js,/최심부 설계실/);
-  assert.match(js,/const order=\['left','right','center'\]/);
+  assert.match(js,/const DUNGEON_SPECS=/);
+  assert.match(js,/taj:\{/);
+  assert.match(js,/himeji:\{/);
+  assert.match(js,/angkor:\{/);
+  assert.match(js,/const order=spec\.order/);
   assert.match(js,/dungeonSession\.stage=1/);
   assert.match(js,/dungeonSession\.stage=2/);
   assert.match(js,/restorationSession=\{poiId:poi\.id,missionIndex:poi\.missionIndex,completed:false,fromDungeon:true\}/);
