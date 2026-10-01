@@ -2854,6 +2854,8 @@ function creatureStandingMaterial(root){
 function creatureHint(spec){
   const hints={
     deer:'사슴은 가까이 다가가면 도망가요.',
+    fox:'숲여우는 침엽수림을 빠르게 돌아다녀요.',
+    snowFox:'설원여우는 눈밭에서 멀리 떨어져 움직이지 않아요.',
     frog:'개구리는 습지에서 폴짝이며 돌아다녀요.',
     camel:'낙타는 사막을 천천히 돌아다녀요. 가까이 가면 놀라서 거리를 둡니다.',
     shadowBug:'그림자 벌레는 밤에 나타나지만 횃불과 불빛을 싫어해요.',
