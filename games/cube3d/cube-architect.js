@@ -1849,7 +1849,8 @@ function initFree(){
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
-  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;seenCreatureKinds=new Set();lastCreatureHintAt=0;dayTime=.28;
+  survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
+  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -2426,13 +2427,14 @@ function runFurnace(recipe){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:9,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:10,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
-    firstNightStarted,dayTime,health:survivalHealth,
+    firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
+    creatureDefeats:{...creatureDefeats},seenCreatures:[...seenCreatureKinds],
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
@@ -2491,6 +2493,9 @@ function loadFreeWorld(){
         }
         survivalExposure=Math.max(0,Math.min(100,Number(data.exposure)||0));
         survivalHealth=Math.max(1,Math.min(5,Number(data.health)||5));
+        survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
+        creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
+        seenCreatureKinds=new Set(Array.isArray(data.seenCreatures)?data.seenCreatures:[]);
         firstNightStarted=!!data.firstNightStarted;
       }
       for(const [key,value] of data.edits||[]){
@@ -3517,6 +3522,13 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 let last=performance.now();
+function persistFreeWorldOnExit(){
+  if(mode==='free')saveFreeWorld();
+}
+window.addEventListener('pagehide',persistFreeWorldOnExit);
+window.addEventListener('beforeunload',persistFreeWorldOnExit);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistFreeWorldOnExit()});
+
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.04,(now-last)/1000);last=now;
