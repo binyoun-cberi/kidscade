@@ -1,0 +1,315 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-animation",
+  "canvas": [
+    128,
+    128
+  ],
+  "baselineY": 124,
+  "bodyTargetBBox": [
+    40,
+    20,
+    91,
+    124
+  ],
+  "canonicalHeadBBox": [
+    40,
+    20,
+    91,
+    67
+  ],
+  "frameSets": {
+    "idle": {
+      "fps": 3,
+      "loop": true,
+      "count": 4,
+      "frames": [
+        {
+          "id": "idle-01",
+          "file": "idle/idle-01.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "idle-02",
+          "file": "idle/idle-02.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "idle-03",
+          "file": "idle/idle-03.png",
+          "bodyBBox": [
+            40,
+            20,
+            91,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            91,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              65.5,
+              43.5
+            ],
+            "scale": 1.0
+          }
+        },
+        {
+          "id": "idle-04",
+          "file": "idle/idle-04.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        }
+      ]
+    },
+    "walk": {
+      "fps": 6,
+      "loop": true,
+      "count": 6,
+      "frames": [
+        {
+          "id": "walk-01",
+          "file": "walk/walk-01.png",
+          "bodyBBox": [
+            40,
+            20,
+            91,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            91,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              65.5,
+              43.5
+            ],
+            "scale": 1.0
+          }
+        },
+        {
+          "id": "walk-02",
+          "file": "walk/walk-02.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "walk-03",
+          "file": "walk/walk-03.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "walk-04",
+          "file": "walk/walk-04.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "walk-05",
+          "file": "walk/walk-05.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        },
+        {
+          "id": "walk-06",
+          "file": "walk/walk-06.png",
+          "bodyBBox": [
+            40,
+            20,
+            92,
+            124
+          ],
+          "headBBox": [
+            40,
+            20,
+            92,
+            67
+          ],
+          "headTransform": {
+            "sourceCenter": [
+              65.5,
+              43.5
+            ],
+            "destCenter": [
+              66.0,
+              43.5
+            ],
+            "scale": 1.0098
+          }
+        }
+      ]
+    }
+  },
+  "layerTransform": "uniform scale + translate around canonical head center",
+  "qa": {
+    "status": "normalized-awaiting-visual-review",
+    "contacts": {
+      "idle": "qa/animation/idle-default-composite-contact.png",
+      "walk": "qa/animation/walk-default-composite-contact.png"
+    }
+  }
+}
