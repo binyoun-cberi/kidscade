@@ -44,6 +44,17 @@ def clear_bg(tile):
         return im
 
     bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
+
+    # Generated sheets may contain an opaque flat background. Removing only
+    # edge-connected pixels leaves the face opening trapped inside a closed
+    # hairstyle silhouette, so remove pixels globally when they match the
+    # sampled background very closely.
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a and dist((r, g, b), bg) <= 18:
+                px[x, y] = (r, g, b, 0)
+
     stack = [(0,0), (w-1,0), (0,h-1), (w-1,h-1)]
     seen = set()
     while stack:
