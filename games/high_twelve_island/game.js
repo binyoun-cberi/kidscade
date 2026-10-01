@@ -185,6 +185,12 @@
   }
   function renderVillage() {
     window.IslandArt?.setState(state);
+    const activeClimate = S.activeDisasters(state);
+    document.body.classList.toggle("disaster-cold", S.winterActive(state));
+    document.body.classList.toggle("disaster-heat", activeClimate.includes("heat"));
+    document.body.classList.toggle("disaster-flood", activeClimate.includes("flood"));
+    document.body.classList.toggle("disaster-dust", activeClimate.includes("dust"));
+    document.body.classList.toggle("disaster-epidemic", activeClimate.includes("epidemic"));
     element.stage.textContent = state.stage === 1 ? "1단계 · 생존 공동체" : "2단계 · 자치 마을";
     element.name.textContent = state.stage === 1 ? "새싹섬 · 작은 야영지" : "새싹섬 · 자치 마을";
     element.population.textContent = "👥 " + state.population + " / " + S.capacity(state) + "명" + (state.stage === 1 && state.population >= S.capacity(state) ? " · 주거 부족" : "");
