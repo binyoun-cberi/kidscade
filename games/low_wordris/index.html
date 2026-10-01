@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>워드리스: 알파벳 낙하</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+  <script src="../../kidscade-storage.js"></script>
+  <script src="../../kidscade-game-sdk.js" data-game-id="low_wordris" data-title="워드리스: 알파벳 낙하" data-shell="true" data-mute="true" data-pauseable="true" data-orientation="portrait"></script>
+</head>
+<body>
+  <main id="game" aria-label="워드리스 알파벳 낙하 게임">
+    <section class="topbar" aria-label="게임 정보">
+      <div class="brand">
+        <span class="eyebrow">WORD + BLOCK</span>
+        <strong>워드리스</strong>
+      </div>
+      <div class="stats">
+        <div><span>점수</span><b id="score">0</b></div>
+        <div><span>단어</span><b id="wordCount">0</b></div>
+        <div><span>레벨</span><b id="level">1</b></div>
+      </div>
+    </section>
+
+    <section class="play-layout">
+      <div class="board-wrap">
+        <canvas id="board" width="320" height="480" tabindex="0" aria-label="8칸 너비 12칸 높이 알파벳 보드"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+        <div id="combo" class="combo" aria-live="polite"></div>
+      </div>
+
+      <aside class="side-panel">
+        <section class="next-card">
+          <span class="panel-label">다음 글자</span>
+          <div id="nextLetters" class="next-letters" aria-label="다음 알파벳 세 개"></div>
+        </section>
+        <section class="used-card">
+          <div class="used-head">
+            <span class="panel-label">이번 판 단어</span>
+            <b id="usedCount">0</b>
+          </div>
+          <div id="usedWords" class="used-words">
+            <span class="empty-note">아직 만든 단어가 없어요.</span>
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="controls" aria-label="게임 조작">
+      <button id="leftBtn" type="button" aria-label="왼쪽으로 이동">◀</button>
+      <button id="downBtn" type="button" aria-label="아래로 한 칸">▼</button>
+      <button id="dropBtn" class="primary" type="button" aria-label="바닥까지 빠르게 내리기">DROP</button>
+      <button id="rightBtn" type="button" aria-label="오른쪽으로 이동">▶</button>
+    </section>
+
+    <p class="hint-line">← → 이동 · ↓ 빠르게 · Space 바로 놓기 · 3글자 이상 단어가 되면 사라져요.</p>
+
+    <div id="startOverlay" class="overlay show">
+      <section class="modal start-modal">
+        <div class="logo-stack" aria-hidden="true"><i>W</i><i>O</i><i>R</i><i>D</i></div>
+        <span class="kicker">FALLING WORD PUZZLE</span>
+        <h1>워드리스</h1>
+        <p>알파벳을 떨어뜨려 가로·세로 영단어를 만드세요.<br><b>한 번 쓴 단어는 같은 판에서 다시 지울 수 없어요.</b></p>
+        <div class="rule-grid">
+          <div><b>3+</b><span>3글자 이상</span></div>
+          <div><b>×</b><span>같은 단어 금지</span></div>
+          <div><b>CHAIN</b><span>연쇄 콤보</span></div>
+        </div>
+        <label class="difficulty-row">난이도
+          <select id="difficulty">
+            <option value="easy">천천히</option>
+            <option value="normal" selected>보통</option>
+            <option value="hard">빠르게</option>
+          </select>
+        </label>
+        <button id="startBtn" class="big-start" type="button">게임 시작</button>
+        <button id="tutorialBtn" class="text-btn" type="button">처음 하는 법 보기</button>
+      </section>
+    </div>
+
+    <div id="tutorialOverlay" class="overlay">
+      <section class="modal tutorial-modal">
+        <span class="kicker">HOW TO PLAY</span>
+        <h2 id="tutorialTitle">1. 글자를 원하는 곳에 놓아요</h2>
+        <div id="tutorialVisual" class="tutorial-visual" aria-hidden="true"></div>
+        <p id="tutorialText"></p>
+        <div class="tutorial-dots" id="tutorialDots"></div>
+        <div class="modal-actions">
+          <button id="tutorialSkip" type="button">건너뛰기</button>
+          <button id="tutorialNext" class="primary-action" type="button">다음</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="gameOverOverlay" class="overlay">
+      <section class="modal result-modal">
+        <span class="kicker">GAME OVER</span>
+        <h2>글자 탑이 가득 찼어요!</h2>
+        <div class="result-score"><span>점수</span><b id="finalScore">0</b></div>
+        <div class="result-grid">
+          <div><b id="finalWords">0</b><span>완성 단어</span></div>
+          <div><b id="bestWord">-</b><span>최장 단어</span></div>
+          <div><b id="bestCombo">0</b><span>최고 콤보</span></div>
+        </div>
+        <div id="resultWords" class="result-words"></div>
+        <div class="modal-actions result-actions">
+          <button id="backBtn" type="button">처음 화면</button>
+          <button id="retryBtn" class="primary-action" type="button">다시 도전</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="./words.js?v=1"></script>
+  <script src="./game.js?v=1"></script>
+</body>
+</html>
