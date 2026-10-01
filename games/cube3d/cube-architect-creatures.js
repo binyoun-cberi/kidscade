@@ -6,10 +6,10 @@ const SPECIES={
   deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8},
   frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6},
   camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9},
-  shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:2,speed:.82,radius:9,nocturnal:true,damage:1,reward:{charcoal:1}},
-  slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:2,speed:.48,radius:8,damage:1,reward:{clay:2}},
-  burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:3,speed:.92,radius:9,damage:1,reward:{sand:3}},
-  cubeGolem:{id:'cubeGolem',name:'큐브 골렘',kind:'hostile',biomes:['badlands'],asset:'golem',hp:5,speed:.43,radius:10,damage:2,reward:{stone:5,ironOre:1},elite:true}
+  shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:3,speed:1.45,radius:10,nocturnal:true,damage:1,respawn:45,reward:{charcoal:1}},
+  slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:3,speed:.9,radius:9,damage:1,respawn:70,reward:{clay:2}},
+  burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:4,speed:1.9,radius:11,damage:1,respawn:90,reward:{sand:3}},
+  cubeGolem:{id:'cubeGolem',name:'큐브 골렘',kind:'hostile',biomes:['badlands'],asset:'golem',hp:9,speed:.82,radius:12,damage:2,respawn:300,reward:{stone:5,ironOre:1},elite:true}
 };
 
 function mat(color,emissive=0){
