@@ -2813,7 +2813,8 @@ async function upgradeWildCreatureAsset(root){
   finally{u.assetPending=false}
 }
 function upgradeWildCreatureAssets(){
-  wildCreatures.forEach(upgradeWildCreatureAsset);
+  wildCreatures.filter(root=>Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z)<=42)
+    .forEach(upgradeWildCreatureAsset);
 }
 window.addEventListener('cube-architect-creature-assets-ready',upgradeWildCreatureAssets);
 
@@ -2905,7 +2906,8 @@ function hitWildCreature(){
   if(u.assembling){toast('큐브 골렘이 몸을 조립하는 중이에요!');return true}
   if(now-lastCreatureAttackAt<480)return true;
   lastCreatureAttackAt=now;
-  const tool=selectedType||'hand',power=['stonePick','ironPick'].includes(tool)?2:1;
+  const tool=selectedType||'hand';
+  const power=tool==='ironPick'?2:(u.spec.id==='cubeGolem'&&tool==='stonePick'?2:1);
   u.hp-=power;u.hurtUntil=now+300;u.knockbackUntil=now+230;
   u.knockDir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
   root.scale.setScalar(1.08);
