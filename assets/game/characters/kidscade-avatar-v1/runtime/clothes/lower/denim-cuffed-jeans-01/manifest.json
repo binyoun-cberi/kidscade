@@ -32,7 +32,7 @@
         87,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "idle-02",
@@ -49,7 +49,7 @@
         87,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "idle-03",
@@ -83,7 +83,7 @@
         87,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-01",
@@ -117,7 +117,7 @@
         89,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-03",
@@ -134,7 +134,7 @@
         90,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-04",
@@ -151,7 +151,7 @@
         83,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-05",
@@ -168,7 +168,7 @@
         89,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-06",
@@ -185,11 +185,18 @@
         87,
         123
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     }
   ],
   "qa": {
-    "status": "generated-needs-visual-review",
-    "contact": "qa/clothes/lower/denim-cuffed-jeans-01-contact.png"
+    "status": "visual-contact-reviewed",
+    "contact": "qa/clothes/lower/denim-cuffed-jeans-01-contact.png",
+    "review": {
+      "whiteBaseShortsCovered": true,
+      "feetRemainVisible": true,
+      "idleFramesChecked": 4,
+      "walkFramesChecked": 6,
+      "note": "10-frame contact sheet visually reviewed after extraction and alignment."
+    }
   }
 }

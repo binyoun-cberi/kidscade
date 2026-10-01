@@ -5,10 +5,11 @@
 'use strict';
 
 const CANVAS=128;
-const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24};
+const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,lower:1};
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
+  lower:0,
   eyes:1,
   eyebrows:1,
   nose:1,
@@ -95,6 +96,7 @@ class PixelAvatar{
     const c={...this.config,...next};
     c.hairSet=c.hairSet==='female'?'female':'male';
     c.hairStyle=clampInt(c.hairStyle,1,COUNTS.hair);
+    c.lower=c.lower?1:0;
     c.eyes=clampInt(c.eyes,1,COUNTS.eyes);
     c.eyebrows=clampInt(c.eyebrows,1,COUNTS.eyebrows);
     c.nose=clampInt(c.nose,1,COUNTS.nose);
@@ -168,6 +170,7 @@ class PixelAvatar{
       base:'runtime/base/master-base-128.png',
       hairBack:`runtime/hair/back/${hs}/hair-back-${hs}-${hn}.png`,
       hairFront:`runtime/hair/front/${hs}/hair-front-${hs}-${hn}.png`,
+      lower:c.lower?'runtime/clothes/lower/denim-cuffed-jeans-01':null,
       eyes:`runtime/face/eyes/eyes-${pad(c.eyes)}.png`,
       eyebrows:`runtime/face/eyebrows/eyebrows-${pad(c.eyebrows)}.png`,
       nose:`runtime/face/noses/nose-${pad(c.nose)}.png`,
@@ -201,11 +204,13 @@ class PixelAvatar{
       const p=this.paths();
       const frame=this.currentFrame();
       const bodyPath=frame?`runtime/animation/${frame.file}`:p.base;
-      const urls=[p.hairBack,bodyPath,p.eyes,p.eyebrows,p.nose,p.mouth,p.blush,p.hairFront].filter(Boolean);
+      const lowerPath=p.lower?(frame?`${p.lower}/${frame.file}`:`${p.lower}/static.png`):null;
+      const urls=[p.hairBack,bodyPath,lowerPath,p.eyes,p.eyebrows,p.nose,p.mouth,p.blush,p.hairFront].filter(Boolean);
       const imgs=await Promise.all(urls.map(path=>this.cache.load(this.url(path))));
       let i=0;
-      const hairBack=imgs[i++], body=imgs[i++], eyes=imgs[i++], eyebrows=imgs[i++],
-            nose=imgs[i++], mouth=imgs[i++], blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
+      const hairBack=imgs[i++], body=imgs[i++], lower=lowerPath?imgs[i++]:null,
+            eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
+            blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
       const headTransform=frame?.headTransform||null;
 
       const ctx=this.ctx;
@@ -216,6 +221,7 @@ class PixelAvatar{
 
       this.drawLayer(hairBack,headTransform);
       ctx.drawImage(body,0,0);
+      if(lower)ctx.drawImage(lower,0,0);
       this.drawLayer(eyes,headTransform);
       this.drawLayer(eyebrows,headTransform);
       this.drawLayer(nose,headTransform);
