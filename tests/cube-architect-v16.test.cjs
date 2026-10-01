@@ -27,9 +27,10 @@ test('v16 modules parse and biome data loads before the game script',()=>{
   assert.match(css,/survival-inventory/);
 });
 test('biomes are deterministic and the spawn is flat and dry',()=>{
+  assert.equal(world.WORLD_SCALE,1.5);
   const samples=[
-    [0,0,'meadow'],[-27,-9,'forest'],[-41,-38,'pine'],[-5,-44,'snow'],
-    [32,-28,'desert'],[43,23,'badlands'],[5,39,'marsh'],[-34,30,'flowers']
+    [0,0,'meadow'],[-40,-13,'forest'],[-61,-57,'pine'],[-7,-66,'snow'],
+    [48,-42,'desert'],[65,35,'badlands'],[8,59,'marsh'],[-51,45,'flowers']
   ];
   for(const [x,z,id] of samples){
     assert.equal(world.region(x,z),id);
@@ -62,8 +63,8 @@ test('camera stepping is visually smoothed and rendering is limited around the p
   assert.match(js,/freePhysicsY=camera\.position\.y/);
   assert.match(js,/maxChange=\(delta>=0\?4\.5:5\.1\)/);
   assert.match(js,/streamWorldMeshes\(\)/);
-  assert.match(js,/const WORLD_HALF=64/);
-  assert.match(js,/WORLD_VIEW_RADIUS=mobileModeEnabled\?19:26/);
+  assert.match(js,/const WORLD_HALF=96/);
+  assert.match(js,/WORLD_VIEW_RADIUS=mobileModeEnabled\?21:30/);
   assert.match(js,/cubeArchitectWorldSaveV4_/);
   assert.match(js,/cubeArchitectWorldSaveV3/);
   assert.match(js,/if\(e\.code==='KeyF'&&gameFreeMode==='creative'\)/);
