@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "canvas": [128, 128],
+  "origin": [0, 0],
+  "layers": {
+    "eyes": 8,
+    "eyebrows": 6,
+    "noses": 4,
+    "mouths": 8,
+    "blush": 4
+  },
+  "placement": {
+    "eyes": { "centerX": 64, "topY": 39 },
+    "eyebrows": { "centerX": 64, "topY": 33 },
+    "noses": { "centerX": 64, "topY": 50 },
+    "mouths": { "centerX": 64, "topY": "55-57 by asset" },
+    "blush": { "centerX": 64, "topY": 53 }
+  },
+  "rules": {
+    "pairAssetsStayTogether": ["eyes", "eyebrows", "blush"],
+    "imageSmoothing": false,
+    "integerCoordinatesOnly": true,
+    "compositeAt": [0, 0]
+  },
+  "notes": [
+    "All runtime parts are 128x128 transparent PNGs.",
+    "Eye assets intentionally exclude eyebrow strokes.",
+    "Pairs are kept together to prevent 1px spacing drift.",
+    "Reference-derived assets were cleaned, hard-alpha converted, nearest-neighbor scaled, and aligned against master-base-128.png."
+  ]
+}
