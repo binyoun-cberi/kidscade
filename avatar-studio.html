@@ -1,7 +1,79 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kidscade Avatar Studio</title></head><body>
-<script src="avatar-pack-1.js"></script>
-<script src="avatar-pack-2.js"></script>
-<script src="avatar-pack-3.js"></script>
-<script src="avatar-pack-4.js"></script>
-<script src="avatar-pack-5.js"></script>
-<script>(async()=>{try{const s=window.__KIDSC_AVATAR_PACK||'';const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0));const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));let html=await new Response(stream).text();const retired=`<scr`+`ipt>(function(){var bad=['도트 바즈컷','dot buzzcut'];function hit(v){v=String(v||'').replace(/\\s+/g,' ').trim().toLowerCase();return bad.some(function(n){return v.indexOf(n.toLowerCase())>=0;});}function purge(){var q='button,[role="button"],label,option,[data-name],[data-label],[data-title],[title],.item,.option,.hair-item,.style-item,.card';Array.from(document.querySelectorAll(q)).forEach(function(el){var meta=[el.textContent,el.getAttribute&&el.getAttribute('data-name'),el.getAttribute&&el.getAttribute('data-label'),el.getAttribute&&el.getAttribute('data-title'),el.getAttribute&&el.getAttribute('title')].join(' ');if(hit(meta))el.remove();});}document.addEventListener('click',function(e){var el=e.target&&e.target.closest&&e.target.closest('button,[role="button"],label,.item,.option,.hair-item,.style-item,.card');if(el&&hit(el.textContent)){e.preventDefault();e.stopImmediatePropagation();}},true);new MutationObserver(purge).observe(document.documentElement,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',purge,{once:true});else purge();setTimeout(purge,100);setTimeout(purge,500);})();</scr`+`ipt>`;html=html.replace(/<\/body>/i,retired+'</body>');document.open();document.write(html);document.close();}catch(e){document.body.innerHTML='<p style="font-family:sans-serif;padding:24px">아바타 아틀리에를 불러오지 못했어요.</p>';console.error(e);}})();</script></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4eadf">
+  <title>Kidscade Pixel Avatar Studio</title>
+  <link rel="stylesheet" href="avatar-pixel-studio.css?v=1">
+</head>
+<body>
+  <main class="studio-shell">
+    <header class="studio-head">
+      <div>
+        <span class="eyebrow">KIDSCade PIXEL AVATAR · v1</span>
+        <h1>내 캐릭터 꾸미기</h1>
+        <p>머리와 얼굴을 골라 나만의 캐릭터를 만들어요.</p>
+      </div>
+      <div class="head-actions">
+        <span id="seedBadge" class="seed-badge" hidden></span>
+        <button id="randomBtn" class="soft-btn" type="button">🎲 랜덤</button>
+        <button id="saveBtn" class="save-btn" type="button">저장하기</button>
+      </div>
+    </header>
+
+    <section class="studio-grid">
+      <aside class="preview-panel">
+        <div class="preview-card">
+          <div class="preview-title">
+            <strong>내 캐릭터</strong>
+            <span id="styleSummary">갈색 헤어 · 기본 얼굴</span>
+          </div>
+          <div class="stage">
+            <div class="stage-glow"></div>
+            <canvas id="avatarCanvas" width="128" height="128" aria-label="내 캐릭터 미리보기"></canvas>
+            <div class="floor-shadow"></div>
+          </div>
+          <div class="preview-actions">
+            <button id="resetBtn" class="soft-btn full" type="button">처음 모습으로</button>
+          </div>
+        </div>
+        <div class="tip-card">
+          <strong>조합 방식</strong>
+          <span>뒷머리 → 몸 → 얼굴 → 앞머리 순서로 합쳐져요.</span>
+        </div>
+      </aside>
+
+      <section class="picker-panel">
+        <nav id="tabs" class="tabs" aria-label="꾸미기 종류">
+          <button class="tab active" data-tab="hair" type="button">헤어</button>
+          <button class="tab" data-tab="eyes" type="button">눈</button>
+          <button class="tab" data-tab="eyebrows" type="button">눈썹</button>
+          <button class="tab" data-tab="noses" type="button">코</button>
+          <button class="tab" data-tab="mouths" type="button">입</button>
+          <button class="tab" data-tab="blush" type="button">볼</button>
+        </nav>
+
+        <div id="hairFilter" class="hair-filter">
+          <button class="filter active" data-hair-set="all" type="button">전체 48</button>
+          <button class="filter" data-hair-set="male" type="button">짧은 스타일 24</button>
+          <button class="filter" data-hair-set="female" type="button">긴 스타일 24</button>
+        </div>
+
+        <div class="picker-head">
+          <div>
+            <strong id="pickerTitle">헤어스타일</strong>
+            <span id="pickerCount">48가지</span>
+          </div>
+          <span class="all-open">모두 사용 가능</span>
+        </div>
+
+        <div id="optionGrid" class="option-grid" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite">저장했어요!</div>
+  </main>
+  <script src="avatar-pixel-studio.js?v=1"></script>
+</body>
+</html>
