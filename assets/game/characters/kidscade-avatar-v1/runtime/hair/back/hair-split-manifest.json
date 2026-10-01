@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "type": "kidscade-split-hair-pack",
   "canvas": [
     128,
@@ -32,6 +32,16 @@
         44,
         86
       ]
+    },
+    "conditionalFaceAperture": {
+      "ellipse": [
+        42,
+        33,
+        86,
+        69
+      ],
+      "preserveTopUntilY": 38,
+      "criticalOverlapThreshold": 0.15
     }
   },
   "sets": {
@@ -59,7 +69,7 @@
             43,
             25,
             88,
-            65
+            60
           ],
           "backBBox": [
             8,
@@ -67,7 +77,9 @@
             125,
             115
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-02",
@@ -81,7 +93,7 @@
             43,
             25,
             88,
-            65
+            60
           ],
           "backBBox": [
             9,
@@ -89,7 +101,9 @@
             120,
             110
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-03",
@@ -103,7 +117,7 @@
             43,
             25,
             88,
-            65
+            60
           ],
           "backBBox": [
             9,
@@ -111,7 +125,9 @@
             118,
             110
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-04",
@@ -125,7 +141,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             1,
@@ -133,7 +149,9 @@
             125,
             110
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-05",
@@ -147,7 +165,7 @@
             43,
             22,
             88,
-            65
+            60
           ],
           "backBBox": [
             5,
@@ -155,7 +173,9 @@
             120,
             109
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-06",
@@ -169,7 +189,7 @@
             43,
             25,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -179,7 +199,9 @@
           ],
           "backTouchesCanvasEdge": [
             "left"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-07",
@@ -193,7 +215,7 @@
             43,
             21,
             88,
-            65
+            60
           ],
           "backBBox": [
             6,
@@ -201,7 +223,9 @@
             125,
             109
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-08",
@@ -215,7 +239,7 @@
             43,
             23,
             88,
-            65
+            60
           ],
           "backBBox": [
             7,
@@ -223,7 +247,9 @@
             121,
             109
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-09",
@@ -237,7 +263,7 @@
             43,
             23,
             88,
-            65
+            60
           ],
           "backBBox": [
             4,
@@ -245,7 +271,9 @@
             120,
             113
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-10",
@@ -259,7 +287,7 @@
             43,
             26,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -269,7 +297,9 @@
           ],
           "backTouchesCanvasEdge": [
             "left"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-11",
@@ -283,7 +313,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             4,
@@ -291,7 +321,9 @@
             125,
             109
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-12",
@@ -305,7 +337,7 @@
             43,
             24,
             88,
-            65
+            60
           ],
           "backBBox": [
             8,
@@ -313,7 +345,9 @@
             117,
             105
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-13",
@@ -327,7 +361,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             5,
@@ -335,7 +369,9 @@
             125,
             108
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-14",
@@ -349,7 +385,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             5,
@@ -357,7 +393,9 @@
             124,
             108
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-15",
@@ -371,7 +409,7 @@
             43,
             22,
             88,
-            65
+            60
           ],
           "backBBox": [
             8,
@@ -379,7 +417,9 @@
             119,
             106
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-16",
@@ -393,7 +433,7 @@
             43,
             22,
             88,
-            65
+            60
           ],
           "backBBox": [
             3,
@@ -401,7 +441,9 @@
             123,
             105
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-17",
@@ -415,7 +457,7 @@
             43,
             21,
             88,
-            65
+            60
           ],
           "backBBox": [
             6,
@@ -423,7 +465,9 @@
             118,
             106
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-18",
@@ -437,7 +481,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -447,7 +491,9 @@
           ],
           "backTouchesCanvasEdge": [
             "left"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-19",
@@ -461,7 +507,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             8,
@@ -469,7 +515,9 @@
             120,
             101
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-20",
@@ -483,7 +531,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             3,
@@ -491,7 +539,9 @@
             124,
             102
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-21",
@@ -505,7 +555,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             4,
@@ -513,7 +563,9 @@
             122,
             101
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-22",
@@ -527,7 +579,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -537,7 +589,9 @@
           ],
           "backTouchesCanvasEdge": [
             "left"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-23",
@@ -551,7 +605,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             2,
@@ -559,7 +613,9 @@
             123,
             105
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-male-24",
@@ -573,7 +629,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             1,
@@ -581,7 +637,9 @@
             122,
             105
           ],
-          "backTouchesCanvasEdge": []
+          "backTouchesCanvasEdge": [],
+          "criticalFaceOverlap": 0.953,
+          "faceApertureApplied": true
         }
       ]
     },
@@ -609,7 +667,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             6,
@@ -620,7 +678,9 @@
           "backTouchesCanvasEdge": [
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-02",
@@ -634,7 +694,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -645,7 +705,9 @@
           "backTouchesCanvasEdge": [
             "left",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-03",
@@ -659,7 +721,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -671,7 +733,9 @@
             "left",
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-04",
@@ -685,7 +749,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -697,7 +761,9 @@
             "left",
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-05",
@@ -711,7 +777,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -723,7 +789,9 @@
             "left",
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-06",
@@ -737,7 +805,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -748,7 +816,9 @@
           "backTouchesCanvasEdge": [
             "left",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-07",
@@ -762,7 +832,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             4,
@@ -772,7 +842,9 @@
           ],
           "backTouchesCanvasEdge": [
             "right"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-08",
@@ -786,7 +858,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -796,7 +868,9 @@
           ],
           "backTouchesCanvasEdge": [
             "left"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-09",
@@ -810,7 +884,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -821,7 +895,9 @@
           "backTouchesCanvasEdge": [
             "left",
             "top"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-10",
@@ -835,7 +911,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -847,7 +923,9 @@
             "left",
             "top",
             "right"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-11",
@@ -861,7 +939,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -874,7 +952,9 @@
             "top",
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-12",
@@ -888,7 +968,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -900,7 +980,9 @@
             "left",
             "top",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-13",
@@ -914,7 +996,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             9,
@@ -924,7 +1006,9 @@
           ],
           "backTouchesCanvasEdge": [
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-14",
@@ -938,7 +1022,7 @@
             43,
             20,
             88,
-            64
+            60
           ],
           "backBBox": [
             1,
@@ -948,7 +1032,9 @@
           ],
           "backTouchesCanvasEdge": [
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 0.819,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-15",
@@ -962,7 +1048,7 @@
             43,
             20,
             88,
-            64
+            60
           ],
           "backBBox": [
             6,
@@ -972,7 +1058,9 @@
           ],
           "backTouchesCanvasEdge": [
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 0.712,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-16",
@@ -986,7 +1074,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             1,
@@ -997,7 +1085,9 @@
           "backTouchesCanvasEdge": [
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-17",
@@ -1011,7 +1101,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1024,7 +1114,9 @@
             "top",
             "right",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 0.911,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-18",
@@ -1038,7 +1130,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1050,7 +1142,9 @@
             "left",
             "top",
             "bottom"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-19",
@@ -1064,7 +1158,7 @@
             43,
             20,
             88,
-            60
+            48
           ],
           "backBBox": [
             10,
@@ -1074,7 +1168,9 @@
           ],
           "backTouchesCanvasEdge": [
             "top"
-          ]
+          ],
+          "criticalFaceOverlap": 0.929,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-20",
@@ -1088,7 +1184,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             6,
@@ -1098,7 +1194,9 @@
           ],
           "backTouchesCanvasEdge": [
             "top"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-21",
@@ -1112,7 +1210,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1123,7 +1221,9 @@
           "backTouchesCanvasEdge": [
             "left",
             "top"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-22",
@@ -1137,7 +1237,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1149,7 +1249,9 @@
             "left",
             "top",
             "right"
-          ]
+          ],
+          "criticalFaceOverlap": 0.994,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-23",
@@ -1163,7 +1265,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1175,7 +1277,9 @@
             "left",
             "top",
             "right"
-          ]
+          ],
+          "criticalFaceOverlap": 0.997,
+          "faceApertureApplied": true
         },
         {
           "id": "hair-female-24",
@@ -1189,7 +1293,7 @@
             43,
             20,
             88,
-            65
+            60
           ],
           "backBBox": [
             0,
@@ -1200,7 +1304,9 @@
           "backTouchesCanvasEdge": [
             "left",
             "top"
-          ]
+          ],
+          "criticalFaceOverlap": 1.0,
+          "faceApertureApplied": true
         }
       ]
     }
@@ -1213,7 +1319,8 @@
       "full hairstyle retained as hairBack",
       "hairFront clipped to master-base head mask",
       "ear-safe front mask",
-      "base + default face + hairBack + hairFront contact previews"
+      "base + default face + hairBack + hairFront contact previews",
+      "conditional face aperture when generated hair covers critical facial features"
     ],
     "contacts": {
       "male": "qa/hair/hair-split-male-contact.png",
