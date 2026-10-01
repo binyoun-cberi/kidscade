@@ -50,19 +50,6 @@
   managerButton.addEventListener("click", () => drawerOpen ? closeDrawer() : openDrawer());
   $(".controls")?.appendChild(managerButton);
 
-  const residentHud = document.createElement("div");
-  residentHud.id = "residentHud";
-  residentHud.className = "resident-hud";
-  residentHud.innerHTML = '<span>👥</span><b>12 / 16명</b>';
-  body.appendChild(residentHud);
-  const population = $("#population");
-  const syncPopulation = () => {
-    const text = population?.textContent || "👥 12 / 16명";
-    $("b", residentHud).textContent = text.replace(/^👥\s*/, "");
-  };
-  syncPopulation();
-  if (population) new MutationObserver(syncPopulation).observe(population, { childList: true, subtree: true, characterData: true });
-
   const fx = document.createElement("div");
   fx.className = "weather-fx";
   fx.setAttribute("aria-hidden", "true");
@@ -146,6 +133,15 @@
     const titles = { work: "일꾼 배치", build: "건설", law: "규칙과 결정", residents: "주민", log: "기록" };
     $("#drawerTitle").textContent = titles[name] || "마을 운영";
   }
+
+  const stats = $("#stats");
+  stats?.addEventListener("click", event => {
+    const button = event.target.closest("[data-open-tab]");
+    if (!button) return;
+    activeSite = null;
+    siteControl.classList.add("hidden");
+    selectTab(button.dataset.openTab, true);
+  });
 
   $$(".tab", tabs).forEach(tab => {
     const iconOnly = tab.textContent.trim().split(/\s+/)[0];
