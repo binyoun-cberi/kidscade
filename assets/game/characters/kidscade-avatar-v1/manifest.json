@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "runtime-base-face-hair-ready",
+  "status": "runtime-base-face-hair-animation-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -67,6 +67,15 @@
       "frontLayers": 48,
       "totalLayerPngs": 96,
       "palette": "warm-medium-brown"
+    },
+    "animationManifest": "runtime/animation/animation-manifest.json",
+    "animation": {
+      "idleFrames": 4,
+      "walkFrames": 6,
+      "totalFrames": 10,
+      "idleFps": 3,
+      "walkFps": 6,
+      "baselineY": 124
     }
   },
   "qa": {
@@ -74,7 +83,12 @@
       "qa/hair/hair-split-male-contact.png",
       "qa/hair/hair-split-female-contact.png"
     ],
-    "hairStatus": "visual-contact-reviewed"
+    "hairStatus": "visual-contact-reviewed",
+    "animationContacts": [
+      "qa/animation/idle-default-composite-contact.png",
+      "qa/animation/walk-default-composite-contact.png"
+    ],
+    "animationStatus": "visual-contact-reviewed"
   },
   "sourceSets": {
     "base": {
@@ -83,7 +97,7 @@
     "animation": {
       "idleFrames": 4,
       "walkFrames": 6,
-      "status": "organized-needs-normalization"
+      "status": "runtime-ready"
     },
     "face": {
       "status": "runtime-ready"
@@ -108,7 +122,7 @@
     }
   },
   "runtime": {
-    "status": "base-face-hair-ready",
+    "status": "base-face-hair-animation-ready",
     "compositeAt": [
       0,
       0
