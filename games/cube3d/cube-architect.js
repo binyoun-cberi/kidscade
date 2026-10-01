@@ -2763,13 +2763,15 @@ function tryRareEliteSpawn(){
 }
 function maintainWildCreatures(force=false){
   if(gameFreeMode!=='survival')return;
-  const max=mobileModeEnabled?5:7;
+  const max=mobileModeEnabled?5:7,normalTarget=mobileModeEnabled?4:6;
   for(const root of [...wildCreatures]){
     const dist=Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z);
     if(root.userData.dead||dist>56)despawnWildCreature(root);
   }
-  let budget=force?max:2;
-  while(wildCreatures.length<max&&budget-->0)spawnDynamicCreature();
+  const normalCount=()=>wildCreatures.filter(c=>!c.userData.spec?.elite).length;
+  let budget=force?normalTarget:2;
+  while(normalCount()<normalTarget&&wildCreatures.length<max&&budget-->0)spawnDynamicCreature();
+  if(wildCreatures.length<max)tryRareEliteSpawn();
 }
 function spawnWildCreatures(){
   for(const c of [...wildCreatures])despawnWildCreature(c);
