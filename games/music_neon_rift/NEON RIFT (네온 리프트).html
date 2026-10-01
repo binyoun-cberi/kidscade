@@ -195,11 +195,10 @@ function generateFractionGateQuestion(r){
     return fractionChoice(frac(n,d,false)+'와 같은 분수는?',correct,[frac(n*m+1,d*m,false),frac(n*(m+1),d*m,false),frac(n*m,Math.max(2,d*m-1),false)],frac(n,d,false)+' = '+correct,r);
   }
   if(kind===1){
-    const vals=[];let guard=0;
-    while(vals.length<3&&guard++<60){const d=3+Math.floor(r()*8),n=1+Math.floor(r()*(d-1)),v=n/d;if(vals.every(x=>Math.abs(x.v-v)>.035))vals.push({s:frac(n,d,false),v})}
-    while(vals.length<3)vals.push({s:frac(vals.length+1,vals.length+4,false),v:(vals.length+1)/(vals.length+4)});
-    const options=shuffled(vals,r),best=options.reduce((a,x,i)=>x.v>options[a].v?i:a,0);
-    return{prompt:'가장 큰 분수는?',choices:options.map(x=>x.s),answerLane:best,answerText:options[best].s,explain:'가장 큰 값은 '+options[best].s};
+    const dens=tier===1?[2,4,5,10]:[2,4,5,8,10,20,25],d=dens[Math.floor(r()*dens.length)],n=1+Math.floor(r()*(d-1)),fv=n/d,equal=r()<(tier===1?.22:.14);
+    let dv=fv,guard=0;if(!equal){do{dv=(1+Math.floor(r()*98))/100;guard++}while(guard<60&&Math.abs(dv-fv)<(tier===1?.08:.045))}
+    const ds=Number(dv.toFixed(2)).toString(),symbol=Math.abs(fv-dv)<1e-9?'=':fv<dv?'<':'>',choices=shuffled(['<','=','>'],r);
+    return{prompt:frac(n,d,false)+'  ?  '+ds,choices,answerLane:choices.indexOf(symbol),answerText:symbol,explain:frac(n,d,false)+' '+symbol+' '+ds};
   }
   if(kind===2){
     const d=4+Math.floor(r()*7),a=1+Math.floor(r()*(d-2)),b=1+Math.floor(r()*Math.max(1,d-a-1)),sum=a+b,correct=frac(sum,d);
