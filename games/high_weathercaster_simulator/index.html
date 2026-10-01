@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>기상캐스터 시뮬레이터</title>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_weathercaster_simulator" data-title="기상캐스터 시뮬레이터" data-shell="true" data-orientation="landscape"></script>
+<style>
+:root{--navy:#071827;--panel:#102b40;--panel2:#163b54;--line:#2d607a;--sky:#69c9ef;--ink:#edf9ff;--muted:#a7c7d8;--yellow:#ffd66b;--green:#7ee3a5;--red:#ff7f83}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:#061522;color:var(--ink)}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#app{min-height:100vh;background:radial-gradient(circle at 50% -10%,#1f6481 0,#0b2d43 32%,#061522 72%);display:flex;flex-direction:column}
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:10px 14px;background:#061522e8;border-bottom:1px solid #2a5670;position:sticky;top:0;z-index:30;backdrop-filter:blur(10px)}
+.brand{font-weight:950;letter-spacing:.02em}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:700;margin-top:2px}
+.day{font-weight:950;padding:7px 12px;border:1px solid #3e6d84;background:#0b2739;border-radius:999px}
+.hud{display:flex;justify-content:flex-end;gap:8px;align-items:center}.pill{font-size:12px;font-weight:900;padding:7px 9px;border-radius:9px;background:#123349;border:1px solid #35657c}
+main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
+.screen{display:none}.screen.active{display:block}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(250px,.7fr);gap:14px;margin-bottom:14px}
+.panel{background:linear-gradient(180deg,#12364c,#0d2738);border:1px solid #326077;border-radius:18px;box-shadow:0 18px 50px #0004;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #2a5368;background:#0a2334}
+.panel-head h2,.panel-head h3{margin:0;font-size:16px}.eyebrow{font-size:10px;color:#8ec9e4;font-weight:950;letter-spacing:.12em;text-transform:uppercase}
+.map-wrap{position:relative;min-height:470px;background:linear-gradient(#6bc9e9 0 54%,#275d72 54% 100%);overflow:hidden}
+.map-wrap:before{content:"";position:absolute;inset:auto 0 0;height:46%;background:repeating-linear-gradient(0deg,#ffffff05 0 2px,transparent 2px 26px)}
+#mapSvg{display:block;width:100%;height:470px;position:relative;z-index:2}
+.land{fill:#dce8cc;stroke:#eef6de;stroke-width:3;filter:drop-shadow(0 8px 8px #08304466)}
+.city-dot{fill:#16384a;stroke:#fff;stroke-width:2}.city-label{font-size:12px;font-weight:900;fill:#082231;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.radar-blob{fill:#1b99e2aa;stroke:#d8fbff;stroke-width:2;filter:drop-shadow(0 0 8px #39b9ff)}.radar-heavy{fill:#655fe0bb;stroke:#fff}
+.wind-line{stroke:#fff;stroke-width:3;stroke-linecap:round;opacity:.85}.wind-line.fast{stroke-width:5}
+.weather-badge{position:absolute;z-index:6;padding:8px 10px;border-radius:12px;background:#062033d9;border:1px solid #6bb9d8;box-shadow:0 8px 20px #00283e88;font-weight:950;pointer-events:none}
+.weather-badge small{display:block;color:#aad4e8;font-size:9px}.b-seoul{left:32%;top:24%}.b-cheongju{left:49%;top:44%}.b-busan{right:24%;top:65%}.b-jeju{left:34%;bottom:6%}
+.tabs{display:flex;gap:7px;padding:10px;background:#0a2334;border-top:1px solid #2c596e}.tab{flex:1;border:1px solid #3b7088;background:#102e41;padding:9px;border-radius:11px;font-weight:900;cursor:pointer}.tab.active{background:#e5f8ff;color:#0c3347;border-color:#fff}
+.brief{padding:15px}.brief h1{font-size:26px;line-height:1.15;margin:5px 0 10px}.brief p{color:#c0d9e5;line-height:1.6;margin:0 0 14px}.data-stack{display:grid;gap:8px}.data-card{padding:11px;border-radius:13px;background:#0a2334;border:1px solid #2d5b71}.data-card b{display:block;font-size:12px;color:#91cce7;margin-bottom:4px}.data-card strong{font-size:18px}.coach{margin-top:12px;padding:11px 12px;border-left:4px solid var(--yellow);background:#2e321d;color:#fff4c2;line-height:1.45;font-size:13px}
+.primary,.secondary{border:0;border-radius:13px;padding:12px 16px;font-weight:950;cursor:pointer}.primary{background:linear-gradient(180deg,#ffdc73,#f5bd42);color:#1e2a31;box-shadow:inset 0 -3px #a86d11}.secondary{background:#173b50;border:1px solid #467b93}.wide{width:100%;margin-top:12px}
+.step-title{text-align:center;margin:8px auto 16px;max-width:760px}.step-title h1{font-size:28px;margin:4px 0}.step-title p{margin:0;color:#b5d1df}
+.forecast-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.question{padding:14px}.question h3{margin:0 0 4px}.question p{margin:0 0 12px;color:#9fc3d5;font-size:12px;min-height:36px}.options{display:grid;gap:7px}.option{border:1px solid #386c83;background:#0c293b;padding:10px;border-radius:11px;text-align:left;font-weight:850;cursor:pointer}.option:hover{background:#153d53}.option.selected{background:#e8f9ff;color:#092f43;border-color:#fff;box-shadow:0 0 0 2px #74d5ff55}.option span{font-size:20px;margin-right:7px}
+.forecast-summary{margin-top:12px;padding:13px;border-radius:14px;background:#091f2f;border:1px solid #37687f;color:#cde8f4}.forecast-summary b{color:#fff}
+.studio{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.45fr);gap:14px}
+.stage{min-height:560px;position:relative;background:linear-gradient(145deg,#0c4b73,#05263e 55%,#051827);overflow:hidden}
+.stage:before{content:"KIDSCADE WEATHER";position:absolute;left:5%;top:5%;font-size:clamp(22px,4vw,46px);font-weight:1000;letter-spacing:.06em;color:#e9fbff1f}
+.studio-map{position:absolute;left:5%;top:19%;width:58%;height:61%;border:1px solid #67bee0;border-radius:16px;background:linear-gradient(#67cbee,#367d9b);box-shadow:inset 0 0 40px #06446188}
+.studio-map svg{width:100%;height:100%}.presenter{position:absolute;right:3%;bottom:3%;width:36%;height:82%;display:flex;align-items:flex-end;justify-content:center}
+#avatarImg{max-width:100%;max-height:88%;object-fit:contain;filter:drop-shadow(0 14px 12px #00172588);transform-origin:50% 100%;animation:idle 2.4s ease-in-out infinite}.avatar-fallback{font-size:min(23vw,220px);filter:drop-shadow(0 14px 12px #00172588);animation:idle 2.4s ease-in-out infinite}
+@keyframes idle{50%{transform:translateY(-5px) rotate(.5deg)}}
+.live-tag{position:absolute;left:4%;bottom:4%;background:#d8363e;padding:8px 12px;border-radius:9px;font-weight:1000;box-shadow:0 0 20px #ff445b66}.lower-third{position:absolute;left:4%;right:40%;bottom:12%;background:#071c2de8;border-left:7px solid #ffd45b;padding:12px 14px;font-weight:900;line-height:1.4}
+.broadcast-side{display:flex;flex-direction:column}.prompter{padding:14px;display:grid;gap:10px}.prompt-card{padding:12px;border-radius:13px;border:1px solid #315f75;background:#091f2f;opacity:.5}.prompt-card.current{opacity:1;border-color:#9ce7ff;background:#11384d}.prompt-card.done{opacity:.35;text-decoration:line-through}.prompt-card b{display:block;color:#8bd4f3;font-size:10px;margin-bottom:4px}.prompt-card p{margin:0;line-height:1.5}.live-controls{margin-top:auto;padding:14px;border-top:1px solid #2d5a70}.region-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:8px 0}.region{border:1px solid #3b6f86;background:#0c2939;padding:9px;border-radius:10px;cursor:pointer;font-weight:900}.region.hit{background:#2d7a55;border-color:#86e4aa}.region.miss{background:#713843;border-color:#ff9398}
+.alert{position:fixed;inset:0;z-index:100;background:#02111de8;display:none;align-items:center;justify-content:center;padding:18px}.alert.show{display:flex}.alert-card{width:min(620px,100%);background:#102b3d;border:2px solid #ffcb55;border-radius:20px;box-shadow:0 30px 100px #000;padding:20px}.alert-card h2{margin:0 0 8px;color:#ffe391}.alert-card p{line-height:1.6}.alert-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}.alert-btn{border:1px solid #50788c;background:#15394d;padding:13px;border-radius:12px;cursor:pointer;font-weight:900}
+.result-wrap{width:min(820px,100%);margin:0 auto}.result-card{padding:22px}.score-big{text-align:center;font-size:72px;font-weight:1000;line-height:1;color:#ffe06f;margin:8px 0}.grade{text-align:center;font-weight:950;color:#bde7f7}.meters{display:grid;gap:10px;margin:18px 0}.meter{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center}.track{height:12px;background:#061722;border-radius:99px;overflow:hidden;border:1px solid #2a566c}.fill{height:100%;background:linear-gradient(90deg,#55cbe8,#86e6a4)}.feedback{padding:14px;border-radius:14px;background:#0a2334;border:1px solid #315f75;line-height:1.65}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.tutorial{position:fixed;inset:0;z-index:120;background:#031421ed;display:none;align-items:center;justify-content:center;padding:18px}.tutorial.show{display:flex}.tutorial-card{width:min(760px,100%);background:#123247;border:1px solid #5590aa;border-radius:22px;padding:22px}.tutorial-card h1{margin:0 0 8px}.tutorial-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}.tut{background:#0a2334;border:1px solid #315d72;border-radius:14px;padding:12px;text-align:center}.tut span{font-size:32px;display:block;margin-bottom:7px}.tut b{display:block}.tut small{display:block;color:#9fc4d6;margin-top:4px;line-height:1.4}
+.toast{position:fixed;left:50%;top:82px;z-index:90;transform:translate(-50%,-12px);background:#071a27ed;border:1px solid #74c6e5;border-radius:12px;padding:10px 14px;font-weight:900;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:850px){.hero,.studio{grid-template-columns:1fr}.map-wrap{min-height:390px}#mapSvg{height:390px}.forecast-grid{grid-template-columns:1fr}.stage{min-height:430px}.broadcast-side{min-height:auto}.tutorial-grid{grid-template-columns:1fr 1fr}.presenter{width:34%}.lower-third{right:35%}}
+@media(max-width:520px){main{padding:9px}.topbar{grid-template-columns:1fr auto}.day{display:none}.hud{gap:4px}.pill{font-size:10px;padding:6px}.hero{gap:9px}.map-wrap{min-height:330px}#mapSvg{height:330px}.brief h1{font-size:22px}.step-title h1{font-size:23px}.studio-map{width:66%;height:56%}.presenter{width:42%;right:-1%}.lower-third{right:30%;font-size:12px}.tutorial-grid{grid-template-columns:1fr 1fr}.alert-options,.result-actions{grid-template-columns:1fr}.meter{grid-template-columns:90px 1fr 38px}.weather-badge{font-size:11px;padding:6px}.b-seoul{left:27%}.b-cheongju{left:46%}.b-busan{right:17%}}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="brand">KIDSCADE WEATHER<small>기상캐스터 시뮬레이터</small></div>
+  <div class="day" id="dayLabel">오늘의 예보</div>
+  <div class="hud"><span class="pill" id="phasePill">관측 1/4</span><span class="pill" id="bestPill">최고 0</span></div>
+</header>
+<main>
+<section id="observe" class="screen active">
+  <div class="hero">
+    <div class="panel">
+      <div class="panel-head"><div><span class="eyebrow">WEATHER CENTER</span><h2>기상 관측 지도</h2></div><strong id="clockLabel">07:00</strong></div>
+      <div class="map-wrap">
+        <svg id="mapSvg" viewBox="0 0 520 470" aria-label="대한민국 기상 관측 지도">
+          <path class="land" d="M270 24 C238 34 221 62 228 88 C204 113 208 143 224 163 C206 190 212 220 233 239 C218 263 226 293 250 306 C241 329 256 353 276 360 C289 386 325 393 344 373 C367 357 366 328 350 313 C371 291 365 260 347 244 C365 220 355 190 337 177 C349 151 338 127 319 115 C329 87 314 59 293 50 C290 36 282 28 270 24 Z"/>
+          <ellipse class="land" cx="237" cy="421" rx="54" ry="21"/>
+          <circle class="city-dot" cx="260" cy="116" r="6"/><text class="city-label" x="272" y="113">서울</text>
+          <circle class="city-dot" cx="285" cy="206" r="6"/><text class="city-label" x="297" y="203">청주</text>
+          <circle class="city-dot" cx="322" cy="316" r="6"/><text class="city-label" x="334" y="313">부산</text>
+          <circle class="city-dot" cx="237" cy="421" r="6"/><text class="city-label" x="249" y="418">제주</text>
+          <g id="radarLayer"></g><g id="windLayer"></g>
+        </svg>
+        <div class="weather-badge b-seoul"><small>서울</small><span id="tempSeoul">18℃</span></div>
+        <div class="weather-badge b-cheongju"><small>청주</small><span id="tempCheongju">17℃</span></div>
+        <div class="weather-badge b-busan"><small>부산</small><span id="tempBusan">21℃</span></div>
+        <div class="weather-badge b-jeju"><small>제주</small><span id="tempJeju">22℃</span></div>
+      </div>
+      <div class="tabs"><button class="tab active" data-tab="radar">🌧 레이더</button><button class="tab" data-tab="temperature">🌡 기온</button><button class="tab" data-tab="wind">💨 바람</button></div>
+    </div>
+    <aside class="panel brief">
+      <span class="eyebrow">MORNING BRIEFING</span>
+      <h1 id="scenarioTitle">오늘의 기상자료가 도착했습니다</h1>
+      <p id="scenarioIntro">지도와 관측 자료를 살펴보고 오늘 오후 날씨를 예보하세요.</p>
+      <div class="data-stack">
+        <div class="data-card"><b>현재 하늘</b><strong id="skyData">구름 많음</strong></div>
+        <div class="data-card"><b>바람</b><strong id="windData">서풍 4 m/s</strong></div>
+        <div class="data-card"><b>핵심 관측</b><strong id="hintData">서해에서 비구름 접근</strong></div>
+      </div>
+      <div class="coach" id="coachText">💡 레이더를 보면 비구름이 어느 방향으로 움직이는지 알 수 있어요.</div>
+      <button class="primary wide" id="toForecast">자료 분석 완료 →</button>
+    </aside>
+  </div>
+</section>
+
+<section id="forecast" class="screen">
+  <div class="step-title"><span class="eyebrow">FORECAST DESK</span><h1>방송 예보를 작성하세요</h1><p>세 가지 판단을 모두 선택하면 방송 대본이 만들어져요.</p></div>
+  <div class="forecast-grid">
+    <div class="panel question"><h3>① 오후의 핵심 날씨</h3><p>레이더와 현재 하늘을 보고 가장 중요한 현상을 고르세요.</p><div class="options" data-group="weather">
+      <button class="option" data-value="sun"><span>☀️</span>맑고 햇빛이 강해요</button>
+      <button class="option" data-value="cloud"><span>☁️</span>구름이 많거나 흐려요</button>
+      <button class="option" data-value="rain"><span>🌧️</span>비가 내릴 가능성이 커요</button>
+      <button class="option" data-value="snow"><span>❄️</span>눈이 내릴 가능성이 커요</button>
+    </div></div>
+    <div class="panel question"><h3>② 기온 변화</h3><p>오전 기온과 들어오는 공기의 성질을 함께 생각하세요.</p><div class="options" data-group="trend">
+      <button class="option" data-value="up"><span>↗️</span>기온이 올라가요</button>
+      <button class="option" data-value="same"><span>➡️</span>비슷하게 유지돼요</button>
+      <button class="option" data-value="down"><span>↘️</span>기온이 내려가요</button>
+    </div></div>
+    <div class="panel question"><h3>③ 시청자 생활 정보</h3><p>오늘 날씨에서 가장 먼저 알려야 할 준비를 골라요.</p><div class="options" data-group="advice">
+      <button class="option" data-value="umbrella"><span>☂️</span>우산 챙기기</button>
+      <button class="option" data-value="water"><span>🥤</span>물 자주 마시기</button>
+      <button class="option" data-value="warm"><span>🧥</span>따뜻하게 입기</button>
+      <button class="option" data-value="mask"><span>😷</span>마스크 준비하기</button>
+      <button class="option" data-value="wind"><span>🏠</span>강풍에 날릴 물건 정리하기</button>
+    </div></div>
+  </div>
+  <div class="forecast-summary" id="forecastSummary">아직 방송 대본을 작성하는 중이에요.</div>
+  <button class="primary wide" id="toLive" disabled>🔴 생방송 스튜디오 입장</button>
+</section>
+
+<section id="live" class="screen">
+  <div class="step-title"><span class="eyebrow">LIVE STUDIO</span><h1>이제 직접 방송해요</h1><p>현재 멘트에 맞는 지역을 가리키고 다음 멘트로 넘어가세요.</p></div>
+  <div class="studio">
+    <div class="panel stage">
+      <div class="studio-map">
+        <svg viewBox="0 0 520 470">
+          <path class="land" d="M270 24 C238 34 221 62 228 88 C204 113 208 143 224 163 C206 190 212 220 233 239 C218 263 226 293 250 306 C241 329 256 353 276 360 C289 386 325 393 344 373 C367 357 366 328 350 313 C371 291 365 260 347 244 C365 220 355 190 337 177 C349 151 338 127 319 115 C329 87 314 59 293 50 C290 36 282 28 270 24 Z"/>
+          <ellipse class="land" cx="237" cy="421" rx="54" ry="21"/>
+          <text class="city-label" x="245" y="115">서울</text><text class="city-label" x="276" y="206">청주</text><text class="city-label" x="318" y="316">부산</text><text class="city-label" x="220" y="425">제주</text>
+        </svg>
+      </div>
+      <div class="presenter"><img id="avatarImg" alt="내 키즈케이드 아바타" hidden><div id="avatarFallback" class="avatar-fallback">🧑‍💼</div></div>
+      <div class="live-tag">● LIVE</div>
+      <div class="lower-third" id="lowerThird">오늘의 날씨를 전해드립니다.</div>
+    </div>
+    <aside class="panel broadcast-side">
+      <div class="panel-head"><h3>프롬프터</h3><strong id="liveCount">1 / 4</strong></div>
+      <div class="prompter" id="prompter"></div>
+      <div class="live-controls">
+        <small style="color:#9fc8da;font-weight:800">지금 설명하는 지역을 가리켜 보세요.</small>
+        <div class="region-buttons">
+          <button class="region" data-region="north">수도권</button><button class="region" data-region="central">충청</button>
+          <button class="region" data-region="south">남부</button><button class="region" data-region="jeju">제주</button>
+        </div>
+        <button class="primary wide" id="nextLine">다음 멘트 →</button>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section id="result" class="screen">
+  <div class="result-wrap panel result-card">
+    <span class="eyebrow">BROADCAST REPORT</span>
+    <div class="score-big" id="scoreBig">0</div>
+    <div class="grade" id="gradeText">첫 방송 완료!</div>
+    <div class="meters">
+      <div class="meter"><b>예보 판단</b><div class="track"><div class="fill" id="forecastMeter"></div></div><strong id="forecastScore">0</strong></div>
+      <div class="meter"><b>지도 설명</b><div class="track"><div class="fill" id="mapMeter"></div></div><strong id="mapScore">0</strong></div>
+      <div class="meter"><b>속보 대응</b><div class="track"><div class="fill" id="alertMeter"></div></div><strong id="alertScore">0</strong></div>
+    </div>
+    <div class="feedback" id="feedbackText"></div>
+    <div class="result-actions"><button class="secondary" id="reviewBtn">관측자료 다시 보기</button><button class="primary" id="againBtn">새로운 날씨 도전</button></div>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="alert" id="alertModal"><div class="alert-card"><span class="eyebrow">BREAKING WEATHER</span><h2>🚨 기상 속보가 들어왔어요!</h2><p id="alertText"></p><div class="alert-options" id="alertOptions"></div></div></div>
+<div class="tutorial show" id="tutorial"><div class="tutorial-card"><span class="eyebrow">첫 출근 튜토리얼</span><h1>기상캐스터의 하루는 이렇게 흘러가요</h1><div class="tutorial-grid">
+  <div class="tut"><span>🗺️</span><b>1. 관측</b><small>레이더·기온·바람을 살펴봐요.</small></div>
+  <div class="tut"><span>🧠</span><b>2. 판단</b><small>오후 날씨와 준비물을 예보해요.</small></div>
+  <div class="tut"><span>🎙️</span><b>3. 방송</b><small>지도에서 지역을 가리키며 설명해요.</small></div>
+  <div class="tut"><span>🚨</span><b>4. 속보</b><small>새 자료가 오면 예보를 빠르게 고쳐요.</small></div>
+</div><p style="color:#bdd8e5;line-height:1.6">정답을 외우는 게임이 아니에요. <b style="color:white">자료가 어떻게 움직이는지 보고 판단</b>하는 것이 핵심입니다.</p><button class="primary wide" id="startBtn">기상센터 출근하기</button></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var scenarios=[
+ {id:"autumn_rain",title:"서쪽에서 비구름이 접근해요",intro:"서해에서 넓은 비구름이 들어오고 있습니다. 오후 중부 지방의 변화를 살펴보세요.",temps:[18,17,21,22],sky:"구름 많음",wind:"서풍 5 m/s",hint:"비구름이 서쪽 → 동쪽으로 이동",weather:"rain",trend:"down",advice:"umbrella",region:"central",radar:"west",alert:"호우 구름대가 예상보다 빠르게 충청 지역으로 이동하고 있습니다.",alertGood:"비 시작 시각을 앞당겨 알린다",alertBad:"아침 예보를 그대로 반복한다",coach:"레이더에서 비구름의 위치뿐 아니라 이동 방향도 확인해 보세요."},
+ {id:"summer_heat",title:"한낮 기온이 크게 오르겠어요",intro:"구름이 거의 없고 남쪽에서 따뜻한 공기가 들어옵니다. 한낮 야외활동에 주의가 필요해 보여요.",temps:[27,28,29,30],sky:"대체로 맑음",wind:"남서풍 3 m/s",hint:"강한 햇빛 + 따뜻한 공기 유입",weather:"sun",trend:"up",advice:"water",region:"central",radar:"clear",alert:"청주에 폭염주의보가 발표되었습니다.",alertGood:"수분 섭취와 야외활동 주의를 강조한다",alertBad:"우산을 꼭 챙기라고 알린다",coach:"비구름이 없는 날에는 기온과 바람이 어디에서 오는지 함께 보세요."},
+ {id:"winter_snow",title:"차가운 공기와 눈구름이 만나요",intro:"서쪽 바다에서 만들어진 눈구름이 들어오고 기온도 내려가고 있습니다.",temps:[-3,-4,1,3],sky:"흐리고 추움",wind:"북서풍 7 m/s",hint:"눈구름 접근 + 영하권 기온",weather:"snow",trend:"down",advice:"warm",region:"central",radar:"snow",alert:"충청 일부 도로에 결빙 위험이 커졌습니다.",alertGood:"눈과 빙판길 주의를 함께 알린다",alertBad:"기온이 곧 크게 오른다고 알린다",coach:"같은 구름이라도 기온이 낮으면 비 대신 눈이 내릴 수 있어요."},
+ {id:"spring_dust",title:"하늘은 맑아도 공기가 뿌옇습니다",intro:"비구름은 없지만 서쪽에서 건조한 바람과 함께 황사가 이동하고 있습니다.",temps:[15,16,18,19],sky:"맑지만 뿌연 하늘",wind:"서풍 8 m/s",hint:"서쪽에서 황사 유입",weather:"cloud",trend:"up",advice:"mask",region:"north",radar:"dust",alert:"수도권 미세먼지 농도가 매우 나쁨 수준으로 올랐습니다.",alertGood:"외출 시간과 호흡기 보호를 안내한다",alertBad:"강수량이 많아진다고 알린다",coach:"레이더에 비가 없다고 항상 좋은 날씨는 아니에요. 바람과 공기 상태도 중요해요."},
+ {id:"typhoon",title:"남쪽 바다의 강한 소용돌이",intro:"제주 남쪽에서 강한 비바람을 동반한 저기압이 북상하고 있습니다.",temps:[24,24,26,27],sky:"남부부터 흐려짐",wind:"남동풍 12 m/s",hint:"제주 남쪽 강한 비구름 + 강풍",weather:"rain",trend:"same",advice:"wind",region:"jeju",radar:"typhoon",alert:"태풍 예상 경로가 동쪽으로 조금 바뀌었지만 제주에는 강풍이 계속됩니다.",alertGood:"새 경로와 제주 강풍 위험을 함께 수정한다",alertBad:"태풍 위험이 완전히 끝났다고 알린다",coach:"태풍은 중심 위치만 보지 말고 넓은 비구름과 강풍 영역을 함께 살펴보세요."},
+ {id:"morning_fog",title:"아침 안개가 천천히 걷혀요",intro:"내륙에 짙은 안개가 있지만 햇빛이 강해지며 시야가 조금씩 좋아지고 있습니다.",temps:[11,10,15,17],sky:"내륙 짙은 안개",wind:"약한 남풍 1 m/s",hint:"강수 없음 + 오전 안개 점차 약화",weather:"sun",trend:"up",advice:"warm",region:"central",radar:"fog",alert:"충청 일부 지역의 안개가 예상보다 오래 남아 있습니다.",alertGood:"운전 시 가시거리 주의를 추가한다",alertBad:"폭설특보가 내려졌다고 알린다",coach:"아침과 오후 날씨가 다를 수 있어요. 시간에 따른 변화를 생각해 보세요."}
+];
+var state={scenario:null,choice:{weather:"",trend:"",advice:""},tab:"radar",line:0,mapHits:0,mapTries:0,alertDone:false,alertCorrect:false,started:false};
+var labels={
+ weather:{sun:"맑고 햇빛이 강함",cloud:"구름 많음·흐림",rain:"비",snow:"눈"},
+ trend:{up:"기온 상승",same:"기온 비슷",down:"기온 하락"},
+ advice:{umbrella:"우산 준비",water:"물 자주 마시기",warm:"따뜻하게 입기",mask:"마스크 준비",wind:"강풍 대비"},
+ region:{north:"수도권",central:"충청",south:"남부",jeju:"제주"}
+};
+function $(id){return document.getElementById(id)}
+function toast(msg){var el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show")},1500)}
+function sdk(name,arg){try{if(window.KidscadeGame&&typeof window.KidscadeGame[name]==="function")window.KidscadeGame[name](arg)}catch(e){}}
+function best(){try{return Number(localStorage.getItem("kidscade_weathercaster_best_v1")||0)}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem("kidscade_weathercaster_best_v1",String(v))}catch(e){}}
+function show(id){document.querySelectorAll(".screen").forEach(function(x){x.classList.remove("active")});$(id).classList.add("active");window.scrollTo(0,0)}
+function phase(text){$("phasePill").textContent=text}
+function pickScenario(){var previous=state.scenario&&state.scenario.id;var pool=scenarios.filter(function(x){return x.id!==previous});state.scenario=pool[Math.floor(Math.random()*pool.length)];state.choice={weather:"",trend:"",advice:""};state.line=0;state.mapHits=0;state.mapTries=0;state.alertDone=false;state.alertCorrect=false;renderObservation()}
+function renderObservation(){
+ var s=state.scenario;$("scenarioTitle").textContent=s.title;$("scenarioIntro").textContent=s.intro;$("skyData").textContent=s.sky;$("windData").textContent=s.wind;$("hintData").textContent=s.hint;$("coachText").textContent="💡 "+s.coach;
+ ["Seoul","Cheongju","Busan","Jeju"].forEach(function(n,i){$("temp"+n).textContent=s.temps[i]+"℃"});renderMap()
+}
+function renderMap(){
+ var s=state.scenario,radar=$("radarLayer"),wind=$("windLayer");radar.innerHTML="";wind.innerHTML="";
+ document.querySelectorAll(".weather-badge").forEach(function(x){x.style.display=state.tab==="temperature"?"block":"none"});
+ if(state.tab==="radar"){
+   var shapes="";
+   if(s.radar==="west")shapes='<ellipse class="radar-blob" cx="130" cy="205" rx="78" ry="115"><animate attributeName="cx" values="80;180;280;380" dur="4s" repeatCount="indefinite"/></ellipse><ellipse class="radar-heavy" cx="110" cy="220" rx="34" ry="58"><animate attributeName="cx" values="70;170;270;370" dur="4s" repeatCount="indefinite"/></ellipse>';
+   else if(s.radar==="snow")shapes='<ellipse class="radar-blob" cx="125" cy="170" rx="70" ry="125"><animate attributeName="cx" values="90;170;250;330" dur="5s" repeatCount="indefinite"/></ellipse>';
+   else if(s.radar==="dust")shapes='<ellipse cx="120" cy="160" rx="90" ry="145" fill="#d7a95088" stroke="#ffe3a2" stroke-width="3"><animate attributeName="cx" values="80;170;270;360" dur="5s" repeatCount="indefinite"/></ellipse>';
+   else if(s.radar==="typhoon")shapes='<circle class="radar-heavy" cx="240" cy="430" r="62"><animate attributeName="r" values="45;70;45" dur="2s" repeatCount="indefinite"/></circle><circle cx="240" cy="430" r="19" fill="#ffcf4d"/>';
+   else if(s.radar==="fog")shapes='<ellipse cx="275" cy="210" rx="90" ry="55" fill="#ffffff88" stroke="#fff" stroke-width="2"><animate attributeName="opacity" values=".35;.8;.35" dur="3s" repeatCount="indefinite"/></ellipse>';
+   else shapes='<text x="65" y="75" fill="#fff" font-size="20" font-weight="900">강수 구름 없음</text>';
+   radar.innerHTML=shapes;
+ }else if(state.tab==="wind"){
+   var fast=/([7-9]|1[0-9]) m\/s/.test(s.wind),lines="";for(var i=0;i<7;i++){var y=80+i*48;lines+='<line class="wind-line '+(fast?"fast":"")+'" x1="70" y1="'+y+'" x2="185" y2="'+y+'"><animate attributeName="x1" values="50;120" dur="'+(fast?"0.7":"1.7")+'s" repeatCount="indefinite"/><animate attributeName="x2" values="150;220" dur="'+(fast?"0.7":"1.7")+'s" repeatCount="indefinite"/></line>'}wind.innerHTML=lines;
+ }
+}
+function choose(group,value,button){
+ state.choice[group]=value;document.querySelectorAll('.options[data-group="'+group+'"] .option').forEach(function(x){x.classList.toggle("selected",x===button)});updateSummary()
+}
+function updateSummary(){
+ var c=state.choice,complete=c.weather&&c.trend&&c.advice;
+ $("toLive").disabled=!complete;
+ $("forecastSummary").innerHTML=complete?'<b>방송 대본:</b> 오후에는 '+labels.weather[c.weather]+'이 예상되고, '+labels.trend[c.trend]+' 흐름입니다. 시청자에게는 <b>'+labels.advice[c.advice]+'</b>를 안내하겠습니다.':"세 가지 판단을 모두 선택하면 방송 대본이 완성돼요.";
+}
+function staticAvatar(){
+ var key="kidscade-avatar-studio-preview",saved="";try{saved=localStorage.getItem(key)||""}catch(e){}
+ if(saved.indexOf("data:image")===0)return saved;
+ try{var h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;if(typeof h.renderAvatarSVG==="function"){var svg=h.renderAvatarSVG();if(svg)return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)}}catch(e){}
+ return ""
+}
+function loadAvatar(){var src=staticAvatar();if(src){$("avatarImg").src=src;$("avatarImg").hidden=false;$("avatarFallback").hidden=true}else{$("avatarImg").hidden=true;$("avatarFallback").hidden=false}}
+function lines(){
+ var c=state.choice,s=state.scenario;
+ return [
+  {tag:"인사",text:"안녕하세요. 키즈케이드 날씨입니다.",region:null},
+  {tag:"오늘의 핵심",text:"오늘 오후 "+labels.region[s.region]+"을 중심으로 "+labels.weather[c.weather]+"이 예상됩니다.",region:s.region},
+  {tag:"기온",text:"기온은 오전보다 "+(c.trend==="up"?"오르겠습니다.":c.trend==="down"?"내려가겠습니다.":"비슷하겠습니다."),region:s.region},
+  {tag:"생활 정보",text:"외출하실 때에는 "+labels.advice[c.advice]+"에 신경 써 주세요.",region:s.region}
+ ]
+}
+function renderPrompter(){
+ var list=lines();$("prompter").innerHTML=list.map(function(x,i){return '<div class="prompt-card '+(i<state.line?"done":i===state.line?"current":"")+'"><b>'+x.tag+'</b><p>'+x.text+'</p></div>'}).join("");
+ $("liveCount").textContent=Math.min(state.line+1,list.length)+" / "+list.length;
+ $("lowerThird").textContent=list[Math.min(state.line,list.length-1)].text;
+}
+function startLive(){show("live");phase("생방송 3/4");loadAvatar();state.line=0;renderPrompter();document.querySelectorAll(".region").forEach(function(x){x.classList.remove("hit","miss")})}
+function regionClick(btn){
+ var target=lines()[state.line]&&lines()[state.line].region;if(!target){toast("인사 멘트에서는 지도를 가리키지 않아도 돼요.");return}
+ state.mapTries++;if(btn.dataset.region===target){state.mapHits++;btn.classList.add("hit");toast("정확한 지역을 가리켰어요!");sdk("sound","correct")}else{btn.classList.add("miss");toast("지도를 다시 살펴보세요.");sdk("sound","wrong")}
+}
+function nextLine(){
+ var list=lines();if(state.line===1&&!state.alertDone){openAlert();return}
+ if(state.line<list.length-1){state.line++;renderPrompter();return}
+ finish()
+}
+function openAlert(){
+ var s=state.scenario;$("alertText").textContent=s.alert;$("alertOptions").innerHTML="";
+ [{text:s.alertGood,good:true},{text:s.alertBad,good:false}].sort(function(){return Math.random()-.5}).forEach(function(o){var b=document.createElement("button");b.className="alert-btn";b.textContent=o.text;b.onclick=function(){state.alertDone=true;state.alertCorrect=o.good;$("alertModal").classList.remove("show");toast(o.good?"속보 반영 성공!":"속보 내용을 놓쳤어요.");sdk("sound",o.good?"correct":"wrong");state.line++;renderPrompter()};$("alertOptions").appendChild(b)});
+ $("alertModal").classList.add("show")
+}
+function finish(){
+ var s=state.scenario,c=state.choice,correct=0,miss=[];
+ if(c.weather===s.weather)correct++;else miss.push("핵심 날씨");
+ if(c.trend===s.trend)correct++;else miss.push("기온 변화");
+ if(c.advice===s.advice)correct++;else miss.push("생활 정보");
+ var fscore=Math.round(correct/3*60),mapRatio=state.mapTries?Math.min(1,state.mapHits/3):0,mscore=Math.round(mapRatio*20),ascore=state.alertCorrect?20:0,total=fscore+mscore+ascore;
+ if(total>best())setBest(total);$("bestPill").textContent="최고 "+best();$("scoreBig").textContent=total;$("forecastScore").textContent=fscore+"/60";$("mapScore").textContent=mscore+"/20";$("alertScore").textContent=ascore+"/20";$("forecastMeter").style.width=(fscore/60*100)+"%";$("mapMeter").style.width=(mscore/20*100)+"%";$("alertMeter").style.width=(ascore/20*100)+"%";
+ $("gradeText").textContent=total>=90?"메인 기상캐스터급 방송!":total>=70?"믿음직한 예보였어요!":total>=50?"좋아요, 자료를 한 번 더 읽어봐요.":"첫 방송을 마쳤어요. 관측부터 복습해 봐요.";
+ var fb=[];fb.push("<b>실제 상황:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>다시 볼 부분:</b> "+miss.join(", "));else fb.push("<br><b>예보 판단 3가지를 모두 정확하게 읽었어요.</b>");fb.push("<br>"+(state.alertCorrect?"속보가 들어왔을 때 새 정보를 방송에 잘 반영했어요.":"속보에서는 처음 예보보다 새 관측 자료를 우선해야 해요."));$("feedbackText").innerHTML=fb.join("");
+ show("result");phase("결과 4/4");sdk("score",total);sdk("gameOver",{score:total})
+}
+function reset(){pickScenario();document.querySelectorAll(".option").forEach(function(x){x.classList.remove("selected")});$("toLive").disabled=true;$("forecastSummary").textContent="아직 방송 대본을 작성하는 중이에요.";show("observe");phase("관측 1/4");if(!state.started){state.started=true;sdk("start")}}
+document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){state.tab=b.dataset.tab;document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x===b)});renderMap()})});
+document.querySelectorAll(".option").forEach(function(b){b.addEventListener("click",function(){choose(b.parentElement.dataset.group,b.dataset.value,b)})});
+document.querySelectorAll(".region").forEach(function(b){b.addEventListener("click",function(){regionClick(b)})});
+$("toForecast").onclick=function(){show("forecast");phase("예보 작성 2/4")};
+$("toLive").onclick=startLive;$("nextLine").onclick=nextLine;
+$("reviewBtn").onclick=function(){show("observe");phase("관측 복습");renderObservation()};
+$("againBtn").onclick=reset;
+$("startBtn").onclick=function(){$("tutorial").classList.remove("show");reset()};
+document.addEventListener("keydown",function(e){
+ if($("forecast").classList.contains("active")){var groups=["weather","trend","advice"],idx=Number(e.key)-1;if(idx>=0&&idx<5){var group=groups.find(function(g){return !state.choice[g]})||"weather";var btn=document.querySelector('.options[data-group="'+group+'"] .option:nth-child('+(idx+1)+')');if(btn)btn.click()}}
+ if($("live").classList.contains("active")&&e.key==="Enter")nextLine()
+});
+$("bestPill").textContent="최고 "+best();pickScenario();
+})();
+</script>
+</body>
+</html>
