@@ -2699,8 +2699,11 @@ function registerCreatureMeshes(root){
     creatureInteractables.push(o);
   });
 }
-function creatureGroundY(x,z){
-  return getHighestSolidY(x,z,WORLD_MAX_Y)+1;
+function creatureGroundY(x,z,fromY=terrainHeight(Math.round(x),Math.round(z))+1){
+  const cx=Math.round(x),cz=Math.round(z),start=Math.min(WORLD_MAX_Y,Math.floor(fromY+1.2));
+  const bottom=Math.max(WORLD_MIN_Y,Math.floor(fromY-3));
+  for(let y=start;y>=bottom;y--)if(isSolidData(getBlock(cx,y,cz),cx,y,cz))return y+1;
+  return terrainHeight(cx,cz)+1;
 }
 function placeWildCreature(id,x,z){
   const api=window.CubeArchitectCreatures,root=api?.create?.(id);if(!root)return null;
@@ -2739,11 +2742,11 @@ function spawnDynamicCreature(){
     const weighted=roster.filter(spec=>!spec.elite||Math.random()<.12);
     if(!weighted.length)continue;
     const spec=weighted[Math.floor(Math.random()*weighted.length)];
-    const ground=terrainHeight(x,z),groundType=getBlock(x,ground,z)?.type;
-    if(ground<SEA_LEVEL-1&& !['frog','slime'].includes(spec.id))continue;
+    const ground=terrainHeight(x,z),fluid=getBlock(x,ground+1,z)?.type;
+    if((ground<SEA_LEVEL-1||fluid==='water')&&!['frog','slime'].includes(spec.id))continue;
     const root=placeWildCreature(spec.id,x,z);if(!root)continue;
     root.userData.spawnId=spec.id+':'+(++creatureSpawnSerial);
-    if(spec.id==='cubeGolem')startCubeGolemAssembly(root);
+    if(spec.id==='cubeGolem')root.userData.needsAssembly=true;
     return true;
   }
   return false;
@@ -2850,9 +2853,9 @@ function creatureHint(spec){
 function walkCreature(root,dir,speed,dt,allowWater=false){
   const nx=root.position.x+Math.sin(dir)*speed*dt,nz=root.position.z+Math.cos(dir)*speed*dt;
   if(!inWorld(Math.round(nx),0,Math.round(nz)))return false;
-  const nextY=creatureGroundY(nx,nz),dy=Math.abs(nextY-root.position.y);
-  const ground=getBlock(Math.round(nx),Math.max(WORLD_MIN_Y,Math.floor(nextY-1)),Math.round(nz));
-  if(dy>1.15||(!allowWater&&ground?.type==='water'))return false;
+  const nextY=creatureGroundY(nx,nz,root.position.y),dy=Math.abs(nextY-root.position.y);
+  const cx=Math.round(nx),cz=Math.round(nz),fluid=getBlock(cx,Math.floor(nextY),cz);
+  if(dy>1.15||(!allowWater&&fluid?.type==='water'))return false;
   root.position.x=nx;root.position.z=nz;root.position.y=nextY;root.rotation.y=dir+Math.PI;return true;
 }
 function updateCreatureHealthUi(){
@@ -2927,6 +2930,10 @@ function updateWildCreatures(dt,t){
     const u=root.userData;if(u.dead||!root.parent)continue;
     const spec=u.spec,dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
     if(dist>42){root.visible=false;continue}
+    if(u.needsAssembly){
+      if(dist>=16){root.visible=false;continue}
+      u.needsAssembly=false;startCubeGolemAssembly(root);
+    }
     upgradeWildCreatureAsset(root);
     if(dist<7&&!seenCreatureKinds.has(spec.id)&&t-lastCreatureHintAt>2400){
       seenCreatureKinds.add(spec.id);lastCreatureHintAt=t;toast('생물 발견 · '+spec.name+' · '+creatureHint(spec));
@@ -2934,7 +2941,7 @@ function updateWildCreatures(dt,t){
     const active=spec.kind!=='hostile'||(spec.id==='shadowBug'?night:true);
     root.visible=active;
     if(!active)continue;
-    root.position.y=creatureGroundY(root.position.x,root.position.z);
+    root.position.y=creatureGroundY(root.position.x,root.position.z,root.position.y);
     if(updateCubeGolemAssembly(root,t)){
       window.CubeArchitectCreatureAssets?.update?.(u.visual,dt,'idle');
       continue;
