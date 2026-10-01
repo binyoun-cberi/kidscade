@@ -14,9 +14,9 @@ const sandbox={THREE:new Proxy({}, {get(){return class{}}})};
 test('v22 creature roster is wired before the main runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(creatureJs));
-  assert.match(html,/cube-architect-creatures\.js\?v=20261001-23/);
-  assert.match(html,/cube-architect-creature-assets\.js\?v=20261001-23/);
-  assert.match(html,/cube-architect\.js\?v=20261001-23/);
+  assert.match(html,/cube-architect-creatures\.js\?v=20261001-24/);
+  assert.match(html,/cube-architect-creature-assets\.js\?v=20261001-24/);
+  assert.match(html,/cube-architect\.js\?v=20261001-24/);
   assert.ok(html.indexOf('cube-architect-creatures.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/type="importmap"/);
   assert.match(assetJs,/GLTFLoader/);
@@ -29,7 +29,7 @@ test('seven new biome creatures cover peaceful wildlife and build-reactive monst
   assert.match(creatureJs,/kind:'hostile'/);
   assert.match(creatureJs,/nocturnal:true/);
   assert.match(creatureJs,/elite:true/);
-  assert.match(js,/function nearbyLight/);
+  assert.match(js,/function nearestCreatureLight/);
   assert.match(js,/hardGround=spec\.id==='burrower'/);
   assert.match(js,/creatureStandingMaterial\(root\)/);
   assert.match(js,/dy>1\.15/);
@@ -56,7 +56,7 @@ test('survival combat is forgiving and keeps building as a defense',()=>{
   assert.match(js,/survivalHealth=5/);
   assert.match(js,/health:survivalHealth/);
   assert.match(js,/Number\(data\.health\)\|\|5/);
-  assert.match(js,/version:10/);
+  assert.match(js,/version:11/);
   assert.match(js,/function damageByCreature/);
   assert.match(js,/function returnAfterCreatureDefeat/);
   assert.match(js,/가방의 재료는 그대로/);
