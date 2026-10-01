@@ -13,18 +13,18 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
   assert.ok(entry);
   assert.equal(entry.subject, 'social');
   assert.equal(entry.age, 'high');
-  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js', 'art.js'])
+  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js', 'art.js', 'rework.js'])
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=8/);
-  assert.match(html, /art.js\?v=8/);
-  assert.match(html, /game.js\?v=8/);
+  assert.match(html, /sim.js\?v=9/);
+  assert.match(html, /art.js\?v=9/);
+  assert.match(html, /game.js\?v=9/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=8"));
+  assert.ok(entry.href.endsWith("?v=9"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -911,4 +911,22 @@ test('v8 simulation makes safe, production-first and compromise chiefs create di
   assert.ok(prod.risky > safe.risky, 'production-first chief should take more high-risk shortcuts');
   assert.ok(Math.abs(prod.health - safe.health) >= 5 || Math.abs(prod.trust - safe.trust) >= 8 ||
     Math.abs(prod.grievances - safe.grievances) >= 3, 'chief styles should create visible long-term consequences');
+});
+
+
+test('island-first interface keeps management secondary and adds direct field controls', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
+  const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
+  const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(html, /rework\.js\?v=9/);
+  assert.match(css, /management-dock/);
+  assert.match(css, /weather-fx/);
+  assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
+  assert.match(rework, /site-control/);
+  assert.match(rework, /data-site="gather"/);
+  assert.match(rework, /data-site="wood"/);
+  assert.match(rework, /data-job/);
+  assert.match(game, /disaster-cold/);
+  assert.match(game, /disaster-flood/);
 });
