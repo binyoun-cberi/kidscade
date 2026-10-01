@@ -45,13 +45,13 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
 #avatarImg{max-width:100%;max-height:88%;object-fit:contain;filter:drop-shadow(0 14px 12px #00172588);transform-origin:50% 100%;animation:idle 2.4s ease-in-out infinite}.avatar-fallback{font-size:min(23vw,220px);filter:drop-shadow(0 14px 12px #00172588);animation:idle 2.4s ease-in-out infinite}
 @keyframes idle{50%{transform:translateY(-5px) rotate(.5deg)}}
 .live-tag{position:absolute;left:4%;bottom:4%;background:#d8363e;padding:8px 12px;border-radius:9px;font-weight:1000;box-shadow:0 0 20px #ff445b66}.lower-third{position:absolute;left:4%;right:40%;bottom:12%;background:#071c2de8;border-left:7px solid #ffd45b;padding:12px 14px;font-weight:900;line-height:1.4}
-.broadcast-side{display:flex;flex-direction:column}.prompter{padding:14px;display:grid;gap:10px}.prompt-card{padding:12px;border-radius:13px;border:1px solid #315f75;background:#091f2f;opacity:.5}.prompt-card.current{opacity:1;border-color:#9ce7ff;background:#11384d}.prompt-card.done{opacity:.35;text-decoration:line-through}.prompt-card b{display:block;color:#8bd4f3;font-size:10px;margin-bottom:4px}.prompt-card p{margin:0;line-height:1.5}.live-controls{margin-top:auto;padding:14px;border-top:1px solid #2d5a70}.region-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:8px 0}.region{border:1px solid #3b6f86;background:#0c2939;padding:9px;border-radius:10px;cursor:pointer;font-weight:900}.region.hit{background:#2d7a55;border-color:#86e4aa}.region.miss{background:#713843;border-color:#ff9398}
+.broadcast-side{display:flex;flex-direction:column}.prompter{padding:14px;display:grid;gap:10px}.prompt-card{padding:12px;border-radius:13px;border:1px solid #315f75;background:#091f2f;opacity:.5}.prompt-card.current{opacity:1;border-color:#9ce7ff;background:#11384d}.prompt-card.done{opacity:.35;text-decoration:line-through}.prompt-card b{display:block;color:#8bd4f3;font-size:10px;margin-bottom:4px}.prompt-card p{margin:0;line-height:1.5}.live-controls{margin-top:auto;padding:14px;border-top:1px solid #2d5a70}.region-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:8px 0}.region{border:1px solid #3b6f86;background:#0c2939;padding:9px;border-radius:10px;cursor:pointer;font-weight:900}.region.hit{background:#2d7a55;border-color:#86e4aa}.region.miss{background:#713843;border-color:#ff9398}.region:disabled{opacity:.62;cursor:not-allowed}.map-hotspot{position:absolute;z-index:4;width:72px;min-height:42px;transform:translate(-50%,-50%);border:2px solid #ffffffbb;background:#07324abf;border-radius:999px;font-size:11px;font-weight:950;cursor:pointer;box-shadow:0 5px 14px #00283e88}.map-hotspot.hit{background:#26704f;border-color:#9bf0ba}.map-hotspot.miss{background:#713843;border-color:#ff9398}.map-hotspot:disabled{opacity:.68}.hot-north{left:50%;top:25%}.hot-central{left:55%;top:45%}.hot-south{left:62%;top:68%}.hot-jeju{left:44%;top:89%}
 .alert{position:fixed;inset:0;z-index:100;background:#02111de8;display:none;align-items:center;justify-content:center;padding:18px}.alert.show{display:flex}.alert-card{width:min(620px,100%);background:#102b3d;border:2px solid #ffcb55;border-radius:20px;box-shadow:0 30px 100px #000;padding:20px}.alert-card h2{margin:0 0 8px;color:#ffe391}.alert-card p{line-height:1.6}.alert-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}.alert-btn{border:1px solid #50788c;background:#15394d;padding:13px;border-radius:12px;cursor:pointer;font-weight:900}
-.result-wrap{width:min(820px,100%);margin:0 auto}.result-card{padding:22px}.score-big{text-align:center;font-size:72px;font-weight:1000;line-height:1;color:#ffe06f;margin:8px 0}.grade{text-align:center;font-weight:950;color:#bde7f7}.meters{display:grid;gap:10px;margin:18px 0}.meter{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center}.track{height:12px;background:#061722;border-radius:99px;overflow:hidden;border:1px solid #2a566c}.fill{height:100%;background:linear-gradient(90deg,#55cbe8,#86e6a4)}.feedback{padding:14px;border-radius:14px;background:#0a2334;border:1px solid #315f75;line-height:1.65}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.verify-wrap{width:min(900px,100%);margin:0 auto}.verify-card{padding:20px}.verify-stage{position:relative;min-height:420px;border:1px solid #41758b;border-radius:18px;overflow:hidden;background:linear-gradient(#67c9e8 0 58%,#2d6a80 58% 100%)}.verify-sky{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:min(26vw,210px);transition:.3s}.verify-map{position:absolute;left:50%;top:50%;transform:translate(-50%,-48%);width:min(52%,360px);opacity:.82}.verify-map svg{width:100%;height:auto}.verify-time{position:absolute;left:16px;top:14px;padding:9px 12px;border-radius:12px;background:#061e2edb;border:1px solid #7fc9e6;font-size:22px;font-weight:1000}.verify-caption{position:absolute;left:16px;right:16px;bottom:14px;padding:12px 14px;background:#061e2ee8;border-left:6px solid #ffd45b;font-weight:900;line-height:1.45}.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.time-node{padding:9px;border:1px solid #315f75;border-radius:12px;background:#0a2334;text-align:center;font-weight:900;opacity:.48}.time-node.active{opacity:1;background:#e7f8ff;color:#0b3144;border-color:#fff}.time-node.done{opacity:.8;border-color:#65d89a}.result-wrap{width:min(820px,100%);margin:0 auto}.result-card{padding:22px}.score-big{text-align:center;font-size:72px;font-weight:1000;line-height:1;color:#ffe06f;margin:8px 0}.grade{text-align:center;font-weight:950;color:#bde7f7}.meters{display:grid;gap:10px;margin:18px 0}.meter{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center}.track{height:12px;background:#061722;border-radius:99px;overflow:hidden;border:1px solid #2a566c}.fill{height:100%;background:linear-gradient(90deg,#55cbe8,#86e6a4)}.feedback{padding:14px;border-radius:14px;background:#0a2334;border:1px solid #315f75;line-height:1.65}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .tutorial{position:fixed;inset:0;z-index:120;background:#031421ed;display:none;align-items:center;justify-content:center;padding:18px}.tutorial.show{display:flex}.tutorial-card{width:min(760px,100%);background:#123247;border:1px solid #5590aa;border-radius:22px;padding:22px}.tutorial-card h1{margin:0 0 8px}.tutorial-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}.tut{background:#0a2334;border:1px solid #315d72;border-radius:14px;padding:12px;text-align:center}.tut span{font-size:32px;display:block;margin-bottom:7px}.tut b{display:block}.tut small{display:block;color:#9fc4d6;margin-top:4px;line-height:1.4}
 .toast{position:fixed;left:50%;top:82px;z-index:90;transform:translate(-50%,-12px);background:#071a27ed;border:1px solid #74c6e5;border-radius:12px;padding:10px 14px;font-weight:900;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:850px){.hero,.studio{grid-template-columns:1fr}.map-wrap{min-height:390px}#mapSvg{height:390px}.forecast-grid{grid-template-columns:1fr}.stage{min-height:430px}.broadcast-side{min-height:auto}.tutorial-grid{grid-template-columns:1fr 1fr}.presenter{width:34%}.lower-third{right:35%}}
-@media(max-width:520px){main{padding:9px}.topbar{grid-template-columns:1fr auto}.day{display:none}.hud{gap:4px}.pill{font-size:10px;padding:6px}.hero{gap:9px}.map-wrap{min-height:330px}#mapSvg{height:330px}.brief h1{font-size:22px}.step-title h1{font-size:23px}.studio-map{width:66%;height:56%}.presenter{width:42%;right:-1%}.lower-third{right:30%;font-size:12px}.tutorial-grid{grid-template-columns:1fr 1fr}.alert-options,.result-actions{grid-template-columns:1fr}.meter{grid-template-columns:90px 1fr 38px}.weather-badge{font-size:11px;padding:6px}.b-seoul{left:27%}.b-cheongju{left:46%}.b-busan{right:17%}}
+@media(max-width:520px){.map-hotspot{width:58px;min-height:38px;font-size:9px}.verify-stage{min-height:340px}.timeline{grid-template-columns:repeat(2,1fr)}main{padding:9px}.topbar{grid-template-columns:1fr auto}.day{display:none}.hud{gap:4px}.pill{font-size:10px;padding:6px}.hero{gap:9px}.map-wrap{min-height:330px}#mapSvg{height:330px}.brief h1{font-size:22px}.step-title h1{font-size:23px}.studio-map{width:66%;height:56%}.presenter{width:42%;right:-1%}.lower-third{right:30%;font-size:12px}.tutorial-grid{grid-template-columns:1fr 1fr}.alert-options,.result-actions{grid-template-columns:1fr}.meter{grid-template-columns:90px 1fr 38px}.weather-badge{font-size:11px;padding:6px}.b-seoul{left:27%}.b-cheongju{left:46%}.b-busan{right:17%}}
 </style>
 </head>
 <body>
@@ -118,6 +118,7 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
       <button class="option" data-value="warm"><span>🧥</span>따뜻하게 입기</button>
       <button class="option" data-value="mask"><span>😷</span>마스크 준비하기</button>
       <button class="option" data-value="wind"><span>🏠</span>강풍에 날릴 물건 정리하기</button>
+      <button class="option" data-value="visibility"><span>🚗</span>안개·낮은 시야 조심하기</button>
     </div></div>
   </div>
   <div class="forecast-summary" id="forecastSummary">아직 방송 대본을 작성하는 중이에요.</div>
@@ -134,6 +135,10 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
           <ellipse class="land" cx="237" cy="421" rx="54" ry="21"/>
           <text class="city-label" x="245" y="115">서울</text><text class="city-label" x="276" y="206">청주</text><text class="city-label" x="318" y="316">부산</text><text class="city-label" x="220" y="425">제주</text>
         </svg>
+        <button class="map-hotspot hot-north" data-region="north">수도권</button>
+        <button class="map-hotspot hot-central" data-region="central">충청</button>
+        <button class="map-hotspot hot-south" data-region="south">남부</button>
+        <button class="map-hotspot hot-jeju" data-region="jeju">제주</button>
       </div>
       <div class="presenter"><img id="avatarImg" alt="내 키즈케이드 아바타" hidden><div id="avatarFallback" class="avatar-fallback">🧑‍💼</div></div>
       <div class="live-tag">● LIVE</div>
@@ -143,7 +148,7 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
       <div class="panel-head"><h3>프롬프터</h3><strong id="liveCount">1 / 4</strong></div>
       <div class="prompter" id="prompter"></div>
       <div class="live-controls">
-        <small style="color:#9fc8da;font-weight:800">지금 설명하는 지역을 가리켜 보세요.</small>
+        <small style="color:#9fc8da;font-weight:800">방송 지도에서 지역을 직접 가리켜 보세요. 아래 버튼은 작은 화면용 보조 조작이에요.</small>
         <div class="region-buttons">
           <button class="region" data-region="north">수도권</button><button class="region" data-region="central">충청</button>
           <button class="region" data-region="south">남부</button><button class="region" data-region="jeju">제주</button>
@@ -151,6 +156,20 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
         <button class="primary wide" id="nextLine">다음 멘트 →</button>
       </div>
     </aside>
+  </div>
+</section>
+
+<section id="verify" class="screen">
+  <div class="step-title"><span class="eyebrow">FORECAST CHECK</span><h1>내 예보 뒤에 실제 날씨는?</h1><p>시간을 보내며 관측한 구름과 바람이 실제로 어떻게 변했는지 확인해요.</p></div>
+  <div class="verify-wrap panel verify-card">
+    <div class="verify-stage">
+      <div class="verify-sky" id="verifySky">🌤️</div>
+      <div class="verify-map"><svg viewBox="0 0 520 470"><path class="land" d="M270 24 C238 34 221 62 228 88 C204 113 208 143 224 163 C206 190 212 220 233 239 C218 263 226 293 250 306 C241 329 256 353 276 360 C289 386 325 393 344 373 C367 357 366 328 350 313 C371 291 365 260 347 244 C365 220 355 190 337 177 C349 151 338 127 319 115 C329 87 314 59 293 50 C290 36 282 28 270 24 Z"/><ellipse class="land" cx="237" cy="421" rx="54" ry="21"/></svg></div>
+      <div class="verify-time" id="verifyTime">07:00</div>
+      <div class="verify-caption" id="verifyCaption">아침 관측을 마쳤습니다.</div>
+    </div>
+    <div class="timeline"><div class="time-node active">07:00<br>관측</div><div class="time-node">10:00</div><div class="time-node">13:00</div><div class="time-node">16:00</div></div>
+    <button class="primary wide" id="advanceTime">시간 보내기 ▶</button>
   </div>
 </section>
 
@@ -176,7 +195,7 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
   <div class="tut"><span>🗺️</span><b>1. 관측</b><small>레이더·기온·바람을 살펴봐요.</small></div>
   <div class="tut"><span>🧠</span><b>2. 판단</b><small>오후 날씨와 준비물을 예보해요.</small></div>
   <div class="tut"><span>🎙️</span><b>3. 방송</b><small>지도에서 지역을 가리키며 설명해요.</small></div>
-  <div class="tut"><span>🚨</span><b>4. 속보</b><small>새 자료가 오면 예보를 빠르게 고쳐요.</small></div>
+  <div class="tut"><span>🚨</span><b>4. 속보·검증</b><small>새 자료에 대응하고 실제 오후 날씨까지 확인해요.</small></div>
 </div><p style="color:#bdd8e5;line-height:1.6">정답을 외우는 게임이 아니에요. <b style="color:white">자료가 어떻게 움직이는지 보고 판단</b>하는 것이 핵심입니다.</p><button class="primary wide" id="startBtn">기상센터 출근하기</button></div></div>
 <div class="toast" id="toast"></div>
 
@@ -184,18 +203,18 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
 (function(){
 "use strict";
 var scenarios=[
- {id:"autumn_rain",title:"서쪽에서 비구름이 접근해요",intro:"서해에서 넓은 비구름이 들어오고 있습니다. 오후 중부 지방의 변화를 살펴보세요.",temps:[18,17,21,22],sky:"구름 많음",wind:"서풍 5 m/s",hint:"비구름이 서쪽 → 동쪽으로 이동",weather:"rain",trend:"down",advice:"umbrella",region:"central",radar:"west",alert:"호우 구름대가 예상보다 빠르게 충청 지역으로 이동하고 있습니다.",alertGood:"비 시작 시각을 앞당겨 알린다",alertBad:"아침 예보를 그대로 반복한다",coach:"레이더에서 비구름의 위치뿐 아니라 이동 방향도 확인해 보세요."},
- {id:"summer_heat",title:"한낮 기온이 크게 오르겠어요",intro:"구름이 거의 없고 남쪽에서 따뜻한 공기가 들어옵니다. 한낮 야외활동에 주의가 필요해 보여요.",temps:[27,28,29,30],sky:"대체로 맑음",wind:"남서풍 3 m/s",hint:"강한 햇빛 + 따뜻한 공기 유입",weather:"sun",trend:"up",advice:"water",region:"central",radar:"clear",alert:"청주에 폭염주의보가 발표되었습니다.",alertGood:"수분 섭취와 야외활동 주의를 강조한다",alertBad:"우산을 꼭 챙기라고 알린다",coach:"비구름이 없는 날에는 기온과 바람이 어디에서 오는지 함께 보세요."},
- {id:"winter_snow",title:"차가운 공기와 눈구름이 만나요",intro:"서쪽 바다에서 만들어진 눈구름이 들어오고 기온도 내려가고 있습니다.",temps:[-3,-4,1,3],sky:"흐리고 추움",wind:"북서풍 7 m/s",hint:"눈구름 접근 + 영하권 기온",weather:"snow",trend:"down",advice:"warm",region:"central",radar:"snow",alert:"충청 일부 도로에 결빙 위험이 커졌습니다.",alertGood:"눈과 빙판길 주의를 함께 알린다",alertBad:"기온이 곧 크게 오른다고 알린다",coach:"같은 구름이라도 기온이 낮으면 비 대신 눈이 내릴 수 있어요."},
- {id:"spring_dust",title:"하늘은 맑아도 공기가 뿌옇습니다",intro:"비구름은 없지만 서쪽에서 건조한 바람과 함께 황사가 이동하고 있습니다.",temps:[15,16,18,19],sky:"맑지만 뿌연 하늘",wind:"서풍 8 m/s",hint:"서쪽에서 황사 유입",weather:"cloud",trend:"up",advice:"mask",region:"north",radar:"dust",alert:"수도권 미세먼지 농도가 매우 나쁨 수준으로 올랐습니다.",alertGood:"외출 시간과 호흡기 보호를 안내한다",alertBad:"강수량이 많아진다고 알린다",coach:"레이더에 비가 없다고 항상 좋은 날씨는 아니에요. 바람과 공기 상태도 중요해요."},
- {id:"typhoon",title:"남쪽 바다의 강한 소용돌이",intro:"제주 남쪽에서 강한 비바람을 동반한 저기압이 북상하고 있습니다.",temps:[24,24,26,27],sky:"남부부터 흐려짐",wind:"남동풍 12 m/s",hint:"제주 남쪽 강한 비구름 + 강풍",weather:"rain",trend:"same",advice:"wind",region:"jeju",radar:"typhoon",alert:"태풍 예상 경로가 동쪽으로 조금 바뀌었지만 제주에는 강풍이 계속됩니다.",alertGood:"새 경로와 제주 강풍 위험을 함께 수정한다",alertBad:"태풍 위험이 완전히 끝났다고 알린다",coach:"태풍은 중심 위치만 보지 말고 넓은 비구름과 강풍 영역을 함께 살펴보세요."},
- {id:"morning_fog",title:"아침 안개가 천천히 걷혀요",intro:"내륙에 짙은 안개가 있지만 햇빛이 강해지며 시야가 조금씩 좋아지고 있습니다.",temps:[11,10,15,17],sky:"내륙 짙은 안개",wind:"약한 남풍 1 m/s",hint:"강수 없음 + 오전 안개 점차 약화",weather:"sun",trend:"up",advice:"warm",region:"central",radar:"fog",alert:"충청 일부 지역의 안개가 예상보다 오래 남아 있습니다.",alertGood:"운전 시 가시거리 주의를 추가한다",alertBad:"폭설특보가 내려졌다고 알린다",coach:"아침과 오후 날씨가 다를 수 있어요. 시간에 따른 변화를 생각해 보세요."}
-];
-var state={scenario:null,choice:{weather:"",trend:"",advice:""},tab:"radar",line:0,mapHits:0,mapTries:0,alertDone:false,alertCorrect:false,started:false};
+ {id:"autumn_rain",title:"가을 아침 관측",intro:"오전 7시 자료입니다. 세 관측 화면을 모두 확인한 뒤 오후 중부 지방을 예보하세요.",temps:[18,17,21,22],sky:"중부 구름 증가",wind:"서풍 5 m/s",windDir:"W",hint:"강수 영역의 이동과 기온 변화를 함께 비교",weather:"rain",trend:"down",advice:"umbrella",region:"central",radar:"west",alert:"호우 구름대가 예상보다 빠르게 충청 지역으로 이동하고 있습니다.",alertGood:"비 시작 시각을 앞당겨 알린다",alertBad:"아침 예보를 그대로 반복한다",coach:"자료의 글자보다 지도에서 구름이 어디로 움직이는지 먼저 확인해 보세요.",timeline:[["07:00","☁️","중부에 구름이 늘기 시작합니다."],["10:00","🌥️","서쪽의 강수 영역이 충청에 가까워집니다."],["13:00","🌧️","충청 곳곳에서 비가 시작됩니다."],["16:00","🌧️","비구름이 동쪽으로 이동하며 비가 이어집니다."]]},
+ {id:"summer_heat",title:"한여름 아침 관측",intro:"오전 7시 자료입니다. 하늘 상태와 바람, 지역별 기온을 보고 오후 상황을 예상하세요.",temps:[27,28,29,30],sky:"구름 거의 없음",wind:"남서풍 3 m/s",windDir:"SW",hint:"구름 양과 따뜻한 공기가 들어오는 방향 비교",weather:"sun",trend:"up",advice:"water",region:"central",radar:"clear",alert:"청주에 폭염주의보가 발표되었습니다.",alertGood:"수분 섭취와 야외활동 주의를 강조한다",alertBad:"우산을 꼭 챙기라고 알린다",coach:"강수 구름이 없을 때는 기온과 바람이 어느 쪽에서 오는지 살펴보세요.",timeline:[["07:00","🌤️","아침부터 햇빛이 강해지기 시작합니다."],["10:00","☀️","구름이 적고 기온이 빠르게 오릅니다."],["13:00","🥵","청주를 포함한 내륙의 더위가 강해집니다."],["16:00","☀️","늦은 오후까지 높은 기온이 이어집니다."]]},
+ {id:"winter_snow",title:"한겨울 아침 관측",intro:"오전 7시 자료입니다. 강수 영역과 영하권 기온, 바람을 함께 살펴보세요.",temps:[-3,-4,1,3],sky:"중부 흐림",wind:"북서풍 7 m/s",windDir:"NW",hint:"강수 영역과 영하권 지역이 겹치는지 확인",weather:"snow",trend:"down",advice:"warm",region:"central",radar:"snow",alert:"충청 일부 도로에 결빙 위험이 커졌습니다.",alertGood:"눈과 빙판길 주의를 함께 알린다",alertBad:"기온이 곧 크게 오른다고 알린다",coach:"강수 구름이 있는 곳의 기온이 0℃ 아래인지 확인해 보세요.",timeline:[["07:00","☁️","중부의 기온이 영하권에 머뭅니다."],["10:00","🌨️","서쪽에서 들어온 구름에서 눈이 날리기 시작합니다."],["13:00","❄️","충청 일부 지역에 눈이 쌓이기 시작합니다."],["16:00","🧊","눈 뒤 기온이 낮아 도로 결빙 위험이 커집니다."]]},
+ {id:"spring_dust",title:"봄철 아침 관측",intro:"오전 7시 자료입니다. 비가 없는 날에도 바람이 무엇을 싣고 오는지 살펴보세요.",temps:[15,16,18,19],sky:"맑지만 시야가 뿌연 곳 있음",wind:"서풍 8 m/s",windDir:"W",hint:"강수 레이더와 별개로 서쪽에서 들어오는 대기 상태 확인",weather:"sun",trend:"up",advice:"mask",region:"north",radar:"dust",alert:"수도권 미세먼지 농도가 매우 나쁨 수준으로 올랐습니다.",alertGood:"외출 시간과 호흡기 보호를 안내한다",alertBad:"강수량이 많아진다고 알린다",coach:"비가 오지 않아도 바람을 따라 황사나 미세먼지가 이동할 수 있어요.",timeline:[["07:00","🌤️","하늘은 맑지만 서쪽 하늘이 뿌옇습니다."],["10:00","🌫️","황사 영역이 수도권으로 들어오기 시작합니다."],["13:00","😷","수도권의 대기 질이 크게 나빠집니다."],["16:00","🌤️","비는 없지만 공기 질 주의가 계속 필요합니다."]]},
+ {id:"typhoon",title:"남쪽 바다 아침 관측",intro:"오전 7시 자료입니다. 제주 남쪽 강수 영역과 바람의 방향·세기를 함께 확인하세요.",temps:[24,24,26,27],sky:"남부 구름 증가",wind:"남동풍 12 m/s",windDir:"SE",hint:"제주 남쪽 강수 영역과 강한 바람의 범위 확인",weather:"rain",trend:"same",advice:"wind",region:"jeju",radar:"typhoon",alert:"태풍 예상 경로가 동쪽으로 조금 바뀌었지만 제주에는 강풍이 계속됩니다.",alertGood:"새 경로와 제주 강풍 위험을 함께 수정한다",alertBad:"태풍 위험이 완전히 끝났다고 알린다",coach:"중심점만 보지 말고 비구름과 강풍의 넓은 범위를 함께 살펴보세요.",timeline:[["07:00","🌀","제주 남쪽 해상에서 강한 소용돌이가 관측됩니다."],["10:00","🌬️","제주에 바람이 강해지고 비구름이 가까워집니다."],["13:00","🌧️","제주에 강한 비바람이 시작됩니다."],["16:00","🌀","진로가 조금 바뀌어도 강풍 위험은 이어집니다."]]},
+ {id:"morning_fog",title:"안개 낀 아침 관측",intro:"오전 7시 자료입니다. 내륙의 시야와 햇빛, 약한 바람의 변화를 살펴보세요.",temps:[11,10,15,17],sky:"내륙 짙은 안개",wind:"남풍 1 m/s",windDir:"S",hint:"강수는 없지만 내륙 가시거리 변화 확인",weather:"sun",trend:"up",advice:"visibility",region:"central",radar:"fog",alert:"충청 일부 지역의 안개가 예상보다 오래 남아 있습니다.",alertGood:"운전 시 가시거리 주의를 추가한다",alertBad:"폭설특보가 내려졌다고 알린다",coach:"안개는 비와 달라요. 햇빛이 강해지는 시간과 시야 변화를 함께 보세요.",timeline:[["07:00","🌫️","충청 내륙의 짙은 안개로 시야가 짧습니다."],["10:00","🌫️","일부 지역은 안개가 예상보다 오래 남습니다."],["13:00","🌤️","햇빛이 강해지며 안개가 대부분 걷힙니다."],["16:00","☀️","오후에는 대체로 맑고 기온도 올랐습니다."]]}
+]
+var state={scenario:null,choice:{weather:"",trend:"",advice:""},tab:"radar",viewed:{radar:true,temperature:false,wind:false},line:0,mapResults:{},alertDone:false,alertCorrect:false,verifyStep:0,started:false};
 var labels={
  weather:{sun:"맑고 햇빛이 강함",cloud:"구름 많음·흐림",rain:"비",snow:"눈"},
  trend:{up:"기온 상승",same:"기온 비슷",down:"기온 하락"},
- advice:{umbrella:"우산 준비",water:"물 자주 마시기",warm:"따뜻하게 입기",mask:"마스크 준비",wind:"강풍 대비"},
+ advice:{umbrella:"우산 준비",water:"물 자주 마시기",warm:"따뜻하게 입기",mask:"마스크 준비",wind:"강풍 대비",visibility:"안개·낮은 시야 주의"},
  region:{north:"수도권",central:"충청",south:"남부",jeju:"제주"}
 };
 function $(id){return document.getElementById(id)}
@@ -205,11 +224,12 @@ function best(){try{return Number(localStorage.getItem("kidscade_weathercaster_b
 function setBest(v){try{localStorage.setItem("kidscade_weathercaster_best_v1",String(v))}catch(e){}}
 function show(id){document.querySelectorAll(".screen").forEach(function(x){x.classList.remove("active")});$(id).classList.add("active");window.scrollTo(0,0)}
 function phase(text){$("phasePill").textContent=text}
-function pickScenario(){var previous=state.scenario&&state.scenario.id;var pool=scenarios.filter(function(x){return x.id!==previous});state.scenario=pool[Math.floor(Math.random()*pool.length)];state.choice={weather:"",trend:"",advice:""};state.line=0;state.mapHits=0;state.mapTries=0;state.alertDone=false;state.alertCorrect=false;renderObservation()}
+function pickScenario(){var previous=state.scenario&&state.scenario.id;var pool=scenarios.filter(function(x){return x.id!==previous});state.scenario=pool[Math.floor(Math.random()*pool.length)];state.choice={weather:"",trend:"",advice:""};state.tab="radar";state.viewed={radar:true,temperature:false,wind:false};state.line=0;state.mapResults={};state.alertDone=false;state.alertCorrect=false;state.verifyStep=0;document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x.dataset.tab==="radar")});renderObservation();updateObservationGate()}
 function renderObservation(){
  var s=state.scenario;$("scenarioTitle").textContent=s.title;$("scenarioIntro").textContent=s.intro;$("skyData").textContent=s.sky;$("windData").textContent=s.wind;$("hintData").textContent=s.hint;$("coachText").textContent="💡 "+s.coach;
- ["Seoul","Cheongju","Busan","Jeju"].forEach(function(n,i){$("temp"+n).textContent=s.temps[i]+"℃"});renderMap()
+ ["Seoul","Cheongju","Busan","Jeju"].forEach(function(n,i){$("temp"+n).textContent=s.temps[i]+"℃"});renderMap();updateObservationGate()
 }
+function updateObservationGate(){var done=state.viewed.radar&&state.viewed.temperature&&state.viewed.wind;$("toForecast").disabled=!done;$("toForecast").textContent=done?"자료 분석 완료 →":"레이더 · 기온 · 바람을 모두 확인하세요"}
 function renderMap(){
  var s=state.scenario,radar=$("radarLayer"),wind=$("windLayer");radar.innerHTML="";wind.innerHTML="";
  document.querySelectorAll(".weather-badge").forEach(function(x){x.style.display=state.tab==="temperature"?"block":"none"});
@@ -223,7 +243,9 @@ function renderMap(){
    else shapes='<text x="65" y="75" fill="#fff" font-size="20" font-weight="900">강수 구름 없음</text>';
    radar.innerHTML=shapes;
  }else if(state.tab==="wind"){
-   var fast=/([7-9]|1[0-9]) m\/s/.test(s.wind),lines="";for(var i=0;i<7;i++){var y=80+i*48;lines+='<line class="wind-line '+(fast?"fast":"")+'" x1="70" y1="'+y+'" x2="185" y2="'+y+'"><animate attributeName="x1" values="50;120" dur="'+(fast?"0.7":"1.7")+'s" repeatCount="indefinite"/><animate attributeName="x2" values="150;220" dur="'+(fast?"0.7":"1.7")+'s" repeatCount="indefinite"/></line>'}wind.innerHTML=lines;
+   var fast=/([7-9]|1[0-9]) m\/s/.test(s.wind),vectors={W:[1,0],E:[-1,0],N:[0,1],S:[0,-1],NW:[1,1],NE:[-1,1],SW:[1,-1],SE:[-1,-1]},v=vectors[s.windDir]||[1,0],parts="",dur=fast?.75:1.55;
+   for(var i=0;i<12;i++){var x=95+(i%4)*100,y=95+Math.floor(i/4)*120,dx=v[0]*70,dy=v[1]*70;parts+='<circle cx="'+x+'" cy="'+y+'" r="'+(fast?5:4)+'" fill="#fff" opacity=".88"><animate attributeName="cx" values="'+x+';'+(x+dx)+'" dur="'+dur+'s" repeatCount="indefinite"/><animate attributeName="cy" values="'+y+';'+(y+dy)+'" dur="'+dur+'s" repeatCount="indefinite"/><animate attributeName="opacity" values=".15;1;.15" dur="'+dur+'s" repeatCount="indefinite"/></circle>'}
+   parts+='<text x="28" y="42" fill="#fff" font-size="18" font-weight="900">'+s.wind+' · 입자는 바람이 부는 쪽으로 이동</text>';wind.innerHTML=parts;
  }
 }
 function choose(group,value,button){
@@ -255,38 +277,53 @@ function renderPrompter(){
  $("liveCount").textContent=Math.min(state.line+1,list.length)+" / "+list.length;
  $("lowerThird").textContent=list[Math.min(state.line,list.length-1)].text;
 }
-function startLive(){show("live");phase("생방송 3/4");loadAvatar();state.line=0;renderPrompter();document.querySelectorAll(".region").forEach(function(x){x.classList.remove("hit","miss")})}
+function startLive(){show("live");phase("생방송 3/5");loadAvatar();state.line=0;state.mapResults={};renderPrompter();resetRegionControls()}
+function resetRegionControls(){document.querySelectorAll(".region,.map-hotspot").forEach(function(x){x.classList.remove("hit","miss");x.disabled=false})}
 function regionClick(btn){
- var target=lines()[state.line]&&lines()[state.line].region;if(!target){toast("인사 멘트에서는 지도를 가리키지 않아도 돼요.");return}
- state.mapTries++;if(btn.dataset.region===target){state.mapHits++;btn.classList.add("hit");toast("정확한 지역을 가리켰어요!");sdk("sound","correct")}else{btn.classList.add("miss");toast("지도를 다시 살펴보세요.");sdk("sound","wrong")}
+ var current=lines()[state.line],target=current&&current.region;if(!target){toast("이 멘트에서는 지도를 가리키지 않아도 돼요.");return}
+ if(Object.prototype.hasOwnProperty.call(state.mapResults,state.line)){toast("이 멘트의 지역 선택은 이미 기록됐어요.");return}
+ var good=btn.dataset.region===target;state.mapResults[state.line]=good;
+ document.querySelectorAll(".region,.map-hotspot").forEach(function(x){x.disabled=true;if(x.dataset.region===btn.dataset.region)x.classList.add(good?"hit":"miss")});
+ toast(good?"정확한 지역을 가리켰어요!":"첫 선택이 기록됐어요. 방송 뒤에 다시 확인해 봐요.");sdk("sound",good?"correct":"wrong")
 }
 function nextLine(){
- var list=lines();if(state.line===1&&!state.alertDone){openAlert();return}
- if(state.line<list.length-1){state.line++;renderPrompter();return}
- finish()
+ var list=lines(),current=list[state.line];
+ if(current&&current.region&&!Object.prototype.hasOwnProperty.call(state.mapResults,state.line)){toast("먼저 방송 지도에서 지역을 한 번 가리켜 주세요.");return}
+ if(state.line===1&&!state.alertDone){openAlert();return}
+ if(state.line<list.length-1){state.line++;resetRegionControls();renderPrompter();return}
+ startVerify()
 }
 function openAlert(){
  var s=state.scenario;$("alertText").textContent=s.alert;$("alertOptions").innerHTML="";
- [{text:s.alertGood,good:true},{text:s.alertBad,good:false}].sort(function(){return Math.random()-.5}).forEach(function(o){var b=document.createElement("button");b.className="alert-btn";b.textContent=o.text;b.onclick=function(){state.alertDone=true;state.alertCorrect=o.good;$("alertModal").classList.remove("show");toast(o.good?"속보 반영 성공!":"속보 내용을 놓쳤어요.");sdk("sound",o.good?"correct":"wrong");state.line++;renderPrompter()};$("alertOptions").appendChild(b)});
+ [{text:s.alertGood,good:true},{text:s.alertBad,good:false}].sort(function(){return Math.random()-.5}).forEach(function(o){var b=document.createElement("button");b.className="alert-btn";b.textContent=o.text;b.onclick=function(){state.alertDone=true;state.alertCorrect=o.good;$("alertModal").classList.remove("show");toast(o.good?"속보 반영 성공!":"속보 내용을 놓쳤어요.");sdk("sound",o.good?"correct":"wrong");state.line++;resetRegionControls();renderPrompter()};$("alertOptions").appendChild(b)});
  $("alertModal").classList.add("show")
 }
+function startVerify(){state.verifyStep=0;show("verify");phase("실제 날씨 확인 4/5");renderVerify()}
+function renderVerify(){
+ var frame=state.scenario.timeline[state.verifyStep],nodes=document.querySelectorAll(".time-node");
+ $("verifyTime").textContent=frame[0];$("verifySky").textContent=frame[1];$("verifyCaption").textContent=frame[2];
+ nodes.forEach(function(n,i){n.classList.toggle("active",i===state.verifyStep);n.classList.toggle("done",i<state.verifyStep)});
+ $("advanceTime").textContent=state.verifyStep>=state.scenario.timeline.length-1?"결과 확인 →":"시간 보내기 ▶"
+}
+function advanceVerify(){if(state.verifyStep<state.scenario.timeline.length-1){state.verifyStep++;renderVerify();sdk("sound","tick")}else finish()}
 function finish(){
  var s=state.scenario,c=state.choice,correct=0,miss=[];
  if(c.weather===s.weather)correct++;else miss.push("핵심 날씨");
  if(c.trend===s.trend)correct++;else miss.push("기온 변화");
  if(c.advice===s.advice)correct++;else miss.push("생활 정보");
- var fscore=Math.round(correct/3*60),mapRatio=state.mapTries?Math.min(1,state.mapHits/3):0,mscore=Math.round(mapRatio*20),ascore=state.alertCorrect?20:0,total=fscore+mscore+ascore;
- if(total>best())setBest(total);$("bestPill").textContent="최고 "+best();$("scoreBig").textContent=total;$("forecastScore").textContent=fscore+"/60";$("mapScore").textContent=mscore+"/20";$("alertScore").textContent=ascore+"/20";$("forecastMeter").style.width=(fscore/60*100)+"%";$("mapMeter").style.width=(mscore/20*100)+"%";$("alertMeter").style.width=(ascore/20*100)+"%";
- $("gradeText").textContent=total>=90?"메인 기상캐스터급 방송!":total>=70?"믿음직한 예보였어요!":total>=50?"좋아요, 자료를 한 번 더 읽어봐요.":"첫 방송을 마쳤어요. 관측부터 복습해 봐요.";
- var fb=[];fb.push("<b>실제 상황:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>다시 볼 부분:</b> "+miss.join(", "));else fb.push("<br><b>예보 판단 3가지를 모두 정확하게 읽었어요.</b>");fb.push("<br>"+(state.alertCorrect?"속보가 들어왔을 때 새 정보를 방송에 잘 반영했어요.":"속보에서는 처음 예보보다 새 관측 자료를 우선해야 해요."));$("feedbackText").innerHTML=fb.join("");
- show("result");phase("결과 4/4");sdk("score",total);sdk("gameOver",{score:total})
+ var fscore=correct*25,mapEntries=Object.keys(state.mapResults),mapCorrect=mapEntries.filter(function(k){return state.mapResults[k]}).length,mapExpected=lines().filter(function(x){return !!x.region}).length;
+ var mscore=mapExpected?Math.round(mapCorrect/mapExpected*15):15,ascore=state.alertCorrect?10:0,total=fscore+mscore+ascore;
+ if(total>best())setBest(total);$("bestPill").textContent="최고 "+best();$("scoreBig").textContent=total;$("forecastScore").textContent=fscore+"/75";$("mapScore").textContent=mscore+"/15";$("alertScore").textContent=ascore+"/10";$("forecastMeter").style.width=(fscore/75*100)+"%";$("mapMeter").style.width=(mscore/15*100)+"%";$("alertMeter").style.width=(ascore/10*100)+"%";
+ $("gradeText").textContent=correct===3&&total>=90?"자료를 읽고 정확히 예보했어요!":correct>=2&&total>=70?"근거 있는 예보였어요!":correct>=1?"관측 자료를 한 번 더 비교해 봐요.":"결과를 보고 관측 자료를 다시 읽어봐요.";
+ var fb=[];fb.push("<b>실제 오후:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>예보와 달랐던 부분:</b> "+miss.join(", "));else fb.push("<br><b>세 가지 예보 판단이 모두 실제 변화와 맞았습니다.</b>");fb.push("<br><b>지도:</b> "+mapCorrect+" / "+mapExpected+"개 멘트에서 첫 지목이 정확했습니다.");fb.push("<br>"+(state.alertCorrect?"속보가 들어왔을 때 새 정보를 방송에 반영했습니다.":"속보에서는 처음 예보보다 새 관측 자료를 우선해야 합니다."));$("feedbackText").innerHTML=fb.join("");
+ show("result");phase("결과 5/5");sdk("score",total);sdk("gameOver",{score:total})
 }
-function reset(){pickScenario();document.querySelectorAll(".option").forEach(function(x){x.classList.remove("selected")});$("toLive").disabled=true;$("forecastSummary").textContent="아직 방송 대본을 작성하는 중이에요.";show("observe");phase("관측 1/4");if(!state.started){state.started=true;sdk("start")}}
-document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){state.tab=b.dataset.tab;document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x===b)});renderMap()})});
+function reset(){pickScenario();document.querySelectorAll(".option").forEach(function(x){x.classList.remove("selected")});$("toLive").disabled=true;$("forecastSummary").textContent="아직 방송 대본을 작성하는 중이에요.";show("observe");phase("관측 1/5");if(!state.started){state.started=true;sdk("start")}}
+document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){state.tab=b.dataset.tab;state.viewed[state.tab]=true;document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x===b)});renderMap();updateObservationGate()})});
 document.querySelectorAll(".option").forEach(function(b){b.addEventListener("click",function(){choose(b.parentElement.dataset.group,b.dataset.value,b)})});
-document.querySelectorAll(".region").forEach(function(b){b.addEventListener("click",function(){regionClick(b)})});
-$("toForecast").onclick=function(){show("forecast");phase("예보 작성 2/4")};
-$("toLive").onclick=startLive;$("nextLine").onclick=nextLine;
+document.querySelectorAll(".region,.map-hotspot").forEach(function(b){b.addEventListener("click",function(){regionClick(b)})});
+$("toForecast").onclick=function(){if($("toForecast").disabled)return;show("forecast");phase("예보 작성 2/5")};
+$("toLive").onclick=startLive;$("nextLine").onclick=nextLine;$("advanceTime").onclick=advanceVerify;
 $("reviewBtn").onclick=function(){show("observe");phase("관측 복습");renderObservation()};
 $("againBtn").onclick=reset;
 $("startBtn").onclick=function(){$("tutorial").classList.remove("show");reset()};
@@ -294,7 +331,7 @@ document.addEventListener("keydown",function(e){
  if($("forecast").classList.contains("active")){var groups=["weather","trend","advice"],idx=Number(e.key)-1;if(idx>=0&&idx<5){var group=groups.find(function(g){return !state.choice[g]})||"weather";var btn=document.querySelector('.options[data-group="'+group+'"] .option:nth-child('+(idx+1)+')');if(btn)btn.click()}}
  if($("live").classList.contains("active")&&e.key==="Enter")nextLine()
 });
-$("bestPill").textContent="최고 "+best();pickScenario();
+$("bestPill").textContent="최고 "+best();pickScenario();updateObservationGate();
 })();
 </script>
 </body>
