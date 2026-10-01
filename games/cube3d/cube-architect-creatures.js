@@ -5,7 +5,7 @@
 const SPECIES={
   deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8},
   frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6},
-  lizard:{id:'lizard',name:'사막도마뱀',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.7,radius:7},
+  camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9},
   shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:2,speed:.82,radius:9,nocturnal:true,damage:1,reward:{charcoal:1}},
   slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:2,speed:.48,radius:8,damage:1,reward:{clay:2}},
   burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:3,speed:.92,radius:9,damage:1,reward:{sand:3}},
@@ -41,12 +41,18 @@ function fallbackFrog(){
   g.add(sphere(.045,dark,-.16,.6,-.37),sphere(.045,dark,.16,.6,-.37));
   g.add(box(.3,.08,.18,belly,-.29,.12,.12),box(.3,.08,.18,belly,.29,.12,.12));return g;
 }
-function fallbackLizard(){
-  const g=holder(),sand=mat(0xb98d4f),dark=mat(0x3b3427);
-  g.add(box(.58,.18,.3,sand,0,.19,0),box(.26,.2,.25,sand,0,.22,-.38));
-  const tail=box(.16,.12,.62,sand,0,.18,.48);tail.rotation.x=-.12;g.add(tail);
-  for(const x of [-.31,.31])for(const z of [-.18,.18]){const leg=box(.28,.06,.08,sand,x,.11,z);leg.rotation.y=(x<0?-1:1)*.22;g.add(leg)}
-  g.add(box(.04,.04,.025,dark,-.08,.26,-.515),box(.04,.04,.025,dark,.08,.26,-.515));return g;
+function fallbackCamel(){
+  const g=holder(),fur=mat(0xb98a52),dark=mat(0x3b2e21),light=mat(0xd7b17b);
+  g.add(box(.95,.46,.38,fur,0,.86,.06));
+  g.add(box(.42,.42,.35,fur,0,1.28,-.48));
+  g.add(box(.25,.5,.24,fur,0,1.02,-.38));
+  const hump=sphere(.28,fur,.12,1.2,.1,8);hump.scale.set(1,.85,.8);g.add(hump);
+  for(const x of [-.32,.32])for(const z of [-.1,.21]){
+    g.add(box(.13,.88,.13,dark,x,.45,z),box(.17,.1,.28,dark,x,.04,z-.04));
+  }
+  g.add(box(.09,.09,.035,dark,-.11,1.34,-.66),box(.09,.09,.035,dark,.11,1.34,-.66));
+  g.add(box(.28,.12,.06,light,0,1.18,-.67));
+  return g;
 }
 function fallbackShadowBug(){
   const g=holder(),shadow=mat(0x242238,0x5b4bb7),eye=mat(0xbd9cff,0x9f7aea);
@@ -77,7 +83,7 @@ function fallbackGolem(){
 function makeFallback(id){
   if(id==='deer')return fallbackDeer();
   if(id==='frog')return fallbackFrog();
-  if(id==='lizard')return fallbackLizard();
+  if(id==='camel')return fallbackCamel();
   if(id==='shadowBug')return fallbackShadowBug();
   if(id==='slime')return fallbackSlime();
   if(id==='burrower')return fallbackBurrower();
