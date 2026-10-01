@@ -2703,21 +2703,94 @@ function placeWildCreature(id,x,z){
   u.homeX=x;u.homeZ=z;u.baseY=terrainHeight(x,z)+1;root.position.set(x,u.baseY,z);
   scene.add(root);wildCreatures.push(root);registerCreatureMeshes(root);return root;
 }
-function spawnWildCreatures(){
-  for(const c of wildCreatures)scene.remove(c);
-  wildCreatures=[];creatureInteractables=[];
+function despawnWildCreature(root){
+  if(!root)return;
+  scene.remove(root);
+  creatureInteractables=creatureInteractables.filter(m=>m.userData?.creatureRoot!==root);
+  wildCreatures=wildCreatures.filter(c=>c!==root);
+}
+function creatureRosterForBiome(biome,night){
+  const specs=Object.values(window.CubeArchitectCreatures?.SPECIES||{});
+  return specs.filter(spec=>spec.biomes?.includes(biome)&&
+    (!spec.nocturnal||night)&&(!spec.elite||survivalStage>=4)&&creatureRespawnReady(spec));
+}
+function creatureRespawnReady(spec){
+  const last=Number(creatureDefeats[spec.id]);
+  return !Number.isFinite(last)||survivalWorldTime-last>=(spec.respawn||60);
+}
+function creatureSpeciesCount(id){
+  return wildCreatures.filter(c=>!c.userData.dead&&c.userData.species===id).length;
+}
+function spawnDynamicCreature(){
+  if(gameFreeMode!=='survival')return false;
+  const night=dayTime>=.82||dayTime<.16;
+  for(let tries=0;tries<12;tries++){
+    const angle=Math.random()*Math.PI*2,dist=18+Math.random()*13;
+    const x=Math.round(camera.position.x+Math.sin(angle)*dist),z=Math.round(camera.position.z+Math.cos(angle)*dist);
+    if(!inWorld(x,0,z)||poiRules.isLandmarkClearZone?.(x,z,3))continue;
+    const biome=worldRules.region(x,z),roster=creatureRosterForBiome(biome,night)
+      .filter(spec=>creatureSpeciesCount(spec.id)<(spec.id==='frog'?2:1));
+    if(!roster.length)continue;
+    const weighted=roster.filter(spec=>!spec.elite||Math.random()<.12);
+    if(!weighted.length)continue;
+    const spec=weighted[Math.floor(Math.random()*weighted.length)];
+    const ground=terrainHeight(x,z),groundType=getBlock(x,ground,z)?.type;
+    if(ground<SEA_LEVEL-1&& !['frog','slime'].includes(spec.id))continue;
+    const root=placeWildCreature(spec.id,x,z);if(!root)continue;
+    root.userData.spawnId=spec.id+':'+(++creatureSpawnSerial);
+    if(spec.id==='cubeGolem')startCubeGolemAssembly(root);
+    return true;
+  }
+  return false;
+}
+function maintainWildCreatures(force=false){
   if(gameFreeMode!=='survival')return;
-  const forest=biomeCenter('forest'),flowers=biomeCenter('flowers'),marsh=biomeCenter('marsh'),
-    desert=biomeCenter('desert'),badlands=biomeCenter('badlands'),pine=biomeCenter('pine');
-  [
-    ['deer',forest[0]-5,forest[1]+4],['deer',flowers[0]+6,flowers[1]-4],
-    ['frog',marsh[0]-4,marsh[1]+2],['frog',marsh[0]+3,marsh[1]+5],['frog',marsh[0]+6,marsh[1]-3],
-    ['camel',desert[0]-5,desert[1]+4],['camel',badlands[0]+6,badlands[1]-4],
-    ['shadowBug',forest[0]+4,forest[1]-5],['shadowBug',pine[0]-3,pine[1]+5],
-    ['slime',marsh[0]-7,marsh[1]-3],['slime',marsh[0]+7,marsh[1]+3],
-    ['burrower',desert[0]+7,desert[1]-5],['burrower',badlands[0]-6,badlands[1]+4],
-    ['cubeGolem',badlands[0]+10,badlands[1]-8]
-  ].forEach(v=>placeWildCreature(v[0],Math.round(v[1]),Math.round(v[2])));
+  const max=mobileModeEnabled?5:7;
+  for(const root of [...wildCreatures]){
+    const dist=Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z);
+    if(root.userData.dead||dist>56)despawnWildCreature(root);
+  }
+  let budget=force?max:2;
+  while(wildCreatures.length<max&&budget-->0&&!spawnDynamicCreature()){}
+}
+function spawnWildCreatures(){
+  for(const c of [...wildCreatures])despawnWildCreature(c);
+  wildCreatures=[];creatureInteractables=[];creatureSpawnClock=0;
+  if(gameFreeMode!=='survival')return;
+  maintainWildCreatures(true);
+}
+function startCubeGolemAssembly(root){
+  const u=root?.userData;if(!u||u.species!=='cubeGolem'||u.assembling)return;
+  u.assembling=true;u.assemblyStart=performance.now();u.assemblyDuration=1500;
+  const group=new THREE.Group(),m=materialFor('stone');
+  const targets=[
+    [-.28,.25,0],[.28,.25,0],[-.28,.62,0],[.28,.62,0],
+    [0,.92,0],[-.46,1.02,0],[.46,1.02,0],[0,1.35,0],
+    [-.18,1.62,0],[.18,1.62,0]
+  ];
+  targets.forEach((target,i)=>{
+    const shard=new THREE.Mesh(new THREE.BoxGeometry(.26,.26,.26),m);
+    const a=i*2.399+Math.random()*.4,r=1.8+(i%3)*.48;
+    shard.position.set(Math.sin(a)*r,.08+(i%4)*.13,Math.cos(a)*r);
+    shard.userData.from=shard.position.clone();shard.userData.to=new THREE.Vector3(...target);
+    shard.castShadow=true;group.add(shard);
+  });
+  u.assemblyGroup=group;root.add(group);if(u.visual)u.visual.visible=false;
+}
+function updateCubeGolemAssembly(root,t){
+  const u=root.userData;if(!u.assembling)return false;
+  const q=THREE.MathUtils.clamp((t-u.assemblyStart)/u.assemblyDuration,0,1),e=1-Math.pow(1-q,3);
+  u.assemblyGroup?.children.forEach((shard,i)=>{
+    shard.position.lerpVectors(shard.userData.from,shard.userData.to,e);
+    shard.rotation.x+=.07;shard.rotation.y+=.09+(i%2)*.02;
+  });
+  if(q>=1){
+    if(u.assemblyGroup){root.remove(u.assemblyGroup);u.assemblyGroup=null}
+    u.assembling=false;if(u.visual)u.visual.visible=true;
+    if(Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z)<12)
+      toast('큐브 골렘이 주변 블록을 모아 몸을 완성했어요!');
+  }
+  return u.assembling;
 }
 async function upgradeWildCreatureAsset(root){
   const u=root?.userData,spec=u?.spec,loader=window.CubeArchitectCreatureAssets;
