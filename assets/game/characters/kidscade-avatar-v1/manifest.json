@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "id": "kidscade-avatar-v1",
+  "status": "source-assets-in-progress",
+  "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
+  "coordinateSystem": {
+    "runtimeCanvas": [
+      128,
+      128
+    ],
+    "origin": [
+      0,
+      0
+    ],
+    "frontFacing": true,
+    "integerCoordinatesOnly": true,
+    "imageSmoothing": false
+  },
+  "layerOrder": [
+    "hairBack",
+    "base",
+    "face",
+    "hairSide",
+    "hairFront",
+    "clothes",
+    "shoes",
+    "accessories"
+  ],
+  "sourceSets": {
+    "base": {
+      "status": "approved-design"
+    },
+    "animation": {
+      "idleFrames": 4,
+      "walkFrames": 6,
+      "status": "needs-normalization"
+    },
+    "face": {
+      "status": "needs-extraction"
+    },
+    "hairFront": {
+      "maleSheetCount": 24,
+      "femaleSheetCount": 24,
+      "status": "needs-extraction"
+    }
+  },
+  "runtime": {
+    "status": "not-yet-cut-from-source"
+  }
+}
