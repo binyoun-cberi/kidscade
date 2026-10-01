@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_weathercaster_simulator",
+      "addedAt": "2026-10-01T18:56:00+09:00",
+      "title": "기상캐스터 시뮬레이터",
+      "href": "games/high_weathercaster_simulator/index.html?v=1",
+      "category": "job",
+      "age": "high",
+      "icon": "🌦️",
+      "description": "레이더·기온·바람 자료를 읽고 오후 날씨를 예보한 뒤, 내 키즈케이드 아바타로 생방송을 진행하세요. 방송 중 들어오는 호우·폭염·황사·태풍 속보에도 즉시 대응하는 기상캐스터 직업 시뮬레이션!",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 8,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "low_wordris",
       "addedAt": "2026-10-01T18:16:00+09:00",
       "title": "워드리스: 알파벳 낙하",
