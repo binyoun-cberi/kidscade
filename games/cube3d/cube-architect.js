@@ -1390,8 +1390,8 @@ let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
 let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
 let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
 let critters=[],critterClock=0;
-let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0;
-let seenCreatureKinds=new Set(),lastCreatureHintAt=0;
+let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0,lastCreatureAttackAt=0;
+let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0;
 const FURNACE_RECIPES=[
   {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
   {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
@@ -1462,16 +1462,28 @@ function prepareFreeAvatar(now){
   freeAvatarRoot.visible=freeViewMode==='third';
   api.animate(freeAvatarRoot,now,moving,onGround||freeFlying);
 }
+function freeLookVector(){
+  return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
+}
+function thirdPersonCameraPosition(eye=camera.position){
+  const look=freeLookVector(),thirdPersonDistance=mobileModeEnabled?5.2:5.8;
+  const desired=eye.clone().addScaledVector(look,-thirdPersonDistance);desired.y+=.9;
+  return thirdPersonCameraPoint(eye,desired);
+}
+function setFreeInteractionRay(maxFromPlayer=6.5){
+  const eye=camera.position.clone(),dir=freeLookVector();
+  if(freeViewMode==='third')raycaster.set(thirdPersonCameraPosition(eye),dir);
+  else raycaster.set(eye,dir);
+  return {eye,maxFromPlayer};
+}
+function withinPlayerReach(hit,eye,max){
+  return !!(hit&&hit.point&&hit.point.distanceTo(eye)<=max+.08);
+}
 function renderFreeScene(now){
   prepareFreeAvatar(now);
   if(freeViewMode!=='third'){renderer.render(scene,camera);return}
   const savedPos=camera.position.clone(),savedQuat=camera.quaternion.clone();
-  const euler=new THREE.Euler(pitch,yaw,0,'YXZ');
-  const look=new THREE.Vector3(0,0,-1).applyEuler(euler);
-  const thirdPersonDistance=mobileModeEnabled?5.2:5.8;
-  const desired=savedPos.clone().addScaledVector(look,-thirdPersonDistance);
-  desired.y+=.9;
-  camera.position.copy(thirdPersonCameraPoint(savedPos,desired));
+  camera.position.copy(thirdPersonCameraPosition(savedPos));
   camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
   renderer.render(scene,camera);
   camera.position.copy(savedPos);camera.quaternion.copy(savedQuat);
@@ -2114,8 +2126,9 @@ function updateFreeMission(){
   renderExplorationHint();
 }
 function freeCenterHit(max=6.5){
-  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-  const hits=raycaster.intersectObjects(worldInteractables,false);return hits.find(h=>h.distance<=max)||null;
+  const {eye,maxFromPlayer}=setFreeInteractionRay(max);
+  const hits=raycaster.intersectObjects(worldInteractables,false);
+  return hits.find(h=>withinPlayerReach(h,eye,maxFromPlayer))||null;
 }
 function placementTarget(hit){
   if(!hit||!hit.face||!hit.object.userData?.worldBlock)return null;
