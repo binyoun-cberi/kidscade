@@ -11,11 +11,16 @@ const BIOMES={
  marsh:{name:'습지',ground:'grass',sub:'clay',alt:-1.7,trees:.029},
  flowers:{name:'꽃 초원',ground:'grass',sub:'dirt',alt:.2,trees:.028}
 };
-const CENTERS=[
+// Player/block proportions already match the familiar voxel convention:
+ // eye height ≈ 1.62 blocks, body width ≈ 0.6 blocks, door height = 2 blocks.
+ // v20 therefore scales the geography around the player instead of shrinking the player.
+const WORLD_SCALE=1.5;
+const BASE_CENTERS=[
  [0,0,'meadow'],[-27,-9,'forest'],[-41,-38,'pine'],[-5,-44,'snow'],
  [32,-28,'desert'],[43,23,'badlands'],[5,39,'marsh'],[-34,30,'flowers'],
  [38,49,'desert'],[-50,46,'pine'],[53,-51,'badlands']
 ];
+const CENTERS=BASE_CENTERS.map(([x,z,id])=>[Math.round(x*WORLD_SCALE),Math.round(z*WORLD_SCALE),id]);
 function hash(x,z){
  const v=Math.sin(x*127.1+z*311.7)*43758.5453;return v-Math.floor(v);
 }
@@ -26,27 +31,31 @@ function noise(x,z,scale){
  return p*(1-b)+q*b;
 }
 function region(x,z){
- if(Math.hypot(x,z)<11)return 'meadow';
- const dx=(noise(x+87,z-17,11)-.5)*9,dz=(noise(x-38,z+19,13)-.5)*9;
- const ranked=CENTERS.map(([cx,cz,id])=>({id,dist:(x+dx-cx)**2+(z+dz-cz)**2})).sort((a,b)=>a.dist-b.dist);
+ // Evaluate the old geography in normalized coordinates so every biome becomes
+ // 1.5× wider without changing the vertical block size.
+ const sx=x/WORLD_SCALE,sz=z/WORLD_SCALE;
+ if(Math.hypot(sx,sz)<11)return 'meadow';
+ const dx=(noise(sx+87,sz-17,11)-.5)*9,dz=(noise(sx-38,sz+19,13)-.5)*9;
+ const ranked=BASE_CENTERS.map(([cx,cz,id])=>({id,dist:(sx+dx-cx)**2+(sz+dz-cz)**2})).sort((a,b)=>a.dist-b.dist);
  return ranked[0].id;
 }
 function biomeAt(x,z){return BIOMES[region(x,z)]}
 function height(x,z){
+ const sx=x/WORLD_SCALE,sz=z/WORLD_SCALE;
  const kind=region(x,z),biome=BIOMES[kind];
- const continent=(noise(x,z,27)-.5)*4.2, hills=(noise(x+31,z-13,9)-.5)*2.9;
- const details=(noise(x+13,z-49,4)-.5)*.9;
- const alt=biome.alt*(Math.max(0,Math.min(1,(Math.hypot(x,z)-10)/16)));
+ const continent=(noise(sx,sz,27)-.5)*4.2, hills=(noise(sx+31,sz-13,9)-.5)*2.9;
+ const details=(noise(sx+13,sz-49,4)-.5)*.9;
+ const alt=biome.alt*(Math.max(0,Math.min(1,(Math.hypot(sx,sz)-10)/16)));
  let h=2.4+continent+hills+details+alt;
- if(kind==='badlands')h+=Math.max(0,noise(x+37,z,13)-.43)*7;
- if(kind==='snow')h+=Math.max(0,noise(x,z+41,16)-.52)*5;
- if(kind==='marsh')h=Math.min(h,1+(noise(x,z,15)-.5)*1.8);
+ if(kind==='badlands')h+=Math.max(0,noise(sx+37,sz,13)-.43)*7;
+ if(kind==='snow')h+=Math.max(0,noise(sx,sz+41,16)-.52)*5;
+ if(kind==='marsh')h=Math.min(h,1+(noise(sx,sz,15)-.5)*1.8);
  // A gentle, reliably dry starting meadow, with wood nearby.
- const starter=Math.max(0,Math.min(1,(Math.hypot(x,z)-4)/9));
+ const starter=Math.max(0,Math.min(1,(Math.hypot(sx,sz)-4)/9));
  h=2.2*(1-starter)+h*starter;
- // A meandering stream outside the safe starting circle.
- const river=25+Math.sin(x*.078+.6)*9;
- if(Math.hypot(x,z)>13&&Math.abs(z-river)<1.5&&kind!=='badlands')h=Math.min(h,-1);
+ // The river widens with the world instead of becoming a one-block trench.
+ const river=(25+Math.sin(sx*.078+.6)*9)*WORLD_SCALE;
+ if(Math.hypot(sx,sz)>13&&Math.abs(z-river)<2.25&&kind!=='badlands')h=Math.min(h,-1);
  return Math.max(-3,Math.min(10,Math.floor(h)));
 }
 const BIOME_REWARDS={
@@ -128,5 +137,5 @@ function toolNeeded(type){
  if(['stone','smoothStone','brick','ironBlock','furnace'].includes(type))return 'woodPick';
  return null;
 }
-window.CubeArchitectWorld={BIOMES,BIOME_REWARDS,region,biomeAt,height,noise,hash,RECIPES,GOALS,goalProgress,shelterAt,exposureStep,dropFor,toolNeeded};
+window.CubeArchitectWorld={WORLD_SCALE,CENTERS,BIOMES,BIOME_REWARDS,region,biomeAt,height,noise,hash,RECIPES,GOALS,goalProgress,shelterAt,exposureStep,dropFor,toolNeeded};
 })();
