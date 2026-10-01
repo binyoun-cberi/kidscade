@@ -2756,7 +2756,7 @@ function maintainWildCreatures(force=false){
     if(root.userData.dead||dist>56)despawnWildCreature(root);
   }
   let budget=force?max:2;
-  while(wildCreatures.length<max&&budget-->0&&!spawnDynamicCreature()){}
+  while(wildCreatures.length<max&&budget-->0)spawnDynamicCreature();
 }
 function spawnWildCreatures(){
   for(const c of [...wildCreatures])despawnWildCreature(c);
