@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20260930-18">
+<link rel="stylesheet" href="./cube-architect.css?v=20261001-19">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -31,8 +31,8 @@
         </button>
         <button class="mode-card" data-mode="free">
           <span class="mode-icon">🌲</span><b>생존 탐험</b>
-          <p>맨손으로 나무를 모아 시작해 도구와 화로를 만들고, 서로 다른 바이옴을 탐험합니다.</p>
-          <span class="tag">단계별 제작 · 생존</span>
+          <p>맨손으로 생존을 시작해 여러 바이옴의 랜드마크를 발견하고, 내부 던전을 돌파해 건축 기술을 해금합니다.</p>
+          <span class="tag">생존 · 랜드마크 던전</span>
         </button>
         <button class="mode-card" data-mode="creative">
           <span class="mode-icon">🌎</span><b>크리에이티브 월드</b>
@@ -132,6 +132,15 @@
     <div id="challengeCrosshair"></div>
     <div id="challengeFlyTip">WASD 이동 · Space 상승 · Shift 하강 · 좌클릭 파괴 · 우클릭 설치 · C 검사</div>
     <div id="challengeLockNotice">화면을 클릭해 비행 건축 시작<small>ESC로 마우스를 풀고 설계도·검사 버튼을 사용할 수 있어요.</small></div>
+  </div>
+
+  <div id="dungeonHud" class="hidden">
+    <div id="dungeonCrosshair"></div>
+    <div id="dungeonMission">
+      <div class="dungeon-head"><b id="dungeonTitle">랜드마크 던전</b><span id="dungeonProgress">1/3</span></div>
+      <small id="dungeonObjective">장치를 조사해 안쪽 문을 여세요.</small>
+    </div>
+    <div id="dungeonPrompt" class="hidden">E · 조사하기</div>
   </div>
 
   <aside id="netPanel" class="side-panel hidden">
@@ -284,10 +293,10 @@
   <div class="mode-tip">마우스 드래그로 3D 도형을 돌려 보고, 자유 월드에서는 ESC로 마우스를 해제할 수 있어요.</div>
 </div>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20260930-18"></script>
-<script src="./cube-architect-world.js?v=20260930-18"></script>
-<script src="./cube-architect-poi.js?v=20260930-18"></script>
-<script src="./cube-architect.js?v=20260930-18"></script>
+<script src="./cube-architect-landmarks.js?v=20261001-19"></script>
+<script src="./cube-architect-world.js?v=20261001-19"></script>
+<script src="./cube-architect-poi.js?v=20261001-19"></script>
+<script src="./cube-architect.js?v=20261001-19"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
