@@ -11,24 +11,14 @@
 - 생성 원본과 시트는 `source/`, 게임에서 직접 쓰는 정규화 자산만 `runtime/`에 둡니다.
 - 픽셀 확대는 nearest-neighbor, 위치는 정수 좌표만 사용합니다.
 
-## 현재 정리된 소스
+## 현재 구조
 
 ```text
 kidscade-avatar-v1/
 ├─ source/
 │  ├─ animation/
-│  │  ├─ idle/
-│  │  │  ├─ idle-01.png
-│  │  │  ├─ idle-02.png
-│  │  │  ├─ idle-03.png
-│  │  │  └─ idle-04.png
-│  │  └─ walk/
-│  │     ├─ walk-01.png
-│  │     ├─ walk-02.png
-│  │     ├─ walk-03.png
-│  │     ├─ walk-04.png
-│  │     ├─ walk-05.png
-│  │     └─ walk-06.png
+│  │  ├─ idle/       # 4 frames
+│  │  └─ walk/       # 6 frames
 │  ├─ face/
 │  │  └─ face-parts-reference.jpg
 │  └─ hair/
@@ -37,26 +27,37 @@ kidscade-avatar-v1/
 │        └─ front-hair-female-24-brown.png
 ├─ runtime/
 │  ├─ base/
-│  ├─ face/
-│  │  ├─ eyes/
-│  │  ├─ eyebrows/
-│  │  ├─ noses/
-│  │  ├─ mouths/
-│  │  └─ blush/
-│  ├─ hair/
-│  │  ├─ back/
-│  │  ├─ side/
-│  │  └─ front/
-│  ├─ clothes/
-│  ├─ shoes/
-│  └─ accessories/
+│  │  └─ master-base-128.png
+│  └─ face/
+│     ├─ face-manifest.json
+│     ├─ eyes/        # 8
+│     ├─ eyebrows/    # 6
+│     ├─ noses/       # 4
+│     ├─ mouths/      # 8
+│     └─ blush/       # 4
 └─ manifest.json
 ```
 
+## 얼굴 파츠 런타임 규칙
+
+- 모든 파일은 128×128 RGBA 투명 PNG입니다.
+- 모든 파츠는 `(0, 0)`에 그대로 합성합니다.
+- 눈/눈썹/볼터치는 좌우 한 쌍을 하나의 파일로 유지합니다.
+- 눈 흰자와 하이라이트는 보존하고 바깥 배경만 투명화했습니다.
+- JPEG/생성 이미지의 경계 노이즈를 정리하고 hard-alpha로 변환했습니다.
+- 기준 베이스에 조합 테스트하여 얼굴 중심과 좌우 간격을 확인했습니다.
+
 ## 현재 상태
 
-1. Idle 4프레임과 Walk 6프레임은 원본 보관 완료. 아직 128×128 정규화/앵커 검증 전입니다.
-2. 얼굴 파츠 참고 시트는 JPEG 원본이라 런타임 직접 사용 금지입니다. 개별 파츠 추출 후 투명 PNG로 재저장해야 합니다.
-3. 앞머리 남성형 24종 + 여성형 24종 시트는 원본 보관 완료. 각 칸을 개별 128×128 투명 PNG로 추출해야 합니다.
-4. 기본 바디 원본, hair_back, hair_side, 의상, 신발, 액세서리는 아직 runtime 등록 전입니다.
-5. `source/` 이미지는 게임에서 직접 렌더링하지 않습니다.
+1. **기본 바디**: `runtime/base/master-base-128.png` 등록 완료.
+2. **얼굴 파츠**: 30개 런타임 에셋 변환 완료.
+   - eyes 8
+   - eyebrows 6
+   - noses 4
+   - mouths 8
+   - blush 4
+3. **Idle 4 / Walk 6**: source 보관 완료, 프레임별 기준선 정규화는 아직 필요.
+4. **앞머리**: 남성형 24 + 여성형 24 source 시트 보관 완료, 개별 파츠 추출 전.
+5. **hair_back / hair_side / 의상 / 신발 / 액세서리**: 이후 제작.
+
+`source/` 이미지는 게임에서 직접 렌더링하지 않습니다.
