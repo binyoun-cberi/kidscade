@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "low_wordris",
+      "addedAt": "2026-10-01T18:16:00+09:00",
+      "title": "워드리스: 알파벳 낙하",
+      "href": "games/low_wordris/index.html?v=1",
+      "category": "lang",
+      "age": "low",
+      "icon": "🔤",
+      "description": "알파벳 블록을 떨어뜨려 가로·세로 영단어를 만들면 블록이 사라지는 낙하 퍼즐! 같은 판에서 한 번 쓴 단어는 다시 사용할 수 없고, 긴 단어와 연쇄 콤보를 노려요.",
+      "subject": "language",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_twelve_island",
       "addedAt": "2026-09-30T17:22:00+09:00",
       "title": "촌장 시뮬레이터",
