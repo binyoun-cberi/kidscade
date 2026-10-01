@@ -13,10 +13,10 @@ const html=read('games/cube3d/index.html');
 test('v23 creature rework parses and is cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(creatures));
-  assert.match(html,/cube-architect-creatures\.js\?v=20261001-23/);
-  assert.match(html,/cube-architect-creature-assets\.js\?v=20261001-23/);
-  assert.match(html,/cube-architect\.js\?v=20261001-23/);
-  assert.match(html,/cube-architect\.css\?v=20261001-23/);
+  assert.match(html,/cube-architect-creatures\.js\?v=20261001-24/);
+  assert.match(html,/cube-architect-creature-assets\.js\?v=20261001-24/);
+  assert.match(html,/cube-architect\.js\?v=20261001-24/);
+  assert.match(html,/cube-architect\.css\?v=20261001-24/);
 });
 
 test('creatures spawn around exploration rather than fixed landmark coordinates',()=>{
@@ -60,7 +60,7 @@ test('real GLB animation clips and cube golem assembly are active',()=>{
 });
 
 test('day cycle and creature farming state survive reload and page exit',()=>{
-  assert.match(js,/version:10/);
+  assert.match(js,/version:11/);
   assert.match(js,/dayTime,cuboidSpec/);
   assert.match(js,/worldTime:survivalWorldTime/);
   assert.match(js,/creatureDefeats:\{\.\.\.creatureDefeats\}/);
