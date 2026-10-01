@@ -52,70 +52,167 @@ var LEVELS=[
   {
     title:"2. 바위 기둥",
     goal:"가운데 바위 기둥을 위로 넘어가세요",
-    tip:"직선으로 그리면 부딪혀요. 가운데를 살짝 높여 보세요.",
-    gap:420,vehicle:"sedan",leftY:410,rightY:405,waterY:590,par:1.18,
-    obstacles:[{type:"up",at:.52,w:108,top:332,label:"바위"}]
+    tip:"직선으로 그리면 부딪혀요. 바위보다 높게 길을 올려 보세요.",
+    gap:420,vehicle:"sedan",leftY:410,rightY:405,waterY:590,par:1.15,
+    obstacles:[{type:"up",at:.52,w:100,top:342,label:"바위"}]
   },
   {
     title:"3. 낮은 터널",
     goal:"매달린 장애물 아래로 길을 내려 보세요",
-    tip:"이번에는 반대로 길을 아래쪽으로 휘어야 해요.",
-    gap:470,vehicle:"bus",leftY:395,rightY:405,waterY:558,par:1.15,
-    obstacles:[{type:"down",at:.52,w:128,bottom:380,label:"터널"}]
+    tip:"이번에는 길을 아래쪽으로 휘어 터널 밑을 지나가요.",
+    gap:470,vehicle:"bus",leftY:395,rightY:405,waterY:565,par:1.16,
+    obstacles:[{type:"down",at:.52,w:108,bottom:350,label:"터널"}]
   },
   {
     title:"4. 위로, 아래로!",
     goal:"첫 기둥은 위로, 다음 장애물은 아래로 피하세요",
-    tip:"한 번 올라갔다가 다시 내려오는 S자 길이 필요해요.",
-    gap:525,vehicle:"ambulance",leftY:408,rightY:405,waterY:575,par:1.30,
+    tip:"한 번 올라갔다가 다시 내려오는 S자 길을 그려 보세요.",
+    gap:525,vehicle:"ambulance",leftY:408,rightY:405,waterY:575,par:1.26,
     obstacles:[
-      {type:"up",at:.31,w:82,top:338,label:"기둥"},
-      {type:"down",at:.70,w:104,bottom:302,label:"매달린 벽"}
+      {type:"up",at:.29,w:72,top:350,label:"기둥"},
+      {type:"down",at:.72,w:82,bottom:300,label:"매달린 벽"}
     ]
   },
   {
-    title:"5. 좁은 관문",
-    goal:"위아래 장애물 사이의 좁은 틈을 통과하세요",
-    tip:"가운데 노란 관문 사이로 길을 정확히 넣어 보세요.",
+    title:"5. 첫 번째 관문",
+    goal:"위아래 장애물 사이의 틈을 통과하세요",
+    tip:"가운데 관문 사이로 길을 넣어 보세요.",
     gap:560,vehicle:"sedan",leftY:408,rightY:408,waterY:575,par:1.16,
     obstacles:[
-      {type:"down",at:.51,w:112,bottom:220,label:"위 관문"},
-      {type:"up",at:.51,w:112,top:360,label:"아래 관문"}
+      {type:"down",at:.51,w:94,bottom:235,label:"위 관문"},
+      {type:"up",at:.51,w:94,top:385,label:"아래 관문"}
     ]
   },
   {
     title:"6. 지그재그 협곡",
     goal:"기둥과 천장을 번갈아 피해 가세요",
-    tip:"위 → 아래 → 위. 길의 높이를 세 번 바꿔야 해요.",
-    gap:610,vehicle:"bus",leftY:402,rightY:395,waterY:575,par:1.40,
+    tip:"위 → 아래 → 위. 미리 방향을 바꾸면 더 쉬워요.",
+    gap:600,vehicle:"bus",leftY:402,rightY:398,waterY:575,par:1.30,
     obstacles:[
-      {type:"up",at:.23,w:72,top:330,label:"기둥"},
-      {type:"down",at:.50,w:86,bottom:330,label:"천장"},
-      {type:"up",at:.77,w:74,top:340,label:"기둥"}
+      {type:"up",at:.18,w:58,top:350,label:"기둥"},
+      {type:"down",at:.50,w:62,bottom:310,label:"천장"},
+      {type:"up",at:.82,w:58,top:365,label:"기둥"}
     ]
   },
   {
     title:"7. 두 개의 관문",
     goal:"높이가 다른 두 관문을 차례로 통과하세요",
-    tip:"첫 관문은 조금 높게, 두 번째는 조금 낮게 지나가야 해요.",
-    gap:640,vehicle:"firetruck",leftY:410,rightY:390,waterY:580,par:1.31,
+    tip:"첫 관문은 조금 높게, 두 번째 관문은 조금 낮게 지나가요.",
+    gap:630,vehicle:"firetruck",leftY:410,rightY:395,waterY:580,par:1.32,
     obstacles:[
-      {type:"down",at:.31,w:82,bottom:230,label:"관문"},
-      {type:"up",at:.31,w:82,top:365,label:"관문"},
-      {type:"down",at:.70,w:86,bottom:340,label:"관문"},
-      {type:"up",at:.70,w:86,top:495,label:"관문"}
+      {type:"down",at:.28,w:66,bottom:225,label:"관문"},
+      {type:"up",at:.28,w:66,top:390,label:"관문"},
+      {type:"down",at:.72,w:68,bottom:315,label:"관문"},
+      {type:"up",at:.72,w:68,top:485,label:"관문"}
     ]
   },
   {
-    title:"8. 마지막 협곡",
-    goal:"네 장애물을 모두 피해 화물차를 건너게 하세요",
-    tip:"처음부터 끝까지 경로를 보고 한 번에 그려 보세요.",
-    gap:680,vehicle:"truck",leftY:420,rightY:370,waterY:575,par:1.48,
+    title:"8. 네 번 꺾기",
+    goal:"네 장애물을 번갈아 피해 화물차를 건너게 하세요",
+    tip:"장애물 바로 앞이 아니라 조금 일찍 길의 높이를 바꿔 보세요.",
+    gap:680,vehicle:"truck",leftY:420,rightY:370,waterY:585,par:1.38,
     obstacles:[
-      {type:"up",at:.18,w:70,top:342,label:"바위"},
-      {type:"down",at:.40,w:82,bottom:286,label:"천장"},
-      {type:"up",at:.62,w:76,top:326,label:"바위"},
-      {type:"down",at:.82,w:76,bottom:320,label:"천장"}
+      {type:"up",at:.12,w:54,top:355,label:"바위"},
+      {type:"down",at:.37,w:58,bottom:270,label:"천장"},
+      {type:"up",at:.63,w:54,top:350,label:"바위"},
+      {type:"down",at:.88,w:54,bottom:285,label:"천장"}
+    ]
+  },
+  {
+    title:"9. 구급차 출동",
+    goal:"빠른 구급차가 세 장애물을 안전하게 지나게 하세요",
+    tip:"아래 → 위 → 아래 순서로 부드럽게 이어 보세요.",
+    gap:650,vehicle:"ambulance",leftY:400,rightY:400,waterY:575,par:1.28,
+    obstacles:[
+      {type:"down",at:.18,w:58,bottom:250,label:"천장"},
+      {type:"up",at:.50,w:60,top:365,label:"기둥"},
+      {type:"down",at:.82,w:58,bottom:285,label:"천장"}
+    ]
+  },
+  {
+    title:"10. 소방차 관문",
+    goal:"서로 높이가 다른 두 관문을 소방차로 통과하세요",
+    tip:"첫 관문을 통과한 뒤 천천히 아래 관문 높이로 내려가요.",
+    gap:690,vehicle:"firetruck",leftY:410,rightY:390,waterY:585,par:1.33,
+    obstacles:[
+      {type:"down",at:.25,w:66,bottom:235,label:"관문"},
+      {type:"up",at:.25,w:66,top:405,label:"관문"},
+      {type:"down",at:.75,w:66,bottom:300,label:"관문"},
+      {type:"up",at:.75,w:66,top:475,label:"관문"}
+    ]
+  },
+  {
+    title:"11. 긴 협곡",
+    goal:"길어진 협곡의 네 장애물을 모두 피해 보세요",
+    tip:"한 장애물을 지난 뒤 다음 장애물 방향을 바로 확인해요.",
+    gap:720,vehicle:"bus",leftY:395,rightY:405,waterY:585,par:1.42,
+    obstacles:[
+      {type:"up",at:.12,w:54,top:355,label:"바위"},
+      {type:"down",at:.38,w:56,bottom:285,label:"천장"},
+      {type:"up",at:.64,w:54,top:345,label:"바위"},
+      {type:"down",at:.90,w:54,bottom:300,label:"천장"}
+    ]
+  },
+  {
+    title:"12. 화물차 우회로",
+    goal:"무거운 화물차가 넓은 계곡을 건너게 하세요",
+    tip:"급하게 꺾기보다 넓게 휘어진 길을 그려 보세요.",
+    gap:730,vehicle:"truck",leftY:420,rightY:400,waterY:590,par:1.34,
+    obstacles:[
+      {type:"down",at:.20,w:58,bottom:275,label:"천장"},
+      {type:"up",at:.50,w:58,top:360,label:"바위"},
+      {type:"down",at:.80,w:58,bottom:280,label:"천장"}
+    ]
+  },
+  {
+    title:"13. 관문 뒤의 바위",
+    goal:"관문을 지난 뒤 바위를 넘고 마지막 천장을 피하세요",
+    tip:"관문 높이에 맞춘 뒤 곧바로 다음 바위를 준비해요.",
+    gap:740,vehicle:"ambulance",leftY:405,rightY:395,waterY:585,par:1.38,
+    obstacles:[
+      {type:"down",at:.20,w:60,bottom:230,label:"관문"},
+      {type:"up",at:.20,w:60,top:390,label:"관문"},
+      {type:"up",at:.52,w:58,top:350,label:"바위"},
+      {type:"down",at:.84,w:58,bottom:290,label:"천장"}
+    ]
+  },
+  {
+    title:"14. 파도 협곡",
+    goal:"파도처럼 위아래로 이어지는 길을 완성하세요",
+    tip:"네 장애물의 높이를 먼저 보고 큰 물결처럼 이어 보세요.",
+    gap:760,vehicle:"firetruck",leftY:410,rightY:390,waterY:590,par:1.46,
+    obstacles:[
+      {type:"up",at:.10,w:48,top:360,label:"바위"},
+      {type:"down",at:.37,w:50,bottom:285,label:"천장"},
+      {type:"up",at:.64,w:48,top:350,label:"바위"},
+      {type:"down",at:.91,w:48,bottom:295,label:"천장"}
+    ]
+  },
+  {
+    title:"15. 세 개의 관문",
+    goal:"높이가 다른 세 관문을 한 번에 통과하세요",
+    tip:"높음 → 낮음 → 중간. 관문 가운데를 차례대로 이어 보세요.",
+    gap:780,vehicle:"bus",leftY:400,rightY:400,waterY:590,par:1.44,
+    obstacles:[
+      {type:"down",at:.18,w:58,bottom:220,label:"관문"},
+      {type:"up",at:.18,w:58,top:385,label:"관문"},
+      {type:"down",at:.50,w:58,bottom:290,label:"관문"},
+      {type:"up",at:.50,w:58,top:460,label:"관문"},
+      {type:"down",at:.82,w:58,bottom:245,label:"관문"},
+      {type:"up",at:.82,w:58,top:415,label:"관문"}
+    ]
+  },
+  {
+    title:"16. 마지막 대교",
+    goal:"다섯 장애물을 모두 피해 마지막 화물차를 건너게 하세요",
+    tip:"처음부터 끝까지 경로를 보고 큰 지그재그 하나를 그려 보세요.",
+    gap:800,vehicle:"truck",leftY:420,rightY:380,waterY:595,par:1.55,
+    obstacles:[
+      {type:"up",at:.10,w:44,top:360,label:"바위"},
+      {type:"down",at:.30,w:44,bottom:285,label:"천장"},
+      {type:"up",at:.50,w:44,top:350,label:"바위"},
+      {type:"down",at:.70,w:44,bottom:300,label:"천장"},
+      {type:"up",at:.90,w:44,top:355,label:"바위"}
     ]
   }
 ];
@@ -559,6 +656,7 @@ function succeed(){
   el.resultTitle.textContent="건넜다!";
   el.resultText.textContent=stars===3?"장애물을 깔끔하게 피했어요!":"자동차가 무사히 건넜어요.";
   el.stars.textContent="★".repeat(stars)+"☆".repeat(3-stars);
+  el.cont.textContent=S.level===LEVELS.length-1?"처음부터":"다음 단계";
   el.result.classList.remove("hidden");
   try{
     window.KidscadeGame?.score?.((S.level+1)*100+stars*10);
@@ -815,62 +913,71 @@ function drawSmoke(){
   }
 }
 
+function drawWheel(x,y,r){
+  ctx.fillStyle="#20242b";
+  ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
+  ctx.fillStyle="#f5f7f9";
+  ctx.beginPath();ctx.arc(x,y,Math.max(3,r*.48),0,TAU);ctx.fill();
+}
+
 function drawCar(){
   var v=S.vehicle;
   if(!v)return;
+  var kind=level().vehicle;
 
   ctx.save();
   ctx.translate(v.x,v.y);
   ctx.rotate(clamp(v.angle,-1.15,1.15));
 
-  ctx.fillStyle="#f8cf08";
-  ctx.beginPath();
-  ctx.roundRect(-34,-15,68,27,8);
-  ctx.fill();
+  if(kind==="bus"){
+    ctx.fillStyle="#f5bd18";
+    ctx.beginPath();ctx.roundRect(-38,-26,76,38,7);ctx.fill();
+    ctx.fillStyle="#b9e4f5";
+    for(var bx=-28;bx<=18;bx+=16)ctx.fillRect(bx,-20,12,12);
+    ctx.fillStyle="#2f343a";ctx.fillRect(-35,1,70,5);
+    drawWheel(-24,12,10);drawWheel(24,12,10);
+    ctx.fillStyle="#fff7b3";ctx.beginPath();ctx.arc(37,-3,4,0,TAU);ctx.fill();
+  }else if(kind==="ambulance"){
+    ctx.fillStyle="#f5f7f9";
+    ctx.beginPath();ctx.roundRect(-36,-20,72,32,7);ctx.fill();
+    ctx.fillStyle="#d94b45";ctx.fillRect(-34,-5,68,6);
+    ctx.fillRect(-7,-18,6,18);ctx.fillRect(-13,-12,18,6);
+    ctx.fillStyle="#b9e4f5";ctx.fillRect(12,-15,16,10);
+    ctx.fillStyle="#58a8ff";ctx.fillRect(-8,-26,8,6);
+    ctx.fillStyle="#e34b4b";ctx.fillRect(2,-26,8,6);
+    drawWheel(-23,12,10);drawWheel(23,12,10);
+  }else if(kind==="firetruck"){
+    ctx.fillStyle="#d8453d";
+    ctx.beginPath();ctx.roundRect(-39,-20,78,32,6);ctx.fill();
+    ctx.fillStyle="#f0f3f6";ctx.fillRect(-30,-29,54,6);
+    ctx.strokeStyle="#f0f3f6";ctx.lineWidth=3;
+    for(var lx=-24;lx<20;lx+=10){ctx.beginPath();ctx.moveTo(lx,-29);ctx.lineTo(lx+6,-20);ctx.stroke();}
+    ctx.fillStyle="#b9e4f5";ctx.fillRect(19,-15,13,10);
+    ctx.fillStyle="#ffd24d";ctx.fillRect(-4,-27,8,5);
+    drawWheel(-25,12,10);drawWheel(25,12,10);
+  }else if(kind==="truck"){
+    ctx.fillStyle="#4f89c9";
+    ctx.beginPath();ctx.roundRect(5,-20,34,32,6);ctx.fill();
+    ctx.fillStyle="#b9e4f5";ctx.fillRect(15,-15,16,10);
+    ctx.fillStyle="#c9d3dc";ctx.fillRect(-40,-27,44,39);
+    ctx.strokeStyle="rgba(50,60,70,.45)";ctx.lineWidth=2;
+    ctx.strokeRect(-38,-25,40,35);
+    drawWheel(-25,12,10);drawWheel(24,12,10);
+    ctx.fillStyle="#fff7b3";ctx.beginPath();ctx.arc(38,-3,4,0,TAU);ctx.fill();
+  }else{
+    ctx.fillStyle="#f8cf08";
+    ctx.beginPath();ctx.roundRect(-34,-15,68,27,8);ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-20,-15);ctx.lineTo(-6,-31);ctx.quadraticCurveTo(0,-36,14,-33);ctx.lineTo(27,-15);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#a7def5";
+    ctx.beginPath();ctx.moveTo(-13,-16);ctx.lineTo(-4,-28);ctx.lineTo(3,-29);ctx.lineTo(3,-16);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(7,-29);ctx.lineTo(14,-28);ctx.lineTo(22,-16);ctx.lineTo(7,-16);ctx.closePath();ctx.fill();
+    drawWheel(-20,12,10);drawWheel(21,12,10);
+    ctx.fillStyle="#fff7b3";ctx.beginPath();ctx.arc(33,-4,4,0,TAU);ctx.fill();
+  }
 
-  ctx.beginPath();
-  ctx.moveTo(-20,-15);
-  ctx.lineTo(-6,-31);
-  ctx.quadraticCurveTo(0,-36,14,-33);
-  ctx.lineTo(27,-15);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle="#a7def5";
-  ctx.beginPath();
-  ctx.moveTo(-13,-16);
-  ctx.lineTo(-4,-28);
-  ctx.lineTo(3,-29);
-  ctx.lineTo(3,-16);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(7,-29);
-  ctx.lineTo(14,-28);
-  ctx.lineTo(22,-16);
-  ctx.lineTo(7,-16);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle="#20242b";
-  ctx.beginPath();
-  ctx.arc(-20,12,10,0,TAU);
-  ctx.arc(21,12,10,0,TAU);
-  ctx.fill();
-
-  ctx.fillStyle="#f5f7f9";
-  ctx.beginPath();
-  ctx.arc(-20,12,5,0,TAU);
-  ctx.arc(21,12,5,0,TAU);
-  ctx.fill();
-
-  ctx.fillStyle="#fff7b3";
-  ctx.beginPath();
-  ctx.arc(33,-4,4,0,TAU);
-  ctx.fill();
   ctx.restore();
 }
-
 function drawMarker(){
   if(!S.drawing||!S.pointer)return;
   var p=S.pointer;
