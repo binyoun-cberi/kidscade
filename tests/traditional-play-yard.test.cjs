@@ -8,30 +8,44 @@ const html = fs.readFileSync(path.join(ROOT, 'games', 'toddler_traditional_play_
 const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'games.json'), 'utf8'));
 const game = catalog.games.find(item => item.id === 'toddler_traditional_play_yard');
 
-test('traditional play yard stays registered as a toddler social game', () => {
+test('traditional play yard stays registered as an easy toddler social playground', () => {
   assert.ok(game);
   assert.equal(game.age, 'toddler');
   assert.equal(game.subject, 'social');
-  assert.match(game.href, /toddler_traditional_play_yard\/우리나라 전통놀이 마당\.html\?v=2/);
+  assert.equal(game.genre, 'playground');
+  assert.equal(game.difficulty, 'easy');
+  assert.match(game.href, /toddler_traditional_play_yard\/우리나라 전통놀이 마당\.html\?v=3/);
 });
 
-test('traditional play yard keeps six distinct mini games and SDK integration', () => {
-  for (const id of ['tuho','jegi','ddakji','hop','flower','yut']) {
-    assert.match(html, new RegExp("id:'" + id + "'"));
-  }
-  assert.match(html, /kidscade-game-sdk\.js/);
-  assert.match(html, /KidscadeGame\.exit\(\)/);
-  assert.match(html, /kidscade_game_v1:toddler_traditional_play_yard:progress/);
+test('reworked yard is an explorable space with Kidscade avatar support', () => {
+  assert.match(html, /id="yard"/);
+  assert.match(html, /id="player"/);
+  assert.match(html, /kidscade-avatar-studio-preview/);
+  assert.match(html, /function movePlayer\(/);
+  assert.match(html, /data-game="tuho"/);
+  assert.match(html, /data-game="jegi"/);
+  assert.match(html, /data-game="hop"/);
 });
 
-test('jegi, ddakji and yut use distinct play interactions', () => {
-  assert.match(html, /jegiHitLine/);
-  assert.match(html, /var wave=\(Math\.sin\(phase\)\+1\)\/2/);
-  assert.doesNotMatch(html, /id="jegiMarker"/);
-  assert.match(html, /power>=42&&power<=78/);
-  assert.match(html, /pointerdown',start/);
-  assert.match(html, /function showFaces\(n\)/);
-  assert.match(html, /id="yutResult"/);
+test('first phase minigames use three different direct interactions', () => {
+  assert.match(html, /function renderTuho\(/);
+  assert.match(html, /pointerdown',down/);
+  assert.match(html, /function renderJegi\(/);
+  assert.match(html, /data-foot="L"/);
+  assert.match(html, /data-foot="R"/);
+  assert.match(html, /function renderHop\(/);
+  assert.match(html, /stoneDown/);
+  assert.match(html, /elementFromPoint/);
+  assert.match(html, /돌이 있는 칸은 건너뛰어요/);
+});
+
+test('progression unlocks hopscotch after one stamp and grows yard rewards', () => {
+  assert.match(html, /id!=='hop'\|\|state\.stamps\.length>=1/);
+  assert.match(html, /state\.coins\+=3/);
+  assert.match(html, /state\.coins\+=1/);
+  assert.match(html, /decor1/);
+  assert.match(html, /decor2/);
+  assert.match(html, /decor3/);
 });
 
 test('traditional play inline runtime compiles', () => {
