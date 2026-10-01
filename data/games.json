@@ -615,14 +615,14 @@
       "title": "빙글빙글 타코야키집",
       "href": "games/job_takoyaki_simulator/빙글빙글 타코야키집.html",
       "category": "job",
-      "age": "job",
+      "age": "toddler",
       "icon": "🐙",
-      "description": "3D로 즐기는 실감 나는 타코야키 만들기! 기름칠부터 반죽 부으기, 속재료 넣기, 타이밍에 맞춰 동글동글하게 굴리기까지 마스터하여 노점의 장인이 되어보세요.",
+      "description": "처음 1구에서 시작해 주문을 하나 완성할 때마다 팬의 구가 하나씩 열리는 쉬운 3D 타코야키 놀이! 빈 구와 노릇해진 구를 눌러가며 최대 12구 팬까지 천천히 확장해보세요.",
       "cover": "assets/gate-image/빙글빙글 타코야키집.png",
       "subject": "career",
       "genre": "management",
-      "difficulty": "medium",
-      "sessionMinutes": 15,
+      "difficulty": "easy",
+      "sessionMinutes": 10,
       "players": [
         "solo"
       ],
@@ -631,7 +631,11 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": true,
+      "ages": [
+        "toddler",
+        "job"
+      ]
     },
     {
       "id": "job_scuba_diver",
