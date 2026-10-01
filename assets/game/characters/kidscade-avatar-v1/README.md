@@ -16,6 +16,8 @@
 ```text
 hairBack
 → base / animation body frame
+→ lower clothes
+→ upper clothes (reserved)
 → face
 → hairSide (reserved)
 → hairFront
@@ -36,9 +38,11 @@ kidscade-avatar-v1/
 │  │  └─ walk/                 # 생성 원본 6
 │  ├─ face/
 │  │  └─ face-parts-reference.jpg
-│  └─ hair/front-sheets/
-│     ├─ front-hair-male-24-brown.png
-│     └─ front-hair-female-24-brown.png
+│  ├─ hair/front-sheets/
+│  │  ├─ front-hair-male-24-brown.png
+│  │  └─ front-hair-female-24-brown.png
+│  └─ clothes/lower/animated/
+│     └─ denim-cuffed-jeans-01-sheet.png
 ├─ runtime/
 │  ├─ base/
 │  │  └─ master-base-128.png
@@ -53,14 +57,20 @@ kidscade-avatar-v1/
 │  │  ├─ noses/                # 4
 │  │  ├─ mouths/               # 8
 │  │  └─ blush/                # 4
-│  └─ hair/
-│     ├─ hair-manifest.json
+│  ├─ hair/
+│  │  ├─ hair-manifest.json
 │     ├─ back/
 │     │  ├─ male/              # 24
 │     │  └─ female/            # 24
-│     └─ front/
-│        ├─ male/              # 24
-│        └─ female/            # 24
+│  │  └─ front/
+│  │     ├─ male/              # 24
+│  │     └─ female/            # 24
+│  └─ clothes/lower/
+│     └─ denim-cuffed-jeans-01/
+│        ├─ static.png
+│        ├─ idle/              # 4
+│        ├─ walk/              # 6
+│        └─ manifest.json
 ├─ qa/
 │  ├─ animation/
 │  │  ├─ idle-default-composite-contact.png
@@ -108,14 +118,26 @@ kidscade-avatar-v1/
 - 얼굴·헤어를 각 프레임 머리에 맞추기 위한 `headTransform` 저장
 - 기본 얼굴 + 기본 헤어를 얹은 Idle/Walk contact sheet 시각 검수 완료
 
-따라서 현재 **base + face + hair + idle/walk animation**까지 런타임 사용 가능한 상태입니다.
+## 하의 파츠
+
+첫 애니메이션 하의 **커프 데님 팬츠**를 런타임에 연결했습니다.
+
+- 정지 1프레임
+- Idle 4프레임
+- Walk 6프레임
+- 모든 프레임 128×128 RGBA
+- 흰 기본 반바지를 가리도록 몸체 위에 합성
+- QA contact sheet에서 Idle/Walk 10프레임의 다리 동작과 겹침을 확인
+
+따라서 현재 **base + face + hair + lower clothes + idle/walk animation**까지 런타임 사용 가능한 상태입니다.
 
 ## 남은 작업
 
-1. 의상 / 신발 / 액세서리 파츠 제작
-2. 필요 시 독립 `hairSide` 파츠 추가
-3. PNG 레이어 렌더러를 기존 아바타 스튜디오에 연결
-4. 헤어 색상 팔레트 확장
-5. 이후 필요할 때 run / jump / hit 같은 추가 모션 제작
+1. 상의 애니메이션 파츠 제작
+2. 하의 스타일 추가
+3. 신발 / 액세서리 파츠 제작
+4. 필요 시 독립 `hairSide` 파츠 추가
+5. 헤어 색상 팔레트 확장
+6. 이후 필요할 때 run / jump / hit 같은 추가 모션 제작
 
 `source/`의 생성 원본은 게임에서 직접 렌더링하지 않습니다.
