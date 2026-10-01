@@ -2717,10 +2717,11 @@ function despawnWildCreature(root){
   creatureInteractables=creatureInteractables.filter(m=>m.userData?.creatureRoot!==root);
   wildCreatures=wildCreatures.filter(c=>c!==root);
 }
-function creatureRosterForBiome(biome,night){
+function creatureRosterForBiome(biome,night,includeElite=false){
   const specs=Object.values(window.CubeArchitectCreatures?.SPECIES||{});
   return specs.filter(spec=>spec.biomes?.includes(biome)&&
-    (!spec.nocturnal||night)&&(!spec.elite||survivalStage>=4)&&creatureRespawnReady(spec));
+    (!spec.nocturnal||night)&&(includeElite||!spec.elite)&&
+    (!spec.elite||survivalStage>=4)&&creatureRespawnReady(spec));
 }
 function creatureRespawnReady(spec){
   const last=Number(creatureDefeats[spec.id]);
@@ -2729,27 +2730,36 @@ function creatureRespawnReady(spec){
 function creatureSpeciesCount(id){
   return wildCreatures.filter(c=>!c.userData.dead&&c.userData.species===id).length;
 }
-function spawnDynamicCreature(){
-  if(gameFreeMode!=='survival')return false;
-  const night=dayTime>=.82||dayTime<.16;
-  for(let tries=0;tries<12;tries++){
+function spawnCreatureFromSpec(spec,biome){
+  for(let tries=0;tries<14;tries++){
     const angle=Math.random()*Math.PI*2,dist=18+Math.random()*13;
     const x=Math.round(camera.position.x+Math.sin(angle)*dist),z=Math.round(camera.position.z+Math.cos(angle)*dist);
-    if(!inWorld(x,0,z)||poiRules.isLandmarkClearZone?.(x,z,3))continue;
-    const biome=worldRules.region(x,z),roster=creatureRosterForBiome(biome,night)
-      .filter(spec=>creatureSpeciesCount(spec.id)<(spec.id==='frog'?2:1));
-    if(!roster.length)continue;
-    const weighted=roster.filter(spec=>!spec.elite||Math.random()<.12);
-    if(!weighted.length)continue;
-    const spec=weighted[Math.floor(Math.random()*weighted.length)];
+    if(!inWorld(x,0,z)||worldRules.region(x,z)!==biome||poiRules.isLandmarkClearZone?.(x,z,3))continue;
     const ground=terrainHeight(x,z),fluid=getBlock(x,ground+1,z)?.type;
     if((ground<SEA_LEVEL-1||fluid==='water')&&!['frog','slime'].includes(spec.id))continue;
     const root=placeWildCreature(spec.id,x,z);if(!root)continue;
     root.userData.spawnId=spec.id+':'+(++creatureSpawnSerial);
-    if(spec.id==='cubeGolem')root.userData.needsAssembly=true;
+    if(spec.elite)root.userData.needsAssembly=true;
     return true;
   }
   return false;
+}
+function spawnDynamicCreature(){
+  if(gameFreeMode!=='survival')return false;
+  const night=dayTime>=.82||dayTime<.16,biome=worldRules.region(camera.position.x,camera.position.z);
+  const roster=creatureRosterForBiome(biome,night,false)
+    .filter(spec=>creatureSpeciesCount(spec.id)<(spec.spawnCap||1));
+  if(!roster.length)return false;
+  const spec=roster[Math.floor(Math.random()*roster.length)];
+  return spawnCreatureFromSpec(spec,biome);
+}
+function tryRareEliteSpawn(){
+  const biome=worldRules.region(camera.position.x,camera.position.z);
+  if(biome!=='badlands'||survivalStage<4||survivalWorldTime<nextEliteSpawnCheckAt)return false;
+  nextEliteSpawnCheckAt=survivalWorldTime+45+Math.random()*30;
+  const spec=window.CubeArchitectCreatures?.SPECIES?.cubeGolem;
+  if(!spec||!creatureRespawnReady(spec)||creatureSpeciesCount(spec.id)>=1||Math.random()>=.12)return false;
+  return spawnCreatureFromSpec(spec,biome);
 }
 function maintainWildCreatures(force=false){
   if(gameFreeMode!=='survival')return;
