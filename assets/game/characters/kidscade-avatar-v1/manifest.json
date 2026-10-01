@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "source-assets-in-progress",
+  "status": "source-assets-organized",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -26,25 +26,52 @@
     "shoes",
     "accessories"
   ],
+  "sourceFiles": {
+    "idle": [
+      "source/animation/idle/idle-01.png",
+      "source/animation/idle/idle-02.png",
+      "source/animation/idle/idle-03.png",
+      "source/animation/idle/idle-04.png"
+    ],
+    "walk": [
+      "source/animation/walk/walk-01.png",
+      "source/animation/walk/walk-02.png",
+      "source/animation/walk/walk-03.png",
+      "source/animation/walk/walk-04.png",
+      "source/animation/walk/walk-05.png",
+      "source/animation/walk/walk-06.png"
+    ],
+    "faceReference": "source/face/face-parts-reference.jpg",
+    "hairFrontSheets": {
+      "male": "source/hair/front-sheets/front-hair-male-24-brown.png",
+      "female": "source/hair/front-sheets/front-hair-female-24-brown.png"
+    }
+  },
   "sourceSets": {
     "base": {
-      "status": "approved-design"
+      "status": "missing-from-canonical-root"
     },
     "animation": {
       "idleFrames": 4,
       "walkFrames": 6,
-      "status": "needs-normalization"
+      "status": "organized-needs-normalization"
     },
     "face": {
-      "status": "needs-extraction"
+      "status": "reference-only-needs-transparent-extraction"
     },
     "hairFront": {
-      "maleSheetCount": 24,
-      "femaleSheetCount": 24,
-      "status": "needs-extraction"
+      "maleCount": 24,
+      "femaleCount": 24,
+      "status": "organized-needs-cell-extraction"
+    },
+    "hairBack": {
+      "status": "not-created"
+    },
+    "hairSide": {
+      "status": "not-created"
     }
   },
   "runtime": {
-    "status": "not-yet-cut-from-source"
+    "status": "empty-needs-production-assets"
   }
 }
