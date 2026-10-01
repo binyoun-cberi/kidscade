@@ -52,6 +52,15 @@ test('solo practice runs locally while live mode keeps server play', () => {
   assert.match(html, /내 선택/);
   assert.match(html, /오답 선택지/);
   assert.match(html, /지난 혼자 기록 보기/);
+  assert.match(html, /value="choice-short"/);
+  assert.match(html, /function prepareSoloQuestions/);
+  assert.match(html, /Math\.round\(questions\.length\*\.3\)/);
+  assert.match(html, /function normalizeShortAnswer/);
+  assert.match(html, /function isSoloShortAnswerCorrect/);
+  assert.match(html, /function submitSoloShortAnswer/);
+  assert.match(html, /answerType:'short'/);
+  assert.match(html, /id="shortAnswerInput"/);
+  assert.match(html, /current\?\.soloKind==='short'/);
   assert.doesNotMatch(html, /api\('\/solo'/);
   assert.match(html, /<option>40<\/option>/);
   assert.match(html, /checkpointMode/);
@@ -59,6 +68,20 @@ test('solo practice runs locally while live mode keeps server play', () => {
   assert.match(html, /현재 .*등|현재 \+'등'/);
 });
 
+
+
+test('solo short-answer mode keeps typed answers local and reviewable', () => {
+  const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
+  assert.match(html, /questionMode!=='choice-short'/);
+  assert.match(html, /item\.family==='identify'/);
+  assert.match(html, /shortAnswer:correctText/);
+  assert.match(html, /띄어쓰기는 달라도 괜찮아요/);
+  assert.match(html, /내 답/);
+  assert.match(html, /answerText:isShort/);
+  assert.match(html, /entered=shortAnswerVariants\(input\)/);
+  assert.match(html, /\^\\d\{3,4\}년\$/);
+  assert.doesNotMatch(html, /api\('\/short-answer'/);
+});
 
 test('chronological mode spans the full timeline without repeating a core fact', () => {
   const picked = pickHistoryQuestions(40, () => 0.42, 'chronological');
