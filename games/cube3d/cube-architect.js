@@ -1466,8 +1466,9 @@ function renderFreeScene(now){
   const savedPos=camera.position.clone(),savedQuat=camera.quaternion.clone();
   const euler=new THREE.Euler(pitch,yaw,0,'YXZ');
   const look=new THREE.Vector3(0,0,-1).applyEuler(euler);
-  const desired=savedPos.clone().addScaledVector(look,-4.1);
-  desired.y+=.72;
+  const thirdPersonDistance=mobileModeEnabled?5.2:5.8;
+  const desired=savedPos.clone().addScaledVector(look,-thirdPersonDistance);
+  desired.y+=.9;
   camera.position.copy(thirdPersonCameraPoint(savedPos,desired));
   camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
   renderer.render(scene,camera);
