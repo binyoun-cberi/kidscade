@@ -27,7 +27,7 @@ jobs:
       - run: python scripts/extract-avatar-hair.py
       - shell: bash
         run: |
-          TARGETS="assets/game/characters/kidscade-avatar-v1/runtime/hair assets/game/characters/kidscade-avatar-v1/qa/hair assets/game/characters/kidscade-avatar-v1/qa/hair-front"
+          TARGETS="assets/game/characters/kidscade-avatar-v1/runtime/hair assets/game/characters/kidscade-avatar-v1/qa/hair"
           if [ -z "$(git status --porcelain -- $TARGETS)" ]; then
             echo "No generated changes."
             exit 0
