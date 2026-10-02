@@ -1364,6 +1364,7 @@ const CUBOID_TOPOLOGY={
 };
 const DEFAULT_FACE_COLORS=['#ef5350','#42a5f5','#ffee58','#8d6e63','#66bb6a','#ab47bc'];
 const freeCubeGeo=new THREE.BoxGeometry(1,1,1);
+const breakParticleGeo=new THREE.BoxGeometry(.12,.12,.12);
 const fluidGeo=new THREE.BoxGeometry(1,.84,1);
 const doorGeo=new THREE.BoxGeometry(.14,1.92,.9);
 const slabGeo=new THREE.BoxGeometry(1,.5,1);
@@ -2297,7 +2298,7 @@ function spawnBreakParticles(x,y,z,type){
   if(!scene)return;
   const group=new THREE.Group(),mat=materialFor(type),pieces=[];
   for(let i=0;i<6;i++){
-    const m=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.12),mat);
+    const m=new THREE.Mesh(breakParticleGeo,mat);
     const a=i*Math.PI/3+Math.random()*.35;
     m.position.set(x+(Math.random()-.5)*.32,y+.48+(Math.random()-.5)*.28,z+(Math.random()-.5)*.32);
     m.userData.vel=new THREE.Vector3(Math.cos(a)*(1.1+Math.random()*.6),1.2+Math.random()*.7,Math.sin(a)*(1.1+Math.random()*.6));
