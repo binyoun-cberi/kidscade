@@ -2218,9 +2218,9 @@ function miningSeconds(data){
   if(type==='cuboidPart')type='cuboid';
   const tier=pickTier();
   if(['flower','reed','sapling','fire','leaves','pineLeaves'].includes(type))return .2;
-  if(['dirt','grass','sand','redSand','snow','gravel','clay','cactus'].includes(type))return tier? .27:.4;
-  if(['log','pineLog'].includes(type))return tier? .62:.78;
-  if(['planks','door','roof','stairs','slab','workbench','windowFrame','reedMat'].includes(type))return tier? .4:.56;
+  if(['dirt','grass','sand','redSand','snow','gravel','clay','cactus'].includes(type))return .4;
+  if(['log','pineLog'].includes(type))return .76;
+  if(['planks','door','roof','stairs','slab','workbench','windowFrame','reedMat'].includes(type))return .54;
   if(type==='ironOre')return tier>=3?.62:tier>=2?1.02:1.28;
   if(type==='obsidian')return tier>=3?1.35:2.1;
   if(['stone','smoothStone','brick','furnace','sandstone','snowBrick','ironBlock'].includes(type))
