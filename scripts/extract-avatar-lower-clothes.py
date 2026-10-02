@@ -16,9 +16,9 @@ OUT = AVATAR / "runtime/clothes/lower/denim-cuffed-jeans-01"
 QA = AVATAR / "qa/clothes/lower"
 
 CANVAS = 128
-TARGET_TOP_Y = 82
-TARGET_MAX_H = 41
-TARGET_MAX_W = 56
+TARGET_TOP_Y = 84
+TARGET_MAX_H = 35
+TARGET_MAX_W = 44
 
 FRAME_MAP = [
     ("idle", 1),
