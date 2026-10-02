@@ -11,7 +11,7 @@ const html=read('games/cube3d/index.html');
 
 test('v27 scripts parse and are cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261002-27/);
+  assert.match(html,/cube-architect\.js\?v=20261002-28/);
   assert.match(html,/id="mobileMore"/);
 });
 
@@ -86,7 +86,7 @@ test('simulation fixes require a real player-built shelter and accept every furn
 test('marsh vegetation can generate trees and landmark restoration is explicitly balanced',()=>{
   assert.match(js,/if\(roll>\.987\)growTree\(x,h\+1,z,false,'forest'\)/);
   assert.match(js,/else if\(roll>\.966\)/);
-  for(const token of ["타워 브리지')?-.08","앙코르와트')?-.035","사그라다 파밀리아')||name.includes('히메지성')?.04","타지마할')||name.includes('에펠탑')?.02"])
+  for(const token of ["타워 브리지')?-.08","앙코르와트')?-.035","(name.includes('사그라다 파밀리아')||name.includes('히메지성'))?.04","(name.includes('타지마할')||name.includes('에펠탑'))?.02"])
     assert.ok(js.includes(token),token);
 });
 
