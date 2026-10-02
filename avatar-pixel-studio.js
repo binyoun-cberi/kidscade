@@ -9,10 +9,10 @@ const BASE=ROOT+'/base/master-base-128.png';
 const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
 const HAIR_MANIFEST=ROOT+'/hair/hair-manifest.json';
 const HAIR_PIVOT=[65.5,43.5];
-// Runtime hair sheets use a full 128x128 source canvas. Anchor each visible
-// hair bbox to the actual master head/body envelope instead of canvas (0,0).
-const HAIR_BACK_FIT_BOX={left:22,right:106,top:10,bottom:102};
-const HAIR_FRONT_FIT_BOX={left:42,right:90,top:18,bottom:62};
+const MASTER_HEAD_BBOX=[40,20,91,67];
+// Front/back are two layers of ONE hairstyle. They must share one transform.
+// The generated hair art is much wider than the master head, so horizontal
+// shrink is stronger than vertical shrink while the crown is anchored to head top.
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
 const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
@@ -130,44 +130,43 @@ async function ensureHairManifest(){
 function getHairItem(set,n){
   return hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)]||null;
 }
-function getHairBox(layer,set,n){
+function hairStyleFit(set,n){
   const item=getHairItem(set,n);
-  if(!item)return layer==='front'?[43,22,88,60]:[12,18,120,112];
-  return layer==='front'
-    ? (item.frontBBox||item.backBBox||[43,22,88,60])
-    : (item.backBBox||[12,18,120,112]);
-}
-function fitHairBoxToEnvelope(box,fitBox,minScale,maxScale=1){
+  const box=item?.backBBox||[12,18,120,112];
   const [x0,y0,x1,y1]=box;
   const [px,py]=HAIR_PIVOT;
+  const [hx0,hy0,hx1]=MASTER_HEAD_BBOX;
+  const headWidth=hx1-hx0;
+  const headCenterX=(hx0+hx1)/2;
+
   const boxW=Math.max(1,x1-x0);
   const boxH=Math.max(1,y1-y0);
-  const fitW=fitBox.right-fitBox.left;
-  const fitH=fitBox.bottom-fitBox.top;
-  let scale=Math.min(1,fitW/boxW,fitH/boxH);
-  scale=Math.max(minScale,Math.min(maxScale,scale));
+  const targetWidth=headWidth*(set==='female'?1.38:1.30);
+  const targetTop=hy0-(set==='female'?8:6);
+
+  let scaleX=targetWidth/boxW;
+  scaleX=Math.max(.50,Math.min(.70,scaleX));
+
+  // Keep long-hair length readable while stopping the side volume from
+  // swallowing the shoulders/body.
+  let scaleY=scaleX*1.15;
+  scaleY=Math.max(.58,Math.min(.78,scaleY));
+  const maxHeight=(set==='female'?86:72);
+  scaleY=Math.min(scaleY,maxHeight/boxH);
 
   const boxCx=(x0+x1)/2;
-  const boxCy=(y0+y1)/2;
-  const scaledCx=px+(boxCx-px)*scale;
-  const scaledCy=py+(boxCy-py)*scale;
-  const fitCx=(fitBox.left+fitBox.right)/2;
-  const fitCy=(fitBox.top+fitBox.bottom)/2;
+  const scaledCx=px+(boxCx-px)*scaleX;
+  const scaledTop=py+(y0-py)*scaleY;
 
   return {
-    scale,
-    offsetX:fitCx-scaledCx,
-    offsetY:fitCy-scaledCy
+    scaleX,
+    scaleY,
+    offsetX:headCenterX-scaledCx,
+    offsetY:targetTop-scaledTop
   };
 }
-function hairFit(layer,set,n){
-  const box=getHairBox(layer,set,n);
-  return layer==='back'
-    ? fitHairBoxToEnvelope(box,HAIR_BACK_FIT_BOX,.62,.86)
-    : fitHairBoxToEnvelope(box,HAIR_FRONT_FIT_BOX,.88,.96);
-}
-function hairTransform(layer,set,n,frameTransform=null){
-  const fit=hairFit(layer,set,n);
+function hairTransform(set,n,frameTransform=null){
+  const fit=hairStyleFit(set,n);
   const frameScale=Number(frameTransform?.scale)||1;
   const dest=frameTransform?.destCenter||HAIR_PIVOT;
   return {
@@ -176,7 +175,8 @@ function hairTransform(layer,set,n,frameTransform=null){
       dest[0]+fit.offsetX*frameScale,
       dest[1]+fit.offsetY*frameScale
     ],
-    scale:frameScale*fit.scale
+    scaleX:frameScale*fit.scaleX,
+    scaleY:frameScale*fit.scaleY
   };
 }
 function drawLayer(targetCtx,image,transform=null){
@@ -187,10 +187,11 @@ function drawLayer(targetCtx,image,transform=null){
   }
   const [sx,sy]=transform.sourceCenter;
   const [dx,dy]=transform.destCenter;
-  const scale=Number(transform.scale)||1;
+  const scaleX=Number(transform.scaleX ?? transform.scale)||1;
+  const scaleY=Number(transform.scaleY ?? transform.scale)||1;
   targetCtx.save();
   targetCtx.translate(Math.round(dx),Math.round(dy));
-  targetCtx.scale(scale,scale);
+  targetCtx.scale(scaleX,scaleY);
   targetCtx.translate(-sx,-sy);
   targetCtx.drawImage(image,0,0,128,128);
   targetCtx.restore();
@@ -215,14 +216,13 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   if(isMain&&my!==renderToken)return;
   const [hairBack,body,lower,upper,blush,eyes,eyebrows,nose,mouth,hairFront]=images;
   const headTransform=frame?.headTransform||null;
-  const hairBackTransform=hairTransform('back',targetState.hairSet,targetState.hair,headTransform);
-  const hairFrontTransform=hairTransform('front',targetState.hairSet,targetState.hair,headTransform);
+  const hairTransformValue=hairTransform(targetState.hairSet,targetState.hair,headTransform);
 
   targetCtx.save();
   targetCtx.setTransform(1,0,0,1,0,0);
   targetCtx.clearRect(0,0,128,128);
   targetCtx.imageSmoothingEnabled=false;
-  drawLayer(targetCtx,hairBack,hairBackTransform);
+  drawLayer(targetCtx,hairBack,hairTransformValue);
   drawLayer(targetCtx,body);
   drawLayer(targetCtx,lower);
   drawLayer(targetCtx,upper);
@@ -231,7 +231,7 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   drawLayer(targetCtx,eyebrows,headTransform);
   drawLayer(targetCtx,nose,headTransform);
   drawLayer(targetCtx,mouth,headTransform);
-  drawLayer(targetCtx,hairFront,hairFrontTransform);
+  drawLayer(targetCtx,hairFront,hairTransformValue);
   targetCtx.restore();
 }
 async function refreshAnimationCache(){
@@ -280,17 +280,19 @@ function flash(text){
 function optionButton(label,index,active,thumbHTML,attrs=''){
   return `<button type="button" class="option${active?' active':''}" ${attrs} aria-label="${label} ${index}">${thumbHTML}<span class="num">${index}</span></button>`;
 }
-function hairThumbStyle(layer,set,n){
-  const fit=hairFit(layer,set,n);
+function hairThumbStyle(set,n){
+  const fit=hairStyleFit(set,n);
   const ox=(HAIR_PIVOT[0]/128*100).toFixed(2);
   const oy=(HAIR_PIVOT[1]/128*100).toFixed(2);
-  return `transform-origin:${ox}% ${oy}%;transform:translate(${fit.offsetX}px,${fit.offsetY}px) scale(${fit.scale});`;
+  const tx=(fit.offsetX/128*100).toFixed(3);
+  const ty=(fit.offsetY/128*100).toFixed(3);
+  return `transform-origin:${ox}% ${oy}%;transform:translate(${tx}%,${ty}%) scale(${fit.scaleX},${fit.scaleY});`;
 }
 function hairThumb(set,n){
   return `<span class="hair-thumb">
-    <img class="back" alt="" style="${hairThumbStyle('back',set,n)}" src="${hairPath('back',set,n)}">
+    <img class="back" alt="" style="${hairThumbStyle(set,n)}" src="${hairPath('back',set,n)}">
     <img class="base" alt="" src="${BASE}">
-    <img class="front" alt="" style="${hairThumbStyle('front',set,n)}" src="${hairPath('front',set,n)}">
+    <img class="front" alt="" style="${hairThumbStyle(set,n)}" src="${hairPath('front',set,n)}">
   </span>`;
 }
 function clothesThumb(path){

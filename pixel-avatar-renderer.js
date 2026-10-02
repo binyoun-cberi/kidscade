@@ -7,10 +7,8 @@
 const CANVAS=128;
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const HAIR_PIVOT=[65.5,43.5];
-// Runtime hair sheets use a full 128x128 source canvas. Anchor each visible
-// hair bbox to the actual master head/body envelope instead of canvas (0,0).
-const HAIR_BACK_FIT_BOX={left:22,right:106,top:10,bottom:102};
-const HAIR_FRONT_FIT_BOX={left:42,right:90,top:18,bottom:62};
+const MASTER_HEAD_BBOX=[40,20,91,67];
+// Both hair layers share one style transform so front/back never drift apart.
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
@@ -191,47 +189,41 @@ class PixelAvatar{
     return this.hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)]||null;
   }
 
-  getHairBox(layer,set,n){
+  hairStyleFit(set,n){
     const item=this.getHairItem(set,n);
-    if(!item)return layer==='front'?[43,22,88,60]:[12,18,120,112];
-    return layer==='front'
-      ? (item.frontBBox||item.backBBox||[43,22,88,60])
-      : (item.backBBox||[12,18,120,112]);
-  }
-
-  fitHairBoxToEnvelope(box,fitBox,minScale,maxScale=1){
+    const box=item?.backBBox||[12,18,120,112];
     const [x0,y0,x1,y1]=box;
     const [px,py]=HAIR_PIVOT;
+    const [hx0,hy0,hx1]=MASTER_HEAD_BBOX;
+    const headWidth=hx1-hx0;
+    const headCenterX=(hx0+hx1)/2;
+
     const boxW=Math.max(1,x1-x0);
     const boxH=Math.max(1,y1-y0);
-    const fitW=fitBox.right-fitBox.left;
-    const fitH=fitBox.bottom-fitBox.top;
-    let scale=Math.min(1,fitW/boxW,fitH/boxH);
-    scale=Math.max(minScale,Math.min(maxScale,scale));
+    const targetWidth=headWidth*(set==='female'?1.38:1.30);
+    const targetTop=hy0-(set==='female'?8:6);
+
+    let scaleX=targetWidth/boxW;
+    scaleX=Math.max(.50,Math.min(.70,scaleX));
+    let scaleY=scaleX*1.15;
+    scaleY=Math.max(.58,Math.min(.78,scaleY));
+    const maxHeight=(set==='female'?86:72);
+    scaleY=Math.min(scaleY,maxHeight/boxH);
 
     const boxCx=(x0+x1)/2;
-    const boxCy=(y0+y1)/2;
-    const scaledCx=px+(boxCx-px)*scale;
-    const scaledCy=py+(boxCy-py)*scale;
-    const fitCx=(fitBox.left+fitBox.right)/2;
-    const fitCy=(fitBox.top+fitBox.bottom)/2;
+    const scaledCx=px+(boxCx-px)*scaleX;
+    const scaledTop=py+(y0-py)*scaleY;
 
     return {
-      scale,
-      offsetX:fitCx-scaledCx,
-      offsetY:fitCy-scaledCy
+      scaleX,
+      scaleY,
+      offsetX:headCenterX-scaledCx,
+      offsetY:targetTop-scaledTop
     };
   }
 
-  hairFit(layer,set,n){
-    const box=this.getHairBox(layer,set,n);
-    return layer==='back'
-      ? this.fitHairBoxToEnvelope(box,HAIR_BACK_FIT_BOX,.62,.86)
-      : this.fitHairBoxToEnvelope(box,HAIR_FRONT_FIT_BOX,.88,.96);
-  }
-
-  hairTransform(layer,set,n,frameTransform=null){
-    const fit=this.hairFit(layer,set,n);
+  hairTransform(set,n,frameTransform=null){
+    const fit=this.hairStyleFit(set,n);
     const frameScale=Number(frameTransform?.scale)||1;
     const dest=frameTransform?.destCenter||HAIR_PIVOT;
     return {
@@ -240,7 +232,8 @@ class PixelAvatar{
         dest[0]+fit.offsetX*frameScale,
         dest[1]+fit.offsetY*frameScale
       ],
-      scale:frameScale*fit.scale
+      scaleX:frameScale*fit.scaleX,
+      scaleY:frameScale*fit.scaleY
     };
   }
 
@@ -252,10 +245,11 @@ class PixelAvatar{
     }
     const [sx,sy]=transform.sourceCenter;
     const [dx,dy]=transform.destCenter;
-    const scale=transform.scale||1;
+    const scaleX=Number(transform.scaleX ?? transform.scale)||1;
+    const scaleY=Number(transform.scaleY ?? transform.scale)||1;
     ctx.save();
     ctx.translate(Math.round(dx),Math.round(dy));
-    ctx.scale(scale,scale);
+    ctx.scale(scaleX,scaleY);
     ctx.translate(-sx,-sy);
     ctx.drawImage(img,0,0);
     ctx.restore();
@@ -278,8 +272,7 @@ class PixelAvatar{
             upper=upperPath?imgs[i++]:null, eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
             blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
       const headTransform=frame?.headTransform||null;
-      const hairBackTransform=this.hairTransform('back',this.config.hairSet,this.config.hairStyle,headTransform);
-      const hairFrontTransform=this.hairTransform('front',this.config.hairSet,this.config.hairStyle,headTransform);
+      const hairTransformValue=this.hairTransform(this.config.hairSet,this.config.hairStyle,headTransform);
 
       const ctx=this.ctx;
       ctx.save();
@@ -287,7 +280,7 @@ class PixelAvatar{
       ctx.clearRect(0,0,CANVAS,CANVAS);
       ctx.imageSmoothingEnabled=false;
 
-      this.drawLayer(hairBack,hairBackTransform);
+      this.drawLayer(hairBack,hairTransformValue);
       ctx.drawImage(body,0,0);
       if(lower)ctx.drawImage(lower,0,0);
       if(upper)ctx.drawImage(upper,0,0);
@@ -296,7 +289,7 @@ class PixelAvatar{
       this.drawLayer(nose,headTransform);
       this.drawLayer(mouth,headTransform);
       if(blush)this.drawLayer(blush,headTransform);
-      this.drawLayer(hairFront,hairFrontTransform);
+      this.drawLayer(hairFront,hairTransformValue);
       ctx.restore();
     }finally{
       this.drawing=false;
