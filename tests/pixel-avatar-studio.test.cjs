@@ -8,7 +8,7 @@ const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 
 test('pixel avatar studio replaces the old packed loader on the main route',()=>{
-  assert.match(html,/avatar-pixel-studio\.js\?v=7/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=8/);
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -51,14 +51,12 @@ test('new users start with a complete outfit and legacy equipment can migrate',(
   assert.match(js,/legacyMigrationState/);
 });
 
-test('back hair is normalized while front hair stays in authored head coordinates',()=>{
-  assert.match(js,/MASTER_HEAD_BBOX=\[40,20,91,67\]/);
-  assert.match(js,/hairStyleFit/);
-  assert.match(js,/hairBackTransform=hairTransform/);
-  assert.match(js,/hairFrontTransform=headTransform/);
-  assert.match(js,/drawLayer\(targetCtx,hairBack,hairBackTransform\)/);
-  assert.match(js,/drawLayer\(targetCtx,hairFront,hairFrontTransform\)/);
-  assert.doesNotMatch(js,/style="\$\{hairThumbStyle\(set,n\)\}" src="\$\{hairPath\('front'/);
+test('hair runtime uses pre-normalized canonical layers without extra studio scaling',()=>{
+  assert.doesNotMatch(js,/hairStyleFit/);
+  assert.doesNotMatch(js,/HAIR_PIVOT/);
+  assert.match(js,/hairTransformValue=headTransform/);
+  assert.match(js,/drawLayer\(targetCtx,hairBack,hairTransformValue\)/);
+  assert.match(js,/drawLayer\(targetCtx,hairFront,hairTransformValue\)/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
