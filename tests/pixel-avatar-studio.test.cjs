@@ -17,9 +17,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=19/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=19/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=19')<html.indexOf('avatar-pixel-studio.js?v=19'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=20/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=20/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=20')<html.indexOf('avatar-pixel-studio.js?v=20'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -56,7 +56,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-hairfit-9'/);
+  assert.match(js,/version:'pixel-v2-rig-hairfit-10'/);
 });
 
 test('new users start with a complete outfit and legacy equipment can migrate',()=>{
@@ -157,9 +157,9 @@ test('renderer trusts generated hair coordinates and adds no built-in hair scali
 });
 
 test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='19'/);
+  assert.match(js,/ASSET_REV='20'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='19'/);
+  assert.match(renderer,/ASSET_REV='20'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
