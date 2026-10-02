@@ -6,8 +6,8 @@ const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const BASE=ROOT+'/base/master-base-128.png';
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
-const DEFAULT={hairSet:'male',hair:1,lower:0,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
-const labels={hair:'헤어스타일',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
+const DEFAULT={hairSet:'male',hair:1,upper:0,lower:0,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
+const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
 const folders={eyes:'eyes',eyebrows:'eyebrows',noses:'noses',mouths:'mouths',blush:'blush'};
 const prefixes={eyes:'eyes',eyebrows:'eyebrows',noses:'nose',mouths:'mouth',blush:'blush'};
 
@@ -39,6 +39,7 @@ function loadState(){
     return {
       hairSet:raw.hairSet==='female'?'female':'male',
       hair:clampInt(raw.hair,1,24,1),
+      upper:clampInt(raw.upper,0,1,0),
       lower:clampInt(raw.lower,0,1,0),
       eyes:clampInt(raw.eyes,1,8,1),
       eyebrows:clampInt(raw.eyebrows,1,6,1),
@@ -52,6 +53,7 @@ let state=loadState();
 
 function pad(n){return String(n).padStart(2,'0');}
 function hairPath(layer,set,n){return `${ROOT}/hair/${layer}/${set}/hair-${layer}-${set}-${pad(n)}.png`;}
+function upperPath(n){return n===1?`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/static.png`:'';}
 function lowerPath(n){return n===1?`${ROOT}/clothes/lower/denim-cuffed-jeans-01/static.png`:'';}
 function facePath(type,n){
   if(!n)return '';
@@ -75,6 +77,7 @@ async function drawTo(targetCtx,targetState=state){
     hairPath('back',targetState.hairSet,targetState.hair),
     BASE,
     lowerPath(targetState.lower),
+    upperPath(targetState.upper),
     facePath('blush',targetState.blush),
     facePath('eyes',targetState.eyes),
     facePath('eyebrows',targetState.eyebrows),
@@ -105,7 +108,7 @@ async function renderAndPublish(showToast=false){
 }
 function updateSummary(){
   const style=state.hairSet==='female'?'긴 스타일':'짧은 스타일';
-  styleSummary.textContent=`${style} ${state.hair} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
+  styleSummary.textContent=`${style} ${state.hair} · ${state.upper?'파란 후드':'기본 상의'} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
 }
 function flash(text){
   toast.textContent=text;
@@ -123,10 +126,11 @@ function hairThumb(set,n){
     <img class="front" alt="" src="${hairPath('front',set,n)}">
   </span>`;
 }
-function lowerThumb(n){
-  const overlay=lowerPath(n);
-  return `<span class="hair-thumb"><img class="base" alt="" src="${BASE}">${overlay?`<img class="front" alt="" src="${overlay}">`:''}</span>`;
+function clothesThumb(path){
+  return `<span class="hair-thumb"><img class="base" alt="" src="${BASE}">${path?`<img class="front" alt="" src="${path}">`:''}</span>`;
 }
+function upperThumb(n){return clothesThumb(upperPath(n));}
+function lowerThumb(n){return clothesThumb(lowerPath(n));}
 function partThumb(type,n){
   if(type==='blush'&&n===0)return '<span class="part-thumb" style="font-size:1.8rem">×</span>';
   return `<span class="part-thumb"><img alt="" src="${facePath(type,n)}"></span>`;
@@ -147,6 +151,16 @@ function renderOptions(){
     return;
   }
   hairFilter.hidden=true;
+  if(currentTab==='upper'){
+    pickerTitle.textContent='상의';
+    const items=[
+      optionButton('기본 상의',0,state.upper===0,upperThumb(0),`data-kind="upper" data-index="0"`),
+      optionButton('파란 별 집업 후드',1,state.upper===1,upperThumb(1),`data-kind="upper" data-index="1"`)
+    ];
+    optionGrid.innerHTML=items.join('');
+    pickerCount.textContent='2가지';
+    return;
+  }
   if(currentTab==='lower'){
     pickerTitle.textContent='하의';
     const items=[
@@ -201,6 +215,7 @@ optionGrid.addEventListener('click',async e=>{
 document.getElementById('randomBtn').addEventListener('click',async()=>{
   state.hairSet=Math.random()<.5?'male':'female';
   state.hair=1+Math.floor(Math.random()*24);
+  state.upper=Math.random()<.5?0:1;
   state.lower=Math.random()<.5?0:1;
   state.eyes=1+Math.floor(Math.random()*8);
   state.eyebrows=1+Math.floor(Math.random()*6);
@@ -243,6 +258,7 @@ function loadStateFromObject(raw){
   return {
     hairSet:raw.hairSet==='female'?'female':'male',
     hair:clampInt(raw.hair,1,24,1),
+    upper:clampInt(raw.upper,0,1,0),
     lower:clampInt(raw.lower,0,1,0),
     eyes:clampInt(raw.eyes,1,8,1),
     eyebrows:clampInt(raw.eyebrows,1,6,1),
