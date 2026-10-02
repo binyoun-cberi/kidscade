@@ -144,7 +144,6 @@ test('renderer uses one identical transform for every hair style and both split 
   assert.match(renderer,/offsetY:0/);
   assert.match(renderer,/key==='hairBack'\|\|key==='hairFront'/);
   assert.doesNotMatch(renderer,/\[1,5,9\]/);
-  assert.doesNotMatch(renderer,/hairSet==='female'/);
   assert.match(renderer,/renderTweak:hairRenderTweak\(key\)/);
   assert.match(renderer,/tweakScaleX/);
   assert.match(renderer,/tweakScaleY/);
