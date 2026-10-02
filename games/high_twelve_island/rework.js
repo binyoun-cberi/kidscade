@@ -34,21 +34,18 @@
   workCol.insertBefore(drawerHead, panel);
   $(".drawer-close", drawerHead).addEventListener("click", closeDrawer);
 
+  const footer = $(".footer");
+  if (footer) {
+    footer.classList.add("drawer-footer");
+    workCol.appendChild(footer);
+  }
+
   const scrim = document.createElement("button");
   scrim.type = "button";
   scrim.className = "drawer-scrim";
   scrim.setAttribute("aria-label", "관리 창 닫기");
   scrim.addEventListener("click", closeDrawer);
   body.appendChild(scrim);
-
-  const managerButton = document.createElement("button");
-  managerButton.type = "button";
-  managerButton.id = "manageToggle";
-  managerButton.className = "iconbtn manage-toggle";
-  managerButton.textContent = "☰";
-  managerButton.setAttribute("aria-label", "마을 운영 열기");
-  managerButton.addEventListener("click", () => drawerOpen ? closeDrawer() : openDrawer());
-  $(".controls")?.appendChild(managerButton);
 
   const fx = document.createElement("div");
   fx.className = "weather-fx";
@@ -144,7 +141,10 @@
   });
 
   $$(".tab", tabs).forEach(tab => {
-    const iconOnly = tab.textContent.trim().split(/\s+/)[0];
+    const fullLabel = tab.textContent.trim();
+    const iconOnly = fullLabel.split(/\s+/)[0];
+    tab.title = fullLabel;
+    tab.setAttribute("aria-label", fullLabel);
     tab.dataset.shortLabel = iconOnly;
     tab.addEventListener("click", event => {
       if (event.isTrusted) openDrawer();
