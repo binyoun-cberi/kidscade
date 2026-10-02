@@ -4,8 +4,10 @@
 
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
+  const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
+  const PREVIEW_VERSION = 'pixel-v2-rig-hairfit-1';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
-  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=10';
+  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=11';
   const GUEST_DEFAULT_CONFIG = Object.freeze({
     hairSet:'male', hairStyle:1, upper:1, lower:1,
     eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
@@ -139,7 +141,9 @@
   function storedPreview() {
     try {
       const data = localStorage.getItem(PREVIEW_KEY) || '';
-      return isPreviewData(data) ? data : '';
+      if (!isPreviewData(data)) return '';
+      if (isGuestSession() && localStorage.getItem(PREVIEW_VERSION_KEY) !== PREVIEW_VERSION) return '';
+      return data;
     } catch (_) {
       return '';
     }
@@ -178,26 +182,51 @@
     return rendererLoadPromise;
   }
 
+  function guestConfigFromPixelState() {
+    const pixel = pixelState();
+    if (!pixel) return { ...GUEST_DEFAULT_CONFIG };
+    return {
+      hairSet:pixel.hairSet === 'female' ? 'female' : 'male',
+      hairStyle:Number(pixel.hair) || 1,
+      upper:pixel.upper ? 1 : 0,
+      lower:pixel.lower ? 1 : 0,
+      eyes:Number(pixel.eyes) || 1,
+      eyebrows:Number(pixel.eyebrows) || 1,
+      nose:Number(pixel.noses) || 1,
+      mouth:Number(pixel.mouths) || 1,
+      blush:Number(pixel.blush) || 0,
+      animation:'static'
+    };
+  }
+
   function ensureGuestDefaultPreview() {
     const saved = storedPreview();
     if (saved || !isGuestSession()) return Promise.resolve(saved);
     if (guestDefaultPreviewPromise) return guestDefaultPreviewPromise;
 
     guestDefaultPreviewPromise = (async () => {
+      try {
+        if (localStorage.getItem(PREVIEW_VERSION_KEY) !== PREVIEW_VERSION) {
+          localStorage.removeItem(PREVIEW_KEY);
+          localStorage.removeItem(PREVIEW_VERSION_KEY);
+        }
+      } catch (_) {}
+
       const api = await loadAvatarRigRuntime();
       if (!isGuestSession()) return storedPreview();
       const canvas = document.createElement('canvas');
       canvas.width = 128;
       canvas.height = 128;
-      const avatar = await api.create(canvas, { playing:false, config:{...GUEST_DEFAULT_CONFIG} });
+      const avatar = await api.create(canvas, { playing:false, config:guestConfigFromPixelState() });
       const data = await avatar.snapshot('image/png');
       avatar.destroy?.();
       if (!isGuestSession()) return storedPreview();
-      if (isPreviewData(data) && !storedPreview()) {
+      if (isPreviewData(data)) {
         localStorage.setItem(PREVIEW_KEY, data);
+        localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
         return data;
       }
-      return storedPreview();
+      return '';
     })().finally(() => { guestDefaultPreviewPromise = null; });
 
     return guestDefaultPreviewPromise;
@@ -294,7 +323,10 @@
       liveImg.addEventListener('error', () => {
         try {
           const current = liveImg?.getAttribute('src') || '';
-          if (current && current === localStorage.getItem(PREVIEW_KEY)) localStorage.removeItem(PREVIEW_KEY);
+          if (current && current === localStorage.getItem(PREVIEW_KEY)) {
+            localStorage.removeItem(PREVIEW_KEY);
+            localStorage.removeItem(PREVIEW_VERSION_KEY);
+          }
         } catch (_) {}
         liveImg?.removeAttribute('src');
         hideBrokenPreview(layer);
@@ -304,7 +336,8 @@
       });
     }
 
-    if (data && liveImg && !liveImg.getAttribute('src')) liveImg.src = data;
+    if (!data && liveImg?.getAttribute('src')) liveImg.removeAttribute('src');
+    if (data && liveImg && liveImg.getAttribute('src') !== data) liveImg.src = data;
     const hasImage = !!liveImg?.getAttribute('src');
     if (liveImg) liveImg.style.display = hasImage ? 'block' : 'none';
     if (liveShadow) liveShadow.style.display = hasImage ? 'block' : 'none';
@@ -331,6 +364,7 @@
       const data = api?.getPreviewDataURL?.();
       if (isPreviewData(data)) {
         localStorage.setItem(PREVIEW_KEY, data);
+        localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
         ensurePreviewLayer();
         if (liveImg) {
           liveImg.src = data;
@@ -556,7 +590,7 @@
   });
 
   window.addEventListener('storage', event => {
-    if (event.key === PIXEL_STATE_KEY || event.key === PREVIEW_KEY) ensurePreviewLayer();
+    if (event.key === PIXEL_STATE_KEY || event.key === PREVIEW_KEY || event.key === PREVIEW_VERSION_KEY) ensurePreviewLayer();
   });
 
   // Garden uses the exact saved avatar-studio appearance, while garden-life.js adds behaviour.
