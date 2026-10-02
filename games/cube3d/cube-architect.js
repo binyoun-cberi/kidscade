@@ -232,15 +232,17 @@ function clearChallenge(){
   $('resultCard').classList.add('hidden');updateChallengeEditor();updateChallengeStats();
 }
 function updateChallengeStats(){
-  const mission=currentChallengeMission();
-  let target=mission.blocks.length;
-  if(challengeDifficulty==='hard'){
-    const top=projectionSet(mission.blocks,'top').size;
-    const front=projectionSet(mission.blocks,'front').size;
-    const side=projectionSet(mission.blocks,'side').size;
-    target=top+front+side;
+  const mission=currentChallengeMission(),hard=challengeDifficulty==='hard';
+  let placed=challengeBlocks.size,target=mission.blocks.length;
+  if(hard){
+    const user=normalizedShape(Array.from(challengeBlocks.keys(),key=>key.split(',').map(Number))).points;
+    placed=projectionSet(user,'top').size+projectionSet(user,'front').size+projectionSet(user,'side').size;
+    target=projectionSet(mission.blocks,'top').size+
+      projectionSet(mission.blocks,'front').size+projectionSet(mission.blocks,'side').size;
   }
-  $('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
+  $('placedCount').textContent=placed;$('targetCount').textContent=target;
+  $('placedCount').parentElement.querySelector('span').textContent=hard?'내 투영 칸':'놓은 블록';
+  $('targetCount').parentElement.querySelector('span').textContent=hard?'설계 투영 칸':'설계 규모';
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
 }
 function setChallengeTool(tool){
@@ -428,12 +430,16 @@ function drawBlueprint(){
 }
 
 function restorationKeep(role,x,y,z){
-  const rate=role==='base'?.94:role==='body'?.78:
+  const baseRate=role==='base'?.94:role==='body'?.78:
     (role==='tower'||role==='arch')?.64:
     (role==='roof'||role==='dome'||role==='spire')?.55:.38;
-  // Remove coherent architectural chunks rather than random individual voxels.
-  // This keeps the starting ruin readable and lets the greedy cuboid pass collapse
-  // thousands of preserved blocks into roughly 60–130 editable pieces.
+  const name=currentChallengeMission()?.name||'';
+  const balance=name.includes('타워 브리지')?-.08:
+    name.includes('앙코르와트')?-.035:
+    name.includes('사그라다 파밀리아')||name.includes('히메지성')?.04:
+    name.includes('타지마할')||name.includes('에펠탑')?.02:0;
+  const rate=Math.max(.08,Math.min(.985,baseRate+balance));
+  // Landmark-specific damage keeps the remaining work near 8–10 meaningful cuboid placements.
   const gx=Math.floor(x/4),gy=Math.floor(y/3),gz=Math.floor(z/4);
   return hash2(gx*17+gy*5,gz*19-gy*3)<rate;
 }
@@ -1051,7 +1057,7 @@ function worldChunkKey(x,z){
 }
 function newSurvivalStats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
-    cuboids:[],paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
+    cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
 }
 function trackSurvival(action,type,n=1){
   if(gameFreeMode!=='survival')return;
@@ -2033,9 +2039,9 @@ function generateWorldChunk(cx,cz){
             for(let y=1;y<=2+Math.floor(hash2(x,z)*2);y++)
               setRawBlock(x,h+y,z,{type:'cactus',natural:true});
         }else if(kind==='marsh'){
-          if(roll>.966)
+          if(roll>.987)growTree(x,h+1,z,false,'forest');
+          else if(roll>.966)
             for(let y=1;y<=2;y++)setRawBlock(x,h+y,z,{type:'reed',natural:true});
-          else if(roll>.987)growTree(x,h+1,z,false,'forest');
         }else if(roll>1-b.trees&&!(x%3===0&&z%3===0)){
           growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
         }
@@ -2841,7 +2847,11 @@ function toggleXray(){
 }
 function buildFurnaceRecipes(){
   const box=$('furnaceRecipes');box.innerHTML='';
-  FURNACE_RECIPES.forEach(recipe=>{const b=document.createElement('button');b.className='furnace-recipe';b.innerHTML='<b>'+recipe.label+'</b><small>'+recipe.note+'</small>';b.onclick=()=>runFurnace(recipe);box.appendChild(b)});
+  FURNACE_RECIPES.forEach(recipe=>{
+    const b=document.createElement('button');b.className='furnace-recipe';
+    b.innerHTML='<b>'+recipe.label+'</b><small>'+recipe.note+(gameFreeMode==='survival'?' · 연료: 원목 또는 숯 1개':'')+'</small>';
+    b.onclick=()=>runFurnace(recipe);box.appendChild(b);
+  });
 }
 function toggleFurnace(force){
   const wasOpen=furnaceOpen;
@@ -2851,6 +2861,8 @@ function toggleFurnace(force){
     if(inventoryOpen){inventoryOpen=false;$('blockInventory').classList.add('hidden')}
   }
   $('furnacePanel').classList.toggle('hidden',!furnaceOpen);
+  if(furnaceOpen&&gameFreeMode==='survival'&&$('furnaceMessage'))
+    $('furnaceMessage').textContent='어떤 재료든 한 번 가공하면 목표가 진행돼요. 연료로 원목 또는 숯 1개가 필요해요.';
   if(furnaceOpen&&document.pointerLockElement===canvas)document.exitPointerLock();
   $('lockNotice').classList.toggle('hidden',furnaceOpen||inventoryOpen||document.pointerLockElement===canvas);
   if(wasOpen&&!furnaceOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
@@ -2936,15 +2948,16 @@ function loadFreeWorld(){
           const poi=poiRules.poiById(id);if(poi)unlockedTech.add(poi.tech.id);
         }
         if(data.stats){
+          const savedStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
           survivalStats={...newSurvivalStats(),...data.stats,
             crafted:{...(data.stats.crafted||{})},
             placed:{...(data.stats.placed||{})},smelted:{...(data.stats.smelted||{})},
             cuboids:Array.isArray(data.stats.cuboids)?data.stats.cuboids:
               ((data.stats.placed?.cuboid||0)>0?['1x1x2']:[]),
+            shelterBuilt:typeof data.stats.shelterBuilt==='boolean'?data.stats.shelterBuilt:savedStage>=6,
             paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
             biomes:[...visitedBiomes],found:[...collected],
             restored:Array.isArray(data.stats.restored)?data.stats.restored:[...restoredLandmarks]};
-          const savedStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
           survivalStage=(data.version||0)<12&&savedStage>=3&&!survivalStats.cuboids.length?3:savedStage;
           survivalFinished=!!data.finished;
         }else{
@@ -2958,6 +2971,7 @@ function loadFreeWorld(){
             placed:{workbench:oldStage>=3?1:0,
               furnace:oldStage>=6?1:0},
             placedBlocks:oldStage>=4?6:0,
+            shelterBuilt:oldStage>=5,
             smelted:{glass:oldStage>=6?1:0},
             biomes:[...visitedBiomes],found:[...collected],restored:[...restoredLandmarks]};
         }
@@ -3670,6 +3684,11 @@ function updateSurvivalEnvironment(dt){
   survivalExposure=worldRules.exposureStep(survivalExposure,delta,{
     night,storm,rain:weather==='rain',cold:biomeId==='snow',sheltered:shelter.sheltered,lit
   });
+  if(shelter.sheltered&&!survivalStats.shelterBuilt){
+    survivalStats.shelterBuilt=true;
+    toast('거점 완성! 지붕과 벽이 실제로 몸을 보호해요.');
+    advanceSurvival();
+  }
   if(shelter.sheltered&&night&&!nightShelterNotice){
     nightShelterNotice=true;toast('내가 지은 거점이 밤의 추위를 막아 주고 있어요.');
   }
