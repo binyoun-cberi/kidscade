@@ -2,11 +2,11 @@
 'use strict';
 
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
-const ASSET_REV='14';
+const ASSET_REV='15';
 function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v2-rig-hairfit-4';
+const PREVIEW_VERSION='pixel-v2-rig-hairfit-5';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=rev(ROOT+'/base/master-base-128.png');
@@ -320,7 +320,7 @@ function previewFrame(mode='idle',time=0){
 }
 
 window.KidscadeAvatarShop={
-  version:'pixel-v2-rig-hairfit-4',
+  version:'pixel-v2-rig-hairfit-5',
   stateKey:STATE_KEY,
   getPreviewDataURL:()=>previewData(),
   renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),

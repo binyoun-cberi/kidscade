@@ -66,10 +66,10 @@ test('guest profile keeps the avatar visible while play records stay account-onl
 test('guest receives a default v2 avatar without opening the heavy studio iframe', () => {
   assert.match(avatarIntegration, /GUEST_DEFAULT_CONFIG/);
   assert.match(avatarIntegration, /hairSet:'male', hairStyle:1, upper:1, lower:1/);
-  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=14'/);
+  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=15'/);
   assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
   assert.match(avatarIntegration, /api\.create\(canvas, \{ playing:false, config:guestConfigFromPixelState\(\) \}\)/);
-  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-hairfit-4'/);
+  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-hairfit-5'/);
   assert.match(avatarIntegration, /localStorage\.removeItem\(PREVIEW_KEY\)/);
   assert.match(avatarIntegration, /guestConfigFromPixelState/);
   assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_KEY, data\)/);
