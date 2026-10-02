@@ -21,19 +21,15 @@ HEAD_BOTTOM = MASTER_HEAD_BBOX[3]
 EAR_Y0, EAR_Y1 = 45, 58
 EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 87
 
+COMMON_HAIR_FIT = {
+    "targetWidth": 70,
+    "targetTop": 12,
+    "maxHeight": 86,
+    "scaleMode": "contain-uniform",
+}
 NORMALIZE = {
-    "male": {
-        "targetWidth": 64,
-        "targetTop": 14,
-        "maxHeight": 66,
-        "scaleMode": "contain-uniform",
-    },
-    "female": {
-        "targetWidth": 70,
-        "targetTop": 12,
-        "maxHeight": 86,
-        "scaleMode": "contain-uniform",
-    },
+    "male": COMMON_HAIR_FIT,
+    "female": COMMON_HAIR_FIT,
 }
 
 SHEETS = {
@@ -264,10 +260,10 @@ def build_face_feature_mask(face_parts):
 def split_full_hair(full, head_mask, critical_mask):
     alpha = full.getchannel("A")
 
-    # Back contains only pixels outside the head silhouette. A 1px-expanded
-    # mask prevents the shrunken halo/double-crown artifact seen in v6/v7.
-    back_block = head_mask.filter(ImageFilter.MaxFilter(3))
-    back_alpha = ImageChops.subtract(alpha, back_block)
+    # Split front/back with the exact same head mask. Expanding the back mask
+    # created a 1px no-man's-land where neither layer was drawn, exposing the
+    # pale base head as a visible halo around the crown.
+    back_alpha = ImageChops.subtract(alpha, head_mask)
     back = full.copy()
     back.putalpha(back_alpha)
 
@@ -394,7 +390,7 @@ def main():
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":8,
+        "version":9,
         "type":"kidscade-normalized-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
@@ -412,12 +408,13 @@ def main():
         "qa":{
             "status":"normalized-split-generated-awaiting-visual-approval",
             "checks":[
+                "one shared contain-fit for both 24-style source sheets",
                 "uniform contain-fit full hairstyle to master head/body before splitting",
                 "preserve source aspect ratio; never stretch hair vertically",
                 "6x4 grid extraction",
                 "128x128 hard-alpha assets",
-                "hairBack excludes master-head silhouette",
-                "hairFront contains only master-head overlap",
+                "hairBack and hairFront are an exact complementary split of the same head mask",
+                "no transparent split-gap halo around the master-head silhouette",
                 "ear-safe front mask",
                 "no eye/eyebrow/nose/mouth subtraction from front hair",
                 "edge-connected white-matte fringe trim before hard alpha",
