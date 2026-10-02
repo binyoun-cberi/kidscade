@@ -42,17 +42,34 @@ const PARTS = {
   membrane:{id:'membrane',cat:'방어',icon:'🛡️',name:'두꺼운 막',cost:10,external:false,max:4,desc:'공격과 염도 변화에 강해지지만 몸이 조금 무거워져요.',science:'세포막은 물질 출입을 조절합니다. 실제 생물의 세포벽·막 조성 변화처럼 환경에 대한 보호 기능을 게임식으로 단순화했습니다.'},
   spike:{id:'spike',cat:'방어',icon:'🔺',name:'가시',cost:10,external:true,max:6,desc:'몸에 부딪힌 포식자에게 피해를 주고 접근을 어렵게 해요.',science:'가시와 돌기는 포식자가 삼키거나 접근하기 어렵게 만드는 방어 형질이 될 수 있습니다.'},
   toxin:{id:'toxin',cat:'방어',icon:'☠️',name:'독소낭',cost:14,external:false,max:3,desc:'특수 행동으로 주변에 독소를 방출할 수 있어요.',science:'미생물도 다른 생물의 성장을 억제하거나 공격하는 화학물질을 만들 수 있습니다.'},
-  camouflage:{id:'camouflage',cat:'방어',icon:'🫥',name:'위장색소',cost:12,external:false,max:3,desc:'가만히 있으면 포식자가 나를 알아채기 어려워져요.',science:'몸의 색이나 투명도는 배경과 비슷해져 발견될 가능성을 낮추는 데 도움이 될 수 있습니다.'}
+  camouflage:{id:'camouflage',cat:'방어',icon:'🫥',name:'위장색소',cost:12,external:false,max:3,desc:'가만히 있으면 포식자가 나를 알아채기 어려워져요.',science:'몸의 색이나 투명도는 배경과 비슷해져 발견될 가능성을 낮추는 데 도움이 될 수 있습니다.'},
+
+  adhesion:{id:'adhesion',cat:'군체',icon:'🔗',name:'세포 접착',cost:18,external:false,max:1,desc:'분열한 세포가 떨어지지 않고 서로 붙어 있을 수 있게 해요.',science:'다세포성으로 가는 중요한 변화 중 하나는 세포들이 서로 붙어 협력할 수 있게 되는 것입니다.'},
+  signaling:{id:'signaling',cat:'군체',icon:'📡',name:'세포간 신호',cost:22,external:false,max:1,requires:'adhesion',desc:'붙어 있는 세포들이 화학 신호를 주고받아 함께 반응해요.',science:'세포간 신호 전달은 여러 세포가 환경 변화에 맞춰 행동을 조절하고 협력하는 데 중요합니다.'},
+  differentiation:{id:'differentiation',cat:'군체',icon:'🧩',name:'세포 분화',cost:28,external:false,max:1,requires:'signaling',desc:'모든 세포가 같은 일을 하지 않고 서로 다른 역할을 맡기 시작해요.',science:'다세포 생물에서는 세포가 서로 다른 구조와 기능을 갖도록 분화해 조직과 기관의 바탕을 만듭니다.'}
 };
 
-const CATS = ['먹이','이동','감각','방어'];
+const CATS = ['먹이','이동','감각','방어','군체'];
+const BODY_SHAPES=Object.freeze({
+  round:{name:'둥근형',x:1,y:1},
+  oval:{name:'타원형',x:1.18,y:.82},
+  long:{name:'유선형',x:1.48,y:.66},
+  amoeba:{name:'아메바형',x:1.12,y:.88}
+});
+const BODY_PATTERNS=Object.freeze({
+  none:'무늬 없음',spots:'반점',stripes:'줄무늬',glow:'발광 테두리'
+});
+const BODY_SYMMETRY=Object.freeze({
+  bilateral:'좌우대칭',radial:'방사대칭',asymmetric:'비대칭'
+});
+const COLONY_PATH=['adhesion','signaling','differentiation'];
 const CAMERA_ZOOM = 1.55;
 const WORLD = {w:2300,h:1650};
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('high_micro_evolution','save') || 'kidscade_game_v1:high_micro_evolution:save';
 
 let canvas,ctx,dpr=1,viewW=0,viewH=0,last=0,raf=0;
 let running=false,paused=false,toastTimer=0,eventTimer=0,senseTimer=0;
-let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null;
+let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null,organStyleSlot=-1;
 let keys={},pointerTarget=null,joy={active:false,x:0,y:0,pid:null};
 let foods=[],creatures=[],lightPatches=[],foodClusters=[],biomeProps=[],ripples=[],particles=[];
 let baseEnv={...BIOMES[0].env},env={...BIOMES[0].env};
@@ -68,7 +85,9 @@ function freshPlayer(){
   slots[0]='primitiveMouth';
   slots[6]='flagellum';
   return {x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:0,radius:30,energy:100,health:100,biomass:0,
-    slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0},
+    slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0,adhesion:0,signaling:0,differentiation:0},
+    appearance:{shape:'oval',symmetry:'bilateral',base:'#29b5a7',accent:'#8cffe9',pattern:'none',opacity:1,length:1,width:1},
+    slotMeta:Array.from({length:12},()=>({scale:1,twist:0})),stage:'unicellular',
     pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0,feedAudioCd:0,hurtAudioCd:0};
 }
 function resetState(){
@@ -84,6 +103,23 @@ function allParts(p=state.player){
   return out;
 }
 function externalAngle(index){ return index/12*TAU; }
+function ensureMorphology(p=state.player){
+  if(!p)return;
+  p.appearance={shape:'oval',symmetry:'bilateral',base:'#29b5a7',accent:'#8cffe9',pattern:'none',opacity:1,length:1,width:1,...(p.appearance||{})};
+  if(!BODY_SHAPES[p.appearance.shape])p.appearance.shape='oval';
+  if(!BODY_PATTERNS[p.appearance.pattern])p.appearance.pattern='none';
+  if(!BODY_SYMMETRY[p.appearance.symmetry])p.appearance.symmetry='bilateral';
+  p.slotMeta=Array.from({length:12},(_,i)=>({scale:1,twist:0,...((p.slotMeta||[])[i]||{})}));
+  p.stage=p.stage||'unicellular';
+  p.inside={chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0,adhesion:0,signaling:0,differentiation:0,...(p.inside||{})};
+}
+function colonyProgress(p=state.player){ ensureMorphology(p);return COLONY_PATH.reduce((n,id)=>n+(countPart(id,p)>0?1:0),0); }
+function colonyReady(p=state.player){ return colonyProgress(p)===COLONY_PATH.length; }
+function stageLabel(p=state.player){ return p?.stage==='colony'?'군체':'단세포'; }
+function bodyExtents(appearance){
+  const app=appearance||{shape:'oval',length:1,width:1},shape=BODY_SHAPES[app.shape]||BODY_SHAPES.oval;
+  return {x:shape.x*clamp(Number(app.length)||1,.7,1.45),y:shape.y*clamp(Number(app.width)||1,.7,1.45)};
+}
 function toast(msg){
   const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),1800);
@@ -264,6 +300,7 @@ function screenToWorld(x,y){
 }
 
 function movementStats(p=state.player){
+  ensureMorphology(p);
   const parts=allParts(p);
   let thrust=0,side=0;
   p.slots.forEach((type,i)=>{
@@ -274,10 +311,11 @@ function movementStats(p=state.player){
     }else if(type==='cilia'){ thrust+=.24;side+=.65; }
     else if(type==='pseudopod'){ thrust+=.18;side+=.28; }
   });
-  const armor=1+(parts.membrane||0)*.22;
-  const speed=(76+thrust*35)/armor;
-  const turn=2.35+side*1.2+(parts.cilia||0)*.5;
-  const sense=110+(parts.eyespot||0)*35+(parts.chemo||0)*48+(parts.mechano||0)*42+(parts.tactile||0)*18+(parts.electro||0)*45;
+  let armor=1+(parts.membrane||0)*.22;
+  let speed=(76+thrust*35)/armor;
+  let turn=2.35+side*1.2+(parts.cilia||0)*.5;
+  let sense=110+(parts.eyespot||0)*35+(parts.chemo||0)*48+(parts.mechano||0)*42+(parts.tactile||0)*18+(parts.electro||0)*45;
+  if(p.stage==='colony'){speed*=.9;turn*=.88;sense*=1.12;armor+=.28}
   return {speed,turn,sense,armor,thrust};
 }
 function lightAt(x,y){
@@ -321,7 +359,8 @@ function lightSenseData(p=state.player){
   return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
 }
 function reproductionRequirement(){
-  return 28+Math.min(42,(state.generation-1)*6);
+  const base=28+Math.min(42,(state.generation-1)*6);
+  return base+(state.player?.stage==='colony'?16:0);
 }
 function partPurchaseCost(part){
   const owned=countPart(part.id);
@@ -620,8 +659,10 @@ function triggerEvent(){
 }
 function advanceGeneration(){
   state.generation++;state.reproductions++;state.generationClock=0;state.dna+=2;state.score+=75;
-  const p=state.player;
-  p.biomass=0;p.energy=clamp(p.energy-18,62,100);p.health=100;p.radius=30;p.divisionFx=1.5;p.attached=null;
+  const p=state.player;ensureMorphology(p);
+  const promoted=p.stage==='unicellular'&&colonyReady(p);
+  if(promoted){p.stage='colony';state.score+=180;state.discovered.colony=1}
+  p.biomass=0;p.energy=clamp(p.energy-18,62,100);p.health=100;p.radius=30;p.divisionFx=promoted?2.2:1.5;p.attached=null;
   creatures.forEach((c,i)=>{
     const pressure=(env.current>65?.08:0)+(env.food<40?.06:0)+(env.turbidity>65?.05:0);
     c.traits=mutateTraits(c.traits,.1+pressure);c.traits.gen=state.generation;
@@ -630,8 +671,9 @@ function advanceGeneration(){
     if(state.discovered.predator&&c.r<34)c.traits.armor=clamp(c.traits.armor+.035,.25,2);
   });
   burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
-  toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 환경은 시간이 지나면 평상 상태로 돌아갑니다.');
-  sound('generation',{volume:.28,rate:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:.84}),70);save();
+  if(promoted)toast('🌐 군체 진화 성공! 여러 세포가 붙어 하나의 생물처럼 협력하기 시작했습니다.');
+  else toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 환경은 시간이 지나면 평상 상태로 돌아갑니다.');
+  sound('generation',{volume:promoted?.34:.28,rate:promoted?.92:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:promoted?.72:.84}),70);save();
 }
 function updateMissions(){
   const m=state.mission;
@@ -657,7 +699,10 @@ function classifyNiche(){
     {name:'숙주 추적 기생생물',desc:'화학 신호를 따라 숙주를 찾고 달라붙어 영양을 얻어요.',s:c('parasite')*5+c('chemo')*2},
     {name:'감각 특화 탐색자',desc:'여러 감각기관으로 넓은 범위를 탐색해요.',s:c('eyespot')+c('chemo')+c('mechano')+c('tactile')+c('electro')*2}
   ];
-  scores.sort((a,b)=>b.s-a.s);return scores[0].s>=6?scores[0]:{name:'초기 미생물',desc:'아직 뚜렷한 생활 방식이 없어요.'};
+  scores.sort((a,b)=>b.s-a.s);
+  const result=scores[0].s>=6?scores[0]:{name:'초기 미생물',desc:'아직 뚜렷한 생활 방식이 없어요.'};
+  if(state.player?.stage==='colony')return {name:'군체 · '+result.name,desc:'여러 세포가 붙어 협력합니다. '+result.desc};
+  return result;
 }
 
 function update(dt){
@@ -771,24 +816,103 @@ function drawFoods(){
     ctx.restore();
   });
 }
-function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null){
+function shadeHex(hex,factor){
+  const h=String(hex||'#29b5a7').replace('#','').padEnd(6,'0').slice(0,6);
+  const n=parseInt(h,16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  const cv=v=>clamp(Math.round(v*factor),0,255).toString(16).padStart(2,'0');
+  return '#'+cv(r)+cv(g)+cv(b);
+}
+function traceBodyPath(r,appearance){
+  const app=appearance||{shape:'oval',length:1,width:1},ext=bodyExtents(app);
+  ctx.beginPath();
+  if(app.shape==='amoeba'){
+    const pts=18;
+    for(let i=0;i<=pts;i++){
+      const a=i/pts*TAU,warp=1+.08*Math.sin(a*3+1.1)+.055*Math.sin(a*5-0.7);
+      const x=Math.cos(a)*r*ext.x*warp,y=Math.sin(a)*r*ext.y*(1+.05*Math.sin(a*4))*warp;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }else ctx.ellipse(0,0,r*ext.x,r*ext.y,0,0,TAU);
+}
+function drawBodyPattern(r,appearance){
+  const app=appearance||{},ext=bodyExtents(app),pattern=app.pattern||'none';
+  if(pattern==='none')return;
+  ctx.save();traceBodyPath(r,app);ctx.clip();
+  ctx.globalAlpha*=.42;
+  ctx.fillStyle=app.accent||'#8cffe9';ctx.strokeStyle=app.accent||'#8cffe9';
+  if(pattern==='spots'){
+    const pts=app.symmetry==='radial'?8:app.symmetry==='asymmetric'?7:6;
+    for(let i=0;i<pts;i++){
+      let x,y;
+      if(app.symmetry==='radial'){
+        const a=i/pts*TAU;x=Math.cos(a)*r*ext.x*.52;y=Math.sin(a)*r*ext.y*.52;
+      }else if(app.symmetry==='bilateral'){
+        const row=Math.floor(i/2)-1,xside=i%2?1:-1;x=xside*r*ext.x*(.24+.11*Math.abs(row));y=row*r*ext.y*.34;
+      }else{
+        x=Math.sin(i*2.13)*r*ext.x*.58;y=Math.cos(i*1.47)*r*ext.y*.5;
+      }
+      ctx.beginPath();ctx.arc(x,y,Math.max(3,r*(.055+(i%3)*.012)),0,TAU);ctx.fill();
+    }
+  }else if(pattern==='stripes'){
+    ctx.lineWidth=Math.max(3,r*.075);
+    for(let i=-4;i<=4;i++){
+      const x=i*r*ext.x*.2;
+      ctx.beginPath();ctx.moveTo(x-r*.25,-r*ext.y*1.1);ctx.lineTo(x+r*.22,r*ext.y*1.1);ctx.stroke();
+    }
+  }else if(pattern==='glow'){
+    ctx.globalAlpha*=1.3;ctx.lineWidth=Math.max(5,r*.1);ctx.shadowBlur=18;ctx.shadowColor=app.accent||'#8cffe9';
+    traceBodyPath(r*.92,app);ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawBodyCell(r,appearance,colors,armor,flash,isPlayer,scale=1,ox=0,oy=0){
+  const app=appearance||{shape:'oval',base:'#29b5a7',accent:'#8cffe9',opacity:1,length:1,width:1};
+  ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
+  const base=isPlayer?(app.base||'#29b5a7'):colors.mid,accent=isPlayer?(app.accent||'#8cffe9'):colors.hi,dark=shadeHex(base,.5);
+  const body=ctx.createRadialGradient(-r*.25,-r*.25,r*.08,0,0,r*1.2);
+  body.addColorStop(0,accent);body.addColorStop(.58,base);body.addColorStop(1,flash>0?'#fff':dark);
+  if(isPlayer&&app.pattern==='glow'){ctx.shadowBlur=24;ctx.shadowColor=accent}
+  ctx.fillStyle=body;traceBodyPath(r,app);ctx.fill();
+  ctx.lineWidth=2+armor*1.6;ctx.strokeStyle=armor?'rgba(202,247,255,.75)':'rgba(255,255,255,.22)';ctx.stroke();
+  drawBodyPattern(r,app);ctx.restore();
+}
+function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null,appearance=null,slotMeta=null,stage='unicellular'){
+  const app=appearance||{shape:'oval',symmetry:'bilateral',base:'#29b5a7',accent:'#8cffe9',pattern:'none',opacity:1,length:1,width:1};
+  const metas=slotMeta||Array.from({length:12},()=>({scale:1,twist:0}));
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   const camo=(inside&&inside.camouflage)||0,armor=(inside&&inside.membrane)||0;
-  ctx.globalAlpha=isPlayer?1:clamp(.9-camo*.12,.52,.92);
+  ctx.globalAlpha=(isPlayer?clamp(Number(app.opacity)||1,.35,1):clamp(.9-camo*.12,.52,.92));
   const colors=tint||{hi:'#73cfe8',mid:'#2b829e',lo:'#124f62'};
-  const body=ctx.createRadialGradient(-r*.25,-r*.25,r*.08,0,0,r);body.addColorStop(0,isPlayer?'#8cffe9':colors.hi);body.addColorStop(.58,isPlayer?'#29b5a7':colors.mid);body.addColorStop(1,flash>0?'#fff':isPlayer?'#0c6570':colors.lo);
-  if(isPlayer){ctx.shadowBlur=22;ctx.shadowColor='rgba(95,255,229,.55)'}
-  ctx.fillStyle=body;ctx.beginPath();ctx.ellipse(0,0,r*1.08,r*.9,0,0,TAU);ctx.fill();
-  ctx.lineWidth=2+armor*1.6;ctx.strokeStyle=armor?'rgba(202,247,255,.75)':'rgba(255,255,255,.22)';ctx.stroke();
-  if(inside&&inside.chloroplast){ctx.fillStyle='#8ce66a';ctx.shadowBlur=10;ctx.shadowColor='#8ce66a';for(let i=0;i<inside.chloroplast*2;i++){const a=i*2.4+state.survival*.08;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.42,Math.sin(a)*r*.35,Math.max(4,r*.1),Math.max(3,r*.06),a,0,TAU);ctx.fill()}ctx.shadowBlur=0}
-  ctx.fillStyle=isPlayer?'#c26ea8':'#7165aa';ctx.beginPath();ctx.arc(-r*.08,2,r*.28,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=2;ctx.stroke();
 
+  if(stage==='colony'){
+    const offsets=app.symmetry==='radial'
+      ?[[.76,0],[-.38,.66],[-.38,-.66],[.18,.78],[.18,-.78]]
+      :app.symmetry==='asymmetric'
+      ?[[.8,.12],[-.62,.5],[-.28,-.76],[.35,.72],[-.82,-.16]]
+      :[[.72,.43],[.72,-.43],[-.72,.43],[-.72,-.43]];
+    offsets.forEach((o,i)=>drawBodyCell(r*.52,app,colors,Math.max(0,armor-1),flash,isPlayer,.9,o[0]*r,o[1]*r));
+  }
+  drawBodyCell(r,app,colors,armor,flash,isPlayer);
+
+  if(inside&&inside.chloroplast){
+    ctx.fillStyle='#8ce66a';ctx.shadowBlur=10;ctx.shadowColor='#8ce66a';
+    for(let i=0;i<inside.chloroplast*2;i++){const a=i*2.4+state.survival*.08;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.42,Math.sin(a)*r*.35,Math.max(4,r*.1),Math.max(3,r*.06),a,0,TAU);ctx.fill()}ctx.shadowBlur=0;
+  }
+  ctx.fillStyle=isPlayer?shadeHex(app.accent||'#8cffe9',.78):'#7165aa';
+  const nucleusX=app.symmetry==='asymmetric'?-r*.18:-r*.08;
+  ctx.beginPath();ctx.arc(nucleusX,2,r*.28,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=2;ctx.stroke();
+
+  const ext=bodyExtents(app);
   (slots||[]).forEach((type,i)=>{
-    if(!type)return;const a=externalAngle(i),px=Math.cos(a)*r*.96,py=Math.sin(a)*r*.82;ctx.save();ctx.translate(px,py);ctx.rotate(a);
+    if(!type)return;
+    const a=externalAngle(i),meta=metas[i]||{scale:1,twist:0},px=Math.cos(a)*r*ext.x*.92,py=Math.sin(a)*r*ext.y*.92;
+    ctx.save();ctx.translate(px,py);ctx.rotate(a+(Number(meta.twist)||0));const sc=clamp(Number(meta.scale)||1,.55,1.8);ctx.scale(sc,sc);
     drawPart(type,r,isPlayer);ctx.restore();
   });
   ctx.restore();
 }
+
 function drawPart(type,r,isPlayer){
   const k=clamp(r/30,.75,2.35),t=state.survival;
   ctx.lineCap='round';ctx.lineJoin='round';
@@ -873,7 +997,7 @@ function drawPlayer(){
   if(p.divisionFx>0){ctx.strokeStyle='rgba(220,255,151,'+clamp(p.divisionFx/1.5,0,1)+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr+(1.5-p.divisionFx)*70,0,TAU);ctx.stroke()}
   ctx.restore();
 
-  drawOrganism(viewW/2,viewH/2,vr,p.angle,p.slots,p.inside,true,p.feedFlash,null);
+  drawOrganism(viewW/2,viewH/2,vr,p.angle,p.slots,p.inside,true,p.feedFlash,null,p.appearance,p.slotMeta,p.stage);
   const range=movementStats(p).sense*CAMERA_ZOOM;ctx.strokeStyle='rgba(102,245,231,.07)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(viewW/2,viewH/2,Math.min(range,360),0,TAU);ctx.stroke();
 
   if(countPart('filter')){
@@ -943,16 +1067,16 @@ function updateStarterGuide(){
     textEl.textContent='아래에서 빛나는 “번식 · 진화” 버튼을 눌러 다음 세대의 몸을 설계하세요.';
     hint.textContent='편모·감각기관·방어기관을 고르면 다음 세대의 생활 방식이 달라져요.';
   }else{
-    step.textContent='✓';title.textContent=state.generation+'세대 생존 중';
-    textEl.textContent='먹기 → 성장 → 번식 · 진화를 반복하며 환경 변화에 맞춰 계통을 이어가세요.';
-    hint.textContent='작은 생물은 먹이, 큰 포식자는 위험. 환경에 따라 유리한 기관이 달라집니다.';
+    step.textContent='✓';title.textContent=(state.player.stage==='colony'?'군체 · ':'')+state.generation+'세대 생존 중';
+    textEl.textContent=state.player.stage==='colony'?'여러 세포가 붙어 감각·방어가 좋아졌어요. 더 많은 DNA를 모아 다음 진화 단계를 준비하세요.':'먹기 → 성장 → 번식 · 진화를 반복하며 환경 변화에 맞춰 계통을 이어가세요.';
+    hint.textContent=state.player.stage==='colony'?'군체는 조금 느리지만 더 넓게 감지하고 공격을 견디기 쉬워요.':'작은 생물은 먹이, 큰 포식자는 위험. 환경에 따라 유리한 기관이 달라집니다.';
     box.classList.add('done');
   }
 }
 function refreshHud(force){
   if(!state.player)return;
   const grow=Math.round(reproductionProgress()*100),req=reproductionRequirement(),ready=canReproduce();
-  $('biomeIcon').textContent=selectedBiome.icon;$('biomeName').textContent=selectedBiome.name;$('generationText').textContent=state.generation+'세대 · 성장 '+grow+'%';
+  $('biomeIcon').textContent=selectedBiome.icon;$('biomeName').textContent=selectedBiome.name;$('generationText').textContent=stageLabel()+' · '+state.generation+'세대 · 성장 '+grow+'%';
   $('dnaText').textContent=Math.floor(state.dna);$('energyText').textContent=Math.round(state.player.energy);$('healthText').textContent=Math.round(state.player.health);
   const n=classifyNiche();$('nicheName').textContent=n.name;$('nicheDesc').textContent=n.desc;
   const m=missionText();$('missionTitle').textContent=m[0];$('missionDesc').textContent=m[1];
@@ -1010,16 +1134,67 @@ function openEditor(){
     toast('아직 번식할 수 없어요 · 생체량 '+Math.floor(state.player.biomass)+'/'+req+', 에너지 '+Math.round(state.player.energy)+'/78');
     return;
   }
-  state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,dna:state.dna}));
+  ensureMorphology();state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,dna:state.dna}));
   $('gameScreen').classList.add('hidden');$('editorScreen').classList.remove('hidden');
   sound('event',{volume:.16,rate:1.08});selectedPart=null;activeTab='먹이';renderEditor();
 }
 function closeEditor(saveChanges){
-  if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna}
+  if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.dna=editorSnapshot.dna}
   $('editorScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');paused=false;selectedPart=null;
-  if(saveChanges&&state.editorMode==='reproduction'){const n=classifyNiche();advanceGeneration();save();toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.')}
-  else if(!saveChanges){sound('click',{volume:.12})}
+  if(saveChanges&&state.editorMode==='reproduction'){
+    const wasColony=state.player.stage==='colony';advanceGeneration();const n=classifyNiche();save();
+    if(wasColony||state.player.stage!=='colony')toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.');
+  }else if(!saveChanges){sound('click',{volume:.12})}
   state.editorMode=null;updateLightSensor();updateSenseOverlay();last=performance.now();
+}
+function syncMorphologyControls(){
+  ensureMorphology();const app=state.player.appearance;
+  if($('bodyShapeSelect'))$('bodyShapeSelect').value=app.shape;
+  if($('bodySymmetrySelect'))$('bodySymmetrySelect').value=app.symmetry;
+  if($('bodyPatternSelect'))$('bodyPatternSelect').value=app.pattern;
+  if($('bodyBaseColor'))$('bodyBaseColor').value=app.base;
+  if($('bodyAccentColor'))$('bodyAccentColor').value=app.accent;
+  const len=Math.round(app.length*100),wid=Math.round(app.width*100),op=Math.round(app.opacity*100);
+  if($('bodyLengthRange'))$('bodyLengthRange').value=len;if($('bodyLengthValue'))$('bodyLengthValue').textContent=len+'%';
+  if($('bodyWidthRange'))$('bodyWidthRange').value=wid;if($('bodyWidthValue'))$('bodyWidthValue').textContent=wid+'%';
+  if($('bodyOpacityRange'))$('bodyOpacityRange').value=op;if($('bodyOpacityValue'))$('bodyOpacityValue').textContent=op+'%';
+  refreshOrganStyleControls();updateColonyProgressUI();
+}
+function refreshOrganStyleControls(){
+  ensureMorphology();const sel=$('organStyleSelect');if(!sel)return;
+  const occupied=state.player.slots.map((type,i)=>({type,i})).filter(x=>x.type);
+  if(!occupied.some(x=>x.i===organStyleSlot))organStyleSlot=occupied.length?occupied[0].i:-1;
+  sel.innerHTML='<option value="">기관을 선택하세요</option>'+occupied.map(x=>'<option value="'+x.i+'">'+(x.i+1)+'번 · '+PARTS[x.type].icon+' '+PARTS[x.type].name+'</option>').join('');
+  sel.value=organStyleSlot>=0?String(organStyleSlot):'';
+  const meta=organStyleSlot>=0?state.player.slotMeta[organStyleSlot]:{scale:1,twist:0};
+  const scale=Math.round((meta.scale||1)*100),twist=Math.round((meta.twist||0)*180/Math.PI);
+  if($('organScaleRange')){$('organScaleRange').disabled=organStyleSlot<0;$('organScaleRange').value=scale}
+  if($('organTwistRange')){$('organTwistRange').disabled=organStyleSlot<0;$('organTwistRange').value=twist}
+  if($('organScaleValue'))$('organScaleValue').textContent=scale+'%';
+  if($('organTwistValue'))$('organTwistValue').textContent=twist+'°';
+}
+function updateColonyProgressUI(){
+  const p=state.player;if(!p||!$('colonyProgressBox'))return;
+  const ids=[['adhesion','colonyStepAdhesion'],['signaling','colonyStepSignaling'],['differentiation','colonyStepDifferentiation']];
+  ids.forEach(([part,id])=>$(id)?.classList.toggle('on',countPart(part)>0));
+  const progress=colonyProgress();
+  $('colonyStageText').textContent=p.stage==='colony'?'군체 생물':progress+'/3 준비';
+  if(p.stage==='colony')$('colonyProgressText').textContent='군체 단계에 진입했습니다. 여러 세포가 붙어 감각과 방어가 좋아졌지만 몸이 커져 움직임은 조금 둔해집니다.';
+  else if(progress===3)$('colonyProgressText').textContent='군체 진화 준비 완료! 이번 번식을 마치면 여러 세포가 붙어 사는 군체 단계로 넘어갑니다.';
+  else $('colonyProgressText').textContent='군체 탭에서 세포 접착 → 세포간 신호 → 세포 분화를 순서대로 진화시키세요.';
+  $('colonyProgressBox').classList.toggle('ready',p.stage!=='colony'&&progress===3);
+}
+function applyMorphologyControl(id,value){
+  ensureMorphology();const app=state.player.appearance;
+  if(id==='shape')app.shape=value;
+  else if(id==='symmetry')app.symmetry=value;
+  else if(id==='pattern')app.pattern=value;
+  else if(id==='base')app.base=value;
+  else if(id==='accent')app.accent=value;
+  else if(id==='length')app.length=clamp(Number(value)/100,.7,1.45);
+  else if(id==='width')app.width=clamp(Number(value)/100,.7,1.45);
+  else if(id==='opacity')app.opacity=clamp(Number(value)/100,.4,1);
+  renderSlots();drawEditorPreview();syncMorphologyControls();
 }
 function renderEditor(){
   $('editorDnaText').textContent=Math.floor(state.dna);
@@ -1027,9 +1202,10 @@ function renderEditor(){
   CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;sound('select',{volume:.09});renderEditor()});tabs.appendChild(b)});
   const list=$('partList');list.innerHTML='';
   Object.values(PARTS).filter(p=>p.cat===activeTab&&!p.starter).forEach(part=>{
-    const count=countPart(part.id),locked=count>=part.max,cost=partPurchaseCost(part);
-    const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+(locked?' locked':'');b.type='button';
-    b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+(count?' · 같은 기관을 더 달면 DNA 비용이 증가해요.':'')+'</small>';
+    const count=countPart(part.id),prereqLocked=part.requires&&!countPart(part.requires),locked=count>=part.max,cost=partPurchaseCost(part);
+    const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+((locked||prereqLocked)?' locked':'');b.type='button';if(part.cat==='군체')b.dataset.colony='1';
+    const reqText=prereqLocked?' · 먼저 '+PARTS[part.requires].name+' 필요':'';
+    b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+reqText+(count?' · 같은 기관을 더 달면 DNA 비용이 증가해요.':'')+'</small>';
     b.addEventListener('click',()=>choosePart(part));list.appendChild(b);
     if(!part.external&&count>0){
       const remove=document.createElement('button');remove.type='button';remove.className='part-remove';
@@ -1038,10 +1214,13 @@ function renderEditor(){
       list.appendChild(remove);
     }
   });
-  renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();
+  renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();syncMorphologyControls();
+  const finish=$('finishEvolutionBtn');if(finish)finish.textContent=state.player.stage==='unicellular'&&colonyReady()?'군체 생물로 진화하기':'이 모습으로 생존하기';
 }
 function choosePart(part){
   updateScienceCard(part);
+  if(part.requires&&!countPart(part.requires)){sound('error',{volume:.12});toast(PARTS[part.requires].name+'을(를) 먼저 진화시켜야 해요.');return}
+  if(state.player.stage==='colony'&&COLONY_PATH.includes(part.id)&&countPart(part.id)>=part.max){sound('error',{volume:.12});toast('군체 유지에 필요한 핵심 형질이에요.');return}
   if(countPart(part.id)>=part.max){sound('error',{volume:.12});toast('이 기관은 더 이상 달 수 없어요.');return}
   const cost=partPurchaseCost(part);
   if(state.dna<cost){sound('error',{volume:.12});toast('DNA가 '+(cost-state.dna).toFixed(1)+' 부족해요. 여러 세대 동안 모으거나 큰 먹이를 노려 보세요.');return}
@@ -1051,10 +1230,12 @@ function choosePart(part){
   }
 }
 function renderSlots(){
-  const layer=$('slotLayer');layer.innerHTML='';const cx=50,cy=50,rr=40;
+  ensureMorphology();
+  const layer=$('slotLayer');layer.innerHTML='';const cx=50,cy=50,ext=bodyExtents(state.player.appearance);
+  const rrX=clamp(34*ext.x,30,43),rrY=clamp(38*ext.y,27,43);
   state.player.slots.forEach((type,i)=>{
     const a=externalAngle(i),b=document.createElement('button');b.type='button';b.className='part-slot'+(selectedPart?' available':'')+(type?' occupied':'');
-    b.style.left=(cx+Math.cos(a)*rr)+'%';b.style.top=(cy+Math.sin(a)*rr)+'%';b.textContent=type?PARTS[type].icon:'+';
+    b.style.left=(cx+Math.cos(a)*rrX)+'%';b.style.top=(cy+Math.sin(a)*rrY)+'%';b.textContent=type?PARTS[type].icon:'+';
     b.title=type?PARTS[type].name:'빈 슬롯';
     b.addEventListener('click',()=>slotClick(i));layer.appendChild(b);
   });
@@ -1062,6 +1243,9 @@ function renderSlots(){
 function removeInternalPart(part){
   const current=Number(state.player.inside[part.id]||0);
   if(current<=0)return;
+  if(state.player.stage==='colony'&&COLONY_PATH.includes(part.id)){sound('error',{volume:.12});toast('군체 단계에서는 이 핵심 형질을 제거할 수 없어요.');return}
+  if(part.id==='adhesion'&&(countPart('signaling')||countPart('differentiation'))){sound('error',{volume:.12});toast('세포간 신호와 분화가 이 형질에 의존하고 있어 먼저 제거할 수 없어요.');return}
+  if(part.id==='signaling'&&countPart('differentiation')){sound('error',{volume:.12});toast('세포 분화를 먼저 제거해야 세포간 신호를 되돌릴 수 있어요.');return}
   state.player.inside[part.id]=current-1;
   const refund=partRefundValue(part);state.dna+=refund;selectedPart=null;
   sound('click',{volume:.12,rate:.86});toast(part.name+' 제거 · DNA '+refund+' 회수');renderEditor();
@@ -1071,9 +1255,9 @@ function slotClick(i){
   if(selectedPart){
     const part=PARTS[selectedPart],cost=partPurchaseCost(part);if(state.dna<cost){sound('error',{volume:.12});toast('DNA가 부족해요. 필요 '+cost);return}
     if(old){state.dna+=partRefundValue(PARTS[old])}
-    state.player.slots[i]=selectedPart;state.dna-=cost;sound('confirm',{volume:.17,rate:1.08});selectedPart=null;renderEditor();
+    state.player.slots[i]=selectedPart;state.dna-=cost;organStyleSlot=i;sound('confirm',{volume:.17,rate:1.08});selectedPart=null;renderEditor();
   }else if(old){
-    const refund=partRefundValue(PARTS[old]);state.player.slots[i]=null;state.dna+=refund;sound('click',{volume:.12,rate:.86});toast(PARTS[old].name+' 제거 · DNA '+refund+' 회수');renderEditor();
+    const refund=partRefundValue(PARTS[old]);state.player.slots[i]=null;state.player.slotMeta[i]={scale:1,twist:0};if(organStyleSlot===i)organStyleSlot=-1;state.dna+=refund;sound('click',{volume:.12,rate:.86});toast(PARTS[old].name+' 제거 · DNA '+refund+' 회수');renderEditor();
   }
 }
 function updateScienceCard(part){
@@ -1084,7 +1268,7 @@ function updateScienceCard(part){
 function drawEditorPreview(){
   const c=$('editorCanvas'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);
   const bg=g.createRadialGradient(w/2,h/2,10,w/2,h/2,w*.48);bg.addColorStop(0,'rgba(71,196,190,.12)');bg.addColorStop(1,'rgba(6,24,31,0)');g.fillStyle=bg;g.fillRect(0,0,w,h);
-  const oldCtx=ctx,oldW=viewW,oldH=viewH;ctx=g;viewW=w;viewH=h;drawOrganism(w/2,h/2,105,0,state.player.slots,state.player.inside,true,0);ctx=oldCtx;viewW=oldW;viewH=oldH;
+  const oldCtx=ctx,oldW=viewW,oldH=viewH;ctx=g;viewW=w;viewH=h;ensureMorphology();drawOrganism(w/2,h/2,105,0,state.player.slots,state.player.inside,true,0,null,state.player.appearance,state.player.slotMeta,state.player.stage);ctx=oldCtx;viewW=oldW;viewH=oldH;
 }
 function updateTraitSummary(){
   const s=movementStats(state.player);$('traitSpeed').textContent=(s.speed/76).toFixed(1)+'×';$('traitTurn').textContent=(s.turn/2.35).toFixed(1)+'×';$('traitSense').textContent=(s.sense/110).toFixed(1)+'×';$('traitArmor').textContent=s.armor.toFixed(1)+'×';
@@ -1098,7 +1282,8 @@ function openEnvInfo(){
 
 function save(){
   try{
-    localStorage.setItem(SAVE_KEY,JSON.stringify({biome:selectedBiome.id,generation:state.generation,dna:state.dna,score:state.score,slots:state.player.slots,inside:state.player.inside,discovered:state.discovered}));
+    ensureMorphology();
+    localStorage.setItem(SAVE_KEY,JSON.stringify({biome:selectedBiome.id,generation:state.generation,dna:state.dna,score:state.score,slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,discovered:state.discovered}));
     sdkScore();
   }catch(_){}
 }
@@ -1107,9 +1292,27 @@ function setupControls(){
   buildBiomeCards();
   $('randomStartBtn').addEventListener('click',randomBiome);$('toggleBiomeBtn').addEventListener('click',()=>{sound('click',{volume:.10});toggleBiomePanel()});$('rerollBtn').addEventListener('click',()=>{sound('select',{volume:.10});buildBiomeCards();toast('생태계 목록을 다시 살펴보세요.')});
   $('openTutorialBtn').addEventListener('click',()=>{sound('event',{volume:.12});$('tutorial').classList.remove('hidden')});$('tutorialCloseBtn').addEventListener('click',()=>{sound('click',{volume:.10});$('tutorial').classList.add('hidden')});$('tutorialPlayBtn').addEventListener('click',()=>{$('tutorial').classList.add('hidden');randomBiome()});
-  $('homeBtn').addEventListener('click',goHome);$('editorBtn').addEventListener('click',openEditor);$('editorCloseBtn').addEventListener('click',()=>closeEditor(false));$('finishEvolutionBtn').addEventListener('click',()=>closeEditor(true));$('undoEvolutionBtn').addEventListener('click',()=>{if(editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.dna=editorSnapshot.dna;selectedPart=null;renderEditor();toast('이번 편집을 처음 상태로 되돌렸어요.')}});
+  $('homeBtn').addEventListener('click',goHome);$('editorBtn').addEventListener('click',openEditor);$('editorCloseBtn').addEventListener('click',()=>closeEditor(false));$('finishEvolutionBtn').addEventListener('click',()=>closeEditor(true));$('undoEvolutionBtn').addEventListener('click',()=>{if(editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.dna=editorSnapshot.dna;selectedPart=null;organStyleSlot=-1;renderEditor();toast('이번 편집을 처음 상태로 되돌렸어요.')}});
   $('pulseBtn').addEventListener('click',useSpecial);$('pauseBtn').addEventListener('click',()=>{paused=!paused;sound('click',{volume:.10});if(paused)stopAmbience();else startAmbience();$('pauseBtn').querySelector('b').textContent=paused?'계속하기':'일시정지';last=performance.now()});
   $('envInfoBtn').addEventListener('click',()=>{sound('event',{volume:.10});openEnvInfo()});$('infoCloseBtn').addEventListener('click',()=>{sound('click',{volume:.09});$('infoModal').classList.add('hidden')});
+
+  const morphBindings=[
+    ['bodyShapeSelect','change','shape'],['bodySymmetrySelect','change','symmetry'],['bodyPatternSelect','change','pattern'],
+    ['bodyBaseColor','input','base'],['bodyAccentColor','input','accent'],['bodyLengthRange','input','length'],
+    ['bodyWidthRange','input','width'],['bodyOpacityRange','input','opacity']
+  ];
+  morphBindings.forEach(([id,event,key])=>$(id)?.addEventListener(event,e=>{applyMorphologyControl(key,e.target.value);if(event==='change')sound('select',{volume:.07})}));
+  $('organStyleSelect')?.addEventListener('change',e=>{
+    organStyleSlot=e.target.value===''?-1:Number(e.target.value);refreshOrganStyleControls();drawEditorPreview();
+  });
+  $('organScaleRange')?.addEventListener('input',e=>{
+    if(organStyleSlot<0)return;ensureMorphology();state.player.slotMeta[organStyleSlot].scale=clamp(Number(e.target.value)/100,.55,1.8);
+    $('organScaleValue').textContent=Math.round(state.player.slotMeta[organStyleSlot].scale*100)+'%';drawEditorPreview();
+  });
+  $('organTwistRange')?.addEventListener('input',e=>{
+    if(organStyleSlot<0)return;ensureMorphology();const deg=clamp(Number(e.target.value),-60,60);state.player.slotMeta[organStyleSlot].twist=deg*Math.PI/180;
+    $('organTwistValue').textContent=Math.round(deg)+'°';drawEditorPreview();
+  });
 
   window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')openEditor();if(e.key===' ')useSpecial();if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
   window.addEventListener('keyup',e=>{keys[e.key]=false});

@@ -138,11 +138,11 @@ test('First play is populated and tells the player what to do',()=>{
 
 test('DNA economy requires multi-generation saving and escalating duplicate costs',()=>{
   assert.match(js,/generation:1,generationClock:0,eventClock:0,dna:4/);
-  assert.match(js,/return 28\+Math\.min\(42,\(state\.generation-1\)\*6\)/);
+  assert.match(js,/const base=28\+Math\.min\(42,\(state\.generation-1\)\*6\)/);
   assert.match(js,/function partPurchaseCost/);
   assert.match(js,/1\+owned\*\.32/);
-  assert.match(js,/state\.dna\+=base\*\.04\*mult/);
-  assert.match(js,/const huntReward=1\.2/);
+  assert.match(js,/state\.dna\+=base\*dnaScale\*mult/);
+  assert.match(js,/const huntReward=1\.35/);
   assert.match(js,/state\.generation\+\+;state\.reproductions\+\+;state\.generationClock=0;state\.dna\+=2/);
   assert.match(js,/predatorMouth:\{id:'predatorMouth'.*cost:10/);
   assert.match(js,/chloroplast:\{id:'chloroplast'.*cost:14/);
@@ -205,4 +205,51 @@ test('Internal organs can be removed and starter organ cannot refund DNA',()=>{
   assert.match(js,/className='part-remove'/);
   assert.match(js,/if\(part\.starter\)return 0/);
   assert.match(js,/filter\(p=>p\.cat===activeTab&&!p\.starter\)/);
+});
+
+
+test('Morphology editor can create cosmetic body diversity without DNA cost',()=>{
+  for(const id of ['bodyShapeSelect','bodySymmetrySelect','bodyPatternSelect','bodyBaseColor','bodyAccentColor','bodyLengthRange','bodyWidthRange','bodyOpacityRange','organStyleSelect','organScaleRange','organTwistRange']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(js,/const BODY_SHAPES=Object\.freeze/);
+  assert.match(js,/const BODY_PATTERNS=Object\.freeze/);
+  assert.match(js,/const BODY_SYMMETRY=Object\.freeze/);
+  assert.match(js,/function applyMorphologyControl/);
+  assert.match(js,/function traceBodyPath/);
+  assert.match(js,/function drawBodyPattern/);
+  assert.match(js,/slotMeta:Array\.from/);
+  assert.match(js,/appearance:\{shape:'oval'/);
+  assert.match(css,/\.morph-editor/);
+  assert.match(css,/\.organ-style-box/);
+});
+
+test('Colony evolution requires adhesion, signaling and differentiation in order',()=>{
+  for(const token of ['adhesion','signaling','differentiation'])assert.match(js,new RegExp(token));
+  assert.match(js,/const COLONY_PATH=\['adhesion','signaling','differentiation'\]/);
+  assert.match(js,/signaling:\{id:'signaling'.*requires:'adhesion'/);
+  assert.match(js,/differentiation:\{id:'differentiation'.*requires:'signaling'/);
+  assert.match(js,/function colonyProgress/);
+  assert.match(js,/function colonyReady/);
+  assert.match(js,/p\.stage==='unicellular'&&colonyReady\(p\)/);
+  assert.match(js,/p\.stage='colony'/);
+  assert.match(js,/if\(p\.stage==='colony'\)\{speed\*=\.9;turn\*=\.88;sense\*=1\.12;armor\+=\.28\}/);
+  assert.match(html,/id="colonyProgressBox"/);
+  assert.match(css,/\.colony-progress/);
+});
+
+test('Colony and morphology edits survive undo snapshots and saving',()=>{
+  assert.match(js,/appearance:state\.player\.appearance/);
+  assert.match(js,/slotMeta:state\.player\.slotMeta/);
+  assert.match(js,/stage:state\.player\.stage/);
+  assert.match(js,/appearance:state\.player\.appearance,slotMeta:state\.player\.slotMeta,stage:state\.player\.stage/);
+  assert.match(js,/state\.player\.appearance=JSON\.parse\(JSON\.stringify\(editorSnapshot\.appearance\)\)/);
+  assert.match(js,/state\.player\.slotMeta=JSON\.parse\(JSON\.stringify\(editorSnapshot\.slotMeta\)\)/);
+});
+
+test('Colony core traits cannot be broken out of dependency order',()=>{
+  assert.match(js,/part\.requires&&!countPart\(part\.requires\)/);
+  assert.match(js,/part\.id==='adhesion'.*countPart\('signaling'\).*countPart\('differentiation'\)/);
+  assert.match(js,/part\.id==='signaling'&&countPart\('differentiation'\)/);
+  assert.match(js,/state\.player\.stage==='colony'&&COLONY_PATH\.includes\(part\.id\)/);
 });
