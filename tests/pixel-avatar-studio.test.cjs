@@ -17,18 +17,19 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=17/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=17/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=17')<html.indexOf('avatar-pixel-studio.js?v=17'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=18/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=18/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=18')<html.indexOf('avatar-pixel-studio.js?v=18'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
 
-test('pixel avatar studio keeps split hair, face and animated clothes assets',()=>{
+test('pixel avatar studio uses the full front-hair asset plus face and clothes layers',()=>{
   assert.match(js,/hair\/\$\{layer\}\/\$\{set\}/);
   assert.match(renderer,/runtime\/face/);
-  assert.match(js,/hairPath\('back'/);
-  assert.match(js,/hairPath\('front'/);
+  assert.doesNotMatch(js,/hairPath\('back',set,n\)/);
+  assert.match(js,/hairPath\('front',set,n\)/);
+  assert.match(renderer,/hairBack:null/);
   assert.match(renderer,/blue-star-zip-hoodie-01/);
   assert.match(renderer,/denim-cuffed-jeans-01/);
   assert.match(js,/eyes:8/);
@@ -55,7 +56,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-hairfit-7'/);
+  assert.match(js,/version:'pixel-v2-rig-hairfit-8'/);
 });
 
 test('new users start with a complete outfit and legacy equipment can migrate',()=>{
@@ -146,23 +147,19 @@ test('hair cleanup keeps bangs intact and removes white matte fringe',()=>{
   assert.match(hairExtract,/faceClipping/);
 });
 
-test('renderer uses one identical transform for every hair style and both split layers',()=>{
-  assert.match(renderer,/const HAIR_RENDER_TWEAK=Object\.freeze/);
-  assert.match(renderer,/scaleX:1\.07/);
-  assert.match(renderer,/scaleY:1\.07/);
-  assert.match(renderer,/offsetX:0/);
-  assert.match(renderer,/offsetY:0/);
-  assert.match(renderer,/key==='hairBack'\|\|key==='hairFront'/);
-  assert.doesNotMatch(renderer,/\[1,5,9\]/);
-  assert.match(renderer,/renderTweak:hairRenderTweak\(key\)/);
+test('renderer trusts generated hair coordinates and adds no built-in hair scaling',()=>{
+  assert.doesNotMatch(renderer,/HAIR_RENDER_TWEAK/);
+  assert.doesNotMatch(renderer,/hairRenderTweak/);
+  assert.match(renderer,/hairBack:null/);
+  assert.match(renderer,/spec:defs\[key\]/);
   assert.match(renderer,/tweakScaleX/);
   assert.match(renderer,/tweakScaleY/);
 });
 
 test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='17'/);
+  assert.match(js,/ASSET_REV='18'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='17'/);
+  assert.match(renderer,/ASSET_REV='18'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{

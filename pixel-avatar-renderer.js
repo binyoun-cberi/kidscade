@@ -5,7 +5,7 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='17';
+const ASSET_REV='18';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
@@ -47,15 +47,6 @@ function finitePair(value,fallback=[0,0]){
 }
 function absoluteSrc(src){
   return /^(?:data:|blob:|https?:|\/\/)/i.test(String(src||''));
-}
-const HAIR_RENDER_TWEAK=Object.freeze({
-  scaleX:1.07,
-  scaleY:1.07,
-  offsetX:0,
-  offsetY:0
-});
-function hairRenderTweak(key){
-  return key==='hairBack'||key==='hairFront' ? HAIR_RENDER_TWEAK : null;
 }
 
 class ImageCache{
@@ -219,7 +210,7 @@ class PixelAvatar{
     const hs=c.hairSet,hn=pad(c.hairStyle);
     return {
       base:'runtime/base/master-base-128.png',
-      hairBack:`runtime/hair/back/${hs}/hair-back-${hs}-${hn}.png`,
+      hairBack:null,
       hairFront:`runtime/hair/front/${hs}/hair-front-${hs}-${hn}.png`,
       upper:c.upper?'runtime/clothes/upper/blue-star-zip-hoodie-01':null,
       lower:c.lower?'runtime/clothes/lower/denim-cuffed-jeans-01':null,
@@ -319,7 +310,7 @@ class PixelAvatar{
     ].filter(([,src])=>Boolean(src)).map(([key,src],order)=>({
       id:key,
       src,
-      spec:{...defs[key],renderTweak:hairRenderTweak(key)},
+      spec:defs[key],
       order
     }));
   }
