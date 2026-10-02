@@ -3804,8 +3804,9 @@ function animate(now){
   if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
     updateFree(dt,now);
-    if(freeSaveDirty&&now>=freeSaveDueAt)saveFreeWorld();
-    else if(now-lastFreeSave>30000)saveFreeWorld();
+    if(freeSaveDirty){
+      if(now>=freeSaveDueAt)saveFreeWorld();
+    }else if(now-lastFreeSave>30000)saveFreeWorld();
   }
   if(renderer){
     if(mode==='free')renderFreeScene(now);
