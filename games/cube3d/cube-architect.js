@@ -3766,7 +3766,7 @@ document.addEventListener('keydown',e=>{
   freeKeys[e.code]=true;
   if(e.code==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
   if(/^Digit[1-9]$/.test(e.code)){
-    selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot];buildHotbar();updateFreeMission();
+    stopMining();selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot]||'hand';buildHotbar();updateFreeMission();
   }
   if(e.code==='KeyF'&&gameFreeMode==='creative'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
   if(e.code==='KeyR'&&gameFreeMode==='creative')pickTargetBlock();
