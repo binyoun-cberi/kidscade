@@ -428,9 +428,9 @@ function drawBlueprint(){
 }
 
 function restorationKeep(role,x,y,z){
-  const rate=role==='base'?.93:role==='body'?.72:
-    (role==='tower'||role==='arch')?.56:
-    (role==='roof'||role==='dome'||role==='spire')?.42:.24;
+  const rate=role==='base'?.94:role==='body'?.78:
+    (role==='tower'||role==='arch')?.64:
+    (role==='roof'||role==='dome'||role==='spire')?.55:.38;
   // Remove coherent architectural chunks rather than random individual voxels.
   // This keeps the starting ruin readable and lets the greedy cuboid pass collapse
   // thousands of preserved blocks into roughly 60–130 editable pieces.
