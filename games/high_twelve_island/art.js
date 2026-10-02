@@ -189,46 +189,319 @@
     ctx.restore();
     badge(x + 4, Math.max(4, y - 27), label);
   }
-  function citizens(s, t) {
-    const N = Math.min(s.population, 16);
-    const spots = [
-      [269,237],[307,221],[390,235],[426,246],[287,273],[403,289],
-      [247,291],[463,206],[274,173],[441,165],[364,305],[216,246],
-      [475,288],[356,167],[525,219],[305,314]
-    ];
+  // 주민 행동은 저장 데이터가 아니라 렌더러의 가벼운 런타임 상태로 유지한다.
+  // 실제 생산량·파업·재난 상태는 sim.js가 결정하고, 이 레이어는 그것을 생활 장면으로 번역한다.
+  const actorRuntime = new Map();
+  const ACTIVITY_SPOTS = Object.freeze({
+    farm: [[142,211],[165,225],[190,244],[210,218]],
+    forest: [[112,126],[151,103],[204,128],[566,126],[604,148]],
+    fishing: [[91,298],[116,322],[585,304],[615,282]],
+    fire: [[311,292],[335,306],[376,296],[401,311]],
+    plaza: [[300,218],[332,226],[370,218],[405,230],[436,216]],
+    homes: [[410,151],[442,157],[500,264],[527,274],[236,159]],
+    clinic: [[474,164],[501,181],[535,187]],
+    hall: [[287,158],[318,166],[350,159],[382,166]],
+    water: [[300,326],[329,338],[362,330]],
+    highground: [[405,108],[455,120],[526,194],[273,137]],
+    floodedge: [[151,318],[194,327],[241,335],[487,329]],
+    storage: [[479,286],[504,299],[532,294]],
+    queue: [[303,253],[329,253],[355,253],[381,253],[407,253]],
+    excluded: [[104,224]],
+    family: [[548,306],[579,319],[610,303]]
+  });
+
+  function hashValue(value) {
+    const text = String(value ?? "");
+    let h = 2166136261;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function seeded(id, salt = 0) {
+    let h = hashValue(id) ^ Math.imul((salt | 0) + 1, 2654435761);
+    h ^= h >>> 16; h = Math.imul(h, 2246822507);
+    h ^= h >>> 13; h = Math.imul(h, 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967295;
+  }
+  function pickSpot(kind, actor, salt = 0) {
+    const spots = ACTIVITY_SPOTS[kind] || ACTIVITY_SPOTS.plaza;
+    const index = Math.floor(seeded(actor.id, salt + actor.index * 17) * spots.length) % spots.length;
+    const base = spots[index];
+    const jitterX = Math.round((seeded(actor.id, salt + 91) - .5) * 8);
+    const jitterY = Math.round((seeded(actor.id, salt + 137) - .5) * 6);
+    return [base[0] + jitterX, base[1] + jitterY];
+  }
+  function actorFor(citizen, index) {
+    const id = citizen?.id || "visible-" + index;
+    let actor = actorRuntime.get(id);
+    if (!actor) {
+      const start = ACTIVITY_SPOTS.plaza[index % ACTIVITY_SPOTS.plaza.length];
+      actor = {
+        id, index, citizen, activity: "idle", forcedKey: "",
+        x: start[0] + (index % 3) * 4, y: start[1] + (index % 2) * 3,
+        targetX: start[0], targetY: start[1],
+        nextDecisionAt: 0, lastAt: 0, arrived: false, phase: seeded(id, 3) * Math.PI * 2
+      };
+      actorRuntime.set(id, actor);
+    }
+    actor.index = index;
+    actor.citizen = citizen;
+    return actor;
+  }
+  function workerAssignment(s, citizen, adultOrdinal) {
+    if (citizen?.isChild || adultOrdinal < 0) return null;
+    if (adultOrdinal < (s.jobs?.gather || 0)) return "gather";
+    if (adultOrdinal < (s.jobs?.gather || 0) + (s.jobs?.wood || 0)) return "wood";
+    return null;
+  }
+  function sickVisualIndex(index, count) {
+    if (!count) return false;
+    return ((index * 7 + 3) % 16) < count;
+  }
+  function forcedActivity(s, citizen, index, adultOrdinal, visibleCount) {
     const childWork = s.childWorkUntil > s.tick;
     const forced = s.forcedLaborUntil > s.tick;
     const excluded = s.exclusionUntil > s.tick;
     const workerStrike = (s.strikes?.workers || 0) > s.tick;
     const familyStrike = (s.strikes?.families || 0) > s.tick;
     const carerStrike = (s.strikes?.carers || 0) > s.tick;
-    const protestSpots = [[320,238],[350,229],[383,239],[414,226]];
-    const forcedSpots = [[118,105],[155,86],[196,105],[594,116]];
-    const familySpots = [[590,295],[620,274],[552,310]];
-    const childSpots = [[150,279],[182,296]];
-    for (let i = 0; i < N; i++) {
-      let pos = spots[i];
-      if (childWork && (i === 10 || i === 11)) pos = childSpots[i - 10];
-      else if (workerStrike && i < 4) pos = protestSpots[i];
-      else if (forced && i < 4) pos = forcedSpots[i];
-      else if (familyStrike && i >= 4 && i <= 6) pos = familySpots[i - 4];
-      else if (excluded && i === 2) pos = [102, 225];
-      else if (carerStrike && i === 7) pos = [540, 168];
-      const [px, py] = pos, wiggle = s.pending ? 0 : Math.sin(t * .0013 + i * 2) * 4;
-      const x = px + (i % 2 ? wiggle : -wiggle), y = py + Math.sin(t * .001 + i) * 2;
-      sprite("farm", i % 3 === 0 ? 108 : 109, x, y, 1.65);
-      if (forced && i < 4) badge(x - 3, y - 19, "!");
+    const sickCount = Math.min(visibleCount, Math.max(0, Math.ceil(Number(s.sick) || 0)));
+    const isSick = sickVisualIndex(index, sickCount);
+
+    if (excluded && index === 2) return ["excluded", "excluded"];
+    if (childWork && citizen?.isChild) return [index % 2 ? "gather" : "farm", "child-work"];
+    if (workerStrike && adultOrdinal >= 0 && adultOrdinal < 4) return ["protest", "worker-strike"];
+    if (forced && adultOrdinal >= 0 && adultOrdinal < 4) return [adultOrdinal % 2 ? "chop" : "carry", "forced-work"];
+    if (familyStrike && index >= 4 && index <= 6) return [index % 2 ? "talk" : "pack", "family-strike"];
+    if (carerStrike && adultOrdinal === 6) return ["protest", "carer-strike"];
+    if (isSick) return [s.buildings?.clinic ? "heal" : "sleep", "sick"];
+
+    if (s.disasters?.flood > s.tick) {
+      if (adultOrdinal >= 0 && adultOrdinal < 3) return ["repair", "flood"];
+      return ["evacuate", "flood"];
     }
-    if (workerStrike) {
-      for (let i = 0; i < 3; i++) {
-        rect(322 + i * 36, 211 + (i % 2) * 5, 18, 12, "#e9dfc1");
-        rect(330 + i * 36, 223 + (i % 2) * 5, 3, 13, "#73583f");
+    if (s.disasters?.epidemic > s.tick && s.buildings?.clinic && adultOrdinal >= 0 && adultOrdinal < 2 && !carerStrike) {
+      return ["care", "epidemic"];
+    }
+    if (s.trust < 28 && adultOrdinal >= 0 && adultOrdinal < 2 && !workerStrike) return ["protest", "low-trust"];
+    return null;
+  }
+  function ambientActivity(s, citizen, index, adultOrdinal, actor, t) {
+    const assignment = workerAssignment(s, citizen, adultOrdinal);
+    const epoch = Math.floor(t / 8000) + s.tick * 29;
+    const roll = seeded(actor.id, epoch);
+
+    if (citizen?.isChild) {
+      if (roll < .48) return "play";
+      if (roll < .69) return "eat";
+      if (roll < .84) return "talk";
+      return "sleep";
+    }
+
+    if (assignment === "gather") {
+      if (s.food < 28 && roll < .30) return "fish";
+      if (s.buildings?.farm && roll < .70) return "farm";
+      return "gather";
+    }
+    if (assignment === "wood") return roll < .78 ? "chop" : "carry";
+
+    if (s.coldUntil > s.tick && s.warmth < 62) return roll < .72 ? "warm" : "carry";
+    if (s.disasters?.heat > s.tick) return roll < .45 ? "fetch_water" : "rest";
+    if (s.disasters?.dust > s.tick) return roll < .70 ? "rest" : "talk";
+    if (s.water < 34 && roll < .58) return "fetch_water";
+    if (s.food < 24) {
+      if (roll < .34) return "queue";
+      if (roll < .64) return "fish";
+      return "gather";
+    }
+
+    if (roll < .20) return "talk";
+    if (roll < .37) return "eat";
+    if (roll < .51) return "fish";
+    if (roll < .65) return "rest";
+    if (roll < .77) return "carry";
+    if (roll < .89) return "sleep";
+    return "walk";
+  }
+  function targetKind(activity, s) {
+    if (activity === "farm") return "farm";
+    if (activity === "gather" || activity === "chop") return "forest";
+    if (activity === "fish") return "fishing";
+    if (activity === "eat" || activity === "warm" || activity === "rest") return s.buildings?.hall ? "plaza" : "fire";
+    if (activity === "talk" || activity === "play" || activity === "protest" || activity === "walk") return s.buildings?.hall ? "hall" : "plaza";
+    if (activity === "sleep") return s.buildings?.hut ? "homes" : "fire";
+    if (activity === "heal" || activity === "care") return s.buildings?.clinic ? "clinic" : "homes";
+    if (activity === "repair") return "floodedge";
+    if (activity === "evacuate") return "highground";
+    if (activity === "fetch_water") return "water";
+    if (activity === "queue") return "queue";
+    if (activity === "excluded") return "excluded";
+    if (activity === "pack") return "family";
+    if (activity === "carry") return s.buildings?.store ? "storage" : "plaza";
+    return "plaza";
+  }
+  function setActivity(actor, activity, key, s, t) {
+    actor.activity = activity;
+    actor.forcedKey = key || "";
+    const salt = Math.floor(t / 4000) + s.tick * 41 + activity.length * 7;
+    const [x, y] = pickSpot(targetKind(activity, s), actor, salt);
+    actor.targetX = x;
+    actor.targetY = y;
+    actor.arrived = false;
+    actor.nextDecisionAt = t + 6200 + seeded(actor.id, salt + 211) * 7600;
+  }
+  function updateActor(actor, s, t) {
+    const dt = actor.lastAt ? clamp((t - actor.lastAt) / 1000, 0, .16) : 0;
+    actor.lastAt = t;
+    const dx = actor.targetX - actor.x, dy = actor.targetY - actor.y;
+    const dist = Math.hypot(dx, dy);
+    const speed = actor.activity === "evacuate" ? 40 : actor.activity === "sleep" ? 19 : 27;
+    if (dist > 1.4 && dt > 0) {
+      const step = Math.min(dist, speed * dt * (s.pending ? .25 : 1));
+      actor.x += dx / dist * step;
+      actor.y += dy / dist * step;
+      actor.arrived = dist - step <= 1.4;
+    } else actor.arrived = true;
+  }
+  function pixelText(text, x, y, size = 10, color = "#fff8db") {
+    ctx.save();
+    ctx.font = "800 " + size + "px ui-monospace, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(24,39,37,.82)";
+    ctx.fillText(text, Math.round(x + 1), Math.round(y + 1));
+    ctx.fillStyle = color;
+    ctx.fillText(text, Math.round(x), Math.round(y));
+    ctx.restore();
+  }
+  function activityProp(actor, s, t, x, y) {
+    if (!actor.arrived) return;
+    const pulse = Math.sin(t * .008 + actor.phase);
+    const phase = Math.floor((t / 520 + actor.index) % 2);
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.lineCap = "square";
+    if (actor.activity === "farm") {
+      ctx.strokeStyle = "#63482d";
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 24); ctx.lineTo(x + 18, y + 18 + phase * 3); ctx.stroke();
+      rect(x + 17, y + 17 + phase * 3, 4, 3, "#d6bf72");
+    } else if (actor.activity === "gather") {
+      rect(x + 17, y + 18, 9, 7, "#8a633d");
+      rect(x + 19, y + 16, 5, 2, "#d8b96a");
+    } else if (actor.activity === "chop") {
+      ctx.strokeStyle = "#6d4c30"; ctx.beginPath(); ctx.moveTo(x + 14, y + 15); ctx.lineTo(x + 22 + phase * 2, y + 7); ctx.stroke();
+      rect(x + 20 + phase * 2, y + 5, 5, 4, "#cfd6c6");
+    } else if (actor.activity === "fish") {
+      ctx.strokeStyle = "#59442e"; ctx.beginPath(); ctx.moveTo(x + 12, y + 13); ctx.lineTo(x + 31, y + 6); ctx.stroke();
+      ctx.strokeStyle = "#dce9dd"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x + 31, y + 6); ctx.lineTo(x + 34, y + 28); ctx.stroke();
+      ctx.strokeStyle = "rgba(221,244,232,.65)";
+      ctx.beginPath(); ctx.ellipse(x + 34, y + 29, 5 + phase * 2, 2, 0, 0, Math.PI * 2); ctx.stroke();
+    } else if (actor.activity === "talk") {
+      rect(x + 6, y - 11, 25, 12, "rgba(246,239,203,.92)");
+      pixelText(phase ? "· ·" : "···", x + 18, y - 5, 8, "#40514a");
+    } else if (actor.activity === "eat") {
+      rect(x + 9, y + 23, 15, 4, "#efe1aa");
+      rect(x + 11, y + 20, 11, 4, "#9b6542");
+      if (phase) pixelText("~", x + 17, y + 15, 8, "#f4d7a0");
+    } else if (actor.activity === "sleep") {
+      pixelText(phase ? "Z" : "z", x + 23, y - 4 - phase * 3, 10, "#e8f2dd");
+    } else if (actor.activity === "protest") {
+      rect(x + 5, y - 13 - phase * 2, 20, 12, "#eadfb9");
+      rect(x + 14, y - 1 - phase * 2, 3, 15, "#72583d");
+      pixelText("!", x + 15, y - 7 - phase * 2, 9, "#8c443b");
+    } else if (actor.activity === "heal") {
+      rect(x + 6, y - 7, 18, 12, "rgba(230,239,220,.92)");
+      rect(x + 13, y - 5, 4, 8, "#ba5b56"); rect(x + 11, y - 3, 8, 4, "#ba5b56");
+    } else if (actor.activity === "care") {
+      rect(x + 20, y + 4, 4, 12, "#f0eee0"); rect(x + 16, y + 8, 12, 4, "#f0eee0");
+    } else if (actor.activity === "repair") {
+      ctx.strokeStyle = "#745036"; ctx.beginPath(); ctx.moveTo(x + 7, y + 22); ctx.lineTo(x + 22, y + 7 + phase * 4); ctx.stroke();
+      rect(x + 19, y + 5 + phase * 4, 7, 4, "#c5c7b1");
+    } else if (actor.activity === "evacuate" || actor.activity === "pack" || actor.activity === "carry") {
+      rect(x + 14, y + 15, 12, 10, actor.activity === "pack" ? "#b98d65" : "#98704c");
+      ctx.strokeStyle = "#66472f"; ctx.strokeRect(Math.round(x + 14), Math.round(y + 15), 12, 10);
+    } else if (actor.activity === "fetch_water") {
+      rect(x + 15, y + 17, 10, 9, "#558ca1");
+      ctx.strokeStyle = "#d8e7dc"; ctx.beginPath(); ctx.arc(x + 20, y + 17, 5, Math.PI, 0); ctx.stroke();
+    } else if (actor.activity === "warm") {
+      ctx.strokeStyle = "rgba(250,205,117,.9)"; ctx.lineWidth = 1;
+      for (let i = 0; i < 2; i++) {
+        const xx = x + 13 + i * 6;
+        ctx.beginPath(); ctx.moveTo(xx, y + 1); ctx.quadraticCurveTo(xx - 3, y - 5 - pulse * 2, xx, y - 10); ctx.stroke();
       }
+    } else if (actor.activity === "play") {
+      rect(x + 20 + phase * 3, y + 20 - Math.max(0,pulse) * 5, 5, 5, "#e0b453");
+    } else if (actor.activity === "queue") {
+      rect(x + 18, y + 19, 7, 6, "#d7b06c");
+      rect(x + 19, y + 17, 5, 2, "#efe0aa");
+    } else if (actor.activity === "excluded") {
+      pixelText("…", x + 17, y - 5, 10, "#e0d9c5");
     }
-    if (familyStrike) {
-      sprite("farm", 74, 558, 328, 1.25);
-      sprite("farm", 72, 602, 315, 1.25);
+    ctx.restore();
+  }
+  function drawActor(actor, s, t) {
+    const citizen = actor.citizen || {};
+    const moving = !actor.arrived;
+    const bob = moving ? Math.sin(t * .016 + actor.phase) * 2 : Math.sin(t * .004 + actor.phase) * .7;
+    const tremble = s.coldUntil > s.tick && s.warmth < 36 && actor.activity !== "warm" ? Math.sin(t * .045 + actor.phase) * 1.5 : 0;
+    const x = actor.x + tremble, y = actor.y + bob;
+    const child = !!citizen.isChild;
+    const scale = child ? 1.28 : 1.52;
+    const tile = moving ? (Math.floor(t / 240 + actor.index) % 2 ? 108 : 109) : (actor.index % 3 === 0 ? 108 : 109);
+
+    if (actor.activity === "sleep" && actor.arrived) {
+      ctx.save();
+      ctx.translate(Math.round(x + 14), Math.round(y + 15));
+      ctx.rotate(.35);
+      sprite("farm", tile, -12, -12, scale);
+      ctx.restore();
+    } else {
+      sprite("farm", tile, x, y, scale);
     }
+    activityProp(actor, s, t, x, y);
+    if (actor.forcedKey === "forced-work") pixelText("!", x + 15, y - 6, 11, "#ffd3a2");
+  }
+  function citizens(s, t) {
+    const visibleCitizens = (s.citizens || []).slice(0, Math.min(s.population, 16));
+    const N = Math.min(s.population, 16);
+    while (visibleCitizens.length < N) {
+      const index = visibleCitizens.length;
+      visibleCitizens.push({ id: "fallback-" + index, name: "주민 " + (index + 1), isChild: index === 10 || index === 11 });
+    }
+
+    const liveIds = new Set();
+    let adultOrdinal = 0;
+    const actors = [];
+    for (let i = 0; i < N; i++) {
+      const citizen = visibleCitizens[i];
+      const actor = actorFor(citizen, i);
+      liveIds.add(actor.id);
+      const adultIndex = citizen?.isChild ? -1 : adultOrdinal++;
+      const forced = forcedActivity(s, citizen, i, adultIndex, N);
+      const activity = forced ? forced[0] : ambientActivity(s, citizen, i, adultIndex, actor, t);
+      const key = forced ? forced[1] : "ambient";
+
+      if (actor.forcedKey !== key || (forced && actor.activity !== activity) || (!forced && t >= actor.nextDecisionAt)) {
+        setActivity(actor, activity, key, s, t);
+      }
+      updateActor(actor, s, t);
+      actors.push(actor);
+    }
+
+    // 떠난 주민의 화면용 상태는 바로 정리하여 장시간 플레이에도 메모리가 늘지 않게 한다.
+    for (const id of actorRuntime.keys()) if (!liveIds.has(id)) actorRuntime.delete(id);
+
+    // 아래쪽 주민이 위쪽 주민보다 나중에 그려지도록 하여 자연스러운 깊이를 만든다.
+    actors.sort((a, b) => a.y - b.y);
+    for (const actor of actors) drawActor(actor, s, t);
+  }
+  function getActivitySnapshot() {
+    const counts = {};
+    for (const actor of actorRuntime.values()) counts[actor.activity] = (counts[actor.activity] || 0) + 1;
+    return { total: actorRuntime.size, counts };
   }
   function stateSignals(s) {
     if (s.childWorkUntil > s.tick) {
@@ -371,5 +644,5 @@
     impact = { choice: choice || null, label: label || "선택", until: Date.now() + 1800 };
     if (ready) redraw();
   }
-  root.IslandArt = Object.freeze({ mount, setState, setPreview, impactChoice, redraw, MAPS });
+  root.IslandArt = Object.freeze({ mount, setState, setPreview, impactChoice, redraw, getActivitySnapshot, MAPS });
 })(window);
