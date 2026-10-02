@@ -8,7 +8,8 @@ const CANVAS=128;
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const HAIR_PIVOT=[65.5,43.5];
 const MASTER_HEAD_BBOX=[40,20,91,67];
-// Both hair layers share one style transform so front/back never drift apart.
+// Normalize only the oversized back silhouette. Front hair is already clipped
+// to the master-head coordinate system and follows the same transform as face parts.
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
@@ -272,7 +273,8 @@ class PixelAvatar{
             upper=upperPath?imgs[i++]:null, eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
             blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
       const headTransform=frame?.headTransform||null;
-      const hairTransformValue=this.hairTransform(this.config.hairSet,this.config.hairStyle,headTransform);
+      const hairBackTransform=this.hairTransform(this.config.hairSet,this.config.hairStyle,headTransform);
+      const hairFrontTransform=headTransform;
 
       const ctx=this.ctx;
       ctx.save();
@@ -280,7 +282,7 @@ class PixelAvatar{
       ctx.clearRect(0,0,CANVAS,CANVAS);
       ctx.imageSmoothingEnabled=false;
 
-      this.drawLayer(hairBack,hairTransformValue);
+      this.drawLayer(hairBack,hairBackTransform);
       ctx.drawImage(body,0,0);
       if(lower)ctx.drawImage(lower,0,0);
       if(upper)ctx.drawImage(upper,0,0);
@@ -289,7 +291,7 @@ class PixelAvatar{
       this.drawLayer(nose,headTransform);
       this.drawLayer(mouth,headTransform);
       if(blush)this.drawLayer(blush,headTransform);
-      this.drawLayer(hairFront,hairTransformValue);
+      this.drawLayer(hairFront,hairFrontTransform);
       ctx.restore();
     }finally{
       this.drawing=false;
