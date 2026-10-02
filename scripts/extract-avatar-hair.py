@@ -81,48 +81,52 @@ def clear_bg(tile):
         if y + 1 < h: stack.append((x, y+1))
     return im
 
-def remove_white_matte(im, clear_distance=44, matte_distance=100):
-    """Remove white-background antialias fringe without eating brown hair highlights."""
+def remove_white_matte(im, bg_distance=112, passes=3):
+    """Trim only near-background pixels connected to transparency.
+
+    The source sheets are painted on white. Their antialiased border can leave
+    pale pixels after background removal. Do not try to mathematically
+    un-multiply those colors: that can turn pale fringe into black/red specks.
+    Instead peel a few edge-connected, near-white layers and keep the actual
+    brown hair colors untouched.
+    """
     im = im.convert("RGBA")
     px = im.load()
     w, h = im.size
     corners = [px[0,0], px[w-1,0], px[0,h-1], px[w-1,h-1]]
     bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
 
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            if a == 0:
-                px[x, y] = (0, 0, 0, 0)
-                continue
+    for _ in range(passes):
+        alpha = im.getchannel("A")
+        apx = alpha.load()
+        remove = []
 
-            d = dist((r, g, b), bg)
-            if d <= clear_distance:
-                px[x, y] = (0, 0, 0, 0)
-                continue
-            if d >= matte_distance:
-                continue
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a == 0 or dist((r, g, b), bg) > bg_distance:
+                    continue
 
-            # Estimate how much foreground color remains in a pixel that was
-            # antialiased against the white sheet background, then un-matte it.
-            coverage = (d - clear_distance) / max(1, matte_distance - clear_distance)
-            new_a = round(a * coverage)
-            if new_a < 12:
-                px[x, y] = (0, 0, 0, 0)
-                continue
+                touches_transparency = False
+                for ny in range(max(0, y-1), min(h, y+2)):
+                    for nx in range(max(0, x-1), min(w, x+2)):
+                        if nx == x and ny == y:
+                            continue
+                        if apx[nx, ny] == 0:
+                            touches_transparency = True
+                            break
+                    if touches_transparency:
+                        break
 
-            safe = max(coverage, 0.05)
-            rr = round((r - bg[0] * (1 - coverage)) / safe)
-            gg = round((g - bg[1] * (1 - coverage)) / safe)
-            bb = round((b - bg[2] * (1 - coverage)) / safe)
-            px[x, y] = (
-                max(0, min(255, rr)),
-                max(0, min(255, gg)),
-                max(0, min(255, bb)),
-                new_a,
-            )
+                if touches_transparency:
+                    remove.append((x, y))
+
+        if not remove:
+            break
+        for x, y in remove:
+            px[x, y] = (0, 0, 0, 0)
+
     return im
-
 def hard_alpha(im):
     im = im.convert("RGBA")
     im.putdata([
@@ -390,7 +394,7 @@ def main():
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":7,
+        "version":8,
         "type":"kidscade-normalized-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
@@ -416,7 +420,7 @@ def main():
                 "hairFront contains only master-head overlap",
                 "ear-safe front mask",
                 "no eye/eyebrow/nose/mouth subtraction from front hair",
-                "white-matte fringe cleanup before hard alpha",
+                "edge-connected white-matte fringe trim before hard alpha",
                 "remove isolated components under 8 pixels",
                 "default face composite contact previews"
             ],
