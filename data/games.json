@@ -22,7 +22,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/기상캐스터 시뮬레이터.png"
     },
     {
       "id": "low_wordris",
@@ -45,7 +46,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/워드리스 알파벳 낙하.png"
     },
     {
       "id": "high_twelve_island",
@@ -92,7 +94,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/작은 세계.png"
     },
     {
       "id": "high_story_builder",
@@ -115,7 +118,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/이야기 조립소.png"
     },
     {
       "id": "high_code_quest",
@@ -352,7 +356,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/누가 마피아 한밤의 마을.png"
     },
     {
       "id": "high_seed_volleyball",
@@ -1113,7 +1118,8 @@
         "touch"
       ],
       "qualityStatus": "standard",
-      "classroom": false
+      "classroom": false,
+      "cover": "assets/gate-image/찰칵 색칠공방.png"
     },
     {
       "id": "tod_shape_color",
@@ -2410,7 +2416,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/프랙션 스미스.png"
     },
     {
       "id": "polygon_area",
@@ -2505,7 +2512,8 @@
       ],
       "qualityStatus": "standard",
       "classroom": true,
-      "desc": "Minecraft식 비율의 복셀 월드에서 건축하고 탐험하세요. 사슴·개구리 같은 생물과 건축으로 대응하는 몬스터, 6개 랜드마크 던전, 설계도·전개도 학습까지 이어집니다."
+      "desc": "Minecraft식 비율의 복셀 월드에서 건축하고 탐험하세요. 사슴·개구리 같은 생물과 건축으로 대응하는 몬스터, 6개 랜드마크 던전, 설계도·전개도 학습까지 이어집니다.",
+      "cover": "assets/gate-image/큐브 아키텍트.png"
     },
     {
       "id": "world_flag_master",
@@ -3141,7 +3149,8 @@
         "keyboard"
       ],
       "qualityStatus": "featured",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/10초 위기탈출.png"
     },
     {
       "id": "high_history_map",
@@ -3192,7 +3201,8 @@
         "keyboard"
       ],
       "qualityStatus": "featured",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/패턴 락.png"
     },
     {
       "id": "high_ecopolis",
@@ -3215,7 +3225,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/에코폴리스.png"
     },
     {
       "id": "high_micro_evolution",
@@ -3242,7 +3253,8 @@
         "keyboard"
       ],
       "qualityStatus": "featured",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/마이크로 에볼루션.png"
     }
   ],
   "taxonomy": {
