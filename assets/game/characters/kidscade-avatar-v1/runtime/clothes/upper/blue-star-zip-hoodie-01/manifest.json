@@ -30,7 +30,7 @@
         99,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "idle-02",
@@ -45,7 +45,7 @@
         100,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "idle-03",
@@ -75,7 +75,7 @@
         99,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-01",
@@ -105,7 +105,7 @@
         97,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-03",
@@ -120,7 +120,7 @@
         99,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-04",
@@ -135,7 +135,7 @@
         99,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-05",
@@ -150,7 +150,7 @@
         95,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     },
     {
       "frame": "walk-06",
@@ -165,11 +165,19 @@
         98,
         99
       ],
-      "bodyCenterX": 66.0
+      "bodyCenterX": 66
     }
   ],
   "qa": {
-    "status": "generated-needs-visual-review",
-    "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png"
+    "status": "visual-contact-reviewed",
+    "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png",
+    "review": {
+      "handsRemainVisible": true,
+      "neckOpeningPreserved": true,
+      "idleFramesChecked": 4,
+      "walkFramesChecked": 6,
+      "pairedWithLower": "denim-cuffed-jeans-01",
+      "note": "10-frame contact sheet visually reviewed after extraction and alignment."
+    }
   }
 }
