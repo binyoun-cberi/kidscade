@@ -1384,7 +1384,7 @@ let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInterac
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
-let freeSaveDirty=false,freeSaveDueAt=0;
+let freeSaveDirty=false,freeSaveDueAt=0,freeStepHop=0;
 let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDurationNow=0,miningBeat=.25;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
@@ -1461,7 +1461,8 @@ function prepareFreeAvatar(now){
   const moving=!!(freeKeys.KeyW||freeKeys.KeyS||freeKeys.KeyA||freeKeys.KeyD||
     freeKeys.ArrowUp||freeKeys.ArrowDown||freeKeys.ArrowLeft||freeKeys.ArrowRight||
     Math.hypot(mobileMove.x,mobileMove.y)>.08);
-  freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62,camera.position.z);
+  const stepLift=freeStepHop>0?Math.sin((1-freeStepHop)*Math.PI)*.1:0;
+  freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62+stepLift,camera.position.z);
   freeAvatarRoot.rotation.y=yaw;
   freeAvatarRoot.visible=freeViewMode==='third';
   api.animate(freeAvatarRoot,now,moving,onGround||freeFlying);
