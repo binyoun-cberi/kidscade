@@ -6,7 +6,7 @@ const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8');
-const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
+const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');\nconst lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
 
 test('avatar studio and renderer JavaScript both parse cleanly',()=>{
@@ -98,6 +98,15 @@ test('existing head layers inherit pose transforms through semantic transform gr
   assert.equal(rig.layerSpecs.nose.attach,'nose');
   assert.equal(rig.layerSpecs.mouth.attach,'mouth');
   assert.match(renderer,/frame\?\.\[transformName\]/);
+});
+
+test('avatar rig lab proves a cropped accessory can attach to the nose anchor',()=>{
+  assert.match(lab,/anchorNose/);
+  assert.match(lab,/width=16;c\.height=14/);
+  assert.match(lab,/attach:'nose'/);
+  assert.match(lab,/pivot:\[8,7\]/);
+  assert.match(lab,/zSlot:'faceAccessoryOver'/);
+  assert.match(lab,/setExtraParts/);
 });
 
 test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
