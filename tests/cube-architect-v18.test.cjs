@@ -72,7 +72,7 @@ test('overworld landmark generation always uses the complete shell and clears ve
   assert.equal(taj.tech.reward.glass,4);
 });
 
-test('landmarks lead into a three-stage dungeon and then the existing blueprint room',()=>{
+test('landmarks lead into a four-stage architecture dungeon and then the existing blueprint room',()=>{
   assert.match(js,/대칭의 홀/);
   assert.match(js,/빛의 회랑/);
   assert.match(js,/최심부 설계실/);
@@ -80,9 +80,9 @@ test('landmarks lead into a three-stage dungeon and then the existing blueprint 
   assert.match(js,/taj:\{/);
   assert.match(js,/himeji:\{/);
   assert.match(js,/angkor:\{/);
-  assert.match(js,/const order=spec\.order/);
+  assert.match(js,/Array\.isArray\(spec\.order\)/);
   assert.match(js,/dungeonSession\.stage=1/);
-  assert.match(js,/dungeonSession\.stage=2/);
+  assert.match(js,/dungeonSession\.stage=2/);\n  assert.match(js,/dungeonSession\.stage=3/);\n  assert.match(js,/targetKind==='structure'/);
   assert.match(js,/restorationSession=\{poiId:poi\.id,missionIndex:poi\.missionIndex,completed:false,fromDungeon:true\}/);
   assert.match(js,/seedRestorationChallenge/);
   assert.match(js,/restorationScore>=85/);
@@ -100,7 +100,7 @@ test('dungeon clear unlocks construction tech while retaining save compatibility
   assert.match(js,/unlockedTech\.add\(poi\.tech\.id\)/);
   assert.match(js,/trackSurvival\('restore',id\)/);
   assert.match(js,/던전 클리어/);
-  assert.match(js,/version:11/);
+  assert.match(js,/version:12/);
   assert.match(js,/restoredLandmarks/);
   assert.match(js,/protectedPoi/);
 });
