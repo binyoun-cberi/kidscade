@@ -436,8 +436,8 @@ function restorationKeep(role,x,y,z){
   const name=currentChallengeMission()?.name||'';
   const balance=name.includes('타워 브리지')?-.08:
     name.includes('앙코르와트')?-.035:
-    name.includes('사그라다 파밀리아')||name.includes('히메지성')?.04:
-    name.includes('타지마할')||name.includes('에펠탑')?.02:0;
+    (name.includes('사그라다 파밀리아')||name.includes('히메지성'))?.04:
+    (name.includes('타지마할')||name.includes('에펠탑'))?.02:0;
   const rate=Math.max(.08,Math.min(.985,baseRate+balance));
   // Landmark-specific damage keeps the remaining work near 8–10 meaningful cuboid placements.
   const gx=Math.floor(x/4),gy=Math.floor(y/3),gz=Math.floor(z/4);
