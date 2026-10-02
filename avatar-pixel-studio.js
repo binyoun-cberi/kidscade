@@ -2,11 +2,11 @@
 'use strict';
 
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
-const ASSET_REV='15';
+const ASSET_REV='16';
 function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v2-rig-hairfit-5';
+const PREVIEW_VERSION='pixel-v2-rig-hairfit-6';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=rev(ROOT+'/base/master-base-128.png');
@@ -179,7 +179,7 @@ async function renderAndPublish(showToast=false){
   publish(showToast);
 }
 function updateSummary(){
-  const style=state.hairSet==='female'?'긴 스타일':'짧은 스타일';
+  const style=state.hairSet==='female'?'스타일 B':'스타일 A';
   styleSummary.textContent=`${style} ${state.hair} · ${state.upper?'파란 후드':'기본 상의'} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
 }
 function flash(text){
@@ -320,7 +320,7 @@ function previewFrame(mode='idle',time=0){
 }
 
 window.KidscadeAvatarShop={
-  version:'pixel-v2-rig-hairfit-5',
+  version:'pixel-v2-rig-hairfit-6',
   stateKey:STATE_KEY,
   getPreviewDataURL:()=>previewData(),
   renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),
