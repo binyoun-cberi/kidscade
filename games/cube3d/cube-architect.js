@@ -989,6 +989,7 @@ const BLOCK_DEFS={
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
 const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
+const HOTBAR_TOOL_TYPES=['woodPick','stonePick','ironPick'];
 const WORLD_HALF=96,WORLD_MIN_Y=-6,WORLD_MAX_Y=48,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
@@ -1948,7 +1949,7 @@ function addToBag(type,n=1){
   if(gameFreeMode!=='survival'||!type)return;
   const first=bagCount(type)===0;
   survivalBag[type]=bagCount(type)+n;
-  if(first&&PLACEABLE_TYPES.includes(type)&&!hotbarTypes.includes(type)){
+  if(first&&(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))&&!hotbarTypes.includes(type)){
     const empty=hotbarTypes.findIndex((item,i)=>i>0&&!item);
     if(empty>=0)hotbarTypes[empty]=type;
   }
@@ -2078,7 +2079,7 @@ function buildInventory(category='전체'){
       const d=blockDef(type),b=document.createElement('button');
       b.className='inventory-item';const hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
       b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개</small>';
-      if(PLACEABLE_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
+      if(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
       else b.disabled=true;
       grid.appendChild(b);
     }
