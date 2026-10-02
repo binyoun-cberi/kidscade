@@ -14,6 +14,10 @@
       'attendance','playtimeSeconds','legacyPlaytimeMinutes','claimedRanks'
     ].forEach(key => { try { s.remove(key); } catch (_) {} });
     try { sessionStorage.removeItem('kc_account_sync_meta_v1'); } catch (_) {}
+    try {
+      localStorage.removeItem('kidscade-pixel-avatar-v1');
+      localStorage.removeItem('kidscade-avatar-studio-preview');
+    } catch (_) {}
   }
 
   function syncDisplayedPlaytimeFromHistory() {

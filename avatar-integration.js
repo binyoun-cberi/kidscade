@@ -5,6 +5,11 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
+  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=10';
+  const GUEST_DEFAULT_CONFIG = Object.freeze({
+    hairSet:'male', hairStyle:1, upper:1, lower:1,
+    eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
+  });
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   let overlay = null;
   let frame = null;
@@ -16,6 +21,8 @@
   let fallbackMode = '';
   let previewSuspended = false;
   let mediaGuardDoc = null;
+  let rendererLoadPromise = null;
+  let guestDefaultPreviewPromise = null;
 
   const motion = {
     mode: 'idle', start: 0, end: 0, next: 0, x: 0, dir: 1,
@@ -138,6 +145,64 @@
     }
   }
 
+  function isGuestSession() {
+    return !window.KidscadeAccount?.account;
+  }
+
+  function loadAvatarRigRuntime() {
+    const ready = window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1;
+    if (ready?.create) return Promise.resolve(ready);
+    if (rendererLoadPromise) return rendererLoadPromise;
+
+    rendererLoadPromise = new Promise((resolve, reject) => {
+      let script = document.querySelector('script[data-kc-avatar-rig-runtime="1"]');
+      const finish = () => {
+        const api = window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1;
+        if (api?.create) resolve(api);
+        else reject(new Error('Avatar rig runtime did not initialize.'));
+      };
+      if (script) {
+        script.addEventListener('load', finish, { once:true });
+        script.addEventListener('error', () => reject(new Error('Avatar rig runtime load failed.')), { once:true });
+        if ((window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1)?.create) finish();
+        return;
+      }
+      script = document.createElement('script');
+      script.src = AVATAR_RIG_RUNTIME_URL;
+      script.async = true;
+      script.dataset.kcAvatarRigRuntime = '1';
+      script.addEventListener('load', finish, { once:true });
+      script.addEventListener('error', () => reject(new Error('Avatar rig runtime load failed.')), { once:true });
+      document.head.appendChild(script);
+    });
+    return rendererLoadPromise;
+  }
+
+  function ensureGuestDefaultPreview() {
+    const saved = storedPreview();
+    if (saved || !isGuestSession()) return Promise.resolve(saved);
+    if (guestDefaultPreviewPromise) return guestDefaultPreviewPromise;
+
+    guestDefaultPreviewPromise = (async () => {
+      const api = await loadAvatarRigRuntime();
+      if (!isGuestSession()) return storedPreview();
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const avatar = await api.create(canvas, { playing:false, config:{...GUEST_DEFAULT_CONFIG} });
+      const data = await avatar.snapshot('image/png');
+      avatar.destroy?.();
+      if (!isGuestSession()) return storedPreview();
+      if (isPreviewData(data) && !storedPreview()) {
+        localStorage.setItem(PREVIEW_KEY, data);
+        return data;
+      }
+      return storedPreview();
+    })().finally(() => { guestDefaultPreviewPromise = null; });
+
+    return guestDefaultPreviewPromise;
+  }
+
   function installStyles() {
     if (document.getElementById('kidscade-avatar-live-style')) return;
     const style = document.createElement('style');
@@ -233,6 +298,9 @@
         } catch (_) {}
         liveImg?.removeAttribute('src');
         hideBrokenPreview(layer);
+        if (isGuestSession()) {
+          setTimeout(() => ensureGuestDefaultPreview().then(ensurePreviewLayer).catch(() => {}), 0);
+        }
       });
     }
 
@@ -515,6 +583,11 @@
     }
     installStyles();
     buildOverlay();
-    setTimeout(() => { ensurePreviewLayer(); watchPreview(); startLivePreview(); }, 0);
+    setTimeout(async () => {
+      await ensureGuestDefaultPreview().catch(() => '');
+      ensurePreviewLayer();
+      watchPreview();
+      startLivePreview();
+    }, 0);
   });
 })();

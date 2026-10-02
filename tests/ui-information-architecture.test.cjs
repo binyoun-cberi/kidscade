@@ -7,6 +7,8 @@ const ROOT = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const source = fs.readFileSync(path.join(ROOT, 'ui-information-architecture.js'), 'utf8');
 const accountGate = fs.readFileSync(path.join(ROOT, 'account-profile-gate.js'), 'utf8');
+const avatarIntegration = fs.readFileSync(path.join(ROOT, 'avatar-integration.js'), 'utf8');
+const sessionSafety = fs.readFileSync(path.join(ROOT, 'account-session-safety.js'), 'utf8');
 
 function position(text) {
   const found = index.indexOf(text);
@@ -49,18 +51,30 @@ test('profile identity and play record have separate labels', () => {
   assert.match(source, /닉네임 수정/);
 });
 
-test('guest profile is reduced to a login gate and play records stay hidden', () => {
-  assert.match(accountGate, /로그인하고 내 프로필 열기/);
+test('guest profile keeps the avatar visible while play records stay account-only', () => {
+  assert.match(accountGate, /게스트 아바타로 바로 체험 중/);
+  assert.match(accountGate, /기본 아바타가 바로 제공돼요/);
   assert.match(accountGate, /학생 계정 로그인/);
-  assert.match(accountGate, /게임은 게스트로 바로 즐길 수 있어요/);
-  assert.match(accountGate, /data-kc-profile-access=\"guest\"/);
+  assert.match(accountGate, /\.avatar-plaza\{display:block!important\}/);
+  assert.match(accountGate, /\.kc-profile-row\{display:none!important\}/);
   assert.match(accountGate, /#kc-local-profile-card\{display:none!important\}/);
-  assert.match(accountGate, /\.avatar-plaza/);
+  assert.match(accountGate, /shell\.querySelector\('\.avatar-plaza'\)/);
   assert.match(accountGate, /KidscadeAccount/);
   assert.match(accountGate, /\.login\?\.\(\)/);
 });
 
-test('guest mobile view defaults to games and profile navigation opens only the login gate', () => {
+test('guest receives a default v2 avatar without opening the heavy studio iframe', () => {
+  assert.match(avatarIntegration, /GUEST_DEFAULT_CONFIG/);
+  assert.match(avatarIntegration, /hairSet:'male', hairStyle:1, upper:1, lower:1/);
+  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=10'/);
+  assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
+  assert.match(avatarIntegration, /api\.create\(canvas, \{ playing:false, config:\{\.\.\.GUEST_DEFAULT_CONFIG\} \}\)/);
+  assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_KEY, data\)/);
+  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-pixel-avatar-v1'\)/);
+  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-studio-preview'\)/);
+});
+
+test('guest mobile view defaults to games and profile navigation opens the guest avatar area', () => {
   assert.match(accountGate, /kcGuestMobileSection = 'games'/);
   assert.match(accountGate, /target === 'profile'/);
   assert.match(accountGate, /kcGuestMobileSection = 'profile'/);

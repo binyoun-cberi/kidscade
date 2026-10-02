@@ -6,9 +6,14 @@ on:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
       - 'avatar-studio.html'
+      - 'avatar-integration.js'
+      - 'account-profile-gate.js'
+      - 'account-session-safety.js'
       - 'pixel-avatar-lab.html'
       - 'assets/game/characters/kidscade-avatar-v1/**'
       - 'tests/pixel-avatar-studio.test.cjs'
+      - 'tests/ui-information-architecture.test.cjs'
+      - 'tests/ui-information-architecture.test.cjs'
       - '.github/workflows/avatar-rig-tests.yml'
   push:
     branches: [main]
@@ -16,6 +21,9 @@ on:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
       - 'avatar-studio.html'
+      - 'avatar-integration.js'
+      - 'account-profile-gate.js'
+      - 'account-session-safety.js'
       - 'pixel-avatar-lab.html'
       - 'assets/game/characters/kidscade-avatar-v1/**'
       - 'tests/pixel-avatar-studio.test.cjs'
@@ -36,5 +44,8 @@ jobs:
         run: |
           node --check pixel-avatar-renderer.js
           node --check avatar-pixel-studio.js
+          node --check avatar-integration.js
+          node --check account-profile-gate.js
+          node --check account-session-safety.js
       - name: Run avatar rig regression tests
-        run: node --test tests/pixel-avatar-studio.test.cjs
+        run: node --test tests/pixel-avatar-studio.test.cjs tests/ui-information-architecture.test.cjs
