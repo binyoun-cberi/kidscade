@@ -3221,7 +3221,7 @@
       "id": "high_micro_evolution",
       "addedAt": "2026-09-30T10:50:00+09:00",
       "title": "마이크로 에볼루션",
-      "href": "games/high_micro_evolution/index.html?v=7",
+      "href": "games/high_micro_evolution/index.html?v=8",
       "category": "trivia",
       "age": "high",
       "ages": [
@@ -3229,7 +3229,7 @@
         "high"
       ],
       "icon": "🦠",
-      "description": "작은 생명체로 시작해 먹고 성장한 뒤 번식할 때 편모·섬모·감각기관·광합성·포식·여과·기생 기관을 조합하세요. 생태계마다 지형과 빛·물살이 다르고, 작은 생물은 도망가며 큰 포식자는 쫓아오는 과학 진화 샌드박스!",
+      "description": "원시 세포로 시작해 먹이 군집을 찾고, 번식할 때 포식·여과섭식·광합성·기생 중 생존 전략을 전문화하세요. 환경 사건은 잠시 생태계를 흔들고 다시 회복하며, AI 종도 세대마다 함께 변이하는 과학 진화 샌드박스!",
       "subject": "science",
       "genre": "sandbox",
       "difficulty": "medium",

@@ -21,10 +21,11 @@ const BIOMES = [
 ];
 
 const PARTS = {
-  predatorMouth:{id:'predatorMouth',cat:'먹이',icon:'🦷',name:'포식 입',cost:10,external:true,max:2,desc:'작은 생물을 물어뜯어 에너지와 DNA를 얻어요.',science:'포식자는 다른 생물을 먹어 유기물에서 에너지를 얻습니다. 입의 위치가 진행 방향과 잘 맞을수록 사냥하기 편해집니다.'},
-  filter:{id:'filter',cat:'먹이',icon:'🪭',name:'여과기관',cost:10,external:true,max:3,desc:'주변의 작은 플랑크톤을 자동으로 걸러 먹어요.',science:'여과섭식은 물을 통과시키며 작은 먹이 입자를 걸러 먹는 방식입니다.'},
-  chloroplast:{id:'chloroplast',cat:'먹이',icon:'🌱',name:'광합성체',cost:14,external:false,max:4,desc:'빛이 강한 곳에서 천천히 에너지를 만들어요.',science:'광합성 생물은 빛 에너지를 이용해 유기물을 만듭니다. 빛이 부족하면 같은 기관도 큰 도움이 되지 않습니다.'},
-  parasite:{id:'parasite',cat:'먹이',icon:'🪝',name:'기생 흡착기',cost:14,external:true,max:2,desc:'큰 생물에 붙어 에너지를 조금씩 빼앗아요.',science:'기생은 숙주에게서 자원이나 영양을 얻는 생활 방식입니다. 숙주와 가까이 붙어 있어야 합니다.'},
+  primitiveMouth:{id:'primitiveMouth',cat:'먹이',icon:'◌',name:'원시 섭식구',cost:0,external:true,max:1,starter:true,desc:'작은 영양 입자를 조금씩 흡수하는 초기 기관이에요.',science:'초기의 단순한 섭식은 특정 먹이에 고도로 특화되지 않습니다. 진화가 진행되면 포식·여과·광합성·기생처럼 서로 다른 전략이 더 효율적이 됩니다.'},
+  predatorMouth:{id:'predatorMouth',cat:'먹이',icon:'🦷',name:'포식 입',cost:10,external:true,max:2,desc:'떠다니는 먹이보다 다른 생물을 사냥할 때 훨씬 큰 성장을 얻어요.',science:'포식자는 다른 생물을 먹어 유기물에서 에너지를 얻습니다. 입의 위치가 진행 방향과 잘 맞을수록 사냥하기 편해집니다.'},
+  filter:{id:'filter',cat:'먹이',icon:'🪭',name:'여과기관',cost:10,external:true,max:3,desc:'플랑크톤 군집 안에서 작은 입자를 빠르게 걸러 생체량을 만들어요.',science:'여과섭식은 물을 통과시키며 작은 먹이 입자를 걸러 먹는 방식입니다. 먹이가 밀집된 곳을 찾는 것이 중요합니다.'},
+  chloroplast:{id:'chloroplast',cat:'먹이',icon:'🌱',name:'광합성체',cost:14,external:false,max:4,desc:'밝은 수역에 머물면 에너지뿐 아니라 생체량도 꾸준히 만들어요.',science:'광합성 생물은 빛 에너지를 이용해 유기물을 만듭니다. 빛이 부족하면 같은 기관도 큰 도움이 되지 않습니다.'},
+  parasite:{id:'parasite',cat:'먹이',icon:'🪝',name:'기생 흡착기',cost:14,external:true,max:2,desc:'큰 숙주에 달라붙어 에너지와 생체량을 지속적으로 빼앗아요.',science:'기생은 숙주에게서 자원이나 영양을 얻는 생활 방식입니다. 숙주와 가까이 붙어 있어야 합니다.'},
 
   flagellum:{id:'flagellum',cat:'이동',icon:'〰️',name:'편모',cost:8,external:true,max:6,desc:'긴 채찍 모양 기관. 뒤쪽에 달수록 직진 추진력이 커져요.',science:'편모는 회전하거나 휘어지며 세포를 추진합니다. 이 게임에서는 배치 방향이 추진 효율에 영향을 줍니다.'},
   cilia:{id:'cilia',cat:'이동',icon:'≋',name:'섬모',cost:9,external:true,max:6,desc:'짧은 털을 움직여 방향 전환과 미세 이동을 도와요.',science:'섬모는 짧은 털 모양 구조가 함께 움직여 이동과 물질 운반을 돕습니다.'},
@@ -53,8 +54,9 @@ let canvas,ctx,dpr=1,viewW=0,viewH=0,last=0,raf=0;
 let running=false,paused=false,toastTimer=0,eventTimer=0,senseTimer=0;
 let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null;
 let keys={},pointerTarget=null,joy={active:false,x:0,y:0,pid:null};
-let foods=[],creatures=[],lightPatches=[],biomeProps=[],ripples=[],particles=[];
-let env={...BIOMES[0].env};
+let foods=[],creatures=[],lightPatches=[],foodClusters=[],biomeProps=[],ripples=[],particles=[];
+let baseEnv={...BIOMES[0].env},env={...BIOMES[0].env};
+let eventDelta={},eventDuration=0;
 let state = {
   generation:1,generationClock:0,eventClock:0,dna:4,score:0,survival:0,
   player:null,mission:0,discovered:{},facts:{},started:false,reproductions:0,
@@ -63,7 +65,7 @@ let state = {
 
 function freshPlayer(){
   const slots=Array(12).fill(null);
-  slots[0]='predatorMouth';
+  slots[0]='primitiveMouth';
   slots[6]='flagellum';
   return {x:WORLD.w/2,y:WORLD.h/2,vx:0,vy:0,angle:0,radius:30,energy:100,health:100,biomass:0,
     slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0},
@@ -144,7 +146,7 @@ function randomBiome(){ startGame(pick(BIOMES)); }
 function startGame(biome){
   selectedBiome=biome;
   resetState();
-  env={...biome.env};
+  baseEnv={...biome.env};env={...baseEnv};eventDelta={};eventDuration=0;
   $('startScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('editorScreen').classList.add('hidden');
   resize();
   setupWorld();
@@ -162,23 +164,24 @@ function goHome(){
 }
 
 function setupWorld(){
-  foods=[];creatures=[];lightPatches=[];biomeProps=[];ripples=[];particles=[];
+  foods=[];creatures=[];lightPatches=[];foodClusters=[];biomeProps=[];ripples=[];particles=[];
   state.player.x=WORLD.w/2;state.player.y=WORLD.h/2;
   const patchCount=selectedBiome.id==='deep'||selectedBiome.id==='vent'?4:6;
   for(let i=0;i<patchCount;i++)lightPatches.push({x:rand(WORLD.w-320,160),y:rand(WORLD.h-320,160),r:rand(330,190),strength:rand(1,.55)});
   buildBiomeProps();
+  buildFoodClusters();
 
-  const foodN=Math.round(115+env.food*1.15);
+  const foodN=Math.round(46+env.food*.42);
   for(let i=0;i<foodN;i++){
-    if(i<70){
-      const a=rand(TAU),d=rand(620,80);
-      spawnFood(null,(state.player.x+Math.cos(a)*d+WORLD.w)%WORLD.w,(state.player.y+Math.sin(a)*d+WORLD.h)%WORLD.h);
+    if(i<18){
+      const a=rand(TAU),d=rand(470,110);
+      spawnFood(i%3===0?'nutrient':'plankton',(state.player.x+Math.cos(a)*d+WORLD.w)%WORLD.w,(state.player.y+Math.sin(a)*d+WORLD.h)%WORLD.h);
     }else spawnFood();
   }
 
-  for(let i=0;i<46;i++){
-    if(i<16){
-      const a=rand(TAU),d=rand(650,180);
+  for(let i=0;i<40;i++){
+    if(i<12){
+      const a=rand(TAU),d=rand(650,220);
       spawnCreature(i%6,(state.player.x+Math.cos(a)*d+WORLD.w)%WORLD.w,(state.player.y+Math.sin(a)*d+WORLD.h)%WORLD.h);
     }else spawnCreature(i%6);
   }
@@ -194,10 +197,34 @@ function buildBiomeProps(){
     biomeProps.push({x:rand(WORLD.w),y:rand(WORLD.h),type:pick(types),size:rand(32,10),phase:rand(TAU)});
   }
 }
+function buildFoodClusters(){
+  foodClusters=[];
+  const clusterCount=selectedBiome.id==='deep'||selectedBiome.id==='ice'?5:7;
+  for(let i=0;i<clusterCount;i++){
+    const roll=Math.random();
+    let type=roll<.58?'plankton':roll<.9?'nutrient':'meat';
+    if(selectedBiome.id==='deep'&&roll<.34)type='meat';
+    if(selectedBiome.id==='pond'&&roll<.68)type='plankton';
+    foodClusters.push({x:rand(WORLD.w),y:rand(WORLD.h),r:rand(250,130),type,strength:rand(1,.58),phase:rand(TAU)});
+  }
+}
+function pickFoodCluster(type){
+  const matches=foodClusters.filter(c=>!type||c.type===type);
+  return pick(matches.length?matches:foodClusters);
+}
 function spawnFood(type,x,y){
   const roll=Math.random();
   type=type||(roll<.56?'plankton':roll<.88?'nutrient':'meat');
-  foods.push({x:x==null?rand(WORLD.w):x,y:y==null?rand(WORLD.h):y,type,r:type==='plankton'?4:type==='nutrient'?6:8,phase:rand(TAU)});
+  if(x==null||y==null){
+    const cluster=pickFoodCluster(type);
+    if(cluster){
+      const a=rand(TAU),d=Math.sqrt(Math.random())*cluster.r;
+      x=(cluster.x+Math.cos(a)*d+WORLD.w)%WORLD.w;
+      y=(cluster.y+Math.sin(a)*d+WORLD.h)%WORLD.h;
+      type=cluster.type;
+    }else{x=rand(WORLD.w);y=rand(WORLD.h)}
+  }
+  foods.push({x,y,type,r:type==='plankton'?4:type==='nutrient'?6:8,phase:rand(TAU)});
 }
 function speciesTemplate(seed){
   const diets=['grazer','filter','hunter','photo','scavenger','parasite'];
@@ -226,6 +253,11 @@ function worldToScreen(x,y){
   const p=state.player;
   return {x:wrappedDelta(x,p.x,WORLD.w)*CAMERA_ZOOM+viewW/2,y:wrappedDelta(y,p.y,WORLD.h)*CAMERA_ZOOM+viewH/2};
 }
+function directionVector(from,to){
+  const dx=wrappedDelta(to.x,from.x,WORLD.w),dy=wrappedDelta(to.y,from.y,WORLD.h);
+  const d=Math.hypot(dx,dy)||1;
+  return {x:dx/d,y:dy/d,d};
+}
 function screenToWorld(x,y){
   const p=state.player;
   return {x:(p.x+(x-viewW/2)/CAMERA_ZOOM+WORLD.w)%WORLD.w,y:(p.y+(y-viewH/2)/CAMERA_ZOOM+WORLD.h)%WORLD.h};
@@ -252,7 +284,7 @@ function lightAt(x,y){
   const ambient=env.light/100*(1-env.turbidity/100*.38)*.42;
   let best=ambient;
   for(const q of lightPatches){
-    const d=Math.hypot(x-q.x,y-q.y);
+    const d=Math.sqrt(dist2({x,y},q));
     if(d<q.r)best=Math.max(best,ambient+(1-d/q.r)*q.strength*(env.light/100)*(1-env.turbidity/100*.24)*.72);
   }
   return clamp(best,0,1);
@@ -285,7 +317,7 @@ function lightSenseData(p=state.player){
       if(score>bestScore){bestScore=score;target=q;distance=d;}
     }
   }
-  const angle=target?Math.atan2(target.y-p.y,target.x-p.x):null;
+  const angle=target?Math.atan2(wrappedDelta(target.y,p.y,WORLD.h),wrappedDelta(target.x,p.x,WORLD.w)):null;
   return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
 }
 function reproductionRequirement(){
@@ -297,6 +329,7 @@ function partPurchaseCost(part){
   return Math.ceil(part.cost*duplicateScale);
 }
 function partRefundValue(part){
+  if(part.starter)return 0;
   return Math.max(1,Math.floor(part.cost*.45));
 }
 function reproductionProgress(){
@@ -307,6 +340,18 @@ function reproductionProgress(){
 }
 function canReproduce(){
   return !!state.player&&state.player.biomass>=reproductionRequirement()&&state.player.energy>=78;
+}
+function updateEnvironment(dt){
+  if(state.activeEventLife>0){
+    state.activeEventLife=Math.max(0,state.activeEventLife-dt);
+  }
+  const fade=state.activeEventLife<=0?0:clamp(state.activeEventLife/Math.min(6,eventDuration||6),0,1);
+  for(const key of Object.keys(baseEnv)){
+    env[key]=clamp(baseEnv[key]+Number(eventDelta[key]||0)*fade,0,100);
+  }
+  if(state.activeEventLife<=0&&state.activeEvent){
+    state.activeEvent=null;eventDelta={};eventDuration=0;refreshEnvBars();
+  }
 }
 function salinityStress(){
   const membrane=countPart('membrane'),target=50+membrane*13;
@@ -357,26 +402,34 @@ function updatePlayer(dt){
 
   const chlor=countPart('chloroplast');
   if(chlor){
-    const gain=chlor*lightAt(p.x,p.y)*1.4*dt;
-    p.energy+=gain;p.biomass+=gain*.05;
-    if(gain>.4)state.score+=gain*.12;
+    const localLight=lightAt(p.x,p.y);
+    const gain=chlor*localLight*1.35*dt;
+    p.energy+=gain;
+    const photoBiomass=gain*(.14+Math.min(.06,chlor*.015));
+    p.biomass+=photoBiomass;state.dna+=photoBiomass*.012;
+    if(gain>.35)state.score+=gain*.12;
   }
 
   const filter=countPart('filter');
   if(filter){
-    const rr=36+filter*15;
+    const rr=38+filter*18;
     for(let i=foods.length-1;i>=0;i--){
       const f=foods[i];if(f.type!=='plankton')continue;
-      if(dist2(p,f)<rr*rr){consumeFood(i,1.1+filter*.12,'filter');}
+      if(dist2(p,f)<rr*rr){consumeFood(i,1.65+filter*.32,'filter');}
     }
   }
 
   if(p.attached){
     const c=p.attached;
-    if(!creatures.includes(c)||dist2(p,c)>Math.pow(p.radius+c.r+20,2)){p.attached=null}
+    if(!creatures.includes(c)||dist2(p,c)>Math.pow(p.radius+c.r+24,2)){p.attached=null}
     else if(countPart('parasite')){
-      const gain=countPart('parasite')*.9*dt;
-      p.energy+=gain;c.health-=gain*.35;state.dna+=gain*.012;state.score+=gain*.25;
+      const organs=countPart('parasite');
+      const gain=organs*1.05*dt;
+      p.energy+=gain;
+      p.biomass+=gain*.34;
+      c.health-=gain*.72;
+      state.dna+=gain*.018;state.score+=gain*.3;
+      if(Math.random()<dt*.8)particles.push({x:p.x,y:p.y,vx:rand(24,-24),vy:rand(24,-24),life:.45,color:'#ff9fca'});
     }
   }
 
@@ -391,10 +444,15 @@ function updatePlayer(dt){
   const growTarget=30+Math.min(24,Math.sqrt(Math.max(0,p.biomass))*2.1);
   p.radius=lerp(p.radius,growTarget,clamp(dt*.7,0,1));
 }
-function consumeFood(index,mult=1,why='mouth'){
+function consumeFood(index,mult=1,why='primitive'){
   const f=foods[index],p=state.player;
   const base=f.type==='meat'?9:f.type==='nutrient'?6:4;
-  p.energy+=base*mult;p.biomass+=base*.42*mult;state.dna+=base*.04*mult;state.score+=base*mult;p.feedFlash=.8;
+  let biomassScale=.42,dnaScale=.04,energyScale=1;
+  if(why==='primitive'){biomassScale=.31;dnaScale=.026;energyScale=.75}
+  else if(why==='filter'){biomassScale=.54;dnaScale=.032;energyScale=.92}
+  else if(why==='pseudopod'){biomassScale=.45;dnaScale=.034;energyScale=.9}
+  else if(why==='predatorLoose'){biomassScale=.25;dnaScale=.018;energyScale=.68}
+  p.energy+=base*mult*energyScale;p.biomass+=base*biomassScale*mult;state.dna+=base*dnaScale*mult;state.score+=base*mult;p.feedFlash=.8;
   state.discovered.firstFood=1;
   if(p.feedAudioCd<=0){
     const rate=f.type==='meat'?.72:f.type==='nutrient'?.90:1.12;
@@ -417,11 +475,15 @@ function updateFoods(dt){
     f.x=(f.x+Math.cos(f.phase*.3)*flow*dt+WORLD.w)%WORLD.w;
     f.y=(f.y+Math.sin(f.phase*.24)*flow*.5*dt+WORLD.h)%WORLD.h;
   });
-  const p=state.player,hasMouth=countPart('predatorMouth')||countPart('pseudopod');
-  if(hasMouth){
+  const p=state.player;
+  const primitive=countPart('primitiveMouth'),predator=countPart('predatorMouth'),pseudo=countPart('pseudopod');
+  if(primitive||predator||pseudo){
     for(let i=foods.length-1;i>=0;i--){
       const f=foods[i],rr=p.radius+f.r+4;
-      if(dist2(p,f)<rr*rr)consumeFood(i,countPart('pseudopod')?1.15:1,'mouth');
+      if(dist2(p,f)>=rr*rr)continue;
+      if(pseudo)consumeFood(i,1.05,'pseudopod');
+      else if(predator&&(f.type==='meat'||f.type==='nutrient'))consumeFood(i,.72,'predatorLoose');
+      else if(primitive&&(f.type==='plankton'||f.type==='nutrient'))consumeFood(i,.62,'primitive');
     }
   }
 }
@@ -456,21 +518,23 @@ function updateCreatures(dt){
     const dp=Math.sqrt(dist2(c,p));
     const hunter=c.traits.diet==='hunter',parasite=c.traits.diet==='parasite';
     const rel=scanCreatureRelations(c,idx);
+    const camouflage=countPart('camouflage'),still=Math.hypot(p.vx,p.vy)<12;
+    const playerVisibility=camouflage?clamp((still?.42:.76)-Math.max(0,camouflage-1)*.09,.22,1):1;
     const see=190+c.traits.sense*120;
 
     if(rel.danger&&rel.dangerD<300+c.traits.sense*35){
-      tx=(c.x-rel.danger.x)/Math.max(1,rel.dangerD);ty=(c.y-rel.danger.y)/Math.max(1,rel.dangerD);goalStrength=1.28;
+      const v=directionVector(c,rel.danger);tx=-v.x;ty=-v.y;goalStrength=1.28;
     }else if(hunter&&rel.prey&&rel.preyD<see){
-      tx=(rel.prey.x-c.x)/Math.max(1,rel.preyD);ty=(rel.prey.y-c.y)/Math.max(1,rel.preyD);goalStrength=1.16;
+      const v=directionVector(c,rel.prey);tx=v.x;ty=v.y;goalStrength=1.16;
     }else if(parasite&&rel.host&&rel.hostD<see){
-      tx=(rel.host.x-c.x)/Math.max(1,rel.hostD);ty=(rel.host.y-c.y)/Math.max(1,rel.hostD);
-    }else if(hunter&&c.r>p.radius*.9&&dp<see*1.15){
-      tx=(p.x-c.x)/Math.max(1,dp);ty=(p.y-c.y)/Math.max(1,dp);goalStrength=1.12;
+      const v=directionVector(c,rel.host);tx=v.x;ty=v.y;
+    }else if(hunter&&c.r>p.radius*.9&&dp<see*1.15*playerVisibility){
+      const v=directionVector(c,p);tx=v.x;ty=v.y;goalStrength=1.12;
     }else if(c.r<p.radius*.84&&dp<300){
-      tx=(c.x-p.x)/Math.max(1,dp);ty=(c.y-p.y)/Math.max(1,dp);goalStrength=1.2;
+      const v=directionVector(c,p);tx=-v.x;ty=-v.y;goalStrength=1.2;
     }else{
       const f=nearestFood(c);
-      if(f){const d=Math.sqrt(dist2(c,f));tx=(f.x-c.x)/Math.max(1,d);ty=(f.y-c.y)/Math.max(1,d)}
+      if(f){const v=directionVector(c,f);tx=v.x;ty=v.y}
       else{tx=Math.cos(c.angle);ty=Math.sin(c.angle)}
     }
 
@@ -509,8 +573,10 @@ function updateCreatures(dt){
       if(countPart('parasite')&&c.r>p.radius*.9&&!p.attached)p.attached=c;
     }
     if(c.health<=0){
-      const huntReward=1.2+clamp((c.r-18)/34,0,1)*.9;
-      state.dna+=huntReward;state.score+=25;p.energy+=13;p.biomass+=5;p.feedFlash=.8;
+      const sizeFactor=clamp((c.r-18)/34,0,1);
+      const huntReward=1.35+sizeFactor*1.25;
+      const biomassReward=8+sizeFactor*8;
+      state.dna+=huntReward;state.score+=30+sizeFactor*20;p.energy+=15+sizeFactor*7;p.biomass+=biomassReward;p.feedFlash=.8;
       sound('reward',{volume:.15,rate:.78+Math.min(.3,huntReward*.08),rateJitter:.04,cooldownMs:160});
       burst(c.x,c.y,'#ff78a4');
       respawnCreature(c,idx%6);
@@ -536,15 +602,15 @@ function updateParticles(dt){
 }
 
 const EVENTS=[
-  {id:'rain',icon:'🌧️',title:'폭우',desc:'영양분이 흘러들어오고 화면의 입자들이 빠르게 휩쓸립니다.',apply(){env.food=clamp(env.food+18,0,100);env.current=clamp(env.current+24,0,100)}},
-  {id:'sun',icon:'☀️',title:'강한 햇빛',desc:'빛이 강해지고 밝은 수역이 넓어집니다.',apply(){env.light=clamp(env.light+22,0,100);env.temp=clamp(env.temp+13,0,100)}},
-  {id:'murk',icon:'🌫️',title:'탁도 증가',desc:'부유물이 퍼져 멀리 보기 어려워졌어요.',apply(){env.turbidity=clamp(env.turbidity+25,0,100);env.light=clamp(env.light-16,0,100)}},
-  {id:'oxygen',icon:'🫧',title:'산소 증가',desc:'기포가 늘고 활발한 생물 활동이 이어집니다.',apply(){env.oxygen=clamp(env.oxygen+20,0,100)}},
-  {id:'evaporate',icon:'🧂',title:'증발',desc:'물이 농축되어 염도가 올라갑니다.',apply(){env.salt=clamp(env.salt+19,0,100);env.food=clamp(env.food-8,0,100)}},
-  {id:'bloom',icon:'🌱',title:'플랑크톤 번성',desc:'작은 먹이 입자가 눈에 띄게 폭발적으로 늘어났어요.',apply(){env.food=clamp(env.food+26,0,100);for(let i=0;i<40;i++)spawnFood('plankton')}}
+  {id:'rain',icon:'🌧️',title:'폭우',desc:'잠시 영양분과 물살이 크게 늘어납니다.',duration:18,delta:{food:18,current:24}},
+  {id:'sun',icon:'☀️',title:'강한 햇빛',desc:'한동안 빛과 수온이 상승합니다.',duration:20,delta:{light:22,temp:13}},
+  {id:'murk',icon:'🌫️',title:'탁도 증가',desc:'부유물이 퍼져 잠시 빛이 줄고 시야가 나빠집니다.',duration:18,delta:{turbidity:25,light:-16}},
+  {id:'oxygen',icon:'🫧',title:'산소 증가',desc:'일시적으로 물속 산소가 풍부해집니다.',duration:20,delta:{oxygen:20}},
+  {id:'evaporate',icon:'🧂',title:'증발',desc:'잠시 물이 농축되어 염도가 높아지고 먹이가 줄어듭니다.',duration:18,delta:{salt:19,food:-8}},
+  {id:'bloom',icon:'🌱',title:'플랑크톤 번성',desc:'짧은 시간 플랑크톤 군집이 폭발적으로 늘어납니다.',duration:22,delta:{food:22},burst(){for(let i=0;i<24;i++)spawnFood('plankton')}}
 ];
 function triggerEvent(){
-  const e=pick(EVENTS);e.apply();state.activeEvent=e.id;state.activeEventLife=8;
+  const e=pick(EVENTS);state.activeEvent=e.id;eventDelta={...e.delta};eventDuration=e.duration||18;state.activeEventLife=eventDuration;e.burst?.();updateEnvironment(0);
   if(e.id==='rain')sound('dash',{volume:.10,rate:.66});
   else if(e.id==='bloom')sound('eat',{volume:.12,rate:1.18});
   else sound('event',{volume:.16,rate:e.id==='sun'?1.12:e.id==='murk'?.86:1});
@@ -564,8 +630,7 @@ function advanceGeneration(){
     if(state.discovered.predator&&c.r<34)c.traits.armor=clamp(c.traits.armor+.035,.25,2);
   });
   burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
-  if(state.generation%2===0)triggerEvent();
-  toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 큰 진화는 여러 세대에 걸쳐 모아야 합니다.');
+  toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 환경은 시간이 지나면 평상 상태로 돌아갑니다.');
   sound('generation',{volume:.28,rate:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:.84}),70);save();
 }
 function updateMissions(){
@@ -598,10 +663,10 @@ function classifyNiche(){
 function update(dt){
   if(paused)return;
   state.survival+=dt;state.generationClock+=dt;state.eventClock+=dt;
-  state.activeEventLife=Math.max(0,state.activeEventLife-dt);if(state.activeEventLife<=0)state.activeEvent=null;
+  updateEnvironment(dt);
   updatePlayer(dt);updateFoods(dt);updateCreatures(dt);updateParticles(dt);updateMissions();
-  if(state.eventClock>=30){state.eventClock=0;triggerEvent()}
-  if(Math.random()<dt*1.2&&foods.length<245)spawnFood();
+  if(state.eventClock>=45){state.eventClock=0;triggerEvent()}
+  if(Math.random()<dt*.5&&foods.length<112)spawnFood();
   if(Math.random()<dt*.18&&countPart('mechano')){const source=pick(creatures);if(source)ripples.push({x:source.x,y:source.y,r:5,life:1});}
   if(state.survival-senseTimer>.15){senseTimer=state.survival;updateSenseOverlay()}
   refreshHud(false);
@@ -686,6 +751,16 @@ function drawPatches(){
     }
   });
 }
+function drawFoodClusters(){
+  foodClusters.forEach(c=>{
+    const p=worldToScreen(c.x,c.y),vr=c.r*CAMERA_ZOOM;
+    if(p.x<-vr||p.x>viewW+vr||p.y<-vr||p.y>viewH+vr)return;
+    const color=c.type==='plankton'?'168,237,123':c.type==='nutrient'?'255,224,138':'255,140,167';
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,vr);
+    g.addColorStop(0,'rgba('+color+','+(0.035*c.strength)+')');g.addColorStop(.65,'rgba('+color+','+(0.018*c.strength)+')');g.addColorStop(1,'rgba('+color+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,vr,0,TAU);ctx.fill();
+  });
+}
 function drawFoods(){
   foods.forEach(f=>{
     const p=worldToScreen(f.x,f.y);if(p.x<-28||p.x>viewW+28||p.y<-28||p.y>viewH+28)return;
@@ -725,6 +800,9 @@ function drawPart(type,r,isPlayer){
     const stretch=(1.05+Math.sin(t*4)*.18)*k;ctx.fillStyle='#49b8a8';ctx.beginPath();ctx.ellipse(12*k*stretch,0,18*k*stretch,7*k,0,0,TAU);ctx.fill();
   }else if(type==='anchor'){
     ctx.strokeStyle='#c8e4e8';ctx.lineWidth=3*k;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(18*k,0);ctx.lineTo(13*k,-7*k);ctx.moveTo(18*k,0);ctx.lineTo(13*k,7*k);ctx.stroke();
+  }else if(type==='primitiveMouth'){
+    ctx.strokeStyle='rgba(226,255,242,.9)';ctx.lineWidth=2*k;ctx.beginPath();ctx.arc(7*k,0,6*k,-1.15,1.15);ctx.stroke();
+    ctx.fillStyle='rgba(185,239,120,.38)';ctx.beginPath();ctx.arc(13*k,0,(2.2+Math.sin(t*5)*.6)*k,0,TAU);ctx.fill();
   }else if(type==='predatorMouth'){
     const gape=(8+Math.sin(t*7)*3)*k;ctx.fillStyle='#fff2df';ctx.beginPath();ctx.moveTo(0,-gape);ctx.lineTo(18*k,-3*k);ctx.lineTo(5*k,0);ctx.lineTo(18*k,7*k);ctx.lineTo(0,gape);ctx.closePath();ctx.fill();
     ctx.strokeStyle='rgba(100,35,50,.45)';ctx.lineWidth=1.2*k;ctx.beginPath();ctx.moveTo(4*k,0);ctx.lineTo(17*k,0);ctx.stroke();
@@ -811,7 +889,7 @@ function drawEffects(){
   ripples.forEach(q=>{const p=worldToScreen(q.x,q.y);ctx.globalAlpha=q.life;ctx.strokeStyle='#ffd99b';ctx.beginPath();ctx.arc(p.x,p.y,q.r*CAMERA_ZOOM,0,TAU);ctx.stroke()});ctx.globalAlpha=1;
 }
 function render(){
-  if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);drawBackground();drawBiomeScenery();drawPatches();drawFoods();drawCreatures();drawEffects();drawPlayer();
+  if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);drawBackground();drawBiomeScenery();drawPatches();drawFoodClusters();drawFoods();drawCreatures();drawEffects();drawPlayer();
 }
 function loop(ts){
   if(!running)return;
@@ -854,11 +932,11 @@ function updateStarterGuide(){
   box.classList.remove('done');
   if(!state.discovered.firstFood){
     step.textContent='1';title.textContent='반짝이는 먹이부터 먹어 보세요';
-    textEl.textContent='WASD·방향키·마우스로 움직여 초록·노랑 점에 닿으세요. 가운데의 “나”가 내 세포예요.';
-    hint.textContent='화면의 초록 테두리 작은 생물도 먹을 수 있고, 붉은 ! 표시는 피해야 해요.';
+    textEl.textContent='WASD·방향키·마우스로 움직여 가까운 영양 입자 군집을 찾아보세요. 가운데의 “나”가 내 세포예요.';
+    hint.textContent='처음의 원시 섭식구는 약해요. 번식 후 포식·여과·광합성·기생 중 하나를 전문화하면 훨씬 빨리 성장합니다.';
   }else if(!canReproduce()){
     step.textContent='2';title.textContent='먹으면서 성장하세요 · '+grow+'%';
-    textEl.textContent='먹이를 계속 먹거나, 나보다 작은 초록 테두리 생물을 앞쪽 입으로 쫓아가세요.';
+    textEl.textContent='지금은 원시 섭식 단계예요. 먹이 군집을 찾아 성장하고 다음 세대에 전문 섭식기관을 선택하세요.';
     hint.textContent='DNA는 장기 진화 자원이에요. 한 세대에 다 쓰기보다 여러 세대 동안 모아 큰 기관을 노려도 돼요.';
   }else if(state.generation===1){
     step.textContent='3';title.textContent='번식 준비 완료!';
@@ -888,7 +966,8 @@ function updateSenseOverlay(){
   let html='',p=state.player,range=movementStats(p).sense;
   if(!state.discovered.firstFood){
     let target=null,bd=Infinity;
-    for(const f of foods){const d=dist2(p,f);if(d<bd){bd=d;target=f}}
+    for(const c of foodClusters){const d=dist2(p,c);if(d<bd){bd=d;target=c}}
+    if(!target){for(const f of foods){const d=dist2(p,f);if(d<bd){bd=d;target=f}}}
     if(target){
       const dx=wrappedDelta(target.x,p.x,WORLD.w),dy=wrappedDelta(target.y,p.y,WORLD.h),a=Math.atan2(dy,dx);
       const lx=viewW/2+Math.cos(a)*100,ly=viewH/2+Math.sin(a)*100;
@@ -947,11 +1026,17 @@ function renderEditor(){
   const tabs=$('partTabs');tabs.innerHTML='';
   CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;sound('select',{volume:.09});renderEditor()});tabs.appendChild(b)});
   const list=$('partList');list.innerHTML='';
-  Object.values(PARTS).filter(p=>p.cat===activeTab).forEach(part=>{
+  Object.values(PARTS).filter(p=>p.cat===activeTab&&!p.starter).forEach(part=>{
     const count=countPart(part.id),locked=count>=part.max,cost=partPurchaseCost(part);
     const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+(locked?' locked':'');b.type='button';
     b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+(count?' · 같은 기관을 더 달면 DNA 비용이 증가해요.':'')+'</small>';
     b.addEventListener('click',()=>choosePart(part));list.appendChild(b);
+    if(!part.external&&count>0){
+      const remove=document.createElement('button');remove.type='button';remove.className='part-remove';
+      remove.textContent='− '+part.name+' 제거 · DNA '+partRefundValue(part)+' 회수';
+      remove.addEventListener('click',()=>removeInternalPart(part));
+      list.appendChild(remove);
+    }
   });
   renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();
 }
@@ -973,6 +1058,13 @@ function renderSlots(){
     b.title=type?PARTS[type].name:'빈 슬롯';
     b.addEventListener('click',()=>slotClick(i));layer.appendChild(b);
   });
+}
+function removeInternalPart(part){
+  const current=Number(state.player.inside[part.id]||0);
+  if(current<=0)return;
+  state.player.inside[part.id]=current-1;
+  const refund=partRefundValue(part);state.dna+=refund;selectedPart=null;
+  sound('click',{volume:.12,rate:.86});toast(part.name+' 제거 · DNA '+refund+' 회수');renderEditor();
 }
 function slotClick(i){
   const old=state.player.slots[i];
