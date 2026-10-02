@@ -7,8 +7,10 @@
 const CANVAS=128;
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const HAIR_PIVOT=[65.5,43.5];
-// Match the generated hair silhouette to the smaller Kidscade master body.
-const HAIR_FIT_BOX={left:20,right:111,top:8,bottom:104};
+// Runtime hair sheets use a full 128x128 source canvas. Anchor each visible
+// hair bbox to the actual master head/body envelope instead of canvas (0,0).
+const HAIR_BACK_FIT_BOX={left:22,right:106,top:10,bottom:102};
+const HAIR_FRONT_FIT_BOX={left:42,right:90,top:18,bottom:62};
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
@@ -185,29 +187,47 @@ class PixelAvatar{
     };
   }
 
-  hairBackFit(set,n){
-    const item=this.hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)];
-    const box=item?.backBBox;
-    if(!box)return set==='female'?{scale:.82,offsetX:0,offsetY:0}:{scale:.89,offsetX:0,offsetY:0};
+  getHairItem(set,n){
+    return this.hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)]||null;
+  }
+
+  getHairBox(layer,set,n){
+    const item=this.getHairItem(set,n);
+    if(!item)return layer==='front'?[43,22,88,60]:[12,18,120,112];
+    return layer==='front'
+      ? (item.frontBBox||item.backBBox||[43,22,88,60])
+      : (item.backBBox||[12,18,120,112]);
+  }
+
+  fitHairBoxToEnvelope(box,fitBox,minScale,maxScale=1){
     const [x0,y0,x1,y1]=box;
     const [px,py]=HAIR_PIVOT;
-    const width=Math.max(1,x1-x0);
-    let scale=Math.min(1,(HAIR_FIT_BOX.right-HAIR_FIT_BOX.left)/width);
-    if(y0<py)scale=Math.min(scale,(py-HAIR_FIT_BOX.top)/Math.max(1,py-y0));
-    if(y1>py)scale=Math.min(scale,(HAIR_FIT_BOX.bottom-py)/Math.max(1,y1-py));
-    const center=(x0+x1)/2;
-    const offsetX=-(center-px)*scale;
-    return {scale:Math.max(.68,scale),offsetX,offsetY:0};
+    const boxW=Math.max(1,x1-x0);
+    const boxH=Math.max(1,y1-y0);
+    const fitW=fitBox.right-fitBox.left;
+    const fitH=fitBox.bottom-fitBox.top;
+    let scale=Math.min(1,fitW/boxW,fitH/boxH);
+    scale=Math.max(minScale,Math.min(maxScale,scale));
+
+    const boxCx=(x0+x1)/2;
+    const boxCy=(y0+y1)/2;
+    const scaledCx=px+(boxCx-px)*scale;
+    const scaledCy=py+(boxCy-py)*scale;
+    const fitCx=(fitBox.left+fitBox.right)/2;
+    const fitCy=(fitBox.top+fitBox.bottom)/2;
+
+    return {
+      scale,
+      offsetX:fitCx-scaledCx,
+      offsetY:fitCy-scaledCy
+    };
   }
 
   hairFit(layer,set,n){
-    const back=this.hairBackFit(set,n);
-    if(layer==='back')return back;
-    return {
-      scale:Math.min(.98,Math.max(.92,back.scale+.16)),
-      offsetX:back.offsetX*.25,
-      offsetY:0
-    };
+    const box=this.getHairBox(layer,set,n);
+    return layer==='back'
+      ? this.fitHairBoxToEnvelope(box,HAIR_BACK_FIT_BOX,.62,.86)
+      : this.fitHairBoxToEnvelope(box,HAIR_FRONT_FIT_BOX,.88,.96);
   }
 
   hairTransform(layer,set,n,frameTransform=null){
