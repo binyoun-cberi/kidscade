@@ -12,7 +12,7 @@ const html=read('games/cube3d/index.html');
 test('v21 avatar module and runtime parse',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(avatar));
-  assert.match(html,/cube-architect-avatar\.js\?v=20261002-25/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261002-26/);
   assert.ok(html.indexOf('cube-architect-avatar.js')<html.indexOf('cube-architect.js'));
 });
 
