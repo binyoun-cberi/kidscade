@@ -9,6 +9,11 @@ const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8'
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
 
+test('avatar studio and renderer JavaScript both parse cleanly',()=>{
+  assert.doesNotThrow(()=>new Function(renderer));
+  assert.doesNotThrow(()=>new Function(js));
+});
+
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
   assert.match(html,/pixel-avatar-renderer\.js\?v=10/);
   assert.match(html,/avatar-pixel-studio\.js\?v=10/);
