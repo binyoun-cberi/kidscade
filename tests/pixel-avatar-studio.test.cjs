@@ -8,7 +8,7 @@ const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 
 test('pixel avatar studio replaces the old packed loader on the main route',()=>{
-  assert.match(html,/avatar-pixel-studio\.js\?v=4/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=5/);
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -53,8 +53,12 @@ test('new users start with a complete outfit and legacy equipment can migrate',(
 
 test('hair layers are normalized against the master head before compositing',()=>{
   assert.match(js,/HAIR_MANIFEST/);
-  assert.match(js,/HAIR_FIT_BOX/);
-  assert.match(js,/left:20,right:111,top:8,bottom:104/);
+  assert.match(js,/HAIR_BACK_FIT_BOX/);
+  assert.match(js,/HAIR_FRONT_FIT_BOX/);
+  assert.match(js,/left:22,right:106,top:10,bottom:102/);
+  assert.match(js,/left:42,right:90,top:18,bottom:62/);
+  assert.match(js,/fitHairBoxToEnvelope/);
+  assert.match(js,/offsetY:fitCy-scaledCy/);
   assert.match(js,/hairBackFit/);
   assert.match(js,/hairTransform/);
   assert.match(js,/hairBackTransform/);
