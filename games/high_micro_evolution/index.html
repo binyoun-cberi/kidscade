@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#061923">
   <title>마이크로 에볼루션</title>
-  <link rel="stylesheet" href="./style.css?v=8">
+  <link rel="stylesheet" href="./style.css?v=9">
 </head>
 <body>
 <div id="app">
@@ -133,6 +133,44 @@
           <div><span>감지</span><b id="traitSense">1.0</b></div>
           <div><span>방어</span><b id="traitArmor">1.0</b></div>
         </div>
+
+        <section class="morph-editor" aria-label="세포 외형 편집">
+          <div class="morph-head">
+            <div><span class="kicker">MORPHOLOGY</span><b>외형 설계</b></div>
+            <small>외형은 DNA를 쓰지 않아요. 예쁘게도, 기괴하게도 만들 수 있어요.</small>
+          </div>
+          <div class="morph-grid">
+            <label><span>몸 형태</span><select id="bodyShapeSelect">
+              <option value="round">둥근형</option><option value="oval">타원형</option><option value="long">유선형</option><option value="amoeba">아메바형</option>
+            </select></label>
+            <label><span>대칭</span><select id="bodySymmetrySelect">
+              <option value="bilateral">좌우대칭</option><option value="radial">방사대칭</option><option value="asymmetric">비대칭</option>
+            </select></label>
+            <label><span>무늬</span><select id="bodyPatternSelect">
+              <option value="none">무늬 없음</option><option value="spots">반점</option><option value="stripes">줄무늬</option><option value="glow">발광 테두리</option>
+            </select></label>
+            <label class="color-control"><span>몸 색</span><input id="bodyBaseColor" type="color" value="#29b5a7"></label>
+            <label class="color-control"><span>강조 색</span><input id="bodyAccentColor" type="color" value="#8cffe9"></label>
+            <label><span>몸 길이 <b id="bodyLengthValue">100%</b></span><input id="bodyLengthRange" type="range" min="70" max="145" step="5" value="100"></label>
+            <label><span>몸 폭 <b id="bodyWidthValue">100%</b></span><input id="bodyWidthRange" type="range" min="70" max="145" step="5" value="100"></label>
+            <label><span>투명도 <b id="bodyOpacityValue">100%</b></span><input id="bodyOpacityRange" type="range" min="40" max="100" step="5" value="100"></label>
+          </div>
+          <div class="organ-style-box">
+            <div><b>기관 꾸미기</b><small>기관마다 크기와 기울기를 따로 바꿀 수 있어요.</small></div>
+            <select id="organStyleSelect"><option value="">기관을 선택하세요</option></select>
+            <label><span>기관 크기 <b id="organScaleValue">100%</b></span><input id="organScaleRange" type="range" min="55" max="180" step="5" value="100"></label>
+            <label><span>기관 회전 <b id="organTwistValue">0°</b></span><input id="organTwistRange" type="range" min="-60" max="60" step="5" value="0"></label>
+          </div>
+          <div id="colonyProgressBox" class="colony-progress">
+            <div class="colony-progress-head"><b>군체 진화</b><span id="colonyStageText">단세포</span></div>
+            <div class="colony-steps">
+              <span id="colonyStepAdhesion">🔗 세포 접착</span>
+              <span id="colonyStepSignaling">📡 세포간 신호</span>
+              <span id="colonyStepDifferentiation">🧩 세포 분화</span>
+            </div>
+            <small id="colonyProgressText">군체 탭에서 세 가지 핵심 형질을 순서대로 진화시키면 다음 번식 때 군체 단계가 열립니다.</small>
+          </div>
+        </section>
       </div>
 
       <div class="parts-panel">
@@ -188,6 +226,6 @@
 <script src="../../kidscade-storage.js"></script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_micro_evolution" data-title="마이크로 에볼루션" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script src="./game.js?v=8"></script>
+<script src="./game.js?v=9"></script>
 </body>
 </html>
