@@ -1460,7 +1460,7 @@ function prepareFreeAvatar(now){
   if(!freeAvatarRoot)return;
   const moving=!!(freeKeys.KeyW||freeKeys.KeyS||freeKeys.KeyA||freeKeys.KeyD||
     freeKeys.ArrowUp||freeKeys.ArrowDown||freeKeys.ArrowLeft||freeKeys.ArrowRight||
-    Math.hypot(mobileMove.x,mobileMove.y)>.08);
+    Math.hypot(mobileMove.x,mobileMove.y)>.12);
   const stepLift=freeStepHop>0?Math.sin((1-freeStepHop)*Math.PI)*.1:0;
   freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62+stepLift,camera.position.z);
   freeAvatarRoot.rotation.y=yaw;
@@ -3475,6 +3475,7 @@ function updateFree(dt,t){
 
 /* Pointer-lock is optional. Safari on iPhone uses touch-look and these controls. */
 function resetMobileInput(){
+  if(miningSource==='mobile')stopMining();
   mobileMove.x=0;mobileMove.y=0;mobileLookPointerId=null;mobileLookLast=null;mobileJoyPointerId=null;
   if($('mobileJoystickKnob'))$('mobileJoystickKnob').style.transform='translate(-50%,-50%)';
   if(typeof challengeKeys!=='undefined'){challengeKeys.Space=false;challengeKeys.ShiftLeft=false}
@@ -3729,6 +3730,7 @@ canvas.addEventListener('mousedown',e=>{
 window.addEventListener('mouseup',e=>{if(e.button===0&&miningSource==='mouse')stopMining()});
 canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
+  if(mode==='free'&&document.pointerLockElement!==canvas&&miningSource==='mouse')stopMining();
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);
   if(mode==='dungeon')$('dungeonPrompt').classList.toggle('hidden',document.pointerLockElement!==canvas&&!mobileModeEnabled);
