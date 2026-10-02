@@ -61,3 +61,37 @@ test('hard landmark progress is reported by three-view silhouette rather than ra
   assert.match(js,/projectionSet\(mission\.blocks,'front'\)\.size/);
   assert.match(js,/projectionSet\(mission\.blocks,'side'\)\.size/);
 });
+
+
+test('simulation fixes require a real player-built shelter and accept every furnace result',()=>{
+  const fakeWindow={};
+  new Function('window',world)(fakeWindow);
+  const rules=fakeWindow.CubeArchitectWorld;
+  const shelterGoal=rules.GOALS[5],furnaceGoal=rules.GOALS[8];
+  assert.equal(shelterGoal.progress({shelterBuilt:false,placedBlocks:99}),0);
+  assert.equal(shelterGoal.progress({shelterBuilt:true,placedBlocks:1}),1);
+  for(const type of ['glass','charcoal','brick','ironBlock','smoothStone'])
+    assert.equal(furnaceGoal.progress({smelted:{[type]:1}}),1,type);
+  const blocks=new Map();
+  const key=(x,y,z)=>x+','+y+','+z;
+  const read=(x,y,z)=>blocks.get(key(x,y,z))||null;
+  blocks.set(key(0,4,0),{type:'planks',playerBuilt:true});
+  blocks.set(key(-1,2,0),{type:'dirt',playerBuilt:true});
+  blocks.set(key(1,2,0),{type:'stone',natural:true});
+  const shelter=rules.shelterAt(read,0,2,0);
+  assert.equal(shelter.sheltered,true);
+  assert.equal(shelter.playerBuilt,true);
+});
+
+test('marsh vegetation can generate trees and landmark restoration is explicitly balanced',()=>{
+  assert.match(js,/if\(roll>\.987\)growTree\(x,h\+1,z,false,'forest'\)/);
+  assert.match(js,/else if\(roll>\.966\)/);
+  for(const token of ["타워 브리지')?-.08","앙코르와트')?-.035","사그라다 파밀리아')||name.includes('히메지성')?.04","타지마할')||name.includes('에펠탑')?.02"])
+    assert.ok(js.includes(token),token);
+});
+
+test('hard blueprint HUD compares projection cells with projection cells',()=>{
+  assert.match(js,/placed=projectionSet\(user,'top'\)\.size\+projectionSet\(user,'front'\)\.size\+projectionSet\(user,'side'\)\.size/);
+  assert.match(js,/내 투영 칸/);
+  assert.match(js,/설계 투영 칸/);
+});
