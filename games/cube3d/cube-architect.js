@@ -232,7 +232,15 @@ function clearChallenge(){
   $('resultCard').classList.add('hidden');updateChallengeEditor();updateChallengeStats();
 }
 function updateChallengeStats(){
-  const target=currentChallengeMission().blocks.length;$('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
+  const mission=currentChallengeMission();
+  let target=mission.blocks.length;
+  if(challengeDifficulty==='hard'){
+    const top=projectionSet(mission.blocks,'top').size;
+    const front=projectionSet(mission.blocks,'front').size;
+    const side=projectionSet(mission.blocks,'side').size;
+    target=top+front+side;
+  }
+  $('placedCount').textContent=challengeBlocks.size;$('targetCount').textContent=target;
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
 }
 function setChallengeTool(tool){
@@ -2453,9 +2461,17 @@ function updateFreeMission(){
   }
   renderExplorationHint();
 }
+function nearbyWorldInteractables(eye,max=6.5){
+  const reach=max+1.25,ey=eye.y;
+  return worldInteractables.filter(mesh=>{
+    const u=mesh.userData;
+    return u?.worldBlock&&Math.abs((u.gx??9999)-eye.x)<=reach&&
+      Math.abs((u.gz??9999)-eye.z)<=reach&&Math.abs((u.gy??9999)-ey)<=reach+2;
+  });
+}
 function freeCenterHit(max=6.5){
   const {eye,maxFromPlayer}=setFreeInteractionRay(max);
-  const hits=raycaster.intersectObjects(worldInteractables,false);
+  const hits=raycaster.intersectObjects(nearbyWorldInteractables(eye,maxFromPlayer),false);
   return hits.find(h=>withinPlayerReach(h,eye,maxFromPlayer))||null;
 }
 
