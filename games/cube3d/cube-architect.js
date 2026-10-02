@@ -1055,6 +1055,7 @@ const WORLD_CHUNK_SIZE=16;
 function worldChunkKey(x,z){
   return Math.floor(x/WORLD_CHUNK_SIZE)+','+Math.floor(z/WORLD_CHUNK_SIZE);
 }
+const voxelRuntime=window.CubeArchitectVoxel||null;
 function newSurvivalStats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
     cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
@@ -1475,6 +1476,7 @@ const leafCubeGeo=new THREE.BoxGeometry(.94,.94,.94);
 const grassTuftGeo=new THREE.PlaneGeometry(.09,.3);
 const materialCache=new Map(),pixelTextureCache=new Map(),blockVisualMaterialCache=new Map();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
+let worldChunkMeshMap=new Map(),worldChunkDecorMap=new Map(),dirtyWorldChunks=new Set(),chunkRemeshQueued=false;
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
@@ -1792,6 +1794,123 @@ function visibleAt(x,y,z,data){
   const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
   return dirs.some(v=>!isOccluder(getBlock(x+v[0],y+v[1],z+v[2])));
 }
+function isChunkRenderableData(data){
+  if(!voxelRuntime||!data)return false;
+  const d=blockDef(data);
+  if(d.hidden||d.special||d.liquid||data.faceColors||data.edgeColors||data.vertexColors)return false;
+  if(data.type==='leaves'||data.type==='pineLeaves')return true;
+  return !!(d.solid&&!d.transparent);
+}
+function chunkFaceOccluded(data,neighbor){
+  if(!neighbor)return false;
+  if((data.type==='leaves'||data.type==='pineLeaves')&&neighbor.type===data.type)return true;
+  return isOccluder(neighbor);
+}
+function chunkMaterialForFace(data,x,z,faceIndex){
+  const mat=blockVisualMaterial(data.type,x,z);
+  return Array.isArray(mat)?(mat[faceIndex]||mat[0]):mat;
+}
+function chunkTouchesRenderRange(cx,cz){
+  if(!Number.isFinite(streamCenterX)||!Number.isFinite(streamCenterZ))return false;
+  const minX=cx*WORLD_CHUNK_SIZE-.5,maxX=(cx+1)*WORLD_CHUNK_SIZE-.5;
+  const minZ=cz*WORLD_CHUNK_SIZE-.5,maxZ=(cz+1)*WORLD_CHUNK_SIZE-.5;
+  return !(maxX<streamCenterX-WORLD_VIEW_RADIUS||minX>streamCenterX+WORLD_VIEW_RADIUS||
+    maxZ<streamCenterZ-WORLD_VIEW_RADIUS||minZ>streamCenterZ+WORLD_VIEW_RADIUS);
+}
+function removeWorldChunkRender(chunk){
+  const meshes=worldChunkMeshMap.get(chunk)||[];
+  for(const mesh of meshes){scene.remove(mesh);mesh.geometry?.dispose?.()}
+  worldChunkMeshMap.delete(chunk);
+  const decor=worldChunkDecorMap.get(chunk)||[];
+  for(const obj of decor)scene.remove(obj);
+  worldChunkDecorMap.delete(chunk);
+  worldInteractables=worldInteractables.filter(m=>m.userData?.worldChunkKey!==chunk);
+  freeMeshes=freeMeshes.filter(m=>m.userData?.worldChunkKey!==chunk);
+}
+function chunkRecords(chunk){
+  const keys=worldChunkIndex.get(chunk);if(!keys)return [];
+  const records=[];
+  for(const key of keys){
+    const data=worldData.get(key);if(!data)continue;
+    const [x,y,z]=parseWorldKey(key);records.push({x,y,z,data});
+  }
+  return records;
+}
+function buildChunkGrassInstances(chunk,records){
+  if(!voxelRuntime||!THREE.InstancedMesh)return;
+  const perVariant=[[],[],[]];
+  const positions=[[-.2,.02,-.12,.08],[.15,0,.13,-.35],[.02,.05,-.03,.55],[.24,.015,-.2,1.05],[-.11,.035,.2,-.9]];
+  for(const {x,y,z,data} of records){
+    if(data.type!=='grass'||!data.natural||!isChunkRenderableData(data))continue;
+    if(worldData.get(worldKey(x,y+1,z))||hash2(x*31+7,z*37-9)<.73)continue;
+    const variant=Math.floor(hash2(x*7-3,z*11+5)*3);
+    for(const [px,py,pz,rot] of positions)
+      perVariant[variant].push([x+px,y+1.12+py,z+pz,rot,(hash2((x+px)*17,(z+pz)*19)-.5)*.2]);
+  }
+  const built=[];
+  for(let variant=0;variant<perVariant.length;variant++){
+    const items=perVariant[variant];if(!items.length)continue;
+    const inst=new THREE.InstancedMesh(grassTuftGeo,grassTuftMaterial(variant),items.length);
+    const dummy=new THREE.Object3D();
+    items.forEach((item,i)=>{
+      dummy.position.set(item[0],item[1],item[2]);dummy.rotation.set(0,item[3],item[4]);dummy.updateMatrix();
+      inst.setMatrixAt(i,dummy.matrix);
+    });
+    inst.instanceMatrix.needsUpdate=true;inst.castShadow=false;inst.receiveShadow=false;
+    inst.userData={worldDecorative:true,worldChunkDecor:true,worldChunkKey:chunk};scene.add(inst);built.push(inst);
+  }
+  worldChunkDecorMap.set(chunk,built);
+}
+function rebuildWorldChunkMesh(cx,cz){
+  if(!voxelRuntime)return;
+  const chunk=cx+','+cz;removeWorldChunkRender(chunk);
+  if(!chunkTouchesRenderRange(cx,cz))return;
+  const records=chunkRecords(chunk);
+  const meshes=voxelRuntime.buildChunkMeshes({
+    THREE,cx,cz,size:WORLD_CHUNK_SIZE,records,
+    getBlock:(x,y,z)=>worldData.get(worldKey(x,y,z))||null,
+    isRenderable:isChunkRenderableData,isFaceOccluded:chunkFaceOccluded,
+    materialForFace:chunkMaterialForFace
+  });
+  worldChunkMeshMap.set(chunk,meshes);
+  for(const mesh of meshes){scene.add(mesh);worldInteractables.push(mesh);freeMeshes.push(mesh)}
+  buildChunkGrassInstances(chunk,records);
+}
+function ensureWorldChunkMesh(cx,cz){
+  const chunk=cx+','+cz;if(!voxelRuntime||worldChunkMeshMap.has(chunk))return false;
+  rebuildWorldChunkMesh(cx,cz);return true;
+}
+function flushDirtyWorldChunks(){
+  chunkRemeshQueued=false;
+  if(mode!=='free'){dirtyWorldChunks.clear();return}
+  const chunks=[...dirtyWorldChunks];dirtyWorldChunks.clear();
+  for(const chunk of chunks){
+    const [cx,cz]=chunk.split(',').map(Number);
+    if(chunkTouchesRenderRange(cx,cz))rebuildWorldChunkMesh(cx,cz);
+  }
+}
+function queueWorldChunkRemesh(x,z){
+  if(!voxelRuntime)return;
+  dirtyWorldChunks.add(worldChunkKey(x,z));
+  if(chunkRemeshQueued)return;
+  chunkRemeshQueued=true;Promise.resolve().then(flushDirtyWorldChunks);
+}
+function forEachActiveWorldBlock(fn){
+  const centerX=Number.isFinite(streamCenterX)?streamCenterX:Math.round(camera.position.x);
+  const centerZ=Number.isFinite(streamCenterZ)?streamCenterZ:Math.round(camera.position.z);
+  const minX=Math.floor((centerX-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const maxX=Math.floor((centerX+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const minZ=Math.floor((centerZ-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  const maxZ=Math.floor((centerZ+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
+  for(let cx=minX;cx<=maxX;cx++)for(let cz=minZ;cz<=maxZ;cz++){
+    const keys=worldChunkIndex.get(cx+','+cz);if(!keys)continue;
+    for(const key of keys){
+      const data=worldData.get(key);if(!data)continue;
+      const [x,y,z]=parseWorldKey(key);if(!inRenderRange(x,z))continue;
+      fn(key,data,x,y,z);
+    }
+  }
+}
 function removeWorldMesh(key){
   const root=worldMeshMap.get(key);if(!root)return;
   scene.remove(root);worldMeshMap.delete(key);
@@ -1850,7 +1969,7 @@ function decorateGrassTop(root,x,y,z,data){
   }
 }
 function makeWorldMesh(x,y,z,data){
-  const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden)return null;
+  const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden||isChunkRenderableData(data))return null;
   let root;
   if(type==='door'){
     root=new THREE.Mesh(doorGeo,materialFor('door'));root.position.set(x,y+1,z);
@@ -1900,7 +2019,9 @@ function refreshBlockMesh(x,y,z){
   const key=worldKey(x,y,z);
   if(!inRenderRange(x,z)){if(worldMeshMap.has(key))removeWorldMesh(key);return}
   removeWorldMesh(key);
-  const data=getBlock(x,y,z);if(data&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
+  const data=getBlock(x,y,z);
+  if(data&&!isChunkRenderableData(data)&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
+  queueWorldChunkRemesh(x,z);
 }
 function refreshAround(x,y,z){
   [[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].forEach(v=>refreshBlockMesh(x+v[0],y+v[1],z+v[2]));
