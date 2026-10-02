@@ -31,9 +31,9 @@
       body.dark-mode #${GATE_ID} .kpg-benefit{background:#253145;border-color:#334155;color:#cbd5e1}
 
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .kc-side-head,
-      body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .avatar-plaza,
+      body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .avatar-plaza{display:block!important}
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .kc-profile-row{display:none!important}
-      body[data-kc-profile-access="guest"] #${GATE_ID}{display:block!important;grid-column:1/-1}
+      body[data-kc-profile-access="guest"] #${GATE_ID}{display:block!important;grid-column:1/-1;padding:13px 14px 15px;border-top:1px solid rgba(148,163,184,.16)}
       body[data-kc-profile-access="guest"] #kc-local-profile-card{display:none!important}
       body[data-kc-profile-access="guest"] .kc-myspace-inner > :not(.avatar-shell):not(#kc-activity-strip):not(#kc-popular-hub):not(#kc-live-stats){display:none!important}
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell{min-height:0!important;display:block!important}
@@ -45,7 +45,7 @@
         body[data-kc-profile-access="guest"][data-kc-guest-mobile-section="games"] .kc-myspace{display:none!important}
         body[data-kc-profile-access="guest"][data-kc-guest-mobile-section="profile"] .kc-arcade{display:none!important}
         body[data-kc-profile-access="guest"][data-kc-guest-mobile-section="profile"] .kc-myspace{display:block!important;order:0!important}
-        body[data-kc-profile-access="guest"] #${GATE_ID}{padding:28px 20px 26px}
+        body[data-kc-profile-access="guest"] #${GATE_ID}{padding:14px 16px 16px}
       }
 
       @media(max-width:620px){
@@ -66,9 +66,9 @@
       gate.setAttribute('aria-label', '학생 계정 로그인 안내');
       gate.innerHTML = `
         <div class="kpg-icon">👤</div>
-        <div class="kpg-kicker">PROFILE</div>
-        <div class="kpg-title">로그인하고 내 프로필 열기</div>
-        <div class="kpg-copy">게임은 게스트로 바로 즐길 수 있어요. 로그인하면 플레이 기록, 씨앗, 새싹력과 아바타를 내 계정에 이어서 보관할 수 있어요.</div>
+        <div class="kpg-kicker">GUEST AVATAR</div>
+        <div class="kpg-title">게스트 아바타로 바로 체험 중</div>
+        <div class="kpg-copy">기본 아바타가 바로 제공돼요. 위의 👕 꾸미기에서 로그인 없이 조합을 확인할 수 있고, 변경 내용은 이 브라우저에 임시 저장돼요.</div>
         <button class="kpg-login" type="button">학생 계정 로그인</button>
         <div class="kpg-benefits">
           <div class="kpg-benefit">☁️ 기록 동기화</div>
@@ -77,7 +77,9 @@
           <div class="kpg-benefit">🎨 아바타 저장</div>
         </div>
       `;
-      shell.insertBefore(gate, shell.firstChild);
+      const plaza = shell.querySelector('.avatar-plaza');
+      if (plaza?.nextSibling) shell.insertBefore(gate, plaza.nextSibling);
+      else shell.appendChild(gate);
       gate.querySelector('.kpg-login')?.addEventListener('click', () => accountApi()?.login?.());
     }
     return true;
