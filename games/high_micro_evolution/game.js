@@ -1365,7 +1365,7 @@ function renderSlots(){
 function removeInternalPart(part){
   const current=Number(state.player.inside[part.id]||0);
   if(current<=0)return;
-  if(state.player.stage==='colony'&&COLONY_PATH.includes(part.id)){sound('error',{volume:.12});toast('군체 단계에서는 이 핵심 형질을 제거할 수 없어요.');return}
+  if(state.player.stage!=='unicellular'&&COLONY_PATH.includes(part.id)){sound('error',{volume:.12});toast('군체 이후에는 이 핵심 형질을 제거할 수 없어요.');return}
   if(part.id==='adhesion'&&(countPart('signaling')||countPart('differentiation'))){sound('error',{volume:.12});toast('세포간 신호와 분화가 이 형질에 의존하고 있어 먼저 제거할 수 없어요.');return}
   if(part.id==='signaling'&&countPart('differentiation')){sound('error',{volume:.12});toast('세포 분화를 먼저 제거해야 세포간 신호를 되돌릴 수 있어요.');return}
   if(part.id==='bodyAxis'&&countPart('epithelium')){sound('error',{volume:.12});toast('상피 조직을 먼저 제거해야 몸의 축을 되돌릴 수 있어요.');return}
