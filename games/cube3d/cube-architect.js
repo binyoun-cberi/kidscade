@@ -2319,7 +2319,7 @@ function placeFreeBlock(hit){
     trackSurvival('place',selectedType);
     buildHotbar();updateFreeMission();
   }
-  sfx('place');saveFreeWorld();
+  sfx('place');markFreeWorldDirty();
 }
 function breakFreeBlock(hit){
   if(!hit||!hit.object.userData.worldBlock)return;
@@ -2357,13 +2357,16 @@ function breakFreeBlock(hit){
       .find(d=>d?.type==='water');
     if(nearby&&!getBlock(x,y,z))
       setWorldBlock(x,y,z,{type:'water',level:Math.max(2,nearby.level||3),flow:true},true);
-    sfx('break');updateFreeMission();saveFreeWorld();
+    spawnBreakParticles(x,y,z,type);
+    sfx('break');updateFreeMission();markFreeWorldDirty();
+    return true;
   }
+  return false;
 }
 function toggleDoorAt(x,y,z){
   let data=getBlock(x,y,z);if(data?.type==='doorTop'){y-=1;data=getBlock(x,y,z)}
   if(!data||data.type!=='door')return false;
-  data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');return true;
+  data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');markFreeWorldDirty();return true;
 }
 function pickTargetBlock(){
   const hit=freeCenterHit();if(!hit)return;let type=hit.object.userData.type,data=getBlock(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);
