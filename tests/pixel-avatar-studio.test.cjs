@@ -8,7 +8,7 @@ const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 
 test('pixel avatar studio replaces the old packed loader on the main route',()=>{
-  assert.match(html,/avatar-pixel-studio\.js\?v=5/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=6/);
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -51,18 +51,16 @@ test('new users start with a complete outfit and legacy equipment can migrate',(
   assert.match(js,/legacyMigrationState/);
 });
 
-test('hair layers are normalized against the master head before compositing',()=>{
-  assert.match(js,/HAIR_MANIFEST/);
-  assert.match(js,/HAIR_BACK_FIT_BOX/);
-  assert.match(js,/HAIR_FRONT_FIT_BOX/);
-  assert.match(js,/left:22,right:106,top:10,bottom:102/);
-  assert.match(js,/left:42,right:90,top:18,bottom:62/);
-  assert.match(js,/fitHairBoxToEnvelope/);
-  assert.match(js,/offsetY:fitCy-scaledCy/);
-  assert.match(js,/hairBackFit/);
-  assert.match(js,/hairTransform/);
-  assert.match(js,/hairBackTransform/);
-  assert.match(js,/hairFrontTransform/);
+test('hair front and back share one head-anchored style transform',()=>{
+  assert.match(js,/MASTER_HEAD_BBOX=\[40,20,91,67\]/);
+  assert.match(js,/hairStyleFit/);
+  assert.match(js,/targetWidth=headWidth\*\(set==='female'\?1\.38:1\.30\)/);
+  assert.match(js,/scaleX/);
+  assert.match(js,/scaleY=scaleX\*1\.15/);
+  assert.match(js,/offsetY:targetTop-scaledTop/);
+  assert.match(js,/hairTransformValue/);
+  assert.doesNotMatch(js,/hairBackTransform/);
+  assert.doesNotMatch(js,/hairFrontTransform/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
