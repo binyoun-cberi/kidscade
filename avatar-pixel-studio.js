@@ -10,9 +10,10 @@ const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
 const HAIR_MANIFEST=ROOT+'/hair/hair-manifest.json';
 const HAIR_PIVOT=[65.5,43.5];
 const MASTER_HEAD_BBOX=[40,20,91,67];
-// Front/back are two layers of ONE hairstyle. They must share one transform.
-// The generated hair art is much wider than the master head, so horizontal
-// shrink is stronger than vertical shrink while the crown is anchored to head top.
+// Back hair was generated much larger than the master body, so only the BACK
+// silhouette is normalized. Front hair was clipped against the master head and
+// is already authored in face coordinates; shrinking it with the back layer
+// destroys the bangs/forehead alignment.
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
 const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
@@ -216,13 +217,14 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   if(isMain&&my!==renderToken)return;
   const [hairBack,body,lower,upper,blush,eyes,eyebrows,nose,mouth,hairFront]=images;
   const headTransform=frame?.headTransform||null;
-  const hairTransformValue=hairTransform(targetState.hairSet,targetState.hair,headTransform);
+  const hairBackTransform=hairTransform(targetState.hairSet,targetState.hair,headTransform);
+  const hairFrontTransform=headTransform;
 
   targetCtx.save();
   targetCtx.setTransform(1,0,0,1,0,0);
   targetCtx.clearRect(0,0,128,128);
   targetCtx.imageSmoothingEnabled=false;
-  drawLayer(targetCtx,hairBack,hairTransformValue);
+  drawLayer(targetCtx,hairBack,hairBackTransform);
   drawLayer(targetCtx,body);
   drawLayer(targetCtx,lower);
   drawLayer(targetCtx,upper);
@@ -231,7 +233,7 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   drawLayer(targetCtx,eyebrows,headTransform);
   drawLayer(targetCtx,nose,headTransform);
   drawLayer(targetCtx,mouth,headTransform);
-  drawLayer(targetCtx,hairFront,hairTransformValue);
+  drawLayer(targetCtx,hairFront,hairFrontTransform);
   targetCtx.restore();
 }
 async function refreshAnimationCache(){
@@ -292,7 +294,7 @@ function hairThumb(set,n){
   return `<span class="hair-thumb">
     <img class="back" alt="" style="${hairThumbStyle(set,n)}" src="${hairPath('back',set,n)}">
     <img class="base" alt="" src="${BASE}">
-    <img class="front" alt="" style="${hairThumbStyle(set,n)}" src="${hairPath('front',set,n)}">
+    <img class="front" alt="" src="${hairPath('front',set,n)}">
   </span>`;
 }
 function clothesThumb(path){
