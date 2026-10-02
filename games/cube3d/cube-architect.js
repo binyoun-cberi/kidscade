@@ -1528,7 +1528,13 @@ function pixelTexture(kind,variant=0){
     leaves:['#448e4b','#56a95a','#34733d','#72bb68'],
     pineLeaves:['#2b5842','#386b4e','#214b38','#4a7b59'],
     grassTop:['#5ea955','#70ba60','#4c9348','#86c66d'],
+    grassTopPine:['#4d8e4b','#5d9d55','#3f7942','#70ac60'],
+    grassTopMarsh:['#668f4c','#789f57','#506f43','#8aae67'],
+    grassTopFlowers:['#69b65d','#7cc76b','#54a052','#93d37a'],
     grassSide:['#80583d','#936447','#6f4a34','#a37350'],
+    grassSidePine:['#80583d','#936447','#6f4a34','#a37350'],
+    grassSideMarsh:['#705642','#84654b','#604836','#98775a'],
+    grassSideFlowers:['#80583d','#936447','#6f4a34','#a37350'],
     logSide:['#7c5234','#93633d','#65432e','#aa7447'],
     pineLogSide:['#584936','#675641','#493c2e','#7a664c'],
     logTop:['#a8784d','#bb8c5d','#8d603f','#d0a36d'],
@@ -1538,9 +1544,11 @@ function pixelTexture(kind,variant=0){
   const base=p[variant%Math.min(2,p.length)]||p[0];
   ctx.clearRect(0,0,16,16);ctx.fillStyle=base;ctx.fillRect(0,0,16,16);
   const dot=(x,y,color,w=1,h=1)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
-  if(kind==='grassSide'){
+  if(kind.startsWith('grassSide')){
     for(let i=0;i<52;i++)dot(Math.floor(rnd()*16),4+Math.floor(rnd()*12),p[1+Math.floor(rnd()*(p.length-1))]);
-    const greens=palettes.grassTop;
+    const greens=kind==='grassSidePine'?palettes.grassTopPine:
+      kind==='grassSideMarsh'?palettes.grassTopMarsh:
+      kind==='grassSideFlowers'?palettes.grassTopFlowers:palettes.grassTop;
     ctx.fillStyle=greens[variant%2];ctx.fillRect(0,0,16,4);
     for(let x=0;x<16;x++)if(rnd()>.38)dot(x,3+Math.floor(rnd()*4),greens[2+Math.floor(rnd()*2)],1,1+Math.floor(rnd()*2));
   }else if(kind==='logSide'||kind==='pineLogSide'||kind==='planks'){
@@ -1562,7 +1570,7 @@ function pixelTexture(kind,variant=0){
       else dot(x,y,p[1+Math.floor(rnd()*(p.length-1))],1+(rnd()>.88?1:0),1);
     }
     for(let i=0;i<10;i++)dot(Math.floor(rnd()*15),Math.floor(rnd()*15),p[3],2,1);
-  }else if(kind==='grassTop'){
+  }else if(kind.startsWith('grassTop')){
     for(let i=0;i<74;i++){
       const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16);
       dot(x,y,p[1+Math.floor(rnd()*(p.length-1))],rnd()>.86?2:1,1);
@@ -1602,10 +1610,12 @@ function pixelMaterial(kind,variant=0,opts={}){
 }
 function blockVisualMaterial(type,x=0,z=0){
   const variant=Math.floor(hash2(x*13+17,z*19-23)*3);
-  const key=type+':'+variant;if(blockVisualMaterialCache.has(key))return blockVisualMaterialCache.get(key);
+  const biome=type==='grass'?(worldRules?.region?.(x,z)||'meadow'):'';
+  const key=type+':'+variant+':'+biome;if(blockVisualMaterialCache.has(key))return blockVisualMaterialCache.get(key);
   let m;
   if(type==='grass'){
-    const side=pixelMaterial('grassSide',variant),top=pixelMaterial('grassTop',variant),bottom=pixelMaterial('dirt',variant);
+    const suffix=biome==='pine'?'Pine':biome==='marsh'?'Marsh':biome==='flowers'?'Flowers':'';
+    const side=pixelMaterial('grassSide'+suffix,variant),top=pixelMaterial('grassTop'+suffix,variant),bottom=pixelMaterial('dirt',variant);
     m=[side,side,top,bottom,side,side];
   }else if(type==='log'||type==='pineLog'){
     const pine=type==='pineLog',side=pixelMaterial(pine?'pineLogSide':'logSide',variant),end=pixelMaterial(pine?'pineLogTop':'logTop',variant);
