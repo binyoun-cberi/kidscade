@@ -8,7 +8,7 @@ const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 
 test('pixel avatar studio replaces the old packed loader on the main route',()=>{
-  assert.match(html,/avatar-pixel-studio\.js\?v=8/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=9/);
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -57,6 +57,11 @@ test('hair runtime uses pre-normalized canonical layers without extra studio sca
   assert.match(js,/hairTransformValue=headTransform/);
   assert.match(js,/drawLayer\(targetCtx,hairBack,hairTransformValue\)/);
   assert.match(js,/drawLayer\(targetCtx,hairFront,hairTransformValue\)/);
+});
+
+test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
+  assert.match(js,/ASSET_REV='9'/);
+  assert.match(js,/function rev\(src\)/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
