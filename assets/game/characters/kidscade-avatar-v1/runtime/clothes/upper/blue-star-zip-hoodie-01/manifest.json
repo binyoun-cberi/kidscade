@@ -10,9 +10,9 @@
   "source": "source/clothes/upper/animated/blue-star-zip-hoodie-01-sheet.png",
   "mapping": "top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
   "fit": {
-    "topY": 59,
-    "maxWidth": 70,
-    "maxHeight": 40,
+    "topY": 64,
+    "maxWidth": 56,
+    "maxHeight": 35,
     "center": "animation bodyBBox center"
   },
   "static": "static.png",
@@ -25,12 +25,12 @@
         0
       ],
       "targetBBox": [
-        32,
-        59,
-        99,
-        99
+        38,
+        64,
+        94,
+        98
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "idle-02",
@@ -40,12 +40,12 @@
         0
       ],
       "targetBBox": [
-        32,
-        59,
-        100,
-        99
+        38,
+        64,
+        94,
+        97
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "idle-03",
@@ -55,10 +55,10 @@
         0
       ],
       "targetBBox": [
-        33,
-        59,
-        98,
-        99
+        38,
+        64,
+        94,
+        98
       ],
       "bodyCenterX": 65.5
     },
@@ -70,12 +70,12 @@
         0
       ],
       "targetBBox": [
-        33,
-        59,
-        99,
-        99
+        38,
+        64,
+        94,
+        98
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-01",
@@ -85,10 +85,10 @@
         0
       ],
       "targetBBox": [
-        33,
-        59,
-        98,
-        99
+        38,
+        64,
+        94,
+        98
       ],
       "bodyCenterX": 65.5
     },
@@ -100,12 +100,12 @@
         1
       ],
       "targetBBox": [
-        34,
-        59,
-        97,
+        38,
+        64,
+        93,
         99
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-03",
@@ -115,12 +115,12 @@
         1
       ],
       "targetBBox": [
-        34,
-        59,
-        99,
-        99
+        38,
+        64,
+        94,
+        98
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-04",
@@ -130,12 +130,12 @@
         1
       ],
       "targetBBox": [
-        32,
-        59,
-        99,
-        99
+        38,
+        64,
+        94,
+        98
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-05",
@@ -145,12 +145,12 @@
         1
       ],
       "targetBBox": [
-        37,
-        59,
-        95,
+        40,
+        64,
+        91,
         99
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-06",
@@ -160,24 +160,16 @@
         1
       ],
       "targetBBox": [
-        34,
-        59,
-        98,
+        38,
+        64,
+        94,
         99
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     }
   ],
   "qa": {
-    "status": "visual-contact-reviewed",
-    "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png",
-    "review": {
-      "handsRemainVisible": true,
-      "neckOpeningPreserved": true,
-      "idleFramesChecked": 4,
-      "walkFramesChecked": 6,
-      "pairedWithLower": "denim-cuffed-jeans-01",
-      "note": "10-frame contact sheet visually reviewed after extraction and alignment."
-    }
+    "status": "generated-needs-visual-review",
+    "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png"
   }
 }
