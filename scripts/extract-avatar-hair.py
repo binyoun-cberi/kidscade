@@ -86,12 +86,13 @@ def hard_alpha(im):
     im.putdata([(r,g,b,255 if a >= 48 else 0) for r,g,b,a in im.getdata()])
     return im
 
-def remove_tiny_components(im, min_pixels=8):
+def remove_tiny_components(im, min_pixels=8, keep_pixels=24, near_px=4):
     im = im.copy()
     alpha = im.getchannel("A")
     px = alpha.load()
     w,h = alpha.size
     seen = bytearray(w*h)
+    comps=[]
 
     def key(x,y): return y*w+x
 
@@ -102,9 +103,13 @@ def remove_tiny_components(im, min_pixels=8):
             q=deque([(x,y)])
             seen[key(x,y)]=1
             comp=[]
+            minx=maxx=x
+            miny=maxy=y
             while q:
                 cx,cy=q.popleft()
                 comp.append((cx,cy))
+                minx=min(minx,cx); maxx=max(maxx,cx)
+                miny=min(miny,cy); maxy=max(maxy,cy)
                 for nx in range(cx-1,cx+2):
                     for ny in range(cy-1,cy+2):
                         if nx==cx and ny==cy: continue
@@ -113,9 +118,33 @@ def remove_tiny_components(im, min_pixels=8):
                         if seen[k] or px[nx,ny] == 0: continue
                         seen[k]=1
                         q.append((nx,ny))
-            if len(comp) < min_pixels:
-                for cx,cy in comp:
-                    px[cx,cy]=0
+            comps.append({
+                "pixels":comp,
+                "bbox":(minx,miny,maxx+1,maxy+1),
+                "size":len(comp),
+            })
+
+    if not comps:
+        return im
+
+    main=max(comps,key=lambda v:v["size"])
+    mx0,my0,mx1,my1=main["bbox"]
+
+    def close_to_main(box):
+        x0,y0,x1,y1=box
+        gapx=max(mx0-x1,x0-mx1,0)
+        gapy=max(my0-y1,y0-my1,0)
+        return gapx<=near_px and gapy<=near_px
+
+    for comp in comps:
+        keep=(
+            comp is main
+            or comp["size"] >= keep_pixels
+            or (comp["size"] >= min_pixels and close_to_main(comp["bbox"]))
+        )
+        if not keep:
+            for cx,cy in comp["pixels"]:
+                px[cx,cy]=0
 
     im.putalpha(alpha)
     return im
