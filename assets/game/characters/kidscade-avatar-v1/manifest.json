@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "kidscade-avatar-v1",
-  "status": "runtime-base-face-hair-animation-lower-ready",
+  "status": "runtime-base-face-hair-animation-upper-lower-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -49,6 +49,9 @@
     },
     "lowerClothing": {
       "denimCuffedJeans01": "source/clothes/lower/animated/denim-cuffed-jeans-01-sheet.png"
+    },
+    "upperClothing": {
+      "blueStarZipHoodie01": "source/clothes/upper/animated/blue-star-zip-hoodie-01-sheet.png"
     }
   },
   "runtimeFiles": {
@@ -92,6 +95,18 @@
           "walkFrames": 6
         }
       ]
+    },
+    "upperClothing": {
+      "count": 1,
+      "items": [
+        {
+          "id": "blue-star-zip-hoodie-01",
+          "manifest": "runtime/clothes/upper/blue-star-zip-hoodie-01/manifest.json",
+          "static": "runtime/clothes/upper/blue-star-zip-hoodie-01/static.png",
+          "idleFrames": 4,
+          "walkFrames": 6
+        }
+      ]
     }
   },
   "qa": {
@@ -108,7 +123,11 @@
     "lowerClothingContacts": [
       "qa/clothes/lower/denim-cuffed-jeans-01-contact.png"
     ],
-    "lowerClothingStatus": "visual-contact-reviewed"
+    "lowerClothingStatus": "visual-contact-reviewed",
+    "upperClothingContacts": [
+      "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png"
+    ],
+    "upperClothingStatus": "visual-contact-reviewed"
   },
   "sourceSets": {
     "base": {
@@ -137,7 +156,8 @@
         "status": "runtime-ready"
       },
       "upper": {
-        "status": "not-created"
+        "count": 1,
+        "status": "runtime-ready"
       }
     },
     "shoes": {
@@ -148,7 +168,7 @@
     }
   },
   "runtime": {
-    "status": "base-face-hair-animation-lower-ready",
+    "status": "base-face-hair-animation-upper-lower-ready",
     "compositeAt": [
       0,
       0
