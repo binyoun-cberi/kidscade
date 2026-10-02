@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261001-24">
+<link rel="stylesheet" href="./cube-architect.css?v=20261002-25">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -179,6 +179,7 @@
 
   <div id="freeHud" class="hidden">
     <div id="crosshair"></div>
+    <div id="miningProgress" class="hidden" aria-live="polite"><div><i></i></div><span>채집 중</span></div>
     <div id="freeMission">
       <b><span id="freeQuestTitle">첫날 · 나무 채집</span> <span id="adventureCount">0/3</span></b>
       <small id="freeQuestDescription">나무를 파괴해 첫 원목을 얻으세요.</small>
@@ -201,10 +202,21 @@
         <button data-inv-cat="도형">도형</button>
       </div>
       <section id="survivalCraftPanel" class="hidden">
-        <b>제작할 수 있는 물건</b><small id="survivalCraftHint">나무를 먼저 모아 보세요.</small>
-        <small id="survivalTechs">설계도 기술 · 아직 없음</small>
-        <div id="survivalCraftList"></div>
+        <div class="craft-panel-head">
+          <div><b>제작 작업대</b><small id="survivalCraftHint">나무를 먼저 모아 보세요.</small></div>
+          <small id="survivalTechs">설계도 기술 · 아직 없음</small>
+        </div>
+        <div class="craft-workspace">
+          <div class="craft-browser">
+            <div id="survivalCraftTabs" class="craft-tabs" role="tablist"></div>
+            <div id="survivalCraftList"></div>
+          </div>
+          <div id="survivalCraftDetail" class="craft-detail">
+            <div class="craft-detail-empty">제작법을 선택하면 필요한 재료와 결과를 여기에서 볼 수 있어요.</div>
+          </div>
+        </div>
       </section>
+      <div id="survivalBagHeader" class="survival-bag-head hidden"><b>내 가방</b><small>설치할 재료를 누르면 핫바에 들어갑니다.</small></div>
       <div id="inventoryGrid"></div>
       <section id="shapeWorkbench" class="shape-workbench">
         <div class="workbench-title"><b>직육면체 제작대</b><small>정육면체도 가로·높이·세로를 같게 하면 됩니다.</small></div>
@@ -298,13 +310,13 @@
 </div>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
-<script src="./cube-architect-landmarks.js?v=20261001-24"></script>
-<script src="./cube-architect-world.js?v=20261001-24"></script>
-<script src="./cube-architect-poi.js?v=20261001-24"></script>
-<script src="./cube-architect-avatar.js?v=20261001-24"></script>
-<script src="./cube-architect-creatures.js?v=20261001-24"></script>
-<script type="module" src="./cube-architect-creature-assets.js?v=20261001-24"></script>
-<script src="./cube-architect.js?v=20261001-24"></script>
+<script src="./cube-architect-landmarks.js?v=20261002-25"></script>
+<script src="./cube-architect-world.js?v=20261002-25"></script>
+<script src="./cube-architect-poi.js?v=20261002-25"></script>
+<script src="./cube-architect-avatar.js?v=20261002-25"></script>
+<script src="./cube-architect-creatures.js?v=20261002-25"></script>
+<script type="module" src="./cube-architect-creature-assets.js?v=20261002-25"></script>
+<script src="./cube-architect.js?v=20261002-25"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
