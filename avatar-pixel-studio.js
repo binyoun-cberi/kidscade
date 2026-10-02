@@ -9,7 +9,9 @@ const BASE=ROOT+'/base/master-base-128.png';
 const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
 const HAIR_MANIFEST=ROOT+'/hair/hair-manifest.json';
 const HAIR_PIVOT=[65.5,43.5];
-const HAIR_FIT_BOX={left:12,right:116,top:7,bottom:115};
+// Hair assets were generated on a larger silhouette than the master body.
+// Fit the BACK silhouette into a compact envelope while keeping the fringe near face scale.
+const HAIR_FIT_BOX={left:20,right:111,top:8,bottom:104};
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
 const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
@@ -136,13 +138,13 @@ function hairBackFit(set,n){
   if(y1>py)scale=Math.min(scale,(HAIR_FIT_BOX.bottom-py)/Math.max(1,y1-py));
   const center=(x0+x1)/2;
   const offsetX=-(center-px)*scale;
-  return {scale:Math.max(.76,scale),offsetX,offsetY:0};
+  return {scale:Math.max(.68,scale),offsetX,offsetY:0};
 }
 function hairFit(layer,set,n){
   const back=hairBackFit(set,n);
   if(layer==='back')return back;
   return {
-    scale:Math.min(1,Math.max(.94,back.scale+.14)),
+    scale:Math.min(.98,Math.max(.92,back.scale+.16)),
     offsetX:back.offsetX*.25,
     offsetY:0
   };
