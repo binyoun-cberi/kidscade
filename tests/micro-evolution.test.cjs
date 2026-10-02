@@ -251,7 +251,7 @@ test('Colony core traits cannot be broken out of dependency order',()=>{
   assert.match(js,/part\.requires&&!countPart\(part\.requires\)/);
   assert.match(js,/part\.id==='adhesion'.*countPart\('signaling'\).*countPart\('differentiation'\)/);
   assert.match(js,/part\.id==='signaling'&&countPart\('differentiation'\)/);
-  assert.match(js,/state\.player\.stage==='colony'&&COLONY_PATH\.includes\(part\.id\)/);
+  assert.match(js,/state\.player\.stage!=='unicellular'&&COLONY_PATH\.includes\(part\.id\)/);
 });
 
 
@@ -324,4 +324,10 @@ test('Tissue position changes the value of specialization',()=>{
 
 test('Multicellular bodies stay physically larger than colonies',()=>{
   assert.match(js,/const baseRadius=p\.stage==='multicellular'\?36:p\.stage==='colony'\?33:30/);
+});
+
+
+test('Multicellular organisms keep colony core traits',()=>{
+  assert.match(js,/state\.player\.stage!=='unicellular'&&COLONY_PATH\.includes\(part\.id\)/);
+  assert.match(js,/군체 이후에는 이 핵심 형질을 제거할 수 없어요/);
 });
