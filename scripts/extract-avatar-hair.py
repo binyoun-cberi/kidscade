@@ -21,15 +21,12 @@ HEAD_BOTTOM = MASTER_HEAD_BBOX[3]
 EAR_Y0, EAR_Y1 = 45, 58
 EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 87
 
-COMMON_HAIR_FIT = {
-    "targetWidth": 70,
-    "targetTop": 12,
-    "maxHeight": 86,
-    "scaleMode": "contain-uniform",
-}
-NORMALIZE = {
-    "male": COMMON_HAIR_FIT,
-    "female": COMMON_HAIR_FIT,
+COMMON_CELL_FIT = {
+    "scale": 0.66,
+    "offsetX": 23,
+    "offsetY": 0,
+    "sourceCanvas": [128, 128],
+    "mode": "fixed-source-cell",
 }
 
 SHEETS = {
@@ -194,45 +191,34 @@ def remove_tiny_components(im, min_pixels=8, keep_pixels=24, near_px=4):
     im.putalpha(alpha)
     return im
 
-def normalize_hair(full, kind):
-    alpha = full.getchannel("A")
-    bbox = alpha.getbbox()
-    if not bbox:
-        return full, {
-            "sourceBBox": None,
-            "targetBBox": None,
-            "scaleX": 1,
-            "scaleY": 1,
-        }
+def place_hair_from_source_cell(full):
+    """Place every source cell with one identical transform.
 
-    x0,y0,x1,y1 = bbox
-    crop = full.crop(bbox)
-    cfg = NORMALIZE[kind]
+    The 6x4 source sheets already encode each hairstyle's intended relative
+    size and offset. Cropping to each alpha bbox and normalizing that bbox made
+    all styles unnaturally uniform and destroyed those source-space offsets.
+    """
+    source_bbox = full.getchannel("A").getbbox()
+    scale = COMMON_CELL_FIT["scale"]
+    dw = max(1, round(RUNTIME * scale))
+    dh = max(1, round(RUNTIME * scale))
+    x = COMMON_CELL_FIT["offsetX"]
+    y = COMMON_CELL_FIT["offsetY"]
 
-    # Hair art must keep its original proportions.  The previous pipeline
-    # stretched Y independently, which made every style look uniformly "off".
-    scale = min(
-        cfg["targetWidth"] / max(1, crop.width),
-        cfg["maxHeight"] / max(1, crop.height),
-    )
-
-    nw = max(1, round(crop.width * scale))
-    nh = max(1, round(crop.height * scale))
-    crop = crop.resize((nw, nh), Image.Resampling.NEAREST)
-
-    hx0,_,hx1,_ = MASTER_HEAD_BBOX
-    head_cx = (hx0 + hx1) / 2
-    x = round(head_cx - nw / 2)
-    y = cfg["targetTop"]
-
+    scaled = full.resize((dw, dh), Image.Resampling.NEAREST)
     canvas = Image.new("RGBA", (RUNTIME, RUNTIME), (0,0,0,0))
-    canvas.alpha_composite(crop, (x,y))
+    canvas.alpha_composite(scaled, (x, y))
     canvas = remove_tiny_components(canvas)
+
+    target_bbox = canvas.getchannel("A").getbbox()
     return canvas, {
-        "sourceBBox": list(bbox),
-        "targetBBox": [x,y,x+nw,y+nh],
-        "scaleX": round(scale,4),
-        "scaleY": round(scale,4),
+        "sourceBBox": list(source_bbox) if source_bbox else None,
+        "targetBBox": list(target_bbox) if target_bbox else None,
+        "scaleX": scale,
+        "scaleY": scale,
+        "offsetX": x,
+        "offsetY": y,
+        "mode": COMMON_CELL_FIT["mode"],
     }
 
 def build_head_mask(base):
@@ -257,24 +243,19 @@ def build_face_feature_mask(face_parts):
         critical = ImageChops.lighter(critical, part.getchannel("A"))
     return critical
 
-def split_full_hair(full, head_mask, critical_mask):
-    alpha = full.getchannel("A")
+def front_only_hair(full, critical_mask):
+    """Keep these source-sheet hairstyles as one full front layer.
 
-    # Split front/back with the exact same head mask. Expanding the back mask
-    # created a 1px no-man's-land where neither layer was drawn, exposing the
-    # pale base head as a visible halo around the crown.
-    back_alpha = ImageChops.subtract(alpha, head_mask)
-    back = full.copy()
-    back.putalpha(back_alpha)
-
-    # Front is the real portion of this hairstyle that lies on the head.
-    # Do not carve around eyes/eyebrows: long bangs may naturally cover them.
-    front_alpha = ImageChops.multiply(alpha, head_mask)
-    overlap = ImageChops.multiply(front_alpha, critical_mask)
-    overlap_count = sum(1 for v in overlap.getdata() if v > 0)
+    The current sources are front-hair sheets. Automatically splitting them
+    around the bald-head silhouette exposed the base head as a pale crown line
+    and also clipped side strands. A transparent back layer is retained only
+    for runtime compatibility.
+    """
     front = full.copy()
-    front.putalpha(front_alpha)
+    back = Image.new("RGBA", (RUNTIME, RUNTIME), (0,0,0,0))
 
+    overlap = ImageChops.multiply(front.getchannel("A"), critical_mask)
+    overlap_count = sum(1 for v in overlap.getdata() if v > 0)
     critical_count = max(1, sum(1 for v in critical_mask.getdata() if v > 0))
     overlap_ratio = overlap_count / critical_count
     return back, front, overlap_ratio
@@ -311,10 +292,8 @@ def extract(kind, source, head_mask, critical_mask):
             tile=image.crop((col*cw,row*ch,(col+1)*cw,(row+1)*ch))
             cleaned=remove_white_matte(clear_bg(tile))
             full=hard_alpha(cleaned.resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST))
-            full,norm=normalize_hair(full,kind)
-            back,front,overlap_ratio=split_full_hair(
-                full,head_mask,critical_mask
-            )
+            full,norm=place_hair_from_source_cell(full)
+            back,front,overlap_ratio=front_only_hair(full,critical_mask)
 
             front_name=f"hair-front-{kind}-{n:02d}.png"
             back_name=f"hair-back-{kind}-{n:02d}.png"
@@ -341,7 +320,7 @@ def extract(kind, source, head_mask, critical_mask):
         "sourceSize":[w,h],
         "cellSize":[cw,ch],
         "count":len(items),
-        "normalization":NORMALIZE[kind],
+        "normalization":COMMON_CELL_FIT,
         "items":items,
     }
 
@@ -390,32 +369,31 @@ def main():
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":9,
-        "type":"kidscade-normalized-split-hair-pack",
+        "version":10,
+        "type":"kidscade-source-coordinate-front-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
-        "layerOrder":["hairBack","base","face","hairFront"],
+        "layerOrder":["base","face","hairFront"],
         "imageSmoothing":False,
         "grid":[6,4],
         "palette":"warm-medium-brown",
         "canonicalHeadBBox":list(MASTER_HEAD_BBOX),
         "headMask":{
-            "bottomY":HEAD_BOTTOM,
-            "earSafe":{"y":[EAR_Y0,EAR_Y1],"innerX":[EAR_INNER_LEFT,EAR_INNER_RIGHT]},
-            "faceClipping":"disabled; hair may naturally cover facial features"
+            "usedForHairSplit":False,
+            "faceClipping":"disabled; full source-sheet hair may naturally cover facial features"
         },
         "sets":{},
         "qa":{
-            "status":"normalized-split-generated-awaiting-visual-approval",
+            "status":"source-coordinate-front-layer-generated-awaiting-visual-approval",
             "checks":[
-                "one shared contain-fit for both 24-style source sheets",
-                "uniform contain-fit full hairstyle to master head/body before splitting",
-                "preserve source aspect ratio; never stretch hair vertically",
+                "one identical source-cell transform for all 48 hairstyles",
+                "preserve source-sheet relative size and offset; no per-style bbox normalization",
+                "preserve source aspect ratio; never stretch hair independently",
                 "6x4 grid extraction",
                 "128x128 hard-alpha assets",
-                "hairBack and hairFront are an exact complementary split of the same head mask",
-                "no transparent split-gap halo around the master-head silhouette",
-                "ear-safe front mask",
+                "full hairstyle is rendered as hairFront",
+                "hairBack is transparent compatibility output",
+                "no bald-head silhouette split, preventing pale crown seams",
                 "no eye/eyebrow/nose/mouth subtraction from front hair",
                 "edge-connected white-matte fringe trim before hard alpha",
                 "remove isolated components under 8 pixels",
@@ -449,7 +427,7 @@ def main():
     if legacy_qa.exists():
         for p in legacy_qa.glob("*.png"): p.unlink()
 
-    print("Generated 48 normalized hairBack + 48 hairFront assets and QA previews.")
+    print("Generated 48 full hairFront assets + transparent compatibility hairBack layers and QA previews.")
 
 if __name__=="__main__":
     main()
