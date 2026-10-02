@@ -3502,6 +3502,7 @@ function configureMobileMode(target){
   $('mobilePaint').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
   $('mobileLens').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
   $('mobileBreak').classList.toggle('hidden',target==='dungeon');
+  if(target!=='dungeon')$('mobileBreak').textContent=target==='free'&&gameFreeMode==='survival'?'채집':'파괴';
   $('mobilePlace').classList.toggle('hidden',target==='dungeon');
   $('mobileUp').classList.toggle('hidden',target==='dungeon');
   $('mobileDown').classList.toggle('hidden',target==='dungeon');
