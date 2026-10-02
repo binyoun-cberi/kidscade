@@ -5,6 +5,7 @@
 'use strict';
 
 const CANVAS=128;
+const ASSET_REV='9';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
   hairSet:'male',
@@ -77,7 +78,11 @@ class PixelAvatar{
     this.onError=typeof options.onError==='function'?options.onError:console.error;
   }
 
-  url(path){return new URL(path,this.assetRoot).href}
+  url(path){
+    const u=new URL(path,this.assetRoot);
+    if(/\.(?:png|json)$/i.test(u.pathname))u.searchParams.set('v',ASSET_REV);
+    return u.href;
+  }
 
   async init(){
     this.animationManifest=await json(this.url('runtime/animation/animation-manifest.json'));
