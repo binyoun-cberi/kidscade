@@ -380,3 +380,70 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   background:#eef1ff;color:#4b5791;font-size:10px;font-weight:850;line-height:1.35}
 .challenge-difficulty button:disabled{opacity:.52;cursor:not-allowed}
 #actionCheck:not(.hidden){white-space:nowrap}
+
+
+/* Cube Architect v25 · tactile survival loop */
+#miningProgress{position:absolute;left:50%;top:calc(50% + 24px);transform:translateX(-50%);z-index:22;
+  width:132px;padding:6px 8px;border-radius:10px;background:rgba(12,20,34,.82);color:#fff;
+  text-align:center;box-shadow:0 5px 16px rgba(0,0,0,.22);pointer-events:none}
+#miningProgress.hidden{display:none!important}
+#miningProgress>div{height:6px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.2)}
+#miningProgress i{display:block;width:0;height:100%;border-radius:999px;background:#f2c65f;transition:width .04s linear}
+#miningProgress span{display:block;margin-top:4px;font-size:9px;font-weight:900;white-space:nowrap}
+#crosshair.mining:before,#crosshair.mining:after{background:#f8d46b}
+#crosshair.mining-stage-2:before,#crosshair.mining-stage-2:after{box-shadow:0 0 7px #ffd86b}
+#crosshair.mining-stage-3{transform:translate(-50%,-50%) scale(1.12)}
+
+#survivalCraftPanel{padding:13px;background:linear-gradient(145deg,#f4f7ff,#eef5f3);border-color:#cdd9e5}
+.craft-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.craft-panel-head>div>b{display:block;font-size:15px;color:#263a55}
+.craft-panel-head #survivalCraftHint{margin:4px 0 0}
+.craft-panel-head #survivalTechs{max-width:46%;margin:0;text-align:right}
+.craft-workspace{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(220px,.82fr);gap:10px}
+.craft-browser,.craft-detail{min-width:0}
+.craft-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.craft-tabs button{border:0;border-radius:999px;padding:6px 9px;background:#e4e9f1;color:#546174;
+  font-size:10px;font-weight:900;cursor:pointer}
+.craft-tabs button.active{background:#415bd8;color:#fff;box-shadow:0 3px 9px rgba(65,91,216,.22)}
+#survivalCraftList{grid-template-columns:1fr!important;max-height:31vh}
+.survival-recipe{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;min-height:58px;padding:7px 9px}
+.survival-recipe .recipe-icon{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;
+  background:var(--recipe-swatch,#dbe4ef);font-size:20px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+.survival-recipe .recipe-copy b{display:block;font-size:11px;color:#28394f}
+.survival-recipe .recipe-copy small{margin-top:3px;font-size:9px}
+.survival-recipe .recipe-state{font-size:9px;font-weight:950;padding:4px 6px;border-radius:999px;background:#e7ebf1;color:#687588}
+.survival-recipe.can-craft .recipe-state{background:#d9f4e6;color:#267a58}
+.survival-recipe.selected{border-color:#5967ee;background:#eef0ff;box-shadow:0 0 0 2px rgba(89,103,238,.1)}
+.survival-recipe:disabled{opacity:1;cursor:pointer}
+.craft-detail{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:190px;padding:12px;border-radius:14px;
+  background:rgba(255,255,255,.92);border:1px solid #d8e0eb;overflow:hidden}
+.craft-detail-empty{font-size:11px;line-height:1.6;color:#7a8798;text-align:center}
+.craft-result{display:flex;align-items:center;gap:10px}
+.craft-result-icon{display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:14px;
+  background:var(--craft-swatch,#d9e2ec);font-size:31px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.48)}
+.craft-result-copy b{display:block;font-size:15px;color:#24354d}.craft-result-copy small{display:block;margin-top:4px;font-size:9px;color:#738095}
+.craft-ingredients{display:grid;gap:6px;margin:12px 0 9px}
+.craft-ingredient{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:7px;padding:6px 7px;border-radius:10px;background:#f3f5f8}
+.craft-ingredient i{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--ing-swatch,#ddd);
+  font-style:normal;font-size:17px}
+.craft-ingredient b{font-size:10px}.craft-ingredient span{font-size:10px;font-weight:950;color:#a84e53}
+.craft-ingredient.ready span{color:#2f8662}
+.craft-bench-note{font-size:9px;color:#6a7584;margin-bottom:8px}
+#craftSelectedButton{border:0;border-radius:11px;padding:10px;background:#5967ee;color:#fff;font-weight:950;cursor:pointer}
+#craftSelectedButton:disabled{background:#c9d0dc;color:#6d7889;cursor:not-allowed}
+.craft-detail.crafting:after{content:"";position:absolute;inset:-30%;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.72) 50%,transparent 60%);
+  animation:craftShine .42s linear}
+.craft-detail.crafting .craft-result-icon{animation:craftPop .42s ease}
+@keyframes craftShine{from{transform:translateX(-70%)}to{transform:translateX(70%)}}
+@keyframes craftPop{0%{transform:scale(.9)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
+.survival-bag-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:11px 2px 7px}
+.survival-bag-head.hidden{display:none!important}.survival-bag-head b{font-size:13px;color:#2c3b50}.survival-bag-head small{font-size:9px;color:#7a8797}
+.mobile-break.holding{box-shadow:0 0 0 4px rgba(255,207,105,.36),0 3px 12px rgba(12,20,39,.24)}
+
+@media(max-width:700px){
+  .craft-workspace{grid-template-columns:1fr}
+  .craft-detail{min-height:160px}
+  .craft-panel-head{display:block}.craft-panel-head #survivalTechs{max-width:none;text-align:left;margin-top:6px}
+  #survivalCraftList{max-height:22vh}
+  #miningProgress{width:112px;top:calc(50% + 22px)}
+}
