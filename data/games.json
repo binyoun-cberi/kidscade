@@ -2,6 +2,32 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "low_perfect_pitch",
+      "addedAt": "2026-10-03T08:46:00+09:00",
+      "title": "퍼펙트 피치",
+      "href": "games/low_perfect_pitch/index.html?v=1",
+      "category": "music",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🎤",
+      "description": "목소리를 높이고 낮춰 공을 움직이며 도·레·미 음표 문을 통과하는 실시간 음정 게임! 시작할 때 내 편한 목소리에 맞춰 음역을 자동 조정하고, 실제 음정 오차를 기준으로 PERFECT·GOOD을 판정합니다.",
+      "subject": "arts",
+      "genre": "rhythm",
+      "difficulty": "easy",
+      "sessionMinutes": 3,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_weathercaster_simulator",
       "addedAt": "2026-10-01T18:56:00+09:00",
       "title": "기상캐스터 시뮬레이터",
