@@ -2035,8 +2035,10 @@ function craftSurvival(recipe){
     if(recipe.id==='flowerDye'){$('facePaintColor').value='#e75aab';facePaintColor='#e75aab'}
     if(recipe.id==='cactusDye'){$('facePaintColor').value='#67a74a';facePaintColor='#67a74a'}
     trackSurvival('craft',recipe.id);
+    if(HOTBAR_TOOL_TYPES.includes(recipe.id))putOnHotbar(recipe.id);
     craftingBusy=false;buildHotbar();buildInventory('전체');markFreeWorldDirty(450);
-    toast(recipe.name+' 제작 완료!'+(recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
+    toast(recipe.name+' 제작 완료!'+(HOTBAR_TOOL_TYPES.includes(recipe.id)?' 바로 사용할 수 있게 핫바에 들었어요.':
+      recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
     sfx('good');
   },420);
 }
@@ -2268,8 +2270,12 @@ function canMineTarget(hit,notify=true){
     const anchor=getBlock(...(data.anchor||[u.gx,u.gy,u.gz]));type=anchor?.type||type;
   }
   const required=worldRules.toolNeeded(type);
-  if(gameFreeMode==='survival'&&required&&!bagCount(required)){
-    if(notify)toast(blockDef(required).name+'이(가) 있어야 '+blockDef(type).name+'을(를) 캘 수 있어요.');
+  if(gameFreeMode==='survival'&&required&&pickTier(selectedType)<pickTier(required)){
+    if(notify){
+      const own=HOTBAR_TOOL_TYPES.some(tool=>bagCount(tool)>0&&pickTier(tool)>=pickTier(required));
+      toast(own?blockDef(required).name+' 이상을 핫바에서 선택해 주세요.':
+        blockDef(required).name+' 이상을 만들어야 '+blockDef(type).name+'을(를) 캘 수 있어요.');
+    }
     return null;
   }
   return target;
