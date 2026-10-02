@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kidscade Pixel Avatar v1 Lab</title>
+<title>Kidscade Pixel Avatar v2 Rig Lab</title>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2c2734;background:#f3efe9}
 *{box-sizing:border-box}
@@ -28,8 +28,8 @@ button.secondary{background:#ede7f0;color:#403649}
 <main class="lab">
   <section class="card stage"><canvas id="avatar" width="128" height="128"></canvas></section>
   <section class="card">
-    <h1>Pixel Avatar v1 Lab</h1>
-    <p>새 128×128 PNG 레이어 런타임을 직접 조합하고 Idle/Walk 정렬을 확인하는 개발용 화면입니다.</p>
+    <h1>Pixel Avatar v2 Rig Lab</h1>
+    <p>이름 있는 anchor + 파츠 pivot으로 PNG를 조립하고 Idle/Walk 정렬을 확인하는 개발용 화면입니다.</p>
     <div class="controls">
       <label>헤어 계열<select id="hairSet"><option value="male">male 24</option><option value="female">female 24</option></select></label>
       <label>헤어 번호<input id="hairStyle" type="number" min="1" max="24" value="1"></label>
@@ -45,11 +45,12 @@ button.secondary{background:#ede7f0;color:#403649}
     <div class="actions">
       <button id="randomize">랜덤 조합</button>
       <button id="play" class="secondary">재생/정지</button>
+      <button id="anchorNose" class="secondary">앵커 테스트 코</button>
     </div>
     <div class="status" id="status">로딩 중…</div>
   </section>
 </main>
-<script src="pixel-avatar-renderer.js"></script>
+<script src="pixel-avatar-renderer.js?v=10"></script>
 <script>
 (async()=>{
  const $=id=>document.getElementById(id);
@@ -57,7 +58,7 @@ button.secondary{background:#ede7f0;color:#403649}
  try{
    const avatar=await KidscadePixelAvatarV1.create(canvas,{config:{animation:'idle'}});
    window.pixelAvatarLab=avatar;
-   status.textContent='준비 완료 · base + face + hair + upper/lower clothes + Idle/Walk 런타임';
+   status.textContent='준비 완료 · Avatar Rig v2 · 코 테스트는 잘린 16×14 PNG를 nose anchor에 직접 붙입니다.';
    const ids=['hairSet','hairStyle','upper','lower','eyes','eyebrows','nose','mouth','blush','animation'];
    async function apply(){
      const patch={};
@@ -78,6 +79,26 @@ button.secondary{background:#ede7f0;color:#403649}
      await apply();
    };
    $('play').onclick=()=>avatar.playing?avatar.pause():avatar.start();
+   let anchorNoseOn=false;
+   function anchorNoseData(){
+     const c=document.createElement('canvas');c.width=16;c.height=14;
+     const x=c.getContext('2d');x.imageSmoothingEnabled=false;
+     x.fillStyle='#b4202a';x.fillRect(4,2,8,10);x.fillRect(2,4,12,6);
+     x.fillStyle='#ef5a62';x.fillRect(5,3,5,3);x.fillStyle='#7c111b';x.fillRect(5,10,6,2);
+     return c.toDataURL('image/png');
+   }
+   $('anchorNose').onclick=async()=>{
+     anchorNoseOn=!anchorNoseOn;
+     await avatar.setExtraParts(anchorNoseOn?[{
+       id:'rig-test-red-nose',
+       src:anchorNoseData(),
+       attach:'nose',
+       pivot:[8,7],
+       transformGroup:'head',
+       zSlot:'faceAccessoryOver'
+     }]:[]);
+     $('anchorNose').textContent=anchorNoseOn?'앵커 테스트 코 끄기':'앵커 테스트 코';
+   };
  }catch(err){
    console.error(err);
    status.textContent='오류: '+err.message;

@@ -1,0 +1,143 @@
+{
+  "version": 2,
+  "id": "kidscade-avatar-rig-v2",
+  "canvas": [128, 128],
+  "coordinateSystem": {
+    "origin": [0, 0],
+    "frontFacing": true,
+    "integerCoordinatesOnly": true,
+    "imageSmoothing": false
+  },
+  "canonicalAnchors": {
+    "canvasOrigin": [0, 0],
+    "headCenter": [65.5, 43.5],
+    "headTop": [65.5, 20],
+    "brow": [65.5, 36],
+    "eyeCenter": [65.5, 43],
+    "nose": [65.5, 50],
+    "mouth": [65.5, 57],
+    "earL": [43, 51],
+    "earR": [88, 51],
+    "neck": [65.5, 65],
+    "root": [65.5, 84],
+    "navel": [65.5, 86],
+    "handL": [43, 82],
+    "handR": [88, 82],
+    "footL": [55, 119],
+    "footR": [76, 119]
+  },
+  "transformGroups": {
+    "canvas": {
+      "sourceAnchor": "canvasOrigin",
+      "frameTransform": null
+    },
+    "head": {
+      "sourceAnchor": "headCenter",
+      "frameTransform": "headTransform"
+    },
+    "body": {
+      "sourceAnchor": "root",
+      "frameTransform": "bodyTransform"
+    }
+  },
+  "zSlots": {
+    "capeBack": 5,
+    "hairBack": 10,
+    "body": 20,
+    "lowerClothes": 30,
+    "upperClothes": 40,
+    "shoes": 50,
+    "face": 60,
+    "faceAccessoryBelow": 65,
+    "hairFront": 70,
+    "eyeAccessory": 75,
+    "earAccessory": 77,
+    "cap": 80,
+    "faceAccessoryOver": 85,
+    "handAccessory": 90,
+    "weapon": 100,
+    "effect": 110
+  },
+  "layerSpecs": {
+    "hairBack": {
+      "attach": "headTop",
+      "pivot": [65.5, 20],
+      "transformGroup": "head",
+      "zSlot": "hairBack"
+    },
+    "base": {
+      "attach": "canvasOrigin",
+      "pivot": [0, 0],
+      "transformGroup": "canvas",
+      "zSlot": "body"
+    },
+    "lower": {
+      "attach": "canvasOrigin",
+      "pivot": [0, 0],
+      "transformGroup": "canvas",
+      "zSlot": "lowerClothes"
+    },
+    "upper": {
+      "attach": "canvasOrigin",
+      "pivot": [0, 0],
+      "transformGroup": "canvas",
+      "zSlot": "upperClothes"
+    },
+    "blush": {
+      "attach": "eyeCenter",
+      "pivot": [65.5, 43],
+      "transformGroup": "head",
+      "zSlot": "face"
+    },
+    "eyes": {
+      "attach": "eyeCenter",
+      "pivot": [65.5, 43],
+      "transformGroup": "head",
+      "zSlot": "face"
+    },
+    "eyebrows": {
+      "attach": "brow",
+      "pivot": [65.5, 36],
+      "transformGroup": "head",
+      "zSlot": "face"
+    },
+    "nose": {
+      "attach": "nose",
+      "pivot": [65.5, 50],
+      "transformGroup": "head",
+      "zSlot": "face"
+    },
+    "mouth": {
+      "attach": "mouth",
+      "pivot": [65.5, 57],
+      "transformGroup": "head",
+      "zSlot": "face"
+    },
+    "hairFront": {
+      "attach": "headTop",
+      "pivot": [65.5, 20],
+      "transformGroup": "head",
+      "zSlot": "hairFront"
+    }
+  },
+  "partContract": {
+    "required": ["src", "attach", "pivot", "zSlot"],
+    "optional": ["id", "slot", "transformGroup", "origin", "scale", "visible"],
+    "description": "A part is positioned by matching its local pivot to a named avatar anchor. New cropped assets do not need to be pre-expanded to a 128x128 canvas.",
+    "example": {
+      "id": "red-nose-01",
+      "slot": "faceAccessory",
+      "src": "runtime/accessories/face/red-nose-01.png",
+      "attach": "nose",
+      "pivot": [8, 7],
+      "transformGroup": "head",
+      "zSlot": "faceAccessoryOver"
+    }
+  },
+  "rules": {
+    "pairAssetsStayTogether": ["eyes", "eyebrows", "blush"],
+    "namedAnchorsAreSourceOfTruth": true,
+    "bboxIsForNormalizationNotAttachment": true,
+    "namedZSlotsAreSourceOfTruth": true
+  }
+}

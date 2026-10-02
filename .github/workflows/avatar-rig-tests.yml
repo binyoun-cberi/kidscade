@@ -1,0 +1,40 @@
+name: Avatar rig checks
+
+on:
+  pull_request:
+    paths:
+      - 'pixel-avatar-renderer.js'
+      - 'avatar-pixel-studio.js'
+      - 'avatar-studio.html'
+      - 'pixel-avatar-lab.html'
+      - 'assets/game/characters/kidscade-avatar-v1/**'
+      - 'tests/pixel-avatar-studio.test.cjs'
+      - '.github/workflows/avatar-rig-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pixel-avatar-renderer.js'
+      - 'avatar-pixel-studio.js'
+      - 'avatar-studio.html'
+      - 'pixel-avatar-lab.html'
+      - 'assets/game/characters/kidscade-avatar-v1/**'
+      - 'tests/pixel-avatar-studio.test.cjs'
+      - '.github/workflows/avatar-rig-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  avatar-rig:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check avatar runtime syntax
+        run: |
+          node --check pixel-avatar-renderer.js
+          node --check avatar-pixel-studio.js
+      - name: Run avatar rig regression tests
+        run: node --test tests/pixel-avatar-studio.test.cjs

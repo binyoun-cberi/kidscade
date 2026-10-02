@@ -1,11 +1,13 @@
-/* Kidscade Pixel Avatar v1
-   Layered PNG renderer for the 128x128 runtime asset pack.
-   Safe to load alongside the legacy avatar studio; it does not mutate legacy storage. */
+/* Kidscade Pixel Avatar v2
+   Semantic-anchor paper-doll renderer for the 128x128 runtime asset pack.
+   Existing v1 state/API names stay available so games do not need a migration. */
 (function(root){
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='9';
+const ASSET_REV='10';
+const RIG_PATH='runtime/avatar-rig-v2.json';
+const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
   hairSet:'male',
@@ -38,6 +40,14 @@ async function json(url){
   if(!res.ok)throw new Error('Avatar manifest load failed: '+res.status+' '+url);
   return res.json();
 }
+function finitePair(value,fallback=[0,0]){
+  if(!Array.isArray(value)||value.length<2)return [...fallback];
+  const x=Number(value[0]),y=Number(value[1]);
+  return [Number.isFinite(x)?x:fallback[0],Number.isFinite(y)?y:fallback[1]];
+}
+function absoluteSrc(src){
+  return /^(?:data:|blob:|https?:|\/\/)/i.test(String(src||''));
+}
 
 class ImageCache{
   constructor(){this.map=new Map()}
@@ -66,8 +76,10 @@ class PixelAvatar{
 
     this.assetRoot=options.assetRoot || defaultAssetRoot();
     this.config={...DEFAULT_CONFIG,...(options.config||{})};
+    this.extraParts=Array.isArray(options.extraParts)?options.extraParts.filter(Boolean):[];
     this.cache=new ImageCache();
     this.animationManifest=null;
+    this.rig=null;
     this.frameIndex=0;
     this.lastFrameAt=0;
     this.playing=options.playing!==false;
@@ -79,32 +91,55 @@ class PixelAvatar{
   }
 
   url(path){
+    if(absoluteSrc(path))return path;
     const u=new URL(path,this.assetRoot);
     if(/\.(?:png|json)$/i.test(u.pathname))u.searchParams.set('v',ASSET_REV);
     return u.href;
   }
 
   async init(){
-    this.animationManifest=await json(this.url('runtime/animation/animation-manifest.json'));
+    [this.animationManifest,this.rig]=await Promise.all([
+      json(this.url(ANIMATION_PATH)),
+      json(this.url(RIG_PATH))
+    ]);
+    this.assertRig();
+    this.config=this.normalizeConfig(this.config);
     this.ready=true;
     await this.draw();
     if(this.playing)this.start();
     return this;
   }
 
+  assertRig(){
+    if(!this.rig?.canonicalAnchors||!this.rig?.layerSpecs||!this.rig?.zSlots){
+      throw new Error('Avatar rig is incomplete.');
+    }
+    for(const [name,spec] of Object.entries(this.rig.layerSpecs)){
+      if(!this.rig.canonicalAnchors[spec.attach]){
+        throw new Error('Avatar rig layer '+name+' references missing anchor '+spec.attach);
+      }
+      if(!(spec.zSlot in this.rig.zSlots)){
+        throw new Error('Avatar rig layer '+name+' references missing zSlot '+spec.zSlot);
+      }
+    }
+  }
+
   normalizeConfig(next){
-    const c={...this.config,...next};
-    c.hairSet=c.hairSet==='female'?'female':'male';
-    c.hairStyle=clampInt(c.hairStyle,1,COUNTS.hair);
-    c.upper=c.upper?1:0;
-    c.lower=c.lower?1:0;
-    c.eyes=clampInt(c.eyes,1,COUNTS.eyes);
-    c.eyebrows=clampInt(c.eyebrows,1,COUNTS.eyebrows);
-    c.nose=clampInt(c.nose,1,COUNTS.nose);
-    c.mouth=clampInt(c.mouth,1,COUNTS.mouth);
-    c.blush=c.blush?clampInt(c.blush,1,COUNTS.blush):0;
-    c.animation=['idle','walk','static'].includes(c.animation)?c.animation:'idle';
-    return c;
+    const raw={...this.config,...(next||{})};
+    if(raw.hair!=null&&raw.hairStyle==null)raw.hairStyle=raw.hair;
+    if(raw.noses!=null&&raw.nose==null)raw.nose=raw.noses;
+    if(raw.mouths!=null&&raw.mouth==null)raw.mouth=raw.mouths;
+    raw.hairSet=raw.hairSet==='female'?'female':'male';
+    raw.hairStyle=clampInt(raw.hairStyle,1,COUNTS.hair);
+    raw.upper=raw.upper?1:0;
+    raw.lower=raw.lower?1:0;
+    raw.eyes=clampInt(raw.eyes,1,COUNTS.eyes);
+    raw.eyebrows=clampInt(raw.eyebrows,1,COUNTS.eyebrows);
+    raw.nose=clampInt(raw.nose,1,COUNTS.nose);
+    raw.mouth=clampInt(raw.mouth,1,COUNTS.mouth);
+    raw.blush=raw.blush?clampInt(raw.blush,1,COUNTS.blush):0;
+    raw.animation=['idle','walk','static'].includes(raw.animation)?raw.animation:'idle';
+    return raw;
   }
 
   async setConfig(patch){
@@ -114,6 +149,12 @@ class PixelAvatar{
       this.frameIndex=0;
       this.lastFrameAt=0;
     }
+    await this.draw();
+    return this;
+  }
+
+  async setExtraParts(parts){
+    this.extraParts=Array.isArray(parts)?parts.filter(Boolean):[];
     await this.draw();
     return this;
   }
@@ -164,9 +205,9 @@ class PixelAvatar{
     return set?.frames?.[this.frameIndex%set.frames.length]||null;
   }
 
-  paths(){
-    const c=this.normalizeConfig(this.config);
-    const hs=c.hairSet, hn=pad(c.hairStyle);
+  pathsFor(config){
+    const c=this.normalizeConfig(config);
+    const hs=c.hairSet,hn=pad(c.hairStyle);
     return {
       base:'runtime/base/master-base-128.png',
       hairBack:`runtime/hair/back/${hs}/hair-back-${hs}-${hn}.png`,
@@ -181,60 +222,136 @@ class PixelAvatar{
     };
   }
 
-  drawLayer(img,transform){
-    const ctx=this.ctx;
+  paths(){return this.pathsFor(this.config)}
+
+  groupTransform(groupName,frame){
+    const group=this.rig.transformGroups?.[groupName]||this.rig.transformGroups?.canvas||{};
+    const sourceAnchor=finitePair(this.rig.canonicalAnchors[group.sourceAnchor]||[0,0]);
+    const transformName=group.frameTransform;
+    const transform=transformName&&frame?.[transformName]?frame[transformName]:null;
     if(!transform){
-      ctx.drawImage(img,0,0);
-      return;
+      return {sourceCenter:sourceAnchor,destCenter:sourceAnchor,scaleX:1,scaleY:1};
     }
-    const [sx,sy]=transform.sourceCenter;
-    const [dx,dy]=transform.destCenter;
-    const scaleX=Number(transform.scaleX ?? transform.scale)||1;
-    const scaleY=Number(transform.scaleY ?? transform.scale)||1;
-    ctx.save();
-    ctx.translate(Math.round(dx),Math.round(dy));
-    ctx.scale(scaleX,scaleY);
-    ctx.translate(-sx,-sy);
-    ctx.drawImage(img,0,0);
-    ctx.restore();
+    const sourceCenter=finitePair(transform.sourceCenter,sourceAnchor);
+    const destCenter=finitePair(transform.destCenter,sourceCenter);
+    const scaleX=Number(transform.scaleX ?? transform.scale);
+    const scaleY=Number(transform.scaleY ?? transform.scale);
+    return {
+      sourceCenter,
+      destCenter,
+      scaleX:Number.isFinite(scaleX)&&scaleX!==0?scaleX:1,
+      scaleY:Number.isFinite(scaleY)&&scaleY!==0?scaleY:1
+    };
+  }
+
+  resolvePlacement(spec,frame){
+    if(!spec||spec.visible===false)return null;
+    const canonical=finitePair(this.rig.canonicalAnchors[spec.attach]);
+    if(!this.rig.canonicalAnchors[spec.attach]){
+      throw new Error('Avatar part references missing anchor '+spec.attach);
+    }
+    const pivot=finitePair(spec.pivot,canonical);
+    const origin=finitePair(spec.origin,[0,0]);
+    const t=this.groupTransform(spec.transformGroup||'canvas',frame);
+    const anchor=[
+      t.destCenter[0]+(canonical[0]-t.sourceCenter[0])*t.scaleX,
+      t.destCenter[1]+(canonical[1]-t.sourceCenter[1])*t.scaleY
+    ];
+    const localScale=Number(spec.scale);
+    const scale=Number.isFinite(localScale)&&localScale>0?localScale:1;
+    return {
+      anchor,
+      pivot,
+      origin,
+      scaleX:t.scaleX*scale,
+      scaleY:t.scaleY*scale,
+      z:this.rig.zSlots[spec.zSlot]??0
+    };
+  }
+
+  drawPart(targetCtx,img,spec,frame){
+    if(!img||!spec)return;
+    const placement=this.resolvePlacement(spec,frame);
+    if(!placement)return;
+    const [ax,ay]=placement.anchor;
+    const [px,py]=placement.pivot;
+    const [ox,oy]=placement.origin;
+    targetCtx.save();
+    targetCtx.translate(ax,ay);
+    targetCtx.scale(placement.scaleX,placement.scaleY);
+    targetCtx.translate(-px,-py);
+    targetCtx.drawImage(img,ox,oy);
+    targetCtx.restore();
+  }
+
+  makeBuiltInCalls(config,frame){
+    const p=this.pathsFor(config);
+    const frameFile=frame?.file||'';
+    const bodyPath=frame?`runtime/animation/${frame.file}`:p.base;
+    const lowerPath=p.lower?(frame?`${p.lower}/${frameFile}`:`${p.lower}/static.png`):null;
+    const upperPath=p.upper?(frame?`${p.upper}/${frameFile}`:`${p.upper}/static.png`):null;
+    const defs=this.rig.layerSpecs;
+    return [
+      ['hairBack',p.hairBack],
+      ['base',bodyPath],
+      ['lower',lowerPath],
+      ['upper',upperPath],
+      ['blush',p.blush],
+      ['eyes',p.eyes],
+      ['eyebrows',p.eyebrows],
+      ['nose',p.nose],
+      ['mouth',p.mouth],
+      ['hairFront',p.hairFront]
+    ].filter(([,src])=>Boolean(src)).map(([key,src],order)=>({
+      id:key,
+      src,
+      spec:defs[key],
+      order
+    }));
+  }
+
+  normalizeExtraCall(part,order){
+    if(!part?.src)return null;
+    const base=part.slot&&this.rig.layerSpecs[part.slot]?this.rig.layerSpecs[part.slot]:{};
+    const spec={...base,...part};
+    if(!spec.attach||!Array.isArray(spec.pivot)||!spec.zSlot){
+      throw new Error('Avatar extra part needs attach, pivot and zSlot: '+(part.id||part.src));
+    }
+    if(!spec.transformGroup)spec.transformGroup='canvas';
+    return {id:part.id||('extra-'+order),src:part.src,spec,order:1000+order};
+  }
+
+  async renderTo(targetCtx,config=this.config,frame=this.currentFrame(),extraParts=this.extraParts){
+    if(!this.ready)throw new Error('Avatar renderer is not ready.');
+    const calls=this.makeBuiltInCalls(config,frame);
+    (extraParts||[]).forEach((part,index)=>{
+      const call=this.normalizeExtraCall(part,index);
+      if(call)calls.push(call);
+    });
+    for(const call of calls){
+      call.placement=this.resolvePlacement(call.spec,frame);
+      call.z=call.placement?.z??0;
+    }
+    calls.sort((a,b)=>a.z-b.z||a.order-b.order);
+    const images=await Promise.all(calls.map(call=>this.cache.load(this.url(call.src)).catch(()=>null)));
+
+    targetCtx.save();
+    targetCtx.setTransform(1,0,0,1,0,0);
+    targetCtx.clearRect(0,0,CANVAS,CANVAS);
+    targetCtx.imageSmoothingEnabled=false;
+    calls.forEach((call,index)=>{
+      const img=images[index];
+      if(img)this.drawPart(targetCtx,img,call.spec,frame);
+    });
+    targetCtx.restore();
   }
 
   async draw(){
-    if(!this.ready&&!this.animationManifest)return;
+    if(!this.ready)return;
     if(this.drawing)return;
     this.drawing=true;
     try{
-      const p=this.paths();
-      const frame=this.currentFrame();
-      const bodyPath=frame?`runtime/animation/${frame.file}`:p.base;
-      const lowerPath=p.lower?(frame?`${p.lower}/${frame.file}`:`${p.lower}/static.png`):null;
-      const upperPath=p.upper?(frame?`${p.upper}/${frame.file}`:`${p.upper}/static.png`):null;
-      const urls=[p.hairBack,bodyPath,lowerPath,upperPath,p.eyes,p.eyebrows,p.nose,p.mouth,p.blush,p.hairFront].filter(Boolean);
-      const imgs=await Promise.all(urls.map(path=>this.cache.load(this.url(path))));
-      let i=0;
-      const hairBack=imgs[i++], body=imgs[i++], lower=lowerPath?imgs[i++]:null,
-            upper=upperPath?imgs[i++]:null, eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
-            blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
-      const headTransform=frame?.headTransform||null;
-      const hairTransformValue=headTransform;
-
-      const ctx=this.ctx;
-      ctx.save();
-      ctx.setTransform(1,0,0,1,0,0);
-      ctx.clearRect(0,0,CANVAS,CANVAS);
-      ctx.imageSmoothingEnabled=false;
-
-      this.drawLayer(hairBack,hairTransformValue);
-      ctx.drawImage(body,0,0);
-      if(lower)ctx.drawImage(lower,0,0);
-      if(upper)ctx.drawImage(upper,0,0);
-      this.drawLayer(eyes,headTransform);
-      this.drawLayer(eyebrows,headTransform);
-      this.drawLayer(nose,headTransform);
-      this.drawLayer(mouth,headTransform);
-      if(blush)this.drawLayer(blush,headTransform);
-      this.drawLayer(hairFront,hairTransformValue);
-      ctx.restore();
+      await this.renderTo(this.ctx,this.config,this.currentFrame(),this.extraParts);
     }finally{
       this.drawing=false;
     }
@@ -251,12 +368,17 @@ async function create(canvas,options={}){
   return avatar.init();
 }
 
-root.KidscadePixelAvatarV1={
+const api={
+  version:2,
   CANVAS,
+  ASSET_REV,
+  RIG_PATH,
   COUNTS:{...COUNTS},
   DEFAULT_CONFIG:{...DEFAULT_CONFIG},
   PixelAvatar,
   create,
   assetRoot:defaultAssetRoot
 };
+root.KidscadePixelAvatarV2=api;
+root.KidscadePixelAvatarV1=api;
 })(window);
