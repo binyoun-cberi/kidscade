@@ -17,9 +17,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=11/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=11/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=11')<html.indexOf('avatar-pixel-studio.js?v=11'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=12/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=12/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=12')<html.indexOf('avatar-pixel-studio.js?v=12'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -55,7 +55,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-hairfit-1'/);
+  assert.match(js,/version:'pixel-v2-rig-hairfit-2'/);
 });
 
 test('new users start with a complete outfit and legacy equipment can migrate',()=>{
@@ -122,10 +122,21 @@ test('hair normalization uses one uniform contain scale instead of stretching ev
   assert.match(hairExtract,/"scaleY": round\(scale,4\)/);
 });
 
+test('hair cleanup keeps bangs intact and removes white matte fringe',()=>{
+  assert.match(hairExtract,/def remove_white_matte\(/);
+  assert.match(hairExtract,/remove_white_matte\(clear_bg\(tile\)\)/);
+  assert.match(hairExtract,/def build_face_feature_mask\(/);
+  assert.match(hairExtract,/Hair is allowed to overlap eyes, eyebrows, nose and mouth/);
+  assert.doesNotMatch(hairExtract,/front_alpha = ImageChops\.subtract\(front_alpha, protect_mask\)/);
+  assert.doesNotMatch(hairExtract,/build_face_protect/);
+  assert.doesNotMatch(hairExtract,/protect_mask/);
+  assert.match(hairExtract,/faceClipping/);
+});
+
 test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='11'/);
+  assert.match(js,/ASSET_REV='12'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='11'/);
+  assert.match(renderer,/ASSET_REV='12'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
