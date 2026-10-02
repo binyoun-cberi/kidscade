@@ -3590,12 +3590,12 @@ canvas.addEventListener('pointermove',e=>{
     const dx=e.clientX-mobileLookLast.x,dy=e.clientY-mobileLookLast.y;
     mobileLookLast={x:e.clientX,y:e.clientY};
     if(mode==='challenge'){
-      challengeYaw-=dx*.004;challengePitch=THREE.MathUtils.clamp(challengePitch-dy*.004,-1.45,1.45);
+      challengeYaw-=dx*.0029;challengePitch=THREE.MathUtils.clamp(challengePitch-dy*.0029,-1.45,1.45);
       updateChallengeCamera();updateChallengeGhost();
     }else if(mode==='dungeon'){
-      dungeonYaw-=dx*.004;dungeonPitch=THREE.MathUtils.clamp(dungeonPitch-dy*.004,-1.25,1.25);updateDungeonCamera();
+      dungeonYaw-=dx*.0029;dungeonPitch=THREE.MathUtils.clamp(dungeonPitch-dy*.0029,-1.25,1.25);updateDungeonCamera();
     }else{
-      yaw-=dx*.004;pitch=THREE.MathUtils.clamp(pitch-dy*.004,-1.35,1.35);
+      yaw-=dx*.0029;pitch=THREE.MathUtils.clamp(pitch-dy*.0029,-1.35,1.35);
       camera.rotation.y=yaw;camera.rotation.x=pitch;
     }
   }
