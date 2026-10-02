@@ -253,6 +253,11 @@ function worldToScreen(x,y){
   const p=state.player;
   return {x:wrappedDelta(x,p.x,WORLD.w)*CAMERA_ZOOM+viewW/2,y:wrappedDelta(y,p.y,WORLD.h)*CAMERA_ZOOM+viewH/2};
 }
+function directionVector(from,to){
+  const dx=wrappedDelta(to.x,from.x,WORLD.w),dy=wrappedDelta(to.y,from.y,WORLD.h);
+  const d=Math.hypot(dx,dy)||1;
+  return {x:dx/d,y:dy/d,d};
+}
 function screenToWorld(x,y){
   const p=state.player;
   return {x:(p.x+(x-viewW/2)/CAMERA_ZOOM+WORLD.w)%WORLD.w,y:(p.y+(y-viewH/2)/CAMERA_ZOOM+WORLD.h)%WORLD.h};
@@ -279,7 +284,7 @@ function lightAt(x,y){
   const ambient=env.light/100*(1-env.turbidity/100*.38)*.42;
   let best=ambient;
   for(const q of lightPatches){
-    const d=Math.hypot(x-q.x,y-q.y);
+    const d=Math.sqrt(dist2({x,y},q));
     if(d<q.r)best=Math.max(best,ambient+(1-d/q.r)*q.strength*(env.light/100)*(1-env.turbidity/100*.24)*.72);
   }
   return clamp(best,0,1);
@@ -312,7 +317,7 @@ function lightSenseData(p=state.player){
       if(score>bestScore){bestScore=score;target=q;distance=d;}
     }
   }
-  const angle=target?Math.atan2(target.y-p.y,target.x-p.x):null;
+  const angle=target?Math.atan2(wrappedDelta(target.y,p.y,WORLD.h),wrappedDelta(target.x,p.x,WORLD.w)):null;
   return {eyes,local,percent,label:lightLevelLabel(percent),range,target,distance,angle,arrow:lightCompass(angle)};
 }
 function reproductionRequirement(){
@@ -518,18 +523,18 @@ function updateCreatures(dt){
     const see=190+c.traits.sense*120;
 
     if(rel.danger&&rel.dangerD<300+c.traits.sense*35){
-      tx=(c.x-rel.danger.x)/Math.max(1,rel.dangerD);ty=(c.y-rel.danger.y)/Math.max(1,rel.dangerD);goalStrength=1.28;
+      const v=directionVector(c,rel.danger);tx=-v.x;ty=-v.y;goalStrength=1.28;
     }else if(hunter&&rel.prey&&rel.preyD<see){
-      tx=(rel.prey.x-c.x)/Math.max(1,rel.preyD);ty=(rel.prey.y-c.y)/Math.max(1,rel.preyD);goalStrength=1.16;
+      const v=directionVector(c,rel.prey);tx=v.x;ty=v.y;goalStrength=1.16;
     }else if(parasite&&rel.host&&rel.hostD<see){
-      tx=(rel.host.x-c.x)/Math.max(1,rel.hostD);ty=(rel.host.y-c.y)/Math.max(1,rel.hostD);
+      const v=directionVector(c,rel.host);tx=v.x;ty=v.y;
     }else if(hunter&&c.r>p.radius*.9&&dp<see*1.15*playerVisibility){
-      tx=(p.x-c.x)/Math.max(1,dp);ty=(p.y-c.y)/Math.max(1,dp);goalStrength=1.12;
+      const v=directionVector(c,p);tx=v.x;ty=v.y;goalStrength=1.12;
     }else if(c.r<p.radius*.84&&dp<300){
-      tx=(c.x-p.x)/Math.max(1,dp);ty=(c.y-p.y)/Math.max(1,dp);goalStrength=1.2;
+      const v=directionVector(c,p);tx=-v.x;ty=-v.y;goalStrength=1.2;
     }else{
       const f=nearestFood(c);
-      if(f){const d=Math.sqrt(dist2(c,f));tx=(f.x-c.x)/Math.max(1,d);ty=(f.y-c.y)/Math.max(1,d)}
+      if(f){const v=directionVector(c,f);tx=v.x;ty=v.y}
       else{tx=Math.cos(c.angle);ty=Math.sin(c.angle)}
     }
 
