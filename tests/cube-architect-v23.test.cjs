@@ -13,10 +13,10 @@ const html=read('games/cube3d/index.html');
 test('v23 creature rework parses and is cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(creatures));
-  assert.match(html,/cube-architect-creatures\.js\?v=20261001-24/);
-  assert.match(html,/cube-architect-creature-assets\.js\?v=20261001-24/);
-  assert.match(html,/cube-architect\.js\?v=20261001-24/);
-  assert.match(html,/cube-architect\.css\?v=20261001-24/);
+  assert.match(html,/cube-architect-creatures\.js\?v=20261002-25/);
+  assert.match(html,/cube-architect-creature-assets\.js\?v=20261002-25/);
+  assert.match(html,/cube-architect\.js\?v=20261002-25/);
+  assert.match(html,/cube-architect\.css\?v=20261002-25/);
 });
 
 test('creatures spawn around exploration rather than fixed landmark coordinates',()=>{
