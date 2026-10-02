@@ -6,6 +6,8 @@
 
 const CANVAS=128;
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
+const HAIR_PIVOT=[65.5,43.5];
+const HAIR_FIT_BOX={left:12,right:116,top:7,bottom:115};
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
@@ -182,6 +184,45 @@ class PixelAvatar{
     };
   }
 
+  hairBackFit(set,n){
+    const item=this.hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)];
+    const box=item?.backBBox;
+    if(!box)return set==='female'?{scale:.82,offsetX:0,offsetY:0}:{scale:.89,offsetX:0,offsetY:0};
+    const [x0,y0,x1,y1]=box;
+    const [px,py]=HAIR_PIVOT;
+    const width=Math.max(1,x1-x0);
+    let scale=Math.min(1,(HAIR_FIT_BOX.right-HAIR_FIT_BOX.left)/width);
+    if(y0<py)scale=Math.min(scale,(py-HAIR_FIT_BOX.top)/Math.max(1,py-y0));
+    if(y1>py)scale=Math.min(scale,(HAIR_FIT_BOX.bottom-py)/Math.max(1,y1-py));
+    const center=(x0+x1)/2;
+    const offsetX=-(center-px)*scale;
+    return {scale:Math.max(.76,scale),offsetX,offsetY:0};
+  }
+
+  hairFit(layer,set,n){
+    const back=this.hairBackFit(set,n);
+    if(layer==='back')return back;
+    return {
+      scale:Math.min(1,Math.max(.94,back.scale+.14)),
+      offsetX:back.offsetX*.25,
+      offsetY:0
+    };
+  }
+
+  hairTransform(layer,set,n,frameTransform=null){
+    const fit=this.hairFit(layer,set,n);
+    const frameScale=Number(frameTransform?.scale)||1;
+    const dest=frameTransform?.destCenter||HAIR_PIVOT;
+    return {
+      sourceCenter:HAIR_PIVOT,
+      destCenter:[
+        dest[0]+fit.offsetX*frameScale,
+        dest[1]+fit.offsetY*frameScale
+      ],
+      scale:frameScale*fit.scale
+    };
+  }
+
   drawLayer(img,transform){
     const ctx=this.ctx;
     if(!transform){
@@ -216,6 +257,8 @@ class PixelAvatar{
             upper=upperPath?imgs[i++]:null, eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
             blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
       const headTransform=frame?.headTransform||null;
+      const hairBackTransform=this.hairTransform('back',this.config.hairSet,this.config.hairStyle,headTransform);
+      const hairFrontTransform=this.hairTransform('front',this.config.hairSet,this.config.hairStyle,headTransform);
 
       const ctx=this.ctx;
       ctx.save();
@@ -223,7 +266,7 @@ class PixelAvatar{
       ctx.clearRect(0,0,CANVAS,CANVAS);
       ctx.imageSmoothingEnabled=false;
 
-      this.drawLayer(hairBack,headTransform);
+      this.drawLayer(hairBack,hairBackTransform);
       ctx.drawImage(body,0,0);
       if(lower)ctx.drawImage(lower,0,0);
       if(upper)ctx.drawImage(upper,0,0);
@@ -232,7 +275,7 @@ class PixelAvatar{
       this.drawLayer(nose,headTransform);
       this.drawLayer(mouth,headTransform);
       if(blush)this.drawLayer(blush,headTransform);
-      this.drawLayer(hairFront,headTransform);
+      this.drawLayer(hairFront,hairFrontTransform);
       ctx.restore();
     }finally{
       this.drawing=false;

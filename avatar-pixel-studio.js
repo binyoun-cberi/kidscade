@@ -7,6 +7,9 @@ const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=ROOT+'/base/master-base-128.png';
 const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
+const HAIR_MANIFEST=ROOT+'/hair/hair-manifest.json';
+const HAIR_PIVOT=[65.5,43.5];
+const HAIR_FIT_BOX={left:12,right:116,top:7,bottom:115};
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
 const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
@@ -31,6 +34,7 @@ let seeds=0;
 let renderToken=0;
 let animationCacheToken=0;
 let animationManifest=null;
+let hairManifest=null;
 let animationFrames={idle:[],walk:[]};
 const cache=new Map();
 
@@ -115,6 +119,48 @@ async function ensureAnimationManifest(){
   animationManifest=await fetchJson(ANIMATION_MANIFEST);
   return animationManifest;
 }
+async function ensureHairManifest(){
+  if(hairManifest)return hairManifest;
+  hairManifest=await fetchJson(HAIR_MANIFEST);
+  return hairManifest;
+}
+function hairBackFit(set,n){
+  const item=hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)];
+  const box=item?.backBBox;
+  if(!box)return set==='female'?{scale:.82,offsetX:0,offsetY:0}:{scale:.89,offsetX:0,offsetY:0};
+  const [x0,y0,x1,y1]=box;
+  const [px,py]=HAIR_PIVOT;
+  const width=Math.max(1,x1-x0);
+  let scale=Math.min(1,(HAIR_FIT_BOX.right-HAIR_FIT_BOX.left)/width);
+  if(y0<py)scale=Math.min(scale,(py-HAIR_FIT_BOX.top)/Math.max(1,py-y0));
+  if(y1>py)scale=Math.min(scale,(HAIR_FIT_BOX.bottom-py)/Math.max(1,y1-py));
+  const center=(x0+x1)/2;
+  const offsetX=-(center-px)*scale;
+  return {scale:Math.max(.76,scale),offsetX,offsetY:0};
+}
+function hairFit(layer,set,n){
+  const back=hairBackFit(set,n);
+  if(layer==='back')return back;
+  return {
+    scale:Math.min(1,Math.max(.94,back.scale+.14)),
+    offsetX:back.offsetX*.25,
+    offsetY:0
+  };
+}
+function hairTransform(layer,set,n,frameTransform=null){
+  const fit=hairFit(layer,set,n);
+  const [px,py]=HAIR_PIVOT;
+  const frameScale=Number(frameTransform?.scale)||1;
+  const dest=frameTransform?.destCenter||HAIR_PIVOT;
+  return {
+    sourceCenter:HAIR_PIVOT,
+    destCenter:[
+      dest[0]+fit.offsetX*frameScale,
+      dest[1]+fit.offsetY*frameScale
+    ],
+    scale:frameScale*fit.scale
+  };
+}
 function drawLayer(targetCtx,image,transform=null){
   if(!image)return;
   if(!transform){
@@ -151,12 +197,14 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   if(isMain&&my!==renderToken)return;
   const [hairBack,body,lower,upper,blush,eyes,eyebrows,nose,mouth,hairFront]=images;
   const headTransform=frame?.headTransform||null;
+  const hairBackTransform=hairTransform('back',targetState.hairSet,targetState.hair,headTransform);
+  const hairFrontTransform=hairTransform('front',targetState.hairSet,targetState.hair,headTransform);
 
   targetCtx.save();
   targetCtx.setTransform(1,0,0,1,0,0);
   targetCtx.clearRect(0,0,128,128);
   targetCtx.imageSmoothingEnabled=false;
-  drawLayer(targetCtx,hairBack,headTransform);
+  drawLayer(targetCtx,hairBack,hairBackTransform);
   drawLayer(targetCtx,body);
   drawLayer(targetCtx,lower);
   drawLayer(targetCtx,upper);
@@ -165,7 +213,7 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   drawLayer(targetCtx,eyebrows,headTransform);
   drawLayer(targetCtx,nose,headTransform);
   drawLayer(targetCtx,mouth,headTransform);
-  drawLayer(targetCtx,hairFront,headTransform);
+  drawLayer(targetCtx,hairFront,hairFrontTransform);
   targetCtx.restore();
 }
 async function refreshAnimationCache(){
@@ -214,11 +262,17 @@ function flash(text){
 function optionButton(label,index,active,thumbHTML,attrs=''){
   return `<button type="button" class="option${active?' active':''}" ${attrs} aria-label="${label} ${index}">${thumbHTML}<span class="num">${index}</span></button>`;
 }
+function hairThumbStyle(layer,set,n){
+  const fit=hairFit(layer,set,n);
+  const ox=(HAIR_PIVOT[0]/128*100).toFixed(2);
+  const oy=(HAIR_PIVOT[1]/128*100).toFixed(2);
+  return `transform-origin:${ox}% ${oy}%;transform:translate(${fit.offsetX}px,${fit.offsetY}px) scale(${fit.scale});`;
+}
 function hairThumb(set,n){
   return `<span class="hair-thumb">
-    <img class="back" alt="" src="${hairPath('back',set,n)}">
+    <img class="back" alt="" style="${hairThumbStyle('back',set,n)}" src="${hairPath('back',set,n)}">
     <img class="base" alt="" src="${BASE}">
-    <img class="front" alt="" src="${hairPath('front',set,n)}">
+    <img class="front" alt="" style="${hairThumbStyle('front',set,n)}" src="${hairPath('front',set,n)}">
   </span>`;
 }
 function clothesThumb(path){
@@ -362,8 +416,11 @@ window.KidscadeAvatarShop={
 };
 
 (async function boot(){
+  await Promise.all([
+    ensureAnimationManifest().catch(()=>null),
+    ensureHairManifest().catch(()=>null)
+  ]);
   renderOptions();
-  await ensureAnimationManifest().catch(()=>null);
   await renderAndPublish(false);
   document.body.dataset.avatarReady='1';
   window.parent?.postMessage({type:'kidscade-avatar-ready',source:'pixel-v1'},location.origin);
