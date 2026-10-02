@@ -2537,6 +2537,11 @@ function runFurnace(recipe){
   };
   requestAnimationFrame(tick);
 }
+function markFreeWorldDirty(delay=1200){
+  if(mode!=='free')return;
+  freeSaveDirty=true;
+  freeSaveDueAt=performance.now()+Math.max(250,delay);
+}
 function saveFreeWorld(){
   if(mode!=='free')return;
   const data={version:11,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
@@ -2550,8 +2555,9 @@ function saveFreeWorld(){
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
-    if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data))
-      lastFreeSave=performance.now();
+    if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data)){
+      lastFreeSave=performance.now();freeSaveDirty=false;freeSaveDueAt=0;
+    }
   }catch(e){console.warn('[Cube Architect save]',e)}
 }
 function loadFreeWorld(){
@@ -3692,7 +3698,8 @@ function animate(now){
   if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
     updateFree(dt,now);
-    if(now-lastFreeSave>30000)saveFreeWorld();
+    if(freeSaveDirty&&now>=freeSaveDueAt)saveFreeWorld();
+    else if(now-lastFreeSave>30000)saveFreeWorld();
   }
   if(renderer){
     if(mode==='free')renderFreeScene(now);
