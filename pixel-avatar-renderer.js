@@ -5,7 +5,7 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='14';
+const ASSET_REV='15';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
@@ -47,6 +47,23 @@ function finitePair(value,fallback=[0,0]){
 }
 function absoluteSrc(src){
   return /^(?:data:|blob:|https?:|\/\/)/i.test(String(src||''));
+}
+function hairRenderTweak(key,config){
+  const style=clampInt(config?.hairStyle ?? config?.hair,1,COUNTS.hair);
+  const set=config?.hairSet==='female'?'female':'male';
+
+  if(key==='hairBack'){
+    return {scaleX:1.06,scaleY:1.05,offsetX:0,offsetY:1};
+  }
+  if(key==='hairFront'){
+    return {
+      scaleX:1.025,
+      scaleY:1.02,
+      offsetX:0,
+      offsetY:set==='male' && [1,5,9].includes(style) ? 1 : 0
+    };
+  }
+  return null;
 }
 
 class ImageCache{
@@ -253,18 +270,23 @@ class PixelAvatar{
     const pivot=finitePair(spec.pivot,canonical);
     const origin=finitePair(spec.origin,[0,0]);
     const t=this.groupTransform(spec.transformGroup||'canvas',frame);
+    const tweak=spec.renderTweak||{};
+    const offsetX=Number(tweak.offsetX);
+    const offsetY=Number(tweak.offsetY);
     const anchor=[
-      t.destCenter[0]+(canonical[0]-t.sourceCenter[0])*t.scaleX,
-      t.destCenter[1]+(canonical[1]-t.sourceCenter[1])*t.scaleY
+      t.destCenter[0]+(canonical[0]-t.sourceCenter[0])*t.scaleX+(Number.isFinite(offsetX)?offsetX:0),
+      t.destCenter[1]+(canonical[1]-t.sourceCenter[1])*t.scaleY+(Number.isFinite(offsetY)?offsetY:0)
     ];
     const localScale=Number(spec.scale);
     const scale=Number.isFinite(localScale)&&localScale>0?localScale:1;
+    const tweakScaleX=Number(tweak.scaleX);
+    const tweakScaleY=Number(tweak.scaleY);
     return {
       anchor,
       pivot,
       origin,
-      scaleX:t.scaleX*scale,
-      scaleY:t.scaleY*scale,
+      scaleX:t.scaleX*scale*(Number.isFinite(tweakScaleX)&&tweakScaleX>0?tweakScaleX:1),
+      scaleY:t.scaleY*scale*(Number.isFinite(tweakScaleY)&&tweakScaleY>0?tweakScaleY:1),
       z:this.rig.zSlots[spec.zSlot]??0
     };
   }
@@ -305,7 +327,7 @@ class PixelAvatar{
     ].filter(([,src])=>Boolean(src)).map(([key,src],order)=>({
       id:key,
       src,
-      spec:defs[key],
+      spec:{...defs[key],renderTweak:hairRenderTweak(key,config)},
       order
     }));
   }
