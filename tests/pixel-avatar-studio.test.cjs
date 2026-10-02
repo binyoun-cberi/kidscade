@@ -6,7 +6,8 @@ const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8');
-const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');\nconst lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
+const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
+const lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
 
 test('avatar studio and renderer JavaScript both parse cleanly',()=>{
