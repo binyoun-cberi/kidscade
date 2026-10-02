@@ -23,16 +23,16 @@ EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 87
 
 NORMALIZE = {
     "male": {
-        "targetWidth": 68,
-        "targetTop": 12,
-        "maxHeight": 74,
-        "verticalFactor": 1.12,
+        "targetWidth": 64,
+        "targetTop": 14,
+        "maxHeight": 66,
+        "scaleMode": "contain-uniform",
     },
     "female": {
-        "targetWidth": 74,
-        "targetTop": 10,
-        "maxHeight": 90,
-        "verticalFactor": 1.25,
+        "targetWidth": 70,
+        "targetTop": 12,
+        "maxHeight": 86,
+        "scaleMode": "contain-uniform",
     },
 }
 
@@ -164,11 +164,15 @@ def normalize_hair(full, kind):
     crop = full.crop(bbox)
     cfg = NORMALIZE[kind]
 
-    sx = cfg["targetWidth"] / max(1, crop.width)
-    sy = min(cfg["maxHeight"] / max(1, crop.height), sx * cfg["verticalFactor"])
+    # Hair art must keep its original proportions.  The previous pipeline
+    # stretched Y independently, which made every style look uniformly "off".
+    scale = min(
+        cfg["targetWidth"] / max(1, crop.width),
+        cfg["maxHeight"] / max(1, crop.height),
+    )
 
-    nw = max(1, round(crop.width * sx))
-    nh = max(1, round(crop.height * sy))
+    nw = max(1, round(crop.width * scale))
+    nh = max(1, round(crop.height * scale))
     crop = crop.resize((nw, nh), Image.Resampling.NEAREST)
 
     hx0,_,hx1,_ = MASTER_HEAD_BBOX
@@ -182,8 +186,8 @@ def normalize_hair(full, kind):
     return canvas, {
         "sourceBBox": list(bbox),
         "targetBBox": [x,y,x+nw,y+nh],
-        "scaleX": round(sx,4),
-        "scaleY": round(sy,4),
+        "scaleX": round(scale,4),
+        "scaleY": round(scale,4),
     }
 
 def build_head_mask(base):
@@ -344,7 +348,7 @@ def main():
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":5,
+        "version":6,
         "type":"kidscade-normalized-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
@@ -362,7 +366,8 @@ def main():
         "qa":{
             "status":"normalized-split-generated-awaiting-visual-approval",
             "checks":[
-                "normalize full hairstyle to master head/body before splitting",
+                "uniform contain-fit full hairstyle to master head/body before splitting",
+                "preserve source aspect ratio; never stretch hair vertically",
                 "6x4 grid extraction",
                 "128x128 hard-alpha assets",
                 "hairBack excludes master-head silhouette",
