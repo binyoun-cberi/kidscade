@@ -82,7 +82,9 @@ test('landmarks lead into a four-stage architecture dungeon and then the existin
   assert.match(js,/angkor:\{/);
   assert.match(js,/Array\.isArray\(spec\.order\)/);
   assert.match(js,/dungeonSession\.stage=1/);
-  assert.match(js,/dungeonSession\.stage=2/);\n  assert.match(js,/dungeonSession\.stage=3/);\n  assert.match(js,/targetKind==='structure'/);
+  assert.match(js,/dungeonSession\.stage=2/);
+  assert.match(js,/dungeonSession\.stage=3/);
+  assert.match(js,/targetKind==='structure'/);
   assert.match(js,/restorationSession=\{poiId:poi\.id,missionIndex:poi\.missionIndex,completed:false,fromDungeon:true\}/);
   assert.match(js,/seedRestorationChallenge/);
   assert.match(js,/restorationScore>=85/);
