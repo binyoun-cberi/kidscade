@@ -4,7 +4,6 @@
 
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
-  const SHOP_KEY = 'kidscade-avatar-shop-v2';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   let overlay = null;
@@ -108,7 +107,7 @@
   function ownedSummary() {
     try {
       const pixel = JSON.parse(localStorage.getItem(PIXEL_STATE_KEY) || 'null');
-      if (pixel) return '픽셀 파츠 78개';
+      if (pixel) return '픽셀 파츠 80개';
     } catch (_) {}
     return '새 픽셀 아바타';
   }
@@ -308,7 +307,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `
       <div id="kidscade-avatar-studio-bar">
-        <div><strong>👤 Kidscade 캐릭터 아틀리에</strong><span>게임에서 모은 씨앗으로 스타일을 해금해요</span></div>
+        <div><strong>👤 Kidscade 캐릭터 아틀리에</strong><span>새 픽셀 파츠를 조합해 나만의 캐릭터를 만들어요</span></div>
         <button id="kidscade-avatar-studio-close" type="button">저장하고 닫기 ✕</button>
       </div>
       <iframe id="kidscade-avatar-studio-frame" title="Kidscade 캐릭터 꾸미기 상점" src="${STUDIO_URL}"></iframe>`;
@@ -474,7 +473,7 @@
   });
 
   window.addEventListener('storage', event => {
-    if (event.key === SHOP_KEY || event.key === PIXEL_STATE_KEY || event.key === PREVIEW_KEY) ensurePreviewLayer();
+    if (event.key === PIXEL_STATE_KEY || event.key === PREVIEW_KEY) ensurePreviewLayer();
   });
 
   // Garden uses the exact saved avatar-studio appearance, while garden-life.js adds behaviour.
@@ -493,7 +492,12 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     const legacy = document.getElementById('avatar-modal');
-    if (legacy) legacy.setAttribute('aria-hidden', 'true');
+    if (legacy) {
+      legacy.classList.add('hidden');
+      legacy.setAttribute('aria-hidden', 'true');
+      legacy.setAttribute('inert', '');
+      legacy.dataset.retiredBy = 'pixel-avatar-v1';
+    }
     installStyles();
     buildOverlay();
     setTimeout(() => { ensurePreviewLayer(); watchPreview(); startLivePreview(); }, 0);
