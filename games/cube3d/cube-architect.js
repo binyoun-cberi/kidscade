@@ -3463,7 +3463,11 @@ function mobileBlockAction(action){
   }
   if(mode==='free'&&!inventoryOpen&&!furnaceOpen){
     const hit=freeCenterHit(6);
-    if(action==='break'){if(hitWildCreature())return;breakFreeBlock(hit)}
+    if(action==='break'){
+      if(hitWildCreature())return;
+      if(gameFreeMode==='survival')startMining('mobile');
+      else breakFreeBlock(hit);
+    }
     if(action==='place')placeFreeBlock(hit);
   }
 }
@@ -3492,7 +3496,15 @@ function initMobileControls(){
       ev.preventDefault();ev.stopPropagation();if(mobileModeEnabled)cb();
     });
   }
-  tap('mobileBreak',()=>mobileBlockAction('break'));
+  const mobileBreakBtn=$('mobileBreak');
+  mobileBreakBtn.addEventListener('pointerdown',ev=>{
+    if(!mobileModeEnabled)return;ev.preventDefault();ev.stopPropagation();
+    mobileBreakBtn.setPointerCapture?.(ev.pointerId);mobileBlockAction('break');
+  });
+  const releaseBreak=()=>{if(miningSource==='mobile')stopMining()};
+  mobileBreakBtn.addEventListener('pointerup',releaseBreak);
+  mobileBreakBtn.addEventListener('pointercancel',releaseBreak);
+  mobileBreakBtn.addEventListener('lostpointercapture',releaseBreak);
   tap('mobilePlace',()=>mobileBlockAction('place'));
   tap('mobileCheck',()=>{
     if(mode==='challenge')checkChallenge();
