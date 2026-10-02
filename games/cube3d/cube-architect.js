@@ -2120,6 +2120,13 @@ function buildInventory(category='전체'){
     grid.appendChild(b);
   });
 }
+function resumeFreePointerLock(){
+  if(mobileModeEnabled||mode!=='free'||typeof canvas.requestPointerLock!=='function')return;
+  try{
+    const p=canvas.requestPointerLock();
+    if(p&&typeof p.catch==='function')p.catch(()=>{$('lockNotice')?.classList.remove('hidden')});
+  }catch(_){$('lockNotice')?.classList.remove('hidden')}
+}
 function toggleInventory(force){
   const wasOpen=inventoryOpen;
   inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
@@ -2133,7 +2140,7 @@ function toggleInventory(force){
     buildInventory('전체');
   }
   $('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
-  if(wasOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')requestGamePointerLock();
+  if(wasOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
 }
 function nearestUnrestoredLandmark(x,z){
   return poiRules.POIS.filter(p=>!restoredLandmarks.has(p.id))
@@ -2582,7 +2589,7 @@ function toggleFurnace(force){
   $('furnacePanel').classList.toggle('hidden',!furnaceOpen);
   if(furnaceOpen&&document.pointerLockElement===canvas)document.exitPointerLock();
   $('lockNotice').classList.toggle('hidden',furnaceOpen||inventoryOpen||document.pointerLockElement===canvas);
-  if(wasOpen&&!furnaceOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')requestGamePointerLock();
+  if(wasOpen&&!furnaceOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
 }
 function runFurnace(recipe){
   if(runFurnace.busy)return;
