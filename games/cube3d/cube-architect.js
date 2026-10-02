@@ -2074,27 +2074,40 @@ function streamWorldMeshes(force=false){
     worldInteractables=worldInteractables.filter(m=>!stale.has(m.userData.worldKey));
     freeMeshes=freeMeshes.filter(m=>!stale.has(m.userData.worldKey));
   }
+  for(const chunk of [...worldChunkMeshMap.keys()]){
+    const [bx,bz]=chunk.split(',').map(Number);
+    if(!chunkTouchesRenderRange(bx,bz))removeWorldChunkRender(chunk);
+  }
   const minX=Math.floor((cx-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   const maxX=Math.floor((cx+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   const minZ=Math.floor((cz-WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   const maxZ=Math.floor((cz+WORLD_VIEW_RADIUS)/WORLD_CHUNK_SIZE);
   for(let bx=minX;bx<=maxX;bx++)for(let bz=minZ;bz<=maxZ;bz++){
+    const chunk=bx+','+bz,wasGenerated=worldChunksGenerated.has(chunk);
     generateWorldChunk(bx,bz);
-    const keys=worldChunkIndex.get(bx+','+bz);
+    const madeChunk=ensureWorldChunkMesh(bx,bz);
+    if(!wasGenerated||madeChunk){
+      for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const neighbor=(bx+dx)+','+(bz+dz);
+        if(worldChunkMeshMap.has(neighbor))rebuildWorldChunkMesh(bx+dx,bz+dz);
+      }
+    }
+    const keys=worldChunkIndex.get(chunk);
     if(!keys)continue;
     for(const key of keys){
       if(worldMeshMap.has(key))continue;
       const [x,y,z]=parseWorldKey(key);
       if(!inRenderRange(x,z))continue;
       const data=worldData.get(key);
-      if(data&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
+      if(data&&!isChunkRenderableData(data)&&visibleAt(x,y,z,data))makeWorldMesh(x,y,z,data);
     }
   }
 }
 function rebuildAllWorldMeshes(){
-  // The world data covers 128×128 cells, but only nearby blocks have 3D meshes.
   for(const mesh of worldMeshMap.values())scene.remove(mesh);
-  worldMeshMap=new Map();worldInteractables=[];freeMeshes=[];
+  for(const chunk of [...worldChunkMeshMap.keys()])removeWorldChunkRender(chunk);
+  worldMeshMap=new Map();worldChunkMeshMap=new Map();worldChunkDecorMap=new Map();
+  dirtyWorldChunks.clear();chunkRemeshQueued=false;worldInteractables=[];freeMeshes=[];
   streamCenterX=Infinity;streamCenterZ=Infinity;streamWorldMeshes(true);
 }
 function growTree(x,baseY,z,record,kind='forest'){
@@ -2183,6 +2196,7 @@ function addCollectible(id,x,y,z,color,label){
 }
 function buildFreeWorld(){
   worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
+  worldChunkMeshMap=new Map();worldChunkDecorMap=new Map();dirtyWorldChunks=new Set();chunkRemeshQueued=false;
   worldChunkIndex=new Map();worldChunksGenerated=new Set();worldChunkGenerationDepth=0;
   const radius=WORLD_VIEW_RADIUS+5;
   const xMin=Math.floor(-radius/WORLD_CHUNK_SIZE),xMax=Math.floor(radius/WORLD_CHUNK_SIZE);
@@ -2592,6 +2606,11 @@ function nearbyWorldInteractables(eye,max=6.5){
   const reach=max+1.25,ey=eye.y;
   return worldInteractables.filter(mesh=>{
     const u=mesh.userData;
+    if(u?.worldChunkMesh){
+      const dx=eye.x<u.minX?u.minX-eye.x:eye.x>u.maxX?eye.x-u.maxX:0;
+      const dz=eye.z<u.minZ?u.minZ-eye.z:eye.z>u.maxZ?eye.z-u.maxZ:0;
+      return dx<=reach&&dz<=reach;
+    }
     return u?.worldBlock&&Math.abs((u.gx??9999)-eye.x)<=reach&&
       Math.abs((u.gz??9999)-eye.z)<=reach&&Math.abs((u.gy??9999)-ey)<=reach+2;
   });
@@ -2599,7 +2618,8 @@ function nearbyWorldInteractables(eye,max=6.5){
 function freeCenterHit(max=6.5){
   const {eye,maxFromPlayer}=setFreeInteractionRay(max);
   const hits=raycaster.intersectObjects(nearbyWorldInteractables(eye,maxFromPlayer),false);
-  return hits.find(h=>withinPlayerReach(h,eye,maxFromPlayer))||null;
+  const hit=hits.find(h=>withinPlayerReach(h,eye,maxFromPlayer))||null;
+  return hit&&voxelRuntime?.resolveHit?voxelRuntime.resolveHit(hit):hit;
 }
 
 function pickTier(type=selectedType){
@@ -3139,10 +3159,10 @@ function reactFluidsNear(x,y,z){
 }
 function simulateSand(){
   const moves=[];
-  for(const key of worldMeshMap.keys()){
-    const d=worldData.get(key);if(!d||!(d.type==='sand'||d.type==='redSand'||d.type==='gravel'))continue;const [x,y,z]=parseWorldKey(key);if(y<=WORLD_MIN_Y+1)continue;
+  forEachActiveWorldBlock((key,d,x,y,z)=>{
+    if(!(d.type==='sand'||d.type==='redSand'||d.type==='gravel')||y<=WORLD_MIN_Y+1)return;
     const below=getBlock(x,y-1,z);if(!below||blockDef(below).liquid||below.type==='fire')moves.push([x,y,z]);
-  }
+  });
   moves.slice(0,40).forEach(([x,y,z])=>{const d=getBlock(x,y,z);if(!d||!blockDef(d).gravity||getBlock(x,y-1,z)&&!blockDef(getBlock(x,y-1,z)).liquid)return;removeWorldBlockData(x,y,z,true);setWorldBlock(x,y-1,z,{...d,falling:true},true)});
 }
 function flowInto(x,y,z,type,level){
@@ -3155,7 +3175,7 @@ function flowInto(x,y,z,type,level){
 }
 function simulateLiquids(){
   const liquids=[];
-  for(const key of worldMeshMap.keys()){const d=worldData.get(key);if(d&&(d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d])}
+  forEachActiveWorldBlock((key,d)=>{if((d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d])});
   for(const [key,d] of liquids.slice(0,90)){
     const [x,y,z]=parseWorldKey(key),level=d.level||1;if(!getBlock(x,y,z))continue;
     if(!getBlock(x,y-1,z)&&y>WORLD_MIN_Y+1){flowInto(x,y-1,z,d.type,Math.max(level,2));continue}
@@ -3173,12 +3193,11 @@ function hasNearbyLog(x,y,z,r=4){
 }
 function simulatePlants(){
   const dirt=[],grass=[],leaves=[],saplings=[];
-  for(const key of worldMeshMap.keys()){
-    const d=worldData.get(key);if(!d)continue;
+  forEachActiveWorldBlock((key,d)=>{
     if(d.type==='dirt')dirt.push(key);else if(d.type==='grass')grass.push(key);
     else if(d.type==='leaves'||d.type==='pineLeaves')leaves.push(key);
     else if(d.type==='sapling')saplings.push(key);
-  }
+  });
   grass.slice(0,80).forEach(key=>{const [x,y,z]=parseWorldKey(key),above=getBlock(x,y+1,z);if(above&&isOccluder(above)&&hash2(x+freeSimTick,z)<.08)setWorldBlock(x,y,z,{type:'dirt',natural:true},true)});
   for(let i=0;i<Math.min(18,dirt.length);i++){
     const key=dirt[(i*13+freeSimTick*7)%dirt.length],[x,y,z]=parseWorldKey(key);if(getBlock(x,y+1,z))continue;
@@ -3196,7 +3215,7 @@ function simulatePlants(){
   }
 }
 function simulateFire(){
-  const fires=[];for(const key of worldMeshMap.keys()){const d=worldData.get(key);if(d?.type==='fire')fires.push(key)}
+  const fires=[];forEachActiveWorldBlock((key,d)=>{if(d?.type==='fire')fires.push(key)});
   const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
   for(const key of fires.slice(0,40)){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
