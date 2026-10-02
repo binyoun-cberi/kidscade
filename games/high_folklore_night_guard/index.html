@@ -533,7 +533,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 .anomaly-asset.scratch{right:13%;top:28%;width:22%;height:37%;opacity:.58}
 .anomaly-asset.footprints{left:35%;bottom:4%;width:31%;height:28%}
 .room-scene .prop{
-  display:none;position:absolute;z-index:10;margin:0;padding:0;border:0;background-color:transparent;
+  display:none;position:absolute;z-index:14;margin:0;padding:0;border:0;background-color:transparent;
   background-repeat:no-repeat;background-position:center;background-size:contain;font-size:0;color:transparent;
   opacity:0;cursor:pointer;filter:none;text-shadow:none;transition:opacity .16s,filter .16s,transform .16s;
   overflow:visible
@@ -541,10 +541,22 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 .room-scene .prop::before,.room-scene .prop::after{pointer-events:none}
 .room-scene .prop:hover{filter:brightness(1.12) drop-shadow(0 0 9px #e0bd6b66)}
 .room-scene .prop.changed{
-  opacity:1;animation:dokkaebiObject 1.05s ease-in-out infinite alternate;
-  filter:drop-shadow(0 4px 7px #000b) brightness(.94) contrast(1.08)
+  opacity:1;animation:dokkaebiObject .82s ease-in-out infinite alternate;
+  filter:drop-shadow(0 5px 8px #000d) brightness(1.12) contrast(1.18);
+  outline:2px solid #e1b85788;outline-offset:3px;background-color:#d7a04d0b
 }
-.room-scene .prop.changed.fresh{animation:dokkaebiReveal .18s steps(2,end) 7,dokkaebiObject 1.05s ease-in-out 1.3s infinite alternate}
+.room-scene .prop.changed .prank-spark{
+  display:block;position:absolute;right:-9px;top:-12px;z-index:4;
+  width:24px;height:24px;border-radius:50%;font:900 16px/24px serif;text-align:center;
+  color:#ffe6a2;background:#3a2b16d9;box-shadow:0 0 13px #e4b84caa;opacity:.62;
+  animation:prankSpark 1.1s ease-in-out infinite alternate;pointer-events:none
+}
+.room-scene .prop.changed.fresh{
+  animation:dokkaebiReveal .16s steps(2,end) 9,dokkaebiObject .82s ease-in-out 1.45s infinite alternate;
+  outline:4px solid #ffe18dcc;outline-offset:5px;box-shadow:0 0 30px #d7a04d66
+}
+.room-scene .prop.changed.fresh .prank-spark{opacity:1;transform:scale(1.24)}
+@keyframes prankSpark{from{transform:translateY(0) rotate(-8deg);filter:brightness(.9)}to{transform:translateY(-4px) rotate(8deg);filter:brightness(1.3)}}
 
 /* 도깨비 전용 장난 8종. 사진·칠판·가짜 문은 일반 이상현상과 겹치므로 사용하지 않는다. */
 .room-scene .prop[data-prop="0"]{
@@ -615,8 +627,8 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   background:repeating-linear-gradient(90deg,#735329 0 5px,#9b743b 5px 9px);
   clip-path:polygon(18% 0,82% 0,100% 100%,0 100%);border-radius:3px
 }
-@keyframes dokkaebiObject{from{transform:translateY(0) rotate(-.35deg)}to{transform:translateY(-2px) rotate(.35deg)}}
-@keyframes dokkaebiReveal{0%,100%{filter:brightness(.82) drop-shadow(0 3px 6px #000a)}50%{filter:brightness(1.34) drop-shadow(0 0 18px #d7a04daa)}}
+@keyframes dokkaebiObject{from{transform:translateY(0) rotate(-.55deg)}to{transform:translateY(-5px) rotate(.55deg)}}
+@keyframes dokkaebiReveal{0%,100%{filter:brightness(.78) contrast(1.1) drop-shadow(0 3px 6px #000a)}50%{filter:brightness(1.62) contrast(1.22) drop-shadow(0 0 26px #ffd56dcc)}}
 @media(max-width:780px){
   .anomaly-asset.class-photo{width:21%}.anomaly-asset.class-board{width:41%}
   .anomaly-asset.west-reaper,.anomaly-asset.east-shadow{width:19%}
@@ -801,6 +813,29 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
   .fake-scare-shadow{width:58vw}
 }
 
+.maiden-gaze{
+  position:absolute;z-index:30;left:18px;bottom:18px;width:min(320px,42vw);display:none;
+  padding:9px 11px;border:1px solid #cbd3d6aa;background:#090b0dde;color:#e8edef;box-shadow:0 8px 24px #000d
+}
+.maiden-gaze.show{display:block}
+.maiden-gaze-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:900}
+.maiden-gaze-head span{font-family:serif;font-size:14px}
+.maiden-gaze-head b{color:#cbd4d8}
+.maiden-gaze-track{margin-top:7px;height:8px;background:#252a2c;border:1px solid #535c60;overflow:hidden}
+.maiden-gaze-fill{height:100%;width:0;background:linear-gradient(90deg,#747d82,#e0e5e7);transition:width .08s linear}
+.room-scene.maiden-focus{filter:grayscale(.62) brightness(.7) contrast(1.2)!important}
+.reaper-omen{
+  display:none;position:absolute;z-index:32;left:50%;top:16%;transform:translateX(-50%);
+  min-width:230px;padding:9px 14px;text-align:center;border:1px solid #7398ab;background:#071015e8;
+  box-shadow:0 0 26px #4eaad155;color:#dbeef6;font-family:ui-monospace,monospace
+}
+.reaper-omen.show{display:block}
+.reaper-omen span{display:block;font-size:10px;letter-spacing:.16em}
+.reaper-omen b{display:block;font-size:21px;letter-spacing:.2em;margin:2px 0;color:#bcecff;text-shadow:0 0 10px #72caff}
+.reaper-omen small{font-size:9px;color:#9db2bb}
+.hall-entity.reaper-presence{display:flex!important;opacity:.72;filter:drop-shadow(0 0 22px #6fc7ff66)}
+.hall-entity.reaper-presence .ghost-sprite{filter:brightness(.42) grayscale(.5) contrast(1.35) drop-shadow(0 0 22px #6fc7ff77)}
+@media(max-width:780px){.maiden-gaze{left:10px;bottom:76px;width:min(280px,76vw)}.reaper-omen{top:13%;min-width:200px}}
 /* v8 · 나폴리탄 야간근무 수칙서 */
 #codexModal{background:#020304e8}
 #codexModal .card{
@@ -903,11 +938,28 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
 }
 .presence-layer .character-dokkaebi.presence-stage-0{left:72%;height:25%;bottom:27%}
 .presence-layer .character-dokkaebi.presence-stage-1{left:67%;height:48%}
+.presence-layer .character-maiden.presence-stage-0{left:72%;height:42%;bottom:19%;opacity:.64;filter:grayscale(.9) brightness(.74) contrast(1.3) drop-shadow(0 0 18px #e8edf055)}
+.presence-layer .character-maiden.presence-stage-1{left:22%;height:72%;bottom:0;opacity:.86;filter:grayscale(.78) brightness(.78) contrast(1.32) drop-shadow(0 0 24px #d9e1e555)}
+.presence-layer .character-maiden.presence-stage-2{left:10%;height:108%;bottom:-16%;opacity:1;filter:grayscale(.65) brightness(.84) contrast(1.38) drop-shadow(0 0 34px #e5e9ec66)}
+.presence-layer.show.ghost-maiden::before{
+  content:"";position:absolute;z-index:3;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,#08090bd8 0 5%,transparent 18% 74%,#090a0bc2 96%),
+    radial-gradient(ellipse at 24% 52%,transparent 0 20%,#d9e1e50b 31%,transparent 47%);
+  animation:maidenVeil 2.2s ease-in-out infinite alternate
+}
 .presence-layer .character-wolf.presence-stage-0{height:36%;bottom:22%}
 .presence-layer .character-wolf.presence-stage-1{height:67%;bottom:4%}
-.presence-layer .character-reaper.presence-stage-0{height:38%;bottom:18%;opacity:.29}
-.presence-layer .character-reaper.presence-stage-1{height:67%;bottom:2%;opacity:.56}
+.presence-layer .character-reaper.presence-stage-0{height:44%;bottom:14%;opacity:.46;filter:grayscale(.72) brightness(.52) contrast(1.4) drop-shadow(0 0 20px #6fc7ff66)}
+.presence-layer .character-reaper.presence-stage-1{height:72%;bottom:-1%;opacity:.72;filter:grayscale(.62) brightness(.6) contrast(1.42) drop-shadow(0 0 28px #6fc7ff77)}
+.presence-layer .character-reaper.presence-stage-2{height:96%;bottom:-12%;opacity:.94;filter:grayscale(.55) brightness(.66) contrast(1.45) drop-shadow(0 0 38px #6fc7ff88)}
+.presence-layer.show.ghost-reaper::after{
+  content:"";position:absolute;z-index:2;right:21%;bottom:18%;width:34px;height:44px;border-radius:45% 45% 55% 55%;
+  background:radial-gradient(circle at 50% 38%,#d9f3ff 0 8%,#8cd7ff88 18%,#4fa8d844 42%,transparent 70%);
+  box-shadow:0 0 28px #65c1f488;animation:reaperLantern 1.7s ease-in-out infinite alternate
+}
 .presence-layer .character-yuki{filter:saturate(.45) brightness(.68) contrast(1.1) drop-shadow(0 0 16px #c9f4ff44)}
+@keyframes maidenVeil{from{opacity:.45}to{opacity:.85}}
+@keyframes reaperLantern{from{opacity:.45;transform:translateY(2px)}to{opacity:1;transform:translateY(-3px)}}
 .presence-layer .character-egg.presence-stage-0{left:70%;height:31%}
 .presence-layer .character-egg.presence-stage-1{left:61%;height:58%}
 .presence-layer .character-maiden.presence-stage-0{left:66%;height:34%}
@@ -1149,6 +1201,7 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
       <div class="desk"></div>
       <div class="monitor"><div><b>학교 야간 감시 단말기</b><small>카메라를 열어 교실과 복도의 이상을 확인하세요.<br>근무수칙은 열어 둔 동안 시간이 멈춥니다.</small></div></div>
       <div class="toast" id="toast"></div>
+      <div class="reaper-omen" id="reaperOmen" aria-hidden="true"><span>저승사자</span><b id="reaperTolls">○ ○ ○</b><small>세 번째 종 전에 문을 닫으세요</small></div>
       <div class="ghost-whisper" id="ghostWhisper" aria-live="polite" aria-hidden="true">
         <span id="ghostWhisperText"></span>
       </div>
@@ -1174,18 +1227,22 @@ button:focus-visible{outline:3px solid #fff8;outline-offset:2px}
           <div class="ambient-layer" id="ambientLayer" aria-hidden="true"></div>
           <div class="presence-layer" id="presenceLayer" aria-hidden="true"></div>
           <div class="signal-intrusion" id="signalIntrusion" aria-hidden="true"></div>
-          <button class="prop" data-prop="0" type="button" aria-label="자리에서 크게 밀려난 책상"></button>
-          <button class="prop" data-prop="1" type="button" aria-label="거꾸로 선 의자"></button>
-          <button class="prop" data-prop="2" type="button" aria-label="제멋대로 돌아간 시계"></button>
-          <button class="prop" data-prop="3" type="button" aria-label="천장에 거꾸로 붙은 화분"></button>
-          <button class="prop" data-prop="4" type="button" aria-label="공중에 떠 있는 자"></button>
-          <button class="prop" data-prop="5" type="button" aria-label="천장에 붙은 가방"></button>
-          <button class="prop" data-prop="6" type="button" aria-label="책상 위에 올라간 신발"></button>
-          <button class="prop" data-prop="7" type="button" aria-label="공중에 떠 있는 빗자루"></button>
+          <button class="prop" data-prop="0" type="button" aria-label="자리에서 크게 밀려난 책상"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="1" type="button" aria-label="거꾸로 선 의자"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="2" type="button" aria-label="제멋대로 돌아간 시계"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="3" type="button" aria-label="천장에 거꾸로 붙은 화분"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="4" type="button" aria-label="공중에 떠 있는 자"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="5" type="button" aria-label="천장에 붙은 가방"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="6" type="button" aria-label="책상 위에 올라간 신발"><span class="prank-spark" aria-hidden="true">✦</span></button>
+          <button class="prop" data-prop="7" type="button" aria-label="공중에 떠 있는 빗자루"><span class="prank-spark" aria-hidden="true">✦</span></button>
           <div class="entity-cam" id="camEntity"></div>
           <div class="frost" id="frost"></div>
           <div class="stare-vignette" id="stareVignette"></div>
           <div class="anomaly-layer" id="anomalyLayer" aria-hidden="true"></div>
+        </div>
+        <div class="maiden-gaze" id="maidenGaze" aria-hidden="true">
+          <div class="maiden-gaze-head"><span>처녀귀신</span><b id="maidenGazeText">시선을 유지하세요</b></div>
+          <div class="maiden-gaze-track"><div class="maiden-gaze-fill" id="maidenGazeFill"></div></div>
         </div>
         <div class="thermostat-panel" id="thermostatPanel" aria-hidden="true">
           <div class="thermo-title">과학실 온도 조절</div>
@@ -1545,7 +1602,7 @@ var els={
   leftLight:$('leftLight'),rightLight:$('rightLight'),leftDoor:$('leftDoor'),rightDoor:$('rightDoor'),
   camOpen:$('camOpen'),cameraShell:$('cameraShell'),cameraView:$('cameraView'),camClose:$('camClose'),cameraMap:$('cameraMap'),
   camCode:$('camCode'),camName:$('camName'),roomScene:$('roomScene'),camEntity:$('camEntity'),frost:$('frost'),stare:$('stareVignette'),
-  ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),
+  ambientLayer:$('ambientLayer'),presenceLayer:$('presenceLayer'),signalIntrusion:$('signalIntrusion'),maidenGaze:$('maidenGaze'),maidenGazeFill:$('maidenGazeFill'),maidenGazeText:$('maidenGazeText'),reaperOmen:$('reaperOmen'),reaperTolls:$('reaperTolls'),
   thermostat:$('thermostatPanel'),thermoFill:$('thermoFill'),roomTemp:$('roomTemp'),setTemp:$('setTemp'),thermoHint:$('thermoHint'),heatBattle:$('heatBattle'),heatBattleFill:$('heatBattleFill'),heatBattleText:$('heatBattleText'),tempUp:$('tempUp'),tempDown:$('tempDown'),reportBtn:$('reportBtn'),anomalyLayer:$('anomalyLayer'),toast:$('toast'),ghostWhisper:$('ghostWhisper'),ghostWhisperText:$('ghostWhisperText'),intro:$('introModal'),help:$('helpModal'),helpContent:$('helpContent'),
   codex:$('codexModal'),codexContent:$('codexContent'),result:$('resultModal'),resultContent:$('resultContent'),
   fakeScare:$('fakeScare'),fakeScareText:$('fakeScareText'),fakeScareEye:$('fakeScareEye'),fakeScareShadow:$('fakeScareShadow'),
@@ -1689,9 +1746,10 @@ function renderCodex(){
         '<div class="quick-rules-title">처음엔 이것만 기억하세요</div>'+
         '<div class="quick-rules-sub">귀신을 봤다고 「이상 기록」을 누르는 게 아닙니다. 귀신마다 대응법이 다릅니다.</div>'+
         '<div class="quick-rule-grid">'+
-          '<div class="quick-rule-card"><div class="who">흰 옷 여자 · 처녀귀신</div><div class="do">계속 바라보기</div><div class="hint">CCTV로 보고 있으면 뒤로 물러남</div></div>'+
+          '<div class="quick-rule-card"><div class="who">흰 옷 여자 · 처녀귀신</div><div class="do">시선 게이지가 찰 때까지 계속 바라보기</div><div class="hint">오르골 소리가 가까워지면 찾아서 쳐다보기</div></div>'+
           '<div class="quick-rule-card"><div class="who">얼굴 없는 학생 · 달걀귀신</div><div class="do">다른 CAM 보기</div><div class="hint">오래 보면 위험함</div></div>'+
-          '<div class="quick-rule-card"><div class="who">복도 귀신 · 저승사자 / 늑대인간</div><div class="do">문 앞에 오면 그쪽 문 닫기</div><div class="hint">서쪽이면 서쪽 문, 동쪽이면 동쪽 문</div></div>'+
+          '<div class="quick-rule-card"><div class="who">검은 갓 · 저승사자</div><div class="do">세 번째 종 전에 그쪽 문 닫기</div><div class="hint">천천히 오지만 멈추지 않음 · 문을 잠시 유지</div></div>'+
+          '<div class="quick-rule-card"><div class="who">늑대인간</div><div class="do">달려드는 즉시 그쪽 문 닫기</div><div class="hint">발소리·울음 뒤 매우 빠르게 돌진</div></div>'+
           '<div class="quick-rule-card"><div class="who">과학실이 얼어감 · 유키온나</div><div class="do">▲ 온도 올리기</div><div class="hint">누르면 잠시 사라짐 · 많이 얼었을수록 오래 물러남</div></div>'+
           '<div class="quick-rule-card"><div class="who">6-1 장난 물건 · 도깨비</div><div class="do">장난친 물건 직접 누르기</div><div class="hint">책상·의자·시계·화분·자·가방·신발·빗자루</div></div>'+
           '<div class="quick-rule-card special-card"><div class="who">문·사진·시계·발자국 등 배경 자체가 달라짐</div><div class="do">「이상 기록」 누르기</div><div class="hint">귀신 자체가 아니라, 원래 없던 변화가 기록 대상</div></div>'+
@@ -1731,8 +1789,8 @@ function renderCodex(){
         '<div class="rulebook-rule danger"><span class="no">0.</span><strong>공통 규칙:</strong> 어떤 귀신이든 <strong>관리실 문 앞까지 오면 그 방향 문을 닫으세요.</strong></div>'+
         '<div class="rulebook-rule"><span class="no">1.</span><strong>흰 옷의 여자</strong> → CCTV로 <strong>계속 바라보세요.</strong> 보고 있으면 뒤로 물러납니다. 그래도 문 앞까지 오면 서쪽 문을 닫으세요.</div>'+
         '<div class="rulebook-rule"><span class="no">2.</span><strong>얼굴 없는 학생</strong> → <strong>바로 다른 카메라로 돌리세요.</strong> 오래 보면 위험합니다.</div>'+
-        '<div class="rulebook-rule danger"><span class="no">3.</span><strong>검은 갓</strong> → 문 앞까지 오면 <span class="rulebook-red">그쪽 문을 닫으세요.</span></div>'+
-        '<div class="rulebook-rule danger"><span class="no">4.</span><strong>늑대인간</strong> → 문 앞까지 오면 <strong>그쪽 문을 닫으세요.</strong></div>'+
+        '<div class="rulebook-rule danger"><span class="no">3.</span><strong>검은 갓 · 저승사자</strong> → 이동할 때마다 종이 울립니다. 문 앞에서는 세 번 울리므로 <span class="rulebook-red">세 번째 종 전에 해당 문을 닫고 잠시 유지하세요.</span> 늑대인간보다 느리지만 CCTV로 봐도 멈추지 않습니다.</div>'+
+        '<div class="rulebook-rule danger"><span class="no">4.</span><strong>늑대인간</strong> → 울음과 달리는 발소리 뒤 빠르게 문으로 돌진합니다. <strong>보이면 즉시 해당 문을 닫으세요.</strong></div>'+
         ''+
         note('maiden',1,'“흰옷은 보고 있으면 멈춘다. 화면을 돌리면 다시 온다.”','pencil')+
         note('egg',1,'“얼굴을 확인하려고 하지 마라. 오래 보는 쪽이 위험하다.”','pencil')+
@@ -2113,12 +2171,24 @@ function renderCamera(){
   els.camCode.textContent=c.code;els.camName.textContent=c.name;
   var bg=c.bg,a=state.anomaly;
   if(a&&a.active&&a.cam===state.currentCam&&a.variantBg)bg=ASSET_ROOT+a.variantBg;
+  var deskPrank=state.currentCam==='korea'&&state.dokkaebi&&state.dokkaebi.active&&state.dokkaebi.location==='korea'&&state.dokkaebi.trickActive&&state.dokkaebi.prop===0;
+  if(deskPrank)bg=ASSET_ROOT+'classroom_desk_shift_01.png';
   if(state.currentCam==='japan'&&state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.yuki.frost>=74)bg=ASSET_ROOT+'science_variant_frozen_01.png';
   els.roomScene.style.backgroundImage='linear-gradient(#02050822,#02050833),url("'+bg+'")';
   els.roomScene.style.backgroundPosition=c.pos||'center';
   els.roomScene.dataset.room=state.currentCam;
   updateCameraMapFocus(state.currentCam);
   renderAtmosphere();roomPropsVisible();cameraGhost();renderAnomaly();
+  var maidenHere=state.maiden&&state.maiden.active&&currentMaidenCam()===state.currentCam;
+  els.roomScene.classList.toggle('maiden-focus',!!maidenHere);
+  if(maidenHere){
+    els.maidenGaze.classList.add('show');els.maidenGaze.setAttribute('aria-hidden','false');
+    var gaze=Math.max(0,Math.min(100,(state.maiden.viewed/2.1)*100));
+    els.maidenGazeFill.style.width=gaze+'%';
+    els.maidenGazeText.textContent=gaze>=72?'조금만 더 바라보세요':gaze>=28?'시선이 닿고 있습니다':'시선을 유지하세요';
+  }else{
+    els.maidenGaze.classList.remove('show');els.maidenGaze.setAttribute('aria-hidden','true');els.maidenGazeFill.style.width='0%';
+  }
   var frost=state.yuki&&state.yuki.active&&state.yuki.location==='japan'&&state.currentCam==='japan'?Math.min(1,state.yuki.frost/100):0;
   els.frost.style.opacity=String(frost*.95);
   var stare=state.egg&&state.egg.active&&state.currentCam===state.egg.cam?Math.min(.85,state.egg.stare/100):0;
@@ -2168,8 +2238,18 @@ function updateOffice(){
   ['reaper','wolf'].forEach(function(type){
     var r=state.roamers&&state.roamers[type];if(!r||!r.active||r.location!=='office')return;
     var target=r.side==='left'?els.leftEntity:els.rightEntity,lit=r.side==='left'?state.leftLight:state.rightLight;
-    if(lit){target.innerHTML+=svg(GHOSTS[type].svg);target.classList.add('show')}
+    if(type==='reaper'){
+      target.innerHTML+=svg(GHOSTS[type].svg);target.classList.add('show','reaper-presence')
+    }else if(lit){target.innerHTML+=svg(GHOSTS[type].svg);target.classList.add('show')}
   });
+  var reaper=state.roamers&&state.roamers.reaper;
+  if(reaper&&reaper.active&&reaper.location==='office'){
+    els.reaperOmen.classList.add('show');els.reaperOmen.setAttribute('aria-hidden','false');
+    var toll=Math.max(0,Math.min(3,reaper.tollStage||0));
+    els.reaperTolls.textContent=(toll>=1?'●':'○')+' '+(toll>=2?'●':'○')+' '+(toll>=3?'●':'○');
+  }else{
+    els.reaperOmen.classList.remove('show');els.reaperOmen.setAttribute('aria-hidden','true');els.reaperTolls.textContent='○ ○ ○';
+  }
   if(state.maiden&&state.maiden.active&&currentMaidenCam()==='office'&&state.leftLight){
     els.leftEntity.innerHTML+=svg('maiden');els.leftEntity.classList.add('show')
   }
@@ -2255,18 +2335,18 @@ function chooseRoamerSide(type){
 function makeRoamer(type,delay){
   if(!castHas(type))return null;
   var side=chooseRoamerSide(type),doorCam=side==='left'?'west':'east';
-  return {active:true,type:type,side:side,route:routeVia('europe',[doorCam,'office']),index:0,location:'europe',moveClock:0,moveEvery:type==='wolf'?6.4:8.1,safeTime:0,attackTime:0,rest:delay||0}
+  return {active:true,type:type,side:side,route:routeVia('europe',[doorCam,'office']),index:0,location:'europe',moveClock:0,moveEvery:type==='wolf'?6.4:9.6,safeTime:0,attackTime:0,rest:delay||0,tollStage:0}
 }
 function resetRoamer(r,rewarded){
   if(rewarded){state.score+=110;state.cleared++;masterGhost(r.type);directorShift(r.type==='wolf'?-17:-15);sound('good')}
   r.side=chooseRoamerSide(r.type);var doorCam=r.side==='left'?'west':'east';
-  r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.rest=6+Math.random()*5
+  r.route=routeVia('europe',[doorCam,'office']);r.index=0;r.location='europe';r.moveClock=0;r.safeTime=0;r.attackTime=0;r.tollStage=0;r.rest=6+Math.random()*5
 }
 function initializePersistentGhosts(){
   var practiceDokkaebi=state.mode==='practice';
   state.dokkaebi=castHas('dokkaebi')?{active:true,location:practiceDokkaebi?'korea':'special',previous:practiceDokkaebi?null:'europe',moveClock:0,moveEvery:10.5,trickActive:false,trickTimer:practiceDokkaebi?4.2:0,prop:randomDokkaebiPrank(),rest:practiceDokkaebi?7:3}:null;
   state.yuki=castHas('yuki')?{active:true,location:'japan',previous:null,moveClock:0,moveEvery:15,frost:18,rest:5,retreat:0,heatBattle:0}:null;
-  state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:6}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0};
+  state.maiden=castHas('maiden')?{active:true,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:3.5,cued:false}:{active:false,path:routeVia('korea',['special','prep','west','office']),index:0,unseen:0,viewed:0,totalViewed:0,rest:0,cued:false};
   if(castHas('egg')){
     var occupied=['special','japan'];if(state.maiden.active)occupied.push('korea');
     var eggCams=['west','east','stairs','library','prep','europe','korea','special','japan'].filter(function(cam){return occupied.indexOf(cam)<0});
@@ -2347,7 +2427,7 @@ function updateDokkaebi(dt){
   d.moveClock+=dt;
   if(d.location==='korea'){
     d.trickTimer+=dt;
-    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=randomDokkaebiPrank();d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.15,.86,1100);whisperGhost('dokkaebi',0);directorShift(3)}
+    if(!d.trickActive&&d.trickTimer>4.5&&movementRoll('dokkaebi')){d.trickActive=true;d.prop=randomDokkaebiPrank();d.trickTimer=0;sound('knock');playTimedClip(Math.random()<.6?'childLaugh':'giggle',.18,.86,1300);whisperGhost('dokkaebi',0);toast('깔깔… 6-1 교실에 장난을 쳤습니다.');directorShift(3)}
     if(d.trickActive&&d.trickTimer>8.7&&d.trickTimer-dt<=8.7)whisperGhost('dokkaebi',2);
     if(d.trickActive&&d.trickTimer>13){d.trickActive=false;d.trickTimer=0;spend(6);state.score=Math.max(0,state.score-40);directorShift(5);sound('warn');playTimedClip('clownWarning',.13,.9,1200);d.previous=d.location;d.location='europe';d.moveClock=0}
   }
@@ -2404,26 +2484,46 @@ function updateYuki(dt){
 }
 function updateMaiden(dt){
   var m=state.maiden;if(!m||!m.active)return;
+  if(!m.cued&&state.elapsed>4){
+    m.cued=true;playTimedClip('musicBox',.085,.78,1700);whisperGhost('maiden',0,'…나를 보고 있어.');
+    toast('낡은 오르골 소리와 함께 흰 형체가 나타났습니다.')
+  }
   if(m.rest>0){m.rest-=dt;return}
   var loc=currentMaidenCam();
   if(loc!=='office'){
     var watching=cameraFeedLive(loc);
     if(watching){
-      m.viewed+=dt;m.totalViewed+=dt;m.unseen=Math.max(0,m.unseen-dt*2);
-      if(m.viewed>2.5){
+      m.viewed+=dt;m.totalViewed+=dt;m.unseen=Math.max(0,m.unseen-dt*2.6);
+      if(m.viewed>2.1){
         m.viewed=0;
-        if(m.index>0){m.index--;state.score+=25;directorShift(-4);sound('good');toast('흰 형체가 한 구역 뒤로 물러났습니다.')}
-        else if(m.totalViewed>5.5){m.totalViewed=0;m.rest=5+Math.random()*3;state.cleared++;state.score+=120;directorShift(-15);masterGhost('maiden');sound('good');toast('처녀귀신은 사라진 것이 아니라 6-1 교실에 머물렀습니다.')}
+        if(m.index>0){
+          m.index--;state.score+=30;directorShift(-6);sound('good');playTimedClip('musicBox',.045,1.22,420);
+          toast('처녀귀신이 시선을 견디지 못하고 한 구역 뒤로 물러났습니다.')
+        }else if(m.totalViewed>4.8){
+          m.totalViewed=0;m.rest=5+Math.random()*2;state.cleared++;state.score+=120;directorShift(-15);masterGhost('maiden');sound('good');
+          toast('흰 형체가 멀어졌습니다. 하지만 아직 학교 안에 있습니다.')
+        }
       }
     }else{
-      m.viewed=0;m.unseen+=dt;var moveAfter=state.mode==='practice'?14:Math.max(9.4,12.8-m.index*.5);
-      if(m.unseen>moveAfter){m.unseen=0;if(movementRoll('maiden')){var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.5}else{m.index=nextIndex;sound('warn');if(m.index>=1){playTimedClip('musicBox',.055,.72,1250);whisperGhost('maiden',Math.min(2,m.index))}}}}
+      m.viewed=0;m.unseen+=dt;
+      var moveAfter=Math.max(7.2,10.5-m.index*.72-nightHour()*.25);
+      if(m.unseen>moveAfter){
+        m.unseen=0;
+        var nextIndex=Math.min(m.path.length-1,m.index+1),reaper=state.roamers&&state.roamers.reaper;
+        if(nextIndex===m.path.length-1&&reaper&&reaper.active&&reaper.location==='office'&&reaper.side==='left'){m.rest=1.2}
+        else{
+          m.index=nextIndex;sound('warn');playTimedClip('musicBox',.09,Math.max(.58,.82-m.index*.05),1500);
+          whisperGhost('maiden',Math.min(2,m.index));
+          if(state.cameraOpen){els.cameraView.classList.add('micro-flicker');setTimeout(function(){els.cameraView.classList.remove('micro-flicker')},420)}
+          if(m.index>=2)toast('오르골 소리가 가까워졌습니다. 처녀귀신을 찾아 바라보세요.')
+        }
+      }
     }
   }else{
     if(state.leftDoor){
       m.viewed+=dt;m.unseen=0;
-      if(m.viewed>.8){m.index=0;m.unseen=0;m.viewed=0;m.totalViewed=0;m.rest=6+Math.random()*4;state.cleared++;state.score+=120;directorShift(-16);masterGhost('maiden');sound('good');toast('서쪽 문으로 막았습니다.')}
-    }else{m.viewed=0;m.unseen+=dt;if(m.unseen>5.8){fail('maiden');return}}
+      if(m.viewed>1.1){m.index=0;m.unseen=0;m.viewed=0;m.totalViewed=0;m.rest=6+Math.random()*3;state.cleared++;state.score+=120;directorShift(-16);masterGhost('maiden');sound('good');toast('서쪽 문 앞의 처녀귀신이 물러났습니다.')}
+    }else{m.viewed=0;m.unseen+=dt;if(m.unseen>5.2){fail('maiden');return}}
   }
 }
 function relocateEgg(rewarded){
@@ -2458,35 +2558,51 @@ function updateRoamer(r,dt){
   if(r.location==='office'){
     r.attackTime+=dt;
     var closed=r.side==='left'?state.leftDoor:state.rightDoor;
+    if(r.type==='reaper'){
+      var nextToll=r.attackTime>=4.5?3:(r.attackTime>=2.35?2:(r.attackTime>=.25?1:0));
+      if(nextToll>(r.tollStage||0)){
+        r.tollStage=nextToll;sound('bell',r.side);
+        if(nextToll===1){whisperGhost('reaper',1,'첫 번째 종입니다.');toast('🔔 저승사자 · 세 번째 종 전에 '+(r.side==='left'?'서쪽':'동쪽')+' 문을 닫으세요.')}
+        else if(nextToll===2)whisperGhost('reaper',2,'두 번째 종입니다.');
+        else whisperGhost('reaper',2,'마지막입니다.');
+      }
+      if(closed){
+        r.safeTime+=dt;
+        if(r.safeTime>1.65){resetRoamer(r,true);toast('종소리가 멀어지며 저승사자가 지나갔습니다.');return}
+      }else{
+        r.safeTime=0;
+        if(r.attackTime>6.8){fail('reaper');return}
+      }
+      return
+    }
     if(closed){
       r.safeTime+=dt;
-      if(r.safeTime>.8){resetRoamer(r,true);return}
+      if(r.safeTime>.72){resetRoamer(r,true);return}
     }else{
       r.safeTime=0;
-      if(r.attackTime>5.6){fail(r.type);return}
+      if(r.attackTime>4.25){fail('wolf');return}
     }
     return
   }
   r.moveClock+=dt;
   var watched=cameraFeedLive(r.location);
-  var interval=r.moveEvery+(watched?1.5:0)+(state.director.tension>75?1.2:0);
+  var interval=r.moveEvery+(r.type==='reaper'?(watched?-.8:0):(watched?1.5:0))+(state.director.tension>75?1.2:0);
   if(r.moveClock>=interval){
     r.moveClock=0;
-    if(movementRoll(r.type)){
+    var canMove=r.type==='reaper'?true:movementRoll(r.type);
+    if(canMove){
       var nextIndex=Math.min(r.route.length-1,r.index+1);
       if(nextIndex===r.route.length-1&&!roamerCanEnterOffice(r)){r.rest=1.5;return}
-      r.index=nextIndex;r.location=r.route[r.index];r.attackTime=0;r.safeTime=0;
-      if(r.location==='office'){
-        if(r.type==='wolf')sound('run',r.side);
-        sound(r.type==='wolf'?'growl':'knock',r.side);
-        whisperGhost(r.type,2);
-      }
-      else if(r.index===1){
-        sound(r.type==='wolf'?'howl':'bell',r.side);
-        if(r.type==='wolf')playTimedClip('run',.07,.72,620);
-        whisperGhost(r.type,1);
-      }
-      else if(r.type==='wolf'&&r.index>=2)playTimedClip('run',.12,1.02,850)
+      r.index=nextIndex;r.location=r.route[r.index];r.attackTime=0;r.safeTime=0;r.tollStage=0;
+      if(r.type==='reaper'){
+        sound('bell',r.side);playTimedClip('sting',.035,.55,520);
+        whisperGhost('reaper',Math.min(2,r.index));
+        if(r.location==='office')toast('🔔 종소리가 문 바로 앞에서 들립니다.')
+      }else if(r.location==='office'){
+        sound('run',r.side);sound('growl',r.side);whisperGhost('wolf',2)
+      }else if(r.index===1){
+        sound('howl',r.side);playTimedClip('run',.07,.72,620);whisperGhost('wolf',1)
+      }else if(r.index>=2)playTimedClip('run',.12,1.02,850)
     }
   }
 }
@@ -2558,7 +2674,9 @@ function reset(mode){
   els.signalIntrusion.className='signal-intrusion';els.signalIntrusion.innerHTML='';
   els.presenceLayer.innerHTML='';els.presenceLayer.className='presence-layer';
   els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');els.fakeScareText.textContent='';
-  els.ghostWhisper.className='ghost-whisper';els.ghostWhisper.setAttribute('aria-hidden','true');els.ghostWhisperText.textContent=''
+  els.ghostWhisper.className='ghost-whisper';els.ghostWhisper.setAttribute('aria-hidden','true');els.ghostWhisperText.textContent='';
+  els.maidenGaze.classList.remove('show');els.maidenGaze.setAttribute('aria-hidden','true');els.maidenGazeFill.style.width='0%';
+  els.reaperOmen.classList.remove('show');els.reaperOmen.setAttribute('aria-hidden','true');els.reaperTolls.textContent='○ ○ ○'
 }
 function start(mode){
   ensureAudio();els.intro.classList.remove('show');reset(mode);startAmbient();window.KidscadeGame?.start?.({mode:mode});
