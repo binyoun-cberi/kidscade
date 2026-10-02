@@ -1804,7 +1804,9 @@ function isChunkRenderableData(data){
 function chunkFaceOccluded(data,neighbor){
   if(!neighbor)return false;
   if((data.type==='leaves'||data.type==='pineLeaves')&&neighbor.type===data.type)return true;
-  return isOccluder(neighbor);
+  if(neighbor.type==='cuboid'||neighbor.type==='cuboidPart')return true;
+  const d=blockDef(neighbor);
+  return !!(d.solid&&!d.transparent&&!d.special);
 }
 function chunkMaterialForFace(data,x,z,faceIndex){
   const mat=blockVisualMaterial(data.type,x,z);
