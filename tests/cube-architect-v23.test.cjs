@@ -60,7 +60,7 @@ test('real GLB animation clips and cube golem assembly are active',()=>{
 });
 
 test('day cycle and creature farming state survive reload and page exit',()=>{
-  assert.match(js,/version:11/);
+  assert.match(js,/version:12/);
   assert.match(js,/dayTime,cuboidSpec/);
   assert.match(js,/worldTime:survivalWorldTime/);
   assert.match(js,/creatureDefeats:\{\.\.\.creatureDefeats\}/);
