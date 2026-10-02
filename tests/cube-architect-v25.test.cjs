@@ -37,7 +37,8 @@ test('crafting has visual selection detail and batches inventory updates',()=>{
 });
 test('block changes use deferred saves and panels return to play',()=>{
   assert.match(js,/function markFreeWorldDirty/);
-  assert.match(js,/freeSaveDirty&&now>=freeSaveDueAt/);
+  assert.match(js,/if\(freeSaveDirty\)\{/);
+  assert.match(js,/if\(now>=freeSaveDueAt\)saveFreeWorld\(\)/);
   assert.match(js,/requestGamePointerLock\(\)/);
   assert.match(js,/freeStepHop=1/);
 });
