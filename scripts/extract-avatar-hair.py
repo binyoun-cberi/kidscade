@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from collections import deque
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageChops, ImageFilter
 
@@ -85,6 +86,40 @@ def hard_alpha(im):
     im.putdata([(r,g,b,255 if a >= 48 else 0) for r,g,b,a in im.getdata()])
     return im
 
+def remove_tiny_components(im, min_pixels=8):
+    im = im.copy()
+    alpha = im.getchannel("A")
+    px = alpha.load()
+    w,h = alpha.size
+    seen = bytearray(w*h)
+
+    def key(x,y): return y*w+x
+
+    for y in range(h):
+        for x in range(w):
+            if seen[key(x,y)] or px[x,y] == 0:
+                continue
+            q=deque([(x,y)])
+            seen[key(x,y)]=1
+            comp=[]
+            while q:
+                cx,cy=q.popleft()
+                comp.append((cx,cy))
+                for nx in range(cx-1,cx+2):
+                    for ny in range(cy-1,cy+2):
+                        if nx==cx and ny==cy: continue
+                        if nx<0 or ny<0 or nx>=w or ny>=h: continue
+                        k=key(nx,ny)
+                        if seen[k] or px[nx,ny] == 0: continue
+                        seen[k]=1
+                        q.append((nx,ny))
+            if len(comp) < min_pixels:
+                for cx,cy in comp:
+                    px[cx,cy]=0
+
+    im.putalpha(alpha)
+    return im
+
 def normalize_hair(full, kind):
     alpha = full.getchannel("A")
     bbox = alpha.getbbox()
@@ -114,6 +149,7 @@ def normalize_hair(full, kind):
 
     canvas = Image.new("RGBA", (RUNTIME, RUNTIME), (0,0,0,0))
     canvas.alpha_composite(crop, (x,y))
+    canvas = remove_tiny_components(canvas)
     return canvas, {
         "sourceBBox": list(bbox),
         "targetBBox": [x,y,x+nw,y+nh],
@@ -304,6 +340,7 @@ def main():
                 "hairFront contains only master-head overlap",
                 "ear-safe front mask",
                 "no generic face-aperture ellipse",
+                "remove isolated components under 8 pixels",
                 "default face composite contact previews"
             ],
             "contacts":{}
