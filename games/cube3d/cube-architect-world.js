@@ -90,7 +90,7 @@ const RECIPES=[
  {id:'windowFrame',name:'창문틀 ×2',needs:{planks:3,glass:1},gives:{windowFrame:2},stage:7,bench:true}
 ];
 const GOALS=[
- {title:'첫날 · 원목 3개 채집',description:'나무를 파괴해 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
+ {title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
  {title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
  {title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
  {title:'나무 곡괭이',description:'막대를 만들고 제작대 근처에서 나무 곡괭이를 제작하세요.',need:1,progress:s=>s.crafted?.woodPick||0},
