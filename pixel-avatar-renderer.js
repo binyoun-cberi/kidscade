@@ -9,8 +9,8 @@ const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
-  upper:0,
-  lower:0,
+  upper:1,
+  lower:1,
   eyes:1,
   eyebrows:1,
   nose:1,
