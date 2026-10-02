@@ -6,10 +6,6 @@
 
 const CANVAS=128;
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
-const HAIR_PIVOT=[65.5,43.5];
-const MASTER_HEAD_BBOX=[40,20,91,67];
-// Normalize only the oversized back silhouette. Front hair is already clipped
-// to the master-head coordinate system and follows the same transform as face parts.
 const DEFAULT_CONFIG={
   hairSet:'male',
   hairStyle:1,
@@ -71,7 +67,6 @@ class PixelAvatar{
     this.config={...DEFAULT_CONFIG,...(options.config||{})};
     this.cache=new ImageCache();
     this.animationManifest=null;
-    this.hairManifest=null;
     this.frameIndex=0;
     this.lastFrameAt=0;
     this.playing=options.playing!==false;
@@ -85,12 +80,7 @@ class PixelAvatar{
   url(path){return new URL(path,this.assetRoot).href}
 
   async init(){
-    const [animationManifest,hairManifest]=await Promise.all([
-      json(this.url('runtime/animation/animation-manifest.json')),
-      json(this.url('runtime/hair/hair-manifest.json'))
-    ]);
-    this.animationManifest=animationManifest;
-    this.hairManifest=hairManifest;
+    this.animationManifest=await json(this.url('runtime/animation/animation-manifest.json'));
     this.ready=true;
     await this.draw();
     if(this.playing)this.start();
@@ -186,58 +176,6 @@ class PixelAvatar{
     };
   }
 
-  getHairItem(set,n){
-    return this.hairManifest?.sets?.[set]?.items?.[Math.max(0,n-1)]||null;
-  }
-
-  hairStyleFit(set,n){
-    const item=this.getHairItem(set,n);
-    const box=item?.backBBox||[12,18,120,112];
-    const [x0,y0,x1,y1]=box;
-    const [px,py]=HAIR_PIVOT;
-    const [hx0,hy0,hx1]=MASTER_HEAD_BBOX;
-    const headWidth=hx1-hx0;
-    const headCenterX=(hx0+hx1)/2;
-
-    const boxW=Math.max(1,x1-x0);
-    const boxH=Math.max(1,y1-y0);
-    const targetWidth=headWidth*(set==='female'?1.38:1.30);
-    const targetTop=hy0-(set==='female'?8:6);
-
-    let scaleX=targetWidth/boxW;
-    scaleX=Math.max(.50,Math.min(.70,scaleX));
-    let scaleY=scaleX*1.15;
-    scaleY=Math.max(.58,Math.min(.78,scaleY));
-    const maxHeight=(set==='female'?86:72);
-    scaleY=Math.min(scaleY,maxHeight/boxH);
-
-    const boxCx=(x0+x1)/2;
-    const scaledCx=px+(boxCx-px)*scaleX;
-    const scaledTop=py+(y0-py)*scaleY;
-
-    return {
-      scaleX,
-      scaleY,
-      offsetX:headCenterX-scaledCx,
-      offsetY:targetTop-scaledTop
-    };
-  }
-
-  hairTransform(set,n,frameTransform=null){
-    const fit=this.hairStyleFit(set,n);
-    const frameScale=Number(frameTransform?.scale)||1;
-    const dest=frameTransform?.destCenter||HAIR_PIVOT;
-    return {
-      sourceCenter:HAIR_PIVOT,
-      destCenter:[
-        dest[0]+fit.offsetX*frameScale,
-        dest[1]+fit.offsetY*frameScale
-      ],
-      scaleX:frameScale*fit.scaleX,
-      scaleY:frameScale*fit.scaleY
-    };
-  }
-
   drawLayer(img,transform){
     const ctx=this.ctx;
     if(!transform){
@@ -273,8 +211,7 @@ class PixelAvatar{
             upper=upperPath?imgs[i++]:null, eyes=imgs[i++], eyebrows=imgs[i++], nose=imgs[i++], mouth=imgs[i++],
             blush=p.blush?imgs[i++]:null, hairFront=imgs[i++];
       const headTransform=frame?.headTransform||null;
-      const hairBackTransform=this.hairTransform(this.config.hairSet,this.config.hairStyle,headTransform);
-      const hairFrontTransform=headTransform;
+      const hairTransformValue=headTransform;
 
       const ctx=this.ctx;
       ctx.save();
@@ -282,7 +219,7 @@ class PixelAvatar{
       ctx.clearRect(0,0,CANVAS,CANVAS);
       ctx.imageSmoothingEnabled=false;
 
-      this.drawLayer(hairBack,hairBackTransform);
+      this.drawLayer(hairBack,hairTransformValue);
       ctx.drawImage(body,0,0);
       if(lower)ctx.drawImage(lower,0,0);
       if(upper)ctx.drawImage(upper,0,0);
@@ -291,7 +228,7 @@ class PixelAvatar{
       this.drawLayer(nose,headTransform);
       this.drawLayer(mouth,headTransform);
       if(blush)this.drawLayer(blush,headTransform);
-      this.drawLayer(hairFront,hairFrontTransform);
+      this.drawLayer(hairFront,hairTransformValue);
       ctx.restore();
     }finally{
       this.drawing=false;

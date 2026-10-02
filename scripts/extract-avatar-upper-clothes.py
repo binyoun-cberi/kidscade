@@ -16,9 +16,9 @@ QA=AVATAR/"qa/clothes/upper"
 
 CANVAS=128
 COLS,ROWS=5,2
-TARGET_TOP_Y=59
-TARGET_MAX_W=70
-TARGET_MAX_H=40
+TARGET_TOP_Y=64
+TARGET_MAX_W=56
+TARGET_MAX_H=35
 
 FRAME_MAP=[
  ("idle",1),("idle",2),("idle",3),("idle",4),("walk",1),
