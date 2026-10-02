@@ -3212,13 +3212,13 @@ function moveFreeHorizontal(dx,dz){
   if(!playerCollidesAt(nx,camera.position.y,camera.position.z))camera.position.x=nx;
   else if(onGround&&!stepped&&
     !playerCollidesAt(nx,camera.position.y+1,camera.position.z)){
-    camera.position.y+=1;camera.position.x=nx;stepped=true;freeVelocityY=0;
+    camera.position.y+=1;camera.position.x=nx;stepped=true;freeVelocityY=0;freeStepHop=1;
   }
   const nz=camera.position.z+dz;
   if(!playerCollidesAt(camera.position.x,camera.position.y,nz))camera.position.z=nz;
   else if(onGround&&!stepped&&
     !playerCollidesAt(camera.position.x,camera.position.y+1,nz)){
-    camera.position.y+=1;camera.position.z=nz;freeVelocityY=0;
+    camera.position.y+=1;camera.position.z=nz;freeVelocityY=0;freeStepHop=1;
   }
 }
 function nearestUndiscoveredRegion(x,z){
