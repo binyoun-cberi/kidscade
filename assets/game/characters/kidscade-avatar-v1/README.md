@@ -1,4 +1,4 @@
-# Kidscade Pixel Avatar v1
+# Kidscade Pixel Avatar v2 Rig
 
 키즈케이드의 정면형 SD 픽셀 아바타 런타임 자산입니다.
 
@@ -152,3 +152,29 @@ kidscade-avatar-v1/
 6. 이후 필요할 때 run / jump / hit 같은 추가 모션 제작
 
 `source/`의 생성 원본은 게임에서 직접 렌더링하지 않습니다.
+
+## Avatar Rig v2
+
+새 파츠는 더 이상 128×128 전체 캔버스 안에서 눈대중으로 위치를 맞출 필요가 없습니다.
+
+- 몸 기준점: `headTop`, `brow`, `eyeCenter`, `nose`, `mouth`, `earL/R`, `neck`, `root`, `handL/R`, `footL/R`
+- 파츠 기준점: 각 PNG 내부의 `pivot: [x, y]`
+- 배치: 파츠의 pivot을 같은 이름의 몸 anchor에 일치시킴
+- 애니메이션: `transformGroup: "head"` 파츠는 현재 프레임의 `headTransform`을 자동 상속
+- 앞뒤: `hairBack`, `body`, `face`, `hairFront`, `cap`, `weapon` 같은 이름 있는 z-slot 사용
+- 호환성: 기존 저장 키 `kidscade-pixel-avatar-v1`과 `KidscadePixelAvatarV1` API 이름은 유지하며 내부 렌더러만 v2 rig를 사용
+
+잘린 PNG를 새로 추가할 때 필요한 최소 메타데이터 예시는 다음과 같습니다.
+
+```json
+{
+  "id": "red-nose-01",
+  "src": "runtime/accessories/face/red-nose-01.png",
+  "attach": "nose",
+  "pivot": [8, 7],
+  "transformGroup": "head",
+  "zSlot": "faceAccessoryOver"
+}
+```
+
+이 구조에서는 이미지 자체 크기가 달라도 `pivot`만 정확하면 코 위치에 자동으로 붙습니다. BBox는 원본을 정규화하는 용도로만 사용하고 장착 좌표의 기준으로 사용하지 않습니다.
