@@ -1381,7 +1381,9 @@ function makeRoofGeometry(){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();return g;
 }
 const roofGeo=makeRoofGeometry();
-const materialCache=new Map();
+const leafCubeGeo=new THREE.BoxGeometry(.94,.94,.94);
+const grassTuftGeo=new THREE.PlaneGeometry(.54,.3);
+const materialCache=new Map(),pixelTextureCache=new Map(),blockVisualMaterialCache=new Map();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
@@ -1502,8 +1504,128 @@ function cloneBlockData(data){return data?JSON.parse(JSON.stringify(data)):null}
 function blockDef(dataOrType){const type=typeof dataOrType==='string'?dataOrType:dataOrType?.type;return BLOCK_DEFS[type]||BLOCK_DEFS.stone}
 function isTransparentData(data){const d=blockDef(data);return !!(d.transparent||d.liquid||d.special)}
 function isOccluder(data){const d=blockDef(data);return !!(data&&d.solid&&!d.transparent&&!d.special)}
+function pixelRng(seed){
+  let n=(seed|0)||1;
+  return ()=>{n=(Math.imul(n,1664525)+1013904223)|0;return ((n>>>0)/4294967296)};
+}
+function pixelTexture(kind,variant=0){
+  const key=kind+':'+variant;if(pixelTextureCache.has(key))return pixelTextureCache.get(key);
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=16;
+  const ctx=canvas.getContext('2d',{alpha:true});ctx.imageSmoothingEnabled=false;
+  const seed=[...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261);
+  const rnd=pixelRng(seed);
+  const palettes={
+    dirt:['#765039','#885d40','#9a6c4b','#694630'],
+    stone:['#7d858d','#9199a1','#69727a','#a0a7ad'],
+    sand:['#d8bd6f','#e6cc82','#c9a95d','#f0da94'],
+    redSand:['#aa6542','#bd754d','#92553b','#cf8659'],
+    gravel:['#777573','#918d87','#656464','#aaa39a'],
+    snow:['#eaf2f6','#dce9ef','#f7fbfd','#cbdde7'],
+    clay:['#909fa9','#a7b3ba','#7f8f9a','#bcc5ca'],
+    bedrock:['#2d3238','#3d434a','#22272c','#50565c'],
+    ironOre:['#7e858b','#949aa0','#686f75','#ac866d'],
+    planks:['#aa7749','#bb8958','#96653f','#cf9b66'],
+    leaves:['#448e4b','#56a95a','#34733d','#72bb68'],
+    pineLeaves:['#2b5842','#386b4e','#214b38','#4a7b59'],
+    grassTop:['#5ea955','#70ba60','#4c9348','#86c66d'],
+    grassSide:['#80583d','#936447','#6f4a34','#a37350'],
+    logSide:['#7c5234','#93633d','#65432e','#aa7447'],
+    pineLogSide:['#584936','#675641','#493c2e','#7a664c'],
+    logTop:['#a8784d','#bb8c5d','#8d603f','#d0a36d'],
+    pineLogTop:['#79664d','#8b7657','#64543f','#a08a68']
+  };
+  const p=palettes[kind]||['#888','#999','#777','#aaa'];
+  const base=p[variant%Math.min(2,p.length)]||p[0];
+  ctx.clearRect(0,0,16,16);ctx.fillStyle=base;ctx.fillRect(0,0,16,16);
+  const dot=(x,y,color,w=1,h=1)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
+  if(kind==='grassSide'){
+    for(let i=0;i<52;i++)dot(Math.floor(rnd()*16),4+Math.floor(rnd()*12),p[1+Math.floor(rnd()*(p.length-1))]);
+    const greens=palettes.grassTop;
+    ctx.fillStyle=greens[variant%2];ctx.fillRect(0,0,16,4);
+    for(let x=0;x<16;x++)if(rnd()>.38)dot(x,3+Math.floor(rnd()*4),greens[2+Math.floor(rnd()*2)],1,1+Math.floor(rnd()*2));
+  }else if(kind==='logSide'||kind==='pineLogSide'||kind==='planks'){
+    for(let x=1;x<16;x+=3+Math.floor(rnd()*2)){
+      ctx.fillStyle=p[2];ctx.fillRect(x,0,1,16);
+      if(rnd()>.45){ctx.fillStyle=p[3];ctx.fillRect(Math.min(15,x+1),Math.floor(rnd()*11),1,3+Math.floor(rnd()*4))}
+    }
+    for(let i=0;i<8;i++)dot(Math.floor(rnd()*16),Math.floor(rnd()*16),p[3],2,1);
+  }else if(kind==='logTop'||kind==='pineLogTop'){
+    ctx.fillStyle=p[1];ctx.fillRect(1,1,14,14);
+    ctx.strokeStyle=p[2];ctx.lineWidth=1;
+    for(const inset of [3,6])ctx.strokeRect(inset,inset,16-inset*2,16-inset*2);
+    dot(7,7,p[2],2,2);
+    for(let i=0;i<8;i++)dot(2+Math.floor(rnd()*12),2+Math.floor(rnd()*12),p[3]);
+  }else if(kind==='leaves'||kind==='pineLeaves'){
+    for(let i=0;i<75;i++){
+      const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16);
+      if(rnd()<.16)ctx.clearRect(x,y,1+(rnd()>.75?1:0),1);
+      else dot(x,y,p[1+Math.floor(rnd()*(p.length-1))],1+(rnd()>.88?1:0),1);
+    }
+    for(let i=0;i<10;i++)dot(Math.floor(rnd()*15),Math.floor(rnd()*15),p[3],2,1);
+  }else if(kind==='grassTop'){
+    for(let i=0;i<74;i++){
+      const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16);
+      dot(x,y,p[1+Math.floor(rnd()*(p.length-1))],rnd()>.86?2:1,1);
+    }
+    for(let i=0;i<8;i++){const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16);dot(x,y,p[3],1,2)}
+  }else if(kind==='stone'){
+    for(let i=0;i<42;i++)dot(Math.floor(rnd()*16),Math.floor(rnd()*16),p[1+Math.floor(rnd()*3)]);
+    ctx.strokeStyle=p[2];ctx.lineWidth=1;
+    for(let i=0;i<3;i++){let x=Math.floor(rnd()*12),y=Math.floor(rnd()*12);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+2,y+1);ctx.lineTo(x+3,y+3);ctx.stroke()}
+  }else if(kind==='gravel'){
+    for(let i=0;i<58;i++){const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16),sz=rnd()>.75?2:1;dot(x,y,p[1+Math.floor(rnd()*3)],sz,sz)}
+  }else if(kind==='ironOre'){
+    for(let i=0;i<36;i++)dot(Math.floor(rnd()*16),Math.floor(rnd()*16),palettes.stone[1+Math.floor(rnd()*3)]);
+    for(let i=0;i<12;i++){const x=Math.floor(rnd()*15),y=Math.floor(rnd()*15);dot(x,y,p[3],rnd()>.6?2:1,rnd()>.7?2:1)}
+  }else{
+    for(let i=0;i<48;i++){
+      const x=Math.floor(rnd()*16),y=Math.floor(rnd()*16),color=p[1+Math.floor(rnd()*(p.length-1))];
+      dot(x,y,color,rnd()>.9?2:1,1);
+    }
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;
+  texture.generateMipmaps=false;
+  if('colorSpace' in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;
+  texture.needsUpdate=true;pixelTextureCache.set(key,texture);return texture;
+}
+function pixelMaterial(kind,variant=0,opts={}){
+  const key='px:'+kind+':'+variant+':'+JSON.stringify(opts);
+  if(materialCache.has(key))return materialCache.get(key);
+  const leaf=kind==='leaves'||kind==='pineLeaves';
+  const m=new THREE.MeshStandardMaterial({
+    color:0xffffff,map:pixelTexture(kind,variant),roughness:opts.roughness??.92,
+    metalness:0,transparent:leaf,opacity:leaf?.97:1,alphaTest:leaf?.28:0,
+    depthWrite:true,side:leaf?THREE.DoubleSide:THREE.FrontSide
+  });
+  materialCache.set(key,m);return m;
+}
+function blockVisualMaterial(type,x=0,z=0){
+  const variant=Math.floor(hash2(x*13+17,z*19-23)*3);
+  const key=type+':'+variant;if(blockVisualMaterialCache.has(key))return blockVisualMaterialCache.get(key);
+  let m;
+  if(type==='grass'){
+    const side=pixelMaterial('grassSide',variant),top=pixelMaterial('grassTop',variant),bottom=pixelMaterial('dirt',variant);
+    m=[side,side,top,bottom,side,side];
+  }else if(type==='log'||type==='pineLog'){
+    const pine=type==='pineLog',side=pixelMaterial(pine?'pineLogSide':'logSide',variant),end=pixelMaterial(pine?'pineLogTop':'logTop',variant);
+    m=[side,side,end,end,side,side];
+  }else if(['dirt','stone','sand','redSand','gravel','snow','clay','ironOre','bedrock','leaves','pineLeaves','planks'].includes(type)){
+    m=pixelMaterial(type,variant);
+  }else m=materialFor(type);
+  blockVisualMaterialCache.set(key,m);return m;
+}
 function materialFor(type){
   if(materialCache.has(type))return materialCache.get(type);
+  if(['dirt','stone','sand','redSand','gravel','snow','clay','ironOre','bedrock','leaves','pineLeaves','planks'].includes(type)){
+    const textured=pixelMaterial(type,0);materialCache.set(type,textured);return textured;
+  }
+  if(type==='log'||type==='pineLog'){
+    const textured=pixelMaterial(type==='pineLog'?'pineLogSide':'logSide',0);materialCache.set(type,textured);return textured;
+  }
+  if(type==='grass'){
+    const textured=pixelMaterial('grassTop',0);materialCache.set(type,textured);return textured;
+  }
   const d=blockDef(type);
   const m=new THREE.MeshStandardMaterial({
     color:d.color||0xffffff,roughness:type==='glass'?.18:.86,metalness:type==='glass'?.05:0,
