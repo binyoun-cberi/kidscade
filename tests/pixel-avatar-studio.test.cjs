@@ -111,15 +111,25 @@ test('avatar rig lab proves a cropped accessory can attach to the nose anchor',(
   assert.match(lab,/setExtraParts/);
 });
 
-test('hair normalization uses one uniform contain scale instead of stretching every style',()=>{
-  assert.match(hairExtract,/"targetWidth": 64/);
-  assert.match(hairExtract,/"targetTop": 14/);
+test('both 24-style hair sheets use the same calibrated contain fit',()=>{
+  assert.match(hairExtract,/COMMON_HAIR_FIT/);
   assert.match(hairExtract,/"targetWidth": 70/);
   assert.match(hairExtract,/"targetTop": 12/);
+  assert.match(hairExtract,/"maxHeight": 86/);
+  assert.match(hairExtract,/"male": COMMON_HAIR_FIT/);
+  assert.match(hairExtract,/"female": COMMON_HAIR_FIT/);
+  assert.doesNotMatch(hairExtract,/"targetWidth": 64/);
   assert.match(hairExtract,/scale = min\(/);
   assert.doesNotMatch(hairExtract,/verticalFactor/);
   assert.match(hairExtract,/"scaleX": round\(scale,4\)/);
   assert.match(hairExtract,/"scaleY": round\(scale,4\)/);
+});
+
+test('front/back hair split has no expanded-mask halo gap',()=>{
+  assert.match(hairExtract,/back_alpha = ImageChops\.subtract\(alpha, head_mask\)/);
+  assert.match(hairExtract,/front_alpha = ImageChops\.multiply\(alpha, head_mask\)/);
+  assert.doesNotMatch(hairExtract,/head_mask\.filter\(ImageFilter\.MaxFilter\(3\)\)/);
+  assert.match(hairExtract,/no transparent split-gap halo/);
 });
 
 test('hair cleanup keeps bangs intact and removes white matte fringe',()=>{
