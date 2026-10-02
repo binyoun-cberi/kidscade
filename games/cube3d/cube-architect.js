@@ -2063,6 +2063,7 @@ function buildInventory(category='전체'){
   $('inventorySubtitle').textContent=survival?'지금 얻은 재료와 만들 수 있는 물건만 보여요.':
     '선택한 재료가 현재 핫바 칸에 들어갑니다.';
   $('survivalCraftPanel').classList.toggle('hidden',!survival);
+  $('survivalBagHeader')?.classList.toggle('hidden',!survival);
   $('shapeWorkbench').classList.toggle('hidden',survival?
     survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
@@ -2081,22 +2082,22 @@ function buildInventory(category='전체'){
     }
     if(!resources.length)grid.textContent='가방이 비어 있어요. 먼저 주변의 나무를 채집해 보세요.';
     const list=$('survivalCraftList');list.innerHTML='';
-    const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
-      snowBrick:'snow',cactusDye:'desert'};
-    const visible=worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&recipeUnlocked(r.id)&&
-      (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id))&&
-      (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
-        Object.keys(r.needs).some(item=>bagCount(item)>0)))
-      .sort((a,b)=>Number(recipePossible(b))-Number(recipePossible(a))||a.stage-b.stage);
-    for(const recipe of visible){
+    const visible=visibleSurvivalRecipes();
+    if(!['전체','도구','건축','재료'].includes(survivalCraftCategory))survivalCraftCategory='전체';
+    renderCraftTabs(visible);
+    const filtered=survivalCraftCategory==='전체'?visible:visible.filter(r=>recipeCategory(r)===survivalCraftCategory);
+    if(!filtered.some(r=>r.id===selectedCraftRecipeId))selectedCraftRecipeId=(filtered.find(recipePossible)||filtered[0])?.id||null;
+    for(const recipe of filtered){
       const b=document.createElement('button'),possible=recipePossible(recipe);
-      b.className='survival-recipe'+(possible?' can-craft':'');
-      b.disabled=!possible;
+      const [resultType]=Object.keys(recipe.gives),result=blockDef(resultType),hex='#'+(result.color||0xdbe4ef).toString(16).padStart(6,'0');
+      b.className='survival-recipe'+(possible?' can-craft':'')+(recipe.id===selectedCraftRecipeId?' selected':'');
       const costs=Object.entries(recipe.needs).map(([type,n])=>blockDef(type).name+' '+bagCount(type)+'/'+n).join(' · ');
-      b.innerHTML=recipe.name+'<small>'+costs+
-        (recipe.bench?' · 제작대 필요':'')+'</small>';
-      b.onclick=()=>craftSurvival(recipe);list.appendChild(b);
+      b.innerHTML='<span class="recipe-icon" style="--recipe-swatch:'+hex+'">'+(result.icon||'▣')+'</span>'+
+        '<span class="recipe-copy"><b>'+recipe.name+'</b><small>'+costs+(recipe.bench?' · 제작대':'')+'</small></span>'+
+        '<span class="recipe-state">'+(possible?'제작 가능':'재료 부족')+'</span>';
+      b.onclick=()=>{selectedCraftRecipeId=recipe.id;buildInventory('전체')};list.appendChild(b);
     }
+    renderCraftDetail(filtered.find(r=>r.id===selectedCraftRecipeId)||null);
     $('survivalCraftHint').textContent=hasWorkbench()?
       '제작대 근처예요. 재료가 모이면 제작 버튼이 활성화돼요.':
       '가방에 든 제작대를 땅에 설치하고 가까이 다가가세요.';
