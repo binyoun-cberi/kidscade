@@ -137,3 +137,7 @@ h1{margin:2px 0 8px;font-size:clamp(46px,7vw,78px);line-height:.9;letter-spacing
 .starter-guide.done{border-color:rgba(88,229,213,.28);opacity:.72}
 @media(max-width:850px){.starter-guide{top:142px;width:min(460px,calc(100% - 180px));min-width:0}}
 @media(max-width:620px){.starter-guide{left:8px;right:8px;top:143px;transform:none;width:auto;padding:9px 10px}.starter-guide small{font-size:8px}.starter-guide em{font-size:7px}}
+
+.part-remove{grid-column:1/-1;min-height:34px;border:1px dashed rgba(255,255,255,.13);border-radius:11px;background:rgba(255,255,255,.025);color:#b8d4d9;font-size:8px;font-weight:850;cursor:pointer}
+.part-remove:hover{border-color:rgba(255,214,107,.4);color:#ffe7a6;background:rgba(255,214,107,.06)}
+@media(max-width:620px){.part-remove{min-height:38px;font-size:8px}}

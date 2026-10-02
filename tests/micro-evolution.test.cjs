@@ -31,7 +31,7 @@ test('Micro Evolution supports chosen and randomized starting biomes',()=>{
 });
 
 test('Cell editor contains feeding, movement, sensing and defense adaptations',()=>{
-  for(const token of ['predatorMouth','filter','chloroplast','parasite','flagellum','cilia','pseudopod','anchor','eyespot','chemo','mechano','tactile','thermo','electro','membrane','spike','toxin','camouflage']){
+  for(const token of ['primitiveMouth','predatorMouth','filter','chloroplast','parasite','flagellum','cilia','pseudopod','anchor','eyespot','chemo','mechano','tactile','thermo','electro','membrane','spike','toxin','camouflage']){
     assert.match(js,new RegExp(token));
   }
   assert.match(js,/externalAngle/);
@@ -87,8 +87,10 @@ test('Micro Evolution is registered as a science sandbox',()=>{
 
 test('Field rework keeps the play area dense, zoomed and biologically legible',()=>{
   assert.match(js,/const CAMERA_ZOOM = 1\.55/);
-  assert.match(js,/for\(let i=0;i<46;i\+\+\)/);
-  assert.match(js,/115\+env\.food\*1\.15/);
+  assert.match(js,/for\(let i=0;i<40;i\+\+\)/);
+  assert.match(js,/46\+env\.food\*\.42/);
+  assert.match(js,/function buildFoodClusters/);
+  assert.match(js,/function drawFoodClusters/);
   assert.match(js,/function wrappedDelta/);
   assert.match(js,/function drawBiomeScenery/);
   assert.match(js,/function creatureTint/);
@@ -124,8 +126,8 @@ test('Canvas is resized after the hidden game screen becomes visible',()=>{
 });
 
 test('First play is populated and tells the player what to do',()=>{
-  assert.match(js,/if\(i<70\)/);
-  assert.match(js,/if\(i<16\)/);
+  assert.match(js,/if\(i<18\)/);
+  assert.match(js,/if\(i<12\)/);
   assert.match(html,/id="starterGuide"/);
   assert.match(html,/먼저 먹이를 먹어 보세요/);
   assert.match(js,/function updateStarterGuide/);
@@ -168,4 +170,39 @@ test('Micro Evolution uses the shared asset-backed audio system',()=>{
   assert.match(js,/sound\('dash'/);
   assert.match(js,/sound\('generation'/);
   assert.match(js,/stopAmbience\(\)/);
+});
+
+
+test('Survival strategies have different biomass economies',()=>{
+  assert.match(js,/slots\[0\]='primitiveMouth'/);
+  assert.match(js,/primitiveMouth:\{id:'primitiveMouth'.*starter:true/);
+  assert.match(js,/why==='primitive'/);
+  assert.match(js,/why==='filter'/);
+  assert.match(js,/why==='predatorLoose'/);
+  assert.match(js,/photoBiomass=gain\*\(\.14\+Math\.min\(\.06,chlor\*\.015\)\)/);
+  assert.match(js,/p\.biomass\+=gain\*\.34/);
+  assert.match(js,/const biomassReward=8\+sizeFactor\*8/);
+  assert.match(js,/1\.65\+filter\*\.32/);
+});
+
+test('Environmental events are temporary and recover toward biome baseline',()=>{
+  assert.match(js,/let baseEnv=/);
+  assert.match(js,/let eventDelta=/);
+  assert.match(js,/function updateEnvironment\(dt\)/);
+  assert.match(js,/env\[key\]=clamp\(baseEnv\[key\]\+Number\(eventDelta\[key\]\|\|0\)\*fade,0,100\)/);
+  assert.match(js,/duration:18/);
+  assert.match(js,/state\.eventClock>=45/);
+  assert.doesNotMatch(js,/e\.apply\(\)/);
+});
+
+test('Camouflage lowers predator detection instead of only reducing damage',()=>{
+  assert.match(js,/const playerVisibility=camouflage/);
+  assert.match(js,/dp<see\*1\.15\*playerVisibility/);
+});
+
+test('Internal organs can be removed and starter organ cannot refund DNA',()=>{
+  assert.match(js,/function removeInternalPart/);
+  assert.match(js,/className='part-remove'/);
+  assert.match(js,/if\(part\.starter\)return 0/);
+  assert.match(js,/filter\(p=>p\.cat===activeTab&&!p\.starter\)/);
 });
