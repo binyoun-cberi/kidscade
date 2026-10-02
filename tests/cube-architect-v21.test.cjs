@@ -12,22 +12,21 @@ const html=read('games/cube3d/index.html');
 test('v21 avatar module and runtime parse',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(avatar));
-  assert.match(html,/cube-architect-avatar\.js\?v=20261002-25/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261002-26/);
   assert.ok(html.indexOf('cube-architect-avatar.js')<html.indexOf('cube-architect.js'));
 });
 
-test('free world has a modular Kidscade block avatar',()=>{
-  assert.match(avatar,/kidscade_avatar_equipped/);
-  assert.match(avatar,/kidscade-avatar-shop-v2/);
-  assert.match(avatar,/skin_peach/);
-  assert.match(avatar,/hair_short/);
-  assert.match(avatar,/top_tee/);
-  assert.match(avatar,/bottom_shorts/);
-  assert.match(avatar,/CubeArchitectPlayerAvatar/);
-  assert.match(avatar,/addHeadItem/);
-  assert.match(avatar,/addFace/);
-  assert.match(avatar,/addHandItem/);
-  assert.match(avatar,/addAura/);
+test('free world uses the shared Kidscade Pixel Avatar v1 state',()=>{
+  assert.match(avatar,/kidscade-pixel-avatar-v1/);
+  assert.match(avatar,/kidscade-avatar-studio-preview/);
+  assert.doesNotMatch(avatar,/kidscade_avatar_equipped/);
+  assert.doesNotMatch(avatar,/kidscade-avatar-shop-v2/);
+  assert.match(avatar,/CubeArchitectPixelAvatar/);
+  assert.match(avatar,/CanvasTexture/);
+  assert.match(avatar,/renderPreviewFrame/);
+  assert.match(avatar,/hairSet/);
+  assert.match(avatar,/upper/);
+  assert.match(avatar,/lower/);
   assert.match(js,/function refreshFreeAvatar/);
   assert.match(js,/freeAvatarRoot\.rotation\.y=yaw/);
 });
@@ -53,10 +52,10 @@ test('avatar customization is reachable on desktop and touch controls',()=>{
   assert.match(js,/tap\('mobileAvatar'/);
 });
 
-test('avatar animates while moving and keeps cosmetic slots visual-only',()=>{
-  assert.match(avatar,/leftLeg\.rotation\.x=walk/);
-  assert.match(avatar,/rightLeg\.rotation\.x=-walk/);
-  assert.match(avatar,/leftArm\.rotation\.x=-walk/);
-  assert.match(avatar,/auraPieces/);
+test('pixel avatar changes frames while moving and remains cosmetic-only',()=>{
+  assert.match(avatar,/moving&&onGround\?'walk':'idle'/);
+  assert.match(avatar,/renderPreviewFrame\?\.\(mode,time\/1000\)/);
+  assert.match(avatar,/NearestFilter/);
+  assert.match(avatar,/shadow/);
   assert.doesNotMatch(avatar,/damage|attackPower|speedBonus|armorBonus/);
 });
