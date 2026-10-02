@@ -3639,8 +3639,17 @@ canvas.addEventListener('mousedown',e=>{
     }
     updateChallengeStats();updateChallengeGhost();return;
   }
-  if(mode==='free'){const hit=freeCenterHit(6);if(e.button===0){if(!hitWildCreature())breakFreeBlock(hit)}if(e.button===2)placeFreeBlock(hit)}
+  if(mode==='free'){
+    const hit=freeCenterHit(6);
+    if(e.button===0){
+      if(hitWildCreature())return;
+      if(gameFreeMode==='survival')startMining('mouse');
+      else breakFreeBlock(hit);
+    }
+    if(e.button===2)placeFreeBlock(hit);
+  }
 });
+window.addEventListener('mouseup',e=>{if(e.button===0&&miningSource==='mouse')stopMining()});
 canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
@@ -3694,7 +3703,7 @@ document.addEventListener('keydown',e=>{
   }
 });
 document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.code]=false;dungeonKeys[e.code]=false});
-window.addEventListener('blur',()=>{resetMobileInput();challengeKeys={};freeKeys={};dungeonKeys={}});
+window.addEventListener('blur',()=>{stopMining();resetMobileInput();challengeKeys={};freeKeys={};dungeonKeys={}});
 function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
 }
