@@ -46,10 +46,22 @@ const PARTS = {
 
   adhesion:{id:'adhesion',cat:'군체',icon:'🔗',name:'세포 접착',cost:18,external:false,max:1,desc:'분열한 세포가 떨어지지 않고 서로 붙어 있을 수 있게 해요.',science:'다세포성으로 가는 중요한 변화 중 하나는 세포들이 서로 붙어 협력할 수 있게 되는 것입니다.'},
   signaling:{id:'signaling',cat:'군체',icon:'📡',name:'세포간 신호',cost:22,external:false,max:1,requires:'adhesion',desc:'붙어 있는 세포들이 화학 신호를 주고받아 함께 반응해요.',science:'세포간 신호 전달은 여러 세포가 환경 변화에 맞춰 행동을 조절하고 협력하는 데 중요합니다.'},
-  differentiation:{id:'differentiation',cat:'군체',icon:'🧩',name:'세포 분화',cost:28,external:false,max:1,requires:'signaling',desc:'모든 세포가 같은 일을 하지 않고 서로 다른 역할을 맡기 시작해요.',science:'다세포 생물에서는 세포가 서로 다른 구조와 기능을 갖도록 분화해 조직과 기관의 바탕을 만듭니다.'}
+  differentiation:{id:'differentiation',cat:'군체',icon:'🧩',name:'세포 분화',cost:28,external:false,max:1,requires:'signaling',desc:'모든 세포가 같은 일을 하지 않고 서로 다른 역할을 맡기 시작해요.',science:'다세포 생물에서는 세포가 서로 다른 구조와 기능을 갖도록 분화해 조직과 기관의 바탕을 만듭니다.'},
+
+  bodyAxis:{id:'bodyAxis',cat:'조직',icon:'↔️',name:'몸의 앞뒤 축',cost:26,external:false,max:1,requires:'differentiation',colonyOnly:true,desc:'몸의 앞과 뒤가 구분되어 세포를 위치에 따라 다르게 배치할 수 있어요.',science:'초기 다세포 생물의 발달에서는 몸의 축과 위치 정보가 생겨 세포들이 어디에서 어떤 역할을 맡을지 정하는 데 도움이 됩니다.'},
+  epithelium:{id:'epithelium',cat:'조직',icon:'🫧',name:'상피 조직',cost:30,external:false,max:1,requires:'bodyAxis',colonyOnly:true,desc:'바깥 세포들이 이어져 몸의 경계를 만들고 내부 세포를 보호해요.',science:'상피 조직은 세포들이 촘촘히 연결되어 몸의 표면이나 내부 공간의 경계를 만드는 기본 조직입니다.'}
 };
 
-const CATS = ['먹이','이동','감각','방어','군체'];
+const CATS = ['먹이','이동','감각','방어','군체','조직'];
+const TISSUE_ROLES=Object.freeze({
+  general:{name:'일반세포',icon:'○',color:'#7ccfc6',desc:'아직 특정 기능에 특화되지 않은 세포'},
+  sensory:{name:'감각세포',icon:'👁',color:'#d9ff7e',desc:'감각 범위를 넓혀 주변 변화를 빨리 알아차림'},
+  motor:{name:'운동세포',icon:'〰',color:'#73d9ff',desc:'수축과 추진을 도와 이동과 회전을 강화'},
+  digestive:{name:'소화세포',icon:'◉',color:'#ffcf78',desc:'먹이에서 더 많은 생체량을 흡수'},
+  protective:{name:'보호세포',icon:'⬡',color:'#b6c8ff',desc:'몸의 표면을 단단하게 해 피해를 줄임'},
+  photo:{name:'광합성세포',icon:'🌱',color:'#9bf47c',desc:'광합성체가 있을 때 빛으로 만드는 생체량을 강화'}
+});
+const TISSUE_CELL_COUNT=7;
 const BODY_SHAPES=Object.freeze({
   round:{name:'둥근형',x:1,y:1},
   oval:{name:'타원형',x:1.18,y:.82},
@@ -69,7 +81,7 @@ const SAVE_KEY = window.KidscadeGame?.storageKey?.('high_micro_evolution','save'
 
 let canvas,ctx,dpr=1,viewW=0,viewH=0,last=0,raf=0;
 let running=false,paused=false,toastTimer=0,eventTimer=0,senseTimer=0;
-let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null,organStyleSlot=-1;
+let selectedBiome=BIOMES[0],selectedPart=null,activeTab='먹이',editorSnapshot=null,organStyleSlot=-1,selectedTissueCell=0;
 let keys={},pointerTarget=null,joy={active:false,x:0,y:0,pid:null};
 let foods=[],creatures=[],lightPatches=[],foodClusters=[],biomeProps=[],ripples=[],particles=[];
 let baseEnv={...BIOMES[0].env},env={...BIOMES[0].env};
@@ -88,6 +100,7 @@ function freshPlayer(){
     slots,inside:{chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0,adhesion:0,signaling:0,differentiation:0},
     appearance:{shape:'oval',symmetry:'bilateral',base:'#29b5a7',accent:'#8cffe9',pattern:'none',opacity:1,length:1,width:1},
     slotMeta:Array.from({length:12},()=>({scale:1,twist:0})),stage:'unicellular',
+    tissueRoles:Array(TISSUE_CELL_COUNT).fill('general'),
     pulseCd:0,biteCd:0,attached:null,lastMove:0,feedFlash:0,divisionFx:0,feedAudioCd:0,hurtAudioCd:0};
 }
 function resetState(){
@@ -111,11 +124,24 @@ function ensureMorphology(p=state.player){
   if(!BODY_SYMMETRY[p.appearance.symmetry])p.appearance.symmetry='bilateral';
   p.slotMeta=Array.from({length:12},(_,i)=>({scale:1,twist:0,...((p.slotMeta||[])[i]||{})}));
   p.stage=p.stage||'unicellular';
-  p.inside={chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0,adhesion:0,signaling:0,differentiation:0,...(p.inside||{})};
+  p.inside={chloroplast:0,thermo:0,membrane:0,toxin:0,camouflage:0,adhesion:0,signaling:0,differentiation:0,bodyAxis:0,epithelium:0,...(p.inside||{})};
+  p.tissueRoles=Array.from({length:TISSUE_CELL_COUNT},(_,i)=>TISSUE_ROLES[(p.tissueRoles||[])[i]]?(p.tissueRoles||[])[i]:'general');
 }
 function colonyProgress(p=state.player){ ensureMorphology(p);return COLONY_PATH.reduce((n,id)=>n+(countPart(id,p)>0?1:0),0); }
 function colonyReady(p=state.player){ return colonyProgress(p)===COLONY_PATH.length; }
-function stageLabel(p=state.player){ return p?.stage==='colony'?'군체':'단세포'; }
+function tissueCounts(p=state.player){
+  ensureMorphology(p);const out={general:0,sensory:0,motor:0,digestive:0,protective:0,photo:0};
+  p.tissueRoles.forEach(role=>out[role]=(out[role]||0)+1);return out;
+}
+function specializedTissueCount(p=state.player){const c=tissueCounts(p);return TISSUE_CELL_COUNT-(c.general||0);}
+function specializedTissueTypes(p=state.player){const c=tissueCounts(p);return Object.entries(c).filter(([k,v])=>k!=='general'&&v>0).length;}
+function tissueEditorUnlocked(p=state.player){return p?.stage!=='unicellular'&&countPart('bodyAxis',p)>0&&countPart('epithelium',p)>0;}
+function multicellularReady(p=state.player){return p?.stage==='colony'&&tissueEditorUnlocked(p)&&specializedTissueCount(p)>=4&&specializedTissueTypes(p)>=2;}
+function stageLabel(p=state.player){
+  if(p?.stage==='multicellular')return '초기 다세포';
+  if(p?.stage==='colony')return '군체';
+  return '단세포';
+}
 function bodyExtents(appearance){
   const app=appearance||{shape:'oval',length:1,width:1},shape=BODY_SHAPES[app.shape]||BODY_SHAPES.oval;
   return {x:shape.x*clamp(Number(app.length)||1,.7,1.45),y:shape.y*clamp(Number(app.width)||1,.7,1.45)};
@@ -315,7 +341,14 @@ function movementStats(p=state.player){
   let speed=(76+thrust*35)/armor;
   let turn=2.35+side*1.2+(parts.cilia||0)*.5;
   let sense=110+(parts.eyespot||0)*35+(parts.chemo||0)*48+(parts.mechano||0)*42+(parts.tactile||0)*18+(parts.electro||0)*45;
+  const tissues=tissueCounts(p);
   if(p.stage==='colony'){speed*=.9;turn*=.88;sense*=1.12;armor+=.28}
+  if(p.stage==='multicellular'){
+    speed*=.84*(1+(tissues.motor||0)*.075);
+    turn*=.8*(1+(tissues.motor||0)*.06);
+    sense*=1.18+(tissues.sensory||0)*.095;
+    armor+=.42+(tissues.protective||0)*.13;
+  }
   return {speed,turn,sense,armor,thrust};
 }
 function lightAt(x,y){
@@ -360,7 +393,9 @@ function lightSenseData(p=state.player){
 }
 function reproductionRequirement(){
   const base=28+Math.min(42,(state.generation-1)*6);
-  return base+(state.player?.stage==='colony'?16:0);
+  if(state.player?.stage==='multicellular')return base+34;
+  if(state.player?.stage==='colony')return base+16;
+  return base;
 }
 function partPurchaseCost(part){
   const owned=countPart(part.id);
@@ -436,6 +471,7 @@ function updatePlayer(dt){
 
   const moving=Math.hypot(p.vx,p.vy)>15;
   let drain=.55+(moving?.42:0)+stats.thrust*.035;
+  if(p.stage==='multicellular')drain+=.18+specializedTissueCount(p)*.018;
   drain += salinityStress()*.9 + temperatureStress()*.8;
   p.energy-=drain*dt;
 
@@ -444,7 +480,8 @@ function updatePlayer(dt){
     const localLight=lightAt(p.x,p.y);
     const gain=chlor*localLight*1.35*dt;
     p.energy+=gain;
-    const photoBiomass=gain*(.14+Math.min(.06,chlor*.015));
+    const photoCells=tissueCounts(p).photo||0;
+    const photoBiomass=gain*(.14+Math.min(.06,chlor*.015))*(1+photoCells*.095);
     p.biomass+=photoBiomass;state.dna+=photoBiomass*.012;
     if(gain>.35)state.score+=gain*.12;
   }
@@ -465,7 +502,8 @@ function updatePlayer(dt){
       const organs=countPart('parasite');
       const gain=organs*1.05*dt;
       p.energy+=gain;
-      p.biomass+=gain*.34;
+      const digestive=tissueCounts(p).digestive||0;
+      p.biomass+=gain*.34*(p.stage==='multicellular'?1+digestive*.065:1);
       c.health-=gain*.72;
       state.dna+=gain*.018;state.score+=gain*.3;
       if(Math.random()<dt*.8)particles.push({x:p.x,y:p.y,vx:rand(24,-24),vy:rand(24,-24),life:.45,color:'#ff9fca'});
@@ -491,7 +529,9 @@ function consumeFood(index,mult=1,why='primitive'){
   else if(why==='filter'){biomassScale=.54;dnaScale=.032;energyScale=.92}
   else if(why==='pseudopod'){biomassScale=.45;dnaScale=.034;energyScale=.9}
   else if(why==='predatorLoose'){biomassScale=.25;dnaScale=.018;energyScale=.68}
-  p.energy+=base*mult*energyScale;p.biomass+=base*biomassScale*mult;state.dna+=base*dnaScale*mult;state.score+=base*mult;p.feedFlash=.8;
+  const digestive=tissueCounts(p).digestive||0;
+  const tissueAssimilation=p.stage==='multicellular'?1+digestive*.085:1;
+  p.energy+=base*mult*energyScale;p.biomass+=base*biomassScale*mult*tissueAssimilation;state.dna+=base*dnaScale*mult;state.score+=base*mult;p.feedFlash=.8;
   state.discovered.firstFood=1;
   if(p.feedAudioCd<=0){
     const rate=f.type==='meat'?.72:f.type==='nutrient'?.90:1.12;
@@ -601,6 +641,8 @@ function updateCreatures(dt){
       if(hunter&&c.r>p.radius*.86){
         let dmg=(8+c.r*.1)*dt/(1+countPart('membrane')*.32);
         if(countPart('camouflage')&&Math.hypot(p.vx,p.vy)<12)dmg*=.45;
+        const protective=tissueCounts(p).protective||0;
+        if(p.stage==='multicellular')dmg/=1+protective*.09;
         p.health-=dmg;c.flash=.12;
         if(p.hurtAudioCd<=0){sound('hurt',{volume:.17,rate:.92,rateJitter:.07,cooldownMs:420});p.hurtAudioCd=.44}
         if(countPart('spike')){c.health-=countPart('spike')*2.5*dt;c.vx*=-.75;c.vy*=-.75}
@@ -614,7 +656,8 @@ function updateCreatures(dt){
     if(c.health<=0){
       const sizeFactor=clamp((c.r-18)/34,0,1);
       const huntReward=1.35+sizeFactor*1.25;
-      const biomassReward=8+sizeFactor*8;
+      const digestive=tissueCounts(p).digestive||0;
+      const biomassReward=(8+sizeFactor*8)*(p.stage==='multicellular'?1+digestive*.075:1);
       state.dna+=huntReward;state.score+=30+sizeFactor*20;p.energy+=15+sizeFactor*7;p.biomass+=biomassReward;p.feedFlash=.8;
       sound('reward',{volume:.15,rate:.78+Math.min(.3,huntReward*.08),rateJitter:.04,cooldownMs:160});
       burst(c.x,c.y,'#ff78a4');
@@ -660,9 +703,11 @@ function triggerEvent(){
 function advanceGeneration(){
   state.generation++;state.reproductions++;state.generationClock=0;state.dna+=2;state.score+=75;
   const p=state.player;ensureMorphology(p);
-  const promoted=p.stage==='unicellular'&&colonyReady(p);
-  if(promoted){p.stage='colony';state.score+=180;state.discovered.colony=1}
-  p.biomass=0;p.energy=clamp(p.energy-18,62,100);p.health=100;p.radius=30;p.divisionFx=promoted?2.2:1.5;p.attached=null;
+  const colonyPromotion=p.stage==='unicellular'&&colonyReady(p);
+  const multicellularPromotion=p.stage==='colony'&&multicellularReady(p);
+  if(colonyPromotion){p.stage='colony';state.score+=180;state.discovered.colony=1}
+  if(multicellularPromotion){p.stage='multicellular';state.score+=320;state.discovered.multicellular=1}
+  p.biomass=0;p.energy=clamp(p.energy-(multicellularPromotion?22:18),58,100);p.health=100;p.radius=multicellularPromotion?34:30;p.divisionFx=multicellularPromotion?2.8:colonyPromotion?2.2:1.5;p.attached=null;
   creatures.forEach((c,i)=>{
     const pressure=(env.current>65?.08:0)+(env.food<40?.06:0)+(env.turbidity>65?.05:0);
     c.traits=mutateTraits(c.traits,.1+pressure);c.traits.gen=state.generation;
@@ -671,9 +716,11 @@ function advanceGeneration(){
     if(state.discovered.predator&&c.r<34)c.traits.armor=clamp(c.traits.armor+.035,.25,2);
   });
   burst(p.x,p.y,'#d6ff9a');ripples.push({x:p.x,y:p.y,r:10,life:1.8});
-  if(promoted)toast('🌐 군체 진화 성공! 여러 세포가 붙어 하나의 생물처럼 협력하기 시작했습니다.');
+  if(multicellularPromotion)toast('🧬 초기 다세포 진화 성공! 세포 역할이 조직처럼 협력하기 시작했습니다.');
+  else if(colonyPromotion)toast('🌐 군체 진화 성공! 여러 세포가 붙어 하나의 생물처럼 협력하기 시작했습니다.');
   else toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 환경은 시간이 지나면 평상 상태로 돌아갑니다.');
-  sound('generation',{volume:promoted?.34:.28,rate:promoted?.92:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:promoted?.72:.84}),70);save();
+  const promoted=colonyPromotion||multicellularPromotion;
+  sound('generation',{volume:promoted?.34:.28,rate:multicellularPromotion?.82:colonyPromotion?.92:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:promoted?.72:.84}),70);save();
 }
 function updateMissions(){
   const m=state.mission;
@@ -701,6 +748,7 @@ function classifyNiche(){
   ];
   scores.sort((a,b)=>b.s-a.s);
   const result=scores[0].s>=6?scores[0]:{name:'초기 미생물',desc:'아직 뚜렷한 생활 방식이 없어요.'};
+  if(state.player?.stage==='multicellular')return {name:'초기 다세포 · '+result.name,desc:'역할이 다른 세포들이 조직처럼 협력합니다. '+result.desc};
   if(state.player?.stage==='colony')return {name:'군체 · '+result.name,desc:'여러 세포가 붙어 협력합니다. '+result.desc};
   return result;
 }
@@ -877,7 +925,7 @@ function drawBodyCell(r,appearance,colors,armor,flash,isPlayer,scale=1,ox=0,oy=0
   ctx.lineWidth=2+armor*1.6;ctx.strokeStyle=armor?'rgba(202,247,255,.75)':'rgba(255,255,255,.22)';ctx.stroke();
   drawBodyPattern(r,app);ctx.restore();
 }
-function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null,appearance=null,slotMeta=null,stage='unicellular'){
+function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null,appearance=null,slotMeta=null,stage='unicellular',tissueRoles=null){
   const app=appearance||{shape:'oval',symmetry:'bilateral',base:'#29b5a7',accent:'#8cffe9',pattern:'none',opacity:1,length:1,width:1};
   const metas=slotMeta||Array.from({length:12},()=>({scale:1,twist:0}));
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
@@ -891,17 +939,36 @@ function drawOrganism(x,y,r,angle,slots,inside,isPlayer=false,flash=0,tint=null,
       :app.symmetry==='asymmetric'
       ?[[.8,.12],[-.62,.5],[-.28,-.76],[.35,.72],[-.82,-.16]]
       :[[.72,.43],[.72,-.43],[-.72,.43],[-.72,-.43]];
-    offsets.forEach((o,i)=>drawBodyCell(r*.52,app,colors,Math.max(0,armor-1),flash,isPlayer,.9,o[0]*r,o[1]*r));
+    offsets.forEach(o=>drawBodyCell(r*.52,app,colors,Math.max(0,armor-1),flash,isPlayer,.9,o[0]*r,o[1]*r));
+    drawBodyCell(r,app,colors,armor,flash,isPlayer);
+  }else if(stage==='multicellular'){
+    drawBodyCell(r*1.08,app,colors,armor,flash,isPlayer);
+    const roles=Array.from({length:TISSUE_CELL_COUNT},(_,i)=>TISSUE_ROLES[(tissueRoles||[])[i]]?(tissueRoles||[])[i]:'general');
+    const cells=[
+      [.54,0,.28], [.18,-.38,.24], [.18,.38,.24],
+      [-.2,-.42,.23],[-.2,.42,.23],[-.57,-.25,.22],[-.57,.25,.22]
+    ];
+    cells.forEach((cell,i)=>{
+      const role=TISSUE_ROLES[roles[i]]||TISSUE_ROLES.general;
+      ctx.save();ctx.globalAlpha*=.76;ctx.fillStyle=role.color;ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.ellipse(cell[0]*r,cell[1]*r,cell[2]*r,cell[2]*r*.82,0,0,TAU);ctx.fill();ctx.stroke();
+      ctx.globalAlpha*=.7;ctx.fillStyle='#18343a';ctx.beginPath();ctx.arc(cell[0]*r+cell[2]*r*.12,cell[1]*r,Math.max(1.8,r*.035),0,TAU);ctx.fill();ctx.restore();
+    });
+    ctx.save();ctx.strokeStyle='rgba(230,255,248,.28)';ctx.lineWidth=Math.max(1.5,r*.035);ctx.setLineDash([4,5]);
+    ctx.beginPath();ctx.moveTo(-r*.82,0);ctx.lineTo(r*.82,0);ctx.stroke();ctx.restore();
+  }else{
+    drawBodyCell(r,app,colors,armor,flash,isPlayer);
   }
-  drawBodyCell(r,app,colors,armor,flash,isPlayer);
 
   if(inside&&inside.chloroplast){
     ctx.fillStyle='#8ce66a';ctx.shadowBlur=10;ctx.shadowColor='#8ce66a';
     for(let i=0;i<inside.chloroplast*2;i++){const a=i*2.4+state.survival*.08;ctx.beginPath();ctx.ellipse(Math.cos(a)*r*.42,Math.sin(a)*r*.35,Math.max(4,r*.1),Math.max(3,r*.06),a,0,TAU);ctx.fill()}ctx.shadowBlur=0;
   }
-  ctx.fillStyle=isPlayer?shadeHex(app.accent||'#8cffe9',.78):'#7165aa';
-  const nucleusX=app.symmetry==='asymmetric'?-r*.18:-r*.08;
-  ctx.beginPath();ctx.arc(nucleusX,2,r*.28,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=2;ctx.stroke();
+  if(stage!=='multicellular'){
+    ctx.fillStyle=isPlayer?shadeHex(app.accent||'#8cffe9',.78):'#7165aa';
+    const nucleusX=app.symmetry==='asymmetric'?-r*.18:-r*.08;
+    ctx.beginPath();ctx.arc(nucleusX,2,r*.28,0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=2;ctx.stroke();
+  }
 
   const ext=bodyExtents(app);
   (slots||[]).forEach((type,i)=>{
@@ -994,10 +1061,10 @@ function drawPlayer(){
   const halo=ctx.createRadialGradient(viewW/2,viewH/2,vr*.5,viewW/2,viewH/2,vr*2.25);
   halo.addColorStop(0,'rgba(83,255,224,.14)');halo.addColorStop(1,'rgba(83,255,224,0)');
   ctx.fillStyle=halo;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr*2.25,0,TAU);ctx.fill();
-  if(p.divisionFx>0){ctx.strokeStyle='rgba(220,255,151,'+clamp(p.divisionFx/1.5,0,1)+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr+(1.5-p.divisionFx)*70,0,TAU);ctx.stroke()}
+  if(p.divisionFx>0){const life=clamp(p.divisionFx/2.8,0,1),expand=(1-life)*90;ctx.strokeStyle='rgba(220,255,151,'+life+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(viewW/2,viewH/2,vr+expand,0,TAU);ctx.stroke()}
   ctx.restore();
 
-  drawOrganism(viewW/2,viewH/2,vr,p.angle,p.slots,p.inside,true,p.feedFlash,null,p.appearance,p.slotMeta,p.stage);
+  drawOrganism(viewW/2,viewH/2,vr,p.angle,p.slots,p.inside,true,p.feedFlash,null,p.appearance,p.slotMeta,p.stage,p.tissueRoles);
   const range=movementStats(p).sense*CAMERA_ZOOM;ctx.strokeStyle='rgba(102,245,231,.07)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(viewW/2,viewH/2,Math.min(range,360),0,TAU);ctx.stroke();
 
   if(countPart('filter')){
@@ -1067,9 +1134,17 @@ function updateStarterGuide(){
     textEl.textContent='아래에서 빛나는 “번식 · 진화” 버튼을 눌러 다음 세대의 몸을 설계하세요.';
     hint.textContent='편모·감각기관·방어기관을 고르면 다음 세대의 생활 방식이 달라져요.';
   }else{
-    step.textContent='✓';title.textContent=(state.player.stage==='colony'?'군체 · ':'')+state.generation+'세대 생존 중';
-    textEl.textContent=state.player.stage==='colony'?'여러 세포가 붙어 감각·방어가 좋아졌어요. 더 많은 DNA를 모아 다음 진화 단계를 준비하세요.':'먹기 → 성장 → 번식 · 진화를 반복하며 환경 변화에 맞춰 계통을 이어가세요.';
-    hint.textContent=state.player.stage==='colony'?'군체는 조금 느리지만 더 넓게 감지하고 공격을 견디기 쉬워요.':'작은 생물은 먹이, 큰 포식자는 위험. 환경에 따라 유리한 기관이 달라집니다.';
+    step.textContent='✓';title.textContent=stageLabel()+' · '+state.generation+'세대 생존 중';
+    if(state.player.stage==='multicellular'){
+      textEl.textContent='세포 역할 분담이 실제 능력을 바꿉니다. 환경에 맞춰 조직 구성을 다시 설계하세요.';
+      hint.textContent='감각·운동·소화·보호·광합성세포의 비율에 따라 같은 기관 조합도 다른 생물이 됩니다.';
+    }else if(state.player.stage==='colony'){
+      textEl.textContent='여러 세포가 붙어 협력하고 있어요. 조직 탭에서 몸의 축과 상피 조직을 진화시켜 보세요.';
+      hint.textContent='조직 기반을 만든 뒤 4개 이상의 세포를 2종 이상 역할로 나누면 초기 다세포가 열립니다.';
+    }else{
+      textEl.textContent='먹기 → 성장 → 번식 · 진화를 반복하며 환경 변화에 맞춰 계통을 이어가세요.';
+      hint.textContent='작은 생물은 먹이, 큰 포식자는 위험. 환경에 따라 유리한 기관이 달라집니다.';
+    }
     box.classList.add('done');
   }
 }
@@ -1134,16 +1209,16 @@ function openEditor(){
     toast('아직 번식할 수 없어요 · 생체량 '+Math.floor(state.player.biomass)+'/'+req+', 에너지 '+Math.round(state.player.energy)+'/78');
     return;
   }
-  ensureMorphology();state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,dna:state.dna}));
+  ensureMorphology();state.editorMode='reproduction';paused=true;editorSnapshot=JSON.parse(JSON.stringify({slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,tissueRoles:state.player.tissueRoles,dna:state.dna}));
   $('gameScreen').classList.add('hidden');$('editorScreen').classList.remove('hidden');
   sound('event',{volume:.16,rate:1.08});selectedPart=null;activeTab='먹이';renderEditor();
 }
 function closeEditor(saveChanges){
-  if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.dna=editorSnapshot.dna}
+  if(!saveChanges&&editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.player.tissueRoles=[...editorSnapshot.tissueRoles];state.dna=editorSnapshot.dna}
   $('editorScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');paused=false;selectedPart=null;
   if(saveChanges&&state.editorMode==='reproduction'){
-    const wasColony=state.player.stage==='colony';advanceGeneration();const n=classifyNiche();save();
-    if(wasColony||state.player.stage!=='colony')toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.');
+    const beforeStage=state.player.stage;advanceGeneration();const n=classifyNiche();save();
+    if(beforeStage===state.player.stage)toast('🧬 '+state.generation+'세대 · '+n.name+' 계통이 이어집니다.');
   }else if(!saveChanges){sound('click',{volume:.12})}
   state.editorMode=null;updateLightSensor();updateSenseOverlay();last=performance.now();
 }
@@ -1178,11 +1253,12 @@ function updateColonyProgressUI(){
   const ids=[['adhesion','colonyStepAdhesion'],['signaling','colonyStepSignaling'],['differentiation','colonyStepDifferentiation']];
   ids.forEach(([part,id])=>$(id)?.classList.toggle('on',countPart(part)>0));
   const progress=colonyProgress();
-  $('colonyStageText').textContent=p.stage==='colony'?'군체 생물':progress+'/3 준비';
-  if(p.stage==='colony')$('colonyProgressText').textContent='군체 단계에 진입했습니다. 여러 세포가 붙어 감각과 방어가 좋아졌지만 몸이 커져 움직임은 조금 둔해집니다.';
+  $('colonyStageText').textContent=p.stage==='multicellular'?'초기 다세포':p.stage==='colony'?'군체 생물':progress+'/3 준비';
+  if(p.stage==='multicellular')$('colonyProgressText').textContent='군체 핵심 형질이 유지되고 있습니다. 이제 조직 역할 분담이 몸의 실제 기능을 결정합니다.';
+  else if(p.stage==='colony')$('colonyProgressText').textContent='군체 단계에 진입했습니다. 조직 탭에서 몸의 앞뒤 축과 상피 조직을 얻으면 세포 역할을 나눌 수 있어요.';
   else if(progress===3)$('colonyProgressText').textContent='군체 진화 준비 완료! 이번 번식을 마치면 여러 세포가 붙어 사는 군체 단계로 넘어갑니다.';
   else $('colonyProgressText').textContent='군체 탭에서 세포 접착 → 세포간 신호 → 세포 분화를 순서대로 진화시키세요.';
-  $('colonyProgressBox').classList.toggle('ready',p.stage!=='colony'&&progress===3);
+  $('colonyProgressBox').classList.toggle('ready',p.stage==='unicellular'&&progress===3);
 }
 function applyMorphologyControl(id,value){
   ensureMorphology();const app=state.player.appearance;
@@ -1196,15 +1272,45 @@ function applyMorphologyControl(id,value){
   else if(id==='opacity')app.opacity=clamp(Number(value)/100,.4,1);
   renderSlots();drawEditorPreview();syncMorphologyControls();
 }
+function renderTissueEditor(){
+  ensureMorphology();const box=$('tissueEditorBox');if(!box)return;
+  const unlocked=tissueEditorUnlocked(),roles=state.player.tissueRoles;
+  box.classList.toggle('locked',!unlocked);box.classList.toggle('ready',multicellularReady());
+  $('multicellularStageText').textContent=state.player.stage==='multicellular'?'초기 다세포':unlocked?'역할 배치 가능':'군체에서 해금';
+  const grid=$('tissueCellGrid');grid.innerHTML='';
+  roles.forEach((role,i)=>{
+    const def=TISSUE_ROLES[role]||TISSUE_ROLES.general,b=document.createElement('button');
+    b.type='button';b.className='tissue-cell'+(i===selectedTissueCell?' selected':'');b.disabled=!unlocked;b.dataset.cell=String(i);
+    b.style.background='color-mix(in srgb, '+def.color+' 28%, rgba(8,26,33,.9))';b.style.borderColor=def.color;b.textContent=def.icon;b.title=(i+1)+'번 세포 · '+def.name;
+    b.addEventListener('click',()=>{selectedTissueCell=i;sound('select',{volume:.07});renderTissueEditor()});grid.appendChild(b);
+  });
+  const role=roles[selectedTissueCell]||'general',sel=$('tissueRoleSelect');sel.value=role;sel.disabled=!unlocked;
+  $('tissueRoleInfo').textContent=(TISSUE_ROLES[role]||TISSUE_ROLES.general).desc;
+  const spec=specializedTissueCount(),types=specializedTissueTypes();
+  $('tissueSpecializedCount').textContent=spec+'/7';$('tissueTypeCount').textContent=types+'/2';
+  if(state.player.stage==='multicellular'){
+    $('tissueHelpText').textContent='세포 역할은 계속 바꿀 수 있어요. 역할 조합에 따라 이동·감각·소화·방어·광합성 효율이 달라집니다.';
+    $('multicellularReadyText').textContent='초기 다세포 단계 · 조직 역할이 실제 능력에 반영됩니다.';
+  }else if(!unlocked){
+    $('tissueHelpText').textContent='군체가 된 뒤 조직 탭에서 몸의 앞뒤 축과 상피 조직을 진화시키면 세포별 역할을 정할 수 있어요.';
+    $('multicellularReadyText').textContent='몸의 앞뒤 축 + 상피 조직이 필요해요.';
+  }else if(multicellularReady()){
+    $('tissueHelpText').textContent='충분한 세포 분업이 만들어졌어요. 이번 번식을 마치면 초기 다세포 단계로 진화합니다.';
+    $('multicellularReadyText').textContent='다세포 진화 준비 완료!';
+  }else{
+    $('tissueHelpText').textContent='7개 세포 중 최소 4개를 전문화하고, 서로 다른 역할을 2종 이상 사용하세요.';
+    $('multicellularReadyText').textContent='전문화 4개 + 역할 2종 필요';
+  }
+}
 function renderEditor(){
   $('editorDnaText').textContent=Math.floor(state.dna);
   const tabs=$('partTabs');tabs.innerHTML='';
   CATS.forEach(cat=>{const b=document.createElement('button');b.className='part-tab'+(cat===activeTab?' active':'');b.textContent=cat;b.addEventListener('click',()=>{activeTab=cat;selectedPart=null;sound('select',{volume:.09});renderEditor()});tabs.appendChild(b)});
   const list=$('partList');list.innerHTML='';
   Object.values(PARTS).filter(p=>p.cat===activeTab&&!p.starter).forEach(part=>{
-    const count=countPart(part.id),prereqLocked=part.requires&&!countPart(part.requires),locked=count>=part.max,cost=partPurchaseCost(part);
-    const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+((locked||prereqLocked)?' locked':'');b.type='button';if(part.cat==='군체')b.dataset.colony='1';
-    const reqText=prereqLocked?' · 먼저 '+PARTS[part.requires].name+' 필요':'';
+    const count=countPart(part.id),prereqLocked=part.requires&&!countPart(part.requires),stageLocked=part.colonyOnly&&state.player.stage==='unicellular',locked=count>=part.max,cost=partPurchaseCost(part);
+    const b=document.createElement('button');b.className='part-card'+(selectedPart===part.id?' selected':'')+((locked||prereqLocked||stageLocked)?' locked':'');b.type='button';if(part.cat==='군체')b.dataset.colony='1';
+    const reqText=stageLocked?' · 군체 단계에서 해금':prereqLocked?' · 먼저 '+PARTS[part.requires].name+' 필요':'';
     b.innerHTML='<div class="part-line"><span class="part-icon">'+part.icon+'</span><span class="cost">🧬 '+cost+'</span></div><b>'+part.name+' '+(count?'×'+count:'')+'</b><small>'+part.desc+reqText+(count?' · 같은 기관을 더 달면 DNA 비용이 증가해요.':'')+'</small>';
     b.addEventListener('click',()=>choosePart(part));list.appendChild(b);
     if(!part.external&&count>0){
@@ -1214,11 +1320,16 @@ function renderEditor(){
       list.appendChild(remove);
     }
   });
-  renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();syncMorphologyControls();
-  const finish=$('finishEvolutionBtn');if(finish)finish.textContent=state.player.stage==='unicellular'&&colonyReady()?'군체 생물로 진화하기':'이 모습으로 생존하기';
+  renderSlots();drawEditorPreview();updateTraitSummary();updateScienceCard();syncMorphologyControls();renderTissueEditor();
+  const finish=$('finishEvolutionBtn');if(finish){
+    if(state.player.stage==='unicellular'&&colonyReady())finish.textContent='군체 생물로 진화하기';
+    else if(state.player.stage==='colony'&&multicellularReady())finish.textContent='초기 다세포로 진화하기';
+    else finish.textContent='이 모습으로 생존하기';
+  }
 }
 function choosePart(part){
   updateScienceCard(part);
+  if(part.colonyOnly&&state.player.stage==='unicellular'){sound('error',{volume:.12});toast('군체 단계에 먼저 진입해야 이 조직 형질을 진화시킬 수 있어요.');return}
   if(part.requires&&!countPart(part.requires)){sound('error',{volume:.12});toast(PARTS[part.requires].name+'을(를) 먼저 진화시켜야 해요.');return}
   if(state.player.stage==='colony'&&COLONY_PATH.includes(part.id)&&countPart(part.id)>=part.max){sound('error',{volume:.12});toast('군체 유지에 필요한 핵심 형질이에요.');return}
   if(countPart(part.id)>=part.max){sound('error',{volume:.12});toast('이 기관은 더 이상 달 수 없어요.');return}
@@ -1246,6 +1357,8 @@ function removeInternalPart(part){
   if(state.player.stage==='colony'&&COLONY_PATH.includes(part.id)){sound('error',{volume:.12});toast('군체 단계에서는 이 핵심 형질을 제거할 수 없어요.');return}
   if(part.id==='adhesion'&&(countPart('signaling')||countPart('differentiation'))){sound('error',{volume:.12});toast('세포간 신호와 분화가 이 형질에 의존하고 있어 먼저 제거할 수 없어요.');return}
   if(part.id==='signaling'&&countPart('differentiation')){sound('error',{volume:.12});toast('세포 분화를 먼저 제거해야 세포간 신호를 되돌릴 수 있어요.');return}
+  if(part.id==='bodyAxis'&&countPart('epithelium')){sound('error',{volume:.12});toast('상피 조직을 먼저 제거해야 몸의 축을 되돌릴 수 있어요.');return}
+  if(part.id==='epithelium'&&(specializedTissueCount()>0||state.player.stage==='multicellular')){sound('error',{volume:.12});toast('세포 역할 분담이 이 조직에 의존하고 있어 제거할 수 없어요.');return}
   state.player.inside[part.id]=current-1;
   const refund=partRefundValue(part);state.dna+=refund;selectedPart=null;
   sound('click',{volume:.12,rate:.86});toast(part.name+' 제거 · DNA '+refund+' 회수');renderEditor();
@@ -1268,7 +1381,7 @@ function updateScienceCard(part){
 function drawEditorPreview(){
   const c=$('editorCanvas'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);
   const bg=g.createRadialGradient(w/2,h/2,10,w/2,h/2,w*.48);bg.addColorStop(0,'rgba(71,196,190,.12)');bg.addColorStop(1,'rgba(6,24,31,0)');g.fillStyle=bg;g.fillRect(0,0,w,h);
-  const oldCtx=ctx,oldW=viewW,oldH=viewH;ctx=g;viewW=w;viewH=h;ensureMorphology();drawOrganism(w/2,h/2,105,0,state.player.slots,state.player.inside,true,0,null,state.player.appearance,state.player.slotMeta,state.player.stage);ctx=oldCtx;viewW=oldW;viewH=oldH;
+  const oldCtx=ctx,oldW=viewW,oldH=viewH;ctx=g;viewW=w;viewH=h;ensureMorphology();const previewStage=state.player.stage==='colony'&&specializedTissueCount()>0?'multicellular':state.player.stage;drawOrganism(w/2,h/2,105,0,state.player.slots,state.player.inside,true,0,null,state.player.appearance,state.player.slotMeta,previewStage,state.player.tissueRoles);ctx=oldCtx;viewW=oldW;viewH=oldH;
 }
 function updateTraitSummary(){
   const s=movementStats(state.player);$('traitSpeed').textContent=(s.speed/76).toFixed(1)+'×';$('traitTurn').textContent=(s.turn/2.35).toFixed(1)+'×';$('traitSense').textContent=(s.sense/110).toFixed(1)+'×';$('traitArmor').textContent=s.armor.toFixed(1)+'×';
@@ -1283,7 +1396,7 @@ function openEnvInfo(){
 function save(){
   try{
     ensureMorphology();
-    localStorage.setItem(SAVE_KEY,JSON.stringify({biome:selectedBiome.id,generation:state.generation,dna:state.dna,score:state.score,slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,discovered:state.discovered}));
+    localStorage.setItem(SAVE_KEY,JSON.stringify({biome:selectedBiome.id,generation:state.generation,dna:state.dna,score:state.score,slots:state.player.slots,inside:state.player.inside,appearance:state.player.appearance,slotMeta:state.player.slotMeta,stage:state.player.stage,tissueRoles:state.player.tissueRoles,discovered:state.discovered}));
     sdkScore();
   }catch(_){}
 }
@@ -1292,7 +1405,7 @@ function setupControls(){
   buildBiomeCards();
   $('randomStartBtn').addEventListener('click',randomBiome);$('toggleBiomeBtn').addEventListener('click',()=>{sound('click',{volume:.10});toggleBiomePanel()});$('rerollBtn').addEventListener('click',()=>{sound('select',{volume:.10});buildBiomeCards();toast('생태계 목록을 다시 살펴보세요.')});
   $('openTutorialBtn').addEventListener('click',()=>{sound('event',{volume:.12});$('tutorial').classList.remove('hidden')});$('tutorialCloseBtn').addEventListener('click',()=>{sound('click',{volume:.10});$('tutorial').classList.add('hidden')});$('tutorialPlayBtn').addEventListener('click',()=>{$('tutorial').classList.add('hidden');randomBiome()});
-  $('homeBtn').addEventListener('click',goHome);$('editorBtn').addEventListener('click',openEditor);$('editorCloseBtn').addEventListener('click',()=>closeEditor(false));$('finishEvolutionBtn').addEventListener('click',()=>closeEditor(true));$('undoEvolutionBtn').addEventListener('click',()=>{if(editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.dna=editorSnapshot.dna;selectedPart=null;organStyleSlot=-1;renderEditor();toast('이번 편집을 처음 상태로 되돌렸어요.')}});
+  $('homeBtn').addEventListener('click',goHome);$('editorBtn').addEventListener('click',openEditor);$('editorCloseBtn').addEventListener('click',()=>closeEditor(false));$('finishEvolutionBtn').addEventListener('click',()=>closeEditor(true));$('undoEvolutionBtn').addEventListener('click',()=>{if(editorSnapshot){state.player.slots=[...editorSnapshot.slots];state.player.inside={...editorSnapshot.inside};state.player.appearance=JSON.parse(JSON.stringify(editorSnapshot.appearance));state.player.slotMeta=JSON.parse(JSON.stringify(editorSnapshot.slotMeta));state.player.stage=editorSnapshot.stage;state.player.tissueRoles=[...editorSnapshot.tissueRoles];state.dna=editorSnapshot.dna;selectedPart=null;organStyleSlot=-1;selectedTissueCell=0;renderEditor();toast('이번 편집을 처음 상태로 되돌렸어요.')}});
   $('pulseBtn').addEventListener('click',useSpecial);$('pauseBtn').addEventListener('click',()=>{paused=!paused;sound('click',{volume:.10});if(paused)stopAmbience();else startAmbience();$('pauseBtn').querySelector('b').textContent=paused?'계속하기':'일시정지';last=performance.now()});
   $('envInfoBtn').addEventListener('click',()=>{sound('event',{volume:.10});openEnvInfo()});$('infoCloseBtn').addEventListener('click',()=>{sound('click',{volume:.09});$('infoModal').classList.add('hidden')});
 
@@ -1312,6 +1425,13 @@ function setupControls(){
   $('organTwistRange')?.addEventListener('input',e=>{
     if(organStyleSlot<0)return;ensureMorphology();const deg=clamp(Number(e.target.value),-60,60);state.player.slotMeta[organStyleSlot].twist=deg*Math.PI/180;
     $('organTwistValue').textContent=Math.round(deg)+'°';drawEditorPreview();
+  });
+  $('tissueRoleSelect')?.addEventListener('change',e=>{
+    if(!tissueEditorUnlocked())return;
+    ensureMorphology();const role=TISSUE_ROLES[e.target.value]?e.target.value:'general';
+    state.player.tissueRoles[selectedTissueCell]=role;sound('select',{volume:.08,rate:1.02});
+    renderTissueEditor();drawEditorPreview();updateTraitSummary();
+    const finish=$('finishEvolutionBtn');if(finish)finish.textContent=state.player.stage==='colony'&&multicellularReady()?'초기 다세포로 진화하기':'이 모습으로 생존하기';
   });
 
   window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')openEditor();if(e.key===' ')useSpecial();if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});

@@ -3232,7 +3232,7 @@
       "id": "high_micro_evolution",
       "addedAt": "2026-09-30T10:50:00+09:00",
       "title": "마이크로 에볼루션",
-      "href": "games/high_micro_evolution/index.html?v=9",
+      "href": "games/high_micro_evolution/index.html?v=10",
       "category": "trivia",
       "age": "high",
       "ages": [
@@ -3240,7 +3240,7 @@
         "high"
       ],
       "icon": "🦠",
-      "description": "원시 세포로 시작해 포식·여과·광합성·기생 전략을 전문화하고, 몸 형태·색·무늬·기관 크기와 각도를 자유롭게 꾸미세요. 세포 접착·세포간 신호·세포 분화를 진화시키면 실제 군체 단계로 넘어가는 과학 진화 샌드박스!",
+      "description": "원시 세포에서 시작해 먹이 전략과 외형을 진화시키고, 군체를 거쳐 몸의 앞뒤 축·상피 조직을 만든 뒤 7개 세포에 감각·운동·소화·방어·광합성 역할을 나눠 실제 초기 다세포 생물로 진화하는 과학 샌드박스!",
       "subject": "science",
       "genre": "sandbox",
       "difficulty": "medium",
