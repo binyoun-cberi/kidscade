@@ -17,6 +17,7 @@
     try {
       localStorage.removeItem('kidscade-pixel-avatar-v1');
       localStorage.removeItem('kidscade-avatar-studio-preview');
+      localStorage.removeItem('kidscade-avatar-studio-preview-version');
     } catch (_) {}
   }
 
