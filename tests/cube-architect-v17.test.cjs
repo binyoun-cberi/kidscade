@@ -41,7 +41,7 @@ test('survival has a finishable, action-driven sequence',()=>{
   const empty=stats();empty.harvestedStone=8;
   assert.equal(rules.goalProgress(rules.GOALS[6],empty),1);
   empty.biomes.push('desert');
-  assert.equal(rules.goalProgress(rules.GOALS[5],empty),2);
+  assert.equal(rules.goalProgress(rules.GOALS[6],empty),2);
 });
 test('a roof and two enclosing walls protect the player',()=>{
   const blocks=new Map();
