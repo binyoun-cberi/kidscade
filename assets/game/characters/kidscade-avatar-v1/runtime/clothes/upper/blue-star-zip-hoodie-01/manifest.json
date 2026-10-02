@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "id": "blue-star-zip-hoodie-01",
+  "type": "animated-upper-clothing",
+  "displayName": "파란 별 집업 후드",
+  "canvas": [
+    128,
+    128
+  ],
+  "source": "source/clothes/upper/animated/blue-star-zip-hoodie-01-sheet.png",
+  "mapping": "top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
+  "fit": {
+    "topY": 59,
+    "maxWidth": 70,
+    "maxHeight": 40,
+    "center": "animation bodyBBox center"
+  },
+  "static": "static.png",
+  "frames": [
+    {
+      "frame": "idle-01",
+      "file": "idle/idle-01.png",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "targetBBox": [
+        32,
+        59,
+        99,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "idle-02",
+      "file": "idle/idle-02.png",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "targetBBox": [
+        32,
+        59,
+        100,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "idle-03",
+      "file": "idle/idle-03.png",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "targetBBox": [
+        33,
+        59,
+        98,
+        99
+      ],
+      "bodyCenterX": 65.5
+    },
+    {
+      "frame": "idle-04",
+      "file": "idle/idle-04.png",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "targetBBox": [
+        33,
+        59,
+        99,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "walk-01",
+      "file": "walk/walk-01.png",
+      "sourceCell": [
+        4,
+        0
+      ],
+      "targetBBox": [
+        33,
+        59,
+        98,
+        99
+      ],
+      "bodyCenterX": 65.5
+    },
+    {
+      "frame": "walk-02",
+      "file": "walk/walk-02.png",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "targetBBox": [
+        34,
+        59,
+        97,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "walk-03",
+      "file": "walk/walk-03.png",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "targetBBox": [
+        34,
+        59,
+        99,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "walk-04",
+      "file": "walk/walk-04.png",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "targetBBox": [
+        32,
+        59,
+        99,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "walk-05",
+      "file": "walk/walk-05.png",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "targetBBox": [
+        37,
+        59,
+        95,
+        99
+      ],
+      "bodyCenterX": 66.0
+    },
+    {
+      "frame": "walk-06",
+      "file": "walk/walk-06.png",
+      "sourceCell": [
+        4,
+        1
+      ],
+      "targetBBox": [
+        34,
+        59,
+        98,
+        99
+      ],
+      "bodyCenterX": 66.0
+    }
+  ],
+  "qa": {
+    "status": "generated-needs-visual-review",
+    "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png"
+  }
+}
