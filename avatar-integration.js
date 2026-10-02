@@ -1,13 +1,13 @@
-/* Kidscade avatar studio integration: deluxe shop + lively main-card preview. */
+/* Kidscade avatar studio integration: deluxe shop + stable static main-card preview. */
 (function () {
   'use strict';
 
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v2-rig-hairfit-7';
+  const PREVIEW_VERSION = 'pixel-v2-rig-hairfit-8';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
-  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=17';
+  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=18';
   const GUEST_DEFAULT_CONFIG = Object.freeze({
     hairSet:'male', hairStyle:1, upper:1, lower:1,
     eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
@@ -245,8 +245,8 @@
       #kidscade-avatar-studio-frame{display:block;max-width:1420px;width:100%;height:100%;margin:0 auto;border:0;border-radius:0 0 18px 18px;background:#f8f5fa;box-shadow:0 16px 40px rgba(0,0,0,.28)}
       #avatar-plaza-preview > :not(#kidscade-deluxe-avatar-preview):not(#avatar-open-btn){display:none!important}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-live-stage{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}
-      #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;transform-origin:50% 92%;will-change:transform;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
-      #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center;will-change:transform,opacity}
+      #kidscade-deluxe-avatar-preview .kidscade-avatar-live-img{position:absolute;left:50%;bottom:-1%;width:min(78%,240px);height:92%;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;transform-origin:50% 92%;filter:drop-shadow(0 12px 12px rgba(38,26,56,.16))}
+      #kidscade-deluxe-avatar-preview .kidscade-avatar-live-shadow{position:absolute;left:50%;bottom:5.5%;width:30%;height:8px;border-radius:50%;background:rgba(52,42,65,.14);filter:blur(2px);transform:translateX(-50%);transform-origin:center}
       #kidscade-deluxe-avatar-preview .kidscade-avatar-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#756c86;font-size:.85rem}
       #avatar-plaza-preview .avatar-preview-edit{position:absolute!important;right:12px!important;bottom:12px!important;left:auto!important;top:auto!important;z-index:80!important;display:inline-flex!important;align-items:center;justify-content:center;min-height:40px!important;width:auto!important;padding:0 16px!important;border:2px solid rgba(255,255,255,.92)!important;border-radius:999px!important;background:linear-gradient(135deg,#8b5cf6 0%,#a855f7 48%,#ec4899 100%)!important;color:#fff!important;font-size:.74rem!important;font-weight:1000!important;letter-spacing:-.01em!important;box-shadow:0 9px 20px rgba(83,51,145,.32),inset 0 1px 0 rgba(255,255,255,.22)!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important;transition:transform .16s ease,box-shadow .16s ease!important}
       #avatar-plaza-preview .avatar-preview-edit:hover{transform:translateY(-2px)!important;box-shadow:0 13px 26px rgba(83,51,145,.38),inset 0 1px 0 rgba(255,255,255,.24)!important}
@@ -564,7 +564,24 @@
   }
 
   function startLivePreview() {
-    if (!liveRaf) liveRaf = requestAnimationFrame(liveLoop);
+    // The lobby/profile card is a diagnostic-quality static preview.
+    // Do not swap pose PNGs or apply sub-pixel walk/jump transforms here:
+    // on mobile Safari that made the 128px pixel avatar visibly tremble.
+    if (liveRaf) cancelAnimationFrame(liveRaf);
+    liveRaf = 0;
+    motion.mode = 'idle';
+    motion.x = 0;
+    motion.y = 0;
+    motion.dir = 1;
+    motion.squash = 1;
+    motion.last = 0;
+    motion.lastCapture = 0;
+    ensurePreviewLayer();
+    if (liveImg) liveImg.style.transform = 'translateX(-50%)';
+    if (liveShadow) {
+      liveShadow.style.transform = 'translateX(-50%) scale(1)';
+      liveShadow.style.opacity = '.95';
+    }
   }
 
   document.addEventListener('click', event => {
