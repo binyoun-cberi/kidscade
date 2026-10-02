@@ -1703,9 +1703,15 @@ function assignWorldUserData(obj,key,x,y,z,type,extra={}){
 }
 function registerWorldObject(root,key,x,y,z,type){
   root.traverse?.(o=>{
-    if(o.isMesh){assignWorldUserData(o,key,x,y,z,type,root.userData||{});worldInteractables.push(o);freeMeshes.push(o)}
+    if(o.isMesh&&!o.userData?.worldDecorative){
+      assignWorldUserData(o,key,x,y,z,type,root.userData||{});worldInteractables.push(o);freeMeshes.push(o)
+    }
   });
-  if(root.isMesh){assignWorldUserData(root,key,x,y,z,type,root.userData||{});if(!worldInteractables.includes(root))worldInteractables.push(root);if(!freeMeshes.includes(root))freeMeshes.push(root)}
+  if(root.isMesh&&!root.userData?.worldDecorative){
+    assignWorldUserData(root,key,x,y,z,type,root.userData||{});
+    if(!worldInteractables.includes(root))worldInteractables.push(root);
+    if(!freeMeshes.includes(root))freeMeshes.push(root)
+  }
 }
 function faceMaterials(colors){
   const cs=(colors&&colors.length===6?colors:DEFAULT_FACE_COLORS);
@@ -1726,6 +1732,21 @@ function makeFurnaceObject(facing=0){
   const mats=[materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone')];
   const front=new THREE.MeshStandardMaterial({color:0x31353b,roughness:.92,emissive:0xff6a28,emissiveIntensity:.05});
   mats[4]=front;const m=new THREE.Mesh(freeCubeGeo,mats);m.rotation.y=(facing||0)*Math.PI/2;return m;
+}
+function grassTuftMaterial(variant=0){
+  const key='grassTuft:'+variant;if(materialCache.has(key))return materialCache.get(key);
+  const colors=[0x68ad57,0x78bc61,0x4f9849];
+  const m=new THREE.MeshStandardMaterial({color:colors[variant%colors.length],roughness:.95,side:THREE.DoubleSide});
+  materialCache.set(key,m);return m;
+}
+function decorateGrassTop(root,x,y,z,data){
+  if(!data?.natural||getBlock(x,y+1,z)||hash2(x*31+7,z*37-9)<.73)return;
+  const variant=Math.floor(hash2(x*7-3,z*11+5)*3),mat=grassTuftMaterial(variant);
+  const positions=[[-.18,.03,-.11,.08],[.14,.01,.12,-.3],[.02,.05,-.02,.55]];
+  for(const [px,py,pz,rot] of positions){
+    const blade=new THREE.Mesh(grassTuftGeo,mat);
+    blade.position.set(px,.62+py,pz);blade.rotation.y=rot;blade.userData.worldDecorative=true;root.add(blade);
+  }
 }
 function makeWorldMesh(x,y,z,data){
   const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden)return null;
@@ -1760,11 +1781,19 @@ function makeWorldMesh(x,y,z,data){
     root=new THREE.Mesh(geo,faceMaterials(data.faceColors));root.position.set(x+(dims[0]-1)/2,y+dims[1]/2,z+(dims[2]-1)/2);
     root.userData={shapeKind:'cuboid',dims:dims.slice(),faceIds:FACE_IDS.slice(),topology:CUBOID_TOPOLOGY};
   }else{
-    root=new THREE.Mesh(freeCubeGeo,data.faceColors?faceMaterials(data.faceColors):materialFor(type));root.position.set(x,y+.5,z);
+    const geo=(type==='leaves'||type==='pineLeaves')?leafCubeGeo:freeCubeGeo;
+    root=new THREE.Mesh(geo,data.faceColors?faceMaterials(data.faceColors):blockVisualMaterial(type,x,z));root.position.set(x,y+.5,z);
     root.userData={shapeKind:'cuboid',dims:[1,1,1],faceIds:FACE_IDS.slice(),topology:CUBOID_TOPOLOGY};
+    if(type==='grass')decorateGrassTop(root,x,y,z,data);
+    if(type==='leaves'||type==='pineLeaves'){
+      const v=.96+hash2(x*19+y*7,z*23-y*3)*.05;
+      root.scale.set(v,.95+hash2(x*5,z*13)*.06,v);
+    }
   }
-  root.castShadow=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='fire'||type==='windowFrame');
-  root.receiveShadow=true;scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);return root;
+  const casts=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='pineLeaves'||type==='fire'||type==='windowFrame');
+  root.castShadow=casts;root.receiveShadow=true;
+  root.traverse?.(o=>{if(o.isMesh&&!o.userData?.worldDecorative){o.castShadow=casts;o.receiveShadow=true}});
+  scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);return root;
 }
 function refreshBlockMesh(x,y,z){
   const key=worldKey(x,y,z);
