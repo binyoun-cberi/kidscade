@@ -181,7 +181,7 @@ test('Survival strategies have different biomass economies',()=>{
   assert.match(js,/why==='predatorLoose'/);
   assert.match(js,/photoBiomass=gain\*\(\.14\+Math\.min\(\.06,chlor\*\.015\)\)/);
   assert.match(js,/p\.biomass\+=gain\*\.34/);
-  assert.match(js,/const biomassReward=8\+sizeFactor\*8/);
+  assert.match(js,/const biomassReward=\(8\+sizeFactor\*8\)/);
   assert.match(js,/1\.65\+filter\*\.32/);
 });
 
@@ -251,5 +251,83 @@ test('Colony core traits cannot be broken out of dependency order',()=>{
   assert.match(js,/part\.requires&&!countPart\(part\.requires\)/);
   assert.match(js,/part\.id==='adhesion'.*countPart\('signaling'\).*countPart\('differentiation'\)/);
   assert.match(js,/part\.id==='signaling'&&countPart\('differentiation'\)/);
-  assert.match(js,/state\.player\.stage==='colony'&&COLONY_PATH\.includes\(part\.id\)/);
+  assert.match(js,/state\.player\.stage!=='unicellular'&&COLONY_PATH\.includes\(part\.id\)/);
+});
+
+
+test('Early multicellular evolution requires tissues and real cell specialization',()=>{
+  for(const token of ['bodyAxis','epithelium']) assert.match(js,new RegExp(token));
+  for(const role of ['general','sensory','motor','digestive','protective','photo']) assert.match(js,new RegExp(role));
+  assert.match(js,/const TISSUE_ROLES=Object\.freeze/);
+  assert.match(js,/const TISSUE_CELL_COUNT=7/);
+  assert.match(js,/function tissueCounts/);
+  assert.match(js,/function specializedTissueCount/);
+  assert.match(js,/function specializedTissueTypes/);
+  assert.match(js,/function tissueEditorUnlocked/);
+  assert.match(js,/function multicellularReady/);
+  assert.match(js,/specializedTissueCount\(p\)>=4/);
+  assert.match(js,/specializedTissueTypes\(p\)>=2/);
+  assert.match(js,/p\.stage==='colony'&&multicellularReady\(p\)/);
+  assert.match(js,/p\.stage='multicellular'/);
+  assert.match(html,/id="tissueEditorBox"/);
+  assert.match(html,/id="tissueCellGrid"/);
+  assert.match(html,/id="tissueRoleSelect"/);
+  assert.match(css,/\.tissue-editor/);
+  assert.match(css,/\.tissue-cell\[data-cell="0"\]/);
+});
+
+test('Tissue roles alter multicellular survival statistics',()=>{
+  assert.match(js,/tissues\.motor/);
+  assert.match(js,/tissues\.sensory/);
+  assert.match(js,/tissues\.protective/);
+  assert.match(js,/tissueCounts\(p\)\.digestive/);
+  assert.match(js,/tissueCounts\(p\)\.photo/);
+  assert.match(js,/p\.stage==='multicellular'.*specializedTissueCount\(p\)/s);
+  assert.match(js,/return base\+34/);
+});
+
+test('Multicellular body displays tissue layout and front-back axis',()=>{
+  assert.match(js,/stage==='multicellular'/);
+  assert.match(js,/const roles=Array\.from\(\{length:TISSUE_CELL_COUNT\}/);
+  assert.match(js,/TISSUE_ROLES\[roles\[i\]\]/);
+  assert.match(js,/ctx\.setLineDash\(\[4,5\]\)/);
+  assert.match(js,/previewStage=state\.player\.stage==='colony'&&specializedTissueCount\(\)>0\?'multicellular'/);
+});
+
+test('Tissue assignments persist through save cancel and undo',()=>{
+  assert.match(js,/tissueRoles:state\.player\.tissueRoles/);
+  assert.match(js,/tissueRoles:state\.player\.tissueRoles,dna:state\.dna/);
+  assert.match(js,/state\.player\.tissueRoles=\[\.\.\.editorSnapshot\.tissueRoles\]/);
+  assert.match(js,/selectedTissueCell=0/);
+});
+
+test('Tissue prerequisites cannot be bypassed',()=>{
+  assert.match(js,/bodyAxis:\{id:'bodyAxis'.*requires:'differentiation'.*colonyOnly:true/);
+  assert.match(js,/epithelium:\{id:'epithelium'.*requires:'bodyAxis'.*colonyOnly:true/);
+  assert.match(js,/part\.colonyOnly&&state\.player\.stage==='unicellular'/);
+  assert.match(js,/part\.id==='bodyAxis'&&countPart\('epithelium'\)/);
+  assert.match(js,/part\.id==='epithelium'.*specializedTissueCount\(\)>0/s);
+});
+
+
+test('Tissue position changes the value of specialization',()=>{
+  assert.match(js,/function tissuePlacementBonuses/);
+  assert.match(js,/sensoryFront/);
+  assert.match(js,/motorRear/);
+  assert.match(js,/digestiveCore/);
+  assert.match(js,/protectiveSurface/);
+  assert.match(js,/placement\.motorRear\*\.045/);
+  assert.match(js,/placement\.sensoryFront\*\.055/);
+  assert.match(js,/placement\.digestiveCore\*\.045/);
+  assert.match(js,/placement\.protectiveSurface\*\.035/);
+});
+
+test('Multicellular bodies stay physically larger than colonies',()=>{
+  assert.match(js,/const baseRadius=p\.stage==='multicellular'\?36:p\.stage==='colony'\?33:30/);
+});
+
+
+test('Multicellular organisms keep colony core traits',()=>{
+  assert.match(js,/state\.player\.stage!=='unicellular'&&COLONY_PATH\.includes\(part\.id\)/);
+  assert.match(js,/군체 이후에는 이 핵심 형질을 제거할 수 없어요/);
 });
