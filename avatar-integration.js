@@ -104,12 +104,25 @@
     return Number.isFinite(n) ? Math.max(0, n) : 0;
   }
 
-  function ownedSummary() {
+  function pixelState() {
     try {
       const pixel = JSON.parse(localStorage.getItem(PIXEL_STATE_KEY) || 'null');
-      if (pixel) return '픽셀 파츠 80개';
-    } catch (_) {}
-    return '새 픽셀 아바타';
+      return pixel && typeof pixel === 'object' ? pixel : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function ownedSummary() {
+    return pixelState() ? '픽셀 파츠 80개' : '새 픽셀 아바타';
+  }
+
+  function equippedSummary() {
+    const pixel = pixelState();
+    if (!pixel) return '픽셀 기본 코디';
+    const upper = pixel.upper ? '파란 후드' : '기본 상의';
+    const lower = pixel.lower ? '데님 팬츠' : '기본 하의';
+    return upper + ' · ' + lower;
   }
 
   function isPreviewData(data) {
@@ -231,6 +244,8 @@
 
     const summary = document.getElementById('avatar-collection-summary');
     if (summary) summary.textContent = ownedSummary();
+    const equipped = document.getElementById('avatar-equipped-summary');
+    if (equipped) equipped.textContent = equippedSummary();
     const button = ensurePreviewEditButton(host);
     if (button) button.textContent = '👕 꾸미기';
   }
