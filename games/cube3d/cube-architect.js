@@ -1950,31 +1950,92 @@ function addToBag(type,n=1){
     const empty=hotbarTypes.findIndex((item,i)=>i>0&&!item);
     if(empty>=0)hotbarTypes[empty]=type;
   }
-  advanceSurvival();buildHotbar();
-  if(inventoryOpen)buildInventory();
+  advanceSurvival();
+  if(inventoryBatchDepth===0){
+    buildHotbar();
+    if(inventoryOpen)buildInventory();
+  }
 }
 function consumeBag(type,n=1){
   if(bagCount(type)<n)return false;
   survivalBag[type]-=n;
-  if(inventoryOpen)buildInventory();
+  if(inventoryOpen&&inventoryBatchDepth===0)buildInventory();
   return true;
 }
 function recipePossible(recipe){
   return (!recipe.bench||hasWorkbench())&&
     Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
 }
+function recipeCategory(recipe){
+  if(['workbench','woodPick','stonePick','ironPick','furnace'].includes(recipe.id))return '도구';
+  const type=Object.keys(recipe.gives||{})[0],cat=blockDef(type).category;
+  if(['건축','기능','도형'].includes(cat))return '건축';
+  return '재료';
+}
+function visibleSurvivalRecipes(){
+  const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
+    snowBrick:'snow',cactusDye:'desert'};
+  return worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&recipeUnlocked(r.id)&&
+    (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id))&&
+    (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
+      Object.keys(r.needs).some(item=>bagCount(item)>0)))
+    .sort((a,b)=>Number(recipePossible(b))-Number(recipePossible(a))||a.stage-b.stage);
+}
+function renderCraftTabs(recipes){
+  const root=$('survivalCraftTabs');if(!root)return;
+  root.innerHTML='';
+  for(const cat of ['전체','도구','건축','재료']){
+    const count=cat==='전체'?recipes.length:recipes.filter(r=>recipeCategory(r)===cat).length;
+    if(cat!=='전체'&&!count)continue;
+    const b=document.createElement('button');b.type='button';b.className=survivalCraftCategory===cat?'active':'';
+    b.textContent=cat+(count?' '+count:'');
+    b.onclick=()=>{survivalCraftCategory=cat;selectedCraftRecipeId=null;buildInventory('전체')};
+    root.appendChild(b);
+  }
+}
+function renderCraftDetail(recipe){
+  const root=$('survivalCraftDetail');if(!root)return;
+  root.classList.remove('crafting');
+  if(!recipe){
+    root.innerHTML='<div class="craft-detail-empty">제작법을 선택하면 필요한 재료와 결과를 여기에서 볼 수 있어요.</div>';return;
+  }
+  const [resultType,resultCount]=Object.entries(recipe.gives)[0],result=blockDef(resultType);
+  const hex='#'+(result.color||0xd9e2ec).toString(16).padStart(6,'0');
+  const ingredients=Object.entries(recipe.needs).map(([type,need])=>{
+    const d=blockDef(type),have=bagCount(type),ready=have>=need,ih='#'+(d.color||0xdddddd).toString(16).padStart(6,'0');
+    return '<div class="craft-ingredient '+(ready?'ready':'')+'"><i style="--ing-swatch:'+ih+'">'+(d.icon||'▣')+
+      '</i><b>'+d.name+'</b><span>'+have+' / '+need+'</span></div>';
+  }).join('');
+  const possible=recipePossible(recipe),benchReady=!recipe.bench||hasWorkbench();
+  root.innerHTML='<div class="craft-result"><div class="craft-result-icon" style="--craft-swatch:'+hex+'">'+(result.icon||'▣')+
+    '</div><div class="craft-result-copy"><b>'+recipe.name+'</b><small>'+result.name+' '+resultCount+'개가 가방에 들어갑니다.</small></div></div>'+
+    '<div class="craft-ingredients">'+ingredients+'</div>'+
+    '<div class="craft-bench-note">'+(recipe.bench?(benchReady?'✓ 제작대 범위 안':'제작대 가까이에서 만들 수 있어요.'):'손으로 바로 제작 가능')+'</div>'+
+    '<button id="craftSelectedButton" type="button" '+(possible?'':'disabled')+'>'+(possible?'제작하기':'재료를 더 모아야 해요')+'</button>';
+  const button=$('craftSelectedButton');if(button)button.onclick=()=>craftSurvival(recipe);
+}
 function craftSurvival(recipe){
+  if(craftingBusy)return;
   if(gameFreeMode!=='survival'||!recipePossible(recipe)){
     toast('재료가 부족하거나 제작대가 필요해요.');return;
   }
-  for(const [type,amount] of Object.entries(recipe.needs))consumeBag(type,amount);
-  for(const [type,amount] of Object.entries(recipe.gives))addToBag(type,amount);
-  if(recipe.id==='flowerDye'){$('facePaintColor').value='#e75aab';facePaintColor='#e75aab'}
-  if(recipe.id==='cactusDye'){$('facePaintColor').value='#67a74a';facePaintColor='#67a74a'}
-  trackSurvival('craft',recipe.id);
-  buildInventory();saveFreeWorld();
-  toast(recipe.name+' 제작 완료!'+
-    (recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
+  craftingBusy=true;
+  const detail=$('survivalCraftDetail'),button=$('craftSelectedButton');
+  detail?.classList.add('crafting');if(button){button.disabled=true;button.textContent='제작 중…'}
+  sfx('mine');
+  setTimeout(()=>{
+    inventoryBatchDepth++;
+    try{
+      for(const [type,amount] of Object.entries(recipe.needs))consumeBag(type,amount);
+      for(const [type,amount] of Object.entries(recipe.gives))addToBag(type,amount);
+    }finally{inventoryBatchDepth=Math.max(0,inventoryBatchDepth-1)}
+    if(recipe.id==='flowerDye'){$('facePaintColor').value='#e75aab';facePaintColor='#e75aab'}
+    if(recipe.id==='cactusDye'){$('facePaintColor').value='#67a74a';facePaintColor='#67a74a'}
+    trackSurvival('craft',recipe.id);
+    craftingBusy=false;buildHotbar();buildInventory('전체');markFreeWorldDirty(450);
+    toast(recipe.name+' 제작 완료!'+(recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
+    sfx('good');
+  },420);
 }
 function blockButtonMarkup(type,index){
   const d=blockDef(type||'hand'),hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
