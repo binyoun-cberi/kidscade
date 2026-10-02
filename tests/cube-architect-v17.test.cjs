@@ -17,7 +17,7 @@ function stats(){
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(worldJs));
-  assert.match(html,/cube-architect\.js\?v=20261002-27/);
+  assert.match(html,/cube-architect\.js\?v=20261002-28/);
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="survivalSafety"/);
   assert.match(html,/id="survivalReturn"/);
