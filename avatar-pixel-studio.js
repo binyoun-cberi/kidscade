@@ -4,9 +4,11 @@
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const STATE_KEY='kidscade-pixel-avatar-v1';
+const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=ROOT+'/base/master-base-128.png';
+const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
-const DEFAULT={hairSet:'male',hair:1,upper:0,lower:0,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
+const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
 const folders={eyes:'eyes',eyebrows:'eyebrows',noses:'noses',mouths:'mouths',blush:'blush'};
 const prefixes={eyes:'eyes',eyebrows:'eyebrows',noses:'nose',mouths:'mouth',blush:'blush'};
@@ -27,34 +29,65 @@ let currentTab='hair';
 let hairFilterValue='all';
 let seeds=0;
 let renderToken=0;
+let animationCacheToken=0;
+let animationManifest=null;
+let animationFrames={idle:[],walk:[]};
 const cache=new Map();
 
 function clampInt(v,min,max,fallback){
   const n=parseInt(v,10);
   return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
 }
+function safeJson(raw){
+  try{return raw?JSON.parse(raw):null}catch(_){return null}
+}
+function loadStateFromObject(raw){
+  raw=raw&&typeof raw==='object'?raw:{};
+  return {
+    hairSet:raw.hairSet==='female'?'female':'male',
+    hair:clampInt(raw.hair,1,24,DEFAULT.hair),
+    upper:clampInt(raw.upper,0,1,DEFAULT.upper),
+    lower:clampInt(raw.lower,0,1,DEFAULT.lower),
+    eyes:clampInt(raw.eyes,1,8,DEFAULT.eyes),
+    eyebrows:clampInt(raw.eyebrows,1,6,DEFAULT.eyebrows),
+    noses:clampInt(raw.noses,1,4,DEFAULT.noses),
+    mouths:clampInt(raw.mouths,1,8,DEFAULT.mouths),
+    blush:clampInt(raw.blush,0,4,DEFAULT.blush)
+  };
+}
+function legacyMigrationState(){
+  const old=safeJson(localStorage.getItem(LEGACY_EQUIPPED_KEY));
+  if(!old||typeof old!=='object')return {...DEFAULT};
+  const femaleHair=['hair_bob','hair_pony','hair_buns','hair_wave','hair_twin'];
+  const hairMap={
+    hair_short:1,hair_spike:4,hair_curl:8,hair_mushroom:13,
+    hair_bob:3,hair_pony:7,hair_buns:10,hair_wave:14,hair_twin:18
+  };
+  return {
+    ...DEFAULT,
+    hairSet:femaleHair.includes(old.hair)?'female':'male',
+    hair:hairMap[old.hair]||1,
+    upper:old.top==='top_hoodie'||old.top==='top_varsity'?1:DEFAULT.upper,
+    lower:old.bottom==='bottom_jeans'||old.bottom==='bottom_track'?1:DEFAULT.lower
+  };
+}
 function loadState(){
   try{
-    const raw=JSON.parse(localStorage.getItem(STATE_KEY)||'null')||{};
-    return {
-      hairSet:raw.hairSet==='female'?'female':'male',
-      hair:clampInt(raw.hair,1,24,1),
-      upper:clampInt(raw.upper,0,1,0),
-      lower:clampInt(raw.lower,0,1,0),
-      eyes:clampInt(raw.eyes,1,8,1),
-      eyebrows:clampInt(raw.eyebrows,1,6,1),
-      noses:clampInt(raw.noses,1,4,1),
-      mouths:clampInt(raw.mouths,1,8,1),
-      blush:clampInt(raw.blush,0,4,0)
-    };
+    const stored=localStorage.getItem(STATE_KEY);
+    if(stored)return loadStateFromObject(safeJson(stored));
+    return legacyMigrationState();
   }catch(_){return {...DEFAULT};}
 }
 let state=loadState();
 
 function pad(n){return String(n).padStart(2,'0');}
 function hairPath(layer,set,n){return `${ROOT}/hair/${layer}/${set}/hair-${layer}-${set}-${pad(n)}.png`;}
-function upperPath(n){return n===1?`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/static.png`:'';}
-function lowerPath(n){return n===1?`${ROOT}/clothes/lower/denim-cuffed-jeans-01/static.png`:'';}
+function upperPath(n,frameFile=''){
+  return n===1?`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/${frameFile||'static.png'}`:'';
+}
+function lowerPath(n,frameFile=''){
+  return n===1?`${ROOT}/clothes/lower/denim-cuffed-jeans-01/${frameFile||'static.png'}`:'';
+}
 function facePath(type,n){
   if(!n)return '';
   return `${ROOT}/face/${folders[type]}/${prefixes[type]}-${pad(n)}.png`;
@@ -64,6 +97,7 @@ function img(src){
   if(cache.has(src))return cache.get(src);
   const p=new Promise((resolve,reject)=>{
     const im=new Image();
+    im.decoding='async';
     im.onload=()=>resolve(im);
     im.onerror=()=>reject(new Error('asset failed: '+src));
     im.src=src;
@@ -71,30 +105,90 @@ function img(src){
   cache.set(src,p);
   return p;
 }
-async function drawTo(targetCtx,targetState=state){
-  const my=++renderToken;
-  const layers=[
+async function fetchJson(src){
+  const res=await fetch(src,{cache:'no-cache'});
+  if(!res.ok)throw new Error('json failed: '+src);
+  return res.json();
+}
+async function ensureAnimationManifest(){
+  if(animationManifest)return animationManifest;
+  animationManifest=await fetchJson(ANIMATION_MANIFEST);
+  return animationManifest;
+}
+function drawLayer(targetCtx,image,transform=null){
+  if(!image)return;
+  if(!transform){
+    targetCtx.drawImage(image,0,0,128,128);
+    return;
+  }
+  const [sx,sy]=transform.sourceCenter;
+  const [dx,dy]=transform.destCenter;
+  const scale=Number(transform.scale)||1;
+  targetCtx.save();
+  targetCtx.translate(Math.round(dx),Math.round(dy));
+  targetCtx.scale(scale,scale);
+  targetCtx.translate(-sx,-sy);
+  targetCtx.drawImage(image,0,0,128,128);
+  targetCtx.restore();
+}
+async function drawTo(targetCtx,targetState=state,frame=null){
+  const isMain=targetCtx===ctx;
+  const my=isMain?++renderToken:renderToken;
+  const frameFile=frame?.file||'';
+  const sources=[
     hairPath('back',targetState.hairSet,targetState.hair),
-    BASE,
-    lowerPath(targetState.lower),
-    upperPath(targetState.upper),
+    frame?`${ROOT}/animation/${frame.file}`:BASE,
+    lowerPath(targetState.lower,frameFile),
+    upperPath(targetState.upper,frameFile),
     facePath('blush',targetState.blush),
     facePath('eyes',targetState.eyes),
     facePath('eyebrows',targetState.eyebrows),
     facePath('noses',targetState.noses),
     facePath('mouths',targetState.mouths),
     hairPath('front',targetState.hairSet,targetState.hair)
-  ].filter(Boolean);
-  const images=await Promise.all(layers.map(src=>img(src).catch(()=>null)));
-  if(targetCtx===ctx && my!==renderToken)return;
+  ];
+  const images=await Promise.all(sources.map(src=>src?img(src).catch(()=>null):Promise.resolve(null)));
+  if(isMain&&my!==renderToken)return;
+  const [hairBack,body,lower,upper,blush,eyes,eyebrows,nose,mouth,hairFront]=images;
+  const headTransform=frame?.headTransform||null;
+
+  targetCtx.save();
+  targetCtx.setTransform(1,0,0,1,0,0);
   targetCtx.clearRect(0,0,128,128);
   targetCtx.imageSmoothingEnabled=false;
-  images.forEach(im=>{if(im)targetCtx.drawImage(im,0,0,128,128);});
+  drawLayer(targetCtx,hairBack,headTransform);
+  drawLayer(targetCtx,body);
+  drawLayer(targetCtx,lower);
+  drawLayer(targetCtx,upper);
+  drawLayer(targetCtx,blush,headTransform);
+  drawLayer(targetCtx,eyes,headTransform);
+  drawLayer(targetCtx,eyebrows,headTransform);
+  drawLayer(targetCtx,nose,headTransform);
+  drawLayer(targetCtx,mouth,headTransform);
+  drawLayer(targetCtx,hairFront,headTransform);
+  targetCtx.restore();
+}
+async function refreshAnimationCache(){
+  const token=++animationCacheToken;
+  const manifest=await ensureAnimationManifest();
+  const next={idle:[],walk:[]};
+  for(const mode of ['idle','walk']){
+    const frames=manifest.frameSets?.[mode]?.frames||[];
+    for(const frame of frames){
+      const off=document.createElement('canvas');
+      off.width=128;off.height=128;
+      const offCtx=off.getContext('2d',{alpha:true});
+      offCtx.imageSmoothingEnabled=false;
+      await drawTo(offCtx,state,frame);
+      next[mode].push(off.toDataURL('image/png'));
+    }
+  }
+  if(token===animationCacheToken)animationFrames=next;
 }
 function previewData(){try{return canvas.toDataURL('image/png');}catch(_){return '';}}
 function publish(showToast=false){
   try{
-    localStorage.setItem(STATE_KEY,JSON.stringify(state));
+    localStorage.setItem(STATE_KEY,JSON.stringify({version:2,...state}));
     const data=previewData();
     if(data)localStorage.setItem(PREVIEW_KEY,data);
     window.parent?.postMessage({type:'kidscade-avatar-change',source:'pixel-v1',state:{...state}},location.origin);
@@ -104,6 +198,7 @@ function publish(showToast=false){
 async function renderAndPublish(showToast=false){
   await drawTo(ctx);
   updateSummary();
+  await refreshAnimationCache().catch(()=>{});
   publish(showToast);
 }
 function updateSummary(){
@@ -154,8 +249,8 @@ function renderOptions(){
   if(currentTab==='upper'){
     pickerTitle.textContent='상의';
     const items=[
-      optionButton('기본 상의',0,state.upper===0,upperThumb(0),`data-kind="upper" data-index="0"`),
-      optionButton('파란 별 집업 후드',1,state.upper===1,upperThumb(1),`data-kind="upper" data-index="1"`)
+      optionButton('기본 상의',0,state.upper===0,upperThumb(0),'data-kind="upper" data-index="0"'),
+      optionButton('파란 별 집업 후드',1,state.upper===1,upperThumb(1),'data-kind="upper" data-index="1"')
     ];
     optionGrid.innerHTML=items.join('');
     pickerCount.textContent='2가지';
@@ -164,8 +259,8 @@ function renderOptions(){
   if(currentTab==='lower'){
     pickerTitle.textContent='하의';
     const items=[
-      optionButton('기본 하의',0,state.lower===0,lowerThumb(0),`data-kind="lower" data-index="0"`),
-      optionButton('커프 데님 팬츠',1,state.lower===1,lowerThumb(1),`data-kind="lower" data-index="1"`)
+      optionButton('기본 하의',0,state.lower===0,lowerThumb(0),'data-kind="lower" data-index="0"'),
+      optionButton('커프 데님 팬츠',1,state.lower===1,lowerThumb(1),'data-kind="lower" data-index="1"')
     ];
     optionGrid.innerHTML=items.join('');
     pickerCount.textContent='2가지';
@@ -215,8 +310,8 @@ optionGrid.addEventListener('click',async e=>{
 document.getElementById('randomBtn').addEventListener('click',async()=>{
   state.hairSet=Math.random()<.5?'male':'female';
   state.hair=1+Math.floor(Math.random()*24);
-  state.upper=Math.random()<.5?0:1;
-  state.lower=Math.random()<.5?0:1;
+  state.upper=Math.random()<.78?1:0;
+  state.lower=Math.random()<.78?1:0;
   state.eyes=1+Math.floor(Math.random()*8);
   state.eyebrows=1+Math.floor(Math.random()*6);
   state.noses=1+Math.floor(Math.random()*4);
@@ -232,13 +327,25 @@ document.getElementById('resetBtn').addEventListener('click',async()=>{
   hairFilter.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.hairSet==='all'));
   selectTab('hair');
   await renderAndPublish(false);
-  flash('처음 모습으로 돌아왔어요.');
+  flash('기본 코디로 돌아왔어요.');
 });
 document.getElementById('saveBtn').addEventListener('click',()=>publish(true));
 
+function previewFrame(mode='idle',time=0){
+  const key=mode==='walk'?'walk':'idle';
+  const frames=animationFrames[key];
+  if(!frames?.length)return previewData();
+  const fps=animationManifest?.frameSets?.[key]?.fps||(key==='walk'?6:3);
+  const t=Number.isFinite(Number(time))?Math.max(0,Number(time)):performance.now()/1000;
+  const index=Math.floor(t*fps)%frames.length;
+  return frames[index]||previewData();
+}
+
 window.KidscadeAvatarShop={
+  version:'pixel-v1',
+  stateKey:STATE_KEY,
   getPreviewDataURL:()=>previewData(),
-  renderPreviewFrame:()=>previewData(),
+  renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),
   setSeeds(value){
     seeds=Math.max(0,parseInt(value,10)||0);
     seedBadge.hidden=false;
@@ -247,29 +354,16 @@ window.KidscadeAvatarShop={
   getState:()=>({...state}),
   async setState(next){
     if(!next||typeof next!=='object')return false;
-    state={...state,...next};
-    state=loadStateFromObject(state);
+    state=loadStateFromObject({...state,...next});
     renderOptions();
     await renderAndPublish(false);
     return true;
   }
 };
-function loadStateFromObject(raw){
-  return {
-    hairSet:raw.hairSet==='female'?'female':'male',
-    hair:clampInt(raw.hair,1,24,1),
-    upper:clampInt(raw.upper,0,1,0),
-    lower:clampInt(raw.lower,0,1,0),
-    eyes:clampInt(raw.eyes,1,8,1),
-    eyebrows:clampInt(raw.eyebrows,1,6,1),
-    noses:clampInt(raw.noses,1,4,1),
-    mouths:clampInt(raw.mouths,1,8,1),
-    blush:clampInt(raw.blush,0,4,0)
-  };
-}
 
 (async function boot(){
   renderOptions();
+  await ensureAnimationManifest().catch(()=>null);
   await renderAndPublish(false);
   document.body.dataset.avatarReady='1';
   window.parent?.postMessage({type:'kidscade-avatar-ready',source:'pixel-v1'},location.origin);
