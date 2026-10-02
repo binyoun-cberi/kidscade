@@ -706,7 +706,32 @@ const NET_FACE_CORNERS=[
   ['H','G','C','D'], // front  (+Z)
   ['F','E','A','B']  // back   (-Z)
 ];
-const NET_LAYOUT=[[2,1],[0,1],[1,0],[1,2],[1,1],[3,1]];
+const NET_VARIANTS=[
+  {layout:[[1,1],[3,1],[0,0],[0,2],[0,1],[2,1]],rot:[0,0,0,0,0,0],cols:4,rows:3},
+  {layout:[[1,2],[1,4],[0,1],[1,3],[0,2],[0,0]],rot:[0,2,0,3,0,2],cols:2,rows:5},
+  {layout:[[2,1],[0,0],[1,0],[1,2],[1,1],[3,1]],rot:[0,1,0,0,0,0],cols:4,rows:3},
+  {layout:[[2,2],[0,1],[1,1],[1,3],[1,2],[0,0]],rot:[0,1,0,0,0,1],cols:3,rows:4},
+  {layout:[[2,2],[0,0],[1,1],[2,3],[1,2],[1,0]],rot:[0,2,0,3,0,2],cols:3,rows:4},
+  {layout:[[2,2],[0,3],[1,1],[1,3],[1,2],[1,0]],rot:[0,3,0,0,0,2],cols:3,rows:4},
+  {layout:[[2,2],[0,1],[1,1],[2,3],[1,2],[0,0]],rot:[0,1,0,3,0,1],cols:3,rows:4},
+  {layout:[[2,2],[0,0],[1,1],[1,3],[1,2],[1,0]],rot:[0,2,0,0,0,2],cols:3,rows:4},
+  {layout:[[2,3],[0,0],[1,2],[1,0],[1,3],[1,1]],rot:[0,3,0,0,0,2],cols:3,rows:4},
+  {layout:[[2,2],[0,2],[1,1],[1,3],[1,2],[1,0]],rot:[0,0,0,0,0,2],cols:3,rows:4},
+  {layout:[[2,2],[0,1],[1,1],[1,3],[1,2],[1,0]],rot:[0,1,0,0,0,2],cols:3,rows:4}
+];
+let netVariantIndex=0,NET_LAYOUT=NET_VARIANTS[0].layout,NET_ROTATIONS=NET_VARIANTS[0].rot;
+function setNetVariant(index){
+  netVariantIndex=((index%NET_VARIANTS.length)+NET_VARIANTS.length)%NET_VARIANTS.length;
+  const v=NET_VARIANTS[netVariantIndex];NET_LAYOUT=v.layout;NET_ROTATIONS=v.rot;
+}
+function chooseNetVariant(){
+  const jump=1+Math.floor(Math.random()*(NET_VARIANTS.length-1));
+  setNetVariant(netVariantIndex+jump);
+}
+function netFaceCorners(face){
+  const base=NET_FACE_CORNERS[face],r=((NET_ROTATIONS[face]||0)%4+4)%4;
+  return r?base.slice(4-r).concat(base.slice(0,4-r)):base.slice();
+}
 const NET_SIDES=['윗쪽','오른쪽','아랫쪽','왼쪽'];
 const NET_CORNER_NAMES=['왼쪽 위','오른쪽 위','오른쪽 아래','왼쪽 아래'];
 const NET_EDGE_CORNERS=[[0,1],[1,2],[3,2],[0,3]];
@@ -715,7 +740,8 @@ let netQuizAnswered=0,netQuizCorrect=0,netQuizProof=null,foldNonce=0;
 function netEdgeData(){
   const result=[];
   for(let f=0;f<6;f++)for(let side=0;side<4;side++){
-    const corners=NET_EDGE_CORNERS[side].map(c=>NET_FACE_CORNERS[f][c]);
+    const faceCorners=netFaceCorners(f);
+    const corners=NET_EDGE_CORNERS[side].map(c=>faceCorners[c]);
     result.push({face:f,side,vertices:corners,edgeKey:corners.slice().sort().join('')});
   }
   return result;
@@ -753,7 +779,7 @@ function makeNetQuiz(kind){
   const corners=[];
   for(let f=0;f<6;f++)for(let corner=0;corner<4;corner++){
     const [col,row]=NET_LAYOUT[f],dc=[0,1,1,0][corner],dr=[0,0,1,1][corner];
-    corners.push({face:f,corner,vertex:NET_FACE_CORNERS[f][corner],xy:[col+dc,row+dr].join(',')});
+    corners.push({face:f,corner,vertex:netFaceCorners(f)[corner],xy:[col+dc,row+dr].join(',')});
   }
   const eligible=corners.filter(a=>corners.some(b=>b.face!==a.face&&b.vertex===a.vertex&&b.xy!==a.xy));
   const source=eligible[Math.floor(Math.random()*eligible.length)];
@@ -783,6 +809,7 @@ function clearNetProof(){
 function nextNetQuiz(){
   foldNonce++;
   foldPieces.forEach(piece=>scene.remove(piece));foldPieces=[];if(netBox)netBox.visible=true;
+  chooseNetVariant();
   clearNetProof();netQuiz=makeNetQuiz(netQuizMode);netQuizChoice=null;netQuizRevealed=false;
   $('resultCard').classList.add('hidden');
   $('netQuizStatus').textContent='문제 '+(netQuizAnswered+1)+' · 지금까지 '+netQuizCorrect+'/'+netQuizAnswered+' 정답';
@@ -856,6 +883,7 @@ function initNet(){
   modeTitle('전개도 연구실','2D 전개도 → 3D 관계 찾기');
   setVisible('netPanel',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
   foldNonce++;foldPieces=[];netQuizMode='decorate';netQuiz=null;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
+  chooseNetVariant();
   cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
   netBox=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.9,1.55),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
@@ -872,8 +900,14 @@ function initNet(){
   $('resultCard').classList.add('hidden');showTutorial('net');
 }
 function buildNetBoard(){
+  const variant=NET_VARIANTS[netVariantIndex],board=$('netBoard');
+  if(board){
+    board.style.gridTemplateColumns='repeat('+variant.cols+',56px)';
+    board.style.gridTemplateRows='repeat('+variant.rows+',44px)';
+  }
   document.querySelectorAll('.net-face').forEach(el=>{
-    const f=Number(el.dataset.face);
+    const f=Number(el.dataset.face),pos=NET_LAYOUT[f];
+    el.style.gridColumn=String(pos[0]+1);el.style.gridRow=String(pos[1]+1);
     el.textContent=netQuizMode==='decorate'?netTarget[f]:faceNames[f];
     el.classList.remove('quiz-target');el.removeAttribute('data-quiz-edge');
     if(netQuizMode!=='decorate'&&netQuiz?.source?.face===f){
@@ -886,7 +920,7 @@ function buildNetBoard(){
     }
     if(netQuizMode==='face'&&netQuiz?.source===f)el.classList.add('quiz-target');
   });
-  if(netQuizMode==='decorate')$('netMission').textContent='전개도의 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
+  if(netQuizMode==='decorate')$('netMission').textContent='11가지 정육면체 전개도 중 하나예요. 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
 }
 function buildPalette(){
   const p=$('stickerPalette');p.innerHTML='';
@@ -913,7 +947,9 @@ function checkNet(){
 function foldPreview(){
   if(!netBox)return;const ticket=++foldNonce;
   foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();netBox.visible=false;
-  const starts=[new THREE.Vector3(2.6,0,0),new THREE.Vector3(-2.6,0,0),new THREE.Vector3(0,1.85,0),new THREE.Vector3(0,-1.85,0),new THREE.Vector3(0,0,0),new THREE.Vector3(5.2,0,0)];
+  const xs=NET_LAYOUT.map(p=>p[0]),ys=NET_LAYOUT.map(p=>p[1]);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+  const starts=NET_LAYOUT.map(([col,row])=>new THREE.Vector3((col-cx)*2.75,(cy-row)*1.95,0));
   const ends=[new THREE.Vector3(1.41,0,0),new THREE.Vector3(-1.41,0,0),new THREE.Vector3(0,.96,0),new THREE.Vector3(0,-.96,0),new THREE.Vector3(0,0,.79),new THREE.Vector3(0,0,-.79)];
   const rots=[
     new THREE.Euler(0,Math.PI/2,0),new THREE.Euler(0,-Math.PI/2,0),new THREE.Euler(-Math.PI/2,0,0),new THREE.Euler(Math.PI/2,0,0),new THREE.Euler(0,0,0),new THREE.Euler(0,Math.PI,0)
