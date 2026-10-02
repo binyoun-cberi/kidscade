@@ -10,9 +10,9 @@
   "source": "source/clothes/lower/animated/denim-cuffed-jeans-01-sheet.png",
   "mapping": "top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
   "fit": {
-    "topY": 82,
-    "maxHeight": 41,
-    "maxWidth": 56,
+    "topY": 84,
+    "maxHeight": 35,
+    "maxWidth": 44,
     "center": "animation bodyBBox center"
   },
   "static": "static.png",
@@ -27,12 +27,12 @@
         356
       ],
       "targetBBox": [
-        45,
-        82,
-        87,
-        123
+        48,
+        84,
+        84,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "idle-02",
@@ -44,12 +44,12 @@
         355
       ],
       "targetBBox": [
-        45,
-        82,
-        87,
-        123
+        48,
+        84,
+        84,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "idle-03",
@@ -61,10 +61,10 @@
         356
       ],
       "targetBBox": [
-        44,
-        82,
-        86,
-        123
+        48,
+        84,
+        84,
+        119
       ],
       "bodyCenterX": 65.5
     },
@@ -78,12 +78,12 @@
         355
       ],
       "targetBBox": [
-        45,
-        82,
-        87,
-        123
+        48,
+        84,
+        84,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-01",
@@ -95,10 +95,10 @@
         358
       ],
       "targetBBox": [
-        44,
-        82,
-        86,
-        123
+        48,
+        84,
+        84,
+        119
       ],
       "bodyCenterX": 65.5
     },
@@ -112,12 +112,12 @@
         726
       ],
       "targetBBox": [
-        44,
-        82,
-        89,
-        123
+        47,
+        84,
+        85,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-03",
@@ -129,12 +129,12 @@
         734
       ],
       "targetBBox": [
-        42,
-        82,
-        90,
-        123
+        46,
+        84,
+        87,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-04",
@@ -146,12 +146,12 @@
         742
       ],
       "targetBBox": [
-        49,
-        82,
-        83,
-        123
+        52,
+        84,
+        81,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-05",
@@ -163,12 +163,12 @@
         726
       ],
       "targetBBox": [
-        44,
-        82,
-        89,
-        123
+        46,
+        84,
+        85,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     },
     {
       "frame": "walk-06",
@@ -180,23 +180,16 @@
         738
       ],
       "targetBBox": [
-        45,
-        82,
-        87,
-        123
+        48,
+        84,
+        84,
+        119
       ],
-      "bodyCenterX": 66
+      "bodyCenterX": 66.0
     }
   ],
   "qa": {
-    "status": "visual-contact-reviewed",
-    "contact": "qa/clothes/lower/denim-cuffed-jeans-01-contact.png",
-    "review": {
-      "whiteBaseShortsCovered": true,
-      "feetRemainVisible": true,
-      "idleFramesChecked": 4,
-      "walkFramesChecked": 6,
-      "note": "10-frame contact sheet visually reviewed after extraction and alignment."
-    }
+    "status": "generated-needs-visual-review",
+    "contact": "qa/clothes/lower/denim-cuffed-jeans-01-contact.png"
   }
 }
