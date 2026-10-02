@@ -1397,7 +1397,7 @@ function initDungeon(){
 }
 function openLandmarkDungeon(poi){
   if(!poi||gameFreeMode!=='survival')return;
-  if(survivalStage<5){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
+  if(survivalStage<6){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
   saveFreeWorld();
   dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null};
   enterMode('dungeon');
@@ -2423,7 +2423,7 @@ function updateFreeMission(){
       if(close.distance<=close.radius+3)nearLandmarkPoi=close;
     }
   }
-  const canRestore=gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const canRestore=gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('actionCheck').classList.toggle('hidden',!canRestore);
   if(canRestore){
     $('actionCheck').textContent='던전 입장';
@@ -2939,7 +2939,8 @@ function loadFreeWorld(){
           survivalStats={...newSurvivalStats(),...data.stats,
             crafted:{...(data.stats.crafted||{})},
             placed:{...(data.stats.placed||{})},smelted:{...(data.stats.smelted||{})},
-            cuboids:Array.isArray(data.stats.cuboids)?data.stats.cuboids:[],
+            cuboids:Array.isArray(data.stats.cuboids)?data.stats.cuboids:
+              ((data.stats.placed?.cuboid||0)>0?['1x1x2']:[]),
             paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
             biomes:[...visitedBiomes],found:[...collected],
             restored:Array.isArray(data.stats.restored)?data.stats.restored:[...restoredLandmarks]};
@@ -3590,12 +3591,12 @@ function renderExplorationHint(){
     if(restoredLandmarks.has(nearLandmarkPoi.id))
       $('explorationHint').textContent='던전 클리어 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
     else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
-      (survivalStage>=5?' · Q 또는 상단의 ‘던전 입장’을 눌러 탐험':
+      (survivalStage>=6?' · Q 또는 상단의 ‘던전 입장’을 눌러 탐험':
       ' · 첫 거점과 돌 도구를 준비하면 던전에 들어갈 수 있어요.');
     return;
   }
   const landmark=nearestUnrestoredLandmark(x,z);
-  if(landmark&&survivalStage>=5){
+  if(landmark&&survivalStage>=6){
     const dx=landmark.center[0]-x,dz=landmark.center[1]-z;
     const direction=(dz<-5?'북':dz>5?'남':'')+(dx>5?'동':dx<-5?'서':'');
     const known=discoveredLandmarks.has(landmark.id);
@@ -3767,7 +3768,7 @@ function configureMobileMode(target){
   $('mobileMore').textContent=mobileUtilityOpen?'도구 닫기':'도구';
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
   $('mobileCheck').textContent=target==='dungeon'?'조사':poiRestore?'던전':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
@@ -3865,7 +3866,7 @@ function initMobileControls(){
   tap('mobileCheck',()=>{
     if(mode==='challenge')checkChallenge();
     else if(mode==='dungeon')dungeonInteract();
-    else if(mode==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
+    else if(mode==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
       openLandmarkDungeon(nearLandmarkPoi);
   });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
@@ -4054,7 +4055,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
   if(e.code==='KeyV'){cycleFreeView();return}
-  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return;
   }
   if(e.code==='KeyQ'&&gameFreeMode==='creative'&&nearRuin){
