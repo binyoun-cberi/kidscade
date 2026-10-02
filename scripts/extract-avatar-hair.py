@@ -81,9 +81,54 @@ def clear_bg(tile):
         if y + 1 < h: stack.append((x, y+1))
     return im
 
+def remove_white_matte(im, clear_distance=44, matte_distance=100):
+    """Remove white-background antialias fringe without eating brown hair highlights."""
+    im = im.convert("RGBA")
+    px = im.load()
+    w, h = im.size
+    corners = [px[0,0], px[w-1,0], px[0,h-1], px[w-1,h-1]]
+    bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
+
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+
+            d = dist((r, g, b), bg)
+            if d <= clear_distance:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+            if d >= matte_distance:
+                continue
+
+            # Estimate how much foreground color remains in a pixel that was
+            # antialiased against the white sheet background, then un-matte it.
+            coverage = (d - clear_distance) / max(1, matte_distance - clear_distance)
+            new_a = round(a * coverage)
+            if new_a < 12:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+
+            safe = max(coverage, 0.05)
+            rr = round((r - bg[0] * (1 - coverage)) / safe)
+            gg = round((g - bg[1] * (1 - coverage)) / safe)
+            bb = round((b - bg[2] * (1 - coverage)) / safe)
+            px[x, y] = (
+                max(0, min(255, rr)),
+                max(0, min(255, gg)),
+                max(0, min(255, bb)),
+                new_a,
+            )
+    return im
+
 def hard_alpha(im):
     im = im.convert("RGBA")
-    im.putdata([(r,g,b,255 if a >= 48 else 0) for r,g,b,a in im.getdata()])
+    im.putdata([
+        (r,g,b,255) if a >= 48 else (0,0,0,0)
+        for r,g,b,a in im.getdata()
+    ])
     return im
 
 def remove_tiny_components(im, min_pixels=8, keep_pixels=24, near_px=4):
@@ -205,17 +250,14 @@ def build_head_mask(base):
             dst[x, y] = 255
     return mask
 
-def build_face_protect(face_parts):
+def build_face_feature_mask(face_parts):
+    # Diagnostic only. Hair is allowed to overlap eyes, eyebrows, nose and mouth.
     critical = Image.new("L", (RUNTIME, RUNTIME), 0)
     for part in face_parts:
         critical = ImageChops.lighter(critical, part.getchannel("A"))
+    return critical
 
-    # Protect only the actual face-feature pixels plus a tiny 2px safety margin.
-    # Do not carve a generic oval out of every hairstyle.
-    protect = critical.filter(ImageFilter.MaxFilter(5))
-    return critical, protect
-
-def split_full_hair(full, head_mask, critical_mask, protect_mask):
+def split_full_hair(full, head_mask, critical_mask):
     alpha = full.getchannel("A")
 
     # Back contains only pixels outside the head silhouette. A 1px-expanded
@@ -226,11 +268,10 @@ def split_full_hair(full, head_mask, critical_mask, protect_mask):
     back.putalpha(back_alpha)
 
     # Front is the real portion of this hairstyle that lies on the head.
-    # Only pixels covering eyes/eyebrows/nose/mouth are removed.
+    # Do not carve around eyes/eyebrows: long bangs may naturally cover them.
     front_alpha = ImageChops.multiply(alpha, head_mask)
     overlap = ImageChops.multiply(front_alpha, critical_mask)
     overlap_count = sum(1 for v in overlap.getdata() if v > 0)
-    front_alpha = ImageChops.subtract(front_alpha, protect_mask)
     front = full.copy()
     front.putalpha(front_alpha)
 
@@ -248,7 +289,7 @@ def touches(bbox):
     if bbox[3] >= RUNTIME: out.append("bottom")
     return out
 
-def extract(kind, source, head_mask, critical_mask, protect_mask):
+def extract(kind, source, head_mask, critical_mask):
     image = Image.open(source).convert("RGBA")
     w, h = image.size
     if w % COLS or h % ROWS:
@@ -268,10 +309,11 @@ def extract(kind, source, head_mask, critical_mask, protect_mask):
     for row in range(ROWS):
         for col in range(COLS):
             tile=image.crop((col*cw,row*ch,(col+1)*cw,(row+1)*ch))
-            full=hard_alpha(clear_bg(tile).resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST))
+            cleaned=remove_white_matte(clear_bg(tile))
+            full=hard_alpha(cleaned.resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST))
             full,norm=normalize_hair(full,kind)
             back,front,overlap_ratio=split_full_hair(
-                full,head_mask,critical_mask,protect_mask
+                full,head_mask,critical_mask
             )
 
             front_name=f"hair-front-{kind}-{n:02d}.png"
@@ -342,13 +384,13 @@ def main():
 
     head_mask=build_head_mask(base)
     face_parts=load_face_defaults()
-    critical_mask,protect_mask=build_face_protect(face_parts)
+    critical_mask=build_face_feature_mask(face_parts)
 
     FRONT_OUT.mkdir(parents=True,exist_ok=True)
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":6,
+        "version":7,
         "type":"kidscade-normalized-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
@@ -360,7 +402,7 @@ def main():
         "headMask":{
             "bottomY":HEAD_BOTTOM,
             "earSafe":{"y":[EAR_Y0,EAR_Y1],"innerX":[EAR_INNER_LEFT,EAR_INNER_RIGHT]},
-            "faceProtection":"default face feature alpha + 2px expansion"
+            "faceClipping":"disabled; hair may naturally cover facial features"
         },
         "sets":{},
         "qa":{
@@ -373,7 +415,8 @@ def main():
                 "hairBack excludes master-head silhouette",
                 "hairFront contains only master-head overlap",
                 "ear-safe front mask",
-                "no generic face-aperture ellipse",
+                "no eye/eyebrow/nose/mouth subtraction from front hair",
+                "white-matte fringe cleanup before hard alpha",
                 "remove isolated components under 8 pixels",
                 "default face composite contact previews"
             ],
@@ -385,7 +428,7 @@ def main():
         if not source.exists():
             raise FileNotFoundError(source)
         result["sets"][kind]=extract(
-            kind,source,head_mask,critical_mask,protect_mask
+            kind,source,head_mask,critical_mask
         )
         result["qa"]["contacts"][kind]=build_contact(kind,base,face_parts)
 
