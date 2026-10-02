@@ -150,7 +150,9 @@
     if (state.boostUntil > state.tick) parts.push('<span class="issue-chip">⚒️ 집중 생산 · ' + (state.boostUntil - state.tick) + '주 남음</span>');
     if (state.laws.process === "delegate" && state.authorityUses)
       parts.push('<span class="issue-chip">🏛️ 위임 결정 ' + state.authorityUses + '회</span>');
-    $("policyNotice").innerHTML = parts.length ? parts.join("") : '<span class="issue-chip">📘 규칙을 정하면 시민들의 요구와 후속 사건이 표시됩니다.</span>';
+    const notice = $("policyNotice");
+    notice.innerHTML = parts.join("");
+    notice.classList.toggle("hidden", parts.length === 0);
   }
   function consequenceBoard() {
     const latest = (state.decisions || []).slice(0, 3);
