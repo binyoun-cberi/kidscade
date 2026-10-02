@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "kidscade-avatar-v1",
-  "status": "runtime-base-face-hair-animation-upper-lower-ready",
+  "status": "runtime-anchor-rig-v2-ready",
   "canonicalRoot": "assets/game/characters/kidscade-avatar-v1",
   "coordinateSystem": {
     "runtimeCanvas": [
@@ -14,7 +14,8 @@
     ],
     "frontFacing": true,
     "integerCoordinatesOnly": true,
-    "imageSmoothing": false
+    "imageSmoothing": false,
+    "attachment": "named semantic anchors"
   },
   "layerOrder": [
     "hairBack",
@@ -107,7 +108,8 @@
           "walkFrames": 6
         }
       ]
-    }
+    },
+    "rig": "runtime/avatar-rig-v2.json"
   },
   "qa": {
     "hairContacts": [
@@ -168,10 +170,14 @@
     }
   },
   "runtime": {
-    "status": "base-face-hair-animation-upper-lower-ready",
+    "status": "anchor-rig-v2-ready",
     "compositeAt": [
       0,
       0
-    ]
+    ],
+    "rig": "runtime/avatar-rig-v2.json",
+    "attachmentModel": "named-anchor+pivot",
+    "zOrdering": "named-z-slot",
+    "legacyStateCompatible": true
   }
 }
