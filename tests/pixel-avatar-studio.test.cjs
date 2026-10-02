@@ -25,11 +25,11 @@ test('pixel avatar studio loads the shared rig renderer before the studio contro
 
 test('pixel avatar studio keeps split hair, face and animated clothes assets',()=>{
   assert.match(js,/hair\/\$\{layer\}\/\$\{set\}/);
-  assert.match(js,/runtime\/face/);
+  assert.match(renderer,/runtime\/face/);
   assert.match(js,/hairPath\('back'/);
   assert.match(js,/hairPath\('front'/);
-  assert.match(js,/blue-star-zip-hoodie-01/);
-  assert.match(js,/denim-cuffed-jeans-01/);
+  assert.match(renderer,/blue-star-zip-hoodie-01/);
+  assert.match(renderer,/denim-cuffed-jeans-01/);
   assert.match(js,/eyes:8/);
   assert.match(js,/eyebrows:6/);
   assert.match(js,/noses:4/);
@@ -39,7 +39,7 @@ test('pixel avatar studio keeps split hair, face and animated clothes assets',()
 
 test('studio delegates actual composition to the anchor-rig renderer',()=>{
   assert.match(js,/KidscadePixelAvatarV2/);
-  assert.match(js,/renderer\.renderTo/);
+  assert.match(js,/r\.renderTo/);
   assert.match(js,/rendererConfig/);
   assert.doesNotMatch(js,/function drawLayer/);
   assert.match(js,/animationFrames=\{idle:\[\],walk:\[\]\}/);
