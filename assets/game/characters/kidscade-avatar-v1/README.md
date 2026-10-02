@@ -118,6 +118,17 @@ kidscade-avatar-v1/
 - 얼굴·헤어를 각 프레임 머리에 맞추기 위한 `headTransform` 저장
 - 기본 얼굴 + 기본 헤어를 얹은 Idle/Walk contact sheet 시각 검수 완료
 
+## 상의 파츠
+
+첫 애니메이션 상의 **파란 별 집업 후드**를 런타임에 연결했습니다.
+
+- 정지 1프레임
+- Idle 4프레임
+- Walk 6프레임
+- 모든 프레임 128×128 RGBA
+- 팔 움직임에 맞춘 소매 변형
+- QA contact sheet에서 기존 데님 팬츠와 함께 10프레임 조합 검수 완료
+
 ## 하의 파츠
 
 첫 애니메이션 하의 **커프 데님 팬츠**를 런타임에 연결했습니다.
@@ -129,12 +140,12 @@ kidscade-avatar-v1/
 - 흰 기본 반바지를 가리도록 몸체 위에 합성
 - QA contact sheet에서 Idle/Walk 10프레임의 다리 동작과 겹침을 확인
 
-따라서 현재 **base + face + hair + lower clothes + idle/walk animation**까지 런타임 사용 가능한 상태입니다.
+따라서 현재 **base + face + hair + upper/lower clothes + idle/walk animation**까지 런타임 사용 가능한 상태입니다.
 
 ## 남은 작업
 
-1. 상의 애니메이션 파츠 제작
-2. 하의 스타일 추가
+1. 상·하의 스타일 추가
+2. 신발 / 액세서리 파츠 제작
 3. 신발 / 액세서리 파츠 제작
 4. 필요 시 독립 `hairSide` 파츠 추가
 5. 헤어 색상 팔레트 확장
