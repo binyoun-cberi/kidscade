@@ -3646,7 +3646,7 @@ function showTutorial(kind){
   if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
   if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>정육면체와 직육면체를 함께 쓰고, 각 면을 따로 칠하며 날씨와 생태·물질 변화를 관찰할 수 있습니다.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치·문·화로</div><div class="keyrow"><b>1~9 / E</b>핫바 / 건축 인벤토리</div><div class="keyrow"><b>F / R</b>비행 / 바라보는 블록 복사</div><div class="keyrow"><b>P</b>바라보는 한 면만 색칠</div><div class="keyrow"><b>X</b>모서리 → 꼭짓점 → 평행면 수학 렌즈</div><div class="keyrow"><b>T</b>날씨 바꾸기</div><div class="keyrow"><b>물·불·화로</b>흐름·연소·물질 변화 실험</div></div>';
   if(kind==='free'&&gameFreeMode==='survival'){
-    html='<h2>생존 탐험 · 첫날</h2><p>지금은 맨손뿐이에요. 근처 나무를 파괴해 원목 3개를 모으고 E를 눌러 판자를 만들어 보세요. 낮에는 사슴·개구리 같은 생물이 돌아다니고, 밤과 위험 지역에서는 몬스터가 나타납니다. 횃불·벽·바닥도 생존 도구예요.</p>'+
+    html='<h2>생존 탐험 · 첫날</h2><p>지금은 맨손뿐이에요. 근처 나무를 바라보고 좌클릭을 잠깐 유지해 원목 3개를 모으고 E를 눌러 판자를 만들어 보세요. 낮에는 사슴·개구리 같은 생물이 돌아다니고, 밤과 위험 지역에서는 몬스터가 나타납니다. 횃불·벽·바닥도 생존 도구예요.</p>'+
       '<div class="keys"><div class="keyrow"><b>WASD / Space</b>걷기 / 점프</div>'+
       '<div class="keyrow"><b>좌클릭 유지</b>바라보는 블록 채집</div>'+
       '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
@@ -3658,7 +3658,7 @@ function showTutorial(kind){
     html='<h2>설계도 챌린지 · 모바일 조작</h2><p>화면을 밀어 보는 방향을 바꾸고 왼쪽 원형 스틱으로 움직이세요. 오른쪽 버튼으로 블록을 설치·파괴합니다. 건물의 위치는 채점하지 않아요.</p><div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>앞뒤좌우 이동</div><div class="keyrow"><b>화면 드래그</b>시점 돌리기</div><div class="keyrow"><b>↑ / ↓</b>상승 / 하강</div><div class="keyrow"><b>설치 / 파괴</b>십자선이 가리키는 곳에 건축</div><div class="keyrow"><b>검사 / 다음</b>채점 / 다음 설계도</div></div>';
   }
   if(mobileModeEnabled&&kind==='free'&&gameFreeMode==='survival'){
-    html='<h2>생존 탐험 · 모바일 첫날</h2><p>왼쪽 스틱으로 가까운 나무에 다가가세요. 화면을 밀어 시점을 돌리고 파괴 버튼으로 원목을 채집합니다. 밤에는 몬스터가 나타나므로 횃불과 벽도 활용해 보세요.</p>'+
+    html='<h2>생존 탐험 · 모바일 첫날</h2><p>왼쪽 스틱으로 가까운 나무에 다가가세요. 화면을 밀어 시점을 돌리고 채집 버튼을 길게 눌러 원목을 모읍니다. 밤에는 몬스터가 나타나므로 횃불과 벽도 활용해 보세요.</p>'+
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>이동</div>'+
       '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
       '<div class="keyrow"><b>파괴 길게 / 설치</b>채집 / 핫바 블록 설치</div>'+
