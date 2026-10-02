@@ -56,7 +56,7 @@ test('survival combat is forgiving and keeps building as a defense',()=>{
   assert.match(js,/survivalHealth=5/);
   assert.match(js,/health:survivalHealth/);
   assert.match(js,/Number\(data\.health\)\|\|5/);
-  assert.match(js,/version:11/);
+  assert.match(js,/version:12/);
   assert.match(js,/function damageByCreature/);
   assert.match(js,/function returnAfterCreatureDefeat/);
   assert.match(js,/가방의 재료는 그대로/);
