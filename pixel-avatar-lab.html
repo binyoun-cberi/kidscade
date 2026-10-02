@@ -33,6 +33,7 @@ button.secondary{background:#ede7f0;color:#403649}
     <div class="controls">
       <label>헤어 계열<select id="hairSet"><option value="male">male 24</option><option value="female">female 24</option></select></label>
       <label>헤어 번호<input id="hairStyle" type="number" min="1" max="24" value="1"></label>
+      <label>상의<select id="upper"><option value="0">기본 메리야스</option><option value="1">파란 별 집업 후드</option></select></label>
       <label>하의<select id="lower"><option value="0">기본 반바지</option><option value="1">커프 데님 팬츠</option></select></label>
       <label>눈<input id="eyes" type="number" min="1" max="8" value="1"></label>
       <label>눈썹<input id="eyebrows" type="number" min="1" max="6" value="1"></label>
@@ -56,8 +57,8 @@ button.secondary{background:#ede7f0;color:#403649}
  try{
    const avatar=await KidscadePixelAvatarV1.create(canvas,{config:{animation:'idle'}});
    window.pixelAvatarLab=avatar;
-   status.textContent='준비 완료 · base + face + hair + lower clothes + Idle/Walk 런타임';
-   const ids=['hairSet','hairStyle','lower','eyes','eyebrows','nose','mouth','blush','animation'];
+   status.textContent='준비 완료 · base + face + hair + upper/lower clothes + Idle/Walk 런타임';
+   const ids=['hairSet','hairStyle','upper','lower','eyes','eyebrows','nose','mouth','blush','animation'];
    async function apply(){
      const patch={};
      ids.forEach(id=>patch[id]=id==='hairSet'||id==='animation'?$(id).value:Number($(id).value));
@@ -67,6 +68,7 @@ button.secondary{background:#ede7f0;color:#403649}
    $('randomize').onclick=async()=>{
      $('hairSet').value=Math.random()<.5?'male':'female';
      $('hairStyle').value=1+Math.floor(Math.random()*24);
+     $('upper').value=Math.random()<.5?0:1;
      $('lower').value=Math.random()<.5?0:1;
      $('eyes').value=1+Math.floor(Math.random()*8);
      $('eyebrows').value=1+Math.floor(Math.random()*6);
