@@ -2425,8 +2425,8 @@ function breakFreeBlock(hit){
   }
   if(survival){
     const required=worldRules.toolNeeded(type);
-    if(required&&!bagCount(required)){
-      toast(blockDef(required).name+'이(가) 있어야 '+blockDef(type).name+'을(를) 캘 수 있어요.');
+    if(required&&pickTier(selectedType)<pickTier(required)){
+      toast(blockDef(required).name+' 이상을 핫바에서 선택해 주세요.');
       return;
     }
   }
