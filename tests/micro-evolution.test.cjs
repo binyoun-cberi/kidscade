@@ -308,3 +308,20 @@ test('Tissue prerequisites cannot be bypassed',()=>{
   assert.match(js,/part\.id==='bodyAxis'&&countPart\('epithelium'\)/);
   assert.match(js,/part\.id==='epithelium'.*specializedTissueCount\(\)>0/s);
 });
+
+
+test('Tissue position changes the value of specialization',()=>{
+  assert.match(js,/function tissuePlacementBonuses/);
+  assert.match(js,/sensoryFront/);
+  assert.match(js,/motorRear/);
+  assert.match(js,/digestiveCore/);
+  assert.match(js,/protectiveSurface/);
+  assert.match(js,/placement\.motorRear\*\.045/);
+  assert.match(js,/placement\.sensoryFront\*\.055/);
+  assert.match(js,/placement\.digestiveCore\*\.045/);
+  assert.match(js,/placement\.protectiveSurface\*\.035/);
+});
+
+test('Multicellular bodies stay physically larger than colonies',()=>{
+  assert.match(js,/const baseRadius=p\.stage==='multicellular'\?36:p\.stage==='colony'\?33:30/);
+});
