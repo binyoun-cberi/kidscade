@@ -2,10 +2,12 @@
 'use strict';
 
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
+const ASSET_REV='9';
+function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
-const BASE=ROOT+'/base/master-base-128.png';
+const BASE=rev(ROOT+'/base/master-base-128.png');
 const ANIMATION_MANIFEST=ROOT+'/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
 const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
@@ -81,16 +83,16 @@ function loadState(){
 let state=loadState();
 
 function pad(n){return String(n).padStart(2,'0');}
-function hairPath(layer,set,n){return `${ROOT}/hair/${layer}/${set}/hair-${layer}-${set}-${pad(n)}.png`;}
+function hairPath(layer,set,n){return rev(`${ROOT}/hair/${layer}/${set}/hair-${layer}-${set}-${pad(n)}.png`);}
 function upperPath(n,frameFile=''){
-  return n===1?`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/${frameFile||'static.png'}`:'';
+  return n===1?rev(`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/${frameFile||'static.png'}`):'';
 }
 function lowerPath(n,frameFile=''){
-  return n===1?`${ROOT}/clothes/lower/denim-cuffed-jeans-01/${frameFile||'static.png'}`:'';
+  return n===1?rev(`${ROOT}/clothes/lower/denim-cuffed-jeans-01/${frameFile||'static.png'}`):'';
 }
 function facePath(type,n){
   if(!n)return '';
-  return `${ROOT}/face/${folders[type]}/${prefixes[type]}-${pad(n)}.png`;
+  return rev(`${ROOT}/face/${folders[type]}/${prefixes[type]}-${pad(n)}.png`);
 }
 function img(src){
   if(!src)return Promise.resolve(null);
@@ -138,7 +140,7 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   const frameFile=frame?.file||'';
   const sources=[
     hairPath('back',targetState.hairSet,targetState.hair),
-    frame?`${ROOT}/animation/${frame.file}`:BASE,
+    frame?rev(`${ROOT}/animation/${frame.file}`):BASE,
     lowerPath(targetState.lower,frameFile),
     upperPath(targetState.upper,frameFile),
     facePath('blush',targetState.blush),
