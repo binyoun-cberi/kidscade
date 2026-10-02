@@ -2134,6 +2134,111 @@ function freeCenterHit(max=6.5){
   const hits=raycaster.intersectObjects(worldInteractables,false);
   return hits.find(h=>withinPlayerReach(h,eye,maxFromPlayer))||null;
 }
+
+function pickTier(type=selectedType){
+  return type==='ironPick'?3:type==='stonePick'?2:type==='woodPick'?1:0;
+}
+function miningSeconds(data){
+  let type=data?.type||'stone';
+  if(type==='doorTop')type='door';
+  if(type==='cuboidPart')type='cuboid';
+  const tier=pickTier();
+  if(['flower','reed','sapling','fire','leaves','pineLeaves'].includes(type))return .2;
+  if(['dirt','grass','sand','redSand','snow','gravel','clay','cactus'].includes(type))return tier? .27:.4;
+  if(['log','pineLog'].includes(type))return tier? .62:.78;
+  if(['planks','door','roof','stairs','slab','workbench','windowFrame','reedMat'].includes(type))return tier? .4:.56;
+  if(type==='ironOre')return tier>=3?.62:tier>=2?1.02:1.28;
+  if(type==='obsidian')return tier>=3?1.35:2.1;
+  if(['stone','smoothStone','brick','furnace','sandstone','snowBrick','ironBlock'].includes(type))
+    return tier>=3?.42:tier>=2?.62:tier>=1?.88:1.22;
+  return tier?.38:.52;
+}
+function resetMiningFeedback(){
+  const ui=$('miningProgress'),cross=$('crosshair');
+  if(ui){ui.classList.add('hidden');ui.querySelector('i').style.width='0%'}
+  cross?.classList.remove('mining','mining-stage-2','mining-stage-3');
+}
+function updateMiningFeedback(data,p){
+  const ui=$('miningProgress'),cross=$('crosshair');if(!ui)return;
+  const pct=Math.round(THREE.MathUtils.clamp(p,0,1)*100);
+  ui.classList.remove('hidden');ui.querySelector('i').style.width=pct+'%';
+  ui.querySelector('span').textContent=blockDef(data).name+' 채집 '+pct+'%';
+  cross?.classList.add('mining');
+  cross?.classList.toggle('mining-stage-2',p>=.34);
+  cross?.classList.toggle('mining-stage-3',p>=.68);
+}
+function miningTargetData(hit){
+  if(!hit?.object?.userData?.worldBlock)return null;
+  const u=hit.object.userData,data=getBlock(u.gx,u.gy,u.gz);if(!data)return null;
+  return {u,data,key:u.worldKey||worldKey(u.gx,u.gy,u.gz)};
+}
+function canMineTarget(hit,notify=true){
+  const target=miningTargetData(hit);if(!target)return null;
+  const {u,data}=target;
+  if(blockDef(data).unbreakable){if(notify)toast('기반암은 부술 수 없어요.');return null}
+  if(data.protectedPoi){
+    const poi=poiRules.poiById(data.landmarkPoi);
+    if(notify)toast((poi?.name||'랜드마크')+'은 탐험 유적이에요. 던전과 설계실을 이용하세요.');
+    return null;
+  }
+  let type=data.type==='doorTop'?'door':data.type;
+  if(type==='cuboidPart'){
+    const anchor=getBlock(...(data.anchor||[u.gx,u.gy,u.gz]));type=anchor?.type||type;
+  }
+  const required=worldRules.toolNeeded(type);
+  if(gameFreeMode==='survival'&&required&&!bagCount(required)){
+    if(notify)toast(blockDef(required).name+'이(가) 있어야 '+blockDef(type).name+'을(를) 캘 수 있어요.');
+    return null;
+  }
+  return target;
+}
+function startMining(source='mouse'){
+  if(mode!=='free'||inventoryOpen||furnaceOpen)return;
+  if(gameFreeMode!=='survival'){
+    const hit=freeCenterHit(6);if(hit)breakFreeBlock(hit);return;
+  }
+  const hit=freeCenterHit(6);if(!canMineTarget(hit,true))return;
+  miningHeld=true;miningSource=source;miningKey='';miningProgress=0;miningBeat=.25;
+  if(source==='mobile')$('mobileBreak')?.classList.add('holding');
+}
+function stopMining(){
+  miningHeld=false;miningSource='';miningKey='';miningProgress=0;miningDurationNow=0;miningBeat=.25;
+  $('mobileBreak')?.classList.remove('holding');resetMiningFeedback();
+}
+function spawnBreakParticles(x,y,z,type){
+  if(!scene)return;
+  const group=new THREE.Group(),mat=materialFor(type),pieces=[];
+  for(let i=0;i<6;i++){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.12),mat);
+    const a=i*Math.PI/3+Math.random()*.35;
+    m.position.set(x+(Math.random()-.5)*.32,y+.48+(Math.random()-.5)*.28,z+(Math.random()-.5)*.32);
+    m.userData.vel=new THREE.Vector3(Math.cos(a)*(1.1+Math.random()*.6),1.2+Math.random()*.7,Math.sin(a)*(1.1+Math.random()*.6));
+    group.add(m);pieces.push(m);
+  }
+  scene.add(group);const started=performance.now();
+  const tick=now=>{
+    const dt=.016;
+    for(const m of pieces){m.userData.vel.y-=5*dt;m.position.addScaledVector(m.userData.vel,dt);m.scale.setScalar(Math.max(.15,1-(now-started)/330))}
+    if(now-started<330)requestAnimationFrame(tick);else scene.remove(group);
+  };
+  requestAnimationFrame(tick);
+}
+function updateMining(dt){
+  if(!miningHeld||mode!=='free'||gameFreeMode!=='survival'||inventoryOpen||furnaceOpen)return;
+  const hit=freeCenterHit(6),target=canMineTarget(hit,false);
+  if(!target){miningKey='';miningProgress=0;resetMiningFeedback();return}
+  if(target.key!==miningKey){
+    miningKey=target.key;miningProgress=0;miningDurationNow=miningSeconds(target.data);miningBeat=.25;
+  }
+  miningProgress+=dt/Math.max(.12,miningDurationNow);
+  updateMiningFeedback(target.data,miningProgress);
+  if(miningProgress>=miningBeat&&miningBeat<1){sfx('mine');miningBeat+=.25}
+  if(miningProgress>=1){
+    const completed=hit;
+    miningKey='';miningProgress=0;miningDurationNow=0;miningBeat=.25;resetMiningFeedback();
+    breakFreeBlock(completed);
+  }
+}
 function placementTarget(hit){
   if(!hit||!hit.face||!hit.object.userData?.worldBlock)return null;
   const n=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
