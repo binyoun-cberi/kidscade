@@ -9,6 +9,7 @@ const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8'
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
+const hairExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-hair.py'),'utf8');
 
 test('avatar studio and renderer JavaScript both parse cleanly',()=>{
   assert.doesNotThrow(()=>new Function(renderer));
@@ -16,9 +17,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=10/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=10/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=10')<html.indexOf('avatar-pixel-studio.js?v=10'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=11/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=11/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=11')<html.indexOf('avatar-pixel-studio.js?v=11'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -54,7 +55,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig'/);
+  assert.match(js,/version:'pixel-v2-rig-hairfit-1'/);
 });
 
 test('new users start with a complete outfit and legacy equipment can migrate',()=>{
@@ -110,10 +111,21 @@ test('avatar rig lab proves a cropped accessory can attach to the nose anchor',(
   assert.match(lab,/setExtraParts/);
 });
 
+test('hair normalization uses one uniform contain scale instead of stretching every style',()=>{
+  assert.match(hairExtract,/"targetWidth": 64/);
+  assert.match(hairExtract,/"targetTop": 14/);
+  assert.match(hairExtract,/"targetWidth": 70/);
+  assert.match(hairExtract,/"targetTop": 12/);
+  assert.match(hairExtract,/scale = min\(/);
+  assert.doesNotMatch(hairExtract,/verticalFactor/);
+  assert.match(hairExtract,/"scaleX": round\(scale,4\)/);
+  assert.match(hairExtract,/"scaleY": round\(scale,4\)/);
+});
+
 test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='10'/);
+  assert.match(js,/ASSET_REV='11'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='10'/);
+  assert.match(renderer,/ASSET_REV='11'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
