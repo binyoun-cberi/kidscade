@@ -12,7 +12,7 @@ const w={};new Function('window',worldJs)(w);
 const rules=w.CubeArchitectWorld;
 function stats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},
-    placedBlocks:0,cuboids:[],paintedFaces:[],smelted:{},biomes:['meadow'],found:[],restored:[]};
+    placedBlocks:0,cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:['meadow'],found:[],restored:[]};
 }
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
@@ -33,7 +33,7 @@ test('survival has a finishable, action-driven sequence',()=>{
   s.harvestedWood=3;
   assert.equal(rules.goalProgress(rules.GOALS[0],s),3);
   s.crafted.planks=1;s.placed.workbench=1;s.cuboids=['1x1x2'];s.crafted.woodPick=1;
-  s.placedBlocks=6;s.harvestedStone=8;s.biomes.push('forest');
+  s.placedBlocks=6;s.shelterBuilt=true;s.harvestedStone=8;s.biomes.push('forest');
   s.placed.furnace=1;s.smelted.glass=1;s.placed.cuboid=1;
   s.paintedFaces=['block:0','block:2'];s.found=['bp1'];s.restored=['taj'];
   for(const goal of rules.GOALS)
