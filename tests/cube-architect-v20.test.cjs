@@ -68,5 +68,5 @@ test('v20 keeps the v19 dungeon loop and advances save schema',()=>{
   assert.match(js,/function dungeonInteract/);
   assert.match(js,/function openDungeonBlueprint/);
   assert.match(js,/const DUNGEON_SPECS=/);
-  assert.match(js,/version:11/);
+  assert.match(js,/version:12/);
 });
