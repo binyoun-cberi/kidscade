@@ -101,33 +101,52 @@ function detectPitch(){
   const minFreq=80,maxFreq=950;
   const minTau=Math.max(2,Math.floor(sampleRate/maxFreq));
   const maxTau=Math.min(Math.floor(sampleRate/minFreq),Math.floor(buf.length/2));
-  let bestTau=-1,bestCorr=0;
-  for(let tau=minTau;tau<=maxTau;tau++){
-    let sum=0,a2=0,b2=0;
+  const difference=new Float32Array(maxTau+1);
+  const cmnd=new Float32Array(maxTau+1);
+
+  for(let tau=1;tau<=maxTau;tau++){
+    let sum=0;
     const limit=buf.length-tau;
     for(let i=0;i<limit;i++){
-      const a=buf[i],b=buf[i+tau];
-      sum+=a*b;a2+=a*a;b2+=b*b;
+      const delta=buf[i]-buf[i+tau];
+      sum+=delta*delta;
     }
-    const denom=Math.sqrt(a2*b2)||1;
-    const corr=sum/denom;
-    if(corr>bestCorr){bestCorr=corr;bestTau=tau}
+    difference[tau]=sum;
   }
-  if(bestTau<0||bestCorr<0.72){state.voiced=false;return null}
+
+  cmnd[0]=1;
+  let running=0;
+  for(let tau=1;tau<=maxTau;tau++){
+    running+=difference[tau];
+    cmnd[tau]=running?difference[tau]*tau/running:1;
+  }
+
+  const threshold=0.14;
+  let bestTau=-1;
+  for(let tau=minTau;tau<=maxTau;tau++){
+    if(cmnd[tau]<threshold){
+      while(tau+1<=maxTau&&cmnd[tau+1]<cmnd[tau])tau++;
+      bestTau=tau;
+      break;
+    }
+  }
+  if(bestTau<0){
+    let bestValue=1;
+    for(let tau=minTau;tau<=maxTau;tau++){
+      if(cmnd[tau]<bestValue){bestValue=cmnd[tau];bestTau=tau}
+    }
+    if(bestTau<0||bestValue>0.30){state.voiced=false;return null}
+  }
 
   let refined=bestTau;
-  const correlation=tau=>{
-    let sum=0,a2=0,b2=0,limit=buf.length-tau;
-    for(let i=0;i<limit;i++){const a=buf[i],b=buf[i+tau];sum+=a*b;a2+=a*a;b2+=b*b}
-    return sum/(Math.sqrt(a2*b2)||1);
-  };
-  if(bestTau>minTau&&bestTau<maxTau){
-    const c1=correlation(bestTau-1),c2=bestCorr,c3=correlation(bestTau+1);
-    const den=(c1-2*c2+c3);
-    if(Math.abs(den)>1e-6)refined=bestTau+0.5*(c1-c3)/den;
+  if(bestTau>1&&bestTau<maxTau){
+    const left=cmnd[bestTau-1],center=cmnd[bestTau],right=cmnd[bestTau+1];
+    const den=2*center-right-left;
+    if(Math.abs(den)>1e-6)refined=bestTau+(right-left)/(2*den);
   }
+
   const hz=sampleRate/refined;
-  if(hz<minFreq||hz>maxFreq){state.voiced=false;return null}
+  if(!Number.isFinite(hz)||hz<minFreq||hz>maxFreq){state.voiced=false;return null}
   state.voiced=true;
   return hz;
 }
