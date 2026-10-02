@@ -1852,6 +1852,8 @@ function initFree(){
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
+  freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
+  selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
@@ -2187,8 +2189,8 @@ function updateFreeMission(){
     $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
-      survivalStage<3?'좌클릭 채집 · E 가방·제작 · Space 점프 · V 시점':
-      '좌클릭 채집 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
+      survivalStage<3?'좌클릭 유지 채집 · E 가방·제작 · Space 점프 · V 시점':
+      '좌클릭 유지 채집 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
     $('freeQuestTitle').textContent='월드 탐험 기록';
@@ -3628,7 +3630,7 @@ initMobileControls();
 /* ---------------- 공통 입력 / 안내 ---------------- */
 function showTutorial(kind){
   const once='cubeArchitectTutorial_'+kind+
-    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v22':'_v22'):
+    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v25':'_v25'):
       (mobileModeEnabled?'_touch_v1':''));try{if(localStorage.getItem(once))return}catch(_){};
   let html='';
   if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
@@ -3637,7 +3639,7 @@ function showTutorial(kind){
   if(kind==='free'&&gameFreeMode==='survival'){
     html='<h2>생존 탐험 · 첫날</h2><p>지금은 맨손뿐이에요. 근처 나무를 파괴해 원목 3개를 모으고 E를 눌러 판자를 만들어 보세요. 낮에는 사슴·개구리 같은 생물이 돌아다니고, 밤과 위험 지역에서는 몬스터가 나타납니다. 횃불·벽·바닥도 생존 도구예요.</p>'+
       '<div class="keys"><div class="keyrow"><b>WASD / Space</b>걷기 / 점프</div>'+
-      '<div class="keyrow"><b>좌클릭</b>바라보는 블록 채집</div>'+
+      '<div class="keyrow"><b>좌클릭 유지</b>바라보는 블록 채집</div>'+
       '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
       '<div class="keyrow"><b>1~9 / 우클릭</b>획득한 재료 선택 / 설치</div>'+
       '<div class="keyrow"><b>V / 꾸미기</b>1·3인칭 전환 / 내 캐릭터 변경</div>'+
@@ -3650,7 +3652,7 @@ function showTutorial(kind){
     html='<h2>생존 탐험 · 모바일 첫날</h2><p>왼쪽 스틱으로 가까운 나무에 다가가세요. 화면을 밀어 시점을 돌리고 파괴 버튼으로 원목을 채집합니다. 밤에는 몬스터가 나타나므로 횃불과 벽도 활용해 보세요.</p>'+
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>이동</div>'+
       '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
-      '<div class="keyrow"><b>파괴 / 설치</b>채집 / 핫바 블록 설치</div>'+
+      '<div class="keyrow"><b>파괴 길게 / 설치</b>채집 / 핫바 블록 설치</div>'+
       '<div class="keyrow"><b>가방 / 꾸미기</b>제작 / 내 캐릭터 변경</div>'+
       '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div></div>';
   }else if(mobileModeEnabled&&kind==='free'){
