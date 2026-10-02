@@ -136,6 +136,15 @@ function tissueCounts(p=state.player){
 function specializedTissueCount(p=state.player){const c=tissueCounts(p);return TISSUE_CELL_COUNT-(c.general||0);}
 function specializedTissueTypes(p=state.player){const c=tissueCounts(p);return Object.entries(c).filter(([k,v])=>k!=='general'&&v>0).length;}
 function tissueEditorUnlocked(p=state.player){return p?.stage!=='unicellular'&&countPart('bodyAxis',p)>0&&countPart('epithelium',p)>0;}
+function tissuePlacementBonuses(p=state.player){
+  ensureMorphology(p);const r=p.tissueRoles;
+  return {
+    sensoryFront:(r[0]==='sensory'?1:0)+(r[1]==='sensory'?.35:0)+(r[2]==='sensory'?.35:0),
+    motorRear:(r[5]==='motor'?1:0)+(r[6]==='motor'?1:0)+(r[3]==='motor'?.25:0)+(r[4]==='motor'?.25:0),
+    digestiveCore:(r[3]==='digestive'?1:0)+(r[4]==='digestive'?1:0)+(r[1]==='digestive'?.3:0)+(r[2]==='digestive'?.3:0),
+    protectiveSurface:[0,1,2,5,6].reduce((n,i)=>n+(r[i]==='protective'?1:0),0)
+  };
+}
 function multicellularReady(p=state.player){return p?.stage==='colony'&&tissueEditorUnlocked(p)&&specializedTissueCount(p)>=4&&specializedTissueTypes(p)>=2;}
 function stageLabel(p=state.player){
   if(p?.stage==='multicellular')return '초기 다세포';
@@ -341,13 +350,13 @@ function movementStats(p=state.player){
   let speed=(76+thrust*35)/armor;
   let turn=2.35+side*1.2+(parts.cilia||0)*.5;
   let sense=110+(parts.eyespot||0)*35+(parts.chemo||0)*48+(parts.mechano||0)*42+(parts.tactile||0)*18+(parts.electro||0)*45;
-  const tissues=tissueCounts(p);
+  const tissues=tissueCounts(p),placement=tissuePlacementBonuses(p);
   if(p.stage==='colony'){speed*=.9;turn*=.88;sense*=1.12;armor+=.28}
   if(p.stage==='multicellular'){
-    speed*=.84*(1+(tissues.motor||0)*.075);
-    turn*=.8*(1+(tissues.motor||0)*.06);
-    sense*=1.18+(tissues.sensory||0)*.095;
-    armor+=.42+(tissues.protective||0)*.13;
+    speed*=.84*(1+(tissues.motor||0)*.075+placement.motorRear*.045);
+    turn*=.8*(1+(tissues.motor||0)*.06+placement.motorRear*.025);
+    sense*=1.18+(tissues.sensory||0)*.095+placement.sensoryFront*.055;
+    armor+=.42+(tissues.protective||0)*.13+placement.protectiveSurface*.035;
   }
   return {speed,turn,sense,armor,thrust};
 }
@@ -502,8 +511,8 @@ function updatePlayer(dt){
       const organs=countPart('parasite');
       const gain=organs*1.05*dt;
       p.energy+=gain;
-      const digestive=tissueCounts(p).digestive||0;
-      p.biomass+=gain*.34*(p.stage==='multicellular'?1+digestive*.065:1);
+      const digestive=tissueCounts(p).digestive||0,placement=tissuePlacementBonuses(p);
+      p.biomass+=gain*.34*(p.stage==='multicellular'?1+digestive*.065+placement.digestiveCore*.035:1);
       c.health-=gain*.72;
       state.dna+=gain*.018;state.score+=gain*.3;
       if(Math.random()<dt*.8)particles.push({x:p.x,y:p.y,vx:rand(24,-24),vy:rand(24,-24),life:.45,color:'#ff9fca'});
@@ -518,7 +527,8 @@ function updatePlayer(dt){
   p.health=clamp(p.health,0,100);
   if(p.health<=0)respawnPlayer();
 
-  const growTarget=30+Math.min(24,Math.sqrt(Math.max(0,p.biomass))*2.1);
+  const baseRadius=p.stage==='multicellular'?36:p.stage==='colony'?33:30;
+  const growTarget=baseRadius+Math.min(24,Math.sqrt(Math.max(0,p.biomass))*2.1);
   p.radius=lerp(p.radius,growTarget,clamp(dt*.7,0,1));
 }
 function consumeFood(index,mult=1,why='primitive'){
@@ -529,8 +539,8 @@ function consumeFood(index,mult=1,why='primitive'){
   else if(why==='filter'){biomassScale=.54;dnaScale=.032;energyScale=.92}
   else if(why==='pseudopod'){biomassScale=.45;dnaScale=.034;energyScale=.9}
   else if(why==='predatorLoose'){biomassScale=.25;dnaScale=.018;energyScale=.68}
-  const digestive=tissueCounts(p).digestive||0;
-  const tissueAssimilation=p.stage==='multicellular'?1+digestive*.085:1;
+  const digestive=tissueCounts(p).digestive||0,placement=tissuePlacementBonuses(p);
+  const tissueAssimilation=p.stage==='multicellular'?1+digestive*.085+placement.digestiveCore*.045:1;
   p.energy+=base*mult*energyScale;p.biomass+=base*biomassScale*mult*tissueAssimilation;state.dna+=base*dnaScale*mult;state.score+=base*mult;p.feedFlash=.8;
   state.discovered.firstFood=1;
   if(p.feedAudioCd<=0){
@@ -656,8 +666,8 @@ function updateCreatures(dt){
     if(c.health<=0){
       const sizeFactor=clamp((c.r-18)/34,0,1);
       const huntReward=1.35+sizeFactor*1.25;
-      const digestive=tissueCounts(p).digestive||0;
-      const biomassReward=(8+sizeFactor*8)*(p.stage==='multicellular'?1+digestive*.075:1);
+      const digestive=tissueCounts(p).digestive||0,placement=tissuePlacementBonuses(p);
+      const biomassReward=(8+sizeFactor*8)*(p.stage==='multicellular'?1+digestive*.075+placement.digestiveCore*.04:1);
       state.dna+=huntReward;state.score+=30+sizeFactor*20;p.energy+=15+sizeFactor*7;p.biomass+=biomassReward;p.feedFlash=.8;
       sound('reward',{volume:.15,rate:.78+Math.min(.3,huntReward*.08),rateJitter:.04,cooldownMs:160});
       burst(c.x,c.y,'#ff78a4');
@@ -1285,11 +1295,12 @@ function renderTissueEditor(){
     b.addEventListener('click',()=>{selectedTissueCell=i;sound('select',{volume:.07});renderTissueEditor()});grid.appendChild(b);
   });
   const role=roles[selectedTissueCell]||'general',sel=$('tissueRoleSelect');sel.value=role;sel.disabled=!unlocked;
-  $('tissueRoleInfo').textContent=(TISSUE_ROLES[role]||TISSUE_ROLES.general).desc;
+  const posHint=selectedTissueCell===0?' · 몸 앞쪽':selectedTissueCell>=5?' · 몸 뒤쪽':' · 몸 중심/옆';
+  $('tissueRoleInfo').textContent=(TISSUE_ROLES[role]||TISSUE_ROLES.general).desc+posHint;
   const spec=specializedTissueCount(),types=specializedTissueTypes();
   $('tissueSpecializedCount').textContent=spec+'/7';$('tissueTypeCount').textContent=types+'/2';
   if(state.player.stage==='multicellular'){
-    $('tissueHelpText').textContent='세포 역할은 계속 바꿀 수 있어요. 역할 조합에 따라 이동·감각·소화·방어·광합성 효율이 달라집니다.';
+    $('tissueHelpText').textContent='세포 역할과 위치를 계속 바꿀 수 있어요. 앞쪽 감각세포, 뒤쪽 운동세포, 중심 소화세포처럼 알맞은 위치에 두면 추가 보너스가 생깁니다.';
     $('multicellularReadyText').textContent='초기 다세포 단계 · 조직 역할이 실제 능력에 반영됩니다.';
   }else if(!unlocked){
     $('tissueHelpText').textContent='군체가 된 뒤 조직 탭에서 몸의 앞뒤 축과 상피 조직을 진화시키면 세포별 역할을 정할 수 있어요.';
