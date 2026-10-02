@@ -12,7 +12,7 @@ const w={};new Function('window',worldJs)(w);
 const rules=w.CubeArchitectWorld;
 function stats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},
-    placedBlocks:0,paintedFaces:[],smelted:{},biomes:['meadow'],found:[],restored:[]};
+    placedBlocks:0,cuboids:[],paintedFaces:[],smelted:{},biomes:['meadow'],found:[],restored:[]};
 }
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
@@ -24,7 +24,7 @@ test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.match(css,/#survivalReturn/);
   assert.match(js,/worldChunksGenerated=new Set/);
   assert.match(js,/generateWorldChunk\(bx,bz\)/);
-  assert.match(js,/version:11/);
+  assert.match(js,/version:12/);
 });
 test('survival has a finishable, action-driven sequence',()=>{
   assert.ok(rules.GOALS.length>=11);
@@ -32,14 +32,14 @@ test('survival has a finishable, action-driven sequence',()=>{
   assert.equal(rules.goalProgress(rules.GOALS[0],s),0);
   s.harvestedWood=3;
   assert.equal(rules.goalProgress(rules.GOALS[0],s),3);
-  s.crafted.planks=1;s.placed.workbench=1;s.crafted.woodPick=1;
+  s.crafted.planks=1;s.placed.workbench=1;s.cuboids=['1x1x2'];s.crafted.woodPick=1;
   s.placedBlocks=6;s.harvestedStone=8;s.biomes.push('forest');
   s.placed.furnace=1;s.smelted.glass=1;s.placed.cuboid=1;
   s.paintedFaces=['block:0','block:2'];s.found=['bp1'];s.restored=['taj'];
   for(const goal of rules.GOALS)
     assert.equal(rules.goalProgress(goal,s),goal.need,goal.title);
   const empty=stats();empty.harvestedStone=8;
-  assert.equal(rules.goalProgress(rules.GOALS[5],empty),1);
+  assert.equal(rules.goalProgress(rules.GOALS[6],empty),1);
   empty.biomes.push('desert');
   assert.equal(rules.goalProgress(rules.GOALS[5],empty),2);
 });
