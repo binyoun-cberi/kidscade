@@ -1382,7 +1382,7 @@ function makeRoofGeometry(){
 }
 const roofGeo=makeRoofGeometry();
 const leafCubeGeo=new THREE.BoxGeometry(.94,.94,.94);
-const grassTuftGeo=new THREE.PlaneGeometry(.54,.3);
+const grassTuftGeo=new THREE.PlaneGeometry(.09,.3);
 const materialCache=new Map(),pixelTextureCache=new Map(),blockVisualMaterialCache=new Map();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
@@ -1752,10 +1752,11 @@ function grassTuftMaterial(variant=0){
 function decorateGrassTop(root,x,y,z,data){
   if(!data?.natural||getBlock(x,y+1,z)||hash2(x*31+7,z*37-9)<.73)return;
   const variant=Math.floor(hash2(x*7-3,z*11+5)*3),mat=grassTuftMaterial(variant);
-  const positions=[[-.18,.03,-.11,.08],[.14,.01,.12,-.3],[.02,.05,-.02,.55]];
+  const positions=[[-.2,.02,-.12,.08],[.15,0,.13,-.35],[.02,.05,-.03,.55],[.24,.015,-.2,1.05],[-.11,.035,.2,-.9]];
   for(const [px,py,pz,rot] of positions){
     const blade=new THREE.Mesh(grassTuftGeo,mat);
-    blade.position.set(px,.62+py,pz);blade.rotation.y=rot;blade.userData.worldDecorative=true;root.add(blade);
+    blade.position.set(px,.62+py,pz);blade.rotation.y=rot;blade.rotation.z=(hash2((x+px)*17,(z+pz)*19)-.5)*.2;
+    blade.userData.worldDecorative=true;root.add(blade);
   }
 }
 function makeWorldMesh(x,y,z,data){
