@@ -34,6 +34,7 @@ let mobileModeEnabled=typeof canvas.requestPointerLock!=='function'||
   (typeof window.matchMedia==='function'&&window.matchMedia('(pointer: coarse)').matches);
 let mobileMove={x:0,y:0};
 let mobileLookPointerId=null,mobileLookLast=null,mobileJoyPointerId=null;
+let mobileUtilityOpen=false;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let toastTimer = null;
@@ -1006,7 +1007,7 @@ function worldChunkKey(x,z){
 }
 function newSurvivalStats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
-    paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
+    cuboids:[],paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
 }
 function trackSurvival(action,type,n=1){
   if(gameFreeMode!=='survival')return;
@@ -1017,6 +1018,9 @@ function trackSurvival(action,type,n=1){
     const field=action==='craft'?'crafted':action==='place'?'placed':'smelted';
     survivalStats[field][type]=(survivalStats[field][type]||0)+n;
     if(action==='place')survivalStats.placedBlocks++;
+  }else if(action==='cuboid'){
+    const dims=String(type).split('x').map(Number).sort((a,b)=>a-b).join('x');
+    if(dims&&!survivalStats.cuboids.includes(dims))survivalStats.cuboids.push(dims);
   }else if(action==='paint'){
     const id=String(type);if(!survivalStats.paintedFaces.includes(id))survivalStats.paintedFaces.push(id);
   }else if(action==='biome'){
@@ -1135,34 +1139,46 @@ const DUNGEON_THEMES={
 };
 const DUNGEON_SPECS={
   taj:{
-    objectives:['대칭의 홀 · 좌우 반사경을 모두 깨워 중앙 봉인을 푸세요.','빛의 회랑 · 거울을 왼쪽 → 오른쪽 → 가운데 순서로 작동시키세요.','최심부 설계실 · 빛나는 문으로 들어가 대칭 건축의 원리를 해독하세요.'],
+    objectives:['대칭의 홀 · 좌우 반사경을 모두 깨워 중앙 봉인을 푸세요.','빛의 회랑 · 거울을 왼쪽 → 오른쪽 → 가운데 순서로 작동시키세요.','구조 판별실 · 타지마할의 정면 구조를 가장 잘 설명하는 설계석을 고르세요.','최심부 설계실 · 선택한 구조를 겨냥도로 복원하세요.'],
     seals:['왼쪽 반사경 조사','오른쪽 반사경 조사'],mirrors:['왼쪽 거울 작동','가운데 거울 작동','오른쪽 거울 작동'],
-    order:['left','right','center'],hint:'왼쪽 → 오른쪽 → 가운데 순서예요.',portal:'타지마할 설계실 입장'
+    order:['left','right','center'],hint:'왼쪽 → 오른쪽 → 가운데 순서예요.',portal:'타지마할 설계실 입장',
+    structure:{prompt:'타지마할 정면의 핵심 구조는?',correct:'symmetry',options:[
+      ['asymmetry','한쪽으로 치우친 비대칭 구조'],['symmetry','중앙 돔을 기준으로 한 좌우 대칭 구조'],['flat','높낮이가 거의 없는 평면 구조']]}
   },
   sagrada:{
-    objectives:['쌍둥이 종탑 · 양쪽 종을 울려 중앙 첨탑의 문을 여세요.','첨탑의 합창 · 낮은 종 → 높은 종 → 중앙 종 순서로 울리세요.','최상층 설계실 · 첨탑 구조를 해독하세요.'],
+    objectives:['쌍둥이 종탑 · 양쪽 종을 울려 중앙 첨탑의 문을 여세요.','첨탑의 합창 · 낮은 종 → 높은 종 → 중앙 종 순서로 울리세요.','구조 판별실 · 여러 첨탑의 높이 관계를 읽고 맞는 설계석을 고르세요.','최상층 설계실 · 첨탑 구조를 겨냥도로 복원하세요.'],
     seals:['서쪽 종탑 울리기','동쪽 종탑 울리기'],mirrors:['낮은 종 울리기','중앙 종 울리기','높은 종 울리기'],
-    order:['left','right','center'],hint:'낮은 종 → 높은 종 → 중앙 종 순서예요.',portal:'성당 설계실 입장'
+    order:['left','right','center'],hint:'낮은 종 → 높은 종 → 중앙 종 순서예요.',portal:'성당 설계실 입장',
+    structure:{prompt:'사그라다 파밀리아 모형의 높이 관계는?',correct:'centerTall',options:[
+      ['equal','모든 탑의 높이가 같다'],['centerTall','중앙 첨탑이 주변 첨탑보다 높다'],['outerTall','바깥 탑만 가장 높다']]}
   },
   eiffel:{
-    objectives:['기계실 · 좌우 발전기를 모두 켜 승강기를 복구하세요.','철골 제어층 · 서쪽 → 중앙 → 동쪽 제어기를 연결하세요.','정상 설계실 · 철골 구조의 원리를 해독하세요.'],
+    objectives:['기계실 · 좌우 발전기를 모두 켜 승강기를 복구하세요.','철골 제어층 · 세 제어기를 모두 연결해 상층 전원을 복구하세요.','구조 판별실 · 에펠탑 실루엣의 변화를 읽고 맞는 설계석을 고르세요.','정상 설계실 · 철골 구조를 겨냥도로 복원하세요.'],
     seals:['서쪽 발전기 가동','동쪽 발전기 가동'],mirrors:['서쪽 제어기 연결','중앙 제어기 연결','동쪽 제어기 연결'],
-    order:['left','center','right'],hint:'서쪽 → 중앙 → 동쪽 순서예요.',portal:'정상 설계실 입장'
+    order:null,hint:'세 제어기는 순서와 상관없이 모두 연결하면 돼요.',portal:'정상 설계실 입장',
+    structure:{prompt:'에펠탑은 위로 갈수록 어떻게 변할까요?',correct:'taper',options:[
+      ['wideTop','위로 갈수록 더 넓어진다'],['taper','위로 갈수록 폭이 좁아진다'],['sameWidth','아래부터 위까지 폭이 같다']]}
   },
   towerBridge:{
-    objectives:['교량 제어실 · 양쪽 수압 장치를 모두 켜세요.','개폐교 제어 · 왼쪽 → 가운데 → 오른쪽 밸브를 맞추세요.','중앙 기관실 · 다리 구조의 설계를 해독하세요.'],
+    objectives:['교량 제어실 · 양쪽 수압 장치를 모두 켜세요.','개폐교 제어 · 좌우 밸브의 압력을 맞춘 뒤 중앙 밸브를 작동시키세요.','구조 판별실 · 두 탑과 연결 통로의 관계를 읽고 맞는 설계석을 고르세요.','중앙 기관실 · 다리 구조를 겨냥도로 복원하세요.'],
     seals:['서쪽 수압 장치','동쪽 수압 장치'],mirrors:['왼쪽 밸브 조작','가운데 밸브 조작','오른쪽 밸브 조작'],
-    order:['left','center','right'],hint:'왼쪽 → 가운데 → 오른쪽 순서예요.',portal:'중앙 기관실 입장'
+    order:['left','right','center'],hint:'좌우 밸브를 먼저 맞춘 뒤 가운데 밸브예요.',portal:'중앙 기관실 입장',
+    structure:{prompt:'타워 브리지의 핵심 실루엣은?',correct:'twin',options:[
+      ['single','하나의 중앙탑만 있는 구조'],['twin','두 탑 사이를 상부 통로가 잇는 구조'],['ring','원형 탑이 고리처럼 이어진 구조']]}
   },
   himeji:{
-    objectives:['성문 · 좌우 샤치호코 봉인을 찾아 해제하세요.','백로성 회랑 · 오른쪽 → 왼쪽 → 가운데 문장을 맞추세요.','천수각 설계실 · 겹지붕의 원리를 해독하세요.'],
+    objectives:['성문 · 좌우 샤치호코 봉인을 찾아 해제하세요.','백로성 회랑 · 오른쪽 → 왼쪽 → 가운데 문장을 맞추세요.','구조 판별실 · 천수의 지붕이 쌓이는 방식을 읽고 맞는 설계석을 고르세요.','천수각 설계실 · 겹지붕 구조를 겨냥도로 복원하세요.'],
     seals:['서쪽 성문 봉인','동쪽 성문 봉인'],mirrors:['왼쪽 문장 맞추기','가운데 문장 맞추기','오른쪽 문장 맞추기'],
-    order:['right','left','center'],hint:'오른쪽 → 왼쪽 → 가운데 순서예요.',portal:'천수각 설계실 입장'
+    order:['right','left','center'],hint:'오른쪽 → 왼쪽 → 가운데 순서예요.',portal:'천수각 설계실 입장',
+    structure:{prompt:'히메지성 모형의 지붕은 어떻게 보이나요?',correct:'layered',options:[
+      ['flat','한 장의 평평한 지붕'],['layered','높이가 달라지며 여러 겹으로 쌓인 지붕'],['roofless','지붕 없이 벽만 높은 구조']]}
   },
   angkor:{
-    objectives:['수호자의 회랑 · 양쪽 수호상을 깨워 석문을 여세요.','고대 문양 · 가운데 → 왼쪽 → 오른쪽 룬을 밟으세요.','중앙 성소 · 석조 건축의 원리를 해독하세요.'],
+    objectives:['수호자의 회랑 · 양쪽 수호상을 깨워 석문을 여세요.','고대 문양 · 가운데 → 왼쪽 → 오른쪽 룬을 밟으세요.','구조 판별실 · 중앙탑과 주변 탑의 배치를 읽고 맞는 설계석을 고르세요.','중앙 성소 · 석조 건축을 겨냥도로 복원하세요.'],
     seals:['서쪽 수호상 깨우기','동쪽 수호상 깨우기'],mirrors:['왼쪽 룬 활성화','가운데 룬 활성화','오른쪽 룬 활성화'],
-    order:['center','left','right'],hint:'가운데 → 왼쪽 → 오른쪽 순서예요.',portal:'중앙 성소 설계실 입장'
+    order:['center','left','right'],hint:'가운데 → 왼쪽 → 오른쪽 순서예요.',portal:'중앙 성소 설계실 입장',
+    structure:{prompt:'앙코르와트의 중심부 배치는?',correct:'five',options:[
+      ['line','탑들이 한 줄로만 늘어선다'],['five','높은 중앙탑과 주변 네 탑이 대칭을 이룬다'],['random','탑의 위치에 규칙이 없다']]}
   }
 };
 function dungeonSpec(poi){return DUNGEON_SPECS[poi?.id]||DUNGEON_SPECS.taj}
@@ -1200,7 +1216,7 @@ function updateDungeonHud(){
   const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
   const stage=dungeonSession.stage||0,spec=dungeonSpec(poi);
   $('dungeonTitle').textContent=poi.name+' · '+poi.dungeon.title;
-  $('dungeonProgress').textContent=(stage+1)+'/3';
+  $('dungeonProgress').textContent=(stage+1)+'/4';
   $('dungeonObjective').textContent=spec.objectives[stage]||spec.objectives[2];
   const near=nearestDungeonTarget(2.4);
   $('dungeonPrompt').classList.toggle('hidden',!near);
@@ -1226,22 +1242,36 @@ function dungeonInteract(){
   }
   if(data.targetKind==='mirror'&&stage===1){
     const poi=poiRules.poiById(dungeonSession.poiId),spec=dungeonSpec(poi);
-    const order=spec.order,seq=dungeonSession.mirrors||(dungeonSession.mirrors=[]);
-    const expected=order[seq.length];
-    if(data.targetId!==expected){
-      seq.length=0;
-      dungeonTargets.filter(m=>m.userData.targetKind==='mirror').forEach(m=>{glowDungeonTarget(m,false);glowDungeonTarget(m.userData.base,false)});
-      toast('순서가 끊겼어요. '+spec.hint);sfx('bad');return;
+    const seq=dungeonSession.mirrors||(dungeonSession.mirrors=[]);
+    if(seq.includes(data.targetId)){toast('이미 작동한 장치예요.');return}
+    if(Array.isArray(spec.order)){
+      const expected=spec.order[seq.length];
+      if(data.targetId!==expected){
+        seq.length=0;
+        dungeonTargets.filter(m=>m.userData.targetKind==='mirror').forEach(m=>{glowDungeonTarget(m,false);glowDungeonTarget(m.userData.base,false)});
+        toast('순서가 끊겼어요. '+spec.hint);sfx('bad');return;
+      }
     }
     seq.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good');
     if(seq.length===3){
       dungeonSession.stage=2;if(dungeonGates[1])dungeonGates[1].visible=false;
-      const portal=dungeonTargets.find(m=>m.userData.targetKind==='portal');if(portal){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
-      toast('빛의 길이 완성됐어요. 최심부 설계실이 열렸습니다.');
+      toast('장치가 모두 연결됐어요. 이제 건축 구조를 읽어 설계석을 고르세요.');
     }
     updateDungeonHud();return;
   }
-  if(data.targetKind==='portal'&&stage>=2){openDungeonBlueprint();return}
+  if(data.targetKind==='structure'&&stage===2){
+    const poi=poiRules.poiById(dungeonSession.poiId),spec=dungeonSpec(poi);
+    if(data.targetId!==spec.structure.correct){
+      toast('구조를 다시 관찰해 보세요. '+spec.structure.prompt);sfx('bad');return;
+    }
+    dungeonSession.structure=data.targetId;dungeonSession.stage=3;
+    glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);
+    if(dungeonGates[2])dungeonGates[2].visible=false;
+    const portal=dungeonTargets.find(m=>m.userData.targetKind==='portal');
+    if(portal){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
+    toast('구조 해독 성공! 이제 최심부 겨냥도를 복원할 수 있어요.');sfx('good');updateDungeonHud();return;
+  }
+  if(data.targetKind==='portal'&&stage>=3){openDungeonBlueprint();return}
   toast('아직 이 장치를 사용할 수 없어요.');
 }
 function buildLandmarkDungeonScene(poi){
@@ -1267,7 +1297,12 @@ function buildLandmarkDungeonScene(poi){
   addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
   addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
   dungeonGate(-14.2,theme.wall);
-  const portal=addDungeonTarget('blueprint','portal',0,-23,theme.accent,spec.portal);
+  spec.structure.options.forEach((option,i)=>{
+    const x=[-3.8,0,3.8][i];
+    addDungeonTarget(option[0],'structure',x,-18.3,theme.accent,option[1]);
+  });
+  dungeonGate(-22.1,theme.wall);
+  const portal=addDungeonTarget('blueprint','portal',0,-25.2,theme.accent,spec.portal);
   // Landmark-specific silhouettes make the same three-room rules read as different places.
   if(poi.id==='taj'){
     for(const x of [-4.3,4.3])for(const z of [5,-5,-17])addDungeonBox(x,2,z,.55,4,.55,theme.wall);
@@ -1287,9 +1322,14 @@ function buildLandmarkDungeonScene(poi){
     for(const [x,z] of [[-4.6,4],[4.6,4],[-4.6,-8],[4.6,-8],[-4.6,-20],[4.6,-20]])addDungeonBox(x,1.4,z,1.4,2.8,1.4,theme.wall);
     addDungeonBox(0,.08,-19,8,.12,4,0x607d45);
   }
-  if((dungeonSession.stage||0)<2){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
+  if((dungeonSession.stage||0)<3){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
   if((dungeonSession.stage||0)>=1&&dungeonGates[0])dungeonGates[0].visible=false;
   if((dungeonSession.stage||0)>=2&&dungeonGates[1])dungeonGates[1].visible=false;
+  if((dungeonSession.stage||0)>=3&&dungeonGates[2])dungeonGates[2].visible=false;
+  if(dungeonSession.structure){
+    const m=dungeonTargets.find(t=>t.userData.targetKind==='structure'&&t.userData.targetId===dungeonSession.structure);
+    if(m){glowDungeonTarget(m,true);glowDungeonTarget(m.userData.base,true)}
+  }
   for(const id of dungeonSession.seals||[]){
     const m=dungeonTargets.find(t=>t.userData.targetKind==='seal'&&t.userData.targetId===id);
     if(m){glowDungeonTarget(m,true);glowDungeonTarget(m.userData.base,true)}
@@ -1315,7 +1355,7 @@ function openLandmarkDungeon(poi){
   if(!poi||gameFreeMode!=='survival')return;
   if(survivalStage<5){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
   saveFreeWorld();
-  dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[]};
+  dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null};
   enterMode('dungeon');
 }
 function returnFromDungeon(){
@@ -1340,7 +1380,7 @@ function updateDungeon(dt){
   if(dungeonKeys.KeyD||dungeonKeys.ArrowRight)move.add(right);
   if(mobileModeEnabled){move.addScaledVector(forward,mobileMove.y);move.addScaledVector(right,mobileMove.x)}
   if(move.lengthSq())camera.position.add(move.normalize().multiplyScalar(speed*dt));
-  const stage=dungeonSession.stage||0,minZ=stage>=2?-26.2:stage>=1?-13.5:-.4;
+  const stage=dungeonSession.stage||0,minZ=stage>=3?-27:stage>=2?-21.4:stage>=1?-13.5:-.4;
   camera.position.x=THREE.MathUtils.clamp(camera.position.x,-6.1,6.1);
   camera.position.z=THREE.MathUtils.clamp(camera.position.z,minZ,10.6);
   camera.position.y=1.65;updateDungeonCamera();updateDungeonHud();
@@ -2235,7 +2275,7 @@ function buildInventory(category='전체'){
   $('shapeWorkbench').classList.toggle('hidden',survival?
     survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
-    '나무에서 시작해 차례대로 제작해 보세요. 제작대를 얻으면 도형 편집 기능도 열려요.':
+    '제작대를 설치하면 2×1×1 직육면체 설계가 바로 열려요. 생존 건축이 곧 입체도형 활동입니다.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
   if(survival){
     const resources=Object.entries(survivalBag).filter(([type,n])=>n>0)
@@ -2363,6 +2403,7 @@ function updateFreeMission(){
     $('freeState').textContent='생존 · '+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
       survivalStage<3?'좌클릭 유지 채집 · E 가방·제작 · Space 점프 · V 시점':
+      survivalStage===3?'E 제작대 · 2×1×1 직육면체 설계 · 우클릭 설치':
       '좌클릭 유지 채집 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
@@ -2567,6 +2608,7 @@ function placeFreeBlock(hit){
       const count=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);consumeBag('planks',count);
     }else consumeBag(selectedType,1);
     trackSurvival('place',selectedType);
+    if(selectedType==='cuboid')trackSurvival('cuboid',currentCuboidSpec.dims.join('x'));
     buildHotbar();updateFreeMission();
   }
   sfx('place');markFreeWorldDirty();
@@ -2799,7 +2841,7 @@ function markFreeWorldDirty(delay=1200){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:11,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:12,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
@@ -2845,10 +2887,12 @@ function loadFreeWorld(){
           survivalStats={...newSurvivalStats(),...data.stats,
             crafted:{...(data.stats.crafted||{})},
             placed:{...(data.stats.placed||{})},smelted:{...(data.stats.smelted||{})},
+            cuboids:Array.isArray(data.stats.cuboids)?data.stats.cuboids:[],
             paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
             biomes:[...visitedBiomes],found:[...collected],
             restored:Array.isArray(data.stats.restored)?data.stats.restored:[...restoredLandmarks]};
-          survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
+          const savedStage=Math.max(0,Math.min(worldRules.GOALS.length-1,Number(data.stage)||0));
+          survivalStage=(data.version||0)<12&&savedStage>=3&&!survivalStats.cuboids.length?3:savedStage;
           survivalFinished=!!data.finished;
         }else{
           const oldStage=Math.max(0,Math.min(6,Number(data.stage)||0));
@@ -3660,13 +3704,16 @@ function resetMobileInput(){
 }
 function configureMobileMode(target){
   const active=mobileModeEnabled&&(target==='challenge'||target==='free'||target==='dungeon');
+  if(target!=='free')mobileUtilityOpen=false;
   setVisible('mobileControls',active);
   $('mobileControls').classList.toggle('challenge-mobile',active&&target==='challenge');
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileControls').classList.toggle('dungeon-mobile',active&&target==='dungeon');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileView').classList.toggle('hidden',target!=='free');
-  $('mobileAvatar').classList.toggle('hidden',target!=='free');
+  $('mobileMore').classList.toggle('hidden',target!=='free');
+  $('mobileMore').textContent=mobileUtilityOpen?'도구 닫기':'도구';
+  $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=5&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
@@ -3674,10 +3721,11 @@ function configureMobileMode(target){
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
   $('mobileNext').classList.toggle('hidden',target!=='challenge'&&target!=='dungeon');
   if(target==='dungeon')$('mobileNext').textContent='귀환';
-  $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  $('mobilePaint').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
-  $('mobileLens').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&survivalStage<3));
+  $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival'||!mobileUtilityOpen);
+  $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival'||!mobileUtilityOpen);
+  const geometryTools=target==='free'&&(gameFreeMode==='creative'||survivalStage>=3)&&mobileUtilityOpen;
+  $('mobilePaint').classList.toggle('hidden',!geometryTools);
+  $('mobileLens').classList.toggle('hidden',!geometryTools);
   $('mobileBreak').classList.toggle('hidden',target==='dungeon');
   if(target!=='dungeon')$('mobileBreak').textContent=target==='free'&&gameFreeMode==='survival'?'채집':'파괴';
   $('mobilePlace').classList.toggle('hidden',target==='dungeon');
@@ -3780,6 +3828,7 @@ function initMobileControls(){
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
   tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
+  tap('mobileMore',()=>{if(mode==='free'){mobileUtilityOpen=!mobileUtilityOpen;configureMobileMode('free')}});
   tap('mobileAvatar',()=>{if(mode==='free')openAvatarCustomizer()});
   tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
   tap('mobileLens',()=>{if(mode==='free')toggleXray()});
@@ -3822,7 +3871,7 @@ function showTutorial(kind){
       '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
       '<div class="keyrow"><b>1~9 / 우클릭</b>획득한 재료 선택 / 설치</div>'+
       '<div class="keyrow"><b>V / 꾸미기</b>1·3인칭 전환 / 내 캐릭터 변경</div>'+
-      '<div class="keyrow"><b>목표</b>나무 → 판자 → 제작대 → 곡괭이</div></div>';
+      '<div class="keyrow"><b>목표</b>나무 → 판자 → 제작대 → 2×1×1 직육면체 → 곡괭이</div></div>';
   }
   if(mobileModeEnabled&&kind==='challenge'){
     html='<h2>설계도 챌린지 · 모바일 조작</h2><p>화면을 밀어 보는 방향을 바꾸고 왼쪽 원형 스틱으로 움직이세요. 오른쪽 버튼으로 블록을 설치·파괴합니다. 건물의 위치는 채점하지 않아요.</p><div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>앞뒤좌우 이동</div><div class="keyrow"><b>화면 드래그</b>시점 돌리기</div><div class="keyrow"><b>↑ / ↓</b>상승 / 하강</div><div class="keyrow"><b>설치 / 파괴</b>십자선이 가리키는 곳에 건축</div><div class="keyrow"><b>검사 / 다음</b>채점 / 다음 설계도</div></div>';
@@ -3833,7 +3882,8 @@ function showTutorial(kind){
       '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
       '<div class="keyrow"><b>파괴 길게 / 설치</b>채집 / 핫바 블록 설치</div>'+
       '<div class="keyrow"><b>가방 / 꾸미기</b>제작 / 내 캐릭터 변경</div>'+
-      '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div></div>';
+      '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div>'+
+      '<div class="keyrow"><b>첫 설계</b>제작대 뒤 2×1×1 직육면체 설치</div></div>';
   }else if(mobileModeEnabled&&kind==='free'){
     html='<h2>크리에이티브 월드 · 모바일</h2><p>모든 재료를 자유롭게 쓰고 날아다닐 수 있어요. 핫바를 좌우로 넘겨 재료를 선택하세요.</p>'+
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱 / 드래그</b>이동 / 시점</div>'+
