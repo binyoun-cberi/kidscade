@@ -22,8 +22,8 @@ EAR_Y0, EAR_Y1 = 45, 58
 EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 87
 
 COMMON_CELL_FIT = {
-    "scale": 0.66,
-    "offsetX": 23,
+    "scale": 0.53,
+    "offsetX": 30,
     "offsetY": 0,
     "sourceCanvas": [128, 128],
     "mode": "fixed-source-cell",
@@ -369,7 +369,7 @@ def main():
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":10,
+        "version":11,
         "type":"kidscade-source-coordinate-front-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
