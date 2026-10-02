@@ -47,10 +47,11 @@ function sfx(kind){
     o.connect(g);g.connect(audioCtx.destination);
     if(kind==='place'){o.type='triangle';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(170,t+.08)}
     else if(kind==='break'){o.type='square';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(80,t+.09)}
+    else if(kind==='mine'){o.type='triangle';o.frequency.setValueAtTime(190,t);o.frequency.exponentialRampToValueAtTime(125,t+.05)}
     else if(kind==='good'){o.type='sine';o.frequency.setValueAtTime(520,t);o.frequency.setValueAtTime(780,t+.09)}
     else{o.type='sine';o.frequency.setValueAtTime(210,t);o.frequency.setValueAtTime(180,t+.08)}
-    g.gain.setValueAtTime(.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
-    o.start(t);o.stop(t+.18);
+    g.gain.setValueAtTime(kind==='mine'?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(kind==='mine'?.09:.16));
+    o.start(t);o.stop(t+(kind==='mine'?.1:.18));
   }catch(e){}
 }
 function toast(msg){
