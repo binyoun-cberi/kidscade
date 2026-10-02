@@ -1127,7 +1127,7 @@
           "backBBox": [
             28,
             10,
-            102,
+            100,
             92
           ],
           "backTouchesCanvasEdge": [],
@@ -1205,7 +1205,7 @@
           "backBBox": [
             28,
             10,
-            102,
+            99,
             92
           ],
           "backTouchesCanvasEdge": [],
@@ -1360,7 +1360,7 @@
           ],
           "backBBox": [
             28,
-            10,
+            22,
             102,
             100
           ],
@@ -1399,7 +1399,7 @@
           ],
           "backBBox": [
             28,
-            10,
+            18,
             102,
             99
           ],
@@ -1438,7 +1438,7 @@
           ],
           "backBBox": [
             28,
-            10,
+            15,
             102,
             100
           ],
@@ -1477,7 +1477,7 @@
           ],
           "backBBox": [
             28,
-            10,
+            13,
             102,
             100
           ],
@@ -1634,8 +1634,8 @@
           "backBBox": [
             28,
             10,
-            102,
-            100
+            97,
+            92
           ],
           "backTouchesCanvasEdge": [],
           "criticalFaceOverlap": 0.961
@@ -1673,7 +1673,7 @@
           "backBBox": [
             28,
             10,
-            102,
+            98,
             100
           ],
           "backTouchesCanvasEdge": [],
@@ -1965,6 +1965,7 @@
       "hairFront contains only master-head overlap",
       "ear-safe front mask",
       "no generic face-aperture ellipse",
+      "remove isolated components under 8 pixels",
       "default face composite contact previews"
     ],
     "contacts": {
