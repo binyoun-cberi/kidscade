@@ -3333,7 +3333,8 @@ function updateFree(dt,t){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
   }
   updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
-  updateSurvivalEnvironment(dt);
+  updateSurvivalEnvironment(dt);updateMining(dt);
+  freeStepHop=Math.max(0,freeStepHop-dt*6.2);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
   const displayEye=camera.position.y;
@@ -3345,15 +3346,21 @@ function updateFree(dt,t){
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
   const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
   const move=new THREE.Vector3();
-  if(freeKeys.KeyW||freeKeys.ArrowUp)move.addScaledVector(forward,-1);
-  if(freeKeys.KeyS||freeKeys.ArrowDown)move.add(forward);
-  if(freeKeys.KeyA||freeKeys.ArrowLeft)move.addScaledVector(right,-1);
-  if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
   if(mobileModeEnabled){
-    move.addScaledVector(forward,mobileMove.y);
-    move.addScaledVector(right,mobileMove.x);
+    const magnitude=Math.min(1,Math.hypot(mobileMove.x,mobileMove.y));
+    if(magnitude>.12){
+      const analog=(magnitude-.12)/.88;
+      move.addScaledVector(forward,mobileMove.y/magnitude);
+      move.addScaledVector(right,mobileMove.x/magnitude);
+      if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt*analog);
+    }
+  }else{
+    if(freeKeys.KeyW||freeKeys.ArrowUp)move.addScaledVector(forward,-1);
+    if(freeKeys.KeyS||freeKeys.ArrowDown)move.add(forward);
+    if(freeKeys.KeyA||freeKeys.ArrowLeft)move.addScaledVector(right,-1);
+    if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
+    if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
   }
-  if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
   if(freeFlying&&gameFreeMode==='creative'){
     camera.position.add(move);
     if(freeKeys.Space)camera.position.y+=speed*dt;
