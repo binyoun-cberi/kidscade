@@ -111,19 +111,27 @@ const GOALS=[
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
 function shelterAt(getBlock,x,feetY,z){
  const p=Math.round(x),q=Math.round(z),feet=Math.floor(feetY);
- // A real roof above the player's head, made of natural rock or placed blocks.
- let roof=false;
+ // A usable shelter needs a roof and walls. For the tutorial goal, at least
+ // one roof piece and one wall direction must be player-built so a natural cave
+ // does not count as "I built a base".
+ let roof=false,roofBuilt=false;
  for(let y=feet+2;y<=feet+4;y++){
    const d=getBlock(p,y,q);
-   if(d&& !['air','water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){
-     roof=true;break;
+   if(d&&!['air','water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){
+     roof=true;roofBuilt=!!d.playerBuilt;break;
    }
  }
- let walls=0;
- for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]])
-   if([0,1].some(dy=>{const d=getBlock(p+dx,feet+dy,q+dz);return d&&
-     !['water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)}))walls++;
- return {roof,walls,sheltered:roof&&walls>=2};
+ let walls=0,builtWalls=0;
+ for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   let wall=null;
+   for(const dy of [0,1]){
+     const d=getBlock(p+dx,feet+dy,q+dz);
+     if(d&&!['water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){wall=d;break}
+   }
+   if(wall){walls++;if(wall.playerBuilt)builtWalls++}
+ }
+ const sheltered=roof&&walls>=2;
+ return {roof,walls,sheltered,playerBuilt:sheltered&&roofBuilt&&builtWalls>=1};
 }
 function exposureStep(exposure,dt,{night=false,storm=false,rain=false,cold=false,sheltered=false,lit=false}={}){
  if(sheltered||lit)return Math.max(0,exposure-dt*(sheltered?19:10));
