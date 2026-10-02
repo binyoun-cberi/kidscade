@@ -3684,9 +3684,9 @@ function updateSurvivalEnvironment(dt){
   survivalExposure=worldRules.exposureStep(survivalExposure,delta,{
     night,storm,rain:weather==='rain',cold:biomeId==='snow',sheltered:shelter.sheltered,lit
   });
-  if(shelter.sheltered&&!survivalStats.shelterBuilt){
+  if(shelter.playerBuilt&&!survivalStats.shelterBuilt){
     survivalStats.shelterBuilt=true;
-    toast('거점 완성! 지붕과 벽이 실제로 몸을 보호해요.');
+    toast('거점 완성! 직접 만든 지붕과 벽이 실제로 몸을 보호해요.');
     advanceSurvival();
   }
   if(shelter.sheltered&&night&&!nightShelterNotice){
