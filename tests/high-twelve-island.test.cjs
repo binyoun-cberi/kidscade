@@ -17,14 +17,14 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=11/);
-  assert.match(html, /art.js\?v=11/);
-  assert.match(html, /game.js\?v=11/);
+  assert.match(html, /sim.js\?v=12/);
+  assert.match(html, /art.js\?v=12/);
+  assert.match(html, /game.js\?v=12/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=11"));
+  assert.ok(entry.href.endsWith("?v=12"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -919,7 +919,7 @@ test('island-first interface keeps management secondary and adds direct field co
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
   const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=11/);
+  assert.match(html, /rework\.js\?v=12/);
   assert.match(css, /management-dock/);
   assert.match(css, /weather-fx/);
   assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
@@ -937,9 +937,9 @@ test('v10 icon HUD keeps exact values in the management drawer', () => {
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=11/);
-  assert.match(html, /game\.js\?v=11/);
-  assert.match(html, /rework\.js\?v=11/);
+  assert.match(html, /style\.css\?v=12/);
+  assert.match(html, /game\.js\?v=12/);
+  assert.match(html, /rework\.js\?v=12/);
   assert.match(js, /class="stat hud-stat/);
   assert.match(js, /data-open-tab/);
   assert.match(js, /function villageStatusBoard/);
@@ -958,8 +958,8 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=11/);
-  assert.match(html, /rework\.js\?v=11/);
+  assert.match(html, /style\.css\?v=12/);
+  assert.match(html, /rework\.js\?v=12/);
   assert.match(css, /calmer game screen cleanup/);
   assert.match(css, /\.scene-caption,\.ticker\{display:none!important\}/);
   assert.match(css, /\.island-heading\{display:none!important\}/);
@@ -968,4 +968,14 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   assert.doesNotMatch(rework, /managerButton = document\.createElement/);
   assert.match(rework, /tab\.title = fullLabel/);
   assert.match(js, /notice\.classList\.toggle\("hidden", parts\.length === 0\)/);
+});
+
+
+test('v12 event scene observer cannot self-trigger and freeze the browser tab', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
+  assert.match(html, /rework\.js\?v=12/);
+  assert.match(rework, /eventSignature/);
+  assert.match(rework, /observe\(modal, \{ attributes: true, attributeFilter: \["class"\] \}\)/);
+  assert.doesNotMatch(rework, /observe\(modal, \{ childList: true, subtree: true/);
 });
