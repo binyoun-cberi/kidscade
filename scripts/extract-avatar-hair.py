@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageChops
+from PIL import Image, ImageDraw, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 AVATAR = ROOT / "assets/game/characters/kidscade-avatar-v1"
@@ -15,9 +15,25 @@ BASE = AVATAR / "runtime/base/master-base-128.png"
 FACE = AVATAR / "runtime/face"
 
 COLS, ROWS, RUNTIME = 6, 4, 128
-HEAD_BOTTOM = 64
-EAR_Y0, EAR_Y1 = 46, 57
-EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 86
+MASTER_HEAD_BBOX = (40, 20, 91, 67)
+HEAD_BOTTOM = MASTER_HEAD_BBOX[3]
+EAR_Y0, EAR_Y1 = 45, 58
+EAR_INNER_LEFT, EAR_INNER_RIGHT = 44, 87
+
+NORMALIZE = {
+    "male": {
+        "targetWidth": 68,
+        "targetTop": 12,
+        "maxHeight": 74,
+        "verticalFactor": 1.12,
+    },
+    "female": {
+        "targetWidth": 74,
+        "targetTop": 10,
+        "maxHeight": 90,
+        "verticalFactor": 1.25,
+    },
+}
 
 SHEETS = {
     "male": SOURCE / "front-hair-male-24-brown.png",
@@ -34,21 +50,13 @@ def clear_bg(tile):
     corners = [px[0,0], px[w-1,0], px[0,h-1], px[w-1,h-1]]
 
     if any(c[3] < 16 for c in corners):
-        for y in range(h):
-            for x in range(w):
-                r, g, b, a = px[x, y]
-                if a < 24:
-                    px[x, y] = (r, g, b, 0)
-                elif a > 232:
-                    px[x, y] = (r, g, b, 255)
+        data=[]
+        for r,g,b,a in im.getdata():
+            data.append((r,g,b,0 if a < 24 else (255 if a > 232 else a)))
+        im.putdata(data)
         return im
 
     bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
-
-    # Generated sheets may contain an opaque flat background. Removing only
-    # edge-connected pixels leaves the face opening trapped inside a closed
-    # hairstyle silhouette, so remove pixels globally when they match the
-    # sampled background very closely.
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
@@ -77,6 +85,42 @@ def hard_alpha(im):
     im.putdata([(r,g,b,255 if a >= 48 else 0) for r,g,b,a in im.getdata()])
     return im
 
+def normalize_hair(full, kind):
+    alpha = full.getchannel("A")
+    bbox = alpha.getbbox()
+    if not bbox:
+        return full, {
+            "sourceBBox": None,
+            "targetBBox": None,
+            "scaleX": 1,
+            "scaleY": 1,
+        }
+
+    x0,y0,x1,y1 = bbox
+    crop = full.crop(bbox)
+    cfg = NORMALIZE[kind]
+
+    sx = cfg["targetWidth"] / max(1, crop.width)
+    sy = min(cfg["maxHeight"] / max(1, crop.height), sx * cfg["verticalFactor"])
+
+    nw = max(1, round(crop.width * sx))
+    nh = max(1, round(crop.height * sy))
+    crop = crop.resize((nw, nh), Image.Resampling.NEAREST)
+
+    hx0,_,hx1,_ = MASTER_HEAD_BBOX
+    head_cx = (hx0 + hx1) / 2
+    x = round(head_cx - nw / 2)
+    y = cfg["targetTop"]
+
+    canvas = Image.new("RGBA", (RUNTIME, RUNTIME), (0,0,0,0))
+    canvas.alpha_composite(crop, (x,y))
+    return canvas, {
+        "sourceBBox": list(bbox),
+        "targetBBox": [x,y,x+nw,y+nh],
+        "scaleX": round(sx,4),
+        "scaleY": round(sy,4),
+    }
+
 def build_head_mask(base):
     alpha = base.getchannel("A")
     mask = Image.new("L", (RUNTIME, RUNTIME), 0)
@@ -86,52 +130,44 @@ def build_head_mask(base):
         for x in range(RUNTIME):
             if y > HEAD_BOTTOM or src[x, y] == 0:
                 continue
-            # Keep existing ears visible: hair in these outer ear zones remains
-            # in the back layer and is therefore occluded by the base ears.
+            # Ears already belong to the base. Keep those zones out of front hair.
             if EAR_Y0 <= y < EAR_Y1 and (x < EAR_INNER_LEFT or x > EAR_INNER_RIGHT):
                 continue
             dst[x, y] = 255
     return mask
 
-def build_face_masks(face_parts):
+def build_face_protect(face_parts):
     critical = Image.new("L", (RUNTIME, RUNTIME), 0)
     for part in face_parts:
         critical = ImageChops.lighter(critical, part.getchannel("A"))
 
-    # A shared face opening keeps eyes/nose/mouth readable when a generated
-    # hairstyle accidentally contains a solid interior fill. The ellipse is
-    # intentionally narrower at the forehead so bangs can still exist.
-    aperture = Image.new("L", (RUNTIME, RUNTIME), 0)
-    draw = ImageDraw.Draw(aperture)
-    draw.ellipse((42, 33, 86, 69), fill=255)
-    # Preserve a little fringe at the very top of the forehead.
-    draw.rectangle((42, 33, 86, 38), fill=0)
-    return critical, aperture
+    # Protect only the actual face-feature pixels plus a tiny 2px safety margin.
+    # Do not carve a generic oval out of every hairstyle.
+    protect = critical.filter(ImageFilter.MaxFilter(5))
+    return critical, protect
 
-def split_full_hair(full, head_mask, critical_mask, aperture_mask):
-    # Back keeps the full hairstyle. Drawing the base over it naturally hides
-    # hair that should sit behind the head/body.
+def split_full_hair(full, head_mask, critical_mask, protect_mask):
+    alpha = full.getchannel("A")
+
+    # Back contains only pixels outside the head silhouette. A 1px-expanded
+    # mask prevents the shrunken halo/double-crown artifact seen in v6/v7.
+    back_block = head_mask.filter(ImageFilter.MaxFilter(3))
+    back_alpha = ImageChops.subtract(alpha, back_block)
     back = full.copy()
+    back.putalpha(back_alpha)
 
-    # Front restores only pixels that overlap the bald head silhouette, with
-    # ear-safe gaps. Long locks below the head remain behind the body.
-    front = full.copy()
-    a = front.getchannel("A")
-    a = Image.composite(a, Image.new("L", a.size, 0), head_mask)
-
-    # Generated sheets sometimes have a solid opaque fill inside the hairstyle
-    # instead of a true face opening. Only cut an aperture when that fill would
-    # cover a meaningful share of the default eyes/nose/mouth pixels.
-    overlap = ImageChops.multiply(a, critical_mask)
+    # Front is the real portion of this hairstyle that lies on the head.
+    # Only pixels covering eyes/eyebrows/nose/mouth are removed.
+    front_alpha = ImageChops.multiply(alpha, head_mask)
+    overlap = ImageChops.multiply(front_alpha, critical_mask)
     overlap_count = sum(1 for v in overlap.getdata() if v > 0)
+    front_alpha = ImageChops.subtract(front_alpha, protect_mask)
+    front = full.copy()
+    front.putalpha(front_alpha)
+
     critical_count = max(1, sum(1 for v in critical_mask.getdata() if v > 0))
     overlap_ratio = overlap_count / critical_count
-    aperture_applied = overlap_ratio > 0.15
-    if aperture_applied:
-        a = ImageChops.subtract(a, aperture_mask)
-
-    front.putalpha(a)
-    return back, front, overlap_ratio, aperture_applied
+    return back, front, overlap_ratio
 
 def touches(bbox):
     if not bbox:
@@ -143,7 +179,7 @@ def touches(bbox):
     if bbox[3] >= RUNTIME: out.append("bottom")
     return out
 
-def extract(kind, source, head_mask, critical_mask, aperture_mask):
+def extract(kind, source, head_mask, critical_mask, protect_mask):
     image = Image.open(source).convert("RGBA")
     w, h = image.size
     if w % COLS or h % ROWS:
@@ -164,8 +200,9 @@ def extract(kind, source, head_mask, critical_mask, aperture_mask):
         for col in range(COLS):
             tile=image.crop((col*cw,row*ch,(col+1)*cw,(row+1)*ch))
             full=hard_alpha(clear_bg(tile).resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST))
-            back,front,overlap_ratio,aperture_applied=split_full_hair(
-                full,head_mask,critical_mask,aperture_mask
+            full,norm=normalize_hair(full,kind)
+            back,front,overlap_ratio=split_full_hair(
+                full,head_mask,critical_mask,protect_mask
             )
 
             front_name=f"hair-front-{kind}-{n:02d}.png"
@@ -180,11 +217,11 @@ def extract(kind, source, head_mask, critical_mask, aperture_mask):
                 "front":f"../front/{kind}/{front_name}",
                 "back":f"{kind}/{back_name}",
                 "sourceCell":[col,row],
+                "normalization":norm,
                 "frontBBox":list(fb) if fb else None,
                 "backBBox":list(bb) if bb else None,
                 "backTouchesCanvasEdge":touches(bb),
                 "criticalFaceOverlap":round(overlap_ratio,3),
-                "faceApertureApplied":aperture_applied,
             })
             n+=1
 
@@ -193,6 +230,7 @@ def extract(kind, source, head_mask, critical_mask, aperture_mask):
         "sourceSize":[w,h],
         "cellSize":[cw,ch],
         "count":len(items),
+        "normalization":NORMALIZE[kind],
         "items":items,
     }
 
@@ -232,38 +270,41 @@ def main():
     base=Image.open(BASE).convert("RGBA")
     if base.size!=(RUNTIME,RUNTIME):
         base=base.resize((RUNTIME,RUNTIME),Image.Resampling.NEAREST)
+
     head_mask=build_head_mask(base)
     face_parts=load_face_defaults()
-    critical_mask,aperture_mask=build_face_masks(face_parts)
+    critical_mask,protect_mask=build_face_protect(face_parts)
 
     FRONT_OUT.mkdir(parents=True,exist_ok=True)
     BACK_OUT.mkdir(parents=True,exist_ok=True)
 
     result={
-        "version":4,
-        "type":"kidscade-split-hair-pack",
+        "version":5,
+        "type":"kidscade-normalized-split-hair-pack",
         "canvas":[128,128],
         "compositeAt":[0,0],
         "layerOrder":["hairBack","base","face","hairFront"],
         "imageSmoothing":False,
         "grid":[6,4],
         "palette":"warm-medium-brown",
+        "canonicalHeadBBox":list(MASTER_HEAD_BBOX),
         "headMask":{
             "bottomY":HEAD_BOTTOM,
             "earSafe":{"y":[EAR_Y0,EAR_Y1],"innerX":[EAR_INNER_LEFT,EAR_INNER_RIGHT]},
-            "conditionalFaceAperture":{"ellipse":[42,33,86,69],"preserveTopUntilY":38,"criticalOverlapThreshold":0.15}
+            "faceProtection":"default face feature alpha + 2px expansion"
         },
         "sets":{},
         "qa":{
-            "status":"split-generated-awaiting-visual-approval",
+            "status":"normalized-split-generated-awaiting-visual-approval",
             "checks":[
+                "normalize full hairstyle to master head/body before splitting",
                 "6x4 grid extraction",
                 "128x128 hard-alpha assets",
-                "full hairstyle retained as hairBack",
-                "hairFront clipped to master-base head mask",
+                "hairBack excludes master-head silhouette",
+                "hairFront contains only master-head overlap",
                 "ear-safe front mask",
-                "base + default face + hairBack + hairFront contact previews",
-                "conditional face aperture when generated hair covers critical facial features"
+                "no generic face-aperture ellipse",
+                "default face composite contact previews"
             ],
             "contacts":{}
         }
@@ -273,7 +314,7 @@ def main():
         if not source.exists():
             raise FileNotFoundError(source)
         result["sets"][kind]=extract(
-            kind,source,head_mask,critical_mask,aperture_mask
+            kind,source,head_mask,critical_mask,protect_mask
         )
         result["qa"]["contacts"][kind]=build_contact(kind,base,face_parts)
 
@@ -283,20 +324,17 @@ def main():
         json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8"
     )
 
-    # Remove superseded intermediate manifests/previews from earlier passes.
     for stale in [
         FRONT_OUT/"hair-front-manifest.json",
         BACK_OUT/"hair-split-manifest.json",
     ]:
-        if stale.exists():
-            stale.unlink()
+        if stale.exists(): stale.unlink()
 
     legacy_qa = AVATAR/"qa/hair-front"
     if legacy_qa.exists():
-        for p in legacy_qa.glob("*.png"):
-            p.unlink()
+        for p in legacy_qa.glob("*.png"): p.unlink()
 
-    print("Generated 48 hairBack + 48 hairFront assets, unified manifest, and QA previews.")
+    print("Generated 48 normalized hairBack + 48 hairFront assets and QA previews.")
 
 if __name__=="__main__":
     main()
