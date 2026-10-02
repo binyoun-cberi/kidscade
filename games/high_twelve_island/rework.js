@@ -219,10 +219,16 @@
       const speaker = $("#speaker");
       speaker?.after(scene);
     }
-    scene.innerHTML = '<span aria-hidden="true">' + disasterIcon(title + " " + bodyText) + '</span><small>지금 이 선택이 섬의 모습과 주민 생활을 바꿉니다.</small>';
+    const signature = title + "\n" + bodyText;
+    if (scene.dataset.eventSignature !== signature) {
+      scene.dataset.eventSignature = signature;
+      scene.innerHTML = '<span aria-hidden="true">' + disasterIcon(title + " " + bodyText) + '</span><small>지금 이 선택이 섬의 모습과 주민 생활을 바꿉니다.</small>';
+    }
   }
   const modal = $("#modal");
-  if (modal) new MutationObserver(syncEventScene).observe(modal, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  // Observe only visibility changes. Watching the modal subtree while syncEventScene writes
+  // into that same subtree causes a self-triggering MutationObserver loop and can freeze the tab.
+  if (modal) new MutationObserver(syncEventScene).observe(modal, { attributes: true, attributeFilter: ["class"] });
   syncEventScene();
 
   const crisis = $("#crisisStrip");
