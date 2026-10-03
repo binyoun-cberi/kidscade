@@ -12,7 +12,7 @@ function fail(message) {
 let html = fs.readFileSync(indexPath, 'utf8');
 
 if (!html.includes('src="playtime-state.js"')) {
-  const headAnchor = '    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>\n';
+  const headAnchor = '    <script src="touch-interaction-guard.js"></script>\n';
   if (!html.includes(headAnchor)) fail('index_base.html의 head script 삽입 위치를 찾지 못했습니다.');
   html = html.replace(headAnchor, headAnchor + '    <script src="playtime-state.js"></script>\n');
 }
