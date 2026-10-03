@@ -5,15 +5,15 @@
       "id": "high_human_history_cards",
       "addedAt": "2026-10-03T20:03:00+09:00",
       "title": "석기 시대에서 살아남기",
-      "href": "games/high_human_history_cards/index.html?v=7",
+      "href": "games/high_human_history_cards/index.html?v=8",
       "category": "trivia",
       "age": "high",
       "icon": "🪨",
-      "description": "자연 자원이 무한 생산되지 않고 카드마다 약 8~18개의 채집 가능량을 가지며, 채집 시간도 수 초 단위로 느려진 석기 시대 생존 샌드박스. 작은 나무에서는 맨손으로 나뭇가지만 얻고, 돌도끼를 갖춘 벌목꾼만 큰 나무에서 목재를 생산할 수 있습니다.",
+      "description": "유한 자원이 고갈되면 사람 1명과 식량 1을 써서 13~17초 탐험 원정을 보내 자원 2~4장과 동물·사건을 발견하는 석기 시대 생존 샌드박스. 3일차 이후 늑대·곰 같은 맹수가 식량을 노리고, 정착지가 커지면 낯선 집단과 교환하거나 적대 집단의 습격에 대비해야 합니다.",
       "subject": "social",
       "genre": "sandbox",
       "difficulty": "medium",
-      "sessionMinutes": 30,
+      "sessionMinutes": 35,
       "players": [
         "solo"
       ],
