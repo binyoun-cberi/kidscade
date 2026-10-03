@@ -260,7 +260,7 @@ test('friendship perks affect the systems matching each resident role',()=>{
 test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
   const rewards=[
     ['minjiPlanter','plant-small3.glb'],['junhoStool','stool-bar-square.glb'],
-    ['haneulTable','table-round.glb'],['doyunBench','bench-cushion.glb'],
+    ['haneulTable','table-round-a.glb'],['doyunBench','bench-cushion.glb'],
     ['yunaPlant','plant-small2.glb'],['taehoRetroTv','television-vintage.glb'],
     ['soraBookcase','bookcase-closed-wide.glb'],['hyunwooDrawers','side-table-drawers.glb'],
     ['nariLamp','lamp-square-floor.glb'],['woojinRelaxChair','lounge-chair-relax.glb'],
@@ -269,7 +269,10 @@ test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
   for(const [key,file] of rewards){
     assert.ok(furnishing.includes(key),'rare reward missing '+key);
     assert.ok(furnishing.includes(file),'rare reward asset missing '+file);
-    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'untracked reward asset '+file);
+    const assetPath=key==='haneulTable'
+      ? path.join(root,'assets','game','3d','bakery','interior',file)
+      : path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file);
+    assert.ok(fs.existsSync(assetPath),'untracked reward asset '+file);
   }
   assert.match(runtime,/key==='taehoRetroTv'/);
   assert.match(runtime,/key==='soraBookcase'/);
