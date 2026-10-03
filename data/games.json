@@ -5,15 +5,15 @@
       "id": "high_human_history_cards",
       "addedAt": "2026-10-03T20:03:00+09:00",
       "title": "석기 시대에서 살아남기",
-      "href": "games/high_human_history_cards/index.html?v=2",
+      "href": "games/high_human_history_cards/index.html?v=3",
       "category": "trivia",
       "age": "high",
       "icon": "🪨",
-      "description": "두 사람과 자연만으로 시작해 뗀석기·간석기·가죽 가공·빗살무늬토기·농경·낚시·그물·통발·저수지·민물고기 양식·목축을 자유롭게 연결하고, 같은 생산지 카드를 쌓아 농장·어장·목장·신석기 마을로 성장시키는 석기 시대 생활 기술 카드 생존 샌드박스.",
+      "description": "돌과 자연만으로 시작해 활·화살·작살·올가미, 가죽 가공, 가락바퀴·직조, 돌화덕·점토가마·숯, 도토리 가공, 갯벌 채집, 조·기장·콩 농경과 낚시·그물·통발·저수지·양식·목축을 자유롭게 연결하고 카드 스택으로 농장·어장·목장·신석기 마을을 키우는 석기 시대 생활 기술 생존 샌드박스.",
       "subject": "social",
       "genre": "sandbox",
       "difficulty": "medium",
-      "sessionMinutes": 20,
+      "sessionMinutes": 25,
       "players": [
         "solo"
       ],
