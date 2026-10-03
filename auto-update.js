@@ -59,7 +59,9 @@
       'kidscade-life-world-overlay',
       'kidscade-avatar-studio-overlay',
       'shop-modal',
-      'pet-modal'
+      'pet-modal',
+      'aquarium-modal',
+      'hamster-modal'
     ].some(id => isVisibleElement(doc.getElementById(id)));
   }
 
