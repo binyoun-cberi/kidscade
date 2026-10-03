@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kidscade - 신나는 학습 오락실!</title>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="touch-interaction-guard.js"></script>
     <script src="playtime-state.js"></script>
     <script src="seed-wallet.js"></script>
@@ -995,7 +994,7 @@
             } catch (error) {}
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
+        (() => {
             // =====================================
             // 유아 모드 잠금 제거
             // 비밀번호 입력 없이 모든 사용자가 바로 입장할 수 있습니다.
@@ -3339,7 +3338,7 @@ ${getEvolutionHintText()}
                 }
             }
             if (currentAgeGroup) checkAttendance();
-        });
+        })();
     </script>
 </body>
 </html>
