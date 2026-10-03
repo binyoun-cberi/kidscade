@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 test('Game SDK exposes the stable v1 contract', () => {
   assert.equal(sdk.VERSION, 1);
-  for (const name of ['init','start','pause','resume','registerPauseHandlers','sound','setMuted','score','gameOver','restart','exit','state']) {
+  for (const name of ['init','start','pause','resume','registerPauseHandlers','registerCleanup','dispose','sound','setMuted','score','gameOver','restart','exit','state']) {
     assert.equal(typeof sdk[name], 'function', `${name} must be a function`);
   }
 });
@@ -51,4 +51,12 @@ test('Game SDK defers shell mounting when loaded before document.body exists', (
   assert.match(source, /if \(!root\.document\.body\)/);
   assert.match(source, /DOMContentLoaded/);
   assert.match(source, /scheduleShellMount/);
+});
+
+test('Game SDK handles the shared game-exit cleanup lifecycle', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'kidscade-game-sdk.js'), 'utf8');
+  assert.match(source, /kidscade:game-exit/);
+  assert.match(source, /function registerCleanup\(/);
+  assert.match(source, /function dispose\(/);
+  assert.match(source, /cleanupHandlers\.clear\(\)/);
 });
