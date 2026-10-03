@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=17';
+import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=18';
 import {createTownEconomy} from './kidscade-world-economy.js?v=15';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=7';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -146,13 +147,23 @@ const outdoor=new THREE.Group(),indoor=new THREE.Group(),petLayer=new THREE.Grou
 scene.add(outdoor,indoor,petLayer);indoor.visible=false;
 
 const loader=new GLTFLoader();
+const fbxLoader=new FBXLoader();
 const gltfCache=new Map();
+const fbxCache=new Map();
 function loadGLTF(url){
   if(gltfCache.has(url))return gltfCache.get(url);
   const p=new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
   gltfCache.set(url,p);return p;
 }
 function loadGLB(url){return loadGLTF(url).then(g=>g.scene)}
+function loadFBX(url){
+  if(fbxCache.has(url))return fbxCache.get(url);
+  const p=new Promise((resolve,reject)=>fbxLoader.load(url,resolve,undefined,reject));
+  fbxCache.set(url,p);return p;
+}
+function loadModelSource(url){
+  return /\.fbx(?:$|\?)/i.test(url)?loadFBX(url):loadGLB(url);
+}
 function prepModel(o){
   o.traverse(n=>{
     if(!n.isMesh)return;
@@ -167,7 +178,7 @@ function prepModel(o){
 }
 async function addModel(parent,url,{x=0,y=0,z=0,w=2,h=2,d=2,rot=0,name=''}={}){
   try{
-    const base=await loadGLB(url),o=prepModel(base.clone(true));
+    const base=await loadModelSource(url),o=prepModel(base.clone(true));
     o.rotation.y=rot;o.position.set(x,y,z);o.name=name;
     o.updateMatrixWorld(true);
     const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3());
@@ -1241,6 +1252,17 @@ function mineIron(){
   persist();setAvatarAction('smile',480);updateStatus();worldAudio.sfx('impact',.14);
   toast('철광석 +'+gain+(extras.length?' · '+extras.join(' · '):''));return true;
 }
+const CROP_ASSET_ROOT='../assets/game/crops/FBX/';
+const CROP_MODEL_FILES={
+  carrot:['Carrot_1.fbx','Carrot_2.fbx','Carrot_3.fbx','Carrot_4.fbx'],
+  tomato:['Tomato_1.fbx','Tomato_2.fbx','Tomato_3.fbx','Tomato_4.fbx'],
+  corn:['Corn_1.fbx','Corn_2.fbx','Corn_3.fbx','Corn_4.fbx'],
+  pumpkin:['Pumpkin_1.fbx','Pumpkin_2.fbx','Pumpkin_3.fbx','Pumpkin_4.fbx']
+};
+const ORCHARD_MODEL_FILES={
+  apple:{ripe:'Apple_Crop.fbx',harvested:'Apple_Harvested.fbx'},
+  orange:{ripe:'Orange_Crop.fbx',harvested:'Orange_Harvested.fbx'}
+};
 const CROP_DEF={
   potato:{name:'감자',color:0xc69b5b,growMs:35000},
   carrot:{name:'당근',color:0xe67e3a,growMs:33000},
@@ -1286,36 +1308,92 @@ function cropAction(id){
 }
 const cropVisual=[];
 const farmPlotActors=[];
+let cropAssetToken=0;
 function updateFarmExpansionVisuals(){
   const unlocked=farmPlotCount();
   for(const a of farmPlotActors){const open=a.index<unlocked;a.group.visible=open;a.interaction.enabled=open;}
   updateCropVisuals();
 }
 function makePlant(){
-  const g=new THREE.Group();
+  const g=new THREE.Group(),fallback=new THREE.Group();g.add(fallback);
   const stem=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.65,8),new THREE.MeshStandardMaterial({color:0x5d9b4e}));
-  stem.position.y=.33;g.add(stem);
-  for(const sx of [-.18,.18]){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshStandardMaterial({color:0x70ac55}));leaf.scale.set(1.3,.45,.7);leaf.position.set(sx,.48,0);g.add(leaf)}
+  stem.position.y=.33;fallback.add(stem);
+  for(const sx of [-.18,.18]){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshStandardMaterial({color:0x70ac55}));leaf.scale.set(1.3,.45,.7);leaf.position.set(sx,.48,0);fallback.add(leaf)}
   const material=new THREE.MeshStandardMaterial({color:0xffffff});
-  const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),material);fruit.position.y=.70;g.add(fruit);g.userData.fruitMaterial=material;
+  const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),material);fruit.position.y=.70;fallback.add(fruit);
+  g.userData.fallback=fallback;g.userData.fruitMaterial=material;g.userData.assetStages=[];g.userData.assetType='';g.userData.assetToken=0;
   return g;
 }
-function updateCropVisuals(){
-  cropVisual.forEach(v=>{
-    const state=cropState(v.id),def=CROP_DEF[state.type];
-    const scale=state.phase==='empty'?0:state.phase==='planted'?.3:state.phase==='growing'?.58:1;
-    if(def)v.object.userData.fruitMaterial?.color.setHex(def.color);
-    v.object.scale.setScalar(scale);
-  });
+function fitCropStages(models){
+  const mature=models[models.length-1];mature.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(mature),size=box.getSize(new THREE.Vector3());
+  const s=Math.min(size.x?1.35/size.x:1,size.y?1.18/size.y:1,size.z?1.35/size.z:1);
+  for(const model of models){
+    model.scale.multiplyScalar(Number.isFinite(s)?s:1);model.updateMatrixWorld(true);
+    const b=new THREE.Box3().setFromObject(model),center=b.getCenter(new THREE.Vector3());
+    model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
+    model.castShadow=true;model.visible=false;
+  }
+  return models;
 }
+async function ensureCropAsset(v,type){
+  const files=CROP_MODEL_FILES[type];if(!files)return false;
+  const data=v.object.userData;
+  if(data.assetType===type&&data.assetStages?.length===4)return true;
+  const token=++cropAssetToken;data.assetToken=token;
+  try{
+    const bases=await Promise.all(files.map(file=>loadFBX(CROP_ASSET_ROOT+file)));
+    if(data.assetToken!==token)return false;
+    for(const old of data.assetStages||[])v.object.remove(old);
+    const models=fitCropStages(bases.map(base=>prepModel(base.clone(true))));
+    for(const model of models)v.object.add(model);
+    data.assetStages=models;data.assetType=type;data.fallback.visible=false;
+    updateCropVisual(v);return true;
+  }catch(err){
+    if(data.assetToken===token){data.assetStages=[];data.assetType='';data.fallback.visible=true}
+    console.warn('[World v3] crop asset failed',type,err);return false;
+  }
+}
+function cropStage(state,def){
+  if(state.phase==='planted')return 1;
+  if(state.phase==='ripe')return 4;
+  if(state.phase!=='growing')return 0;
+  const total=Math.max(1,def?.growMs||1),remain=Math.max(0,state.readyAt-Date.now()),progress=Math.max(0,Math.min(1,1-remain/total));
+  return progress<.45?2:3;
+}
+function updateCropVisual(v){
+  const state=cropState(v.id),def=CROP_DEF[state.type],data=v.object.userData;
+  const hasAsset=!!(state.type&&data.assetType===state.type&&data.assetStages?.length===4);
+  v.object.visible=state.phase!=='empty';
+  if(state.phase==='empty'){for(const m of data.assetStages||[])m.visible=false;data.fallback.visible=false;return}
+  if(def)data.fruitMaterial?.color.setHex(def.color);
+  if(CROP_MODEL_FILES[state.type]&&!hasAsset)void ensureCropAsset(v,state.type);
+  if(hasAsset){
+    data.fallback.visible=false;
+    const stage=cropStage(state,def);
+    data.assetStages.forEach((m,i)=>m.visible=i===stage-1);
+  }else{
+    for(const m of data.assetStages||[])m.visible=false;
+    data.fallback.visible=true;
+    data.fallback.scale.setScalar(state.phase==='planted'?.30:state.phase==='growing'?.62:1);
+  }
+}
+function updateCropVisuals(){cropVisual.forEach(updateCropVisual)}
+setInterval(updateCropVisuals,1000);
 
 const ORCHARD_FRUIT_SEQUENCE=['apple','pear','apple','peach','pear','orange','apple','cherry','peach'];
 const ORCHARD_FRUIT_COLORS={apple:0xc83e3e,pear:0xb7c85a,peach:0xf09a7c,orange:0xf09a32,cherry:0xb51f3a};
 function orchardFruitName(key){return itemName(key)}
+function updateOrchardActorVisual(actor){
+  if(!actor?.asset)return;
+  const harvested=Number(prog().orchard.harvests[actor.id]||0)===prog().survival.day;
+  actor.asset.ripe.visible=!harvested;actor.asset.harvested.visible=harvested;
+}
 function updateOrchardVisuals(){
   const count=orchardTreeCount();
   for(const actor of orchardActors){
     const open=actor.index<count;actor.group.visible=open;actor.interaction.enabled=open;
+    updateOrchardActorVisual(actor);
   }
 }
 function harvestOrchardTree(actor){
@@ -1323,7 +1401,7 @@ function harvestOrchardTree(actor){
   if(last===day){toast(orchardFruitName(key)+'나무는 오늘 이미 수확했어요.');return;}
   const gain=key==='cherry'?3:2;
   if(!addInventoryItem(key,gain))return;
-  p.orchard.harvests[actor.id]=day;persist();Meta?.advanceTask?.('harvest',1);setAvatarAction('smile',650);worldAudio.sfx('pickup',.16);updateStatus();
+  p.orchard.harvests[actor.id]=day;persist();Meta?.advanceTask?.('harvest',1);setAvatarAction('smile',650);worldAudio.sfx('pickup',.16);updateStatus();updateOrchardActorVisual(actor);
   toast('🍎 '+orchardFruitName(key)+' +'+gain+' · 내일 다시 열려요.');
 }
 function addFruitDots(group,color){
@@ -1331,6 +1409,23 @@ function addFruitDots(group,color){
   for(const [x,y,z] of [[-.45,2.15,.2],[.38,2.35,.12],[-.18,2.55,-.3],[.55,2.05,-.25]]){
     const fruit=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),mat);fruit.position.set(x,y,z);fruit.castShadow=true;group.add(fruit);
   }
+}
+function fitOrchardModel(base){
+  const model=prepModel(base.clone(true));model.updateMatrixWorld(true);
+  let box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+  const s=Math.min(size.x?2.35/size.x:1,size.y?3.9/size.y:1,size.z?2.35/size.z:1);
+  model.scale.multiplyScalar(Number.isFinite(s)?s:1);model.updateMatrixWorld(true);
+  box=new THREE.Box3().setFromObject(model);const center=box.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=box.min.y;
+  return model;
+}
+async function attachOrchardAsset(actor){
+  const files=ORCHARD_MODEL_FILES[actor.fruit];if(!files)return;
+  try{
+    const [ripeBase,harvestedBase]=await Promise.all([loadFBX(CROP_ASSET_ROOT+files.ripe),loadFBX(CROP_ASSET_ROOT+files.harvested)]);
+    const ripe=fitOrchardModel(ripeBase),harvested=fitOrchardModel(harvestedBase);
+    actor.group.add(ripe,harvested);actor.asset={ripe,harvested};actor.fallback.visible=false;updateOrchardActorVisual(actor);
+  }catch(err){console.warn('[World v3] orchard asset failed',actor.fruit,err);actor.fallback.visible=true}
 }
 
 function addColliderFor(modeName,x,z,w,d){return collider(modeName,x,z,w,d)}
@@ -1523,11 +1618,11 @@ async function buildOutdoor(){
     const o=point('orchard');
     const slots=[[-6,-5],[-2,-5],[2,-5],[6,-5],[-6,0],[-2,0],[2,0],[6,0],[0,5.5]];
     for(let idx=0;idx<slots.length;idx++){
-      const [dx,dz]=slots[idx],group=new THREE.Group();group.position.set(o.x+dx,0,o.z+dz);outdoor.add(group);
-      await addModel(group,idx%3===0?ASSET.oak:ASSET.tree,{x:0,z:0,w:2.35,h:3.9,d:2.35,rot:idx*.39,name:'orchard-tree-'+idx});
-      const fruit=ORCHARD_FRUIT_SEQUENCE[idx],color=ORCHARD_FRUIT_COLORS[fruit]||0xd94b45;addFruitDots(group,color);
+      const [dx,dz]=slots[idx],group=new THREE.Group(),fallback=new THREE.Group();group.position.set(o.x+dx,0,o.z+dz);group.add(fallback);outdoor.add(group);
+      await addModel(fallback,idx%3===0?ASSET.oak:ASSET.tree,{x:0,z:0,w:2.35,h:3.9,d:2.35,rot:idx*.39,name:'orchard-tree-'+idx});
+      const fruit=ORCHARD_FRUIT_SEQUENCE[idx],color=ORCHARD_FRUIT_COLORS[fruit]||0xd94b45;addFruitDots(fallback,color);
       const interaction=interact('outdoor',o.x+dx,o.z+dz,1.35,orchardFruitName(fruit)+' 수확하기',()=>harvestOrchardTree(orchardActors[idx]));
-      orchardActors.push({id:'orchard-'+idx,index:idx,fruit,group,interaction});
+      const actor={id:'orchard-'+idx,index:idx,fruit,group,fallback,asset:null,interaction};orchardActors.push(actor);void attachOrchardAsset(actor);
     }
     for(const [dx,dz,rot] of [[-7.8,-7.7,0],[-2.7,-7.7,0],[2.7,-7.7,0],[7.8,-7.7,0],[-7.8,7.7,0],[-2.7,7.7,0],[2.7,7.7,0],[7.8,7.7,0],[-8.7,-4.8,Math.PI/2],[-8.7,0,Math.PI/2],[-8.7,4.8,Math.PI/2],[8.7,-4.8,Math.PI/2],[8.7,0,Math.PI/2],[8.7,4.8,Math.PI/2]]){
       const fence=await addFence(outdoor,o.x+dx,o.z+dz,rot,{length:2.5,height:.82,name:'orchard-fence'});
