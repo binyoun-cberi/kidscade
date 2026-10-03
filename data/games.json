@@ -102,12 +102,12 @@
       "id": "high_twelve_island",
       "addedAt": "2026-09-30T17:22:00+09:00",
       "title": "촌장 시뮬레이터",
-      "href": "games/high_twelve_island/index.html?v=13",
+      "href": "games/high_twelve_island/index.html?v=14",
       "category": "trivia",
       "age": "high",
       "icon": "🏝️",
       "cover": "assets/gate-image/열두 명의 섬.svg",
-      "description": "폭염·홍수·황사·전염병·한파가 겹치는 극한의 섬! 식량·식수·공기 질·건강을 지키고, 노동 주민·가족·돌봄 주민들의 청원과 집단행동에 대응하세요. 선택은 실제 생산 중단·이탈·임시 운영 체제에 영향을 줍니다.",
+      "description": "폭염·홍수·황사·전염병·한파가 겹치는 극한의 섬! 식량·식수·공기 질·건강을 지키고 주민들의 청원과 집단행동에 대응하세요. 주민들은 광장·밭·숲·낚시터·진료소 같은 POI 사이의 실제 길을 따라 이동하며 일하고 쉬고 대피합니다.",
       "subject": "social",
       "genre": "simulation",
       "difficulty": "medium",
@@ -3349,4 +3349,4 @@
       "rework": "개선 중"
     }
   }
-}\n
+}
