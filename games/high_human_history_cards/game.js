@@ -761,7 +761,7 @@ function populationCapacity(){
  for(const c of state.cards.values()){
   if(c.type==='hideTent')cap+=c.count;
   else if(c.type==='pitHouse')cap+=c.count;
-  else if(c.type==='camp')cap+=2*c.count;
+  else if(c.type==='camp')cap+=3*c.count;
   else if(c.type==='village')cap+=3*c.count;
  }
  return Math.max(2,cap);
