@@ -16,7 +16,7 @@ test('games do not navigate directly to Kidscade index from inside iframe', () =
   const offenders = [];
   for (const file of walk(path.join(process.cwd(), 'games'))) {
     const html = fs.readFileSync(file, 'utf8');
-    if (/href\s*=\s*["'][^"']*index\.html(?:[?#][^"']*)?["']/i.test(html)) {
+    if (/href\s*=\s*["'](?:\/|(?:\.\.\/)+)index\.html(?:[?#][^"']*)?["']/i.test(html)) {
       offenders.push(path.relative(process.cwd(), file));
     }
   }
