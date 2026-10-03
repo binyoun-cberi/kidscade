@@ -138,6 +138,7 @@ test('close records seeds, sprout power, mission and Seed World session in one l
   assert.equal(result.sessionSec, 120);
   assert.equal(result.reward.rewardSeeds, 10);
   assert.equal(result.reward.rewardPower, 4);
+  assert.deepEqual(calls.slice(0, 2), [['modal-close'], ['sound', 'close']]);
   assert.ok(calls.some(call => call[0] === 'coins' && call[1] === 10));
   assert.ok(calls.some(call => call[0] === 'power' && call[1] > 0));
   assert.ok(calls.some(call => call[0] === 'mission'));
