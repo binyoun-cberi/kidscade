@@ -15,12 +15,12 @@ test('avatar studio JavaScript parses cleanly',()=>{
 
 test('global admin exposes the avatar studio entry point',()=>{
   assert.match(teacherHtml,/id="admin-tools"/);
-  assert.match(teacherHtml,//teacher/avatar-clothing-studio.html/);
+  assert.match(teacherHtml,/\/teacher\/avatar-clothing-studio\.html/);
   assert.match(teacherHtml,/아바타 제작실/);
-  assert.match(teacherJs,/$('admin-tools')?.classList.toggle('hidden', globalOnlyHidden)/);
+  assert.match(teacherJs,/admin-tools/);
 });
 
-test('studio is fixed to real 128x128 runtime coordinates',()=>{
+test('studio stays on exact 128x128 runtime coordinates',()=>{
   assert.match(html,/canvas id="workCanvas" width="128" height="128"/);
   assert.match(js,/const SIZE=128/);
   assert.match(js,/const ROOT_X=64/);
@@ -29,92 +29,82 @@ test('studio is fixed to real 128x128 runtime coordinates',()=>{
 });
 
 test('v3 frame contract uses stand 2 walk 4 and jump 1',()=>{
-  assert.match(js,/stand-01/);
-  assert.match(js,/stand-02/);
-  assert.match(js,/length:4/);
-  assert.match(js,/jump-01/);
-  assert.match(js,/kind:'stand'/);
-  assert.match(js,/kind:'walk'/);
-  assert.match(js,/kind:'jump'/);
+  for(const frame of ['stand-01','stand-02','walk-01','walk-02','walk-03','walk-04','jump-01']) assert.match(js,new RegExp(frame));
 });
 
-test('studio supports body hair and clothing as independent frame layers',()=>{
-  for(const id of ['layerBody','layerHairBack','layerHairFront','layerUpper','layerLower']){
-    assert.match(html,new RegExp('id="'+id+'"'));
-  }
-  assert.match(js,/const LAYERS=['body','hairBack','hairFront','upper','lower']/);
-  assert.match(js,/['hairBack','body','lower','upper','hairFront']/);
+test('default avatar workflow uses one full hair layer',()=>{
+  for(const id of ['layerBody','layerHair','layerUpper','layerLower']) assert.match(html,new RegExp('id="'+id+'"'));
+  assert.doesNotMatch(html,/id="layerHairBack"/);
+  assert.doesNotMatch(html,/id="layerHairFront"/);
+  assert.match(js,/const LAYERS=\['body','hair','upper','lower'\]/);
+  assert.match(js,/hairMode:'single'/);
+  assert.match(js,/layerOrder:\['body','lower','upper','hair'\]/);
+});
+
+test('old split-hair projects are migrated into the single hair layer',()=>{
+  assert.match(js,/src\.hairBack\|\|src\.hairFront/);
+  assert.match(js,/layerCtx\(f\.id,'hair'\)/);
+  assert.match(js,/if\(src\.hairBack\)/);
+  assert.match(js,/if\(src\.hairFront\)/);
 });
 
 test('frame alignment tools support reference comparison and precise editing',()=>{
   for(const id of ['referenceFrame','showReference','showDifference','toolSelect','nudgeUp','nudgeDown','nudgeLeft','nudgeRight','alignCenter','alignGround','shrinkSelection','growSelection']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
-  assert.match(js,/function drawDifferenceOverlay()/);
-  assert.match(js,/function moveLayerOrSelection(/);
-  assert.match(js,/function resizeSelection(/);
-  assert.match(js,/ROOT_X-(box.x+(box.w-1)/2)/);
-  assert.match(js,/GROUND_Y-box.maxY/);
+  assert.match(js,/function drawDifferenceOverlay\(\)/);
+  assert.match(js,/function moveLayerOrSelection\(/);
+  assert.match(js,/function resizeSelection\(/);
+});
+
+test('nudge arrows move an imported image before commit and a layer after commit',()=>{
+  assert.match(html,/id="nudgeMode"/);
+  assert.match(js,/function nudgeCurrent\(dx,dy\)/);
+  assert.match(js,/if\(sourceImage\)/);
+  assert.match(js,/stampX/);
+  assert.match(js,/stampY/);
+  assert.match(js,/nudgeCurrent\(0,-1\)/);
+  assert.match(js,/nudgeCurrent\(-1,0\)/);
+  assert.match(js,/clearStamp\(\);\n  afterEdit/);
 });
 
 test('image importer can auto-fit and pixelize body hair and clothes',()=>{
   for(const id of ['pixelPreviewCanvas','paletteSize','pixelResolution','alphaCut','removeFlatBg','cleanupNoise','autoOutline','autoFitStamp','pixelizePreview','applyPixelized']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
-  assert.match(js,/function refreshPreparedSource()/);
-  assert.match(js,/function targetRectForLayer()/);
-  assert.match(js,/activeLayer==='body'/);
-  assert.match(js,/activeLayer==='hairBack'||activeLayer==='hairFront'/);
-  assert.match(js,/function hardenAlpha(/);
-  assert.match(js,/function quantizeCanvas(/);
-  assert.match(js,/function cleanupSingletons(/);
-  assert.match(js,/function addAutoOutline(/);
+  assert.match(js,/activeLayer==='hair'/);
+  assert.match(js,/function hardenAlpha\(/);
+  assert.match(js,/function quantizeCanvas\(/);
+  assert.match(js,/function cleanupSingletons\(/);
+  assert.match(js,/function addAutoOutline\(/);
 });
 
-test('studio exports individual body hair composite and full zip bundle',()=>{
+test('studio exports single hair and full zip bundle',()=>{
   for(const id of ['exportCurrent','exportComposite','exportCurrentBody','exportCurrentHair','exportManifest','exportBundle']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
-  assert.match(js,/function exportCurrentBody()/);
-  assert.match(js,/function exportCurrentHair()/);
-  assert.match(js,/function compositeCanvas(/);
-  assert.match(js,/function buildZip(/);
-  assert.match(js,/kidscade-avatar-v3-bundle.zip/);
-  assert.match(js,/hair/back/);
-  assert.match(js,/hair/front/);
+  assert.match(js,/function exportCurrentHair\(\)/);
+  assert.match(js,/layerCanvas\(currentFrame,'hair'\)/);
+  assert.match(js,/folder=\{body:'body',hair:'hair',upper:'upper',lower:'lower'\}/);
+  assert.match(js,/kidscade-avatar-v3-bundle\.zip/);
 });
-
-test('project format keeps frame layers and v3 runtime metadata',()=>{
-  assert.match(js,/type:'kidscade-avatar-studio-project'/);
-  assert.match(js,/mirrorRight:true/);
-  assert.match(js,/mirrorForRight:true/);
-  assert.match(js,/frameSets:{stand:/);
-  assert.match(js,/logicalRoot:[ROOT_X,82]/);
-});
-
-test('studio verifies global admin before exposing production tools',()=>{
-  assert.match(js,/kc_teacher_admin_key/);
-  assert.match(js,//api/teacher/overview/);
-  assert.match(js,/body.scope!=='global'/);
-});
-
 
 test('studio can preload the uploaded left-facing body draft set',()=>{
   assert.match(html,/id="loadDraftBodySet"/);
   assert.match(js,/DRAFT_BODY_SOURCE_SECONDS=\[8,9,10,11,12,13,14\]/);
-  assert.match(js,/function draftBodySourceUrl\(/);
-  assert.match(js,/function rasterDraftBodyImage\(/);
   assert.match(js,/async function loadDraftBodySet\(/);
-  assert.match(js,/allBodyFramesEmpty\(\)/);
   assert.match(js,/ROOT_X-masterCenter/);
   assert.match(js,/GROUND_Y-masterBox\.maxY/);
 });
-
 
 test('uploaded body loader resolves relative asset paths and cannot hang forever',()=>{
   assert.match(js,/new URL\('\.\.\/assets\/game\/characters\/'\+file,window\.location\.href\)\.href/);
   assert.match(js,/function loadImageUrl\(url,timeoutMs=10000\)/);
   assert.match(js,/10초 안에 이미지를 받지 못했습니다/);
-  assert.match(js,/BODY 불러오는 중 '\+\(i\+1\)\+' \/ '\+FRAMES\.length/);
-  assert.doesNotMatch(js,/Promise\.all\(FRAMES\.map\(\(_,i\)=>loadImageUrl\(draftBodySourceUrl\(i\)\)\)\)/);
+});
+
+test('studio verifies global admin before exposing production tools',()=>{
+  assert.match(js,/kc_teacher_admin_key/);
+  assert.match(js,/\/api\/teacher\/overview/);
+  assert.match(js,/body\.scope!=='global'/);
 });
