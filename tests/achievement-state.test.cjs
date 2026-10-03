@@ -76,3 +76,68 @@ test('achievement state normalization ignores unknown ids and preserves known pr
   assert.equal(state.progress['unknown.progress'], undefined);
   assert.equal(state.playedGames.cube3d, 4567);
 });
+
+
+test('first-play definitions unlock from the shared played-game boundary', () => {
+  const memory = new Map();
+  global.localStorage = {
+    getItem:key => memory.has(key) ? memory.get(key) : null,
+    setItem:(key,value) => memory.set(key,String(value)),
+    removeItem:key => memory.delete(key)
+  };
+  try {
+    achievements.registerDefinitions({
+      id:'test_game.first_play',
+      gameId:'test_game',
+      title:'첫 플레이',
+      enabled:true,
+      trigger:'first_play'
+    });
+    achievements.recordPlayedGame('test_game', 12345);
+    const state = achievements.loadAchievementState();
+    assert.equal(Boolean(state.unlocked['test_game.first_play']), true);
+    assert.equal(state.playedGames.test_game, 12345);
+  } finally {
+    delete global.localStorage;
+  }
+});
+
+test('disabled planned achievements stay out of summaries and cannot unlock', () => {
+  const before = achievements.getSummary().total;
+  achievements.registerDefinitions({
+    id:'planned_game.secret',
+    gameId:'planned_game',
+    title:'아직 연결 전',
+    enabled:false,
+    type:'secret',
+    hidden:true
+  });
+  assert.equal(achievements.getSummary().total, before);
+  assert.equal(achievements.unlock('planned_game.secret').unlocked, false);
+  assert.equal(achievements.getDefinitions().some(def => def.id === 'planned_game.secret'), false);
+  assert.equal(achievements.getAllDefinitions().some(def => def.id === 'planned_game.secret'), true);
+});
+
+test('event rules unlock only when the reported game-over condition is satisfied', () => {
+  const memory = new Map();
+  global.localStorage = {
+    getItem:key => memory.has(key) ? memory.get(key) : null,
+    setItem:(key,value) => memory.set(key,String(value)),
+    removeItem:key => memory.delete(key)
+  };
+  try {
+    achievements.registerDefinitions({
+      id:'rule_game.combo',
+      gameId:'rule_game',
+      title:'콤보',
+      enabled:true,
+      rule:{event:'game-over',field:'maxCombo',op:'gte',value:10}
+    });
+    achievements.applyEventRules({event:'game-over',gameId:'rule_game',maxCombo:9});
+    assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), false);
+    achievements.applyEventRules({event:'game-over',gameId:'rule_game',maxCombo:10});
+    assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), true);
+  } finally {
+    delete global.localStorage;
+  }
+});
