@@ -78,6 +78,22 @@ test('Seed Town reuses tracked city market transport and service assets',()=>{
   }
 });
 
+test('Seed World uses Quaternius staged crops and distinct CC0 town buildings',()=>{
+  assert.match(runtime,/FBXLoader/);
+  for(const crop of ['Carrot_1.fbx','Carrot_4.fbx','Tomato_1.fbx','Tomato_4.fbx','Corn_1.fbx','Corn_4.fbx','Pumpkin_1.fbx','Pumpkin_4.fbx']){
+    assert.ok(runtime.includes(crop),'missing staged crop '+crop);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','crops','FBX',crop)),'missing crop asset '+crop);
+  }
+  for(const fruit of ['Apple_Crop.fbx','Apple_Harvested.fbx','Orange_Crop.fbx','Orange_Harvested.fbx']){
+    assert.ok(runtime.includes(fruit),'missing orchard asset '+fruit);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','crops','FBX',fruit)),'missing orchard asset '+fruit);
+  }
+  for(const building of ['1Story_Sign_Mat.fbx','1Story_GableRoof_Mat.fbx','2Story_Columns_Mat.fbx','2Story_Balcony_Mat.fbx','1Story_RoundRoof_Mat.fbx']){
+    assert.ok(city.includes(building),'town building not wired '+building);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','buildings','Models with Materials','FBX',building)),'missing town building '+building);
+  }
+});
+
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
   assert.match(economy,/const BUY=/);
   assert.match(economy,/const SELL=/);
