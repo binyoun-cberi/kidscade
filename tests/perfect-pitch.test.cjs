@@ -28,6 +28,17 @@ test('Perfect Pitch has calibration, three difficulties, and SDK lifecycle',()=>
   assert.ok(html.includes('data-game-id="low_perfect_pitch"'));
 });
 
+test('Perfect Pitch includes endless high-note stair mode',()=>{
+  assert.ok(html.includes('data-mode="stair"'));
+  assert.match(runtime,/gameMode:'classic'/);
+  assert.match(runtime,/function startStairGame/);
+  assert.match(runtime,/function stairGameLoop/);
+  assert.match(runtime,/function stairSemitone/);
+  assert.match(runtime,/stairLives:3/);
+  assert.match(runtime,/restEvery:7/);
+  assert.match(runtime,/큰 소리는 필요 없어요/);
+});
+
 test('Perfect Pitch runtime parses',()=>{
   const checked=spawnSync(process.execPath,['--check'],{input:runtime,encoding:'utf8'});
   assert.equal(checked.status,0,checked.stderr||checked.stdout);
