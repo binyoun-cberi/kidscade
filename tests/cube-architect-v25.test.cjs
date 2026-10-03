@@ -11,7 +11,7 @@ const css=read('games/cube3d/cube-architect.css');
 
 test('v25 tactile survival scripts parse and load',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261003-29/);
+  assert.match(html,/cube-architect\.js\?v=20261003-31/);
   assert.match(html,/id="miningProgress"/);
   assert.match(html,/id="survivalCraftDetail"/);
 });
