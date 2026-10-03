@@ -10,6 +10,8 @@ const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
 const hairExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-hair.py'),'utf8');
+const hairCatalog=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/hair/approved-hair-manifest.json'),'utf8'));
+const legacyHairWorkflow=fs.readFileSync(path.join(root,'.github/workflows/avatar-hair-extract.yml'),'utf8');
 
 test('avatar studio and renderer JavaScript both parse cleanly',()=>{
   assert.doesNotThrow(()=>new Function(renderer));
@@ -17,19 +19,23 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=21/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=21/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=21')<html.indexOf('avatar-pixel-studio.js?v=21'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=22/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=22/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=22')<html.indexOf('avatar-pixel-studio.js?v=22'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
 
-test('pixel avatar studio uses the full front-hair asset plus face and clothes layers',()=>{
-  assert.match(js,/hair\/\$\{layer\}\/\$\{set\}/);
+test('pixel avatar studio exposes only the curated standalone hair catalog',()=>{
+  assert.match(renderer,/HAIR_CATALOG_PATH='runtime\/hair\/approved-hair-manifest\.json'/);
+  assert.match(renderer,/hairRecord\(c\.hairId\)/);
+  assert.match(renderer,/hairBack:hair\?\.back\|\|null/);
+  assert.match(renderer,/hairFront:hair\?\.front\|\|null/);
+  assert.doesNotMatch(renderer,/runtime\/hair\/front\/\$\{hs\}/);
+  assert.doesNotMatch(js,/hairPath\(/);
+  assert.match(js,/approvedHairs\(\)/);
+  assert.match(js,/data-hair-id/);
   assert.match(renderer,/runtime\/face/);
-  assert.doesNotMatch(js,/hairPath\('back',set,n\)/);
-  assert.match(js,/hairPath\('front',set,n\)/);
-  assert.match(renderer,/hairBack:null/);
   assert.match(renderer,/blue-star-zip-hoodie-01/);
   assert.match(renderer,/denim-cuffed-jeans-01/);
   assert.match(js,/eyes:8/);
@@ -56,13 +62,16 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-hairfit-11'/);
+  assert.match(js,/version:'pixel-v2-rig-haircatalog-1'/);
 });
 
-test('new users start with a complete outfit and legacy equipment can migrate',()=>{
+test('new and legacy users fall back to the curated default hair with a complete outfit',()=>{
+  assert.match(js,/hairId:'clean-01'/);
   assert.match(js,/upper:1,lower:1/);
   assert.match(js,/kidscade_avatar_equipped/);
   assert.match(js,/legacyMigrationState/);
+  assert.doesNotMatch(js,/hairMap=/);
+  assert.doesNotMatch(js,/femaleHair=/);
 });
 
 test('avatar rig defines named anchors, named z slots and an item attachment contract',()=>{
@@ -112,54 +121,47 @@ test('avatar rig lab proves a cropped accessory can attach to the nose anchor',(
   assert.match(lab,/setExtraParts/);
 });
 
-test('all 48 hairstyles preserve source-sheet geometry with one fixed transform',()=>{
-  assert.match(hairExtract,/COMMON_CELL_FIT/);
-  assert.match(hairExtract,/"scale": 0\.50/);
-  assert.match(hairExtract,/"offsetX": 32/);
-  assert.match(hairExtract,/"offsetY": 0/);
-  assert.match(hairExtract,/def place_hair_from_source_cell\(full\)/);
-  assert.doesNotMatch(hairExtract,/def normalize_hair/);
-  assert.doesNotMatch(hairExtract,/targetWidth/);
-  assert.doesNotMatch(hairExtract,/targetTop/);
-  assert.doesNotMatch(hairExtract,/maxHeight/);
+test('curated hair catalog has one approved fallback and standalone asset',()=>{
+  assert.equal(hairCatalog.type,'kidscade-approved-hair-catalog');
+  assert.equal(hairCatalog.legacyHidden,true);
+  assert.equal(hairCatalog.fallbackId,'clean-01');
+  assert.equal(hairCatalog.coordinateSystem.canvas[0],128);
+  assert.equal(hairCatalog.coordinateSystem.canvas[1],128);
+  assert.equal(hairCatalog.coordinateSystem.runtimeScale,1);
+  assert.deepEqual(hairCatalog.coordinateSystem.runtimeOffset,[0,0]);
+  const fallback=hairCatalog.items.find(item=>item.id===hairCatalog.fallbackId);
+  assert.ok(fallback?.approved);
+  assert.equal(fallback.back,null);
+  assert.match(fallback.front,/runtime\/hair\/approved\/hair-clean-01\.png/);
+  assert.ok(fs.existsSync(path.join(root,'assets/game/characters/kidscade-avatar-v1',fallback.front)));
 });
 
-test('source-sheet hair is a full front layer with no bald-head split seam',()=>{
-  assert.match(hairExtract,/def front_only_hair\(full, critical_mask\)/);
-  assert.match(hairExtract,/front = full\.copy\(\)/);
-  assert.match(hairExtract,/back = Image\.new\("RGBA", \(RUNTIME, RUNTIME\), \(0,0,0,0\)\)/);
-  assert.doesNotMatch(hairExtract,/def split_full_hair/);
-  assert.doesNotMatch(hairExtract,/ImageChops\.subtract\(alpha, head_mask\)/);
-  assert.doesNotMatch(hairExtract,/ImageChops\.multiply\(alpha, head_mask\)/);
-  assert.match(hairExtract,/no bald-head silhouette split/);
-});
-
-test('hair cleanup keeps bangs intact and removes white matte fringe',()=>{
-  assert.match(hairExtract,/def remove_white_matte\(/);
-  assert.match(hairExtract,/touches_transparency/);
-  assert.match(hairExtract,/bg_distance=112/);
-  assert.doesNotMatch(hairExtract,/coverage =/);
-  assert.match(hairExtract,/remove_white_matte\(clear_bg\(tile\)\)/);
-  assert.match(hairExtract,/def build_face_feature_mask\(/);
-  assert.match(hairExtract,/Hair is allowed to overlap eyes, eyebrows, nose and mouth/);
-  assert.doesNotMatch(hairExtract,/build_face_protect/);
-  assert.doesNotMatch(hairExtract,/protect_mask/);
-  assert.match(hairExtract,/faceClipping/);
-});
-
-test('renderer trusts generated hair coordinates and adds no built-in hair scaling',()=>{
+test('renderer migrates legacy hair selections to the approved fallback and supports future back hair',()=>{
+  assert.match(renderer,/hairId:'clean-01'/);
+  assert.match(renderer,/fallbackHairId\(\)/);
+  assert.match(renderer,/this\.hairRecord\(String\(raw\.hairId\|\|''\)\)\?\.id\|\|this\.fallbackHairId\(\)/);
+  assert.match(renderer,/hairBack:hair\?\.back\|\|null/);
+  assert.match(renderer,/hairFront:hair\?\.front\|\|null/);
   assert.doesNotMatch(renderer,/HAIR_RENDER_TWEAK/);
   assert.doesNotMatch(renderer,/hairRenderTweak/);
-  assert.match(renderer,/hairBack:null/);
-  assert.match(renderer,/spec:defs\[key\]/);
-  assert.match(renderer,/tweakScaleX/);
-  assert.match(renderer,/tweakScaleY/);
 });
 
-test('runtime assets are revisioned so regenerated PNGs do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='21'/);
+test('legacy sheet hair stays in the repository but its automatic build is retired',()=>{
+  assert.match(hairExtract,/COMMON_CELL_FIT/);
+  assert.match(legacyHairWorkflow,/Legacy avatar sheet hair build \(manual\)/);
+  assert.match(legacyHairWorkflow,/workflow_dispatch:/);
+  assert.doesNotMatch(legacyHairWorkflow,/\n  push:/);
+  assert.doesNotMatch(js,/스타일 A/);
+  assert.doesNotMatch(js,/스타일 B/);
+  assert.doesNotMatch(html,/전체 48/);
+  assert.doesNotMatch(html,/스타일 A 24/);
+  assert.doesNotMatch(html,/스타일 B 24/);
+});
+
+test('runtime assets are revisioned so curated hair migrations do not stay stale in browser cache',()=>{
+  assert.match(js,/ASSET_REV='22'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='21'/);
+  assert.match(renderer,/ASSET_REV='22'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
