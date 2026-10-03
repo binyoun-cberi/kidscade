@@ -457,8 +457,8 @@ class RamenKitchen3D{
    else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
    else if(nearest.type==='fridge')els.stationHint.textContent=state.heldItem?'E · 토핑이면 돌려놓기':'E · 주문에 맞는 토핑 꺼내기';
    else if(nearest.group?.userData?.storageSlot){
-    const stored=nearest.group.userData.storedItem;
-    els.stationHint.textContent=state.heldItem?(stored?'조리대 사용 중 · 먼저 집어가세요':'E · '+heldItemLabel()+' 내려놓기'):(stored?'E · '+itemLabel(stored)+' 집기':'빈 조리대 · 재료나 라면을 잠깐 둘 수 있어요')
+    const stored=nearest.group.userData.storedItem,reserved=nearest.group.userData.reservedBy==='helper';
+    els.stationHint.textContent=reserved?'알바생이 '+itemLabel(stored)+' 가지러 오는 중':state.heldItem?(stored?'조리대 사용 중 · 먼저 집어가세요':'E · '+heldItemLabel()+' 내려놓기'):(stored?'E · '+itemLabel(stored)+' 집기':'빈 조리대 · 재료나 라면을 잠깐 둘 수 있어요')
    }
    else if(nearest.type==='service')els.stationHint.textContent=state.heldItem?.kind==='meal'?'E · '+state.heldItem.name+' 서빙':'배식대 · 완성 라면을 들고 오세요';
    else if(nearest.type==='pot')els.stationHint.textContent=state.heldItem?'E · '+heldItemLabel()+' 넣기':'E · 냄비 사용';
@@ -629,6 +629,7 @@ function itemLabel(item){
 function heldItemLabel(){return itemLabel(state.heldItem)}
 function usePrepCounter(group){
  if(!group?.userData?.storageSlot)return false;
+ if(group.userData.reservedBy==='helper'){toast('알바생이 이 조리대 재료를 가지러 오는 중이에요',1300);return false}
  const held=state.heldItem,stored=group.userData.storedItem;
  if(held&&stored){toast('조리대가 이미 '+itemLabel(stored)+'으로 차 있어요',1400);return false}
  if(held&&!stored){
@@ -808,8 +809,9 @@ function updateActionButtons(){
  if(state.phase!=='service'){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent='영업 전에는 주방 배치를 정리해요';els.dock.appendChild(wait)
  }else if(n?.group?.userData?.storageSlot){
-  const stored=n.group.userData.storedItem,btn=document.createElement('button');btn.type='button';
-  if(state.heldItem&&stored){btn.disabled=true;btn.innerHTML='<span>↔</span><b>조리대 사용 중</b>'}
+  const stored=n.group.userData.storedItem,reserved=n.group.userData.reservedBy==='helper',btn=document.createElement('button');btn.type='button';
+  if(reserved){btn.disabled=true;btn.innerHTML='<span>👨‍🍳</span><b>알바생 예약</b>'}
+  else if(state.heldItem&&stored){btn.disabled=true;btn.innerHTML='<span>↔</span><b>조리대 사용 중</b>'}
   else if(state.heldItem){btn.innerHTML='<span>↓</span><b>조리대에 내려놓기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
   else if(stored){btn.innerHTML='<span>↑</span><b>'+itemLabel(stored)+' 집기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
   else{btn.disabled=true;btn.innerHTML='<span>□</span><b>빈 조리대</b>'}
@@ -1028,14 +1030,27 @@ function serveOrder(orderId){
   state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
   const after=activePotCount();
   if(wasTutorial){
-   state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;
-   setTimeout(()=>{if(state.running){spawnOrder();spawnOrder();toast('이제 자유 영업! 조리대에 재료를 미리 준비하면 왕복을 줄일 수 있어요',2600)}},650)
+   state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;unlockHelper();
+   setTimeout(()=>{if(state.running){spawnOrder();spawnOrder();toast('알바생 합류! 조리대에 올린 재료를 필요한 냄비로 옮겨줘요',3000)}},650)
   }else setTimeout(()=>{if(state.running)spawnOrder()},700);
   renderTray();renderOrders();renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=82?'shop.purchase':'collect.coin_pickup',{volume:.25,cooldownMs:300});
   if(after>before)toast('새 화구가 열렸어요! 이제 냄비 '+after+'개를 쓸 수 있어요',2200);
   else if(wasTutorial)toast(r.name+' 첫 서빙 성공! +'+money(earned),1800);else toast(r.name+' 서빙 · '+qualityLabel(q)+' · +'+money(earned),1700)
  })
 }
+
+function renderHelperButton(){
+ if(!els.helper)return;
+ els.helper.classList.toggle('hidden',!state.helperUnlocked);
+ els.helper.classList.toggle('active',state.helperEnabled);
+ els.helper.textContent=state.helperEnabled?'👨‍🍳 ON':'👨‍🍳 OFF';
+ els.helper.title=state.helperEnabled?'알바생 자동 운반 켜짐':'알바생 자동 운반 꺼짐'
+}
+function unlockHelper(){
+ if(state.helperUnlocked)return;
+ state.helperUnlocked=true;state.helperEnabled=true;kitchen.setHelperEnabled(true);renderHelperButton()
+}
+
 function updateDishHud(){
  if(!els.dishStatus)return;
  els.dishStatus.innerHTML='🥣 <b>'+state.cleanPlates+'</b><small>깨끗</small> · 🧼 <b>'+state.dirtyPlates+'</b><small>더러움</small>';
@@ -1099,11 +1114,11 @@ function loop(ts){
 function resetGameState(){
  restaurant.reset({keepLayout:true});
  state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
- state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;kitchen.clearPrepCounters();
+ state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.helperUnlocked=false;state.helperEnabled=false;kitchen.clearPrepCounters();kitchen.resetHelper();
  state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
- kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
+ kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderHelperButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
 function startGame(){
  resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');
@@ -1134,6 +1149,10 @@ $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
 els.openShop?.addEventListener('click',beginService);
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
+els.helper?.addEventListener('click',()=>{
+ if(!state.helperUnlocked)return;
+ kitchen.setHelperEnabled(!state.helperEnabled);renderHelperButton();toast(state.helperEnabled?'알바생 자동 운반 ON':'알바생 자동 운반 OFF',1200)
+});
 
 addEventListener('keydown',e=>{
  if(!state.running)return;
@@ -1151,4 +1170,4 @@ els.moveControls?.querySelectorAll('[data-move]').forEach(btn=>{
 });
 els.moveControls?.querySelector('[data-interact]')?.addEventListener('click',()=>kitchen.interactNearest());
 
-updateHud();updateDishHud();renderHeldStatus();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
+updateHud();updateDishHud();renderHeldStatus();renderHelperButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
