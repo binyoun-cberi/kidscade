@@ -77,12 +77,16 @@ test('hidden avatar runtimes are silenced while games or Seed World are active',
   assert.match(avatar,/setPreviewSuspended\(blocked\)/);
 });
 
-test('Seed World HUD release is cache-bumped and scripts parse',()=>{
+test('Seed World HUD release keeps runtime and overlay cache versions aligned',()=>{
   assert.match(html,/touch-interaction-guard\.js\?v=2/);
-  assert.match(html,/kidscade-world-v3\.js\?v=37/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=37/);
-  assert.match(garden,/avatar-preview-inline-edit-v7/);
-  assert.match(garden,/world-v3-homestead-v35/);
+  const runtimeVersion=html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1];
+  const integrationVersion=integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1];
+  assert.ok(runtimeVersion,'world-v3 HTML must version its runtime');
+  assert.equal(integrationVersion,runtimeVersion,'world overlay and runtime cache versions must stay aligned');
+  assert.match(garden,/document\.currentScript/);
+  assert.match(garden,/writeScript\('avatar-integration\.js'\)/);
+  assert.match(garden,/writeScript\('life-world-integration\.js'\)/);
+  assert.doesNotMatch(garden,/world-v3-homestead-v\d+/);
   assert.match(index,/main-bootstrap\.js\?v=[^\"']+/);
 
   const moduleSource=runtime.replace(/^import .*$/gm,'').replace(/^export /gm,'');
