@@ -236,6 +236,16 @@ test('migrated games obey every age, subject and search combination', () => {
 });
 
 
+test('filter delegation is source-owned and no longer patched by bootstrap text surgery', () => {
+  const base = read('index_base.html');
+  const bootstrap = read('main-bootstrap.js');
+  assert.match(base, /window\.KidscadeFilter\?\.apply\?\.\(/);
+  assert.match(base, /genre:\s*document\.body\.dataset\.kidscadeGenre/);
+  assert.doesNotMatch(bootstrap, /const filterStart =/);
+  assert.doesNotMatch(bootstrap, /filterReplacement/);
+});
+
+
 test('bootstrap accepts Game SDK lifecycle messages only from the active iframe', () => {
   const source = read('main-bootstrap.js');
   assert.match(source, /event\.origin !== location\.origin/);
