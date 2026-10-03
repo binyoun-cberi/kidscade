@@ -27,7 +27,8 @@ test('only stage one is a plain gap and later stages add route-changing obstacle
   assert.match(runtime,/title:"5\. 첫 번째 관문"/);
   assert.match(runtime,/title:"6\. 지그재그 협곡"/);
   assert.match(runtime,/title:"7\. 두 개의 관문"/);
-  assert.match(runtime,/title:"8\. 마지막 협곡"/);
+  assert.match(runtime,/title:"8\. 네 번 꺾기"/);
+  assert.match(runtime,/title:"16\. 마지막 대교"/);
 });
 
 test('car collides with the authored obstacles instead of ignoring them',()=>{
