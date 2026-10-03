@@ -17,6 +17,7 @@ const TEST_FILES = [
   "tests/index-base-seed-wallet.test.cjs",
   "tests/daily-progress.test.cjs",
   "tests/index-base-daily-progress.test.cjs",
+  "tests/daily-ui.test.cjs",
   "tests/achievement-state.test.cjs",
   "tests/index-base-achievement.test.cjs",
   "tests/shop-state.test.cjs",
