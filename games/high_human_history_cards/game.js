@@ -5,7 +5,7 @@ const board=$('#board');
 const ui={
  era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
- toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),
+ toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
  goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
  values:{hunt:$('#huntValue'),farm:$('#farmValue'),fish:$('#fishValue'),herd:$('#herdValue')}
 };
@@ -352,23 +352,51 @@ function cancelAssignment(card){
  if(node&&node.occupiedBy===worker.id){node.occupiedBy=null;clearWorkVisual(node);}
  worker.assignmentNodeId=null;clearWorkVisual(worker);
 }
+function pointInExtractor(x,y){
+ const r=ui.extractor?.getBoundingClientRect?.();return !!r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+}
+function setExtractorDrag(card,x=null,y=null){
+ if(!ui.extractor)return;
+ const ready=!!card&&card.count>1;
+ ui.extractor.classList.toggle('ready',ready);
+ ui.extractor.classList.toggle('over',ready&&x!=null&&pointInExtractor(x,y));
+}
+function splitOneFromStack(card,x,y){
+ if(!card||!state.cards.has(card.id)||card.count<=1)return false;
+ cancelAssignment(card);
+ const type=card.type;
+ card.count-=1;updateCard(card);place(card,x,y);
+ const dx=x+50+card.el.offsetWidth<=board.clientWidth?50:-50;
+ const out=addCard(type,clamp(x+dx,6,Math.max(6,board.clientWidth-card.el.offsetWidth-12)),clamp(y+24,20,Math.max(20,board.clientHeight-card.el.offsetHeight-12)),1,false);
+ if(out){
+  out.el.classList.add('split-out');
+  setTimeout(()=>out.el?.classList.remove('split-out'),420);
+ }
+ playUiSound('ui.open',{volume:.2,rate:1.08});
+ impactAt(x+card.el.offsetWidth/2,y+card.el.offsetHeight/2,'soft');
+ showToast('↔ '+C[type].name+' 1장을 스택에서 분리했습니다.');
+ renderAll();return true;
+}
 function bindDrag(c){
- let dragging=false,ox=0,oy=0,moved=false;
+ let dragging=false,ox=0,oy=0,moved=false,startX=0,startY=0;
  c.el.addEventListener('pointerdown',e=>{
   if(!state.started||state.over||(c.busy&&!c.assignmentNodeId&&!c.occupiedBy))return;
-  dragging=true;moved=false;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');highlightTargets(c);
+  dragging=true;moved=false;startX=c.x;startY=c.y;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');highlightTargets(c);setExtractorDrag(c,e.clientX,e.clientY);
   const r=c.el.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;c.el.style.zIndex=++state.z;e.preventDefault();
  });
  c.el.addEventListener('pointermove',e=>{
   if(!dragging)return;
   if(!moved){moved=true;cancelAssignment(c);}
+  setExtractorDrag(c,e.clientX,e.clientY);
   const r=board.getBoundingClientRect();
   place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-12)),clamp(e.clientY-r.top-oy,18,Math.max(18,r.height-c.el.offsetHeight-12)));e.preventDefault();
  });
  const end=e=>{
   if(!dragging)return;dragging=false;c.el.classList.remove('dragging');clearHighlights();
+  const extract=pointInExtractor(e.clientX,e.clientY)&&c.count>1;setExtractorDrag(null);
   try{c.el.releasePointerCapture(e.pointerId)}catch(_){}
   if(!moved)return;
+  if(extract){splitOneFromStack(c,startX,startY);return;}
   const target=findTarget(c);if(target)resolve(c,target);
  };
  c.el.addEventListener('pointerup',end);c.el.addEventListener('pointercancel',end);
@@ -391,23 +419,55 @@ function resolve(a,b){
  showToast('이 조합은 아직 쓸 방법을 찾지 못했어요.');separate(a,b);
 }
 
+function playUiSound(key,options={}){
+ try{window.KidscadeAudio?.play?.(key,options)?.catch?.(()=>{});}catch(_){}
+}
+function impactAt(x,y,variant='hard'){
+ const e=document.createElement('i');e.className='impactBurst'+(variant==='soft'?' soft':'');
+ e.style.left=x+'px';e.style.top=y+'px';board.appendChild(e);setTimeout(()=>e.remove(),430);
+}
+function animateCombine(a,b,done){
+ const run=state.runId;if(!state.cards.has(a.id)||!state.cards.has(b.id))return;
+ a.busy=true;b.busy=true;
+ a.el.classList.add('merge-source');b.el.classList.add('merge-target');
+ place(a,b.x+3,b.y+4);a.el.style.zIndex=++state.z;
+ setTimeout(()=>{
+  if(run!==state.runId||!state.cards.has(a.id)||!state.cards.has(b.id))return;
+  impactAt(b.x+b.el.offsetWidth/2,b.y+b.el.offsetHeight/2);
+  playUiSound('ui.select',{volume:.2,rate:.9});
+  done();
+  for(const c of [a,b])if(state.cards.has(c.id)){c.busy=false;c.el.classList.remove('merge-source','merge-target');}
+ },175);
+}
+function markSynthesized(card){
+ if(!card)return;card.el.classList.add('synthesized');setTimeout(()=>card.el?.classList.remove('synthesized'),460);
+}
 function mergeSame(a,b){
  const total=a.count+b.count,rule=SAME[a.type],x=b.x,y=b.y;
- removeCard(a);removeCard(b);
- if(rule&&total>=rule.need){
-  addCard(rule.out,x,y,1);discover(rule.name);state.stats.crafted++;
-  const rest=total-rule.need;if(rest>0)addCard(a.type,x+22,y+22,rest);
- }else addCard(a.type,x,y,total);
- renderAll();checkMilestone();
+ animateCombine(a,b,()=>{
+  removeCard(a);removeCard(b);
+  let result=null;
+  if(rule&&total>=rule.need){
+   result=addCard(rule.out,x,y,1);discover(rule.name);state.stats.crafted++;
+   const rest=total-rule.need;if(rest>0)addCard(a.type,x+30,y+24,rest);
+  }else result=addCard(a.type,x,y,total);
+  markSynthesized(result);playUiSound('ui.confirm',{volume:.22,rate:1.04});
+  renderAll();checkMilestone();
+ });
 }
 
 function findRecipe(a,b){
  return R.filter(r=>((a.type===r.a&&b.type===r.b&&a.count>=r.ca&&b.count>=r.cb)||(a.type===r.b&&b.type===r.a&&a.count>=r.cb&&b.count>=r.ca))).sort((x,y)=>(y.ca+y.cb)-(x.ca+x.cb))[0]||null;
 }
 function craftRecipe(a,b,r){
- const direct=a.type===r.a;const ca=direct?r.ca:r.cb,cb=direct?r.cb:r.ca,x=(a.x+b.x)/2,y=(a.y+b.y)/2;
- consume(a,ca);consume(b,cb);r.out.forEach((o,i)=>addCard(o[0],x+i*20,y+i*20,o[1]||1));
- discover(r.name);state.stats.crafted++;renderAll();checkMilestone();
+ const direct=a.type===r.a,ca=direct?r.ca:r.cb,cb=direct?r.cb:r.ca,x=(a.x+b.x)/2,y=(a.y+b.y)/2;
+ animateCombine(a,b,()=>{
+  consume(a,ca);consume(b,cb);
+  let first=null;
+  r.out.forEach((o,i)=>{const card=addCard(o[0],x+i*28,y+i*24,o[1]||1);if(!first)first=card;markSynthesized(card);});
+  discover(r.name);state.stats.crafted++;playUiSound('ui.confirm',{volume:.22,rate:1.06});
+  renderAll();checkMilestone();
+ });
 }
 
 function workerAction(worker,node){
@@ -498,9 +558,11 @@ function playProductionPop(){
 function spawnOutputs(anchor,out){
  out.forEach((o,i)=>{
   const p=outputPosition(anchor,i+(anchor.produceSeq||0));
-  addCard(o[0],p.x,p.y,o[1]||1,true);
+  const card=addCard(o[0],p.x,p.y,o[1]||1,true);
+  if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
  });
  anchor.produceSeq=((anchor.produceSeq||0)+out.length)%7;
+ impactAt(anchor.x+anchor.el.offsetWidth/2,anchor.y+anchor.el.offsetHeight/2,'soft');
  playProductionPop();
 }
 function finishOneShotWorker(worker,node,d,run){
