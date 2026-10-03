@@ -5,7 +5,7 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='25';
+const ASSET_REV='26';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const HAIR_CATALOG_PATH='runtime/hair/approved-hair-manifest.json';

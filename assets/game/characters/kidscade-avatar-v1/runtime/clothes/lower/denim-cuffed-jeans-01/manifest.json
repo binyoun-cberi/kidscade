@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "denim-cuffed-jeans-01",
   "type": "animated-lower-clothing",
   "displayName": "커프 데님 팬츠",
@@ -10,10 +10,18 @@
   "source": "source/clothes/lower/animated/denim-cuffed-jeans-01-sheet.png",
   "mapping": "top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
   "fit": {
-    "topY": 84,
-    "maxHeight": 35,
-    "maxWidth": 44,
-    "center": "animation bodyBBox center"
+    "idle": {
+      "topY": 84,
+      "maxHeight": 35,
+      "maxWidth": 44
+    },
+    "walk": {
+      "topY": 83,
+      "maxHeight": 37,
+      "maxWidth": 46
+    },
+    "center": "animation bodyBBox center",
+    "coverageGuard": "walk frames expand by ~1-2px and move up 1px to prevent base-layer bleed"
   },
   "static": "static.png",
   "frames": [
@@ -95,10 +103,10 @@
         358
       ],
       "targetBBox": [
-        48,
+        46,
+        83,
         84,
-        84,
-        119
+        120
       ],
       "bodyCenterX": 65.5
     },
@@ -112,10 +120,10 @@
         726
       ],
       "targetBBox": [
-        47,
-        84,
-        85,
-        119
+        46,
+        83,
+        86,
+        120
       ],
       "bodyCenterX": 66.0
     },
@@ -129,10 +137,10 @@
         734
       ],
       "targetBBox": [
-        46,
-        84,
+        44,
+        83,
         87,
-        119
+        120
       ],
       "bodyCenterX": 66.0
     },
@@ -146,10 +154,10 @@
         742
       ],
       "targetBBox": [
-        52,
-        84,
+        50,
+        83,
         81,
-        119
+        120
       ],
       "bodyCenterX": 66.0
     },
@@ -164,9 +172,9 @@
       ],
       "targetBBox": [
         46,
-        84,
-        85,
-        119
+        83,
+        87,
+        120
       ],
       "bodyCenterX": 66.0
     },
@@ -180,16 +188,16 @@
         738
       ],
       "targetBBox": [
-        48,
-        84,
-        84,
-        119
+        47,
+        83,
+        85,
+        120
       ],
       "bodyCenterX": 66.0
     }
   ],
   "qa": {
-    "status": "generated-needs-visual-review",
+    "status": "generated-walk-coverage-guard",
     "contact": "qa/clothes/lower/denim-cuffed-jeans-01-contact.png"
   }
 }

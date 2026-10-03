@@ -20,6 +20,12 @@ TARGET_TOP_Y=64
 TARGET_MAX_W=56
 TARGET_MAX_H=35
 
+# Animated walk frames need a tiny bleed guard so the underwear/body layer never
+# flashes outside the garment by a pixel as limbs change pose.
+WALK_TOP_Y=63
+WALK_MAX_W=58
+WALK_MAX_H=37
+
 FRAME_MAP=[
  ("idle",1),("idle",2),("idle",3),("idle",4),("walk",1),
  ("walk",2),("walk",3),("walk",4),("walk",5),("walk",6)
@@ -33,18 +39,22 @@ def hard_alpha(im,threshold=40):
 def cell_bounds(length,count):
     return [round(i*length/count) for i in range(count+1)]
 
-def place(crop,center_x):
+def place(crop,center_x,kind):
     box=crop.getchannel("A").getbbox()
     if not box:
         raise RuntimeError("empty garment cell")
     crop=crop.crop(box)
-    scale=min(TARGET_MAX_W/crop.width,TARGET_MAX_H/crop.height)
+    if kind=="walk":
+        max_w,max_h,top_y=WALK_MAX_W,WALK_MAX_H,WALK_TOP_Y
+    else:
+        max_w,max_h,top_y=TARGET_MAX_W,TARGET_MAX_H,TARGET_TOP_Y
+    scale=min(max_w/crop.width,max_h/crop.height)
     nw=max(1,round(crop.width*scale))
     nh=max(1,round(crop.height*scale))
     crop=crop.resize((nw,nh),Image.Resampling.NEAREST)
     canvas=Image.new("RGBA",(CANVAS,CANVAS),(0,0,0,0))
     x=round(center_x-nw/2)
-    y=TARGET_TOP_Y
+    y=top_y
     canvas.alpha_composite(crop,(x,y))
     return canvas,[x,y,x+nw,y+nh]
 
@@ -56,8 +66,7 @@ def load_face():
     return [Image.open(p).convert("RGBA") for p in ps]
 
 def build_qa(frames):
-    back=Image.open(HAIR/"back/male/hair-back-male-01.png").convert("RGBA")
-    front=Image.open(HAIR/"front/male/hair-front-male-01.png").convert("RGBA")
+    front=Image.open(HAIR/"approved/hair-male-01.png").convert("RGBA")
     face=load_face()
     sheet=Image.new("RGBA",(5*CANVAS,2*CANVAS),(245,245,245,255))
     draw=ImageDraw.Draw(sheet)
@@ -66,7 +75,6 @@ def build_qa(frames):
         lower_path=LOWER/kind/f"{kind}-{n:02d}.png"
         lower=Image.open(lower_path).convert("RGBA") if lower_path.exists() else None
         preview=Image.new("RGBA",(CANVAS,CANVAS),(255,255,255,255))
-        preview.alpha_composite(back)
         preview.alpha_composite(body)
         if lower: preview.alpha_composite(lower)
         preview.alpha_composite(upper)
@@ -100,7 +108,7 @@ def main():
         for col in range(COLS):
             kind,n=FRAME_MAP[idx]
             cell=src.crop((xs[col],ys[row],xs[col+1],ys[row+1]))
-            overlay,target=place(cell,centers[(kind,n)])
+            overlay,target=place(cell,centers[(kind,n)],kind)
             d=OUT/kind; d.mkdir(parents=True,exist_ok=True)
             name=f"{kind}-{n:02d}.png"
             overlay.save(d/name,optimize=True)
@@ -118,17 +126,22 @@ def main():
     static.save(OUT/"static.png",optimize=True)
     contact=build_qa(qa)
     manifest={
-      "version":1,
+      "version":2,
       "id":"blue-star-zip-hoodie-01",
       "type":"animated-upper-clothing",
       "displayName":"파란 별 집업 후드",
       "canvas":[128,128],
       "source":"source/clothes/upper/animated/blue-star-zip-hoodie-01-sheet.png",
       "mapping":"top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
-      "fit":{"topY":TARGET_TOP_Y,"maxWidth":TARGET_MAX_W,"maxHeight":TARGET_MAX_H,"center":"animation bodyBBox center"},
+      "fit":{
+        "idle":{"topY":TARGET_TOP_Y,"maxWidth":TARGET_MAX_W,"maxHeight":TARGET_MAX_H},
+        "walk":{"topY":WALK_TOP_Y,"maxWidth":WALK_MAX_W,"maxHeight":WALK_MAX_H},
+        "center":"animation bodyBBox center",
+        "coverageGuard":"walk frames expand by ~1-2px and move up 1px to prevent base-layer bleed"
+      },
       "static":"static.png",
       "frames":items,
-      "qa":{"status":"generated-needs-visual-review","contact":contact}
+      "qa":{"status":"generated-walk-coverage-guard","contact":contact}
     }
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
