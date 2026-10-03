@@ -162,7 +162,7 @@ test('pixel-art renderer uses the real packed atlases for scene, buildings and c
   }
   const ctx = {
     clearRect() {}, fillRect() {}, beginPath() {}, ellipse() {}, fill() {}, stroke() {},
-    moveTo() {}, lineTo() {}, save() {}, restore() {}, clip() {},
+    moveTo() {}, lineTo() {}, save() {}, restore() {}, clip() {}, fillText() {},
     drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) {
       drawn.push({ path: img.url, sx, sy, sw, sh, dx, dy, dw, dh });
       assert.ok(sw === 16 && sh === 16);
