@@ -22,8 +22,8 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
   assert.match(html,/pixel-avatar-renderer\.js\?v=26/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=27/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=27'));
+  assert.match(html,/avatar-pixel-studio\.js\?v=28/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=28'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
