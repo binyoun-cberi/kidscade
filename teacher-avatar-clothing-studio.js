@@ -146,6 +146,82 @@ function loadImageUrl(url,timeoutMs=10000){
   });
 }
 
+
+function starterAssetUrl(layer){
+  const entry=STARTER_ASSETS[layer];
+  if(!entry)throw new Error('등록되지 않은 기본 에셋입니다: '+layer);
+  return new URL('../assets/game/characters/kidscade-avatar-v3/'+entry.file,window.location.href).href;
+}
+
+async function loadStarterAsset(layer,{apply=false,announce=true}={}){
+  const entry=STARTER_ASSETS[layer];
+  if(!entry)return false;
+  try{
+    stopPlayback();
+    if(currentFrame!=='stand-01')selectFrame('stand-01');
+    selectLayer(layer);
+    const field=LAYER_ID_FIELDS[layer];
+    if(field&&$(field))$(field).value=entry.id;
+    if(announce)setStatus('GitHub 기본 '+(LAYER_LABELS[layer]||layer)+' 불러오는 중…');
+    const url=starterAssetUrl(layer);
+    const img=await loadImageUrl(url,12000);
+    sourceImage=img;
+    $('sourcePreview').src=url;
+    $('sourcePreview').classList.remove('hidden');
+    refreshPreparedSource();
+
+    if(sourceRuntimeReady){
+      $('stampX').value='0';$('stampY').value='0';$('stampW').value=String(SIZE);$('stampH').value=String(SIZE);$('stampRotation').value='0';
+      pixelizePreview(false);
+    }else{
+      autoFitStamp(false);
+      pixelizePreview(false);
+    }
+    refreshNudgeMode();render();
+
+    if(apply){
+      applyPixelized();
+      return true;
+    }
+    if(announce)setStatus((LAYER_LABELS[layer]||layer)+' 원본 연결됨 · 화살표로 위치를 맞춘 뒤 현재 레이어에 적용하세요.');
+    return true;
+  }catch(e){
+    setStatus('기본 에셋 불러오기 실패 · '+(LAYER_LABELS[layer]||layer)+' · '+(e?.message||e),true);
+    clearStamp();
+    return false;
+  }
+}
+
+async function loadStarterSet(){
+  const button=$('loadStarterSet'),old=button?.textContent||'';
+  const rec=frames.get('stand-01');
+  const occupied=STARTER_CORE_LAYERS.some(layer=>hasInk(rec?.[layer]));
+  if(occupied&&!confirm('STAND-01의 기본 파츠를 GitHub 기본 세트로 덮어쓸까요? BODY는 유지됩니다.'))return;
+  if(button){button.disabled=true;button.textContent='기본 세트 연결 중…'}
+  const prevFrame=currentFrame,prevLayer=activeLayer;
+  try{
+    selectFrame('stand-01');
+    for(let i=0;i<STARTER_CORE_LAYERS.length;i++){
+      const layer=STARTER_CORE_LAYERS[i];
+      if(button)button.textContent='기본 세트 '+(i+1)+' / '+STARTER_CORE_LAYERS.length;
+      setStatus('기본 세트 연결 중 · '+(i+1)+' / '+STARTER_CORE_LAYERS.length+' · '+(LAYER_LABELS[layer]||layer));
+      const ok=await loadStarterAsset(layer,{apply:true,announce:false});
+      if(!ok)throw new Error((LAYER_LABELS[layer]||layer)+' 연결 실패');
+      await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    selectLayer('hair');
+    refreshFrameButtons();saveLocal();
+    setStatus('기본 세트 연결 완료 · STAND-01에서 각 파츠 위치를 확인하고 필요한 파츠만 모든 프레임으로 복사하세요.');
+  }catch(e){
+    setStatus('기본 세트 연결 중단: '+(e?.message||e),true);
+  }finally{
+    clearStamp();
+    if(button){button.disabled=false;button.textContent=old}
+    if(prevFrame!=='stand-01'&&frames.has(prevFrame))selectFrame(prevFrame);
+    if(LAYERS.includes(prevLayer))selectLayer(prevLayer);
+  }
+}
+
 function rasterDraftBodyImage(img){
   const source=makeCanvas(img.naturalWidth||img.width||1,img.naturalHeight||img.height||1);
   const sc=source.getContext('2d',{alpha:true});
@@ -473,9 +549,10 @@ function render(){
 }
 
 function refreshPreparedSource(){
-  preparedSource=null;sourceCrop=null;invalidatePixelPreview();
+  preparedSource=null;sourceCrop=null;sourceRuntimeReady=false;invalidatePixelPreview();
   if(!sourceImage)return;
   const w=Math.max(1,sourceImage.naturalWidth||sourceImage.width||1),h=Math.max(1,sourceImage.naturalHeight||sourceImage.height||1);
+  sourceRuntimeReady=w===SIZE&&h===SIZE;
   const c=makeCanvas(w,h),p=c.getContext('2d',{alpha:true});p.imageSmoothingEnabled=true;p.drawImage(sourceImage,0,0,w,h);
   const img=p.getImageData(0,0,w,h),d=img.data;
   if($('removeFlatBg')?.checked){
@@ -613,7 +690,11 @@ function addAutoOutline(cvs){
 
 function buildPixelizedCanvas(){
   if(!sourceImage)return null;if(!preparedSource)refreshPreparedSource();
-  const base=makeCanvas(),bc=base.getContext('2d',{alpha:true});drawStamp(bc,1,true);
+  const base=makeCanvas(),bc=base.getContext('2d',{alpha:true});drawStamp(bc,1,!sourceRuntimeReady);
+  if(sourceRuntimeReady){
+    hardenAlpha(base,1);
+    return base;
+  }
   const resolution=clamp(Math.round(Number($('pixelResolution').value)||64),32,128);
   let out=base;
   if(resolution<SIZE){
@@ -654,7 +735,7 @@ function commitStamp(){
   afterEdit('원본을 '+applied+'에 적용함 · 이제 화살표는 적용된 레이어를 움직입니다.');
 }
 function clearStamp(){
-  sourceImage=null;preparedSource=null;sourceCrop=null;pixelPreviewReady=false;
+  sourceImage=null;preparedSource=null;sourceCrop=null;sourceRuntimeReady=false;pixelPreviewReady=false;
   $('sourcePreview').src='';$('sourcePreview').classList.add('hidden');$('sourceFile').value='';
   $('pixelPreviewCanvas').getContext('2d').clearRect(0,0,SIZE,SIZE);
   refreshNudgeMode();render();
@@ -841,6 +922,10 @@ function bind(){
   $('clearSelection').addEventListener('click',clearSelection);
   $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
   $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
+  $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
+  document.querySelectorAll('.starter-asset').forEach(button=>{
+    button.addEventListener('click',()=>loadStarterAsset(button.dataset.layer,{apply:false,announce:true}));
+  });
   $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
   $('playStand').addEventListener('click',()=>startPlayback('stand'));
