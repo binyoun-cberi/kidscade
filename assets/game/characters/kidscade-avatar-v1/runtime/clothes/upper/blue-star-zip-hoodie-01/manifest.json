@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "blue-star-zip-hoodie-01",
   "type": "animated-upper-clothing",
   "displayName": "파란 별 집업 후드",
@@ -10,10 +10,18 @@
   "source": "source/clothes/upper/animated/blue-star-zip-hoodie-01-sheet.png",
   "mapping": "top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
   "fit": {
-    "topY": 64,
-    "maxWidth": 56,
-    "maxHeight": 35,
-    "center": "animation bodyBBox center"
+    "idle": {
+      "topY": 64,
+      "maxWidth": 56,
+      "maxHeight": 35
+    },
+    "walk": {
+      "topY": 63,
+      "maxWidth": 58,
+      "maxHeight": 37
+    },
+    "center": "animation bodyBBox center",
+    "coverageGuard": "walk frames expand by ~1-2px and move up 1px to prevent base-layer bleed"
   },
   "static": "static.png",
   "frames": [
@@ -85,10 +93,10 @@
         0
       ],
       "targetBBox": [
-        38,
-        64,
+        36,
+        63,
         94,
-        98
+        99
       ],
       "bodyCenterX": 65.5
     },
@@ -100,10 +108,10 @@
         1
       ],
       "targetBBox": [
-        38,
-        64,
-        93,
-        99
+        37,
+        63,
+        95,
+        100
       ],
       "bodyCenterX": 66.0
     },
@@ -115,10 +123,10 @@
         1
       ],
       "targetBBox": [
-        38,
-        64,
-        94,
-        98
+        37,
+        63,
+        95,
+        99
       ],
       "bodyCenterX": 66.0
     },
@@ -130,9 +138,9 @@
         1
       ],
       "targetBBox": [
-        38,
-        64,
-        94,
+        37,
+        63,
+        95,
         98
       ],
       "bodyCenterX": 66.0
@@ -145,10 +153,10 @@
         1
       ],
       "targetBBox": [
-        40,
-        64,
-        91,
-        99
+        39,
+        63,
+        93,
+        100
       ],
       "bodyCenterX": 66.0
     },
@@ -160,16 +168,16 @@
         1
       ],
       "targetBBox": [
-        38,
-        64,
-        94,
+        37,
+        63,
+        95,
         99
       ],
       "bodyCenterX": 66.0
     }
   ],
   "qa": {
-    "status": "generated-needs-visual-review",
+    "status": "generated-walk-coverage-guard",
     "contact": "qa/clothes/upper/blue-star-zip-hoodie-01-contact.png"
   }
 }
