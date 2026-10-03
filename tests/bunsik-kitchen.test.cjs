@@ -37,7 +37,7 @@ test('context actions are tied to nearby physical stations instead of instant po
   assert.match(js, /n\?\.type==='fridge'/);
   assert.match(js, /n\?\.type==='sink'/);
   assert.match(js, /n\?\.type==='pot'/);
-  assert.match(js, /data\.pick/);
+  assert.match(js, /dataset\.pick/);
   assert.match(js, /pickIngredient\(id\)/);
   assert.doesNotMatch(js, /const actionKeys=\{Digit1:/);
 });
