@@ -51,11 +51,11 @@ const els={
 
 
 function defaultProgress(){
- return{version:1,cash:0,shifts:0,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
+ return{version:1,cash:0,shifts:0,tutorialDone:false,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
 }
 function normalizeProgress(raw){
  const base=defaultProgress(),v=raw&&typeof raw==='object'?raw:{};
- const out={version:1,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),owned:{},filters:{...base.filters,...(v.filters||{})},layout:v.layout&&typeof v.layout==='object'?v.layout:{}};
+ const out={version:1,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),tutorialDone:!!v.tutorialDone,owned:{},filters:{...base.filters,...(v.filters||{})},layout:v.layout&&typeof v.layout==='object'?v.layout:{}};
  for(const [key,info] of Object.entries(EQUIPMENT)){
   const n=Math.floor(Number(v.owned?.[key]));
   out.owned[key]=Math.max(info.min,Math.min(info.max,Number.isFinite(n)?n:info.min))
@@ -344,8 +344,8 @@ class RamenKitchen3D{
  rotateSelectedAutomation(){
   if(state.phase!=='prep')return false;
   const g=this.selectedLayoutStation;if(!g?.visible||!g?.userData?.automationType){toast('자동화 장비를 먼저 선택해 주세요',1300);return false}
-  g.userData.direction=(g.userData.direction+1)%4;g.rotation.y=g.userData.direction*Math.PI/2;
-  toast((g.userData.automationType==='grabber'?'Grabber':'컨베이어')+' 방향 회전',900);return true
+  g.userData.direction=(g.userData.direction+1)%4;g.rotation.y=g.userData.direction*Math.PI/2;this.snapshotEquipmentLayout();
+  toast(storageLabel(g)+' 방향 회전',900);return true
  }
  automationVector(group){
   return [{x:0,z:-1},{x:-1,z:0},{x:0,z:1},{x:1,z:0}][group?.userData?.direction||0]
@@ -728,7 +728,7 @@ class RamenKitchen3D{
   renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons()
  }
  pointerUp(e){
-  if(this.dragLayout){this.dragLayout=null;document.body.classList.remove('layout-dragging');return}
+  if(this.dragLayout){this.dragLayout=null;document.body.classList.remove('layout-dragging');this.snapshotEquipmentLayout();renderSmartFilterButton();return}
   if(!state.running||state.phase!=='service')return;
   this.updatePointer(e);
   const hit=this.raycaster.intersectObjects(this.pickables,false)[0];
@@ -1202,6 +1202,38 @@ function serveOrder(orderId){
  })
 }
 
+function renderSmartFilterButton(){
+ if(!els.smartFilter)return;
+ const g=kitchen?.selectedLayoutStation,show=state.phase==='prep'&&g?.visible&&g?.userData?.automationType==='smartGrabber';
+ els.smartFilter.classList.toggle('hidden',!show);
+ if(show)els.smartFilter.textContent='🎯 필터: '+ingredientLabel(g.userData.filterId||'noodle')
+}
+function cycleSmartFilter(){
+ const g=kitchen?.selectedLayoutStation;if(state.phase!=='prep'||g?.userData?.automationType!=='smartGrabber')return;
+ const current=SMART_FILTERS.indexOf(g.userData.filterId),next=SMART_FILTERS[(current+1+SMART_FILTERS.length)%SMART_FILTERS.length];
+ g.userData.filterId=next;progress.filters[g.userData.stationId]=next;kitchen.snapshotEquipmentLayout();renderSmartFilterButton();toast('Smart Grabber · '+ingredientLabel(next)+'만 통과',1200)
+}
+function renderEconomyProgress(){
+ if(els.bankCash)els.bankCash.textContent=money(progress.cash);
+ if(els.shopCash)els.shopCash.textContent=money(progress.cash);
+ els.equipmentShop?.querySelectorAll('[data-buy]').forEach(btn=>{
+  const key=btn.dataset.buy,info=EQUIPMENT[key],count=progress.owned[key]||0,maxed=count>=info.max,missing=info.requires&&(progress.owned[info.requires]||0)<1,poor=progress.cash<info.price;
+  btn.disabled=maxed||missing||poor;btn.classList.toggle('owned',count>info.min);btn.classList.toggle('locked',!!missing);
+  let badge=btn.querySelector('.count-badge');if(!badge){badge=document.createElement('span');badge.className='count-badge';btn.appendChild(badge)}
+  badge.textContent=count+'/'+info.max;
+  btn.title=maxed?'최대 보유':missing?EQUIPMENT[info.requires].name+'를 먼저 구매하세요':poor?'금고 잔액이 부족해요':info.name+' 구매'
+ })
+}
+function purchaseEquipment(key){
+ const info=EQUIPMENT[key];if(!info||state.phase!=='ended')return false;
+ const count=progress.owned[key]||0;if(count>=info.max){toast('이미 최대 수량이에요');return false}
+ if(info.requires&&(progress.owned[info.requires]||0)<1){toast(EQUIPMENT[info.requires].name+'를 먼저 구매해야 해요',1600);return false}
+ if(progress.cash<info.price){toast('금고 잔액이 부족해요');return false}
+ progress.cash-=info.price;progress.owned[key]=count+1;
+ const g=kitchen.revealNewestEquipment(key);if(g?.userData?.automationType==='smartGrabber')g.userData.filterId=progress.filters[g.userData.stationId]||'noodle';
+ kitchen.snapshotEquipmentLayout();saveProgress();renderEconomyProgress();sfx('shop.purchase',{volume:.24,cooldownMs:150});toast(info.name+' 구매! 다음 영업 전에 배치해 보세요',1800);return true
+}
+
 function renderHelperButton(){
  if(!els.helper)return;
  els.helper.classList.toggle('hidden',!state.helperUnlocked);
@@ -1211,7 +1243,7 @@ function renderHelperButton(){
 }
 function unlockHelper(){
  if(state.helperUnlocked)return;
- state.helperUnlocked=true;state.helperEnabled=true;kitchen.setHelperEnabled(true);renderHelperButton()
+ state.helperUnlocked=true;state.helperEnabled=true;progress.tutorialDone=true;saveProgress();kitchen.setHelperEnabled(true);renderHelperButton()
 }
 
 function updateDishHud(){
