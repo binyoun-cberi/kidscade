@@ -101,6 +101,7 @@
     html = html.replace('src="daily-ui.js"', 'src="' + withVersion('daily-ui.js') + '"');
     html = html.replace('src="achievement-state.js"', 'src="' + withVersion('achievement-state.js') + '"');
     html = html.replace('src="shop-state.js"', 'src="' + withVersion('shop-state.js') + '"');
+    html = html.replace('src="shop-ui.js"', 'src="' + withVersion('shop-ui.js') + '"');
     html = html.replace('src="theme-ui.js"', 'src="' + withVersion('theme-ui.js') + '"');
     html = html.replace('src="age-navigation.js"', 'src="' + withVersion('age-navigation.js') + '"');
     const gardenScript = '<scr' + 'ipt src="garden.js"></scr' + 'ipt>';
