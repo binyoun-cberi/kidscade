@@ -35,7 +35,7 @@
     { id:'infinite_gugudan.combo_20', gameId:'infinite_gugudan', icon:'🌟', type:'secret', hidden:true, target:20, title:'무한루 폭주', description:'한 경기에서 최대 20콤보를 달성하세요.' },
     { id:'infinite_gugudan.correct_25', gameId:'infinite_gugudan', icon:'🎯', type:'challenge', target:25, title:'계산 기관총', description:'한 경기에서 25문제 이상 정답을 맞히세요.' },
     { id:'infinite_gugudan.fraction_win', gameId:'infinite_gugudan', icon:'➗', type:'challenge', title:'분수의 고수', description:'분수 연산으로 CPU 대결에서 승리하세요.' }
-  ].map(def => Object.freeze({ target:1, hidden:false, ...def }));
+  ].map(def => Object.freeze({ target:1, hidden:false, enabled:true, trigger:'', rule:null, ...def }));
 
   const definitionMap = new Map(BASE_DEFINITIONS.map(def => [def.id, def]));
   let browserEventsBound = false;
@@ -169,6 +169,10 @@
   }
 
   function getDefinitions() {
+    return Array.from(definitionMap.values()).filter(def => def.enabled !== false).map(def => ({ ...def }));
+  }
+
+  function getAllDefinitions() {
     return Array.from(definitionMap.values()).map(def => ({ ...def }));
   }
 
@@ -188,6 +192,9 @@
         icon:String(raw.icon || '🏆'),
         type:['normal','challenge','secret'].includes(raw.type) ? raw.type : 'normal',
         hidden:Boolean(raw.hidden),
+        enabled:raw.enabled !== false,
+        trigger:String(raw.trigger || '').trim(),
+        rule:raw.rule && typeof raw.rule === 'object' ? { ...raw.rule } : null,
         target
       }));
       added += 1;
@@ -198,7 +205,7 @@
   function unlockInState(state, id, unlockedIds, at = Date.now()) {
     const key = cleanAchievementId(id);
     const def = definitionMap.get(key);
-    if (!def || state.unlocked[key]) return false;
+    if (!def || def.enabled === false || state.unlocked[key]) return false;
     state.unlocked[key] = { unlockedAt:Math.max(1, Number(at) || Date.now()) };
     if (def.target > 1) state.progress[key] = Math.max(Number(state.progress[key]) || 0, def.target);
     if (!unlockedIds.includes(key)) unlockedIds.push(key);
@@ -208,7 +215,7 @@
   function setProgressInState(state, id, value, unlockedIds) {
     const key = cleanAchievementId(id);
     const def = definitionMap.get(key);
-    if (!def) return false;
+    if (!def || def.enabled === false) return false;
     const next = Math.max(Number(state.progress[key]) || 0, Math.max(0, Number(value) || 0));
     const before = Number(state.progress[key]) || 0;
     if (next > 0) state.progress[key] = next;
@@ -294,14 +301,20 @@
       state.playedGames[id] = Math.max(1, Number(at) || Date.now());
       changed = true;
     }
+    definitionMap.forEach(def => {
+      if (def.enabled !== false && def.gameId === id && def.trigger === 'first_play') {
+        if (unlockInState(state, def.id, unlockedIds, at)) changed = true;
+      }
+    });
     syncMetaInState(state, unlockedIds);
     return commitAchievementState(state, unlockedIds, changed || unlockedIds.length > 0);
   }
 
   function getSummaryFromState(input) {
     const state = normalizeAchievementState(input);
-    const total = definitionMap.size;
-    const unlocked = Object.keys(state.unlocked).filter(id => definitionMap.has(id)).length;
+    const enabledIds = new Set(Array.from(definitionMap.values()).filter(def => def.enabled !== false).map(def => def.id));
+    const total = enabledIds.size;
+    const unlocked = Object.keys(state.unlocked).filter(id => enabledIds.has(id)).length;
     return { total, unlocked, percent:total ? Math.round(unlocked / total * 100) : 0, playedGames:Object.keys(state.playedGames).length };
   }
 
@@ -311,7 +324,7 @@
 
   function getGameProgress(gameId) {
     const id = String(gameId || '').trim();
-    const defs = Array.from(definitionMap.values()).filter(def => def.gameId === id);
+    const defs = Array.from(definitionMap.values()).filter(def => def.gameId === id && def.enabled !== false);
     const state = loadAchievementState();
     const items = defs.map(def => ({
       ...def,
@@ -325,14 +338,52 @@
 
   function canGameReport(def, gameId) {
     const source = String(gameId || '').trim();
-    return Boolean(def && source && def.gameId === source);
+    return Boolean(def && def.enabled !== false && source && def.gameId === source);
+  }
+
+  function ruleMatches(rule, detail = {}) {
+    if (!rule || typeof rule !== 'object') return false;
+    const field = String(rule.field || '').trim();
+    if (!field) return false;
+    const actual = detail[field];
+    const op = String(rule.op || 'eq');
+    if (op === 'truthy') return Boolean(actual);
+    if (op === 'falsy') return !actual;
+    if (op === 'eq') return actual === rule.value;
+    if (op === 'gte') return Number.isFinite(Number(actual)) && Number(actual) >= Number(rule.value);
+    if (op === 'lte') return Number.isFinite(Number(actual)) && Number(actual) <= Number(rule.value);
+    if (op === 'gt') return Number.isFinite(Number(actual)) && Number(actual) > Number(rule.value);
+    if (op === 'lt') return Number.isFinite(Number(actual)) && Number(actual) < Number(rule.value);
+    if (op === 'oneOf') return Array.isArray(rule.value) && rule.value.includes(actual);
+    return false;
+  }
+
+  function applyEventRules(detail = {}) {
+    const eventName = String(detail.event || '').trim();
+    const gameId = String(detail.gameId || '').trim();
+    if (!eventName || !gameId) return false;
+    const state = loadAchievementState();
+    const unlockedIds = [];
+    let changed = false;
+    definitionMap.forEach(def => {
+      const rule = def.rule;
+      if (def.enabled === false || def.gameId !== gameId || !rule || String(rule.event || '') !== eventName) return;
+      if (ruleMatches(rule, detail) && unlockInState(state, def.id, unlockedIds)) changed = true;
+    });
+    if (!changed && !unlockedIds.length) return false;
+    syncMetaInState(state, unlockedIds);
+    commitAchievementState(state, unlockedIds, true);
+    return true;
   }
 
   function handleGameEvent(detail = {}) {
     const eventName = String(detail.event || '').trim();
     const gameId = String(detail.gameId || '').trim();
     if ((eventName === 'ready' || eventName === 'start') && gameId) recordPlayedGame(gameId);
-    if (eventName !== 'achievement') return false;
+    if (eventName !== 'achievement') {
+      applyEventRules(detail);
+      return false;
+    }
 
     const achievementId = cleanAchievementId(detail.achievementId);
     const def = definitionMap.get(achievementId);
@@ -450,6 +501,7 @@
     cleanAchievementId,
     getDefinition,
     getDefinitions,
+    getAllDefinitions,
     registerDefinitions,
     unlock,
     setProgress,
@@ -457,6 +509,8 @@
     recordPlayedGame,
     getSummary,
     getGameProgress,
+    ruleMatches,
+    applyEventRules,
     handleGameEvent,
     bindBrowserEvents,
     getCustomHistoryRank,
