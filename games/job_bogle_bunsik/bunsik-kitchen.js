@@ -398,7 +398,7 @@ class RamenKitchen3D{
    const t=Math.min(1,(now-started)/820),up=Math.sin(Math.PI*t);
    pot.position.set(startPos.x+.72*up,startPos.y+.32*up,startPos.z-.18*up);
    pot.rotation.z=-.95*Math.sin(Math.PI*Math.min(1,t*1.25));
-   if(t>.48&&this.serviceMeal)this.serviceMeal.visible=true;
+   if(t>.48&&this.serviceMeal)this.serviceMeal.visible=false;
    if(t<1){requestAnimationFrame(run);return}
    pot.position.copy(startPos);pot.rotation.copy(startRot);onDone?.();
   };
@@ -699,7 +699,8 @@ function qualityLabel(q,burnt=false){
  if(burnt)return'탔어요';if(q>=90)return'최고!';if(q>=76)return'맛있음';if(q>=58)return'괜찮음';if(q>=38)return'아쉬움';return'실패'
 }
 function platePot(index){
- if(state.tray||state.busy){toast('배식대가 사용 중이에요');return false}
+ if(state.tray||state.busy){toast('이미 완성된 라면을 들고 있어요');return false}
+ if(state.carry){toast('그릇에 담으려면 먼저 손을 비워 주세요');return false}
  if(state.cleanPlates<=0){toast('깨끗한 그릇이 없어요 · 싱크에서 더러운 그릇을 씻어 주세요',1900);return false}
  const p=state.pots[index];if(!hasIngredient(p,'noodle')){toast('면이 들어간 라면만 담을 수 있어요');return false}
  const recipe=identifyRecipe(p);if(!recipe){toast('주문에 맞는 토핑을 확인해 주세요');return false}
@@ -708,10 +709,11 @@ function platePot(index){
  p.plating=true;state.busy=true;state.tray={recipeId:recipe.id,name:recipe.name,quality,label:qualityLabel(quality,p.burnt),burnt:p.burnt,ready:false};
  renderTray();renderOrders();renderSelectedHelp();updateActionButtons();toast('냄비를 기울여 그릇에 담는 중…',1200);
  kitchen.animatePlate(index,()=>{
-  resetPot(index);state.busy=false;if(!state.tray)return;state.tray.ready=true;kitchen.setTrayMeal(true);
+  resetPot(index);state.busy=false;if(!state.tray)return;state.tray.ready=true;kitchen.setTrayMeal(false);
+  setCarry({kind:'meal',recipeId:state.tray.recipeId,name:state.tray.name,quality:state.tray.quality,label:state.tray.label,burnt:state.tray.burnt});
   if(tutorialPlate)state.tutorial.step=6;
   renderTray();renderOrders();renderTutorial();renderSelectedHelp();updateActionButtons();sfx(quality>=75?'success.cheer_yay':'failure.fail_sting',{volume:.18,cooldownMs:250});
-  toast(state.tray.name+' 완성! 쟁반을 손님에게 끌어다 주세요',1900)
+  toast(state.tray.name+' 완성! 직접 들고 주문 손님에게 가져가세요',1900)
  });
  return true
 }
@@ -734,9 +736,9 @@ function handleAction(action){
 function requestDiscard(){
  if(state.tutorial.active){toast('첫 라면은 같이 완성해 본 뒤 비우기를 사용할 수 있어요');return}
  const now=performance.now();
- if(state.tray?.ready){
-  if(now>state.trayDiscardArmedUntil){state.trayDiscardArmedUntil=now+2400;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 쟁반 비우기';toast('한 번 더 누르면 완성된 라면을 버려요',1600);return}
-  state.trayDiscardArmedUntil=0;state.tray=null;kitchen.setTrayMeal(false);addDirtyPlate();renderTray();renderOrders();renderSelectedHelp();updateActionButtons();renderDiscardButton();toast('라면은 버렸지만 사용한 그릇은 싱크로 갔어요');return
+ if(state.carry){
+  if(now>state.trayDiscardArmedUntil){state.trayDiscardArmedUntil=now+2200;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 손의 것 버리기';toast('한 번 더 누르면 '+carryLabel()+'을 버려요',1500);return}
+  const wasMeal=state.carry.kind==='meal';state.trayDiscardArmedUntil=0;state.tray=null;clearCarry();if(wasMeal)addDirtyPlate();renderTray();renderOrders();renderSelectedHelp();updateActionButtons();renderDiscardButton();toast(wasMeal?'라면은 버렸지만 그릇은 싱크로 갔어요':'들고 있던 재료를 버렸어요');return
  }
  if(state.selectedPot==null){toast('먼저 비울 냄비를 선택하세요');return}
  const p=state.pots[state.selectedPot];if(potEmpty(p)){toast('이미 빈 냄비예요');return}
@@ -767,10 +769,10 @@ function potPrompt(p){
 function renderPotStrip(){
  els.pots.innerHTML='';
  state.pots.forEach((p,i)=>{
-  const d=document.createElement('button');d.type='button';const locked=i>=activePotCount();
+  const d=document.createElement('span'),locked=i>=activePotCount();
   const ideal=hasIngredient(p,'noodle')&&p.noodleTime>=8.2&&p.noodleTime<=11.5&&!p.burnt,danger=p.burnt||p.noodleTime>14.2;
   d.className='pot-tag'+(i===state.selectedPot?' active':'')+(ideal?' ready':'')+(danger?' danger':'')+(locked?' locked':'');
-  d.textContent=locked?'🔒 화구 '+(i+1):(i+1)+' · '+potPrompt(p);d.disabled=locked;d.addEventListener('click',()=>kitchen.setSelectedPot(i));els.pots.appendChild(d)
+  d.textContent=locked?'🔒 화구 '+(i+1):(i+1)+' · '+potPrompt(p);els.pots.appendChild(d)
  })
 }
 function renderSelectedHelp(){
@@ -795,12 +797,11 @@ function renderOrders(){
   const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';const matching=state.tray?.ready&&state.tray.recipeId===o.recipeId;
   d.className='order-bubble'+(matching?' waiting':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');d.dataset.order=String(o.id);d.style.setProperty('--left',(lefts[o.slot]||50)+'%');
   d.innerHTML='<div class="order-main"><span class="customer-face">'+o.customer+'</span><span><b>'+r.name+'</b><span class="recipe-icons">'+orderIngredientIcons(r)+'</span></span></div><div class="patience"><i style="transform:scaleX('+(Math.max(0,o.patience)/100)+')"></i></div>';
-  d.addEventListener('click',()=>toast(state.tray?.ready?'오른쪽 아래 쟁반을 이 손님에게 끌어다 주세요':'이 손님은 '+r.name+'을 기다리고 있어요',1300));els.orders.appendChild(d)
+  d.addEventListener('click',()=>toast(state.carry?.kind==='meal'?'라면을 들고 이 손님 앞까지 직접 이동해 E를 눌러 주세요':'이 손님은 '+r.name+'을 기다리고 있어요',1300));els.orders.appendChild(d)
  })
 }
 function renderTray(){
- if(!state.tray||!state.tray.ready){els.trayBtn.classList.add('hidden');return}
- els.trayBtn.classList.remove('hidden');els.trayText.textContent=state.tray.name;els.trayQuality.textContent=state.tray.label+' · 손님에게 끌기'
+ els.trayBtn.classList.add('hidden');renderCarryHud()
 }
 function serveOrder(orderId){
  if(!state.running||state.busy)return;
@@ -812,11 +813,11 @@ function serveOrder(orderId){
  }
  const r=recipeById(order.recipeId),q=state.tray.quality,wasTutorial=state.tutorial.active&&state.tutorial.step===6,slot=order.slot;
  const quote=restaurant.quote(order.id,state.tray.recipeId,{quality:q}),earned=quote.earned,before=activePotCount();
- order.paused=true;state.busy=true;els.trayBtn.classList.add('hidden');updateActionButtons();toast('쟁반을 손님 앞으로 가져가는 중…',900);
- kitchen.animateServe(slot,()=>{
+ order.paused=true;state.busy=true;updateActionButtons();toast('손님에게 라면을 건네는 중…',700);
+ kitchen.customerReact(slot);setTimeout(()=>{
   const sale=restaurant.serve(orderId,r.id,{quality:q});
   if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
-  state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
+  state.tray=null;state.busy=false;clearCarry();setTimeout(()=>{if(state.running)addDirtyPlate()},900);
   const after=activePotCount();
   if(wasTutorial){
    state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;
@@ -825,7 +826,7 @@ function serveOrder(orderId){
   renderTray();renderOrders();renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=82?'shop.purchase':'collect.coin_pickup',{volume:.25,cooldownMs:300});
   if(after>before)toast('새 화구가 열렸어요! 이제 냄비 '+after+'개를 쓸 수 있어요',2200);
   else if(wasTutorial)toast(r.name+' 첫 서빙 성공! +'+money(earned),1800);else toast(r.name+' 서빙 · '+qualityLabel(q)+' · +'+money(earned),1700)
- })
+ },420)
 }
 function updateDishHud(){
  if(!els.dishStatus)return;
