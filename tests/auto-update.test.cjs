@@ -8,6 +8,8 @@ const updater = require('../auto-update.js');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
+const finalizer = fs.readFileSync(path.join(ROOT, 'scripts', 'finalize-lobby-build.cjs'), 'utf8');
+const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 test('auto updater compares immutable build ids rather than timestamps', () => {
   assert.equal(updater.isUsableBuild('__KIDSCADE_BUILD__'), false);
@@ -49,8 +51,11 @@ test('Cloudflare build precomposes the final lobby before browser startup', () =
   assert.match(built, /auto-update\.js\?v=/);
   assert.match(built, /audio-manager\.js\?v=/);
   assert.match(built, /game-frame-shell\.js\?v=/);
-  assert.match(build, /composeLobbyArtifact/);
-  assert.match(build, /compose-lobby-build\.cjs/);
+  assert.match(finalizer, /composeLobby/);
+  assert.match(finalizer, /compose-lobby-build\.cjs/);
+  const command = packageJson.scripts['build:cloudflare'];
+  assert.ok(command.indexOf('bunsik-kitchen-build.cjs') < command.indexOf('finalize-lobby-build.cjs'));
+  assert.match(command, /finalize-lobby-build\.cjs$/);
 });
 
 test('Cloudflare build emits a no-cache static version manifest', () => {
