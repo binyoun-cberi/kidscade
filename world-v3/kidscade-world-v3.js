@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=18';
 import {createTownEconomy} from './kidscade-world-economy.js?v=15';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=7';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=3';
 
@@ -54,7 +54,8 @@ const P={
   modular:ROOT+'buildings/kenney-modular-buildings/',
   nature:ROOT+'nature/kenney-nature-kit/',
   survival:ROOT+'survival/kenney-survival-kit/',
-  furniture:ROOT+'interiors/kenney-furniture-kit/'
+  furniture:ROOT+'interiors/kenney-furniture-kit/',
+  bakery:ROOT+'bakery/interior/'
 };
 const ASSET={
   house:P.suburban+'building-type-a.glb',
@@ -1067,6 +1068,7 @@ let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInter
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
 let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null,carpenterCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
+let indoorLevel2Decor=null,indoorLevel3Decor=null;
 const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
 let mode='outdoor';
@@ -1130,6 +1132,8 @@ function updateHomesteadVisuals(){
   if(starterBeddingGroup)starterBeddingGroup.visible=!realBed;
   if(starterBeddingInteraction)starterBeddingInteraction.enabled=!realBed;
   for(const cover of houseExpansionCovers)cover.object.visible=d.houseLevel<cover.unlockAt;
+  if(indoorLevel2Decor)indoorLevel2Decor.visible=d.houseLevel>=2;
+  if(indoorLevel3Decor)indoorLevel3Decor.visible=d.houseLevel>=3;
   if(homeHouseObject&&homeHouseBaseScale){
     const mul=d.houseLevel===1?.78:d.houseLevel===2?.90:1;
     homeHouseObject.scale.copy(homeHouseBaseScale).multiplyScalar(mul);
@@ -1716,6 +1720,15 @@ async function buildIndoor(){
 
   await addModel(indoor,ASSET.chest,{x:2.55,z:1.85,w:1.35,h:.92,d:.95,rot:Math.PI/2,name:'starter-home-storage'});
   addColliderFor('indoor',2.55,1.85,.95,.72);
+
+  indoorLevel2Decor=new THREE.Group();indoor.add(indoorLevel2Decor);
+  indoorLevel3Decor=new THREE.Group();indoor.add(indoorLevel3Decor);
+  await Promise.all([
+    addModel(indoorLevel2Decor,P.bakery+'curtains.glb',{x:-3.75,z:-4.72,w:2.2,h:2.2,d:.28,rot:0,name:'home-curtains-left'}),
+    addModel(indoorLevel2Decor,P.bakery+'rug.glb',{x:-2.7,z:.1,w:3.3,h:.08,d:2.3,rot:0,name:'home-rug'}),
+    addModel(indoorLevel3Decor,P.bakery+'wall-shelf-bakery-a.glb',{x:3.9,z:-4.72,w:2.0,h:1.1,d:.34,rot:0,name:'home-wall-shelf-a'}),
+    addModel(indoorLevel3Decor,P.bakery+'wall-shelf-bakery-b.glb',{x:5.4,z:-4.72,w:1.4,h:1.0,d:.34,rot:0,name:'home-wall-shelf-b'})
+  ]);
 
   interact('indoor',0,3.20,1.35,'밖으로 나가기',()=>setMode('outdoor'));
   starterBeddingInteraction=interact('indoor',0,-1.55,1.45,'🧺 바닥 이불에서 자기',sleepOnFloor);
