@@ -337,7 +337,8 @@ function addCard(type,x,y,count=1,animate=true){
  el.className='card '+group.cls+(animate?' newborn':'');el.dataset.id=id;
  const foodBadge=d.food?'<span class="foodBadge">🍖 '+d.food+'</span>':'';
  const resourceBadge=RESOURCE_CAPS[type]?'<span class="resourceBadge"></span>':'';
- el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
+ const threatBadge=THREAT_CONFIG[type]?'<span class="threatBadge"></span>':'';
+ el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+threatBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
  const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;state.cards.set(id,c);updateCard(c);
  place(c,clamp(x,4,Math.max(4,board.clientWidth-el.offsetWidth-12)),clamp(y,18,Math.max(18,board.clientHeight-el.offsetHeight-12)));
@@ -353,6 +354,8 @@ function updateCard(c){
   rb.textContent='⛏ '+left;
   rb.classList.toggle('low',left<=Math.max(2,Math.ceil(cap*.25)));
  }
+ const tb=c.el.querySelector('.threatBadge');
+ if(tb)tb.textContent='⚠ '+Math.max(0,c.raidIn??THREAT_CONFIG[c.type].raidEvery)+'초';
 }
 function place(c,x,y){c.x=x;c.y=y;c.el.style.left=x+'px';c.el.style.top=y+'px';}
 function removeCard(c){if(!c||!state.cards.has(c.id))return;c.el.remove();state.cards.delete(c.id);}
@@ -855,8 +858,8 @@ function raidThreat(card){
 function tickThreats(){
  for(const card of [...state.cards.values()]){
   const cfg=THREAT_CONFIG[card.type];if(!cfg||card.busy)continue;
-  card.raidIn=(card.raidIn??cfg.raidEvery)-1;
-  if(card.raidIn<=0){card.raidIn=cfg.raidEvery;raidThreat(card);}
+  card.raidIn=(card.raidIn??cfg.raidEvery)-1;updateCard(card);
+  if(card.raidIn<=0){card.raidIn=cfg.raidEvery;updateCard(card);raidThreat(card);}
  }
 }
 function tidy(){
@@ -909,6 +912,7 @@ function renderDiscoveries(){
 function has(t){return [...state.cards.values()].some(c=>c.type===t);}
 function renderQuests(){
  const q=[
+  ['주변 탐험을 1회 마친다',state.stats.explores>=1&&!state.expedition],
   ['불을 안정적으로 피운다',has('campfire')],
   ['사슴을 잡아 가죽·뼈를 얻는다',state.discoveries.has('큰 사냥')],
   ['섬유를 꼬아 끈·실·직물을 만든다',has('wovenCloth')||has('wovenClothing')],
@@ -924,8 +928,8 @@ function renderGoal(){
  const score=settlementScore();
  if(!has('campfire')){ui.goalTitle.textContent='첫 생활 기술 만들기';ui.goalText.textContent='작은 나무에서 나뭇가지를 모으고 돌을 다듬어 기본 도구를 만드세요.';ui.hint.textContent='사람+작은 나무 → 나뭇가지 · 돌×2 → 찍개 · 찍개+나뭇가지 → 돌도끼';return;}
  if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
- if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='잡곡 농경, 사냥, 갯벌·강 어로, 목축, 방직을 서로 섞어도 됩니다.';ui.hint.textContent='조·기장·콩밭×3 → 농장 · 낚시 자리×3 → 낚시터 · 염소 우리×3 → 목장';return;}
- ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='이미 안정적인 정착지입니다. 다른 생산 방식과 생활 기술도 계속 연결해 보세요.';ui.hint.textContent='가락바퀴·직물옷·돌화덕·점토 가마·도토리죽·갯벌·잡곡 농장까지 모두 열어볼 수 있어요.';
+ if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='자원이 고갈되면 사람을 탐험에 보내 새 터를 찾고, 잡곡 농경·어로·목축을 연결하세요.';ui.hint.textContent='탐험 → 새 자원·동물 · 조·기장·콩밭×3 → 농장 · 울타리는 맹수 방어에도 도움';return;}
+ ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 더 먼 탐험과 다른 집단과의 교환, 맹수·적대 집단에 대한 방어가 필요합니다.';ui.hint.textContent='탐험으로 낯선 집단을 만나 교환하거나, 울타리·마을·사냥꾼으로 위협에 대비하세요.';
 }
 
 let toastTimer;
