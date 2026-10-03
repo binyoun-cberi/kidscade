@@ -260,17 +260,19 @@ test('friendship perks affect the systems matching each resident role',()=>{
 test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
   const rewards=[
     ['minjiPlanter','plant-small3.glb'],['junhoStool','stool-bar-square.glb'],
-    ['haneulTable','table-round.glb'],['doyunBench','bench-cushion.glb'],
+    ['haneulTable','table-round-a.glb','bakery/interior'],['doyunBench','bench-cushion.glb'],
     ['yunaPlant','plant-small2.glb'],['taehoRetroTv','television-vintage.glb'],
     ['soraBookcase','bookcase-closed-wide.glb'],['hyunwooDrawers','side-table-drawers.glb'],
     ['nariLamp','lamp-square-floor.glb'],['woojinRelaxChair','lounge-chair-relax.glb'],
     ['seoyeonPetChair','chair-rounded.glb'],['minseokTravelBench','bench-cushion-low.glb']
   ];
-  for(const [key,file] of rewards){
+  for(const [key,file,assetRoot] of rewards){
     assert.ok(furnishing.includes(key),'rare reward missing '+key);
     assert.ok(furnishing.includes(file),'rare reward asset missing '+file);
-    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'untracked reward asset '+file);
+    const rel=assetRoot||'interiors/kenney-furniture-kit';
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d',rel,file)),'untracked reward asset '+file);
   }
+  assert.match(furnishing,/haneulTable:\{[^\n]*root:'bakery'/);
   assert.match(runtime,/key==='taehoRetroTv'/);
   assert.match(runtime,/key==='soraBookcase'/);
 });
