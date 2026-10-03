@@ -5,7 +5,12 @@
   const SLOT_ID = 'kc-account-slot';
   const MODAL_ID = 'kc-account-modal';
   const META_KEY = 'kc_account_sync_meta_v1';
+  const SHARED_SYNC_META_KEY = 'kc_account_sync_shared_v1';
+  const SYNC_LEASE_KEY = 'kc_account_sync_lease_v1';
+  const SYNC_LOCK_NAME = 'kidscade-account-sync-v1';
   const SYNC_DEBOUNCE_MS = 1400;
+  const SYNC_LEASE_MS = 8000;
+  const TAB_ID = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + ':' + Date.now();
   let account = null;
   let available = true;
   let applyingCloud = false;
@@ -24,6 +29,71 @@
 
   function writeMeta(value) {
     try { sessionStorage.setItem(META_KEY, JSON.stringify(value || {})); } catch (_) {}
+  }
+
+  function readSharedSyncMeta() {
+    try { return JSON.parse(localStorage.getItem(SHARED_SYNC_META_KEY) || '{}') || {}; } catch (_) { return {}; }
+  }
+
+  function writeSharedSyncMeta(value) {
+    try { localStorage.setItem(SHARED_SYNC_META_KEY, JSON.stringify(value || {})); } catch (_) {}
+  }
+
+  function stateSignature(state) {
+    const text = JSON.stringify(state || {});
+    let hash = 2166136261;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return text.length + ':' + (hash >>> 0).toString(16);
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function claimFallbackSyncLease() {
+    const now = Date.now();
+    try {
+      const current = JSON.parse(localStorage.getItem(SYNC_LEASE_KEY) || '{}') || {};
+      if (current.owner && current.owner !== TAB_ID && Number(current.expiresAt || 0) > now) return false;
+      localStorage.setItem(SYNC_LEASE_KEY, JSON.stringify({ owner:TAB_ID, expiresAt:now + SYNC_LEASE_MS }));
+      const confirmed = JSON.parse(localStorage.getItem(SYNC_LEASE_KEY) || '{}') || {};
+      return confirmed.owner === TAB_ID;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function releaseFallbackSyncLease() {
+    try {
+      const current = JSON.parse(localStorage.getItem(SYNC_LEASE_KEY) || '{}') || {};
+      if (current.owner === TAB_ID) localStorage.removeItem(SYNC_LEASE_KEY);
+    } catch (_) {}
+  }
+
+  async function runCoordinatedSync(isAlreadySynced, task) {
+    if (navigator.locks?.request) {
+      return navigator.locks.request(SYNC_LOCK_NAME, { mode:'exclusive' }, async () => {
+        if (isAlreadySynced()) return true;
+        return task();
+      });
+    }
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      if (isAlreadySynced()) return true;
+      if (claimFallbackSyncLease()) {
+        try {
+          if (isAlreadySynced()) return true;
+          return await task();
+        } finally {
+          releaseFallbackSyncLease();
+        }
+      }
+      await sleep(250);
+    }
+    if (isAlreadySynced()) return true;
+    return task();
   }
 
   function collectState() {
@@ -358,16 +428,31 @@
 
   async function syncNow(forcedState = null) {
     if (!account || syncing || applyingCloud) return false;
+    const state = forcedState || collectState();
+    const signature = stateSignature(state);
+    const loginId = account.loginId;
+    const isAlreadySynced = () => {
+      if (forcedState) return false;
+      const shared = readSharedSyncMeta();
+      return shared.loginId === loginId && shared.signature === signature;
+    };
     syncing = true;
     try {
-      const state = forcedState || collectState();
-      const syncPath = account.role === 'teacher' ? '/api/teacher/auth/sync' : '/api/account/sync';
-      const { response, body } = await api(syncPath, { method:'POST', body:JSON.stringify({ state }) });
-      if (!response.ok || !body.ok) return false;
-      account = body.account;
-      writeMeta({ loginId: account.loginId, revision: account.revision });
-      renderSlot();
-      return true;
+      return await runCoordinatedSync(isAlreadySynced, async () => {
+        const syncPath = account.role === 'teacher' ? '/api/teacher/auth/sync' : '/api/account/sync';
+        const { response, body } = await api(syncPath, { method:'POST', body:JSON.stringify({ state }) });
+        if (!response.ok || !body.ok) return false;
+        account = body.account;
+        writeMeta({ loginId: account.loginId, revision: account.revision });
+        writeSharedSyncMeta({
+          loginId: account.loginId,
+          signature,
+          revision: Number(account.revision || 0),
+          syncedAt: Date.now()
+        });
+        renderSlot();
+        return true;
+      });
     } catch (_) {
       return false;
     } finally {
@@ -389,6 +474,10 @@
       'pet','petItems','gardenState','recents','favorites','dailyMissions','dailyRewardClaimed','attendance'
     ].forEach(key => { try { s.remove(key); } catch (_) {} });
     writeMeta({});
+    try {
+      localStorage.removeItem(SHARED_SYNC_META_KEY);
+      localStorage.removeItem(SYNC_LEASE_KEY);
+    } catch (_) {}
   }
 
   async function logout() {
@@ -458,7 +547,10 @@
     checkSession();
     document.addEventListener('kidscade:profile-history-changed', scheduleSync);
     document.addEventListener('kidscade:storage-changed', scheduleSync);
-    window.addEventListener('storage', scheduleSync);
+    window.addEventListener('storage', event => {
+      if (event.key === SHARED_SYNC_META_KEY || event.key === SYNC_LEASE_KEY) return;
+      scheduleSync();
+    });
     window.addEventListener('online', scheduleSync);
   }
 
