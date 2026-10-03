@@ -5,9 +5,9 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-2';
+  const PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-3';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
-  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=23';
+  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=24';
   const GUEST_DEFAULT_CONFIG = Object.freeze({
     hairId:'male-short-01', upper:1, lower:1,
     eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
