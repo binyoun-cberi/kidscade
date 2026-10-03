@@ -163,6 +163,7 @@ export class OrderSystem {
     if (seconds <= 0 || !this.items.length) return [];
     const expired = [];
     this.items.forEach(order => {
+      if (order.paused === true) return;
       const rate = typeof this.decayPerSecond === 'function'
         ? Number(this.decayPerSecond({ order, context })) || 0
         : Number(this.decayPerSecond) || 0;
