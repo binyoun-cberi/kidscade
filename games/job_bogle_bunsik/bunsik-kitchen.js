@@ -38,7 +38,7 @@ const els={
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
  endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
- prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn')
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),rotate:$('#rotateStationBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn')
 };
 
 function newPot(i){
@@ -244,7 +244,74 @@ class RamenKitchen3D{
   if(group.userData.storedItem)anchor.add(this.makeItemSprite(group.userData.storedItem))
  }
  clearPrepCounters(){
-  this.layoutStations.filter(s=>s.group.userData.storageSlot).forEach(s=>{s.group.userData.storedItem=null;this.syncCounterVisual(s.group)})
+  this.layoutStations.filter(s=>s.group.userData.storageSlot).forEach(s=>{s.group.userData.storedItem=null;delete s.group.userData.reservedBy;s.group.userData.automationClock=0;this.syncCounterVisual(s.group)})
+ }
+ makeAutomationStation(id,label,type,x,z,dir=0){
+  const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=dir*Math.PI/2;holder.userData.stationId=id;holder.userData.blockRadius=.62;holder.userData.storageSlot=true;holder.userData.storedItem=null;holder.userData.automationType=type;holder.userData.direction=dir;holder.userData.automationClock=0;this.scene.add(holder);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.25,.28,1.25),this.material(type==='grabber'?0x5b7082:0x4d6570,{roughness:.38,metalness:.42}));base.position.y=.2;base.castShadow=true;base.receiveShadow=true;holder.add(base);
+  for(let i=-1;i<=1;i++){const roller=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,1.02,12),this.material(0xc7d2d5,{roughness:.28,metalness:.65}));roller.rotation.z=Math.PI/2;roller.position.set(i*.34,.39,0);holder.add(roller)}
+  if(type==='grabber'){
+   const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.92),this.material(0xe9b84d,{roughness:.4,metalness:.18}));arm.position.set(0,.62,-.05);holder.add(arm);
+   const claw=new THREE.Mesh(new THREE.BoxGeometry(.5,.14,.14),this.material(0xe9b84d,{roughness:.4,metalness:.18}));claw.position.set(0,.62,-.48);holder.add(claw)
+  }
+  const arrow=new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,.72,.3),.72,0x8ce6ff,.22,.15);holder.add(arrow);holder.userData.directionArrow=arrow;
+  const pick=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.35,1.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=.62;pick.userData.layoutStation=holder;holder.add(pick);this.stationPickables.push(pick);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.58,.72,30),new THREE.MeshBasicMaterial({color:0x5bd0ff,transparent:true,opacity:0,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;holder.add(ring);holder.userData.ring=ring;
+  const anchor=new THREE.Group();anchor.position.set(0,.9,0);holder.add(anchor);holder.userData.itemAnchor=anchor;
+  const tag=this.makeTextSprite(label);tag.position.set(0,1.45,0);tag.scale.set(1.18,.37,1);holder.add(tag);
+  this.layoutStations.push({id,label,group:holder});return holder
+ }
+ rotateSelectedAutomation(){
+  if(state.phase!=='prep')return false;
+  const g=this.selectedLayoutStation;if(!g?.userData?.automationType){toast('컨베이어나 Grabber를 먼저 선택해 주세요',1300);return false}
+  g.userData.direction=(g.userData.direction+1)%4;g.rotation.y=g.userData.direction*Math.PI/2;
+  toast((g.userData.automationType==='grabber'?'Grabber':'컨베이어')+' 방향 회전',900);return true
+ }
+ automationVector(group){
+  return [{x:0,z:-1},{x:-1,z:0},{x:0,z:1},{x:1,z:0}][group?.userData?.direction||0]
+ }
+ findStorageInDirection(origin,sign=1,need='empty'){
+  const v=this.automationVector(origin);let best=null;
+  for(const s of this.layoutStations){
+   const g=s.group;if(g===origin||!g.userData.storageSlot||g.userData.reservedBy)continue;
+   const item=g.userData.storedItem;if(need==='empty'&&item)continue;if(need==='filled'&&!item)continue;
+   const dx=g.position.x-origin.position.x,dz=g.position.z-origin.position.z,d=Math.hypot(dx,dz);if(d<.45||d>2.55)continue;
+   const forward=(dx*v.x+dz*v.z)*sign,lateral=Math.abs(dx*v.z-dz*v.x);
+   if(forward<=.35||lateral>.82)continue;
+   if(!best||d<best.d)best={group:g,d}
+  }
+  return best?.group||null
+ }
+ findPotInDirection(origin,item){
+  if(!item||item.kind!=='ingredient')return null;
+  const v=this.automationVector(origin);let best=null;
+  for(let i=0;i<activePotCount();i++){
+   const root=this.potVisuals[i].root,dx=root.position.x-origin.position.x,dz=root.position.z-origin.position.z,d=Math.hypot(dx,dz);
+   if(d<.5||d>2.65)continue;
+   const forward=dx*v.x+dz*v.z,lateral=Math.abs(dx*v.z-dz*v.x);
+   if(forward<=.35||lateral>.95||!this.helperCanDeliver(item.id,state.pots[i]))continue;
+   if(!best||d<best.d)best={index:i,d}
+  }
+  return best?.index??null
+ }
+ transferAutomationItem(from,to){
+  if(!from?.userData?.storedItem||!to?.userData?.storageSlot||to.userData.storedItem||to.userData.reservedBy)return false;
+  to.userData.storedItem={...from.userData.storedItem};from.userData.storedItem=null;this.syncCounterVisual(from);this.syncCounterVisual(to);return true
+ }
+ updateAutomation(dt){
+  if(state.phase!=='service'||state.tutorial.active)return;
+  const autos=this.layoutStations.map(s=>s.group).filter(g=>g.userData.automationType);
+  for(const g of autos){
+   g.userData.automationClock=(g.userData.automationClock||0)-dt;if(g.userData.automationClock>0)continue;g.userData.automationClock=.72;
+   if(g.userData.automationType==='grabber'&&!g.userData.storedItem){
+    const source=this.findStorageInDirection(g,-1,'filled');
+    if(source&&source.userData.storedItem?.kind==='ingredient'&&!source.userData.automationType&&source.userData.reservedBy!=='helper')this.transferAutomationItem(source,g)
+   }
+   const item=g.userData.storedItem;if(!item)continue;
+   const potIndex=this.findPotInDirection(g,item);
+   if(potIndex!=null&&addToPot(potIndex,item.id)){g.userData.storedItem=null;this.syncCounterVisual(g);sfx('collect.coin_drop',{volume:.06,rate:1.22,cooldownMs:80});continue}
+   const target=this.findStorageInDirection(g,1,'empty');if(target)this.transferAutomationItem(g,target)
+  }
  }
  makePlateupStations(){
   const sink=this.makeLayoutStation('sink','싱크 · 물/설거지',BAKERY_BITS,'kitchencounter-sink.glb',2.05,-5.7,-1.7,Math.PI/2,.88);
@@ -254,6 +321,8 @@ class RamenKitchen3D{
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2,.72);
   this.makePrepCounter('prepCounterA','조리대 A',5.35,-1.65,-Math.PI/2);
   this.makePrepCounter('prepCounterB','조리대 B',5.35,.15,-Math.PI/2);
+  this.makeAutomationStation('conveyorA','컨베이어','conveyor',-1.15,-1.8,2);
+  this.makeAutomationStation('grabberA','Grabber','grabber',-3.45,-1.8,2);
   const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
   this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
    if(!model)return;
@@ -342,7 +411,7 @@ class RamenKitchen3D{
   if(!state.helperEnabled||state.tutorial.active||this.helperTask||this.helperCarry)return false;
   let best=null;
   for(const station of this.layoutStations){
-   const counter=station.group,item=counter.userData.storageSlot&&counter.userData.storedItem;
+   const counter=station.group,item=counter.userData.storageSlot&&!counter.userData.automationType&&counter.userData.storedItem;
    if(!item||item.kind!=='ingredient'||counter.userData.reservedBy)continue;
    for(let i=0;i<activePotCount();i++){
     const p=state.pots[i];if(!this.helperCanDeliver(item.id,p))continue;
@@ -450,7 +519,7 @@ class RamenKitchen3D{
   this.nearestStation=nearest;
   this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep' ? .55 : (nearest?.group===s.group ? .88 : 0)});
   if(els.stationHint){
-   if(state.phase==='prep')els.stationHint.textContent='가구를 드래그해 주방 동선을 바꿔 보세요';
+   if(state.phase==='prep')els.stationHint.textContent=this.selectedLayoutStation?.userData?.automationType?'자동화 장비 선택됨 · 드래그로 이동 / R 또는 회전 버튼으로 방향 변경':'가구를 드래그해 주방 동선을 바꿔 보세요';
    else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
    else if(nearest.type==='sink')els.stationHint.textContent=state.heldItem?'E · 같은 물이면 돌려놓기':(state.dirtyPlates?'E · 설거지':'E · 물 한 컵 받기');
    else if(nearest.type==='noodleSource')els.stationHint.textContent=state.heldItem?'E · 면이면 돌려놓기':'E · 면 들기';
@@ -458,8 +527,8 @@ class RamenKitchen3D{
    else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
    else if(nearest.type==='fridge')els.stationHint.textContent=state.heldItem?'E · 토핑이면 돌려놓기':'E · 주문에 맞는 토핑 꺼내기';
    else if(nearest.group?.userData?.storageSlot){
-    const stored=nearest.group.userData.storedItem,reserved=nearest.group.userData.reservedBy==='helper';
-    els.stationHint.textContent=reserved?'알바생이 '+itemLabel(stored)+' 가지러 오는 중':state.heldItem?(stored?'조리대 사용 중 · 먼저 집어가세요':'E · '+heldItemLabel()+' 내려놓기'):(stored?'E · '+itemLabel(stored)+' 집기':'빈 조리대 · 재료나 라면을 잠깐 둘 수 있어요')
+    const stored=nearest.group.userData.storedItem,reserved=nearest.group.userData.reservedBy==='helper',label=storageLabel(nearest.group);
+    els.stationHint.textContent=reserved?'알바생이 '+itemLabel(stored)+' 가지러 오는 중':state.heldItem?(stored?label+' 사용 중 · 먼저 집어가세요':'E · '+heldItemLabel()+' → '+label):(stored?'E · '+itemLabel(stored)+' 집기':'빈 '+label+' · 아이템을 둘 수 있어요')
    }
    else if(nearest.type==='service')els.stationHint.textContent=state.heldItem?.kind==='meal'?'E · '+state.heldItem.name+' 서빙':'배식대 · 완성 라면을 들고 오세요';
    else if(nearest.type==='pot')els.stationHint.textContent=state.heldItem?'E · '+heldItemLabel()+' 넣기':'E · 냄비 사용';
@@ -590,6 +659,7 @@ class RamenKitchen3D{
   this.clock+=dt;
   this.updatePlayer(dt);
   this.updateHelper(dt);
+  this.updateAutomation(dt);
   state.pots.forEach((p,i)=>{
    const v=this.potVisuals[i];if(!v)return;
    const boiling=p.water>.05&&p.heat>=3.5&&!p.burnt;
@@ -627,21 +697,26 @@ function itemLabel(item){
  if(!item)return'빈칸';
  return item.kind==='meal'?(item.name||'완성 라면'):ingredientLabel(item.id)
 }
+function storageLabel(group){
+ if(group?.userData?.automationType==='conveyor')return'컨베이어';
+ if(group?.userData?.automationType==='grabber')return'Grabber';
+ return'조리대'
+}
 function heldItemLabel(){return itemLabel(state.heldItem)}
 function usePrepCounter(group){
  if(!group?.userData?.storageSlot)return false;
  if(group.userData.reservedBy==='helper'){toast('알바생이 이 조리대 재료를 가지러 오는 중이에요',1300);return false}
- const held=state.heldItem,stored=group.userData.storedItem;
- if(held&&stored){toast('조리대가 이미 '+itemLabel(stored)+'으로 차 있어요',1400);return false}
+ const held=state.heldItem,stored=group.userData.storedItem,label=storageLabel(group);
+ if(held&&stored){toast(label+'가 이미 '+itemLabel(stored)+'으로 차 있어요',1400);return false}
  if(held&&!stored){
   group.userData.storedItem={...held};kitchen.syncCounterVisual(group);setHeldItem(null);
-  sfx('collect.coin_drop',{volume:.11,rate:.9,cooldownMs:80});toast(itemLabel(group.userData.storedItem)+'을 조리대에 내려놓았어요',1200);return true
+  sfx('collect.coin_drop',{volume:.11,rate:.9,cooldownMs:80});toast(itemLabel(group.userData.storedItem)+'을 '+label+'에 내려놓았어요',1200);return true
  }
  if(!held&&stored){
   const item={...stored};group.userData.storedItem=null;kitchen.syncCounterVisual(group);setHeldItem(item);
-  sfx('collect.coin_pickup',{volume:.12,rate:1.02,cooldownMs:80});toast(itemLabel(item)+'을 조리대에서 집었어요',1200);return true
+  sfx('collect.coin_pickup',{volume:.12,rate:1.02,cooldownMs:80});toast(itemLabel(item)+'을 '+label+'에서 집었어요',1200);return true
  }
- toast('빈 조리대예요 · 재료나 완성 라면을 내려놓을 수 있어요',1300);return false
+ toast('빈 '+label+'예요 · 아이템을 내려놓을 수 있어요',1300);return false
 }
 function setHeldItem(item){
  state.heldItem=item?{...item}:null;kitchen.setCarryVisual(state.heldItem);renderHeldStatus();updateActionButtons()
@@ -811,11 +886,12 @@ function updateActionButtons(){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent='영업 전에는 주방 배치를 정리해요';els.dock.appendChild(wait)
  }else if(n?.group?.userData?.storageSlot){
   const stored=n.group.userData.storedItem,reserved=n.group.userData.reservedBy==='helper',btn=document.createElement('button');btn.type='button';
+  const label=storageLabel(n.group);
   if(reserved){btn.disabled=true;btn.innerHTML='<span>👨‍🍳</span><b>알바생 예약</b>'}
-  else if(state.heldItem&&stored){btn.disabled=true;btn.innerHTML='<span>↔</span><b>조리대 사용 중</b>'}
-  else if(state.heldItem){btn.innerHTML='<span>↓</span><b>조리대에 내려놓기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
+  else if(state.heldItem&&stored){btn.disabled=true;btn.innerHTML='<span>↔</span><b>'+label+' 사용 중</b>'}
+  else if(state.heldItem){btn.innerHTML='<span>↓</span><b>'+label+'에 내려놓기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
   else if(stored){btn.innerHTML='<span>↑</span><b>'+itemLabel(stored)+' 집기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
-  else{btn.disabled=true;btn.innerHTML='<span>□</span><b>빈 조리대</b>'}
+  else{btn.disabled=true;btn.innerHTML='<span>□</span><b>빈 '+label+'</b>'}
   els.dock.appendChild(btn)
  }else if(state.heldItem){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent=heldItemLabel()+'을 들고 있어요 · '+(state.heldItem.kind==='meal'?'배식대 또는 빈 조리대로 이동':'냄비 또는 빈 조리대로 이동');els.dock.appendChild(wait)
@@ -1149,6 +1225,7 @@ addEventListener('pointerup',e=>{
 $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
 els.openShop?.addEventListener('click',beginService);
+els.rotate?.addEventListener('click',()=>kitchen.rotateSelectedAutomation());
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
 els.helper?.addEventListener('click',()=>{
  if(!state.helperUnlocked)return;
@@ -1157,6 +1234,7 @@ els.helper?.addEventListener('click',()=>{
 
 addEventListener('keydown',e=>{
  if(!state.running)return;
+ if(e.code==='KeyR'&&state.phase==='prep'){e.preventDefault();kitchen.rotateSelectedAutomation();return}
  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(e.code)){kitchen.setMoveKey(e.code,true);e.preventDefault();return}
  if((e.code==='KeyE'||e.code==='Space')&&state.phase==='service'){e.preventDefault();kitchen.interactNearest();return}
  if(e.code==='Digit8'){e.preventDefault();requestDiscard();return}

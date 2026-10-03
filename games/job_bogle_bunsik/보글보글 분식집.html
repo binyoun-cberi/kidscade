@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="bunsik-kitchen.css?v=13">
+<link rel="stylesheet" href="bunsik-kitchen.css?v=14">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 </head>
@@ -29,7 +29,8 @@
     <div id="potStrip" class="pot-world-labels" aria-label="냄비 상태"></div>
 
     <div id="prepBar" class="prep-bar hidden">
-      <span><b>영업 전 주방 배치</b><small>싱크 · 재료 공급대 · 조리대 2개 · 접시대를 드래그해 짧은 동선을 만들어 보세요.</small></span>
+      <span><b>영업 전 주방 배치</b><small>조리대와 자동화 장비를 옮기고, 컨베이어/Grabber 방향을 맞춰 보세요.</small></span>
+      <button id="rotateStationBtn" class="rotate-btn" type="button">↻ 선택 회전</button>
       <button id="openShopBtn" type="button">영업 시작</button>
     </div>
 
@@ -69,9 +70,9 @@
   <div class="start-card">
     <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>영업 전에 주방을 배치하고, 재료를 한 번에 하나씩 운반해요. 조리대에 재료를 미리 두면 첫 그릇 뒤 합류하는 알바생이 필요한 냄비까지 옮겨줘요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
+    <p>영업 전에 주방을 배치하고, 조리대·알바생·컨베이어·Grabber를 조합해 재료 동선을 줄여요. 자동화 장비는 화살표 방향으로 아이템을 옮기고, 플레이어는 요리 판단과 서빙을 맡아요.</p>
     <div class="flow-demo">
-      <span>🧱<b>주방 배치</b></span><i>→</i><span>🧺<b>재료 준비</b></span><i>→</i><span>👨‍🍳<b>알바 운반</b></span><i>→</i><span>🍜<b>직접 서빙</b></span>
+      <span>🧱<b>주방 배치</b></span><i>→</i><span>➡️<b>자동화 연결</b></span><i>→</i><span>👨‍🍳<b>알바 운반</b></span><i>→</i><span>🍜<b>직접 서빙</b></span>
     </div>
     <div class="recipe-board">
       <div><b>계란 라면</b><span>🍜 🟥 🥚</span></div>
@@ -97,6 +98,6 @@
   </div>
 </div>
 
-<script type="module" src="bunsik-kitchen.js?v=13"></script>
+<script type="module" src="bunsik-kitchen.js?v=14"></script>
 </body>
 </html>
