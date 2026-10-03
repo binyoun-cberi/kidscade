@@ -43,6 +43,7 @@ const TEST_FILES = [
   "tests/pass-mafia.test.cjs",
   "tests/maratang-selfbar.test.cjs",
   "tests/bunsik-kitchen.test.cjs",
+  "tests/restaurant-engine.test.cjs",
   "tests/deep-diver-2d.test.cjs",
   "tests/code-breaker-dx.test.cjs",
   "tests/code-quest-v4.test.cjs",

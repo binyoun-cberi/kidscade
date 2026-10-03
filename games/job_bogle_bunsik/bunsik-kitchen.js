@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RestaurantEngine } from '../shared/restaurant-engine.js?v=1';
 
 const FOOD=new URL('../../assets/game/food/',import.meta.url).href;
 const PEOPLE=new URL('../../assets/game/characters/people/',import.meta.url).href;
@@ -41,18 +42,43 @@ const els={
 function newPot(i){
  return{index:i,water:0,ingredients:[],sequence:[],heat:0,noodleTime:0,mistakes:0,burnt:false,plating:false};
 }
+let restaurant=null;
 const state={
- running:false,time:SHIFT_SECONDS,revenue:0,served:0,perfect:0,missed:0,sound:true,
- orders:[],nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
+ running:false,sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,
- pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i))
+ pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
+ get time(){return restaurant?.shift.remaining??SHIFT_SECONDS},
+ set time(value){if(restaurant)restaurant.shift.remaining=Math.max(0,Number(value)||0)},
+ get revenue(){return restaurant?.economy.revenue??0},
+ set revenue(value){if(restaurant)restaurant.economy.revenue=Math.max(0,Number(value)||0)},
+ get served(){return restaurant?.economy.served??0},
+ set served(value){if(restaurant)restaurant.economy.served=Math.max(0,Math.floor(Number(value)||0))},
+ get perfect(){return restaurant?.economy.perfect??0},
+ set perfect(value){if(restaurant)restaurant.economy.perfect=Math.max(0,Math.floor(Number(value)||0))},
+ get missed(){return restaurant?.economy.missed??0},
+ set missed(value){if(restaurant)restaurant.economy.missed=Math.max(0,Math.floor(Number(value)||0))},
+ get orders(){return restaurant?.orders.items??[]},
+ set orders(value){if(restaurant)restaurant.orders.replace(Array.isArray(value)?value:[])}
 };
+
+restaurant=new RestaurantEngine({
+ items:Object.entries(INGREDIENTS).map(([id,item])=>({id,...item})),
+ recipes:RECIPES,
+ order:{
+  maxOrders:MAX_ORDERS,
+  basePatience:100,
+  decayPerSecond:({context})=>.84+(Number(context?.served)||0)*.012
+ },
+ economy:{perfectQuality:90},
+ shift:{duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE},
+ pricing:({recipe,quality,order})=>Math.max(200,Math.round(((recipe?.price||0)*(.48+.52*quality/100)+(order?.patience||0))*.01)*100)
+});
 
 window.__bunsikKitchenOwnAudio=true;
 function sfx(key,opt={}){if(!state.sound)return;try{window.KidscadeAudio?.play?.(key,opt)}catch(_){}}
 function money(n){return Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원'}
 function toast(t,ms=1300){els.toast.textContent=t;els.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>els.toast.classList.remove('show'),ms)}
-function recipeById(id){return RECIPES.find(r=>r.id===id)||null}
+function recipeById(id){return restaurant.recipes.get(id)}
 function ingredientLabel(id){return INGREDIENTS[id]?.name||id}
 
 class RamenKitchen3D{
@@ -459,8 +485,7 @@ function potCondition(p){
 }
 function identifyRecipe(p){
  if(!p)return null;
- const unique=[...new Set(p.ingredients)].sort();
- return RECIPES.find(r=>[...r.need].sort().join('|')===unique.join('|'))||null
+ return restaurant.recipes.findExact(p.ingredients)
 }
 function qualityFor(p,recipe){
  let q=100;if(!recipe)q-=58;
@@ -550,13 +575,14 @@ function renderSelectedHelp(){
  els.selected.textContent=nextInstruction(p)
 }
 function makeOrder(forcedId=null){
- const recipe=forcedId?recipeById(forcedId):RECIPES[Math.floor(Math.random()*RECIPES.length)],used=new Set(state.orders.map(o=>o.slot));
+ const used=new Set(state.orders.map(o=>o.slot));
  const slot=[0,1,2,3].find(n=>!used.has(n))??0;
- return{id:state.nextOrder++,recipeId:recipe.id,patience:100,slot,customer:CUSTOMER_ICONS[slot%CUSTOMER_ICONS.length]}
+ return restaurant.spawnOrder(forcedId,{slot,customer:CUSTOMER_ICONS[slot%CUSTOMER_ICONS.length]})
 }
 function spawnOrder(forcedId=null){
  if(!state.running||state.orders.length>=MAX_ORDERS)return;
- state.orders.push(makeOrder(forcedId));renderOrders();sfx('collect.coin_drop',{volume:.11,rate:1.12,cooldownMs:150})
+ const order=makeOrder(forcedId);if(!order)return;
+ renderOrders();sfx('collect.coin_drop',{volume:.11,rate:1.12,cooldownMs:150})
 }
 function orderIngredientText(r){return r.need.map(id=>ingredientLabel(id)).join(' + ')}
 function orderIngredientIcons(r){return r.need.map(id=>INGREDIENTS[id]?.icon||'').join(' ')}
@@ -578,14 +604,16 @@ function serveOrder(orderId){
  const order=state.orders.find(o=>o.id===orderId);if(!order)return;
  if(!state.tray?.ready){toast('먼저 라면을 그릇에 담아 쟁반에 올려 주세요');return}
  if(state.tray.recipeId!==order.recipeId){
-  order.patience=Math.max(0,order.patience-5);renderOrders();const wrong=els.orders.querySelector('[data-order="'+order.id+'"]');wrong?.classList.add('wrong');setTimeout(()=>wrong?.classList.remove('wrong'),320);
+  restaurant.orders.adjustPatience(order.id,-5);renderOrders();const wrong=els.orders.querySelector('[data-order="'+order.id+'"]');wrong?.classList.add('wrong');setTimeout(()=>wrong?.classList.remove('wrong'),320);
   sfx('failure.fail_sting',{volume:.16,cooldownMs:250});toast('앗, 이 손님은 '+recipeById(order.recipeId).name+' 주문이에요');return
  }
  const r=recipeById(order.recipeId),q=state.tray.quality,wasTutorial=state.tutorial.active&&state.tutorial.step===6,slot=order.slot;
- const earned=Math.max(200,Math.round((r.price*(.48+.52*q/100)+order.patience)*.01)*100),before=activePotCount();
- state.busy=true;els.trayBtn.classList.add('hidden');updateActionButtons();toast('쟁반을 손님 앞으로 가져가는 중…',900);
+ const quote=restaurant.quote(order.id,state.tray.recipeId,{quality:q}),earned=quote.earned,before=activePotCount();
+ order.paused=true;state.busy=true;els.trayBtn.classList.add('hidden');updateActionButtons();toast('쟁반을 손님 앞으로 가져가는 중…',900);
  kitchen.animateServe(slot,()=>{
-  state.revenue+=earned;state.served++;if(q>=90)state.perfect++;state.orders=state.orders.filter(o=>o.id!==orderId);state.tray=null;state.busy=false;
+  const sale=restaurant.serve(orderId,r.id,{quality:q});
+  if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
+  state.tray=null;state.busy=false;
   const after=activePotCount();
   if(wasTutorial){
    state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;
@@ -598,16 +626,22 @@ function serveOrder(orderId){
 }
 function updateOrders(dt){
  if(state.tutorial.active)return;
- let changed=false;state.orders.forEach(o=>{o.patience-=dt*(.84+state.served*.012)});
- const expired=state.orders.filter(o=>o.patience<=0);
- if(expired.length){state.missed+=expired.length;state.orders=state.orders.filter(o=>o.patience>0);changed=true;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요',1400)}
- if(changed)renderOrders()
+ const {expiredOrders}=restaurant.tick(dt,{
+  advanceShift:false,
+  advanceOrders:true,
+  advanceAutomation:false,
+  context:{served:state.served}
+ });
+ if(expiredOrders.length){sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요',1400);renderOrders()}
 }
 function updateHud(){
  els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served
 }
 function updateGame(dt){
- if(!state.tutorial.active){state.time-=dt;state.spawnClock+=dt}
+ if(!state.tutorial.active){
+  restaurant.tick(dt,{advanceShift:true,advanceOrders:false,advanceAutomation:false});
+  state.spawnClock+=dt
+ }
  state.uiClock+=dt;updatePots(dt);updateOrders(dt);
  if(!state.tutorial.active&&state.spawnClock>=11){state.spawnClock=0;spawnOrder()}
  if(state.uiClock>=.13){state.uiClock=0;renderPotStrip();renderSelectedHelp();renderOrders();renderTutorial();updateActionButtons();updateHud()}
@@ -615,7 +649,7 @@ function updateGame(dt){
 }
 function endShift(){
  if(!state.running)return;
- state.running=false;cancelAnimationFrame(state.raf);
+ state.running=false;restaurant.stopShift();cancelAnimationFrame(state.raf);
  const win=state.revenue>=TARGET_REVENUE;
  els.endTitle.textContent=win?'오늘 목표 달성!':'조금만 더 팔면 돼요!';
  els.endText.textContent=win?'여러 냄비의 타이밍을 잘 맞춰 오늘 매출 목표를 넘겼어요.':'냄비를 동시에 돌리되, 면이 가장 맛있는 순간을 놓치지 않는 게 핵심이에요.';
@@ -628,6 +662,7 @@ function loop(ts){
  if(state.running)state.raf=requestAnimationFrame(loop)
 }
 function resetGameState(){
+ restaurant.reset({keepLayout:true});
  state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
  state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
@@ -635,7 +670,7 @@ function resetGameState(){
  kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud()
 }
 function startGame(){
- resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');
+ resetGameState();restaurant.startShift({duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE});state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');
  spawnOrder('egg');renderTutorial();updateActionButtons();toast('첫 그릇은 같이 해볼게요 · 1번 냄비를 눌러 주세요',2200);state.raf=requestAnimationFrame(loop)
 }
 

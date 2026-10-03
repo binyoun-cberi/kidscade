@@ -13,9 +13,9 @@ const js = fs.readFileSync(path.join(gameDir, 'bunsik-kitchen.js'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
-test('Bunsik Kitchen v7 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=7/);
-  assert.match(html, /bunsik-kitchen\.js\?v=7/);
+test('Bunsik Kitchen v8 keeps the 3D kitchen visually dominant', () => {
+  assert.match(html, /bunsik-kitchen\.css\?v=8/);
+  assert.match(html, /bunsik-kitchen\.js\?v=8/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -108,18 +108,32 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
   assert.match(js, /CUSTOMER_MODELS/);
 });
 
-test('catalog and compatibility entry publish v7', () => {
+test('catalog and compatibility entry publish v8', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=7');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=8');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=7/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=7/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=8/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=8/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
-test('Bunsik Kitchen build script publishes v7', () => {
+test('Bunsik Kitchen build script publishes v8', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=7/);
+  assert.match(build,/\?v=8/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
+});
+
+
+test('Bunsik Kitchen delegates restaurant state to the shared engine', () => {
+  assert.match(js, /import \{ RestaurantEngine \} from '\.\.\/shared\/restaurant-engine\.js\?v=1'/);
+  assert.match(js, /restaurant=new RestaurantEngine\(/);
+  assert.match(js, /restaurant\.recipes\.findExact\(p\.ingredients\)/);
+  assert.match(js, /restaurant\.spawnOrder\(/);
+  assert.match(js, /restaurant\.orders\.adjustPatience\(/);
+  assert.match(js, /restaurant\.quote\(/);
+  assert.match(js, /restaurant\.serve\(/);
+  assert.match(js, /restaurant\.tick\(dt,\{/);
+  assert.match(js, /restaurant\.startShift\(/);
+  assert.match(js, /restaurant\.stopShift\(\)/);
 });
