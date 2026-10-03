@@ -3,7 +3,7 @@
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
- era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),
+ era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),defense:$('#defenseLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
  toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
  expeditionStatus:$('#expeditionStatus'),expeditionTitle:$('#expeditionTitle'),expeditionText:$('#expeditionText'),expeditionBar:$('#expeditionBar'),
@@ -359,7 +359,7 @@ function updateCard(c){
   rb.classList.toggle('low',left<=Math.max(2,Math.ceil(cap*.25)));
  }
  const tb=c.el.querySelector('.threatBadge');
- if(tb)tb.textContent='⚠ '+Math.max(0,c.raidIn??THREAT_CONFIG[c.type].raidEvery)+'초';
+ if(tb){const cfg=THREAT_CONFIG[c.type];tb.textContent='⚠ '+Math.max(0,c.raidIn??cfg.raidEvery)+'초 · 🛡'+cfg.power;}
  const tr=c.el.querySelector('.tradeBadge');
  if(tr)tr.textContent='🤝 '+Math.max(0,c.tradeRemaining??3);
 }
@@ -912,7 +912,7 @@ function renderExpedition(){
 function renderHud(){
  const food=foodUnits(),pop=population(),free=availableExplorer();
  ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop;
- ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();
+ ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();ui.defense.textContent=defensePower();
  ui.explore.disabled=!!state.expedition||food<1||state.starving;
  ui.explore.innerHTML=state.expedition?'<span>🧭</span><b>탐험 중</b><small>'+state.expedition.remaining+'초</small>':'<span>🧭</span><b>주변 탐색</b><small>사람 1 · 식량 1</small>';
  ui.foodTile?.classList.toggle('low',state.starving||food<pop);renderExpedition();
