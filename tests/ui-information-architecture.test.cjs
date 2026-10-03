@@ -5,25 +5,26 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
 const source = fs.readFileSync(path.join(ROOT, 'ui-information-architecture.js'), 'utf8');
 const accountGate = fs.readFileSync(path.join(ROOT, 'account-profile-gate.js'), 'utf8');
 const avatarIntegration = fs.readFileSync(path.join(ROOT, 'avatar-integration.js'), 'utf8');
 const sessionSafety = fs.readFileSync(path.join(ROOT, 'account-session-safety.js'), 'utf8');
 
-function position(text) {
-  const found = index.indexOf(text);
+function position(text, haystack = bootstrap) {
+  const found = haystack.indexOf(text);
   assert.notEqual(found, -1, `missing ${text}`);
   return found;
 }
 
-test('information architecture and account profile gate load before bootstrap', () => {
+test('information architecture and account profile gate load in final-document dependency order', () => {
+  assert.doesNotMatch(index, /ui-information-architecture\.js|account-client\.js|account-profile-gate\.js/);
+  assert.match(index, /main-bootstrap\.js/);
   const ia = position('ui-information-architecture.js');
   const account = position('account-client.js');
   const gate = position('account-profile-gate.js');
-  const bootstrap = position('main-bootstrap.js');
-  assert.ok(ia < bootstrap, 'IA layer must start before the asynchronous lobby bootstrap');
+  assert.ok(ia >= 0);
   assert.ok(account < gate, 'profile gate needs the account client API first');
-  assert.ok(gate < bootstrap, 'profile gate must survive the asynchronous lobby bootstrap');
 });
 
 test('mobile primary navigation exposes only games profile and search', () => {
