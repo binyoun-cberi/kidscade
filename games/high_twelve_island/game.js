@@ -66,6 +66,11 @@
     timer = setInterval(() => {
       if (paused || state.pending || state.ended || !element.help.classList.contains("hidden") || document.hidden) return;
       const arrivalCount = state.arrivalLog?.length || 0;
+      const activity = window.IslandArt?.getActivitySnapshot?.();
+      if (activity) {
+        state.activityFoodFactor = Number.isFinite(activity.foodPresence) ? activity.foodPresence : 1;
+        state.activityWoodFactor = Number.isFinite(activity.woodPresence) ? activity.woodPresence : 1;
+      }
       S.tick(state);
       if (state.tick % 3 === 0 || state.pending || state.stage === 2 || (state.arrivalLog?.length || 0) !== arrivalCount) save();
       render();
@@ -368,10 +373,10 @@
         villageStatusBoard(rates) +
         (urgent ? operationCards() : '') +
         '<div class="panel-subhead">배치하지 않은 성인 <span>' + S.unused(state) + "명</span></div>" +
-        workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주") +
-        workerRow("wood", "🪵", "물자 수집", state.jobs.wood, "생산 " + number(rates.wood) + " / 주") +
+        workerRow("gather", "🍞", "식량 채집", state.jobs.gather, "생산 " + number(rates.gather) + " / 주 · 현장 작업 " + Math.round((rates.activityFoodFactor || 1) * 100) + "%") +
+        workerRow("wood", "🪵", "물자 수집", state.jobs.wood, "생산 " + number(rates.wood) + " / 주 · 현장 작업 " + Math.round((rates.activityWoodFactor || 1) * 100) + "%") +
         '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) +
-        "/주 · 재난이 겹치면 생산과 식수, 돌봄에 영향을 줍니다. 위기 때 운영 행동으로 대응할 수 있어요.</div>" +
+        "/주 · 배치된 주민은 실제 작업 장소에 도착해야 최대 생산을 냅니다. 재난·대피·파업으로 작업지가 비면 생산도 줄어요.</div>" +
         (urgent ? '' : operationCards());
     } else if (activeTab === "build") {
       p.innerHTML = '<h2>공동시설 건설</h2><p class="intro">자동 배치되는 시설을 지어 마을을 발전시키세요. 비용은 즉시 차감됩니다.</p>' +
