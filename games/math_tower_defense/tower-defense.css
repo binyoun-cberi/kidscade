@@ -126,3 +126,23 @@ body.camera-used #cameraHint{opacity:.38;transform:translateY(2px)}
 @media(max-width:700px){
   #cameraHint{right:7px;bottom:91px;max-width:58vw;padding:5px 8px;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+
+/* v10 zombie outbreak skin */
+:root{--bg:#71808d;--line:rgba(248,113,113,.22);--muted:#aab7c2}
+html,body,#world{background:linear-gradient(#6f7f8a,#8f9aa1 55%,#414a46 55%)}
+#topHud{background:linear-gradient(180deg,rgba(20,17,22,.98),rgba(20,17,22,.86));border-bottom-color:rgba(248,113,113,.28)}
+.brandIcon{background:linear-gradient(135deg,#ef4444,#65a30d);box-shadow:0 0 25px rgba(239,68,68,.22)}
+.stats span{background:rgba(37,30,35,.78);border-color:rgba(248,113,113,.2)}
+#waveCard{background:rgba(31,23,27,.92);border-color:rgba(248,113,113,.48);box-shadow:0 18px 44px rgba(48,10,18,.35)}
+#enemyPreview{color:#fecaca}
+#startWaveBtn{background:linear-gradient(135deg,#dc2626,#ea580c);box-shadow:0 8px 20px rgba(220,38,38,.28)}
+#towerDeck{background:linear-gradient(0deg,rgba(17,14,18,.99),rgba(24,19,23,.9));border-top-color:rgba(248,113,113,.24)}
+.towerCard{background:rgba(43,34,40,.94);border-color:rgba(255,255,255,.11)}
+.towerCard.selected{outline-color:#fca5a5;background:rgba(78,34,43,.96);box-shadow:0 0 22px rgba(248,113,113,.22)}
+body.build-mode #towerDeck{border-top-color:#f87171;box-shadow:0 -8px 26px rgba(248,113,113,.12)}
+body.build-mode #buildHint{border-color:rgba(248,113,113,.68);background:rgba(45,19,25,.94)}
+.modalCard{background:linear-gradient(180deg,rgba(39,25,31,.98),rgba(16,13,17,.98));border-color:rgba(248,113,113,.22)}
+.eyebrow{background:rgba(248,113,113,.13);color:#fecaca}
+.modalCard h1 em{color:#fca5a5}
+.primary{background:linear-gradient(135deg,#dc2626,#ea580c);box-shadow:0 10px 24px rgba(220,38,38,.22)}
