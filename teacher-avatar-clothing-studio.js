@@ -92,6 +92,7 @@ let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
 let pendingCatalogAsset=null;
+let focusPartOnly=false;
 
 const frames=new Map();
 const history=new Map();
@@ -436,7 +437,7 @@ function selectLayer(layer){
   else render();
   refreshNudgeMode();syncLayerSelect();
   const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(activeLayer)){category.value=activeLayer;renderAssetGrid()}
-  renderSelectedAssetList();
+  renderSelectedAssetList();refreshFocusToggle();
   setStatus(frameRecord().label+' · '+(LAYER_LABELS[activeLayer]||activeLayer)+' 편집');
 }
 
@@ -588,6 +589,22 @@ function drawDifferenceOverlay(){
   tmp.getContext('2d').putImageData(ti,0,0);ctx.drawImage(tmp,0,0);
 }
 
+function refreshFocusToggle(){
+  const button=$('focusPartToggle');if(!button)return;
+  button.setAttribute('aria-pressed',focusPartOnly?'true':'false');
+  button.textContent=focusPartOnly?'모든 파츠 보기':'선택 파츠만 보기';
+  button.className=focusPartOnly?'primary-wide':'secondary primary-wide';
+}
+
+function toggleFocusPart(){
+  focusPartOnly=!focusPartOnly;
+  refreshFocusToggle();
+  render();
+  setStatus(focusPartOnly
+    ? partLabel(activeLayer)+' 집중 보기 · BODY와 현재 파츠만 표시'
+    : '전체 파츠 보기 · 현재 조합을 모두 표시');
+}
+
 function layerVisible(layer){
   if(layer==='body')return $('showBody').checked;
   if(FACE_LAYERS.includes(layer))return $('showFace').checked;
@@ -609,7 +626,8 @@ function render(){
   }
 
   for(const layer of RENDER_ORDER){
-    if(layerVisible(layer)&&hasInk(rec[layer]))ctx.drawImage(rec[layer],0,0);
+    const focusVisible=!focusPartOnly||layer==='body'||layer===activeLayer;
+    if(focusVisible&&layerVisible(layer)&&hasInk(rec[layer]))ctx.drawImage(rec[layer],0,0);
   }
 
   drawDifferenceOverlay();
@@ -1015,6 +1033,7 @@ async function verifyAdmin(){
 function bind(){
   buildFrameButtons();buildLayerSelect();buildAssetBrowser();
   $('editLayerSelect')?.addEventListener('change',e=>selectLayer(e.target.value));
+  $('focusPartToggle')?.addEventListener('click',toggleFocusPart);
   $('assetCategory')?.addEventListener('change',e=>{selectLayer(e.target.value);renderAssetGrid()});
   $('assetSearch')?.addEventListener('input',renderAssetGrid);
   for(const [layer,id] of Object.entries(LAYER_BUTTON_IDS)){
@@ -1108,7 +1127,7 @@ async function init(){
   await restoreLocal();
   selectLayer('body');selectTool('pencil');selectFrame('stand-01');
   if(allBodyFramesEmpty())await loadDraftBodySet(false);
-  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();
+  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();
   if(!allBodyFramesEmpty())setStatus('아바타 제작실 준비됨 · 왼쪽 에셋을 눌러 조합하세요.');
 }
 
