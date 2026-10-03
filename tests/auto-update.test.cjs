@@ -8,6 +8,7 @@ const updater = require('../auto-update.js');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
+const base = fs.readFileSync(path.join(ROOT, 'index_base.html'), 'utf8');
 const finalizer = fs.readFileSync(path.join(ROOT, 'scripts', 'finalize-lobby-build.cjs'), 'utf8');
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -66,5 +67,6 @@ test('Cloudflare build emits a no-cache static version manifest', () => {
 });
 
 test('closing a game signals the updater to check before the next lobby action', () => {
-  assert.match(bootstrap, /kidscade:game-closed/);
+  assert.match(base, /kidscade:game-closed/);
+  assert.doesNotMatch(bootstrap, /kidscade:game-closed/);
 });
