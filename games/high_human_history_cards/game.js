@@ -97,11 +97,13 @@ const C={
  storageBasket:{name:'저장 바구니',emoji:'🧺',kind:'building',sub:'바구니 3개를 묶은 저장 도구'},
  shellKnife:{name:'조개칼',emoji:'🐚',kind:'tool',sub:'식물·식재료 가공 도구'},
  shellOrnament:{name:'조개 장신구',emoji:'📿',kind:'tool',sub:'정착지 생활문화의 흔적'},
+ tuskOrnament:{name:'엄니 장신구',emoji:'📿',kind:'tool',sub:'멧돼지 엄니로 만든 장신구'},
 
  campfire:{name:'모닥불',emoji:'🔥',kind:'building',sub:'기본 조리와 불 유지'},
  hearth:{name:'돌화덕',emoji:'🔥',kind:'building',sub:'안정적인 조리와 가열'},
  kiln:{name:'점토 가마',emoji:'🏺',kind:'building',sub:'토기를 안정적으로 소성'},
  charcoal:{name:'숯',emoji:'⚫',kind:'item',sub:'가마에서 만든 고온 연료'},
+ highKiln:{name:'숯 고온가마',emoji:'🔥',kind:'building',sub:'숯으로 더 안정적으로 소성'},
  smokingRack:{name:'훈연대',emoji:'♨️',kind:'building',sub:'고기·생선을 보존'},
  clayVessel:{name:'말린 토기',emoji:'🏺',kind:'item',sub:'불에 구우면 토기'},
  combRawPot:{name:'무늬 넣은 토기',emoji:'🏺',kind:'item',sub:'소성 전 빗살무늬토기'},
@@ -177,6 +179,7 @@ const R=[
  ['yarn','loom',1,0,[['wovenCloth',1]],'직조'],
  ['wovenCloth','boneNeedle',1,0,[['wovenClothing',1]],'직물옷'],
  ['shell','chopper',1,0,[['shellKnife',1]],'조개칼'],
+ ['boarTusk','cord',1,1,[['tuskOrnament',1]],'엄니 장신구'],
  ['basket','cord',1,1,[['fishTrap',1]],'통발'],
  ['stoneBlade','wood',1,1,[['spear',1]],'돌창'],
  ['sinew','wood',1,1,[['bow',1]],'활'],
@@ -197,6 +200,7 @@ const R=[
  ['groundStone','campfire',1,0,[['hearth',1]],'돌화덕'],
  ['clayVessel','hearth',2,0,[['kiln',1]],'점토 가마'],
  ['wood','kiln',2,0,[['charcoal',2]],'숯 굽기'],
+ ['charcoal','kiln',1,1,[['highKiln',1]],'숯 고온가마'],
  ['rawHide','scraper',1,0,[['dressedHide',1]],'가죽 손질'],
  ['dressedHide','boneNeedle',1,0,[['leatherClothing',1]],'가죽옷'],
  ['dressedHide','hutFrame',1,1,[['hideTent',1]],'가죽 천막'],
@@ -207,6 +211,8 @@ const R=[
  ['combRawPot','campfire',1,0,[['combPottery',1]],'빗살무늬토기 굽기'],
  ['clayVessel','kiln',1,0,[['pottery',1]],'가마에서 토기 굽기'],
  ['combRawPot','kiln',1,0,[['combPottery',1]],'가마에서 빗살무늬토기 굽기'],
+ ['clayVessel','highKiln',1,0,[['pottery',2]],'고온가마 토기 소성'],
+ ['combRawPot','highKiln',1,0,[['combPottery',2]],'고온가마 빗살무늬토기 소성'],
  ['rawMeat','campfire',1,0,[['cookedMeat',1]],'고기 익히기'],
  ['rawMeat','smokingRack',1,0,[['smokedMeat',1]],'고기 훈연'],
  ['freshFish','smokingRack',1,0,[['smokedFish',1]],'생선 훈연'],
@@ -234,7 +240,7 @@ const R=[
  ['person','cord',1,1,[['herder',1]],'목축민']
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
-const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,shellOrnament:1};
+const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,highKiln:2,shellOrnament:1,tuskOrnament:1};
 const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
 const isWorker=t=>['person','hunter','fisher','farmer','herder'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -380,6 +386,8 @@ function specialAction(a,b){
  if(has('storageBasket','berryBush'))return {ms:1000,label:'저장 바구니 채집 중',consume:null,preserve:null,out:[['berry',4]],discover:'대량 채집',life:'hunt'};
  if(has('basket','tidalFlat'))return {ms:1100,label:'바구니로 갯벌 채집 중',consume:null,preserve:null,out:[['clam',2],['oyster',1],['shell',1]],discover:'갯벌 바구니 채집',life:'fish',lifeGain:2};
  if(has('acornMeal','river'))return {ms:1500,label:'도토리 떫은맛 우려내는 중',consume:'acornMeal',preserve:'river',out:[['leachedAcorn',1]],discover:'도토리 우리기'};
+ if(has('shellKnife','reedBed'))return {ms:900,label:'조개칼로 섬유 베는 중',consume:null,preserve:null,out:[['fiber',2]],discover:'조개칼 채집',life:'hunt'};
+ if(has('shellKnife','wildMillet'))return {ms:1050,label:'조개칼로 곡식 베는 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',1]],discover:'조개칼 수확',life:'farm'};
  if(has('groundAxe','clearedPlot'))return {ms:1800,label:'저수 웅덩이 파는 중',consume:'clearedPlot',preserve:'groundAxe',out:[['waterPit',1]],discover:'저수 웅덩이'};
  return null;
 }
@@ -406,8 +414,8 @@ function snap(a,b){place(a,b.x+10,b.y+12);a.el.style.zIndex=++state.z;}
 function separate(a,b){if(!a||!state.cards.has(a.id)||!b||!state.cards.has(b.id))return;place(a,clamp(b.x+b.el.offsetWidth+12,4,Math.max(4,board.clientWidth-a.el.offsetWidth-4)),clamp(b.y+14,4,Math.max(4,board.clientHeight-a.el.offsetHeight-4)));}
 
 function onCreated(type){
- if(['campfire','hearth','kiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket'].includes(type))discover(C[type].name);
- if(['groundAxe','combPottery','pitHouse','milletFarm','broomcornFarm','beanFarm','fishingGround','goatRanch','wovenClothing','kiln'].includes(type))ui.era.textContent='신석기 생활 확장';
+ if(['campfire','hearth','kiln','highKiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket'].includes(type))discover(C[type].name);
+ if(['groundAxe','combPottery','pitHouse','milletFarm','broomcornFarm','beanFarm','fishingGround','goatRanch','wovenClothing','kiln','highKiln'].includes(type))ui.era.textContent='신석기 생활 확장';
 }
 function discover(name){if(state.discoveries.has(name))return;state.discoveries.add(name);showToast('💡 새 기술: '+name);try{window.KidscadeGame?.sound?.('correct')}catch(_){}}
 function addLife(k,n=1){state.lifestyle[k]+=n;}
@@ -419,7 +427,7 @@ function settlementScore(){
 }
 function checkMilestone(){
  if(state.milestoneShown||state.over)return;
- const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
+ const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln','highKiln'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
  if(score>=9&&advanced>=2){
   state.milestoneShown=true;
   $('#milestoneText').textContent='농경·어로·목축 중 여러 생활 기술과 주거·저장 기술이 연결되며 정착도가 '+score+'에 도달했습니다. 한 가지 길만 고르지 않아도 됩니다.';
