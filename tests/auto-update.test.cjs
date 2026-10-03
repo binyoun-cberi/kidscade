@@ -8,6 +8,9 @@ const updater = require('../auto-update.js');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
+const base = fs.readFileSync(path.join(ROOT, 'index_base.html'), 'utf8');
+const finalizer = fs.readFileSync(path.join(ROOT, 'scripts', 'finalize-lobby-build.cjs'), 'utf8');
+const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 test('auto updater compares immutable build ids rather than timestamps', () => {
   assert.equal(updater.isUsableBuild('__KIDSCADE_BUILD__'), false);
@@ -41,6 +44,21 @@ test('index keeps one bootstrap entrypoint and runtime scripts load after compos
   assert.match(bootstrap, /<scr' \+ 'ipt defer src=/);
 });
 
+test('Cloudflare build precomposes the final lobby before browser startup', () => {
+  const built = fs.readFileSync(path.join(ROOT, 'dist', 'index.html'), 'utf8');
+  assert.doesNotMatch(built, /__KIDSCADE_BUILD__/);
+  assert.doesNotMatch(built, /<script\b[^>]*src=["'][^"']*main-bootstrap\.js/i);
+  assert.match(built, /window\.KidscadeCatalog=/);
+  assert.match(built, /auto-update\.js\?v=/);
+  assert.match(built, /audio-manager\.js\?v=/);
+  assert.match(built, /game-frame-shell\.js\?v=/);
+  assert.match(finalizer, /composeLobby/);
+  assert.match(finalizer, /compose-lobby-build\.cjs/);
+  const command = packageJson.scripts['build:cloudflare'];
+  assert.ok(command.indexOf('bunsik-kitchen-build.cjs') < command.indexOf('finalize-lobby-build.cjs'));
+  assert.match(command, /finalize-lobby-build\.cjs$/);
+});
+
 test('Cloudflare build emits a no-cache static version manifest', () => {
   assert.match(build, /kidscade-version\.json/);
   assert.match(build, /writeBuildVersion\(buildId\)/);
@@ -49,5 +67,6 @@ test('Cloudflare build emits a no-cache static version manifest', () => {
 });
 
 test('closing a game signals the updater to check before the next lobby action', () => {
-  assert.match(bootstrap, /kidscade:game-closed/);
+  assert.match(base, /kidscade:game-closed/);
+  assert.doesNotMatch(bootstrap, /kidscade:game-closed/);
 });
