@@ -149,8 +149,10 @@
     let sessionSec = 0;
     let reward = null;
 
-    bridge.playSound?.('close');
+    // Close/reset the iframe first so shared game audio is stopped before
+    // the lobby close chime is played.
     bridge.closeModal?.();
+    bridge.playSound?.('close');
 
     try {
       if (!session || finiteNumber(session.startedAt) <= 0) {
