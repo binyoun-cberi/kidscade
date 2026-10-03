@@ -133,7 +133,11 @@ test('curated hair catalog has one approved fallback and standalone asset',()=>{
   assert.ok(fallback?.approved);
   assert.equal(fallback.back,null);
   assert.match(fallback.front,/runtime\/hair\/approved\/hair-clean-01\.png/);
-  assert.ok(fs.existsSync(path.join(root,'assets/game/characters/kidscade-avatar-v1',fallback.front)));
+  const assetPath=path.join(root,'assets/game/characters/kidscade-avatar-v1',fallback.front);
+  assert.ok(fs.existsSync(assetPath));
+  const png=fs.readFileSync(assetPath);
+  assert.equal(png.readUInt32BE(16),128);
+  assert.equal(png.readUInt32BE(20),128);
 });
 
 test('renderer migrates legacy hair selections to the approved fallback and supports future back hair',()=>{
