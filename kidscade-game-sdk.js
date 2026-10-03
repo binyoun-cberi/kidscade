@@ -253,6 +253,33 @@
     return { ...state(), scoreResult:result, elapsedMs };
   }
 
+  function cleanAchievementId(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '');
+  }
+
+  function achievement(id, detail = {}) {
+    const achievementId = cleanAchievementId(id);
+    if (!achievementId) return false;
+    emit('achievement', { ...detail, achievementId, action:'unlock' });
+    return true;
+  }
+
+  function achievementProgress(id, value, detail = {}) {
+    const achievementId = cleanAchievementId(id);
+    const numeric = finite(value);
+    if (!achievementId || numeric === null) return false;
+    emit('achievement', { ...detail, achievementId, action:'progress', value:numeric });
+    return true;
+  }
+
+  function achievementIncrement(id, amount = 1, detail = {}) {
+    const achievementId = cleanAchievementId(id);
+    const numeric = finite(amount);
+    if (!achievementId || numeric === null) return false;
+    emit('achievement', { ...detail, achievementId, action:'increment', amount:Math.max(0, numeric) });
+    return true;
+  }
+
   function restart() {
     emit('restart', { source:'shell' });
     if (typeof options.onRestart === 'function') {
@@ -460,6 +487,9 @@
     toggleMuted,
     score,
     gameOver,
+    achievement,
+    achievementProgress,
+    achievementIncrement,
     bestRecord,
     restart,
     exit,
