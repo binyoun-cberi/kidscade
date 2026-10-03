@@ -123,3 +123,17 @@ test('Bunsik Kitchen build script publishes v7', () => {
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
+
+
+test('Bunsik Kitchen delegates restaurant state to the shared engine', () => {
+  assert.match(js, /import \{ RestaurantEngine \} from '\.\.\/shared\/restaurant-engine\.js\?v=1'/);
+  assert.match(js, /restaurant=new RestaurantEngine\(/);
+  assert.match(js, /restaurant\.recipes\.findExact\(p\.ingredients\)/);
+  assert.match(js, /restaurant\.spawnOrder\(/);
+  assert.match(js, /restaurant\.orders\.adjustPatience\(/);
+  assert.match(js, /restaurant\.quote\(/);
+  assert.match(js, /restaurant\.serve\(/);
+  assert.match(js, /restaurant\.tick\(dt,\{/);
+  assert.match(js, /restaurant\.startShift\(/);
+  assert.match(js, /restaurant\.stopShift\(\)/);
+});
