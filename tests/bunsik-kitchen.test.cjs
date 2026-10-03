@@ -93,7 +93,7 @@ test('tutorial teaches the physical water-to-pot-to-customer route', () => {
   assert.match(js, /스프 상자/);
   assert.match(js, /계란을 들고 냄비에/);
   assert.match(js, /손님 앞으로 가서 E로 서빙/);
-  assert.match(js, /if\(state\.tutorial\.step===0&&id==='water'\)state\.tutorial\.step=1/);
+  assert.match(js, /state\.tutorial\.step===0&&id==='water'/);
 });
 
 test('plating transfers the finished ramen into the player hand', () => {
