@@ -6,7 +6,7 @@
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const DEFAULTS={
-  hairSet:'male',hair:1,upper:1,lower:1,
+  hairId:'clean-01',upper:1,lower:1,
   eyes:1,eyebrows:1,noses:1,mouths:1,blush:0
 };
 
@@ -26,8 +26,7 @@ function readEquipment(){
   return {
     ...DEFAULTS,
     ...saved,
-    hairSet:saved.hairSet==='female'?'female':'male',
-    hair:Math.max(1,Math.min(24,parseInt(saved.hair,10)||DEFAULTS.hair)),
+    hairId:typeof saved.hairId==='string'&&saved.hairId?saved.hairId:DEFAULTS.hairId,
     upper:saved.upper==null?DEFAULTS.upper:(saved.upper?1:0),
     lower:saved.lower==null?DEFAULTS.lower:(saved.lower?1:0),
     eyes:Math.max(1,Math.min(8,parseInt(saved.eyes,10)||DEFAULTS.eyes)),
@@ -39,7 +38,7 @@ function readEquipment(){
 }
 function signature(e=readEquipment()){
   return [
-    e.hairSet,e.hair,e.upper,e.lower,e.eyes,e.eyebrows,e.noses,e.mouths,e.blush
+    e.hairId,e.upper,e.lower,e.eyes,e.eyebrows,e.noses,e.mouths,e.blush
   ].join('|');
 }
 function avatarApi(){
