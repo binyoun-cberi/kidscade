@@ -14,8 +14,8 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json')
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
 test('Bunsik Kitchen v7 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=7/);
-  assert.match(html, /bunsik-kitchen\.js\?v=7/);
+  assert.match(html, /bunsik-kitchen\.css\?v=8/);
+  assert.match(html, /bunsik-kitchen\.js\?v=8/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -110,16 +110,16 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
 
 test('catalog and compatibility entry publish v7', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=7');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=8');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=7/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=7/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=8/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=8/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
 test('Bunsik Kitchen build script publishes v7', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=7/);
+  assert.match(build,/\?v=8/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
