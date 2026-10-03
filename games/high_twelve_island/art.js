@@ -584,8 +584,8 @@
         if (actor.arrived && woodActivities.has(actor.activity)) woodWorking++;
       }
     }
-    const foodPresence = foodAssigned ? clamp(.90 + .10 * (foodWorking / foodAssigned), .88, 1) : 1;
-    const woodPresence = woodAssigned ? clamp(.90 + .10 * (woodWorking / woodAssigned), .88, 1) : 1;
+    const foodPresence = foodAssigned ? clamp(.95 + .05 * (foodWorking / foodAssigned), .94, 1) : 1;
+    const woodPresence = woodAssigned ? clamp(.95 + .05 * (woodWorking / woodAssigned), .94, 1) : 1;
     return { total: actorRuntime.size, counts, moving, routed, foodAssigned, foodWorking, woodAssigned, woodWorking, foodPresence, woodPresence };
   }
   function stateSignals(s) {
