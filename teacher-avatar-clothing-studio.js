@@ -6,7 +6,35 @@ const SAVE_KEY='kidscade-avatar-studio-v3';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
-const LAYERS=['body','hair','upper','lower'];
+const LAYERS=['body','eyes','nose','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat'];
+const FACE_LAYERS=['eyes','nose','mouth'];
+const HAIR_LAYERS=['hair','hat'];
+const OUTFIT_LAYERS=['upper','lower','shoes','gloves'];
+const ACCESSORY_LAYERS=['earring','mask'];
+const RENDER_ORDER=['body','lower','shoes','upper','gloves','eyes','nose','mouth','mask','hair','earring','hat'];
+const LAYER_LABELS={
+  body:'BODY',hair:'HAIR',eyes:'눈',nose:'코',mouth:'입',earring:'귀걸이',mask:'가면',
+  upper:'상의',lower:'하의',shoes:'신발',gloves:'장갑',hat:'모자'
+};
+const LAYER_BUTTON_IDS={
+  body:'layerBody',hair:'layerHair',eyes:'layerEyes',nose:'layerNose',mouth:'layerMouth',
+  earring:'layerEarring',mask:'layerMask',upper:'layerUpper',lower:'layerLower',
+  shoes:'layerShoes',gloves:'layerGloves',hat:'layerHat'
+};
+const LAYER_ID_FIELDS={
+  body:'bodyId',hair:'hairId',eyes:'eyesId',nose:'noseId',mouth:'mouthId',earring:'earringId',
+  mask:'maskId',upper:'upperId',lower:'lowerId',shoes:'shoesId',gloves:'glovesId',hat:'hatId'
+};
+const LAYER_DEFAULT_IDS={
+  body:'maple-lite-body-v3',hair:'toben-like-01',eyes:'eyes-01',nose:'nose-01',mouth:'mouth-01',
+  earring:'earring-01',mask:'mask-01',upper:'upper-01',lower:'lower-01',shoes:'shoes-01',
+  gloves:'gloves-01',hat:'hat-01'
+};
+const LAYER_FOLDERS={
+  body:'body',hair:'hair',eyes:'face/eyes',nose:'face/nose',mouth:'face/mouth',
+  earring:'accessories/earring',mask:'accessories/mask',hat:'accessories/hat',
+  upper:'outfit/upper',lower:'outfit/lower',shoes:'outfit/shoes',gloves:'outfit/gloves'
+};
 const FRAMES=[
   {id:'stand-01',label:'STAND 01',kind:'stand',n:1},
   {id:'stand-02',label:'STAND 02',kind:'stand',n:2},
@@ -65,6 +93,12 @@ function hasInk(c){
   const d=c.getContext('2d',{alpha:true}).getImageData(0,0,c.width,c.height).data;
   for(let i=3;i<d.length;i+=4)if(d[i])return true;
   return false;
+}
+
+function anyLayerHasInk(rec,layers){return layers.some(layer=>hasInk(rec?.[layer]))}
+function assetIdForLayer(layer){
+  const field=LAYER_ID_FIELDS[layer],fallback=LAYER_DEFAULT_IDS[layer]||layer+'-01';
+  return safeId(field&&$(field)?.value,fallback);
 }
 
 function bboxOfCanvas(c,alphaCut=1){
@@ -193,13 +227,16 @@ function buildFrameButtons(){
 function refreshFrameButtons(){
   document.querySelectorAll('.frame-btn').forEach(b=>{
     const id=b.dataset.frame,rec=frames.get(id),f=frameRecord(id);
-    const body=hasInk(rec.body),hair=hasInk(rec.hair),upper=hasInk(rec.upper),lower=hasInk(rec.lower);
+    const body=hasInk(rec.body);
+    const face=anyLayerHasInk(rec,FACE_LAYERS);
+    const style=anyLayerHasInk(rec,HAIR_LAYERS);
+    const gear=anyLayerHasInk(rec,[...OUTFIT_LAYERS,...ACCESSORY_LAYERS]);
     b.classList.toggle('active',id===currentFrame);
     b.innerHTML='<span>'+f.label+'</span><span class="dots">'+
       '<span class="'+(body?'dot-body':'dot-empty')+'">●</span>'+
-      '<span class="'+(hair?'dot-hair':'dot-empty')+'">●</span>'+
-      '<span class="'+(upper?'dot-upper':'dot-empty')+'">●</span>'+
-      '<span class="'+(lower?'dot-lower':'dot-empty')+'">●</span></span>';
+      '<span class="'+(face?'dot-hair':'dot-empty')+'">●</span>'+
+      '<span class="'+(style?'dot-upper':'dot-empty')+'">●</span>'+
+      '<span class="'+(gear?'dot-lower':'dot-empty')+'">●</span></span>';
   });
   refreshLayerStatus();
 }
@@ -207,19 +244,26 @@ function refreshFrameButtons(){
 function refreshLayerStatus(){
   const host=$('layerStatus');if(!host)return;
   const rec=frames.get(currentFrame);
-  const defs=[['body','BODY'],['hair','HAIR'],['upper','UPPER'],['lower','LOWER']];
-  host.innerHTML=defs.map(([id,label])=>'<span class="badge '+(hasInk(rec[id])?'on':'')+'">'+label+'</span>').join('');
+  const defs=[
+    ['BODY',hasInk(rec.body)],
+    ['FACE',anyLayerHasInk(rec,FACE_LAYERS)],
+    ['HAIR',anyLayerHasInk(rec,HAIR_LAYERS)],
+    ['OUTFIT',anyLayerHasInk(rec,OUTFIT_LAYERS)],
+    ['ACC',anyLayerHasInk(rec,ACCESSORY_LAYERS)]
+  ];
+  host.innerHTML=defs.map(([label,on])=>'<span class="badge '+(on?'on':'')+'">'+label+'</span>').join('');
 }
 
 function selectLayer(layer){
   if(!LAYERS.includes(layer))return;
   activeLayer=layer;selection=null;selectionStart=null;invalidatePixelPreview();
-  const map={body:'layerBody',hair:'layerHair',upper:'layerUpper',lower:'layerLower'};
-  for(const [name,id] of Object.entries(map))$(id).className=name===activeLayer?'active':'secondary';
+  for(const [name,id] of Object.entries(LAYER_BUTTON_IDS)){
+    const el=$(id);if(el)el.className=name===activeLayer?'active':'secondary';
+  }
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
   refreshNudgeMode();
-  setStatus(frameRecord().label+' · '+activeLayer.toUpperCase()+' 편집');
+  setStatus(frameRecord().label+' · '+(LAYER_LABELS[activeLayer]||activeLayer)+' 편집');
 }
 
 function selectFrame(id){
@@ -369,6 +413,15 @@ function drawDifferenceOverlay(){
   tmp.getContext('2d').putImageData(ti,0,0);ctx.drawImage(tmp,0,0);
 }
 
+function layerVisible(layer){
+  if(layer==='body')return $('showBody').checked;
+  if(FACE_LAYERS.includes(layer))return $('showFace').checked;
+  if(HAIR_LAYERS.includes(layer))return $('showHair').checked;
+  if(OUTFIT_LAYERS.includes(layer))return $('showClothes').checked;
+  if(ACCESSORY_LAYERS.includes(layer))return $('showAccessories').checked;
+  return true;
+}
+
 function render(){
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,SIZE,SIZE);ctx.imageSmoothingEnabled=false;
   const rec=frames.get(currentFrame);
@@ -380,10 +433,9 @@ function render(){
     }
   }
 
-  if($('showBody').checked&&hasInk(rec.body))ctx.drawImage(rec.body,0,0);
-  if($('showClothes').checked&&hasInk(rec.lower))ctx.drawImage(rec.lower,0,0);
-  if($('showClothes').checked&&hasInk(rec.upper))ctx.drawImage(rec.upper,0,0);
-  if($('showHair').checked&&hasInk(rec.hair))ctx.drawImage(rec.hair,0,0);
+  for(const layer of RENDER_ORDER){
+    if(layerVisible(layer)&&hasInk(rec[layer]))ctx.drawImage(rec[layer],0,0);
+  }
 
   drawDifferenceOverlay();
 
@@ -449,14 +501,42 @@ function bodyGuideBox(){
 
 function targetRectForLayer(){
   const body=bodyGuideBox();
+  const head={x:body.x,y:body.y,w:body.w,h:Math.max(1,Math.round(body.h*.55))};
   if(activeLayer==='body')return {x:22,y:6,w:84,h:113,ground:true};
   if(activeLayer==='hair'){
-    return {x:Math.max(0,body.x-5),y:Math.max(0,body.y-4),w:Math.min(SIZE-body.x+5,body.w+10),h:Math.min(72,Math.round(body.h*.56)+6)};
+    return {x:Math.max(0,head.x-5),y:Math.max(0,head.y-4),w:Math.min(SIZE-head.x+5,head.w+10),h:Math.min(72,head.h+7)};
+  }
+  if(activeLayer==='hat'){
+    return {x:Math.max(0,head.x-7),y:Math.max(0,head.y-12),w:Math.min(SIZE-head.x+7,head.w+14),h:Math.min(58,Math.round(head.h*.72))};
+  }
+  if(activeLayer==='eyes'){
+    return {x:Math.round(head.x+head.w*.04),y:Math.round(head.y+head.h*.34),w:Math.max(10,Math.round(head.w*.58)),h:Math.max(8,Math.round(head.h*.22))};
+  }
+  if(activeLayer==='nose'){
+    return {x:Math.round(head.x+head.w*.00),y:Math.round(head.y+head.h*.48),w:Math.max(8,Math.round(head.w*.34)),h:Math.max(7,Math.round(head.h*.18))};
+  }
+  if(activeLayer==='mouth'){
+    return {x:Math.round(head.x+head.w*.04),y:Math.round(head.y+head.h*.61),w:Math.max(9,Math.round(head.w*.38)),h:Math.max(7,Math.round(head.h*.16))};
+  }
+  if(activeLayer==='mask'){
+    return {x:Math.max(0,Math.round(head.x-head.w*.03)),y:Math.round(head.y+head.h*.24),w:Math.round(head.w*.70),h:Math.round(head.h*.52)};
+  }
+  if(activeLayer==='earring'){
+    return {x:Math.round(head.x+head.w*.72),y:Math.round(head.y+head.h*.43),w:Math.max(8,Math.round(head.w*.23)),h:Math.max(10,Math.round(head.h*.28))};
   }
   if(activeLayer==='upper'){
     return {x:Math.max(0,Math.round(body.x+body.w*.12)),y:Math.round(body.y+body.h*.46),w:Math.round(body.w*.76),h:Math.round(body.h*.30)};
   }
-  return {x:Math.max(0,Math.round(body.x+body.w*.16)),y:Math.round(body.y+body.h*.65),w:Math.round(body.w*.68),h:Math.round(body.h*.30)};
+  if(activeLayer==='lower'){
+    return {x:Math.max(0,Math.round(body.x+body.w*.16)),y:Math.round(body.y+body.h*.65),w:Math.round(body.w*.68),h:Math.round(body.h*.30)};
+  }
+  if(activeLayer==='shoes'){
+    return {x:Math.max(0,Math.round(body.x+body.w*.08)),y:Math.round(body.y+body.h*.84),w:Math.round(body.w*.84),h:Math.max(10,Math.round(body.h*.18))};
+  }
+  if(activeLayer==='gloves'){
+    return {x:Math.max(0,Math.round(body.x-body.w*.04)),y:Math.round(body.y+body.h*.50),w:Math.min(SIZE,Math.round(body.w*1.08)),h:Math.round(body.h*.28)};
+  }
+  return {x:body.x,y:body.y,w:body.w,h:body.h};
 }
 
 function autoFitStamp(announce=true){
@@ -569,6 +649,18 @@ function clearStamp(){
   refreshNudgeMode();render();
 }
 
+function copyLayerToAllFrames(){
+  if(sourceImage)return setStatus('먼저 불러온 이미지를 현재 파츠에 적용해 주세요.',true);
+  const src=layerCanvas();
+  if(!hasInk(src))return setStatus('현재 파츠가 비어 있습니다.',true);
+  if(!confirm((LAYER_LABELS[activeLayer]||activeLayer)+'을(를) 모든 애니메이션 프레임에 같은 좌표로 복사할까요?'))return;
+  for(const f of FRAMES){
+    if(f.id===currentFrame)continue;
+    const dst=layerCtx(f.id,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);
+  }
+  history.clear();selection=null;afterEdit((LAYER_LABELS[activeLayer]||activeLayer)+'을 모든 프레임에 복사함');
+}
+
 function copyPrevious(){
   const prev=prevFrameId();if(!prev)return setStatus('이전 프레임이 없습니다.',true);
   snapshot();const dst=layerCtx(),src=layerCanvas(prev,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);selection=null;afterEdit(prev+' → '+currentFrame+' '+activeLayer+' 복사');
@@ -593,8 +685,11 @@ function clearAll(){
 }
 
 function readProject(){
-  const out={version:3,type:'kidscade-avatar-studio-project',canvas:[128,128],root:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorRight:true,
-    bodyId:$('bodyId').value.trim()||'maple-lite-body-v3',hairId:$('hairId').value.trim()||'toben-like-01',upperId:$('upperId').value.trim()||'upper-01',lowerId:$('lowerId').value.trim()||'lower-01',frames:{}};
+  const assetIds=Object.fromEntries(LAYERS.map(layer=>[layer,assetIdForLayer(layer)]));
+  const out={version:4,type:'kidscade-avatar-studio-project',canvas:[128,128],root:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorRight:true,
+    assetIds,
+    bodyId:assetIds.body,hairId:assetIds.hair,upperId:assetIds.upper,lowerId:assetIds.lower,
+    frames:{}};
   for(const f of FRAMES){const rec=frames.get(f.id);out.frames[f.id]={};for(const layer of LAYERS)out.frames[f.id][layer]=rec[layer].toDataURL('image/png')}
   return out;
 }
@@ -609,16 +704,20 @@ async function applyProject(project){
     const map={'static':'stand-01','idle-01':'stand-02','walk-01':'walk-01','walk-02':'walk-02','walk-03':'walk-03','walk-04':'walk-04'};
     for(const [oldId,newId] of Object.entries(map)){const src=project.frames?.[oldId];if(!src)continue;await Promise.all([loadDataUrl(layerCanvas(newId,'upper'),src.upper),loadDataUrl(layerCanvas(newId,'lower'),src.lower)])}
   }else if(project.type==='kidscade-avatar-studio-project'){
-    if(project.bodyId)$('bodyId').value=project.bodyId;if(project.hairId)$('hairId').value=project.hairId;if(project.upperId)$('upperId').value=project.upperId;if(project.lowerId)$('lowerId').value=project.lowerId;
+    const legacyIds={body:project.bodyId,hair:project.hairId,upper:project.upperId,lower:project.lowerId};
+    const ids={...legacyIds,...(project.assetIds||{})};
+    for(const layer of LAYERS){
+      const field=LAYER_ID_FIELDS[layer],value=ids[layer];
+      if(field&&value&&$(field))$(field).value=value;
+    }
     for(const f of FRAMES){
       const src=project.frames?.[f.id];if(!src)continue;
-      await Promise.all(['body','upper','lower'].map(layer=>loadDataUrl(layerCanvas(f.id,layer),src[layer])));
-      if(src.hair)await loadDataUrl(layerCanvas(f.id,'hair'),src.hair);
-      else if(src.hairBack||src.hairFront){
+      for(const layer of LAYERS)if(src[layer])await loadDataUrl(layerCanvas(f.id,layer),src[layer]);
+      if(!src.hair&&(src.hairBack||src.hairFront)){
         const target=layerCtx(f.id,'hair');target.clearRect(0,0,SIZE,SIZE);
         const legacy=makeCanvas();
         if(src.hairBack){await loadDataUrl(legacy,src.hairBack);target.drawImage(legacy,0,0)}
-        if(src.hairFront){await loadDataUrl(legacy,src.hairFront);target.drawImage(legacy,0,0)}
+        if(src.hairFront){legacy.getContext('2d').clearRect(0,0,SIZE,SIZE);await loadDataUrl(legacy,src.hairFront);target.drawImage(legacy,0,0)}
       }
     }
   }else throw new Error('Kidscade 아바타 제작실 프로젝트가 아닙니다.');
@@ -639,33 +738,25 @@ function downloadBlob(name,blob){
 function canvasBlob(c){return new Promise(resolve=>c.toBlob(blob=>resolve(blob),'image/png'))}
 async function downloadCanvas(c,name){const blob=await canvasBlob(c);if(blob)downloadBlob(name,blob)}
 function safeId(v,fallback){return String(v||fallback).trim().replace(/[^a-zA-Z0-9_-]+/g,'-')||fallback}
-function layerId(layer){
-  if(layer==='body')return safeId($('bodyId').value,'body');
-  if(layer==='hair')return safeId($('hairId').value,'hair');
-  if(layer==='upper')return safeId($('upperId').value,'upper');
-  return safeId($('lowerId').value,'lower');
-}
-function layerFileName(layer,frameId=currentFrame){
-  return layerId(layer)+'_'+layer+'_'+frameId+'.png';
-}
+function layerId(layer){return assetIdForLayer(layer)}
+function layerFileName(layer,frameId=currentFrame){return layerId(layer)+'_'+frameId+'.png'}
 function compositeCanvas(frameId=currentFrame){
   const rec=frames.get(frameId),out=makeCanvas(),o=out.getContext('2d',{alpha:true});
-  for(const layer of ['body','lower','upper','hair'])if(hasInk(rec[layer]))o.drawImage(rec[layer],0,0);
+  for(const layer of RENDER_ORDER)if(hasInk(rec[layer]))o.drawImage(rec[layer],0,0);
   return out;
 }
-function exportCurrent(){downloadCanvas(layerCanvas(),layerFileName(activeLayer));setStatus('현재 '+activeLayer.toUpperCase()+' PNG 내보냄')}
-function exportComposite(){downloadCanvas(compositeCanvas(),safeId($('bodyId').value,'avatar')+'_'+currentFrame+'_composite.png');setStatus('현재 합성 PNG 내보냄')}
-function exportCurrentBody(){downloadCanvas(layerCanvas(currentFrame,'body'),safeId($('bodyId').value,'body')+'_'+currentFrame+'.png');setStatus('현재 BODY PNG 내보냄')}
-function exportCurrentHair(){
-  downloadCanvas(layerCanvas(currentFrame,'hair'),safeId($('hairId').value,'hair')+'_'+currentFrame+'.png');
-  setStatus('현재 HAIR PNG 내보냄');
-}
+function exportCurrent(){downloadCanvas(layerCanvas(),layerFileName(activeLayer));setStatus('현재 '+(LAYER_LABELS[activeLayer]||activeLayer)+' PNG 내보냄')}
+function exportComposite(){downloadCanvas(compositeCanvas(),assetIdForLayer('body')+'_'+currentFrame+'_composite.png');setStatus('현재 합성 PNG 내보냄')}
+function exportCurrentBody(){downloadCanvas(layerCanvas(currentFrame,'body'),assetIdForLayer('body')+'_'+currentFrame+'.png');setStatus('현재 BODY PNG 내보냄')}
+function exportCurrentHair(){downloadCanvas(layerCanvas(currentFrame,'hair'),assetIdForLayer('hair')+'_'+currentFrame+'.png');setStatus('현재 HAIR PNG 내보냄')}
+
 function manifestObject(){
-  return {version:3,type:'kidscade-avatar-v3',canvas:[128,128],logicalRoot:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorForRight:true,
+  return {version:4,type:'kidscade-avatar-v3',canvas:[128,128],logicalRoot:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorForRight:true,
     frameSets:{stand:['stand-01','stand-02'],walk:['walk-01','walk-02','walk-03','walk-04'],jump:['jump-01']},
     hairMode:'single',
-    layerOrder:['body','lower','upper','hair'],
-    ids:{body:safeId($('bodyId').value,'body'),hair:safeId($('hairId').value,'hair'),upper:safeId($('upperId').value,'upper'),lower:safeId($('lowerId').value,'lower')},
+    layerOrder:[...RENDER_ORDER],
+    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS]},
+    ids:Object.fromEntries(LAYERS.map(layer=>[layer,assetIdForLayer(layer)])),
     availability:Object.fromEntries(FRAMES.map(f=>[f.id,Object.fromEntries(LAYERS.map(layer=>[layer,hasInk(layerCanvas(f.id,layer))]))]))
   };
 }
@@ -707,7 +798,7 @@ async function canvasBytes(c){
 async function exportBundle(){
   const btn=$('exportBundle'),old=btn.textContent;btn.disabled=true;btn.textContent='ZIP 만드는 중';
   try{
-    const files=[],folder={body:'body',hair:'hair',upper:'upper',lower:'lower'};
+    const files=[],folder={...LAYER_FOLDERS};
     for(const f of FRAMES){
       for(const layer of LAYERS){const c=layerCanvas(f.id,layer);if(hasInk(c))files.push({name:folder[layer]+'/'+f.id+'.png',data:await canvasBytes(c)})}
       const comp=compositeCanvas(f.id);if(hasInk(comp))files.push({name:'composite/'+f.id+'.png',data:await canvasBytes(comp)});
@@ -730,25 +821,25 @@ async function verifyAdmin(){
 
 function bind(){
   buildFrameButtons();
-  $('layerBody').addEventListener('click',()=>selectLayer('body'));
-  $('layerHair').addEventListener('click',()=>selectLayer('hair'));
-  $('layerUpper').addEventListener('click',()=>selectLayer('upper'));
-  $('layerLower').addEventListener('click',()=>selectLayer('lower'));
+  for(const [layer,id] of Object.entries(LAYER_BUTTON_IDS)){
+    $(id)?.addEventListener('click',()=>selectLayer(layer));
+  }
   $('toolPencil').addEventListener('click',()=>selectTool('pencil'));
   $('toolErase').addEventListener('click',()=>selectTool('erase'));
   $('toolSelect').addEventListener('click',()=>selectTool('select'));
   $('clearSelection').addEventListener('click',clearSelection);
   $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
   $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
+  $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
   $('playStand').addEventListener('click',()=>startPlayback('stand'));
   $('playWalk').addEventListener('click',()=>startPlayback('walk'));
   $('showJump').addEventListener('click',()=>{stopPlayback();selectFrame('jump-01')});
   $('stopPlay').addEventListener('click',stopPlayback);
 
-  ['showReference','showDifference','showGrid','showBody','showHair','showClothes'].forEach(id=>$(id).addEventListener('change',render));
+  ['showReference','showDifference','showGrid','showBody','showFace','showHair','showClothes','showAccessories'].forEach(id=>$(id).addEventListener('change',render));
   $('referenceOpacity').addEventListener('input',render);$('referenceFrame').addEventListener('change',render);
-  ['bodyId','hairId','upperId','lowerId'].forEach(id=>$(id).addEventListener('input',scheduleSave));
+  Object.values(LAYER_ID_FIELDS).forEach(id=>$(id)?.addEventListener('input',scheduleSave));
 
   $('nudgeUp').addEventListener('click',()=>nudgeCurrent(0,-1));
   $('nudgeDown').addEventListener('click',()=>nudgeCurrent(0,1));
