@@ -37,13 +37,15 @@ test('activity feed is linked, and full-screen attendance stamp is gone', () => 
 });
 
 
-test('teacher management shortcut sits immediately left of activity history', () => {
+test('teacher management shortcut is teacher-only and sits left of activity history', () => {
   const root=path.resolve(__dirname,'..');
   const source=fs.readFileSync(path.join(root,'activity-feed.js'),'utf8');
   const css=fs.readFileSync(path.join(root,'activity-feed.css'),'utf8');
+  assert.match(source, /KidscadeAccount\?\.account\?\.role === 'teacher'/);
+  assert.match(source, /if \(!isTeacherAccount\) \{\s*teacherLauncher\?\.remove\(\)/);
   assert.match(source, /teacherLauncher\.href = '\/teacher\/'/);
-  assert.match(source, /kc-teacher-launcher-label\">교사 관리/);
+  assert.match(source, /event\.preventDefault\(\)/);
+  assert.match(source, /kidscade:account-changed/);
   assert.match(source, /host\.insertBefore\(teacherLauncher, launcher\)/);
   assert.match(css, /\.kc-teacher-launcher\{/);
-  assert.match(css, /kc-teacher-launcher \.kc-teacher-launcher-label\{display:none\}/);
 });

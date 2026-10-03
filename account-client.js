@@ -23,6 +23,14 @@
   function store() { return window.KidscadeStorage || null; }
   function profileApi() { return window.KidscadeProfileHistory || null; }
 
+  function emitAccountChanged() {
+    try {
+      document.dispatchEvent(new CustomEvent('kidscade:account-changed', {
+        detail:{ account:account ? { role:account.role, loginId:account.loginId } : null }
+      }));
+    } catch (_) {}
+  }
+
   function readMeta() {
     try { return JSON.parse(sessionStorage.getItem(META_KEY) || '{}') || {}; } catch (_) { return {}; }
   }
@@ -402,6 +410,7 @@
         return;
       }
       account = body.account;
+      emitAccountChanged();
       const localState = collectState();
       if (Number(account.revision || 0) === 0 && hasMeaningfulProgress(localState)) {
         await syncNow(localState);
@@ -443,6 +452,7 @@
         const { response, body } = await api(syncPath, { method:'POST', body:JSON.stringify({ state }) });
         if (!response.ok || !body.ok) return false;
         account = body.account;
+        emitAccountChanged();
         writeMeta({ loginId: account.loginId, revision: account.revision });
         writeSharedSyncMeta({
           loginId: account.loginId,
@@ -486,6 +496,7 @@
     const logoutPath = account.role === 'teacher' ? '/api/teacher/auth/logout' : '/api/account/logout';
     try { await api(logoutPath, { method:'POST', body:'{}' }); } catch (_) {}
     account = null;
+    emitAccountChanged();
     economySummary = null;
     economySummaryLoaded = false;
     clearLocalAccountProgress();
@@ -508,12 +519,14 @@
       }
       if (!response.ok || !body.ok || !body.account) {
         account = null;
+        emitAccountChanged();
         economySummary = null;
         economySummaryLoaded = false;
         renderSlot();
         return;
       }
       account = body.account;
+      emitAccountChanged();
       const meta = readMeta();
       const revision = Number(account.revision || 0);
       if (revision > 0 && (meta.loginId !== account.loginId || Number(meta.revision || -1) !== revision)) {
