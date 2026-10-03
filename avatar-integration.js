@@ -5,11 +5,11 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v2-rig-hairfit-11';
+  const PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-1';
   const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
-  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=21';
+  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=22';
   const GUEST_DEFAULT_CONFIG = Object.freeze({
-    hairSet:'male', hairStyle:1, upper:1, lower:1,
+    hairId:'clean-01', upper:1, lower:1,
     eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
   });
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -123,7 +123,7 @@
   }
 
   function ownedSummary() {
-    return pixelState() ? '픽셀 파츠 80개' : '새 픽셀 아바타';
+    return pixelState() ? '검수 헤어 · 픽셀 파츠' : '새 픽셀 아바타';
   }
 
   function equippedSummary() {
@@ -142,7 +142,7 @@
     try {
       const data = localStorage.getItem(PREVIEW_KEY) || '';
       if (!isPreviewData(data)) return '';
-      if (isGuestSession() && localStorage.getItem(PREVIEW_VERSION_KEY) !== PREVIEW_VERSION) return '';
+      if (localStorage.getItem(PREVIEW_VERSION_KEY) !== PREVIEW_VERSION) return '';
       return data;
     } catch (_) {
       return '';
@@ -186,8 +186,7 @@
     const pixel = pixelState();
     if (!pixel) return { ...GUEST_DEFAULT_CONFIG };
     return {
-      hairSet:pixel.hairSet === 'female' ? 'female' : 'male',
-      hairStyle:Number(pixel.hair) || 1,
+      hairId:typeof pixel.hairId === 'string' && pixel.hairId ? pixel.hairId : 'clean-01',
       upper:pixel.upper ? 1 : 0,
       lower:pixel.lower ? 1 : 0,
       eyes:Number(pixel.eyes) || 1,
@@ -201,7 +200,7 @@
 
   function ensureGuestDefaultPreview() {
     const saved = storedPreview();
-    if (saved || !isGuestSession()) return Promise.resolve(saved);
+    if (saved) return Promise.resolve(saved);
     if (guestDefaultPreviewPromise) return guestDefaultPreviewPromise;
 
     guestDefaultPreviewPromise = (async () => {
@@ -213,14 +212,12 @@
       } catch (_) {}
 
       const api = await loadAvatarRigRuntime();
-      if (!isGuestSession()) return storedPreview();
       const canvas = document.createElement('canvas');
       canvas.width = 128;
       canvas.height = 128;
       const avatar = await api.create(canvas, { playing:false, config:guestConfigFromPixelState() });
       const data = await avatar.snapshot('image/png');
       avatar.destroy?.();
-      if (!isGuestSession()) return storedPreview();
       if (isPreviewData(data)) {
         localStorage.setItem(PREVIEW_KEY, data);
         localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
