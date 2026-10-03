@@ -25,6 +25,12 @@ const C={
  wildMillet:{name:'야생 조',emoji:'🌾',kind:'node',sub:'곡식과 씨앗을 얻음'},
  deer:{name:'사슴',emoji:'🦌',kind:'node',sub:'고기·가죽·뼈의 원천'},
  wildGoat:{name:'야생 염소',emoji:'🐐',kind:'node',sub:'길들이면 가축이 됨'},
+ oakGrove:{name:'도토리 숲',emoji:'🌳',kind:'node',sub:'도토리를 넉넉히 채집할 수 있음'},
+ tidalFlat:{name:'갯벌',emoji:'🌊',kind:'node',sub:'조개·굴·조개껍데기를 얻음'},
+ wildBroomcorn:{name:'야생 기장',emoji:'🌾',kind:'node',sub:'기장과 씨앗을 얻음'},
+ wildBean:{name:'야생 콩',emoji:'🫘',kind:'node',sub:'콩과 씨앗을 얻음'},
+ wildBoar:{name:'멧돼지',emoji:'🐗',kind:'node',sub:'큰 사냥감 · 고기와 가죽'},
+ rabbit:{name:'토끼',emoji:'🐇',kind:'node',sub:'올가미로 잡을 수 있는 작은 사냥감'},
 
  wood:{name:'나무',emoji:'🪵',kind:'item',sub:'도구·시설 재료'},
  stone:{name:'돌',emoji:'🪨',kind:'item',sub:'석기의 기본 재료'},
@@ -47,6 +53,19 @@ const C={
  flour:{name:'간 곡물',emoji:'🥣',kind:'item',sub:'죽의 재료'},
  porridgePrep:{name:'곡물죽 재료',emoji:'🍲',kind:'item',sub:'불에 끓이면 완성'},
  porridge:{name:'곡물죽',emoji:'🥣',kind:'food',sub:'식량 2',food:2},
+ acorn:{name:'도토리',emoji:'🌰',kind:'item',sub:'떫은맛을 빼고 가공해야 함'},
+ acornMeal:{name:'간 도토리',emoji:'🥣',kind:'item',sub:'물에 우려 떫은맛을 뺌'},
+ leachedAcorn:{name:'우린 도토리가루',emoji:'🥣',kind:'item',sub:'토기에 담아 익힐 수 있음'},
+ acornPrep:{name:'도토리죽 재료',emoji:'🍲',kind:'item',sub:'화덕에서 익히면 완성'},
+ acornPorridge:{name:'도토리죽',emoji:'🥣',kind:'food',sub:'식량 2',food:2},
+ clam:{name:'바지락류 조개',emoji:'🐚',kind:'food',sub:'갯벌 먹거리 · 식량 1',food:1},
+ oyster:{name:'굴',emoji:'🦪',kind:'food',sub:'갯벌 먹거리 · 식량 1',food:1},
+ shell:{name:'조개껍데기',emoji:'🐚',kind:'item',sub:'도구와 장신구 재료'},
+ broomcornSeed:{name:'기장 씨앗',emoji:'🌱',kind:'item',sub:'개간지에 심을 수 있음'},
+ broomcornGrain:{name:'기장',emoji:'🌾',kind:'food',sub:'식량 1 · 잡곡',food:1},
+ beanSeed:{name:'콩 씨앗',emoji:'🌱',kind:'item',sub:'개간지에 심을 수 있음'},
+ bean:{name:'콩',emoji:'🫘',kind:'food',sub:'식량 1 · 단백질 공급원',food:1},
+ boarTusk:{name:'멧돼지 엄니',emoji:'🦷',kind:'item',sub:'장신구·도구 재료'},
 
  chopper:{name:'찍개',emoji:'🪨',kind:'tool',sub:'돌을 다듬는 기본 석기'},
  stoneBlade:{name:'돌날',emoji:'🔪',kind:'tool',sub:'창·낫 제작 재료'},
@@ -63,9 +82,26 @@ const C={
  groundAxe:{name:'간돌도끼',emoji:'🪓',kind:'tool',sub:'숲 개간 가능'},
  stoneHoe:{name:'돌괭이',emoji:'⛏️',kind:'tool',sub:'농부 양성'},
  sickle:{name:'돌낫',emoji:'🌙',kind:'tool',sub:'곡물 작업 도구'},
- grindingStone:{name:'갈돌·갈판',emoji:'🪨',kind:'tool',sub:'곡물을 갈 수 있음'},
+ grindingStone:{name:'갈돌·갈판',emoji:'🪨',kind:'tool',sub:'곡물과 도토리를 갈 수 있음'},
+ arrowhead:{name:'돌화살촉',emoji:'🔺',kind:'tool',sub:'화살 제작 재료'},
+ arrow:{name:'화살',emoji:'🏹',kind:'tool',sub:'활과 합쳐 사냥 활 세트'},
+ huntingBow:{name:'활·화살 세트',emoji:'🏹',kind:'tool',sub:'사냥꾼을 양성하는 궁시'},
+ harpoonHead:{name:'뼈 작살촉',emoji:'🦴',kind:'tool',sub:'작살 제작 재료'},
+ harpoon:{name:'작살',emoji:'🔱',kind:'tool',sub:'강과 바다에서 어로 가능'},
+ snare:{name:'올가미',emoji:'🪤',kind:'tool',sub:'작은 동물을 잡는 덫'},
+ spindleWhorl:{name:'가락바퀴',emoji:'🧿',kind:'tool',sub:'섬유로 실을 뽑는 도구'},
+ yarn:{name:'실',emoji:'🧶',kind:'item',sub:'직조의 재료'},
+ loom:{name:'간단한 베틀',emoji:'🪵',kind:'building',sub:'실을 직물로 짬'},
+ wovenCloth:{name:'직물',emoji:'🧶',kind:'item',sub:'옷 제작 재료'},
+ wovenClothing:{name:'직물옷',emoji:'👕',kind:'tool',sub:'방직 기술로 만든 옷'},
+ storageBasket:{name:'저장 바구니',emoji:'🧺',kind:'building',sub:'바구니 3개를 묶은 저장 도구'},
+ shellKnife:{name:'조개칼',emoji:'🐚',kind:'tool',sub:'식물·식재료 가공 도구'},
+ shellOrnament:{name:'조개 장신구',emoji:'📿',kind:'tool',sub:'정착지 생활문화의 흔적'},
 
- campfire:{name:'모닥불',emoji:'🔥',kind:'building',sub:'조리와 토기 소성'},
+ campfire:{name:'모닥불',emoji:'🔥',kind:'building',sub:'기본 조리와 불 유지'},
+ hearth:{name:'돌화덕',emoji:'🔥',kind:'building',sub:'안정적인 조리와 가열'},
+ kiln:{name:'점토 가마',emoji:'🏺',kind:'building',sub:'토기를 안정적으로 소성'},
+ charcoal:{name:'숯',emoji:'⚫',kind:'item',sub:'가마에서 만든 고온 연료'},
  smokingRack:{name:'훈연대',emoji:'♨️',kind:'building',sub:'고기·생선을 보존'},
  clayVessel:{name:'말린 토기',emoji:'🏺',kind:'item',sub:'불에 구우면 토기'},
  combRawPot:{name:'무늬 넣은 토기',emoji:'🏺',kind:'item',sub:'소성 전 빗살무늬토기'},
@@ -82,6 +118,10 @@ const C={
  clearedPlot:{name:'개간지',emoji:'🟫',kind:'node',sub:'씨앗을 심을 수 있음'},
  milletPlot:{name:'조밭',emoji:'🌱',kind:'node',sub:'사람이 돌보면 조 생산'},
  milletFarm:{name:'조 농장',emoji:'🌾',kind:'building',sub:'조밭 3개가 합쳐진 생산지'},
+ broomcornPlot:{name:'기장밭',emoji:'🌱',kind:'node',sub:'사람이 돌보면 기장 생산'},
+ broomcornFarm:{name:'기장 농장',emoji:'🌾',kind:'building',sub:'기장밭 3개가 합쳐진 생산지'},
+ beanPlot:{name:'콩밭',emoji:'🌱',kind:'node',sub:'사람이 돌보면 콩 생산'},
+ beanFarm:{name:'콩 농장',emoji:'🫘',kind:'building',sub:'콩밭 3개가 합쳐진 생산지'},
  granary:{name:'곡식 저장소',emoji:'🛖',kind:'building',sub:'농경 정착의 핵심'},
  fishingSpot:{name:'낚시 자리',emoji:'🎣',kind:'node',sub:'강가의 작은 낚시 지점'},
  fishingGround:{name:'낚시터',emoji:'🐟',kind:'building',sub:'낚시 자리 3개가 합쳐짐'},
@@ -107,12 +147,16 @@ const state={
 const SAME={
  stone:{need:2,out:'chopper',name:'찍개'},
  fiber:{need:3,out:'cord',name:'끈 꼬기'},
+ basket:{need:3,out:'storageBasket',name:'저장 바구니'},
+ shell:{need:3,out:'shellOrnament',name:'조개 장신구'},
  cord:{need:2,out:'net',name:'그물 짜기'},
  clay:{need:2,out:'clayVessel',name:'토기 성형'},
  combPottery:{need:3,out:'storageJars',name:'저장 토기'},
  hideTent:{need:3,out:'camp',name:'사냥 캠프'},
  pitHouse:{need:3,out:'village',name:'신석기 마을'},
  milletPlot:{need:3,out:'milletFarm',name:'조 농장'},
+ broomcornPlot:{need:3,out:'broomcornFarm',name:'기장 농장'},
+ beanPlot:{need:3,out:'beanFarm',name:'콩 농장'},
  fishingSpot:{need:3,out:'fishingGround',name:'낚시터'},
  netSpot:{need:3,out:'netFishery',name:'그물 어장'},
  trapSpot:{need:3,out:'trapFishery',name:'통발 어장'},
@@ -127,9 +171,21 @@ const R=[
  ['chopper','bone',0,1,[['boneNeedle',1]],'뼈바늘'],
  ['bone','cord',1,1,[['fishHook',1]],'뼈 낚싯바늘'],
  ['fiber','cord',1,1,[['basket',1]],'바구니'],
+ ['clay','stone',1,1,[['spindleWhorl',1]],'가락바퀴'],
+ ['fiber','spindleWhorl',1,0,[['yarn',1]],'실 뽑기'],
+ ['wood','cord',2,2,[['loom',1]],'간단한 베틀'],
+ ['yarn','loom',1,0,[['wovenCloth',1]],'직조'],
+ ['wovenCloth','boneNeedle',1,0,[['wovenClothing',1]],'직물옷'],
+ ['shell','chopper',1,0,[['shellKnife',1]],'조개칼'],
  ['basket','cord',1,1,[['fishTrap',1]],'통발'],
  ['stoneBlade','wood',1,1,[['spear',1]],'돌창'],
  ['sinew','wood',1,1,[['bow',1]],'활'],
+ ['stoneBlade','fiber',1,1,[['arrowhead',1]],'돌화살촉'],
+ ['arrowhead','wood',1,1,[['arrow',1]],'화살'],
+ ['bow','arrow',1,1,[['huntingBow',1]],'활·화살 세트'],
+ ['bone','sinew',1,1,[['harpoonHead',1]],'뼈 작살촉'],
+ ['harpoonHead','wood',1,1,[['harpoon',1]],'작살'],
+ ['cord','stone',1,1,[['snare',1]],'올가미'],
  ['groundStone','wood',1,1,[['groundAxe',1]],'간돌도끼'],
  ['groundStone','cord',1,1,[['stoneHoe',1]],'돌괭이'],
  ['stoneBlade','cord',1,1,[['sickle',1]],'돌낫'],
@@ -138,6 +194,9 @@ const R=[
  ['wood','cord',1,1,[['fence',1]],'울타리'],
  ['wood','cord',2,1,[['hutFrame',1]],'움집 골조'],
  ['wood','campfire',2,0,[['smokingRack',1]],'훈연대'],
+ ['stone','campfire',2,0,[['hearth',1]],'돌화덕'],
+ ['clay','hearth',3,0,[['kiln',1]],'점토 가마'],
+ ['wood','kiln',2,0,[['charcoal',2]],'숯 굽기'],
  ['rawHide','scraper',1,0,[['dressedHide',1]],'가죽 손질'],
  ['dressedHide','boneNeedle',1,0,[['leatherClothing',1]],'가죽옷'],
  ['dressedHide','hutFrame',1,1,[['hideTent',1]],'가죽 천막'],
@@ -146,24 +205,36 @@ const R=[
  ['clayVessel','stoneBlade',1,0,[['combRawPot',1]],'석기로 무늬 새기기'],
  ['clayVessel','campfire',1,0,[['pottery',1]],'토기 굽기'],
  ['combRawPot','campfire',1,0,[['combPottery',1]],'빗살무늬토기 굽기'],
+ ['clayVessel','kiln',1,0,[['pottery',1]],'가마에서 토기 굽기'],
+ ['combRawPot','kiln',1,0,[['combPottery',1]],'가마에서 빗살무늬토기 굽기'],
  ['rawMeat','campfire',1,0,[['cookedMeat',1]],'고기 익히기'],
  ['rawMeat','smokingRack',1,0,[['smokedMeat',1]],'고기 훈연'],
  ['freshFish','smokingRack',1,0,[['smokedFish',1]],'생선 훈연'],
  ['milletGrain','grindingStone',1,0,[['flour',1]],'곡물 갈기'],
  ['flour','pottery',1,0,[['porridgePrep',1]],'죽 준비'],
  ['porridgePrep','campfire',1,0,[['porridge',1]],'곡물죽 끓이기'],
+ ['porridgePrep','hearth',1,0,[['porridge',1]],'화덕에서 곡물죽 끓이기'],
+ ['acorn','grindingStone',1,0,[['acornMeal',1]],'도토리 갈기'],
+ ['leachedAcorn','pottery',1,0,[['acornPrep',1]],'도토리죽 준비'],
+ ['acornPrep','hearth',1,0,[['acornPorridge',1]],'도토리죽 끓이기'],
  ['milletSeed','clearedPlot',1,1,[['milletPlot',1]],'조밭 만들기'],
+ ['broomcornSeed','clearedPlot',1,1,[['broomcornPlot',1]],'기장밭 만들기'],
+ ['beanSeed','clearedPlot',1,1,[['beanPlot',1]],'콩밭 만들기'],
  ['milletFarm','storageJars',0,1,[['granary',1]],'곡식 저장소'],
+ ['broomcornFarm','storageJars',0,1,[['granary',1]],'기장 저장소'],
+ ['beanFarm','storageJars',0,1,[['granary',1]],'콩 저장소'],
  ['tamedGoat','fence',1,1,[['goatPen',1]],'염소 우리'],
  ['freshFish','reservoir',1,0,[['fishHolding',1]],'민물고기 가두리'],
  ['person','spear',1,1,[['hunter',1]],'사냥꾼'],
  ['person','bow',1,1,[['hunter',1]],'활 사냥꾼'],
+ ['person','huntingBow',1,1,[['hunter',1]],'궁시 사냥꾼'],
+ ['person','harpoon',1,1,[['fisher',1]],'작살 어부'],
  ['person','fishHook',1,1,[['fisher',1]],'어부'],
  ['person','stoneHoe',1,1,[['farmer',1]],'농부'],
  ['person','cord',1,1,[['herder',1]],'목축민']
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
-const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,combPottery:1,groundAxe:1,leatherClothing:1};
+const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,shellOrnament:1};
 const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
 const isWorker=t=>['person','hunter','fisher','farmer','herder'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -183,7 +254,7 @@ function spawnInitial(){
  const list=[
   ['person',.11,.16],['person',.22,.26],['berry',.10,.60],['berry',.20,.69],
   ['forest',.40,.12],['berryBush',.58,.14],['stoneSource',.76,.18],['reedBed',.87,.36],
-  ['clayBank',.70,.54],['river',.48,.58],['wildMillet',.31,.50],['deer',.17,.43],['wildGoat',.83,.66]
+  ['clayBank',.70,.54],['river',.48,.58],['wildMillet',.31,.50],['oakGrove',.38,.72],['deer',.17,.43],['wildGoat',.83,.66]
  ];
  list.forEach(([t,x,y])=>addCard(t,Math.min(w-120,w*x),Math.min(h-150,h*y),1,false));
 }
@@ -254,13 +325,21 @@ function workerAction(worker,node){
   stoneSource:{ms:1050,label:'돌 줍는 중',out:[['stone',1]],life:'hunt'},
   reedBed:{ms:950,label:'섬유 모으는 중',out:[['fiber',1]],life:'hunt'},
   clayBank:{ms:1100,label:'점토 캐는 중',out:[['clay',1]],life:null},
-  wildMillet:{ms:1200,label:'야생 곡식 거두는 중',out:[['wildGrain',1],['milletSeed',1]],life:'farm'},
+  wildMillet:{ms:1200,label:'야생 조 거두는 중',out:[['wildGrain',1],['milletSeed',1]],life:'farm'},
+  wildBroomcorn:{ms:1200,label:'야생 기장 거두는 중',out:[['broomcornGrain',1],['broomcornSeed',1]],life:'farm'},
+  wildBean:{ms:1200,label:'야생 콩 거두는 중',out:[['bean',1],['beanSeed',1]],life:'farm'},
+  oakGrove:{ms:1150,label:'도토리 줍는 중',out:[['acorn',2]],life:'hunt'},
+  tidalFlat:{ms:1300,label:'갯벌 채집 중',out:[['clam',1],['oyster',1],['shell',1]],life:'fish',lifeGain:2},
   river:{ms:1250,label:'강가 채집 중',out:[['shellfish',1]],life:'fish'}
  };
  if(base[node.type])return base[node.type];
  if(node.type==='deer'){
   if(worker.type!=='hunter'){showToast('큰 사슴은 돌창을 든 사냥꾼이 필요해요.');return null;}
   return {ms:1900,label:'사슴 사냥 중',out:[['rawMeat',2],['rawHide',1],['bone',1],['sinew',1]],life:'hunt',consumeNode:true,discover:'큰 사냥'};
+ }
+ if(node.type==='wildBoar'){
+  if(worker.type!=='hunter'){showToast('멧돼지는 활이나 돌창을 다루는 사냥꾼이 필요해요.');return null;}
+  return {ms:2200,label:'멧돼지 사냥 중',out:[['rawMeat',3],['rawHide',1],['bone',2],['boarTusk',1]],life:'hunt',lifeGain:2,consumeNode:true,discover:'멧돼지 사냥'};
  }
  if(node.type==='wildGoat'){
   if(worker.type!=='herder'){showToast('야생 염소는 끈을 다루는 목축민이 길들일 수 있어요.');return null;}
@@ -269,6 +348,10 @@ function workerAction(worker,node){
  const prod={
   milletPlot:{ms:1500,label:'조밭 돌보는 중',out:[['milletGrain',worker.type==='farmer'?2:1],['milletSeed',1]],life:'farm'},
   milletFarm:{ms:1800,label:'조 농장 수확 중',out:[['milletGrain',worker.type==='farmer'?4:3],['milletSeed',1]],life:'farm',lifeGain:3},
+  broomcornPlot:{ms:1500,label:'기장밭 돌보는 중',out:[['broomcornGrain',worker.type==='farmer'?2:1],['broomcornSeed',1]],life:'farm'},
+  broomcornFarm:{ms:1800,label:'기장 농장 수확 중',out:[['broomcornGrain',worker.type==='farmer'?4:3],['broomcornSeed',1]],life:'farm',lifeGain:3},
+  beanPlot:{ms:1500,label:'콩밭 돌보는 중',out:[['bean',worker.type==='farmer'?2:1],['beanSeed',1]],life:'farm'},
+  beanFarm:{ms:1800,label:'콩 농장 수확 중',out:[['bean',worker.type==='farmer'?4:3],['beanSeed',1]],life:'farm',lifeGain:3},
   fishingSpot:{ms:1500,label:'낚시 중',out:[['freshFish',worker.type==='fisher'?2:1]],life:'fish'},
   fishingGround:{ms:1750,label:'낚시터 운영 중',out:[['freshFish',worker.type==='fisher'?4:3]],life:'fish',lifeGain:3},
   netSpot:{ms:1450,label:'그물 걷는 중',out:[['freshFish',2]],life:'fish',lifeGain:2},
@@ -290,6 +373,13 @@ function specialAction(a,b){
  if(has('net','river'))return {ms:1500,label:'그물 설치 중',consume:null,preserve:null,out:[['netSpot',1]],discover:'그물 어로'};
  if(has('fishTrap','river'))return {ms:1500,label:'통발 설치 중',consume:null,preserve:null,out:[['trapSpot',1]],discover:'통발 어로'};
  if(has('sickle','wildMillet'))return {ms:1300,label:'돌낫으로 수확 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',2]],discover:'돌낫 수확',life:'farm'};
+ if(has('sickle','wildBroomcorn'))return {ms:1300,label:'기장 수확 중',consume:null,preserve:null,out:[['broomcornGrain',2],['broomcornSeed',2]],discover:'기장 수확',life:'farm'};
+ if(has('harpoon','river'))return {ms:1450,label:'작살 어로 중',consume:null,preserve:null,out:[['freshFish',2]],discover:'작살 어로',life:'fish',lifeGain:2};
+ if(has('snare','rabbit'))return {ms:1200,label:'올가미 확인 중',consume:'rabbit',preserve:'snare',out:[['rawMeat',1],['rawHide',1]],discover:'작은 동물 사냥',life:'hunt'};
+ if(has('basket','berryBush'))return {ms:900,label:'바구니로 채집 중',consume:null,preserve:null,out:[['berry',2]],discover:'바구니 채집',life:'hunt'};
+ if(has('storageBasket','berryBush'))return {ms:1000,label:'저장 바구니 채집 중',consume:null,preserve:null,out:[['berry',4]],discover:'대량 채집',life:'hunt'};
+ if(has('basket','tidalFlat'))return {ms:1100,label:'바구니로 갯벌 채집 중',consume:null,preserve:null,out:[['clam',2],['oyster',1],['shell',1]],discover:'갯벌 바구니 채집',life:'fish',lifeGain:2};
+ if(has('acornMeal','river'))return {ms:1500,label:'도토리 떫은맛 우려내는 중',consume:'acornMeal',preserve:'river',out:[['leachedAcorn',1]],discover:'도토리 우리기'};
  if(has('groundAxe','clearedPlot'))return {ms:1800,label:'저수 웅덩이 파는 중',consume:'clearedPlot',preserve:'groundAxe',out:[['waterPit',1]],discover:'저수 웅덩이'};
  return null;
 }
@@ -316,8 +406,8 @@ function snap(a,b){place(a,b.x+10,b.y+12);a.el.style.zIndex=++state.z;}
 function separate(a,b){if(!a||!state.cards.has(a.id)||!b||!state.cards.has(b.id))return;place(a,clamp(b.x+b.el.offsetWidth+12,4,Math.max(4,board.clientWidth-a.el.offsetWidth-4)),clamp(b.y+14,4,Math.max(4,board.clientHeight-a.el.offsetHeight-4)));}
 
 function onCreated(type){
- if(['campfire','dressedHide','groundAxe','combPottery','milletFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village'].includes(type))discover(C[type].name);
- if(['groundAxe','combPottery','pitHouse','milletFarm','fishingGround','goatRanch'].includes(type))ui.era.textContent='신석기 생활 확장';
+ if(['campfire','hearth','kiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket'].includes(type))discover(C[type].name);
+ if(['groundAxe','combPottery','pitHouse','milletFarm','broomcornFarm','beanFarm','fishingGround','goatRanch','wovenClothing','kiln'].includes(type))ui.era.textContent='신석기 생활 확장';
 }
 function discover(name){if(state.discoveries.has(name))return;state.discoveries.add(name);showToast('💡 새 기술: '+name);try{window.KidscadeGame?.sound?.('correct')}catch(_){}}
 function addLife(k,n=1){state.lifestyle[k]+=n;}
@@ -329,7 +419,7 @@ function settlementScore(){
 }
 function checkMilestone(){
  if(state.milestoneShown||state.over)return;
- const score=settlementScore(),advanced=['milletFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
+ const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
  if(score>=9&&advanced>=2){
   state.milestoneShown=true;
   $('#milestoneText').textContent='농경·어로·목축 중 여러 생활 기술과 주거·저장 기술이 연결되며 정착도가 '+score+'에 도달했습니다. 한 가지 길만 고르지 않아도 됩니다.';
@@ -354,7 +444,7 @@ function eatMeal(){
 
 function explore(){
  if(state.over)return;if(foodUnits()<1){showToast('탐색에는 식량 1이 필요해요.');return;}consumeFood(1);state.stats.explores++;
- const pool=['deer','wildGoat','berryBush','forest','stoneSource','reedBed','clayBank','wildMillet','river'];
+ const pool=['deer','wildBoar','rabbit','wildGoat','berryBush','forest','oakGrove','stoneSource','reedBed','clayBank','wildMillet','wildBroomcorn','wildBean','river','tidalFlat'];
  const t=pool[Math.floor(Math.random()*pool.length)],x=35+Math.random()*Math.max(60,board.clientWidth-170),y=45+Math.random()*Math.max(70,board.clientHeight-210);
  addCard(t,x,y);showToast('🧭 '+C[t].name+'을(를) 새로 발견했습니다.');renderAll();
 }
@@ -374,11 +464,11 @@ function renderQuests(){
  const q=[
   ['불을 안정적으로 피운다',has('campfire')],
   ['사슴을 잡아 가죽·뼈를 얻는다',state.discoveries.has('큰 사냥')],
-  ['섬유를 꼬아 끈을 만든다',has('cord')||has('net')],
+  ['섬유를 꼬아 끈·실·직물을 만든다',has('wovenCloth')||has('wovenClothing')],
   ['생가죽을 긁개로 손질한다',has('dressedHide')||has('leatherClothing')||has('hideTent')],
   ['간돌도끼 같은 간석기를 만든다',has('groundAxe')],
   ['빗살무늬토기를 굽는다',has('combPottery')||has('storageJars')],
-  ['농장·어장·목장·양식장 중 하나를 성장시킨다',has('milletFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')||has('fishPond')],
+  ['농장·어장·목장·양식장 중 하나를 성장시킨다',has('milletFarm')||has('broomcornFarm')||has('beanFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')||has('fishPond')],
   ['정착도 9 이상',settlementScore()>=9]
  ];
  ui.questList.innerHTML=q.map(x=>'<div class="quest '+(x[1]?'done':'')+'"><i>'+(x[1]?'✓':'·')+'</i><span>'+x[0]+'</span></div>').join('');
@@ -386,9 +476,9 @@ function renderQuests(){
 function renderGoal(){
  const score=settlementScore();
  if(!has('campfire')){ui.goalTitle.textContent='첫 생활 기술 만들기';ui.goalText.textContent='재료를 모아 불과 석기를 만들어 보세요.';ui.hint.textContent='돌 + 돌 → 찍개 · 나무 + 섬유 → 모닥불';return;}
- if(!has('groundAxe')&&!has('combPottery')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 생가죽 + 긁개 → 손질한 가죽 · 점토 2장 → 말린 토기';return;}
- if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='한 길만 고르지 말고 농경·어로·목축 생산지를 조합해도 됩니다.';ui.hint.textContent='조밭×3 → 조 농장 · 낚시 자리×3 → 낚시터 · 염소 우리×3 → 염소 목장';return;}
- ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='이미 안정적인 정착지입니다. 다른 생산 방식과 생활 기술도 계속 연결해 보세요.';ui.hint.textContent='곡물 저장소·그물 어장·통발 어장·가죽옷·신석기 마을까지 확장할 수 있어요.';
+ if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
+ if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='잡곡 농경, 사냥, 갯벌·강 어로, 목축, 방직을 서로 섞어도 됩니다.';ui.hint.textContent='조·기장·콩밭×3 → 농장 · 낚시 자리×3 → 낚시터 · 염소 우리×3 → 목장';return;}
+ ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='이미 안정적인 정착지입니다. 다른 생산 방식과 생활 기술도 계속 연결해 보세요.';ui.hint.textContent='가락바퀴·직물옷·돌화덕·점토 가마·도토리죽·갯벌·잡곡 농장까지 모두 열어볼 수 있어요.';
 }
 
 let toastTimer;
