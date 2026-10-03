@@ -79,8 +79,8 @@ test('hidden avatar runtimes are silenced while games or Seed World are active',
 
 test('Seed World HUD release is cache-bumped and scripts parse',()=>{
   assert.match(html,/touch-interaction-guard\.js\?v=2/);
-  const runtimeVersion=Number(html.match(/kidscade-world-v3\\.js\\?v=(\\d+)/)?.[1]||0);
-  const integrationVersion=Number(integration.match(/world-v3\\/kidscade-world\\.html\\?v=(\\d+)/)?.[1]||0);
+  const runtimeVersion=Number(html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1]||0);
+  const integrationVersion=Number(integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1]||0);
   assert.ok(runtimeVersion>=37,'Seed World runtime cache must be at least v37');
   assert.equal(integrationVersion,runtimeVersion,'Seed World entry and runtime cache versions must stay synchronized');
   assert.match(garden,/avatar-preview-inline-edit-v7/);
