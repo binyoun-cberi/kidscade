@@ -33,12 +33,13 @@ test('PIN hashes are server-secret keyed and tied to the login ID', async () => 
   assert.match(first, /^[0-9a-f]{64}$/);
 });
 
-test('student session cookie is HttpOnly, Secure and strict same-site', () => {
+test('student session cookie is long-lived, HttpOnly, Secure and strict same-site', () => {
   const cookie = makeSessionCookie('a'.repeat(64));
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /Secure/);
   assert.match(cookie, /SameSite=Strict/);
   assert.match(cookie, /Path=\//);
+  assert.match(cookie, /Max-Age=34560000/);
 });
 
 test('cloud sync state only keeps bounded Kidscade progress fields', () => {
@@ -119,3 +120,21 @@ test('profile account card promotes classroom economy with a lightweight live su
   assert.match(student, /economy_job_capabilities/);
   assert.match(student, /workLogDue/);
 });
+
+test('student sessions renew lazily and account sync is deduplicated across open tabs', () => {
+  const server = fs.readFileSync(path.join(ROOT, 'worker', 'accounts.mjs'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'account-client.js'), 'utf8');
+
+  assert.match(server, /SESSION_MAX_AGE_SEC = 400 \* 24 \* 60 \* 60/);
+  assert.match(server, /SESSION_REFRESH_WINDOW_SEC = 180 \* 24 \* 60 \* 60/);
+  assert.match(server, /refreshStudentSessionIfNeeded/);
+  assert.match(server, /DELETE FROM student_sessions WHERE expires_at <= \?/);
+  assert.match(server, /set-cookie': makeSessionCookie\(auth\.token\)/);
+
+  assert.match(client, /SHARED_SYNC_META_KEY/);
+  assert.match(client, /SYNC_LOCK_NAME/);
+  assert.match(client, /navigator\.locks\?\.request/);
+  assert.match(client, /claimFallbackSyncLease/);
+  assert.match(client, /stateSignature/);
+});
+
