@@ -1321,7 +1321,7 @@ function makePlant(){
   for(const sx of [-.18,.18]){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshStandardMaterial({color:0x70ac55}));leaf.scale.set(1.3,.45,.7);leaf.position.set(sx,.48,0);fallback.add(leaf)}
   const material=new THREE.MeshStandardMaterial({color:0xffffff});
   const fruit=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),material);fruit.position.y=.70;fallback.add(fruit);
-  g.userData.fallback=fallback;g.userData.fruitMaterial=material;g.userData.assetStages=[];g.userData.assetType='';g.userData.assetToken=0;
+  g.userData.fallback=fallback;g.userData.fruitMaterial=material;g.userData.assetStages=[];g.userData.assetType='';g.userData.assetLoadingType='';g.userData.assetToken=0;
   return g;
 }
 function fitCropStages(models){
@@ -1340,17 +1340,18 @@ async function ensureCropAsset(v,type){
   const files=CROP_MODEL_FILES[type];if(!files)return false;
   const data=v.object.userData;
   if(data.assetType===type&&data.assetStages?.length===4)return true;
-  const token=++cropAssetToken;data.assetToken=token;
+  if(data.assetLoadingType===type)return false;
+  const token=++cropAssetToken;data.assetToken=token;data.assetLoadingType=type;
   try{
     const bases=await Promise.all(files.map(file=>loadFBX(CROP_ASSET_ROOT+file)));
     if(data.assetToken!==token)return false;
     for(const old of data.assetStages||[])v.object.remove(old);
     const models=fitCropStages(bases.map(base=>prepModel(base.clone(true))));
     for(const model of models)v.object.add(model);
-    data.assetStages=models;data.assetType=type;data.fallback.visible=false;
+    data.assetStages=models;data.assetType=type;data.assetLoadingType='';data.fallback.visible=false;
     updateCropVisual(v);return true;
   }catch(err){
-    if(data.assetToken===token){data.assetStages=[];data.assetType='';data.fallback.visible=true}
+    if(data.assetToken===token){data.assetStages=[];data.assetType='';data.assetLoadingType='';data.fallback.visible=true}
     console.warn('[World v3] crop asset failed',type,err);return false;
   }
 }
