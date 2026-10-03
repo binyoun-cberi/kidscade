@@ -72,7 +72,7 @@ const tutorialSteps=[
  {title:'1. 검역 판정',text:'검사 결과와 이번 주 지침을 대조해 세 가지 처분을 고릅니다. 추가검사와 격리는 이제 서로 다른 단계입니다.',demo:'<b>1 통과</b> · <b>2 추가검사→A 관찰실</b> · <b>3 격리→즉시 소각</b><br>I/T/U/B/R/G로 검사 · V로 지금까지 본 결과 다시보기'},
  {title:'2. 추가검사실 관리',text:'추가검사 판정자는 A 관찰실에서 정밀검사를 받습니다. 검사 결과가 음성이면 퇴실시키고, 양성이면 B 고위험실로 분리한 뒤 처리해야 합니다.',demo:'정밀검사는 시간이 지나면 자동 완료됩니다. 급하면 <b>우선 분석</b>으로 결과를 앞당길 수 있습니다. B실이 만실이면 양성자가 A실에 남아 다른 시민을 감염시킬 수 있습니다.'},
  {title:'3. 세 화면 감시',text:'검역소에서 판정을 계속하면서 격리시설과 생존자 캠프 CCTV를 언제든 오갈 수 있습니다. 두 시설은 보고 있지 않아도 실시간으로 진행됩니다.',demo:'화면 아래의 <b>검역소 / 격리시설 / 생존자 캠프</b> 버튼으로 전환하세요. 캠프에서는 평소 주민들의 생활도 볼 수 있고, 경보 숫자가 뜨면 위험이 진행 중이라는 뜻입니다.'},
- {title:'4. 필요할 때 출동',text:'좀비가 생겼다고 자동으로 전투가 시작되지는 않습니다. CCTV로 상황을 보고 직접 진입할지, 검역을 계속할지 선택합니다.',demo:'캠프의 <b>현장 출동</b> 또는 격리시설의 <b>직접 진입</b>을 눌렀을 때만 전투가 시작됩니다.<br><b>A/D</b> 이동 · <b>W/↑/Space</b> 점프 · <b>클릭/J</b> 사격 · <b>F</b> 밀치기 · <b>R</b> 재장전'}
+ {title:'4. 필요할 때 현장 출동',text:'좀비가 생겼다고 자동으로 전투가 시작되지는 않습니다. CCTV로 상황을 보고 CAMP-17 현장에 직접 출동할지, 검역을 계속할지 선택합니다.',demo:'캠프의 <b>현장 출동</b> 또는 격리시설의 <b>직접 진입</b>을 누르면 탑다운 현장 모드가 열립니다.<br><b>WASD/방향키</b> 이동 · <b>마우스/터치</b> 조준·사격 · <b>R</b> 재장전 · <b>E</b> 보급상자/의무소/자동포탑 상호작용'}
 ];
 const Q17_TUTORIAL_KEY='kidscade_quarantine17_tutorial_seen',Q17_TUTORIAL_LEGACY='q17Tutorial'+'Seen';
 let tutorialIndex=0;
@@ -631,6 +631,22 @@ window.Q17Outbreak={
  canQuarantine:function(){return true},
  canRetest:function(){return roomHasSpace('A')},
  openIsolation:openIsolation,
+ resolveIsolationField:function(result){
+  const won=!!(result&&result.won);
+  if(won){
+   const cleared=isolation.filter(function(d){return d.status==='zombie'}).length;
+   isolation=isolation.filter(function(d){return d.status!=='zombie'});
+   addIsoLog('<b>현장 소탕 완료</b> · 격리동 감염자 '+cleared+'명 제거 · 보급품 회수');
+   renderIsolation();
+   const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-Math.min(5,Math.max(1,cleared)),trustDelta:1,scoreDelta:cleared*120+40});
+   notify('격리동 현장 소탕 완료 · '+cleared+'명 제거');
+   return{won:true,cleared:cleared};
+  }
+  const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:2,trustDelta:-3,scoreDelta:-140});
+  addIsoLog('<b>현장 철수</b> · 남은 감염자는 격리동에 계속 존재함');
+  renderIsolation();notify('격리동에서 긴급 철수했습니다.');
+  return{won:false,cleared:0};
+ },
  tickIsolation:function(){if(!active)advanceIsolation()},
  getIsolationSnapshot:function(){return isolation.map(function(d){return{id:d.id,name:d.name,room:d.room,status:d.status,labResult:d.labResult,infectedAtEntry:d.infectedAtEntry,acquired:d.acquired,stage:d.stage,labStage:d.labStage,exposure:d.exposure,sprite:d.sprite}})},
  isCombatActive:function(){return !!active},
