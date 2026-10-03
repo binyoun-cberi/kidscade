@@ -274,6 +274,232 @@ function canvasMetrics(c){
   };
 }
 
+
+const GARMENT_COVER_LAYERS=['upper','lower','shoes','gloves'];
+
+function isSkinColorCandidate(r,g,b,a){
+  if(a<32)return false;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  return r>=135&&g>=70&&b>=55&&r>=g+8&&g>=b-8&&(max-min)>=18;
+}
+
+function componentSummariesFromMask(mask){
+  const seen=new Uint8Array(SIZE*SIZE),out=[],queue=[];
+  const idx=(x,y)=>y*SIZE+x;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const start=idx(x,y);
+    if(!mask[start]||seen[start])continue;
+    let minX=x,maxX=x,minY=y,maxY=y,sumX=0,sumY=0,count=0;
+    queue.length=0;queue.push(start);seen[start]=1;
+    for(let q=0;q<queue.length;q++){
+      const n=queue[q],nx=n%SIZE,ny=Math.floor(n/SIZE);
+      count++;sumX+=nx;sumY+=ny;
+      if(nx<minX)minX=nx;if(nx>maxX)maxX=nx;if(ny<minY)minY=ny;if(ny>maxY)maxY=ny;
+      const neighbors=[[nx-1,ny],[nx+1,ny],[nx,ny-1],[nx,ny+1]];
+      for(const [px,py] of neighbors){
+        if(px<0||py<0||px>=SIZE||py>=SIZE)continue;
+        const ni=idx(px,py);if(mask[ni]&&!seen[ni]){seen[ni]=1;queue.push(ni)}
+      }
+    }
+    out.push({
+      pixelCount:count,
+      bbox:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1,maxX,maxY},
+      center:[Number((sumX/count).toFixed(3)),Number((sumY/count).toFixed(3))]
+    });
+  }
+  return out.sort((a,b)=>b.pixelCount-a.pixelCount);
+}
+
+function bodyExposureDiagnostics(frameId){
+  const body=layerCanvas(frameId,'body'),bd=body.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data;
+  const garmentData=Object.fromEntries(GARMENT_COVER_LAYERS.map(layer=>[
+    layer,layerCanvas(frameId,layer).getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data
+  ]));
+  const nonBodyLayers=LAYERS.filter(layer=>layer!=='body');
+  const allData=Object.fromEntries(nonBodyLayers.map(layer=>[
+    layer,layerCanvas(frameId,layer).getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data
+  ]));
+  const skinVisible=[],skinEdge=[],visibleMask=new Uint8Array(SIZE*SIZE),edgeMask=new Uint8Array(SIZE*SIZE);
+  const coverageByGarment=Object.fromEntries(GARMENT_COVER_LAYERS.map(layer=>[layer,0]));
+  let bodyOpaque=0,garmentCovered=0,anyLayerCovered=0,skinCandidates=0,skinVisibleCount=0;
+  const alphaAt=(data,x,y)=>data[(y*SIZE+x)*4+3];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const i=(y*SIZE+x)*4,ba=bd[i+3];
+    if(!ba)continue;
+    bodyOpaque++;
+    let coveredGarment=false,coveredAny=false;
+    for(const layer of GARMENT_COVER_LAYERS){
+      if(alphaAt(garmentData[layer],x,y)>0){coverageByGarment[layer]++;coveredGarment=true}
+    }
+    for(const layer of nonBodyLayers){if(alphaAt(allData[layer],x,y)>0){coveredAny=true;break}}
+    if(coveredGarment)garmentCovered++;
+    if(coveredAny)anyLayerCovered++;
+    if(!isSkinColorCandidate(bd[i],bd[i+1],bd[i+2],ba))continue;
+    skinCandidates++;
+    if(coveredGarment)continue;
+    skinVisibleCount++;visibleMask[y*SIZE+x]=1;
+    skinVisible.push([x,y,bd[i],bd[i+1],bd[i+2],ba]);
+    let nearGarment=false;
+    for(let oy=-1;oy<=1&&!nearGarment;oy++)for(let ox=-1;ox<=1&&!nearGarment;ox++){
+      if(!ox&&!oy)continue;
+      const px=x+ox,py=y+oy;if(px<0||py<0||px>=SIZE||py>=SIZE)continue;
+      for(const layer of GARMENT_COVER_LAYERS){
+        if(alphaAt(garmentData[layer],px,py)>0){nearGarment=true;break}
+      }
+    }
+    if(nearGarment){edgeMask[y*SIZE+x]=1;skinEdge.push([x,y,bd[i],bd[i+1],bd[i+2],ba])}
+  }
+  return {
+    note:'Heuristic diagnostic only. Visible skin can be intentional at face, hands, neck, ankles or feet. Use pixel context and BODY pose before treating a region as a leak.',
+    garmentCoverageLayers:[...GARMENT_COVER_LAYERS],
+    bodyOpaquePixels:bodyOpaque,
+    bodyPixelsCoveredByGarments:garmentCovered,
+    bodyPixelsCoveredByAnyLayer:anyLayerCovered,
+    skinColorCandidatePixels:skinCandidates,
+    visibleSkinCandidatePixels:skinVisible,
+    visibleSkinCandidateCount:skinVisibleCount,
+    garmentEdgeSkinCandidatePixels:skinEdge,
+    garmentEdgeSkinCandidateCount:skinEdge.length,
+    visibleSkinComponents:componentSummariesFromMask(visibleMask),
+    garmentEdgeSkinComponents:componentSummariesFromMask(edgeMask),
+    coverageByGarment
+  };
+}
+
+function buildFullAnalysis(){
+  const framesOut={};
+  for(const frame of FRAMES){
+    const layers={};
+    for(const layer of LAYERS){
+      const c=layerCanvas(frame.id,layer);
+      layers[layer]={
+        ...canvasMetrics(c),
+        pixels:sparsePixelsOfCanvas(c,1),
+        asset:assetMeta(frame.id,layer)||null
+      };
+    }
+    framesOut[frame.id]={
+      kind:frame.kind,
+      frameNumber:frame.n,
+      layers,
+      composite:{...canvasMetrics(compositeCanvas(frame.id))},
+      exposure:bodyExposureDiagnostics(frame.id)
+    };
+  }
+  return {
+    version:1,
+    type:'kidscade-avatar-full-analysis',
+    createdAt:new Date().toISOString(),
+    canvas:{width:SIZE,height:SIZE,origin:'top-left'},
+    avatar:{facing:'left',logicalRoot:[ROOT_X,82],groundY:GROUND_Y,mirrorForRight:true},
+    frameOrder:FRAMES.map(f=>f.id),
+    layerOrder:[...RENDER_ORDER],
+    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS]},
+    assetIds:Object.fromEntries(LAYERS.map(layer=>[layer,assetIdForLayer(layer)])),
+    frames:framesOut,
+    adjustmentContract:{
+      type:'kidscade-avatar-full-adjustment',
+      version:1,
+      target:{canvas:[SIZE,SIZE],facing:'left'},
+      frames:{
+        'walk-02':{
+          layers:{
+            shoes:{
+              baseChecksum:'use frames.walk-02.layers.shoes.checksum from this analysis',
+              copyFrom:'optional frame id',
+              operations:[
+                {op:'translate',dx:0,dy:0},
+                {op:'moveRect',rect:{x:0,y:0,w:1,h:1},dx:0,dy:0},
+                {op:'setPixels',pixels:[[0,0,0,0,0,0]]},
+                {op:'replacePixels',pixels:[[0,0,255,255,255,255]]}
+              ],
+              note:'optional layer-specific explanation'
+            }
+          },
+          note:'optional frame-level explanation'
+        }
+      },
+      rules:[
+        'Only include frame/layer entries that need changes.',
+        'Coordinates are integer pixels in the 128x128 top-left origin canvas.',
+        'replacePixels clears that one layer/frame first; omitted pixels become transparent.',
+        'setPixels changes only listed RGBA pixels; alpha 0 clears a pixel.',
+        'moveRect moves an existing rectangular region before later operations.',
+        'Operations execute in listed order after optional copyFrom.',
+        'Do not modify BODY merely to hide clothing leaks unless the BODY itself is wrong; prefer correcting upper/lower/shoes/gloves.',
+        'Use exposure diagnostics only as hints. Face, neck, hands and feet can be intentionally visible.'
+      ]
+    }
+  };
+}
+
+function exportFullAnalysisFile(){
+  const data=buildFullAnalysis();
+  downloadBlob('kidscade-avatar-full-analysis.json',new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
+  setStatus('전체 아바타 분석 JSON 저장됨 · 모든 파츠/프레임과 피부 노출 진단 포함');
+}
+
+function validateFullAdjustmentFile(data){
+  if(!data||data.type!=='kidscade-avatar-full-adjustment'||Number(data.version)!==1)throw new Error('Kidscade 전체 AI 보정 파일 형식이 아닙니다.');
+  if(data.target?.canvas&&(Number(data.target.canvas[0])!==SIZE||Number(data.target.canvas[1])!==SIZE))throw new Error('128×128 전체 보정 파일만 적용할 수 있습니다.');
+  if(!data.frames||typeof data.frames!=='object')throw new Error('frames 보정 정보가 없습니다.');
+  for(const [frameId,framePlan] of Object.entries(data.frames)){
+    if(!frames.has(frameId))throw new Error('알 수 없는 프레임: '+frameId);
+    if(!framePlan?.layers||typeof framePlan.layers!=='object')throw new Error(frameId+'에 layers가 없습니다.');
+    for(const [layer,plan] of Object.entries(framePlan.layers)){
+      if(!LAYERS.includes(layer))throw new Error(frameId+'에 알 수 없는 파츠가 있습니다: '+layer);
+      if(plan?.copyFrom&&!frames.has(plan.copyFrom))throw new Error(frameId+' '+layer+'의 copyFrom 프레임을 찾을 수 없습니다.');
+      for(const op of Array.isArray(plan?.operations)?plan.operations:[]){
+        if(!['translate','moveRect','setPixels','replacePixels'].includes(op?.op))throw new Error(frameId+' '+layer+'에 지원하지 않는 op가 있습니다: '+String(op?.op));
+      }
+    }
+  }
+  return true;
+}
+
+function applyLayerAdjustmentPlan(frameId,layer,plan,assetId){
+  snapshotFrameLayer(frameId,layer);
+  if(plan?.copyFrom){
+    const dst=layerCtx(frameId,layer),src=layerCanvas(plan.copyFrom,layer);
+    dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);
+    setAssetMeta(frameId,layer,assetMeta(plan.copyFrom,layer));
+  }
+  for(const op of Array.isArray(plan?.operations)?plan.operations:[]){
+    if(op.op==='translate')shiftLayerFrame(frameId,layer,op.dx,op.dy);
+    else if(op.op==='moveRect')moveRectOnFrame(frameId,layer,op.rect,op.dx,op.dy);
+    else if(op.op==='setPixels')applyPixelTuples(frameId,layer,op.pixels,{replace:false});
+    else if(op.op==='replacePixels')applyPixelTuples(frameId,layer,op.pixels,{replace:true});
+  }
+  if(!assetMeta(frameId,layer)){
+    const id=assetId||assetIdForLayer(layer);
+    setAssetMeta(frameId,layer,{layer,id,label:id+' · AI 보정',file:null,custom:true});
+  }
+}
+
+async function applyFullAdjustment(data){
+  validateFullAdjustmentFile(data);
+  const mismatches=[];
+  for(const [frameId,framePlan] of Object.entries(data.frames)){
+    for(const [layer,plan] of Object.entries(framePlan.layers)){
+      if(plan?.baseChecksum&&canvasChecksum(layerCanvas(frameId,layer))!==String(plan.baseChecksum))mismatches.push(frameId+' / '+partLabel(layer));
+    }
+  }
+  if(mismatches.length&&!confirm('분석 이후 '+mismatches.join(', ')+' 픽셀이 바뀌었습니다. 그래도 전체 AI 보정을 적용할까요?'))return false;
+
+  let layerChanges=0;
+  for(const [frameId,framePlan] of Object.entries(data.frames)){
+    for(const [layer,plan] of Object.entries(framePlan.layers)){
+      const assetId=data.assetIds?.[layer]||data.target?.assetIds?.[layer]||assetIdForLayer(layer);
+      applyLayerAdjustmentPlan(frameId,layer,plan,assetId);
+      layerChanges++;
+    }
+  }
+  stopPlayback();selection=null;
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();render();saveLocal();
+  setStatus('전체 AI 보정 적용 완료 · '+layerChanges+'개 프레임/파츠 수정');
+  return true;
+}
+
 function buildPartAnalysis(layer=activeLayer){
   if(!LAYERS.includes(layer))throw new Error('지원하지 않는 파츠입니다: '+layer);
   const framesOut={};
@@ -414,19 +640,7 @@ async function applyPartAdjustment(data){
 
   let changed=0;
   for(const [frameId,plan] of Object.entries(data.frames)){
-    snapshotFrameLayer(frameId,layer);
-    if(plan.copyFrom){
-      const dst=layerCtx(frameId,layer),src=layerCanvas(plan.copyFrom,layer);
-      dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);
-      setAssetMeta(frameId,layer,assetMeta(plan.copyFrom,layer));
-    }
-    for(const op of Array.isArray(plan.operations)?plan.operations:[]){
-      if(op.op==='translate')shiftLayerFrame(frameId,layer,op.dx,op.dy);
-      else if(op.op==='moveRect')moveRectOnFrame(frameId,layer,op.rect,op.dx,op.dy);
-      else if(op.op==='setPixels')applyPixelTuples(frameId,layer,op.pixels,{replace:false});
-      else if(op.op==='replacePixels')applyPixelTuples(frameId,layer,op.pixels,{replace:true});
-    }
-    if(!assetMeta(frameId,layer))setAssetMeta(frameId,layer,{layer,id:data.target?.assetId||assetIdForLayer(layer),label:(data.target?.assetId||assetIdForLayer(layer))+' · AI 보정',file:null,custom:true});
+    applyLayerAdjustmentPlan(frameId,layer,plan,data.target?.assetId||assetIdForLayer(layer));
     changed++;
   }
   const field=LAYER_ID_FIELDS[layer];
@@ -1269,6 +1483,17 @@ function bind(){
   $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
 
   $('exportPartAnalysis')?.addEventListener('click',exportPartAnalysisFile);
+  $('exportFullAnalysis')?.addEventListener('click',exportFullAnalysisFile);
+  $('importFullAdjustment')?.addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{
+      const data=JSON.parse(await file.text());
+      await applyFullAdjustment(data);
+    }catch(err){
+      setStatus('전체 AI 보정 파일 적용 실패: '+(err?.message||err),true);
+    }
+    e.target.value='';
+  });
   $('importPartAdjustment')?.addEventListener('change',async e=>{
     const file=e.target.files?.[0];if(!file)return;
     try{
