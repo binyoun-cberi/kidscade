@@ -170,6 +170,13 @@ export async function buildKidscadeCity(ctx){
     parent.add(label);buildingLabels.push(label);
   }
 
+  // Three core venues are now walk-in interiors. The trigger sits just outside each front collider.
+  for(const [id,x,z,label] of [
+    ['market',market.x-4.7,market.z-2.55,'🚪 씨앗마트 들어가기'],
+    ['hardware',market.x+4.7,market.z-2.55,'🚪 튼튼 철물점 들어가기'],
+    ['cafe',leisure.x-4.7,leisure.z-2.55,'🚪 하늘 카페 들어가기']
+  ])interact('outdoor',x,z,1.35,label,()=>actions.enterVenue?.(id));
+
   // Commerce props stay deep inside the market parcel, never on the south or center roads.
   await Promise.all([
     addModel(parent,CITY_ASSET.fruit,{x:market.x-5.8,z:market.z+.6,w:1.6,h:1.35,d:1.0,rot:0,name:'market-fruit'}),
