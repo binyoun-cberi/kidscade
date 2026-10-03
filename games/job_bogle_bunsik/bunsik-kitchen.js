@@ -254,9 +254,9 @@ class RamenKitchen3D{
   this.layoutStations.push({id,label,group:holder});
   return holder
  }
- makePrepCounter(id,label,x,z,rot=0){
+ makePrepCounter(id,label,x,z,rot=0,equipmentIndex=0){
   const holder=this.makeLayoutStation(id,label,SUSHI,'counter-straight.glb',1.85,x,z,rot,.78);
-  holder.userData.storageSlot=true;holder.userData.storedItem=null;
+  holder.userData.storageSlot=true;holder.userData.storedItem=null;holder.userData.equipmentKey='prepCounter';holder.userData.equipmentIndex=equipmentIndex;
   const anchor=new THREE.Group();anchor.position.set(0,1.15,0);holder.add(anchor);holder.userData.itemAnchor=anchor;
   return holder
  }
@@ -276,13 +276,16 @@ class RamenKitchen3D{
  clearPrepCounters(){
   this.layoutStations.filter(s=>s.group.userData.storageSlot).forEach(s=>{s.group.userData.storedItem=null;delete s.group.userData.reservedBy;s.group.userData.automationClock=0;this.syncCounterVisual(s.group)})
  }
- makeAutomationStation(id,label,type,x,z,dir=0){
-  const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=dir*Math.PI/2;holder.userData.stationId=id;holder.userData.blockRadius=.62;holder.userData.storageSlot=true;holder.userData.storedItem=null;holder.userData.automationType=type;holder.userData.direction=dir;holder.userData.automationClock=0;this.scene.add(holder);
-  const base=new THREE.Mesh(new THREE.BoxGeometry(1.25,.28,1.25),this.material(type==='grabber'?0x5b7082:0x4d6570,{roughness:.38,metalness:.42}));base.position.y=.2;base.castShadow=true;base.receiveShadow=true;holder.add(base);
+ makeAutomationStation(id,label,type,x,z,dir=0,equipmentIndex=0){
+  const equipmentKey=type==='smartGrabber'?'smartGrabber':type;
+  const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=dir*Math.PI/2;holder.userData.stationId=id;holder.userData.blockRadius=.62;holder.userData.storageSlot=true;holder.userData.storedItem=null;holder.userData.automationType=type;holder.userData.equipmentKey=equipmentKey;holder.userData.equipmentIndex=equipmentIndex;holder.userData.direction=dir;holder.userData.automationClock=0;if(type==='smartGrabber')holder.userData.filterId=progress.filters[id]||'noodle';this.scene.add(holder);
+  const baseColor=type==='smartGrabber'?0x4d8c7b:type==='grabber'?0x5b7082:0x4d6570;
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.25,.28,1.25),this.material(baseColor,{roughness:.38,metalness:.42}));base.position.y=.2;base.castShadow=true;base.receiveShadow=true;holder.add(base);
   for(let i=-1;i<=1;i++){const roller=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,1.02,12),this.material(0xc7d2d5,{roughness:.28,metalness:.65}));roller.rotation.z=Math.PI/2;roller.position.set(i*.34,.39,0);holder.add(roller)}
-  if(type==='grabber'){
-   const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.92),this.material(0xe9b84d,{roughness:.4,metalness:.18}));arm.position.set(0,.62,-.05);holder.add(arm);
-   const claw=new THREE.Mesh(new THREE.BoxGeometry(.5,.14,.14),this.material(0xe9b84d,{roughness:.4,metalness:.18}));claw.position.set(0,.62,-.48);holder.add(claw)
+  if(type==='grabber'||type==='smartGrabber'){
+   const armColor=type==='smartGrabber'?0x72dbb5:0xe9b84d;
+   const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.92),this.material(armColor,{roughness:.4,metalness:.18}));arm.position.set(0,.62,-.05);holder.add(arm);
+   const claw=new THREE.Mesh(new THREE.BoxGeometry(.5,.14,.14),this.material(armColor,{roughness:.4,metalness:.18}));claw.position.set(0,.62,-.48);holder.add(claw)
   }
   const arrow=new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,.72,.3),.72,0x8ce6ff,.22,.15);holder.add(arrow);holder.userData.directionArrow=arrow;
   const pick=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.35,1.5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=.62;pick.userData.layoutStation=holder;holder.add(pick);this.stationPickables.push(pick);
@@ -291,6 +294,53 @@ class RamenKitchen3D{
   const tag=this.makeTextSprite(label);tag.position.set(0,1.45,0);tag.scale.set(1.18,.37,1);holder.add(tag);
   this.layoutStations.push({id,label,group:holder});return holder
  }
+ isEquipmentOwned(group){
+  const key=group?.userData?.equipmentKey;if(!key)return true;
+  return (progress.owned[key]||0)>(group.userData.equipmentIndex||0)
+ }
+ syncEquipmentVisibility(){
+  this.layoutStations.forEach(s=>{
+   const g=s.group,active=this.isEquipmentOwned(g);g.visible=active;
+   const pick=this.stationPickables.find(p=>p.userData.layoutStation===g);if(pick)pick.visible=active;
+   if(!active){g.userData.storedItem=null;delete g.userData.reservedBy;this.syncCounterVisual(g)}
+  })
+ }
+ applySavedEquipmentState(){
+  this.syncEquipmentVisibility();
+  this.layoutStations.forEach(s=>{
+   const g=s.group;if(!g.visible)return;
+   const saved=progress.layout?.[s.id];if(saved){
+    if(Number.isFinite(saved.x)&&Number.isFinite(saved.z))g.position.set(saved.x,0,saved.z);
+    if(g.userData.automationType&&Number.isInteger(saved.dir)){g.userData.direction=((saved.dir%4)+4)%4;g.rotation.y=g.userData.direction*Math.PI/2}
+   }
+   if(g.userData.automationType==='smartGrabber'){
+    const filter=progress.filters[s.id];if(SMART_FILTERS.includes(filter))g.userData.filterId=filter
+   }
+  })
+ }
+ snapshotEquipmentLayout(){
+  const layout={};
+  this.layoutStations.forEach(s=>{
+   const g=s.group;if(!g.userData.equipmentKey||!g.visible)return;
+   layout[s.id]={x:Math.round(g.position.x*100)/100,z:Math.round(g.position.z*100)/100};
+   if(g.userData.automationType)layout[s.id].dir=g.userData.direction||0
+  });
+  progress.layout=layout;
+  this.layoutStations.filter(s=>s.group.userData.automationType==='smartGrabber').forEach(s=>{progress.filters[s.id]=s.group.userData.filterId||'noodle'});
+  saveProgress()
+ }
+ findFreeEquipmentSpot(group){
+  const spots=[];
+  for(const z of [3.35,2.25,-2.1])for(let x=-3.2;x<=4.8;x+=1.6)spots.push({x:Math.round(x*10)/10,z});
+  return spots.find(p=>!this.layoutPlacementBlocked(group,p.x,p.z))||{x:0,z:3.35}
+ }
+ revealNewestEquipment(key){
+  const candidates=this.layoutStations.filter(s=>s.group.userData.equipmentKey===key).sort((a,b)=>(a.group.userData.equipmentIndex||0)-(b.group.userData.equipmentIndex||0));
+  const target=candidates.find(s=>(s.group.userData.equipmentIndex||0)===progress.owned[key]-1)?.group;if(!target)return null;
+  target.visible=true;const pick=this.stationPickables.find(p=>p.userData.layoutStation===target);if(pick)pick.visible=true;
+  const spot=this.findFreeEquipmentSpot(target);target.position.set(spot.x,0,spot.z);return target
+ }
+
  rotateSelectedAutomation(){
   if(state.phase!=='prep')return false;
   const g=this.selectedLayoutStation;if(!g?.userData?.automationType){toast('컨베이어나 Grabber를 먼저 선택해 주세요',1300);return false}
@@ -349,10 +399,14 @@ class RamenKitchen3D{
   this.makeLayoutStation('soupSource','스프 바구니',BAKERY,'basket-b.glb',1.05,-5.9,2.45,0,.62);
   this.makeLayoutStation('fridge','토핑 냉장고',BAKERY_BITS,'fridge-a.glb',2.1,-3.8,3.7,Math.PI,.88);
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2,.72);
-  this.makePrepCounter('prepCounterA','조리대 A',5.35,-1.65,-Math.PI/2);
-  this.makePrepCounter('prepCounterB','조리대 B',5.35,.15,-Math.PI/2);
-  this.makeAutomationStation('conveyorA','컨베이어','conveyor',-1.15,-1.8,2);
-  this.makeAutomationStation('grabberA','Grabber','grabber',-3.45,-1.8,2);
+  this.makePrepCounter('prepCounterA','조리대 A',5.35,-1.65,-Math.PI/2,0);
+  this.makePrepCounter('prepCounterB','조리대 B',5.35,.15,-Math.PI/2,1);
+  this.makePrepCounter('prepCounterC','조리대 C',3.7,3.2,Math.PI,2);
+  this.makeAutomationStation('conveyorA','컨베이어 A','conveyor',-1.15,-1.8,2,0);
+  this.makeAutomationStation('conveyorB','컨베이어 B','conveyor',1.15,-1.8,2,1);
+  this.makeAutomationStation('grabberA','Grabber','grabber',-3.45,-1.8,2,0);
+  this.makeAutomationStation('smartGrabberA','Smart Grabber','smartGrabber',3.45,-1.8,2,0);
+  this.applySavedEquipmentState();
   const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
   this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
    if(!model)return;
