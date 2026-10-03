@@ -7,6 +7,8 @@ const ui={
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
  toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
  expeditionStatus:$('#expeditionStatus'),expeditionTitle:$('#expeditionTitle'),expeditionText:$('#expeditionText'),expeditionBar:$('#expeditionBar'),
+ tutorialShade:$('#tutorialShade'),tutorialCoach:$('#tutorialCoach'),tutorialStepLabel:$('#tutorialStepLabel'),tutorialIcon:$('#tutorialIcon'),
+ tutorialTitle:$('#tutorialTitle'),tutorialText:$('#tutorialText'),tutorialHint:$('#tutorialHint'),tutorialNext:$('#tutorialNextBtn'),tutorialSkip:$('#tutorialSkipBtn'),
  goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
  values:{hunt:$('#huntValue'),farm:$('#farmValue'),fish:$('#fishValue'),herd:$('#herdValue')}
 };
@@ -154,7 +156,7 @@ const C={
 const state={
  started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
  lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false,
- worldTick:0,expedition:null
+ worldTick:0,expedition:null,tutorial:{active:false,step:0}
 };
 let bgmHandle=null;
 
@@ -275,8 +277,67 @@ const RESOURCE_CAPS=Object.freeze({
 function resourceCap(type,count=1){return (RESOURCE_CAPS[type]||0)*Math.max(1,count||1);}
 function outputUnits(out){return out.reduce((n,o)=>n+(Number(o[1])||1),0);}
 
+const TUTORIAL_STEPS=[
+ {icon:'👤',title:'사람을 작은 나무에 올리기',text:'사람 카드를 끌어서 작은 나무 카드 위에 겹쳐 놓아보세요.',hint:'사람 + 자연 카드를 겹치면 작업이 시작됩니다.',cards:['person','smallTree']},
+ {icon:'🌿',title:'작업자는 계속 일해요',text:'진행바가 차면 나뭇가지 카드가 옆으로 튀어나옵니다. 사람을 그대로 두면 다시 작업을 시작해요.',hint:'첫 나뭇가지가 나올 때까지 잠깐 기다려보세요.',cards:['smallTree']},
+ {icon:'✋',title:'필요하면 작업을 멈추기',text:'이제 작은 나무 위의 사람 카드를 빈 곳으로 끌어내세요.',hint:'사람을 옮기는 순간 반복 작업이 멈춥니다.',cards:['person','smallTree']},
+ {icon:'🪨',title:'돌 두 개 모으기',text:'사람을 돌무더기에 올려 돌을 2개 모아보세요. 튜토리얼 동안 채집은 조금 빠르게 진행됩니다.',hint:'돌 2개가 모이면 작업자는 자동으로 쉬게 됩니다.',cards:['person','stoneSource']},
+ {icon:'💥',title:'같은 재료 합치기',text:'돌 카드 2장을 서로 겹쳐 찍개를 만들어보세요.',hint:'합칠 수 있는 카드는 드래그할 때 테두리가 빛납니다.',cards:['stone']},
+ {icon:'🃏',title:'같은 카드도 스택',text:'사람 두 장을 서로 겹쳐 사람 ×2 스택을 만들어보세요.',hint:'스택은 공간을 아끼지만 개별 사람을 쓰려면 다시 분리해야 합니다.',cards:['person']},
+ {icon:'↔',title:'분리대에서 한 장 꺼내기',text:'사람 ×2 스택을 상단 HUD의 분리대에 끌어다 놓으세요.',hint:'목재·돌 같은 자원 더미도 한 장씩 꺼낼 수 있습니다.',cards:['person'],ui:['extractorZone']},
+ {icon:'🧭',title:'주변 탐험 보내기',text:'주변 탐색 버튼을 눌러 쉬는 사람 1명과 식량 1을 원정에 보내보세요.',hint:'튜토리얼 원정은 7초만 걸립니다.',ui:['exploreBtn']},
+ {icon:'⏳',title:'탐험이 돌아오는 중',text:'탐험 중인 사람은 다른 일을 할 수 없습니다. 귀환하면 새 자원지와 동물·사건을 발견할 수 있어요.',hint:'탐험 상태창의 진행도를 확인하세요.',ui:['expeditionStatus']},
+ {icon:'🛡',title:'이제 스스로 살아남기',text:'식량이 떨어지면 사람 카드 위에 굶주림 게이지가 나타납니다. 3일차 이후에는 맹수도 만나며 불·울타리·마을·사냥꾼이 방어력을 올립니다.',hint:'채집 → 제작 → 탐험 → 정착 → 방어의 순환을 자유롭게 이어가세요.',selectors:['.foodTile','.defenseTile'],next:'튜토리얼 완료'}
+];
+function tutorialActive(){return !!state.tutorial?.active;}
+function clearTutorialFocus(){
+ for(const c of state.cards.values())c.el.classList.remove('tutorial-focus');
+ document.querySelectorAll('.tutorial-ui-focus').forEach(el=>el.classList.remove('tutorial-ui-focus'));
+}
+function renderTutorial(){
+ if(!tutorialActive()){ui.tutorialShade?.classList.add('hidden');ui.tutorialCoach?.classList.add('hidden');clearTutorialFocus();return;}
+ const step=TUTORIAL_STEPS[state.tutorial.step]||TUTORIAL_STEPS[0];
+ ui.tutorialShade?.classList.remove('hidden');ui.tutorialCoach?.classList.remove('hidden');
+ ui.tutorialStepLabel.textContent='처음 배우기 '+(state.tutorial.step+1)+'/'+TUTORIAL_STEPS.length;
+ ui.tutorialIcon.textContent=step.icon;ui.tutorialTitle.textContent=step.title;ui.tutorialText.textContent=step.text;ui.tutorialHint.textContent=step.hint||'';
+ ui.tutorialNext.textContent=step.next||'다음';
+ ui.tutorialCoach.classList.toggle('can-next',!!step.next);
+ clearTutorialFocus();
+ for(const type of step.cards||[])for(const c of state.cards.values())if(c.type===type)c.el.classList.add('tutorial-focus');
+ for(const id of step.ui||[])document.getElementById(id)?.classList.add('tutorial-ui-focus');
+ for(const sel of step.selectors||[])document.querySelector(sel)?.classList.add('tutorial-ui-focus');
+}
+function beginTutorial(){state.tutorial={active:true,step:0};closeHudPopovers();renderTutorial();}
+function finishTutorial(skipped=false){
+ state.tutorial={active:false,step:0};state.mealLeft=70;clearTutorialFocus();
+ ui.tutorialShade?.classList.add('hidden');ui.tutorialCoach?.classList.add('hidden');
+ showToast(skipped?'튜토리얼을 건너뛰었습니다.':'✅ 기본 조작을 익혔어요. 이제 자유롭게 살아남아 보세요!');
+ renderAll();
+}
+function setTutorialStep(step){
+ if(!tutorialActive())return;
+ state.tutorial.step=Math.max(0,Math.min(TUTORIAL_STEPS.length-1,step));renderTutorial();
+}
+function cardsOf(type){return [...state.cards.values()].filter(c=>c.type===type);}
+function tutorialEvent(name,payload={}){
+ if(!tutorialActive())return;
+ const step=state.tutorial.step;
+ if(step===0&&name==='assigned_small_tree'){setTutorialStep(1);return;}
+ if(step===1&&name==='resource_produced'&&payload.node?.type==='smallTree'){setTutorialStep(2);return;}
+ if(step===2&&name==='detached_small_tree'){setTutorialStep(3);return;}
+ if(step===3&&name==='resource_produced'&&payload.node?.type==='stoneSource'&&cardsOf('stone').reduce((n,c)=>n+c.count,0)>=2){
+  const worker=payload.node.occupiedBy?state.cards.get(payload.node.occupiedBy):null;if(worker)cancelAssignment(worker);
+  setTutorialStep(4);return;
+ }
+ if(step===4&&name==='crafted_chopper'){setTutorialStep(5);return;}
+ if(step===5&&name==='stacked_people'){setTutorialStep(6);return;}
+ if(step===6&&name==='split_people'){setTutorialStep(7);return;}
+ if(step===7&&name==='expedition_started'){setTutorialStep(8);return;}
+ if(step===8&&name==='expedition_finished'){setTutorialStep(9);}
+}
+
 function reset(){
- state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.expedition=null;
+ state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.expedition=null;state.tutorial={active:false,step:0};
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
  state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
@@ -285,6 +346,7 @@ function reset(){
   if(!state.started||state.over)return;
   state.worldTick++;
   tickExpedition();
+  if(tutorialActive()){renderHud();renderHunger();return;}
   tickThreats();
   if(state.starving){
    if(tryRecoverMeal())return;
@@ -400,10 +462,11 @@ function cancelAssignment(card){
  let worker=isWorker(card?.type)?card:null;
  if(!worker&&card?.occupiedBy)worker=state.cards.get(card.occupiedBy)||null;
  if(!worker||!worker.assignmentNodeId)return;
- const node=state.cards.get(worker.assignmentNodeId);
+ const node=state.cards.get(worker.assignmentNodeId),nodeType=node?.type;
  if(worker.assignmentTimer){clearTimeout(worker.assignmentTimer);worker.assignmentTimer=null;}
  if(node&&node.occupiedBy===worker.id){node.occupiedBy=null;clearWorkVisual(node);}
  worker.assignmentNodeId=null;clearWorkVisual(worker);
+ if(nodeType==='smallTree')tutorialEvent('detached_small_tree',{worker,node});
 }
 function pointInExtractor(x,y){
  const r=ui.extractor?.getBoundingClientRect?.();return !!r&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
@@ -431,6 +494,7 @@ function splitOneFromStack(card,x,y){
  playUiSound('ui.open',{volume:.2,rate:1.08});
  impactAt(x+card.el.offsetWidth/2,y+card.el.offsetHeight/2,'soft');
  showToast('↔ '+C[type].name+' 1장을 스택에서 분리했습니다.');
+ if(type==='person')tutorialEvent('split_people',{card,out});
  renderAll();return true;
 }
 function bindDrag(c){
@@ -509,6 +573,8 @@ function mergeSame(a,b){
    const rest=total-rule.need;if(rest>0)addCard(a.type,x+30,y+24,rest);
   }else {result=addCard(a.type,x,y,total);if(result&&RESOURCE_CAPS[a.type]){result.remaining=remaining;updateCard(result);}}
   markSynthesized(result);playUiSound('ui.confirm',{volume:.22,rate:1.04});
+  if(result?.type==='chopper')tutorialEvent('crafted_chopper',{card:result});
+  if(result?.type==='person'&&result.count>1)tutorialEvent('stacked_people',{card:result});
   renderAll();checkMilestone();
  });
 }
@@ -540,7 +606,11 @@ function workerAction(worker,node){
   oakGrove:{ms:6200,label:'도토리 줍는 중',out:[['acorn',2]],life:'hunt'},
   tidalFlat:{ms:7200,label:'갯벌 채집 중',out:[['clam',1],['oyster',1],['shell',1]],life:'fish',lifeGain:2}
  };
- if(base[node.type])return base[node.type];
+ if(base[node.type]){
+  const action={...base[node.type]};
+  if(tutorialActive()&&(node.type==='smallTree'||node.type==='stoneSource'))action.ms=Math.min(action.ms,2600);
+  return action;
+ }
  if(node.type==='bigTree'){
   if(worker.type!=='lumberjack'){showToast('큰 나무는 돌도끼를 든 벌목꾼이 있어야 벨 수 있어요.');return null;}
   return {ms:8500,label:'큰 나무 베는 중',out:[['wood',1]],life:'hunt'};
@@ -674,6 +744,7 @@ function productionCycle(worker,node,d,run){
  worker.assignmentTimer=setTimeout(()=>{
   if(state.over||run!==state.runId||worker.assignmentNodeId!==node.id||!state.cards.has(worker.id)||!state.cards.has(node.id))return;
   spawnOutputs(node,d.out);state.stats.gathered+=d.out.reduce((sum,o)=>sum+(o[1]||1),0);
+  tutorialEvent('resource_produced',{worker,node,out:d.out});
   const exhausted=spendResource(node,d.out);
   if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);
   renderAll();checkMilestone();
@@ -690,6 +761,7 @@ function runAction(worker,node,d){
  if(node.occupiedBy&&node.occupiedBy!==worker.id){showToast('이미 다른 사람이 이곳에서 일하고 있어요.');separate(worker,node);return;}
  cancelAssignment(worker);
  worker.assignmentNodeId=node.id;node.occupiedBy=worker.id;snap(worker,node);
+ if(node.type==='smallTree')tutorialEvent('assigned_small_tree',{worker,node});
  productionCycle(worker,node,d,run);
 }
 
@@ -836,6 +908,7 @@ function finishExpedition(){
  const encounter=expeditionEncounter();
  if(encounter){expeditionSpawn(encounter,anchor,count+1);found.push(C[encounter].name);}
  state.expedition=null;discover('주변 탐색');playProductionPop();
+ tutorialEvent('expedition_finished',{worker,encounter});
  const danger=encounter&&THREAT_CONFIG[encounter];
  showToast((danger?'⚠️ ':'🧭 ')+'탐험 귀환: '+found.join(' · '));
  renderAll();
@@ -858,9 +931,10 @@ function explore(){
   return;
  }
  consumeFood(1);state.stats.explores++;
- const duration=18+Math.floor(Math.random()*5);
+ const duration=tutorialActive()?7:18+Math.floor(Math.random()*5);
  state.expedition={workerId:worker.id,duration,remaining:duration};
  worker.exploring=true;worker.busy=true;markBusy(worker,'탐험 중',duration*1000);worker.el.classList.add('exploring');
+ tutorialEvent('expedition_started',{worker});
  showToast('🧭 '+C[worker.type].name+'이(가) 식량 1을 챙겨 주변을 탐험합니다.');
  renderAll();
 }
@@ -989,7 +1063,7 @@ async function startBgm(){
  }catch(_){}
 }
 function stopBgm(){try{bgmHandle?.stop?.()}catch(_){}bgmHandle=null;}
-function start(){$('#startLayer').classList.add('hidden');reset();startBgm();try{window.KidscadeGame?.start?.()}catch(_){}}
+function start(){$('#startLayer').classList.add('hidden');reset();startBgm();beginTutorial();try{window.KidscadeGame?.start?.()}catch(_){}}
 
 $('#startBtn').addEventListener('click',start);
 $('#retryBtn').addEventListener('click',reset);
@@ -997,6 +1071,8 @@ $('#restartBtn').addEventListener('click',reset);
 $('#continueBtn').addEventListener('click',()=>$('#milestoneLayer').classList.add('hidden'));
 $('#exploreBtn').addEventListener('click',explore);
 $('#tidyBtn').addEventListener('click',tidy);
+ui.tutorialSkip.addEventListener('click',()=>finishTutorial(true));
+ui.tutorialNext.addEventListener('click',()=>{if(tutorialActive()&&state.tutorial.step===TUTORIAL_STEPS.length-1)finishTutorial(false);});
 function closeHudPopovers(){
  ui.goalPopover.classList.add('hidden');ui.discoverPopover.classList.add('hidden');
  ui.goalBtn.classList.remove('active');ui.discoverBtn.classList.remove('active');
