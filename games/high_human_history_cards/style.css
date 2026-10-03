@@ -137,6 +137,8 @@ button{font:inherit}.hidden{display:none!important}
 }
 .countBadge.one{display:none}
 .foodBadge{position:absolute;left:5px;bottom:5px;z-index:4;padding:3px 5px;border-radius:999px;background:#9e493b;color:#fff;font-size:8px;font-weight:1000}
+.resourceBadge{position:absolute;right:5px;bottom:5px;z-index:4;padding:3px 5px;border-radius:999px;background:#3c5e37;color:#eef9e8;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.28)}
+.resourceBadge.low{background:#8c5b2d;color:#fff3dc}
 .workTag{position:absolute;left:6px;right:6px;top:27px;z-index:8;padding:4px;border-radius:5px;background:rgba(27,24,19,.88);color:#fff;font-size:9px;text-align:center;font-weight:950;opacity:0}
 .card.busy .workTag{opacity:1}.card.busy{filter:saturate(.75) drop-shadow(0 7px 5px rgba(39,50,31,.25))}
 .progress{position:absolute;left:3px;right:3px;bottom:3px;height:5px;width:0;border-radius:999px;background:#e39735;z-index:7}
@@ -168,6 +170,7 @@ button{font:inherit}.hidden{display:none!important}
 .card.split-out{animation:cardSplitOut .36s cubic-bezier(.2,1.25,.3,1)}
 .card.merge-source{animation:mergeSource .18s ease-in forwards}
 .card.merge-target{animation:mergeTarget .2s ease-in-out}
+.card.depleted{pointer-events:none;animation:resourceDeplete .38s ease-in forwards}
 @keyframes cardDeal{
   0%{transform:translateY(-18px) scale(.52) rotate(-4deg);opacity:0}
   70%{transform:translateY(4px) scale(1.06) rotate(1deg);opacity:1}
@@ -197,6 +200,11 @@ button{font:inherit}.hidden{display:none!important}
   0%,100%{transform:scale(1)}
   50%{transform:scale(.93)}
   72%{transform:scale(1.08)}
+}
+@keyframes resourceDeplete{
+  0%{transform:scale(1);opacity:1;filter:grayscale(0)}
+  55%{transform:scale(.96) rotate(-1deg);opacity:.72;filter:grayscale(.7)}
+  100%{transform:scale(.72) translateY(10px);opacity:0;filter:grayscale(1)}
 }
 .impactBurst{
   position:absolute;width:56px;height:56px;z-index:10010;pointer-events:none;transform:translate(-50%,-50%);
