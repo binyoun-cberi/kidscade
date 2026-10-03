@@ -2327,6 +2327,14 @@ ${getEvolutionHintText()}
             function scoreCardForPetTalk(card) {
                 const answers = petTalkState.answers || {};
                 const gameId = card.getAttribute('data-id');
+                const game = window.KidscadeGames?.get?.(gameId);
+                const delegated = window.KidscadeRecommendations?.scoreCurrent?.(game, {
+                    answers,
+                    dominantCategory: getDominantPetCategory()
+                });
+                if (Number.isFinite(delegated)) return delegated;
+
+                // 추천 모듈이 아직 준비되지 않은 초기 순간만 사용하는 안전 fallback.
                 const category = card.getAttribute('data-category');
                 let score = 0;
                 if (answers.category && answers.category !== 'any' && category === answers.category) score += 12;
