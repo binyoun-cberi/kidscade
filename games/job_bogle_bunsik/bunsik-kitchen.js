@@ -263,7 +263,8 @@ class RamenKitchen3D{
   if(!this.raycaster.ray.intersectPlane(plane,p))return;
   const x=Math.max(-6.2,Math.min(6.2,Math.round(p.x*2)/2)),z=Math.max(-2.25,Math.min(3.7,Math.round(p.z*2)/2));
   const blocked=this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.45)||
-   this.layoutStations.some(s=>s.group!==this.dragLayout&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<1.45);
+   this.layoutStations.some(s=>s.group!==this.dragLayout&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<1.45)||
+   (this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<1.45);
   if(!blocked)this.dragLayout.position.set(x,0,z);
  }
  stationDistance(group){return this.player?Math.hypot(group.position.x-this.player.position.x,group.position.z-this.player.position.z):999}
@@ -290,7 +291,7 @@ class RamenKitchen3D{
   let nearest=null,best=1.55;
   candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
   this.nearestStation=nearest;
-  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep'?.55:(nearest?.group===s.group?.88:0)});
+  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep' ? .55 : (nearest?.group===s.group ? .88 : 0)});
   if(els.stationHint){
    if(state.phase==='prep')els.stationHint.textContent='가구를 드래그해 주방 동선을 바꿔 보세요';
    else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
