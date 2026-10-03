@@ -160,17 +160,10 @@
   }
 
   function bindThemeFallback() {
-    const theme = document.getElementById('theme-btn');
-    if (!theme || theme.dataset.kcThemeBound) return;
-    theme.dataset.kcThemeBound = '1';
-    let dark = false;
-    try { dark = localStorage.getItem('kidscade_darkmode') === 'true'; } catch (_) {}
-    document.body.classList.toggle('dark-mode', dark);
-    theme.addEventListener('click', () => {
-      dark = !document.body.classList.contains('dark-mode');
-      document.body.classList.toggle('dark-mode', dark);
-      try { localStorage.setItem('kidscade_darkmode', String(dark)); } catch (_) {}
-      try { window.playUISound?.('click'); } catch (_) {}
+    window.KidscadeTheme?.bind?.({
+      document,
+      localStorage,
+      playSound: sound => window.playUISound?.(sound)
     });
   }
 
