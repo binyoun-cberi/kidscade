@@ -56,8 +56,10 @@ test('sprout-power ranking entry is pinned to the main sidebar and remains visib
 
 test('student ranking UI uses non-spendable sprout power instead of seed balance', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const base = fs.readFileSync(path.join(ROOT, 'index_base.html'), 'utf8');
   const client = fs.readFileSync(path.join(ROOT, 'sprout-power.js'), 'utf8');
-  assert.match(index, /sprout-power\.js/);
+  assert.doesNotMatch(index, /sprout-power\.js/);
+  assert.match(base, /sprout-power\.js/);
   assert.match(client, /우리 반 새싹력 랭킹/);
   assert.match(client, /이번 주/);
   assert.match(client, /누적/);
