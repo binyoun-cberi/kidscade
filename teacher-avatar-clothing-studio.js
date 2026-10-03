@@ -21,6 +21,9 @@ let activeLayer='upper';
 let tool='pencil';
 let drawing=false;
 let sourceImage=null;
+let preparedSource=null;
+let sourceCrop=null;
+let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
 const bodyCache=new Map();
@@ -91,20 +94,229 @@ function refreshFrameButtons(){
   });
 }
 
-function drawStamp(target,alpha=1){
+function makeCanvas(w=SIZE,h=SIZE){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d',{alpha:true}).imageSmoothingEnabled=false;
+  return c;
+}
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+function invalidatePixelPreview(){
+  pixelPreviewReady=false;
+  const c=$('pixelPreviewCanvas');
+  if(c)c.getContext('2d',{alpha:true}).clearRect(0,0,SIZE,SIZE);
+}
+
+function refreshPreparedSource(){
+  preparedSource=null;sourceCrop=null;invalidatePixelPreview();
   if(!sourceImage)return;
+  const w=Math.max(1,sourceImage.naturalWidth||sourceImage.width||1);
+  const h=Math.max(1,sourceImage.naturalHeight||sourceImage.height||1);
+  const c=makeCanvas(w,h),p=c.getContext('2d',{alpha:true});
+  p.imageSmoothingEnabled=true;
+  p.drawImage(sourceImage,0,0,w,h);
+  const img=p.getImageData(0,0,w,h);
+  const d=img.data;
+
+  if($('removeFlatBg')?.checked){
+    const cornerIndexes=[0,(w-1)*4,(h-1)*w*4,((h-1)*w+(w-1))*4];
+    const opaque=cornerIndexes.filter(i=>d[i+3]>220);
+    if(opaque.length>=3){
+      const bg=[0,1,2].map(ch=>opaque.reduce((sum,i)=>sum+d[i+ch],0)/opaque.length);
+      const threshold2=48*48;
+      for(let i=0;i<d.length;i+=4){
+        const dr=d[i]-bg[0],dg=d[i+1]-bg[1],db=d[i+2]-bg[2];
+        if(dr*dr+dg*dg+db*db<=threshold2)d[i+3]=0;
+      }
+      p.putImageData(img,0,0);
+    }
+  }
+
+  let minX=w,minY=h,maxX=-1,maxY=-1;
+  const scan=p.getImageData(0,0,w,h).data;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const a=scan[(y*w+x)*4+3];
+    if(a<8)continue;
+    if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+  }
+  sourceCrop=maxX>=minX?{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1}:{x:0,y:0,w,h};
+  preparedSource=c;
+}
+
+function activeSourceCrop(){
+  const crop=sourceCrop||{x:0,y:0,w:preparedSource?.width||1,h:preparedSource?.height||1};
+  if($('sourceScope')?.value!=='outfit')return crop;
+  const upperH=Math.max(1,Math.round(crop.h*.52));
+  const lowerY=crop.y+Math.max(0,Math.round(crop.h*.48));
+  return activeLayer==='upper'
+    ? {x:crop.x,y:crop.y,w:crop.w,h:upperH}
+    : {x:crop.x,y:lowerY,w:crop.w,h:Math.max(1,crop.y+crop.h-lowerY)};
+}
+
+function drawStamp(target,alpha=1,smoothing=false){
+  if(!sourceImage)return;
+  if(!preparedSource)refreshPreparedSource();
+  if(!preparedSource)return;
+  const crop=activeSourceCrop();
   const x=Number($('stampX').value)||0;
   const y=Number($('stampY').value)||0;
   const w=Math.max(1,Number($('stampW').value)||128);
   const h=Math.max(1,Number($('stampH').value)||128);
   const rad=(Number($('stampRotation').value)||0)*Math.PI/180;
   target.save();
-  target.imageSmoothingEnabled=false;
+  target.imageSmoothingEnabled=Boolean(smoothing);
   target.globalAlpha=alpha;
   target.translate(x+w/2,y+h/2);
   target.rotate(rad);
-  target.drawImage(sourceImage,-w/2,-h/2,w,h);
+  target.drawImage(preparedSource,crop.x,crop.y,crop.w,crop.h,-w/2,-h/2,w,h);
   target.restore();
+}
+
+function targetRectForLayer(){
+  // Kidscade's canonical 128px body keeps torso/arms and legs in these zones.
+  // Final cleanup remains editable pixel-by-pixel after this first-pass fit.
+  if(activeLayer==='upper')return {x:38,y:62,w:56,h:38};
+  return {x:45,y:82,w:42,h:39};
+}
+
+function autoFitStamp(announce=true){
+  if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
+  if(!preparedSource)refreshPreparedSource();
+  const crop=activeSourceCrop(),target=targetRectForLayer();
+  const scale=Math.min(target.w/crop.w,target.h/crop.h);
+  const w=Math.max(1,Math.round(crop.w*scale));
+  const h=Math.max(1,Math.round(crop.h*scale));
+  $('stampW').value=String(w);$('stampH').value=String(h);
+  $('stampX').value=String(Math.round(target.x+(target.w-w)/2));
+  $('stampY').value=String(Math.round(target.y+(target.h-h)/2));
+  $('stampRotation').value='0';
+  invalidatePixelPreview();render();
+  if(announce)setStatus((activeLayer==='upper'?'상의':'하의')+' BODY 영역에 자동 맞춤함');
+}
+
+function hardenAlpha(canvas,cut){
+  const c=canvas.getContext('2d',{alpha:true}),img=c.getImageData(0,0,SIZE,SIZE),d=img.data;
+  for(let i=0;i<d.length;i+=4){
+    if(d[i+3]<cut){d[i]=0;d[i+1]=0;d[i+2]=0;d[i+3]=0}
+    else d[i+3]=255;
+  }
+  c.putImageData(img,0,0);
+}
+
+function quantizeCanvas(canvas,k){
+  if(!k||k<2)return;
+  const c=canvas.getContext('2d',{alpha:true}),img=c.getImageData(0,0,SIZE,SIZE),d=img.data;
+  const colors=[];
+  for(let i=0;i<d.length;i+=4)if(d[i+3]){
+    const color=[d[i],d[i+1],d[i+2]];
+    if(colors.length<5000||((i>>2)%5===0))colors.push(color);
+  }
+  if(colors.length<=k)return;
+
+  const centers=[];
+  let darkest=colors[0],bestLum=Infinity;
+  for(const p of colors){const lum=p[0]*.2126+p[1]*.7152+p[2]*.0722;if(lum<bestLum){bestLum=lum;darkest=p}}
+  centers.push([...darkest]);
+  while(centers.length<k){
+    let pick=colors[0],best=-1;
+    for(const p of colors){
+      let min=Infinity;
+      for(const q of centers){
+        const dr=p[0]-q[0],dg=p[1]-q[1],db=p[2]-q[2];
+        const dist=dr*dr+dg*dg+db*db;if(dist<min)min=dist;
+      }
+      if(min>best){best=min;pick=p}
+    }
+    centers.push([...pick]);
+  }
+
+  for(let iter=0;iter<6;iter++){
+    const sums=centers.map(()=>[0,0,0,0]);
+    for(const p of colors){
+      let bi=0,bd=Infinity;
+      for(let n=0;n<centers.length;n++){
+        const q=centers[n],dr=p[0]-q[0],dg=p[1]-q[1],db=p[2]-q[2],dist=dr*dr+dg*dg+db*db;
+        if(dist<bd){bd=dist;bi=n}
+      }
+      const a=sums[bi];a[0]+=p[0];a[1]+=p[1];a[2]+=p[2];a[3]++;
+    }
+    sums.forEach((a,n)=>{if(a[3])centers[n]=[Math.round(a[0]/a[3]),Math.round(a[1]/a[3]),Math.round(a[2]/a[3])]});
+  }
+
+  for(let i=0;i<d.length;i+=4)if(d[i+3]){
+    let bi=0,bd=Infinity;
+    for(let n=0;n<centers.length;n++){
+      const q=centers[n],dr=d[i]-q[0],dg=d[i+1]-q[1],db=d[i+2]-q[2],dist=dr*dr+dg*dg+db*db;
+      if(dist<bd){bd=dist;bi=n}
+    }
+    d[i]=centers[bi][0];d[i+1]=centers[bi][1];d[i+2]=centers[bi][2];
+  }
+  c.putImageData(img,0,0);
+}
+
+function cleanupSingletons(canvas){
+  const c=canvas.getContext('2d',{alpha:true}),img=c.getImageData(0,0,SIZE,SIZE),d=img.data,out=new Uint8ClampedArray(d);
+  const opaque=(x,y)=>x>=0&&y>=0&&x<SIZE&&y<SIZE&&d[(y*SIZE+x)*4+3]>0;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const i=(y*SIZE+x)*4;if(!d[i+3])continue;
+    let neighbors=0;
+    for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)if((xx||yy)&&opaque(x+xx,y+yy))neighbors++;
+    if(neighbors===0){out[i]=0;out[i+1]=0;out[i+2]=0;out[i+3]=0}
+  }
+  c.putImageData(new ImageData(out,SIZE,SIZE),0,0);
+}
+
+function addAutoOutline(canvas){
+  const c=canvas.getContext('2d',{alpha:true}),img=c.getImageData(0,0,SIZE,SIZE),d=img.data,out=new Uint8ClampedArray(d);
+  const alpha=(x,y)=>x>=0&&y>=0&&x<SIZE&&y<SIZE?d[(y*SIZE+x)*4+3]:0;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const i=(y*SIZE+x)*4;if(!d[i+3])continue;
+    if(!alpha(x-1,y)||!alpha(x+1,y)||!alpha(x,y-1)||!alpha(x,y+1)){
+      out[i]=Math.round(d[i]*.52);out[i+1]=Math.round(d[i+1]*.52);out[i+2]=Math.round(d[i+2]*.52);
+    }
+  }
+  c.putImageData(new ImageData(out,SIZE,SIZE),0,0);
+}
+
+function buildPixelizedCanvas(){
+  if(!sourceImage)return null;
+  if(!preparedSource)refreshPreparedSource();
+  const base=makeCanvas(),bc=base.getContext('2d',{alpha:true});
+  drawStamp(bc,1,true);
+
+  const resolution=clamp(Math.round(Number($('pixelResolution').value)||64),32,128);
+  let out=base;
+  if(resolution<SIZE){
+    const small=makeCanvas(resolution,resolution),sc=small.getContext('2d',{alpha:true});
+    sc.imageSmoothingEnabled=true;sc.imageSmoothingQuality='high';sc.drawImage(base,0,0,resolution,resolution);
+    out=makeCanvas();const oc=out.getContext('2d',{alpha:true});oc.imageSmoothingEnabled=false;oc.drawImage(small,0,0,resolution,resolution,0,0,SIZE,SIZE);
+  }
+
+  hardenAlpha(out,clamp(Math.round(Number($('alphaCut').value)||72),1,254));
+  quantizeCanvas(out,Math.max(0,Number($('paletteSize').value)||0));
+  if($('cleanupNoise').checked)cleanupSingletons(out);
+  if($('autoOutline').checked)addAutoOutline(out);
+  hardenAlpha(out,1);
+  return out;
+}
+
+function pixelizePreview(announce=true){
+  const out=buildPixelizedCanvas();
+  if(!out)return setStatus('먼저 이미지를 불러오세요.',true);
+  const p=$('pixelPreviewCanvas').getContext('2d',{alpha:true});
+  p.clearRect(0,0,SIZE,SIZE);p.imageSmoothingEnabled=false;p.drawImage(out,0,0);
+  pixelPreviewReady=true;
+  if(announce)setStatus('픽셀화 미리보기 생성 · '+$('pixelResolution').value+'px / '+($('paletteSize').value==='0'?'원본색':$('paletteSize').value+'색'));
+}
+
+function applyPixelized(){
+  if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
+  if(!pixelPreviewReady)pixelizePreview(false);
+  const preview=$('pixelPreviewCanvas');
+  snapshot();
+  const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);c.imageSmoothingEnabled=false;c.drawImage(preview,0,0);
+  afterEdit('자동 픽셀화 결과를 '+activeLayer+' '+currentFrame+'에 적용함');
 }
 
 async function render(){
@@ -161,12 +373,14 @@ async function render(){
 function selectFrame(id){
   if(!frames.has(id))return;
   currentFrame=id;
+  invalidatePixelPreview();
   refreshFrameButtons();
   render();
 }
 
 function selectLayer(layer){
   activeLayer=layer==='lower'?'lower':'upper';
+  invalidatePixelPreview();
   $('layerUpper').className=activeLayer==='upper'?'':'secondary';
   $('layerLower').className=activeLayer==='lower'?'':'secondary';
   render();
@@ -317,22 +531,24 @@ function startPlayback(kind){
 }
 
 function fitStamp(){
-  if(!sourceImage)return setStatus('먼저 PNG를 불러오세요.',true);
-  $('stampX').value='0';$('stampY').value='0';$('stampW').value='128';$('stampH').value='128';$('stampRotation').value='0';render();
+  if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
+  $('stampX').value='0';$('stampY').value='0';$('stampW').value='128';$('stampH').value='128';$('stampRotation').value='0';
+  invalidatePixelPreview();render();setStatus('선택한 원본 영역을 128×128 전체 캔버스에 맞춤');
 }
 
 function commitStamp(){
-  if(!sourceImage)return setStatus('먼저 PNG를 불러오세요.',true);
+  if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
   snapshot();
-  drawStamp(layerCtx(),1);
-  afterEdit('가져온 이미지를 '+activeLayer+' 레이어에 적용함');
+  drawStamp(layerCtx(),1,false);
+  afterEdit('가져온 원본을 '+activeLayer+' 레이어에 그대로 적용함');
 }
 
 function clearStamp(){
-  sourceImage=null;
+  sourceImage=null;preparedSource=null;sourceCrop=null;pixelPreviewReady=false;
   $('sourcePreview').src='';
   $('sourcePreview').classList.add('hidden');
   $('sourceFile').value='';
+  const p=$('pixelPreviewCanvas');if(p)p.getContext('2d').clearRect(0,0,SIZE,SIZE);
   render();
 }
 
@@ -431,7 +647,8 @@ function bind(){
 
   ['showBody','showOnion','showGrid','showUpper','showLower'].forEach(id=>$(id).addEventListener('change',render));
   $('bodyOpacity').addEventListener('input',render);
-  ['stampX','stampY','stampW','stampH','stampRotation','stampOpacity'].forEach(id=>$(id).addEventListener('input',render));
+  ['stampX','stampY','stampW','stampH','stampRotation'].forEach(id=>$(id).addEventListener('input',()=>{invalidatePixelPreview();render()}));
+  $('stampOpacity').addEventListener('input',render);
   $('upperId').addEventListener('input',scheduleSave);$('lowerId').addEventListener('input',scheduleSave);
 
   canvas.addEventListener('pointerdown',e=>{
@@ -452,13 +669,32 @@ function bind(){
     reader.onload=()=>{
       const img=new Image();
       img.onload=()=>{
-        sourceImage=img;$('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');fitStamp();setStatus('원본 이미지를 불러옴 · 위치/크기를 조절하세요.');
+        sourceImage=img;
+        $('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');
+        refreshPreparedSource();
+        if($('autoFitOnLoad').checked)autoFitStamp(false);else fitStamp();
+        pixelizePreview(false);
+        setStatus('원본을 불러와 자동 픽셀화 미리보기를 만들었습니다.');
       };
       img.src=reader.result;
     };
     reader.readAsDataURL(file);
   });
-  $('fitStamp').addEventListener('click',fitStamp);$('commitStamp').addEventListener('click',commitStamp);$('clearStamp').addEventListener('click',clearStamp);
+  $('autoFitStamp').addEventListener('click',()=>{autoFitStamp();pixelizePreview(false)});
+  $('pixelizePreview').addEventListener('click',()=>pixelizePreview());
+  $('applyPixelized').addEventListener('click',applyPixelized);
+  $('fitStamp').addEventListener('click',()=>{fitStamp();pixelizePreview(false)});
+  $('commitStamp').addEventListener('click',commitStamp);$('clearStamp').addEventListener('click',clearStamp);
+
+  $('pixelResolution').addEventListener('input',()=>{
+    $('pixelResolutionValue').value=$('pixelResolution').value;invalidatePixelPreview();if(sourceImage)pixelizePreview(false);
+  });
+  $('alphaCut').addEventListener('input',()=>{
+    $('alphaCutValue').value=$('alphaCut').value;invalidatePixelPreview();if(sourceImage)pixelizePreview(false);
+  });
+  ['paletteSize','cleanupNoise','autoOutline'].forEach(id=>$(id).addEventListener('change',()=>{invalidatePixelPreview();if(sourceImage)pixelizePreview(false)}));
+  $('removeFlatBg').addEventListener('change',()=>{refreshPreparedSource();if(sourceImage){autoFitStamp(false);pixelizePreview(false)}});
+  $('sourceScope').addEventListener('change',()=>{invalidatePixelPreview();if(sourceImage){autoFitStamp(false);pixelizePreview(false)}});
   $('exportCurrent').addEventListener('click',exportCurrent);$('exportBoth').addEventListener('click',exportBoth);$('exportManifest').addEventListener('click',exportManifest);$('saveProject').addEventListener('click',saveProjectFile);
   $('clearFrame').addEventListener('click',clearCurrent);$('clearAll').addEventListener('click',clearAll);
   $('loadProject').addEventListener('change',async e=>{
@@ -477,6 +713,8 @@ function bind(){
 async function init(){
   if(!await verifyAdmin())return;
   bind();
+  $('pixelResolutionValue').value=$('pixelResolution').value;
+  $('alphaCutValue').value=$('alphaCut').value;
   await restoreLocal();
   selectLayer('upper');selectTool('pencil');selectFrame('static');
   Promise.all(FRAMES.map(f=>loadBody(f.body).catch(()=>null))).then(()=>render());
