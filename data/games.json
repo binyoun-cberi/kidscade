@@ -4,16 +4,16 @@
     {
       "id": "high_human_history_cards",
       "addedAt": "2026-10-03T20:03:00+09:00",
-      "title": "인류의 카드: 첫 불에서 마을까지",
-      "href": "games/high_human_history_cards/index.html?v=1",
+      "title": "석기 시대에서 살아남기",
+      "href": "games/high_human_history_cards/index.html?v=2",
       "category": "trivia",
       "age": "high",
-      "icon": "🔥",
-      "description": "두 사람과 자연 카드에서 시작해 채집·뗀석기·사냥·불·움막을 발견하고, 농경·어로·목축 중 하나의 생활 방식을 선택해 작은 정착지까지 만드는 인간 생활사 카드 시뮬레이션 프로토타입.",
+      "icon": "🪨",
+      "description": "두 사람과 자연만으로 시작해 뗀석기·간석기·가죽 가공·빗살무늬토기·농경·낚시·그물·통발·목축을 자유롭게 연결하고, 같은 생산지 카드를 쌓아 조 농장·낚시터·어장·염소 목장·신석기 마을로 성장시키는 석기 시대 생활 기술 카드 생존 샌드박스.",
       "subject": "social",
-      "genre": "strategy",
+      "genre": "sandbox",
       "difficulty": "medium",
-      "sessionMinutes": 12,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],
@@ -21,7 +21,7 @@
         "touch",
         "keyboard"
       ],
-      "qualityStatus": "standard",
+      "qualityStatus": "featured",
       "classroom": true
     },
     {
