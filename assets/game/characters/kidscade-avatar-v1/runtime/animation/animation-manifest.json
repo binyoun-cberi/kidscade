@@ -45,7 +45,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -72,7 +72,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -102,7 +102,7 @@
               65.5,
               43.5
             ],
-            "scale": 1
+            "scale": 1.0
           }
         },
         {
@@ -126,7 +126,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -163,7 +163,7 @@
               65.5,
               43.5
             ],
-            "scale": 1
+            "scale": 1.0
           }
         },
         {
@@ -187,7 +187,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -214,7 +214,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -241,7 +241,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -268,7 +268,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -295,7 +295,7 @@
               43.5
             ],
             "destCenter": [
-              66,
+              66.0,
               43.5
             ],
             "scale": 1.0098
@@ -306,17 +306,10 @@
   },
   "layerTransform": "uniform scale + translate around canonical head center",
   "qa": {
-    "status": "visual-contact-reviewed",
+    "status": "normalized-awaiting-visual-review",
     "contacts": {
       "idle": "qa/animation/idle-default-composite-contact.png",
       "walk": "qa/animation/walk-default-composite-contact.png"
-    },
-    "review": {
-      "defaultFaceHairComposite": true,
-      "maxHeadCenterDriftPx": 0.5,
-      "maxHeadScale": 1.0098,
-      "baselineStable": true,
-      "note": "Idle 4 and Walk 6 contact sheets were visually checked after normalization."
     }
   }
 }
