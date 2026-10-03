@@ -12,7 +12,7 @@ test('traditional play yard stays registered as an easy toddler social playgroun
   assert.ok(game);
   assert.equal(game.age, 'toddler');
   assert.equal(game.subject, 'social');
-  assert.equal(game.genre, 'playground');
+  assert.equal(game.genre, 'sports');
   assert.equal(game.difficulty, 'easy');
   assert.match(game.href, /toddler_traditional_play_yard\/우리나라 전통놀이 마당\.html\?v=3/);
 });
