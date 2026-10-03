@@ -2136,17 +2136,17 @@
     },
     {
       "id": "math_tower_defense",
-      "title": "약수 타워 디펜스",
-      "href": "games/math_tower_defense/약수 타워 디펜스.html?v=9",
+      "title": "좀비 vs 약수 터렛",
+      "href": "games/math_tower_defense/약수 타워 디펜스.html?v=10",
       "category": "math",
       "age": "high",
-      "icon": "🛡️",
-      "description": "떠 있는 어반 SF 아레나에서 실제 몬스터와 포탑을 배치해 ÷2·÷3·÷5·+1·-1 연산을 적용하고, 설치 모드와 실시간 계산식으로 약수·배수를 익히는 3D 타워디펜스!",
+      "icon": "🧟",
+      "description": "숫자 갑옷을 두른 좀비 떼가 대피소로 몰려옵니다. ÷2·÷3·÷5 약수 터렛은 정확히 나누어떨어지는 수에만 발사하고, 소수나 2·3·5로 나눌 수 없는 수는 ±1 변환기로 교정해 1까지 완전 분해하는 3D 수학 타워디펜스!",
       "scoreKey": "neonTowerBest",
       "cover": "assets/gate-image/약수 타워 디펜스.png",
       "subject": "math",
       "genre": "strategy",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "sessionMinutes": 15,
       "players": [
         "solo"
