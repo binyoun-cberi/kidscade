@@ -81,15 +81,19 @@ function bboxOfCanvas(c,alphaCut=1){
 function draftBodySourceUrl(index){
   const sec=String(DRAFT_BODY_SOURCE_SECONDS[index]).padStart(2,'0');
   const file='ChatGPT 이미지 2026년 10월 3일 오후 08_59_'+sec+'-'+String(index+1)+'.png';
-  return encodeURI('/assets/game/characters/'+file);
+  return new URL('../assets/game/characters/'+file,window.location.href).href;
 }
 
-function loadImageUrl(url){
+function loadImageUrl(url,timeoutMs=10000){
   return new Promise((resolve,reject)=>{
     const img=new Image();
-    img.decoding='async';
-    img.onload=()=>resolve(img);
-    img.onerror=()=>reject(new Error('이미지를 불러오지 못했습니다: '+url));
+    let settled=false;
+    const timer=setTimeout(()=>{
+      if(settled)return;settled=true;img.src='';
+      reject(new Error('10초 안에 이미지를 받지 못했습니다: '+decodeURI(url)));
+    },timeoutMs);
+    img.onload=()=>{if(settled)return;settled=true;clearTimeout(timer);resolve(img)};
+    img.onerror=()=>{if(settled)return;settled=true;clearTimeout(timer);reject(new Error('이미지를 불러오지 못했습니다: '+decodeURI(url)))};
     img.src=url;
   });
 }
@@ -138,9 +142,16 @@ async function loadDraftBodySet(announce=true){
   if(button){button.disabled=true;button.textContent='GitHub BODY 불러오는 중…'}
   try{
     if(!allBodyFramesEmpty()&&announce&&!confirm('현재 BODY 프레임을 업로드한 좌향 초안 7장으로 다시 채울까요? HAIR/의상 레이어는 유지됩니다.'))return false;
-    setStatus('GitHub 좌향 BODY 7장을 불러오는 중…');
-    const images=await Promise.all(FRAMES.map((_,i)=>loadImageUrl(draftBodySourceUrl(i))));
-    const raw=images.map(rasterDraftBodyImage);
+    setStatus('좌향 BODY 7장 준비 중 · 0 / '+FRAMES.length);
+    const raw=[];
+    for(let i=0;i<FRAMES.length;i++){
+      setStatus('좌향 BODY 7장 준비 중 · '+(i+1)+' / '+FRAMES.length+' · '+FRAMES[i].label);
+      if(button)button.textContent='BODY 불러오는 중 '+(i+1)+' / '+FRAMES.length;
+      const img=await loadImageUrl(draftBodySourceUrl(i));
+      await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+      raw.push(rasterDraftBodyImage(img));
+      await new Promise(resolve=>setTimeout(resolve,0));
+    }
     const masterBox=bboxOfCanvas(raw[0],8);
     if(!masterBox)throw new Error('STAND-01에서 캐릭터 실루엣을 찾지 못했습니다.');
     const masterCenter=masterBox.x+(masterBox.w-1)/2;
