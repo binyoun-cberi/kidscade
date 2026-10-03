@@ -110,6 +110,29 @@
     runtimeCleanup = null;
   }
 
+  function silenceFrameAudio(iframe, reason = 'frame-reset') {
+    let child = null;
+    try { child = iframe?.contentWindow || null; } catch (_) {}
+
+    if (child) {
+      try {
+        const EventCtor = child.CustomEvent || root?.CustomEvent;
+        if (EventCtor) child.dispatchEvent(new EventCtor('kidscade:game-exit', { detail:{ reason } }));
+      } catch (_) {}
+      try {
+        child.document?.querySelectorAll?.('audio,video')?.forEach?.(media => {
+          try { media.pause?.(); } catch (_) {}
+          try { media.currentTime = 0; } catch (_) {}
+        });
+      } catch (_) {}
+      try { child.speechSynthesis?.cancel?.(); } catch (_) {}
+    }
+
+    // Games that load audio-manager.js share the parent KidscadeAudio instance.
+    // Those sources survive iframe navigation unless the shared manager is stopped here.
+    try { root?.KidscadeAudio?.stopAll?.(); } catch (_) {}
+  }
+
   function showStage() {
     const { stage } = stageParts();
     stage?.classList.remove('hidden');
@@ -190,6 +213,7 @@
       <button class="kc-game-stage-primary" type="button" data-stage-action="retry">다시 불러오기</button>
       <button class="kc-game-stage-secondary" type="button" data-stage-action="cancel">키즈케이드로 나가기</button>`;
     const refs = dom();
+    silenceFrameAudio(refs.iframe, 'error');
     refs.iframe?.classList.add('kc-game-frame-hidden');
     showStage();
     root.setTimeout?.(() => p.actions.querySelector('[data-stage-action="retry"]')?.focus?.(), 0);
@@ -293,6 +317,7 @@
     renderLoading();
     status = 'loading';
     refs.iframe.classList.add('kc-game-frame-hidden');
+    silenceFrameAudio(refs.iframe, 'reload');
     refs.iframe.src = 'about:blank';
     root?.setTimeout?.(() => {
       if (!current || status !== 'loading') return;
@@ -337,6 +362,7 @@
     const refs = dom();
     clearTimer();
     detachRuntimeGuard();
+    silenceFrameAudio(refs.iframe, 'reset');
     status = 'idle';
     current = null;
     if (refs.iframe) {
