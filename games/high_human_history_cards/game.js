@@ -160,7 +160,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function reset(){
  state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.cards.clear();state.discoveries.clear();
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
- state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';
+ state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
  spawnInitial();renderAll();
  const t=setInterval(()=>{if(!state.started||state.over)return;state.mealLeft--;if(state.mealLeft<=0)eatMeal();renderHud();},1000);
@@ -228,7 +228,7 @@ function mergeSame(a,b){
 }
 
 function findRecipe(a,b){
- return R.find(r=>((a.type===r.a&&b.type===r.b&&a.count>=r.ca&&b.count>=r.cb)||(a.type===r.b&&b.type===r.a&&a.count>=r.cb&&b.count>=r.ca)));
+ return R.filter(r=>((a.type===r.a&&b.type===r.b&&a.count>=r.ca&&b.count>=r.cb)||(a.type===r.b&&b.type===r.a&&a.count>=r.cb&&b.count>=r.ca))).sort((x,y)=>(y.ca+y.cb)-(x.ca+x.cb))[0]||null;
 }
 function craftRecipe(a,b,r){
  const direct=a.type===r.a;const ca=direct?r.ca:r.cb,cb=direct?r.cb:r.ca,x=(a.x+b.x)/2,y=(a.y+b.y)/2;
