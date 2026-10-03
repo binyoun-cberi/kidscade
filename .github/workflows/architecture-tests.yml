@@ -52,6 +52,7 @@ jobs:
             patience-tower-duel-entry.js \
             teacher-accounts.js \
             age-navigation.js \
+            garden.js \
             main-bootstrap.js \
             stats-rankings.js \
             server-stats.js \
