@@ -246,7 +246,8 @@ const R=[
  ['person','fishHook',1,1,[['fisher',1]],'어부'],
  ['person','stoneHoe',1,1,[['farmer',1]],'농부'],
  ['person','cord',1,1,[['herder',1]],'목축민'],
- ['person','stoneAxe',1,1,[['lumberjack',1]],'벌목꾼']
+ ['person','stoneAxe',1,1,[['lumberjack',1]],'벌목꾼'],
+ ['person','groundAxe',1,1,[['lumberjack',1]],'간돌도끼 벌목꾼']
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
 const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,highKiln:2,shellOrnament:1,tuskOrnament:1};
@@ -648,13 +649,25 @@ function runAction(worker,node,d){
  productionCycle(worker,node,d,run);
 }
 
+function depleteLooseNode(node){
+ if(!node||!state.cards.has(node.id))return;
+ const name=C[node.type]?.name||'자원';
+ node.el.classList.add('depleted');
+ showToast('🍂 '+name+'에서 얻을 수 있는 자원을 다 모았습니다.');
+ setTimeout(()=>{if(state.cards.has(node.id))removeCard(node);},380);
+}
 function runSpecial(a,b,d){
  const run=state.runId;a.busy=true;b.busy=true;markBusy(a,d.label,d.ms);markBusy(b,d.label,d.ms);snap(a,b);
  setTimeout(()=>{if(state.over||run!==state.runId)return;
   [a,b].forEach(c=>{if(state.cards.has(c.id)){c.busy=false;c.el.classList.remove('busy');}});
   if(d.consume){const c=a.type===d.consume?a:b;consume(c,1);}
+  const resourceNode=[a,b].find(c=>state.cards.has(c.id)&&RESOURCE_CAPS[c.type]);
   const base=state.cards.has(b.id)?b:(state.cards.has(a.id)?a:null),x=base?base.x:120,y=base?base.y:120;
-  d.out.forEach((o,i)=>addCard(o[0],x+112+i*20,y+i*20,o[1]||1));if(state.cards.has(a.id)&&state.cards.has(b.id))separate(a,b);if(d.life)addLife(d.life,d.lifeGain||1);discover(d.discover);renderAll();checkMilestone();
+  d.out.forEach((o,i)=>addCard(o[0],x+112+i*20,y+i*20,o[1]||1));
+  const exhausted=resourceNode?spendResource(resourceNode,d.out):false;
+  if(state.cards.has(a.id)&&state.cards.has(b.id))separate(a,b);
+  if(exhausted)depleteLooseNode(resourceNode);
+  if(d.life)addLife(d.life,d.lifeGain||1);discover(d.discover);renderAll();checkMilestone();
  },d.ms);
 }
 
