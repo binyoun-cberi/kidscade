@@ -38,7 +38,7 @@ const els={
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
  endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
- prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls')
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus')
 };
 
 function newPot(i){
@@ -47,7 +47,7 @@ function newPot(i){
 let restaurant=null;
 const state={
  running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
- cleanPlates:3,dirtyPlates:0,washing:false,
+ cleanPlates:3,dirtyPlates:0,washing:false,heldItem:null,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
  get time(){return restaurant?.shift.remaining??SHIFT_SECONDS},
@@ -110,7 +110,7 @@ class RamenKitchen3D{
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
-  this.player=null;this.playerRing=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];
+  this.player=null;this.playerRing=null;this.carryAnchor=null;this.carrySprite=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];
 
   this.makeLights();
   this.makeRoom();
@@ -242,7 +242,18 @@ class RamenKitchen3D{
   const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.38,.5,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
   const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.72,5,10),this.material(0xe4634d,{roughness:.75}));fallback.position.y=.72;root.add(fallback);root.userData.fallback=fallback;
+  this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(0,1.72,-.12);root.add(this.carryAnchor);
   this.loadModel(PEOPLE,'character-female-b.glb',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
+ }
+ setCarryVisual(item){
+  if(!this.carryAnchor)return;
+  while(this.carryAnchor.children.length){const n=this.carryAnchor.children.pop();n.material?.map?.dispose?.();n.material?.dispose?.()}
+  this.carrySprite=null;if(!item)return;
+  const icon=item.kind==='meal'?'🍜':(INGREDIENTS[item.id]?.icon||'📦');
+  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const g=canvas.getContext('2d');
+  g.fillStyle='rgba(255,248,230,.94)';g.beginPath();g.arc(64,64,48,0,Math.PI*2);g.fill();g.strokeStyle='rgba(70,48,34,.35)';g.lineWidth=5;g.stroke();
+  g.font='68px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(icon,64,67);
+  const tex=new THREE.CanvasTexture(canvas),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sprite.scale.set(.72,.72,1);this.carryAnchor.add(sprite);this.carrySprite=sprite
  }
  setMoveKey(code,on){if(on)this.moveKeys.add(code);else this.moveKeys.delete(code)}
  updatePointer(e){
@@ -286,7 +297,8 @@ class RamenKitchen3D{
   }
   const candidates=[
    ...this.layoutStations.map(s=>({type:s.id,label:s.label,group:s.group})),
-   ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i}))
+   ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i})),
+   ...(this.serviceGroup?[{type:'service',label:'배식대',group:this.serviceGroup}]:[])
   ];
   let nearest=null,best=1.55;
   candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
@@ -295,19 +307,30 @@ class RamenKitchen3D{
   if(els.stationHint){
    if(state.phase==='prep')els.stationHint.textContent='가구를 드래그해 주방 동선을 바꿔 보세요';
    else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
-   else if(nearest.type==='sink')els.stationHint.textContent=state.dirtyPlates?'E · 더러운 접시 씻기':'싱크 · 더러운 접시가 없어요';
+   else if(nearest.type==='sink')els.stationHint.textContent=state.heldItem?'E · 들고 있는 것을 유지':'E · 물 받기'+(state.dirtyPlates?' / 설거지는 아래 버튼':'');
    else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
-   else if(nearest.type==='fridge')els.stationHint.textContent='재료 냉장고 · 조리 재료 보관';
-   else els.stationHint.textContent='E · '+nearest.label+' 선택';
+   else if(nearest.type==='fridge')els.stationHint.textContent=state.heldItem?'손이 차 있어요 · 먼저 냄비나 배식대로 이동':'E · 다음 추천 재료 꺼내기';
+   else if(nearest.type==='service')els.stationHint.textContent=state.heldItem?.kind==='meal'?'E · '+state.heldItem.name+' 서빙':'배식대 · 완성 라면을 들고 오세요';
+   else if(nearest.type==='pot')els.stationHint.textContent=state.heldItem?'E · '+heldItemLabel()+' 넣기':'E · 냄비 사용';
+   else els.stationHint.textContent='E · '+nearest.label+' 사용';
   }
  }
  interactNearest(){
   if(state.phase!=='service')return;
-  const n=this.nearestStation;if(!n){toast('가까운 조리대나 싱크로 이동해 주세요');return}
-  if(n.type==='pot'){this.setSelectedPot(n.potIndex);return}
-  if(n.type==='sink'){washOnePlate();return}
-  if(n.type==='rack'){toast('깨끗한 접시 '+state.cleanPlates+'개 · 라면을 담을 때 하나 사용해요',1500);return}
-  if(n.type==='fridge'){toast('냉장고에서 면·스프·토핑을 꺼내 쓰는 운반 시스템은 다음 단계에서 연결돼요',1600)}
+  const n=this.nearestStation;if(!n){toast('가까운 설비로 이동해 주세요');return}
+  if(n.type==='fridge'){pickIngredient(recommendedCarryIngredient());return}
+  if(n.type==='sink'){
+   if(state.heldItem){toast('손에 '+heldItemLabel()+'을 들고 있어요');return}
+   pickIngredient('water');return
+  }
+  if(n.type==='rack'){toast('깨끗한 그릇 '+state.cleanPlates+'개 · 완성 라면을 담을 때 자동으로 하나 사용해요',1500);return}
+  if(n.type==='pot'){
+   this.setSelectedPot(n.potIndex);
+   if(state.heldItem?.kind==='ingredient'){insertHeldIntoPot(n.potIndex);return}
+   if(!state.heldItem&&canUseAction('plate')){platePot(n.potIndex);return}
+   toast(nextInstruction(state.pots[n.potIndex]),1500);return
+  }
+  if(n.type==='service'){serveHeldMeal();return}
  }
  syncDishVisuals(){this.dirtyPlateModels.forEach((m,i)=>{m.visible=i<Math.min(5,state.dirtyPlates)})}
  makeCustomers(){
@@ -430,6 +453,54 @@ class RamenKitchen3D{
 }
 
 const kitchen=new RamenKitchen3D(els.canvas);
+
+
+function heldItemLabel(){
+ const h=state.heldItem;if(!h)return'빈손';
+ return h.kind==='meal'?(h.name||'완성 라면'):ingredientLabel(h.id)
+}
+function setHeldItem(item){
+ state.heldItem=item?{...item}:null;kitchen.setCarryVisual(state.heldItem);renderHeldStatus();updateActionButtons()
+}
+function renderHeldStatus(){
+ if(!els.heldStatus)return;
+ const h=state.heldItem;
+ els.heldStatus.classList.toggle('empty',!h);
+ els.heldStatus.innerHTML=h?'<small>손에 든 것</small><b>'+(h.kind==='meal'?'🍜 '+h.name:(INGREDIENTS[h.id]?.icon||'📦')+' '+ingredientLabel(h.id))+'</b>':'<small>손에 든 것</small><b>빈손</b>'
+}
+function tutorialCarryExpected(){
+ if(!state.tutorial.active)return null;
+ return({0:'water',1:'water',2:'noodle',3:'soup',4:'egg'})[state.tutorial.step]||null
+}
+function recommendedCarryIngredient(){
+ const expected=tutorialCarryExpected();if(expected)return expected;
+ const p=state.selectedPot==null?null:state.pots[state.selectedPot];
+ if(!p)return'noodle';
+ const actions=contextActionsForPot(p).filter(id=>id!=='plate');
+ return actions[0]||'noodle'
+}
+function pickIngredient(id){
+ if(!id||!INGREDIENTS[id])return;
+ if(state.heldItem){toast('한 번에 하나만 들 수 있어요 · '+heldItemLabel()+'을 먼저 사용해 주세요');return}
+ setHeldItem({kind:'ingredient',id});sfx('collect.coin_pickup',{volume:.13,rate:1.05,cooldownMs:70});
+ toast(INGREDIENTS[id].icon+' '+ingredientLabel(id)+'을 들었어요 · 냄비로 가져가 E',1400)
+}
+function insertHeldIntoPot(index){
+ const held=state.heldItem;if(!held||held.kind!=='ingredient')return false;
+ const action=held.id,p=state.pots[index];
+ if(!canUseAction(action)){toast(nextInstruction(p),1500);return false}
+ const changed=addToPot(index,action);
+ if(!changed)return false;
+ setHeldItem(null);advanceTutorialAfterAction(action,p);renderPotStrip();renderSelectedHelp();updateActionButtons();return true
+}
+function serveHeldMeal(){
+ const held=state.heldItem;
+ if(!held||held.kind!=='meal'){toast('완성된 라면을 들고 배식대로 와 주세요');return}
+ const order=state.orders.find(o=>o.recipeId===held.recipeId);
+ if(!order){toast('이 라면을 기다리는 손님이 없어요');return}
+ state.tray={recipeId:held.recipeId,name:held.name,quality:held.quality,label:held.label,burnt:held.burnt,ready:true};
+ setHeldItem(null);serveOrder(order.id)
+}
 
 function activePotCount(){return state.tutorial.active?2:state.served>=6?4:state.served>=3?3:2}
 function resetPot(index){
