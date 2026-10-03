@@ -87,6 +87,7 @@ jobs:
             games/math_base10_blocks/market-walk.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
+            scripts/compose-lobby-build.cjs \
             scripts/inject-game-integrations.cjs \
             scripts/import-stdict.cjs \
             scripts/build-wordchain-static.cjs \
