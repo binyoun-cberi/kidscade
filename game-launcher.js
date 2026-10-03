@@ -108,9 +108,12 @@
       bridge.remember?.(gameId);
       bridge.updateModalTitle?.(`진행 중: ${title}`);
       bridge.afterOpen?.(activatedSession);
-      if (typeof window !== 'undefined') window.KidscadeActivity?.record?.('start', {
-        title: title + ' 플레이 시작', place: title, gameId
-      });
+      if (typeof window !== 'undefined') {
+        try { window.KidscadeAchievements?.recordPlayedGame?.(gameId, startedAt); } catch (_) {}
+        window.KidscadeActivity?.record?.('start', {
+          title: title + ' 플레이 시작', place: title, gameId
+        });
+      }
       return activatedSession;
     };
 
