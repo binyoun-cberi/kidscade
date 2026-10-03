@@ -32,6 +32,7 @@ test('activity feed is linked, and full-screen attendance stamp is gone', () => 
   assert.match(read('main-bootstrap.js'),/withVersion\('activity-feed.css'\)/);
   assert.match(read('kidscade-storage.js'),/activityFeed: 'kidscade_activity_feed_v1'/);
   assert.doesNotMatch(read('index_base.html'),/id="attendance-stamp"/);
-  assert.match(read('index_base.html'),/KidscadeActivity\?\.record\?\.\('attendance'/);
+  assert.match(read('daily-ui.js'),/record\?\.\('attendance'/);
+  assert.doesNotMatch(read('index_base.html'),/KidscadeActivity\?\.record\?\.\('attendance'/);
   assert.match(read('game-launcher.js'),/KidscadeActivity\?\.record\?\.\('start'/);
 });
