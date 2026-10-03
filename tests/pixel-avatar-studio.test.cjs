@@ -186,10 +186,13 @@ test('runtime assets are revisioned so curated hair migrations do not stay stale
 });
 
 
-test('animated clothes use a small walk-only coverage guard',()=>{
-  assert.match(upperClothesExtract,/WALK_TOP_Y=63/);
-  assert.match(upperClothesExtract,/WALK_MAX_W=58/);
-  assert.match(upperClothesExtract,/WALK_MAX_H=37/);
+test('animated clothes use frame-synced upper paper-doll motion and guarded lower coverage',()=>{
+  assert.match(upperClothesExtract,/TORSO_LEFT=52/);
+  assert.match(upperClothesExtract,/LEFT_SLEEVE_CUT=61/);
+  assert.match(upperClothesExtract,/RIGHT_SLEEVE_CUT=70/);
+  assert.match(upperClothesExtract,/def arm_anchor\(/);
+  assert.match(upperClothesExtract,/def transform_part\(/);
+  assert.match(upperClothesExtract,/animated-upper-clothing-paperdoll/);
   assert.match(lowerClothesExtract,/WALK_TOP_Y = 83/);
   assert.match(lowerClothesExtract,/WALK_MAX_H = 37/);
   assert.match(lowerClothesExtract,/WALK_MAX_W = 46/);
