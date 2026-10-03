@@ -69,12 +69,15 @@ test('all semantic keys used by game audio hooks exist in the catalog', () => {
   for (const key of used) assert.ok(catalog.sounds[key], `missing catalog sound key: ${key}`);
 });
 
-test('main page loads the shared audio manager before bootstrap', () => {
+test('bootstrap loads the shared audio manager into the final lobby document', () => {
   const html = read('index.html');
-  const audioAt = html.indexOf('audio-manager.js');
-  const bootstrapAt = html.indexOf('main-bootstrap.js');
-  assert.ok(audioAt >= 0, 'audio manager script missing');
-  assert.ok(bootstrapAt > audioAt, 'audio manager must load before main bootstrap');
+  const bootstrap = read('main-bootstrap.js');
+  assert.doesNotMatch(html, /audio-manager\.js/);
+  assert.match(html, /main-bootstrap\.js/);
+  const audioAt = bootstrap.indexOf("'audio-manager.js'");
+  const frameAt = bootstrap.indexOf("'game-frame-shell.js'");
+  assert.ok(audioAt >= 0, 'audio manager bootstrap injection missing');
+  assert.ok(frameAt > audioAt, 'audio manager must load before the game frame runtime');
 });
 
 test('Cloudflare build injector adds the audio manager and both game hook tiers', () => {
