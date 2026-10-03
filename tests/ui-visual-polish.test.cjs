@@ -5,20 +5,21 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
 const source = fs.readFileSync(path.join(ROOT, 'ui-visual-polish.js'), 'utf8');
 
 function position(text) {
-  const found = index.indexOf(text);
+  const found = bootstrap.indexOf(text);
   assert.notEqual(found, -1, `missing ${text}`);
   return found;
 }
 
-test('visual polish layer loads after information architecture and before bootstrap', () => {
+test('visual polish layer loads after information architecture in the final document', () => {
+  assert.doesNotMatch(index, /ui-information-architecture\.js|ui-visual-polish\.js/);
+  assert.match(index, /main-bootstrap\.js/);
   const ia = position('ui-information-architecture.js');
   const polish = position('ui-visual-polish.js');
-  const bootstrap = position('main-bootstrap.js');
   assert.ok(ia < polish, 'visual polish must layer on top of the IA pass');
-  assert.ok(polish < bootstrap, 'visual polish must be ready before the async lobby bootstrap');
 });
 
 test('mobile play record can collapse secondary detail without removing totals', () => {
