@@ -86,3 +86,13 @@ test('age gate markup exposes exactly three age choices and no career card', () 
   assert.match(gate, /어디에서 놀까요\?/);
   assert.match(gate, /선택은 언제든 바꿀 수 있어요/);
 });
+
+
+test('age gate binds before deferred lobby runtimes', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const html=fs.readFileSync(path.resolve(__dirname,'..','index_base.html'),'utf8');
+  assert.doesNotMatch(html, /document\.addEventListener\(["']DOMContentLoaded["'][\s\S]{0,2000}KidscadeAgeNavigation\.init/);
+  assert.match(html, /\(\(\) => \{[\s\S]*KidscadeAgeNavigation\.init/);
+  assert.doesNotMatch(html, /html2canvas\.hertzen\.com/);
+});
