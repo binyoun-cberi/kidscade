@@ -1696,6 +1696,35 @@
             renderAvatarPlaza();
 
 
+            function dailyUiContext() {
+                return {
+                    daily: window.KidscadeDaily,
+                    activity: window.KidscadeActivity,
+                    sproutPower: window.KidscadeSproutPower,
+                    localStorage,
+                    document,
+                    categoryNames,
+                    changeSeeds,
+                    showToast,
+                    addPetExp(amount) {
+                        pet.exp += amount;
+                        savePet();
+                        checkPetEvolution();
+                    },
+                    addPetAffection(amount) {
+                        pet.affection = Math.min(100, pet.affection + amount);
+                        savePet();
+                        updatePetUI();
+                    },
+                    renderShop,
+                    updatePetUI
+                };
+            }
+
+            function claimDailyReward(item) {
+                return window.KidscadeDailyUI.claimDailyReward(item, dailyUiContext());
+            }
+
             let shopController = null;
 
             function shopUiContext() {
