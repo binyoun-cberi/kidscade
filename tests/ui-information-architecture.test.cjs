@@ -65,13 +65,15 @@ test('guest profile keeps the avatar visible while play records stay account-onl
 
 test('guest receives a default v2 avatar without opening the heavy studio iframe', () => {
   assert.match(avatarIntegration, /GUEST_DEFAULT_CONFIG/);
-  assert.match(avatarIntegration, /hairSet:'male', hairStyle:1, upper:1, lower:1/);
-  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=21'/);
+  assert.match(avatarIntegration, /hairId:'clean-01', upper:1, lower:1/);
+  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=22'/);
   assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
   assert.match(avatarIntegration, /api\.create\(canvas, \{ playing:false, config:guestConfigFromPixelState\(\) \}\)/);
-  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-hairfit-11'/);
+  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-1'/);
   assert.match(avatarIntegration, /localStorage\.removeItem\(PREVIEW_KEY\)/);
   assert.match(avatarIntegration, /guestConfigFromPixelState/);
+  assert.match(avatarIntegration, /hairId:typeof pixel\.hairId === 'string'/);
+  assert.doesNotMatch(avatarIntegration, /hairSet:pixel\.hairSet/);
   assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_KEY, data\)/);
   assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_VERSION_KEY, PREVIEW_VERSION\)/);
   assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-pixel-avatar-v1'\)/);
