@@ -376,11 +376,6 @@
   }
 
   function injectBootPayload(html, catalog) {
-    // index.html is replaced with index_base.html, so preserve the deployment
-    // build id in the final document for auto-update and diagnostics.
-    if (!/<meta\\s+name=["']kidscade-build["']/i.test(html)) {
-      html = html.replace('</head>', '<meta name="kidscade-build" content="' + escapeHtml(RUNTIME_VERSION) + '"></head>');
-    }
     const payload = '<scr' + 'ipt>' +
       'window.KidscadeCatalog=' + serializeForInlineScript(catalog) + ';' +
       'window.KidscadeBoot={version:' + JSON.stringify(RUNTIME_VERSION) + ',catalogUrl:' + JSON.stringify(CATALOG_URL) + '};' +
@@ -390,22 +385,6 @@
 
   function injectRuntimeScripts(html) {
     const scripts = [
-      // These modules used to execute in index.html before document.open()/write().
-      // Load them only after the composed document exists so their listeners,
-      // observers and timers belong to the final page.
-      'auto-update.js',
-      'kidscade-storage.js',
-      'audio-manager.js',
-      'profile-history.js',
-      'stats-rankings.js',
-      'server-stats.js',
-      'ui-information-architecture.js',
-      'ui-visual-polish.js',
-      'account-client.js',
-      'account-session-safety.js',
-      'account-ui-runtime.js',
-      'account-profile-gate.js',
-      'seed-balance-sync.js',
       'score-display-normalizer.js',
       'ui-clarity-overhaul.js',
       'ui-topbar-compact.js',
@@ -420,7 +399,7 @@
       'game-frame-shell.js',
       'game-launcher.js',
       'home-v2.js'
-    ].map(src => '<scr' + 'ipt defer src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
+    ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     const activityStyles = '<link rel="stylesheet" href="' + withVersion('activity-feed.css') + '">';
     return html.replace('</body>', activityStyles + scripts + '</body>');
   }
