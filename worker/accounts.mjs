@@ -7,7 +7,11 @@ const JSON_HEADERS = Object.freeze({
 });
 
 const SESSION_COOKIE = 'kc_session';
-const SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60;
+// Browsers cap persistent cookies (Chromium currently caps them at about 400 days).
+// Re-issuing this first-party cookie from /me keeps actively used classroom devices
+// signed in without a heartbeat or per-tab server session.
+const SESSION_MAX_AGE_SEC = 400 * 24 * 60 * 60;
+const SESSION_REFRESH_WINDOW_SEC = 180 * 24 * 60 * 60;
 const MAX_STATE_BYTES = 96 * 1024;
 const MAX_STUDENTS_PER_BATCH = 40;
 const LOGIN_LOCK_THRESHOLD = 5;
@@ -247,7 +251,19 @@ export async function requireStudent(request, env) {
     await env.DB.prepare('DELETE FROM student_sessions WHERE token_hash = ?').bind(tokenHash).run();
     return { response: json({ ok: false, error: 'session_expired' }, 401, { 'set-cookie': clearSessionCookie() }) };
   }
-  return { row, tokenHash };
+  return { row, tokenHash, token };
+}
+
+async function refreshStudentSessionIfNeeded(auth, env) {
+  const expiresAt = new Date(auth?.row?.expires_at || 0).getTime();
+  const remainingMs = expiresAt - Date.now();
+  if (!Number.isFinite(remainingMs) || remainingMs > SESSION_REFRESH_WINDOW_SEC * 1000) return false;
+  const nextExpiresAt = new Date(Date.now() + SESSION_MAX_AGE_SEC * 1000).toISOString();
+  await env.DB.prepare(
+    'UPDATE student_sessions SET expires_at = ? WHERE token_hash = ?'
+  ).bind(nextExpiresAt, auth.tokenHash).run();
+  auth.row.expires_at = nextExpiresAt;
+  return true;
 }
 
 async function login(request, env) {
@@ -288,7 +304,9 @@ async function login(request, env) {
   const tokenHash = await sha256(token);
   const createdAt = nowIso();
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SEC * 1000).toISOString();
-  await env.DB.prepare('DELETE FROM student_sessions WHERE student_id = ? AND expires_at <= ?').bind(row.id, createdAt).run();
+  // Opportunistic global cleanup prevents abandoned classroom-device sessions
+  // from accumulating forever. This is one bounded D1 write per successful login.
+  await env.DB.prepare('DELETE FROM student_sessions WHERE expires_at <= ?').bind(createdAt).run();
   await env.DB.prepare(`
     INSERT INTO student_sessions (token_hash, student_id, created_at, expires_at)
     VALUES (?, ?, ?, ?)
@@ -313,7 +331,14 @@ async function logout(request, env) {
 async function me(request, env) {
   const auth = await requireStudent(request, env);
   if (auth.response) return auth.response;
-  return json({ ok: true, ...accountPayload(auth.row) });
+  await refreshStudentSessionIfNeeded(auth, env);
+  // Refreshing the cookie itself is cheap and keeps active iPads signed in.
+  // The database expiry is only extended inside the refresh window above.
+  return json(
+    { ok: true, ...accountPayload(auth.row) },
+    200,
+    { 'set-cookie': makeSessionCookie(auth.token) }
+  );
 }
 
 async function syncState(request, env) {
