@@ -10,15 +10,16 @@ const ROADS=new URL('3d/city/kenney-city-kit-roads/',ROOT).href;
 const POLY=new URL('3d/city/poly-pizza-city-pack/',ROOT).href;
 const MARKET=new URL('shops/market/',ROOT).href;
 const FURNITURE=new URL('3d/interiors/kenney-furniture-kit/',ROOT).href;
+const QBUILD=new URL('buildings/Models with Materials/FBX/',ROOT).href;
 
 const CITY_ASSET={
   market:SUBURBAN+'building-type-b.glb',
-  hardware:SUBURBAN+'building-type-c.glb',
-  cafe:SUBURBAN+'building-type-d.glb',
+  hardware:QBUILD+'1Story_Sign_Mat.fbx',
+  cafe:QBUILD+'1Story_GableRoof_Mat.fbx',
   arcade:SUBURBAN+'building-type-e.glb',
-  civic:SUBURBAN+'building-type-f.glb',
-  library:SUBURBAN+'building-type-h.glb',
-  clinic:SUBURBAN+'building-type-i.glb',
+  civic:QBUILD+'2Story_Columns_Mat.fbx',
+  library:QBUILD+'2Story_Balcony_Mat.fbx',
+  clinic:QBUILD+'1Story_RoundRoof_Mat.fbx',
   road:ROADS+'road-straight.glb',
   cross:ROADS+'road-crossroad.glb',
   lamp:ROADS+'light-square.glb',
