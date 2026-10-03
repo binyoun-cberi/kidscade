@@ -101,13 +101,13 @@ function fallbackGolem(){
 function makeFallback(id){
   if(id==='deer')return fallbackDeer();
   if(id==='fox')return fallbackFox(false);
-  if(id==='snowFox')return fallbackFox(true);
-  if(id==='frog')return fallbackFrog();
-  if(id==='camel')return fallbackCamel();
+  if(id==='snowFox'||id==='wolf')return fallbackFox(id==='snowFox');
+  if(id==='frog'||id==='chicken')return fallbackFrog();
+  if(id==='camel'||id==='pig'||id==='sheep')return fallbackCamel();
   if(id==='shadowBug')return fallbackShadowBug();
   if(id==='slime')return fallbackSlime();
   if(id==='burrower')return fallbackBurrower();
-  if(id==='cubeGolem')return fallbackGolem();
+  if(id==='goblin'||id==='skeleton'||id==='yeti'||id==='cubeGolem')return fallbackGolem();
   return holder();
 }
 function create(id){
