@@ -9,7 +9,7 @@ const js=fs.readFileSync(path.join(root,'games/math_base10_blocks/market-walk.js
 test('walkable market uses shopping and self checkout flow',()=>{
   assert.match(html,/직접 장보고, 직접 계산해요/);
   assert.match(html,/SELF CHECKOUT/);
-  assert.match(js,/phase:'shopping'/);
+  assert.match(js,/state\.phase='shopping'/);
   assert.match(js,/function openCheckout/);
   assert.match(js,/function tryPick/);
   assert.match(js,/function updatePlayer/);
