@@ -6,6 +6,7 @@ const ui={
  era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
  toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
+ expeditionStatus:$('#expeditionStatus'),expeditionTitle:$('#expeditionTitle'),expeditionText:$('#expeditionText'),expeditionBar:$('#expeditionBar'),
  goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
  values:{hunt:$('#huntValue'),farm:$('#farmValue'),fish:$('#fishValue'),herd:$('#herdValue')}
 };
@@ -34,6 +35,10 @@ const C={
  wildBean:{name:'야생 콩',emoji:'🫘',kind:'node',sub:'콩과 씨앗을 얻음'},
  wildBoar:{name:'멧돼지',emoji:'🐗',kind:'node',sub:'큰 사냥감 · 고기와 가죽'},
  rabbit:{name:'토끼',emoji:'🐇',kind:'node',sub:'올가미로 잡을 수 있는 작은 사냥감'},
+ wolf:{name:'늑대',emoji:'🐺',kind:'threat',sub:'야영지의 식량을 노리는 맹수'},
+ bear:{name:'곰',emoji:'🐻',kind:'threat',sub:'강한 사냥꾼이 필요한 큰 맹수'},
+ strangerGroup:{name:'낯선 집단',emoji:'🧑‍🤝‍🧑',kind:'group',sub:'교환하거나 관계를 맺을 수 있음'},
+ hostileBand:{name:'적대 집단',emoji:'⚔️',kind:'threat',sub:'식량과 정착지를 노리는 경쟁 집단'},
 
  branch:{name:'나뭇가지',emoji:'🌿',kind:'item',sub:'불·자루·간단한 도구 재료'},
  wood:{name:'목재',emoji:'🪵',kind:'item',sub:'큰 나무에서 얻는 건축 재료'},
@@ -148,7 +153,8 @@ const C={
 
 const state={
  started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
- lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false
+ lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false,
+ worldTick:0,expedition:null
 };
 let bgmHandle=null;
 
@@ -254,6 +260,11 @@ const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,be
 const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
 const isWorker=t=>['person','hunter','fisher','farmer','herder','lumberjack'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const THREAT_CONFIG=Object.freeze({
+ wolf:{raidEvery:16,steal:1,label:'늑대'},
+ bear:{raidEvery:22,steal:2,label:'곰'},
+ hostileBand:{raidEvery:20,steal:2,label:'적대 집단'}
+});
 const RESOURCE_CAPS=Object.freeze({
  smallTree:8,bigTree:10,berryBush:8,stoneSource:10,reedBed:10,clayBank:10,
  wildMillet:12,wildBroomcorn:12,wildBean:12,oakGrove:12,tidalFlat:12,
@@ -265,7 +276,7 @@ function resourceCap(type,count=1){return (RESOURCE_CAPS[type]||0)*Math.max(1,co
 function outputUnits(out){return out.reduce((n,o)=>n+(Number(o[1])||1),0);}
 
 function reset(){
- state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();
+ state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.expedition=null;
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
  state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
@@ -299,11 +310,14 @@ function spawnInitial(){
  list.forEach(([t,x,y])=>addCard(t,Math.min(w-120,w*x),Math.min(h-150,h*y),1,false));
 }
 
-const ANIMALS=new Set(['deer','wildGoat','wildBoar','rabbit','tamedGoat']);
-const DANGERS=new Set(['deer','wildBoar']);
+const ANIMALS=new Set(['deer','wildGoat','wildBoar','rabbit','tamedGoat','wolf','bear']);
+const DANGERS=new Set(['wildBoar','wolf','bear','hostileBand']);
+const GROUPS=new Set(['strangerGroup']);
 function cardGroup(type,d){
  if(isWorker(type))return {cls:'human',label:'주민'};
- if(ANIMALS.has(type))return {cls:(DANGERS.has(type)?'animal danger':'animal'),label:'동물'};
+ if(GROUPS.has(type))return {cls:'group',label:'집단'};
+ if(type==='hostileBand')return {cls:'danger',label:'위험'};
+ if(ANIMALS.has(type))return {cls:(DANGERS.has(type)?'animal danger':'animal'),label:DANGERS.has(type)?'맹수':'동물'};
  if(d.kind==='node')return {cls:'node',label:'자연'};
  if(d.kind==='food')return {cls:'food',label:'음식'};
  if(d.kind==='building')return {cls:'building',label:'시설'};
@@ -322,7 +336,7 @@ function addCard(type,x,y,count=1,animate=true){
  const resourceBadge=RESOURCE_CAPS[type]?'<span class="resourceBadge"></span>':'';
  el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
- const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};state.cards.set(id,c);updateCard(c);
+ const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;state.cards.set(id,c);updateCard(c);
  place(c,clamp(x,4,Math.max(4,board.clientWidth-el.offsetWidth-12)),clamp(y,18,Math.max(18,board.clientHeight-el.offsetHeight-12)));
  bindDrag(c);if(animate)onCreated(type);renderHunger();return c;
 }
