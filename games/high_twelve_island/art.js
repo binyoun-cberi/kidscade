@@ -210,6 +210,68 @@
     family: [[548,306],[579,319],[610,303]]
   });
 
+  // Dead Shop식 POI 이동 원리를 주민 생활에 맞게 적용한 보행 경로망.
+  // 주민은 목적지로 직선 이동하지 않고 광장·교차로·시설 입구를 순서대로 지나간다.
+  const ROUTE_NODES = Object.freeze({
+    plaza:[360,220], west:[270,220], east:[465,220], north:[350,170], south:[350,286],
+    farmGate:[232,222], forestWest:[214,164], forestEast:[526,174],
+    fishWest:[207,292], fishEast:[520,294], homes:[430,176], clinic:[486,194],
+    hall:[350,165], water:[350,312], storage:[477,276], family:[520,302],
+    highground:[430,132], floodWest:[238,306], floodEast:[490,316]
+  });
+  const ROUTE_LINKS = Object.freeze({
+    plaza:['west','east','north','south'], west:['plaza','farmGate','forestWest','floodWest'],
+    east:['plaza','homes','clinic','forestEast','storage','floodEast'], north:['plaza','hall','highground','homes'],
+    south:['plaza','water','floodWest','floodEast'], farmGate:['west','forestWest'], forestWest:['west','farmGate'],
+    forestEast:['east','homes'], fishWest:['floodWest','water'], fishEast:['floodEast','storage'],
+    homes:['east','north','clinic','forestEast'], clinic:['east','homes'], hall:['north','plaza'],
+    water:['south','fishWest','fishEast'], storage:['east','floodEast','fishEast','family'],
+    family:['storage','floodEast'], highground:['north','homes'], floodWest:['west','south','fishWest'],
+    floodEast:['east','south','storage','fishEast','family']
+  });
+  function nearestRouteNode(x,y) {
+    let best='plaza', d=Infinity;
+    for (const [key,p] of Object.entries(ROUTE_NODES)) {
+      const nd=Math.hypot(p[0]-x,p[1]-y);
+      if (nd<d) { d=nd; best=key; }
+    }
+    return best;
+  }
+  function destinationNode(kind,target) {
+    if (kind==='farm') return 'farmGate';
+    if (kind==='forest') return target.x<360?'forestWest':'forestEast';
+    if (kind==='fishing') return target.x<360?'fishWest':'fishEast';
+    if (kind==='homes') return 'homes';
+    if (kind==='clinic') return 'clinic';
+    if (kind==='hall') return 'hall';
+    if (kind==='water') return 'water';
+    if (kind==='highground') return 'highground';
+    if (kind==='floodedge') return target.x<360?'floodWest':'floodEast';
+    if (kind==='storage') return 'storage';
+    if (kind==='family') return 'family';
+    if (kind==='queue'||kind==='excluded'||kind==='fire'||kind==='plaza') return 'plaza';
+    return 'plaza';
+  }
+  function buildRoute(actor,kind,target) {
+    const start=nearestRouteNode(actor.x,actor.y), goal=destinationNode(kind,target);
+    if (start===goal) return [{x:target.x,y:target.y}];
+    const queue=[start], prev=new Map([[start,null]]);
+    while (queue.length) {
+      const here=queue.shift();
+      if (here===goal) break;
+      for (const next of ROUTE_LINKS[here]||[]) {
+        if (!prev.has(next)) { prev.set(next,here); queue.push(next); }
+      }
+    }
+    const keys=[];
+    let cur=goal;
+    while (cur&&prev.has(cur)) { keys.push(cur); cur=prev.get(cur); }
+    keys.reverse();
+    const points=keys.map(k=>({x:ROUTE_NODES[k][0],y:ROUTE_NODES[k][1]}));
+    points.push({x:target.x,y:target.y});
+    return points;
+  }
+
   function hashValue(value) {
     const text = String(value ?? "");
     let h = 2166136261;
@@ -242,7 +304,7 @@
       actor = {
         id, index, citizen, activity: "idle", forcedKey: "",
         x: start[0] + (index % 3) * 4, y: start[1] + (index % 2) * 3,
-        targetX: start[0], targetY: start[1],
+        targetX: start[0], targetY: start[1], route: [], waypoint: 0,
         nextDecisionAt: 0, lastAt: 0, arrived: false, phase: seeded(id, 3) * Math.PI * 2
       };
       actorRuntime.set(id, actor);
@@ -350,20 +412,26 @@
     const [x, y] = pickSpot(targetKind(activity, s), actor, salt);
     actor.targetX = x;
     actor.targetY = y;
+    actor.route = buildRoute(actor, targetKind(activity, s), {x, y});
+    actor.waypoint = 0;
     actor.arrived = false;
     actor.nextDecisionAt = t + 6200 + seeded(actor.id, salt + 211) * 7600;
   }
   function updateActor(actor, s, t) {
     const dt = actor.lastAt ? clamp((t - actor.lastAt) / 1000, 0, .16) : 0;
     actor.lastAt = t;
-    const dx = actor.targetX - actor.x, dy = actor.targetY - actor.y;
+    const point = actor.route?.[actor.waypoint] || {x:actor.targetX,y:actor.targetY};
+    const dx = point.x - actor.x, dy = point.y - actor.y;
     const dist = Math.hypot(dx, dy);
     const speed = actor.activity === "evacuate" ? 40 : actor.activity === "sleep" ? 19 : 27;
     if (dist > 1.4 && dt > 0) {
       const step = Math.min(dist, speed * dt * (s.pending ? .25 : 1));
       actor.x += dx / dist * step;
       actor.y += dy / dist * step;
-      actor.arrived = dist - step <= 1.4;
+      actor.arrived = false;
+    } else if (actor.route?.length && actor.waypoint < actor.route.length - 1) {
+      actor.waypoint += 1;
+      actor.arrived = false;
     } else actor.arrived = true;
   }
   function pixelText(text, x, y, size = 10, color = "#fff8db") {
@@ -500,8 +568,13 @@
   }
   function getActivitySnapshot() {
     const counts = {};
-    for (const actor of actorRuntime.values()) counts[actor.activity] = (counts[actor.activity] || 0) + 1;
-    return { total: actorRuntime.size, counts };
+    let moving = 0, routed = 0;
+    for (const actor of actorRuntime.values()) {
+      counts[actor.activity] = (counts[actor.activity] || 0) + 1;
+      if (!actor.arrived) moving += 1;
+      if (actor.route?.length > 1) routed += 1;
+    }
+    return { total: actorRuntime.size, counts, moving, routed };
   }
   function stateSignals(s) {
     if (s.childWorkUntil > s.tick) {
@@ -644,5 +717,5 @@
     impact = { choice: choice || null, label: label || "선택", until: Date.now() + 1800 };
     if (ready) redraw();
   }
-  root.IslandArt = Object.freeze({ mount, setState, setPreview, impactChoice, redraw, getActivitySnapshot, MAPS });
+  root.IslandArt = Object.freeze({ mount, setState, setPreview, impactChoice, redraw, getActivitySnapshot, MAPS, ROUTE_NODES });
 })(window);
