@@ -79,7 +79,14 @@
     fractionSmithBest: 'kidscade_fraction_smith_best_v1',
     mafiaPassPlaySave: 'kidscade_mafia_passplay_v1',
     cubeArchitectWorldSave: 'kidscade_cube_architect_world_v1',
-    driverLicenseBest: 'kidscade_driver_license_best_v1'
+    driverLicenseBest: 'kidscade_driver_license_best_v1',
+    bodySlow3dTutorial: 'kidscade_body_slow3d_tutorial',
+    driftSurvivalSaveV2: 'kidscade_drift_v2_save',
+    driftSurvivalEndingsV2: 'kidscade_drift_endings_v2',
+    perfectPitchSave: 'kidscade_perfect_pitch_v1',
+    storyBuilderSave: 'kidscade_story_builder_v1',
+    takoyakiHolesSave: 'kidscade_takoyaki_holes_v1',
+    weathercasterBest: 'kidscade_weathercaster_best_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
