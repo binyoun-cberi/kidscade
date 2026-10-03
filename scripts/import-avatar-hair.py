@@ -30,17 +30,18 @@ STYLES = [
 # Each generated sprite is authored on an arbitrary transparent square. Normalize the
 # visible hair pixels into Kidscade's actual head coordinate system instead of drawing
 # the whole source canvas from (0, 0).
+FIT_VERSION = "short-head-fit-v2"
 HEAD_FIT = {
-    "male-short-01": {"maxW": 68, "maxH": 54, "top": 12},
-    "male-short-02": {"maxW": 64, "maxH": 50, "top": 14},
-    "male-short-03": {"maxW": 68, "maxH": 54, "top": 12},
-    "male-short-04": {"maxW": 68, "maxH": 52, "top": 13},
-    "male-short-05": {"maxW": 72, "maxH": 58, "top": 8},
-    "male-short-06": {"maxW": 72, "maxH": 58, "top": 8},
-    "male-short-07": {"maxW": 60, "maxH": 46, "top": 15},
-    "male-short-08": {"maxW": 66, "maxH": 52, "top": 10},
-    "male-short-09": {"maxW": 70, "maxH": 54, "top": 12},
-    "male-short-10": {"maxW": 68, "maxH": 54, "top": 12},
+    "male-short-01": {"maxW": 60, "maxH": 46, "top": 9},
+    "male-short-02": {"maxW": 58, "maxH": 42, "top": 11},
+    "male-short-03": {"maxW": 60, "maxH": 46, "top": 9},
+    "male-short-04": {"maxW": 60, "maxH": 44, "top": 10},
+    "male-short-05": {"maxW": 64, "maxH": 50, "top": 6},
+    "male-short-06": {"maxW": 64, "maxH": 50, "top": 6},
+    "male-short-07": {"maxW": 54, "maxH": 40, "top": 12},
+    "male-short-08": {"maxW": 58, "maxH": 44, "top": 8},
+    "male-short-09": {"maxW": 62, "maxH": 48, "top": 9},
+    "male-short-10": {"maxW": 60, "maxH": 44, "top": 9},
 }
 
 CANVAS = 128
@@ -143,7 +144,7 @@ def fit_sprite_to_head(src: Path, dst: Path, hair_id: str) -> dict[str, object]:
             f"content {crop.size} -> {(new_w, new_h)}, scale={scale:.3f}"
         )
         return {
-            "version": "short-head-fit-v1",
+            "version": FIT_VERSION,
             "sourceBBox": list(before),
             "targetBBox": list(after),
             "headAnchor": [HEAD_CENTER_X, 20],
@@ -152,13 +153,13 @@ def fit_sprite_to_head(src: Path, dst: Path, hair_id: str) -> dict[str, object]:
         }
 
 
-def import_raw_sources() -> None:
+def import_raw_sources() -> bool:
     sources = sorted(
         [p for p in HAIR.glob("*.png") if SOURCE_RE.match(p.name)],
         key=source_index,
     )
     if not sources:
-        return
+        return False
     if len(sources) != len(STYLES):
         raise SystemExit(f"Expected {len(STYLES)} raw hair sprites, found {len(sources)}")
 
@@ -184,12 +185,18 @@ def import_raw_sources() -> None:
 
     for src in sources:
         src.unlink()
+    return True
 
 
 def main() -> None:
-    import_raw_sources()
+    imported_raw = import_raw_sources()
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    previous_by_id = {
+        str(item.get("id")): item
+        for item in manifest.get("items", [])
+        if isinstance(item, dict) and item.get("id")
+    }
     items = [
         item for item in manifest.get("items", [])
         if not str(item.get("id", "")).startswith("male-short-")
@@ -200,7 +207,17 @@ def main() -> None:
         path = APPROVED / filename
         if not path.exists():
             raise SystemExit(f"Missing approved source sprite: {path}")
-        normalization = fit_sprite_to_head(path, path, hair_id)
+        previous = previous_by_id.get(hair_id) or {}
+        previous_norm = previous.get("normalization") if isinstance(previous, dict) else None
+        already_current = (
+            isinstance(previous_norm, dict)
+            and previous_norm.get("version") == FIT_VERSION
+        )
+        if imported_raw or not already_current:
+            normalization = fit_sprite_to_head(path, path, hair_id)
+        else:
+            normalization = previous_norm
+            print(f"{hair_id}: already normalized with {FIT_VERSION}; keeping existing pixels")
         items.append({
             "id": hair_id,
             "name": name,
@@ -218,7 +235,7 @@ def main() -> None:
             ],
         })
 
-    manifest["version"] = 4
+    manifest["version"] = 5
     manifest["fallbackId"] = "male-short-01"
     manifest["coordinateSystem"]["centerX"] = HEAD_CENTER_X
     manifest["coordinateSystem"]["headTopY"] = 20
