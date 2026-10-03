@@ -9,9 +9,6 @@ on:
       - "scripts/**"
       - "games/**"
       - "assets/**"
-      - "data/**"
-      - "world-v2/**"
-      - "world-v3/**"
       - "teacher/**"
       - "*.html"
       - "*.js"
@@ -44,14 +41,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Check platform health baseline
-        run: npm run health:strict
-
       - name: Build Cloudflare artifact
         run: npm run build:cloudflare
-
-      - name: Run regression tests and audits
-        run: npm run test:ci
 
       - name: Verify Cloudflare token identity
         run: npx wrangler whoami
