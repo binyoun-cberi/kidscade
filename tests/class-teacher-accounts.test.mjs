@@ -60,6 +60,8 @@ test('teacher accounts can log in from the main Kidscade account UI without beco
   assert.match(client,/\/api\/teacher\/auth\/sync/);
   assert.match(client,/교사 관리/);
   assert.match(client,/account\.role === 'teacher'/);
+  assert.match(client,/kidscade:account-changed/);
+  assert.match(client,/emitAccountChanged/);
 });
 
 test('teacher main sidebar groups management and economy shortcuts', () => {
