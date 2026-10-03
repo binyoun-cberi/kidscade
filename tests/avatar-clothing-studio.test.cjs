@@ -92,3 +92,13 @@ test('studio verifies global admin',()=>{
   assert.ok(js.includes('/api/teacher/overview'));
   assert.ok(js.includes("body.scope!=='global'"));
 });
+
+
+test('single focus toggle switches between all parts and body plus active part',()=>{
+  assert.ok(html.includes('id="focusPartToggle"'));
+  assert.ok(html.includes('선택 파츠만 보기'));
+  assert.ok(js.includes('let focusPartOnly=false'));
+  assert.match(js,/function toggleFocusPart\(\)/);
+  assert.ok(js.includes("button.textContent=focusPartOnly?'모든 파츠 보기':'선택 파츠만 보기'"));
+  assert.ok(js.includes("const focusVisible=!focusPartOnly||layer==='body'||layer===activeLayer"));
+});
