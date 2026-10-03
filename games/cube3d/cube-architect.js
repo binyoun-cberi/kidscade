@@ -1523,6 +1523,7 @@ let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDuratio
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
+let freeHeldToolRoot=null,freeHeldToolKey='',freeHeldToolToken=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
 let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
 let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
@@ -1604,6 +1605,42 @@ function prepareFreeAvatar(now){
 function freeLookVector(){
   return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
 }
+function desiredHeldTool(){
+  return ['woodPick','stonePick','ironPick'].includes(selectedType)?selectedType:'';
+}
+function syncFreeHeldTool(){
+  const key=desiredHeldTool(),api=window.CubeArchitectWorldAssets;
+  if(key===freeHeldToolKey&&freeHeldToolRoot?.parent===scene)return;
+  const token=++freeHeldToolToken,targetScene=scene;
+  if(freeHeldToolRoot?.parent)freeHeldToolRoot.parent.remove(freeHeldToolRoot);
+  freeHeldToolRoot=null;freeHeldToolKey=key;
+  if(!key||!api?.loadTool)return;
+  api.loadTool(key).then(model=>{
+    if(token!==freeHeldToolToken||mode!=='free'||scene!==targetScene||desiredHeldTool()!==key)return;
+    freeHeldToolRoot=model;
+    freeHeldToolRoot.userData={...freeHeldToolRoot.userData,worldDecorative:true,heldTool:true};
+    targetScene.add(freeHeldToolRoot);
+  }).catch(err=>console.warn('[Cube Architect held tool]',key,err));
+}
+function updateFreeHeldTool(now){
+  syncFreeHeldTool();
+  if(!freeHeldToolRoot)return;
+  const visible=mode==='free'&&freeViewMode==='first'&&!!desiredHeldTool();
+  freeHeldToolRoot.visible=visible;if(!visible)return;
+  camera.updateMatrixWorld(true);
+  const forward=freeLookVector();
+  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0).normalize();
+  const up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1).normalize();
+  const swing=miningHeld?Math.sin(now*.018)*.08:0;
+  freeHeldToolRoot.position.copy(camera.position)
+    .addScaledVector(forward,.72+swing*.2)
+    .addScaledVector(right,.34)
+    .addScaledVector(up,-.34-Math.abs(swing)*.16);
+  freeHeldToolRoot.quaternion.copy(camera.quaternion);
+  freeHeldToolRoot.rotateZ(-.58+swing);
+  freeHeldToolRoot.rotateY(-.38);
+  freeHeldToolRoot.rotateX(.08);
+}
 function thirdPersonCameraPosition(eye=camera.position){
   const look=freeLookVector(),thirdPersonDistance=mobileModeEnabled?5.2:5.8;
   const desired=eye.clone().addScaledVector(look,-thirdPersonDistance);desired.y+=.9;
@@ -1620,6 +1657,7 @@ function withinPlayerReach(hit,eye,max){
 }
 function renderFreeScene(now){
   prepareFreeAvatar(now);
+  updateFreeHeldTool(now);
   if(freeViewMode!=='third'){renderer.render(scene,camera);return}
   const savedPos=camera.position.clone(),savedQuat=camera.quaternion.clone();
   camera.position.copy(thirdPersonCameraPosition(savedPos));
@@ -2377,6 +2415,7 @@ function initFree(){
   );
   freePhysicsY=camera.position.y;
   freeAvatarRoot=null;freeAvatarSignature='';freeAvatarSyncAt=0;
+  freeHeldToolRoot=null;freeHeldToolKey='';freeHeldToolToken++;
   setFreeView('third',false);refreshFreeAvatar(true);
   applyRestoredLandmarksToLoadedWorld();
   rebuildAllWorldMeshes();
