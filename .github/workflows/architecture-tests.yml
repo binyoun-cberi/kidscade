@@ -85,6 +85,8 @@ jobs:
             games/low_cleanup_squad/cleanup-squad.js \
             games/high_bridge_builder/bridge-builder.js \
             games/math_base10_blocks/market-walk.js \
+            games/high_quarantine_17/field-topdown-v18.js \
+            games/high_twelve_island/art.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
             scripts/inject-game-integrations.cjs \
