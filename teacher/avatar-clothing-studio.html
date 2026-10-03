@@ -15,7 +15,7 @@
 .canvas-card{display:grid;justify-items:center;gap:10px}.canvas-shell{position:relative;width:min(70vw,640px);aspect-ratio:1/1;border-radius:14px;overflow:hidden;background-color:#eef1f6;background-image:linear-gradient(45deg,#dfe4ec 25%,transparent 25%),linear-gradient(-45deg,#dfe4ec 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dfe4ec 75%),linear-gradient(-45deg,transparent 75%,#dfe4ec 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.canvas-shell canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
 .toolbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}button,.file-btn{min-height:38px;border:0;border-radius:10px;padding:0 11px;background:var(--purple);color:#fff;font:900 .72rem/1 system-ui;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.secondary{background:#eef2f7!important;color:#475569!important;border:1px solid #e2e8f0!important}.warn{background:#fff7ed!important;color:#c2410c!important;border:1px solid #fed7aa!important}.danger{background:#fff1f2!important;color:#be123c!important;border:1px solid #fecdd3!important}
 .file-btn input{display:none}.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}.seg button.active{background:#312e81}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}label{display:grid;gap:5px;font-size:.68rem;font-weight:900;color:#475569}input[type=text],input[type=number],select{width:100%;min-height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:0 9px;background:#fff;color:#111827;font:inherit}input[type=color]{width:100%;height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:3px;background:#fff}.check{display:flex;align-items:center;gap:6px;font-size:.7rem;font-weight:900}.divider{height:1px;background:#eef2f7;margin:12px 0}.status{min-height:20px;font-size:.69rem;font-weight:900;color:#166534}.status.error{color:#b91c1c}.tip{padding:9px 10px;border-radius:10px;background:#f8fafc;color:#64748b;font-size:.67rem;line-height:1.45}.compact{display:grid;gap:7px}.project-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.full{grid-column:1/-1}
-#sourcePreview{width:100%;max-height:120px;object-fit:contain;image-rendering:pixelated;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc}
+#sourcePreview{width:100%;max-height:120px;object-fit:contain;image-rendering:pixelated;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc}.preview-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.preview-box{display:grid;gap:5px;justify-items:center;font-size:.63rem;font-weight:900;color:#64748b}.mini-canvas{width:128px;max-width:100%;aspect-ratio:1;border:1px dashed #cbd5e1;border-radius:10px;background-color:#eef1f6;background-image:linear-gradient(45deg,#dfe4ec 25%,transparent 25%),linear-gradient(-45deg,#dfe4ec 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dfe4ec 75%),linear-gradient(-45deg,transparent 75%,#dfe4ec 75%);background-size:12px 12px;background-position:0 0,0 6px,6px -6px,-6px 0;image-rendering:pixelated}.range-line{display:grid;grid-template-columns:1fr 54px;gap:7px;align-items:center}.range-line output{text-align:center;padding:6px 4px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;font-size:.65rem;font-weight:1000}
 @media(max-width:1050px){.studio{grid-template-columns:190px minmax(400px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}.right>.card{margin:0}}
 @media(max-width:760px){.wrap{width:min(100% - 12px,1480px);margin-top:8px}.top{align-items:flex-start}.studio{grid-template-columns:1fr}.left,.right{display:block;grid-column:auto}.canvas-shell{width:min(94vw,620px)}.right>.card{margin-bottom:10px}.frame-grid{grid-template-columns:repeat(5,1fr)}}
 </style>
@@ -84,10 +84,33 @@
       </section>
 
       <section class="card">
-        <h3>이미지 가져와서 맞추기</h3>
-        <label class="file-btn secondary">PNG 불러오기<input id="sourceFile" type="file" accept="image/png,image/webp,image/jpeg"></label>
-        <img id="sourcePreview" class="hidden" alt="가져온 의상 원본">
-        <div class="row4" style="margin-top:8px">
+        <h3>이미지 → 자동 픽셀 의상</h3>
+        <label class="file-btn secondary">PNG/JPG 불러오기<input id="sourceFile" type="file" accept="image/png,image/webp,image/jpeg"></label>
+        <div class="preview-pair">
+          <div class="preview-box"><span>원본</span><img id="sourcePreview" class="hidden" alt="가져온 의상 원본"></div>
+          <div class="preview-box"><span>픽셀화 결과</span><canvas id="pixelPreviewCanvas" class="mini-canvas" width="128" height="128"></canvas></div>
+        </div>
+
+        <div class="row" style="margin-top:9px">
+          <label>입력 형태<select id="sourceScope"><option value="single">현재 레이어만</option><option value="outfit">상의+하의 합본</option></select></label>
+          <label>팔레트<select id="paletteSize"><option value="4">4색</option><option value="6" selected>6색</option><option value="8">8색</option><option value="0">원본 유지</option></select></label>
+        </div>
+
+        <label style="margin-top:8px">픽셀 해상도
+          <div class="range-line"><input id="pixelResolution" type="range" min="32" max="128" step="16" value="64"><output id="pixelResolutionValue">64</output></div>
+        </label>
+        <label style="margin-top:7px">알파 컷
+          <div class="range-line"><input id="alphaCut" type="range" min="1" max="254" step="1" value="72"><output id="alphaCutValue">72</output></div>
+        </label>
+        <div class="row" style="margin-top:7px">
+          <label class="check"><input id="removeFlatBg" type="checkbox" checked> 모서리 배경 제거</label>
+          <label class="check"><input id="cleanupNoise" type="checkbox" checked> 단독 픽셀 정리</label>
+          <label class="check"><input id="autoOutline" type="checkbox" checked> 어두운 외곽선</label>
+          <label class="check"><input id="autoFitOnLoad" type="checkbox" checked> 불러오면 자동 맞춤</label>
+        </div>
+
+        <div class="divider"></div>
+        <div class="row4">
           <label>X<input id="stampX" type="number" value="0"></label>
           <label>Y<input id="stampY" type="number" value="0"></label>
           <label>W<input id="stampW" type="number" min="1" value="128"></label>
@@ -95,14 +118,20 @@
         </div>
         <div class="row" style="margin-top:7px">
           <label>회전 °<input id="stampRotation" type="number" value="0" step="1"></label>
-          <label>미리보기 α<input id="stampOpacity" type="number" min="0.05" max="1" step="0.05" value="0.75"></label>
+          <label>원본 미리보기 α<input id="stampOpacity" type="number" min="0.05" max="1" step="0.05" value="0.45"></label>
         </div>
+
         <div class="toolbar" style="margin-top:8px">
-          <button id="fitStamp" class="secondary" type="button">128×128 맞춤</button>
-          <button id="commitStamp" type="button">현재 레이어에 찍기</button>
+          <button id="autoFitStamp" class="secondary" type="button">🎯 BODY 자동 맞춤</button>
+          <button id="pixelizePreview" type="button">▦ 픽셀화 미리보기</button>
+          <button id="applyPixelized" type="button">✓ 픽셀 결과 적용</button>
+        </div>
+        <div class="toolbar" style="margin-top:6px">
+          <button id="fitStamp" class="secondary" type="button">128×128 전체 맞춤</button>
+          <button id="commitStamp" class="secondary" type="button">원본 그대로 찍기</button>
           <button id="clearStamp" class="secondary" type="button">원본 닫기</button>
         </div>
-        <div class="tip" style="margin-top:8px">가져온 AI 이미지는 여기서 좌표와 크기를 맞춘 뒤 레이어에 찍고, 연필·지우개로 실제 BODY 프레임에 맞게 마감합니다.</div>
+        <div class="tip" style="margin-top:8px">권장 흐름: AI 의상 이미지 불러오기 → BODY 자동 맞춤 → 64px/6색 픽셀화 → 결과 적용 → 1px 연필·지우개로 손목·겨드랑이·바짓단만 마감.</div>
       </section>
 
       <section class="card">
@@ -121,6 +150,6 @@
     </aside>
   </main>
 </div>
-<script src="/teacher-avatar-clothing-studio.js?v=1"></script>
+<script src="/teacher-avatar-clothing-studio.js?v=2"></script>
 </body>
 </html>
