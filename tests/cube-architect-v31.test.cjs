@@ -21,6 +21,17 @@ test('v31 Cube World rework loads before the runtime and classic scripts still p
   assert.ok(html.indexOf('cube-architect-world-assets.js')<html.indexOf('cube-architect.js'));
 });
 
+test('terrain reuses the Cube World pixel atlas while keeping the chunk renderer',()=>{
+  assert.match(main,/Blocks_PixelArt\.png/);
+  assert.match(main,/CUBE_WORLD_PIXEL_TILES/);
+  assert.match(main,/function cubeWorldAtlasTexture/);
+  assert.match(main,/grassSide:\[\.6,0\]/);
+  assert.match(main,/grassTop:\[0,\.6\]/);
+  assert.match(main,/snowTop:\[\.2,\.2\]/);
+  assert.match(main,/pixelTextureCache\.clear\(\)/);
+  assert.match(main,/if\(mode==='free'\)rebuildAllWorldMeshes\(\)/);
+});
+
 test('biome decoration uses Cube World environment glTF assets without replacing world blocks',()=>{
   assert.match(worldAssets,/Environment\/glTF\/Grass_Big\.gltf/);
   assert.match(worldAssets,/Environment\/glTF\/Bush\.gltf/);
