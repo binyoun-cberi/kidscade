@@ -10,14 +10,14 @@ const canvas=$('world'),assetStatus=$('assetStatus');
 const GRID_W=16,GRID_H=10,CELL=1.05;
 const GAME_SPEEDS=[1,2,4,8,16],MAX_SIM_STEP=.05;
 const TOWERS={
-  SUB1:{id:'SUB1',name:'−1 교정기',short:'−1',cost:90,unlock:1,range:2.05,cool:.62,color:'#fb7185',models:['subA','subB'],op:'-1'},
+  SUB1:{id:'SUB1',name:'−1 교정기',short:'−1',cost:90,unlock:3,range:2.05,cool:.62,color:'#fb7185',models:['subA','subB'],op:'-1'},
   DIV2:{id:'DIV2',name:'÷2 속사 터렛',short:'÷2',cost:145,unlock:1,range:2.3,cool:.68,color:'#38bdf8',models:['div2A','div2B'],op:'÷2',value:2},
   DIV3:{id:'DIV3',name:'÷3 기어 캐논',short:'÷3',cost:205,unlock:2,range:2.35,cool:.82,color:'#22c55e',models:['div3A','div3B'],op:'÷3',value:3},
   ADD1:{id:'ADD1',name:'+1 변환기',short:'+1',cost:115,unlock:3,range:2.0,cool:.9,color:'#fbbf24',models:['addA','addB'],op:'+1'},
   DIV5:{id:'DIV5',name:'÷5 중포 터렛',short:'÷5',cost:295,unlock:4,range:2.5,cool:1.0,color:'#a78bfa',models:['div5A','div5B'],op:'÷5',value:5}
 };
 const WAVES=[
-  {nums:[4,6,8,10],count:7,mission:'짝수 감염체입니다. ÷2 터렛으로 숫자를 1까지 분해하세요.'},
+  {nums:[2,4,8,16],count:7,mission:'첫 감염체는 모두 2의 거듭제곱입니다. ÷2만으로 숫자를 1까지 분해하세요.'},
   {nums:[6,9,12,18],count:8,mission:'÷3 기어 캐논이 열렸습니다. 9·12·18의 약수를 골라 연쇄 분해하세요.'},
   {nums:[7,11,13],count:8,mission:'소수 감염 경보! ±1 변환기로 2·3·5의 배수로 바꾼 뒤 분해하세요.'},
   {nums:[10,15,20,25,30],count:9,mission:'÷5 중포가 열렸습니다. 큰 수를 빠르게 작은 인수로 쪼개세요.'},
@@ -31,7 +31,7 @@ const PATH=(()=>{
   for(let x=0;x<=4;x++)add(x,5);for(let y=5;y>=2;y--)add(4,y);for(let x=4;x<=11;x++)add(x,2);for(let y=2;y<=8;y++)add(11,y);for(let x=11;x<=15;x++)add(x,8);return a
 })();
 const PATH_SET=new Set(PATH.map(p=>p.x+','+p.y));
-const RECOMMENDED=[{id:'DIV2',x:6,y:4},{id:'SUB1',x:13,y:7},{id:'SUB1',x:3,y:6}];
+const RECOMMENDED=[{id:'DIV2',x:3,y:6},{id:'DIV2',x:6,y:4}];
 
 const runtimeBase=(()=>{try{return new URL('.',document.currentScript?.src||location.href)}catch(_){return new URL('.',location.href)}})();
 const GAME_ROOT=new URL('../../assets/game/',runtimeBase);
@@ -401,11 +401,19 @@ function onWheel(e){
 }
 
 
-function hasBasicDivisor(n){return n>1&&(n%2===0||n%3===0||n%5===0)}
+function unlockedDivisors(){const out=[2];if(state.wave>=TOWERS.DIV3.unlock)out.push(3);if(state.wave>=TOWERS.DIV5.unlock)out.push(5);return out}
+function hasUnlockedDivisor(n){return n>1&&unlockedDivisors().some(v=>n%v===0)}
+function fullyReducibleNow(n){
+  if(n<1)return false;
+  let rest=n;
+  for(const v of unlockedDivisors())while(rest>1&&rest%v===0)rest/=v;
+  return rest===1
+}
 function canHit(t,e){
   if(e.hp<=1)return false;
-  if(t.id==='SUB1'||t.id==='ADD1')return e.hp>2&&!hasBasicDivisor(e.hp);
-  if(t.id.startsWith('DIV'))return e.hp%TOWERS[t.id].value===0;
+  if(t.id==='SUB1')return e.hp>2&&!hasUnlockedDivisor(e.hp)&&fullyReducibleNow(e.hp-1);
+  if(t.id==='ADD1')return e.hp>2&&!hasUnlockedDivisor(e.hp)&&fullyReducibleNow(e.hp+1);
+  if(t.id.startsWith('DIV'))return state.wave>=TOWERS[t.id].unlock&&e.hp%TOWERS[t.id].value===0;
   return false
 }
 function placeTower(id,x,y){
@@ -517,7 +525,7 @@ function syncSelectedPanel(){
 function feed(text,color){const wrap=$('calcFeed'),el=document.createElement('div');el.className='calcItem';el.textContent=text;el.style.borderColor=color;wrap.prepend(el);while(wrap.children.length>4)wrap.lastChild.remove();setTimeout(()=>el.remove(),900)}
 function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1200)}
 function autoBuild(){
-  if(state.wave!==1||state.autoUsed||state.waveActive)return;for(const p of RECOMMENDED){const d=TOWERS[p.id];if(state.money>=d.cost&&!towerAt(p.x,p.y)){state.money-=d.cost;state.towers.push({id:p.id,x:p.x,y:p.y,level:0,coolLeft:0,range:d.range,cool:d.cool,cost:d.cost});setDecorBuilt(p.x,p.y,true)}}state.autoUsed=true;sfx.build();toast('추천 배치 완료');syncHUD();syncDeck()
+  if(state.wave!==1||state.autoUsed||state.waveActive)return;for(const p of RECOMMENDED){const d=TOWERS[p.id];if(state.wave>=d.unlock&&state.money>=d.cost&&!towerAt(p.x,p.y)){state.money-=d.cost;state.towers.push({id:p.id,x:p.x,y:p.y,level:0,coolLeft:0,range:d.range,cool:d.cool,cost:d.cost});setDecorBuilt(p.x,p.y,true)}}state.autoUsed=true;sfx.build();toast('추천 배치 완료');syncHUD();syncDeck()
 }
 function resetGame(){
   for(const n of towerNodes.values())towerGroup.remove(n);for(const n of enemyNodes.values())enemyGroup.remove(n);for(const m of enemyMixers.values())m.stopAllAction();towerNodes.clear();enemyNodes.clear();enemyMixers.clear();
