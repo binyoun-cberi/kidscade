@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "type": "kidscade-approved-hair-catalog",
   "legacyHidden": true,
   "fallbackId": "clean-01",
@@ -30,6 +30,156 @@
       "notes": [
         "independent PNG",
         "transparent background",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-01",
+      "name": "콤마 사이드파트",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-01.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-02",
+      "name": "라운드 보울컷",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-02.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-03",
+      "name": "센터 커튼",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-03.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-04",
+      "name": "소프트 투블럭",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-04.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-05",
+      "name": "텍스처 스파이크",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-05.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-06",
+      "name": "레이어드 울프컷",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-06.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-07",
+      "name": "쇼트 크롭",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-07.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-08",
+      "name": "미니 퀴프",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-08.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-09",
+      "name": "비대칭 사이드스윕",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-09.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
+        "no runtime position correction"
+      ]
+    },
+    {
+      "id": "male-short-10",
+      "name": "플러피 머쉬룸",
+      "category": "short-male",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-male-10.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-generated-normalized-128x128",
+      "notes": [
+        "full-canvas nearest-neighbor normalization to 128x128",
+        "transparent standalone PNG",
         "no runtime position correction"
       ]
     }
