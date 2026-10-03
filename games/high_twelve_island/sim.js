@@ -137,7 +137,13 @@
         else { thought = "공공시설을 오래 운영할 수 있도록 비용과 혜택을 함께 살펴봐요."; reason = "공동시설 운영"; }
     }
     if (person.isChild) {
-      if (s.childWorkUntil > s.tick) { mood = "걱정"; thought = "오늘도 수업에 가지 못하고 위험한 채집 일을 해야 하나요? 너무 지쳐요."; reason = "위험한 어린이 노동"; }
+      if (s.water < 10) {
+      s.health = clamp(s.health - 1.35);
+      s.childWellbeing = clamp(s.childWellbeing - .75);
+    } else if (s.water < 22) {
+      s.health = clamp(s.health - .45);
+    }
+    if (s.childWorkUntil > s.tick) { mood = "걱정"; thought = "오늘도 수업에 가지 못하고 위험한 채집 일을 해야 하나요? 너무 지쳐요."; reason = "위험한 어린이 노동"; }
       else if (s.education < 70) { mood = "걱정"; thought = "지난번 일을 하느라 공부를 많이 놓쳤어요. 다시 배울 시간을 갖고 싶어요."; reason = "학습 기회 감소"; }
       else if (winterActive(s)) { thought = "밖이 너무 추워요. 안전한 곳에서 친구들과 공부하고 싶어요."; reason = "겨울철 생활"; }
       else { thought = "마을이 안정되면 공부하고 친구들과 놀 수 있는 시간을 갖고 싶어요."; reason = "어린이의 생활"; }
@@ -173,6 +179,8 @@
       pledges: [], decisions: [], authorityUses: 0, voteCooldownUntil: 0,
       workReliefUntil: 0, stormAftermathAt: 0, stormAftermathChoice: null,
       reserveFood: 0, boostUntil: 0, actionCooldowns: {},
+      // 화면 속 주민이 실제 작업지에 도착했는지를 생산량에 소폭 반영한다. 구버전/헤드리스에서는 1로 동작한다.
+      activityFoodFactor: 1, activityWoodFactor: 1,
       // 한파와 인권 관련 상태는 실제 위기가 닥쳤을 때 HUD에 공개한다.
       warmth: 73, health: 85, education: 95, childWellbeing: 95,
       nextWinterAt: 16, coldUntil: 0, winterPrepared: null, winterEver: false, winterCount: 0,
@@ -221,6 +229,8 @@
     if (!Array.isArray(d.pledges)) d.pledges = [];
     if (!Array.isArray(d.decisions)) d.decisions = [];
     d.reserveFood = clamp(d.reserveFood || 0, 0, 28);
+    d.activityFoodFactor = clamp(Number.isFinite(d.activityFoodFactor) ? d.activityFoodFactor : 1, .76, 1);
+    d.activityWoodFactor = clamp(Number.isFinite(d.activityWoodFactor) ? d.activityWoodFactor : 1, .76, 1);
     d.warmth = clamp(d.warmth == null ? 73 : d.warmth);
     d.health = clamp(d.health == null ? 85 : d.health);
     d.education = clamp(d.education == null ? 95 : d.education);
@@ -293,21 +303,24 @@
     const strikeFactor = (s.strikes?.workers || 0) > s.tick ? .53 : 1;
     const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) *
       fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor * climateFactor * strikeFactor;
-    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production + (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
-    const cut = s.jobs.wood * .48 * production + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
+    const activityFoodFactor = clamp(Number.isFinite(s.activityFoodFactor) ? s.activityFoodFactor : 1, .76, 1);
+    const activityWoodFactor = clamp(Number.isFinite(s.activityWoodFactor) ? s.activityWoodFactor : 1, .76, 1);
+    const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production * activityFoodFactor +
+      (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
+    const cut = s.jobs.wood * .48 * production * activityWoodFactor + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
     const extras = (s.safeguards?.fairBonus ? .045 : 0) + (s.safeguards?.effortCare ? .055 : 0) + (s.safeguards?.workBreak ? .025 : 0);
-    const foodUse = Math.max(0, s.population * .30 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
+    const foodUse = Math.max(0, s.population * .38 * ((ration.foodUse || 1) * (labor.foodUse || 1) + extras) *
       (winterActive(s) ? 1.13 : 1) * (disasterActive(s,"heat") ? 1.10 : 1) -
       (s.exclusionUntil > s.tick ? 2.15 : 0));
     const taxIncome = s.stage >= 2 ? s.population * (tax.rate || .16) : 0;
     const serviceCost = s.stage >= 2 ? s.population * .105 + s.buildings.clinic * 1.10 + s.buildings.hall * .65 + (care.upkeep || 0) + (s.safeguards?.needsAudit ? .22 : 0) : 0;
     const administration = s.laws.ration === "needs" ? (s.safeguards?.needsAudit ? .26 : .15) : 0;
-    const waterUse = s.population * .14 + (disasterActive(s,"heat") ? 2.65 : 0) +
+    const waterUse = s.population * .155 + (disasterActive(s,"heat") ? 2.65 : 0) +
       (disasterActive(s,"epidemic") ? .6 : 0);
     const waterGain = disasterActive(s,"flood") ? .1 : 2.55;
     const careCost = disasterActive(s,"epidemic") && s.disasterCare?.epidemic > s.tick && s.stage >= 2 ? .75 : 0;
     return { food: gather - foodUse, wood: cut - administration, treasury: taxIncome - serviceCost - careCost,
-      water: waterGain - waterUse, gather, foodUse, fatigue,
+      water: waterGain - waterUse, gather, foodUse, fatigue, activityFoodFactor, activityWoodFactor,
       heating: winterActive(s) ? (s.winterPrepared === 2 ? 2.15 : 3.25) + Math.min(1.6, Math.max(0, (s.winterCount || 1) - 1) * .55) : 0 };
   }
   function canBuild(s, id) {
@@ -1069,7 +1082,8 @@
       s.wood = clamp(producedWood, 0, s.woodCap);
       s.warmth = clamp(s.warmth + 1.7);
     }
-    if (s.food < 20) { s.health = clamp(s.health - .9); s.childWellbeing = clamp(s.childWellbeing - .7); }
+    if (s.food < 8) { s.health = clamp(s.health - 2.2); s.childWellbeing = clamp(s.childWellbeing - 1.5); }
+    else if (s.food < 20) { s.health = clamp(s.health - 1.25); s.childWellbeing = clamp(s.childWellbeing - .9); }
     else if (!winterActive(s) && s.food > 40) {
       s.health = clamp(s.health + (s.buildings.clinic && s.treasury >= 1 ? .55 : .22));
       s.childWellbeing = clamp(s.childWellbeing + .32);
@@ -1424,6 +1438,9 @@
     if (s.food < 15) s.trust = clamp(s.trust - .95);
     else if (s.food < 30) s.trust = clamp(s.trust - .40);
     else if (s.food > 55 && s.trust < 70) s.trust = clamp(s.trust + .10);
+    // 높은 신뢰는 영구 고정값이 아니라 계속 관리해야 하는 상태로 만든다.
+    if (s.trust > 92) s.trust = clamp(s.trust - .22);
+    else if (s.trust > 86) s.trust = clamp(s.trust - .08);
     if (s.treasury < 1 && s.stage >= 2 && (s.buildings.clinic || s.buildings.hall)) s.trust = clamp(s.trust - .24);
     if (s.buildings.clinic && s.treasury >= 1) s.trust = clamp(s.trust + .06);
     if (s.population < capacity(s) && s.food >= 53 && s.water >= 27 && s.trust >= 42 &&
