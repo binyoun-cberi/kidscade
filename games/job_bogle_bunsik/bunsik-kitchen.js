@@ -697,14 +697,6 @@ function updateActionButtons(){
  };
  if(state.phase!=='service'){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent='영업 전에는 주방 배치를 정리해요';els.dock.appendChild(wait)
- }else if(state.heldItem){
-  const wait=document.createElement('span');wait.className='action-wait';wait.textContent=heldItemLabel()+'을 들고 있어요 · '+(state.heldItem.kind==='meal'?'배식대로 이동':'냄비로 이동');els.dock.appendChild(wait)
- }else if(n?.type==='noodleSource'){
-  addSourceButton('noodle','면 들기');
- }else if(n?.type==='soupSource'){
-  addSourceButton('soup','스프 들기');
- }else if(n?.type==='fridge'){
-  const toppings=state.tutorial.active?['egg']:['egg','green','cheese'];toppings.forEach(id=>addSourceButton(id));
  }else if(n?.group?.userData?.storageSlot){
   const stored=n.group.userData.storedItem,btn=document.createElement('button');btn.type='button';
   if(state.heldItem&&stored){btn.disabled=true;btn.innerHTML='<span>↔</span><b>조리대 사용 중</b>'}
@@ -712,6 +704,14 @@ function updateActionButtons(){
   else if(stored){btn.innerHTML='<span>↑</span><b>'+itemLabel(stored)+' 집기</b>';btn.addEventListener('click',()=>usePrepCounter(n.group))}
   else{btn.disabled=true;btn.innerHTML='<span>□</span><b>빈 조리대</b>'}
   els.dock.appendChild(btn)
+ }else if(state.heldItem){
+  const wait=document.createElement('span');wait.className='action-wait';wait.textContent=heldItemLabel()+'을 들고 있어요 · '+(state.heldItem.kind==='meal'?'배식대 또는 빈 조리대로 이동':'냄비 또는 빈 조리대로 이동');els.dock.appendChild(wait)
+ }else if(n?.type==='noodleSource'){
+  addSourceButton('noodle','면 들기');
+ }else if(n?.type==='soupSource'){
+  addSourceButton('soup','스프 들기');
+ }else if(n?.type==='fridge'){
+  const toppings=state.tutorial.active?['egg']:['egg','green','cheese'];toppings.forEach(id=>addSourceButton(id));
  }else if(n?.type==='sink'){
   addSourceButton('water','물 한 컵 받기');
   if(state.dirtyPlates>0){const wash=document.createElement('button');wash.type='button';wash.innerHTML='<span>🧼</span><b>설거지</b>';wash.addEventListener('click',washOnePlate);els.dock.appendChild(wash)}
