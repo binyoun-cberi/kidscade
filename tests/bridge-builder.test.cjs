@@ -24,7 +24,7 @@ test('only stage one is a plain gap and later stages add route-changing obstacle
   assert.match(runtime,/title:"2\. 바위 기둥"[\s\S]*type:"up"/);
   assert.match(runtime,/title:"3\. 낮은 터널"[\s\S]*type:"down"/);
   assert.match(runtime,/title:"4\. 위로, 아래로!"[\s\S]*type:"up"[\s\S]*type:"down"/);
-  assert.match(runtime,/title:"5\. 좁은 관문"/);
+  assert.match(runtime,/title:"5\. 첫 번째 관문"/);
   assert.match(runtime,/title:"6\. 지그재그 협곡"/);
   assert.match(runtime,/title:"7\. 두 개의 관문"/);
   assert.match(runtime,/title:"8\. 마지막 협곡"/);
@@ -85,6 +85,6 @@ test('only redraw control lives inside the visible play area',()=>{
 test('mobile play area keeps the 12 by 7 canvas and v13 runtime',()=>{
   assert.match(css,/aspect-ratio:12\/7/);
   assert.match(css,/width:100%!important/);
-  assert.match(html,/bridge-builder\.js\?v=12/);
-  assert.match(html,/bridge-builder\.css\?v=12/);
+  assert.match(html,/bridge-builder\.js\?v=13/);
+  assert.match(html,/bridge-builder\.css\?v=13/);
 });
