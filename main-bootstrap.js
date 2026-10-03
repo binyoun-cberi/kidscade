@@ -376,6 +376,11 @@
   }
 
   function injectBootPayload(html, catalog) {
+    // index.html is replaced with index_base.html, so preserve the deployment
+    // build id in the final document for auto-update and diagnostics.
+    if (!/<meta\\s+name=["']kidscade-build["']/i.test(html)) {
+      html = html.replace('</head>', '<meta name="kidscade-build" content="' + escapeHtml(RUNTIME_VERSION) + '"></head>');
+    }
     const payload = '<scr' + 'ipt>' +
       'window.KidscadeCatalog=' + serializeForInlineScript(catalog) + ';' +
       'window.KidscadeBoot={version:' + JSON.stringify(RUNTIME_VERSION) + ',catalogUrl:' + JSON.stringify(CATALOG_URL) + '};' +
