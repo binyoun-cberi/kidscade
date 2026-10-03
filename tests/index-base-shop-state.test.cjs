@@ -42,11 +42,14 @@ test('shop-ui owns tabs rendering purchases and equipped visual skins', () => {
   assert.doesNotMatch(html, /document\.querySelectorAll\('\.shop-tab'\)\.forEach\(tab/);
 });
 
-test('normal shop UI persists only through the common state API when available', () => {
+test('normal shop UI prefers the common state API and keeps storage writes only as module fallback', () => {
   const grantIndex = ui.indexOf('if (shopState?.grant)');
-  const fallbackIndex = ui.indexOf("storage?.setItem?.('kidscade_inventory'", grantIndex);
-  assert.ok(grantIndex >= 0 && fallbackIndex > grantIndex);
-  assert.doesNotMatch(html, /localStorage\.setItem\('kidscade_equipped'/);
+  const inventoryFallback = ui.indexOf("storage?.setItem?.('kidscade_inventory'", grantIndex);
+  const equipIndex = ui.indexOf('if (shopState?.equip)');
+  const equippedFallback = ui.indexOf("storage?.setItem?.('kidscade_equipped'", equipIndex);
+  assert.ok(grantIndex >= 0 && inventoryFallback > grantIndex);
+  assert.ok(equipIndex >= 0 && equippedFallback > equipIndex);
+  assert.doesNotMatch(html, /function\s+buyItem\s*\(|function\s+equipItem\s*\(/);
 });
 
 test('bootstrap cache-busts shop state and UI with the shared runtime version', () => {
