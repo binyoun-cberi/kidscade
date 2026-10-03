@@ -58,6 +58,7 @@ const C={
  basket:{name:'바구니',emoji:'🧺',kind:'tool',sub:'통발 제작 재료'},
  fishTrap:{name:'통발',emoji:'🪤',kind:'tool',sub:'통발 어장 조성'},
  spear:{name:'돌창',emoji:'🗡️',kind:'tool',sub:'사냥꾼 양성'},
+ bow:{name:'활',emoji:'🏹',kind:'tool',sub:'힘줄과 나무로 만든 사냥 도구'},
  groundStone:{name:'간 돌',emoji:'⚪',kind:'tool',sub:'강에서 매끈하게 간 석재'},
  groundAxe:{name:'간돌도끼',emoji:'🪓',kind:'tool',sub:'숲 개간 가능'},
  stoneHoe:{name:'돌괭이',emoji:'⛏️',kind:'tool',sub:'농부 양성'},
@@ -122,6 +123,7 @@ const R=[
  ['fiber','cord',1,1,[['basket',1]],'바구니'],
  ['basket','cord',1,1,[['fishTrap',1]],'통발'],
  ['stoneBlade','wood',1,1,[['spear',1]],'돌창'],
+ ['sinew','wood',1,1,[['bow',1]],'활'],
  ['groundStone','wood',1,1,[['groundAxe',1]],'간돌도끼'],
  ['groundStone','cord',1,1,[['stoneHoe',1]],'돌괭이'],
  ['stoneBlade','cord',1,1,[['sickle',1]],'돌낫'],
@@ -135,6 +137,7 @@ const R=[
  ['dressedHide','hutFrame',1,1,[['hideTent',1]],'가죽 천막'],
  ['hutFrame','clayVessel',1,1,[['pitHouse',1]],'움집'],
  ['clayVessel','boneNeedle',1,0,[['combRawPot',1]],'빗살무늬 새기기'],
+ ['clayVessel','stoneBlade',1,0,[['combRawPot',1]],'석기로 무늬 새기기'],
  ['clayVessel','campfire',1,0,[['pottery',1]],'토기 굽기'],
  ['combRawPot','campfire',1,0,[['combPottery',1]],'빗살무늬토기 굽기'],
  ['rawMeat','campfire',1,0,[['cookedMeat',1]],'고기 익히기'],
@@ -147,6 +150,7 @@ const R=[
  ['milletFarm','storageJars',0,1,[['granary',1]],'곡식 저장소'],
  ['tamedGoat','fence',1,1,[['goatPen',1]],'염소 우리'],
  ['person','spear',1,1,[['hunter',1]],'사냥꾼'],
+ ['person','bow',1,1,[['hunter',1]],'활 사냥꾼'],
  ['person','fishHook',1,1,[['fisher',1]],'어부'],
  ['person','stoneHoe',1,1,[['farmer',1]],'농부'],
  ['person','cord',1,1,[['herder',1]],'목축민']
@@ -277,6 +281,7 @@ function specialAction(a,b){
  if(has('fishHook','river'))return {ms:1200,label:'낚시 자리 찾는 중',consume:null,preserve:null,out:[['fishingSpot',1]],discover:'낚시 자리'};
  if(has('net','river'))return {ms:1500,label:'그물 설치 중',consume:null,preserve:null,out:[['netSpot',1]],discover:'그물 어로'};
  if(has('fishTrap','river'))return {ms:1500,label:'통발 설치 중',consume:null,preserve:null,out:[['trapSpot',1]],discover:'통발 어로'};
+ if(has('sickle','wildMillet'))return {ms:1300,label:'돌낫으로 수확 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',2]],discover:'돌낫 수확',life:'farm'};
  return null;
 }
 
@@ -284,7 +289,7 @@ function runAction(worker,node,d){
  const run=state.runId;worker.busy=true;node.busy=true;markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);snap(worker,node);
  setTimeout(()=>{if(state.over||run!==state.runId)return;worker.busy=false;worker.el.classList.remove('busy');if(state.cards.has(node.id)){if(d.consumeNode)removeCard(node);else{node.busy=false;node.el.classList.remove('busy');}}
   d.out.forEach((o,i)=>addCard(o[0],worker.x+108+i*20,worker.y+i*18,o[1]||1));state.stats.gathered+=d.out.reduce((s,o)=>s+(o[1]||1),0);
-  if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);renderAll();checkMilestone();},d.ms);
+  if(!d.consumeNode&&state.cards.has(node.id))separate(worker,node);if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);renderAll();checkMilestone();},d.ms);
 }
 
 function runSpecial(a,b,d){
@@ -293,7 +298,7 @@ function runSpecial(a,b,d){
   [a,b].forEach(c=>{if(state.cards.has(c.id)){c.busy=false;c.el.classList.remove('busy');}});
   if(d.consume){const c=a.type===d.consume?a:b;consume(c,1);}
   const base=state.cards.has(b.id)?b:(state.cards.has(a.id)?a:null),x=base?base.x:120,y=base?base.y:120;
-  d.out.forEach((o,i)=>addCard(o[0],x+112+i*20,y+i*20,o[1]||1));discover(d.discover);renderAll();checkMilestone();
+  d.out.forEach((o,i)=>addCard(o[0],x+112+i*20,y+i*20,o[1]||1));if(state.cards.has(a.id)&&state.cards.has(b.id))separate(a,b);if(d.life)addLife(d.life,d.lifeGain||1);discover(d.discover);renderAll();checkMilestone();
  },d.ms);
 }
 
