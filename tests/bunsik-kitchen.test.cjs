@@ -13,9 +13,9 @@ const js = fs.readFileSync(path.join(gameDir, 'bunsik-kitchen.js'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
-test('Bunsik Kitchen v8 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=8/);
-  assert.match(html, /bunsik-kitchen\.js\?v=8/);
+test('Bunsik Kitchen v9 keeps the 3D kitchen visually dominant', () => {
+  assert.match(html, /bunsik-kitchen\.css\?v=9/);
+  assert.match(html, /bunsik-kitchen\.js\?v=9/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -108,22 +108,81 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
   assert.match(js, /CUSTOMER_MODELS/);
 });
 
-test('catalog and compatibility entry publish v8', () => {
+test('catalog and compatibility entry publish v9', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=8');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=9');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=8/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=8/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=9/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=9/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
-test('Bunsik Kitchen build script publishes v8', () => {
+test('Bunsik Kitchen build script publishes v9', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=8/);
+  assert.match(build,/\?v=9/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
 
+
+
+
+test('Bunsik Kitchen v9 adds a PlateUp-style prep phase and movable layout stations', () => {
+  assert.match(html, /id="prepBar" class="prep-bar hidden"/);
+  assert.match(html, /id="openShopBtn"/);
+  assert.match(html, /id="stationHint"/);
+  assert.match(js, /phase:'idle'/);
+  assert.match(js, /function beginService\(\)/);
+  assert.match(js, /state\.phase='prep'/);
+  assert.match(js, /state\.phase='service'/);
+  assert.match(js, /makeLayoutStation\(/);
+  assert.match(js, /pointerDown\(e\)/);
+  assert.match(js, /pointerMove\(e\)/);
+  assert.match(js, /Math\.round\(p\.x\*2\)\/2/);
+  assert.match(css, /\.prep-bar\{/);
+  assert.match(css, /\.layout-mode #gameCanvas/);
+});
+
+test('Bunsik Kitchen v9 uses committed CC0 restaurant assets for sink, fridge and dish rack', () => {
+  const required = [
+    'assets/game/3d/bakery/restaurant-bits/kitchencounter-sink.glb',
+    'assets/game/3d/bakery/restaurant-bits/fridge-a.glb',
+    'assets/game/3d/bakery/restaurant-bits/dishrack-plates.glb',
+    'assets/game/3d/bakery/restaurant-bits/plate-dirty.glb'
+  ];
+  for (const rel of required) assert.ok(fs.existsSync(path.join(root,rel)), 'missing PlateUp-style asset: '+rel);
+  assert.match(js, /const BAKERY_BITS=/);
+  assert.match(js, /'kitchencounter-sink\.glb'/);
+  assert.match(js, /'dishrack-plates\.glb'/);
+  assert.match(js, /'plate-dirty\.glb'/);
+});
+
+test('Bunsik Kitchen v9 adds player movement and proximity interaction', () => {
+  assert.match(html, /id="moveControls"/);
+  assert.match(html, /data-move="ArrowUp"/);
+  assert.match(html, /data-interact/);
+  assert.match(js, /makePlayer\(\)/);
+  assert.match(js, /updatePlayer\(dt\)/);
+  assert.match(js, /setMoveKey\(code,on\)/);
+  assert.match(js, /interactNearest\(\)/);
+  assert.match(js, /KeyW/);
+  assert.match(js, /KeyE/);
+  assert.match(js, /stationDistance\(group\)/);
+  assert.match(css, /\.move-controls\{/);
+});
+
+test('Bunsik Kitchen v9 turns plates into a reusable washing bottleneck', () => {
+  assert.match(html, /id="dishStatus"/);
+  assert.match(js, /cleanPlates:3,dirtyPlates:0/);
+  assert.match(js, /if\(state\.cleanPlates<=0\)/);
+  assert.match(js, /state\.cleanPlates=Math\.max\(0,state\.cleanPlates-1\)/);
+  assert.match(js, /function addDirtyPlate\(\)/);
+  assert.match(js, /function washOnePlate\(\)/);
+  assert.match(js, /state\.dirtyPlates=Math\.max\(0,state\.dirtyPlates-1\)/);
+  assert.match(js, /state\.cleanPlates\+=1/);
+  assert.match(js, /setTimeout\(\(\)=>\{if\(state\.running\)addDirtyPlate\(\)\},1050\)/);
+  assert.match(css, /\.dish-stat/);
+});
 
 test('Bunsik Kitchen delegates restaurant state to the shared engine', () => {
   assert.match(js, /import \{ RestaurantEngine \} from '\.\.\/shared\/restaurant-engine\.js\?v=1'/);
