@@ -356,10 +356,11 @@ class RamenKitchen3D{
   return true
  }
  returnHelperCarry(){
-  if(!this.helperCarry)return;
+  if(!this.helperCarry)return false;
   const preferred=this.helperTask?.counter;
   const target=preferred&&!preferred.userData.storedItem?preferred:this.layoutStations.map(s=>s.group).find(g=>g.userData.storageSlot&&!g.userData.storedItem);
-  if(target){target.userData.storedItem={...this.helperCarry};this.syncCounterVisual(target);this.setHelperCarry(null)}
+  if(target){target.userData.storedItem={...this.helperCarry};this.syncCounterVisual(target);this.setHelperCarry(null);return true}
+  this.setHelperCarry(null);return false
  }
  updateHelper(dt){
   if(!state.helperUnlocked||!this.helper){return}
