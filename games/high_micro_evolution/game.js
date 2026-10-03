@@ -730,6 +730,12 @@ function advanceGeneration(){
   else if(colonyPromotion)toast('🌐 군체 진화 성공! 여러 세포가 붙어 하나의 생물처럼 협력하기 시작했습니다.');
   else toast('🧬 '+state.generation+'세대 탄생! DNA +2 · 환경은 시간이 지나면 평상 상태로 돌아갑니다.');
   const promoted=colonyPromotion||multicellularPromotion;
+  try{
+    KidscadeGame?.achievement?.('high_micro_evolution.first_generation');
+    KidscadeGame?.achievementProgress?.('high_micro_evolution.generations_10',state.reproductions);
+    if(colonyPromotion)KidscadeGame?.achievement?.('high_micro_evolution.colony');
+    if(multicellularPromotion)KidscadeGame?.achievement?.('high_micro_evolution.multicellular');
+  }catch(_){}
   sound('generation',{volume:promoted?.34:.28,rate:multicellularPromotion?.82:colonyPromotion?.92:1.03});setTimeout(()=>sound('reward',{volume:.11,rate:promoted?.72:.84}),70);save();
 }
 function updateMissions(){
