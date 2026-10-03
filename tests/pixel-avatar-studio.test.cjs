@@ -22,8 +22,8 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
   assert.match(html,/pixel-avatar-renderer\.js\?v=26/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=29/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=29'));
+  assert.match(html,/avatar-pixel-studio\.js\?v=30/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=30'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -47,17 +47,17 @@ test('pixel avatar studio exposes only the curated standalone hair catalog',()=>
   assert.match(js,/blush:4/);
 });
 
-test('avatar studio exposes live stand idle walk and jump preview controls',()=>{
+test('avatar studio exposes one stand idle walk and jump preview controller',()=>{
   assert.equal((html.match(/id="motionControls"/g)||[]).length,1);
   assert.match(html,/data-motion="static"/);
   assert.match(html,/data-motion="idle"/);
   assert.match(html,/data-motion="walk"/);
   assert.match(html,/data-motion="jump"/);
+  assert.match(js,/function startPreviewMode\(mode='static'\)/);
   assert.match(js,/function setPreviewMode\(mode\)/);
-  assert.match(js,/function previewLoop\(now\)/);
+  assert.match(js,/function previewTick\(now\)/);
   assert.match(js,/Math\.sin\(Math\.PI\*phase\)/);
-  assert.match(js,/getPreviewMode:\(\)=>previewMode/);
-  assert.match(css,/\.motion-controls/);
+  assert.match(js,/setPreviewMode:startPreviewMode/);
   assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
@@ -195,18 +195,6 @@ test('animated clothes use a small walk-only coverage guard',()=>{
   assert.match(lowerClothesExtract,/WALK_MAX_W = 46/);
   assert.match(upperClothesExtract,/approved\/hair-male-01\.png/);
   assert.match(lowerClothesExtract,/approved\/hair-male-01\.png/);
-});
-
-test('avatar studio exposes stand idle walk and jump preview controls',()=>{
-  assert.match(html,/id="motionControls"/);
-  assert.match(html,/data-motion="static"/);
-  assert.match(html,/data-motion="idle"/);
-  assert.match(html,/data-motion="walk"/);
-  assert.match(html,/data-motion="jump"/);
-  assert.match(js,/function setPreviewMode\(mode\)/);
-  assert.match(js,/animationCanvases=\{idle:\[\],walk:\[\]\}/);
-  assert.match(js,/Math\.sin\(Math\.PI\*phase\)/);
-  assert.match(css,/\.motion-btn\.active/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{

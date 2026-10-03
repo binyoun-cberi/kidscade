@@ -145,6 +145,107 @@ async function drawTo(targetCtx,targetState=state,frame=null){
   staticPreviewCtx.drawImage(off,0,0);
   staticPreviewReady=true;
 }
+function previewFrameRecord(mode,elapsedSec){
+  const set=animationManifest?.frameSets?.[mode];
+  const frames=set?.frames||[];
+  if(!frames.length)return null;
+  const fps=Math.max(1,Number(set.fps)||(mode==='walk'?6:3));
+  return frames[Math.floor(Math.max(0,elapsedSec)*fps)%frames.length]||frames[0];
+}
+function resetPreviewTransform(){
+  canvas.style.transform='translateY(2%)';
+}
+function syncMotionButtons(){
+  motionControls?.querySelectorAll('[data-motion]').forEach(button=>{
+    const active=button.dataset.motion===previewMode;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',active?'true':'false');
+  });
+}
+function drawStaticPreview(){
+  resetPreviewTransform();
+  if(!staticPreviewReady)return;
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,128,128);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(staticPreviewCanvas,0,0);
+  ctx.restore();
+}
+async function drawLivePreview(frame){
+  if(previewRenderBusy)return;
+  previewRenderBusy=true;
+  try{
+    const r=await ensureRenderer();
+    const my=++renderToken;
+    const off=document.createElement('canvas');
+    off.width=128;off.height=128;
+    const offCtx=off.getContext('2d',{alpha:true});
+    offCtx.imageSmoothingEnabled=false;
+    await r.renderTo(offCtx,rendererConfig(state,'static'),frame,extraParts);
+    if(my!==renderToken)return;
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,128,128);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(off,0,0);
+    ctx.restore();
+  }finally{
+    previewRenderBusy=false;
+  }
+}
+function stopPreviewMode(){
+  if(previewRaf)cancelAnimationFrame(previewRaf);
+  previewRaf=0;
+  previewLastFrameKey='';
+  resetPreviewTransform();
+}
+function previewTick(now){
+  previewRaf=0;
+  if(previewMode==='static'){
+    drawStaticPreview();
+    return;
+  }
+
+  const elapsed=Math.max(0,(now-previewStartedAt)/1000);
+  let frame=null;
+  let frameKey='';
+
+  if(previewMode==='jump'){
+    frame=animationManifest?.frameSets?.idle?.frames?.[0]||null;
+    const duration=.9;
+    const phase=(elapsed%duration)/duration;
+    const lift=Math.sin(Math.PI*phase);
+    const rise=(lift*13).toFixed(2);
+    canvas.style.transform=`translateY(calc(2% - ${rise}%))`;
+    frameKey='jump';
+  }else{
+    frame=previewFrameRecord(previewMode,elapsed);
+    frameKey=previewMode+':'+(frame?.id||'static');
+    resetPreviewTransform();
+  }
+
+  if(frameKey!==previewLastFrameKey&&!previewRenderBusy){
+    previewLastFrameKey=frameKey;
+    drawLivePreview(frame).catch(err=>console.error(err));
+  }
+  previewRaf=requestAnimationFrame(previewTick);
+}
+function startPreviewMode(mode='static'){
+  const next=['static','idle','walk','jump'].includes(mode)?mode:'static';
+  stopPreviewMode();
+  previewMode=next;
+  previewStartedAt=performance.now();
+  syncMotionButtons();
+  if(previewMode==='static'){
+    drawStaticPreview();
+    return;
+  }
+  previewRaf=requestAnimationFrame(previewTick);
+}
+function setPreviewMode(mode){
+  startPreviewMode(mode);
+}
 async function refreshAnimationCache(){
   const token=++animationCacheToken;
   const r=await ensureRenderer();
