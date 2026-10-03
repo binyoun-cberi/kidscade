@@ -262,3 +262,16 @@ test('common game start screen owns deferred launch and shared errors', () => {
   assert.match(frame, /게임을 불러오지 못했어요/);
   assert.match(frame, /다시 불러오기/);
 });
+
+
+test('retired standalone aquarium and hamster rooms stay removed', () => {
+  const base = read('index_base.html');
+  const css = read('main-shell.css');
+  const updater = read('auto-update.js');
+  const clarity = read('ui-clarity-overhaul.js');
+  assert.equal(fs.existsSync(path.join(ROOT, 'kidscade_aquarium.html')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'kidscade_hamster_home.html')), false);
+  for (const source of [base, css, updater, clarity]) {
+    assert.doesNotMatch(source, /aquarium-modal|hamster-modal|btn-open-aquarium|btn-open-hamster/);
+  }
+});
