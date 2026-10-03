@@ -452,7 +452,7 @@ function applyTower(t,e){
   hitBurst(e.pos,def.color);feed(label,def.color);sfx.shoot();if(e.hp===1)purifyEnemy(e)
 }
 function purifyEnemy(e){
-  const reward=Math.max(8,Math.min(120,Math.round(e.max*1.8)));state.money+=reward;state.kills++;state.enemies=state.enemies.filter(x=>x!==e);const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);
+  const reward=Math.max(8,Math.min(40,8+Math.ceil(Math.log2(e.max+1))*3+(e.chain||0)*2));state.money+=reward;state.kills++;state.enemies=state.enemies.filter(x=>x!==e);const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);
   state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(0,1.05,0)),text:'완전 분해! +'+reward,color:'#86efac',life:1.0});burst(e.pos,'#86efac');syncHUD()
 }
 function hitBurst(pos,color){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:colorHex(color)}));m.position.copy(pos).add(new THREE.Vector3(0,.52,0));fxGroup.add(m);state.particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*1.6,.7+Math.random()*1.4,(Math.random()-.5)*1.6),life:.2+Math.random()*.18})}}
@@ -462,7 +462,7 @@ function startWave(){
   if(state.waveActive||state.gameOver)return;const cfg=waveConfig();state.waveActive=true;state.spawnQueue=[];for(let i=0;i<cfg.count;i++)state.spawnQueue.push(cfg.nums[i%cfg.nums.length]);state.spawnTimer=.35;sfx.click();$('startWaveBtn').disabled=true;syncHUD()
 }
 function waveClear(){
-  state.waveActive=false;const bonus=120+state.wave*35;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('감염 웨이브 정화 완료! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
+  state.waveActive=false;const bonus=70+state.wave*18;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('감염 웨이브 정화 완료! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
 }
 function loseCore(e){
   const dmg=Math.max(1,Math.ceil(e.hp/5));state.lives-=dmg;const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);state.enemies=state.enemies.filter(x=>x!==e);core.userData.orb.scale.setScalar(1.3);setTimeout(()=>core.userData.orb.scale.setScalar(1),150);sfx.hit();if(state.lives<=0)gameOver();syncHUD()
