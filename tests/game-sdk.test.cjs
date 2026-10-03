@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 test('Game SDK exposes the stable v1 contract', () => {
   assert.equal(sdk.VERSION, 1);
-  for (const name of ['init','start','pause','resume','registerPauseHandlers','registerCleanup','dispose','sound','setMuted','score','gameOver','restart','exit','state']) {
+  for (const name of ['init','start','pause','resume','registerPauseHandlers','registerCleanup','dispose','sound','setMuted','score','gameOver','achievement','achievementProgress','achievementIncrement','restart','exit','state']) {
     assert.equal(typeof sdk[name], 'function', `${name} must be a function`);
   }
 });
@@ -59,4 +59,13 @@ test('Game SDK handles the shared game-exit cleanup lifecycle', () => {
   assert.match(source, /function registerCleanup\(/);
   assert.match(source, /function dispose\(/);
   assert.match(source, /cleanupHandlers\.clear\(\)/);
+});
+
+
+test('Game SDK achievement helpers use the common event channel', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'kidscade-game-sdk.js'), 'utf8');
+  assert.match(source, /function achievement\(/);
+  assert.match(source, /function achievementProgress\(/);
+  assert.match(source, /function achievementIncrement\(/);
+  assert.match(source, /emit\('achievement'/);
 });
