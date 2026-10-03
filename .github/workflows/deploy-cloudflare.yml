@@ -44,11 +44,11 @@ jobs:
       - name: Check platform health baseline
         run: npm run health:strict
 
-      - name: Run regression tests and audits
-        run: npm run test:ci
-
       - name: Build Cloudflare artifact
         run: npm run build:cloudflare
+
+      - name: Run regression tests and audits
+        run: npm run test:ci
 
       - name: Verify Cloudflare token identity
         run: npx wrangler whoami
