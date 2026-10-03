@@ -222,6 +222,227 @@ function bboxOfCanvas(c,alphaCut=1){
   return maxX>=minX?{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1,maxX,maxY}:null;
 }
 
+
+function canvasChecksum(c){
+  const d=c.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data;
+  let hash=0x811c9dc5;
+  for(let i=0;i<d.length;i++){hash^=d[i];hash=Math.imul(hash,0x01000193)>>>0}
+  return hash.toString(16).padStart(8,'0');
+}
+
+function sparsePixelsOfCanvas(c,alphaCut=1){
+  const d=c.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data,out=[];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const i=(y*SIZE+x)*4,a=d[i+3];
+    if(a<alphaCut)continue;
+    out.push([x,y,d[i],d[i+1],d[i+2],a]);
+  }
+  return out;
+}
+
+function alphaRunsOfCanvas(c,alphaCut=1){
+  const d=c.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data,rows=[];
+  for(let y=0;y<SIZE;y++){
+    const runs=[];let start=-1;
+    for(let x=0;x<SIZE;x++){
+      const on=d[(y*SIZE+x)*4+3]>=alphaCut;
+      if(on&&start<0)start=x;
+      if((!on||x===SIZE-1)&&start>=0){
+        const end=on&&x===SIZE-1?x:x-1;
+        runs.push([start,end]);start=-1;
+      }
+    }
+    if(runs.length)rows.push([y,runs]);
+  }
+  return rows;
+}
+
+function canvasMetrics(c){
+  const d=c.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data;
+  let count=0,sx=0,sy=0,sa=0;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const a=d[(y*SIZE+x)*4+3];
+    if(!a)continue;
+    const w=a/255;count++;sx+=x*w;sy+=y*w;sa+=w;
+  }
+  const box=bboxOfCanvas(c,1);
+  return {
+    bbox:box?{x:box.x,y:box.y,w:box.w,h:box.h,maxX:box.maxX,maxY:box.maxY}:null,
+    pixelCount:count,
+    centerOfMass:sa?[Number((sx/sa).toFixed(3)),Number((sy/sa).toFixed(3))]:null,
+    checksum:canvasChecksum(c)
+  };
+}
+
+function buildPartAnalysis(layer=activeLayer){
+  if(!LAYERS.includes(layer))throw new Error('지원하지 않는 파츠입니다: '+layer);
+  const framesOut={};
+  for(const frame of FRAMES){
+    const part=layerCanvas(frame.id,layer),body=layerCanvas(frame.id,'body');
+    framesOut[frame.id]={
+      kind:frame.kind,
+      frameNumber:frame.n,
+      part:{
+        ...canvasMetrics(part),
+        pixels:sparsePixelsOfCanvas(part,1)
+      },
+      bodyGuide:{
+        ...canvasMetrics(body),
+        alphaRuns:alphaRunsOfCanvas(body,24)
+      }
+    };
+  }
+  const meta=assetMeta(currentFrame,layer);
+  return {
+    version:1,
+    type:'kidscade-avatar-part-analysis',
+    createdAt:new Date().toISOString(),
+    canvas:{width:SIZE,height:SIZE,origin:'top-left'},
+    avatar:{facing:'left',logicalRoot:[ROOT_X,82],groundY:GROUND_Y,mirrorForRight:true},
+    target:{
+      layer,
+      label:partLabel(layer),
+      assetId:assetIdForLayer(layer),
+      selectedAsset:meta||null
+    },
+    frameOrder:FRAMES.map(f=>f.id),
+    frames:framesOut,
+    adjustmentContract:{
+      type:'kidscade-avatar-part-adjustment',
+      version:1,
+      target:{layer,assetId:assetIdForLayer(layer),canvas:[SIZE,SIZE]},
+      frames:{
+        'walk-02':{
+          baseChecksum:'use frames.walk-02.part.checksum from this analysis',
+          copyFrom:'optional frame id, e.g. stand-01',
+          operations:[
+            {op:'translate',dx:0,dy:0},
+            {op:'moveRect',rect:{x:0,y:0,w:1,h:1},dx:0,dy:0},
+            {op:'setPixels',pixels:[[0,0,0,0,0,0]]},
+            {op:'replacePixels',pixels:[[0,0,255,255,255,255]]}
+          ],
+          note:'optional explanation'
+        }
+      },
+      rules:[
+        'Only include frames that need changes.',
+        'Coordinates are integer pixels in the 128x128 top-left origin canvas.',
+        'replacePixels clears the target frame first; omitted pixels become transparent.',
+        'setPixels changes only listed pixels. RGBA alpha 0 clears a pixel.',
+        'moveRect moves an existing rectangular pixel region before later operations.',
+        'Operations execute in listed order after optional copyFrom.'
+      ]
+    }
+  };
+}
+
+function exportPartAnalysisFile(){
+  const data=buildPartAnalysis(activeLayer);
+  const name=safeId(assetIdForLayer(activeLayer),activeLayer)+'_'+activeLayer+'_analysis.json';
+  downloadBlob(name,new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
+  setStatus(partLabel(activeLayer)+' 분석 파일 저장됨 · ChatGPT에 업로드해 보정 JSON을 요청할 수 있습니다.');
+}
+
+function snapshotFrameLayer(frameId,layer){
+  const c=layerCtx(frameId,layer);if(!c)return;
+  const key=historyKey(frameId,layer),h=history.get(key)||{undo:[],redo:[]};
+  h.undo.push(c.getImageData(0,0,SIZE,SIZE));
+  if(h.undo.length>40)h.undo.shift();
+  h.redo=[];history.set(key,h);
+}
+
+function translateCanvasInPlace(c,dx,dy){
+  const temp=makeCanvas();temp.getContext('2d',{alpha:true}).drawImage(c.canvas||c,0,0);
+}
+
+function shiftLayerFrame(frameId,layer,dx,dy){
+  const cvs=layerCanvas(frameId,layer),c=layerCtx(frameId,layer);
+  if(!cvs||!c)return;
+  const temp=makeCanvas();temp.getContext('2d',{alpha:true}).drawImage(cvs,0,0);
+  c.clearRect(0,0,SIZE,SIZE);c.drawImage(temp,Math.round(dx)||0,Math.round(dy)||0);
+}
+
+function moveRectOnFrame(frameId,layer,rect,dx,dy){
+  const c=layerCtx(frameId,layer);if(!c)return;
+  const x=clamp(Math.round(Number(rect?.x)||0),0,SIZE-1),y=clamp(Math.round(Number(rect?.y)||0),0,SIZE-1);
+  const w=clamp(Math.round(Number(rect?.w)||1),1,SIZE-x),h=clamp(Math.round(Number(rect?.h)||1),1,SIZE-y);
+  const nx=clamp(x+(Math.round(Number(dx)||0)),0,SIZE-w),ny=clamp(y+(Math.round(Number(dy)||0)),0,SIZE-h);
+  const temp=makeCanvas(w,h),tc=temp.getContext('2d',{alpha:true});
+  tc.putImageData(c.getImageData(x,y,w,h),0,0);
+  c.clearRect(x,y,w,h);c.drawImage(temp,nx,ny);
+}
+
+function applyPixelTuples(frameId,layer,pixels,{replace=false}={}){
+  const c=layerCtx(frameId,layer);if(!c)return;
+  if(replace)c.clearRect(0,0,SIZE,SIZE);
+  const img=c.getImageData(0,0,SIZE,SIZE),d=img.data;
+  for(const p of Array.isArray(pixels)?pixels:[]){
+    if(!Array.isArray(p)||p.length<6)continue;
+    const x=Math.round(Number(p[0])),y=Math.round(Number(p[1]));
+    if(x<0||y<0||x>=SIZE||y>=SIZE)continue;
+    const i=(y*SIZE+x)*4;
+    d[i]=clamp(Math.round(Number(p[2])||0),0,255);
+    d[i+1]=clamp(Math.round(Number(p[3])||0),0,255);
+    d[i+2]=clamp(Math.round(Number(p[4])||0),0,255);
+    d[i+3]=clamp(Math.round(Number(p[5])||0),0,255);
+  }
+  c.putImageData(img,0,0);
+}
+
+function validateAdjustmentFile(data){
+  if(!data||data.type!=='kidscade-avatar-part-adjustment'||Number(data.version)!==1)throw new Error('Kidscade AI 보정 파일 형식이 아닙니다.');
+  const layer=data.target?.layer;
+  if(!LAYERS.includes(layer))throw new Error('알 수 없는 대상 파츠: '+String(layer||'없음'));
+  if(data.target?.canvas&&(Number(data.target.canvas[0])!==SIZE||Number(data.target.canvas[1])!==SIZE))throw new Error('128×128 보정 파일만 적용할 수 있습니다.');
+  if(!data.frames||typeof data.frames!=='object')throw new Error('frames 보정 정보가 없습니다.');
+  for(const [frameId,plan] of Object.entries(data.frames)){
+    if(!frames.has(frameId))throw new Error('알 수 없는 프레임: '+frameId);
+    if(plan?.copyFrom&&!frames.has(plan.copyFrom))throw new Error(frameId+'의 copyFrom 프레임을 찾을 수 없습니다.');
+    for(const op of Array.isArray(plan?.operations)?plan.operations:[]){
+      if(!['translate','moveRect','setPixels','replacePixels'].includes(op?.op))throw new Error(frameId+'에 지원하지 않는 op가 있습니다: '+String(op?.op));
+    }
+  }
+  return layer;
+}
+
+async function applyPartAdjustment(data){
+  const layer=validateAdjustmentFile(data),mismatches=[];
+  for(const [frameId,plan] of Object.entries(data.frames)){
+    if(plan?.baseChecksum&&canvasChecksum(layerCanvas(frameId,layer))!==String(plan.baseChecksum))mismatches.push(frameId);
+  }
+  if(mismatches.length&&!confirm('분석 이후 '+mismatches.join(', ')+' 프레임의 픽셀이 바뀌었습니다. 그래도 AI 보정을 적용할까요?'))return false;
+
+  let changed=0;
+  for(const [frameId,plan] of Object.entries(data.frames)){
+    snapshotFrameLayer(frameId,layer);
+    if(plan.copyFrom){
+      const dst=layerCtx(frameId,layer),src=layerCanvas(plan.copyFrom,layer);
+      dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);
+      setAssetMeta(frameId,layer,assetMeta(plan.copyFrom,layer));
+    }
+    for(const op of Array.isArray(plan.operations)?plan.operations:[]){
+      if(op.op==='translate')shiftLayerFrame(frameId,layer,op.dx,op.dy);
+      else if(op.op==='moveRect')moveRectOnFrame(frameId,layer,op.rect,op.dx,op.dy);
+      else if(op.op==='setPixels')applyPixelTuples(frameId,layer,op.pixels,{replace:false});
+      else if(op.op==='replacePixels')applyPixelTuples(frameId,layer,op.pixels,{replace:true});
+    }
+    if(!assetMeta(frameId,layer))setAssetMeta(frameId,layer,{layer,id:data.target?.assetId||assetIdForLayer(layer),label:(data.target?.assetId||assetIdForLayer(layer))+' · AI 보정',file:null,custom:true});
+    changed++;
+  }
+  const field=LAYER_ID_FIELDS[layer];
+  if(field&&data.target?.assetId&&$(field))$(field).value=data.target.assetId;
+  stopPlayback();selectLayer(layer);
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
+  setStatus(partLabel(layer)+' AI 보정 적용 완료 · '+changed+'개 프레임');
+  return true;
+}
+
+function refreshAdjustmentSummary(){
+  const el=$('adjustmentSummary');if(!el)return;
+  const filled=FRAMES.filter(f=>hasInk(layerCanvas(f.id,activeLayer))).length;
+  el.textContent='대상: '+partLabel(activeLayer)+' · '+assetIdForLayer(activeLayer)+' · 픽셀 존재 '+filled+' / '+FRAMES.length+' 프레임';
+}
+
 function draftBodySourceUrl(index){
   const sec=String(DRAFT_BODY_SOURCE_SECONDS[index]).padStart(2,'0');
   const file='ChatGPT 이미지 2026년 10월 3일 오후 08_59_'+sec+'-'+String(index+1)+'.png';
@@ -437,7 +658,7 @@ function selectLayer(layer){
   else render();
   refreshNudgeMode();syncLayerSelect();
   const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(activeLayer)){category.value=activeLayer;renderAssetGrid()}
-  renderSelectedAssetList();refreshFocusToggle();
+  renderSelectedAssetList();refreshFocusToggle();refreshAdjustmentSummary();
   setStatus(frameRecord().label+' · '+(LAYER_LABELS[activeLayer]||activeLayer)+' 편집');
 }
 
@@ -502,7 +723,7 @@ function paintAt(x,y){
 }
 
 function afterEdit(message='수정됨'){
-  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
 }
 function scheduleSave(){
   clearTimeout(saveTimer);
@@ -1047,6 +1268,18 @@ function bind(){
   $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
   $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
 
+  $('exportPartAnalysis')?.addEventListener('click',exportPartAnalysisFile);
+  $('importPartAdjustment')?.addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{
+      const data=JSON.parse(await file.text());
+      await applyPartAdjustment(data);
+    }catch(err){
+      setStatus('AI 보정 파일 적용 실패: '+(err?.message||err),true);
+    }
+    e.target.value='';
+  });
+
   $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
   $('playStand').addEventListener('click',()=>startPlayback('stand'));
@@ -1127,7 +1360,7 @@ async function init(){
   await restoreLocal();
   selectLayer('body');selectTool('pencil');selectFrame('stand-01');
   if(allBodyFramesEmpty())await loadDraftBodySet(false);
-  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();
+  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();refreshAdjustmentSummary();
   if(!allBodyFramesEmpty())setStatus('아바타 제작실 준비됨 · 왼쪽 에셋을 눌러 조합하세요.');
 }
 
