@@ -2,16 +2,16 @@
 'use strict';
 
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
-const ASSET_REV='21';
+const ASSET_REV='22';
 function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v2-rig-hairfit-11';
+const PREVIEW_VERSION='pixel-v2-rig-haircatalog-1';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=rev(ROOT+'/base/master-base-128.png');
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
-const DEFAULT={hairSet:'male',hair:1,upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
+const DEFAULT={hairId:'clean-01',upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
 const folders={eyes:'eyes',eyebrows:'eyebrows',noses:'noses',mouths:'mouths',blush:'blush'};
 const prefixes={eyes:'eyes',eyebrows:'eyebrows',noses:'nose',mouths:'mouth',blush:'blush'};
@@ -29,7 +29,6 @@ const toast=document.getElementById('toast');
 const seedBadge=document.getElementById('seedBadge');
 
 let currentTab='hair';
-let hairFilterValue='all';
 let seeds=0;
 let renderToken=0;
 let animationCacheToken=0;
@@ -48,8 +47,7 @@ function safeJson(raw){
 function loadStateFromObject(raw){
   raw=raw&&typeof raw==='object'?raw:{};
   return {
-    hairSet:raw.hairSet==='female'?'female':'male',
-    hair:clampInt(raw.hair,1,24,DEFAULT.hair),
+    hairId:typeof raw.hairId==='string'&&raw.hairId?raw.hairId:DEFAULT.hairId,
     upper:clampInt(raw.upper,0,1,DEFAULT.upper),
     lower:clampInt(raw.lower,0,1,DEFAULT.lower),
     eyes:clampInt(raw.eyes,1,8,DEFAULT.eyes),
@@ -62,15 +60,8 @@ function loadStateFromObject(raw){
 function legacyMigrationState(){
   const old=safeJson(localStorage.getItem(LEGACY_EQUIPPED_KEY));
   if(!old||typeof old!=='object')return {...DEFAULT};
-  const femaleHair=['hair_bob','hair_pony','hair_buns','hair_wave','hair_twin'];
-  const hairMap={
-    hair_short:1,hair_spike:4,hair_curl:8,hair_mushroom:13,
-    hair_bob:3,hair_pony:7,hair_buns:10,hair_wave:14,hair_twin:18
-  };
   return {
     ...DEFAULT,
-    hairSet:femaleHair.includes(old.hair)?'female':'male',
-    hair:hairMap[old.hair]||1,
     upper:old.top==='top_hoodie'||old.top==='top_varsity'?1:DEFAULT.upper,
     lower:old.bottom==='bottom_jeans'||old.bottom==='bottom_track'?1:DEFAULT.lower
   };
@@ -85,7 +76,6 @@ function loadState(){
 let state=loadState();
 
 function pad(n){return String(n).padStart(2,'0');}
-function hairPath(layer,set,n){return rev(`${ROOT}/hair/${layer}/${set}/hair-${layer}-${set}-${pad(n)}.png`);}
 function upperPath(n,frameFile=''){
   return n===1?rev(`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/${frameFile||'static.png'}`):'';
 }
@@ -98,8 +88,7 @@ function facePath(type,n){
 }
 function rendererConfig(s=state,animation='static'){
   return {
-    hairSet:s.hairSet,
-    hairStyle:s.hair,
+    hairId:s.hairId,
     upper:s.upper,
     lower:s.lower,
     eyes:s.eyes,
@@ -116,6 +105,7 @@ async function ensureRenderer(){
   if(!api?.create)throw new Error('Kidscade avatar rig renderer is missing.');
   renderer=await api.create(canvas,{playing:false,config:rendererConfig(state)});
   animationManifest=renderer.animationManifest;
+  state.hairId=renderer.normalizeConfig({hairId:state.hairId}).hairId;
   return renderer;
 }
 async function drawTo(targetCtx,targetState=state,frame=null){
@@ -162,7 +152,7 @@ async function refreshAnimationCache(){
 function previewData(){try{return canvas.toDataURL('image/png');}catch(_){return '';}}
 function publish(showToast=false){
   try{
-    localStorage.setItem(STATE_KEY,JSON.stringify({version:2,...state}));
+    localStorage.setItem(STATE_KEY,JSON.stringify({version:3,...state}));
     const data=previewData();
     if(data){
       localStorage.setItem(PREVIEW_KEY,data);
@@ -178,9 +168,15 @@ async function renderAndPublish(showToast=false){
   await refreshAnimationCache().catch(()=>{});
   publish(showToast);
 }
+function approvedHairs(){
+  return (renderer?.hairManifest?.items||[]).filter(item=>item?.approved!==false&&item?.id&&item?.front);
+}
+function hairRecord(id){
+  return approvedHairs().find(item=>item.id===id)||approvedHairs()[0]||null;
+}
 function updateSummary(){
-  const style=state.hairSet==='female'?'스타일 B':'스타일 A';
-  styleSummary.textContent=`${style} ${state.hair} · ${state.upper?'파란 후드':'기본 상의'} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
+  const hair=hairRecord(state.hairId);
+  styleSummary.textContent=`${hair?.name||'기본 헤어'} · ${state.upper?'파란 후드':'기본 상의'} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
 }
 function flash(text){
   toast.textContent=text;
@@ -191,11 +187,13 @@ function flash(text){
 function optionButton(label,index,active,thumbHTML,attrs=''){
   return `<button type="button" class="option${active?' active':''}" ${attrs} aria-label="${label} ${index}">${thumbHTML}<span class="num">${index}</span></button>`;
 }
-function hairThumb(set,n){
-  return `<span class="hair-thumb">
-    <img class="base" alt="" src="${BASE}">
-    <img class="front" alt="" src="${hairPath('front',set,n)}">
-  </span>`;
+function hairAssetUrl(path){
+  return rev(`${ROOT.replace(/\/runtime$/,'')}/${path}`);
+}
+function hairThumb(item){
+  const back=item?.back?`<img class="back" alt="" src="${hairAssetUrl(item.back)}">`:'';
+  const front=item?.front?`<img class="front" alt="" src="${hairAssetUrl(item.front)}">`:'';
+  return `<span class="hair-thumb">${back}<img class="base" alt="" src="${BASE}">${front}</span>`;
 }
 function clothesThumb(path){
   return `<span class="hair-thumb"><img class="base" alt="" src="${BASE}">${path?`<img class="front" alt="" src="${path}">`:''}</span>`;
@@ -208,17 +206,13 @@ function partThumb(type,n){
 }
 function renderOptions(){
   if(currentTab==='hair'){
-    hairFilter.hidden=false;
-    pickerTitle.textContent='헤어스타일';
-    const sets=hairFilterValue==='all'?['male','female']:[hairFilterValue];
-    const items=[];
-    sets.forEach(set=>{
-      for(let n=1;n<=24;n++){
-        items.push(optionButton('헤어',n,state.hairSet===set&&state.hair===n,hairThumb(set,n),`data-kind="hair" data-set="${set}" data-index="${n}"`));
-      }
-    });
-    optionGrid.innerHTML=items.join('');
-    pickerCount.textContent=items.length+'가지';
+    hairFilter.hidden=true;
+    pickerTitle.textContent='검수 완료 헤어';
+    const hairs=approvedHairs();
+    optionGrid.innerHTML=hairs.map((item,index)=>
+      optionButton(item.name||'헤어',index+1,state.hairId===item.id,hairThumb(item),`data-kind="hair" data-hair-id="${item.id}" data-index="${index+1}"`)
+    ).join('');
+    pickerCount.textContent=hairs.length+'가지';
     return;
   }
   hairFilter.hidden=true;
@@ -262,21 +256,14 @@ tabs.addEventListener('click',e=>{
   const b=e.target.closest('.tab');
   if(b)selectTab(b.dataset.tab);
 });
-hairFilter.addEventListener('click',e=>{
-  const b=e.target.closest('.filter');
-  if(!b)return;
-  hairFilterValue=b.dataset.hairSet;
-  hairFilter.querySelectorAll('.filter').forEach(x=>x.classList.toggle('active',x===b));
-  renderOptions();
-});
 optionGrid.addEventListener('click',async e=>{
   const b=e.target.closest('.option');
   if(!b)return;
   const kind=b.dataset.kind;
   const n=parseInt(b.dataset.index,10);
   if(kind==='hair'){
-    state.hairSet=b.dataset.set==='female'?'female':'male';
-    state.hair=clampInt(n,1,24,1);
+    const next=hairRecord(b.dataset.hairId);
+    if(next)state.hairId=next.id;
   }else{
     state[kind]=n;
   }
@@ -284,8 +271,8 @@ optionGrid.addEventListener('click',async e=>{
   await renderAndPublish(false);
 });
 document.getElementById('randomBtn').addEventListener('click',async()=>{
-  state.hairSet=Math.random()<.5?'male':'female';
-  state.hair=1+Math.floor(Math.random()*24);
+  const hairs=approvedHairs();
+  if(hairs.length)state.hairId=hairs[Math.floor(Math.random()*hairs.length)].id;
   state.upper=Math.random()<.78?1:0;
   state.lower=Math.random()<.78?1:0;
   state.eyes=1+Math.floor(Math.random()*8);
@@ -299,9 +286,7 @@ document.getElementById('randomBtn').addEventListener('click',async()=>{
 });
 document.getElementById('resetBtn').addEventListener('click',async()=>{
   state={...DEFAULT};
-  hairFilterValue='all';
   extraParts=[];
-  hairFilter.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.hairSet==='all'));
   selectTab('hair');
   await renderAndPublish(false);
   flash('기본 코디로 돌아왔어요.');
@@ -319,7 +304,7 @@ function previewFrame(mode='idle',time=0){
 }
 
 window.KidscadeAvatarShop={
-  version:'pixel-v2-rig-hairfit-11',
+  version:'pixel-v2-rig-haircatalog-1',
   stateKey:STATE_KEY,
   getPreviewDataURL:()=>previewData(),
   renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),
@@ -339,6 +324,7 @@ window.KidscadeAvatarShop={
   async setState(next){
     if(!next||typeof next!=='object')return false;
     state=loadStateFromObject({...state,...next});
+    state.hairId=renderer?.normalizeConfig({hairId:state.hairId}).hairId||DEFAULT.hairId;
     renderOptions();
     await renderAndPublish(false);
     return true;

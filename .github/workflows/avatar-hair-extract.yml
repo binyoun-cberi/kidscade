@@ -1,14 +1,7 @@
-name: Build avatar front-hair runtime assets
+name: Legacy avatar sheet hair build (manual)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/avatar-hair-extract.yml'
-      - 'scripts/extract-avatar-hair.py'
-      - 'assets/game/characters/kidscade-avatar-v1/source/hair/front-sheets/**'
-      - 'assets/game/characters/kidscade-avatar-v1/runtime/base/master-base-128.png'
-      - 'assets/game/characters/kidscade-avatar-v1/runtime/face/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -35,6 +28,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A $TARGETS
-          git commit -m "Build split avatar hair runtime assets"
+          git commit -m "Build legacy avatar sheet hair runtime assets"
           git pull --rebase origin main
           git push

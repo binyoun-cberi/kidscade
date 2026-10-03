@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "type": "kidscade-approved-hair-catalog",
+  "legacyHidden": true,
+  "fallbackId": "clean-01",
+  "coordinateSystem": {
+    "canvas": [
+      128,
+      128
+    ],
+    "centerX": 64,
+    "headTopY": 20,
+    "earCenterY": 51,
+    "runtimeScale": 1,
+    "runtimeOffset": [
+      0,
+      0
+    ]
+  },
+  "items": [
+    {
+      "id": "clean-01",
+      "name": "센터 커튼",
+      "category": "short",
+      "approved": true,
+      "front": "runtime/hair/approved/hair-clean-01.png",
+      "back": null,
+      "extra": [],
+      "source": "standalone-128x128",
+      "notes": [
+        "independent PNG",
+        "transparent background",
+        "no runtime position correction"
+      ]
+    }
+  ]
+}

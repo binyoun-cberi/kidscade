@@ -13,7 +13,7 @@
       <div>
         <span class="eyebrow">KIDSCade PIXEL AVATAR · v2 RIG</span>
         <h1>내 캐릭터 꾸미기</h1>
-        <p>머리·얼굴·옷을 골라 나만의 캐릭터를 만들어요.</p>
+        <p>검수 완료된 머리·얼굴·옷 파츠만 골라 안전하게 조합해요.</p>
       </div>
       <div class="head-actions">
         <span id="seedBadge" class="seed-badge" hidden></span>
@@ -40,7 +40,7 @@
         </div>
         <div class="tip-card">
           <strong>조합 방식</strong>
-          <span>몸의 기준점에 파츠의 접점을 맞추고, 정해진 앞뒤 순서로 합쳐져요.</span>
+          <span>새 헤어는 128×128 고정 좌표계로 제작하고, 긴 머리는 뒤·앞 레이어를 분리해 합쳐요.</span>
         </div>
       </aside>
 
@@ -56,18 +56,14 @@
           <button class="tab" data-tab="blush" type="button">볼</button>
         </nav>
 
-        <div id="hairFilter" class="hair-filter">
-          <button class="filter active" data-hair-set="all" type="button">전체 48</button>
-          <button class="filter" data-hair-set="male" type="button">스타일 A 24</button>
-          <button class="filter" data-hair-set="female" type="button">스타일 B 24</button>
-        </div>
+        <div id="hairFilter" class="hair-filter" hidden aria-hidden="true"></div>
 
         <div class="picker-head">
           <div>
-            <strong id="pickerTitle">헤어스타일</strong>
-            <span id="pickerCount">48가지</span>
+            <strong id="pickerTitle">검수 완료 헤어</strong>
+            <span id="pickerCount">1가지</span>
           </div>
-          <span class="all-open">모두 사용 가능</span>
+          <span class="all-open">검수 완료 파츠만 표시</span>
         </div>
 
         <div id="optionGrid" class="option-grid" aria-live="polite"></div>
@@ -76,7 +72,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite">저장했어요!</div>
   </main>
-  <script src="pixel-avatar-renderer.js?v=21"></script>
-  <script src="avatar-pixel-studio.js?v=21"></script>
+  <script src="pixel-avatar-renderer.js?v=22"></script>
+  <script src="avatar-pixel-studio.js?v=22"></script>
 </body>
 </html>
