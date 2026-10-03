@@ -38,7 +38,7 @@ const els={
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
  endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
- prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls')
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),carryHud:$('#carryHud')
 };
 
 function newPot(i){
@@ -47,7 +47,7 @@ function newPot(i){
 let restaurant=null;
 const state={
  running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
- cleanPlates:3,dirtyPlates:0,washing:false,
+ cleanPlates:3,dirtyPlates:0,washing:false,carry:null,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
  get time(){return restaurant?.shift.remaining??SHIFT_SECONDS},
@@ -110,7 +110,7 @@ class RamenKitchen3D{
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
-  this.player=null;this.playerRing=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];
+  this.player=null;this.playerRing=null;this.heldGroup=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];this.customerRings=[];
 
   this.makeLights();
   this.makeRoom();
@@ -230,6 +230,11 @@ class RamenKitchen3D{
   const sink=this.makeLayoutStation('sink','싱크 · 설거지',BAKERY_BITS,'kitchencounter-sink.glb',2.05,-5.7,-1.7,Math.PI/2);
   this.makeLayoutStation('fridge','재료 냉장고',BAKERY_BITS,'fridge-a.glb',2.1,-5.85,2.4,Math.PI/2);
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2);
+  this.makeIngredientSource('src-noodle','noodle','면',-3.6,2.95);
+  this.makeIngredientSource('src-soup','soup','스프',-1.8,2.95);
+  this.makeIngredientSource('src-egg','egg','계란',0,2.95,FOOD,'egg.glb');
+  this.makeIngredientSource('src-green','green','대파',1.8,2.95,FOOD,'leek.glb');
+  this.makeIngredientSource('src-cheese','cheese','치즈',3.6,2.95,FOOD,'cheese-cut.glb');
   const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
   this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
    if(!model)return;
@@ -237,11 +242,48 @@ class RamenKitchen3D{
    this.syncDishVisuals()
   });
  }
+ makeIngredientSource(id,ingredientId,label,x,z,assetRoot=null,file=null){
+  const holder=new THREE.Group();holder.position.set(x,0,z);holder.userData.stationId=id;this.scene.add(holder);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.08,.62,1.08),this.material(0xb48b63,{roughness:.8}));base.position.y=.31;base.castShadow=true;base.receiveShadow=true;holder.add(base);
+  const inset=new THREE.Mesh(new THREE.BoxGeometry(.84,.08,.84),this.material(0x665247,{roughness:.7}));inset.position.y=.66;holder.add(inset);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.58,.72,28),new THREE.MeshBasicMaterial({color:0x5bd0ff,transparent:true,opacity:0,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;holder.add(ring);holder.userData.ring=ring;
+  const pick=new THREE.Mesh(new THREE.BoxGeometry(1.18,1.35,1.18),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=.68;pick.userData.layoutStation=holder;holder.add(pick);this.stationPickables.push(pick);
+  const tag=this.makeTextSprite(label);tag.position.set(0,1.48,0);tag.scale.set(1.0,.32,1);holder.add(tag);
+  const visual=new THREE.Group();visual.position.y=.76;holder.add(visual);
+  if(assetRoot&&file)this.loadModel(assetRoot,file,.42).then(o=>{if(o)visual.add(o)});
+  else if(ingredientId==='noodle'){
+   for(let i=0;i<5;i++){const n=new THREE.Mesh(new THREE.TorusGeometry(.18+i*.018,.018,5,18,Math.PI*1.5),this.material(0xf2cf69));n.rotation.x=Math.PI/2;n.rotation.z=i*.55;n.position.y=i*.025;visual.add(n)}
+  }else if(ingredientId==='soup'){
+   const packet=new THREE.Mesh(new THREE.BoxGeometry(.36,.48,.08),this.material(0xd84d3f));packet.position.y=.18;packet.rotation.y=.2;visual.add(packet)
+  }
+  this.layoutStations.push({id,label,group:holder,ingredientId,source:true});
+  return holder
+ }
+ setHeldVisual(carry){
+  if(!this.heldGroup)return;
+  while(this.heldGroup.children.length)this.heldGroup.remove(this.heldGroup.children[0]);
+  if(!carry)return;
+  if(carry.kind==='meal'){
+   this.loadModel(SUSHI,'ramen.glb',.58).then(o=>{if(o&&state.carry?.kind==='meal')this.heldGroup.add(o)});return
+  }
+  const id=carry.id,info=INGREDIENTS[id];
+  if(info?.model){this.loadModel(FOOD,info.model,.34).then(o=>{if(o&&state.carry?.id===id)this.heldGroup.add(o)});return}
+  if(id==='water'){
+   const cup=new THREE.Mesh(new THREE.CylinderGeometry(.16,.14,.28,16),this.material(0xbfe9f5,{transparent:true,opacity:.78}));cup.position.y=.14;this.heldGroup.add(cup);return
+  }
+  if(id==='noodle'){
+   for(let i=0;i<4;i++){const n=new THREE.Mesh(new THREE.TorusGeometry(.15+i*.018,.016,5,18,Math.PI*1.45),this.material(0xf2cf69));n.rotation.x=Math.PI/2;n.rotation.z=i*.6;n.position.y=i*.025;this.heldGroup.add(n)};return
+  }
+  if(id==='soup'){
+   const packet=new THREE.Mesh(new THREE.BoxGeometry(.28,.38,.07),this.material(0xd84d3f));packet.position.y=.2;this.heldGroup.add(packet)
+  }
+ }
  makePlayer(){
   const root=this.player=new THREE.Group();root.position.set(0,0,3.45);this.scene.add(root);
   const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.38,.5,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
   const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.72,5,10),this.material(0xe4634d,{roughness:.75}));fallback.position.y=.72;root.add(fallback);root.userData.fallback=fallback;
+  this.heldGroup=new THREE.Group();this.heldGroup.position.set(0,1.05,-.42);root.add(this.heldGroup);
   this.loadModel(PEOPLE,'character-female-b.glb',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
  }
  setMoveKey(code,on){if(on)this.moveKeys.add(code);else this.moveKeys.delete(code)}
@@ -313,6 +355,7 @@ class RamenKitchen3D{
  makeCustomers(){
   this.customerXs.forEach((x,i)=>{
    const file=CUSTOMER_MODELS[i%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
+   const ring=new THREE.Mesh(new THREE.RingGeometry(.42,.56,28),new THREE.MeshBasicMaterial({color:0x71df77,transparent:true,opacity:0,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;holder.add(ring);this.customerRings.push(ring);
    this.loadModel(PEOPLE,file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o)}});
   });
   this.box(9.4,.86,1.0,0x416c62,0,.38,-3.62,{roughness:.58});
@@ -385,11 +428,6 @@ class RamenKitchen3D{
  }
  pointerUp(e){
   if(this.dragLayout){this.dragLayout=null;document.body.classList.remove('layout-dragging');return}
-  if(!state.running||state.phase!=='service')return;
-  this.updatePointer(e);
-  const hit=this.raycaster.intersectObjects(this.pickables,false)[0];
-  if(!hit)return;
-  this.setSelectedPot(hit.object.userData.potIndex);
  }
  resize(){
   const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;
