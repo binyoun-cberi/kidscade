@@ -783,10 +783,10 @@ function orderIngredientIcons(r){return r.need.map(id=>INGREDIENTS[id]?.icon||''
 function renderOrders(){
  els.orders.innerHTML='';const lefts=[25,41.5,58.5,75];
  state.orders.forEach(o=>{
-  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';const matching=state.tray?.ready&&state.tray.recipeId===o.recipeId;
+  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';const matching=(state.heldItem?.kind==='meal'&&state.heldItem.recipeId===o.recipeId)||(state.tray?.ready&&state.tray.recipeId===o.recipeId);
   d.className='order-bubble'+(matching?' waiting':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');d.dataset.order=String(o.id);d.style.setProperty('--left',(lefts[o.slot]||50)+'%');
   d.innerHTML='<div class="order-main"><span class="customer-face">'+o.customer+'</span><span><b>'+r.name+'</b><span class="recipe-icons">'+orderIngredientIcons(r)+'</span></span></div><div class="patience"><i style="transform:scaleX('+(Math.max(0,o.patience)/100)+')"></i></div>';
-  d.addEventListener('click',()=>toast(state.tray?.ready?'오른쪽 아래 쟁반을 이 손님에게 끌어다 주세요':'이 손님은 '+r.name+'을 기다리고 있어요',1300));els.orders.appendChild(d)
+  d.addEventListener('click',()=>toast(state.heldItem?.kind==='meal'?'완성 라면을 들고 배식대에서 E를 눌러 주세요':'이 손님은 '+r.name+'을 기다리고 있어요',1300));els.orders.appendChild(d)
  })
 }
 function renderTray(){
