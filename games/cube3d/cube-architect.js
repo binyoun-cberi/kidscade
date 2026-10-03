@@ -4227,6 +4227,19 @@ document.addEventListener('keyup',e=>{challengeKeys[e.code]=false;freeKeys[e.cod
 window.addEventListener('blur',()=>{stopMining();resetMobileInput();challengeKeys={};freeKeys={};dungeonKeys={}});
 function reportResult(kind,score,cleared){
   try{parent.postMessage({type:'kidscade-result',game:'큐브 아키텍트',mode:kind,score:score,cleared:cleared},'*')}catch(e){}
+  if(!cleared)return;
+  try{
+    if(kind==='challenge'){
+      KidscadeGame?.achievement?.('cube3d.first_blueprint');
+      if(Number(score)>=100)KidscadeGame?.achievement?.('cube3d.perfect_blueprint');
+    }
+    if(String(kind).startsWith('net')){
+      KidscadeGame?.achievement?.('cube3d.first_net');
+      KidscadeGame?.achievementIncrement?.('cube3d.net_master',1);
+    }
+    if(kind==='survival-landmark')KidscadeGame?.achievement?.('cube3d.landmark_restorer');
+    if(kind==='free-survival')KidscadeGame?.achievement?.('cube3d.survival_complete');
+  }catch(_){}
 }
 function resize(){
   const w=innerWidth,h=innerHeight;if(renderer)renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
