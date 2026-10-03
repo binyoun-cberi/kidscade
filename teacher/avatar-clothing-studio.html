@@ -97,6 +97,16 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
       </section>
 
       <section class="card">
+        <h3>AI 프레임 보정</h3>
+        <div class="tip">현재 편집 파츠의 7개 프레임 픽셀·BODY 실루엣·정합 정보를 JSON으로 내보냅니다. 그 파일을 ChatGPT에 올려 보정 파일을 만든 뒤 다시 불러오면 프레임별 이동·부분 이동·픽셀 패치를 자동 적용할 수 있습니다.</div>
+        <div class="project-actions" style="margin-top:7px">
+          <button id="exportPartAnalysis" type="button">분석 파일 내보내기</button>
+          <label class="file-btn secondary">AI 보정 파일 적용<input id="importPartAdjustment" type="file" accept="application/json,.json"></label>
+        </div>
+        <div id="adjustmentSummary" class="muted" style="margin-top:6px">대상: 현재 편집 파츠 · STAND 2 / WALK 4 / JUMP 1 전체</div>
+      </section>
+
+      <section class="card">
         <h3>현재 착용 에셋</h3>
         <div id="selectedAssetList" class="selected-list"></div>
         <div id="layerStatus" class="layer-status"></div>
@@ -139,6 +149,6 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
     </aside>
   </main>
 </div>
-<script src="/teacher-avatar-clothing-studio.js?v=10"></script>
+<script src="/teacher-avatar-clothing-studio.js?v=11"></script>
 </body>
 </html>
