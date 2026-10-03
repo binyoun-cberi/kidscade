@@ -90,3 +90,37 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify deployed lobby build
+        env:
+          EXPECTED_BUILD: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          verified=0
+          for attempt in $(seq 1 12); do
+            version_json="$(curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/kidscade-version.json?verify=${EXPECTED_BUILD}" || true)"
+            if VERSION_JSON="$version_json" EXPECTED_BUILD="$EXPECTED_BUILD" node -e '
+              const payload = JSON.parse(process.env.VERSION_JSON || "{}");
+              process.exit(payload.build === process.env.EXPECTED_BUILD ? 0 : 1);
+            '; then
+              verified=1
+              break
+            fi
+            echo "Waiting for deployed build ${EXPECTED_BUILD:0:12} (attempt ${attempt}/12)"
+            sleep 5
+          done
+
+          if [ "$verified" -ne 1 ]; then
+            echo "Production version manifest did not reach the deployed commit."
+            exit 1
+          fi
+
+          curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-home.html
+          grep -q 'window.KidscadeCatalog=' /tmp/kidscade-home.html
+          if grep -q 'main-bootstrap\.js' /tmp/kidscade-home.html; then
+            echo "Production lobby unexpectedly contains the destructive runtime bootstrap."
+            exit 1
+          fi
+          curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/home-v2.js?verify=${EXPECTED_BUILD}" -o /dev/null
+          echo "Production lobby smoke check passed for ${EXPECTED_BUILD:0:12}."

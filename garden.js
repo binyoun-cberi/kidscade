@@ -1,7 +1,22 @@
 /* Legacy garden entry retired.
    Cube Pets now live entirely inside Kidscade World v3.
-   This bootstrap filename stays only for main-shell compatibility. */
-document.write('<script src="avatar-integration.js?v=avatar-preview-inline-edit-v7"><\/script>');
-document.write('<script src="seed-world-meta.js?v=1"><\/script>');
-document.write('<script src="avatar-preview-boot-fix.js?v=avatar-preview-fix-v2"><\/script>');
-document.write('<script src="life-world-integration.js?v=world-v3-homestead-v35"><\/script>');
+   This bootstrap filename stays only for main-shell compatibility.
+   Child modules inherit the deployment build id so a fresh lobby can never
+   revive an older cached integration layer. */
+(() => {
+  'use strict';
+
+  let version = 'dev';
+  try {
+    const src = document.currentScript?.src || '';
+    version = new URL(src, document.baseURI).searchParams.get('v') || 'dev';
+  } catch (_) {}
+
+  const withVersion = path => path + '?v=' + encodeURIComponent(version);
+  const writeScript = path => document.write('<script src="' + withVersion(path) + '"><\\/script>');
+
+  writeScript('avatar-integration.js');
+  writeScript('seed-world-meta.js');
+  writeScript('avatar-preview-boot-fix.js');
+  writeScript('life-world-integration.js');
+})();

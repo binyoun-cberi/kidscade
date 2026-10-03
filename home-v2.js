@@ -17,6 +17,8 @@
   const DAY_MS = 24 * HOUR_MS;
   const KST_OFFSET_MS = 9 * HOUR_MS;
   const NEW_RELEASE_WINDOW_DAYS = 30;
+  const MOUNT_RETRY_MS = 80;
+  const MOUNT_TIMEOUT_MS = 3000;
   const HOME_LAYOUTS = Object.freeze({ recommend: 'recommend', classic: 'classic' });
 
   function normalizeLayout(value) {
@@ -66,6 +68,8 @@
   let bodyObserver = null;
   let searchBound = false;
   let heroRotationTimer = null;
+  let mountStartedAt = 0;
+  let mountAborted = false;
 
   const cleanIds = value => Array.isArray(value)
     ? value.map(item => String(item || '')).filter(Boolean)
@@ -557,13 +561,24 @@
   }
 
   function ensureStylesheet() {
-    if (!root?.document || root.document.querySelector('link[data-kc-home-v2-style]')) return;
-    const link = root.document.createElement('link');
-    link.rel = 'stylesheet';
-    link.dataset.kcHomeV2Style = '1';
-    const version = root.KidscadeBoot?.version || 'dev';
-    link.href = `home-v2.css?v=${encodeURIComponent(version)}`;
-    root.document.head.appendChild(link);
+    if (!root?.document) return false;
+    let link = root.document.querySelector('link[data-kc-home-v2-style]');
+    if (!link) {
+      link = root.document.createElement('link');
+      link.rel = 'stylesheet';
+      link.dataset.kcHomeV2Style = '1';
+      link.dataset.kcHomeV2State = 'loading';
+      const version = root.KidscadeBoot?.version || 'dev';
+      link.href = `home-v2.css?v=${encodeURIComponent(version)}`;
+      link.addEventListener('load', () => { link.dataset.kcHomeV2State = 'loaded'; }, { once:true });
+      link.addEventListener('error', () => { link.dataset.kcHomeV2State = 'error'; }, { once:true });
+      root.document.head.appendChild(link);
+    }
+    if (link.dataset.kcHomeV2State === 'loaded' || link.sheet) {
+      link.dataset.kcHomeV2State = 'loaded';
+      return true;
+    }
+    return false;
   }
 
   function ensureShell() {
@@ -577,6 +592,8 @@
     shell = root.document.createElement('section');
     shell.id = HOME_ID;
     shell.className = 'kc-home-v2';
+    shell.hidden = true;
+    shell.dataset.kcHomeStage = '1';
     shell.setAttribute('aria-label', 'KIDSCADE 추천 홈');
     arcade.insertBefore(shell, discovery);
 
@@ -585,6 +602,8 @@
       backbar = root.document.createElement('div');
       backbar.id = BACKBAR_ID;
       backbar.className = 'kc-home-backbar';
+      backbar.hidden = true;
+      backbar.dataset.kcHomeStage = '1';
       backbar.innerHTML = `
         <button type="button" class="kc-home-back">← 추천 홈</button>
         <div class="kc-home-back-copy">
@@ -596,8 +615,32 @@
       backbar.querySelector('.kc-home-back')?.addEventListener('click', () => showHome());
     }
 
-    root.document.body.classList.add('kc-home-v2-ready');
     return shell;
+  }
+
+  function activateShell(shell) {
+    if (!root?.document || !shell) return false;
+    shell.hidden = false;
+    delete shell.dataset.kcHomeStage;
+    const backbar = root.document.getElementById(BACKBAR_ID);
+    if (backbar) {
+      backbar.hidden = false;
+      delete backbar.dataset.kcHomeStage;
+    }
+    root.document.body.classList.add('kc-home-v2-ready');
+    return true;
+  }
+
+  function rollbackStagedShell(reason = 'not-ready') {
+    if (!root?.document) return;
+    const shell = root.document.getElementById(HOME_ID);
+    const backbar = root.document.getElementById(BACKBAR_ID);
+    if (shell?.dataset.kcHomeStage === '1') shell.remove();
+    if (backbar?.dataset.kcHomeStage === '1') backbar.remove();
+    root.document.body.classList.remove('kc-home-v2-ready');
+    delete root.document.body.dataset.kcHomeMode;
+    delete root.document.body.dataset.kcHomeSearchReturn;
+    console.warn('[Kidscade Home] 추천 홈 활성화를 취소하고 기본 홈을 유지합니다:', reason);
   }
 
   function heroMarkup(game, age) {
@@ -753,7 +796,7 @@
     updateLayoutButton();
   }
 
-  function render() {
+  function render(options = {}) {
     renderQueued = false;
     const shell = ensureShell();
     if (!shell) return false;
@@ -824,13 +867,13 @@
     wireShell(shell);
     prepareKeyboardNavigation(shell);
     prepareRailNavigation(shell);
-    root.document.body.classList.add('kc-home-v2-ready');
     if (!root.document.body.dataset.kcHomeLayout) {
       setLayout(storedLayout(), { persist: false, scroll: false });
     } else {
       updateLayoutButton(currentLayout());
       updateBackbar();
     }
+    if (options.activate !== false) activateShell(shell);
     return true;
   }
 
@@ -1050,24 +1093,49 @@
   }
 
   function mount() {
-    if (!root?.document || mounted) return false;
-    ensureStylesheet();
+    if (!root?.document || mounted || mountAborted) return false;
+    if (!mountStartedAt) mountStartedAt = Date.now();
+
     const attempt = () => {
-      if (mounted) return;
+      if (mounted || mountAborted) return;
       const shell = ensureShell();
-      const ready = shell && games().length && root.KidscadePlay && root.KidscadeDashboard;
+      const cssReady = ensureStylesheet();
+      const ready = Boolean(
+        shell &&
+        cssReady &&
+        games().length &&
+        typeof root.KidscadePlay?.open === 'function' &&
+        typeof root.KidscadeDashboard?.render === 'function'
+      );
+
       if (!ready) {
-        setTimeout(attempt, 80);
+        if (Date.now() - mountStartedAt >= MOUNT_TIMEOUT_MS) {
+          mountAborted = true;
+          rollbackStagedShell('required-runtime-timeout');
+          return;
+        }
+        setTimeout(attempt, MOUNT_RETRY_MS);
         return;
       }
-      mounted = true;
-      bindSearch();
-      bindLayoutToggle();
-      bindGlobalEvents();
-      render();
-      scheduleHourlyHeroRefresh();
-      refreshStats();
+
+      try {
+        const rendered = render({ activate: false });
+        if (!rendered) throw new Error('recommended-home-render-returned-false');
+        bindSearch();
+        bindLayoutToggle();
+        bindGlobalEvents();
+        if (!activateShell(shell)) throw new Error('recommended-home-activation-failed');
+        mounted = true;
+        scheduleHourlyHeroRefresh();
+        refreshStats();
+      } catch (error) {
+        mountAborted = true;
+        rollbackStagedShell(error?.message || 'recommended-home-render-failed');
+        console.error('[Kidscade Home] 추천 홈 초기화 실패', error);
+      }
     };
+
+    ensureStylesheet();
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', attempt, { once: true });
     else attempt();
     return true;

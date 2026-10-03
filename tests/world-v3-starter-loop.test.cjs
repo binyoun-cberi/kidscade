@@ -39,7 +39,9 @@ test('starter guidance reveals one homestead goal at a time',()=>{
   assert.match(runtime,/첫 개척 목표/);
 });
 
-test('starter loop is current cached Seed World v37',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=37/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=37/);
+test('starter loop uses the same cache version as the Seed World overlay',()=>{
+  const runtimeVersion=html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1];
+  const integrationVersion=integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1];
+  assert.ok(runtimeVersion,'world-v3 HTML must version its runtime');
+  assert.equal(integrationVersion,runtimeVersion);
 });

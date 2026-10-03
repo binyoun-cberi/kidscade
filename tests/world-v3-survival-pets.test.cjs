@@ -68,8 +68,10 @@ test('legacy garden runtime is retired from active boot',()=>{
   assert.match(indexBase,/window\.openKidscadeLifeWorld\?\.\(\)/);
 });
 
-test('Cube Pets survival expansion is the current default cache',()=>{
-  assert.match(html,/kidscade-world-v3\.js\?v=37/);
-  assert.match(integration,/world-v3\/kidscade-world\.html\?v=37/);
+test('Cube Pets survival expansion follows the current Seed World cache',()=>{
+  const runtimeVersion=html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1];
+  const integrationVersion=integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1];
+  assert.ok(runtimeVersion,'world-v3 HTML must version its runtime');
+  assert.equal(integrationVersion,runtimeVersion);
   assert.match(integration,/syncCubePetsSidebar/);
 });
