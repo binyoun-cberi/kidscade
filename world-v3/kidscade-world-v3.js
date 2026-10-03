@@ -1943,27 +1943,9 @@ function resize(){
 addEventListener('resize',resize);resize();
 
 let townEconomy=null,cityRuntime=null,furnishingSystem=null;
-let last=performance.now(),saveClock=0,wasInCity=false,runtimeActive=false,rafId=0;
-
-function pauseRuntime({audio=true}={}){
-  runtimeActive=false;
-  if(rafId){cancelAnimationFrame(rafId);rafId=0;}
-  resetInput(true);
-  if(audio)worldAudio.stop();
-  return true;
-}
-function resumeRuntime({audio=true}={}){
-  if(!runtimeActive){
-    runtimeActive=true;
-    last=performance.now();
-    rafId=requestAnimationFrame(tick);
-  }
-  if(audio){worldAudio.unlock();syncAudioButton();}
-  return true;
-}
+let last=performance.now(),saveClock=0,wasInCity=false;
 function tick(now){
-  if(!runtimeActive){rafId=0;return;}
-  rafId=requestAnimationFrame(tick);
+  requestAnimationFrame(tick);
   const dt=Math.min(.05,(now-last)/1000);last=now;
   let dx=0,dz=0;
   if(keys.has('arrowleft')||keys.has('a'))dx-=1;
@@ -2071,10 +2053,10 @@ async function init(){
   if(previous==='indoor')setMode('indoor');
   else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
   loading.classList.add('hide');
-  canvas.focus();resumeRuntime({audio:false});
+  canvas.focus();requestAnimationFrame(tick);
 }
 
 window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();updateHomesteadVisuals();updateCropVisuals();updateStatus()},pause(){return pauseRuntime()},resume(){return resumeRuntime()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
+window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();updateHomesteadVisuals();updateCropVisuals();updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
