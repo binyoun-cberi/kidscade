@@ -6,7 +6,7 @@ const SAVE_KEY='kidscade-avatar-studio-v3';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
-const LAYERS=['body','hairBack','hairFront','upper','lower'];
+const LAYERS=['body','hair','upper','lower'];
 const FRAMES=[
   {id:'stand-01',label:'STAND 01',kind:'stand',n:1},
   {id:'stand-02',label:'STAND 02',kind:'stand',n:2},
@@ -193,7 +193,7 @@ function buildFrameButtons(){
 function refreshFrameButtons(){
   document.querySelectorAll('.frame-btn').forEach(b=>{
     const id=b.dataset.frame,rec=frames.get(id),f=frameRecord(id);
-    const body=hasInk(rec.body),hair=hasInk(rec.hairBack)||hasInk(rec.hairFront),upper=hasInk(rec.upper),lower=hasInk(rec.lower);
+    const body=hasInk(rec.body),hair=hasInk(rec.hair),upper=hasInk(rec.upper),lower=hasInk(rec.lower);
     b.classList.toggle('active',id===currentFrame);
     b.innerHTML='<span>'+f.label+'</span><span class="dots">'+
       '<span class="'+(body?'dot-body':'dot-empty')+'">●</span>'+
@@ -207,17 +207,18 @@ function refreshFrameButtons(){
 function refreshLayerStatus(){
   const host=$('layerStatus');if(!host)return;
   const rec=frames.get(currentFrame);
-  const defs=[['body','BODY'],['hairBack','HAIR B'],['hairFront','HAIR F'],['upper','UPPER'],['lower','LOWER']];
+  const defs=[['body','BODY'],['hair','HAIR'],['upper','UPPER'],['lower','LOWER']];
   host.innerHTML=defs.map(([id,label])=>'<span class="badge '+(hasInk(rec[id])?'on':'')+'">'+label+'</span>').join('');
 }
 
 function selectLayer(layer){
   if(!LAYERS.includes(layer))return;
   activeLayer=layer;selection=null;selectionStart=null;invalidatePixelPreview();
-  const map={body:'layerBody',hairBack:'layerHairBack',hairFront:'layerHairFront',upper:'layerUpper',lower:'layerLower'};
+  const map={body:'layerBody',hair:'layerHair',upper:'layerUpper',lower:'layerLower'};
   for(const [name,id] of Object.entries(map))$(id).className=name===activeLayer?'active':'secondary';
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
+  refreshNudgeMode();
   setStatus(frameRecord().label+' · '+activeLayer.toUpperCase()+' 편집');
 }
 
@@ -286,6 +287,26 @@ function afterEdit(message='수정됨'){
 function scheduleSave(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{saveLocal();setStatus('브라우저에 자동 저장됨')},300);
+}
+
+function refreshNudgeMode(){
+  const el=$('nudgeMode');if(!el)return;
+  const strong=el.querySelector('strong');if(!strong)return;
+  strong.textContent=sourceImage?'불러온 이미지 배치':'현재 '+activeLayer.toUpperCase()+' 레이어';
+}
+
+function nudgeCurrent(dx,dy){
+  if(sourceImage){
+    $('stampX').value=String((Number($('stampX').value)||0)+dx);
+    $('stampY').value=String((Number($('stampY').value)||0)+dy);
+    invalidatePixelPreview();
+    pixelizePreview(false);
+    render();
+    refreshNudgeMode();
+    setStatus('불러온 이미지 '+(dx||0)+','+(dy||0)+'px 이동 · 적용 전 위치 조정 중');
+    return;
+  }
+  moveLayerOrSelection(dx,dy);
 }
 
 function moveLayerOrSelection(dx,dy){
@@ -359,11 +380,10 @@ function render(){
     }
   }
 
-  if($('showHair').checked&&hasInk(rec.hairBack))ctx.drawImage(rec.hairBack,0,0);
   if($('showBody').checked&&hasInk(rec.body))ctx.drawImage(rec.body,0,0);
   if($('showClothes').checked&&hasInk(rec.lower))ctx.drawImage(rec.lower,0,0);
   if($('showClothes').checked&&hasInk(rec.upper))ctx.drawImage(rec.upper,0,0);
-  if($('showHair').checked&&hasInk(rec.hairFront))ctx.drawImage(rec.hairFront,0,0);
+  if($('showHair').checked&&hasInk(rec.hair))ctx.drawImage(rec.hair,0,0);
 
   drawDifferenceOverlay();
 
@@ -430,7 +450,7 @@ function bodyGuideBox(){
 function targetRectForLayer(){
   const body=bodyGuideBox();
   if(activeLayer==='body')return {x:22,y:6,w:84,h:113,ground:true};
-  if(activeLayer==='hairBack'||activeLayer==='hairFront'){
+  if(activeLayer==='hair'){
     return {x:Math.max(0,body.x-5),y:Math.max(0,body.y-4),w:Math.min(SIZE-body.x+5,body.w+10),h:Math.min(72,Math.round(body.h*.56)+6)};
   }
   if(activeLayer==='upper'){
@@ -526,7 +546,9 @@ function applyPixelized(){
   if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
   if(!pixelPreviewReady)pixelizePreview(false);
   snapshot();const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);c.drawImage($('pixelPreviewCanvas'),0,0);selection=null;
-  afterEdit('픽셀화 결과를 '+activeLayer.toUpperCase()+' '+currentFrame+'에 적용함');
+  const applied=activeLayer.toUpperCase();
+  clearStamp();
+  afterEdit('픽셀화 결과를 '+applied+' '+currentFrame+'에 적용함 · 이제 화살표는 적용된 레이어를 움직입니다.');
 }
 
 function fitStamp(){
@@ -535,12 +557,16 @@ function fitStamp(){
 }
 function commitStamp(){
   if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
-  snapshot();const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);drawStamp(c,1,false);selection=null;afterEdit('원본을 '+activeLayer.toUpperCase()+'에 적용함');
+  snapshot();const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);drawStamp(c,1,false);selection=null;
+  const applied=activeLayer.toUpperCase();
+  clearStamp();
+  afterEdit('원본을 '+applied+'에 적용함 · 이제 화살표는 적용된 레이어를 움직입니다.');
 }
 function clearStamp(){
   sourceImage=null;preparedSource=null;sourceCrop=null;pixelPreviewReady=false;
   $('sourcePreview').src='';$('sourcePreview').classList.add('hidden');$('sourceFile').value='';
-  $('pixelPreviewCanvas').getContext('2d').clearRect(0,0,SIZE,SIZE);render();
+  $('pixelPreviewCanvas').getContext('2d').clearRect(0,0,SIZE,SIZE);
+  refreshNudgeMode();render();
 }
 
 function copyPrevious(){
@@ -568,7 +594,7 @@ function clearAll(){
 
 function readProject(){
   const out={version:3,type:'kidscade-avatar-studio-project',canvas:[128,128],root:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorRight:true,
-    bodyId:$('bodyId').value.trim()||'maple-lite-body-v3',hairId:$('hairId').value.trim()||'hair-01',upperId:$('upperId').value.trim()||'upper-01',lowerId:$('lowerId').value.trim()||'lower-01',frames:{}};
+    bodyId:$('bodyId').value.trim()||'maple-lite-body-v3',hairId:$('hairId').value.trim()||'toben-like-01',upperId:$('upperId').value.trim()||'upper-01',lowerId:$('lowerId').value.trim()||'lower-01',frames:{}};
   for(const f of FRAMES){const rec=frames.get(f.id);out.frames[f.id]={};for(const layer of LAYERS)out.frames[f.id][layer]=rec[layer].toDataURL('image/png')}
   return out;
 }
@@ -584,7 +610,17 @@ async function applyProject(project){
     for(const [oldId,newId] of Object.entries(map)){const src=project.frames?.[oldId];if(!src)continue;await Promise.all([loadDataUrl(layerCanvas(newId,'upper'),src.upper),loadDataUrl(layerCanvas(newId,'lower'),src.lower)])}
   }else if(project.type==='kidscade-avatar-studio-project'){
     if(project.bodyId)$('bodyId').value=project.bodyId;if(project.hairId)$('hairId').value=project.hairId;if(project.upperId)$('upperId').value=project.upperId;if(project.lowerId)$('lowerId').value=project.lowerId;
-    for(const f of FRAMES){const src=project.frames?.[f.id];if(!src)continue;await Promise.all(LAYERS.map(layer=>loadDataUrl(layerCanvas(f.id,layer),src[layer])))}
+    for(const f of FRAMES){
+      const src=project.frames?.[f.id];if(!src)continue;
+      await Promise.all(['body','upper','lower'].map(layer=>loadDataUrl(layerCanvas(f.id,layer),src[layer])));
+      if(src.hair)await loadDataUrl(layerCanvas(f.id,'hair'),src.hair);
+      else if(src.hairBack||src.hairFront){
+        const target=layerCtx(f.id,'hair');target.clearRect(0,0,SIZE,SIZE);
+        const legacy=makeCanvas();
+        if(src.hairBack){await loadDataUrl(legacy,src.hairBack);target.drawImage(legacy,0,0)}
+        if(src.hairFront){await loadDataUrl(legacy,src.hairFront);target.drawImage(legacy,0,0)}
+      }
+    }
   }else throw new Error('Kidscade 아바타 제작실 프로젝트가 아닙니다.');
   history.clear();selection=null;refreshFrameButtons();render();saveLocal();
 }
@@ -605,31 +641,30 @@ async function downloadCanvas(c,name){const blob=await canvasBlob(c);if(blob)dow
 function safeId(v,fallback){return String(v||fallback).trim().replace(/[^a-zA-Z0-9_-]+/g,'-')||fallback}
 function layerId(layer){
   if(layer==='body')return safeId($('bodyId').value,'body');
-  if(layer==='hairBack'||layer==='hairFront')return safeId($('hairId').value,'hair');
+  if(layer==='hair')return safeId($('hairId').value,'hair');
   if(layer==='upper')return safeId($('upperId').value,'upper');
   return safeId($('lowerId').value,'lower');
 }
 function layerFileName(layer,frameId=currentFrame){
-  const suffix=layer==='hairBack'?'back':layer==='hairFront'?'front':layer;
-  return layerId(layer)+'_'+suffix+'_'+frameId+'.png';
+  return layerId(layer)+'_'+layer+'_'+frameId+'.png';
 }
 function compositeCanvas(frameId=currentFrame){
   const rec=frames.get(frameId),out=makeCanvas(),o=out.getContext('2d',{alpha:true});
-  for(const layer of ['hairBack','body','lower','upper','hairFront'])if(hasInk(rec[layer]))o.drawImage(rec[layer],0,0);
+  for(const layer of ['body','lower','upper','hair'])if(hasInk(rec[layer]))o.drawImage(rec[layer],0,0);
   return out;
 }
 function exportCurrent(){downloadCanvas(layerCanvas(),layerFileName(activeLayer));setStatus('현재 '+activeLayer.toUpperCase()+' PNG 내보냄')}
 function exportComposite(){downloadCanvas(compositeCanvas(),safeId($('bodyId').value,'avatar')+'_'+currentFrame+'_composite.png');setStatus('현재 합성 PNG 내보냄')}
 function exportCurrentBody(){downloadCanvas(layerCanvas(currentFrame,'body'),safeId($('bodyId').value,'body')+'_'+currentFrame+'.png');setStatus('현재 BODY PNG 내보냄')}
 function exportCurrentHair(){
-  downloadCanvas(layerCanvas(currentFrame,'hairBack'),safeId($('hairId').value,'hair')+'_back_'+currentFrame+'.png');
-  setTimeout(()=>downloadCanvas(layerCanvas(currentFrame,'hairFront'),safeId($('hairId').value,'hair')+'_front_'+currentFrame+'.png'),180);
-  setStatus('현재 HAIR BACK/FRONT PNG 내보냄');
+  downloadCanvas(layerCanvas(currentFrame,'hair'),safeId($('hairId').value,'hair')+'_'+currentFrame+'.png');
+  setStatus('현재 HAIR PNG 내보냄');
 }
 function manifestObject(){
   return {version:3,type:'kidscade-avatar-v3',canvas:[128,128],logicalRoot:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorForRight:true,
     frameSets:{stand:['stand-01','stand-02'],walk:['walk-01','walk-02','walk-03','walk-04'],jump:['jump-01']},
-    layerOrder:['hairBack','body','lower','upper','hairFront'],
+    hairMode:'single',
+    layerOrder:['body','lower','upper','hair'],
     ids:{body:safeId($('bodyId').value,'body'),hair:safeId($('hairId').value,'hair'),upper:safeId($('upperId').value,'upper'),lower:safeId($('lowerId').value,'lower')},
     availability:Object.fromEntries(FRAMES.map(f=>[f.id,Object.fromEntries(LAYERS.map(layer=>[layer,hasInk(layerCanvas(f.id,layer))]))]))
   };
@@ -672,7 +707,7 @@ async function canvasBytes(c){
 async function exportBundle(){
   const btn=$('exportBundle'),old=btn.textContent;btn.disabled=true;btn.textContent='ZIP 만드는 중';
   try{
-    const files=[],folder={body:'body',hairBack:'hair/back',hairFront:'hair/front',upper:'upper',lower:'lower'};
+    const files=[],folder={body:'body',hair:'hair',upper:'upper',lower:'lower'};
     for(const f of FRAMES){
       for(const layer of LAYERS){const c=layerCanvas(f.id,layer);if(hasInk(c))files.push({name:folder[layer]+'/'+f.id+'.png',data:await canvasBytes(c)})}
       const comp=compositeCanvas(f.id);if(hasInk(comp))files.push({name:'composite/'+f.id+'.png',data:await canvasBytes(comp)});
@@ -696,8 +731,7 @@ async function verifyAdmin(){
 function bind(){
   buildFrameButtons();
   $('layerBody').addEventListener('click',()=>selectLayer('body'));
-  $('layerHairBack').addEventListener('click',()=>selectLayer('hairBack'));
-  $('layerHairFront').addEventListener('click',()=>selectLayer('hairFront'));
+  $('layerHair').addEventListener('click',()=>selectLayer('hair'));
   $('layerUpper').addEventListener('click',()=>selectLayer('upper'));
   $('layerLower').addEventListener('click',()=>selectLayer('lower'));
   $('toolPencil').addEventListener('click',()=>selectTool('pencil'));
@@ -716,10 +750,10 @@ function bind(){
   $('referenceOpacity').addEventListener('input',render);$('referenceFrame').addEventListener('change',render);
   ['bodyId','hairId','upperId','lowerId'].forEach(id=>$(id).addEventListener('input',scheduleSave));
 
-  $('nudgeUp').addEventListener('click',()=>moveLayerOrSelection(0,-1));
-  $('nudgeDown').addEventListener('click',()=>moveLayerOrSelection(0,1));
-  $('nudgeLeft').addEventListener('click',()=>moveLayerOrSelection(-1,0));
-  $('nudgeRight').addEventListener('click',()=>moveLayerOrSelection(1,0));
+  $('nudgeUp').addEventListener('click',()=>nudgeCurrent(0,-1));
+  $('nudgeDown').addEventListener('click',()=>nudgeCurrent(0,1));
+  $('nudgeLeft').addEventListener('click',()=>nudgeCurrent(-1,0));
+  $('nudgeRight').addEventListener('click',()=>nudgeCurrent(1,0));
   $('alignCenter').addEventListener('click',alignActiveCenter);
   $('alignGround').addEventListener('click',alignActiveGround);
   $('shrinkSelection').addEventListener('click',()=>resizeSelection(-1));
@@ -740,7 +774,7 @@ function bind(){
 
   $('sourceFile').addEventListener('change',e=>{
     const file=e.target.files?.[0];if(!file)return;
-    const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{sourceImage=img;$('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');refreshPreparedSource();if($('autoFitOnLoad').checked)autoFitStamp(false);else fitStamp();pixelizePreview(false);setStatus('원본을 불러와 '+activeLayer.toUpperCase()+'용 픽셀 미리보기를 만들었습니다.')};img.src=reader.result};reader.readAsDataURL(file);
+    const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{sourceImage=img;$('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');refreshPreparedSource();if($('autoFitOnLoad').checked)autoFitStamp(false);else fitStamp();pixelizePreview(false);refreshNudgeMode();setStatus('원본을 불러왔습니다 · 화살표로 위치를 맞춘 뒤 현재 레이어에 적용하세요.')};img.src=reader.result};reader.readAsDataURL(file);
   });
   $('autoFitStamp').addEventListener('click',()=>{autoFitStamp();pixelizePreview(false)});
   $('pixelizePreview').addEventListener('click',()=>pixelizePreview());
@@ -770,10 +804,10 @@ function bind(){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)redo();else undo();return}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}
     if(e.target&&['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
-    if(e.key==='ArrowLeft'){e.preventDefault();moveLayerOrSelection(-1,0)}
-    else if(e.key==='ArrowRight'){e.preventDefault();moveLayerOrSelection(1,0)}
-    else if(e.key==='ArrowUp'){e.preventDefault();moveLayerOrSelection(0,-1)}
-    else if(e.key==='ArrowDown'){e.preventDefault();moveLayerOrSelection(0,1)}
+    if(e.key==='ArrowLeft'){e.preventDefault();nudgeCurrent(-1,0)}
+    else if(e.key==='ArrowRight'){e.preventDefault();nudgeCurrent(1,0)}
+    else if(e.key==='ArrowUp'){e.preventDefault();nudgeCurrent(0,-1)}
+    else if(e.key==='ArrowDown'){e.preventDefault();nudgeCurrent(0,1)}
     else if(e.key==='Escape')clearSelection();
   });
   window.addEventListener('beforeunload',()=>{stopPlayback();saveLocal()});
