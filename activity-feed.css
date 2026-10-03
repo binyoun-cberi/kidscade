@@ -1,5 +1,6 @@
 /* Local activity notifications: accessible, responsive, and independent of the profile login gate. */
 .kc-feed-launcher{position:relative;display:inline-flex;align-items:center;gap:5px}
+.kc-teacher-launcher{position:relative;display:inline-flex;align-items:center;gap:5px;text-decoration:none!important}
 .kc-feed-badge,.kc-feed-nav-badge{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#ea580c;color:#fff;font-size:10px;font-weight:900;line-height:1;box-shadow:0 2px 8px #c2410c44}
 .kc-feed-badge[hidden],.kc-feed-nav-badge[hidden]{display:none!important}
 .kc-feed-nav-badge{position:absolute;right:10px;top:2px}
@@ -40,7 +41,7 @@ body.dark-mode .kc-feed-meta button{background:#352b58;color:#e9d5ff;border-colo
   .kc-feed-panel{width:100%;padding-bottom:env(safe-area-inset-bottom)}
 }
 @media(max-width:620px){
-  .kc-feed-launcher .kc-feed-launcher-label{display:none}
+  .kc-feed-launcher .kc-feed-launcher-label,.kc-teacher-launcher .kc-teacher-launcher-label{display:none}
   .kc-feed-head{padding:20px 17px 14px}
   .kc-feed-list{padding:8px 16px 24px}
   .kc-feed-filters{padding:12px 16px}

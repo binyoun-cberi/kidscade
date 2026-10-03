@@ -55,7 +55,8 @@ test('profile identity and play record have separate labels', () => {
 test('guest profile keeps the avatar visible while play records stay account-only', () => {
   assert.match(accountGate, /게스트 아바타로 바로 체험 중/);
   assert.match(accountGate, /기본 아바타가 바로 제공돼요/);
-  assert.match(accountGate, /학생 계정 로그인/);
+  assert.match(accountGate, />계정 로그인<\/button>/);
+  assert.doesNotMatch(accountGate, /학생 계정 로그인/);
   assert.match(accountGate, /\.avatar-plaza\{display:block!important\}/);
   assert.match(accountGate, /\.kc-profile-row\{display:none!important\}/);
   assert.match(accountGate, /#kc-local-profile-card\{display:none!important\}/);

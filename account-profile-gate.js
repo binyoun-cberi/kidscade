@@ -63,13 +63,13 @@
     if (!gate) {
       gate = document.createElement('div');
       gate.id = GATE_ID;
-      gate.setAttribute('aria-label', '학생 계정 로그인 안내');
+      gate.setAttribute('aria-label', '계정 로그인 안내');
       gate.innerHTML = `
         <div class="kpg-icon">👤</div>
         <div class="kpg-kicker">GUEST AVATAR</div>
         <div class="kpg-title">게스트 아바타로 바로 체험 중</div>
         <div class="kpg-copy">기본 아바타가 바로 제공돼요. 위의 👕 꾸미기에서 로그인 없이 조합을 확인할 수 있고, 변경 내용은 이 브라우저에 임시 저장돼요.</div>
-        <button class="kpg-login" type="button">학생 계정 로그인</button>
+        <button class="kpg-login" type="button">계정 로그인</button>
         <div class="kpg-benefits">
           <div class="kpg-benefit">☁️ 기록 동기화</div>
           <div class="kpg-benefit">🌱 씨앗 보관</div>
