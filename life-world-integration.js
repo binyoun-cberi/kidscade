@@ -129,12 +129,12 @@
     document.body.appendChild(overlay);frame=overlay.querySelector('#'+FRAME_ID);overlay.querySelector('#kidscade-life-world-close').addEventListener('click',close);overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
   }
 
-  function activate(){ensure();if(activated)return;activated=true;frame.src=WORLD_URL;}
+  function activate(){ensure();if(activated)return;activated=true;frame.addEventListener('load',()=>{try{const api=frame?.contentWindow?.KidscadeWorldV3;if(overlay?.classList.contains('open')){if(api?.resume)api.resume();else api?.resumeAudio?.();}else{if(api?.pause)api.pause();else api?.pauseAudio?.();}}catch(_){} });frame.src=WORLD_URL;}
   function resetWorldInput(){try{frame?.contentWindow?.KidscadeWorldV3?.resetInput?.();const w=frame?.contentWindow?.KidscadeWorldV2?.activeWorld||frame?.contentWindow?.__kidscadeWorldV2;w?.input?.reset?.();}catch(_){} }
   function refreshWorld(){try{frame?.contentWindow?.KidscadeWorldV3?.refresh?.();frame.contentWindow?.postMessage({type:'kidscade-world-v3-refresh'},location.origin);frame.contentWindow?.postMessage({type:'kidscade-life-world-refresh'},location.origin);}catch(_){} }
 
-  function open(){activate();syncCubePetsSidebar();syncWorldEntryStatus();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();try{frame?.contentWindow?.KidscadeWorldV3?.resumeAudio?.()}catch(_){}setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
-  function close(){if(!overlay)return;resetWorldInput();try{frame?.contentWindow?.KidscadeWorldV3?.pauseAudio?.()}catch(_){}overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';syncCubePetsSidebar();syncWorldEntryStatus();}
+  function open(){activate();syncCubePetsSidebar();syncWorldEntryStatus();overlay.dataset.prevOverflow=document.body.style.overflow||'';document.body.style.overflow='hidden';overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');resetWorldInput();refreshWorld();try{const api=frame?.contentWindow?.KidscadeWorldV3;if(api?.resume)api.resume();else api?.resumeAudio?.();}catch(_){}setTimeout(()=>{try{frame.contentDocument?.querySelector('canvas')?.focus()}catch(_){}},80);}
+  function close(){if(!overlay)return;resetWorldInput();try{const api=frame?.contentWindow?.KidscadeWorldV3;if(api?.pause)api.pause();else api?.pauseAudio?.();}catch(_){}overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=overlay.dataset.prevOverflow||'';syncCubePetsSidebar();syncWorldEntryStatus();}
 
   document.addEventListener('click',e=>{const trigger=e.target.closest?.('[data-open-life-world]');if(!trigger)return;e.preventDefault();e.stopImmediatePropagation?.();open();},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay?.classList.contains('open')){e.preventDefault();close()}},true);
