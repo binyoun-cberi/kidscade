@@ -3,6 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const sharp = require('sharp');
+const { composeLobby } = require('./compose-lobby-build.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'dist');
@@ -145,6 +146,36 @@ async function optimizeCatalogCovers(catalog) {
   return { optimizedCount, originalBytes, optimizedBytes };
 }
 
+async function composeLobbyArtifact(buildId) {
+  const bootstrapPath = path.join(OUT, 'main-bootstrap.js');
+  const basePath = path.join(OUT, 'index_base.html');
+  const catalogPath = path.join(OUT, 'data', 'games.json');
+  assertExists('main-bootstrap.js');
+  assertExists('index_base.html');
+  assertExists('data/games.json');
+
+  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  const html = await composeLobby({
+    bootstrapSource: fs.readFileSync(bootstrapPath, 'utf8'),
+    baseHtml: fs.readFileSync(basePath, 'utf8'),
+    catalog,
+    buildId
+  });
+
+  if (html.includes('__KIDSCADE_BUILD__')) {
+    throw new Error('Precomposed lobby still contains the unresolved build marker.');
+  }
+  if (/<script\b[^>]*src=["'][^"']*main-bootstrap\.js/i.test(html)) {
+    throw new Error('Precomposed lobby must not reload main-bootstrap.js in the browser.');
+  }
+
+  fs.writeFileSync(path.join(OUT, 'index.html'), html, 'utf8');
+  return {
+    bytes: Buffer.byteLength(html),
+    games: Array.isArray(catalog.games) ? catalog.games.length : 0
+  };
+}
+
 async function optimizeFavicon() {
   if (!fs.existsSync(FAVICON_SOURCE)) return null;
   const outputPath = path.join(OUT, 'favicon.png');
@@ -200,6 +231,7 @@ async function main() {
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
   const removedGameCount = removeRetiredGames(catalog);
   const coverStats = await optimizeCatalogCovers(catalog);
+  const lobbyStats = await composeLobbyArtifact(buildId);
   const faviconStats = await optimizeFavicon();
   writeStaticHeaders();
 
@@ -229,6 +261,7 @@ async function main() {
   console.log(`- retired catalog games removed: ${removedGameCount}`);
   console.log(`- enabled game entry files verified: ${enabledGames.length}`);
   console.log(`- optimized cover images: ${coverStats.optimizedCount}`);
+  console.log(`- precomposed lobby: ${lobbyStats.games} catalog games, ${formatKiB(lobbyStats.bytes)} HTML`);
   if (coverStats.optimizedCount) {
     console.log(`- cover payload: ${formatMiB(coverStats.originalBytes)} -> ${formatMiB(coverStats.optimizedBytes)} (${savedPct}% smaller)`);
   }
