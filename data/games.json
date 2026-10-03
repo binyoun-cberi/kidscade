@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_human_history_cards",
+      "addedAt": "2026-10-03T20:03:00+09:00",
+      "title": "인류의 카드: 첫 불에서 마을까지",
+      "href": "games/high_human_history_cards/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🔥",
+      "description": "두 사람과 자연 카드에서 시작해 채집·뗀석기·사냥·불·움막을 발견하고, 농경·어로·목축 중 하나의 생활 방식을 선택해 작은 정착지까지 만드는 인간 생활사 카드 시뮬레이션 프로토타입.",
+      "subject": "social",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 12,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "low_perfect_pitch",
       "addedAt": "2026-10-03T08:46:00+09:00",
       "title": "퍼펙트 피치",
