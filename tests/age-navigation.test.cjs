@@ -96,3 +96,32 @@ test('age gate binds before deferred lobby runtimes', () => {
   assert.match(html, /\(\(\) => \{[\s\S]*KidscadeAgeNavigation\.init/);
   assert.doesNotMatch(html, /html2canvas\.hertzen\.com/);
 });
+
+
+test('early no-callback init can be completed later without rebinding the gate', () => {
+  const timers=new Map();let timerId=0;let saved='high';let changes=0;
+  const buttons=['toddler','low','high'].map(age=>({dataset:{targetAge:age},classList:{toggle(){}},setAttribute(){},focus(){}}));
+  const screen={style:{},dataset:{},addCount:0,addEventListener(){this.addCount++},querySelectorAll(){return buttons},setAttribute(){}};
+  const main={style:{},setAttribute(){}};
+  const change={dataset:{},addCount:0,addEventListener(){this.addCount++},focus(){}};
+  const document={body:{dataset:{}},getElementById(id){return id==='age-selection-screen'?screen:id==='main-app'?main:id==='btn-change-age'?change:{style:{},setAttribute(){}}}};
+  const storage={getItem(){return saved},setItem(k,v){saved=v},removeItem(){}};
+  const api=navigation.create({document,storage,setTimeout(fn){timers.set(++timerId,fn);return timerId},clearTimeout(id){timers.delete(id)}});
+  api.init();
+  assert.equal(screen.addCount,1);
+  assert.equal(change.addCount,1);
+  api.init({onAgeChange(){changes++}});
+  assert.equal(changes,1);
+  assert.equal(screen.addCount,1);
+  assert.equal(change.addCount,1);
+});
+
+test('index primes age navigation before the legacy lobby body executes', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const html=fs.readFileSync(path.resolve(__dirname,'..','index_base.html'),'utf8');
+  const prime=html.indexOf('window.KidscadeAgeNavigation?.init?.();');
+  const legacy=html.indexOf('(() => {', prime);
+  assert.ok(prime>0);
+  assert.ok(legacy>prime);
+});
