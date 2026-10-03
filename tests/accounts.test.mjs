@@ -138,3 +138,12 @@ test('student sessions renew lazily and account sync is deduplicated across open
   assert.match(client, /stateSignature/);
 });
 
+
+
+test('account UI render is idempotent under its body MutationObserver', () => {
+  const client = fs.readFileSync(path.join(ROOT, 'account-client.js'), 'utf8');
+  assert.match(client, /function commitSlot\(slot, renderKey, html, bind\)/);
+  assert.match(client, /slot\.dataset\.kcaRenderKey === renderKey/);
+  assert.match(client, /const externalMutation = mutations\.some/);
+  assert.doesNotMatch(client, /new MutationObserver\(\(\) => renderSlot\(\)\)/);
+});
