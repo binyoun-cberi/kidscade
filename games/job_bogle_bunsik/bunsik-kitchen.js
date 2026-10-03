@@ -230,6 +230,7 @@ class RamenKitchen3D{
   const sink=this.makeLayoutStation('sink','싱크 · 설거지',BAKERY_BITS,'kitchencounter-sink.glb',2.05,-5.7,-1.7,Math.PI/2);
   this.makeLayoutStation('fridge','재료 냉장고',BAKERY_BITS,'fridge-a.glb',2.1,-5.85,2.4,Math.PI/2);
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2);
+  this.makeIngredientSource('src-water','water','물',-5.0,2.95);
   this.makeIngredientSource('src-noodle','noodle','면',-3.6,2.95);
   this.makeIngredientSource('src-soup','soup','스프',-1.8,2.95);
   this.makeIngredientSource('src-egg','egg','계란',0,2.95,FOOD,'egg.glb');
@@ -310,6 +311,16 @@ class RamenKitchen3D{
   if(!blocked)this.dragLayout.position.set(x,0,z);
  }
  stationDistance(group){return this.player?Math.hypot(group.position.x-this.player.position.x,group.position.z-this.player.position.z):999}
+ canStand(x,z){
+  if(x<-7.15||x>7.15||z<-2.82||z>4.55)return false;
+  for(const v of this.potVisuals){if(Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.03)return false}
+  for(const s of this.layoutStations){
+   const radius=s.source?.72:1.0;
+   if(Math.hypot(s.group.position.x-x,s.group.position.z-z)<radius)return false
+  }
+  if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<.92)return false;
+  return true
+ }
  updatePlayer(dt){
   if(!this.player)return;
   const canMove=state.phase==='service';
@@ -322,34 +333,42 @@ class RamenKitchen3D{
   }
   if(dx||dz){
    const len=Math.hypot(dx,dz)||1,speed=3.25;dx/=len;dz/=len;
-   this.player.position.x=Math.max(-7.15,Math.min(7.15,this.player.position.x+dx*speed*dt));
-   this.player.position.z=Math.max(-2.85,Math.min(4.55,this.player.position.z+dz*speed*dt));
+   const nx=this.player.position.x+dx*speed*dt,nz=this.player.position.z+dz*speed*dt;
+   if(this.canStand(nx,this.player.position.z))this.player.position.x=nx;
+   if(this.canStand(this.player.position.x,nz))this.player.position.z=nz;
    this.player.rotation.y=Math.atan2(dx,dz);
   }
+  const customers=state.orders.map(o=>({type:'customer',label:recipeById(o.recipeId)?.name||'손님',group:this.customerHolders[o.slot],orderId:o.id,slot:o.slot})).filter(x=>x.group);
   const candidates=[
-   ...this.layoutStations.map(s=>({type:s.id,label:s.label,group:s.group})),
-   ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i}))
+   ...this.layoutStations.map(s=>({type:s.source?'source':s.id,label:s.label,group:s.group,ingredientId:s.ingredientId,sourceId:s.id})),
+   ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i})),
+   ...customers
   ];
-  let nearest=null,best=1.55;
+  let nearest=null,best=1.6;
   candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
   this.nearestStation=nearest;
-  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep' ? .55 : (nearest?.group===s.group ? .88 : 0)});
+  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep' ? .55 : (nearest?.group===s.group ? .9 : 0)});
+  this.customerRings.forEach((ring,i)=>{const order=state.orders.find(o=>o.slot===i),near=nearest?.type==='customer'&&nearest.slot===i;ring.material.opacity=order&&(near||state.carry?.kind==='meal'&&state.carry.recipeId===order.recipeId)?(near?.95:.38):0});
   if(els.stationHint){
-   if(state.phase==='prep')els.stationHint.textContent='가구를 드래그해 주방 동선을 바꿔 보세요';
-   else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
-   else if(nearest.type==='sink')els.stationHint.textContent=state.dirtyPlates?'E · 더러운 접시 씻기':'싱크 · 더러운 접시가 없어요';
+   if(state.phase==='prep')els.stationHint.textContent='가구와 재료 상자를 드래그해 짧은 동선을 만들어 보세요';
+   else if(!nearest)els.stationHint.textContent=state.carry?'손에 든 '+carryLabel()+'을 사용할 곳으로 가져가세요':'WASD / 방향키로 이동 · E로 집기/놓기';
+   else if(nearest.type==='source')els.stationHint.textContent=state.carry?'손이 가득 찼어요 · 먼저 '+carryLabel()+'을 사용하세요':'E · '+nearest.label+' 집기';
+   else if(nearest.type==='sink')els.stationHint.textContent=state.carry?'설거지 전 손을 비워 주세요':state.dirtyPlates?'E · 더러운 접시 씻기':'싱크 · 더러운 접시가 없어요';
    else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
-   else if(nearest.type==='fridge')els.stationHint.textContent='재료 냉장고 · 조리 재료 보관';
-   else els.stationHint.textContent='E · '+nearest.label+' 선택';
+   else if(nearest.type==='customer')els.stationHint.textContent=state.carry?.kind==='meal'?'E · '+nearest.label+' 서빙':'손님 주문 · '+nearest.label;
+   else if(nearest.type==='pot')els.stationHint.textContent=state.carry?'E · '+carryLabel()+' → '+nearest.label:'E · '+nearest.label+' 사용';
+   else els.stationHint.textContent='E · '+nearest.label;
   }
  }
  interactNearest(){
   if(state.phase!=='service')return;
-  const n=this.nearestStation;if(!n){toast('가까운 조리대나 싱크로 이동해 주세요');return}
-  if(n.type==='pot'){this.setSelectedPot(n.potIndex);return}
-  if(n.type==='sink'){washOnePlate();return}
-  if(n.type==='rack'){toast('깨끗한 접시 '+state.cleanPlates+'개 · 라면을 담을 때 하나 사용해요',1500);return}
-  if(n.type==='fridge'){toast('냉장고에서 면·스프·토핑을 꺼내 쓰는 운반 시스템은 다음 단계에서 연결돼요',1600)}
+  const n=this.nearestStation;if(!n){toast('사용할 곳 가까이 이동해 주세요');return}
+  if(n.type==='source'){pickupIngredient(n.ingredientId);return}
+  if(n.type==='pot'){interactPot(n.potIndex);return}
+  if(n.type==='customer'){serveCarriedMeal(n.orderId);return}
+  if(n.type==='sink'){if(state.carry){toast('설거지하려면 먼저 손을 비워 주세요');return}washOnePlate();return}
+  if(n.type==='rack'){toast('깨끗한 접시 '+state.cleanPlates+'개 · 완성된 라면을 담을 때 자동으로 한 장 꺼내요',1500);return}
+  if(n.type==='fridge'){toast('재료는 냉장고 앞 개별 재료 상자에서 직접 집어 주세요',1500)}
  }
  syncDishVisuals(){this.dirtyPlateModels.forEach((m,i)=>{m.visible=i<Math.min(5,state.dirtyPlates)})}
  makeCustomers(){
@@ -419,10 +438,9 @@ class RamenKitchen3D{
  setSelectedPot(index){
   if(index==null){state.selectedPot=null;this.potVisuals.forEach(v=>v.selectRing.visible=false);renderPotStrip();renderSelectedHelp();updateActionButtons();return}
   if(index>=activePotCount()){toast('조금 더 서빙하면 이 화구가 열려요');return}
-  if(state.tutorial.active&&state.tutorial.step===0&&index!==0){toast('첫 그릇은 1번 냄비로 같이 만들어 봐요');return}
+  if(state.tutorial.active&&index!==0){toast('첫 그릇은 1번 냄비로 같이 만들어 봐요');return}
   if(state.selectedPot!==index){state.discardArmedUntil=0;state.discardArmedPot=null;els.discard.classList.remove('armed')}
   state.selectedPot=index;
-  if(state.tutorial.active&&state.tutorial.step===0&&index===0)state.tutorial.step=1;
   this.potVisuals.forEach((v,i)=>v.selectRing.visible=i===index);
   renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons()
  }
@@ -455,7 +473,7 @@ class RamenKitchen3D{
    if(p.burnt)v.flame.color.setHex(0xff2f1d);else v.flame.color.setHex(0xff6a2b);
    const locked=i>=activePotCount();v.lockTag.visible=locked;v.tag.visible=!locked;
    if(locked){v.selectRing.visible=false;v.flame.intensity=0;v.burner.material.emissiveIntensity=.02;return}
-   const selected=i===state.selectedPot,tutorialTarget=state.tutorial.active&&state.tutorial.step===0&&i===0;
+   const selected=i===state.selectedPot,tutorialTarget=state.tutorial.active&&state.tutorial.step>=1&&state.tutorial.step<=5&&i===0;
    const ideal=hasIngredient(p,'noodle')&&p.noodleTime>=8.2&&p.noodleTime<=11.5&&!p.burnt;
    const danger=p.burnt||p.noodleTime>14.2;
    v.selectRing.visible=selected||tutorialTarget;
