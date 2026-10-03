@@ -19,9 +19,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=22/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=22/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=22')<html.indexOf('avatar-pixel-studio.js?v=22'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=23/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=23/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=23')<html.indexOf('avatar-pixel-studio.js?v=23'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -62,11 +62,11 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-haircatalog-1'/);
+  assert.match(js,/version:'pixel-v2-rig-haircatalog-2'/);
 });
 
 test('new and legacy users fall back to the curated default hair with a complete outfit',()=>{
-  assert.match(js,/hairId:'clean-01'/);
+  assert.match(js,/hairId:'male-short-01'/);
   assert.match(js,/upper:1,lower:1/);
   assert.match(js,/kidscade_avatar_equipped/);
   assert.match(js,/legacyMigrationState/);
@@ -121,18 +121,19 @@ test('avatar rig lab proves a cropped accessory can attach to the nose anchor',(
   assert.match(lab,/setExtraParts/);
 });
 
-test('curated hair catalog has one approved fallback and standalone asset',()=>{
+test('curated hair catalog uses the head-fitted short hair fallback',()=>{
   assert.equal(hairCatalog.type,'kidscade-approved-hair-catalog');
   assert.equal(hairCatalog.legacyHidden,true);
-  assert.equal(hairCatalog.fallbackId,'clean-01');
+  assert.equal(hairCatalog.fallbackId,'male-short-01');
   assert.equal(hairCatalog.coordinateSystem.canvas[0],128);
   assert.equal(hairCatalog.coordinateSystem.canvas[1],128);
+  assert.equal(hairCatalog.coordinateSystem.centerX,65.5);
   assert.equal(hairCatalog.coordinateSystem.runtimeScale,1);
   assert.deepEqual(hairCatalog.coordinateSystem.runtimeOffset,[0,0]);
   const fallback=hairCatalog.items.find(item=>item.id===hairCatalog.fallbackId);
   assert.ok(fallback?.approved);
   assert.equal(fallback.back,null);
-  assert.match(fallback.front,/runtime\/hair\/approved\/hair-clean-01\.png/);
+  assert.match(fallback.front,/runtime\/hair\/approved\/hair-male-01\.png/);
   const assetPath=path.join(root,'assets/game/characters/kidscade-avatar-v1',fallback.front);
   assert.ok(fs.existsSync(assetPath));
   const png=fs.readFileSync(assetPath);
@@ -141,7 +142,7 @@ test('curated hair catalog has one approved fallback and standalone asset',()=>{
 });
 
 test('renderer migrates legacy hair selections to the approved fallback and supports future back hair',()=>{
-  assert.match(renderer,/hairId:'clean-01'/);
+  assert.match(renderer,/hairId:'male-short-01'/);
   assert.match(renderer,/fallbackHairId\(\)/);
   assert.match(renderer,/this\.hairRecord\(String\(raw\.hairId\|\|''\)\)\?\.id\|\|this\.fallbackHairId\(\)/);
   assert.match(renderer,/hairBack:hair\?\.back\|\|null/);
@@ -163,9 +164,9 @@ test('legacy sheet hair stays in the repository but its automatic build is retir
 });
 
 test('runtime assets are revisioned so curated hair migrations do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='22'/);
+  assert.match(js,/ASSET_REV='23'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='22'/);
+  assert.match(renderer,/ASSET_REV='23'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{

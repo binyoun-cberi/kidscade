@@ -2,16 +2,16 @@
 'use strict';
 
 const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
-const ASSET_REV='22';
+const ASSET_REV='23';
 function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v2-rig-haircatalog-1';
+const PREVIEW_VERSION='pixel-v2-rig-haircatalog-2';
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
 const BASE=rev(ROOT+'/base/master-base-128.png');
 const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
-const DEFAULT={hairId:'clean-01',upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
+const DEFAULT={hairId:'male-short-01',upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
 const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
 const folders={eyes:'eyes',eyebrows:'eyebrows',noses:'noses',mouths:'mouths',blush:'blush'};
 const prefixes={eyes:'eyes',eyebrows:'eyebrows',noses:'nose',mouths:'mouth',blush:'blush'};
@@ -304,7 +304,7 @@ function previewFrame(mode='idle',time=0){
 }
 
 window.KidscadeAvatarShop={
-  version:'pixel-v2-rig-haircatalog-1',
+  version:'pixel-v2-rig-haircatalog-2',
   stateKey:STATE_KEY,
   getPreviewDataURL:()=>previewData(),
   renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),

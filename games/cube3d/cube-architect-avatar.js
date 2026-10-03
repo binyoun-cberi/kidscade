@@ -6,7 +6,7 @@
 const STATE_KEY='kidscade-pixel-avatar-v1';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const DEFAULTS={
-  hairId:'clean-01',upper:1,lower:1,
+  hairId:'male-short-01',upper:1,lower:1,
   eyes:1,eyebrows:1,noses:1,mouths:1,blush:0
 };
 

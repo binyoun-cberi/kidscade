@@ -5,13 +5,13 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='22';
+const ASSET_REV='23';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const HAIR_CATALOG_PATH='runtime/hair/approved-hair-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
-  hairId:'clean-01',
+  hairId:'male-short-01',
   hairSet:'male',
   hairStyle:1,
   upper:1,
@@ -151,7 +151,7 @@ class PixelAvatar{
   fallbackHairId(){
     const preferred=this.hairManifest?.fallbackId;
     if(preferred&&this.hairRecord(preferred))return preferred;
-    return this.approvedHairItems()[0]?.id||'clean-01';
+    return this.approvedHairItems()[0]?.id||'male-short-01';
   }
 
   normalizeConfig(next){
