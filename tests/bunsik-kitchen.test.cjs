@@ -239,7 +239,7 @@ test('Bunsik Kitchen v15 makes furniture collision matter during service', () =>
   assert.match(js, /isBlockedPosition\(x,z,pr=/);
   assert.match(js, /layoutPlacementBlocked\(holder,x,z\)/);
   assert.match(js, /this\.potVisuals\.some\(v=>Math\.hypot/);
-  assert.match(js, /this\.layoutStations\.some\(s=>Math\.hypot/);
+  assert.match(js, /this\.layoutStations\.some\(s=>s\.group\.visible&&Math\.hypot/);
   assert.match(js, /if\(!this\.isBlockedPosition\(nx,this\.player\.position\.z\)\)/);
   assert.match(js, /if\(!this\.isBlockedPosition\(this\.player\.position\.x,nz\)\)/);
 });
@@ -302,8 +302,8 @@ test('Bunsik Kitchen v15 exposes generic storage-slot actions in the proximity d
 
 test('Bunsik Kitchen v15 publishes the automation strategy', () => {
   assert.match(html, /컨베이어\/Grabber 방향/);
-  assert.match(html, /조리대·알바생·컨베이어·Grabber/);
-  assert.match(html, /자동화 연결/);
+  assert.match(html, /Grabber는 재료를 당기고/);
+  assert.match(html, /장비 구매/);
 });
 
 
@@ -340,7 +340,7 @@ test('Bunsik Kitchen v15 helper paths around solid kitchen furniture', () => {
 
 test('Bunsik Kitchen v15 helper safely returns or releases carried work', () => {
   assert.match(js, /returnHelperCarry\(\)/);
-  assert.match(js, /preferred&&!preferred\.userData\.storedItem/);
+  assert.match(js, /preferred\?\.visible&&!preferred\.userData\.storedItem/);
   assert.match(js, /this\.setHelperCarry\(null\);return false/);
   assert.match(js, /resetHelper\(\)/);
 });
@@ -462,11 +462,11 @@ test('Bunsik Kitchen v15 adds a filterable Smart Grabber', () => {
 });
 
 test('Bunsik Kitchen v15 persists purchased equipment layout, direction and Smart Grabber filter', () => {
-  assert.match(js, /function snapshotEquipmentLayout\(\)/);
+  assert.match(js, /snapshotEquipmentLayout\(\)/);
   assert.match(js, /layout\[s\.id\]=\{x:/);
   assert.match(js, /layout\[s\.id\]\.dir=g\.userData\.direction\|\|0/);
   assert.match(js, /progress\.filters\[s\.id\]=s\.group\.userData\.filterId\|\|'noodle'/);
-  assert.match(js, /function applySavedEquipmentState\(\)/);
+  assert.match(js, /applySavedEquipmentState\(\)/);
   assert.match(js, /g\.position\.set\(saved\.x,0,saved\.z\)/);
 });
 
