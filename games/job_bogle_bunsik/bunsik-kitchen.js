@@ -505,12 +505,30 @@ function tutorialCarryExpected(){
  if(!state.tutorial.active)return null;
  return({0:'water',1:'water',2:'noodle',3:'soup',4:'egg'})[state.tutorial.step]||null
 }
-function recommendedCarryIngredient(){
- const expected=tutorialCarryExpected();if(expected)return expected;
+function recommendedToppingIngredient(){
+ const expected=tutorialCarryExpected();if(['egg','green','cheese'].includes(expected))return expected;
  const p=state.selectedPot==null?null:state.pots[state.selectedPot];
- if(!p)return'noodle';
- const actions=contextActionsForPot(p).filter(id=>id!=='plate');
- return actions[0]||'noodle'
+ const wanted=p?contextActionsForPot(p).filter(id=>['egg','green','cheese'].includes(id)):[];
+ if(wanted.length)return wanted[0];
+ for(const o of state.orders){
+  const r=recipeById(o.recipeId);if(!r)continue;
+  const topping=r.need.find(id=>['egg','green','cheese'].includes(id));
+  if(topping)return topping
+ }
+ return'egg'
+}
+function returnHeldAtSource(ids){
+ const held=state.heldItem;if(!held||held.kind!=='ingredient')return false;
+ const list=Array.isArray(ids)?ids:[ids];
+ if(!list.includes(held.id))return false;
+ const name=heldItemLabel();setHeldItem(null);toast(name+'을 제자리에 돌려놓았어요',1200);return true
+}
+function dropHeldItem(){
+ const held=state.heldItem;if(!held)return false;
+ const name=heldItemLabel();setHeldItem(null);state.heldDiscardArmedUntil=0;
+ if(held.kind==='meal'){addDirtyPlate();toast(name+'을 버렸어요 · 그릇은 싱크로 갔어요',1500)}
+ else toast(name+'을 제자리에 돌려놓았어요',1200);
+ return true
 }
 function pickIngredient(id){
  if(!id||!INGREDIENTS[id])return;
@@ -550,9 +568,9 @@ function tutorialMessage(){
  const p=state.pots[0],held=state.heldItem;
  if(state.tutorial.step===0)return held?.id==='water'?'① 물을 들고 1번 냄비로 가서 E':'① 싱크로 가서 E로 물을 받아 1번 냄비에 가져가요';
  if(state.tutorial.step===1)return held?.id==='water'?'② 물 한 컵 더 · 1번 냄비에서 E':'② 싱크에서 물을 한 번 더 받아 1번 냄비로 가져가요';
- if(state.tutorial.step===2)return held?.id==='noodle'?'③ 면을 들고 1번 냄비에서 E':'③ 냉장고에서 E로 면을 꺼내 1번 냄비로 가져가요';
- if(state.tutorial.step===3)return held?.id==='soup'?'④ 스프를 들고 냄비에서 E':'④ 냉장고에서 스프를 꺼내 냄비로 가져가요';
- if(state.tutorial.step===4)return held?.id==='egg'?'⑤ 계란을 들고 냄비에서 E':'⑤ 첫 주문은 계란 라면 · 냉장고에서 계란을 꺼내요';
+ if(state.tutorial.step===2)return held?.id==='noodle'?'③ 면을 들고 1번 냄비에서 E':'③ 면 바구니로 가서 E로 면을 들고 와요';
+ if(state.tutorial.step===3)return held?.id==='soup'?'④ 스프를 들고 냄비에서 E':'④ 스프 바구니에서 스프를 들고 냄비로 가져가요';
+ if(state.tutorial.step===4)return held?.id==='egg'?'⑤ 계란을 들고 냄비에서 E':'⑤ 첫 주문은 계란 라면 · 토핑 냉장고에서 계란을 꺼내요';
  if(state.tutorial.step===5){
   if(p.noodleTime<5.5)return'⑥ 보글보글 끓는 동안 기다려요 · 아직 설익었어요';
   if(p.noodleTime<8.2)return'⑥ 조금만 더! “딱 좋아요”가 될 때를 기다려요';
@@ -610,11 +628,13 @@ function canUseAction(action){
  return false
 }
 function renderDiscardButton(){
- const p=state.selectedPot==null?null:state.pots[state.selectedPot],trayReady=!!state.tray?.ready;
- const disabled=!state.running||state.busy||state.tutorial.active||(!trayReady&&(!p||potEmpty(p)));
+ const p=state.selectedPot==null?null:state.pots[state.selectedPot],trayReady=!!state.tray?.ready,held=state.heldItem;
+ const heldCanDrop=!!held&&(held.kind==='ingredient'||!state.tutorial.active);
+ const disabled=!state.running||state.busy||(!heldCanDrop&&(state.tutorial.active||(!trayReady&&(!p||potEmpty(p)))));
  els.discard.disabled=disabled;
- if(performance.now()>state.discardArmedUntil&&performance.now()>state.trayDiscardArmedUntil){
-  els.discard.classList.remove('armed');els.discard.querySelector('b').textContent=trayReady?'쟁반 비우기':'냄비 비우기'
+ if(performance.now()>state.discardArmedUntil&&performance.now()>state.trayDiscardArmedUntil&&performance.now()>state.heldDiscardArmedUntil){
+  els.discard.classList.remove('armed');
+  els.discard.querySelector('b').textContent=held?(held.kind==='meal'?'라면 버리기':'재료 내려놓기'):trayReady?'쟁반 비우기':'냄비 비우기'
  }
 }
 function contextActionsForPot(p){
@@ -640,8 +660,12 @@ function updateActionButtons(){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent='영업 전에는 주방 배치를 정리해요';els.dock.appendChild(wait)
  }else if(state.heldItem){
   const wait=document.createElement('span');wait.className='action-wait';wait.textContent=heldItemLabel()+'을 들고 있어요 · '+(state.heldItem.kind==='meal'?'배식대로 이동':'냄비로 이동');els.dock.appendChild(wait)
+ }else if(n?.type==='noodleSource'){
+  addSourceButton('noodle','면 들기');
+ }else if(n?.type==='soupSource'){
+  addSourceButton('soup','스프 들기');
  }else if(n?.type==='fridge'){
-  ['noodle','soup','egg','green','cheese'].forEach(id=>addSourceButton(id));
+  const toppings=state.tutorial.active?['egg']:['egg','green','cheese'];toppings.forEach(id=>addSourceButton(id));
  }else if(n?.type==='sink'){
   addSourceButton('water','물 한 컵 받기');
   if(state.dirtyPlates>0){const wash=document.createElement('button');wash.type='button';wash.innerHTML='<span>🧼</span><b>설거지</b>';wash.addEventListener('click',washOnePlate);els.dock.appendChild(wash)}
@@ -660,13 +684,13 @@ function nextInstruction(p){
  if(state.heldItem?.kind==='meal')return state.heldItem.name+'을 들고 배식대로 이동해 E로 서빙하세요';
  if(state.heldItem?.kind==='ingredient')return heldItemLabel()+'을 들고 있어요 · 사용할 냄비 가까이에서 E';
  if(state.tray)return'라면을 서빙하는 중이에요';
- if(!p)return'냉장고·싱크에서 재료를 하나 들고 냄비로 가져가세요';
- if(p.burnt)return'탔어요 · 왼쪽 아래 “선택 냄비 비우기”로 새로 시작하세요';
- if(potEmpty(p))return'물 버튼을 두 번 눌러 2컵을 맞추세요';
- if(p.water<1.5&&!p.ingredients.length)return'물을 한 번 더 넣어 2컵 가까이 맞추세요';
- if(!hasIngredient(p,'noodle')&&!hasIngredient(p,'soup'))return'면과 스프 버튼을 눌러 주세요';
- if(!hasIngredient(p,'noodle'))return'면 버튼을 눌러 주세요';
- if(!hasIngredient(p,'soup'))return'스프 버튼을 눌러 주세요';
+ if(!p)return'싱크·면 바구니·스프 바구니·토핑 냉장고에서 재료를 하나씩 가져오세요';
+ if(p.burnt)return'탔어요 · 왼쪽 아래 “냄비 비우기”로 새로 시작하세요';
+ if(potEmpty(p))return'싱크에서 물을 받아 이 냄비로 가져오세요';
+ if(p.water<1.5&&!p.ingredients.length)return'싱크에서 물 한 컵을 더 가져오세요';
+ if(!hasIngredient(p,'noodle')&&!hasIngredient(p,'soup'))return'면 바구니와 스프 바구니를 차례로 다녀오세요';
+ if(!hasIngredient(p,'noodle'))return'면 바구니에서 면을 가져오세요';
+ if(!hasIngredient(p,'soup'))return'스프 바구니에서 스프를 가져오세요';
  const recipe=identifyRecipe(p);
  if(!recipe){
   const order=compatibleOrderForPot(p),r=order&&recipeById(order.recipeId);
@@ -756,8 +780,14 @@ function handleAction(action){
  applyAction(state.selectedPot,action)
 }
 function requestDiscard(){
- if(state.tutorial.active){toast('첫 라면은 같이 완성해 본 뒤 비우기를 사용할 수 있어요');return}
  const now=performance.now();
+ if(state.heldItem){
+  if(state.heldItem.kind==='ingredient'){dropHeldItem();renderDiscardButton();return}
+  if(state.tutorial.active){toast('첫 라면은 손님에게 서빙해 보세요');return}
+  if(now>state.heldDiscardArmedUntil){state.heldDiscardArmedUntil=now+2200;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 버리기';toast('완성 라면을 정말 버릴까요?',1400);return}
+  dropHeldItem();renderDiscardButton();return
+ }
+ if(state.tutorial.active){toast('첫 라면은 같이 완성해 본 뒤 비우기를 사용할 수 있어요');return}
  if(state.tray?.ready){
   if(now>state.trayDiscardArmedUntil){state.trayDiscardArmedUntil=now+2400;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 쟁반 비우기';toast('한 번 더 누르면 완성된 라면을 버려요',1600);return}
   state.trayDiscardArmedUntil=0;state.tray=null;kitchen.setTrayMeal(false);addDirtyPlate();renderTray();renderOrders();renderSelectedHelp();updateActionButtons();renderDiscardButton();toast('라면은 버렸지만 사용한 그릇은 싱크로 갔어요');return
@@ -914,14 +944,14 @@ function resetGameState(){
  restaurant.reset({keepLayout:true});
  state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
  state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;
- state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;
+ state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
  kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
 function startGame(){
  resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');
- toast('영업 전 준비 · 싱크, 냉장고, 접시대를 드래그해 동선을 만들어 보세요',2500);state.raf=requestAnimationFrame(loop)
+ toast('영업 전 준비 · 싱크, 면·스프 바구니, 토핑 냉장고, 접시대를 배치해 보세요',2700);state.raf=requestAnimationFrame(loop)
 }
 function beginService(){
  if(!state.running||state.phase!=='prep')return;
