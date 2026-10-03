@@ -102,3 +102,33 @@ test('single focus toggle switches between all parts and body plus active part',
   assert.ok(js.includes("button.textContent=focusPartOnly?'모든 파츠 보기':'선택 파츠만 보기'"));
   assert.ok(js.includes("const focusVisible=!focusPartOnly||layer==='body'||layer===activeLayer"));
 });
+
+
+test('studio exports an AI-readable analysis file for the active part',()=>{
+  assert.ok(html.includes('id="exportPartAnalysis"'));
+  assert.ok(js.includes("type:'kidscade-avatar-part-analysis'"));
+  assert.match(js,/function buildPartAnalysis\(/);
+  assert.match(js,/function sparsePixelsOfCanvas\(/);
+  assert.match(js,/function alphaRunsOfCanvas\(/);
+  assert.match(js,/function canvasMetrics\(/);
+  assert.ok(js.includes("adjustmentContract:{"));
+  assert.ok(js.includes("type:'kidscade-avatar-part-adjustment'"));
+});
+
+test('studio imports AI adjustment JSON with frame operations',()=>{
+  assert.ok(html.includes('id="importPartAdjustment"'));
+  assert.match(js,/function validateAdjustmentFile\(/);
+  assert.match(js,/async function applyPartAdjustment\(/);
+  for(const op of ['translate','moveRect','setPixels','replacePixels']) assert.ok(js.includes("'"+op+"'"));
+  assert.match(js,/function snapshotFrameLayer\(/);
+  assert.match(js,/function shiftLayerFrame\(/);
+  assert.match(js,/function moveRectOnFrame\(/);
+  assert.match(js,/function applyPixelTuples\(/);
+});
+
+test('AI adjustment exchange validates 128x128 target and checksums',()=>{
+  assert.ok(js.includes("data.target?.canvas"));
+  assert.ok(js.includes('canvasChecksum(layerCanvas(frameId,layer))'));
+  assert.ok(js.includes('baseChecksum'));
+  assert.ok(html.includes('id="adjustmentSummary"'));
+});
