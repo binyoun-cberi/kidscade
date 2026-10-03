@@ -89,8 +89,6 @@
       #pet-modal .sook-room-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
       .shop-tab[data-tab="pet"],
       #btn-open-pet-shop-compact,
-      #btn-open-aquarium,
-      #btn-open-hamster,
       .sook-main-tab[data-sook-tab="room"] { display:none !important; }
 
       /* Mobile primary navigation. */

@@ -153,11 +153,13 @@ async function optimizeFavicon() {
     .png({ compressionLevel: 9, palette: true })
     .toFile(outputPath);
 
-  const indexPath = path.join(OUT, 'index.html');
-  let html = fs.readFileSync(indexPath, 'utf8');
   const versionedFavicon = `favicon.png?v=${shortHash(FAVICON_SOURCE)}`;
-  html = html.replaceAll('assets/gate-image/favicon.png', versionedFavicon);
-  fs.writeFileSync(indexPath, html, 'utf8');
+  for (const rel of ['index.html', 'index_base.html']) {
+    const target = path.join(OUT, rel);
+    let html = fs.readFileSync(target, 'utf8');
+    html = html.replaceAll('assets/gate-image/favicon.png', versionedFavicon);
+    fs.writeFileSync(target, html, 'utf8');
+  }
 
   return {
     sourceBytes: fs.statSync(FAVICON_SOURCE).size,
