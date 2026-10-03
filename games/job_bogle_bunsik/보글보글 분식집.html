@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="bunsik-kitchen.css?v=9">
+<link rel="stylesheet" href="bunsik-kitchen.css?v=10">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 </head>
@@ -33,6 +33,7 @@
     </div>
 
     <div id="stationHint" class="station-hint">WASD / 방향키로 이동 · E로 상호작용</div>
+    <div id="heldStatus" class="held-status empty"><small>손에 든 것</small><b>빈손</b></div>
 
     <div id="tutorialBanner" class="tutorial-banner">
       <small>첫 그릇</small>
@@ -67,9 +68,9 @@
   <div class="start-card">
     <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>영업 전에 주방을 직접 배치하고, 영업이 시작되면 캐릭터를 움직여 조리대와 싱크를 오가며 라면을 완성해요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
+    <p>영업 전에 주방을 배치하고, 영업이 시작되면 재료를 한 번에 하나씩 직접 들고 냄비와 배식대를 오가며 라면을 완성해요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
     <div class="flow-demo">
-      <span>🧱<b>주방 배치</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🍜<b>서빙</b></span><i>→</i><span>🧼<b>설거지</b></span>
+      <span>🧱<b>주방 배치</b></span><i>→</i><span>📦<b>재료 운반</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🍜<b>직접 서빙</b></span>
     </div>
     <div class="recipe-board">
       <div><b>계란 라면</b><span>🍜 🟥 🥚</span></div>
@@ -95,6 +96,6 @@
   </div>
 </div>
 
-<script type="module" src="bunsik-kitchen.js?v=9"></script>
+<script type="module" src="bunsik-kitchen.js?v=10"></script>
 </body>
 </html>
