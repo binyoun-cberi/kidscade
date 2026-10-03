@@ -13,7 +13,7 @@
   } catch (_) {}
 
   const withVersion = path => path + '?v=' + encodeURIComponent(version);
-  const writeScript = path => document.write('<script src="' + withVersion(path) + '"><\\/script>');
+  const writeScript = path => document.write('<scr' + 'ipt src="' + withVersion(path) + '"></scr' + 'ipt>');
 
   writeScript('avatar-integration.js');
   writeScript('seed-world-meta.js');
