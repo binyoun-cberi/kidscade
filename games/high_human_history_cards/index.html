@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>인류의 카드: 첫 불에서 마을까지</title>
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="brand">
+      <span class="brandIcon">🔥</span>
+      <div><strong>인류의 카드</strong><small id="eraLabel">구석기 시대</small></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>☀️ 시대의 하루</span><b id="dayLabel">1일</b></div>
+      <div class="stat"><span>🍖 식량</span><b id="foodLabel">0</b></div>
+      <div class="stat"><span>👥 사람</span><b id="popLabel">2</b></div>
+      <div class="stat"><span>⏳ 다음 식사</span><b id="mealLabel">45초</b></div>
+    </div>
+    <button id="helpBtn" class="roundBtn" type="button" aria-label="도움말">?</button>
+  </header>
+
+  <main id="layout">
+    <section id="boardWrap">
+      <div id="board" aria-label="카드 놀이판"></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+      <div class="boardActions">
+        <button id="exploreBtn" class="actionBtn" type="button">🧭 주변 탐색 <small>식량 1</small></button>
+        <button id="tidyBtn" class="actionBtn secondary" type="button">🧺 카드 정리</button>
+      </div>
+    </section>
+
+    <aside id="journal">
+      <div class="journalTop">
+        <span class="eyebrow">생활사 기록</span>
+        <h2 id="goalTitle">오늘 살아남기</h2>
+        <p id="goalText">카드를 겹쳐 먹을거리와 생활 도구를 만들어 보세요.</p>
+      </div>
+      <div id="questList" class="questList"></div>
+      <div class="divider"></div>
+      <h3>발견한 지식</h3>
+      <div id="discoveries" class="discoveries"></div>
+      <div class="hintBox">
+        <b>💡 겹쳐 볼 만한 카드</b>
+        <p id="hintText">사람 + 숲 · 사람 + 열매 덤불 · 사람 + 돌무더기</p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="startLayer" class="overlay">
+    <div class="panel heroPanel">
+      <div class="heroEmoji">🪨🔥🌾</div>
+      <span class="eyebrow">생활사 카드 시뮬레이션 · 프로토타입</span>
+      <h1>첫 불에서<br>마을까지</h1>
+      <p>두 사람과 몇 장의 자연 카드만 가지고 시작합니다. 카드를 직접 끌어 겹치며 먹을거리와 도구를 발견하고, 마지막에는 <b>농경·어로·목축</b> 가운데 하나의 생활 방식을 선택해 보세요.</p>
+      <div class="howGrid">
+        <div><b>1. 겹치기</b><span>카드를 끌어 다른 카드 위에 놓아요.</span></div>
+        <div><b>2. 기다리기</b><span>채집과 사냥은 잠깐 시간이 걸려요.</span></div>
+        <div><b>3. 먹여 살리기</b><span>45초마다 사람 수만큼 식량이 필요해요.</span></div>
+      </div>
+      <button id="startBtn" class="primaryBtn" type="button">인류의 첫날 시작</button>
+    </div>
+  </div>
+
+  <div id="helpLayer" class="overlay hidden">
+    <div class="panel">
+      <button class="closeBtn" data-close="helpLayer" type="button">×</button>
+      <span class="eyebrow">게임 방법</span>
+      <h2>카드를 겹치면 역사가 움직여요</h2>
+      <div class="helpRecipes">
+        <div><span>👤 + 🌲</span><b>나무 채집</b></div>
+        <div><span>🪵 + 🪨</span><b>뗀석기 도끼</b></div>
+        <div><span>🪵 + 🌾</span><b>모닥불</b></div>
+        <div><span>👤 + 🪓</span><b>사냥꾼</b></div>
+      </div>
+      <p>초록색 카드는 자연이며 여러 번 이용할 수 있습니다. 재료 카드는 조합할 때 사라질 수 있어요. 사슴처럼 사냥하면 사라지는 자연 카드도 있습니다.</p>
+      <button class="primaryBtn" data-close="helpLayer" type="button">계속하기</button>
+    </div>
+  </div>
+
+  <div id="branchLayer" class="overlay hidden">
+    <div class="panel branchPanel">
+      <span class="eyebrow">새로운 생활 방식</span>
+      <h2>떠돌던 사람들이 머물기 시작했어요</h2>
+      <p>식량을 얻는 방법에 따라 마을의 모습이 달라집니다. 이번 판에서 먼저 시험할 길을 하나 골라보세요.</p>
+      <div class="branchGrid">
+        <button type="button" data-branch="farm"><span>🌾</span><b>농경</b><small>땅을 돌보고 곡식을 얻는다</small></button>
+        <button type="button" data-branch="fish"><span>🐟</span><b>어로</b><small>강가에 머물며 물고기를 잡는다</small></button>
+        <button type="button" data-branch="herd"><span>🐐</span><b>목축</b><small>동물을 길들여 먹을거리를 얻는다</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultLayer" class="overlay hidden">
+    <div class="panel resultPanel">
+      <div id="resultEmoji" class="heroEmoji">🏕️</div>
+      <span class="eyebrow">프로토타입 완주</span>
+      <h2 id="resultTitle">작은 정착지가 생겼어요</h2>
+      <p id="resultText"></p>
+      <div id="resultStats" class="resultStats"></div>
+      <button id="restartBtn" class="primaryBtn" type="button">다른 길로 다시 시작</button>
+    </div>
+  </div>
+
+  <div id="gameOverLayer" class="overlay hidden">
+    <div class="panel resultPanel">
+      <div class="heroEmoji">🌙</div>
+      <span class="eyebrow">생존 실패</span>
+      <h2>먹을거리가 모자랐어요</h2>
+      <p>사람 수만큼 식량을 준비하지 못했습니다. 열매를 모으고, 사냥한 고기는 모닥불에 익혀 식량을 넉넉히 만들어 보세요.</p>
+      <button id="retryBtn" class="primaryBtn" type="button">다시 시작</button>
+    </div>
+  </div>
+</div>
+<script src="./game.js?v=1"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="인류의 카드: 첫 불에서 마을까지" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+</body>
+</html>
