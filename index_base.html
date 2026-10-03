@@ -2696,6 +2696,11 @@ ${getEvolutionHintText()}
             // 즐겨찾기 & 최근 플레이 
             // =====================================
             function renderDashboards() {
+                if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
+                    return;
+                }
+
+                // 초기 로딩 fallback. dashboard-recent.js가 준비되면 중앙 모듈이 렌더링을 전담합니다.
                 const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
                 favList.innerHTML = ''; let favCount = 0;
                 favorites.forEach(id => {
@@ -2726,19 +2731,22 @@ ${getEvolutionHintText()}
             function trackRecent(id) {
                 const card = document.querySelector(`.game-card[data-id="${id}"]`);
                 if(card && card.classList.contains('disabled')) return;
+                if (window.KidscadeDashboard?.remember?.(id)) {
+                    recents = safeParseStorage('kidscade_recents', []);
+                    return;
+                }
                 recents = recents.filter(rId => rId !== id); recents.unshift(id);
-                if (recents.length > 4) recents.pop(); 
+                if (recents.length > 4) recents.pop();
                 localStorage.setItem('kidscade_recents', JSON.stringify(recents)); renderDashboards();
             }
 
-            document.querySelectorAll('.fav-star').forEach(star => {
-                star.addEventListener('click', function(e) {
-                    e.preventDefault(); e.stopPropagation(); playUISound('click');
-                    const card = this.closest('.game-card'); const id = card.getAttribute('data-id');
-                    if (favorites.includes(id)) { favorites = favorites.filter(favId => favId !== id); this.innerText = '☆'; this.classList.remove('active'); } 
-                    else { favorites.push(id); this.innerText = '★'; this.classList.add('active'); }
-                    localStorage.setItem('kidscade_favs', JSON.stringify(favorites)); renderDashboards();
-                });
+            // 즐겨찾기/최근 플레이의 쓰기는 dashboard-recent.js가 전담합니다.
+            // 초기 fallback 배열은 중앙 상태 변경 이벤트를 받아 동기화합니다.
+            document.addEventListener('kidscade:favorites-changed', () => {
+                favorites = safeParseStorage('kidscade_favs', []);
+            });
+            document.addEventListener('kidscade:recents-changed', () => {
+                recents = safeParseStorage('kidscade_recents', []);
             });
 
             gameCards.forEach(card => {
