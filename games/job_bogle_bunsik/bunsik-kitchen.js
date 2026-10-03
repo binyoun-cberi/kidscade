@@ -13,6 +13,14 @@ const SHIFT_SECONDS=150;
 const TARGET_REVENUE=5200;
 const MAX_ORDERS=4;
 const POT_COUNT=4;
+const SAVE_KEY='bunsikTycoonProgressV1';
+const EQUIPMENT={
+ prepCounter:{name:'추가 조리대',price:900,min:2,max:3},
+ conveyor:{name:'컨베이어',price:1400,min:0,max:2},
+ grabber:{name:'Grabber',price:2200,min:0,max:1},
+ smartGrabber:{name:'Smart Grabber',price:3400,min:0,max:1,requires:'grabber'}
+};
+const SMART_FILTERS=['noodle','soup','egg','green','cheese'];
 const $=s=>document.querySelector(s);
 
 const INGREDIENTS={
@@ -37,9 +45,31 @@ const els={
  selected:$('#selectedAction'),trayBtn:$('#trayBtn'),trayText:$('#trayText'),trayQuality:$('#trayQuality'),dock:$('#actionDock'),
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
- endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
- prepBar:$('#prepBar'),openShop:$('#openShopBtn'),rotate:$('#rotateStationBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn')
+ endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),bankCash:$('#bankCash'),shopCash:$('#shopCash'),equipmentShop:$('#equipmentShop'),
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),rotate:$('#rotateStationBtn'),smartFilter:$('#smartFilterBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn')
 };
+
+
+function defaultProgress(){
+ return{version:1,cash:0,shifts:0,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
+}
+function normalizeProgress(raw){
+ const base=defaultProgress(),v=raw&&typeof raw==='object'?raw:{};
+ const out={version:1,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),owned:{},filters:{...base.filters,...(v.filters||{})},layout:v.layout&&typeof v.layout==='object'?v.layout:{}};
+ for(const [key,info] of Object.entries(EQUIPMENT)){
+  const n=Math.floor(Number(v.owned?.[key]));
+  out.owned[key]=Math.max(info.min,Math.min(info.max,Number.isFinite(n)?n:info.min))
+ }
+ if(!SMART_FILTERS.includes(out.filters.smartGrabberA))out.filters.smartGrabberA='noodle';
+ return out
+}
+function loadProgress(){
+ try{return normalizeProgress(window.KidscadeStorage?.getJson?.(SAVE_KEY,null))}catch(_){return defaultProgress()}
+}
+function saveProgress(){
+ try{return Boolean(window.KidscadeStorage?.setJson?.(SAVE_KEY,progress))}catch(_){return false}
+}
+const progress=loadProgress();
 
 function newPot(i){
  return{index:i,water:0,ingredients:[],sequence:[],heat:0,noodleTime:0,mistakes:0,burnt:false,plating:false};
