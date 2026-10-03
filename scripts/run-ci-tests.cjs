@@ -22,6 +22,7 @@ const TEST_FILES = [
   "tests/index-base-achievement.test.cjs",
   "tests/shop-state.test.cjs",
   "tests/index-base-shop-state.test.cjs",
+  "tests/shop-ui.test.cjs",
   "tests/theme-ui.test.cjs",
   "tests/auto-update.test.cjs",
   "tests/ui-information-architecture.test.cjs",
