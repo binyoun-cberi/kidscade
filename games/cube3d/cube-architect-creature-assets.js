@@ -5,6 +5,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 const loader=new GLTFLoader();
 const cache=new Map();
 const ROOT='../../assets/game/';
+const CUBE_WORLD_ROOT=ROOT+'cube world/';
 const SPECS={
   deer:{url:ROOT+'characters/pets/animal-deer.glb',height:1.28},
   fox:{url:ROOT+'characters/pets/animal-fox.glb',height:.72},
@@ -12,7 +13,14 @@ const SPECS={
   frog:{url:ROOT+'3d/characters/quaternius/frog.glb',height:.62},
   slime:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/green-blob.glb',height:.9},
   burrower:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/green-spiky-blob.glb',height:.78,tint:0xd6a458},
-  golem:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/goleling.glb',height:1.9}
+  golem:{url:ROOT+'3d/characters/monsters/ultimate-monsters-bundle/goleling.glb',height:1.9},
+  pig:{url:CUBE_WORLD_ROOT+'Animals/glTF/Pig.gltf',height:.78},
+  sheep:{url:CUBE_WORLD_ROOT+'Animals/glTF/Sheep.gltf',height:.9},
+  chicken:{url:CUBE_WORLD_ROOT+'Animals/glTF/Chicken.gltf',height:.68},
+  wolf:{url:CUBE_WORLD_ROOT+'Animals/glTF/Wolf.gltf',height:.88},
+  goblin:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Goblin.gltf',height:1.22},
+  skeleton:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Skeleton.gltf',height:1.58},
+  yeti:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Yeti.gltf',height:1.72}
 };
 
 function cloneMaterial(mat,tint){
@@ -29,6 +37,13 @@ function prep(root,spec){
     o.castShadow=true;o.receiveShadow=true;
     if(Array.isArray(o.material))o.material=o.material.map(m=>cloneMaterial(m,spec.tint));
     else if(o.material)o.material=cloneMaterial(o.material,spec.tint);
+    const mats=Array.isArray(o.material)?o.material:[o.material];
+    for(const m of mats)for(const key of ['map','emissiveMap','normalMap']){
+      const tex=m?.[key];if(!tex)continue;
+      tex.magFilter=THREE.NearestFilter;
+      if(key==='map')tex.minFilter=THREE.NearestFilter;
+      tex.generateMipmaps=false;tex.needsUpdate=true;
+    }
   });
   return root;
 }
