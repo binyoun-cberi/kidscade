@@ -1838,6 +1838,65 @@ function chunkRecords(chunk){
   }
   return records;
 }
+function cubeWorldDecorSpec(kind,x,z){
+  const roll=hash2(x*53+17,z*47-23);
+  if(kind==='flowers'){
+    if(roll>.994)return ['bush',.92];
+    if(roll>.978)return [hash2(x*7,z*11)>.5?'flowers1':'flowers2',.9];
+    if(roll>.966)return ['grassBig',.86];
+  }else if(kind==='meadow'){
+    if(roll>.994)return ['bush',.9];
+    if(roll>.979)return ['grassBig',.84];
+  }else if(kind==='forest'){
+    if(roll>.995)return ['rock2',.9];
+    if(roll>.982)return ['bush',.9];
+    if(roll>.969)return ['mushroom',.82];
+  }else if(kind==='pine'){
+    if(roll>.995)return ['rock1',.9];
+    if(roll>.982)return ['mushroom',.82];
+    if(roll>.971)return ['bush',.86];
+  }else if(kind==='marsh'){
+    if(roll>.994)return ['bamboo',.88];
+    if(roll>.981)return ['bambooSmall',.86];
+    if(roll>.967)return [hash2(x*17,z*19)>.5?'plant2':'plant3',.84];
+  }else if(kind==='desert'){
+    if(roll>.998)return ['crystalSmall',.8];
+    if(roll>.986)return [hash2(x*5,z*13)>.5?'rock1':'rock2',.92];
+  }else if(kind==='badlands'){
+    if(roll>.997)return [hash2(x*11,z*5)>.72?'crystalBig':'crystalSmall',.9];
+    if(roll>.982)return [hash2(x*5,z*13)>.5?'rock1':'rock2',.95];
+  }else if(kind==='snow'){
+    if(roll>.998)return ['crystalSmall',.78];
+    if(roll>.988)return ['rock1',.86];
+  }
+  return null;
+}
+function buildChunkCubeWorldDecor(chunk,records,built){
+  const api=window.CubeArchitectWorldAssets;if(!api?.loadProp)return;
+  const placements=[];
+  for(const {x,y,z,data} of records){
+    if(placements.length>=10)break;
+    if(!data?.natural||!['grass','sand','redSand','snow'].includes(data.type))continue;
+    if(worldData.get(worldKey(x,y+1,z)))continue;
+    if(gameFreeMode==='survival'&&poiRules.isLandmarkClearZone?.(x,z,1))continue;
+    const spec=cubeWorldDecorSpec(worldRules.region(x,z),x,z);if(!spec)continue;
+    placements.push({key:spec[0],scale:spec[1],x,y:y+1,z,rot:hash2(x*29-3,z*31+5)*Math.PI*2});
+  }
+  if(!placements.length)return;
+  const group=new THREE.Group();
+  group.name='CubeWorldDecor_'+chunk;
+  group.userData={worldDecorative:true,worldChunkDecor:true,worldChunkKey:chunk,cubeWorldDecor:true};
+  scene.add(group);built.push(group);
+  for(const p of placements){
+    api.loadProp(p.key).then(model=>{
+      if(group.parent!==scene)return;
+      model.position.set(p.x,p.y,p.z);model.rotation.y=p.rot;model.scale.multiplyScalar(p.scale);
+      model.userData={...model.userData,worldDecorative:true,worldChunkDecor:true,worldChunkKey:chunk};
+      group.add(model);
+    }).catch(err=>console.warn('[Cube Architect Cube World prop]',p.key,err));
+  }
+}
+
 function buildChunkGrassInstances(chunk,records){
   if(!voxelRuntime||!THREE.InstancedMesh)return;
   const perVariant=[[],[],[]];
@@ -1861,6 +1920,7 @@ function buildChunkGrassInstances(chunk,records){
     inst.instanceMatrix.needsUpdate=true;inst.castShadow=false;inst.receiveShadow=false;
     inst.userData={worldDecorative:true,worldChunkDecor:true,worldChunkKey:chunk};scene.add(inst);built.push(inst);
   }
+  buildChunkCubeWorldDecor(chunk,records,built);
   worldChunkDecorMap.set(chunk,built);
 }
 function rebuildWorldChunkMesh(cx,cz){
@@ -3455,6 +3515,7 @@ function upgradeWildCreatureAssets(){
   wildCreatures.filter(root=>Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z)<=42)
     .forEach(upgradeWildCreatureAsset);
 }
+window.addEventListener('cube-architect-world-assets-ready',()=>{if(mode==='free')rebuildAllWorldMeshes()});
 window.addEventListener('cube-architect-creature-assets-ready',upgradeWildCreatureAssets);
 
 function nearestCreatureLight(x,z,r=7){
