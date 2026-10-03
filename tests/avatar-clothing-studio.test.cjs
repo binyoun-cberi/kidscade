@@ -52,3 +52,29 @@ test('studio verifies global admin before exposing production tools',()=>{
   assert.match(js,/\/api\/teacher\/overview/);
   assert.match(js,/body\.scope!==['"]global['"]/);
 });
+
+
+test('studio can auto-fit high resolution art and pixelize it deterministically',()=>{
+  for(const id of [
+    'pixelPreviewCanvas','sourceScope','paletteSize','pixelResolution','alphaCut',
+    'removeFlatBg','cleanupNoise','autoOutline','autoFitStamp','pixelizePreview','applyPixelized'
+  ]) assert.match(html,new RegExp('id="'+id+'"'));
+  assert.match(js,/function refreshPreparedSource\(\)/);
+  assert.match(js,/function activeSourceCrop\(\)/);
+  assert.match(js,/function autoFitStamp\(/);
+  assert.match(js,/function hardenAlpha\(/);
+  assert.match(js,/function quantizeCanvas\(/);
+  assert.match(js,/function cleanupSingletons\(/);
+  assert.match(js,/function addAutoOutline\(/);
+  assert.match(js,/function buildPixelizedCanvas\(/);
+  assert.match(js,/function applyPixelized\(/);
+  assert.match(js,/imageSmoothingEnabled=false/);
+});
+
+test('auto pixelizer supports combined outfit splitting and BODY-specific fit zones',()=>{
+  assert.match(js,/sourceScope/);
+  assert.match(js,/value!=='outfit'/);
+  assert.match(js,/activeLayer==='upper'/);
+  assert.match(js,/return \{x:38,y:62,w:56,h:38\}/);
+  assert.match(js,/return \{x:45,y:82,w:42,h:39\}/);
+});
