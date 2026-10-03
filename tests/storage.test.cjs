@@ -41,6 +41,7 @@ test('anonymous server-stat and local profile keys stay inside the registered na
   assert.equal(storage.keys.serverStatsCache, 'kidscade_stats_cache_v1');
   assert.equal(storage.keys.profile, 'kidscade_profile_v1');
   assert.equal(storage.keys.playHistory, 'kidscade_play_history_v1');
+  assert.equal(storage.keys.achievements, 'kidscade_achievements_v1');
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_anon_client_id'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_stats_cache_v1'), true);
   assert.equal(storage.isRegisteredPhysicalKey('kidscade_profile_v1'), true);

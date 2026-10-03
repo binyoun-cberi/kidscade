@@ -44,7 +44,8 @@
     serverStatsCache: 'kidscade_stats_cache_v1',
     profile: 'kidscade_profile_v1',
     playHistory: 'kidscade_play_history_v1',
-    activityFeed: 'kidscade_activity_feed_v1'
+    activityFeed: 'kidscade_activity_feed_v1',
+    achievements: 'kidscade_achievements_v1'
   });
 
   // Existing namespaced saves owned by one game. They are catalogued separately

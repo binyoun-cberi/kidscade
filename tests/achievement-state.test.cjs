@@ -47,3 +47,32 @@ test('inspect accepts an injected reader for game-specific keys', () => {
   assert.equal(result.highRank, true);
   assert.match(result.scoreText, /987점/);
 });
+
+
+test('achievement registry exposes platform and pilot-game definitions', () => {
+  assert.equal(achievements.progressKey, 'kidscade_achievements_v1');
+  assert.equal(achievements.getDefinition('cube3d.net_master').target, 10);
+  assert.equal(achievements.getDefinition('high_micro_evolution.multicellular').hidden, true);
+  assert.equal(achievements.getDefinition('infinite_gugudan.combo_20').target, 20);
+  assert.equal(achievements.getGameProgress('cube3d').total, 6);
+});
+
+test('achievement state normalization ignores unknown ids and preserves known progress', () => {
+  const state = achievements.normalizeAchievementState({
+    unlocked: {
+      'cube3d.first_blueprint': { unlockedAt: 1234 },
+      'unknown.badge': { unlockedAt: 9 }
+    },
+    progress: {
+      'cube3d.net_master': 7,
+      'unknown.progress': 99
+    },
+    playedGames: { cube3d: 4567 }
+  });
+
+  assert.equal(state.unlocked['cube3d.first_blueprint'].unlockedAt, 1234);
+  assert.equal(state.unlocked['unknown.badge'], undefined);
+  assert.equal(state.progress['cube3d.net_master'], 7);
+  assert.equal(state.progress['unknown.progress'], undefined);
+  assert.equal(state.playedGames.cube3d, 4567);
+});

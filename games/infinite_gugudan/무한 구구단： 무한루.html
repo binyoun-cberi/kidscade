@@ -573,6 +573,7 @@
   <div class="flash" id="flash"></div>
   <div class="doors" id="doors"><div class="door left"></div><div class="door right"></div></div>
 
+  <script src="../../kidscade-game-sdk.js" data-game-id="infinite_gugudan" data-title="무한 연산: 무한루" data-shell="true" data-mute="false" data-orientation="landscape"></script>
   <script>
   (function(){
     "use strict";
@@ -925,6 +926,7 @@
 
     function startMatch(){
       clearTimers();
+      try{window.KidscadeGame?.start?.({mode:state.mode,skill:state.skill})}catch(e){}
       state.round=1;state.wins=[0,0];state.target=0;state.visual=0;state.active=false;state.paused=false;state.ending=false;
       state.fighters=[makeFighter(),makeFighter()];
       showOnly(els.battleScreen);
@@ -1273,6 +1275,18 @@
       try{
         var old=+(localStorage.getItem(GUGU_SCORE_KEY)||localStorage.getItem(GUGU_SCORE_OLD)||0);
         if(score>old)localStorage.setItem(GUGU_SCORE_KEY,String(score));
+      }catch(e){}
+      try{
+        if(window.KidscadeGame){
+          KidscadeGame.achievementProgress?.('infinite_gugudan.combo_10',f.maxCombo);
+          KidscadeGame.achievementProgress?.('infinite_gugudan.combo_20',f.maxCombo);
+          KidscadeGame.achievementProgress?.('infinite_gugudan.correct_25',f.correct);
+          if(state.mode==="cpu"&&winner===0){
+            KidscadeGame.achievement?.('infinite_gugudan.first_win');
+            if(state.skill==="fraction")KidscadeGame.achievement?.('infinite_gugudan.fraction_win');
+          }
+          KidscadeGame.gameOver?.({score:score,cleared:winner===0,mode:state.mode,skill:state.skill});
+        }
       }catch(e){}
       els.resultIcon.textContent=winner===0?"🏆":"⚡";
       if(state.mode==="cpu"){
