@@ -5,7 +5,7 @@
       "id": "low_perfect_pitch",
       "addedAt": "2026-10-03T08:46:00+09:00",
       "title": "퍼펙트 피치",
-      "href": "games/low_perfect_pitch/index.html?v=1",
+      "href": "games/low_perfect_pitch/index.html?v=2",
       "category": "music",
       "age": "low",
       "ages": [
@@ -13,11 +13,11 @@
         "high"
       ],
       "icon": "🎤",
-      "description": "목소리를 높이고 낮춰 공을 움직이며 도·레·미 음표 문을 통과하는 실시간 음정 게임! 시작할 때 내 편한 목소리에 맞춰 음역을 자동 조정하고, 실제 음정 오차를 기준으로 PERFECT·GOOD을 판정합니다.",
+      "description": "목소리 음정으로 공을 움직여 도·레·미 음표 문을 통과하거나, 제한시간 없이 한 음씩 올라가는 무한 고음 계단에서 최고 층에 도전하는 실시간 음정 게임! 시작할 때 내 편한 목소리에 맞춰 음역을 자동 조정합니다.",
       "subject": "arts",
       "genre": "rhythm",
       "difficulty": "easy",
-      "sessionMinutes": 3,
+      "sessionMinutes": 5,
       "players": [
         "solo"
       ],
