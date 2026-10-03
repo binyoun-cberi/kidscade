@@ -553,12 +553,15 @@ function renderHud(){
  ui.foodTile?.classList.toggle('low',state.starving||food<pop);
 }
 function renderHunger(){
- const pct=Math.max(0,Math.min(100,state.hunger));
+ const noFood=foodUnits()===0,starvePct=Math.max(0,Math.min(100,state.hunger)),mealPct=Math.max(0,Math.min(100,(state.mealLeft/70)*100));
  for(const c of state.cards.values()){
   if(!isWorker(c.type))continue;
   c.el.classList.toggle('starving',state.starving);
-  const bar=c.el.querySelector('.hungerMeter i');if(bar)bar.style.width=pct+'%';
-  const label=c.el.querySelector('.hungerLabel');if(label)label.textContent=state.starving?'굶주림 '+Math.ceil(pct)+'%':'';
+  c.el.classList.toggle('food-empty',!state.starving&&noFood);
+  const bar=c.el.querySelector('.hungerMeter i');
+  if(bar)bar.style.width=(state.starving?starvePct:mealPct)+'%';
+  const label=c.el.querySelector('.hungerLabel');
+  if(label)label.textContent=state.starving?'굶주림 '+Math.ceil(starvePct)+'%':(noFood?'식량 없음 '+state.mealLeft+'초':'');
  }
 }
 function renderLife(){
