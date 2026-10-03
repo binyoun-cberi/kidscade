@@ -85,7 +85,7 @@ const state={
 };
 
 function isPrime(n){if(n<=1)return false;if(n<=3)return true;if(n%2===0||n%3===0)return false;for(let i=5;i*i<=n;i+=6)if(n%i===0||n%(i+2)===0)return false;return true}
-function waveConfig(){if(state.wave<=WAVES.length)return WAVES[state.wave-1];const start=10+state.wave*3;return{nums:[start,start+2,start+5,start+8],count:Math.min(18,10+state.wave),mission:'복합 웨이브입니다. 나누기 타워로 줄이고 -1로 마무리하세요.'}}
+function waveConfig(){if(state.wave<=WAVES.length)return WAVES[state.wave-1];const start=10+state.wave*3;return{nums:[start,start+2,start+5,start+8],count:Math.min(18,10+state.wave),mission:'복합 감염 웨이브입니다. 약수 터렛으로 줄이고, 남은 소수는 ±1 교정기로 다시 분해 경로에 연결하세요.'}}
 function cellWorld(x,y,h=0){return new THREE.Vector3((x-(GRID_W-1)/2)*CELL,h,(y-(GRID_H-1)/2)*CELL)}
 function isPath(x,y){return PATH_SET.has(x+','+y)}
 function towerAt(x,y){return state.towers.find(t=>t.x===x&&t.y===y)}
