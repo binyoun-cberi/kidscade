@@ -261,9 +261,9 @@ const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
 const isWorker=t=>['person','hunter','fisher','farmer','herder','lumberjack'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const THREAT_CONFIG=Object.freeze({
- wolf:{raidEvery:16,steal:1,label:'늑대'},
- bear:{raidEvery:22,steal:2,label:'곰'},
- hostileBand:{raidEvery:20,steal:2,label:'적대 집단'}
+ wolf:{raidEvery:24,steal:1,power:2,label:'늑대'},
+ bear:{raidEvery:30,steal:2,power:4,label:'곰'},
+ hostileBand:{raidEvery:32,steal:2,power:5,label:'적대 집단'}
 });
 const RESOURCE_CAPS=Object.freeze({
  smallTree:8,bigTree:10,berryBush:8,stoneSource:10,reedBed:10,clayBank:10,
@@ -338,9 +338,13 @@ function addCard(type,x,y,count=1,animate=true){
  const foodBadge=d.food?'<span class="foodBadge">🍖 '+d.food+'</span>':'';
  const resourceBadge=RESOURCE_CAPS[type]?'<span class="resourceBadge"></span>':'';
  const threatBadge=THREAT_CONFIG[type]?'<span class="threatBadge"></span>':'';
- el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+threatBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
+ const tradeBadge=type==='strangerGroup'?'<span class="tradeBadge"></span>':'';
+ el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+threatBadge+tradeBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
- const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;state.cards.set(id,c);updateCard(c);
+ const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};
+ if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;
+ if(type==='strangerGroup')c.tradeRemaining=3;
+ state.cards.set(id,c);updateCard(c);
  place(c,clamp(x,4,Math.max(4,board.clientWidth-el.offsetWidth-12)),clamp(y,18,Math.max(18,board.clientHeight-el.offsetHeight-12)));
  bindDrag(c);if(animate)onCreated(type);renderHunger();return c;
 }
@@ -356,6 +360,8 @@ function updateCard(c){
  }
  const tb=c.el.querySelector('.threatBadge');
  if(tb)tb.textContent='⚠ '+Math.max(0,c.raidIn??THREAT_CONFIG[c.type].raidEvery)+'초';
+ const tr=c.el.querySelector('.tradeBadge');
+ if(tr)tr.textContent='🤝 '+Math.max(0,c.tradeRemaining??3);
 }
 function place(c,x,y){c.x=x;c.y=y;c.el.style.left=x+'px';c.el.style.top=y+'px';}
 function removeCard(c){if(!c||!state.cards.has(c.id))return;c.el.remove();state.cards.delete(c.id);}
@@ -775,20 +781,25 @@ function expeditionResourcePool(){
  return pool;
 }
 function expeditionEncounter(){
- const score=settlementScore(),r=Math.random();
+ const score=settlementScore(),chance=state.day<3?.42:(score>=6?.6:.52);
+ if(Math.random()>chance)return null;
  const animals=['rabbit','deer','wildGoat'];
- if(state.day>=3)animals.push('wildBoar','wolf','wolf');
+ if(state.day>=3)animals.push('wildBoar','wolf');
  if(state.day>=5)animals.push('bear');
  if(score>=4&&state.day>=4)animals.push('strangerGroup','strangerGroup');
  if(score>=8&&state.day>=6)animals.push('hostileBand');
- if(r>.68)return null;
  return pick(animals);
 }
-function expeditionSpawn(type,anchor,index){
+function expeditionSpawn(type,anchor,index,{partial=false}={}){
  const angle=(Math.PI*2/7)*(index+1),radius=155+((index%2)*38);
  const x=clamp(anchor.x+Math.cos(angle)*radius,8,Math.max(8,board.clientWidth-135));
  const y=clamp(anchor.y+Math.sin(angle)*radius,24,Math.max(24,board.clientHeight-175));
  const card=addCard(type,x,y,1,true);
+ if(card&&partial&&RESOURCE_CAPS[type]){
+  const cap=resourceCap(type,1);
+  card.remaining=Math.min(cap,4+Math.floor(Math.random()*4));
+  updateCard(card);
+ }
  if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
  return card;
 }
@@ -797,8 +808,8 @@ function finishExpedition(){
  const worker=state.cards.get(ex.workerId);
  if(worker){worker.exploring=false;worker.el.classList.remove('exploring');clearWorkVisual(worker);}
  const anchor=worker||{x:board.clientWidth*.45,y:board.clientHeight*.45};
- const found=[],count=2+Math.floor(Math.random()*3),pool=expeditionResourcePool();
- for(let i=0;i<count;i++){const type=pick(pool);expeditionSpawn(type,anchor,i);found.push(C[type].name);}
+ const found=[],count=1+(Math.random()<.55?1:0),pool=expeditionResourcePool();
+ for(let i=0;i<count;i++){const type=pick(pool);expeditionSpawn(type,anchor,i,{partial:true});found.push(C[type].name);}
  const encounter=expeditionEncounter();
  if(encounter){expeditionSpawn(encounter,anchor,count+1);found.push(C[encounter].name);}
  state.expedition=null;discover('주변 탐색');playProductionPop();
@@ -824,34 +835,44 @@ function explore(){
   return;
  }
  consumeFood(1);state.stats.explores++;
- const duration=13+Math.floor(Math.random()*5);
+ const duration=18+Math.floor(Math.random()*5);
  state.expedition={workerId:worker.id,duration,remaining:duration};
  worker.exploring=true;worker.busy=true;markBusy(worker,'탐험 중',duration*1000);worker.el.classList.add('exploring');
  showToast('🧭 '+C[worker.type].name+'이(가) 식량 1을 챙겨 주변을 탐험합니다.');
  renderAll();
 }
-function defenseChance(type){
- let chance=0;
- if(type==='wolf'){if(has('campfire')||has('hearth'))chance+=.32;if(has('fence'))chance+=.38;if(has('village'))chance+=.18;}
- if(type==='bear'){if(has('campfire')||has('hearth'))chance+=.14;if(has('fence'))chance+=.2;if(has('village'))chance+=.12;}
- if(type==='hostileBand'){if(has('fence'))chance+=.35;if(has('village'))chance+=.3;if(has('camp'))chance+=.1;}
- return Math.min(.78,chance);
+function defensePower(){
+ let power=0;
+ if(has('campfire'))power+=1;
+ if(has('hearth'))power+=1;
+ if(has('fence'))power+=2;
+ if(has('camp'))power+=1;
+ if(has('village'))power+=2;
+ if([...state.cards.values()].some(c=>c.type==='hunter'&&!c.exploring))power+=2;
+ return power;
+}
+function threatLeaves(card,msg){
+ if(!card||!state.cards.has(card.id))return;
+ card.el.classList.add('depleted');
+ if(msg)showToast(msg);
+ setTimeout(()=>{if(state.cards.has(card.id))removeCard(card);},380);
 }
 function raidThreat(card){
  const cfg=THREAT_CONFIG[card.type];if(!cfg||!state.cards.has(card.id))return;
  card.el.classList.add('raid-alert');setTimeout(()=>card.el?.classList.remove('raid-alert'),1100);
- if(Math.random()<defenseChance(card.type)){
+ const power=defensePower();
+ if(power>=cfg.power){
   playUiSound('ui.confirm',{volume:.16,rate:.82});
-  showToast('🛡 '+cfg.label+'의 접근을 불·울타리·정착지가 막아냈습니다.');
-  return;
+  threatLeaves(card,'🛡 방어력 '+power+'로 '+cfg.label+'을(를) 물리쳤습니다.');
+  renderAll();return;
  }
  const available=foodUnits(),take=Math.min(cfg.steal,available);
  if(take>0){
   consumeFood(take);playUiSound('ui.select',{volume:.18,rate:.72});
-  showToast('⚠️ '+cfg.label+'이(가) 식량 '+take+'을 가져갔습니다.');
+  threatLeaves(card,'⚠️ '+cfg.label+'이(가) 식량 '+take+'을 가져가고 떠났습니다.');
  }else{
   beginStarvation();state.hunger=Math.max(0,state.hunger-(card.type==='bear'?22:14));
-  showToast('⚠️ '+cfg.label+'이(가) 먹을 것을 찾다 야영지를 위협했습니다.');
+  threatLeaves(card,'⚠️ '+cfg.label+'이(가) 야영지를 위협한 뒤 떠났습니다.');
  }
  renderAll();
 }
@@ -859,7 +880,7 @@ function tickThreats(){
  for(const card of [...state.cards.values()]){
   const cfg=THREAT_CONFIG[card.type];if(!cfg||card.busy)continue;
   card.raidIn=(card.raidIn??cfg.raidEvery)-1;updateCard(card);
-  if(card.raidIn<=0){card.raidIn=cfg.raidEvery;updateCard(card);raidThreat(card);}
+  if(card.raidIn<=0){raidThreat(card);}
  }
 }
 function tidy(){
