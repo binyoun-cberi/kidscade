@@ -94,6 +94,20 @@ test('Seed World uses Quaternius staged crops and distinct CC0 town buildings',(
   }
 });
 
+test('home interior uses CC0 bakery and restaurant assets without changing furniture behavior keys',()=>{
+  for(const file of ['stove-multi-decorated.glb','kitchencounter-sink-backsplash.glb','kitchencounter-straight-a-decorated.glb','fridge-a-decorated.glb']){
+    assert.ok(furnishing.includes(file),'functional kitchen asset not wired '+file);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','bakery','restaurant-bits',file)),'missing kitchen asset '+file);
+  }
+  for(const file of ['curtains.glb','rug.glb','wall-shelf-bakery-a.glb','wall-shelf-bakery-b.glb']){
+    assert.ok(runtime.includes(file),'home decor not wired '+file);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','bakery','interior',file)),'missing home decor '+file);
+  }
+  for(const key of ['kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge'])assert.ok(furnishing.includes(key),'functional key changed '+key);
+  assert.match(runtime,/indoorLevel2Decor\.visible=d\.houseLevel>=2/);
+  assert.match(runtime,/indoorLevel3Decor\.visible=d\.houseLevel>=3/);
+});
+
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
   assert.match(economy,/const BUY=/);
   assert.match(economy,/const SELL=/);
