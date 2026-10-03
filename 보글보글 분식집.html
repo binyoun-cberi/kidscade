@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=14">
+<link rel="stylesheet" href="games/job_bogle_bunsik/bunsik-kitchen.css?v=15">
 <script type="importmap">{"imports":{"three":"assets/vendor/three-r160/three.module.js","three/addons/":"assets/vendor/three-r160/addons/"}}</script>
+<script src="kidscade-storage.js"></script>
 <script src="audio-manager.js?v=20260917-1"></script>
 </head>
 <body>
@@ -13,9 +14,12 @@
   <header class="hud">
     <div class="brand"><b>보글보글 분식집</b><small>주방을 보고 직접 요리해요</small></div>
     <div class="hud-stats">
-      <span class="money-stat">🪙 <b id="revenue">0원</b><small>/ <b id="goal">6,500원</b></small></span>
-      <span>⏱ <b id="time">120</b></span>
+      <span class="money-stat">🪙 <b id="revenue">0원</b><small>/ <b id="goal">5,200원</b></small></span>
+      <span class="bank-stat">🏦 <b id="bankCash">0원</b></span>
+      <span>⏱ <b id="time">150</b></span>
       <span class="served-stat">🍜 <b id="served">0</b></span>
+      <span id="dishStatus" class="dish-stat">🥣 <b>3</b><small>깨끗</small> · 🧼 <b>0</b><small>더러움</small></span>
+      <button id="helperBtn" class="helper-toggle hidden" type="button" aria-label="알바생 자동 운반 켜기/끄기">👨‍🍳 OFF</button>
       <button id="soundBtn" type="button" aria-label="소리 켜기/끄기">♪</button>
     </div>
   </header>
@@ -25,6 +29,16 @@
 
     <section id="orderStrip" class="customer-orders" aria-label="손님 주문"></section>
     <div id="potStrip" class="pot-world-labels" aria-label="냄비 상태"></div>
+
+    <div id="prepBar" class="prep-bar hidden">
+      <span><b>영업 전 주방 배치</b><small>조리대와 자동화 장비를 옮기고, 컨베이어/Grabber 방향을 맞춰 보세요.</small></span>
+      <button id="rotateStationBtn" class="rotate-btn" type="button">↻ 선택 회전</button>
+      <button id="smartFilterBtn" class="filter-btn hidden" type="button">🎯 필터: 면</button>
+      <button id="openShopBtn" type="button">영업 시작</button>
+    </div>
+
+    <div id="stationHint" class="station-hint">WASD / 방향키로 이동 · E로 상호작용</div>
+    <div id="heldStatus" class="held-status empty"><small>손에 든 것</small><b>빈손</b></div>
 
     <div id="tutorialBanner" class="tutorial-banner">
       <small>첫 그릇</small>
@@ -42,6 +56,15 @@
     </button>
 
     <button id="discardBtn" class="discard-btn" type="button"><span>🗑</span><b>냄비 비우기</b></button>
+
+    <div id="moveControls" class="move-controls" aria-label="이동과 상호작용">
+      <button type="button" data-move="ArrowUp" aria-label="위로 이동">▲</button>
+      <button type="button" data-move="ArrowLeft" aria-label="왼쪽 이동">◀</button>
+      <button type="button" data-move="ArrowDown" aria-label="아래로 이동">▼</button>
+      <button type="button" data-move="ArrowRight" aria-label="오른쪽 이동">▶</button>
+      <button type="button" data-interact aria-label="가까운 설비 사용">E</button>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
 </div>
@@ -50,16 +73,16 @@
   <div class="start-card">
     <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>손님의 말풍선을 보고 냄비에서 직접 끓여요. 완성되면 그릇에 담고, 쟁반을 손님에게 끌어다 주세요.</p>
+    <p>첫 영업은 직접 뛰며 시작하고, 번 돈으로 조리대와 자동화 장비를 사서 주방을 키워요. Grabber는 재료를 당기고, Smart Grabber는 지정한 재료만 골라 자동화 라인을 만들 수 있어요.</p>
     <div class="flow-demo">
-      <span>👧<b>주문 확인</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🥣<b>그릇에 담기</b></span><i>→</i><span>🍜<b>끌어서 서빙</b></span>
+      <span>🍜<b>직접 영업</b></span><i>→</i><span>🪙<b>매출 적립</b></span><i>→</i><span>🛒<b>장비 구매</b></span><i>→</i><span>⚙️<b>자동화</b></span>
     </div>
     <div class="recipe-board">
       <div><b>계란 라면</b><span>🍜 🟥 🥚</span></div>
       <div><b>파 라면</b><span>🍜 🟥 🌿</span></div>
       <div><b>치즈 계란 라면</b><span>🍜 🟥 🥚 🧀</span></div>
     </div>
-    <button id="startBtn" class="primary" type="button">가게 문 열기</button>
+    <button id="startBtn" class="primary" type="button">주방 준비 시작</button>
     <small class="credit">Kitchen: Isa Lousberg · CC BY / Quaternius · CC0</small>
   </div>
 </div>
@@ -70,14 +93,24 @@
     <h1 id="endTitle">수고했어요!</h1>
     <p id="endText"></p>
     <div class="result-grid">
-      <div><small>매출</small><b id="endRevenue">0원</b></div>
+      <div><small>오늘 매출</small><b id="endRevenue">0원</b></div>
       <div><small>서빙</small><b id="endServed">0</b></div>
       <div><small>최고 품질</small><b id="endPerfect">0</b></div>
     </div>
-    <button id="restartBtn" class="primary" type="button">다시 영업하기</button>
+    <div class="shop-head">
+      <span><b>장비 상점</b><small>오늘 매출이 금고에 적립됐어요</small></span>
+      <strong id="shopCash">0원</strong>
+    </div>
+    <div id="equipmentShop" class="equipment-shop">
+      <button type="button" class="shop-item" data-buy="prepCounter" data-price="900"><span>🧺</span><b>추가 조리대</b><small>버퍼 +1 · 최대 3개</small><em>900원</em></button>
+      <button type="button" class="shop-item" data-buy="conveyor" data-price="1400"><span>➡️</span><b>컨베이어</b><small>앞 슬롯로 자동 이동 · 최대 2개</small><em>1,400원</em></button>
+      <button type="button" class="shop-item" data-buy="grabber" data-price="2200"><span>🦾</span><b>Grabber</b><small>뒤 조리대에서 재료 당김 · 최대 1개</small><em>2,200원</em></button>
+      <button type="button" class="shop-item" data-buy="smartGrabber" data-price="3400"><span>🎯</span><b>Smart Grabber</b><small>필터 재료만 골라 당김 · Grabber 필요</small><em>3,400원</em></button>
+    </div>
+    <button id="restartBtn" class="primary" type="button">다음 영업 준비</button>
   </div>
 </div>
 
-<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=14"></script>
+<script type="module" src="games/job_bogle_bunsik/bunsik-kitchen.js?v=15"></script>
 </body>
 </html>
