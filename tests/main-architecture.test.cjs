@@ -162,17 +162,19 @@ test('dashboard owns favorite mutation without bootstrap text surgery', () => {
   assert.doesNotMatch(bootstrap, /dashboardReplacement|recentReplacement|favoriteReplacement/);
 });
 
-test('pet recommendation scoring is catalog/state driven instead of card-DOM driven', () => {
+test('pet recommendation scoring is catalog/state driven without bootstrap rewriting', () => {
   const recommendation = read('game-recommendations.js');
+  const base = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(recommendation, /function\s+scoreGame\s*\(/);
   assert.match(recommendation, /function\s+scoreCurrent\s*\(/);
   assert.match(recommendation, /KidscadeDashboard/);
   assert.doesNotMatch(recommendation, /querySelector|getAttribute|\.game-card/);
-  assert.match(bootstrap, /KidscadeRecommendations\?\.scoreCurrent/);
-  assert.match(bootstrap, /KidscadeGames\?\.get/);
+  assert.match(base, /KidscadeRecommendations\?\.scoreCurrent/);
+  assert.match(base, /KidscadeGames\?\.get/);
   assert.match(bootstrap, /game-recommendations\.js/);
+  assert.doesNotMatch(bootstrap, /petScoreStart|petScoreReplacement/);
 });
 
 test('game launcher owns modal session lifecycle and reward calculation', () => {
