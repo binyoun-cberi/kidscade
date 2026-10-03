@@ -524,6 +524,12 @@ function syncHUD(){
 function syncDeck(){
   document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>{const d=TOWERS[btn.dataset.tower],locked=state.wave<d.unlock;btn.classList.toggle('locked',locked);btn.classList.toggle('selected',selectedTower===d.id);btn.disabled=locked;const cost=btn.querySelector('small');if(cost)cost.textContent=d.cost});
   $('autoBtn').style.display=(state.wave===1&&!state.autoUsed&&!state.waveActive)?'block':'none';
+  const hint=$('buildHint');
+  if(hint){
+    if(selectedTower==='SUB1'||selectedTower==='ADD1')hint.textContent='교정기 → 나눗셈 순서가 핵심! 길 앞쪽에서 소수를 바꾸고, 후반에도 잔여 소수용 교정기를 이어 보세요.';
+    else if(selectedTower?.startsWith('DIV'))hint.textContent='나눗셈 터렛은 교정기 뒤에 이어 두면 FACTOR CHAIN이 길어집니다.';
+    else hint.textContent='① 약수 터렛 선택 → ② 도로 주변 설치 → ③ 감염 웨이브 시작';
+  }
   applyBuildMode(Boolean(selectedTower))
 }
 function syncSelectedPanel(){
