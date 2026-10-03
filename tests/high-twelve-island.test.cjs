@@ -17,14 +17,14 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=14/);
-  assert.match(html, /art.js\?v=14/);
-  assert.match(html, /game.js\?v=14/);
+  assert.match(html, /sim.js\?v=15/);
+  assert.match(html, /art.js\?v=15/);
+  assert.match(html, /game.js\?v=15/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=14"));
+  assert.ok(entry.href.endsWith("?v=15"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -145,10 +145,12 @@ test('long autonomous runs have valid resources, time-pause and no unwinnable ev
       if (s.tick === 13) S.enact(s, 'ration', 'equal');
     }
     assert.ok(events >= 1);
-    assert.equal(s.stage, 2, 'seed ' + seed + ' should reach town');
+    assert.ok([1, 2].includes(s.stage), 'stage remains valid for seed ' + seed);
     const resumed = S.normalize(JSON.parse(JSON.stringify(s)));
     assert.equal(resumed.stage, s.stage);
     assert.equal(resumed.population, s.population);
+    assert.ok(Number.isFinite(resumed.activityFoodFactor));
+    assert.ok(Number.isFinite(resumed.activityWoodFactor));
   }
 });
 
@@ -919,7 +921,7 @@ test('island-first interface keeps management secondary and adds direct field co
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
   const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=14/);
+  assert.match(html, /rework\.js\?v=15/);
   assert.match(css, /management-dock/);
   assert.match(css, /weather-fx/);
   assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
@@ -937,9 +939,9 @@ test('v10 icon HUD keeps exact values in the management drawer', () => {
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=14/);
-  assert.match(html, /game\.js\?v=14/);
-  assert.match(html, /rework\.js\?v=14/);
+  assert.match(html, /style\.css\?v=15/);
+  assert.match(html, /game\.js\?v=15/);
+  assert.match(html, /rework\.js\?v=15/);
   assert.match(js, /class="stat hud-stat/);
   assert.match(js, /data-open-tab/);
   assert.match(js, /function villageStatusBoard/);
@@ -958,8 +960,8 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=14/);
-  assert.match(html, /rework\.js\?v=14/);
+  assert.match(html, /style\.css\?v=15/);
+  assert.match(html, /rework\.js\?v=15/);
   assert.match(css, /calmer game screen cleanup/);
   assert.match(css, /\.scene-caption,\.ticker\{display:none!important\}/);
   assert.match(css, /\.island-heading\{display:none!important\}/);
@@ -974,17 +976,40 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
 test('v12 event scene observer cannot self-trigger and freeze the browser tab', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=14/);
+  assert.match(html, /rework\.js\?v=15/);
   assert.match(rework, /eventSignature/);
   assert.match(rework, /observe\(modal, \{ attributes: true, attributeFilter: \["class"\] \}\)/);
   assert.doesNotMatch(rework, /observe\(modal, \{ childList: true, subtree: true/);
 });
 
 
+test('v15 no-build neglect creates real survival pressure while field presence only nudges production', () => {
+  const baseline = S.initial(7);
+  const normalGather = S.rates(baseline).gather;
+  baseline.activityFoodFactor = .94;
+  const fieldAdjusted = S.rates(baseline).gather;
+  assert.ok(fieldAdjusted < normalGather);
+  assert.ok(fieldAdjusted > normalGather * .9, 'visual field presence should be a modest production modifier');
+
+  const s = S.initial(7);
+  for (let guard = 0; guard < 320 && s.tick < 120 && !s.ended; guard++) {
+    if (s.pending) {
+      const e = S.EVENTS.find(x => x.id === s.pending);
+      const safe = e.options.findIndex(o =>
+        (!o.cost || Object.entries(o.cost).every(([key, amount]) => s[key] >= amount)) &&
+        !o.startChildLabor && !o.startForcedLabor && !o.startExclusion && !o.endSettlement);
+      const fallback = e.options.findIndex(o => !o.cost || Object.entries(o.cost).every(([key, amount]) => s[key] >= amount));
+      assert.equal(S.resolveEvent(s, safe >= 0 ? safe : fallback).ok, true);
+    } else S.tick(s);
+  }
+  assert.ok(s.food < 20 || s.health < 40 || s.population < 12 || s.ended,
+    '120 weeks without building should create a visible survival crisis');
+});
+
 test('v13 villagers visibly work, rest and react to village conditions', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
-  assert.match(html, /art\.js\?v=14/);
+  assert.match(html, /art\.js\?v=15/);
   assert.match(art, /const actorRuntime = new Map\(\)/);
   assert.match(art, /ACTIVITY_SPOTS/);
   for (const activity of ['farm','gather','chop','fish','talk','eat','sleep','protest','heal','care','repair','evacuate','fetch_water','play']) {
@@ -996,6 +1021,9 @@ test('v13 villagers visibly work, rest and react to village conditions', () => {
   assert.match(art, /s\.disasters\?\.epidemic/);
   assert.match(art, /s\.childWorkUntil > s\.tick/);
   assert.match(art, /function getActivitySnapshot\(/);
+  assert.match(art, /foodPresence/);
+  assert.match(art, /woodPresence/);
+  assert.match(art, /Math\.min\(s\.population, 24\)/);
   assert.match(art, /const ROUTE_NODES = Object\.freeze/);
   assert.match(art, /function buildRoute\(actor,kind,target\)/);
   assert.match(art, /actor\.route = buildRoute/);
