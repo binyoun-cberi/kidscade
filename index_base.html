@@ -9,8 +9,11 @@
     <script src="seed-wallet.js"></script>
     <script src="sprout-power.js"></script>
     <script src="daily-progress.js"></script>
+    <script src="daily-ui.js"></script>
     <script src="achievement-state.js"></script>
     <script src="shop-state.js"></script>
+    <script src="shop-ui.js"></script>
+    <script src="theme-ui.js"></script>
     <link rel="stylesheet" href="main-shell.css">
     <link rel="stylesheet" href="age-gate.css">
 
@@ -1227,14 +1230,6 @@
             }
 
 
-            if (window.KidscadeShopState?.subscribe) {
-                window.KidscadeShopState.subscribe(detail => {
-                    syncShopStateMirrors(detail);
-                    applyEquipped();
-                    const shopModal = document.getElementById('shop-modal');
-                    if (shopModal && !shopModal.classList.contains('hidden')) renderShop();
-                }, { immediate: false });
-            }
 
             // =====================================
             // 👤 씨앗 아바타 옷장: 기존 게임/기록과 분리된 SVG 레이어 시스템
@@ -1700,24 +1695,83 @@
             renderAvatarPlaza();
 
 
-            function applyEquipped() {
-                const badge = shopDB.badge.find(item => item.id === getEquippedShopId('badge')) || shopDB.badge[0];
-                if (badge) {
-                    document.getElementById('profile-emoji').innerText = badge.icon || '🐣';
-                    document.getElementById('profile-prefix').innerText = badge.prefix || '신입생';
-                    document.getElementById('profile-noun').innerText = badge.noun || '게이머';
+            function dailyUiContext() {
+                return {
+                    daily: window.KidscadeDaily,
+                    activity: window.KidscadeActivity,
+                    sproutPower: window.KidscadeSproutPower,
+                    localStorage,
+                    document,
+                    categoryNames,
+                    changeSeeds,
+                    showToast,
+                    addPetExp(amount) {
+                        pet.exp += amount;
+                        savePet();
+                        checkPetEvolution();
+                    },
+                    addPetAffection(amount) {
+                        pet.affection = Math.min(100, pet.affection + amount);
+                        savePet();
+                        updatePetUI();
+                    },
+                    renderShop,
+                    updatePetUI
+                };
+            }
+
+            function claimDailyReward(item) {
+                return window.KidscadeDailyUI.claimDailyReward(item, dailyUiContext());
+            }
+
+            let shopController = null;
+
+            function shopUiContext() {
+                return {
+                    document,
+                    localStorage,
+                    shopState: window.KidscadeShopState,
+                    shopDB,
+                    getCoins: () => coins,
+                    changeSeeds,
+                    showToast,
+                    playSound: playUISound,
+                    getMirrors: () => ({ inventory, equipped }),
+                    syncMirrors(state) {
+                        if (!state) return;
+                        if (state.inventory) inventory = state.inventory;
+                        if (state.equipped) equipped = state.equipped;
+                    },
+                    claimDailyReward,
+                    isDailyRewardClaimed: () => window.KidscadeDailyUI?.isDailyRewardClaimed?.(dailyUiContext()) === true,
+                    updatePetUI,
+                    openGardenBuild() {
+                        openSookFromSidebar('room');
+                        gardenController?.openBuild();
+                    },
+                    isPetUnlocked: type => window.sookPetIsUnlocked?.(type) === true,
+                    selectPet: type => window.sookPetSelect?.(type),
+                    buyPetThing: kind => window.sookPetBuy?.(kind)
+                };
+            }
+
+            function getShopController() {
+                if (!shopController) {
+                    shopController = window.KidscadeShopUI.create(shopUiContext());
                 }
+                return shopController;
+            }
 
-                document.body.classList.remove('theme-hacker', 'theme-princess', 'theme-space');
-                shopDB.card.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
-                shopDB.land.forEach(item => { if (item.className) document.body.classList.remove(item.className); });
+            function openShopTab(tab, options) {
+                return getShopController().openTab(tab, options);
+            }
 
-                const cardSkin = shopDB.card.find(item => item.id === getEquippedShopId('card'));
-                if (cardSkin && cardSkin.className) document.body.classList.add(cardSkin.className);
-                const landSkin = shopDB.land.find(item => item.id === getEquippedShopId('land'));
-                if (landSkin && landSkin.className) document.body.classList.add(landSkin.className);
-                renderShop();
-                updatePetUI();
+            function renderShop() {
+                return getShopController().render();
+            }
+
+            function applyEquipped() {
+                return getShopController().applyEquipped();
             }
 
             // =====================================
@@ -2055,196 +2109,22 @@ ${getEvolutionHintText()}
             });
 
             document.getElementById('btn-pet-stroke').addEventListener('click', () => {
-                playUISound('open');
-                currentShopTab = 'land';
-                document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'land'));
-                document.getElementById('shop-modal').classList.remove('hidden');
-                renderShop();
+                openShopTab('land');
             });
 
             document.getElementById('btn-pet-clean').addEventListener('click', () => {
-                playUISound('open');
-                currentShopTab = 'reward';
-                document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'reward'));
-                document.getElementById('shop-modal').classList.remove('hidden');
-                renderShop();
+                openShopTab('reward');
             });
 
             // =====================================
-            // 상점 로직
+            // 상점 UI: 상태는 shop-state.js, 화면/행동은 shop-ui.js가 소유
             // =====================================
-            let currentShopTab = 'land';
-            document.querySelectorAll('.shop-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    playUISound('click');
-                    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    currentShopTab = this.getAttribute('data-tab');
-                    renderShop();
-                });
-            });
+            getShopController().bind();
 
             document.getElementById('btn-open-shop')?.addEventListener('click', (event) => {
                 event?.stopPropagation?.();
                 window.openKidscadeLifeWorld?.();
             });
-            document.getElementById('btn-open-pet-shop-compact')?.addEventListener('click', () => {
-                playUISound('open');
-                currentShopTab = 'pet';
-                document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'pet'));
-                document.getElementById('shop-modal').classList.remove('hidden');
-                renderShop();
-            });
-
-            function syncShopStateMirrors(state) {
-                if (!state) return;
-                if (state.inventory) inventory = state.inventory;
-                if (state.equipped) equipped = state.equipped;
-            }
-
-            function isOwnedShopItem(category, item) {
-                if (window.KidscadeShopState?.owns) return window.KidscadeShopState.owns(category, item.id);
-                return (inventory[category] || []).includes(item.id);
-            }
-
-            function getEquippedShopId(category) {
-                if (window.KidscadeShopState?.getEquipped) return window.KidscadeShopState.getEquipped(category);
-                return equipped[category];
-            }
-
-            function buyItem(category, item) {
-                if (category === 'reward') { claimDailyReward(item); return; }
-                if (isOwnedShopItem(category, item)) { showToast('이미 가지고 있는 꾸미기예요.'); return; }
-                if (coins < item.price) { showToast(`씨앗이 부족해요! (${item.price}개 필요)`); playUISound('click'); return; }
-                if (!changeSeeds(-item.price, '', { toast: false })) return;
-
-                if (window.KidscadeShopState?.grant) {
-                    syncShopStateMirrors(window.KidscadeShopState.grant(category, item.id, { equip: true, source: 'purchase' }));
-                } else {
-                    if (!inventory[category]) inventory[category] = [];
-                    inventory[category].push(item.id);
-                    equipped[category] = item.id;
-                    localStorage.setItem('kidscade_inventory', JSON.stringify(inventory));
-                    localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
-                }
-                showToast(`${item.name}을(를) 얻고 바로 적용했어요!`);
-                playUISound('print');
-                applyEquipped();
-            }
-
-            function equipItem(category, item) {
-                playUISound('click');
-                if (window.KidscadeShopState?.equip) {
-                    const result = window.KidscadeShopState.equip(category, item.id, { source: 'equip' });
-                    if (!result.ok) return;
-                    syncShopStateMirrors(result);
-                } else {
-                    equipped[category] = item.id;
-                    localStorage.setItem('kidscade_equipped', JSON.stringify(equipped));
-                }
-                showToast(`${item.name} 적용 완료!`);
-                applyEquipped();
-            }
-
-            function getDailyRewardKey() {
-                return new Date().toLocaleDateString('ko-KR');
-            }
-
-            function claimDailyReward(item) {
-                const today = getDailyRewardKey();
-                const claimed = window.KidscadeDaily?.isDailyRewardClaimed?.() ?? (localStorage.getItem('kidscade_daily_reward_claimed') === today);
-                if (claimed) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
-
-                let granted = false;
-                if (item.rewardType === 'seed') {
-                    granted = changeSeeds(item.amount, '', { toast: false });
-                    if (granted) showToast(`${item.name} 선택! 씨앗 ${item.amount}개를 받았어요.`, true);
-                } else if (item.rewardType === 'exp') {
-                    pet.exp += item.amount;
-                    savePet();
-                    showToast(`${item.name} 선택! 쑥쑥이 경험치 +${item.amount}`);
-                    checkPetEvolution();
-                    granted = true;
-                } else {
-                    granted = changeSeeds(item.amount, '', { toast: false });
-                    if (granted) {
-                        pet.exp += 10;
-                        savePet();
-                        showToast(`${item.name} 선택! 씨앗 ${item.amount}개와 성장 경험치를 받았어요.`, true);
-                        checkPetEvolution();
-                    }
-                }
-
-                // 실제 지급이 끝난 뒤에만 '오늘 수령 완료'를 기록합니다.
-                if (granted) {
-                    if (window.KidscadeDaily?.markDailyRewardClaimed) window.KidscadeDaily.markDailyRewardClaimed();
-                    else localStorage.setItem('kidscade_daily_reward_claimed', today);
-                    window.KidscadeActivity?.record?.('reward', {
-                        title: '오늘의 보상 수령',
-                        summary: item.name + (item.rewardType === 'exp' ? ' · 쑥쑥이 경험치 +' : ' · 씨앗 +') + item.amount,
-                        place: '키즈케이드 상점',
-                        dedupeKey: 'daily-reward-' + new Date().toLocaleDateString('sv-SE')
-                    });
-                }
-                renderShop();
-                updatePetUI();
-            }
-
-            function renderShop() {
-                const container = document.getElementById('shop-items-container');
-                container.innerHTML = '';
-                if(['land','pet'].includes(currentShopTab) && window.KidscadeGarden) {
-                    const item=document.createElement('div'); item.className='shop-item';
-                    item.innerHTML='<div class="item-icon">🌳</div><div class="item-name">정원 시설 설치</div><div class="item-desc">동물은 게임을 탐험하며 발견하고, 씨앗으로 친구들이 놀 시설을 설치해요.</div><button type="button" class="item-btn btn-buy">정원 시설 보러 가기</button>';
-                    item.querySelector('button').addEventListener('click',()=>{document.getElementById('shop-modal').classList.add('hidden');openSookFromSidebar('room');gardenController?.openBuild();});
-                    container.append(item);return;
-                }
-                const items = shopDB[currentShopTab] || [];
-                const todayClaimed = window.KidscadeDaily?.isDailyRewardClaimed?.() ?? (localStorage.getItem('kidscade_daily_reward_claimed') === getDailyRewardKey());
-
-                items.forEach(item => {
-                    const el = document.createElement('div');
-                    const owned = currentShopTab !== 'reward' && isOwnedShopItem(currentShopTab, item);
-                    const equippedNow = currentShopTab !== 'reward' && getEquippedShopId(currentShopTab) === item.id;
-                    el.className = `shop-item ${owned ? 'owned' : ''}`;
-                    const priceText = currentShopTab === 'reward' ? '하루 1개 선택' : `${item.price.toLocaleString()} 씨앗`;
-                    el.innerHTML = `<div class="item-icon">${item.icon || '✨'}</div><div class="item-name">${item.name}</div><div class="item-desc">${item.desc}</div><div class="item-stock">${priceText}</div>`;
-
-                    const btn = document.createElement('button');
-                    if (currentShopTab === 'reward') {
-                        btn.className = todayClaimed ? 'item-btn btn-equipped' : 'item-btn btn-buy';
-                        btn.innerText = todayClaimed ? '오늘 선택 완료' : '오늘 보상 받기';
-                        btn.disabled = todayClaimed;
-                        btn.onclick = () => claimDailyReward(item);
-                    } else if (currentShopTab === 'pet') {
-                        const isUnlockPet = item.kind && item.kind.startsWith('unlock_');
-                        const petType = isUnlockPet ? item.kind.replace('unlock_', '') : '';
-                        const alreadyOpen = isUnlockPet && window.sookPetIsUnlocked && window.sookPetIsUnlocked(petType);
-                        btn.className = alreadyOpen ? 'item-btn btn-equip' : 'item-btn btn-buy';
-                        btn.innerText = alreadyOpen ? '선택하기' : (isUnlockPet ? `데려오기 (${item.price.toLocaleString()} 씨앗)` : `추가하기 (${item.price.toLocaleString()} 씨앗)`);
-                        btn.onclick = () => {
-                            if (alreadyOpen && window.sookPetSelect) window.sookPetSelect(petType);
-                            else if (window.sookPetBuy) window.sookPetBuy(item.kind);
-                            else showToast('쑥쑥 친구 방을 먼저 열어주세요.');
-                            renderShop();
-                        };
-                    } else if (!owned) {
-                        btn.className = 'item-btn btn-buy';
-                        btn.innerText = item.price === 0 ? '받기' : `구매 (${item.price.toLocaleString()} 씨앗)`;
-                        btn.onclick = () => buyItem(currentShopTab, item);
-                    } else if (equippedNow) {
-                        btn.className = 'item-btn btn-equipped';
-                        btn.innerText = '적용 중';
-                        btn.disabled = true;
-                    } else {
-                        btn.className = 'item-btn btn-equip';
-                        btn.innerText = '적용하기';
-                        btn.onclick = () => equipItem(currentShopTab, item);
-                    }
-                    el.appendChild(btn);
-                    container.appendChild(el);
-                });
-            }
 
             // =====================================
             // 메인 UI 필터링 및 로직
@@ -2259,95 +2139,12 @@ ${getEvolutionHintText()}
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술', job: '직업' };
             const subjectNames = { all: '전체', math: '수학', korean: '국어', language: '외국어·한자', social: '사회', science: '과학·환경', arts: '예술', career: '진로', thinking: '사고력' };
 
-            function getTodayKey() {
-                return window.KidscadeDaily?.getTodayKey?.() || new Date().toLocaleDateString('ko-KR');
-            }
-
-            function buildTodayMissionState() {
-                if (window.KidscadeDaily?.buildMissionState) return window.KidscadeDaily.buildMissionState(categoryNames);
-                const categories = ['math', 'korean', 'lang', 'trivia', 'music'];
-                const category = categories[new Date().getDate() % categories.length];
-                return {
-                    date: getTodayKey(),
-                    missions: [
-                        { id: 'play_any', icon: '🎮', title: '첫 게임 도전', desc: '아무 게임이나 1번 플레이하기', goal: 1, progress: 0, reward: 20, type: 'any', claimed: false },
-                        { id: 'play_category', icon: '🧭', title: `${categoryNames[category]} 탐험`, desc: `${categoryNames[category]} 게임 1번 플레이하기`, goal: 1, progress: 0, reward: 35, type: 'category', category, claimed: false },
-                        { id: 'play_two', icon: '🔥', title: '두 번의 도전', desc: '오늘 게임을 총 2번 플레이하기', goal: 2, progress: 0, reward: 45, type: 'count', claimed: false }
-                    ]
-                };
-            }
-
-            function getTodayMissionState() {
-                if (window.KidscadeDaily?.getMissionState) return window.KidscadeDaily.getMissionState(categoryNames);
-                let state;
-                try { state = JSON.parse(localStorage.getItem('kidscade_daily_missions') || 'null'); } catch(e) { state = null; }
-                if (!state || state.date !== getTodayKey() || !Array.isArray(state.missions)) {
-                    state = buildTodayMissionState();
-                    localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
-                }
-                return state;
-            }
-
-            function saveTodayMissionState(state) {
-                if (window.KidscadeDaily?.saveMissionState) return window.KidscadeDaily.saveMissionState(state);
-                localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
-                return true;
-            }
-
             function renderDailyMissions() {
-                const box = document.getElementById('sook-mission-list');
-                if (!box) return;
-                const state = getTodayMissionState();
-                box.innerHTML = '';
-                state.missions.forEach(mission => {
-                    const done = mission.claimed || mission.progress >= mission.goal;
-                    const card = document.createElement('div');
-                    card.className = `sook-mission-card ${done ? 'done' : ''}`;
-                    card.innerHTML = `<div class="mission-title">${mission.icon} ${mission.title}</div><div class="mission-desc">${mission.desc}<br>완료 보상: 🌱 ${mission.reward}개</div><div class="mission-progress">${mission.claimed ? '완료!' : `${Math.min(mission.progress, mission.goal)} / ${mission.goal}`}</div>`;
-                    box.appendChild(card);
-                });
-                const completed = state.missions.filter(m => m.claimed || m.progress >= m.goal).length;
-                const total = Math.max(1, state.missions.length);
-                const sideCount = document.getElementById('sidebar-mission-count');
-                const sideFill = document.getElementById('sidebar-mission-fill');
-                const sideNote = document.getElementById('sidebar-mission-note');
-                if (sideCount) sideCount.textContent = `${completed} / ${state.missions.length}`;
-                if (sideFill) sideFill.style.width = `${(completed / total) * 100}%`;
-                if (sideNote) sideNote.textContent = completed >= state.missions.length
-                    ? '오늘의 미션 완료! 멋지게 해냈어요.'
-                    : `미션 ${state.missions.length - completed}개가 남았어요. 완료하면 씨앗을 받아요.`;
+                return window.KidscadeDailyUI.renderDailyMissions(dailyUiContext());
             }
 
             function updateMissionProgress(category, gameId) {
-                let completed = [];
-                if (window.KidscadeDaily?.advanceMissions) {
-                    completed = window.KidscadeDaily.advanceMissions(category, categoryNames).completed || [];
-                } else {
-                    const state = getTodayMissionState();
-                    state.missions.forEach(mission => {
-                        if (mission.claimed) return;
-                        if (mission.type === 'any' || mission.type === 'count') mission.progress += 1;
-                        if (mission.type === 'category' && mission.category === category) mission.progress += 1;
-                        if (mission.progress >= mission.goal) {
-                            mission.progress = mission.goal;
-                            mission.claimed = true;
-                            completed.push({ ...mission });
-                        }
-                    });
-                    saveTodayMissionState(state);
-                }
-                completed.forEach(mission => {
-                    changeSeeds(mission.reward, '', { toast: false });
-                    const power = Math.max(5, Math.round(Number(mission.reward || 0) / 5));
-                    window.KidscadeSproutPower?.earn?.(power, '일일 미션 · ' + mission.title);
-                    showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개 · 새싹력 +${power}`, true);
-                    window.KidscadeActivity?.record?.('mission', {
-                        title: mission.title + ' 완료!',
-                        summary: '씨앗 +' + mission.reward + ' · 새싹력 +' + power,
-                        place: '오늘의 미션', gameId: gameId || ''
-                    });
-                });
-                renderDailyMissions();
+                return window.KidscadeDailyUI.updateMissionProgress(category, gameId, dailyUiContext());
             }
 
             const visibleGameCount = document.getElementById('visible-game-count');
@@ -3303,40 +3100,14 @@ ${getEvolutionHintText()}
             // =====================================
             // 다크모드 및 출석
             // =====================================
-            const themeBtn = document.getElementById('theme-btn');
-            if (themeBtn && !themeBtn.dataset.kcThemeBound) {
-                themeBtn.dataset.kcThemeBound = '1';
-                let isDarkMode = localStorage.getItem('kidscade_darkmode') === 'true';
-                document.body.classList.toggle('dark-mode', isDarkMode);
-                themeBtn.addEventListener('click', () => {
-                    playUISound('click');
-                    isDarkMode = !isDarkMode;
-                    document.body.classList.toggle('dark-mode', isDarkMode);
-                    localStorage.setItem('kidscade_darkmode', String(isDarkMode));
-                });
-            }
+            window.KidscadeTheme?.bind?.({
+                document,
+                localStorage,
+                playSound: playUISound
+            });
 
-            let attendanceRewardPending = false;
             function checkAttendance() {
-                const todayStr = getDailyRewardKey();
-                const attendanceClaimed = window.KidscadeDaily?.isAttendanceClaimed?.() ?? (localStorage.getItem('kidscade_attendance') === todayStr);
-                if (!attendanceClaimed && !attendanceRewardPending) {
-                    attendanceRewardPending = true;
-                    // 씨앗을 실제 저장한 뒤 출석 완료 날짜를 기록합니다.
-                    if (changeSeeds(30, "오늘의 출석 씨앗", { toast: false })) {
-                        pet.affection = Math.min(100, pet.affection + 20);
-                        savePet(); updatePetUI();
-                        if (window.KidscadeDaily?.markAttendanceClaimed) window.KidscadeDaily.markAttendanceClaimed();
-                        else localStorage.setItem('kidscade_attendance', todayStr);
-                        window.KidscadeActivity?.record?.('attendance', {
-                            title: '오늘의 출석 완료!',
-                            summary: '씨앗 +30 · 쑥쑥이 친밀도 +20',
-                            place: '키즈케이드',
-                            dedupeKey: 'attendance-' + new Date().toLocaleDateString('sv-SE')
-                        });
-                    }
-                    attendanceRewardPending = false;
-                }
+                return window.KidscadeDailyUI.checkAttendance(dailyUiContext());
             }
             if (currentAgeGroup) checkAttendance();
         })();
