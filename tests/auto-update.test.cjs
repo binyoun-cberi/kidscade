@@ -36,6 +36,8 @@ test('index keeps one bootstrap entrypoint and runtime scripts load after compos
   for (const runtime of ['auto-update.js','kidscade-storage.js','audio-manager.js','profile-history.js','account-client.js','seed-balance-sync.js']) {
     assert.ok(bootstrap.includes("'" + runtime + "'"), runtime + ' must be injected by bootstrap');
   }
+  assert.match(bootstrap, /meta name="kidscade-build"/);
+  assert.match(bootstrap, /escapeHtml\(RUNTIME_VERSION\)/);
 });
 
 test('Cloudflare build emits a no-cache static version manifest', () => {
