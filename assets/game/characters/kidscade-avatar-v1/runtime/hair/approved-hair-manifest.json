@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "type": "kidscade-approved-hair-catalog",
   "legacyHidden": true,
   "fallbackId": "clean-01",
@@ -65,7 +65,7 @@
     },
     {
       "id": "male-short-03",
-      "name": "센터 커튼",
+      "name": "클린 센터파트",
       "category": "short-male",
       "approved": true,
       "front": "runtime/hair/approved/hair-male-03.png",
