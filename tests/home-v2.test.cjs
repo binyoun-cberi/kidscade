@@ -268,3 +268,23 @@ test('Home V2 desktop rails target four visible cards on wide screens', () => {
   assert.match(css, /@media \(min-width:1280px\)[\s\S]*grid-auto-columns:calc\(\(100% - 36px\) \/ 4\)/);
   assert.doesNotMatch(css, /calc\(\(100% - 40px\) \/ 5\)/);
 });
+
+
+test('Home V2 keeps the classic lobby visible until the recommended home is fully ready', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const source=fs.readFileSync(path.resolve(__dirname,'..','home-v2.js'),'utf8');
+  const ensureShell=source.slice(source.indexOf('function ensureShell()'),source.indexOf('function activateShell('));
+  const mount=source.slice(source.indexOf('function mount()'),source.indexOf('return Object.freeze({'));
+
+  assert.match(source,/const MOUNT_TIMEOUT_MS = 3000/);
+  assert.match(ensureShell,/shell\.hidden = true/);
+  assert.match(ensureShell,/backbar\.hidden = true/);
+  assert.doesNotMatch(ensureShell,/kc-home-v2-ready/);
+  assert.match(source,/function rollbackStagedShell\(/);
+  assert.match(source,/render\(\{ activate: false \}\)/);
+  assert.match(source,/typeof root\.KidscadePlay\?\.open === 'function'/);
+  assert.match(source,/typeof root\.KidscadeDashboard\?\.render === 'function'/);
+  assert.match(mount,/required-runtime-timeout/);
+  assert.match(mount,/activateShell\(shell\)/);
+});
