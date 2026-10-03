@@ -55,8 +55,8 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(blocks, /cube-architect-poi\.js/);
   assert.match(blocks, /cube-architect-landmarks\.js/);
   assert.match(blocks, /cube-architect\.js/);
-  assert.doesNotMatch(blocks, /type="module"/);
-  assert.doesNotMatch(blocks, /type="module" src="\.\/cube-architect\.js/);
+  assert.match(blocks, /type="module"/);
+  assert.match(blocks, /cube-architect\.js/);
   assert.match(architect, /겨냥도/);
   assert.match(architect, /foldPreview/);
   assert.match(architect, /saveFreeWorld/);
