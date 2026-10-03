@@ -71,7 +71,7 @@ const weeks=[
    p('정하나',46,'B-6','화훼사','adventurer',37.3,true,true,false,{infected:true,dialogue:'꽃가루 때문인지 자꾸 기침이…'}),
    p('배시우',33,'A-7','회계사','player',36.5,false,false,false,{})
   ]},
- {week:3,title:'무증상 변이와 특별구역',rev:'03',newTool:'혈액 검사',bloodKits:5,time:62,
+ {week:3,title:'무증상 변이와 특별구역',rev:'03',newTool:'혈액 검사',bloodKits:5,time:72,
   rules:['체온과 UV 검사는 계속 실시한다.','D-7 거주자는 증상과 무관하게 혈액검사가 의무다. 혈액 양성이면 즉시 격리·소각한다.','D-7 외 시민의 단독 UV 반응은 즉시 소각하지 말고 추가검사·관찰로 보낸다.','고열 + 기침이 함께 있으면 즉시 격리·소각한다.'],
   memo:'K형 무증상 사례가 보고되었습니다. 혈액 키트는 제한되어 있습니다.',
   citizens:[
@@ -84,7 +84,7 @@ const weeks=[
    p('조아라',43,'B-3','약사','adventurer',36.7,false,true,false,{}),
    p('차시온',35,'D-7','공무원','player',36.5,false,false,false,{})
   ]},
- {week:4,title:'위조 통행증 단속',rev:'04',newTool:'신원 대조',bloodKits:5,time:68,
+ {week:4,title:'위조 통행증 단속',rev:'04',newTool:'신원 대조',bloodKits:5,time:94,
   rules:['모든 시민의 통행증 사진과 실제 얼굴을 대조한다. 불일치하면 추가검사로 보낸다.','D-7 거주자는 혈액검사 의무를 유지한다.','고열 + 기침은 즉시 격리·소각, D-7 외 단독 UV 반응은 추가검사·관찰이다.','즉시 소각 기준과 신원 이상이 동시에 있으면 즉시 격리·소각을 우선한다.'],
   memo:'봉쇄구역 이탈을 위해 타인의 통행증을 사용하는 사례가 발견되었습니다.',
   citizens:[
@@ -97,7 +97,7 @@ const weeks=[
    p('김하람',42,'D-7','간호사','female',36.8,false,false,false,{}),
    p('문태양',34,'C-6','목수','adventurer',38.1,false,false,false,{})
   ]},
- {week:5,title:'오염 물품 반입',rev:'05',newTool:'소지품 검사',bloodKits:5,time:76,
+ {week:5,title:'오염 물품 반입',rev:'05',newTool:'소지품 검사',bloodKits:5,time:102,
   rules:['통행증에 노란 「소지품 검사」 표식이 있는 시민은 가방 검사가 의무다.','봉인되지 않은 생체시료 또는 오염 샘플이 발견되면 즉시 격리·소각한다.','신원 불일치는 추가검사·관찰, D-7 혈액 양성은 즉시 격리·소각한다.','고열 + 기침은 즉시 격리·소각하고, D-7 외 단독 UV 반응은 추가검사·관찰한다.'],
   memo:'감염보다 물품 운반이 더 위험할 수 있습니다. 노란 표식을 놓치지 마십시오.',
   citizens:[
@@ -110,7 +110,7 @@ const weeks=[
    p('오세린',38,'D-7','조리사','female',36.8,false,false,false,{bagRequired:true,bagItems:['앞치마','식재료','보온병']}),
    p('한도윤',50,'C-3','운송기사','adventurer',36.5,false,false,false,{bagRequired:true,bioSample:true,infected:true,bagItems:['배송 전표','냉각팩','미신고 조직 샘플']})
   ]},
- {week:6,title:'호흡기 변이',rev:'06',newTool:'호흡 검사',bloodKits:5,time:82,
+ {week:6,title:'호흡기 변이',rev:'06',newTool:'호흡 검사',bloodKits:5,time:101,
   rules:['기침 증상이 있는 시민은 반드시 호흡 검사를 실시한다.','기침 + 비정상 호흡이 확인되면 체온과 무관하게 즉시 격리·소각한다.','고열 + 기침이라도 호흡이 정상이면 즉시 소각하지 말고 추가검사·관찰로 보낸다.','D-7 혈액검사, 신원 대조, 표식 시민의 소지품 검사는 계속 유지한다.'],
   memo:'새 변이는 열보다 호흡 기능을 먼저 떨어뜨립니다. 기존 고열 중심 규칙이 변경되었습니다.',
   citizens:[
@@ -123,7 +123,7 @@ const weeks=[
    p('신태경',41,'C-6','경비원','soldier',37.3,true,false,false,{resp:true,infected:true}),
    p('마지수',25,'A-2','학생','female',36.5,false,false,false,{forged:true,docSprite:'player'})
   ]},
- {week:7,title:'교차반응 경보',rev:'07',newTool:'선별 혈액검사',bloodKits:6,time:84,
+ {week:7,title:'교차반응 경보',rev:'07',newTool:'선별 혈액검사',bloodKits:6,time:92,
   rules:['D-7 및 통행증의 「R-혈액」 표식 시민은 혈액검사가 의무다.','D-7 외 시민의 혈액 양성만으로는 즉시 소각하지 않고 추가검사·관찰로 보낸다.','기침 + 비정상 호흡은 즉시 격리·소각한다.','단독 UV 반응, 신원 불일치, 혈액 단독 양성은 추가검사·관찰이다.','오염 생체시료 소지는 즉시 격리·소각한다.'],
   memo:'일부 정상인에게 항원 교차반응이 확인됐습니다. 혈액 양성 하나만 보고 즉시 소각하지 마십시오.',
   citizens:[
@@ -136,7 +136,7 @@ const weeks=[
    p('강민호',37,'C-5','연구원','adventurer',36.8,false,false,false,{bagRequired:true,bioSample:true,infected:true,bagItems:['노트북','냉각팩','미신고 혈액 샘플']}),
    p('한가은',42,'B-7','교사','female',37.2,true,false,false,{resp:false})
   ]},
- {week:8,title:'최종 변이 · 복합 판정',rev:'08',newTool:'전 검사 체계',bloodKits:6,time:90,
+ {week:8,title:'최종 변이 · 복합 판정',rev:'08',newTool:'전 검사 체계',bloodKits:6,time:102,
   rules:['모든 시민은 신원 대조와 UV 검사를 받는다. 표식 검사는 빠짐없이 실시한다.','D-7 혈액 양성 또는 기침 + 비정상 호흡은 즉시 격리·소각한다.','D-7 외 시민은 혈액 양성과 UV/호흡 이상이 함께 있을 때 즉시 격리·소각한다. 혈액 단독 양성은 추가검사·관찰이다.','고열 + 기침만 있는 경우는 계절성 감염 가능성 때문에 추가검사·관찰로 보낸다.','신원 불일치·단독 UV 반응은 추가검사·관찰, 오염 생체시료는 즉시 격리·소각한다.'],
   memo:'마지막 주입니다. 초기에 배운 규칙 중 일부는 더 이상 유효하지 않습니다. 현재 지침만 따르십시오.',
   citizens:[
@@ -211,7 +211,7 @@ function stamp(action){const s=$id('stamp');s.textContent={pass:'통 과',retest
 function decide(action){if(state.locked)return;if(action==='retest'&&window.Q17Outbreak&&typeof window.Q17Outbreak.canRetest==='function'&&!window.Q17Outbreak.canRetest()){errorSound();showMsg('추가검사 관찰실 정원 초과 · CCTV에서 음성 판정자를 퇴실시키거나 양성자를 처리하세요.',2400,true);if(window.Q17Outbreak.openIsolation)window.Q17Outbreak.openIsolation();return}const err=validateDecision();if(err){errorSound();showMsg(err,1800,true);return}state.locked=true;$id('idCard').classList.remove('open');bagPanel.classList.remove('open');booth.classList.remove('uvmode');spendTime(1);const pp=current(),correct=outcome(pp,state.weekIndex),ok=action===correct;const testCount=Object.keys(state.tests).filter(function(k){return state.tests[k]}).length;state.totalCases++;if(ok){state.totalCorrect++;state.streak++;state.bestStreak=Math.max(state.bestStreak,state.streak);let gain=120+Math.min(80,state.streak*8);if(testCount<=requiredChecks(pp,state.weekIndex).length+1)gain+=25;state.score+=gain;state.trust=clamp(state.trust+1,0,100);if(pp.infected&&action==='quarantine')state.infection=clamp(state.infection-1,0,99);tone(520,.05,'square',.025)}else{state.streak=0;state.score=Math.max(0,state.score-55);if(action==='pass'&&pp.infected){state.infection=clamp(state.infection+5,0,99);state.trust=clamp(state.trust-3,0,100)}else if(action==='quarantine'&&correct!=='quarantine'){state.trust=clamp(state.trust-12,0,100)}else{state.trust=clamp(state.trust-3,0,100);state.infection=clamp(state.infection+1,0,99)}errorSound()}state.records.push({name:pp.name,chosen:action,correct:correct,ok:ok,reason:reasonFor(pp,state.weekIndex),tests:testCount,infected:!!pp.infected,sprite:pp.sprite});renderHeader();stamp(action);const payload={name:pp.name,sprite:pp.sprite,district:pp.district,infected:!!pp.infected,action:action,correct:correct,ok:ok,weekIndex:state.weekIndex,infection:state.infection,wrongQuarantine:action==='quarantine'&&correct!=='quarantine',caseData:{temp:pp.temp,cough:!!pp.cough,uv:!!pp.uv,blood:!!pp.blood,resp:!!pp.resp,forged:!!pp.forged,bioSample:!!pp.bioSample,docIssueLabel:pp.docIssueLabel||'',bagRequired:!!pp.bagRequired}};const handled=window.Q17Outbreak&&typeof window.Q17Outbreak.onDecision==='function'?window.Q17Outbreak.onDecision(payload,function(){nextCase()}):false;if(!handled)setTimeout(nextCase,650)}
 function nextCase(){if(state.caseIndex+1<currentWeek().citizens.length){state.caseIndex++;loadCase()}else showReport()}
 function reportHeadline(){if(state.infection>=25)return'도시 내 확산이 통제선을 압박하고 있습니다.';if(state.trust<50)return'시민 불신이 커져 검역소 앞 항의가 늘고 있습니다.';if(state.infection<=7&&state.trust>=75)return'정확한 검역 덕분에 도시가 안정세를 보입니다.';return'통제선은 유지되고 있지만 작은 오판이 다음 주 상황을 바꿀 수 있습니다.'}
-function showReport(){const rows=state.records.map(function(r){return'<tr><td>'+esc(r.name)+'</td><td>'+decisionName(r.chosen)+'</td><td>'+decisionName(r.correct)+'</td><td class="'+(r.ok?'ok':'no')+'">'+(r.ok?'정확':'오판')+'</td><td>'+esc(r.reason)+'</td></tr>'}).join('');const okCount=state.records.filter(function(r){return r.ok}).length,total=state.records.length;const efficiency=Math.max(0,state.time)*3;state.score+=efficiency;$id('reportContent').innerHTML='<h2>'+(state.weekIndex+1)+'주차 검역 보고서</h2><p>'+esc(reportHeadline())+'</p><div class="summary-cards"><div class="sum"><b>'+okCount+'/'+total+'</b><small>정확 판정</small></div><div class="sum"><b>'+state.trust+'</b><small>시민 신뢰</small></div><div class="sum"><b>'+state.infection+'%</b><small>도시 감염률</small></div><div class="sum"><b>+'+efficiency+'</b><small>효율 보너스</small></div></div><table class="report"><thead><tr><th>시민</th><th>내 판정</th><th>정답</th><th>결과</th><th>판정 근거</th></tr></thead><tbody>'+rows+'</tbody></table>'+(state.weekIndex<weeks.length-1?'<button class="primary" id="continueBtn" type="button">다음 주 지침 받기</button>':finalText());$id('reportModal').classList.add('show');const b=$id('continueBtn');if(b)b.addEventListener('click',function(){clickSound();$id('reportModal').classList.remove('show');state.weekIndex++;state.caseIndex=0;state.records=[];prepareWeek();showBriefing()});saveBest()}
+function showReport(){const rows=state.records.map(function(r){return'<tr><td>'+esc(r.name)+'</td><td>'+decisionName(r.chosen)+'</td><td>'+decisionName(r.correct)+'</td><td class="'+(r.ok?'ok':'no')+'">'+(r.ok?'정확':'오판')+'</td><td>'+esc(r.reason)+'</td></tr>'}).join('');const okCount=state.records.filter(function(r){return r.ok}).length,total=state.records.length;const efficiency=Math.max(0,state.time)*3;state.score+=efficiency;const patrolWeek=[1,3,5].includes(state.weekIndex);const nextLabel=patrolWeek?'정기 순찰 후 다음 주 지침 받기':'다음 주 지침 받기';$id('reportContent').innerHTML='<h2>'+(state.weekIndex+1)+'주차 검역 보고서</h2><p>'+esc(reportHeadline())+'</p><div class="summary-cards"><div class="sum"><b>'+okCount+'/'+total+'</b><small>정확 판정</small></div><div class="sum"><b>'+state.trust+'</b><small>시민 신뢰</small></div><div class="sum"><b>'+state.infection+'%</b><small>도시 감염률</small></div><div class="sum"><b>+'+efficiency+'</b><small>효율 보너스</small></div></div><table class="report"><thead><tr><th>시민</th><th>내 판정</th><th>정답</th><th>결과</th><th>판정 근거</th></tr></thead><tbody>'+rows+'</tbody></table>'+(state.weekIndex<weeks.length-1?'<button class="primary" id="continueBtn" type="button">'+nextLabel+'</button>':finalText());$id('reportModal').classList.add('show');const b=$id('continueBtn');if(b)b.addEventListener('click',function(){clickSound();$id('reportModal').classList.remove('show');const advance=function(){state.weekIndex++;state.caseIndex=0;state.records=[];prepareWeek();showBriefing()};const field=window.Q17FieldMission;if(patrolWeek&&field&&typeof field.startPatrol==='function'&&(!field.isActive||!field.isActive())){const started=field.startPatrol({weekIndex:state.weekIndex,infection:state.infection,trust:state.trust},advance);if(started!==false)return}advance()});saveBest()}
 function endingData(){const accuracy=state.totalCases?Math.round(state.totalCorrect/state.totalCases*100):0;if(state.infection<=8&&state.trust>=72&&accuracy>=88)return['철벽과 신뢰','감염 확산을 막으면서도 시민의 협조를 유지했습니다. 제17검역소는 새로운 표준 검역소로 지정됩니다.'];if(state.infection<=8&&state.trust<55)return['통제는 성공, 신뢰는 붕괴','감염은 억제했지만 과잉 판정의 대가로 시민 신뢰가 무너졌습니다. 통제선은 남았지만 검역소 앞에는 긴 항의 행렬이 생깁니다.'];if(state.infection>=25&&state.trust>=65)return['친절했던 문','시민의 신뢰는 지켰지만 놓친 감염 사례가 누적되었습니다. 도시는 이제 검역소 안쪽에 새로운 통제선을 세웁니다.'];if(state.infection>=25&&state.trust<55)return['제17구역 폐쇄','감염과 불신이 동시에 임계점을 넘었습니다. 검역소는 폐쇄되고 전 구역 이동 금지령이 내려집니다.'];return['불안한 균형','완벽하진 않았지만 통제선은 유지되었습니다. 다음 검역관에게 당신의 기록과 개정된 지침서가 전달됩니다.']}
 const Q17_BEST_KEY='kidscade_quarantine17_best_v2',Q17_BEST_LEGACY='quarantine17'+'BestV2';
 function saveBest(){try{const old=Number(localStorage.getItem(Q17_BEST_KEY)||localStorage.getItem(Q17_BEST_LEGACY)||0);if(state.score>old)localStorage.setItem(Q17_BEST_KEY,String(state.score))}catch(e){}}
