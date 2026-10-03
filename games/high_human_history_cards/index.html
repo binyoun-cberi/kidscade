@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>석기 시대에서 살아남기</title>
-<link rel="stylesheet" href="./style.css?v=9">
+<link rel="stylesheet" href="./style.css?v=10">
 </head>
 <body>
 <div id="app">
@@ -78,6 +78,23 @@
       </div>
 
       <div class="boardTip">카드를 끌어 겹쳐 보세요 · 같은 카드는 스택으로 합쳐집니다</div>
+
+      <div id="tutorialShade" class="tutorialShade hidden" aria-hidden="true"></div>
+      <section id="tutorialCoach" class="tutorialCoach hidden" aria-live="polite">
+        <div class="tutorialTop">
+          <span id="tutorialStepLabel">튜토리얼 1/9</span>
+          <button id="tutorialSkipBtn" type="button">건너뛰기</button>
+        </div>
+        <div class="tutorialBody">
+          <span id="tutorialIcon" class="tutorialIcon">🪨</span>
+          <div>
+            <h2 id="tutorialTitle">석기 시대의 첫날</h2>
+            <p id="tutorialText">카드는 끌어서 서로 겹치면 작업하거나 합칠 수 있어요.</p>
+            <small id="tutorialHint">빛나는 카드를 찾아보세요.</small>
+          </div>
+        </div>
+        <button id="tutorialNextBtn" class="tutorialNext" type="button">알겠어요</button>
+      </section>
     </section>
   </main>
 
@@ -159,7 +176,7 @@
   </div>
 </div>
 <script src="../../audio-manager.js?v=2"></script>
-<script src="./game.js?v=9"></script>
+<script src="./game.js?v=10"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="석기 시대에서 살아남기" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
