@@ -12,6 +12,8 @@ const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kids
 const hairExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-hair.py'),'utf8');
 const hairCatalog=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/hair/approved-hair-manifest.json'),'utf8'));
 const legacyHairWorkflow=fs.readFileSync(path.join(root,'.github/workflows/avatar-hair-extract.yml'),'utf8');
+const upperClothesExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-upper-clothes.py'),'utf8');
+const lowerClothesExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-lower-clothes.py'),'utf8');
 
 test('avatar studio and renderer JavaScript both parse cleanly',()=>{
   assert.doesNotThrow(()=>new Function(renderer));
@@ -19,9 +21,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=25/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=25/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=25')<html.indexOf('avatar-pixel-studio.js?v=25'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=26/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=26/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=26'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -62,7 +64,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-haircatalog-4'/);
+  assert.match(js,/version:'pixel-v2-rig-haircatalog-5'/);
 });
 
 test('new and legacy users fall back to the curated default hair with a complete outfit',()=>{
@@ -164,9 +166,21 @@ test('legacy sheet hair stays in the repository but its automatic build is retir
 });
 
 test('runtime assets are revisioned so curated hair migrations do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='25'/);
+  assert.match(js,/ASSET_REV='26'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='25'/);
+  assert.match(renderer,/ASSET_REV='26'/);
+});
+
+
+test('animated clothes use a small walk-only coverage guard',()=>{
+  assert.match(upperClothesExtract,/WALK_TOP_Y=63/);
+  assert.match(upperClothesExtract,/WALK_MAX_W=58/);
+  assert.match(upperClothesExtract,/WALK_MAX_H=37/);
+  assert.match(lowerClothesExtract,/WALK_TOP_Y = 83/);
+  assert.match(lowerClothesExtract,/WALK_MAX_H = 37/);
+  assert.match(lowerClothesExtract,/WALK_MAX_W = 46/);
+  assert.match(upperClothesExtract,/approved\/hair-male-01\.png/);
+  assert.match(lowerClothesExtract,/approved\/hair-male-01\.png/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
