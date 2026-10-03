@@ -3,14 +3,21 @@
 'use strict';
 
 const SPECIES={
-  deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8,spawnCap:2},
-  fox:{id:'fox',name:'숲여우',kind:'passive',biomes:['pine'],asset:'fox',hp:1,speed:.72,radius:9,spawnCap:2},
-  snowFox:{id:'snowFox',name:'설원여우',kind:'passive',biomes:['snow'],asset:'snowFox',hp:1,speed:.68,radius:9,spawnCap:2},
-  frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6,spawnCap:3},
-  camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9,spawnCap:2},
-  shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:3,speed:1.45,radius:10,nocturnal:true,damage:1,respawn:45,spawnCap:2,reward:{charcoal:1}},
-  slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:3,speed:.9,radius:9,damage:1,respawn:70,spawnCap:2,reward:{clay:2}},
-  burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:4,speed:1.9,radius:11,damage:1,respawn:90,spawnCap:2,reward:{sand:3}},
+  deer:{id:'deer',name:'사슴',kind:'passive',biomes:['forest','flowers'],asset:'deer',hp:1,speed:.55,radius:8,spawnCap:1},
+  fox:{id:'fox',name:'숲여우',kind:'passive',biomes:['pine'],asset:'fox',hp:1,speed:.72,radius:9,spawnCap:1},
+  snowFox:{id:'snowFox',name:'설원여우',kind:'passive',biomes:['snow'],asset:'snowFox',hp:1,speed:.68,radius:9,spawnCap:1},
+  frog:{id:'frog',name:'개구리',kind:'passive',biomes:['marsh'],asset:'frog',hp:1,speed:.35,radius:6,spawnCap:2},
+  camel:{id:'camel',name:'낙타',kind:'passive',biomes:['desert','badlands'],asset:null,hp:1,speed:.46,radius:9,spawnCap:1},
+  pig:{id:'pig',name:'돼지',kind:'passive',biomes:['meadow','flowers'],asset:'pig',hp:1,speed:.42,radius:7,spawnCap:1},
+  sheep:{id:'sheep',name:'양',kind:'passive',biomes:['meadow','forest'],asset:'sheep',hp:1,speed:.4,radius:7,spawnCap:1},
+  chicken:{id:'chicken',name:'닭',kind:'passive',biomes:['meadow','flowers'],asset:'chicken',hp:1,speed:.36,radius:6,spawnCap:1},
+  wolf:{id:'wolf',name:'늑대',kind:'passive',biomes:['pine','snow'],asset:'wolf',hp:2,speed:.78,radius:10,spawnCap:1},
+  shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:3,speed:1.45,radius:10,nocturnal:true,damage:1,respawn:45,spawnCap:1,reward:{charcoal:1}},
+  slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:3,speed:.9,radius:9,damage:1,respawn:70,spawnCap:1,reward:{clay:2}},
+  burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:4,speed:1.9,radius:11,damage:1,respawn:90,spawnCap:1,reward:{sand:3}},
+  goblin:{id:'goblin',name:'숲 고블린',kind:'hostile',biomes:['forest'],asset:'goblin',hp:3,speed:1.05,radius:9,nocturnal:true,damage:1,respawn:80,spawnCap:1,reward:{stone:1}},
+  skeleton:{id:'skeleton',name:'해골 병사',kind:'hostile',biomes:['badlands','desert'],asset:'skeleton',hp:4,speed:1.02,radius:10,nocturnal:true,damage:1,respawn:110,spawnCap:1,reward:{charcoal:1,stone:1}},
+  yeti:{id:'yeti',name:'설원 예티',kind:'hostile',biomes:['snow'],asset:'yeti',hp:6,speed:.86,radius:11,damage:2,respawn:160,spawnCap:1,reward:{snow:4,stone:2}},
   cubeGolem:{id:'cubeGolem',name:'큐브 골렘',kind:'hostile',biomes:['badlands'],asset:'golem',hp:9,speed:.82,radius:12,damage:2,respawn:300,spawnCap:1,reward:{stone:5,ironOre:1},elite:true}
 };
 
