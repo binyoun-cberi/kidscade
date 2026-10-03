@@ -229,8 +229,8 @@
     if (!Array.isArray(d.pledges)) d.pledges = [];
     if (!Array.isArray(d.decisions)) d.decisions = [];
     d.reserveFood = clamp(d.reserveFood || 0, 0, 28);
-    d.activityFoodFactor = clamp(Number.isFinite(d.activityFoodFactor) ? d.activityFoodFactor : 1, .76, 1);
-    d.activityWoodFactor = clamp(Number.isFinite(d.activityWoodFactor) ? d.activityWoodFactor : 1, .76, 1);
+    d.activityFoodFactor = clamp(Number.isFinite(d.activityFoodFactor) ? d.activityFoodFactor : 1, .88, 1);
+    d.activityWoodFactor = clamp(Number.isFinite(d.activityWoodFactor) ? d.activityWoodFactor : 1, .88, 1);
     d.warmth = clamp(d.warmth == null ? 73 : d.warmth);
     d.health = clamp(d.health == null ? 85 : d.health);
     d.education = clamp(d.education == null ? 95 : d.education);
@@ -303,8 +303,8 @@
     const strikeFactor = (s.strikes?.workers || 0) > s.tick ? .53 : 1;
     const production = (ration.production || 1) * (labor.production || 1) * (s.stormUntil > s.tick ? .7 : 1) *
       fatigue * effortAdapt * shortRest * focusedWork * coldFactor * illnessFactor * climateFactor * strikeFactor;
-    const activityFoodFactor = clamp(Number.isFinite(s.activityFoodFactor) ? s.activityFoodFactor : 1, .76, 1);
-    const activityWoodFactor = clamp(Number.isFinite(s.activityWoodFactor) ? s.activityWoodFactor : 1, .76, 1);
+    const activityFoodFactor = clamp(Number.isFinite(s.activityFoodFactor) ? s.activityFoodFactor : 1, .88, 1);
+    const activityWoodFactor = clamp(Number.isFinite(s.activityWoodFactor) ? s.activityWoodFactor : 1, .88, 1);
     const gather = s.jobs.gather * (.96 + s.buildings.farm * .23) * production * activityFoodFactor +
       (s.childWorkUntil > s.tick && s.childWellbeing > 25 ? Math.min(2, childCount(s)) * 1.25 : 0);
     const cut = s.jobs.wood * .48 * production * activityWoodFactor + (s.forcedLaborUntil > s.tick ? 2.8 : 0);
