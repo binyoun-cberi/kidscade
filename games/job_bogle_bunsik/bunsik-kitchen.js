@@ -314,7 +314,7 @@ class RamenKitchen3D{
   if(x<-7.15||x>7.15||z<-2.82||z>4.55)return false;
   for(const v of this.potVisuals){if(Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.03)return false}
   for(const s of this.layoutStations){
-   const radius=s.source?.72:1.0;
+   const radius=s.source?.62:1.0;
    if(Math.hypot(s.group.position.x-x,s.group.position.z-z)<radius)return false
   }
   if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<.92)return false;
