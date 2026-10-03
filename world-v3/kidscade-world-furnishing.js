@@ -1,13 +1,19 @@
 import * as THREE from 'three';
 
-const ROOT=new URL('../assets/game/3d/interiors/kenney-furniture-kit/',import.meta.url).href;
+const ROOTS={
+  kenney:new URL('../assets/game/3d/interiors/kenney-furniture-kit/',import.meta.url).href,
+  bakery:new URL('../assets/game/3d/bakery/interior/',import.meta.url).href,
+  restaurant:new URL('../assets/game/3d/bakery/restaurant-bits/',import.meta.url).href
+};
+const ROOT=ROOTS.kenney;
+function furnitureAssetUrl(def){return (ROOTS[def.root]||ROOT)+def.file;}
 
 export const FURNITURE_CATALOG={
   bedSingle:{name:'나무 침대',file:'bed-single.glb',w:2.6,h:1.25,d:2.1,cw:1.6,cd:2.35,use:'침대에서 자기',source:'목수공방 제작'},
-  kitchenStove:{name:'가스레인지',file:'kitchen-stove.glb',w:1.3,h:1.45,d:1.1,cw:1.1,cd:.78,use:'요리하기',source:'목수공방 2단계 제작'},
-  kitchenSink:{name:'싱크대·수도꼭지',file:'kitchen-sink.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'수도 사용하기',source:'수도 3단계 + 목수공방 제작'},
-  kitchenCabinet:{name:'큰 수납장',file:'kitchen-cabinet.glb',w:1.55,h:1.3,d:1.0,cw:1.35,cd:.78,use:'집 수납 열기',source:'목수공방 제작'},
-  kitchenFridge:{name:'냉장고',file:'kitchen-fridge.glb',w:1.25,h:2.3,d:1.2,cw:1.0,cd:.9,use:'냉장고 열기',source:'목수공방 3단계 제작'},
+  kitchenStove:{name:'가스레인지',root:'restaurant',file:'stove-multi-decorated.glb',w:1.45,h:1.35,d:1.15,cw:1.15,cd:.82,use:'요리하기',source:'목수공방 2단계 제작'},
+  kitchenSink:{name:'싱크대·수도꼭지',root:'restaurant',file:'kitchencounter-sink-backsplash.glb',w:1.65,h:1.45,d:1.0,cw:1.4,cd:.78,use:'수도 사용하기',source:'수도 3단계 + 목수공방 제작'},
+  kitchenCabinet:{name:'큰 수납장',root:'restaurant',file:'kitchencounter-straight-a-decorated.glb',w:1.65,h:1.35,d:1.0,cw:1.4,cd:.78,use:'집 수납 열기',source:'목수공방 제작'},
+  kitchenFridge:{name:'냉장고',root:'restaurant',file:'fridge-a-decorated.glb',w:1.35,h:2.25,d:1.2,cw:1.05,cd:.9,use:'냉장고 열기',source:'목수공방 3단계 제작'},
   homeDrawers:{name:'서랍장',file:'side-table-drawers.glb',w:1.15,h:1.05,d:1.0,cw:.85,cd:.76,use:'집 수납 열기',source:'목수공방 1단계 제작'},
   wardrobe:{name:'옷장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,use:'옷 갈아입기',source:'목수공방 2단계 제작'},
   classicDesk:{name:'기본 책상',file:'desk.glb',w:2.0,h:1.4,d:1.2,cw:1.8,cd:.9,recipe:{wood:8,iron:1},use:'책상 사용하기'},
@@ -27,7 +33,7 @@ export const FURNITURE_CATALOG={
   television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,source:'기술 공방 3단계 · 3×3 제작대',use:'TV 보기'},
   minjiPlanter:{name:'민지의 시장 화분',file:'plant-small3.glb',w:.8,h:1.0,d:.8,cw:.5,cd:.5,source:'민지 친밀도 희귀 보상'},
   junhoStool:{name:'준호의 작업 스툴',file:'stool-bar-square.glb',w:.85,h:1.25,d:.85,cw:.6,cd:.6,source:'준호 친밀도 희귀 보상'},
-  haneulTable:{name:'하늘의 카페 테이블',file:'table-round.glb',w:1.6,h:1.15,d:1.6,cw:1.3,cd:1.3,source:'하늘 친밀도 희귀 보상'},
+  haneulTable:{name:'하늘의 카페 테이블',root:'bakery',file:'table-round-a.glb',w:1.6,h:1.15,d:1.6,cw:1.3,cd:1.3,source:'하늘 친밀도 희귀 보상'},
   doyunBench:{name:'도윤의 마을 벤치',file:'bench-cushion.glb',w:2.0,h:1.0,d:.85,cw:1.7,cd:.7,source:'도윤 친밀도 희귀 보상'},
   yunaPlant:{name:'유나의 작은 화초',file:'plant-small2.glb',w:.75,h:.95,d:.75,cw:.46,cd:.46,source:'유나 친밀도 희귀 보상'},
   taehoRetroTv:{name:'태호의 레트로 게임 TV',file:'television-vintage.glb',w:1.35,h:1.1,d:.65,cw:1.1,cd:.5,source:'태호 친밀도 희귀 보상',use:'레트로 게임 하기'},
@@ -121,7 +127,7 @@ export function createFurnishingSystem(ctx){
   }
   async function spawn(rec){
     const def=FURNITURE_CATALOG[rec.key];if(!def)return null;
-    const object=await addModel(parent,ROOT+def.file,{x:rec.x,z:rec.z,w:def.w,h:def.h,d:def.d,rot:rec.rot*Math.PI/2,name:'placed-'+rec.id});
+    const object=await addModel(parent,furnitureAssetUrl(def),{x:rec.x,z:rec.z,w:def.w,h:def.h,d:def.d,rot:rec.rot*Math.PI/2,name:'placed-'+rec.id});
     if(!object)return null;
     return registerActor(rec,object);
   }
