@@ -198,7 +198,6 @@ async function loadStarterSet(){
   const occupied=STARTER_CORE_LAYERS.some(layer=>hasInk(rec?.[layer]));
   if(occupied&&!confirm('STAND-01의 기본 파츠를 GitHub 기본 세트로 덮어쓸까요? BODY는 유지됩니다.'))return;
   if(button){button.disabled=true;button.textContent='기본 세트 연결 중…'}
-  const prevFrame=currentFrame,prevLayer=activeLayer;
   try{
     selectFrame('stand-01');
     for(let i=0;i<STARTER_CORE_LAYERS.length;i++){
@@ -216,9 +215,9 @@ async function loadStarterSet(){
     setStatus('기본 세트 연결 중단: '+(e?.message||e),true);
   }finally{
     clearStamp();
+    selectFrame('stand-01');
+    selectLayer('hair');
     if(button){button.disabled=false;button.textContent=old}
-    if(prevFrame!=='stand-01'&&frames.has(prevFrame))selectFrame(prevFrame);
-    if(LAYERS.includes(prevLayer))selectLayer(prevLayer);
   }
 }
 
