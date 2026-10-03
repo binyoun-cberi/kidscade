@@ -2593,6 +2593,11 @@ ${getEvolutionHintText()}
             // 즐겨찾기 & 최근 플레이 
             // =====================================
             function renderDashboards() {
+                if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
+                    return;
+                }
+
+                // Safe startup fallback until dashboard-recent.js is available.
                 const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
                 favList.innerHTML = ''; let favCount = 0;
                 favorites.forEach(id => {
@@ -2621,6 +2626,10 @@ ${getEvolutionHintText()}
             }
 
             function trackRecent(id) {
+                if (window.KidscadeDashboard?.remember?.(id)) {
+                    recents = safeParseStorage('kidscade_recents', []);
+                    return;
+                }
                 const card = document.querySelector(`.game-card[data-id="${id}"]`);
                 if(card && card.classList.contains('disabled')) return;
                 recents = recents.filter(rId => rId !== id); recents.unshift(id);
@@ -2628,14 +2637,13 @@ ${getEvolutionHintText()}
                 localStorage.setItem('kidscade_recents', JSON.stringify(recents)); renderDashboards();
             }
 
-            document.querySelectorAll('.fav-star').forEach(star => {
-                star.addEventListener('click', function(e) {
-                    e.preventDefault(); e.stopPropagation(); playUISound('click');
-                    const card = this.closest('.game-card'); const id = card.getAttribute('data-id');
-                    if (favorites.includes(id)) { favorites = favorites.filter(favId => favId !== id); this.innerText = '☆'; this.classList.remove('active'); } 
-                    else { favorites.push(id); this.innerText = '★'; this.classList.add('active'); }
-                    localStorage.setItem('kidscade_favs', JSON.stringify(favorites)); renderDashboards();
-                });
+            // Favorite and recent mutations are owned by dashboard-recent.js.
+            // Keep only the legacy fallback arrays synchronized with the central state.
+            document.addEventListener('kidscade:favorites-changed', () => {
+                favorites = safeParseStorage('kidscade_favs', []);
+            });
+            document.addEventListener('kidscade:recents-changed', () => {
+                recents = safeParseStorage('kidscade_recents', []);
             });
 
             gameCards.forEach(card => {
