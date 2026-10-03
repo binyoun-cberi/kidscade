@@ -57,6 +57,20 @@ const STARTER_ASSETS={
   hat:{id:'navy-cap-01',file:'hat01.png',core:false}
 };
 const STARTER_CORE_LAYERS=['hair','eyes','mouth','upper','lower','shoes','gloves'];
+const ASSET_CATALOG=[
+  {layer:'hair',id:'toben-like-01',label:'토벤풍 기본 머리',file:'hair-01_stand-01.png',core:true},
+  {layer:'eyes',id:'eyes-01',label:'기본 갈색 눈',file:'eyes01.png',core:true},
+  {layer:'mouth',id:'mouth-01',label:'기본 미소',file:'mouth01.png',core:true},
+  {layer:'upper',id:'blue-star-hoodie-01',label:'파란 별 후드',file:'hoodie01.png',core:true},
+  {layer:'lower',id:'denim-cuffed-jeans-01',label:'롤업 데님',file:'jenas01.png',core:true},
+  {layer:'shoes',id:'shoes-01',label:'기본 스니커즈',file:'shoes01.png',core:true},
+  {layer:'gloves',id:'gloves-01',label:'기본 장갑',file:'gloves01.png',core:true},
+  {layer:'hat',id:'navy-cap-01',label:'네이비 캡',file:'hat01.png',core:false},
+  {layer:'earring',id:'earring-01',label:'골드 귀걸이',file:'earing01.png',core:false},
+  {layer:'mask',id:'mask-01',label:'화이트 마스크',file:'mask01.png',core:false}
+];
+const ASSET_CATEGORY_ORDER=['hair','eyes','mouth','upper','lower','shoes','gloves','hat','earring','mask'];
+
 
 
 const $=id=>document.getElementById(id);
@@ -77,9 +91,11 @@ let sourceRuntimeReady=false;
 let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
+let pendingCatalogAsset=null;
 
 const frames=new Map();
 const history=new Map();
+const selectedAssets=new Map();
 
 function makeCanvas(w=SIZE,h=SIZE){
   const c=document.createElement('canvas');
@@ -92,6 +108,7 @@ for(const frame of FRAMES){
   const rec={};
   for(const layer of LAYERS)rec[layer]=makeCanvas();
   frames.set(frame.id,rec);
+  selectedAssets.set(frame.id,new Map());
 }
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
@@ -115,6 +132,84 @@ function assetIdForLayer(layer){
   return safeId(field&&$(field)?.value,fallback);
 }
 
+
+function assetMeta(frameId=currentFrame,layer=activeLayer){return selectedAssets.get(frameId)?.get(layer)||null}
+function setAssetMeta(frameId,layer,meta){
+  const map=selectedAssets.get(frameId)||new Map();
+  if(meta)map.set(layer,{...meta});else map.delete(layer);
+  selectedAssets.set(frameId,map);
+}
+function catalogEntry(layer,id){
+  return ASSET_CATALOG.find(item=>item.layer===layer&&(!id||item.id===id))||null;
+}
+function assetEntryUrl(entry){
+  return entry?new URL('../assets/game/characters/kidscade-avatar-v3/'+entry.file,window.location.href).href:'';
+}
+function partLabel(layer){return LAYER_LABELS[layer]||layer}
+function syncLayerSelect(){
+  const el=$('editLayerSelect');
+  if(el&&el.value!==activeLayer)el.value=activeLayer;
+}
+function buildLayerSelect(){
+  const el=$('editLayerSelect');if(!el)return;
+  el.innerHTML=LAYERS.map(layer=>'<option value="'+layer+'">'+partLabel(layer)+'</option>').join('');
+  el.value=activeLayer;
+}
+function buildAssetBrowser(){
+  const category=$('assetCategory'),grid=$('assetGrid');
+  if(!category||!grid)return;
+  if(!category.options.length){
+    category.innerHTML=ASSET_CATEGORY_ORDER.map(layer=>'<option value="'+layer+'">'+partLabel(layer)+'</option>').join('');
+    category.value=ASSET_CATEGORY_ORDER.includes(activeLayer)?activeLayer:'hair';
+  }
+  renderAssetGrid();
+}
+function renderAssetGrid(){
+  const category=$('assetCategory'),grid=$('assetGrid');if(!category||!grid)return;
+  const layer=category.value||'hair';
+  const q=String($('assetSearch')?.value||'').trim().toLowerCase();
+  const items=ASSET_CATALOG.filter(item=>item.layer===layer&&(!q||(item.label+' '+item.id).toLowerCase().includes(q)));
+  grid.innerHTML='';
+  if(!items.length){grid.innerHTML='<div class="asset-empty">이 분류에 등록된 에셋이 없습니다.</div>';return}
+  const current=assetMeta(currentFrame,layer);
+  for(const item of items){
+    const button=document.createElement('button');
+    button.type='button';button.className='asset-card'+(current?.id===item.id?' selected':'');
+    button.title=item.label;
+    const img=document.createElement('img');img.src=assetEntryUrl(item);img.alt=item.label;
+    const name=document.createElement('span');name.className='name';name.textContent=item.label;
+    button.append(img,name);
+    button.addEventListener('click',()=>loadCatalogAsset(item,{apply:false,announce:true}));
+    grid.appendChild(button);
+  }
+}
+function renderSelectedAssetList(){
+  const host=$('selectedAssetList');if(!host)return;
+  const rec=frames.get(currentFrame),rows=[];
+  for(const layer of RENDER_ORDER){
+    if(!hasInk(rec?.[layer]))continue;
+    const meta=assetMeta(currentFrame,layer);
+    const id=meta?.id||assetIdForLayer(layer);
+    const entry=meta?.file?meta:catalogEntry(layer,id);
+    const thumb=entry?.file?assetEntryUrl(entry):layerCanvas(currentFrame,layer).toDataURL('image/png');
+    rows.push({layer,id,thumb,label:meta?.label||catalogEntry(layer,id)?.label||id});
+  }
+  host.innerHTML='';
+  if(!rows.length){host.innerHTML='<div class="asset-empty">현재 프레임에 선택된 파츠가 없습니다.</div>';return}
+  for(const row of rows){
+    const div=document.createElement('div');div.className='selected-row';div.dataset.layer=row.layer;
+    div.innerHTML='<div class="selected-thumb"><img alt=""></div><div class="selected-meta"><div class="selected-slot">'+partLabel(row.layer)+'</div><div class="selected-name"></div></div><button class="selected-remove" type="button" title="현재 프레임에서 제거">×</button>';
+    div.querySelector('img').src=row.thumb;
+    div.querySelector('.selected-name').textContent=row.label;
+    div.querySelector('.selected-meta').addEventListener('click',()=>selectLayer(row.layer));
+    div.querySelector('.selected-remove').addEventListener('click',()=>{
+      const c=layerCtx(currentFrame,row.layer);c.clearRect(0,0,SIZE,SIZE);setAssetMeta(currentFrame,row.layer,null);
+      if(activeLayer===row.layer)selection=null;
+      afterEdit(partLabel(row.layer)+' 제거');
+    });
+    host.appendChild(div);
+  }
+}
 function bboxOfCanvas(c,alphaCut=1){
   if(!c)return null;
   const d=c.getContext('2d',{alpha:true}).getImageData(0,0,c.width,c.height).data;
@@ -147,50 +242,38 @@ function loadImageUrl(url,timeoutMs=10000){
 }
 
 
-function starterAssetUrl(layer){
-  const entry=STARTER_ASSETS[layer];
-  if(!entry)throw new Error('등록되지 않은 기본 에셋입니다: '+layer);
-  return new URL('../assets/game/characters/kidscade-avatar-v3/'+entry.file,window.location.href).href;
-}
+function starterAssetUrl(layer){return assetEntryUrl(catalogEntry(layer)||STARTER_ASSETS[layer])}
 
-async function loadStarterAsset(layer,{apply=false,announce=true}={}){
-  const entry=STARTER_ASSETS[layer];
+async function loadCatalogAsset(entry,{apply=false,announce=true}={}){
   if(!entry)return false;
+  const layer=entry.layer;
   try{
     stopPlayback();
     if(currentFrame!=='stand-01')selectFrame('stand-01');
     selectLayer(layer);
+    const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(layer))category.value=layer;
     const field=LAYER_ID_FIELDS[layer];
     if(field&&$(field))$(field).value=entry.id;
-    if(announce)setStatus('GitHub 기본 '+(LAYER_LABELS[layer]||layer)+' 불러오는 중…');
-    const url=starterAssetUrl(layer);
+    pendingCatalogAsset={layer:entry.layer,id:entry.id,label:entry.label||entry.id,file:entry.file};
+    if(announce)setStatus('GitHub '+partLabel(layer)+' · '+(entry.label||entry.id)+' 불러오는 중…');
+    const url=assetEntryUrl(entry);
     const img=await loadImageUrl(url,12000);
-    sourceImage=img;
-    $('sourcePreview').src=url;
-    $('sourcePreview').classList.remove('hidden');
+    sourceImage=img;$('sourcePreview').src=url;$('sourcePreview').classList.remove('hidden');
     refreshPreparedSource();
-
     if(sourceRuntimeReady){
       $('stampX').value='0';$('stampY').value='0';$('stampW').value=String(SIZE);$('stampH').value=String(SIZE);$('stampRotation').value='0';
       pixelizePreview(false);
-    }else{
-      autoFitStamp(false);
-      pixelizePreview(false);
-    }
-    refreshNudgeMode();render();
-
-    if(apply){
-      applyPixelized();
-      return true;
-    }
-    if(announce)setStatus((LAYER_LABELS[layer]||layer)+' 원본 연결됨 · 화살표로 위치를 맞춘 뒤 현재 레이어에 적용하세요.');
+    }else{autoFitStamp(false);pixelizePreview(false)}
+    refreshNudgeMode();render();renderAssetGrid();
+    if(apply){applyPixelized();return true}
+    if(announce)setStatus(partLabel(layer)+' 미리보기 · 화살표로 맞춘 뒤 적용하세요.');
     return true;
   }catch(e){
-    setStatus('기본 에셋 불러오기 실패 · '+(LAYER_LABELS[layer]||layer)+' · '+(e?.message||e),true);
-    clearStamp();
-    return false;
+    setStatus('에셋 불러오기 실패 · '+partLabel(layer)+' · '+(e?.message||e),true);
+    clearStamp();return false;
   }
 }
+async function loadStarterAsset(layer,opts={}){return loadCatalogAsset(catalogEntry(layer)||STARTER_ASSETS[layer],opts)}
 
 async function loadStarterSet(){
   const button=$('loadStarterSet'),old=button?.textContent||'';
@@ -351,7 +434,9 @@ function selectLayer(layer){
   }
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
-  refreshNudgeMode();
+  refreshNudgeMode();syncLayerSelect();
+  const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(activeLayer)){category.value=activeLayer;renderAssetGrid()}
+  renderSelectedAssetList();
   setStatus(frameRecord().label+' · '+(LAYER_LABELS[activeLayer]||activeLayer)+' 편집');
 }
 
@@ -360,6 +445,7 @@ function selectFrame(id){
   currentFrame=id;selection=null;selectionStart=null;invalidatePixelPreview();refreshFrameButtons();
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
+  renderSelectedAssetList();renderAssetGrid();
 }
 
 function selectTool(next){
@@ -415,7 +501,7 @@ function paintAt(x,y){
 }
 
 function afterEdit(message='수정됨'){
-  refreshFrameButtons();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
 }
 function scheduleSave(){
   clearTimeout(saveTimer);
@@ -717,9 +803,11 @@ function applyPixelized(){
   if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
   if(!pixelPreviewReady)pixelizePreview(false);
   snapshot();const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);c.drawImage($('pixelPreviewCanvas'),0,0);selection=null;
-  const applied=activeLayer.toUpperCase();
+  const appliedLayer=activeLayer,applied=partLabel(activeLayer);
+  const meta=pendingCatalogAsset&&pendingCatalogAsset.layer===activeLayer?{...pendingCatalogAsset}:{layer:activeLayer,id:assetIdForLayer(activeLayer),label:'사용자 '+applied,file:null,custom:true};
+  setAssetMeta(currentFrame,activeLayer,meta);
   clearStamp();
-  afterEdit('픽셀화 결과를 '+applied+' '+currentFrame+'에 적용함 · 이제 화살표는 적용된 레이어를 움직입니다.');
+  afterEdit(applied+' · '+currentFrame+'에 적용함');
 }
 
 function fitStamp(){
@@ -729,12 +817,13 @@ function fitStamp(){
 function commitStamp(){
   if(!sourceImage)return setStatus('먼저 이미지를 불러오세요.',true);
   snapshot();const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);drawStamp(c,1,false);selection=null;
-  const applied=activeLayer.toUpperCase();
-  clearStamp();
-  afterEdit('원본을 '+applied+'에 적용함 · 이제 화살표는 적용된 레이어를 움직입니다.');
+  const appliedLayer=activeLayer,applied=partLabel(activeLayer);
+  const meta=pendingCatalogAsset&&pendingCatalogAsset.layer===activeLayer?{...pendingCatalogAsset}:{layer:activeLayer,id:assetIdForLayer(activeLayer),label:'사용자 '+applied,file:null,custom:true};
+  setAssetMeta(currentFrame,activeLayer,meta);
+  clearStamp();afterEdit('원본 '+applied+' 적용함');
 }
 function clearStamp(){
-  sourceImage=null;preparedSource=null;sourceCrop=null;sourceRuntimeReady=false;pixelPreviewReady=false;
+  sourceImage=null;preparedSource=null;sourceCrop=null;sourceRuntimeReady=false;pixelPreviewReady=false;pendingCatalogAsset=null;
   $('sourcePreview').src='';$('sourcePreview').classList.add('hidden');$('sourceFile').value='';
   $('pixelPreviewCanvas').getContext('2d').clearRect(0,0,SIZE,SIZE);
   refreshNudgeMode();render();
@@ -748,13 +837,14 @@ function copyLayerToAllFrames(){
   for(const f of FRAMES){
     if(f.id===currentFrame)continue;
     const dst=layerCtx(f.id,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);
+    setAssetMeta(f.id,activeLayer,assetMeta(currentFrame,activeLayer));
   }
   history.clear();selection=null;afterEdit((LAYER_LABELS[activeLayer]||activeLayer)+'을 모든 프레임에 복사함');
 }
 
 function copyPrevious(){
   const prev=prevFrameId();if(!prev)return setStatus('이전 프레임이 없습니다.',true);
-  snapshot();const dst=layerCtx(),src=layerCanvas(prev,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);selection=null;afterEdit(prev+' → '+currentFrame+' '+activeLayer+' 복사');
+  snapshot();const dst=layerCtx(),src=layerCanvas(prev,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);setAssetMeta(currentFrame,activeLayer,assetMeta(prev,activeLayer));selection=null;afterEdit(prev+' → '+currentFrame+' '+partLabel(activeLayer)+' 복사');
 }
 
 function stopPlayback(){if(playTimer){clearInterval(playTimer);playTimer=0}}
@@ -767,12 +857,12 @@ function startPlayback(kind){
 function clearCurrent(){
   if(!hasInk(layerCanvas()))return;
   if(!confirm(currentFrame+' '+activeLayer+' 레이어를 비울까요?'))return;
-  snapshot();layerCtx().clearRect(0,0,SIZE,SIZE);selection=null;afterEdit('현재 레이어를 비움');
+  snapshot();layerCtx().clearRect(0,0,SIZE,SIZE);setAssetMeta(currentFrame,activeLayer,null);selection=null;afterEdit('현재 파츠를 비움');
 }
 function clearAll(){
   if(!confirm('BODY·HAIR·의상의 모든 프레임을 비울까요?'))return;
-  for(const f of FRAMES)for(const layer of LAYERS)layerCtx(f.id,layer).clearRect(0,0,SIZE,SIZE);
-  history.clear();selection=null;saveLocal();refreshFrameButtons();render();setStatus('모든 프레임을 초기화함');
+  for(const f of FRAMES){for(const layer of LAYERS)layerCtx(f.id,layer).clearRect(0,0,SIZE,SIZE);selectedAssets.set(f.id,new Map())}
+  history.clear();selection=null;saveLocal();refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();setStatus('모든 프레임을 초기화함');
 }
 
 function readProject(){
@@ -780,6 +870,7 @@ function readProject(){
   const out={version:4,type:'kidscade-avatar-studio-project',canvas:[128,128],root:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorRight:true,
     assetIds,
     bodyId:assetIds.body,hairId:assetIds.hair,upperId:assetIds.upper,lowerId:assetIds.lower,
+    selectedAssets:Object.fromEntries(FRAMES.map(f=>[f.id,Object.fromEntries(selectedAssets.get(f.id)||[])])),
     frames:{}};
   for(const f of FRAMES){const rec=frames.get(f.id);out.frames[f.id]={};for(const layer of LAYERS)out.frames[f.id][layer]=rec[layer].toDataURL('image/png')}
   return out;
@@ -812,7 +903,18 @@ async function applyProject(project){
       }
     }
   }else throw new Error('Kidscade 아바타 제작실 프로젝트가 아닙니다.');
-  history.clear();selection=null;refreshFrameButtons();render();saveLocal();
+  if(project.selectedAssets){
+    for(const f of FRAMES){
+      const items=project.selectedAssets[f.id]||{};
+      selectedAssets.set(f.id,new Map(Object.entries(items)));
+    }
+  }else{
+    for(const f of FRAMES){
+      const map=new Map();for(const layer of LAYERS)if(hasInk(layerCanvas(f.id,layer)))map.set(layer,{layer,id:assetIdForLayer(layer),label:assetIdForLayer(layer),file:null,custom:true});
+      selectedAssets.set(f.id,map);
+    }
+  }
+  history.clear();selection=null;refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
 }
 async function restoreLocal(){
   try{
@@ -911,7 +1013,10 @@ async function verifyAdmin(){
 }
 
 function bind(){
-  buildFrameButtons();
+  buildFrameButtons();buildLayerSelect();buildAssetBrowser();
+  $('editLayerSelect')?.addEventListener('change',e=>selectLayer(e.target.value));
+  $('assetCategory')?.addEventListener('change',e=>{selectLayer(e.target.value);renderAssetGrid()});
+  $('assetSearch')?.addEventListener('input',renderAssetGrid);
   for(const [layer,id] of Object.entries(LAYER_BUTTON_IDS)){
     $(id)?.addEventListener('click',()=>selectLayer(layer));
   }
@@ -922,9 +1027,7 @@ function bind(){
   $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
   $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
   $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
-  document.querySelectorAll('.starter-asset').forEach(button=>{
-    button.addEventListener('click',()=>loadStarterAsset(button.dataset.layer,{apply:false,announce:true}));
-  });
+
   $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
   $('playStand').addEventListener('click',()=>startPlayback('stand'));
@@ -960,7 +1063,7 @@ function bind(){
 
   $('sourceFile').addEventListener('change',e=>{
     const file=e.target.files?.[0];if(!file)return;
-    const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{sourceImage=img;$('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');refreshPreparedSource();if($('autoFitOnLoad').checked)autoFitStamp(false);else fitStamp();pixelizePreview(false);refreshNudgeMode();setStatus('원본을 불러왔습니다 · 화살표로 위치를 맞춘 뒤 현재 레이어에 적용하세요.')};img.src=reader.result};reader.readAsDataURL(file);
+    const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{pendingCatalogAsset=null;sourceImage=img;$('sourcePreview').src=reader.result;$('sourcePreview').classList.remove('hidden');refreshPreparedSource();if($('autoFitOnLoad').checked)autoFitStamp(false);else fitStamp();pixelizePreview(false);refreshNudgeMode();setStatus('원본을 불러왔습니다 · 화살표로 위치를 맞춘 뒤 현재 레이어에 적용하세요.')};img.src=reader.result};reader.readAsDataURL(file);
   });
   $('autoFitStamp').addEventListener('click',()=>{autoFitStamp();pixelizePreview(false)});
   $('pixelizePreview').addEventListener('click',()=>pixelizePreview());
@@ -1005,7 +1108,8 @@ async function init(){
   await restoreLocal();
   selectLayer('body');selectTool('pencil');selectFrame('stand-01');
   if(allBodyFramesEmpty())await loadDraftBodySet(false);
-  else setStatus('V3 제작실 준비됨 · STAND-01 기준 오버레이와 오차 표시로 BODY/HAIR를 정합하세요.');
+  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();
+  if(!allBodyFramesEmpty())setStatus('아바타 제작실 준비됨 · 왼쪽 에셋을 눌러 조합하세요.');
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
