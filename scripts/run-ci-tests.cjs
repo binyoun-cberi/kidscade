@@ -124,6 +124,12 @@ run(
   ['scripts/deployment-audit.cjs', '--strict']
 );
 
+run(
+  'Kidscade architecture ratchet',
+  process.execPath,
+  ['scripts/architecture-ratchet.cjs']
+);
+
 const failed = results.filter(result => result.status !== 0);
 console.log('\n============================================================');
 console.log('CI suite summary');

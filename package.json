@@ -9,7 +9,8 @@
     "deploy:cloudflare": "npm run build:cloudflare && npm run db:migrate:remote && wrangler deploy",
     "health": "node scripts/platform-health-report.cjs",
     "health:strict": "node scripts/platform-health-report.cjs --strict",
-    "test:ci": "node scripts/run-ci-tests.cjs"
+    "test:ci": "node scripts/run-ci-tests.cjs",
+    "architecture:ratchet": "node scripts/architecture-ratchet.cjs"
   },
   "devDependencies": {
     "sharp": "0.35.4",
