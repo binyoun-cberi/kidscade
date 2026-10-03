@@ -33,8 +33,6 @@
   let muted = false;
   let menuOpen = false;
   let pauseHandlers = null;
-  const cleanupHandlers = new Set();
-  let exitLifecycleInstalled = false;
   let errorReportingInstalled = false;
   let shellMountPending = false;
 
@@ -223,40 +221,6 @@
     options.pauseable = Boolean(pauseHandlers.pause || pauseHandlers.resume);
     syncShell();
     return options.pauseable;
-  }
-
-  function installExitLifecycle() {
-    if (exitLifecycleInstalled || !root?.addEventListener) return false;
-    exitLifecycleInstalled = true;
-    root.addEventListener('kidscade:game-exit', event => {
-      dispose(event?.detail || {});
-    });
-    return true;
-  }
-
-  function registerCleanup(handler) {
-    if (typeof handler !== 'function') return () => {};
-    installExitLifecycle();
-    cleanupHandlers.add(handler);
-    return () => cleanupHandlers.delete(handler);
-  }
-
-  function dispose(detail = {}) {
-    try { pauseHandlers?.pause?.(); } catch (_) {}
-    for (const handler of [...cleanupHandlers]) {
-      try { handler(detail); } catch (_) {}
-    }
-    cleanupHandlers.clear();
-    try {
-      root?.document?.querySelectorAll?.('audio,video').forEach(media => {
-        try { media.pause?.(); } catch (_) {}
-      });
-    } catch (_) {}
-    try { root?.speechSynthesis?.cancel?.(); } catch (_) {}
-    paused = true;
-    ended = true;
-    syncShell();
-    return true;
   }
 
   function bestRecord() {
@@ -454,7 +418,6 @@
       try { root?.document?.documentElement?.setAttribute('data-kidscade-orientation', options.orientation); } catch (_) {}
     }
     installErrorReporting();
-    installExitLifecycle();
     if (options.shell) mountShell();
     emit('ready', { title:options.title, orientation:options.orientation });
     return api;
@@ -491,8 +454,6 @@
     resume,
     togglePause,
     registerPauseHandlers,
-    registerCleanup,
-    dispose,
     sound,
     reportError,
     setMuted,
