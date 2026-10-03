@@ -27,13 +27,15 @@ test('auto updater polls gently and waits for lobby-safe application', () => {
   assert.match(source, /kc_update/);
 });
 
-test('index binds the deployed build id to updater and core lobby scripts', () => {
+test('index keeps one bootstrap entrypoint and runtime scripts load after composition', () => {
   assert.match(index, /meta name="kidscade-build" content="__KIDSCADE_BUILD__"/);
-  assert.match(index, /auto-update\.js\?v=__KIDSCADE_BUILD__/);
   assert.match(index, /main-bootstrap\.js\?v=__KIDSCADE_BUILD__/);
-  const versionedScripts = Array.from(index.matchAll(/<script src="[^"]+\.js\?v=([^"]+)"/g), match => match[1]);
-  assert.ok(versionedScripts.length >= 10);
-  assert.ok(versionedScripts.every(version => version === '__KIDSCADE_BUILD__'));
+  assert.doesNotMatch(index, /auto-update\.js\?v=__KIDSCADE_BUILD__/);
+  const scripts = Array.from(index.matchAll(/<script src="([^"]+)"/g), match => match[1]);
+  assert.deepEqual(scripts, ['main-bootstrap.js?v=__KIDSCADE_BUILD__']);
+  for (const runtime of ['auto-update.js','kidscade-storage.js','audio-manager.js','profile-history.js','account-client.js','seed-balance-sync.js']) {
+    assert.ok(bootstrap.includes("'" + runtime + "'"), runtime + ' must be injected by bootstrap');
+  }
 });
 
 test('Cloudflare build emits a no-cache static version manifest', () => {
