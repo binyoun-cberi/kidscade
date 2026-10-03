@@ -7,6 +7,7 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),'utf8');
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
+const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
@@ -19,7 +20,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,grid,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,interiors,grid,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -106,6 +107,24 @@ test('home interior uses CC0 bakery and restaurant assets without changing furni
   for(const key of ['kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge'])assert.ok(furnishing.includes(key),'functional key changed '+key);
   assert.match(runtime,/indoorLevel2Decor\.visible=d\.houseLevel>=2/);
   assert.match(runtime,/indoorLevel3Decor\.visible=d\.houseLevel>=3/);
+});
+
+test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
+  assert.match(runtime,/buildVenueInteriors/);
+  assert.match(runtime,/VENUE_MODES/);
+  assert.match(runtime,/function enterVenue\(kind\)/);
+  assert.match(runtime,/function exitVenue\(\)/);
+  for(const id of ['market','hardware','cafe'])assert.ok(interiors.includes(id+":"),'missing venue '+id);
+  for(const label of ['씨앗마트 들어가기','튼튼 철물점 들어가기','하늘 카페 들어가기'])assert.ok(city.includes(label),'missing door '+label);
+  const required=[
+    ['shops','market','shelf-boxes.glb'],['shops','market','freezer.glb'],['shops','market','cash-register.glb'],
+    ['3d','survival','kenney-survival-kit','workbench.glb'],['3d','survival','kenney-survival-kit','workbench-anvil.glb'],
+    ['3d','bakery','interior','counter-table.glb'],['3d','bakery','interior','display-case-long.glb'],['3d','bakery','interior','coffee-machine.glb']
+  ];
+  for(const parts of required)assert.ok(fs.existsSync(path.join(root,'assets','game',...parts)),'missing venue asset '+parts.join('/'));
+  assert.match(interiors,/actions\.shop\('market','민지'\)/);
+  assert.match(interiors,/actions\.shop\('hardware','준호'\)/);
+  assert.match(interiors,/actions\.shop\('cafe','하늘'\)/);
 });
 
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
