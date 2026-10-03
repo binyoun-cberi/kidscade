@@ -6,32 +6,32 @@ const SAVE_KEY='kidscade-avatar-studio-v3';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
-const LAYERS=['body','eyes','nose','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat'];
-const FACE_LAYERS=['eyes','nose','mouth'];
+const LAYERS=['body','eyes','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat'];
+const FACE_LAYERS=['eyes','mouth'];
 const HAIR_LAYERS=['hair','hat'];
 const OUTFIT_LAYERS=['upper','lower','shoes','gloves'];
 const ACCESSORY_LAYERS=['earring','mask'];
-const RENDER_ORDER=['body','lower','shoes','upper','gloves','eyes','nose','mouth','mask','hair','earring','hat'];
+const RENDER_ORDER=['body','lower','shoes','upper','gloves','eyes','mouth','mask','hair','earring','hat'];
 const LAYER_LABELS={
-  body:'BODY',hair:'HAIR',eyes:'눈',nose:'코',mouth:'입',earring:'귀걸이',mask:'가면',
+  body:'BODY',hair:'HAIR',eyes:'눈',mouth:'입',earring:'귀걸이',mask:'가면',
   upper:'상의',lower:'하의',shoes:'신발',gloves:'장갑',hat:'모자'
 };
 const LAYER_BUTTON_IDS={
-  body:'layerBody',hair:'layerHair',eyes:'layerEyes',nose:'layerNose',mouth:'layerMouth',
+  body:'layerBody',hair:'layerHair',eyes:'layerEyes',mouth:'layerMouth',
   earring:'layerEarring',mask:'layerMask',upper:'layerUpper',lower:'layerLower',
   shoes:'layerShoes',gloves:'layerGloves',hat:'layerHat'
 };
 const LAYER_ID_FIELDS={
-  body:'bodyId',hair:'hairId',eyes:'eyesId',nose:'noseId',mouth:'mouthId',earring:'earringId',
+  body:'bodyId',hair:'hairId',eyes:'eyesId',mouth:'mouthId',earring:'earringId',
   mask:'maskId',upper:'upperId',lower:'lowerId',shoes:'shoesId',gloves:'glovesId',hat:'hatId'
 };
 const LAYER_DEFAULT_IDS={
-  body:'maple-lite-body-v3',hair:'toben-like-01',eyes:'eyes-01',nose:'nose-01',mouth:'mouth-01',
-  earring:'earring-01',mask:'mask-01',upper:'upper-01',lower:'lower-01',shoes:'shoes-01',
+  body:'maple-lite-body-v3',hair:'toben-like-01',eyes:'eyes-01',mouth:'mouth-01',
+  earring:'earring-01',mask:'mask-01',upper:'blue-star-hoodie-01',lower:'denim-cuffed-jeans-01',shoes:'shoes-01',
   gloves:'gloves-01',hat:'hat-01'
 };
 const LAYER_FOLDERS={
-  body:'body',hair:'hair',eyes:'face/eyes',nose:'face/nose',mouth:'face/mouth',
+  body:'body',hair:'hair',eyes:'face/eyes',mouth:'face/mouth',
   earring:'accessories/earring',mask:'accessories/mask',hat:'accessories/hat',
   upper:'outfit/upper',lower:'outfit/lower',shoes:'outfit/shoes',gloves:'outfit/gloves'
 };
@@ -44,6 +44,19 @@ const FRAMES=[
 const DRAFT_BODY_SOURCE_SECONDS=[8,9,10,11,12,13,14];
 const DRAFT_BODY_SOURCE_RESOLUTION=64;
 const DRAFT_BODY_SOURCE_PALETTE=12;
+const STARTER_ASSETS={
+  hair:{id:'toben-like-01',file:'hair-01_stand-01.png',core:true},
+  eyes:{id:'eyes-01',file:'eyes01.png',core:true},
+  mouth:{id:'mouth-01',file:'mouth01.png',core:true},
+  earring:{id:'earring-01',file:'earing01.png',core:false},
+  mask:{id:'mask-01',file:'mask01.png',core:false},
+  upper:{id:'blue-star-hoodie-01',file:'hoodie01.png',core:true},
+  lower:{id:'denim-cuffed-jeans-01',file:'jenas01.png',core:true},
+  shoes:{id:'shoes-01',file:'shoes01.png',core:true},
+  gloves:{id:'gloves-01',file:'gloves01.png',core:true},
+  hat:{id:'navy-cap-01',file:'hat01.png',core:false}
+};
+const STARTER_CORE_LAYERS=['hair','eyes','mouth','upper','lower','shoes','gloves'];
 
 
 const $=id=>document.getElementById(id);
@@ -60,6 +73,7 @@ let selectionStart=null;
 let sourceImage=null;
 let preparedSource=null;
 let sourceCrop=null;
+let sourceRuntimeReady=false;
 let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
@@ -511,9 +525,6 @@ function targetRectForLayer(){
   }
   if(activeLayer==='eyes'){
     return {x:Math.round(head.x+head.w*.04),y:Math.round(head.y+head.h*.34),w:Math.max(10,Math.round(head.w*.58)),h:Math.max(8,Math.round(head.h*.22))};
-  }
-  if(activeLayer==='nose'){
-    return {x:Math.round(head.x+head.w*.00),y:Math.round(head.y+head.h*.48),w:Math.max(8,Math.round(head.w*.34)),h:Math.max(7,Math.round(head.h*.18))};
   }
   if(activeLayer==='mouth'){
     return {x:Math.round(head.x+head.w*.04),y:Math.round(head.y+head.h*.61),w:Math.max(9,Math.round(head.w*.38)),h:Math.max(7,Math.round(head.h*.16))};
