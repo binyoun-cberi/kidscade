@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>석기 시대에서 살아남기</title>
-<link rel="stylesheet" href="./style.css?v=2">
+<link rel="stylesheet" href="./style.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -13,56 +13,62 @@
       <span class="brandIcon">🪨</span>
       <div><strong>석기 시대에서 살아남기</strong><small id="eraLabel">구석기 생활</small></div>
     </div>
-    <div class="stats">
-      <div class="stat"><span>☀️ 생존</span><b id="dayLabel">1일</b></div>
-      <div class="stat"><span>🍖 식량</span><b id="foodLabel">0</b></div>
-      <div class="stat"><span>👥 사람</span><b id="popLabel">2</b></div>
-      <div class="stat"><span>⏳ 다음 식사</span><b id="mealLabel">70초</b></div>
-      <div class="stat"><span>🏕 정착도</span><b id="settlementLabel">0</b></div>
+
+    <div class="hudStats">
+      <div class="hudTile"><span>☀</span><small>생존</small><b id="dayLabel">1일</b></div>
+      <div class="hudTile foodTile"><span>🍖</span><small>식량</small><b id="foodLabel">0</b></div>
+      <div class="hudTile"><span>👥</span><small>사람</small><b id="popLabel">2</b></div>
+      <div class="hudTile"><span>⏳</span><small>식사</small><b id="mealLabel">70초</b></div>
+      <div class="hudTile"><span>🏕</span><small>정착도</small><b id="settlementLabel">0</b></div>
     </div>
-    <button id="helpBtn" class="roundBtn" type="button" aria-label="도움말">?</button>
+
+    <div class="lifeChips" aria-label="생활 방식">
+      <div class="lifeChip" data-life="hunt" title="수렵·채집"><span>🏹</span><b id="huntValue">0</b></div>
+      <div class="lifeChip" data-life="farm" title="농경"><span>🌾</span><b id="farmValue">0</b></div>
+      <div class="lifeChip" data-life="fish" title="어로"><span>🐟</span><b id="fishValue">0</b></div>
+      <div class="lifeChip" data-life="herd" title="목축"><span>🐐</span><b id="herdValue">0</b></div>
+    </div>
+
+    <nav class="hudActions">
+      <button id="goalBtn" class="hudButton" type="button"><span>📜</span><em>목표</em></button>
+      <button id="discoverBtn" class="hudButton" type="button"><span>💡</span><em>발견</em><i id="discoveryCount">0</i></button>
+      <button id="helpBtn" class="hudButton iconOnly" type="button" aria-label="도움말"><span>?</span></button>
+    </nav>
   </header>
 
   <main id="layout">
     <section id="boardWrap">
       <div id="board" aria-label="석기 시대 카드 놀이판"></div>
       <div id="toast" role="status" aria-live="polite"></div>
-      <div class="boardActions">
-        <button id="exploreBtn" class="actionBtn" type="button">🧭 주변 탐색 <small>식량 1</small></button>
-        <button id="tidyBtn" class="actionBtn secondary" type="button">🧺 카드 정리</button>
-      </div>
-    </section>
 
-    <aside id="journal">
-      <section>
-        <span class="eyebrow">현재 목표</span>
-        <h2 id="goalTitle">오늘을 버티기</h2>
+      <div id="goalPopover" class="hudPopover hidden">
+        <div class="popoverHead">
+          <div><span class="eyebrow">현재 목표</span><h2 id="goalTitle">오늘을 버티기</h2></div>
+          <button type="button" data-close-popover="goalPopover">×</button>
+        </div>
         <p id="goalText">사람을 자연 카드에 겹쳐 재료와 먹을거리를 모으세요.</p>
         <div id="questList" class="questList"></div>
-      </section>
-
-      <div class="divider"></div>
-
-      <section>
-        <div class="sectionHead"><h3>생활 방식</h3><small>행동에 따라 자동 변화</small></div>
-        <div class="lifeRow"><span>🏹 수렵·채집</span><div><i id="huntBar"></i></div><b id="huntValue">0</b></div>
-        <div class="lifeRow"><span>🌾 농경</span><div><i id="farmBar"></i></div><b id="farmValue">0</b></div>
-        <div class="lifeRow"><span>🐟 어로</span><div><i id="fishBar"></i></div><b id="fishValue">0</b></div>
-        <div class="lifeRow"><span>🐐 목축</span><div><i id="herdBar"></i></div><b id="herdValue">0</b></div>
-      </section>
-
-      <div class="divider"></div>
-
-      <section>
-        <div class="sectionHead"><h3>발견한 기술</h3><small id="discoveryCount">0개</small></div>
-        <div id="discoveries" class="discoveries"></div>
-      </section>
-
-      <div class="hintBox">
-        <b>💡 지금 해볼 만한 것</b>
-        <p id="hintText">사람 + 숲 · 사람 + 돌무더기 · 사람 + 갈대밭</p>
+        <div class="hintBox"><b>💡 지금 해볼 만한 것</b><p id="hintText">사람 + 숲 · 사람 + 돌무더기 · 사람 + 갈대밭</p></div>
       </div>
-    </aside>
+
+      <div id="discoverPopover" class="hudPopover hidden">
+        <div class="popoverHead">
+          <div><span class="eyebrow">생활의 흔적</span><h2>발견한 기술</h2></div>
+          <button type="button" data-close-popover="discoverPopover">×</button>
+        </div>
+        <div id="discoveries" class="discoveries"></div>
+        <div class="lifeLegend">
+          <span>🏹 수렵·채집</span><span>🌾 농경</span><span>🐟 어로</span><span>🐐 목축</span>
+        </div>
+      </div>
+
+      <div class="boardActions">
+        <button id="exploreBtn" class="actionBtn" type="button"><span>🧭</span><b>주변 탐색</b><small>식량 1</small></button>
+        <button id="tidyBtn" class="actionBtn secondary" type="button"><span>🧺</span><b>카드 정리</b></button>
+      </div>
+
+      <div class="boardTip">카드를 끌어 겹쳐 보세요 · 같은 카드는 스택으로 합쳐집니다</div>
+    </section>
   </main>
 
   <div id="startLayer" class="overlay">
@@ -89,7 +95,7 @@
         <div><span>👤 + 🌲</span><b>채집</b><small>사람을 자연에 겹쳐 자원을 얻어요.</small></div>
         <div><span>🪨 + 🪨</span><b>찍개</b><small>같은 재료도 겹치면 제작이 일어날 수 있어요.</small></div>
         <div><span>🌿 ×3</span><b>끈</b><small>카드 오른쪽 위 숫자가 스택 개수예요.</small></div>
-        <div><span>🌱 ×3</span><b>조 농장</b><small>작은 생산지 3개를 합치면 상위 시설이 돼요.</small></div>
+        <div><span>🌱 ×3</span><b>농장</b><small>작은 생산지 3개를 합치면 상위 시설이 돼요.</small></div>
       </div>
       <h3>대표 발전</h3>
       <div class="recipeLines">
@@ -125,13 +131,13 @@
     <div class="panel resultPanel">
       <div class="heroEmoji">🌙</div>
       <span class="eyebrow">생존 실패</span>
-      <h2>먹을거리가 바닥났어요</h2>
-      <p>채집만으로 버티기 어렵다면 사냥, 농경, 어로, 목축 시설을 동시에 키워 식량원을 늘려 보세요.</p>
+      <h2>부족이 굶주렸어요</h2>
+      <p>식량이 부족해지면 사람 카드 위에 굶주림 게이지가 나타납니다. 게이지가 바닥나기 전에 식량을 다시 생산하세요.</p>
       <button id="retryBtn" class="primaryBtn" type="button">다시 살아남기</button>
     </div>
   </div>
 </div>
-<script src="./game.js?v=3"></script>
+<script src="./game.js?v=4"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="석기 시대에서 살아남기" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
