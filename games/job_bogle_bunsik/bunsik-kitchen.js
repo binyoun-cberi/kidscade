@@ -321,6 +321,9 @@ class RamenKitchen3D{
   if(n.type==='fridge'){pickIngredient(recommendedCarryIngredient());return}
   if(n.type==='sink'){
    if(state.heldItem){toast('손에 '+heldItemLabel()+'을 들고 있어요');return}
+   const expected=tutorialCarryExpected();
+   if(expected==='water'){pickIngredient('water');return}
+   if(state.dirtyPlates>0){washOnePlate();return}
    pickIngredient('water');return
   }
   if(n.type==='rack'){toast('깨끗한 그릇 '+state.cleanPlates+'개 · 완성 라면을 담을 때 자동으로 하나 사용해요',1500);return}
