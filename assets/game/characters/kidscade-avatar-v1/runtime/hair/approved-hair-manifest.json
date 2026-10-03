@@ -26,11 +26,35 @@
       "front": "runtime/hair/approved/hair-male-01.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          26,
+          33,
+          102,
+          86
+        ],
+        "targetBBox": [
+          32,
+          12,
+          100,
+          59
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -41,11 +65,35 @@
       "front": "runtime/hair/approved/hair-male-02.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          27,
+          36,
+          101,
+          85
+        ],
+        "targetBBox": [
+          34,
+          14,
+          98,
+          56
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -56,11 +104,35 @@
       "front": "runtime/hair/approved/hair-male-03.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          23,
+          33,
+          106,
+          92
+        ],
+        "targetBBox": [
+          33,
+          12,
+          100,
+          60
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -71,11 +143,35 @@
       "front": "runtime/hair/approved/hair-male-04.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          26,
+          33,
+          102,
+          86
+        ],
+        "targetBBox": [
+          32,
+          13,
+          100,
+          60
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -86,11 +182,35 @@
       "front": "runtime/hair/approved/hair-male-05.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          22,
+          30,
+          106,
+          92
+        ],
+        "targetBBox": [
+          30,
+          8,
+          102,
+          61
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -101,11 +221,35 @@
       "front": "runtime/hair/approved/hair-male-06.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          26,
+          30,
+          104,
+          92
+        ],
+        "targetBBox": [
+          30,
+          8,
+          102,
+          65
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -116,11 +260,35 @@
       "front": "runtime/hair/approved/hair-male-07.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          32,
+          36,
+          96,
+          78
+        ],
+        "targetBBox": [
+          36,
+          15,
+          96,
+          54
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -131,11 +299,35 @@
       "front": "runtime/hair/approved/hair-male-08.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          28,
+          35,
+          100,
+          86
+        ],
+        "targetBBox": [
+          32,
+          10,
+          98,
+          57
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -146,11 +338,35 @@
       "front": "runtime/hair/approved/hair-male-09.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          22,
+          30,
+          106,
+          93
+        ],
+        "targetBBox": [
+          30,
+          12,
+          100,
+          64
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     },
     {
@@ -161,11 +377,35 @@
       "front": "runtime/hair/approved/hair-male-10.png",
       "back": null,
       "extra": [],
-      "source": "standalone-generated-normalized-128x128",
+      "source": "standalone-generated-head-fit-128x128",
+      "normalization": {
+        "version": "short-head-fit-v1",
+        "sourceBBox": [
+          28,
+          35,
+          100,
+          85
+        ],
+        "targetBBox": [
+          32,
+          12,
+          100,
+          59
+        ],
+        "headAnchor": [
+          65.5,
+          20
+        ],
+        "runtimeScale": 1,
+        "runtimeOffset": [
+          0,
+          0
+        ]
+      },
       "notes": [
-        "full-canvas nearest-neighbor normalization to 128x128",
+        "visible hair pixels normalized to Kidscade head coordinates",
         "transparent standalone PNG",
-        "no runtime position correction"
+        "runtime scale 1 / offset 0"
       ]
     }
   ]
