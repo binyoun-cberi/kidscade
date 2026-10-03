@@ -150,6 +150,9 @@
       mastery:{event:'game-over', field:'maxCombo', op:'gte', value:10},
       secret:{event:'game-over', field:'stairPeak', op:'gte', value:10}
     },
+    low_wordris: {
+      mastery:{event:'game-over', field:'bestCombo', op:'gte', value:5}
+    },
     low_blind_elephant: {
       mastery:{event:'game-over', field:'correct', op:'gte', value:12}
     },
@@ -157,30 +160,26 @@
       mastery:{event:'game-over', field:'score', op:'gte', value:20}
     },
     low_speak_jjoayo: {
-      mastery:{event:'game-over', field:'bestCombo', op:'gte', value:10},
-      secret:{event:'game-over', field:'correct', op:'gte', value:20}
+      mastery:{event:'game-over', field:'bestCombo', op:'gte', value:10}
     },
     low_word_blaster: {
-      mastery:{event:'game-over', field:'completedWords', op:'gte', value:10},
-      secret:{event:'game-over', field:'cleared', op:'truthy'}
+      mastery:{event:'game-over', field:'completedWords', op:'gte', value:10}
+    },
+    low_pattern_lock: {
+      mastery:{event:'game-over', field:'completed', op:'truthy'}
     },
     high_rule_lab: {
       mastery:{event:'game-over', field:'score', op:'gte', value:1}
     },
     high_ecopolis: {
-      mastery:{event:'game-over', field:'restored', op:'gte', value:90},
-      secret:{event:'game-over', field:'completed', op:'truthy'}
+      mastery:{event:'game-over', field:'restored', op:'gte', value:90}
     },
     job_driver_license: {
       mastery:{event:'game-over', field:'passed', op:'truthy'},
       secret:{event:'game-over', field:'score', op:'gte', value:100}
     },
-    high_folklore_night_guard: {
-      mastery:{event:'game-over', field:'cleared', op:'truthy'}
-    },
     toddler_photo_coloring: {
-      mastery:{event:'game-over', field:'score', op:'gte', value:100},
-      secret:{event:'game-over', field:'completed', op:'truthy'}
+      mastery:{event:'game-over', field:'score', op:'gte', value:100}
     }
   });
 
