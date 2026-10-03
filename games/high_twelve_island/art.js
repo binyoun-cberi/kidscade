@@ -321,7 +321,7 @@
   }
   function sickVisualIndex(index, count) {
     if (!count) return false;
-    return ((index * 7 + 3) % 16) < count;
+    return ((index * 7 + 3) % 24) < count;
   }
   function forcedActivity(s, citizen, index, adultOrdinal, visibleCount) {
     const childWork = s.childWorkUntil > s.tick;
@@ -533,8 +533,8 @@
     if (actor.forcedKey === "forced-work") pixelText("!", x + 15, y - 6, 11, "#ffd3a2");
   }
   function citizens(s, t) {
-    const visibleCitizens = (s.citizens || []).slice(0, Math.min(s.population, 16));
-    const N = Math.min(s.population, 16);
+    const visibleCitizens = (s.citizens || []).slice(0, Math.min(s.population, 24));
+    const N = Math.min(s.population, 24);
     while (visibleCitizens.length < N) {
       const index = visibleCitizens.length;
       visibleCitizens.push({ id: "fallback-" + index, name: "주민 " + (index + 1), isChild: index === 10 || index === 11 });
@@ -548,6 +548,7 @@
       const actor = actorFor(citizen, i);
       liveIds.add(actor.id);
       const adultIndex = citizen?.isChild ? -1 : adultOrdinal++;
+      actor.assignedJob = workerAssignment(s, citizen, adultIndex);
       const forced = forcedActivity(s, citizen, i, adultIndex, N);
       const activity = forced ? forced[0] : ambientActivity(s, citizen, i, adultIndex, actor, t);
       const key = forced ? forced[1] : "ambient";
@@ -568,13 +569,24 @@
   }
   function getActivitySnapshot() {
     const counts = {};
-    let moving = 0, routed = 0;
+    let moving = 0, routed = 0, foodAssigned = 0, foodWorking = 0, woodAssigned = 0, woodWorking = 0;
+    const foodActivities = new Set(["farm","gather","fish"]);
+    const woodActivities = new Set(["chop","carry"]);
     for (const actor of actorRuntime.values()) {
       counts[actor.activity] = (counts[actor.activity] || 0) + 1;
       if (!actor.arrived) moving += 1;
       if (actor.route?.length > 1) routed += 1;
+      if (actor.assignedJob === "gather") {
+        foodAssigned++;
+        if (actor.arrived && foodActivities.has(actor.activity)) foodWorking++;
+      } else if (actor.assignedJob === "wood") {
+        woodAssigned++;
+        if (actor.arrived && woodActivities.has(actor.activity)) woodWorking++;
+      }
     }
-    return { total: actorRuntime.size, counts, moving, routed };
+    const foodPresence = foodAssigned ? clamp(.78 + .22 * (foodWorking / foodAssigned), .76, 1) : 1;
+    const woodPresence = woodAssigned ? clamp(.78 + .22 * (woodWorking / woodAssigned), .76, 1) : 1;
+    return { total: actorRuntime.size, counts, moving, routed, foodAssigned, foodWorking, woodAssigned, woodWorking, foodPresence, woodPresence };
   }
   function stateSignals(s) {
     if (s.childWorkUntil > s.tick) {
