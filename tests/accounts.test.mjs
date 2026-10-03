@@ -68,10 +68,12 @@ test('cloud sync state only keeps bounded Kidscade progress fields', () => {
 
 test('account feature is wired into deployment without exposing server code as static assets', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
   const wrangler = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
   const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
   const migration = fs.readFileSync(path.join(ROOT, 'migrations', '0002_student_accounts.sql'), 'utf8');
-  assert.match(index, /account-client\.js/);
+  assert.doesNotMatch(index, /account-client\.js/);
+  assert.match(bootstrap, /['"]account-client\.js['"]/);
   assert.match(wrangler, /worker\/main\.mjs/);
   assert.match(build, /'worker'/);
   assert.match(build, /'migrations'/);
@@ -81,8 +83,10 @@ test('account feature is wired into deployment without exposing server code as s
 
 test('account login modal keeps its overlay styling after lobby bootstrap replacement', () => {
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
   const runtime = fs.readFileSync(path.join(ROOT, 'account-ui-runtime.js'), 'utf8');
-  assert.match(index, /account-ui-runtime\.js/);
+  assert.doesNotMatch(index, /account-ui-runtime\.js/);
+  assert.match(bootstrap, /['"]account-ui-runtime\.js['"]/);
   assert.match(runtime, /#kc-account-modal\{position:fixed!important/);
   assert.match(runtime, /place-items:end center!important/);
   assert.match(runtime, /safe-area-inset-bottom/);
