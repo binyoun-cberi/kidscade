@@ -321,8 +321,8 @@ class RamenKitchen3D{
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2,.72);
   this.makePrepCounter('prepCounterA','조리대 A',5.35,-1.65,-Math.PI/2);
   this.makePrepCounter('prepCounterB','조리대 B',5.35,.15,-Math.PI/2);
-  this.makeAutomationStation('conveyorA','컨베이어','conveyor',3.15,-2.05,0);
-  this.makeAutomationStation('grabberA','Grabber','grabber',1.15,-2.05,0);
+  this.makeAutomationStation('conveyorA','컨베이어','conveyor',-1.15,-1.8,2);
+  this.makeAutomationStation('grabberA','Grabber','grabber',-3.45,-1.8,2);
   const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
   this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
    if(!model)return;
