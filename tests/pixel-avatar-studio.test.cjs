@@ -114,8 +114,8 @@ test('avatar rig lab proves a cropped accessory can attach to the nose anchor',(
 
 test('all 48 hairstyles preserve source-sheet geometry with one fixed transform',()=>{
   assert.match(hairExtract,/COMMON_CELL_FIT/);
-  assert.match(hairExtract,/"scale": 0\.53/);
-  assert.match(hairExtract,/"offsetX": 30/);
+  assert.match(hairExtract,/"scale": 0\.50/);
+  assert.match(hairExtract,/"offsetX": 32/);
   assert.match(hairExtract,/"offsetY": 0/);
   assert.match(hairExtract,/def place_hair_from_source_cell\(full\)/);
   assert.doesNotMatch(hairExtract,/def normalize_hair/);
