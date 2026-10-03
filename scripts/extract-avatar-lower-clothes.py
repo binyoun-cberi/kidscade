@@ -20,6 +20,12 @@ TARGET_TOP_Y = 84
 TARGET_MAX_H = 35
 TARGET_MAX_W = 44
 
+# Walk poses spread/cross the legs. Give animated trousers a tiny coverage guard
+# so the base underwear/leg pixels cannot flash through at the edges.
+WALK_TOP_Y = 83
+WALK_MAX_H = 37
+WALK_MAX_W = 46
+
 FRAME_MAP = [
     ("idle", 1),
     ("idle", 2),
@@ -119,17 +125,21 @@ def tighten_box(mask: Image.Image, rough):
         raise RuntimeError("empty garment crop")
     return (x0+box[0], y0+box[1], x0+box[2], y0+box[3])
 
-def place_garment(crop: Image.Image, center_x: float):
+def place_garment(crop: Image.Image, center_x: float, kind: str):
     box = crop.getchannel("A").getbbox()
     crop = crop.crop(box)
-    scale = min(TARGET_MAX_H/crop.height, TARGET_MAX_W/crop.width)
+    if kind == "walk":
+        max_h, max_w, top_y = WALK_MAX_H, WALK_MAX_W, WALK_TOP_Y
+    else:
+        max_h, max_w, top_y = TARGET_MAX_H, TARGET_MAX_W, TARGET_TOP_Y
+    scale = min(max_h/crop.height, max_w/crop.width)
     nw = max(1, round(crop.width*scale))
     nh = max(1, round(crop.height*scale))
     crop = crop.resize((nw,nh), Image.Resampling.NEAREST)
 
     canvas = Image.new("RGBA",(CANVAS,CANVAS),(0,0,0,0))
     x = round(center_x - nw/2)
-    y = TARGET_TOP_Y
+    y = top_y
     canvas.alpha_composite(crop,(x,y))
     return canvas, [x,y,x+nw,y+nh]
 
@@ -143,8 +153,7 @@ def load_default_face():
     return [Image.open(p).convert("RGBA") for p in paths]
 
 def build_qa(frames):
-    back = Image.open(HAIR/"back/male/hair-back-male-01.png").convert("RGBA")
-    front = Image.open(HAIR/"front/male/hair-front-male-01.png").convert("RGBA")
+    front = Image.open(HAIR/"approved/hair-male-01.png").convert("RGBA")
     face = load_default_face()
     sheet = Image.new("RGBA",(5*CANVAS,2*CANVAS),(245,245,245,255))
     draw = ImageDraw.Draw(sheet)
@@ -153,7 +162,6 @@ def build_qa(frames):
         kind,n,overlay = item
         body = Image.open(ANIM/kind/f"{kind}-{n:02d}.png").convert("RGBA")
         preview = Image.new("RGBA",(CANVAS,CANVAS),(255,255,255,255))
-        preview.alpha_composite(back)
         preview.alpha_composite(body)
         preview.alpha_composite(overlay)
         for part in face:
@@ -190,7 +198,7 @@ def main():
         tight=tighten_box(mask,rough)
         crop=src.crop(tight)
         center=frame_centers[(kind,n)]
-        overlay,target=place_garment(crop,center)
+        overlay,target=place_garment(crop,center,kind)
 
         d=OUT/kind
         d.mkdir(parents=True,exist_ok=True)
@@ -211,7 +219,7 @@ def main():
 
     qa_path=build_qa(qa_frames)
     manifest={
-        "version":1,
+        "version":2,
         "id":"denim-cuffed-jeans-01",
         "type":"animated-lower-clothing",
         "displayName":"커프 데님 팬츠",
@@ -219,15 +227,15 @@ def main():
         "source":"source/clothes/lower/animated/denim-cuffed-jeans-01-sheet.png",
         "mapping":"top row idle01 idle02 idle03 idle04 walk01; bottom row walk02 walk03 walk04 walk05 walk06",
         "fit":{
-            "topY":TARGET_TOP_Y,
-            "maxHeight":TARGET_MAX_H,
-            "maxWidth":TARGET_MAX_W,
-            "center":"animation bodyBBox center"
+            "idle":{"topY":TARGET_TOP_Y,"maxHeight":TARGET_MAX_H,"maxWidth":TARGET_MAX_W},
+            "walk":{"topY":WALK_TOP_Y,"maxHeight":WALK_MAX_H,"maxWidth":WALK_MAX_W},
+            "center":"animation bodyBBox center",
+            "coverageGuard":"walk frames expand by ~1-2px and move up 1px to prevent base-layer bleed"
         },
         "static":"static.png",
         "frames":items,
         "qa":{
-            "status":"generated-needs-visual-review",
+            "status":"generated-walk-coverage-guard",
             "contact":qa_path
         }
     }
