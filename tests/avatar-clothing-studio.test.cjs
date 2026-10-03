@@ -97,3 +97,15 @@ test('studio verifies global admin before exposing production tools',()=>{
   assert.match(js,//api/teacher/overview/);
   assert.match(js,/body.scope!=='global'/);
 });
+
+
+test('studio can preload the uploaded left-facing body draft set',()=>{
+  assert.match(html,/id="loadDraftBodySet"/);
+  assert.match(js,/DRAFT_BODY_SOURCE_SECONDS=\[8,9,10,11,12,13,14\]/);
+  assert.match(js,/function draftBodySourceUrl\(/);
+  assert.match(js,/function rasterDraftBodyImage\(/);
+  assert.match(js,/async function loadDraftBodySet\(/);
+  assert.match(js,/allBodyFramesEmpty\(\)/);
+  assert.match(js,/ROOT_X-masterCenter/);
+  assert.match(js,/GROUND_Y-masterBox\.maxY/);
+});
