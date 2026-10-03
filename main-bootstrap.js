@@ -417,6 +417,7 @@
       'dashboard-recent.js',
       'game-recommendations.js',
       'activity-feed.js',
+      'achievement-catalog.js',
       'achievement-gallery.js',
       'game-frame-shell.js',
       'game-launcher.js',
