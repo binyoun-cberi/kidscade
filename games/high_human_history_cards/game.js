@@ -761,11 +761,103 @@ function eatMeal(){
  showToast('🍲 부족이 한 끼를 먹고 '+state.day+'일째를 맞았습니다.');renderAll();
 }
 
+function availableExplorer(){
+ return [...state.cards.values()].find(c=>isWorker(c.type)&&c.count===1&&!c.busy&&!c.assignmentNodeId&&!c.exploring);
+}
+function pick(list){return list[Math.floor(Math.random()*list.length)];}
+function expeditionResourcePool(){
+ const pool=['smallTree','berryBush','stoneSource','reedBed','clayBank','oakGrove','wildMillet'];
+ if(state.day>=2)pool.push('bigTree','river','wildBroomcorn');
+ if(state.day>=3)pool.push('wildBean','tidalFlat');
+ return pool;
+}
+function expeditionEncounter(){
+ const score=settlementScore(),r=Math.random();
+ const animals=['rabbit','deer','wildGoat'];
+ if(state.day>=3)animals.push('wildBoar','wolf','wolf');
+ if(state.day>=5)animals.push('bear');
+ if(score>=4&&state.day>=4)animals.push('strangerGroup','strangerGroup');
+ if(score>=8&&state.day>=6)animals.push('hostileBand');
+ if(r>.68)return null;
+ return pick(animals);
+}
+function expeditionSpawn(type,anchor,index){
+ const angle=(Math.PI*2/7)*(index+1),radius=155+((index%2)*38);
+ const x=clamp(anchor.x+Math.cos(angle)*radius,8,Math.max(8,board.clientWidth-135));
+ const y=clamp(anchor.y+Math.sin(angle)*radius,24,Math.max(24,board.clientHeight-175));
+ const card=addCard(type,x,y,1,true);
+ if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
+ return card;
+}
+function finishExpedition(){
+ const ex=state.expedition;if(!ex)return;
+ const worker=state.cards.get(ex.workerId);
+ if(worker){worker.exploring=false;clearWorkVisual(worker);}
+ const anchor=worker||{x:board.clientWidth*.45,y:board.clientHeight*.45};
+ const found=[],count=2+Math.floor(Math.random()*3),pool=expeditionResourcePool();
+ for(let i=0;i<count;i++){const type=pick(pool);expeditionSpawn(type,anchor,i);found.push(C[type].name);}
+ const encounter=expeditionEncounter();
+ if(encounter){expeditionSpawn(encounter,anchor,count+1);found.push(C[encounter].name);}
+ state.expedition=null;discover('주변 탐색');playProductionPop();
+ const danger=encounter&&THREAT_CONFIG[encounter];
+ showToast((danger?'⚠️ ':'🧭 ')+'탐험 귀환: '+found.join(' · '));
+ renderAll();
+}
+function tickExpedition(){
+ const ex=state.expedition;if(!ex)return;
+ ex.remaining=Math.max(0,ex.remaining-1);
+ if(ex.remaining<=0){finishExpedition();return;}
+ renderExpedition();
+}
 function explore(){
- if(state.over)return;if(foodUnits()<1){showToast('탐색에는 식량 1이 필요해요.');return;}consumeFood(1);state.stats.explores++;
- const pool=['deer','wildBoar','rabbit','wildGoat','berryBush','smallTree','bigTree','oakGrove','stoneSource','reedBed','clayBank','wildMillet','wildBroomcorn','wildBean','river','tidalFlat'];
- const t=pool[Math.floor(Math.random()*pool.length)],x=35+Math.random()*Math.max(60,board.clientWidth-170),y=45+Math.random()*Math.max(70,board.clientHeight-210);
- addCard(t,x,y);showToast('🧭 '+C[t].name+'을(를) 새로 발견했습니다.');renderAll();
+ if(state.over)return;
+ if(state.expedition){showToast('이미 한 사람이 탐험 중이에요.');return;}
+ if(state.starving){showToast('굶주림을 해결한 뒤 탐험을 보내세요.');return;}
+ if(foodUnits()<1){showToast('탐색에는 식량 1이 필요해요.');return;}
+ const worker=availableExplorer();
+ if(!worker){
+  const stacked=[...state.cards.values()].some(c=>isWorker(c.type)&&c.count>1);
+  showToast(stacked?'탐험할 사람을 분리대에서 한 장 꺼내 주세요.':'쉬고 있는 사람이 있어야 탐험을 보낼 수 있어요.');
+  return;
+ }
+ consumeFood(1);state.stats.explores++;
+ const duration=13+Math.floor(Math.random()*5);
+ state.expedition={workerId:worker.id,duration,remaining:duration};
+ worker.exploring=true;worker.busy=true;markBusy(worker,'탐험 중',duration*1000);worker.el.classList.add('exploring');
+ showToast('🧭 '+C[worker.type].name+'이(가) 식량 1을 챙겨 주변을 탐험합니다.');
+ renderAll();
+}
+function defenseChance(type){
+ let chance=0;
+ if(type==='wolf'){if(has('campfire')||has('hearth'))chance+=.32;if(has('fence'))chance+=.38;if(has('village'))chance+=.18;}
+ if(type==='bear'){if(has('campfire')||has('hearth'))chance+=.14;if(has('fence'))chance+=.2;if(has('village'))chance+=.12;}
+ if(type==='hostileBand'){if(has('fence'))chance+=.35;if(has('village'))chance+=.3;if(has('camp'))chance+=.1;}
+ return Math.min(.78,chance);
+}
+function raidThreat(card){
+ const cfg=THREAT_CONFIG[card.type];if(!cfg||!state.cards.has(card.id))return;
+ card.el.classList.add('raid-alert');setTimeout(()=>card.el?.classList.remove('raid-alert'),1100);
+ if(Math.random()<defenseChance(card.type)){
+  playUiSound('ui.confirm',{volume:.16,rate:.82});
+  showToast('🛡 '+cfg.label+'의 접근을 불·울타리·정착지가 막아냈습니다.');
+  return;
+ }
+ const available=foodUnits(),take=Math.min(cfg.steal,available);
+ if(take>0){
+  consumeFood(take);playUiSound('ui.select',{volume:.18,rate:.72});
+  showToast('⚠️ '+cfg.label+'이(가) 식량 '+take+'을 가져갔습니다.');
+ }else{
+  beginStarvation();state.hunger=Math.max(0,state.hunger-(card.type==='bear'?22:14));
+  showToast('⚠️ '+cfg.label+'이(가) 먹을 것을 찾다 야영지를 위협했습니다.');
+ }
+ renderAll();
+}
+function tickThreats(){
+ for(const card of [...state.cards.values()]){
+  const cfg=THREAT_CONFIG[card.type];if(!cfg||card.busy)continue;
+  card.raidIn=(card.raidIn??cfg.raidEvery)-1;
+  if(card.raidIn<=0){card.raidIn=cfg.raidEvery;raidThreat(card);}
+ }
 }
 function tidy(){
  const cards=[...state.cards.values()].filter(c=>!c.busy),cols=Math.max(3,Math.floor((board.clientWidth-18)/122));
@@ -773,12 +865,23 @@ function tidy(){
 }
 
 function renderAll(){renderHud();renderLife();renderDiscoveries();renderQuests();renderGoal();renderHunger();}
+function renderExpedition(){
+ const ex=state.expedition;
+ if(!ex){ui.expeditionStatus?.classList.add('hidden');return;}
+ ui.expeditionStatus?.classList.remove('hidden');
+ const worker=state.cards.get(ex.workerId);
+ if(ui.expeditionTitle)ui.expeditionTitle.textContent=(worker?C[worker.type].name:'탐험대')+' 탐험 중';
+ if(ui.expeditionText)ui.expeditionText.textContent=ex.remaining+'초 뒤 귀환';
+ const progress=Math.max(0,Math.min(100,((ex.duration-ex.remaining)/ex.duration)*100));
+ ui.expeditionStatus?.style.setProperty('--expedition-progress',progress+'%');
+}
 function renderHud(){
- const food=foodUnits(),pop=population();
+ const food=foodUnits(),pop=population(),free=availableExplorer();
  ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop;
  ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();
- ui.explore.disabled=food<1||state.starving;
- ui.foodTile?.classList.toggle('low',state.starving||food<pop);
+ ui.explore.disabled=!!state.expedition||food<1||state.starving||!free;
+ ui.explore.innerHTML=state.expedition?'<span>🧭</span><b>탐험 중</b><small>'+state.expedition.remaining+'초</small>':'<span>🧭</span><b>주변 탐색</b><small>사람 1 · 식량 1</small>';
+ ui.foodTile?.classList.toggle('low',state.starving||food<pop);renderExpedition();
 }
 function renderHunger(){
  const noFood=foodUnits()===0,starvePct=Math.max(0,Math.min(100,state.hunger)),mealPct=Math.max(0,Math.min(100,(state.mealLeft/70)*100));
