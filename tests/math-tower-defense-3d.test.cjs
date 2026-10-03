@@ -16,7 +16,7 @@ const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
 test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=9/);
+  assert.match(html,/tower-defense-loader\.js\?v=10/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
   assert.ok(html.length>1000);
@@ -28,7 +28,7 @@ test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=9/);
+  assert.match(loader,/tower-defense\.js\?v=10/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -40,28 +40,32 @@ test('classic 3D runtime parses',()=>{
 
 test('math rules and original wave progression survive the rebuild',()=>{
   for(const op of ['SUB1','DIV2','DIV3','ADD1','DIV5']) assert.match(runtime,new RegExp(op));
-  assert.match(runtime,/if\(t\.id==='SUB1'\)/);
-  assert.match(runtime,/e\.hp=Math\.floor\(e\.hp\/def\.value\)/);
-  assert.match(runtime,/isPrime\(e\.hp\)/);
-  assert.match(runtime,/\{nums:\[2,3,4\],count:6/);
+  assert.match(runtime,/function hasBasicDivisor/);
+  assert.match(runtime,/e\.hp=before\/def\.value/);
+  assert.match(runtime,/if\(e\.hp===1\)purifyEnemy\(e\)/);
+  assert.match(runtime,/e\.hp>2&&!hasBasicDivisor\(e\.hp\)/);
+  assert.match(runtime,/\{nums:\[4,6,8,10\],count:7/);
   assert.match(runtime,/\{nums:\[17,19,23,29\],count:12/);
 });
 
-test('3D runtime uses sci-fi turrets and monster assets',()=>{
+test('v10 runtime uses Quaternius zombies, turrets and city buildings',()=>{
   for(const rel of [
-    'assets/game/3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
-    'assets/game/3d/weapons/scifi-turrets/rail-gun-turret.glb',
-    'assets/game/3d/weapons/scifi-turrets/plasma-turret.glb',
-    'assets/game/3d/weapons/scifi-turrets/emp-turret.glb',
-    'assets/game/3d/weapons/scifi-turrets/missile-turret.glb',
-    'assets/game/3d/characters/monsters/ultimate-monsters-bundle/green-blob.glb',
-    'assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',
-    'assets/game/3d/characters/monsters/ultimate-monsters-bundle/orc-enemy.glb'
+    'assets/game/turrets/FBX/Gun_2.fbx',
+    'assets/game/turrets/FBX/Gun_10.fbx',
+    'assets/game/turrets/FBX/Laser_2.fbx',
+    'assets/game/turrets/FBX/Teleporter5.fbx',
+    'assets/game/turrets/FBX/Cannon_7.fbx',
+    'assets/game/npcs/glTF/Zombie_Male.gltf',
+    'assets/game/npcs/glTF/Zombie_Female.gltf',
+    'assets/game/buildings/Models with Materials/FBX/1Story_Sign_Mat.fbx',
+    'assets/game/buildings/Models with Materials/FBX/6Story_Stack_Mat.fbx'
   ]) assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
-  assert.match(runtime,/gatelng-gun-turret\.glb/);
-  assert.match(runtime,/mushroom-king\.glb/);
+  assert.match(loader,/FBXLoader/);
+  assert.match(runtime,/Zombie_Male\.gltf/);
+  assert.match(runtime,/Gun_10\.fbx/);
+  assert.match(runtime,/6Story_Stack_Mat\.fbx/);
+  assert.match(runtime,/function towerVisualKey/);
 });
-
 test('3D placement and learning feedback are first class',()=>{
   assert.match(runtime,/Raycaster/);
   assert.match(runtime,/pointerCell/);
@@ -81,14 +85,14 @@ test('mobile UI reserves most of the screen for the battlefield',()=>{
 test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
-  assert.equal(game.title,'약수 타워 디펜스');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=9');
+  assert.equal(game.title,'좀비 vs 약수 터렛');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=10');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=9');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=10');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
@@ -108,7 +112,7 @@ test('v3 battlefield improves combat readability and feedback',()=>{
 });
 
 
-test('v8 uses a cohesive eco-city battlefield with dependency-free camera controls and BGM',()=>{
+test('v10 keeps camera/audio systems while rebuilding the battlefield as an outbreak city',()=>{
   assert.match(runtime,/rebuildBoardDecor/);
   assert.match(runtime,/rebuildSkyWorld/);
   assert.match(runtime,/tree-default\.glb/);
@@ -122,7 +126,10 @@ test('v8 uses a cohesive eco-city battlefield with dependency-free camera contro
   assert.match(runtime,/function roundRectPath/);
   assert.match(runtime,/const AC=window\.AudioContext/);
   assert.match(runtime,/function onPointerUp/);
-  assert.match(runtime,/scene\.background=new THREE\.Color\(0xcfeeff\)/);
+  assert.match(runtime,/scene\.background=new THREE\.Color\(0x71808d\)/);
+  assert.match(runtime,/function zombieKey/);
+  assert.match(runtime,/FACTOR ×/);
+  assert.match(runtime,/완전 분해/);
   assert.doesNotMatch(runtime,/addFloatingIsland/);
   assert.match(runtime,/enemyMixers/);
   assert.match(runtime,/SkeletonUtils/);
@@ -147,7 +154,8 @@ test('v9 exposes direct 1x to 16x speed choices and substeps high-speed simulati
   assert.match(css,/\.speedMenu/);
 });
 
-test('required CC-BY credit stays visible',()=>{
-  assert.match(html,/Turrets: Zsky/);
-  assert.match(html,/CC BY/);
+test('v10 credits the new CC0 Quaternius outbreak packs',()=>{
+  assert.match(html,/Zombies · NPCs · Turrets · Buildings: Quaternius/);
+  assert.match(html,/CC0/);
+  assert.doesNotMatch(html,/Turrets: Zsky/);
 });
