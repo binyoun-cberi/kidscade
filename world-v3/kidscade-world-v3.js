@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=18';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=19';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=1';
 import {createTownEconomy} from './kidscade-world-economy.js?v=15';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -144,8 +145,8 @@ sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22;
 scene.add(sun);
 
-const outdoor=new THREE.Group(),indoor=new THREE.Group(),petLayer=new THREE.Group();
-scene.add(outdoor,indoor,petLayer);indoor.visible=false;
+const outdoor=new THREE.Group(),indoor=new THREE.Group(),venueLayer=new THREE.Group(),petLayer=new THREE.Group();
+scene.add(outdoor,indoor,venueLayer,petLayer);indoor.visible=false;venueLayer.visible=false;
 
 const loader=new GLTFLoader();
 const fbxLoader=new FBXLoader();
@@ -206,6 +207,7 @@ function plane(parent,x,z,w,d,color,y=.02){
 
 const colliders={outdoor:[],indoor:[]};
 const interactables={outdoor:[],indoor:[]};
+for(const venueMode of Object.values(VENUE_MODES)){colliders[venueMode]=[];interactables[venueMode]=[]}
 function collider(mode,x,z,w,d){const c={x,z,w,d,enabled:true};colliders[mode].push(c);return c;}
 function interact(mode,x,z,r,label,action){const q={x,z,r,label,action,enabled:true};interactables[mode].push(q);return q;}
 
@@ -1072,6 +1074,14 @@ let indoorLevel2Decor=null,indoorLevel3Decor=null;
 const houseExpansionCovers=[];
 const orchardActors=[],ranchVisualActors=[];
 let mode='outdoor';
+let activeVenue='',venueReturn=null;
+const VENUE_MODE_SET=new Set(Object.values(VENUE_MODES));
+const VENUE_RETURN_POINTS={
+  market:{x:-16.7,z:21.45},
+  hardware:{x:-7.3,z:21.45},
+  cafe:{x:7.3,z:21.45}
+};
+function venueKindFromMode(value=mode){return Object.keys(VENUE_MODES).find(key=>VENUE_MODES[key]===value)||''}
 const savedLayout=Number(save.player?.v3Layout||0);
 const player={
   x:savedLayout===LAYOUT_VERSION&&Number.isFinite(Number(save.player?.v3x))?Number(save.player.v3x):-12,
@@ -1091,7 +1101,9 @@ const TRAVEL_POINTS={
 };
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
-  if(mode!=='outdoor'){mode='outdoor';outdoor.visible=true;indoor.visible=false;}
+  if(mode!=='outdoor'){
+    mode='outdoor';activeVenue='';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
+  }
   resetInput(true);player.x=d.x;player.z=d.z;near=null;panel.classList.remove('open');setAvatarAction('smile',450);
   toast('씨앗버스 도착 · '+d.name);
 }
@@ -1163,14 +1175,14 @@ function showStarterHintOnce(){
   setTimeout(()=>toast('첫 개척 목표 · '+goal.icon+' '+goal.title),650);
 }
 function isBlocked(nx,nz){
-  const bounds=mode==='outdoor'?WORLD_BOUNDS:currentHouseBounds();
+  const bounds=mode==='outdoor'?WORLD_BOUNDS:mode==='indoor'?currentHouseBounds():VENUE_BOUNDS;
   if(nx<bounds.x1+.25||nx>bounds.x2-.25||nz<bounds.z1+.25||nz>bounds.z2-.25)return true;
   if(mode==='outdoor'&&!zoneAt(nx,nz)&&!isTravelCorridor(nx,nz))return true;
-  return colliders[mode].some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
+  return (colliders[mode]||[]).some(c=>c.enabled!==false&&nx>c.x-c.w/2-.32&&nx<c.x+c.w/2+.32&&nz>c.z-c.d/2-.24&&nz<c.z+c.d/2+.24);
 }
 let near=null;
 function nearestInteraction(){
-  const list=interactables[mode];let best=null,bestD=999;
+  const list=interactables[mode]||[];let best=null,bestD=999;
   for(const q of list){if(q.enabled===false)continue;const d=Math.hypot(player.x-q.x,player.z-q.z);if(d<q.r&&d<bestD){best=q;bestD=d}}
   near=best;
   promptEl.textContent=best?((matchMedia('(max-width:760px)').matches?'행동':'E / Space')+' · '+best.label):'';
@@ -1180,6 +1192,10 @@ function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confi
 let lastMetaZone='';
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역 · 🗺️';if(lastMetaZone!=='indoor'){lastMetaZone='indoor';Meta?.recordExplore?.('indoor');}return;}
+  if(VENUE_MODE_SET.has(mode)){
+    const kind=venueKindFromMode(mode),info=VENUE_INFO[kind];zoneEl.textContent=(info?.name||'씨앗마을 실내')+' · 실내';
+    const metaKey='venue-'+kind;if(lastMetaZone!==metaKey){lastMetaZone=metaKey;Meta?.recordExplore?.(metaKey)}return;
+  }
   const cell=zoneAt(player.x,player.z),zoneId=cell?.id||cell?.key||cell?.name||'road';
   zoneEl.textContent=(cell?(cell.name+' · '+cell.hint):'구역 사이 길')+' · 🗺️';
   if(zoneId!==lastMetaZone){lastMetaZone=zoneId;Meta?.recordExplore?.(zoneId);}
@@ -1188,10 +1204,29 @@ zoneEl?.addEventListener('click',worldMapPanel);
 worldMailChip?.addEventListener('click',mailboxPanel);
 worldTaskChip?.addEventListener('click',dailyLifePanel);
 function setMode(next){
-  resetInput(true);mode=next;outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';
+  resetInput(true);activeVenue='';venueReturn=null;mode=next;
+  outdoor.visible=next==='outdoor';indoor.visible=next==='indoor';venueLayer.visible=false;venueInteriors?.hideAll?.();
   if(next==='indoor'){player.x=0;player.z=3.55;zoneEl.textContent='우리 집 · 3D 실내';toast('집 안으로 들어왔어요.')}
   else{player.x=-12;player.z=-1.8;zoneEl.textContent='집 구역 · 집·연못·펫 마당';toast('집 밖으로 나왔어요.')}
   setAvatarAction('smile',520);near=null;
+}
+function venueIsOpen(kind){
+  const hours=townEconomy?.HOURS?.[kind];if(!hours)return true;
+  const hour=((prog().survival.time%1440)+1440)%1440/60;return hour>=hours.open&&hour<hours.close;
+}
+function enterVenue(kind){
+  const targetMode=VENUE_MODES[kind],info=VENUE_INFO[kind];if(!targetMode||!info||!venueInteriors)return;
+  if(!venueIsOpen(kind)){townEconomy?.shop?.(kind,info.npc);return;}
+  resetInput(true);panel.classList.remove('open');venueReturn={x:player.x,z:player.z+.55};activeVenue=kind;mode=targetMode;
+  outdoor.visible=false;indoor.visible=false;venueLayer.visible=true;venueInteriors.show(kind);
+  player.x=0;player.z=3.05;near=null;zoneEl.textContent=info.name+' · 실내';setAvatarAction('smile',520);toast(info.name+' 안으로 들어왔어요.');
+}
+function exitVenue(){
+  if(!VENUE_MODE_SET.has(mode))return;
+  const kind=activeVenue||venueKindFromMode(mode),fallback=VENUE_RETURN_POINTS[kind]||{x:-12,z:18},dest=venueReturn||fallback;
+  resetInput(true);panel.classList.remove('open');mode='outdoor';activeVenue='';venueReturn=null;
+  outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
+  player.x=dest.x;player.z=dest.z;near=null;setAvatarAction('smile',520);toast('씨앗마을 거리로 나왔어요.');
 }
 function spendTool(kind,item){
   const p=prog(),t=p.tools[item];
@@ -1690,7 +1725,8 @@ async function buildOutdoor(){
       jobs:()=>townEconomy?.jobs(),delivery:()=>townEconomy?.delivery(),
       talk:(id,name)=>townEconomy?.talk(id,name),arcade:()=>townEconomy?.arcade(),
       library:()=>townEconomy?.library(),clinic:()=>townEconomy?.clinic(),
-      transport:()=>townEconomy?.transport(),bench:()=>townEconomy?.bench()
+      transport:()=>townEconomy?.transport(),bench:()=>townEconomy?.bench(),
+      enterVenue:kind=>enterVenue(kind)
     },
     getGameTime:()=>prog().survival.time,
     getPlayerPosition:()=>({x:player.x,z:player.z})
@@ -2051,7 +2087,7 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 
-let townEconomy=null,cityRuntime=null,furnishingSystem=null;
+let townEconomy=null,cityRuntime=null,furnishingSystem=null,venueInteriors=null;
 let last=performance.now(),saveClock=0,wasInCity=false;
 function tick(now){
   requestAnimationFrame(tick);
@@ -2152,7 +2188,15 @@ async function init(){
   persist();
   syncCosmeticAura();
   updateStatus();
-  await Promise.all([buildOutdoor(),buildIndoor()]);
+  const venuePromise=buildVenueInteriors({
+    parent:venueLayer,addModel,box,plane,interact,collider,
+    actions:{
+      shop:(kind,npc)=>townEconomy?.shop?.(kind,npc),
+      rest:()=>townEconomy?.bench?.(),
+      exitVenue
+    }
+  }).then(runtime=>{venueInteriors=runtime;return runtime});
+  await Promise.all([buildOutdoor(),buildIndoor(),venuePromise]);
   await furnishingSystem.restore();
   await buildPets();
   updateHomesteadVisuals();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();
@@ -2160,7 +2204,11 @@ async function init(){
   showStarterHintOnce();
   const previous=save.player?.v3scene;
   if(previous==='indoor')setMode('indoor');
-  else{mode='outdoor';outdoor.visible=true;indoor.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
+  else if(VENUE_MODE_SET.has(previous)){
+    const kind=venueKindFromMode(previous),dest=VENUE_RETURN_POINTS[kind]||{x:-12,z:18};
+    mode='outdoor';activeVenue='';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
+    player.x=dest.x;player.z=dest.z;zoneEl.textContent='씨앗마을 · 상점가';wasInCity=true;
+  }else{mode='outdoor';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);
 }
