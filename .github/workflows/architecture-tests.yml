@@ -110,5 +110,17 @@ jobs:
         run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
+
+      - name: Install Chromium browser diagnostic
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Run local full lobby browser diagnostic
+        run: SERVE_DIST=1 node scripts/e2e-lobby-diagnostic.mjs
+
+      - name: Run production full lobby browser diagnostic
+        run: TARGET_URL=https://kidscade.binyoun.workers.dev/ node scripts/e2e-lobby-diagnostic.mjs
+
       - name: Run all regression tests and audits
         run: npm run test:ci
