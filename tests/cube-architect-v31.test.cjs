@@ -57,9 +57,14 @@ test('Cube World fauna and enemies join the existing survival roster',()=>{
   assert.match(creatureAssets,/Enemies\/glTF\/Yeti\.gltf/);
 });
 
-test('Cube World tool models are registered for the existing pickaxe progression',()=>{
+test('Cube World tool models are registered and shown in first person',()=>{
   assert.match(worldAssets,/Tools\/glTF\/Pickaxe_Wood\.gltf/);
   assert.match(worldAssets,/Tools\/glTF\/Pickaxe_Stone\.gltf/);
   assert.match(worldAssets,/Tools\/glTF\/Pickaxe_Gold\.gltf/);
   assert.match(worldAssets,/function loadTool/);
+  assert.match(main,/function desiredHeldTool/);
+  assert.match(main,/function syncFreeHeldTool/);
+  assert.match(main,/function updateFreeHeldTool/);
+  assert.match(main,/freeViewMode==='first'/);
+  assert.match(main,/\[Cube Architect held tool\]/);
 });
