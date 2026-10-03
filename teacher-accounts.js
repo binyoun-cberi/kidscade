@@ -64,7 +64,9 @@
 
   function showManagement(open) {
     ['admin-dashboard','class-list'].forEach(id => $(id)?.classList.toggle('hidden', !open));
-    $('class-create')?.classList.toggle('hidden', !open || overviewData?.scope !== 'global');
+    const globalOnlyHidden = !open || overviewData?.scope !== 'global';
+    $('class-create')?.classList.toggle('hidden', globalOnlyHidden);
+    $('admin-tools')?.classList.toggle('hidden', globalOnlyHidden);
     $('admin-logout')?.classList.toggle('hidden', !open);
   }
 
