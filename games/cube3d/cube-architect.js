@@ -1475,6 +1475,44 @@ const roofGeo=makeRoofGeometry();
 const leafCubeGeo=new THREE.BoxGeometry(.94,.94,.94);
 const grassTuftGeo=new THREE.PlaneGeometry(.09,.3);
 const materialCache=new Map(),pixelTextureCache=new Map(),blockVisualMaterialCache=new Map();
+let cubeWorldBlockAtlas=null,cubeWorldBlockAtlasReady=false;
+const CUBE_WORLD_PIXEL_TILES={
+  dirt:[.4,0],stone:[.4,.2],snow:[.8,0],snowTop:[.2,.2],
+  leaves:[.2,.6],pineLeaves:[.2,.6],planks:[.2,.4],
+  grassSide:[.6,0],grassTop:[0,.6],
+  logSide:[0,.4],pineLogSide:[0,.4],logTop:[.2,.8],pineLogTop:[.2,.8]
+};
+function cubeWorldPixelKind(kind){
+  if(kind.startsWith('grassSide'))return 'grassSide';
+  if(kind.startsWith('grassTop'))return 'grassTop';
+  return kind;
+}
+function cubeWorldAtlasTexture(kind){
+  const tile=CUBE_WORLD_PIXEL_TILES[cubeWorldPixelKind(kind)];
+  if(!cubeWorldBlockAtlasReady||!cubeWorldBlockAtlas||!tile)return null;
+  const tex=cubeWorldBlockAtlas.clone();
+  const inset=.0025,span=.195;
+  tex.offset.set(tile[0]+inset,tile[1]+inset);tex.repeat.set(span,span);
+  tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
+  tex.flipY=false;tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;
+  tex.generateMipmaps=false;
+  if('colorSpace' in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;
+  tex.needsUpdate=true;return tex;
+}
+function loadCubeWorldBlockAtlas(){
+  if(!THREE.TextureLoader)return;
+  new THREE.TextureLoader().load('../../assets/game/cube world/Blocks_PixelArt.png',tex=>{
+    tex.flipY=false;tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;
+    tex.generateMipmaps=false;
+    if('colorSpace' in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;
+    tex.needsUpdate=true;cubeWorldBlockAtlas=tex;cubeWorldBlockAtlasReady=true;
+    pixelTextureCache.clear();blockVisualMaterialCache.clear();
+    for(const key of [...materialCache.keys()])if(key.startsWith('px:')||
+      ['dirt','stone','snow','leaves','pineLeaves','planks','log','pineLog','grass'].includes(key))materialCache.delete(key);
+    if(mode==='free')rebuildAllWorldMeshes();
+  },undefined,err=>console.warn('[Cube Architect Cube World atlas]',err));
+}
+loadCubeWorldBlockAtlas();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
 let worldChunkMeshMap=new Map(),worldChunkDecorMap=new Map(),dirtyWorldChunks=new Set(),chunkRemeshQueued=false;
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
@@ -1602,6 +1640,8 @@ function pixelRng(seed){
 }
 function pixelTexture(kind,variant=0){
   const key=kind+':'+variant;if(pixelTextureCache.has(key))return pixelTextureCache.get(key);
+  const packed=cubeWorldAtlasTexture(kind);
+  if(packed){pixelTextureCache.set(key,packed);return packed}
   const canvas=document.createElement('canvas');canvas.width=canvas.height=16;
   const ctx=canvas.getContext('2d',{alpha:true});ctx.imageSmoothingEnabled=false;
   const seed=[...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261);
@@ -1712,7 +1752,10 @@ function blockVisualMaterial(type,x=0,z=0){
   }else if(type==='log'||type==='pineLog'){
     const pine=type==='pineLog',side=pixelMaterial(pine?'pineLogSide':'logSide',variant),end=pixelMaterial(pine?'pineLogTop':'logTop',variant);
     m=[side,side,end,end,side,side];
-  }else if(['dirt','stone','sand','redSand','gravel','snow','clay','ironOre','bedrock','leaves','pineLeaves','planks'].includes(type)){
+  }else if(type==='snow'){
+    const side=pixelMaterial('snow',variant),top=pixelMaterial('snowTop',variant),bottom=pixelMaterial('dirt',variant);
+    m=[side,side,top,bottom,side,side];
+  }else if(['dirt','stone','sand','redSand','gravel','clay','ironOre','bedrock','leaves','pineLeaves','planks'].includes(type)){
     m=pixelMaterial(type,variant);
   }else m=materialFor(type);
   blockVisualMaterialCache.set(key,m);return m;
