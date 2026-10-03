@@ -191,11 +191,12 @@ function moveLayerOrSelection(dx,dy){
   snapshot();
   if(selection){
     const s=selection;
+    const nx=clamp(s.x+dx,0,SIZE-s.w),ny=clamp(s.y+dy,0,SIZE-s.h);
     const temp=makeCanvas(s.w,s.h),tc=temp.getContext('2d',{alpha:true});
     tc.putImageData(c.getImageData(s.x,s.y,s.w,s.h),0,0);
     c.clearRect(s.x,s.y,s.w,s.h);
-    c.drawImage(temp,s.x+dx,s.y+dy);
-    selection={...s,x:clamp(s.x+dx,0,SIZE-s.w),y:clamp(s.y+dy,0,SIZE-s.h)};
+    c.drawImage(temp,nx,ny);
+    selection={...s,x:nx,y:ny};
   }else{
     const temp=makeCanvas();temp.getContext('2d',{alpha:true}).drawImage(layerCanvas(),0,0);
     c.clearRect(0,0,SIZE,SIZE);c.drawImage(temp,dx,dy);
