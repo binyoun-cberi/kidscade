@@ -92,7 +92,11 @@ const C={
  fence:{name:'울타리',emoji:'🪵',kind:'building',sub:'가축 우리 재료'},
  tamedGoat:{name:'길들인 염소',emoji:'🐐',kind:'item',sub:'울타리와 합쳐 우리 조성'},
  goatPen:{name:'염소 우리',emoji:'🐐',kind:'node',sub:'젖을 얻을 수 있음'},
- goatRanch:{name:'염소 목장',emoji:'🐐',kind:'building',sub:'염소 우리 3개가 합쳐짐'}
+ goatRanch:{name:'염소 목장',emoji:'🐐',kind:'building',sub:'염소 우리 3개가 합쳐짐'},
+ waterPit:{name:'저수 웅덩이',emoji:'💧',kind:'node',sub:'개간지를 파서 물을 모음'},
+ reservoir:{name:'작은 저수지',emoji:'🌊',kind:'building',sub:'저수 웅덩이 3개가 합쳐짐'},
+ fishHolding:{name:'민물고기 가두리',emoji:'🐟',kind:'node',sub:'잡은 물고기를 가두어 기름'},
+ fishPond:{name:'민물고기 양식장',emoji:'🐟',kind:'building',sub:'가두리 3개가 합쳐진 실험적 생산지'}
 };
 
 const state={
@@ -112,7 +116,9 @@ const SAME={
  fishingSpot:{need:3,out:'fishingGround',name:'낚시터'},
  netSpot:{need:3,out:'netFishery',name:'그물 어장'},
  trapSpot:{need:3,out:'trapFishery',name:'통발 어장'},
- goatPen:{need:3,out:'goatRanch',name:'염소 목장'}
+ goatPen:{need:3,out:'goatRanch',name:'염소 목장'},
+ waterPit:{need:3,out:'reservoir',name:'작은 저수지'},
+ fishHolding:{need:3,out:'fishPond',name:'민물고기 양식장'}
 };
 
 const R=[
@@ -149,6 +155,7 @@ const R=[
  ['milletSeed','clearedPlot',1,1,[['milletPlot',1]],'조밭 만들기'],
  ['milletFarm','storageJars',0,1,[['granary',1]],'곡식 저장소'],
  ['tamedGoat','fence',1,1,[['goatPen',1]],'염소 우리'],
+ ['freshFish','reservoir',1,0,[['fishHolding',1]],'민물고기 가두리'],
  ['person','spear',1,1,[['hunter',1]],'사냥꾼'],
  ['person','bow',1,1,[['hunter',1]],'활 사냥꾼'],
  ['person','fishHook',1,1,[['fisher',1]],'어부'],
@@ -156,7 +163,7 @@ const R=[
  ['person','cord',1,1,[['herder',1]],'목축민']
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
-const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,storageJars:1,combPottery:1,groundAxe:1,leatherClothing:1};
+const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,combPottery:1,groundAxe:1,leatherClothing:1};
 const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
 const isWorker=t=>['person','hunter','fisher','farmer','herder'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -269,7 +276,8 @@ function workerAction(worker,node){
   trapSpot:{ms:1450,label:'통발 확인 중',out:[['freshFish',2]],life:'fish',lifeGain:2},
   trapFishery:{ms:1750,label:'통발 어장 운영 중',out:[['freshFish',4]],life:'fish',lifeGain:3},
   goatPen:{ms:1500,label:'염소 돌보는 중',out:[['milk',1]],life:'herd'},
-  goatRanch:{ms:1800,label:'염소 목장 돌보는 중',out:[['milk',3]],life:'herd',lifeGain:3}
+  goatRanch:{ms:1800,label:'염소 목장 돌보는 중',out:[['milk',3]],life:'herd',lifeGain:3},
+  fishPond:{ms:2100,label:'양식장 돌보는 중',out:[['freshFish',2]],life:'fish',lifeGain:2}
  };
  return prod[node.type]||null;
 }
@@ -282,6 +290,7 @@ function specialAction(a,b){
  if(has('net','river'))return {ms:1500,label:'그물 설치 중',consume:null,preserve:null,out:[['netSpot',1]],discover:'그물 어로'};
  if(has('fishTrap','river'))return {ms:1500,label:'통발 설치 중',consume:null,preserve:null,out:[['trapSpot',1]],discover:'통발 어로'};
  if(has('sickle','wildMillet'))return {ms:1300,label:'돌낫으로 수확 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',2]],discover:'돌낫 수확',life:'farm'};
+ if(has('groundAxe','clearedPlot'))return {ms:1800,label:'저수 웅덩이 파는 중',consume:'clearedPlot',preserve:'groundAxe',out:[['waterPit',1]],discover:'저수 웅덩이'};
  return null;
 }
 
@@ -320,7 +329,7 @@ function settlementScore(){
 }
 function checkMilestone(){
  if(state.milestoneShown||state.over)return;
- const score=settlementScore(),advanced=['milletFarm','fishingGround','netFishery','trapFishery','goatRanch','village','granary'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
+ const score=settlementScore(),advanced=['milletFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
  if(score>=9&&advanced>=2){
   state.milestoneShown=true;
   $('#milestoneText').textContent='농경·어로·목축 중 여러 생활 기술과 주거·저장 기술이 연결되며 정착도가 '+score+'에 도달했습니다. 한 가지 길만 고르지 않아도 됩니다.';
@@ -369,7 +378,7 @@ function renderQuests(){
   ['생가죽을 긁개로 손질한다',has('dressedHide')||has('leatherClothing')||has('hideTent')],
   ['간돌도끼 같은 간석기를 만든다',has('groundAxe')],
   ['빗살무늬토기를 굽는다',has('combPottery')||has('storageJars')],
-  ['농장·어장·목장 중 하나를 성장시킨다',has('milletFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')],
+  ['농장·어장·목장·양식장 중 하나를 성장시킨다',has('milletFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')||has('fishPond')],
   ['정착도 9 이상',settlementScore()>=9]
  ];
  ui.questList.innerHTML=q.map(x=>'<div class="quest '+(x[1]?'done':'')+'"><i>'+(x[1]?'✓':'·')+'</i><span>'+x[0]+'</span></div>').join('');
