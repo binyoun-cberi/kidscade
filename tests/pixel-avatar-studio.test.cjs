@@ -22,8 +22,8 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
   assert.match(html,/pixel-avatar-renderer\.js\?v=26/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=26/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=26'));
+  assert.match(html,/avatar-pixel-studio\.js\?v=27/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=27'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -45,6 +45,18 @@ test('pixel avatar studio exposes only the curated standalone hair catalog',()=>
   assert.match(js,/noses:4/);
   assert.match(js,/mouths:8/);
   assert.match(js,/blush:4/);
+});
+
+test('avatar studio exposes live stand, walk and jump preview controls',()=>{
+  assert.match(html,/id="motionControls"/);
+  assert.match(html,/data-motion="idle"/);
+  assert.match(html,/data-motion="walk"/);
+  assert.match(html,/data-motion="jump"/);
+  assert.match(js,/function startPreviewMode\(mode='idle'\)/);
+  assert.match(js,/function previewTick\(now\)/);
+  assert.match(js,/Math\.sin\(Math\.PI\*progress\)\*14/);
+  assert.match(css,/\.motion-controls/);
+  assert.match(css,/\.motion-btn\.active/);
 });
 
 test('studio delegates actual composition to the anchor-rig renderer',()=>{
