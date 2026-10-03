@@ -1481,6 +1481,7 @@ body.dark-mode .site-credits {
         #pet-modal .sook-pet-caption { bottom: 10px !important; padding: 7px 11px !important; font-size: .78rem; }
         #pet-modal .sook-pet-action-grid { gap: 6px; }
         #pet-modal .sook-pet-action-btn { min-height: 40px; font-size: .77rem; border-radius: 12px; }
+        #pet-modal .sook-open-aquarium-btn { min-height: 45px; border-radius: 14px; }
         #pet-room-status {
             height: 100%;
             min-height: 0;
@@ -1494,6 +1495,7 @@ body.dark-mode .site-credits {
         #pet-room-status .sook-need-row { padding: 9px 10px; }
         #pet-room-status .pet-smart-note { margin: 0; }
         .sook-status-actions { margin-top: auto; display: grid; gap: 8px; }
+        #pet-room-status .sook-open-aquarium-btn { min-height: 46px; }
         .sook-compact-shop-btn {
             width: 100%;
             min-height: 46px;
@@ -1533,6 +1535,123 @@ body.dark-mode .site-credits {
             #pet-modal .sook-3d-room { min-height: 700px !important; }
             .sook-full-panel .sook-mission-list { grid-template-columns: 1fr; }
         }
+
+        /* =========================================
+            전용 3D 어항 연결
+           ========================================= */
+        #aquarium-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 12000;
+            display: flex;
+            flex-direction: column;
+            background: #03111f;
+        }
+        #aquarium-modal.hidden { display: none !important; }
+        .aquarium-modal-bar {
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 14px;
+            background: #08283f;
+            color: white;
+            box-shadow: 0 4px 14px rgba(0,0,0,.28);
+            z-index: 2;
+        }
+        .aquarium-modal-title { font-weight: 900; color: #a5f3fc; }
+        .aquarium-modal-close {
+            border: 0;
+            border-radius: 12px;
+            min-height: 38px;
+            padding: 0 15px;
+            background: #ef4444;
+            color: white;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        #aquarium-iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #03111f; }
+        .sook-open-aquarium-btn {
+            width: 100%;
+            min-height: 52px;
+            border: 0;
+            border-radius: 17px;
+            background: linear-gradient(135deg, #0891b2, #2563eb);
+            color: white;
+            font-weight: 1000;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(8,145,178,.24);
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+            z-index: 4;
+        }
+        .sook-open-aquarium-btn:hover { transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 16px 28px rgba(8,145,178,.30); }
+        .sook-open-aquarium-btn small { display: block; margin-top: 3px; font-size: .72rem; opacity: .82; }
+        @media (max-width: 620px) {
+            .aquarium-modal-bar { display: none; }
+            #aquarium-modal { height: 100dvh; }
+        }
+
+
+        /* =========================================
+            전용 3D 햄스터 집 연결
+           ========================================= */
+        #hamster-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 12010;
+            display: flex;
+            flex-direction: column;
+            background: #dbe9ee;
+        }
+        #hamster-modal.hidden { display: none !important; }
+        .hamster-modal-bar {
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #8b5a2b, #d28a42);
+            color: white;
+            box-shadow: 0 4px 14px rgba(0,0,0,.24);
+            z-index: 2;
+        }
+        .hamster-modal-title { font-weight: 1000; color: #fff7ed; }
+        .hamster-modal-close {
+            border: 0;
+            border-radius: 12px;
+            min-height: 38px;
+            padding: 0 15px;
+            background: #ef4444;
+            color: white;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        #hamster-iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #dbe9ee; }
+        .sook-open-hamster-btn {
+            width: 100%;
+            min-height: 52px;
+            border: 0;
+            border-radius: 17px;
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            color: white;
+            font-weight: 1000;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(217,119,6,.24);
+            transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+            z-index: 4;
+        }
+        .sook-open-hamster-btn:hover { transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 16px 28px rgba(217,119,6,.30); }
+        .sook-open-hamster-btn small { display: block; margin-top: 3px; font-size: .72rem; opacity: .86; }
+        @media (max-width: 620px) {
+            #hamster-modal { height: 100dvh; }
+            .hamster-modal-bar { min-height: 50px; padding: 6px 9px; }
+            .hamster-modal-title { font-size: .9rem; }
+            .hamster-modal-close { min-height: 36px; padding: 0 11px; }
+        }
+
+
 
         /* =========================================
             👤 Kidscade 아바타 광장 · SVG 옷장
