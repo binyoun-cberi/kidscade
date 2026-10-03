@@ -38,14 +38,35 @@ test('classic 3D runtime parses',()=>{
   assert.doesNotMatch(runtime,/import\.meta/);
 });
 
-test('math rules and original wave progression survive the rebuild',()=>{
+test('math rules and scripted wave progression stay solvable as factors unlock',()=>{
   for(const op of ['SUB1','DIV2','DIV3','ADD1','DIV5']) assert.match(runtime,new RegExp(op));
-  assert.match(runtime,/function hasBasicDivisor/);
+  assert.match(runtime,/function unlockedDivisors/);
+  assert.match(runtime,/function fullyReducibleNow/);
   assert.match(runtime,/e\.hp=before\/def\.value/);
   assert.match(runtime,/if\(e\.hp===1\)purifyEnemy\(e\)/);
-  assert.match(runtime,/e\.hp>2&&!hasBasicDivisor\(e\.hp\)/);
-  assert.match(runtime,/\{nums:\[4,6,8,10\],count:7/);
+  assert.match(runtime,/fullyReducibleNow\(e\.hp-1\)/);
+  assert.match(runtime,/fullyReducibleNow\(e\.hp\+1\)/);
+  assert.match(runtime,/\{nums:\[2,4,8,16\],count:7/);
   assert.match(runtime,/\{nums:\[17,19,23,29\],count:12/);
+
+  const towerSource=runtime.match(/const TOWERS=(\{[\s\S]*?\});\nconst WAVES=/)?.[1];
+  const waveSource=runtime.match(/const WAVES=(\[[\s\S]*?\]);\nconst PATH=/)?.[1];
+  assert.ok(towerSource&&waveSource,'tower/wave tables must be extractable');
+  const towers=Function('return ('+towerSource+')')();
+  const waves=Function('return ('+waveSource+')')();
+  const divisorsFor=wave=>[2,3,5].filter(v=>wave>=({2:towers.DIV2.unlock,3:towers.DIV3.unlock,5:towers.DIV5.unlock}[v]));
+  const reachable=(start,wave)=>{
+    const divisors=divisorsFor(wave),queue=[start],seen=new Set(queue);
+    while(queue.length){
+      const n=queue.shift();if(n===1)return true;
+      const next=[];
+      for(const d of divisors)if(n>1&&n%d===0)next.push(n/d);
+      if(n>2&&!divisors.some(d=>n%d===0))next.push(n-1,n+1);
+      for(const value of next)if(value>0&&value<1000&&!seen.has(value)){seen.add(value);queue.push(value)}
+    }
+    return false;
+  };
+  waves.forEach((waveDef,index)=>waveDef.nums.forEach(n=>assert.ok(reachable(n,index+1),'wave '+(index+1)+' cannot reduce '+n+' to 1')));
 });
 
 test('v10 runtime uses Quaternius zombies, turrets and city buildings',()=>{
