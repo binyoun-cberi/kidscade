@@ -36,7 +36,7 @@ const ENHANCED_TITLES = [
 const EXTRA_ENHANCED_TITLES = [
   '외계인 피자 가게',
   '문방구 사장님',
-  '약수 타워 디펜스',
+  '좀비 vs 약수 터렛',
   '넘버 시그널 (룬의 숲)',
   '오목 아레나'
 ];
