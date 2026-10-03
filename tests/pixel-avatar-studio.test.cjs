@@ -195,6 +195,18 @@ test('animated clothes use a small walk-only coverage guard',()=>{
   assert.match(lowerClothesExtract,/approved\/hair-male-01\.png/);
 });
 
+test('avatar studio exposes stand idle walk and jump preview controls',()=>{
+  assert.match(html,/id="motionControls"/);
+  assert.match(html,/data-motion="static"/);
+  assert.match(html,/data-motion="idle"/);
+  assert.match(html,/data-motion="walk"/);
+  assert.match(html,/data-motion="jump"/);
+  assert.match(js,/function setPreviewMode\(mode\)/);
+  assert.match(js,/animationCanvases=\{idle:\[\],walk:\[\]\}/);
+  assert.match(js,/Math\.sin\(Math\.PI\*phase\)/);
+  assert.match(css,/\.motion-btn\.active/);
+});
+
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
   assert.match(css,/image-rendering:pixelated/);
   assert.match(css,/@media\(max-width:720px\)/);
