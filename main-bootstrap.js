@@ -98,46 +98,6 @@
   }
 
   function refactorLegacyControllers(html) {
-    const filterStart = '            function applyFilters() {';
-    const filterEnd = '\n\n            function setAgeGroup(ageKey) {';
-    const filterReplacement = `            function applyFilters() {
-                const delegated = window.KidscadeFilter?.apply?.({
-                    age: currentAgeGroup,
-                    subject: currentCategory,
-                    genre: document.body.dataset.kidscadeGenre || 'all',
-                    keyword: searchKeyword,
-                    ageNames,
-                    categoryNames,
-                    subjectNames
-                });
-                if (delegated) {
-                    renderDashboards();
-                    return;
-                }
-
-                // 안전한 초기 로딩용 레거시 fallback. 런타임 모듈 로드 후에는 위임 경로만 사용합니다.
-                let visibleCount = 0;
-                let ageTotalCount = 0;
-                const keyword = searchKeyword.trim().toLowerCase();
-                gameCards.forEach(card => {
-                    const matchAge = card.getAttribute('data-age') === currentAgeGroup;
-                    const matchCat = currentCategory === 'all' || card.getAttribute('data-category') === currentCategory;
-                    const searchText = \`${'${'}card.querySelector('.game-title')?.innerText || ''} ${'${'}card.querySelector('.game-desc')?.innerText || ''} ${'${'}categoryNames[card.getAttribute('data-category')] || ''}\`.toLowerCase();
-                    const matchSearch = !keyword || searchText.includes(keyword);
-                    if (matchAge) ageTotalCount++;
-                    if (matchAge && matchCat && matchSearch) { card.classList.remove('hidden'); visibleCount++; }
-                    else { card.classList.add('hidden'); }
-                });
-                if (visibleCount === 0) emptyMessage.classList.remove('hidden');
-                else emptyMessage.classList.add('hidden');
-                if (visibleGameCount) {
-                    const ageLabel = ageNames[currentAgeGroup] || '선택한 모드';
-                    visibleGameCount.textContent = \`${'${'}ageLabel} 게임 ${'${'}visibleCount}/${'${'}ageTotalCount}개 표시\`;
-                }
-                renderDashboards();
-            }`;
-    html = replaceBetween(html, filterStart, filterEnd, filterReplacement);
-
     const dashboardStart = '            function renderDashboards() {';
     const dashboardEnd = '\n\n            function trackRecent(id) {';
     const dashboardReplacement = `            function renderDashboards() {
