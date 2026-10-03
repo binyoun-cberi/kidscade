@@ -13,6 +13,10 @@ const FRAMES=[
   ...Array.from({length:4},(_,i)=>({id:'walk-'+String(i+1).padStart(2,'0'),label:'WALK '+String(i+1).padStart(2,'0'),kind:'walk',n:i+1})),
   {id:'jump-01',label:'JUMP 01',kind:'jump',n:1}
 ];
+const DRAFT_BODY_SOURCE_SECONDS=[8,9,10,11,12,13,14];
+const DRAFT_BODY_SOURCE_RESOLUTION=64;
+const DRAFT_BODY_SOURCE_PALETTE=12;
+
 
 const $=id=>document.getElementById(id);
 const canvas=$('workCanvas');
@@ -72,6 +76,93 @@ function bboxOfCanvas(c,alphaCut=1){
     if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
   }
   return maxX>=minX?{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1,maxX,maxY}:null;
+}
+
+function draftBodySourceUrl(index){
+  const sec=String(DRAFT_BODY_SOURCE_SECONDS[index]).padStart(2,'0');
+  const file='ChatGPT 이미지 2026년 10월 3일 오후 08_59_'+sec+'-'+String(index+1)+'.png';
+  return encodeURI('/assets/game/characters/'+file);
+}
+
+function loadImageUrl(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.decoding='async';
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('이미지를 불러오지 못했습니다: '+url));
+    img.src=url;
+  });
+}
+
+function rasterDraftBodyImage(img){
+  const source=makeCanvas(img.naturalWidth||img.width||1,img.naturalHeight||img.height||1);
+  const sc=source.getContext('2d',{alpha:true});
+  sc.imageSmoothingEnabled=true;
+  sc.imageSmoothingQuality='high';
+  sc.drawImage(img,0,0,source.width,source.height);
+
+  const base=makeCanvas(),bc=base.getContext('2d',{alpha:true});
+  bc.imageSmoothingEnabled=true;
+  bc.imageSmoothingQuality='high';
+  bc.drawImage(source,0,0,SIZE,SIZE);
+
+  const low=makeCanvas(DRAFT_BODY_SOURCE_RESOLUTION,DRAFT_BODY_SOURCE_RESOLUTION);
+  const lc=low.getContext('2d',{alpha:true});
+  lc.imageSmoothingEnabled=true;
+  lc.imageSmoothingQuality='high';
+  lc.drawImage(base,0,0,DRAFT_BODY_SOURCE_RESOLUTION,DRAFT_BODY_SOURCE_RESOLUTION);
+
+  const out=makeCanvas(),oc=out.getContext('2d',{alpha:true});
+  oc.imageSmoothingEnabled=false;
+  oc.drawImage(low,0,0,DRAFT_BODY_SOURCE_RESOLUTION,DRAFT_BODY_SOURCE_RESOLUTION,0,0,SIZE,SIZE);
+  hardenAlpha(out,56);
+  quantizeCanvas(out,DRAFT_BODY_SOURCE_PALETTE);
+  hardenAlpha(out,1);
+  return out;
+}
+
+function shiftCanvas(source,dx,dy){
+  const out=makeCanvas(),o=out.getContext('2d',{alpha:true});
+  o.imageSmoothingEnabled=false;
+  o.drawImage(source,dx,dy);
+  return out;
+}
+
+function allBodyFramesEmpty(){
+  return FRAMES.every(f=>!hasInk(layerCanvas(f.id,'body')));
+}
+
+async function loadDraftBodySet(announce=true){
+  const button=$('loadDraftBodySet');
+  const oldText=button?.textContent||'';
+  if(button){button.disabled=true;button.textContent='GitHub BODY 불러오는 중…'}
+  try{
+    if(!allBodyFramesEmpty()&&announce&&!confirm('현재 BODY 프레임을 업로드한 좌향 초안 7장으로 다시 채울까요? HAIR/의상 레이어는 유지됩니다.'))return false;
+    setStatus('GitHub 좌향 BODY 7장을 불러오는 중…');
+    const images=await Promise.all(FRAMES.map((_,i)=>loadImageUrl(draftBodySourceUrl(i))));
+    const raw=images.map(rasterDraftBodyImage);
+    const masterBox=bboxOfCanvas(raw[0],8);
+    if(!masterBox)throw new Error('STAND-01에서 캐릭터 실루엣을 찾지 못했습니다.');
+    const masterCenter=masterBox.x+(masterBox.w-1)/2;
+    const dx=Math.round(ROOT_X-masterCenter);
+    const dy=GROUND_Y-masterBox.maxY;
+
+    for(let i=0;i<FRAMES.length;i++){
+      const target=layerCtx(FRAMES[i].id,'body');
+      target.clearRect(0,0,SIZE,SIZE);
+      const shifted=shiftCanvas(raw[i],dx,dy);
+      target.drawImage(shifted,0,0);
+    }
+    selection=null;history.clear();$('referenceFrame').value='stand-01';
+    refreshFrameButtons();render();saveLocal();
+    setStatus('좌향 BODY 7장 연결 완료 · STAND-01 기준 공통 이동값 '+dx+','+dy+' 적용 · 빨간 오차 표시로 프레임별 차이를 보정하세요.');
+    return true;
+  }catch(e){
+    setStatus('BODY 초안 불러오기 실패: '+(e?.message||e),true);
+    return false;
+  }finally{
+    if(button){button.disabled=false;button.textContent=oldText}
+  }
 }
 
 function buildFrameButtons(){
@@ -486,7 +577,14 @@ async function applyProject(project){
   }else throw new Error('Kidscade 아바타 제작실 프로젝트가 아닙니다.');
   history.clear();selection=null;refreshFrameButtons();render();saveLocal();
 }
-async function restoreLocal(){try{const raw=localStorage.getItem(SAVE_KEY);if(raw)await applyProject(JSON.parse(raw))}catch(_){}}
+async function restoreLocal(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    await applyProject(JSON.parse(raw));
+    return true;
+  }catch(_){return false}
+}
 
 function downloadBlob(name,blob){
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),900);
@@ -596,6 +694,7 @@ function bind(){
   $('toolSelect').addEventListener('click',()=>selectTool('select'));
   $('clearSelection').addEventListener('click',clearSelection);
   $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
+  $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
   $('copyPrev').addEventListener('click',copyPrevious);
   $('playStand').addEventListener('click',()=>startPlayback('stand'));
   $('playWalk').addEventListener('click',()=>startPlayback('walk'));
@@ -672,8 +771,10 @@ function bind(){
 async function init(){
   if(!await verifyAdmin())return;
   bind();$('pixelResolutionValue').value=$('pixelResolution').value;$('alphaCutValue').value=$('alphaCut').value;
-  await restoreLocal();selectLayer('body');selectTool('pencil');selectFrame('stand-01');
-  setStatus('V3 제작실 준비됨 · STAND-01 BODY부터 넣고 x=64 / y=118을 기준으로 맞추세요.');
+  await restoreLocal();
+  selectLayer('body');selectTool('pencil');selectFrame('stand-01');
+  if(allBodyFramesEmpty())await loadDraftBodySet(false);
+  else setStatus('V3 제작실 준비됨 · STAND-01 기준 오버레이와 오차 표시로 BODY/HAIR를 정합하세요.');
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
