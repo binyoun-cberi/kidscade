@@ -132,3 +132,41 @@ test('AI adjustment exchange validates 128x128 target and checksums',()=>{
   assert.ok(js.includes('baseChecksum'));
   assert.ok(html.includes('id="adjustmentSummary"'));
 });
+
+
+test('studio exports whole-avatar analysis JSON with every frame and layer',()=>{
+  assert.ok(html.includes('id="exportFullAnalysis"'));
+  assert.ok(js.includes("type:'kidscade-avatar-full-analysis'"));
+  assert.match(js,/function buildFullAnalysis\(\)/);
+  assert.ok(js.includes('layers[layer]={'));
+  assert.ok(js.includes('pixels:sparsePixelsOfCanvas(c,1)'));
+  assert.ok(js.includes('frameOrder:FRAMES.map'));
+  assert.ok(js.includes('layerOrder:[...RENDER_ORDER]'));
+});
+
+test('whole-avatar analysis includes body skin exposure diagnostics',()=>{
+  assert.match(js,/function bodyExposureDiagnostics\(frameId\)/);
+  assert.ok(js.includes("const GARMENT_COVER_LAYERS=['upper','lower','shoes','gloves']"));
+  assert.match(js,/function isSkinColorCandidate\(/);
+  assert.ok(js.includes('visibleSkinCandidatePixels'));
+  assert.ok(js.includes('garmentEdgeSkinCandidatePixels'));
+  assert.ok(js.includes('visibleSkinComponents'));
+  assert.ok(js.includes('garmentEdgeSkinComponents'));
+  assert.ok(js.includes('coverageByGarment'));
+});
+
+test('studio imports whole-avatar AI adjustment JSON across frame-layer pairs',()=>{
+  assert.ok(html.includes('id="importFullAdjustment"'));
+  assert.ok(js.includes("type!=='kidscade-avatar-full-adjustment'"));
+  assert.match(js,/function validateFullAdjustmentFile\(/);
+  assert.match(js,/function applyLayerAdjustmentPlan\(/);
+  assert.match(js,/async function applyFullAdjustment\(/);
+  assert.ok(js.includes('framePlan.layers'));
+  assert.ok(js.includes('baseChecksum'));
+});
+
+test('whole adjustment contract supports translate rectangle moves and pixel patches',()=>{
+  for(const op of ['translate','moveRect','setPixels','replacePixels']) assert.ok(js.includes("'"+op+"'"));
+  assert.ok(js.includes("Do not modify BODY merely to hide clothing leaks"));
+  assert.ok(js.includes("Use exposure diagnostics only as hints"));
+});
