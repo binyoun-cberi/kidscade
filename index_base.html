@@ -12,6 +12,7 @@
     <script src="daily-ui.js"></script>
     <script src="achievement-state.js"></script>
     <script src="shop-state.js"></script>
+    <script src="theme-ui.js"></script>
     <link rel="stylesheet" href="main-shell.css">
     <link rel="stylesheet" href="age-gate.css">
 
@@ -3290,18 +3291,11 @@ ${getEvolutionHintText()}
             // =====================================
             // 다크모드 및 출석
             // =====================================
-            const themeBtn = document.getElementById('theme-btn');
-            if (themeBtn && !themeBtn.dataset.kcThemeBound) {
-                themeBtn.dataset.kcThemeBound = '1';
-                let isDarkMode = localStorage.getItem('kidscade_darkmode') === 'true';
-                document.body.classList.toggle('dark-mode', isDarkMode);
-                themeBtn.addEventListener('click', () => {
-                    playUISound('click');
-                    isDarkMode = !isDarkMode;
-                    document.body.classList.toggle('dark-mode', isDarkMode);
-                    localStorage.setItem('kidscade_darkmode', String(isDarkMode));
-                });
-            }
+            window.KidscadeTheme?.bind?.({
+                document,
+                localStorage,
+                playSound: playUISound
+            });
 
             function checkAttendance() {
                 return window.KidscadeDailyUI.checkAttendance(dailyUiContext());
