@@ -29,3 +29,7 @@ Runtime order is:
 Only entries in `approved-hair-manifest.json` are selectable in the avatar studio. The old sheet-generated assets stay in the repository as legacy/reference data but are intentionally hidden from users.
 
 A legacy saved hair selection that has no approved `hairId` falls back to the catalog's `fallbackId`.
+
+## Short-hair head fit
+
+Generated short-hair art is not trusted to carry useful 128×128 coordinates. The import step measures the visible alpha bounds, removes detached generation fragments, scales the visible hair to a per-style head-fit box, and places that box around the rig's real head anchor (X=65.5, head top Y=20). The resulting PNG remains a full 128×128 asset, so runtime rendering stays at scale 1 and offset 0.
