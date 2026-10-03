@@ -39,6 +39,7 @@ jobs:
             seed-wallet.js \
             seed-world-meta.js \
             daily-progress.js \
+            daily-ui.js \
             achievement-state.js \
             shop-state.js \
             classroom-war-records.js \
