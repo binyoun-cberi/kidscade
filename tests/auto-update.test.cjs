@@ -41,6 +41,18 @@ test('index keeps one bootstrap entrypoint and runtime scripts load after compos
   assert.match(bootstrap, /<scr' \+ 'ipt defer src=/);
 });
 
+test('Cloudflare build precomposes the final lobby before browser startup', () => {
+  const built = fs.readFileSync(path.join(ROOT, 'dist', 'index.html'), 'utf8');
+  assert.doesNotMatch(built, /__KIDSCADE_BUILD__/);
+  assert.doesNotMatch(built, /<script\b[^>]*src=["'][^"']*main-bootstrap\.js/i);
+  assert.match(built, /window\.KidscadeCatalog=/);
+  assert.match(built, /auto-update\.js\?v=/);
+  assert.match(built, /audio-manager\.js\?v=/);
+  assert.match(built, /game-frame-shell\.js\?v=/);
+  assert.match(build, /composeLobbyArtifact/);
+  assert.match(build, /compose-lobby-build\.cjs/);
+});
+
 test('Cloudflare build emits a no-cache static version manifest', () => {
   assert.match(build, /kidscade-version\.json/);
   assert.match(build, /writeBuildVersion\(buildId\)/);
