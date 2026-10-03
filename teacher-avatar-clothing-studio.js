@@ -27,6 +27,7 @@ let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
 const bodyCache=new Map();
+const bodyImageCache=new Map();
 const frames=new Map();
 const history=new Map();
 
@@ -54,7 +55,7 @@ function loadBody(url){
   const p=new Promise((resolve,reject)=>{
     const img=new Image();
     img.decoding='async';
-    img.onload=()=>resolve(img);
+    img.onload=()=>{bodyImageCache.set(url,img);resolve(img)};
     img.onerror=()=>reject(new Error('BODY 프레임을 불러오지 못했습니다.'));
     img.src=url+'?v=clothing-studio-1';
   });
@@ -174,10 +175,19 @@ function drawStamp(target,alpha=1,smoothing=false){
 }
 
 function targetRectForLayer(){
-  // Kidscade's canonical 128px body keeps torso/arms and legs in these zones.
-  // Final cleanup remains editable pixel-by-pixel after this first-pass fit.
-  if(activeLayer==='upper')return {x:38,y:62,w:56,h:38};
-  return {x:45,y:82,w:42,h:39};
+  // Base fit zones come from the approved Kidscade body/clothing contact sheets.
+  // The zone follows each loaded BODY frame's horizontal center, so walk/idle drift
+  // is handled before the artist performs the final 1px cleanup.
+  const base=activeLayer==='upper'?{x:38,y:62,w:56,h:38}:{x:45,y:82,w:42,h:39};
+  const rec=frameRecord(),img=bodyImageCache.get(rec.body);
+  if(!img)return base;
+  const c=makeCanvas(),p=c.getContext('2d',{alpha:true});p.drawImage(img,0,0,SIZE,SIZE);
+  const d=p.getImageData(0,0,SIZE,SIZE).data;
+  let minX=SIZE,maxX=-1;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(d[(y*SIZE+x)*4+3]>24){if(x<minX)minX=x;if(x>maxX)maxX=x}
+  if(maxX<minX)return base;
+  const center=(minX+maxX)/2;
+  return {...base,x:base.x+Math.round(center-65.5)};
 }
 
 function autoFitStamp(announce=true){
@@ -264,7 +274,7 @@ function cleanupSingletons(canvas){
     for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)if((xx||yy)&&opaque(x+xx,y+yy))neighbors++;
     if(neighbors===0){out[i]=0;out[i+1]=0;out[i+2]=0;out[i+3]=0}
   }
-  c.putImageData(new ImageData(out,SIZE,SIZE),0,0);
+  img.data.set(out);c.putImageData(img,0,0);
 }
 
 function addAutoOutline(canvas){
@@ -276,7 +286,7 @@ function addAutoOutline(canvas){
       out[i]=Math.round(d[i]*.52);out[i+1]=Math.round(d[i+1]*.52);out[i+2]=Math.round(d[i+2]*.52);
     }
   }
-  c.putImageData(new ImageData(out,SIZE,SIZE),0,0);
+  img.data.set(out);c.putImageData(img,0,0);
 }
 
 function buildPixelizedCanvas(){
@@ -383,7 +393,8 @@ function selectLayer(layer){
   invalidatePixelPreview();
   $('layerUpper').className=activeLayer==='upper'?'':'secondary';
   $('layerLower').className=activeLayer==='lower'?'':'secondary';
-  render();
+  if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
+  else render();
 }
 
 function selectTool(next){
