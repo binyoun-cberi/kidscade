@@ -42,6 +42,7 @@ jobs:
             daily-ui.js \
             achievement-state.js \
             shop-state.js \
+            theme-ui.js \
             classroom-war-records.js \
             classroom-war-records-observer.js \
             timing-exact10-records.js \
