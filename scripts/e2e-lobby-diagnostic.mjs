@@ -100,7 +100,7 @@ const testAccount = {
   nickname:'E2E테스터',
   className:'E2E 테스트반',
   classCode:'E2E01',
-  revision:1,
+  revision:0,
   lastLoginAt:new Date().toISOString()
 };
 const testState = {
