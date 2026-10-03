@@ -385,6 +385,22 @@
 
   function injectRuntimeScripts(html) {
     const scripts = [
+      // These modules used to execute in index.html before document.open()/write().
+      // Load them only after the composed document exists so their listeners,
+      // observers and timers belong to the final page.
+      'auto-update.js',
+      'kidscade-storage.js',
+      'audio-manager.js',
+      'profile-history.js',
+      'stats-rankings.js',
+      'server-stats.js',
+      'ui-information-architecture.js',
+      'ui-visual-polish.js',
+      'account-client.js',
+      'account-session-safety.js',
+      'account-ui-runtime.js',
+      'account-profile-gate.js',
+      'seed-balance-sync.js',
       'score-display-normalizer.js',
       'ui-clarity-overhaul.js',
       'ui-topbar-compact.js',
