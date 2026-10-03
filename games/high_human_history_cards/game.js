@@ -5,8 +5,8 @@ const board=$('#board');
 const ui={
  era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
- toast:$('#toast'),explore:$('#exploreBtn'),
- bars:{hunt:$('#huntBar'),farm:$('#farmBar'),fish:$('#fishBar'),herd:$('#herdBar')},
+ toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),
+ goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
  values:{hunt:$('#huntValue'),farm:$('#farmValue'),fish:$('#fishValue'),herd:$('#herdValue')}
 };
 
@@ -142,7 +142,7 @@ const C={
 };
 
 const state={
- started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,cards:new Map(),discoveries:new Set(),timers:[],
+ started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
  lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false
 };
 
@@ -246,12 +246,27 @@ const isWorker=t=>['person','hunter','fisher','farmer','herder'].includes(t);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function reset(){
- state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.cards.clear();state.discoveries.clear();
+ state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
  state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
  spawnInitial();renderAll();
- const t=setInterval(()=>{if(!state.started||state.over)return;state.mealLeft--;if(state.mealLeft<=0)eatMeal();renderHud();},1000);
+ const t=setInterval(()=>{
+  if(!state.started||state.over)return;
+  if(state.starving){
+   if(tryRecoverMeal())return;
+   state.hunger=Math.max(0,state.hunger-2.5);
+   if(state.hunger<=0){
+    state.over=true;
+    $('#gameOverLayer').classList.remove('hidden');
+    showToast('🌙 굶주림을 버티지 못했습니다.');
+   }
+   renderHud();renderHunger();return;
+  }
+  state.mealLeft--;
+  if(state.mealLeft<=0)eatMeal();
+  renderHud();renderHunger();
+ },1000);
  state.timers.push(t);
 }
 
@@ -265,26 +280,78 @@ function spawnInitial(){
  list.forEach(([t,x,y])=>addCard(t,Math.min(w-120,w*x),Math.min(h-150,h*y),1,false));
 }
 
+const ANIMALS=new Set(['deer','wildGoat','wildBoar','rabbit','tamedGoat']);
+const DANGERS=new Set(['deer','wildBoar']);
+function cardGroup(type,d){
+ if(isWorker(type))return {cls:'human',label:'주민'};
+ if(ANIMALS.has(type))return {cls:(DANGERS.has(type)?'animal danger':'animal'),label:'동물'};
+ if(d.kind==='node')return {cls:'node',label:'자연'};
+ if(d.kind==='food')return {cls:'food',label:'음식'};
+ if(d.kind==='building')return {cls:'building',label:'시설'};
+ if(d.kind==='tool')return {cls:'tool',label:'도구'};
+ return {cls:'item',label:'자원'};
+}
+function artMarkup(type,d){
+ if(d.image)return '<img src="'+d.image+'" alt="'+d.name+'" draggable="false">';
+ return '<span class="emoji" aria-hidden="true">'+d.emoji+'</span>';
+}
 function addCard(type,x,y,count=1,animate=true){
  if(!C[type])return null;
- const id=++state.id,el=document.createElement('div'),d=C[type];
- el.className='card '+d.kind+(animate?' newborn':'');el.dataset.id=id;
- el.innerHTML='<div class="workTag">진행 중…</div><div class="cardTop">'+d.emoji+'<span class="countBadge"></span></div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div><div class="progress"></div>';
+ const id=++state.id,el=document.createElement('div'),d=C[type],group=cardGroup(type,d);
+ el.className='card '+group.cls+(animate?' newborn':'');el.dataset.id=id;
+ const foodBadge=d.food?'<span class="foodBadge">🍖 '+d.food+'</span>':'';
+ el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
  const c={id,type,count,busy:false,x:0,y:0,el};state.cards.set(id,c);updateCard(c);
- place(c,clamp(x,4,Math.max(4,board.clientWidth-el.offsetWidth-4)),clamp(y,4,Math.max(4,board.clientHeight-el.offsetHeight-4)));
- bindDrag(c);if(animate)onCreated(type);return c;
+ place(c,clamp(x,4,Math.max(4,board.clientWidth-el.offsetWidth-12)),clamp(y,18,Math.max(18,board.clientHeight-el.offsetHeight-12)));
+ bindDrag(c);if(animate)onCreated(type);renderHunger();return c;
 }
-function updateCard(c){if(!c||!state.cards.has(c.id))return;const b=c.el.querySelector('.countBadge');b.textContent='×'+c.count;b.classList.toggle('one',c.count===1);}
+function updateCard(c){
+ if(!c||!state.cards.has(c.id))return;
+ const b=c.el.querySelector('.countBadge');b.textContent='×'+c.count;b.classList.toggle('one',c.count===1);
+ c.el.classList.toggle('stacked',c.count>1);
+}
 function place(c,x,y){c.x=x;c.y=y;c.el.style.left=x+'px';c.el.style.top=y+'px';}
 function removeCard(c){if(!c||!state.cards.has(c.id))return;c.el.remove();state.cards.delete(c.id);}
 function consume(c,n){if(n<=0)return true;if(!c||c.count<n)return false;c.count-=n;if(c.count<=0)removeCard(c);else updateCard(c);return true;}
 
+const WORK_NODES=new Set(['forest','berryBush','stoneSource','reedBed','clayBank','wildMillet','wildBroomcorn','wildBean','oakGrove','tidalFlat','river','milletPlot','milletFarm','broomcornPlot','broomcornFarm','beanPlot','beanFarm','fishingSpot','fishingGround','netSpot','netFishery','trapSpot','trapFishery','goatPen','goatRanch','fishPond']);
+function interactionClass(a,b){
+ if(a.type===b.type)return 'drop-stack';
+ if(findRecipe(a,b))return 'drop-craft';
+ if(specialAction(a,b))return 'drop-action';
+ const worker=isWorker(a.type)?a:(isWorker(b.type)?b:null);
+ if(!worker)return '';
+ const node=worker.id===a.id?b:a;
+ if(WORK_NODES.has(node.type))return 'drop-action';
+ if(node.type==='deer'||node.type==='wildBoar')return worker.type==='hunter'?'drop-danger':'';
+ if(node.type==='wildGoat')return worker.type==='herder'?'drop-action':'';
+ return '';
+}
+function clearHighlights(){for(const o of state.cards.values())o.el.classList.remove('drop-stack','drop-craft','drop-action','drop-danger');}
+function highlightTargets(c){
+ clearHighlights();
+ for(const o of state.cards.values()){
+  if(o.id===c.id||o.busy)continue;
+  const cls=interactionClass(c,o);if(cls)o.el.classList.add(cls);
+ }
+}
 function bindDrag(c){
  let dragging=false,ox=0,oy=0;
- c.el.addEventListener('pointerdown',e=>{if(!state.started||state.over||c.busy)return;dragging=true;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');const r=c.el.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;c.el.style.zIndex=++state.z;e.preventDefault();});
- c.el.addEventListener('pointermove',e=>{if(!dragging)return;const r=board.getBoundingClientRect();place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-4)),clamp(e.clientY-r.top-oy,4,Math.max(4,r.height-c.el.offsetHeight-4)));e.preventDefault();});
- const end=e=>{if(!dragging)return;dragging=false;c.el.classList.remove('dragging');try{c.el.releasePointerCapture(e.pointerId)}catch(_){}const target=findTarget(c);if(target)resolve(c,target);};
+ c.el.addEventListener('pointerdown',e=>{
+  if(!state.started||state.over||c.busy)return;
+  dragging=true;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');highlightTargets(c);
+  const r=c.el.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;c.el.style.zIndex=++state.z;e.preventDefault();
+ });
+ c.el.addEventListener('pointermove',e=>{
+  if(!dragging)return;const r=board.getBoundingClientRect();
+  place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-12)),clamp(e.clientY-r.top-oy,18,Math.max(18,r.height-c.el.offsetHeight-12)));e.preventDefault();
+ });
+ const end=e=>{
+  if(!dragging)return;dragging=false;c.el.classList.remove('dragging');clearHighlights();
+  try{c.el.releasePointerCapture(e.pointerId)}catch(_){}
+  const target=findTarget(c);if(target)resolve(c,target);
+ };
  c.el.addEventListener('pointerup',end);c.el.addEventListener('pointercancel',end);
 }
 
@@ -445,9 +512,25 @@ function consumeFood(need){
  for(const c of piles){while(left>0&&state.cards.has(c.id)&&c.count>0){left-=C[c.type].food||1;consume(c,1);}if(left<=0)break;}
  return left<=0;
 }
+function beginStarvation(){
+ if(state.starving)return;
+ state.starving=true;state.hunger=100;state.mealLeft=0;
+ showToast('⚠️ 식량이 부족합니다. 사람 카드의 굶주림 게이지가 바닥나기 전에 먹을 것을 만드세요.');
+ renderAll();
+}
+function tryRecoverMeal(){
+ const need=population();
+ if(!state.starving||need<=0||foodUnits()<need)return false;
+ consumeFood(need);state.starving=false;state.hunger=100;state.day++;state.mealLeft=70;state.stats.meals++;
+ showToast('🍲 식량을 마련해 굶주림에서 벗어났습니다.');
+ renderAll();return true;
+}
 function eatMeal(){
- const need=population();if(foodUnits()<need){state.over=true;$('#gameOverLayer').classList.remove('hidden');return;}
- consumeFood(need);state.day++;state.mealLeft=70;state.stats.meals++;showToast('🍲 부족이 한 끼를 먹고 '+state.day+'일째를 맞았습니다.');renderAll();
+ const need=population();
+ if(need<=0)return;
+ if(foodUnits()<need){beginStarvation();return;}
+ consumeFood(need);state.starving=false;state.hunger=100;state.day++;state.mealLeft=70;state.stats.meals++;
+ showToast('🍲 부족이 한 끼를 먹고 '+state.day+'일째를 맞았습니다.');renderAll();
 }
 
 function explore(){
@@ -457,16 +540,38 @@ function explore(){
  addCard(t,x,y);showToast('🧭 '+C[t].name+'을(를) 새로 발견했습니다.');renderAll();
 }
 function tidy(){
- const cards=[...state.cards.values()].filter(c=>!c.busy),cols=Math.max(3,Math.floor((board.clientWidth-15)/114));
- cards.forEach((c,i)=>place(c,8+(i%cols)*112,8+Math.floor(i/cols)*143));
+ const cards=[...state.cards.values()].filter(c=>!c.busy),cols=Math.max(3,Math.floor((board.clientWidth-18)/122));
+ cards.forEach((c,i)=>place(c,10+(i%cols)*120,22+Math.floor(i/cols)*158));
 }
 
-function renderAll(){renderHud();renderLife();renderDiscoveries();renderQuests();renderGoal();}
-function renderHud(){ui.day.textContent=state.day+'일';ui.food.textContent=foodUnits();ui.pop.textContent=population();ui.meal.textContent=state.mealLeft+'초';ui.settlement.textContent=settlementScore();ui.explore.disabled=foodUnits()<1;}
-function renderLife(){
- for(const k of ['hunt','farm','fish','herd']){const v=state.lifestyle[k];ui.values[k].textContent=v;ui.bars[k].style.width=Math.min(100,v*9)+'%';}
+function renderAll(){renderHud();renderLife();renderDiscoveries();renderQuests();renderGoal();renderHunger();}
+function renderHud(){
+ const food=foodUnits(),pop=population();
+ ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop;
+ ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();
+ ui.explore.disabled=food<1||state.starving;
+ ui.foodTile?.classList.toggle('low',state.starving||food<pop);
 }
-function renderDiscoveries(){const list=[...state.discoveries];ui.discoveryCount.textContent=list.length+'개';ui.discoveries.innerHTML=list.length?list.slice(-18).map(x=>'<span class="discovery">'+x+'</span>').join(''):'<span class="discovery">아직 없음</span>';}
+function renderHunger(){
+ const pct=Math.max(0,Math.min(100,state.hunger));
+ for(const c of state.cards.values()){
+  if(!isWorker(c.type))continue;
+  c.el.classList.toggle('starving',state.starving);
+  const bar=c.el.querySelector('.hungerMeter i');if(bar)bar.style.width=pct+'%';
+  const label=c.el.querySelector('.hungerLabel');if(label)label.textContent=state.starving?'굶주림 '+Math.ceil(pct)+'%':'';
+ }
+}
+function renderLife(){
+ const vals=['hunt','farm','fish','herd'].map(k=>state.lifestyle[k]),max=Math.max(0,...vals);
+ for(const k of ['hunt','farm','fish','herd']){
+  const v=state.lifestyle[k];ui.values[k].textContent=v;
+  document.querySelector('[data-life="'+k+'"]')?.classList.toggle('leading',v>0&&v===max);
+ }
+}
+function renderDiscoveries(){
+ const list=[...state.discoveries];ui.discoveryCount.textContent=list.length;
+ ui.discoveries.innerHTML=list.length?list.slice(-30).map(x=>'<span class="discovery">'+x+'</span>').join(''):'<span class="discovery">아직 발견한 기술이 없습니다.</span>';
+}
 function has(t){return [...state.cards.values()].some(c=>c.type===t);}
 function renderQuests(){
  const q=[
@@ -500,7 +605,20 @@ $('#restartBtn').addEventListener('click',reset);
 $('#continueBtn').addEventListener('click',()=>$('#milestoneLayer').classList.add('hidden'));
 $('#exploreBtn').addEventListener('click',explore);
 $('#tidyBtn').addEventListener('click',tidy);
-$('#helpBtn').addEventListener('click',()=>$('#helpLayer').classList.remove('hidden'));
+function closeHudPopovers(){
+ ui.goalPopover.classList.add('hidden');ui.discoverPopover.classList.add('hidden');
+ ui.goalBtn.classList.remove('active');ui.discoverBtn.classList.remove('active');
+}
+function toggleHudPopover(which){
+ const pop=which==='goal'?ui.goalPopover:ui.discoverPopover,btn=which==='goal'?ui.goalBtn:ui.discoverBtn;
+ const willOpen=pop.classList.contains('hidden');closeHudPopovers();
+ if(willOpen){pop.classList.remove('hidden');btn.classList.add('active');}
+}
+ui.goalBtn.addEventListener('click',()=>toggleHudPopover('goal'));
+ui.discoverBtn.addEventListener('click',()=>toggleHudPopover('discover'));
+$('#helpBtn').addEventListener('click',()=>{closeHudPopovers();$('#helpLayer').classList.remove('hidden');});
+document.querySelectorAll('[data-close-popover]').forEach(b=>b.addEventListener('click',()=>closeHudPopovers()));
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeLayer(b.dataset.close)));
-window.addEventListener('resize',()=>{for(const c of state.cards.values())place(c,clamp(c.x,4,Math.max(4,board.clientWidth-c.el.offsetWidth-4)),clamp(c.y,4,Math.max(4,board.clientHeight-c.el.offsetHeight-4)));});
+board.addEventListener('pointerdown',e=>{if(e.target===board)closeHudPopovers();});
+window.addEventListener('resize',()=>{for(const c of state.cards.values())place(c,clamp(c.x,4,Math.max(4,board.clientWidth-c.el.offsetWidth-12)),clamp(c.y,18,Math.max(18,board.clientHeight-c.el.offsetHeight-12)));});
 })();
