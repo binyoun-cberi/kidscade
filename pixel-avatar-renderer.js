@@ -12,7 +12,7 @@ const HAIR_CATALOG_PATH='runtime/hair/approved-hair-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
   hairId:'clean-01',
-  hairSet:'legacy',
+  hairSet:'male',
   hairStyle:1,
   upper:1,
   lower:1,
@@ -160,7 +160,7 @@ class PixelAvatar{
     if(raw.noses!=null&&raw.nose==null)raw.nose=raw.noses;
     if(raw.mouths!=null&&raw.mouth==null)raw.mouth=raw.mouths;
     raw.hairId=this.hairRecord(String(raw.hairId||''))?.id||this.fallbackHairId();
-    raw.hairSet='legacy';
+    raw.hairSet=raw.hairSet==='female'?'female':'male';
     raw.hairStyle=clampInt(raw.hairStyle,1,COUNTS.hair);
     raw.upper=raw.upper?1:0;
     raw.lower=raw.lower?1:0;
