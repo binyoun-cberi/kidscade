@@ -500,18 +500,18 @@ function tutorialExpectedAction(){
 function tutorialMessage(){
  if(!state.tutorial.active)return'';
  const p=state.pots[0];
- if(state.tutorial.step===0)return'① 먼저 1번 냄비를 눌러 주세요';
- if(state.tutorial.step===1)return p.water<1?'② 아래의 물 버튼을 두 번 눌러 주세요 · 첫 번째 컵':'② 좋아요! 물을 한 번 더 눌러 2컵을 맞춰요';
- if(state.tutorial.step===2)return'③ 이제 면 버튼을 눌러 주세요';
- if(state.tutorial.step===3)return'④ 스프 버튼을 눌러 국물을 만들어요';
- if(state.tutorial.step===4)return'⑤ 첫 주문은 계란 라면이에요 · 계란을 넣어 주세요';
+ if(state.tutorial.step===0)return'① 물 상자로 걸어가 E를 눌러 물을 직접 들어 보세요';
+ if(state.tutorial.step===1)return p.water<1?'② 물을 든 채 1번 냄비로 가서 E · 첫 번째 컵':'② 물 상자에 다시 가서 한 컵 더 들고 와 2컵을 맞춰요';
+ if(state.tutorial.step===2)return'③ 면 상자에서 면을 들고 1번 냄비까지 가져오세요';
+ if(state.tutorial.step===3)return'④ 스프 상자 → 1번 냄비 · 직접 옮겨 넣어요';
+ if(state.tutorial.step===4)return'⑤ 첫 주문은 계란 라면 · 계란을 들고 냄비에 넣어 주세요';
  if(state.tutorial.step===5){
   if(p.noodleTime<5.5)return'⑥ 보글보글 끓는 동안 기다려요 · 아직 설익었어요';
   if(p.noodleTime<8.2)return'⑥ 조금만 더! “딱 좋아요”가 될 때를 기다려요';
-  if(p.noodleTime<=11.5)return'⑥ 지금이 가장 맛있어요! 초록색 “담기”를 눌러 주세요';
-  return'⑥ 면이 퍼지기 시작했어요! 바로 “담기”를 눌러 주세요'
+  if(p.noodleTime<=11.5)return'⑥ 지금! 빈손으로 1번 냄비 가까이에서 E를 눌러 그릇에 담아요';
+  return'⑥ 면이 퍼지고 있어요! 빈손으로 냄비에서 E를 눌러 빨리 담아요'
  }
- if(state.tutorial.step===6)return'⑦ 완성! 오른쪽 아래 쟁반을 계란 라면 손님에게 끌어다 주세요';
+ if(state.tutorial.step===6)return'⑦ 라면을 직접 들고 계란 라면 손님 앞으로 가서 E로 서빙하세요';
  return''
 }
 function renderTutorial(){
@@ -519,6 +519,52 @@ function renderTutorial(){
  document.body.classList.toggle('tutorial-mode',active);
  els.tutorialBanner.classList.toggle('hidden',!active);
  if(active)els.tutorialText.textContent=tutorialMessage()
+}
+function carryLabel(){
+ if(!state.carry)return'빈손';
+ if(state.carry.kind==='meal')return state.carry.name||'완성 라면';
+ return INGREDIENTS[state.carry.id]?.name||state.carry.id
+}
+function renderCarryHud(){
+ if(!els.carryHud)return;
+ if(!state.carry){els.carryHud.innerHTML='<small>손</small><b>빈손</b>';els.carryHud.classList.remove('holding','meal');return}
+ els.carryHud.classList.add('holding');els.carryHud.classList.toggle('meal',state.carry.kind==='meal');
+ const icon=state.carry.kind==='meal'?'🍜':(INGREDIENTS[state.carry.id]?.icon||'📦');
+ els.carryHud.innerHTML='<span>'+icon+'</span><small>들고 있음</small><b>'+carryLabel()+'</b>'
+}
+function setCarry(carry){
+ state.carry=carry||null;kitchen.setHeldVisual(state.carry);renderCarryHud();updateActionButtons()
+}
+function clearCarry(){setCarry(null)}
+function pickupIngredient(id){
+ if(state.phase!=='service')return false;
+ if(state.carry){toast('이미 '+carryLabel()+'을 들고 있어요');return false}
+ if(state.tutorial.active){
+  const expected=state.tutorial.step===0||state.tutorial.step===1?'water':state.tutorial.step===2?'noodle':state.tutorial.step===3?'soup':state.tutorial.step===4?'egg':null;
+  if(expected&&id!==expected){toast(tutorialMessage(),1700);return false}
+  if(state.tutorial.step>=5){toast(tutorialMessage(),1700);return false}
+ }
+ setCarry({kind:'ingredient',id});
+ if(state.tutorial.active&&state.tutorial.step===0&&id==='water')state.tutorial.step=1;
+ sfx('collect.coin_pickup',{volume:.14,rate:1.08,cooldownMs:70});toast(ingredientLabel(id)+'을 들었어요 · 냄비까지 가져가세요',1300);renderTutorial();
+ return true
+}
+function interactPot(index){
+ if(index>=activePotCount()){toast('아직 잠긴 화구예요');return}
+ kitchen.setSelectedPot(index);
+ if(state.carry?.kind==='meal'){toast('완성된 라면은 손님에게 직접 가져가세요');return}
+ if(state.carry?.kind==='ingredient'){
+  const id=state.carry.id;
+  if(applyAction(index,id)){clearCarry();return}
+  return
+ }
+ const p=state.pots[index];
+ if(canUseAction('plate')){platePot(index);return}
+ toast(nextInstruction(p),1500)
+}
+function serveCarriedMeal(orderId){
+ if(state.carry?.kind!=='meal'||!state.tray?.ready){const order=state.orders.find(o=>o.id===orderId);toast(order?'이 손님은 '+recipeById(order.recipeId).name+'을 기다리고 있어요':'주문이 바뀌었어요',1400);return}
+ serveOrder(orderId)
 }
 function compatibleOrderForPot(p){
  return state.orders.find(o=>{
@@ -580,39 +626,35 @@ function contextActionsForPot(p){
  return toppings.size?[...toppings]:['egg','green','cheese']
 }
 function updateActionButtons(){
- const p=state.selectedPot==null?null:state.pots[state.selectedPot],actions=contextActionsForPot(p);
+ if(!els.dock)return;
  els.dock.innerHTML='';
- actions.forEach(action=>{
-  const btn=document.createElement('button');btn.type='button';btn.dataset.action=action;
-  const info=INGREDIENTS[action]||{icon:action==='plate'?'🥣':'•',name:ACTION_NAMES[action]||action};
-  btn.innerHTML='<span>'+info.icon+'</span><b>'+(action==='plate'?'그릇에 담기':info.name)+'</b>';
-  const enabled=canUseAction(action);btn.disabled=!enabled;btn.classList.toggle('recommended',enabled);btn.classList.toggle('ready-now',enabled&&action==='plate'&&p&&p.noodleTime>=8.2&&p.noodleTime<=11.5);els.dock.appendChild(btn)
- });
- if(!actions.length){
-  const wait=document.createElement('span');wait.className='action-wait';
-  wait.textContent=state.tray?(state.tray.ready?'쟁반을 손님에게 끌어다 주세요':'그릇에 담는 중…'):state.busy?'잠깐만요…':!p?'냄비를 눌러 주세요':identifyRecipe(p)&&p.noodleTime<5.5?'보글보글 익는 중…':'주문을 보고 다음 재료를 골라요';els.dock.appendChild(wait)
- }
- renderDiscardButton()
+ const status=document.createElement('span');status.className='action-wait carry-action';
+ if(state.phase==='prep')status.textContent='영업 전에 설비와 재료 상자를 배치하세요';
+ else if(state.busy)status.textContent='잠깐만요…';
+ else if(state.carry?.kind==='meal')status.textContent='🍜 '+carryLabel()+' · 주문 손님에게 직접 가져가 E';
+ else if(state.carry)status.textContent=(INGREDIENTS[state.carry.id]?.icon||'📦')+' '+carryLabel()+' · 냄비까지 직접 가져가 E';
+ else status.textContent='빈손 · 재료 상자에서 E로 집고 냄비까지 운반하세요';
+ els.dock.appendChild(status);renderDiscardButton()
 }
 function nextInstruction(p){
- if(state.tray)return state.tray.ready?'완성된 '+state.tray.name+' 쟁반을 기다리는 손님에게 끌어다 주세요':'냄비에서 그릇으로 라면을 담는 중이에요';
- if(!p)return'먼저 냄비 하나를 눌러 선택하세요';
+ if(state.tray)return state.tray.ready?'완성된 '+state.tray.name+'을 들고 주문 손님에게 직접 가져가세요':'냄비에서 그릇으로 라면을 담는 중이에요';
+ if(!p)return'재료 상자에서 하나를 들고 냄비 가까이로 이동하세요';
  if(p.burnt)return'탔어요 · 왼쪽 아래 “선택 냄비 비우기”로 새로 시작하세요';
- if(potEmpty(p))return'물 버튼을 두 번 눌러 2컵을 맞추세요';
- if(p.water<1.5&&!p.ingredients.length)return'물을 한 번 더 넣어 2컵 가까이 맞추세요';
- if(!hasIngredient(p,'noodle')&&!hasIngredient(p,'soup'))return'면과 스프 버튼을 눌러 주세요';
- if(!hasIngredient(p,'noodle'))return'면 버튼을 눌러 주세요';
- if(!hasIngredient(p,'soup'))return'스프 버튼을 눌러 주세요';
+ if(potEmpty(p))return'물 상자에서 물을 들고 와 두 번 부어 주세요';
+ if(p.water<1.5&&!p.ingredients.length)return'물 상자에서 한 컵 더 가져오세요';
+ if(!hasIngredient(p,'noodle')&&!hasIngredient(p,'soup'))return'면과 스프를 각각 상자에서 직접 가져오세요';
+ if(!hasIngredient(p,'noodle'))return'면 상자에서 면을 가져오세요';
+ if(!hasIngredient(p,'soup'))return'스프 상자에서 스프를 가져오세요';
  const recipe=identifyRecipe(p);
  if(!recipe){
   const order=compatibleOrderForPot(p),r=order&&recipeById(order.recipeId);
-  return r?'주문 확인 → '+r.name+'에 필요한 토핑을 넣으세요':'위 주문을 보고 계란·대파·치즈 중 토핑을 골라 주세요'
+  return r?'주문 확인 → '+r.name+'에 필요한 토핑을 직접 가져오세요':'주문을 보고 계란·대파·치즈 상자 중 필요한 곳으로 가세요'
  }
  if(p.noodleTime<5.5)return recipe.name+' · 아직 설익었어요. 잠시 기다리세요';
  if(p.noodleTime<8.2)return recipe.name+' · 조금 더 끓이면 가장 맛있어요';
- if(p.noodleTime<=11.5)return'✅ '+recipe.name+' · 지금 “담기”를 누르세요!';
- if(p.noodleTime<=14.2)return'⚠ '+recipe.name+' · 퍼지고 있어요. 빨리 담으세요!';
- return'🚨 곧 타요! 바로 담으세요'
+ if(p.noodleTime<=11.5)return'✅ '+recipe.name+' · 빈손으로 냄비에서 E를 눌러 담으세요!';
+ if(p.noodleTime<=14.2)return'⚠ '+recipe.name+' · 퍼지고 있어요. 냄비에서 E!';
+ return'🚨 곧 타요! 빈손으로 냄비에서 E'
 }
 function addToPot(index,id){
  const p=state.pots[index];
