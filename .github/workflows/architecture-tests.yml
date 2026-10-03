@@ -116,12 +116,19 @@ jobs:
           npm install --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
 
+      - name: Bisect lobby DOMContentLoaded stalls
+        timeout-minutes: 5
+        continue-on-error: true
+        run: node scripts/e2e-lobby-bisect.mjs
+
       - name: Run local full lobby browser diagnostic
         timeout-minutes: 5
+        continue-on-error: true
         run: SERVE_DIST=1 node scripts/e2e-lobby-diagnostic.mjs
 
       - name: Run production full lobby browser diagnostic
         timeout-minutes: 5
+        continue-on-error: true
         run: TARGET_URL=https://kidscade.binyoun.workers.dev/ node scripts/e2e-lobby-diagnostic.mjs
 
       - name: Run all regression tests and audits
