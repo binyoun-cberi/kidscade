@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Kidscade 아바타 의상 제작실</title>
+<style>
+:root{font-family:"맑은 고딕",system-ui,sans-serif;color:#172033;background:#f5f7fb;--purple:#7156e8;--line:#dde3ee;--muted:#68758a;--panel:#fff;--danger:#be123c}
+*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}
+.wrap{width:min(1480px,calc(100% - 24px));margin:18px auto 52px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.top h1{margin:0;font-size:1.45rem;letter-spacing:-.04em}.top a{text-decoration:none;color:#5b43c5;font-weight:900}.muted{color:var(--muted);font-size:.75rem;line-height:1.5}
+.gate,.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 28px rgba(15,23,42,.05)}.gate{padding:24px;text-align:center}.gate h2{margin:0 0 7px}
+.studio{display:grid;grid-template-columns:220px minmax(480px,1fr) 340px;gap:12px;align-items:start}.card{padding:14px}.card h2,.card h3{margin:0 0 9px;font-size:.92rem}
+.frame-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.frame-btn{min-height:39px;border:1px solid #e6e9f1;background:#f8fafc;color:#475569;border-radius:10px;font-weight:900;cursor:pointer}.frame-btn.active{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}.frame-btn .dots{display:block;font-size:.58rem;margin-top:2px;letter-spacing:2px}.dot-upper{color:#2563eb}.dot-lower{color:#0f766e}.dot-empty{color:#cbd5e1}
+.canvas-card{display:grid;justify-items:center;gap:10px}.canvas-shell{position:relative;width:min(70vw,640px);aspect-ratio:1/1;border-radius:14px;overflow:hidden;background-color:#eef1f6;background-image:linear-gradient(45deg,#dfe4ec 25%,transparent 25%),linear-gradient(-45deg,#dfe4ec 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#dfe4ec 75%),linear-gradient(-45deg,transparent 75%,#dfe4ec 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}.canvas-shell canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}button,.file-btn{min-height:38px;border:0;border-radius:10px;padding:0 11px;background:var(--purple);color:#fff;font:900 .72rem/1 system-ui;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.secondary{background:#eef2f7!important;color:#475569!important;border:1px solid #e2e8f0!important}.warn{background:#fff7ed!important;color:#c2410c!important;border:1px solid #fed7aa!important}.danger{background:#fff1f2!important;color:#be123c!important;border:1px solid #fecdd3!important}
+.file-btn input{display:none}.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}.seg button.active{background:#312e81}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}label{display:grid;gap:5px;font-size:.68rem;font-weight:900;color:#475569}input[type=text],input[type=number],select{width:100%;min-height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:0 9px;background:#fff;color:#111827;font:inherit}input[type=color]{width:100%;height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:3px;background:#fff}.check{display:flex;align-items:center;gap:6px;font-size:.7rem;font-weight:900}.divider{height:1px;background:#eef2f7;margin:12px 0}.status{min-height:20px;font-size:.69rem;font-weight:900;color:#166534}.status.error{color:#b91c1c}.tip{padding:9px 10px;border-radius:10px;background:#f8fafc;color:#64748b;font-size:.67rem;line-height:1.45}.compact{display:grid;gap:7px}.project-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.full{grid-column:1/-1}
+#sourcePreview{width:100%;max-height:120px;object-fit:contain;image-rendering:pixelated;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc}
+@media(max-width:1050px){.studio{grid-template-columns:190px minmax(400px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}.right>.card{margin:0}}
+@media(max-width:760px){.wrap{width:min(100% - 12px,1480px);margin-top:8px}.top{align-items:flex-start}.studio{grid-template-columns:1fr}.left,.right{display:block;grid-column:auto}.canvas-shell{width:min(94vw,620px)}.right>.card{margin-bottom:10px}.frame-grid{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>🧵 아바타 의상 제작실</h1><div class="muted">128×128 frame-synced paper-doll 의상을 직접 맞추고 픽셀 단위로 수정합니다.</div></div>
+    <a href="/teacher/">← 관리자 화면</a>
+  </div>
+
+  <section id="gate" class="gate">
+    <h2>관리자 권한 확인 중</h2>
+    <div class="muted">전역 관리자 로그인 상태에서만 제작실을 사용할 수 있습니다.</div>
+  </section>
+
+  <main id="studio" class="studio hidden">
+    <aside class="left card">
+      <h2>애니메이션 프레임</h2>
+      <div id="frameGrid" class="frame-grid"></div>
+      <div class="divider"></div>
+      <div class="compact">
+        <button id="copyPrev" class="secondary" type="button">← 이전 프레임 옷 복사</button>
+        <button id="playIdle" class="secondary" type="button">▶ IDLE 미리보기</button>
+        <button id="playWalk" class="secondary" type="button">▶ WALK 미리보기</button>
+        <button id="stopPlay" class="secondary" type="button">■ 정지</button>
+      </div>
+      <div class="divider"></div>
+      <label class="check"><input id="showBody" type="checkbox" checked> BODY 가이드 표시</label>
+      <label>BODY 투명도 <input id="bodyOpacity" type="range" min="0" max="100" value="55"></label>
+      <label class="check"><input id="showOnion" type="checkbox"> 이전 프레임 onion skin</label>
+      <label class="check"><input id="showGrid" type="checkbox" checked> 8px 가이드 그리드</label>
+    </aside>
+
+    <section class="canvas-card card">
+      <div class="toolbar">
+        <button id="toolPencil" type="button">✏️ 연필</button>
+        <button id="toolErase" class="secondary" type="button">⌫ 지우개</button>
+        <button id="undo" class="secondary" type="button">↶ 실행 취소</button>
+        <button id="redo" class="secondary" type="button">↷ 다시 실행</button>
+      </div>
+      <div class="canvas-shell"><canvas id="workCanvas" width="128" height="128"></canvas></div>
+      <div class="row4" style="width:min(100%,620px)">
+        <label>색상<input id="paintColor" type="color" value="#1677ff"></label>
+        <label>브러시<input id="brushSize" type="number" min="1" max="8" value="1"></label>
+        <label>X<input id="cursorX" type="text" value="-" readonly></label>
+        <label>Y<input id="cursorY" type="text" value="-" readonly></label>
+      </div>
+      <div id="studioStatus" class="status">준비됨</div>
+    </section>
+
+    <aside class="right">
+      <section class="card">
+        <h3>작업 레이어</h3>
+        <div class="seg">
+          <button id="layerUpper" type="button">상의 UPPER</button>
+          <button id="layerLower" class="secondary" type="button">하의 LOWER</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="check"><input id="showUpper" type="checkbox" checked> 상의 표시</label>
+          <label class="check"><input id="showLower" type="checkbox" checked> 하의 표시</label>
+        </div>
+        <div class="divider"></div>
+        <label>상의 ID<input id="upperId" type="text" value="blue-star-zip-hoodie-01"></label>
+        <label style="margin-top:7px">하의 ID<input id="lowerId" type="text" value="denim-cuffed-jeans-01"></label>
+      </section>
+
+      <section class="card">
+        <h3>이미지 가져와서 맞추기</h3>
+        <label class="file-btn secondary">PNG 불러오기<input id="sourceFile" type="file" accept="image/png,image/webp,image/jpeg"></label>
+        <img id="sourcePreview" class="hidden" alt="가져온 의상 원본">
+        <div class="row4" style="margin-top:8px">
+          <label>X<input id="stampX" type="number" value="0"></label>
+          <label>Y<input id="stampY" type="number" value="0"></label>
+          <label>W<input id="stampW" type="number" min="1" value="128"></label>
+          <label>H<input id="stampH" type="number" min="1" value="128"></label>
+        </div>
+        <div class="row" style="margin-top:7px">
+          <label>회전 °<input id="stampRotation" type="number" value="0" step="1"></label>
+          <label>미리보기 α<input id="stampOpacity" type="number" min="0.05" max="1" step="0.05" value="0.75"></label>
+        </div>
+        <div class="toolbar" style="margin-top:8px">
+          <button id="fitStamp" class="secondary" type="button">128×128 맞춤</button>
+          <button id="commitStamp" type="button">현재 레이어에 찍기</button>
+          <button id="clearStamp" class="secondary" type="button">원본 닫기</button>
+        </div>
+        <div class="tip" style="margin-top:8px">가져온 AI 이미지는 여기서 좌표와 크기를 맞춘 뒤 레이어에 찍고, 연필·지우개로 실제 BODY 프레임에 맞게 마감합니다.</div>
+      </section>
+
+      <section class="card">
+        <h3>저장 · 내보내기</h3>
+        <div class="project-actions">
+          <button id="exportCurrent" type="button">현재 레이어 PNG</button>
+          <button id="exportBoth" class="secondary" type="button">상의+하의 각각 PNG</button>
+          <button id="exportManifest" class="secondary" type="button">manifest.json</button>
+          <button id="saveProject" class="secondary" type="button">프로젝트 JSON</button>
+          <label class="file-btn secondary full">프로젝트 불러오기<input id="loadProject" type="file" accept="application/json"></label>
+          <button id="clearFrame" class="warn full" type="button">현재 레이어 비우기</button>
+          <button id="clearAll" class="danger full" type="button">모든 의상 프레임 초기화</button>
+        </div>
+        <div class="tip" style="margin-top:8px">실제 export PNG는 항상 128×128이며 BODY 가이드·그리드·onion skin·가져온 원본 미리보기는 포함되지 않습니다.</div>
+      </section>
+    </aside>
+  </main>
+</div>
+<script src="/teacher-avatar-clothing-studio.js?v=1"></script>
+</body>
+</html>
