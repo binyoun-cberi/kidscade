@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-v3-starter-assets",
+  "note": "Starter paper-doll sources uploaded to the V3 character folder. Nose is intentionally omitted.",
+  "slots": {
+    "hair": {
+      "id": "toben-like-01",
+      "file": "hair-01_stand-01.png",
+      "default": true
+    },
+    "eyes": {
+      "id": "eyes-01",
+      "file": "eyes01.png",
+      "default": true
+    },
+    "mouth": {
+      "id": "mouth-01",
+      "file": "mouth01.png",
+      "default": true
+    },
+    "earring": {
+      "id": "earring-01",
+      "file": "earing01.png",
+      "default": false
+    },
+    "mask": {
+      "id": "mask-01",
+      "file": "mask01.png",
+      "default": false
+    },
+    "upper": {
+      "id": "blue-star-hoodie-01",
+      "file": "hoodie01.png",
+      "default": true
+    },
+    "lower": {
+      "id": "denim-cuffed-jeans-01",
+      "file": "jenas01.png",
+      "default": true
+    },
+    "shoes": {
+      "id": "shoes-01",
+      "file": "shoes01.png",
+      "default": true
+    },
+    "gloves": {
+      "id": "gloves-01",
+      "file": "gloves01.png",
+      "default": true
+    },
+    "hat": {
+      "id": "navy-cap-01",
+      "file": "hat01.png",
+      "default": false
+    }
+  }
+}
