@@ -146,17 +146,21 @@ test('dashboard exclusively owns quick-hub and favorite/recent state APIs', () =
   assert.match(dashboard, /kidscade:dashboard-rendered/);
 });
 
-test('dashboard owns favorite mutation and bootstrap removes legacy per-star listeners', () => {
+test('dashboard state is source-owned without bootstrap surgery', () => {
   const dashboard = read('dashboard-recent.js');
+  const index = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(dashboard, /function\s+toggleFavorite\s*\(/);
   assert.match(dashboard, /function\s+bindFavoriteActions\s*\(/);
   assert.match(dashboard, /addEventListener\('click',[\s\S]*?true\)/);
-  assert.match(bootstrap, /favoriteStart/);
-  assert.match(bootstrap, /kidscade:favorites-changed/);
-  assert.match(bootstrap, /kidscade:recents-changed/);
-  assert.match(bootstrap, /즐겨찾기\/최근 플레이의 쓰기는 dashboard-recent\.js가 전담/);
+  assert.equal(index.includes('window.KidscadeDashboard?.render?.({'), true);
+  assert.equal(index.includes('window.KidscadeDashboard?.remember?.(id)'), true);
+  assert.match(index, /kidscade:favorites-changed/);
+  assert.match(index, /kidscade:recents-changed/);
+  assert.equal(bootstrap.includes('const dashboardStart ='), false);
+  assert.equal(bootstrap.includes('const recentStart ='), false);
+  assert.equal(bootstrap.includes('const favoriteStart ='), false);
 });
 
 test('pet recommendation scoring is catalog/state driven instead of card-DOM driven', () => {
