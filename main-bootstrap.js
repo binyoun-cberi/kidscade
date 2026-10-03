@@ -420,7 +420,7 @@
       'game-frame-shell.js',
       'game-launcher.js',
       'home-v2.js'
-    ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
+    ].map(src => '<scr' + 'ipt defer src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     const activityStyles = '<link rel="stylesheet" href="' + withVersion('activity-feed.css') + '">';
     return html.replace('</body>', activityStyles + scripts + '</body>');
   }
