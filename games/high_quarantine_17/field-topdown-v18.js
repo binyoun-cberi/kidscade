@@ -104,7 +104,7 @@ function makeMap(){
 function resetMission(mode,payload,done){
  state.active=true;state.started=false;state.mode=mode;state.payload=payload||{};state.done=typeof done==='function'?done:null;
  state.zombies=[];state.bullets=[];state.survivors=[];state.pickups=[];state.crates=[];state.wave=0;state.spawnQueue=0;state.spawnCd=0;state.wavePause=0;
- state.elapsed=0;state.losses=0;state.rescued=0;state.medCharges=1;state.shake=0;state.flash=0;
+ state.elapsed=0;state.losses=0;state.rescued=0;state.medCharges=1;state.shake=0;state.flash=0;keys.mobileFire=false;pointer.down=false;
  makeMap();
  state.player={x:460,y:274,r:12,hp:100,maxHp:100,ammo:12,reserve:36,reload:0,shotCd:0,scrap:0,ifr:0,facing:1};
  state.turret={x:720,y:286,r:15,active:false,cooldown:0,range:190};
@@ -115,14 +115,14 @@ function resetMission(mode,payload,done){
  ];
  if(mode==='camp'){
   const count=clamp(Number(state.payload.survivorCount)||5,3,7);
-  for(let i=0;i<count;i++)state.survivors.push({x:118+(i%3)*48,y:248+Math.floor(i/3)*45,r:10,hp:3,alive:true,rescued:false,phase:i*.8,sprite:i%2?'female':'adventurer'});
+  for(let i=0;i<count;i++)state.survivors.push({x:118+(i%3)*48,y:248+Math.floor(i/3)*45,r:10,hp:3,alive:true,rescued:false,phase:i*.8,sprite:i%2?'female':'adventurer',escorted:false});
   const t=clamp(Number(state.payload.threatCount)||1,1,6);
-  state.waves=[t+2,t+3];
+  state.waves=[t+3,t+4];
   ui.title.childNodes[0].nodeValue='CAMP-17 생존자 캠프 출동';
   ui.sub.textContent='감염자를 차단하고 주민을 지휘소 안전구역으로 유도하세요.';
   ui.briefTitle.textContent='생존자 캠프 감염 경보';
-  ui.briefText.innerHTML='검역을 통과한 감염자가 캠프 안으로 들어왔습니다. 주민들이 지휘소 쪽으로 대피하는 동안 감염자를 막고, 보급상자에서 부품을 모아 <b>자동포탑을 재가동</b>할 수 있습니다.';
-  ui.objective.textContent='목표 · 위협 제거 + 가능한 많은 생존자 보호';
+  ui.briefText.innerHTML='검역을 통과한 감염자가 캠프 안으로 들어왔습니다. 주민은 혼자 대피하지 못합니다. <b>가까이 붙어 호위</b>해야 안전구역으로 움직이며, 보급상자의 부품으로 자동포탑을 재가동할 수 있습니다.';
+  ui.objective.textContent='목표 · 주민 곁에서 호위해 안전구역까지 대피 + 위협 제거';
  }else if(mode==='isolation'){
   state.player.x=390;state.player.y=238;state.waves=[Math.max(3,Number(state.payload.count)||3)];
   ui.title.childNodes[0].nodeValue='CAMP-17 격리동 직접 진입';
@@ -130,6 +130,16 @@ function resetMission(mode,payload,done){
   ui.briefTitle.textContent='격리동 내부 붕괴';
   ui.briefText.innerHTML='고위험 격리실에서 변이가 확인됐습니다. 격리동 전면을 확보하고 의무막사·보급창고를 활용해 남은 감염자를 제거하세요.';
   ui.objective.textContent='목표 · 격리동 감염자 전원 제거';
+ }else if(mode==='patrol'){
+  state.player.x=330;state.player.y=258;
+  const inf=clamp(Number(state.payload.infection)||0,0,99);
+  const base=clamp(4+Math.floor(inf/9),4,7);
+  state.waves=[base,Math.max(3,base-1)];
+  ui.title.childNodes[0].nodeValue='CAMP-17 정기 현장 순찰';
+  ui.sub.textContent='검역이 안정적이어도 외곽 잔존 감염원을 직접 확인합니다.';
+  ui.briefTitle.textContent='정기 순찰 · 잔존 감염원 수색';
+  ui.briefText.innerHTML='검역선이 안정된 주에도 현장 위험은 남습니다. 짧은 2개 구역을 순찰하며 잔존 감염자를 제거하고 보급 상태를 점검하세요. <b>정확한 검역은 더 쉬운 순찰</b>로 이어집니다.';
+  ui.objective.textContent='목표 · 2개 순찰 구역 확보';
  }else{
   state.player.x=280;state.player.y=258;state.waves=[5,6,7];
   ui.title.childNodes[0].nodeValue='CAMP-17 외곽 격리선 출동';
@@ -156,7 +166,7 @@ function startWave(){
 function nearestTarget(z){
  let best=state.player,bd=dist(z,state.player);
  if(state.mode==='camp'){
-  state.survivors.forEach(s=>{if(!s.alive||s.rescued)return;const d=dist(z,s);if(d<bd*1.15){best=s;bd=d}});
+  state.survivors.forEach(s=>{if(!s.alive||s.rescued)return;const d=dist(z,s);if(d<bd*1.75){best=s;bd=d}});
  }
  return best;
 }
@@ -165,10 +175,14 @@ function updateSurvivors(dt){
  const safe={x:270,y:205};
  state.survivors.forEach((s,i)=>{
   if(!s.alive||s.rescued)return;
+  const escortDistance=dist(state.player,s);
+  if(escortDistance>145){s.escorted=false;return}
+  s.escorted=true;
   const dx=safe.x-s.x,dy=safe.y-s.y,d=Math.hypot(dx,dy)||1;
-  const panic=state.zombies.some(z=>dist(z,s)<90)?1.25:1;
-  moveEntity(s,dx/d*23*panic*dt,dy/d*23*panic*dt);
-  if(Math.hypot(s.x-safe.x,s.y-safe.y)<28){s.rescued=true;state.rescued++;toast('생존자 안전구역 도착');}
+  const threatened=state.zombies.some(z=>dist(z,s)<90);
+  const speed=threatened?18:25;
+  moveEntity(s,dx/d*speed*dt,dy/d*speed*dt);
+  if(Math.hypot(s.x-safe.x,s.y-safe.y)<28){s.rescued=true;state.rescued++;toast('호위 성공 · 생존자 안전구역 도착');}
  });
 }
 function updateZombies(dt){
@@ -259,12 +273,20 @@ function updatePlayer(dt){
  if(dx||dy){const d=Math.hypot(dx,dy);moveEntity(p,dx/d*125*dt,dy/d*125*dt);if(dx)p.facing=dx<0?-1:1;}
 }
 function missionComplete(){
- return state.started&&state.wave>=state.waves.length&&state.spawnQueue<=0&&state.zombies.length===0&&state.wavePause<0;
+ if(!(state.started&&state.wave>=state.waves.length&&state.spawnQueue<=0&&state.zombies.length===0&&state.wavePause<0))return false;
+ if(state.mode==='camp'){
+  const living=state.survivors.filter(s=>s.alive).length;
+  if(living>0&&state.rescued<living)return false;
+ }
+ return true;
 }
 function update(dt){
  if(!state.active||!state.started)return;
  state.elapsed+=dt;state.flash=Math.max(0,state.flash-dt);state.shake=Math.max(0,state.shake-dt*10);
- updatePlayer(dt);updateSurvivors(dt);
+ updatePlayer(dt);
+ if(pointer.down)shootAt(pointer.x,pointer.y);
+ if(keys.mobileFire){let target=null,bd=9999;state.zombies.forEach(z=>{const d=dist(z,state.player);if(d<bd){bd=d;target=z}});if(target)shootAt(target.x,target.y);}
+ updateSurvivors(dt);
  if(state.spawnQueue>0){
   state.spawnCd-=dt;if(state.spawnCd<=0){spawnZombie();state.spawnQueue--;state.spawnCd=.55+Math.random()*.35;}
  }else if(state.zombies.length===0){
@@ -295,6 +317,9 @@ function finish(won){
    else b.applyOutbreakResult({won:false,infectionDelta:5,trustDelta:-7,scoreDelta:-240});
   }
   if(done)setTimeout(()=>done({won,mode:'camp',losses}),120);
+ }else if(mode==='patrol'){
+  if(b)b.applyOutbreakResult(won?{won:true,infectionDelta:-2,trustDelta:1,scoreDelta:220}:{won:false,infectionDelta:3,trustDelta:-2,scoreDelta:-120});
+  if(done)setTimeout(()=>done({won,mode:'patrol',losses:0}),120);
  }else if(mode==='outbreak'){
   if(b)b.applyOutbreakResult(won?{won:true,infectionDelta:-8,trustDelta:-1,scoreDelta:520}:{won:false,infectionDelta:8,trustDelta:-12,scoreDelta:-500,gameOver:true});
   if(done)setTimeout(()=>done({won,mode:'outbreak',losses:0}),120);
@@ -359,7 +384,9 @@ document.getElementById('q17FieldBriefRetreat').addEventListener('click',()=>fin
 document.getElementById('q17FieldRetreat').addEventListener('click',()=>finish(false));
 document.getElementById('q17FieldInteract').addEventListener('click',interact);
 document.getElementById('q17FieldReload').addEventListener('click',startReload);
-document.getElementById('q17FieldFire').addEventListener('pointerdown',()=>{let target=null,bd=9999;state.zombies.forEach(z=>{const d=dist(z,state.player);if(d<bd){bd=d;target=z}});if(target)shootAt(target.x,target.y);});
+const fireBtn=document.getElementById('q17FieldFire');
+fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();keys.mobileFire=true;let target=null,bd=9999;state.zombies.forEach(z=>{const d=dist(z,state.player);if(d<bd){bd=d;target=z}});if(target)shootAt(target.x,target.y);});
+['pointerup','pointercancel','pointerleave'].forEach(type=>fireBtn.addEventListener(type,()=>{keys.mobileFire=false;}));
 window.addEventListener('keydown',e=>{
  if(!state.active)return;const k=e.key.toLowerCase();keys[k]=true;
  if(k==='r')startReload();if(k==='e')interact();if(e.code==='Space'){let target=null,bd=9999;state.zombies.forEach(z=>{const d=dist(z,state.player);if(d<bd){bd=d;target=z}});if(target)shootAt(target.x,target.y);e.preventDefault();}
@@ -367,7 +394,7 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 canvas.addEventListener('pointermove',e=>{const p=worldPoint(e);pointer.x=p.x;pointer.y=p.y;});
 canvas.addEventListener('pointerdown',e=>{const p=worldPoint(e);pointer.x=p.x;pointer.y=p.y;pointer.down=true;shootAt(p.x,p.y);});
-canvas.addEventListener('pointerup',()=>pointer.down=false);canvas.addEventListener('pointercancel',()=>pointer.down=false);
+canvas.addEventListener('pointerup',()=>pointer.down=false);canvas.addEventListener('pointercancel',()=>pointer.down=false);canvas.addEventListener('pointerleave',()=>pointer.down=false);
 function bindHold(btn,key){
  if(!btn)return;const on=e=>{e.preventDefault();keys[key]=true;btn.classList.add('active')};const off=e=>{e.preventDefault();keys[key]=false;btn.classList.remove('active')};
  btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('pointerleave',off);
@@ -377,6 +404,7 @@ document.querySelectorAll('[data-field-hold]').forEach(b=>bindHold(b,b.dataset.f
 api.isCombatActive=function(){return state.active||original.isCombatActive()};
 api.respondCamp=function(payload,done){if(state.active||original.isCombatActive())return false;resetMission('camp',payload,done);return true};
 api.respondGlobal=function(done){if(state.active||original.isCombatActive())return false;resetMission('outbreak',{},done);return true};
+api.respondPatrol=function(payload,done){if(state.active||original.isCombatActive())return false;resetMission('patrol',payload||{},done);return true};
 api.reset=function(){if(state.active){state.active=false;state.started=false;host.classList.remove('show');cancelAnimationFrame(raf)};if(original.reset)return original.reset()};
 const fightBtn=document.getElementById('q17FightRoom');
 if(fightBtn)fightBtn.addEventListener('click',e=>{
@@ -390,6 +418,7 @@ window.Q17FieldMission=Object.freeze({
  isActive:()=>state.active,
  startCamp:(payload,done)=>resetMission('camp',payload,done),
  startGlobal:done=>resetMission('outbreak',{},done),
+ startPatrol:(payload,done)=>{if(state.active||original.isCombatActive())return false;resetMission('patrol',payload||{},done);return true;},
  startIsolation:count=>resetMission('isolation',{count},null)
 });
 })();
