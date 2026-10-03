@@ -98,69 +98,6 @@
   }
 
   function refactorLegacyControllers(html) {
-    const dashboardStart = '            function renderDashboards() {';
-    const dashboardEnd = '\n\n            function trackRecent(id) {';
-    const dashboardReplacement = `            function renderDashboards() {
-                if (window.KidscadeDashboard?.render?.({ age: currentAgeGroup })) {
-                    return;
-                }
-
-                // 초기 로딩 fallback. dashboard-recent.js가 준비되면 더 이상 cloneNode를 사용하지 않습니다.
-                const favList = document.getElementById('favorite-list'); const favSection = document.getElementById('favorite-section');
-                favList.innerHTML = ''; let favCount = 0;
-                favorites.forEach(id => {
-                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
-                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
-                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
-                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
-                        favList.appendChild(clone);
-                        originCard.querySelector('.fav-star').innerText = '★'; originCard.querySelector('.fav-star').classList.add('active');
-                        favCount++;
-                    }
-                });
-                if (favCount > 0) favSection.classList.remove('hidden'); else favSection.classList.add('hidden');
-
-                const recentList = document.getElementById('recent-list'); const recentSection = document.getElementById('recent-section');
-                recentList.innerHTML = ''; let recentCount = 0;
-                recents.forEach(id => {
-                    const originCard = document.querySelector(\`#game-list .game-card[data-id="${'${'}id}"]\`);
-                    if (originCard && originCard.getAttribute('data-age') === currentAgeGroup) {
-                        const clone = originCard.cloneNode(true); clone.className += ' mini-card';
-                        clone.addEventListener('click', function(e) { openGameModal(e, this); });
-                        recentList.appendChild(clone); recentCount++;
-                    }
-                });
-                if (recentCount > 0) recentSection.classList.remove('hidden'); else recentSection.classList.add('hidden');
-            }`;
-    html = replaceBetween(html, dashboardStart, dashboardEnd, dashboardReplacement);
-
-    const recentStart = '            function trackRecent(id) {';
-    const recentEnd = '\n\n            document.querySelectorAll(\'.fav-star\').forEach(star => {';
-    const recentReplacement = `            function trackRecent(id) {
-                const card = document.querySelector(\`.game-card[data-id="${'${'}id}"]\`);
-                if(card && card.classList.contains('disabled')) return;
-                if (window.KidscadeDashboard?.remember?.(id)) {
-                    recents = safeParseStorage('kidscade_recents', []);
-                    return;
-                }
-                recents = recents.filter(rId => rId !== id); recents.unshift(id);
-                if (recents.length > 4) recents.pop();
-                localStorage.setItem('kidscade_recents', JSON.stringify(recents)); renderDashboards();
-            }`;
-    html = replaceBetween(html, recentStart, recentEnd, recentReplacement);
-
-    const favoriteStart = "            document.querySelectorAll('.fav-star').forEach(star => {";
-    const favoriteEnd = '\n\n            gameCards.forEach(card => {';
-    const favoriteReplacement = `            // 즐겨찾기/최근 플레이의 쓰기는 dashboard-recent.js가 전담합니다.
-            // 남아 있는 초기 로딩 fallback 배열만 중앙 상태 변경 이벤트로 동기화합니다.
-            document.addEventListener('kidscade:favorites-changed', () => {
-                favorites = safeParseStorage('kidscade_favs', []);
-            });
-            document.addEventListener('kidscade:recents-changed', () => {
-                recents = safeParseStorage('kidscade_recents', []);
-            });`;
-    html = replaceBetween(html, favoriteStart, favoriteEnd, favoriteReplacement);
-
     const petScoreStart = '            function scoreCardForPetTalk(card) {';
     const petScoreEnd = '\n\n            function showPetRecommendations() {';
     const petScoreReplacement = `            function scoreCardForPetTalk(card) {
