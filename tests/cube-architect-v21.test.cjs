@@ -12,7 +12,7 @@ const html=read('games/cube3d/index.html');
 test('v21 avatar module and runtime parse',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(avatar));
-  assert.match(html,/cube-architect-avatar\.js\?v=20261003-29/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261003-30/);
   assert.ok(html.indexOf('cube-architect-avatar.js')<html.indexOf('cube-architect.js'));
 });
 
@@ -24,7 +24,7 @@ test('free world uses the shared Kidscade Pixel Avatar v1 state',()=>{
   assert.match(avatar,/CubeArchitectPixelAvatar/);
   assert.match(avatar,/CanvasTexture/);
   assert.match(avatar,/renderPreviewFrame/);
-  assert.match(avatar,/hairSet/);
+  assert.match(avatar,/hairId/);
   assert.match(avatar,/upper/);
   assert.match(avatar,/lower/);
   assert.match(js,/function refreshFreeAvatar/);
