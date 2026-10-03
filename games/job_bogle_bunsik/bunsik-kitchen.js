@@ -238,7 +238,7 @@ class RamenKitchen3D{
  }
  syncCounterVisual(group){
   const anchor=group?.userData?.itemAnchor;if(!anchor)return;
-  while(anchor.children.length){const n=anchor.children.pop();n.material?.map?.dispose?.();n.material?.dispose?.()}
+  while(anchor.children.length){const n=anchor.children[0];anchor.remove(n);n.material?.map?.dispose?.();n.material?.dispose?.()}
   if(group.userData.storedItem)anchor.add(this.makeItemSprite(group.userData.storedItem))
  }
  clearPrepCounters(){
