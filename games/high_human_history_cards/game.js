@@ -283,6 +283,9 @@ function reset(){
  spawnInitial();renderAll();
  const t=setInterval(()=>{
   if(!state.started||state.over)return;
+  state.worldTick++;
+  tickExpedition();
+  tickThreats();
   if(state.starving){
    if(tryRecoverMeal())return;
    state.hunger=Math.max(0,state.hunger-2.5);
@@ -365,7 +368,8 @@ function interactionClass(a,b){
  const node=worker.id===a.id?b:a;
  if(node.type==='bigTree')return worker.type==='lumberjack'?'drop-action':'';
  if(WORK_NODES.has(node.type))return 'drop-action';
- if(node.type==='deer'||node.type==='wildBoar')return worker.type==='hunter'?'drop-danger':'';
+ if(DANGERS.has(node.type))return worker.type==='hunter'?'drop-danger':'';
+ if(node.type==='deer')return worker.type==='hunter'?'drop-danger':'';
  if(node.type==='wildGoat')return worker.type==='herder'?'drop-action':'';
  return '';
 }
@@ -544,6 +548,18 @@ function workerAction(worker,node){
   if(worker.type!=='herder'){showToast('야생 염소는 끈을 다루는 목축민이 길들일 수 있어요.');return null;}
   return {ms:9000,label:'염소 길들이는 중',out:[['tamedGoat',1]],life:'herd',consumeNode:true,discover:'가축 길들이기'};
  }
+ if(node.type==='wolf'){
+  if(worker.type!=='hunter'){showToast('늑대는 준비된 사냥꾼이 상대해야 해요.');return null;}
+  return {ms:7200,label:'늑대 몰아내는 중',out:[['rawMeat',1],['rawHide',1]],life:'hunt',lifeGain:2,consumeNode:true,discover:'늑대 방어'};
+ }
+ if(node.type==='bear'){
+  if(worker.type!=='hunter'){showToast('곰은 사냥꾼 없이 상대하기 너무 위험해요.');return null;}
+  return {ms:11000,label:'곰과 대치 중',out:[['rawMeat',4],['rawHide',2],['bone',2]],life:'hunt',lifeGain:3,consumeNode:true,discover:'곰 사냥'};
+ }
+ if(node.type==='hostileBand'){
+  if(worker.type!=='hunter'){showToast('적대 집단과 맞서려면 사냥꾼이 필요해요. 교전을 피하고 방어를 준비할 수도 있어요.');return null;}
+  return {ms:12000,label:'적대 집단 막는 중',out:[['stone',2],['branch',2]],life:'hunt',lifeGain:2,consumeNode:true,discover:'정착지 방어'};
+ }
  const prod={
   milletPlot:{ms:7200,label:'조밭 돌보는 중',out:[['milletGrain',worker.type==='farmer'?2:1],['milletSeed',1]],life:'farm'},
   milletFarm:{ms:9400,label:'조 농장 수확 중',out:[['milletGrain',worker.type==='farmer'?4:3],['milletSeed',1]],life:'farm',lifeGain:3},
@@ -582,6 +598,9 @@ function specialAction(a,b){
  if(has('shellKnife','reedBed'))return {ms:4200,label:'조개칼로 섬유 베는 중',consume:null,preserve:null,out:[['fiber',2]],discover:'조개칼 채집',life:'hunt'};
  if(has('shellKnife','wildMillet'))return {ms:5000,label:'조개칼로 곡식 베는 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',1]],discover:'조개칼 수확',life:'farm'};
  if(has('groundAxe','clearedPlot'))return {ms:8500,label:'저수 웅덩이 파는 중',consume:'clearedPlot',preserve:'groundAxe',out:[['waterPit',1]],discover:'저수 웅덩이'};
+ if(has('pottery','strangerGroup'))return {ms:6000,label:'토기를 교환하는 중',consume:'pottery',preserve:'strangerGroup',out:[['milletSeed',1],['beanSeed',1]],discover:'이웃과 교환'};
+ if(has('smokedMeat','strangerGroup'))return {ms:6000,label:'보존식을 교환하는 중',consume:'smokedMeat',preserve:'strangerGroup',out:[['stone',2],['fiber',1]],discover:'먹거리 교환'};
+ if(has('shellOrnament','strangerGroup'))return {ms:6500,label:'장신구를 교환하는 중',consume:'shellOrnament',preserve:'strangerGroup',out:[['broomcornSeed',1],['cord',1]],discover:'장신구 교환'};
  return null;
 }
 
