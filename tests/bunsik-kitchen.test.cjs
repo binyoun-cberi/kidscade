@@ -13,9 +13,9 @@ const js = fs.readFileSync(path.join(gameDir, 'bunsik-kitchen.js'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
-test('Bunsik Kitchen v9 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=9/);
-  assert.match(html, /bunsik-kitchen\.js\?v=9/);
+test('Bunsik Kitchen v10 keeps the 3D kitchen visually dominant', () => {
+  assert.match(html, /bunsik-kitchen\.css\?v=10/);
+  assert.match(html, /bunsik-kitchen\.js\?v=10/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -32,36 +32,36 @@ test('Bunsik Kitchen module parses as JavaScript', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout || 'Bunsik Kitchen syntax check failed');
 });
 
-test('context actions only show what the selected pot can do now', () => {
-  assert.match(js, /function contextActionsForPot/);
-  assert.match(js, /function updateActionButtons/);
-  assert.match(js, /els\.dock\.innerHTML=''/);
-  assert.match(js, /return\['water'\]/);
-  assert.match(js, /return p\.noodleTime>=5\.5\?\['plate'\]/);
-  assert.match(js, /new Set\(\)/);
+test('context actions are tied to nearby physical stations instead of instant pot actions', () => {
+  assert.match(js, /function updateActionButtons\(\)/);
+  assert.match(js, /n\?\.type==='fridge'/);
+  assert.match(js, /n\?\.type==='sink'/);
+  assert.match(js, /n\?\.type==='pot'/);
+  assert.match(js, /dataset\.pick/);
+  assert.match(js, /pickIngredient\(id\)/);
+  assert.doesNotMatch(js, /const actionKeys=\{Digit1:/);
 });
 
-test('plating is an animated physical transfer instead of an instant state swap', () => {
+test('plating animates into a meal carried by the player', () => {
   assert.match(js, /makeServiceStation\(\)/);
-  assert.match(js, /serving-tray\.glb/);
   assert.match(js, /ramen\.glb/);
   assert.match(js, /animatePlate\(index,onDone\)/);
   assert.match(js, /p\.plating=true/);
   assert.match(js, /state\.tray=\{recipeId:recipe\.id[\s\S]*ready:false/);
-  assert.match(js, /state\.tray\.ready=true/);
-  assert.match(js, /kitchen\.setTrayMeal\(true\)/);
+  assert.match(js, /const meal=\{kind:'meal'/);
+  assert.match(js, /setHeldItem\(meal\)/);
+  assert.match(js, /kitchen\.setTrayMeal\(false\)/);
 });
 
-test('serving requires dragging the tray onto a customer order bubble', () => {
-  assert.match(html, /id="trayBtn" class="serve-drag hidden"/);
-  assert.match(js, /trayDrag=null/);
-  assert.match(js, /trayBtn\.addEventListener\('pointerdown'/);
-  assert.match(js, /addEventListener\('pointermove'/);
-  assert.match(js, /document\.elementFromPoint/);
-  assert.match(js, /closest\?\.\('\[data-order\]'/);
-  assert.match(js, /serveOrder\(Number\(order\.dataset\.order\)\)/);
+test('serving is now a direct carry interaction at the service counter', () => {
+  assert.match(html, /id="heldStatus"/);
+  assert.match(js, /function serveHeldMeal\(\)/);
+  assert.match(js, /state\.heldItem\?\.kind==='meal'/);
+  assert.match(js, /type:'service'/);
+  assert.match(js, /if\(n\.type==='service'\)\{serveHeldMeal\(\);return\}/);
   assert.match(js, /animateServe\(slot,onDone\)/);
   assert.match(js, /customerReact\(slot\)/);
+  assert.match(css, /\.serve-drag\{display:none!important/);
 });
 
 test('orders are compact customer speech bubbles rather than dashboard cards', () => {
@@ -108,18 +108,18 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
   assert.match(js, /CUSTOMER_MODELS/);
 });
 
-test('catalog and compatibility entry publish v9', () => {
+test('catalog and compatibility entry publish v10', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=9');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=10');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=9/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=9/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=10/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=10/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
-test('Bunsik Kitchen build script publishes v9', () => {
+test('Bunsik Kitchen build script publishes v10', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=9/);
+  assert.match(build,/\?v=10/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
@@ -127,7 +127,7 @@ test('Bunsik Kitchen build script publishes v9', () => {
 
 
 
-test('Bunsik Kitchen v9 adds a PlateUp-style prep phase and movable layout stations', () => {
+test('Bunsik Kitchen v10 adds a PlateUp-style prep phase and movable layout stations', () => {
   assert.match(html, /id="prepBar" class="prep-bar hidden"/);
   assert.match(html, /id="openShopBtn"/);
   assert.match(html, /id="stationHint"/);
@@ -143,7 +143,7 @@ test('Bunsik Kitchen v9 adds a PlateUp-style prep phase and movable layout stati
   assert.match(css, /\.layout-mode #gameCanvas/);
 });
 
-test('Bunsik Kitchen v9 uses committed CC0 restaurant assets for sink, fridge and dish rack', () => {
+test('Bunsik Kitchen v10 uses committed CC0 restaurant assets for sink, fridge and dish rack', () => {
   const required = [
     'assets/game/3d/bakery/restaurant-bits/kitchencounter-sink.glb',
     'assets/game/3d/bakery/restaurant-bits/fridge-a.glb',
@@ -157,7 +157,7 @@ test('Bunsik Kitchen v9 uses committed CC0 restaurant assets for sink, fridge an
   assert.match(js, /'plate-dirty\.glb'/);
 });
 
-test('Bunsik Kitchen v9 adds player movement and proximity interaction', () => {
+test('Bunsik Kitchen v10 adds player movement and proximity interaction', () => {
   assert.match(html, /id="moveControls"/);
   assert.match(html, /data-move="ArrowUp"/);
   assert.match(html, /data-interact/);
@@ -171,7 +171,7 @@ test('Bunsik Kitchen v9 adds player movement and proximity interaction', () => {
   assert.match(css, /\.move-controls\{/);
 });
 
-test('Bunsik Kitchen v9 turns plates into a reusable washing bottleneck', () => {
+test('Bunsik Kitchen v10 turns plates into a reusable washing bottleneck', () => {
   assert.match(html, /id="dishStatus"/);
   assert.match(js, /cleanPlates:3,dirtyPlates:0/);
   assert.match(js, /if\(state\.cleanPlates<=0\)/);
@@ -195,4 +195,35 @@ test('Bunsik Kitchen delegates restaurant state to the shared engine', () => {
   assert.match(js, /restaurant\.tick\(dt,\{/);
   assert.match(js, /restaurant\.startShift\(/);
   assert.match(js, /restaurant\.stopShift\(\)/);
+});
+
+
+test('Bunsik Kitchen v10 enforces a one-item carry invariant', () => {
+  assert.match(js, /heldItem:null/);
+  assert.match(js, /function setHeldItem\(item\)/);
+  assert.match(js, /if\(state\.heldItem\)\{toast\('한 번에 하나만 들 수 있어요/);
+  assert.match(js, /function pickIngredient\(id\)/);
+  assert.match(js, /function insertHeldIntoPot\(index\)/);
+  assert.match(js, /setHeldItem\(null\)/);
+  assert.match(js, /setCarryVisual\(item\)/);
+  assert.match(html, /id="heldStatus"/);
+  assert.match(css, /\.held-status\{/);
+});
+
+test('Bunsik Kitchen v10 tutorial follows sink fridge pot and service-counter travel', () => {
+  assert.match(js, /싱크로 가서 E로 물을 받아/);
+  assert.match(js, /냉장고에서 E로 면을 꺼내/);
+  assert.match(js, /냉장고에서 스프를 꺼내/);
+  assert.match(js, /냉장고에서 계란을 꺼내/);
+  assert.match(js, /완성 라면을 들고 배식대로 이동해 E로 서빙/);
+  assert.match(js, /function recommendedCarryIngredient\(\)/);
+});
+
+test('Bunsik Kitchen v10 no longer exposes instant ingredient keyboard shortcuts', () => {
+  assert.doesNotMatch(js, /Digit1:'water'/);
+  assert.doesNotMatch(js, /Digit2:'noodle'/);
+  assert.doesNotMatch(js, /Digit3:'soup'/);
+  assert.doesNotMatch(js, /Digit4:'egg'/);
+  assert.match(js, /KeyE/);
+  assert.match(js, /Space/);
 });
