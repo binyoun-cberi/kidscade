@@ -114,7 +114,15 @@
     }
 
     function init(options = {}) {
-      if (initialized) return;
+      if (initialized) {
+        const hadAgeChange = typeof callbacks.onAgeChange === 'function';
+        callbacks = { ...callbacks, ...options };
+        if (age && !hadAgeChange && typeof callbacks.onAgeChange === 'function') {
+          try { callbacks.onAgeChange(age); }
+          catch (error) { console.error?.('[KidscadeAgeNavigation] late onAgeChange failed:', error); }
+        }
+        return;
+      }
       initialized = true;
       callbacks = options;
       let saved;
