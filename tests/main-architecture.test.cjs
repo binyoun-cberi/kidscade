@@ -146,34 +146,40 @@ test('dashboard exclusively owns quick-hub and favorite/recent state APIs', () =
   assert.match(dashboard, /kidscade:dashboard-rendered/);
 });
 
-test('dashboard owns favorite mutation and bootstrap removes legacy per-star listeners', () => {
+test('dashboard owns favorite mutation without bootstrap text surgery', () => {
   const dashboard = read('dashboard-recent.js');
+  const base = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(dashboard, /function\s+toggleFavorite\s*\(/);
   assert.match(dashboard, /function\s+bindFavoriteActions\s*\(/);
   assert.match(dashboard, /addEventListener\('click',[\s\S]*?true\)/);
-  assert.match(bootstrap, /favoriteStart/);
-  assert.match(bootstrap, /kidscade:favorites-changed/);
-  assert.match(bootstrap, /kidscade:recents-changed/);
-  assert.match(bootstrap, /즐겨찾기\/최근 플레이의 쓰기는 dashboard-recent\.js가 전담/);
+  assert.match(base, /KidscadeDashboard\?\.render/);
+  assert.match(base, /KidscadeDashboard\?\.remember/);
+  assert.match(base, /kidscade:favorites-changed/);
+  assert.match(base, /kidscade:recents-changed/);
+  assert.doesNotMatch(bootstrap, /dashboardStart|recentStart|favoriteStart/);
+  assert.doesNotMatch(bootstrap, /dashboardReplacement|recentReplacement|favoriteReplacement/);
 });
 
-test('pet recommendation scoring is catalog/state driven instead of card-DOM driven', () => {
+test('pet recommendation scoring is catalog/state driven without bootstrap rewriting', () => {
   const recommendation = read('game-recommendations.js');
+  const base = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(recommendation, /function\s+scoreGame\s*\(/);
   assert.match(recommendation, /function\s+scoreCurrent\s*\(/);
   assert.match(recommendation, /KidscadeDashboard/);
   assert.doesNotMatch(recommendation, /querySelector|getAttribute|\.game-card/);
-  assert.match(bootstrap, /KidscadeRecommendations\?\.scoreCurrent/);
-  assert.match(bootstrap, /KidscadeGames\?\.get/);
+  assert.match(base, /KidscadeRecommendations\?\.scoreCurrent/);
+  assert.match(base, /KidscadeGames\?\.get/);
   assert.match(bootstrap, /game-recommendations\.js/);
+  assert.doesNotMatch(bootstrap, /petScoreStart|petScoreReplacement/);
 });
 
-test('game launcher owns modal session lifecycle and reward calculation', () => {
+test('game launcher owns modal session lifecycle and source-owned bridge wiring', () => {
   const launcher = read('game-launcher.js');
+  const base = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(launcher, /function\s+calculateReward\s*\(/);
@@ -182,12 +188,13 @@ test('game launcher owns modal session lifecycle and reward calculation', () => 
   assert.match(launcher, /bridge\.remember/);
   assert.match(launcher, /bridge\.checkpointPlayTime/);
   assert.match(launcher, /bridge\.recordGardenSession/);
-  assert.match(bootstrap, /const\s+gameLauncherBridge\s*=/);
-  assert.match(bootstrap, /KidscadeGameLauncher\.open/);
-  assert.match(bootstrap, /KidscadeGameLauncher\.close/);
-  assert.match(bootstrap, /kidscade:close-game/);
-  assert.match(bootstrap, /event\.source !== gameIframe\.contentWindow/);
+  assert.match(base, /const\s+gameLauncherBridge\s*=/);
+  assert.match(base, /KidscadeGameLauncher\.open/);
+  assert.match(base, /KidscadeGameLauncher\.close/);
+  assert.match(base, /kidscade:close-game/);
+  assert.match(base, /event\.source !== gameIframe\.contentWindow/);
   assert.match(bootstrap, /game-launcher\.js/);
+  assert.doesNotMatch(bootstrap, /launcherStart|launcherReplacement/);
 });
 
 test('composed page has exactly one card per catalog entry, including injected legacy games', async () => {
@@ -236,8 +243,18 @@ test('migrated games obey every age, subject and search combination', () => {
 });
 
 
-test('bootstrap accepts Game SDK lifecycle messages only from the active iframe', () => {
-  const source = read('main-bootstrap.js');
+test('filter delegation is source-owned and no longer patched by bootstrap text surgery', () => {
+  const base = read('index_base.html');
+  const bootstrap = read('main-bootstrap.js');
+  assert.match(base, /window\.KidscadeFilter\?\.apply\?\.\(/);
+  assert.match(base, /genre:\s*document\.body\.dataset\.kidscadeGenre/);
+  assert.doesNotMatch(bootstrap, /const filterStart =/);
+  assert.doesNotMatch(bootstrap, /filterReplacement/);
+});
+
+
+test('source-owned launcher bridge accepts Game SDK lifecycle messages only from the active iframe', () => {
+  const source = read('index_base.html');
   assert.match(source, /event\.origin !== location\.origin/);
   assert.match(source, /event\.source !== gameIframe\.contentWindow/);
   assert.match(source, /kidscade:close-game/);
@@ -247,20 +264,30 @@ test('bootstrap accepts Game SDK lifecycle messages only from the active iframe'
 
 
 test('common game start screen owns deferred launch and shared errors', () => {
+  const base = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
   const launcher = read('game-launcher.js');
   const frame = read('game-frame-shell.js');
 
   assert.match(bootstrap, /game-frame-shell\.js/);
   assert.match(bootstrap, /home-v2\.js/);
-  assert.match(bootstrap, /deferLaunch:\s*true/);
-  assert.match(bootstrap, /KidscadeGameFrame\?\.open/);
-  assert.match(bootstrap, /kidscade:game-error/);
+  assert.match(base, /deferLaunch:\s*true/);
+  assert.match(base, /KidscadeGameFrame\?\.open/);
+  assert.match(base, /kidscade:game-error/);
   assert.match(launcher, /bridge\.deferLaunch === true/);
   assert.match(launcher, /const\s+activate\s*=\s*\(\)\s*=>/);
   assert.match(frame, /LOAD_TIMEOUT_MS = 15000/);
   assert.match(frame, /게임을 불러오지 못했어요/);
   assert.match(frame, /다시 불러오기/);
+});
+
+
+test('bootstrap no longer rewrites legacy controller source text', () => {
+  const bootstrap = read('main-bootstrap.js');
+  assert.doesNotMatch(bootstrap, /function\s+replaceBetween\s*\(/);
+  assert.doesNotMatch(bootstrap, /function\s+refactorLegacyControllers\s*\(/);
+  assert.doesNotMatch(bootstrap, /filterStart|dashboardStart|recentStart|favoriteStart|petScoreStart|launcherStart/);
+  assert.doesNotMatch(bootstrap, /Replacement\s*=/);
 });
 
 
