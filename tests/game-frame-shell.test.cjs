@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const frame = require('../game-frame-shell.js');
+const fs = require('node:fs');
+const path = require('node:path');
+const source = fs.readFileSync(path.resolve(__dirname, '../game-frame-shell.js'), 'utf8');
 
 test('common game frame formats concise start metadata', () => {
   assert.deepEqual(frame.formatMetadata({
@@ -22,4 +25,14 @@ test('common game frame exposes start, retry, error and state APIs', () => {
     assert.equal(typeof frame[name], 'function', `${name} must be available`);
   }
   assert.equal(frame.getState().status, 'idle');
+});
+
+
+test('common game frame silences child and shared audio before iframe disposal', () => {
+  assert.match(source, /function\s+silenceFrameAudio\s*\(/);
+  assert.match(source, /kidscade:game-exit/);
+  assert.match(source, /querySelectorAll\?\.\('audio,video'\)/);
+  assert.match(source, /KidscadeAudio\?\.stopAll/);
+  assert.match(source, /silenceFrameAudio\(refs\.iframe, 'reset'\)/);
+  assert.match(source, /silenceFrameAudio\(refs\.iframe, 'reload'\)/);
 });
