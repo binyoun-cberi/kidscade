@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="bunsik-kitchen.css?v=12">
+<link rel="stylesheet" href="bunsik-kitchen.css?v=13">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 </head>
@@ -17,6 +17,7 @@
       <span>⏱ <b id="time">150</b></span>
       <span class="served-stat">🍜 <b id="served">0</b></span>
       <span id="dishStatus" class="dish-stat">🥣 <b>3</b><small>깨끗</small> · 🧼 <b>0</b><small>더러움</small></span>
+      <button id="helperBtn" class="helper-toggle hidden" type="button" aria-label="알바생 자동 운반 켜기/끄기">👨‍🍳 OFF</button>
       <button id="soundBtn" type="button" aria-label="소리 켜기/끄기">♪</button>
     </div>
   </header>
@@ -68,9 +69,9 @@
   <div class="start-card">
     <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>영업 전에 주방을 배치하고, 재료를 한 번에 하나씩 운반해요. 조리대에는 재료나 완성 라면을 한 개씩 미리 내려둘 수 있어 왕복 동선을 줄일 수 있어요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
+    <p>영업 전에 주방을 배치하고, 재료를 한 번에 하나씩 운반해요. 조리대에 재료를 미리 두면 첫 그릇 뒤 합류하는 알바생이 필요한 냄비까지 옮겨줘요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
     <div class="flow-demo">
-      <span>🧱<b>주방 배치</b></span><i>→</i><span>🧺<b>조리대 준비</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🍜<b>직접 서빙</b></span>
+      <span>🧱<b>주방 배치</b></span><i>→</i><span>🧺<b>재료 준비</b></span><i>→</i><span>👨‍🍳<b>알바 운반</b></span><i>→</i><span>🍜<b>직접 서빙</b></span>
     </div>
     <div class="recipe-board">
       <div><b>계란 라면</b><span>🍜 🟥 🥚</span></div>
@@ -96,6 +97,6 @@
   </div>
 </div>
 
-<script type="module" src="bunsik-kitchen.js?v=12"></script>
+<script type="module" src="bunsik-kitchen.js?v=13"></script>
 </body>
 </html>
