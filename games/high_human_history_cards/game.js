@@ -36,7 +36,7 @@
   };
 
   const state = {
-    started:false, over:false, day:1, mealLeft:45, z:20, id:0, cards:new Map(),
+    started:false, over:false, day:1, mealLeft:45, z:20, id:0, runId:0, cards:new Map(),
     discoveries:new Set(), branch:null, branchCount:0, branchStartedAt:0,
     flags:{berry:false,handaxe:false,hunted:false,cooked:false,shelter:false},
     stats:{crafted:0,gathered:0,meals:0,discoveries:0},
@@ -61,7 +61,7 @@
   ]);
 
   function resetState(){
-    state.started = true; state.over = false; state.day = 1; state.mealLeft = 45; state.z = 20; state.id = 0;
+    state.runId += 1; state.started = true; state.over = false; state.day = 1; state.mealLeft = 45; state.z = 20; state.id = 0;
     state.cards.clear(); state.discoveries.clear(); state.branch = null; state.branchCount = 0;
     state.flags = {berry:false,handaxe:false,hunted:false,cooked:false,shelter:false};
     state.stats = {crafted:0,gathered:0,meals:0,discoveries:0};
@@ -191,10 +191,11 @@
   }
 
   function runAction(worker,node,def){
+    const runId=state.runId;
     worker.busy=true; node.busy=true; markBusy(worker,def.label,def.ms); markBusy(node,def.label,def.ms);
     snapTogether(worker,node);
     setTimeout(()=>{
-      if(state.over)return;
+      if(state.over || runId!==state.runId)return;
       worker.busy=false; worker.el.classList.remove('busy'); worker.el.querySelector('.workTag').textContent='진행 중…';
       if(def.consumeNode){removeCard(node);}else{node.busy=false;node.el.classList.remove('busy');node.el.querySelector('.workTag').textContent='진행 중…';}
       const bx=(worker.x+(def.consumeNode?0:node.x))/ (def.consumeNode?1:2);
@@ -209,9 +210,10 @@
   }
 
   function runProcessing(station,input,def){
+    const runId=state.runId;
     station.busy=true; input.busy=true; markBusy(station,def.label,def.ms); markBusy(input,def.label,def.ms); snapTogether(input,station);
     setTimeout(()=>{
-      if(state.over)return;
+      if(state.over || runId!==state.runId)return;
       station.busy=false;station.el.classList.remove('busy');station.el.querySelector('.workTag').textContent='진행 중…';
       const x=station.x+112,y=station.y+15; removeCard(input);
       def.out.forEach((t,i)=>addCard(t,x+(i*18),y+(i*28)));
@@ -262,7 +264,7 @@
 
   function checkMilestones(){
     if(state.flags.berry && state.flags.handaxe && state.flags.hunted && state.flags.cooked && state.flags.shelter && !state.branch){
-      setTimeout(()=>{if(!state.branch&&!state.over)$('#branchLayer').classList.remove('hidden');},500);
+      const runId=state.runId; setTimeout(()=>{if(runId===state.runId&&!state.branch&&!state.over)$('#branchLayer').classList.remove('hidden');},500);
     }
   }
 
