@@ -610,6 +610,8 @@ function specialAction(a,b){
  if(has('pottery','strangerGroup'))return {ms:6000,label:'토기를 교환하는 중',consume:'pottery',preserve:'strangerGroup',out:[['milletSeed',1],['beanSeed',1]],discover:'이웃과 교환',trade:true};
  if(has('smokedMeat','strangerGroup'))return {ms:6000,label:'보존식을 교환하는 중',consume:'smokedMeat',preserve:'strangerGroup',out:[['stone',2],['fiber',1]],discover:'먹거리 교환',trade:true};
  if(has('shellOrnament','strangerGroup'))return {ms:6500,label:'장신구를 교환하는 중',consume:'shellOrnament',preserve:'strangerGroup',out:[['broomcornSeed',1],['cord',1]],discover:'장신구 교환',trade:true};
+ if(has('porridge','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'porridge',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
+ if(has('smokedMeat','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'smokedMeat',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
  return null;
 }
 
@@ -701,6 +703,7 @@ function depleteLooseNode(node){
 function runSpecial(a,b,d){
  const run=state.runId,tradeGroup=d.trade?[a,b].find(c=>c.type==='strangerGroup'):null;
  if(d.trade&&tradeGroup&&(tradeGroup.tradeRemaining??3)<=0){showToast('이 집단은 교환을 마치고 떠날 준비를 하고 있어요.');return;}
+ if(d.recruit&&population()>=populationCapacity()){showToast('🏠 주거가 부족합니다. 천막·움집·마을을 더 마련하세요.');return;}
  a.busy=true;b.busy=true;markBusy(a,d.label,d.ms);markBusy(b,d.label,d.ms);snap(a,b);
  setTimeout(()=>{if(state.over||run!==state.runId)return;
   [a,b].forEach(c=>{if(state.cards.has(c.id)){c.busy=false;c.el.classList.remove('busy');}});
@@ -753,6 +756,16 @@ function checkMilestone(){
 
 function foodUnits(){let n=0;for(const c of state.cards.values())n+=(C[c.type].food||0)*c.count;return n;}
 function population(){let n=0;for(const c of state.cards.values())if(isWorker(c.type))n+=c.count;return n;}
+function populationCapacity(){
+ let cap=2;
+ for(const c of state.cards.values()){
+  if(c.type==='hideTent')cap+=c.count;
+  else if(c.type==='pitHouse')cap+=c.count;
+  else if(c.type==='camp')cap+=2*c.count;
+  else if(c.type==='village')cap+=3*c.count;
+ }
+ return Math.max(2,cap);
+}
 function consumeFood(need){
  const piles=[...state.cards.values()].filter(c=>C[c.type].food).sort((a,b)=>(C[a.type].food||1)-(C[b.type].food||1));
  let left=need;
@@ -911,7 +924,7 @@ function renderExpedition(){
 }
 function renderHud(){
  const food=foodUnits(),pop=population(),free=availableExplorer();
- ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop;
+ ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop+'/'+populationCapacity();
  ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();ui.defense.textContent=defensePower();
  ui.explore.disabled=!!state.expedition||food<1||state.starving;
  ui.explore.innerHTML=state.expedition?'<span>🧭</span><b>탐험 중</b><small>'+state.expedition.remaining+'초</small>':'<span>🧭</span><b>주변 탐색</b><small>사람 1 · 식량 1</small>';
@@ -951,7 +964,8 @@ function renderQuests(){
   ['간돌도끼 같은 간석기를 만든다',has('groundAxe')],
   ['빗살무늬토기를 굽는다',has('combPottery')||has('storageJars')],
   ['농장·어장·목장·양식장 중 하나를 성장시킨다',has('milletFarm')||has('broomcornFarm')||has('beanFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')||has('fishPond')],
-  ['정착도 9 이상',settlementScore()>=9]
+  ['정착도 9 이상',settlementScore()>=9],
+  ['주거를 늘려 인구 상한을 3명 이상 만든다',populationCapacity()>=3]
  ];
  ui.questList.innerHTML=q.map(x=>'<div class="quest '+(x[1]?'done':'')+'"><i>'+(x[1]?'✓':'·')+'</i><span>'+x[0]+'</span></div>').join('');
 }
@@ -960,7 +974,7 @@ function renderGoal(){
  if(!has('campfire')){ui.goalTitle.textContent='첫 생활 기술 만들기';ui.goalText.textContent='작은 나무에서 나뭇가지를 모으고 돌을 다듬어 기본 도구를 만드세요.';ui.hint.textContent='사람+작은 나무 → 나뭇가지 · 돌×2 → 찍개 · 찍개+나뭇가지 → 돌도끼';return;}
  if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
  if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='자원이 고갈되면 사람을 탐험에 보내 새 터를 찾고, 잡곡 농경·어로·목축을 연결하세요.';ui.hint.textContent='탐험 → 새 자원·동물 · 조·기장·콩밭×3 → 농장 · 울타리는 맹수 방어에도 도움';return;}
- ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 더 먼 탐험과 다른 집단과의 교환, 맹수·적대 집단에 대한 방어가 필요합니다.';ui.hint.textContent='탐험으로 낯선 집단을 만나 교환하거나, 울타리·마을·사냥꾼으로 위협에 대비하세요.';
+ ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 탐험·교환·방어와 함께 주거를 늘려 더 많은 일손을 받아들일 수 있습니다.';ui.hint.textContent='마을+곡물죽/훈제고기 → 새 구성원 · 천막·움집·마을은 인구 상한을 늘림';
 }
 
 let toastTimer;
