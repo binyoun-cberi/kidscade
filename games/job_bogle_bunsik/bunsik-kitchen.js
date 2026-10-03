@@ -7,6 +7,7 @@ const PEOPLE=new URL('../../assets/game/characters/people/',import.meta.url).hre
 const KITCHEN=new URL('../../assets/game/3d/interiors/charming-kitchen-set/',import.meta.url).href;
 const SUSHI=new URL('../../assets/game/3d/interiors/modular-sushi-restaurant-kit/',import.meta.url).href;
 const BAKERY=new URL('../../assets/game/3d/bakery/interior/',import.meta.url).href;
+const BAKERY_BITS=new URL('../../assets/game/3d/bakery/restaurant-bits/',import.meta.url).href;
 
 const SHIFT_SECONDS=120;
 const TARGET_REVENUE=6500;
@@ -36,7 +37,8 @@ const els={
  selected:$('#selectedAction'),trayBtn:$('#trayBtn'),trayText:$('#trayText'),trayQuality:$('#trayQuality'),dock:$('#actionDock'),
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
- endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn')
+ endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls')
 };
 
 function newPot(i){
@@ -44,7 +46,8 @@ function newPot(i){
 }
 let restaurant=null;
 const state={
- running:false,sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
+ running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
+ cleanPlates:3,dirtyPlates:0,washing:false,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
  get time(){return restaurant?.shift.remaining??SHIFT_SECONDS},
@@ -106,15 +109,21 @@ class RamenKitchen3D{
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(5.25,.92,2.65);
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
+  this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
+  this.player=null;this.playerRing=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];
 
   this.makeLights();
   this.makeRoom();
   this.makeBurners();
   this.makeKitchenProps();
+  this.makePlateupStations();
   this.makeCustomers();
   this.makeServiceStation();
+  this.makePlayer();
   this.resize();
   addEventListener('resize',()=>this.resize(),{passive:true});
+  canvas.addEventListener('pointerdown',e=>this.pointerDown(e));
+  canvas.addEventListener('pointermove',e=>this.pointerMove(e));
   canvas.addEventListener('pointerup',e=>this.pointerUp(e));
  }
  material(color,opt={}){return new THREE.MeshStandardMaterial({color,roughness:opt.roughness??.72,metalness:opt.metalness??0,transparent:!!opt.transparent,opacity:opt.opacity??1,emissive:opt.emissive??0x000000,emissiveIntensity:opt.emissiveIntensity??0})}
@@ -197,8 +206,6 @@ class RamenKitchen3D{
   const tex=new THREE.CanvasTexture(c);const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});const sp=new THREE.Sprite(mat);sp.scale.set(1.6,.5,1);return sp
  }
  makeKitchenProps(){
-  this.placeModel(SUSHI,'counter-sink.glb',2.2,-6.25,.02,-1.8,Math.PI/2);
-  this.placeModel(SUSHI,'can-fridge.glb',2.45,-6.45,.02,2.65,Math.PI/2);
   this.placeModel(SUSHI,'counter-straight.glb',2.2,6.35,.02,-1.8,-Math.PI/2);
   this.placeModel(SUSHI,'counter-straight.glb',2.2,6.35,.02,1.0,-Math.PI/2);
   this.placeModel(SUSHI,'table.glb',2.15,-5.0,.02,4.2,0);
@@ -208,6 +215,101 @@ class RamenKitchen3D{
   this.placeModel(SUSHI,'plate.glb',.46,5.95,.92,1.0,0);
   this.placeModel(KITCHEN,'spatula.glb',.7,6.2,.92,1.6,.3);
  }
+ makeLayoutStation(id,label,root,file,size,x,z,rot=0){
+  const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=rot;holder.userData.stationId=id;this.scene.add(holder);
+  const pick=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.7,1.8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+  pick.position.y=.8;pick.userData.layoutStation=holder;holder.add(pick);this.stationPickables.push(pick);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.72,.9,32),new THREE.MeshBasicMaterial({color:0x5bd0ff,transparent:true,opacity:.0,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.02;holder.add(ring);holder.userData.ring=ring;
+  const tag=this.makeTextSprite(label);tag.position.set(0,1.8,0);tag.scale.set(1.25,.4,1);holder.add(tag);
+  this.loadModel(root,file,size).then(o=>{if(o)holder.add(o)});
+  this.layoutStations.push({id,label,group:holder});
+  return holder
+ }
+ makePlateupStations(){
+  const sink=this.makeLayoutStation('sink','싱크 · 설거지',BAKERY_BITS,'kitchencounter-sink.glb',2.05,-5.7,-1.7,Math.PI/2);
+  this.makeLayoutStation('fridge','재료 냉장고',BAKERY_BITS,'fridge-a.glb',2.1,-5.85,2.4,Math.PI/2);
+  this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2);
+  const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
+  this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
+   if(!model)return;
+   for(let i=0;i<5;i++){const plate=model.clone(true);plate.position.set(0,i*.07,0);plate.visible=false;dirtyGroup.add(plate);this.dirtyPlateModels.push(plate)}
+   this.syncDishVisuals()
+  });
+ }
+ makePlayer(){
+  const root=this.player=new THREE.Group();root.position.set(0,0,3.45);this.scene.add(root);
+  const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.38,.5,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
+  const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.72,5,10),this.material(0xe4634d,{roughness:.75}));fallback.position.y=.72;root.add(fallback);root.userData.fallback=fallback;
+  this.loadModel(PEOPLE,'character-female-b.glb',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
+ }
+ setMoveKey(code,on){if(on)this.moveKeys.add(code);else this.moveKeys.delete(code)}
+ updatePointer(e){
+  const r=this.canvas.getBoundingClientRect();this.pointer.x=((e.clientX-r.left)/r.width)*2-1;this.pointer.y=-((e.clientY-r.top)/r.height)*2+1;this.raycaster.setFromCamera(this.pointer,this.camera)
+ }
+ pointerDown(e){
+  if(state.phase!=='prep')return;
+  this.updatePointer(e);
+  const hit=this.raycaster.intersectObjects(this.stationPickables,false)[0];if(!hit)return;
+  this.dragLayout=hit.object.userData.layoutStation||null;this.selectedLayoutStation=this.dragLayout;
+  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=s.group===this.selectedLayoutStation?.userData?.layoutStation?.group?1:(s.group===this.selectedLayoutStation?1:0)});
+  this.canvas.setPointerCapture?.(e.pointerId);document.body.classList.add('layout-dragging');e.preventDefault()
+ }
+ pointerMove(e){
+  if(state.phase!=='prep'||!this.dragLayout)return;
+  this.updatePointer(e);
+  const p=new THREE.Vector3(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+  if(!this.raycaster.ray.intersectPlane(plane,p))return;
+  const x=Math.max(-6.2,Math.min(6.2,Math.round(p.x*2)/2)),z=Math.max(-2.25,Math.min(3.7,Math.round(p.z*2)/2));
+  const blocked=this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.45)||
+   this.layoutStations.some(s=>s.group!==this.dragLayout&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<1.45)||
+   (this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<1.45);
+  if(!blocked)this.dragLayout.position.set(x,0,z);
+ }
+ stationDistance(group){return this.player?Math.hypot(group.position.x-this.player.position.x,group.position.z-this.player.position.z):999}
+ updatePlayer(dt){
+  if(!this.player)return;
+  const canMove=state.phase==='service';
+  let dx=0,dz=0;
+  if(canMove){
+   if(this.moveKeys.has('KeyA')||this.moveKeys.has('ArrowLeft'))dx-=1;
+   if(this.moveKeys.has('KeyD')||this.moveKeys.has('ArrowRight'))dx+=1;
+   if(this.moveKeys.has('KeyW')||this.moveKeys.has('ArrowUp'))dz-=1;
+   if(this.moveKeys.has('KeyS')||this.moveKeys.has('ArrowDown'))dz+=1;
+  }
+  if(dx||dz){
+   const len=Math.hypot(dx,dz)||1,speed=3.25;dx/=len;dz/=len;
+   this.player.position.x=Math.max(-7.15,Math.min(7.15,this.player.position.x+dx*speed*dt));
+   this.player.position.z=Math.max(-2.85,Math.min(4.55,this.player.position.z+dz*speed*dt));
+   this.player.rotation.y=Math.atan2(dx,dz);
+  }
+  const candidates=[
+   ...this.layoutStations.map(s=>({type:s.id,label:s.label,group:s.group})),
+   ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i}))
+  ];
+  let nearest=null,best=1.55;
+  candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
+  this.nearestStation=nearest;
+  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=state.phase==='prep' ? .55 : (nearest?.group===s.group ? .88 : 0)});
+  if(els.stationHint){
+   if(state.phase==='prep')els.stationHint.textContent='가구를 드래그해 주방 동선을 바꿔 보세요';
+   else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
+   else if(nearest.type==='sink')els.stationHint.textContent=state.dirtyPlates?'E · 더러운 접시 씻기':'싱크 · 더러운 접시가 없어요';
+   else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
+   else if(nearest.type==='fridge')els.stationHint.textContent='재료 냉장고 · 조리 재료 보관';
+   else els.stationHint.textContent='E · '+nearest.label+' 선택';
+  }
+ }
+ interactNearest(){
+  if(state.phase!=='service')return;
+  const n=this.nearestStation;if(!n){toast('가까운 조리대나 싱크로 이동해 주세요');return}
+  if(n.type==='pot'){this.setSelectedPot(n.potIndex);return}
+  if(n.type==='sink'){washOnePlate();return}
+  if(n.type==='rack'){toast('깨끗한 접시 '+state.cleanPlates+'개 · 라면을 담을 때 하나 사용해요',1500);return}
+  if(n.type==='fridge'){toast('냉장고에서 면·스프·토핑을 꺼내 쓰는 운반 시스템은 다음 단계에서 연결돼요',1600)}
+ }
+ syncDishVisuals(){this.dirtyPlateModels.forEach((m,i)=>{m.visible=i<Math.min(5,state.dirtyPlates)})}
  makeCustomers(){
   this.customerXs.forEach((x,i)=>{
    const file=CUSTOMER_MODELS[i%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
@@ -282,9 +384,9 @@ class RamenKitchen3D{
   renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons()
  }
  pointerUp(e){
-  if(!state.running)return;
-  const r=this.canvas.getBoundingClientRect();this.pointer.x=((e.clientX-r.left)/r.width)*2-1;this.pointer.y=-((e.clientY-r.top)/r.height)*2+1;
-  this.raycaster.setFromCamera(this.pointer,this.camera);
+  if(this.dragLayout){this.dragLayout=null;document.body.classList.remove('layout-dragging');return}
+  if(!state.running||state.phase!=='service')return;
+  this.updatePointer(e);
   const hit=this.raycaster.intersectObjects(this.pickables,false)[0];
   if(!hit)return;
   this.setSelectedPot(hit.object.userData.potIndex);
@@ -296,6 +398,7 @@ class RamenKitchen3D{
  }
  update(dt){
   this.clock+=dt;
+  this.updatePlayer(dt);
   state.pots.forEach((p,i)=>{
    const v=this.potVisuals[i];if(!v)return;
    const boiling=p.water>.05&&p.heat>=3.5&&!p.burnt;
@@ -356,7 +459,7 @@ function tutorialMessage(){
  return''
 }
 function renderTutorial(){
- const active=state.running&&state.tutorial.active;
+ const active=state.running&&state.phase==='service'&&state.tutorial.active;
  document.body.classList.toggle('tutorial-mode',active);
  els.tutorialBanner.classList.toggle('hidden',!active);
  if(active)els.tutorialText.textContent=tutorialMessage()
@@ -384,7 +487,7 @@ function recommendedActionsForPot(p){
  return[]
 }
 function canUseAction(action){
- if(state.busy||state.tray)return false;
+ if(state.phase!=='service'||state.busy||state.tray)return false;
  if(state.selectedPot==null)return false;
  const p=state.pots[state.selectedPot];
  if(!p)return false;
@@ -411,7 +514,7 @@ function renderDiscardButton(){
  }
 }
 function contextActionsForPot(p){
- if(!state.running||state.busy||state.tray||!p)return[];
+ if(!state.running||state.phase!=='service'||state.busy||state.tray||!p)return[];
  if(state.tutorial.active)return[tutorialExpectedAction()].filter(Boolean);
  if(potEmpty(p)||p.water<1.5&&!p.ingredients.length)return['water'];
  const basics=[];if(!hasIngredient(p,'noodle'))basics.push('noodle');if(!hasIngredient(p,'soup'))basics.push('soup');if(basics.length)return basics;
@@ -499,9 +602,11 @@ function qualityLabel(q,burnt=false){
 }
 function platePot(index){
  if(state.tray||state.busy){toast('배식대가 사용 중이에요');return false}
+ if(state.cleanPlates<=0){toast('깨끗한 그릇이 없어요 · 싱크에서 더러운 그릇을 씻어 주세요',1900);return false}
  const p=state.pots[index];if(!hasIngredient(p,'noodle')){toast('면이 들어간 라면만 담을 수 있어요');return false}
  const recipe=identifyRecipe(p);if(!recipe){toast('주문에 맞는 토핑을 확인해 주세요');return false}
  const quality=qualityFor(p,recipe),tutorialPlate=state.tutorial.active&&state.tutorial.step===5&&index===0;
+ state.cleanPlates=Math.max(0,state.cleanPlates-1);updateDishHud();
  p.plating=true;state.busy=true;state.tray={recipeId:recipe.id,name:recipe.name,quality,label:qualityLabel(quality,p.burnt),burnt:p.burnt,ready:false};
  renderTray();renderOrders();renderSelectedHelp();updateActionButtons();toast('냄비를 기울여 그릇에 담는 중…',1200);
  kitchen.animatePlate(index,()=>{
@@ -533,7 +638,7 @@ function requestDiscard(){
  const now=performance.now();
  if(state.tray?.ready){
   if(now>state.trayDiscardArmedUntil){state.trayDiscardArmedUntil=now+2400;els.discard.classList.add('armed');els.discard.querySelector('b').textContent='한 번 더 눌러 쟁반 비우기';toast('한 번 더 누르면 완성된 라면을 버려요',1600);return}
-  state.trayDiscardArmedUntil=0;state.tray=null;kitchen.setTrayMeal(false);renderTray();renderOrders();renderSelectedHelp();updateActionButtons();renderDiscardButton();toast('쟁반을 비웠어요');return
+  state.trayDiscardArmedUntil=0;state.tray=null;kitchen.setTrayMeal(false);addDirtyPlate();renderTray();renderOrders();renderSelectedHelp();updateActionButtons();renderDiscardButton();toast('라면은 버렸지만 사용한 그릇은 싱크로 갔어요');return
  }
  if(state.selectedPot==null){toast('먼저 비울 냄비를 선택하세요');return}
  const p=state.pots[state.selectedPot];if(potEmpty(p)){toast('이미 빈 냄비예요');return}
@@ -613,7 +718,7 @@ function serveOrder(orderId){
  kitchen.animateServe(slot,()=>{
   const sale=restaurant.serve(orderId,r.id,{quality:q});
   if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
-  state.tray=null;state.busy=false;
+  state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
   const after=activePotCount();
   if(wasTutorial){
    state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;
@@ -623,6 +728,26 @@ function serveOrder(orderId){
   if(after>before)toast('새 화구가 열렸어요! 이제 냄비 '+after+'개를 쓸 수 있어요',2200);
   else if(wasTutorial)toast(r.name+' 첫 서빙 성공! +'+money(earned),1800);else toast(r.name+' 서빙 · '+qualityLabel(q)+' · +'+money(earned),1700)
  })
+}
+function updateDishHud(){
+ if(!els.dishStatus)return;
+ els.dishStatus.innerHTML='🥣 <b>'+state.cleanPlates+'</b><small>깨끗</small> · 🧼 <b>'+state.dirtyPlates+'</b><small>더러움</small>';
+ kitchen?.syncDishVisuals?.()
+}
+function addDirtyPlate(){
+ state.dirtyPlates+=1;updateDishHud();
+ if(state.cleanPlates===0)toast('깨끗한 그릇이 없어요 · 싱크에서 E를 눌러 설거지!',1900)
+}
+function washOnePlate(){
+ if(state.phase!=='service'||state.washing)return;
+ if(state.dirtyPlates<=0){toast('씻을 그릇이 없어요');return}
+ state.washing=true;sfx('collect.coin_drop',{volume:.1,rate:.68,cooldownMs:120});toast('🧼 그릇을 씻는 중…',1300);
+ const sink=kitchen.layoutStations.find(s=>s.id==='sink')?.group?.userData?.ring;if(sink){sink.material.color.setHex(0x72d8ff);sink.material.opacity=1}
+ setTimeout(()=>{
+  if(!state.running)return;
+  state.dirtyPlates=Math.max(0,state.dirtyPlates-1);state.cleanPlates+=1;state.washing=false;updateDishHud();
+  sfx('success.cheer_yay',{volume:.13,cooldownMs:150});toast('깨끗한 그릇 +1',1200)
+ },1450)
 }
 function updateOrders(dt){
  if(state.tutorial.active)return;
@@ -638,18 +763,21 @@ function updateHud(){
  els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served
 }
 function updateGame(dt){
- if(!state.tutorial.active){
-  restaurant.tick(dt,{advanceShift:true,advanceOrders:false,advanceAutomation:false});
-  state.spawnClock+=dt
+ if(state.phase==='service'){
+  if(!state.tutorial.active){
+   restaurant.tick(dt,{advanceShift:true,advanceOrders:false,advanceAutomation:false});
+   state.spawnClock+=dt
+  }
+  updatePots(dt);updateOrders(dt);
+  if(!state.tutorial.active&&state.spawnClock>=11){state.spawnClock=0;spawnOrder()}
+  if(state.time<=0)endShift()
  }
- state.uiClock+=dt;updatePots(dt);updateOrders(dt);
- if(!state.tutorial.active&&state.spawnClock>=11){state.spawnClock=0;spawnOrder()}
- if(state.uiClock>=.13){state.uiClock=0;renderPotStrip();renderSelectedHelp();renderOrders();renderTutorial();updateActionButtons();updateHud()}
- if(state.time<=0)endShift()
+ state.uiClock+=dt;
+ if(state.uiClock>=.13){state.uiClock=0;renderPotStrip();renderSelectedHelp();renderOrders();renderTutorial();updateActionButtons();updateHud();updateDishHud()}
 }
 function endShift(){
  if(!state.running)return;
- state.running=false;restaurant.stopShift();cancelAnimationFrame(state.raf);
+ state.running=false;state.phase='ended';restaurant.stopShift();cancelAnimationFrame(state.raf);
  const win=state.revenue>=TARGET_REVENUE;
  els.endTitle.textContent=win?'오늘 목표 달성!':'조금만 더 팔면 돼요!';
  els.endText.textContent=win?'여러 냄비의 타이밍을 잘 맞춰 오늘 매출 목표를 넘겼어요.':'냄비를 동시에 돌리되, 면이 가장 맛있는 순간을 놓치지 않는 게 핵심이에요.';
@@ -663,15 +791,22 @@ function loop(ts){
 }
 function resetGameState(){
  restaurant.reset({keepLayout:true});
- state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
+ state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
+ state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;
  state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
- kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud()
+ kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
 function startGame(){
- resetGameState();restaurant.startShift({duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE});state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');
- spawnOrder('egg');renderTutorial();updateActionButtons();toast('첫 그릇은 같이 해볼게요 · 1번 냄비를 눌러 주세요',2200);state.raf=requestAnimationFrame(loop)
+ resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');
+ toast('영업 전 준비 · 싱크, 냉장고, 접시대를 드래그해 동선을 만들어 보세요',2500);state.raf=requestAnimationFrame(loop)
+}
+function beginService(){
+ if(!state.running||state.phase!=='prep')return;
+ state.phase='service';document.body.classList.remove('layout-mode');els.prepBar?.classList.add('hidden');
+ restaurant.startShift({duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE});spawnOrder('egg');renderTutorial();updateActionButtons();updateDishHud();
+ toast('영업 시작! WASD/방향키로 움직이고 가까운 설비에서 E를 눌러요',2500)
 }
 
 els.dock.addEventListener('click',e=>{
@@ -690,15 +825,27 @@ addEventListener('pointerup',e=>{
 });
 $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
+els.openShop?.addEventListener('click',beginService);
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
 
 addEventListener('keydown',e=>{
  if(!state.running)return;
+ if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(e.code)){kitchen.setMoveKey(e.code,true);e.preventDefault();return}
+ if((e.code==='KeyE'||e.code==='Space')&&state.phase==='service'){e.preventDefault();kitchen.interactNearest();return}
  const actionKeys={Digit1:'water',Digit2:'noodle',Digit3:'soup',Digit4:'egg',Digit5:'green',Digit6:'cheese',Digit7:'plate'};
  if(actionKeys[e.code]){e.preventDefault();handleAction(actionKeys[e.code]);return}
  if(e.code==='Digit8'){e.preventDefault();requestDiscard();return}
- const potKeys={KeyQ:0,KeyW:1,KeyE:2,KeyR:3};
+ const potKeys={KeyQ:0,KeyR:3};
  if(Object.prototype.hasOwnProperty.call(potKeys,e.code)){e.preventDefault();kitchen.setSelectedPot(potKeys[e.code])}
 });
+addEventListener('keyup',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(e.code))kitchen.setMoveKey(e.code,false)});
 
-updateHud();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
+els.moveControls?.querySelectorAll('[data-move]').forEach(btn=>{
+ const code=btn.dataset.move;
+ const down=e=>{e.preventDefault();kitchen.setMoveKey(code,true)};
+ const up=e=>{e.preventDefault();kitchen.setMoveKey(code,false)};
+ btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('pointerleave',up)
+});
+els.moveControls?.querySelector('[data-interact]')?.addEventListener('click',()=>kitchen.interactNearest());
+
+updateHud();updateDishHud();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
