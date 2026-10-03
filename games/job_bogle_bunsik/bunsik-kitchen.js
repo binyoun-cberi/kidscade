@@ -38,7 +38,7 @@ const els={
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
  endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),
- prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus')
+ prepBar:$('#prepBar'),openShop:$('#openShopBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn')
 };
 
 function newPot(i){
@@ -47,7 +47,7 @@ function newPot(i){
 let restaurant=null;
 const state={
  running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
- cleanPlates:3,dirtyPlates:0,washing:false,heldItem:null,
+ cleanPlates:3,dirtyPlates:0,washing:false,heldItem:null,helperUnlocked:false,helperEnabled:false,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,heldDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
  get time(){return restaurant?.shift.remaining??SHIFT_SECONDS},
@@ -111,6 +111,7 @@ class RamenKitchen3D{
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
   this.player=null;this.playerRing=null;this.carryAnchor=null;this.carrySprite=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];this.staticBlockers=[];
+  this.helper=null;this.helperCarryAnchor=null;this.helperCarry=null;this.helperTask=null;this.helperPath=[];this.helperThink=0;
 
   this.makeLights();
   this.makeRoom();
@@ -120,6 +121,7 @@ class RamenKitchen3D{
   this.makeCustomers();
   this.makeServiceStation();
   this.makePlayer();
+  this.makeHelper();
   this.resize();
   addEventListener('resize',()=>this.resize(),{passive:true});
   canvas.addEventListener('pointerdown',e=>this.pointerDown(e));
@@ -277,6 +279,114 @@ class RamenKitchen3D{
   g.font='68px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(icon,64,67);
   const tex=new THREE.CanvasTexture(canvas),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sprite.scale.set(.72,.72,1);this.carryAnchor.add(sprite);this.carrySprite=sprite
  }
+ makeHelper(){
+  const root=this.helper=new THREE.Group();root.position.set(2.55,0,4.05);root.visible=false;this.scene.add(root);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.34,.44,28),new THREE.MeshBasicMaterial({color:0x77c9ff,transparent:true,opacity:.82,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.02;root.add(ring);
+  const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.26,.68,5,10),this.material(0x4f86b8,{roughness:.72}));fallback.position.y=.7;root.add(fallback);root.userData.fallback=fallback;
+  this.helperCarryAnchor=new THREE.Group();this.helperCarryAnchor.position.set(0,1.68,-.1);root.add(this.helperCarryAnchor);
+  const label=this.makeTextSprite('알바');label.position.set(0,2.0,0);label.scale.set(1.05,.34,1);root.add(label);
+  this.loadModel(PEOPLE,'character-male-b.glb',1.38).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}})
+ }
+ setHelperCarry(item){
+  this.helperCarry=item?{...item}:null;
+  if(!this.helperCarryAnchor)return;
+  while(this.helperCarryAnchor.children.length){const n=this.helperCarryAnchor.children[0];this.helperCarryAnchor.remove(n);n.material?.map?.dispose?.();n.material?.dispose?.()}
+  if(this.helperCarry)this.helperCarryAnchor.add(this.makeItemSprite(this.helperCarry))
+ }
+ releaseHelperReservation(){
+  const counter=this.helperTask?.counter;if(counter?.userData?.reservedBy==='helper')delete counter.userData.reservedBy
+ }
+ resetHelper(){
+  this.releaseHelperReservation();this.helperTask=null;this.helperPath=[];this.helperThink=0;this.setHelperCarry(null);
+  if(this.helper){this.helper.position.set(2.55,0,4.05);this.helper.visible=false}
+ }
+ setHelperEnabled(on){
+  state.helperEnabled=!!on&&state.helperUnlocked;
+  if(this.helper)this.helper.visible=state.helperUnlocked;
+  if(!state.helperEnabled&&this.helperTask){
+   this.returnHelperCarry();this.releaseHelperReservation();this.helperTask=null;this.helperPath=[]
+  }
+ }
+ helperCanDeliver(id,p){
+  return !!id&&!state.tutorial.active&&!!p&&!p.burnt&&!p.plating&&contextActionsForPot(p).includes(id)
+ }
+ buildHelperPath(group,approach=1.42){
+  if(!this.helper||!group)return[];
+  const step=.45,minX=-7,maxX=7,minZ=-2.7,maxZ=4.45;
+  const snap=v=>Math.round(v/step)*step,key=(x,z)=>x.toFixed(2)+','+z.toFixed(2);
+  const start={x:snap(this.helper.position.x),z:snap(this.helper.position.z)},queue=[start],prev=new Map([[key(start.x,start.z),null]]),nodes=new Map([[key(start.x,start.z),start]]);
+  let goalKey=null,head=0;
+  while(head<queue.length&&head<900){
+   const cur=queue[head++],ck=key(cur.x,cur.z);
+   if(Math.hypot(cur.x-group.position.x,cur.z-group.position.z)<=approach){goalKey=ck;break}
+   for(const [dx,dz] of [[step,0],[-step,0],[0,step],[0,-step]]){
+    const x=Number((cur.x+dx).toFixed(2)),z=Number((cur.z+dz).toFixed(2)),k=key(x,z);
+    if(x<minX||x>maxX||z<minZ||z>maxZ||prev.has(k))continue;
+    if(this.isBlockedPosition(x,z,.26))continue;
+    prev.set(k,ck);const node={x,z};nodes.set(k,node);queue.push(node)
+   }
+  }
+  if(!goalKey)return[];
+  const path=[];let k=goalKey;
+  while(k&&k!==key(start.x,start.z)){const n=nodes.get(k);if(n)path.push(new THREE.Vector3(n.x,0,n.z));k=prev.get(k)}
+  return path.reverse()
+ }
+ moveHelperPath(dt){
+  if(!this.helperPath.length)return true;
+  const target=this.helperPath[0],dx=target.x-this.helper.position.x,dz=target.z-this.helper.position.z,d=Math.hypot(dx,dz);
+  if(d<.08){this.helper.position.set(target.x,0,target.z);this.helperPath.shift();return this.helperPath.length===0}
+  const speed=2.45,move=Math.min(d,speed*dt);this.helper.position.x+=dx/d*move;this.helper.position.z+=dz/d*move;this.helper.rotation.y=Math.atan2(dx,dz);return false
+ }
+ findHelperTask(){
+  if(!state.helperEnabled||state.tutorial.active||this.helperTask||this.helperCarry)return false;
+  let best=null;
+  for(const station of this.layoutStations){
+   const counter=station.group,item=counter.userData.storageSlot&&counter.userData.storedItem;
+   if(!item||item.kind!=='ingredient'||counter.userData.reservedBy)continue;
+   for(let i=0;i<activePotCount();i++){
+    const p=state.pots[i];if(!this.helperCanDeliver(item.id,p))continue;
+    const score=Math.hypot(this.helper.position.x-counter.position.x,this.helper.position.z-counter.position.z)+Math.hypot(counter.position.x-this.potVisuals[i].root.position.x,counter.position.z-this.potVisuals[i].root.position.z);
+    if(!best||score<best.score)best={counter,potIndex:i,itemId:item.id,score}
+   }
+  }
+  if(!best)return false;
+  best.counter.userData.reservedBy='helper';this.helperTask={...best,phase:'toCounter'};this.helperPath=this.buildHelperPath(best.counter,1.35);
+  if(!this.helperPath.length){this.releaseHelperReservation();this.helperTask=null;return false}
+  return true
+ }
+ returnHelperCarry(){
+  if(!this.helperCarry)return;
+  const preferred=this.helperTask?.counter;
+  const target=preferred&&!preferred.userData.storedItem?preferred:this.layoutStations.map(s=>s.group).find(g=>g.userData.storageSlot&&!g.userData.storedItem);
+  if(target){target.userData.storedItem={...this.helperCarry};this.syncCounterVisual(target);this.setHelperCarry(null)}
+ }
+ updateHelper(dt){
+  if(!state.helperUnlocked||!this.helper){return}
+  this.helper.visible=true;
+  if(!state.helperEnabled)return;
+  this.helperThink-=dt;
+  if(!this.helperTask&&!this.helperCarry&&this.helperThink<=0){this.helperThink=.45;this.findHelperTask()}
+  const task=this.helperTask;if(!task)return;
+  if(!this.helperPath.length){
+   if(task.phase==='toCounter'){
+    const stored=task.counter.userData.storedItem;
+    if(!stored||stored.kind!=='ingredient'||stored.id!==task.itemId){this.releaseHelperReservation();this.helperTask=null;return}
+    task.counter.userData.storedItem=null;delete task.counter.userData.reservedBy;this.syncCounterVisual(task.counter);this.setHelperCarry(stored);
+    task.phase='toPot';this.helperPath=this.buildHelperPath(this.potVisuals[task.potIndex].root,1.48);
+    if(!this.helperPath.length){this.returnHelperCarry();this.helperTask=null}
+    return
+   }
+   if(task.phase==='toPot'){
+    const p=state.pots[task.potIndex];
+    if(this.helperCarry&&this.helperCanDeliver(this.helperCarry.id,p)){
+     const id=this.helperCarry.id;if(addToPot(task.potIndex,id)){this.setHelperCarry(null);sfx('collect.coin_drop',{volume:.07,rate:1.18,cooldownMs:80})}
+    }else this.returnHelperCarry();
+    this.helperTask=null;this.helperThink=.35;return
+   }
+  }
+  this.moveHelperPath(dt)
+ }
  setMoveKey(code,on){if(on)this.moveKeys.add(code);else this.moveKeys.delete(code)}
  updatePointer(e){
   const r=this.canvas.getBoundingClientRect();this.pointer.x=((e.clientX-r.left)/r.width)*2-1;this.pointer.y=-((e.clientY-r.top)/r.height)*2+1;this.raycaster.setFromCamera(this.pointer,this.camera)
@@ -304,8 +414,7 @@ class RamenKitchen3D{
   if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<r+1.05)return true;
   return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<r+b.r+.2)
  }
- isBlockedPosition(x,z){
-  const pr=.36;
+ isBlockedPosition(x,z,pr=.36){
   if(x<-7.15||x>7.15||z<-2.85||z>4.55)return true;
   if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.0+pr))return true;
   if(this.layoutStations.some(s=>Math.hypot(s.group.position.x-x,s.group.position.z-z)<(s.group.userData.blockRadius||.82)+pr))return true;
@@ -479,6 +588,7 @@ class RamenKitchen3D{
  update(dt){
   this.clock+=dt;
   this.updatePlayer(dt);
+  this.updateHelper(dt);
   state.pots.forEach((p,i)=>{
    const v=this.potVisuals[i];if(!v)return;
    const boiling=p.water>.05&&p.heat>=3.5&&!p.burnt;
