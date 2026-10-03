@@ -607,9 +607,9 @@ function specialAction(a,b){
  if(has('shellKnife','reedBed'))return {ms:4200,label:'조개칼로 섬유 베는 중',consume:null,preserve:null,out:[['fiber',2]],discover:'조개칼 채집',life:'hunt'};
  if(has('shellKnife','wildMillet'))return {ms:5000,label:'조개칼로 곡식 베는 중',consume:null,preserve:null,out:[['wildGrain',2],['milletSeed',1]],discover:'조개칼 수확',life:'farm'};
  if(has('groundAxe','clearedPlot'))return {ms:8500,label:'저수 웅덩이 파는 중',consume:'clearedPlot',preserve:'groundAxe',out:[['waterPit',1]],discover:'저수 웅덩이'};
- if(has('pottery','strangerGroup'))return {ms:6000,label:'토기를 교환하는 중',consume:'pottery',preserve:'strangerGroup',out:[['milletSeed',1],['beanSeed',1]],discover:'이웃과 교환'};
- if(has('smokedMeat','strangerGroup'))return {ms:6000,label:'보존식을 교환하는 중',consume:'smokedMeat',preserve:'strangerGroup',out:[['stone',2],['fiber',1]],discover:'먹거리 교환'};
- if(has('shellOrnament','strangerGroup'))return {ms:6500,label:'장신구를 교환하는 중',consume:'shellOrnament',preserve:'strangerGroup',out:[['broomcornSeed',1],['cord',1]],discover:'장신구 교환'};
+ if(has('pottery','strangerGroup'))return {ms:6000,label:'토기를 교환하는 중',consume:'pottery',preserve:'strangerGroup',out:[['milletSeed',1],['beanSeed',1]],discover:'이웃과 교환',trade:true};
+ if(has('smokedMeat','strangerGroup'))return {ms:6000,label:'보존식을 교환하는 중',consume:'smokedMeat',preserve:'strangerGroup',out:[['stone',2],['fiber',1]],discover:'먹거리 교환',trade:true};
+ if(has('shellOrnament','strangerGroup'))return {ms:6500,label:'장신구를 교환하는 중',consume:'shellOrnament',preserve:'strangerGroup',out:[['broomcornSeed',1],['cord',1]],discover:'장신구 교환',trade:true};
  return null;
 }
 
@@ -699,7 +699,9 @@ function depleteLooseNode(node){
  setTimeout(()=>{if(state.cards.has(node.id))removeCard(node);},380);
 }
 function runSpecial(a,b,d){
- const run=state.runId;a.busy=true;b.busy=true;markBusy(a,d.label,d.ms);markBusy(b,d.label,d.ms);snap(a,b);
+ const run=state.runId,tradeGroup=d.trade?[a,b].find(c=>c.type==='strangerGroup'):null;
+ if(d.trade&&tradeGroup&&(tradeGroup.tradeRemaining??3)<=0){showToast('이 집단은 교환을 마치고 떠날 준비를 하고 있어요.');return;}
+ a.busy=true;b.busy=true;markBusy(a,d.label,d.ms);markBusy(b,d.label,d.ms);snap(a,b);
  setTimeout(()=>{if(state.over||run!==state.runId)return;
   [a,b].forEach(c=>{if(state.cards.has(c.id)){c.busy=false;c.el.classList.remove('busy');}});
   if(d.consume){const c=a.type===d.consume?a:b;consume(c,1);}
@@ -709,6 +711,14 @@ function runSpecial(a,b,d){
   const exhausted=resourceNode?spendResource(resourceNode,d.out):false;
   if(state.cards.has(a.id)&&state.cards.has(b.id))separate(a,b);
   if(exhausted)depleteLooseNode(resourceNode);
+  if(d.trade&&tradeGroup&&state.cards.has(tradeGroup.id)){
+   tradeGroup.tradeRemaining=Math.max(0,(tradeGroup.tradeRemaining??3)-1);updateCard(tradeGroup);
+   if(tradeGroup.tradeRemaining<=0){
+    tradeGroup.el.classList.add('depleted');
+    showToast('🤝 세 번의 교환을 마친 이웃 집단이 다른 곳으로 떠났습니다.');
+    setTimeout(()=>{if(state.cards.has(tradeGroup.id))removeCard(tradeGroup);},420);
+   }
+  }
   if(d.life)addLife(d.life,d.lifeGain||1);discover(d.discover);renderAll();checkMilestone();
  },d.ms);
 }
