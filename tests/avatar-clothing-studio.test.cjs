@@ -75,6 +75,7 @@ test('auto pixelizer supports combined outfit splitting and BODY-specific fit zo
   assert.match(js,/sourceScope/);
   assert.match(js,/value!=='outfit'/);
   assert.match(js,/activeLayer==='upper'/);
-  assert.match(js,/return \{x:38,y:62,w:56,h:38\}/);
-  assert.match(js,/return \{x:45,y:82,w:42,h:39\}/);
+  assert.match(js,/activeLayer==='upper'\?\{x:38,y:62,w:56,h:38\}:\{x:45,y:82,w:42,h:39\}/);
+  assert.match(js,/bodyImageCache/);
+  assert.match(js,/center-65\.5/);
 });
