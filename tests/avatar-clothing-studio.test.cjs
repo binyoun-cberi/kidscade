@@ -9,73 +9,91 @@ const js=fs.readFileSync(path.join(root,'teacher-avatar-clothing-studio.js'),'ut
 const teacherHtml=fs.readFileSync(path.join(root,'teacher','index.html'),'utf8');
 const teacherJs=fs.readFileSync(path.join(root,'teacher-accounts.js'),'utf8');
 
-test('avatar clothing studio JavaScript parses cleanly',()=>{
+test('avatar studio JavaScript parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
 });
 
-test('global admin exposes the avatar clothing studio entry point',()=>{
+test('global admin exposes the avatar studio entry point',()=>{
   assert.match(teacherHtml,/id="admin-tools"/);
-  assert.match(teacherHtml,/\/teacher\/avatar-clothing-studio\.html/);
-  assert.match(teacherJs,/\$\('admin-tools'\)\?\.classList\.toggle\('hidden', globalOnlyHidden\)/);
+  assert.match(teacherHtml,//teacher/avatar-clothing-studio.html/);
+  assert.match(teacherHtml,/아바타 제작실/);
+  assert.match(teacherJs,/$('admin-tools')?.classList.toggle('hidden', globalOnlyHidden)/);
 });
 
-test('clothing studio is fixed to real 128x128 runtime coordinates',()=>{
+test('studio is fixed to real 128x128 runtime coordinates',()=>{
   assert.match(html,/canvas id="workCanvas" width="128" height="128"/);
   assert.match(js,/const SIZE=128/);
-  assert.match(js,/master-base-128\.png/);
-  assert.match(js,/runtime\/animation\/idle/);
-  assert.match(js,/runtime\/animation\/walk/);
+  assert.match(js,/const ROOT_X=64/);
+  assert.match(js,/const GROUND_Y=118/);
   assert.match(js,/imageSmoothingEnabled=false/);
 });
 
-test('clothing studio keeps frame-synced upper and lower layers',()=>{
-  for(const text of ['STATIC','IDLE','WALK','상의 UPPER','하의 LOWER'])assert.match(html,new RegExp(text));
-  assert.match(js,/upper:makeLayerCanvas\(\),lower:makeLayerCanvas\(\)/);
-  assert.match(js,/idle-.*padStart/);
-  assert.match(js,/walk-.*padStart/);
-  assert.match(js,/runtimeScale:1,runtimeOffset:\[0,0\]/);
+test('v3 frame contract uses stand 2 walk 4 and jump 1',()=>{
+  assert.match(js,/stand-01/);
+  assert.match(js,/stand-02/);
+  assert.match(js,/length:4/);
+  assert.match(js,/jump-01/);
+  assert.match(js,/kind:'stand'/);
+  assert.match(js,/kind:'walk'/);
+  assert.match(js,/kind:'jump'/);
 });
 
-test('editor supports numeric placement pixel cleanup preview and export',()=>{
-  for(const id of ['stampX','stampY','stampW','stampH','stampRotation','toolPencil','toolErase','copyPrev','playIdle','playWalk','exportCurrent','exportManifest']){
+test('studio supports body hair and clothing as independent frame layers',()=>{
+  for(const id of ['layerBody','layerHairBack','layerHairFront','layerUpper','layerLower']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
-  assert.match(js,/drawStamp\(/);
-  assert.match(js,/paintAt\(/);
-  assert.match(js,/snapshot\(/);
-  assert.match(js,/toBlob/);
-  assert.match(js,/kidscade-frame-synced-clothing-bundle/);
+  assert.match(js,/const LAYERS=['body','hairBack','hairFront','upper','lower']/);
+  assert.match(js,/['hairBack','body','lower','upper','hairFront']/);
+});
+
+test('frame alignment tools support reference comparison and precise editing',()=>{
+  for(const id of ['referenceFrame','showReference','showDifference','toolSelect','nudgeUp','nudgeDown','nudgeLeft','nudgeRight','alignCenter','alignGround','shrinkSelection','growSelection']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(js,/function drawDifferenceOverlay()/);
+  assert.match(js,/function moveLayerOrSelection(/);
+  assert.match(js,/function resizeSelection(/);
+  assert.match(js,/ROOT_X-(box.x+(box.w-1)/2)/);
+  assert.match(js,/GROUND_Y-box.maxY/);
+});
+
+test('image importer can auto-fit and pixelize body hair and clothes',()=>{
+  for(const id of ['pixelPreviewCanvas','paletteSize','pixelResolution','alphaCut','removeFlatBg','cleanupNoise','autoOutline','autoFitStamp','pixelizePreview','applyPixelized']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(js,/function refreshPreparedSource()/);
+  assert.match(js,/function targetRectForLayer()/);
+  assert.match(js,/activeLayer==='body'/);
+  assert.match(js,/activeLayer==='hairBack'||activeLayer==='hairFront'/);
+  assert.match(js,/function hardenAlpha(/);
+  assert.match(js,/function quantizeCanvas(/);
+  assert.match(js,/function cleanupSingletons(/);
+  assert.match(js,/function addAutoOutline(/);
+});
+
+test('studio exports individual body hair composite and full zip bundle',()=>{
+  for(const id of ['exportCurrent','exportComposite','exportCurrentBody','exportCurrentHair','exportManifest','exportBundle']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(js,/function exportCurrentBody()/);
+  assert.match(js,/function exportCurrentHair()/);
+  assert.match(js,/function compositeCanvas(/);
+  assert.match(js,/function buildZip(/);
+  assert.match(js,/kidscade-avatar-v3-bundle.zip/);
+  assert.match(js,/hair/back/);
+  assert.match(js,/hair/front/);
+});
+
+test('project format keeps frame layers and v3 runtime metadata',()=>{
+  assert.match(js,/type:'kidscade-avatar-studio-project'/);
+  assert.match(js,/mirrorRight:true/);
+  assert.match(js,/mirrorForRight:true/);
+  assert.match(js,/frameSets:{stand:/);
+  assert.match(js,/logicalRoot:[ROOT_X,82]/);
 });
 
 test('studio verifies global admin before exposing production tools',()=>{
   assert.match(js,/kc_teacher_admin_key/);
-  assert.match(js,/\/api\/teacher\/overview/);
-  assert.match(js,/body\.scope!==['"]global['"]/);
-});
-
-
-test('studio can auto-fit high resolution art and pixelize it deterministically',()=>{
-  for(const id of [
-    'pixelPreviewCanvas','sourceScope','paletteSize','pixelResolution','alphaCut',
-    'removeFlatBg','cleanupNoise','autoOutline','autoFitStamp','pixelizePreview','applyPixelized'
-  ]) assert.match(html,new RegExp('id="'+id+'"'));
-  assert.match(js,/function refreshPreparedSource\(\)/);
-  assert.match(js,/function activeSourceCrop\(\)/);
-  assert.match(js,/function autoFitStamp\(/);
-  assert.match(js,/function hardenAlpha\(/);
-  assert.match(js,/function quantizeCanvas\(/);
-  assert.match(js,/function cleanupSingletons\(/);
-  assert.match(js,/function addAutoOutline\(/);
-  assert.match(js,/function buildPixelizedCanvas\(/);
-  assert.match(js,/function applyPixelized\(/);
-  assert.match(js,/imageSmoothingEnabled=false/);
-});
-
-test('auto pixelizer supports combined outfit splitting and BODY-specific fit zones',()=>{
-  assert.match(js,/sourceScope/);
-  assert.match(js,/value!=='outfit'/);
-  assert.match(js,/activeLayer==='upper'/);
-  assert.match(js,/activeLayer==='upper'\?\{x:38,y:62,w:56,h:38\}:\{x:45,y:82,w:42,h:39\}/);
-  assert.match(js,/bodyImageCache/);
-  assert.match(js,/center-65\.5/);
+  assert.match(js,//api/teacher/overview/);
+  assert.match(js,/body.scope!=='global'/);
 });
