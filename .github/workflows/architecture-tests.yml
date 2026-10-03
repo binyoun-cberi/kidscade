@@ -89,6 +89,8 @@ jobs:
             games/high_twelve_island/art.js \
             scripts/secret-audit.cjs \
             scripts/build-cloudflare.cjs \
+            scripts/compose-lobby-build.cjs \
+            scripts/finalize-lobby-build.cjs \
             scripts/inject-game-integrations.cjs \
             scripts/import-stdict.cjs \
             scripts/build-wordchain-static.cjs \
