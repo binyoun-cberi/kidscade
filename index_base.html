@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kidscade - 신나는 학습 오락실!</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="touch-interaction-guard.js"></script>
     <script src="playtime-state.js"></script>
     <script src="seed-wallet.js"></script>
@@ -48,6 +49,8 @@
                             </div>
                             <div class="pet-smart-note" id="pet-smart-note">오늘 할 게임을 같이 골라볼게요.</div>
                             <div class="sook-status-actions">
+                                <button class="sook-open-aquarium-btn hidden" id="btn-open-aquarium" type="button">내 어항 들어가기<small>무리 행동과 먹이 반응을 3D로 관찰해요</small></button>
+                                <button class="sook-open-hamster-btn hidden" id="btn-open-hamster" type="button">햄스터 집 들어가기<small>먹이·물·청결을 돌보고 행동을 3D로 관찰해요</small></button>
                                 <button class="sook-compact-shop-btn" id="btn-open-pet-shop-compact" type="button">🛒 필요한 용품은 상점에서 준비하기</button>
                             </div>
                         </div>
@@ -81,6 +84,22 @@
     </div>
 
 
+
+    <div id="aquarium-modal" class="hidden" aria-label="나의 3D 어항">
+        <div class="aquarium-modal-bar">
+            <span class="aquarium-modal-title">나의 3D 어항</span>
+            <button class="aquarium-modal-close" id="aquarium-modal-close" type="button">어항 나가기</button>
+        </div>
+        <iframe id="aquarium-iframe" src="about:blank" title="Kidscade 나의 3D 어항" allow="fullscreen"></iframe>
+    </div>
+
+    <div id="hamster-modal" class="hidden" aria-label="나의 3D 햄스터 집">
+        <div class="hamster-modal-bar">
+            <span class="hamster-modal-title">콩이의 3D 햄스터 집</span>
+            <button class="hamster-modal-close" id="hamster-modal-close" type="button">쑥쑥랜드로 돌아가기</button>
+        </div>
+        <iframe id="hamster-iframe" src="about:blank" title="Kidscade 나의 3D 햄스터 집" allow="fullscreen"></iframe>
+    </div>
 
     <div id="age-selection-screen" role="dialog" aria-modal="true" aria-labelledby="age-screen-title" aria-describedby="age-screen-subtitle">
         <div class="age-gate-brand" aria-hidden="true">KIDSCADE <span>🎮</span></div>
@@ -960,7 +979,6 @@
     
     <link rel="stylesheet" href="garden.css">
     <script src="age-navigation.js"></script>
-    <script>window.KidscadeAgeNavigation?.init?.();</script>
     <script src="garden.js"></script>
     <script>
         // =====================================
@@ -995,7 +1013,7 @@
             } catch (error) {}
         }
 
-        (() => {
+        document.addEventListener("DOMContentLoaded", function() {
             // =====================================
             // 유아 모드 잠금 제거
             // 비밀번호 입력 없이 모든 사용자가 바로 입장할 수 있습니다.
@@ -3060,7 +3078,7 @@ ${getEvolutionHintText()}
                 function decayStats(nowReal){ const last=Number(pet3d.lastStatTick||nowReal); const elapsed=Math.max(0,Math.min(60*60*1000,nowReal-last)); if(elapsed<12000) return; const minutes=elapsed/60000; const auto=getAutoAction(performance.now()); pet3d.stats.hunger=clamp(pet3d.stats.hunger-minutes*.20,0,100); pet3d.stats.happy=clamp(pet3d.stats.happy-minutes*.10,0,100); if(auto==='sleep') pet3d.stats.energy=clamp(pet3d.stats.energy+minutes*1.8,0,100); else pet3d.stats.energy=clamp(pet3d.stats.energy-minutes*.18,0,100); if(pet3d.stats.hunger<20||pet3d.stats.energy<12) pet3d.stats.health=clamp(pet3d.stats.health-minutes*.45,0,100); else pet3d.stats.health=clamp(pet3d.stats.health+minutes*.12,0,100); pet3d.lastStatTick=nowReal; save3d(); }
                 function renderPicker(){ if(!picker) return; picker.innerHTML=Object.entries(PETS).map(([type,info])=>{ const unlocked=isUnlocked(type); const active=pet3d.type===type; return `<button class="sook-pet-choice ${active?'active':''} ${unlocked?'':'locked'}" type="button" data-sook-pet="${type}">${info.emoji} ${info.label}<small>${unlocked?'선택 가능':`잠금 · ${info.cost} 씨앗`}</small></button>`; }).join(''); picker.querySelectorAll('.sook-pet-choice').forEach(btn=>btn.addEventListener('click',()=>{ const type=btn.dataset.sookPet; if(isUnlocked(type)) selectPet(type); else unlockPet(type); })); }
                 function roomDetail(){ const type=pet3d.type; if(type==='fish') return `${fishById(pet3d.selectedFish).label} 대표 · 물고기 ${pet3d.fishTank.fish.length}마리`; if(type==='hamster') return `집 ${pet3d.hamsterRoom.houses} · 쳇바퀴 ${pet3d.hamsterRoom.wheels} · 장난감 ${pet3d.hamsterRoom.toys} · 발판 ${pet3d.hamsterRoom.platforms||0}`; if(type==='iguana') return `가지 ${pet3d.iguanaRoom.branches} · 바위 ${pet3d.iguanaRoom.rocks} · 잎사귀 ${pet3d.iguanaRoom.leaves}`; const r=pet3d.rooms[type]||{}; if(type==='parrot') return `횃대 ${r.perches} · 장난감 ${r.toys}`; if(type==='cat') return `침대 ${r.beds} · 스크래처 ${r.scratchers} · 장난감 ${r.toys}`; if(type==='dog') return `잠자리 ${r.beds} · 장난감 ${r.toys}`; if(type==='goat') return `쉼터 ${r.shelters} · 놀잇감 ${r.toys}`; if(type==='miniPig') return `깔개 ${r.beds} · 탐색 놀이 ${r.toys}`; if(type==='sugarGlider') return `주머니 ${r.pouches} · 가지 ${r.branches} · 장난감 ${r.toys}`; if(type==='rabbit') return `숨는 집 ${r.houses} · 씹는 장난감 ${r.toys}`; if(type==='turtle') return `일광욕 바위 ${r.rocks} · 수초 ${r.plants}`; return petInfo().room; }
-                function updatePetStatusUI(){ const auto=getAutoAction(performance.now()); renderPicker(); updateNeed('need-hunger',pet3d.stats.hunger); updateNeed('need-happy',pet3d.stats.happy); updateNeed('need-energy',pet3d.stats.energy); updateNeed('need-health',pet3d.stats.health); const display=document.getElementById('pet-display-name'); const dominantInfo=getDominantPetCategory(); if(display) display.textContent=`나의 쑥쑥 친구: ${petInfo().label} [${roomDetail()} · ${dominantInfo.label}]`; const smart=document.getElementById('pet-smart-note'); if(smart) smart.innerHTML=`🌱 ${petInfo().emoji} ${petInfo().label} · ${roomDetail()}<br>새 친구는 씨앗으로 데려올 수 있고, 동물마다 먹이와 온도·습도, 생활 방식이 달라요.`; if(caption) caption.textContent=`${petInfo().emoji} ${petInfo().label} · ${petInfo().room} · ${actionCaption(auto)}`; if(profileIcon) profileIcon.textContent=petInfo().emoji; if(roomTitle) roomTitle.textContent=`${petInfo().label} · ${petInfo().room}`; if(roomSubtitle) roomSubtitle.textContent=roomDetail(); if(summaryFood) summaryFood.innerHTML=`🍽️ 먹이<small>${petInfo().food.slice(0,34)}${petInfo().food.length>34?'…':''}</small>`; if(summaryClimate) summaryClimate.innerHTML=`🌡️ 환경<small>${petInfo().temp} · ${petInfo().humidity}</small>`; if(summaryHome) summaryHome.innerHTML=`🏠 집<small>${petInfo().home.slice(0,34)}${petInfo().home.length>34?'…':''}</small>`; renderOwnedSupplies(); const widget=document.getElementById('pet-widget-avatar'); if(widget) widget.textContent=petInfo().emoji; const hidden=document.getElementById('pet-room-avatar'); if(hidden) hidden.textContent=petInfo().emoji; renderMiniShop(); updateActionButtons(); renderCareGuide(); save3d(); }
+                function updatePetStatusUI(){ const auto=getAutoAction(performance.now()); renderPicker(); updateNeed('need-hunger',pet3d.stats.hunger); updateNeed('need-happy',pet3d.stats.happy); updateNeed('need-energy',pet3d.stats.energy); updateNeed('need-health',pet3d.stats.health); const display=document.getElementById('pet-display-name'); const dominantInfo=getDominantPetCategory(); if(display) display.textContent=`나의 쑥쑥 친구: ${petInfo().label} [${roomDetail()} · ${dominantInfo.label}]`; const smart=document.getElementById('pet-smart-note'); if(smart) smart.innerHTML=`🌱 ${petInfo().emoji} ${petInfo().label} · ${roomDetail()}<br>새 친구는 씨앗으로 데려올 수 있고, 동물마다 먹이와 온도·습도, 생활 방식이 달라요.`; if(caption) caption.textContent=`${petInfo().emoji} ${petInfo().label} · ${petInfo().room} · ${actionCaption(auto)}`; if(profileIcon) profileIcon.textContent=petInfo().emoji; if(roomTitle) roomTitle.textContent=`${petInfo().label} · ${petInfo().room}`; if(roomSubtitle) roomSubtitle.textContent=roomDetail(); if(summaryFood) summaryFood.innerHTML=`🍽️ 먹이<small>${petInfo().food.slice(0,34)}${petInfo().food.length>34?'…':''}</small>`; if(summaryClimate) summaryClimate.innerHTML=`🌡️ 환경<small>${petInfo().temp} · ${petInfo().humidity}</small>`; if(summaryHome) summaryHome.innerHTML=`🏠 집<small>${petInfo().home.slice(0,34)}${petInfo().home.length>34?'…':''}</small>`; renderOwnedSupplies(); const widget=document.getElementById('pet-widget-avatar'); if(widget) widget.textContent=petInfo().emoji; const hidden=document.getElementById('pet-room-avatar'); if(hidden) hidden.textContent=petInfo().emoji; renderMiniShop(); updateActionButtons(); renderCareGuide(); const aquariumButton=document.getElementById('btn-open-aquarium'); if(aquariumButton) aquariumButton.classList.toggle('hidden', pet3d.type!=='fish'); const hamsterButton=document.getElementById('btn-open-hamster'); if(hamsterButton) hamsterButton.classList.toggle('hidden', pet3d.type!=='hamster'); save3d(); }
                 function selectPet(type){ if(!PETS[type]) return; if(!isUnlocked(type)){ unlockPet(type); return; } pet3d.type=type; pet3d.action='idle'; pet3d.actionStarted=performance.now(); pet3d.actionUntil=0; playUISound('click'); updatePetStatusUI(); updatePetUI(); }
                 function runAction(action){ const auto=getAutoAction(performance.now()); if(auto==='sick' && action==='exercise'){ showToast('컨디션이 낮아서 운동보다 밥이나 간식이 필요해요.'); return; } const now=performance.now(); pet3d.action=action; pet3d.actionStarted=now; pet3d.actionUntil=now+(actionDuration[action]||1800); if(action==='feed'){ pet3d.stats.hunger=clamp(pet3d.stats.hunger+20,0,100); pet3d.stats.energy=clamp(pet3d.stats.energy+4,0,100); pet3d.stats.health=clamp(pet3d.stats.health+4,0,100); spawn('food',12); } if(action==='snack'){ pet3d.stats.happy=clamp(pet3d.stats.happy+17,0,100); pet3d.stats.hunger=clamp(pet3d.stats.hunger+8,0,100); pet3d.stats.health=clamp(pet3d.stats.health+2,0,100); spawn('heart',10); } if(action==='exercise'){ pet3d.stats.energy=clamp(pet3d.stats.energy-14,0,100); pet3d.stats.health=clamp(pet3d.stats.health+8,0,100); pet3d.stats.happy=clamp(pet3d.stats.happy+5,0,100); spawn('spark',16); } if(action==='play'){ pet3d.stats.happy=clamp(pet3d.stats.happy+15,0,100); pet3d.stats.energy=clamp(pet3d.stats.energy-6,0,100); spawn('spark',16); } pet3d.lastStatTick=Date.now(); save3d(); updatePetStatusUI(); playUISound('open'); }
 
@@ -3240,6 +3258,164 @@ ${getEvolutionHintText()}
                 document.querySelectorAll('.sook-pet-action-btn').forEach(btn=>btn.addEventListener('click',()=>runAction(btn.dataset.sookAction)));
                 canvas.addEventListener('click',()=>runAction('play'));
 
+                function syncAquariumStateBack() {
+                    let fresh = {};
+                    try { fresh = JSON.parse(localStorage.getItem('kidscade_sook_canvas_pet') || '{}'); } catch(e) { fresh = {}; }
+                    if (fresh.fishTank) pet3d.fishTank = {...pet3d.fishTank, ...fresh.fishTank};
+                    if (fresh.stats) pet3d.stats = {...pet3d.stats, ...fresh.stats};
+                    if (fresh.selectedFish && FISH_DB.some(f => f.id === fresh.selectedFish)) pet3d.selectedFish = fresh.selectedFish;
+                    updatePetStatusUI();
+                    updatePetUI();
+                }
+                function closeAquariumRoom() {
+                    const modal = document.getElementById('aquarium-modal');
+                    const frame = document.getElementById('aquarium-iframe');
+                    if (modal) modal.classList.add('hidden');
+                    if (frame) frame.src = 'about:blank';
+                    document.body.style.overflow = '';
+                    syncAquariumStateBack();
+                    playUISound('close');
+                }
+                function sendAquariumState() {
+                    const frame = document.getElementById('aquarium-iframe');
+                    if (!frame?.contentWindow) return;
+                    frame.contentWindow.postMessage({
+                        type: 'aquarium:init',
+                        payload: {
+                            legacy: {
+                                type: pet3d.type,
+                                selectedFish: pet3d.selectedFish,
+                                fishTank: pet3d.fishTank,
+                                stats: pet3d.stats
+                            }
+                        }
+                    }, '*');
+                }
+                function openAquariumRoom() {
+                    if (pet3d.type !== 'fish') return;
+                    save3d();
+                    const modal = document.getElementById('aquarium-modal');
+                    const frame = document.getElementById('aquarium-iframe');
+                    if (!modal || !frame) return;
+                    frame.onload = () => setTimeout(sendAquariumState, 40);
+                    frame.src = `kidscade_aquarium.html?v=5`;
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    playUISound('open');
+                }
+                document.getElementById('btn-open-aquarium')?.addEventListener('click', openAquariumRoom);
+                document.getElementById('aquarium-modal-close')?.addEventListener('click', closeAquariumRoom);
+                window.addEventListener('message', event => {
+                    if (!event.data || typeof event.data !== 'object') return;
+                    if (event.data.type === 'aquarium:ready') sendAquariumState();
+                    if (event.data.type === 'aquarium:update') {
+                        const legacy = event.data.payload?.legacy;
+                        if (legacy?.fishTank) pet3d.fishTank = {...pet3d.fishTank, ...legacy.fishTank};
+                        if (legacy?.stats) pet3d.stats = {...pet3d.stats, ...legacy.stats};
+                        if (legacy?.selectedFish && FISH_DB.some(f => f.id === legacy.selectedFish)) pet3d.selectedFish = legacy.selectedFish;
+                        save3d();
+                        syncAquariumStateBack();
+                    }
+                    if (event.data.type === 'aquarium:close') closeAquariumRoom();
+                });
+                let hamsterLastReportedCoins = null;
+                let hamsterClosing = false;
+                let hamsterCloseTimer = null;
+
+                function finishHamsterFrameClose() {
+                    const frame = document.getElementById('hamster-iframe');
+                    if (hamsterCloseTimer) clearTimeout(hamsterCloseTimer);
+                    hamsterCloseTimer = null;
+                    if (frame) frame.src = 'about:blank';
+                    hamsterClosing = false;
+                    hamsterLastReportedCoins = null;
+                }
+
+                function applyHamsterPayload(payload) {
+                    if (!payload || typeof payload !== 'object') return;
+                    if (Number.isFinite(Number(payload.coins)) && hamsterLastReportedCoins !== null) {
+                        const incomingCoins = Math.max(0, Math.round(Number(payload.coins)));
+                        const delta = incomingCoins - hamsterLastReportedCoins;
+                        const persistedCoins = getPersistedCoins();
+                        // 자식 iframe이 이미 같은 localStorage에 저장했다면 중복 차감/지급하지 않습니다.
+                        if (persistedCoins === incomingCoins) {
+                            coins = persistedCoins;
+                            renderCoinUI();
+                        } else if (delta !== 0) {
+                            // iframe의 '전체 잔액'으로 덮어쓰지 않고, 햄스터 방에서 실제로 변한 차액만 반영합니다.
+                            changeSeeds(delta, '', { toast: false });
+                        }
+                        hamsterLastReportedCoins = incomingCoins;
+                    }
+                    if (payload.stats && typeof payload.stats === 'object') {
+                        const incoming = payload.stats;
+                        pet3d.stats.hunger = clamp(Number(incoming.hunger ?? pet3d.stats.hunger), 0, 100);
+                        pet3d.stats.happy = clamp(Number(incoming.happy ?? pet3d.stats.happy), 0, 100);
+                        pet3d.stats.energy = clamp(Number(incoming.energy ?? pet3d.stats.energy), 0, 100);
+                        pet3d.stats.health = clamp(Number(incoming.health ?? pet3d.stats.health), 0, 100);
+                    }
+                    if (payload.hamsterRoom && typeof payload.hamsterRoom === 'object') {
+                        pet3d.hamsterRoom = { ...pet3d.hamsterRoom, ...payload.hamsterRoom };
+                    }
+                    pet3d.lastStatTick = Date.now();
+                    save3d();
+                    updatePetStatusUI();
+                    updatePetUI();
+                }
+                function sendHamsterState() {
+                    const frame = document.getElementById('hamster-iframe');
+                    if (!frame?.contentWindow) return;
+                    hamsterLastReportedCoins = coins;
+                    frame.contentWindow.postMessage({
+                        type: 'hamster:init',
+                        payload: {
+                            coins,
+                            hamsterRoom: pet3d.hamsterRoom,
+                            stats: pet3d.stats
+                        }
+                    }, '*');
+                }
+                function closeHamsterRoom() {
+                    const modal = document.getElementById('hamster-modal');
+                    const frame = document.getElementById('hamster-iframe');
+                    if (hamsterClosing) return;
+                    hamsterClosing = true;
+                    if (frame?.contentWindow) frame.contentWindow.postMessage({ type:'hamster:request-update' }, '*');
+                    if (modal) modal.classList.add('hidden');
+                    // 40ms 즉시 폐기 대신 최종 상태 메시지를 받을 시간을 줍니다.
+                    hamsterCloseTimer = setTimeout(finishHamsterFrameClose, 600);
+                    document.body.style.overflow = '';
+                    updatePetStatusUI();
+                    updatePetUI();
+                    playUISound('close');
+                }
+                function openHamsterRoom() {
+                    if (pet3d.type !== 'hamster') return;
+                    if (hamsterClosing) finishHamsterFrameClose();
+                    save3d();
+                    const modal = document.getElementById('hamster-modal');
+                    const frame = document.getElementById('hamster-iframe');
+                    if (!modal || !frame) return;
+                    frame.onload = () => setTimeout(sendHamsterState, 50);
+                    frame.src = 'kidscade_hamster_home.html?v=2';
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    playUISound('open');
+                }
+                document.getElementById('btn-open-hamster')?.addEventListener('click', openHamsterRoom);
+                document.getElementById('hamster-modal-close')?.addEventListener('click', closeHamsterRoom);
+                window.addEventListener('message', event => {
+                    const frame = document.getElementById('hamster-iframe');
+                    if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
+                    if (!event.data || typeof event.data !== 'object') return;
+                    if (event.data.type === 'hamster:ready') sendHamsterState();
+                    if (event.data.type === 'hamster:update') {
+                        applyHamsterPayload(event.data.payload);
+                        if (hamsterClosing) finishHamsterFrameClose();
+                    }
+                    if (event.data.type === 'hamster:close') closeHamsterRoom();
+                });
+
                 window.addEventListener('resize',resizeCanvas);
                 if(window.ResizeObserver) new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
                 window.sookPetBuy=buyThing; window.sookPetDo=runAction; window.sookPetIsUnlocked=isUnlocked; window.sookPetSelect=selectPet;
@@ -3339,7 +3515,7 @@ ${getEvolutionHintText()}
                 }
             }
             if (currentAgeGroup) checkAttendance();
-        })();
+        });
     </script>
 </body>
 </html>
