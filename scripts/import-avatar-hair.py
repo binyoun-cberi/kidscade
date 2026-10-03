@@ -68,7 +68,7 @@ def clean_alpha(rgba: Image.Image) -> Image.Image:
     return rgba
 
 
-def largest_component_bbox(rgba: Image.Image) -> tuple[int, int, int, int]:
+def keep_largest_component(rgba: Image.Image) -> tuple[Image.Image, tuple[int, int, int, int]]:
     alpha = rgba.getchannel("A")
     w, h = rgba.size
     mask = [[alpha.getpixel((x, y)) >= 32 for x in range(w)] for y in range(h)]
@@ -96,48 +96,18 @@ def largest_component_bbox(rgba: Image.Image) -> tuple[int, int, int, int]:
     if not best:
         raise SystemExit("Hair sprite contains no visible pixels.")
 
-    xs = [p[0] for p in best]
-    ys = [p[1] for p in best]
-    return min(xs), min(ys), max(xs) + 1, max(ys) + 1
-
-
-def keep_largest_component(rgba: Image.Image, bbox: tuple[int, int, int, int]) -> Image.Image:
-    alpha = rgba.getchannel("A")
-    w, h = rgba.size
-    # Keep all pixels connected to the largest component's seed; this strips detached
-    # generation artifacts without deleting legitimate antialiased edge pixels.
-    seed = None
-    for y in range(bbox[1], bbox[3]):
-        for x in range(bbox[0], bbox[2]):
-            if alpha.getpixel((x, y)) >= 32:
-                seed = (x, y)
-                break
-        if seed:
-            break
-    if seed is None:
-        return rgba
-
-    allowed = set()
-    q = deque([seed])
-    allowed.add(seed)
-    while q:
-        cx, cy = q.popleft()
-        for ny in range(max(0, cy - 1), min(h, cy + 2)):
-            for nx in range(max(0, cx - 1), min(w, cx + 2)):
-                if (nx, ny) in allowed:
-                    continue
-                if alpha.getpixel((nx, ny)) >= 32:
-                    allowed.add((nx, ny))
-                    q.append((nx, ny))
-
+    allowed = set(best)
     out = rgba.copy()
     px = out.load()
     for y in range(h):
         for x in range(w):
             if alpha.getpixel((x, y)) >= 32 and (x, y) not in allowed:
                 px[x, y] = (0, 0, 0, 0)
-    return out
 
+    xs = [p[0] for p in best]
+    ys = [p[1] for p in best]
+    bbox = (min(xs), min(ys), max(xs) + 1, max(ys) + 1)
+    return out, bbox
 
 def fit_sprite_to_head(src: Path, dst: Path, hair_id: str) -> dict[str, object]:
     cfg = HEAD_FIT[hair_id]
@@ -146,9 +116,7 @@ def fit_sprite_to_head(src: Path, dst: Path, hair_id: str) -> dict[str, object]:
         if rgba.size != (CANVAS, CANVAS):
             rgba = rgba.resize((CANVAS, CANVAS), Image.Resampling.NEAREST)
 
-        before = largest_component_bbox(rgba)
-        rgba = keep_largest_component(rgba, before)
-        before = largest_component_bbox(rgba)
+        rgba, before = keep_largest_component(rgba)
         crop = rgba.crop(before)
 
         scale = min(cfg["maxW"] / crop.width, cfg["maxH"] / crop.height)
@@ -169,7 +137,7 @@ def fit_sprite_to_head(src: Path, dst: Path, hair_id: str) -> dict[str, object]:
         dst.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(dst, "PNG", optimize=True)
 
-        after = largest_component_bbox(canvas)
+        _, after = keep_largest_component(canvas)
         print(
             f"{hair_id}: bbox {before} -> {after}, "
             f"content {crop.size} -> {(new_w, new_h)}, scale={scale:.3f}"
