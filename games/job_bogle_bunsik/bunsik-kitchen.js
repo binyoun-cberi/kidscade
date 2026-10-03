@@ -321,7 +321,7 @@ class RamenKitchen3D{
  snapshotEquipmentLayout(){
   const layout={};
   this.layoutStations.forEach(s=>{
-   const g=s.group;if(!g.userData.equipmentKey||!g.visible)return;
+   const g=s.group;if(!g.visible)return;
    layout[s.id]={x:Math.round(g.position.x*100)/100,z:Math.round(g.position.z*100)/100};
    if(g.userData.automationType)layout[s.id].dir=g.userData.direction||0
   });
@@ -350,11 +350,11 @@ class RamenKitchen3D{
  automationVector(group){
   return [{x:0,z:-1},{x:-1,z:0},{x:0,z:1},{x:1,z:0}][group?.userData?.direction||0]
  }
- findStorageInDirection(origin,sign=1,need='empty'){
+ findStorageInDirection(origin,sign=1,need='empty',predicate=null){
   const v=this.automationVector(origin);let best=null;
   for(const s of this.layoutStations){
    const g=s.group;if(g===origin||!g.visible||!g.userData.storageSlot||g.userData.reservedBy)continue;
-   const item=g.userData.storedItem;if(need==='empty'&&item)continue;if(need==='filled'&&!item)continue;
+   const item=g.userData.storedItem;if(need==='empty'&&item)continue;if(need==='filled'&&!item)continue;if(predicate&&!predicate(g,item))continue;
    const dx=g.position.x-origin.position.x,dz=g.position.z-origin.position.z,d=Math.hypot(dx,dz);if(d<.45||d>2.55)continue;
    const forward=(dx*v.x+dz*v.z)*sign,lateral=Math.abs(dx*v.z-dz*v.x);
    if(forward<=.35||lateral>.82)continue;
@@ -384,9 +384,8 @@ class RamenKitchen3D{
   for(const g of autos){
    g.userData.automationClock=(g.userData.automationClock||0)-dt;if(g.userData.automationClock>0)continue;g.userData.automationClock=.72;
    if((g.userData.automationType==='grabber'||g.userData.automationType==='smartGrabber')&&!g.userData.storedItem){
-    const source=this.findStorageInDirection(g,-1,'filled'),sourceItem=source?.userData?.storedItem;
-    const filterOk=g.userData.automationType!=='smartGrabber'||sourceItem?.id===g.userData.filterId;
-    if(source&&sourceItem?.kind==='ingredient'&&!source.userData.automationType&&source.userData.reservedBy!=='helper'&&filterOk)this.transferAutomationItem(source,g)
+    const source=this.findStorageInDirection(g,-1,'filled',(candidate,item)=>item?.kind==='ingredient'&&!candidate.userData.automationType&&candidate.userData.reservedBy!=='helper'&&(g.userData.automationType!=='smartGrabber'||item.id===g.userData.filterId));
+    if(source)this.transferAutomationItem(source,g)
    }
    const item=g.userData.storedItem;if(!item)continue;
    const potIndex=this.findPotInDirection(g,item);
