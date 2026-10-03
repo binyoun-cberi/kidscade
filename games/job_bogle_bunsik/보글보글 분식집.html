@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>보글보글 분식집</title>
-<link rel="stylesheet" href="bunsik-kitchen.css?v=8">
+<link rel="stylesheet" href="bunsik-kitchen.css?v=9">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 </head>
@@ -16,6 +16,7 @@
       <span class="money-stat">🪙 <b id="revenue">0원</b><small>/ <b id="goal">6,500원</b></small></span>
       <span>⏱ <b id="time">120</b></span>
       <span class="served-stat">🍜 <b id="served">0</b></span>
+      <span id="dishStatus" class="dish-stat">🥣 <b>3</b><small>깨끗</small> · 🧼 <b>0</b><small>더러움</small></span>
       <button id="soundBtn" type="button" aria-label="소리 켜기/끄기">♪</button>
     </div>
   </header>
@@ -25,6 +26,13 @@
 
     <section id="orderStrip" class="customer-orders" aria-label="손님 주문"></section>
     <div id="potStrip" class="pot-world-labels" aria-label="냄비 상태"></div>
+
+    <div id="prepBar" class="prep-bar hidden">
+      <span><b>영업 전 주방 배치</b><small>싱크 · 냉장고 · 접시대를 드래그해서 동선을 바꿔 보세요.</small></span>
+      <button id="openShopBtn" type="button">영업 시작</button>
+    </div>
+
+    <div id="stationHint" class="station-hint">WASD / 방향키로 이동 · E로 상호작용</div>
 
     <div id="tutorialBanner" class="tutorial-banner">
       <small>첫 그릇</small>
@@ -42,6 +50,15 @@
     </button>
 
     <button id="discardBtn" class="discard-btn" type="button"><span>🗑</span><b>냄비 비우기</b></button>
+
+    <div id="moveControls" class="move-controls" aria-label="이동과 상호작용">
+      <button type="button" data-move="ArrowUp" aria-label="위로 이동">▲</button>
+      <button type="button" data-move="ArrowLeft" aria-label="왼쪽 이동">◀</button>
+      <button type="button" data-move="ArrowDown" aria-label="아래로 이동">▼</button>
+      <button type="button" data-move="ArrowRight" aria-label="오른쪽 이동">▶</button>
+      <button type="button" data-interact aria-label="가까운 설비 사용">E</button>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
 </div>
@@ -50,16 +67,16 @@
   <div class="start-card">
     <div class="eyebrow">BOGLE BOGLE · RAMEN DAY</div>
     <h1>보글보글 분식집</h1>
-    <p>손님의 말풍선을 보고 냄비에서 직접 끓여요. 완성되면 그릇에 담고, 쟁반을 손님에게 끌어다 주세요.</p>
+    <p>영업 전에 주방을 직접 배치하고, 영업이 시작되면 캐릭터를 움직여 조리대와 싱크를 오가며 라면을 완성해요. 사용한 그릇은 씻어야 다시 쓸 수 있어요.</p>
     <div class="flow-demo">
-      <span>👧<b>주문 확인</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🥣<b>그릇에 담기</b></span><i>→</i><span>🍜<b>끌어서 서빙</b></span>
+      <span>🧱<b>주방 배치</b></span><i>→</i><span>🔥<b>냄비 조리</b></span><i>→</i><span>🍜<b>서빙</b></span><i>→</i><span>🧼<b>설거지</b></span>
     </div>
     <div class="recipe-board">
       <div><b>계란 라면</b><span>🍜 🟥 🥚</span></div>
       <div><b>파 라면</b><span>🍜 🟥 🌿</span></div>
       <div><b>치즈 계란 라면</b><span>🍜 🟥 🥚 🧀</span></div>
     </div>
-    <button id="startBtn" class="primary" type="button">가게 문 열기</button>
+    <button id="startBtn" class="primary" type="button">주방 준비 시작</button>
     <small class="credit">Kitchen: Isa Lousberg · CC BY / Quaternius · CC0</small>
   </div>
 </div>
@@ -78,6 +95,6 @@
   </div>
 </div>
 
-<script type="module" src="bunsik-kitchen.js?v=8"></script>
+<script type="module" src="bunsik-kitchen.js?v=9"></script>
 </body>
 </html>
