@@ -792,7 +792,7 @@ function expeditionSpawn(type,anchor,index){
 function finishExpedition(){
  const ex=state.expedition;if(!ex)return;
  const worker=state.cards.get(ex.workerId);
- if(worker){worker.exploring=false;clearWorkVisual(worker);}
+ if(worker){worker.exploring=false;worker.el.classList.remove('exploring');clearWorkVisual(worker);}
  const anchor=worker||{x:board.clientWidth*.45,y:board.clientHeight*.45};
  const found=[],count=2+Math.floor(Math.random()*3),pool=expeditionResourcePool();
  for(let i=0;i<count;i++){const type=pick(pool);expeditionSpawn(type,anchor,i);found.push(C[type].name);}
