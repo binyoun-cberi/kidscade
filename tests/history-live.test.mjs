@@ -105,7 +105,7 @@ test('mobile quiz controls are touch friendly and both play modes expose chronol
   assert.match(html, /id="orderMode"/);
   assert.match(html, /id="soloOrderMode"/);
   assert.match(html, /value="chronological"/);
-  assert.match(html, /pickHistoryQuestions\(count,Math\.random,orderMode,questionMode,eras\)/);
+  assert.match(html, /pickHistoryQuestions\(count,Math\.random,orderMode,bankMode,eras\)/);
 });
 
 test('live server records chronology mode in the room plan', () => {
@@ -259,7 +259,7 @@ test('teacher UI supports era selection presets and same-room next rounds', () =
   assert.match(html,/applyHostPreset\('quick'\)/);
   assert.match(html,/applyRoundPreset\('challenge'\)/);
   assert.match(html,/selectedEras\('hostEraPicker'\)/);
-  assert.match(html,/pickHistoryQuestions\(count,Math\.random,orderMode,questionMode,eras\)/);
+  assert.match(html,/pickHistoryQuestions\(count,Math\.random,orderMode,bankMode,eras\)/);
 });
 
 
