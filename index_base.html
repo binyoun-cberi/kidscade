@@ -9,6 +9,7 @@
     <script src="seed-wallet.js"></script>
     <script src="sprout-power.js"></script>
     <script src="daily-progress.js"></script>
+    <script src="daily-ui.js"></script>
     <script src="achievement-state.js"></script>
     <script src="shop-state.js"></script>
     <link rel="stylesheet" href="main-shell.css">
@@ -2146,48 +2147,37 @@ ${getEvolutionHintText()}
                 applyEquipped();
             }
 
+            function dailyUiContext() {
+                return {
+                    daily: window.KidscadeDaily,
+                    activity: window.KidscadeActivity,
+                    sproutPower: window.KidscadeSproutPower,
+                    localStorage,
+                    document,
+                    categoryNames,
+                    changeSeeds,
+                    showToast,
+                    addPetExp(amount) {
+                        pet.exp += amount;
+                        savePet();
+                        checkPetEvolution();
+                    },
+                    addPetAffection(amount) {
+                        pet.affection = Math.min(100, pet.affection + amount);
+                        savePet();
+                        updatePetUI();
+                    },
+                    renderShop,
+                    updatePetUI
+                };
+            }
+
             function getDailyRewardKey() {
-                return new Date().toLocaleDateString('ko-KR');
+                return window.KidscadeDailyUI.getDailyRewardKey(dailyUiContext());
             }
 
             function claimDailyReward(item) {
-                const today = getDailyRewardKey();
-                const claimed = window.KidscadeDaily?.isDailyRewardClaimed?.() ?? (localStorage.getItem('kidscade_daily_reward_claimed') === today);
-                if (claimed) { showToast('오늘의 보상은 이미 골랐어요. 내일 다시 받을 수 있어요!'); return; }
-
-                let granted = false;
-                if (item.rewardType === 'seed') {
-                    granted = changeSeeds(item.amount, '', { toast: false });
-                    if (granted) showToast(`${item.name} 선택! 씨앗 ${item.amount}개를 받았어요.`, true);
-                } else if (item.rewardType === 'exp') {
-                    pet.exp += item.amount;
-                    savePet();
-                    showToast(`${item.name} 선택! 쑥쑥이 경험치 +${item.amount}`);
-                    checkPetEvolution();
-                    granted = true;
-                } else {
-                    granted = changeSeeds(item.amount, '', { toast: false });
-                    if (granted) {
-                        pet.exp += 10;
-                        savePet();
-                        showToast(`${item.name} 선택! 씨앗 ${item.amount}개와 성장 경험치를 받았어요.`, true);
-                        checkPetEvolution();
-                    }
-                }
-
-                // 실제 지급이 끝난 뒤에만 '오늘 수령 완료'를 기록합니다.
-                if (granted) {
-                    if (window.KidscadeDaily?.markDailyRewardClaimed) window.KidscadeDaily.markDailyRewardClaimed();
-                    else localStorage.setItem('kidscade_daily_reward_claimed', today);
-                    window.KidscadeActivity?.record?.('reward', {
-                        title: '오늘의 보상 수령',
-                        summary: item.name + (item.rewardType === 'exp' ? ' · 쑥쑥이 경험치 +' : ' · 씨앗 +') + item.amount,
-                        place: '키즈케이드 상점',
-                        dedupeKey: 'daily-reward-' + new Date().toLocaleDateString('sv-SE')
-                    });
-                }
-                renderShop();
-                updatePetUI();
+                return window.KidscadeDailyUI.claimDailyReward(item, dailyUiContext());
             }
 
             function renderShop() {
@@ -2259,95 +2249,12 @@ ${getEvolutionHintText()}
             const categoryNames = { all: '전체', math: '수학·퍼즐', korean: '국어', lang: '외국어·한자', trivia: '상식·생활', music: '음악·예술', job: '직업' };
             const subjectNames = { all: '전체', math: '수학', korean: '국어', language: '외국어·한자', social: '사회', science: '과학·환경', arts: '예술', career: '진로', thinking: '사고력' };
 
-            function getTodayKey() {
-                return window.KidscadeDaily?.getTodayKey?.() || new Date().toLocaleDateString('ko-KR');
-            }
-
-            function buildTodayMissionState() {
-                if (window.KidscadeDaily?.buildMissionState) return window.KidscadeDaily.buildMissionState(categoryNames);
-                const categories = ['math', 'korean', 'lang', 'trivia', 'music'];
-                const category = categories[new Date().getDate() % categories.length];
-                return {
-                    date: getTodayKey(),
-                    missions: [
-                        { id: 'play_any', icon: '🎮', title: '첫 게임 도전', desc: '아무 게임이나 1번 플레이하기', goal: 1, progress: 0, reward: 20, type: 'any', claimed: false },
-                        { id: 'play_category', icon: '🧭', title: `${categoryNames[category]} 탐험`, desc: `${categoryNames[category]} 게임 1번 플레이하기`, goal: 1, progress: 0, reward: 35, type: 'category', category, claimed: false },
-                        { id: 'play_two', icon: '🔥', title: '두 번의 도전', desc: '오늘 게임을 총 2번 플레이하기', goal: 2, progress: 0, reward: 45, type: 'count', claimed: false }
-                    ]
-                };
-            }
-
-            function getTodayMissionState() {
-                if (window.KidscadeDaily?.getMissionState) return window.KidscadeDaily.getMissionState(categoryNames);
-                let state;
-                try { state = JSON.parse(localStorage.getItem('kidscade_daily_missions') || 'null'); } catch(e) { state = null; }
-                if (!state || state.date !== getTodayKey() || !Array.isArray(state.missions)) {
-                    state = buildTodayMissionState();
-                    localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
-                }
-                return state;
-            }
-
-            function saveTodayMissionState(state) {
-                if (window.KidscadeDaily?.saveMissionState) return window.KidscadeDaily.saveMissionState(state);
-                localStorage.setItem('kidscade_daily_missions', JSON.stringify(state));
-                return true;
-            }
-
             function renderDailyMissions() {
-                const box = document.getElementById('sook-mission-list');
-                if (!box) return;
-                const state = getTodayMissionState();
-                box.innerHTML = '';
-                state.missions.forEach(mission => {
-                    const done = mission.claimed || mission.progress >= mission.goal;
-                    const card = document.createElement('div');
-                    card.className = `sook-mission-card ${done ? 'done' : ''}`;
-                    card.innerHTML = `<div class="mission-title">${mission.icon} ${mission.title}</div><div class="mission-desc">${mission.desc}<br>완료 보상: 🌱 ${mission.reward}개</div><div class="mission-progress">${mission.claimed ? '완료!' : `${Math.min(mission.progress, mission.goal)} / ${mission.goal}`}</div>`;
-                    box.appendChild(card);
-                });
-                const completed = state.missions.filter(m => m.claimed || m.progress >= m.goal).length;
-                const total = Math.max(1, state.missions.length);
-                const sideCount = document.getElementById('sidebar-mission-count');
-                const sideFill = document.getElementById('sidebar-mission-fill');
-                const sideNote = document.getElementById('sidebar-mission-note');
-                if (sideCount) sideCount.textContent = `${completed} / ${state.missions.length}`;
-                if (sideFill) sideFill.style.width = `${(completed / total) * 100}%`;
-                if (sideNote) sideNote.textContent = completed >= state.missions.length
-                    ? '오늘의 미션 완료! 멋지게 해냈어요.'
-                    : `미션 ${state.missions.length - completed}개가 남았어요. 완료하면 씨앗을 받아요.`;
+                return window.KidscadeDailyUI.renderDailyMissions(dailyUiContext());
             }
 
             function updateMissionProgress(category, gameId) {
-                let completed = [];
-                if (window.KidscadeDaily?.advanceMissions) {
-                    completed = window.KidscadeDaily.advanceMissions(category, categoryNames).completed || [];
-                } else {
-                    const state = getTodayMissionState();
-                    state.missions.forEach(mission => {
-                        if (mission.claimed) return;
-                        if (mission.type === 'any' || mission.type === 'count') mission.progress += 1;
-                        if (mission.type === 'category' && mission.category === category) mission.progress += 1;
-                        if (mission.progress >= mission.goal) {
-                            mission.progress = mission.goal;
-                            mission.claimed = true;
-                            completed.push({ ...mission });
-                        }
-                    });
-                    saveTodayMissionState(state);
-                }
-                completed.forEach(mission => {
-                    changeSeeds(mission.reward, '', { toast: false });
-                    const power = Math.max(5, Math.round(Number(mission.reward || 0) / 5));
-                    window.KidscadeSproutPower?.earn?.(power, '일일 미션 · ' + mission.title);
-                    showToast(`${mission.title} 완료! 씨앗 ${mission.reward}개 · 새싹력 +${power}`, true);
-                    window.KidscadeActivity?.record?.('mission', {
-                        title: mission.title + ' 완료!',
-                        summary: '씨앗 +' + mission.reward + ' · 새싹력 +' + power,
-                        place: '오늘의 미션', gameId: gameId || ''
-                    });
-                });
-                renderDailyMissions();
+                return window.KidscadeDailyUI.updateMissionProgress(category, gameId, dailyUiContext());
             }
 
             const visibleGameCount = document.getElementById('visible-game-count');
@@ -3316,27 +3223,8 @@ ${getEvolutionHintText()}
                 });
             }
 
-            let attendanceRewardPending = false;
             function checkAttendance() {
-                const todayStr = getDailyRewardKey();
-                const attendanceClaimed = window.KidscadeDaily?.isAttendanceClaimed?.() ?? (localStorage.getItem('kidscade_attendance') === todayStr);
-                if (!attendanceClaimed && !attendanceRewardPending) {
-                    attendanceRewardPending = true;
-                    // 씨앗을 실제 저장한 뒤 출석 완료 날짜를 기록합니다.
-                    if (changeSeeds(30, "오늘의 출석 씨앗", { toast: false })) {
-                        pet.affection = Math.min(100, pet.affection + 20);
-                        savePet(); updatePetUI();
-                        if (window.KidscadeDaily?.markAttendanceClaimed) window.KidscadeDaily.markAttendanceClaimed();
-                        else localStorage.setItem('kidscade_attendance', todayStr);
-                        window.KidscadeActivity?.record?.('attendance', {
-                            title: '오늘의 출석 완료!',
-                            summary: '씨앗 +30 · 쑥쑥이 친밀도 +20',
-                            place: '키즈케이드',
-                            dedupeKey: 'attendance-' + new Date().toLocaleDateString('sv-SE')
-                        });
-                    }
-                    attendanceRewardPending = false;
-                }
+                return window.KidscadeDailyUI.checkAttendance(dailyUiContext());
             }
             if (currentAgeGroup) checkAttendance();
         })();
