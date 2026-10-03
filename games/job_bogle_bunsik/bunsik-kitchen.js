@@ -1277,7 +1277,7 @@ function updateOrders(dt){
  if(expiredOrders.length){sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요',1400);renderOrders()}
 }
 function updateHud(){
- els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served
+ els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served;renderEconomyProgress()
 }
 function updateGame(dt){
  if(state.phase==='service'){
@@ -1294,11 +1294,12 @@ function updateGame(dt){
 }
 function endShift(){
  if(!state.running)return;
- state.running=false;state.phase='ended';restaurant.stopShift();cancelAnimationFrame(state.raf);
+ state.running=false;state.phase='ended';restaurant.stopShift();cancelAnimationFrame(state.raf);kitchen.snapshotEquipmentLayout();
+ const earned=Math.max(0,Math.round(state.revenue));progress.cash+=earned;progress.shifts+=1;saveProgress();
  const win=state.revenue>=TARGET_REVENUE;
- els.endTitle.textContent=win?'오늘 목표 달성!':'조금만 더 팔면 돼요!';
- els.endText.textContent=win?'여러 냄비의 타이밍을 잘 맞춰 오늘 매출 목표를 넘겼어요.':'냄비를 동시에 돌리되, 면이 가장 맛있는 순간을 놓치지 않는 게 핵심이에요.';
- els.endRevenue.textContent=money(state.revenue);els.endServed.textContent=String(state.served);els.endPerfect.textContent=String(state.perfect);els.end.classList.add('show');
+ els.endTitle.textContent=win?'오늘 목표 달성!':'오늘 영업 종료';
+ els.endText.textContent=win?'매출이 금고에 적립됐어요. 장비를 사서 다음 주방 동선을 더 짧게 만들어 보세요.':'번 돈은 그대로 금고에 적립됐어요. 작은 장비부터 사서 다음 영업을 더 편하게 만들어 보세요.';
+ els.endRevenue.textContent=money(state.revenue);els.endServed.textContent=String(state.served);els.endPerfect.textContent=String(state.perfect);els.end.classList.add('show');renderEconomyProgress();
  sfx(win?'success.victory_fanfare':'failure.fail_sting',{volume:.34,cooldownMs:900})
 }
 function loop(ts){
@@ -1309,21 +1310,23 @@ function loop(ts){
 function resetGameState(){
  restaurant.reset({keepLayout:true});
  state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
- state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.helperUnlocked=false;state.helperEnabled=false;kitchen.clearPrepCounters();kitchen.resetHelper();
- state.selectedPot=null;state.tutorial={active:true,step:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
+ state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
+ state.selectedPot=null;state.tutorial={active:!progress.tutorialDone,step:progress.tutorialDone?7:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
- kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderHelperButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
+ kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);kitchen.selectedLayoutStation=null;kitchen.setHelperEnabled(state.helperEnabled);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
 function startGame(){
- resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');
- toast('영업 전 준비 · 싱크, 면·스프 바구니, 토핑 냉장고, 접시대를 배치해 보세요',2700);state.raf=requestAnimationFrame(loop)
+ resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');renderEconomyProgress();
+ toast(progress.shifts?'영업 전 준비 · 산 장비를 배치하고 자동화 방향을 맞춰 보세요':'첫 영업 준비 · 직접 움직이며 주방 흐름을 익혀 보세요',2700);state.raf=requestAnimationFrame(loop)
 }
 function beginService(){
  if(!state.running||state.phase!=='prep')return;
- state.phase='service';document.body.classList.remove('layout-mode');els.prepBar?.classList.add('hidden');
- restaurant.startShift({duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE});spawnOrder('egg');renderTutorial();updateActionButtons();updateDishHud();renderHeldStatus();
- toast('영업 시작! 재료를 하나씩 직접 들고 냄비와 배식대를 오가세요',2600)
+ kitchen.snapshotEquipmentLayout();state.phase='service';document.body.classList.remove('layout-mode');els.prepBar?.classList.add('hidden');renderSmartFilterButton();
+ restaurant.startShift({duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE});
+ if(state.tutorial.active)spawnOrder('egg');else{spawnOrder();spawnOrder()}
+ renderTutorial();updateActionButtons();updateDishHud();renderHeldStatus();
+ toast(state.tutorial.active?'영업 시작! 재료를 하나씩 직접 들고 냄비와 배식대를 오가세요':'영업 시작! 알바생과 자동화 장비가 바로 작동해요',2600)
 }
 
 els.dock.addEventListener('click',e=>{
@@ -1344,6 +1347,8 @@ $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
 els.openShop?.addEventListener('click',beginService);
 els.rotate?.addEventListener('click',()=>kitchen.rotateSelectedAutomation());
+els.smartFilter?.addEventListener('click',cycleSmartFilter);
+els.equipmentShop?.addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(b&&!b.disabled)purchaseEquipment(b.dataset.buy)});
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
 els.helper?.addEventListener('click',()=>{
  if(!state.helperUnlocked)return;
@@ -1367,4 +1372,4 @@ els.moveControls?.querySelectorAll('[data-move]').forEach(btn=>{
 });
 els.moveControls?.querySelector('[data-interact]')?.addEventListener('click',()=>kitchen.interactNearest());
 
-updateHud();updateDishHud();renderHeldStatus();renderHelperButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
+updateHud();updateDishHud();renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderEconomyProgress();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
