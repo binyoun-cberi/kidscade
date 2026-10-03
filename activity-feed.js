@@ -236,6 +236,19 @@
         host.insertBefore(launcher, host.firstChild);
         launcher.addEventListener('click', open);
       }
+      let teacherLauncher = document.getElementById('kc-teacher-launcher');
+      if (!teacherLauncher) {
+        teacherLauncher = document.createElement('a');
+        teacherLauncher.id = 'kc-teacher-launcher';
+        teacherLauncher.className = 'header-btn kc-teacher-launcher';
+        teacherLauncher.href = '/teacher/';
+        teacherLauncher.setAttribute('aria-label', '교사 관리 열기');
+        teacherLauncher.setAttribute('title', '교사 관리');
+        teacherLauncher.innerHTML = '<span aria-hidden="true">👩‍🏫</span><span class="kc-teacher-launcher-label">교사 관리</span>';
+        host.insertBefore(teacherLauncher, launcher);
+      } else if (teacherLauncher.nextElementSibling !== launcher) {
+        host.insertBefore(teacherLauncher, launcher);
+      }
       const nav = document.querySelector('.kc-mobile-nav');
       if (nav) {
         nav.classList.add('kc-feed-nav');
