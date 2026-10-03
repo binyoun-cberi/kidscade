@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "frames": ["stand-01", "stand-02", "walk-01", "walk-02", "walk-03", "walk-04", "jump-01"]
+}
