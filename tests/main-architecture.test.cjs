@@ -290,3 +290,13 @@ test('retired standalone aquarium and hamster rooms stay removed', () => {
     assert.doesNotMatch(source, /aquarium-modal|hamster-modal|btn-open-aquarium|btn-open-hamster/);
   }
 });
+
+
+test('index owns filter delegation without bootstrap source surgery', () => {
+  const index = read('index_base.html');
+  const bootstrap = read('main-bootstrap.js');
+
+  assert.equal(index.includes('window.KidscadeFilter?.apply?.({'), true);
+  assert.equal(bootstrap.includes('const filterStart ='), false);
+  assert.equal(bootstrap.includes('filterReplacement'), false);
+});
