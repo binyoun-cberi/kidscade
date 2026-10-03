@@ -145,6 +145,7 @@ const state={
  started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
  lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false
 };
+let bgmHandle=null;
 
 const SAME={
  stone:{need:2,out:'chopper',name:'찍개'},
@@ -336,20 +337,38 @@ function highlightTargets(c){
   const cls=interactionClass(c,o);if(cls)o.el.classList.add(cls);
  }
 }
+function clearWorkVisual(c){
+ if(!c?.el)return;
+ c.busy=false;c.el.classList.remove('busy');
+ const tag=c.el.querySelector('.workTag');if(tag)tag.textContent='진행 중…';
+ const p=c.el.querySelector('.progress');if(p){p.style.transition='none';p.style.width='0';}
+}
+function cancelAssignment(card){
+ let worker=isWorker(card?.type)?card:null;
+ if(!worker&&card?.occupiedBy)worker=state.cards.get(card.occupiedBy)||null;
+ if(!worker||!worker.assignmentNodeId)return;
+ const node=state.cards.get(worker.assignmentNodeId);
+ if(worker.assignmentTimer){clearTimeout(worker.assignmentTimer);worker.assignmentTimer=null;}
+ if(node&&node.occupiedBy===worker.id){node.occupiedBy=null;clearWorkVisual(node);}
+ worker.assignmentNodeId=null;clearWorkVisual(worker);
+}
 function bindDrag(c){
- let dragging=false,ox=0,oy=0;
+ let dragging=false,ox=0,oy=0,moved=false;
  c.el.addEventListener('pointerdown',e=>{
-  if(!state.started||state.over||c.busy)return;
-  dragging=true;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');highlightTargets(c);
+  if(!state.started||state.over||(c.busy&&!c.assignmentNodeId&&!c.occupiedBy))return;
+  dragging=true;moved=false;c.el.setPointerCapture(e.pointerId);c.el.classList.add('dragging');highlightTargets(c);
   const r=c.el.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;c.el.style.zIndex=++state.z;e.preventDefault();
  });
  c.el.addEventListener('pointermove',e=>{
-  if(!dragging)return;const r=board.getBoundingClientRect();
+  if(!dragging)return;
+  if(!moved){moved=true;cancelAssignment(c);}
+  const r=board.getBoundingClientRect();
   place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-12)),clamp(e.clientY-r.top-oy,18,Math.max(18,r.height-c.el.offsetHeight-12)));e.preventDefault();
  });
  const end=e=>{
   if(!dragging)return;dragging=false;c.el.classList.remove('dragging');clearHighlights();
   try{c.el.releasePointerCapture(e.pointerId)}catch(_){}
+  if(!moved)return;
   const target=findTarget(c);if(target)resolve(c,target);
  };
  c.el.addEventListener('pointerup',end);c.el.addEventListener('pointercancel',end);
@@ -459,11 +478,62 @@ function specialAction(a,b){
  return null;
 }
 
+function outputPosition(anchor,index=0){
+ const offsets=[[126,0],[126,34],[-126,0],[-126,34],[34,158],[68,158],[0,158]];
+ const p=offsets[index%offsets.length],w=board.clientWidth,h=board.clientHeight;
+ return {x:clamp(anchor.x+p[0],6,Math.max(6,w-124)),y:clamp(anchor.y+p[1],20,Math.max(20,h-164))};
+}
+function playProductionPop(){
+ try{
+  if(window.KidscadeAudio?.play){window.KidscadeAudio.play('ui.confirm',{volume:.16,rate:1.18,rateJitter:.035,cooldownMs:70}).catch?.(()=>{});return;}
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  const ctx=playProductionPop.ctx||(playProductionPop.ctx=new AC());
+  if(ctx.state==='suspended')ctx.resume();
+  const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;
+  o.type='sine';o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(760,t+.075);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.035,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+.12);
+  o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.13);
+ }catch(_){}
+}
+function spawnOutputs(anchor,out){
+ out.forEach((o,i)=>{
+  const p=outputPosition(anchor,i+(anchor.produceSeq||0));
+  addCard(o[0],p.x,p.y,o[1]||1,true);
+ });
+ anchor.produceSeq=((anchor.produceSeq||0)+out.length)%7;
+ playProductionPop();
+}
+function finishOneShotWorker(worker,node,d,run){
+ if(state.over||run!==state.runId)return;
+ clearWorkVisual(worker);
+ if(state.cards.has(node.id)){if(d.consumeNode)removeCard(node);else clearWorkVisual(node);}
+ spawnOutputs(state.cards.has(node.id)?node:worker,d.out);
+ state.stats.gathered+=d.out.reduce((sum,o)=>sum+(o[1]||1),0);
+ if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);
+ if(state.cards.has(node.id))separate(worker,node);
+ renderAll();checkMilestone();
+}
+function productionCycle(worker,node,d,run){
+ if(state.over||run!==state.runId||!state.cards.has(worker.id)||!state.cards.has(node.id)||worker.assignmentNodeId!==node.id)return;
+ worker.busy=true;node.busy=true;markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);
+ worker.assignmentTimer=setTimeout(()=>{
+  if(state.over||run!==state.runId||worker.assignmentNodeId!==node.id||!state.cards.has(worker.id)||!state.cards.has(node.id))return;
+  spawnOutputs(node,d.out);state.stats.gathered+=d.out.reduce((sum,o)=>sum+(o[1]||1),0);
+  if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);
+  renderAll();checkMilestone();
+  worker.assignmentTimer=setTimeout(()=>productionCycle(worker,node,d,run),260);
+ },d.ms);
+}
 function runAction(worker,node,d){
- const run=state.runId;worker.busy=true;node.busy=true;markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);snap(worker,node);
- setTimeout(()=>{if(state.over||run!==state.runId)return;worker.busy=false;worker.el.classList.remove('busy');if(state.cards.has(node.id)){if(d.consumeNode)removeCard(node);else{node.busy=false;node.el.classList.remove('busy');}}
-  d.out.forEach((o,i)=>addCard(o[0],worker.x+108+i*20,worker.y+i*18,o[1]||1));state.stats.gathered+=d.out.reduce((s,o)=>s+(o[1]||1),0);
-  if(!d.consumeNode&&state.cards.has(node.id))separate(worker,node);if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);renderAll();checkMilestone();},d.ms);
+ const run=state.runId;
+ if(d.consumeNode){
+  worker.busy=true;node.busy=true;markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);snap(worker,node);
+  setTimeout(()=>finishOneShotWorker(worker,node,d,run),d.ms);return;
+ }
+ if(node.occupiedBy&&node.occupiedBy!==worker.id){showToast('이미 다른 사람이 이곳에서 일하고 있어요.');separate(worker,node);return;}
+ cancelAssignment(worker);
+ worker.assignmentNodeId=node.id;node.occupiedBy=worker.id;snap(worker,node);
+ productionCycle(worker,node,d,run);
 }
 
 function runSpecial(a,b,d){
@@ -600,7 +670,16 @@ function renderGoal(){
 let toastTimer;
 function showToast(msg){ui.toast.textContent=msg;ui.toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),2100);}
 function closeLayer(id){$('#'+id)?.classList.add('hidden');}
-function start(){$('#startLayer').classList.add('hidden');reset();try{window.KidscadeGame?.start?.()}catch(_){}}
+async function startBgm(){
+ try{
+  if(bgmHandle||window.KidscadeAudio?.getSettings?.().muted)return;
+  window.KidscadeAudio?.preload?.(['music.korea_welcome','ui.confirm'])?.catch?.(()=>{});
+  const result=await window.KidscadeAudio?.play?.('music.korea_welcome',{loop:true,volume:.075,cooldownMs:500});
+  if(result?.ok)bgmHandle=result;
+ }catch(_){}
+}
+function stopBgm(){try{bgmHandle?.stop?.()}catch(_){}bgmHandle=null;}
+function start(){$('#startLayer').classList.add('hidden');reset();startBgm();try{window.KidscadeGame?.start?.()}catch(_){}}
 
 $('#startBtn').addEventListener('click',start);
 $('#retryBtn').addEventListener('click',reset);
@@ -623,5 +702,8 @@ $('#helpBtn').addEventListener('click',()=>{closeHudPopovers();$('#helpLayer').c
 document.querySelectorAll('[data-close-popover]').forEach(b=>b.addEventListener('click',()=>closeHudPopovers()));
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeLayer(b.dataset.close)));
 board.addEventListener('pointerdown',e=>{if(e.target===board)closeHudPopovers();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopBgm();else if(state.started&&!state.over)startBgm();});
+window.addEventListener('pagehide',stopBgm);
+window.addEventListener('beforeunload',stopBgm);
 window.addEventListener('resize',()=>{for(const c of state.cards.values())place(c,clamp(c.x,4,Math.max(4,board.clientWidth-c.el.offsetWidth-12)),clamp(c.y,18,Math.max(18,board.clientHeight-c.el.offsetHeight-12)));});
 })();
