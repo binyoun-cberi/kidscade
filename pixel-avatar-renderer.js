@@ -5,7 +5,7 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='20';
+const ASSET_REV='21';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
