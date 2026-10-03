@@ -21,9 +21,9 @@ test('avatar studio and renderer JavaScript both parse cleanly',()=>{
 });
 
 test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=26/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=30/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=26')<html.indexOf('avatar-pixel-studio.js?v=30'));
+  assert.match(html,/pixel-avatar-renderer\.js\?v=27/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=31/);
+  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=27')<html.indexOf('avatar-pixel-studio.js?v=31'));
   assert.match(html,/avatarCanvas/);
   assert.doesNotMatch(html,/avatar-pack-1\.js/);
 });
@@ -78,7 +78,7 @@ test('pixel avatar studio stays compatible with existing avatar integration',()=
   assert.match(js,/renderPreviewFrame/);
   assert.match(js,/setSeeds/);
   assert.match(js,/kidscade-avatar-change/);
-  assert.match(js,/version:'pixel-v2-rig-haircatalog-5'/);
+  assert.match(js,/version:'pixel-v2-rig-haircatalog-6'/);
 });
 
 test('new and legacy users fall back to the curated default hair with a complete outfit',()=>{
@@ -180,9 +180,9 @@ test('legacy sheet hair stays in the repository but its automatic build is retir
 });
 
 test('runtime assets are revisioned so curated hair migrations do not stay stale in browser cache',()=>{
-  assert.match(js,/ASSET_REV='26'/);
+  assert.match(js,/ASSET_REV='27'/);
   assert.match(js,/function rev\(src\)/);
-  assert.match(renderer,/ASSET_REV='26'/);
+  assert.match(renderer,/ASSET_REV='27'/);
 });
 
 
