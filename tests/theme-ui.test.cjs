@@ -59,12 +59,16 @@ test('theme bind is idempotent and toggles persisted state', () => {
   assert.deepEqual(sounds,['click']);
 });
 
-test('index_base only binds the shared theme module', () => {
+test('index_base and compact topbar both delegate theme ownership', () => {
   const html=fs.readFileSync('index_base.html','utf8');
   const bootstrap=fs.readFileSync('main-bootstrap.js','utf8');
+  const topbar=fs.readFileSync('ui-topbar-compact.js','utf8');
   assert.match(html,/<script src="theme-ui\.js"><\/script>/);
   assert.match(html,/KidscadeTheme\?\.bind/);
+  assert.match(topbar,/KidscadeTheme\?\.bind/);
   assert.doesNotMatch(html,/localStorage\.getItem\('kidscade_darkmode'\)/);
   assert.doesNotMatch(html,/localStorage\.setItem\('kidscade_darkmode'/);
+  assert.doesNotMatch(topbar,/localStorage\.getItem\('kidscade_darkmode'\)/);
+  assert.doesNotMatch(topbar,/localStorage\.setItem\('kidscade_darkmode'/);
   assert.match(bootstrap,/withVersion\('theme-ui\.js'\)/);
 });
