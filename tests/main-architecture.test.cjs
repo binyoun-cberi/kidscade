@@ -207,8 +207,23 @@ test('composed page has exactly one card per catalog entry, including injected l
   }
   assert.equal((output.match(/<a\b[^>]*class="game-card/g) || []).length, catalog.games.length);
   assert.ok(!output.includes('href="unknown.html"'));
-  // garden.js runs after composition; it must only load garden modules, never add cards.
-  vm.runInContext(read('garden.js'), vm.createContext({ document: { write() {} } }));
+  // garden.js runs while the HTML parser is active. Every injected child script
+  // must contain a real closing tag; an escaped <\\/script> swallows the next inline
+  // lobby script and leaves the whole page visible but inert.
+  const gardenWrites = [];
+  vm.runInContext(read('garden.js'), vm.createContext({
+    URL,
+    document: {
+      currentScript: { src:'https://example.test/garden.js?v=test-build' },
+      baseURI:'https://example.test/',
+      write(value) { gardenWrites.push(String(value)); }
+    }
+  }));
+  assert.equal(gardenWrites.length, 4);
+  for (const markup of gardenWrites) {
+    assert.match(markup, /^<script src="[^"]+\?v=test-build"><\/script>$/);
+    assert.doesNotMatch(markup, /<\\\/script>/);
+  }
   assert.doesNotMatch(read('index.html'), /catalog-extra\.js/);
   assert.doesNotMatch(read('main-bootstrap.js'), /KidscadeCatalogCovers/);
 });
