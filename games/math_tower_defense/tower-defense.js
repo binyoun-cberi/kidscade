@@ -19,10 +19,10 @@ const TOWERS={
 const WAVES=[
   {nums:[2,4,8,16],count:7,mission:'첫 감염체는 모두 2의 거듭제곱입니다. ÷2만으로 숫자를 1까지 분해하세요.'},
   {nums:[6,9,12,18],count:8,mission:'÷3 기어 캐논이 열렸습니다. 9·12·18의 약수를 골라 연쇄 분해하세요.'},
-  {nums:[7,11,13],count:8,mission:'소수 감염 경보! ±1 변환기로 2·3·5의 배수로 바꾼 뒤 분해하세요.'},
+  {nums:[7,11,13],count:8,mission:'소수 감염 경보! ±1 교정기로 지금 해금된 2·3의 배수로 바꾼 뒤 분해하세요.'},
   {nums:[10,15,20,25,30],count:9,mission:'÷5 중포가 열렸습니다. 큰 수를 빠르게 작은 인수로 쪼개세요.'},
   {nums:[18,24,30,36,45],count:10,mission:'FACTOR CHAIN을 노리세요. 여러 약수 터렛이 이어질수록 강해집니다.'},
-  {nums:[14,21,27,35,49],count:11,mission:'바로 나눌 수 없는 49는 ±1로 48 또는 50을 만든 뒤 처리하세요.'},
+  {nums:[14,21,27,35,49],count:11,mission:'나눈 뒤 7 같은 소수가 다시 남습니다. 길 후반에도 교정기→나눗셈 2차 방어선을 이어 보세요.'},
   {nums:[17,19,23,29],count:12,mission:'소수 러시입니다. 교정기 위치와 나눗셈 터렛의 사거리를 연결하세요.'},
   {nums:[48,60,72,90,120],count:12,mission:'대형 감염체 러시! 약수 연쇄로 숫자 갑옷을 1까지 완전히 분해하세요.'}
 ];
@@ -81,7 +81,7 @@ function readBest(){try{return Math.max(1,parseInt(localStorage.getItem('numTD_b
 const state={
   wave:1,money:520,lives:20,maxLives:20,kills:0,best:readBest(),
   towers:[],enemies:[],spawnQueue:[],spawnTimer:0,waveActive:false,paused:false,speed:1,
-  beams:[],texts:[],particles:[],gameOver:false,autoUsed:false
+  beams:[],texts:[],particles:[],gameOver:false,autoUsed:false,residualHintShown:false
 };
 
 function isPrime(n){if(n<=1)return false;if(n<=3)return true;if(n%2===0||n%3===0)return false;for(let i=5;i*i<=n;i+=6)if(n%i===0||n%(i+2)===0)return false;return true}
@@ -311,13 +311,19 @@ function rebuildSkyWorld(){
 
 
 async function loadAssets(){
-  if(assetsLoading)return;assetsLoading=true;assetStatus.textContent='3D 모델 불러오는 중…';
-  const results=await Promise.allSettled(Object.entries(MODELS).map(([k,u])=>loadModel(k,u)));
-  assetStatus.textContent='3D 모델 준비 완료';
-  setTimeout(()=>assetStatus.style.opacity='.35',1800);
-  rebuildBoardDecor();rebuildSkyWorld();
+  if(assetsLoading)return;assetsLoading=true;assetStatus.textContent='전투 모델 불러오는 중…';
+  const priority=['subA','div2A','div3A','addA','div5A','zombieMale','zombieFemale','cityLight','treeDefault','treeDetailed','treeOak','pine','bush','grass','flower'];
+  await Promise.allSettled(priority.map(k=>loadModel(k,MODELS[k])));
+  rebuildBoardDecor();
   for(const [t,n] of [...towerNodes]){towerGroup.remove(n);towerNodes.delete(t)}
   for(const [e,n] of [...enemyNodes]){enemyGroup.remove(n);enemyNodes.delete(e);enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e)}
+  assetStatus.textContent='전투 모델 준비 완료 · 도시 불러오는 중…';
+  const rest=Object.keys(MODELS).filter(k=>!priority.includes(k));
+  await Promise.allSettled(rest.map(k=>loadModel(k,MODELS[k])));
+  rebuildBoardDecor();rebuildSkyWorld();
+  for(const [t,n] of [...towerNodes]){towerGroup.remove(n);towerNodes.delete(t)}
+  assetStatus.textContent='좀비 도시 에셋 준비 완료';
+  setTimeout(()=>assetStatus.style.opacity='.35',1800)
 }
 
 function zombieKey(e){return e.variant==='female'?'zombieFemale':'zombieMale'}
@@ -439,7 +445,8 @@ function applyTower(t,e){
   const def=TOWERS[t.id],before=e.hp;let label='',factor=false;
   if(t.id==='SUB1'){e.hp-=1;label=before+'−1='+e.hp;e.chain=0}
   else if(t.id==='ADD1'){e.hp+=1;label=before+'+1='+e.hp;e.chain=0}
-  else{e.hp=before/def.value;label=before+'÷'+def.value+'='+e.hp;e.chain=(e.chain||0)+1;factor=true}
+  else{e.hp=before/def.value;label=before+'÷'+def.value+'='+e.hp;e.chain=(e.chain||0)+1;factor=true;
+    if(e.hp>5&&isPrime(e.hp)&&!state.residualHintShown){state.residualHintShown=true;setTimeout(()=>toast(e.hp+' 같은 소수가 남았어요. 길 뒤쪽에도 ±1 교정기와 나눗셈 터렛을 이어 두세요.'),120)}}
   e.flash=.2;impactShake=Math.max(impactShake,.12);const tp=cellWorld(t.x,t.y,.72);state.beams.push({a:tp,b:e.pos.clone().setY(.58),color:def.color,life:.16,id:t.id});state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(e.labelSide*.12,1.34+e.labelLane*.05,0)),text:label,color:def.color,life:.72});
   if(factor&&e.chain>=2)state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(-e.labelSide*.16,1.62,0)),text:'FACTOR ×'+e.chain,color:'#fde68a',life:.82});
   hitBurst(e.pos,def.color);feed(label,def.color);sfx.shoot();if(e.hp===1)purifyEnemy(e)
@@ -531,7 +538,7 @@ function resetGame(){
   for(const n of towerNodes.values())towerGroup.remove(n);for(const n of enemyNodes.values())enemyGroup.remove(n);for(const m of enemyMixers.values())m.stopAllAction();towerNodes.clear();enemyNodes.clear();enemyMixers.clear();
   for(const child of [...fxGroup.children]){fxGroup.remove(child);child.geometry?.dispose();child.material?.dispose()}
   for(const child of [...ui3dGroup.children]){if(child===hoverTile||child===rangeRing)continue;ui3dGroup.remove(child);child.material?.map?.dispose();child.material?.dispose()}
-  state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.beams=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();setGameSpeed(1);$('pauseBtn').textContent='⏸';syncBgm()
+  state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.residualHintShown=false;state.beams=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();setGameSpeed(1);$('pauseBtn').textContent='⏸';syncBgm()
 }
 
 document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>btn.addEventListener('click',()=>{initAudio();const d=TOWERS[btn.dataset.tower];if(state.wave<d.unlock)return;selectedTower=selectedTower===d.id?null:d.id;selectedBuilt=null;sfx.click();syncDeck();syncSelectedPanel();syncSelection()}));
