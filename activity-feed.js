@@ -236,8 +236,12 @@
         host.insertBefore(launcher, host.firstChild);
         launcher.addEventListener('click', open);
       }
+      const isTeacherAccount = window.KidscadeAccount?.account?.role === 'teacher';
       let teacherLauncher = document.getElementById('kc-teacher-launcher');
-      if (!teacherLauncher) {
+      if (!isTeacherAccount) {
+        teacherLauncher?.remove();
+        teacherLauncher = null;
+      } else if (!teacherLauncher) {
         teacherLauncher = document.createElement('a');
         teacherLauncher.id = 'kc-teacher-launcher';
         teacherLauncher.className = 'header-btn kc-teacher-launcher';
@@ -245,6 +249,11 @@
         teacherLauncher.setAttribute('aria-label', '교사 관리 열기');
         teacherLauncher.setAttribute('title', '교사 관리');
         teacherLauncher.innerHTML = '<span aria-hidden="true">👩‍🏫</span><span class="kc-teacher-launcher-label">교사 관리</span>';
+        teacherLauncher.addEventListener('click', event => {
+          if (window.KidscadeAccount?.account?.role === 'teacher') return;
+          event.preventDefault();
+          teacherLauncher.remove();
+        });
         host.insertBefore(teacherLauncher, launcher);
       } else if (teacherLauncher.nextElementSibling !== launcher) {
         host.insertBefore(teacherLauncher, launcher);
@@ -397,6 +406,7 @@
       window.addEventListener('storage', event => { if (event.key === KEY) scheduleSync(); });
       document.addEventListener('kidscade:activity-changed', scheduleSync);
       document.addEventListener('kidscade:catalog-ready', scheduleSync);
+      document.addEventListener('kidscade:account-changed', scheduleSync);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
       else scheduleSync();
       let attempts = 0;
