@@ -6,14 +6,14 @@ const screens = {
   intro:$('introScreen'), calibration:$('calibrationScreen'), game:$('gameScreen'), result:$('resultScreen')
 };
 const ui = {
-  difficultyList:$('difficultyList'), calibrateBtn:$('calibrateBtn'), defaultBtn:$('defaultBtn'), introStatus:$('introStatus'),
-  calOrb:$('calOrb'), calValue:$('calValue'), calNote:$('calNote'), calProgress:$('calProgress'), calHint:$('calHint'),
+  modeList:$('modeList'), modeHint:$('modeHint'), difficultyCopy:$('difficultyCopy'), difficultyList:$('difficultyList'), calibrateBtn:$('calibrateBtn'), defaultBtn:$('defaultBtn'), introStatus:$('introStatus'),
+  calOrb:$('calOrb'), calValue:$('calValue'), calNote:$('calNote'), calProgress:$('calProgress'), calHint:$('calHint'), calDescription:$('calDescription'),
   retryCalBtn:$('retryCalBtn'), cancelCalBtn:$('cancelCalBtn'),
-  modeLabel:$('modeLabel'), score:$('scoreText'), combo:$('comboText'), time:$('timeText'),
+  modeLabel:$('modeLabel'), score:$('scoreText'), combo:$('comboText'), time:$('timeText'), thirdStatLabel:$('thirdStatLabel'),
   targetNote:$('targetNote'), targetText:$('targetText'), targetHz:$('targetHz'), currentNote:$('currentNote'), currentHz:$('currentHz'),
   tuneNeedle:$('tuneNeedle'), stage:$('stage'), stageWrap:$('stageWrap'), micBadge:$('micBadge'), micText:$('micText'), floatGrade:$('floatGrade'),
-  resultScore:$('resultScore'), resultGrade:$('resultGrade'), perfectCount:$('perfectCount'), goodCount:$('goodCount'),
-  accuracyText:$('accuracyText'), maxComboText:$('maxComboText'), resultComment:$('resultComment'), retryBtn:$('retryBtn'), menuBtn:$('menuBtn')
+  resultTitle:$('resultTitle'), resultScore:$('resultScore'), resultGrade:$('resultGrade'), perfectCount:$('perfectCount'), goodCount:$('goodCount'),
+  accuracyText:$('accuracyText'), accuracyLabel:$('accuracyLabel'), maxComboText:$('maxComboText'), maxComboLabel:$('maxComboLabel'), resultComment:$('resultComment'), retryBtn:$('retryBtn'), menuBtn:$('menuBtn')
 };
 
 const DIFFICULTY = {
@@ -23,15 +23,18 @@ const DIFFICULTY = {
 };
 const NOTE_NAMES = ['도','레','미','파','솔','라','시','높은 도'];
 const SCALE = [0,2,4,5,7,9,11,12];
+const MAJOR_SCALE = [0,2,4,5,7,9,11];
+const STAIR = {passCents:88,perfectCents:32,holdMs:520,stepMs:6500,restEvery:7,restMs:2600,maxHz:900};
 const SAVE_KEY = 'kidscade_perfect_pitch_v1';
 const TAU = Math.PI * 2;
 
 const state = {
-  phase:'intro', difficulty:'easy', audioCtx:null, analyser:null, stream:null, buffer:null,
+  phase:'intro', gameMode:'classic', difficulty:'easy', audioCtx:null, analyser:null, stream:null, buffer:null,
   pitchHz:null, smoothHz:null, voiced:false, rms:0, rootMidi:60, calibrated:false,
   calSamples:[], calStartedAt:0, calCollectAt:0, calRaf:0,
   gameStartedAt:0, gameEndsAt:0, lastFrame:0, lastPitchAt:0, lastSpawnAt:0,
   gates:[], particles:[], sequenceIndex:0, score:0, combo:0, maxCombo:0, perfect:0, good:0, miss:0,
+  stairStep:0,stairPeak:0,stairLives:3,stairHoldAt:0,stairStepStartedAt:0,stairRestUntil:0,stairLastError:null,
   currentTarget:null, raf:0, resizeNeeded:true, best:loadBest()
 };
 
@@ -42,12 +45,12 @@ function showScreen(name){
 function loadBest(){
   try{
     const v=window.KidscadeStorage?.getJson?.(SAVE_KEY,null);
-    if(v&&typeof v==='object')return {score:Number(v.score)||0,combo:Number(v.combo)||0};
+    if(v&&typeof v==='object')return {score:Number(v.score)||0,combo:Number(v.combo)||0,stairPeak:Number(v.stairPeak)||0};
   }catch(_){}
-  return {score:0,combo:0};
+  return {score:0,combo:0,stairPeak:0};
 }
 function saveBest(){
-  const next={score:Math.max(state.best.score,state.score),combo:Math.max(state.best.combo,state.maxCombo)};
+  const next={score:Math.max(state.best.score,state.score),combo:Math.max(state.best.combo,state.maxCombo),stairPeak:Math.max(state.best.stairPeak||0,state.stairPeak||0)};
   state.best=next;
   try{window.KidscadeStorage?.setJson?.(SAVE_KEY,next)}catch(_){}
 }
@@ -177,6 +180,27 @@ ui.difficultyList.addEventListener('click',e=>{
   const b=e.target.closest('.diff');if(b)chooseDifficulty(b.dataset.difficulty);
 });
 
+function chooseMode(value){
+  if(!['classic','stair'].includes(value))return;
+  state.gameMode=value;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===value));
+  const stair=value==='stair';
+  ui.modeHint.textContent=stair
+    ? '무한 고음 계단 · 제한시간 없이 한 음씩 올라가요. 3번 실패하면 끝나며, 큰 소리는 점수에 영향을 주지 않아요.'
+    : '일반 모드 · 목소리를 위아래로 움직여 다가오는 음표 문을 통과해요.';
+  ui.difficultyCopy.textContent=stair
+    ? '난이도는 판정 폭에만 적용돼요. 계단은 성공할 때마다 계속 한 칸씩 높아집니다.'
+    : '처음에는 초급을 추천해요. 판정 폭과 음표 수가 난이도에 따라 달라집니다.';
+  ui.calDescription.innerHTML=stair
+    ? '평소 가장 편한 음으로 “아~~~” 해주세요.<br>그 음을 기준으로 계단을 시작하므로 일부러 높게 부를 필요가 없어요.'
+    : '높이려고 애쓰지 말고 평소 가장 편한 음을 길게 내면<br>게임이 그 목소리에 맞춰 도~높은 도 범위를 정해요.';
+  ui.calibrateBtn.textContent=stair?'🎤 내 음역 맞추고 계단 시작':'🎤 내 음역 맞추고 시작';
+  ui.defaultBtn.textContent=stair?'기본 음역으로 체험':'바로 체험';
+}
+ui.modeList.addEventListener('click',e=>{
+  const b=e.target.closest('.mode-btn');if(b)chooseMode(b.dataset.mode);
+});
+
 async function beginCalibration(){
   ui.introStatus.textContent='';
   try{
@@ -252,7 +276,16 @@ function pitchY(){
   const clamped=Math.max(-1,Math.min(13,semi));
   return laneYBySemitone(clamped);
 }
-function targetMidi(index){return state.rootMidi+SCALE[index]}
+function stairSemitone(step){
+  const s=Math.max(0,Math.floor(step));
+  return Math.floor(s/7)*12+MAJOR_SCALE[s%7];
+}
+function stairNoteName(step){
+  const names=['도','레','미','파','솔','라','시'];
+  const octave=Math.floor(step/7);
+  return (octave===0?'':octave===1?'높은 ':octave===2?'더 높은 ':'+'+octave+'옥타브 ')+names[step%7];
+}
+function targetMidi(index){return state.rootMidi+(state.gameMode==='stair'?stairSemitone(index):SCALE[index])}
 function targetFrequency(index){return midiToHz(targetMidi(index))}
 function noteErrorCents(index){
   if(!state.pitchHz||!state.voiced)return null;
@@ -285,18 +318,126 @@ function updateTargetHud(){
 
 function startGame(){
   cancelAnimationFrame(state.calRaf);
+  if(state.gameMode==='stair'){startStairGame();return}
   const c=cfg();
   state.score=0;state.combo=0;state.maxCombo=0;state.perfect=0;state.good=0;state.miss=0;state.gates=[];state.particles=[];
   state.sequenceIndex=0;state.currentTarget=null;state.lastFrame=performance.now();state.lastPitchAt=0;state.lastSpawnAt=state.lastFrame;
   state.gameStartedAt=state.lastFrame;state.gameEndsAt=state.lastFrame+c.seconds*1000;
   showScreen('game');state.resizeNeeded=true;resizeCanvas();spawnGate(true);
   ui.modeLabel.textContent=c.label+' · '+(state.calibrated?'맞춤 음역':'기본 C 음역');
+  ui.thirdStatLabel.textContent='남은 시간';
   updateHud();
   try{window.KidscadeGame?.start?.({difficulty:state.difficulty,calibrated:state.calibrated,rootMidi:state.rootMidi})}catch(_){}
   cancelAnimationFrame(state.raf);state.raf=requestAnimationFrame(gameLoop);
 }
 function updateHud(){
   ui.score.textContent=state.score;ui.combo.textContent=state.combo;
+}
+
+function stairTolerance(){
+  if(state.difficulty==='easy')return {pass:118,perfect:42};
+  if(state.difficulty==='hard')return {pass:62,perfect:24};
+  return {pass:STAIR.passCents,perfect:STAIR.perfectCents};
+}
+function startStairGame(){
+  state.score=0;state.combo=0;state.maxCombo=0;state.perfect=0;state.good=0;state.miss=0;state.gates=[];state.particles=[];
+  state.stairStep=0;state.stairPeak=0;state.stairLives=3;state.stairHoldAt=0;state.stairRestUntil=0;state.stairLastError=null;
+  state.lastFrame=performance.now();state.lastPitchAt=0;state.stairStepStartedAt=state.lastFrame;state.gameStartedAt=state.lastFrame;
+  state.currentTarget=0;showScreen('game');state.resizeNeeded=true;resizeCanvas();
+  ui.modeLabel.textContent='무한 고음 계단 · '+(state.calibrated?'맞춤 음역':'기본 C 음역');
+  ui.thirdStatLabel.textContent='기회';ui.time.textContent='♥♥♥';
+  updateStairTargetHud();updateHud();
+  try{window.KidscadeGame?.start?.({mode:'stair',difficulty:state.difficulty,calibrated:state.calibrated,rootMidi:state.rootMidi})}catch(_){}
+  cancelAnimationFrame(state.raf);state.raf=requestAnimationFrame(stairGameLoop);
+}
+function updateStairTargetHud(){
+  state.currentTarget=state.stairStep;
+  const label=stairNoteName(state.stairStep),hz=targetFrequency(state.stairStep);
+  ui.targetNote.textContent=label.length>4?String(state.stairStep+1):label;
+  ui.targetText.textContent=(state.stairStep+1)+'층 · '+label;
+  ui.targetHz.textContent='목표 '+Math.round(hz)+' Hz · 큰 소리보다 편하게 정확히 맞춰요';
+}
+function stairSuccess(kind,now){
+  state[kind]++;state.combo++;state.maxCombo=Math.max(state.maxCombo,state.combo);
+  state.stairPeak=Math.max(state.stairPeak,state.stairStep+1);
+  state.score+=kind==='perfect'?150+state.stairStep*12:95+state.stairStep*8;
+  popGrade(kind==='perfect'?'PERFECT!':'GOOD!',kind);
+  burst((state.viewW||900)*.34,(state.viewH||400)*.56,kind);
+  state.stairStep++;state.stairHoldAt=0;state.stairLastError=null;state.stairStepStartedAt=now;
+  if(targetFrequency(state.stairStep)>=STAIR.maxHz){endGame('ceiling');return}
+  if(state.stairStep>0&&state.stairStep%STAIR.restEvery===0){
+    state.stairRestUntil=now+STAIR.restMs;popGrade('숨 고르기','good');
+  }
+  updateStairTargetHud();updateHud();
+  try{window.KidscadeGame?.score?.(state.score,{unit:'점',higherIsBetter:true})}catch(_){}
+}
+function stairMiss(now){
+  state.miss++;state.combo=0;state.stairLives--;state.stairHoldAt=0;state.stairStepStartedAt=now;state.stairLastError=null;
+  popGrade('다시 한 번','miss');updateHud();
+  if(state.stairLives<=0){endGame('lives');return}
+  ui.time.textContent='♥'.repeat(state.stairLives)+'♡'.repeat(3-state.stairLives);
+}
+function stairGameLoop(now){
+  if(state.phase!=='game'||state.gameMode!=='stair')return;
+  if(state.resizeNeeded)resizeCanvas();
+  updatePitch(now);
+  const dt=Math.min(.05,(now-state.lastFrame)/1000||0);state.lastFrame=now;
+  for(const p of state.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt;p.life-=dt}
+  state.particles=state.particles.filter(p=>p.life>0);
+  if(state.stairRestUntil>now){
+    ui.time.textContent='쉼';state.stairStepStartedAt=now;state.stairHoldAt=0;
+  }else{
+    ui.time.textContent='♥'.repeat(state.stairLives)+'♡'.repeat(3-state.stairLives);
+    const err=noteErrorCents(state.stairStep);state.stairLastError=err;
+    const tol=stairTolerance();
+    if(err!==null&&Math.abs(err)<=tol.pass){
+      if(!state.stairHoldAt)state.stairHoldAt=now;
+      if(now-state.stairHoldAt>=STAIR.holdMs){
+        stairSuccess(Math.abs(err)<=tol.perfect?'perfect':'good',now);
+        if(state.phase!=='game')return;
+      }
+    }else state.stairHoldAt=0;
+    if(now-state.stairStepStartedAt>=STAIR.stepMs)stairMiss(now);
+    if(state.phase!=='game')return;
+  }
+  updatePitchHud();drawStair(now);
+  state.raf=requestAnimationFrame(stairGameLoop);
+}
+function drawStair(now){
+  const ctx=ui.stage.getContext('2d'),w=state.viewW,h=state.viewH;
+  const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#24194a');bg.addColorStop(.5,'#101334');bg.addColorStop(1,'#07091d');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  const rest=state.stairRestUntil>now;
+  const baseX=w*.14,baseY=h*.82,stepW=Math.max(68,w*.105),stepH=Math.max(34,h*.075);
+  for(let i=-2;i<=6;i++){
+    const floor=state.stairStep+i;if(floor<0)continue;
+    const x=baseX+(i+1.7)*stepW,y=baseY-(i+1.7)*stepH;
+    ctx.fillStyle=i===0?'#ffe46b':i<0?'#25305f':'#28386f';ctx.globalAlpha=i===0?1:.72;
+    ctx.beginPath();ctx.roundRect(x,y,stepW+4,stepH,10);ctx.fill();
+    ctx.fillStyle=i===0?'#17172d':'#cbd5ff';ctx.font='900 12px system-ui';ctx.textAlign='center';
+    ctx.fillText((floor+1)+'층',x+stepW/2,y+stepH*.62);
+  }
+  ctx.globalAlpha=1;
+  const targetY=baseY-1.7*stepH-20,px=baseX+1.7*stepW+stepW*.5;
+  let py=targetY;
+  if(state.stairLastError!==null)py=targetY-Math.max(-150,Math.min(150,state.stairLastError))*.18;
+  ctx.save();ctx.shadowBlur=24;ctx.shadowColor=state.voiced?'#75edff':'#747da0';
+  const ball=ctx.createRadialGradient(px-7,py-8,3,px,py,22);ball.addColorStop(0,'#fff');ball.addColorStop(.3,state.voiced?'#9af5ff':'#bbc1d4');ball.addColorStop(1,state.voiced?'#657eff':'#555d79');
+  ctx.fillStyle=ball;ctx.beginPath();ctx.arc(px,py,20,0,TAU);ctx.fill();ctx.restore();
+  const tol=stairTolerance(),err=state.stairLastError,within=err!==null&&Math.abs(err)<=tol.pass;
+  const progress=state.stairHoldAt&&within?Math.min(1,(now-state.stairHoldAt)/STAIR.holdMs):0;
+  ctx.fillStyle='#101737';ctx.fillRect(w*.24,h*.10,w*.52,14);
+  ctx.fillStyle='#79f2ad';ctx.fillRect(w*.24,h*.10,w*.52*progress,14);
+  ctx.strokeStyle='#52609b';ctx.strokeRect(w*.24,h*.10,w*.52,14);
+  ctx.fillStyle='#eef2ff';ctx.font='900 16px system-ui';ctx.textAlign='center';
+  ctx.fillText(rest?'숨 고르기 · 목에 힘을 빼요':(state.stairStep+1)+'층  '+stairNoteName(state.stairStep),w*.5,h*.10-10);
+  ctx.fillStyle='#aeb7df';ctx.font='800 11px system-ui';
+  ctx.fillText('큰 소리는 필요 없어요 · 불편하면 바로 멈춰도 돼요',w*.5,h*.10+42);
+  for(const p of state.particles){
+    ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.kind==='perfect'?'#ffe66f':'#79f2ad';
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,TAU);ctx.fill();
+  }
+  ctx.globalAlpha=1;
 }
 function burst(x,y,kind){
   const count=kind==='perfect'?20:12;
@@ -415,21 +556,31 @@ function drawGate(ctx,g,w,h){
   ctx.restore();
 }
 
-function endGame(){
+function endGame(reason='time'){
   cancelAnimationFrame(state.raf);
   const total=state.perfect+state.good+state.miss,passed=state.perfect+state.good,accuracy=total?Math.round(passed/total*100):0;
   saveBest();stopMic();
   ui.resultScore.textContent=state.score.toLocaleString('ko-KR');
   ui.perfectCount.textContent=state.perfect;ui.goodCount.textContent=state.good;ui.accuracyText.textContent=accuracy+'%';ui.maxComboText.textContent=state.maxCombo;
-  if(accuracy>=90&&state.perfect>=state.good)ui.resultGrade.textContent='음정을 아주 정확하게 잡았어요!';
-  else if(accuracy>=75)ui.resultGrade.textContent='목소리 높낮이를 잘 조절했어요!';
-  else if(accuracy>=50)ui.resultGrade.textContent='좋아요! 다음에는 음표 문 앞에서 조금 더 천천히 맞춰봐요.';
-  else ui.resultGrade.textContent='처음엔 어려울 수 있어요. 초급에서 길게 소리 내며 움직임부터 익혀봐요.';
   const rootName=nearestNoteName(midiToHz(state.rootMidi));
-  ui.resultComment.textContent=(state.calibrated?'맞춤 음역의 시작음은 '+rootName+' 근처였어요. ':'기본 C 음역으로 플레이했어요. ')+
-    '최고 기록 '+state.best.score.toLocaleString('ko-KR')+'점 · 최고 콤보 '+state.best.combo+'회';
+  if(state.gameMode==='stair'){
+    ui.resultTitle.textContent=reason==='ceiling'?'고음 계단 정상 도착!':'고음 계단 기록';
+    ui.resultGrade.textContent='최고 '+state.stairPeak+'층 · '+(state.stairPeak?stairNoteName(state.stairPeak-1):'시작음')+'까지 올라갔어요';
+    ui.accuracyLabel.textContent='성공률';ui.maxComboLabel.textContent='최대 연속';
+    ui.resultComment.textContent=(state.calibrated?'내 편한 목소리를 기준으로 시작했어요. ':'기본 C 음역으로 시작했어요. ')+
+      '이 기기 최고 계단은 '+Math.max(state.best.stairPeak||0,state.stairPeak)+'층이에요. 높은 음은 큰 소리로 낼 필요가 없고, 목이 불편하면 기록과 상관없이 멈추는 게 좋아요.';
+  }else{
+    ui.resultTitle.textContent='노래길 완주!';
+    ui.accuracyLabel.textContent='통과율';ui.maxComboLabel.textContent='최대 콤보';
+    if(accuracy>=90&&state.perfect>=state.good)ui.resultGrade.textContent='음정을 아주 정확하게 잡았어요!';
+    else if(accuracy>=75)ui.resultGrade.textContent='목소리 높낮이를 잘 조절했어요!';
+    else if(accuracy>=50)ui.resultGrade.textContent='좋아요! 다음에는 음표 문 앞에서 조금 더 천천히 맞춰봐요.';
+    else ui.resultGrade.textContent='처음엔 어려울 수 있어요. 초급에서 길게 소리 내며 움직임부터 익혀봐요.';
+    ui.resultComment.textContent=(state.calibrated?'맞춤 음역의 시작음은 '+rootName+' 근처였어요. ':'기본 C 음역으로 플레이했어요. ')+
+      '최고 기록 '+state.best.score.toLocaleString('ko-KR')+'점 · 최고 콤보 '+state.best.combo+'회';
+  }
   showScreen('result');
-  try{window.KidscadeGame?.gameOver?.({score:state.score,scoreOptions:{unit:'점',higherIsBetter:true},accuracy,perfect:state.perfect,good:state.good,miss:state.miss,maxCombo:state.maxCombo})}catch(_){}
+  try{window.KidscadeGame?.gameOver?.({score:state.score,scoreOptions:{unit:'점',higherIsBetter:true},mode:state.gameMode,accuracy,perfect:state.perfect,good:state.good,miss:state.miss,maxCombo:state.maxCombo,stairPeak:state.stairPeak})}catch(_){}
 }
 
 ui.calibrateBtn.addEventListener('click',beginCalibration);
@@ -441,6 +592,7 @@ ui.retryBtn.addEventListener('click',()=>{
   requestMic().then(()=>startGame()).catch(()=>{showScreen('intro');ui.introStatus.textContent='마이크를 다시 허용해 주세요.'});
 });
 ui.menuBtn.addEventListener('click',()=>{stopMic();showScreen('intro')});
+chooseMode('classic');
 
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&state.phase==='game'){
