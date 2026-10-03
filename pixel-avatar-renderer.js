@@ -5,12 +5,14 @@
 'use strict';
 
 const CANVAS=128;
-const ASSET_REV='21';
+const ASSET_REV='22';
 const RIG_PATH='runtime/avatar-rig-v2.json';
 const ANIMATION_PATH='runtime/animation/animation-manifest.json';
+const HAIR_CATALOG_PATH='runtime/hair/approved-hair-manifest.json';
 const COUNTS={eyes:8,eyebrows:6,nose:4,mouth:8,blush:4,hair:24,upper:1,lower:1};
 const DEFAULT_CONFIG={
-  hairSet:'male',
+  hairId:'clean-01',
+  hairSet:'legacy',
   hairStyle:1,
   upper:1,
   lower:1,
@@ -79,6 +81,7 @@ class PixelAvatar{
     this.extraParts=Array.isArray(options.extraParts)?options.extraParts.filter(Boolean):[];
     this.cache=new ImageCache();
     this.animationManifest=null;
+    this.hairManifest=null;
     this.rig=null;
     this.frameIndex=0;
     this.lastFrameAt=0;
@@ -98,11 +101,13 @@ class PixelAvatar{
   }
 
   async init(){
-    [this.animationManifest,this.rig]=await Promise.all([
+    [this.animationManifest,this.rig,this.hairManifest]=await Promise.all([
       json(this.url(ANIMATION_PATH)),
-      json(this.url(RIG_PATH))
+      json(this.url(RIG_PATH)),
+      json(this.url(HAIR_CATALOG_PATH))
     ]);
     this.assertRig();
+    this.assertHairCatalog();
     this.config=this.normalizeConfig(this.config);
     this.ready=true;
     await this.draw();
@@ -124,12 +129,38 @@ class PixelAvatar{
     }
   }
 
+  assertHairCatalog(){
+    const items=this.hairManifest?.items;
+    if(!Array.isArray(items)||!items.length){
+      throw new Error('Avatar approved hair catalog is empty.');
+    }
+    if(!items.some(item=>item?.id&&item?.front)){
+      throw new Error('Avatar approved hair catalog has no usable hair.');
+    }
+  }
+
+  approvedHairItems(){
+    return (this.hairManifest?.items||[]).filter(item=>item?.approved!==false&&item?.id&&item?.front);
+  }
+
+  hairRecord(id){
+    const items=this.approvedHairItems();
+    return items.find(item=>item.id===id)||null;
+  }
+
+  fallbackHairId(){
+    const preferred=this.hairManifest?.fallbackId;
+    if(preferred&&this.hairRecord(preferred))return preferred;
+    return this.approvedHairItems()[0]?.id||'clean-01';
+  }
+
   normalizeConfig(next){
     const raw={...this.config,...(next||{})};
     if(raw.hair!=null&&raw.hairStyle==null)raw.hairStyle=raw.hair;
     if(raw.noses!=null&&raw.nose==null)raw.nose=raw.noses;
     if(raw.mouths!=null&&raw.mouth==null)raw.mouth=raw.mouths;
-    raw.hairSet=raw.hairSet==='female'?'female':'male';
+    raw.hairId=this.hairRecord(String(raw.hairId||''))?.id||this.fallbackHairId();
+    raw.hairSet='legacy';
     raw.hairStyle=clampInt(raw.hairStyle,1,COUNTS.hair);
     raw.upper=raw.upper?1:0;
     raw.lower=raw.lower?1:0;
@@ -207,11 +238,11 @@ class PixelAvatar{
 
   pathsFor(config){
     const c=this.normalizeConfig(config);
-    const hs=c.hairSet,hn=pad(c.hairStyle);
+    const hair=this.hairRecord(c.hairId)||this.hairRecord(this.fallbackHairId());
     return {
       base:'runtime/base/master-base-128.png',
-      hairBack:null,
-      hairFront:`runtime/hair/front/${hs}/hair-front-${hs}-${hn}.png`,
+      hairBack:hair?.back||null,
+      hairFront:hair?.front||null,
       upper:c.upper?'runtime/clothes/upper/blue-star-zip-hoodie-01':null,
       lower:c.lower?'runtime/clothes/lower/denim-cuffed-jeans-01':null,
       eyes:`runtime/face/eyes/eyes-${pad(c.eyes)}.png`,
