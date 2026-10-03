@@ -109,3 +109,12 @@ test('studio can preload the uploaded left-facing body draft set',()=>{
   assert.match(js,/ROOT_X-masterCenter/);
   assert.match(js,/GROUND_Y-masterBox\.maxY/);
 });
+
+
+test('uploaded body loader resolves relative asset paths and cannot hang forever',()=>{
+  assert.match(js,/new URL\('\.\.\/assets\/game\/characters\/'\+file,window\.location\.href\)\.href/);
+  assert.match(js,/function loadImageUrl\(url,timeoutMs=10000\)/);
+  assert.match(js,/10초 안에 이미지를 받지 못했습니다/);
+  assert.match(js,/BODY 불러오는 중 '\+\(i\+1\)\+' \/ '\+FRAMES\.length/);
+  assert.doesNotMatch(js,/Promise\.all\(FRAMES\.map\(\(_,i\)=>loadImageUrl\(draftBodySourceUrl\(i\)\)\)\)/);
+});
