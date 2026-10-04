@@ -104,7 +104,7 @@ test('small wildlife follows edited voxel terrain instead of teleporting onto st
 });
 
 test('return points use the current edited world and solid blocks can displace replaceable fluids',()=>{
-  assert.match(js,/function safeReturnEyeY\(\)\{return getHighestSolidY\(0,5,WORLD_MAX_Y\)\+2\.62\}/);
+  assert.match(js,/function safeReturnEyeY\(\)\{return groundTopBelow\(0,WORLD_MAX_Y\+1\.62,5\)\+1\.62\}/);
   assert.match(js,/camera\.position\.set\(0,safeReturnEyeY\(\),5\)/);
   assert.match(js,/const canDisplaceFluid=occupied&&blockDef\(occupied\)\.liquid&&selectedDef\.solid/);
   assert.match(js,/const canReplaceFragile=occupied&&\['fire','flower','reed','sapling','torch'\]\.includes\(occupied\.type\)/);
@@ -148,4 +148,10 @@ test('shelter checks ignore decoration partial walls and open doorways',()=>{
   assert.match(world,/\(d\.type==='door'\|\|d\.type==='doorTop'\)&&d\.open/);
   assert.match(world,/shelterBlock\(d,'roof'\)/);
   assert.match(world,/shelterBlock\(d,'wall'\)/);
+});
+
+
+test('rabbit spawn and emergency return also use shaped surface heights',()=>{
+  assert.match(js,/g\.position\.set\(x,creatureGroundY\(x,z,terrainHeight\(x,z\)\+1\),z\)/);
+  assert.match(js,/function safeReturnEyeY\(\)\{return groundTopBelow\(0,WORLD_MAX_Y\+1\.62,5\)\+1\.62\}/);
 });
