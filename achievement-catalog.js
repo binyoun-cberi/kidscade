@@ -168,6 +168,10 @@
     low_pattern_lock: {
       mastery:{event:'game-over', field:'completed', op:'truthy'}
     },
+    world_flag_master: {
+      mastery:{event:'milestone', field:'continentMastered', op:'truthy'},
+      secret:{event:'result', field:'perfect', op:'truthy'}
+    },
     low_one_stroke: {
       mastery:{event:'game-over', field:'clean', op:'truthy'},
       secret:{event:'game-over', field:'completedCount', op:'gte', value:10}
