@@ -38,6 +38,8 @@ export function zoneAt(x,z){
   return null;
 }
 export function isCityArea(x,z){
+  const cell=zoneAt(x,z);
+  if(cell?.kind==='city')return true;
   return x>=CITY_BOUNDS.x1&&x<=CITY_BOUNDS.x2&&z>=CITY_BOUNDS.z1&&z<=CITY_BOUNDS.z2;
 }
 export function isRoadArea(x,z,pad=0){
