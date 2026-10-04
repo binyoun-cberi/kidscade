@@ -123,8 +123,8 @@ function addWallShell(group,def){
   const doorW=1.55,sideW=(width-doorW)/2;
   addWallBox(walls.south,'south',b.x1+sideW/2,b.z2,sideW,th,h,def);
   addWallBox(walls.south,'south',b.x2-sideW/2,b.z2,sideW,th,h,def);
-  const lintelH=.48;addWallBox(walls.south,'south',0,b.z2,doorW,th,lintelH,def);
-  walls.south.children[walls.south.children.length-1].position.y=2.72-lintelH/2;
+  const lintelH=.48,lintel=addWallBox(walls.south,'south',0,b.z2,doorW,th,lintelH,def);
+  lintel.position.y=2.72-lintelH/2;lintel.updateMatrix();
   addBaseboard(walls.south,'south',b.x1+sideW/2,b.z2-.10,sideW-.12,.10,def);
   addBaseboard(walls.south,'south',b.x2-sideW/2,b.z2-.10,sideW-.12,.10,def);
   return walls;
@@ -196,10 +196,10 @@ export async function buildHomeInterior({parent,addModel}){
     const b=entry.def.bounds,cx=(b.x1+b.x2)/2,cz=(b.z1+b.z2)/2;
     // Hide the two walls nearest the camera. The opposite walls remain opaque,
     // so the room still reads as a real building instead of a three-sided stage.
-    entry.walls.east.visible=Number(cameraX)>=cx;
-    entry.walls.west.visible=Number(cameraX)<cx;
-    entry.walls.south.visible=Number(cameraZ)>=cz;
-    entry.walls.north.visible=Number(cameraZ)<cz;
+    entry.walls.east.visible=Number(cameraX)<cx;
+    entry.walls.west.visible=Number(cameraX)>=cx;
+    entry.walls.south.visible=Number(cameraZ)<cz;
+    entry.walls.north.visible=Number(cameraZ)>=cz;
   }
   setLevel(1);
   return {
