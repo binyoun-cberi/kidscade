@@ -30,7 +30,7 @@ function routineTarget(id,hour,weather,pois){
 }
 
 export function createResidentLife(ctx){
-  const {npcs,pois,getMinutes,getPlayer,getDailyState}=ctx;
+  const {npcs,pois,getMinutes,getPlayer,getDailyState,isBlocked}=ctx;
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   let chatSerial=0;
 
@@ -117,9 +117,22 @@ export function createResidentLife(ctx){
         if(d<.07)stopAt(n,now);
         else{
           const speed=(n.role==='resident'||n.role==='delivery') ? .58 : .44,step=Math.min(d,speed*dt);
-          n.object.position.x+=dx/d*step;n.object.position.z+=dz/d*step;n.object.rotation.y=Math.atan2(dx,dz);walking=true;
+          const ux=dx/d,uz=dz/d,nx=n.object.position.x+ux*step,nz=n.object.position.z+uz*step;
+          if(!isBlocked?.(nx,nz)){
+            n.object.position.x=nx;n.object.position.z=nz;n.detourSign=0;walking=true;
+          }else{
+            const signs=n.detourSign?[n.detourSign,-n.detourSign]:[1,-1];
+            for(const sign of signs){
+              const sx=-uz*sign,sz=ux*sign,tx=n.object.position.x+sx*step*.9,tz=n.object.position.z+sz*step*.9;
+              if(isBlocked?.(tx,tz))continue;
+              n.object.position.x=tx;n.object.position.z=tz;n.detourSign=sign;walking=true;break;
+            }
+            if(!walking){n.moving=false;n.nextDecision=now+700;n.detourSign=0;}
+          }
+          n.object.rotation.y=Math.atan2(walking?(n.object.position.x-(n.lastX??n.object.position.x)):dx,walking?(n.object.position.z-(n.lastZ??n.object.position.z)):dz);
         }
       }else if(n.lifeState==='IDLE'){startMove(n,target,now);}
+      n.lastX=n.object.position.x;n.lastZ=n.object.position.z;
       n.playAnim?.(walking?'walk':'idle');n.mixer?.update(dt);
       n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.010:0);
       if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
