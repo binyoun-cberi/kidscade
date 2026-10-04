@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=4';
+import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=5';
 import {createResidentLife} from './kidscade-world-residents.js?v=3';
 import {residentVisual} from './kidscade-world-npc-style.js?v=1';
 export {CITY_BOUNDS};
@@ -37,7 +37,18 @@ const CITY_ASSET={
   cart:MARKET+'shopping-cart.glb',
   employee:MARKET+'character-employee.glb',
   bench:FURNITURE+'bench.glb',
-  museum:SUBURBAN+'building-type-i.glb'
+  museum:SUBURBAN+'building-type-i.glb',
+  homes:[
+    SUBURBAN+'building-type-a.glb',SUBURBAN+'building-type-c.glb',SUBURBAN+'building-type-d.glb',
+    SUBURBAN+'building-type-f.glb',SUBURBAN+'building-type-g.glb',SUBURBAN+'building-type-h.glb',
+    SUBURBAN+'building-type-j.glb',SUBURBAN+'building-type-k.glb'
+  ],
+  pathLong:SUBURBAN+'path-stones-long.glb',
+  pathMessy:SUBURBAN+'path-stones-messy.glb',
+  driveway:SUBURBAN+'driveway-short.glb',
+  residentialTreeLarge:SUBURBAN+'tree-large.glb',
+  residentialTreeSmall:SUBURBAN+'tree-small.glb',
+  residentialFence:SUBURBAN+'fence-low.glb'
 };
 
 function makeLabel(text,{width=2.2,height=.52,font=38}={}){
@@ -172,7 +183,8 @@ export async function buildKidscadeCity(ctx){
     for(const x of [-1.4,-.65,.1,.85])plane(parent,x,z,.34,3.0,0xf3eee1,.11);
   }
 
-  const market=p('cityMarket'),leisure=p('cityLeisure'),civic=p('cityCivic'),transit=p('cityTransit'),museum=p('museum');
+  const market=p('cityMarket'),leisure=p('cityLeisure'),civic=p('cityCivic'),transit=p('cityTransit'),museum=p('museum'),
+    residentialSouth=p('residentialSouth'),residentialNorth=p('residentialNorth');
   const buildings=[
     ['market',CITY_ASSET.market,market.x-4.7,market.z-5.2,6.0,5.2,'씨앗마트',2.25],
     ['hardware',CITY_ASSET.hardware,market.x+4.7,market.z-5.2,6.0,5.2,'튼튼 철물점',2.25],
@@ -247,6 +259,62 @@ export async function buildKidscadeCity(ctx){
   ]);
   track('transport-corner','decor',transit.x+4.8,transit.z+2.4,6.4,7.2);
 
+  // Residential districts occupy the two previously dead eastern parcels.
+  // Lower town has eight compact homes; upper town keeps more breathing room around a small park.
+  const residentHomes={};
+  const homeDefs=[
+    ['minji','민지',residentialSouth.x-6.6,residentialSouth.z-4.6,0,Math.PI],
+    ['junho','준호',residentialSouth.x-2.2,residentialSouth.z-4.6,1,Math.PI],
+    ['haneul','하늘',residentialSouth.x+2.2,residentialSouth.z-4.6,2,Math.PI],
+    ['taeho','태호',residentialSouth.x+6.6,residentialSouth.z-4.6,3,Math.PI],
+    ['yuna','유나',residentialSouth.x-6.6,residentialSouth.z+4.6,4,0],
+    ['woojin','우진',residentialSouth.x-2.2,residentialSouth.z+4.6,5,0],
+    ['seoyeon','서연',residentialSouth.x+2.2,residentialSouth.z+4.6,6,0],
+    ['hyunwoo','현우',residentialSouth.x+6.6,residentialSouth.z+4.6,7,0],
+    ['doyun','도윤',residentialNorth.x-4.7,residentialNorth.z-4.4,3,Math.PI],
+    ['sora','소라',residentialNorth.x+4.7,residentialNorth.z-4.4,6,Math.PI],
+    ['nari','나리',residentialNorth.x-4.7,residentialNorth.z+4.4,2,0],
+    ['minseok','민석',residentialNorth.x+4.7,residentialNorth.z+4.4,5,0]
+  ];
+
+  // Main garden lanes visually connect to the x=24 road without creating another asphalt grid.
+  plane(parent,residentialSouth.x,residentialSouth.z,18.6,1.35,0xd8ceb2,.065);
+  plane(parent,residentialNorth.x,residentialNorth.z,18.6,1.35,0xd8ceb2,.065);
+  plane(parent,residentialSouth.x-8.7,residentialSouth.z,1.4,18.4,0xd8ceb2,.064);
+  plane(parent,residentialNorth.x-8.7,residentialNorth.z,1.4,18.4,0xd8ceb2,.064);
+
+  for(let i=0;i<homeDefs.length;i++){
+    const [id,name,x,z,assetIndex,rot]=homeDefs[i],north= z>=(residentialNorth.z-10),frontDz=rot===Math.PI?2.05:-2.05;
+    await addModel(parent,CITY_ASSET.homes[assetIndex%CITY_ASSET.homes.length],{
+      x,z,w:north?4.25:3.85,h:north?4.25:3.95,d:3.45,rot,name:'resident-home-'+id
+    });
+    collider('outdoor',x,z,north?3.65:3.35,2.85);
+    track('resident-home-'+id,'building',x,z,north?3.65:3.35,2.85);
+    const door={x,z:z+frontDz};residentHomes[id]=door;
+    // Short doorstep path makes each house read as connected to the shared lane.
+    const pathZ=(z+door.z)/2;
+    plane(parent,x,pathZ,.78,Math.abs(frontDz)+.8,0xd7ccb1,.072);
+    const label=makeLabel(name+'의 집',{width:1.48,height:.36,font:30});
+    label.position.set(x,3.05,z+frontDz*.72);label.userData.anchor={x,z:z+frontDz*.72};label.visible=false;
+    parent.add(label);buildingLabels.push(label);
+  }
+
+  // South residential planting: enough detail to hide the parcel edge without blocking the central lane.
+  for(const [x,z,large] of [
+    [residentialSouth.x-8.2,residentialSouth.z-7.2,1],[residentialSouth.x+8.0,residentialSouth.z-6.8,0],
+    [residentialSouth.x-8.1,residentialSouth.z+7.1,0],[residentialSouth.x+8.0,residentialSouth.z+7.0,1]
+  ])await addModel(parent,large?CITY_ASSET.residentialTreeLarge:CITY_ASSET.residentialTreeSmall,{x,z,w:1.7,h:3.4,d:1.7,rot:.1});
+
+  // North residential district keeps a real pocket park between the four homes.
+  plane(parent,residentialNorth.x,residentialNorth.z,7.1,5.8,0x9db67c,.07);
+  await Promise.all([
+    addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x-1.9,z:residentialNorth.z+.2,w:1.9,h:.92,d:.74,rot:Math.PI/2,name:'residential-park-bench-a'}),
+    addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x+1.9,z:residentialNorth.z-.2,w:1.9,h:.92,d:.74,rot:-Math.PI/2,name:'residential-park-bench-b'}),
+    addModel(parent,CITY_ASSET.planter,{x:residentialNorth.x,z:residentialNorth.z-2.0,w:1.2,h:.85,d:.85,rot:0,name:'residential-park-planter'}),
+    addModel(parent,CITY_ASSET.residentialTreeLarge,{x:residentialNorth.x,z:residentialNorth.z+2.0,w:2.0,h:3.8,d:2.0,rot:.2,name:'residential-park-tree'})
+  ]);
+  track('residential-pocket-park','plaza',residentialNorth.x,residentialNorth.z,7.1,5.8);
+
   // Lamps are also kept inside parcels, at least 1m from the road gutter.
   for(const [x,z] of [
     [market.x-8,market.z+3.0],[market.x+8,market.z+3.0],
@@ -313,21 +381,19 @@ export async function buildKidscadeCity(ctx){
     civicGarden:{x:civic.x,z:civic.z+6.0,r:1.15},
     coveredPlaza:{x:leisure.x-1.0,z:leisure.z-1.1,r:.72},
     riverLook:{x:5.0,z:15.8,r:.8},
-    homeFallback:{x:0,z:14.4,r:.25},
-    // Until dedicated resident houses are built, lower-town residents visibly leave via the south street.
-     'home-minji':{x:-21.0,z:14.4,r:.18},
-    'home-junho':{x:-3.5,z:14.4,r:.18},
-    'home-haneul':{x:3.5,z:14.4,r:.18},
-    'home-taeho':{x:21.0,z:14.4,r:.18},
-    'home-yuna':{x:2.5,z:14.4,r:.18},
-    'home-woojin':{x:10.5,z:14.4,r:.18},
-    'home-seoyeon':{x:12.0,z:14.4,r:.18},
-    'home-hyunwoo':{x:-12.0,z:14.4,r:.18},
-    // Civic workers leave through the quiet north edge.
-    'home-doyun':{x:-7.0,z:57.0,r:.18},
-    'home-sora':{x:-17.0,z:57.0,r:.18},
-    'home-nari':{x:7.0,z:57.0,r:.18},
-    'home-minseok':{x:17.0,z:57.0,r:.18}
+    homeFallback:{x:residentialSouth.x-8.6,z:residentialSouth.z,r:.25},
+    'home-minji':{...residentHomes.minji,r:.18},
+    'home-junho':{...residentHomes.junho,r:.18},
+    'home-haneul':{...residentHomes.haneul,r:.18},
+    'home-taeho':{...residentHomes.taeho,r:.18},
+    'home-yuna':{...residentHomes.yuna,r:.18},
+    'home-woojin':{...residentHomes.woojin,r:.18},
+    'home-seoyeon':{...residentHomes.seoyeon,r:.18},
+    'home-hyunwoo':{...residentHomes.hyunwoo,r:.18},
+    'home-doyun':{...residentHomes.doyun,r:.18},
+    'home-sora':{...residentHomes.sora,r:.18},
+    'home-nari':{...residentHomes.nari,r:.18},
+    'home-minseok':{...residentHomes.minseok,r:.18}
   };
   const livingNpcs=npcs.filter(n=>n.id!=='clerk'&&n.id!=='visitor');
   const npcBlockers=layout.filter(v=>v.type==='building'||v.type==='decor');
