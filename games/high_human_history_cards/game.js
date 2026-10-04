@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-// v12: living nature stocks, recovery, specialist pressure, auto-stacking, and stronger managed production.
+// v13: Bronze and Iron Age progression, mining, metallurgy, advanced workers, and age settlements.
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
@@ -173,12 +173,46 @@ const C={
  wildGrainField:{name:'야생 곡물밭',emoji:'🌾',kind:'node',sub:'조·기장 씨앗을 찾기 좋은 들판'},
  flintOutcrop:{name:'부싯돌 노두',emoji:'🪨',kind:'node',sub:'날카로운 돌을 찾기 좋은 노출 지층'},
  loggingCamp:{name:'벌목장',emoji:'🪵',kind:'building',sub:'개척한 숲에서 목재를 안정적으로 생산'},
- quarry:{name:'채석장',emoji:'⛏️',kind:'building',sub:'개척한 바위지대에서 돌을 안정적으로 생산'}
+ quarry:{name:'채석장',emoji:'⛏️',kind:'building',sub:'개척한 바위지대에서 돌을 안정적으로 생산'},
+ copperVein:{name:'구리 광맥',emoji:'🟠',kind:'node',sub:'광부가 구리광석을 캐낼 수 있음'},
+ tinVein:{name:'주석 광맥',emoji:'⚪',kind:'node',sub:'희귀한 주석광석을 얻는 광맥'},
+ ironVein:{name:'철 광맥',emoji:'⛏️',kind:'node',sub:'깊은 곳에서 철광석을 캐낼 수 있음'},
+ copperOre:{name:'구리광석',emoji:'🟤',kind:'item',sub:'고온가마에서 제련할 금속 원료'},
+ tinOre:{name:'주석광석',emoji:'⚪',kind:'item',sub:'청동 합금에 필요한 희귀 원료'},
+ ironOre:{name:'철광석',emoji:'🔴',kind:'item',sub:'철 제련의 원료'},
+ copperIngot:{name:'구리괴',emoji:'🟧',kind:'item',sub:'제련한 구리'},
+ tinIngot:{name:'주석괴',emoji:'⬜',kind:'item',sub:'제련한 주석'},
+ bronzeIngot:{name:'청동괴',emoji:'🟫',kind:'item',sub:'구리와 주석을 합금한 금속'},
+ ironCharge:{name:'철 제련 재료',emoji:'⚫',kind:'item',sub:'철광석과 숯을 섞은 제련 재료'},
+ ironBloom:{name:'괴련철',emoji:'🌑',kind:'item',sub:'불순물이 남은 초기 철 덩어리'},
+ ironIngot:{name:'철괴',emoji:'⬛',kind:'item',sub:'두드려 다듬은 철 재료'},
+ stonePick:{name:'돌곡괭이',emoji:'⛏️',kind:'tool',sub:'광맥을 캐기 위한 초기 채굴 도구'},
+ bronzeAxe:{name:'청동도끼',emoji:'🪓',kind:'tool',sub:'돌도끼보다 빠르고 강한 벌목 도구'},
+ bronzePick:{name:'청동곡괭이',emoji:'⛏️',kind:'tool',sub:'광석을 더 빠르게 채굴'},
+ bronzeSpear:{name:'청동창',emoji:'🔱',kind:'tool',sub:'강한 사냥용 청동 무기'},
+ bronzeHammer:{name:'청동망치',emoji:'🔨',kind:'tool',sub:'철 덩어리를 두드려 정련하는 도구'},
+ ironAxe:{name:'철도끼',emoji:'🪓',kind:'tool',sub:'많은 목재를 빠르게 생산하는 철제 도구'},
+ ironPick:{name:'철곡괭이',emoji:'⛏️',kind:'tool',sub:'광산 생산성을 크게 높이는 철제 도구'},
+ ironHoe:{name:'철괭이',emoji:'⛏️',kind:'tool',sub:'농경 생산성을 크게 높이는 철제 농기구'},
+ ironSpear:{name:'철창',emoji:'🗡️',kind:'tool',sub:'철기 시대의 강한 사냥 무기'},
+ miner:{name:'광부',emoji:'⛏️',kind:'human',sub:'돌곡괭이로 금속 광맥을 채굴'},
+ bronzeLumberjack:{name:'청동 벌목꾼',emoji:'🪓',kind:'human',sub:'청동도끼로 숲을 빠르게 벰'},
+ bronzeMiner:{name:'청동 광부',emoji:'⛏️',kind:'human',sub:'청동곡괭이로 광석을 효율적으로 채굴'},
+ bronzeHunter:{name:'청동 사냥꾼',emoji:'🔱',kind:'human',sub:'청동창으로 위험한 짐승을 상대'},
+ ironLumberjack:{name:'철기 벌목꾼',emoji:'🪓',kind:'human',sub:'철도끼로 대량 벌목'},
+ ironMiner:{name:'철기 광부',emoji:'⛏️',kind:'human',sub:'철곡괭이로 광석을 대량 채굴'},
+ ironFarmer:{name:'철기 농부',emoji:'🌾',kind:'human',sub:'철괭이로 농장을 효율적으로 관리'},
+ ironHunter:{name:'철기 사냥꾼',emoji:'🗡️',kind:'human',sub:'철창으로 맹수와 적대 세력에 대응'},
+ bloomery:{name:'철 제련로',emoji:'🔥',kind:'building',sub:'숯으로 철광석을 괴련철로 제련'},
+ largeVillage:{name:'큰 취락',emoji:'🏘️',kind:'building',sub:'여러 신석기 마을이 모인 큰 정착지'},
+ bronzeCenter:{name:'청동기 중심 취락',emoji:'🏛️',kind:'building',sub:'청동 생산과 교역이 모이는 중심지'},
+ ironTown:{name:'철기 마을',emoji:'🏰',kind:'building',sub:'철제 농기구와 도구를 사용하는 큰 정착지'},
+ dolmen:{name:'고인돌',emoji:'🪨',kind:'building',sub:'청동기 공동체의 거대한 기념물'}
 };
 
 const state={
  started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
- lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false,
+ lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false,bronzeMilestoneShown:false,ironMilestoneShown:false,ageReached:'paleo',
  worldTick:0,tutorial:{active:false,step:0}
 };
 let bgmHandle=null;
@@ -201,7 +235,8 @@ const SAME={
  trapSpot:{need:3,out:'trapFishery',name:'통발 어장'},
  goatPen:{need:3,out:'goatRanch',name:'염소 목장'},
  waterPit:{need:3,out:'reservoir',name:'작은 저수지'},
- fishHolding:{need:3,out:'fishPond',name:'민물고기 양식장'}
+ fishHolding:{need:3,out:'fishPond',name:'민물고기 양식장'},
+ village:{need:3,out:'largeVillage',name:'큰 취락'}
 };
 
 const R=[
@@ -278,12 +313,45 @@ const R=[
  ['person','stoneHoe',1,1,[['farmer',1]],'농부'],
  ['person','cord',1,1,[['herder',1]],'목축민'],
  ['person','stoneAxe',1,1,[['lumberjack',1]],'벌목꾼'],
- ['person','groundAxe',1,1,[['lumberjack',1]],'간돌도끼 벌목꾼']
+ ['person','groundAxe',1,1,[['lumberjack',1]],'간돌도끼 벌목꾼'],
+ ['chopper','wood',1,1,[['stonePick',1]],'돌곡괭이'],
+ ['person','stonePick',1,1,[['miner',1]],'광부'],
+ ['copperOre','highKiln',1,0,[['copperIngot',1]],'구리 제련'],
+ ['tinOre','highKiln',1,0,[['tinIngot',1]],'주석 제련'],
+ ['copperIngot','tinIngot',1,1,[['bronzeIngot',1]],'청동 합금'],
+ ['bronzeIngot','wood',1,1,[['bronzeAxe',1]],'청동도끼'],
+ ['bronzeIngot','stonePick',1,1,[['bronzePick',1]],'청동곡괭이'],
+ ['bronzeIngot','spear',1,1,[['bronzeSpear',1]],'청동창'],
+ ['bronzeIngot','stone',1,1,[['bronzeHammer',1]],'청동망치'],
+ ['person','bronzeAxe',1,1,[['bronzeLumberjack',1]],'청동 벌목꾼'],
+ ['person','bronzePick',1,1,[['bronzeMiner',1]],'청동 광부'],
+ ['person','bronzeSpear',1,1,[['bronzeHunter',1]],'청동 사냥꾼'],
+ ['largeVillage','bronzeIngot',1,1,[['bronzeCenter',1]],'청동기 중심 취락'],
+ ['bronzeCenter','stone',1,2,[['dolmen',1]],'고인돌 세우기'],
+ ['clay','highKiln',2,0,[['bloomery',1]],'철 제련로'],
+ ['ironOre','charcoal',1,1,[['ironCharge',1]],'철 제련 재료'],
+ ['ironCharge','bloomery',1,0,[['ironBloom',1]],'괴련철 제련'],
+ ['ironBloom','bronzeHammer',1,0,[['ironIngot',1]],'철 정련'],
+ ['ironIngot','wood',1,1,[['ironAxe',1]],'철도끼'],
+ ['ironIngot','stonePick',1,1,[['ironPick',1]],'철곡괭이'],
+ ['ironIngot','stoneHoe',1,1,[['ironHoe',1]],'철괭이'],
+ ['ironIngot','spear',1,1,[['ironSpear',1]],'철창'],
+ ['person','ironAxe',1,1,[['ironLumberjack',1]],'철기 벌목꾼'],
+ ['person','ironPick',1,1,[['ironMiner',1]],'철기 광부'],
+ ['person','ironHoe',1,1,[['ironFarmer',1]],'철기 농부'],
+ ['person','ironSpear',1,1,[['ironHunter',1]],'철기 사냥꾼'],
+ ['bronzeCenter','ironIngot',1,1,[['ironTown',1]],'철기 마을'}
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
-const SETTLE_POINTS={camp:2,village:5,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,highKiln:2,shellOrnament:1,tuskOrnament:1};
+const SETTLE_POINTS={camp:2,village:5,largeVillage:8,bronzeCenter:12,ironTown:18,dolmen:3,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,highKiln:2,bloomery:4,shellOrnament:1,tuskOrnament:1};
 const FOOD_TYPES=()=>Object.keys(C).filter(k=>C[k].food);
-const isWorker=t=>['person','hunter','fisher','farmer','herder','lumberjack'].includes(t);
+const WORKER_TYPES=new Set(['person','hunter','fisher','farmer','herder','lumberjack','miner','bronzeLumberjack','bronzeMiner','bronzeHunter','ironLumberjack','ironMiner','ironFarmer','ironHunter']);
+const LUMBER_WORKERS=new Set(['lumberjack','bronzeLumberjack','ironLumberjack']);
+const MINER_WORKERS=new Set(['miner','bronzeMiner','ironMiner']);
+const HUNTER_WORKERS=new Set(['hunter','bronzeHunter','ironHunter']);
+const FARM_WORKERS=new Set(['farmer','ironFarmer']);
+const isWorker=t=>WORKER_TYPES.has(t);
+const workerTier=t=>t.startsWith('iron')?2:t.startsWith('bronze')?1:0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const THREAT_CONFIG=Object.freeze({
  wolf:{raidEvery:24,steal:1,power:2,label:'늑대'},
@@ -296,7 +364,7 @@ const RESOURCE_CAPS=Object.freeze({
  mushroomPatch:10,herbPatch:10,wildGrainField:14,flintOutcrop:12,
  milletPlot:12,milletFarm:18,broomcornPlot:12,broomcornFarm:18,beanPlot:12,beanFarm:18,
  fishingSpot:10,fishingGround:15,netSpot:12,netFishery:18,trapSpot:12,trapFishery:18,
- goatPen:12,goatRanch:18,fishPond:16,loggingCamp:40,quarry:40
+ goatPen:12,goatRanch:18,fishPond:16,loggingCamp:40,quarry:40,copperVein:12,tinVein:8,ironVein:14
 });
 function resourceCap(type,count=1){return (RESOURCE_CAPS[type]||0)*Math.max(1,count||1);}
 function outputUnits(out){return out.reduce((n,o)=>n+(Number(o[1])||1),0);}
@@ -309,13 +377,13 @@ const EXPLORE_DEFS=Object.freeze({
  meadow:{max:4,ms:8200,bonus:.18,results:[['wildGrainField',18],['wildGoat',12],['deer',10],['rabbit',10],['spring',8],['herbPatch',10],['animalTrail',12],['smokeTrace',5]]},
  river:{max:4,ms:8200,bonus:.18,results:[['reedBed',18],['clayBank',14],['freshFish',12],['wetland',12],['spring',10],['pond',9],['animalTrail',8],['tidalFlat',6]]},
  wetland:{max:4,ms:9000,bonus:.16,results:[['reedBed',20],['clayBank',16],['freshFish',10],['shellfish',8],['pond',12],['spring',8],['herbPatch',10],['animalTrail',8]]},
- rockyHill:{max:3,ms:7800,bonus:.16,results:[['stoneSource',26],['flintOutcrop',16],['valley',12],['caveEntrance',12],['ridge',10],['footprints',8],['smokeTrace',5]]},
+ rockyHill:{max:3,ms:7800,bonus:.16,results:[['stoneSource',24],['flintOutcrop',15],['valley',11],['caveEntrance',11],['ridge',10],['footprints',8],['smokeTrace',5],['copperVein',6]]},
  valley:{max:4,ms:9200,bonus:.18,results:[['stoneSource',14],['river',11],['spring',12],['forest',12],['caveEntrance',9],['animalTrail',12],['herbPatch',10],['deer',8]]},
  caveEntrance:{max:3,ms:10500,bonus:.12,results:[['stoneSource',16],['flintOutcrop',18],['deepCave',14],['bear',5],['footprints',12],['bone',8],['smokeTrace',4]]},
- deepCave:{max:4,ms:12800,bonus:.1,results:[['flintOutcrop',22],['stoneSource',18],['bone',12],['bear',7],['spring',7],['footprints',12]]},
+ deepCave:{max:4,ms:12800,bonus:.1,results:[['flintOutcrop',18],['stoneSource',14],['bone',10],['bear',7],['spring',6],['footprints',10],['copperVein',8],['tinVein',7],['ironVein',10]]},
  spring:{max:3,ms:7600,bonus:.16,results:[['river',11],['wetland',10],['pond',12],['herbPatch',16],['animalTrail',14],['deer',8],['wildGoat',8]]},
  pond:{max:3,ms:7600,bonus:.16,results:[['freshFish',18],['reedBed',16],['wetland',12],['herbPatch',10],['animalTrail',10],['wildGoat',7]]},
- ridge:{max:3,ms:9000,bonus:.12,results:[['rockyHill',14],['valley',12],['caveEntrance',10],['forest',9],['smokeTrace',8],['wildGoat',9],['stoneSource',12]]}
+ ridge:{max:3,ms:9000,bonus:.12,results:[['rockyHill',12],['valley',10],['caveEntrance',9],['forest',8],['smokeTrace',7],['wildGoat',8],['stoneSource',10],['copperVein',8],['tinVein',5],['ironVein',5]]}
 });
 const CLUE_DEFS=Object.freeze({
  animalTrail:{label:'동물 흔적을 따라가는 중',discover:'동물 추적',results:[['rabbit',25],['deer',23],['wildGoat',18],['wildBoar',13],['wolf',8],['forest',7],['meadow',6]]},
@@ -505,7 +573,7 @@ function tutorialEvent(name,payload={}){
 
 function reset(){
  state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.tutorial={active:false,step:0};
- state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
+ state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;state.bronzeMilestoneShown=false;state.ironMilestoneShown=false;state.ageReached='paleo';
  state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
  spawnInitial();renderAll();
