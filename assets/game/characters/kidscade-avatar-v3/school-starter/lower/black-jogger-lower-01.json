@@ -18,7 +18,13 @@
     [
       25,
       27,
-      31,
+      30,
+      255
+    ],
+    [
+      38,
+      41,
+      46,
       255
     ],
     [
@@ -26,7 +32,14 @@
       51,
       57,
       255
+    ],
+    [
+      59,
+      62,
+      69,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

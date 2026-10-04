@@ -16,9 +16,15 @@
   "design": "beige-chino",
   "palette": [
     [
-      126,
-      98,
-      67,
+      100,
+      82,
+      59,
+      255
+    ],
+    [
+      150,
+      123,
+      89,
       255
     ],
     [
@@ -26,7 +32,14 @@
       154,
       111,
       255
+    ],
+    [
+      221,
+      182,
+      132,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

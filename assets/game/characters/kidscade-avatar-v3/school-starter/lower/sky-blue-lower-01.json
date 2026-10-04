@@ -16,9 +16,15 @@
   "design": "sky-blue",
   "palette": [
     [
-      64,
+      59,
+      84,
       105,
-      148,
+      255
+    ],
+    [
+      89,
+      126,
+      159,
       255
     ],
     [
@@ -26,7 +32,14 @@
       158,
       199,
       255
+    ],
+    [
+      132,
+      186,
+      234,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

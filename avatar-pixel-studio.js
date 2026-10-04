@@ -6,7 +6,7 @@ const SHEET_URL=ROOT+'/school-starter-sheet.png';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-5';
+const PREVIEW_VERSION='pixel-v3-school-starter-6';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -100,7 +100,7 @@ function loadSheet(){
     img.decoding='async';
     img.onload=()=>{sheet=img;resolve(img)};
     img.onerror=()=>reject(new Error('v3 아바타 스프라이트를 불러오지 못했습니다.'));
-    img.src=SHEET_URL+'?v=1';
+    img.src=SHEET_URL+'?v=quality-2';
   });
 }
 function hexToRgb(hex){
@@ -685,7 +685,7 @@ function renderOptions(){
   pickerTitle.textContent=meta.label;
   pickerCount.textContent='1가지';
   optionGrid.innerHTML=`<button type="button" class="option active" aria-pressed="true" data-v3-part="${currentTab}">
-    <span class="hair-thumb"><img class="base" alt="" src="${DEFAULT_IMAGE}?v=1"></span>
+    <span class="hair-thumb"><img class="base" alt="" src="${DEFAULT_IMAGE}?v=quality-2"></span>
     <span class="num">✓</span>
     <span class="part-name">${meta.name}<small>${id}</small></span>
   </button>`;
@@ -789,7 +789,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-5',
+  version:'pixel-v3-school-starter-6',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,

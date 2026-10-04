@@ -5,7 +5,7 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v3-school-starter-5';
+  const PREVIEW_VERSION = 'pixel-v3-school-starter-6';
   const PIXEL_STATE_KEY = 'kidscade-avatar-v3';
   const SCHOOL_DEFAULT_IMAGE = 'assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png';
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -155,7 +155,7 @@
       } catch (_) {}
 
       const image = new Image();
-      image.src = new URL(SCHOOL_DEFAULT_IMAGE, document.baseURI).href;
+      image.src = new URL(SCHOOL_DEFAULT_IMAGE + '?v=quality-2', document.baseURI).href;
       try {
         await image.decode();
         const schoolCanvas = document.createElement('canvas');

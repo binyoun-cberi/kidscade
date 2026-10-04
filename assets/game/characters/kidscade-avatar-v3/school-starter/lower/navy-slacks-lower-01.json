@@ -16,9 +16,15 @@
   "design": "navy-slacks",
   "palette": [
     [
-      24,
+      22,
+      30,
+      47,
+      255
+    ],
+    [
       34,
-      59,
+      46,
+      70,
       255
     ],
     [
@@ -26,7 +32,14 @@
       57,
       88,
       255
+    ],
+    [
+      52,
+      69,
+      105,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

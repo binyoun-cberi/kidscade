@@ -16,9 +16,15 @@
   "design": "brown-corduroy",
   "palette": [
     [
-      78,
-      52,
-      37,
+      67,
+      46,
+      30,
+      255
+    ],
+    [
+      102,
+      69,
+      46,
       255
     ],
     [
@@ -26,7 +32,14 @@
       86,
       57,
       255
+    ],
+    [
+      150,
+      103,
+      69,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

@@ -16,9 +16,15 @@
   "design": "denim-blue",
   "palette": [
     [
-      35,
-      62,
-      91,
+      36,
+      55,
+      76,
+      255
+    ],
+    [
+      54,
+      82,
+      114,
       255
     ],
     [
@@ -26,7 +32,14 @@
       103,
       143,
       255
+    ],
+    [
+      81,
+      122,
+      169,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }
