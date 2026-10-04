@@ -12,7 +12,7 @@ const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
   assert.match(html,/deep-diver-2d\.css\?v=34/);
-  assert.match(html,/diver-v7\.js\?v=34/);
+  assert.match(html,/diver-v7\.js\?v=35/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -21,6 +21,16 @@ test('Deep Diver v15 uses the 2D runtime',()=>{
 test('Deep Diver v15 browser runtime parses',()=>{
   const result=spawnSync(process.execPath,['--check',path.join(dir,'diver-v7.js')],{encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
+});
+
+test('Deep Diver v35 never blocks launch on optional image preloads',()=>{
+  assert.match(js,/let ready=true,loaded=0,assetFailures=0/);
+  assert.match(js,/im\.onload=\(\)=>\{loaded\+\+\}/);
+  assert.match(js,/im\.onerror=\(\)=>\{loaded\+\+;assetFailures\+\+\}/);
+  assert.doesNotMatch(js,/loaded===Object\.keys\(ASSETS\)\.length.*ready=true/);
+  assert.match(js,/imgs\.bg\.complete&&imgs\.bg\.naturalWidth/);
+  assert.match(js,/imgs\.mid\.complete&&imgs\.mid\.naturalWidth/);
+  assert.match(js,/!imgs\.props\.complete\|\|!imgs\.props\.naturalWidth/);
 });
 
 test('Deep Diver v15 has core career systems',()=>{
@@ -227,7 +237,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=34');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=35');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
