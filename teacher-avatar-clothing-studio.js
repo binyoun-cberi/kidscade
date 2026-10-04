@@ -3,6 +3,7 @@
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
 const SAVE_KEY='kidscade-avatar-studio-v3';
+const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v1';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
@@ -1664,8 +1665,27 @@ async function applyAdjustmentJsonFile(file){
   throw new Error('지원하지 않는 JSON입니다. 파츠 조정 또는 전체 조정 JSON을 선택하세요.');
 }
 
+function setupCollapsiblePanels(){
+  const panels=[...document.querySelectorAll('[data-panel-key]')];
+  try{
+    const saved=JSON.parse(localStorage.getItem(PANEL_STATE_KEY)||'{}');
+    for(const panel of panels){
+      const key=panel.dataset.panelKey;
+      if(Object.prototype.hasOwnProperty.call(saved,key))panel.open=!!saved[key];
+    }
+  }catch(_){}
+  const save=()=>{
+    const state={};
+    for(const panel of panels)state[panel.dataset.panelKey]=!!panel.open;
+    try{localStorage.setItem(PANEL_STATE_KEY,JSON.stringify(state))}catch(_){}
+  };
+  for(const panel of panels)panel.addEventListener('toggle',save);
+  $('collapseAllPanels')?.addEventListener('click',()=>{for(const panel of panels)panel.open=false;save()});
+  $('expandAllPanels')?.addEventListener('click',()=>{for(const panel of panels)panel.open=true;save()});
+}
+
 function bind(){
-  buildFrameButtons();buildLayerSelect();buildAssetBrowser();
+  buildFrameButtons();buildLayerSelect();buildAssetBrowser();setupCollapsiblePanels();
   $('editLayerSelect')?.addEventListener('change',e=>selectLayer(e.target.value));
   $('focusPartToggle')?.addEventListener('click',toggleFocusPart);
   $('assetCategory')?.addEventListener('change',e=>{selectLayer(e.target.value);renderAssetGrid()});
