@@ -15,6 +15,7 @@ const AVATARS=['🧳','🎒','📸','🗺️'];
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korea_marble','world_best')||'kidscade_game_v1:korea_marble:world_best';
 const MAP_URL='../../assets/maps/world-countries-110m.geojson';
 const MAP_W=1000,MAP_H=520,LAT_TOP=80,LAT_BOTTOM=-58;
+const GEO_NAME_FALLBACK={France:'FR',Singapore:'SG'};
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -116,7 +117,8 @@ function renderMapBase(){
   mapEls={countries:new Map(),nodes:new Map(),routes:new Map()};
   const playable=new Set(COUNTRIES.map(c=>c.id));
   for(const f of geo.features||[]){
-    const iso=String(f.properties?.ISO_A2||'').toUpperCase();
+    let iso=String(f.properties?.ISO_A2||'').toUpperCase();
+    if(!playable.has(iso))iso=GEO_NAME_FALLBACK[String(f.properties?.NAME||'')]||iso;
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d',geometryPath(f.geometry));
     path.setAttribute('class','country-shape'+(playable.has(iso)?' playable':''));
