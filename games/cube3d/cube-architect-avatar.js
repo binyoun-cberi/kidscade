@@ -120,11 +120,12 @@ function create(equipment=readEquipment()){
   setSource(rig,storedPreview());
   return root;
 }
-function animate(root,time,moving,onGround=true){
+function animate(root,time,moving,onGround=true,motion='ground'){
   const rig=root?.userData?.avatarRig;
   if(!rig)return;
 
-  const mode=moving&&onGround?'walk':'idle';
+  const swimming=motion==='swim',airborne=motion==='air';
+  const mode=moving&&(onGround||swimming)?'walk':'idle';
   if(time-rig.lastFrameAt>=92||mode!==rig.lastMode){
     rig.lastFrameAt=time;
     rig.lastMode=mode;
@@ -136,11 +137,22 @@ function animate(root,time,moving,onGround=true){
   }
 
   const phase=time/115;
+  if(swimming){
+    const stroke=Math.sin(time/175);
+    rig.plane.position.y=.98+Math.sin(time/260)*.045;
+    rig.plane.rotation.x=-.78+stroke*.06;
+    rig.plane.rotation.z=stroke*.045;
+    rig.plane.scale.set(1.02,.98,1);
+    rig.shadow.scale.setScalar(.72);
+    rig.shadow.material.opacity=.045;
+    return;
+  }
+  rig.plane.rotation.x=0;rig.plane.rotation.z=0;
   const step=moving&&onGround?Math.abs(Math.sin(phase*Math.PI)):0;
-  rig.plane.position.y=1.14+step*.035;
+  rig.plane.position.y=1.14+step*.035+(airborne?Math.sin(time/170)*.025:0);
   rig.plane.scale.set(1+(1-step)*.012,1-step*.018,1);
-  rig.shadow.scale.setScalar(1-step*.14);
-  rig.shadow.material.opacity=.2-step*.04;
+  rig.shadow.scale.setScalar(airborne?.72:1-step*.14);
+  rig.shadow.material.opacity=airborne?.08:.2-step*.04;
 }
 window.CubeArchitectAvatar={
   STATE_KEY,PREVIEW_KEY,DEFAULTS,readEquipment,signature,create,animate
