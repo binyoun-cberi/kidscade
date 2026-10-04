@@ -22,6 +22,7 @@ test('world flag master has continent mastery and difficulty progression', () =>
   for (const token of ['asia','europe','northAmerica','southAmerica','africa','oceania']) assert.ok(html.includes(token), token);
   assert.match(html, /const DIFFS=\{/);
   assert.match(html, /function masteryProgress\(/);
+  assert.match(html, /const minimum=Math\.min\(6,continentPool\.length\)/);
   assert.match(html, /continent_mastered/);
 });
 
@@ -30,6 +31,11 @@ test('world flag master uses local flags and smart distractors', () => {
   assert.doesNotMatch(html, /flagcdn\.com/);
   assert.match(html, /const SIMILAR_GROUPS=\[/);
   assert.match(html, /function smartDistractors\(/);
+  const codes = [...html.matchAll(/code:\s*'([^']+)'/g)].map(match => match[1]);
+  assert.equal(new Set(codes).size, 89);
+  for (const code of new Set(codes)) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'assets/game/2d/flags', code + '.png')), code);
+  }
 });
 
 test('world flag master has partial capital scoring and spaced review', () => {
