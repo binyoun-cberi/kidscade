@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=21';
-import {createDailyDirector} from './kidscade-world-daily.js?v=2';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=22';
+import {createDailyDirector} from './kidscade-world-daily.js?v=3';
+import {createDailyLife} from './kidscade-world-daily-life.js?v=1';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=2';
-import {createTownEconomy} from './kidscade-world-economy.js?v=17';
+import {createTownEconomy} from './kidscade-world-economy.js?v=18';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=3';
@@ -329,7 +330,7 @@ const itemName=k=>({
   water:'물',nails:'못',fabric:'천',glass:'유리',wire:'전선',paint:'페인트',
   potato:'감자',carrot:'당근',tomato:'토마토',strawberry:'딸기',corn:'옥수수',pumpkin:'호박',
   apple:'사과',pear:'배',peach:'복숭아',orange:'감귤',cherry:'체리',
-  milk:'우유',egg:'달걀',truffle:'트러플',fish:'물고기',rareFish:'희귀 물고기',pearl:'진주',bug:'곤충',mushroom:'버섯'
+  milk:'우유',egg:'달걀',truffle:'트러플',fish:'물고기',rareFish:'희귀 물고기',pearl:'진주',shell:'조개껍데기',bug:'곤충',mushroom:'버섯'
 })[k]||k;
 
 const BACKPACK_SLOTS=[0,8,12,16,20];
@@ -919,6 +920,7 @@ panel.addEventListener('click',e=>{
   const pet=e.target.closest('[data-pet]');if(pet&&CUBE_PETS[pet.dataset.pet]){prog().cubePets.companion=pet.dataset.pet;persist();petPicker?.classList.remove('open');toast(CUBE_PETS[pet.dataset.pet].name+'와 함께 다녀요!');petPanel();updateStatus();return;}
   const plant=e.target.closest('[data-plant]');if(plant){const [id,type]=plant.dataset.plant.split(':');plantCrop(id,type);return;}
   if(e.target.closest('[data-ranch-collect]')){collectRanchProducts();return;}
+  if(dailyLife?.handlePanelClick?.(e.target))return;
   if(furnishingSystem?.handlePanelClick?.(e))return;
   if(townEconomy?.handlePanelClick?.(e))return;
 });
@@ -1760,7 +1762,8 @@ async function buildOutdoor(){
       talk:(id,name)=>townEconomy?.talk(id,name),arcade:()=>townEconomy?.arcade(),
       library:()=>townEconomy?.library(),clinic:()=>townEconomy?.clinic(),
       transport:()=>townEconomy?.transport(),bench:()=>townEconomy?.bench(),
-      enterVenue:kind=>enterVenue(kind)
+      enterVenue:kind=>enterVenue(kind),
+      dailyBoard:()=>dailyLife?.boardPanel?.(),dailyVisitor:()=>dailyLife?.visitorPanel?.()
     },
     getGameTime:()=>prog().survival.time,
     getPlayerPosition:()=>({x:player.x,z:player.z}),
@@ -2126,7 +2129,7 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 
-let townEconomy=null,cityRuntime=null,furnishingSystem=null,venueInteriors=null,dailyDirector=null;
+let townEconomy=null,cityRuntime=null,furnishingSystem=null,venueInteriors=null,dailyDirector=null,dailyLife=null;
 let last=performance.now(),saveClock=0,wasInCity=false;
 function tick(now){
   requestAnimationFrame(tick);
@@ -2163,6 +2166,7 @@ function tick(now){
   updatePets(now,dt);
   furnishingSystem?.updatePreview?.();
   dailyDirector?.update?.(now,dt,player,prog().survival.day);
+  dailyLife?.sync?.();
   cityRuntime?.update?.(now,dt);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
@@ -2223,7 +2227,8 @@ async function init(){
     foodName:key=>FOOD_DEF[key]?.name||key,
     addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,
     travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume),
-    enterVenue,getVenue:()=>activeVenue
+    enterVenue,getVenue:()=>activeVenue,
+    getDailyState:()=>dailyDirector?.state?.()||prog().dailyWorld||null
   });
   townEconomy.ensureState(prog());
   dailyDirector=createDailyDirector({
@@ -2238,11 +2243,19 @@ async function init(){
         }
         if(watered)updateCropVisuals();
       }
+      dailyLife?.refreshDay?.(state);
       persist();updateStatus();
       const weather=dailyDirector?.weather?.();
       const extra=watered?' · 밭 '+watered+'칸에 빗물이 스며들었어요.':'';
       setTimeout(()=>toast((weather?.icon||'🌤️')+' 새로운 아침 · '+(weather?.label||'맑음')+extra),320);
     }
+  });
+  dailyLife=await createDailyLife({
+    parent:outdoor,addModel,interact,prog,inv,persist,toast,openPanel,itemName,
+    addInventoryItem,canCarryNewKey,townEconomy,
+    getDailyState:()=>dailyDirector?.state?.()||prog().dailyWorld||null,
+    getDevelopment:devState,setAvatarAction,
+    playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
   });
   // Persist one-time v3.22 starter-world migration before any later refresh/reload.
   persist();
