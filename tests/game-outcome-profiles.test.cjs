@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const profiles = require('../game-outcome-profiles.js');
+const profiles = require('../app/features/achievements/game-outcome-profiles.js');
 const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
 const games = (Array.isArray(raw) ? raw : raw.games || []).filter(game => !game.disabled);
 
