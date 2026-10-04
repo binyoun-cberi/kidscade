@@ -24,6 +24,7 @@ const ui={
   steeringPad:document.querySelector('#steeringPad'),steeringWheel:document.querySelector('#steeringWheel'),steerKnob:document.querySelector('#steerKnob'),
   signalLeft:document.querySelector('#signalLeft'),signalRight:document.querySelector('#signalRight'),
   ignition:document.querySelector('#ignition'),seatbelt:document.querySelector('#seatbelt'),parkingBrake:document.querySelector('#parkingBrake'),hazard:document.querySelector('#hazard'),
+  headlight:document.querySelector('#headlight'),wiper:document.querySelector('#wiper'),
   autoGate:document.querySelector('#autoGate'),manualGate:document.querySelector('#manualGate'),
   autoKnob:document.querySelector('#autoKnob'),manualKnob:document.querySelector('#manualKnob'),
   clutchPedal:document.querySelector('#clutchPedal'),brakePedal:document.querySelector('#brakePedal'),throttlePedal:document.querySelector('#throttlePedal'),
@@ -84,9 +85,9 @@ const VISUAL_MODELS={
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
-let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false,emergencyBrakeSeen=false;
+let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false,parkingSensorSeen=false,emergencyBrakeSeen=false;
 let deductions=[];
-let sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};
+let sectionResults={controls:'pending',hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};
 let mirrorFrame=0;
 const obstacles=[];
 let collisionCooldown=0;
@@ -103,7 +104,15 @@ let examEvents=[];
 let runStats={collisions:0,cones:0,offroad:0,gearChanges:0,maxSpeed:0,parking:null};
 let examiner={disqualified:false,reason:'',stageStartedAt:0,startAt:0,hillStopZ:null,hillRollback:0,hillWarned:false,
   parkingBrakeHold:0,overspeedTimer:0,overspeedTicks:0,intersectionWarned:false,finishSignalChecked:false,
-  emergencyStopTime:null,emergencyHazardTime:null,emergencyStopPenalized:false,emergencyHazardPenalized:false,hazardDrivePenalized:false};
+  emergencyStopTime:null,emergencyHazardTime:null,emergencyHazardToggleAt:null,emergencyStopPenalized:false,emergencyHazardPenalized:false,
+  emergencyEarlyHazardPenalized:false,hazardDrivePenalized:false};
+const CONTROL_TASK_POOL=[
+  {kind:'headlight',label:'전조등',command:'전조등을 켜십시오.'},
+  {kind:'wiper',label:'와이퍼',command:'와이퍼를 작동하십시오.'},
+  {kind:'signalLeft',label:'좌측 방향지시등',command:'좌측 방향지시등을 켜십시오.'},
+  {kind:'signalRight',label:'우측 방향지시등',command:'우측 방향지시등을 켜십시오.'}
+];
+let controlCheck={tasks:[],index:0,complete:false};
 
 const touch={steer:0,throttle:0,brake:0,clutch:0};
 const pedalPointers={throttle:null,brake:null,clutch:null};
@@ -112,7 +121,7 @@ const car={
   x:0,z:73,y:0,yaw:0,pitch:0,speed:0,
   steeringWheel:0,wheelAngle:0,
   engine:false,rpm:0,gear:'P',
-  parkingBrake:true,seatbelt:false,signal:0,hazard:false
+  parkingBrake:true,seatbelt:false,signal:0,hazard:false,headlight:false,wiper:false
 };
 
 const audio={ctx:null,engine:null,gain:null};
@@ -142,7 +151,9 @@ function showToast(text,tone='normal',seconds=1.8){
   ui.toast.textContent=text;ui.toast.className='show'+(tone==='normal'?'':' '+tone);toastTimer=seconds;
 }
 function setInstruction(main,sub=''){
-  ui.instruction.textContent=main;ui.subInstruction.textContent=sub;
+  ui.instruction.textContent=main;
+  // 기능시험에서는 공략 설명을 숨기고 시험 음성 수준의 지시만 남깁니다.
+  ui.subInstruction.textContent=(mode==='exam'&&gameState==='playing')?'':sub;
 }
 function recordEvent(kind,label,data={}){
   examEvents.push({t:Math.round(gameTime*10)/10,kind,label,...data});
@@ -178,7 +189,7 @@ function finishRun(){
   ui.resultTitle.textContent=mode==='practice'?'연습 완료':examiner.disqualified?'실격':passed?'합격':'불합격';
   ui.finalScore.textContent=mode==='practice'?'코스 완주':examiner.disqualified?'실격 · '+score+'점':score+'점';
   ui.resultRows.innerHTML='';
-  const sectionLabels={hill:'경사로 정차',intersection:'신호교차로',parking:'T자 후진주차',acceleration:'가속구간',emergency:'급정지'};
+  const sectionLabels={controls:'운전장치 조작',hill:'경사로 정차',intersection:'신호교차로',parking:'T자 후진주차',acceleration:'가속구간',emergency:'급정지'};
   for(const key of Object.keys(sectionLabels)){
     const state=sectionResults[key];
     const row=document.createElement('div');row.className='result-row';
@@ -337,13 +348,41 @@ function currentDirection(){
   return car.gear===-1?-1:(Number(car.gear)>0?1:0);
 }
 function gearText(){return license==='auto'?String(car.gear):(car.gear===-1?'R':car.gear===0?'N':String(car.gear))}
+function prepareControlCheck(){
+  const pool=[...CONTROL_TASK_POOL];
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  controlCheck={tasks:pool.slice(0,2),index:0,complete:mode!=='exam'};
+  sectionResults.controls=mode==='exam'?'pending':'ok';
+}
+function expectedControlTask(){return controlCheck.tasks[controlCheck.index]||null}
+function verifyControlAction(kind){
+  if(mode!=='exam'||gameState!=='playing'||stage!=='PREP'||controlCheck.complete)return;
+  const expected=expectedControlTask();if(!expected)return;
+  if(kind!==expected.kind){
+    addDeduction('운전장치 조작 오류',5);
+    examinerSay('지시된 장치를 다시 확인하세요.','운전장치','warn');
+    return;
+  }
+  controlCheck.index++;
+  recordEvent('control-check',expected.label);
+  beep(840,.08,.035);
+  if(controlCheck.index>=controlCheck.tasks.length){
+    controlCheck.complete=true;sectionResults.controls='ok';
+    examinerSay('운전장치 조작 확인 완료','운전장치','ok');
+    showToast('운전장치 조작 완료');
+  }else{
+    const next=expectedControlTask();
+    examinerSay(next.command,'운전장치','normal');
+    showToast('다음 지시를 확인하세요.');
+  }
+}
 function resetCar(){
-  Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,steeringWheel:0,wheelAngle:0,speed:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0,hazard:false});
+  Object.assign(car,{x:0,z:73,y:0,yaw:0,pitch:0,steeringWheel:0,wheelAngle:0,speed:0,engine:false,rpm:0,gear:license==='auto'?'P':0,parkingBrake:true,seatbelt:false,signal:0,hazard:false,headlight:false,wiper:false});
   touch.steer=touch.throttle=touch.brake=touch.clutch=0;
   gameTime=0;holdTimer=stallTimer=offroadTimer=emergencyTimer=collisionCooldown=0;lastCollisionId='';
-  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];examEvents=[];runStats={collisions:0,cones:0,offroad:0,gearChanges:0,maxSpeed:0,parking:null};examiner={disqualified:false,reason:'',stageStartedAt:0,startAt:0,hillStopZ:null,hillRollback:0,hillWarned:false,parkingBrakeHold:0,overspeedTimer:0,overspeedTicks:0,intersectionWarned:false,finishSignalChecked:false,emergencyStopTime:null,emergencyHazardTime:null,emergencyStopPenalized:false,emergencyHazardPenalized:false,hazardDrivePenalized:false};sectionResults={hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';
+  hillStopped=accelOk=emergencyTriggered=parkingComplete=parkingReverseSeen=parkingSensorSeen=emergencyBrakeSeen=false;car._redPenalized=false;car._rightPenalized=false;car._emergencyPenalized=false;score=100;deductions=[];examEvents=[];runStats={collisions:0,cones:0,offroad:0,gearChanges:0,maxSpeed:0,parking:null};examiner={disqualified:false,reason:'',stageStartedAt:0,startAt:0,hillStopZ:null,hillRollback:0,hillWarned:false,parkingBrakeHold:0,overspeedTimer:0,overspeedTicks:0,intersectionWarned:false,finishSignalChecked:false,emergencyStopTime:null,emergencyHazardTime:null,emergencyHazardToggleAt:null,emergencyStopPenalized:false,emergencyHazardPenalized:false,emergencyEarlyHazardPenalized:false,hazardDrivePenalized:false};sectionResults={controls:'pending',hill:'pending',intersection:'pending',parking:'pending',acceleration:'pending',emergency:'pending'};stage='PREP';prepareControlCheck();
   headYaw=headPitch=0;ui.score.textContent=mode==='exam'?'100':'연습';
-  examinerSay(mode==='exam'?'안전띠와 차량 조작 준비를 확인합니다.':'감점 없이 조작을 익혀 보세요.',mode==='exam'?'승차 확인':'연습 코치');
+  examinerSay(mode==='exam'?'안전띠 착용 후 안내되는 운전장치 2가지를 조작하십시오.':'감점 없이 조작을 익혀 보세요.',mode==='exam'?'승차 확인':'연습 코치');
   updateControlVisibility();updateGearVisual();updateButtonVisuals();
 }
 function requestGameFullscreen(){
@@ -367,7 +406,7 @@ function startGame(){
   initAudio();gameState='playing';resetCar();ui.start.classList.remove('show');ui.result.classList.remove('show');
   try{window.KidscadeGame?.start?.({license,mode});}catch(_){}
   ui.examMode.textContent=(license==='auto'?'2종 자동':'1종 보통')+' · '+(mode==='exam'?'기능시험':'연습');
-  setInstruction('먼저 안전띠를 매세요.','준비 순서: 안전띠 → 시동 → 기어 → 주차브레이크 해제');
+  setInstruction('먼저 안전띠를 매세요.','연습 순서: 안전띠 → 시동 → 기어 → 주차브레이크 해제');
   showToast('운전석 준비 완료');
 }
 function selectOptions(){
@@ -591,6 +630,8 @@ function buildCourse(){
   line(12,.18,42,25.4,white,.16);line(12,.18,42,40.5,white,.16);
   line(.18,15,36.1,33,white,.16);line(.18,15,47.9,33,white,.16);
   line(.18,12,39.2,33,white,.17);line(.18,12,44.8,33,white,.17);line(5.8,.18,42,38.7,white,.17);
+  // T자 주차 확인선: 후진 중 뒤쪽이 이 선에 도달해야 주차 과제가 인정됩니다.
+  line(5.45,.24,42,36.6,0x46d9ff,.185);
 
   const makeConeFallback=(id,x,z)=>{
     const mesh=new THREE.Mesh(new THREE.ConeGeometry(.28,.58,12),new THREE.MeshStandardMaterial({color:0xf47b20,roughness:.9}));
