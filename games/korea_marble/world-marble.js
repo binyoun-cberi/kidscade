@@ -16,6 +16,12 @@ const SAVE_KEY=window.KidscadeGame?.storageKey?.('korea_marble','world_best')||'
 const MAP_URL='../../assets/maps/world-countries-110m.geojson';
 const MAP_W=1000,MAP_H=520,LAT_TOP=80,LAT_BOTTOM=-58;
 const GEO_NAME_FALLBACK={France:'FR',Singapore:'SG'};
+const LANDMARK_GLYPHS={
+  KR:'🗼',JP:'🗼',CN:'🧱',MN:'⛺',VN:'⛰️',TH:'🏯',SG:'🏙️',ID:'🛕',IN:'🕌',AE:'🏙️',TR:'🕌',RU:'🏰',
+  GB:'🕰️',FR:'🗼',ES:'⛪',PT:'🏰',DE:'🏛️',NL:'🌬️',BE:'🏰',CH:'🏔️',IT:'🏟️',AT:'🏰',CZ:'🏰',PL:'🏰',
+  GR:'🏛️',EG:'🔺',MA:'🏜️',KE:'🦁',TZ:'🦓',ZA:'⛰️',US:'🗽',CA:'🌊',MX:'🛕',CU:'🌊',BR:'✝️',AR:'🎨',
+  CL:'🏔️',PE:'🏔️',CO:'🏰',AU:'🎭',NZ:'🏞️',FJ:'🏝️'
+};
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -32,7 +38,7 @@ let geo=null;
 let state={
   started:false,players:[],turn:0,round:1,maxRounds:10,cpuDifficulty:'normal',speed:'normal',
   investments:{},festival:null,phase:'menu',rolled:0,routeOptions:[],selectedRoute:null,eventUsed:false,
-  totalPlayers:4,humanPlayers:1
+  totalPlayers:4,humanPlayers:1,buildFx:null
 };
 let mapEls={countries:new Map(),nodes:new Map(),routes:new Map()};
 let setup={total:4,human:1,rounds:10,diff:'normal',speed:'normal'};
@@ -157,13 +163,59 @@ function renderMapBase(){
 
 function showTooltip(e,c){
   const inv=state.investments[c.id];
-  let owner='투자자 없음';
-  if(inv&&state.players[inv.owner])owner=state.players[inv.owner].name+' · Lv.'+inv.level;
-  ui.tooltip.innerHTML='<b>'+c.icon+' '+c.name+' · '+c.city+'</b><small>'+CONTINENTS[c.continent].name+' · 투자 '+c.value+'만 · '+owner+'</small>';
+  let owner='투자자 없음',stage='';
+  if(inv&&state.players[inv.owner]){
+    owner=state.players[inv.owner].name+' · Lv.'+inv.level;
+    stage=' · '+c.build[Math.max(0,inv.level-1)];
+    if(inv.level===3)stage+=' ⭐';
+  }
+  ui.tooltip.innerHTML='<b>'+c.icon+' '+c.name+' · '+c.city+'</b><small>'+CONTINENTS[c.continent].name+' · 투자 '+c.value+'만 · '+owner+stage+'</small>';
   ui.tooltip.classList.add('show');moveTooltip(e);
 }
 function moveTooltip(e){ui.tooltip.style.left=Math.min(innerWidth-190,e.clientX+13)+'px';ui.tooltip.style.top=Math.min(innerHeight-70,e.clientY+13)+'px'}
 function hideTooltip(){ui.tooltip.classList.remove('show')}
+
+function svgEl(tag,attrs={}){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));
+  return el;
+}
+
+function triggerBuildFx(countryId,level){
+  state.buildFx={countryId,level,until:performance.now()+1100};
+}
+
+function renderInvestmentVisual(node,c,inv){
+  node.querySelector('.investment-visual')?.remove();
+  if(!inv)return;
+  const owner=state.players[inv.owner],color=owner?.color||'#64748b';
+  const pop=state.buildFx?.countryId===c.id&&performance.now()<state.buildFx.until;
+  const g=svgEl('g',{class:'investment-visual level-'+inv.level+(pop?' build-pop':'')});
+  g.dataset.level=String(inv.level);
+
+  const base=svgEl('ellipse',{class:'investment-shadow',cx:10,cy:3,rx:inv.level===3?9:7,ry:3});
+  base.setAttribute('fill',color);g.appendChild(base);
+
+  if(inv.level===1){
+    const body=svgEl('rect',{class:'investment-building',x:6,y:-7,width:8,height:10,rx:1});
+    body.setAttribute('fill',color);g.appendChild(body);
+    g.appendChild(svgEl('rect',{class:'investment-window',x:8,y:-5,width:2,height:2,rx:.4}));
+    g.appendChild(svgEl('rect',{class:'investment-window',x:11,y:-5,width:2,height:2,rx:.4}));
+    const badge=svgEl('text',{class:'investment-level',x:10,y:11,'text-anchor':'middle'});badge.textContent='L1';g.appendChild(badge);
+  }else if(inv.level===2){
+    const roof=svgEl('path',{class:'investment-roof',d:'M3 -13 L10 -18 L17 -13 Z'});roof.setAttribute('fill',color);g.appendChild(roof);
+    const body=svgEl('rect',{class:'investment-building',x:4,y:-13,width:12,height:16,rx:1.4});body.setAttribute('fill',color);g.appendChild(body);
+    for(const x of [6.5,11.5])for(const y of [-10,-5])g.appendChild(svgEl('rect',{class:'investment-window',x,y,width:2.4,height:2.4,rx:.5}));
+    const badge=svgEl('text',{class:'investment-level',x:10,y:11,'text-anchor':'middle'});badge.textContent='L2';g.appendChild(badge);
+  }else{
+    const stem=svgEl('path',{class:'landmark-stem',d:'M10 2 L10 -18'});stem.setAttribute('stroke',color);g.appendChild(stem);
+    const crown=svgEl('circle',{class:'landmark-crown',cx:10,cy:-19,r:11});crown.setAttribute('stroke',color);g.appendChild(crown);
+    const icon=svgEl('text',{class:'landmark-glyph',x:10,y:-15,'text-anchor':'middle'});icon.textContent=LANDMARK_GLYPHS[c.id]||'⭐';g.appendChild(icon);
+    const label=svgEl('text',{class:'landmark-label',x:10,y:-34,'text-anchor':'middle'});label.textContent=c.build[2];g.appendChild(label);
+    const star=svgEl('text',{class:'landmark-star',x:21,y:-23,'text-anchor':'middle'});star.textContent='★';g.appendChild(star);
+  }
+  node.appendChild(g);
+}
 
 function refreshMap(){
   if(!geo)return;
@@ -182,11 +234,7 @@ function refreshMap(){
       if(inv)node.classList.add('owned-p'+inv.owner);
       if(state.routeOptions.some(o=>o.dest===c.id))node.classList.add('reachable');
       if(state.players[state.turn]?.country===c.id)node.classList.add('current');
-      const star=node.querySelector('.landmark-star');if(star)star.remove();
-      if(inv?.level===3){
-        const t=document.createElementNS('http://www.w3.org/2000/svg','text');
-        t.setAttribute('class','landmark-star');t.setAttribute('x','9');t.setAttribute('y','7');t.textContent='⭐';node.appendChild(t);
-      }
+      renderInvestmentVisual(node,c,inv);
     }
   }
   for(const g of mapEls.routes.values())g.querySelectorAll('.route').forEach(p=>p.classList.remove('active','preview'));
@@ -227,7 +275,7 @@ function newGame(){
   state={
     started:true,players:[],turn:0,round:1,maxRounds:setup.rounds,cpuDifficulty:setup.diff,speed:setup.speed,
     investments:{},festival:null,phase:'roll',rolled:0,routeOptions:[],selectedRoute:null,eventUsed:false,
-    totalPlayers:setup.total,humanPlayers:setup.human
+    totalPlayers:setup.total,humanPlayers:setup.human,buildFx:null
   };
   let cpuNo=1;
   for(let i=0;i<setup.total;i++){
@@ -329,6 +377,7 @@ function remoteUpgrade(player,c,inv,cost){
   if(player.buildPoints<=0||inv.level>=3||player.money<cost)return enterRollPhase(player);
   player.buildPoints--;player.money-=cost;if(player.discount<1)player.discount=1;inv.level++;
   if(inv.level===3)player.landmarks++;
+  triggerBuildFx(c.id,inv.level);
   sdkSound('success');
   announce(c.name+' '+c.build[inv.level-1]+' 건설!', '건설권을 사용해 여행 전에 사업을 성장시켰습니다.');
   refreshMap();updateAll();
@@ -475,8 +524,8 @@ function routeTicketStatus(player,c,path){
   const inv=state.investments[c.id],transit=routeTransitFee(player,path);
   const via=transit?' · 환승 '+transit+'만':'';
   if(!inv)return {cls:'open',text:'✨ 투자 가능'+via};
-  if(inv.owner===player.id)return {cls:'mine',text:(inv.level<3?'🏗️ 내 사업 Lv.'+inv.level:'⭐ 내 랜드마크')+via};
-  return {cls:'risk',text:'⚠️ 여행비 '+getToll(c.id)+'만'+via};
+  if(inv.owner===player.id)return {cls:'mine',text:(inv.level<3?'🏗️ 내 사업 Lv.'+inv.level:'⭐ '+c.build[2])+via};
+  return {cls:'risk',text:(inv.level===3?'⚠️ '+c.build[2]+' · ':'⚠️ ')+'여행비 '+getToll(c.id)+'만'+via};
 }
 
 function renderDestinationStrip(){
@@ -626,6 +675,7 @@ function promptInvestment(player,c){
 function buyCountry(player,c,cost){
   player.money-=cost;if(player.discount<1)player.discount=1;
   state.investments[c.id]={owner:player.id,level:1};
+  triggerBuildFx(c.id,1);
   sdkSound('success');announce(c.name+' 여행 사업 시작!',c.build[0]+'에 투자했습니다.');
   refreshMap();updateAll();later(()=>finishLanding(player),state.speed==='fast'?260:700);
 }
@@ -651,6 +701,7 @@ function promptUpgrade(player,c,inv){
 function upgradeCountry(player,c,inv,cost){
   player.money-=cost;if(player.discount<1)player.discount=1;inv.level++;
   if(inv.level===3)player.landmarks++;
+  triggerBuildFx(c.id,inv.level);
   sdkSound('success');announce(c.name+' '+c.build[inv.level-1]+' 완성!','여행 수익이 더 높아졌습니다.');
   refreshMap();updateAll();later(()=>finishLanding(player),state.speed==='fast'?250:700);
 }
@@ -736,6 +787,7 @@ function applyEvent(player,event){
     const owned=COUNTRIES.filter(c=>state.investments[c.id]?.owner===player.id&&state.investments[c.id].level<3);
     if(owned.length){
       const c=owned[Math.floor(Math.random()*owned.length)],inv=state.investments[c.id];inv.level++;if(inv.level===3)player.landmarks++;
+      triggerBuildFx(c.id,inv.level);
       announce('관광청 지원 성공!',c.name+'의 '+c.build[inv.level-1]+'이(가) 무료 완성됐습니다.');
     }
     refreshMap();updateAll();return nextTurn();
