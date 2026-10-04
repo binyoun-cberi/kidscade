@@ -384,7 +384,7 @@ function seededPick(list,key){
 
 function pickTravelTickets(routes,player,roll){
   if(routes.length<=4)return routes;
-  const target=roll<=2?3:4,picked=[];
+  const target=state.round>=7?3:(roll<=2?3:4),picked=[];
   const add=route=>{if(route&&!picked.some(x=>x.dest===route.dest))picked.push(route)};
   const opponent=routes.filter(r=>{
     const inv=state.investments[r.dest];return inv&&inv.owner!==player.id;
@@ -394,9 +394,19 @@ function pickTravelTickets(routes,player,roll){
   }).sort((a,b)=>(state.investments[b.dest].level-state.investments[a.dest].level)||BY_ID.get(b.dest).value-BY_ID.get(a.dest).value);
   const open=routes.filter(r=>!state.investments[r.dest]).sort((a,b)=>BY_ID.get(b.dest).value-BY_ID.get(a.dest).value||a.dest.localeCompare(b.dest));
   const seed=state.round+'|'+player.id+'|'+player.country+'|'+roll;
-  add(seededPick(opponent,seed+'|risk'));
-  add(seededPick(mine,seed+'|mine'));
-  add(seededPick(open,seed+'|open'));
+  if(state.round<=3){
+    add(seededPick(open,seed+'|open'));
+    add(seededPick(mine,seed+'|mine'));
+    add(seededPick(opponent,seed+'|risk'));
+  }else if(state.round<=6){
+    add(seededPick(opponent,seed+'|risk'));
+    add(seededPick(mine,seed+'|mine'));
+    add(seededPick(open,seed+'|open'));
+  }else{
+    const risk1=seededPick(opponent,seed+'|risk-a');add(risk1);
+    add(seededPick(opponent.filter(r=>r.dest!==risk1?.dest),seed+'|risk-b'));
+    add(seededPick(mine,seed+'|mine'));
+  }
   const rest=routes.filter(r=>!picked.some(x=>x.dest===r.dest))
     .sort((a,b)=>ticketHash(seed+'|'+a.dest)-ticketHash(seed+'|'+b.dest));
   for(const route of rest){add(route);if(picked.length>=target)break}
