@@ -19,6 +19,7 @@ const TEST_FILES = [
   "tests/daily-ui.test.cjs",
   "tests/index-base-daily-progress.test.cjs",
   "tests/achievement-state.test.cjs",
+  "tests/game-outcome-profiles.test.cjs",
   "tests/index-base-achievement.test.cjs",
   "tests/achievement-system.test.cjs",
   "tests/shop-state.test.cjs",
