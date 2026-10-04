@@ -1198,8 +1198,15 @@ function drawDangerFX(){
  if(world.lightJam>0){ctx.save();const a=clamp(world.lightJam*.22,0,.38),g=ctx.createRadialGradient(view.w/2,view.h/2,55,view.w/2,view.h/2,Math.max(view.w,view.h)*.62);g.addColorStop(0,'rgba(0,8,18,'+(a*.18)+')');g.addColorStop(.48,'rgba(0,6,16,'+(a*.55)+')');g.addColorStop(1,'rgba(0,0,8,'+a+')');ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);ctx.restore()}
  if(world.currentBurst>0){ctx.save();ctx.globalAlpha=clamp(world.currentBurst*.28,0,.22);ctx.strokeStyle='#b8f6ff';ctx.lineWidth=2;for(let y=90;y<view.h;y+=70){const off=(world.time*210+y*1.7)%180;ctx.beginPath();ctx.moveTo(-40+off,y);ctx.lineTo(120+off,y-18);ctx.stroke()}ctx.restore()}
 }
+function fishRenderList(limit=32){
+ if(!world)return[];const p=world.player,visible=[];
+ for(const f of world.fish){if(!f.alive)continue;const q=screenPos(f.x,f.y);if(q.x<-120||q.x>view.w+120||q.y<-100||q.y>view.h+100)continue;const sp=SPECIES[f.key],d=Math.hypot(f.x-p.x,f.y-p.y),important=sp.rare||sp.motion==='boss'||f.alert>0||f.hooked||f.marked>0;visible.push({f,d,important})}
+ if(visible.length<=limit)return visible.map(o=>o.f);
+ const must=visible.filter(o=>o.important).sort((a,b)=>a.d-b.d),rest=visible.filter(o=>!o.important).sort((a,b)=>a.d-b.d);
+ return must.concat(rest).slice(0,Math.max(limit,must.length)).map(o=>o.f)
+}
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDeepLandmarks();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();for(const f of world.fish)drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updateObservationHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDeepLandmarks();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();for(const f of fishRenderList())drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updateObservationHud();updatePhotoLabel()
 }
 function updateObservationHud(){
  const box=$('observeHud');if(!box||!world)return;
