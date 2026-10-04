@@ -265,7 +265,7 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
 
 test('avatar studio markup does not leak closing tag text',()=>{
   assert.ok(!html.includes('</main>/div>'));
-  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=20"></script>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=21"></script>'));
 });
 
 
@@ -360,4 +360,12 @@ test('equipment is included in analysis, status and exported bundle folders',()=
   assert.ok(js.includes("weaponFront:'equipment/weapon/front'"));
   assert.ok(js.includes("shieldBack:'equipment/shield/back'"));
   assert.ok(js.includes("shieldFront:'equipment/shield/front'"));
+});
+
+
+test('admin studio alone exposes the school starter JSON apply shortcut',()=>{
+  assert.ok(html.includes('id="loadSchoolStarterSet"'));
+  assert.match(js,/async function loadSchoolStarterSet\(\)/);
+  assert.match(js,/school-starter\/school-starter\.json/);
+  assert.match(js,/applyFullAdjustment\(data\)/);
 });
