@@ -47,7 +47,6 @@ const VISUAL_MODELS={
   tree:'../../assets/game/3d/nature/kenney-nature-kit/tree-default.glb',
   oak:'../../assets/game/3d/nature/kenney-nature-kit/tree-oak.glb',
   pine:'../../assets/game/3d/nature/kenney-nature-kit/tree-pine-round-a.glb',
-  bush:'../../assets/game/3d/nature/kenney-nature-kit/plant-bush-detailed.glb',
   trafficLight:'../../assets/game/3d/city/kenney-city-kit-roads/traffic-light.glb',
   cone:'../../assets/game/3d/city/kenney-city-kit-roads/construction-cone.glb',
   barrier:'../../assets/game/3d/city/kenney-city-kit-roads/construction-barrier.glb',
@@ -58,16 +57,11 @@ const VISUAL_MODELS={
   campusA:'../../assets/game/3d/city/kenney-city-kit-suburban/building-type-a.glb',
   campusB:'../../assets/game/3d/city/kenney-city-kit-suburban/building-type-b.glb',
   bigBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/big-building.glb',
-  redBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/building-red.glb',
-  greenBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/building-green.glb',
-  brownBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/brown-building.glb',
   bench:'../../assets/game/3d/city/poly-pizza-city-pack/bench.glb',
   planter:'../../assets/game/3d/city/poly-pizza-city-pack/planter-and-bushes.glb',
-  dumpster:'../../assets/game/3d/city/poly-pizza-city-pack/dumpster.glb',
   sedan:'../../assets/game/3d/vehicles/kenney-car-kit/sedan.glb',
   suv:'../../assets/game/3d/vehicles/kenney-car-kit/suv.glb',
   hatch:'../../assets/game/3d/vehicles/kenney-car-kit/hatchback-sports.glb',
-  taxi:'../../assets/game/3d/vehicles/kenney-car-kit/taxi.glb',
   van:'../../assets/game/3d/vehicles/kenney-car-kit/van.glb',
   sharedTreeA:shared3DPath('nature.commonTreeA','../../'),
   sharedTreeB:shared3DPath('nature.commonTreeB','../../'),
@@ -576,12 +570,12 @@ function rebuildVisualEnvironment(){
   // 외곽 펜스. 출입구 쪽은 비워 두어 폐쇄된 공사장이 아니라 시험장 캠퍼스로 보이게 합니다.
   for(let x=-22;x<=124;x+=7){
     if(x>-5&&x<28)continue;
-    placeVisual('fence',3.0,x,86,0);
-    placeVisual('fence',3.0,x,7,0);
+    placeVisual('fence',6.2,x,86,0);
+    placeVisual('fence',6.2,x,7,0);
   }
   for(let z=14;z<=79;z+=7){
-    placeVisual('fence',3.0,-25,z,Math.PI/2);
-    placeVisual('fence',3.0,130,z,Math.PI/2);
+    placeVisual('fence',6.2,-25,z,Math.PI/2);
+    placeVisual('fence',6.2,130,z,Math.PI/2);
   }
 
   const tl=placeVisual('trafficLight',4.7,4.8,25.8,Math.PI);
