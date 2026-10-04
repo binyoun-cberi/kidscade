@@ -1635,19 +1635,22 @@ function buildLandmarkDungeonScene(poi){
   }
   dungeonTargets=[];dungeonGates=[];
   const spec=dungeonSpec(poi);
-  addDungeonTarget('left','seal',-3.2,3,theme.accent,spec.seals[0]);
-  addDungeonTarget('right','seal',3.2,3,theme.accent,spec.seals[1]);
-  dungeonGate(-1.2,theme.wall);
-  addDungeonTarget('left','mirror',-3.1,-8,theme.accent,spec.mirrors[0]);
-  addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
-  addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
-  dungeonGate(-14.2,theme.wall);
-  spec.structure.options.forEach((option,i)=>{
-    const x=[-3.8,0,3.8][i];
-    addDungeonTarget(option[0],'structure',x,-18.3,theme.accent,option[1]);
-  });
-  dungeonGate(-22.1,theme.wall);
-  const portal=addDungeonTarget('blueprint','portal',0,-25.2,theme.accent,spec.portal);
+  const portal=dungeonSession?.shrineVersion?buildShrineDungeonPuzzles(poi,theme):
+    addDungeonTarget('blueprint','portal',0,-25.2,theme.accent,spec.portal);
+  if(!dungeonSession?.shrineVersion){
+    addDungeonTarget('left','seal',-3.2,3,theme.accent,spec.seals[0]);
+    addDungeonTarget('right','seal',3.2,3,theme.accent,spec.seals[1]);
+    dungeonGate(-1.2,theme.wall);
+    addDungeonTarget('left','mirror',-3.1,-8,theme.accent,spec.mirrors[0]);
+    addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
+    addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
+    dungeonGate(-14.2,theme.wall);
+    spec.structure.options.forEach((option,i)=>{
+      const x=[-3.8,0,3.8][i];
+      addDungeonTarget(option[0],'structure',x,-18.3,theme.accent,option[1]);
+    });
+    dungeonGate(-22.1,theme.wall);
+  }
   // Landmark-specific silhouettes make the same three-room rules read as different places.
   if(poi.id==='taj'){
     for(const x of [-4.3,4.3])for(const z of [5,-5,-17])addDungeonBox(x,2,z,.55,4,.55,theme.wall);
@@ -1668,6 +1671,7 @@ function buildLandmarkDungeonScene(poi){
     addDungeonBox(0,.08,-19,8,.12,4,0x607d45);
   }
   if((dungeonSession.stage||0)<3){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
+  else if(dungeonSession?.shrineVersion){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
   if((dungeonSession.stage||0)>=1&&dungeonGates[0])dungeonGates[0].visible=false;
   if((dungeonSession.stage||0)>=2&&dungeonGates[1])dungeonGates[1].visible=false;
   if((dungeonSession.stage||0)>=3&&dungeonGates[2])dungeonGates[2].visible=false;
