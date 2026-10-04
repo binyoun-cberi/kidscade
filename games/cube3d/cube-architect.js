@@ -2956,7 +2956,8 @@ function placeFreeBlock(hit){
   const p=placementTarget(hit);
   if(!p||!inWorld(p.x,p.y,p.z))return;
   const occupied=getBlock(p.x,p.y,p.z);
-  const replaceable=occupied&&(blockDef(occupied).liquid||['fire','flower','reed','sapling'].includes(occupied.type))&&
+  const replaceable=occupied&&!['door','cuboid'].includes(selectedType)&&
+    (blockDef(occupied).liquid||['fire','flower','reed','sapling'].includes(occupied.type))&&
     !(['water','lava'].includes(selectedType)&&blockDef(occupied).liquid);
   if(occupied&&!replaceable)return;
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
