@@ -51,6 +51,7 @@ test('inspect accepts an injected reader for game-specific keys', () => {
 
 test('achievement registry exposes platform and pilot-game definitions', () => {
   assert.equal(achievements.progressKey, 'kidscade_achievements_v1');
+  assert.equal(achievements.progressVersion, 2);
   assert.equal(achievements.getDefinition('cube3d.net_master').target, 10);
   assert.equal(achievements.getDefinition('high_micro_evolution.multicellular').hidden, true);
   assert.equal(achievements.getDefinition('infinite_gugudan.combo_20').target, 20);
@@ -78,7 +79,7 @@ test('achievement state normalization ignores unknown ids and preserves known pr
 });
 
 
-test('first-play definitions unlock from the shared played-game boundary', () => {
+test('opening a game records analytics but does not unlock achievements', () => {
   const memory = new Map();
   global.localStorage = {
     getItem:key => memory.has(key) ? memory.get(key) : null,
@@ -87,16 +88,62 @@ test('first-play definitions unlock from the shared played-game boundary', () =>
   };
   try {
     achievements.registerDefinitions({
-      id:'test_game.first_play',
+      id:'test_game.first_finish',
       gameId:'test_game',
-      title:'첫 플레이',
+      title:'첫 완주',
       enabled:true,
-      trigger:'first_play'
+      trigger:'completion_count',
+      target:1
     });
     achievements.recordPlayedGame('test_game', 12345);
     const state = achievements.loadAchievementState();
-    assert.equal(Boolean(state.unlocked['test_game.first_play']), true);
+    assert.equal(Boolean(state.unlocked['test_game.first_finish']), false);
     assert.equal(state.playedGames.test_game, 12345);
+    assert.equal(state.completedGames.test_game, undefined);
+  } finally {
+    delete global.localStorage;
+  }
+});
+
+test('completion milestones progress from completed games instead of entry', () => {
+  const memory = new Map();
+  global.localStorage = {
+    getItem:key => memory.has(key) ? memory.get(key) : null,
+    setItem:(key,value) => memory.set(key,String(value)),
+    removeItem:key => memory.delete(key)
+  };
+  try {
+    achievements.registerDefinitions([
+      {
+        id:'completion_game.first_finish',
+        gameId:'completion_game',
+        title:'첫 완주',
+        enabled:true,
+        trigger:'completion_count',
+        target:1
+      },
+      {
+        id:'completion_game.finisher_5',
+        gameId:'completion_game',
+        title:'5회 완주',
+        enabled:true,
+        trigger:'completion_count',
+        target:5
+      }
+    ]);
+    achievements.recordCompletedGame('completion_game', 20000);
+    let state = achievements.loadAchievementState();
+    assert.equal(Boolean(state.unlocked['completion_game.first_finish']), true);
+    assert.equal(Boolean(state.unlocked['completion_game.finisher_5']), false);
+    assert.equal(state.progress['completion_game.finisher_5'], 1);
+    assert.equal(state.completedGames.completion_game.count, 1);
+    assert.equal(Boolean(state.unlocked['kidscade.first_finish']), true);
+
+    for (let i = 0; i < 4; i += 1) achievements.recordCompletedGame('completion_game', 21000 + i);
+    state = achievements.loadAchievementState();
+    assert.equal(Boolean(state.unlocked['completion_game.finisher_5']), true);
+    assert.equal(state.progress['completion_game.finisher_5'], 5);
+    assert.equal(state.completedGames.completion_game.count, 5);
   } finally {
     delete global.localStorage;
   }
