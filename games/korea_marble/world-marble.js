@@ -234,7 +234,7 @@ function newGame(){
     const isCpu=i>=setup.human;
     state.players.push({
       id:i,name:isCpu?'CPU '+cpuNo++:'플레이어 '+(i+1),isCpu,color:COLORS[i],emoji:AVATARS[i],
-      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
+      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,turnTransitPaid:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
     });
   }
   ui.start.classList.add('hidden');ui.result.classList.add('hidden');ui.game.classList.remove('hidden');
@@ -253,7 +253,7 @@ function beginTurn(){
   if(state.round>state.maxRounds){finishGame('round-limit');return}
   const p=activePlayer();
   if(!p||p.bankrupt){nextTurn();return}
-  state.phase='preturn';state.rolled=0;state.routeOptions=[];state.selectedRoute=null;state.eventUsed=false;
+  state.phase='preturn';state.rolled=0;state.routeOptions=[];state.selectedRoute=null;state.eventUsed=false;p.turnTransitPaid=0;
   if(p.rest>0){
     p.rest--;announce(p.name+'은(는) 여행 지연 중이에요.','이번 턴을 쉬고 다음 여행을 준비합니다.');
     updateAll();later(nextTurn,850);return;
@@ -438,29 +438,43 @@ function destinationInterest(player,id){
   return score;
 }
 
+function routeTransitFee(player,path){
+  let total=0;
+  for(let i=0;i<Math.max(0,path.length-1);i++){
+    const countryId=path[i].to,inv=state.investments[countryId];
+    if(!inv||inv.owner===player.id)continue;
+    total+=Math.max(2,Math.min(12,Math.round(getToll(countryId)*.15)));
+  }
+  return total;
+}
+
 function chooseCpuRoute(player,routes){
   if(state.phase!=='choose')return;
   let pick;
   if(state.cpuDifficulty==='easy')pick=routes[Math.floor(Math.random()*routes.length)];
   else{
-    const scored=routes.map(r=>({r,s:destinationInterest(player,r.dest)+(state.cpuDifficulty==='hard'?Math.random()*6:Math.random()*20)})).sort((a,b)=>b.s-a.s);
+    const scored=routes.map(r=>({
+      r,
+      s:destinationInterest(player,r.dest)-routeTransitFee(player,r.path)*.8+(state.cpuDifficulty==='hard'?Math.random()*6:Math.random()*20)
+    })).sort((a,b)=>b.s-a.s);
     pick=scored[0]?.r;
   }
   if(pick)travelRoute(player,pick);
 }
 
-function routeTicketStatus(player,c){
-  const inv=state.investments[c.id];
-  if(!inv)return {cls:'open',text:'✨ 투자 가능'};
-  if(inv.owner===player.id)return {cls:'mine',text:inv.level<3?'🏗️ 내 사업 Lv.'+inv.level:'⭐ 내 랜드마크'};
-  return {cls:'risk',text:'⚠️ 여행비 '+getToll(c.id)+'만'};
+function routeTicketStatus(player,c,path){
+  const inv=state.investments[c.id],transit=routeTransitFee(player,path);
+  const via=transit?' · 환승 '+transit+'만':'';
+  if(!inv)return {cls:'open',text:'✨ 투자 가능'+via};
+  if(inv.owner===player.id)return {cls:'mine',text:(inv.level<3?'🏗️ 내 사업 Lv.'+inv.level:'⭐ 내 랜드마크')+via};
+  return {cls:'risk',text:'⚠️ 여행비 '+getToll(c.id)+'만'+via};
 }
 
 function renderDestinationStrip(){
   ui.destinationStrip.innerHTML='';
   const player=activePlayer();
   state.routeOptions.forEach(o=>{
-    const c=BY_ID.get(o.dest),status=routeTicketStatus(player,c),btn=document.createElement('button');btn.className='dest-btn '+status.cls;
+    const c=BY_ID.get(o.dest),status=routeTicketStatus(player,c,o.path),btn=document.createElement('button');btn.className='dest-btn '+status.cls;
     const modes=[...new Set(o.path.map(s=>chooseMode(s.route,0,player)))].map(m=>m==='rail'?'🚄':m==='sea'?'🚢':'✈️').join('');
     btn.innerHTML='<b>'+c.icon+' '+c.name+'</b><small>'+status.text+' · '+o.path.length+'구간 '+modes+'</small>';
     btn.addEventListener('mouseenter',()=>previewRoute(o,true));
@@ -509,6 +523,16 @@ function shouldShowcaseTravel(player,mode,from,to){
   return !player.seenModes.includes(mode)||from.continent!==to.continent;
 }
 
+function chargeTransit(player,countryId){
+  const inv=state.investments[countryId];
+  if(!inv||inv.owner===player.id)return true;
+  const fee=Math.max(2,Math.min(12,Math.round(getToll(countryId)*.15)));
+  const owner=state.players[inv.owner];
+  player.money-=fee;owner.money+=fee;player.turnTransitPaid+=fee;
+  if(player.money<0){bankrupt(player);return false}
+  return true;
+}
+
 async function travelRoute(player,option){
   if(state.phase!=='choose')return;
   state.phase='travel';state.routeOptions=[];ui.destinationStrip.innerHTML='';ui.moveLeft.classList.remove('choose');
@@ -523,6 +547,7 @@ async function travelRoute(player,option){
     if(!player.seenModes.includes(mode))player.seenModes.push(mode);
     group?.querySelectorAll('.route').forEach(p=>p.classList.remove('active'));
     player.country=seg.to;
+    if(i<option.path.length-1&&!chargeTransit(player,seg.to))return;
     if(!player.visited.includes(seg.to)){
       player.visited.push(seg.to);
       try{window.KidscadeGame?.milestone?.('country_visit',{country:seg.to,firstVisit:player.visited.length===2,visitedCount:player.visited.length})}catch(_){}
@@ -541,7 +566,7 @@ async function travelRoute(player,option){
 function handleArrival(player,countryId){
   state.phase='action';refreshMap();updateAll();
   const c=BY_ID.get(countryId),inv=state.investments[countryId];
-  announce(c.icon+' '+c.name+' 도착!',c.city+' · '+CONTINENTS[c.continent].name);
+  announce(c.icon+' '+c.name+' 도착!',c.city+' · '+CONTINENTS[c.continent].name+(player.turnTransitPaid?' · 환승비 '+player.turnTransitPaid+'만 지불':''));
   sdkSound('correct');
   if(!inv)return promptInvestment(player,c);
   if(inv.owner===player.id)return promptUpgrade(player,c,inv);
