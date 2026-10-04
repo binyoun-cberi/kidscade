@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=23';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=24';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=2';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=4';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=5';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=19';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
@@ -2193,6 +2193,7 @@ function tick(now){
   dailyDirector?.update?.(now,dt,player,prog().survival.day);
   dailyLife?.sync?.();
   cityRuntime?.update?.(now,dt);
+  venueInteriors?.update?.(dt);
 
   const homeCamera=mode==='indoor'?homeInteriorCameraProfile(devState().houseLevel):null;
   const desiredView=mode==='outdoor'?8.6:homeCamera
@@ -2313,7 +2314,7 @@ async function init(){
   syncCosmeticAura();
   updateStatus();
   const venuePromise=buildVenueInteriors({
-    parent:venueLayer,addModel,box,plane,interact,collider,
+    parent:venueLayer,addModel,box,plane,interact,collider,loadGLTF,prepModel,
     actions:{
       shop:(kind,npc)=>townEconomy?.shop?.(kind,npc),
       resident:id=>townEconomy?.resident?.(id),
