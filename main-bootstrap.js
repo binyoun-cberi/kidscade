@@ -172,7 +172,7 @@
       'dashboard-recent.js',
       'game-recommendations.js',
       'activity-feed.js',
-      'game-outcome-profiles.js',
+      'app/features/achievements/game-outcome-profiles.js',
       'achievement-catalog.js',
       'achievement-gallery.js',
       'game-frame-shell.js',
