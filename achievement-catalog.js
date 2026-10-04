@@ -103,7 +103,7 @@
     "threes":["3 탄생","첫 3 타일을 만드세요.","큰 수 만들기","큰 숫자 타일을 만드세요.","초대형 타일","아주 높은 숫자 타일을 만드세요."],
     "math_tower_defense":["첫 좀비 방어","첫 웨이브를 막아내세요.","10웨이브 생존","10웨이브 이상 버티세요.","한 마리도 통과 못 했다","한 웨이브를 완벽하게 막아내세요."],
     "alien_sandwich":["첫 주문","첫 샌드위치를 완성하세요.","은하 샌드위치 장인","많은 주문을 처리하세요.","초거대 샌드위치","특별히 큰 샌드위치를 완성하세요."],
-    "korea_marble":["첫 여행","첫 지역을 방문하세요.","전국일주","전국을 여행하세요.","모든 명소 방문","모든 주요 명소를 방문하세요."],
+    "korea_marble":["첫 세계여행","첫 나라에 도착하세요.","6대륙 여행가","한 판에서 6대륙을 모두 방문하세요.","랜드마크 컬렉터","한 판에서 랜드마크 3개 이상을 완성하세요."],
     "code_breaker":["첫 암호 해독","첫 암호를 풀어내세요.","암호 전문가","여러 암호를 해결하세요.","한 번에 해독","최소 시도로 암호를 맞히세요."],
     "world_boardgames":["첫 보드게임","첫 보드게임을 완료하세요.","세계 놀이 탐험가","여러 종류의 보드게임을 플레이하세요.","모든 게임 승리","모든 주요 게임에서 승리하세요."],
     "word_snake":["첫 단어 먹기","첫 단어를 획득하세요.","영어뱀 50단어","많은 단어를 모으세요.","무오답 사냥","오답 없이 한 판을 마치세요."],
@@ -172,6 +172,10 @@
     world_flag_master: {
       mastery:{event:'milestone', field:'continentMastered', op:'truthy'},
       secret:{event:'result', field:'perfect', op:'truthy'}
+    },
+    korea_marble: {
+      mastery:{event:'result', field:'continentsVisited', op:'gte', value:6},
+      secret:{event:'result', field:'landmarks', op:'gte', value:3}
     },
     low_one_stroke: {
       mastery:{event:'game-over', field:'clean', op:'truthy'},
