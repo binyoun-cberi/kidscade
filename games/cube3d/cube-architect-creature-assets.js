@@ -17,10 +17,19 @@ const SPECS={
   pig:{url:CUBE_WORLD_ROOT+'Animals/glTF/Pig.gltf',height:.78},
   sheep:{url:CUBE_WORLD_ROOT+'Animals/glTF/Sheep.gltf',height:.9},
   chicken:{url:CUBE_WORLD_ROOT+'Animals/glTF/Chicken.gltf',height:.68},
+  chick:{url:CUBE_WORLD_ROOT+'Animals/glTF/Chick.gltf',height:.42},
+  cat:{url:CUBE_WORLD_ROOT+'Animals/glTF/Cat.gltf',height:.58},
+  dog:{url:CUBE_WORLD_ROOT+'Animals/glTF/Dog.gltf',height:.68},
+  horse:{url:CUBE_WORLD_ROOT+'Animals/glTF/Horse.gltf',height:1.18},
+  raccoon:{url:CUBE_WORLD_ROOT+'Animals/glTF/Raccoon.gltf',height:.64},
   wolf:{url:CUBE_WORLD_ROOT+'Animals/glTF/Wolf.gltf',height:.88},
   goblin:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Goblin.gltf',height:1.22},
   skeleton:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Skeleton.gltf',height:1.58},
-  yeti:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Yeti.gltf',height:1.72}
+  yeti:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Yeti.gltf',height:1.72},
+  demon:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Demon.gltf',height:1.62},
+  giant:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Giant.gltf',height:2.15},
+  wizard:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Wizard.gltf',height:1.46},
+  zombie:{url:CUBE_WORLD_ROOT+'Enemies/glTF/Zombie.gltf',height:1.52}
 };
 
 function cloneMaterial(mat,tint){
