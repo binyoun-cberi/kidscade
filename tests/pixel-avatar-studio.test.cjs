@@ -6,8 +6,8 @@ const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8');
-const v3Studio=fs.readFileSync(path.join(root,'avatar-school-studio.js'),'utf8');
-const v3Runtime=fs.readFileSync(path.join(root,'school-avatar-runtime.js'),'utf8');
+const v3Studio=fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v3/runtime/avatar-school-studio.js'),'utf8');
+const v3Runtime=fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v3/runtime/school-avatar-runtime.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
@@ -25,9 +25,9 @@ test('avatar runtimes and studio controllers parse cleanly',()=>{
 });
 
 test('public avatar studio loads only the v3 school runtime and controller',()=>{
-  assert.match(html,/school-avatar-runtime\.js\?v=1/);
-  assert.match(html,/avatar-school-studio\.js\?v=1/);
-  assert.ok(html.indexOf('school-avatar-runtime.js?v=1')<html.indexOf('avatar-school-studio.js?v=1'));
+  assert.match(html,/assets\/game\/characters\/kidscade-avatar-v3\/runtime\/school-avatar-runtime\.js/);
+  assert.match(html,/assets\/game\/characters\/kidscade-avatar-v3\/runtime\/avatar-school-studio\.js/);
+  assert.ok(html.indexOf('school-avatar-runtime.js')<html.indexOf('avatar-school-studio.js'));
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
   assert.doesNotMatch(html,/avatar-pixel-studio\.js/);
   assert.match(html,/avatarCanvas/);
