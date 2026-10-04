@@ -334,7 +334,7 @@ function weightedResult(entries){
 function rollExploreOutputs(node){
  const def=EXPLORE_DEFS[node.type];if(!def)return [];
  if(tutorialActive()&&state.tutorial.step===0&&node.type==='forestEdge')return [['smallTree',1],['berryBush',1]];
- if(tutorialActive()&&state.tutorial.step===5&&node.type==='rockyHill')return [['stoneSource',1]];
+ if(tutorialActive()&&state.tutorial.step===4&&node.type==='rockyHill')return [['stoneSource',1]];
  let entries=def.results.slice();
  const level=node.exploreLevel||0;
  if(level>=def.max){const common=entries.filter(e=>!EXPLORE_DEFS[e[0]]);if(common.length)entries=common;}
