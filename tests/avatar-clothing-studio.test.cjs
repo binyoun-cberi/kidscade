@@ -214,3 +214,12 @@ test('whole adjustment contract supports translate rectangle moves and pixel pat
   assert.ok(js.includes("Do not modify BODY merely to hide clothing leaks"));
   assert.ok(js.includes("Use exposure diagnostics only as hints"));
 });
+
+test('generated part JSON can be applied as a new custom asset',()=>{
+  assert.ok(html.includes('파츠·에셋 JSON 적용'));
+  assert.match(js,/async function applyAdjustmentJsonFile\(file\)/);
+  assert.ok(js.includes("data?.type==='kidscade-avatar-part-adjustment'"));
+  assert.ok(js.includes("data?.type==='kidscade-avatar-full-adjustment'"));
+  assert.ok(js.includes("setAssetMeta(frameId,layer,{layer,id:assetId,label:assetId,file:null,custom:true})"));
+  assert.ok(js.includes("setStatus(partLabel(layer)+' JSON 적용 완료"));
+});
