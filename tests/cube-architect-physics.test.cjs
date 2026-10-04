@@ -30,6 +30,13 @@ test('full cubes no longer auto-step while slabs and stairs have partial collisi
   assert.doesNotMatch(js,/camera\.position\.y\+=1;camera\.position\.z=nz/);
 });
 
+test('thin blocks and roofs collide like their visible geometry',()=>{
+  assert.match(js,/function thinBlockContains/);
+  assert.match(js,/\['door','glassPane','windowFrame'\]\.includes\(type\)/);
+  assert.match(js,/data\.type==='roof'/);
+  assert.match(js,/Math\.max\(\.04,1-Math\.min\(\.5,across\)\*2\)/);
+});
+
 test('survival environmental hazards use the existing health system',()=>{
   assert.match(js,/function damageByEnvironment/);
   assert.match(js,/state\.lava\?'용암':state\.fire\?'불':state\.cactus\?'선인장'/);
