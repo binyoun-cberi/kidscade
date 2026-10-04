@@ -1285,7 +1285,7 @@
             KidscadeGame.achievement?.('infinite_gugudan.first_win');
             if(state.skill==="fraction")KidscadeGame.achievement?.('infinite_gugudan.fraction_win');
           }
-          KidscadeGame.gameOver?.({score:score,cleared:winner===0,mode:state.mode,skill:state.skill});
+          KidscadeGame.result?.({scope:'match',status:'completed',outcome:winner===0?'win':'loss',score:score,cleared:winner===0,mode:state.mode,skill:state.skill,maxCombo:f.maxCombo,correct:f.correct});
         }
       }catch(e){}
       els.resultIcon.textContent=winner===0?"🏆":"⚡";
