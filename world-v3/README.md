@@ -401,3 +401,21 @@
 - 기존 `progression.housing.placed`의 x / z / rot 값은 자동 변경하지 않아 기존 집 꾸미기 저장을 보존
 - 새 가구 생성 시 Kenney 고정 경로 대신 `furnitureAssetUrl(def)`을 사용해 Restaurant / Bakery 루트 가구도 최초 배치부터 올바른 모델을 로드
 - 캐시 버전 World v3.49 / furnishing v10 / interior-kit v2
+
+
+## v3.34 상점 실내 · 주민 비주얼 리워크
+- 씨앗마트 / 튼튼 철물점 / 하늘 카페 실내를 기능 동선 기준으로 다시 배치하고 공통 실내 bounds를 10.3×7.24 수준으로 조정
+- 씨앗마트는 중앙 3열 진열대 + 뒤쪽 냉동고 + 입구 과일·빵 + 실제 높이의 계산대 구조로 재배치
+- 계산기는 바닥에서 계산대 위로 올리고 카트·바구니를 cutaway 벽에서 충분히 떼어 벽 클리핑 제거
+- 튼튼 철물점은 도끼 / 곡괭이 / 망치를 벽면 공구판에 걸고, 모루·연마대·작업대·상자·판재를 작업 구역별로 묶음
+- 바닥에 나뭇가지처럼 보이던 `resource-wood` 대신 정돈된 `resource-planks` 적재 모델 사용
+- 하늘 카페는 손님석 목재 바닥 / 카운터 안쪽 타일 바닥을 분리하고 Bakery 패널 벽·창을 실제 실내 건축 장식으로 사용
+- 커피머신 / 계산기 / 페이스트리 스탠드 / 컵 / 쿠키병을 카운터·진열대 높이에 올려 바닥 소품처럼 보이던 현상 제거
+- 상점 실내 점원이 일반 Object3D clone으로 깨져 머리만 보일 수 있던 경로를 폐기하고 `SkeletonUtils.clone` + 원본 GLTF + Idle mixer 파이프라인으로 변경
+- `kidscade-world-npc-style.js`에서 주민 역할별 외형을 단일 관리: Casual / Worker / Chef / Suit / Doctor / OldClassy / Cowboy 등 기존 NPC 팩을 적극 재사용
+- 민지=Casual, 준호=Worker, 하늘=Chef, 도윤·소라=Suit, 나리=Doctor, 우진=Cowboy 등 직업과 역할이 외형에서 바로 읽히도록 변경
+- 주민별 키를 소폭 다르게 설정해 같은 체형 복제 느낌을 완화
+- 야외 주민 이름표를 이름 + 역할 2단 구조의 큰 크림색 카드로 교체하고 이름표 크기를 약 1.92×0.56 월드 단위로 확대
+- 이름표 표시 거리를 3.4m → 5.6m로 늘리고 건물 뒤에서는 자연스럽게 가려지도록 depth test 유지
+- 실내 점원도 같은 역할형 이름표를 사용해 작은 단색 이름표 문제 해결
+- 캐시 버전 World v3.50 / city v24 / residents v3 / interiors v5 / npc-style v1
