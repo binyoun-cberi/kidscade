@@ -118,6 +118,18 @@
       .replace(/\u2029/g, '\\u2029');
   }
 
+  function lobbyRuntimeAnchor() {
+    return '<scr' + 'ipt src="' + withVersion('age-navigation.js') + '"></scr' + 'ipt>';
+  }
+
+  function insertBeforeLobbyRuntime(html, markup, label) {
+    const anchor = lobbyRuntimeAnchor();
+    if (!html.includes(anchor)) {
+      throw new Error('로비 런타임 연결 지점을 찾지 못했습니다: ' + label);
+    }
+    return html.replace(anchor, markup + anchor);
+  }
+
   function injectBootPayload(html, catalog) {
     // index.html is replaced with index_base.html, so preserve the deployment
     // build id in the final document for auto-update and diagnostics.
@@ -128,14 +140,14 @@
       'window.KidscadeCatalog=' + serializeForInlineScript(catalog) + ';' +
       'window.KidscadeBoot={version:' + JSON.stringify(RUNTIME_VERSION) + ',catalogUrl:' + JSON.stringify(CATALOG_URL) + '};' +
       '</scr' + 'ipt>';
-    return html.replace('</body>', payload + '</body>');
+    return insertBeforeLobbyRuntime(html, payload, 'boot-payload');
   }
 
   function injectRuntimeScripts(html) {
     const scripts = [
-      // These modules used to execute in index.html before document.open()/write().
-      // Load them only after the composed document exists so their listeners,
-      // observers and timers belong to the final page.
+      // The lobby source executes one large inline controller immediately after
+      // age-navigation/garden. These APIs must already exist at that point.
+      // Keep them synchronous and source-ordered in the final composed document.
       'auto-update.js',
       'kidscade-storage.js',
       'audio-manager.js',
@@ -165,9 +177,9 @@
       'game-frame-shell.js',
       'game-launcher.js',
       'home-v2.js'
-    ].map(src => '<scr' + 'ipt defer src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
+    ].map(src => '<scr' + 'ipt src="' + withVersion(src) + '"></scr' + 'ipt>').join('');
     const activityStyles = '<link rel="stylesheet" href="' + withVersion('activity-feed.css') + '">';
-    return html.replace('</body>', activityStyles + scripts + '</body>');
+    return insertBeforeLobbyRuntime(html, activityStyles + scripts, 'runtime-scripts');
   }
 
   function showLoadError(error) {
