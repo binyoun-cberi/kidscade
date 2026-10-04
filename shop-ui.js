@@ -110,24 +110,10 @@
       return activeTab;
     }
 
-    function renderGardenShortcut(container) {
-      if (activeTab !== 'land' || !root?.KidscadeGarden) return false;
-      const item = doc.createElement('div');
-      item.className = 'shop-item';
-      item.innerHTML = '<div class="item-icon">🌳</div><div class="item-name">정원 시설 설치</div><div class="item-desc">동물은 게임을 탐험하며 발견하고, 씨앗으로 친구들이 놀 시설을 설치해요.</div><button type="button" class="item-btn btn-buy">정원 시설 보러 가기</button>';
-      item.querySelector('button')?.addEventListener('click', () => {
-        doc.getElementById('shop-modal')?.classList.add('hidden');
-        options.openGardenBuild?.();
-      });
-      container.append(item);
-      return true;
-    }
-
     function render() {
       const container = doc?.getElementById?.('shop-items-container');
       if (!container) return false;
       container.innerHTML = '';
-      if (renderGardenShortcut(container)) return true;
 
       const items = Array.isArray(shopDB[activeTab]) ? shopDB[activeTab] : [];
       const todayClaimed = Boolean(options.isDailyRewardClaimed?.());

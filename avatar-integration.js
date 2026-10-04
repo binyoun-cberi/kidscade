@@ -607,20 +607,6 @@
     if (event.key === PIXEL_STATE_KEY || event.key === PREVIEW_KEY || event.key === PREVIEW_VERSION_KEY) ensurePreviewLayer();
   });
 
-  // Garden uses the exact saved avatar-studio appearance, while garden-life.js adds behaviour.
-  if (window.KidscadeGarden?.init) {
-    const gardenInit = window.KidscadeGarden.init;
-    window.KidscadeGarden.init = function (bridge) {
-      const originalAvatar = bridge.avatar;
-      const wrapped = { ...bridge, avatar() {
-        const png = storedPreview();
-        if (!png) return originalAvatar?.();
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 160"><image href="${png}" width="128" height="160"/></svg>`;
-      }};
-      return gardenInit(wrapped);
-    };
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
     const legacy = document.getElementById('avatar-modal');
     if (legacy) {
