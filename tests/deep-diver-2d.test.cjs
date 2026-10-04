@@ -237,7 +237,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=36');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=37');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -1088,7 +1088,7 @@ test('Deep Diver v34 keeps state readable after player-caused changes',()=>{
 });
 
 
-test('Deep Diver v36 guides young players toward the next objective',()=>{
+test('Deep Diver v37 guides young players toward the next objective',()=>{
   assert.match(html,/id="objectiveCompass"/);
   assert.match(html,/id="rookieTip"/);
   assert.match(js,/function currentObjectiveTarget/);
@@ -1098,7 +1098,7 @@ test('Deep Diver v36 guides young players toward the next objective',()=>{
   assert.match(js,/저녁 식당용 물고기 1마리/);
 });
 
-test('Deep Diver v36 explains capture difficulty and recommended gear',()=>{
+test('Deep Diver v37 explains capture difficulty and recommended gear',()=>{
   assert.match(js,/function captureDifficultyInfo/);
   assert.match(js,/포획 난이도/);
   assert.match(js,/const CONTRACT_GEAR_RECOMMEND=/);
@@ -1107,7 +1107,7 @@ test('Deep Diver v36 explains capture difficulty and recommended gear',()=>{
   assert.match(css,/\.gearRecommend/);
 });
 
-test('Deep Diver v36 shortens night service with automatic serving',()=>{
+test('Deep Diver v37 shortens night service with automatic serving',()=>{
   assert.match(js,/function queueRestaurantAutoServe/);
   assert.match(js,/자동 서빙/);
   assert.doesNotMatch(js,/id="serveDishBtn"/);
@@ -1116,8 +1116,19 @@ test('Deep Diver v36 shortens night service with automatic serving',()=>{
 });
 
 
-test('Deep Diver v36 caps only visual creature clutter while preserving important encounters',()=>{
+test('Deep Diver v37 caps only visual creature clutter while preserving important encounters',()=>{
   assert.match(js,/function fishRenderList\(limit=32\)/);
   assert.match(js,/sp\.rare\|\|sp\.motion==='boss'\|\|f\.alert>0\|\|f\.hooked\|\|f\.marked>0/);
   assert.match(js,/for\(const f of fishRenderList\(\)\)drawFish\(f\)/);
+});
+
+
+test('Deep Diver v37 simplifies the rookie HUD and adapts creature clutter to screen size',()=>{
+  assert.match(js,/function missionHudText\(\)/);
+  assert.match(js,/world\.time<28/);
+  assert.match(js,/물고기를 화면 중앙에 맞추고 X로 촬영/);
+  assert.match(js,/function fishRenderLimit\(\)/);
+  assert.match(js,/view\.w<760\)return 18/);
+  assert.match(js,/view\.w<1180\)return 24/);
+  assert.match(js,/function fishRenderList\(limit=fishRenderLimit\(\)\)/);
 });
