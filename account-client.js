@@ -355,6 +355,16 @@
     }
   }
 
+  // The body observer also sees this slot's own writes. Preserve unchanged
+  // nodes so its callback settles instead of starving rendering and input.
+  const slotMarkup = new WeakMap();
+  function updateSlot(slot, markup, selector, handler) {
+    if (slotMarkup.get(slot) === markup && slot.firstChild) return;
+    slot.innerHTML = markup;
+    slotMarkup.set(slot, markup);
+    slot.querySelector(selector)?.addEventListener('click', handler);
+  }
+
   function renderSlot() {
     const identity = document.getElementById('kc-profile-identity');
     if (!identity || !available) return false;
@@ -365,19 +375,16 @@
       identity.appendChild(slot);
     }
     if (!account) {
-      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ 기록을 안전하게 보관하기</div><div class="kca-sub">발급받은 계정으로 다른 기기에서도 이어서 플레이</div></div><button type="button" data-kca-login>로그인</button></div>`;
-      slot.querySelector('[data-kca-login]')?.addEventListener('click', openLogin);
+      updateSlot(slot, `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ 기록을 안전하게 보관하기</div><div class="kca-sub">발급받은 계정으로 다른 기기에서도 이어서 플레이</div></div><button type="button" data-kca-login>로그인</button></div>`, '[data-kca-login]', openLogin);
       return true;
     }
     if (account.role === 'teacher') {
       const teacherEconomyHref = '/teacher/economy.html?classId=' + encodeURIComponent(account.classId || '') + '&className=' + encodeURIComponent(account.className || '');
-      slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>↪ 로그아웃</button></div></div><div class="kca-teacher-actions"><a class="kca-teacher-action manage" href="/teacher/"><span class="kca-action-icon" aria-hidden="true">👩‍🏫</span><span class="kca-action-copy"><strong>교사 관리</strong><span>학생 계정 · 반 관리</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a><a class="kca-teacher-action economy" href="${escapeHtml(teacherEconomyHref)}"><span class="kca-action-icon" aria-hidden="true">💰</span><span class="kca-action-copy"><strong>학급경제 관리</strong><span>급여 · 은행 · 부동산</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a></div>`;
-      slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
+      updateSlot(slot, `<div class="kca-row"><div class="kca-copy"><div class="kca-title">👩‍🏫 ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} 교사 · 게임 기록 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>↪ 로그아웃</button></div></div><div class="kca-teacher-actions"><a class="kca-teacher-action manage" href="/teacher/"><span class="kca-action-icon" aria-hidden="true">👩‍🏫</span><span class="kca-action-copy"><strong>교사 관리</strong><span>학생 계정 · 반 관리</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a><a class="kca-teacher-action economy" href="${escapeHtml(teacherEconomyHref)}"><span class="kca-action-icon" aria-hidden="true">💰</span><span class="kca-action-copy"><strong>학급경제 관리</strong><span>급여 · 은행 · 부동산</span></span><span class="kca-action-arrow" aria-hidden="true">›</span></a></div>`, '[data-kca-logout]', logout);
       return true;
     }
     const economyView = economyCardView();
-    slot.innerHTML = `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><a class="kca-economy-card" href="/economy.html" aria-label="학급경제 열기"><span class="kca-economy-icon">💰</span><span class="kca-economy-copy"><span class="kca-economy-title">학급경제 <span class="kca-economy-badge ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.badge)}</span></span><span class="kca-economy-meta">${escapeHtml(economyView.meta)}</span><span class="kca-economy-status ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.status)}</span></span><span class="kca-economy-arrow">›</span></a>`;
-    slot.querySelector('[data-kca-logout]')?.addEventListener('click', logout);
+    updateSlot(slot, `<div class="kca-row"><div class="kca-copy"><div class="kca-title">☁️ ${escapeHtml(account.loginId)}</div><div class="kca-sub">${escapeHtml(account.className || 'Kidscade')} · 동기화됨</div></div><div class="kca-buttons"><button class="kca-logout" type="button" data-kca-logout>로그아웃</button></div></div><a class="kca-economy-card" href="/economy.html" aria-label="학급경제 열기"><span class="kca-economy-icon">💰</span><span class="kca-economy-copy"><span class="kca-economy-title">학급경제 <span class="kca-economy-badge ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.badge)}</span></span><span class="kca-economy-meta">${escapeHtml(economyView.meta)}</span><span class="kca-economy-status ${economyView.attention ? 'attention' : ''}">${escapeHtml(economyView.status)}</span></span><span class="kca-economy-arrow">›</span></a>`, '[data-kca-logout]', logout);
     return true;
   }
 
