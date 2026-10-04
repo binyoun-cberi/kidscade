@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-// v13: Bronze and Iron Age progression, mining, metallurgy, advanced workers, and age settlements.
+// v14: full-campaign balance, guaranteed geology path, non-regressing eras, and late-game bottleneck fixes.
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
