@@ -57,9 +57,8 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
 });
 
 test('legacy avatar data is not reused as v3 appearance',()=>{
-  assert.match(js,/LEGACY_STATE_KEYS=\['kidscade-pixel-avatar-v1','kidscade_avatar_equipped'\]/);
-  assert.match(js,/kidscade-avatar-v3-migrated-from-legacy/);
-  assert.doesNotMatch(js,/localStorage\.removeItem\('kidscade-pixel-avatar-v1'\)/);
+  assert.doesNotMatch(js,/kidscade-pixel-avatar-v1|kidscade_avatar_equipped|migrated-from-legacy/);
+  assert.match(js,/const STATE_KEY='kidscade-avatar-v3'/);
 });
 
 test('pixel canvas keeps crisp scaling and responsive controls',()=>{
