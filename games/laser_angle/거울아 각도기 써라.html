@@ -2098,6 +2098,8 @@
 
         // 학습 문구 보정: "거울선의 화면상 기울기"와 "법선 기준 입사각/반사각"을 구분합니다.
         const EDUCATION_PATCHES = {
+            1: { lesson: '빛은 곧게 나아갑니다. 방향각은 수학에서 쓰는 기준으로 표시합니다: 0° 오른쪽, 90° 위, 180° 왼쪽, 270° 아래.' },
+            2: { lesson: '방향이 90° 바뀌면 직각 회전입니다. 위쪽은 수학 기준 90°입니다.', hints: ['목표가 발사기 바로 위에 있습니다.', '표시되는 방향각을 90° 근처로 맞춰 보세요.'] },
             3: { lesson: '거울에서 빛은 법선을 기준으로 들어오는 각도와 나가는 각도가 같습니다. 거울선의 기울기 숫자와 입사각·반사각은 서로 다른 값입니다.' },
             4: { lesson: '거울선이 수평선과 만드는 기울기를 조절해 빛을 오른쪽 아래로 보내 보세요. 반사각은 거울선이 아니라 법선을 기준으로 잽니다.' },
             5: { lesson: '거울선의 기울기가 90°보다 큰 둔각일 수도 있습니다. 실제 입사각과 반사각은 충돌 지점의 법선을 기준으로 확인하세요.' },
@@ -2232,9 +2234,12 @@
             return '둔각';
         };
 
+        const toMathDirection = (internalAngle) => normalizeAngle(360 - normalizeAngle(internalAngle, 360), 360);
+        const fromMathDirection = (mathAngle) => normalizeAngle(360 - normalizeAngle(mathAngle, 360), 360);
+
         const getSelectedMirror = () => mirrors.find(m => m.id === selectedMirrorId);
         const getSelectedAngle = () => {
-            if (selectedEmitter && levelData.emitter.rotatable) return levelData.emitter.angle;
+            if (selectedEmitter && levelData.emitter.rotatable) return toMathDirection(levelData.emitter.angle);
             const m = getSelectedMirror();
             return m ? m.angle : null;
         };
@@ -2262,7 +2267,7 @@
             selectedAngleDisplay.innerText = `${Math.round(angle)}°`;
             if (selectedEmitter) {
                 angleTypeLabel.innerText = '발사 방향';
-                angleHelpText.innerText = `발사 방향 ${Math.round(angle)}° · ${getAngleKind(angle, 360)}. 화면 기준 0° 오른쪽, 90° 아래, 180° 왼쪽, 270° 위입니다.`;
+                angleHelpText.innerText = `발사 방향 ${Math.round(angle)}° · ${getAngleKind(angle, 360)}. 수학 기준 0° 오른쪽, 90° 위, 180° 왼쪽, 270° 아래입니다.`;
             } else {
                 angleTypeLabel.innerText = '거울 기울기';
                 angleHelpText.innerText = `거울선의 화면상 기울기 ${Math.round(angle)}°입니다. 이 숫자는 입사각·반사각이 아닙니다. ‘법선·각’을 켜면 레이저가 닿는 지점의 실제 각을 확인할 수 있습니다.`;
@@ -2277,8 +2282,8 @@
             controlLabel.innerText = '발사 방향:';
             angleSlider.max = 360;
             angleInput.max = 360;
-            angleSlider.value = normalizeAngle(levelData.emitter.angle, 360);
-            angleInput.value = normalizeAngle(levelData.emitter.angle, 360);
+            angleSlider.value = toMathDirection(levelData.emitter.angle);
+            angleInput.value = toMathDirection(levelData.emitter.angle);
             updateAngleHelp();
             return true;
         };
@@ -2488,9 +2493,10 @@
             isTargetHit = false;
             targetHitTimer = 0;
             if (selectedEmitter && levelData.emitter.rotatable) {
-                levelData.emitter.angle = normalizeAngle(angle, 360);
-                angleSlider.value = levelData.emitter.angle;
-                angleInput.value = levelData.emitter.angle;
+                const mathAngle = normalizeAngle(angle, 360);
+                levelData.emitter.angle = fromMathDirection(mathAngle);
+                angleSlider.value = mathAngle;
+                angleInput.value = mathAngle;
             } else if (selectedMirrorId !== null) {
                 const m = mirrors.find(m => m.id === selectedMirrorId);
                 if (m && !m.fixed) {
@@ -2642,7 +2648,7 @@
                 let angleRad = Math.atan2(pos.y - levelData.emitter.y, pos.x - levelData.emitter.x);
                 let angleDeg = Math.round(angleRad * 180 / Math.PI);
                 if (angleDeg < 0) angleDeg += 360;
-                updateAngle(angleDeg);
+                updateAngle(toMathDirection(angleDeg));
             } else if (selectedMirrorId !== null) {
                 const m = mirrors.find(x => x.id === selectedMirrorId);
                 if (m) {
@@ -2825,8 +2831,7 @@
                     ctx.strokeStyle = isMajor ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)';
                     ctx.stroke();
                     if(isMajor) {
-                        let textAngle = a;
-                        if (textAngle > 180) textAngle -= 360;
+                        const textAngle = toMathDirection(a);
                         ctx.fillText(textAngle + '°', (90 + 18) * Math.cos(rad), (90 + 18) * Math.sin(rad));
                     }
                 }
