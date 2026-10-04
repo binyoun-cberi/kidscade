@@ -44,6 +44,10 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
           <div class="divider"></div>
           <button id="loadStarterSet" class="primary-wide" type="button">✨ 기본 착장 불러오기</button>
           <div class="tip" style="margin-top:6px">썸네일을 누르면 해당 파츠가 STAND-01 미리보기로 올라옵니다. 화살표로 맞춘 뒤 적용하세요.</div>
+          <details class="advanced"><summary>무기 · 방패 레이어</summary><div class="advanced-body">
+            <div class="row"><button id="layerWeaponFront" class="secondary" type="button">⚔ 무기 · 앞</button><button id="layerWeaponBack" class="secondary" type="button">⚔ 무기 · 뒤</button><button id="layerShieldFront" class="secondary" type="button">🛡 방패 · 앞</button><button id="layerShieldBack" class="secondary" type="button">🛡 방패 · 뒤</button></div>
+            <div class="tip" style="margin-top:6px">같은 무기/방패도 프레임에 따라 앞·뒤 레이어를 나눠 쓰면 팔과 몸을 자연스럽게 가릴 수 있습니다. 무기는 왼손 weaponPivot, 방패는 오른손 anchor를 기준으로 파생 동작을 만듭니다.</div>
+          </div></details>
           <details class="advanced"><summary>내 이미지 가져오기</summary><div class="advanced-body">
             <label class="file-btn secondary primary-wide">PNG/JPG 불러오기<input id="sourceFile" type="file" accept="image/png,image/webp,image/jpeg"></label>
             <div class="preview-pair"><div class="preview-box"><span>원본</span><img id="sourcePreview" class="hidden" alt="가져온 원본"></div><div class="preview-box"><span>128×128 결과</span><canvas id="pixelPreviewCanvas" class="mini-canvas" width="128" height="128"></canvas></div></div>
@@ -129,28 +133,28 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
 
     <aside class="right panel-stack">
       <details class="card tool-card" data-panel-key="ai-adjustment" open><summary>AI 프레임 보정</summary><div class="tool-body">
-        <div class="tip">개별 파츠 또는 전체 아바타를 128×128 픽셀 JSON으로 내보낼 수 있습니다. ChatGPT가 새 파츠를 픽셀 JSON으로 만들어 준 경우에도 아래 JSON 적용 버튼으로 바로 넣을 수 있습니다. STAND/WALK/JUMP뿐 아니라 ATTACK/HURT/DEAD/SIT/PICKUP 프레임도 같은 JSON 계약으로 다룹니다.</div>
+        <div class="tip">개별 파츠 또는 전체 아바타를 128×128 픽셀 JSON으로 내보낼 수 있습니다. ChatGPT가 새 파츠를 픽셀 JSON으로 만들어 준 경우에도 아래 JSON 적용 버튼으로 바로 넣을 수 있습니다. STAND/WALK/JUMP와 ATTACK/HURT/DEAD/SIT/PICKUP을 같은 계약으로 다루며, 무기·방패는 앞/뒤 레이어까지 JSON으로 지정할 수 있습니다.</div>
         <div class="project-actions" style="margin-top:7px"><button id="exportPartAnalysis" type="button">현재 파츠 분석 JSON</button><label class="file-btn secondary">파츠·에셋 JSON 적용<input id="importPartAdjustment" type="file" accept="application/json,.json"></label><button id="exportBodyReference" type="button">맨몸 BODY 기준 JSON</button><button id="exportFullAnalysis" type="button">전체 분석 JSON</button><label class="file-btn secondary full">전체/파츠 JSON 적용<input id="importFullAdjustment" type="file" accept="application/json,.json"></label></div>
-        <div id="adjustmentSummary" class="muted" style="margin-top:6px">대상: 현재 편집 파츠 · STAND 2 / WALK 4 / JUMP 1 전체</div>
+        <div id="adjustmentSummary" class="muted" style="margin-top:6px">대상: 현재 편집 파츠 · 23프레임 (STAND/WALK/JUMP/ATTACK/HURT/DEAD/SIT/PICKUP)</div>
       </div></details>
 
       <details class="card tool-card" data-panel-key="equipped-assets" open><summary>현재 착용 에셋</summary><div class="tool-body"><div id="selectedAssetList" class="selected-list"></div><div id="layerStatus" class="layer-status"></div></div></details>
 
       <details class="card tool-card" data-panel-key="display-guides"><summary>가이드 · 표시 설정</summary><div class="tool-body">
         <label>기준 BODY<select id="referenceFrame"></select></label><label class="check"><input id="showReference" type="checkbox" checked> 기준 BODY 오버레이</label><label>기준 투명도 <input id="referenceOpacity" type="range" min="0" max="100" value="24"></label><label class="check"><input id="showDifference" type="checkbox"> 오차 빨간색 표시</label><label class="check"><input id="showGrid" type="checkbox" checked> 8px 그리드 + x=64</label>
-        <div class="divider"></div><div class="row3"><label class="check"><input id="showBody" type="checkbox" checked> BODY</label><label class="check"><input id="showFace" type="checkbox" checked> 얼굴</label><label class="check"><input id="showHair" type="checkbox" checked> 헤어·모자</label><label class="check"><input id="showClothes" type="checkbox" checked> 의상</label><label class="check"><input id="showAccessories" type="checkbox" checked> 장식</label></div>
+        <div class="divider"></div><div class="row3"><label class="check"><input id="showBody" type="checkbox" checked> BODY</label><label class="check"><input id="showFace" type="checkbox" checked> 얼굴</label><label class="check"><input id="showHair" type="checkbox" checked> 헤어·모자</label><label class="check"><input id="showClothes" type="checkbox" checked> 방어구·의상</label><label class="check"><input id="showEquipment" type="checkbox" checked> 무기·방패</label><label class="check"><input id="showAccessories" type="checkbox" checked> 장식</label></div>
       </div></details>
 
       <details class="card tool-card" data-panel-key="project-tools"><summary>관리 · 내보내기</summary><div class="tool-body">
         <button id="loadDraftBodySet" class="secondary primary-wide" type="button">기본 BODY·동작 전체 다시 만들기</button><button id="regenerateDerivedFrames" class="secondary primary-wide" style="margin-top:5px" type="button">ATTACK/HURT/DEAD/SIT/PICKUP 다시 생성</button><button id="copyPrev" class="secondary primary-wide" style="margin-top:5px" type="button">← 이전 프레임 현재 파츠 복사</button>
         <div class="divider"></div><div class="project-actions"><button id="exportCurrent" type="button">현재 파츠 PNG</button><button id="exportComposite" class="secondary" type="button">합성 PNG</button><button id="exportCurrentBody" class="secondary" type="button">BODY PNG</button><button id="exportCurrentHair" class="secondary" type="button">HAIR PNG</button><button id="exportManifest" class="secondary" type="button">manifest</button><button id="exportBundle" type="button">전체 ZIP</button><button id="saveProject" class="secondary" type="button">프로젝트 JSON</button><label class="file-btn secondary">불러오기<input id="loadProject" type="file" accept="application/json"></label><button id="clearFrame" class="warn full" type="button">현재 파츠 비우기</button><button id="clearAll" class="danger full" type="button">착용 파츠 전체 초기화 (BODY 유지)</button></div>
-        <details class="advanced"><summary>에셋 ID</summary><div class="advanced-body row"><label>BODY<input id="bodyId" type="text" value="maple-lite-body-v3"></label><label>HAIR<input id="hairId" type="text" value="toben-like-01"></label><label>눈<input id="eyesId" type="text" value="eyes-01"></label><label>입<input id="mouthId" type="text" value="mouth-01"></label><label>귀걸이<input id="earringId" type="text" value="earring-01"></label><label>가면<input id="maskId" type="text" value="mask-01"></label><label>상의<input id="upperId" type="text" value="blue-star-hoodie-01"></label><label>하의<input id="lowerId" type="text" value="denim-cuffed-jeans-01"></label><label>신발<input id="shoesId" type="text" value="shoes-01"></label><label>장갑<input id="glovesId" type="text" value="gloves-01"></label><label>모자<input id="hatId" type="text" value="navy-cap-01"></label></div></details>
+        <details class="advanced"><summary>에셋 ID</summary><div class="advanced-body row"><label>BODY<input id="bodyId" type="text" value="maple-lite-body-v3"></label><label>HAIR<input id="hairId" type="text" value="toben-like-01"></label><label>눈<input id="eyesId" type="text" value="eyes-01"></label><label>입<input id="mouthId" type="text" value="mouth-01"></label><label>귀걸이<input id="earringId" type="text" value="earring-01"></label><label>가면<input id="maskId" type="text" value="mask-01"></label><label>상의<input id="upperId" type="text" value="blue-star-hoodie-01"></label><label>하의<input id="lowerId" type="text" value="denim-cuffed-jeans-01"></label><label>신발<input id="shoesId" type="text" value="shoes-01"></label><label>장갑<input id="glovesId" type="text" value="gloves-01"></label><label>모자<input id="hatId" type="text" value="navy-cap-01"></label><label>무기 · 앞<input id="weaponFrontId" type="text" value="weapon-front-01"></label><label>무기 · 뒤<input id="weaponBackId" type="text" value="weapon-back-01"></label><label>방패 · 앞<input id="shieldFrontId" type="text" value="shield-front-01"></label><label>방패 · 뒤<input id="shieldBackId" type="text" value="shield-back-01"></label></div></details>
       </div></details>
 
       <div class="hidden-controls"><button id="layerBody"></button><button id="layerHair"></button><button id="layerEyes"></button><button id="layerMouth"></button><button id="layerEarring"></button><button id="layerMask"></button><button id="layerUpper"></button><button id="layerLower"></button><button id="layerShoes"></button><button id="layerGloves"></button><button id="layerHat"></button></div>
     </aside>
   </main>
 </div>
-<script src="/teacher-avatar-clothing-studio.js?v=19"></script>
+<script src="/teacher-avatar-clothing-studio.js?v=20"></script>
 </body>
 </html>
