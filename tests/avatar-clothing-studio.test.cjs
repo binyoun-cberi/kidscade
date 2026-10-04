@@ -231,19 +231,19 @@ test('studio tool panels are collapsible and remember their state',()=>{
   assert.ok(html.includes('class="workspace-dock"'));
   assert.ok(html.includes('class="card tool-card compact animation-dock"'));
   assert.match(js,/function setupCollapsiblePanels\(\)/);
-  assert.ok(js.includes("const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v2'"));
+  assert.ok(js.includes("const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v3'"));
   assert.ok(js.includes("localStorage.setItem(PANEL_STATE_KEY"));
 });
 
-test('canvas-first workspace keeps the canvas above pixel tools and docks correction controls beside it',()=>{
+test('canvas-first workspace keeps correction and pixel tools below the canvas',()=>{
   const canvasPos=html.indexOf('class="canvas-shell"');
-  const pixelToolsPos=html.indexOf('data-panel-key="pixel-tools"');
   const adjustPos=html.indexOf('data-panel-key="adjust-tools"');
-  assert.ok(canvasPos>0&&pixelToolsPos>canvasPos);
-  assert.ok(adjustPos>0);
-  assert.ok(html.includes('class="workspace-dock"'));
+  const pixelToolsPos=html.indexOf('data-panel-key="pixel-tools"');
+  assert.ok(canvasPos>0&&adjustPos>canvasPos&&pixelToolsPos>adjustPos);
+  assert.ok(html.includes('class="canvas-bottom-stack"'));
   assert.ok(html.includes('data-panel-key="adjust-move"'));
   assert.ok(html.includes('data-panel-key="adjust-size"'));
   assert.ok(html.includes('data-panel-key="adjust-align"'));
   assert.ok(html.includes('width:min(100%,66vh,680px)'));
+  assert.ok(html.includes('<details class="card tool-card compact adjust-dock" data-panel-key="adjust-tools">'));
 });
