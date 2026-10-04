@@ -114,13 +114,22 @@
     <div id="start-screen" class="fixed inset-0 z-50 bg-pattern flex flex-col justify-center items-center transition-opacity duration-500 overflow-y-auto py-8">
         <div class="bg-white p-6 md:p-10 rounded-3xl shadow-2xl text-center max-w-md w-11/12 border-4 border-teal-500 my-auto">
             <h1 class="text-4xl md:text-5xl font-black text-teal-600 mb-2">🗺️ K-퍼즐</h1>
-            <p class="text-gray-500 mb-6 font-bold">우리나라 구석구석, 지도를 완성하세요!</p>
+            <p class="text-gray-500 mb-6 font-bold">우리나라부터 세계까지, 지도를 완성하세요!</p>
             
             <div class="mb-6 text-left">
                 <label for="map-select-start" class="block text-sm font-bold text-teal-800 mb-2">어느 지역을 맞출까요?</label>
                 <select id="map-select-start" class="w-full bg-teal-50 border-2 border-teal-300 text-teal-900 rounded-xl focus:ring-teal-500 focus:border-teal-500 block p-3 font-bold text-base cursor-pointer shadow-sm">
-                    <optgroup label="🌏 전국">
+                    <optgroup label="🇰🇷 대한민국">
                         <option value="korea">🇰🇷 대한민국 전도 (17개 시/도)</option>
+                    </optgroup>
+                    <optgroup label="🌍 세계 · 대륙">
+                        <option value="world_Asia">🌏 아시아</option>
+                        <option value="world_Europe">🌍 유럽</option>
+                        <option value="world_Africa">🌍 아프리카</option>
+                        <option value="world_North America">🌎 북아메리카</option>
+                        <option value="world_South America">🌎 남아메리카</option>
+                        <option value="world_Oceania">🌊 오세아니아</option>
+                        <option value="world_ALL">🌐 세계 전체 도전 (177개 국가·지역)</option>
                     </optgroup>
                     <optgroup label="🏙️ 특별시 및 광역시 (구 단위)">
                         <option value="seoul">서울특별시</option>
@@ -163,7 +172,10 @@
             <button id="btn-home" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 md:px-4 md:py-2 rounded-xl font-bold transition flex items-center gap-1">
                 🏠 <span class="hidden md:inline">메뉴</span>
             </button>
-            <h1 class="text-lg md:text-2xl font-black text-teal-600 truncate max-w-[120px] md:max-w-none" id="current-map-title">전국</h1>
+            <div class="min-w-0">
+                <h1 class="text-lg md:text-2xl font-black text-teal-600 truncate max-w-[150px] md:max-w-none" id="current-map-title">전국</h1>
+                <p id="held-country" class="text-[10px] md:text-xs font-bold text-gray-500 truncate max-w-[170px] md:max-w-[360px]">조각을 잡아보세요</p>
+            </div>
         </div>
         
         <div class="flex items-center gap-2 md:gap-4 bg-teal-50 px-3 md:px-5 py-2 rounded-2xl border border-teal-100 shadow-inner">
@@ -228,7 +240,8 @@
         const DATA_URLS = {
             provinces: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_geo_simple.json",
             municipalities: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_municipalities_geo_simple.json",
-            submunicipalities: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_submunicipalities_geo_simple.json"
+            submunicipalities: "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_submunicipalities_geo_simple.json",
+            world: "../../assets/maps/world-countries-110m.geojson"
         };
 
         // 통계청(2013) 기준 지역 코드 매핑 (중복 제거 및 정확도 향상)
@@ -266,9 +279,20 @@
 
         // 읍면동 단위까지 불러와야 하는 세부 지역
         const DETAILED_REGIONS = ['jeungpyeong', 'sejong', 'jeju_sub'];
+        const WORLD_MODES = {
+            'world_Asia': 'Asia',
+            'world_Europe': 'Europe',
+            'world_Africa': 'Africa',
+            'world_North America': 'North America',
+            'world_South America': 'South America',
+            'world_Oceania': 'Oceania',
+            'world_ALL': 'ALL'
+        };
+        const TINY_WORLD_ISO = new Set(['LUX','MNE','MKD','SWZ','LSO','GMB','BRN','TLS','TTO','JAM','CYP','LBN','QAT','KWT','ISR','PSE','DJI','RWA','BDI','GNQ','SLV','BLZ']);
 
         let cachedData = {};
         let currentMapData = null;
+        let currentMode = 'korea';
         let totalPieces = 0, placedPieces = 0;
         let startTime = null, timerInterval = null, gameActive = false;
         let bgmPlaying = false;
@@ -366,8 +390,12 @@
             document.getElementById("current-map-title").innerText = titleText;
 
             try {
+                currentMode = mode;
+                const isWorldMode = mode.startsWith('world_');
                 let sourceUrl = DATA_URLS.municipalities;
-                if(mode === 'korea') {
+                if(isWorldMode) {
+                    sourceUrl = DATA_URLS.world;
+                } else if(mode === 'korea') {
                     sourceUrl = DATA_URLS.provinces;
                 } else if(DETAILED_REGIONS.includes(mode)) {
                     sourceUrl = DATA_URLS.submunicipalities;
@@ -385,7 +413,14 @@
 
                 let filteredFeatures = geoJson.features;
                 
-                if (mode !== 'korea') {
+                if (isWorldMode) {
+                    const continent = WORLD_MODES[mode];
+                    filteredFeatures = geoJson.features.filter(f => {
+                        const p = f.properties || {};
+                        if (p.NAME === 'Antarctica' || p.CONTINENT === 'Antarctica' || p.CONTINENT === 'Seven seas (open ocean)') return false;
+                        return continent === 'ALL' || p.CONTINENT === continent;
+                    });
+                } else if (mode !== 'korea') {
                     const prefixes = REGION_CODES[mode];
                     
                     // 1차 검색: 지역 코드로 필터링
@@ -480,6 +515,7 @@
         // --- 퍼즐 렌더링 로직 ---
         function renderGame() {
             placedPieces = 0;
+            document.getElementById("held-country").innerText = currentMode.startsWith('world_') ? "조각을 잡으면 나라 이름이 보여요" : "조각을 잡아보세요";
             updateProgress();
             resetTimer();
             startTimer();
@@ -492,7 +528,7 @@
 
             const padding = width < 768 ? 40 : 120; 
             
-            const projection = d3.geoMercator()
+            const projection = (currentMode === 'world_ALL' ? d3.geoNaturalEarth1() : d3.geoMercator())
                 .fitExtent([[padding, padding], [width - padding, height - padding]], currentMapData);
             
             const path = d3.geoPath().projection(projection);
@@ -510,7 +546,13 @@
                 .on("start", function(event, d) {
                     if (d.placed || !gameActive) return;
                     d3.select(this).raise();
-                    d3.select(this).select("path").attr("stroke", "#374151").attr("stroke-width", "2.5px");
+                    d3.select(this).select("path:not(.hit-area)").attr("stroke", "#374151").attr("stroke-width", "2.5px");
+                    const p = d.properties || {};
+                    const countryName = p.NAME_KO || p.name || p.NAME || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || "";
+                    const flag = p.ISO_A2 && p.ISO_A2.length === 2 && !p.ISO_A2.includes('-')
+                        ? [...p.ISO_A2.toUpperCase()].map(c => String.fromCodePoint(127397 + c.charCodeAt())).join('')
+                        : '';
+                    document.getElementById("held-country").innerText = countryName ? `${flag} ${countryName}`.trim() : "조각을 움직이는 중";
                 })
                 .on("drag", function(event, d) {
                     if (d.placed || !gameActive) return;
@@ -520,12 +562,14 @@
                 })
                 .on("end", function(event, d) {
                     if (d.placed || !gameActive) return;
-                    d3.select(this).select("path").attr("stroke", "#ffffff").attr("stroke-width", "1px");
+                    d3.select(this).select("path:not(.hit-area)").attr("stroke", "#ffffff").attr("stroke-width", "1px");
 
                     const distance = Math.sqrt(d.currentX * d.currentX + d.currentY * d.currentY);
                     
                     let snapThreshold = width < 768 ? 40 : 30;
-                    if(totalPieces > 50) snapThreshold += 15; 
+                    if(totalPieces > 50) snapThreshold += 15;
+                    const iso3 = (d.properties || {}).ISO_A3;
+                    if(currentMode.startsWith('world_') && TINY_WORLD_ISO.has(iso3)) snapThreshold += 18; 
 
                     if (distance < snapThreshold) {
                         d.placed = true;
@@ -564,6 +608,15 @@
                 .attr("stroke-width", "1px")
                 .attr("stroke-linejoin", "round");
 
+            // 작은 국가도 손가락/마우스로 잡기 쉽도록 투명한 터치 영역을 넓힘
+            piece.append("path")
+                .attr("class", "hit-area")
+                .attr("d", path)
+                .attr("fill", "none")
+                .attr("stroke", "transparent")
+                .attr("stroke-width", d => currentMode.startsWith('world_') && TINY_WORLD_ISO.has((d.properties || {}).ISO_A3) ? 22 : 8)
+                .style("pointer-events", "stroke");
+
             piece.append("text")
                 .attr("class", "region-label")
                 .attr("transform", function(d) {
@@ -573,9 +626,10 @@
                 })
                 .attr("text-anchor", "middle")
                 .attr("dy", ".35em")
+                .style("display", () => currentMode === 'world_ALL' ? "none" : null)
                 .text(d => {
                     const p = d.properties || {};
-                    return p.name || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || "";
+                    return p.NAME_KO || p.name || p.NAME || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || "";
                 }); 
         }
 
