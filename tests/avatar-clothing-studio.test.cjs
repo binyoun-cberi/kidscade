@@ -11,7 +11,7 @@ test('avatar studio JavaScript parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
 });
 
-test('maple-style layout exposes left asset browser, right animation and correction panels',()=>{
+test('maple-style layout exposes asset browser and central animation/correction panels',()=>{
   for(const id of ['assetCategory','assetSearch','assetGrid','frameGrid','editLayerSelect','selectedAssetList','nudgeMode']){
     assert.ok(html.includes('id="'+id+'"'));
   }
@@ -222,4 +222,14 @@ test('generated part JSON can be applied as a new custom asset',()=>{
   assert.ok(js.includes("data?.type==='kidscade-avatar-full-adjustment'"));
   assert.ok(js.includes("setAssetMeta(frameId,layer,{layer,id:assetId,label:assetId,file:null,custom:true})"));
   assert.ok(js.includes("setStatus(partLabel(layer)+' JSON 적용 완료"));
+});
+
+test('studio tool panels are collapsible and remember their state',()=>{
+  for(const key of ['asset-library','animation','adjust-tools','pixel-tools','ai-adjustment','equipped-assets','display-guides','project-tools']) assert.ok(html.includes('data-panel-key="'+key+'"'));
+  assert.ok(html.includes('id="collapseAllPanels"'));
+  assert.ok(html.includes('id="expandAllPanels"'));
+  assert.ok(html.includes('class="center-tool-grid"'));
+  assert.match(js,/function setupCollapsiblePanels\(\)/);
+  assert.ok(js.includes("const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v1'"));
+  assert.ok(js.includes("localStorage.setItem(PANEL_STATE_KEY"));
 });
