@@ -92,6 +92,7 @@ let pixelPreviewReady=false;
 let playTimer=0;
 let saveTimer=0;
 let pendingCatalogAsset=null;
+let catalogLoadToken=0;
 let focusPartOnly=false;
 
 const frames=new Map();
@@ -683,10 +684,12 @@ function starterAssetUrl(layer){return assetEntryUrl(catalogEntry(layer)||STARTE
 async function loadCatalogAsset(entry,{apply=false,announce=true}={}){
   if(!entry)return false;
   const layer=entry.layer;
+  stopPlayback();
+  if(sourceImage||pendingCatalogAsset)clearStamp();
+  if(currentFrame!=='stand-01')selectFrame('stand-01');
+  selectLayer(layer);
+  const loadToken=++catalogLoadToken;
   try{
-    stopPlayback();
-    if(currentFrame!=='stand-01')selectFrame('stand-01');
-    selectLayer(layer);
     const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(layer))category.value=layer;
     const field=LAYER_ID_FIELDS[layer];
     if(field&&$(field))$(field).value=entry.id;
@@ -694,6 +697,7 @@ async function loadCatalogAsset(entry,{apply=false,announce=true}={}){
     if(announce)setStatus('GitHub '+partLabel(layer)+' · '+(entry.label||entry.id)+' 불러오는 중…');
     const url=assetEntryUrl(entry);
     const img=await loadImageUrl(url,12000);
+    if(loadToken!==catalogLoadToken||activeLayer!==layer||currentFrame!=='stand-01')return false;
     sourceImage=img;$('sourcePreview').src=url;$('sourcePreview').classList.remove('hidden');
     refreshPreparedSource();
     if(sourceRuntimeReady){
@@ -705,6 +709,7 @@ async function loadCatalogAsset(entry,{apply=false,announce=true}={}){
     if(announce)setStatus(partLabel(layer)+' 미리보기 · 화살표로 맞춘 뒤 적용하세요.');
     return true;
   }catch(e){
+    if(loadToken!==catalogLoadToken)return false;
     setStatus('에셋 불러오기 실패 · '+partLabel(layer)+' · '+(e?.message||e),true);
     clearStamp();return false;
   }
@@ -864,6 +869,7 @@ function refreshLayerStatus(){
 
 function selectLayer(layer){
   if(!LAYERS.includes(layer))return;
+  if(layer!==activeLayer&&(sourceImage||pendingCatalogAsset))clearStamp();
   activeLayer=layer;selection=null;selectionStart=null;invalidatePixelPreview();
   for(const [name,id] of Object.entries(LAYER_BUTTON_IDS)){
     const el=$(id);if(el)el.className=name===activeLayer?'active':'secondary';
@@ -878,6 +884,7 @@ function selectLayer(layer){
 
 function selectFrame(id){
   if(!frames.has(id))return;
+  if(id!==currentFrame&&(sourceImage||pendingCatalogAsset))clearStamp();
   currentFrame=id;selection=null;selectionStart=null;invalidatePixelPreview();refreshFrameButtons();
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
@@ -1276,6 +1283,7 @@ function commitStamp(){
   clearStamp();afterEdit('원본 '+applied+' 적용함');
 }
 function clearStamp(){
+  catalogLoadToken++;
   sourceImage=null;preparedSource=null;sourceCrop=null;sourceRuntimeReady=false;pixelPreviewReady=false;pendingCatalogAsset=null;
   $('sourcePreview').src='';$('sourcePreview').classList.add('hidden');$('sourceFile').value='';
   $('pixelPreviewCanvas').getContext('2d').clearRect(0,0,SIZE,SIZE);
