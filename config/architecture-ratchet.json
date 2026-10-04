@@ -2,7 +2,7 @@
   "version": 1,
   "description": "Legacy complexity may stay flat temporarily, but it must not grow. Lower limits whenever migration removes legacy surface area.",
   "maximums": {
-    "rootRuntimeJs": 79,
+    "rootRuntimeJs": 71,
     "catalogRootEntrypoints": 24,
     "catalogManualVersionPins": 66,
     "bootstrapReplaceBetweenOccurrences": 0,
