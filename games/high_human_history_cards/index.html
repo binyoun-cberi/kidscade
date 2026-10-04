@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>석기 시대에서 살아남기</title>
-<link rel="stylesheet" href="./style.css?v=11">
+<link rel="stylesheet" href="./style.css?v=12">
 </head>
 <body>
 <div id="app">
@@ -99,11 +99,11 @@
       <div class="heroEmoji">🪨🔥🏺🌾</div>
       <span class="eyebrow">생활 기술 카드 샌드박스</span>
       <h1>석기 시대에서<br>살아남기</h1>
-      <p>두 사람과 숲·들판·강가·바위언덕만 가지고 시작합니다. 사람을 자연에 보내 새로운 장소와 자원을 발견하고, 채집과 사냥으로 버티다가 숲은 벌목장으로, 들판은 밭으로 바꾸며 <b>나만의 석기 시대 정착지</b>를 만드세요.</p>
+      <p>두 사람과 숲·들판·강가·바위언덕만 가지고 시작합니다. 자연은 이용할수록 줄고, 쉬게 두면 일부는 다시 회복됩니다. 탐험과 채집으로 버티다가 부족해진 자연을 <b>벌목장·밭·채석장 같은 안정적인 생산지</b>로 바꾸며 정착지를 키우세요.</p>
       <div class="howGrid">
         <div><b>자연 탐험</b><span>사람을 자연 카드 위에 올려 세계를 직접 발견해요.</span></div>
         <div><b>사람이 행동력</b><span>탐험·채집 중인 사람은 그 시간 동안 다른 일을 못 해요.</span></div>
-        <div><b>자연에서 정착지로</b><span>발견한 자연을 필요에 따라 농장·벌목장·채석장으로 바꿔요.</span></div>
+        <div><b>살아 있는 자연</b><span>많이 이용하면 줄고, 재생 가능한 자연은 쉬게 두면 다시 회복돼요.</span></div>
       </div>
       <button id="startBtn" class="primaryBtn" type="button">석기 시대 생존 시작</button>
     </div>
@@ -120,7 +120,7 @@
         <div><span>🌿 ×3</span><b>끈</b><small>카드 오른쪽 위 숫자가 스택 개수예요.</small></div>
         <div><span>🌱 ×3</span><b>농장</b><small>작은 생산지 3개를 합치면 상위 시설이 돼요.</small></div>
         <div><span>↔ ×2</span><b>카드 분리</b><small>겹친 카드는 상단 분리대에 끌어 한 장씩 꺼낼 수 있어요.</small></div>
-        <div><span>⛏ 10</span><b>유한 자원</b><small>자연 카드는 남은 수량만큼만 생산하고 고갈돼요.</small></div>
+        <div><span>🌿 7/9</span><b>자연 상태</b><small>숲·들판·물가는 이용할수록 줄고 일부는 쉬게 두면 천천히 회복돼요.</small></div>
         <div><span>👤 + 🌲</span><b>자연 탐험</b><small>사람을 자연 카드 위에 올리면 탐험이 시작되고 그동안 그 사람은 다른 일에 쓸 수 없어요.</small></div>
         <div><span>🐺 ⚠</span><b>야생의 위협</b><small>3일차 이후에는 맹수와 다른 집단을 만날 수도 있어요.</small></div>
       </div>
@@ -141,6 +141,8 @@
         <p>🧭 숲·들판·강가·바위언덕 탐험 → 자원·동물·흔적·새 지역 발견 → 더 깊은 자연으로 확장</p>
         <p>🐾 동물 길·큰 발자국·연기 흔적 + 사람 → 동물·동굴·낯선 집단을 추적해 발견</p>
         <p>🪓 간돌도끼 + 숲 → 벌목장 / 돌괭이 + 들판 → 개간지 / 찍개 + 바위언덕 → 채석장</p>
+        <p>🌿 자연 상태가 낮아지면 자원·동물 발견 확률도 낮아짐 / 재생 가능한 자연은 작업하지 않을 때 서서히 회복</p>
+        <p>📦 나뭇가지·돌·먹거리 같은 산출물은 가까운 같은 카드에 자동으로 합쳐져 보드가 덜 복잡해짐</p>
         <p>🐺 늑대·곰·적대 집단은 습격 전 카운트다운 표시 / 한 번 습격하거나 막히면 떠남</p>
         <p>🛡 불·울타리·마을·대기 중 사냥꾼의 방어력을 합쳐 위협의 요구 방어력과 비교</p>
         <p>🤝 낯선 집단은 토기·훈제고기·장신구와 최대 3회 교환 후 떠남</p>
@@ -174,7 +176,7 @@
   </div>
 </div>
 <script src="../../audio-manager.js?v=2"></script>
-<script src="./game.js?v=11"></script>
+<script src="./game.js?v=12"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="석기 시대에서 살아남기" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
