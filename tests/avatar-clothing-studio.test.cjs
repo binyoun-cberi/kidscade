@@ -59,6 +59,14 @@ test('current equipped asset list shows previews and remove actions',()=>{
   assert.ok(js.includes('setAssetMeta(currentFrame,row.layer,null)'));
 });
 
+test('pending asset preview cannot leak into another layer or frame',()=>{
+  assert.ok(js.includes('let catalogLoadToken=0'));
+  assert.ok(js.includes("if(layer!==activeLayer&&(sourceImage||pendingCatalogAsset))clearStamp()"));
+  assert.ok(js.includes("if(id!==currentFrame&&(sourceImage||pendingCatalogAsset))clearStamp()"));
+  assert.ok(js.includes("if(loadToken!==catalogLoadToken||activeLayer!==layer||currentFrame!=='stand-01')return false"));
+  assert.ok(js.includes('catalogLoadToken++;'));
+});
+
 test('selected asset metadata follows frame copy operations',()=>{
   assert.ok(js.includes('setAssetMeta(f.id,activeLayer,assetMeta(currentFrame,activeLayer))'));
   assert.ok(js.includes('setAssetMeta(currentFrame,activeLayer,assetMeta(prev,activeLayer))'));
