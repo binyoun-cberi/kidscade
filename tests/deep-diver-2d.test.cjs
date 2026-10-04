@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=36/);
-  assert.match(html,/diver-v7\.js\?v=36/);
+  assert.match(html,/deep-diver-2d\.css\?v=37/);
+  assert.match(html,/diver-v7\.js\?v=37/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -1117,7 +1117,7 @@ test('Deep Diver v37 shortens night service with automatic serving',()=>{
 
 
 test('Deep Diver v37 caps only visual creature clutter while preserving important encounters',()=>{
-  assert.match(js,/function fishRenderList\(limit=32\)/);
+  assert.match(js,/function fishRenderList\(limit=fishRenderLimit\(\)\)/);
   assert.match(js,/sp\.rare\|\|sp\.motion==='boss'\|\|f\.alert>0\|\|f\.hooked\|\|f\.marked>0/);
   assert.match(js,/for\(const f of fishRenderList\(\)\)drawFish\(f\)/);
 });

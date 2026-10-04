@@ -631,7 +631,7 @@ function applyLayerAdjustmentPlan(frameId,layer,plan,assetId){
     throw new Error(frameId+' BODY가 비어 버리는 AI 보정은 안전장치가 차단했습니다.');
   }
   if(layer==='body')rememberBodyFrame(frameId);
-  if(!assetMeta(frameId,layer)){
+  if(assetId||!assetMeta(frameId,layer)){
     const id=assetId||assetIdForLayer(layer);
     setAssetMeta(frameId,layer,{layer,id,label:id+' · AI 보정',file:null,custom:true});
   }
@@ -654,8 +654,9 @@ async function applyFullAdjustment(data){
   let layerChanges=0,derivedChanges=0;
   for(const [frameId,framePlan] of Object.entries(data.frames)){
     for(const [layer,plan] of Object.entries(framePlan.layers)){
-      const assetId=data.assetIds?.[layer]||data.target?.assetIds?.[layer]||assetIdForLayer(layer);
+      const assetId=data.assetIds?.[layer]||data.target?.assetIds?.[layer];
       applyLayerAdjustmentPlan(frameId,layer,plan,assetId);
+      if(assetId&&$(LAYER_ID_FIELDS[layer]))$(LAYER_ID_FIELDS[layer]).value=assetId;
       layerChanges++;
     }
   }
@@ -893,6 +894,21 @@ async function loadCatalogAsset(entry,{apply=false,announce=true}={}){
   }
 }
 async function loadStarterAsset(layer,opts={}){return loadCatalogAsset(catalogEntry(layer)||STARTER_ASSETS[layer],opts)}
+
+async function loadSchoolStarterSet(){
+  const button=$('loadSchoolStarterSet');
+  if(!confirm('학교 탐험가 9종을 23프레임에 적용할까요? BODY는 유지되며 해당 파츠만 교체됩니다.'))return;
+  if(button)button.disabled=true;
+  try{
+    const response=await fetch('/assets/game/characters/kidscade-avatar-v3/school-starter/school-starter.json');
+    if(!response.ok)throw new Error('기본 세트 파일을 불러오지 못했습니다.');
+    const data=await response.json();
+    await applyFullAdjustment(data);
+    selectFrame('stand-01');selectLayer('hair');
+    setStatus('학교 탐험가 9종 · 23프레임 적용 완료 · 자/교과서 앞뒤 패스 포함');
+  }catch(error){setStatus(error.message||String(error),true)}
+  finally{if(button)button.disabled=false}
+}
 
 async function loadStarterSet(){
   const button=$('loadStarterSet'),old=button?.textContent||'';
@@ -1942,6 +1958,7 @@ function bind(){
   $('clearSelection').addEventListener('click',clearSelection);
   $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);
   $('loadDraftBodySet').addEventListener('click',()=>loadDraftBodySet(true));
+  $('loadSchoolStarterSet')?.addEventListener('click',()=>loadSchoolStarterSet());
   $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
 
   $('exportPartAnalysis')?.addEventListener('click',exportPartAnalysisFile);

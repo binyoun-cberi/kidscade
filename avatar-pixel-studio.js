@@ -1,27 +1,31 @@
-(()=>{
-'use strict';
+(()=>{'use strict';
 
-const ROOT='assets/game/characters/kidscade-avatar-v1/runtime';
-const ASSET_REV='27';
-function rev(src){return src+(src.includes('?')?'&':'?')+'v='+ASSET_REV;}
+const ROOT='assets/game/characters/kidscade-avatar-v3/school-starter';
+const MANIFEST_URL=ROOT+'/manifest.json';
+const SHEET_URL=ROOT+'/school-starter-sheet.png';
+const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v2-rig-haircatalog-6';
-const STATE_KEY='kidscade-pixel-avatar-v1';
-const LEGACY_EQUIPPED_KEY='kidscade_avatar_equipped';
-const BASE=rev(ROOT+'/base/master-base-128.png');
-const COUNTS={eyes:8,eyebrows:6,noses:4,mouths:8,blush:4};
-const DEFAULT={hairId:'male-short-01',upper:1,lower:1,eyes:1,eyebrows:1,noses:1,mouths:1,blush:0};
-const labels={hair:'헤어스타일',upper:'상의',lower:'하의',eyes:'눈',eyebrows:'눈썹',noses:'코',mouths:'입',blush:'볼터치'};
-const folders={eyes:'eyes',eyebrows:'eyebrows',noses:'noses',mouths:'mouths',blush:'blush'};
-const prefixes={eyes:'eyes',eyebrows:'eyebrows',noses:'nose',mouths:'mouth',blush:'blush'};
+const PREVIEW_VERSION='pixel-v3-school-starter-1';
+const STATE_KEY='kidscade-avatar-v3';
+const SIZE=128;
+const PARTS={
+  hair:{label:'헤어',name:'더벅머리',assetKey:'hair'},
+  eyes:{label:'눈',name:'기본 눈',assetKey:'eyes'},
+  mouth:{label:'입',name:'ㅡ 입',assetKey:'mouth'},
+  earring:{label:'귀걸이',name:'구리 링 귀걸이',assetKey:'earring'},
+  upper:{label:'상의',name:'학교 교복 상의',assetKey:'upper'},
+  lower:{label:'하의',name:'학교 교복 하의',assetKey:'lower'},
+  shoes:{label:'신발',name:'기본 운동화',assetKey:'shoes'},
+  weapon:{label:'도구',name:'자',assetKey:'weaponFront'},
+  shield:{label:'책',name:'교과서',assetKey:'shieldFront'}
+};
 
 const canvas=document.getElementById('avatarCanvas');
 const ctx=canvas.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
-const optionGrid=document.getElementById('optionGrid');
 const tabs=document.getElementById('tabs');
-const hairFilter=document.getElementById('hairFilter');
+const optionGrid=document.getElementById('optionGrid');
 const pickerTitle=document.getElementById('pickerTitle');
 const pickerCount=document.getElementById('pickerCount');
 const styleSummary=document.getElementById('styleSummary');
@@ -29,131 +33,91 @@ const toast=document.getElementById('toast');
 const seedBadge=document.getElementById('seedBadge');
 const motionControls=document.getElementById('motionControls');
 
-let currentTab='hair';
-let seeds=0;
-let renderToken=0;
-let animationCacheToken=0;
-let animationManifest=null;
-let animationFrames={idle:[],walk:[]};
-let renderer=null;
-let extraParts=[];
-let previewMode='static';
-let previewRaf=0;
-let previewStartedAt=0;
-let previewLastFrameKey='';
-let previewRenderBusy=false;
-let staticPreviewReady=false;
-const staticPreviewCanvas=document.createElement('canvas');
-staticPreviewCanvas.width=128;staticPreviewCanvas.height=128;
-const staticPreviewCtx=staticPreviewCanvas.getContext('2d',{alpha:true});
-staticPreviewCtx.imageSmoothingEnabled=false;
+const staticCanvas=document.createElement('canvas');
+staticCanvas.width=SIZE;staticCanvas.height=SIZE;
+const staticCtx=staticCanvas.getContext('2d',{alpha:true});
+staticCtx.imageSmoothingEnabled=false;
 
-function clampInt(v,min,max,fallback){
-  const n=parseInt(v,10);
-  return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
-}
-function safeJson(raw){
-  try{return raw?JSON.parse(raw):null}catch(_){return null}
-}
-function loadStateFromObject(raw){
-  raw=raw&&typeof raw==='object'?raw:{};
-  return {
-    hairId:typeof raw.hairId==='string'&&raw.hairId?raw.hairId:DEFAULT.hairId,
-    upper:clampInt(raw.upper,0,1,DEFAULT.upper),
-    lower:clampInt(raw.lower,0,1,DEFAULT.lower),
-    eyes:clampInt(raw.eyes,1,8,DEFAULT.eyes),
-    eyebrows:clampInt(raw.eyebrows,1,6,DEFAULT.eyebrows),
-    noses:clampInt(raw.noses,1,4,DEFAULT.noses),
-    mouths:clampInt(raw.mouths,1,8,DEFAULT.mouths),
-    blush:clampInt(raw.blush,0,4,DEFAULT.blush)
-  };
-}
-function legacyMigrationState(){
-  const old=safeJson(localStorage.getItem(LEGACY_EQUIPPED_KEY));
-  if(!old||typeof old!=='object')return {...DEFAULT};
-  return {
-    ...DEFAULT,
-    upper:old.top==='top_hoodie'||old.top==='top_varsity'?1:DEFAULT.upper,
-    lower:old.bottom==='bottom_jeans'||old.bottom==='bottom_track'?1:DEFAULT.lower
-  };
-}
+let manifest=null;
+let sheet=null;
+let currentTab='hair';
+let previewMode='stand';
+let previewStartedAt=0;
+let previewRaf=0;
+let lastFrameIndex=-1;
+let seeds=0;
+let state={version:3,setId:'school-starter-01'};
+
+function safeJson(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
 function loadState(){
   try{
-    const stored=localStorage.getItem(STATE_KEY);
-    if(stored)return loadStateFromObject(safeJson(stored));
-    return legacyMigrationState();
-  }catch(_){return {...DEFAULT};}
+    const saved=safeJson(localStorage.getItem(STATE_KEY));
+    if(saved&&saved.version===3&&saved.setId)return {...state,...saved};
+  }catch(_){}
+  return {...state};
 }
-let state=loadState();
+state=loadState();
 
-function pad(n){return String(n).padStart(2,'0');}
-function upperPath(n,frameFile=''){
-  return n===1?rev(`${ROOT}/clothes/upper/blue-star-zip-hoodie-01/${frameFile||'static.png'}`):'';
+async function loadManifest(){
+  const res=await fetch(MANIFEST_URL,{cache:'no-cache'});
+  if(!res.ok)throw new Error('v3 아바타 manifest를 불러오지 못했습니다.');
+  manifest=await res.json();
+  state.setId=manifest.id||state.setId;
+  return manifest;
 }
-function lowerPath(n,frameFile=''){
-  return n===1?rev(`${ROOT}/clothes/lower/denim-cuffed-jeans-01/${frameFile||'static.png'}`):'';
+function loadSheet(){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.decoding='async';
+    img.onload=()=>{sheet=img;resolve(img)};
+    img.onerror=()=>reject(new Error('v3 아바타 스프라이트를 불러오지 못했습니다.'));
+    img.src=SHEET_URL+'?v=1';
+  });
 }
-function facePath(type,n){
-  if(!n)return '';
-  return rev(`${ROOT}/face/${folders[type]}/${prefixes[type]}-${pad(n)}.png`);
+function animationFor(mode){
+  if(!manifest?.animations)return [];
+  const normalized=mode==='idle'||mode==='smile'||mode==='static'?'stand':mode;
+  return manifest.animations[normalized]||manifest.animations.stand||[];
 }
-function rendererConfig(s=state,animation='static'){
-  return {
-    hairId:s.hairId,
-    upper:s.upper,
-    lower:s.lower,
-    eyes:s.eyes,
-    eyebrows:s.eyebrows,
-    nose:s.noses,
-    mouth:s.mouths,
-    blush:s.blush,
-    animation
-  };
-}
-async function ensureRenderer(){
-  if(renderer)return renderer;
-  const api=window.KidscadePixelAvatarV2||window.KidscadePixelAvatarV1;
-  if(!api?.create)throw new Error('Kidscade avatar rig renderer is missing.');
-  renderer=await api.create(canvas,{playing:false,config:rendererConfig(state)});
-  animationManifest=renderer.animationManifest;
-  state.hairId=renderer.normalizeConfig({hairId:state.hairId}).hairId;
-  return renderer;
-}
-async function drawTo(targetCtx,targetState=state,frame=null){
-  const r=await ensureRenderer();
-  const config=rendererConfig(targetState,'static');
-  const isMain=targetCtx===ctx;
-  if(!isMain){
-    await r.renderTo(targetCtx,config,frame,extraParts);
-    return;
+function frameAt(mode,timeSec=0){
+  const frames=animationFor(mode);
+  if(!frames.length)return {index:0,id:'stand-01',durationMs:500};
+  const total=frames.reduce((n,f)=>n+Math.max(1,Number(f.durationMs)||100),0);
+  let ms=(Math.max(0,Number(timeSec)||0)*1000)%total;
+  for(const frame of frames){
+    const duration=Math.max(1,Number(frame.durationMs)||100);
+    if(ms<duration)return frame;
+    ms-=duration;
   }
-
-  const my=++renderToken;
+  return frames[frames.length-1];
+}
+function drawFrame(target,index){
+  if(!sheet)return;
+  target.save();
+  target.setTransform(1,0,0,1,0,0);
+  target.clearRect(0,0,SIZE,SIZE);
+  target.imageSmoothingEnabled=false;
+  target.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
+  target.restore();
+}
+function drawStatic(){
+  const frame=animationFor('stand')[0]||{index:0};
+  drawFrame(staticCtx,frame.index||0);
+  drawFrame(ctx,frame.index||0);
+  lastFrameIndex=frame.index||0;
+}
+function previewData(){
+  try{return staticCanvas.toDataURL('image/png')}catch(_){return ''}
+}
+function renderPreviewFrame(mode='stand',time=0){
+  if(!sheet)return previewData();
+  const frame=frameAt(mode,time);
   const off=document.createElement('canvas');
-  off.width=128;off.height=128;
+  off.width=SIZE;off.height=SIZE;
   const offCtx=off.getContext('2d',{alpha:true});
   offCtx.imageSmoothingEnabled=false;
-  await r.renderTo(offCtx,config,frame,extraParts);
-  if(my!==renderToken)return;
-  targetCtx.save();
-  targetCtx.setTransform(1,0,0,1,0,0);
-  targetCtx.clearRect(0,0,128,128);
-  targetCtx.imageSmoothingEnabled=false;
-  targetCtx.drawImage(off,0,0);
-  targetCtx.restore();
-  staticPreviewCtx.clearRect(0,0,128,128);
-  staticPreviewCtx.drawImage(off,0,0);
-  staticPreviewReady=true;
-}
-function previewFrameRecord(mode,elapsedSec){
-  const set=animationManifest?.frameSets?.[mode];
-  const frames=set?.frames||[];
-  if(!frames.length)return null;
-  const fps=Math.max(1,Number(set.fps)||(mode==='walk'?6:3));
-  return frames[Math.floor(Math.max(0,elapsedSec)*fps)%frames.length]||frames[0];
-}
-function resetPreviewTransform(){
-  canvas.style.transform='translateY(2%)';
+  drawFrame(offCtx,frame.index||0);
+  try{return off.toDataURL('image/png')}catch(_){return previewData()}
 }
 function syncMotionButtons(){
   motionControls?.querySelectorAll('[data-motion]').forEach(button=>{
@@ -162,141 +126,56 @@ function syncMotionButtons(){
     button.setAttribute('aria-pressed',active?'true':'false');
   });
 }
-function drawStaticPreview(){
-  resetPreviewTransform();
-  if(!staticPreviewReady)return;
-  ctx.save();
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,128,128);
-  ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(staticPreviewCanvas,0,0);
-  ctx.restore();
-}
-async function drawLivePreview(frame){
-  if(previewRenderBusy)return;
-  previewRenderBusy=true;
-  try{
-    const r=await ensureRenderer();
-    const my=++renderToken;
-    const off=document.createElement('canvas');
-    off.width=128;off.height=128;
-    const offCtx=off.getContext('2d',{alpha:true});
-    offCtx.imageSmoothingEnabled=false;
-    await r.renderTo(offCtx,rendererConfig(state,'static'),frame,extraParts);
-    if(my!==renderToken)return;
-    ctx.save();
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,128,128);
-    ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(off,0,0);
-    ctx.restore();
-  }finally{
-    previewRenderBusy=false;
-  }
-}
-function stopPreviewMode(){
+function stopPreview(){
   if(previewRaf)cancelAnimationFrame(previewRaf);
   previewRaf=0;
-  previewLastFrameKey='';
-  resetPreviewTransform();
+  lastFrameIndex=-1;
 }
-function previewTick(now){
+function tick(now){
   previewRaf=0;
-  if(previewMode==='static'){
-    drawStaticPreview();
-    return;
-  }
-
   const elapsed=Math.max(0,(now-previewStartedAt)/1000);
-  let frame=null;
-  let frameKey='';
-
-  if(previewMode==='jump'){
-    frame=animationManifest?.frameSets?.idle?.frames?.[0]||null;
-    const duration=.9;
-    const phase=(elapsed%duration)/duration;
-    const lift=Math.sin(Math.PI*phase);
-    const rise=(lift*13).toFixed(2);
-    canvas.style.transform=`translateY(calc(2% - ${rise}%))`;
-    frameKey='jump';
-  }else{
-    frame=previewFrameRecord(previewMode,elapsed);
-    frameKey=previewMode+':'+(frame?.id||'static');
-    resetPreviewTransform();
+  const frame=frameAt(previewMode,elapsed);
+  if(frame.index!==lastFrameIndex){
+    drawFrame(ctx,frame.index||0);
+    lastFrameIndex=frame.index||0;
   }
-
-  if(frameKey!==previewLastFrameKey&&!previewRenderBusy){
-    previewLastFrameKey=frameKey;
-    drawLivePreview(frame).catch(err=>console.error(err));
-  }
-  previewRaf=requestAnimationFrame(previewTick);
+  previewRaf=requestAnimationFrame(tick);
 }
-function startPreviewMode(mode='static'){
-  const next=['static','idle','walk','jump'].includes(mode)?mode:'static';
-  stopPreviewMode();
-  previewMode=next;
+function setPreviewMode(mode='stand'){
+  const normalized=mode==='static'||mode==='idle'||mode==='smile'?'stand':mode;
+  previewMode=manifest?.animations?.[normalized]?normalized:'stand';
+  stopPreview();
   previewStartedAt=performance.now();
   syncMotionButtons();
-  if(previewMode==='static'){
-    drawStaticPreview();
-    return;
+  if(animationFor(previewMode).length<=1){
+    const frame=frameAt(previewMode,0);
+    drawFrame(ctx,frame.index||0);
+    lastFrameIndex=frame.index||0;
+  }else{
+    previewRaf=requestAnimationFrame(tick);
   }
-  previewRaf=requestAnimationFrame(previewTick);
 }
-function setPreviewMode(mode){
-  startPreviewMode(mode);
+function assetIdFor(part){
+  const meta=PARTS[part];
+  if(!meta||!manifest?.assetIds)return '';
+  return manifest.assetIds[meta.assetKey]||'';
 }
-async function refreshAnimationCache(){
-  const token=++animationCacheToken;
-  const r=await ensureRenderer();
-  const manifest=animationManifest||r.animationManifest;
-  const next={idle:[],walk:[]};
-  for(const mode of ['idle','walk']){
-    const frames=manifest?.frameSets?.[mode]?.frames||[];
-    for(const frame of frames){
-      const off=document.createElement('canvas');
-      off.width=128;off.height=128;
-      const offCtx=off.getContext('2d',{alpha:true});
-      offCtx.imageSmoothingEnabled=false;
-      await r.renderTo(offCtx,rendererConfig(state,'static'),frame,extraParts);
-      next[mode].push(off.toDataURL('image/png'));
-    }
-  }
-  if(token===animationCacheToken)animationFrames=next;
+function renderOptions(){
+  const meta=PARTS[currentTab]||PARTS.hair;
+  const id=assetIdFor(currentTab);
+  pickerTitle.textContent=meta.label;
+  pickerCount.textContent='1가지';
+  optionGrid.innerHTML=`<button type="button" class="option active" aria-pressed="true" data-v3-part="${currentTab}">
+    <span class="hair-thumb"><img class="base" alt="" src="${DEFAULT_IMAGE}?v=1"></span>
+    <span class="num">✓</span>
+    <span class="part-name">${meta.name}<small>${id}</small></span>
+  </button>`;
 }
-function previewData(){
-  try{return staticPreviewReady?staticPreviewCanvas.toDataURL('image/png'):canvas.toDataURL('image/png');}
-  catch(_){return '';}
-}
-function publish(showToast=false){
-  try{
-    localStorage.setItem(STATE_KEY,JSON.stringify({version:3,...state}));
-    const data=previewData();
-    if(data){
-      localStorage.setItem(PREVIEW_KEY,data);
-      localStorage.setItem(PREVIEW_VERSION_KEY,PREVIEW_VERSION);
-    }
-    window.parent?.postMessage({type:'kidscade-avatar-change',source:'pixel-v2-rig',state:{...state}},location.origin);
-    if(showToast)flash('캐릭터를 저장했어요!');
-  }catch(_){}
-}
-async function renderAndPublish(showToast=false){
-  stopPreviewMode();
-  await drawTo(ctx);
-  updateSummary();
-  await refreshAnimationCache().catch(()=>{});
-  publish(showToast);
-  startPreviewMode(previewMode);
-}
-function approvedHairs(){
-  return (renderer?.hairManifest?.items||[]).filter(item=>item?.approved!==false&&item?.id&&item?.front);
-}
-function hairRecord(id){
-  return approvedHairs().find(item=>item.id===id)||approvedHairs()[0]||null;
-}
-function updateSummary(){
-  const hair=hairRecord(state.hairId);
-  styleSummary.textContent=`${hair?.name||'기본 헤어'} · ${state.upper?'파란 후드':'기본 상의'} · ${state.lower?'데님 팬츠':'기본 하의'} · 눈 ${state.eyes} · 입 ${state.mouths}`;
+function selectTab(tab){
+  if(!PARTS[tab])tab='hair';
+  currentTab=tab;
+  tabs.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderOptions();
 }
 function flash(text){
   toast.textContent=text;
@@ -304,144 +183,49 @@ function flash(text){
   clearTimeout(flash.t);
   flash.t=setTimeout(()=>toast.classList.remove('show'),1400);
 }
-function optionButton(label,index,active,thumbHTML,attrs=''){
-  return `<button type="button" class="option${active?' active':''}" ${attrs} aria-label="${label} ${index}">${thumbHTML}<span class="num">${index}</span></button>`;
+function publish(showToast=false){
+  try{
+    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{})}};
+    state=payload;
+    localStorage.setItem(STATE_KEY,JSON.stringify(payload));
+    const data=previewData();
+    if(data){
+      localStorage.setItem(PREVIEW_KEY,data);
+      localStorage.setItem(PREVIEW_VERSION_KEY,PREVIEW_VERSION);
+    }
+    window.parent?.postMessage({type:'kidscade-avatar-change',source:'pixel-v3-school',state:{...payload}},location.origin);
+    if(showToast)flash('새 v3 캐릭터를 저장했어요!');
+  }catch(_){}
 }
-function hairAssetUrl(path){
-  return rev(`${ROOT.replace(/\/runtime$/,'')}/${path}`);
+function resetToDefault(){
+  state={version:3,setId:manifest?.id||'school-starter-01'};
+  drawStatic();
+  setPreviewMode('stand');
+  publish(false);
+  flash('새 기본 캐릭터로 돌아왔어요.');
 }
-function hairThumb(item){
-  const back=item?.back?`<img class="back" alt="" src="${hairAssetUrl(item.back)}">`:'';
-  const front=item?.front?`<img class="front" alt="" src="${hairAssetUrl(item.front)}">`:'';
-  return `<span class="hair-thumb">${back}<img class="base" alt="" src="${BASE}">${front}</span>`;
-}
-function clothesThumb(path){
-  return `<span class="hair-thumb"><img class="base" alt="" src="${BASE}">${path?`<img class="front" alt="" src="${path}">`:''}</span>`;
-}
-function upperThumb(n){return clothesThumb(upperPath(n));}
-function lowerThumb(n){return clothesThumb(lowerPath(n));}
-function partThumb(type,n){
-  if(type==='blush'&&n===0)return '<span class="part-thumb" style="font-size:1.8rem">×</span>';
-  return `<span class="part-thumb"><img alt="" src="${facePath(type,n)}"></span>`;
-}
-function renderOptions(){
-  if(currentTab==='hair'){
-    hairFilter.hidden=true;
-    pickerTitle.textContent='검수 완료 헤어';
-    const hairs=approvedHairs();
-    optionGrid.innerHTML=hairs.map((item,index)=>
-      optionButton(item.name||'헤어',index+1,state.hairId===item.id,hairThumb(item),`data-kind="hair" data-hair-id="${item.id}" data-index="${index+1}"`)
-    ).join('');
-    pickerCount.textContent=hairs.length+'가지';
-    return;
-  }
-  hairFilter.hidden=true;
-  if(currentTab==='upper'){
-    pickerTitle.textContent='상의';
-    const items=[
-      optionButton('기본 상의',0,state.upper===0,upperThumb(0),'data-kind="upper" data-index="0"'),
-      optionButton('파란 별 집업 후드',1,state.upper===1,upperThumb(1),'data-kind="upper" data-index="1"')
-    ];
-    optionGrid.innerHTML=items.join('');
-    pickerCount.textContent='2가지';
-    return;
-  }
-  if(currentTab==='lower'){
-    pickerTitle.textContent='하의';
-    const items=[
-      optionButton('기본 하의',0,state.lower===0,lowerThumb(0),'data-kind="lower" data-index="0"'),
-      optionButton('커프 데님 팬츠',1,state.lower===1,lowerThumb(1),'data-kind="lower" data-index="1"')
-    ];
-    optionGrid.innerHTML=items.join('');
-    pickerCount.textContent='2가지';
-    return;
-  }
-  pickerTitle.textContent=labels[currentTab];
-  const max=COUNTS[currentTab];
-  const start=currentTab==='blush'?0:1;
-  const items=[];
-  for(let n=start;n<=max;n++){
-    const shown=n===0?'없음':n;
-    items.push(optionButton(labels[currentTab],shown,state[currentTab]===n,partThumb(currentTab,n),`data-kind="${currentTab}" data-index="${n}"`));
-  }
-  optionGrid.innerHTML=items.join('');
-  pickerCount.textContent=items.length+'가지';
-}
-function selectTab(tab){
-  currentTab=tab;
-  tabs.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-  renderOptions();
-}
-tabs.addEventListener('click',e=>{
-  const b=e.target.closest('.tab');
-  if(b)selectTab(b.dataset.tab);
+
+tabs?.addEventListener('click',e=>{
+  const button=e.target.closest('.tab');
+  if(button)selectTab(button.dataset.tab);
 });
-optionGrid.addEventListener('click',async e=>{
-  const b=e.target.closest('.option');
-  if(!b)return;
-  const kind=b.dataset.kind;
-  const n=parseInt(b.dataset.index,10);
-  if(kind==='hair'){
-    const next=hairRecord(b.dataset.hairId);
-    if(next)state.hairId=next.id;
-  }else{
-    state[kind]=n;
-  }
-  renderOptions();
-  await renderAndPublish(false);
-});
-document.getElementById('randomBtn').addEventListener('click',async()=>{
-  const hairs=approvedHairs();
-  if(hairs.length)state.hairId=hairs[Math.floor(Math.random()*hairs.length)].id;
-  state.upper=Math.random()<.78?1:0;
-  state.lower=Math.random()<.78?1:0;
-  state.eyes=1+Math.floor(Math.random()*8);
-  state.eyebrows=1+Math.floor(Math.random()*6);
-  state.noses=1+Math.floor(Math.random()*4);
-  state.mouths=1+Math.floor(Math.random()*8);
-  state.blush=Math.floor(Math.random()*5);
-  renderOptions();
-  await renderAndPublish(false);
-  flash('새 조합을 만들었어요!');
-});
-document.getElementById('resetBtn').addEventListener('click',async()=>{
-  state={...DEFAULT};
-  extraParts=[];
-  selectTab('hair');
-  await renderAndPublish(false);
-  flash('기본 코디로 돌아왔어요.');
-});
-document.getElementById('saveBtn').addEventListener('click',()=>publish(true));
 motionControls?.addEventListener('click',e=>{
   const button=e.target.closest('[data-motion]');
-  if(!button)return;
-  setPreviewMode(button.dataset.motion);
+  if(button)setPreviewMode(button.dataset.motion);
 });
-
-function previewFrame(mode='idle',time=0){
-  const key=mode==='walk'?'walk':'idle';
-  const frames=animationFrames[key];
-  if(!frames?.length)return previewData();
-  const fps=animationManifest?.frameSets?.[key]?.fps||(key==='walk'?6:3);
-  const t=Number.isFinite(Number(time))?Math.max(0,Number(time)):performance.now()/1000;
-  const index=Math.floor(t*fps)%frames.length;
-  return frames[index]||previewData();
-}
+document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
+document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v2-rig-haircatalog-6',
+  version:'pixel-v3-school-starter-1',
   stateKey:STATE_KEY,
-  getPreviewDataURL:()=>previewData(),
-  renderPreviewFrame:(mode='idle',time=0)=>previewFrame(mode,time),
+  getPreviewDataURL:previewData,
+  renderPreviewFrame,
   getPreviewMode:()=>previewMode,
-  setPreviewMode:startPreviewMode,
-  getRig:()=>renderer?.rig||null,
-  getExtraParts:()=>extraParts.map(part=>({...part})),
-  async setExtraParts(parts){
-    extraParts=Array.isArray(parts)?parts.filter(Boolean):[];
-    await renderAndPublish(false);
-    return true;
-  },
+  setPreviewMode,
+  getRig:()=>null,
+  getExtraParts:()=>[],
+  async setExtraParts(){return false},
   setSeeds(value){
     seeds=Math.max(0,parseInt(value,10)||0);
     seedBadge.hidden=false;
@@ -450,24 +234,24 @@ window.KidscadeAvatarShop={
   getState:()=>({...state}),
   async setState(next){
     if(!next||typeof next!=='object')return false;
-    state=loadStateFromObject({...state,...next});
-    state.hairId=renderer?.normalizeConfig({hairId:state.hairId}).hairId||DEFAULT.hairId;
-    renderOptions();
-    await renderAndPublish(false);
+    state={...state,...next,version:3,setId:manifest?.id||state.setId};
+    publish(false);
     return true;
   }
 };
 
 (async function boot(){
-  await ensureRenderer();
-  renderOptions();
-  await renderAndPublish(false);
-  startPreviewMode('static');
+  await Promise.all([loadManifest(),loadSheet()]);
+  drawStatic();
+  styleSummary.textContent='학교 탐험가 · 9종 기본 파츠 · 23프레임';
+  selectTab('hair');
+  setPreviewMode('stand');
+  publish(false);
   document.body.dataset.avatarReady='1';
-  window.parent?.postMessage({type:'kidscade-avatar-ready',source:'pixel-v2-rig'},location.origin);
+  window.parent?.postMessage({type:'kidscade-avatar-ready',source:'pixel-v3-school'},location.origin);
 })().catch(err=>{
   console.error(err);
   document.body.dataset.avatarReady='error';
-  flash('아바타를 불러오지 못했어요.');
+  flash('새 아바타를 불러오지 못했어요.');
 });
 })();

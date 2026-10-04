@@ -4,7 +4,7 @@
   "maximums": {
     "rootRuntimeJs": 69,
     "catalogRootEntrypoints": 24,
-    "catalogManualVersionPins": 66,
+    "catalogManualVersionPins": 69,
     "bootstrapReplaceBetweenOccurrences": 0,
     "injectScriptCount": 2
   }

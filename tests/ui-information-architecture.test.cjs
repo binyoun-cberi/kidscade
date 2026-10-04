@@ -66,22 +66,15 @@ test('guest profile keeps the avatar visible while play records stay account-onl
   assert.match(accountGate, /\.login\?\.\(\)/);
 });
 
-test('guest receives a default v2 avatar without opening the heavy studio iframe', () => {
-  assert.match(avatarIntegration, /GUEST_DEFAULT_CONFIG/);
-  assert.match(avatarIntegration, /hairId:'male-short-01', upper:1, lower:1/);
-  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=27'/);
+test('guest receives the v3 school avatar without opening the retired v2 renderer', () => {
+  assert.match(avatarIntegration, /SCHOOL_DEFAULT_IMAGE/);
+  assert.match(avatarIntegration, /kidscade-avatar-v3\/school-starter\/guest-default\.png/);
   assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
-  assert.match(avatarIntegration, /api\.create\(canvas, \{ playing:false, config:guestConfigFromPixelState\(\) \}\)/);
-  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-6'/);
-  assert.match(avatarIntegration, /localStorage\.removeItem\(PREVIEW_KEY\)/);
-  assert.match(avatarIntegration, /guestConfigFromPixelState/);
-  assert.match(avatarIntegration, /hairId:typeof pixel\.hairId === 'string'/);
-  assert.doesNotMatch(avatarIntegration, /hairSet:pixel\.hairSet/);
-  assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_KEY, data\)/);
-  assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_VERSION_KEY, PREVIEW_VERSION\)/);
-  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-pixel-avatar-v1'\)/);
+  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v3-school-starter-1'/);
+  assert.match(avatarIntegration, /PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
+  assert.doesNotMatch(avatarIntegration, /GUEST_DEFAULT_CONFIG|guestConfigFromPixelState|pixel-avatar-renderer\.js\?v=27/);
+  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-v3'\)/);
   assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-studio-preview'\)/);
-  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-studio-preview-version'\)/);
 });
 
 test('profile avatar preview is static to avoid sub-pixel mobile jitter', () => {
