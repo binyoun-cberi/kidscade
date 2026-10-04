@@ -1522,7 +1522,7 @@ let freeSaveDirty=false,freeSaveDueAt=0,freeStepHop=0;
 let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDurationNow=0,miningBeat=.25;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
-let freeFluidKind='',lastEnvironmentDamage=0;
+let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
 let freeHeldToolRoot=null,freeHeldToolKey='',freeHeldToolToken=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
@@ -1601,7 +1601,8 @@ function prepareFreeAvatar(now){
   freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62+stepLift,camera.position.z);
   freeAvatarRoot.rotation.y=yaw;
   freeAvatarRoot.visible=freeViewMode==='third';
-  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying);
+  const motion=freeFluidKind?'swim':freeFlying?'air':onGround?'ground':'air';
+  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion);
 }
 function freeLookVector(){
   return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
@@ -2390,7 +2391,7 @@ function initFree(){
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
-  freeFluidKind='';lastEnvironmentDamage=0;
+  freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
   seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
@@ -2731,7 +2732,7 @@ function updateFreeMission(){
     $('adventureCount').textContent=survivalFinished?'완료':
       progress+'/'+goal.need+' · '+(survivalStage+1)+'/'+worldRules.GOALS.length;
     $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
-    $('freeState').textContent='생존 · '+chosen;
+    $('freeState').textContent='생존 · '+(freeFluidKind==='water'?'수영 · ':freeFluidKind==='lava'?'용암 · ':'')+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
       survivalStage<3?'좌클릭 유지 채집 · E 가방·제작 · Space 점프 · V 시점':
       survivalStage===3?'E 제작대 · 2×1×1 직육면체 설계 · 우클릭 설치':
@@ -2742,7 +2743,7 @@ function updateFreeMission(){
     $('freeQuestDescription').textContent='서로 다른 바이옴에서 설계도 조각과 색 결정을 찾아보세요.';
     $('adventureCount').textContent=done+'/'+total;
     $('adventureBar').style.width=(done/total*100)+'%';
-    $('freeState').textContent=(freeFlying?'비행':'걷기')+' · '+chosen;
+    $('freeState').textContent=(freeFlying?'비행':freeFluidKind==='water'?'수영':freeFluidKind==='lava'?'용암':'걷기')+' · '+chosen;
     $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행 · V 시점':
       'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
@@ -2886,6 +2887,34 @@ function placementTarget(hit){
   };
 }
 function facingFromYaw(){return ((Math.round(yaw/(Math.PI/2))%4)+4)%4}
+function fullSupportBelow(x,y,z){
+  const below=getBlock(x,y-1,z),top=collisionTopForData(below,x,y-1,z,x,z);
+  return top!==null&&top>=y-.02;
+}
+function placementSupportValid(type,x,y,z){
+  const below=getBlock(x,y-1,z),belowType=below?.type||'';
+  if(type==='sapling'||type==='flower')return ['grass','dirt'].includes(belowType);
+  if(type==='reed')return ['grass','dirt','clay','sand'].includes(belowType);
+  if(type==='cactus')return ['sand','redSand','cactus'].includes(belowType);
+  if(type==='door'||type==='torch'||type==='fire')return fullSupportBelow(x,y,z);
+  return true;
+}
+function placementSupportError(type,p){
+  if(placementSupportValid(type,p.x,p.y,p.z))return '';
+  if(type==='sapling'||type==='flower')return '흙이나 잔디 위에 놓아 주세요.';
+  if(type==='reed')return '흙·잔디·점토·모래처럼 자연 바닥 위에 놓아 주세요.';
+  if(type==='cactus')return '선인장은 모래나 붉은 모래 위에 놓아 주세요.';
+  if(type==='door')return '문은 단단한 바닥 위에 세워야 해요.';
+  if(type==='torch')return '횃불은 단단한 바닥 위에 놓아 주세요.';
+  if(type==='fire')return '불은 단단한 바닥 위에서만 붙일 수 있어요.';
+  return '이 블록을 놓을 바닥을 확인해 주세요.';
+}
+function cleanupUnsupportedAt(x,y,z,record=true){
+  const data=getBlock(x,y,z);if(!data||data.type==='doorTop')return false;
+  if(!['sapling','flower','reed','cactus','torch','fire','door'].includes(data.type))return false;
+  if(placementSupportValid(data.type,x,y,z))return false;
+  return removeWorldBlockData(x,y,z,record);
+}
 function placeCustomCuboid(p){
   const dims=currentCuboidSpec.dims.map(v=>THREE.MathUtils.clamp(Math.round(v),1,survivalCuboidMax()));
   for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
@@ -2918,6 +2947,8 @@ function placeFreeBlock(hit){
   if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
     p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return;
+  const supportError=placementSupportError(selectedType,p);
+  if(supportError){toast(supportError);return}
   const survival=gameFreeMode==='survival';
   if(survival){
     if(selectedType==='cuboid'){
@@ -3644,8 +3675,10 @@ function walkCreature(root,dir,speed,dt,allowWater=false){
   const nx=root.position.x+Math.sin(dir)*speed*dt,nz=root.position.z+Math.cos(dir)*speed*dt;
   if(!inWorld(Math.round(nx),0,Math.round(nz)))return false;
   const nextY=creatureGroundY(nx,nz,root.position.y),dy=Math.abs(nextY-root.position.y);
-  const cx=Math.round(nx),cz=Math.round(nz),fluid=getBlock(cx,Math.floor(nextY),cz);
-  if(dy>1.15||(!allowWater&&fluid?.type==='water'))return false;
+  const cx=Math.round(nx),cz=Math.round(nz),feetCell=getBlock(cx,Math.floor(nextY),cz);
+  const supportCell=getBlock(cx,Math.floor(nextY)-1,cz);
+  const danger=[feetCell?.type,supportCell?.type].some(type=>['lava','fire','cactus'].includes(type));
+  if(dy>1.15||danger||(!allowWater&&feetCell?.type==='water'))return false;
   root.position.x=nx;root.position.z=nz;root.position.y=nextY;root.rotation.y=dir+Math.PI;return true;
 }
 function walkCreatureWithDetour(root,dir,speed,dt,allowWater,t){
@@ -3670,9 +3703,10 @@ function updateCreatureHealthUi(){
 }
 function returnAfterCreatureDefeat(){
   camera.position.set(0,terrainHeight(0,5)+2.62,5);freePhysicsY=camera.position.y;
-  freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;streamWorldMeshes(true);
+  freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;survivalBreath=100;freeFallPeakY=freePhysicsY;
+  streamWorldMeshes(true);
   toast('기절해서 시작 지점으로 돌아왔어요. 가방의 재료는 그대로예요.');
-  updateCreatureHealthUi();saveFreeWorld();
+  updateCreatureHealthUi();updateBreathUi(false);saveFreeWorld();
 }
 function damageByCreature(root,t){
   if(gameFreeMode!=='survival'||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
@@ -3929,6 +3963,33 @@ function damageByEnvironment(state,t){
   sfx('bad');updateCreatureHealthUi();
   if(survivalHealth<=0)returnAfterCreatureDefeat();
 }
+function updateBreathUi(underwater){
+  const bar=$('breathBar'),fill=$('breathFill');if(!bar||!fill)return;
+  const show=gameFreeMode==='survival'&&(underwater||survivalBreath<99.5);
+  bar.classList.toggle('hidden',!show);fill.style.width=Math.round(survivalBreath)+'%';
+  bar.setAttribute('aria-valuenow',String(Math.round(survivalBreath)));
+}
+function updateBreath(state,dt,t){
+  if(gameFreeMode!=='survival'){survivalBreath=100;updateBreathUi(false);return}
+  if(state.headUnderWater){
+    survivalBreath=Math.max(0,survivalBreath-dt*9);
+    if(survivalBreath<=0&&t-lastDrownDamage>=1400){
+      lastDrownDamage=t;healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-1);
+      toast('숨이 부족해요! 물 위로 올라가세요. '+('♥'.repeat(survivalHealth)||'생명 0'));
+      sfx('bad');updateCreatureHealthUi();
+      if(survivalHealth<=0){returnAfterCreatureDefeat();return}
+    }
+  }else survivalBreath=Math.min(100,survivalBreath+dt*34);
+  updateBreathUi(state.headUnderWater);
+}
+function damageByFall(distance){
+  if(gameFreeMode!=='survival'||distance<=4.25)return;
+  const amount=Math.min(4,Math.max(1,Math.floor((distance-4.25)/3)+1));
+  healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-amount);
+  toast('높은 곳에서 떨어졌어요! -'+amount+'♥ · '+('♥'.repeat(survivalHealth)||'생명 0'));
+  sfx('bad');updateCreatureHealthUi();
+  if(survivalHealth<=0)returnAfterCreatureDefeat();
+}
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
   // Only half-height geometry may auto-step. Full cubes now require an actual jump.
@@ -4017,7 +4078,7 @@ function emergencyReturn(){
     performance.now()-lastEmergencyReturn<90000)return;
   camera.position.set(0,terrainHeight(0,5)+2.62,5);
   freePhysicsY=camera.position.y;
-  freeVelocityY=0;onGround=true;survivalExposure=15;
+  freeVelocityY=0;onGround=true;survivalExposure=15;survivalBreath=100;freeFallPeakY=freePhysicsY;
   lastEmergencyReturn=performance.now();streamWorldMeshes(true);
   toast('시작 지점으로 귀환했어요. 재료는 잃지 않아요. 지붕과 벽을 지어 보세요.');
   renderSurvivalSafety(null);saveFreeWorld();
@@ -4071,8 +4132,10 @@ function updateFree(dt,t){
   // Physics and visual camera heights are intentionally separate.
   camera.position.y=freePhysicsY;
   const environment=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
+  const previousFluid=freeFluidKind;
   freeFluidKind=environment.lava?'lava':environment.water?'water':'';
-  damageByEnvironment(environment,t);
+  if(mobileModeEnabled&&previousFluid!==freeFluidKind)refreshMobileFly();
+  damageByEnvironment(environment,t);updateBreath(environment,dt,t);
   const fluidSpeed=freeFluidKind==='water'?.58:freeFluidKind==='lava'?.35:1;
   const speed=((freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0)*
     (gameFreeMode==='survival'&&survivalExposure>=70?.83:1)*fluidSpeed;
@@ -4098,19 +4161,27 @@ function updateFree(dt,t){
     camera.position.add(move);
     if(freeKeys.Space)camera.position.y+=speed*dt;
     if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
-    freeVelocityY=0;onGround=false;
+    freeVelocityY=0;onGround=false;freeFallPeakY=camera.position.y;
   }else{
     moveFreeHorizontal(move.x,move.z);
+    const wasGrounded=onGround;
     if(freeFluidKind){
+      freeFallPeakY=camera.position.y;
       const swimUp=!!freeKeys.Space,swimDown=!!(freeKeys.ShiftLeft||freeKeys.ShiftRight);
       freeVelocityY+=(swimUp?8.4:0)*dt-(swimDown?6.2:0)*dt-2.6*dt;
       freeVelocityY=THREE.MathUtils.clamp(freeVelocityY,-2.5,3.4);
-    }else freeVelocityY-=14*dt;
+    }else{
+      if(wasGrounded)freeFallPeakY=camera.position.y;
+      else freeFallPeakY=Math.max(freeFallPeakY,camera.position.y);
+      freeVelocityY-=14*dt;
+    }
     let nextY=camera.position.y+freeVelocityY*dt;
     if(freeVelocityY<=0){
       const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
       if(nextY-1.62<=ground){
-        nextY=ground+1.62;freeVelocityY=0;onGround=true;
+        nextY=ground+1.62;freeVelocityY=0;
+        if(!wasGrounded&&!freeFluidKind)damageByFall(Math.max(0,freeFallPeakY-nextY));
+        onGround=true;freeFallPeakY=nextY;
       }else onGround=false;
     }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){
       freeVelocityY=0;nextY=camera.position.y;
@@ -4190,8 +4261,9 @@ function requestGamePointerLock(){
 function refreshMobileFly(){
   if(mode!=='free')return;
   $('mobileFly').textContent=freeFlying?'걷기':'비행';
-  $('mobileDown').classList.toggle('hidden',!freeFlying);
-  $('mobileUp').querySelector('small').textContent=freeFlying?'상승':'점프';
+  const swimming=!!freeFluidKind&&!freeFlying;
+  $('mobileDown').classList.toggle('hidden',!freeFlying&&!swimming);
+  $('mobileUp').querySelector('small').textContent=swimming?'수영 위':freeFlying?'상승':'점프';
 }
 function mobileBlockAction(action){
   if(mode==='challenge'){
@@ -4283,7 +4355,8 @@ function initMobileControls(){
       b.setPointerCapture?.(ev.pointerId);b.classList.add('pressed');
       if(mode==='challenge')challengeKeys[key]=true;
       else if(mode==='free'){
-        if(key==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false}
+        const fluid=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
+        if(key==='Space'&&!freeFlying&&!fluid.water&&!fluid.lava&&onGround){freeVelocityY=5.2;onGround=false}
         else freeKeys[key]=true;
       }
     });
