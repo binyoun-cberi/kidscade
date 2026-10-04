@@ -7,7 +7,8 @@ import {createDailyLife} from './kidscade-world-daily-life.js?v=2';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=4';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=19';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=9';
+import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=1';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=4';
 
@@ -1094,8 +1095,7 @@ let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInter
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
 let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null,carpenterCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
-let indoorLevel2Decor=null,indoorLevel3Decor=null;
-const houseExpansionCovers=[];
+let homeInteriorRuntime=null;
 const orchardActors=[],ranchVisualActors=[];
 let mode='outdoor';
 let activeVenue='',venueReturn=null;
@@ -1135,9 +1135,9 @@ function travelTo(id){
 }
 const HOUSE_BOUNDS=[
   null,
-  {x1:-3.35,x2:3.35,z1:-3.65,z2:3.85},
-  {x1:-5.05,x2:5.05,z1:-4.25,z2:4.05},
-  {x1:-6.55,x2:6.55,z1:-4.75,z2:4.15}
+  HOME_INTERIOR_LEVELS[1].bounds,
+  HOME_INTERIOR_LEVELS[2].bounds,
+  HOME_INTERIOR_LEVELS[3].bounds
 ];
 function currentHouseBounds(){return HOUSE_BOUNDS[devState().houseLevel]||HOUSE_BOUNDS[1]}
 function collectWater(source){
@@ -1169,9 +1169,7 @@ function updateHomesteadVisuals(){
   const realBed=hasPlacedFurniture('bedSingle');
   if(starterBeddingGroup)starterBeddingGroup.visible=!realBed;
   if(starterBeddingInteraction)starterBeddingInteraction.enabled=!realBed;
-  for(const cover of houseExpansionCovers)cover.object.visible=d.houseLevel<cover.unlockAt;
-  if(indoorLevel2Decor)indoorLevel2Decor.visible=d.houseLevel>=2;
-  if(indoorLevel3Decor)indoorLevel3Decor.visible=d.houseLevel>=3;
+  homeInteriorRuntime?.setLevel?.(d.houseLevel);
   if(homeHouseObject&&homeHouseBaseScale){
     const mul=d.houseLevel===1?.78:d.houseLevel===2?.90:1;
     homeHouseObject.scale.copy(homeHouseBaseScale).multiplyScalar(mul);
@@ -1813,21 +1811,12 @@ async function buildOutdoor(){
 }
 
 async function buildIndoor(){
-  // The full shell exists for compatibility, but a fresh player can only use the small central room.
-  box(indoor,0,0,14,10.5,.24,0xc8a36e,-.18);
-  box(indoor,0,-5.25,14,.28,2.75,0xe8d9b4,0);
-  box(indoor,-7,0,.28,10.5,2.75,0xe2d0a6,0);
-  box(indoor,7,0,.28,10.5,2.75,0xe2d0a6,0);
-  box(indoor,0,-5.05,14,.18,.18,0x9f7651,2.75);
+  // Interior Kit owns the architectural shell. Furniture remains a separate
+  // persistent layer so existing x/z/rotation saves survive house upgrades.
+  homeInteriorRuntime=await buildHomeInterior({parent:indoor,addModel});
+  homeInteriorRuntime.setLevel(devState().houseLevel);
 
-  // Locked side rooms are visibly covered until the house expands.
-  const leftCover=plane(indoor,-4.85,-.15,3.0,8.0,0x83745e,.018);
-  const rightCover=plane(indoor,4.85,-.15,3.0,8.0,0x83745e,.018);
-  const outerLeft=plane(indoor,-6.0,-.15,1.7,9.0,0x6e6252,.021);
-  const outerRight=plane(indoor,6.0,-.15,1.7,9.0,0x6e6252,.021);
-  houseExpansionCovers.push({object:leftCover,unlockAt:2},{object:rightCover,unlockAt:2},{object:outerLeft,unlockAt:3},{object:outerRight,unlockAt:3});
-
-  // Fresh home: floor bedding and one temporary crate, no bed, stove, sink or fridge.
+  // Fresh home: floor bedding and one temporary crate, no free functional furniture.
   starterBeddingGroup=new THREE.Group();indoor.add(starterBeddingGroup);
   const blanket=plane(starterBeddingGroup,0,-1.55,2.25,2.85,0x6f8db2,.026);
   const pillow=box(starterBeddingGroup,0,-2.42,1.25,.48,.16,0xe9e2d3,.03);
@@ -1835,15 +1824,6 @@ async function buildIndoor(){
 
   await addModel(indoor,ASSET.chest,{x:2.55,z:1.85,w:1.35,h:.92,d:.95,rot:Math.PI/2,name:'starter-home-storage'});
   addColliderFor('indoor',2.55,1.85,.95,.72);
-
-  indoorLevel2Decor=new THREE.Group();indoor.add(indoorLevel2Decor);
-  indoorLevel3Decor=new THREE.Group();indoor.add(indoorLevel3Decor);
-  await Promise.all([
-    addModel(indoorLevel2Decor,P.bakery+'curtains.glb',{x:-3.75,z:-4.72,w:2.2,h:2.2,d:.28,rot:0,name:'home-curtains-left'}),
-    addModel(indoorLevel2Decor,P.bakery+'rug.glb',{x:-2.7,z:.1,w:3.3,h:.08,d:2.3,rot:0,name:'home-rug'}),
-    addModel(indoorLevel3Decor,P.bakery+'wall-shelf-bakery-a.glb',{x:3.9,z:-4.72,w:2.0,h:1.1,d:.34,rot:0,name:'home-wall-shelf-a'}),
-    addModel(indoorLevel3Decor,P.bakery+'wall-shelf-bakery-b.glb',{x:5.4,z:-4.72,w:1.4,h:1.0,d:.34,rot:0,name:'home-wall-shelf-b'})
-  ]);
 
   interact('indoor',0,3.20,1.35,'밖으로 나가기',()=>setMode('outdoor'));
   starterBeddingInteraction=interact('indoor',0,-1.55,1.45,'🧺 바닥 이불에서 자기',sleepOnFloor);
@@ -2164,10 +2144,13 @@ function updateSurvival(dt,moving){
   survivalUiClock+=dt;if(survivalUiClock>.45){survivalUiClock=0;updateStatus();}
 }
 
+let cameraAspect=1,cameraHalfHeight=8.6;
+function applyCameraProjection(v=cameraHalfHeight){
+  camera.top=v;camera.bottom=-v;camera.left=-v*cameraAspect;camera.right=v*cameraAspect;camera.updateProjectionMatrix();
+}
 function resize(){
   const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);
-  const aspect=w/Math.max(1,h),v=8.6;
-  camera.top=v;camera.bottom=-v;camera.left=-v*aspect;camera.right=v*aspect;camera.updateProjectionMatrix();
+  cameraAspect=w/Math.max(1,h);applyCameraProjection();
 }
 addEventListener('resize',resize);resize();
 
@@ -2211,10 +2194,28 @@ function tick(now){
   dailyLife?.sync?.();
   cityRuntime?.update?.(now,dt);
 
-  const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
-  const target=new THREE.Vector3(player.x,0,player.z);
+  const homeCamera=mode==='indoor'?homeInteriorCameraProfile(devState().houseLevel):null;
+  const desiredView=mode==='outdoor'?8.6:homeCamera?homeCamera.viewHeight:6.7;
+  const projectionBlend=1-Math.pow(.0025,dt);
+  const nextView=THREE.MathUtils.lerp(cameraHalfHeight,desiredView,projectionBlend);
+  if(Math.abs(nextView-cameraHalfHeight)>.001){cameraHalfHeight=nextView;applyCameraProjection();}
+
+  let off,target,targetY;
+  if(homeCamera){
+    const follow=homeCamera.playerFollow;
+    target=new THREE.Vector3(
+      THREE.MathUtils.lerp(homeCamera.centerX,player.x,follow),
+      0,
+      THREE.MathUtils.lerp(homeCamera.centerZ,player.z,follow)
+    );
+    off=new THREE.Vector3(...homeCamera.offset);targetY=homeCamera.targetY;
+  }else{
+    off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
+    target=new THREE.Vector3(player.x,0,player.z);targetY=mode==='outdoor'?.2:.55;
+  }
   camera.position.lerp(target.clone().add(off),1-Math.pow(.0015,dt));
-  camera.lookAt(target.x,mode==='outdoor'?.2:.55,target.z);
+  camera.lookAt(target.x,targetY,target.z);
+  if(homeCamera)homeInteriorRuntime?.updateCutaway?.(camera.position.x,camera.position.z);
   nearestInteraction();
   updateZone();
   updateSurvival(dt,moving);
@@ -2228,6 +2229,7 @@ async function init(){
     parent:indoor,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,setAvatarAction,itemName,
     getMode:()=>mode,
     getPlacementPose:()=>({x:player.x,z:player.z,dx:lastMove.x,dz:lastMove.z}),
+    getRoomBounds:()=>currentHouseBounds(),
     canPlace:canPlaceFurniture,
     useFurniture:key=>{
       if(key==='bedSingle'){setAvatarAction('smile',850);sleep();return;}
