@@ -1236,6 +1236,83 @@ const DUNGEON_SPECS={
 };
 function dungeonSpec(poi){return DUNGEON_SPECS[poi?.id]||DUNGEON_SPECS.taj}
 
+const DUNGEON_SHRINE_OBJECTIVES=[
+  '그림자 겨냥도 · 중앙 블록 장치의 모양을 바꿔 위·정면·옆면 그림자를 모두 맞추세요.',
+  '입체 설계실 · 벽의 겨냥도를 보고 중앙 장치의 블록을 정확한 위치에 놓으세요.',
+  '전개도 접기 · 바닥의 세 전개도 중 실제 정육면체로 접히는 것을 찾아 직접 작동시키세요.',
+  '설계 핵심 회수 · 마지막 장치를 조사해 랜드마크의 건축 기술을 가져가세요.'
+];
+const DUNGEON_VOXEL_VARIANTS=[
+  {
+    shadow:{
+      target:[[0,0,0],[1,0,0],[2,0,0],[1,1,0],[1,0,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,0],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[1,0,0],[2,0,0],[0,1,0],[2,1,0],[1,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,0],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[1,1,0],[1,0,1]]
+    }
+  },
+  {
+    shadow:{
+      target:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[0,0,1],[1,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[1,1,0]]
+    }
+  },
+  {
+    shadow:{
+      target:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[0,1,0],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[1,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[0,1,0],[1,1,1],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[1,1,0],[2,1,1]]
+    }
+  }
+];
+const DUNGEON_INVALID_NETS=[
+  [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],
+  [[0,0],[1,0],[0,1],[1,1],[2,1],[2,2]]
+];
+function dungeonShrineVariant(poi){
+  const seed=Number.isFinite(poi?.missionIndex)?poi.missionIndex:
+    ['taj','sagrada','eiffel','towerBridge','himeji','angkor'].indexOf(poi?.id);
+  return DUNGEON_VOXEL_VARIANTS[((seed||0)%DUNGEON_VOXEL_VARIANTS.length+
+    DUNGEON_VOXEL_VARIANTS.length)%DUNGEON_VOXEL_VARIANTS.length];
+}
+function dungeonNetChoices(poi){
+  const seed=Number.isFinite(poi?.missionIndex)?poi.missionIndex:0;
+  const correctIndex=((seed%3)+3)%3;
+  const valid=NET_VARIANTS[(seed+3)%NET_VARIANTS.length].layout.map(p=>p.slice());
+  const layouts=[DUNGEON_INVALID_NETS[0].map(p=>p.slice()),DUNGEON_INVALID_NETS[1].map(p=>p.slice())];
+  layouts.splice(correctIndex,0,valid);
+  return layouts.slice(0,3).map((layout,index)=>({layout,valid:index===correctIndex}));
+}
+function dungeonVoxelKey(p){return p.join(',')}
+function dungeonVoxelPoints(stage){
+  const raw=dungeonSession?.puzzleState?.[stage]||[];
+  return raw.map(k=>String(k).split(',').map(Number));
+}
+function dungeonVoxelDefinition(poi,stage){
+  const variant=dungeonShrineVariant(poi);return stage===0?variant.shadow:variant.build;
+}
+function dungeonSetVoxel(stage,key,on){
+  if(!dungeonSession)return;
+  dungeonSession.puzzleState=dungeonSession.puzzleState||{};
+  const set=new Set(dungeonSession.puzzleState[stage]||[]);
+  if(on)set.add(key);else set.delete(key);
+  dungeonSession.puzzleState[stage]=[...set];
+}
 function dungeonMaterial(color,emissive=0){
   return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?0.35:0});
 }
