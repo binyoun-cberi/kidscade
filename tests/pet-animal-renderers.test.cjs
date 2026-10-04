@@ -29,3 +29,12 @@ test('animal renderer module is visual-only and receives action explicitly',()=>
     assert.match(source,new RegExp('function\\s+'+name+'\\s*\\([^)]*action\\)'));
   }
 });
+
+test('main lobby inline controller remains syntactically complete after extraction',()=>{
+  const inlineScripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .map(match=>match[1])
+    .filter(code=>code.trim());
+  const controller=inlineScripts.find(code=>code.includes('// 오디오 시스템'));
+  assert.ok(controller,'main inline controller should still exist');
+  assert.doesNotThrow(()=>new Function(controller));
+});
