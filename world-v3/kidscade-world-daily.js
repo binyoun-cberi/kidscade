@@ -29,11 +29,19 @@ function pickWeather(day){
 }
 function rollDay(day){
   const rng=seeded(day,43),weather=pickWeather(day);
+  const visitorSeed=Math.floor(rng()*1e9),visitorRoll=seeded(visitorSeed,71)();
+  let visitor='none';
+  if(day===2)visitor='crafter';
+  else if(day===3)visitor='collector';
+  else if(day>3){
+    const pool=['none','crafter','collector','prospector','angler'];
+    visitor=pool[Math.min(pool.length-1,Math.floor(visitorRoll*pool.length))];
+  }
   return {
-    version:1,day,weather:weather.id,
+    version:2,day,weather:weather.id,
     theme:THEMES[Math.floor(rng()*THEMES.length)%THEMES.length],
     shopSeed:Math.floor(rng()*1e9),forageSeed:Math.floor(rng()*1e9),
-    visitorSeed:Math.floor(rng()*1e9)
+    visitorSeed,requestSeed:Math.floor(rng()*1e9),visitor
   };
 }
 
@@ -63,10 +71,18 @@ export function createDailyDirector(ctx){
     const p=prog();p.dailyWorld=p.dailyWorld&&typeof p.dailyWorld==='object'?p.dailyWorld:{};
     const saved=p.dailyWorld;
     const same=Number(saved.day)===day&&WEATHER[saved.weather];
-    const previousDay=Number(saved.day)||0;
-    if(same)current={...saved,version:1,day};
-    else{
-      current=rollDay(day);p.dailyWorld={...current};persist();
+    const previousDay=Number(saved.day)||0,rolled=rollDay(day);
+    if(same){
+      const extras={
+        taken:saved.taken,requests:saved.requests,requestDay:saved.requestDay,requestDone:saved.requestDone,
+        visitorDone:saved.visitorDone
+      };
+      current={...rolled};
+      for(const [key,value] of Object.entries(extras))if(value!==undefined)current[key]=value;
+      p.dailyWorld={...current};
+      if(Number(saved.version)!==2)persist();
+    }else{
+      current=rolled;p.dailyWorld={...current};persist();
       if(!initial&&previousDay!==day)onDayStart?.(current);
     }
     lastSyncedDay=day;
