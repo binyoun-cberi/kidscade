@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=24';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=25';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=2';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=5';
@@ -10,7 +10,8 @@ import {createTownEconomy} from './kidscade-world-economy.js?v=19';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
-import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=4';
+import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=5';
+import {buildWorldLandscape} from './kidscade-world-landscape.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -784,15 +785,32 @@ function cosmeticShopPanel(){
 }
 function travelPointDiscovered(id){
   const d=devState();
-  if(['home','farm','forest','quarry','river','camp','city','museum'].includes(id))return true;
+  if(['home','farm','forest','quarry','river','camp','city','plaza','civic','transit','residential','residentialNorth','museum'].includes(id))return true;
   if(id==='orchard')return d.orchardLevel>0;
   if(id==='ranch')return d.ranchLevel>0;
   if(id==='beach')return d.fishingLevel>=3;
   return false;
 }
+const WORLD_MAP_META={
+  beach:{icon:'🏖️',travel:'beach'},waterfront:{icon:'🌊',travel:'river'},ranch:{icon:'🐄',travel:'ranch'},orchard:{icon:'🍎',travel:'orchard'},
+  forest:{icon:'🌲',travel:'forest'},home:{icon:'🏠',travel:'home'},farm:{icon:'🌾',travel:'farm'},quarry:{icon:'⛏️',travel:'quarry'},
+  camp:{icon:'⛺',travel:'camp'},cityMarket:{icon:'🛍️',travel:'city'},cityLeisure:{icon:'🎪',travel:'plaza'},residentialSouth:{icon:'🏘️',travel:'residential'},
+  museum:{icon:'🏛️',travel:'museum'},cityCivic:{icon:'📚',travel:'civic'},cityTransit:{icon:'🚌',travel:'transit'},residentialNorth:{icon:'🌳',travel:'residentialNorth'}
+};
 function worldMapPanel(){
-  const rows=Object.entries(TRAVEL_POINTS).filter(([id])=>travelPointDiscovered(id)).map(([id,d])=>'<button data-world-travel="'+id+'">'+d.name+'</button>').join(' ');
-  openPanel('<h2>🗺️ 씨앗버스 빠른 이동</h2><p>직접 발견하거나 만들어 낸 생활 구역만 지도에 표시돼요.</p><div style="display:flex;gap:7px;flex-wrap:wrap">'+rows+'</div>');
+  const current=mode==='outdoor'?zoneAt(player.x,player.z):null;
+  const xs=[-36,-12,12,36],zs=[48,24,0,-24],cards=[];
+  for(const z of zs)for(const x of xs){
+    const cell=Object.values(WORLD_GRID).find(v=>v.cx===x&&v.cz===z);
+    if(!cell){cards.push('<div style="min-height:76px;border-radius:12px;background:rgba(62,78,57,.12);border:1px dashed rgba(62,78,57,.18)"></div>');continue;}
+    const meta=WORLD_MAP_META[cell.id]||{icon:'📍',travel:''},open=!meta.travel||travelPointDiscovered(meta.travel),here=current?.id===cell.id;
+    const base='min-height:76px;padding:8px 5px;border-radius:12px;border:'+(here?'3px solid #e9a63a':'2px solid #65745d')+';background:'+(open?'#f8f0d1':'#d7d4c8')+';color:#2d392d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:'+(here?'0 0 0 3px rgba(233,166,58,.20)':'none');
+    const body='<span style="font-size:24px;line-height:1">'+(open?meta.icon:'❓')+'</span><b style="font-size:12px;line-height:1.15">'+(open?cell.name.replace('씨앗마을 · ',''):'미발견 지역')+'</b>'+(here?'<small style="font-weight:900;color:#b76f19">현재 위치</small>':'');
+    cards.push(meta.travel&&open?'<button data-world-travel="'+meta.travel+'" style="'+base+';cursor:pointer">'+body+'</button>':'<div style="'+base+'">'+body+'</div>');
+  }
+  openPanel('<h2>🗺️ 씨앗 월드 지도</h2><p>월드의 실제 위치 관계를 그대로 보여줘요. 발견한 지역을 누르면 씨앗버스로 이동합니다.</p>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-width:660px;margin:10px auto">'+cards.join('')+'</div>'+
+    '<p style="font-size:12px;text-align:center">위쪽은 마을 북쪽 · 아래쪽은 해변/강가 방향</p>');
 }
 function nextHomesteadGoal(){
   const p=prog(),d=devState(),h=p.homestead,i=inv();
@@ -1115,10 +1133,16 @@ const player={
 };
 const TRAVEL_POINTS={
   home:{x:-12,z:2.0,name:'집 구역'},
+  farm:{x:12,z:2.0,name:'농장'},
   forest:{x:-30,z:0,name:'깊은 숲'},
   quarry:{x:30,z:0,name:'광산'},
   camp:{x:-36,z:18.0,name:'야영지'},
   city:{x:-12,z:18.0,name:'씨앗마을 상점가'},
+  plaza:{x:12,z:29.0,name:'씨앗마을 광장'},
+  civic:{x:-12,z:40.0,name:'공공시설 거리'},
+  transit:{x:12,z:40.0,name:'교통·보건 거리'},
+  residential:{x:27.4,z:24.0,name:'햇살 주택가'},
+  residentialNorth:{x:27.4,z:48.0,name:'별빛 주택가'},
   river:{x:-12,z:-18.0,name:'북쪽 강가'},
   ranch:{x:12,z:-18.0,name:'목장'},
   orchard:{x:36,z:-18.0,name:'과수원'},
@@ -1595,6 +1619,9 @@ async function buildOutdoor(){
   }
   for(const x of ROAD_X)box(outdoor,x,12,4,92,.08,0xc8b98f,-.02);
   for(const z of ROAD_Z)box(outdoor,0,z,92,4,.08,0xc8b98f,-.02);
+
+  // Landscape v1 visually breaks the rigid parcel grid without changing movement/collision coordinates.
+  await buildWorldLandscape({parent:outdoor,addModel,box,plane});
 
   // HOME square (-22..-2 / -10..10) — starts primitive and grows with the player.
   {
