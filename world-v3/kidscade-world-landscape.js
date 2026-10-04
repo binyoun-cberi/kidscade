@@ -8,7 +8,7 @@ function ellipse(parent,x,z,rx,rz,color,y=.035,rotation=0,opacity=1){
   const mat=new THREE.MeshStandardMaterial({color,roughness:.96,transparent:opacity<1,opacity,depthWrite:opacity>=1});
   const mesh=new THREE.Mesh(new THREE.CircleGeometry(1,20),mat);
   mesh.scale.set(rx,rz,1);
-  mesh.rotation.x=-Math.PI/2;
+  mesh.rotation.x=Math.PI/2;
   mesh.rotation.z=rotation;
   mesh.position.set(x,y,z);
   mesh.receiveShadow=true;
