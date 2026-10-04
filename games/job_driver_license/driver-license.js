@@ -247,9 +247,10 @@ function groundDz(x,z){
 function isOnRoad(x,z){
   const vertical=Math.abs(x)<=4.55&&z>=14&&z<=82;
   const horizontal=Math.abs(z-20)<=4.7&&x>=-5&&x<=120;
+  const returnLane=Math.abs(x-110)<=4.55&&z>=18&&z<=74;
   const parking=x>=35&&x<=49&&z>=24&&z<=42;
   const connector=x>=37&&x<=47&&z>=20&&z<=27;
-  return vertical||horizontal||parking||connector;
+  return vertical||horizontal||returnLane||parking||connector;
 }
 function carCorners(){
   const halfW=.9,halfL=2.15;
@@ -408,6 +409,7 @@ function requestGameFullscreen(){
 function startGame(){
   requestGameFullscreen();
   initAudio();gameState='playing';resetCar();ui.start.classList.remove('show');ui.result.classList.remove('show');
+  if(parkingSensorLine?.material?.color)parkingSensorLine.material.color.set(mode==='practice'?0x46d9ff:0xffffff);
   try{window.KidscadeGame?.start?.({license,mode});}catch(_){}
   ui.examMode.textContent=(license==='auto'?'2종 자동':'1종 보통')+' · '+(mode==='exam'?'기능시험':'연습');
   setInstruction('먼저 안전띠를 매세요.','연습 순서: 안전띠 → 시동 → 기어 → 주차브레이크 해제');
@@ -646,6 +648,8 @@ function buildCourse(){
   makeRoadSegment(9,10,0,45,1,ang);
   makeEnhancedRoad(9,26,0,27,0,0,'z');
   makeEnhancedRoad(120,9,57.5,20,0,0,'x');
+  // 돌발 과제 뒤에는 우측 끝에서 다시 북쪽 종료장으로 올라오는 반환 차로가 이어집니다.
+  makeEnhancedRoad(9,52,110,46,0,0,'z');
   makeFlat(14,19,0x626a6e,42,33,.06);makeFlat(12,6,0x626a6e,42,26,.06);
 
   // 본관 옆 시험차량 대기장.
@@ -656,7 +660,9 @@ function buildCourse(){
   for(let x=8;x<=116;x+=8)line(3.8,.13,x,20,0xe3c85a,.14);
   line(.11,20,-3.95,71,0xffffff,.155);line(.11,20,3.95,71,0xffffff,.155);
   line(.11,24,-3.95,27,0xffffff,.155);line(.11,24,3.95,27,0xffffff,.155);
-  line(114,.11,60,16.15,0xffffff,.155);line(114,.11,60,23.85,0xffffff,.155);
+  line(105,.11,55.5,16.15,0xffffff,.155);line(105,.11,55.5,23.85,0xffffff,.155);
+  line(.11,48,106.15,47,0xffffff,.155);line(.11,48,113.85,47,0xffffff,.155);
+  for(let z=28;z<=68;z+=8)line(.13,3.7,110,z,0xe3c85a,.14);
 
   line(9,.32,0,54,0xffffff,.18);line(9,.32,0,29,0xffffff,.16);
   line(.32,9,58,20,0xffffff,.16);line(.32,9,88,20,0xffffff,.16);
@@ -676,7 +682,8 @@ function buildCourse(){
   makeGroundLabel('T 주차',42,27.2,5.0,1.35,Math.PI/2,'rgba(35,91,119,.82)');
   makeGroundLabel('20 km/h',70,20,6.2,1.35,Math.PI/2,'rgba(44,78,92,.82)');
   makeGroundLabel('돌발',96,20,4.7,1.35,Math.PI/2,'rgba(151,65,39,.84)');
-  makeGroundLabel('종료',112,20,4.5,1.35,Math.PI/2,'rgba(48,98,65,.84)');
+  makeGroundLabel('종료장 ↑',106,20,5.4,1.35,Math.PI/2,'rgba(48,98,65,.84)');
+  makeGroundLabel('종료',110,69,4.5,1.35,0,'rgba(48,98,65,.84)');
 
   const makeConeFallback=(id,x,z)=>{
     const mesh=new THREE.Mesh(new THREE.ConeGeometry(.28,.58,12),new THREE.MeshStandardMaterial({color:0xf47b20,roughness:.9}));
@@ -688,7 +695,7 @@ function buildCourse(){
 
   addSign('KIDSCADE 운전면허시험장',-8,81);
   addSign('경사로',-6.8,55);addSign('T자 주차',42,44);
-  addSign('가속구간',70,26);addSign('급정지',95,26);addSign('종료',112,26);
+  addSign('가속구간',70,26);addSign('급정지',95,26);addSign('종료장',117,55);
 
   const pole=makeBox(.16,4,.16,0x303a3f,4.6,2,25.6);registerFallback(pole);addCircleObstacle('signalPole',4.6,25.6,.3);
   const housing=makeBox(.76,1.65,.48,0x1c2428,4.6,3.5,25.6);registerFallback(housing);
@@ -1056,9 +1063,9 @@ function examStep(dt,inp){
       const evaluated=examiner.emergencyStopTime!==null&&hazardElapsed>EXAM_RULES.emergencyHazardLimit+.15;
       if(evaluated){
         if(sectionResults.emergency==='pending')sectionResults.emergency='ok';
-        stage='FINISH';examinerStage('종료','비상등을 끄고 종료선 전 우측 방향지시등을 켜세요.');
+        stage='FINISH';examinerStage('종료','비상등을 끄고 앞쪽 반환 차로에서 좌측 방향지시등을 켠 뒤 종료장으로 이동하십시오.');
         showToast(sectionResults.emergency==='ok'?'돌발 과제 완료':'돌발 과제 감점');
-        setInstruction(mode==='exam'?'종료선으로 이동하십시오.':'비상등을 끄고 종료선으로 이동하세요.','종료선 전에 우측 방향지시등을 켜고 통과합니다.');
+        setInstruction(mode==='exam'?'종료장으로 이동하십시오.':'비상등을 끄고 반환 차로로 좌회전해 종료장으로 이동하세요.','좌측 방향지시등 → 반환 차로 진입 → 종료선 정차');
       }
       if(car.x>=103&&!car._emergencyPenalized){
         car._emergencyPenalized=true;sectionResults.emergency='miss';addDeduction('급정지선 초과',10);
@@ -1070,13 +1077,14 @@ function examStep(dt,inp){
     if(car.hazard&&car.x>104&&!examiner.hazardDrivePenalized){
       examiner.hazardDrivePenalized=true;addDeduction('돌발 후 비상등 미해제',5);
     }
-    if(car.x>107&&!examiner.finishSignalChecked){
+    if(car.x>106&&car.z<27&&!examiner.finishSignalChecked){
       examiner.finishSignalChecked=true;
-      if(car.signal!==1)addDeduction('종료선 우측 방향지시등 미사용',5);
+      if(car.signal!==-1)addDeduction('종료장 좌측 방향지시등 미사용',5);
     }
-    if(car.x>109&&kmh<.8){
+    const inFinishLane=Math.abs(car.x-110)<4.7&&car.z>64;
+    if(inFinishLane&&kmh<.8){
       stage='SECURE';examinerStage('종료조작','차량을 안전한 종료 상태로 만드십시오.');setInstruction(mode==='exam'?'종료 조작을 실시하십시오.':'시험을 마무리하세요.',license==='auto'?'P 기어 · 주차브레이크 · 시동 OFF':'중립 N · 주차브레이크 · 시동 OFF');
-      showToast('차량을 안전하게 종료하세요.');
+      showToast('종료장 도착 · 차량을 안전하게 종료하세요.');
     }
     return;
   }
