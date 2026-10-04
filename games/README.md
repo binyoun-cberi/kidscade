@@ -75,8 +75,35 @@ games/
 KidscadeGame.start();
 KidscadeGame.sound('correct');
 KidscadeGame.score(1200);
-KidscadeGame.gameOver({ score: 1200 });
+KidscadeGame.result({
+  scope: 'match',
+  status: 'completed',
+  outcome: 'win',
+  score: 1200
+});
 KidscadeGame.exit();
+```
+
+### 결과와 업적 이벤트
+
+새 코드에서는 업적을 위해 `gameOver()`를 억지로 만들지 않습니다. 게임 구조에 맞춰 두 이벤트를 사용합니다.
+
+- `KidscadeGame.result({...})`: 경기·한 판·런·스테이지·근무·임무·캠페인·창작처럼 결과 단위가 끝났을 때 보냅니다.
+- `KidscadeGame.milestone(name, {...})`: 샌드박스·성장형·컬렉션 게임에서 시대 진입, 발견, 저장, 특별 목표처럼 의미 있는 사건이 발생했을 때 보냅니다.
+- `status`: `completed` / `failed` / `abandoned`를 구분합니다.
+- `outcome`: 승패가 있을 때 `win` / `loss` / `draw`, 클리어형이면 `clear` / `fail`을 사용합니다.
+- 스테이지 게임은 스테이지마다 별도 업적을 만들지 않고 `stage` 결과를 누적해 1회·10회 같은 단계 업적으로 사용합니다.
+- 자유 샌드박스는 종료 이벤트가 없어도 됩니다. 중요한 상태 변화에서 milestone만 보고하면 됩니다.
+- 기존 `gameOver()`는 레거시 호환용으로 유지되지만, 새 게임과 리워크 게임은 `result()` / `milestone()`을 우선 사용합니다.
+
+예:
+
+```js
+KidscadeGame.result({ scope:'stage', status:'completed', outcome:'clear', id:'forest-10' });
+KidscadeGame.result({ scope:'match', status:'completed', outcome:'loss', score:2 });
+KidscadeGame.result({ scope:'shift', status:'completed', orders:14, mistakes:1 });
+KidscadeGame.milestone('era_reached', { value:'iron', uniqueKey:'iron' });
+KidscadeGame.milestone('creation_saved', { id:'drawing-7' });
 ```
 
 - 공통 메뉴는 다시 시작 / 게임 나가기 / 지원 게임의 음소거 / 연결된 게임의 일시정지를 제공합니다.

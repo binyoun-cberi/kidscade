@@ -7,15 +7,15 @@
 
   const CLAIMED_KEY = 'kidscade_claimed_ranks';
   const PROGRESS_KEY = 'kidscade_achievements_v1';
-  const PROGRESS_VERSION = 2;
+  const PROGRESS_VERSION = 3;
   const HIGH_RANK_MARKERS = Object.freeze([
     '플래티넘', '다이아몬드', '마스터', '그랜드마스터', '챌린저',
     '세종대왕', '강철 위장', '조선시대', '대한제국', '대한민국', '역사왕'
   ]);
 
   const BASE_DEFINITIONS = [
-    { id:'kidscade.first_finish', gameId:'kidscade', icon:'🏁', type:'normal', title:'첫 완주', description:'Kidscade 게임 하나를 끝까지 완료해 보세요.' },
-    { id:'kidscade.explorer_5', gameId:'kidscade', icon:'🧭', type:'challenge', target:5, title:'게임 탐험가', description:'서로 다른 게임 5개를 끝까지 완료해 보세요.' },
+    { id:'kidscade.first_result', gameId:'kidscade', icon:'🏁', type:'normal', title:'첫 기록', description:'게임 하나에서 실제 플레이 결과나 주요 목표를 남겨 보세요.' },
+    { id:'kidscade.explorer_5', gameId:'kidscade', icon:'🧭', type:'challenge', target:5, title:'게임 탐험가', description:'서로 다른 게임 5개에서 실제 플레이 기록을 남겨 보세요.' },
     { id:'kidscade.collector_25', gameId:'kidscade', icon:'🏆', type:'challenge', target:25, title:'업적 수집가', description:'업적 25개를 달성해 보세요.' },
 
     { id:'cube3d.first_blueprint', gameId:'cube3d', icon:'🏗️', type:'normal', title:'첫 설계 복원', description:'설계도 챌린지를 처음 성공하세요.' },
@@ -97,8 +97,50 @@
     return saveClaimedRanks(claimed);
   }
 
+  function defaultGameStats() {
+    return {
+      results:0,
+      abandoned:0,
+      matchesCompleted:0,
+      wins:0,
+      losses:0,
+      draws:0,
+      sessionsCompleted:0,
+      runs:0,
+      stagesCleared:0,
+      shiftsCompleted:0,
+      missionsCompleted:0,
+      campaignsCompleted:0,
+      creationsSaved:0,
+      fails:0,
+      milestonesReached:0,
+      uniqueMilestones:{},
+      lastAt:0
+    };
+  }
+
+  function normalizeGameStatsEntry(input) {
+    const raw = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+    const stats = defaultGameStats();
+    [
+      'results','abandoned','matchesCompleted','wins','losses','draws','sessionsCompleted',
+      'runs','stagesCleared','shiftsCompleted','missionsCompleted','campaignsCompleted',
+      'creationsSaved','fails','milestonesReached'
+    ].forEach(key => {
+      stats[key] = Math.max(0, Math.floor(Number(raw[key]) || 0));
+    });
+    if (raw.uniqueMilestones && typeof raw.uniqueMilestones === 'object' && !Array.isArray(raw.uniqueMilestones)) {
+      Object.entries(raw.uniqueMilestones).forEach(([key, value]) => {
+        const id = String(key || '').trim();
+        if (id && value) stats.uniqueMilestones[id] = true;
+      });
+    }
+    stats.lastAt = Math.max(0, Number(raw.lastAt) || 0);
+    return stats;
+  }
+
   function defaultAchievementState() {
-    return { version:PROGRESS_VERSION, unlocked:{}, progress:{}, playedGames:{}, completedGames:{} };
+    return { version:PROGRESS_VERSION, unlocked:{}, progress:{}, playedGames:{}, gameStats:{} };
   }
 
   function normalizeAchievementState(input) {
@@ -132,20 +174,11 @@
       });
     }
 
-    if (raw.completedGames && typeof raw.completedGames === 'object' && !Array.isArray(raw.completedGames)) {
-      Object.entries(raw.completedGames).forEach(([rawId, value]) => {
+    if (raw.gameStats && typeof raw.gameStats === 'object' && !Array.isArray(raw.gameStats)) {
+      Object.entries(raw.gameStats).forEach(([rawId, value]) => {
         const id = String(rawId || '').trim();
         if (!id) return;
-        const entry = value && typeof value === 'object' && !Array.isArray(value) ? value : { count:value };
-        const count = Math.max(0, Math.floor(Number(entry.count) || 0));
-        if (!count) return;
-        const firstCompletedAt = Math.max(0, Number(entry.firstCompletedAt) || 0);
-        const lastCompletedAt = Math.max(0, Number(entry.lastCompletedAt) || 0);
-        state.completedGames[id] = {
-          count,
-          firstCompletedAt:firstCompletedAt || lastCompletedAt || Date.now(),
-          lastCompletedAt:lastCompletedAt || firstCompletedAt || Date.now()
-        };
+        state.gameStats[id] = normalizeGameStatsEntry(value);
       });
     }
 
@@ -211,6 +244,7 @@
         hidden:Boolean(raw.hidden),
         enabled:raw.enabled !== false,
         trigger:String(raw.trigger || '').trim(),
+        metric:String(raw.metric || '').trim(),
         rule:raw.rule && typeof raw.rule === 'object' ? { ...raw.rule } : null,
         target
       }));
@@ -240,10 +274,15 @@
     return next !== before;
   }
 
+  function statsHaveMeaning(stats) {
+    if (!stats || typeof stats !== 'object') return false;
+    return Number(stats.results) > 0 || Object.keys(stats.uniqueMilestones || {}).length > 0;
+  }
+
   function syncMetaInState(state, unlockedIds) {
-    const completed = Object.keys(state.completedGames).length;
-    if (completed > 0) unlockInState(state, 'kidscade.first_finish', unlockedIds);
-    setProgressInState(state, 'kidscade.explorer_5', completed, unlockedIds);
+    const trackedGames = Object.values(state.gameStats || {}).filter(statsHaveMeaning).length;
+    if (trackedGames > 0) unlockInState(state, 'kidscade.first_result', unlockedIds);
+    setProgressInState(state, 'kidscade.explorer_5', trackedGames, unlockedIds);
     const collectorCount = Object.keys(state.unlocked).filter(id => id !== 'kidscade.collector_25').length;
     setProgressInState(state, 'kidscade.collector_25', collectorCount, unlockedIds);
   }
@@ -317,26 +356,169 @@
     return commitAchievementState(state, [], true);
   }
 
-  function recordCompletedGame(gameId, at = Date.now()) {
+  function profilesApi() {
+    if (typeof window !== 'undefined' && window.KidscadeGameProfiles) return window.KidscadeGameProfiles;
+    if (typeof require === 'function') {
+      try { return require('./app/features/achievements/game-outcome-profiles.js'); } catch (_) {}
+    }
+    return null;
+  }
+
+  function metricValue(stats, metric) {
+    const key = String(metric || '').trim();
+    if (!stats || !key) return 0;
+    if (key === 'uniqueMilestones') return Object.keys(stats.uniqueMilestones || {}).length;
+    return Math.max(0, Number(stats[key]) || 0);
+  }
+
+  function syncMetricAchievementsInState(state, gameId, unlockedIds) {
     const id = String(gameId || '').trim();
-    if (!id || id === 'kidscade') return loadAchievementState();
-    const state = loadAchievementState();
-    const unlockedIds = [];
-    const completedAt = Math.max(1, Number(at) || Date.now());
-    const previous = state.completedGames[id] || null;
-    const count = Math.max(0, Number(previous?.count) || 0) + 1;
-    state.completedGames[id] = {
-      count,
-      firstCompletedAt:Number(previous?.firstCompletedAt) || completedAt,
-      lastCompletedAt:completedAt
-    };
+    const stats = state.gameStats[id] || defaultGameStats();
     definitionMap.forEach(def => {
-      if (def.enabled !== false && def.gameId === id && def.trigger === 'completion_count') {
-        setProgressInState(state, def.id, count, unlockedIds);
-      }
+      if (def.enabled === false || def.gameId !== id || def.trigger !== 'metric' || !def.metric) return;
+      setProgressInState(state, def.id, metricValue(stats, def.metric), unlockedIds);
     });
+  }
+
+  function ensureGameStats(state, gameId) {
+    const id = String(gameId || '').trim();
+    if (!id) return null;
+    if (!state.gameStats[id]) state.gameStats[id] = defaultGameStats();
+    return state.gameStats[id];
+  }
+
+  function normalizeOutcome(value) {
+    const outcome = String(value || '').trim().toLowerCase();
+    return ['win','loss','draw','clear','fail'].includes(outcome) ? outcome : '';
+  }
+
+  function normalizeResultStatus(value) {
+    const status = String(value || 'completed').trim().toLowerCase();
+    return ['completed','failed','abandoned'].includes(status) ? status : 'completed';
+  }
+
+  function recordResult(detail = {}) {
+    const gameId = String(detail.gameId || '').trim();
+    const scope = String(detail.scope || '').trim().toLowerCase();
+    if (!gameId || !['match','session','run','stage','shift','mission','campaign','creation'].includes(scope) || gameId === 'kidscade') return loadAchievementState();
+    const state = loadAchievementState();
+    const stats = ensureGameStats(state, gameId);
+    const unlockedIds = [];
+    const at = Math.max(1, Number(detail.at || detail.completedAt) || Date.now());
+    const status = normalizeResultStatus(detail.status);
+    const outcome = normalizeOutcome(detail.outcome ?? detail.result);
+    stats.lastAt = at;
+
+    if (status === 'abandoned') {
+      stats.abandoned += 1;
+      return commitAchievementState(state, unlockedIds, true);
+    }
+
+    stats.results += 1;
+    if (scope === 'match') {
+      stats.matchesCompleted += 1;
+      if (outcome === 'win') stats.wins += 1;
+      else if (outcome === 'loss') stats.losses += 1;
+      else if (outcome === 'draw') stats.draws += 1;
+    } else if (scope === 'session') {
+      if (status === 'completed') stats.sessionsCompleted += 1;
+      else stats.fails += 1;
+    } else if (scope === 'run') {
+      stats.runs += 1;
+      if (status === 'failed' || outcome === 'fail') stats.fails += 1;
+    } else if (scope === 'stage') {
+      if (status === 'completed' || outcome === 'clear' || outcome === 'win') stats.stagesCleared += 1;
+      else stats.fails += 1;
+    } else if (scope === 'shift') {
+      if (status === 'completed') stats.shiftsCompleted += 1;
+      else stats.fails += 1;
+    } else if (scope === 'mission') {
+      if (status === 'completed' || outcome === 'clear' || outcome === 'win') stats.missionsCompleted += 1;
+      else stats.fails += 1;
+    } else if (scope === 'campaign') {
+      if (status === 'completed' || outcome === 'clear' || outcome === 'win') stats.campaignsCompleted += 1;
+      else stats.fails += 1;
+    } else if (scope === 'creation') {
+      if (status === 'completed') stats.creationsSaved += 1;
+      else stats.fails += 1;
+    }
+
+    syncMetricAchievementsInState(state, gameId, unlockedIds);
     syncMetaInState(state, unlockedIds);
     return commitAchievementState(state, unlockedIds, true);
+  }
+
+  function milestoneKey(detail = {}) {
+    const name = String(detail.name || '').trim().toLowerCase();
+    const discriminator = detail.uniqueKey ?? detail.id ?? detail.stage ?? detail.key ?? detail.level ?? detail.value ?? '';
+    return [name, String(discriminator || '').trim()].filter(Boolean).join(':');
+  }
+
+  function recordMilestone(detail = {}) {
+    const gameId = String(detail.gameId || '').trim();
+    const name = String(detail.name || '').trim().toLowerCase();
+    if (!gameId || !name || gameId === 'kidscade') return loadAchievementState();
+    const state = loadAchievementState();
+    const stats = ensureGameStats(state, gameId);
+    const unlockedIds = [];
+    const key = milestoneKey(detail);
+    stats.lastAt = Math.max(1, Number(detail.at) || Date.now());
+    stats.milestonesReached += 1;
+    if (key) stats.uniqueMilestones[key] = true;
+
+    if (name === 'stage_clear' || name === 'puzzle_clear') stats.stagesCleared += 1;
+    else if (name === 'shift_complete') stats.shiftsCompleted += 1;
+    else if (name === 'mission_complete') stats.missionsCompleted += 1;
+    else if (name === 'campaign_complete') stats.campaignsCompleted += 1;
+    else if (name === 'creation_saved' || name === 'creation_complete') stats.creationsSaved += 1;
+
+    syncMetricAchievementsInState(state, gameId, unlockedIds);
+    syncMetaInState(state, unlockedIds);
+    return commitAchievementState(state, unlockedIds, true);
+  }
+
+  function inferLegacyOutcome(detail = {}) {
+    const direct = normalizeOutcome(detail.outcome ?? detail.result);
+    if (direct) return direct;
+    if (detail.won === true || detail.win === true || detail.victory === true) return 'win';
+    if (detail.lost === true || detail.loss === true || detail.defeat === true) return 'loss';
+    if (detail.draw === true || detail.tied === true) return 'draw';
+    if (detail.cleared === true || detail.passed === true || detail.success === true || detail.completed === true) return 'clear';
+    if (detail.failed === true || detail.cleared === false || detail.passed === false || detail.success === false) return 'fail';
+    return '';
+  }
+
+  function legacyGameOverResult(detail = {}) {
+    const gameId = String(detail.gameId || '').trim();
+    const profile = profilesApi()?.getProfile?.(gameId);
+    if (!profile || profile.legacy === 'ignore') return null;
+    if (detail.abandoned === true || detail.status === 'abandoned') {
+      return { gameId, scope:profile.scope, status:'abandoned', outcome:null, at:detail.completedAt || Date.now() };
+    }
+
+    const outcome = inferLegacyOutcome(detail);
+    if (profile.legacy === 'match-end') {
+      return { gameId, scope:'match', status:'completed', outcome:outcome || null, at:detail.completedAt || Date.now() };
+    }
+    if (profile.legacy === 'session-end') {
+      return { gameId, scope:'session', status:'completed', outcome:outcome || null, at:detail.completedAt || Date.now() };
+    }
+    if (profile.legacy === 'run-end') {
+      return { gameId, scope:'run', status:'completed', outcome:outcome || null, at:detail.completedAt || Date.now() };
+    }
+    if (profile.legacy === 'explicit-success') {
+      if (['win','clear'].includes(outcome)) {
+        return { gameId, scope:profile.scope, status:'completed', outcome, at:detail.completedAt || Date.now() };
+      }
+      if (['loss','fail'].includes(outcome)) {
+        return { gameId, scope:profile.scope, status:'failed', outcome, at:detail.completedAt || Date.now() };
+      }
+    }
+    return null;
+  }
+
+  function recordCompletedGame(gameId, at = Date.now()) {
+    return recordResult({ gameId, scope:'session', status:'completed', at });
   }
 
   function getSummaryFromState(input) {
@@ -344,20 +526,26 @@
     const enabledIds = new Set(Array.from(definitionMap.values()).filter(def => def.enabled !== false).map(def => def.id));
     const total = enabledIds.size;
     const unlocked = Object.keys(state.unlocked).filter(id => enabledIds.has(id)).length;
-    const completedGames = Object.keys(state.completedGames).length;
-    const totalCompletions = Object.values(state.completedGames).reduce((sum, item) => sum + Math.max(0, Number(item?.count) || 0), 0);
+    const trackedGames = Object.values(state.gameStats).filter(statsHaveMeaning).length;
+    const totalResults = Object.values(state.gameStats).reduce((sum, stats) => sum + Math.max(0, Number(stats.results) || 0), 0);
     return {
       total,
       unlocked,
       percent:total ? Math.round(unlocked / total * 100) : 0,
       playedGames:Object.keys(state.playedGames).length,
-      completedGames,
-      totalCompletions
+      trackedGames,
+      totalResults
     };
   }
 
   function getSummary() {
     return getSummaryFromState(loadAchievementState());
+  }
+
+  function getGameStats(gameId) {
+    const id = String(gameId || '').trim();
+    const state = loadAchievementState();
+    return normalizeGameStatsEntry(state.gameStats[id]);
   }
 
   function getGameProgress(gameId) {
@@ -417,8 +605,27 @@
   function handleGameEvent(detail = {}) {
     const eventName = String(detail.event || '').trim();
     const gameId = String(detail.gameId || '').trim();
-    if ((eventName === 'ready' || eventName === 'start') && gameId) recordPlayedGame(gameId);
-    if (eventName === 'game-over' && gameId) recordCompletedGame(gameId, detail.completedAt || Date.now());
+    if ((eventName === 'ready' || eventName === 'start') && gameId) {
+      recordPlayedGame(gameId);
+      return true;
+    }
+    if (eventName === 'result' && gameId) {
+      recordResult(detail);
+      applyEventRules(detail);
+      applyEventRules({ ...detail, event:'game-over' });
+      return true;
+    }
+    if (eventName === 'milestone' && gameId) {
+      recordMilestone(detail);
+      applyEventRules(detail);
+      return true;
+    }
+    if (eventName === 'game-over' && gameId) {
+      const legacyResult = legacyGameOverResult(detail);
+      if (legacyResult) recordResult(legacyResult);
+      applyEventRules(detail);
+      return Boolean(legacyResult);
+    }
     if (eventName !== 'achievement') {
       applyEventRules(detail);
       return false;
@@ -547,7 +754,11 @@
     increment,
     recordPlayedGame,
     recordCompletedGame,
+    recordResult,
+    recordMilestone,
+    legacyGameOverResult,
     getSummary,
+    getGameStats,
     getGameProgress,
     ruleMatches,
     applyEventRules,

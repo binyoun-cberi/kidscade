@@ -41,6 +41,10 @@
   const now = () => root?.performance?.now?.() ?? Date.now();
   const cleanToken = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
   const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+  const RESULT_SCOPES = new Set(['match','session','run','stage','shift','mission','campaign','creation']);
+  const RESULT_STATUSES = new Set(['completed','failed','abandoned']);
+  const RESULT_OUTCOMES = new Set(['win','loss','draw','clear','fail']);
+  const cleanEventToken = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '');
 
   function storageKey(id, name) {
     const gameId = cleanToken(id);
@@ -279,14 +283,64 @@
     return { score:numeric, best:next?.value ?? numeric, improved };
   }
 
+  function normalizeResultInput(detail = {}) {
+    const rawScope = cleanEventToken(detail.scope);
+    const scope = RESULT_SCOPES.has(rawScope) ? rawScope : '';
+    const rawStatus = cleanEventToken(detail.status || 'completed');
+    const status = RESULT_STATUSES.has(rawStatus) ? rawStatus : 'completed';
+    const rawOutcome = cleanEventToken(detail.outcome ?? detail.result);
+    const outcome = RESULT_OUTCOMES.has(rawOutcome) ? rawOutcome : '';
+    return { scope, status, outcome };
+  }
+
+  function result(detail = {}) {
+    const normalized = normalizeResultInput(detail);
+    if (!normalized.scope) {
+      console.warn?.('[KidscadeGame] result scope is missing or unsupported.');
+      return false;
+    }
+    const scoreResult = Object.hasOwn(detail, 'score') ? score(detail.score, detail.scoreOptions || {}) : null;
+    const elapsedMs = startedAt ? Math.max(0, now() - startedAt) : 0;
+    const closesSession = detail.endsSession === true ||
+      (detail.endsSession !== false && ['match','session','run','shift','mission','campaign'].includes(normalized.scope));
+    if (closesSession) {
+      ended = true;
+      paused = false;
+    }
+    emit('result', {
+      ...detail,
+      scope:normalized.scope,
+      status:normalized.status,
+      outcome:normalized.outcome || null,
+      scoreResult,
+      elapsedMs:Math.round(elapsedMs)
+    });
+    syncShell();
+    return {
+      ...state(),
+      scope:normalized.scope,
+      status:normalized.status,
+      outcome:normalized.outcome || null,
+      scoreResult,
+      elapsedMs
+    };
+  }
+
+  function milestone(name, detail = {}) {
+    const milestoneName = cleanEventToken(name);
+    if (!milestoneName) return false;
+    emit('milestone', { ...detail, name:milestoneName });
+    return true;
+  }
+
   function gameOver(detail = {}) {
     ended = true;
     paused = false;
-    const result = Object.hasOwn(detail, 'score') ? score(detail.score, detail.scoreOptions || {}) : null;
+    const scoreResult = Object.hasOwn(detail, 'score') ? score(detail.score, detail.scoreOptions || {}) : null;
     const elapsedMs = startedAt ? Math.max(0, now() - startedAt) : 0;
-    emit('game-over', { ...detail, scoreResult:result, elapsedMs:Math.round(elapsedMs) });
+    emit('game-over', { ...detail, scoreResult, elapsedMs:Math.round(elapsedMs) });
     syncShell();
-    return { ...state(), scoreResult:result, elapsedMs };
+    return { ...state(), scoreResult, elapsedMs };
   }
 
   function cleanAchievementId(value) {
@@ -525,6 +579,8 @@
     setMuted,
     toggleMuted,
     score,
+    result,
+    milestone,
     gameOver,
     achievement,
     achievementProgress,
