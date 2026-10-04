@@ -700,21 +700,29 @@ test('market props are individually tracked and no longer share the register foo
 });
 
 
-test('Seed Natural Museum tracks discovery donation and visible exhibit growth',()=>{
+test('Seed Natural Museum tracks source-aware specimens and one-by-one exhibit growth',()=>{
   assert.match(runtime,/createMuseumSystem/);
   assert.match(runtime,/museumRuntime\.syncKnown\(\)/);
-  assert.match(runtime,/museumRuntime\?\.discover\?\.\('fish:'\+place/);
-  assert.match(runtime,/museumRuntime\?\.discover\?\.\('crop:'\+state\.type/);
+  assert.match(runtime,/recordSpecimen\?\.\('fish:'\+place/);
+  assert.match(runtime,/museumId:'crop:'\+state\.type/);
   assert.match(runtime,/museumRuntime\?\.discover\?\.\('pet:'\+id/);
   assert.match(runtime,/data-museum-donate/);
-  assert.match(storage,/museum:\{version:1,discovered:\{\},donated:\{\},records:\{\}\}/);
+  assert.match(runtime,/function removeInventoryItem/);
+  assert.match(storage,/museum:\{version:2,discovered:\{\},donated:\{\},records:\{\},specimens:\{\}\}/);
   assert.match(museum,/export const MUSEUM_CATALOG=/);
-  assert.match(museum,/function donationPanel\(\)/);
-  assert.match(museum,/donatedByCategory/);
+  assert.match(museum,/function recordSpecimen\(/);
+  assert.match(museum,/function consumeItem\(/);
+  assert.match(museum,/donatedIds/);
+  assert.match(museum,/ITEM_ENTRY_LISTS/);
   assert.match(interiors,/museum:'venue-museum'/);
   assert.match(interiors,/museum-aquarium/);
-  assert.match(interiors,/museum-mineral/);
+  assert.match(interiors,/museumSlots/);
+  assert.match(interiors,/museum-slot-/);
+  assert.match(interiors,/donated=new Set\(summary\.donatedIds/);
   assert.match(interiors,/syncMuseumDisplays/);
+  assert.match(dailyLife,/function bugMesh\(\)/);
+  assert.match(dailyLife,/🪲 곤충 잡기/);
+  assert.match(dailyLife,/museumId:'nature:mushroom'/);
   assert.match(city,/씨앗 자연박물관/);
   assert.match(city,/\['museum',museum\.x,museum\.z-\.55/);
   assert.match(grid,/museum:\{id:'museum',name:'씨앗 자연박물관',cx:-36,cz:48/);
