@@ -9,6 +9,7 @@ const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
 const residents=fs.readFileSync(path.join(root,'world-v3','kidscade-world-residents.js'),'utf8');
 const daily=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily.js'),'utf8');
+const dailyLife=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily-life.js'),'utf8');
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
@@ -22,7 +23,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,daily,interiors,grid,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,grid,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -65,6 +66,29 @@ test('Seed Town residents follow routines, chat, avoid buildings and go home',()
   assert.match(residents,/CHAT_LINES\[serial%CHAT_LINES\.length\]/);
   assert.match(city,/home-minji/);
   assert.match(city,/home-hyunwoo/);
+});
+
+test('Today in Seed Town changes daily content without blocking progression',()=>{
+  assert.match(runtime,/createDailyLife/);
+  assert.match(runtime,/dailyLife=await createDailyLife/);
+  assert.match(runtime,/dailyLife\?\.sync/);
+  assert.match(runtime,/dailyBoard:\(\)=>dailyLife/);
+  assert.match(runtime,/dailyVisitor:\(\)=>dailyLife/);
+  assert.match(runtime,/shell:'조개껍데기'/);
+  assert.match(daily,/requestSeed/);
+  assert.match(daily,/visitorSeed/);
+  assert.match(daily,/visitor/);
+  assert.match(dailyLife,/function shuffle\(list,rng\)/);
+  assert.match(dailyLife,/message-bottle/);
+  assert.match(dailyLife,/sparkle-ground/);
+  assert.match(dailyLife,/오늘의 주민 부탁/);
+  assert.match(dailyLife,/townEconomy\.addFriendship/);
+  assert.match(city,/오늘의 주민 부탁 보기/);
+  assert.match(city,/오늘의 방문객과 이야기하기/);
+  assert.match(economy,/const DAILY_DEAL_POOL=/);
+  assert.match(economy,/오늘 특가/);
+  assert.match(economy,/shell:7/);
+  for(const essential of ['seedPotato','seedCarrot','axe','pick'])assert.ok(economy.includes(essential+':{'),'essential progression item removed '+essential);
 });
 
 test('starter loop cannot deadlock on a fresh save',()=>{
