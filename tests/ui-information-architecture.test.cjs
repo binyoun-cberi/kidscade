@@ -66,20 +66,17 @@ test('guest profile keeps the avatar visible while play records stay account-onl
   assert.match(accountGate, /\.login\?\.\(\)/);
 });
 
-test('guest receives a default v2 avatar without opening the heavy studio iframe', () => {
-  assert.match(avatarIntegration, /GUEST_DEFAULT_CONFIG/);
-  assert.match(avatarIntegration, /hairId:'male-short-01', upper:1, lower:1/);
-  assert.match(avatarIntegration, /AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer\.js\?v=27'/);
+test('guest receives the v3 school avatar without loading the retired v2 renderer', () => {
+  assert.match(avatarIntegration, /PREVIEW_VERSION = 'school-avatar-v3-23f-1'/);
+  assert.match(avatarIntegration, /V3_STATE_KEY = 'kidscade-avatar-v3'/);
+  assert.match(avatarIntegration, /SCHOOL_DEFAULT_IMAGE = 'assets\/game\/characters\/kidscade-avatar-v3\/school-starter\/guest-default\.png'/);
   assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
-  assert.match(avatarIntegration, /api\.create\(canvas, \{ playing:false, config:guestConfigFromPixelState\(\) \}\)/);
-  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-6'/);
-  assert.match(avatarIntegration, /localStorage\.removeItem\(PREVIEW_KEY\)/);
-  assert.match(avatarIntegration, /guestConfigFromPixelState/);
-  assert.match(avatarIntegration, /hairId:typeof pixel\.hairId === 'string'/);
-  assert.doesNotMatch(avatarIntegration, /hairSet:pixel\.hairSet/);
+  assert.match(avatarIntegration, /image\.decode\(\)/);
+  assert.match(avatarIntegration, /context\.imageSmoothingEnabled = false/);
+  assert.doesNotMatch(avatarIntegration, /pixel-avatar-renderer\.js|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState|loadAvatarRigRuntime/);
   assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_KEY, data\)/);
   assert.match(avatarIntegration, /localStorage\.setItem\(PREVIEW_VERSION_KEY, PREVIEW_VERSION\)/);
-  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-pixel-avatar-v1'\)/);
+  assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-v3'\)/);
   assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-studio-preview'\)/);
   assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-studio-preview-version'\)/);
 });
