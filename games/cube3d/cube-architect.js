@@ -91,6 +91,7 @@ function clearModeUi(){
   ['challengePanel','challengeFlyHud','netPanel','freeHud','dungeonHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   blueprintModalOpen=false;
   resetMobileInput();
+  $('underwaterOverlay')?.classList.remove('active');
   $('topbar').classList.add('hidden');
   $('homeScreen').classList.add('hidden');
   $('actionCheck').classList.add('hidden');
