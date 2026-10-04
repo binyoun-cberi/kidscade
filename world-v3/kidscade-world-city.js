@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=3';
+import {createResidentLife} from './kidscade-world-residents.js?v=1';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
@@ -238,6 +239,11 @@ export async function buildKidscadeCity(ctx){
   npcs.push(await addNpc(npcCtx,'clerk','마트직원',market.x-6.6,market.z-1.2,{role:'shop',label:false,radius:.20}));
 
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
+  for(const n of npcs){
+    if(n.id==='clerk')continue;
+    const marker=makeLabel('💬',{width:.52,height:.26,font:34});
+    marker.position.set(n.object.position.x,2.58,n.object.position.z);marker.visible=false;parent.add(marker);n.chatMarker=marker;
+  }
   function bind(id,r,label,action){
     const n=byId[id];if(!n)return;
     n.interaction=interact('outdoor',n.object.position.x,n.object.position.z,r,label,action);
@@ -254,72 +260,57 @@ export async function buildKidscadeCity(ctx){
 
   validateMapLayout(layout);
 
-  const eveningSlots={
-    doyun:{x:leisure.x-3.8,z:leisure.z+4.0},
-    yuna:{x:leisure.x-1.9,z:leisure.z+4.4},
-    hyunwoo:{x:leisure.x,z:leisure.z+3.8},
-    woojin:{x:leisure.x+2.0,z:leisure.z+4.4},
-    seoyeon:{x:leisure.x+3.8,z:leisure.z+4.0}
+  const pois={
+    market:{x:market.x-4.7,z:market.z-1.0,r:.32},
+    hardware:{x:market.x+4.7,z:market.z-1.0,r:.32},
+    cafe:{x:leisure.x-4.7,z:leisure.z-1.0,r:.32},
+    arcade:{x:leisure.x+4.7,z:leisure.z-1.0,r:.34},
+    civic:{x:civic.x+4.5,z:civic.z+1.0,r:.38},
+    library:{x:civic.x-4.5,z:civic.z+1.0,r:.34},
+    clinic:{x:transit.x-4.5,z:transit.z+1.0,r:.34},
+    busStop:{x:transit.x+4.5,z:transit.z+1.0,r:.36},
+    marketFront:{x:market.x,z:market.z+4.5,r:1.15},
+    cafeFront:{x:leisure.x-4.0,z:leisure.z+3.9,r:.80},
+    plazaWest:{x:leisure.x-4.0,z:leisure.z+4.0,r:1.0},
+    plazaEast:{x:leisure.x+4.0,z:leisure.z+4.0,r:1.0},
+    plazaCenter:{x:leisure.x,z:leisure.z+3.4,r:1.35},
+    civicGarden:{x:civic.x,z:civic.z+6.0,r:1.15},
+    coveredPlaza:{x:leisure.x-1.0,z:leisure.z-1.1,r:.72},
+    riverLook:{x:transit.x-7.0,z:transit.z+6.7,r:.8},
+    homeFallback:{x:civic.x,z:civic.z+8.0,r:.25},
+    'home-minji':{x:civic.x-7.8,z:civic.z+8.1,r:.18},
+    'home-junho':{x:civic.x-4.8,z:civic.z+8.1,r:.18},
+    'home-haneul':{x:civic.x-1.8,z:civic.z+8.1,r:.18},
+    'home-taeho':{x:civic.x+1.8,z:civic.z+8.1,r:.18},
+    'home-doyun':{x:civic.x+4.8,z:civic.z+8.1,r:.18},
+    'home-sora':{x:civic.x+7.8,z:civic.z+8.1,r:.18},
+    'home-nari':{x:transit.x-7.6,z:transit.z+8.0,r:.18},
+    'home-minseok':{x:transit.x-4.5,z:transit.z+8.0,r:.18},
+    'home-yuna':{x:transit.x-1.5,z:transit.z+8.0,r:.18},
+    'home-woojin':{x:transit.x+1.5,z:transit.z+8.0,r:.18},
+    'home-seoyeon':{x:transit.x+4.5,z:transit.z+8.0,r:.18},
+    'home-hyunwoo':{x:transit.x+7.5,z:transit.z+8.0,r:.18}
   };
-  const dayRoleTargets={
-    yuna:{x:leisure.x-4.0,z:leisure.z+4.2,r:.35},
-    woojin:{x:leisure.x,z:leisure.z+4.8,r:.35},
-    seoyeon:{x:leisure.x+4.0,z:leisure.z+4.2,r:.35},
-    hyunwoo:{x:market.x,z:market.z+4.5,r:.35}
-  };
-
-  function chooseNpcDecision(n,hx,hz,r,now){
-    const mostlyStationary=['shop','arcade','library','clinic','bus','civic'].includes(n.role);
-    const pauseChance=mostlyStationary?.82:.55;
-    n.anchorX=hx;n.anchorZ=hz;
-    n.nextDecision=now+(mostlyStationary?2800:1800)+Math.random()*(mostlyStationary?4200:3000);
-    if(Math.random()<pauseChance){
-      n.moving=false;n.targetX=n.object.position.x;n.targetZ=n.object.position.z;return;
-    }
-    n.targetX=hx+(Math.random()*2-1)*r;
-    n.targetZ=hz+(Math.random()*2-1)*r*.62;
-    n.moving=true;
-  }
+  const livingNpcs=npcs.filter(n=>n.id!=='clerk');
+  const residentLife=createResidentLife({
+    npcs:livingNpcs,pois,
+    getMinutes:()=>typeof getGameTime==='function'?getGameTime():720,
+    getPlayer:()=>typeof getPlayerPosition==='function'?getPlayerPosition():null,
+    getDailyState:()=>typeof getDailyState==='function'?getDailyState():null
+  });
 
   return {
-    npcs,bounds:CITY_BOUNDS,
+    npcs,bounds:CITY_BOUNDS,residentLife,
     update(now,dt){
-      const minutes=typeof getGameTime==='function'?getGameTime():720;
-      const hour=minutes/60,evening=hour>=18&&hour<23,daytime=hour>=7&&hour<18;
       const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
       for(const label of buildingLabels){
         const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<7.5;
       }
-      for(const n of npcs){
-        let hx=n.homeX,hz=n.homeZ,r=n.r;
-        if(daytime&&dayRoleTargets[n.id]){const q=dayRoleTargets[n.id];hx=q.x;hz=q.z;r=q.r;}
-        else if(evening&&eveningSlots[n.id]){const q=eveningSlots[n.id];hx=q.x;hz=q.z;r=.30;}
-        const anchorShift=Math.hypot((n.anchorX??hx)-hx,(n.anchorZ??hz)-hz);
-        if(anchorShift>.12){
-          n.anchorX=hx;n.anchorZ=hz;n.targetX=hx;n.targetZ=hz;n.moving=true;n.nextDecision=now+900;
-        }else if(now>=n.nextDecision){
-          chooseNpcDecision(n,hx,hz,r,now);
-        }
-        let walking=false;
-        if(n.moving){
-          const dx=n.targetX-n.object.position.x,dz=n.targetZ-n.object.position.z,d=Math.hypot(dx,dz);
-          if(d<.055){
-            n.moving=false;n.nextDecision=now+1800+Math.random()*3200;
-          }else{
-            const speed=['shop','arcade','library','clinic','bus','civic'].includes(n.role)?.38:.58;
-            const step=Math.min(d,speed*dt);
-            n.object.position.x+=dx/d*step;n.object.position.z+=dz/d*step;
-            n.object.rotation.y=Math.atan2(dx,dz);walking=true;
-          }
-        }
-        n.playAnim?.(walking?'walk':'idle');n.mixer?.update(dt);
-        n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.010:0);
-        if(n.label){
-          n.label.position.set(n.object.position.x,2.12,n.object.position.z);
-          n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;
-        }
-        if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
+      residentLife.update(now,dt);
+      const clerk=byId.clerk;
+      if(clerk){
+        clerk.playAnim?.('idle');clerk.mixer?.update(dt);
+        if(clerk.interaction){clerk.interaction.x=clerk.object.position.x;clerk.interaction.z=clerk.object.position.z;}
       }
     }
-  };
-}
+  };}
