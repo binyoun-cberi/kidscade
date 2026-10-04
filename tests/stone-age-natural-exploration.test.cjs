@@ -135,3 +135,19 @@ test('v13 tin has both exploration and trade paths and dolmen does not consume t
   assert.match(js, /주석 교역/);
   assert.match(js, /\['bronzeCenter','stone',0,2,\[\['dolmen',1\]\]/);
 });
+
+test('full campaign balance avoids late settlement and charcoal grind', () => {
+  const js = read('game.js');
+  assert.match(js, /village:\{need:2,out:'largeVillage'/);
+  assert.match(js, /reedBed:14,clayBank:14/);
+  assert.match(js, /\['wood','highKiln',2,0,\[\['charcoal',3\]\]/);
+  assert.match(js, /bronzeLumberjack.*bronzeMiner.*bronzeHunter/);
+  assert.match(js, /ironLumberjack.*ironMiner.*ironFarmer.*ironHunter/);
+  assert.match(js, /const reached=Math\.max\(rank,order\[state\.ageReached\]\?\?0\)/);
+});
+
+test('late age milestones accept equipped metal specialists after their tools are consumed', () => {
+  const js = read('game.js');
+  assert.match(js, /state\.bronzeMilestoneShown.*bronzeLumberjack.*bronzeMiner.*bronzeHunter/s);
+  assert.match(js, /state\.ironMilestoneShown.*ironLumberjack.*ironMiner.*ironFarmer.*ironHunter/s);
+});
