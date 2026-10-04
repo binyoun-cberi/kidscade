@@ -878,7 +878,7 @@ function selectLayer(layer){
   else render();
   refreshNudgeMode();syncLayerSelect();
   const category=$('assetCategory');if(category&&ASSET_CATEGORY_ORDER.includes(activeLayer)){category.value=activeLayer;renderAssetGrid()}
-  renderSelectedAssetList();refreshFocusToggle();refreshAdjustmentSummary();
+  renderSelectedAssetList();refreshFocusToggle();refreshAdjustmentSummary();refreshPartSizeStatus();
   setStatus(frameRecord().label+' · '+(LAYER_LABELS[activeLayer]||activeLayer)+' 편집');
 }
 
@@ -888,7 +888,7 @@ function selectFrame(id){
   currentFrame=id;selection=null;selectionStart=null;invalidatePixelPreview();refreshFrameButtons();
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
-  renderSelectedAssetList();renderAssetGrid();
+  renderSelectedAssetList();renderAssetGrid();refreshPartSizeStatus();
 }
 
 function selectTool(next){
@@ -944,7 +944,7 @@ function paintAt(x,y){
 }
 
 function afterEdit(message='수정됨'){
-  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
 }
 function scheduleSave(){
   clearTimeout(saveTimer);
@@ -987,6 +987,66 @@ function moveLayerOrSelection(dx,dy){
     c.clearRect(0,0,SIZE,SIZE);c.drawImage(temp,dx,dy);
   }
   afterEdit((selection?'선택 영역':'레이어')+' '+dx+','+dy+' 이동');
+}
+
+function refreshPartSizeStatus(){
+  const el=$('partSizeStatus');if(!el)return;
+  const strong=el.querySelector('strong');if(!strong)return;
+  const box=bboxOfCanvas(layerCanvas());
+  strong.textContent=box?(box.w+'×'+box.h+'px'):'비어 있음';
+}
+
+function partScaleAnchor(layer,box){
+  const bottomAnchored=['body','lower','shoes'].includes(layer);
+  return {
+    x:box.x+box.w/2,
+    y:bottomAnchored?box.y+box.h:box.y+box.h/2,
+    bottom:bottomAnchored
+  };
+}
+
+function scaledDimension(value,factor){
+  if(!Number.isFinite(factor)||factor<=0)return value;
+  let next=Math.round(value*factor);
+  if(factor>1&&next===value)next=value+1;
+  if(factor<1&&next===value)next=value-1;
+  return clamp(next,1,SIZE);
+}
+
+function resizeActiveLayer({uniformPixels=0,factor=1,dw=0,dh=0}={}){
+  if(sourceImage)return setStatus('불러온 이미지를 먼저 현재 파츠에 적용한 뒤 크기를 조절하세요.',true);
+  const src=layerCanvas(),box=bboxOfCanvas(src);
+  if(!box)return setStatus('현재 파츠가 비어 있습니다.',true);
+
+  let newW=box.w,newH=box.h;
+  if(uniformPixels){
+    const longest=Math.max(box.w,box.h);
+    const target=clamp(longest+uniformPixels,1,SIZE);
+    const ratio=target/longest;
+    newW=scaledDimension(box.w,ratio);
+    newH=scaledDimension(box.h,ratio);
+  }else if(factor!==1){
+    newW=scaledDimension(box.w,factor);
+    newH=scaledDimension(box.h,factor);
+  }
+  newW=clamp(newW+dw,1,SIZE);
+  newH=clamp(newH+dh,1,SIZE);
+  if(newW===box.w&&newH===box.h)return setStatus('현재 크기에서 더 조절할 수 없습니다.',true);
+
+  const anchor=partScaleAnchor(activeLayer,box);
+  let newX=Math.round(anchor.x-newW/2);
+  let newY=anchor.bottom?Math.round(anchor.y-newH):Math.round(anchor.y-newH/2);
+  newX=clamp(newX,0,SIZE-newW);
+  newY=clamp(newY,0,SIZE-newH);
+
+  snapshot();
+  const crop=makeCanvas(box.w,box.h),cropCtx=crop.getContext('2d',{alpha:true});
+  cropCtx.imageSmoothingEnabled=false;
+  cropCtx.drawImage(src,box.x,box.y,box.w,box.h,0,0,box.w,box.h);
+  const c=layerCtx();c.clearRect(0,0,SIZE,SIZE);c.save();c.imageSmoothingEnabled=false;
+  c.drawImage(crop,0,0,box.w,box.h,newX,newY,newW,newH);c.restore();
+  selection=null;selectionStart=null;
+  afterEdit(partLabel(activeLayer)+' 크기 '+box.w+'×'+box.h+' → '+newW+'×'+newH+'px');
 }
 
 function resizeSelection(delta){
@@ -1532,6 +1592,14 @@ function bind(){
   $('alignGround').addEventListener('click',alignActiveGround);
   $('shrinkSelection').addEventListener('click',()=>resizeSelection(-1));
   $('growSelection').addEventListener('click',()=>resizeSelection(1));
+  $('scalePartDown1').addEventListener('click',()=>resizeActiveLayer({uniformPixels:-1}));
+  $('scalePartUp1').addEventListener('click',()=>resizeActiveLayer({uniformPixels:1}));
+  $('scalePartDown5').addEventListener('click',()=>resizeActiveLayer({factor:.95}));
+  $('scalePartUp5').addEventListener('click',()=>resizeActiveLayer({factor:1.05}));
+  $('scalePartWidthDown').addEventListener('click',()=>resizeActiveLayer({dw:-1}));
+  $('scalePartWidthUp').addEventListener('click',()=>resizeActiveLayer({dw:1}));
+  $('scalePartHeightDown').addEventListener('click',()=>resizeActiveLayer({dh:-1}));
+  $('scalePartHeightUp').addEventListener('click',()=>resizeActiveLayer({dh:1}));
 
   canvas.addEventListener('pointerdown',e=>{
     const p=pointFromEvent(e);canvas.setPointerCapture(e.pointerId);
@@ -1593,7 +1661,7 @@ async function init(){
   await restoreLocal();
   selectLayer('body');selectTool('pencil');selectFrame('stand-01');
   if(allBodyFramesEmpty())await loadDraftBodySet(false);
-  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();refreshAdjustmentSummary();
+  renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();refreshAdjustmentSummary();refreshPartSizeStatus();
   if(!allBodyFramesEmpty())setStatus('아바타 제작실 준비됨 · 왼쪽 에셋을 눌러 조합하세요.');
 }
 
