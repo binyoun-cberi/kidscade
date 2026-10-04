@@ -111,9 +111,10 @@ const GOALS=[
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
 const SHELTER_PASSABLE=new Set(['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch']);
 function shelterBlock(d,role='wall'){
- if(!d||SHELTER_PASSABLE.has(d.type))return false;
+ if(!d||SHELTER_PASSABLE.has(d.type)||d.type==='cactus')return false;
  if((d.type==='door'||d.type==='doorTop')&&d.open)return false;
- if(role==='roof'&&['door','doorTop','glassPane','windowFrame','cactus'].includes(d.type))return false;
+ if(role==='roof'&&['door','doorTop','glassPane','windowFrame'].includes(d.type))return false;
+ if(role==='wall'&&d.type==='slab')return false;
  return true;
 }
 function shelterAt(getBlock,x,feetY,z){
