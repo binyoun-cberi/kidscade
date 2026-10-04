@@ -551,14 +551,24 @@ var PEOPLE_MODELS={
   F:['character-female-a.glb','character-female-b.glb','character-female-c.glb','character-female-d.glb','character-female-e.glb','character-female-f.glb'],
   M:['character-male-a.glb','character-male-b.glb','character-male-c.glb','character-male-d.glb','character-male-e.glb','character-male-f.glb']
 };
-function makeVisual(diseaseId,sex,returning){
+var PEOPLE_NPC_MODELS={
+  F:['npcs/glTF/Casual_Female.gltf','npcs/glTF/Casual2_Female.gltf','npcs/glTF/Casual3_Female.gltf','npcs/glTF/Suit_Female.gltf','npcs/glTF/Worker_Female.gltf'],
+  M:['npcs/glTF/Casual_Male.gltf','npcs/glTF/Casual2_Male.gltf','npcs/glTF/Casual3_Male.gltf','npcs/glTF/Suit_Male.gltf','npcs/glTF/Worker_Male.gltf']
+};
+function patientModelPool(sex,age){
+  var base=(PEOPLE_MODELS[sex]||PEOPLE_MODELS.F).slice();
+  var npc=(PEOPLE_NPC_MODELS[sex]||PEOPLE_NPC_MODELS.F).slice();
+  if(Number(age)>=58)npc.unshift('npcs/glTF/OldClassy_'+(sex==='M'?'Male':'Female')+'.gltf');
+  return base.concat(npc);
+}
+function makeVisual(diseaseId,sex,returning,age){
   var cues=[];
   if(['cold','flu','bronchitis','pneumonia'].indexOf(diseaseId)>=0)cues.push('cough');
   if(['flu','pneumonia'].indexOf(diseaseId)>=0)cues.push('flush');
   if(['gastro','foodpoison'].indexOf(diseaseId)>=0)cues.push('tired');
   if(diseaseId==='allergy')cues.push('nose');
   if(returning&&['flu','pneumonia','foodpoison'].indexOf(diseaseId)>=0)cues.push('sweat');
-  return {model:pick(PEOPLE_MODELS[sex]||PEOPLE_MODELS.F),cues:cues,severity:returning?2:1};
+  return {model:pick(patientModelPool(sex,age)),cues:cues,severity:returning?2:1};
 }
 
 function makePatient(diseaseId,returnInfo){
@@ -580,11 +590,12 @@ function makePatient(diseaseId,returnInfo){
   if(Math.random()<.12&&day>=3)currentMeds.push('B');
 
   var sex=Math.random()<.5?'F':'M';
+  var age=20+Math.floor(Math.random()*55);
   var p={
-    id:uid(),name:pick(NAMES),age:20+Math.floor(Math.random()*55),sex:sex,
+    id:uid(),name:pick(NAMES),age:age,sex:sex,
     disease:diseaseId,severity:d.risk,returning:false,visitCount:1,
     allergies:allergies,currentMeds:currentMeds,
-    complaint:d.base,visual:makeVisual(diseaseId,sex,false),
+    complaint:d.base,visual:makeVisual(diseaseId,sex,false,age),
     avatar:{shirt:pick(SHIRTS),hair:pick(HAIRS),skin:pick(SKINS)}
   };
   if(returnInfo){
@@ -595,7 +606,7 @@ function makePatient(diseaseId,returnInfo){
     p.complaint=d.returnText;
     p.id=returnInfo.patient.id;
     var keptModel=p.visual&&p.visual.model;
-    p.visual=makeVisual(diseaseId,p.sex,true);
+    p.visual=makeVisual(diseaseId,p.sex,true,p.age);
     if(keptModel)p.visual.model=keptModel;
   }
   return p;
@@ -1128,7 +1139,7 @@ if(canvas&&stage){
   let current=null,requestId=0,last=performance.now();
 
   async function loadModel(name){
-    const url='../../assets/game/characters/people/'+name;
+    const url=name.indexOf('/')>=0?'../../assets/game/'+name:'../../assets/game/characters/people/'+name;
     if(!cache.has(url))cache.set(url,loader.loadAsync(url));
     return cache.get(url);
   }
