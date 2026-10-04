@@ -109,15 +109,21 @@ const GOALS=[
   progress:s=>(s.restored||[]).length}
 ];
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
+const SHELTER_PASSABLE=new Set(['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch']);
+function shelterBlock(d,role='wall'){
+ if(!d||SHELTER_PASSABLE.has(d.type))return false;
+ if((d.type==='door'||d.type==='doorTop')&&d.open)return false;
+ if(role==='roof'&&['door','doorTop','glassPane','windowFrame','cactus'].includes(d.type))return false;
+ return true;
+}
 function shelterAt(getBlock,x,feetY,z){
  const p=Math.round(x),q=Math.round(z),feet=Math.floor(feetY);
- // A usable shelter needs a roof and walls. For the tutorial goal, at least
- // one roof piece and one wall direction must be player-built so a natural cave
- // does not count as "I built a base".
+ // A usable shelter needs a real overhead cover and blocking walls. Decorative
+ // plants, torches and an open doorway do not count as architecture.
  let roof=false,roofBuilt=false;
  for(let y=feet+2;y<=feet+4;y++){
    const d=getBlock(p,y,q);
-   if(d&&!['air','water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){
+   if(shelterBlock(d,'roof')){
      roof=true;roofBuilt=!!d.playerBuilt;break;
    }
  }
@@ -126,7 +132,7 @@ function shelterAt(getBlock,x,feetY,z){
    let wall=null;
    for(const dy of [0,1]){
      const d=getBlock(p+dx,feet+dy,q+dz);
-     if(d&&!['water','lava','fire','leaves','pineLeaves','flower','reed'].includes(d.type)){wall=d;break}
+     if(shelterBlock(d,'wall')){wall=d;break}
    }
    if(wall){walls++;if(wall.playerBuilt)builtWalls++}
  }
