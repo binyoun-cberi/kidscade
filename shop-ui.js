@@ -111,7 +111,7 @@
     }
 
     function renderGardenShortcut(container) {
-      if (!['land','pet'].includes(activeTab) || !root?.KidscadeGarden) return false;
+      if (activeTab !== 'land' || !root?.KidscadeGarden) return false;
       const item = doc.createElement('div');
       item.className = 'shop-item';
       item.innerHTML = '<div class="item-icon">🌳</div><div class="item-name">정원 시설 설치</div><div class="item-desc">동물은 게임을 탐험하며 발견하고, 씨앗으로 친구들이 놀 시설을 설치해요.</div><button type="button" class="item-btn btn-buy">정원 시설 보러 가기</button>';
@@ -145,20 +145,6 @@
           btn.innerText = todayClaimed ? '오늘 선택 완료' : '오늘 보상 받기';
           btn.disabled = todayClaimed;
           btn.onclick = () => options.claimDailyReward?.(item);
-        } else if (activeTab === 'pet') {
-          const isUnlockPet = Boolean(item.kind && item.kind.startsWith('unlock_'));
-          const petType = isUnlockPet ? item.kind.replace('unlock_', '') : '';
-          const alreadyOpen = Boolean(isUnlockPet && options.isPetUnlocked?.(petType));
-          btn.className = alreadyOpen ? 'item-btn btn-equip' : 'item-btn btn-buy';
-          btn.innerText = alreadyOpen
-            ? '선택하기'
-            : (isUnlockPet ? `데려오기 (${Number(item.price || 0).toLocaleString()} 씨앗)` : `추가하기 (${Number(item.price || 0).toLocaleString()} 씨앗)`);
-          btn.onclick = () => {
-            if (alreadyOpen) options.selectPet?.(petType);
-            else if (options.buyPetThing) options.buyPetThing(item.kind);
-            else options.showToast?.('쑥쑥 친구 방을 먼저 열어주세요.');
-            render();
-          };
         } else if (!owned) {
           btn.className = 'item-btn btn-buy';
           btn.innerText = Number(item.price || 0) === 0 ? '받기' : `구매 (${Number(item.price || 0).toLocaleString()} 씨앗)`;
@@ -218,12 +204,6 @@
           render();
         });
       });
-
-      const compact = doc?.getElementById?.('btn-open-pet-shop-compact');
-      if (compact && compact.dataset.kcShopBound !== '1') {
-        compact.dataset.kcShopBound = '1';
-        compact.addEventListener('click', () => openTab('pet'));
-      }
 
       if (shopState?.subscribe) {
         unsubscribe = shopState.subscribe(detail => {
