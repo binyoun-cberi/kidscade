@@ -35,7 +35,7 @@
         crafted:[],
         food:{},
         fishDex:{},
-        museum:{version:1,discovered:{},donated:{},records:{}},
+        museum:{version:2,discovered:{},donated:{},records:{},specimens:{}},
         kitchen:{pending:null},
         cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false,products:{}},
         starterKitClaimed:false,
@@ -78,7 +78,8 @@
           ...base.progression.museum,...(p.museum||{}),
           discovered:{...base.progression.museum.discovered,...(p.museum?.discovered||{})},
           donated:{...base.progression.museum.donated,...(p.museum?.donated||{})},
-          records:{...base.progression.museum.records,...(p.museum?.records||{})}
+          records:{...base.progression.museum.records,...(p.museum?.records||{})},
+          specimens:{...base.progression.museum.specimens,...(p.museum?.specimens||{})}
         },
         kitchen:{...base.progression.kitchen,...(p.kitchen||{})},
         groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})},
