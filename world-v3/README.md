@@ -75,7 +75,7 @@
 - 마이그레이션 후에는 `kidscade_garden_v1`을 다시 참조하지 않음
 
 ## 구형 정원 폐기
-- `garden.js`는 더 이상 `garden-core.js`, `garden-life.js`, `pet-art.js`를 로드하지 않음
+- 구형 `garden-core.js`, `garden-life.js`, `pet-art.js` 런타임은 제거됨. 기존 `kidscade_garden_v1` 저장값은 World v3가 직접 읽어 Cube Pets로 마이그레이션함
 - 메인 사이드바의 기존 쑥쑥랜드/정원 진입은 생활·생존 월드 v3로 바로 연결
 - 구형 펫 상점, 햄스터 집, 정원 room 탭은 UI에서 숨김
 - 기존 파일은 v2 안정판/이력 확인을 위해 당장은 저장소에 남기되 기본 실행 경로에서는 사용하지 않음
