@@ -402,7 +402,7 @@ function rollExploreOutputs(node){
  const unseen=entries.filter(e=>!(EXPLORE_DEFS[e[0]]&&cardsOf(e[0]).length>0));if(unseen.length)entries=unseen;
  const first=weightedResult(entries),out=first?[[first,1]]:[];
  if(out.length&&Math.random()<def.bonus){
-  const secondEntries=def.results.filter(e=>e[0]!==first&&!EXPLORE_DEFS[e[0]]);
+  const secondEntries=adjustedExploreEntries(node,def.results.filter(e=>e[0]!==first&&!EXPLORE_DEFS[e[0]]));
   const second=secondEntries.length?weightedResult(secondEntries):null;if(second)out.push([second,1]);
  }
  return out;
