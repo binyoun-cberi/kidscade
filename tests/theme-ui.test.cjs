@@ -72,3 +72,34 @@ test('index_base and compact topbar both delegate theme ownership', () => {
   assert.doesNotMatch(topbar,/localStorage\.setItem\('kidscade_darkmode'/);
   assert.match(bootstrap,/withVersion\('theme-ui\.js'\)/);
 });
+
+test('topbar observer rebind settles without rewriting the theme label', () => {
+  const doc = documentFixture();
+  const s = storage();
+  let value = '';
+  let pending = false;
+  let writes = 0;
+  Object.defineProperty(doc.button, 'textContent', {
+    get: () => value,
+    set(next) { value = next; pending = true; writes++; }
+  });
+  function flush() {
+    theme.bind({document:doc, localStorage:s});
+    let callbacks = 0;
+    while (pending && callbacks < 20) {
+      pending = false; callbacks++;
+      theme.bind({document:doc, localStorage:s});
+    }
+    assert.equal(pending, false, 'topbar/theme mutation feedback must settle');
+  }
+  flush();
+  assert.equal(writes, 1);
+  doc.button.listeners.click();
+  flush();
+  assert.equal(writes, 2);
+  assert.equal(value, '☀️ 밝은 모드');
+  doc.button.listeners.click();
+  flush();
+  assert.equal(writes, 3);
+  assert.equal(value, '🌙 다크 모드');
+});
