@@ -136,7 +136,41 @@ export async function buildVenueInteriors(ctx){
     ]);
   }
 
-  const museumDisplays={};
+  const museumDisplays={},museumSlots={};
+
+  function museumObject(shape,color,scale=1){
+    const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color,roughness:.64,metalness:shape==='crystal'?.18:0});
+    let body;
+    if(shape==='fish'){
+      body=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),mat);body.scale.set(1.55,.72,.72);g.add(body);
+      const tail=new THREE.Mesh(new THREE.ConeGeometry(.13,.22,3),mat);tail.rotation.z=Math.PI/2;tail.position.x=-.26;g.add(tail);
+    }else if(shape==='bug'){
+      body=new THREE.Mesh(new THREE.SphereGeometry(.12,10,7),mat);body.scale.set(.8,1.25,.72);g.add(body);
+      for(const sx of [-.11,.11]){const wing=new THREE.Mesh(new THREE.SphereGeometry(.10,8,6),new THREE.MeshStandardMaterial({color:0xd8e3c5,transparent:true,opacity:.72,roughness:.5}));wing.scale.set(.55,.18,1.2);wing.position.set(sx,.04,0);g.add(wing)}
+    }else if(shape==='mushroom'){
+      const stem=new THREE.Mesh(new THREE.CylinderGeometry(.055,.07,.17,8),new THREE.MeshStandardMaterial({color:0xe8d9b8,roughness:.8}));stem.position.y=-.02;g.add(stem);
+      body=new THREE.Mesh(new THREE.SphereGeometry(.14,12,8),mat);body.scale.set(1,.45,1);body.position.y=.11;g.add(body);
+    }else if(shape==='crystal'){
+      body=new THREE.Mesh(new THREE.OctahedronGeometry(.15,0),mat);body.scale.set(.78,1.45,.78);g.add(body);
+    }else if(shape==='pearl'){
+      body=new THREE.Mesh(new THREE.SphereGeometry(.13,12,8),new THREE.MeshStandardMaterial({color:0xf7f0dc,roughness:.24,metalness:.08}));g.add(body);
+    }else{
+      body=new THREE.Mesh(new THREE.SphereGeometry(.13,10,7),mat);body.scale.set(1,.82,1);g.add(body);
+    }
+    g.scale.setScalar(scale);return g;
+  }
+
+  function addMuseumSlot(parent,id,x,z,{color=0xd39a5c,shape='produce',scale=1}={}){
+    const slot=new THREE.Group();slot.name='museum-slot-'+id.replace(':','-');slot.visible=false;parent.add(slot);
+    const pedestal=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,.12,10),new THREE.MeshStandardMaterial({color:0xe4dfd2,roughness:.82}));
+    pedestal.position.set(x,.08,z);slot.add(pedestal);
+    const object=museumObject(shape,color,scale);object.position.set(x,.31,z);slot.add(object);
+    museumSlots[id]=slot;return slot;
+  }
+
+  function addMuseumSectionLabel(parent,text,x,z,width=1.5){
+    const label=canvasLabel(text,{width,height:.30,font:29});label.position.set(x,1.46,z);parent.add(label);
+  }
 
   async function buildMuseum(){
     const kind='museum',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,0xc9c5b4,0xe7e2d1,VENUE_INFO[kind].name);
@@ -144,31 +178,52 @@ export async function buildVenueInteriors(ctx){
     interact(mode,-1.45,2.45,1.35,'📖 씨앗 자연도감 보기',()=>actions.museumCatalog?.());
     interact(mode,1.45,2.45,1.35,'🎁 발견물 기증하기',()=>actions.museumDonate?.());
 
-    // Reception and four exhibit wings. Each wing becomes visible only after the
-    // first matching donation, so the room physically fills as the collection grows.
     box(g,0,2.15,3.8,.75,.85,0x8f7455,.02);
     const reception=canvasLabel('도감 · 기증 접수',{width:2.25,height:.48,font:32});
     reception.position.set(0,1.55,2.12);g.add(reception);
 
+    // Each donation owns one independent 3D slot. Wings appear after the first
+    // donation, then visibly fill one object at a time instead of popping in complete.
     const aquarium=new THREE.Group();aquarium.name='museum-aquarium';g.add(aquarium);
-    box(aquarium,-3.35,-1.45,2.65,2.0,1.55,0x6da7bf,.02);
-    box(aquarium,-3.35,-1.45,2.25,1.6,.10,0x8ed3d8,1.42);
-    const aqLabel=canvasLabel('🐟 물고기 수조',{width:1.45,height:.34,font:31});aqLabel.position.set(-3.35,2.02,-1.45);aquarium.add(aqLabel);
+    box(aquarium,-4.15,-1.55,2.15,3.55,.18,0x6da7bf,.02);
+    box(aquarium,-4.15,-1.55,1.78,3.15,.10,0x8ed3d8,.32);
+    addMuseumSectionLabel(aquarium,'🐟 수조',-4.15,-3.05,1.18);
+    [
+      ['fish:pond',-4.55,-2.25,0x6fc0d2],['fish:river',-3.75,-1.85,0x5b90cc],
+      ['fish:beach',-4.55,-1.05,0xe8b45f],['fish:rare',-3.75,-.65,0xd7b5ef]
+    ].forEach(([id,x,z,color])=>addMuseumSlot(aquarium,id,x,z,{color,shape:'fish',scale:.9}));
 
     const nature=new THREE.Group();nature.name='museum-nature';g.add(nature);
-    box(nature,3.35,-1.55,2.65,1.85,.52,0x7f9861,.02);
-    for(const [x,z,color] of [[2.75,-1.62,0xd9c69b],[3.35,-1.35,0xb98b63],[3.92,-1.66,0xe2d4b4]])box(nature,x,z,.42,.42,.48,color,.53);
-    const natureLabel=canvasLabel('🍄 자연 채집관',{width:1.55,height:.34,font:31});natureLabel.position.set(3.35,1.48,-1.55);nature.add(natureLabel);
+    box(nature,-1.75,-1.55,1.85,3.55,.18,0x7f9861,.02);
+    addMuseumSectionLabel(nature,'🍄 자연',-1.75,-3.05,1.18);
+    [
+      ['nature:pearl',-2.05,-2.20,0xf4ead6,'pearl'],['nature:shell',-1.42,-1.72,0xe4aa93,'produce'],
+      ['nature:bug',-2.05,-1.08,0x55734f,'bug'],['nature:mushroom',-1.42,-.58,0xc95d51,'mushroom']
+    ].forEach(([id,x,z,color,shape])=>addMuseumSlot(nature,id,x,z,{color,shape,scale:.9}));
 
     const mineral=new THREE.Group();mineral.name='museum-mineral';g.add(mineral);
-    box(mineral,-3.15,.62,3.0,1.25,.48,0x8b857d,.02);
-    for(const [x,color,h] of [[-4.05,0x8d9396,.52],[-3.15,0xb7794e,.64],[-2.25,0xe2c65c,.72]])box(mineral,x,.62,.48,.48,h,color,.50);
-    const mineralLabel=canvasLabel('💎 광물 전시관',{width:1.55,height:.34,font:31});mineralLabel.position.set(-3.15,1.52,.62);mineral.add(mineralLabel);
+    box(mineral,-3.0,.75,4.3,1.25,.18,0x8b857d,.02);
+    addMuseumSectionLabel(mineral,'💎 광물',-3.0,.22,1.22);
+    [
+      ['mineral:stone',-4.55,.85,0x8d9396],['mineral:iron',-3.78,.85,0x66717a],
+      ['mineral:copper',-3.0,.85,0xb7794e],['mineral:quartz',-2.22,.85,0x9fd7dc],
+      ['mineral:gold',-1.45,.85,0xe2c65c]
+    ].forEach(([id,x,z,color])=>addMuseumSlot(mineral,id,x,z,{color,shape:'crystal',scale:.95}));
 
     const farm=new THREE.Group();farm.name='museum-farm';g.add(farm);
-    box(farm,3.15,.55,3.0,1.30,.50,0xa9865f,.02);
-    for(const [x,color] of [[2.35,0xe67e3a],[3.15,0xc95142],[3.95,0xf0cb55]])box(farm,x,.55,.44,.44,.60,color,.52);
-    const farmLabel=canvasLabel('🌱 농업·요리관',{width:1.65,height:.34,font:31});farmLabel.position.set(3.15,1.55,.55);farm.add(farmLabel);
+    box(farm,2.55,-.65,5.15,4.65,.18,0xa9865f,.02);
+    addMuseumSectionLabel(farm,'🌱 농업 · 요리',2.55,-3.0,1.65);
+    const farmIds=[
+      'crop:potato','crop:carrot','crop:tomato','crop:strawberry','crop:corn','crop:pumpkin','crop:beet','crop:lettuce','crop:mushroom',
+      'crop:rice','crop:watermelon','crop:wheat','crop:bamboo','crop:berry',
+      'fruit:apple','fruit:pear','fruit:peach','fruit:orange','fruit:cherry',
+      'food:grilledFish','food:bakedPotato','food:veggieSoup','food:mushroomSoup','food:omelet','food:fruitSalad','food:cityLunch','food:cafeToast'
+    ];
+    const farmColors=[0xc9a16a,0xe67e3a,0xc95142,0xe85e72,0xf0cb55,0xe98932,0xb7355b,0x70ad55,0xc95d51,0xe4d176,0x4e9857,0xd9b95d,0x5f9d57,0x8650a1,0xcf4d3f,0xd4b16e,0xf0a079,0xe8a552,0xb83d52,0x659db2,0xc69b5b,0x8ebc6a,0xc88c65,0xe3c36b,0xa8c77d,0x86a9c5,0xb87c55];
+    farmIds.forEach((id,index)=>{
+      const col=index%9,row=Math.floor(index/9),x=.45+col*.52,z=-2.25+row*.78;
+      addMuseumSlot(farm,id,x,z,{color:farmColors[index]||0xd39a5c,shape:id==='crop:mushroom'?'mushroom':id.startsWith('food:')?'produce':'produce',scale:.68});
+    });
 
     museumDisplays.aquarium=aquarium;
     museumDisplays.nature=nature;
@@ -178,8 +233,9 @@ export async function buildVenueInteriors(ctx){
   }
 
   function syncMuseumDisplays(){
-    const exhibits=actions.museumSummary?.()?.exhibits||{};
+    const summary=actions.museumSummary?.()||{},exhibits=summary.exhibits||{},donated=new Set(summary.donatedIds||[]);
     for(const [key,group] of Object.entries(museumDisplays))group.visible=!!exhibits[key];
+    for(const [id,slot] of Object.entries(museumSlots))slot.visible=donated.has(id);
   }
 
   const builders={market:buildMarket,hardware:buildHardware,cafe:buildCafe,museum:buildMuseum};
