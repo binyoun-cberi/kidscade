@@ -1561,6 +1561,21 @@ function dungeonInteract(){
   const target=nearestDungeonTarget(2.6);
   if(!target){toast('조사할 장치에 조금 더 가까이 가 보세요.');return}
   const data=target.userData,stage=dungeonSession.stage||0;
+  if(data.targetKind==='shrineVoxel'){
+    if(data.puzzleStage!==stage){toast('지금 방의 수학 장치부터 해결해 보세요.');return}
+    const poi=poiRules.poiById(dungeonSession.poiId),theme=DUNGEON_THEMES[poi?.dungeon?.theme]||DUNGEON_THEMES.marble;
+    const active=new Set(dungeonSession.puzzleState?.[stage]||[]),on=!active.has(data.voxelKey);
+    dungeonSetVoxel(stage,data.voxelKey,on);renderDungeonVoxelPuzzle(stage,theme);sfx('place');
+    completeDungeonVoxelStage(stage,poi);updateDungeonHud();return;
+  }
+  if(data.targetKind==='shrineNet'){
+    if(stage!==2){toast('앞쪽 퍼즐부터 해결해야 이 장치를 사용할 수 있어요.');return}
+    animateDungeonNetChoice(data.netIndex);return;
+  }
+  if(data.targetKind==='shrinePortal'){
+    if(stage<3){toast('세 개의 수학 퍼즐을 모두 해결해야 설계 핵심이 열려요.');return}
+    completeDungeonShrine();return;
+  }
   if(data.targetKind==='seal'&&stage===0){
     const active=dungeonSession.seals||(dungeonSession.seals=[]);
     if(!active.includes(data.targetId)){active.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good')}
