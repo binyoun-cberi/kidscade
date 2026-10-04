@@ -106,8 +106,9 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
         <div class="project-actions" style="margin-top:7px">
           <button id="exportPartAnalysis" type="button">현재 파츠 분석 JSON</button>
           <label class="file-btn secondary">현재 파츠 보정 적용<input id="importPartAdjustment" type="file" accept="application/json,.json"></label>
+          <button id="exportBodyReference" type="button">맨몸 BODY 기준 JSON</button>
           <button id="exportFullAnalysis" type="button">전체 분석 JSON</button>
-          <label class="file-btn secondary">전체 보정 JSON 적용<input id="importFullAdjustment" type="file" accept="application/json,.json"></label>
+          <label class="file-btn secondary full">전체 보정 JSON 적용<input id="importFullAdjustment" type="file" accept="application/json,.json"></label>
         </div>
         <div id="adjustmentSummary" class="muted" style="margin-top:6px">대상: 현재 편집 파츠 · STAND 2 / WALK 4 / JUMP 1 전체</div>
       </section>
@@ -138,7 +139,7 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
           <button id="copyPrev" class="secondary primary-wide" style="margin-top:5px" type="button">← 이전 프레임 현재 파츠 복사</button>
           <div class="divider"></div>
           <div class="project-actions">
-            <button id="exportCurrent" type="button">현재 파츠 PNG</button><button id="exportComposite" class="secondary" type="button">합성 PNG</button><button id="exportCurrentBody" class="secondary" type="button">BODY PNG</button><button id="exportCurrentHair" class="secondary" type="button">HAIR PNG</button><button id="exportManifest" class="secondary" type="button">manifest</button><button id="exportBundle" type="button">전체 ZIP</button><button id="saveProject" class="secondary" type="button">프로젝트 JSON</button><label class="file-btn secondary">불러오기<input id="loadProject" type="file" accept="application/json"></label><button id="clearFrame" class="warn full" type="button">현재 파츠 비우기</button><button id="clearAll" class="danger full" type="button">전체 초기화</button>
+            <button id="exportCurrent" type="button">현재 파츠 PNG</button><button id="exportComposite" class="secondary" type="button">합성 PNG</button><button id="exportCurrentBody" class="secondary" type="button">BODY PNG</button><button id="exportCurrentHair" class="secondary" type="button">HAIR PNG</button><button id="exportManifest" class="secondary" type="button">manifest</button><button id="exportBundle" type="button">전체 ZIP</button><button id="saveProject" class="secondary" type="button">프로젝트 JSON</button><label class="file-btn secondary">불러오기<input id="loadProject" type="file" accept="application/json"></label><button id="clearFrame" class="warn full" type="button">현재 파츠 비우기</button><button id="clearAll" class="danger full" type="button">착용 파츠 전체 초기화 (BODY 유지)</button>
           </div>
           <details class="advanced">
             <summary>에셋 ID</summary>
@@ -155,6 +156,6 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
     </aside>
   </main>
 </div>
-<script src="/teacher-avatar-clothing-studio.js?v=12"></script>
+<script src="/teacher-avatar-clothing-studio.js?v=13"></script>
 </body>
 </html>
