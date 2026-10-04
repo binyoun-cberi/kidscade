@@ -9,13 +9,15 @@ const PEOPLE=new URL('characters/people/',ROOT).href;
 export const VENUE_MODES={
   market:'venue-market',
   hardware:'venue-hardware',
-  cafe:'venue-cafe'
+  cafe:'venue-cafe',
+  museum:'venue-museum'
 };
 
 export const VENUE_INFO={
   market:{name:'씨앗마트',npc:'민지',npcId:'minji',model:PEOPLE+'character-female-a.glb'},
   hardware:{name:'튼튼 철물점',npc:'준호',npcId:'junho',model:PEOPLE+'character-male-a.glb'},
-  cafe:{name:'하늘 카페',npc:'하늘',npcId:'haneul',model:PEOPLE+'character-female-b.glb'}
+  cafe:{name:'하늘 카페',npc:'하늘',npcId:'haneul',model:PEOPLE+'character-female-b.glb'},
+  museum:{name:'씨앗 자연박물관'}
 };
 
 export const VENUE_BOUNDS={x1:-5.45,x2:5.45,z1:-3.85,z2:3.85};
@@ -134,7 +136,53 @@ export async function buildVenueInteriors(ctx){
     ]);
   }
 
-  const builders={market:buildMarket,hardware:buildHardware,cafe:buildCafe};
+  const museumDisplays={};
+
+  async function buildMuseum(){
+    const kind='museum',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,0xc9c5b4,0xe7e2d1,VENUE_INFO[kind].name);
+    interact(mode,0,3.35,1.0,'🚪 박물관 밖으로 나가기',()=>actions.exitVenue());
+    interact(mode,-1.45,2.45,1.35,'📖 씨앗 자연도감 보기',()=>actions.museumCatalog?.());
+    interact(mode,1.45,2.45,1.35,'🎁 발견물 기증하기',()=>actions.museumDonate?.());
+
+    // Reception and four exhibit wings. Each wing becomes visible only after the
+    // first matching donation, so the room physically fills as the collection grows.
+    box(g,0,2.15,3.8,.75,.85,0x8f7455,.02);
+    const reception=canvasLabel('도감 · 기증 접수',{width:2.25,height:.48,font:32});
+    reception.position.set(0,1.55,2.12);g.add(reception);
+
+    const aquarium=new THREE.Group();aquarium.name='museum-aquarium';g.add(aquarium);
+    box(aquarium,-3.35,-1.45,2.65,2.0,1.55,0x6da7bf,.02);
+    box(aquarium,-3.35,-1.45,2.25,1.6,.10,0x8ed3d8,1.42);
+    const aqLabel=canvasLabel('🐟 물고기 수조',{width:1.45,height:.34,font:31});aqLabel.position.set(-3.35,2.02,-1.45);aquarium.add(aqLabel);
+
+    const nature=new THREE.Group();nature.name='museum-nature';g.add(nature);
+    box(nature,3.35,-1.55,2.65,1.85,.52,0x7f9861,.02);
+    for(const [x,z,color] of [[2.75,-1.62,0xd9c69b],[3.35,-1.35,0xb98b63],[3.92,-1.66,0xe2d4b4]])box(nature,x,z,.42,.42,.48,color,.53);
+    const natureLabel=canvasLabel('🍄 자연 채집관',{width:1.55,height:.34,font:31});natureLabel.position.set(3.35,1.48,-1.55);nature.add(natureLabel);
+
+    const mineral=new THREE.Group();mineral.name='museum-mineral';g.add(mineral);
+    box(mineral,-3.15,.62,3.0,1.25,.48,0x8b857d,.02);
+    for(const [x,color,h] of [[-4.05,0x8d9396,.52],[-3.15,0xb7794e,.64],[-2.25,0xe2c65c,.72]])box(mineral,x,.62,.48,.48,h,color,.50);
+    const mineralLabel=canvasLabel('💎 광물 전시관',{width:1.55,height:.34,font:31});mineralLabel.position.set(-3.15,1.52,.62);mineral.add(mineralLabel);
+
+    const farm=new THREE.Group();farm.name='museum-farm';g.add(farm);
+    box(farm,3.15,.55,3.0,1.30,.50,0xa9865f,.02);
+    for(const [x,color] of [[2.35,0xe67e3a],[3.15,0xc95142],[3.95,0xf0cb55]])box(farm,x,.55,.44,.44,.60,color,.52);
+    const farmLabel=canvasLabel('🌱 농업·요리관',{width:1.65,height:.34,font:31});farmLabel.position.set(3.15,1.55,.55);farm.add(farmLabel);
+
+    museumDisplays.aquarium=aquarium;
+    museumDisplays.nature=nature;
+    museumDisplays.mineral=mineral;
+    museumDisplays.farm=farm;
+    syncMuseumDisplays();
+  }
+
+  function syncMuseumDisplays(){
+    const exhibits=actions.museumSummary?.()?.exhibits||{};
+    for(const [key,group] of Object.entries(museumDisplays))group.visible=!!exhibits[key];
+  }
+
+  const builders={market:buildMarket,hardware:buildHardware,cafe:buildCafe,museum:buildMuseum};
   function hideAll(){for(const g of Object.values(groups))g.visible=false}
   function ensure(kind){
     if(built.has(kind))return Promise.resolve(groups[kind]);
@@ -145,8 +193,8 @@ export async function buildVenueInteriors(ctx){
   }
   async function show(kind){
     hideAll();const g=groups[kind];if(!g)return null;g.visible=true;
-    await ensure(kind);if(g)g.visible=true;return g;
+    await ensure(kind);if(kind==='museum')syncMuseumDisplays();if(g)g.visible=true;return g;
   }
   hideAll();
-  return {groups,show,hideAll,ensure,isBuilt:kind=>built.has(kind)};
+  return {groups,show,hideAll,ensure,syncMuseumDisplays,isBuilt:kind=>built.has(kind)};
 }
