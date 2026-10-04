@@ -81,7 +81,13 @@ class TravelFX {
       this.icon.textContent=kind==='rail'?'🚄':kind==='sea'?'🚢':'✈️';
       this.title.textContent=kind==='rail'?'기차 이동':kind==='sea'?'배 이동':'항공 이동';
       this.route.textContent=from+' → '+to;
-      setTimeout(()=>{this.overlay.classList.remove('show');resolve()},duration);
+      const card=this.overlay.querySelector('.travel-fx-card');
+      card?.setAttribute('data-fallback',this.icon.textContent);
+      setTimeout(()=>{
+        this.overlay.classList.remove('show');
+        card?.removeAttribute('data-fallback');
+        resolve();
+      },duration);
     });
   }
   play({kind='air',from='',to='',fast=false}={}){
