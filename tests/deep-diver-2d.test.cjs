@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=34/);
-  assert.match(html,/diver-v7\.js\?v=35/);
+  assert.match(html,/deep-diver-2d\\.css\\?v=36/);
+  assert.match(html,/diver-v7\\.js\\?v=36/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -237,7 +237,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=35');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=36');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -1085,4 +1085,32 @@ test('Deep Diver v34 keeps state readable after player-caused changes',()=>{
   assert.match(js,/펄스에 반응한 생물/);
   assert.match(js,/카메라 정밀 관찰/);
   assert.match(html,/OBSERVE \/ APPROACH \/ HUNT/);
+});
+
+
+test('Deep Diver v36 guides young players toward the next objective',()=>{
+  assert.match(html,/id="objectiveCompass"/);
+  assert.match(html,/id="rookieTip"/);
+  assert.match(js,/function currentObjectiveTarget/);
+  assert.match(js,/function updateObjectiveCompass/);
+  assert.match(js,/청색 암초어 촬영/);
+  assert.match(js,/탐사선으로 귀환/);
+  assert.match(js,/저녁 식당용 물고기 1마리/);
+});
+
+test('Deep Diver v36 explains capture difficulty and recommended gear',()=>{
+  assert.match(js,/function captureDifficultyInfo/);
+  assert.match(js,/포획 난이도/);
+  assert.match(js,/const CONTRACT_GEAR_RECOMMEND=/);
+  assert.match(js,/추천 장비/);
+  assert.match(css,/\.gearCard\.recommended/);
+  assert.match(css,/\.gearRecommend/);
+});
+
+test('Deep Diver v36 shortens night service with automatic serving',()=>{
+  assert.match(js,/function queueRestaurantAutoServe/);
+  assert.match(js,/자동 서빙/);
+  assert.doesNotMatch(js,/id="serveDishBtn"/);
+  assert.match(js,/queueRestaurantAutoServe\(customerId\)/);
+  assert.match(css,/\.dishReady\.autoServe/);
 });
