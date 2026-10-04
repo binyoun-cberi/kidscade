@@ -6,6 +6,8 @@ const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const renderer=fs.readFileSync(path.join(root,'pixel-avatar-renderer.js'),'utf8');
+const v3Studio=fs.readFileSync(path.join(root,'avatar-school-studio.js'),'utf8');
+const v3Runtime=fs.readFileSync(path.join(root,'school-avatar-runtime.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const lab=fs.readFileSync(path.join(root,'pixel-avatar-lab.html'),'utf8');
 const rig=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v1/runtime/avatar-rig-v2.json'),'utf8'));
@@ -15,17 +17,29 @@ const legacyHairWorkflow=fs.readFileSync(path.join(root,'.github/workflows/avata
 const upperClothesExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-upper-clothes.py'),'utf8');
 const lowerClothesExtract=fs.readFileSync(path.join(root,'scripts/extract-avatar-lower-clothes.py'),'utf8');
 
-test('avatar studio and renderer JavaScript both parse cleanly',()=>{
+test('avatar runtimes and studio controllers parse cleanly',()=>{
   assert.doesNotThrow(()=>new Function(renderer));
   assert.doesNotThrow(()=>new Function(js));
+  assert.doesNotThrow(()=>new Function(v3Runtime));
+  assert.doesNotThrow(()=>new Function(v3Studio));
 });
 
-test('pixel avatar studio loads the shared rig renderer before the studio controller',()=>{
-  assert.match(html,/pixel-avatar-renderer\.js\?v=27/);
-  assert.match(html,/avatar-pixel-studio\.js\?v=31/);
-  assert.ok(html.indexOf('pixel-avatar-renderer.js?v=27')<html.indexOf('avatar-pixel-studio.js?v=31'));
+test('public avatar studio loads only the v3 school runtime and controller',()=>{
+  assert.match(html,/school-avatar-runtime\.js\?v=1/);
+  assert.match(html,/avatar-school-studio\.js\?v=1/);
+  assert.ok(html.indexOf('school-avatar-runtime.js?v=1')<html.indexOf('avatar-school-studio.js?v=1'));
+  assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
+  assert.doesNotMatch(html,/avatar-pixel-studio\.js/);
   assert.match(html,/avatarCanvas/);
-  assert.doesNotMatch(html,/avatar-pack-1\.js/);
+});
+
+test('v3 public studio exposes nine registered starter slots and no JSON controls',()=>{
+  for(const tab of ['hair','eyes','mouth','earring','upper','lower','shoes','weapon','shield'])assert.match(html,new RegExp('data-tab="'+tab+'"'));
+  assert.match(v3Studio,/school-starter-01/);
+  assert.match(v3Studio,/school-ruler-01/);
+  assert.match(v3Studio,/school-textbook-01/);
+  assert.doesNotMatch(html,/application\/json|JSON 적용|JSON 내보내기/);
+  assert.doesNotMatch(v3Studio,/FileReader|type=['"]file['"]/);
 });
 
 test('pixel avatar studio exposes only the curated standalone hair catalog',()=>{
@@ -47,18 +61,14 @@ test('pixel avatar studio exposes only the curated standalone hair catalog',()=>
   assert.match(js,/blush:4/);
 });
 
-test('avatar studio exposes one stand idle walk and jump preview controller',()=>{
+test('v3 studio exposes all eight approved animation groups',()=>{
   assert.equal((html.match(/id="motionControls"/g)||[]).length,1);
-  assert.match(html,/data-motion="static"/);
-  assert.match(html,/data-motion="idle"/);
-  assert.match(html,/data-motion="walk"/);
-  assert.match(html,/data-motion="jump"/);
-  assert.match(js,/function startPreviewMode\(mode='static'\)/);
-  assert.match(js,/function setPreviewMode\(mode\)/);
-  assert.match(js,/function previewTick\(now\)/);
-  assert.match(js,/Math\.sin\(Math\.PI\*phase\)/);
-  assert.match(js,/setPreviewMode:startPreviewMode/);
-  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  for(const mode of ['static','walk','jump','attack','hurt','dead','sit','pickup'])assert.match(html,new RegExp('data-motion="'+mode+'"'));
+  assert.match(v3Studio,/function startPreviewMode\(mode='static'\)/);
+  assert.match(v3Studio,/renderPreviewFrame/);
+  assert.match(v3Runtime,/static:'stand',idle:'stand',smile:'stand'/);
+  assert.match(v3Runtime,/attack:'attack'/);
+  assert.match(v3Runtime,/pickup:'pickup'/);
 });
 
 test('studio delegates actual composition to the anchor-rig renderer',()=>{
