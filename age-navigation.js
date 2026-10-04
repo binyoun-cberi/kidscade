@@ -42,7 +42,23 @@
     function render() {
       const screen = element('age-selection-screen');
       const main = element('main-app');
+      const bootScreen = element('kc-lobby-boot-screen');
       const ready = phase === 'ready';
+      const homeReady = document.body?.classList?.contains?.('kc-home-v2-ready') === true;
+      const bootResolved = Boolean(document.body?.dataset?.kcLobbyBootResolved);
+
+      // First visitors should see the age gate immediately. Returning players keep
+      // the branded boot screen until Home V2 (or the verified classic fallback)
+      // explicitly resolves startup.
+      if (!ready) {
+        document.body?.classList?.remove?.('kc-lobby-booting');
+        bootScreen?.setAttribute?.('aria-hidden', 'true');
+        bootScreen?.setAttribute?.('aria-busy', 'false');
+      } else if (!homeReady && !bootResolved) {
+        document.body?.classList?.add?.('kc-lobby-booting');
+        bootScreen?.setAttribute?.('aria-hidden', 'false');
+        bootScreen?.setAttribute?.('aria-busy', 'true');
+      }
 
       if (main) {
         main.inert = !ready;
