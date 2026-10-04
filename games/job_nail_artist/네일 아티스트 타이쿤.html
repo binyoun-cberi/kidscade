@@ -941,9 +941,10 @@
             nails.forEach((nail, index) => {
                 const target = targetPattern[index];
                 if (nail.dataset.cuticle === 'false') points += 1;
-                if (nail.dataset.color === target.color) points += 2;
-                if (nail.dataset.finish === target.finish) points += 1;
-                if (nail.dataset.sticker === target.sticker) points += 1;
+                const colorCorrect = nail.dataset.color === target.color;
+                if (colorCorrect) points += 2;
+                if (colorCorrect && nail.dataset.finish === target.finish) points += 1;
+                if (colorCorrect && nail.dataset.sticker === target.sticker) points += 1;
             });
             const score = points / (targetPattern.length * 5);
             return { score, percent:Math.round(score * 100) };
