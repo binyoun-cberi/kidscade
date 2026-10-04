@@ -8,9 +8,8 @@ const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
 const LAYERS=[
-  'weaponBack','shieldBack',
-  'body','eyes','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat',
-  'shieldFront','weaponFront'
+  'body','eyes','mouth','mask','upper','lower','shoes','gloves','hair','hat','earring',
+  'weaponFront','weaponBack','shieldFront','shieldBack'
 ];
 const FACE_LAYERS=['eyes','mouth'];
 const HAIR_LAYERS=['hair','hat'];
