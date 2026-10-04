@@ -112,7 +112,12 @@ test('One Stroke reports results and achievements through the common SDK',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/KidscadeGame\?\.start/);
   assert.match(html,/KidscadeGame\?\.gameOver/);
-  for(const id of ['low_one_stroke.first_route','low_one_stroke.clean_route','low_one_stroke.stages_10','low_one_stroke.master_50']){
-    assert.ok(html.includes(id),id);
-  }
+  assert.match(html,/completedCount:save\.completed\.length/);
+  assert.match(html,/clean,elapsedMs/);
+});
+
+
+test('One Stroke activates its planned mastery and secret achievement rules',()=>{
+  const catalog=fs.readFileSync(path.join(root,'achievement-catalog.js'),'utf8');
+  assert.match(catalog,/low_one_stroke:\s*\{[\s\S]*field:'clean'[\s\S]*field:'completedCount'/);
 });
