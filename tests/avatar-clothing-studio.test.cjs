@@ -265,7 +265,7 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
 
 test('avatar studio markup does not leak closing tag text',()=>{
   assert.ok(!html.includes('</main>/div>'));
-  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=19"></script>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=20"></script>'));
 });
 
 
@@ -319,4 +319,45 @@ test('part analysis exposes action timing anchors and derived state',()=>{
   assert.ok(js.includes('event:frame.event||null'));
   assert.ok(js.includes('derived:!!frame.derived'));
   assert.ok(js.includes('For best quality, explicitly provide action-frame pixels'));
+});
+
+
+test('weapon and shield front/back passes are first-class studio layers',()=>{
+  for(const layer of ['weaponBack','weaponFront','shieldBack','shieldFront']){
+    assert.ok(js.includes("'"+layer+"'"));
+  }
+  assert.ok(js.includes("const WEAPON_LAYERS=['weaponBack','weaponFront']"));
+  assert.ok(js.includes("const SHIELD_LAYERS=['shieldBack','shieldFront']"));
+  assert.ok(js.includes("const EQUIPMENT_LAYERS=[...WEAPON_LAYERS,...SHIELD_LAYERS]"));
+  assert.ok(js.includes("'weaponBack','shieldBack'"));
+  assert.ok(js.includes("'shieldFront','weaponFront'"));
+});
+
+test('equipment editing controls and visibility toggle are exposed',()=>{
+  for(const id of ['layerWeaponFront','layerWeaponBack','layerShieldFront','layerShieldBack','showEquipment','weaponFrontId','weaponBackId','shieldFrontId','shieldBackId']){
+    assert.ok(html.includes('id="'+id+'"'));
+  }
+  assert.ok(html.includes('무기 · 방패 레이어'));
+  assert.ok(html.includes('방어구·의상'));
+  assert.ok(js.includes("if(EQUIPMENT_LAYERS.includes(layer))return $('showEquipment').checked"));
+});
+
+test('equipment action derivation follows weapon and shield anchors',()=>{
+  assert.match(js,/function equipmentAnchor\(frame,layer\)/);
+  assert.match(js,/function derivedEquipmentCanvas\(frameId,layer,spec\)/);
+  assert.ok(js.includes("const EQUIPMENT_ATTACK_ANGLES="));
+  assert.ok(js.includes("anchors.weaponPivot||anchors.leftHand"));
+  assert.ok(js.includes("anchors.rightHand"));
+  assert.ok(js.includes("targetFrame.kind==='attack'"));
+});
+
+test('equipment is included in analysis, status and exported bundle folders',()=>{
+  assert.ok(js.includes("equipment:[...EQUIPMENT_LAYERS]"));
+  assert.ok(js.includes("weapon:[...WEAPON_LAYERS]"));
+  assert.ok(js.includes("shield:[...SHIELD_LAYERS]"));
+  assert.ok(js.includes("['EQUIP',anyLayerHasInk(rec,EQUIPMENT_LAYERS)]"));
+  assert.ok(js.includes("weaponBack:'equipment/weapon/back'"));
+  assert.ok(js.includes("weaponFront:'equipment/weapon/front'"));
+  assert.ok(js.includes("shieldBack:'equipment/shield/back'"));
+  assert.ok(js.includes("shieldFront:'equipment/shield/front'"));
 });
