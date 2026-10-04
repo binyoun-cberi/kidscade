@@ -323,16 +323,23 @@ function specimenRecordLine(f){
  const rec=meta.records?.[f.key];if(!rec?.caughtCount)return'내 포획 기록 없음';
  return'내 최고 '+Number(rec.heaviest||0).toFixed(2)+'kg · 최대 '+Math.round((rec.largestCaught||1)*100)+'% · '+rec.caughtCount+'회'
 }
+function captureDifficultyInfo(f,method){
+ const sp=SPECIES[f.key];if(!sp||sp.protected||!(sp.weight>0))return{label:'관찰 전용',className:'locked',chance:0};
+ const use=method||(sp.catchMethods||[]).find(k=>GEAR_DEFS[k])||'net',check=captureCompatibility(f,use);
+ if(!check.ok)return{label:'장비 부족',className:'locked',chance:0};
+ const difficulty=(sp.catchDifficulty||2)+(check.preferred?0:2),chance=captureChance(difficulty,use,f);
+ return chance>=.72?{label:'쉬움',className:'easy',chance}:chance>=.48?{label:'보통',className:'normal',chance}:{label:'어려움',className:'hard',chance}
+}
 function observationGearHint(f){
  const sp=SPECIES[f.key];if(sp.protected||!(sp.weight>0))return'관찰 전용 · 포획 금지';
  const methods=(sp.catchMethods||[]).filter(k=>GEAR_DEFS[k]);if(!methods.length)return'적합 장비 정보 없음';
  const ranked=methods.map(method=>({method,check:captureCompatibility(f,method),equipped:!!world?.loadout?.includes(method),tier:gearTier(method)}))
   .sort((a,b)=>(Number(b.check.ok)+Number(b.equipped)*.35)-(Number(a.check.ok)+Number(a.equipped)*.35));
- const pick=ranked[0],name=catchMethodLabel(pick.method),tierName=GEAR_TIER_NAMES[pick.tier]||('Lv.'+pick.tier);
- if(pick.check.ok)return name+' '+tierName+(pick.equipped?' · 오늘 사용 가능':' · 창고 보유/오늘 미장착');
- if(pick.check.reason==='tier')return name+' '+(GEAR_TIER_NAMES[pick.check.required]||('Lv.'+pick.check.required))+' 이상 필요';
- if(pick.check.reason==='size')return name+' 용량 부족 · 상위 장비 필요';
- return name+'이 적합'
+ const pick=ranked[0],name=catchMethodLabel(pick.method),tierName=GEAR_TIER_NAMES[pick.tier]||('Lv.'+pick.tier),diff=captureDifficultyInfo(f,pick.method);
+ if(pick.check.ok)return name+' '+tierName+(pick.equipped?' · 오늘 사용 가능':' · 창고 보유/오늘 미장착')+' · 포획 난이도 '+diff.label;
+ if(pick.check.reason==='tier')return name+' '+(GEAR_TIER_NAMES[pick.check.required]||('Lv.'+pick.check.required))+' 이상 필요 · 포획 난이도 '+diff.label;
+ if(pick.check.reason==='size')return name+' 용량 부족 · 상위 장비 필요 · 포획 난이도 '+diff.label;
+ return name+'이 적합 · 포획 난이도 '+diff.label
 }
 function findObservationTarget(){
  if(!world)return null;
@@ -1225,12 +1232,69 @@ function missionComplete(){
  if(id==='hadal')return !!(m.visited.whaleFall&&m.visited.riftAbyss&&m.visited.volcanoCaldera&&['angler','giantIsopod'].some(k=>gradeAtLeast(m.photoGrades[k],'A')));
  return !!(m.deep&&['A','S'].includes(m.giantGrade));
 }
+function nearestObjectiveCreature(keys){
+ const p=world?.player;if(!p)return null;const wanted=new Set(Array.isArray(keys)?keys:[keys]);
+ return world.fish.filter(f=>f.alive&&wanted.has(f.key)).map(f=>({f,d:Math.hypot(f.x-p.x,f.y-p.y)})).sort((a,b)=>a.d-b.d)[0]?.f||null
+}
+function nearestObjectiveHarvest(){
+ const p=world?.player;if(!p)return null;
+ return world.harvestables.filter(h=>!h.taken).map(h=>({h,d:Math.hypot(h.x-p.x,h.y-p.y)})).sort((a,b)=>a.d-b.d)[0]?.h||null
+}
+function objectiveCreatureTarget(keys,label){
+ const f=nearestObjectiveCreature(keys);return f?{x:f.x,y:f.y,label:label||SPECIES[f.key]?.name||'목표 생물',kind:'life'}:null
+}
+function objectiveBoat(){return world?.boat?{x:world.boat.x,y:world.boat.y,label:'탐사선으로 귀환',kind:'return'}:null}
+function currentObjectiveTarget(){
+ if(!world)return null;const p=world.player,m=world.mission,id=world.contract.id,reserve=oxygenReserveStatus();
+ if(reserve.code==='critical')return objectiveBoat();
+ if(id==='free'){
+  if(meta.day===1&&world.catchWeight<.05)return objectiveCreatureTarget(world.loadout.includes('net')?['blue','orange','green','grey','bream','mackerel','flounder']:['blue','orange','green'],'저녁 식당용 물고기 1마리');
+  return null
+ }
+ if(id==='reef'){
+  for(const [key,label] of [['blue','청색 암초어 촬영'],['orange','주황 산호어 촬영'],['pink','분홍 산호어 촬영']])if(!gradeAtLeast(m.photoGrades[key],'B'))return objectiveCreatureTarget(key,label);
+  if(!m.visited.reefMaze){const z=SUBZONES.find(q=>q.id==='reefMaze');return{x:p.x,y:(z.y0+z.y1)/2,label:'산호 미로 통과',kind:'zone'}}
+ }
+ if(id==='kelp'){
+  if(!gradeAtLeast(m.photoGrades.long,'A'))return objectiveCreatureTarget('long','희귀 긴꼬리어 A급 촬영');
+  if(m.samples<2){const h=nearestObjectiveHarvest();if(h)return{x:h.x,y:h.y,label:'식재료 표본 '+m.samples+'/2',kind:'harvest'}}
+  if(!m.visited.currentCut){const z=SUBZONES.find(q=>q.id==='currentCut');return{x:p.x,y:(z.y0+z.y1)/2,label:'조류 협곡 통과',kind:'zone'}}
+ }
+ if(id==='ruins'){
+  if(!m.statue){const o=world.props.find(o=>o.id==='statue'&&!o.done);if(o)return{x:o.x,y:o.y,label:'침수 석상 기록',kind:'objective'}}
+  if(!m.arch){const o=world.props.find(o=>o.id==='arch'&&!o.done);if(o)return{x:o.x,y:o.y,label:'석조 아치 기록',kind:'objective'}}
+  if(!m.relic){const q=world.pickups.find(q=>q.id==='relic'&&!q.taken);if(q)return{x:q.x,y:q.y,label:'고대 표식판 회수',kind:'objective'}}
+ }
+ if(id==='wreck'&&!m.recorder){const q=world.pickups.find(q=>q.id==='recorder'&&!q.taken);if(q)return{x:q.x,y:q.y,label:'항해기록 장치 회수',kind:'objective'}}
+ if(id==='abyss'){
+  if(!m.deep)return{x:p.x,y:WORLD.surface+600*WORLD.scaleDepth,label:'600m 심해 도달',kind:'zone'};
+  if(!gradeAtLeast(m.giantGrade,'A'))return objectiveCreatureTarget('giant','대형 심해 상어 A급 촬영');
+ }
+ if(id==='hadal'){
+  for(const zid of ['whaleFall','riftAbyss','volcanoCaldera'])if(!m.visited[zid]){const z=SUBZONES.find(q=>q.id===zid);return{x:p.x,y:(z.y0+z.y1)/2,label:z.name+' 도달',kind:'zone'}}
+  if(!['angler','giantIsopod'].some(k=>gradeAtLeast(m.photoGrades[k],'A')))return objectiveCreatureTarget(['angler','giantIsopod'],'심해 생물 A급 촬영');
+ }
+ if(missionComplete())return objectiveBoat();
+ return null
+}
+function objectiveArrow(dx,dy){
+ const dirs=['→','↘','↓','↙','←','↖','↑','↗'],a=Math.atan2(dy,dx),idx=Math.round((a+Math.PI*2)/(Math.PI/4))%8;return dirs[idx]
+}
+function updateObjectiveCompass(){
+ const box=$('objectiveCompass');if(!box||!world)return;const t=currentObjectiveTarget();if(!t){box.classList.add('hidden');return}
+ const dx=t.x-world.player.x,dy=t.y-world.player.y,d=Math.hypot(dx,dy);box.classList.remove('hidden');box.dataset.kind=t.kind||'objective';
+ $('compassArrow').textContent=d<55?'◆':objectiveArrow(dx,dy);$('compassLabel').textContent=t.label;$('compassDistance').textContent=d<55?'도착':('약 '+Math.max(1,Math.round(d/5.5))+'m')
+}
+function firstDayGuideText(){
+ if(!world||meta.day!==1)return'';if(world.catchWeight<.05)return'선택 목표 🍳 저녁 식당을 열고 싶다면 그물로 식용 물고기 1마리를 잡아 오세요.';
+ return'✓ 저녁 식당용 재료 확보 · 안전하게 귀환하면 밤 장사를 열 수 있어요.'
+}
 function updateHud(){
  const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y),reserve=oxygenReserveStatus();
  $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y),sub=subzoneForY(p.y),sr=SUBZONE_RULES[sub.id]||{},pressure=world.pressureOver>0?' · 압력+'+Math.round(world.pressureOver)+'m':'';
  $('zoneText').textContent=sub.name+' · '+(sr.short||ZONE_RULES[z.id]?.danger||'')+pressure;
  $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionText()+' · 오늘 '+world.daily.title+' '+dailyTaskProgressText(world.daily);$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
- const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}updateLightUI()
+ const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}const rookie=$('rookieTip'),rookieText=firstDayGuideText();if(rookie){rookie.textContent=rookieText;rookie.classList.toggle('hidden',!rookieText)}updateObjectiveCompass();updateLightUI()
 }
 function updateLightUI(){
  const on=world?.lightOn!==false,desktop=$('lightBtn'),mobile=$('lightMobile');if(desktop){desktop.textContent=on?'LIGHT ON · L':'LIGHT OFF · L';desktop.classList.toggle('off',!on)}if(mobile){mobile.textContent=on?'조명 ON':'조명 OFF';mobile.classList.toggle('off',!on)}
