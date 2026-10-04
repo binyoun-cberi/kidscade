@@ -20,6 +20,9 @@ function seeded(day,salt=0){
   };
 }
 function pickWeather(day){
+  if(day===1)return WEATHER.clear;
+  if(day===2)return WEATHER.clear;
+  if(day===3)return WEATHER.cloudy;
   const r=seeded(day,17)()*100;let acc=0;
   for(const def of Object.values(WEATHER)){acc+=def.weight;if(r<acc)return def}
   return WEATHER.clear;
