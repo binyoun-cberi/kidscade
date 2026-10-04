@@ -6,8 +6,8 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const dir=path.join(root,'assets/game/characters/kidscade-avatar-v3/school-starter');
 const manifest=JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'),'utf8'));
-const runtime=fs.readFileSync(path.join(root,'school-avatar-runtime.js'),'utf8');
-const publicStudio=fs.readFileSync(path.join(root,'avatar-school-studio.js'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v3/runtime/school-avatar-runtime.js'),'utf8');
+const publicStudio=fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v3/runtime/avatar-school-studio.js'),'utf8');
 const publicHtml=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const adminStudio=fs.readFileSync(path.join(root,'teacher-avatar-clothing-studio.js'),'utf8');
 
