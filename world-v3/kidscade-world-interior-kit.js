@@ -7,17 +7,17 @@ export const HOME_INTERIOR_LEVELS={
   1:{
     bounds:{x1:-3.35,x2:3.35,z1:-3.65,z2:3.85},
     floorColor:'#b98555',wallColor:'#efe1c8',trimColor:'#9b6c49',
-    camera:{viewHeight:6.15,playerFollow:.28,offset:[6.8,8.9,8.7],targetY:.60}
+    camera:{viewHeight:6.15,fitHalfWidth:6.65,fitHalfHeight:6.05,playerFollow:.28,offset:[6.8,8.9,8.7],targetY:.60}
   },
   2:{
     bounds:{x1:-5.05,x2:5.05,z1:-4.25,z2:4.05},
     floorColor:'#c08f5d',wallColor:'#f1e3cc',trimColor:'#946746',
-    camera:{viewHeight:7.35,playerFollow:.32,offset:[7.4,9.7,9.5],targetY:.62}
+    camera:{viewHeight:7.35,fitHalfWidth:8.95,fitHalfHeight:7.25,playerFollow:.32,offset:[7.4,9.7,9.5],targetY:.62}
   },
   3:{
     bounds:{x1:-6.55,x2:6.55,z1:-4.75,z2:4.15},
     floorColor:'#c59662',wallColor:'#f2e6d2',trimColor:'#8f6344',
-    camera:{viewHeight:8.25,playerFollow:.36,offset:[8.0,10.3,10.0],targetY:.64}
+    camera:{viewHeight:8.45,fitHalfWidth:11.05,fitHalfHeight:8.45,playerFollow:.36,offset:[8.0,10.3,10.0],targetY:.64}
   }
 };
 
@@ -132,7 +132,7 @@ function addWallShell(group,def){
 
 function addKitchenInset(group,def,level){
   if(level<2)return;
-  const b=def.bounds,width=level===2?2.9:3.6,depth=level===2?2.65:3.15;
+  const b=def.bounds,width=level===2?4.6:5.8,depth=level===2?2.65:3.15;
   const x=b.x2-width/2-.20,z=b.z1+depth/2+.20;
   const tex=makeTileTexture();tex.repeat.set(width*.85,depth*.85);
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,depth),new THREE.MeshStandardMaterial({map:tex,roughness:.82}));
