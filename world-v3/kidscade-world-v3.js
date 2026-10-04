@@ -1270,7 +1270,9 @@ function fish(place='pond'){
   setTimeout(()=>{
     try{
       const bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
-      addInventoryItem('fish',gain,{silent:true});p.fishDex=p.fishDex||{};
+      const added=addInventoryItem('fish',gain,{silent:true});
+      if(!added){toast('🎒 낚는 사이 가방이 가득 찼어요. 물고기를 담지 못했어요.');return;}
+      p.fishDex=p.fishDex||{};
       const label=place==='beach'?'해변 물고기':place==='river'?'강가 물고기':'연못 물고기';
       p.fishDex[label]=(p.fishDex[label]||0)+gain;
       if(place==='river'&&Math.random()<.24&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
