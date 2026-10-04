@@ -1698,17 +1698,26 @@ function initDungeon(){
   buildLandmarkDungeonScene(poi);
   camera.position.set(0,1.65,10);dungeonYaw=0;dungeonPitch=0;dungeonKeys={};updateDungeonCamera();
   configureMobileMode('dungeon');updateDungeonHud();
-  if(!mobileModeEnabled)toast('WASD로 탐험 · 마우스로 시점 · E로 장치 조사');
+  if(!mobileModeEnabled)toast(dungeonSession?.shrineVersion?
+    'WASD로 퍼즐 방을 걸어 다니고 · E로 블록 장치를 직접 바꿔 보세요.':
+    'WASD로 탐험 · 마우스로 시점 · E로 장치 조사');
 }
 function openLandmarkDungeon(poi){
   if(!poi||gameFreeMode!=='survival')return;
   if(survivalStage<6){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
   saveFreeWorld();
-  dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null};
+  const variant=dungeonShrineVariant(poi);
+  dungeonSession={
+    poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null,shrineVersion:1,netAnimating:false,
+    puzzleState:{
+      0:variant.shadow.initial.map(dungeonVoxelKey),
+      1:variant.build.initial.map(dungeonVoxelKey)
+    }
+  };
   enterMode('dungeon');
 }
 function returnFromDungeon(){
-  dungeonSession=null;enterMode('free');
+  dungeonFoldNonce++;dungeonSession=null;enterMode('free');
 }
 function openDungeonBlueprint(){
   if(!dungeonSession)return;
