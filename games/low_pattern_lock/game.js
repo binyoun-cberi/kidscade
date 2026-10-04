@@ -315,7 +315,7 @@ function complete(){
    ui.resultMsg.textContent=state.attempts===0?'후보를 논리적으로 줄여 첫 예상에 맞혔어요!':'정답을 본 적 없이 단서와 비교 정보만으로 패턴을 찾아냈어요.';
    ui.resultAlg.textContent=answerSummary(l);ui.concept.textContent='순차·선택·반복은 실제 비밀 알고리즘의 구조이고, 단서는 그 구조와 경로의 특징을 조금씩 공개합니다.';ui.next.textContent=l.id===LEVELS.length?'처음 화면으로':'다음 사람';sdkStageClear(l.id,'campaign');
  }else{
-   ui.resultEye.textContent='친구의 비밀 패턴 발견';ui.resultTitle.textContent='친구 패턴 해제!';ui.earned.textContent='🔓';ui.resultMsg.textContent='정답을 직접 보지 않고 자동 생성된 후보와 단서만으로 맞혔어요.';ui.resultAlg.textContent=answerSummary(state.level);ui.concept.textContent='친구가 만든 패턴도 게임이 특징을 분석하고 가짜 후보를 생성해 하나의 추리 문제로 바꿉니다.';ui.next.textContent='새 패턴 내기';
+   ui.resultEye.textContent='친구의 비밀 패턴 발견';ui.resultTitle.textContent='친구 패턴 해제!';ui.earned.textContent='🔓';ui.resultMsg.textContent='정답을 직접 보지 않고 자동 생성된 후보와 단서만으로 맞혔어요.';ui.resultAlg.textContent=answerSummary(state.level);ui.concept.textContent='친구가 만든 패턴도 게임이 특징을 분석하고 가짜 후보를 생성해 하나의 추리 문제로 바꿉니다.';ui.next.textContent='새 패턴 내기';sdkStageClear('friend','friend');
  }
  ui.success.classList.remove('hidden');burst();
 }
