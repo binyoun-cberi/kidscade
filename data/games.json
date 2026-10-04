@@ -1901,7 +1901,7 @@
       "category": "math",
       "age": "low",
       "icon": "⚖️",
-      "description": "과일과 생활 물건을 접시에 직접 올리며 g 단위와 무게 비교를 익혀요.",
+      "description": "저울의 기울기를 관찰하며 미지의 물건 무게를 추리해요.",
       "scoreKey": "mathMobileHighScore",
       "cover": "assets/gate-image/신비한 양팔 저울.png",
       "subject": "math",
