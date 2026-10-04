@@ -35,6 +35,7 @@
         crafted:[],
         food:{},
         fishDex:{},
+        museum:{version:1,discovered:{},donated:{},records:{}},
         kitchen:{pending:null},
         cubePets:{version:1,owned:[],met:[],companion:'',migratedLegacy:false,products:{}},
         starterKitClaimed:false,
@@ -73,6 +74,12 @@
         crafted:Array.isArray(p.crafted)?[...p.crafted]:[],
         food:{...base.progression.food,...(p.food||{})},
         fishDex:{...base.progression.fishDex,...(p.fishDex||{})},
+        museum:{
+          ...base.progression.museum,...(p.museum||{}),
+          discovered:{...base.progression.museum.discovered,...(p.museum?.discovered||{})},
+          donated:{...base.progression.museum.donated,...(p.museum?.donated||{})},
+          records:{...base.progression.museum.records,...(p.museum?.records||{})}
+        },
         kitchen:{...base.progression.kitchen,...(p.kitchen||{})},
         groundPickups:{...base.progression.groundPickups,...(p.groundPickups||{})},
         development:{...base.progression.development,...(p.development||{})},
