@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=19';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=1';
-import {createTownEconomy} from './kidscade-world-economy.js?v=15';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=2';
+import {createTownEconomy} from './kidscade-world-economy.js?v=16';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=3';
@@ -1218,7 +1218,7 @@ function enterVenue(kind){
   const targetMode=VENUE_MODES[kind],info=VENUE_INFO[kind];if(!targetMode||!info||!venueInteriors)return;
   if(!venueIsOpen(kind)){townEconomy?.shop?.(kind,info.npc);return;}
   resetInput(true);panel.classList.remove('open');venueReturn={x:player.x,z:player.z+.55};activeVenue=kind;mode=targetMode;
-  outdoor.visible=false;indoor.visible=false;venueLayer.visible=true;venueInteriors.show(kind);
+  outdoor.visible=false;indoor.visible=false;venueLayer.visible=true;void venueInteriors.show(kind);
   player.x=0;player.z=3.05;near=null;zoneEl.textContent=info.name+' · 실내';setAvatarAction('smile',520);toast(info.name+' 안으로 들어왔어요.');
 }
 function exitVenue(){
@@ -2181,7 +2181,8 @@ async function init(){
     prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,
     foodName:key=>FOOD_DEF[key]?.name||key,
     addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,
-    travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
+    travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume),
+    enterVenue,getVenue:()=>activeVenue
   });
   townEconomy.ensureState(prog());
   // Persist one-time v3.22 starter-world migration before any later refresh/reload.
@@ -2192,7 +2193,8 @@ async function init(){
     parent:venueLayer,addModel,box,plane,interact,collider,
     actions:{
       shop:(kind,npc)=>townEconomy?.shop?.(kind,npc),
-      rest:()=>townEconomy?.bench?.(),
+      resident:id=>townEconomy?.resident?.(id),
+      cafeRest:()=>townEconomy?.cafeRest?.(),
       exitVenue
     }
   }).then(runtime=>{venueInteriors=runtime;return runtime});
