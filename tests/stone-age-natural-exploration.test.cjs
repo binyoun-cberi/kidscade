@@ -65,6 +65,7 @@ test('v12 living nature depletes, recovers and changes exploration pressure', ()
   assert.match(js, /adjustedExploreEntries/);
   assert.match(js, /ecoUse:2/);
   assert.match(js, /ecoUse:1/);
+  assert.match(js, /exploreWear=NATURE_ECO\[node\.type\].*!NATURE_ECO\[node\.type\]\.renewable\?1:0/);
   assert.match(css, /\.natureBadge/);
   assert.match(css, /\.nature-depleted/);
 });
