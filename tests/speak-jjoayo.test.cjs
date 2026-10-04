@@ -26,7 +26,7 @@ test('Speak Jjoayo keeps the 60-second rush rules and Kidscade SDK lifecycle',()
   assert.match(runtime,/state\.deadline-=3000/);
   assert.match(runtime,/state\.combo%5===0/);
   assert.match(runtime,/KidscadeGame\?\.start/);
-  assert.match(runtime,/KidscadeGame\?\.gameOver/);
+  assert.match(runtime,/KidscadeGame\?\.result/);
   assert.ok(html.includes('data-game-id="low_speak_jjoayo"'));
 });
 

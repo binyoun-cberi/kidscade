@@ -212,7 +212,7 @@ function finish(){
  ui.resultTitle.textContent=state.correct>=12?'동물 박사!':state.correct>=8?'매의 눈 탐정!':'동물 탐정!';
  ui.resultSummary.textContent=(state.mode==='easy'?'쉬움':'어려움')+'에서 '+state.correct+'마리를 맞혔어요. 단서를 덜 보고 맞힐수록 점수가 커집니다.';
  ui.bestText.textContent='이 난이도 최고 기록: '+best.correct+'마리 · '+best.score+'점';
- try{window.KidscadeGame&&KidscadeGame.gameOver({score:state.score,mode:state.mode,correct:state.correct})}catch(e){}
+ try{window.KidscadeGame&&KidscadeGame.result?.({scope:'session',status:'completed',score:state.score,mode:state.mode,correct:state.correct,bestStreak:state.bestStreak})}catch(e){}
 }
 function backMenu(){
  state.running=false;cancelAnimationFrame(state.raf);ui.result.classList.add('hidden');ui.game.classList.add('hidden');ui.menu.classList.remove('hidden');

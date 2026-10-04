@@ -237,7 +237,7 @@ function showEnd(win,text){
   ui.resultScore.textContent=state.score.toLocaleString('ko-KR');ui.resultWords.textContent=state.completed.length;ui.resultNoHint.textContent=state.noHint;
   let oldBest=0;try{oldBest=window.KidscadeStorage?.getInt?.(SCORE_KEY,0)||0}catch(_){}
   const best=Math.max(oldBest,state.score);try{window.KidscadeStorage?.setRaw?.(SCORE_KEY,best)}catch(_){}
-  window.KidscadeGame?.gameOver?.({score:state.score,cleared:Boolean(win),completedWords:state.completed.length});
+  window.KidscadeGame?.result?.({scope:'run',status:'completed',outcome:win?'clear':'fail',score:state.score,cleared:Boolean(win),completedWords:state.completed.length});
 }
 
 function burst(pos){

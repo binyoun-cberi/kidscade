@@ -597,7 +597,7 @@ function endGame(reason='time'){
       '최고 기록 '+state.best.score.toLocaleString('ko-KR')+'점 · 최고 콤보 '+state.best.combo+'회';
   }
   showScreen('result');
-  try{window.KidscadeGame?.gameOver?.({score:state.score,scoreOptions:{unit:'점',higherIsBetter:true},mode:state.gameMode,accuracy,perfect:state.perfect,good:state.good,miss:state.miss,maxCombo:state.maxCombo,stairPeak:state.stairPeak})}catch(_){}
+  try{window.KidscadeGame?.result?.({scope:'run',status:'completed',score:state.score,scoreOptions:{unit:'점',higherIsBetter:true},mode:state.gameMode,accuracy,perfect:state.perfect,good:state.good,miss:state.miss,maxCombo:state.maxCombo,stairPeak:state.stairPeak})}catch(_){}
 }
 
 ui.calibrateBtn.addEventListener('click',beginCalibration);

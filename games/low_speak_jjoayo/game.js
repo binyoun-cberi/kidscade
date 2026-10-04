@@ -629,7 +629,9 @@ function finishRun(){
   const best=localResult.best;
   const improved=localResult.improved;
   try{
-    window.KidscadeGame?.gameOver?.({
+    window.KidscadeGame?.result?.({
+      scope:'session',
+      status:'completed',
       score:state.correct,
       correct:state.correct,
       bestCombo:state.bestCombo,

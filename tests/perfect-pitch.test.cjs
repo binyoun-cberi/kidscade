@@ -24,7 +24,7 @@ test('Perfect Pitch has calibration, three difficulties, and SDK lifecycle',()=>
   assert.match(runtime,/normal:\{label:'보통'/);
   assert.match(runtime,/hard:\{label:'도전'/);
   assert.match(runtime,/KidscadeGame\?\.start/);
-  assert.match(runtime,/KidscadeGame\?\.gameOver/);
+  assert.match(runtime,/KidscadeGame\?\.result/);
   assert.ok(html.includes('data-game-id="low_perfect_pitch"'));
 });
 

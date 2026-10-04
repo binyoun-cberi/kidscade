@@ -318,7 +318,7 @@ function finish(win){
   $('#result').classList.remove('hidden');
   if(win)burst();
   say(win?'축하해요! 내가 이겼어요!':'좋았어요. 한 판 더 해봐요!');
-  if(window.KidscadeGame?.gameOver) KidscadeGame.gameOver({score:youScore*100});
+  if(window.KidscadeGame?.result) KidscadeGame.result({scope:'match',status:'completed',outcome:win?'win':'loss',score:youScore*100,youScore,cpuScore});
 }
 function burst(){
   const c=$('#confetti');c.innerHTML='';

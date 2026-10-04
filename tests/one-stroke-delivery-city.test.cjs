@@ -111,7 +111,8 @@ test('One Stroke delivery reward is short, boostable, and restores the bright ci
 test('One Stroke reports results and achievements through the common SDK',()=>{
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/KidscadeGame\?\.start/);
-  assert.match(html,/KidscadeGame\?\.gameOver/);
+  assert.match(html,/KidscadeGame\?\.result/);
+  assert.match(html,/scope:'stage'/);
   assert.match(html,/completedCount:save\.completed\.length/);
   assert.match(html,/clean,elapsedMs/);
 });
