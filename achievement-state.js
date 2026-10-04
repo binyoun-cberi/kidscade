@@ -359,7 +359,7 @@
   function profilesApi() {
     if (typeof window !== 'undefined' && window.KidscadeGameProfiles) return window.KidscadeGameProfiles;
     if (typeof require === 'function') {
-      try { return require('./game-outcome-profiles.js'); } catch (_) {}
+      try { return require('./app/features/achievements/game-outcome-profiles.js'); } catch (_) {}
     }
     return null;
   }
