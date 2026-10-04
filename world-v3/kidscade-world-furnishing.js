@@ -127,7 +127,8 @@ export function createFurnishingSystem(ctx){
     const bounds=getRoomBounds();if(!bounds)return null;
     const near=nearestWall(bounds,x,z),reach=Number(def.wallSnap)||1.65;
     if(!near||(!force&&near.distance>reach))return null;
-    const nextRot=inwardRotation(near.wall),d=dims(def,nextRot),margin=.16;
+    const sourceFront=((Math.round(Number(def.frontQuarter)||0)%4)+4)%4;
+    const nextRot=(inwardRotation(near.wall)-sourceFront+4)%4,d=dims(def,nextRot),margin=.16;
     let nx=grid(x),nz=grid(z);
     if(near.wall==='north'){
       nz=bounds.z1+d.d/2+margin;
