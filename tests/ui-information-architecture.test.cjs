@@ -59,6 +59,7 @@ test('guest profile keeps the avatar visible while play records stay account-onl
   assert.doesNotMatch(accountGate, /학생 계정 로그인/);
   assert.match(accountGate, /\.avatar-plaza\{display:block!important\}/);
   assert.match(accountGate, /\.kc-profile-row\{display:none!important\}/);
+  assert.match(accountGate, /#kc-account-slot\{display:none!important\}/);
   assert.match(accountGate, /#kc-local-profile-card\{display:none!important\}/);
   assert.match(accountGate, /shell\.querySelector\('\.avatar-plaza'\)/);
   assert.match(accountGate, /KidscadeAccount/);
