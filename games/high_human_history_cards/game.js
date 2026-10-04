@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-// v11: natural-region exploration, worker locking, discovery chains, and managed land conversion.
+// v12: living nature stocks, recovery, specialist pressure, auto-stacking, and stronger managed production.
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
@@ -296,7 +296,7 @@ const RESOURCE_CAPS=Object.freeze({
  mushroomPatch:10,herbPatch:10,wildGrainField:14,flintOutcrop:12,
  milletPlot:12,milletFarm:18,broomcornPlot:12,broomcornFarm:18,beanPlot:12,beanFarm:18,
  fishingSpot:10,fishingGround:15,netSpot:12,netFishery:18,trapSpot:12,trapFishery:18,
- goatPen:12,goatRanch:18,fishPond:16,loggingCamp:24,quarry:24
+ goatPen:12,goatRanch:18,fishPond:16,loggingCamp:40,quarry:40
 });
 function resourceCap(type,count=1){return (RESOURCE_CAPS[type]||0)*Math.max(1,count||1);}
 function outputUnits(out){return out.reduce((n,o)=>n+(Number(o[1])||1),0);}
@@ -318,7 +318,7 @@ const EXPLORE_DEFS=Object.freeze({
  ridge:{max:3,ms:9000,bonus:.12,results:[['rockyHill',14],['valley',12],['caveEntrance',10],['forest',9],['smokeTrace',8],['wildGoat',9],['stoneSource',12]]}
 });
 const CLUE_DEFS=Object.freeze({
- animalTrail:{label:'동물 흔적을 따라가는 중',discover:'동물 추적',results:[['rabbit',28],['deer',26],['wildGoat',20],['wildBoar',14],['forest',6],['meadow',6]]},
+ animalTrail:{label:'동물 흔적을 따라가는 중',discover:'동물 추적',results:[['rabbit',25],['deer',23],['wildGoat',18],['wildBoar',13],['wolf',8],['forest',7],['meadow',6]]},
  footprints:{label:'큰 발자국을 추적하는 중',discover:'큰 짐승 추적',results:[['deer',22],['wildBoar',24],['bear',12],['caveEntrance',16],['denseForest',14],['valley',12]]},
  smokeTrace:{label:'연기의 근원을 찾는 중',discover:'사람의 흔적',results:[['strangerGroup',68],['hostileBand',14],['meadow',10],['river',8]]}
 });
@@ -326,6 +326,67 @@ const FOREST_REGIONS=new Set(['forestEdge','forest','denseForest']);
 const FIELD_REGIONS=new Set(['grassland','meadow']);
 const WATER_REGIONS=new Set(['river','wetland','spring','pond']);
 const HUNT_REGIONS=new Set(['forestEdge','forest','denseForest','grassland','meadow','valley','spring']);
+const NATURE_ECO=Object.freeze({
+ forestEdge:{max:7,regenEvery:20,regen:1,renewable:true},forest:{max:9,regenEvery:22,regen:1,renewable:true},denseForest:{max:11,regenEvery:26,regen:1,renewable:true},
+ grassland:{max:7,regenEvery:18,regen:1,renewable:true},meadow:{max:8,regenEvery:18,regen:1,renewable:true},
+ river:{max:8,regenEvery:16,regen:1,renewable:true},wetland:{max:9,regenEvery:20,regen:1,renewable:true},spring:{max:7,regenEvery:16,regen:1,renewable:true},pond:{max:7,regenEvery:18,regen:1,renewable:true},
+ valley:{max:7,regenEvery:24,regen:1,renewable:true},rockyHill:{max:9,regenEvery:0,regen:0,renewable:false},ridge:{max:8,regenEvery:0,regen:0,renewable:false},
+ caveEntrance:{max:7,regenEvery:0,regen:0,renewable:false},deepCave:{max:8,regenEvery:0,regen:0,renewable:false}
+});
+const ECO_SENSITIVE=new Set(['smallTree','bigTree','berryBush','mushroomPatch','herbPatch','oakGrove','wildMillet','wildBroomcorn','wildBean','wildGrainField','reedBed','freshFish','shellfish','tidalFlat','rabbit','deer','wildGoat','wildBoar','wolf','bear']);
+const AUTO_STACK_KINDS=new Set(['item','food']);
+function natureMax(type){return NATURE_ECO[type]?.max||0;}
+function natureRatio(node){
+ const max=natureMax(node?.type);if(!max)return 1;
+ return clamp((node.ecoRemaining??max)/max,0,1);
+}
+function natureStateLabel(node){
+ const ratio=natureRatio(node);
+ if(ratio<=0)return '고갈';
+ if(ratio<=.25)return '매우 적음';
+ if(ratio<=.5)return '줄어듦';
+ if(ratio<=.75)return '보통';
+ return '풍부';
+}
+function natureDisplayName(node){
+ const ratio=natureRatio(node),base=C[node.type]?.name||'자연';
+ if(FOREST_REGIONS.has(node.type)){
+  if(ratio<=0)return '벌거숭이 땅';
+  if(ratio<=.25)return '성긴 숲';
+  if(node.type==='denseForest'&&ratio<=.55)return '숲';
+ }
+ if(FIELD_REGIONS.has(node.type)&&ratio<=.25)return '메마른 '+base;
+ if(WATER_REGIONS.has(node.type)&&ratio<=.25)return '자원 적은 '+base;
+ if((node.type==='rockyHill'||node.type==='ridge')&&ratio<=.2)return '캐낸 '+base;
+ if((node.type==='caveEntrance'||node.type==='deepCave')&&ratio<=.2)return '메마른 '+base;
+ return base;
+}
+function useNature(node,amount=1){
+ const max=natureMax(node?.type);if(!max||!state.cards.has(node.id))return true;
+ if(node.ecoRemaining==null)node.ecoRemaining=max;
+ node.ecoRemaining=Math.max(0,node.ecoRemaining-amount);updateCard(node);
+ return node.ecoRemaining>0;
+}
+function canUseNature(node,amount=1){
+ const max=natureMax(node?.type);if(!max)return true;
+ return (node.ecoRemaining??max)>=amount;
+}
+function adjustedExploreEntries(node,entries){
+ const max=natureMax(node?.type);if(!max)return entries;
+ const ratio=natureRatio(node);
+ const mult=ratio<=0?.06:ratio<=.25?.3:ratio<=.5?.65:1;
+ if(mult===1)return entries;
+ return entries.map(([type,w])=>[type,ECO_SENSITIVE.has(type)?Math.max(.15,w*mult):w]);
+}
+function tickNatureRecovery(){
+ for(const card of state.cards.values()){
+  const cfg=NATURE_ECO[card.type];if(!cfg?.renewable||card.busy)continue;
+  if(state.worldTick%cfg.regenEvery!==0)continue;
+  const before=card.ecoRemaining??cfg.max;
+  if(before>=cfg.max)continue;
+  card.ecoRemaining=Math.min(cfg.max,before+cfg.regen);updateCard(card);
+ }
+}
 function weightedResult(entries){
  const total=entries.reduce((n,e)=>n+e[1],0);let roll=Math.random()*total;
  for(const e of entries){roll-=e[1];if(roll<=0)return e[0];}
@@ -335,7 +396,7 @@ function rollExploreOutputs(node){
  const def=EXPLORE_DEFS[node.type];if(!def)return [];
  if(tutorialActive()&&state.tutorial.step===0&&node.type==='forestEdge')return [['smallTree',1],['berryBush',1]];
  if(tutorialActive()&&state.tutorial.step===4&&node.type==='rockyHill')return [['stoneSource',1]];
- let entries=def.results.slice();
+ let entries=adjustedExploreEntries(node,def.results.slice());
  const level=node.exploreLevel||0;
  if(level>=def.max){const common=entries.filter(e=>!EXPLORE_DEFS[e[0]]);if(common.length)entries=common;}
  const unseen=entries.filter(e=>!(EXPLORE_DEFS[e[0]]&&cardsOf(e[0]).length>0));if(unseen.length)entries=unseen;
@@ -347,11 +408,30 @@ function rollExploreOutputs(node){
  return out;
 }
 function specialistNatureAction(worker,node){
- if(worker.type==='lumberjack'&&FOREST_REGIONS.has(node.type))return {ms:7200,label:'쓸 만한 나무 고르는 중',out:node.type==='denseForest'?[['wood',2],['branch',1]]:[['wood',1],['branch',1]],oneShot:true,life:'hunt'};
- if(worker.type==='hunter'&&HUNT_REGIONS.has(node.type))return {ms:8200,label:'동물 흔적 찾는 중',out:[[weightedResult(node.type==='denseForest'?[['deer',45],['wildBoar',35],['bear',20]]:[['rabbit',35],['deer',35],['wildGoat',18],['wildBoar',12]]),1]],oneShot:true,life:'hunt'};
- if(worker.type==='farmer'&&FIELD_REGIONS.has(node.type))return {ms:7600,label:'먹을 수 있는 식물 찾는 중',out:[[weightedResult([['wildMillet',38],['wildBroomcorn',34],['wildBean',28]]),1]],oneShot:true,life:'farm'};
- if(worker.type==='fisher'&&WATER_REGIONS.has(node.type))return {ms:7600,label:'물고기 자리 살피는 중',out:[['freshFish',2]],oneShot:true,life:'fish'};
- if(worker.type==='herder'&&FIELD_REGIONS.has(node.type))return {ms:8400,label:'길들일 동물 찾는 중',out:[[weightedResult([['wildGoat',62],['animalTrail',38]]),1]],oneShot:true,life:'herd'};
+ const depleted=(cost,msg)=>{
+  if(canUseNature(node,cost))return false;
+  showToast('🍂 '+C[node.type].name+'의 자연 자원이 부족합니다. '+msg);return true;
+ };
+ if(worker.type==='lumberjack'&&FOREST_REGIONS.has(node.type)){
+  if(depleted(2,'쉬게 두거나 벌목장으로 개척해 보세요.'))return {blocked:true};
+  return {ms:7600,label:'숲에서 목재 찾는 중',out:node.type==='denseForest'?[['wood',2],['branch',1]]:[['wood',1],['branch',1]],oneShot:true,life:'hunt',ecoUse:2};
+ }
+ if(worker.type==='hunter'&&HUNT_REGIONS.has(node.type)){
+  if(depleted(1,'동물이 다시 돌아오도록 기다려 보세요.'))return {blocked:true};
+  return {ms:8400,label:'동물 흔적 찾는 중',out:[[weightedResult(node.type==='denseForest'?[['deer',39],['wildBoar',29],['wolf',12],['bear',20]]:[['rabbit',32],['deer',31],['wildGoat',18],['wildBoar',11],['wolf',8]]),1]],oneShot:true,life:'hunt',ecoUse:1};
+ }
+ if(worker.type==='farmer'&&FIELD_REGIONS.has(node.type)){
+  if(depleted(1,'야생 식물이 다시 자라길 기다리거나 밭으로 개간해 보세요.'))return {blocked:true};
+  return {ms:7800,label:'먹을 수 있는 식물 찾는 중',out:[[weightedResult([['wildMillet',38],['wildBroomcorn',34],['wildBean',28]]),1]],oneShot:true,life:'farm',ecoUse:1};
+ }
+ if(worker.type==='fisher'&&WATER_REGIONS.has(node.type)){
+  if(depleted(1,'물고기가 다시 모이도록 기다리거나 어장을 만들어 보세요.'))return {blocked:true};
+  return {ms:7800,label:'물고기 자리 살피는 중',out:[['freshFish',2]],oneShot:true,life:'fish',ecoUse:1};
+ }
+ if(worker.type==='herder'&&FIELD_REGIONS.has(node.type)){
+  if(depleted(1,'동물이 다시 모이도록 기다려 보세요.'))return {blocked:true};
+  return {ms:8600,label:'길들일 동물 찾는 중',out:[[weightedResult([['wildGoat',62],['animalTrail',38]]),1]],oneShot:true,life:'herd',ecoUse:1};
+ }
  return null;
 }
 function natureWorkerAction(worker,node){
@@ -433,6 +513,7 @@ function reset(){
   state.worldTick++;
   if(tutorialActive()){renderHud();renderHunger();return;}
   tickThreats();
+  tickNatureRecovery();
   if(state.starving){
    if(tryRecoverMeal())return;
    state.hunger=Math.max(0,state.hunger-2.5);
@@ -484,11 +565,12 @@ function addCard(type,x,y,count=1,animate=true){
  const foodBadge=d.food?'<span class="foodBadge">🍖 '+d.food+'</span>':'';
  const resourceBadge=RESOURCE_CAPS[type]?'<span class="resourceBadge"></span>':'';
  const exploreBadge=EXPLORE_DEFS[type]?'<span class="exploreBadge"></span>':'';
+ const natureBadge=NATURE_ECO[type]?'<span class="natureBadge"></span>':'';
  const threatBadge=THREAT_CONFIG[type]?'<span class="threatBadge"></span>':'';
  const tradeBadge=type==='strangerGroup'?'<span class="tradeBadge"></span>':'';
- el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+exploreBadge+threatBadge+tradeBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
+ el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+exploreBadge+natureBadge+threatBadge+tradeBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
- const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null,exploreLevel:EXPLORE_DEFS[type]?0:null};
+ const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null,exploreLevel:EXPLORE_DEFS[type]?0:null,ecoRemaining:natureMax(type)||null};
  if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;
  if(type==='strangerGroup')c.tradeRemaining=3;
  state.cards.set(id,c);updateCard(c);
@@ -499,6 +581,14 @@ function updateCard(c){
  if(!c||!state.cards.has(c.id))return;
  const b=c.el.querySelector('.countBadge');b.textContent='×'+c.count;b.classList.toggle('one',c.count===1);
  c.el.classList.toggle('stacked',c.count>1);
+ const nameEl=c.el.querySelector('.cardName');if(nameEl)nameEl.textContent=NATURE_ECO[c.type]?natureDisplayName(c):C[c.type].name;
+ const nb=c.el.querySelector('.natureBadge');
+ if(nb){
+  const max=natureMax(c.type),left=Math.max(0,c.ecoRemaining??max),ratio=max?left/max:1;
+  nb.textContent='🌿 '+natureStateLabel(c)+' '+left+'/'+max;
+  nb.classList.toggle('low',ratio<=.25);nb.classList.toggle('mid',ratio>.25&&ratio<=.5);
+  c.el.classList.toggle('nature-depleted',ratio<=0);c.el.classList.toggle('nature-low',ratio>0&&ratio<=.25);
+ }
  const rb=c.el.querySelector('.resourceBadge');
  if(rb){
   const cap=resourceCap(c.type,c.count),left=Math.max(0,c.remaining??cap);
@@ -683,7 +773,7 @@ function craftRecipe(a,b,r){
 
 function workerAction(worker,node){
  const clue=clueWorkerAction(worker,node);if(clue)return clue;
- const nature=natureWorkerAction(worker,node);if(nature){tutorialEvent('assigned_explore',{worker,node});return nature;}
+ const nature=natureWorkerAction(worker,node);if(nature){if(nature.blocked)return null;tutorialEvent('assigned_explore',{worker,node});return nature;}
  const base={
   smallTree:{ms:4800,label:'나뭇가지 모으는 중',out:[['branch',1]],life:'hunt'},
   berryBush:{ms:5200,label:'열매 따는 중',out:[['berry',1]],life:'hunt'},
@@ -699,8 +789,8 @@ function workerAction(worker,node){
   herbPatch:{ms:5400,label:'약초 채집 중',out:[['herb',1]],life:'hunt'},
   wildGrainField:{ms:6600,label:'야생 곡물 거두는 중',out:[['wildGrain',2],['milletSeed',1]],life:'farm'},
   flintOutcrop:{ms:7000,label:'부싯돌 고르는 중',out:[['stone',2]],life:null},
-  loggingCamp:{ms:8500,label:'벌목장 작업 중',out:[['wood',2],['branch',1]],life:'hunt',lifeGain:2},
-  quarry:{ms:9000,label:'채석장 작업 중',out:[['stone',3]],life:null}
+  loggingCamp:{ms:7000,label:'벌목장 작업 중',out:[['wood',3],['branch',1]],life:'hunt',lifeGain:2},
+  quarry:{ms:7600,label:'채석장 작업 중',out:[['stone',4]],life:null}
  };
  if(base[node.type]){
   const action={...base[node.type]};
@@ -804,11 +894,26 @@ function playProductionPop(){
   o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.13);
  }catch(_){}
 }
+function nearbyStack(type,x,y,radius=190){
+ if(!AUTO_STACK_KINDS.has(C[type]?.kind))return null;
+ let best=null,dist=radius;
+ for(const c of state.cards.values()){
+  if(c.type!==type||c.busy)continue;
+  const d=Math.hypot(c.x-x,c.y-y);if(d<dist){best=c;dist=d;}
+ }
+ return best;
+}
 function spawnOutputs(anchor,out){
  out.forEach((o,i)=>{
-  const p=outputPosition(anchor,i+(anchor.produceSeq||0));
-  const card=addCard(o[0],p.x,p.y,o[1]||1,true);
-  if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
+  const p=outputPosition(anchor,i+(anchor.produceSeq||0)),amount=o[1]||1;
+  const stack=nearbyStack(o[0],p.x,p.y);
+  if(stack){
+   stack.count+=amount;updateCard(stack);stack.el.classList.add('produced','auto-stacked');
+   setTimeout(()=>stack.el?.classList.remove('produced','auto-stacked'),470);
+  }else{
+   const card=addCard(o[0],p.x,p.y,amount,true);
+   if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
+  }
  });
  anchor.produceSeq=((anchor.produceSeq||0)+out.length)%7;
  impactAt(anchor.x+anchor.el.offsetWidth/2,anchor.y+anchor.el.offsetHeight/2,'soft');
@@ -818,6 +923,7 @@ function finishOneShotWorker(worker,node,d,run){
  if(state.over||run!==state.runId)return;
  if(d.countExplore){state.stats.explores++;worker.exploring=false;worker.el.classList.remove('exploring');}
  if(d.exploreNode&&state.cards.has(node.id)){const def=EXPLORE_DEFS[node.type];node.exploreLevel=Math.min(def.max,(node.exploreLevel||0)+1);updateCard(node);}
+ if(d.ecoUse&&state.cards.has(node.id))useNature(node,d.ecoUse);
  clearWorkVisual(worker);
  if(state.cards.has(node.id)){if(d.consumeNode)removeCard(node);else clearWorkVisual(node);}
  const anchor=state.cards.has(node.id)?node:worker;
@@ -979,7 +1085,7 @@ function freeWorkerCount(){
  let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&!c.busy&&!c.assignmentNodeId&&!c.exploring)n+=c.count;return n;
 }
 function busyWorkerCount(){
- let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&(c.busy||c.assignmentNodeId))n+=c.count;return n;
+ let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&!c.exploring&&(c.busy||c.assignmentNodeId))n+=c.count;return n;
 }
 function exploringWorkerCount(){
  let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&c.exploring)n+=c.count;return n;
@@ -1082,7 +1188,7 @@ function renderGoal(){
  const score=settlementScore();
  if(!has('campfire')){ui.goalTitle.textContent='자연을 탐험하고 첫 도구 만들기';ui.goalText.textContent='사람을 숲·들판·강가·바위언덕에 올려 장소를 발견하고, 그곳에서 재료를 모으세요.';ui.hint.textContent='사람+자연 → 탐험 · 발견한 작은 나무→나뭇가지 · 돌×2→찍개';return;}
  if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
- if(score<9){ui.goalTitle.textContent='자연을 개척해 정착지 키우기';ui.goalText.textContent='탐험으로 새 숲·초원·계곡·동굴을 찾고, 필요한 곳은 벌목장·밭·채석장으로 바꾸세요.';ui.hint.textContent='간돌도끼+숲→벌목장 · 돌괭이+들판→개간지 · 찍개+바위언덕→채석장';return;}
+ if(score<9){ui.goalTitle.textContent='자연을 쉬게 하거나 개척하기';ui.goalText.textContent='자연은 이용할수록 줄고 일부는 천천히 회복됩니다. 부족해지면 다른 곳을 탐험하거나 안정적인 생산지로 바꾸세요.';ui.hint.textContent='간돌도끼+숲→벌목장 · 돌괭이+들판→개간지 · 찍개+바위언덕→채석장';return;}
  ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 탐험·교환·방어와 함께 주거를 늘려 더 많은 일손을 받아들일 수 있습니다.';ui.hint.textContent='마을+곡물죽/훈제고기 → 새 구성원 · 천막·움집·마을은 인구 상한을 늘림';
 }
 
