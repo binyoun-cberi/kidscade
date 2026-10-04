@@ -51,6 +51,7 @@ const NPC_MODELS={
   woojin:PEOPLE+'character-male-e.glb',
   seoyeon:PEOPLE+'character-female-f.glb',
   minseok:PEOPLE+'character-male-f.glb',
+  visitor:PEOPLE+'character-male-f.glb',
   clerk:CITY_ASSET.employee
 };
 
@@ -203,6 +204,18 @@ export async function buildKidscadeCity(ctx){
     addModel(parent,CITY_ASSET.planter,{x:leisure.x+6.5,z:leisure.z+2.7,w:1.2,h:.85,d:.85,rot:0,name:'plaza-planter-east'})
   ]);
 
+  // Daily request board: three notes refresh with the DailyDirector.
+  {
+    const bx=leisure.x,bz=leisure.z+7.1;
+    box(parent,bx-.95,bz,.12,.12,1.75,0x72513a,.02);
+    box(parent,bx+.95,bz,.12,.12,1.75,0x72513a,.02);
+    box(parent,bx,bz,2.25,.18,1.15,0xb98b58,.72);
+    box(parent,bx,bz-.02,2.45,.24,.14,0x6b4931,1.84);
+    for(const dx of [-.62,0,.62])box(parent,bx+dx,bz-.12,.48,.035,.58,0xfff1c9,1.02+(dx===0?.08:0));
+    track('daily-request-board','decor',bx,bz,2.25,.32);
+    interact('outdoor',bx,bz+.75,1.35,'📌 오늘의 주민 부탁 보기',()=>actions.dailyBoard?.());
+  }
+
   // Civic parcel.
   await Promise.all([
     addModel(parent,CITY_ASSET.mailbox,{x:civic.x,z:civic.z+1.8,w:.7,h:1.25,d:.6,rot:0,name:'town-mailbox'}),
@@ -240,6 +253,8 @@ export async function buildKidscadeCity(ctx){
   npcs.push(await addNpc(npcCtx,'seoyeon','서연',leisure.x+4.0,leisure.z+4.2,{role:'resident',radius:.55}));
   npcs.push(await addNpc(npcCtx,'hyunwoo','현우',market.x,market.z+4.5,{role:'delivery',radius:.45}));
   npcs.push(await addNpc(npcCtx,'clerk','마트직원',market.x-6.6,market.z-1.2,{role:'shop',label:false,radius:.20}));
+  const visitor=await addNpc(npcCtx,'visitor','여행객',leisure.x+3.0,leisure.z+6.7,{role:'visitor',radius:.42});
+  visitor.object.visible=false;if(visitor.label)visitor.label.visible=false;npcs.push(visitor);
 
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   for(const n of npcs){
@@ -257,6 +272,7 @@ export async function buildKidscadeCity(ctx){
     ['nari','나리와 이야기하기'],['minseok','민석과 이야기하기'],['yuna','유나와 이야기하기'],
     ['woojin','우진과 이야기하기'],['seoyeon','서연과 이야기하기'],['hyunwoo','현우와 이야기하기']
   ])bind(id,id==='minseok'?1.45:1.35,label,()=>actions.resident(id));
+  bind('visitor',1.45,'🎒 오늘의 방문객과 이야기하기',()=>actions.dailyVisitor?.());
 
   interact('outdoor',leisure.x-4.4,leisure.z+3.0,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
   interact('outdoor',leisure.x+4.4,leisure.z+3.0,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
@@ -296,7 +312,7 @@ export async function buildKidscadeCity(ctx){
     'home-nari':{x:7.0,z:57.0,r:.18},
     'home-minseok':{x:17.0,z:57.0,r:.18}
   };
-  const livingNpcs=npcs.filter(n=>n.id!=='clerk');
+  const livingNpcs=npcs.filter(n=>n.id!=='clerk'&&n.id!=='visitor');
   const npcBlockers=layout.filter(v=>v.type==='building'||v.type==='decor');
   const isNpcBlocked=(x,z)=>npcBlockers.some(v=>Math.abs(x-v.x)<v.w/2+.34&&Math.abs(z-v.z)<v.d/2+.34);
   const residentLife=createResidentLife({
@@ -319,6 +335,18 @@ export async function buildKidscadeCity(ctx){
       if(clerk){
         clerk.playAnim?.('idle');clerk.mixer?.update(dt);
         if(clerk.interaction){clerk.interaction.x=clerk.object.position.x;clerk.interaction.z=clerk.object.position.z;}
+      }
+      const visitor=byId.visitor,daily=typeof getDailyState==='function'?getDailyState():null;
+      if(visitor){
+        const names={crafter:'토리 · 떠돌이 목공가',collector:'모아 · 숲 수집가',prospector:'반짝 · 돌 수집가',angler:'파도 · 여행 낚시꾼'};
+        const visible=!!daily&&daily.visitor&&daily.visitor!=='none';
+        visitor.object.visible=visible;visitor.playAnim?.('idle');visitor.mixer?.update(dt);
+        if(visitor.label){
+          visitor.label.userData?.setText?.(names[daily?.visitor]||'여행객');
+          visitor.label.position.set(visitor.object.position.x,2.12,visitor.object.position.z);
+          visitor.label.visible=visible&&!!player&&Math.hypot(player.x-visitor.object.position.x,player.z-visitor.object.position.z)<4.2;
+        }
+        if(visitor.interaction){visitor.interaction.enabled=visible;visitor.interaction.x=visitor.object.position.x;visitor.interaction.z=visitor.object.position.z;}
       }
     }
   };}
