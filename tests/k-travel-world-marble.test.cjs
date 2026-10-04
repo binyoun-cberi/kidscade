@@ -76,10 +76,16 @@ test('all playable countries can be matched to the committed Natural Earth map',
   assert.ok(geo.features.length>=170,'world map should retain a broad Natural Earth country set');
 });
 
-test('world travel movement uses dice distance, route choice, three transport modes and animated assets',()=>{
+test('world travel movement uses fair bounded tickets, three transport modes and layered animations',()=>{
   assert.match(game,/function exactRoutes\(start,steps\)/);
+  assert.doesNotMatch(game,/found\.size>=28/);
+  assert.match(game,/sort\(\(a,b\)=>a\.to\.localeCompare\(b\.to\)\)/);
+  assert.match(game,/function pickTravelTickets\(routes,player,roll\)/);
+  assert.match(game,/const target=roll<=2\?3:4/);
   assert.match(game,/prepareRouteChoice\(player,roll\)/);
   assert.match(game,/travelRoute\(player,option\)/);
+  assert.match(game,/animateMapSegment\(from,to,mode,fast=false\)/);
+  assert.match(game,/shouldShowcaseTravel\(player,mode,from,to\)/);
   assert.match(game,/chooseMode\(route,segmentIndex,player\)/);
   assert.match(html,/항공/);assert.match(html,/철도/);assert.match(html,/항로/);
   assert.match(fx,/train-electric-bullet-a\.glb/);
@@ -93,9 +99,13 @@ test('economy preserves investment, upgrades, tolls, takeovers, continent collec
   assert.equal(Object.keys(CONTINENTS).length,6);
   assert.ok(EVENTS.length>=8);
   for(const needle of [
-    'promptInvestment','upgradeCountry','getToll','offerTakeover','collectionActive','drawEvent','setFestival','bankrupt','netWorth'
+    'promptInvestment','upgradeCountry','getToll','offerTakeover','collectionActive','drawEvent','setFestival','bankrupt','netWorth',
+    'remoteBuildCost','maybeOfferBuild','remoteUpgrade','routeTransitFee','chargeTransit'
   ])assert.ok(game.includes('function '+needle),needle);
-  assert.match(game,/toll\*=1\.4/);
+  assert.match(game,/buildPoints:1/);
+  assert.match(game,/buildPoints=Math\.min\(3,p\.buildPoints\+1\)/);
+  assert.match(game,/toll\*=1\.35/);
+  assert.match(game,/Math\.min\(12,Math\.round\(getToll\(countryId\)\*\.15\)\)/);
   assert.match(game,/state\.festival/);
 });
 
