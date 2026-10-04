@@ -2955,10 +2955,12 @@ function placeFreeBlock(hit){
   }
   const p=placementTarget(hit);
   if(!p||!inWorld(p.x,p.y,p.z))return;
-  const occupied=getBlock(p.x,p.y,p.z);
-  const replaceable=occupied&&!['door','cuboid'].includes(selectedType)&&
-    (blockDef(occupied).liquid||['fire','flower','reed','sapling'].includes(occupied.type))&&
-    !(['water','lava'].includes(selectedType)&&blockDef(occupied).liquid);
+  const occupied=getBlock(p.x,p.y,p.z),selectedDef=blockDef(selectedType);
+  const canDisplaceFluid=occupied&&blockDef(occupied).liquid&&selectedDef.solid&&
+    !['door','cuboid'].includes(selectedType);
+  const canReplaceFragile=occupied&&['fire','flower','reed','sapling','torch'].includes(occupied.type)&&
+    (selectedDef.solid||['water','lava'].includes(selectedType));
+  const replaceable=!!(canDisplaceFluid||canReplaceFragile);
   if(occupied&&!replaceable)return;
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
     p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return;
@@ -3364,7 +3366,9 @@ function flowInto(x,y,z,type,level){
   if(!inWorld(x,y,z)||level<=0)return false;const at=getBlock(x,y,z);
   if(at){
     if((type==='water'&&at.type==='lava')||(type==='lava'&&at.type==='water')){setWorldBlock(x,y,z,{type:level>=4&&(at.level||0)>=4?'obsidian':'stone',formedBy:'water+lava'},true);return true}
-    return false;
+    if(['fire','flower','reed','sapling','torch'].includes(at.type)){
+      removeWorldBlockData(x,y,z,true);
+    }else return false;
   }
   setWorldBlock(x,y,z,{type,level,flow:true},true);reactFluidsNear(x,y,z);return true;
 }
@@ -3402,7 +3406,8 @@ function simulatePlants(){
   }
   for(const key of leaves.slice(0,50)){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
-    if(hasNearbyLog(x,y,z)){d.decay=0;continue}d.decay=(d.decay||0)+1;if(d.decay>5&&hash2(x+freeSimTick,z)>.48)removeWorldBlockData(x,y,z,true);
+    if(d.playerBuilt||hasNearbyLog(x,y,z)){d.decay=0;continue}
+    d.decay=(d.decay||0)+1;if(d.decay>5&&hash2(x+freeSimTick,z)>.48)removeWorldBlockData(x,y,z,true);
   }
   for(const key of saplings){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;d.age=(d.age||0)+((weather==='rain'||weather==='storm')?2:1);
