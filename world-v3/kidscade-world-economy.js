@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue}=ctx;
 
   const BUY={
     market:{
@@ -137,7 +137,8 @@ export function createTownEconomy(ctx){
         reward:95
       },
       dailyPlay:{arcadePrizeDay:Math.max(0,Math.floor(Number(daily.arcadePrizeDay)||0))},
-      libraryDay:Math.max(0,Math.floor(Number(old.libraryDay)||0))
+      libraryDay:Math.max(0,Math.floor(Number(old.libraryDay)||0)),
+      cafeRestDay:Math.max(0,Math.floor(Number(old.cafeRestDay)||0))
     };
     const day=p.survival.day;
     if(p.town.delivery.active&&p.town.delivery.startedDay!==day)p.town.delivery.active=false;
@@ -346,18 +347,26 @@ export function createTownEconomy(ctx){
     t.friendship[id]=(t.friendship[id]||0)+gain;t.fun=Math.min(100,t.fun+(favorite?4:2));
     claimFriendshipRewards(id);persist();setAvatarAction('smile',750);playSfx?.('success',.10);toast((RESIDENTS[id]?.name||id)+' 친밀도 ♥ +'+gain+(favorite?' · 정말 좋아해요!':''));updateStatus();resident(id);
   }
+  function residentServiceLabel(r){
+    if(!r)return '';
+    if(!['market','hardware','cafe'].includes(r.service))return r.serviceLabel;
+    const title=r.service==='market'?'씨앗마트':r.service==='hardware'?'튼튼 철물점':'하늘 카페';
+    return getVenue?.()===r.service?title+' 이용':title+' 들어가기';
+  }
   function resident(id){
     const r=RESIDENTS[id];if(!r)return;
     claimFriendshipRewards(id);
     const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
     const rewardHtml=rewards.map(x=>'<div class="item"><b>♥ '+x.at+'</b><div>'+x.name+'</div><small>'+(t.rewardClaims[id+':'+x.at]?'획득 완료':f>=x.at?'획득 가능':'친밀도 필요')+'</small></div>').join('');
-    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+r.serviceLabel+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
+    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+residentServiceLabel(r)+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
   }
   function residentService(id){
     const r=RESIDENTS[id];if(!r)return;
-    if(r.service==='market')return shop('market',r.name);
-    if(r.service==='hardware')return shop('hardware',r.name);
-    if(r.service==='cafe')return shop('cafe',r.name);
+    if(['market','hardware','cafe'].includes(r.service)){
+      if(getVenue?.()===r.service)return shop(r.service,r.name);
+      if(enterVenue)return enterVenue(r.service);
+      return shop(r.service,r.name);
+    }
     if(r.service==='jobs')return jobs();
     if(r.service==='arcade')return arcade();
     if(r.service==='library')return library();
@@ -418,6 +427,12 @@ export function createTownEconomy(ctx){
     const p=prog(),t=ensureState(p);p.energy=Math.min(p.maxEnergy,p.energy+7);t.fun=Math.min(100,t.fun+8);
     persist();toast('도시 벤치에서 쉬었어요.');updateStatus();
   }
+  function cafeRest(){
+    const p=prog(),t=ensureState(p),day=p.survival.day;
+    if(t.cafeRestDay===day){toast('오늘은 카페에서 충분히 쉬었어요. 맛있는 메뉴를 주문하거나 내일 다시 쉬어보세요.');return false;}
+    t.cafeRestDay=day;p.energy=Math.min(p.maxEnergy,p.energy+5);t.fun=Math.min(100,t.fun+6);
+    persist();setAvatarAction('smile',700);toast('카페에서 잠깐 쉬었어요. 체력 +5 · 재미 +6');updateStatus();return true;
+  }
   function tick(dt){const t=ensureState();t.fun=Math.max(0,t.fun-dt*.006)}
 
   function handlePanelClick(e){
@@ -440,7 +455,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,tick,handlePanelClick,
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,
     BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS
   };
 }
