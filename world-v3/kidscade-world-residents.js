@@ -113,7 +113,7 @@ export function createResidentLife(ctx){
         const dx=n.targetX-n.object.position.x,dz=n.targetZ-n.object.position.z,d=Math.hypot(dx,dz);
         if(d<.07)stopAt(n,now);
         else{
-          const speed=n.role==='resident'||n.role==='delivery'?.58:.44,step=Math.min(d,speed*dt);
+          const speed=(n.role==='resident'||n.role==='delivery') ? .58 : .44,step=Math.min(d,speed*dt);
           n.object.position.x+=dx/d*step;n.object.position.z+=dz/d*step;n.object.rotation.y=Math.atan2(dx,dz);walking=true;
         }
       }else if(n.lifeState==='IDLE'){startMove(n,target,now);}
