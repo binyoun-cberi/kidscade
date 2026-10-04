@@ -148,6 +148,8 @@ test('fishing cannot queue multiple delayed catches from rapid input',()=>{
   assert.match(runtime,/if\(fishingBusy\)/);
   assert.match(runtime,/fishingBusy=true/);
   assert.match(runtime,/finally\{fishingBusy=false\}/);
+  assert.match(runtime,/const added=addInventoryItem\('fish',gain,\{silent:true\}\)/);
+  assert.match(runtime,/if\(!added\).*가방이 가득/s);
 });
 
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
