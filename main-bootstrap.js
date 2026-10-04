@@ -89,129 +89,6 @@
     return html.slice(0, contentStart) + cards + remainingMarkup + html.slice(contentEnd);
   }
 
-  function replaceBetween(html, startMarker, endMarker, replacement) {
-    const start = html.indexOf(startMarker);
-    if (start < 0) throw new Error('필수 화면 연결 지점을 찾지 못했습니다: ' + startMarker.trim());
-    const end = html.indexOf(endMarker, start + startMarker.length);
-    if (end < 0) throw new Error('필수 화면 연결 끝을 찾지 못했습니다: ' + endMarker.trim());
-    return html.slice(0, start) + replacement + html.slice(end);
-  }
-
-  function refactorLegacyControllers(html) {
-    const launcherStart = '            function openGameModal(e, cardElement) {';
-    const launcherEnd = '\n\n            // =====================================\n            // 배지 동기화 및 랭크 보상';
-    const launcherReplacement = `            const gameLauncherBridge = {
-                canLaunch: (event) => window.KidscadeAgeNavigation?.canLaunch(event) === true,
-                deferLaunch: true,
-                isLaunchPending: () => window.KidscadeGameFrame?.isPending?.() === true,
-                getGame: (id) => window.KidscadeGames?.get?.(id) || null,
-                getCard: (id) => window.KidscadeGames?.getCard?.(id) || document.querySelector(\`#game-list .game-card[data-id="${'${'}CSS.escape(String(id || ''))}"]\`),
-                playSound: (sound) => playUISound(sound),
-                alert: (message) => window.alert(message),
-                showToast: (message) => showToast(message),
-                now: () => Date.now(),
-                minRewardPlaySec: MIN_REWARD_PLAY_SEC,
-                startSession: (session) => {
-                    playStartTime = session.startedAt;
-                    playCheckpointTime = session.startedAt;
-                    activeGameId = session.id;
-                    activeGameCategory = session.category || 'all';
-                },
-                getSession: () => ({
-                    id: activeGameId,
-                    category: activeGameCategory,
-                    startedAt: playStartTime
-                }),
-                remember: (id) => {
-                    if (window.KidscadeDashboard?.remember?.(id)) return true;
-                    trackRecent(id);
-                    return true;
-                },
-                updateModalTitle: (titleText) => {
-                    document.getElementById('modal-title-text').innerText = titleText;
-                },
-                openModal: ({ game, href, titleText, onStart, startedTitle }) => {
-                    const opened = window.KidscadeGameFrame?.open?.({
-                        game,
-                        href,
-                        titleText,
-                        onStart,
-                        startedTitle
-                    });
-                    if (opened) return;
-                    const session = onStart?.();
-                    document.getElementById('modal-title-text').innerText = startedTitle?.(session) || titleText;
-                    gameIframe.src = href;
-                    gameModal.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-                },
-                closeModal: () => {
-                    window.KidscadeGameFrame?.reset?.();
-                    gameModal.classList.add('hidden');
-                    gameIframe.src = 'about:blank';
-                    document.body.style.overflow = 'auto';
-                },
-                checkpointPlayTime: (at) => checkpointPlayTime(at),
-                addCoins: (amount, reason) => addCoins(amount, reason),
-                addSproutPower: (amount, reason) => window.KidscadeSproutPower?.earn?.(amount, reason),
-                updateMission: (category, id) => updateMissionProgress(category, id),
-                recordGardenSession: (payload) => {
-                    const result = window.KidscadeSeedWorldMeta?.recordGameSession?.(payload);
-                    if (result?.parcelCreated) showToast('📬 씨앗 월드에 ' + (result.parcel?.name || '게임 선물') + ' 도착!');
-                    window.KidscadeWorld?.syncWorldEntryStatus?.();
-                    return result;
-                },
-                resetSession: () => {
-                    playStartTime = 0;
-                    playCheckpointTime = 0;
-                    activeGameId = null;
-                    activeGameCategory = 'all';
-                },
-                syncBadges: () => syncBadgesAndProfile(),
-                afterClose: (detail) => {
-                    document.dispatchEvent(new CustomEvent('kidscade:game-closed', { detail: detail || {} }));
-                }
-            };
-
-            window.KidscadePlay = Object.freeze({
-                open(id, event) {
-                    const card = gameLauncherBridge.getCard(id);
-                    if (!card) return { handled: true, opened: false, reason: 'missing-card' };
-                    return window.KidscadeGameLauncher.open(event, card, gameLauncherBridge);
-                }
-            });
-
-            function openGameModal(e, cardElement) {
-                return window.KidscadeGameLauncher.open(e, cardElement, gameLauncherBridge);
-            }
-
-            closeModalBtn.addEventListener('click', () => {
-                window.KidscadeGameLauncher.close(gameLauncherBridge);
-            });
-            window.addEventListener('message', (event) => {
-                if (event.origin !== location.origin || event.source !== gameIframe.contentWindow) return;
-                if (event.data?.type === 'kidscade:close-game') {
-                    window.KidscadeGameLauncher.close(gameLauncherBridge);
-                    return;
-                }
-                if (event.data?.type === 'kidscade:game-event') {
-                    document.dispatchEvent(new CustomEvent('kidscade:game-event', {
-                        detail: event.data?.detail || {}
-                    }));
-                    return;
-                }
-                if (event.data?.type === 'kidscade:game-error' && event.data?.detail?.fatal !== false) {
-                    window.KidscadeGameFrame?.showError?.({
-                        code: event.data?.detail?.code || 'GAME_ERROR',
-                        userMessage: event.data?.detail?.message ? '게임 오류: ' + event.data.detail.message : undefined
-                    });
-                }
-            });`;
-    html = replaceBetween(html, launcherStart, launcherEnd, launcherReplacement);
-
-    return html;
-  }
-
   function applyCompatibilityFixes(html) {
     html = html.replace('data-genre="sandbox">샌드박스</button>\\n', 'data-genre="sandbox">샌드박스</button>\n');
     html = html.replace('href="main-shell.css"', 'href="' + withVersion('main-shell.css') + '"');
@@ -231,7 +108,6 @@
     const versionedGarden = '<scr' + 'ipt src="' + withVersion('garden.js') + '"></scr' + 'ipt>';
     html = html.replace(gardenScript, versionedGarden);
     html = html.replace('href="games/spelling_frog/스펠링 프로그.html"', 'href="games/spelling_frog/스펠링 프로그.html?v=20260922-1"');
-    html = refactorLegacyControllers(html);
     return html;
   }
 
