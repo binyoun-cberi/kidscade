@@ -69,15 +69,15 @@ test('math rules and scripted wave progression stay solvable as factors unlock',
   waves.forEach((waveDef,index)=>waveDef.nums.forEach(n=>assert.ok(reachable(n,index+1),'wave '+(index+1)+' cannot reduce '+n+' to 1')));
 });
 
-test('v11 runtime uses Quaternius zombies, turrets and city buildings',()=>{
+test('v12 runtime uses Quaternius zombies, turrets and city buildings',()=>{
   for(const rel of [
     'assets/game/turrets/FBX/Gun_2.fbx',
     'assets/game/turrets/FBX/Gun_10.fbx',
     'assets/game/turrets/FBX/Laser_2.fbx',
     'assets/game/turrets/FBX/Teleporter5.fbx',
     'assets/game/turrets/FBX/Cannon_7.fbx',
-    'assets/game/npcs/glTF/Zombie_Male.gltf',
-    'assets/game/npcs/glTF/Zombie_Female.gltf',
+    'assets/game/zombie/FBX/Zombie.fbx',
+    'assets/game/zombie/FBX/ZombieSmooth.fbx',
     'assets/game/buildings/Models with Materials/FBX/1Story_Sign_Mat.fbx',
     'assets/game/buildings/Models with Materials/FBX/6Story_Stack_Mat.fbx'
   ]) assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
@@ -87,6 +87,17 @@ test('v11 runtime uses Quaternius zombies, turrets and city buildings',()=>{
   assert.match(runtime,/6Story_Stack_Mat\.fbx/);
   assert.match(runtime,/function towerVisualKey/);
 });
+test('v12 adds visible aiming, projectile travel, colored civilians, and the dedicated zombie pack',()=>{
+  assert.match(runtime,/turnSpeed/);
+  assert.match(runtime,/projectileSpeed/);
+  assert.match(runtime,/function turnToward/);
+  assert.match(runtime,/function launchProjectile/);
+  assert.match(runtime,/function updateProjectiles/);
+  assert.match(runtime,/SphereGeometry\(size/);
+  assert.match(runtime,/function tintCharacter/);
+  assert.match(runtime,/zombie\/FBX\/ZombieSmooth\.fbx/);
+});
+
 test('3D placement and learning feedback are first class',()=>{
   assert.match(runtime,/Raycaster/);
   assert.match(runtime,/pointerCell/);
@@ -133,7 +144,7 @@ test('v3 battlefield improves combat readability and feedback',()=>{
 });
 
 
-test('v11 keeps camera/audio systems while rebuilding the battlefield as an outbreak city',()=>{
+test('v12 keeps camera/audio systems while rebuilding the battlefield as an outbreak city',()=>{
   assert.match(runtime,/rebuildBoardDecor/);
   assert.match(runtime,/rebuildSkyWorld/);
   assert.match(runtime,/tree-default\.glb/);
@@ -175,7 +186,7 @@ test('v9 exposes direct 1x to 16x speed choices and substeps high-speed simulati
   assert.match(css,/\.speedMenu/);
 });
 
-test('v11 credits the new CC0 Quaternius outbreak packs',()=>{
+test('v12 credits the new CC0 Quaternius outbreak packs',()=>{
   assert.match(html,/Zombies · NPCs · Turrets · Buildings: Quaternius/);
   assert.match(html,/CC0/);
   assert.doesNotMatch(html,/Turrets: Zsky/);
