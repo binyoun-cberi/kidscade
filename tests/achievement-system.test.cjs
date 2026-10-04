@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const profiles = require('../game-outcome-profiles.js');
+const profiles = require('../app/features/achievements/game-outcome-profiles.js');
 
 test('achievement gallery is parseable and loaded by the lobby runtime', () => {
   const gallery = read('achievement-gallery.js');
