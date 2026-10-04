@@ -74,6 +74,7 @@ test('v12 restores wolves, auto-stacks loose output and separates work from expl
   assert.match(js, /\['wolf',8\]/);
   assert.match(js, /function nearbyStack/);
   assert.match(js, /AUTO_STACK_KINDS/);
+  assert.match(js, /\|\|SAME\[type\]\)return null/);
   assert.match(js, /!c\.exploring&&\(c\.busy\|\|c\.assignmentNodeId\)/);
 });
 
