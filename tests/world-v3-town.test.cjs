@@ -61,6 +61,8 @@ test('Seed Town residents follow routines, chat, avoid buildings and go home',()
   assert.match(residents,/if\(!isBlocked\?\.\(nx,nz\)\)/);
   assert.match(residents,/n\.partnerId=best\.id/);
   assert.match(city,/makeLabel\('💬'/);
+  assert.match(city,/userData\.setText/);
+  assert.match(residents,/CHAT_LINES\[serial%CHAT_LINES\.length\]/);
   assert.match(city,/home-minji/);
   assert.match(city,/home-hyunwoo/);
 });
