@@ -1,0 +1,430 @@
+/*
+ * Cube Architect HUD refresh · 2026-10-05
+ * Visual-only override layer. Keeps gameplay DOM ids/events intact.
+ */
+
+:root{
+  --ca-glass:rgba(13,22,37,.78);
+  --ca-glass-strong:rgba(12,20,34,.90);
+  --ca-glass-soft:rgba(255,255,255,.12);
+  --ca-line:rgba(255,255,255,.16);
+  --ca-text:#f7fbff;
+  --ca-muted:#bfd0e2;
+  --ca-aqua:#67dfcf;
+  --ca-sky:#8ac9ff;
+  --ca-gold:#f6c85f;
+  --ca-danger:#ff8193;
+  --ca-shadow:0 12px 32px rgba(4,10,20,.24);
+}
+
+/* ---------- top in-game HUD ---------- */
+#topbar{
+  left:14px;
+  right:14px;
+  top:14px;
+  gap:8px;
+  align-items:flex-start;
+}
+#topbar .icon-btn,
+#topbar .pill-btn,
+#modeTitle{
+  border:1px solid var(--ca-line);
+  background:var(--ca-glass);
+  color:var(--ca-text);
+  box-shadow:var(--ca-shadow);
+  backdrop-filter:blur(16px) saturate(1.12);
+  -webkit-backdrop-filter:blur(16px) saturate(1.12);
+}
+#topbar .icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  font-size:18px;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease;
+}
+#topbar .icon-btn:hover{
+  transform:translateY(-1px);
+  background:rgba(25,38,60,.92);
+  border-color:rgba(255,255,255,.28);
+}
+#modeTitle{
+  min-width:0;
+  max-width:235px;
+  padding:7px 12px 8px;
+  border-radius:13px;
+}
+#modeTitle b{
+  font-size:13px;
+  line-height:1.2;
+  letter-spacing:-.02em;
+}
+#modeTitle small{
+  margin-top:3px;
+  color:var(--ca-muted);
+  font-size:9px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.top-actions{
+  gap:6px;
+  align-items:center;
+}
+#topbar .pill-btn{
+  min-height:38px;
+  padding:9px 12px;
+  border-radius:12px;
+  font-size:11px;
+  line-height:1;
+  letter-spacing:-.01em;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+#topbar .pill-btn:hover{
+  transform:translateY(-1px);
+  background:rgba(26,40,64,.94);
+  border-color:rgba(255,255,255,.28);
+}
+#actionAvatar::before{content:"◫ ";color:var(--ca-sky)}
+#actionView::before{content:"◉ ";color:var(--ca-aqua)}
+#actionXray::before{content:"◇ ";color:var(--ca-gold)}
+#actionSave::before{content:"◆ ";color:var(--ca-aqua)}
+#actionNext::before{content:"→ ";color:var(--ca-gold)}
+#actionCheck::before{content:"✓ ";color:var(--ca-aqua)}
+#topbar .pill-btn.good,
+#topbar .pill-btn.warn,
+#topbar .pill-btn.primary{
+  background:var(--ca-glass);
+  color:var(--ca-text);
+}
+#topbar .pill-btn.good{border-color:rgba(103,223,207,.40)}
+#topbar .pill-btn.warn{border-color:rgba(246,200,95,.44)}
+#topbar .pill-btn.primary{border-color:rgba(138,201,255,.44)}
+
+/* ---------- survival / creative mission card ---------- */
+#freeMission{
+  left:14px;
+  top:72px;
+  width:min(286px,34vw);
+  padding:13px 14px 12px;
+  border:1px solid var(--ca-line);
+  border-radius:16px;
+  background:linear-gradient(155deg,rgba(14,25,41,.91),rgba(11,19,32,.78));
+  color:var(--ca-text);
+  box-shadow:var(--ca-shadow);
+  backdrop-filter:blur(15px) saturate(1.08);
+  -webkit-backdrop-filter:blur(15px) saturate(1.08);
+}
+#freeMission::before{
+  content:"WORLD HUD";
+  display:block;
+  margin-bottom:7px;
+  color:rgba(178,210,235,.66);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.18em;
+}
+#freeMission>b{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  font-size:13px;
+  line-height:1.25;
+}
+#freeQuestTitle{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#adventureCount{
+  flex:0 0 auto;
+  padding:3px 7px;
+  border:1px solid rgba(103,223,207,.26);
+  border-radius:999px;
+  background:rgba(103,223,207,.12);
+  color:#bff8ef;
+  font-size:9px;
+}
+#freeQuestDescription{
+  margin-top:6px!important;
+  color:#d3dfec!important;
+  font-size:10px;
+  line-height:1.45!important;
+}
+.free-status{
+  display:flex;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:9px;
+  color:var(--ca-muted);
+  font-size:9px;
+}
+.free-status span{
+  padding:4px 7px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  line-height:1;
+}
+#biomeState{background:rgba(79,180,119,.14);border-color:rgba(91,204,139,.20)}
+#weatherState{background:rgba(94,164,225,.14);border-color:rgba(126,194,255,.20)}
+#survivalHealth{
+  color:#ff9dad!important;
+  background:rgba(232,93,117,.10);
+  border-color:rgba(255,129,147,.20);
+}
+#survivalSafety{
+  background:rgba(103,223,207,.10);
+  border-color:rgba(103,223,207,.18);
+  color:#bbefe8;
+}
+#freeMission .progress{
+  height:5px;
+  margin-top:8px;
+  background:rgba(255,255,255,.11);
+}
+#freeMission .progress i{
+  background:linear-gradient(90deg,#58cfbe,#85e7d9);
+  box-shadow:0 0 10px rgba(103,223,207,.28);
+}
+#explorationHint{
+  color:#aebfd1;
+  font-size:9px;
+}
+#survivalReturn{
+  border-color:rgba(255,174,112,.30);
+  background:rgba(255,174,112,.12);
+  color:#ffd8bc;
+}
+
+/* ---------- center prompts ---------- */
+#lockNotice,
+#challengeLockNotice{
+  min-width:300px;
+  max-width:min(480px,82vw);
+  padding:15px 20px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:15px;
+  background:rgba(10,18,31,.82);
+  box-shadow:0 18px 45px rgba(0,0,0,.28);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  font-size:13px;
+  letter-spacing:-.01em;
+}
+#lockNotice::before,
+#challengeLockNotice::before{
+  content:"CLICK TO PLAY";
+  display:block;
+  margin-bottom:6px;
+  color:var(--ca-aqua);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.18em;
+}
+#lockNotice small,
+#challengeLockNotice small{
+  margin-top:6px;
+  color:#aebed0;
+  font-size:9px;
+  line-height:1.5;
+}
+
+/* ---------- contextual hint ---------- */
+#freeHint,
+#challengeFlyTip{
+  bottom:102px;
+  padding:6px 11px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  background:rgba(10,18,31,.68);
+  color:#dbe7f3;
+  box-shadow:0 6px 18px rgba(4,9,17,.16);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  font-size:9px;
+  font-weight:800;
+}
+
+/* ---------- hotbar ---------- */
+#freeHud #hotbar{
+  bottom:22px;
+  gap:5px;
+  padding:7px;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;
+  background:rgba(9,17,29,.74);
+  box-shadow:0 14px 38px rgba(3,8,15,.30);
+  backdrop-filter:blur(16px) saturate(1.1);
+  -webkit-backdrop-filter:blur(16px) saturate(1.1);
+}
+#freeHud .hot-slot{
+  width:55px;
+  height:55px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:11px;
+  background:rgba(239,245,251,.92);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+  transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease,background .14s ease;
+}
+#freeHud .hot-slot:hover{
+  transform:translateY(-2px);
+  border-color:rgba(255,255,255,.62);
+  background:#fff;
+}
+#freeHud .hot-slot.active{
+  transform:translateY(-5px);
+  border-color:#fff;
+  background:#fff;
+  box-shadow:
+    0 0 0 2px rgba(246,200,95,.78),
+    0 7px 18px rgba(0,0,0,.24);
+}
+#freeHud .hot-slot i{
+  inset:7px;
+  border-radius:8px;
+  font-size:21px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
+}
+#freeHud .hot-slot span{
+  left:4px;
+  top:3px;
+  font-size:8px;
+  color:#263348;
+  text-shadow:none;
+}
+#freeHud .hot-slot em{
+  bottom:2px;
+  max-width:49px;
+  padding:1px 3px;
+  border-radius:5px;
+  background:rgba(12,20,34,.64);
+  font-size:7px;
+}
+.hot-slot .hot-count{
+  right:3px;
+  top:3px;
+  min-width:16px;
+  padding:2px 4px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  background:rgba(12,20,34,.82);
+  font-size:8px;
+  line-height:1;
+  text-align:center;
+}
+
+/* ---------- toast / transient feedback ---------- */
+#toast{
+  top:74px;
+  min-width:0;
+  padding:8px 13px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;
+  background:rgba(10,18,31,.78);
+  color:#f5fbff;
+  box-shadow:0 9px 26px rgba(0,0,0,.22);
+  backdrop-filter:blur(13px);
+  -webkit-backdrop-filter:blur(13px);
+  font-size:10px;
+  font-weight:850;
+}
+#toast.show{transform:translate(-50%,2px)}
+
+/* ---------- bottom-right help bubble ---------- */
+.mode-tip{
+  right:16px;
+  bottom:16px;
+  width:36px;
+  height:36px;
+  max-width:none;
+  overflow:hidden;
+  padding:0;
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:999px;
+  background:rgba(10,18,31,.72);
+  color:transparent;
+  box-shadow:0 8px 24px rgba(0,0,0,.20);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:width .2s ease,height .2s ease,padding .2s ease,color .15s ease,background .15s ease;
+}
+.mode-tip::before{
+  content:"?";
+  position:absolute;
+  right:0;
+  top:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  color:#f4f8fc;
+  font-size:14px;
+  font-weight:950;
+}
+.mode-tip:hover{
+  width:min(330px,70vw);
+  height:auto;
+  min-height:36px;
+  padding:10px 42px 10px 12px;
+  background:rgba(10,18,31,.90);
+  color:#dce8f4;
+  font-size:9px;
+  line-height:1.45;
+}
+
+/* ---------- crosshair ---------- */
+#crosshair,
+#challengeCrosshair,
+#dungeonCrosshair{
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
+  opacity:.92;
+}
+
+/* ---------- modal panels stay visually related to HUD ---------- */
+#blockInventory,
+#furnacePanel,
+.side-panel,
+#resultCard{
+  border:1px solid rgba(255,255,255,.76);
+  box-shadow:0 24px 64px rgba(5,13,25,.28);
+}
+
+/* ---------- responsive safeguards ---------- */
+@media(max-width:900px){
+  #topbar .pill-btn{padding:8px 10px;font-size:10px}
+  #modeTitle{max-width:190px}
+  #freeMission{width:min(260px,42vw)}
+}
+@media(max-width:700px){
+  #topbar{left:8px;right:8px;top:8px}
+  #topbar .icon-btn{width:38px;height:38px}
+  #modeTitle{padding:6px 9px;max-width:150px}
+  #modeTitle b{font-size:11px}
+  #freeMission{left:8px;top:58px}
+  #freeHint,#challengeFlyTip{bottom:126px}
+  #lockNotice,#challengeLockNotice{min-width:0;width:min(340px,82vw);padding:13px 15px}
+}
+@media(pointer:coarse){
+  #freeHud #hotbar{
+    bottom:150px;
+    padding:6px;
+    border-radius:14px;
+  }
+  #freeHud .hot-slot{
+    width:48px;
+    height:48px;
+    flex:0 0 48px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #topbar .icon-btn,
+  #topbar .pill-btn,
+  #freeHud .hot-slot,
+  .mode-tip{
+    transition:none;
+  }
+}
