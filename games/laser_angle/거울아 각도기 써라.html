@@ -108,8 +108,9 @@
                 <path d="m4.93 4.93 14.14 14.14M19.07 4.93 4.93 19.07"></path>
             </svg>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 shrink-0">빛의 반사</h1>
-        <p class="text-slate-400 mb-6 text-sm shrink-0">거울을 직접 돌려 레이저 경로를 설계하고, 법선·입사각·반사각을 눈으로 확인하세요!</p>
+        <h1 class="text-2xl sm:text-3xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 shrink-0">거울아, 각도기 써라!</h1>
+        <p class="text-sky-300 font-extrabold text-xs mb-2 shrink-0">빛의 반사 실험실</p>
+        <p class="text-slate-400 mb-6 text-sm shrink-0">각도를 먼저 예상하고 레이저를 발사해 결과를 확인하세요. 법선·입사각·반사각을 눈으로 비교하며 경로를 완성합니다.</p>
         
         <div id="stage-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 overflow-y-auto p-1 shrink h-full min-h-[200px]">
             </div>
@@ -158,10 +159,11 @@
                     <span id="angle-type-label" class="angle-chip text-sky-200">직접 드래그</span>
                     <div class="text-[11px] text-slate-400 ml-auto hidden sm:block">거울을 잡아 직접 돌리세요</div>
                 </div>
-                <div class="grid grid-cols-5 gap-2 w-full">
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 w-full">
+                    <button id="btn-fire-laser" class="tool-btn primary">⚡ 발사 0</button>
                     <button id="btn-angle-minus" class="tool-btn">-5°</button>
                     <button id="btn-angle-plus" class="tool-btn">+5°</button>
-                    <button id="btn-snap-solution" class="tool-btn primary">각도기</button>
+                    <button id="btn-snap-solution" class="tool-btn">각도기</button>
                     <button id="btn-toggle-guide" class="tool-btn">법선·각</button>
                     <button id="btn-stage-hint" class="tool-btn warn">힌트 1/3</button>
                 </div>
@@ -2116,6 +2118,37 @@
             if (level13.solutions?.mirrors) level13.solutions.mirrors['1'] = 0;
         }
 
+        // 시작부터 거의 정답이던 기존 배치를 폐기합니다.
+        // 챕터가 진행될수록 정답과 더 멀리 떨어진 각도에서 시작해
+        // '미세 조정'이 아니라 경로를 예상하고 실험하도록 만듭니다.
+        const normalizeStartAngle = (value, max) => {
+            let v = value % max;
+            if (v < 0) v += max;
+            return Math.round(v);
+        };
+        const challengeOffset = (levelId, index, emitter = false) => {
+            if (emitter) return levelId <= 2 ? 45 : (levelId <= 18 ? 60 : 75);
+            const set = levelId <= 8
+                ? [42, -48]
+                : levelId <= 18
+                    ? [50, -62, 72, -78]
+                    : levelId <= 24
+                        ? [62, -75, 84, -58, 70, -88]
+                        : [68, -82, 88, -64, 76, -50];
+            return set[index % set.length];
+        };
+        LEVELS.forEach(level => {
+            if (level.emitter?.rotatable) {
+                const solution = level.emitter.solutionAngle ?? level.solutions?.emitter ?? level.emitter.angle;
+                level.emitter.angle = normalizeStartAngle(solution + challengeOffset(level.id, 0, true), 360);
+            }
+            (level.mirrors || []).forEach((mirror, index) => {
+                if (mirror.fixed) return;
+                const solution = mirror.solutionAngle ?? level.solutions?.mirrors?.[mirror.id] ?? mirror.angle;
+                mirror.angle = normalizeStartAngle(solution + challengeOffset(level.id, index, false), 180);
+            });
+        });
+
         // ==========================================
         // Game State & Storage
         // ==========================================
@@ -2137,6 +2170,8 @@
         let isTargetHit = false;
         let targetHitTimer = 0; // 실제 시간(초) 기준
         let lastLoopTime = 0;
+        let laserPulseUntil = 0;
+        let shotsFired = 0;
 
         const screens = {
             start: document.getElementById('start-screen'),
@@ -2152,6 +2187,7 @@
         const lessonText = document.getElementById('lesson-text');
         const angleTypeLabel = document.getElementById('angle-type-label');
         const angleHelpText = document.getElementById('angle-help-text');
+        const btnFireLaser = document.getElementById('btn-fire-laser');
         const btnAngleMinus = document.getElementById('btn-angle-minus');
         const btnAnglePlus = document.getElementById('btn-angle-plus');
         const btnStageHint = document.getElementById('btn-stage-hint');
@@ -2362,6 +2398,9 @@
             selectedEmitter = false;
             isTargetHit = false;
             targetHitTimer = 0;
+            laserPulseUntil = 0;
+            shotsFired = 0;
+            btnFireLaser.innerText = '⚡ 발사 0';
             controlsPanel.classList.add('hidden');
             hintStep = 0;
             hintsUsed = 0;
@@ -2373,7 +2412,9 @@
             btnSnapSolution.innerText = '각도기';
             lessonConcept.innerText = `📐 ${levelData.concept || '각도'}`;
             lessonDifficulty.innerText = levelData.difficulty || '기초';
-            setLessonMessage(levelData.lesson);
+            setLessonMessage(levelData.id <= 2
+                ? levelData.lesson + ' 각도를 정한 뒤 ⚡ 발사를 눌러 확인하세요.'
+                : levelData.lesson + ' 먼저 경로를 예상하고 ⚡ 발사로 실험하세요.');
             updateAngleHelp();
             
             document.getElementById('level-indicator').innerText = `LEVEL ${levelData.id}`;
@@ -2407,7 +2448,8 @@
             const stars = calculateStars();
             setBestStars(levelData.id, stars);
             resultStars.innerText = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-            resultHintSummary.innerText = stars === 3 ? '도움 없이 스스로 해결했습니다!' : stars === 2 ? '힌트 1회를 사용해 해결했습니다.' : '법선·각 또는 여러 힌트를 활용해 해결했습니다.';
+            const helpSummary = stars === 3 ? '도움 없이 스스로 해결했습니다!' : stars === 2 ? '힌트 1회를 사용해 해결했습니다.' : '법선·각 또는 여러 힌트를 활용해 해결했습니다.';
+            resultHintSummary.innerText = `${helpSummary} · 실험 ${shotsFired}회`;
             const bestTimes = getBestTimes();
             document.getElementById('new-best-time').innerText = formatTime(bestTimes[levelData.id]);
             
@@ -2441,6 +2483,10 @@
         // Input Handling
         // ==========================================
         const updateAngle = (angle) => {
+            // 조절을 시작하면 직전 실험 광선은 꺼집니다. 먼저 예상한 뒤 다시 발사합니다.
+            laserPulseUntil = 0;
+            isTargetHit = false;
+            targetHitTimer = 0;
             if (selectedEmitter && levelData.emitter.rotatable) {
                 levelData.emitter.angle = normalizeAngle(angle, 360);
                 angleSlider.value = levelData.emitter.angle;
@@ -2460,6 +2506,17 @@
         angleInput.addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
             if(!isNaN(val)) updateAngle(val);
+        });
+
+        btnFireLaser.addEventListener('click', () => {
+            soundEffects.click();
+            if (gameState !== 'playing') return;
+            shotsFired++;
+            laserPulseUntil = performance.now() + 1400;
+            targetHitTimer = 0;
+            isTargetHit = false;
+            btnFireLaser.innerText = `⚡ 발사 ${shotsFired}`;
+            setLessonMessage(`실험 ${shotsFired}회 · 빛의 경로를 관찰하세요. 목표에 닿지 않았다면 어느 거울에서 방향이 어긋났는지 찾아 다시 조절하세요.`);
         });
 
         btnAngleMinus.addEventListener('click', () => {
@@ -2653,7 +2710,10 @@
 
         const draw = (dt = 0.016) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const timeAnim = performance.now() / 500; 
+            const now = performance.now();
+            const laserActive = now < laserPulseUntil;
+            if (!laserActive) isTargetHit = false;
+            const timeAnim = now / 500; 
             
             // Grid background
             ctx.strokeStyle = '#334155';
@@ -2910,6 +2970,13 @@
             });
 
             // 6. Raycasting Physics Logic
+            // 평소에는 광선을 숨겨 먼저 각도와 경로를 생각하게 하고,
+            // '발사' 후 짧은 시간에만 실제 광선을 보여줍니다.
+            if (!laserActive) {
+                targetHitTimer = 0;
+                return;
+            }
+
             let rayOrigin = { x: em.x, y: em.y };
             let rayAngle = em.angle * Math.PI / 180;
             let currentHitTarget = false;
