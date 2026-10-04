@@ -9,11 +9,15 @@ const js=read('games/cube3d/cube-architect.js');
 const html=read('games/cube3d/index.html');
 const avatar=read('games/cube3d/cube-architect-avatar.js');
 const css=read('games/cube3d/cube-architect.css');
+const world=read('games/cube3d/cube-architect-world.js');
 
 test('Cube Architect world physics parses and cache-busts the runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261003-31-physics2/);
+  assert.match(html,/cube-architect\.js\?v=20261003-31-physics3/);
+  assert.match(html,/cube-architect-world\.js\?v=20261003-29-shelter1/);
+  assert.match(html,/cube-architect\.css\?v=20261003-29-water1/);
   assert.match(html,/cube-architect-avatar\.js\?v=20261003-30-swim1/);
+  assert.doesNotThrow(()=>new Function(world));
 });
 
 test('water and lava use fluid movement instead of ground walking',()=>{
@@ -100,7 +104,7 @@ test('small wildlife follows edited voxel terrain instead of teleporting onto st
 });
 
 test('return points use the current edited world and solid blocks can displace replaceable fluids',()=>{
-  assert.match(js,/function safeReturnEyeY\(\)\{return getHighestSolidY\(0,5,WORLD_MAX_Y\)\+2\.62\}/);
+  assert.match(js,/function safeReturnEyeY\(\)\{return groundTopBelow\(0,WORLD_MAX_Y\+1\.62,5\)\+1\.62\}/);
   assert.match(js,/camera\.position\.set\(0,safeReturnEyeY\(\),5\)/);
   assert.match(js,/const canDisplaceFluid=occupied&&blockDef\(occupied\)\.liquid&&selectedDef\.solid/);
   assert.match(js,/const canReplaceFragile=occupied&&\['fire','flower','reed','sapling','torch'\]\.includes\(occupied\.type\)/);
@@ -112,4 +116,42 @@ test('player-built leaves persist and moving fluids wash away fragile props',()=
   assert.match(js,/if\(d\.playerBuilt\|\|hasNearbyLog\(x,y,z\)\)\{d\.decay=0;continue\}/);
   assert.match(js,/\['fire','flower','reed','sapling','torch'\]\.includes\(at\.type\)/);
   assert.match(js,/removeWorldBlockData\(x,y,z,true\)/);
+});
+
+
+test('creatures stand on the visible top of slabs stairs and roofs',()=>{
+  assert.match(js,/const d=getBlock\(cx,y,cz\),top=collisionTopForData\(d,cx,y,cz,x,z\)/);
+  assert.match(js,/function supportDataBelow/);
+  assert.match(js,/return supportDataBelow\(camera\.position\.x,freePhysicsY-1\.62,camera\.position\.z\)/);
+  assert.match(js,/return supportDataBelow\(root\.position\.x,root\.position\.y,root\.position\.z\)/);
+});
+
+test('open doors no longer behave like invisible liquid dams',()=>{
+  assert.match(js,/function openDoorCell/);
+  assert.match(js,/function flowLiquidStep/);
+  assert.match(js,/while\(steps<2&&openDoorCell\(tx,ty,tz\)\)/);
+  assert.match(js,/flowLiquidStep\(x,y,z,d\.type,level-1,v\[0\],0,v\[1\]\)/);
+});
+
+test('underwater state has a visible screen cue and clears between modes',()=>{
+  assert.match(html,/id="underwaterOverlay"/);
+  assert.match(css,/#underwaterOverlay\.active\{opacity:1\}/);
+  assert.match(js,/function updateUnderwaterVisual/);
+  assert.match(js,/overlay\.classList\.toggle\('active',!!underwater&&mode==='free'\)/);
+  assert.match(js,/\$\('underwaterOverlay'\)\?\.classList\.remove\('active'\)/);
+});
+
+test('shelter checks ignore decoration partial walls and open doorways',()=>{
+  assert.match(world,/SHELTER_PASSABLE=new Set\(\['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch'\]\)/);
+  assert.match(world,/d\.type==='cactus'/);
+  assert.match(world,/role==='wall'&&d\.type==='slab'/);
+  assert.match(world,/\(d\.type==='door'\|\|d\.type==='doorTop'\)&&d\.open/);
+  assert.match(world,/shelterBlock\(d,'roof'\)/);
+  assert.match(world,/shelterBlock\(d,'wall'\)/);
+});
+
+
+test('rabbit spawn and emergency return also use shaped surface heights',()=>{
+  assert.match(js,/g\.position\.set\(x,creatureGroundY\(x,z,terrainHeight\(x,z\)\+1\),z\)/);
+  assert.match(js,/function safeReturnEyeY\(\)\{return groundTopBelow\(0,WORLD_MAX_Y\+1\.62,5\)\+1\.62\}/);
 });

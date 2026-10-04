@@ -8,6 +8,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#cce8ff;fon
 button{font:inherit}
 #app{position:fixed;inset:0}
 #gameCanvas{display:block;width:100%;height:100%;outline:0;touch-action:none}
+#underwaterOverlay{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0;transition:opacity .14s ease;background:
+  linear-gradient(rgba(46,143,190,.16),rgba(21,97,148,.28)),
+  radial-gradient(circle at 50% 42%,transparent 32%,rgba(10,73,119,.22) 100%);
+  box-shadow:inset 0 0 90px rgba(18,83,132,.2)}
+#underwaterOverlay.active{opacity:1}
 .hidden{display:none!important}
 .screen{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;background:
 radial-gradient(circle at 20% 15%,rgba(255,255,255,.88),transparent 28%),
