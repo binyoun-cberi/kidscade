@@ -39,7 +39,9 @@ test('index keeps one bootstrap entrypoint and composed runtime scripts execute 
   }
   assert.match(bootstrap, /meta name="kidscade-build"/);
   assert.match(bootstrap, /escapeHtml\(RUNTIME_VERSION\)/);
-  assert.match(bootstrap, /<scr' \+ 'ipt src=/);\n  assert.doesNotMatch(bootstrap, /<scr' \+ 'ipt defer src=/);\n  assert.match(bootstrap, /insertBeforeLobbyRuntime/);
+  assert.match(bootstrap, /<scr' \+ 'ipt src=/);
+  assert.doesNotMatch(bootstrap, /<scr' \+ 'ipt defer src=/);
+  assert.match(bootstrap, /insertBeforeLobbyRuntime/);
 });
 
 test('Cloudflare build emits a no-cache static version manifest', () => {
