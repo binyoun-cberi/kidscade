@@ -168,6 +168,10 @@
     low_pattern_lock: {
       mastery:{event:'game-over', field:'completed', op:'truthy'}
     },
+    low_one_stroke: {
+      mastery:{event:'game-over', field:'clean', op:'truthy'},
+      secret:{event:'game-over', field:'completedCount', op:'gte', value:10}
+    },
     high_rule_lab: {
       mastery:{event:'game-over', field:'score', op:'gte', value:1}
     },
