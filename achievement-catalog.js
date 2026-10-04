@@ -197,15 +197,16 @@
   }
 
   function def(gameId, slot, title, description, extra = {}) {
+    const completionSlot = slot === 'first_finish' || slot === 'finisher_5' || slot === 'finisher_20';
     return {
       id: gameId + '.' + slot,
       gameId,
-      icon: slot === 'first_play' ? '🎮' : slot === 'mastery' ? '🏆' : '✨',
-      type: slot === 'secret' ? 'secret' : slot === 'mastery' ? 'challenge' : 'normal',
+      icon: slot === 'first_finish' ? '🏁' : slot === 'finisher_5' ? '🔥' : slot === 'finisher_20' ? '👑' : slot === 'mastery' ? '🏆' : '✨',
+      type: slot === 'secret' ? 'secret' : slot === 'first_finish' ? 'normal' : 'challenge',
       hidden: slot === 'secret',
       target: 1,
-      enabled: slot === 'first_play',
-      trigger: slot === 'first_play' ? 'first_play' : '',
+      enabled: completionSlot,
+      trigger: completionSlot ? 'completion_count' : '',
       title,
       description,
       ...extra
@@ -216,9 +217,11 @@
     const defs = [];
     Object.entries(PLANS).forEach(([gameId, values]) => {
       if (!gameExists(gameId) || PILOT_GAME_IDS.has(gameId)) return;
-      const [firstTitle, firstDesc, masteryTitle, masteryDesc, secretTitle, secretDesc] = values;
+      const [, , masteryTitle, masteryDesc, secretTitle, secretDesc] = values;
       const rules = LIVE_RULES[gameId] || {};
-      defs.push(def(gameId, 'first_play', firstTitle, firstDesc));
+      defs.push(def(gameId, 'first_finish', '첫 완주', '이 게임을 한 판 끝까지 완료하세요.', { target:1 }));
+      defs.push(def(gameId, 'finisher_5', '익숙해졌어!', '이 게임을 5판 끝까지 완료하세요.', { target:5 }));
+      defs.push(def(gameId, 'finisher_20', '단골 플레이어', '이 게임을 20판 끝까지 완료하세요.', { target:20 }));
       defs.push(def(gameId, 'mastery', masteryTitle, masteryDesc, {
         enabled:Boolean(rules.mastery),
         rule:rules.mastery || null
