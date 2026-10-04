@@ -466,6 +466,9 @@ function rollExploreOutputs(node){
  if(tutorialActive()&&state.tutorial.step===4&&node.type==='rockyHill')return [['stoneSource',1]];
  let entries=adjustedExploreEntries(node,def.results.slice());
  const level=node.exploreLevel||0;
+ if(node.type==='rockyHill'&&level>=2&&!cardsOf('copperVein').length)return [['copperVein',1]];
+ if(node.type==='ridge'&&level>=2&&!cardsOf('tinVein').length)return [['tinVein',1]];
+ if(node.type==='deepCave'&&level>=2&&!cardsOf('ironVein').length)return [['ironVein',1]];
  if(level>=def.max){const common=entries.filter(e=>!EXPLORE_DEFS[e[0]]);if(common.length)entries=common;}
  const unseen=entries.filter(e=>!(EXPLORE_DEFS[e[0]]&&cardsOf(e[0]).length>0));if(unseen.length)entries=unseen;
  const first=weightedResult(entries),out=first?[[first,1]]:[];
