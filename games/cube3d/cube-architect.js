@@ -1050,6 +1050,7 @@ let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
 let dungeonYaw=0,dungeonPitch=0,dungeonKeys={},dungeonTargets=[],dungeonGates=[];
+let dungeonPuzzleGroups=new Map(),dungeonNetVisuals=[],dungeonFoldNonce=0;
 let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
 let worldChunkIndex=new Map(),worldChunksGenerated=new Set(),worldChunkGenerationDepth=0;
 const WORLD_CHUNK_SIZE=16;
