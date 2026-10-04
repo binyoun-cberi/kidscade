@@ -356,7 +356,7 @@ function prepareControlCheck(){
 }
 function expectedControlTask(){return controlCheck.tasks[controlCheck.index]||null}
 function verifyControlAction(kind){
-  if(mode!=='exam'||gameState!=='playing'||stage!=='PREP'||controlCheck.complete)return;
+  if(mode!=='exam'||gameState!=='playing'||stage!=='PREP'||controlCheck.complete||!car.seatbelt)return;
   const expected=expectedControlTask();if(!expected)return;
   if(kind!==expected.kind){
     addDeduction('운전장치 조작 오류',5);
