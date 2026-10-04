@@ -10,14 +10,14 @@ const CATEGORY_META={
 };
 
 export const MUSEUM_CATALOG=[
-  {id:'fish:pond',category:'fish',name:'연못 물고기',icon:'🐟',fishDex:'연못 물고기',consume:'fish',location:'집 연못',size:true},
-  {id:'fish:river',category:'fish',name:'강가 물고기',icon:'🐠',fishDex:'강가 물고기',consume:'fish',location:'북쪽 강가',size:true},
-  {id:'fish:beach',category:'fish',name:'해변 물고기',icon:'🐡',fishDex:'해변 물고기',consume:'fish',location:'해변가',size:true},
+  {id:'fish:pond',category:'fish',name:'연못 물고기',icon:'🐟',fishDex:'연못 물고기',consume:'fish',location:'집 연못',size:true,specimen:true},
+  {id:'fish:river',category:'fish',name:'강가 물고기',icon:'🐠',fishDex:'강가 물고기',consume:'fish',location:'북쪽 강가',size:true,specimen:true},
+  {id:'fish:beach',category:'fish',name:'해변 물고기',icon:'🐡',fishDex:'해변 물고기',consume:'fish',location:'해변가',size:true,specimen:true},
   {id:'fish:rare',category:'fish',name:'희귀 물고기',icon:'✨',item:'rareFish',location:'강가·해변',size:true},
   {id:'nature:pearl',category:'nature',name:'진주',icon:'🫧',item:'pearl',location:'해변가'},
   {id:'nature:shell',category:'nature',name:'조개껍데기',icon:'🐚',item:'shell',location:'해변가'},
   {id:'nature:bug',category:'nature',name:'곤충',icon:'🪲',item:'bug',location:'숲과 들판'},
-  {id:'nature:mushroom',category:'nature',name:'야생 버섯',icon:'🍄',item:'mushroom',location:'깊은 숲'},
+  {id:'nature:mushroom',category:'nature',name:'야생 버섯',icon:'🍄',item:'mushroom',location:'깊은 숲',specimen:true},
   {id:'mineral:stone',category:'mineral',name:'돌',icon:'🪨',item:'stone',location:'광산'},
   {id:'mineral:iron',category:'mineral',name:'철광석',icon:'⛏️',item:'iron',location:'철 광산'},
   {id:'mineral:copper',category:'mineral',name:'구리',icon:'🟠',item:'copper',location:'철 광산'},
@@ -28,7 +28,7 @@ export const MUSEUM_CATALOG=[
     ['corn','옥수수','🌽'],['pumpkin','호박','🎃'],['beet','비트','🫜'],['lettuce','상추','🥬'],
     ['mushroom','재배 버섯','🍄'],['rice','벼','🌾'],['watermelon','수박','🍉'],['wheat','밀','🌾'],
     ['bamboo','대나무','🎋'],['berry','베리','🫐']
-  ].map(([key,name,icon])=>({id:'crop:'+key,category:'crop',name,icon,item:key,location:'농장'})),
+  ].map(([key,name,icon])=>({id:'crop:'+key,category:'crop',name,icon,item:key,location:'농장',...(key==='mushroom'?{specimen:true}:{})})),
   ...[
     ['apple','사과','🍎'],['pear','배','🍐'],['peach','복숭아','🍑'],['orange','감귤','🍊'],['cherry','체리','🍒']
   ].map(([key,name,icon])=>({id:'fruit:'+key,category:'fruit',name,icon,item:key,location:'과수원'})),
@@ -46,10 +46,12 @@ export const MUSEUM_CATALOG=[
 ];
 
 const BY_ID=Object.fromEntries(MUSEUM_CATALOG.map(v=>[v.id,v]));
-const ITEM_ENTRIES=new Map();
+const ITEM_ENTRY_LISTS=new Map();
 for(const entry of MUSEUM_CATALOG){
-  if(entry.item&&!ITEM_ENTRIES.has(entry.item))ITEM_ENTRIES.set(entry.item,entry);
+  if(!entry.item)continue;
+  const list=ITEM_ENTRY_LISTS.get(entry.item)||[];list.push(entry);ITEM_ENTRY_LISTS.set(entry.item,list);
 }
+const ITEM_ENTRIES=new Map([...ITEM_ENTRY_LISTS.entries()].filter(([,list])=>list.length===1).map(([key,list])=>[key,list[0]]));
 const FOOD_ENTRIES=new Map(MUSEUM_CATALOG.filter(v=>v.food).map(v=>[v.food,v]));
 
 function safeNumber(v){const n=Number(v);return Number.isFinite(n)?n:0}
@@ -60,10 +62,11 @@ export function createMuseumSystem(ctx){
   function state(){
     const p=prog();
     p.museum=p.museum&&typeof p.museum==='object'?p.museum:{};
-    p.museum.version=1;
+    p.museum.version=2;
     p.museum.discovered=p.museum.discovered&&typeof p.museum.discovered==='object'?p.museum.discovered:{};
     p.museum.donated=p.museum.donated&&typeof p.museum.donated==='object'?p.museum.donated:{};
     p.museum.records=p.museum.records&&typeof p.museum.records==='object'?p.museum.records:{};
+    p.museum.specimens=p.museum.specimens&&typeof p.museum.specimens==='object'?p.museum.specimens:{};
     return p.museum;
   }
 
@@ -92,13 +95,38 @@ export function createMuseumSystem(ctx){
     return discover(entry.id,{...opts,location:opts.location||entry.location});
   }
 
+  function recordSpecimen(id,qty=1,opts={}){
+    const entry=BY_ID[id],amount=Math.max(0,Math.floor(safeNumber(qty)));if(!entry||!entry.specimen||!amount)return false;
+    const s=state();s.specimens[id]=safeNumber(s.specimens[id])+amount;
+    discover(id,{...opts,location:opts.location||entry.location,silent:opts.silent??true});
+    persist?.();return true;
+  }
+
+  function consumeItem(key,qty=1){
+    let left=Math.max(0,Math.floor(safeNumber(qty)));if(!left)return 0;
+    const s=state(),matches=MUSEUM_CATALOG.filter(entry=>entry.specimen&&(entry.item===key||entry.consume===key));
+    let used=0;
+    for(const entry of matches){
+      if(!left)break;
+      const have=Math.max(0,Math.floor(safeNumber(s.specimens[entry.id]))),take=Math.min(have,left);
+      if(take){s.specimens[entry.id]=have-take;left-=take;used+=take;}
+    }
+    return used;
+  }
+
   function syncKnown(){
     const p=prog(),i=inv(),s=state();let changed=false;
     for(const entry of MUSEUM_CATALOG){
       let known=false;
-      if(entry.item)known=safeNumber(i[entry.item])>0;
+      if(entry.item&&!entry.specimen)known=safeNumber(i[entry.item])>0;
       if(entry.food)known=safeNumber(p.food?.[entry.food])>0;
-      if(entry.fishDex)known=safeNumber(p.fishDex?.[entry.fishDex])>0;
+      if(entry.fishDex){
+        const caught=safeNumber(p.fishDex?.[entry.fishDex]);known=caught>0;
+        if(caught>0&&safeNumber(s.specimens[entry.id])<=0&&!s.donated[entry.id]&&safeNumber(i[entry.consume])>0){
+          s.specimens[entry.id]=Math.min(caught,safeNumber(i[entry.consume]));changed=true;
+        }
+      }
+      if(entry.specimen&&safeNumber(s.specimens[entry.id])>0)known=true;
       if(entry.pet)known=(p.cubePets?.owned||[]).includes(entry.pet)||(p.cubePets?.met||[]).includes(entry.pet);
       if(known&&!s.discovered[entry.id]){
         s.discovered[entry.id]={day:Math.max(1,Math.floor(safeNumber(p.survival?.day)||1)),location:entry.location||''};changed=true;
@@ -111,6 +139,7 @@ export function createMuseumSystem(ctx){
   function ownedCount(entry){
     const p=prog(),i=inv();
     if(entry.food)return safeNumber(p.food?.[entry.food]);
+    if(entry.specimen){const key=entry.consume||entry.item;return Math.min(safeNumber(i[key]),safeNumber(state().specimens[entry.id]));}
     if(entry.consume)return safeNumber(i[entry.consume]);
     if(entry.item)return safeNumber(i[entry.item]);
     if(entry.pet)return (p.cubePets?.owned||[]).includes(entry.pet)?1:0;
@@ -134,6 +163,7 @@ export function createMuseumSystem(ctx){
     else {
       const key=entry.consume||entry.item;
       i[key]=Math.max(0,safeNumber(i[key])-1);
+      if(entry.specimen)s.specimens[id]=Math.max(0,safeNumber(s.specimens[id])-1);
     }
     s.donated[id]=Math.max(1,Math.floor(safeNumber(getDay())||1));
     persist?.();toast?.('🏛️ '+entry.name+' 기증 완료! 박물관 전시가 늘어났어요.');
@@ -147,6 +177,7 @@ export function createMuseumSystem(ctx){
     for(const category of CATEGORY_ORDER)donatedByCategory[category]=MUSEUM_CATALOG.filter(v=>v.category===category&&!!s.donated[v.id]).length;
     return {
       total:MUSEUM_CATALOG.length,discovered,donated,donatedByCategory,
+      donatedIds:MUSEUM_CATALOG.filter(v=>!!s.donated[v.id]).map(v=>v.id),
       exhibits:{
         aquarium:donatedByCategory.fish>0,
         nature:donatedByCategory.nature>0,
@@ -185,5 +216,5 @@ export function createMuseumSystem(ctx){
   }
 
   syncKnown();
-  return {state,discover,discoverItem,syncKnown,catalogPanel,donationPanel,donate,summary,catalog:MUSEUM_CATALOG};
+  return {state,discover,discoverItem,recordSpecimen,consumeItem,syncKnown,catalogPanel,donationPanel,donate,summary,catalog:MUSEUM_CATALOG};
 }
