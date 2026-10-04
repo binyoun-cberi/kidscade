@@ -234,7 +234,7 @@ function newGame(){
     const isCpu=i>=setup.human;
     state.players.push({
       id:i,name:isCpu?'CPU '+cpuNo++:'플레이어 '+(i+1),isCpu,color:COLORS[i],emoji:AVATARS[i],
-      money:280,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,turnTransitPaid:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
+      money:300,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,turnTransitPaid:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
     });
   }
   ui.start.classList.add('hidden');ui.result.classList.add('hidden');ui.game.classList.remove('hidden');
@@ -294,7 +294,7 @@ function maybeOfferBuild(player){
     const affordable=owned.filter(c=>player.money>=remoteBuildCost(player,c,state.investments[c.id].level));
     if(!affordable.length){enterRollPhase(player);return true}
     const target=affordable[0],inv=state.investments[target.id],cost=remoteBuildCost(player,target,inv.level);
-    const reserve=state.cpuDifficulty==='hard'?35:state.cpuDifficulty==='normal'?65:95;
+    const reserve=state.cpuDifficulty==='hard'?40:state.cpuDifficulty==='normal'?80:105;
     const use=player.money-cost>=reserve&&(state.cpuDifficulty!=='easy'||Math.random()>.45);
     if(use)later(()=>remoteUpgrade(player,target,inv,cost),state.speed==='fast'?140:360);
     else enterRollPhase(player);
@@ -609,7 +609,7 @@ function promptInvestment(player,c){
   const cost=investmentCost(player,c),can=player.money>=cost;
   if(player.isCpu){
     let buy=can&&(state.cpuDifficulty!=='easy'||Math.random()>.38);
-    if(state.cpuDifficulty==='normal'&&player.money-cost<55)buy=false;
+    if(state.cpuDifficulty==='normal'&&player.money-cost<75)buy=false;
     if(state.cpuDifficulty==='hard'&&countContinent(player.id,c.continent)===CONTINENTS[c.continent].need-1)buy=can;
     return later(()=>buy?buyCountry(player,c,cost):finishLanding(player),state.speed==='fast'?220:650);
   }
