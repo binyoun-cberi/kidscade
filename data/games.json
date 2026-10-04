@@ -1968,7 +1968,7 @@
     {
       "id": "korea_puzzle",
       "title": "K-퍼즐 지도 맞추기",
-      "href": "games/korea_puzzle/K-퍼즐 지도 맞추기.html?v=2",
+      "href": "games/korea_puzzle/K-퍼즐 지도 맞추기.html",
       "category": "trivia",
       "age": "high",
       "icon": "🗺️",
@@ -1992,7 +1992,7 @@
       "id": "world_map_puzzle",
       "addedAt": "2026-10-04T22:08:00+09:00",
       "title": "W-퍼즐 세계 지도 맞추기",
-      "href": "games/world_map_puzzle/index.html?v=2",
+      "href": "games/world_map_puzzle/index.html",
       "category": "trivia",
       "age": "high",
       "icon": "🌍",
