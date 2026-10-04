@@ -130,8 +130,12 @@ test('v13 tin has both exploration and trade paths and dolmen does not consume t
   const js = read('game.js');
   assert.match(js, /\['tinVein',7\]/);
   assert.match(js, /node\.type==='rockyHill'&&level>=2.*copperVein/);
+  assert.match(js, /node\.type==='rockyHill'&&level>=3.*ridge/);
   assert.match(js, /node\.type==='ridge'&&level>=2.*tinVein/);
+  assert.match(js, /node\.type==='ridge'&&level>=3.*caveEntrance/);
+  assert.match(js, /node\.type==='caveEntrance'&&level>=2.*deepCave/);
   assert.match(js, /node\.type==='deepCave'&&level>=2.*ironVein/);
+  assert.doesNotMatch(js, /if\(level>=def\.max\).*common/);
   assert.match(js, /주석 교역/);
   assert.match(js, /\['bronzeCenter','stone',0,2,\[\['dolmen',1\]\]/);
 });
