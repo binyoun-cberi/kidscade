@@ -292,11 +292,14 @@ export async function buildKidscadeCity(ctx){
     'home-hyunwoo':{x:transit.x+7.5,z:transit.z+8.0,r:.18}
   };
   const livingNpcs=npcs.filter(n=>n.id!=='clerk');
+  const npcBlockers=layout.filter(v=>v.type==='building'||v.type==='decor');
+  const isNpcBlocked=(x,z)=>npcBlockers.some(v=>Math.abs(x-v.x)<v.w/2+.34&&Math.abs(z-v.z)<v.d/2+.34);
   const residentLife=createResidentLife({
     npcs:livingNpcs,pois,
     getMinutes:()=>typeof getGameTime==='function'?getGameTime():720,
     getPlayer:()=>typeof getPlayerPosition==='function'?getPlayerPosition():null,
-    getDailyState:()=>typeof getDailyState==='function'?getDailyState():null
+    getDailyState:()=>typeof getDailyState==='function'?getDailyState():null,
+    isBlocked:isNpcBlocked
   });
 
   return {
