@@ -2570,7 +2570,7 @@
       "category": "trivia",
       "age": "high",
       "icon": "🌍",
-      "description": "국기와 수도를 맞추며 세계 지리 박사가 되어보세요!",
+      "description": "대륙 코스를 골라 15문제씩 도전하고, 헷갈린 국기를 자동 복습하며 나라와 수도를 익혀보세요!",
       "scoreKey": "flagQuizHighScore",
       "cover": "assets/gate-image/세계국기마스터.png",
       "subject": "social",
