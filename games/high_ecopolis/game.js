@@ -1074,7 +1074,7 @@ function completeGame(){
   let best=0;try{best=Number(localStorage.getItem(BEST_KEY)||0);if(score>best)localStorage.setItem(BEST_KEY,String(score));localStorage.removeItem(SAVE_KEY)}catch(e){}
   ui.resultScore.textContent=score.toLocaleString();ui.resultRestore.textContent=c.restorePct+'%';ui.resultSpecies.textContent=returnedSpeciesCount()+'종';
   ui.resultText.textContent=SCENARIOS[selectedScenario].name+'에 시설과 길을 하나도 남기지 않았습니다. '+(score>best?'새 최고 기록이에요!':'최고 기록 '+Math.max(best,score).toLocaleString()+'점');
-  ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.gameOver?.({score,completed:true,restored:c.restorePct,species:returnedSpeciesCount()})}catch(e){}
+  ui.result.classList.remove('hidden');sdkSound('success');try{window.KidscadeGame?.milestone?.('ecosystem_restored',{uniqueKey:selectedScenario,score,completed:true,restored:c.restorePct,species:returnedSpeciesCount(),scenario:selectedScenario})}catch(e){}
 }
 function beginNew(tutorial=false){
   selectedScenario=document.querySelector('.scenario.active')?.dataset.scenario||'valley';phase=tutorial?1:3;ecoPoints=tutorial?160:220;builtCount=0;elapsed=0;ecosystem=makeEcosystem();ecologyClock=0;economyClock=0;visitorSpawnClock=0;simSpeed=1;activeToolCategory='restore';lastGuideKey='';completed=false;lastAction=null;tutorialMode=tutorial;tutorialIndex=tutorial?0:-1;
