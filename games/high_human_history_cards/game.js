@@ -327,7 +327,7 @@ const R=[
  ['person','bronzePick',1,1,[['bronzeMiner',1]],'청동 광부'],
  ['person','bronzeSpear',1,1,[['bronzeHunter',1]],'청동 사냥꾼'],
  ['largeVillage','bronzeIngot',1,1,[['bronzeCenter',1]],'청동기 중심 취락'],
- ['bronzeCenter','stone',1,2,[['dolmen',1]],'고인돌 세우기'],
+ ['bronzeCenter','stone',0,2,[['dolmen',1]],'고인돌 세우기'],
  ['clay','highKiln',2,0,[['bloomery',1]],'철 제련로'],
  ['ironOre','charcoal',1,1,[['ironCharge',1]],'철 제련 재료'],
  ['ironCharge','bloomery',1,0,[['ironBloom',1]],'괴련철 제련'],
