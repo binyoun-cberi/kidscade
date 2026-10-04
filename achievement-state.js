@@ -7,16 +7,16 @@
 
   const CLAIMED_KEY = 'kidscade_claimed_ranks';
   const PROGRESS_KEY = 'kidscade_achievements_v1';
-  const PROGRESS_VERSION = 1;
+  const PROGRESS_VERSION = 2;
   const HIGH_RANK_MARKERS = Object.freeze([
     '플래티넘', '다이아몬드', '마스터', '그랜드마스터', '챌린저',
     '세종대왕', '강철 위장', '조선시대', '대한제국', '대한민국', '역사왕'
   ]);
 
   const BASE_DEFINITIONS = [
-    { id:'kidscade.first_game', gameId:'kidscade', icon:'🎮', type:'normal', title:'첫 발자국', description:'Kidscade 게임을 처음 열어 보세요.' },
-    { id:'kidscade.explorer_3', gameId:'kidscade', icon:'🧭', type:'challenge', target:3, title:'게임 탐험가', description:'서로 다른 게임 3개를 플레이해 보세요.' },
-    { id:'kidscade.hunter_10', gameId:'kidscade', icon:'🏆', type:'challenge', target:10, title:'업적 수집가', description:'업적 10개를 달성해 보세요.' },
+    { id:'kidscade.first_finish', gameId:'kidscade', icon:'🏁', type:'normal', title:'첫 완주', description:'Kidscade 게임 하나를 끝까지 완료해 보세요.' },
+    { id:'kidscade.explorer_5', gameId:'kidscade', icon:'🧭', type:'challenge', target:5, title:'게임 탐험가', description:'서로 다른 게임 5개를 끝까지 완료해 보세요.' },
+    { id:'kidscade.collector_25', gameId:'kidscade', icon:'🏆', type:'challenge', target:25, title:'업적 수집가', description:'업적 25개를 달성해 보세요.' },
 
     { id:'cube3d.first_blueprint', gameId:'cube3d', icon:'🏗️', type:'normal', title:'첫 설계 복원', description:'설계도 챌린지를 처음 성공하세요.' },
     { id:'cube3d.perfect_blueprint', gameId:'cube3d', icon:'💯', type:'secret', hidden:true, title:'오차 없는 설계', description:'설계도 챌린지를 100점으로 완성하세요.' },
@@ -98,7 +98,7 @@
   }
 
   function defaultAchievementState() {
-    return { version:PROGRESS_VERSION, unlocked:{}, progress:{}, playedGames:{} };
+    return { version:PROGRESS_VERSION, unlocked:{}, progress:{}, playedGames:{}, completedGames:{} };
   }
 
   function normalizeAchievementState(input) {
@@ -129,6 +129,23 @@
         if (!id) return;
         const at = Math.max(0, Number(value) || 0);
         state.playedGames[id] = at || Date.now();
+      });
+    }
+
+    if (raw.completedGames && typeof raw.completedGames === 'object' && !Array.isArray(raw.completedGames)) {
+      Object.entries(raw.completedGames).forEach(([rawId, value]) => {
+        const id = String(rawId || '').trim();
+        if (!id) return;
+        const entry = value && typeof value === 'object' && !Array.isArray(value) ? value : { count:value };
+        const count = Math.max(0, Math.floor(Number(entry.count) || 0));
+        if (!count) return;
+        const firstCompletedAt = Math.max(0, Number(entry.firstCompletedAt) || 0);
+        const lastCompletedAt = Math.max(0, Number(entry.lastCompletedAt) || 0);
+        state.completedGames[id] = {
+          count,
+          firstCompletedAt:firstCompletedAt || lastCompletedAt || Date.now(),
+          lastCompletedAt:lastCompletedAt || firstCompletedAt || Date.now()
+        };
       });
     }
 
@@ -224,11 +241,11 @@
   }
 
   function syncMetaInState(state, unlockedIds) {
-    const played = Object.keys(state.playedGames).length;
-    if (played > 0) unlockInState(state, 'kidscade.first_game', unlockedIds);
-    setProgressInState(state, 'kidscade.explorer_3', played, unlockedIds);
-    const hunterCount = Object.keys(state.unlocked).filter(id => id !== 'kidscade.hunter_10').length;
-    setProgressInState(state, 'kidscade.hunter_10', hunterCount, unlockedIds);
+    const completed = Object.keys(state.completedGames).length;
+    if (completed > 0) unlockInState(state, 'kidscade.first_finish', unlockedIds);
+    setProgressInState(state, 'kidscade.explorer_5', completed, unlockedIds);
+    const collectorCount = Object.keys(state.unlocked).filter(id => id !== 'kidscade.collector_25').length;
+    setProgressInState(state, 'kidscade.collector_25', collectorCount, unlockedIds);
   }
 
   function dispatchEventSafe(name, detail) {
@@ -295,19 +312,31 @@
     const id = String(gameId || '').trim();
     if (!id || id === 'kidscade') return loadAchievementState();
     const state = loadAchievementState();
+    if (state.playedGames[id]) return state;
+    state.playedGames[id] = Math.max(1, Number(at) || Date.now());
+    return commitAchievementState(state, [], true);
+  }
+
+  function recordCompletedGame(gameId, at = Date.now()) {
+    const id = String(gameId || '').trim();
+    if (!id || id === 'kidscade') return loadAchievementState();
+    const state = loadAchievementState();
     const unlockedIds = [];
-    let changed = false;
-    if (!state.playedGames[id]) {
-      state.playedGames[id] = Math.max(1, Number(at) || Date.now());
-      changed = true;
-    }
+    const completedAt = Math.max(1, Number(at) || Date.now());
+    const previous = state.completedGames[id] || null;
+    const count = Math.max(0, Number(previous?.count) || 0) + 1;
+    state.completedGames[id] = {
+      count,
+      firstCompletedAt:Number(previous?.firstCompletedAt) || completedAt,
+      lastCompletedAt:completedAt
+    };
     definitionMap.forEach(def => {
-      if (def.enabled !== false && def.gameId === id && def.trigger === 'first_play') {
-        if (unlockInState(state, def.id, unlockedIds, at)) changed = true;
+      if (def.enabled !== false && def.gameId === id && def.trigger === 'completion_count') {
+        setProgressInState(state, def.id, count, unlockedIds);
       }
     });
     syncMetaInState(state, unlockedIds);
-    return commitAchievementState(state, unlockedIds, changed || unlockedIds.length > 0);
+    return commitAchievementState(state, unlockedIds, true);
   }
 
   function getSummaryFromState(input) {
@@ -315,7 +344,16 @@
     const enabledIds = new Set(Array.from(definitionMap.values()).filter(def => def.enabled !== false).map(def => def.id));
     const total = enabledIds.size;
     const unlocked = Object.keys(state.unlocked).filter(id => enabledIds.has(id)).length;
-    return { total, unlocked, percent:total ? Math.round(unlocked / total * 100) : 0, playedGames:Object.keys(state.playedGames).length };
+    const completedGames = Object.keys(state.completedGames).length;
+    const totalCompletions = Object.values(state.completedGames).reduce((sum, item) => sum + Math.max(0, Number(item?.count) || 0), 0);
+    return {
+      total,
+      unlocked,
+      percent:total ? Math.round(unlocked / total * 100) : 0,
+      playedGames:Object.keys(state.playedGames).length,
+      completedGames,
+      totalCompletions
+    };
   }
 
   function getSummary() {
@@ -380,6 +418,7 @@
     const eventName = String(detail.event || '').trim();
     const gameId = String(detail.gameId || '').trim();
     if ((eventName === 'ready' || eventName === 'start') && gameId) recordPlayedGame(gameId);
+    if (eventName === 'game-over' && gameId) recordCompletedGame(gameId, detail.completedAt || Date.now());
     if (eventName !== 'achievement') {
       applyEventRules(detail);
       return false;
@@ -507,6 +546,7 @@
     setProgress,
     increment,
     recordPlayedGame,
+    recordCompletedGame,
     getSummary,
     getGameProgress,
     ruleMatches,
