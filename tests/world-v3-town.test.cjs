@@ -516,7 +516,7 @@ test('outdoor map uses one sub-base plus separated square tiles without overlapp
 test('resident nameplates are readable role cards while building labels stay proximity based',()=>{
   assert.match(city,/function makeResidentLabel/);
   assert.match(city,/sp\.scale\.set\(1\.92,\.56,1\)/);
-  assert.match(city,/depthTest:false/);
+  assert.match(city,/depthTest:true/);
   assert.match(city,/visual\.role/);
   assert.match(city,/tag\.visible=false/);
   assert.match(city,/buildingLabels/);
