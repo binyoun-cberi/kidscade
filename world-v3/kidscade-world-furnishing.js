@@ -274,7 +274,16 @@ export function createFurnishingSystem(ctx){
   }
   function turnPlaced(id){
     const actor=actors.get(String(id));if(!actor)return true;
-    const def=FURNITURE_CATALOG[actor.rec.key],next=(actor.rec.rot+1)%4,d=dims(def,next);
+    const def=FURNITURE_CATALOG[actor.rec.key],next=(actor.rec.rot+1)%4;
+    const snap=wallPlacement(def,actor.rec.x,actor.rec.z,next);
+    if(snap){
+      const d=dims(def,snap.rot);
+      if(!canPlace(snap.x,snap.z,d.w,d.d,actor.collision)){toast('벽 방향으로 정렬할 공간이 부족해요.');return true;}
+      actor.rec.x=snap.x;actor.rec.z=snap.z;actor.rec.rot=snap.rot;
+      actor.object.position.x=snap.x;actor.object.position.z=snap.z;actor.object.rotation.y=snap.rot*Math.PI/2;
+      updateHandles(actor);persist();toast('벽 가까이에서는 정면이 방 안을 향하도록 유지돼요.');furnitureActionPanel(id);return true;
+    }
+    const d=dims(def,next);
     if(!canPlace(actor.rec.x,actor.rec.z,d.w,d.d,actor.collision)){toast('회전할 공간이 부족해요.');return true;}
     actor.rec.rot=next;actor.object.rotation.y=next*Math.PI/2;updateHandles(actor);persist();toast(def.name+' 회전');furnitureActionPanel(id);return true;
   }
