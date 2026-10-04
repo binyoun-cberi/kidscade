@@ -277,19 +277,21 @@ export async function buildKidscadeCity(ctx){
     civicGarden:{x:civic.x,z:civic.z+6.0,r:1.15},
     coveredPlaza:{x:leisure.x-1.0,z:leisure.z-1.1,r:.72},
     riverLook:{x:transit.x-7.0,z:transit.z+6.7,r:.8},
-    homeFallback:{x:civic.x,z:civic.z+8.0,r:.25},
-    'home-minji':{x:civic.x-7.8,z:civic.z+8.1,r:.18},
-    'home-junho':{x:civic.x-4.8,z:civic.z+8.1,r:.18},
-    'home-haneul':{x:civic.x-1.8,z:civic.z+8.1,r:.18},
-    'home-taeho':{x:civic.x+1.8,z:civic.z+8.1,r:.18},
-    'home-doyun':{x:civic.x+4.8,z:civic.z+8.1,r:.18},
-    'home-sora':{x:civic.x+7.8,z:civic.z+8.1,r:.18},
-    'home-nari':{x:transit.x-7.6,z:transit.z+8.0,r:.18},
-    'home-minseok':{x:transit.x-4.5,z:transit.z+8.0,r:.18},
-    'home-yuna':{x:transit.x-1.5,z:transit.z+8.0,r:.18},
-    'home-woojin':{x:transit.x+1.5,z:transit.z+8.0,r:.18},
-    'home-seoyeon':{x:transit.x+4.5,z:transit.z+8.0,r:.18},
-    'home-hyunwoo':{x:transit.x+7.5,z:transit.z+8.0,r:.18}
+    homeFallback:{x:0,z:14.4,r:.25},
+    // Until dedicated resident houses are built, lower-town residents visibly leave via the south street.
+    'home-minji':{x:-18.0,z:14.4,r:.18},
+    'home-junho':{x:-7.0,z:14.4,r:.18},
+    'home-haneul':{x:6.0,z:14.4,r:.18},
+    'home-taeho':{x:18.0,z:14.4,r:.18},
+    'home-yuna':{x:3.5,z:14.4,r:.18},
+    'home-woojin':{x:9.0,z:14.4,r:.18},
+    'home-seoyeon':{x:14.0,z:14.4,r:.18},
+    'home-hyunwoo':{x:-12.0,z:14.4,r:.18},
+    // Civic workers leave through the quiet north edge.
+    'home-doyun':{x:-7.0,z:57.0,r:.18},
+    'home-sora':{x:-17.0,z:57.0,r:.18},
+    'home-nari':{x:7.0,z:57.0,r:.18},
+    'home-minseok':{x:17.0,z:57.0,r:.18}
   };
   const livingNpcs=npcs.filter(n=>n.id!=='clerk');
   const npcBlockers=layout.filter(v=>v.type==='building'||v.type==='decor');
