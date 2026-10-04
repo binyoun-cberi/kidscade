@@ -895,7 +895,7 @@ function playProductionPop(){
  }catch(_){}
 }
 function nearbyStack(type,x,y,radius=190){
- if(!AUTO_STACK_KINDS.has(C[type]?.kind))return null;
+ if(!AUTO_STACK_KINDS.has(C[type]?.kind)||SAME[type])return null;
  let best=null,dist=radius;
  for(const c of state.cards.values()){
   if(c.type!==type||c.busy)continue;
