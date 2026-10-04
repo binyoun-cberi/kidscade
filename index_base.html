@@ -151,7 +151,6 @@
                 </div>
                 <div class="shop-nav">
                     <button class="shop-tab active" data-tab="land">정원 꾸미기</button>
-                    <button class="shop-tab" data-tab="pet">동물과 시설</button>
                     <button class="shop-tab" data-tab="card">카드 스킨</button>
                     <button class="shop-tab" data-tab="badge">칭호 배지</button>
                     <button class="shop-tab" data-tab="reward">오늘의 보상</button>
@@ -1034,13 +1033,11 @@
             };
             let inventory = initialShopState.inventory;
             let equipped = initialShopState.equipped;
-            let petItems = safeParseStorage('kidscade_pet_items', {});
 
             if (!Array.isArray(favorites)) favorites = [];
             if (!Array.isArray(recents)) recents = [];
             if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) inventory = {emoji:['e_basic'], title_p:['tp_basic'], title_n:['tn_basic'], theme:['th_basic'], land:['land_basic'], card:['card_basic'], badge:['badge_basic']};
             if (!equipped || typeof equipped !== 'object' || Array.isArray(equipped)) equipped = {emoji:'e_basic', title_p:'tp_basic', title_n:'tn_basic', theme:'th_basic', land:'land_basic', card:'card_basic', badge:'badge_basic'};
-            if (!petItems || typeof petItems !== 'object' || Array.isArray(petItems)) petItems = {};
 
             if (window.KidscadeShopState?.ensureDefaults) {
                 const normalizedShopState = window.KidscadeShopState.ensureDefaults();
@@ -1086,54 +1083,6 @@
                     { id: 'badge_word', name: '말놀이 대장', desc: '국어와 언어 게임을 즐기는 친구에게 어울립니다.', price: 180, icon: '📖', prefix: '말놀이', noun: '대장' },
                     { id: 'badge_artist', name: '무지개 예술가', desc: '음악·예술·창작 게임을 좋아하는 친구를 위한 배지입니다.', price: 220, icon: '🎨', prefix: '무지개', noun: '예술가' },
                     { id: 'badge_dream', name: '꿈 찾는 모험가', desc: '직업체험 게임을 많이 해보고 싶은 친구에게 어울립니다.', price: 260, icon: '🚀', prefix: '꿈 찾는', noun: '모험가' }
-                ],
-                pet: [
-                    { id: 'pet_unlock_parrot', name: '앵무새 데려오기', desc: '횃대와 장난감이 있는 밝은 새장에서 지내는 친구입니다.', price: 180, icon: '🦜', kind: 'unlock_parrot' },
-                    { id: 'pet_unlock_cat', name: '고양이 데려오기', desc: '스크래처와 숨는 곳이 필요한 조용한 친구입니다.', price: 220, icon: '🐱', kind: 'unlock_cat' },
-                    { id: 'pet_unlock_dog', name: '강아지 데려오기', desc: '산책과 놀이, 기본 예절이 필요한 활발한 친구입니다.', price: 220, icon: '🐶', kind: 'unlock_dog' },
-                    { id: 'pet_unlock_goat', name: '염소 데려오기', desc: '마른 축사와 뛰어놀 공간이 필요한 목장 친구입니다.', price: 260, icon: '🐐', kind: 'unlock_goat' },
-                    { id: 'pet_unlock_minipig', name: '미니돼지 데려오기', desc: '정해진 식사량과 탐색 놀이가 필요한 똑똑한 친구입니다.', price: 260, icon: '🐷', kind: 'unlock_miniPig' },
-                    { id: 'pet_unlock_sugarglider', name: '슈가글라이더 데려오기', desc: '높은 케이지와 주머니집이 필요한 야행성 친구입니다.', price: 300, icon: '🐿️', kind: 'unlock_sugarGlider' },
-                    { id: 'pet_unlock_rabbit', name: '토끼 데려오기', desc: '건초와 숨는 집, 넓은 공간이 필요한 친구입니다.', price: 240, icon: '🐰', kind: 'unlock_rabbit' },
-                    { id: 'pet_unlock_turtle', name: '거북이 데려오기', desc: '물과 육지, 일광욕 자리가 모두 필요한 친구입니다.', price: 240, icon: '🐢', kind: 'unlock_turtle' },
-                    { id: 'pet_fish', name: '물고기 친구 추가', desc: '어항에 새로운 물고기를 한 마리 데려옵니다.', price: 80, icon: '🐟', kind: 'fish' },
-                    { id: 'pet_filter', name: '어항 여과기', desc: '물고기가 살 물을 깨끗하게 관리하는 기본 용품입니다.', price: 85, icon: '🧰', kind: 'filter' },
-                    { id: 'pet_heater', name: '어항 히터', desc: '수온을 안정적으로 맞추는 용품입니다.', price: 75, icon: '🌡️', kind: 'heater' },
-                    { id: 'pet_light', name: '어항 조명', desc: '관찰하기 쉽고 식물이 자라기 좋은 조명을 더합니다.', price: 65, icon: '💡', kind: 'light' },
-                    { id: 'pet_plant', name: '수초 심기', desc: '물고기들이 숨고 쉬는 수초를 추가합니다.', price: 45, icon: '🌿', kind: 'plant' },
-                    { id: 'pet_ornament', name: '어항 기물', desc: '성, 보물상자, 동굴 같은 어항 장식을 추가합니다.', price: 70, icon: '🏰', kind: 'ornament' },
-                    { id: 'pet_shrimp', name: '새우 친구', desc: '어항 바닥을 총총 걷는 새우를 추가합니다.', price: 60, icon: '🦐', kind: 'shrimp' },
-                    { id: 'pet_snail', name: '달팽이 친구', desc: '유리벽을 천천히 오르는 달팽이를 추가합니다.', price: 50, icon: '🐌', kind: 'snail' },
-                    { id: 'pet_ham_house', name: '햄스터 숨는 집', desc: '햄스터가 안정감을 느끼는 은신처를 추가합니다.', price: 75, icon: '🏠', kind: 'hamsterHouse' },
-                    { id: 'pet_ham_wheel', name: '안전 쳇바퀴', desc: '햄스터가 밤에 충분히 움직일 수 있는 운동 기구입니다.', price: 70, icon: '🛞', kind: 'wheel' },
-                    { id: 'pet_ham_sand', name: '모래목욕통', desc: '햄스터가 털을 관리할 수 있게 도와줍니다.', price: 55, icon: '🛁', kind: 'sandBath' },
-                    { id: 'pet_ham_chew', name: '이갈이 나무', desc: '햄스터의 이가 자라기 때문에 씹을 것이 필요합니다.', price: 35, icon: '🪵', kind: 'chewStick' },
-                    { id: 'pet_ham_bottle', name: '급수기', desc: '깨끗한 물을 마실 수 있도록 준비합니다.', price: 45, icon: '💧', kind: 'waterBottle' },
-                    { id: 'pet_ham_tunnel', name: '햄스터 터널', desc: '숨어 다니며 탐색할 수 있는 통로입니다.', price: 60, icon: '🌀', kind: 'tunnel' },
-                    { id: 'pet_iguana_branch', name: '굵은 등반가지', desc: '이구아나가 몸을 올리고 쉬는 튼튼한 가지입니다.', price: 70, icon: '🌳', kind: 'branch' },
-                    { id: 'pet_iguana_rock', name: '일광욕 바위', desc: '몸을 따뜻하게 데우는 장소를 만들어줍니다.', price: 65, icon: '🪨', kind: 'rock' },
-                    { id: 'pet_iguana_uvb', name: 'UVB 조명', desc: '이구아나에게 중요한 조명 환경을 만들어줍니다.', price: 90, icon: '☀️', kind: 'uvbLamp' },
-                    { id: 'pet_iguana_mist', name: '습도 분무기', desc: '테라리움의 습도를 유지하는 데 도움을 줍니다.', price: 70, icon: '💦', kind: 'mist' },
-                    { id: 'pet_iguana_vine', name: '덩굴 장식', desc: '이구아나가 숨고 오를 수 있는 느낌을 더합니다.', price: 55, icon: '🌿', kind: 'vine' },
-                    { id: 'pet_parrot_swing', name: '앵무새 그네', desc: '새장 안에서 균형 잡고 놀 수 있는 용품입니다.', price: 55, icon: '🪢', kind: 'swing' },
-                    { id: 'pet_parrot_ladder', name: '새장 사다리', desc: '앵무새가 오르내릴 수 있는 사다리입니다.', price: 55, icon: '🪜', kind: 'ladder' },
-                    { id: 'pet_parrot_bath', name: '앵무새 목욕통', desc: '깃털을 깨끗하게 관리할 수 있게 돕습니다.', price: 50, icon: '🛁', kind: 'bath' },
-                    { id: 'pet_cat_tower', name: '캣타워', desc: '고양이가 높은 곳에서 쉬고 움직일 수 있는 공간입니다.', price: 90, icon: '🗼', kind: 'catTower' },
-                    { id: 'pet_cat_litter', name: '고양이 화장실', desc: '고양이에게 꼭 필요한 생활 공간입니다.', price: 70, icon: '🚽', kind: 'litterBox' },
-                    { id: 'pet_cat_fountain', name: '고양이 정수기', desc: '물을 더 자주 마실 수 있게 도와줍니다.', price: 80, icon: '💧', kind: 'fountain' },
-                    { id: 'pet_dog_leash', name: '산책 목줄', desc: '안전한 산책을 위해 필요한 용품입니다.', price: 55, icon: '🦮', kind: 'leash' },
-                    { id: 'pet_dog_kennel', name: '강아지 켄넬', desc: '강아지가 안정감을 느끼는 쉬는 공간입니다.', price: 75, icon: '🏠', kind: 'kennel' },
-                    { id: 'pet_goat_hay', name: '건초통', desc: '염소와 토끼에게 중요한 건초를 담아둡니다.', price: 55, icon: '🌾', kind: 'hayRack' },
-                    { id: 'pet_goat_platform', name: '오르기 발판', desc: '염소가 좋아하는 오르기 놀이 공간입니다.', price: 60, icon: '⛰️', kind: 'platform' },
-                    { id: 'pet_pig_root', name: '탐색 매트', desc: '미니돼지가 코로 찾으며 노는 용품입니다.', price: 55, icon: '🧩', kind: 'rootingMat' },
-                    { id: 'pet_pig_mud', name: '진흙놀이 공간', desc: '미니돼지가 더위를 식히고 탐색할 수 있는 공간입니다.', price: 65, icon: '💧', kind: 'mudPool' },
-                    { id: 'pet_glider_pouch', name: '주머니집', desc: '슈가글라이더가 안정감을 느끼는 잠자리입니다.', price: 70, icon: '👜', kind: 'pouch' },
-                    { id: 'pet_glider_rope', name: '타는 밧줄', desc: '높은 곳을 오가며 움직일 수 있게 해줍니다.', price: 55, icon: '🪢', kind: 'rope' },
-                    { id: 'pet_rabbit_litter', name: '토끼 화장실', desc: '토끼 하우스를 깨끗하게 관리하는 데 필요합니다.', price: 70, icon: '🚽', kind: 'litterBox' },
-                    { id: 'pet_rabbit_chew', name: '이갈이 나무', desc: '토끼의 이가 계속 자라기 때문에 꼭 필요합니다.', price: 35, icon: '🪵', kind: 'chewStick' },
-                    { id: 'pet_turtle_dock', name: '일광욕 육지', desc: '거북이가 물 밖으로 올라와 몸을 말리는 장소입니다.', price: 80, icon: '☀️', kind: 'turtleDock' },
-                    { id: 'pet_turtle_filter', name: '거북이 수조 여과기', desc: '거북이 수조 물을 깨끗하게 유지하는 데 필요합니다.', price: 85, icon: '🧰', kind: 'turtleFilter' },
-                    { id: 'pet_turtle_ramp', name: '물가 경사로', desc: '거북이가 물과 육지를 오가기 쉽게 해줍니다.', price: 55, icon: '🌉', kind: 'ramp' }
                 ],
                 reward: [
                     { id: 'daily_seed', name: '씨앗 한 줌', desc: '정원 시설과 캐릭터 꾸미기에 쓸 씨앗 40개를 받습니다.', price: 0, icon: '🌱', rewardType: 'seed', amount: 40 }
@@ -1748,10 +1697,7 @@
                     openGardenBuild() {
                         openSookFromSidebar('room');
                         gardenController?.openBuild();
-                    },
-                    isPetUnlocked: type => window.sookPetIsUnlocked?.(type) === true,
-                    selectPet: type => window.sookPetSelect?.(type),
-                    buyPetThing: kind => window.sookPetBuy?.(kind)
+                    }
                 };
             }
 
@@ -1833,10 +1779,7 @@
                 localStorage.setItem('kidscade_pet', JSON.stringify(pet));
             }
 
-            function savePetItems() {
-                localStorage.setItem('kidscade_pet_items', JSON.stringify(petItems));
-            }
-            normalizePet(); savePet(); savePetItems();
+            normalizePet(); savePet();
 
             function getPetAvatar() {
                 let saved = {};
@@ -1933,14 +1876,6 @@
                 return `지금은 ${dominant.label} 성향이 가장 강해요. 이 성향은 추천 게임과 쑥쑥랜드 안내에 반영돼요.`;
             }
 
-            function showEvolutionHint() {
-                alert(`🔮 쑥쑥 친구 성장 힌트
-
-${getEvolutionHintText()}
-
-수학·국어·외국어·상식·예술 중 어떤 게임을 많이 했는지에 따라 추천과 성장 안내가 달라져요.`);
-            }
-
             function checkPetEvolution() {
                 let max = getMaxExp();
                 if (pet.level < 4 && pet.exp >= max) {
@@ -1951,111 +1886,6 @@ ${getEvolutionHintText()}
 더 많은 게임과 미션으로 쑥쑥랜드를 꾸며보세요.`);
                 }
                 savePet(); updatePetUI();
-            }
-
-            function getPetShopItem(itemId) {
-                return shopDB.pet.find(item => item.id === itemId);
-            }
-
-            function getPetItemCount(itemId) {
-                return parseInt(petItems[itemId] || 0, 10) || 0;
-            }
-
-            function changePetItemCount(itemId, amount) {
-                petItems[itemId] = Math.max(0, getPetItemCount(itemId) + amount);
-                if (petItems[itemId] === 0) delete petItems[itemId];
-                savePetItems();
-            }
-
-            function animatePetRoomAvatar(transformText = "scale(1.18)") {
-                const avatarEl = document.getElementById('pet-room-avatar');
-                avatarEl.style.transform = transformText;
-                setTimeout(() => avatarEl.style.transform = "scale(1)", 220);
-            }
-
-            function finishPetCare(message, sound = 'coin') {
-                if (pet.fullness <= 0 || pet.cleanliness <= 0) pet.isSick = true;
-                savePet(); updatePetUI(); renderShop();
-                playUISound(sound); showToast(message);
-                checkPetEvolution();
-            }
-
-            function usePetCareItem(itemId, options = {}) {
-                const item = getPetShopItem(itemId);
-                if (!item) return false;
-
-                if (itemId === 'p_apple' && pet.fatigue >= 100) { showToast("쑥쑥이가 자고 있어요. 먼저 쉬게 해 주세요."); return false; }
-                if (itemId === 'p_cookie' && pet.fatigue >= 100) { showToast("쑥쑥이가 자고 있어요. 먼저 쉬게 해 주세요."); return false; }
-                if (itemId === 'p_soap' && pet.fatigue >= 100) { showToast("쑥쑥이가 자고 있어요. 깨어난 뒤 씻겨 주세요."); return false; }
-                if (itemId === 'p_medicine' && !pet.isSick) { showToast("지금은 치료가 필요 없어요."); return false; }
-                if (itemId === 'p_bed' && pet.fatigue <= 0 && !pet.isSick) { showToast("이미 충분히 쉬었어요! ⚡"); return false; }
-                if (itemId === 'p_hint' && pet.fatigue >= 100) { showToast("쑥쑥이가 쉬고 있어요. 잠시 뒤에 힌트를 물어봐 주세요."); return false; }
-                if (itemId === 'p_apple' && pet.fullness >= 100 && pet.affection >= 100) { showToast("이미 컨디션도 마음도 가득해요! 🥰"); return false; }
-
-                const hasStock = getPetItemCount(itemId) > 0;
-                const directPrice = options.directPrice ?? item.price;
-                if (!hasStock) {
-                    if (!options.allowDirectPurchase) { showToast("상점에서 쑥쑥이 용품을 먼저 구매해 주세요!"); return false; }
-                    if (coins < directPrice) { showToast(`씨앗이 부족해요! (${directPrice}씨앗 필요)`); return false; }
-                    if (!changeSeeds(-directPrice, '', { toast: false })) return false;
-                } else {
-                    changePetItemCount(itemId, -1);
-                }
-                const sourceText = hasStock ? "보유 아이템 사용" : `${directPrice}씨앗 사용`;
-
-                if (itemId === 'p_apple') {
-                    pet.fullness = Math.min(100, pet.fullness + 40);
-                    pet.affection = Math.min(100, pet.affection + 5);
-                    if (Math.random() < 0.25) { pet.poops++; pet.cleanliness -= 10; }
-                    animatePetRoomAvatar("scale(1.25)");
-                    finishPetCare(`아삭 사과를 주었습니다! 🍎 (${sourceText})`);
-                    return true;
-                }
-                if (itemId === 'p_cookie') {
-                    pet.affection = Math.min(100, pet.affection + 20);
-                    pet.exp += 10;
-                    animatePetRoomAvatar("rotate(8deg) scale(1.2)");
-                    finishPetCare(`칭찬 쿠키를 먹고 기분이 좋아졌어요! 🍪 (${sourceText})`);
-                    return true;
-                }
-                if (itemId === 'p_sticker') {
-                    pet.affection = Math.min(100, pet.affection + 10);
-                    pet.exp += 5;
-                    animatePetRoomAvatar("rotate(-6deg) scale(1.18)");
-                    finishPetCare(`응원 스티커를 붙였어요! 다음 도전이 더 즐거워졌습니다. 🌟 (${sourceText})`);
-                    return true;
-                }
-                if (itemId === 'p_hint') {
-                    showEvolutionHint();
-                    animatePetRoomAvatar("scale(1.12)");
-                    finishPetCare(`성장 힌트를 확인했어요! 🔮 (${sourceText})`, 'open');
-                    return true;
-                }
-                if (itemId === 'p_soap') {
-                    pet.cleanliness = Math.min(100, pet.cleanliness + 45);
-                    pet.poops = Math.max(0, pet.poops - 1);
-                    animatePetRoomAvatar("rotate(-8deg) scale(1.16)");
-                    finishPetCare(`보글보글 깨끗하게 씻었습니다! 🧼 (${sourceText})`, 'open');
-                    return true;
-                }
-                if (itemId === 'p_medicine') {
-                    pet.isSick = false;
-                    pet.affection = Math.min(100, pet.affection + 20);
-                    pet.fullness = Math.max(20, pet.fullness);
-                    pet.cleanliness = Math.max(20, pet.cleanliness);
-                    animatePetRoomAvatar("scale(1.18)");
-                    finishPetCare(`쑥쑥이가 건강을 되찾았습니다! 💊 (${sourceText})`);
-                    return true;
-                }
-                if (itemId === 'p_bed') {
-                    pet.fatigue = Math.max(0, pet.fatigue - 70);
-                    if (pet.fatigue < 100) pet.isSick = pet.isSick && (pet.fullness <= 0 || pet.cleanliness <= 0);
-                    pet.affection = Math.min(100, pet.affection + 5);
-                    animatePetRoomAvatar("scale(0.95)");
-                    finishPetCare(`포근하게 쉬고 피로가 줄었습니다! 🛏️ (${sourceText})`, 'open');
-                    return true;
-                }
-                return false;
             }
 
             function switchSookTab(tabName) {
