@@ -7,34 +7,52 @@ const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v3';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
-const LAYERS=['body','eyes','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat'];
+const LAYERS=[
+  'weaponBack','shieldBack',
+  'body','eyes','mouth','mask','lower','shoes','upper','gloves','hair','earring','hat',
+  'shieldFront','weaponFront'
+];
 const FACE_LAYERS=['eyes','mouth'];
 const HAIR_LAYERS=['hair','hat'];
 const OUTFIT_LAYERS=['upper','lower','shoes','gloves'];
 const ACCESSORY_LAYERS=['earring','mask'];
-const RENDER_ORDER=['body','lower','shoes','upper','gloves','eyes','mouth','mask','hair','earring','hat'];
+const WEAPON_LAYERS=['weaponBack','weaponFront'];
+const SHIELD_LAYERS=['shieldBack','shieldFront'];
+const EQUIPMENT_LAYERS=[...WEAPON_LAYERS,...SHIELD_LAYERS];
+const RENDER_ORDER=[
+  'weaponBack','shieldBack',
+  'body','lower','shoes','upper','gloves','eyes','mouth','mask','hair','earring','hat',
+  'shieldFront','weaponFront'
+];
 const LAYER_LABELS={
   body:'BODY',hair:'HAIR',eyes:'눈',mouth:'입',earring:'귀걸이',mask:'가면',
-  upper:'상의',lower:'하의',shoes:'신발',gloves:'장갑',hat:'모자'
+  upper:'상의',lower:'하의',shoes:'신발',gloves:'장갑',hat:'모자',
+  weaponBack:'무기 · 뒤',weaponFront:'무기 · 앞',shieldBack:'방패 · 뒤',shieldFront:'방패 · 앞'
 };
 const LAYER_BUTTON_IDS={
   body:'layerBody',hair:'layerHair',eyes:'layerEyes',mouth:'layerMouth',
   earring:'layerEarring',mask:'layerMask',upper:'layerUpper',lower:'layerLower',
-  shoes:'layerShoes',gloves:'layerGloves',hat:'layerHat'
+  shoes:'layerShoes',gloves:'layerGloves',hat:'layerHat',
+  weaponBack:'layerWeaponBack',weaponFront:'layerWeaponFront',
+  shieldBack:'layerShieldBack',shieldFront:'layerShieldFront'
 };
 const LAYER_ID_FIELDS={
   body:'bodyId',hair:'hairId',eyes:'eyesId',mouth:'mouthId',earring:'earringId',
-  mask:'maskId',upper:'upperId',lower:'lowerId',shoes:'shoesId',gloves:'glovesId',hat:'hatId'
+  mask:'maskId',upper:'upperId',lower:'lowerId',shoes:'shoesId',gloves:'glovesId',hat:'hatId',
+  weaponBack:'weaponBackId',weaponFront:'weaponFrontId',shieldBack:'shieldBackId',shieldFront:'shieldFrontId'
 };
 const LAYER_DEFAULT_IDS={
   body:'maple-lite-body-v3',hair:'toben-like-01',eyes:'eyes-01',mouth:'mouth-01',
   earring:'earring-01',mask:'mask-01',upper:'blue-star-hoodie-01',lower:'denim-cuffed-jeans-01',shoes:'shoes-01',
-  gloves:'gloves-01',hat:'hat-01'
+  gloves:'gloves-01',hat:'hat-01',
+  weaponBack:'weapon-back-01',weaponFront:'weapon-front-01',shieldBack:'shield-back-01',shieldFront:'shield-front-01'
 };
 const LAYER_FOLDERS={
   body:'body',hair:'hair',eyes:'face/eyes',mouth:'face/mouth',
   earring:'accessories/earring',mask:'accessories/mask',hat:'accessories/hat',
-  upper:'outfit/upper',lower:'outfit/lower',shoes:'outfit/shoes',gloves:'outfit/gloves'
+  upper:'outfit/upper',lower:'outfit/lower',shoes:'outfit/shoes',gloves:'outfit/gloves',
+  weaponBack:'equipment/weapon/back',weaponFront:'equipment/weapon/front',
+  shieldBack:'equipment/shield/back',shieldFront:'equipment/shield/front'
 };
 const ANIMATION_GROUPS={
   stand:{label:'STAND',loop:true,fps:2},
@@ -121,7 +139,7 @@ const ASSET_CATALOG=[
   {layer:'earring',id:'earring-01',label:'골드 귀걸이',file:'earing01.png',core:false},
   {layer:'mask',id:'mask-01',label:'화이트 마스크',file:'mask01.png',core:false}
 ];
-const ASSET_CATEGORY_ORDER=['hair','eyes','mouth','upper','lower','shoes','gloves','hat','earring','mask'];
+const ASSET_CATEGORY_ORDER=['hair','eyes','mouth','upper','lower','shoes','gloves','hat','earring','mask','weaponFront','weaponBack','shieldFront','shieldBack'];
 
 
 
@@ -245,7 +263,7 @@ function renderAssetGrid(){
   const q=String($('assetSearch')?.value||'').trim().toLowerCase();
   const items=ASSET_CATALOG.filter(item=>item.layer===layer&&(!q||(item.label+' '+item.id).toLowerCase().includes(q)));
   grid.innerHTML='';
-  if(!items.length){grid.innerHTML='<div class="asset-empty">이 분류에 등록된 에셋이 없습니다.</div>';return}
+  if(!items.length){grid.innerHTML='<div class="asset-empty">이 분류에 등록된 기본 에셋이 없습니다.<br>파츠·에셋 JSON 또는 내 이미지 가져오기로 추가할 수 있습니다.</div>';return}
   const current=assetMeta(currentFrame,layer);
   for(const item of items){
     const button=document.createElement('button');
@@ -475,7 +493,7 @@ function buildFullAnalysis(){
     avatar:{facing:'left',logicalRoot:[ROOT_X,82],groundY:GROUND_Y,mirrorForRight:true},
     frameOrder:FRAMES.map(f=>f.id),
     layerOrder:[...RENDER_ORDER],
-    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS]},
+    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS],equipment:[...EQUIPMENT_LAYERS],weapon:[...WEAPON_LAYERS],shield:[...SHIELD_LAYERS]},
     assetIds:Object.fromEntries(LAYERS.map(layer=>[layer,assetIdForLayer(layer)])),
     frames:framesOut,
     adjustmentContract:{
@@ -508,6 +526,8 @@ function buildFullAnalysis(){
         'moveRect moves an existing rectangular region before later operations.',
         'Operations execute in listed order after optional copyFrom.',
         'Do not modify BODY merely to hide clothing leaks unless the BODY itself is wrong; prefer correcting upper/lower/shoes/gloves.',
+        'weaponBack/shieldBack render behind BODY; shieldFront/weaponFront render above the avatar.',
+        'A single logical weapon or shield may use both front and back layers in different frames for correct occlusion.',
         'Use exposure diagnostics only as hints. Face, neck, hands and feet can be intentionally visible.'
       ]
     }
@@ -552,8 +572,10 @@ function buildBodyReferenceAnalysis(){
         'Generate only the requested wearable or cosmetic layer on a transparent 128x128 canvas.',
         'Use BODY pixels, bbox, alphaRuns, logicalRoot, groundY and per-frame anchors as the fit reference.',
         'Keep frame alignment consistent across STAND, WALK, JUMP, ATTACK, HURT, DEAD, SIT and PICKUP.',
-        'ATTACK weaponPivot is the left-hand equipment pivot; mirror the full avatar for right-facing play.',
-        'For derived action frames, regenerate or hand-correct wearable pixels when the automatic fallback no longer matches the pose.'
+        'ATTACK weaponPivot is the left-hand weapon grip pivot; shield equipment follows the rightHand anchor.',
+        'weaponBack/weaponFront and shieldBack/shieldFront are separate occlusion passes for the same logical equipment slot.',
+        'Mirror the full avatar and equipment together for right-facing play.',
+        'For derived action frames, regenerate or hand-correct wearable/equipment pixels when the automatic fallback no longer matches the pose.'
       ]
     }
   };
@@ -709,6 +731,8 @@ function buildPartAnalysis(layer=activeLayer){
         'moveRect moves an existing rectangular pixel region before later operations.',
         'Operations execute in listed order after optional copyFrom.',
         'If an old JSON only supplies STAND/WALK/JUMP, the studio derives ATTACK/HURT/DEAD/SIT/PICKUP automatically.',
+        'Weapons use the leftHand/weaponPivot anchor; shields use rightHand.',
+        'Use weaponBack/weaponFront or shieldBack/shieldFront to move the same logical item behind/in front of BODY per frame.',
         'For best quality, explicitly provide action-frame pixels when clothing, hair or equipment needs pose-specific deformation.'
       ]
     }
@@ -948,11 +972,36 @@ function drawTransformedLayer(target,source,spec={}){
   c.restore();
 }
 
+const EQUIPMENT_ATTACK_ANGLES={
+  'attack-01':0,'attack-02':-26,'attack-03':-62,'attack-04':-105,'attack-05':-12
+};
+function equipmentAnchor(frame,layer){
+  const anchors=frame?.anchors||{};
+  if(WEAPON_LAYERS.includes(layer))return anchors.weaponPivot||anchors.leftHand||null;
+  if(SHIELD_LAYERS.includes(layer))return anchors.rightHand||null;
+  return null;
+}
+function derivedEquipmentCanvas(frameId,layer,spec){
+  const out=makeCanvas(),sourceId=spec.source||'stand-01',source=layerCanvas(sourceId,layer);
+  if(!source||!hasInk(source))return out;
+  const sourceFrame=frameRecord(sourceId),targetFrame=frameRecord(frameId);
+  const from=equipmentAnchor(sourceFrame,layer),to=equipmentAnchor(targetFrame,layer);
+  if(!from||!to){drawTransformedLayer(out,source,spec);return out}
+  const c=out.getContext('2d',{alpha:true});c.save();c.imageSmoothingEnabled=false;
+  const angle=WEAPON_LAYERS.includes(layer)&&targetFrame.kind==='attack'
+    ? Number(EQUIPMENT_ATTACK_ANGLES[frameId]||0)
+    : Number(spec.angle||0);
+  c.translate(to[0],to[1]);c.rotate(angle*Math.PI/180);c.translate(-from[0],-from[1]);c.drawImage(source,0,0);c.restore();
+  return out;
+}
+
 function derivedLayerCanvas(frameId,layer){
   const spec=DERIVED_BODY_POSES[frameId],out=makeCanvas();
   if(!spec)return out;
   const source=layerCanvas(spec.source||'stand-01',layer);
   if(!source||!hasInk(source))return out;
+
+  if(EQUIPMENT_LAYERS.includes(layer))return derivedEquipmentCanvas(frameId,layer,spec);
 
   if(spec.type==='attackMix'){
     const mixed=makeCanvas(),m=mixed.getContext('2d',{alpha:true});m.imageSmoothingEnabled=false;
@@ -1125,7 +1174,7 @@ function refreshFrameButtons(){
     const body=hasInk(rec.body);
     const face=anyLayerHasInk(rec,FACE_LAYERS);
     const style=anyLayerHasInk(rec,HAIR_LAYERS);
-    const gear=anyLayerHasInk(rec,[...OUTFIT_LAYERS,...ACCESSORY_LAYERS]);
+    const gear=anyLayerHasInk(rec,[...OUTFIT_LAYERS,...ACCESSORY_LAYERS,...EQUIPMENT_LAYERS]);
     b.classList.toggle('active',id===currentFrame);
     b.innerHTML='<span>'+f.label+'</span><span class="dots">'+
       '<span class="'+(body?'dot-body':'dot-empty')+'">●</span>'+
@@ -1144,6 +1193,7 @@ function refreshLayerStatus(){
     ['FACE',anyLayerHasInk(rec,FACE_LAYERS)],
     ['HAIR',anyLayerHasInk(rec,HAIR_LAYERS)],
     ['OUTFIT',anyLayerHasInk(rec,OUTFIT_LAYERS)],
+    ['EQUIP',anyLayerHasInk(rec,EQUIPMENT_LAYERS)],
     ['ACC',anyLayerHasInk(rec,ACCESSORY_LAYERS)]
   ];
   host.innerHTML=defs.map(([label,on])=>'<span class="badge '+(on?'on':'')+'">'+label+'</span>').join('');
@@ -1408,6 +1458,7 @@ function layerVisible(layer){
   if(FACE_LAYERS.includes(layer))return $('showFace').checked;
   if(HAIR_LAYERS.includes(layer))return $('showHair').checked;
   if(OUTFIT_LAYERS.includes(layer))return $('showClothes').checked;
+  if(EQUIPMENT_LAYERS.includes(layer))return $('showEquipment').checked;
   if(ACCESSORY_LAYERS.includes(layer))return $('showAccessories').checked;
   return true;
 }
@@ -1786,7 +1837,7 @@ function manifestObject(){
     frameMeta:Object.fromEntries(FRAMES.map(f=>[f.id,{durationMs:f.durationMs||null,anchors:f.anchors||null,event:f.event||null,derived:!!f.derived}])),
     hairMode:'single',
     layerOrder:[...RENDER_ORDER],
-    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS]},
+    groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS],equipment:[...EQUIPMENT_LAYERS],weapon:[...WEAPON_LAYERS],shield:[...SHIELD_LAYERS]},
     ids:Object.fromEntries(LAYERS.map(layer=>[layer,assetIdForLayer(layer)])),
     availability:Object.fromEntries(FRAMES.map(f=>[f.id,Object.fromEntries(LAYERS.map(layer=>[layer,hasInk(layerCanvas(f.id,layer))]))]))
   };
@@ -1914,7 +1965,7 @@ function bind(){
   $('copyPrev').addEventListener('click',copyPrevious);
   $('regenerateDerivedFrames')?.addEventListener('click',regenerateDerivedFrames);
 
-  ['showReference','showDifference','showGrid','showBody','showFace','showHair','showClothes','showAccessories'].forEach(id=>$(id).addEventListener('change',render));
+  ['showReference','showDifference','showGrid','showBody','showFace','showHair','showClothes','showEquipment','showAccessories'].forEach(id=>$(id).addEventListener('change',render));
   $('referenceOpacity').addEventListener('input',render);$('referenceFrame').addEventListener('change',render);
   Object.values(LAYER_ID_FIELDS).forEach(id=>$(id)?.addEventListener('input',scheduleSave));
 
