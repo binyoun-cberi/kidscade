@@ -2195,7 +2195,9 @@ function tick(now){
   cityRuntime?.update?.(now,dt);
 
   const homeCamera=mode==='indoor'?homeInteriorCameraProfile(devState().houseLevel):null;
-  const desiredView=mode==='outdoor'?8.6:homeCamera?homeCamera.viewHeight:6.7;
+  const desiredView=mode==='outdoor'?8.6:homeCamera
+    ?Math.max(homeCamera.viewHeight,homeCamera.fitHalfHeight||0,(homeCamera.fitHalfWidth||0)/Math.max(.52,cameraAspect))
+    :6.7;
   const projectionBlend=1-Math.pow(.0025,dt);
   const nextView=THREE.MathUtils.lerp(cameraHalfHeight,desiredView,projectionBlend);
   if(Math.abs(nextView-cameraHalfHeight)>.001){cameraHalfHeight=nextView;applyCameraProjection();}
