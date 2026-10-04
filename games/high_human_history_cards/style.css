@@ -171,6 +171,11 @@ button{font:inherit}.hidden{display:none!important}
 .resourceBadge{position:absolute;right:5px;bottom:5px;z-index:4;padding:3px 5px;border-radius:999px;background:#3c5e37;color:#eef9e8;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.28)}
 .resourceBadge.low{background:#8c5b2d;color:#fff3dc}
 .exploreBadge{position:absolute;right:5px;top:26px;z-index:5;padding:3px 5px;border-radius:999px;background:#315f55;color:#eafff8;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.3)}
+.natureBadge{position:absolute;left:5px;top:26px;z-index:5;padding:3px 5px;border-radius:999px;background:#507743;color:#f4ffe9;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.28)}
+.natureBadge.mid{background:#8a7838;color:#fff7d8}.natureBadge.low{background:#8b4e32;color:#fff0e6}
+.card.nature-low .cardArt{filter:saturate(.72) brightness(.95)}
+.card.nature-depleted .cardArt{filter:grayscale(.55) saturate(.45) brightness(.9)}
+.card.auto-stacked{transform:scale(1.035)}
 .threatBadge{position:absolute;left:5px;bottom:5px;z-index:5;padding:3px 5px;border-radius:999px;background:#9f3f36;color:#fff;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.32)}
 .tradeBadge{position:absolute;right:5px;bottom:5px;z-index:5;padding:3px 5px;border-radius:999px;background:#655184;color:#fff;font-size:8px;font-weight:1000;border:1px solid rgba(255,255,255,.3)}
 .workTag{position:absolute;left:6px;right:6px;top:27px;z-index:8;padding:4px;border-radius:5px;background:rgba(27,24,19,.88);color:#fff;font-size:9px;text-align:center;font-weight:950;opacity:0}
