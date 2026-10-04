@@ -1989,6 +1989,29 @@
       "classroom": false
     },
     {
+      "id": "world_puzzle",
+      "addedAt": "2026-10-04T22:08:00+09:00",
+      "title": "월드 퍼즐 지도 맞추기",
+      "href": "games/world_puzzle/월드 퍼즐 지도 맞추기.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "아시아·유럽·아프리카·북아메리카·남아메리카·오세아니아 또는 세계 전체를 골라 나라 조각을 제자리에 맞추는 세계지리 퍼즐. 조각을 잡으면 한글 국가명과 국기가 나타나고 작은 나라는 터치 판정을 넓혀 쉽게 집을 수 있어요.",
+      "subject": "social",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "world_map_puzzle",
       "addedAt": "2026-10-04T22:08:00+09:00",
       "title": "W-퍼즐 세계 지도 맞추기",
