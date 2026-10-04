@@ -400,4 +400,4 @@
 - 원본 모델마다 정면축이 다를 경우 `frontQuarter` 하나만 조정할 수 있게 해 특정 에셋 방향 보정을 전체 배치 코드와 분리
 - 기존 `progression.housing.placed`의 x / z / rot 값은 자동 변경하지 않아 기존 집 꾸미기 저장을 보존
 - 새 가구 생성 시 Kenney 고정 경로 대신 `furnitureAssetUrl(def)`을 사용해 Restaurant / Bakery 루트 가구도 최초 배치부터 올바른 모델을 로드
-- 캐시 버전 World v3.48 / furnishing v9 / interior-kit v1
+- 캐시 버전 World v3.49 / furnishing v10 / interior-kit v2
