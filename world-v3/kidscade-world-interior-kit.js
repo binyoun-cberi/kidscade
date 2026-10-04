@@ -123,7 +123,6 @@ function addWallShell(group,def){
   const doorW=1.55,sideW=(width-doorW)/2;
   addWallBox(walls.south,'south',b.x1+sideW/2,b.z2,sideW,th,h,def);
   addWallBox(walls.south,'south',b.x2-sideW/2,b.z2,sideW,th,h,def);
-  addWallBox(walls.south,'south',0,b.z2,doorW,th,.48,def);
   const lintelH=.48;addWallBox(walls.south,'south',0,b.z2,doorW,th,lintelH,def);
   walls.south.children[walls.south.children.length-1].position.y=2.72-lintelH/2;
   addBaseboard(walls.south,'south',b.x1+sideW/2,b.z2-.10,sideW-.12,.10,def);
