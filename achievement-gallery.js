@@ -121,7 +121,7 @@
     if (!entry) {
       entry = document.createElement('div');
       entry.id = ENTRY_ID;
-      entry.innerHTML = '<button class="kca-entry-btn" type="button" aria-label="업적 도감 열기"><span><span class="kca-entry-title">🏆 업적 도감</span><span class="kca-entry-note">게임에서 달성한 기록을 한곳에서 봐요.</span></span><strong class="kca-entry-count">0 / 0</strong><span class="kca-entry-track" aria-hidden="true"><i style="width:0%"></i></span></button>';
+      entry.innerHTML = '<button class="kca-entry-btn" type="button" aria-label="업적 도감 열기"><span><span class="kca-entry-title">🏆 업적 도감</span><span class="kca-entry-note">게임을 실제로 끝내고 달성한 기록을 한곳에서 봐요.</span></span><strong class="kca-entry-count">0 / 0</strong><span class="kca-entry-track" aria-hidden="true"><i style="width:0%"></i></span></button>';
       host.appendChild(entry);
       entry.querySelector('button')?.addEventListener('click', open);
     }
@@ -204,7 +204,7 @@
       summaryEl.innerHTML =
         '<div class="kca-stat"><b>' + summary.unlocked + ' / ' + summary.total + '</b><span>달성 업적</span></div>' +
         '<div class="kca-stat"><b>' + summary.percent + '%</b><span>전체 달성률</span></div>' +
-        '<div class="kca-stat"><b>' + summary.playedGames + '개</b><span>플레이한 게임</span></div>';
+        '<div class="kca-stat"><b>' + (summary.completedGames || 0) + '개</b><span>완주한 게임</span></div>';
     }
 
     const body = overlay.querySelector('.kca-body');
