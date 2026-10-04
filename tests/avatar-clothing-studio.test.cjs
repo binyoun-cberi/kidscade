@@ -59,6 +59,27 @@ test('current equipped asset list shows previews and remove actions',()=>{
   assert.ok(js.includes('setAssetMeta(currentFrame,row.layer,null)'));
 });
 
+test('BODY is protected from accidental deletion and missing frames are repaired',()=>{
+  assert.ok(js.includes("const bodySafetySnapshots=new Map()"));
+  assert.ok(js.includes("const protectedBody=row.layer==='body'"));
+  assert.ok(js.includes("if(activeLayer==='body')return setStatus('BODY는 아바타의 기준 바디라 비울 수 없습니다."));
+  assert.ok(js.includes("for(const layer of LAYERS)if(layer!=='body')"));
+  assert.match(js,/async function repairMissingBodyFrames\(/);
+  assert.ok(js.includes("else if(missingBodyFrames().length)await repairMissingBodyFrames(false)"));
+  assert.ok(js.includes("BODY가 완전히 사라지는 편집을 안전장치가 되돌렸습니다."));
+});
+
+test('BODY reference JSON exports exact pixels for asset generation',()=>{
+  assert.ok(html.includes('id="exportBodyReference"'));
+  assert.match(js,/function buildBodyReferenceAnalysis\(\)/);
+  assert.match(js,/function exportBodyReferenceFile\(\)/);
+  assert.ok(js.includes("type:'kidscade-avatar-body-reference'"));
+  assert.ok(js.includes('alphaRuns:alphaRunsOfCanvas(body,1)'));
+  assert.ok(js.includes('pixels:sparsePixelsOfCanvas(body,1)'));
+  assert.ok(js.includes('assetGenerationContract:{'));
+  assert.ok(js.includes("bodyIsReferenceOnly:true"));
+});
+
 test('pending asset preview cannot leak into another layer or frame',()=>{
   assert.ok(js.includes('let catalogLoadToken=0'));
   assert.ok(js.includes("if(layer!==activeLayer&&(sourceImage||pendingCatalogAsset))clearStamp()"));
