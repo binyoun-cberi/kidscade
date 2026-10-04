@@ -129,6 +129,9 @@ test('v13 age HUD, goals and milestones extend through the Iron Age', () => {
 test('v13 tin has both exploration and trade paths and dolmen does not consume the Bronze center', () => {
   const js = read('game.js');
   assert.match(js, /\['tinVein',7\]/);
+  assert.match(js, /node\.type==='rockyHill'&&level>=2.*copperVein/);
+  assert.match(js, /node\.type==='ridge'&&level>=2.*tinVein/);
+  assert.match(js, /node\.type==='deepCave'&&level>=2.*ironVein/);
   assert.match(js, /주석 교역/);
   assert.match(js, /\['bronzeCenter','stone',0,2,\[\['dolmen',1\]\]/);
 });
