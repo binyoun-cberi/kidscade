@@ -2315,9 +2315,7 @@
       "sessionMinutes": 15,
       "players": [
         "solo",
-        "local2",
-        "local3",
-        "local4"
+        "localMulti"
       ],
       "input": [
         "touch",
