@@ -1539,10 +1539,15 @@ function updateDungeonCamera(){
 function updateDungeonHud(){
   if(!dungeonSession)return;
   const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
-  const stage=dungeonSession.stage||0,spec=dungeonSpec(poi);
+  const stage=dungeonSession.stage||0,spec=dungeonSpec(poi),shrine=!!dungeonSession.shrineVersion;
   $('dungeonTitle').textContent=poi.name+' · '+poi.dungeon.title;
   $('dungeonProgress').textContent=(stage+1)+'/4';
-  $('dungeonObjective').textContent=spec.objectives[stage]||spec.objectives[2];
+  $('dungeonObjective').textContent=shrine?(DUNGEON_SHRINE_OBJECTIVES[stage]||DUNGEON_SHRINE_OBJECTIVES[3]):
+    (spec.objectives[stage]||spec.objectives[2]);
+  if($('dungeonPuzzleStatus')){
+    $('dungeonPuzzleStatus').classList.toggle('hidden',!shrine);
+    if(shrine)$('dungeonPuzzleStatus').textContent=dungeonPuzzleStatusText(poi,stage);
+  }
   const near=nearestDungeonTarget(2.4);
   $('dungeonPrompt').classList.toggle('hidden',!near);
   if(near)$('dungeonPrompt').textContent='E · '+near.userData.label;
