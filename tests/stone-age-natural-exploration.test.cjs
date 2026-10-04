@@ -9,7 +9,7 @@ const gameDir = path.join(ROOT, 'games/high_human_history_cards');
 
 function read(name){ return fs.readFileSync(path.join(gameDir, name), 'utf8'); }
 
-test('Stone Age v13 uses direct natural-region exploration instead of a global expedition button', () => {
+test('Stone Age v14 uses direct natural-region exploration instead of a global expedition button', () => {
   const html = read('index.html');
   const js = read('game.js');
   assert.doesNotThrow(() => new Function(js));
@@ -46,14 +46,14 @@ test('natural land can be converted into managed production sites', () => {
   assert.match(js, /간돌도끼\+숲→벌목장/);
 });
 
-test('catalog and game shell are cache-bumped to v13', () => {
+test('catalog and game shell are cache-bumped to v14', () => {
   const html = read('index.html');
   const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
   const entry = data.games.find(g => g.id === 'high_human_history_cards');
   assert.ok(entry);
-  assert.match(html, /style\.css\?v=13/);
-  assert.match(html, /game\.js\?v=13/);
-  assert.ok(entry.href.endsWith('?v=13'));
+  assert.match(html, /style\.css\?v=14/);
+  assert.match(html, /game\.js\?v=14/);
+  assert.ok(entry.href.endsWith('?v=14'));
 });
 
 test('v12 living nature depletes, recovers and changes exploration pressure', () => {
@@ -87,7 +87,7 @@ test('v12 managed production is deliberately stronger than wild extraction', () 
   assert.match(js, /quarry:\{ms:7600[^\n]+\['stone',4\]/);
 });
 
-test('v13 Bronze and Iron Age progression is reachable from mining through settlement', () => {
+test('v14 Bronze and Iron Age progression is reachable from mining through settlement', () => {
   const js = read('game.js');
   for (const token of ['copperVein','tinVein','ironVein','stonePick','miner','copperIngot','tinIngot','bronzeIngot','bronzeCenter','bloomery','ironBloom','ironIngot','ironTown']) {
     assert.ok(js.includes(token), token);
@@ -102,7 +102,7 @@ test('v13 Bronze and Iron Age progression is reachable from mining through settl
   assert.match(js, /\['bronzeCenter','ironIngot',1,1,\[\['ironTown',1\]\]/);
 });
 
-test('v13 metal specialists create real productivity progression', () => {
+test('v14 metal specialists create real productivity progression', () => {
   const js = read('game.js');
   assert.match(js, /bronzeLumberjack/);
   assert.match(js, /bronzeMiner/);
@@ -115,7 +115,7 @@ test('v13 metal specialists create real productivity progression', () => {
   assert.match(js, /ecoUse:cost/);
 });
 
-test('v13 age HUD, goals and milestones extend through the Iron Age', () => {
+test('v14 age HUD, goals and milestones extend through the Iron Age', () => {
   const js = read('game.js');
   assert.match(js, /function ageRank\(/);
   assert.match(js, /청동기 생활/);
@@ -126,7 +126,7 @@ test('v13 age HUD, goals and milestones extend through the Iron Age', () => {
   assert.match(js, /철기 마을을 완성한다/);
 });
 
-test('v13 tin has both exploration and trade paths and dolmen does not consume the Bronze center', () => {
+test('v14 tin has both exploration and trade paths and dolmen does not consume the Bronze center', () => {
   const js = read('game.js');
   assert.match(js, /\['tinVein',7\]/);
   assert.match(js, /node\.type==='rockyHill'&&level>=2.*copperVein/);
@@ -154,4 +154,17 @@ test('late age milestones accept equipped metal specialists after their tools ar
   const js = read('game.js');
   assert.match(js, /state\.bronzeMilestoneShown.*bronzeLumberjack.*bronzeMiner.*bronzeHunter/s);
   assert.match(js, /state\.ironMilestoneShown.*ironLumberjack.*ironMiner.*ironFarmer.*ironHunter/s);
+});
+
+test('all recipe inputs and outputs reference defined cards', () => {
+  const js = read('game.js');
+  const cBlock = js.match(/const C=\{([\s\S]*?)\n\};\n\nconst state=/);
+  const rBlock = js.match(/const R=\[([\s\S]*?)\]\.map\(x=>/);
+  const sameBlock = js.match(/const SAME=\{([\s\S]*?)\n\};/);
+  assert.ok(cBlock && rBlock && sameBlock);
+  const cards = new Set([...cBlock[1].matchAll(/^\s*([A-Za-z_]\w*):\{name:/gm)].map(m => m[1]));
+  const refs = [];
+  for (const m of rBlock[1].matchAll(/\['([^']+)','([^']+)',\d+,\d+,\[\['([^']+)',\d+\]\]/g)) refs.push(m[1], m[2], m[3]);
+  for (const m of sameBlock[1].matchAll(/^\s*(\w+):\{need:\d+,out:'([^']+)'/gm)) refs.push(m[1], m[2]);
+  assert.deepEqual([...new Set(refs.filter(x => !cards.has(x)))], []);
 });
