@@ -90,8 +90,8 @@ test('achievement catalog registers planned definitions without exposing unfinis
   const run = new Function('window','document','CustomEvent','setInterval','clearInterval', catalogSource);
   run(fakeWindow, fakeDocument, FakeCustomEvent, () => 0, () => {});
   assert.equal(registered.length, 408);
-  assert.equal(registered.filter(def => def.enabled !== false).length, 149);
-  assert.equal(registered.filter(def => def.enabled === false).length, 259);
+  assert.equal(registered.filter(def => def.enabled !== false).length, 151);
+  assert.equal(registered.filter(def => def.enabled === false).length, 257);
   assert.equal(registered.filter(def => def.trigger === 'first_play').length, 136);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.mastery').enabled, true);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.secret').enabled, true);
