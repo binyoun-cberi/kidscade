@@ -98,6 +98,7 @@ let focusPartOnly=false;
 const frames=new Map();
 const history=new Map();
 const selectedAssets=new Map();
+const bodySafetySnapshots=new Map();
 
 function makeCanvas(w=SIZE,h=SIZE){
   const c=document.createElement('canvas');
@@ -129,6 +130,25 @@ function hasInk(c){
 }
 
 function anyLayerHasInk(rec,layers){return layers.some(layer=>hasInk(rec?.[layer]))}
+
+function rememberBodyFrame(frameId=currentFrame){
+  const c=layerCanvas(frameId,'body');
+  if(!hasInk(c))return false;
+  bodySafetySnapshots.set(frameId,c.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE));
+  return true;
+}
+function rememberAllBodyFrames(){for(const f of FRAMES)rememberBodyFrame(f.id)}
+function restoreBodySafetySnapshot(frameId=currentFrame){
+  const data=bodySafetySnapshots.get(frameId);if(!data)return false;
+  const c=layerCtx(frameId,'body');c.clearRect(0,0,SIZE,SIZE);c.putImageData(data,0,0);
+  return true;
+}
+function protectBodyAfterMutation(frameId=currentFrame){
+  const c=layerCanvas(frameId,'body');
+  if(hasInk(c)){rememberBodyFrame(frameId);return true}
+  return restoreBodySafetySnapshot(frameId);
+}
+
 function assetIdForLayer(layer){
   const field=LAYER_ID_FIELDS[layer],fallback=LAYER_DEFAULT_IDS[layer]||layer+'-01';
   return safeId(field&&$(field)?.value,fallback);
@@ -200,11 +220,14 @@ function renderSelectedAssetList(){
   if(!rows.length){host.innerHTML='<div class="asset-empty">현재 프레임에 선택된 파츠가 없습니다.</div>';return}
   for(const row of rows){
     const div=document.createElement('div');div.className='selected-row';div.dataset.layer=row.layer;
-    div.innerHTML='<div class="selected-thumb"><img alt=""></div><div class="selected-meta"><div class="selected-slot">'+partLabel(row.layer)+'</div><div class="selected-name"></div></div><button class="selected-remove" type="button" title="현재 프레임에서 제거">×</button>';
+    const protectedBody=row.layer==='body';
+    div.innerHTML='<div class="selected-thumb"><img alt=""></div><div class="selected-meta"><div class="selected-slot">'+partLabel(row.layer)+'</div><div class="selected-name"></div></div><button class="selected-remove" type="button" title="'+(protectedBody?'BODY는 기본 바디라 제거할 수 없습니다.':'현재 프레임에서 제거')+'">'+(protectedBody?'🔒':'×')+'</button>';
     div.querySelector('img').src=row.thumb;
     div.querySelector('.selected-name').textContent=row.label;
     div.querySelector('.selected-meta').addEventListener('click',()=>selectLayer(row.layer));
-    div.querySelector('.selected-remove').addEventListener('click',()=>{
+    const remove=div.querySelector('.selected-remove');
+    if(protectedBody){remove.disabled=true;remove.classList.add('body-locked')}
+    else remove.addEventListener('click',()=>{
       const c=layerCtx(currentFrame,row.layer);c.clearRect(0,0,SIZE,SIZE);setAssetMeta(currentFrame,row.layer,null);
       if(activeLayer===row.layer)selection=null;
       afterEdit(partLabel(row.layer)+' 제거');
@@ -434,6 +457,52 @@ function buildFullAnalysis(){
   };
 }
 
+function buildBodyReferenceAnalysis(){
+  const missing=FRAMES.filter(f=>!hasInk(layerCanvas(f.id,'body'))).map(f=>f.id);
+  if(missing.length)throw new Error('BODY가 비어 있는 프레임이 있습니다: '+missing.join(', ')+' · 먼저 BODY 복구가 필요합니다.');
+  const framesOut={};
+  for(const frame of FRAMES){
+    const body=layerCanvas(frame.id,'body');
+    framesOut[frame.id]={
+      kind:frame.kind,
+      frameNumber:frame.n,
+      ...canvasMetrics(body),
+      alphaRuns:alphaRunsOfCanvas(body,1),
+      pixels:sparsePixelsOfCanvas(body,1)
+    };
+  }
+  return {
+    version:1,
+    type:'kidscade-avatar-body-reference',
+    createdAt:new Date().toISOString(),
+    canvas:{width:SIZE,height:SIZE,origin:'top-left',transparent:true},
+    avatar:{bodyId:assetIdForLayer('body'),facing:'left',logicalRoot:[ROOT_X,82],groundY:GROUND_Y,mirrorForRight:true},
+    frameOrder:FRAMES.map(f=>f.id),
+    frames:framesOut,
+    assetGenerationContract:{
+      bodyIsReferenceOnly:true,
+      outputCanvas:[SIZE,SIZE],
+      transparentBackground:true,
+      coordinateOrigin:'top-left',
+      pixelFormat:'[x,y,r,g,b,a]',
+      frameOrder:FRAMES.map(f=>f.id),
+      rules:[
+        'Do not paint or replace BODY pixels in generated wearable assets.',
+        'Generate only the requested wearable or cosmetic layer on a transparent 128x128 canvas.',
+        'Use BODY pixels, bbox, alphaRuns, logicalRoot and groundY as the fit reference.',
+        'Keep frame alignment consistent across STAND, WALK and JUMP.'
+      ]
+    }
+  };
+}
+function exportBodyReferenceFile(){
+  try{
+    const data=buildBodyReferenceAnalysis();
+    downloadBlob('kidscade-avatar-body-reference.json',new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
+    setStatus('맨몸 BODY 기준 JSON 저장됨 · 이 파일을 ChatGPT에 올려 새 에셋 제작 기준으로 사용할 수 있습니다.');
+  }catch(e){setStatus(e?.message||String(e),true)}
+}
+
 function exportFullAnalysisFile(){
   const data=buildFullAnalysis();
   downloadBlob('kidscade-avatar-full-analysis.json',new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
@@ -459,6 +528,7 @@ function validateFullAdjustmentFile(data){
 }
 
 function applyLayerAdjustmentPlan(frameId,layer,plan,assetId){
+  const before=layer==='body'?layerCtx(frameId,'body').getImageData(0,0,SIZE,SIZE):null;
   snapshotFrameLayer(frameId,layer);
   if(plan?.copyFrom){
     const dst=layerCtx(frameId,layer),src=layerCanvas(plan.copyFrom,layer);
@@ -471,6 +541,12 @@ function applyLayerAdjustmentPlan(frameId,layer,plan,assetId){
     else if(op.op==='setPixels')applyPixelTuples(frameId,layer,op.pixels,{replace:false});
     else if(op.op==='replacePixels')applyPixelTuples(frameId,layer,op.pixels,{replace:true});
   }
+  if(layer==='body'&&!hasInk(layerCanvas(frameId,'body'))){
+    const c=layerCtx(frameId,'body');c.clearRect(0,0,SIZE,SIZE);if(before)c.putImageData(before,0,0);
+    rememberBodyFrame(frameId);
+    throw new Error(frameId+' BODY가 비어 버리는 AI 보정은 안전장치가 차단했습니다.');
+  }
+  if(layer==='body')rememberBodyFrame(frameId);
   if(!assetMeta(frameId,layer)){
     const id=assetId||assetIdForLayer(layer);
     setAssetMeta(frameId,layer,{layer,id,label:id+' · AI 보정',file:null,custom:true});
@@ -782,6 +858,32 @@ function shiftCanvas(source,dx,dy){
 function allBodyFramesEmpty(){
   return FRAMES.every(f=>!hasInk(layerCanvas(f.id,'body')));
 }
+function missingBodyFrames(){return FRAMES.filter(f=>!hasInk(layerCanvas(f.id,'body')))}
+
+async function repairMissingBodyFrames(announce=true){
+  const missing=missingBodyFrames();
+  if(!missing.length){rememberAllBodyFrames();return 0}
+  try{
+    const masterImg=await loadImageUrl(draftBodySourceUrl(0));
+    const masterRaw=rasterDraftBodyImage(masterImg),masterBox=bboxOfCanvas(masterRaw,8);
+    if(!masterBox)throw new Error('기준 STAND-01 BODY 실루엣을 찾지 못했습니다.');
+    const masterCenter=masterBox.x+(masterBox.w-1)/2;
+    const dx=Math.round(ROOT_X-masterCenter),dy=GROUND_Y-masterBox.maxY;
+    for(const frame of missing){
+      const index=FRAMES.findIndex(f=>f.id===frame.id);
+      const raw=index===0?masterRaw:rasterDraftBodyImage(await loadImageUrl(draftBodySourceUrl(index)));
+      const shifted=shiftCanvas(raw,dx,dy),target=layerCtx(frame.id,'body');
+      target.clearRect(0,0,SIZE,SIZE);target.drawImage(shifted,0,0);
+      rememberBodyFrame(frame.id);
+    }
+    refreshFrameButtons();renderSelectedAssetList();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal();
+    if(announce)setStatus('누락 BODY 자동 복구 완료 · '+missing.map(f=>f.label).join(', ')+' · 기존 정상 BODY 프레임은 건드리지 않았습니다.');
+    return missing.length;
+  }catch(e){
+    if(announce)setStatus('누락 BODY 복구 실패: '+(e?.message||e),true);
+    return 0;
+  }
+}
 
 async function loadDraftBodySet(announce=true){
   const button=$('loadDraftBodySet');
@@ -811,7 +913,7 @@ async function loadDraftBodySet(announce=true){
       const shifted=shiftCanvas(raw[i],dx,dy);
       target.drawImage(shifted,0,0);
     }
-    selection=null;history.clear();$('referenceFrame').value='stand-01';
+    selection=null;history.clear();$('referenceFrame').value='stand-01';rememberAllBodyFrames();
     refreshFrameButtons();render();saveLocal();
     setStatus('좌향 BODY 7장 연결 완료 · STAND-01 기준 공통 이동값 '+dx+','+dy+' 적용 · 빨간 오차 표시로 프레임별 차이를 보정하세요.');
     return true;
@@ -944,7 +1046,12 @@ function paintAt(x,y){
 }
 
 function afterEdit(message='수정됨'){
-  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();scheduleSave();render();setStatus(message+' · 자동 저장 대기');
+  let bodyBlocked=false;
+  if(activeLayer==='body'&&!hasInk(layerCanvas(currentFrame,'body'))){
+    bodyBlocked=restoreBodySafetySnapshot(currentFrame);
+  }else if(activeLayer==='body')rememberBodyFrame(currentFrame);
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();scheduleSave();render();
+  setStatus(bodyBlocked?'BODY가 완전히 사라지는 편집을 안전장치가 되돌렸습니다.':message+' · 자동 저장 대기',bodyBlocked);
 }
 function scheduleSave(){
   clearTimeout(saveTimer);
@@ -983,6 +1090,13 @@ function moveLayerOrSelection(dx,dy){
     c.drawImage(temp,nx,ny);
     selection={...s,x:nx,y:ny};
   }else{
+    if(activeLayer==='body'){
+      const box=bboxOfCanvas(layerCanvas());
+      if(box){
+        dx=clamp(dx,-box.x,SIZE-1-box.maxX);
+        dy=clamp(dy,-box.y,SIZE-1-box.maxY);
+      }
+    }
     const temp=makeCanvas();temp.getContext('2d',{alpha:true}).drawImage(layerCanvas(),0,0);
     c.clearRect(0,0,SIZE,SIZE);c.drawImage(temp,dx,dy);
   }
@@ -1376,14 +1490,19 @@ function startPlayback(kind){
 }
 
 function clearCurrent(){
+  if(activeLayer==='body')return setStatus('BODY는 아바타의 기준 바디라 비울 수 없습니다. 필요하면 BODY 7장 다시 불러오기를 사용하세요.',true);
   if(!hasInk(layerCanvas()))return;
   if(!confirm(currentFrame+' '+activeLayer+' 레이어를 비울까요?'))return;
   snapshot();layerCtx().clearRect(0,0,SIZE,SIZE);setAssetMeta(currentFrame,activeLayer,null);selection=null;afterEdit('현재 파츠를 비움');
 }
 function clearAll(){
-  if(!confirm('BODY·HAIR·의상의 모든 프레임을 비울까요?'))return;
-  for(const f of FRAMES){for(const layer of LAYERS)layerCtx(f.id,layer).clearRect(0,0,SIZE,SIZE);selectedAssets.set(f.id,new Map())}
-  history.clear();selection=null;saveLocal();refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();setStatus('모든 프레임을 초기화함');
+  if(!confirm('BODY는 유지하고 헤어·얼굴·의상·장식만 모든 프레임에서 비울까요?'))return;
+  for(const f of FRAMES){
+    const existing=selectedAssets.get(f.id)||new Map(),bodyMeta=existing.get('body')||null;
+    for(const layer of LAYERS)if(layer!=='body')layerCtx(f.id,layer).clearRect(0,0,SIZE,SIZE);
+    selectedAssets.set(f.id,bodyMeta?new Map([['body',bodyMeta]]):new Map());
+  }
+  history.clear();selection=null;rememberAllBodyFrames();saveLocal();refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();setStatus('착용 파츠 전체 초기화 완료 · BODY는 유지됨');
 }
 
 function readProject(){
@@ -1435,7 +1554,9 @@ async function applyProject(project){
       selectedAssets.set(f.id,map);
     }
   }
-  history.clear();selection=null;refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
+  history.clear();selection=null;
+  if(missingBodyFrames().length)await repairMissingBodyFrames(false);
+  rememberAllBodyFrames();refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
 }
 async function restoreLocal(){
   try{
@@ -1551,6 +1672,7 @@ function bind(){
   $('loadStarterSet')?.addEventListener('click',()=>loadStarterSet());
 
   $('exportPartAnalysis')?.addEventListener('click',exportPartAnalysisFile);
+  $('exportBodyReference')?.addEventListener('click',exportBodyReferenceFile);
   $('exportFullAnalysis')?.addEventListener('click',exportFullAnalysisFile);
   $('importFullAdjustment')?.addEventListener('change',async e=>{
     const file=e.target.files?.[0];if(!file)return;
@@ -1661,6 +1783,8 @@ async function init(){
   await restoreLocal();
   selectLayer('body');selectTool('pencil');selectFrame('stand-01');
   if(allBodyFramesEmpty())await loadDraftBodySet(false);
+  else if(missingBodyFrames().length)await repairMissingBodyFrames(false);
+  rememberAllBodyFrames();
   renderSelectedAssetList();renderAssetGrid();syncLayerSelect();refreshFocusToggle();refreshAdjustmentSummary();refreshPartSizeStatus();
   if(!allBodyFramesEmpty())setStatus('아바타 제작실 준비됨 · 왼쪽 에셋을 눌러 조합하세요.');
 }
