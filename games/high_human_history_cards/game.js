@@ -1,12 +1,12 @@
 (() => {
 'use strict';
+// v11: natural-region exploration, worker locking, discovery chains, and managed land conversion.
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
  era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),defense:$('#defenseLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
- toast:$('#toast'),explore:$('#exploreBtn'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
- expeditionStatus:$('#expeditionStatus'),expeditionTitle:$('#expeditionTitle'),expeditionText:$('#expeditionText'),expeditionBar:$('#expeditionBar'),
+ toast:$('#toast'),workforce:$('#workforceStatus'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
  tutorialShade:$('#tutorialShade'),tutorialCoach:$('#tutorialCoach'),tutorialStepLabel:$('#tutorialStepLabel'),tutorialIcon:$('#tutorialIcon'),
  tutorialTitle:$('#tutorialTitle'),tutorialText:$('#tutorialText'),tutorialHint:$('#tutorialHint'),tutorialNext:$('#tutorialNextBtn'),tutorialSkip:$('#tutorialSkipBtn'),
  goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
@@ -20,14 +20,29 @@ const C={
  farmer:{name:'농부',emoji:'🧑‍🌾',kind:'human',sub:'농경 생산량 증가'},
  herder:{name:'목축민',emoji:'🧑‍🌾',kind:'human',sub:'야생 염소를 길들임'},
  lumberjack:{name:'벌목꾼',emoji:'🧑‍🌾',kind:'human',sub:'돌도끼로 큰 나무를 벰'},
- forest:{name:'숲',emoji:'🌲',kind:'node',sub:'주변 탐색에서 만나는 숲'},
+ forestEdge:{name:'숲 가장자리',emoji:'🌲',kind:'node',sub:'가볍게 들어가 주변을 살필 수 있는 숲'},
+ grassland:{name:'들판',emoji:'🌾',kind:'node',sub:'야생 곡물과 작은 동물이 드나드는 넓은 땅'},
+ rockyHill:{name:'바위언덕',emoji:'⛰️',kind:'node',sub:'돌과 동굴의 흔적을 찾을 수 있는 언덕'},
+ forest:{name:'숲',emoji:'🌲',kind:'node',sub:'자원과 동물, 더 깊은 지역을 품은 숲'},
+ denseForest:{name:'울창한 숲',emoji:'🌳',kind:'node',sub:'큰 나무와 맹수, 숨은 장소가 많은 깊은 숲'},
+ meadow:{name:'초원',emoji:'🌿',kind:'node',sub:'야생 곡물과 초식동물이 모이는 풀밭'},
+ wetland:{name:'습지',emoji:'🪷',kind:'node',sub:'갈대·점토·물고기가 풍부한 습한 땅'},
+ valley:{name:'계곡',emoji:'🏞️',kind:'node',sub:'물과 돌, 숲이 만나는 깊은 지형'},
+ caveEntrance:{name:'동굴 입구',emoji:'🕳️',kind:'node',sub:'돌과 짐승의 흔적이 남아 있는 어두운 입구'},
+ deepCave:{name:'깊은 동굴',emoji:'🪨',kind:'node',sub:'위험하지만 희귀한 발견이 가능한 깊은 곳'},
+ spring:{name:'샘',emoji:'💧',kind:'node',sub:'물이 솟아 주변 생물이 모이는 장소'},
+ pond:{name:'연못',emoji:'🏕️',kind:'node',sub:'얕은 물과 갈대, 물고기가 모이는 곳'},
+ ridge:{name:'산등성이',emoji:'🏔️',kind:'node',sub:'멀리까지 살필 수 있는 높은 지형'},
+ animalTrail:{name:'동물 길',emoji:'🐾',kind:'node',sub:'동물을 따라가면 서식지를 발견할 수 있음'},
+ footprints:{name:'큰 발자국',emoji:'🐾',kind:'node',sub:'큰 짐승이 지나간 흔적'},
+ smokeTrace:{name:'연기 흔적',emoji:'💨',kind:'node',sub:'누군가 근처에 머문 흔적'},
  smallTree:{name:'작은 나무',emoji:'🌿',kind:'node',sub:'맨손으로 나뭇가지를 모을 수 있음'},
  bigTree:{name:'큰 나무',emoji:'🌳',kind:'node',sub:'벌목꾼과 돌도끼가 필요함'},
  berryBush:{name:'열매 덤불',emoji:'🫐',kind:'node',sub:'열매를 채집할 수 있음'},
  stoneSource:{name:'돌무더기',emoji:'🪨',kind:'node',sub:'석재를 구할 수 있음'},
  reedBed:{name:'갈대밭',emoji:'🌿',kind:'node',sub:'식물 섬유를 얻음'},
  clayBank:{name:'점토층',emoji:'🟤',kind:'node',sub:'토기의 재료'},
- river:{name:'강가',emoji:'🏞️',kind:'node',sub:'어로와 돌 갈기의 장소'},
+ river:{name:'강가',emoji:'🏞️',kind:'node',sub:'탐험·어로·돌 갈기가 가능한 물가'},
  wildMillet:{name:'야생 조',emoji:'🌾',kind:'node',sub:'곡식과 씨앗을 얻음'},
  deer:{name:'사슴',emoji:'🦌',kind:'node',sub:'고기·가죽·뼈의 원천'},
  wildGoat:{name:'야생 염소',emoji:'🐐',kind:'node',sub:'길들이면 가축이 됨'},
@@ -49,6 +64,8 @@ const C={
  clay:{name:'점토',emoji:'🟤',kind:'item',sub:'그릇을 빚는 재료'},
  berry:{name:'열매',emoji:'🫐',kind:'food',sub:'식량 1',food:1},
  wildGrain:{name:'야생 곡식',emoji:'🌾',kind:'food',sub:'식량 1',food:1},
+ mushroom:{name:'버섯',emoji:'🍄',kind:'food',sub:'식량 1',food:1},
+ herb:{name:'약초',emoji:'🌿',kind:'item',sub:'상처와 생활에 쓰는 식물'},
  milletSeed:{name:'조 씨앗',emoji:'🌱',kind:'item',sub:'개간지에 심을 수 있음'},
  rawMeat:{name:'날고기',emoji:'🥩',kind:'item',sub:'익히거나 훈연 가능'},
  rawHide:{name:'생가죽',emoji:'🟫',kind:'item',sub:'긁개로 손질해야 함'},
@@ -150,13 +167,19 @@ const C={
  waterPit:{name:'저수 웅덩이',emoji:'💧',kind:'node',sub:'개간지를 파서 물을 모음'},
  reservoir:{name:'작은 저수지',emoji:'🌊',kind:'building',sub:'저수 웅덩이 3개가 합쳐짐'},
  fishHolding:{name:'민물고기 가두리',emoji:'🐟',kind:'node',sub:'잡은 물고기를 가두어 기름'},
- fishPond:{name:'민물고기 양식장',emoji:'🐟',kind:'building',sub:'가두리 3개가 합쳐진 실험적 생산지'}
+ fishPond:{name:'민물고기 양식장',emoji:'🐟',kind:'building',sub:'가두리 3개가 합쳐진 실험적 생산지'},
+ mushroomPatch:{name:'버섯 군락',emoji:'🍄',kind:'node',sub:'버섯을 채집할 수 있는 그늘진 곳'},
+ herbPatch:{name:'약초 군락',emoji:'🌿',kind:'node',sub:'쓸 만한 약초가 자라는 곳'},
+ wildGrainField:{name:'야생 곡물밭',emoji:'🌾',kind:'node',sub:'조·기장 씨앗을 찾기 좋은 들판'},
+ flintOutcrop:{name:'부싯돌 노두',emoji:'🪨',kind:'node',sub:'날카로운 돌을 찾기 좋은 노출 지층'},
+ loggingCamp:{name:'벌목장',emoji:'🪵',kind:'building',sub:'개척한 숲에서 목재를 안정적으로 생산'},
+ quarry:{name:'채석장',emoji:'⛏️',kind:'building',sub:'개척한 바위지대에서 돌을 안정적으로 생산'}
 };
 
 const state={
  started:false,over:false,runId:0,id:0,z:20,day:1,mealLeft:70,starving:false,hunger:100,cards:new Map(),discoveries:new Set(),timers:[],
  lifestyle:{hunt:0,farm:0,fish:0,herd:0},stats:{crafted:0,gathered:0,meals:0,explores:0},milestoneShown:false,
- worldTick:0,expedition:null,tutorial:{active:false,step:0}
+ worldTick:0,tutorial:{active:false,step:0}
 };
 let bgmHandle=null;
 
@@ -270,24 +293,88 @@ const THREAT_CONFIG=Object.freeze({
 const RESOURCE_CAPS=Object.freeze({
  smallTree:8,bigTree:10,berryBush:8,stoneSource:10,reedBed:10,clayBank:10,
  wildMillet:12,wildBroomcorn:12,wildBean:12,oakGrove:12,tidalFlat:12,
+ mushroomPatch:10,herbPatch:10,wildGrainField:14,flintOutcrop:12,
  milletPlot:12,milletFarm:18,broomcornPlot:12,broomcornFarm:18,beanPlot:12,beanFarm:18,
  fishingSpot:10,fishingGround:15,netSpot:12,netFishery:18,trapSpot:12,trapFishery:18,
- goatPen:12,goatRanch:18,fishPond:16
+ goatPen:12,goatRanch:18,fishPond:16,loggingCamp:24,quarry:24
 });
 function resourceCap(type,count=1){return (RESOURCE_CAPS[type]||0)*Math.max(1,count||1);}
 function outputUnits(out){return out.reduce((n,o)=>n+(Number(o[1])||1),0);}
 
+const EXPLORE_DEFS=Object.freeze({
+ forestEdge:{max:3,ms:7200,bonus:.18,results:[['smallTree',24],['berryBush',22],['mushroomPatch',12],['rabbit',9],['forest',12],['animalTrail',9],['herbPatch',7],['smokeTrace',5]]},
+ forest:{max:4,ms:9000,bonus:.2,results:[['smallTree',16],['bigTree',14],['oakGrove',12],['deer',9],['denseForest',12],['valley',8],['animalTrail',9],['footprints',7],['mushroomPatch',7],['herbPatch',6]]},
+ denseForest:{max:5,ms:11200,bonus:.16,results:[['bigTree',19],['oakGrove',12],['deer',10],['wildBoar',7],['caveEntrance',10],['spring',8],['footprints',9],['animalTrail',9],['herbPatch',8],['mushroomPatch',8]]},
+ grassland:{max:3,ms:7000,bonus:.2,results:[['wildMillet',18],['wildBroomcorn',14],['wildBean',10],['rabbit',10],['meadow',12],['wildGrainField',12],['animalTrail',9],['smokeTrace',5]]},
+ meadow:{max:4,ms:8200,bonus:.18,results:[['wildGrainField',18],['wildGoat',12],['deer',10],['rabbit',10],['spring',8],['herbPatch',10],['animalTrail',12],['smokeTrace',5]]},
+ river:{max:4,ms:8200,bonus:.18,results:[['reedBed',18],['clayBank',14],['freshFish',12],['wetland',12],['spring',10],['pond',9],['animalTrail',8],['tidalFlat',6]]},
+ wetland:{max:4,ms:9000,bonus:.16,results:[['reedBed',20],['clayBank',16],['freshFish',10],['shellfish',8],['pond',12],['spring',8],['herbPatch',10],['animalTrail',8]]},
+ rockyHill:{max:3,ms:7800,bonus:.16,results:[['stoneSource',26],['flintOutcrop',16],['valley',12],['caveEntrance',12],['ridge',10],['footprints',8],['smokeTrace',5]]},
+ valley:{max:4,ms:9200,bonus:.18,results:[['stoneSource',14],['river',11],['spring',12],['forest',12],['caveEntrance',9],['animalTrail',12],['herbPatch',10],['deer',8]]},
+ caveEntrance:{max:3,ms:10500,bonus:.12,results:[['stoneSource',16],['flintOutcrop',18],['deepCave',14],['bear',5],['footprints',12],['bone',8],['smokeTrace',4]]},
+ deepCave:{max:4,ms:12800,bonus:.1,results:[['flintOutcrop',22],['stoneSource',18],['bone',12],['bear',7],['spring',7],['footprints',12]]},
+ spring:{max:3,ms:7600,bonus:.16,results:[['river',11],['wetland',10],['pond',12],['herbPatch',16],['animalTrail',14],['deer',8],['wildGoat',8]]},
+ pond:{max:3,ms:7600,bonus:.16,results:[['freshFish',18],['reedBed',16],['wetland',12],['herbPatch',10],['animalTrail',10],['wildGoat',7]]},
+ ridge:{max:3,ms:9000,bonus:.12,results:[['rockyHill',14],['valley',12],['caveEntrance',10],['forest',9],['smokeTrace',8],['wildGoat',9],['stoneSource',12]]}
+});
+const CLUE_DEFS=Object.freeze({
+ animalTrail:{label:'동물 흔적을 따라가는 중',discover:'동물 추적',results:[['rabbit',28],['deer',26],['wildGoat',20],['wildBoar',14],['forest',6],['meadow',6]]},
+ footprints:{label:'큰 발자국을 추적하는 중',discover:'큰 짐승 추적',results:[['deer',22],['wildBoar',24],['bear',12],['caveEntrance',16],['denseForest',14],['valley',12]]},
+ smokeTrace:{label:'연기의 근원을 찾는 중',discover:'사람의 흔적',results:[['strangerGroup',68],['hostileBand',14],['meadow',10],['river',8]]}
+});
+const FOREST_REGIONS=new Set(['forestEdge','forest','denseForest']);
+const FIELD_REGIONS=new Set(['grassland','meadow']);
+const WATER_REGIONS=new Set(['river','wetland','spring','pond']);
+const HUNT_REGIONS=new Set(['forestEdge','forest','denseForest','grassland','meadow','valley','spring']);
+function weightedResult(entries){
+ const total=entries.reduce((n,e)=>n+e[1],0);let roll=Math.random()*total;
+ for(const e of entries){roll-=e[1];if(roll<=0)return e[0];}
+ return entries[entries.length-1]?.[0]||null;
+}
+function rollExploreOutputs(node){
+ const def=EXPLORE_DEFS[node.type];if(!def)return [];
+ if(tutorialActive()&&state.tutorial.step===0&&node.type==='forestEdge')return [['smallTree',1],['berryBush',1]];
+ if(tutorialActive()&&state.tutorial.step===5&&node.type==='rockyHill')return [['stoneSource',1]];
+ let entries=def.results.slice();
+ const level=node.exploreLevel||0;
+ if(level>=def.max){const common=entries.filter(e=>!EXPLORE_DEFS[e[0]]);if(common.length)entries=common;}
+ const unseen=entries.filter(e=>!(EXPLORE_DEFS[e[0]]&&cardsOf(e[0]).length>0));if(unseen.length)entries=unseen;
+ const first=weightedResult(entries),out=first?[[first,1]]:[];
+ if(out.length&&Math.random()<def.bonus){
+  const secondEntries=def.results.filter(e=>e[0]!==first&&!EXPLORE_DEFS[e[0]]);
+  const second=secondEntries.length?weightedResult(secondEntries):null;if(second)out.push([second,1]);
+ }
+ return out;
+}
+function specialistNatureAction(worker,node){
+ if(worker.type==='lumberjack'&&FOREST_REGIONS.has(node.type))return {ms:7200,label:'쓸 만한 나무 고르는 중',out:node.type==='denseForest'?[['wood',2],['branch',1]]:[['wood',1],['branch',1]],oneShot:true,life:'hunt'};
+ if(worker.type==='hunter'&&HUNT_REGIONS.has(node.type))return {ms:8200,label:'동물 흔적 찾는 중',out:[[weightedResult(node.type==='denseForest'?[['deer',45],['wildBoar',35],['bear',20]]:[['rabbit',35],['deer',35],['wildGoat',18],['wildBoar',12]]),1]],oneShot:true,life:'hunt'};
+ if(worker.type==='farmer'&&FIELD_REGIONS.has(node.type))return {ms:7600,label:'먹을 수 있는 식물 찾는 중',out:[[weightedResult([['wildMillet',38],['wildBroomcorn',34],['wildBean',28]]),1]],oneShot:true,life:'farm'};
+ if(worker.type==='fisher'&&WATER_REGIONS.has(node.type))return {ms:7600,label:'물고기 자리 살피는 중',out:[['freshFish',2]],oneShot:true,life:'fish'};
+ if(worker.type==='herder'&&FIELD_REGIONS.has(node.type))return {ms:8400,label:'길들일 동물 찾는 중',out:[[weightedResult([['wildGoat',62],['animalTrail',38]]),1]],oneShot:true,life:'herd'};
+ return null;
+}
+function natureWorkerAction(worker,node){
+ const def=EXPLORE_DEFS[node.type];if(!def)return null;
+ const specialist=specialistNatureAction(worker,node);if(specialist)return specialist;
+ const level=node.exploreLevel||0,ms=def.ms+Math.min(level,def.max)*1200;
+ return {ms,label:C[node.type].name+' 탐험 중',out:rollExploreOutputs(node),oneShot:true,countExplore:true,exploreNode:true,discover:'자연 탐험'};
+}
+function clueWorkerAction(worker,node){
+ const def=CLUE_DEFS[node.type];if(!def)return null;
+ const found=weightedResult(def.results);return {ms:7200,label:def.label,out:[[found,1]],oneShot:true,consumeNode:true,countExplore:true,discover:def.discover};
+}
+
 const TUTORIAL_STEPS=[
- {icon:'👤',title:'사람을 작은 나무에 올리기',text:'사람 카드를 끌어서 작은 나무 카드 위에 겹쳐 놓아보세요.',hint:'사람 + 자연 카드를 겹치면 작업이 시작됩니다.',cards:['person','smallTree']},
- {icon:'🌿',title:'작업자는 계속 일해요',text:'진행바가 차면 나뭇가지 카드가 옆으로 튀어나옵니다. 사람을 그대로 두면 다시 작업을 시작해요.',hint:'첫 나뭇가지가 나올 때까지 잠깐 기다려보세요.',cards:['smallTree']},
- {icon:'✋',title:'필요하면 작업을 멈추기',text:'이제 작은 나무 위의 사람 카드를 빈 곳으로 끌어내세요.',hint:'사람을 옮기는 순간 반복 작업이 멈춥니다.',cards:['person','smallTree']},
- {icon:'🪨',title:'돌 두 개 모으기',text:'사람을 돌무더기에 올려 돌을 2개 모아보세요. 튜토리얼 동안 채집은 조금 빠르게 진행됩니다.',hint:'돌 2개가 모이면 작업자는 자동으로 쉬게 됩니다.',cards:['person','stoneSource']},
- {icon:'💥',title:'같은 재료 합치기',text:'돌 카드 2장을 서로 겹쳐 찍개를 만들어보세요.',hint:'합칠 수 있는 카드는 드래그할 때 테두리가 빛납니다.',cards:['stone']},
- {icon:'🃏',title:'같은 카드도 스택',text:'사람 두 장을 서로 겹쳐 사람 ×2 스택을 만들어보세요.',hint:'스택은 공간을 아끼지만 개별 사람을 쓰려면 다시 분리해야 합니다.',cards:['person']},
- {icon:'↔',title:'분리대에서 한 장 꺼내기',text:'사람 ×2 스택을 상단 HUD의 분리대에 끌어다 놓으세요.',hint:'목재·돌 같은 자원 더미도 한 장씩 꺼낼 수 있습니다.',cards:['person'],ui:['extractorZone']},
- {icon:'🧭',title:'주변 탐험 보내기',text:'주변 탐색 버튼을 눌러 쉬는 사람 1명과 식량 1을 원정에 보내보세요.',hint:'튜토리얼 원정은 7초만 걸립니다.',ui:['exploreBtn']},
- {icon:'⏳',title:'탐험이 돌아오는 중',text:'탐험 중인 사람은 다른 일을 할 수 없습니다. 귀환하면 새 자원지와 동물·사건을 발견할 수 있어요.',hint:'탐험 상태창의 진행도를 확인하세요.',ui:['expeditionStatus']},
- {icon:'🛡',title:'이제 스스로 살아남기',text:'식량이 떨어지면 사람 카드 위에 굶주림 게이지가 나타납니다. 3일차 이후에는 맹수도 만나며 불·울타리·마을·사냥꾼이 방어력을 올립니다.',hint:'채집 → 제작 → 탐험 → 정착 → 방어의 순환을 자유롭게 이어가세요.',selectors:['.foodTile','.defenseTile'],next:'튜토리얼 완료'}
+ {icon:'🧭',title:'사람을 숲 가장자리에 올리기',text:'사람 카드를 숲 가장자리 카드 위에 겹쳐 놓아보세요.',hint:'사람이 자연 카드에 들어가면 그 시간 동안 다른 일에는 쓸 수 없습니다.',cards:['person','forestEdge']},
+ {icon:'🔍',title:'탐험 결과 기다리기',text:'탐험 진행바가 끝나면 자원이나 동물, 새로운 장소가 주변에 나타납니다.',hint:'첫 숲 탐험에서는 작은 나무와 열매 덤불을 찾게 됩니다.',cards:['forestEdge']},
+ {icon:'🌿',title:'발견한 자원 이용하기',text:'사람을 작은 나무에 올려 나뭇가지를 모아보세요.',hint:'탐험으로 장소를 찾고, 발견한 자원에서 다시 생활 재료를 얻습니다.',cards:['person','smallTree']},
+ {icon:'⏳',title:'작업자는 계속 일해요',text:'진행바가 차면 나뭇가지 카드가 옆으로 튀어나옵니다.',hint:'필요한 만큼 모았으면 사람 카드를 다른 곳으로 옮기면 됩니다.',cards:['smallTree']},
+ {icon:'⛰️',title:'바위언덕도 탐험하기',text:'작은 나무에서 사람을 꺼내 바위언덕 위에 올려보세요.',hint:'자연마다 발견할 수 있는 장소와 자원이 다릅니다.',cards:['person','rockyHill']},
+ {icon:'🪨',title:'돌이 있는 곳 발견하기',text:'바위언덕 탐험이 끝나면 돌무더기를 발견합니다.',hint:'탐험을 거듭하면 계곡·동굴·산등성이 같은 더 깊은 장소도 나옵니다.',cards:['rockyHill']},
+ {icon:'🪨',title:'돌 두 개 모으기',text:'사람을 돌무더기에 올려 돌을 2개 모아보세요.',hint:'튜토리얼 동안 기본 채집은 조금 빠르게 진행됩니다.',cards:['person','stoneSource']},
+ {icon:'💥',title:'같은 재료 합치기',text:'돌 카드 2장을 서로 겹쳐 찍개를 만들어보세요.',hint:'도구가 생기면 같은 자연에서도 할 수 있는 일이 늘어납니다.',cards:['stone']},
+ {icon:'🌍',title:'자연에서 마을로',text:'숲·들판·강가·바위언덕을 계속 탐험하세요. 나중에는 숲을 벌목장으로, 들판을 밭으로 바꾸며 정착지를 키울 수 있습니다.',hint:'탐험 → 발견 → 채집 → 기술 → 개척 → 더 먼 탐험이 기본 순환입니다.',selectors:['.foodTile','.defenseTile'],next:'튜토리얼 완료'}
 ];
 function tutorialActive(){return !!state.tutorial?.active;}
 function clearTutorialFocus(){
@@ -322,22 +409,21 @@ function cardsOf(type){return [...state.cards.values()].filter(c=>c.type===type)
 function tutorialEvent(name,payload={}){
  if(!tutorialActive())return;
  const step=state.tutorial.step;
- if(step===0&&name==='assigned_small_tree'){setTutorialStep(1);return;}
- if(step===1&&name==='resource_produced'&&payload.node?.type==='smallTree'){setTutorialStep(2);return;}
- if(step===2&&name==='detached_small_tree'){setTutorialStep(3);return;}
- if(step===3&&name==='resource_produced'&&payload.node?.type==='stoneSource'&&cardsOf('stone').reduce((n,c)=>n+c.count,0)>=2){
+ if(step===0&&name==='assigned_explore'&&payload.node?.type==='forestEdge'){setTutorialStep(1);return;}
+ if(step===1&&name==='explore_finished'&&payload.node?.type==='forestEdge'){setTutorialStep(2);return;}
+ if(step===2&&name==='assigned_small_tree'){setTutorialStep(3);return;}
+ if(step===3&&name==='resource_produced'&&payload.node?.type==='smallTree'){setTutorialStep(4);return;}
+ if(step===4&&name==='assigned_explore'&&payload.node?.type==='rockyHill'){setTutorialStep(5);return;}
+ if(step===5&&name==='explore_finished'&&payload.node?.type==='rockyHill'){setTutorialStep(6);return;}
+ if(step===6&&name==='resource_produced'&&payload.node?.type==='stoneSource'&&cardsOf('stone').reduce((n,c)=>n+c.count,0)>=2){
   const worker=payload.node.occupiedBy?state.cards.get(payload.node.occupiedBy):null;if(worker)cancelAssignment(worker);
-  setTutorialStep(4);return;
+  setTutorialStep(7);return;
  }
- if(step===4&&name==='crafted_chopper'){setTutorialStep(5);return;}
- if(step===5&&name==='stacked_people'){setTutorialStep(6);return;}
- if(step===6&&name==='split_people'){setTutorialStep(7);return;}
- if(step===7&&name==='expedition_started'){setTutorialStep(8);return;}
- if(step===8&&name==='expedition_finished'){setTutorialStep(9);}
+ if(step===7&&name==='crafted_chopper'){setTutorialStep(8);}
 }
 
 function reset(){
- state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.expedition=null;state.tutorial={active:false,step:0};
+ state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.tutorial={active:false,step:0};
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;
  state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
@@ -345,7 +431,6 @@ function reset(){
  const t=setInterval(()=>{
   if(!state.started||state.over)return;
   state.worldTick++;
-  tickExpedition();
   if(tutorialActive()){renderHud();renderHunger();return;}
   tickThreats();
   if(state.starving){
@@ -368,9 +453,8 @@ function reset(){
 function spawnInitial(){
  const w=Math.max(620,board.clientWidth),h=Math.max(390,board.clientHeight);
  const list=[
-  ['person',.11,.16],['person',.22,.26],['berry',.10,.60],['berry',.20,.69],
-  ['smallTree',.38,.12],['bigTree',.49,.12],['berryBush',.62,.15],['stoneSource',.78,.20],['reedBed',.88,.38],
-  ['clayBank',.70,.54],['river',.48,.58],['wildMillet',.31,.50],['oakGrove',.38,.72],['deer',.17,.43],['wildGoat',.83,.66]
+  ['person',.10,.18],['person',.20,.28],['berry',.10,.62],['berry',.20,.70],
+  ['forestEdge',.38,.17],['grassland',.63,.18],['river',.43,.58],['rockyHill',.74,.58]
  ];
  list.forEach(([t,x,y])=>addCard(t,Math.min(w-120,w*x),Math.min(h-150,h*y),1,false));
 }
@@ -399,11 +483,12 @@ function addCard(type,x,y,count=1,animate=true){
  el.className='card '+group.cls+(animate?' newborn':'');el.dataset.id=id;
  const foodBadge=d.food?'<span class="foodBadge">🍖 '+d.food+'</span>':'';
  const resourceBadge=RESOURCE_CAPS[type]?'<span class="resourceBadge"></span>':'';
+ const exploreBadge=EXPLORE_DEFS[type]?'<span class="exploreBadge"></span>':'';
  const threatBadge=THREAT_CONFIG[type]?'<span class="threatBadge"></span>':'';
  const tradeBadge=type==='strangerGroup'?'<span class="tradeBadge"></span>':'';
- el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+threatBadge+tradeBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
+ el.innerHTML='<div class="cardShell"><div class="cardRibbon">'+group.label+'</div><div class="cardArt">'+artMarkup(type,d)+'</div><div class="cardName">'+d.name+'</div><div class="cardSub">'+d.sub+'</div>'+foodBadge+resourceBadge+exploreBadge+threatBadge+tradeBadge+'</div><span class="countBadge"></span><div class="workTag">진행 중…</div><div class="progress"></div><div class="hungerLabel">굶주림</div><div class="hungerMeter"><i></i></div>';
  board.appendChild(el);
- const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null};
+ const c={id,type,count,busy:false,x:0,y:0,el,remaining:resourceCap(type,count)||null,exploreLevel:EXPLORE_DEFS[type]?0:null};
  if(THREAT_CONFIG[type])c.raidIn=THREAT_CONFIG[type].raidEvery;
  if(type==='strangerGroup')c.tradeRemaining=3;
  state.cards.set(id,c);updateCard(c);
@@ -420,6 +505,8 @@ function updateCard(c){
   rb.textContent='⛏ '+left;
   rb.classList.toggle('low',left<=Math.max(2,Math.ceil(cap*.25)));
  }
+ const eb=c.el.querySelector('.exploreBadge');
+ if(eb){const def=EXPLORE_DEFS[c.type],level=Math.max(0,c.exploreLevel||0);eb.textContent=level>=def.max?'🔍 익숙함':'🔍 '+level+'/'+def.max;}
  const tb=c.el.querySelector('.threatBadge');
  if(tb){const cfg=THREAT_CONFIG[c.type];tb.textContent='⚠ '+Math.max(0,c.raidIn??cfg.raidEvery)+'초 · 🛡'+cfg.power;}
  const tr=c.el.querySelector('.tradeBadge');
@@ -429,7 +516,7 @@ function place(c,x,y){c.x=x;c.y=y;c.el.style.left=x+'px';c.el.style.top=y+'px';}
 function removeCard(c){if(!c||!state.cards.has(c.id))return;c.el.remove();state.cards.delete(c.id);}
 function consume(c,n){if(n<=0)return true;if(!c||c.count<n)return false;c.count-=n;if(c.count<=0)removeCard(c);else updateCard(c);return true;}
 
-const WORK_NODES=new Set(['smallTree','bigTree','berryBush','stoneSource','reedBed','clayBank','wildMillet','wildBroomcorn','wildBean','oakGrove','tidalFlat','milletPlot','milletFarm','broomcornPlot','broomcornFarm','beanPlot','beanFarm','fishingSpot','fishingGround','netSpot','netFishery','trapSpot','trapFishery','goatPen','goatRanch','fishPond']);
+const WORK_NODES=new Set(['smallTree','bigTree','berryBush','stoneSource','reedBed','clayBank','wildMillet','wildBroomcorn','wildBean','oakGrove','tidalFlat','mushroomPatch','herbPatch','wildGrainField','flintOutcrop','loggingCamp','quarry','milletPlot','milletFarm','broomcornPlot','broomcornFarm','beanPlot','beanFarm','fishingSpot','fishingGround','netSpot','netFishery','trapSpot','trapFishery','goatPen','goatRanch','fishPond']);
 function interactionClass(a,b){
  if(a.type===b.type)return 'drop-stack';
  if(findRecipe(a,b))return 'drop-craft';
@@ -437,6 +524,7 @@ function interactionClass(a,b){
  const worker=isWorker(a.type)?a:(isWorker(b.type)?b:null);
  if(!worker)return '';
  const node=worker.id===a.id?b:a;
+ if(EXPLORE_DEFS[node.type]||CLUE_DEFS[node.type])return 'drop-action';
  if(node.type==='bigTree')return worker.type==='lumberjack'?'drop-action':'';
  if(WORK_NODES.has(node.type))return 'drop-action';
  if(DANGERS.has(node.type))return worker.type==='hunter'?'drop-danger':'';
@@ -594,6 +682,8 @@ function craftRecipe(a,b,r){
 }
 
 function workerAction(worker,node){
+ const clue=clueWorkerAction(worker,node);if(clue)return clue;
+ const nature=natureWorkerAction(worker,node);if(nature){tutorialEvent('assigned_explore',{worker,node});return nature;}
  const base={
   smallTree:{ms:4800,label:'나뭇가지 모으는 중',out:[['branch',1]],life:'hunt'},
   berryBush:{ms:5200,label:'열매 따는 중',out:[['berry',1]],life:'hunt'},
@@ -604,7 +694,13 @@ function workerAction(worker,node){
   wildBroomcorn:{ms:6500,label:'야생 기장 거두는 중',out:[['broomcornGrain',1],['broomcornSeed',1]],life:'farm'},
   wildBean:{ms:6500,label:'야생 콩 거두는 중',out:[['bean',1],['beanSeed',1]],life:'farm'},
   oakGrove:{ms:6200,label:'도토리 줍는 중',out:[['acorn',2]],life:'hunt'},
-  tidalFlat:{ms:7200,label:'갯벌 채집 중',out:[['clam',1],['oyster',1],['shell',1]],life:'fish',lifeGain:2}
+  tidalFlat:{ms:7200,label:'갯벌 채집 중',out:[['clam',1],['oyster',1],['shell',1]],life:'fish',lifeGain:2},
+  mushroomPatch:{ms:4800,label:'버섯 채집 중',out:[['mushroom',1]],life:'hunt'},
+  herbPatch:{ms:5400,label:'약초 채집 중',out:[['herb',1]],life:'hunt'},
+  wildGrainField:{ms:6600,label:'야생 곡물 거두는 중',out:[['wildGrain',2],['milletSeed',1]],life:'farm'},
+  flintOutcrop:{ms:7000,label:'부싯돌 고르는 중',out:[['stone',2]],life:null},
+  loggingCamp:{ms:8500,label:'벌목장 작업 중',out:[['wood',2],['branch',1]],life:'hunt',lifeGain:2},
+  quarry:{ms:9000,label:'채석장 작업 중',out:[['stone',3]],life:null}
  };
  if(base[node.type]){
   const action={...base[node.type]};
@@ -661,6 +757,12 @@ function workerAction(worker,node){
 
 function specialAction(a,b){
  const has=(x,y)=>((a.type===x&&b.type===y)||(a.type===y&&b.type===x));
+ const forestNode=[a,b].find(c=>FOREST_REGIONS.has(c.type));
+ if(forestNode&&(a.type==='groundAxe'||b.type==='groundAxe'))return {ms:10500,label:'숲을 벌목장으로 개척 중',consume:forestNode.type,preserve:'groundAxe',out:[['loggingCamp',1],['wood',2]],discover:'벌목장 개척',life:'hunt',lifeGain:2};
+ const fieldNode=[a,b].find(c=>FIELD_REGIONS.has(c.type));
+ if(fieldNode&&(a.type==='stoneHoe'||b.type==='stoneHoe'))return {ms:9500,label:'들판을 개간하는 중',consume:fieldNode.type,preserve:'stoneHoe',out:[['clearedPlot',1]],discover:'들판 개간',life:'farm',lifeGain:2};
+ const rockNode=[a,b].find(c=>c.type==='rockyHill'||c.type==='flintOutcrop');
+ if(rockNode&&(a.type==='chopper'||b.type==='chopper'))return {ms:9800,label:'채석장을 만드는 중',consume:rockNode.type,preserve:'chopper',out:[['quarry',1]],discover:'채석장 개척'};
  if(has('stone','river'))return {ms:6000,label:'돌 가는 중',consume:'stone',preserve:'river',out:[['groundStone',1]],discover:'간석기 제작'};
  if(has('groundAxe','bigTree'))return {ms:9000,label:'큰 나무 베어 개간 중',consume:'bigTree',preserve:'groundAxe',out:[['clearedPlot',1],['wood',2]],discover:'개간'};
  if(has('fishHook','river'))return {ms:6500,label:'낚시 자리 찾는 중',consume:null,preserve:null,out:[['fishingSpot',1]],discover:'낚시 자리'};
@@ -714,11 +816,18 @@ function spawnOutputs(anchor,out){
 }
 function finishOneShotWorker(worker,node,d,run){
  if(state.over||run!==state.runId)return;
+ if(d.countExplore){state.stats.explores++;worker.exploring=false;worker.el.classList.remove('exploring');}
+ if(d.exploreNode&&state.cards.has(node.id)){const def=EXPLORE_DEFS[node.type];node.exploreLevel=Math.min(def.max,(node.exploreLevel||0)+1);updateCard(node);}
  clearWorkVisual(worker);
  if(state.cards.has(node.id)){if(d.consumeNode)removeCard(node);else clearWorkVisual(node);}
- spawnOutputs(state.cards.has(node.id)?node:worker,d.out);
+ const anchor=state.cards.has(node.id)?node:worker;
+ spawnOutputs(anchor,d.out);
  state.stats.gathered+=d.out.reduce((sum,o)=>sum+(o[1]||1),0);
  if(d.life)addLife(d.life,d.lifeGain||1);if(d.discover)discover(d.discover);
+ if(d.countExplore){
+  tutorialEvent('explore_finished',{worker,node,out:d.out});
+  showToast('🧭 '+C[node.type].name+': '+d.out.map(o=>C[o[0]]?.name||o[0]).join(' · ')+' 발견');
+ }
  if(state.cards.has(node.id))separate(worker,node);
  renderAll();checkMilestone();
 }
@@ -754,8 +863,9 @@ function productionCycle(worker,node,d,run){
 }
 function runAction(worker,node,d){
  const run=state.runId;
- if(d.consumeNode){
-  worker.busy=true;node.busy=true;markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);snap(worker,node);
+ if(d.consumeNode||d.oneShot){
+  worker.busy=true;node.busy=true;if(d.countExplore){worker.exploring=true;worker.el.classList.add('exploring');}
+  markBusy(worker,d.label,d.ms);markBusy(node,d.label,d.ms);snap(worker,node);
   setTimeout(()=>finishOneShotWorker(worker,node,d,run),d.ms);return;
  }
  if(node.occupiedBy&&node.occupiedBy!==worker.id){showToast('이미 다른 사람이 이곳에서 일하고 있어요.');separate(worker,node);return;}
@@ -865,78 +975,14 @@ function eatMeal(){
  showToast('🍲 부족이 한 끼를 먹고 '+state.day+'일째를 맞았습니다.');renderAll();
 }
 
-function availableExplorer(){
- return [...state.cards.values()].find(c=>isWorker(c.type)&&c.count===1&&!c.busy&&!c.assignmentNodeId&&!c.exploring);
+function freeWorkerCount(){
+ let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&!c.busy&&!c.assignmentNodeId&&!c.exploring)n+=c.count;return n;
 }
-function pick(list){return list[Math.floor(Math.random()*list.length)];}
-function expeditionResourcePool(){
- const pool=['smallTree','berryBush','stoneSource','reedBed','clayBank','oakGrove','wildMillet'];
- if(state.day>=2)pool.push('bigTree','river','wildBroomcorn');
- if(state.day>=3)pool.push('wildBean','tidalFlat');
- return pool;
+function busyWorkerCount(){
+ let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&(c.busy||c.assignmentNodeId))n+=c.count;return n;
 }
-function expeditionEncounter(){
- const score=settlementScore(),chance=state.day<3?.42:(score>=6?.6:.52);
- if(Math.random()>chance)return null;
- const animals=['rabbit','deer','wildGoat'];
- if(state.day>=3)animals.push('wildBoar','wolf');
- if(state.day>=5)animals.push('bear');
- if(score>=4&&state.day>=4)animals.push('strangerGroup','strangerGroup');
- if(score>=8&&state.day>=6)animals.push('hostileBand');
- return pick(animals);
-}
-function expeditionSpawn(type,anchor,index,{partial=false}={}){
- const angle=(Math.PI*2/7)*(index+1),radius=155+((index%2)*38);
- const x=clamp(anchor.x+Math.cos(angle)*radius,8,Math.max(8,board.clientWidth-135));
- const y=clamp(anchor.y+Math.sin(angle)*radius,24,Math.max(24,board.clientHeight-175));
- const card=addCard(type,x,y,1,true);
- if(card&&partial&&RESOURCE_CAPS[type]){
-  const cap=resourceCap(type,1);
-  card.remaining=Math.min(cap,4+Math.floor(Math.random()*4));
-  updateCard(card);
- }
- if(card){card.el.classList.add('produced');setTimeout(()=>card.el?.classList.remove('produced'),470);}
- return card;
-}
-function finishExpedition(){
- const ex=state.expedition;if(!ex)return;
- const worker=state.cards.get(ex.workerId);
- if(worker){worker.exploring=false;worker.el.classList.remove('exploring');clearWorkVisual(worker);}
- const anchor=worker||{x:board.clientWidth*.45,y:board.clientHeight*.45};
- const found=[],count=1+(Math.random()<.55?1:0),pool=expeditionResourcePool();
- for(let i=0;i<count;i++){const type=pick(pool);expeditionSpawn(type,anchor,i,{partial:true});found.push(C[type].name);}
- const encounter=expeditionEncounter();
- if(encounter){expeditionSpawn(encounter,anchor,count+1);found.push(C[encounter].name);}
- state.expedition=null;discover('주변 탐색');playProductionPop();
- tutorialEvent('expedition_finished',{worker,encounter});
- const danger=encounter&&THREAT_CONFIG[encounter];
- showToast((danger?'⚠️ ':'🧭 ')+'탐험 귀환: '+found.join(' · '));
- renderAll();
-}
-function tickExpedition(){
- const ex=state.expedition;if(!ex)return;
- ex.remaining=Math.max(0,ex.remaining-1);
- if(ex.remaining<=0){finishExpedition();return;}
- renderExpedition();
-}
-function explore(){
- if(state.over)return;
- if(state.expedition){showToast('이미 한 사람이 탐험 중이에요.');return;}
- if(state.starving){showToast('굶주림을 해결한 뒤 탐험을 보내세요.');return;}
- if(foodUnits()<1){showToast('탐색에는 식량 1이 필요해요.');return;}
- const worker=availableExplorer();
- if(!worker){
-  const stacked=[...state.cards.values()].some(c=>isWorker(c.type)&&c.count>1);
-  showToast(stacked?'탐험할 사람을 분리대에서 한 장 꺼내 주세요.':'쉬고 있는 사람이 있어야 탐험을 보낼 수 있어요.');
-  return;
- }
- consumeFood(1);state.stats.explores++;
- const duration=tutorialActive()?7:18+Math.floor(Math.random()*5);
- state.expedition={workerId:worker.id,duration,remaining:duration};
- worker.exploring=true;worker.busy=true;markBusy(worker,'탐험 중',duration*1000);worker.el.classList.add('exploring');
- tutorialEvent('expedition_started',{worker});
- showToast('🧭 '+C[worker.type].name+'이(가) 식량 1을 챙겨 주변을 탐험합니다.');
- renderAll();
+function exploringWorkerCount(){
+ let n=0;for(const c of state.cards.values())if(isWorker(c.type)&&c.exploring)n+=c.count;return n;
 }
 function defensePower(){
  let power=0;
@@ -986,23 +1032,12 @@ function tidy(){
 }
 
 function renderAll(){renderHud();renderLife();renderDiscoveries();renderQuests();renderGoal();renderHunger();}
-function renderExpedition(){
- const ex=state.expedition;
- if(!ex){ui.expeditionStatus?.classList.add('hidden');return;}
- ui.expeditionStatus?.classList.remove('hidden');
- const worker=state.cards.get(ex.workerId);
- if(ui.expeditionTitle)ui.expeditionTitle.textContent=(worker?C[worker.type].name:'탐험대')+' 탐험 중';
- if(ui.expeditionText)ui.expeditionText.textContent=ex.remaining+'초 뒤 귀환';
- const progress=Math.max(0,Math.min(100,((ex.duration-ex.remaining)/ex.duration)*100));
- ui.expeditionStatus?.style.setProperty('--expedition-progress',progress+'%');
-}
 function renderHud(){
- const food=foodUnits(),pop=population(),free=availableExplorer();
+ const food=foodUnits(),pop=population(),free=freeWorkerCount(),busy=busyWorkerCount(),exploring=exploringWorkerCount();
  ui.day.textContent=state.day+'일';ui.food.textContent=food;ui.pop.textContent=pop+'/'+populationCapacity();
  ui.meal.textContent=state.starving?'위험':state.mealLeft+'초';ui.settlement.textContent=settlementScore();ui.defense.textContent=defensePower();
- ui.explore.disabled=!!state.expedition||food<1||state.starving;
- ui.explore.innerHTML=state.expedition?'<span>🧭</span><b>탐험 중</b><small>'+state.expedition.remaining+'초</small>':'<span>🧭</span><b>주변 탐색</b><small>사람 1 · 식량 1</small>';
- ui.foodTile?.classList.toggle('low',state.starving||food<pop);renderExpedition();
+ if(ui.workforce)ui.workforce.innerHTML='<span>👤</span><b>쉬는 사람 '+free+'</b><small>작업 '+busy+' · 탐험 '+exploring+' · 자연 카드 위에 올려 명령</small>';
+ ui.foodTile?.classList.toggle('low',state.starving||food<pop);
 }
 function renderHunger(){
  const noFood=foodUnits()===0,starvePct=Math.max(0,Math.min(100,state.hunger)),mealPct=Math.max(0,Math.min(100,(state.mealLeft/70)*100));
@@ -1030,7 +1065,7 @@ function renderDiscoveries(){
 function has(t){return [...state.cards.values()].some(c=>c.type===t);}
 function renderQuests(){
  const q=[
-  ['주변 탐험을 1회 마친다',state.stats.explores>=1&&!state.expedition],
+  ['자연 카드를 직접 탐험한다',state.stats.explores>=1],
   ['불을 안정적으로 피운다',has('campfire')],
   ['사슴을 잡아 가죽·뼈를 얻는다',state.discoveries.has('큰 사냥')],
   ['섬유를 꼬아 끈·실·직물을 만든다',has('wovenCloth')||has('wovenClothing')],
@@ -1045,9 +1080,9 @@ function renderQuests(){
 }
 function renderGoal(){
  const score=settlementScore();
- if(!has('campfire')){ui.goalTitle.textContent='첫 생활 기술 만들기';ui.goalText.textContent='작은 나무에서 나뭇가지를 모으고 돌을 다듬어 기본 도구를 만드세요.';ui.hint.textContent='사람+작은 나무 → 나뭇가지 · 돌×2 → 찍개 · 찍개+나뭇가지 → 돌도끼';return;}
+ if(!has('campfire')){ui.goalTitle.textContent='자연을 탐험하고 첫 도구 만들기';ui.goalText.textContent='사람을 숲·들판·강가·바위언덕에 올려 장소를 발견하고, 그곳에서 재료를 모으세요.';ui.hint.textContent='사람+자연 → 탐험 · 발견한 작은 나무→나뭇가지 · 돌×2→찍개';return;}
  if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
- if(score<9){ui.goalTitle.textContent='정착지를 키우기';ui.goalText.textContent='자원이 고갈되면 사람을 탐험에 보내 새 터를 찾고, 잡곡 농경·어로·목축을 연결하세요.';ui.hint.textContent='탐험 → 새 자원·동물 · 조·기장·콩밭×3 → 농장 · 울타리는 맹수 방어에도 도움';return;}
+ if(score<9){ui.goalTitle.textContent='자연을 개척해 정착지 키우기';ui.goalText.textContent='탐험으로 새 숲·초원·계곡·동굴을 찾고, 필요한 곳은 벌목장·밭·채석장으로 바꾸세요.';ui.hint.textContent='간돌도끼+숲→벌목장 · 돌괭이+들판→개간지 · 찍개+바위언덕→채석장';return;}
  ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 탐험·교환·방어와 함께 주거를 늘려 더 많은 일손을 받아들일 수 있습니다.';ui.hint.textContent='마을+곡물죽/훈제고기 → 새 구성원 · 천막·움집·마을은 인구 상한을 늘림';
 }
 
@@ -1069,7 +1104,6 @@ $('#startBtn').addEventListener('click',start);
 $('#retryBtn').addEventListener('click',reset);
 $('#restartBtn').addEventListener('click',reset);
 $('#continueBtn').addEventListener('click',()=>$('#milestoneLayer').classList.add('hidden'));
-$('#exploreBtn').addEventListener('click',explore);
 $('#tidyBtn').addEventListener('click',tidy);
 ui.tutorialSkip.addEventListener('click',()=>finishTutorial(true));
 ui.tutorialNext.addEventListener('click',()=>{if(tutorialActive()&&state.tutorial.step===TUTORIAL_STEPS.length-1)finishTutorial(false);});
