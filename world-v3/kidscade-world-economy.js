@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
 
   const BUY={
     market:{
@@ -33,7 +33,7 @@ export function createTownEconomy(ctx){
       lunch:{name:'도시락',price:36,type:'food',key:'cityLunch',qty:1}
     }
   };
-  const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,apple:14,pear:16,peach:18,orange:20,cherry:26,mushroom:10,milk:18,egg:12,truffle:38};
+  const SELL={wood:4,stone:4,iron:12,copper:24,quartz:28,gold:70,semiconductor:160,fish:14,rareFish:38,pearl:90,shell:7,potato:8,carrot:8,tomato:10,strawberry:13,corn:12,pumpkin:16,apple:14,pear:16,peach:18,orange:20,cherry:26,mushroom:10,milk:18,egg:12,truffle:38};
   const JOBS={
     market:{name:'마트 진열 돕기',reward:65,energy:12,hunger:5,steps:['빈 진열대 확인하기','상품 상자 옮기기','가격표 맞춰 놓기']},
     cafe:{name:'카페 설거지',reward:72,energy:14,hunger:6,steps:['컵 물에 불리기','접시 깨끗이 닦기','마른 그릇 정리하기']},
@@ -193,6 +193,12 @@ export function createTownEconomy(ctx){
   function claimFriendshipRewards(id){
     for(const r of FRIENDSHIP_REWARDS[id]||[])grantReward(id,r);
   }
+  function addFriendship(id,amount=1,{silent=false}={}){
+    const t=ensureState(),gain=Math.max(0,Math.floor(Number(amount)||0));if(!RESIDENTS[id]||gain<=0)return false;
+    t.friendship[id]=(t.friendship[id]||0)+gain;claimFriendshipRewards(id);persist();
+    if(!silent)toast((RESIDENTS[id]?.name||id)+' 친밀도 ♥ +'+gain);
+    return true;
+  }
   function nextRewardText(id){
     const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
     const pending=rewards.find(r=>f>=r.at&&!t.rewardClaims[id+':'+r.at]);
@@ -208,6 +214,23 @@ export function createTownEconomy(ctx){
     return 0;
   }
   function priceFor(kind,base){return Math.max(1,Math.round(base*(1-discountFor(kind))))}
+  const DAILY_DEAL_POOL={
+    market:['seedStrawberry','seedCorn','seedPumpkin','lunch','rugRound','teddy','fabric','paint'],
+    hardware:['wood3','stone3','floorLamp','nails','glass','wire'],
+    cafe:['toast','lunch']
+  };
+  function dailyDealKeys(kind){
+    const pool=DAILY_DEAL_POOL[kind]||[],seed=Number(getDailyState?.()?.shopSeed||0)>>>0,count=kind==='market'?3:kind==='hardware'?2:1;
+    return [...pool].sort((a,b)=>{
+      const ha=Math.imul((seed^(a.length*2654435761))>>>0,2246822519)>>>0;
+      const hb=Math.imul((seed^(b.length*2654435761))>>>0,2246822519)>>>0;
+      return ha-hb||a.localeCompare(b);
+    }).slice(0,count);
+  }
+  function shopPrice(kind,key,d){
+    const base=priceFor(kind,d.price),deal=dailyDealKeys(kind).includes(key);
+    return {price:deal?Math.max(1,Math.round(base*.80)):base,deal};
+  }
   function hour(){return ((prog().survival.time%1440)+1440)%1440/60}
   function isOpen(kind){
     const h=HOURS[kind];if(!h)return true;
@@ -226,19 +249,20 @@ export function createTownEconomy(ctx){
   }
   function shop(kind,npcName='상인'){
     if(!isOpen(kind)){closedPanel(kind,npcName);return;}
-    const p=prog(),t=ensureState(p),items=BUY[kind]||{};
-    const buyCards=Object.entries(items).map(([key,d])=>{const price=priceFor(kind,d.price),lock=itemUnlockState(d);return '<div class="item"><b>'+(lock.ok?'':'🔒 ')+d.name+'</b><div>'+price+' 코인'+(price<d.price?' <small>(단골 할인)</small>':'')+'</div>'+(lock.text?'<small>'+lock.text+'</small><br>':'')+'<button data-city-buy="'+kind+':'+key+'" '+(lock.ok?'':'disabled')+'>구매</button></div>';}).join('');
+    const p=prog(),t=ensureState(p),items=BUY[kind]||{},deals=dailyDealKeys(kind);
+    const buyCards=Object.entries(items).map(([key,d])=>{const pp=shopPrice(kind,key,d),price=pp.price,lock=itemUnlockState(d);return '<div class="item"><b>'+(lock.ok?'':'🔒 ')+(pp.deal?'✨ 오늘 특가 · ':'')+d.name+'</b><div>'+price+' 코인'+(pp.deal?' <small>(오늘 -20%)</small>':price<d.price?' <small>(단골 할인)</small>':'')+'</div>'+(lock.text?'<small>'+lock.text+'</small><br>':'')+'<button data-city-buy="'+kind+':'+key+'" '+(lock.ok?'':'disabled')+'>구매</button></div>';}).join('');
     const sellCards=kind==='market'?Object.entries(SELL).map(([key,price])=>'<div class="item"><b>'+itemName(key)+'</b><div>1개당 '+price+' 코인</div><button data-city-sell="'+key+'" '+((inv()[key]||0)>0?'':'disabled')+'>1개 팔기</button></div>').join(''):'';
     const delivery=kind==='cafe'&&t.delivery.active&&t.delivery.target==='cafe'
       ?'<h3>📦 배달</h3><div class="item"><b>현우의 배달 상자</b><div>하늘에게 전달하면 95코인</div><button data-city-delivery-complete="1">배달 완료</button></div>'
       :'';
     const title=kind==='market'?'씨앗마트':kind==='hardware'?'튼튼 철물점':'하늘 카페';
-    openPanel('<h2>'+npcName+' · '+title+'</h2><p><b>보유 '+t.coins+' 코인</b> · 영업 '+HOURS[kind].label+'</p><div class="grid">'+buyCards+'</div>'+(sellCards?'<h3>내 물건 팔기</h3><div class="grid">'+sellCards+'</div>':'')+delivery);
+    const dealNames=deals.map(key=>items[key]?.name).filter(Boolean).join(' · ');
+    openPanel('<h2>'+npcName+' · '+title+'</h2><p><b>보유 '+t.coins+' 코인</b> · 영업 '+HOURS[kind].label+'</p>'+(dealNames?'<p>✨ 오늘의 추천 · '+dealNames+'</p>':'')+'<div class="grid">'+buyCards+'</div>'+(sellCards?'<h3>내 물건 팔기</h3><div class="grid">'+sellCards+'</div>':'')+delivery);
   }
   function buy(kind,key){
     const d=BUY[kind]?.[key];if(!d)return;
     const unlock=itemUnlockState(d);if(!unlock.ok){toast(unlock.text);return;}
-    const p=prog(),t=ensureState(p),price=priceFor(kind,d.price);if(t.coins<price){toast('코인이 부족해요.');return;}
+    const p=prog(),t=ensureState(p),price=shopPrice(kind,key,d).price;if(t.coins<price){toast('코인이 부족해요.');return;}
     if(d.type==='inv'&&canCarryNewKey&&!canCarryNewKey(d.key)){toast('🎒 가방에 빈 칸이 없어요.');return;}
     if(d.type==='food'&&canCarryFoodKey&&!canCarryFoodKey(d.key)){toast('🎒 음식을 넣을 가방 칸이 없어요.');return;}
     t.coins-=price;
@@ -458,7 +482,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
     BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS
   };
 }
