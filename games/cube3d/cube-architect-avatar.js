@@ -1,14 +1,11 @@
-/* Pixel-avatar billboard adapter for Cube Architect.
-   Uses the same Kidscade Pixel Avatar v1 state and renderPreviewFrame API as the main site. */
+/* KIDSCADE Avatar v3 billboard adapter for Cube Architect.
+   Uses the shared v3 state and renderPreviewFrame API from the main site. */
 (()=>{
 'use strict';
 
-const STATE_KEY='kidscade-pixel-avatar-v1';
+const STATE_KEY='kidscade-avatar-v3';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
-const DEFAULTS={
-  hairId:'male-short-01',upper:1,lower:1,
-  eyes:1,eyebrows:1,noses:1,mouths:1,blush:0
-};
+const DEFAULTS={version:3,preset:'school-starter-01'};
 
 function host(){
   try{if(parent&&parent!==window&&parent.location.origin===location.origin)return parent}catch(_){}
@@ -23,23 +20,10 @@ function readEquipment(){
   try{saved=safeJson(h.localStorage?.getItem(STATE_KEY))}catch(_){}
   if(!saved)try{saved=safeJson(localStorage.getItem(STATE_KEY))}catch(_){}
   saved=saved&&typeof saved==='object'?saved:{};
-  return {
-    ...DEFAULTS,
-    ...saved,
-    hairId:typeof saved.hairId==='string'&&saved.hairId?saved.hairId:DEFAULTS.hairId,
-    upper:saved.upper==null?DEFAULTS.upper:(saved.upper?1:0),
-    lower:saved.lower==null?DEFAULTS.lower:(saved.lower?1:0),
-    eyes:Math.max(1,Math.min(8,parseInt(saved.eyes,10)||DEFAULTS.eyes)),
-    eyebrows:Math.max(1,Math.min(6,parseInt(saved.eyebrows,10)||DEFAULTS.eyebrows)),
-    noses:Math.max(1,Math.min(4,parseInt(saved.noses,10)||DEFAULTS.noses)),
-    mouths:Math.max(1,Math.min(8,parseInt(saved.mouths,10)||DEFAULTS.mouths)),
-    blush:Math.max(0,Math.min(4,parseInt(saved.blush,10)||0))
-  };
+  return {...DEFAULTS,...saved,preset:'school-starter-01'};
 }
 function signature(e=readEquipment()){
-  return [
-    e.hairId,e.upper,e.lower,e.eyes,e.eyebrows,e.noses,e.mouths,e.blush
-  ].join('|');
+  return [e.version||3,e.preset||'school-starter-01',JSON.stringify(e.assetIds||{})].join('|');
 }
 function avatarApi(){
   const h=host();
