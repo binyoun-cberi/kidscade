@@ -1457,6 +1457,12 @@ const DEFAULT_FACE_COLORS=['#ef5350','#42a5f5','#ffee58','#8d6e63','#66bb6a','#a
 const freeCubeGeo=new THREE.BoxGeometry(1,1,1);
 const breakParticleGeo=new THREE.BoxGeometry(.12,.12,.12);
 const fluidGeo=new THREE.BoxGeometry(1,.84,1);
+function fluidHeight(data){
+  if(!data||!blockDef(data).liquid)return 0;
+  if(data.naturalSea)return .84;
+  const level=THREE.MathUtils.clamp(Math.round(Number(data.level)||4),1,4);
+  return [.34,.50,.67,.84][level-1];
+}
 const doorGeo=new THREE.BoxGeometry(.14,1.92,.9);
 const slabGeo=new THREE.BoxGeometry(1,.5,1);
 const paneGeo=new THREE.BoxGeometry(.12,.92,1);
@@ -2128,7 +2134,8 @@ function makeWorldMesh(x,y,z,data){
     root=new THREE.Mesh(fireGeo,new THREE.MeshStandardMaterial({color:0xff8c32,emissive:0xff4b18,emissiveIntensity:1.15,transparent:true,opacity:.84,roughness:.5}));
     root.position.set(x,y+.42,z);const light=new THREE.PointLight(0xff692c,1.4,6,2);light.position.y=.35;root.add(light);
   }else if(type==='water'||type==='lava'){
-    root=new THREE.Mesh(fluidGeo,materialFor(type));root.position.set(x,y+.42,z);
+    const h=fluidHeight(data);
+    root=new THREE.Mesh(fluidGeo,materialFor(type));root.scale.y=h/.84;root.position.set(x,y+h/2,z);
   }else if(type==='slab'){
     root=new THREE.Mesh(slabGeo,materialFor('planks'));root.position.set(x,y+.25,z);
   }else if(type==='glassPane'){
@@ -2947,7 +2954,11 @@ function placeFreeBlock(hit){
     toast('E를 눌러 가방에서 설치할 재료를 골라 보세요.');return;
   }
   const p=placementTarget(hit);
-  if(!p||!inWorld(p.x,p.y,p.z)||getBlock(p.x,p.y,p.z))return;
+  if(!p||!inWorld(p.x,p.y,p.z))return;
+  const occupied=getBlock(p.x,p.y,p.z);
+  const replaceable=occupied&&(blockDef(occupied).liquid||['fire','flower','reed','sapling'].includes(occupied.type))&&
+    !(['water','lava'].includes(selectedType)&&blockDef(occupied).liquid);
+  if(occupied&&!replaceable)return;
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
     p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return;
   const supportError=placementSupportError(selectedType,p);
@@ -2964,6 +2975,7 @@ function placeFreeBlock(hit){
     }
   }
   const facing=facingFromYaw();
+  if(replaceable)removeWorldBlockData(p.x,p.y,p.z,true);
   if(selectedType==='cuboid'){
     if(!placeCustomCuboid(p))return;
   }else if(selectedType==='door'){
@@ -3700,6 +3712,7 @@ function walkCreatureWithDetour(root,dir,speed,dt,allowWater,t){
   }
   u.detourSide=-side;u.detourUntil=t+260;return false;
 }
+function safeReturnEyeY(){return getHighestSolidY(0,5,WORLD_MAX_Y)+2.62}
 function updateCreatureHealthUi(){
   const el=$('survivalHealth');if(!el)return;
   el.classList.toggle('hidden',gameFreeMode!=='survival');
@@ -3707,7 +3720,7 @@ function updateCreatureHealthUi(){
   el.title='생명 '+survivalHealth+'/5';
 }
 function returnAfterCreatureDefeat(){
-  camera.position.set(0,terrainHeight(0,5)+2.62,5);freePhysicsY=camera.position.y;
+  camera.position.set(0,safeReturnEyeY(),5);freePhysicsY=camera.position.y;
   freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;survivalBreath=100;freeFallPeakY=freePhysicsY;
   streamWorldMeshes(true);
   toast('기절해서 시작 지점으로 돌아왔어요. 가방의 재료는 그대로예요.');
@@ -3840,12 +3853,14 @@ function updateCritters(dt,t){
       if(weather==='storm')u.speed=.28;
       const nx=c.position.x+Math.sin(u.dir)*u.speed*dt,nz=c.position.z+Math.cos(u.dir)*u.speed*dt;
       if(Math.abs(nx-u.homeX)>7||Math.abs(nz-u.homeZ)>7||
-        !inWorld(Math.round(nx),0,Math.round(nz))||
-        terrainHeight(Math.round(nx),Math.round(nz))<0){
+        !inWorld(Math.round(nx),0,Math.round(nz))){
         u.dir+=Math.PI*.7;continue;
       }
-      c.position.x=nx;c.position.z=nz;
-      c.position.y=getHighestSolidY(nx,nz)+1;c.rotation.y=u.dir+Math.PI;
+      const nextY=creatureGroundY(nx,nz,c.position.y),cx=Math.round(nx),cz=Math.round(nz);
+      const feetCell=getBlock(cx,Math.floor(nextY),cz),supportCell=getBlock(cx,Math.floor(nextY)-1,cz);
+      const danger=[feetCell?.type,supportCell?.type].some(type=>['water','lava','fire','cactus'].includes(type));
+      if(Math.abs(nextY-c.position.y)>1.15||danger){u.dir+=Math.PI*.7;continue}
+      c.position.x=nx;c.position.z=nz;c.position.y=nextY;c.rotation.y=u.dir+Math.PI;
     }else if(u.kind==='bird'){
       u.angle+=dt*u.speed*(weather==='storm'?.6:1);c.position.x=u.centerX+Math.sin(u.angle)*u.radius;c.position.z=u.centerZ+Math.cos(u.angle)*u.radius;
       c.position.y=u.baseY+Math.sin(t*.0015+u.angle)*1.2+(weather==='rain'?-1:0);c.rotation.y=u.angle;const flap=Math.sin(t*.014)*.35;u.wing1.rotation.z=flap;u.wing2.rotation.z=-flap;
@@ -3947,15 +3962,15 @@ function stepHeightAt(px,eyeY,pz,maxStep=.56){
 function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera.position.z){
   const r=.30,feet=eyeY-1.62,state={water:false,lava:false,fire:false,cactus:false,headUnderWater:false};
   for(const ox of [-r,0,r])for(const oz of [-r,0,r])for(const sy of [feet+.08,feet+.62,eyeY-.16]){
-    const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz),type=getBlock(x,y,z)?.type;
-    if(type==='water')state.water=true;
-    else if(type==='lava')state.lava=true;
+    const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz),cell=getBlock(x,y,z),type=cell?.type;
+    if(type==='water'&&sy<y+fluidHeight(cell))state.water=true;
+    else if(type==='lava'&&sy<y+fluidHeight(cell))state.lava=true;
     else if(type==='fire')state.fire=true;
     else if(type==='cactus')state.cactus=true;
   }
   const headY=eyeY-.16,hx=blockCoordFromWorld(px),hy=Math.floor(headY),hz=blockCoordFromWorld(pz);
   const headBlock=getBlock(hx,hy,hz);
-  state.headUnderWater=headBlock?.type==='water'&&headY<hy+.84;
+  state.headUnderWater=headBlock?.type==='water'&&headY<hy+fluidHeight(headBlock);
   return state;
 }
 function damageByEnvironment(state,t){
@@ -4088,7 +4103,7 @@ function renderSurvivalSafety(shelter){
 function emergencyReturn(){
   if(gameFreeMode!=='survival'||survivalExposure<85||
     performance.now()-lastEmergencyReturn<90000)return;
-  camera.position.set(0,terrainHeight(0,5)+2.62,5);
+  camera.position.set(0,safeReturnEyeY(),5);
   freePhysicsY=camera.position.y;
   freeVelocityY=0;onGround=true;survivalExposure=15;survivalBreath=100;freeFallPeakY=freePhysicsY;
   lastEmergencyReturn=performance.now();streamWorldMeshes(true);
