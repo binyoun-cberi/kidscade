@@ -1258,24 +1258,29 @@ function sleep(){
   s.day+=1;s.time=420;
   persist();updateStatus();toast('아침까지 푹 쉬었어요. 체력이 회복됐어요.');
 }
+let fishingBusy=false;
 function fish(place='pond'){
   const p=prog(),d=devState(),required=place==='beach'?3:place==='river'?2:1;
+  if(fishingBusy){toast('🎣 이미 낚싯줄을 드리우고 있어요.');return}
   if(d.fishingLevel<required){toast('🎣 낚시터 '+required+'단계에서 이용할 수 있어요. 마을 성장 보드에서 확장해 보세요.');return}
   if(!canCarryNewKey('fish')){toast('🎒 물고기를 넣을 가방 칸이 없어요.');return}
   if(p.energy<3){toast('체력이 부족해요.');return}
-  p.energy=Math.max(0,p.energy-3);toast(place==='beach'?'바닷가 낚시 중…':place==='river'?'강가 낚시 중…':'연못 낚시 중…');
+  fishingBusy=true;p.energy=Math.max(0,p.energy-3);persist();updateStatus();
+  toast(place==='beach'?'바닷가 낚시 중…':place==='river'?'강가 낚시 중…':'연못 낚시 중…');
   setTimeout(()=>{
-    const bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
-    addInventoryItem('fish',gain,{silent:true});p.fishDex=p.fishDex||{};
-    const label=place==='beach'?'해변 물고기':place==='river'?'강가 물고기':'연못 물고기';
-    p.fishDex[label]=(p.fishDex[label]||0)+gain;
-    if(place==='river'&&Math.random()<.24&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
-    if(place==='beach'){
-      if(Math.random()<.32&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
-      if(Math.random()<.16&&addInventoryItem('pearl',1,{silent:true}))extras.push('진주 +1');
-    }
-    persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);
-    toast('물고기 +'+gain+(extras.length?' · '+extras.join(' · '):''));
+    try{
+      const bonus=companionId()==='parrot'&&Math.random()<.32?1:0,gain=1+bonus,extras=[];
+      addInventoryItem('fish',gain,{silent:true});p.fishDex=p.fishDex||{};
+      const label=place==='beach'?'해변 물고기':place==='river'?'강가 물고기':'연못 물고기';
+      p.fishDex[label]=(p.fishDex[label]||0)+gain;
+      if(place==='river'&&Math.random()<.24&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
+      if(place==='beach'){
+        if(Math.random()<.32&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
+        if(Math.random()<.16&&addInventoryItem('pearl',1,{silent:true}))extras.push('진주 +1');
+      }
+      persist();setAvatarAction('smile',900);updateStatus();worldAudio.sfx('pickup',.18);
+      toast('물고기 +'+gain+(extras.length?' · '+extras.join(' · '):''));
+    }finally{fishingBusy=false}
   },850);
 }
 function mineIron(){
