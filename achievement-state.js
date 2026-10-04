@@ -400,7 +400,7 @@
   function recordResult(detail = {}) {
     const gameId = String(detail.gameId || '').trim();
     const scope = String(detail.scope || '').trim().toLowerCase();
-    if (!gameId || !scope || gameId === 'kidscade') return loadAchievementState();
+    if (!gameId || !['match','session','run','stage','shift','mission','campaign','creation'].includes(scope) || gameId === 'kidscade') return loadAchievementState();
     const state = loadAchievementState();
     const stats = ensureGameStats(state, gameId);
     const unlockedIds = [];
