@@ -6,7 +6,7 @@ const SHEET_URL=ROOT+'/school-starter-sheet.png';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-3';
+const PREVIEW_VERSION='pixel-v3-school-starter-4';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -62,9 +62,9 @@ let previewRaf=0;
 let lastFrameIndex=-1;
 let seeds=0;
 let skinPalette=[];
+const frameSkinPalettes=new Map();
+const skinRemapCache=new Map();
 let skinBaseHex='#fce2d2';
-let skinRemapColor='';
-let skinRemap=new Map();
 let state={version:3,setId:'school-starter-01',skinColor:null};
 
 function safeJson(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
@@ -113,30 +113,127 @@ function loadSkinPalette(){
     const shade=Number(entry?.shade);
     if(!hex||!Number.isFinite(shade)||shade<=0)return null;
     const [r,g,b]=hexToRgb(hex);
-    return {key:colorKey(r,g,b),source:hex,shade:Math.max(.05,Math.min(1.25,shade)),role:String(entry?.role||'')};
+    return {key:colorKey(r,g,b),source:hex,r,g,b,shade:Math.max(.05,Math.min(1.25,shade)),role:String(entry?.role||'')};
   }).filter(Boolean);
   if(!skinPalette.length)throw new Error('v3 피부 팔레트가 등록되지 않았습니다.');
-  skinRemapColor='';skinRemap=new Map();
+  frameSkinPalettes.clear();
+  skinRemapCache.clear();
   return skinPalette;
 }
-function ensureSkinRemap(){
+function medianNumber(values){
+  if(!values.length)return 0;
+  const sorted=[...values].sort((x,y)=>x-y);
+  return sorted[Math.floor(sorted.length/2)];
+}
+function rgbDistance(a,b){
+  const dr=a[0]-b[0],dg=a[1]-b[1],db=a[2]-b[2];
+  return Math.sqrt(dr*dr+dg*dg+db*db);
+}
+function frameImageData(frameId){
+  const index=manifest?.frameOrder?.indexOf(frameId)??-1;
+  if(index<0||!sheet)return null;
+  const scratch=document.createElement('canvas');
+  scratch.width=SIZE;scratch.height=SIZE;
+  const c=scratch.getContext('2d',{alpha:true});
+  c.imageSmoothingEnabled=false;
+  c.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
+  return c.getImageData(0,0,SIZE,SIZE);
+}
+function discoverSourceFrameSkinPalette(frameId){
+  const image=frameImageData(frameId);
+  if(!image)return [];
+  const data=image.data,config=manifest?.customization?.skinColor||{};
+  const points=Array.isArray(config.samplePoints)&&config.samplePoints.length?config.samplePoints:(eyeCatalog?.skinSamples||[[64,56]]);
+  const sampled=[];
+  for(const point of points){
+    const x=Math.round(Number(point?.[0])||0),y=Math.round(Number(point?.[1])||0);
+    if(x<0||y<0||x>=SIZE||y>=SIZE)continue;
+    const i=(y*SIZE+x)*4;
+    if(data[i+3]>200)sampled.push([data[i],data[i+1],data[i+2]]);
+  }
+  if(!sampled.length)return [];
+  const anchor=[0,1,2].map(axis=>medianNumber(sampled.map(rgb=>rgb[axis])));
+  const region=config.sampleRegion||{},x0=Math.max(0,Math.round(Number(region.x)||44)),y0=Math.max(0,Math.round(Number(region.y)||42));
+  const w=Math.max(1,Math.round(Number(region.w)||42)),h=Math.max(1,Math.round(Number(region.h)||30));
+  const maxDistance=Math.max(1,Number(region.maxMatchDistance)||88),minCount=Math.max(1,Math.round(Number(region.minCount)||2));
+  const counts=new Map();
+  for(let y=y0;y<Math.min(SIZE,y0+h);y++){
+    for(let x=x0;x<Math.min(SIZE,x0+w);x++){
+      const i=(y*SIZE+x)*4,a=data[i+3];
+      if(a<200)continue;
+      const rgbaKey=[data[i],data[i+1],data[i+2],a].join(',');
+      if(hairProtectedKeys.has(rgbaKey))continue;
+      const key=colorKey(data[i],data[i+1],data[i+2]);
+      const rec=counts.get(key)||{key,r:data[i],g:data[i+1],b:data[i+2],count:0};
+      rec.count++;counts.set(key,rec);
+    }
+  }
+  const candidates=[...counts.values()].filter(item=>item.count>=minCount);
+  const baseRgb=hexToRgb(skinBaseHex),used=new Set(),out=[];
+  for(const src of skinPalette){
+    const expected=[
+      Math.max(0,Math.min(255,anchor[0]+(src.r-baseRgb[0]))),
+      Math.max(0,Math.min(255,anchor[1]+(src.g-baseRgb[1]))),
+      Math.max(0,Math.min(255,anchor[2]+(src.b-baseRgb[2])))
+    ];
+    let best=null,bestDistance=Infinity;
+    for(const candidate of candidates){
+      if(used.has(candidate.key))continue;
+      const distance=rgbDistance([candidate.r,candidate.g,candidate.b],expected);
+      if(distance<bestDistance){best=candidate;bestDistance=distance}
+    }
+    if(best&&bestDistance<=maxDistance){
+      used.add(best.key);
+      out.push({key:best.key,sourceFrame:frameId,shade:src.shade,role:src.role});
+    }
+  }
+  const anchorKey=colorKey(anchor[0],anchor[1],anchor[2]);
+  if(!out.some(item=>item.key===anchorKey))out.unshift({key:anchorKey,sourceFrame:frameId,shade:1,role:'frame-base'});
+  return out;
+}
+function loadFrameSkinPalettes(){
+  frameSkinPalettes.clear();
+  const config=manifest?.customization?.skinColor||{};
+  const sourceFrames=Array.isArray(config.sourceFrames)&&config.sourceFrames.length?config.sourceFrames:(hairCatalog?.sourceFrames||['stand-01']);
+  for(const frameId of sourceFrames){
+    const discovered=discoverSourceFrameSkinPalette(frameId);
+    frameSkinPalettes.set(frameId,discovered.length?discovered:skinPalette);
+  }
+  skinRemapCache.clear();
+  return frameSkinPalettes;
+}
+function skinSourceFrames(frameId){
+  const configured=manifest?.customization?.skinColor?.frameSources?.[frameId];
+  if(Array.isArray(configured)&&configured.length)return configured;
+  return [frameId];
+}
+function skinPaletteForFrame(frameId){
+  const merged=new Map();
+  for(const sourceId of skinSourceFrames(frameId)){
+    const palette=frameSkinPalettes.get(sourceId)||skinPalette;
+    for(const item of palette)if(!merged.has(item.key))merged.set(item.key,item);
+  }
+  return [...merged.values()];
+}
+function ensureSkinRemap(frameId='stand-01'){
   const target=normalizeHexColor(state.skinColor);
   if(!target||!skinPalette.length)return null;
-  if(skinRemapColor===target&&skinRemap.size)return skinRemap;
-  const targetRgb=hexToRgb(target);
-  const next=new Map();
-  for(const src of skinPalette){
+  const cacheKey=target+'|'+frameId;
+  if(skinRemapCache.has(cacheKey))return skinRemapCache.get(cacheKey);
+  const targetRgb=hexToRgb(target),next=new Map();
+  for(const src of skinPaletteForFrame(frameId)){
     next.set(src.key,targetRgb.map(value=>Math.max(0,Math.min(255,Math.round(value*src.shade)))));
   }
-  skinRemapColor=target;skinRemap=next;
+  skinRemapCache.set(cacheKey,next);
   return next;
 }
-function recolorSkin(target){
-  const remap=ensureSkinRemap();
+function recolorSkin(target,frameId='stand-01'){
+  const remap=ensureSkinRemap(frameId);
   if(!remap?.size)return;
   const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
   for(let i=0;i<data.length;i+=4){
     if(data[i+3]<1)continue;
+    if(hairProtectedKeys.has([data[i],data[i+1],data[i+2],data[i+3]].join(',')))continue;
     const replacement=remap.get(colorKey(data[i],data[i+1],data[i+2]));
     if(!replacement)continue;
     data[i]=replacement[0];data[i+1]=replacement[1];data[i+2]=replacement[2];
@@ -293,13 +390,13 @@ function sampledHairSkin(image,frameId){
   if(!values.length)return hexToRgb(state.skinColor||skinBaseHex);
   const median=index=>values.map(v=>v[index]).sort((a,b)=>a-b)[Math.floor(values.length/2)];return [median(0),median(1),median(2)];
 }
-function currentHairOutline(){
-  const source=normalizeHexColor(hairCatalog?.clear?.outlineSource)||'#7b5053',[r,g,b]=hexToRgb(source),remap=ensureSkinRemap();
+function currentHairOutline(frameId='stand-01'){
+  const source=normalizeHexColor(hairCatalog?.clear?.outlineSource)||'#7b5053',[r,g,b]=hexToRgb(source),remap=ensureSkinRemap(frameId);
   return remap?.get(colorKey(r,g,b))||[r,g,b];
 }
 function isHairProtected(data,i){return hairProtectedKeys.has([data[i],data[i+1],data[i+2],data[i+3]].join(','))}
 function clearBaseHair(target,frameId){
-  const image=target.getImageData(0,0,SIZE,SIZE),data=image.data,skin=sampledHairSkin(image,frameId),outline=currentHairOutline();
+  const image=target.getImageData(0,0,SIZE,SIZE),data=image.data,skin=sampledHairSkin(image,frameId),outline=currentHairOutline(frameId);
   for(const [x,y] of hairMaskCoords('transparent',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=0;data[i+1]=0;data[i+2]=0;data[i+3]=0}
   for(const [x,y] of hairMaskCoords('skin',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=skin[0];data[i+1]=skin[1];data[i+2]=skin[2];data[i+3]=255}
   for(const [x,y] of hairMaskCoords('outline',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=outline[0];data[i+1]=outline[1];data[i+2]=outline[2];data[i+3]=255}
@@ -338,8 +435,8 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId()){
   target.clearRect(0,0,SIZE,SIZE);
   target.imageSmoothingEnabled=false;
   target.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
-  recolorSkin(target);
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
+  recolorSkin(target,frameId);
   const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
   if(customHair)clearBaseHair(target,frameId);
   applyEyePart(target,frameId,eyeId);
@@ -482,7 +579,7 @@ function flash(text){
   flash.t=setTimeout(()=>toast.classList.remove('show'),1400);
 }
 function refreshSkinPreview(){
-  skinRemapColor='';skinRemap=new Map();
+  skinRemapCache.clear();
   const stand=animationFor('stand')[0]||{index:0};
   drawFrame(staticCtx,stand.index||0);
   setPreviewMode(previewMode);
@@ -554,7 +651,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-3',
+  version:'pixel-v3-school-starter-4',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -588,6 +685,7 @@ window.KidscadeAvatarShop={
   await loadEyeCatalog();
   await loadHairCatalog();
   loadSkinPalette();
+  loadFrameSkinPalettes();
   drawStatic();
   styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 피부색 자유 설정 · 23프레임';
   selectTab('skin');
