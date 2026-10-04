@@ -206,14 +206,13 @@ test('Driver License v13 steering returns quickly instead of feeling boat-like',
 });
 
 
-test('driving test uses QA-gated shared community 3D scenery',()=>{
+test('driving test keeps QA-gated shared nature only where it fits the exam campus',()=>{
   assert.match(js,/shared-community-3d\.js/);
   assert.match(js,/shared-community-3d-runtime\.js/);
   assert.match(js,/prepareShared3DObject/);
-  for(const id of ['nature.commonTreeA','prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(js,/sharedHouse/);
-  assert.match(js,/sharedBus/);
-  assert.match(html,/driver-license\.js\?v=17/);
+  for(const id of ['nature.commonTreeA','nature.commonTreeB','nature.pineTreeA','nature.grass'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
+  for(const id of ['prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.doesNotMatch(js,new RegExp(id.replace(/\./g,'\\.')));
+  assert.match(html,/driver-license\.js\?v=18/);
 });
 
 
@@ -221,7 +220,7 @@ test('Driver License v16 respects shared 3D performance policy',()=>{
   assert.match(js,/shared3DShouldLoad/);
   assert.match(js,/sharedCoarse/);
   assert.match(js,/shadows:key!==\'sharedGrass\'/);
-  assert.match(html,/driver-license\.js\?v=17/);
+  assert.match(html,/driver-license\.js\?v=18/);
 });
 
 
@@ -244,4 +243,32 @@ test('Driver License v17 requires the T-parking confirmation line',()=>{
 test('Driver License v17 suppresses coaching text during exam mode',()=>{
   assert.match(js,/mode==='exam'&&gameState==='playing'/);
   assert.match(js,/기능시험에서는 공략 설명을 숨기고/);
+});
+
+
+test('Driver License v18 rebuilds the grounds as an exam campus',()=>{
+  for(const token of ['construction-fence.glb','building-type-a.glb','building-type-b.glb','hatchback-sports.glb']){
+    assert.match(js,new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  }
+  assert.match(js,/const CAMPUS_BUILDINGS=/);
+  assert.match(js,/const WAITING_CARS=/);
+  assert.match(js,/makeParkingLot\(18,24,17\.5,70\.5\)/);
+  assert.match(js,/시험차량 대기/);
+  assert.doesNotMatch(js,/sharedWaterTower/);
+  assert.doesNotMatch(js,/sharedWell/);
+});
+
+test('Driver License v18 turns the old L course into a return-lane campus route',()=>{
+  assert.match(js,/const returnLane=Math\.abs\(x-110\)<=4\.55/);
+  assert.match(js,/makeEnhancedRoad\(9,52,110,46/);
+  assert.match(js,/종료장 ↑/);
+  assert.match(js,/종료장 좌측 방향지시등 미사용/);
+  assert.match(js,/const inFinishLane=Math\.abs\(car\.x-110\)<4\.7&&car\.z>64/);
+});
+
+test('Driver License v18 uses road markings and practice-only parking sensor emphasis',()=>{
+  assert.match(js,/makeGroundLabel\('출발'/);
+  assert.match(js,/makeGroundLabel\('20 km\/h'/);
+  assert.match(js,/makeCrosswalk\(0,25\.6,'z'\)/);
+  assert.match(js,/parkingSensorLine\.material\.color\.set\(mode==='practice'\?0x46d9ff:0xffffff\)/);
 });
