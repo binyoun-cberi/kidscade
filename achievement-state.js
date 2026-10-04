@@ -35,11 +35,6 @@
     { id:'infinite_gugudan.combo_20', gameId:'infinite_gugudan', icon:'🌟', type:'secret', hidden:true, target:20, title:'무한루 폭주', description:'한 경기에서 최대 20콤보를 달성하세요.' },
     { id:'infinite_gugudan.correct_25', gameId:'infinite_gugudan', icon:'🎯', type:'challenge', target:25, title:'계산 기관총', description:'한 경기에서 25문제 이상 정답을 맞히세요.' },
     { id:'infinite_gugudan.fraction_win', gameId:'infinite_gugudan', icon:'➗', type:'challenge', title:'분수의 고수', description:'분수 연산으로 CPU 대결에서 승리하세요.' },
-
-    { id:'low_one_stroke.first_route', gameId:'low_one_stroke', icon:'🛵', type:'normal', title:'첫 배달 성공', description:'한붓쓱에서 처음으로 모든 골목을 한 번씩 지나 배달을 완료하세요.' },
-    { id:'low_one_stroke.clean_route', gameId:'low_one_stroke', icon:'✨', type:'secret', hidden:true, title:'한 번에 쓱!', description:'힌트·되돌리기·초기화 없이 한 스테이지를 완료하세요.' },
-    { id:'low_one_stroke.stages_10', gameId:'low_one_stroke', icon:'🗺️', type:'challenge', target:10, title:'골목길 탐험가', description:'서로 다른 스테이지 10개를 완료하세요.' },
-    { id:'low_one_stroke.master_50', gameId:'low_one_stroke', icon:'🏙️', type:'challenge', target:50, title:'한붓 배달 마스터', description:'50개 스테이지를 모두 완료하세요.' }
   ].map(def => Object.freeze({ target:1, hidden:false, enabled:true, trigger:'', rule:null, ...def }));
 
   const definitionMap = new Map(BASE_DEFINITIONS.map(def => [def.id, def]));
