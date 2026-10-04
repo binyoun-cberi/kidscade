@@ -3508,7 +3508,7 @@ function createRabbit(x,z){
   const body=new THREE.Mesh(new THREE.BoxGeometry(.62,.42,.42),fur),head=new THREE.Mesh(new THREE.BoxGeometry(.34,.34,.34),fur);
   body.position.y=.28;head.position.set(0,.42,-.36);
   const e1=new THREE.Mesh(new THREE.BoxGeometry(.1,.38,.1),pink),e2=e1.clone();e1.position.set(-.1,.72,-.37);e2.position.set(.1,.72,-.37);
-  g.add(body,head,e1,e2);g.position.set(x,getHighestSolidY(x,z,8)+1,z);g.userData={kind:'rabbit',homeX:x,homeZ:z,dir:Math.random()*Math.PI,speed:.45+.25*Math.random(),turn:1+Math.random()*3};scene.add(g);return g;
+  g.add(body,head,e1,e2);g.position.set(x,creatureGroundY(x,z,terrainHeight(x,z)+1),z);g.userData={kind:'rabbit',homeX:x,homeZ:z,dir:Math.random()*Math.PI,speed:.45+.25*Math.random(),turn:1+Math.random()*3};scene.add(g);return g;
 }
 function createBird(x,z,index){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(.42,.25,.5),critterMaterial(index%2?0x5f87b8:0xb46f57));
@@ -3746,7 +3746,7 @@ function walkCreatureWithDetour(root,dir,speed,dt,allowWater,t){
   }
   u.detourSide=-side;u.detourUntil=t+260;return false;
 }
-function safeReturnEyeY(){return getHighestSolidY(0,5,WORLD_MAX_Y)+2.62}
+function safeReturnEyeY(){return groundTopBelow(0,WORLD_MAX_Y+1.62,5)+1.62}
 function updateCreatureHealthUi(){
   const el=$('survivalHealth');if(!el)return;
   el.classList.toggle('hidden',gameFreeMode!=='survival');
