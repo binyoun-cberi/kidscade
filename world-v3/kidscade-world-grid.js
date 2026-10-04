@@ -14,6 +14,7 @@ export const WORLD_GRID={
   farm:{id:'farm',name:'농장',cx:12,cz:0,color:0x94b76b,kind:'life',hint:'자유 재배·제작'},
   quarry:{id:'quarry',name:'광산',cx:36,cz:0,color:0x918b76,kind:'resource',hint:'돌·철광석'},
   camp:{id:'camp',name:'야영지',cx:-36,cz:24,color:0x718f55,kind:'nature',hint:'모닥불·휴식'},
+  museum:{id:'museum',name:'씨앗 자연박물관',cx:-36,cz:48,color:0xb8b29f,kind:'city',hint:'도감·기증·전시'},
   cityMarket:{id:'cityMarket',name:'씨앗마을 · 상점가',cx:-12,cz:24,color:0xbab29d,kind:'city',hint:'마트·철물점'},
   cityLeisure:{id:'cityLeisure',name:'씨앗마을 · 광장/놀이',cx:12,cz:24,color:0xc2ba9e,kind:'city',hint:'카페·아케이드·광장'},
   cityCivic:{id:'cityCivic',name:'씨앗마을 · 공공시설',cx:-12,cz:48,color:0xb3ad99,kind:'city',hint:'도서관·마을회관'},
