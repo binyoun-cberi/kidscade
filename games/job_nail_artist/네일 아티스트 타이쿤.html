@@ -94,6 +94,90 @@
         }
         .modal-content { animation: slideUp 0.3s ease-out forwards; }
         
+        .customer-chip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            margin: 0.15rem auto 0.45rem;
+            color: #9d174d;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .quality-box {
+            min-height: 2.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.8rem;
+            background: #fdf2f8;
+            border: 1px solid #fbcfe8;
+            color: #9d174d;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .submit-work {
+            min-height: 2.75rem;
+            padding: 0 0.9rem;
+            border-radius: 0.8rem;
+            background: #ec4899;
+            color: white;
+            font-size: 0.82rem;
+            font-weight: 800;
+            box-shadow: 0 4px 0 #be185d;
+        }
+        .submit-work:active { transform: translateY(2px); box-shadow: 0 2px 0 #be185d; }
+        .upgrade-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.55rem; margin-bottom:1rem; }
+        .upgrade-card {
+            border: 1px solid #fbcfe8;
+            border-radius: 0.9rem;
+            padding: 0.6rem;
+            background: #fff7fb;
+            text-align: left;
+        }
+        .upgrade-card b { display:block; color:#9d174d; font-size:0.78rem; }
+        .upgrade-card span { display:block; color:#6b7280; font-size:0.66rem; line-height:1.25; margin:0.18rem 0 0.45rem; }
+        .upgrade-card button {
+            width:100%;
+            border-radius:0.65rem;
+            padding:0.45rem 0.35rem;
+            background:#f472b6;
+            color:white;
+            font-size:0.7rem;
+            font-weight:800;
+        }
+        .upgrade-card button:disabled { background:#d1d5db; color:#6b7280; }
+        .toast {
+            position:absolute;
+            left:50%;
+            bottom:1rem;
+            transform:translate(-50%, 12px);
+            z-index:120;
+            max-width:88%;
+            padding:0.65rem 0.9rem;
+            border-radius:999px;
+            background:rgba(31,41,55,.94);
+            color:white;
+            font-size:0.75rem;
+            opacity:0;
+            pointer-events:none;
+            transition:.18s ease;
+            text-align:center;
+        }
+        .toast.show { opacity:1; transform:translate(-50%, 0); }
+        .nail-bed.working::after {
+            content:'';
+            position:absolute;
+            inset:-20% auto -20% -45%;
+            width:32%;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);
+            transform:skewX(-18deg);
+            animation:shineSweep .24s ease-out;
+            pointer-events:none;
+            z-index:5;
+        }
+        @keyframes shineSweep { to { left:120%; } }
+
         .hide { display: none !important; }
         
         /* 스크롤바 숨기기 */
@@ -116,7 +200,7 @@
             </div>
             <div class="flex flex-col items-end">
                 <div class="flex items-center gap-2 mb-1">
-                    <div class="text-xs opacity-80">평판</div>
+                    <div class="text-xs opacity-80">평판 · <span id="shop-level-display">샵 Lv.1</span></div>
                     <button onclick="resetGame()" class="text-[10px] bg-red-400 px-2 py-0.5 rounded shadow">초기화</button>
                 </div>
                 <div class="text-sm tracking-widest" id="rep-display">⭐⭐⭐</div>
@@ -130,6 +214,7 @@
                     <h3 class="text-pink-600 text-sm font-bold">손님의 주문</h3>
                     <span id="difficulty-badge" class="text-xs bg-pink-500 text-white px-2 py-0.5 rounded-full">Lv.1</span>
                 </div>
+                <div id="customer-chip" class="customer-chip">🙂 첫 방문 손님 · 편하게 해주세요</div>
                 <p id="order-text" class="text-sm text-gray-800 mb-2 leading-tight">손님을 기다리는 중...</p>
                 <div id="target-pattern" class="flex justify-center gap-2 mb-2 h-10"></div>
                 <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
@@ -149,6 +234,10 @@
                     <button onclick="switchTab('stickers')" id="tab-btn-stickers" class="flex-1 py-2 text-sm font-bold text-gray-400 border-b-2 border-transparent transition-colors">파츠</button>
                 </div>
                 <div id="palette-content" class="p-3 flex justify-center gap-3 items-center min-h-[4.5rem] bg-white"></div>
+                <div class="grid grid-cols-[1fr_auto] gap-2 px-3 pb-3">
+                    <div id="quality-preview" class="quality-box">현재 완성도 0%</div>
+                    <button id="submit-work" type="button" class="submit-work" onclick="submitCustomer(false)">✨ 완성했어요</button>
+                </div>
             </div>
         </main>
 
@@ -206,11 +295,22 @@
                         <span>오늘 수입:</span>
                         <span id="end-day-income" class="font-bold text-green-500">+$0</span>
                     </div>
-                    <div id="rent-section" class="flex justify-between border-t pt-2 hide text-red-500">
-                        <span>월세 및 관리비 (7일차):</span>
-                        <span id="end-day-rent" class="font-bold">-$200</span>
+                    <div class="flex justify-between border-t pt-2 text-orange-500">
+                        <span>재료·소모품:</span>
+                        <span id="end-day-supplies" class="font-bold">-$0</span>
+                    </div>
+                    <div id="rent-section" class="flex justify-between pt-2 hide text-red-500">
+                        <span>주간 임대료:</span>
+                        <span id="end-day-rent" class="font-bold">-$0</span>
+                    </div>
+                    <div class="flex justify-between border-t pt-2 mt-2">
+                        <span class="font-bold">오늘 순수익:</span>
+                        <span id="end-day-net" class="font-bold text-pink-600">$0</span>
                     </div>
                 </div>
+
+                <div class="text-left text-xs font-bold text-pink-700 mb-2">🏪 샵 업그레이드</div>
+                <div id="upgrade-grid" class="upgrade-grid"></div>
                 
                 <button onclick="openPhoneApp()" class="w-full bg-pink-500 hover:bg-pink-600 text-white text-lg py-3 rounded-xl shadow-lg font-bold mb-3 relative flex justify-center items-center gap-2 transition-colors">
                     📱 리뷰 관리 앱 열기
@@ -243,6 +343,7 @@
             </div>
         </div>
 
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </div>
 
     <script>
@@ -278,49 +379,72 @@
 
         // --- 게임 상태 변수 ---
         let money = 0;
-        let reputation = 3; 
+        let reputation = 3;
         let day = 1;
         let customersToday = 0;
+        let totalCustomers = 0;
         let dailyIncome = 0;
-        let reviewsData = []; // {id, text, stars, isGood, day}
+        let combo = 0;
+        let reviewsData = [];
+        let dayClosed = false;
+        let lastDayCosts = { supplies:0, rent:0 };
+        let salonUpgrades = { table:0, supplies:0, decor:0, cabinet:0 };
         
-        let dayTimeMax = 800; // 하루 영업 시간 (80초)
-        let dayTimeLeft = 800;
+        let dayTimeMax = 900; // 실제 작업 중에만 흐르는 90초 영업 시간
+        let dayTimeLeft = 900;
         
-        let currentToolCategory = null; 
+        let currentToolCategory = null;
         let currentToolValue = null;
-        let targetPattern = []; 
+        let currentCustomer = null;
+        let customerFinished = false;
+        let targetPattern = [];
         let timerInterval;
         let timeLeft = 0;
-        let maxTime = 150;
+        let maxTime = 260;
         
         let tutorialStep = 1;
         let isTutorialFinished = false;
 
         // 아이템 데이터베이스
         const colors = {
-            '#ef4444': { name: '레드', value: '#ef4444' },
-            '#3b82f6': { name: '블루', value: '#3b82f6' },
-            '#eab308': { name: '옐로', value: '#eab308' },
-            '#ec4899': { name: '핑크', value: '#ec4899' },
-            '#a855f7': { name: '퍼플', value: '#a855f7' }
+            '#ef4444': { name:'레드', unlock:0 },
+            '#3b82f6': { name:'블루', unlock:0 },
+            '#eab308': { name:'옐로', unlock:0 },
+            '#ec4899': { name:'핑크', unlock:0 },
+            '#a855f7': { name:'퍼플', unlock:1 },
+            '#14b8a6': { name:'민트', unlock:1 },
+            '#111827': { name:'블랙', unlock:2 },
+            '#f9fafb': { name:'화이트', unlock:2 }
         };
         const finishes = {
-            'none': { name: '폴리쉬', emoji: '💅' },
-            'gel': { name: '젤네일', emoji: '💧' },
-            'glitter': { name: '글리터', emoji: '✨' }
+            'none': { name:'폴리쉬', emoji:'💅', unlock:0 },
+            'gel': { name:'젤네일', emoji:'💧', unlock:0 },
+            'glitter': { name:'글리터', emoji:'✨', unlock:1 }
         };
         const stickers = {
-            'none': { name: '제거', emoji: '🚫' },
-            '⭐': { name: '별', emoji: '⭐' },
-            '❤️': { name: '하트', emoji: '❤️' },
-            '🎀': { name: '리본', emoji: '🎀' },
-            '🦋': { name: '나비', emoji: '🦋' }
+            'none': { name:'제거', emoji:'🚫', unlock:0 },
+            '⭐': { name:'별', emoji:'⭐', unlock:0 },
+            '❤️': { name:'하트', emoji:'❤️', unlock:0 },
+            '🎀': { name:'리본', emoji:'🎀', unlock:1 },
+            '🦋': { name:'나비', emoji:'🦋', unlock:2 }
         };
 
-        const colorKeys = Object.keys(colors);
-        const finishKeys = Object.keys(finishes);
-        const stickerKeys = Object.keys(stickers).filter(k => k !== 'none');
+        const CUSTOMER_TYPES = [
+            { key:'casual', name:'첫 방문 손님', emoji:'🙂', minDay:1, minRep:0, threshold:.72, pay:1, timeBonus:50, hint:'편안한 분위기를 좋아해요.' },
+            { key:'trend', name:'유행 민감 손님', emoji:'🤩', minDay:2, minRep:0, threshold:.80, pay:1.15, timeBonus:20, hint:'마감과 포인트 파츠를 눈여겨봐요.', bias:'finish' },
+            { key:'regular', name:'단골 손님', emoji:'🥰', minDay:3, minRep:3.7, threshold:.82, pay:1.25, timeBonus:35, hint:'좋았던 기억만큼 기대도 높아요.', bias:'parts' },
+            { key:'picky', name:'꼼꼼한 손님', emoji:'🧐', minDay:4, minRep:0, threshold:.90, pay:1.4, timeBonus:-20, hint:'한 손가락도 대충 넘어가지 않아요.', bias:'detail' }
+        ];
+        const UPGRADE_DEFS = {
+            table:{ name:'작업 테이블', desc:'손님당 제한시간 +3초', base:240, max:3 },
+            supplies:{ name:'프로 재료', desc:'수익 +12% · Lv.1 글리터 해금', base:320, max:3 },
+            decor:{ name:'샵 인테리어', desc:'팁 +6% · 좋은 리뷰 평판 보너스', base:280, max:3 },
+            cabinet:{ name:'파츠 진열장', desc:'새 색상과 리본·나비 파츠 해금', base:260, max:2 }
+        };
+
+        const availableColorKeys = () => Object.keys(colors).filter(k => colors[k].unlock <= salonUpgrades.cabinet);
+        const availableFinishKeys = () => Object.keys(finishes).filter(k => finishes[k].unlock <= salonUpgrades.supplies);
+        const availableStickerKeys = () => Object.keys(stickers).filter(k => k !== 'none' && stickers[k].unlock <= salonUpgrades.cabinet);
 
         // --- DOM 요소 ---
         const el = {
@@ -337,8 +461,10 @@
             review: document.getElementById('review-modal'),
             endDay: document.getElementById('end-day-modal'),
             phone: document.getElementById('phone-modal'),
-            noti: document.getElementById('review-noti')
-        };
+            noti: document.getElementById('review-noti'),
+            customer: document.getElementById('customer-chip'),
+            quality: document.getElementById('quality-preview'),
+            toast: document.getElementById('toast')        };
 
         // --- 초기화 및 흐름 제어 ---
         function initGame() {
@@ -357,31 +483,57 @@
             }
         }
 
+        function showToast(message) {
+            if (!el.toast) return;
+            el.toast.textContent = message;
+            el.toast.classList.add('show');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => el.toast.classList.remove('show'), 1300);
+        }
+
         function resetGame() {
-            if(confirm("모든 데이터를 지우고 처음부터 다시 시작하시겠습니까?")) {
-                localStorage.clear();
+            if(confirm("네일 타이쿤 진행 데이터만 지우고 처음부터 다시 시작하시겠습니까?")) {
+                localStorage.removeItem('nailTycoonSave');
                 location.reload();
             }
         }
 
         function saveGameData() {
-            const data = { money, reputation, day, reviewsData, isTutorialFinished, dayTimeLeft, customersToday, dailyIncome };
+            const data = {
+                money, reputation, day, reviewsData, isTutorialFinished, dayTimeLeft,
+                customersToday, totalCustomers, dailyIncome, combo, salonUpgrades,
+                dayClosed, lastDayCosts
+            };
             localStorage.setItem('nailTycoonSave', JSON.stringify(data));
         }
 
         function loadGameData() {
             const save = localStorage.getItem('nailTycoonSave');
-            if (save) {
-                const data = JSON.parse(save);
-                money = data.money;
-                reputation = data.reputation;
-                day = data.day;
-                reviewsData = data.reviewsData || [];
-                isTutorialFinished = data.isTutorialFinished;
-                dayTimeLeft = data.dayTimeLeft !== undefined ? data.dayTimeLeft : dayTimeMax;
-                customersToday = data.customersToday || 0;
-                dailyIncome = data.dailyIncome || 0;
+            if (!save) return;
+            try {
+                const data = JSON.parse(save) || {};
+                money = Number(data.money) || 0;
+                reputation = Math.min(5, Math.max(1, Number(data.reputation) || 3));
+                day = Math.max(1, Number(data.day) || 1);
+                reviewsData = Array.isArray(data.reviewsData) ? data.reviewsData.map(r => ({ read:false, resolved:false, ...r })) : [];
+                isTutorialFinished = !!data.isTutorialFinished;
+                dayTimeLeft = data.dayTimeLeft !== undefined ? Math.max(0, Number(data.dayTimeLeft) || 0) : dayTimeMax;
+                customersToday = Math.max(0, Number(data.customersToday) || 0);
+                totalCustomers = Math.max(customersToday, Number(data.totalCustomers) || 0);
+                dailyIncome = Math.max(0, Number(data.dailyIncome) || 0);
+                combo = Math.max(0, Number(data.combo) || 0);
+                salonUpgrades = { table:0, supplies:0, decor:0, cabinet:0, ...(data.salonUpgrades || {}) };
+                Object.keys(salonUpgrades).forEach(k => salonUpgrades[k] = Math.max(0, Number(salonUpgrades[k]) || 0));
+                dayClosed = !!data.dayClosed;
+                lastDayCosts = { supplies:0, rent:0, ...(data.lastDayCosts || {}) };
+            } catch (_) {
+                localStorage.removeItem('nailTycoonSave');
             }
+        }
+
+        function shopLevel() {
+            const points = Object.values(salonUpgrades).reduce((sum, n) => sum + n, 0);
+            return 1 + Math.floor(points / 2);
         }
 
         function updateDayTimeDisplay() {
@@ -399,12 +551,13 @@
             let repScore = Math.floor(reputation);
             for(let i=0; i<5; i++) repStr += (i < repScore) ? "⭐" : "✰";
             el.rep.innerText = repStr;
+            const levelEl = document.getElementById('shop-level-display');
+            if (levelEl) levelEl.innerText = `샵 Lv.${shopLevel()}`;
             
             updateDayTimeDisplay();
             
-            // 안 읽은 나쁜 리뷰 표시 (간단히)
-            const hasBadReview = reviewsData.some(r => !r.isGood);
-            if(hasBadReview) el.noti.classList.remove('hide');
+            const hasUnreadBadReview = reviewsData.some(r => !r.isGood && !r.read && !r.resolved);
+            if(hasUnreadBadReview) el.noti.classList.remove('hide');
             else el.noti.classList.add('hide');
         }
 
@@ -457,10 +610,57 @@
             day++;
             customersToday = 0;
             dailyIncome = 0;
+            combo = 0;
             dayTimeLeft = dayTimeMax;
+            dayClosed = false;
+            lastDayCosts = { supplies:0, rent:0 };
             saveGameData();
             updateTopBar();
             startNextCustomerOrDay();
+        }
+
+        function upgradeCost(key) {
+            const def = UPGRADE_DEFS[key];
+            const lv = salonUpgrades[key] || 0;
+            return Math.round(def.base * (1 + lv * 0.75));
+        }
+
+        function buyUpgrade(key) {
+            const def = UPGRADE_DEFS[key];
+            if (!def) return;
+            const lv = salonUpgrades[key] || 0;
+            if (lv >= def.max) return;
+            const cost = upgradeCost(key);
+            if (money < cost) {
+                showToast(`자금이 부족해요 · $${cost} 필요`);
+                return;
+            }
+            money -= cost;
+            salonUpgrades[key] = lv + 1;
+            sfx.cash();
+            saveGameData();
+            updateTopBar();
+            renderUpgradeGrid();
+            showToast(`${def.name} Lv.${salonUpgrades[key]} 업그레이드!`);
+        }
+
+        function renderUpgradeGrid() {
+            const grid = document.getElementById('upgrade-grid');
+            if (!grid) return;
+            grid.innerHTML = Object.entries(UPGRADE_DEFS).map(([key, def]) => {
+                const lv = salonUpgrades[key] || 0;
+                const maxed = lv >= def.max;
+                const cost = upgradeCost(key);
+                return `
+                    <div class="upgrade-card">
+                        <b>${def.name} Lv.${lv}/${def.max}</b>
+                        <span>${def.desc}</span>
+                        <button type="button" onclick="buyUpgrade('${key}')" ${maxed ? 'disabled' : ''}>
+                            ${maxed ? '최대 강화' : `$${cost} 업그레이드`}
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function endDay() {
@@ -469,34 +669,61 @@
             
             el.endDay.classList.remove('hide');
             el.endDay.classList.add('flex');
+
+            if (!dayClosed) {
+                const supplyCost = customersToday * (8 + salonUpgrades.supplies * 3);
+                const rentCost = day % 7 === 0
+                    ? 220 + day * 20 + (salonUpgrades.table + salonUpgrades.decor + salonUpgrades.cabinet) * 20
+                    : 0;
+                money -= supplyCost + rentCost;
+                lastDayCosts = { supplies:supplyCost, rent:rentCost };
+                dayClosed = true;
+                try {
+                    window.KidscadeGame?.result?.({
+                        scope:'shift',
+                        status:'completed',
+                        orders:customersToday,
+                        score:dailyIncome,
+                        day,
+                        reputation:Number(reputation.toFixed(2))
+                    });
+                } catch (_) {}
+                saveGameData();
+            }
             
             document.getElementById('end-day-title').innerText = `Day ${day} 마감`;
+            document.getElementById('end-day-title').className = "text-2xl text-gray-800 font-bold mb-4";
             document.getElementById('end-day-customers').innerText = `${customersToday}명`;
             document.getElementById('end-day-income').innerText = `+$${dailyIncome}`;
+            document.getElementById('end-day-supplies').innerText = `-$${lastDayCosts.supplies || 0}`;
             
             const rentSection = document.getElementById('rent-section');
-            const rentCost = 150 + (day * 10); // 갈수록 월세 증가
-            
-            // 7일(1주)마다 월세 납부
-            if (day % 7 === 0) {
+            if ((lastDayCosts.rent || 0) > 0) {
                 rentSection.classList.remove('hide');
-                document.getElementById('end-day-rent').innerText = `-$${rentCost}`;
-                money -= rentCost;
-                if(money < 0) {
-                    document.getElementById('end-day-title').innerText = "파산 위기! 😱";
-                    document.getElementById('end-day-title').className = "text-2xl text-red-600 font-bold mb-4";
-                }
+                document.getElementById('end-day-rent').innerText = `-$${lastDayCosts.rent}`;
             } else {
                 rentSection.classList.add('hide');
             }
-            
+            const net = dailyIncome - (lastDayCosts.supplies || 0) - (lastDayCosts.rent || 0);
+            const netEl = document.getElementById('end-day-net');
+            netEl.innerText = `${net >= 0 ? '+' : '-'}$${Math.abs(net)}`;
+            netEl.className = `font-bold ${net >= 0 ? 'text-pink-600' : 'text-red-600'}`;
+
+            if (money < 0) {
+                document.getElementById('end-day-title').innerText = "운영 자금이 부족해요 😱";
+                document.getElementById('end-day-title').className = "text-2xl text-red-600 font-bold mb-4";
+            }
+
+            renderUpgradeGrid();
             updateTopBar();
-            saveGameData();
         }
 
         // --- 리뷰(스마트폰) 시스템 ---
         function openPhoneApp() {
             sfx.click();
+            reviewsData.forEach(r => { r.read = true; });
+            saveGameData();
+            updateTopBar();
             el.phone.classList.remove('hide');
             renderReviews();
         }
@@ -533,9 +760,13 @@
                     <p class="text-sm text-gray-800 font-medium">"${rev.text}"</p>
                     ${!isGood ? `
                         <div class="mt-2 text-right">
-                            <button onclick="deleteReview(${rev.id})" class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow transition-colors">
-                                악플 삭제 (비용: $200)
-                            </button>
+                            ${rev.resolved ? `
+                                <span class="text-xs text-green-600 font-bold">✓ 보상 완료</span>
+                            ` : `
+                                <button onclick="resolveReview(${rev.id})" class="text-xs bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded shadow transition-colors">
+                                    보상 쿠폰 보내기 ($120)
+                                </button>
+                            `}
                         </div>
                     ` : ''}
                 `;
@@ -543,19 +774,23 @@
             });
         }
 
-        function deleteReview(id) {
-            if (money < 200) {
-                alert("비용이 부족합니다! ($200 필요)");
+        function resolveReview(id) {
+            const review = reviewsData.find(r => r.id === id);
+            if (!review || review.resolved) return;
+            const cost = 120;
+            if (money < cost) {
+                showToast(`보상 쿠폰 비용 $${cost}이 필요해요`);
                 return;
             }
             sfx.cash();
-            money -= 200;
-            if(reputation < 5) reputation += 0.5; // 명성 회복
-            
-            reviewsData = reviewsData.filter(r => r.id !== id);
+            money -= cost;
+            review.resolved = true;
+            review.read = true;
+            reputation = Math.min(5, reputation + 0.15);
             saveGameData();
             updateTopBar();
             renderReviews();
+            showToast('손님에게 보상 쿠폰을 보냈어요.');
         }
 
         // --- 탭 및 도구 시스템 ---
@@ -575,15 +810,15 @@
             el.palette.innerHTML = '';
             if (tabName === 'tools') {
                 el.palette.innerHTML = `
-                    <button onclick="selectTool('tool', 'nipper')" id="btn-nipper" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl">✂️</button>
-                    <button onclick="selectTool('tool', 'remover')" id="btn-remover" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl">🧽</button>
+                    <button onclick="selectTool('tool', 'nipper')" id="btn-nipper" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl" aria-label="큐티클 니퍼">✂️</button>
+                    <button onclick="selectTool('tool', 'remover')" id="btn-remover" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex items-center justify-center text-3xl" aria-label="리무버">🧽</button>
                 `;
             } else if (tabName === 'colors') {
-                colorKeys.forEach(hex => {
-                    el.palette.innerHTML += `<button onclick="selectTool('color', '${hex}')" id="btn-${hex.replace('#','')}" class="tool-btn w-12 h-12 rounded-full shadow border-2 border-white" style="background-color: ${hex}"></button>`;
+                availableColorKeys().forEach(hex => {
+                    el.palette.innerHTML += `<button onclick="selectTool('color', '${hex}')" id="btn-${hex.replace('#','')}" class="tool-btn w-12 h-12 rounded-full shadow border-2 border-gray-200" aria-label="${colors[hex].name}" style="background-color: ${hex}"></button>`;
                 });
             } else if (tabName === 'finishes') {
-                ['none', 'gel', 'glitter'].forEach(key => {
+                availableFinishKeys().forEach(key => {
                     el.palette.innerHTML += `
                         <button onclick="selectTool('finish', '${key}')" id="btn-${key}" class="tool-btn w-14 h-14 bg-white rounded-xl shadow border-2 border-gray-100 flex flex-col items-center justify-center">
                             <span class="text-xl">${finishes[key].emoji}</span>
@@ -592,8 +827,8 @@
                     `;
                 });
             } else if (tabName === 'stickers') {
-                ['none', ...stickerKeys].forEach(key => {
-                    el.palette.innerHTML += `<button onclick="selectTool('sticker', '${key}')" id="btn-sticker-${key === 'none' ? 'none' : key}" class="tool-btn w-12 h-12 bg-white rounded-full shadow border-2 border-gray-100 flex items-center justify-center text-2xl">${stickers[key].emoji}</button>`;
+                ['none', ...availableStickerKeys()].forEach(key => {
+                    el.palette.innerHTML += `<button onclick="selectTool('sticker', '${key}')" id="btn-sticker-${key === 'none' ? 'none' : key}" class="tool-btn w-12 h-12 bg-white rounded-full shadow border-2 border-gray-100 flex items-center justify-center text-2xl" aria-label="${stickers[key].name}">${stickers[key].emoji}</button>`;
                 });
             }
             highlightSelectedTool();
@@ -647,9 +882,8 @@
                 cuticle.className = 'cuticle';
                 cuticle.id = `cuticle-${i}`;
 
-                nail.addEventListener('mousedown', () => interactWithNail(nail, cuticle, stickerLayer));
-                nail.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); 
+                nail.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
                     interactWithNail(nail, cuticle, stickerLayer);
                 });
 
@@ -677,8 +911,7 @@
                     }
                 } else if (currentToolValue === 'remover') {
                     nail.dataset.color = 'none';
-                    nail.style.backgroundColor = '#f8edeb';
-                    nail.dataset.finish = 'none';
+                    nail.style.backgroundColor = '#f8edeb';                    nail.dataset.finish = 'none';
                     nail.className = 'nail-bed animate-pop'; 
                     nail.dataset.sticker = 'none';
                     stickerLayer.innerText = '';
@@ -693,7 +926,33 @@
                 nail.dataset.sticker = currentToolValue;
                 stickerLayer.innerText = currentToolValue === 'none' ? '' : currentToolValue;
             }
+            nail.classList.remove('working');
+            void nail.offsetWidth;
+            nail.classList.add('working');
+            setTimeout(() => nail.classList.remove('working'), 260);
+            updateQualityPreview();
             checkWinCondition();
+        }
+
+        function evaluateNails() {
+            const nails = [...document.querySelectorAll('.nail-bed')];
+            if (!targetPattern.length || nails.length !== targetPattern.length) return { score:0, percent:0 };
+            let points = 0;
+            nails.forEach((nail, index) => {
+                const target = targetPattern[index];
+                if (nail.dataset.cuticle === 'false') points += 1;
+                if (nail.dataset.color === target.color) points += 2;
+                if (nail.dataset.finish === target.finish) points += 1;
+                if (nail.dataset.sticker === target.sticker) points += 1;
+            });
+            const score = points / (targetPattern.length * 5);
+            return { score, percent:Math.round(score * 100) };
+        }
+
+        function updateQualityPreview() {
+            const quality = evaluateNails();
+            if (!el.quality) return;
+            el.quality.innerText = `현재 완성도 ${quality.percent}% · 콤보 ${combo}`;
         }
 
         function renderTargetPattern(pattern) {
@@ -715,8 +974,13 @@
             });
         }
 
+        function chooseCustomer() {
+            const pool = CUSTOMER_TYPES.filter(c => day >= c.minDay && reputation >= c.minRep);
+            return { ...pool[Math.floor(Math.random() * pool.length)] };
+        }
+
         function startNextCustomerOrDay() {
-            if (dayTimeLeft <= 0) {
+            if (dayClosed || dayTimeLeft <= 0) {
                 endDay();
                 return;
             }
@@ -726,95 +990,113 @@
             el.review.classList.remove('flex');
             createHand();
             updateTopBar();
+            customerFinished = false;
+            currentCustomer = chooseCustomer();
             
-            // 난이도 설정
-            let level = 1;
-            if (reputation >= 3 || day > 2) level = 2;
-            if (reputation >= 4.5 || day > 5) level = 3;
+            let level = day <= 2 ? 1 : (day <= 5 ? 2 : 3);
+            if (day >= 2 && reputation >= 4.5) level = Math.min(3, level + 1);
+            if (reputation < 2.3) level = Math.max(1, level - 1);
             
             document.getElementById('difficulty-badge').innerText = `Lv.${level}`;
+            el.customer.innerText = `${currentCustomer.emoji} ${currentCustomer.name} · ${currentCustomer.hint}`;
 
             targetPattern = [];
-            const isMultiColor = level >= 2 ? Math.random() > 0.5 : false;
-            const useSpecificFinish = level >= 2 ? Math.random() > 0.4 : false;
-            const useStickers = level >= 3 ? Math.random() > 0.6 : false;
+            const colorKeys = availableColorKeys();
+            const finishKeys = availableFinishKeys();
+            const stickerKeys = availableStickerKeys();
+            const isMultiColor = level >= 2 && Math.random() > 0.55;
+            const useSpecificFinish = level >= 2 && finishKeys.length > 1 && (currentCustomer.bias === 'finish' || Math.random() > 0.5);
+            const useStickers = stickerKeys.length > 0 && (level >= 3 ? Math.random() > 0.35 : currentCustomer.bias === 'parts' && Math.random() > 0.45);
 
             const baseColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
-            const baseFinish = useSpecificFinish ? finishKeys[Math.floor(Math.random() * finishKeys.length)] : 'none';
+            const finishChoices = finishKeys.filter(k => k !== 'none');
+            const baseFinish = useSpecificFinish && finishChoices.length
+                ? finishChoices[Math.floor(Math.random() * finishChoices.length)]
+                : 'none';
 
-            let orderDesc = "깔끔한 <b>큐티클 정리</b> 필수!<br/>";
-            if(isMultiColor) orderDesc += "손가락마다 <b>다양한 색상</b>으로 꾸며주세요.";
+            let orderDesc = "먼저 <b>큐티클을 정리</b>해주세요.<br/>";
+            if(isMultiColor) orderDesc += "도안처럼 <b>손가락마다 색을 맞춰</b>주세요.";
             else orderDesc += `<b>${colors[baseColor].name}</b> 색상으로 칠해주세요.`;
 
-            if(useSpecificFinish && baseFinish !== 'none') orderDesc += ` <br/><span class="text-blue-500">(${finishes[baseFinish].name} 추가)</span>`;
-            if(useStickers) orderDesc += "<br/><span class='text-xs text-pink-500'>* 도안대로 파츠도 올려주세요!</span>";
-
+            if(baseFinish !== 'none') orderDesc += `<br/><span class="text-blue-500">${finishes[baseFinish].name} 마감도 부탁해요.</span>`;
+            if(useStickers) orderDesc += "<br/><span class='text-xs text-pink-500'>도안의 포인트 파츠 위치도 확인!</span>";
             el.order.innerHTML = orderDesc;
 
             for(let i=0; i<5; i++) {
                 targetPattern.push({
                     color: isMultiColor ? colorKeys[Math.floor(Math.random() * colorKeys.length)] : baseColor,
-                    finish: baseFinish, 
-                    sticker: useStickers ? (Math.random() > 0.4 ? stickerKeys[Math.floor(Math.random() * stickerKeys.length)] : 'none') : 'none'
+                    finish: baseFinish,
+                    sticker: useStickers && Math.random() > 0.4 ? stickerKeys[Math.floor(Math.random() * stickerKeys.length)] : 'none'
                 });
             }
 
             renderTargetPattern(targetPattern);
-            
             currentToolCategory = null;
             currentToolValue = null;
             switchTab('tools');
+            updateQualityPreview();
 
-            // 타이머
-            maxTime = 150 + ((level - 1) * 50); 
+            maxTime = 240 + level * 50 + salonUpgrades.table * 30 + currentCustomer.timeBonus;
             timeLeft = maxTime;
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 timeLeft -= 1;
-                dayTimeLeft -= 1;
-                el.timer.style.width = `${(timeLeft / maxTime) * 100}%`;
+                dayTimeLeft = Math.max(0, dayTimeLeft - 1);
+                el.timer.style.width = `${Math.max(0, (timeLeft / maxTime) * 100)}%`;
                 
-                if(timeLeft < maxTime * 0.3) {
-                    el.timer.style.backgroundColor = '#ef4444'; 
-                } else {
-                    el.timer.style.backgroundColor = '#ec4899'; 
-                }
+                if(timeLeft < maxTime * 0.3) el.timer.style.backgroundColor = '#ef4444';
+                else el.timer.style.backgroundColor = '#ec4899';
 
                 updateDayTimeDisplay();
-
                 if (timeLeft % 10 === 0) sfx.bgmTick();
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    finishCustomer(false); 
+                    submitCustomer(true);
                 }
-            }, 100); 
+            }, 100);
         }
 
         function checkWinCondition() {
-            const nails = document.querySelectorAll('.nail-bed');
-            let isPerfect = true;
-
-            nails.forEach((nail, index) => {
-                const target = targetPattern[index];
-                if (
-                    nail.dataset.cuticle === 'true' || 
-                    nail.dataset.color !== target.color ||
-                    nail.dataset.finish !== target.finish ||
-                    nail.dataset.sticker !== target.sticker
-                ) {
-                    isPerfect = false;
-                }
-            });
-
-            if (isPerfect) {
+            if (customerFinished) return;
+            const result = evaluateNails();
+            if (result.score >= 0.999) {
+                customerFinished = true;
                 clearInterval(timerInterval);
-                setTimeout(() => finishCustomer(true), 300); 
+                setTimeout(() => submitCustomer(false, true), 220);
             }
         }
 
-        function finishCustomer(isSuccess) {
+        function submitCustomer(isTimeout = false, autoPerfect = false) {
+            if (customerFinished && !autoPerfect) return;
+            const quality = evaluateNails();
+            if (!isTimeout && !autoPerfect && quality.score < 0.55) {
+                showToast('아직 손톱을 조금 더 완성해 주세요.');
+                return;
+            }
+            customerFinished = true;
+            clearInterval(timerInterval);
+
+            const adjustedScore = Math.max(0, quality.score - (isTimeout ? 0.06 : 0));
+            let stars = 1;
+            if (adjustedScore >= .96) stars = 5;
+            else if (adjustedScore >= .86) stars = 4;
+            else if (adjustedScore >= .72) stars = 3;
+            else if (adjustedScore >= .58) stars = 2;
+
+            const success = adjustedScore >= (currentCustomer?.threshold || .72);
+            finishCustomer({
+                isSuccess:success,
+                score:adjustedScore,
+                percent:Math.round(adjustedScore * 100),
+                stars,
+                timedOut:isTimeout
+            });
+        }
+
+        function finishCustomer(result) {
             customersToday++;
+            totalCustomers++;
             el.review.classList.remove('hide');
             el.review.classList.add('flex');
             
@@ -825,69 +1107,58 @@
             const emojiEl = document.getElementById('review-emoji');
             const nextBtn = document.getElementById('next-btn');
 
-            let earnedMoney = 0;
-            let reviewText = "";
-            let givenStars = 0;
+            const level = parseInt(document.getElementById('difficulty-badge').innerText.replace('Lv.', '')) || 1;
+            const basePay = 55 + level * 25;
+            const shopMultiplier = 1 + salonUpgrades.supplies * .12 + salonUpgrades.decor * .06;
+            const timeBonus = result.timedOut ? 0 : Math.floor(Math.max(0, timeLeft) / 12);
+            const qualityMultiplier = .35 + result.score * .9;
+            let earnedMoney = Math.round(basePay * qualityMultiplier * (currentCustomer?.pay || 1) * shopMultiplier + timeBonus);
+            if (!result.isSuccess) earnedMoney = Math.max(10, Math.round(earnedMoney * .3));
 
-            if (isSuccess) {
-                sfx.success();
-                const levelBonus = parseInt(document.getElementById('difficulty-badge').innerText.replace('Lv.', '')) * 20;
-                earnedMoney = 50 + levelBonus + Math.floor(timeLeft / 2);
-                dailyIncome += earnedMoney;
-                money += earnedMoney;
-                if(reputation < 5) reputation += 0.5;
-                givenStars = 5;
+            if (result.stars >= 4) combo++;
+            else combo = 0;
+            if (combo >= 3 && result.isSuccess) earnedMoney += 10 + combo * 3;
 
-                emojiEl.innerText = '😍';
-                titleEl.innerText = "대만족!";
-                titleEl.className = "text-2xl text-pink-600 font-bold mb-2";
-                
-                const goodReviews = [
-                    "요청한 도안이랑 완전 똑같아요! 금손이시네요.",
-                    "단골 예약입니다. 너무 예뻐요!",
-                    "파츠도 안 떨어지게 잘 붙여주셨어요.",
-                    "손놀림이 엄청 빠르시네요! 완벽합니다."
-                ];
-                reviewText = goodReviews[Math.floor(Math.random() * goodReviews.length)];
-                earnEl.className = "text-2xl text-green-500 font-bold";
-            } else {
-                sfx.fail();
-                earnedMoney = 10; 
-                dailyIncome += earnedMoney;
-                money += earnedMoney;
-                if(reputation > 1) reputation -= 1;
-                givenStars = Math.max(1, Math.floor(reputation));
+            dailyIncome += earnedMoney;
+            money += earnedMoney;
 
-                emojiEl.innerText = '😠';
-                titleEl.innerText = "실망이에요...";
-                titleEl.className = "text-2xl text-gray-800 font-bold mb-2";
-                
-                const badReviews = [
-                    "시간이 너무 오래 걸리고 엉망이네요.",
-                    "제가 보여드린 도안이랑 전혀 다르잖아요!",
-                    "큐티클 정리도 안 해주시고 최악입니다.",
-                    "돈이 아깝네요. 다신 안 와요."
-                ];
-                reviewText = badReviews[Math.floor(Math.random() * badReviews.length)];
-                earnEl.className = "text-2xl text-red-500 font-bold";
-            }
+            let repDelta = 0;
+            if (result.stars === 5) repDelta = .15 + salonUpgrades.decor * .03;
+            else if (result.stars === 4) repDelta = .08 + salonUpgrades.decor * .02;
+            else if (result.stars === 2) repDelta = -.25;
+            else if (result.stars === 1) repDelta = -.45;
+            reputation = Math.min(5, Math.max(1, reputation + repDelta));
 
-            starsEl.innerText = "⭐".repeat(givenStars) + "✰".repeat(5 - givenStars);
-            textEl.innerText = `"${reviewText}"`;
+            const reviewsByStars = {
+                5:["도안보다 더 예뻐요! 다음에도 꼭 올게요.","손도 빠르고 마감도 깔끔해요. 완전 만족!"],
+                4:["원하는 느낌이 잘 나왔어요. 다음엔 더 기대할게요!","조금 아쉽지만 전체적으로 예뻐요."],
+                3:["무난하게 잘 받았어요.","몇 군데 아쉽지만 괜찮았어요."],
+                2:["원했던 도안과 조금 많이 달라요.","마감이 아쉬워서 다음엔 고민될 것 같아요."],
+                1:["시간도 오래 걸리고 주문과 너무 달라요.","오늘은 많이 아쉬웠어요."]
+            };
+            const reviewText = reviewsByStars[result.stars][Math.floor(Math.random() * reviewsByStars[result.stars].length)];
+
+            emojiEl.innerText = result.stars >= 5 ? '😍' : result.stars >= 4 ? '😊' : result.stars === 3 ? '🙂' : result.stars === 2 ? '😕' : '😠';
+            titleEl.innerText = result.stars >= 5 ? "완벽한 시술!" : result.stars >= 4 ? "좋아요!" : result.stars === 3 ? "괜찮아요" : "아쉬워요";
+            titleEl.className = `text-2xl font-bold mb-2 ${result.stars >= 4 ? 'text-pink-600' : result.stars <= 2 ? 'text-red-500' : 'text-gray-800'}`;
+            starsEl.innerText = "⭐".repeat(result.stars) + "✰".repeat(5 - result.stars);
+            textEl.innerText = `"${reviewText}" · 완성도 ${result.percent}%`;
             earnEl.innerText = `+$${earnedMoney}`;
+            earnEl.className = result.isSuccess ? "text-2xl text-green-500 font-bold" : "text-2xl text-red-500 font-bold";
             
-            // 리뷰 데이터 저장
             reviewsData.push({
                 id: Date.now(),
                 text: reviewText,
-                stars: givenStars,
-                isGood: isSuccess,
-                day: day
+                stars: result.stars,
+                isGood: result.stars >= 4,
+                read:false,
+                resolved:false,
+                day,
+                customer:currentCustomer?.name || '손님',
+                quality:result.percent
             });
-            
-            // 보유 리뷰가 너무 많으면 오래된 것 삭제
-            if(reviewsData.length > 20) reviewsData.shift();
-            
+            if(reviewsData.length > 24) reviewsData.shift();
+
             if(dayTimeLeft <= 0) {
                 nextBtn.innerText = "하루 마감하기";
                 nextBtn.className = "w-full bg-indigo-500 text-white text-xl py-3 rounded-xl shadow-lg font-bold";
