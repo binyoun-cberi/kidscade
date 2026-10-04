@@ -340,7 +340,7 @@ const R=[
  ['person','ironPick',1,1,[['ironMiner',1]],'철기 광부'],
  ['person','ironHoe',1,1,[['ironFarmer',1]],'철기 농부'],
  ['person','ironSpear',1,1,[['ironHunter',1]],'철기 사냥꾼'],
- ['bronzeCenter','ironIngot',1,1,[['ironTown',1]],'철기 마을'}
+ ['bronzeCenter','ironIngot',1,1,[['ironTown',1]],'철기 마을']
 ].map(x=>({a:x[0],b:x[1],ca:x[2],cb:x[3],out:x[4],name:x[5]}));
 
 const SETTLE_POINTS={camp:2,village:5,largeVillage:8,bronzeCenter:12,ironTown:18,dolmen:3,pitHouse:1,milletFarm:3,broomcornFarm:3,beanFarm:3,granary:2,fishingGround:3,netFishery:3,trapFishery:3,goatRanch:3,reservoir:2,fishPond:3,storageJars:1,storageBasket:1,combPottery:1,groundAxe:1,leatherClothing:1,wovenClothing:1,hearth:1,kiln:2,highKiln:2,bloomery:4,shellOrnament:1,tuskOrnament:1};
@@ -910,9 +910,9 @@ function workerAction(worker,node){
  const prod={
   milletPlot:{ms:7200,label:'조밭 돌보는 중',out:[['milletGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?3:2):1],['milletSeed',1]],life:'farm'},
   milletFarm:{ms:9400,label:'조 농장 수확 중',out:[['milletGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['milletSeed',1]],life:'farm',lifeGain:3},
-  broomcornPlot:{ms:7200,label:'기장밭 돌보는 중',out:[['broomcornGrain',worker.type==='farmer'?2:1],['broomcornSeed',1]],life:'farm'},
+  broomcornPlot:{ms:7200,label:'기장밭 돌보는 중',out:[['broomcornGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?3:2):1],['broomcornSeed',1]],life:'farm'},
   broomcornFarm:{ms:9400,label:'기장 농장 수확 중',out:[['broomcornGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['broomcornSeed',1]],life:'farm',lifeGain:3},
-  beanPlot:{ms:7200,label:'콩밭 돌보는 중',out:[['bean',worker.type==='farmer'?2:1],['beanSeed',1]],life:'farm'},
+  beanPlot:{ms:7200,label:'콩밭 돌보는 중',out:[['bean',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?3:2):1],['beanSeed',1]],life:'farm'},
   beanFarm:{ms:9400,label:'콩 농장 수확 중',out:[['bean',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['beanSeed',1]],life:'farm',lifeGain:3},
   fishingSpot:{ms:7600,label:'낚시 중',out:[['freshFish',worker.type==='fisher'?2:1]],life:'fish'},
   fishingGround:{ms:9800,label:'낚시터 운영 중',out:[['freshFish',worker.type==='fisher'?4:3]],life:'fish',lifeGain:3},
