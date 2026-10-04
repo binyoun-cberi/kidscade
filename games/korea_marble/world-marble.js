@@ -234,7 +234,7 @@ function newGame(){
     const isCpu=i>=setup.human;
     state.players.push({
       id:i,name:isCpu?'CPU '+cpuNo++:'플레이어 '+(i+1),isCpu,color:COLORS[i],emoji:AVATARS[i],
-      money:260,country:'KR',rest:0,pass:0,discount:1,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0
+      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
     });
   }
   ui.start.classList.add('hidden');ui.result.classList.add('hidden');ui.game.classList.remove('hidden');
@@ -253,17 +253,86 @@ function beginTurn(){
   if(state.round>state.maxRounds){finishGame('round-limit');return}
   const p=activePlayer();
   if(!p||p.bankrupt){nextTurn();return}
-  state.phase='roll';state.rolled=0;state.routeOptions=[];state.selectedRoute=null;state.eventUsed=false;
+  state.phase='preturn';state.rolled=0;state.routeOptions=[];state.selectedRoute=null;state.eventUsed=false;
   if(p.rest>0){
     p.rest--;announce(p.name+'은(는) 여행 지연 중이에요.','이번 턴을 쉬고 다음 여행을 준비합니다.');
     updateAll();later(nextTurn,850);return;
   }
   updateAll();
-  announce(p.name+'의 여행 차례','현재 '+BY_ID.get(p.country).name+' · 주사위를 굴려주세요.');
-  if(p.isCpu){
+  if(maybeOfferBuild(p))return;
+  enterRollPhase(p);
+}
+
+function enterRollPhase(player){
+  state.phase='roll';
+  updateAll();
+  announce(player.name+'의 여행 차례','현재 '+BY_ID.get(player.country).name+' · 주사위를 굴려주세요.');
+  if(player.isCpu){
     ui.roll.disabled=true;
-    later(()=>rollDice(),state.speed==='fast'?350:700);
+    later(()=>rollDice(),state.speed==='fast'?260:520);
   }else ui.roll.disabled=false;
+}
+
+function remoteBuildCost(player,c,level){
+  return Math.max(1,Math.round(upgradeCost(player,c,level)*.72));
+}
+
+function upgradeableCountries(player){
+  return COUNTRIES
+    .filter(c=>state.investments[c.id]?.owner===player.id&&state.investments[c.id].level<3)
+    .sort((a,b)=>{
+      const ai=state.investments[a.id],bi=state.investments[b.id];
+      return (bi.level-ai.level)||(b.value-a.value)||a.id.localeCompare(b.id);
+    });
+}
+
+function maybeOfferBuild(player){
+  const owned=upgradeableCountries(player);
+  if(player.buildPoints<=0||!owned.length)return false;
+  state.phase='build';
+  if(player.isCpu){
+    const affordable=owned.filter(c=>player.money>=remoteBuildCost(player,c,state.investments[c.id].level));
+    if(!affordable.length){enterRollPhase(player);return true}
+    const target=affordable[0],inv=state.investments[target.id],cost=remoteBuildCost(player,target,inv.level);
+    const reserve=state.cpuDifficulty==='hard'?35:state.cpuDifficulty==='normal'?65:95;
+    const use=player.money-cost>=reserve&&(state.cpuDifficulty!=='easy'||Math.random()>.45);
+    if(use)later(()=>remoteUpgrade(player,target,inv,cost),state.speed==='fast'?140:360);
+    else enterRollPhase(player);
+    return true;
+  }
+  showBuildPicker(player,owned);
+  return true;
+}
+
+function showBuildPicker(player,owned){
+  ui.actionIcon.textContent='🏗️';
+  ui.actionTitle.textContent='출발 전 건설';
+  ui.actionSub.textContent='건설권 '+player.buildPoints+'장 · 내 투자국 한 곳을 성장시키고 여행을 시작할 수 있어요.';
+  ui.economy.innerHTML='<div><span>건설권</span><b>'+player.buildPoints+'장</b></div><div><span>투자국</span><b>'+ownedCount(player.id)+'개</b></div><div><span>랜드마크</span><b>'+player.landmarks+'개</b></div>';
+  ui.actionChoices.innerHTML='';
+  const wrap=document.createElement('div');wrap.className='owned-choice';
+  owned.slice(0,8).forEach(c=>{
+    const inv=state.investments[c.id],cost=remoteBuildCost(player,c,inv.level),btn=document.createElement('button');
+    btn.disabled=player.money<cost;
+    btn.innerHTML=c.icon+' '+c.name+'<br><small>Lv.'+inv.level+' → Lv.'+(inv.level+1)+' · '+cost+'만</small>';
+    btn.onclick=()=>{if(btn.disabled)return;ui.actionModal.classList.add('hidden');remoteUpgrade(player,c,inv,cost)};
+    wrap.appendChild(btn);
+  });
+  ui.actionChoices.appendChild(wrap);
+  const skip=document.createElement('button');skip.className='secondary';skip.textContent='건설하지 않고 여행';
+  skip.onclick=()=>{ui.actionModal.classList.add('hidden');enterRollPhase(player)};
+  ui.actionChoices.appendChild(skip);
+  ui.actionModal.classList.remove('hidden');
+}
+
+function remoteUpgrade(player,c,inv,cost){
+  if(player.buildPoints<=0||inv.level>=3||player.money<cost)return enterRollPhase(player);
+  player.buildPoints--;player.money-=cost;if(player.discount<1)player.discount=1;inv.level++;
+  if(inv.level===3)player.landmarks++;
+  sdkSound('success');
+  announce(c.name+' '+c.build[inv.level-1]+' 건설!', '건설권을 사용해 여행 전에 사업을 성장시켰습니다.');
+  refreshMap();updateAll();
+  later(()=>enterRollPhase(player),state.speed==='fast'?180:520);
 }
 
 function rollDice(){
@@ -285,38 +354,69 @@ function rollDice(){
 
 function exactRoutes(start,steps){
   const found=new Map(),visited=new Set([start]);
-  let calls=0;
   const dfs=(cur,left,path)=>{
-    if(calls++>14000)return;
-    if(left===0){if(cur!==start&&!found.has(cur))found.set(cur,[...path]);return}
-    const nbs=[...(ADJ.get(cur)||[])].sort(()=>Math.random()-.5);
+    if(left===0){
+      if(cur!==start&&!found.has(cur))found.set(cur,[...path]);
+      return;
+    }
+    const nbs=[...(ADJ.get(cur)||[])].sort((a,b)=>a.to.localeCompare(b.to));
     for(const edge of nbs){
       if(visited.has(edge.to))continue;
       visited.add(edge.to);path.push({from:cur,to:edge.to,route:edge.route});
       dfs(edge.to,left-1,path);
       path.pop();visited.delete(edge.to);
-      if(found.size>=28)return;
     }
   };
   dfs(start,steps,[]);
-  return [...found.entries()].map(([dest,path])=>({dest,path}));
+  return [...found.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([dest,path])=>({dest,path}));
+}
+
+function ticketHash(text){
+  let h=2166136261;
+  for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}
+  return h>>>0;
+}
+
+function seededPick(list,key){
+  if(!list.length)return null;
+  return list[ticketHash(key)%list.length];
+}
+
+function pickTravelTickets(routes,player,roll){
+  if(routes.length<=4)return routes;
+  const target=roll<=2?3:4,picked=[];
+  const add=route=>{if(route&&!picked.some(x=>x.dest===route.dest))picked.push(route)};
+  const opponent=routes.filter(r=>{
+    const inv=state.investments[r.dest];return inv&&inv.owner!==player.id;
+  }).sort((a,b)=>getToll(b.dest)-getToll(a.dest)||a.dest.localeCompare(b.dest));
+  const mine=routes.filter(r=>{
+    const inv=state.investments[r.dest];return inv?.owner===player.id&&inv.level<3;
+  }).sort((a,b)=>(state.investments[b.dest].level-state.investments[a.dest].level)||BY_ID.get(b.dest).value-BY_ID.get(a.dest).value);
+  const open=routes.filter(r=>!state.investments[r.dest]).sort((a,b)=>BY_ID.get(b.dest).value-BY_ID.get(a.dest).value||a.dest.localeCompare(b.dest));
+  const seed=state.round+'|'+player.id+'|'+player.country+'|'+roll;
+  add(seededPick(opponent,seed+'|risk'));
+  add(seededPick(mine,seed+'|mine'));
+  add(seededPick(open,seed+'|open'));
+  const rest=routes.filter(r=>!picked.some(x=>x.dest===r.dest))
+    .sort((a,b)=>ticketHash(seed+'|'+a.dest)-ticketHash(seed+'|'+b.dest));
+  for(const route of rest){add(route);if(picked.length>=target)break}
+  return picked.slice(0,target);
 }
 
 function prepareRouteChoice(player,roll){
-  let routes=exactRoutes(player.country,roll),used=roll;
-  while(!routes.length&&used>1){used--;routes=exactRoutes(player.country,used)}
-  if(!routes.length){
+  let allRoutes=exactRoutes(player.country,roll),used=roll;
+  while(!allRoutes.length&&used>1){used--;allRoutes=exactRoutes(player.country,used)}
+  if(!allRoutes.length){
     const n=(ADJ.get(player.country)||[])[0];
-    if(n)routes=[{dest:n.to,path:[{from:player.country,to:n.to,route:n.route}]}],used=1;
+    if(n)allRoutes=[{dest:n.to,path:[{from:player.country,to:n.to,route:n.route}]}],used=1;
   }
-  routes.sort((a,b)=>destinationInterest(player,b.dest)-destinationInterest(player,a.dest));
-  if(routes.length>16)routes=routes.slice(0,16);
+  const routes=pickTravelTickets(allRoutes,player,roll);
   state.routeOptions=routes;state.phase='choose';
   refreshMap();renderDestinationStrip();
-  announce('주사위 '+roll+' · '+used+'구간 여행','빛나는 목적지 중 한 곳을 선택하세요. 경로는 교통망을 따라 자동으로 이어집니다.');
-  ui.moveLeft.textContent='🎲 '+roll+' → '+used+'구간 · 목적지 '+routes.length+'곳';
+  announce('주사위 '+roll+' · '+used+'구간 여행','여행사에서 '+routes.length+'개의 목적지 티켓을 제안했어요. 하나를 골라 출발하세요.');
+  ui.moveLeft.textContent='🎲 '+roll+' → '+used+'구간 · 티켓 '+routes.length+'장';
   ui.moveLeft.classList.add('choose');
-  if(player.isCpu)later(()=>chooseCpuRoute(player,routes),state.speed==='fast'?250:650);
+  if(player.isCpu)later(()=>chooseCpuRoute(player,routes),state.speed==='fast'?180:460);
 }
 
 function destinationInterest(player,id){
@@ -342,12 +442,20 @@ function chooseCpuRoute(player,routes){
   if(pick)travelRoute(player,pick);
 }
 
+function routeTicketStatus(player,c){
+  const inv=state.investments[c.id];
+  if(!inv)return {cls:'open',text:'✨ 투자 가능'};
+  if(inv.owner===player.id)return {cls:'mine',text:inv.level<3?'🏗️ 내 사업 Lv.'+inv.level:'⭐ 내 랜드마크'};
+  return {cls:'risk',text:'⚠️ 여행비 '+getToll(c.id)+'만'};
+}
+
 function renderDestinationStrip(){
   ui.destinationStrip.innerHTML='';
+  const player=activePlayer();
   state.routeOptions.forEach(o=>{
-    const c=BY_ID.get(o.dest),btn=document.createElement('button');btn.className='dest-btn';
-    const names=o.path.map(s=>BY_ID.get(s.to).name).join(' → ');
-    btn.innerHTML=c.icon+' '+c.name+'<small>'+o.path.length+'구간 · '+names+'</small>';
+    const c=BY_ID.get(o.dest),status=routeTicketStatus(player,c),btn=document.createElement('button');btn.className='dest-btn '+status.cls;
+    const modes=[...new Set(o.path.map(s=>chooseMode(s.route,0,player)))].map(m=>m==='rail'?'🚄':m==='sea'?'🚢':'✈️').join('');
+    btn.innerHTML='<b>'+c.icon+' '+c.name+'</b><small>'+status.text+' · '+o.path.length+'구간 '+modes+'</small>';
     btn.addEventListener('mouseenter',()=>previewRoute(o,true));
     btn.addEventListener('mouseleave',()=>previewRoute(o,false));
     btn.addEventListener('click',()=>{if(!activePlayer()?.isCpu)travelRoute(activePlayer(),o)});
@@ -370,6 +478,30 @@ function chooseMode(route,segmentIndex,player){
   return modes[(state.round+player.id+segmentIndex)%modes.length];
 }
 
+function animateMapSegment(from,to,mode,fast=false){
+  return new Promise(resolve=>{
+    const a=project(from.lon,from.lat),b=project(to.lon,to.lat);
+    let bx=b.x;if(Math.abs(bx-a.x)>MAP_W/2)bx+=bx>a.x?-MAP_W:MAP_W;
+    const icon=document.createElementNS('http://www.w3.org/2000/svg','text');
+    icon.setAttribute('class','travel-map-icon '+mode);
+    icon.textContent=mode==='rail'?'🚄':mode==='sea'?'🚢':'✈️';
+    ui.playerLayer.appendChild(icon);
+    const duration=fast?95:210,start=performance.now();
+    const frame=now=>{
+      const t=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-t,2);
+      let x=a.x+(bx-a.x)*ease;x=((x%MAP_W)+MAP_W)%MAP_W;
+      const y=a.y+(b.y-a.y)*ease-Math.sin(t*Math.PI)*8;
+      icon.setAttribute('x',x);icon.setAttribute('y',y);
+      if(t<1)requestAnimationFrame(frame);else{icon.remove();resolve()}
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+function shouldShowcaseTravel(player,mode,from,to){
+  return !player.seenModes.includes(mode)||from.continent!==to.continent;
+}
+
 async function travelRoute(player,option){
   if(state.phase!=='choose')return;
   state.phase='travel';state.routeOptions=[];ui.destinationStrip.innerHTML='';ui.moveLeft.classList.remove('choose');
@@ -378,7 +510,10 @@ async function travelRoute(player,option){
     const seg=option.path[i],mode=chooseMode(seg.route,i,player);
     const group=mapEls.routes.get(seg.route.id);group?.querySelectorAll('.route').forEach(p=>p.classList.add('active'));
     const from=BY_ID.get(seg.from),to=BY_ID.get(seg.to);
-    await travelFX.play({kind:mode,from:from.name,to:to.name,fast:state.speed==='fast'});
+    const showcase=shouldShowcaseTravel(player,mode,from,to);
+    if(showcase)await travelFX.play({kind:mode,from:from.name,to:to.name,fast:state.speed==='fast'});
+    else await animateMapSegment(from,to,mode,state.speed==='fast');
+    if(!player.seenModes.includes(mode))player.seenModes.push(mode);
     group?.querySelectorAll('.route').forEach(p=>p.classList.remove('active'));
     player.country=seg.to;
     if(!player.visited.includes(seg.to)){
@@ -613,9 +748,12 @@ function nextTurn(){
     state.round++;
     if(state.festival&&state.round>state.festival.expires)state.festival=null;
     if(state.round>state.maxRounds)return finishGame('round-limit');
+    activePlayers().forEach(p=>p.buildPoints=Math.min(3,p.buildPoints+1));
     if(state.round%3===1){
       activePlayers().forEach(p=>p.money+=12);
-      announce('세계여행 지원금','새 라운드 시작! 여행 중인 모두에게 12만이 지급됩니다.');
+      announce('세계여행 지원금 + 건설권','새 라운드! 여행 중인 모두에게 12만과 건설권 1장이 지급됩니다.');
+    }else{
+      announce('새 라운드 건설권','여행 중인 모두에게 건설권 1장이 지급됩니다.');
     }
   }
   updateAll();later(beginTurn,state.speed==='fast'?140:420);
@@ -639,7 +777,7 @@ function updateAll(){
     ui.turnAvatar.textContent=p.emoji;ui.turnAvatar.style.background=p.color;
     ui.turnTitle.textContent=p.name+' · '+BY_ID.get(p.country).name;
     ui.turnSub.textContent='현금 '+p.money+'만 · 총자산 '+netWorth(p)+'만';
-    ui.status.textContent=(state.festival?'🎉 '+BY_ID.get(state.festival.country)?.name+' 축제 · ':'')+'투자국 '+ownedCount(p.id)+' · 랜드마크 '+p.landmarks;
+    ui.status.textContent=(state.festival?'🎉 '+BY_ID.get(state.festival.country)?.name+' 축제 · ':'')+'🏗️ '+p.buildPoints+' · 투자국 '+ownedCount(p.id)+' · 랜드마크 '+p.landmarks;
   }
 }
 
@@ -655,6 +793,7 @@ function renderPlayerDock(){
       '<div class="p-tags">'+
       (p.pass?'<span class="p-tag">🎟️ 패스 '+p.pass+'</span>':'')+
       (p.discount<1?'<span class="p-tag">💸 50% 할인</span>':'')+
+      (p.buildPoints?'<span class="p-tag">🏗️ 건설권 '+p.buildPoints+'</span>':'')+
       collections.map(k=>'<span class="p-tag">'+CONTINENTS[k].icon+' '+CONTINENTS[k].name+'</span>').join('')+
       '</div>';
     ui.playerDock.appendChild(card);
