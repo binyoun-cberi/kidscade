@@ -189,7 +189,7 @@
   },
   "customization": {
     "skinColor": {
-      "mode": "explicit-palette-remap-v2",
+      "mode": "frame-aware-palette-remap-v3",
       "freeColor": true,
       "preserveShading": true,
       "scope": "body-skin-only",
@@ -235,7 +235,121 @@
           "shade": 0.58,
           "role": "outline-shadow"
         }
-      ]
+      ],
+      "sourceFrames": [
+        "stand-01",
+        "stand-02",
+        "walk-01",
+        "walk-02",
+        "walk-03",
+        "walk-04",
+        "jump-01"
+      ],
+      "samplePoints": [
+        [
+          58,
+          56
+        ],
+        [
+          61,
+          56
+        ],
+        [
+          64,
+          56
+        ],
+        [
+          67,
+          56
+        ],
+        [
+          70,
+          56
+        ]
+      ],
+      "sampleRegion": {
+        "x": 44,
+        "y": 42,
+        "w": 42,
+        "h": 30,
+        "maxMatchDistance": 88,
+        "minCount": 2
+      },
+      "frameSources": {
+        "stand-01": [
+          "stand-01"
+        ],
+        "stand-02": [
+          "stand-02"
+        ],
+        "walk-01": [
+          "walk-01"
+        ],
+        "walk-02": [
+          "walk-02"
+        ],
+        "walk-03": [
+          "walk-03"
+        ],
+        "walk-04": [
+          "walk-04"
+        ],
+        "jump-01": [
+          "jump-01"
+        ],
+        "attack-01": [
+          "stand-01"
+        ],
+        "attack-02": [
+          "stand-02"
+        ],
+        "attack-03": [
+          "stand-01",
+          "jump-01"
+        ],
+        "attack-04": [
+          "stand-01",
+          "jump-01"
+        ],
+        "attack-05": [
+          "stand-02"
+        ],
+        "hurt-01": [
+          "stand-01"
+        ],
+        "hurt-02": [
+          "stand-01"
+        ],
+        "dead-01": [
+          "stand-01"
+        ],
+        "dead-02": [
+          "stand-01"
+        ],
+        "dead-03": [
+          "stand-01"
+        ],
+        "dead-04": [
+          "stand-01"
+        ],
+        "sit-01": [
+          "stand-01",
+          "jump-01"
+        ],
+        "sit-02": [
+          "stand-02",
+          "jump-01"
+        ],
+        "pickup-01": [
+          "stand-01"
+        ],
+        "pickup-02": [
+          "stand-01"
+        ],
+        "pickup-03": [
+          "stand-02"
+        ]
+      }
     }
   },
   "partCatalogs": {

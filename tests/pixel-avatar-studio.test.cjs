@@ -14,7 +14,7 @@ const hairCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair/catalog.
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=44/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=45/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -22,7 +22,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-3/);
+  assert.match(js,/pixel-v3-school-starter-4/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -53,7 +53,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-3'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-4'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -73,12 +73,12 @@ test('public studio supports free skin color without exposing JSON editing',()=>
   assert.match(html,/data-tab="skin"/);
   assert.match(js,/const SKIN_PRESETS=/);
   assert.match(js,/function loadSkinPalette\(\)/);
-  assert.match(js,/function recolorSkin\(target\)/);
+  assert.match(js,/function recolorSkin\(target,frameId='stand-01'\)/);
   assert.match(js,/function setSkinColor\(/);
   assert.match(js,/skinColorPicker/);
   assert.match(js,/type="color"/);
   assert.match(js,/skinColor:normalizeHexColor\(state\.skinColor\)/);
-  assert.match(js,/recolorSkin\(target\)/);
+  assert.match(js,/recolorSkin\(target,frameId\)/);
   assert.match(css,/\.skin-picker-card/);
   assert.match(css,/input\[type=color\]/);
   assert.equal(manifest.customization.skinColor.freeColor,true);
@@ -88,7 +88,7 @@ test('public studio supports free skin color without exposing JSON editing',()=>
 
 test('skin recoloring uses the registered exact BODY palette instead of color guessing',()=>{
   const skin=manifest.customization.skinColor;
-  assert.equal(skin.mode,'explicit-palette-remap-v2');
+  assert.equal(skin.mode,'frame-aware-palette-remap-v3');
   assert.equal(skin.defaultColor,'#fce2d2');
   assert.equal(skin.sourcePalette.length,8);
   assert.deepEqual(skin.sourcePalette.map(item=>item.source),['#fce2d2','#fac8b7','#d1b0ac','#cb9790','#9e7270','#9d8185','#805e61','#7b5053']);
@@ -98,6 +98,26 @@ test('skin recoloring uses the registered exact BODY palette instead of color gu
   assert.match(js,/targetRgb\.map\(value=>Math\.max\(0,Math\.min\(255,Math\.round\(value\*src\.shade\)\)\)\)/);
   assert.match(js,/remap\.get\(colorKey\(data\[i\],data\[i\+1\],data\[i\+2\]\)\)/);
   assert.doesNotMatch(js,/isLikelySkin|getImageData\(40,22,50,52\)|rgbToHsl|hslToRgb/);
+});
+
+test('skin recoloring covers every source and derived animation frame',()=>{
+  const skin=manifest.customization.skinColor;
+  assert.deepEqual(skin.sourceFrames,['stand-01','stand-02','walk-01','walk-02','walk-03','walk-04','jump-01']);
+  assert.equal(Object.keys(skin.frameSources).length,23);
+  assert.deepEqual(Object.keys(skin.frameSources),manifest.frameOrder);
+  for(const frameId of manifest.frameOrder){
+    assert.ok(Array.isArray(skin.frameSources[frameId])&&skin.frameSources[frameId].length>0,frameId);
+  }
+  assert.deepEqual(skin.frameSources['attack-03'],['stand-01','jump-01']);
+  assert.deepEqual(skin.frameSources['attack-04'],['stand-01','jump-01']);
+  assert.deepEqual(skin.frameSources['sit-01'],['stand-01','jump-01']);
+  assert.deepEqual(skin.frameSources['sit-02'],['stand-02','jump-01']);
+  assert.match(js,/function discoverSourceFrameSkinPalette\(frameId\)/);
+  assert.match(js,/function loadFrameSkinPalettes\(\)/);
+  assert.match(js,/function skinPaletteForFrame\(frameId\)/);
+  assert.match(js,/recolorSkin\(target,frameId\)/);
+  assert.match(js,/loadFrameSkinPalettes\(\);/);
+  assert.doesNotMatch(js,/recolorSkin\(target\);/);
 });
 
 test('skin color persists in the v3 avatar state and reset returns to original tone',()=>{
