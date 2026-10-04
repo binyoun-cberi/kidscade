@@ -440,7 +440,7 @@ function destinationInterest(player,id){
     const riskWeight=state.cpuDifficulty==='hard'?.45:.7;
     score-=getToll(id)*riskWeight;
     const takeCost=takeoverCost(c,inv);
-    if(inv.level<3&&player.money-takeCost>90)score+=state.cpuDifficulty==='hard'?34:14;
+    if(inv.level<3&&player.money-takeCost>90&&state.cpuDifficulty==='hard')score+=34;
   }
   const owned=countContinent(player.id,c.continent);
   if(owned===CONTINENTS[c.continent].need-1&&!inv)score+=55;
@@ -687,8 +687,7 @@ function offerTakeover(player,c,inv){
   if(!can||inv.level>=3)return finishLanding(player);
   if(player.isCpu){
     const hard=state.cpuDifficulty==='hard'&&player.money-cost>55&&Math.random()>.3;
-    const normal=state.cpuDifficulty==='normal'&&player.money-cost>95&&Math.random()>.72;
-    return (hard||normal)?takeover(player,c,inv,cost):finishLanding(player);
+    return hard?takeover(player,c,inv,cost):finishLanding(player);
   }
   showAction({
     icon:'🤝',title:c.name+' 사업 인수',sub:'여행비를 낸 뒤 기존 사업을 인수할 수도 있어요.',
