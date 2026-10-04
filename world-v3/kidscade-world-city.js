@@ -56,15 +56,18 @@ const NPC_MODELS={
 
 function makeLabel(text,{width=2.2,height=.52,font=38}={}){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,512,128);
-  ctx.fillStyle='rgba(255,249,218,.94)';ctx.strokeStyle='#4b5841';ctx.lineWidth=8;
-  const x=12,y=16,w=488,h=96,r=26;
-  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle='#2d3a2d';ctx.font='700 '+font+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,65);
+  const ctx=canvas.getContext('2d'),x=12,y=16,w=488,h=96,r=26;
+  const draw=value=>{
+    ctx.clearRect(0,0,512,128);
+    ctx.fillStyle='rgba(255,249,218,.94)';ctx.strokeStyle='#4b5841';ctx.lineWidth=8;
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#2d3a2d';ctx.font='700 '+font+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(value||''),256,65,455);
+  };
+  draw(text);
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
   const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true});
-  const sp=new THREE.Sprite(mat);sp.scale.set(width,height,1);sp.renderOrder=20;return sp;
+  const sp=new THREE.Sprite(mat);sp.scale.set(width,height,1);sp.renderOrder=20;
+  sp.userData.setText=value=>{draw(value);tex.needsUpdate=true;};return sp;
 }
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
@@ -241,7 +244,7 @@ export async function buildKidscadeCity(ctx){
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   for(const n of npcs){
     if(n.id==='clerk')continue;
-    const marker=makeLabel('💬',{width:.52,height:.26,font:34});
+    const marker=makeLabel('💬',{width:2.15,height:.42,font:24});
     marker.position.set(n.object.position.x,2.58,n.object.position.z);marker.visible=false;parent.add(marker);n.chatMarker=marker;
   }
   function bind(id,r,label,action){
