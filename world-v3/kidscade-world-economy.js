@@ -221,11 +221,12 @@ export function createTownEconomy(ctx){
   };
   function dailyDealKeys(kind){
     const pool=DAILY_DEAL_POOL[kind]||[],seed=Number(getDailyState?.()?.shopSeed||0)>>>0,count=kind==='market'?3:kind==='hardware'?2:1;
-    return [...pool].sort((a,b)=>{
-      const ha=Math.imul((seed^(a.length*2654435761))>>>0,2246822519)>>>0;
-      const hb=Math.imul((seed^(b.length*2654435761))>>>0,2246822519)>>>0;
-      return ha-hb||a.localeCompare(b);
-    }).slice(0,count);
+    const score=key=>{
+      let h=(seed^2166136261)>>>0;
+      for(let i=0;i<key.length;i++){h^=key.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+      return h;
+    };
+    return [...pool].sort((a,b)=>score(a)-score(b)||a.localeCompare(b)).slice(0,count);
   }
   function shopPrice(kind,key,d){
     const base=priceFor(kind,d.price),deal=dailyDealKeys(kind).includes(key);
