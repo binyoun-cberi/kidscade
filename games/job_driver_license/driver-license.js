@@ -41,13 +41,7 @@ const SHARED_VISUAL_IDS=Object.freeze({
   sharedTreeA:'nature.commonTreeA',
   sharedTreeB:'nature.commonTreeB',
   sharedPineA:'nature.pineTreeA',
-  sharedRock:'nature.rock',
-  sharedMossyRock:'nature.mossyRockA',
-  sharedGrass:'nature.grass',
-  sharedWaterTower:'prop.waterTower',
-  sharedWell:'prop.well',
-  sharedBus:'vehicle.schoolBus',
-  sharedHouse:'building.house'
+  sharedGrass:'nature.grass'
 });
 const VISUAL_MODELS={
   tree:'../../assets/game/3d/nature/kenney-nature-kit/tree-default.glb',
@@ -60,6 +54,9 @@ const VISUAL_MODELS={
   streetLight:'../../assets/game/3d/city/kenney-city-kit-roads/light-square.glb',
   stopSign:'../../assets/game/3d/city/kenney-city-kit-roads/road-sign-stop.glb',
   warningSign:'../../assets/game/3d/city/kenney-city-kit-roads/road-sign-warning.glb',
+  fence:'../../assets/game/3d/city/kenney-city-kit-roads/construction-fence.glb',
+  campusA:'../../assets/game/3d/city/kenney-city-kit-suburban/building-type-a.glb',
+  campusB:'../../assets/game/3d/city/kenney-city-kit-suburban/building-type-b.glb',
   bigBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/big-building.glb',
   redBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/building-red.glb',
   greenBuilding:'../../assets/game/3d/city/poly-pizza-city-pack/building-green.glb',
@@ -69,19 +66,26 @@ const VISUAL_MODELS={
   dumpster:'../../assets/game/3d/city/poly-pizza-city-pack/dumpster.glb',
   sedan:'../../assets/game/3d/vehicles/kenney-car-kit/sedan.glb',
   suv:'../../assets/game/3d/vehicles/kenney-car-kit/suv.glb',
+  hatch:'../../assets/game/3d/vehicles/kenney-car-kit/hatchback-sports.glb',
   taxi:'../../assets/game/3d/vehicles/kenney-car-kit/taxi.glb',
   van:'../../assets/game/3d/vehicles/kenney-car-kit/van.glb',
   sharedTreeA:shared3DPath('nature.commonTreeA','../../'),
   sharedTreeB:shared3DPath('nature.commonTreeB','../../'),
   sharedPineA:shared3DPath('nature.pineTreeA','../../'),
-  sharedRock:shared3DPath('nature.rock','../../'),
-  sharedMossyRock:shared3DPath('nature.mossyRockA','../../'),
-  sharedGrass:shared3DPath('nature.grass','../../'),
-  sharedWaterTower:shared3DPath('prop.waterTower','../../'),
-  sharedWell:shared3DPath('prop.well','../../'),
-  sharedBus:shared3DPath('vehicle.schoolBus','../../'),
-  sharedHouse:shared3DPath('building.house','../../')
+  sharedGrass:shared3DPath('nature.grass','../../')
 };
+const CAMPUS_BUILDINGS=[
+  {key:'campusA',x:-16,z:70,size:12,rot:Math.PI/2,label:'운전면허시험장'},
+  {key:'campusB',x:-16,z:48,size:10,rot:Math.PI/2,label:'안전교육동'},
+  {key:'bigBuilding',x:70,z:53,size:11,rot:Math.PI,label:'차량관리동'}
+];
+const WAITING_CARS=[
+  ['sedan',14,77,Math.PI/2],['hatch',14,71,Math.PI/2],['suv',14,65,Math.PI/2],
+  ['van',21,77,Math.PI/2],['sedan',21,71,Math.PI/2],['hatch',21,65,Math.PI/2]
+];
+const CAMPUS_TREES=[
+  [-28,79],[-28,58],[-28,34],[32,59],[92,59],[126,44],[126,4],[78,3],[30,3]
+];
 let signalRedMat,signalGreenMat,signalGreen=false;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
@@ -483,6 +487,30 @@ function makeEnhancedRoad(w,d,x,z,y=0,rx=0,axis='z'){
     }
   }
   return road;
+}
+function makeParkingLot(w,d,x,z){
+  makeFlat(w,d,0x666d70,x,z,.055);
+  const left=x-w/2+2.2,right=x+w/2-2.2,top=z+d/2-2.2,bottom=z-d/2+2.2;
+  for(let px=left;px<=right+.01;px+=4.6){
+    line(.11,d-3.2,px,z,0xf7f4df,.145);
+  }
+  line(w-2,.11,x,top,0xf7f4df,.145);line(w-2,.11,x,bottom,0xf7f4df,.145);
+}
+function makeCrosswalk(cx,cz,rot=0){
+  for(let i=-3;i<=3;i++){
+    const stripe=makeFlat(rot?2.7:.42,rot?.42:2.7,0xf4f2e8,
+      cx+(rot?i*.72:0),cz+(rot?0:i*.72),.17);
+    stripe.rotation.y=0;
+  }
+}
+function makeGroundLabel(text,x,z,w=5.6,h=1.7,rotation=0,bg='rgba(26,45,54,.78)',fg='#ffffff'){
+  const c=document.createElement('canvas');c.width=512;c.height=160;const q=c.getContext('2d');
+  q.fillStyle=bg;q.fillRect(0,0,c.width,c.height);
+  q.strokeStyle='rgba(255,255,255,.5)';q.lineWidth=10;q.strokeRect(7,7,c.width-14,c.height-14);
+  q.fillStyle=fg;q.font='900 62px sans-serif';q.textAlign='center';q.textBaseline='middle';q.fillText(text,256,82);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.rotation.z=rotation;m.position.set(x,.205,z);scene.add(m);return m;
 }
 function createFallbackTree(x,z){
   const g=new THREE.Group();
