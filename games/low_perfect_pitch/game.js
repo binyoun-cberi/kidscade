@@ -361,7 +361,7 @@ function stairSuccess(kind,now){
   state[kind]++;state.combo++;state.maxCombo=Math.max(state.maxCombo,state.combo);
   state.stairPeak=Math.max(state.stairPeak,state.stairStep+1);
   state.score+=kind==='perfect'?150+state.stairStep*12:95+state.stairStep*8;
-  popGrade(kind==='perfect'?'PERFECT!':'GOOD!',kind);
+  popGrade(kind==='perfect'?'반짝 PERFECT! ✨':'좋아요! ♪',kind);
   burst((state.viewW||900)*.34,(state.viewH||400)*.56,kind);
   state.stairStep++;state.stairHoldAt=0;state.stairLastError=null;state.stairStepStartedAt=now;
   if(targetFrequency(state.stairStep)>=STAIR.maxHz){endGame('ceiling');return}
@@ -373,7 +373,7 @@ function stairSuccess(kind,now){
 }
 function stairMiss(now){
   state.miss++;state.combo=0;state.stairLives--;state.stairHoldAt=0;state.stairStepStartedAt=now;state.stairLastError=null;
-  popGrade('다시 한 번','miss');updateHud();
+  popGrade('아깝! 다시 한 번 🌷','miss');updateHud();
   if(state.stairLives<=0){endGame('lives');return}
   ui.time.textContent='♥'.repeat(state.stairLives)+'♡'.repeat(3-state.stairLives);
 }
@@ -466,12 +466,12 @@ function judgeGate(g){
   const err=noteErrorCents(g.target),c=cfg();
   if(err!==null&&Math.abs(err)<=c.perfectCents){
     g.grade='perfect';state.perfect++;state.combo++;state.score+=120+Math.min(100,state.combo*4);
-    popGrade('PERFECT!','perfect');burst((state.viewW||900)*.22,laneYBySemitone(SCALE[g.target]),'perfect');
+    popGrade('반짝 PERFECT! ✨','perfect');burst((state.viewW||900)*.22,laneYBySemitone(SCALE[g.target]),'perfect');
   }else if(err!==null&&Math.abs(err)<=c.passCents){
     g.grade='good';state.good++;state.combo++;state.score+=75+Math.min(60,state.combo*2);
-    popGrade('GOOD!','good');burst((state.viewW||900)*.22,laneYBySemitone(SCALE[g.target]),'good');
+    popGrade('좋아요! ♪','good');burst((state.viewW||900)*.22,laneYBySemitone(SCALE[g.target]),'good');
   }else{
-    g.grade='miss';state.miss++;state.combo=0;popGrade(err===null?'소리를 내봐요!':'MISS','miss');
+    g.grade='miss';state.miss++;state.combo=0;popGrade(err===null?'목소리를 들려줘요 ♪':'아깝!','miss');
   }
   state.maxCombo=Math.max(state.maxCombo,state.combo);
   g.flash=.34;updateHud();
