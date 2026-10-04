@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-part",
+  "id": "brown-corduroy-lower-01",
+  "label": "브라운 코듀로이",
+  "layer": "lower",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "design": "brown-corduroy",
+  "palette": [
+    [
+      78,
+      52,
+      37,
+      255
+    ],
+    [
+      127,
+      86,
+      57,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}
