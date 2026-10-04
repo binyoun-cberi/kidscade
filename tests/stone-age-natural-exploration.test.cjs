@@ -9,7 +9,7 @@ const gameDir = path.join(ROOT, 'games/high_human_history_cards');
 
 function read(name){ return fs.readFileSync(path.join(gameDir, name), 'utf8'); }
 
-test('Stone Age v11 uses direct natural-region exploration instead of a global expedition button', () => {
+test('Stone Age v12 uses direct natural-region exploration instead of a global expedition button', () => {
   const html = read('index.html');
   const js = read('game.js');
   assert.doesNotThrow(() => new Function(js));
@@ -46,12 +46,41 @@ test('natural land can be converted into managed production sites', () => {
   assert.match(js, /간돌도끼\+숲→벌목장/);
 });
 
-test('catalog and game shell are cache-bumped to v11', () => {
+test('catalog and game shell are cache-bumped to v12', () => {
   const html = read('index.html');
   const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
   const entry = data.games.find(g => g.id === 'high_human_history_cards');
   assert.ok(entry);
-  assert.match(html, /style\.css\?v=11/);
-  assert.match(html, /game\.js\?v=11/);
-  assert.ok(entry.href.endsWith('?v=11'));
+  assert.match(html, /style\.css\?v=12/);
+  assert.match(html, /game\.js\?v=12/);
+  assert.ok(entry.href.endsWith('?v=12'));
+});
+
+test('v12 living nature depletes, recovers and changes exploration pressure', () => {
+  const js = read('game.js');
+  const css = read('style.css');
+  assert.match(js, /const NATURE_ECO/);
+  assert.match(js, /function useNature/);
+  assert.match(js, /function tickNatureRecovery/);
+  assert.match(js, /adjustedExploreEntries/);
+  assert.match(js, /ecoUse:2/);
+  assert.match(js, /ecoUse:1/);
+  assert.match(css, /\.natureBadge/);
+  assert.match(css, /\.nature-depleted/);
+});
+
+test('v12 restores wolves, auto-stacks loose output and separates work from exploration counts', () => {
+  const js = read('game.js');
+  assert.match(js, /\['wolf',8\]/);
+  assert.match(js, /function nearbyStack/);
+  assert.match(js, /AUTO_STACK_KINDS/);
+  assert.match(js, /!c\.exploring&&\(c\.busy\|\|c\.assignmentNodeId\)/);
+});
+
+test('v12 managed production is deliberately stronger than wild extraction', () => {
+  const js = read('game.js');
+  assert.match(js, /loggingCamp:40/);
+  assert.match(js, /quarry:40/);
+  assert.match(js, /loggingCamp:\{ms:7000[^\n]+\['wood',3\]/);
+  assert.match(js, /quarry:\{ms:7600[^\n]+\['stone',4\]/);
 });
