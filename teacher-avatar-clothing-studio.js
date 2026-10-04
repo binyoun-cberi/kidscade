@@ -3,7 +3,7 @@
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
 const SAVE_KEY='kidscade-avatar-studio-v3';
-const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v2';
+const PANEL_STATE_KEY='kidscade-avatar-studio-panels-v3';
 const SIZE=128;
 const ROOT_X=64;
 const GROUND_Y=118;
