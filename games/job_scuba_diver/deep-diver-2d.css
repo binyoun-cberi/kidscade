@@ -407,3 +407,18 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 @media(max-width:760px){
  #rightHud #lightBtn{display:none}
 }
+
+
+/* v36 guided expedition rework */
+.rookieTip{margin-top:7px;padding:6px 8px;border-radius:9px;background:rgba(255,211,91,.10);border:1px solid rgba(255,222,120,.22);color:#ffe69a;font-size:9px;font-weight:900;line-height:1.35}
+.objectiveCompass{display:flex;align-items:center;gap:8px;margin-top:7px;padding:6px 8px;border-radius:10px;background:rgba(16,103,125,.24);border:1px solid rgba(121,235,255,.24)}
+.objectiveCompass>span{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:50%;background:rgba(107,232,255,.14);color:#bff8ff;font-size:20px;font-weight:1000;box-shadow:inset 0 0 0 1px rgba(173,247,255,.18)}
+.objectiveCompass>div{min-width:0;display:flex;align-items:baseline;gap:7px}.objectiveCompass b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eafcff;font-size:10px}.objectiveCompass small{flex:none;color:#8ce9f7;font-size:8px;font-weight:900}
+.objectiveCompass[data-kind="return"]{background:rgba(255,179,76,.12);border-color:rgba(255,201,114,.28)}.objectiveCompass[data-kind="return"]>span{color:#ffe09a;background:rgba(255,193,80,.14)}
+.gearRecommend{margin:6px 0;padding:5px 7px;border-radius:8px;background:rgba(106,227,244,.08);color:#aeeef6;font-size:9px;font-weight:900}
+.gearCard.recommended{outline:2px solid rgba(255,219,104,.42);outline-offset:2px}.gearCard>b i{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:999px;background:#f0c653;color:#162830;font-size:7px;font-style:normal;vertical-align:2px}
+.rookieDockTip{display:block;margin-top:5px;padding:5px 8px;border-radius:8px;background:rgba(255,211,91,.10);color:#ffe59a;font-size:8px;font-style:normal;font-weight:900}
+.dockWelcome{flex-wrap:wrap}.dockWelcome .rookieDockTip{flex-basis:100%}
+.dishReady.autoServe{animation:autoServePulse .58s ease-in-out infinite alternate}
+@keyframes autoServePulse{from{transform:scale(.995);box-shadow:0 0 0 rgba(101,219,154,0)}to{transform:scale(1.005);box-shadow:0 0 18px rgba(101,219,154,.12)}}
+@media(max-width:700px){#missionHud{max-width:min(500px,58vw)}.rookieTip{font-size:8px}.objectiveCompass{gap:5px;padding:5px 6px}.objectiveCompass>span{flex-basis:26px;height:26px;font-size:17px}.objectiveCompass b{font-size:9px}.objectiveCompass small{font-size:7px}}
