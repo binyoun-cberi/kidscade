@@ -155,20 +155,20 @@ function freezeObject(object){
   object.updateMatrix();object.matrixAutoUpdate=false;return object;
 }
 
-async function addArchitecturalDetails(group,addModel,def,level){
+async function addArchitecturalDetails(group,walls,addModel,def,level){
   const b=def.bounds,back=b.z1+.13;
   const jobs=[
-    addModel(group,FURNITURE+'wall-window-slide.glb',{x:-Math.min(1.55,(b.x2-b.x1)*.22),z:back,w:2.05,h:2.25,d:.28,rot:0,name:'home-window-main-l'+level}),
+    addModel(walls.north,FURNITURE+'wall-window-slide.glb',{x:-Math.min(1.55,(b.x2-b.x1)*.22),z:back,w:2.05,h:2.25,d:.28,rot:0,name:'home-window-main-l'+level}),
     addModel(group,FURNITURE+'rug-doormat.glb',{x:0,z:b.z2-.48,w:1.7,h:.06,d:.72,rot:0,name:'home-doormat-l'+level}),
-    addModel(group,FURNITURE+'lamp-wall.glb',{x:Math.min(1.85,b.x2-.55),z:back+.03,w:.45,h:.78,d:.30,rot:0,name:'home-wall-lamp-l'+level})
+    addModel(walls.north,FURNITURE+'lamp-wall.glb',{x:Math.min(1.85,b.x2-.55),z:back+.03,w:.45,h:.78,d:.30,rot:0,name:'home-wall-lamp-l'+level})
   ];
   if(level>=2){
-    jobs.push(addModel(group,BAKERY+'curtains.glb',{x:-Math.min(1.55,(b.x2-b.x1)*.22),z:back+.05,w:2.3,h:2.20,d:.30,rot:0,name:'home-curtains-l'+level}));
-    jobs.push(addModel(group,FURNITURE+'wall-window.glb',{x:b.x2-.12,z:.25,w:2.0,h:2.2,d:.26,rot:-Math.PI/2,name:'home-side-window-l'+level}));
+    jobs.push(addModel(walls.north,BAKERY+'curtains.glb',{x:-Math.min(1.55,(b.x2-b.x1)*.22),z:back+.05,w:2.3,h:2.20,d:.30,rot:0,name:'home-curtains-l'+level}));
+    jobs.push(addModel(walls.east,FURNITURE+'wall-window.glb',{x:b.x2-.12,z:.25,w:2.0,h:2.2,d:.26,rot:-Math.PI/2,name:'home-side-window-l'+level}));
   }
   if(level>=3){
-    jobs.push(addModel(group,BAKERY+'wall-shelf-bakery-a.glb',{x:3.65,z:back+.08,w:1.55,h:.88,d:.30,rot:0,name:'home-architecture-shelf-a'}));
-    jobs.push(addModel(group,BAKERY+'wall-shelf-bakery-b.glb',{x:5.05,z:back+.08,w:1.2,h:.82,d:.30,rot:0,name:'home-architecture-shelf-b'}));
+    jobs.push(addModel(walls.north,BAKERY+'wall-shelf-bakery-a.glb',{x:3.65,z:back+.08,w:1.55,h:.88,d:.30,rot:0,name:'home-architecture-shelf-a'}));
+    jobs.push(addModel(walls.north,BAKERY+'wall-shelf-bakery-b.glb',{x:5.05,z:back+.08,w:1.2,h:.82,d:.30,rot:0,name:'home-architecture-shelf-b'}));
   }
   const objects=await Promise.all(jobs);objects.forEach(freezeObject);
 }
@@ -179,7 +179,7 @@ async function buildLevel(parent,addModel,level){
   const walls=addWallShell(group,def);
   addKitchenInset(group,def,level);
   addWarmLights(group,def);
-  await addArchitecturalDetails(group,addModel,def,level);
+  await addArchitecturalDetails(group,walls,addModel,def,level);
   return {group,walls,def};
 }
 
