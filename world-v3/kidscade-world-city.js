@@ -73,7 +73,7 @@ function makeResidentLabel(text,{role='주민',accent='#7c9863'}={}){
   };
   draw(text);
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearFilter;
-  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:false});
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:true});
   const sp=new THREE.Sprite(mat);sp.scale.set(1.92,.56,1);sp.renderOrder=40;
   sp.userData.setText=value=>{
     draw(value);tex.needsUpdate=true;
