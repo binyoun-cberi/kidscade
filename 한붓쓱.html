@@ -1073,10 +1073,6 @@ function completeStage(){
   const quality=Math.max(0,400-state.hintsUsed*80-state.undos*20-state.resets*40),score=num*1000+quality;
   try{
     window.KidscadeGame?.score?.(score);
-    window.KidscadeGame?.achievement?.('low_one_stroke.first_route');
-    window.KidscadeGame?.achievementProgress?.('low_one_stroke.stages_10',save.completed.length);
-    window.KidscadeGame?.achievementProgress?.('low_one_stroke.master_50',save.completed.length);
-    if(clean)window.KidscadeGame?.achievement?.('low_one_stroke.clean_route');
     window.KidscadeGame?.gameOver?.({score,stage:num,sourceStage:state.stage.sourceNum||num,completedCount:save.completed.length,hints:state.hintsUsed,undos:state.undos,resets:state.resets,clean,elapsedMs:Math.round(elapsedMs),cleared:true});
   }catch(_){}
   const chapterDone=num%10===0&&CHAPTERS[(num-1)/10]&&STAGES.slice(num-10,num).every(s=>save.completed.includes(s.num));
