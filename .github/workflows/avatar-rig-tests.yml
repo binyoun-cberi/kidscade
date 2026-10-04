@@ -5,6 +5,8 @@ on:
     paths:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
+      - 'school-avatar-runtime.js'
+      - 'avatar-school-studio.js'
       - 'avatar-studio.html'
       - 'avatar-integration.js'
       - 'account-profile-gate.js'
@@ -12,6 +14,10 @@ on:
       - 'pixel-avatar-lab.html'
       - 'scripts/extract-avatar-hair.py'
       - 'assets/game/characters/kidscade-avatar-v1/**'
+      - 'assets/game/characters/kidscade-avatar-v3/**'
+      - 'teacher-avatar-clothing-studio.js'
+      - 'teacher/avatar-clothing-studio.html'
+      - 'tests/avatar-clothing-studio.test.cjs'
       - 'tests/pixel-avatar-studio.test.cjs'
       - 'tests/ui-information-architecture.test.cjs'
       - 'games/cube3d/cube-architect-avatar.js'
@@ -22,12 +28,18 @@ on:
     paths:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
+      - 'school-avatar-runtime.js'
+      - 'avatar-school-studio.js'
       - 'avatar-studio.html'
       - 'avatar-integration.js'
       - 'account-profile-gate.js'
       - 'account-session-safety.js'
       - 'pixel-avatar-lab.html'
       - 'assets/game/characters/kidscade-avatar-v1/**'
+      - 'assets/game/characters/kidscade-avatar-v3/**'
+      - 'teacher-avatar-clothing-studio.js'
+      - 'teacher/avatar-clothing-studio.html'
+      - 'tests/avatar-clothing-studio.test.cjs'
       - 'tests/pixel-avatar-studio.test.cjs'
       - 'games/cube3d/cube-architect-avatar.js'
       - 'tests/cube-architect-v21.test.cjs'
@@ -55,8 +67,11 @@ jobs:
         run: |
           node --check pixel-avatar-renderer.js
           node --check avatar-pixel-studio.js
+          node --check school-avatar-runtime.js
+          node --check avatar-school-studio.js
           node --check avatar-integration.js
+          node --check teacher-avatar-clothing-studio.js
           node --check account-profile-gate.js
           node --check account-session-safety.js
       - name: Run avatar rig regression tests
-        run: node --test tests/pixel-avatar-studio.test.cjs tests/ui-information-architecture.test.cjs tests/cube-architect-v21.test.cjs
+        run: node --test tests/avatar-clothing-studio.test.cjs tests/pixel-avatar-studio.test.cjs tests/ui-information-architecture.test.cjs tests/cube-architect-v21.test.cjs
