@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 test('Game SDK exposes the stable v1 contract', () => {
   assert.equal(sdk.VERSION, 1);
-  for (const name of ['init','start','pause','resume','registerPauseHandlers','registerCleanup','dispose','sound','setMuted','score','gameOver','achievement','achievementProgress','achievementIncrement','restart','exit','state']) {
+  for (const name of ['init','start','pause','resume','registerPauseHandlers','registerCleanup','dispose','sound','setMuted','score','result','milestone','gameOver','achievement','achievementProgress','achievementIncrement','restart','exit','state']) {
     assert.equal(typeof sdk[name], 'function', `${name} must be a function`);
   }
 });
@@ -68,4 +68,17 @@ test('Game SDK achievement helpers use the common event channel', () => {
   assert.match(source, /function achievementProgress\(/);
   assert.match(source, /function achievementIncrement\(/);
   assert.match(source, /emit\('achievement'/);
+});
+
+
+test('Game SDK exposes structured result and milestone events without redefining legacy gameOver', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'kidscade-game-sdk.js'), 'utf8');
+  assert.match(source, /function result\(detail = \{\}\)/);
+  assert.match(source, /function milestone\(name, detail = \{\}\)/);
+  assert.match(source, /emit\('result'/);
+  assert.match(source, /emit\('milestone'/);
+  assert.match(source, /RESULT_SCOPES/);
+  assert.match(source, /RESULT_STATUSES/);
+  assert.match(source, /RESULT_OUTCOMES/);
+  assert.match(source, /function gameOver\(detail = \{\}\)/);
 });
