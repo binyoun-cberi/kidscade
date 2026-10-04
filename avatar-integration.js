@@ -5,13 +5,9 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v2-rig-haircatalog-6';
-  const PIXEL_STATE_KEY = 'kidscade-pixel-avatar-v1';
-  const AVATAR_RIG_RUNTIME_URL = 'pixel-avatar-renderer.js?v=27';
-  const GUEST_DEFAULT_CONFIG = Object.freeze({
-    hairId:'male-short-01', upper:1, lower:1,
-    eyes:1, eyebrows:1, nose:1, mouth:1, blush:0, animation:'static'
-  });
+  const PREVIEW_VERSION = 'pixel-v3-school-starter-1';
+  const PIXEL_STATE_KEY = 'kidscade-avatar-v3';
+  const SCHOOL_DEFAULT_IMAGE = 'assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png';
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   let overlay = null;
   let frame = null;
@@ -123,15 +119,11 @@
   }
 
   function ownedSummary() {
-    return pixelState() ? '검수 헤어 · 픽셀 파츠' : '새 픽셀 아바타';
+    return '학교 탐험가 · v3 파츠';
   }
 
   function equippedSummary() {
-    const pixel = pixelState();
-    if (!pixel) return '픽셀 기본 코디';
-    const upper = pixel.upper ? '파란 후드' : '기본 상의';
-    const lower = pixel.lower ? '데님 팬츠' : '기본 하의';
-    return upper + ' · ' + lower;
+    return '교복 · 운동화 · 자 · 교과서';
   }
 
   function isPreviewData(data) {
@@ -149,55 +141,6 @@
     }
   }
 
-  function isGuestSession() {
-    return !window.KidscadeAccount?.account;
-  }
-
-  function loadAvatarRigRuntime() {
-    const ready = window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1;
-    if (ready?.create) return Promise.resolve(ready);
-    if (rendererLoadPromise) return rendererLoadPromise;
-
-    rendererLoadPromise = new Promise((resolve, reject) => {
-      let script = document.querySelector('script[data-kc-avatar-rig-runtime="1"]');
-      const finish = () => {
-        const api = window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1;
-        if (api?.create) resolve(api);
-        else reject(new Error('Avatar rig runtime did not initialize.'));
-      };
-      if (script) {
-        script.addEventListener('load', finish, { once:true });
-        script.addEventListener('error', () => reject(new Error('Avatar rig runtime load failed.')), { once:true });
-        if ((window.KidscadePixelAvatarV2 || window.KidscadePixelAvatarV1)?.create) finish();
-        return;
-      }
-      script = document.createElement('script');
-      script.src = AVATAR_RIG_RUNTIME_URL;
-      script.async = true;
-      script.dataset.kcAvatarRigRuntime = '1';
-      script.addEventListener('load', finish, { once:true });
-      script.addEventListener('error', () => reject(new Error('Avatar rig runtime load failed.')), { once:true });
-      document.head.appendChild(script);
-    });
-    return rendererLoadPromise;
-  }
-
-  function guestConfigFromPixelState() {
-    const pixel = pixelState();
-    if (!pixel) return { ...GUEST_DEFAULT_CONFIG };
-    return {
-      hairId:typeof pixel.hairId === 'string' && pixel.hairId ? pixel.hairId : 'male-short-01',
-      upper:pixel.upper ? 1 : 0,
-      lower:pixel.lower ? 1 : 0,
-      eyes:Number(pixel.eyes) || 1,
-      eyebrows:Number(pixel.eyebrows) || 1,
-      nose:Number(pixel.noses) || 1,
-      mouth:Number(pixel.mouths) || 1,
-      blush:Number(pixel.blush) || 0,
-      animation:'static'
-    };
-  }
-
   function ensureGuestDefaultPreview() {
     const saved = storedPreview();
     if (saved) return Promise.resolve(saved);
@@ -211,18 +154,22 @@
         }
       } catch (_) {}
 
-      const api = await loadAvatarRigRuntime();
-      const canvas = document.createElement('canvas');
-      canvas.width = 128;
-      canvas.height = 128;
-      const avatar = await api.create(canvas, { playing:false, config:guestConfigFromPixelState() });
-      const data = await avatar.snapshot('image/png');
-      avatar.destroy?.();
-      if (isPreviewData(data)) {
-        localStorage.setItem(PREVIEW_KEY, data);
-        localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
-        return data;
-      }
+      const image = new Image();
+      image.src = new URL(SCHOOL_DEFAULT_IMAGE, document.baseURI).href;
+      try {
+        await image.decode();
+        const schoolCanvas = document.createElement('canvas');
+        schoolCanvas.width = schoolCanvas.height = 128;
+        const schoolCtx = schoolCanvas.getContext('2d');
+        schoolCtx.imageSmoothingEnabled = false;
+        schoolCtx.drawImage(image, 0, 0);
+        const data = schoolCanvas.toDataURL('image/png');
+        if (isPreviewData(data)) {
+          localStorage.setItem(PREVIEW_KEY, data);
+          localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
+          return data;
+        }
+      } catch (_) {}
       return '';
     })().finally(() => { guestDefaultPreviewPromise = null; });
 
@@ -327,9 +274,7 @@
         } catch (_) {}
         liveImg?.removeAttribute('src');
         hideBrokenPreview(layer);
-        if (isGuestSession()) {
-          setTimeout(() => ensureGuestDefaultPreview().then(ensurePreviewLayer).catch(() => {}), 0);
-        }
+        setTimeout(() => ensureGuestDefaultPreview().then(ensurePreviewLayer).catch(() => {}), 0);
       });
     }
 
@@ -421,7 +366,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `
       <div id="kidscade-avatar-studio-bar">
-        <div><strong>👤 Kidscade 캐릭터 아틀리에</strong><span>새 픽셀 파츠를 조합해 나만의 캐릭터를 만들어요</span></div>
+        <div><strong>👤 Kidscade 캐릭터 아틀리에</strong><span>새 v3 파츠로 나만의 캐릭터를 만들어요</span></div>
         <button id="kidscade-avatar-studio-close" type="button">저장하고 닫기 ✕</button>
       </div>
       <iframe id="kidscade-avatar-studio-frame" title="Kidscade 캐릭터 꾸미기 상점" src="${STUDIO_URL}"></iframe>`;
@@ -613,7 +558,7 @@
       legacy.classList.add('hidden');
       legacy.setAttribute('aria-hidden', 'true');
       legacy.setAttribute('inert', '');
-      legacy.dataset.retiredBy = 'pixel-avatar-v1';
+      legacy.dataset.retiredBy = 'pixel-avatar-v3';
     }
     installStyles();
     buildOverlay();
