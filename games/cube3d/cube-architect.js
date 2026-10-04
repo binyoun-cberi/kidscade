@@ -1522,6 +1522,7 @@ let freeSaveDirty=false,freeSaveDueAt=0,freeStepHop=0;
 let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDurationNow=0,miningBeat=.25;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let freeFluidKind='',lastEnvironmentDamage=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
 let freeHeldToolRoot=null,freeHeldToolKey='',freeHeldToolToken=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
@@ -2389,6 +2390,7 @@ function initFree(){
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
+  freeFluidKind='';lastEnvironmentDamage=0;
   seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
@@ -3842,34 +3844,107 @@ function checkCollectibles(t){
   updateFreeMission();
 }
 function blockCoordFromWorld(v){return Math.floor(v+.5)}
+function stairHighHalf(data,x,z,wx,wz){
+  const facing=((data?.facing||0)%4+4)%4,dx=wx-x,dz=wz-z;
+  return facing===0?dz>=0:facing===1?dx>=0:facing===2?dz<=0:dx<=0;
+}
+function collisionTopForData(data,x,y,z,wx=x,wz=z){
+  if(!isSolidData(data,x,y,z))return null;
+  if(data.type==='slab')return y+.5;
+  if(data.type==='stairs')return y+(stairHighHalf(data,x,z,wx,wz)?1:.5);
+  if(data.type==='roof'){
+    const facing=((data.facing||0)%4+4)%4;
+    const across=(facing%2===0)?Math.abs(wx-x):Math.abs(wz-z);
+    return y+Math.max(.04,1-Math.min(.5,across)*2);
+  }
+  return y+1;
+}
+function thinBlockContains(data,x,z,wx,wz){
+  const type=data?.type;
+  if(!['door','glassPane','windowFrame'].includes(type))return true;
+  const facing=((data.facing||0)%4+4)%4;
+  const across=facing%2===0?Math.abs(wx-x):Math.abs(wz-z);
+  const along=facing%2===0?Math.abs(wz-z):Math.abs(wx-x);
+  const halfThickness=type==='door'?.09:.075;
+  return across<=halfThickness&&along<=.5;
+}
+function pointHitsWorldBlock(wx,wy,wz){
+  const x=blockCoordFromWorld(wx),y=Math.floor(wy),z=blockCoordFromWorld(wz),data=getBlock(x,y,z);
+  if(!data)return false;
+  let collisionData=data;
+  if(data.type==='doorTop')collisionData=getBlock(x,y-1,z)||data;
+  if(!thinBlockContains(collisionData,x,z,wx,wz))return false;
+  const top=collisionTopForData(data,x,y,z,wx,wz);
+  return top!==null&&wy<top-.002;
+}
 function playerCollidesAt(px,eyeY,pz){
   const r=.27,feet=eyeY-1.62;
-  for(const ox of [-r,r])for(const oz of [-r,r])for(const sy of [feet+.08,feet+.82,eyeY-.12]){
-    const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz);
-    if(isSolidData(getBlock(x,y,z),x,y,z))return true;
-  }return false;
+  for(const ox of [-r,r])for(const oz of [-r,r])for(const sy of [feet+.08,feet+.82,eyeY-.12])
+    if(pointHitsWorldBlock(px+ox,sy,pz+oz))return true;
+  return false;
 }
 function groundTopBelow(px,eyeY,pz){
-  const x=blockCoordFromWorld(px),z=blockCoordFromWorld(pz),feet=eyeY-1.62;
-  for(let y=Math.min(WORLD_MAX_Y,Math.floor(feet+.15));y>=WORLD_MIN_Y;y--)if(isSolidData(getBlock(x,y,z),x,y,z))return y+1;
-  return WORLD_MIN_Y+1;
+  const r=.22,feet=eyeY-1.62,samples=[[0,0],[-r,-r],[-r,r],[r,-r],[r,r]];
+  let best=WORLD_MIN_Y+1;
+  for(const [ox,oz] of samples){
+    const wx=px+ox,wz=pz+oz,x=blockCoordFromWorld(wx),z=blockCoordFromWorld(wz);
+    for(let y=Math.min(WORLD_MAX_Y,Math.floor(feet+.16));y>=WORLD_MIN_Y;y--){
+      const data=getBlock(x,y,z),top=collisionTopForData(data,x,y,z,wx,wz);
+      if(top!==null&&top<=feet+.18){best=Math.max(best,top);break}
+    }
+  }
+  return best;
+}
+function stepHeightAt(px,eyeY,pz,maxStep=.56){
+  const r=.27,feet=eyeY-1.62;
+  let needed=0;
+  for(const ox of [-r,r])for(const oz of [-r,r]){
+    const wx=px+ox,wz=pz+oz,x=blockCoordFromWorld(wx),z=blockCoordFromWorld(wz),y=Math.floor(feet+.08);
+    const data=getBlock(x,y,z),top=collisionTopForData(data,x,y,z,wx,wz);
+    if(top!==null&&top>feet+.03)needed=Math.max(needed,top-feet);
+  }
+  return needed>0&&needed<=maxStep?needed:0;
+}
+function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera.position.z){
+  const r=.30,feet=eyeY-1.62,state={water:false,lava:false,fire:false,cactus:false,headUnderWater:false};
+  for(const ox of [-r,0,r])for(const oz of [-r,0,r])for(const sy of [feet+.08,feet+.62,eyeY-.16]){
+    const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz),type=getBlock(x,y,z)?.type;
+    if(type==='water')state.water=true;
+    else if(type==='lava')state.lava=true;
+    else if(type==='fire')state.fire=true;
+    else if(type==='cactus')state.cactus=true;
+  }
+  const hx=blockCoordFromWorld(px),hy=Math.floor(eyeY-.16),hz=blockCoordFromWorld(pz);
+  state.headUnderWater=getBlock(hx,hy,hz)?.type==='water';
+  return state;
+}
+function damageByEnvironment(state,t){
+  if(gameFreeMode!=='survival')return;
+  const kind=state.lava?'용암':state.fire?'불':state.cactus?'선인장':'';
+  if(!kind)return;
+  const cooldown=state.lava?700:1050;if(t-lastEnvironmentDamage<cooldown)return;
+  lastEnvironmentDamage=t;healthRegenClock=0;
+  survivalHealth=Math.max(0,survivalHealth-(state.lava?2:1));
+  toast(kind+(state.lava?'에 들어갔어요! 빨리 빠져나오세요.':'에 닿았어요!')+' '+('♥'.repeat(survivalHealth)||'생명 0'));
+  sfx('bad');updateCreatureHealthUi();
+  if(survivalHealth<=0)returnAfterCreatureDefeat();
 }
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
-  // A diagonal move must not step the player upward twice in one frame.
+  // Only half-height geometry may auto-step. Full cubes now require an actual jump.
   let stepped=false;
-  const nx=camera.position.x+dx;
-  if(!playerCollidesAt(nx,camera.position.y,camera.position.z))camera.position.x=nx;
-  else if(onGround&&!stepped&&
-    !playerCollidesAt(nx,camera.position.y+1,camera.position.z)){
-    camera.position.y+=1;camera.position.x=nx;stepped=true;freeVelocityY=0;freeStepHop=1;
-  }
-  const nz=camera.position.z+dz;
-  if(!playerCollidesAt(camera.position.x,camera.position.y,nz))camera.position.z=nz;
-  else if(onGround&&!stepped&&
-    !playerCollidesAt(camera.position.x,camera.position.y+1,nz)){
-    camera.position.y+=1;camera.position.z=nz;freeVelocityY=0;freeStepHop=1;
-  }
+  const tryAxis=(nextX,nextZ,axis)=>{
+    if(!playerCollidesAt(nextX,camera.position.y,nextZ)){
+      camera.position[axis]=axis==='x'?nextX:nextZ;return true;
+    }
+    if(!onGround||stepped)return false;
+    const step=stepHeightAt(nextX,camera.position.y,nextZ);
+    if(step<=0||playerCollidesAt(nextX,camera.position.y+step,nextZ))return false;
+    camera.position.y+=step;camera.position[axis]=axis==='x'?nextX:nextZ;
+    stepped=true;freeVelocityY=0;freeStepHop=1;return true;
+  };
+  tryAxis(camera.position.x+dx,camera.position.z,'x');
+  tryAxis(camera.position.x,camera.position.z+dz,'z');
 }
 function nearestUndiscoveredRegion(x,z){
   const seen=new Set(visitedBiomes);
@@ -3993,11 +4068,14 @@ function updateFree(dt,t){
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
   const displayEye=camera.position.y;
-  // Physics and visual camera heights are intentionally separate. A one-cell
-  // step is immediate for collision, gradual for the player's view.
+  // Physics and visual camera heights are intentionally separate.
   camera.position.y=freePhysicsY;
+  const environment=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
+  freeFluidKind=environment.lava?'lava':environment.water?'water':'';
+  damageByEnvironment(environment,t);
+  const fluidSpeed=freeFluidKind==='water'?.58:freeFluidKind==='lava'?.35:1;
   const speed=((freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0)*
-    (gameFreeMode==='survival'&&survivalExposure>=70?.83:1);
+    (gameFreeMode==='survival'&&survivalExposure>=70?.83:1)*fluidSpeed;
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
   const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
   const move=new THREE.Vector3();
@@ -4023,7 +4101,11 @@ function updateFree(dt,t){
     freeVelocityY=0;onGround=false;
   }else{
     moveFreeHorizontal(move.x,move.z);
-    freeVelocityY-=14*dt;
+    if(freeFluidKind){
+      const swimUp=!!freeKeys.Space,swimDown=!!(freeKeys.ShiftLeft||freeKeys.ShiftRight);
+      freeVelocityY+=(swimUp?8.4:0)*dt-(swimDown?6.2:0)*dt-2.6*dt;
+      freeVelocityY=THREE.MathUtils.clamp(freeVelocityY,-2.5,3.4);
+    }else freeVelocityY-=14*dt;
     let nextY=camera.position.y+freeVelocityY*dt;
     if(freeVelocityY<=0){
       const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
@@ -4032,7 +4114,7 @@ function updateFree(dt,t){
       }else onGround=false;
     }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){
       freeVelocityY=0;nextY=camera.position.y;
-    }
+    }else onGround=false;
     camera.position.y=nextY;
   }
   camera.position.x=THREE.MathUtils.clamp(camera.position.x,-WORLD_HALF+.7,WORLD_HALF-.7);
@@ -4349,7 +4431,11 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Escape'&&(inventoryOpen||furnaceOpen)){if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);return}
   if(inventoryOpen||furnaceOpen)return;
   freeKeys[e.code]=true;
-  if(e.code==='Space'&&!freeFlying&&onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
+  if(e.code==='Space'&&!freeFlying){
+    const fluid=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
+    if(fluid.water||fluid.lava)e.preventDefault();
+    else if(onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
+  }
   if(/^Digit[1-9]$/.test(e.code)){
     stopMining();selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot]||'hand';buildHotbar();updateFreeMission();
   }

@@ -74,6 +74,7 @@ const TEST_FILES = [
   "tests/traditional-play-yard.test.cjs",
   "tests/bridge-builder.test.cjs",
   "tests/cube-architect-v31.test.cjs",
+  "tests/cube-architect-physics.test.cjs",
   "tests/rule-lab.test.cjs",
   "tests/server-stats-worker.test.mjs",
   "tests/stats-rankings.test.cjs",
