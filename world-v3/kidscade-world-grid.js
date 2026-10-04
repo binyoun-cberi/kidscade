@@ -17,12 +17,14 @@ export const WORLD_GRID={
   museum:{id:'museum',name:'씨앗 자연박물관',cx:-36,cz:48,color:0xb8b29f,kind:'city',hint:'도감·기증·전시'},
   cityMarket:{id:'cityMarket',name:'씨앗마을 · 상점가',cx:-12,cz:24,color:0xbab29d,kind:'city',hint:'마트·철물점'},
   cityLeisure:{id:'cityLeisure',name:'씨앗마을 · 광장/놀이',cx:12,cz:24,color:0xc2ba9e,kind:'city',hint:'카페·아케이드·광장'},
+  residentialSouth:{id:'residentialSouth',name:'씨앗마을 · 햇살 주택가',cx:36,cz:24,color:0xb6bd9d,kind:'city',hint:'주민 집·골목정원'},
   cityCivic:{id:'cityCivic',name:'씨앗마을 · 공공시설',cx:-12,cz:48,color:0xb3ad99,kind:'city',hint:'도서관·마을회관'},
-  cityTransit:{id:'cityTransit',name:'씨앗마을 · 교통/보건',cx:12,cz:48,color:0xbbb39a,kind:'city',hint:'보건소·버스'}
+  cityTransit:{id:'cityTransit',name:'씨앗마을 · 교통/보건',cx:12,cz:48,color:0xbbb39a,kind:'city',hint:'보건소·버스'},
+  residentialNorth:{id:'residentialNorth',name:'씨앗마을 · 별빛 주택가',cx:36,cz:48,color:0xafb99a,kind:'city',hint:'주민 집·작은 공원'}
 };
 
 export const WORLD_BOUNDS={x1:-46,x2:46,z1:-34,z2:58};
-export const CITY_BOUNDS={x1:-22,x2:22,z1:14,z2:58};
+export const CITY_BOUNDS={x1:-22,x2:46,z1:14,z2:58};
 export const ROAD_X=[-24,0,24];
 export const ROAD_Z=[-12,12,36];
 
