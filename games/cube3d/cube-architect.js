@@ -3860,11 +3860,9 @@ function collisionTopForData(data,x,y,z,wx=x,wz=z){
   return y+1;
 }
 function thinBlockContains(data,x,z,wx,wz){
-  let source=data;
-  if(data?.type==='doorTop')source=getBlock(x,Math.floor((data.baseY??0)),z)||getBlock(x,Math.floor((data.baseY??0)),z);
-  const type=source?.type;
+  const type=data?.type;
   if(!['door','glassPane','windowFrame'].includes(type))return true;
-  const facing=((source.facing||0)%4+4)%4;
+  const facing=((data.facing||0)%4+4)%4;
   const across=facing%2===0?Math.abs(wx-x):Math.abs(wz-z);
   const along=facing%2===0?Math.abs(wz-z):Math.abs(wx-x);
   const halfThickness=type==='door'?.09:.075;
