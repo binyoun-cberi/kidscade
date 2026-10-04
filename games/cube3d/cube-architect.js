@@ -1526,8 +1526,9 @@ function completeDungeonShrine(){
   if(!dungeonSession||dungeonSession.stage<3)return;
   const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
   const id=poi.id;dungeonSession=null;dungeonFoldNonce++;
-  if(!restoredLandmarks.has(id))completeLandmarkPoi(id);
   enterMode('free');
+  if(!restoredLandmarks.has(id))completeLandmarkPoi(id);
+  reportResult('survival-landmark',100,true);
 }
 function dungeonGate(z,color){
   const gate=addDungeonBox(0,2.25,z,11.8,4.5,.35,color,{dungeonGate:true});
