@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=20';
-import {createDailyDirector} from './kidscade-world-daily.js?v=1';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=21';
+import {createDailyDirector} from './kidscade-world-daily.js?v=2';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=17';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
