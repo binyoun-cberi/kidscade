@@ -10,35 +10,35 @@ function furnitureAssetUrl(def){return (ROOTS[def.root]||ROOT)+def.file;}
 
 export const FURNITURE_CATALOG={
   bedSingle:{name:'나무 침대',file:'bed-single.glb',w:2.6,h:1.25,d:2.1,cw:1.6,cd:2.35,use:'침대에서 자기',source:'목수공방 제작'},
-  kitchenStove:{name:'가스레인지',root:'restaurant',file:'stove-multi-decorated.glb',w:1.45,h:1.35,d:1.15,cw:1.15,cd:.82,use:'요리하기',source:'목수공방 2단계 제작'},
-  kitchenSink:{name:'싱크대·수도꼭지',root:'restaurant',file:'kitchencounter-sink-backsplash.glb',w:1.65,h:1.45,d:1.0,cw:1.4,cd:.78,use:'수도 사용하기',source:'수도 3단계 + 목수공방 제작'},
-  kitchenCabinet:{name:'큰 수납장',root:'restaurant',file:'kitchencounter-straight-a-decorated.glb',w:1.65,h:1.35,d:1.0,cw:1.4,cd:.78,use:'집 수납 열기',source:'목수공방 제작'},
-  kitchenFridge:{name:'냉장고',root:'restaurant',file:'fridge-a-decorated.glb',w:1.35,h:2.25,d:1.2,cw:1.05,cd:.9,use:'냉장고 열기',source:'목수공방 3단계 제작'},
-  homeDrawers:{name:'서랍장',file:'side-table-drawers.glb',w:1.15,h:1.05,d:1.0,cw:.85,cd:.76,use:'집 수납 열기',source:'목수공방 1단계 제작'},
-  wardrobe:{name:'옷장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,use:'옷 갈아입기',source:'목수공방 2단계 제작'},
+  kitchenStove:{name:'가스레인지',root:'restaurant',file:'stove-multi-decorated.glb',w:1.45,h:1.35,d:1.15,cw:1.15,cd:.82,wallPreferred:true,use:'요리하기',source:'목수공방 2단계 제작'},
+  kitchenSink:{name:'싱크대·수도꼭지',root:'restaurant',file:'kitchencounter-sink-backsplash.glb',w:1.65,h:1.45,d:1.0,cw:1.4,cd:.78,wallPreferred:true,use:'수도 사용하기',source:'수도 3단계 + 목수공방 제작'},
+  kitchenCabinet:{name:'큰 수납장',root:'restaurant',file:'kitchencounter-straight-a-decorated.glb',w:1.65,h:1.35,d:1.0,cw:1.4,cd:.78,wallPreferred:true,use:'집 수납 열기',source:'목수공방 제작'},
+  kitchenFridge:{name:'냉장고',root:'restaurant',file:'fridge-a-decorated.glb',w:1.35,h:2.25,d:1.2,cw:1.05,cd:.9,wallPreferred:true,use:'냉장고 열기',source:'목수공방 3단계 제작'},
+  homeDrawers:{name:'서랍장',file:'side-table-drawers.glb',w:1.15,h:1.05,d:1.0,cw:.85,cd:.76,wallPreferred:true,use:'집 수납 열기',source:'목수공방 1단계 제작'},
+  wardrobe:{name:'옷장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,wallPreferred:true,use:'옷 갈아입기',source:'목수공방 2단계 제작'},
   classicDesk:{name:'기본 책상',file:'desk.glb',w:2.0,h:1.4,d:1.2,cw:1.8,cd:.9,recipe:{wood:8,iron:1},use:'책상 사용하기'},
-  tallBookcase:{name:'기본 책장',file:'bookcase-open.glb',w:1.6,h:2.45,d:.78,cw:1.35,cd:.62,recipe:{wood:10},use:'책장 살펴보기'},
+  tallBookcase:{name:'기본 책장',file:'bookcase-open.glb',w:1.6,h:2.45,d:.78,cw:1.35,cd:.62,wallPreferred:true,recipe:{wood:10},use:'책장 살펴보기'},
   classicSofa:{name:'기본 소파',file:'lounge-sofa.glb',w:2.9,h:1.4,d:1.45,cw:2.5,cd:1.1,recipe:{wood:12,iron:1},use:'소파에 앉기'},
   diningTable:{name:'기본 식탁',file:'table.glb',w:2.4,h:1.3,d:1.9,cw:2.0,cd:1.5,recipe:{wood:9},use:'식탁 사용하기'},
   rugRectangle:{name:'거실 러그',file:'rug-rectangle.glb',w:4.2,h:.10,d:2.8,cw:0,cd:0},
   woodChair:{name:'나무 의자',file:'chair.glb',w:.95,h:1.35,d:.95,cw:.72,cd:.72,recipe:{wood:4}},
   sideTable:{name:'작은 협탁',file:'side-table.glb',w:1.1,h:1.0,d:1.0,cw:.82,cd:.78,recipe:{wood:5,stone:1}},
   pottedPlant:{name:'화분',file:'potted-plant.glb',w:.9,h:1.35,d:.9,cw:.62,cd:.62,recipe:{wood:2,stone:2}},
-  bookcase:{name:'낮은 책장',file:'bookcase-open-low.glb',w:1.8,h:1.55,d:.75,cw:1.55,cd:.62,recipe:{wood:7}},
+  bookcase:{name:'낮은 책장',file:'bookcase-open-low.glb',w:1.8,h:1.55,d:.75,cw:1.55,cd:.62,wallPreferred:true,recipe:{wood:7}},
   coffeeTable:{name:'커피 테이블',file:'table-coffee.glb',w:1.7,h:.8,d:1.15,cw:1.42,cd:.92,recipe:{wood:6}},
   loungeChair:{name:'라운지 의자',file:'lounge-chair.glb',w:1.25,h:1.25,d:1.35,cw:1.0,cd:1.08,recipe:{wood:5,iron:1}},
   rugRound:{name:'둥근 러그',file:'rug-round.glb',w:2.2,h:.10,d:2.2,cw:0,cd:0},
   floorLamp:{name:'플로어 램프',file:'lamp-round-floor.glb',w:.7,h:2.0,d:.7,cw:.46,cd:.46},
   teddy:{name:'곰 인형',file:'bear.glb',w:.8,h:.95,d:.75,cw:.45,cd:.42},
-  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,source:'기술 공방 3단계 · 3×3 제작대',use:'TV 보기'},
+  television:{name:'모던 TV',file:'television-modern.glb',w:1.55,h:1.2,d:.55,cw:1.25,cd:.42,wallPreferred:true,source:'기술 공방 3단계 · 3×3 제작대',use:'TV 보기'},
   minjiPlanter:{name:'민지의 시장 화분',file:'plant-small3.glb',w:.8,h:1.0,d:.8,cw:.5,cd:.5,source:'민지 친밀도 희귀 보상'},
   junhoStool:{name:'준호의 작업 스툴',file:'stool-bar-square.glb',w:.85,h:1.25,d:.85,cw:.6,cd:.6,source:'준호 친밀도 희귀 보상'},
   haneulTable:{name:'하늘의 카페 테이블',root:'bakery',file:'table-round-a.glb',w:1.6,h:1.15,d:1.6,cw:1.3,cd:1.3,source:'하늘 친밀도 희귀 보상'},
   doyunBench:{name:'도윤의 마을 벤치',file:'bench-cushion.glb',w:2.0,h:1.0,d:.85,cw:1.7,cd:.7,source:'도윤 친밀도 희귀 보상'},
   yunaPlant:{name:'유나의 작은 화초',file:'plant-small2.glb',w:.75,h:.95,d:.75,cw:.46,cd:.46,source:'유나 친밀도 희귀 보상'},
-  taehoRetroTv:{name:'태호의 레트로 게임 TV',file:'television-vintage.glb',w:1.35,h:1.1,d:.65,cw:1.1,cd:.5,source:'태호 친밀도 희귀 보상',use:'레트로 게임 하기'},
-  soraBookcase:{name:'소라의 고전 책장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,source:'소라 친밀도 희귀 보상',use:'희귀 책 읽기'},
-  hyunwooDrawers:{name:'현우의 배달 서랍장',file:'side-table-drawers.glb',w:1.05,h:1.0,d:.95,cw:.8,cd:.72,source:'현우 친밀도 희귀 보상'},
+  taehoRetroTv:{name:'태호의 레트로 게임 TV',file:'television-vintage.glb',w:1.35,h:1.1,d:.65,cw:1.1,cd:.5,wallPreferred:true,source:'태호 친밀도 희귀 보상',use:'레트로 게임 하기'},
+  soraBookcase:{name:'소라의 고전 책장',file:'bookcase-closed-wide.glb',w:2.0,h:2.2,d:.8,cw:1.7,cd:.65,wallPreferred:true,source:'소라 친밀도 희귀 보상',use:'희귀 책 읽기'},
+  hyunwooDrawers:{name:'현우의 배달 서랍장',file:'side-table-drawers.glb',w:1.05,h:1.0,d:.95,cw:.8,cd:.72,wallPreferred:true,source:'현우 친밀도 희귀 보상'},
   nariLamp:{name:'나리의 진료실 램프',file:'lamp-square-floor.glb',w:.7,h:2.0,d:.7,cw:.46,cd:.46,source:'나리 친밀도 희귀 보상'},
   woojinRelaxChair:{name:'우진의 숲 휴식의자',file:'lounge-chair-relax.glb',w:1.35,h:1.25,d:1.5,cw:1.05,cd:1.2,source:'우진 친밀도 희귀 보상'},
   seoyeonPetChair:{name:'서연의 펫 의자',file:'chair-rounded.glb',w:1.0,h:1.25,d:1.0,cw:.75,cd:.75,source:'서연 친밀도 희귀 보상'},
@@ -54,7 +54,7 @@ function safeCount(v){return Math.max(0,Math.floor(Number(v)||0));}
 export function createFurnishingSystem(ctx){
   const {
     parent,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,
-    setAvatarAction,itemName,getMode,getPlacementPose,canPlace,useFurniture
+    setAvatarAction,itemName,getMode,getPlacementPose,getRoomBounds,canPlace,useFurniture
   }=ctx;
 
   const actors=new Map();
@@ -107,6 +107,43 @@ export function createFurnishingSystem(ctx){
     const odd=Math.abs(rot)%2===1;
     return {w:odd?def.cd:def.cw,d:odd?def.cw:def.cd};
   }
+  function nearestWall(bounds,x,z){
+    if(!bounds)return null;
+    const choices=[
+      {wall:'west',distance:Math.abs(x-bounds.x1)},
+      {wall:'east',distance:Math.abs(bounds.x2-x)},
+      {wall:'north',distance:Math.abs(z-bounds.z1)},
+      {wall:'south',distance:Math.abs(bounds.z2-z)}
+    ];
+    choices.sort((a,b)=>a.distance-b.distance);return choices[0];
+  }
+  function inwardRotation(wall){
+    return wall==='north'?0:wall==='west'?1:wall==='south'?2:3;
+  }
+  function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+  function grid(v){return Math.round(v*2)/2;}
+  function wallPlacement(def,x,z,rot,{force=false}={}){
+    if(!def?.wallPreferred||typeof getRoomBounds!=='function')return null;
+    const bounds=getRoomBounds();if(!bounds)return null;
+    const near=nearestWall(bounds,x,z),reach=Number(def.wallSnap)||1.65;
+    if(!near||(!force&&near.distance>reach))return null;
+    const nextRot=inwardRotation(near.wall),d=dims(def,nextRot),margin=.16;
+    let nx=grid(x),nz=grid(z);
+    if(near.wall==='north'){
+      nz=bounds.z1+d.d/2+margin;
+      nx=clamp(nx,bounds.x1+d.w/2+margin,bounds.x2-d.w/2-margin);
+    }else if(near.wall==='south'){
+      nz=bounds.z2-d.d/2-margin;
+      nx=clamp(nx,bounds.x1+d.w/2+margin,bounds.x2-d.w/2-margin);
+    }else if(near.wall==='west'){
+      nx=bounds.x1+d.w/2+margin;
+      nz=clamp(nz,bounds.z1+d.d/2+margin,bounds.z2-d.d/2-margin);
+    }else{
+      nx=bounds.x2-d.w/2-margin;
+      nz=clamp(nz,bounds.z1+d.d/2+margin,bounds.z2-d.d/2-margin);
+    }
+    return {x:nx,z:nz,rot:nextRot,wall:near.wall};
+  }
   function setHandles(actor,enabled){
     if(actor.interaction)actor.interaction.enabled=enabled;
     if(actor.collision)actor.collision.enabled=enabled;
@@ -151,14 +188,14 @@ export function createFurnishingSystem(ctx){
     let object=actor?.object||null;
     if(actor){setHandles(actor,false);}
     else{
-      object=await addModel(parent,ROOT+def.file,{x:0,z:0,w:def.w,h:def.h,d:def.d,rot:0,name:'placing-'+key});
+      object=await addModel(parent,furnitureAssetUrl(def),{x:0,z:0,w:def.w,h:def.h,d:def.d,rot:0,name:'placing-'+key});
       if(!object)return;
     }
     setGhost(object,true);
-    active={key,actor,object,rot:actor?.rec.rot||0,valid:false,isNew:!actor};
+    active={key,actor,object,rot:actor?.rec.rot||0,valid:false,isNew:!actor,wallSnapped:false};
     toolbar.classList.add('show');
     updatePreview();
-    toast('이동해서 위치 선택 · 회전 후 배치');
+    toast(def.wallPreferred?'이동해서 위치 선택 · 벽 가까이는 정면이 자동으로 방 안을 향해요.':'이동해서 위치 선택 · 회전 후 배치');
   }
 
   function updatePreview(){
@@ -169,16 +206,23 @@ export function createFurnishingSystem(ctx){
     if(Math.abs(dx)+Math.abs(dz)<.01)dz=1;
     const len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;
     const dist=Math.max(1.15,Math.max(def.cw,def.cd)*.72);
-    const x=Math.round((pose.x+dx*dist)*2)/2,z=Math.round((pose.z+dz*dist)*2)/2;
+    let x=grid(pose.x+dx*dist),z=grid(pose.z+dz*dist);
+    const snapped=wallPlacement(def,x,z,active.rot);
+    active.wallSnapped=!!snapped;
+    if(snapped){x=snapped.x;z=snapped.z;active.rot=snapped.rot;}
     const d=dims(def,active.rot);
     active.valid=canPlace(x,z,d.w,d.d,active.actor?.collision||null);
     active.x=x;active.z=z;
     active.object.position.x=x;active.object.position.z=z;active.object.rotation.y=active.rot*Math.PI/2;
-    toolbarState.textContent=active.valid?'✓ 여기에 놓을 수 있어요':'✕ 다른 위치를 골라주세요';
+    toolbarState.textContent=active.valid
+      ?(active.wallSnapped?'✓ 벽에 맞춤 · 정면은 방 안':'✓ 여기에 놓을 수 있어요')
+      :'✕ 다른 위치를 골라주세요';
   }
 
   function rotatePlacement(){
     if(!active)return;
+    const def=FURNITURE_CATALOG[active.key];
+    if(active.wallSnapped&&def?.wallPreferred){toast('벽 가까이에서는 가구 정면이 방 안을 향하도록 자동으로 맞춰져요.');return;}
     active.rot=(active.rot+1)%4;updatePreview();
   }
 
@@ -221,7 +265,8 @@ export function createFurnishingSystem(ctx){
     const actor=actors.get(String(id));if(!actor)return;
     const def=FURNITURE_CATALOG[actor.rec.key];
     const use=def.use?'<button data-furn-use="'+id+'">'+def.use+'</button>':'';
-    openPanel('<h2>'+def.name+'</h2><p>이 가구는 이제 우리 집 어디든 옮길 수 있어요.</p><div class="grid">'+use+'<button data-furn-move="'+id+'">옮기기</button><button data-furn-turn="'+id+'">90° 회전</button><button data-furn-store="'+id+'">창고에 넣기</button></div>');
+    const wallFit=def.wallPreferred?'<button data-furn-wallfit="'+id+'">🧲 가까운 벽에 맞추기</button>':'';
+    openPanel('<h2>'+def.name+'</h2><p>'+(def.wallPreferred?'벽 가까이에 놓으면 뒷면은 벽을 향하고 정면은 방 안을 향하도록 자동 정렬돼요.':'이 가구는 이제 우리 집 어디든 옮길 수 있어요.')+'</p><div class="grid">'+use+'<button data-furn-move="'+id+'">옮기기</button>'+wallFit+'<button data-furn-turn="'+id+'">90° 회전</button><button data-furn-store="'+id+'">창고에 넣기</button></div>');
   }
   function usePlaced(id){
     const actor=actors.get(String(id));if(!actor)return true;
@@ -233,6 +278,17 @@ export function createFurnishingSystem(ctx){
     if(!canPlace(actor.rec.x,actor.rec.z,d.w,d.d,actor.collision)){toast('회전할 공간이 부족해요.');return true;}
     actor.rec.rot=next;actor.object.rotation.y=next*Math.PI/2;updateHandles(actor);persist();toast(def.name+' 회전');furnitureActionPanel(id);return true;
   }
+  function wallFitPlaced(id){
+    const actor=actors.get(String(id));if(!actor)return true;
+    const def=FURNITURE_CATALOG[actor.rec.key],snap=wallPlacement(def,actor.rec.x,actor.rec.z,actor.rec.rot,{force:true});
+    if(!snap){toast('이 가구는 벽 자동 정렬 대상이 아니에요.');return true;}
+    const d=dims(def,snap.rot);
+    if(!canPlace(snap.x,snap.z,d.w,d.d,actor.collision)){toast('가까운 벽 쪽에 다른 가구가 있어 정렬할 수 없어요.');return true;}
+    actor.rec.x=snap.x;actor.rec.z=snap.z;actor.rec.rot=snap.rot;
+    actor.object.position.x=snap.x;actor.object.position.z=snap.z;actor.object.rotation.y=snap.rot*Math.PI/2;
+    updateHandles(actor);persist();toast(def.name+'을(를) 벽에 맞췄어요. 정면은 방 안을 향해요.');furnitureActionPanel(id);return true;
+  }
+
   function storePlaced(id){
     const actor=actors.get(String(id));if(!actor)return true;
     const s=ensureState(),def=FURNITURE_CATALOG[actor.rec.key];
@@ -246,6 +302,7 @@ export function createFurnishingSystem(ctx){
     const placeBtn=e.target.closest('[data-furn-place]');if(placeBtn){beginPlacement(placeBtn.dataset.furnPlace);return true;}
     const useBtn=e.target.closest('[data-furn-use]');if(useBtn)return usePlaced(useBtn.dataset.furnUse);
     const moveBtn=e.target.closest('[data-furn-move]');if(moveBtn){const a=actors.get(moveBtn.dataset.furnMove);if(a)beginPlacement(a.rec.key,a);return true;}
+    const wallFitBtn=e.target.closest('[data-furn-wallfit]');if(wallFitBtn)return wallFitPlaced(wallFitBtn.dataset.furnWallfit);
     const turnBtn=e.target.closest('[data-furn-turn]');if(turnBtn)return turnPlaced(turnBtn.dataset.furnTurn);
     const storeBtn=e.target.closest('[data-furn-store]');if(storeBtn)return storePlaced(storeBtn.dataset.furnStore);
     return false;
