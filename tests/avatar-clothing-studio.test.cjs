@@ -265,7 +265,7 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
 
 test('avatar studio markup does not leak closing tag text',()=>{
   assert.ok(!html.includes('</main>/div>'));
-  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=20"></script>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=21"></script>'));
 });
 
 

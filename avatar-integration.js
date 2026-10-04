@@ -211,6 +211,22 @@
         }
       } catch (_) {}
 
+      // A new guest receives the free school set. Existing pixel choices retain
+      // their normal rig renderer and saved preview; no account state is changed.
+      if (isGuestSession() && !pixelState()) {
+        const image = new Image();
+        image.src = new URL('assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png', document.baseURI).href;
+        try {
+          await image.decode();
+          const schoolCanvas = document.createElement('canvas');
+          schoolCanvas.width = schoolCanvas.height = 128;
+          schoolCanvas.getContext('2d').drawImage(image, 0, 0);
+          const data = schoolCanvas.toDataURL('image/png');
+          localStorage.setItem(PREVIEW_KEY, data);
+          localStorage.setItem(PREVIEW_VERSION_KEY, PREVIEW_VERSION);
+          return data;
+        } catch (_) { /* Use the established rig fallback if the asset is unavailable. */ }
+      }
       const api = await loadAvatarRigRuntime();
       const canvas = document.createElement('canvas');
       canvas.width = 128;
