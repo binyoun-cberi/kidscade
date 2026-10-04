@@ -234,7 +234,7 @@ function newGame(){
     const isCpu=i>=setup.human;
     state.players.push({
       id:i,name:isCpu?'CPU '+cpuNo++:'플레이어 '+(i+1),isCpu,color:COLORS[i],emoji:AVATARS[i],
-      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,turnTransitPaid:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
+      money:280,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,turnTransitPaid:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
     });
   }
   ui.start.classList.add('hidden');ui.result.classList.add('hidden');ui.game.classList.remove('hidden');
@@ -662,10 +662,10 @@ function collectionActive(owner,continent){return countContinent(owner,continent
 
 function getToll(countryId){
   const c=BY_ID.get(countryId),inv=state.investments[countryId];if(!inv)return 0;
-  const levelMul=[0,.5,1.05,2.2][inv.level]||.5;
+  const levelMul=[0,.45,.9,1.9][inv.level]||.45;
   let toll=c.value*levelMul;
-  if(collectionActive(inv.owner,c.continent))toll*=1.35;
-  if(state.festival?.country===countryId&&state.round<=state.festival.expires)toll*=1.75;
+  if(collectionActive(inv.owner,c.continent))toll*=1.3;
+  if(state.festival?.country===countryId&&state.round<=state.festival.expires)toll*=1.6;
   return Math.max(1,Math.round(toll));
 }
 
