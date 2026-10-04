@@ -1114,3 +1114,10 @@ test('Deep Diver v36 shortens night service with automatic serving',()=>{
   assert.match(js,/queueRestaurantAutoServe\(customerId\)/);
   assert.match(css,/\.dishReady\.autoServe/);
 });
+
+
+test('Deep Diver v36 caps only visual creature clutter while preserving important encounters',()=>{
+  assert.match(js,/function fishRenderList\(limit=32\)/);
+  assert.match(js,/sp\.rare\|\|sp\.motion==='boss'\|\|f\.alert>0\|\|f\.hooked\|\|f\.marked>0/);
+  assert.match(js,/for\(const f of fishRenderList\(\)\)drawFish\(f\)/);
+});
