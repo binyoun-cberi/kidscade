@@ -291,9 +291,9 @@ export async function buildKidscadeCity(ctx){
     collider('outdoor',x,z,north?3.65:3.35,2.85);
     track('resident-home-'+id,'building',x,z,north?3.65:3.35,2.85);
     const door={x,z:z+frontDz};residentHomes[id]=door;
-    // Short doorstep path makes each house read as connected to the shared lane.
-    const pathZ=(z+door.z)/2;
-    plane(parent,x,pathZ,.78,Math.abs(frontDz)+.8,0xd7ccb1,.072);
+    // Doorstep path reaches the shared garden lane, so every house is visibly connected.
+    const laneZ=north?residentialNorth.z:residentialSouth.z,pathZ=(door.z+laneZ)/2;
+    plane(parent,x,pathZ,.78,Math.abs(door.z-laneZ)+.85,0xd7ccb1,.072);
     const label=makeLabel(name+'의 집',{width:1.48,height:.36,font:30});
     label.position.set(x,3.05,z+frontDz*.72);label.userData.anchor={x,z:z+frontDz*.72};label.visible=false;
     parent.add(label);buildingLabels.push(label);
@@ -306,14 +306,14 @@ export async function buildKidscadeCity(ctx){
   ])await addModel(parent,large?CITY_ASSET.residentialTreeLarge:CITY_ASSET.residentialTreeSmall,{x,z,w:1.7,h:3.4,d:1.7,rot:.1});
 
   // North residential district keeps a real pocket park between the four homes.
-  plane(parent,residentialNorth.x,residentialNorth.z,7.1,5.8,0x9db67c,.07);
+  plane(parent,residentialNorth.x,residentialNorth.z,6.8,5.4,0x9db67c,.07);
   await Promise.all([
     addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x-1.9,z:residentialNorth.z+.2,w:1.9,h:.92,d:.74,rot:Math.PI/2,name:'residential-park-bench-a'}),
     addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x+1.9,z:residentialNorth.z-.2,w:1.9,h:.92,d:.74,rot:-Math.PI/2,name:'residential-park-bench-b'}),
     addModel(parent,CITY_ASSET.planter,{x:residentialNorth.x,z:residentialNorth.z-2.0,w:1.2,h:.85,d:.85,rot:0,name:'residential-park-planter'}),
     addModel(parent,CITY_ASSET.residentialTreeLarge,{x:residentialNorth.x,z:residentialNorth.z+2.0,w:2.0,h:3.8,d:2.0,rot:.2,name:'residential-park-tree'})
   ]);
-  track('residential-pocket-park','plaza',residentialNorth.x,residentialNorth.z,7.1,5.8);
+  track('residential-pocket-park','plaza',residentialNorth.x,residentialNorth.z,6.8,5.4);
 
   // Lamps are also kept inside parcels, at least 1m from the road gutter.
   for(const [x,z] of [
