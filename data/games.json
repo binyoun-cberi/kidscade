@@ -126,7 +126,7 @@
       "id": "high_little_world",
       "addedAt": "2026-09-30T16:25:00+09:00",
       "title": "작은 세계",
-      "href": "games/high_little_world/index.html?v=1",
+      "href": "games/high_little_world/index.html?v=2",
       "category": "trivia",
       "age": "high",
       "icon": "🌍",
@@ -695,7 +695,7 @@
     {
       "id": "job_internal_medicine",
       "title": "오늘도 진료중!",
-      "href": "games/job_internal_medicine/오늘도 진료중!.html?v=3",
+      "href": "games/job_internal_medicine/오늘도 진료중!.html?v=4",
       "category": "job",
       "age": "job",
       "icon": "🩺",
@@ -982,7 +982,7 @@
     {
       "id": "job_bogle_bunsik",
       "title": "보글보글 분식집",
-      "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=15",
+      "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=16",
       "category": "job",
       "age": "job",
       "icon": "🥘",
