@@ -152,6 +152,17 @@ test('fishing cannot queue multiple delayed catches from rapid input',()=>{
   assert.match(runtime,/if\(!added\).*가방이 가득/s);
 });
 
+test('rest and gather loops cannot generate unlimited free recovery or mushrooms',()=>{
+  assert.match(runtime,/function restAtCamp\(\)/);
+  assert.match(runtime,/if\(s\.hunger<4\)/);
+  assert.match(runtime,/s\.time=next%1440/);
+  assert.match(runtime,/bookcaseReadDay===day/);
+  assert.match(runtime,/const MUSHROOM_RESPAWN_MS=30000/);
+  assert.match(runtime,/function addMushroomPatch\(id,x,z\)/);
+  assert.match(runtime,/prog\(\)\.groundPickups\[id\]=nextAt/);
+  assert.match(runtime,/scheduleGroundPickup\(actor,MUSHROOM_RESPAWN_MS\)/);
+});
+
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
   assert.match(economy,/const BUY=/);
   assert.match(economy,/const SELL=/);
