@@ -182,11 +182,29 @@
     return insertBeforeLobbyRuntime(html, activityStyles + scripts, 'runtime-scripts');
   }
 
+  function showLoadingState(loader, note = '게임 목록을 준비하고 있어요.') {
+    if (!loader) return;
+    loader.innerHTML = '<div class="loader-card"><div class="loader-icon">🎮</div><div class="loader-title">KIDSCADE 불러오는 중...</div><div class="loader-note">' + escapeHtml(note) + '</div></div>';
+  }
+
   function showLoadError(error) {
     console.error(error);
     const loader = document.getElementById('kidscade-loader');
     if (!loader) return;
-    loader.innerHTML = '<div class="loader-card"><div class="loader-icon">⚠️</div><div class="loader-title">KIDSCADE를 불러오지 못했습니다.</div><div class="loader-note">' + escapeHtml(error.message) + '<br><a href="index_base.html">기존 화면 열기</a></div></div>';
+    loader.innerHTML = '<div class="loader-card"><div class="loader-icon">🛟</div><div class="loader-title">KIDSCADE 안전 복구</div><div class="loader-note">' +
+      escapeHtml(error?.message || '화면을 준비하지 못했습니다.') +
+      '<br>옛 화면으로 이동하지 않고 현재 버전을 다시 불러옵니다.</div>' +
+      '<div class="loader-actions"><button type="button" class="loader-btn loader-btn-primary" data-kc-retry>다시 시도</button>' +
+      '<button type="button" class="loader-btn loader-btn-secondary" data-kc-reload>새로고침</button></div>' +
+      '<div class="loader-help">문제가 계속되면 잠시 후 다시 시도해 주세요.</div></div>';
+
+    loader.querySelector?.('[data-kc-retry]')?.addEventListener?.('click', () => {
+      showLoadingState(loader, '현재 버전으로 다시 연결하고 있어요.');
+      void boot();
+    }, { once: true });
+    loader.querySelector?.('[data-kc-reload]')?.addEventListener?.('click', () => {
+      location.reload();
+    }, { once: true });
   }
 
   async function boot() {

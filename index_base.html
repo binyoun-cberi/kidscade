@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kidscade - 신나는 학습 오락실!</title>
+    <script data-kc-template-guard>
+    (() => {
+        try {
+            const path = String(window.location.pathname || '').replace(/\/+$/, '');
+            if (!/(^|\/)index_base\.html$/i.test(path)) return;
+            const target = new URL('./', window.location.href);
+            target.search = window.location.search;
+            target.hash = window.location.hash;
+            window.location.replace(target.href);
+        } catch (_) {}
+    })();
+    </script>
     <script src="touch-interaction-guard.js"></script>
     <script src="playtime-state.js"></script>
     <script src="seed-wallet.js"></script>

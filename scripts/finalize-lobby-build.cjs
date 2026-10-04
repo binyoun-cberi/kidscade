@@ -39,7 +39,15 @@ async function main() {
   }
 
   fs.writeFileSync(path.join(OUT, 'index.html'), html, 'utf8');
+
+  const legacyTemplatePath = path.join(OUT, 'index_base.html');
+  fs.rmSync(legacyTemplatePath, { force: true });
+  if (fs.existsSync(legacyTemplatePath)) {
+    throw new Error('Final lobby must not publish index_base.html.');
+  }
+
   console.log(`[lobby-finalize] precomposed ${catalog.games.length} catalog games into dist/index.html`);
+  console.log('[lobby-finalize] omitted transitional index_base.html from public dist');
 }
 
 main().catch(error => {

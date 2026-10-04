@@ -12,6 +12,8 @@
   const HOME_ID = 'kc-home-v2';
   const BACKBAR_ID = 'kc-home-backbar';
   const LAYOUT_BUTTON_ID = 'btn-home-layout';
+  const RECOVERY_ID = 'kc-home-recovery';
+  const RECOVERY_STYLE_ID = 'kc-home-recovery-style';
   const MAX_RAIL_GAMES = 12;
   const HOUR_MS = 60 * 60 * 1000;
   const DAY_MS = 24 * HOUR_MS;
@@ -631,8 +633,57 @@
     return true;
   }
 
+  function classicFallbackReady() {
+    if (!root?.document) return false;
+    const arcade = root.document.querySelector('.kc-arcade');
+    const discovery = root.document.querySelector('.kc-discovery');
+    const list = root.document.getElementById('game-list');
+    const hasGameCard = Boolean(list?.querySelector?.('.game-card'));
+    return Boolean(arcade && discovery && list && hasGameCard && typeof root.KidscadePlay?.open === 'function');
+  }
+
+  function clearRecoveryPanel() {
+    root?.document?.getElementById(RECOVERY_ID)?.remove();
+  }
+
+  function showRecoveryPanel(reason = 'not-ready') {
+    if (!root?.document?.body) return false;
+    clearRecoveryPanel();
+
+    if (!root.document.getElementById(RECOVERY_STYLE_ID)) {
+      const style = root.document.createElement('style');
+      style.id = RECOVERY_STYLE_ID;
+      style.textContent = `
+        #${RECOVERY_ID}{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#eef2ff,#e0f2fe 55%,#fdf2f8);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color:#1e293b}
+        #${RECOVERY_ID} .kc-recovery-card{width:min(520px,100%);background:#fff;border:1px solid rgba(99,102,241,.16);border-radius:28px;padding:30px;text-align:center;box-shadow:0 24px 70px rgba(15,23,42,.18)}
+        #${RECOVERY_ID} .kc-recovery-icon{font-size:52px}
+        #${RECOVERY_ID} h1{margin:10px 0 8px;font-size:24px}
+        #${RECOVERY_ID} p{margin:0;color:#64748b;line-height:1.65}
+        #${RECOVERY_ID} button{margin-top:20px;border:0;border-radius:14px;padding:12px 18px;background:#7c3aed;color:#fff;font:inherit;font-weight:900;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,.22)}
+        #${RECOVERY_ID} small{display:block;margin-top:12px;color:#94a3b8}
+      `;
+      root.document.head?.appendChild(style);
+    }
+
+    const panel = root.document.createElement('section');
+    panel.id = RECOVERY_ID;
+    panel.setAttribute('role', 'alert');
+    panel.innerHTML = `
+      <div class="kc-recovery-card">
+        <div class="kc-recovery-icon" aria-hidden="true">🛟</div>
+        <h1>KIDSCADE 안전 복구</h1>
+        <p>현재 홈 화면을 정상적으로 준비하지 못했습니다.<br>옛 화면을 대신 보여주지 않고 현재 버전을 다시 불러옵니다.</p>
+        <button type="button" data-kc-home-reload>새로고침</button>
+        <small>복구 코드: ${escapeHtml(reason)}</small>
+      </div>
+    `;
+    panel.querySelector('[data-kc-home-reload]')?.addEventListener('click', () => root.location?.reload?.(), { once:true });
+    root.document.body.appendChild(panel);
+    return true;
+  }
+
   function rollbackStagedShell(reason = 'not-ready') {
-    if (!root?.document) return;
+    if (!root?.document) return false;
     const shell = root.document.getElementById(HOME_ID);
     const backbar = root.document.getElementById(BACKBAR_ID);
     if (shell?.dataset.kcHomeStage === '1') shell.remove();
@@ -640,7 +691,16 @@
     root.document.body.classList.remove('kc-home-v2-ready');
     delete root.document.body.dataset.kcHomeMode;
     delete root.document.body.dataset.kcHomeSearchReturn;
-    console.warn('[Kidscade Home] 추천 홈 활성화를 취소하고 기본 홈을 유지합니다:', reason);
+
+    if (classicFallbackReady()) {
+      clearRecoveryPanel();
+      console.warn('[Kidscade Home] 추천 홈 활성화를 취소하고 검증된 기본 홈을 유지합니다:', reason);
+      return true;
+    }
+
+    showRecoveryPanel(reason);
+    console.error('[Kidscade Home] 추천 홈과 기본 홈이 모두 준비되지 않아 안전 복구 화면을 표시합니다:', reason);
+    return false;
   }
 
   function heroMarkup(game, age) {
