@@ -385,3 +385,19 @@
 - 판매 / 주민 부탁 / 방문객 거래 / Cube Pet 길들이기 / 요리 소비에서 박물관 표본 수량도 함께 정리해 이미 사용한 표본이 남는 현상을 완화
 - 저장 스키마에 `museum.specimens`를 추가하고 구버전 저장은 기존 낚시 기록을 이용해 안전하게 보완
 - 캐시 버전 World v3.47 / storage v9 / city v23 / interiors v4 / grid v4 / museum v2 / daily-life v2 / economy v19
+
+
+## v3.33 Interior Kit 1차 · 플레이어 집 리워크
+- `kidscade-world-interior-kit.js`를 추가해 플레이어 집의 건축 shell과 자유 배치 가구 시스템을 분리
+- 집 1 / 2 / 3단계가 더 이상 큰 방 위의 어두운 가림막 해제로 표현되지 않고, 단계별 실제 크기의 바닥·벽·출입구 shell로 교체
+- Kenney Furniture Kit의 창문 / 현관 매트 / 벽등과 Tiny Treats Bakery의 커튼 / 벽 선반을 건축 장식으로 재사용
+- 2단계부터 주방 후보 공간에 타일 바닥을 넣어 거실과 생활 공간을 시각적으로 구분
+- 카메라가 방 크기에 맞춰 자동 프레이밍되고 캐릭터를 100% 추적하지 않아 꾸민 방 전체가 더 잘 보이도록 변경
+- 네 면의 실제 벽을 유지하되 카메라 쪽 두 벽만 자동으로 숨기는 cutaway 방식 적용
+- 싱크대 / 가스레인지 / 냉장고 / 수납장 / 옷장 / 책장 / TV 등 벽 지향 가구에 `wallPreferred` 규칙 추가
+- 벽 지향 가구는 가까운 벽에 배치할 때 자동으로 벽에 밀착되고 정면이 방 안을 향하도록 회전
+- 이미 배치한 벽 지향 가구에는 **가까운 벽에 맞추기** 동작을 추가하고, 벽 근처에서 90° 회전해 정면이 벽을 향하는 상태가 되지 않도록 보호
+- 원본 모델마다 정면축이 다를 경우 `frontQuarter` 하나만 조정할 수 있게 해 특정 에셋 방향 보정을 전체 배치 코드와 분리
+- 기존 `progression.housing.placed`의 x / z / rot 값은 자동 변경하지 않아 기존 집 꾸미기 저장을 보존
+- 새 가구 생성 시 Kenney 고정 경로 대신 `furnitureAssetUrl(def)`을 사용해 Restaurant / Bakery 루트 가구도 최초 배치부터 올바른 모델을 로드
+- 캐시 버전 World v3.48 / furnishing v9 / interior-kit v1
