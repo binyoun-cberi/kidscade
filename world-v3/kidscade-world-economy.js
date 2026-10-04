@@ -138,7 +138,8 @@ export function createTownEconomy(ctx){
       },
       dailyPlay:{arcadePrizeDay:Math.max(0,Math.floor(Number(daily.arcadePrizeDay)||0))},
       libraryDay:Math.max(0,Math.floor(Number(old.libraryDay)||0)),
-      cafeRestDay:Math.max(0,Math.floor(Number(old.cafeRestDay)||0))
+      cafeRestDay:Math.max(0,Math.floor(Number(old.cafeRestDay)||0)),
+      benchRestDay:Math.max(0,Math.floor(Number(old.benchRestDay)||0))
     };
     const day=p.survival.day;
     if(p.town.delivery.active&&p.town.delivery.startedDay!==day)p.town.delivery.active=false;
@@ -424,8 +425,10 @@ export function createTownEconomy(ctx){
   }
 
   function bench(){
-    const p=prog(),t=ensureState(p);p.energy=Math.min(p.maxEnergy,p.energy+7);t.fun=Math.min(100,t.fun+8);
-    persist();toast('도시 벤치에서 쉬었어요.');updateStatus();
+    const p=prog(),t=ensureState(p),day=p.survival.day;
+    if(t.benchRestDay===day){toast('오늘은 광장에서 충분히 쉬었어요. 다른 활동을 해보거나 내일 다시 쉬어보세요.');return false;}
+    t.benchRestDay=day;p.energy=Math.min(p.maxEnergy,p.energy+7);t.fun=Math.min(100,t.fun+8);
+    persist();setAvatarAction('smile',650);toast('광장 벤치에서 쉬었어요. 체력 +7 · 재미 +8');updateStatus();return true;
   }
   function cafeRest(){
     const p=prog(),t=ensureState(p),day=p.survival.day;
