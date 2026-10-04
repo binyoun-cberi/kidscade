@@ -33,6 +33,7 @@
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .kc-side-head,
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .avatar-plaza{display:block!important}
       body[data-kc-profile-access="guest"] .kc-side-card.avatar-shell .kc-profile-row{display:none!important}
+      body[data-kc-profile-access="guest"] #kc-account-slot{display:none!important}
       body[data-kc-profile-access="guest"] #${GATE_ID}{display:block!important;grid-column:1/-1;padding:13px 14px 15px;border-top:1px solid rgba(148,163,184,.16)}
       body[data-kc-profile-access="guest"] #kc-local-profile-card{display:none!important}
       body[data-kc-profile-access="guest"] .kc-myspace-inner > :not(.avatar-shell):not(#kc-activity-strip):not(#kc-popular-hub):not(#kc-live-stats){display:none!important}
