@@ -43,6 +43,9 @@ test('home Interior Kit expands architecture, adds cutaway walls and frames each
   assert.match(runtime,/homeInteriorCameraProfile/);
   assert.match(runtime,/playerFollow/);
   assert.match(runtime,/cameraHalfHeight/);
+  assert.match(runtime,/homeCamera\.fitHalfWidth/);
+  assert.match(runtime,/Math\.max\(\.52,cameraAspect\)/);
+  assert.match(interiorKit,/width=level===2\?4\.6:5\.8/);
 });
 
 test('wall-facing furniture snaps its back to a nearby wall while preserving old saved rotations',()=>{
