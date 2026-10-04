@@ -104,7 +104,7 @@ function makeFallbackHouse(level){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(.82,.55,.75),new THREE.MeshStandardMaterial({color:level>=2?0xc58f63:0x9b765d,roughness:.9}));body.position.y=.28;const roof=new THREE.Mesh(new THREE.ConeGeometry(.62,.4,4),new THREE.MeshStandardMaterial({color:0x704d3a,roughness:.9}));roof.position.y=.72;roof.rotation.y=Math.PI/4;g.add(body,roof);return g;
 }
 function addVillageProp(key,base,c,dx,dz,size,rotation=0){
-  const o=normalizedClone(loaded[key],size);if(!o)return;
+  const o=normalizedClone(loaded[key],size,key==='cow'||key==='pig');if(!o)return;
   o.position.x+=base.x+dx;o.position.z+=base.z+dz;o.position.y+=groundTop(c);o.rotation.y=rotation;villageGroup.add(o);
 }
 function rebuildVillages(){
