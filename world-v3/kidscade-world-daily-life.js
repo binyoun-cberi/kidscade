@@ -42,6 +42,15 @@ function shellMesh(){
   }
   return g;
 }
+function bugMesh(){
+  const g=new THREE.Group();
+  const bodyMat=new THREE.MeshStandardMaterial({color:0x42533f,roughness:.72});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.12,10,7),bodyMat);body.scale.set(.8,1.25,.72);body.position.y=.16;g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.075,9,6),new THREE.MeshStandardMaterial({color:0x2d392e,roughness:.75}));head.position.set(0,.31,0);g.add(head);
+  const wingMat=new THREE.MeshStandardMaterial({color:0xc7d9b5,transparent:true,opacity:.72,roughness:.45});
+  for(const sx of [-.10,.10]){const wing=new THREE.Mesh(new THREE.SphereGeometry(.10,8,6),wingMat);wing.scale.set(.6,.2,1.2);wing.position.set(sx,.20,0);g.add(wing)}
+  return g;
+}
 function sparkleMesh(){
   const g=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.RingGeometry(.22,.34,18),new THREE.MeshStandardMaterial({color:0xffdc65,emissive:0xffb52d,emissiveIntensity:1.15,side:THREE.DoubleSide,roughness:.5}));
@@ -51,7 +60,7 @@ function sparkleMesh(){
 }
 
 export async function createDailyLife(ctx){
-  const {parent,addModel,interact,prog,inv,persist,toast,openPanel,itemName,addInventoryItem,canCarryNewKey,townEconomy,getDailyState,getDevelopment,setAvatarAction,playSfx}=ctx;
+  const {parent,addModel,interact,prog,inv,persist,toast,openPanel,itemName,addInventoryItem,removeInventoryItem,canCarryNewKey,townEconomy,getDailyState,getDevelopment,setAvatarAction,playSfx}=ctx;
   const actors=[],group=new THREE.Group();group.name='daily-life';parent.add(group);
   let day=0,state=null;
 
@@ -64,9 +73,9 @@ export async function createDailyLife(ctx){
   }
   function posActor(a,x,z){a.x=x;a.z=z;a.object.position.x=x;a.object.position.z=z;a.interaction.x=x;a.interaction.z=z}
   function syncVisibility(){const got=taken();for(const a of actors){const visible=!got[a.key];a.object.visible=visible;a.interaction.enabled=visible}}
-  function collectItem(a,key,qty,label){
+  function collectItem(a,key,qty,label,{museumId=''}={}){
     if(!canCarryNewKey(key)){toast('🎒 '+label+'을(를) 넣을 가방 칸이 없어요.');return}
-    if(!addInventoryItem(key,qty,{silent:true}))return;
+    if(!addInventoryItem(key,qty,{silent:true,museumId}))return;
     mark(a.key);setAvatarAction?.('smile',500);playSfx?.('pickup',.13);toast(label+' +'+qty);
   }
 
@@ -78,8 +87,11 @@ export async function createDailyLife(ctx){
     if(!obj)continue;group.remove(obj);
     const a=addActor('mushroom-'+i,'mushroom',obj,1.0,'🍄 오늘의 버섯 줍기',()=>{
       const bonus=(prog().cubePets?.companion==='fox'?1:0)+(Number(prog().town?.perks?.mushroomBonus)||0);
-      collectItem(a,'mushroom',1+bonus,'버섯');
+      collectItem(a,'mushroom',1+bonus,'버섯',{museumId:'nature:mushroom'});
     });
+  }
+  for(let i=0;i<2;i++){
+    const a=addActor('bug-'+i,'bug',bugMesh(),.95,'🪲 곤충 잡기',()=>collectItem(a,'bug',1,'곤충',{museumId:'nature:bug'}));
   }
   const bottleObj=await addModel(group,SURVIVAL+'bottle.glb',{x:0,z:0,w:.42,h:.30,d:.42,rot:Math.PI/2,name:'daily-message-bottle'});
   let bottleActor=null;
@@ -122,7 +134,7 @@ export async function createDailyLife(ctx){
   function completeRequest(id){
     const q=generateRequests().find(x=>x.id===id),done=requestDone();if(!q||done[id])return;
     const bag=inv();if((bag[q.item]||0)<q.count){toast('필요한 물건이 부족해요.');return}
-    bag[q.item]-=q.count;done[id]=true;
+    if(removeInventoryItem)removeInventoryItem(q.item,q.count);else bag[q.item]-=q.count;done[id]=true;
     const t=townEconomy.ensureState(prog());t.coins+=q.reward;
     townEconomy.addFriendship?.(q.npc,1,{silent:true});
     persist();setAvatarAction?.('smile',650);playSfx?.('success',.12);toast(q.name+'의 부탁 완료 · +'+q.reward+'코인 · 친밀도 ♥1');boardPanel();
@@ -137,7 +149,7 @@ export async function createDailyLife(ctx){
   function tradeVisitor(){
     const v=VISITORS[state?.visitor]||null,p=prog();if(!v||p.dailyWorld.visitorDone)return;
     if((inv()[v.item]||0)<v.count){toast('교환할 물건이 부족해요.');return}
-    inv()[v.item]-=v.count;p.dailyWorld.visitorDone=true;townEconomy.ensureState(p).coins+=v.reward;
+    if(removeInventoryItem)removeInventoryItem(v.item,v.count);else inv()[v.item]-=v.count;p.dailyWorld.visitorDone=true;townEconomy.ensureState(p).coins+=v.reward;
     persist();setAvatarAction?.('smile',650);playSfx?.('success',.12);toast(v.name+'와 거래 완료 · +'+v.reward+'코인');visitorPanel();
   }
 
@@ -145,19 +157,21 @@ export async function createDailyLife(ctx){
     const rng=rngFrom(current?.forageSeed||1);
     const beach=[[-43,-28],[-40,-20],[-36,-29],[-33,-19],[-29,-27],[-31,-23],[-42,-24]];
     const forest=[[-43,5],[-40,-5],[-36,6],[-33,-6],[-29,4],[-31,-1],[-41,0]];
+    const field=[[-42,5],[-38,-6],[-31,3],[7,6],[16,5],[18,-6]];
     const sparkleSpots=[[-7,6],[7,7],[-29,29],[31,7],[-5,31],[20,-27]];
     const take=(arr,count)=>shuffle(arr,rng).slice(0,count).map(([x,z])=>({x:x+(rng()-.5)*1.2,z:z+(rng()-.5)*1.2}));
-    const shells=take(beach,3),mushrooms=take(forest,3),bottle=take(beach.filter(p=>!shells.some(s=>Math.hypot(s.x-p[0],s.z-p[1])<2)),1)[0]||{x:-36,z:-20},sp=take(sparkleSpots,1)[0];
-    return {shells,mushrooms,bottle,sparkle:sp};
+    const shells=take(beach,3),mushrooms=take(forest,3),bugs=take(field,2),bottle=take(beach.filter(p=>!shells.some(s=>Math.hypot(s.x-p[0],s.z-p[1])<2)),1)[0]||{x:-36,z:-20},sp=take(sparkleSpots,1)[0];
+    return {shells,mushrooms,bugs,bottle,sparkle:sp};
   }
   function refreshDay(current=getDailyState?.()){
     if(!current)return;state=current;day=Number(current.day)||0;
     const p=prog();p.dailyWorld=p.dailyWorld&&typeof p.dailyWorld==='object'?p.dailyWorld:{...current};
     p.dailyWorld.taken=p.dailyWorld.taken&&typeof p.dailyWorld.taken==='object'?p.dailyWorld.taken:{};
     p.dailyWorld.visitorDone=!!p.dailyWorld.visitorDone;
-    const lay=layoutFor(current),shellActors=actors.filter(a=>a.kind==='shell'),mushActors=actors.filter(a=>a.kind==='mushroom');
+    const lay=layoutFor(current),shellActors=actors.filter(a=>a.kind==='shell'),mushActors=actors.filter(a=>a.kind==='mushroom'),bugActors=actors.filter(a=>a.kind==='bug');
     shellActors.forEach((a,i)=>posActor(a,lay.shells[i].x,lay.shells[i].z));
     mushActors.forEach((a,i)=>posActor(a,lay.mushrooms[i].x,lay.mushrooms[i].z));
+    bugActors.forEach((a,i)=>posActor(a,lay.bugs[i].x,lay.bugs[i].z));
     if(bottleActor)posActor(bottleActor,lay.bottle.x,lay.bottle.z);
     posActor(sparkle,lay.sparkle.x,lay.sparkle.z);
     generateRequests();syncVisibility();persist();
