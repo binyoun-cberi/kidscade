@@ -55,6 +55,29 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
 .live-tag{position:absolute;left:4%;bottom:4%;background:#d8363e;padding:8px 12px;border-radius:9px;font-weight:1000;box-shadow:0 0 20px #ff445b66}.lower-third{position:absolute;left:4%;right:40%;bottom:12%;background:#071c2de8;border-left:7px solid #ffd45b;padding:12px 14px;font-weight:900;line-height:1.4}
 .broadcast-side{display:flex;flex-direction:column}.prompter{padding:14px;display:grid;gap:10px}.prompt-card{padding:12px;border-radius:13px;border:1px solid #315f75;background:#091f2f;opacity:.5}.prompt-card.current{opacity:1;border-color:#9ce7ff;background:#11384d}.prompt-card.done{opacity:.35;text-decoration:line-through}.prompt-card b{display:block;color:#8bd4f3;font-size:10px;margin-bottom:4px}.prompt-card p{margin:0;line-height:1.5}.live-controls{margin-top:auto;padding:14px;border-top:1px solid #2d5a70}.region-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:8px 0}.region{border:1px solid #3b6f86;background:#0c2939;padding:9px;border-radius:10px;cursor:pointer;font-weight:900}.region.hit{background:#2d7a55;border-color:#86e4aa}.region.miss{background:#713843;border-color:#ff9398}.region:disabled{opacity:.62;cursor:not-allowed}.map-hotspot{position:absolute;z-index:4;width:72px;min-height:42px;transform:translate(-50%,-50%);border:2px solid #ffffffbb;background:#07324abf;border-radius:999px;font-size:11px;font-weight:950;cursor:pointer;box-shadow:0 5px 14px #00283e88}.map-hotspot.hit{background:#26704f;border-color:#9bf0ba}.map-hotspot.miss{background:#713843;border-color:#ff9398}.map-hotspot:disabled{opacity:.68}.hot-north{left:48%;top:20%}.hot-central{left:54%;top:40%}.hot-south{left:64%;top:66%}.hot-jeju{left:49%;top:88%}
 .alert{position:fixed;inset:0;z-index:100;background:#02111de8;display:none;align-items:center;justify-content:center;padding:18px}.alert.show{display:flex}.alert-card{width:min(620px,100%);background:#102b3d;border:2px solid #ffcb55;border-radius:20px;box-shadow:0 30px 100px #000;padding:20px}.alert-card h2{margin:0 0 8px;color:#ffe391}.alert-card p{line-height:1.6}.alert-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}.alert-btn{border:1px solid #50788c;background:#15394d;padding:13px;border-radius:12px;cursor:pointer;font-weight:900}
+
+/* v6 · kid-friendly emergency broadcast */
+.news-strip.emergency{border-bottom-color:#ff7b83;background:#351018}
+.news-strip.emergency .news-strip-label{background:#ff4f5d}
+.alert{backdrop-filter:blur(7px)}
+.emergency-card{width:min(690px,100%);border:2px solid #ff6b75;background:linear-gradient(180deg,#40131b 0,#1a1d2b 24%,#0e2a3d 100%);padding:0;overflow:hidden}
+.emergency-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#d93b49;border-bottom:1px solid #ff7c85}
+.emergency-head .eyebrow{color:white;margin:0}.emergency-step{padding:5px 9px;border-radius:999px;background:#7a1822;color:#fff;font-size:11px;font-weight:1000}
+.emergency-body{padding:18px}
+.emergency-card h2{color:#fff;margin:0 0 10px;font-size:clamp(22px,4vw,34px)}
+.emergency-sub{margin:0 0 12px;color:#ffd9dc;font-weight:850}
+.emergency-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 14px}.emergency-progress i{height:7px;border-radius:99px;background:#42596a}.emergency-progress i.done{background:#63d89a}.emergency-progress i.active{background:#ffd45b}
+.emergency-visual{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px;border:1px solid #54788a;border-radius:15px;background:#071d2be8;margin:8px 0 14px}
+.emergency-weather-card{min-height:98px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:12px;background:#12354a}.emergency-weather-card b{font-size:11px;color:#a9d4e7}.emergency-weather-card span{font-size:clamp(34px,8vw,58px);line-height:1}.emergency-arrow{font-size:28px;color:#ffd45b;font-weight:1000}
+.emergency-question{font-size:18px;font-weight:1000;line-height:1.45;margin:0 0 12px;color:#f5fbff}
+.emergency-stars{font-size:25px;letter-spacing:5px;color:#ffd45b;text-align:center;margin:4px 0 12px;min-height:32px}
+.alert-options{grid-template-columns:1fr;gap:9px}
+.alert-btn{min-height:54px;text-align:left;border:1px solid #527b90;background:#12394f;color:#eefaff;padding:12px 14px;font-size:15px;line-height:1.35}
+.alert-btn:hover{background:#194a64;border-color:#81cde9}.alert-btn.correct{background:#174936;border-color:#65dfa1}.alert-btn.wrong{background:#59222a;border-color:#ff8189}.alert-btn:disabled{opacity:1;cursor:default}
+.emergency-help{margin-top:11px;padding:9px 11px;border-radius:10px;background:#071b29;color:#a9cfdf;font-size:11px;line-height:1.45;text-align:center}
+.emergency-region-grid .alert-btn{text-align:center;font-size:17px}
+@media(max-width:520px){.emergency-body{padding:14px}.emergency-card h2{font-size:22px}.emergency-weather-card{min-height:82px}.emergency-question{font-size:16px}.alert-btn{min-height:50px;font-size:14px}}
+
 .verify-wrap{width:min(900px,100%);margin:0 auto}.verify-card{padding:20px}.verify-stage{position:relative;min-height:420px;border:1px solid #41758b;border-radius:18px;overflow:hidden;background:linear-gradient(#67c9e8 0 58%,#2d6a80 58% 100%)}.verify-sky{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:min(26vw,210px);transition:.3s}.verify-map{position:absolute;left:50%;top:50%;transform:translate(-50%,-48%);width:min(52%,360px);opacity:.82}.verify-map svg{width:100%;height:auto}.verify-time{position:absolute;left:16px;top:14px;padding:9px 12px;border-radius:12px;background:#061e2edb;border:1px solid #7fc9e6;font-size:22px;font-weight:1000}.verify-caption{position:absolute;left:16px;right:16px;bottom:14px;padding:12px 14px;background:#061e2ee8;border-left:6px solid #ffd45b;font-weight:900;line-height:1.45}.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.time-node{padding:9px;border:1px solid #315f75;border-radius:12px;background:#0a2334;text-align:center;font-weight:900;opacity:.48}.time-node.active{opacity:1;background:#e7f8ff;color:#0b3144;border-color:#fff}.time-node.done{opacity:.8;border-color:#65d89a}.result-wrap{width:min(820px,100%);margin:0 auto}.result-card{padding:22px}.score-big{text-align:center;font-size:72px;font-weight:1000;line-height:1;color:#ffe06f;margin:8px 0}.grade{text-align:center;font-weight:950;color:#bde7f7}.meters{display:grid;gap:10px;margin:18px 0}.meter{display:grid;grid-template-columns:120px 1fr 44px;gap:8px;align-items:center}.track{height:12px;background:#061722;border-radius:99px;overflow:hidden;border:1px solid #2a566c}.fill{height:100%;background:linear-gradient(90deg,#55cbe8,#86e6a4)}.feedback{padding:14px;border-radius:14px;background:#0a2334;border:1px solid #315f75;line-height:1.65}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .tutorial{position:fixed;inset:0;z-index:120;background:#031421ed;display:none;align-items:center;justify-content:center;padding:18px}.tutorial.show{display:flex}.tutorial-card{width:min(760px,100%);background:#123247;border:1px solid #5590aa;border-radius:22px;padding:22px}.tutorial-card h1{margin:0 0 8px}.tutorial-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}.tut{background:#0a2334;border:1px solid #315d72;border-radius:14px;padding:12px;text-align:center}.tut span{font-size:32px;display:block;margin-bottom:7px}.tut b{display:block}.tut small{display:block;color:#9fc4d6;margin-top:4px;line-height:1.4}
 .toast{position:fixed;left:50%;top:82px;z-index:90;transform:translate(-50%,-12px);background:#071a27ed;border:1px solid #74c6e5;border-radius:12px;padding:10px 14px;font-weight:900;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
@@ -283,7 +306,7 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
     <div class="meters">
       <div class="meter"><b>예보 판단</b><div class="track"><div class="fill" id="forecastMeter"></div></div><strong id="forecastScore">0</strong></div>
       <div class="meter"><b>지도 설명</b><div class="track"><div class="fill" id="mapMeter"></div></div><strong id="mapScore">0</strong></div>
-      <div class="meter"><b>속보 대응</b><div class="track"><div class="fill" id="alertMeter"></div></div><strong id="alertScore">0</strong></div>
+      <div class="meter"><b>긴급방송</b><div class="track"><div class="fill" id="alertMeter"></div></div><strong id="alertScore">0</strong></div>
     </div>
     <div class="feedback" id="feedbackText"></div>
     <div class="result-actions"><button class="secondary" id="reviewBtn">관측자료 다시 보기</button><button class="primary" id="againBtn">새로운 날씨 도전</button></div>
@@ -292,13 +315,27 @@ main{width:min(1180px,100%);margin:0 auto;padding:16px;flex:1}
 </main>
 </div>
 
-<div class="alert" id="alertModal"><div class="alert-card"><span class="eyebrow">BREAKING WEATHER</span><h2>🚨 기상 속보가 들어왔어요!</h2><p id="alertText"></p><div class="alert-options" id="alertOptions"></div></div></div>
+<div class="alert" id="alertModal" role="dialog" aria-modal="true" aria-labelledby="emergencyTitle">
+  <div class="alert-card emergency-card">
+    <div class="emergency-head"><span class="eyebrow">BREAKING WEATHER · 긴급 기상방송</span><span class="emergency-step" id="emergencyStep">1 / 3</span></div>
+    <div class="emergency-body">
+      <h2 id="emergencyTitle">🚨 날씨가 갑자기 달라졌어요!</h2>
+      <p class="emergency-sub" id="emergencySub">그림을 보고 차근차근 방송해 봐요.</p>
+      <div class="emergency-progress" id="emergencyProgress"><i class="active"></i><i></i><i></i></div>
+      <div class="emergency-visual" id="emergencyVisual"></div>
+      <p class="emergency-question" id="alertText"></p>
+      <div class="emergency-stars" id="emergencyStars" aria-label="긴급방송 별 점수">☆☆☆</div>
+      <div class="alert-options" id="alertOptions"></div>
+      <div class="emergency-help" id="emergencyHelp">전문용어는 필요 없어요. 보이는 변화와 안전한 행동만 생각하면 돼요.</div>
+    </div>
+  </div>
+</div>
 <div class="tutorial show" id="tutorial"><div class="tutorial-card"><span class="eyebrow">첫 출근 튜토리얼</span><h1>기상캐스터의 하루는 이렇게 흘러가요</h1><div class="tutorial-grid">
   <div class="tut"><span>🗺️</span><b>1. 관측</b><small>레이더·기온·바람을 살펴봐요.</small></div>
   <div class="tut"><span>🧠</span><b>2. 판단</b><small>오후 날씨와 준비물을 예보해요.</small></div>
   <div class="tut"><span>🎙️</span><b>3. 방송</b><small>지도에서 지역을 가리키며 설명해요.</small></div>
-  <div class="tut"><span>🚨</span><b>4. 속보·검증</b><small>새 자료에 대응하고 실제 오후 날씨까지 확인해요.</small></div>
-</div><p style="color:#bdd8e5;line-height:1.6">정답을 외우는 게임이 아니에요. <b style="color:white">자료가 어떻게 움직이는지 보고 판단</b>하는 것이 핵심입니다.</p><button class="primary wide" id="startBtn">기상센터 출근하기</button></div></div>
+  <div class="tut"><span>🚨</span><b>4. 긴급방송</b><small>달라진 날씨를 보고 안전한 행동을 골라요.</small></div>
+</div><p style="color:#bdd8e5;line-height:1.6">어려운 날씨 말을 외울 필요 없어요. <b style="color:white">그림이 어떻게 달라지는지 보고 안전하게 알려 주면</b> 됩니다.</p><button class="primary wide" id="startBtn">기상센터 출근하기</button></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -364,7 +401,54 @@ function currentObservationFrame(){
  return frames[Math.max(0,Math.min(state.observation.frameIndex,frames.length-1))];
 }
 
-var state={scenario:null,choice:{weather:"",trend:"",advice:""},tab:"radar",viewed:{radar:true,temperature:false,wind:false,air:false},observation:{frameIndex:0,playing:false,timer:null},line:0,mapResults:{},alertDone:false,alertCorrect:false,verifyStep:0,started:false};
+
+var emergencyProfiles={
+ autumn_rain:{
+  title:"비가 갑자기 강해졌어요!",before:"🌥️",after:"🌧️🌧️",
+  change:{question:"무엇이 달라졌나요?",correct:"비가 더 강해졌어요",options:["비가 더 강해졌어요","비가 약해졌어요","눈이 내리기 시작했어요"]},
+  region:"central",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"우산을 챙기고 물이 많은 곳은 조심해요",options:["우산을 챙기고 물이 많은 곳은 조심해요","물을 많이 마시고 그늘에서 쉬어요","따뜻한 옷을 여러 겹 입어요"]},
+  report:"충청 지역에 비가 강해지고 있습니다. 우산을 챙기고 물이 많은 곳은 조심하세요."
+ },
+ summer_heat:{
+  title:"기온이 빠르게 올라가고 있어요!",before:"🌤️ 29℃",after:"☀️ 33℃",
+  change:{question:"무엇이 달라졌나요?",correct:"기온이 더 높아졌어요",options:["기온이 더 높아졌어요","눈이 내리기 시작했어요","안개가 아주 짙어졌어요"]},
+  region:"central",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"물을 자주 마시고 그늘에서 쉬어요",options:["물을 자주 마시고 그늘에서 쉬어요","우산만 꼭 챙겨요","길이 미끄러운지 살펴요"]},
+  report:"충청 내륙의 기온이 빠르게 오르고 있습니다. 물을 자주 마시고 그늘에서 쉬세요."
+ },
+ winter_snow:{
+  title:"눈이 더 많이 내리기 시작했어요!",before:"☁️",after:"🌨️❄️",
+  change:{question:"무엇이 달라졌나요?",correct:"눈이 더 많이 내리고 있어요",options:["눈이 더 많이 내리고 있어요","날씨가 아주 더워졌어요","하늘이 완전히 맑아졌어요"]},
+  region:"central",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"천천히 걷고 미끄러운 길을 조심해요",options:["천천히 걷고 미끄러운 길을 조심해요","그늘에서 더위를 피해요","창문을 모두 열어 두어요"]},
+  report:"충청 지역에 눈이 강해지고 있습니다. 천천히 걷고 미끄러운 길을 조심하세요."
+ },
+ spring_dust:{
+  title:"공기가 갑자기 더 뿌옇게 변했어요!",before:"🌤️",after:"🌫️😷",
+  change:{question:"무엇이 달라졌나요?",correct:"공기가 더 뿌옇게 변했어요",options:["공기가 더 뿌옇게 변했어요","눈이 많이 쌓였어요","비구름이 모두 사라졌어요"]},
+  region:"north",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"밖에서는 마스크를 쓰고 오래 뛰지 않아요",options:["밖에서는 마스크를 쓰고 오래 뛰지 않아요","미끄러운 얼음길을 조심해요","바닷가에서 파도를 구경해요"]},
+  report:"수도권의 공기가 많이 뿌옇습니다. 밖에서는 마스크를 쓰고 오래 뛰는 활동은 줄여 주세요."
+ },
+ typhoon:{
+  title:"제주에 비바람이 더 강해졌어요!",before:"🌧️🌬️",after:"🌀🌧️",
+  change:{question:"무엇이 달라졌나요?",correct:"비와 바람이 더 강해졌어요",options:["비와 바람이 더 강해졌어요","날씨가 아주 맑아졌어요","기온만 조금 내려갔어요"]},
+  region:"jeju",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"밖에 나가지 않고 안전한 곳에 있어요",options:["밖에 나가지 않고 안전한 곳에 있어요","바닷가에 가까이 가서 살펴봐요","자전거를 타고 바람을 확인해요"]},
+  report:"제주에 비바람이 강해지고 있습니다. 밖에 나가지 말고 안전한 곳에 머물러 주세요."
+ },
+ morning_fog:{
+  title:"안개가 예상보다 오래 남아 있어요!",before:"🌫️",after:"🌫️🌫️",
+  change:{question:"무엇이 달라졌나요?",correct:"안개가 계속 짙게 남아 있어요",options:["안개가 계속 짙게 남아 있어요","눈이 내리기 시작했어요","햇빛이 아주 강해졌어요"]},
+  region:"central",
+  action:{question:"시청자에게 어떤 안전 안내를 할까요?",correct:"앞을 잘 보고 천천히 이동해요",options:["앞을 잘 보고 천천히 이동해요","더우니 물놀이를 해요","강한 바람을 맞으러 밖에 나가요"]},
+  report:"충청 내륙에 안개가 짙게 남아 있습니다. 앞을 잘 보고 천천히 이동하세요."
+ }
+};
+function emergencyFor(s){return emergencyProfiles[s.id]||emergencyProfiles.autumn_rain}
+
+var state={scenario:null,choice:{weather:"",trend:"",advice:""},tab:"radar",viewed:{radar:true,temperature:false,wind:false,air:false},observation:{frameIndex:0,playing:false,timer:null},line:0,mapResults:{},alertDone:false,alertCorrect:false,alertStep:0,alertStars:0,alertTriggerLine:1,verifyStep:0,started:false};
 var labels={
  weather:{sun:"맑고 햇빛이 강함",cloud:"구름 많음·흐림",rain:"비",snow:"눈"},
  trend:{up:"기온 상승",same:"기온 비슷",down:"기온 하락"},
@@ -385,7 +469,7 @@ function pickScenario(){
  state.scenario=pool[Math.floor(Math.random()*pool.length)];
  state.choice={weather:"",trend:"",advice:""};state.tab="radar";
  state.viewed={radar:true,temperature:false,wind:false,air:false};
- state.observation.frameIndex=0;state.line=0;state.mapResults={};state.alertDone=false;state.alertCorrect=false;state.verifyStep=0;
+ state.observation.frameIndex=0;state.line=0;state.mapResults={};state.alertDone=false;state.alertCorrect=false;state.alertStep=0;state.alertStars=0;state.alertTriggerLine=Math.random()<.5?1:2;state.verifyStep=0;
  document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x.dataset.tab==="radar")});
  renderObservation();updateObservationGate()
 }
@@ -514,14 +598,70 @@ function regionClick(btn){
 function nextLine(){
  var list=lines(),current=list[state.line];
  if(current&&current.region&&!Object.prototype.hasOwnProperty.call(state.mapResults,state.line)){toast("먼저 방송 지도에서 지역을 한 번 가리켜 주세요.");return}
- if(state.line===1&&!state.alertDone){openAlert();return}
+ if(state.line===state.alertTriggerLine&&!state.alertDone){openAlert();return}
  if(state.line<list.length-1){state.line++;resetRegionControls();renderPrompter();return}
  startVerify()
 }
+function shuffled(list){return list.slice().sort(function(){return Math.random()-.5})}
+function emergencyStarsText(){return "★".repeat(state.alertStars)+"☆".repeat(3-state.alertStars)}
 function openAlert(){
- var s=state.scenario;$("alertText").textContent=s.alert;$("alertOptions").innerHTML="";
- [{text:s.alertGood,good:true},{text:s.alertBad,good:false}].sort(function(){return Math.random()-.5}).forEach(function(o){var b=document.createElement("button");b.className="alert-btn";b.textContent=o.text;b.onclick=function(){state.alertDone=true;state.alertCorrect=o.good;$("alertModal").classList.remove("show");toast(o.good?"속보 반영 성공!":"속보 내용을 놓쳤어요.");sdk("sound",o.good?"correct":"wrong");state.line++;resetRegionControls();renderPrompter()};$("alertOptions").appendChild(b)});
- $("alertModal").classList.add("show")
+ state.alertStep=0;state.alertStars=0;
+ var e=emergencyFor(state.scenario);
+ $("emergencyTitle").textContent="🚨 "+e.title;
+ $("emergencySub").textContent="갑자기 들어온 새 날씨예요. 세 가지만 확인하면 돼요.";
+ document.querySelector(".news-strip").classList.add("emergency");
+ $("tickerText").textContent="긴급 기상방송 | "+e.title;
+ $("alertModal").classList.add("show");
+ phase("긴급방송");
+ renderEmergencyStep();
+ sdk("sound","tick")
+}
+function renderEmergencyStep(){
+ var e=emergencyFor(state.scenario),step=state.alertStep;
+ $("emergencyStep").textContent=(step+1)+" / 3";
+ $("emergencyStars").textContent=emergencyStarsText();
+ Array.from($("emergencyProgress").children).forEach(function(x,i){x.className=i<step?"done":i===step?"active":""});
+ $("alertOptions").innerHTML="";
+ $("alertOptions").classList.toggle("emergency-region-grid",step===1);
+ if(step===0){
+   $("emergencyVisual").innerHTML='<div class="emergency-weather-card"><b>조금 전</b><span>'+e.before+'</span></div><div class="emergency-arrow">→</div><div class="emergency-weather-card"><b>지금</b><span>'+e.after+'</span></div>';
+   $("alertText").textContent=e.change.question;
+   shuffled(e.change.options).forEach(function(text){makeEmergencyButton(text,text===e.change.correct)})
+ }else if(step===1){
+   $("emergencyVisual").innerHTML='<div class="emergency-weather-card"><b>새 소식</b><span>📍</span></div><div class="emergency-arrow">→</div><div class="emergency-weather-card"><b>방송 지역</b><span>🗺️</span></div>';
+   $("alertText").textContent="어느 지역에 먼저 알려야 할까요?";
+   shuffled(["north","central","south","jeju"]).forEach(function(region){makeEmergencyButton(labels.region[region],region===e.region)})
+ }else{
+   $("emergencyVisual").innerHTML='<div class="emergency-weather-card"><b>날씨 변화</b><span>'+e.after+'</span></div><div class="emergency-arrow">→</div><div class="emergency-weather-card"><b>안전 행동</b><span>🛟</span></div>';
+   $("alertText").textContent=e.action.question;
+   shuffled(e.action.options).forEach(function(text){makeEmergencyButton(text,text===e.action.correct)})
+ }
+}
+function makeEmergencyButton(textValue,good){
+ var b=document.createElement("button");b.className="alert-btn";b.textContent=textValue;
+ b.onclick=function(){
+   var buttons=Array.from($("alertOptions").querySelectorAll("button"));
+   buttons.forEach(function(x){x.disabled=true});
+   if(good){state.alertStars++;b.classList.add("correct");toast("좋아요! 방송에 잘 반영했어요.");sdk("sound","correct")}
+   else{b.classList.add("wrong");toast("괜찮아요. 그림을 한 번 더 살펴봐요.");sdk("sound","wrong")}
+   $("emergencyStars").textContent=emergencyStarsText();
+   setTimeout(function(){
+     state.alertStep++;
+     if(state.alertStep<3){renderEmergencyStep();return}
+     finishEmergency()
+   },520)
+ };
+ $("alertOptions").appendChild(b)
+}
+function finishEmergency(){
+ var e=emergencyFor(state.scenario);
+ state.alertDone=true;state.alertCorrect=state.alertStars===3;
+ $("alertModal").classList.remove("show");
+ document.querySelector(".news-strip").classList.remove("emergency");
+ $("tickerText").textContent="긴급방송 완료 | "+e.report;
+ phase("생방송 3/5");
+ toast("긴급방송 완료! "+emergencyStarsText());
+ state.line++;resetRegionControls();renderPrompter()
 }
 function startVerify(){state.verifyStep=0;show("verify");phase("실제 날씨 확인 4/5");renderVerify()}
 function renderVerify(){
@@ -537,10 +677,10 @@ function finish(){
  if(c.trend===s.trend)correct++;else miss.push("기온 변화");
  if(c.advice===s.advice)correct++;else miss.push("생활 정보");
  var fscore=correct*25,mapEntries=Object.keys(state.mapResults),mapCorrect=mapEntries.filter(function(k){return state.mapResults[k]}).length,mapExpected=lines().filter(function(x){return !!x.region}).length;
- var mscore=mapExpected?Math.round(mapCorrect/mapExpected*15):15,ascore=state.alertCorrect?10:0,total=fscore+mscore+ascore;
+ var mscore=mapExpected?Math.round(mapCorrect/mapExpected*15):15,ascore=state.alertStars===3?10:state.alertStars===2?7:state.alertStars===1?3:0,total=fscore+mscore+ascore;
  if(total>best())setBest(total);$("bestPill").textContent="최고 "+best();$("scoreBig").textContent=total;$("forecastScore").textContent=fscore+"/75";$("mapScore").textContent=mscore+"/15";$("alertScore").textContent=ascore+"/10";$("forecastMeter").style.width=(fscore/75*100)+"%";$("mapMeter").style.width=(mscore/15*100)+"%";$("alertMeter").style.width=(ascore/10*100)+"%";
  $("gradeText").textContent=correct===3&&total>=90?"자료를 읽고 정확히 예보했어요!":correct>=2&&total>=70?"근거 있는 예보였어요!":correct>=1?"관측 자료를 한 번 더 비교해 봐요.":"결과를 보고 관측 자료를 다시 읽어봐요.";
- var fb=[];fb.push("<b>실제 오후:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>예보와 달랐던 부분:</b> "+miss.join(", "));else fb.push("<br><b>세 가지 예보 판단이 모두 실제 변화와 맞았습니다.</b>");fb.push("<br><b>지도:</b> "+mapCorrect+" / "+mapExpected+"개 멘트에서 첫 지목이 정확했습니다.");fb.push("<br>"+(state.alertCorrect?"속보가 들어왔을 때 새 정보를 방송에 반영했습니다.":"속보에서는 처음 예보보다 새 관측 자료를 우선해야 합니다."));$("feedbackText").innerHTML=fb.join("");
+ var fb=[];fb.push("<b>실제 오후:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>예보와 달랐던 부분:</b> "+miss.join(", "));else fb.push("<br><b>세 가지 예보 판단이 모두 실제 변화와 맞았습니다.</b>");fb.push("<br><b>지도:</b> "+mapCorrect+" / "+mapExpected+"개 멘트에서 첫 지목이 정확했습니다.");fb.push("<br><b>긴급방송:</b> "+emergencyStarsText()+" · "+(state.alertStars===3?"날씨 변화, 지역, 안전 행동을 모두 잘 찾았어요!":state.alertStars===2?"두 가지를 잘 찾았어요. 그림을 한 번 더 비교하면 더 정확해져요.":"다음에는 바뀐 그림과 안전 행동을 천천히 연결해 봐요."));$("feedbackText").innerHTML=fb.join("");
  show("result");phase("결과 5/5");sdk("score",total);sdk("gameOver",{score:total})
 }
 function reset(){pickScenario();document.querySelectorAll(".option").forEach(function(x){x.classList.remove("selected")});$("toLive").disabled=true;$("forecastSummary").textContent="아직 방송 대본을 작성하는 중이에요.";show("observe");phase("관측 1/5");if(!state.started){state.started=true;sdk("start")}}
