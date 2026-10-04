@@ -19,7 +19,8 @@ const CHAT_LINES=[
 
 function routineTarget(id,hour,weather,pois){
   const r=ROUTINES[id];if(!r)return null;
-  if(hour<r.wake||hour>=r.sleep)return {key:'home-'+id,home:true,...(pois['home-'+id]||pois.homeFallback)};
+  const goHomeAt=Math.max(r.wake+1,r.sleep-1.15);
+  if(hour<r.wake||hour>=goHomeAt)return {key:'home-'+id,home:true,...(pois['home-'+id]||pois.homeFallback)};
   let key='';
   for(const slot of r.slots){if(hour>=slot[0]&&hour<slot[1]){key=slot[2];break}}
   if(!key)key='plazaCenter';
@@ -116,7 +117,7 @@ export function createResidentLife(ctx){
         const dx=n.targetX-n.object.position.x,dz=n.targetZ-n.object.position.z,d=Math.hypot(dx,dz);
         if(d<.07)stopAt(n,now);
         else{
-          const speed=(n.role==='resident'||n.role==='delivery') ? .58 : .44,step=Math.min(d,speed*dt);
+          const speed=(n.role==='resident'||n.role==='delivery') ? 1.00 : .82,step=Math.min(d,speed*dt);
           const ux=dx/d,uz=dz/d,nx=n.object.position.x+ux*step,nz=n.object.position.z+uz*step;
           if(!isBlocked?.(nx,nz)){
             n.object.position.x=nx;n.object.position.z=nz;n.detourSign=0;walking=true;
