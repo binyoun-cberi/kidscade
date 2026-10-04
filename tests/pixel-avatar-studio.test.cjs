@@ -10,10 +10,11 @@ const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
 const starterDir=path.join(root,'assets/game/characters/kidscade-avatar-v3/school-starter');
 const manifest=JSON.parse(fs.readFileSync(path.join(starterDir,'manifest.json'),'utf8'));
 const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.json'),'utf8'));
+const hairCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=43/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=44/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -144,4 +145,56 @@ test('public renderer composes selected JSON eyes across the 23-frame v3 motion 
   assert.equal(eyeCatalog.sourceFrames.length,7);
   assert.equal(eyeCatalog.sourceFrames.length+Object.keys(eyeCatalog.frameTransforms).length,23);
   assert.equal(eyeCatalog.baseClearPixels.length,98);
+});
+
+
+test('v3 hair catalog adds ten JSON hairstyles and keeps the builtin tousled style',()=>{
+  assert.equal(manifest.partCatalogs.hair,'hair/catalog.json');
+  assert.equal(hairCatalog.type,'kidscade-avatar-hair-catalog');
+  assert.equal(hairCatalog.layer,'hair');
+  assert.equal(hairCatalog.defaultId,'basic-tousled-hair-01');
+  assert.equal(hairCatalog.items.length,11);
+  const extra=hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId);
+  assert.equal(extra.length,10);
+  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  for(const item of extra){
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
+    assert.equal(file.type,'kidscade-avatar-hair-part',item.id);
+    assert.equal(file.id,item.id);
+    assert.equal(file.layer,'hair');
+    assert.equal(file.bodyId,'maple-lite-body-v3');
+    assert.deepEqual(file.canvas,[128,128]);
+    assert.ok(file.pixels.length>=250,item.id);
+    for(const pixel of file.pixels){
+      assert.equal(pixel.length,6,item.id);
+      assert.ok(pixel[0]>=0&&pixel[0]<128&&pixel[1]>=0&&pixel[1]<128,item.id);
+      for(const value of pixel.slice(2))assert.ok(Number.isInteger(value)&&value>=0&&value<=255,item.id);
+    }
+  }
+});
+
+test('public renderer replaces the baked default hair safely across all 23 motion frames',()=>{
+  const countRuns=runs=>runs.reduce((sum,row)=>sum+(row[1]||[]).reduce((n,run)=>n+run[1]-run[0],0),0);
+  assert.match(js,/async function loadHairCatalog\(\)/);
+  assert.match(js,/function transformHairCanvas\(source,frameId\)/);
+  assert.match(js,/function clearBaseHair\(target,frameId\)/);
+  assert.match(js,/function paintHairLayer\(target,layer\)/);
+  assert.match(js,/data-hair-id/);
+  assert.match(js,/hairProtectedKeys/);
+  assert.equal(hairCatalog.sourceFrames.length,7);
+  assert.equal(Object.keys(hairCatalog.frameTransforms).length,16);
+  assert.equal(hairCatalog.sourceFrames.length+Object.keys(hairCatalog.frameTransforms).length,23);
+  assert.equal(countRuns(hairCatalog.clear.skinRuns),656);
+  assert.equal(countRuns(hairCatalog.clear.outlineRuns),79);
+  assert.equal(countRuns(hairCatalog.clear.transparentRuns),166);
+  assert.equal(countRuns(hairCatalog.clear.skinRuns)+countRuns(hairCatalog.clear.outlineRuns)+countRuns(hairCatalog.clear.transparentRuns),901);
+  assert.equal(hairCatalog.clear.outlineSource,'#7b5053');
+  assert.ok(hairCatalog.protectedColors.length>=10);
+});
+
+test('hair choice persists beside eye choice in the v3 public avatar state',()=>{
+  assert.match(js,/state\.assetIds=\{\.\.\.\(manifest\?\.assetIds\|\|\{\}\),\.\.\.\(state\.assetIds\|\|\{\}\),hair:id\}/);
+  assert.match(js,/state\.assetIds\.hair/);
+  assert.match(js,/await loadHairPart\(state\.assetIds\.hair\)/);
+  assert.match(js,/헤어 11종/);
 });

@@ -239,6 +239,7 @@
     }
   },
   "partCatalogs": {
-    "eyes": "eyes/catalog.json"
+    "eyes": "eyes/catalog.json",
+    "hair": "hair/catalog.json"
   }
 }

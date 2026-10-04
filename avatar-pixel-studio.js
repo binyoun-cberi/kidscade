@@ -48,6 +48,13 @@ const eyeSourceCache=new Map();
 const eyeFrameCache=new Map();
 const eyeMaskCache=new Map();
 const eyeMaskCoordCache=new Map();
+let hairCatalog=null;
+const hairParts=new Map();
+const hairSourceCache=new Map();
+const hairFrameCache=new Map();
+const hairMaskSourceCache=new Map();
+const hairMaskCoordCache=new Map();
+let hairProtectedKeys=new Set();
 let currentTab='skin';
 let previewMode='stand';
 let previewStartedAt=0;
@@ -217,6 +224,96 @@ function applyEyePart(target,frameId,eyeId=selectedEyeId()){
   for(const [x,y] of eyeMaskCoords(frameId)){const i=(y*SIZE+x)*4;image.data[i]=skin[0];image.data[i+1]=skin[1];image.data[i+2]=skin[2];image.data[i+3]=255}
   target.putImageData(image,0,0);target.drawImage(layer,0,0);
 }
+async function loadHairCatalog(){
+  const rel=manifest?.partCatalogs?.hair||'hair/catalog.json';
+  const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});
+  if(!res.ok)throw new Error('헤어 파츠 카탈로그를 불러오지 못했습니다.');
+  const data=await res.json();
+  if(data?.type!=='kidscade-avatar-hair-catalog'||!Array.isArray(data.items))throw new Error('헤어 파츠 카탈로그 형식이 올바르지 않습니다.');
+  hairCatalog=data;hairProtectedKeys=new Set((data.protectedColors||[]).map(color=>color.join(',')));
+  const merged={...(manifest?.assetIds||{}),...(state.assetIds||{})};
+  const requested=merged.hair||data.defaultId||manifest?.assetIds?.hair||'basic-tousled-hair-01';
+  merged.hair=data.items.some(item=>item.id===requested)?requested:(data.defaultId||'basic-tousled-hair-01');
+  state.assetIds=merged;
+  if(merged.hair!==data.defaultId)await loadHairPart(merged.hair);
+  return data;
+}
+async function loadHairPart(id){
+  if(!hairCatalog||!id||id===hairCatalog.defaultId)return null;
+  if(hairParts.has(id))return hairParts.get(id);
+  const item=hairCatalog.items.find(candidate=>candidate.id===id);
+  if(!item?.file)throw new Error('등록되지 않은 헤어 파츠입니다: '+id);
+  const res=await fetch(ROOT+'/hair/'+item.file,{cache:'no-cache'});
+  if(!res.ok)throw new Error('헤어 파츠를 불러오지 못했습니다: '+id);
+  const part=await res.json();
+  if(part?.type!=='kidscade-avatar-hair-part'||part.id!==id||part.layer!=='hair'||!Array.isArray(part.pixels))throw new Error('헤어 파츠 JSON 형식이 올바르지 않습니다: '+id);
+  hairParts.set(id,part);return part;
+}
+function selectedHairId(){return state.assetIds?.hair||manifest?.assetIds?.hair||hairCatalog?.defaultId||'basic-tousled-hair-01'}
+function runsCanvas(runs){
+  const out=document.createElement('canvas');out.width=SIZE;out.height=SIZE;
+  const c=out.getContext('2d',{alpha:true}),image=c.createImageData(SIZE,SIZE),data=image.data;
+  for(const row of runs||[]){const y=Number(row?.[0]);for(const run of row?.[1]||[]){const start=Math.max(0,Number(run?.[0])||0),end=Math.min(SIZE,Number(run?.[1])||0);for(let x=start;x<end;x++){const i=(y*SIZE+x)*4;data[i]=255;data[i+1]=255;data[i+2]=255;data[i+3]=255}}}
+  c.putImageData(image,0,0);return out;
+}
+function transformHairCanvas(source,frameId){
+  const out=document.createElement('canvas');out.width=SIZE;out.height=SIZE;
+  const c=out.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
+  const spec=hairCatalog?.frameTransforms?.[frameId];
+  if(!spec){c.drawImage(source,0,0);return out}
+  if(spec.type==='sitMix'){c.drawImage(source,0,Number(spec.down)||0);return out}
+  const pivot=spec.pivot||[64,118],dx=Number(spec.dx)||0,dy=Number(spec.dy)||0,angle=(Number(spec.angle)||0)*Math.PI/180;
+  const scaleX=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1,scaleY=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1;
+  c.save();c.translate(pivot[0]+dx,pivot[1]+dy);c.rotate(angle);c.scale(scaleX,scaleY);c.translate(-pivot[0],-pivot[1]);c.drawImage(source,0,0);c.restore();return out;
+}
+function hairLayerCanvas(id,frameId){
+  const cacheKey=id+':'+frameId;if(hairFrameCache.has(cacheKey))return hairFrameCache.get(cacheKey);
+  const part=hairParts.get(id);if(!part)return null;
+  let source=hairSourceCache.get(id);if(!source){source=pixelsCanvas(part.pixels);hairSourceCache.set(id,source)}
+  const out=transformHairCanvas(source,frameId);hairFrameCache.set(cacheKey,out);return out;
+}
+function hairMaskCoords(kind,frameId){
+  const cacheKey=kind+':'+frameId;if(hairMaskCoordCache.has(cacheKey))return hairMaskCoordCache.get(cacheKey);
+  let source=hairMaskSourceCache.get(kind);
+  if(!source){const runs=hairCatalog?.clear?.[kind+'Runs']||[];source=runsCanvas(runs);hairMaskSourceCache.set(kind,source)}
+  const transformed=transformHairCanvas(source,frameId),data=transformed.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data,coords=[];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(data[(y*SIZE+x)*4+3])coords.push([x,y]);
+  hairMaskCoordCache.set(cacheKey,coords);return coords;
+}
+function transformHairPoint(point,frameId){
+  const x=Number(point?.[0])||0,y=Number(point?.[1])||0,spec=hairCatalog?.frameTransforms?.[frameId];
+  if(!spec)return [Math.round(x),Math.round(y)];
+  if(spec.type==='sitMix')return [Math.round(x),Math.round(y+(Number(spec.down)||0))];
+  const pivot=spec.pivot||[64,118],dx=Number(spec.dx)||0,dy=Number(spec.dy)||0,angle=(Number(spec.angle)||0)*Math.PI/180;
+  const sx=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1,sy=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1,ux=(x-pivot[0])*sx,uy=(y-pivot[1])*sy;
+  return [Math.round(pivot[0]+dx+Math.cos(angle)*ux-Math.sin(angle)*uy),Math.round(pivot[1]+dy+Math.sin(angle)*ux+Math.cos(angle)*uy)];
+}
+function sampledHairSkin(image,frameId){
+  const values=[];for(const point of hairCatalog?.skinSamples||[[64,56]]){const [x,y]=transformHairPoint(point,frameId);if(x<0||y<0||x>=SIZE||y>=SIZE)continue;const i=(y*SIZE+x)*4;if(image.data[i+3]>0)values.push([image.data[i],image.data[i+1],image.data[i+2]])}
+  if(!values.length)return hexToRgb(state.skinColor||skinBaseHex);
+  const median=index=>values.map(v=>v[index]).sort((a,b)=>a-b)[Math.floor(values.length/2)];return [median(0),median(1),median(2)];
+}
+function currentHairOutline(){
+  const source=normalizeHexColor(hairCatalog?.clear?.outlineSource)||'#7b5053',[r,g,b]=hexToRgb(source),remap=ensureSkinRemap();
+  return remap?.get(colorKey(r,g,b))||[r,g,b];
+}
+function isHairProtected(data,i){return hairProtectedKeys.has([data[i],data[i+1],data[i+2],data[i+3]].join(','))}
+function clearBaseHair(target,frameId){
+  const image=target.getImageData(0,0,SIZE,SIZE),data=image.data,skin=sampledHairSkin(image,frameId),outline=currentHairOutline();
+  for(const [x,y] of hairMaskCoords('transparent',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=0;data[i+1]=0;data[i+2]=0;data[i+3]=0}
+  for(const [x,y] of hairMaskCoords('skin',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=skin[0];data[i+1]=skin[1];data[i+2]=skin[2];data[i+3]=255}
+  for(const [x,y] of hairMaskCoords('outline',frameId)){const i=(y*SIZE+x)*4;if(isHairProtected(data,i))continue;data[i]=outline[0];data[i+1]=outline[1];data[i+2]=outline[2];data[i+3]=255}
+  target.putImageData(image,0,0);
+}
+function paintHairLayer(target,layer){
+  if(!layer)return;const base=target.getImageData(0,0,SIZE,SIZE),hair=layer.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE),a=base.data,b=hair.data;
+  for(let i=0;i<b.length;i+=4){if(!b[i+3]||isHairProtected(a,i))continue;a[i]=b[i];a[i+1]=b[i+1];a[i+2]=b[i+2];a[i+3]=b[i+3]}
+  target.putImageData(base,0,0);
+}
+function applyHairPart(target,frameId,hairId=selectedHairId()){
+  if(!hairCatalog||!hairId||hairId===hairCatalog.defaultId)return false;
+  const layer=hairLayerCanvas(hairId,frameId);if(!layer)return false;clearBaseHair(target,frameId);paintHairLayer(target,layer);return true;
+}
 function animationFor(mode){
   if(!manifest?.animations)return [];
   const normalized=mode==='idle'||mode==='smile'||mode==='static'?'stand':mode;
@@ -234,7 +331,7 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId()){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId()){
   if(!sheet)return;
   target.save();
   target.setTransform(1,0,0,1,0,0);
@@ -242,7 +339,11 @@ function drawFrame(target,index,eyeId=selectedEyeId()){
   target.imageSmoothingEnabled=false;
   target.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
   recolorSkin(target);
-  applyEyePart(target,manifest?.frameOrder?.[index]||'stand-01',eyeId);
+  const frameId=manifest?.frameOrder?.[index]||'stand-01';
+  const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
+  if(customHair)clearBaseHair(target,frameId);
+  applyEyePart(target,frameId,eyeId);
+  if(customHair)paintHairLayer(target,hairLayerCanvas(hairId,frameId));
   target.restore();
 }
 function drawStatic(){
@@ -327,7 +428,7 @@ function renderSkinOptions(){
 }
 function drawEyeThumbnail(canvasElement,id){
   if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
-  const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,id);
+  const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,id,hairCatalog?.defaultId||selectedHairId());
   const thumb=canvasElement.getContext('2d',{alpha:true});thumb.imageSmoothingEnabled=false;thumb.clearRect(0,0,SIZE,SIZE);thumb.drawImage(full,42,20,46,46,0,0,SIZE,SIZE);
 }
 async function hydrateEyeThumbnails(){
@@ -339,8 +440,23 @@ function renderEyeOptions(){
   optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-eye-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-eye-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-eye-thumb]').forEach(el=>{if(el.dataset.eyeThumb===eyeCatalog.defaultId)drawEyeThumbnail(el,el.dataset.eyeThumb)});hydrateEyeThumbnails();
 }
+function drawHairThumbnail(canvasElement,id){
+  if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
+  const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,eyeCatalog?.defaultId||selectedEyeId(),id);
+  const thumb=canvasElement.getContext('2d',{alpha:true});thumb.imageSmoothingEnabled=false;thumb.clearRect(0,0,SIZE,SIZE);thumb.drawImage(full,32,10,72,72,0,0,SIZE,SIZE);
+}
+async function hydrateHairThumbnails(){
+  if(!hairCatalog)return;await Promise.allSettled(hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId).map(item=>loadHairPart(item.id)));
+  if(currentTab!=='hair')return;optionGrid.querySelectorAll('canvas[data-hair-thumb]').forEach(el=>drawHairThumbnail(el,el.dataset.hairThumb));
+}
+function renderHairOptions(){
+  const items=hairCatalog?.items||[],selected=selectedHairId();pickerTitle.textContent='헤어';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-hair-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-hair-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.querySelectorAll('canvas[data-hair-thumb]').forEach(el=>{if(el.dataset.hairThumb===hairCatalog.defaultId)drawHairThumbnail(el,el.dataset.hairThumb)});hydrateHairThumbnails();
+}
 function renderOptions(){
   if(currentTab==='skin'){renderSkinOptions();return}
+  if(currentTab==='hair'){renderHairOptions();return}
   if(currentTab==='eyes'){renderEyeOptions();return}
   optionGrid.classList.remove('skin-mode');
   const meta=PARTS[currentTab]||PARTS.hair;
@@ -370,6 +486,11 @@ function refreshSkinPreview(){
   const stand=animationFor('stand')[0]||{index:0};
   drawFrame(staticCtx,stand.index||0);
   setPreviewMode(previewMode);
+}
+async function setHairAsset(id){
+  if(!hairCatalog?.items?.some(item=>item.id===id))return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),hair:id};refreshSkinPreview();renderOptions();publish(false);
+  const item=hairCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'헤어')+' 적용했어요!');return true;
 }
 async function setEyeAsset(id){
   if(!eyeCatalog?.items?.some(item=>item.id===id))return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
@@ -411,6 +532,8 @@ tabs?.addEventListener('click',e=>{
   if(button)selectTab(button.dataset.tab);
 });
 optionGrid?.addEventListener('click',e=>{
+  const hair=e.target.closest('[data-hair-id]');
+  if(hair){setHairAsset(hair.dataset.hairId);return}
   const eye=e.target.closest('[data-eye-id]');
   if(eye){setEyeAsset(eye.dataset.eyeId);return}
   const swatch=e.target.closest('[data-skin-color]');
@@ -452,6 +575,8 @@ window.KidscadeAvatarShop={
     state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),...(next.assetIds||{})};
     if(eyeCatalog&&!eyeCatalog.items.some(item=>item.id===state.assetIds.eyes))state.assetIds.eyes=eyeCatalog.defaultId;
     if(state.assetIds.eyes!==eyeCatalog?.defaultId)await loadEyePart(state.assetIds.eyes);
+    if(hairCatalog&&!hairCatalog.items.some(item=>item.id===state.assetIds.hair))state.assetIds.hair=hairCatalog.defaultId;
+    if(state.assetIds.hair!==hairCatalog?.defaultId)await loadHairPart(state.assetIds.hair);
     refreshSkinPreview();
     publish(false);
     return true;
@@ -461,9 +586,10 @@ window.KidscadeAvatarShop={
 (async function boot(){
   await Promise.all([loadManifest(),loadSheet()]);
   await loadEyeCatalog();
+  await loadHairCatalog();
   loadSkinPalette();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 눈 11종 · 피부색 자유 설정 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 피부색 자유 설정 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);
