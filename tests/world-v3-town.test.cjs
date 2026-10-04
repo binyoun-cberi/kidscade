@@ -11,6 +11,7 @@ const residents=fs.readFileSync(path.join(root,'world-v3','kidscade-world-reside
 const daily=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily.js'),'utf8');
 const dailyLife=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily-life.js'),'utf8');
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
+const museum=fs.readFileSync(path.join(root,'world-v3','kidscade-world-museum.js'),'utf8');
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
@@ -23,7 +24,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,grid,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,museum,grid,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -399,13 +400,14 @@ test('friendship level 12 grants resident-exclusive tracked 3D furniture',()=>{
 
 
 
-test('World v3 road-first grid keeps Seed Town in four equal districts',()=>{
+test('World v3 road-first grid keeps the core town plus museum district connected',()=>{
   assert.match(grid,/export const CELL_SIZE=20/);
   assert.match(grid,/export const ROAD_WIDTH=4/);
   assert.match(grid,/export const CELL_PITCH=CELL_SIZE\+ROAD_WIDTH/);
   assert.match(grid,/CITY_BOUNDS=\{x1:-22,x2:22,z1:14,z2:58\}/);
-  for(const id of ['cityMarket','cityLeisure','cityCivic','cityTransit'])assert.ok(grid.includes(id+':{id:'),'missing city square '+id);
+  for(const id of ['cityMarket','cityLeisure','cityCivic','cityTransit','museum'])assert.ok(grid.includes(id+':{id:'),'missing city square '+id);
   assert.match(city,/city-road-mid-horizontal/);
+  assert.match(city,/city-road-museum/);
   assert.match(city,/city-road-mid-vertical/);
   assert.match(city,/city-road-south/);
   assert.match(city,/market-fruit/);
@@ -646,7 +648,7 @@ test('World v3 has one authoritative 20x20 parcel plus 4m road grid',()=>{
     ["beach",-36,-24],["waterfront",-12,-24],["ranch",12,-24],["orchard",36,-24],
     ["forest",-36,0],["home",-12,0],["farm",12,0],["quarry",36,0],
     ["camp",-36,24],["cityMarket",-12,24],["cityLeisure",12,24],
-    ["cityCivic",-12,48],["cityTransit",12,48]
+    ["museum",-36,48],["cityCivic",-12,48],["cityTransit",12,48]
   ]){
     const [id,cx,cz]=spec;
     assert.ok(grid.includes(id+":{id:'"+id+"'"),'missing grid cell '+id);
@@ -695,4 +697,26 @@ test('market props are individually tracked and no longer share the register foo
   assert.match(city,/track\('market-register','decor'/);
   assert.match(city,/market\.z\+2\.0/);
   assert.doesNotMatch(city,/market-register'\}\),\s*addModel[^\n]*market\.z\+\.1/s);
+});
+
+
+test('Seed Natural Museum tracks discovery donation and visible exhibit growth',()=>{
+  assert.match(runtime,/createMuseumSystem/);
+  assert.match(runtime,/museumRuntime\.syncKnown\(\)/);
+  assert.match(runtime,/museumRuntime\?\.discover\?\.\('fish:'\+place/);
+  assert.match(runtime,/museumRuntime\?\.discover\?\.\('crop:'\+state\.type/);
+  assert.match(runtime,/museumRuntime\?\.discover\?\.\('pet:'\+id/);
+  assert.match(runtime,/data-museum-donate/);
+  assert.match(storage,/museum:\{version:1,discovered:\{\},donated:\{\},records:\{\}\}/);
+  assert.match(museum,/export const MUSEUM_CATALOG=/);
+  assert.match(museum,/function donationPanel\(\)/);
+  assert.match(museum,/donatedByCategory/);
+  assert.match(interiors,/museum:'venue-museum'/);
+  assert.match(interiors,/museum-aquarium/);
+  assert.match(interiors,/museum-mineral/);
+  assert.match(interiors,/syncMuseumDisplays/);
+  assert.match(city,/씨앗 자연박물관/);
+  assert.match(city,/\['museum',museum\.x,museum\.z-\.55/);
+  assert.match(grid,/museum:\{id:'museum',name:'씨앗 자연박물관',cx:-36,cz:48/);
+  assert.match(runtime,/museum:\{x:-36,z:52\.0,name:'씨앗 자연박물관'\}/);
 });
