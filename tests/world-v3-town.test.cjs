@@ -7,6 +7,8 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),'utf8');
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
+const residents=fs.readFileSync(path.join(root,'world-v3','kidscade-world-residents.js'),'utf8');
+const daily=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily.js'),'utf8');
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
@@ -20,7 +22,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,interiors,grid,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,residents,daily,interiors,grid,economy,furnishing,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -28,6 +30,39 @@ test('Seed Town modules parse as modules after import/export stripping',()=>{
     const r=spawnSync(process.execPath,['--check'],{input:src,encoding:'utf8'});
     assert.equal(r.status,0,r.stderr||r.stdout);
   }
+});
+
+test('Seed World daily director keeps weather stable and visible',()=>{
+  assert.match(runtime,/createDailyDirector/);
+  assert.match(runtime,/dailyDirector\.applyLighting/);
+  assert.match(runtime,/dailyDirector\?\.update/);
+  assert.match(runtime,/getDailyState:\(\)=>dailyDirector/);
+  assert.match(runtime,/state\.weather==='rain'/);
+  assert.match(runtime,/crop\.phase='growing'/);
+  assert.match(daily,/function seeded\(day,salt=0\)/);
+  assert.match(daily,/shopSeed/);
+  assert.match(daily,/forageSeed/);
+  assert.match(daily,/visitorSeed/);
+  assert.match(daily,/day===1.*WEATHER\.clear/s);
+  for(const id of ['clear','cloudy','rain','fog'])assert.ok(daily.includes(id+':{id:'),id);
+  assert.match(daily,/makeRain\(parent\)/);
+});
+
+test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{
+  assert.match(city,/createResidentLife/);
+  assert.match(city,/getDailyState/);
+  assert.match(city,/npcBlockers/);
+  assert.match(city,/isBlocked:isNpcBlocked/);
+  assert.match(residents,/const ROUTINES=/);
+  for(const id of ['minji','junho','haneul','taeho','doyun','sora','nari','minseok','yuna','woojin','seoyeon','hyunwoo'])assert.ok(residents.includes(id+':{wake:'),'missing routine '+id);
+  for(const state of ['GO_TO_POI','USE_POI','CHATTING','GO_HOME','HOME'])assert.ok(residents.includes("'"+state+"'"),'missing life state '+state);
+  assert.match(residents,/weather==='rain'\|\|weather==='fog'/);
+  assert.match(residents,/coveredPlaza/);
+  assert.match(residents,/if\(!isBlocked\?\.\(nx,nz\)\)/);
+  assert.match(residents,/n\.partnerId=best\.id/);
+  assert.match(city,/makeLabel\('💬'/);
+  assert.match(city,/home-minji/);
+  assert.match(city,/home-hyunwoo/);
 });
 
 test('starter loop cannot deadlock on a fresh save',()=>{
