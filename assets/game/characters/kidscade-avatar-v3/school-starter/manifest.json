@@ -194,5 +194,8 @@
       "preserveShading": true,
       "scope": "body-skin-only"
     }
+  },
+  "partCatalogs": {
+    "eyes": "eyes/catalog.json"
   }
 }

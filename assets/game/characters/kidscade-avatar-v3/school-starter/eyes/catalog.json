@@ -1,0 +1,663 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-eye-catalog",
+  "layer": "eyes",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "basic-eyes-01",
+  "referenceFrame": "stand-01",
+  "sourceFrames": [
+    "stand-01",
+    "stand-02",
+    "walk-01",
+    "walk-02",
+    "walk-03",
+    "walk-04",
+    "jump-01"
+  ],
+  "baseClearPixels": [
+    [
+      50,
+      47
+    ],
+    [
+      51,
+      47
+    ],
+    [
+      52,
+      47
+    ],
+    [
+      53,
+      47
+    ],
+    [
+      54,
+      47
+    ],
+    [
+      55,
+      47
+    ],
+    [
+      56,
+      47
+    ],
+    [
+      68,
+      47
+    ],
+    [
+      69,
+      47
+    ],
+    [
+      70,
+      47
+    ],
+    [
+      71,
+      47
+    ],
+    [
+      72,
+      47
+    ],
+    [
+      73,
+      47
+    ],
+    [
+      74,
+      47
+    ],
+    [
+      50,
+      48
+    ],
+    [
+      51,
+      48
+    ],
+    [
+      52,
+      48
+    ],
+    [
+      53,
+      48
+    ],
+    [
+      54,
+      48
+    ],
+    [
+      55,
+      48
+    ],
+    [
+      56,
+      48
+    ],
+    [
+      68,
+      48
+    ],
+    [
+      69,
+      48
+    ],
+    [
+      70,
+      48
+    ],
+    [
+      71,
+      48
+    ],
+    [
+      72,
+      48
+    ],
+    [
+      73,
+      48
+    ],
+    [
+      74,
+      48
+    ],
+    [
+      51,
+      49
+    ],
+    [
+      52,
+      49
+    ],
+    [
+      53,
+      49
+    ],
+    [
+      54,
+      49
+    ],
+    [
+      55,
+      49
+    ],
+    [
+      69,
+      49
+    ],
+    [
+      70,
+      49
+    ],
+    [
+      71,
+      49
+    ],
+    [
+      72,
+      49
+    ],
+    [
+      73,
+      49
+    ],
+    [
+      51,
+      50
+    ],
+    [
+      52,
+      50
+    ],
+    [
+      53,
+      50
+    ],
+    [
+      54,
+      50
+    ],
+    [
+      55,
+      50
+    ],
+    [
+      69,
+      50
+    ],
+    [
+      70,
+      50
+    ],
+    [
+      71,
+      50
+    ],
+    [
+      72,
+      50
+    ],
+    [
+      73,
+      50
+    ],
+    [
+      51,
+      51
+    ],
+    [
+      52,
+      51
+    ],
+    [
+      53,
+      51
+    ],
+    [
+      54,
+      51
+    ],
+    [
+      55,
+      51
+    ],
+    [
+      69,
+      51
+    ],
+    [
+      70,
+      51
+    ],
+    [
+      71,
+      51
+    ],
+    [
+      72,
+      51
+    ],
+    [
+      73,
+      51
+    ],
+    [
+      51,
+      52
+    ],
+    [
+      52,
+      52
+    ],
+    [
+      53,
+      52
+    ],
+    [
+      54,
+      52
+    ],
+    [
+      55,
+      52
+    ],
+    [
+      69,
+      52
+    ],
+    [
+      70,
+      52
+    ],
+    [
+      71,
+      52
+    ],
+    [
+      72,
+      52
+    ],
+    [
+      73,
+      52
+    ],
+    [
+      51,
+      53
+    ],
+    [
+      52,
+      53
+    ],
+    [
+      53,
+      53
+    ],
+    [
+      54,
+      53
+    ],
+    [
+      55,
+      53
+    ],
+    [
+      69,
+      53
+    ],
+    [
+      70,
+      53
+    ],
+    [
+      71,
+      53
+    ],
+    [
+      72,
+      53
+    ],
+    [
+      73,
+      53
+    ],
+    [
+      51,
+      54
+    ],
+    [
+      52,
+      54
+    ],
+    [
+      53,
+      54
+    ],
+    [
+      54,
+      54
+    ],
+    [
+      55,
+      54
+    ],
+    [
+      69,
+      54
+    ],
+    [
+      70,
+      54
+    ],
+    [
+      71,
+      54
+    ],
+    [
+      72,
+      54
+    ],
+    [
+      73,
+      54
+    ],
+    [
+      51,
+      55
+    ],
+    [
+      52,
+      55
+    ],
+    [
+      53,
+      55
+    ],
+    [
+      54,
+      55
+    ],
+    [
+      55,
+      55
+    ],
+    [
+      69,
+      55
+    ],
+    [
+      70,
+      55
+    ],
+    [
+      71,
+      55
+    ],
+    [
+      72,
+      55
+    ],
+    [
+      73,
+      55
+    ]
+  ],
+  "skinSamples": [
+    [
+      58,
+      56
+    ],
+    [
+      61,
+      56
+    ],
+    [
+      64,
+      56
+    ],
+    [
+      67,
+      56
+    ],
+    [
+      70,
+      56
+    ]
+  ],
+  "frameTransforms": {
+    "attack-01": {
+      "type": "transform",
+      "source": "stand-01"
+    },
+    "attack-02": {
+      "type": "transform",
+      "source": "stand-02",
+      "dx": 2,
+      "angle": 3,
+      "pivot": [
+        64,
+        118
+      ]
+    },
+    "attack-03": {
+      "type": "attackMix",
+      "source": "stand-01",
+      "armSource": "jump-01"
+    },
+    "attack-04": {
+      "type": "attackMix",
+      "source": "stand-01",
+      "armSource": "jump-01",
+      "dx": -5,
+      "angle": -4,
+      "pivot": [
+        64,
+        118
+      ]
+    },
+    "attack-05": {
+      "type": "transform",
+      "source": "stand-02",
+      "dx": -1,
+      "angle": -2,
+      "pivot": [
+        64,
+        118
+      ]
+    },
+    "hurt-01": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": 2,
+      "angle": 6,
+      "pivot": [
+        64,
+        118
+      ]
+    },
+    "hurt-02": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": 4,
+      "angle": 11,
+      "scaleY": 0.98,
+      "pivot": [
+        64,
+        118
+      ]
+    },
+    "dead-01": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -4,
+      "angle": 15,
+      "pivot": [
+        64,
+        116
+      ]
+    },
+    "dead-02": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -14,
+      "angle": 35,
+      "pivot": [
+        64,
+        116
+      ]
+    },
+    "dead-03": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -30,
+      "angle": 60,
+      "pivot": [
+        64,
+        116
+      ]
+    },
+    "dead-04": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -44,
+      "angle": 90,
+      "pivot": [
+        64,
+        116
+      ]
+    },
+    "sit-01": {
+      "type": "sitMix",
+      "source": "stand-01",
+      "legSource": "jump-01",
+      "down": 7
+    },
+    "sit-02": {
+      "type": "sitMix",
+      "source": "stand-02",
+      "legSource": "jump-01",
+      "down": 12
+    },
+    "pickup-01": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -1,
+      "angle": -7,
+      "pivot": [
+        64,
+        110
+      ]
+    },
+    "pickup-02": {
+      "type": "transform",
+      "source": "stand-01",
+      "dx": -4,
+      "dy": 4,
+      "angle": -15,
+      "scaleY": 0.94,
+      "pivot": [
+        64,
+        112
+      ]
+    },
+    "pickup-03": {
+      "type": "transform",
+      "source": "stand-02",
+      "dx": -2,
+      "angle": -7,
+      "pivot": [
+        64,
+        110
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "basic-eyes-01",
+      "label": "기본 눈",
+      "builtin": true,
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "round-big-eyes-01",
+      "label": "동그란 큰 눈",
+      "file": "round-big-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "soft-droop-eyes-01",
+      "label": "순한 처진 눈",
+      "file": "soft-droop-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "sharp-up-eyes-01",
+      "label": "또렷한 올라간 눈",
+      "file": "sharp-up-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "smile-closed-eyes-01",
+      "label": "웃는 눈",
+      "file": "smile-closed-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "sleepy-half-eyes-01",
+      "label": "졸린 반눈",
+      "file": "sleepy-half-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "sparkle-eyes-01",
+      "label": "반짝 눈",
+      "file": "sparkle-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "tiny-dot-eyes-01",
+      "label": "콩알 눈",
+      "file": "tiny-dot-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "wide-innocent-eyes-01",
+      "label": "맑은 큰 눈",
+      "file": "wide-innocent-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "focused-eyes-01",
+      "label": "집중 눈",
+      "file": "focused-eyes-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "wink-eyes-01",
+      "label": "윙크 눈",
+      "file": "wink-eyes-01.json",
+      "public": true,
+      "price": 0
+    }
+  ]
+}

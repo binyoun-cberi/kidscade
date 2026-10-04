@@ -7,11 +7,13 @@ const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');
 const integration=fs.readFileSync(path.join(root,'avatar-integration.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'avatar-pixel-studio.css'),'utf8');
-const manifest=JSON.parse(fs.readFileSync(path.join(root,'assets/game/characters/kidscade-avatar-v3/school-starter/manifest.json'),'utf8'));
+const starterDir=path.join(root,'assets/game/characters/kidscade-avatar-v3/school-starter');
+const manifest=JSON.parse(fs.readFileSync(path.join(starterDir,'manifest.json'),'utf8'));
+const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=41/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=42/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -100,4 +102,43 @@ test('skin color persists in the v3 avatar state and reset returns to original t
   assert.match(js,/state\.skinColor=normalizeHexColor\(value\)/);
   assert.match(js,/state=\{version:3,setId:manifest\?\.id\|\|'school-starter-01',skinColor:null\}/);
   assert.match(js,/localStorage\.setItem\(STATE_KEY,JSON\.stringify\(payload\)\)/);
+});
+
+
+test('v3 eye catalog adds ten JSON eye assets and keeps the builtin default',()=>{
+  assert.equal(manifest.partCatalogs.eyes,'eyes/catalog.json');
+  assert.equal(eyeCatalog.type,'kidscade-avatar-eye-catalog');
+  assert.equal(eyeCatalog.layer,'eyes');
+  assert.equal(eyeCatalog.defaultId,'basic-eyes-01');
+  assert.equal(eyeCatalog.items.length,11);
+  const extra=eyeCatalog.items.filter(item=>item.id!==eyeCatalog.defaultId);
+  assert.equal(extra.length,10);
+  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  for(const item of extra){
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes',item.file),'utf8'));
+    assert.equal(file.type,'kidscade-avatar-eye-part',item.id);
+    assert.equal(file.id,item.id);
+    assert.equal(file.layer,'eyes');
+    assert.equal(file.bodyId,'maple-lite-body-v3');
+    assert.deepEqual(file.canvas,[128,128]);
+    assert.ok(file.pixels.length>=20,item.id);
+    for(const pixel of file.pixels){
+      assert.equal(pixel.length,6,item.id);
+      assert.ok(pixel[0]>=0&&pixel[0]<128&&pixel[1]>=0&&pixel[1]<128,item.id);
+      for(const value of pixel.slice(2))assert.ok(Number.isInteger(value)&&value>=0&&value<=255,item.id);
+    }
+  }
+});
+
+test('public renderer composes selected JSON eyes across the 23-frame v3 motion set',()=>{
+  assert.match(js,/async function loadEyeCatalog\(\)/);
+  assert.match(js,/function transformEyeCanvas\(source,frameId\)/);
+  assert.match(js,/function applyEyePart\(target,frameId,eyeId=selectedEyeId\(\)\)/);
+  assert.match(js,/data-eye-id/);
+  assert.match(js,/frameTransforms/);
+  assert.match(js,/sampledEyeSkin\(image,frameId\)/);
+  assert.equal(Object.keys(eyeCatalog.frameTransforms).length,16);
+  assert.equal(eyeCatalog.sourceFrames.length,7);
+  assert.equal(eyeCatalog.sourceFrames.length+Object.keys(eyeCatalog.frameTransforms).length,23);
+  assert.equal(eyeCatalog.baseClearPixels.length,98);
 });

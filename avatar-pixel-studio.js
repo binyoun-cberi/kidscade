@@ -42,6 +42,12 @@ staticCtx.imageSmoothingEnabled=false;
 
 let manifest=null;
 let sheet=null;
+let eyeCatalog=null;
+const eyeParts=new Map();
+const eyeSourceCache=new Map();
+const eyeFrameCache=new Map();
+const eyeMaskCache=new Map();
+const eyeMaskCoordCache=new Map();
 let currentTab='skin';
 let previewMode='stand';
 let previewStartedAt=0;
@@ -176,6 +182,87 @@ function recolorSkin(target){
   }
   target.putImageData(image,0,0);
 }
+async function loadEyeCatalog(){
+  const rel=manifest?.partCatalogs?.eyes||'eyes/catalog.json';
+  const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});
+  if(!res.ok)throw new Error('눈 파츠 카탈로그를 불러오지 못했습니다.');
+  const data=await res.json();
+  if(data?.type!=='kidscade-avatar-eye-catalog'||!Array.isArray(data.items))throw new Error('눈 파츠 카탈로그 형식이 올바르지 않습니다.');
+  eyeCatalog=data;
+  const merged={...(manifest?.assetIds||{}),...(state.assetIds||{})};
+  const requested=merged.eyes||data.defaultId||manifest?.assetIds?.eyes||'basic-eyes-01';
+  merged.eyes=data.items.some(item=>item.id===requested)?requested:(data.defaultId||'basic-eyes-01');
+  state.assetIds=merged;
+  if(merged.eyes!==data.defaultId)await loadEyePart(merged.eyes);
+  return data;
+}
+async function loadEyePart(id){
+  if(!eyeCatalog||!id||id===eyeCatalog.defaultId)return null;
+  if(eyeParts.has(id))return eyeParts.get(id);
+  const item=eyeCatalog.items.find(candidate=>candidate.id===id);
+  if(!item?.file)throw new Error('등록되지 않은 눈 파츠입니다: '+id);
+  const res=await fetch(ROOT+'/eyes/'+item.file,{cache:'no-cache'});
+  if(!res.ok)throw new Error('눈 파츠를 불러오지 못했습니다: '+id);
+  const part=await res.json();
+  if(part?.type!=='kidscade-avatar-eye-part'||part.id!==id||part.layer!=='eyes'||!Array.isArray(part.pixels))throw new Error('눈 파츠 JSON 형식이 올바르지 않습니다: '+id);
+  eyeParts.set(id,part);return part;
+}
+function selectedEyeId(){return state.assetIds?.eyes||manifest?.assetIds?.eyes||eyeCatalog?.defaultId||'basic-eyes-01'}
+function pixelsCanvas(pixels,maskOnly=false){
+  const out=document.createElement('canvas');out.width=SIZE;out.height=SIZE;
+  const c=out.getContext('2d',{alpha:true}),image=c.createImageData(SIZE,SIZE),data=image.data;
+  for(const pixel of pixels||[]){
+    const x=Number(pixel?.[0]),y=Number(pixel?.[1]);
+    if(!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x>=SIZE||y>=SIZE)continue;
+    const i=(y*SIZE+x)*4;
+    if(maskOnly){data[i]=255;data[i+1]=255;data[i+2]=255;data[i+3]=255;continue}
+    data[i]=Math.max(0,Math.min(255,Number(pixel[2])||0));data[i+1]=Math.max(0,Math.min(255,Number(pixel[3])||0));data[i+2]=Math.max(0,Math.min(255,Number(pixel[4])||0));data[i+3]=Math.max(0,Math.min(255,Number(pixel[5])||0));
+  }
+  c.putImageData(image,0,0);return out;
+}
+function transformEyeCanvas(source,frameId){
+  const out=document.createElement('canvas');out.width=SIZE;out.height=SIZE;
+  const c=out.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
+  const spec=eyeCatalog?.frameTransforms?.[frameId];
+  if(!spec){c.drawImage(source,0,0);return out}
+  if(spec.type==='sitMix'){const down=Number(spec.down)||0;c.drawImage(source,35,20,60,81,35,20+down,60,81);return out}
+  const pivot=spec.pivot||[64,118],dx=Number(spec.dx)||0,dy=Number(spec.dy)||0,angle=(Number(spec.angle)||0)*Math.PI/180;
+  const scaleX=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1,scaleY=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1;
+  c.save();c.translate(pivot[0]+dx,pivot[1]+dy);c.rotate(angle);c.scale(scaleX,scaleY);c.translate(-pivot[0],-pivot[1]);c.drawImage(source,0,0);c.restore();return out;
+}
+function eyeLayerCanvas(id,frameId){
+  const key=id+':'+frameId;if(eyeFrameCache.has(key))return eyeFrameCache.get(key);
+  const part=eyeParts.get(id);if(!part)return null;
+  let source=eyeSourceCache.get(id);if(!source){source=pixelsCanvas(part.pixels);eyeSourceCache.set(id,source)}
+  const out=transformEyeCanvas(source,frameId);eyeFrameCache.set(key,out);return out;
+}
+function eyeMaskCoords(frameId){
+  if(eyeMaskCoordCache.has(frameId))return eyeMaskCoordCache.get(frameId);
+  let mask=eyeMaskCache.get(frameId);if(!mask){mask=transformEyeCanvas(pixelsCanvas(eyeCatalog?.baseClearPixels||[],true),frameId);eyeMaskCache.set(frameId,mask)}
+  const data=mask.getContext('2d',{alpha:true}).getImageData(0,0,SIZE,SIZE).data,coords=[];
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(data[(y*SIZE+x)*4+3])coords.push([x,y]);
+  eyeMaskCoordCache.set(frameId,coords);return coords;
+}
+function transformEyePoint(point,frameId){
+  const x=Number(point?.[0])||0,y=Number(point?.[1])||0,spec=eyeCatalog?.frameTransforms?.[frameId];
+  if(!spec)return [Math.round(x),Math.round(y)];
+  if(spec.type==='sitMix')return [Math.round(x),Math.round(y+(Number(spec.down)||0))];
+  const pivot=spec.pivot||[64,118],dx=Number(spec.dx)||0,dy=Number(spec.dy)||0,angle=(Number(spec.angle)||0)*Math.PI/180;
+  const sx=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1,sy=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1,ux=(x-pivot[0])*sx,uy=(y-pivot[1])*sy;
+  return [Math.round(pivot[0]+dx+Math.cos(angle)*ux-Math.sin(angle)*uy),Math.round(pivot[1]+dy+Math.sin(angle)*ux+Math.cos(angle)*uy)];
+}
+function sampledEyeSkin(image,frameId){
+  const values=[];for(const point of eyeCatalog?.skinSamples||[[64,56]]){const [x,y]=transformEyePoint(point,frameId);if(x<0||y<0||x>=SIZE||y>=SIZE)continue;const i=(y*SIZE+x)*4;if(image.data[i+3]>0)values.push([image.data[i],image.data[i+1],image.data[i+2]])}
+  if(!values.length)return hexToRgb(state.skinColor||skinBaseHex);
+  const median=index=>values.map(v=>v[index]).sort((a,b)=>a-b)[Math.floor(values.length/2)];return [median(0),median(1),median(2)];
+}
+function applyEyePart(target,frameId,eyeId=selectedEyeId()){
+  if(!eyeCatalog||!eyeId||eyeId===eyeCatalog.defaultId)return;
+  const layer=eyeLayerCanvas(eyeId,frameId);if(!layer)return;
+  const image=target.getImageData(0,0,SIZE,SIZE),skin=sampledEyeSkin(image,frameId);
+  for(const [x,y] of eyeMaskCoords(frameId)){const i=(y*SIZE+x)*4;image.data[i]=skin[0];image.data[i+1]=skin[1];image.data[i+2]=skin[2];image.data[i+3]=255}
+  target.putImageData(image,0,0);target.drawImage(layer,0,0);
+}
 function animationFor(mode){
   if(!manifest?.animations)return [];
   const normalized=mode==='idle'||mode==='smile'||mode==='static'?'stand':mode;
@@ -193,7 +280,7 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index){
+function drawFrame(target,index,eyeId=selectedEyeId()){
   if(!sheet)return;
   target.save();
   target.setTransform(1,0,0,1,0,0);
@@ -201,6 +288,7 @@ function drawFrame(target,index){
   target.imageSmoothingEnabled=false;
   target.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
   recolorSkin(target);
+  applyEyePart(target,manifest?.frameOrder?.[index]||'stand-01',eyeId);
   target.restore();
 }
 function drawStatic(){
@@ -261,7 +349,7 @@ function setPreviewMode(mode='stand'){
 function assetIdFor(part){
   const meta=PARTS[part];
   if(!meta?.assetKey||!manifest?.assetIds)return '';
-  return manifest.assetIds[meta.assetKey]||'';
+  return state.assetIds?.[meta.assetKey]||manifest.assetIds[meta.assetKey]||'';
 }
 function skinSwatch(color,label){
   const selected=normalizeHexColor(state.skinColor)===normalizeHexColor(color);
@@ -283,8 +371,23 @@ function renderSkinOptions(){
     <button type="button" class="soft-btn skin-reset" data-skin-reset>원래 피부색으로</button>
   </div>`;
 }
+function drawEyeThumbnail(canvasElement,id){
+  if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
+  const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,id);
+  const thumb=canvasElement.getContext('2d',{alpha:true});thumb.imageSmoothingEnabled=false;thumb.clearRect(0,0,SIZE,SIZE);thumb.drawImage(full,42,20,46,46,0,0,SIZE,SIZE);
+}
+async function hydrateEyeThumbnails(){
+  if(!eyeCatalog)return;await Promise.allSettled(eyeCatalog.items.filter(item=>item.id!==eyeCatalog.defaultId).map(item=>loadEyePart(item.id)));
+  if(currentTab!=='eyes')return;optionGrid.querySelectorAll('canvas[data-eye-thumb]').forEach(el=>drawEyeThumbnail(el,el.dataset.eyeThumb));
+}
+function renderEyeOptions(){
+  const items=eyeCatalog?.items||[],selected=selectedEyeId();pickerTitle.textContent='눈';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-eye-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-eye-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.querySelectorAll('canvas[data-eye-thumb]').forEach(el=>{if(el.dataset.eyeThumb===eyeCatalog.defaultId)drawEyeThumbnail(el,el.dataset.eyeThumb)});hydrateEyeThumbnails();
+}
 function renderOptions(){
   if(currentTab==='skin'){renderSkinOptions();return}
+  if(currentTab==='eyes'){renderEyeOptions();return}
   optionGrid.classList.remove('skin-mode');
   const meta=PARTS[currentTab]||PARTS.hair;
   const id=assetIdFor(currentTab);
@@ -314,6 +417,11 @@ function refreshSkinPreview(){
   drawFrame(staticCtx,stand.index||0);
   setPreviewMode(previewMode);
 }
+async function setEyeAsset(id){
+  if(!eyeCatalog?.items?.some(item=>item.id===id))return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),eyes:id};refreshSkinPreview();renderOptions();publish(false);
+  const item=eyeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'눈')+' 적용했어요!');return true;
+}
 function setSkinColor(value,{rerender=false,announce=false}={}){
   state.skinColor=normalizeHexColor(value);
   refreshSkinPreview();
@@ -323,7 +431,7 @@ function setSkinColor(value,{rerender=false,announce=false}={}){
 }
 function publish(showToast=false){
   try{
-    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{})},skinColor:normalizeHexColor(state.skinColor)};
+    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},skinColor:normalizeHexColor(state.skinColor)};
     state=payload;
     localStorage.setItem(STATE_KEY,JSON.stringify(payload));
     const data=previewData();
@@ -337,6 +445,7 @@ function publish(showToast=false){
 }
 function resetToDefault(){
   state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null};
+  state.assetIds={...(manifest?.assetIds||{})};
   drawStatic();
   setPreviewMode('stand');
   publish(false);
@@ -348,6 +457,8 @@ tabs?.addEventListener('click',e=>{
   if(button)selectTab(button.dataset.tab);
 });
 optionGrid?.addEventListener('click',e=>{
+  const eye=e.target.closest('[data-eye-id]');
+  if(eye){setEyeAsset(eye.dataset.eyeId);return}
   const swatch=e.target.closest('[data-skin-color]');
   if(swatch){setSkinColor(swatch.dataset.skinColor,{rerender:true,announce:true});return}
   if(e.target.closest('[data-skin-reset]'))setSkinColor(null,{rerender:true,announce:true});
@@ -384,6 +495,9 @@ window.KidscadeAvatarShop={
   async setState(next){
     if(!next||typeof next!=='object')return false;
     state={...state,...next,version:3,setId:manifest?.id||state.setId,skinColor:normalizeHexColor(next.skinColor??state.skinColor)};
+    state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),...(next.assetIds||{})};
+    if(eyeCatalog&&!eyeCatalog.items.some(item=>item.id===state.assetIds.eyes))state.assetIds.eyes=eyeCatalog.defaultId;
+    if(state.assetIds.eyes!==eyeCatalog?.defaultId)await loadEyePart(state.assetIds.eyes);
     refreshSkinPreview();
     publish(false);
     return true;
@@ -392,9 +506,10 @@ window.KidscadeAvatarShop={
 
 (async function boot(){
   await Promise.all([loadManifest(),loadSheet()]);
+  await loadEyeCatalog();
   buildSkinPalette();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 피부색 자유 설정 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 눈 11종 · 피부색 자유 설정 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);
