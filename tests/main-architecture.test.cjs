@@ -208,6 +208,17 @@ test('composed page has exactly one card per catalog entry, including injected l
   vm.runInContext(read('main-bootstrap.js'), context);
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(output.includes('window.KidscadeCatalog='));
+  const payloadAt = output.indexOf('window.KidscadeCatalog=');
+  const accountAt = output.indexOf('account-client.js?v=test');
+  const gateAt = output.indexOf('account-profile-gate.js?v=test');
+  const launcherAt = output.indexOf('game-launcher.js?v=test');
+  const ageAt = output.indexOf('age-navigation.js?v=test');
+  const lobbyInlineAt = output.indexOf('// 오디오 시스템');
+  assert.ok(payloadAt >= 0 && accountAt > payloadAt, 'boot payload must exist before account runtime');
+  assert.ok(gateAt > accountAt, 'account profile gate must load after account client');
+  assert.ok(launcherAt > gateAt, 'launcher must load after account/profile runtime');
+  assert.ok(ageAt > launcherAt, 'all composed runtimes must execute before age navigation and the legacy lobby controller');
+  assert.ok(lobbyInlineAt > ageAt, 'legacy lobby controller must execute after composed runtimes');
   for (const match of output.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
     if (match[1].trim()) assert.doesNotThrow(() => new vm.Script(match[1]));
   }
