@@ -9,21 +9,54 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const runtime=read('world-v3/kidscade-world-v3.js');
 const storage=read('world-v2/kidscade-world-storage.js');
 const furnishing=read('world-v3/kidscade-world-furnishing.js');
+const interiorKit=read('world-v3/kidscade-world-interior-kit.js');
 const economy=read('world-v3/kidscade-world-economy.js');
 const grid=read('world-v3/kidscade-world-grid.js');
 const integration=read('life-world-integration.js');
 
-test('fresh home begins as one room with bedding and no automatic modern facilities',()=>{
+test('fresh home begins as one architectural room with bedding and no automatic modern facilities',()=>{
   assert.match(storage,/houseLevel:1/);
   assert.match(storage,/campfireBuilt:false/);
   assert.match(storage,/kitchenLevel:0/);
-  assert.match(runtime,/HOUSE_BOUNDS=/);
+  assert.match(runtime,/HOME_INTERIOR_LEVELS/);
+  assert.match(runtime,/buildHomeInterior/);
   assert.match(runtime,/starter-home-storage/);
   assert.match(runtime,/바닥 이불에서 자기/);
+  assert.match(interiorKit,/home-interior-level-/);
+  assert.match(interiorKit,/wall-window-slide\.glb/);
+  assert.match(interiorKit,/rug-doormat\.glb/);
+  assert.doesNotMatch(runtime,/houseExpansionCovers/);
   assert.doesNotMatch(furnishing,/function migrateDefaultLayout/);
   assert.doesNotMatch(furnishing,/function migrateFunctionalLayout/);
   assert.doesNotMatch(furnishing,/function claimStarterGift/);
   assert.doesNotMatch(furnishing,/data-furn-craft/);
+});
+
+test('home Interior Kit expands architecture, adds cutaway walls and frames each house level',()=>{
+  for(const level of ['1:','2:','3:'])assert.ok(interiorKit.includes(level),'missing home level '+level);
+  assert.match(interiorKit,/makeWoodTexture/);
+  assert.match(interiorKit,/makeTileTexture/);
+  assert.match(interiorKit,/addWallShell/);
+  assert.match(interiorKit,/updateCutaway/);
+  assert.match(interiorKit,/entry\.walls\.east\.visible=Number\(cameraX\)<cx/);
+  assert.match(interiorKit,/entry\.walls\.south\.visible=Number\(cameraZ\)<cz/);
+  assert.match(runtime,/homeInteriorCameraProfile/);
+  assert.match(runtime,/playerFollow/);
+  assert.match(runtime,/cameraHalfHeight/);
+});
+
+test('wall-facing furniture snaps its back to a nearby wall while preserving old saved rotations',()=>{
+  for(const key of ['kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge','wardrobe','tallBookcase','television']){
+    assert.ok(furnishing.includes(key+':{')&&furnishing.slice(furnishing.indexOf(key+':{'),furnishing.indexOf(key+':{')+320).includes('wallPreferred:true'),key+' must prefer a wall');
+  }
+  assert.match(furnishing,/function nearestWall/);
+  assert.match(furnishing,/function inwardRotation/);
+  assert.match(furnishing,/function wallPlacement/);
+  assert.match(furnishing,/정면은 방 안/);
+  assert.match(furnishing,/data-furn-wallfit/);
+  assert.match(furnishing,/furnitureAssetUrl\(def\).*placing-/s);
+  assert.match(runtime,/getRoomBounds:\(\)=>currentHouseBounds\(\)/);
+  assert.match(furnishing,/rot:Math\.round\(Number\(r\.rot\)\|\|0\)%4/);
 });
 
 test('water progression changes where water comes from',()=>{
