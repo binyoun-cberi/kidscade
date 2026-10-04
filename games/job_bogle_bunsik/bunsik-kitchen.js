@@ -661,7 +661,7 @@ class RamenKitchen3D{
  syncDishVisuals(){this.dirtyPlateModels.forEach((m,i)=>{m.visible=i<Math.min(5,state.dirtyPlates)})}
  makeCustomers(){
   this.customerXs.forEach((x,i)=>{
-   const spec=CUSTOMER_MODELS[i%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
+   const spec=CUSTOMER_MODELS[(i+progress.shifts*2)%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
    this.loadModel(spec.root,spec.file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o)}});
   });
   this.box(9.4,.86,1.0,0x416c62,0,.38,-3.62,{roughness:.58});
