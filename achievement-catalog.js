@@ -197,16 +197,16 @@
   }
 
   function def(gameId, slot, title, description, extra = {}) {
-    const completionSlot = slot === 'first_finish' || slot === 'finisher_5' || slot === 'finisher_20';
     return {
       id: gameId + '.' + slot,
       gameId,
-      icon: slot === 'first_finish' ? '🏁' : slot === 'finisher_5' ? '🔥' : slot === 'finisher_20' ? '👑' : slot === 'mastery' ? '🏆' : '✨',
-      type: slot === 'secret' ? 'secret' : slot === 'first_finish' ? 'normal' : 'challenge',
-      hidden: slot === 'secret',
-      target: 1,
-      enabled: completionSlot,
-      trigger: completionSlot ? 'completion_count' : '',
+      icon:'🏆',
+      type:'challenge',
+      hidden:false,
+      target:1,
+      enabled:false,
+      trigger:'',
+      metric:'',
       title,
       description,
       ...extra
@@ -215,18 +215,39 @@
 
   function buildDefinitions() {
     const defs = [];
+    const profiles = window.KidscadeGameProfiles;
     Object.entries(PLANS).forEach(([gameId, values]) => {
       if (!gameExists(gameId) || PILOT_GAME_IDS.has(gameId)) return;
-      const [, , masteryTitle, masteryDesc, secretTitle, secretDesc] = values;
+      const [firstTitle, firstDesc, masteryTitle, masteryDesc, secretTitle, secretDesc] = values;
+      const profile = profiles?.getProfile?.(gameId);
       const rules = LIVE_RULES[gameId] || {};
-      defs.push(def(gameId, 'first_finish', '첫 완주', '이 게임을 한 판 끝까지 완료하세요.', { target:1 }));
-      defs.push(def(gameId, 'finisher_5', '익숙해졌어!', '이 게임을 5판 끝까지 완료하세요.', { target:5 }));
-      defs.push(def(gameId, 'finisher_20', '단골 플레이어', '이 게임을 20판 끝까지 완료하세요.', { target:20 }));
+
+      (profile?.baseline || []).forEach(item => {
+        defs.push(def(gameId, item.slot, item.title, item.description, {
+          icon:item.icon || '🏆',
+          type:item.target > 1 ? 'challenge' : 'normal',
+          target:item.target,
+          enabled:true,
+          trigger:'metric',
+          metric:item.metric
+        }));
+      });
+
+      defs.push(def(gameId, 'planned_first', firstTitle, firstDesc, {
+        icon:'🎮',
+        type:'normal',
+        enabled:false
+      }));
       defs.push(def(gameId, 'mastery', masteryTitle, masteryDesc, {
+        icon:'🏆',
+        type:'challenge',
         enabled:Boolean(rules.mastery),
         rule:rules.mastery || null
       }));
       defs.push(def(gameId, 'secret', secretTitle, secretDesc, {
+        icon:'✨',
+        type:'secret',
+        hidden:true,
         enabled:Boolean(rules.secret),
         rule:rules.secret || null
       }));
