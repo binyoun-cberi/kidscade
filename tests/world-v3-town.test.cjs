@@ -165,7 +165,7 @@ test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
 });
 
 test('walk-in venues keep merchant social loops, warm lights, lazy assets and bounded cafe rest',()=>{
-  assert.match(interiors,/const built=new Set\(\),buildPromises=\{\}/);
+  assert.match(interiors,/built=new Set\(\),buildPromises=\{\}/);
   assert.match(interiors,/async function show\(kind\)/);
   assert.match(interiors,/AmbientLight/);
   assert.match(interiors,/PointLight/);
@@ -231,8 +231,10 @@ test('city has bus travel and passes game time to NPC schedules',()=>{
   assert.match(runtime,/travel:travelTo/);
   assert.match(runtime,/getGameTime:\(\)=>prog\(\)\.survival\.time/);
   assert.match(city,/민석과 이야기하기/);
-  assert.match(city,/getGameTime/);
-  assert.match(city,/evening/);
+  assert.match(city,/getMinutes:\(\)=>typeof getGameTime==='function'\?getGameTime\(\):720/);
+  assert.match(residents,/const ROUTINES=\{/);
+  assert.match(residents,/minseok:\{wake:6\.5,sleep:22/);
+  assert.match(residents,/slots:\[\[7,11,'busStop'\]/);
 });
 
 
@@ -393,13 +395,15 @@ test('World v3 road-first grid keeps Seed Town in four equal districts',()=>{
 test('resident AI movement keeps interaction anchors attached inside the new city squares',()=>{
   assert.match(city,/interaction:null/);
   assert.match(city,/function bind\(id,r,label,action\)/);
-  assert.match(city,/n\.interaction\.x=n\.object\.position\.x/);
-  assert.match(city,/n\.interaction\.z=n\.object\.position\.z/);
-  assert.match(city,/dayRoleTargets/);
-  assert.match(city,/eveningSlots/);
-  assert.match(city,/yuna:\{x:leisure\.x-4\.0,z:leisure\.z\+4\.2/);
-  assert.match(city,/woojin:\{x:leisure\.x,z:leisure\.z\+4\.8/);
-  assert.match(city,/seoyeon:\{x:leisure\.x\+4\.0,z:leisure\.z\+4\.2/);
+  assert.match(residents,/n\.interaction\.x=n\.object\.position\.x/);
+  assert.match(residents,/n\.interaction\.z=n\.object\.position\.z/);
+  assert.match(residents,/function routineTarget\(id,hour,weather,pois\)/);
+  assert.match(residents,/yuna:\{wake:6\.5,sleep:21\.5/);
+  assert.match(residents,/woojin:\{wake:8,sleep:23/);
+  assert.match(residents,/seoyeon:\{wake:7,sleep:21\.8/);
+  assert.match(city,/plazaWest:\{x:leisure\.x-4\.0,z:leisure\.z\+4\.0/);
+  assert.match(city,/plazaEast:\{x:leisure\.x\+4\.0,z:leisure\.z\+4\.0/);
+  assert.match(city,/plazaCenter:\{x:leisure\.x,z:leisure\.z\+3\.4/);
 });
 
 
@@ -421,7 +425,7 @@ test('regression: NPCs and animals preserve GLB ground offsets instead of sinkin
   assert.match(city,/model\.position\.y-=b\.min\.y/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
   assert.match(city,/object:anchor,model/);
-  assert.match(city,/n\.object\.position\.y=n\.groundY/);
+  assert.match(residents,/n\.object\.position\.y=n\.groundY\+/);
   assert.match(runtime,/o\.userData\.groundY=o\.position\.y/);
   assert.match(runtime,/groundY=Number\(object\.userData\.groundY\)\|\|0/);
   assert.match(runtime,/a\.object\.position\.y=a\.groundY/);
@@ -459,7 +463,7 @@ test('city labels are smaller and only shown near the player',()=>{
   assert.match(city,/width:1\.2,height:\.30/);
   assert.match(city,/tag\.visible=false/);
   assert.match(city,/buildingLabels/);
-  assert.match(city,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<3\.4/);
+  assert.match(residents,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<3\.4/);
   assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<7\.5/);
 });
 
@@ -546,7 +550,7 @@ test('resident GLBs retain full animations and use the proven people normalizati
   assert.match(city,/new THREE\.AnimationMixer\(model\)/);
   assert.match(city,/\/idle\|stand\/i/);
   assert.match(city,/\/walk\|run\/i/);
-  assert.match(city,/n\.mixer\?\.update\(dt\)/);
+  assert.match(residents,/n\.mixer\?\.update\(dt\)/);
 });
 
 
@@ -572,13 +576,14 @@ test('resident walk animation strips root motion so visual bodies cannot detach 
 });
 
 
-test('residents actually idle between short walks instead of perpetual sinusoidal motion',()=>{
-  assert.match(city,/function chooseNpcDecision\(n,hx,hz,r,now\)/);
-  assert.match(city,/pauseChance=mostlyStationary\?\.82:\.55/);
-  assert.match(city,/n\.moving=false;n\.targetX=n\.object\.position\.x/);
-  assert.match(city,/n\.nextDecision=now\+1800\+Math\.random\(\)\*3200/);
-  assert.match(city,/n\.playAnim\?\.\(walking\?'walk':'idle'\)/);
-  assert.doesNotMatch(city,/Math\.sin\(now\/2600\+n\.phase\)/);
+test('residents actually idle between short walks instead of perpetual motion',()=>{
+  assert.match(residents,/function stopAt\(n,now\)/);
+  assert.match(residents,/n\.moving=false;n\.lifeState=n\.lifeState==='GO_HOME'\?'HOME':'USE_POI'/);
+  assert.match(residents,/n\.nextDecision=now\+2800\+/);
+  assert.match(residents,/if\(n\.lifeState==='USE_POI'&&now>=n\.nextDecision\)/);
+  assert.match(residents,/const waitBias=weather==='rain'\?\.86:\.64/);
+  assert.match(residents,/if\(Math\.random\(\)<waitBias\)\{n\.nextDecision=now\+2200\+Math\.random\(\)\*3600;\}/);
+  assert.match(residents,/n\.playAnim\?\.\(walking\?'walk':'idle'\)/);
 });
 
 
