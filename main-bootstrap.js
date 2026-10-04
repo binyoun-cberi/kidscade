@@ -98,39 +98,6 @@
   }
 
   function refactorLegacyControllers(html) {
-    const petScoreStart = '            function scoreCardForPetTalk(card) {';
-    const petScoreEnd = '\n\n            function showPetRecommendations() {';
-    const petScoreReplacement = `            function scoreCardForPetTalk(card) {
-                const answers = petTalkState.answers || {};
-                const gameId = card.getAttribute('data-id');
-                const game = window.KidscadeGames?.get?.(gameId);
-                const delegated = window.KidscadeRecommendations?.scoreCurrent?.(game, {
-                    answers,
-                    dominantCategory: getDominantPetCategory()
-                });
-                if (Number.isFinite(delegated)) return delegated;
-
-                // 런타임 모듈이 준비되지 않은 경우에만 사용하는 안전한 fallback.
-                const category = card.getAttribute('data-category');
-                let score = 0;
-                if (answers.category && answers.category !== 'any' && category === answers.category) score += 12;
-                if (answers.category === 'any') {
-                    const dominant = getDominantPetCategory();
-                    if (dominant.value > 0 && category === dominant.key) score += 6;
-                }
-                if (answers.style === 'favorite' && favorites.includes(gameId)) score += 10;
-                if (answers.style === 'fresh' && !recents.includes(gameId)) score += 5;
-                if (answers.style === 'fresh' && recents.includes(gameId)) score -= 4;
-                if (answers.style === 'challenge' && (card.getAttribute('data-scorekey') || card.getAttribute('data-rankkey'))) score += 4;
-                if (answers.style === 'short') {
-                    const descLen = (card.querySelector('.game-desc')?.innerText || '').length;
-                    if (descLen < 60) score += 2;
-                }
-                score += Math.random() * 2;
-                return score;
-            }`;
-    html = replaceBetween(html, petScoreStart, petScoreEnd, petScoreReplacement);
-
     const launcherStart = '            function openGameModal(e, cardElement) {';
     const launcherEnd = '\n\n            // =====================================\n            // 배지 동기화 및 랭크 보상';
     const launcherReplacement = `            const gameLauncherBridge = {
