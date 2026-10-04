@@ -13,7 +13,7 @@ test('W-puzzle is registered as a solo social puzzle',()=>{
   assert.equal(game.subject,'social');
   assert.equal(game.genre,'puzzle');
   assert.deepEqual(game.players,['solo']);
-  assert.match(game.href,/^games\/world_map_puzzle\/index\.html\?v=\d+$/);
+  assert.equal(game.href,'games/world_map_puzzle/index.html');
 });
 
 test('W-puzzle bundles a clean local Natural Earth dataset',()=>{
