@@ -3852,10 +3852,30 @@ function collisionTopForData(data,x,y,z,wx=x,wz=z){
   if(!isSolidData(data,x,y,z))return null;
   if(data.type==='slab')return y+.5;
   if(data.type==='stairs')return y+(stairHighHalf(data,x,z,wx,wz)?1:.5);
+  if(data.type==='roof'){
+    const facing=((data.facing||0)%4+4)%4;
+    const across=(facing%2===0)?Math.abs(wx-x):Math.abs(wz-z);
+    return y+Math.max(.04,1-Math.min(.5,across)*2);
+  }
   return y+1;
+}
+function thinBlockContains(data,x,z,wx,wz){
+  let source=data;
+  if(data?.type==='doorTop')source=getBlock(x,Math.floor((data.baseY??0)),z)||getBlock(x,Math.floor((data.baseY??0)),z);
+  const type=source?.type;
+  if(!['door','glassPane','windowFrame'].includes(type))return true;
+  const facing=((source.facing||0)%4+4)%4;
+  const across=facing%2===0?Math.abs(wx-x):Math.abs(wz-z);
+  const along=facing%2===0?Math.abs(wz-z):Math.abs(wx-x);
+  const halfThickness=type==='door'?.09:.075;
+  return across<=halfThickness&&along<=.5;
 }
 function pointHitsWorldBlock(wx,wy,wz){
   const x=blockCoordFromWorld(wx),y=Math.floor(wy),z=blockCoordFromWorld(wz),data=getBlock(x,y,z);
+  if(!data)return false;
+  let collisionData=data;
+  if(data.type==='doorTop')collisionData=getBlock(x,y-1,z)||data;
+  if(!thinBlockContains(collisionData,x,z,wx,wz))return false;
   const top=collisionTopForData(data,x,y,z,wx,wz);
   return top!==null&&wy<top-.002;
 }
@@ -3888,7 +3908,7 @@ function stepHeightAt(px,eyeY,pz,maxStep=.56){
   return needed>0&&needed<=maxStep?needed:0;
 }
 function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera.position.z){
-  const r=.24,feet=eyeY-1.62,state={water:false,lava:false,fire:false,cactus:false,headUnderWater:false};
+  const r=.30,feet=eyeY-1.62,state={water:false,lava:false,fire:false,cactus:false,headUnderWater:false};
   for(const ox of [-r,0,r])for(const oz of [-r,0,r])for(const sy of [feet+.08,feet+.62,eyeY-.16]){
     const x=blockCoordFromWorld(px+ox),y=Math.floor(sy),z=blockCoordFromWorld(pz+oz),type=getBlock(x,y,z)?.type;
     if(type==='water')state.water=true;
