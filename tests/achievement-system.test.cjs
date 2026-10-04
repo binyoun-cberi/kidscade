@@ -55,7 +55,7 @@ test('Infinite Arithmetic adopts the SDK and reports match achievements', () => 
 });
 
 
-test('all active catalog games have a three-slot achievement plan or an existing pilot set', () => {
+test('all active catalog games have an achievement plan or an existing pilot set', () => {
   const catalogSource = read('achievement-catalog.js');
   const raw = JSON.parse(read('data/games.json'));
   const games = (Array.isArray(raw) ? raw : raw.games || []).filter(game => !game.disabled);
@@ -67,8 +67,9 @@ test('all active catalog games have a three-slot achievement plan or an existing
     if (pilotIds.has(game.id)) continue;
     assert.equal(planIds.has(game.id), true, 'missing achievement plan: ' + game.id);
   }
-  assert.match(catalogSource, /enabled: slot === 'first_play'/);
-  assert.match(catalogSource, /trigger: slot === 'first_play' \? 'first_play'/);
+  assert.match(catalogSource, /completionSlot = slot === 'first_finish'/);
+  assert.match(catalogSource, /trigger: completionSlot \? 'completion_count' : ''/);
+  assert.doesNotMatch(catalogSource, /first_play/);
 });
 
 test('achievement catalog registers planned definitions without exposing unfinished ones', () => {
@@ -89,18 +90,23 @@ test('achievement catalog registers planned definitions without exposing unfinis
   function FakeCustomEvent(type, init = {}) { this.type = type; this.detail = init.detail; }
   const run = new Function('window','document','CustomEvent','setInterval','clearInterval', catalogSource);
   run(fakeWindow, fakeDocument, FakeCustomEvent, () => 0, () => {});
-  assert.equal(registered.length, 408);
-  assert.equal(registered.filter(def => def.enabled !== false).length, 151);
+  assert.equal(registered.length, 680);
+  assert.equal(registered.filter(def => def.enabled !== false).length, 423);
   assert.equal(registered.filter(def => def.enabled === false).length, 257);
-  assert.equal(registered.filter(def => def.trigger === 'first_play').length, 136);
+  assert.equal(registered.filter(def => def.trigger === 'completion_count').length, 408);
+  assert.equal(registered.filter(def => def.trigger === 'first_play').length, 0);
+  assert.equal(registered.find(def => def.id === 'low_perfect_pitch.finisher_5').target, 5);
+  assert.equal(registered.find(def => def.id === 'low_perfect_pitch.finisher_20').target, 20);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.mastery').enabled, true);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.secret').enabled, true);
   assert.equal(registered.find(def => def.id === 'high_twelve_island.mastery').enabled, false);
   assert.equal(events.some(event => event.type === 'kidscade:achievement-catalog-ready'), true);
 });
 
-test('common launcher records first play achievements', () => {
+test('common launcher records visits for analytics without first-play achievements', () => {
   const launcher = read('game-launcher.js');
+  const catalog = read('achievement-catalog.js');
   assert.match(launcher, /KidscadeAchievements\?\.recordPlayedGame\?\.\(gameId, startedAt\)/);
+  assert.doesNotMatch(catalog, /first_play/);
   assert.match(read('main-bootstrap.js'), /'achievement-catalog\.js',\s*'achievement-gallery\.js'/);
 });
