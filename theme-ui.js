@@ -24,7 +24,10 @@
     const button = doc?.getElementById?.('theme-btn');
     if (button) {
       button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      button.textContent = enabled ? '☀️ 밝은 모드' : '🌙 다크 모드';
+      const label = enabled ? '☀️ 밝은 모드' : '🌙 다크 모드';
+      // The compact topbar rebinds after child-list mutations. Writing the same
+      // text would retrigger that observer indefinitely and freeze the page.
+      if (button.textContent !== label) button.textContent = label;
     }
     return Boolean(enabled);
   }
