@@ -236,7 +236,7 @@ const SAME={
  goatPen:{need:3,out:'goatRanch',name:'염소 목장'},
  waterPit:{need:3,out:'reservoir',name:'작은 저수지'},
  fishHolding:{need:3,out:'fishPond',name:'민물고기 양식장'},
- village:{need:3,out:'largeVillage',name:'큰 취락'}
+ village:{need:2,out:'largeVillage',name:'큰 취락'}
 };
 
 const R=[
@@ -359,7 +359,7 @@ const THREAT_CONFIG=Object.freeze({
  hostileBand:{raidEvery:32,steal:2,power:5,label:'적대 집단'}
 });
 const RESOURCE_CAPS=Object.freeze({
- smallTree:8,bigTree:10,berryBush:8,stoneSource:10,reedBed:10,clayBank:10,
+ smallTree:8,bigTree:10,berryBush:8,stoneSource:10,reedBed:14,clayBank:14,
  wildMillet:12,wildBroomcorn:12,wildBean:12,oakGrove:12,tidalFlat:12,
  mushroomPatch:10,herbPatch:10,wildGrainField:14,flintOutcrop:12,
  milletPlot:12,milletFarm:18,broomcornPlot:12,broomcornFarm:18,beanPlot:12,beanFarm:18,
@@ -1109,16 +1109,16 @@ function snap(a,b){place(a,b.x+10,b.y+12);a.el.style.zIndex=++state.z;}
 function separate(a,b){if(!a||!state.cards.has(a.id)||!b||!state.cards.has(b.id))return;place(a,clamp(b.x+b.el.offsetWidth+12,4,Math.max(4,board.clientWidth-a.el.offsetWidth-4)),clamp(b.y+14,4,Math.max(4,board.clientHeight-a.el.offsetHeight-4)));}
 
 function ageRank(){
- if(has('ironIngot')||has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')||has('ironTown'))return 3;
- if(has('bronzeIngot')||has('bronzeAxe')||has('bronzePick')||has('bronzeSpear')||has('bronzeCenter')||has('dolmen'))return 2;
+ if(has('ironIngot')||has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')||has('ironLumberjack')||has('ironMiner')||has('ironFarmer')||has('ironHunter')||has('ironTown'))return 3;
+ if(has('bronzeIngot')||has('bronzeAxe')||has('bronzePick')||has('bronzeSpear')||has('bronzeHammer')||has('bronzeLumberjack')||has('bronzeMiner')||has('bronzeHunter')||has('bronzeCenter')||has('dolmen'))return 2;
  if(has('groundAxe')||has('combPottery')||has('pitHouse')||has('village')||has('milletFarm')||has('broomcornFarm')||has('beanFarm')||has('highKiln'))return 1;
  return 0;
 }
 function updateEra(){
- const rank=ageRank(),labels=['구석기 생활','신석기 정착','청동기 생활','철기 생활'],keys=['paleo','neolithic','bronze','iron'];
- ui.era.textContent=labels[rank];
- const next=keys[rank],order={paleo:0,neolithic:1,bronze:2,iron:3};
- if(order[next]>order[state.ageReached]){
+ const rank=ageRank(),labels=['구석기 생활','신석기 정착','청동기 생활','철기 생활'],keys=['paleo','neolithic','bronze','iron'],order={paleo:0,neolithic:1,bronze:2,iron:3};
+ const reached=Math.max(rank,order[state.ageReached]??0),next=keys[reached];
+ ui.era.textContent=labels[reached];
+ if(reached>(order[state.ageReached]??0)){
   state.ageReached=next;
   if(next==='bronze')showToast('🥉 청동기 진입! 광업·제련·교역이 중요해집니다.');
   if(next==='iron')showToast('⚒️ 철기 진입! 생산력이 크게 높아집니다.');
@@ -1154,11 +1154,11 @@ function checkMilestone(){
   try{window.KidscadeGame?.score?.(score*100+state.discoveries.size*20)}catch(_){}
   return;
  }
- if(!state.bronzeMilestoneShown&&has('bronzeCenter')&&(has('bronzeAxe')||has('bronzePick')||has('bronzeSpear'))){
+ if(!state.bronzeMilestoneShown&&has('bronzeCenter')&&(has('bronzeAxe')||has('bronzePick')||has('bronzeSpear')||has('bronzeLumberjack')||has('bronzeMiner')||has('bronzeHunter'))){
   state.bronzeMilestoneShown=true;
   showToast('🥉 청동기 중심 취락 완성! 이제 철광석과 철 제련로를 준비하세요.');
  }
- if(!state.ironMilestoneShown&&has('ironTown')&&has('bloomery')&&(has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear'))){
+ if(!state.ironMilestoneShown&&has('ironTown')&&has('bloomery')&&(has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')||has('ironLumberjack')||has('ironMiner')||has('ironFarmer')||has('ironHunter'))){
   state.ironMilestoneShown=true;
   showMilestone('철기 마을을 완성했어요','철기 시대 달성','광업·제련·철제 농기구와 도구가 정착지에 연결되었습니다. 구석기의 탐험 생활에서 시작해 철기 마을까지 발전했습니다.');
   try{window.KidscadeGame?.score?.(3000+score*120+state.discoveries.size*25)}catch(_){}
@@ -1310,7 +1310,7 @@ function renderQuests(){
   ['주거를 늘려 인구 상한을 3명 이상 만든다',populationCapacity()>=3],
   ['돌곡괭이로 금속 광맥을 채굴한다',has('copperOre')||has('tinOre')||has('ironOre')],
   ['구리와 주석을 합금해 청동을 만든다',has('bronzeIngot')||ageRank()>=2],
-  ['신석기 마을 3개를 큰 취락으로 성장시킨다',has('largeVillage')||has('bronzeCenter')||has('ironTown')],
+  ['신석기 마을 2개를 큰 취락으로 성장시킨다',has('largeVillage')||has('bronzeCenter')||has('ironTown')],
   ['청동기 중심 취락을 만든다',has('bronzeCenter')||has('ironTown')],
   ['철 제련로에서 괴련철을 만든다',has('ironBloom')||has('ironIngot')||ageRank()>=3],
   ['철제 도구를 만든다',has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')],
@@ -1325,7 +1325,7 @@ function renderGoal(){
  if(score<9){ui.goalTitle.textContent='자연을 쉬게 하거나 개척하기';ui.goalText.textContent='자연은 이용할수록 줄고 일부는 천천히 회복됩니다. 부족해지면 다른 곳을 탐험하거나 안정적인 생산지로 바꾸세요.';ui.hint.textContent='간돌도끼+숲→벌목장 · 돌괭이+들판→개간지 · 찍개+바위언덕→채석장';return;}
  if(!has('highKiln')){ui.goalTitle.textContent='금속을 다룰 준비';ui.goalText.textContent='숯과 고온가마를 만들고 산등성이·깊은 동굴에서 금속 광맥을 찾으세요.';ui.hint.textContent='나무+가마→숯 · 숯+가마→고온가마 · 찍개+목재→돌곡괭이';return;}
  if(!has('bronzeIngot')){ui.goalTitle.textContent='청동기 열기';ui.goalText.textContent='광부를 만들어 구리·주석 광맥을 캐고 고온가마에서 각각 제련한 뒤 합금하세요.';ui.hint.textContent='구리광석+고온가마→구리괴 · 주석광석+고온가마→주석괴 · 구리괴+주석괴→청동괴';return;}
- if(!has('bronzeCenter')){ui.goalTitle.textContent='청동기 중심 취락';ui.goalText.textContent='청동 도구를 만들고 신석기 마을 3개를 큰 취락으로 키워 청동기 중심지를 만드세요.';ui.hint.textContent='마을×3→큰 취락 · 큰 취락+청동괴→청동기 중심 취락';return;}
+ if(!has('bronzeCenter')){ui.goalTitle.textContent='청동기 중심 취락';ui.goalText.textContent='청동 도구를 만들고 신석기 마을 2개를 큰 취락으로 키워 청동기 중심지를 만드세요.';ui.hint.textContent='마을×2→큰 취락 · 큰 취락+청동괴→청동기 중심 취락';return;}
  if(!has('ironIngot')){ui.goalTitle.textContent='철을 제련하기';ui.goalText.textContent='깊은 동굴과 산등성이에서 철광석을 찾고 숯·철 제련로·청동망치로 철괴를 만드세요.';ui.hint.textContent='점토×2+고온가마→철 제련로 · 철광석+숯→제련 재료 → 제련로→괴련철 → 청동망치→철괴';return;}
  if(!has('ironTown')){ui.goalTitle.textContent='철기 마을 완성';ui.goalText.textContent='철도끼·철곡괭이·철괭이·철창 중 하나를 만들고 청동기 중심 취락을 철기 마을로 발전시키세요.';ui.hint.textContent='청동기 중심 취락+철괴→철기 마을 · 철제 도구+사람→철기 전문 작업자';return;}
  ui.goalTitle.textContent='철기 시대 정착 완성';ui.goalText.textContent='철제 도구의 높은 생산력을 활용하되 숲과 광맥이 지나치게 빨리 고갈되지 않도록 관리하세요.';ui.hint.textContent='철기 전문 작업자는 강력하지만 자연 소모도 큼 · 남은 자연과 생산시설을 균형 있게 운영';
