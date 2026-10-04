@@ -2014,11 +2014,11 @@
     {
       "id": "laser_angle",
       "title": "거울아 각도기 써라",
-      "href": "games/laser_angle/거울아 각도기 써라.html",
+      "href": "games/laser_angle/거울아 각도기 써라.html?v=2",
       "category": "math",
       "age": "high",
       "icon": "🪞",
-      "description": "거울 각도를 조절하여 레이저를 목표에 명중시켜요!",
+      "description": "거울 각도를 먼저 예상하고 레이저를 발사해 결과를 관찰하세요. 각도기와 법선·입사각·반사각을 비교하며 장애물과 다중 반사 경로를 완성하는 28스테이지 빛의 반사 퍼즐!",
       "cover": "assets/gate-image/거울아 각도기 써라.png",
       "subject": "math",
       "genre": "puzzle",
