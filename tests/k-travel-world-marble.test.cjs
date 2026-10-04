@@ -67,7 +67,11 @@ test('all playable countries can be matched to the committed Natural Earth map',
     }
     iso.add(code);
   }
-  for(const c of COUNTRIES)assert.ok(iso.has(c.id),'missing map feature '+c.id);
+  for(const c of COUNTRIES){
+    if(c.id==='SG')continue; // Natural Earth 110m omits this microstate polygon; the game renders its travel node from coordinates.
+    assert.ok(iso.has(c.id),'missing map feature '+c.id);
+  }
+  assert.ok(COUNTRIES.some(c=>c.id==='SG'&&Number.isFinite(c.lon)&&Number.isFinite(c.lat)));
   assert.equal(geo.features.length,172);
 });
 
