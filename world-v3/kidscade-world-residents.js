@@ -63,17 +63,19 @@ export function createResidentLife(ctx){
       if(d<bestD){best=other;bestD=d;}
     }
     if(!best)return false;
-    const until=now+3600+(++chatSerial%3)*550;
+    const serial=++chatSerial,until=now+3600+(serial%3)*550;
     n.lifeState=best.lifeState='CHATTING';n.partnerId=best.id;best.partnerId=n.id;
     n.chatUntil=best.chatUntil=until;n.moving=best.moving=false;
-    if(n.chatMarker)n.chatMarker.visible=true;if(best.chatMarker)best.chatMarker.visible=true;
+    const first=CHAT_LINES[serial%CHAT_LINES.length],second=CHAT_LINES[(serial+2)%CHAT_LINES.length];
+    if(n.chatMarker){n.chatMarker.userData?.setText?.(first);n.chatMarker.visible=true;}
+    if(best.chatMarker){best.chatMarker.userData?.setText?.(second);best.chatMarker.visible=true;}
     return true;
   }
   function endChat(n,now){
     const other=byId[n.partnerId];
     for(const a of [n,other].filter(Boolean)){
       a.partnerId='';a.chatUntil=0;a.lifeState='USE_POI';a.chatCooldown=now+10000+((a.id.length*509)%7000);a.nextDecision=now+2000;
-      if(a.chatMarker)a.chatMarker.visible=false;
+      if(a.chatMarker){a.chatMarker.visible=false;a.chatMarker.userData?.setText?.('💬');}
     }
   }
 
