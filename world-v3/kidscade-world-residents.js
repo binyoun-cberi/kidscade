@@ -85,7 +85,10 @@ export function createResidentLife(ctx){
     for(const n of npcs){
       const target=routineTarget(n.id,hour,weather,pois);if(!target)continue;
       if(n.lifeState==='HOME'){
-        if(!target.home){setVisible(n,true);n.object.position.set(target.x,n.groundY,target.z);startMove(n,target,now);}
+        if(!target.home){
+          const home=pois['home-'+n.id]||pois.homeFallback;
+          setVisible(n,true);n.object.position.set(home.x,n.groundY,home.z);startMove(n,target,now);
+        }
         continue;
       }
       if(target.home&&n.lifeState!=='GO_HOME'){startMove(n,target,now);}
