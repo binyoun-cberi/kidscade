@@ -236,8 +236,14 @@
 
   function sdkGameOver(winner) {
     try {
-      if (window.KidscadeGame && typeof window.KidscadeGame.gameOver === 'function') {
-        window.KidscadeGame.gameOver({ score: winner === 'town' ? 1 : 0 });
+      if (window.KidscadeGame && typeof window.KidscadeGame.result === 'function') {
+        window.KidscadeGame.result({
+          scope:'match',
+          status:'completed',
+          outcome:winner === 'town' ? 'win' : 'loss',
+          score:winner === 'town' ? 1 : 0,
+          winner
+        });
       }
     } catch (_) {}
   }

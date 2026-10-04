@@ -1073,7 +1073,7 @@ function completeStage(){
   const quality=Math.max(0,400-state.hintsUsed*80-state.undos*20-state.resets*40),score=num*1000+quality;
   try{
     window.KidscadeGame?.score?.(score);
-    window.KidscadeGame?.gameOver?.({score,stage:num,sourceStage:state.stage.sourceNum||num,completedCount:save.completed.length,hints:state.hintsUsed,undos:state.undos,resets:state.resets,clean,elapsedMs:Math.round(elapsedMs),cleared:true});
+    window.KidscadeGame?.result?.({scope:'stage',status:'completed',outcome:'clear',score,stage:num,sourceStage:state.stage.sourceNum||num,completedCount:save.completed.length,hints:state.hintsUsed,undos:state.undos,resets:state.resets,clean,elapsedMs:Math.round(elapsedMs),cleared:true});
   }catch(_){}
   const chapterDone=num%10===0&&CHAPTERS[(num-1)/10]&&STAGES.slice(num-10,num).every(s=>save.completed.includes(s.num));
   if(num===TOTAL_STAGES&&save.completed.length===TOTAL_STAGES)$('#successText').textContent='50개 스테이지를 모두 완성했어요!';

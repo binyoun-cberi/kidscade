@@ -27,13 +27,13 @@ test('Folklore Night Guard no longer broadcasts close requests to wildcard origi
   assert.doesNotMatch(html, /postMessage\(\{type:'kidscade:close-game'\},'\*'\)/);
   assert.match(html, /KidscadeGame\?\.exit/);
   assert.match(html, /KidscadeGame\?\.start/);
-  assert.match(html, /KidscadeGame\?\.gameOver/);
+  assert.match(html, /KidscadeGame\?\.result/);
 });
 
 test('Word Blaster reports lifecycle through the SDK', () => {
   const word = read('games/low_word_blaster/word-blaster.js');
   assert.match(word, /KidscadeGame\?\.start/);
-  assert.match(word, /KidscadeGame\?\.gameOver/);
+  assert.match(word, /KidscadeGame\?\.result/);
 });
 
 test('Emergency City stays on its standalone canvas runtime', () => {

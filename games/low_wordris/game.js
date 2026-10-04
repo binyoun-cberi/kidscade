@@ -656,7 +656,7 @@
     $('bestCombo').textContent=bestCombo>1?'×'+bestCombo:'-';
     $('resultWords').innerHTML=used.size?[...used].map(w=>'<span>'+w+'</span>').join(''):'<span>사용한 단어 없음</span>';
     $('gameOverOverlay').classList.add('show');
-    try { window.KidscadeGame?.gameOver?.({score,words:wordCount,longestWord,bestCombo,difficulty,lettersPlaced:placedLetters}); } catch (_) {}
+    try { window.KidscadeGame?.result?.({scope:'run',status:'completed',outcome:'fail',score,words:wordCount,longestWord,bestCombo,difficulty,lettersPlaced:placedLetters}); } catch (_) {}
   }
 
   function frame(now){

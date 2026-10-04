@@ -283,7 +283,7 @@ function loop(){ if(!state.playing||state.paused)return; const now=currentTime()
   drawEffects(); if(now>state.duration){ finish(); return; } raf=requestAnimationFrame(loop); }
 function finish(){ state.playing=false; cancelAnimationFrame(raf); els.game.classList.add('hidden'); els.result.classList.remove('hidden'); const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.9)/done*100):0; let grade='C'; if(acc>=92)grade='S'; else if(acc>=82)grade='A'; else if(acc>=68)grade='B'; els.grade.textContent=grade; els.resultScore.textContent=state.score; els.resultCombo.textContent=state.maxCombo; els.resultAcc.textContent=acc+'%'; els.resultPerfect.textContent=state.perfect; els.resultGood.textContent=state.good; els.resultMiss.textContent=state.miss;
   const msg=state.mode==='echo'?(acc>=90?'얼씨구! 듣고 기억한 장단을 아주 잘 따라쳤어요.':acc>=75?'좋다! 장단 순서를 잘 기억했어요.':'짧은 장단부터 다시 듣고 따라쳐 봐요.'):(acc>=92?'얼씨구! 장단을 아주 안정적으로 탔어요.':acc>=82?'좋다! 궁과 덕을 잘 구분했어요.':acc>=68?'잘했어요! 박자선을 조금 더 보고 다시 쳐봐요.':'천천히 궁·덕부터 다시 맞춰보면 금방 늘어요.');if(els.resultMessage)els.resultMessage.textContent=msg;
-  try{window.KidscadeGame?.score?.(state.score);window.KidscadeGame?.gameOver?.({score:state.score,accuracy:acc,maxCombo:state.maxCombo,perfect:state.perfect,good:state.good,miss:state.miss,stray:state.stray,hype:state.hype,song:state.song?.id||'',mode:state.mode})}catch(_){}
+  try{window.KidscadeGame?.score?.(state.score);window.KidscadeGame?.result?.({scope:'run',status:'completed',score:state.score,accuracy:acc,maxCombo:state.maxCombo,perfect:state.perfect,good:state.good,miss:state.miss,stray:state.stray,hype:state.hype,song:state.song?.id||'',mode:state.mode})}catch(_){}
 }
 renderMenu();
 })();

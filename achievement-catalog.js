@@ -176,7 +176,7 @@
       mastery:{event:'game-over', field:'score', op:'gte', value:1}
     },
     high_ecopolis: {
-      mastery:{event:'game-over', field:'restored', op:'gte', value:90}
+      mastery:{event:'milestone', field:'restored', op:'gte', value:90}
     },
     job_driver_license: {
       mastery:{event:'game-over', field:'passed', op:'truthy'},

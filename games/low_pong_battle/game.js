@@ -21,7 +21,7 @@ const ball={x:W/2,y:H/2,vx:0,vy:0,r:BALL_R,trail:[]};
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(_){}}
 function sdkStart(){try{window.KidscadeGame?.start?.({mode,difficulty,target})}catch(_){}}
 function sdkScore(){try{window.KidscadeGame?.score?.(bestRally,{unit:'랠리',higherIsBetter:true})}catch(_){}}
-function sdkGameOver(winner){try{window.KidscadeGame?.gameOver?.({score:bestRally,scoreOptions:{unit:'랠리',higherIsBetter:true},winner,mode,leftScore,rightScore})}catch(_){}}
+function sdkGameOver(winner){try{window.KidscadeGame?.result?.({scope:'match',status:'completed',outcome:winner==='left'?'win':'loss',score:bestRally,scoreOptions:{unit:'랠리',higherIsBetter:true},winner,mode,leftScore,rightScore})}catch(_){}}
 
 function showMessage(text,ms=0){ui.message.textContent=text;ui.message.classList.add('show');clearTimeout(flashTimer);if(ms)flashTimer=setTimeout(()=>ui.message.classList.remove('show'),ms)}
 function hideMessage(){clearTimeout(flashTimer);ui.message.classList.remove('show')}

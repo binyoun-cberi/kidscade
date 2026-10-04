@@ -2862,7 +2862,7 @@ function fail(id){
   state.fakeScareToken++;state.fakeScareActive=false;els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');
   if(id!=='power')discover(id);
   state.gameOver=true;state.paused=true;state.running=false;
-  window.KidscadeGame?.gameOver?.({score:state.score,cleared:false,reason:id});
+  window.KidscadeGame?.result?.({scope:'shift',status:'failed',outcome:'fail',score:state.score,cleared:false,reason:id,mode:state.mode});
   if(id==='power')startPowerEnding();
   else startGhostJumpscare(id);
 }
@@ -2981,7 +2981,7 @@ function startPowerEnding(){
   },4380);
 }
 function win(){
-  if(state.gameOver)return;stopAmbient();sound('schoolEnd');state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.gameOver?.({score:state.score,cleared:true});showResult(true)
+  if(state.gameOver)return;stopAmbient();sound('schoolEnd');state.running=false;state.paused=true;state.elapsed=state.duration;state.blackout=false;document.getElementById('app').classList.remove('power-dead');state.score+=Math.round(state.power*4)+state.cleared*45;updateHUD();save();window.KidscadeGame?.result?.({scope:'shift',status:'completed',outcome:'clear',score:state.score,cleared:true,mode:state.mode,clearedEvents:state.cleared});showResult(true)
 }
 function quizHtml(){
   var q=[
