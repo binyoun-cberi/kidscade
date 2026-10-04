@@ -275,6 +275,7 @@ const R=[
  ['clayVessel','hearth',2,0,[['kiln',1]],'점토 가마'],
  ['wood','kiln',2,0,[['charcoal',2]],'숯 굽기'],
  ['charcoal','kiln',1,1,[['highKiln',1]],'숯 고온가마'],
+ ['wood','highKiln',2,0,[['charcoal',3]],'고온가마 숯 굽기'],
  ['rawHide','scraper',1,0,[['dressedHide',1]],'가죽 손질'],
  ['dressedHide','boneNeedle',1,0,[['leatherClothing',1]],'가죽옷'],
  ['dressedHide','hutFrame',1,1,[['hideTent',1]],'가죽 천막'],
