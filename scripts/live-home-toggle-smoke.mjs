@@ -7,7 +7,8 @@ import path from 'node:path';
 const SITE_URL = process.env.SITE_URL || 'https://kidscade.binyoun.workers.dev/';
 const EXPECTED_BUILD = process.env.EXPECTED_BUILD || '';
 const DEBUG_PORT = Number(process.env.CHROME_DEBUG_PORT || 9223);
-const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS || 30000);
+const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS || 20000);
+const HARD_TIMEOUT_MS = Number(process.env.SMOKE_HARD_TIMEOUT_MS || 90000);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -117,9 +118,24 @@ async function clickSelector(cdp, selector) {
     const rect = el.getBoundingClientRect();
     const style = getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden' || rect.width < 1 || rect.height < 1) return null;
-    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return {
+      x,
+      y,
+      hit: hit ? {
+        tag: hit.tagName,
+        id: hit.id || null,
+        className: typeof hit.className === 'string' ? hit.className : null,
+        insideTarget: Boolean(hit.closest?.(${JSON.stringify(selector)}))
+      } : null
+    };
   })()`);
   if (!point) throw new Error('Clickable element not available: ' + selector);
+  if (point.hit && !point.hit.insideTarget) {
+    throw new Error('Click target is covered for ' + selector + ': ' + JSON.stringify(point.hit));
+  }
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y });
   await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
@@ -143,7 +159,20 @@ async function state(cdp) {
       buttonBound: button?.dataset.kcHomeLayoutBound || null,
       homeDisplay: visible(home),
       discoveryDisplay: visible(discovery),
-      gameListDisplay: visible(list)
+      gameListDisplay: visible(list),
+      profileAccess: body.dataset.kcProfileAccess || null,
+      loginButtonPresent: Boolean(document.querySelector('#kc-account-profile-gate .kpg-login')),
+      accountApiPresent: Boolean(window.KidscadeAccount),
+      homeApiPresent: Boolean(window.KidscadeHomeV2),
+      dashboardApiPresent: Boolean(window.KidscadeDashboard),
+      gateImages: (() => {
+        const images = Array.from(document.querySelectorAll('img[src*="gate-image"]'));
+        return {
+          total: images.length,
+          loaded: images.filter(img => img.complete && img.naturalWidth > 0).length,
+          failed: images.filter(img => img.complete && img.naturalWidth === 0).slice(0, 8).map(img => img.currentSrc || img.src)
+        };
+      })()
     };
   })()`);
 }
@@ -236,6 +265,18 @@ async function main() {
 
     await waitFor(
       cdp,
+      'Array.from(document.querySelectorAll("img[src*=\\\"gate-image\\\"]")).some(img => img.complete && img.naturalWidth > 0)',
+      'No gate image reached a loaded DOM state.'
+    );
+
+    await waitFor(
+      cdp,
+      'document.body.dataset.kcProfileAccess === "account" || !!document.querySelector("#kc-account-profile-gate .kpg-login")',
+      'Account/profile login UI did not initialize.'
+    );
+
+    await waitFor(
+      cdp,
       'document.body.classList.contains("kc-home-v2-ready") && !!document.getElementById("btn-home-layout")',
       'Recommended home did not initialize.'
     );
@@ -275,12 +316,22 @@ async function main() {
     process.exitCode = 1;
   } finally {
     try { cdp?.close(); } catch (_) {}
-    browser.kill('SIGTERM');
+    try { browser.kill('SIGKILL'); } catch (_) {}
   }
 }
 
-main().catch(error => {
+const watchdog = setTimeout(() => {
+  console.error('KIDSCADE_HOME_TOGGLE_SMOKE FAIL');
+  console.error('Hard timeout after ' + HARD_TIMEOUT_MS + 'ms');
+  process.exit(124);
+}, HARD_TIMEOUT_MS);
+
+main().then(() => {
+  clearTimeout(watchdog);
+  process.exit(process.exitCode || 0);
+}).catch(error => {
+  clearTimeout(watchdog);
   console.error('KIDSCADE_HOME_TOGGLE_SMOKE FAIL');
   console.error(error?.stack || error);
-  process.exitCode = 1;
+  process.exit(1);
 });
