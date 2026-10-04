@@ -177,8 +177,9 @@ test('pet recommendation scoring is catalog/state driven and source-owned', () =
   assert.equal(bootstrap.includes('const petScoreStart ='), false);
 });
 
-test('game launcher owns modal session lifecycle and reward calculation', () => {
+test('game launcher owns modal lifecycle and the lobby source owns its bridge', () => {
   const launcher = read('game-launcher.js');
+  const index = read('index_base.html');
   const bootstrap = read('main-bootstrap.js');
 
   assert.match(launcher, /function\s+calculateReward\s*\(/);
@@ -187,11 +188,11 @@ test('game launcher owns modal session lifecycle and reward calculation', () => 
   assert.match(launcher, /bridge\.remember/);
   assert.match(launcher, /bridge\.checkpointPlayTime/);
   assert.match(launcher, /bridge\.recordGardenSession/);
-  assert.match(bootstrap, /const\s+gameLauncherBridge\s*=/);
-  assert.match(bootstrap, /KidscadeGameLauncher\.open/);
-  assert.match(bootstrap, /KidscadeGameLauncher\.close/);
-  assert.match(bootstrap, /kidscade:close-game/);
-  assert.match(bootstrap, /event\.source !== gameIframe\.contentWindow/);
+  assert.match(index, /const\s+gameLauncherBridge\s*=/);
+  assert.match(index, /KidscadeGameLauncher\.open/);
+  assert.match(index, /KidscadeGameLauncher\.close/);
+  assert.match(index, /kidscade:close-game/);
+  assert.match(index, /event\.source !== gameIframe\.contentWindow/);
   assert.match(bootstrap, /game-launcher\.js/);
 });
 
@@ -256,8 +257,8 @@ test('migrated games obey every age, subject and search combination', () => {
 });
 
 
-test('bootstrap accepts Game SDK lifecycle messages only from the active iframe', () => {
-  const source = read('main-bootstrap.js');
+test('lobby source accepts Game SDK lifecycle messages only from the active iframe', () => {
+  const source = read('index_base.html');
   assert.match(source, /event\.origin !== location\.origin/);
   assert.match(source, /event\.source !== gameIframe\.contentWindow/);
   assert.match(source, /kidscade:close-game/);
@@ -265,17 +266,17 @@ test('bootstrap accepts Game SDK lifecycle messages only from the active iframe'
   assert.match(source, /new CustomEvent\('kidscade:game-event'/);
 });
 
-
 test('common game start screen owns deferred launch and shared errors', () => {
   const bootstrap = read('main-bootstrap.js');
+  const index = read('index_base.html');
   const launcher = read('game-launcher.js');
   const frame = read('game-frame-shell.js');
 
   assert.match(bootstrap, /game-frame-shell\.js/);
   assert.match(bootstrap, /home-v2\.js/);
-  assert.match(bootstrap, /deferLaunch:\s*true/);
-  assert.match(bootstrap, /KidscadeGameFrame\?\.open/);
-  assert.match(bootstrap, /kidscade:game-error/);
+  assert.match(index, /deferLaunch:\s*true/);
+  assert.match(index, /KidscadeGameFrame\?\.open/);
+  assert.match(index, /kidscade:game-error/);
   assert.match(launcher, /bridge\.deferLaunch === true/);
   assert.match(launcher, /const\s+activate\s*=\s*\(\)\s*=>/);
   assert.match(frame, /LOAD_TIMEOUT_MS = 15000/);
@@ -283,6 +284,12 @@ test('common game start screen owns deferred launch and shared errors', () => {
   assert.match(frame, /다시 불러오기/);
 });
 
+test('bootstrap no longer performs controller source surgery', () => {
+  const bootstrap = read('main-bootstrap.js');
+  assert.equal(bootstrap.includes('replaceBetween('), false);
+  assert.equal(bootstrap.includes('refactorLegacyControllers'), false);
+  assert.equal(bootstrap.includes('launcherReplacement'), false);
+});
 
 test('retired standalone aquarium and hamster rooms stay removed', () => {
   const base = read('index_base.html');
