@@ -71,7 +71,8 @@ test('One Stroke makes the city visibly larger and more three-dimensional',()=>{
 test('One Stroke catalog points to the road-oriented 3D rework',()=>{
   const game=catalog.games.find(g=>g.id==='low_one_stroke');
   assert.ok(game);
-  assert.equal(game.href,'한붓쓱.html?v=7');
+  assert.equal(game.href,'한붓쓱.html?v=8');
+  assert.deepEqual(game.input,['touch']);
 });
 
 test('One Stroke uses role-based roof colors to break up repeated green roofs',()=>{
@@ -80,4 +81,38 @@ test('One Stroke uses role-based roof colors to break up repeated green roofs',(
   assert.match(runtime,/roofColor\(roofRole\(l\.role\)/);
   assert.match(runtime,/const roles=o\.edgeId!=null/);
   assert.match(runtime,/if\(roof!=null&&key\.startsWith\('building'\)\)tintRoof/);
+});
+
+
+test('One Stroke teaches strategy without auto-solving every move',()=>{
+  assert.match(html,/const TUTORIALS =/);
+  assert.match(html,/힌트 1\/3/);
+  assert.match(html,/힌트 2\/3/);
+  assert.match(html,/힌트 3\/3/);
+  assert.doesNotMatch(html,/이 경로로는 끝까지 이어지지 않아요/);
+  assert.match(html,/completionTrail\(next\)/);
+});
+
+test('One Stroke keeps stages valid while smoothing chapter difficulty',()=>{
+  assert.match(html,/const RAW_STAGES =/);
+  assert.match(html,/const DIFFICULTY_ORDER =/);
+  assert.match(html,/1,2,3,4,5,7,6,9,8,10/);
+  assert.match(html,/sourceNum,num:slot,chapter/);
+});
+
+test('One Stroke delivery reward is short, boostable, and restores the bright city',()=>{
+  assert.match(html,/Math\.min\(4200,Math\.max\(2200,state\.edges\.length\*155\)\)/);
+  assert.match(html,/function boostDelivery/);
+  assert.match(html,/state\.delivery\.speed=2/);
+  assert.match(html,/board-shell\.solving #city3d/);
+  assert.match(html,/classList\.add\('delivering'\)/);
+});
+
+test('One Stroke reports results and achievements through the common SDK',()=>{
+  assert.match(html,/kidscade-game-sdk\.js/);
+  assert.match(html,/KidscadeGame\?\.start/);
+  assert.match(html,/KidscadeGame\?\.gameOver/);
+  for(const id of ['low_one_stroke.first_route','low_one_stroke.clean_route','low_one_stroke.stages_10','low_one_stroke.master_50']){
+    assert.ok(html.includes(id),id);
+  }
 });
