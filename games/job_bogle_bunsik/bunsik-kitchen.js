@@ -4,6 +4,7 @@ import { RestaurantEngine } from '../shared/restaurant-engine.js?v=1';
 
 const FOOD=new URL('../../assets/game/food/',import.meta.url).href;
 const PEOPLE=new URL('../../assets/game/characters/people/',import.meta.url).href;
+const NPCS=new URL('../../assets/game/npcs/glTF/',import.meta.url).href;
 const KITCHEN=new URL('../../assets/game/3d/interiors/charming-kitchen-set/',import.meta.url).href;
 const SUSHI=new URL('../../assets/game/3d/interiors/modular-sushi-restaurant-kit/',import.meta.url).href;
 const BAKERY=new URL('../../assets/game/3d/bakery/interior/',import.meta.url).href;
@@ -38,7 +39,12 @@ const RECIPES=[
 ];
 const ACTION_NAMES={water:'물 붓기',noodle:'면 넣기',soup:'스프 넣기',egg:'계란 넣기',green:'대파 넣기',cheese:'치즈 넣기',plate:'그릇에 담기',discard:'냄비 비우기'};
 const CUSTOMER_ICONS=['👧','👦','👩','🧑','👵','👨'];
-const CUSTOMER_MODELS=['character-female-b.glb','character-male-a.glb','character-female-c.glb','character-male-b.glb'];
+const CUSTOMER_MODELS=[
+ {root:PEOPLE,file:'character-female-b.glb'},{root:PEOPLE,file:'character-male-a.glb'},
+ {root:NPCS,file:'Casual_Female.gltf'},{root:NPCS,file:'Casual_Male.gltf'},
+ {root:NPCS,file:'OldClassy_Female.gltf'},{root:NPCS,file:'OldClassy_Male.gltf'},
+ {root:NPCS,file:'Suit_Female.gltf'},{root:NPCS,file:'Suit_Male.gltf'}
+];
 
 const els={
  canvas:$('#gameCanvas'),orders:$('#orderStrip'),pots:$('#potStrip'),revenue:$('#revenue'),goal:$('#goal'),time:$('#time'),served:$('#served'),
@@ -420,7 +426,7 @@ class RamenKitchen3D{
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
   const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.72,5,10),this.material(0xe4634d,{roughness:.75}));fallback.position.y=.72;root.add(fallback);root.userData.fallback=fallback;
   this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(0,1.72,-.12);root.add(this.carryAnchor);
-  this.loadModel(PEOPLE,'character-female-b.glb',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
+  this.loadModel(NPCS,'Chef_Female.gltf',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
  }
  setCarryVisual(item){
   if(!this.carryAnchor)return;
@@ -439,7 +445,7 @@ class RamenKitchen3D{
   const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.26,.68,5,10),this.material(0x4f86b8,{roughness:.72}));fallback.position.y=.7;root.add(fallback);root.userData.fallback=fallback;
   this.helperCarryAnchor=new THREE.Group();this.helperCarryAnchor.position.set(0,1.68,-.1);root.add(this.helperCarryAnchor);
   const label=this.makeTextSprite('알바');label.position.set(0,2.0,0);label.scale.set(1.05,.34,1);root.add(label);
-  this.loadModel(PEOPLE,'character-male-b.glb',1.38).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}})
+  this.loadModel(NPCS,'Chef_Male.gltf',1.38).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}})
  }
  setHelperCarry(item){
   this.helperCarry=item?{...item}:null;
@@ -655,8 +661,8 @@ class RamenKitchen3D{
  syncDishVisuals(){this.dirtyPlateModels.forEach((m,i)=>{m.visible=i<Math.min(5,state.dirtyPlates)})}
  makeCustomers(){
   this.customerXs.forEach((x,i)=>{
-   const file=CUSTOMER_MODELS[i%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
-   this.loadModel(PEOPLE,file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o)}});
+   const spec=CUSTOMER_MODELS[(i+progress.shifts*2)%CUSTOMER_MODELS.length],holder=new THREE.Group();holder.position.set(x,0,-4.25);holder.rotation.y=0;this.scene.add(holder);this.customerHolders.push(holder);
+   this.loadModel(spec.root,spec.file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o)}});
   });
   this.box(9.4,.86,1.0,0x416c62,0,.38,-3.62,{roughness:.58});
   this.box(9.5,.11,1.08,0xe4c489,0,.86,-3.62,{roughness:.5});
