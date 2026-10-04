@@ -14,6 +14,9 @@
   const LAYOUT_BUTTON_ID = 'btn-home-layout';
   const RECOVERY_ID = 'kc-home-recovery';
   const RECOVERY_STYLE_ID = 'kc-home-recovery-style';
+  const BOOT_SCREEN_ID = 'kc-lobby-boot-screen';
+  const BOOT_STEP_ID = 'kc-lobby-boot-step';
+  const BOOT_PROGRESS_ID = 'kc-lobby-boot-progress';
   const MAX_RAIL_GAMES = 12;
   const HOUR_MS = 60 * 60 * 1000;
   const DAY_MS = 24 * HOUR_MS;
@@ -72,6 +75,49 @@
   let heroRotationTimer = null;
   let mountStartedAt = 0;
   let mountAborted = false;
+
+  function bootScreenAllowed() {
+    const navigation = root?.KidscadeAgeNavigation?.state?.();
+    return !navigation || navigation.phase === 'ready';
+  }
+
+  function updateBootScreen(note = '게임 목록을 준비하는 중...', progress = 18, phase = 'booting') {
+    if (!root?.document?.body || root.document.body.dataset.kcLobbyBootResolved) return false;
+    const screen = root.document.getElementById(BOOT_SCREEN_ID);
+    if (!screen || !bootScreenAllowed()) return false;
+
+    const value = Math.max(8, Math.min(98, Math.round(Number(progress) || 18)));
+    root.document.body.classList.add('kc-lobby-booting');
+    root.document.body.dataset.kcLobbyBootPhase = phase;
+    screen.setAttribute('aria-hidden', 'false');
+    screen.setAttribute('aria-busy', 'true');
+
+    const step = root.document.getElementById(BOOT_STEP_ID);
+    if (step && note) step.textContent = String(note);
+
+    const bar = root.document.getElementById(BOOT_PROGRESS_ID);
+    if (bar) bar.style.width = value + '%';
+    bar?.parentElement?.setAttribute?.('aria-valuenow', String(value));
+    return true;
+  }
+
+  function resolveBootScreen(result = 'home-v2') {
+    if (!root?.document?.body) return false;
+    const body = root.document.body;
+    body.dataset.kcLobbyBootResolved = result;
+    delete body.dataset.kcLobbyBootPhase;
+
+    const screen = root.document.getElementById(BOOT_SCREEN_ID);
+    const step = root.document.getElementById(BOOT_STEP_ID);
+    const bar = root.document.getElementById(BOOT_PROGRESS_ID);
+    if (bar) bar.style.width = '100%';
+    bar?.parentElement?.setAttribute?.('aria-valuenow', '100');
+    if (step && result === 'home-v2') step.textContent = '준비 완료! 오락실을 열고 있어요.';
+    screen?.setAttribute?.('aria-busy', 'false');
+    screen?.setAttribute?.('aria-hidden', 'true');
+    body.classList.remove('kc-lobby-booting');
+    return true;
+  }
 
   const cleanIds = value => Array.isArray(value)
     ? value.map(item => String(item || '')).filter(Boolean)
@@ -630,6 +676,7 @@
       delete backbar.dataset.kcHomeStage;
     }
     root.document.body.classList.add('kc-home-v2-ready');
+    resolveBootScreen('home-v2');
     return true;
   }
 
@@ -694,10 +741,12 @@
 
     if (classicFallbackReady()) {
       clearRecoveryPanel();
+      resolveBootScreen('classic-fallback');
       console.warn('[Kidscade Home] 추천 홈 활성화를 취소하고 검증된 기본 홈을 유지합니다:', reason);
       return true;
     }
 
+    resolveBootScreen('recovery');
     showRecoveryPanel(reason);
     console.error('[Kidscade Home] 추천 홈과 기본 홈이 모두 준비되지 않아 안전 복구 화면을 표시합니다:', reason);
     return false;
@@ -1160,13 +1209,21 @@
       if (mounted || mountAborted) return;
       const shell = ensureShell();
       const cssReady = ensureStylesheet();
-      const ready = Boolean(
-        shell &&
-        cssReady &&
-        games().length &&
-        typeof root.KidscadePlay?.open === 'function' &&
-        typeof root.KidscadeDashboard?.render === 'function'
+      const gameList = games();
+      const checks = [
+        { ok: Boolean(shell), note: '오락실 화면을 준비하는 중...', progress: 22, phase: 'shell' },
+        { ok: Boolean(cssReady), note: '오락실을 예쁘게 꾸미는 중...', progress: 38, phase: 'styles' },
+        { ok: Boolean(gameList.length), note: '게임 목록을 정리하는 중...', progress: 56, phase: 'catalog' },
+        { ok: typeof root.KidscadePlay?.open === 'function', note: '게임기를 연결하는 중...', progress: 72, phase: 'launcher' },
+        { ok: typeof root.KidscadeDashboard?.render === 'function', note: '내 기록과 즐겨찾기를 불러오는 중...', progress: 86, phase: 'dashboard' }
+      ];
+      const pending = checks.find(check => !check.ok);
+      updateBootScreen(
+        pending?.note || '오늘의 추천 게임을 고르는 중...',
+        pending?.progress || 94,
+        pending?.phase || 'recommendations'
       );
+      const ready = checks.every(check => check.ok);
 
       if (!ready) {
         if (Date.now() - mountStartedAt >= MOUNT_TIMEOUT_MS) {
@@ -1179,6 +1236,7 @@
       }
 
       try {
+        updateBootScreen('오늘의 추천 게임을 고르는 중...', 94, 'recommendations');
         const rendered = render({ activate: false });
         if (!rendered) throw new Error('recommended-home-render-returned-false');
         bindSearch();
