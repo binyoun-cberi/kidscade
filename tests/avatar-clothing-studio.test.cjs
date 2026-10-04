@@ -247,3 +247,8 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
   assert.ok(html.includes('width:min(100%,66vh,680px)'));
   assert.ok(html.includes('<details class="card tool-card compact adjust-dock" data-panel-key="adjust-tools">'));
 });
+
+test('avatar studio markup does not leak closing tag text',()=>{
+  assert.ok(!html.includes('</main>/div>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=18"></script>'));
+});
