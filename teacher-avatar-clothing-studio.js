@@ -36,12 +36,63 @@ const LAYER_FOLDERS={
   earring:'accessories/earring',mask:'accessories/mask',hat:'accessories/hat',
   upper:'outfit/upper',lower:'outfit/lower',shoes:'outfit/shoes',gloves:'outfit/gloves'
 };
+const ANIMATION_GROUPS={
+  stand:{label:'STAND',loop:true,fps:2},
+  walk:{label:'WALK',loop:true,fps:6},
+  jump:{label:'JUMP',loop:false,fps:1},
+  attack:{label:'ATTACK',loop:false,fps:10},
+  hurt:{label:'HURT',loop:false,fps:7},
+  dead:{label:'DEAD',loop:false,fps:5},
+  sit:{label:'SIT',loop:true,fps:3},
+  pickup:{label:'PICKUP',loop:false,fps:7}
+};
 const FRAMES=[
-  {id:'stand-01',label:'STAND 01',kind:'stand',n:1},
-  {id:'stand-02',label:'STAND 02',kind:'stand',n:2},
-  ...Array.from({length:4},(_,i)=>({id:'walk-'+String(i+1).padStart(2,'0'),label:'WALK '+String(i+1).padStart(2,'0'),kind:'walk',n:i+1})),
-  {id:'jump-01',label:'JUMP 01',kind:'jump',n:1}
+  {id:'stand-01',label:'STAND 01',kind:'stand',n:1,durationMs:500,anchors:{leftHand:[49,91],rightHand:[81,91]}},
+  {id:'stand-02',label:'STAND 02',kind:'stand',n:2,durationMs:500,anchors:{leftHand:[49,91],rightHand:[81,91]}},
+  ...Array.from({length:4},(_,i)=>({id:'walk-'+String(i+1).padStart(2,'0'),label:'WALK '+String(i+1).padStart(2,'0'),kind:'walk',n:i+1,durationMs:165,anchors:{leftHand:[50,89],rightHand:[82,89]}})),
+  {id:'jump-01',label:'JUMP 01',kind:'jump',n:1,durationMs:180,anchors:{leftHand:[45,78],rightHand:[88,80]}},
+
+  {id:'attack-01',label:'ATK 01',kind:'attack',n:1,durationMs:90,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[49,91],rightHand:[81,91],weaponPivot:[49,91]}},
+  {id:'attack-02',label:'ATK 02',kind:'attack',n:2,durationMs:80,derived:true,fallbackFrom:'stand-02',anchors:{leftHand:[47,88],rightHand:[82,91],weaponPivot:[47,88]}},
+  {id:'attack-03',label:'ATK 03',kind:'attack',n:3,durationMs:55,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[45,82],rightHand:[87,82],weaponPivot:[45,82]}},
+  {id:'attack-04',label:'ATK 04',kind:'attack',n:4,durationMs:70,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[39,79],rightHand:[82,84],weaponPivot:[39,79]},event:'hit'},
+  {id:'attack-05',label:'ATK 05',kind:'attack',n:5,durationMs:120,derived:true,fallbackFrom:'stand-02',anchors:{leftHand:[49,91],rightHand:[81,91],weaponPivot:[49,91]}},
+
+  {id:'hurt-01',label:'HURT 01',kind:'hurt',n:1,durationMs:110,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[51,92],rightHand:[82,92]}},
+  {id:'hurt-02',label:'HURT 02',kind:'hurt',n:2,durationMs:180,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[54,94],rightHand:[84,93]},event:'hurtPeak'},
+
+  {id:'dead-01',label:'DEAD 01',kind:'dead',n:1,durationMs:120,derived:true,fallbackFrom:'stand-01'},
+  {id:'dead-02',label:'DEAD 02',kind:'dead',n:2,durationMs:120,derived:true,fallbackFrom:'stand-01'},
+  {id:'dead-03',label:'DEAD 03',kind:'dead',n:3,durationMs:150,derived:true,fallbackFrom:'stand-01'},
+  {id:'dead-04',label:'DEAD 04',kind:'dead',n:4,durationMs:600,derived:true,fallbackFrom:'stand-01',event:'down'},
+
+  {id:'sit-01',label:'SIT 01',kind:'sit',n:1,durationMs:260,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[51,99],rightHand:[79,101]}},
+  {id:'sit-02',label:'SIT 02',kind:'sit',n:2,durationMs:420,derived:true,fallbackFrom:'stand-02',anchors:{leftHand:[51,103],rightHand:[79,104]}},
+
+  {id:'pickup-01',label:'PICK 01',kind:'pickup',n:1,durationMs:120,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[47,96],rightHand:[80,94]}},
+  {id:'pickup-02',label:'PICK 02',kind:'pickup',n:2,durationMs:160,derived:true,fallbackFrom:'stand-01',anchors:{leftHand:[41,108],rightHand:[76,99]},event:'pickup'},
+  {id:'pickup-03',label:'PICK 03',kind:'pickup',n:3,durationMs:180,derived:true,fallbackFrom:'stand-02',anchors:{leftHand:[45,100],rightHand:[79,96]}}
 ];
+const SOURCE_BODY_FRAMES=FRAMES.filter(frame=>!frame.derived);
+const DERIVED_FRAMES=FRAMES.filter(frame=>frame.derived);
+const DERIVED_BODY_POSES={
+  'attack-01':{type:'transform',source:'stand-01'},
+  'attack-02':{type:'transform',source:'stand-02',dx:2,angle:3,pivot:[64,118]},
+  'attack-03':{type:'attackMix',source:'stand-01',armSource:'jump-01'},
+  'attack-04':{type:'attackMix',source:'stand-01',armSource:'jump-01',dx:-5,angle:-4,pivot:[64,118]},
+  'attack-05':{type:'transform',source:'stand-02',dx:-1,angle:-2,pivot:[64,118]},
+  'hurt-01':{type:'transform',source:'stand-01',dx:2,angle:6,pivot:[64,118]},
+  'hurt-02':{type:'transform',source:'stand-01',dx:4,angle:11,scaleY:.98,pivot:[64,118]},
+  'dead-01':{type:'transform',source:'stand-01',dx:-4,angle:15,pivot:[64,116]},
+  'dead-02':{type:'transform',source:'stand-01',dx:-14,angle:35,pivot:[64,116]},
+  'dead-03':{type:'transform',source:'stand-01',dx:-30,angle:60,pivot:[64,116]},
+  'dead-04':{type:'transform',source:'stand-01',dx:-44,angle:90,pivot:[64,116]},
+  'sit-01':{type:'sitMix',source:'stand-01',legSource:'jump-01',down:7},
+  'sit-02':{type:'sitMix',source:'stand-02',legSource:'jump-01',down:12},
+  'pickup-01':{type:'transform',source:'stand-01',dx:-1,angle:-7,pivot:[64,110]},
+  'pickup-02':{type:'transform',source:'stand-01',dx:-4,dy:4,angle:-15,scaleY:.94,pivot:[64,112]},
+  'pickup-03':{type:'transform',source:'stand-02',dx:-2,angle:-7,pivot:[64,110]}
+};
 const DRAFT_BODY_SOURCE_SECONDS=[8,9,10,11,12,13,14];
 const DRAFT_BODY_SOURCE_RESOLUTION=64;
 const DRAFT_BODY_SOURCE_PALETTE=12;
@@ -80,6 +131,7 @@ const ctx=canvas.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 
 let currentFrame='stand-01';
+let animationFilterKind='stand';
 let activeLayer='body';
 let tool='pencil';
 let drawing=false;
@@ -406,6 +458,10 @@ function buildFullAnalysis(){
     framesOut[frame.id]={
       kind:frame.kind,
       frameNumber:frame.n,
+      durationMs:frame.durationMs||null,
+      anchors:frame.anchors||null,
+      event:frame.event||null,
+      derived:!!frame.derived,
       layers,
       composite:{...canvasMetrics(compositeCanvas(frame.id))},
       exposure:bodyExposureDiagnostics(frame.id)
@@ -467,13 +523,17 @@ function buildBodyReferenceAnalysis(){
     framesOut[frame.id]={
       kind:frame.kind,
       frameNumber:frame.n,
+      durationMs:frame.durationMs||null,
+      anchors:frame.anchors||null,
+      event:frame.event||null,
+      derived:!!frame.derived,
       ...canvasMetrics(body),
       alphaRuns:alphaRunsOfCanvas(body,1),
       pixels:sparsePixelsOfCanvas(body,1)
     };
   }
   return {
-    version:1,
+    version:2,
     type:'kidscade-avatar-body-reference',
     createdAt:new Date().toISOString(),
     canvas:{width:SIZE,height:SIZE,origin:'top-left',transparent:true},
@@ -490,8 +550,10 @@ function buildBodyReferenceAnalysis(){
       rules:[
         'Do not paint or replace BODY pixels in generated wearable assets.',
         'Generate only the requested wearable or cosmetic layer on a transparent 128x128 canvas.',
-        'Use BODY pixels, bbox, alphaRuns, logicalRoot and groundY as the fit reference.',
-        'Keep frame alignment consistent across STAND, WALK and JUMP.'
+        'Use BODY pixels, bbox, alphaRuns, logicalRoot, groundY and per-frame anchors as the fit reference.',
+        'Keep frame alignment consistent across STAND, WALK, JUMP, ATTACK, HURT, DEAD, SIT and PICKUP.',
+        'ATTACK weaponPivot is the left-hand equipment pivot; mirror the full avatar for right-facing play.',
+        'For derived action frames, regenerate or hand-correct wearable pixels when the automatic fallback no longer matches the pose.'
       ]
     }
   };
@@ -725,6 +787,7 @@ async function applyPartAdjustment(data){
   }
   const field=LAYER_ID_FIELDS[layer];
   if(field&&$(field))$(field).value=assetId;
+  seedDerivedFramesForLayer(layer,{force:true,skipIds:new Set(Object.keys(data.frames||{}))});
   stopPlayback();selectLayer(layer);
   refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal();
   setStatus(partLabel(layer)+' JSON 적용 완료 · '+assetId+' · '+changed+'개 프레임');
@@ -858,6 +921,85 @@ function shiftCanvas(source,dx,dy){
   return out;
 }
 
+function drawTransformedLayer(target,source,spec={}){
+  const c=target.getContext('2d',{alpha:true});
+  const pivot=spec.pivot||[ROOT_X,GROUND_Y],dx=Number(spec.dx)||0,dy=Number(spec.dy)||0;
+  const angle=(Number(spec.angle)||0)*Math.PI/180;
+  const scaleX=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1;
+  const scaleY=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1;
+  c.save();c.imageSmoothingEnabled=false;
+  c.translate(pivot[0]+dx,pivot[1]+dy);
+  c.rotate(angle);c.scale(scaleX,scaleY);
+  c.translate(-pivot[0],-pivot[1]);
+  c.drawImage(source,0,0);
+  c.restore();
+}
+
+function derivedLayerCanvas(frameId,layer){
+  const spec=DERIVED_BODY_POSES[frameId],out=makeCanvas();
+  if(!spec)return out;
+  const source=layerCanvas(spec.source||'stand-01',layer);
+  if(!source||!hasInk(source))return out;
+
+  if(spec.type==='attackMix'){
+    const mixed=makeCanvas(),m=mixed.getContext('2d',{alpha:true});m.imageSmoothingEnabled=false;
+    m.drawImage(source,0,0);
+    m.clearRect(40,72,16,30);m.clearRect(77,72,18,30);
+    const armCandidate=layerCanvas(spec.armSource||'jump-01',layer);
+    const arms=armCandidate&&hasInk(armCandidate)?armCandidate:source;
+    m.drawImage(arms,39,66,20,29,39,72,20,29);
+    m.drawImage(arms,74,66,22,29,74,72,22,29);
+    drawTransformedLayer(out,mixed,spec);
+    return out;
+  }
+
+  if(spec.type==='sitMix'){
+    const c=out.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
+    const down=Number(spec.down)||0;
+    c.drawImage(source,35,20,60,81,35,20+down,60,81);
+    const legCandidate=layerCanvas(spec.legSource||'jump-01',layer);
+    const legs=legCandidate&&hasInk(legCandidate)?legCandidate:source;
+    c.drawImage(legs,45,87,45,26,41,92+Math.floor(down/2),45,26);
+    return out;
+  }
+
+  drawTransformedLayer(out,source,spec);
+  return out;
+}
+
+function seedDerivedFramesForLayer(layer,{force=false,skipIds=null}={}){
+  let changed=0;
+  for(const frame of DERIVED_FRAMES){
+    if(skipIds?.has(frame.id))continue;
+    const target=layerCanvas(frame.id,layer);
+    if(!force&&hasInk(target))continue;
+    const generated=derivedLayerCanvas(frame.id,layer),ctx=layerCtx(frame.id,layer);
+    ctx.clearRect(0,0,SIZE,SIZE);
+    if(hasInk(generated)){
+      ctx.drawImage(generated,0,0);
+      const sourceId=DERIVED_BODY_POSES[frame.id]?.source||frame.fallbackFrom||'stand-01';
+      const meta=assetMeta(sourceId,layer);
+      if(meta)setAssetMeta(frame.id,layer,{...meta,derived:true,derivedFrom:sourceId});
+      else if(layer==='body')setAssetMeta(frame.id,'body',{layer:'body',id:assetIdForLayer('body'),label:assetIdForLayer('body'),file:null,custom:true,derived:true,derivedFrom:sourceId});
+      changed++;
+    }else setAssetMeta(frame.id,layer,null);
+  }
+  return changed;
+}
+
+function seedDerivedFrames({force=false}={}){
+  let changed=0;
+  for(const layer of LAYERS)changed+=seedDerivedFramesForLayer(layer,{force});
+  if(changed){rememberAllBodyFrames();refreshFrameButtons();renderSelectedAssetList();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal()}
+  return changed;
+}
+
+function regenerateDerivedFrames(){
+  if(!confirm('ATTACK·HURT·DEAD·SIT·PICKUP 파생 프레임을 현재 STAND/JUMP 기준으로 다시 만들까요? 파생 프레임에서 직접 수정한 내용은 덮어씁니다.'))return;
+  const changed=seedDerivedFrames({force:true});
+  setStatus('파생 동작 프레임 다시 생성 완료 · '+changed+'개 레이어/프레임 갱신');
+}
+
 function allBodyFramesEmpty(){
   return FRAMES.every(f=>!hasInk(layerCanvas(f.id,'body')));
 }
@@ -867,21 +1009,25 @@ async function repairMissingBodyFrames(announce=true){
   const missing=missingBodyFrames();
   if(!missing.length){rememberAllBodyFrames();return 0}
   try{
-    const masterImg=await loadImageUrl(draftBodySourceUrl(0));
-    const masterRaw=rasterDraftBodyImage(masterImg),masterBox=bboxOfCanvas(masterRaw,8);
-    if(!masterBox)throw new Error('기준 STAND-01 BODY 실루엣을 찾지 못했습니다.');
-    const masterCenter=masterBox.x+(masterBox.w-1)/2;
-    const dx=Math.round(ROOT_X-masterCenter),dy=GROUND_Y-masterBox.maxY;
-    for(const frame of missing){
-      const index=FRAMES.findIndex(f=>f.id===frame.id);
-      const raw=index===0?masterRaw:rasterDraftBodyImage(await loadImageUrl(draftBodySourceUrl(index)));
-      const shifted=shiftCanvas(raw,dx,dy),target=layerCtx(frame.id,'body');
-      target.clearRect(0,0,SIZE,SIZE);target.drawImage(shifted,0,0);
-      rememberBodyFrame(frame.id);
+    const sourceMissing=SOURCE_BODY_FRAMES.filter(f=>!hasInk(layerCanvas(f.id,'body')));
+    if(sourceMissing.length){
+      const masterImg=await loadImageUrl(draftBodySourceUrl(0));
+      const masterRaw=rasterDraftBodyImage(masterImg),masterBox=bboxOfCanvas(masterRaw,8);
+      if(!masterBox)throw new Error('기준 STAND-01 BODY 실루엣을 찾지 못했습니다.');
+      const masterCenter=masterBox.x+(masterBox.w-1)/2;
+      const dx=Math.round(ROOT_X-masterCenter),dy=GROUND_Y-masterBox.maxY;
+      for(const frame of sourceMissing){
+        const index=SOURCE_BODY_FRAMES.findIndex(f=>f.id===frame.id);
+        const raw=index===0?masterRaw:rasterDraftBodyImage(await loadImageUrl(draftBodySourceUrl(index)));
+        const shifted=shiftCanvas(raw,dx,dy),target=layerCtx(frame.id,'body');
+        target.clearRect(0,0,SIZE,SIZE);target.drawImage(shifted,0,0);
+        rememberBodyFrame(frame.id);
+      }
     }
+    const derivedChanged=seedDerivedFramesForLayer('body',{force:false});
     refreshFrameButtons();renderSelectedAssetList();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal();
-    if(announce)setStatus('누락 BODY 자동 복구 완료 · '+missing.map(f=>f.label).join(', ')+' · 기존 정상 BODY 프레임은 건드리지 않았습니다.');
-    return missing.length;
+    if(announce)setStatus('누락 BODY 자동 복구 완료 · 기본 '+sourceMissing.length+'프레임 + 파생 '+derivedChanged+'프레임');
+    return sourceMissing.length+derivedChanged;
   }catch(e){
     if(announce)setStatus('누락 BODY 복구 실패: '+(e?.message||e),true);
     return 0;
@@ -891,14 +1037,15 @@ async function repairMissingBodyFrames(announce=true){
 async function loadDraftBodySet(announce=true){
   const button=$('loadDraftBodySet');
   const oldText=button?.textContent||'';
-  if(button){button.disabled=true;button.textContent='GitHub BODY 불러오는 중…'}
+  if(button){button.disabled=true;button.textContent='기본 BODY 불러오는 중…'}
   try{
-    if(!allBodyFramesEmpty()&&announce&&!confirm('현재 BODY 프레임을 업로드한 좌향 초안 7장으로 다시 채울까요? HAIR/의상 레이어는 유지됩니다.'))return false;
-    setStatus('좌향 BODY 7장 준비 중 · 0 / '+FRAMES.length);
+    if(!allBodyFramesEmpty()&&announce&&!confirm('현재 BODY를 기본 7프레임으로 다시 불러오고 ATTACK·HURT·DEAD·SIT·PICKUP 동작을 다시 생성할까요? HAIR/의상 레이어는 유지됩니다.'))return false;
+    setStatus('기본 BODY 7프레임 준비 중 · 0 / '+SOURCE_BODY_FRAMES.length);
     const raw=[];
-    for(let i=0;i<FRAMES.length;i++){
-      setStatus('좌향 BODY 7장 준비 중 · '+(i+1)+' / '+FRAMES.length+' · '+FRAMES[i].label);
-      if(button)button.textContent='BODY 불러오는 중 '+(i+1)+' / '+FRAMES.length;
+    for(let i=0;i<SOURCE_BODY_FRAMES.length;i++){
+      const frame=SOURCE_BODY_FRAMES[i];
+      setStatus('기본 BODY 준비 중 · '+(i+1)+' / '+SOURCE_BODY_FRAMES.length+' · '+frame.label);
+      if(button)button.textContent='BODY '+(i+1)+' / '+SOURCE_BODY_FRAMES.length;
       const img=await loadImageUrl(draftBodySourceUrl(i));
       await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
       raw.push(rasterDraftBodyImage(img));
@@ -910,15 +1057,15 @@ async function loadDraftBodySet(announce=true){
     const dx=Math.round(ROOT_X-masterCenter);
     const dy=GROUND_Y-masterBox.maxY;
 
-    for(let i=0;i<FRAMES.length;i++){
-      const target=layerCtx(FRAMES[i].id,'body');
+    for(let i=0;i<SOURCE_BODY_FRAMES.length;i++){
+      const target=layerCtx(SOURCE_BODY_FRAMES[i].id,'body');
       target.clearRect(0,0,SIZE,SIZE);
-      const shifted=shiftCanvas(raw[i],dx,dy);
-      target.drawImage(shifted,0,0);
+      target.drawImage(shiftCanvas(raw[i],dx,dy),0,0);
     }
+    const derivedCount=seedDerivedFramesForLayer('body',{force:true});
     selection=null;history.clear();$('referenceFrame').value='stand-01';rememberAllBodyFrames();
     refreshFrameButtons();render();saveLocal();
-    setStatus('좌향 BODY 7장 연결 완료 · STAND-01 기준 공통 이동값 '+dx+','+dy+' 적용 · 빨간 오차 표시로 프레임별 차이를 보정하세요.');
+    setStatus('BODY '+FRAMES.length+'프레임 준비 완료 · 기본 7 + 파생 '+derivedCount+' · ATTACK/HURT/DEAD/SIT/PICKUP 편집 가능');
     return true;
   }catch(e){
     setStatus('BODY 초안 불러오기 실패: '+(e?.message||e),true);
@@ -928,14 +1075,31 @@ async function loadDraftBodySet(announce=true){
   }
 }
 
-function buildFrameButtons(){
+function renderAnimationModeButtons(){
+  const host=$('animationModeButtons');if(!host)return;
+  host.innerHTML='';
+  for(const [kind,group] of Object.entries(ANIMATION_GROUPS)){
+    const b=document.createElement('button');b.type='button';b.className='secondary anim-mode-btn';
+    b.dataset.kind=kind;b.textContent=group.label;
+    b.classList.toggle('active',animationFilterKind===kind);
+    b.addEventListener('click',()=>startPlayback(kind));
+    host.appendChild(b);
+  }
+  const stop=document.createElement('button');stop.type='button';stop.className='secondary';stop.textContent='정지';stop.addEventListener('click',stopPlayback);host.appendChild(stop);
+}
+function renderFrameButtonsForKind(kind=animationFilterKind){
+  animationFilterKind=ANIMATION_GROUPS[kind]?kind:'stand';
   const host=$('frameGrid');host.innerHTML='';
-  for(const frame of FRAMES){
+  for(const frame of FRAMES.filter(f=>f.kind===animationFilterKind)){
     const b=document.createElement('button');
     b.type='button';b.className='frame-btn';b.dataset.frame=frame.id;
     b.addEventListener('click',()=>{stopPlayback();selectFrame(frame.id)});
     host.appendChild(b);
   }
+  renderAnimationModeButtons();
+}
+function buildFrameButtons(){
+  renderFrameButtonsForKind('stand');
   const ref=$('referenceFrame');
   ref.innerHTML=FRAMES.map(f=>'<option value="'+f.id+'">'+f.label+'</option>').join('');
   ref.value='stand-01';
@@ -990,6 +1154,8 @@ function selectLayer(layer){
 function selectFrame(id){
   if(!frames.has(id))return;
   if(id!==currentFrame&&(sourceImage||pendingCatalogAsset))clearStamp();
+  const nextKind=frameRecord(id).kind;
+  if(nextKind!==animationFilterKind)renderFrameButtonsForKind(nextKind);
   currentFrame=id;selection=null;selectionStart=null;invalidatePixelPreview();refreshFrameButtons();
   if(sourceImage){autoFitStamp(false);pixelizePreview(false)}
   else render();
@@ -1485,15 +1651,26 @@ function copyPrevious(){
   snapshot();const dst=layerCtx(),src=layerCanvas(prev,activeLayer);dst.clearRect(0,0,SIZE,SIZE);dst.drawImage(src,0,0);setAssetMeta(currentFrame,activeLayer,assetMeta(prev,activeLayer));selection=null;afterEdit(prev+' → '+currentFrame+' '+partLabel(activeLayer)+' 복사');
 }
 
-function stopPlayback(){if(playTimer){clearInterval(playTimer);playTimer=0}}
+function stopPlayback(){
+  if(playTimer){clearTimeout(playTimer);clearInterval(playTimer);playTimer=0}
+  renderAnimationModeButtons();
+}
 function startPlayback(kind){
-  stopPlayback();const ids=FRAMES.filter(f=>f.kind===kind).map(f=>f.id);if(!ids.length)return;
-  let i=Math.max(0,ids.indexOf(currentFrame));selectFrame(ids[i]);const fps=kind==='walk'?6:2;
-  playTimer=setInterval(()=>{i=(i+1)%ids.length;selectFrame(ids[i])},1000/fps);
+  stopPlayback();
+  const group=ANIMATION_GROUPS[kind],items=FRAMES.filter(f=>f.kind===kind);if(!group||!items.length)return;
+  animationFilterKind=kind;renderFrameButtonsForKind(kind);
+  let i=frameRecord(currentFrame).kind===kind?Math.max(0,items.findIndex(f=>f.id===currentFrame)):0;
+  const step=()=>{
+    const frame=items[i];selectFrame(frame.id);
+    if(!group.loop&&i===items.length-1){playTimer=0;renderAnimationModeButtons();return}
+    const delay=Math.max(40,Number(frame.durationMs)||Math.round(1000/(group.fps||6)));
+    playTimer=setTimeout(()=>{i=(i+1)%items.length;step()},delay);
+  };
+  step();
 }
 
 function clearCurrent(){
-  if(activeLayer==='body')return setStatus('BODY는 아바타의 기준 바디라 비울 수 없습니다. 필요하면 BODY 7장 다시 불러오기를 사용하세요.',true);
+  if(activeLayer==='body')return setStatus('BODY는 아바타의 기준 바디라 비울 수 없습니다. 필요하면 BODY 전체 다시 만들기를 사용하세요.',true);
   if(!hasInk(layerCanvas()))return;
   if(!confirm(currentFrame+' '+activeLayer+' 레이어를 비울까요?'))return;
   snapshot();layerCtx().clearRect(0,0,SIZE,SIZE);setAssetMeta(currentFrame,activeLayer,null);selection=null;afterEdit('현재 파츠를 비움');
@@ -1558,6 +1735,7 @@ async function applyProject(project){
     }
   }
   history.clear();selection=null;
+  for(const layer of LAYERS)if(layer!=='body')seedDerivedFramesForLayer(layer,{force:false});
   if(missingBodyFrames().length)await repairMissingBodyFrames(false);
   rememberAllBodyFrames();refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
 }
@@ -1590,7 +1768,9 @@ function exportCurrentHair(){downloadCanvas(layerCanvas(currentFrame,'hair'),ass
 
 function manifestObject(){
   return {version:4,type:'kidscade-avatar-v3',canvas:[128,128],logicalRoot:[ROOT_X,82],groundY:GROUND_Y,facing:'left',mirrorForRight:true,
-    frameSets:{stand:['stand-01','stand-02'],walk:['walk-01','walk-02','walk-03','walk-04'],jump:['jump-01']},
+    frameSets:Object.fromEntries(Object.keys(ANIMATION_GROUPS).map(kind=>[kind,FRAMES.filter(f=>f.kind===kind).map(f=>f.id)])),
+    animationMeta:Object.fromEntries(Object.entries(ANIMATION_GROUPS).map(([kind,meta])=>[kind,{...meta,frames:FRAMES.filter(f=>f.kind===kind).map(f=>f.id)}])),
+    frameMeta:Object.fromEntries(FRAMES.map(f=>[f.id,{durationMs:f.durationMs||null,anchors:f.anchors||null,event:f.event||null,derived:!!f.derived}])),
     hairMode:'single',
     layerOrder:[...RENDER_ORDER],
     groups:{face:[...FACE_LAYERS],hair:[...HAIR_LAYERS],outfit:[...OUTFIT_LAYERS],accessories:[...ACCESSORY_LAYERS]},
@@ -1719,10 +1899,7 @@ function bind(){
 
   $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
-  $('playStand').addEventListener('click',()=>startPlayback('stand'));
-  $('playWalk').addEventListener('click',()=>startPlayback('walk'));
-  $('showJump').addEventListener('click',()=>{stopPlayback();selectFrame('jump-01')});
-  $('stopPlay').addEventListener('click',stopPlayback);
+  $('regenerateDerivedFrames')?.addEventListener('click',regenerateDerivedFrames);
 
   ['showReference','showDifference','showGrid','showBody','showFace','showHair','showClothes','showAccessories'].forEach(id=>$(id).addEventListener('change',render));
   $('referenceOpacity').addEventListener('input',render);$('referenceFrame').addEventListener('change',render);
