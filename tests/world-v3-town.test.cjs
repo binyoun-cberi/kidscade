@@ -14,6 +14,7 @@ const dailyLife=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily-
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
 const museum=fs.readFileSync(path.join(root,'world-v3','kidscade-world-museum.js'),'utf8');
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
+const landscape=fs.readFileSync(path.join(root,'world-v3','kidscade-world-landscape.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
 const interiorKit=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interior-kit.js'),'utf8');
@@ -26,7 +27,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,npcStyle,daily,dailyLife,interiors,museum,grid,economy,furnishing,interiorKit,audio]){
+  for(const src0 of [runtime,city,residents,npcStyle,daily,dailyLife,interiors,museum,grid,landscape,economy,furnishing,interiorKit,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -432,8 +433,8 @@ test('World v3 road-first grid keeps the core town plus museum district connecte
   assert.match(grid,/export const CELL_SIZE=20/);
   assert.match(grid,/export const ROAD_WIDTH=4/);
   assert.match(grid,/export const CELL_PITCH=CELL_SIZE\+ROAD_WIDTH/);
-  assert.match(grid,/CITY_BOUNDS=\{x1:-22,x2:22,z1:14,z2:58\}/);
-  for(const id of ['cityMarket','cityLeisure','cityCivic','cityTransit','museum'])assert.ok(grid.includes(id+':{id:'),'missing city square '+id);
+  assert.match(grid,/CITY_BOUNDS=\{x1:-22,x2:46,z1:14,z2:58\}/);
+  for(const id of ['cityMarket','cityLeisure','cityCivic','cityTransit','museum','residentialSouth','residentialNorth'])assert.ok(grid.includes(id+':{id:'),'missing city square '+id);
   assert.match(city,/city-road-mid-horizontal/);
   assert.match(city,/city-road-museum/);
   assert.match(city,/city-road-mid-vertical/);
@@ -445,6 +446,38 @@ test('World v3 road-first grid keeps the core town plus museum district connecte
   assert.doesNotMatch(city,/traffic-light\.glb/);
 });
 
+
+test('Seed World landscape visually connects nature districts and softens the rigid grid',()=>{
+  assert.match(runtime,/buildWorldLandscape\(\{parent:outdoor,addModel,box,plane\}\)/);
+  assert.match(runtime,/kidscade-world-landscape\.js\?v=1/);
+  assert.match(landscape,/bridge-wood-narrow\.glb/);
+  assert.match(landscape,/tree-palm-detailed-tall\.glb/);
+  assert.match(landscape,/tent-detailed-open\.glb/);
+  assert.match(landscape,/waterShape/);
+  assert.match(landscape,/softenedRoads:true/);
+  assert.match(landscape,/connectedRiver:true/);
+});
+
+test('east Seed Town has twelve real resident homes with doorstep lanes and pocket park',()=>{
+  assert.equal((city.match(/\['(?:minji|junho|haneul|taeho|yuna|woojin|seoyeon|hyunwoo|doyun|sora|nari|minseok)'/g)||[]).length>=12,true);
+  assert.match(city,/const homeDefs=\[/);
+  assert.match(city,/resident-home-/);
+  assert.match(city,/residentHomes\[id\]=door/);
+  assert.match(city,/residential-pocket-park/);
+  for(const id of ['minji','junho','haneul','taeho','yuna','woojin','seoyeon','hyunwoo','doyun','sora','nari','minseok']){
+    assert.ok(city.includes("'home-"+id+"':{...residentHomes."+id),'missing real home POI '+id);
+  }
+});
+
+test('world map is a spatial four-by-four map instead of a flat travel button list',()=>{
+  assert.match(runtime,/const WORLD_MAP_META=\{/);
+  assert.match(runtime,/const xs=\[-36,-12,12,36\],zs=\[48,24,0,-24\]/);
+  assert.match(runtime,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(runtime,/현재 위치/);
+  assert.match(runtime,/미발견 지역/);
+  assert.match(runtime,/residentialSouth:\{icon:'🏘️',travel:'residential'\}/);
+  assert.match(runtime,/residentialNorth:\{icon:'🌳',travel:'residentialNorth'\}/);
+});
 
 test('resident AI movement keeps interaction anchors attached inside the new city squares',()=>{
   assert.match(city,/interaction:null/);
@@ -678,8 +711,8 @@ test('World v3 has one authoritative 20x20 parcel plus 4m road grid',()=>{
   for(const spec of [
     ["beach",-36,-24],["waterfront",-12,-24],["ranch",12,-24],["orchard",36,-24],
     ["forest",-36,0],["home",-12,0],["farm",12,0],["quarry",36,0],
-    ["camp",-36,24],["cityMarket",-12,24],["cityLeisure",12,24],
-    ["museum",-36,48],["cityCivic",-12,48],["cityTransit",12,48]
+    ["camp",-36,24],["cityMarket",-12,24],["cityLeisure",12,24],["residentialSouth",36,24],
+    ["museum",-36,48],["cityCivic",-12,48],["cityTransit",12,48],["residentialNorth",36,48]
   ]){
     const [id,cx,cz]=spec;
     assert.ok(grid.includes(id+":{id:'"+id+"'"),'missing grid cell '+id);
