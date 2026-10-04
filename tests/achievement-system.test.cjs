@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const profiles = require('../game-outcome-profiles.js');
 
 test('achievement gallery is parseable and loaded by the lobby runtime', () => {
   const gallery = read('achievement-gallery.js');
@@ -67,9 +68,11 @@ test('all active catalog games have an achievement plan or an existing pilot set
     if (pilotIds.has(game.id)) continue;
     assert.equal(planIds.has(game.id), true, 'missing achievement plan: ' + game.id);
   }
-  assert.match(catalogSource, /completionSlot = slot === 'first_finish'/);
-  assert.match(catalogSource, /trigger: completionSlot \? 'completion_count' : ''/);
+  assert.match(catalogSource, /trigger:'metric'/);
+  assert.match(catalogSource, /metric:item\.metric/);
+  assert.doesNotMatch(catalogSource, /completion_count/);
   assert.doesNotMatch(catalogSource, /first_play/);
+  for (const game of games) assert.ok(profiles.getProfile(game.id), 'missing outcome profile: ' + game.id);
 });
 
 test('achievement catalog registers planned definitions without exposing unfinished ones', () => {
@@ -85,18 +88,21 @@ test('achievement catalog registers planned definitions without exposing unfinis
   };
   const fakeWindow = {
     KidscadeCatalog:{ games },
+    KidscadeGameProfiles:profiles,
     KidscadeAchievements:{ registerDefinitions(defs){ registered.push(...defs); return defs.length; } }
   };
   function FakeCustomEvent(type, init = {}) { this.type = type; this.detail = init.detail; }
   const run = new Function('window','document','CustomEvent','setInterval','clearInterval', catalogSource);
   run(fakeWindow, fakeDocument, FakeCustomEvent, () => 0, () => {});
   assert.equal(registered.length, 680);
-  assert.equal(registered.filter(def => def.enabled !== false).length, 423);
-  assert.equal(registered.filter(def => def.enabled === false).length, 257);
-  assert.equal(registered.filter(def => def.trigger === 'completion_count').length, 408);
-  assert.equal(registered.filter(def => def.trigger === 'first_play').length, 0);
-  assert.equal(registered.find(def => def.id === 'low_perfect_pitch.finisher_5').target, 5);
-  assert.equal(registered.find(def => def.id === 'low_perfect_pitch.finisher_20').target, 20);
+  assert.equal(registered.filter(def => def.enabled !== false).length, 287);
+  assert.equal(registered.filter(def => def.enabled === false).length, 393);
+  assert.equal(registered.filter(def => def.trigger === 'metric').length, 272);
+  assert.equal(registered.filter(def => def.trigger === 'completion_count').length, 0);
+  assert.equal(registered.find(def => def.id === 'high_seed_baseball.first_win').metric, 'wins');
+  assert.equal(registered.find(def => def.id === 'low_wordris.runs_10').target, 10);
+  assert.equal(registered.find(def => def.id === 'pixel_editor.creations_5').metric, 'creationsSaved');
+  assert.equal(registered.find(def => def.id === 'high_little_world.milestones_5').metric, 'uniqueMilestones');
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.mastery').enabled, true);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.secret').enabled, true);
   assert.equal(registered.find(def => def.id === 'high_twelve_island.mastery').enabled, false);
@@ -108,5 +114,6 @@ test('common launcher records visits for analytics without first-play achievemen
   const catalog = read('achievement-catalog.js');
   assert.match(launcher, /KidscadeAchievements\?\.recordPlayedGame\?\.\(gameId, startedAt\)/);
   assert.doesNotMatch(catalog, /first_play/);
-  assert.match(read('main-bootstrap.js'), /'achievement-catalog\.js',\s*'achievement-gallery\.js'/);
+  const bootstrap = read('main-bootstrap.js');
+  assert.match(bootstrap, /'game-outcome-profiles\.js',[\s\S]*'achievement-catalog\.js',\s*'achievement-gallery\.js'/);
 });
