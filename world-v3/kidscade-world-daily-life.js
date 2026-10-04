@@ -26,6 +26,11 @@ function rngFrom(seed){
   let x=(Number(seed)||1)>>>0;
   return ()=>{x+=0x6D2B79F5;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296};
 }
+function shuffle(list,rng){
+  const out=[...list];
+  for(let i=out.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[out[i],out[j]]=[out[j],out[i]]}
+  return out;
+}
 function shellMesh(){
   const g=new THREE.Group();
   const mat=new THREE.MeshStandardMaterial({color:0xf3b7a6,roughness:.78});
@@ -98,7 +103,7 @@ export async function createDailyLife(ctx){
     const p=prog(),daily=p.dailyWorld;
     if(Array.isArray(daily.requests)&&Number(daily.requestDay)===p.survival.day)return daily.requests;
     const rng=rngFrom(state?.requestSeed||state?.forageSeed||1),dev=getDevelopment?.()||{},pool=REQUEST_POOL.filter(x=>!x.needsFishing||Number(dev.fishingLevel)>0);
-    const shuffled=[...pool].sort(()=>rng()-.5),requests=[];
+    const shuffled=shuffle(pool,rng),requests=[];
     for(const def of shuffled){
       if(requests.length>=3)break;
       const count=def.count[0]+Math.floor(rng()*(def.count[1]-def.count[0]+1));
@@ -141,7 +146,7 @@ export async function createDailyLife(ctx){
     const beach=[[-43,-28],[-40,-20],[-36,-29],[-33,-19],[-29,-27],[-31,-23],[-42,-24]];
     const forest=[[-43,5],[-40,-5],[-36,6],[-33,-6],[-29,4],[-31,-1],[-41,0]];
     const sparkleSpots=[[-7,6],[7,7],[-29,29],[31,7],[-5,31],[20,-27]];
-    const take=(arr,count)=>[...arr].sort(()=>rng()-.5).slice(0,count).map(([x,z])=>({x:x+(rng()-.5)*1.2,z:z+(rng()-.5)*1.2}));
+    const take=(arr,count)=>shuffle(arr,rng).slice(0,count).map(([x,z])=>({x:x+(rng()-.5)*1.2,z:z+(rng()-.5)*1.2}));
     const shells=take(beach,3),mushrooms=take(forest,3),bottle=take(beach.filter(p=>!shells.some(s=>Math.hypot(s.x-p[0],s.z-p[1])<2)),1)[0]||{x:-36,z:-20},sp=take(sparkleSpots,1)[0];
     return {shells,mushrooms,bottle,sparkle:sp};
   }
