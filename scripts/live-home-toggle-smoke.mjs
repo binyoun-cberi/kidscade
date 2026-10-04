@@ -285,6 +285,23 @@ async function main() {
       'document.getElementById("btn-home-layout")?.dataset?.kcHomeLayoutBound === "1"',
       'Home layout toggle button was not bound.'
     );
+    await waitFor(
+      cdp,
+      `(() => {
+        const main = document.getElementById('main-app');
+        const button = document.getElementById('btn-home-layout');
+        if (!main || !button) return false;
+        const mainStyle = getComputedStyle(main);
+        const buttonStyle = getComputedStyle(button);
+        const rect = button.getBoundingClientRect();
+        return document.body.dataset.kidscadeNavigation === 'ready' &&
+          mainStyle.display !== 'none' &&
+          buttonStyle.display !== 'none' &&
+          buttonStyle.visibility !== 'hidden' &&
+          rect.width > 0 && rect.height > 0;
+      })()`,
+      'Main lobby/home-layout toggle did not become interactable.'
+    );
 
     const before = await state(cdp);
     await clickSelector(cdp, '#btn-home-layout');
