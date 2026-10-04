@@ -113,6 +113,24 @@ test('economy preserves investment, upgrades, tolls, takeovers, continent collec
   assert.match(game,/state\.festival/);
 });
 
+test('investment growth is visualized from local business to named landmark',()=>{
+  assert.match(game,/const LANDMARK_GLYPHS=\{/);
+  for(const id of ['KR','FR','EG','US','AU'])assert.match(game,new RegExp(id+":'"));
+  assert.match(game,/function renderInvestmentVisual\(node,c,inv\)/);
+  assert.match(game,/investment-visual level-/);
+  assert.match(game,/c\.build\[2\]/);
+  assert.match(game,/function triggerBuildFx\(countryId,level\)/);
+  assert.match(game,/triggerBuildFx\(c\.id,1\)/);
+  assert.ok((game.match(/triggerBuildFx\(c\.id,inv\.level\)/g)||[]).length>=2);
+  assert.match(game,/landmark-glyph/);
+  assert.match(game,/landmark-label/);
+  const css=read('games/korea_marble/world-marble.css');
+  assert.match(css,/\.investment-visual\.build-pop/);
+  assert.match(css,/@keyframes investmentRise/);
+  assert.match(css,/\.landmark-crown/);
+  assert.match(css,/prefers-reduced-motion/);
+});
+
 test('game reports bounded campaign results to Kidscade and supports local multiplayer plus CPUs',()=>{
   assert.match(game,/scope:'campaign',status:'completed'/);
   assert.match(game,/outcome/);
