@@ -291,7 +291,8 @@ function prog(){
     storageLevel:clampLevel(rawHome.storageLevel,1,4,1),
     wardrobeBuilt:rawHome.wardrobeBuilt===true,
     homeStorage:rawHome.homeStorage&&typeof rawHome.homeStorage==='object'?rawHome.homeStorage:{},
-    homeFoodStorage:rawHome.homeFoodStorage&&typeof rawHome.homeFoodStorage==='object'?rawHome.homeFoodStorage:{}
+    homeFoodStorage:rawHome.homeFoodStorage&&typeof rawHome.homeFoodStorage==='object'?rawHome.homeFoodStorage:{},
+    bookcaseReadDay:Math.max(0,Math.floor(Number(rawHome.bookcaseReadDay)||0))
   };
   p.orchard=p.orchard&&typeof p.orchard==='object'?p.orchard:{};
   p.orchard.trees=p.orchard.trees&&typeof p.orchard.trees==='object'?p.orchard.trees:{};
@@ -1258,6 +1259,13 @@ function sleep(){
   s.day+=1;s.time=420;
   persist();updateStatus();toast('아침까지 푹 쉬었어요. 체력이 회복됐어요.');
 }
+function restAtCamp(){
+  const p=prog(),s=p.survival;
+  if(s.hunger<4){toast('배가 너무 고파서 더 쉬어도 힘이 나지 않아요. 먼저 음식을 먹어보세요.');return false;}
+  p.energy=Math.min(p.maxEnergy,p.energy+18);s.hunger=Math.max(0,s.hunger-4);
+  const next=s.time+30;if(next>=1440)s.day+=1;s.time=next%1440;
+  persist();setAvatarAction('smile',750);toast('모닥불 곁에서 30분 쉬었어요. 체력 +18 · 허기 -4');updateStatus();return true;
+}
 let fishingBusy=false;
 function fish(place='pond'){
   const p=prog(),d=devState(),required=place==='beach'?3:place==='river'?2:1;
@@ -1714,7 +1722,7 @@ async function buildOutdoor(){
     await addModel(outdoor,ASSET.campfire,{x:c.x-1.5,z:c.z,w:1.7,h:.8,d:1.7,rot:0,name:'campfire'});
     const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(c.x-1.5,1.4,c.z);fireLight.userData.campfire=true;outdoor.add(fireLight);
     interact('outdoor',c.x-1.5,c.z,1.55,'야영지 모닥불 살펴보기',()=>toast('여기는 탐험 중 쉬어가는 공용 모닥불이에요. 요리는 집 앞에 직접 캠프파이어를 만들어서 해보세요.'));
-    interact('outdoor',c.x+1.3,c.z,1.5,'야영지에서 쉬기',()=>{const p=prog();p.energy=Math.min(p.maxEnergy,p.energy+18);p.survival.hunger=Math.max(0,p.survival.hunger-4);persist();setAvatarAction('smile',750);toast('모닥불 곁에서 잠깐 쉬었어요.');updateStatus();});
+    interact('outdoor',c.x+1.3,c.z,1.5,'야영지에서 쉬기',restAtCamp);
     for(const [dx,dz] of [[-7,-7],[-5,6],[6,-7],[7,6]])await addModel(outdoor,ASSET.pine,{x:c.x+dx,z:c.z+dz,w:2.4,h:4.0,d:2.4,rot:.2});
     await addZoneSign('camp',7.2,0,'야영지 · 모닥불 · 휴식',Math.PI/2);
   }
@@ -2178,8 +2186,9 @@ async function init(){
         setAvatarAction('smile',900);toast((key==='taehoRetroTv'?'레트로 게임을':'TV를')+' 즐겼어요. 재미 +'+funGain);return;
       }
       if(key==='soraBookcase'){
-        const p=prog(),t=townEconomy?.ensureState?.(p)||p.town;
-        p.energy=Math.min(p.maxEnergy,p.energy+3);if(t)t.fun=Math.min(100,(t.fun||0)+6);
+        const p=prog(),t=townEconomy?.ensureState?.(p)||p.town,day=p.survival.day;
+        if(p.homestead.bookcaseReadDay===day){toast('오늘은 이미 희귀 책을 충분히 읽었어요. 내일 다른 책을 펼쳐보세요.');return;}
+        p.homestead.bookcaseReadDay=day;p.energy=Math.min(p.maxEnergy,p.energy+3);if(t)t.fun=Math.min(100,(t.fun||0)+6);
         persist();updateStatus();setAvatarAction('smile',650);toast('희귀 책을 읽었어요. 체력 +3 · 재미 +6');return;
       }
     }
