@@ -13,7 +13,7 @@ const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.j
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\\.js\\?v=43/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=43/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -92,11 +92,11 @@ test('skin recoloring uses the registered exact BODY palette instead of color gu
   assert.equal(skin.sourcePalette.length,8);
   assert.deepEqual(skin.sourcePalette.map(item=>item.source),['#fce2d2','#fac8b7','#d1b0ac','#cb9790','#9e7270','#9d8185','#805e61','#7b5053']);
   assert.deepEqual(skin.sourcePalette.map(item=>item.shade),[1,.94,.85,.79,.68,.71,.62,.58]);
-  assert.match(js,/function loadSkinPalette\\(\\)/);
-  assert.match(js,/config\\.sourcePalette/);
-  assert.match(js,/targetRgb\\.map\\(value=>Math\\.max\\(0,Math\\.min\\(255,Math\\.round\\(value\\*src\\.shade\\)\\)\\)\\)/);
-  assert.match(js,/remap\\.get\\(colorKey\\(data\\[i\\],data\\[i\\+1\\],data\\[i\\+2\\]\\)\\)/);
-  assert.doesNotMatch(js,/isLikelySkin|getImageData\\(40,22,50,52\\)|rgbToHsl|hslToRgb/);
+  assert.match(js,/function loadSkinPalette\(\)/);
+  assert.match(js,/config\.sourcePalette/);
+  assert.match(js,/targetRgb\.map\(value=>Math\.max\(0,Math\.min\(255,Math\.round\(value\*src\.shade\)\)\)\)/);
+  assert.match(js,/remap\.get\(colorKey\(data\[i\],data\[i\+1\],data\[i\+2\]\)\)/);
+  assert.doesNotMatch(js,/isLikelySkin|getImageData\(40,22,50,52\)|rgbToHsl|hslToRgb/);
 });
 
 test('skin color persists in the v3 avatar state and reset returns to original tone',()=>{
