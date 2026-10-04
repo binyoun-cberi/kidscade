@@ -88,6 +88,21 @@ test('nudge and drawing controls remain available',()=>{
   assert.match(js,/function nudgeCurrent\(dx,dy\)/);
 });
 
+test('whole-part pixel scaling controls resize the active layer with nearest-neighbor rendering',()=>{
+  for(const id of ['partSizeStatus','scalePartDown1','scalePartUp1','scalePartDown5','scalePartUp5','scalePartWidthDown','scalePartWidthUp','scalePartHeightDown','scalePartHeightUp']){
+    assert.ok(html.includes('id="'+id+'"'));
+  }
+  assert.match(js,/function resizeActiveLayer\(/);
+  assert.match(js,/function partScaleAnchor\(/);
+  assert.match(js,/function refreshPartSizeStatus\(/);
+  assert.ok(js.includes("const bottomAnchored=['body','lower','shoes'].includes(layer)"));
+  assert.ok(js.includes('c.imageSmoothingEnabled=false'));
+  assert.ok(js.includes("resizeActiveLayer({uniformPixels:-1})"));
+  assert.ok(js.includes("resizeActiveLayer({factor:1.05})"));
+  assert.ok(js.includes("resizeActiveLayer({dw:-1})"));
+  assert.ok(js.includes("resizeActiveLayer({dh:1})"));
+});
+
 test('studio exports runtime bundle',()=>{
   for(const id of ['exportCurrent','exportComposite','exportManifest','exportBundle']){
     assert.ok(html.includes('id="'+id+'"'));
