@@ -304,3 +304,19 @@ test('BODY reference v2 exports timing anchors and action events',()=>{
   assert.ok(js.includes("event:'hit'"));
   assert.ok(js.includes("event:'pickup'"));
 });
+
+
+test('full-avatar source edits refresh omitted derived action frames',()=>{
+  assert.ok(js.includes('sourceTouchedLayers=new Set()'));
+  assert.ok(js.includes('explicitDerivedByLayer=new Map()'));
+  assert.ok(js.includes('for(const layer of sourceTouchedLayers)'));
+  assert.ok(js.includes('seedDerivedFramesForLayer(layer,{force:true,skipIds:explicitDerivedByLayer.get(layer)||new Set()})'));
+});
+
+test('part analysis exposes action timing anchors and derived state',()=>{
+  assert.ok(js.includes('durationMs:frame.durationMs||null'));
+  assert.ok(js.includes('anchors:frame.anchors||null'));
+  assert.ok(js.includes('event:frame.event||null'));
+  assert.ok(js.includes('derived:!!frame.derived'));
+  assert.ok(js.includes('For best quality, explicitly provide action-frame pixels'));
+});
