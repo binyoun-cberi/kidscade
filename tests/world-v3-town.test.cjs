@@ -223,10 +223,10 @@ test('walk-in venues keep social loops, animated merchants, themed density and b
 
 test('shop interior props keep service items off the floor and away from cutaway walls',()=>{
   assert.match(interiors,/VENUE_BOUNDS=\{x1:-5\.15,x2:5\.15,z1:-3\.62,z2:3\.62\}/);
-  assert.match(interiors,/cash-register\.glb'\),?\{x:3\.18,y:\.94[\s\S]*name:'market-register'/);
-  assert.match(interiors,/coffee-machine\.glb'\),?\{x:1\.85,y:\.91[\s\S]*name:'cafe-coffee-machine'/);
-  assert.match(interiors,/cash-register\.glb'\),?\{x:\.70,y:\.91[\s\S]*name:'cafe-register'/);
-  assert.match(interiors,/cookie-jar\.glb'\),?\{x:-1\.88,y:\.92[\s\S]*name:'cafe-cookie-jar'/);
+  assert.ok(interiors.includes("MARKET+'cash-register.glb',{x:3.18,y:.94,z:1.48"),'market register must sit on the counter');
+  assert.ok(interiors.includes("BAKERY+'coffee-machine.glb',{x:1.85,y:.91,z:-2.05"),'coffee machine must sit on the counter');
+  assert.ok(interiors.includes("BAKERY+'cash-register.glb',{x:.70,y:.91,z:-2.05"),'cafe register must sit on the counter');
+  assert.ok(interiors.includes("BAKERY+'cookie-jar.glb',{x:-1.88,y:.92,z:-1.75"),'cafe small props must sit on furniture');
   assert.doesNotMatch(interiors,/x:4\.35,z:2\.65/);
   assert.doesNotMatch(interiors,/resource-wood\.glb/);
 });
