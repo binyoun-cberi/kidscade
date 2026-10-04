@@ -33,12 +33,14 @@ test('second shrine room requires the exact voxel build shown by the diagram',()
   assert.match(js,/겨냥도를 보고 똑같이 쌓기/);
 });
 
-test('voxel controls physically toggle the central puzzle model',()=>{
-  assert.match(js,/targetKind==='shrineVoxel'/);
+test('players directly touch voxel sockets to change the central puzzle model',()=>{
+  assert.match(js,/targetKind:'shrineCell'/);
+  assert.match(js,/data\.targetKind==='shrineVoxel'\|\|data\.targetKind==='shrineCell'/);
   assert.match(js,/dungeonSetVoxel\(stage,data\.voxelKey,on\)/);
   assert.match(js,/renderDungeonVoxelPuzzle\(stage,theme\)/);
   assert.match(js,/new THREE\.BoxGeometry\(\.76,\.76,\.76\)/);
   assert.match(js,/wireframe:true/);
+  assert.match(js,/new THREE\.TorusGeometry\(1\.55,\.045,8,40\)/);
 });
 
 test('third shrine room offers spatial net candidates and visibly folds them',()=>{
