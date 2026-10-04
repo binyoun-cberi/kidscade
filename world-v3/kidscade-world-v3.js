@@ -7,8 +7,8 @@ import {createDailyLife} from './kidscade-world-daily-life.js?v=2';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=4';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=19';
-import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=9';
-import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=1';
+import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
+import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=4';
 
