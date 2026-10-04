@@ -28,7 +28,7 @@ test('auto updater polls gently and waits for lobby-safe application', () => {
   assert.match(source, /kc_update/);
 });
 
-test('index keeps one bootstrap entrypoint and runtime scripts load after composition', () => {
+test('index keeps one bootstrap entrypoint and composed runtime scripts execute before the lobby controller', () => {
   assert.match(index, /meta name="kidscade-build" content="__KIDSCADE_BUILD__"/);
   assert.match(index, /main-bootstrap\.js\?v=__KIDSCADE_BUILD__/);
   assert.doesNotMatch(index, /auto-update\.js\?v=__KIDSCADE_BUILD__/);
@@ -39,7 +39,7 @@ test('index keeps one bootstrap entrypoint and runtime scripts load after compos
   }
   assert.match(bootstrap, /meta name="kidscade-build"/);
   assert.match(bootstrap, /escapeHtml\(RUNTIME_VERSION\)/);
-  assert.match(bootstrap, /<scr' \+ 'ipt defer src=/);
+  assert.match(bootstrap, /<scr' \+ 'ipt src=/);\n  assert.doesNotMatch(bootstrap, /<scr' \+ 'ipt defer src=/);\n  assert.match(bootstrap, /insertBeforeLobbyRuntime/);
 });
 
 test('Cloudflare build emits a no-cache static version manifest', () => {
