@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=19';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=20';
+import {createDailyDirector} from './kidscade-world-daily.js?v=1';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=17';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
@@ -1762,7 +1763,8 @@ async function buildOutdoor(){
       enterVenue:kind=>enterVenue(kind)
     },
     getGameTime:()=>prog().survival.time,
-    getPlayerPosition:()=>({x:player.x,z:player.z})
+    getPlayerPosition:()=>({x:player.x,z:player.z}),
+    getDailyState:()=>dailyDirector?.state?.()||null
   });
 }
 
@@ -2056,8 +2058,9 @@ function updateStatus(){
   const hunger=Math.max(0,Math.min(100,Number(s.hunger)||0));
   const fun=Math.max(0,Math.min(100,Number(t.fun)||0));
   const phase=isNightTime(s.time)?'밤':'낮';
-  if(statusClockEl)statusClockEl.textContent='Day '+s.day+' · '+clockText(s.time);
-  if(statusPhaseEl)statusPhaseEl.textContent=(phase==='밤'?'🌙 ':'☀ ') + phase;
+  const weather=dailyDirector?.weather?.();
+  if(statusClockEl){statusClockEl.textContent='Day '+s.day+' · '+clockText(s.time)+(weather?' · '+weather.icon:'');statusClockEl.title=dailyDirector?.summary?.()||'';}
+  if(statusPhaseEl)statusPhaseEl.textContent=(phase==='밤'?'🌙 ':'☀ ') + phase+(weather?' · '+weather.label:'');
   if(coinCountEl)coinCountEl.textContent='🪙 '+Math.round(Number(t.coins)||0);
   if(seedCountEl){seedCountEl.textContent='🌱 '+(Bridge?.readSeeds?.()||0);seedCountEl.title='씨앗마을 '+'⭐'.repeat(villageStars());}
   if(funCountEl)funCountEl.textContent='🙂 '+Math.round(fun);
@@ -2107,8 +2110,11 @@ function updateSurvival(dt,moving){
   sun.intensity=.45+daylight*2.95;
   hemi.intensity=.55+daylight*1.45;
   const dayColor=new THREE.Color(0xb9d8ee),nightColor=new THREE.Color(0x17243d);
-  const sky=nightColor.clone().lerp(dayColor,daylight);
-  scene.background.copy(sky);scene.fog.color.copy(sky);renderer.setClearColor(sky,1);
+  if(dailyDirector)dailyDirector.applyLighting({daylight,dayColor,nightColor,sun,hemi,scene,renderer});
+  else{
+    const sky=nightColor.clone().lerp(dayColor,daylight);
+    scene.background.copy(sky);scene.fog.color.copy(sky);renderer.setClearColor(sky,1);
+  }
   outdoor.traverse(o=>{if(o.isPointLight&&o.userData?.campfire)o.intensity=night?2.4:.35;});
   survivalUiClock+=dt;if(survivalUiClock>.45){survivalUiClock=0;updateStatus();}
 }
@@ -2120,7 +2126,7 @@ function resize(){
 }
 addEventListener('resize',resize);resize();
 
-let townEconomy=null,cityRuntime=null,furnishingSystem=null,venueInteriors=null;
+let townEconomy=null,cityRuntime=null,furnishingSystem=null,venueInteriors=null,dailyDirector=null;
 let last=performance.now(),saveClock=0,wasInCity=false;
 function tick(now){
   requestAnimationFrame(tick);
@@ -2156,6 +2162,7 @@ function tick(now){
   applyAvatarMotion(now,moving);
   updatePets(now,dt);
   furnishingSystem?.updatePreview?.();
+  dailyDirector?.update?.(now,dt,player,prog().survival.day);
   cityRuntime?.update?.(now,dt);
 
   const off=mode==='outdoor'?new THREE.Vector3(10.5,13.5,13.5):new THREE.Vector3(8.0,10.2,10.0);
@@ -2219,6 +2226,24 @@ async function init(){
     enterVenue,getVenue:()=>activeVenue
   });
   townEconomy.ensureState(prog());
+  dailyDirector=createDailyDirector({
+    parent:outdoor,prog,persist,
+    onDayStart:state=>{
+      const p=prog();let watered=0;
+      if(state.weather==='rain'){
+        for(const crop of Object.values(p.crops||{})){
+          const def=CROP_DEF[crop?.type];
+          if(crop?.phase!=='planted'||!def)continue;
+          crop.phase='growing';crop.readyAt=Date.now()+def.growMs;watered++;
+        }
+        if(watered)updateCropVisuals();
+      }
+      persist();updateStatus();
+      const weather=dailyDirector?.weather?.();
+      const extra=watered?' · 밭 '+watered+'칸에 빗물이 스며들었어요.':'';
+      setTimeout(()=>toast((weather?.icon||'🌤️')+' 새로운 아침 · '+(weather?.label||'맑음')+extra),320);
+    }
+  });
   // Persist one-time v3.22 starter-world migration before any later refresh/reload.
   persist();
   syncCosmeticAura();
