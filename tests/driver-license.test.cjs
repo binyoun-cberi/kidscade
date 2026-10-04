@@ -237,7 +237,7 @@ test('Driver License v17 requires the T-parking confirmation line',()=>{
   assert.match(js,/parkingSensorSeen/);
   assert.match(js,/확인선 감지/);
   assert.match(js,/parkingReverseSeen&&parkingSensorSeen&&kmh<\.7/);
-  assert.match(js,/line\(5\.45,\.24,42,36\.6,0x46d9ff/);
+  assert.match(js,/parkingSensorLine=line\(5\.45,\.24,42,36\.6,0xffffff,\.185\)/);
 });
 
 test('Driver License v17 suppresses coaching text during exam mode',()=>{
