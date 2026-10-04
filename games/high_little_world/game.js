@@ -12,6 +12,7 @@ const ui={
 };
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('high_little_world','world')||'kidscade_game_v1:high_little_world:world';
 const ROOT='../../assets/game/';
+const ROOT_SHARED='../../assets/';
 const ASSET={
   tree:ROOT+'3d/nature/kenney-nature-kit/tree-default.glb',
   oak:ROOT+'3d/nature/kenney-nature-kit/tree-oak.glb',
@@ -20,7 +21,16 @@ const ASSET={
   humanA:ROOT+'characters/people/character-male-a.glb',
   humanB:ROOT+'characters/people/character-female-b.glb',
   house:ROOT+'3d/city/kenney-city-kit-suburban/building-type-a.glb',
-  hall:ROOT+'3d/city/kenney-city-kit-suburban/building-type-f.glb'
+  hall:ROOT+'3d/city/kenney-city-kit-suburban/building-type-f.glb',
+  barn:ROOT_SHARED+'quaternius_cc0-barn-666.glb',
+  coop:ROOT_SHARED+'quaternius_cc0-chicken-coop-819.glb',
+  cow:ROOT_SHARED+'quaternius_cc0-cow-881.glb',
+  pig:ROOT_SHARED+'quaternius_cc0-pig-1226.glb',
+  well:ROOT_SHARED+'quaternius_cc0-well-1471.glb',
+  windmill:ROOT_SHARED+'quaternius_cc0-windmill-1504.glb',
+  wheat:ROOT_SHARED+'quaternius_cc0-wheat-1478.glb',
+  corn:ROOT_SHARED+'quaternius_cc0-corn-866.glb',
+  rice:ROOT_SHARED+'quaternius_cc0-rice-1294.glb'
 };
 const POWERS={
   raise:{icon:'⛰️',label:'땅 올리기'},lower:{icon:'🕳️',label:'땅 내리기'},inspect:{icon:'🔎',label:'살펴보기'},
@@ -93,12 +103,39 @@ function rebuildAnimals(){
 function makeFallbackHouse(level){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(.82,.55,.75),new THREE.MeshStandardMaterial({color:level>=2?0xc58f63:0x9b765d,roughness:.9}));body.position.y=.28;const roof=new THREE.Mesh(new THREE.ConeGeometry(.62,.4,4),new THREE.MeshStandardMaterial({color:0x704d3a,roughness:.9}));roof.position.y=.72;roof.rotation.y=Math.PI/4;g.add(body,roof);return g;
 }
+function addVillageProp(key,base,c,dx,dz,size,rotation=0){
+  const o=normalizedClone(loaded[key],size);if(!o)return;
+  o.position.x+=base.x+dx;o.position.z+=base.z+dz;o.position.y+=groundTop(c);o.rotation.y=rotation;villageGroup.add(o);
+}
 function rebuildVillages(){
   clearGroup(villageGroup);mixers.length=0;
   for(const s of sim.settlements){
     const c=sim.get(s.x,s.z);if(!c)continue;const base=worldPos(c),houses=Math.min(8,1+s.level*2+Math.floor(s.pop/24));
-    for(let i=0;i<houses;i++){const a=i/houses*Math.PI*2,r=.6+Math.floor(i/4)*.45,key=s.level>=3&&i===0?'hall':'house',o=normalizedClone(loaded[key],s.level>=3&&i===0?1.28:.9)||makeFallbackHouse(s.level);o.position.x+=base.x+Math.cos(a)*r;o.position.z+=base.z+Math.sin(a)*r;o.position.y+=groundTop(c);o.rotation.y=-a+Math.PI/2;villageGroup.add(o)}
-    const people=Math.min(3,1+s.level);for(let i=0;i<people;i++){const gltf=loaded[i%2?'humanB':'humanA'],o=normalizedClone(gltf,.72,true);if(!o)continue;const a=i/Math.max(1,people)*Math.PI*2;o.position.x+=base.x+Math.cos(a)*1.18;o.position.z+=base.z+Math.sin(a)*1.18;o.position.y+=groundTop(c);o.rotation.y=-a;villageGroup.add(o);const clips=gltf?.animations||[],clip=clips.find(q=>/idle|stand/i.test(q.name))||clips[0];if(clip){const mixer=new THREE.AnimationMixer(o);mixer.clipAction(clip).play();mixers.push(mixer)}}
+    for(let i=0;i<houses;i++){
+      const a=i/houses*Math.PI*2,r=.6+Math.floor(i/4)*.45,key=s.level>=3&&i===0?'hall':'house';
+      const o=normalizedClone(loaded[key],s.level>=3&&i===0?1.28:.9)||makeFallbackHouse(s.level);
+      o.position.x+=base.x+Math.cos(a)*r;o.position.z+=base.z+Math.sin(a)*r;o.position.y+=groundTop(c);o.rotation.y=-a+Math.PI/2;villageGroup.add(o);
+    }
+    if(s.level>=1){
+      const cropKey=c.moisture>.62?'rice':c.moisture>.42?'wheat':'corn';
+      for(let i=0;i<4;i++)addVillageProp(cropKey,base,c,-1.15+i*.38,1.32+(i%2)*.22,.32,(i%2)*.12);
+    }
+    if(s.level>=2){
+      addVillageProp('barn',base,c,1.55,1.15,1.18,-.4);
+      addVillageProp('cow',base,c,1.72,.12,.56,.65);
+      addVillageProp('pig',base,c,1.18,-.28,.48,-.55);
+    }
+    if(s.level>=3){
+      addVillageProp('well',base,c,-1.55,.72,.62,.2);
+      addVillageProp('windmill',base,c,-1.72,-1.12,1.26,.35);
+      addVillageProp('coop',base,c,1.72,-1.15,.72,-.25);
+    }
+    const people=Math.min(3,1+s.level);
+    for(let i=0;i<people;i++){
+      const gltf=loaded[i%2?'humanB':'humanA'],o=normalizedClone(gltf,.72,true);if(!o)continue;
+      const a=i/Math.max(1,people)*Math.PI*2;o.position.x+=base.x+Math.cos(a)*1.18;o.position.z+=base.z+Math.sin(a)*1.18;o.position.y+=groundTop(c);o.rotation.y=-a;villageGroup.add(o);
+      const clips=gltf?.animations||[],clip=clips.find(q=>/idle|stand/i.test(q.name))||clips[0];if(clip){const mixer=new THREE.AnimationMixer(o);mixer.clipAction(clip).play();mixers.push(mixer)}
+    }
   }
 }
 function rebuildFx(){
