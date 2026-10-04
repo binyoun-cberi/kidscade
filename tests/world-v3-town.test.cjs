@@ -15,6 +15,7 @@ const museum=fs.readFileSync(path.join(root,'world-v3','kidscade-world-museum.js
 const grid=fs.readFileSync(path.join(root,'world-v3','kidscade-world-grid.js'),'utf8');
 const economy=fs.readFileSync(path.join(root,'world-v3','kidscade-world-economy.js'),'utf8');
 const furnishing=fs.readFileSync(path.join(root,'world-v3','kidscade-world-furnishing.js'),'utf8');
+const interiorKit=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interior-kit.js'),'utf8');
 const audio=fs.readFileSync(path.join(root,'world-v3','kidscade-world-audio.js'),'utf8');
 const storage=fs.readFileSync(path.join(root,'world-v2','kidscade-world-storage.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf8');
@@ -24,7 +25,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,museum,grid,economy,furnishing,audio]){
+  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,museum,grid,economy,furnishing,interiorKit,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -157,18 +158,22 @@ test('Seed World uses Quaternius staged crops and distinct CC0 town buildings',(
   }
 });
 
-test('home interior uses CC0 bakery and restaurant assets without changing furniture behavior keys',()=>{
+test('home interior kit uses tracked architecture plus bakery and restaurant assets without changing furniture behavior keys',()=>{
   for(const file of ['stove-multi-decorated.glb','kitchencounter-sink-backsplash.glb','kitchencounter-straight-a-decorated.glb','fridge-a-decorated.glb']){
     assert.ok(furnishing.includes(file),'functional kitchen asset not wired '+file);
     assert.ok(fs.existsSync(path.join(root,'assets','game','3d','bakery','restaurant-bits',file)),'missing kitchen asset '+file);
   }
-  for(const file of ['curtains.glb','rug.glb','wall-shelf-bakery-a.glb','wall-shelf-bakery-b.glb']){
-    assert.ok(runtime.includes(file),'home decor not wired '+file);
+  for(const file of ['wall-window-slide.glb','rug-doormat.glb','lamp-wall.glb']){
+    assert.ok(interiorKit.includes(file),'home architecture not wired '+file);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing home architecture '+file);
+  }
+  for(const file of ['curtains.glb','wall-shelf-bakery-a.glb','wall-shelf-bakery-b.glb']){
+    assert.ok(interiorKit.includes(file),'home decor not wired '+file);
     assert.ok(fs.existsSync(path.join(root,'assets','game','3d','bakery','interior',file)),'missing home decor '+file);
   }
   for(const key of ['kitchenStove','kitchenSink','kitchenCabinet','kitchenFridge'])assert.ok(furnishing.includes(key),'functional key changed '+key);
-  assert.match(runtime,/indoorLevel2Decor\.visible=d\.houseLevel>=2/);
-  assert.match(runtime,/indoorLevel3Decor\.visible=d\.houseLevel>=3/);
+  assert.match(runtime,/homeInteriorRuntime\?\.setLevel/);
+  assert.match(interiorKit,/addKitchenInset/);
 });
 
 test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
@@ -273,6 +278,7 @@ test('Seed Town is connected into the continuous World v3 map and current cache'
   assert.match(runtime,/kidscade-world-grid\.js\?v=\d+/);
   assert.match(runtime,/kidscade-world-economy\.js\?v=\d+/);
   assert.match(runtime,/kidscade-world-furnishing\.js\?v=\d+/);
+  assert.match(runtime,/kidscade-world-interior-kit\.js\?v=\d+/);
   assert.match(runtime,/kidscade-world-audio\.js\?v=\d+/);
   const runtimeVersion=html.match(/kidscade-world-v3\.js\?v=(\d+)/)?.[1];
   const integrationVersion=integration.match(/world-v3\/kidscade-world\.html\?v=(\d+)/)?.[1];
@@ -304,6 +310,7 @@ test('World v3 furnishing supports persistent craft buy place rotate move and st
   assert.match(furnishing,/data-furnish-confirm/);
   assert.match(furnishing,/data-furnish-cancel/);
   assert.match(furnishing,/data-furn-move/);
+  assert.match(furnishing,/data-furn-wallfit/);
   assert.match(furnishing,/data-furn-store/);
   assert.match(furnishing,/starterGiftClaimed/);
   for(const file of ['chair.glb','side-table.glb','potted-plant.glb','bookcase-open-low.glb','table-coffee.glb','lounge-chair.glb','rug-round.glb','lamp-round-floor.glb','bear.glb','television-modern.glb']){
