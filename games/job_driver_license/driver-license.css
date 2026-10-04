@@ -488,3 +488,11 @@ body{
   .stalk,.small-control{width:33px;height:27px;font-size:7px}
   #parkingBrake{width:33px}
 }
+
+.course-note{
+  margin-top:-7px!important;
+  margin-bottom:12px!important;
+  font-size:10px!important;
+  color:#78909a!important;
+  font-weight:700!important;
+}
