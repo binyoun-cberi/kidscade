@@ -712,7 +712,7 @@ function resolve(a,b){
  const recipe=findRecipe(a,b);
  if(recipe){craftRecipe(a,b,recipe);return;}
  const worker=isWorker(a.type)?a:(isWorker(b.type)?b:null);
- if(worker){const node=worker.id===a.id?b:a;const act=workerAction(worker,node);if(act){runAction(worker,node,act);return;}}
+ if(worker){const node=worker.id===a.id?b:a;const act=workerAction(worker,node);if(act?.blocked){separate(worker,node);return;}if(act){runAction(worker,node,act);return;}}
  const special=specialAction(a,b);if(special){runSpecial(a,b,special);return;}
  showToast('이 조합은 아직 쓸 방법을 찾지 못했어요.');separate(a,b);
 }
@@ -773,7 +773,7 @@ function craftRecipe(a,b,r){
 
 function workerAction(worker,node){
  const clue=clueWorkerAction(worker,node);if(clue)return clue;
- const nature=natureWorkerAction(worker,node);if(nature){if(nature.blocked)return null;tutorialEvent('assigned_explore',{worker,node});return nature;}
+ const nature=natureWorkerAction(worker,node);if(nature){if(nature.blocked)return nature;tutorialEvent('assigned_explore',{worker,node});return nature;}
  const base={
   smallTree:{ms:4800,label:'나뭇가지 모으는 중',out:[['branch',1]],life:'hunt'},
   berryBush:{ms:5200,label:'열매 따는 중',out:[['berry',1]],life:'hunt'},
