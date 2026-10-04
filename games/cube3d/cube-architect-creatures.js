@@ -24,7 +24,7 @@ const SPECIES={
   zombie:{id:'zombie',name:'밤 좀비',kind:'hostile',biomes:['meadow','forest'],asset:'zombie',hp:4,speed:.78,radius:9,nocturnal:true,damage:1,respawn:105,spawnCap:1,reward:{charcoal:1}},
   wizard:{id:'wizard',name:'황야 마법사',kind:'hostile',biomes:['pine','badlands'],asset:'wizard',hp:5,speed:.76,radius:11,nocturnal:true,damage:2,respawn:145,spawnCap:1,reward:{quartz:1}},
   demon:{id:'demon',name:'황야 악마',kind:'hostile',biomes:['badlands'],asset:'demon',hp:7,speed:.92,radius:12,nocturnal:true,damage:2,respawn:190,spawnCap:1,reward:{charcoal:2,ironOre:1}},
-  giant:{id:'giant',name:'거인',kind:'hostile',biomes:['badlands','snow'],asset:'giant',hp:9,speed:.62,radius:13,damage:2,respawn:240,spawnCap:1,reward:{stone:4,ironOre:1},elite:true},
+  giant:{id:'giant',name:'거인',kind:'hostile',biomes:['badlands','snow'],asset:'giant',hp:9,speed:.62,radius:13,nocturnal:true,damage:2,respawn:240,spawnCap:1,reward:{stone:4,ironOre:1}},
   skeleton:{id:'skeleton',name:'해골 병사',kind:'hostile',biomes:['badlands','desert'],asset:'skeleton',hp:4,speed:1.02,radius:10,nocturnal:true,damage:1,respawn:110,spawnCap:1,reward:{charcoal:1,stone:1}},
   yeti:{id:'yeti',name:'설원 예티',kind:'hostile',biomes:['snow'],asset:'yeti',hp:6,speed:.86,radius:11,damage:2,respawn:160,spawnCap:1,reward:{snow:4,stone:2}},
   cubeGolem:{id:'cubeGolem',name:'큐브 골렘',kind:'hostile',biomes:['badlands'],asset:'golem',hp:9,speed:.82,radius:12,damage:2,respawn:300,spawnCap:1,reward:{stone:5,ironOre:1},elite:true}
