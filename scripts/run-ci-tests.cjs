@@ -84,6 +84,7 @@ const TEST_FILES = [
   "tests/game-filenames.test.cjs",
   "tests/recommendations.test.cjs",
   "tests/home-v2.test.cjs",
+  "tests/lobby-recovery.test.cjs",
   "tests/garden.test.cjs",
   "tests/world-v3-hud.test.cjs",
   "tests/world-v3-progression.test.cjs",
