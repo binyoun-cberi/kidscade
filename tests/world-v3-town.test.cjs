@@ -127,6 +127,28 @@ test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
   assert.match(interiors,/actions\.shop\('cafe','하늘'\)/);
 });
 
+test('walk-in venues keep merchant social loops, warm lights, lazy assets and bounded cafe rest',()=>{
+  assert.match(interiors,/const built=new Set\(\),buildPromises=\{\}/);
+  assert.match(interiors,/async function show\(kind\)/);
+  assert.match(interiors,/AmbientLight/);
+  assert.match(interiors,/PointLight/);
+  for(const id of ['minji','junho','haneul'])assert.ok(interiors.includes("actions.resident('"+id+"')"),'missing interior resident '+id);
+  assert.match(economy,/residentServiceLabel/);
+  assert.match(economy,/getVenue\?\.\(\)===r\.service/);
+  assert.match(economy,/enterVenue\(r\.service\)/);
+  assert.match(economy,/function cafeRest\(\)/);
+  assert.match(economy,/cafeRestDay===day/);
+  assert.match(runtime,/enterVenue,getVenue:\(\)=>activeVenue/);
+  assert.match(runtime,/cafeRest:\(\)=>townEconomy\?\.cafeRest\?\.\(\)/);
+});
+
+test('fishing cannot queue multiple delayed catches from rapid input',()=>{
+  assert.match(runtime,/let fishingBusy=false/);
+  assert.match(runtime,/if\(fishingBusy\)/);
+  assert.match(runtime,/fishingBusy=true/);
+  assert.match(runtime,/finally\{fishingBusy=false\}/);
+});
+
 test('town economy supports shopping selling jobs delivery leisure services schedules and friendship',()=>{
   assert.match(economy,/const BUY=/);
   assert.match(economy,/const SELL=/);
