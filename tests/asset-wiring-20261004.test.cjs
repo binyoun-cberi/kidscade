@@ -13,7 +13,7 @@ test('Seed World wires the expanded staged crop pack without a second mushroom i
   }
   assert.ok(js.includes("mushroom:['Mushroom_1.fbx'"));
   assert.doesNotMatch(js,/mushroomCrop/);
-  assert.match(read('world-v3/kidscade-world.html'),/kidscade-world-v3\.js\?v=45/);
+  assert.match(read('world-v3/kidscade-world.html'),/kidscade-world-v3\.js\?v=46/);
 });
 
 test('Little World turns settlement levels into visible farms and village infrastructure',()=>{
