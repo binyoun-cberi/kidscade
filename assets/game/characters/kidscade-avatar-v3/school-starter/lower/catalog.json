@@ -1,0 +1,280 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-catalog",
+  "layer": "lower",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "basic-school-uniform-lower-01",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "sourcePalette": [
+    [
+      34,
+      48,
+      71,
+      255
+    ],
+    [
+      52,
+      73,
+      98,
+      255
+    ]
+  ],
+  "frameBounds": {
+    "stand-01": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "stand-02": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "walk-01": [
+      57,
+      90,
+      77,
+      102
+    ],
+    "walk-02": [
+      57,
+      90,
+      77,
+      102
+    ],
+    "walk-03": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "walk-04": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "jump-01": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "attack-01": [
+      55,
+      90,
+      77,
+      102
+    ],
+    "attack-02": [
+      58,
+      90,
+      80,
+      103
+    ],
+    "attack-03": [
+      55,
+      90,
+      76,
+      102
+    ],
+    "attack-04": [
+      49,
+      89,
+      70,
+      103
+    ],
+    "attack-05": [
+      53,
+      90,
+      75,
+      102
+    ],
+    "hurt-01": [
+      59,
+      89,
+      82,
+      103
+    ],
+    "hurt-02": [
+      62,
+      89,
+      86,
+      105
+    ],
+    "dead-01": [
+      55,
+      89,
+      79,
+      106
+    ],
+    "dead-02": [
+      51,
+      90,
+      75,
+      111
+    ],
+    "dead-03": [
+      41,
+      96,
+      62,
+      119
+    ],
+    "dead-04": [
+      33,
+      107,
+      45,
+      127
+    ],
+    "sit-01": [
+      51,
+      98,
+      73,
+      110
+    ],
+    "sit-02": [
+      51,
+      101,
+      73,
+      113
+    ],
+    "pickup-01": [
+      52,
+      89,
+      74,
+      103
+    ],
+    "pickup-02": [
+      46,
+      93,
+      69,
+      109
+    ],
+    "pickup-03": [
+      51,
+      89,
+      73,
+      103
+    ]
+  },
+  "frameOrder": [
+    "stand-01",
+    "stand-02",
+    "walk-01",
+    "walk-02",
+    "walk-03",
+    "walk-04",
+    "jump-01",
+    "attack-01",
+    "attack-02",
+    "attack-03",
+    "attack-04",
+    "attack-05",
+    "hurt-01",
+    "hurt-02",
+    "dead-01",
+    "dead-02",
+    "dead-03",
+    "dead-04",
+    "sit-01",
+    "sit-02",
+    "pickup-01",
+    "pickup-02",
+    "pickup-03"
+  ],
+  "items": [
+    {
+      "id": "basic-school-uniform-lower-01",
+      "label": "기본 학교 교복 하의",
+      "builtin": true,
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "denim-blue-lower-01",
+      "label": "데님 블루 팬츠",
+      "file": "denim-blue-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "denim-blue"
+    },
+    {
+      "id": "navy-slacks-lower-01",
+      "label": "네이비 슬랙스",
+      "file": "navy-slacks-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "navy-slacks"
+    },
+    {
+      "id": "beige-chino-lower-01",
+      "label": "베이지 치노",
+      "file": "beige-chino-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "beige-chino"
+    },
+    {
+      "id": "olive-pants-lower-01",
+      "label": "올리브 팬츠",
+      "file": "olive-pants-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "olive-pants"
+    },
+    {
+      "id": "black-jogger-lower-01",
+      "label": "블랙 조거 팬츠",
+      "file": "black-jogger-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "black-jogger"
+    },
+    {
+      "id": "gray-sweat-lower-01",
+      "label": "그레이 팬츠",
+      "file": "gray-sweat-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "gray-pants"
+    },
+    {
+      "id": "brown-corduroy-lower-01",
+      "label": "브라운 코듀로이",
+      "file": "brown-corduroy-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "brown-corduroy"
+    },
+    {
+      "id": "sky-blue-lower-01",
+      "label": "스카이 블루 팬츠",
+      "file": "sky-blue-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "sky-blue"
+    },
+    {
+      "id": "camel-pants-lower-01",
+      "label": "카멜 팬츠",
+      "file": "camel-pants-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "camel-pants"
+    },
+    {
+      "id": "charcoal-pants-lower-01",
+      "label": "차콜 팬츠",
+      "file": "charcoal-pants-lower-01.json",
+      "public": true,
+      "price": 0,
+      "design": "charcoal-pants"
+    }
+  ]
+}
