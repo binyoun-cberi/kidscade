@@ -62,7 +62,7 @@ test('all active catalog games have an achievement plan or an existing pilot set
   const games = (Array.isArray(raw) ? raw : raw.games || []).filter(game => !game.disabled);
   const pilotIds = new Set(['cube3d','high_micro_evolution','infinite_gugudan']);
   const planIds = new Set([...catalogSource.matchAll(/^\s{4}"([^"]+)":\[/gm)].map(match => match[1]));
-  assert.equal(games.length, 139);
+  assert.equal(games.length, 140);
   assert.equal(planIds.size, games.length - pilotIds.size);
   for (const game of games) {
     if (pilotIds.has(game.id)) continue;
@@ -94,10 +94,10 @@ test('achievement catalog registers planned definitions without exposing unfinis
   function FakeCustomEvent(type, init = {}) { this.type = type; this.detail = init.detail; }
   const run = new Function('window','document','CustomEvent','setInterval','clearInterval', catalogSource);
   run(fakeWindow, fakeDocument, FakeCustomEvent, () => 0, () => {});
-  assert.equal(registered.length, 680);
-  assert.equal(registered.filter(def => def.enabled !== false).length, 287);
-  assert.equal(registered.filter(def => def.enabled === false).length, 393);
-  assert.equal(registered.filter(def => def.trigger === 'metric').length, 272);
+  assert.equal(registered.length, 685);
+  assert.equal(registered.filter(def => def.enabled !== false).length, 289);
+  assert.equal(registered.filter(def => def.enabled === false).length, 396);
+  assert.equal(registered.filter(def => def.trigger === 'metric').length, 274);
   assert.equal(registered.filter(def => def.trigger === 'completion_count').length, 0);
   assert.equal(registered.find(def => def.id === 'high_seed_baseball.first_win').metric, 'wins');
   assert.equal(registered.find(def => def.id === 'low_wordris.runs_10').target, 10);
