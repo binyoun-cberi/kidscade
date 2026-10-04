@@ -1,6 +1,6 @@
 const ROUTINES={
   minji:{wake:6.5,sleep:22.4,personality:'bright',slots:[[7,12,'market'],[12,13,'plazaWest'],[13,18,'market'],[18,21,'cafeFront'],[21,22.4,'plazaWest']]},
-  junho:{wake:7,sleep:21.5,personality:'calm',slots:[[8,12,'hardware'],[12,13,'plazaEast'],[13,18,'hardware'],[18,20,'civicGarden'],[20,21.5,'plazaEast']]},
+  junho:{wake:7,sleep:21.5,personality:'calm',slots:[[8,12,'hardware'],[12,13,'plazaEast'],[13,18,'hardware'],[18,20.5,'plazaEast']]},
   haneul:{wake:5.5,sleep:23.2,personality:'cheerful',slots:[[6,11,'cafe'],[11,12.5,'plazaWest'],[12.5,20,'cafe'],[20,22.5,'riverLook'],[22.5,23.2,'cafeFront']]},
   taeho:{wake:9,sleep:23.5,personality:'playful',slots:[[10,14,'arcade'],[14,16,'plazaEast'],[16,22,'arcade'],[22,23.5,'plazaEast']]},
   doyun:{wake:7,sleep:21.5,personality:'busy',slots:[[8,12,'civic'],[12,13,'plazaWest'],[13,17.5,'civic'],[17.5,20,'plazaCenter'],[20,21.5,'civicGarden']]},
