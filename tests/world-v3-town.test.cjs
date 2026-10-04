@@ -138,6 +138,7 @@ test('walk-in venues keep merchant social loops, warm lights, lazy assets and bo
   assert.match(economy,/enterVenue\(r\.service\)/);
   assert.match(economy,/function cafeRest\(\)/);
   assert.match(economy,/cafeRestDay===day/);
+  assert.match(economy,/benchRestDay===day/);
   assert.match(runtime,/enterVenue,getVenue:\(\)=>activeVenue/);
   assert.match(runtime,/cafeRest:\(\)=>townEconomy\?\.cafeRest\?\.\(\)/);
 });
