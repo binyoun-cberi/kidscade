@@ -5,8 +5,6 @@ on:
     paths:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
-      - 'school-avatar-runtime.js'
-      - 'avatar-school-studio.js'
       - 'avatar-studio.html'
       - 'avatar-integration.js'
       - 'account-profile-gate.js'
@@ -68,8 +66,8 @@ jobs:
         run: |
           node --check pixel-avatar-renderer.js
           node --check avatar-pixel-studio.js
-          node --check school-avatar-runtime.js
-          node --check avatar-school-studio.js
+          node --check assets/game/characters/kidscade-avatar-v3/runtime/school-avatar-runtime.js
+          node --check assets/game/characters/kidscade-avatar-v3/runtime/avatar-school-studio.js
           node --check avatar-integration.js
           node --check teacher-avatar-clothing-studio.js
           node --check account-profile-gate.js
