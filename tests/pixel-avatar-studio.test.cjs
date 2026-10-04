@@ -12,10 +12,11 @@ const manifest=JSON.parse(fs.readFileSync(path.join(starterDir,'manifest.json'),
 const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.json'),'utf8'));
 const hairCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair/catalog.json'),'utf8'));
 const upperCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'upper/catalog.json'),'utf8'));
+const lowerCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'lower/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=46/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=47/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -23,7 +24,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-4/);
+  assert.match(js,/pixel-v3-school-starter-5/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -54,7 +55,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-4'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-5'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -249,4 +250,51 @@ test('upper choice persists in public v3 state',()=>{
   assert.match(js,/state\.assetIds\.upper/);
   assert.match(js,/await loadUpperPart\(state\.assetIds\.upper\)/);
   assert.match(js,/상의 11종/);
+});
+
+
+test('v3 lower catalog adds ten JSON pants and keeps the builtin school uniform lower',()=>{
+  assert.equal(manifest.partCatalogs.lower,'lower/catalog.json');
+  assert.equal(lowerCatalog.type,'kidscade-avatar-lower-catalog');
+  assert.equal(lowerCatalog.layer,'lower');
+  assert.equal(lowerCatalog.defaultId,'basic-school-uniform-lower-01');
+  assert.equal(lowerCatalog.items.length,11);
+  assert.deepEqual(lowerCatalog.sourcePalette,[[34,48,71,255],[52,73,98,255]]);
+  assert.equal(Object.keys(lowerCatalog.frameBounds).length,23);
+  assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
+  const extra=lowerCatalog.items.filter(item=>item.id!==lowerCatalog.defaultId);
+  assert.equal(extra.length,10);
+  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  for(const item of extra){
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'lower',item.file),'utf8'));
+    assert.equal(file.type,'kidscade-avatar-lower-part',item.id);
+    assert.equal(file.id,item.id);
+    assert.equal(file.layer,'lower');
+    assert.equal(file.bodyId,'maple-lite-body-v3');
+    assert.deepEqual(file.canvas,[128,128]);
+    assert.equal(file.palette.length,2,item.id);
+    assert.equal(file.frameMode,'exact-source-palette-remap-23');
+    for(const color of file.palette){
+      assert.equal(color.length,4,item.id);
+      for(const value of color)assert.ok(Number.isInteger(value)&&value>=0&&value<=255,item.id);
+    }
+  }
+});
+
+test('public renderer applies selected JSON lower parts to all 23 frame bounds',()=>{
+  assert.match(js,/async function loadLowerCatalog\(\)/);
+  assert.match(js,/async function loadLowerPart\(id\)/);
+  assert.match(js,/function applyLowerPart\(target,frameId,lowerId=selectedLowerId\(\)\)/);
+  assert.match(js,/data-lower-id/);
+  assert.match(js,/renderLowerOptions/);
+  assert.match(js,/drawLowerThumbnail/);
+  assert.match(js,/applyLowerPart\(target,frameId,lowerId\)/);
+  assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
+});
+
+test('lower choice persists in public v3 state',()=>{
+  assert.match(js,/state\.assetIds\.lower/);
+  assert.match(js,/await loadLowerPart\(state\.assetIds\.lower\)/);
+  assert.match(js,/lower:id/);
+  assert.match(js,/하의 11종/);
 });

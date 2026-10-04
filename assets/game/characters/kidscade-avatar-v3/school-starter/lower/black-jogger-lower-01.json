@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-part",
+  "id": "black-jogger-lower-01",
+  "label": "블랙 조거 팬츠",
+  "layer": "lower",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "design": "black-jogger",
+  "palette": [
+    [
+      25,
+      27,
+      31,
+      255
+    ],
+    [
+      48,
+      51,
+      57,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

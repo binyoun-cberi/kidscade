@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-part",
+  "id": "sky-blue-lower-01",
+  "label": "스카이 블루 팬츠",
+  "layer": "lower",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "design": "sky-blue",
+  "palette": [
+    [
+      64,
+      105,
+      148,
+      255
+    ],
+    [
+      111,
+      158,
+      199,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

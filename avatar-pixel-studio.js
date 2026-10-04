@@ -6,7 +6,7 @@ const SHEET_URL=ROOT+'/school-starter-sheet.png';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-4';
+const PREVIEW_VERSION='pixel-v3-school-starter-5';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -57,6 +57,8 @@ const hairMaskCoordCache=new Map();
 let hairProtectedKeys=new Set();
 let upperCatalog=null;
 const upperParts=new Map();
+let lowerCatalog=null;
+const lowerParts=new Map();
 let currentTab='skin';
 let previewMode='stand';
 let previewStartedAt=0;
@@ -457,6 +459,50 @@ function applyUpperPart(target,frameId,upperId=selectedUpperId()){
   }
   target.putImageData(image,0,0);return true;
 }
+async function loadLowerCatalog(){
+  const rel=manifest?.partCatalogs?.lower||'lower/catalog.json';
+  const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});
+  if(!res.ok)throw new Error('하의 파츠 카탈로그를 불러오지 못했습니다.');
+  const data=await res.json();
+  if(data?.type!=='kidscade-avatar-lower-catalog'||!Array.isArray(data.items)||!Array.isArray(data.sourcePalette))throw new Error('하의 파츠 카탈로그 형식이 올바르지 않습니다.');
+  lowerCatalog=data;
+  const merged={...(manifest?.assetIds||{}),...(state.assetIds||{})};
+  const requested=merged.lower||data.defaultId||manifest?.assetIds?.lower||'basic-school-uniform-lower-01';
+  merged.lower=data.items.some(item=>item.id===requested)?requested:(data.defaultId||'basic-school-uniform-lower-01');
+  state.assetIds=merged;
+  if(merged.lower!==data.defaultId)await loadLowerPart(merged.lower);
+  return data;
+}
+async function loadLowerPart(id){
+  if(!lowerCatalog||!id||id===lowerCatalog.defaultId)return null;
+  if(lowerParts.has(id))return lowerParts.get(id);
+  const item=lowerCatalog.items.find(candidate=>candidate.id===id);
+  if(!item?.file)throw new Error('등록되지 않은 하의 파츠입니다: '+id);
+  const res=await fetch(ROOT+'/lower/'+item.file,{cache:'no-cache'});
+  if(!res.ok)throw new Error('하의 파츠를 불러오지 못했습니다: '+id);
+  const part=await res.json();
+  if(part?.type!=='kidscade-avatar-lower-part'||part.id!==id||part.layer!=='lower'||!Array.isArray(part.palette)||part.palette.length!==lowerCatalog.sourcePalette.length)throw new Error('하의 파츠 JSON 형식이 올바르지 않습니다: '+id);
+  lowerParts.set(id,part);return part;
+}
+function selectedLowerId(){return state.assetIds?.lower||manifest?.assetIds?.lower||lowerCatalog?.defaultId||'basic-school-uniform-lower-01'}
+function lowerColorIndex(r,g,b,a){
+  const palette=lowerCatalog?.sourcePalette||[];
+  for(let i=0;i<palette.length;i++){const c=palette[i];if(r===c[0]&&g===c[1]&&b===c[2]&&a===c[3])return i}
+  return -1;
+}
+function applyLowerPart(target,frameId,lowerId=selectedLowerId()){
+  if(!lowerCatalog||!lowerId||lowerId===lowerCatalog.defaultId)return false;
+  const part=lowerParts.get(lowerId),box=lowerCatalog.frameBounds?.[frameId];
+  if(!part||!box)return false;
+  const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
+  const x0=Math.max(0,Number(box[0])||0),y0=Math.max(0,Number(box[1])||0),x1=Math.min(SIZE-1,Number(box[2])||0),y1=Math.min(SIZE-1,Number(box[3])||0);
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const i=(y*SIZE+x)*4,index=lowerColorIndex(data[i],data[i+1],data[i+2],data[i+3]);
+    if(index<0)continue;
+    const color=part.palette[index];data[i]=color[0];data[i+1]=color[1];data[i+2]=color[2];data[i+3]=color[3];
+  }
+  target.putImageData(image,0,0);return true;
+}
 function animationFor(mode){
   if(!manifest?.animations)return [];
   const normalized=mode==='idle'||mode==='smile'||mode==='static'?'stand':mode;
@@ -474,7 +520,7 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId()){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId()){
   if(!sheet)return;
   target.save();
   target.setTransform(1,0,0,1,0,0);
@@ -484,6 +530,7 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
   recolorSkin(target,frameId);
   applyUpperPart(target,frameId,upperId);
+  applyLowerPart(target,frameId,lowerId);
   const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
   if(customHair)clearBaseHair(target,frameId);
   applyEyePart(target,frameId,eyeId);
@@ -612,11 +659,26 @@ function renderUpperOptions(){
   optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-upper-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-upper-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-upper-thumb]').forEach(el=>{if(el.dataset.upperThumb===upperCatalog.defaultId)drawUpperThumbnail(el,el.dataset.upperThumb)});hydrateUpperThumbnails();
 }
+function drawLowerThumbnail(canvasElement,id){
+  if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
+  const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,eyeCatalog?.defaultId||selectedEyeId(),hairCatalog?.defaultId||selectedHairId(),upperCatalog?.defaultId||selectedUpperId(),id);
+  const thumb=canvasElement.getContext('2d',{alpha:true});thumb.imageSmoothingEnabled=false;thumb.clearRect(0,0,SIZE,SIZE);thumb.drawImage(full,45,84,44,34,0,0,SIZE,SIZE);
+}
+async function hydrateLowerThumbnails(){
+  if(!lowerCatalog)return;await Promise.allSettled(lowerCatalog.items.filter(item=>item.id!==lowerCatalog.defaultId).map(item=>loadLowerPart(item.id)));
+  if(currentTab!=='lower')return;optionGrid.querySelectorAll('canvas[data-lower-thumb]').forEach(el=>drawLowerThumbnail(el,el.dataset.lowerThumb));
+}
+function renderLowerOptions(){
+  const items=lowerCatalog?.items||[],selected=selectedLowerId();pickerTitle.textContent='하의';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-lower-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-lower-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.querySelectorAll('canvas[data-lower-thumb]').forEach(el=>{if(el.dataset.lowerThumb===lowerCatalog.defaultId)drawLowerThumbnail(el,el.dataset.lowerThumb)});hydrateLowerThumbnails();
+}
 function renderOptions(){
   if(currentTab==='skin'){renderSkinOptions();return}
   if(currentTab==='hair'){renderHairOptions();return}
   if(currentTab==='eyes'){renderEyeOptions();return}
   if(currentTab==='upper'){renderUpperOptions();return}
+  if(currentTab==='lower'){renderLowerOptions();return}
   optionGrid.classList.remove('skin-mode');
   const meta=PARTS[currentTab]||PARTS.hair;
   const id=assetIdFor(currentTab);
@@ -650,6 +712,11 @@ async function setUpperAsset(id){
   if(!upperCatalog?.items?.some(item=>item.id===id))return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),upper:id};refreshSkinPreview();renderOptions();publish(false);
   const item=upperCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'상의')+' 적용했어요!');return true;
+}
+async function setLowerAsset(id){
+  if(!lowerCatalog?.items?.some(item=>item.id===id))return false;if(id!==lowerCatalog.defaultId)await loadLowerPart(id);
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),lower:id};refreshSkinPreview();renderOptions();publish(false);
+  const item=lowerCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'하의')+' 적용했어요!');return true;
 }
 async function setHairAsset(id){
   if(!hairCatalog?.items?.some(item=>item.id===id))return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
@@ -696,6 +763,8 @@ tabs?.addEventListener('click',e=>{
   if(button)selectTab(button.dataset.tab);
 });
 optionGrid?.addEventListener('click',e=>{
+  const lower=e.target.closest('[data-lower-id]');
+  if(lower){setLowerAsset(lower.dataset.lowerId);return}
   const upper=e.target.closest('[data-upper-id]');
   if(upper){setUpperAsset(upper.dataset.upperId);return}
   const hair=e.target.closest('[data-hair-id]');
@@ -720,7 +789,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-4',
+  version:'pixel-v3-school-starter-5',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -745,6 +814,8 @@ window.KidscadeAvatarShop={
     if(state.assetIds.hair!==hairCatalog?.defaultId)await loadHairPart(state.assetIds.hair);
     if(upperCatalog&&!upperCatalog.items.some(item=>item.id===state.assetIds.upper))state.assetIds.upper=upperCatalog.defaultId;
     if(state.assetIds.upper!==upperCatalog?.defaultId)await loadUpperPart(state.assetIds.upper);
+    if(lowerCatalog&&!lowerCatalog.items.some(item=>item.id===state.assetIds.lower))state.assetIds.lower=lowerCatalog.defaultId;
+    if(state.assetIds.lower!==lowerCatalog?.defaultId)await loadLowerPart(state.assetIds.lower);
     refreshSkinPreview();
     publish(false);
     return true;
@@ -756,10 +827,11 @@ window.KidscadeAvatarShop={
   await loadEyeCatalog();
   await loadHairCatalog();
   await loadUpperCatalog();
+  await loadLowerCatalog();
   loadSkinPalette();
   loadFrameSkinPalettes();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 상의 11종 · 피부색 자유 설정 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 상의 11종 · 하의 11종 · 피부색 자유 설정 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);

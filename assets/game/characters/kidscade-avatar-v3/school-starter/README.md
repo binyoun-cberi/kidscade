@@ -44,3 +44,12 @@
 - 실제 `school-starter.json` 상의 레이어에서 추출한 23개 프레임 범위와 원본 7색만 정확히 치환합니다.
 - 자·교과서처럼 상의보다 앞에서 합성된 픽셀은 원본 상의 7색과 다르므로 보존됩니다.
 - 선택값은 `kidscade-avatar-v3` 상태의 `assetIds.upper`에 저장됩니다.
+
+
+## 하의 파츠
+- `lower/catalog.json`이 공개 하의 카탈로그입니다.
+- `basic-school-uniform-lower-01` 기본 교복 하의에 JSON 하의 10종을 추가해 총 11종입니다.
+- 추가 하의: 데님 블루 팬츠, 네이비 슬랙스, 베이지 치노, 올리브 팬츠, 블랙 조거 팬츠, 그레이 팬츠, 브라운 코듀로이, 스카이 블루 팬츠, 카멜 팬츠, 차콜 팬츠.
+- 실제 `school-starter.json` 하의 레이어에서 추출한 원본 2색과 23개 프레임 범위만 정확히 치환합니다.
+- BODY 자세와 하의 실루엣은 건드리지 않으므로 STAND/WALK/JUMP/ATTACK/HURT/DEAD/SIT/PICKUP 23프레임이 그대로 유지됩니다.
+- 선택값은 `kidscade-avatar-v3` 상태의 `assetIds.lower`에 저장됩니다.
