@@ -99,6 +99,7 @@ jobs:
             scripts/inject-game-integrations.cjs \
             scripts/architecture-ratchet.cjs \
             scripts/live-home-toggle-smoke.mjs \
+            scripts/live-gate-image-smoke.mjs \
             scripts/import-stdict.cjs \
             scripts/build-wordchain-static.cjs \
             scripts/maratang-selfbar-build.cjs \
