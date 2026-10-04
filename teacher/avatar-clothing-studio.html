@@ -102,13 +102,13 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
 
       <section class="card">
         <h3>AI 프레임 보정</h3>
-        <div class="tip">개별 파츠 또는 전체 아바타를 128×128 픽셀 JSON으로 내보낼 수 있습니다. 전체 분석에는 BODY와 모든 파츠의 픽셀 관계, 의상에 덮이지 않은 BODY 픽셀, 피부색 후보 영역까지 들어가서 소매·바지·신발 사이로 살이 삐져나오는지 함께 점검할 수 있습니다.</div>
+        <div class="tip">개별 파츠 또는 전체 아바타를 128×128 픽셀 JSON으로 내보낼 수 있습니다. ChatGPT가 새 파츠를 픽셀 JSON으로 만들어 준 경우에도 아래 JSON 적용 버튼으로 바로 넣을 수 있습니다. 현재 선택 파츠와 달라도 JSON의 target.layer를 자동으로 찾아 적용합니다.</div>
         <div class="project-actions" style="margin-top:7px">
           <button id="exportPartAnalysis" type="button">현재 파츠 분석 JSON</button>
-          <label class="file-btn secondary">현재 파츠 보정 적용<input id="importPartAdjustment" type="file" accept="application/json,.json"></label>
+          <label class="file-btn secondary">파츠·에셋 JSON 적용<input id="importPartAdjustment" type="file" accept="application/json,.json"></label>
           <button id="exportBodyReference" type="button">맨몸 BODY 기준 JSON</button>
           <button id="exportFullAnalysis" type="button">전체 분석 JSON</button>
-          <label class="file-btn secondary full">전체 보정 JSON 적용<input id="importFullAdjustment" type="file" accept="application/json,.json"></label>
+          <label class="file-btn secondary full">전체/파츠 JSON 적용<input id="importFullAdjustment" type="file" accept="application/json,.json"></label>
         </div>
         <div id="adjustmentSummary" class="muted" style="margin-top:6px">대상: 현재 편집 파츠 · STAND 2 / WALK 4 / JUMP 1 전체</div>
       </section>
@@ -156,6 +156,6 @@ label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[
     </aside>
   </main>
 </div>
-<script src="/teacher-avatar-clothing-studio.js?v=13"></script>
+<script src="/teacher-avatar-clothing-studio.js?v=14"></script>
 </body>
 </html>
