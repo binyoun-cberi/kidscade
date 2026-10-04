@@ -333,7 +333,7 @@ const NATURE_ECO=Object.freeze({
  valley:{max:7,regenEvery:24,regen:1,renewable:true},rockyHill:{max:9,regenEvery:0,regen:0,renewable:false},ridge:{max:8,regenEvery:0,regen:0,renewable:false},
  caveEntrance:{max:7,regenEvery:0,regen:0,renewable:false},deepCave:{max:8,regenEvery:0,regen:0,renewable:false}
 });
-const ECO_SENSITIVE=new Set(['smallTree','bigTree','berryBush','mushroomPatch','herbPatch','oakGrove','wildMillet','wildBroomcorn','wildBean','wildGrainField','reedBed','freshFish','shellfish','tidalFlat','rabbit','deer','wildGoat','wildBoar','wolf','bear']);
+const ECO_SENSITIVE=new Set(['smallTree','bigTree','berryBush','mushroomPatch','herbPatch','oakGrove','wildMillet','wildBroomcorn','wildBean','wildGrainField','reedBed','clayBank','stoneSource','flintOutcrop','bone','freshFish','shellfish','tidalFlat','rabbit','deer','wildGoat','wildBoar','wolf','bear']);
 const AUTO_STACK_KINDS=new Set(['item','food']);
 function natureMax(type){return NATURE_ECO[type]?.max||0;}
 function natureRatio(node){
@@ -438,7 +438,8 @@ function natureWorkerAction(worker,node){
  const def=EXPLORE_DEFS[node.type];if(!def)return null;
  const specialist=specialistNatureAction(worker,node);if(specialist)return specialist;
  const level=node.exploreLevel||0,ms=def.ms+Math.min(level,def.max)*1200;
- return {ms,label:C[node.type].name+' 탐험 중',out:rollExploreOutputs(node),oneShot:true,countExplore:true,exploreNode:true,discover:'자연 탐험'};
+ const exploreWear=NATURE_ECO[node.type]&&!NATURE_ECO[node.type].renewable?1:0;
+ return {ms,label:C[node.type].name+' 탐험 중',out:rollExploreOutputs(node),oneShot:true,countExplore:true,exploreNode:true,ecoUse:exploreWear,discover:'자연 탐험'};
 }
 function clueWorkerAction(worker,node){
  const def=CLUE_DEFS[node.type];if(!def)return null;
