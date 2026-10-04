@@ -468,9 +468,11 @@ function rollExploreOutputs(node){
  let entries=adjustedExploreEntries(node,def.results.slice());
  const level=node.exploreLevel||0;
  if(node.type==='rockyHill'&&level>=2&&!cardsOf('copperVein').length)return [['copperVein',1]];
+ if(node.type==='rockyHill'&&level>=3&&!cardsOf('ridge').length)return [['ridge',1]];
  if(node.type==='ridge'&&level>=2&&!cardsOf('tinVein').length)return [['tinVein',1]];
+ if(node.type==='ridge'&&level>=3&&!cardsOf('caveEntrance').length)return [['caveEntrance',1]];
+ if(node.type==='caveEntrance'&&level>=2&&!cardsOf('deepCave').length)return [['deepCave',1]];
  if(node.type==='deepCave'&&level>=2&&!cardsOf('ironVein').length)return [['ironVein',1]];
- if(level>=def.max){const common=entries.filter(e=>!EXPLORE_DEFS[e[0]]);if(common.length)entries=common;}
  const unseen=entries.filter(e=>!(EXPLORE_DEFS[e[0]]&&cardsOf(e[0]).length>0));if(unseen.length)entries=unseen;
  const first=weightedResult(entries),out=first?[[first,1]]:[];
  if(out.length&&Math.random()<def.bonus){
