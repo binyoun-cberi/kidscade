@@ -539,9 +539,9 @@ $('finishBtn').addEventListener('click', () => {
   $('resultLine').src = line.toDataURL('image/png');
   $('resultArt').src = art.toDataURL('image/png');
   showScreen('result');
-  if (window.KidscadeGame && window.KidscadeGame.gameOver) {
+  if (window.KidscadeGame && window.KidscadeGame.result) {
     const value = parseInt($('progressText').textContent, 10) || 0;
-    window.KidscadeGame.gameOver({ score: value, completed: true });
+    window.KidscadeGame.result({ scope:'creation', status:'completed', outcome:'clear', score:value, completed:true });
   }
 });
 $('backPaintBtn').addEventListener('click', () => showScreen('paint'));
