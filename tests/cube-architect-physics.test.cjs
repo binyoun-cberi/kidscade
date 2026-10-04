@@ -83,3 +83,25 @@ test('desktop mobile and avatar presentation react to swimming',()=>{
   assert.match(avatar,/const swimming=motion==='swim'/);
   assert.match(avatar,/rig\.plane\.rotation\.x=-\.78/);
 });
+
+
+test('flowing fluids render and collide at level-dependent heights',()=>{
+  assert.match(js,/function fluidHeight\(data\)/);
+  assert.match(js,/return \[\.34,\.50,\.67,\.84\]\[level-1\]/);
+  assert.match(js,/root\.scale\.y=h\/\.84/);
+  assert.match(js,/sy<y\+fluidHeight\(cell\)/);
+  assert.match(js,/headY<hy\+fluidHeight\(headBlock\)/);
+});
+
+test('small wildlife follows edited voxel terrain instead of teleporting onto structures',()=>{
+  assert.match(js,/const nextY=creatureGroundY\(nx,nz,c\.position\.y\)/);
+  assert.match(js,/\['water','lava','fire','cactus'\]\.includes\(type\)/);
+  assert.doesNotMatch(js,/c\.position\.y=getHighestSolidY\(nx,nz\)\+1/);
+});
+
+test('return points use the current edited world and solid blocks can displace replaceable fluids',()=>{
+  assert.match(js,/function safeReturnEyeY\(\)\{return getHighestSolidY\(0,5,WORLD_MAX_Y\)\+2\.62\}/);
+  assert.match(js,/camera\.position\.set\(0,safeReturnEyeY\(\),5\)/);
+  assert.match(js,/const replaceable=occupied&&!\['door','cuboid'\]\.includes\(selectedType\)/);
+  assert.match(js,/if\(replaceable\)removeWorldBlockData\(p\.x,p\.y,p\.z,true\)/);
+});
