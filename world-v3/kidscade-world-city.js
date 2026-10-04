@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=3';
+import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=4';
 import {createResidentLife} from './kidscade-world-residents.js?v=2';
 export {CITY_BOUNDS};
 
@@ -35,7 +35,8 @@ const CITY_ASSET={
   register:MARKET+'cash-register.glb',
   cart:MARKET+'shopping-cart.glb',
   employee:MARKET+'character-employee.glb',
-  bench:FURNITURE+'bench.glb'
+  bench:FURNITURE+'bench.glb',
+  museum:SUBURBAN+'building-type-i.glb'
 };
 
 const NPC_MODELS={
@@ -136,11 +137,13 @@ export async function buildKidscadeCity(ctx){
   const p=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
 
   // Road-first city: asphalt occupies ONLY the 4m gutters between 20x20 city parcels.
-  box(parent,0,36,44,4,.09,0x62696d,-.01);    // between lower / upper city squares
-  box(parent,0,36,4,44,.09,0x62696d,-.01);    // between west / east city squares
+  box(parent,0,36,44,4,.09,0x62696d,-.01);    // between lower / upper core city squares
+  box(parent,0,36,4,44,.09,0x62696d,-.01);    // between west / east core city squares
+  box(parent,-24,36,4,44,.09,0x62696d,-.01);  // museum avenue between camp/museum and the core town
   box(parent,0,12,44,4,.09,0x62696d,-.01);    // shared approach from home/farm
   track('city-road-mid-horizontal','road',0,36,44,4);
   track('city-road-mid-vertical','road',0,36,4,44);
+  track('city-road-museum','road',-24,36,4,44);
   track('city-road-south','road',0,12,44,4);
 
   // Sidewalk ribbons live just INSIDE each parcel, parallel to the road gutters.
@@ -157,7 +160,7 @@ export async function buildKidscadeCity(ctx){
     for(const x of [-1.4,-.65,.1,.85])plane(parent,x,z,.34,3.0,0xf3eee1,.11);
   }
 
-  const market=p('cityMarket'),leisure=p('cityLeisure'),civic=p('cityCivic'),transit=p('cityTransit');
+  const market=p('cityMarket'),leisure=p('cityLeisure'),civic=p('cityCivic'),transit=p('cityTransit'),museum=p('museum');
   const buildings=[
     ['market',CITY_ASSET.market,market.x-4.7,market.z-5.2,6.0,5.2,'씨앗마트',2.25],
     ['hardware',CITY_ASSET.hardware,market.x+4.7,market.z-5.2,6.0,5.2,'튼튼 철물점',2.25],
@@ -165,7 +168,8 @@ export async function buildKidscadeCity(ctx){
     ['arcade',CITY_ASSET.arcade,leisure.x+4.7,leisure.z-5.2,6.0,5.2,'키즈 아케이드',2.25],
     ['library',CITY_ASSET.library,civic.x-4.7,civic.z-5.0,6.2,5.0,'마을 도서관',2.25],
     ['civic',CITY_ASSET.civic,civic.x+4.7,civic.z-5.0,6.6,5.0,'마을회관',2.25],
-    ['clinic',CITY_ASSET.clinic,transit.x-4.7,transit.z-5.0,6.2,5.0,'튼튼 보건소',2.25]
+    ['clinic',CITY_ASSET.clinic,transit.x-4.7,transit.z-5.0,6.2,5.0,'튼튼 보건소',2.25],
+    ['museum',CITY_ASSET.museum,museum.x,museum.z-4.4,10.5,7.0,'씨앗 자연박물관',3.15]
   ];
   for(const [id,url,x,z,w,d,name,labelDz] of buildings){
     await addModel(parent,url,{x,z,w,h:5.0,d,rot:Math.PI,name:'city-'+id});
@@ -175,12 +179,13 @@ export async function buildKidscadeCity(ctx){
     parent.add(label);buildingLabels.push(label);
   }
 
-  // Three core venues are now walk-in interiors. The trigger sits just outside each front collider.
-  for(const [id,x,z,label] of [
-    ['market',market.x-4.7,market.z-2.55,'🚪 씨앗마트 들어가기'],
-    ['hardware',market.x+4.7,market.z-2.55,'🚪 튼튼 철물점 들어가기'],
-    ['cafe',leisure.x-4.7,leisure.z-2.55,'🚪 하늘 카페 들어가기']
-  ])interact('outdoor',x,z,1.35,label,()=>actions.enterVenue?.(id));
+  // Walk-in venues share the same transition system. Triggers sit just outside the building colliders.
+  for(const [id,x,z,r,label] of [
+    ['market',market.x-4.7,market.z-2.55,1.35,'🚪 씨앗마트 들어가기'],
+    ['hardware',market.x+4.7,market.z-2.55,1.35,'🚪 튼튼 철물점 들어가기'],
+    ['cafe',leisure.x-4.7,leisure.z-2.55,1.35,'🚪 하늘 카페 들어가기'],
+    ['museum',museum.x,museum.z-.55,1.55,'🏛️ 씨앗 자연박물관 들어가기']
+  ])interact('outdoor',x,z,r,label,()=>actions.enterVenue?.(id));
 
   // Commerce props stay deep inside the market parcel, never on the south or center roads.
   await Promise.all([
