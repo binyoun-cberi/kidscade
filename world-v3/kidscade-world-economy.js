@@ -1,5 +1,5 @@
 export function createTownEconomy(ctx){
-  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
+  const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,removeInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
 
   const BUY={
     market:{
@@ -282,7 +282,8 @@ export function createTownEconomy(ctx){
   }
   function sell(key){
     const price=SELL[key],i=inv();if(!price||(i[key]||0)<=0)return;
-    i[key]--;ensureState().coins+=price;persist();playSfx?.('pickup',.16);toast(itemName(key)+' 판매 +'+price+' 코인');updateStatus();shop('market','민지');
+    if(removeInventoryItem)removeInventoryItem(key,1);else i[key]--;
+    ensureState().coins+=price;persist();playSfx?.('pickup',.16);toast(itemName(key)+' 판매 +'+price+' 코인');updateStatus();shop('market','민지');
   }
 
   function jobs(){
