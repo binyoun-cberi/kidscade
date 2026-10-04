@@ -1737,7 +1737,7 @@ function restaurantTimingHtml(stage){
 }
 function restaurantKitchenHtml(){
  const c=restaurantCustomerById(restaurant.selectedId);
- if(!c)return'<div class="workEmpty"><b>주문을 골라 주세요</b><span>손님을 누르면 주방에서 손질 → 굽기 → 플레이팅 → 서빙 순서로 요리합니다.</span></div>';
+ if(!c)return'<div class="workEmpty"><b>주문을 골라 주세요</b><span>손님을 고르고 재료를 선택한 뒤 손질 → 굽기 타이밍만 맞추면 자동으로 서빙합니다.</span></div>';
  const recipe=RECIPES.find(r=>r.id===c.recipeId),w=restaurant.work;
  const primary=recipeGroups(recipe)[0],extraGroups=recipeGroups(recipe).slice(1),ingredientButtons=primary.map(k=>{const n=meta.stock[k]||0,src=ingredientSpriteSrc(k),sq=stockQualitySummary(k);return'<button class="ingredientBtn '+(w.key===k?'selected':'')+'" data-ingredient="'+k+'" '+(n<=0||w.stage!=='idle'?'disabled':'')+'>'+(src?'<img class="ingredientSprite" src="'+src+'" alt="">':'')+'<b>'+ingredientInfo(k).name+'</b><small>재고 '+n+(sq.premium?' · '+sq.label:'')+' · 예상 '+money(recipePrice(recipe,k))+'</small></button>'}).join(''),extraNeed=extraGroups.length?'<div class="recipeNeeds">추가 재료 · '+extraGroups.map(g=>g.map(k=>ingredientInfo(k).name).join(' / ')).join(' + ')+'</div>':'';
  let action='';
@@ -1745,7 +1745,7 @@ function restaurantKitchenHtml(){
  else if(w.stage==='idle')action='<button class="cookAction prep" id="prepStartBtn">🔪 손질 시작</button>';
  else if(w.stage==='prep')action=restaurantTimingHtml('prep')+'<button class="cookAction prep" id="prepStopBtn">🔪 지금 손질!</button>';
  else if(w.stage==='cook')action=restaurantTimingHtml('cook')+'<button class="cookAction fire" id="cookStopBtn">🔥 지금 불 끄기!</button>';
- else if(w.stage==='ready')action='<div class="dishReady"><span>'+recipe.icon+'</span><b>'+recipe.name+' 완성!</b><small>품질 '+restaurantQualityLabel(w.quality)+' · 손님에게 바로 내세요.</small></div><button class="cookAction serve" id="serveDishBtn">🍽️ 서빙하기</button>';
+ else if(w.stage==='ready')action='<div class="dishReady autoServe"><span>'+recipe.icon+'</span><b>'+recipe.name+' 완성!</b><small>품질 '+restaurantQualityLabel(w.quality)+' · 자동 서빙 중…</small></div>';
  return'<div class="workOrder"><span>선택 주문</span><b>'+recipe.icon+' '+recipe.name+'</b><small>'+c.name+' · 남은 기다림 <strong id="selectedPatience">'+Math.max(0,Math.ceil(c.patience))+'초</strong></small></div>'+
    extraNeed+'<div class="ingredientShelf">'+ingredientButtons+'</div>'+action
 }
@@ -1759,8 +1759,8 @@ function renderRestaurant(){
  '<div class="restaurantStock"><strong>냉장고</strong>'+restaurantStockHtml()+'</div><div class="toolbar"><button class="btn dark" id="closeNightBtn">오늘 영업 마감</button></div>';
  document.querySelectorAll('#restaurantBody [data-customer]').forEach(b=>b.onclick=()=>selectRestaurantCustomer(Number(b.dataset.customer)));
  document.querySelectorAll('#restaurantBody [data-ingredient]').forEach(b=>b.onclick=()=>chooseRestaurantIngredient(b.dataset.ingredient));
- const ps=$('prepStartBtn'),pp=$('prepStopBtn'),cp=$('cookStopBtn'),sv=$('serveDishBtn');
- if(ps)ps.onclick=startRestaurantPrep;if(pp)pp.onclick=stopRestaurantPrep;if(cp)cp.onclick=stopRestaurantCook;if(sv)sv.onclick=serveRestaurantDish;
+ const ps=$('prepStartBtn'),pp=$('prepStopBtn'),cp=$('cookStopBtn');
+ if(ps)ps.onclick=startRestaurantPrep;if(pp)pp.onclick=stopRestaurantPrep;if(cp)cp.onclick=stopRestaurantCook;
  $('closeNightBtn').onclick=()=>finishRestaurant('조기 마감')
 }
 function updateRestaurantLive(){
@@ -1791,7 +1791,7 @@ function tickRestaurant(){
    w.meter+=w.dir*(7.8-(meta.shopUp.prep||0)*.55);if(w.meter>=100){w.meter=100;w.dir=-1}else if(w.meter<=0){w.meter=0;w.dir=1}
  }else if(w.stage==='cook'){
    w.meter+=Math.max(1.35,2.8-(meta.shopUp.stove||0)*.38);
-   if(w.meter>=100){w.meter=100;w.cookScore=.5;w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='조금 탔어요! 그래도 서빙은 할 수 있습니다.';beep(115,.09,'sawtooth');changed=true}
+   if(w.meter>=100){w.meter=100;w.cookScore=.5;w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='조금 탔어요! 그래도 자동으로 서빙합니다.';const customerId=w.customerId;beep(115,.09,'sawtooth');changed=true;queueRestaurantAutoServe(customerId)}
  }
  if(restaurant.spawnCd<=0&&restaurant.timeLeft>7&&restaurant.generated<restaurant.quota&&restaurant.customers.length<3&&availableRecipes().length){if(spawnRestaurantCustomer())changed=true}
  if(restaurant.timeLeft<=0){finishRestaurant('영업 시간 종료');return}
@@ -1820,9 +1820,15 @@ function stopRestaurantPrep(){
  const w=restaurant?.work;if(!w||w.stage!=='prep')return;
  w.prepScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.stage='cook';w.meter=0;const center=66+Math.random()*10,wide=10+(meta.shopUp.stove||0)*3;w.target0=center-wide;w.target1=center+wide;restaurant.message='손질 완료! 이제 알맞게 익혀서 불을 끄세요.';beep(w.prepScore>=1?900:430,.05);renderRestaurant()
 }
+function queueRestaurantAutoServe(customerId){
+ setTimeout(()=>{if(!restaurant||restaurant.finished||state!=='restaurant')return;const w=restaurant.work;if(w.stage!=='ready'||w.customerId!==customerId)return;
+  if(!restaurantCustomerById(customerId)){restaurant.work=restaurantWorkIdle();restaurant.selectedId=null;restaurant.message='손님이 떠나 다음 주문을 받습니다.';renderRestaurant();return}
+  serveRestaurantDish()
+ },280)
+}
 function stopRestaurantCook(){
  const w=restaurant?.work;if(!w||w.stage!=='cook')return;
- w.cookScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='플레이팅 완료 · 품질 '+restaurantQualityLabel(w.quality)+'!';beep(w.quality>=1.04?1180:760,.06);renderRestaurant()
+ w.cookScore=restaurantTimingScore(w.meter,w.target0,w.target1);w.quality=(w.prepScore+w.cookScore)/2;w.stage='ready';restaurant.message='플레이팅 완료 · 품질 '+restaurantQualityLabel(w.quality)+' · 자동 서빙!';const customerId=w.customerId;beep(w.quality>=1.04?1180:760,.06);renderRestaurant();queueRestaurantAutoServe(customerId)
 }
 function serveRestaurantDish(){
  if(!restaurant||restaurant.finished)return;
@@ -1863,12 +1869,20 @@ function finishRestaurant(reason='영업 종료'){
  $('nextDayBtn').onclick=()=>openNextMorning(false)
 }
 
+const CONTRACT_GEAR_RECOMMEND={reef:['net'],kelp:['knife','net'],ruins:['knife','gloves'],wreck:['harpoon'],abyss:['harpoon'],hadal:['harpoon','trap']};
+function contractRecommendedGear(contract){
+ const id=contract?.id||dockMissionId||'free';if(id==='free'&&meta.day===1)return['net'];return CONTRACT_GEAR_RECOMMEND[id]||[]
+}
+function recommendedGearText(contract){
+ const keys=contractRecommendedGear(contract);return keys.length?keys.map(k=>GEAR_DEFS[k]?.icon+' '+GEAR_DEFS[k]?.name).join(' · '):'자유 선택'
+}
 function contractCards(){
  const daily=dailyTaskForDay(meta.day),dailyCard='<div class="missionCard dailyMission"><span>오늘의 보너스 · 자동 적용</span><h3>'+daily.title+'</h3><p>'+daily.desc+'</p><div class="depthRating">안전 귀환 시 '+money(daily.reward)+'</div><b>주요 의뢰와 동시에 진행됩니다.</b></div>';
- return dailyCard+CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 주요 의뢰':'주요 탐사 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 주요 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
+ return dailyCard+CONTRACTS.map((c,i)=>{const locked=(c.unlock||0)>meta.unlocked,selected=!locked&&dockMissionId===c.id,rec=c.recommended||CONTRACT_DEPTH_RATING[i]||260;return'<button class="missionCard '+(selected?'selected ':'')+(locked?'locked':'')+'" '+(locked?'disabled':'data-mission="'+c.id+'"')+'><span>'+(locked?'잠긴 주요 의뢰':'주요 탐사 의뢰')+'</span><h3>'+c.title+'</h3><p>'+c.desc+'</p><div class="gearRecommend">추천 장비 · '+recommendedGearText(c)+'</div><div class="depthRating">권장 수심 '+rec+'m · 성공 보상 '+money(c.reward)+'</div><b>'+(locked?'이전 단계 조사를 완료하면 개방':selected?'✓ 오늘 주요 의뢰로 선택됨':'선택하기')+'</b></button>'}).join('')
 }
 function gearLoadoutCards(){
- const slots=2+(meta.up.slots||0);return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'';return'<button class="gearCard '+(selected?'selected':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'<br><b>'+gearCapabilityText(k,tier)+'</b></small><strong>'+(selected?'장착됨':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급</div>'
+ const slots=2+(meta.up.slots||0),mission=CONTRACTS.find(c=>c.id===dockMissionId)||FREE_DIVE,recommended=new Set(contractRecommendedGear(mission));
+ return Object.entries(GEAR_DEFS).map(([k,g])=>{const selected=meta.loadout.includes(k),tier=gearTier(k),src=ASSETS[g.asset]||'',rec=recommended.has(k);return'<button class="gearCard '+(selected?'selected ':'')+(rec?'recommended':'')+'" data-loadout="'+k+'" style="--tier:'+GEAR_TIER_COLORS[tier]+'"><div class="gearArt">'+(src?'<img src="'+src+'" alt="">':'')+'<span>'+g.icon+'</span></div><b>'+g.name+(rec?' <i>추천</i>':'')+'</b><em>'+GEAR_TIER_NAMES[tier]+' 등급 · Lv.'+tier+'</em><small>'+g.desc+'<br><b>'+gearCapabilityText(k,tier)+'</b></small><strong>'+(selected?'장착됨':rec?'추천 장비 · 빌리기':'빌리기')+'</strong></button>'}).join('')+'<div class="loadoutCount">채집 장비 '+meta.loadout.length+' / '+slots+'칸 · 카메라와 소나는 기본 지급 · 오늘 추천 '+recommendedGearText(mission)+'</div>'
 }
 function toggleDockGear(k){
  const slots=2+(meta.up.slots||0),i=meta.loadout.indexOf(k);if(i>=0)meta.loadout.splice(i,1);else if(meta.loadout.length<slots)meta.loadout.push(k);else{showHint('장비 슬롯이 가득 찼습니다. 장비 랙을 업그레이드하세요.',1000);return}save();openContracts()
@@ -1882,7 +1896,7 @@ function dockBuildingHtml(kind,label,sub,base,roof,feature,active=false,extra=''
 function dockDetailHtml(){
  if(dockTab==='gear')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>장비 창고</span><h3>오늘 빌려갈 채집 장비</h3></div><small>슬롯 안에서 장비를 골라 배에 싣습니다.</small></div><div class="gearGrid">'+gearLoadoutCards()+'</div></section>';
  if(dockTab==='missions')return '<section class="dockDetailPanel"><div class="dockDetailHead"><div><span>의뢰 사무소</span><h3>오늘 받을 탐사 의뢰</h3></div><small>의뢰는 완전히 선택 사항입니다. 자유 잠수도 바로 출항할 수 있습니다.</small></div><div class="missionGrid">'+contractCards()+'</div><button class="btn dark" id="clearMissionBtn">의뢰 없이 자유 잠수</button></section>';
- return '<section class="dockWelcome"><b>선착장에서 오늘 잠수를 준비하세요.</b><span>건물을 누르면 의뢰·장비·강화·도감을 열 수 있고, 오른쪽 탐사선을 누르면 바로 출항합니다.</span></section>'
+ const dayOne=meta.day===1?'<em class="rookieDockTip">첫날 추천 · 의뢰를 고르고 그물을 챙긴 뒤, 물고기 1마리를 잡아 오면 밤 식당까지 체험할 수 있어요.</em>':'';return '<section class="dockWelcome"><b>선착장에서 오늘 잠수를 준비하세요.</b><span>건물을 누르면 의뢰·장비·강화·도감을 열 수 있고, 오른쪽 탐사선을 누르면 바로 출항합니다.</span>'+dayOne+'</section>'
 }
 function openContracts(tab=dockTab){
  dockTab=tab||'none';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
