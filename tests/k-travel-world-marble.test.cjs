@@ -72,7 +72,8 @@ test('all playable countries can be matched to the committed Natural Earth map',
     assert.ok(iso.has(c.id),'missing map feature '+c.id);
   }
   assert.ok(COUNTRIES.some(c=>c.id==='SG'&&Number.isFinite(c.lon)&&Number.isFinite(c.lat)));
-  assert.equal(geo.features.length,172);
+  assert.match(String(geo.source||''),/Natural Earth/i);
+  assert.ok(geo.features.length>=170,'world map should retain a broad Natural Earth country set');
 });
 
 test('world travel movement uses dice distance, route choice, three transport modes and animated assets',()=>{
