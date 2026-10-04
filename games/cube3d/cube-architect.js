@@ -2183,6 +2183,8 @@ function removeCuboidAt(ax,ay,az,record=true){
   for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++){
     const x=ax+dx,y=ay+dy,z=az+dz;setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);
   }
+  for(let dx=0;dx<dims[0];dx++)for(let dz=0;dz<dims[2];dz++)
+    cleanupUnsupportedAt(ax+dx,ay+dims[1],az+dz,record);
   for(let dx=-1;dx<=dims[0];dx++)for(let dy=-1;dy<=dims[1];dy++)for(let dz=-1;dz<=dims[2];dz++){
     if(dx>=0&&dx<dims[0]&&dy>=0&&dy<dims[1]&&dz>=0&&dz<dims[2])continue;
     refreshBlockMesh(ax+dx,ay+dy,az+dz);
@@ -2199,9 +2201,10 @@ function removeWorldBlockData(x,y,z,record=true){
   if(data.type==='door'){
     setRawBlock(x,y,z,null);setRawBlock(x,y+1,z,null);
     if(record){markEdit(x,y,z,null);markEdit(x,y+1,z,null)}
-    refreshAround(x,y,z);refreshAround(x,y+1,z);return true;
+    refreshAround(x,y,z);refreshAround(x,y+1,z);cleanupUnsupportedAt(x,y+2,z,record);return true;
   }
-  setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);refreshAround(x,y,z);return true;
+  setRawBlock(x,y,z,null);if(record)markEdit(x,y,z,null);refreshAround(x,y,z);
+  cleanupUnsupportedAt(x,y+1,z,record);return true;
 }
 function inRenderRange(x,z){
   return Math.abs(x-streamCenterX)<=WORLD_VIEW_RADIUS&&Math.abs(z-streamCenterZ)<=WORLD_VIEW_RADIUS;
@@ -2416,7 +2419,7 @@ function initFree(){
     THREE.MathUtils.clamp(spawn[1],WORLD_MIN_Y+1.7,WORLD_MAX_Y+8),
     THREE.MathUtils.clamp(spawn[2],-WORLD_HALF+1,WORLD_HALF-1)
   );
-  freePhysicsY=camera.position.y;
+  freePhysicsY=camera.position.y;freeFallPeakY=freePhysicsY;
   freeAvatarRoot=null;freeAvatarSignature='';freeAvatarSyncAt=0;
   freeHeldToolRoot=null;freeHeldToolKey='';freeHeldToolToken++;
   setFreeView('third',false);refreshFreeAvatar(true);
@@ -3034,7 +3037,9 @@ function breakFreeBlock(hit){
 function toggleDoorAt(x,y,z){
   let data=getBlock(x,y,z);if(data?.type==='doorTop'){y-=1;data=getBlock(x,y,z)}
   if(!data||data.type!=='door')return false;
-  data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');markFreeWorldDirty();return true;
+  data={...data,open:!data.open};setWorldBlock(x,y,z,data,true);refreshBlockMesh(x,y+1,z);
+  if(data.open)cleanupUnsupportedAt(x,y+2,z,true);
+  sfx('place');toast(data.open?'문을 열었어요.':'문을 닫았어요.');markFreeWorldDirty();return true;
 }
 function pickTargetBlock(){
   const hit=freeCenterHit();if(!hit)return;let type=hit.object.userData.type,data=getBlock(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);
