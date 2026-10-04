@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>석기 시대에서 살아남기</title>
-<link rel="stylesheet" href="./style.css?v=12">
+<link rel="stylesheet" href="./style.css?v=13">
 </head>
 <body>
 <div id="app">
@@ -99,11 +99,11 @@
       <div class="heroEmoji">🪨🔥🏺🌾</div>
       <span class="eyebrow">생활 기술 카드 샌드박스</span>
       <h1>석기 시대에서<br>살아남기</h1>
-      <p>두 사람과 숲·들판·강가·바위언덕만 가지고 시작합니다. 자연은 이용할수록 줄고, 쉬게 두면 일부는 다시 회복됩니다. 탐험과 채집으로 버티다가 부족해진 자연을 <b>벌목장·밭·채석장 같은 안정적인 생산지</b>로 바꾸며 정착지를 키우세요.</p>
+      <p>두 사람과 숲·들판·강가·바위언덕만 가지고 시작합니다. 자연을 탐험하고 정착한 뒤, 산과 동굴에서 금속 광맥을 찾아 <b>신석기 → 청동기 → 철기</b>까지 발전하세요. 자연은 이용할수록 줄고, 금속 도구는 더 강력한 대신 더 많은 자원을 빠르게 사용합니다.</p>
       <div class="howGrid">
         <div><b>자연 탐험</b><span>사람을 자연 카드 위에 올려 세계를 직접 발견해요.</span></div>
         <div><b>사람이 행동력</b><span>탐험·채집 중인 사람은 그 시간 동안 다른 일을 못 해요.</span></div>
-        <div><b>살아 있는 자연</b><span>많이 이용하면 줄고, 재생 가능한 자연은 쉬게 두면 다시 회복돼요.</span></div>
+        <div><b>시대의 발전</b><span>석기 도구에서 청동과 철 제련까지 실제 생산 체계가 이어져요.</span></div>
       </div>
       <button id="startBtn" class="primaryBtn" type="button">석기 시대 생존 시작</button>
     </div>
@@ -113,7 +113,7 @@
     <div class="panel helpPanel">
       <button class="closeBtn" data-close="helpLayer" type="button">×</button>
       <span class="eyebrow">기본 조작</span>
-      <h2>탐험하고, 발견하고, 개척하세요</h2>
+      <h2>탐험하고, 정착하고, 철기까지 발전하세요</h2>
       <div class="helpGrid">
         <div><span>👤 + 🌿</span><b>느린 채집</b><small>작은 나무에서는 맨손으로 나뭇가지만 모을 수 있어요.</small></div>
         <div><span>🪨 + 🪨</span><b>찍개</b><small>같은 재료도 겹치면 제작이 일어날 수 있어요.</small></div>
@@ -143,6 +143,11 @@
         <p>🪓 간돌도끼 + 숲 → 벌목장 / 돌괭이 + 들판 → 개간지 / 찍개 + 바위언덕 → 채석장</p>
         <p>🌿 자연 상태가 낮아지면 자원·동물 발견 확률도 낮아짐 / 재생 가능한 자연은 작업하지 않을 때 서서히 회복</p>
         <p>📦 나뭇가지·돌·먹거리 같은 산출물은 가까운 같은 카드에 자동으로 합쳐져 보드가 덜 복잡해짐</p>
+        <p>⛏️ 찍개+목재 → 돌곡괭이 / 사람+돌곡괭이 → 광부 / 광부+금속 광맥 → 구리·주석·철광석</p>
+        <p>🥉 구리광석+고온가마 → 구리괴 / 주석광석+고온가마 → 주석괴 / 구리괴+주석괴 → 청동괴</p>
+        <p>🏛️ 신석기 마을×3 → 큰 취락 / 큰 취락+청동괴 → 청동기 중심 취락 / 중심 취락+돌×2 → 고인돌</p>
+        <p>⚒️ 점토×2+고온가마 → 철 제련로 / 철광석+숯 → 철 제련 재료 → 제련로 → 괴련철 → 청동망치 → 철괴</p>
+        <p>🏰 청동기 중심 취락+철괴 → 철기 마을 / 철도끼·철곡괭이·철괭이·철창은 철기 전문 작업자로 이어짐</p>
         <p>🌿 자연 상태가 낮아지면 자원·동물 발견 확률도 낮아짐 / 재생 가능한 자연은 작업하지 않을 때 서서히 회복</p>
         <p>📦 나뭇가지·돌·먹거리 같은 산출물은 가까운 같은 카드에 자동으로 합쳐져 보드가 덜 복잡해짐</p>
         <p>🐺 늑대·곰·적대 집단은 습격 전 카운트다운 표시 / 한 번 습격하거나 막히면 떠남</p>
@@ -178,7 +183,7 @@
   </div>
 </div>
 <script src="../../audio-manager.js?v=2"></script>
-<script src="./game.js?v=12"></script>
+<script src="./game.js?v=13"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="석기 시대에서 살아남기" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>
