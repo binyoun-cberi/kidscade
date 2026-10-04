@@ -26,11 +26,32 @@ button{font:inherit;color:inherit}
 .stage{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,251,230,.5),rgba(231,194,129,.42)),radial-gradient(circle at 60% 20%,rgba(255,255,255,.5),transparent 30%)}#gameCanvas{position:absolute;inset:0;width:100%;height:100%}.stage-labels{position:absolute;left:16px;top:50%;transform:translateY(-50%);z-index:2;display:grid;gap:20px;pointer-events:none}.lane-label{width:112px;height:58px;border-radius:22px;color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:900;text-shadow:0 2px 2px rgba(0,0,0,.35);box-shadow:0 6px 0 rgba(0,0,0,.18)}.lane-label.red{background:linear-gradient(#e14646,var(--red2))}.lane-label.blue{background:linear-gradient(#2878c8,var(--blue2))}.lane-label small{font-size:12px;opacity:.92}.center-toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:4;text-align:center;font-weight:900;font-size:clamp(30px,6vw,76px);color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.28),0 0 25px rgba(0,0,0,.35);pointer-events:none;opacity:0}.center-toast.show{animation:toastPop .8s both}@keyframes toastPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:0;transform:translate(-50%,-86%) scale(1)}}
 .guide-card{position:absolute;right:18px;bottom:18px;z-index:4;background:rgba(255,249,234,.86);border:2px solid rgba(100,55,35,.28);border-radius:20px;padding:13px 15px;max-width:340px;box-shadow:0 10px 20px rgba(0,0,0,.15);font-size:15px;line-height:1.4}.guide-card b{color:var(--red2)}.guide-card .measure{font-size:13px;color:var(--muted);margin-top:4px}.countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;pointer-events:none;background:radial-gradient(circle,rgba(50,25,12,.36),transparent 60%);font-size:clamp(70px,16vw,190px);font-weight:1000;color:#fff;text-shadow:0 8px 0 var(--red2),0 16px 26px rgba(0,0,0,.4)}
 .drumdeck{position:relative;min-height:226px;background:linear-gradient(180deg,var(--wood2),var(--wood));border-top:8px solid #a71919;box-shadow:0 -14px 26px rgba(0,0,0,.35);padding:18px 14px 24px}.woodgrain{position:absolute;inset:0;opacity:.16;background:repeating-linear-gradient(90deg,transparent 0 20px,#fff 21px 22px),repeating-linear-gradient(8deg,rgba(255,255,255,.55) 0 2px,transparent 2px 11px);pointer-events:none}.drums{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;width:min(930px,100%);margin:0 auto}.drum{height:190px;border-radius:999px;background:#fff5ce;border:14px solid #5b3729;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;box-shadow:inset 0 0 22px rgba(68,26,10,.18),0 10px 18px rgba(0,0,0,.35);position:relative}.drum::after{content:attr(data-mark);position:absolute;inset:0;display:grid;place-items:center;font-size:92px;font-weight:1000;opacity:.08;pointer-events:none}.pad{border:0;background:transparent;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;color:#fff;text-shadow:0 3px 3px rgba(0,0,0,.55);font-weight:1000;font-size:40px;transition:background .07s,transform .07s}.pad+.pad{border-left:1px solid rgba(0,0,0,.15)}.pad small{font-size:15px;margin-top:3px}.pad.red.active{background:rgba(198,40,40,.42);transform:scale(.96)}.pad.blue.active{background:rgba(22,102,177,.42);transform:scale(.96)}.center-controls{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;min-width:132px}.hit-help{color:#ffeec2;text-align:center;font-size:15px;line-height:1.35;font-weight:900}.big-hit{border:3px solid #f8d677;background:#8e1d17;color:#fff;border-radius:18px;padding:12px 16px;font-weight:1000;box-shadow:0 6px 0 rgba(0,0,0,.3);cursor:pointer}.big-hit:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+
+.performance-strip{position:relative;z-index:2;width:min(900px,96%);margin:0 auto 8px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#ffeec2;font-weight:900}
+.sinmyeong{display:grid;grid-template-columns:auto minmax(120px,280px) auto;align-items:center;gap:10px;min-width:0}
+.sinmyeong-track{height:17px;border-radius:999px;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.22);overflow:hidden;min-width:120px}
+.sinmyeong-track i{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#f7c948,#ff7b32,#e53935);transition:width .2s ease}
+.sinmyeong strong{min-width:42px;text-align:right}.festival-status{font-size:14px;text-align:right;white-space:nowrap}
+.janggu-wrap{position:relative;z-index:1;width:min(820px,94%);height:158px;margin:0 auto;display:grid;grid-template-columns:minmax(150px,1fr) minmax(110px,170px) minmax(150px,1fr);align-items:center;filter:drop-shadow(0 12px 12px rgba(0,0,0,.32))}
+.janggu-body{height:116px;margin:0 -18px;position:relative;z-index:1;clip-path:polygon(0 14%,28% 25%,42% 40%,50% 50%,42% 60%,28% 75%,0 86%,100% 86%,72% 75%,58% 60%,50% 50%,58% 40%,72% 25%,100% 14%);background:linear-gradient(180deg,#9b4d22,#6e2e18 44%,#4e1e12 52%,#8c3f1e);border-radius:30px}
+.janggu-body:before,.janggu-body:after{content:"";position:absolute;top:12px;bottom:12px;width:11px;background:#f0c24f;border-radius:99px}
+.janggu-body:before{left:25%}.janggu-body:after{right:25%}.janggu-body b{position:absolute;inset:0;display:grid;place-items:center;color:#ffe4a3;text-shadow:0 2px #4d1d12;font-size:18px}
+.janggu-body i{position:absolute;left:15%;right:15%;height:4px;background:#e33b31;transform:rotate(18deg);top:38%}.janggu-body i+ i{transform:rotate(-18deg);top:60%}
+.janggu-head{height:145px;border-radius:50%;position:relative;z-index:3;border:11px solid #583426;background:radial-gradient(circle at 44% 40%,#fffdf0 0 36%,#f1e2bc 70%,#d7bc88 100%);box-shadow:inset 0 0 0 5px rgba(111,66,39,.16),0 7px 0 rgba(0,0,0,.2);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:1000;touch-action:manipulation;transition:transform .07s,filter .07s}
+.janggu-head span{font-size:42px;text-shadow:0 2px #fff}.janggu-head small{font-size:13px;margin-top:2px;color:#735444}.janggu-head.gung span{color:var(--red)}.janggu-head.deok span{color:var(--blue)}
+.janggu-head.gung:before,.janggu-head.deok:before{content:"";position:absolute;inset:8px;border-radius:50%;border:4px dashed rgba(198,40,40,.28)}.janggu-head.deok:before{border-color:rgba(22,102,177,.3)}
+.janggu-head.active{transform:scale(.94);filter:brightness(.94)}.janggu-head.gung.active{box-shadow:inset 0 0 38px rgba(198,40,40,.38),0 3px 0 rgba(0,0,0,.22)}.janggu-head.deok.active{box-shadow:inset 0 0 38px rgba(22,102,177,.38),0 3px 0 rgba(0,0,0,.22)}
+.janggu-hand{position:absolute;left:10%;top:-22px;z-index:7;font-size:44px;transform:rotate(18deg);transform-origin:50% 100%;opacity:.9;pointer-events:none}.janggu-hand.hit{animation:handHit .16s ease-out}
+.janggu-stick{position:absolute;right:9%;top:-26px;width:9px;height:92px;border-radius:999px;background:linear-gradient(90deg,#f5ce74,#8a532c);transform:rotate(24deg);transform-origin:50% 8%;z-index:7;box-shadow:0 2px 4px rgba(0,0,0,.25);pointer-events:none}.janggu-stick:after{content:"";position:absolute;left:-4px;bottom:-4px;width:17px;height:17px;border-radius:50%;background:#7d3c24}.janggu-stick.hit{animation:stickHit .15s ease-out}
+@keyframes handHit{50%{transform:translateY(34px) rotate(-6deg) scale(.92)}}@keyframes stickHit{55%{transform:translate(-18px,45px) rotate(-8deg)}}
+.janggu-help{position:relative;z-index:2;text-align:center;color:#ffe8bc;font-size:13px;margin-top:1px}.janggu-help span{opacity:.72;margin-left:8px}
+.festival-crowd{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:3;white-space:nowrap;font-size:30px;letter-spacing:8px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.2));pointer-events:none;opacity:.92}
 .result{display:flex;align-items:center;justify-content:center;background:rgba(18,8,4,.72);backdrop-filter:blur(8px);z-index:20;padding:18px}.result-card{width:min(720px,94vw);border-radius:30px;padding:28px;text-align:center}.result-card h2{font-size:clamp(42px,7vw,72px);margin:0 0 12px;color:#f9c848;text-shadow:0 4px 0 var(--red2);-webkit-text-stroke:1px var(--red2)}.grade{font-size:84px;margin:4px 0 8px;font-weight:1000;color:var(--red);text-shadow:0 4px 0 #ffd56d}.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}.result-box{background:#fff7dc;border:2px solid #ead09f;border-radius:18px;padding:14px}.result-box span{font-size:14px;color:#76594a}.result-box b{display:block;font-size:29px;margin-top:5px}.result-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}.main-action{border:0;border-radius:999px;background:var(--red);color:#fff;font-size:24px;font-weight:1000;padding:15px 28px;box-shadow:0 7px 0 var(--red2),0 12px 20px rgba(0,0,0,.2);cursor:pointer}.main-action.secondary{background:#5c4035;box-shadow:0 7px 0 #2b1812,0 12px 20px rgba(0,0,0,.2)}.main-action:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.4)}
 .pause-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,8,4,.56);z-index:30}.pause-card{width:min(440px,92vw);border-radius:26px;padding:24px;text-align:center}.pause-card h3{font-size:42px;margin:0 0 16px}.pause-card .main-action{font-size:21px;margin:6px}
 @media(max-width:860px){.menu-card{grid-template-columns:1fr;overflow:auto}.brand .icon{font-size:54px}.brand h1{font-size:48px}.feature-grid{display:none}.topbar{grid-template-columns:1fr auto auto;gap:8px}.stat:nth-of-type(2),.stat:nth-of-type(3){display:none}.stat{min-width:70px;padding:7px}.stage-labels{left:8px}.lane-label{width:86px;height:48px;font-size:15px}.guide-card{right:10px;left:10px;bottom:10px;max-width:none;font-size:13px;padding:10px}.drumdeck{min-height:232px;padding:14px 8px 20px}.drums{gap:8px;grid-template-columns:1fr 72px 1fr}.drum{height:164px;border-width:10px}.drum::after{font-size:70px}.pad{font-size:32px}.pad small{font-size:12px}.center-controls{min-width:72px}.hit-help{font-size:12px}.big-hit{font-size:13px;padding:10px 9px}.result-grid{grid-template-columns:1fr 1fr}.result-box:last-child{grid-column:1/-1}.top-title span{display:none}}
-@media(max-width:520px){.song-title{font-size:18px}.badge{display:none}.drums{grid-template-columns:1fr 58px 1fr}.drum{height:138px}.pad{font-size:28px}.center-controls{min-width:58px}.hit-help{display:none}.top-btn{padding:9px}.stat b{font-size:18px}.top-title b{font-size:18px}.drumdeck{min-height:196px}}
+@media(max-width:520px){.song-title{font-size:18px}.badge{display:none}.top-btn{padding:9px}.stat b{font-size:18px}.top-title b{font-size:18px}.drumdeck{min-height:196px;padding:9px 6px 12px}.performance-strip{margin-bottom:4px}.sinmyeong{grid-template-columns:auto minmax(76px,1fr) auto;gap:6px;font-size:12px}.festival-status{display:none}.janggu-wrap{width:98%;height:130px;grid-template-columns:minmax(110px,1fr) 92px minmax(110px,1fr)}.janggu-head{height:118px;border-width:8px}.janggu-head span{font-size:34px}.janggu-body{height:94px;margin:0 -14px}.janggu-hand{font-size:34px;left:7%;top:-18px}.janggu-stick{height:74px;right:6%;top:-18px}.janggu-help{font-size:11px}.janggu-help span{display:none}}
 </style>
+<script src="../../kidscade-game-sdk.js" data-game-id="joseon_janggu" data-title="신명나는 쿵덕장구!" data-shell="false" data-mute="false" data-pauseable="true" data-orientation="landscape"></script>
 </head>
 <body>
 <div id="menuScreen" class="screen menu">
@@ -38,19 +59,19 @@ button{font:inherit;color:inherit}
     <section class="brand">
       <div class="icon">🥁</div>
       <h1>쿵덕장구</h1>
-      <p>궁·덕을 보고 치는 장구 리듬놀이. 두 줄 트랙으로 <b>왼손 궁</b>과 <b>오른손 덕</b>을 한눈에 구분해요.</p>
+      <p>진짜 장구처럼 <b>왼쪽 북편은 궁</b>, <b>오른쪽 채편은 덕</b>! 박자를 맞출수록 풍물판의 신명이 점점 커져요.</p>
       <div class="feature-grid">
-        <div class="feature"><b>두 줄 판정선</b><br>붉은 줄은 궁, 푸른 줄은 덕</div>
-        <div class="feature"><b>친절 판정</b><br>처음엔 덩도 한 번으로 연습 가능</div>
-        <div class="feature"><b>오프라인 단일 파일</b><br>외부 CDN 없이 바로 실행</div>
-        <div class="feature"><b>박자 도움</b><br>마디선·카운트다운·진행률 표시</div>
+        <div class="feature"><b>한 대의 장구</b><br>왼쪽 북편은 궁, 오른쪽 채편은 덕</div>
+        <div class="feature"><b>두 손 덩</b><br>큰 덩 음표는 양쪽 면을 함께 쳐요</div>
+        <div class="feature"><b>신명 게이지</b><br>잘 칠수록 풍물패가 하나씩 합류</div>
+        <div class="feature"><b>어린이 판정</b><br>정확한 연주는 살리고 난타는 막아요</div>
       </div>
     </section>
     <section class="song-panel">
       <h2>연주할 장단/노래 선택</h2>
       <div id="songList" class="song-list"></div>
       <div class="option-row">
-        <button id="assistToggle" class="toggle on" type="button">친절 판정 ON<small>덩/큰덕을 한 번 쳐도 인정</small></button>
+        <button id="assistToggle" class="toggle on" type="button">친절 판정 ON<small>덩은 한쪽을 먼저 쳐도 넉넉하게 기다려줘요</small></button>
         <button id="melodyToggle" class="toggle on" type="button">멜로디 가이드 ON<small>작은 안내음을 같이 재생</small></button>
       </div>
     </section>
@@ -60,7 +81,7 @@ button{font:inherit;color:inherit}
 <main id="gameScreen" class="screen game hidden">
   <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
   <header class="topbar">
-    <div class="top-title"><b id="songTitle">곡 제목</b><span id="songInfo">D/F = 궁 · J/K = 덕 · 큰 음표는 양쪽 키</span></div>
+    <div class="top-title"><b id="songTitle">곡 제목</b><span id="songInfo">왼쪽 장구면 = 궁 · 오른쪽 장구면 = 덕 · 덩은 양쪽 함께</span></div>
     <div class="stat"><span>점수</span><b id="uiScore">0</b></div>
     <div class="stat"><span>연타</span><b id="uiCombo">0</b></div>
     <div class="stat"><span>정확도</span><b id="uiAcc">100%</b></div>
@@ -70,27 +91,29 @@ button{font:inherit;color:inherit}
   <section class="stage" id="stage">
     <canvas id="gameCanvas"></canvas>
     <div class="stage-labels"><div class="lane-label red">궁<span><small>D / F</small></span></div><div class="lane-label blue">덕<span><small>J / K</small></span></div></div>
+    <div id="festivalCrowd" class="festival-crowd" aria-hidden="true"></div>
     <div id="centerToast" class="center-toast">얼쑤!</div>
     <div id="countdown" class="countdown hidden">3</div>
     <div class="guide-card"><b id="guideMain">판정선에 음표가 닿을 때 쳐요.</b><div class="measure" id="guideSub">붉은 음표는 궁, 푸른 음표는 덕입니다.</div></div>
   </section>
   <section class="drumdeck">
     <div class="woodgrain"></div>
-    <div class="drums">
-      <div class="drum" data-mark="궁">
-        <button class="pad red" id="padD" data-key="d" type="button">D<small>궁 왼쪽</small></button>
-        <button class="pad red" id="padF" data-key="f" type="button">F<small>궁 오른쪽</small></button>
-      </div>
-      <div class="center-controls">
-        <button class="big-hit" id="bigGung" type="button">덩<br><small>D+F</small></button>
-        <div class="hit-help">큰 음표는<br>두 손가락으로!</div>
-        <button class="big-hit" id="bigDeok" type="button" style="background:#0e4f91">큰덕<br><small>J+K</small></button>
-      </div>
-      <div class="drum" data-mark="덕">
-        <button class="pad blue" id="padJ" data-key="j" type="button">J<small>덕 왼쪽</small></button>
-        <button class="pad blue" id="padK" data-key="k" type="button">K<small>덕 오른쪽</small></button>
-      </div>
+    <div class="performance-strip">
+      <div class="sinmyeong"><b>신명</b><div class="sinmyeong-track"><i id="hypeFill"></i></div><strong id="hypeText">0%</strong></div>
+      <div id="festivalStatus" class="festival-status">혼자 장구를 시작해요</div>
     </div>
+    <div class="janggu-wrap" id="jangguWrap" aria-label="장구 연주판">
+      <div id="leftHand" class="janggu-hand left" aria-hidden="true">✋</div>
+      <button class="janggu-head gung" id="padGung" data-lane="gung" type="button" aria-label="궁, 왼쪽 북편">
+        <span>궁</span><small>왼쪽 북편</small>
+      </button>
+      <div class="janggu-body" aria-hidden="true"><i></i><i></i><b>장구</b></div>
+      <button class="janggu-head deok" id="padDeok" data-lane="deok" type="button" aria-label="덕, 오른쪽 채편">
+        <span>덕</span><small>오른쪽 채편</small>
+      </button>
+      <div id="rightStick" class="janggu-stick" aria-hidden="true"></div>
+    </div>
+    <div class="janggu-help"><b>터치:</b> 왼쪽 궁 · 오른쪽 덕 · <b>덩:</b> 두 면을 거의 동시에! <span>키보드 D/F · J/K도 가능</span></div>
   </section>
   <div id="pausePanel" class="pause-panel hidden">
     <div class="pause-card glass"><h3>잠깐 쉬기</h3><button id="resumeBtn" class="main-action" type="button">계속 연주</button><button id="quitBtn" class="main-action secondary" type="button">메뉴로</button></div>
@@ -121,7 +144,8 @@ const els = {
   menu:$('menuScreen'), game:$('gameScreen'), result:$('resultScreen'), songList:$('songList'), assist:$('assistToggle'), melody:$('melodyToggle'),
   canvas:$('gameCanvas'), stage:$('stage'), title:$('songTitle'), info:$('songInfo'), score:$('uiScore'), combo:$('uiCombo'), acc:$('uiAcc'), progress:$('progressFill'),
   mute:$('muteBtn'), pause:$('pauseBtn'), pausePanel:$('pausePanel'), resume:$('resumeBtn'), quit:$('quitBtn'), retry:$('retryBtn'), menuBtn:$('menuBtn'),
-  toast:$('centerToast'), countdown:$('countdown'), guideMain:$('guideMain'), guideSub:$('guideSub'), grade:$('grade'), resultScore:$('resultScore'), resultCombo:$('resultCombo'), resultAcc:$('resultAcc'), resultPerfect:$('resultPerfect'), resultGood:$('resultGood'), resultMiss:$('resultMiss'), bigGung:$('bigGung'), bigDeok:$('bigDeok')
+  toast:$('centerToast'), countdown:$('countdown'), guideMain:$('guideMain'), guideSub:$('guideSub'), grade:$('grade'), resultScore:$('resultScore'), resultCombo:$('resultCombo'), resultAcc:$('resultAcc'), resultPerfect:$('resultPerfect'), resultGood:$('resultGood'), resultMiss:$('resultMiss'),
+  padGung:$('padGung'), padDeok:$('padDeok'), leftHand:$('leftHand'), rightStick:$('rightStick'), hypeFill:$('hypeFill'), hypeText:$('hypeText'), festivalStatus:$('festivalStatus'), festivalCrowd:$('festivalCrowd')
 };
 const ctx = els.canvas.getContext('2d');
 let raf = 0, audioCtx = null, master = null, lastSong = null;
@@ -148,35 +172,55 @@ function parseSong(song){
     } t += dur; while(t>=nextMeasure+measureMs-1) nextMeasure += measureMs; });
   return {notes,duration:t+1300,measureMs};
 }
-const state = {playing:false,paused:false,start:0,pauseAt:0,song:null,notes:[],duration:0,measureMs:0,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,total:0,hitZone:150,speed:.62,particles:[],texts:[],melodyIndex:0,lastBeat:-1};
+const state = {playing:false,paused:false,start:0,pauseAt:0,song:null,notes:[],duration:0,measureMs:0,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,stray:0,total:0,hype:0,hitZone:150,speed:.62,particles:[],texts:[],melodyIndex:0,lastBeat:-1,lastHead:{gung:-9999,deok:-9999},pendingBig:null};
 function initAudio(){ if(audioCtx) { if(audioCtx.state==='suspended') audioCtx.resume(); return; } const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC(); master=audioCtx.createGain(); master.gain.value=.23; master.connect(audioCtx.destination); }
 function tone(freq,dur=.12,type='sine',gain=.2,delay=0){ if(!audioCtx||settings.muted||!freq) return; const t=audioCtx.currentTime+delay; const osc=audioCtx.createOscillator(); const g=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+dur); osc.connect(g); g.connect(master); osc.start(t); osc.stop(t+dur+.03); }
-function drum(lane,big=false){ if(!audioCtx||settings.muted) return; if(lane==='gung'){ tone(big?120:170,big?.30:.22,'sine',big?.46:.34); tone(big?72:95,big?.18:.14,'triangle',big?.13:.09,.015); } else { tone(big?560:720,big?.085:.055,'triangle',big?.28:.22); tone(big?1300:1700,big?.05:.035,'square',big?.06:.045,.01); } }
+function noiseBurst(freq=900,dur=.06,gain=.08,q=.8){ if(!audioCtx||settings.muted)return; const len=Math.max(1,Math.floor(audioCtx.sampleRate*dur)),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),data=buf.getChannelData(0); for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len); const src=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),g=audioCtx.createGain(); filter.type='bandpass';filter.frequency.value=freq;filter.Q.value=q;g.gain.value=gain;src.buffer=buf;src.connect(filter);filter.connect(g);g.connect(master);src.start(); }
+function drum(lane,big=false){ if(!audioCtx||settings.muted) return; if(lane==='gung'){ tone(big?92:118,big?.34:.26,'sine',big?.5:.38); tone(big?146:178,big?.18:.12,'triangle',big?.13:.08,.008); noiseBurst(big?260:330,big?.12:.08,big?.12:.075,.65); } else { tone(big?430:520,big?.105:.075,'triangle',big?.2:.16); noiseBurst(big?1450:1780,big?.09:.065,big?.18:.12,1.5); tone(big?960:1180,.035,'square',big?.035:.025,.006); } }
 function melody(freq,dur){ if(settings.melody) tone(freq,Math.min(.65,dur/1000*.7),'sine',.07); }
 function clickBeat(strong=false){ if(!settings.melody) return; tone(strong?900:660,.035,'square',strong?.05:.03); }
 function resize(){ const r=els.stage.getBoundingClientRect(); const dpr=Math.min(window.devicePixelRatio||1,2); els.canvas.width=Math.floor(r.width*dpr); els.canvas.height=Math.floor(r.height*dpr); els.canvas.style.width=r.width+'px'; els.canvas.style.height=r.height+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); state.hitZone=Math.min(178,r.width*.24); state.speed=r.width>900?.78:r.width>560?.62:.48; }
 window.addEventListener('resize',resize);
 function renderMenu(){ els.songList.innerHTML=''; songs.forEach(song=>{ const b=document.createElement('button'); b.type='button'; b.className='song-btn'; b.style.setProperty('--song',song.color); b.innerHTML=`<span class="song-emoji">${song.emoji}</span><span><span class="song-title">${song.title}</span><span class="song-desc">${song.desc} · ${song.bpm}BPM</span></span><span class="badge">${song.level}</span>`; b.onclick=()=>start(song); els.songList.appendChild(b); }); }
-function start(song){ initAudio(); lastSong=song; const map=parseSong(song); Object.assign(state,{playing:true,paused:false,start:performance.now(),pauseAt:0,song,notes:map.notes,duration:map.duration,measureMs:map.measureMs,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,total:map.notes.length,particles:[],texts:[],melodyIndex:0,lastBeat:-1}); els.title.textContent=song.emoji+' '+song.title; els.info.textContent=`${song.bpm}BPM · ${song.level} · 붉은 줄=궁, 푸른 줄=덕`; els.menu.classList.add('hidden'); els.result.classList.add('hidden'); els.game.classList.remove('hidden'); els.pausePanel.classList.add('hidden'); resize(); updateHud(); cancelAnimationFrame(raf); loop(); }
+function start(song){ initAudio(); lastSong=song; const map=parseSong(song); Object.assign(state,{playing:true,paused:false,start:performance.now(),pauseAt:0,song,notes:map.notes,duration:map.duration,measureMs:map.measureMs,score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,stray:0,total:map.notes.length,hype:0,particles:[],texts:[],melodyIndex:0,lastBeat:-1,lastHead:{gung:-9999,deok:-9999},pendingBig:null}); try{window.KidscadeGame?.start?.()}catch(_){} els.title.textContent=song.emoji+' '+song.title; els.info.textContent=`${song.bpm}BPM · ${song.level} · 붉은 줄=궁, 푸른 줄=덕`; els.menu.classList.add('hidden'); els.result.classList.add('hidden'); els.game.classList.remove('hidden'); els.pausePanel.classList.add('hidden'); resize(); updateHud(); cancelAnimationFrame(raf); loop(); }
 function currentTime(){ return performance.now()-state.start; }
-function updateHud(){ els.score.textContent=state.score; els.combo.textContent=state.combo; const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.75)/done*100):100; els.acc.textContent=acc+'%'; }
+function hypeStage(){return state.hype>=80?4:state.hype>=60?3:state.hype>=40?2:state.hype>=20?1:0}
+function updateFestival(){ const stages=[
+  ['혼자 장구를 시작해요','🧒'],
+  ['친구가 장단을 타기 시작했어요','🧒 👏'],
+  ['북이 합류했어요','🧒 🥁 👏'],
+  ['꽹과리까지! 판이 커져요','🧒 🥁 🎵 👏'],
+  ['얼씨구! 풍물판 완성!','🧒 🥁 🎵 🪭 🎉']
+]; const st=stages[hypeStage()]; if(els.hypeFill)els.hypeFill.style.width=state.hype+'%'; if(els.hypeText)els.hypeText.textContent=Math.round(state.hype)+'%'; if(els.festivalStatus)els.festivalStatus.textContent=st[0]; if(els.festivalCrowd)els.festivalCrowd.textContent=st[1]; }
+function changeHype(delta){const before=hypeStage();state.hype=Math.max(0,Math.min(100,state.hype+delta));const after=hypeStage();if(after>before)setToast(['','좋다! 친구가 왔어요!','북 합류!','얼씨구!','풍물판 완성!'][after],'#fff7c2');updateFestival()}
+function updateHud(){ els.score.textContent=state.score; els.combo.textContent=state.combo; const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.9)/done*100):100; els.acc.textContent=acc+'%'; updateFestival(); }
 function setToast(text,color){ els.toast.textContent=text; els.toast.style.color=color||'#fff'; els.toast.classList.remove('show'); void els.toast.offsetWidth; els.toast.classList.add('show'); }
 function addText(text,x,y,color){ state.texts.push({text,x,y,color,life:1,vy:-1.3}); }
 function sparks(x,y,color,count=10){ for(let i=0;i<count;i++){ state.particles.push({x,y,vx:(Math.random()-.5)*(count>18?16:10),vy:(Math.random()-.5)*(count>18?16:10),life:1,size:4+Math.random()*(count>18?8:5),color}); } }
 function laneY(lane,h){ return lane==='gung'?h*.38:h*.62; }
-function pressVisual(id){ const el=$(id); if(!el)return; el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),100); }
-function input(lane,key,forcedBig=false){ if(!state.playing||state.paused) return; initAudio(); const now=currentTime(); drum(lane,forcedBig); const h=els.stage.clientHeight; sparks(state.hitZone,laneY(lane,h),lane==='gung'?'#e53935':'#1e88e5',forcedBig?20:9);
-  let nearest=null, min=9999; for(const n of state.notes){ if(n.cleared||n.missed) continue; if(n.lane!==lane) continue; if(n.hitKeys.has(key)) continue; const diff=Math.abs(n.time-now); if(diff<190 && diff<min){min=diff; nearest=n;} }
-  if(!nearest){ const wrong=state.notes.find(n=>!n.cleared&&!n.missed&&Math.abs(n.time-now)<130); if(wrong){ state.combo=0; updateHud(); addText('엇박!',state.hitZone,laneY(lane,h)-36,'#555'); } return; }
-  nearest.hitKeys.add(key); const need=forcedBig ? 1 : (nearest.big && !settings.assist ? 2 : 1); if(nearest.hitKeys.size<need){ nearest.half=true; addText('한 번 더!',state.hitZone,laneY(lane,h)-36,'#ffca28'); return; }
-  nearest.cleared=true; let text='좋다!', pts=7, color='#2e7d32'; if(min<=48){text='얼쑤!';pts=12;color='#d84315';state.perfect++;} else {state.good++;}
-  if(nearest.big) pts*=2; state.combo++; state.maxCombo=Math.max(state.maxCombo,state.combo); state.score+=pts+Math.floor(state.combo/8); addText(text,state.hitZone,laneY(lane,h)-42,color); sparks(state.hitZone,laneY(lane,h),lane==='gung'?'#f44336':'#2196f3',nearest.big?28:16); if(state.combo&&state.combo%10===0) setToast(state.combo+'연타!', '#fff7c2'); updateHud(); }
-const keyToPad={d:'padD',f:'padF',j:'padJ',k:'padK'};
+function pressHead(lane){ const el=lane==='gung'?els.padGung:els.padDeok,actor=lane==='gung'?els.leftHand:els.rightStick;if(el){el.classList.add('active');setTimeout(()=>el.classList.remove('active'),100)}if(actor){actor.classList.remove('hit');void actor.offsetWidth;actor.classList.add('hit');setTimeout(()=>actor.classList.remove('hit'),180)}}
+function completeHit(n,min){ const h=els.stage.clientHeight;n.cleared=true;n.half=false;state.pendingBig=null;let text='좋다!',pts=8,color='#2e7d32';if(min<=80){text=['얼쑤!','좋~다!','절씨구!'][Math.floor(Math.random()*3)];pts=12;color='#d84315';state.perfect++;changeHype(n.big?10:7)}else{state.good++;changeHype(n.big?7:4)}if(n.big)pts*=2;state.combo++;state.maxCombo=Math.max(state.maxCombo,state.combo);state.score+=pts+Math.floor(state.combo/10);addText(text,state.hitZone,laneY(n.lane,h)-42,color);sparks(state.hitZone,laneY(n.lane,h),n.lane==='gung'?'#f44336':'#2196f3',n.big?30:16);if(state.combo&&state.combo%10===0)setToast(state.combo+'연타!','#fff7c2');updateHud()}
+function input(lane,key){ if(!state.playing||state.paused)return;initAudio();const now=currentTime(),h=els.stage.clientHeight;state.lastHead[lane]=now;pressHead(lane);drum(lane,false);sparks(state.hitZone,laneY(lane,h),lane==='gung'?'#e53935':'#1e88e5',9);
+  // 덩은 왼쪽 큰 음표를 기준으로 양쪽 장구면을 거의 동시에 쳐서 완성한다.
+  if(state.pendingBig&&!state.pendingBig.cleared&&!state.pendingBig.missed&&Math.abs(state.pendingBig.time-now)<230){
+    const n=state.pendingBig;n.hitKeys.add(lane);if(n.hitKeys.has('gung')&&n.hitKeys.has('deok')){drum('gung',true);drum('deok',true);completeHit(n,Math.abs(n.time-now));return}
+  }
+  let nearest=null,min=9999;for(const n of state.notes){if(n.cleared||n.missed)continue;const diff=Math.abs(n.time-now);if(diff>=190||diff>=min)continue;
+    if(n.big&&n.lane==='gung'){nearest=n;min=diff;continue}
+    if(n.lane===lane){nearest=n;min=diff}
+  }
+  if(!nearest){const wrong=state.notes.find(n=>!n.cleared&&!n.missed&&Math.abs(n.time-now)<190);if(wrong){state.combo=0;state.stray++;state.score=Math.max(0,state.score-2);changeHype(-5);addText('엇박!',state.hitZone,laneY(lane,h)-36,'#555');updateHud()}return}
+  if(nearest.big&&nearest.lane==='gung'){
+    nearest.hitKeys.add(lane);state.pendingBig=nearest;nearest.half=true;
+    const other=lane==='gung'?'deok':'gung';if(now-state.lastHead[other] <= (settings.assist?210:135)){nearest.hitKeys.add(other)}
+    if(nearest.hitKeys.has('gung')&&nearest.hitKeys.has('deok')){drum('gung',true);drum('deok',true);completeHit(nearest,min)}else addText('양쪽 함께!',state.hitZone,laneY('gung',h)-38,'#ffca28');
+    return
+  }
+  completeHit(nearest,min)
+}
 const keyLane={d:'gung',f:'gung',j:'deok',k:'deok'};
-window.addEventListener('keydown',e=>{ const k=e.key.toLowerCase(); if(e.repeat) return; if(k==='escape'&&state.playing){togglePause(true);return;} if(keyLane[k]){ e.preventDefault(); pressVisual(keyToPad[k]); input(keyLane[k],k,false); }});
-['padD','padF','padJ','padK'].forEach(id=>{ const el=$(id); el.addEventListener('pointerdown',e=>{e.preventDefault(); const k=el.dataset.key; pressVisual(id); input(keyLane[k],k,false);}); });
-els.bigGung?.addEventListener('pointerdown',e=>{e.preventDefault(); pressVisual('padD');pressVisual('padF');input('gung','big'+performance.now(),true);});
-els.bigDeok?.addEventListener('pointerdown',e=>{e.preventDefault(); pressVisual('padJ');pressVisual('padK');input('deok','big'+performance.now(),true);});
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(e.repeat)return;if(k==='escape'&&state.playing){togglePause(true);return}if(keyLane[k]){e.preventDefault();input(keyLane[k],k)}});
+[['padGung','gung'],['padDeok','deok']].forEach(([id,lane])=>{const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();input(lane,'touch-'+lane+'-'+e.pointerId)})});
 function togglePause(force){ if(!state.playing) return; if(!state.paused || force){ state.paused=true; state.pauseAt=performance.now(); els.pausePanel.classList.remove('hidden'); cancelAnimationFrame(raf); } else { state.paused=false; state.start += performance.now()-state.pauseAt; els.pausePanel.classList.add('hidden'); loop(); } }
 els.pause.onclick=()=>togglePause(false); els.resume.onclick=()=>togglePause(false); els.quit.onclick=()=>quitToMenu();
 els.mute.onclick=()=>{settings.muted=!settings.muted; els.mute.textContent=settings.muted?'소리 OFF':'소리 ON'; els.mute.style.background=settings.muted?'#d7c4a7':'#fff1cf';};
@@ -196,11 +240,14 @@ function loop(){ if(!state.playing||state.paused)return; const now=currentTime()
   const remain=2600-now; if(remain>0){ els.countdown.classList.remove('hidden'); els.countdown.textContent=remain>1800?'3':remain>1000?'2':remain>250?'1':'시작!'; } else els.countdown.classList.add('hidden');
   const beat=Math.floor((now-2600)/(60000/state.song.bpm)); if(beat!==state.lastBeat && beat>=0){state.lastBeat=beat; clickBeat(beat%4===0);}
   while(state.melodyIndex<state.notes.length && now>=state.notes[state.melodyIndex].time-20){ const n=state.notes[state.melodyIndex]; if(n.pitch&&!n.played){melody(n.pitch,n.duration); n.played=true;} state.melodyIndex++; }
-  let next=null; for(const n of state.notes){ if(n.cleared) continue; const y=laneY(n.lane,h); const x=state.hitZone+(n.time-now)*state.speed; if(!n.missed && now-n.time>190){ n.missed=true; state.miss++; state.combo=0; addText('아차!',state.hitZone,y-40,'#777'); updateHud(); }
+  let next=null; for(const n of state.notes){ if(n.cleared) continue; const y=laneY(n.lane,h); const x=state.hitZone+(n.time-now)*state.speed; if(!n.missed && now-n.time>190){ n.missed=true; n.half=false; if(state.pendingBig===n)state.pendingBig=null; state.miss++; state.combo=0; changeHype(-8); addText('아차!',state.hitZone,y-40,'#777'); updateHud(); }
     if(!n.missed && x>-80 && x<w+120) drawNote(n,x,y); if(!n.cleared&&!n.missed&&n.time>now && !next) next=n; }
-  if(next){ els.guideMain.textContent=`다음: ${next.label} ${next.big?'(큰 음표)':''}`; els.guideSub.textContent= next.lane==='gung' ? '붉은 줄이 판정선에 닿으면 D 또는 F를 치세요.' : '푸른 줄이 판정선에 닿으면 J 또는 K를 치세요.'; }
+  if(next){ els.guideMain.textContent=`다음: ${next.label} ${next.big&&next.lane==='gung'?'(두 면 함께)':''}`; els.guideSub.textContent= next.big&&next.lane==='gung' ? '큰 덩이 닿으면 왼쪽 궁과 오른쪽 덕을 거의 동시에 쳐요.' : next.lane==='gung' ? '붉은 음표가 닿으면 왼쪽 북편을 쳐요.' : '푸른 음표가 닿으면 오른쪽 채편을 쳐요.'; }
   drawEffects(); if(now>state.duration){ finish(); return; } raf=requestAnimationFrame(loop); }
-function finish(){ state.playing=false; cancelAnimationFrame(raf); els.game.classList.add('hidden'); els.result.classList.remove('hidden'); const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.75)/done*100):0; let grade='C'; if(acc>=95)grade='S'; else if(acc>=85)grade='A'; else if(acc>=70)grade='B'; els.grade.textContent=grade; els.resultScore.textContent=state.score; els.resultCombo.textContent=state.maxCombo; els.resultAcc.textContent=acc+'%'; els.resultPerfect.textContent=state.perfect; els.resultGood.textContent=state.good; els.resultMiss.textContent=state.miss; }
+function finish(){ state.playing=false; cancelAnimationFrame(raf); els.game.classList.add('hidden'); els.result.classList.remove('hidden'); const done=state.perfect+state.good+state.miss; const acc=done?Math.round((state.perfect+state.good*.9)/done*100):0; let grade='C'; if(acc>=92)grade='S'; else if(acc>=82)grade='A'; else if(acc>=68)grade='B'; els.grade.textContent=grade; els.resultScore.textContent=state.score; els.resultCombo.textContent=state.maxCombo; els.resultAcc.textContent=acc+'%'; els.resultPerfect.textContent=state.perfect; els.resultGood.textContent=state.good; els.resultMiss.textContent=state.miss;
+  const msg=acc>=92?'얼씨구! 장단을 아주 안정적으로 탔어요.':acc>=82?'좋다! 궁과 덕을 잘 구분했어요.':acc>=68?'잘했어요! 박자선을 조금 더 보고 다시 쳐봐요.':'천천히 궁·덕부터 다시 맞춰보면 금방 늘어요.';setToast(msg,'#fff7c2');
+  try{window.KidscadeGame?.score?.(state.score);window.KidscadeGame?.gameOver?.({score:state.score,accuracy:acc,maxCombo:state.maxCombo,perfect:state.perfect,good:state.good,miss:state.miss,stray:state.stray,hype:state.hype,song:state.song?.id||''})}catch(_){}
+}
 renderMenu();
 })();
 </script>
