@@ -223,10 +223,10 @@ test('walk-in venues keep social loops, animated merchants, themed density and b
 
 test('shop interior props keep service items off the floor and away from cutaway walls',()=>{
   assert.match(interiors,/VENUE_BOUNDS=\{x1:-5\.15,x2:5\.15,z1:-3\.62,z2:3\.62\}/);
-  assert.match(interiors,/market-register'[\s\S]*y:\.94/);
-  assert.match(interiors,/cafe-coffee-machine'[\s\S]*y:\.91/);
-  assert.match(interiors,/cafe-register'[\s\S]*y:\.91/);
-  assert.match(interiors,/cafe-cookie-jar'[\s\S]*y:\.92/);
+  assert.match(interiors,/cash-register\.glb'\),?\{x:3\.18,y:\.94[\s\S]*name:'market-register'/);
+  assert.match(interiors,/coffee-machine\.glb'\),?\{x:1\.85,y:\.91[\s\S]*name:'cafe-coffee-machine'/);
+  assert.match(interiors,/cash-register\.glb'\),?\{x:\.70,y:\.91[\s\S]*name:'cafe-register'/);
+  assert.match(interiors,/cookie-jar\.glb'\),?\{x:-1\.88,y:\.92[\s\S]*name:'cafe-cookie-jar'/);
   assert.doesNotMatch(interiors,/x:4\.35,z:2\.65/);
   assert.doesNotMatch(interiors,/resource-wood\.glb/);
 });
