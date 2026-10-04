@@ -74,12 +74,14 @@ test('Driver License v9 has examiner rules and immediate disqualification paths'
   assert.match(js,/안전사고 발생/);
 });
 
-test('Driver License v9 adds emergency hazard-light evaluation',()=>{
+test('Driver License v17 evaluates emergency stop before the three-second hazard window',()=>{
   assert.match(html,/id="hazard"/);
   assert.match(js,/function toggleHazard/);
   assert.match(js,/emergencyStopLimit:2/);
   assert.match(js,/emergencyHazardLimit:3/);
-  assert.match(js,/돌발 비상등 조작 지연/);
+  assert.match(js,/hazardElapsed=examiner\.emergencyStopTime===null\?0:emergencyTimer-examiner\.emergencyStopTime/);
+  assert.match(js,/정지 후 3초 이내 비상등 조작 실패/);
+  assert.match(js,/정지 전 비상등 조작/);
 });
 
 test('Driver License v9 requires three-second hill stop and parking-brake confirmation',()=>{
@@ -211,7 +213,7 @@ test('driving test uses QA-gated shared community 3D scenery',()=>{
   for(const id of ['nature.commonTreeA','prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
   assert.match(js,/sharedHouse/);
   assert.match(js,/sharedBus/);
-  assert.match(html,/driver-license\.js\?v=16/);
+  assert.match(html,/driver-license\.js\?v=17/);
 });
 
 
@@ -219,5 +221,27 @@ test('Driver License v16 respects shared 3D performance policy',()=>{
   assert.match(js,/shared3DShouldLoad/);
   assert.match(js,/sharedCoarse/);
   assert.match(js,/shadows:key!==\'sharedGrass\'/);
-  assert.match(html,/driver-license\.js\?v=16/);
+  assert.match(html,/driver-license\.js\?v=17/);
+});
+
+
+test('Driver License v17 adds randomized stationary control tasks',()=>{
+  assert.match(html,/id="headlight"/);
+  assert.match(html,/id="wiper"/);
+  assert.match(js,/const CONTROL_TASK_POOL=/);
+  assert.match(js,/function verifyControlAction/);
+  assert.match(js,/sectionResults=\{controls:'pending'/);
+  assert.match(js,/운전장치 조작 오류/);
+});
+
+test('Driver License v17 requires the T-parking confirmation line',()=>{
+  assert.match(js,/parkingSensorSeen/);
+  assert.match(js,/확인선 감지/);
+  assert.match(js,/parkingReverseSeen&&parkingSensorSeen&&kmh<\.7/);
+  assert.match(js,/line\(5\.45,\.24,42,36\.6,0x46d9ff/);
+});
+
+test('Driver License v17 suppresses coaching text during exam mode',()=>{
+  assert.match(js,/mode==='exam'&&gameState==='playing'/);
+  assert.match(js,/기능시험에서는 공략 설명을 숨기고/);
 });
