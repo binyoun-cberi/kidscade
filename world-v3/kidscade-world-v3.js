@@ -232,7 +232,7 @@ function prog(){
   p.maxEnergy=Number(p.maxEnergy??100);
   p.tools=p.tools||{};
   p.equippedTool=['hand','axe','pick'].includes(p.equippedTool)?p.equippedTool:'hand';
-  p.seeds={potato:2,carrot:2,tomato:2,strawberry:1,corn:1,pumpkin:1,...(p.seeds||{})};
+  p.seeds={potato:2,carrot:2,tomato:2,strawberry:1,corn:1,pumpkin:1,beet:1,lettuce:1,mushroom:1,rice:1,watermelon:1,wheat:1,bamboo:1,berry:1,...(p.seeds||{})};
   p.crops=p.crops||{};
   p.food=p.food||{};
   p.fishDex=p.fishDex||{};
@@ -1314,7 +1314,15 @@ const CROP_MODEL_FILES={
   carrot:['Carrot_1.fbx','Carrot_2.fbx','Carrot_3.fbx','Carrot_4.fbx'],
   tomato:['Tomato_1.fbx','Tomato_2.fbx','Tomato_3.fbx','Tomato_4.fbx'],
   corn:['Corn_1.fbx','Corn_2.fbx','Corn_3.fbx','Corn_4.fbx'],
-  pumpkin:['Pumpkin_1.fbx','Pumpkin_2.fbx','Pumpkin_3.fbx','Pumpkin_4.fbx']
+  pumpkin:['Pumpkin_1.fbx','Pumpkin_2.fbx','Pumpkin_3.fbx','Pumpkin_4.fbx'],
+  beet:['Beet_1.fbx','Beet_2.fbx','Beet_3.fbx','Beet_4.fbx'],
+  lettuce:['Lettuce_1.fbx','Lettuce_2.fbx','Lettuce_3.fbx','Lettuce_4.fbx'],
+  mushroom:['Mushroom_1.fbx','Mushroom_2.fbx','Mushroom_3.fbx','Mushroom_4.fbx'],
+  rice:['Rice_1.fbx','Rice_2.fbx','Rice_3.fbx','Rice_4.fbx'],
+  watermelon:['Watermelon_1.fbx','Watermelon_2.fbx','Watermelon_3.fbx','Watermelon_4.fbx'],
+  wheat:['Wheat_1.fbx','Wheat_2.fbx','Wheat_3.fbx','Wheat_4.fbx'],
+  bamboo:['Bamboo_1.fbx','Bamboo_2.fbx','Bamboo_3.fbx','Bamboo_4.fbx'],
+  berry:['BushBerries_1.fbx','BushBerries_2.fbx','BushBerries_3.fbx','BushBerries_4.fbx']
 };
 const ORCHARD_MODEL_FILES={
   apple:{ripe:'Apple_Crop.fbx',harvested:'Apple_Harvested.fbx'},
@@ -1326,7 +1334,15 @@ const CROP_DEF={
   tomato:{name:'토마토',color:0xc95142,growMs:38000},
   strawberry:{name:'딸기',color:0xe64949,growMs:36000},
   corn:{name:'옥수수',color:0xf0cb55,growMs:42000},
-  pumpkin:{name:'호박',color:0xe98932,growMs:47000}
+  pumpkin:{name:'호박',color:0xe98932,growMs:47000},
+  beet:{name:'비트',color:0xb7355b,growMs:34000},
+  lettuce:{name:'상추',color:0x70ad55,growMs:32000},
+  mushroom:{name:'버섯',color:0xd9c6a2,growMs:30000},
+  rice:{name:'벼',color:0xe4d176,growMs:44000},
+  watermelon:{name:'수박',color:0x4e9857,growMs:48000},
+  wheat:{name:'밀',color:0xd9b95d,growMs:41000},
+  bamboo:{name:'대나무',color:0x5f9d57,growMs:46000},
+  berry:{name:'베리',color:0x9d405f,growMs:39000}
 };
 function cropState(id){
   const p=prog();let state=p.crops[id];
