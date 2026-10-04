@@ -298,3 +298,18 @@ test('lower choice persists in public v3 state',()=>{
   assert.match(js,/lower:id/);
   assert.match(js,/하의 11종/);
 });
+
+
+test('hair visual regression keeps repaired partings solid and ponytail off the eye',()=>{
+  const loadHair=name=>JSON.parse(fs.readFileSync(path.join(starterDir,'hair',name),'utf8'));
+  const coordSet=data=>new Set(data.pixels.map(pixel=>pixel[0]+','+pixel[1]));
+  const side=coordSet(loadHair('side-part-hair-01.json'));
+  const curly=coordSet(loadHair('curly-hair-01.json'));
+  const pony=coordSet(loadHair('ponytail-hair-01.json'));
+  const sideRepair={22:[61,62,63],23:[61,62,63],24:[61,62,63],25:[60,61,62],26:[60,61,62],27:[60,61,62],28:[60,61,62],29:[60,61],30:[60,61],31:[60],33:[59]};
+  for(const [y,xs] of Object.entries(sideRepair))for(const x of xs)assert.ok(side.has(x+','+y),'side-part gap '+x+','+y);
+  const curlyRepair={38:[[61,61]],39:[[60,62],[72,72]],40:[[59,62],[71,73]],41:[[58,63],[70,73]],42:[[58,64],[69,74]],43:[[59,64],[70,75]],44:[[60,63],[71,75]],45:[[60,62],[71,74]],46:[[61,62],[72,73]]};
+  for(const [y,runs] of Object.entries(curlyRepair))for(const [a,b] of runs)for(let x=a;x<=b;x++)assert.ok(curly.has(x+','+y),'curly gap '+x+','+y);
+  const eyeMask=new Set(eyeCatalog.baseClearPixels.map(pixel=>pixel[0]+','+pixel[1]));
+  assert.deepEqual([...pony].filter(key=>eyeMask.has(key)),[]);
+});
