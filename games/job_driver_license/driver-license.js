@@ -211,9 +211,9 @@ function finishRun(){
       window.KidscadeStorage?.setRaw('driverLicenseBest',String(best));
       if(legacy) localStorage.removeItem(legacyKey);
     }catch(_){}
-    try{window.KidscadeGame?.gameOver?.({score,passed,license,disqualified:examiner.disqualified,reason:examiner.reason});}catch(_){}
+    try{window.KidscadeGame?.result?.({scope:'mission',status:passed?'completed':'failed',outcome:passed?'clear':'fail',score,passed,license,disqualified:examiner.disqualified,reason:examiner.reason});}catch(_){}
   }else{
-    try{window.KidscadeGame?.gameOver?.({practice:true,license});}catch(_){}
+    try{window.KidscadeGame?.milestone?.('practice_complete',{uniqueKey:license,practice:true,license});}catch(_){}
   }
 }
 
