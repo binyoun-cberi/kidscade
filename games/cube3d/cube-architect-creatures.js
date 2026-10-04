@@ -11,11 +11,20 @@ const SPECIES={
   pig:{id:'pig',name:'돼지',kind:'passive',biomes:['meadow','flowers'],asset:'pig',hp:1,speed:.42,radius:7,spawnCap:1},
   sheep:{id:'sheep',name:'양',kind:'passive',biomes:['meadow','forest'],asset:'sheep',hp:1,speed:.4,radius:7,spawnCap:1},
   chicken:{id:'chicken',name:'닭',kind:'passive',biomes:['meadow','flowers'],asset:'chicken',hp:1,speed:.36,radius:6,spawnCap:1},
+  chick:{id:'chick',name:'병아리',kind:'passive',biomes:['flowers','meadow'],asset:'chick',hp:1,speed:.32,radius:5,spawnCap:1},
+  cat:{id:'cat',name:'들고양이',kind:'passive',biomes:['meadow','forest'],asset:'cat',hp:1,speed:.58,radius:7,spawnCap:1},
+  dog:{id:'dog',name:'들개',kind:'passive',biomes:['meadow','forest'],asset:'dog',hp:1,speed:.64,radius:8,spawnCap:1},
+  horse:{id:'horse',name:'야생마',kind:'passive',biomes:['meadow'],asset:'horse',hp:2,speed:.82,radius:11,spawnCap:1},
+  raccoon:{id:'raccoon',name:'너구리',kind:'passive',biomes:['forest','pine'],asset:'raccoon',hp:1,speed:.52,radius:7,spawnCap:1},
   wolf:{id:'wolf',name:'늑대',kind:'passive',biomes:['pine','snow'],asset:'wolf',hp:2,speed:.78,radius:10,spawnCap:1},
   shadowBug:{id:'shadowBug',name:'그림자 벌레',kind:'hostile',biomes:['forest','pine','meadow'],asset:null,hp:3,speed:1.45,radius:10,nocturnal:true,damage:1,respawn:45,spawnCap:1,reward:{charcoal:1}},
   slime:{id:'slime',name:'늪 슬라임',kind:'hostile',biomes:['marsh'],asset:'slime',hp:3,speed:.9,radius:9,damage:1,respawn:70,spawnCap:1,reward:{clay:2}},
   burrower:{id:'burrower',name:'모래잠복충',kind:'hostile',biomes:['desert','badlands'],asset:'burrower',hp:4,speed:1.9,radius:11,damage:1,respawn:90,spawnCap:1,reward:{sand:3}},
   goblin:{id:'goblin',name:'숲 고블린',kind:'hostile',biomes:['forest'],asset:'goblin',hp:3,speed:1.05,radius:9,nocturnal:true,damage:1,respawn:80,spawnCap:1,reward:{stone:1}},
+  zombie:{id:'zombie',name:'밤 좀비',kind:'hostile',biomes:['meadow','forest'],asset:'zombie',hp:4,speed:.78,radius:9,nocturnal:true,damage:1,respawn:105,spawnCap:1,reward:{charcoal:1}},
+  wizard:{id:'wizard',name:'황야 마법사',kind:'hostile',biomes:['pine','badlands'],asset:'wizard',hp:5,speed:.76,radius:11,nocturnal:true,damage:2,respawn:145,spawnCap:1,reward:{quartz:1}},
+  demon:{id:'demon',name:'황야 악마',kind:'hostile',biomes:['badlands'],asset:'demon',hp:7,speed:.92,radius:12,nocturnal:true,damage:2,respawn:190,spawnCap:1,reward:{charcoal:2,ironOre:1}},
+  giant:{id:'giant',name:'거인',kind:'hostile',biomes:['badlands','snow'],asset:'giant',hp:9,speed:.62,radius:13,damage:2,respawn:240,spawnCap:1,reward:{stone:4,ironOre:1},elite:true},
   skeleton:{id:'skeleton',name:'해골 병사',kind:'hostile',biomes:['badlands','desert'],asset:'skeleton',hp:4,speed:1.02,radius:10,nocturnal:true,damage:1,respawn:110,spawnCap:1,reward:{charcoal:1,stone:1}},
   yeti:{id:'yeti',name:'설원 예티',kind:'hostile',biomes:['snow'],asset:'yeti',hp:6,speed:.86,radius:11,damage:2,respawn:160,spawnCap:1,reward:{snow:4,stone:2}},
   cubeGolem:{id:'cubeGolem',name:'큐브 골렘',kind:'hostile',biomes:['badlands'],asset:'golem',hp:9,speed:.82,radius:12,damage:2,respawn:300,spawnCap:1,reward:{stone:5,ironOre:1},elite:true}
@@ -102,12 +111,13 @@ function makeFallback(id){
   if(id==='deer')return fallbackDeer();
   if(id==='fox')return fallbackFox(false);
   if(id==='snowFox'||id==='wolf')return fallbackFox(id==='snowFox');
-  if(id==='frog'||id==='chicken')return fallbackFrog();
-  if(id==='camel'||id==='pig'||id==='sheep')return fallbackCamel();
+  if(id==='frog'||id==='chicken'||id==='chick')return fallbackFrog();
+  if(id==='cat'||id==='dog'||id==='raccoon')return fallbackFox(false);
+  if(id==='camel'||id==='pig'||id==='sheep'||id==='horse')return fallbackCamel();
   if(id==='shadowBug')return fallbackShadowBug();
   if(id==='slime')return fallbackSlime();
   if(id==='burrower')return fallbackBurrower();
-  if(id==='goblin'||id==='skeleton'||id==='yeti'||id==='cubeGolem')return fallbackGolem();
+  if(id==='goblin'||id==='skeleton'||id==='yeti'||id==='zombie'||id==='wizard'||id==='demon'||id==='giant'||id==='cubeGolem')return fallbackGolem();
   return holder();
 }
 function create(id){
