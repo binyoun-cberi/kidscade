@@ -186,5 +186,13 @@
         "durationMs": 180
       }
     ]
+  },
+  "customization": {
+    "skinColor": {
+      "mode": "runtime-palette-remap",
+      "freeColor": true,
+      "preserveShading": true,
+      "scope": "body-skin-only"
+    }
   }
 }
