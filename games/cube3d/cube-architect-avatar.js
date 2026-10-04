@@ -125,7 +125,8 @@ function animate(root,time,moving,onGround=true,motion='ground'){
   if(!rig)return;
 
   const swimming=motion==='swim',airborne=motion==='air';
-  const mode=moving&&(onGround||swimming)?'walk':'idle';
+  const groundMode=moving&&onGround?'walk':'idle';
+  const mode=swimming&&moving?'walk':groundMode;
   if(time-rig.lastFrameAt>=92||mode!==rig.lastMode){
     rig.lastFrameAt=time;
     rig.lastMode=mode;
