@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "lavender-knit-upper-01",
+  "label": "라벤더 니트",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "lavender-knit",
+  "palette": [
+    [
+      229,
+      218,
+      245,
+      255
+    ],
+    [
+      159,
+      132,
+      201,
+      255
+    ],
+    [
+      120,
+      95,
+      169,
+      255
+    ],
+    [
+      159,
+      132,
+      201,
+      255
+    ],
+    [
+      213,
+      190,
+      105,
+      255
+    ],
+    [
+      187,
+      164,
+      214,
+      255
+    ],
+    [
+      85,
+      66,
+      126,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

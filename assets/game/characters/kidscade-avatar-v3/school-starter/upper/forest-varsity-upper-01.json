@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "forest-varsity-upper-01",
+  "label": "포레스트 바시티",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "forest-varsity",
+  "palette": [
+    [
+      239,
+      228,
+      199,
+      255
+    ],
+    [
+      46,
+      112,
+      81,
+      255
+    ],
+    [
+      29,
+      78,
+      57,
+      255
+    ],
+    [
+      239,
+      228,
+      199,
+      255
+    ],
+    [
+      201,
+      155,
+      54,
+      255
+    ],
+    [
+      207,
+      190,
+      149,
+      255
+    ],
+    [
+      22,
+      58,
+      43,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

@@ -354,6 +354,7 @@
   },
   "partCatalogs": {
     "eyes": "eyes/catalog.json",
-    "hair": "hair/catalog.json"
+    "hair": "hair/catalog.json",
+    "upper": "upper/catalog.json"
   }
 }

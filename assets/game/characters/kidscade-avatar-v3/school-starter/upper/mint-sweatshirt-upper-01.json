@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "mint-sweatshirt-upper-01",
+  "label": "민트 맨투맨",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "clean-sweatshirt",
+  "palette": [
+    [
+      196,
+      235,
+      219,
+      255
+    ],
+    [
+      94,
+      180,
+      151,
+      255
+    ],
+    [
+      63,
+      145,
+      120,
+      255
+    ],
+    [
+      94,
+      180,
+      151,
+      255
+    ],
+    [
+      196,
+      235,
+      219,
+      255
+    ],
+    [
+      123,
+      194,
+      169,
+      255
+    ],
+    [
+      48,
+      111,
+      94,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "sky-stripe-upper-01",
+  "label": "하늘 스트라이프",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "sky-stripe",
+  "palette": [
+    [
+      245,
+      250,
+      252,
+      255
+    ],
+    [
+      104,
+      183,
+      220,
+      255
+    ],
+    [
+      65,
+      143,
+      184,
+      255
+    ],
+    [
+      245,
+      250,
+      252,
+      255
+    ],
+    [
+      247,
+      195,
+      80,
+      255
+    ],
+    [
+      171,
+      217,
+      235,
+      255
+    ],
+    [
+      47,
+      111,
+      150,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

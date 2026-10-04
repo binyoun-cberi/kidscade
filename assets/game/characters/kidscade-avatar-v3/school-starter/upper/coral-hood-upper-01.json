@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "coral-hood-upper-01",
+  "label": "코랄 후드 상의",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "coral-hood",
+  "palette": [
+    [
+      95,
+      54,
+      64,
+      255
+    ],
+    [
+      229,
+      111,
+      102,
+      255
+    ],
+    [
+      194,
+      77,
+      78,
+      255
+    ],
+    [
+      229,
+      111,
+      102,
+      255
+    ],
+    [
+      245,
+      172,
+      120,
+      255
+    ],
+    [
+      222,
+      130,
+      110,
+      255
+    ],
+    [
+      128,
+      51,
+      59,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

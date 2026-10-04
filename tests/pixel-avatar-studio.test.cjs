@@ -11,10 +11,11 @@ const starterDir=path.join(root,'assets/game/characters/kidscade-avatar-v3/schoo
 const manifest=JSON.parse(fs.readFileSync(path.join(starterDir,'manifest.json'),'utf8'));
 const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.json'),'utf8'));
 const hairCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair/catalog.json'),'utf8'));
+const upperCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'upper/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=45/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=46/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -217,4 +218,35 @@ test('hair choice persists beside eye choice in the v3 public avatar state',()=>
   assert.match(js,/state\.assetIds\.hair/);
   assert.match(js,/await loadHairPart\(state\.assetIds\.hair\)/);
   assert.match(js,/헤어 11종/);
+});
+
+
+test('v3 upper catalog adds ten JSON tops and keeps the builtin school uniform',()=>{
+  assert.equal(manifest.partCatalogs.upper,'upper/catalog.json');
+  assert.equal(upperCatalog.type,'kidscade-avatar-upper-catalog');
+  assert.equal(upperCatalog.layer,'upper');
+  assert.equal(upperCatalog.defaultId,'basic-school-uniform-upper-01');
+  assert.equal(upperCatalog.items.length,11);
+  assert.equal(upperCatalog.sourcePalette.length,7);
+  assert.equal(Object.keys(upperCatalog.frameBounds).length,23);
+  const extra=upperCatalog.items.filter(item=>item.id!==upperCatalog.defaultId);
+  assert.equal(extra.length,10);
+  for(const item of extra){
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'upper',item.file),'utf8'));
+    assert.equal(file.type,'kidscade-avatar-upper-part',item.id);
+    assert.equal(file.layer,'upper');
+    assert.equal(file.palette.length,7,item.id);
+    for(const color of file.palette)for(const value of color)assert.ok(Number.isInteger(value)&&value>=0&&value<=255,item.id);
+  }
+});
+test('public renderer applies selected tops to all 23 exact upper frame bounds',()=>{
+  assert.match(js,/async function loadUpperCatalog\(\)/);
+  assert.match(js,/function applyUpperPart\(target,frameId,upperId=selectedUpperId\(\)\)/);
+  assert.match(js,/data-upper-id/);
+  assert.deepEqual(Object.keys(upperCatalog.frameBounds),manifest.frameOrder);
+});
+test('upper choice persists in public v3 state',()=>{
+  assert.match(js,/state\.assetIds\.upper/);
+  assert.match(js,/await loadUpperPart\(state\.assetIds\.upper\)/);
+  assert.match(js,/상의 11종/);
 });

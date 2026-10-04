@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "navy-sports-upper-01",
+  "label": "네이비 체육복",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "navy-sports",
+  "palette": [
+    [
+      246,
+      246,
+      241,
+      255
+    ],
+    [
+      38,
+      74,
+      119,
+      255
+    ],
+    [
+      27,
+      50,
+      82,
+      255
+    ],
+    [
+      235,
+      235,
+      230,
+      255
+    ],
+    [
+      217,
+      76,
+      71,
+      255
+    ],
+    [
+      199,
+      204,
+      214,
+      255
+    ],
+    [
+      19,
+      37,
+      63,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-part",
+  "id": "black-graphic-upper-01",
+  "label": "블랙 그래픽",
+  "layer": "upper",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "design": "black-graphic",
+  "palette": [
+    [
+      221,
+      223,
+      225,
+      255
+    ],
+    [
+      56,
+      58,
+      63,
+      255
+    ],
+    [
+      32,
+      34,
+      38,
+      255
+    ],
+    [
+      224,
+      224,
+      220,
+      255
+    ],
+    [
+      237,
+      189,
+      64,
+      255
+    ],
+    [
+      157,
+      158,
+      162,
+      255
+    ],
+    [
+      18,
+      19,
+      22,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}
