@@ -618,15 +618,19 @@ function applyLayerAdjustmentPlan(frameId,layer,plan,assetId){
 
 async function applyFullAdjustment(data){
   validateFullAdjustmentFile(data);
-  const mismatches=[];
+  const mismatches=[],sourceTouchedLayers=new Set(),explicitDerivedByLayer=new Map();
   for(const [frameId,framePlan] of Object.entries(data.frames)){
+    const frame=frameRecord(frameId);
     for(const [layer,plan] of Object.entries(framePlan.layers)){
       if(plan?.baseChecksum&&canvasChecksum(layerCanvas(frameId,layer))!==String(plan.baseChecksum))mismatches.push(frameId+' / '+partLabel(layer));
+      if(frame.derived){
+        const set=explicitDerivedByLayer.get(layer)||new Set();set.add(frameId);explicitDerivedByLayer.set(layer,set);
+      }else sourceTouchedLayers.add(layer);
     }
   }
   if(mismatches.length&&!confirm('분석 이후 '+mismatches.join(', ')+' 픽셀이 바뀌었습니다. 그래도 전체 AI 보정을 적용할까요?'))return false;
 
-  let layerChanges=0;
+  let layerChanges=0,derivedChanges=0;
   for(const [frameId,framePlan] of Object.entries(data.frames)){
     for(const [layer,plan] of Object.entries(framePlan.layers)){
       const assetId=data.assetIds?.[layer]||data.target?.assetIds?.[layer]||assetIdForLayer(layer);
@@ -634,9 +638,12 @@ async function applyFullAdjustment(data){
       layerChanges++;
     }
   }
+  for(const layer of sourceTouchedLayers){
+    derivedChanges+=seedDerivedFramesForLayer(layer,{force:true,skipIds:explicitDerivedByLayer.get(layer)||new Set()});
+  }
   stopPlayback();selection=null;
-  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();render();saveLocal();
-  setStatus('전체 AI 보정 적용 완료 · '+layerChanges+'개 프레임/파츠 수정');
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal();
+  setStatus('전체 AI 보정 적용 완료 · 직접 '+layerChanges+'개 + 파생 '+derivedChanges+'개 갱신');
   return true;
 }
 
@@ -648,6 +655,10 @@ function buildPartAnalysis(layer=activeLayer){
     framesOut[frame.id]={
       kind:frame.kind,
       frameNumber:frame.n,
+      durationMs:frame.durationMs||null,
+      anchors:frame.anchors||null,
+      event:frame.event||null,
+      derived:!!frame.derived,
       part:{
         ...canvasMetrics(part),
         pixels:sparsePixelsOfCanvas(part,1)
@@ -696,7 +707,9 @@ function buildPartAnalysis(layer=activeLayer){
         'replacePixels clears the target frame first; omitted pixels become transparent.',
         'setPixels changes only listed pixels. RGBA alpha 0 clears a pixel.',
         'moveRect moves an existing rectangular pixel region before later operations.',
-        'Operations execute in listed order after optional copyFrom.'
+        'Operations execute in listed order after optional copyFrom.',
+        'If an old JSON only supplies STAND/WALK/JUMP, the studio derives ATTACK/HURT/DEAD/SIT/PICKUP automatically.',
+        'For best quality, explicitly provide action-frame pixels when clothing, hair or equipment needs pose-specific deformation.'
       ]
     }
   };
