@@ -1389,27 +1389,27 @@ function renderDungeonVoxelPuzzle(stage,theme){
   const poi=poiRules.poiById(dungeonSession?.poiId);if(!poi)return;
   const def=dungeonVoxelDefinition(poi,stage),active=new Set(dungeonSession?.puzzleState?.[stage]||[]);
   const old=dungeonPuzzleGroups.get(stage);if(old)scene.remove(old);
+  dungeonTargets=dungeonTargets.filter(t=>!(t.userData.targetKind==='shrineCell'&&t.userData.puzzleStage===stage));
   const group=new THREE.Group(),centerZ=dungeonVoxelRoomZ(stage);
   for(const p of def.allowed){
     const key=dungeonVoxelKey(p),on=active.has(key),mesh=new THREE.Mesh(
       new THREE.BoxGeometry(.76,.76,.76),
-      on?dungeonMaterial(theme.accent,theme.accent):new THREE.MeshBasicMaterial({color:theme.accent,wireframe:true,transparent:true,opacity:.18})
+      on?dungeonMaterial(theme.accent,theme.accent):new THREE.MeshBasicMaterial({color:theme.accent,wireframe:true,transparent:true,opacity:.24})
     );
     mesh.position.set((p[0]-1)*.86,.48+p[1]*.86,centerZ+(p[2]-.5)*.86);
-    group.add(mesh);
+    mesh.userData={
+      dungeonTarget:true,targetKind:'shrineCell',targetId:'cell-'+stage+'-'+key,
+      puzzleStage:stage,voxelKey:key,label:dungeonVoxelLabel(p)+(on?' 빼기':' 넣기')
+    };
+    group.add(mesh);dungeonTargets.push(mesh);
   }
   scene.add(group);dungeonPuzzleGroups.set(stage,group);
-  dungeonTargets.filter(t=>t.userData.targetKind==='shrineVoxel'&&t.userData.puzzleStage===stage).forEach(t=>{
-    const on=active.has(t.userData.voxelKey);glowDungeonTarget(t,on);glowDungeonTarget(t.userData.base,on);
-  });
 }
 function addDungeonVoxelControls(stage,def,theme){
-  const centerZ=dungeonVoxelRoomZ(stage);
-  def.allowed.forEach((p,i)=>{
-    const side=i%2?-4.9:4.9,row=Math.floor(i/2),z=centerZ+2.7-row*1.25,key=dungeonVoxelKey(p);
-    const target=addDungeonTarget('v'+stage+'-'+i,'shrineVoxel',side,z,theme.accent,dungeonVoxelLabel(p)+' 전환');
-    target.userData.puzzleStage=stage;target.userData.voxelKey=key;target.userData.base.userData.puzzleStage=stage;
-  });
+  const z=dungeonVoxelRoomZ(stage);
+  addDungeonBox(0,.08,z,3.8,.16,2.6,theme.wall);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.55,.045,8,40),new THREE.MeshBasicMaterial({color:theme.accent,transparent:true,opacity:.72}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(0,.19,z);scene.add(ring);
   renderDungeonVoxelPuzzle(stage,theme);
 }
 function dungeonShadowScores(poi){
@@ -1561,7 +1561,7 @@ function dungeonInteract(){
   const target=nearestDungeonTarget(2.6);
   if(!target){toast('조사할 장치에 조금 더 가까이 가 보세요.');return}
   const data=target.userData,stage=dungeonSession.stage||0;
-  if(data.targetKind==='shrineVoxel'){
+  if(data.targetKind==='shrineVoxel'||data.targetKind==='shrineCell'){
     if(data.puzzleStage!==stage){toast('지금 방의 수학 장치부터 해결해 보세요.');return}
     const poi=poiRules.poiById(dungeonSession.poiId),theme=DUNGEON_THEMES[poi?.dungeon?.theme]||DUNGEON_THEMES.marble;
     const active=new Set(dungeonSession.puzzleState?.[stage]||[]),on=!active.has(data.voxelKey);
@@ -1691,7 +1691,7 @@ function buildLandmarkDungeonScene(poi){
 function initDungeon(){
   const poi=dungeonSession&&poiRules.poiById(dungeonSession.poiId);
   if(!poi){dungeonSession=null;enterMode('free');return}
-  modeTitle('랜드마크 던전',poi.name+' · '+poi.dungeon.title);
+  modeTitle(dungeonSession?.shrineVersion?'랜드마크 수학 사당':'랜드마크 던전',poi.name+' · '+poi.dungeon.title);
   setVisible('dungeonHud',true);
   $('actionNext').classList.remove('hidden');$('actionNext').textContent='월드로 귀환';$('actionNext').onclick=returnFromDungeon;
   $('actionCheck').classList.remove('hidden');$('actionCheck').textContent='조사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=dungeonInteract;
