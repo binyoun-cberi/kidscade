@@ -81,7 +81,9 @@ test('world travel movement uses fair bounded tickets, three transport modes and
   assert.doesNotMatch(game,/found\.size>=28/);
   assert.match(game,/sort\(\(a,b\)=>a\.to\.localeCompare\(b\.to\)\)/);
   assert.match(game,/function pickTravelTickets\(routes,player,roll\)/);
-  assert.match(game,/const target=roll<=2\?3:4/);
+  assert.match(game,/const target=state\.round>=7\?3:\(roll<=2\?3:4\)/);
+  assert.match(game,/state\.round<=3/);
+  assert.match(game,/state\.round<=6/);
   assert.match(game,/prepareRouteChoice\(player,roll\)/);
   assert.match(game,/travelRoute\(player,option\)/);
   assert.match(game,/animateMapSegment\(from,to,mode,fast=false\)/);
