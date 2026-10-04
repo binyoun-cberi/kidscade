@@ -2862,7 +2862,7 @@ function fail(id){
   state.fakeScareToken++;state.fakeScareActive=false;els.fakeScare.className='fake-scare';els.fakeScare.setAttribute('aria-hidden','true');
   if(id!=='power')discover(id);
   state.gameOver=true;state.paused=true;state.running=false;
-  window.KidscadeGame?.gameOver?.({score:state.score,cleared:false,reason:id});
+  window.KidscadeGame?.result?.({scope:'shift',status:'failed',outcome:'fail',score:state.score,cleared:false,reason:id,mode:state.mode});
   if(id==='power')startPowerEnding();
   else startGhostJumpscare(id);
 }
