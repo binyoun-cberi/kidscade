@@ -13,7 +13,7 @@ const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.j
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=42/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=43/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -21,7 +21,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-2/);
+  assert.match(js,/pixel-v3-school-starter-3/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -52,7 +52,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-2'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-3'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -71,7 +71,7 @@ test('pixel canvas keeps crisp scaling and responsive controls',()=>{
 test('public studio supports free skin color without exposing JSON editing',()=>{
   assert.match(html,/data-tab="skin"/);
   assert.match(js,/const SKIN_PRESETS=/);
-  assert.match(js,/function buildSkinPalette\(\)/);
+  assert.match(js,/function loadSkinPalette\(\)/);
   assert.match(js,/function recolorSkin\(target\)/);
   assert.match(js,/function setSkinColor\(/);
   assert.match(js,/skinColorPicker/);
@@ -85,15 +85,18 @@ test('public studio supports free skin color without exposing JSON editing',()=>
   assert.equal(manifest.customization.skinColor.scope,'body-skin-only');
 });
 
-test('skin recoloring discovers a body-skin palette and preserves frame shading',()=>{
-  assert.match(js,/getImageData\(40,22,50,52\)/);
-  assert.match(js,/isLikelySkin\(r,g,b,a\)/);
-  assert.match(js,/filter\(item=>item\.count>=4\)/);
-  assert.match(js,/skinPalette\[0\]/);
-  assert.match(js,/srcHsl\.l-refHsl\.l/);
-  assert.match(js,/targetHsl\.l\+\(srcHsl\.l-refHsl\.l\)\*\.92/);
+test('skin recoloring uses the registered exact BODY palette instead of color guessing',()=>{
+  const skin=manifest.customization.skinColor;
+  assert.equal(skin.mode,'explicit-palette-remap-v2');
+  assert.equal(skin.defaultColor,'#fce2d2');
+  assert.equal(skin.sourcePalette.length,8);
+  assert.deepEqual(skin.sourcePalette.map(item=>item.source),['#fce2d2','#fac8b7','#d1b0ac','#cb9790','#9e7270','#9d8185','#805e61','#7b5053']);
+  assert.deepEqual(skin.sourcePalette.map(item=>item.shade),[1,.94,.85,.79,.68,.71,.62,.58]);
+  assert.match(js,/function loadSkinPalette\(\)/);
+  assert.match(js,/config\.sourcePalette/);
+  assert.match(js,/targetRgb\.map\(value=>Math\.max\(0,Math\.min\(255,Math\.round\(value\*src\.shade\)\)\)\)/);
   assert.match(js,/remap\.get\(colorKey\(data\[i\],data\[i\+1\],data\[i\+2\]\)\)/);
-  assert.doesNotMatch(js,/globalCompositeOperation=['"]source-atop['"]/);
+  assert.doesNotMatch(js,/isLikelySkin|getImageData\(40,22,50,52\)|rgbToHsl|hslToRgb/);
 });
 
 test('skin color persists in the v3 avatar state and reset returns to original tone',()=>{

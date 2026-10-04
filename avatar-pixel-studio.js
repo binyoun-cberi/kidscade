@@ -6,7 +6,7 @@ const SHEET_URL=ROOT+'/school-starter-sheet.png';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-2';
+const PREVIEW_VERSION='pixel-v3-school-starter-3';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -55,7 +55,7 @@ let previewRaf=0;
 let lastFrameIndex=-1;
 let seeds=0;
 let skinPalette=[];
-let skinBaseHex='#f2b89d';
+let skinBaseHex='#fce2d2';
 let skinRemapColor='';
 let skinRemap=new Map();
 let state={version:3,setId:'school-starter-01',skinColor:null};
@@ -92,65 +92,23 @@ function loadSheet(){
     img.src=SHEET_URL+'?v=1';
   });
 }
-function rgbToHsl(r,g,b){
-  r/=255;g/=255;b/=255;
-  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
-  let h=0;
-  const l=(max+min)/2;
-  const sat=d===0?0:d/(1-Math.abs(2*l-1));
-  if(d){
-    if(max===r)h=((g-b)/d)%6;
-    else if(max===g)h=(b-r)/d+2;
-    else h=(r-g)/d+4;
-    h*=60;if(h<0)h+=360;
-  }
-  return {h,s:sat,l};
-}
-function hslToRgb(h,s,l){
-  h=((h%360)+360)%360;
-  const c=(1-Math.abs(2*l-1))*s;
-  const x=c*(1-Math.abs((h/60)%2-1));
-  const m=l-c/2;
-  let r=0,g=0,b=0;
-  if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
-  else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
-  return [r,g,b].map(v=>Math.max(0,Math.min(255,Math.round((v+m)*255))));
-}
 function hexToRgb(hex){
   const safe=normalizeHexColor(hex)||skinBaseHex;
   return [parseInt(safe.slice(1,3),16),parseInt(safe.slice(3,5),16),parseInt(safe.slice(5,7),16)];
 }
-function rgbToHex(r,g,b){return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('')}
 function colorKey(r,g,b){return (r<<16)|(g<<8)|b}
-function isLikelySkin(r,g,b,a){
-  if(a<200)return false;
-  const hsl=rgbToHsl(r,g,b),value=Math.max(r,g,b)/255;
-  return value>=.54&&hsl.s>=.12&&hsl.s<=.62&&hsl.h>=5&&hsl.h<=42&&r>g&&g>=b*.92;
-}
-function buildSkinPalette(){
-  if(!sheet)return [];
-  const counts=new Map();
-  const scratch=document.createElement('canvas');
-  scratch.width=SIZE;scratch.height=SIZE;
-  const sc=scratch.getContext('2d',{alpha:true});
-  sc.imageSmoothingEnabled=false;
-  for(const index of [0,1]){
-    sc.clearRect(0,0,SIZE,SIZE);
-    sc.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
-    const data=sc.getImageData(40,22,50,52).data;
-    for(let i=0;i<data.length;i+=4){
-      const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
-      if(!isLikelySkin(r,g,b,a))continue;
-      const key=colorKey(r,g,b);
-      const rec=counts.get(key)||{key,r,g,b,count:0,hsl:rgbToHsl(r,g,b)};
-      rec.count++;counts.set(key,rec);
-    }
-  }
-  skinPalette=[...counts.values()].filter(item=>item.count>=4).sort((a,b)=>b.count-a.count).slice(0,8);
-  if(skinPalette.length){
-    const base=skinPalette[0];
-    skinBaseHex=rgbToHex(base.r,base.g,base.b);
-  }
+function loadSkinPalette(){
+  const config=manifest?.customization?.skinColor||{};
+  skinBaseHex=normalizeHexColor(config.defaultColor)||'#fce2d2';
+  const source=Array.isArray(config.sourcePalette)?config.sourcePalette:[];
+  skinPalette=source.map(entry=>{
+    const hex=normalizeHexColor(entry?.source);
+    const shade=Number(entry?.shade);
+    if(!hex||!Number.isFinite(shade)||shade<=0)return null;
+    const [r,g,b]=hexToRgb(hex);
+    return {key:colorKey(r,g,b),source:hex,shade:Math.max(.05,Math.min(1.25,shade)),role:String(entry?.role||'')};
+  }).filter(Boolean);
+  if(!skinPalette.length)throw new Error('v3 피부 팔레트가 등록되지 않았습니다.');
   skinRemapColor='';skinRemap=new Map();
   return skinPalette;
 }
@@ -158,14 +116,10 @@ function ensureSkinRemap(){
   const target=normalizeHexColor(state.skinColor);
   if(!target||!skinPalette.length)return null;
   if(skinRemapColor===target&&skinRemap.size)return skinRemap;
-  const [tr,tg,tb]=hexToRgb(target),targetHsl=rgbToHsl(tr,tg,tb);
-  const ref=skinPalette[0],refHsl=ref.hsl||rgbToHsl(ref.r,ref.g,ref.b);
+  const targetRgb=hexToRgb(target);
   const next=new Map();
   for(const src of skinPalette){
-    const srcHsl=src.hsl||rgbToHsl(src.r,src.g,src.b);
-    const light=Math.max(.025,Math.min(.975,targetHsl.l+(srcHsl.l-refHsl.l)*.92));
-    const sat=Math.max(0,Math.min(1,targetHsl.s*(.88+Math.min(1,srcHsl.s/(refHsl.s||.01))*.12)));
-    next.set(src.key,hslToRgb(targetHsl.h,sat,light));
+    next.set(src.key,targetRgb.map(value=>Math.max(0,Math.min(255,Math.round(value*src.shade)))));
   }
   skinRemapColor=target;skinRemap=next;
   return next;
@@ -477,7 +431,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-2',
+  version:'pixel-v3-school-starter-3',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -507,7 +461,7 @@ window.KidscadeAvatarShop={
 (async function boot(){
   await Promise.all([loadManifest(),loadSheet()]);
   await loadEyeCatalog();
-  buildSkinPalette();
+  loadSkinPalette();
   drawStatic();
   styleSummary.textContent='학교 탐험가 · 눈 11종 · 피부색 자유 설정 · 23프레임';
   selectTab('skin');
