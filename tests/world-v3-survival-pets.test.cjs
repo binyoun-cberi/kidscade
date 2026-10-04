@@ -10,6 +10,8 @@ const html=fs.readFileSync(path.join(root,'world-v3','kidscade-world.html'),'utf
 const integration=fs.readFileSync(path.join(root,'life-world-integration.js'),'utf8');
 const gardenBoot=fs.readFileSync(path.join(root,'garden.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
+const shopUi=fs.readFileSync(path.join(root,'shop-ui.js'),'utf8');
+const avatarIntegration=fs.readFileSync(path.join(root,'avatar-integration.js'),'utf8');
 
 test('World v3 survival runtime parses',()=>{
   const src=runtime.replace(/^import .*$/gm,'');
@@ -63,9 +65,18 @@ test('legacy garden runtime is retired from active boot',()=>{
   assert.doesNotMatch(gardenBoot,/garden-life\.js/);
   assert.doesNotMatch(gardenBoot,/pet-art\.js/);
   assert.match(gardenBoot,/life-world-integration\.js/);
-  assert.match(indexBase,/const gardenArtwork=\{\};/);
-  assert.match(indexBase,/const gardenController=null;/);
+  assert.doesNotMatch(indexBase,/gardenArtwork|gardenController|openGardenBuild/);
   assert.match(indexBase,/window\.openKidscadeLifeWorld\?\.\(\)/);
+});
+
+test('retired Garden bridges stay absent while compatibility bootstrap remains',()=>{
+  assert.doesNotMatch(indexBase,/gardenArtwork|gardenController|openGardenBuild/);
+  assert.doesNotMatch(shopUi,/renderGardenShortcut|openGardenBuild|KidscadeGarden/);
+  assert.doesNotMatch(avatarIntegration,/KidscadeGarden/);
+  assert.match(gardenBoot,/avatar-integration\.js/);
+  assert.match(gardenBoot,/seed-world-meta\.js/);
+  assert.match(gardenBoot,/avatar-preview-boot-fix\.js/);
+  assert.match(gardenBoot,/life-world-integration\.js/);
 });
 
 test('Cube Pets survival expansion follows the current Seed World cache',()=>{

@@ -1693,11 +1693,7 @@
                     },
                     claimDailyReward,
                     isDailyRewardClaimed: () => window.KidscadeDailyUI?.isDailyRewardClaimed?.(dailyUiContext()) === true,
-                    updatePetUI,
-                    openGardenBuild() {
-                        openSookFromSidebar('room');
-                        gardenController?.openBuild();
-                    }
+                    updatePetUI
                 };
             }
 
@@ -2540,14 +2536,6 @@
                     openGameModal(e, this);
                 });
             });
-
-
-
-            // Legacy garden / single-pet canvas is retired. Cube Pets lives in World v3.
-            const gardenArtwork={};
-            const gardenController=null;
-            const updateLegacyPetUI=updatePetUI;
-            updatePetUI=function(){updateLegacyPetUI();gardenController?.refresh();};
 
 
 
