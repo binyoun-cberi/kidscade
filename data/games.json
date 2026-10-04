@@ -237,8 +237,8 @@
         "touch",
         "keyboard"
       ],
-      "qualityStatus": "standard",
-      "classroom": false
+      "qualityStatus": "featured",
+      "classroom": true
     },
     {
       "id": "low_math_number_tower",
