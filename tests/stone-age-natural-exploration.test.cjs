@@ -9,7 +9,7 @@ const gameDir = path.join(ROOT, 'games/high_human_history_cards');
 
 function read(name){ return fs.readFileSync(path.join(gameDir, name), 'utf8'); }
 
-test('Stone Age v12 uses direct natural-region exploration instead of a global expedition button', () => {
+test('Stone Age v13 uses direct natural-region exploration instead of a global expedition button', () => {
   const html = read('index.html');
   const js = read('game.js');
   assert.doesNotThrow(() => new Function(js));
@@ -46,14 +46,14 @@ test('natural land can be converted into managed production sites', () => {
   assert.match(js, /간돌도끼\+숲→벌목장/);
 });
 
-test('catalog and game shell are cache-bumped to v12', () => {
+test('catalog and game shell are cache-bumped to v13', () => {
   const html = read('index.html');
   const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
   const entry = data.games.find(g => g.id === 'high_human_history_cards');
   assert.ok(entry);
-  assert.match(html, /style\.css\?v=12/);
-  assert.match(html, /game\.js\?v=12/);
-  assert.ok(entry.href.endsWith('?v=12'));
+  assert.match(html, /style\.css\?v=13/);
+  assert.match(html, /game\.js\?v=13/);
+  assert.ok(entry.href.endsWith('?v=13'));
 });
 
 test('v12 living nature depletes, recovers and changes exploration pressure', () => {
@@ -85,4 +85,50 @@ test('v12 managed production is deliberately stronger than wild extraction', () 
   assert.match(js, /quarry:40/);
   assert.match(js, /loggingCamp:\{ms:7000[^\n]+\['wood',3\]/);
   assert.match(js, /quarry:\{ms:7600[^\n]+\['stone',4\]/);
+});
+
+test('v13 Bronze and Iron Age progression is reachable from mining through settlement', () => {
+  const js = read('game.js');
+  for (const token of ['copperVein','tinVein','ironVein','stonePick','miner','copperIngot','tinIngot','bronzeIngot','bronzeCenter','bloomery','ironBloom','ironIngot','ironTown']) {
+    assert.ok(js.includes(token), token);
+  }
+  assert.match(js, /\['chopper','wood',1,1,\[\['stonePick',1\]\]/);
+  assert.match(js, /\['copperOre','highKiln',1,0,\[\['copperIngot',1\]\]/);
+  assert.match(js, /\['tinOre','highKiln',1,0,\[\['tinIngot',1\]\]/);
+  assert.match(js, /\['copperIngot','tinIngot',1,1,\[\['bronzeIngot',1\]\]/);
+  assert.match(js, /\['ironOre','charcoal',1,1,\[\['ironCharge',1\]\]/);
+  assert.match(js, /\['ironCharge','bloomery',1,0,\[\['ironBloom',1\]\]/);
+  assert.match(js, /\['ironBloom','bronzeHammer',1,0,\[\['ironIngot',1\]\]/);
+  assert.match(js, /\['bronzeCenter','ironIngot',1,1,\[\['ironTown',1\]\]/);
+});
+
+test('v13 metal specialists create real productivity progression', () => {
+  const js = read('game.js');
+  assert.match(js, /bronzeLumberjack/);
+  assert.match(js, /bronzeMiner/);
+  assert.match(js, /ironLumberjack/);
+  assert.match(js, /ironMiner/);
+  assert.match(js, /ironFarmer/);
+  assert.match(js, /ironHunter/);
+  assert.match(js, /tier===2\?6:tier===1\?4:3/);
+  assert.match(js, /tier===2\?3:tier===1\?2:1/);
+  assert.match(js, /ecoUse:cost/);
+});
+
+test('v13 age HUD, goals and milestones extend through the Iron Age', () => {
+  const js = read('game.js');
+  assert.match(js, /function ageRank\(/);
+  assert.match(js, /청동기 생활/);
+  assert.match(js, /철기 생활/);
+  assert.match(js, /청동기 중심 취락 완성/);
+  assert.match(js, /철기 마을을 완성했어요/);
+  assert.match(js, /철기 시대 정착 완성/);
+  assert.match(js, /철기 마을을 완성한다/);
+});
+
+test('v13 tin has both exploration and trade paths and dolmen does not consume the Bronze center', () => {
+  const js = read('game.js');
+  assert.match(js, /\['tinVein',7\]/);
+  assert.match(js, /주석 교역/);
+  assert.match(js, /\['bronzeCenter','stone',0,2,\[\['dolmen',1\]\]/);
 });
