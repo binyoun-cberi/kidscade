@@ -56,9 +56,9 @@ const ROUTES=[
 ['CN','MN',['rail']],['CN','VN',['rail','air']],['CN','IN',['air']],['CN','RU',['rail','air']],['VN','TH',['rail']],['TH','SG',['rail','air']],['SG','ID',['sea','air']],['SG','IN',['air']],['SG','AU',['air']],['ID','AU',['sea','air']],['IN','AE',['air']],['AE','TR',['air']],['TR','RU',['air']],['TR','GR',['sea','air']],['TR','AT',['rail']],
 ['RU','PL',['rail']],['RU','DE',['air']],['GB','FR',['rail','sea']],['GB','NL',['sea','air']],['GB','US',['air']],['GB','CA',['air']],
 ['FR','BE',['rail']],['FR','CH',['rail']],['FR','ES',['rail']],['FR','MA',['air']],['FR','US',['air']],['ES','PT',['rail']],['ES','MA',['sea']],
-['DE','NL',['rail']],['DE','PL',['rail']],['DE','CZ',['rail']],['DE','AT',['rail']],['NL','BE',['rail']],['BE','FR',['rail']],['CH','IT',['rail']],['CH','AT',['rail']],['IT','AT',['rail']],['IT','GR',['sea','air']],['IT','EG',['sea','air']],['AT','CZ',['rail']],['AT','PL',['rail']],['CZ','PL',['rail']],['GR','EG',['sea','air']],
+['DE','NL',['rail']],['DE','PL',['rail']],['DE','CZ',['rail']],['DE','AT',['rail']],['NL','BE',['rail']],['CH','IT',['rail']],['CH','AT',['rail']],['IT','AT',['rail']],['IT','GR',['sea','air']],['IT','EG',['sea','air']],['AT','CZ',['rail']],['AT','PL',['rail']],['CZ','PL',['rail']],['GR','EG',['sea','air']],
 ['EG','MA',['air']],['EG','KE',['air']],['MA','ZA',['air']],['KE','TZ',['rail','air']],['TZ','ZA',['air']],
-['US','CA',['rail','air']],['US','MX',['rail','air']],['US','CU',['sea','air']],['US','BR',['air']],['CA','GB',['air']],['MX','CU',['sea','air']],['MX','CO',['air']],
+['US','CA',['rail','air']],['US','MX',['rail','air']],['US','CU',['sea','air']],['US','BR',['air']],['MX','CU',['sea','air']],['MX','CO',['air']],
 ['CO','PE',['air']],['CO','BR',['air']],['PE','CL',['air']],['PE','BR',['air']],['BR','AR',['rail','air']],['BR','PT',['air']],['AR','CL',['rail']],
 ['AU','NZ',['sea','air']],['AU','FJ',['sea','air']],['NZ','FJ',['air']]
 ].map((r,i)=>({id:'r'+i,a:r[0],b:r[1],modes:r[2]}));
