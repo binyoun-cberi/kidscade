@@ -3372,16 +3372,34 @@ function flowInto(x,y,z,type,level){
   }
   setWorldBlock(x,y,z,{type,level,flow:true},true);reactFluidsNear(x,y,z);return true;
 }
+function openDoorCell(x,y,z,data=getBlock(x,y,z)){
+  if(data?.type==='door')return !!data.open;
+  if(data?.type==='doorTop'){
+    const base=getBlock(x,Number.isFinite(data.baseY)?data.baseY:y-1,z);
+    return !!(base?.type==='door'&&base.open);
+  }
+  return false;
+}
+function flowLiquidStep(x,y,z,type,level,dx,dy,dz){
+  let tx=x+dx,ty=y+dy,tz=z+dz,steps=0;
+  while(steps<2&&openDoorCell(tx,ty,tz)){
+    tx+=dx;ty+=dy;tz+=dz;steps++;
+  }
+  return flowInto(tx,ty,tz,type,level);
+}
 function simulateLiquids(){
   const liquids=[];
   forEachActiveWorldBlock((key,d)=>{if((d.type==='water'||d.type==='lava')&&!d.naturalSea)liquids.push([key,d])});
   for(const [key,d] of liquids.slice(0,90)){
     const [x,y,z]=parseWorldKey(key),level=d.level||1;if(!getBlock(x,y,z))continue;
-    if(!getBlock(x,y-1,z)&&y>WORLD_MIN_Y+1){flowInto(x,y-1,z,d.type,Math.max(level,2));continue}
+    const below=getBlock(x,y-1,z);
+    if((!below||openDoorCell(x,y-1,z,below))&&y>WORLD_MIN_Y+1){
+      flowLiquidStep(x,y,z,d.type,Math.max(level,2),0,-1,0);continue
+    }
     if(level<=1)continue;if(d.type==='lava'&&freeSimTick%2)continue;
     const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
     for(let i=0;i<dirs.length;i++){
-      const v=dirs[(i+freeSimTick)%4];flowInto(x+v[0],y,z+v[1],d.type,level-1);
+      const v=dirs[(i+freeSimTick)%4];flowLiquidStep(x,y,z,d.type,level-1,v[0],0,v[1]);
     }
   }
 }
@@ -3525,9 +3543,12 @@ function registerCreatureMeshes(root){
   });
 }
 function creatureGroundY(x,z,fromY=terrainHeight(Math.round(x),Math.round(z))+1){
-  const cx=Math.round(x),cz=Math.round(z),start=Math.min(WORLD_MAX_Y,Math.floor(fromY+1.2));
+  const cx=blockCoordFromWorld(x),cz=blockCoordFromWorld(z),start=Math.min(WORLD_MAX_Y,Math.floor(fromY+1.2));
   const bottom=Math.max(WORLD_MIN_Y,Math.floor(fromY-3));
-  for(let y=start;y>=bottom;y--)if(isSolidData(getBlock(cx,y,cz),cx,y,cz))return y+1;
+  for(let y=start;y>=bottom;y--){
+    const d=getBlock(cx,y,cz),top=collisionTopForData(d,cx,y,cz,x,z);
+    if(top!==null)return top;
+  }
   return terrainHeight(cx,cz)+1;
 }
 function placeWildCreature(id,x,z){
@@ -3670,15 +3691,21 @@ function nearestCreatureLight(x,z,r=7){
   }
   return best;
 }
+function supportDataBelow(wx,feetY,wz,maxDrop=1.4){
+  const x=blockCoordFromWorld(wx),z=blockCoordFromWorld(wz);
+  const start=Math.min(WORLD_MAX_Y,Math.floor(feetY+.08)),bottom=Math.max(WORLD_MIN_Y,Math.floor(feetY-maxDrop));
+  let best=null,bestTop=-Infinity;
+  for(let y=start;y>=bottom;y--){
+    const data=getBlock(x,y,z),top=collisionTopForData(data,x,y,z,wx,wz);
+    if(top!==null&&top<=feetY+.14&&top>bestTop){best={data,top,x,y,z};bestTop=top}
+  }
+  return best;
+}
 function playerStandingMaterial(){
-  const x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
-  const y=Math.floor(freePhysicsY-1.7);
-  return getBlock(x,y,z)?.type||'';
+  return supportDataBelow(camera.position.x,freePhysicsY-1.62,camera.position.z)?.data?.type||'';
 }
 function creatureStandingMaterial(root){
-  const x=blockCoordFromWorld(root.position.x),z=blockCoordFromWorld(root.position.z);
-  const y=Math.floor(root.position.y-1);
-  return getBlock(x,y,z)?.type||'';
+  return supportDataBelow(root.position.x,root.position.y,root.position.z)?.data?.type||'';
 }
 function creatureHint(spec){
   const hints={
@@ -3991,6 +4018,10 @@ function damageByEnvironment(state,t){
   if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
   return false;
 }
+function updateUnderwaterVisual(underwater){
+  const overlay=$('underwaterOverlay');if(!overlay)return;
+  overlay.classList.toggle('active',!!underwater&&mode==='free');
+}
 function updateBreathUi(underwater){
   const bar=$('breathBar'),fill=$('breathFill');if(!bar||!fill)return;
   const show=gameFreeMode==='survival'&&(underwater||survivalBreath<99.5);
@@ -4002,6 +4033,7 @@ function updateBreathUi(underwater){
   }
 }
 function updateBreath(state,dt,t){
+  updateUnderwaterVisual(state.headUnderWater);
   if(gameFreeMode!=='survival'){survivalBreath=100;updateBreathUi(false);return false}
   if(state.headUnderWater){
     survivalBreath=Math.max(0,survivalBreath-dt*9);
@@ -4154,7 +4186,8 @@ function updateSurvivalEnvironment(dt){
 function updateFree(dt,t){
   // Pause the world while young players are reading recipes or using the furnace.
   if(inventoryOpen||furnaceOpen){
-    updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
+    updateDayNight(0);updateWeather(0,t);updateMathOverlay();
+    updateUnderwaterVisual(playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z).headUnderWater);return;
   }
   updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
   updateSurvivalEnvironment(dt);updateMining(dt);
