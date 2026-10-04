@@ -480,17 +480,19 @@ function specialistNatureAction(worker,node){
   if(canUseNature(node,cost))return false;
   showToast('🍂 '+C[node.type].name+'의 자연 자원이 부족합니다. '+msg);return true;
  };
- if(worker.type==='lumberjack'&&FOREST_REGIONS.has(node.type)){
-  if(depleted(2,'쉬게 두거나 벌목장으로 개척해 보세요.'))return {blocked:true};
-  return {ms:7600,label:'숲에서 목재 찾는 중',out:node.type==='denseForest'?[['wood',2],['branch',1]]:[['wood',1],['branch',1]],oneShot:true,life:'hunt',ecoUse:2};
+ if(LUMBER_WORKERS.has(worker.type)&&FOREST_REGIONS.has(node.type)){
+  const tier=workerTier(worker.type),cost=tier===2?3:2;
+  if(depleted(cost,'쉬게 두거나 벌목장으로 개척해 보세요.'))return {blocked:true};
+  const wood=tier===2?5:tier===1?3:(node.type==='denseForest'?2:1);
+  return {ms:tier===2?5900:tier===1?6700:7600,label:tier===2?'철도끼로 대량 벌목 중':tier===1?'청동도끼로 벌목 중':'숲에서 목재 찾는 중',out:[['wood',wood],['branch',1]],oneShot:true,life:'hunt',ecoUse:cost};
  }
- if(worker.type==='hunter'&&HUNT_REGIONS.has(node.type)){
+ if(HUNTER_WORKERS.has(worker.type)&&HUNT_REGIONS.has(node.type)){
   if(depleted(1,'동물이 다시 돌아오도록 기다려 보세요.'))return {blocked:true};
-  return {ms:8400,label:'동물 흔적 찾는 중',out:[[weightedResult(node.type==='denseForest'?[['deer',39],['wildBoar',29],['wolf',12],['bear',20]]:[['rabbit',32],['deer',31],['wildGoat',18],['wildBoar',11],['wolf',8]]),1]],oneShot:true,life:'hunt',ecoUse:1};
+  const tier=workerTier(worker.type);return {ms:tier===2?6200:tier===1?7200:8400,label:tier?'금속 무기로 동물 추적 중':'동물 흔적 찾는 중',out:[[weightedResult(node.type==='denseForest'?[['deer',39],['wildBoar',29],['wolf',12],['bear',20]]:[['rabbit',32],['deer',31],['wildGoat',18],['wildBoar',11],['wolf',8]]),1]],oneShot:true,life:'hunt',ecoUse:1};
  }
- if(worker.type==='farmer'&&FIELD_REGIONS.has(node.type)){
+ if(FARM_WORKERS.has(worker.type)&&FIELD_REGIONS.has(node.type)){
   if(depleted(1,'야생 식물이 다시 자라길 기다리거나 밭으로 개간해 보세요.'))return {blocked:true};
-  return {ms:7800,label:'먹을 수 있는 식물 찾는 중',out:[[weightedResult([['wildMillet',38],['wildBroomcorn',34],['wildBean',28]]),1]],oneShot:true,life:'farm',ecoUse:1};
+  const tier=workerTier(worker.type);return {ms:tier===2?5600:7800,label:tier===2?'철괭이로 야생 곡물 정리 중':'먹을 수 있는 식물 찾는 중',out:[[weightedResult([['wildMillet',38],['wildBroomcorn',34],['wildBean',28]]),tier===2?2:1]],oneShot:true,life:'farm',ecoUse:tier===2?2:1};
  }
  if(worker.type==='fisher'&&WATER_REGIONS.has(node.type)){
   if(depleted(1,'물고기가 다시 모이도록 기다리거나 어장을 만들어 보세요.'))return {blocked:true};
@@ -843,6 +845,19 @@ function craftRecipe(a,b,r){
 function workerAction(worker,node){
  const clue=clueWorkerAction(worker,node);if(clue)return clue;
  const nature=natureWorkerAction(worker,node);if(nature){if(nature.blocked)return nature;tutorialEvent('assigned_explore',{worker,node});return nature;}
+ if(['copperVein','tinVein','ironVein'].includes(node.type)){
+  if(!MINER_WORKERS.has(worker.type)){showToast('⛏️ 금속 광맥은 돌곡괭이를 익힌 광부가 캐야 해요.');return null;}
+  const tier=workerTier(worker.type),ore=node.type==='copperVein'?'copperOre':node.type==='tinVein'?'tinOre':'ironOre';
+  return {ms:tier===2?5600:tier===1?6900:8400,label:(tier===2?'철곡괭이':tier===1?'청동곡괭이':'돌곡괭이')+'로 광석 캐는 중',out:[[ore,tier===2?3:tier===1?2:1]],life:null};
+ }
+ if(node.type==='loggingCamp'){
+  const tier=LUMBER_WORKERS.has(worker.type)?workerTier(worker.type):0;
+  return {ms:tier===2?5200:tier===1?6100:7000,label:'벌목장 작업 중',out:[['wood',tier===2?6:tier===1?4:3],['branch',1]],life:'hunt',lifeGain:2};
+ }
+ if(node.type==='quarry'){
+  const tier=MINER_WORKERS.has(worker.type)?workerTier(worker.type):0;
+  return {ms:tier===2?5600:tier===1?6500:7600,label:'채석장 작업 중',out:[['stone',tier===2?7:tier===1?5:4]],life:null};
+ }
  const base={
   smallTree:{ms:4800,label:'나뭇가지 모으는 중',out:[['branch',1]],life:'hunt'},
   berryBush:{ms:5200,label:'열매 따는 중',out:[['berry',1]],life:'hunt'},
@@ -857,9 +872,7 @@ function workerAction(worker,node){
   mushroomPatch:{ms:4800,label:'버섯 채집 중',out:[['mushroom',1]],life:'hunt'},
   herbPatch:{ms:5400,label:'약초 채집 중',out:[['herb',1]],life:'hunt'},
   wildGrainField:{ms:6600,label:'야생 곡물 거두는 중',out:[['wildGrain',2],['milletSeed',1]],life:'farm'},
-  flintOutcrop:{ms:7000,label:'부싯돌 고르는 중',out:[['stone',2]],life:null},
-  loggingCamp:{ms:7000,label:'벌목장 작업 중',out:[['wood',3],['branch',1]],life:'hunt',lifeGain:2},
-  quarry:{ms:7600,label:'채석장 작업 중',out:[['stone',4]],life:null}
+  flintOutcrop:{ms:7000,label:'부싯돌 고르는 중',out:[['stone',2]],life:null}
  };
  if(base[node.type]){
   const action={...base[node.type]};
@@ -867,15 +880,15 @@ function workerAction(worker,node){
   return action;
  }
  if(node.type==='bigTree'){
-  if(worker.type!=='lumberjack'){showToast('큰 나무는 돌도끼를 든 벌목꾼이 있어야 벨 수 있어요.');return null;}
-  return {ms:8500,label:'큰 나무 베는 중',out:[['wood',1]],life:'hunt'};
+  if(!LUMBER_WORKERS.has(worker.type)){showToast('큰 나무는 도끼를 든 벌목꾼이 있어야 벨 수 있어요.');return null;}
+  const tier=workerTier(worker.type);return {ms:tier===2?5200:tier===1?6500:8500,label:'큰 나무 베는 중',out:[['wood',tier===2?4:tier===1?2:1]],life:'hunt'};
  }
  if(node.type==='deer'){
-  if(worker.type!=='hunter'){showToast('큰 사슴은 돌창을 든 사냥꾼이 필요해요.');return null;}
+  if(!HUNTER_WORKERS.has(worker.type)){showToast('큰 사슴은 돌창을 든 사냥꾼이 필요해요.');return null;}
   return {ms:8500,label:'사슴 사냥 중',out:[['rawMeat',2],['rawHide',1],['bone',1],['sinew',1]],life:'hunt',consumeNode:true,discover:'큰 사냥'};
  }
  if(node.type==='wildBoar'){
-  if(worker.type!=='hunter'){showToast('멧돼지는 활이나 돌창을 다루는 사냥꾼이 필요해요.');return null;}
+  if(!HUNTER_WORKERS.has(worker.type)){showToast('멧돼지는 활이나 돌창을 다루는 사냥꾼이 필요해요.');return null;}
   return {ms:10000,label:'멧돼지 사냥 중',out:[['rawMeat',3],['rawHide',1],['bone',2],['boarTusk',1]],life:'hunt',lifeGain:2,consumeNode:true,discover:'멧돼지 사냥'};
  }
  if(node.type==='wildGoat'){
@@ -883,24 +896,24 @@ function workerAction(worker,node){
   return {ms:9000,label:'염소 길들이는 중',out:[['tamedGoat',1]],life:'herd',consumeNode:true,discover:'가축 길들이기'};
  }
  if(node.type==='wolf'){
-  if(worker.type!=='hunter'){showToast('늑대는 준비된 사냥꾼이 상대해야 해요.');return null;}
+  if(!HUNTER_WORKERS.has(worker.type)){showToast('늑대는 준비된 사냥꾼이 상대해야 해요.');return null;}
   return {ms:7200,label:'늑대 몰아내는 중',out:[['rawMeat',1],['rawHide',1]],life:'hunt',lifeGain:2,consumeNode:true,discover:'늑대 방어'};
  }
  if(node.type==='bear'){
-  if(worker.type!=='hunter'){showToast('곰은 사냥꾼 없이 상대하기 너무 위험해요.');return null;}
+  if(!HUNTER_WORKERS.has(worker.type)){showToast('곰은 사냥꾼 없이 상대하기 너무 위험해요.');return null;}
   return {ms:11000,label:'곰과 대치 중',out:[['rawMeat',4],['rawHide',2],['bone',2]],life:'hunt',lifeGain:3,consumeNode:true,discover:'곰 사냥'};
  }
  if(node.type==='hostileBand'){
-  if(worker.type!=='hunter'){showToast('적대 집단과 맞서려면 사냥꾼이 필요해요. 교전을 피하고 방어를 준비할 수도 있어요.');return null;}
+  if(!HUNTER_WORKERS.has(worker.type)){showToast('적대 집단과 맞서려면 사냥꾼이 필요해요. 교전을 피하고 방어를 준비할 수도 있어요.');return null;}
   return {ms:12000,label:'적대 집단 막는 중',out:[['stone',2],['branch',2]],life:'hunt',lifeGain:2,consumeNode:true,discover:'정착지 방어'};
  }
  const prod={
-  milletPlot:{ms:7200,label:'조밭 돌보는 중',out:[['milletGrain',worker.type==='farmer'?2:1],['milletSeed',1]],life:'farm'},
-  milletFarm:{ms:9400,label:'조 농장 수확 중',out:[['milletGrain',worker.type==='farmer'?4:3],['milletSeed',1]],life:'farm',lifeGain:3},
+  milletPlot:{ms:7200,label:'조밭 돌보는 중',out:[['milletGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?3:2):1],['milletSeed',1]],life:'farm'},
+  milletFarm:{ms:9400,label:'조 농장 수확 중',out:[['milletGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['milletSeed',1]],life:'farm',lifeGain:3},
   broomcornPlot:{ms:7200,label:'기장밭 돌보는 중',out:[['broomcornGrain',worker.type==='farmer'?2:1],['broomcornSeed',1]],life:'farm'},
-  broomcornFarm:{ms:9400,label:'기장 농장 수확 중',out:[['broomcornGrain',worker.type==='farmer'?4:3],['broomcornSeed',1]],life:'farm',lifeGain:3},
+  broomcornFarm:{ms:9400,label:'기장 농장 수확 중',out:[['broomcornGrain',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['broomcornSeed',1]],life:'farm',lifeGain:3},
   beanPlot:{ms:7200,label:'콩밭 돌보는 중',out:[['bean',worker.type==='farmer'?2:1],['beanSeed',1]],life:'farm'},
-  beanFarm:{ms:9400,label:'콩 농장 수확 중',out:[['bean',worker.type==='farmer'?4:3],['beanSeed',1]],life:'farm',lifeGain:3},
+  beanFarm:{ms:9400,label:'콩 농장 수확 중',out:[['bean',FARM_WORKERS.has(worker.type)?(worker.type==='ironFarmer'?6:4):3],['beanSeed',1]],life:'farm',lifeGain:3},
   fishingSpot:{ms:7600,label:'낚시 중',out:[['freshFish',worker.type==='fisher'?2:1]],life:'fish'},
   fishingGround:{ms:9800,label:'낚시터 운영 중',out:[['freshFish',worker.type==='fisher'?4:3]],life:'fish',lifeGain:3},
   netSpot:{ms:8200,label:'그물 걷는 중',out:[['freshFish',2]],life:'fish',lifeGain:2},
@@ -941,6 +954,7 @@ function specialAction(a,b){
  if(has('pottery','strangerGroup'))return {ms:6000,label:'토기를 교환하는 중',consume:'pottery',preserve:'strangerGroup',out:[['milletSeed',1],['beanSeed',1]],discover:'이웃과 교환',trade:true};
  if(has('smokedMeat','strangerGroup'))return {ms:6000,label:'보존식을 교환하는 중',consume:'smokedMeat',preserve:'strangerGroup',out:[['stone',2],['fiber',1]],discover:'먹거리 교환',trade:true};
  if(has('shellOrnament','strangerGroup'))return {ms:6500,label:'장신구를 교환하는 중',consume:'shellOrnament',preserve:'strangerGroup',out:[['broomcornSeed',1],['cord',1]],discover:'장신구 교환',trade:true};
+ if(has('tuskOrnament','strangerGroup'))return {ms:7000,label:'희귀 장신구로 주석을 교환하는 중',consume:'tuskOrnament',preserve:'strangerGroup',out:[['tinOre',2]],discover:'주석 교역',trade:true};
  if(has('porridge','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'porridge',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
  if(has('smokedMeat','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'smokedMeat',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
  return null;
@@ -1120,6 +1134,9 @@ function populationCapacity(){
   else if(c.type==='pitHouse')cap+=c.count;
   else if(c.type==='camp')cap+=3*c.count;
   else if(c.type==='village')cap+=3*c.count;
+  else if(c.type==='largeVillage')cap+=6*c.count;
+  else if(c.type==='bronzeCenter')cap+=8*c.count;
+  else if(c.type==='ironTown')cap+=12*c.count;
  }
  return Math.max(2,cap);
 }
@@ -1166,7 +1183,8 @@ function defensePower(){
  if(has('fence'))power+=2;
  if(has('camp'))power+=1;
  if(has('village'))power+=2;
- if([...state.cards.values()].some(c=>c.type==='hunter'&&!c.exploring))power+=2;
+ if(has('largeVillage'))power+=3;if(has('bronzeCenter'))power+=5;if(has('ironTown'))power+=8;
+ for(const c of state.cards.values())if(HUNTER_WORKERS.has(c.type)&&!c.exploring)power+=c.type==='ironHunter'?5:c.type==='bronzeHunter'?3:2;
  return power;
 }
 function threatLeaves(card,msg){
