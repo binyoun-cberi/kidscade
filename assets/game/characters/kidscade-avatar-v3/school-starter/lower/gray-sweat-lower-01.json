@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-part",
+  "id": "gray-sweat-lower-01",
+  "label": "그레이 팬츠",
+  "layer": "lower",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "design": "gray-pants",
+  "palette": [
+    [
+      77,
+      82,
+      91,
+      255
+    ],
+    [
+      126,
+      132,
+      143,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}
