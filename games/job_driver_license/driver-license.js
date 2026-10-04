@@ -86,7 +86,7 @@ const WAITING_CARS=[
 const CAMPUS_TREES=[
   [-28,79],[-28,58],[-28,34],[32,59],[92,59],[126,44],[126,4],[78,3],[30,3]
 ];
-let signalRedMat,signalGreenMat,signalGreen=false;
+let signalRedMat,signalGreenMat,signalGreen=false,parkingSensorLine=null;
 let lastTime=performance.now(),accumulator=0,gameTime=0,toastTimer=0;
 let holdTimer=0,stallTimer=0,offroadTimer=0,emergencyTimer=0;
 let hillStopped=false,accelOk=false,emergencyTriggered=false,parkingComplete=false,parkingReverseSeen=false,parkingSensorSeen=false,emergencyBrakeSeen=false;
@@ -496,11 +496,10 @@ function makeParkingLot(w,d,x,z){
   }
   line(w-2,.11,x,top,0xf7f4df,.145);line(w-2,.11,x,bottom,0xf7f4df,.145);
 }
-function makeCrosswalk(cx,cz,rot=0){
+function makeCrosswalk(cx,cz,axis='z'){
   for(let i=-3;i<=3;i++){
-    const stripe=makeFlat(rot?2.7:.42,rot?.42:2.7,0xf4f2e8,
-      cx+(rot?i*.72:0),cz+(rot?0:i*.72),.17);
-    stripe.rotation.y=0;
+    if(axis==='z') makeFlat(6.6,.38,0xf4f2e8,cx,cz+i*.72,.17);
+    else makeFlat(.38,6.6,0xf4f2e8,cx+i*.72,cz,.17);
   }
 }
 function makeGroundLabel(text,x,z,w=5.6,h=1.7,rotation=0,bg='rgba(26,45,54,.78)',fg='#ffffff'){
@@ -548,44 +547,47 @@ function rebuildVisualEnvironment(){
   clearVisualWorld();
   for(const o of fallbackVisuals)o.visible=false;
 
-  const trees=[
-    ['tree',-16,72,4.1,.2],['oak',-18,45,4.5,1.4],['pine',-18,18,5.1,.8],
-    ['oak',15,33,4.2,2.1],['tree',28,49,4.0,.5],['pine',58,47,5.0,1.2],
-    ['oak',82,45,4.4,2.5],['tree',105,45,4.1,.7],['pine',123,18,5.0,1.8],
-    ['oak',75,-6,4.3,.3],['tree',27,-10,4.0,2.7]
-  ];
-  for(const [k,x,z,s,r] of trees)placeVisual(k,s,x,z,r);
+  // 시험장 중심부는 Kenney 계열 건물·차량으로 통일하고 자연물은 외곽에만 둡니다.
+  for(let i=0;i<CAMPUS_TREES.length;i++){
+    const [x,z]=CAMPUS_TREES[i];
+    const key=i%3===0?'tree':i%3===1?'oak':'pine';
+    placeVisual(key,4.2+(i%2)*.45,x,z,(i*.73)%Math.PI);
+  }
+  for(const [key,x,z,size,rot] of [
+    ['sharedTreeA',-29,68,4.3,.3],['sharedTreeB',35,60,4.4,1.1],
+    ['sharedPineA',101,58,4.8,.8],['sharedGrass',121,35,1.15,.2]
+  ]) placeVisual(key,size,x,z,rot);
 
-  // Shared community assets fill the course perimeter without changing the exam geometry.
-  const sharedNature=[
-    ['sharedTreeA',-27,69,4.4,.3],['sharedTreeB',-28,36,4.6,1.2],['sharedPineA',-27,5,5.0,.7],
-    ['sharedTreeA',34,58,4.1,2.0],['sharedTreeB',69,55,4.3,.4],['sharedPineA',111,39,4.8,1.7],
-    ['sharedRock',18,58,1.55,.2],['sharedMossyRock',73,49,1.7,1.1],['sharedGrass',116,34,1.25,.8]
-  ];
-  for(const [k,x,z,size,rot] of sharedNature)placeVisual(k,size,x,z,rot);
-  placeVisual('sharedWell',2.9,31,58,.35);
-  placeVisual('sharedWaterTower',8.5,126,63,.12);
-  placeVisual('sharedBus',6.4,-24,58,Math.PI*.48);
-  placeVisual('sharedHouse',9.2,15,62,Math.PI);
+  for(const b of CAMPUS_BUILDINGS){
+    const obj=placeVisual(b.key,b.size,b.x,b.z,b.rot);
+    if(obj){
+      const label=textSprite(b.label,'#f8fbff','rgba(18,61,78,.92)');
+      label.position.set(b.x,4.2,b.z-5.2);label.scale.set(6.2,1.9,1);visualWorld.add(label);
+    }
+  }
 
-  const buildings=[
-    ['redBuilding',-12,8,10,0],['greenBuilding',20,51,11,Math.PI],
-    ['bigBuilding',55,57,12,Math.PI/2],['brownBuilding',92,56,11,Math.PI],
-    ['bigBuilding',118,50,12,Math.PI/2]
-  ];
-  for(const [k,x,z,s,r] of buildings)placeVisual(k,s,x,z,r);
+  // 대기장은 '주변에 실제 시험차량이 있다'는 느낌을 주되 움직이지 않아 성능 부담이 작습니다.
+  for(const [key,x,z,rot] of WAITING_CARS) placeVisual(key,4.05,x,z,rot);
+  const waitingSign=textSprite('시험차량 대기','#ffffff','rgba(25,86,111,.92)');
+  waitingSign.position.set(17.5,2.2,83);waitingSign.scale.set(5.8,1.6,1);visualWorld.add(waitingSign);
 
-  for(const [k,x,z,r] of [
-    ['sedan',-10,17,Math.PI/2],['taxi',79,31,Math.PI],['suv',102,8,0],
-    ['van',53,34,Math.PI],['sedan',59,34,Math.PI],['suv',65,34,Math.PI]
-  ]) placeVisual(k,4.1,x,z,r);
+  // 외곽 펜스. 출입구 쪽은 비워 두어 폐쇄된 공사장이 아니라 시험장 캠퍼스로 보이게 합니다.
+  for(let x=-22;x<=124;x+=7){
+    if(x>-5&&x<28)continue;
+    placeVisual('fence',3.0,x,86,0);
+    placeVisual('fence',3.0,x,7,0);
+  }
+  for(let z=14;z<=79;z+=7){
+    placeVisual('fence',3.0,-25,z,Math.PI/2);
+    placeVisual('fence',3.0,130,z,Math.PI/2);
+  }
 
   const tl=placeVisual('trafficLight',4.7,4.8,25.8,Math.PI);
   placeVisual('stopSign',2.8,-5.8,30.2,Math.PI/2);
   placeVisual('warningSign',2.7,56,26,-Math.PI/2);
   placeVisual('warningSign',2.7,91,26,-Math.PI/2);
 
-  for(const [x,z,r] of [[14,13,0],[14,27,Math.PI],[34,13,0],[34,27,Math.PI],[74,13,0],[74,27,Math.PI],[110,13,0],[110,27,Math.PI]]){
+  for(const [x,z,r] of [[14,13,0],[14,27,Math.PI],[34,13,0],[34,27,Math.PI],[74,13,0],[74,27,Math.PI],[110,13,0],[110,27,Math.PI],[-8,78,0],[-8,58,0]]){
     placeVisual('streetLight',5.2,x,z,r);
   }
   for(const [x,z,r] of [[32,42.7,0],[35,42.7,0],[38,42.7,0],[41,42.7,0],[44,42.7,0],[47,42.7,0],[50,42.7,0]]){
@@ -598,15 +600,12 @@ function rebuildVisualEnvironment(){
   for(const [x,z,r] of [[36,43.5,0],[48,43.5,0],[89,14,Math.PI/2],[89,26,Math.PI/2]]){
     placeVisual('barrier',1.65,x,z,r);
   }
-  for(const [x,z,r] of [[31,23,0],[51,23,Math.PI],[68,12,0],[99,28,Math.PI]]){
-    placeVisual('bench',1.7,x,z,r);
-  }
-  for(const [x,z,r] of [[27,28,0],[53,28,Math.PI],[72,30,0],[115,31,Math.PI]]){
-    placeVisual('planter',1.6,x,z,r);
-  }
-  placeVisual('dumpster',1.15,30,53,0);
-  placeVisual('dumpster',1.15,91,48,Math.PI/2);
-  if(tl)recordEvent('visual','고품질 시험장 에셋 로드');
+
+  // 본관 앞 대기·휴식 요소는 최소한으로만 사용합니다.
+  for(const [x,z,r] of [[-8,73,Math.PI/2],[-8,66,Math.PI/2]]) placeVisual('bench',1.7,x,z,r);
+  for(const [x,z,r] of [[-8,76,0],[-8,63,0],[27,82,0]]) placeVisual('planter',1.6,x,z,r);
+
+  if(tl)recordEvent('visual','시험장 캠퍼스 에셋 로드');
 }
 function makeBox(w,h,d,color,x,y,z,rough=.86){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:rough}));
@@ -640,6 +639,7 @@ function buildCourse(){
   const grass=new THREE.Mesh(new THREE.PlaneGeometry(260,190),new THREE.MeshStandardMaterial({color:0x78a96b,roughness:1}));
   grass.rotation.x=-Math.PI/2;grass.receiveShadow=true;scene.add(grass);
 
+  // 실제 판정 좌표는 유지하면서 주변을 '시험장 캠퍼스'처럼 읽히도록 재구성합니다.
   makeEnhancedRoad(9,22,0,71,0,0,'z');
   const ang=Math.atan(.1);
   makeRoadSegment(9,10,0,55,1,-ang);
@@ -648,18 +648,35 @@ function buildCourse(){
   makeEnhancedRoad(120,9,57.5,20,0,0,'x');
   makeFlat(14,19,0x626a6e,42,33,.06);makeFlat(12,6,0x626a6e,42,26,.06);
 
+  // 본관 옆 시험차량 대기장.
+  makeParkingLot(18,24,17.5,70.5);
+
+  // 주행 코스 가장자리와 중앙선을 분명하게 해 초행 플레이에서도 동선이 읽히게 합니다.
   for(let z=78;z>=18;z-=8){if(z<61&&z>39)continue;line(.13,3.7,-.2,z,0xe3c85a,.14)}
   for(let x=8;x<=116;x+=8)line(3.8,.13,x,20,0xe3c85a,.14);
+  line(.11,20,-3.95,71,0xffffff,.155);line(.11,20,3.95,71,0xffffff,.155);
+  line(.11,24,-3.95,27,0xffffff,.155);line(.11,24,3.95,27,0xffffff,.155);
+  line(114,.11,60,16.15,0xffffff,.155);line(114,.11,60,23.85,0xffffff,.155);
+
   line(9,.32,0,54,0xffffff,.18);line(9,.32,0,29,0xffffff,.16);
   line(.32,9,58,20,0xffffff,.16);line(.32,9,88,20,0xffffff,.16);
   line(.32,9,103,20,0xffe9a6,.18);line(.32,9,108,20,0xffffff,.16);
+  makeCrosswalk(0,25.6,'z');
 
   const white=0xffffff;
   line(12,.18,42,25.4,white,.16);line(12,.18,42,40.5,white,.16);
   line(.18,15,36.1,33,white,.16);line(.18,15,47.9,33,white,.16);
   line(.18,12,39.2,33,white,.17);line(.18,12,44.8,33,white,.17);line(5.8,.18,42,38.7,white,.17);
-  // T자 주차 확인선: 후진 중 뒤쪽이 이 선에 도달해야 주차 과제가 인정됩니다.
-  line(5.45,.24,42,36.6,0x46d9ff,.185);
+  parkingSensorLine=line(5.45,.24,42,36.6,0xffffff,.185);
+
+  // 떠 있는 설명판보다 실제 노면표시를 중심으로 코스를 읽게 합니다.
+  makeGroundLabel('출발',0,77,4.6,1.45,0,'rgba(21,86,112,.84)');
+  makeGroundLabel('경사로',0,60.2,5.1,1.35,0,'rgba(56,84,70,.82)');
+  makeGroundLabel('정지',0,32,4.2,1.35,0,'rgba(153,48,48,.84)');
+  makeGroundLabel('T 주차',42,27.2,5.0,1.35,Math.PI/2,'rgba(35,91,119,.82)');
+  makeGroundLabel('20 km/h',70,20,6.2,1.35,Math.PI/2,'rgba(44,78,92,.82)');
+  makeGroundLabel('돌발',96,20,4.7,1.35,Math.PI/2,'rgba(151,65,39,.84)');
+  makeGroundLabel('종료',112,20,4.5,1.35,Math.PI/2,'rgba(48,98,65,.84)');
 
   const makeConeFallback=(id,x,z)=>{
     const mesh=new THREE.Mesh(new THREE.ConeGeometry(.28,.58,12),new THREE.MeshStandardMaterial({color:0xf47b20,roughness:.9}));
@@ -669,8 +686,9 @@ function buildCourse(){
   for(let z=64;z<=80;z+=4){makeConeFallback('coneL'+z,-5.2,z);makeConeFallback('coneR'+z,5.2,z)}
   for(let x=32;x<=50;x+=3)makeConeFallback('parkCone'+x,x,42.7);
 
-  addSign('경사로',-6.8,55);addSign('신호 우회전',-6.8,31);addSign('T자 주차',42,44);
-  addSign('20km/h 이상',70,26);addSign('급정지',95,26);addSign('종료',112,26);
+  addSign('KIDSCADE 운전면허시험장',-8,81);
+  addSign('경사로',-6.8,55);addSign('T자 주차',42,44);
+  addSign('가속구간',70,26);addSign('급정지',95,26);addSign('종료',112,26);
 
   const pole=makeBox(.16,4,.16,0x303a3f,4.6,2,25.6);registerFallback(pole);addCircleObstacle('signalPole',4.6,25.6,.3);
   const housing=makeBox(.76,1.65,.48,0x1c2428,4.6,3.5,25.6);registerFallback(housing);
@@ -683,21 +701,18 @@ function buildCourse(){
   const parkArrow=textSprite('후진 →','#ffffff','rgba(38,97,122,.88)');parkArrow.position.set(42,1.25,27);parkArrow.scale.set(3.4,1.05,1);scene.add(parkArrow);
 
   let treeN=0;
-  for(const [x,z] of [[-16,72],[-18,45],[-18,18],[15,33],[28,49],[58,47],[82,45],[105,45],[123,18],[75,-6],[27,-10]]){
+  for(const [x,z] of CAMPUS_TREES){
     createFallbackTree(x,z);addCircleObstacle('tree'+(++treeN),x,z,.7);
   }
+
   let buildingN=0;
-  for(const [x,z,c] of [[-12,8,0xc87664],[20,51,0x6e91ad],[55,57,0x8f7fa8],[92,56,0xb08a5f],[118,50,0x7c91a0]]){
-    createFallbackBuilding(x,z,c);addBoxObstacle('building'+(++buildingN),x,z,10.4,9.4);
+  for(const b of CAMPUS_BUILDINGS){
+    const color=buildingN===0?0x7c9baa:buildingN===1?0x879b82:0x8c879b;
+    createFallbackBuilding(b.x,b.z,color,10.5,8.5,5.6);
+    addBoxObstacle('campusBuilding'+(++buildingN),b.x,b.z,11,9);
   }
-  for(const [id,x,z] of [['parkedSedan',-10,17],['parkedTaxi',79,31],['parkedSuv',102,8],['parkedVan',53,34],['parkedSedan2',59,34],['parkedSuv2',65,34]]){
-    addCircleObstacle(id,x,z,1.55);
-  }
-  // Decorative shared assets outside the marked course are still physically solid when a learner leaves the road.
-  addBoxObstacle('sharedHouse',15,62,8.0,7.2);
-  addBoxObstacle('sharedBus',-24,58,5.8,2.5);
-  addCircleObstacle('sharedWaterTower',126,63,1.8);
-  addCircleObstacle('sharedWell',31,58,1.05);
+  let carN=0;
+  for(const [,x,z] of WAITING_CARS) addCircleObstacle('waitingCar'+(++carN),x,z,1.55);
 }
 function initBackupGuides(){
   const makeGuide=()=>{
