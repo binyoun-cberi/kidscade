@@ -5,7 +5,7 @@
     "rootRuntimeJs": 84,
     "catalogRootEntrypoints": 24,
     "catalogManualVersionPins": 66,
-    "bootstrapReplaceBetweenOccurrences": 2,
+    "bootstrapReplaceBetweenOccurrences": 0,
     "injectScriptCount": 2
   }
 }
