@@ -265,7 +265,7 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
 
 test('avatar studio markup does not leak closing tag text',()=>{
   assert.ok(!html.includes('</main>/div>'));
-  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=20"></script>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=21"></script>'));
 });
 
 
@@ -360,4 +360,13 @@ test('equipment is included in analysis, status and exported bundle folders',()=
   assert.ok(js.includes("weaponFront:'equipment/weapon/front'"));
   assert.ok(js.includes("shieldBack:'equipment/shield/back'"));
   assert.ok(js.includes("shieldFront:'equipment/shield/front'"));
+});
+
+
+test('v3 school starter is admin-studio only',()=>{
+  assert.ok(html.includes('loadSchoolStarterSet'));
+  assert.ok(js.includes('async function loadSchoolStarterSet()'));
+  assert.ok(js.includes("/assets/game/characters/kidscade-avatar-v3/school-starter/school-starter.json"));
+  assert.ok(js.includes("if(!await verifyAdmin())return"));
+  assert.ok(js.includes("body.scope!=='global'"));
 });

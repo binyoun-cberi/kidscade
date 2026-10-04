@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "id": "school-starter-01",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "root": [
+    64,
+    82
+  ],
+  "groundY": 118,
+  "assetIds": {
+    "hair": "basic-tousled-hair-01",
+    "eyes": "basic-eyes-01",
+    "mouth": "basic-flat-mouth-01",
+    "earring": "copper-ring-earring-01",
+    "upper": "basic-school-uniform-upper-01",
+    "lower": "basic-school-uniform-lower-01",
+    "shoes": "basic-sneakers-01",
+    "weaponFront": "school-ruler-01",
+    "weaponBack": "school-ruler-01",
+    "shieldFront": "school-textbook-01",
+    "shieldBack": "school-textbook-01"
+  },
+  "json": "school-starter.json",
+  "spriteSheet": "school-starter-sheet.png",
+  "defaultImage": "guest-default.png",
+  "frameOrder": [
+    "stand-01",
+    "stand-02",
+    "walk-01",
+    "walk-02",
+    "walk-03",
+    "walk-04",
+    "jump-01",
+    "attack-01",
+    "attack-02",
+    "attack-03",
+    "attack-04",
+    "attack-05",
+    "hurt-01",
+    "hurt-02",
+    "dead-01",
+    "dead-02",
+    "dead-03",
+    "dead-04",
+    "sit-01",
+    "sit-02",
+    "pickup-01",
+    "pickup-02",
+    "pickup-03"
+  ],
+  "animations": {
+    "stand": [
+      {
+        "index": 0,
+        "id": "stand-01",
+        "durationMs": 500
+      },
+      {
+        "index": 1,
+        "id": "stand-02",
+        "durationMs": 500
+      }
+    ],
+    "walk": [
+      {
+        "index": 2,
+        "id": "walk-01",
+        "durationMs": 165
+      },
+      {
+        "index": 3,
+        "id": "walk-02",
+        "durationMs": 165
+      },
+      {
+        "index": 4,
+        "id": "walk-03",
+        "durationMs": 165
+      },
+      {
+        "index": 5,
+        "id": "walk-04",
+        "durationMs": 165
+      }
+    ],
+    "jump": [
+      {
+        "index": 6,
+        "id": "jump-01",
+        "durationMs": 180
+      }
+    ],
+    "attack": [
+      {
+        "index": 7,
+        "id": "attack-01",
+        "durationMs": 90
+      },
+      {
+        "index": 8,
+        "id": "attack-02",
+        "durationMs": 80
+      },
+      {
+        "index": 9,
+        "id": "attack-03",
+        "durationMs": 55
+      },
+      {
+        "index": 10,
+        "id": "attack-04",
+        "durationMs": 70
+      },
+      {
+        "index": 11,
+        "id": "attack-05",
+        "durationMs": 120
+      }
+    ],
+    "hurt": [
+      {
+        "index": 12,
+        "id": "hurt-01",
+        "durationMs": 110
+      },
+      {
+        "index": 13,
+        "id": "hurt-02",
+        "durationMs": 180
+      }
+    ],
+    "dead": [
+      {
+        "index": 14,
+        "id": "dead-01",
+        "durationMs": 120
+      },
+      {
+        "index": 15,
+        "id": "dead-02",
+        "durationMs": 120
+      },
+      {
+        "index": 16,
+        "id": "dead-03",
+        "durationMs": 150
+      },
+      {
+        "index": 17,
+        "id": "dead-04",
+        "durationMs": 600
+      }
+    ],
+    "sit": [
+      {
+        "index": 18,
+        "id": "sit-01",
+        "durationMs": 260
+      },
+      {
+        "index": 19,
+        "id": "sit-02",
+        "durationMs": 420
+      }
+    ],
+    "pickup": [
+      {
+        "index": 20,
+        "id": "pickup-01",
+        "durationMs": 120
+      },
+      {
+        "index": 21,
+        "id": "pickup-02",
+        "durationMs": 160
+      },
+      {
+        "index": 22,
+        "id": "pickup-03",
+        "durationMs": 180
+      }
+    ]
+  }
+}

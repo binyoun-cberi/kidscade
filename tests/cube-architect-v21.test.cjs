@@ -16,17 +16,15 @@ test('v21 avatar module and runtime parse',()=>{
   assert.ok(html.indexOf('cube-architect-avatar.js')<html.indexOf('cube-architect.js'));
 });
 
-test('free world uses the shared Kidscade Pixel Avatar v1 state',()=>{
-  assert.match(avatar,/kidscade-pixel-avatar-v1/);
+test('free world uses the shared Kidscade Avatar v3 state',()=>{
+  assert.match(avatar,/kidscade-avatar-v3/);
+  assert.match(avatar,/school-starter-01/);
   assert.match(avatar,/kidscade-avatar-studio-preview/);
+  assert.doesNotMatch(avatar,/kidscade-pixel-avatar-v1/);
   assert.doesNotMatch(avatar,/kidscade_avatar_equipped/);
-  assert.doesNotMatch(avatar,/kidscade-avatar-shop-v2/);
   assert.match(avatar,/CubeArchitectPixelAvatar/);
   assert.match(avatar,/CanvasTexture/);
   assert.match(avatar,/renderPreviewFrame/);
-  assert.match(avatar,/hairId/);
-  assert.match(avatar,/upper/);
-  assert.match(avatar,/lower/);
   assert.match(js,/function refreshFreeAvatar/);
   assert.match(js,/freeAvatarRoot\.rotation\.y=yaw/);
 });
