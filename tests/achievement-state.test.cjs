@@ -3,6 +3,17 @@ const assert = require('node:assert/strict');
 
 const achievements = require('../achievement-state.js');
 
+function withMemory(run) {
+  const memory = new Map();
+  global.localStorage = {
+    getItem:key => memory.has(key) ? memory.get(key) : null,
+    setItem:(key,value) => memory.set(key,String(value)),
+    removeItem:key => memory.delete(key)
+  };
+  try { return run(memory); }
+  finally { delete global.localStorage; }
+}
+
 test('history rank thresholds remain compatible', () => {
   assert.equal(achievements.getCustomHistoryRank(0), '구석기');
   assert.equal(achievements.getCustomHistoryRank(41), '조선시대');
@@ -48,17 +59,17 @@ test('inspect accepts an injected reader for game-specific keys', () => {
   assert.match(result.scoreText, /987점/);
 });
 
-
 test('achievement registry exposes platform and pilot-game definitions', () => {
   assert.equal(achievements.progressKey, 'kidscade_achievements_v1');
-  assert.equal(achievements.progressVersion, 2);
+  assert.equal(achievements.progressVersion, 3);
+  assert.equal(achievements.getDefinition('kidscade.first_result').title, '첫 기록');
   assert.equal(achievements.getDefinition('cube3d.net_master').target, 10);
   assert.equal(achievements.getDefinition('high_micro_evolution.multicellular').hidden, true);
   assert.equal(achievements.getDefinition('infinite_gugudan.combo_20').target, 20);
   assert.equal(achievements.getGameProgress('cube3d').total, 6);
 });
 
-test('achievement state normalization ignores unknown ids and preserves known progress', () => {
+test('achievement state normalization ignores unknown ids and preserves known progress and stats', () => {
   const state = achievements.normalizeAchievementState({
     unlocked: {
       'cube3d.first_blueprint': { unlockedAt: 1234 },
@@ -68,7 +79,10 @@ test('achievement state normalization ignores unknown ids and preserves known pr
       'cube3d.net_master': 7,
       'unknown.progress': 99
     },
-    playedGames: { cube3d: 4567 }
+    playedGames: { cube3d: 4567 },
+    gameStats: {
+      cube3d: { results:2, stagesCleared:3, uniqueMilestones:{ 'landmark:taj':true } }
+    }
   });
 
   assert.equal(state.unlocked['cube3d.first_blueprint'].unlockedAt, 1234);
@@ -76,78 +90,158 @@ test('achievement state normalization ignores unknown ids and preserves known pr
   assert.equal(state.progress['cube3d.net_master'], 7);
   assert.equal(state.progress['unknown.progress'], undefined);
   assert.equal(state.playedGames.cube3d, 4567);
+  assert.equal(state.gameStats.cube3d.results, 2);
+  assert.equal(state.gameStats.cube3d.stagesCleared, 3);
+  assert.equal(state.gameStats.cube3d.uniqueMilestones['landmark:taj'], true);
 });
 
+test('opening a game records analytics but never counts as a result', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'low_blind_elephant.test_session',
+    gameId:'low_blind_elephant',
+    title:'테스트 한 판',
+    enabled:true,
+    trigger:'metric',
+    metric:'sessionsCompleted',
+    target:1
+  });
+  achievements.recordPlayedGame('low_blind_elephant', 12345);
+  const state = achievements.loadAchievementState();
+  assert.equal(Boolean(state.unlocked['low_blind_elephant.test_session']), false);
+  assert.equal(state.playedGames.low_blind_elephant, 12345);
+  assert.equal(state.gameStats.low_blind_elephant, undefined);
+  assert.equal(Boolean(state.unlocked['kidscade.first_result']), false);
+}));
 
-test('opening a game records analytics but does not unlock achievements', () => {
-  const memory = new Map();
-  global.localStorage = {
-    getItem:key => memory.has(key) ? memory.get(key) : null,
-    setItem:(key,value) => memory.set(key,String(value)),
-    removeItem:key => memory.delete(key)
-  };
-  try {
-    achievements.registerDefinitions({
-      id:'test_game.first_finish',
-      gameId:'test_game',
-      title:'첫 완주',
-      enabled:true,
-      trigger:'completion_count',
-      target:1
-    });
-    achievements.recordPlayedGame('test_game', 12345);
-    const state = achievements.loadAchievementState();
-    assert.equal(Boolean(state.unlocked['test_game.first_finish']), false);
-    assert.equal(state.playedGames.test_game, 12345);
-    assert.equal(state.completedGames.test_game, undefined);
-  } finally {
-    delete global.localStorage;
-  }
-});
+test('match game-over records the match but requires an actual win for win achievements', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'low_pong_battle.test_first_win',
+    gameId:'low_pong_battle',
+    title:'테스트 첫 승리',
+    enabled:true,
+    trigger:'metric',
+    metric:'wins',
+    target:1
+  });
 
-test('completion milestones progress from completed games instead of entry', () => {
-  const memory = new Map();
-  global.localStorage = {
-    getItem:key => memory.has(key) ? memory.get(key) : null,
-    setItem:(key,value) => memory.set(key,String(value)),
-    removeItem:key => memory.delete(key)
-  };
-  try {
-    achievements.registerDefinitions([
-      {
-        id:'completion_game.first_finish',
-        gameId:'completion_game',
-        title:'첫 완주',
-        enabled:true,
-        trigger:'completion_count',
-        target:1
-      },
-      {
-        id:'completion_game.finisher_5',
-        gameId:'completion_game',
-        title:'5회 완주',
-        enabled:true,
-        trigger:'completion_count',
-        target:5
-      }
-    ]);
-    achievements.recordCompletedGame('completion_game', 20000);
-    let state = achievements.loadAchievementState();
-    assert.equal(Boolean(state.unlocked['completion_game.first_finish']), true);
-    assert.equal(Boolean(state.unlocked['completion_game.finisher_5']), false);
-    assert.equal(state.progress['completion_game.finisher_5'], 1);
-    assert.equal(state.completedGames.completion_game.count, 1);
-    assert.equal(Boolean(state.unlocked['kidscade.first_finish']), true);
+  achievements.handleGameEvent({event:'game-over',gameId:'low_pong_battle',score:3});
+  let stats = achievements.getGameStats('low_pong_battle');
+  assert.equal(stats.matchesCompleted, 1);
+  assert.equal(stats.wins, 0);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['low_pong_battle.test_first_win']), false);
 
-    for (let i = 0; i < 4; i += 1) achievements.recordCompletedGame('completion_game', 21000 + i);
-    state = achievements.loadAchievementState();
-    assert.equal(Boolean(state.unlocked['completion_game.finisher_5']), true);
-    assert.equal(state.progress['completion_game.finisher_5'], 5);
-    assert.equal(state.completedGames.completion_game.count, 5);
-  } finally {
-    delete global.localStorage;
-  }
-});
+  achievements.handleGameEvent({event:'game-over',gameId:'low_pong_battle',won:true});
+  stats = achievements.getGameStats('low_pong_battle');
+  assert.equal(stats.matchesCompleted, 2);
+  assert.equal(stats.wins, 1);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['low_pong_battle.test_first_win']), true);
+}));
+
+test('stage game-over is ignored unless legacy code reports explicit success or failure', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'low_pattern_lock.test_clear',
+    gameId:'low_pattern_lock',
+    title:'테스트 클리어',
+    enabled:true,
+    trigger:'metric',
+    metric:'stagesCleared',
+    target:1
+  });
+
+  achievements.handleGameEvent({event:'game-over',gameId:'low_pattern_lock'});
+  assert.equal(achievements.getGameStats('low_pattern_lock').results, 0);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['low_pattern_lock.test_clear']), false);
+
+  achievements.handleGameEvent({event:'game-over',gameId:'low_pattern_lock',completed:true});
+  assert.equal(achievements.getGameStats('low_pattern_lock').stagesCleared, 1);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['low_pattern_lock.test_clear']), true);
+}));
+
+test('run game-over is a valid run end even when the player eventually crashes or loses', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'jineung_bird.test_run',
+    gameId:'jineung_bird',
+    title:'테스트 런',
+    enabled:true,
+    trigger:'metric',
+    metric:'runs',
+    target:1
+  });
+  achievements.handleGameEvent({event:'game-over',gameId:'jineung_bird'});
+  const stats = achievements.getGameStats('jineung_bird');
+  assert.equal(stats.runs, 1);
+  assert.equal(stats.results, 1);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['jineung_bird.test_run']), true);
+}));
+
+test('structured result events keep completed, failed and abandoned meanings separate', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'structured_match.test_win',
+    gameId:'structured_match',
+    title:'구조화 승리',
+    enabled:true,
+    trigger:'metric',
+    metric:'wins',
+    target:1
+  });
+
+  achievements.handleGameEvent({
+    event:'result',
+    gameId:'structured_match',
+    scope:'match',
+    status:'completed',
+    outcome:'loss'
+  });
+  let stats = achievements.getGameStats('structured_match');
+  assert.equal(stats.losses, 1);
+  assert.equal(stats.wins, 0);
+
+  achievements.handleGameEvent({
+    event:'result',
+    gameId:'structured_match',
+    scope:'match',
+    status:'abandoned',
+    outcome:null
+  });
+  stats = achievements.getGameStats('structured_match');
+  assert.equal(stats.abandoned, 1);
+  assert.equal(stats.results, 1);
+
+  achievements.handleGameEvent({
+    event:'result',
+    gameId:'structured_match',
+    scope:'match',
+    status:'completed',
+    outcome:'win'
+  });
+  stats = achievements.getGameStats('structured_match');
+  assert.equal(stats.wins, 1);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['structured_match.test_win']), true);
+}));
+
+test('sandbox and progression achievements advance from distinct milestones, not game-over', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'high_little_world.test_discoveries',
+    gameId:'high_little_world',
+    title:'발견 둘',
+    enabled:true,
+    trigger:'metric',
+    metric:'uniqueMilestones',
+    target:2
+  });
+
+  achievements.handleGameEvent({event:'game-over',gameId:'high_little_world'});
+  assert.equal(achievements.getGameStats('high_little_world').results, 0);
+
+  achievements.handleGameEvent({event:'milestone',gameId:'high_little_world',name:'ecosystem_stable',value:'forest'});
+  achievements.handleGameEvent({event:'milestone',gameId:'high_little_world',name:'ecosystem_stable',value:'forest'});
+  assert.equal(Object.keys(achievements.getGameStats('high_little_world').uniqueMilestones).length, 1);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['high_little_world.test_discoveries']), false);
+
+  achievements.handleGameEvent({event:'milestone',gameId:'high_little_world',name:'predator_chain',value:'complete'});
+  assert.equal(Object.keys(achievements.getGameStats('high_little_world').uniqueMilestones).length, 2);
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['high_little_world.test_discoveries']), true);
+}));
 
 test('disabled planned achievements stay out of summaries and cannot unlock', () => {
   const before = achievements.getSummary().total;
@@ -165,26 +259,28 @@ test('disabled planned achievements stay out of summaries and cannot unlock', ()
   assert.equal(achievements.getAllDefinitions().some(def => def.id === 'planned_game.secret'), true);
 });
 
-test('event rules unlock only when the reported game-over condition is satisfied', () => {
-  const memory = new Map();
-  global.localStorage = {
-    getItem:key => memory.has(key) ? memory.get(key) : null,
-    setItem:(key,value) => memory.set(key,String(value)),
-    removeItem:key => memory.delete(key)
-  };
-  try {
-    achievements.registerDefinitions({
-      id:'rule_game.combo',
-      gameId:'rule_game',
-      title:'콤보',
-      enabled:true,
-      rule:{event:'game-over',field:'maxCombo',op:'gte',value:10}
-    });
-    achievements.applyEventRules({event:'game-over',gameId:'rule_game',maxCombo:9});
-    assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), false);
-    achievements.applyEventRules({event:'game-over',gameId:'rule_game',maxCombo:10});
-    assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), true);
-  } finally {
-    delete global.localStorage;
-  }
-});
+test('new result events still satisfy compatible legacy game-over mastery rules', () => withMemory(() => {
+  achievements.registerDefinitions({
+    id:'rule_game.combo',
+    gameId:'rule_game',
+    title:'콤보',
+    enabled:true,
+    rule:{event:'game-over',field:'maxCombo',op:'gte',value:10}
+  });
+  achievements.handleGameEvent({
+    event:'result',
+    gameId:'rule_game',
+    scope:'run',
+    status:'completed',
+    maxCombo:9
+  });
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), false);
+  achievements.handleGameEvent({
+    event:'result',
+    gameId:'rule_game',
+    scope:'run',
+    status:'completed',
+    maxCombo:10
+  });
+  assert.equal(Boolean(achievements.loadAchievementState().unlocked['rule_game.combo']), true);
+}));
