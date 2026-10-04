@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-lower-part",
+  "id": "charcoal-pants-lower-01",
+  "label": "차콜 팬츠",
+  "layer": "lower",
+  "public": true,
+  "price": 0,
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "facing": "left",
+  "sourceBaseId": "basic-school-uniform-lower-01",
+  "design": "charcoal-pants",
+  "palette": [
+    [
+      44,
+      47,
+      53,
+      255
+    ],
+    [
+      76,
+      80,
+      89,
+      255
+    ]
+  ],
+  "frameMode": "exact-source-palette-remap-23"
+}
