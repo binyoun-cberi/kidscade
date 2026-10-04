@@ -99,7 +99,7 @@ test('Driver License v9 exposes a live examiner panel',()=>{
 
 
 test('Driver License v10 upgrades the exam course with shared 3D environment assets',()=>{
-  for(const token of ['traffic-light.glb','construction-cone.glb','light-square.glb','tree-default.glb','tree-oak.glb','tree-pine-round-a.glb','big-building.glb','building-red.glb','sedan.glb']){
+  for(const token of ['traffic-light.glb','construction-cone.glb','light-square.glb','tree-default.glb','tree-oak.glb','tree-pine-round-a.glb','construction-fence.glb','building-type-a.glb','building-type-b.glb','big-building.glb','sedan.glb']){
     assert.match(js,new RegExp(token.replace(/[.*+?^$\{\}()|[\]\\]/g,'\\$&')));
   }
   assert.match(js,/function rebuildVisualEnvironment/);
