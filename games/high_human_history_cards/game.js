@@ -957,6 +957,10 @@ function specialAction(a,b){
  if(has('tuskOrnament','strangerGroup'))return {ms:7000,label:'희귀 장신구로 주석을 교환하는 중',consume:'tuskOrnament',preserve:'strangerGroup',out:[['tinOre',2]],discover:'주석 교역',trade:true};
  if(has('porridge','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'porridge',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
  if(has('smokedMeat','village'))return {ms:24000,label:'새 구성원을 맞이하는 중',consume:'smokedMeat',preserve:'village',out:[['person',1]],discover:'정착 인구 증가',recruit:true};
+ for(const settlement of ['largeVillage','bronzeCenter','ironTown']){
+  if(has('porridge',settlement))return {ms:20000,label:'새 구성원을 맞이하는 중',consume:'porridge',preserve:settlement,out:[['person',1]],discover:'정착 인구 증가',recruit:true};
+  if(has('smokedMeat',settlement))return {ms:20000,label:'새 구성원을 맞이하는 중',consume:'smokedMeat',preserve:settlement,out:[['person',1]],discover:'정착 인구 증가',recruit:true};
+ }
  return null;
 }
 
@@ -1101,9 +1105,25 @@ function markBusy(c,label,ms){c.el.classList.add('busy');c.el.querySelector('.wo
 function snap(a,b){place(a,b.x+10,b.y+12);a.el.style.zIndex=++state.z;}
 function separate(a,b){if(!a||!state.cards.has(a.id)||!b||!state.cards.has(b.id))return;place(a,clamp(b.x+b.el.offsetWidth+12,4,Math.max(4,board.clientWidth-a.el.offsetWidth-4)),clamp(b.y+14,4,Math.max(4,board.clientHeight-a.el.offsetHeight-4)));}
 
+function ageRank(){
+ if(has('ironIngot')||has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')||has('ironTown'))return 3;
+ if(has('bronzeIngot')||has('bronzeAxe')||has('bronzePick')||has('bronzeSpear')||has('bronzeCenter')||has('dolmen'))return 2;
+ if(has('groundAxe')||has('combPottery')||has('pitHouse')||has('village')||has('milletFarm')||has('broomcornFarm')||has('beanFarm')||has('highKiln'))return 1;
+ return 0;
+}
+function updateEra(){
+ const rank=ageRank(),labels=['구석기 생활','신석기 정착','청동기 생활','철기 생활'],keys=['paleo','neolithic','bronze','iron'];
+ ui.era.textContent=labels[rank];
+ const next=keys[rank],order={paleo:0,neolithic:1,bronze:2,iron:3};
+ if(order[next]>order[state.ageReached]){
+  state.ageReached=next;
+  if(next==='bronze')showToast('🥉 청동기 진입! 광업·제련·교역이 중요해집니다.');
+  if(next==='iron')showToast('⚒️ 철기 진입! 생산력이 크게 높아집니다.');
+ }
+}
 function onCreated(type){
- if(['campfire','hearth','kiln','highKiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket'].includes(type))discover(C[type].name);
- if(['groundAxe','combPottery','pitHouse','milletFarm','broomcornFarm','beanFarm','fishingGround','goatRanch','wovenClothing','kiln','highKiln'].includes(type))ui.era.textContent='신석기 생활 확장';
+ if(['campfire','hearth','kiln','highKiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket','stonePick','copperIngot','tinIngot','bronzeIngot','bronzeAxe','bronzePick','bronzeSpear','bronzeHammer','bloomery','ironBloom','ironIngot','ironAxe','ironPick','ironHoe','ironSpear','largeVillage','bronzeCenter','ironTown','dolmen'].includes(type))discover(C[type].name);
+ updateEra();
 }
 function discover(name){if(state.discoveries.has(name))return;state.discoveries.add(name);showToast('💡 새 기술: '+name);try{window.KidscadeGame?.sound?.('correct')}catch(_){}}
 function addLife(k,n=1){state.lifestyle[k]+=n;}
@@ -1113,15 +1133,32 @@ function settlementScore(){
  for(const c of state.cards.values()){if(SETTLE_POINTS[c.type]&&!seen.has(c.type)){score+=SETTLE_POINTS[c.type];seen.add(c.type);}}
  return score;
 }
+function showMilestone(title,eyebrow,text){
+ const layer=$('#milestoneLayer');
+ const titleEl=layer?.querySelector('h2'),eye=layer?.querySelector('.eyebrow');
+ if(titleEl)titleEl.textContent=title;if(eye)eye.textContent=eyebrow;
+ $('#milestoneText').textContent=text;
+ const score=settlementScore();
+ $('#resultStats').innerHTML='<div><span>생존</span><b>'+state.day+'일</b></div><div><span>정착도</span><b>'+score+'</b></div><div><span>발견 기술</span><b>'+state.discoveries.size+'</b></div>';
+ layer?.classList.remove('hidden');
+}
 function checkMilestone(){
- if(state.milestoneShown||state.over)return;
- const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln','highKiln'].filter(t=>[...state.cards.values()].some(c=>c.type===t)).length;
- if(score>=9&&advanced>=2){
+ if(state.over)return;
+ const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln','highKiln'].filter(t=>has(t)).length;
+ if(!state.milestoneShown&&score>=9&&advanced>=2){
   state.milestoneShown=true;
-  $('#milestoneText').textContent='농경·어로·목축 중 여러 생활 기술과 주거·저장 기술이 연결되며 정착도가 '+score+'에 도달했습니다. 한 가지 길만 고르지 않아도 됩니다.';
-  $('#resultStats').innerHTML='<div><span>생존</span><b>'+state.day+'일</b></div><div><span>정착도</span><b>'+score+'</b></div><div><span>발견 기술</span><b>'+state.discoveries.size+'</b></div>';
-  $('#milestoneLayer').classList.remove('hidden');
+  showMilestone('생활이 마을이 되었어요','신석기 정착 달성','농경·어로·목축과 주거·저장 기술이 연결되었습니다. 이제 산과 동굴에서 금속 광맥을 찾아 다음 시대로 나아갈 수 있습니다.');
   try{window.KidscadeGame?.score?.(score*100+state.discoveries.size*20)}catch(_){}
+  return;
+ }
+ if(!state.bronzeMilestoneShown&&has('bronzeCenter')&&(has('bronzeAxe')||has('bronzePick')||has('bronzeSpear'))){
+  state.bronzeMilestoneShown=true;
+  showToast('🥉 청동기 중심 취락 완성! 이제 철광석과 철 제련로를 준비하세요.');
+ }
+ if(!state.ironMilestoneShown&&has('ironTown')&&has('bloomery')&&(has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear'))){
+  state.ironMilestoneShown=true;
+  showMilestone('철기 마을을 완성했어요','철기 시대 달성','광업·제련·철제 농기구와 도구가 정착지에 연결되었습니다. 구석기의 탐험 생활에서 시작해 철기 마을까지 발전했습니다.');
+  try{window.KidscadeGame?.score?.(3000+score*120+state.discoveries.size*25)}catch(_){}
  }
 }
 
@@ -1267,7 +1304,14 @@ function renderQuests(){
   ['빗살무늬토기를 굽는다',has('combPottery')||has('storageJars')],
   ['농장·어장·목장·양식장 중 하나를 성장시킨다',has('milletFarm')||has('broomcornFarm')||has('beanFarm')||has('fishingGround')||has('netFishery')||has('trapFishery')||has('goatRanch')||has('fishPond')],
   ['정착도 9 이상',settlementScore()>=9],
-  ['주거를 늘려 인구 상한을 3명 이상 만든다',populationCapacity()>=3]
+  ['주거를 늘려 인구 상한을 3명 이상 만든다',populationCapacity()>=3],
+  ['돌곡괭이로 금속 광맥을 채굴한다',has('copperOre')||has('tinOre')||has('ironOre')],
+  ['구리와 주석을 합금해 청동을 만든다',has('bronzeIngot')||ageRank()>=2],
+  ['신석기 마을 3개를 큰 취락으로 성장시킨다',has('largeVillage')||has('bronzeCenter')||has('ironTown')],
+  ['청동기 중심 취락을 만든다',has('bronzeCenter')||has('ironTown')],
+  ['철 제련로에서 괴련철을 만든다',has('ironBloom')||has('ironIngot')||ageRank()>=3],
+  ['철제 도구를 만든다',has('ironAxe')||has('ironPick')||has('ironHoe')||has('ironSpear')],
+  ['철기 마을을 완성한다',has('ironTown')]
  ];
  ui.questList.innerHTML=q.map(x=>'<div class="quest '+(x[1]?'done':'')+'"><i>'+(x[1]?'✓':'·')+'</i><span>'+x[0]+'</span></div>').join('');
 }
@@ -1276,7 +1320,12 @@ function renderGoal(){
  if(!has('campfire')){ui.goalTitle.textContent='자연을 탐험하고 첫 도구 만들기';ui.goalText.textContent='사람을 숲·들판·강가·바위언덕에 올려 장소를 발견하고, 그곳에서 재료를 모으세요.';ui.hint.textContent='사람+자연 → 탐험 · 발견한 작은 나무→나뭇가지 · 돌×2→찍개';return;}
  if(!has('groundAxe')&&!has('combPottery')&&!has('wovenCloth')){ui.goalTitle.textContent='생활 기술 넓히기';ui.goalText.textContent='가죽, 간석기, 토기, 방직 중 원하는 방향부터 발전시키세요.';ui.hint.textContent='돌 + 강가 → 간 돌 · 점토+돌 → 가락바퀴 · 도토리+갈돌·갈판 → 간 도토리';return;}
  if(score<9){ui.goalTitle.textContent='자연을 쉬게 하거나 개척하기';ui.goalText.textContent='자연은 이용할수록 줄고 일부는 천천히 회복됩니다. 부족해지면 다른 곳을 탐험하거나 안정적인 생산지로 바꾸세요.';ui.hint.textContent='간돌도끼+숲→벌목장 · 돌괭이+들판→개간지 · 찍개+바위언덕→채석장';return;}
- ui.goalTitle.textContent='나만의 석기 사회';ui.goalText.textContent='안정된 정착지는 탐험·교환·방어와 함께 주거를 늘려 더 많은 일손을 받아들일 수 있습니다.';ui.hint.textContent='마을+곡물죽/훈제고기 → 새 구성원 · 천막·움집·마을은 인구 상한을 늘림';
+ if(!has('highKiln')){ui.goalTitle.textContent='금속을 다룰 준비';ui.goalText.textContent='숯과 고온가마를 만들고 산등성이·깊은 동굴에서 금속 광맥을 찾으세요.';ui.hint.textContent='나무+가마→숯 · 숯+가마→고온가마 · 찍개+목재→돌곡괭이';return;}
+ if(!has('bronzeIngot')){ui.goalTitle.textContent='청동기 열기';ui.goalText.textContent='광부를 만들어 구리·주석 광맥을 캐고 고온가마에서 각각 제련한 뒤 합금하세요.';ui.hint.textContent='구리광석+고온가마→구리괴 · 주석광석+고온가마→주석괴 · 구리괴+주석괴→청동괴';return;}
+ if(!has('bronzeCenter')){ui.goalTitle.textContent='청동기 중심 취락';ui.goalText.textContent='청동 도구를 만들고 신석기 마을 3개를 큰 취락으로 키워 청동기 중심지를 만드세요.';ui.hint.textContent='마을×3→큰 취락 · 큰 취락+청동괴→청동기 중심 취락';return;}
+ if(!has('ironIngot')){ui.goalTitle.textContent='철을 제련하기';ui.goalText.textContent='깊은 동굴과 산등성이에서 철광석을 찾고 숯·철 제련로·청동망치로 철괴를 만드세요.';ui.hint.textContent='점토×2+고온가마→철 제련로 · 철광석+숯→제련 재료 → 제련로→괴련철 → 청동망치→철괴';return;}
+ if(!has('ironTown')){ui.goalTitle.textContent='철기 마을 완성';ui.goalText.textContent='철도끼·철곡괭이·철괭이·철창 중 하나를 만들고 청동기 중심 취락을 철기 마을로 발전시키세요.';ui.hint.textContent='청동기 중심 취락+철괴→철기 마을 · 철제 도구+사람→철기 전문 작업자';return;}
+ ui.goalTitle.textContent='철기 시대 정착 완성';ui.goalText.textContent='철제 도구의 높은 생산력을 활용하되 숲과 광맥이 지나치게 빨리 고갈되지 않도록 관리하세요.';ui.hint.textContent='철기 전문 작업자는 강력하지만 자연 소모도 큼 · 남은 자연과 생산시설을 균형 있게 운영';
 }
 
 let toastTimer;
