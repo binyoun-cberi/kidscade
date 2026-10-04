@@ -8,7 +8,6 @@ const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
 const PREVIEW_VERSION='pixel-v3-school-starter-1';
 const STATE_KEY='kidscade-avatar-v3';
-const LEGACY_STATE_KEYS=['kidscade-pixel-avatar-v1','kidscade_avatar_equipped'];
 const SIZE=128;
 const PARTS={
   hair:{label:'헤어',name:'더벅머리',assetKey:'hair'},
@@ -198,14 +197,6 @@ function publish(showToast=false){
     if(showToast)flash('새 v3 캐릭터를 저장했어요!');
   }catch(_){}
 }
-function migrateLegacyOnce(){
-  try{
-    const hasV3=!!localStorage.getItem(STATE_KEY);
-    if(hasV3)return;
-    const hadLegacy=LEGACY_STATE_KEYS.some(key=>!!localStorage.getItem(key));
-    if(hadLegacy)localStorage.setItem('kidscade-avatar-v3-migrated-from-legacy','1');
-  }catch(_){}
-}
 function resetToDefault(){
   state={version:3,setId:manifest?.id||'school-starter-01'};
   drawStatic();
@@ -250,7 +241,6 @@ window.KidscadeAvatarShop={
 };
 
 (async function boot(){
-  migrateLegacyOnce();
   await Promise.all([loadManifest(),loadSheet()]);
   drawStatic();
   styleSummary.textContent='학교 탐험가 · 9종 기본 파츠 · 23프레임';
