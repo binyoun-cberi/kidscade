@@ -3953,47 +3953,54 @@ function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera
     else if(type==='fire')state.fire=true;
     else if(type==='cactus')state.cactus=true;
   }
-  const hx=blockCoordFromWorld(px),hy=Math.floor(eyeY-.16),hz=blockCoordFromWorld(pz);
-  state.headUnderWater=getBlock(hx,hy,hz)?.type==='water';
+  const headY=eyeY-.16,hx=blockCoordFromWorld(px),hy=Math.floor(headY),hz=blockCoordFromWorld(pz);
+  const headBlock=getBlock(hx,hy,hz);
+  state.headUnderWater=headBlock?.type==='water'&&headY<hy+.84;
   return state;
 }
 function damageByEnvironment(state,t){
-  if(gameFreeMode!=='survival')return;
+  if(gameFreeMode!=='survival')return false;
   const kind=state.lava?'용암':state.fire?'불':state.cactus?'선인장':'';
-  if(!kind)return;
-  const cooldown=state.lava?700:1050;if(t-lastEnvironmentDamage<cooldown)return;
+  if(!kind)return false;
+  const cooldown=state.lava?700:1050;if(t-lastEnvironmentDamage<cooldown)return false;
   lastEnvironmentDamage=t;healthRegenClock=0;
   survivalHealth=Math.max(0,survivalHealth-(state.lava?2:1));
   toast(kind+(state.lava?'에 들어갔어요! 빨리 빠져나오세요.':'에 닿았어요!')+' '+('♥'.repeat(survivalHealth)||'생명 0'));
   sfx('bad');updateCreatureHealthUi();
-  if(survivalHealth<=0)returnAfterCreatureDefeat();
+  if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
+  return false;
 }
 function updateBreathUi(underwater){
   const bar=$('breathBar'),fill=$('breathFill');if(!bar||!fill)return;
   const show=gameFreeMode==='survival'&&(underwater||survivalBreath<99.5);
   bar.classList.toggle('hidden',!show);fill.style.width=Math.round(survivalBreath)+'%';
   bar.setAttribute('aria-valuenow',String(Math.round(survivalBreath)));
+  if(underwater&&$('survivalSafety')){
+    $('survivalSafety').classList.remove('hidden');
+    $('survivalSafety').textContent=survivalBreath<=30?'물속 · 숨이 얼마 안 남았어요':'물속 · 숨 참는 중';
+  }
 }
 function updateBreath(state,dt,t){
-  if(gameFreeMode!=='survival'){survivalBreath=100;updateBreathUi(false);return}
+  if(gameFreeMode!=='survival'){survivalBreath=100;updateBreathUi(false);return false}
   if(state.headUnderWater){
     survivalBreath=Math.max(0,survivalBreath-dt*9);
     if(survivalBreath<=0&&t-lastDrownDamage>=1400){
       lastDrownDamage=t;healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-1);
       toast('숨이 부족해요! 물 위로 올라가세요. '+('♥'.repeat(survivalHealth)||'생명 0'));
       sfx('bad');updateCreatureHealthUi();
-      if(survivalHealth<=0){returnAfterCreatureDefeat();return}
+      if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
     }
   }else survivalBreath=Math.min(100,survivalBreath+dt*34);
-  updateBreathUi(state.headUnderWater);
+  updateBreathUi(state.headUnderWater);return false;
 }
 function damageByFall(distance){
-  if(gameFreeMode!=='survival'||distance<=4.25)return;
+  if(gameFreeMode!=='survival'||distance<=4.25)return false;
   const amount=Math.min(4,Math.max(1,Math.floor((distance-4.25)/3)+1));
   healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-amount);
   toast('높은 곳에서 떨어졌어요! -'+amount+'♥ · '+('♥'.repeat(survivalHealth)||'생명 0'));
   sfx('bad');updateCreatureHealthUi();
-  if(survivalHealth<=0)returnAfterCreatureDefeat();
+  if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
+  return false;
 }
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
@@ -4140,7 +4147,8 @@ function updateFree(dt,t){
   const previousFluid=freeFluidKind;
   freeFluidKind=environment.lava?'lava':environment.water?'water':'';
   if(mobileModeEnabled&&previousFluid!==freeFluidKind)refreshMobileFly();
-  damageByEnvironment(environment,t);updateBreath(environment,dt,t);
+  if(damageByEnvironment(environment,t))return;
+  if(updateBreath(environment,dt,t))return;
   const fluidSpeed=freeFluidKind==='water'?.58:freeFluidKind==='lava'?.35:1;
   const speed=((freeKeys.ControlLeft||freeKeys.ControlRight)?6.6:4.0)*
     (gameFreeMode==='survival'&&survivalExposure>=70?.83:1)*fluidSpeed;
@@ -4185,7 +4193,7 @@ function updateFree(dt,t){
       const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
       if(nextY-1.62<=ground){
         nextY=ground+1.62;freeVelocityY=0;
-        if(!wasGrounded&&!freeFluidKind)damageByFall(Math.max(0,freeFallPeakY-nextY));
+        if(!wasGrounded&&!freeFluidKind&&damageByFall(Math.max(0,freeFallPeakY-nextY)))return;
         onGround=true;freeFallPeakY=nextY;
       }else onGround=false;
     }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){
