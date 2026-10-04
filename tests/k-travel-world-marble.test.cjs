@@ -105,7 +105,8 @@ test('economy preserves investment, upgrades, tolls, takeovers, continent collec
   assert.match(game,/buildPoints:1/);
   assert.match(game,/buildPoints=Math\.min\(3,p\.buildPoints\+1\)/);
   assert.match(game,/toll\*=1\.35/);
-  assert.match(game,/Math\.min\(12,Math\.round\(getToll\(countryId\)\*\.15\)\)/);
+  assert.match(game,/Math\.min\(6,Math\.round\(getToll\(countryId\)\*\.08\)\)/);
+  assert.match(game,/if\(player\.turnTransitPaid>0\)return true/);
   assert.match(game,/state\.festival/);
 });
 
