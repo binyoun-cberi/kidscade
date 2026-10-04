@@ -102,8 +102,8 @@ export function createResidentLife(ctx){
         else{
           const dx=other.object.position.x-n.object.position.x,dz=other.object.position.z-n.object.position.z;
           n.object.rotation.y=Math.atan2(dx,dz);n.playAnim?.('idle');n.mixer?.update(dt);
-          if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
-          if(n.chatMarker)n.chatMarker.position.set(n.object.position.x,2.58,n.object.position.z);
+          if(n.label){n.label.position.set(n.object.position.x,2.22,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
+          if(n.chatMarker)n.chatMarker.position.set(n.object.position.x,2.82,n.object.position.z);
           if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
           continue;
         }
@@ -138,8 +138,8 @@ export function createResidentLife(ctx){
       n.lastX=n.object.position.x;n.lastZ=n.object.position.z;
       n.playAnim?.(walking?'walk':'idle');n.mixer?.update(dt);
       n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.010:0);
-      if(n.label){n.label.position.set(n.object.position.x,2.12,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<3.4;}
-      if(n.chatMarker){n.chatMarker.position.set(n.object.position.x,2.58,n.object.position.z);if(n.lifeState!=='CHATTING')n.chatMarker.visible=false;}
+      if(n.label){n.label.position.set(n.object.position.x,2.22,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
+      if(n.chatMarker){n.chatMarker.position.set(n.object.position.x,2.82,n.object.position.z);if(n.lifeState!=='CHATTING')n.chatMarker.visible=false;}
       if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
     }
   }
