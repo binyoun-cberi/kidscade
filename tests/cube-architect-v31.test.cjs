@@ -15,8 +15,8 @@ test('v31 Cube World rework loads before the runtime and classic scripts still p
   assert.doesNotThrow(()=>new Function(main));
   assert.doesNotThrow(()=>new Function(creatures));
   assert.match(html,/cube-architect-world-assets\.js\?v=20261003-31/);
-  assert.match(html,/cube-architect-creatures\.js\?v=20261003-31/);
-  assert.match(html,/cube-architect-creature-assets\.js\?v=20261003-31/);
+  assert.match(html,/cube-architect-creatures\.js\?v=20261004-32/);
+  assert.match(html,/cube-architect-creature-assets\.js\?v=20261004-32/);
   assert.match(html,/cube-architect\.js\?v=20261003-31/);
   assert.ok(html.indexOf('cube-architect-world-assets.js')<html.indexOf('cube-architect.js'));
 });
@@ -47,7 +47,7 @@ test('biome decoration uses Cube World environment glTF assets without replacing
 });
 
 test('Cube World fauna and enemies join the existing survival roster',()=>{
-  for(const id of ['pig','sheep','chicken','wolf','goblin','skeleton','yeti']){
+  for(const id of ['pig','sheep','chicken','chick','cat','dog','horse','raccoon','wolf','goblin','zombie','wizard','demon','giant','skeleton','yeti']){
     assert.match(creatures,new RegExp(id+":\\{id:'"+id+"'"));
   }
   assert.match(creatureAssets,/cube world\//);
@@ -55,6 +55,8 @@ test('Cube World fauna and enemies join the existing survival roster',()=>{
   assert.match(creatureAssets,/Animals\/glTF\/Wolf\.gltf/);
   assert.match(creatureAssets,/Enemies\/glTF\/Goblin\.gltf/);
   assert.match(creatureAssets,/Enemies\/glTF\/Yeti\.gltf/);
+  for(const file of ['Cat','Dog','Horse','Raccoon']) assert.match(creatureAssets,new RegExp('Animals\\/glTF\\/'+file+'\\.gltf'));
+  for(const file of ['Demon','Giant','Wizard','Zombie']) assert.match(creatureAssets,new RegExp('Enemies\\/glTF\\/'+file+'\\.gltf'));
 });
 
 test('Cube World tool models are registered and shown in first person',()=>{
