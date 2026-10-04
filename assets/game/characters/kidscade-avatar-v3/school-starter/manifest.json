@@ -189,10 +189,53 @@
   },
   "customization": {
     "skinColor": {
-      "mode": "runtime-palette-remap",
+      "mode": "explicit-palette-remap-v2",
       "freeColor": true,
       "preserveShading": true,
-      "scope": "body-skin-only"
+      "scope": "body-skin-only",
+      "defaultColor": "#fce2d2",
+      "sourcePalette": [
+        {
+          "source": "#fce2d2",
+          "shade": 1,
+          "role": "base"
+        },
+        {
+          "source": "#fac8b7",
+          "shade": 0.94,
+          "role": "light-shadow"
+        },
+        {
+          "source": "#d1b0ac",
+          "shade": 0.85,
+          "role": "shadow"
+        },
+        {
+          "source": "#cb9790",
+          "shade": 0.79,
+          "role": "deep-shadow"
+        },
+        {
+          "source": "#9e7270",
+          "shade": 0.68,
+          "role": "edge-shadow"
+        },
+        {
+          "source": "#9d8185",
+          "shade": 0.71,
+          "role": "soft-edge"
+        },
+        {
+          "source": "#805e61",
+          "shade": 0.62,
+          "role": "outline-light"
+        },
+        {
+          "source": "#7b5053",
+          "shade": 0.58,
+          "role": "outline-shadow"
+        }
+      ]
     }
   },
   "partCatalogs": {
