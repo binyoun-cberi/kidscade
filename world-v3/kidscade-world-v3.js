@@ -1491,6 +1491,7 @@ function addNatureCollider(x,z,w,d){
 }
 const groundPickups=[];
 const GROUND_PICKUP_RESPAWN_MS=45000;
+const MUSHROOM_RESPAWN_MS=30000;
 function scheduleGroundPickup(actor,delay){
   clearTimeout(actor.timer);
   actor.ready=false;actor.object.visible=false;
@@ -1519,6 +1520,23 @@ async function addGroundPickup(id,kind,x,z){
   const remain=nextAt-Date.now();
   if(remain>0)scheduleGroundPickup(actor,remain);
   else prog().groundPickups[id]=0;
+}
+async function addMushroomPatch(id,x,z){
+  const object=await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0,name:id});
+  if(!object)return;
+  const actor={id,kind:'mushroom',object,ready:true,interaction:null,timer:null};groundPickups.push(actor);
+  actor.interaction=interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{
+    if(!actor.ready)return;
+    const p=prog();if(p.energy<1){toast('체력이 부족해요.');return;}
+    const gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);
+    if(!addInventoryItem('mushroom',gain))return;
+    p.energy=Math.max(0,p.energy-1);
+    const nextAt=Date.now()+MUSHROOM_RESPAWN_MS;prog().groundPickups[id]=nextAt;
+    persist();setAvatarAction('smile',380);toast('버섯 +'+gain+' · 이 자리는 잠시 쉬어가요.');updateStatus();worldAudio.sfx('pickup',.12);
+    scheduleGroundPickup(actor,MUSHROOM_RESPAWN_MS);
+  });
+  const nextAt=Number(prog().groundPickups[id]||0),remain=nextAt-Date.now();
+  if(remain>0)scheduleGroundPickup(actor,remain);else prog().groundPickups[id]=0;
 }
 async function buildOutdoor(){
   const point=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
@@ -1696,9 +1714,9 @@ async function buildOutdoor(){
       await addModel(outdoor,treeAssets[(i+1)%3],{x,z,w:2.5,h:4.2+(i%3)*.25,d:2.5,rot:i*.37});
       addNatureCollider(x,z,.72,.72);interact('outdoor',x,z,1.3,'깊은 숲 나무 베기',()=>{if(spendTool('wood','axe'))setAvatarAction('smile',450);});
     }
+    let mushroomIndex=0;
     for(const [dx,dz] of [[-5,1.2],[-1,3.5],[7,2.8],[-5,-5.2]]){
-      const x=c.x+dx,z=c.z+dz;await addModel(outdoor,ASSET.mushroom,{x,z,w:.75,h:.55,d:.7,rot:0});
-      interact('outdoor',x,z,1.05,'버섯 채집하기',()=>{const gain=(companionId()==='fox'?2:1)+(Number(townPerks().mushroomBonus)||0);if(!addInventoryItem('mushroom',gain))return;prog().energy=Math.max(0,prog().energy-1);persist();toast('버섯 +'+gain);updateStatus();});
+      const x=c.x+dx,z=c.z+dz;await addMushroomPatch('forest-mushroom-'+mushroomIndex++,x,z);
     }
     await addModel(outdoor,ASSET.logStack,{x:c.x+.5,z:c.z+5.2,w:2.4,h:1.1,d:1.2,rot:.2});
     await addZoneSign('forest',7.0,-6.2,'깊은 숲 · 목재 · 버섯',Math.PI/2);
