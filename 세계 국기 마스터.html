@@ -269,10 +269,12 @@ section{margin-bottom:18px}.progress-card,.question-card,.result-grid,.rank-resu
 
   function eligibleCountries(){
     const diff=DIFFS[settings.difficulty];
-    return countryData.filter(c=>{
-      const cont=settings.continent==='world'||CONTINENTS[settings.continent].codes.includes(c.code);
-      return cont&&difficultyOf(c.code)<=diff.max;
-    });
+    const continentPool=countryData.filter(c=>settings.continent==='world'||CONTINENTS[settings.continent].codes.includes(c.code));
+    let filtered=continentPool.filter(c=>difficultyOf(c.code)<=diff.max);
+    const minimum=Math.min(6,continentPool.length);
+    if(filtered.length<minimum&&diff.max<3) filtered=continentPool.filter(c=>difficultyOf(c.code)<=diff.max+1);
+    if(filtered.length<minimum) filtered=continentPool;
+    return filtered;
   }
 
   function masteryProgress(continentKey){
