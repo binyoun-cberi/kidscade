@@ -102,6 +102,14 @@ test('small wildlife follows edited voxel terrain instead of teleporting onto st
 test('return points use the current edited world and solid blocks can displace replaceable fluids',()=>{
   assert.match(js,/function safeReturnEyeY\(\)\{return getHighestSolidY\(0,5,WORLD_MAX_Y\)\+2\.62\}/);
   assert.match(js,/camera\.position\.set\(0,safeReturnEyeY\(\),5\)/);
-  assert.match(js,/const replaceable=occupied&&!\['door','cuboid'\]\.includes\(selectedType\)/);
+  assert.match(js,/const canDisplaceFluid=occupied&&blockDef\(occupied\)\.liquid&&selectedDef\.solid/);
+  assert.match(js,/const canReplaceFragile=occupied&&\['fire','flower','reed','sapling','torch'\]\.includes\(occupied\.type\)/);
   assert.match(js,/if\(replaceable\)removeWorldBlockData\(p\.x,p\.y,p\.z,true\)/);
+});
+
+
+test('player-built leaves persist and moving fluids wash away fragile props',()=>{
+  assert.match(js,/if\(d\.playerBuilt\|\|hasNearbyLog\(x,y,z\)\)\{d\.decay=0;continue\}/);
+  assert.match(js,/\['fire','flower','reed','sapling','torch'\]\.includes\(at\.type\)/);
+  assert.match(js,/removeWorldBlockData\(x,y,z,true\)/);
 });
