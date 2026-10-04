@@ -8,6 +8,7 @@ const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),'utf8');
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
 const residents=fs.readFileSync(path.join(root,'world-v3','kidscade-world-residents.js'),'utf8');
+const npcStyle=fs.readFileSync(path.join(root,'world-v3','kidscade-world-npc-style.js'),'utf8');
 const daily=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily.js'),'utf8');
 const dailyLife=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily-life.js'),'utf8');
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
@@ -25,7 +26,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,daily,dailyLife,interiors,museum,grid,economy,furnishing,interiorKit,audio]){
+  for(const src0 of [runtime,city,residents,npcStyle,daily,dailyLife,interiors,museum,grid,economy,furnishing,interiorKit,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -106,22 +107,23 @@ test('starter loop cannot deadlock on a fresh save',()=>{
   assert.match(storage,/starterKitClaimed:false/);
 });
 
-test('Seed Town uses actual tracked 3D human NPC assets',()=>{
+test('Seed Town gives named residents diverse role-matched 3D NPC assets',()=>{
   const files=[
-    'character-female-a.glb','character-female-b.glb','character-female-c.glb',
-    'character-female-d.glb','character-female-e.glb','character-female-f.glb',
-    'character-male-a.glb','character-male-b.glb','character-male-c.glb',
-    'character-male-d.glb','character-male-e.glb','character-male-f.glb'
+    'Casual_Female.gltf','Worker_Male.gltf','Chef_Female.gltf','Casual2_Male.gltf',
+    'Suit_Male.gltf','Suit_Female.gltf','Doctor_Female_Young.gltf','OldClassy_Male.gltf',
+    'Casual3_Female.gltf','Cowboy_Male.gltf','Casual2_Female.gltf','Casual_Male.gltf'
   ];
   for(const file of files){
-    assert.ok(fs.existsSync(path.join(root,'assets','game','characters','people',file)),'missing '+file);
-    assert.ok(city.includes(file),'city missing '+file);
+    assert.ok(fs.existsSync(path.join(root,'assets','game','npcs','glTF',file)),'missing '+file);
+    assert.ok(npcStyle.includes(file),'resident visual missing '+file);
   }
   assert.ok(fs.existsSync(path.join(root,'assets','game','shops','market','character-employee.glb')));
-  assert.match(city,/character-employee\.glb/);
+  assert.match(npcStyle,/character-employee\.glb/);
   for(const name of ['민지','준호','하늘','도윤','유나','태호','소라','현우','나리','우진','서연','민석','마트직원']){
-    assert.ok(city.includes(name),'NPC missing '+name);
+    assert.ok(npcStyle.includes(name),'NPC preset missing '+name);
   }
+  assert.match(city,/residentVisual\(id\)/);
+  assert.match(city,/Number\(visual\.height\)\|\|1\.82/);
 });
 
 test('Seed Town reuses tracked city market transport and service assets',()=>{
@@ -184,7 +186,7 @@ test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
   for(const id of ['market','hardware','cafe'])assert.ok(interiors.includes(id+":"),'missing venue '+id);
   for(const label of ['씨앗마트 들어가기','튼튼 철물점 들어가기','하늘 카페 들어가기'])assert.ok(city.includes(label),'missing door '+label);
   const required=[
-    ['shops','market','shelf-boxes.glb'],['shops','market','freezer.glb'],['shops','market','cash-register.glb'],
+    ['shops','market','shelf-boxes.glb'],['shops','market','freezers-standing.glb'],['shops','market','cash-register.glb'],
     ['3d','survival','kenney-survival-kit','workbench.glb'],['3d','survival','kenney-survival-kit','workbench-anvil.glb'],
     ['3d','bakery','interior','counter-table.glb'],['3d','bakery','interior','display-case-long.glb'],['3d','bakery','interior','coffee-machine.glb']
   ];
@@ -194,11 +196,20 @@ test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
   assert.match(interiors,/actions\.shop\('cafe','하늘'\)/);
 });
 
-test('walk-in venues keep merchant social loops, warm lights, lazy assets and bounded cafe rest',()=>{
+test('walk-in venues keep social loops, animated merchants, themed density and bounded cafe rest',()=>{
   assert.match(interiors,/built=new Set\(\),buildPromises=\{\}/);
   assert.match(interiors,/async function show\(kind\)/);
   assert.match(interiors,/AmbientLight/);
   assert.match(interiors,/PointLight/);
+  assert.match(interiors,/cloneSkeleton\(gltf\.scene\)/);
+  assert.match(interiors,/merchantMixers/);
+  assert.match(runtime,/venueInteriors\?\.update\?\.\(dt\)/);
+  assert.match(runtime,/loadGLTF,prepModel/);
+  assert.match(interiors,/market-shelf-boxes-b/);
+  assert.match(interiors,/hardware-wall-hammer/);
+  assert.match(interiors,/cafe-wall-window-a/);
+  assert.match(interiors,/cafe-floor-tile/);
+  assert.match(interiors,/mug-b-stacked\.glb/);
   for(const id of ['minji','junho','haneul'])assert.ok(interiors.includes("actions.resident('"+id+"')"),'missing interior resident '+id);
   assert.match(economy,/residentServiceLabel/);
   assert.match(economy,/getVenue\?\.\(\)===r\.service/);
@@ -208,6 +219,16 @@ test('walk-in venues keep merchant social loops, warm lights, lazy assets and bo
   assert.match(economy,/benchRestDay===day/);
   assert.match(runtime,/enterVenue,getVenue:\(\)=>activeVenue/);
   assert.match(runtime,/cafeRest:\(\)=>townEconomy\?\.cafeRest\?\.\(\)/);
+});
+
+test('shop interior props keep service items off the floor and away from cutaway walls',()=>{
+  assert.match(interiors,/VENUE_BOUNDS=\{x1:-5\.15,x2:5\.15,z1:-3\.62,z2:3\.62\}/);
+  assert.match(interiors,/market-register'[\s\S]*y:\.94/);
+  assert.match(interiors,/cafe-coffee-machine'[\s\S]*y:\.91/);
+  assert.match(interiors,/cafe-register'[\s\S]*y:\.91/);
+  assert.match(interiors,/cafe-cookie-jar'[\s\S]*y:\.92/);
+  assert.doesNotMatch(interiors,/x:4\.35,z:2\.65/);
+  assert.doesNotMatch(interiors,/resource-wood\.glb/);
 });
 
 test('fishing cannot queue multiple delayed catches from rapid input',()=>{
@@ -492,11 +513,14 @@ test('outdoor map uses one sub-base plus separated square tiles without overlapp
   assert.doesNotMatch(runtime,/plane\(outdoor,0,5,82,96/);
 });
 
-test('city labels are smaller and only shown near the player',()=>{
-  assert.match(city,/width:1\.2,height:\.30/);
+test('resident nameplates are readable role cards while building labels stay proximity based',()=>{
+  assert.match(city,/function makeResidentLabel/);
+  assert.match(city,/sp\.scale\.set\(1\.92,\.56,1\)/);
+  assert.match(city,/depthTest:false/);
+  assert.match(city,/visual\.role/);
   assert.match(city,/tag\.visible=false/);
   assert.match(city,/buildingLabels/);
-  assert.match(residents,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<3\.4/);
+  assert.match(residents,/Math\.hypot\(player\.x-n\.object\.position\.x,player\.z-n\.object\.position\.z\)<5\.6/);
   assert.match(city,/Math\.hypot\(player\.x-a\.x,player\.z-a\.z\)<7\.5/);
 });
 
