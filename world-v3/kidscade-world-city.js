@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=3';
-import {createResidentLife} from './kidscade-world-residents.js?v=1';
+import {createResidentLife} from './kidscade-world-residents.js?v=2';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
