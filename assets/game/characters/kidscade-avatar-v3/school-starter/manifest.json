@@ -357,5 +357,6 @@
     "hair": "hair/catalog.json",
     "upper": "upper/catalog.json",
     "lower": "lower/catalog.json"
-  }
+  },
+  "artRevision": "quality-2"
 }

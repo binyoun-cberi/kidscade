@@ -16,9 +16,15 @@
   "design": "camel-pants",
   "palette": [
     [
-      105,
-      74,
-      45,
+      87,
+      63,
+      38,
+      255
+    ],
+    [
+      132,
+      95,
+      58,
       255
     ],
     [
@@ -26,7 +32,14 @@
       119,
       72,
       255
+    ],
+    [
+      194,
+      141,
+      87,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

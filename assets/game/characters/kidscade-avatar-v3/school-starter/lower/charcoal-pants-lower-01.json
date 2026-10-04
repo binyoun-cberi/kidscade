@@ -16,9 +16,15 @@
   "design": "charcoal-pants",
   "palette": [
     [
-      44,
+      40,
+      42,
       47,
-      53,
+      255
+    ],
+    [
+      61,
+      64,
+      71,
       255
     ],
     [
@@ -26,7 +32,14 @@
       80,
       89,
       255
+    ],
+    [
+      91,
+      96,
+      106,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }

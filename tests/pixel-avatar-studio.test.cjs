@@ -16,7 +16,7 @@ const lowerCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'lower/catalo
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=47/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=48/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -24,7 +24,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-5/);
+  assert.match(js,/pixel-v3-school-starter-6/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -55,7 +55,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-5'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-6'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -259,7 +259,7 @@ test('v3 lower catalog adds ten JSON pants and keeps the builtin school uniform 
   assert.equal(lowerCatalog.layer,'lower');
   assert.equal(lowerCatalog.defaultId,'basic-school-uniform-lower-01');
   assert.equal(lowerCatalog.items.length,11);
-  assert.deepEqual(lowerCatalog.sourcePalette,[[34,48,71,255],[52,73,98,255]]);
+  assert.deepEqual(lowerCatalog.sourcePalette,[[26,36,52,255],[46,64,85,255],[66,87,109,255],[87,107,124,255]]);
   assert.equal(Object.keys(lowerCatalog.frameBounds).length,23);
   assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
   const extra=lowerCatalog.items.filter(item=>item.id!==lowerCatalog.defaultId);
@@ -272,7 +272,7 @@ test('v3 lower catalog adds ten JSON pants and keeps the builtin school uniform 
     assert.equal(file.layer,'lower');
     assert.equal(file.bodyId,'maple-lite-body-v3');
     assert.deepEqual(file.canvas,[128,128]);
-    assert.equal(file.palette.length,2,item.id);
+    assert.equal(file.palette.length,4,item.id);
     assert.equal(file.frameMode,'exact-source-palette-remap-23');
     for(const color of file.palette){
       assert.equal(color.length,4,item.id);
@@ -308,8 +308,24 @@ test('hair visual regression keeps repaired partings solid and ponytail off the 
   const pony=coordSet(loadHair('ponytail-hair-01.json'));
   const sideRepair={22:[61,62,63],23:[61,62,63],24:[61,62,63],25:[60,61,62],26:[60,61,62],27:[60,61,62],28:[60,61,62],29:[60,61],30:[60,61],31:[60],33:[59]};
   for(const [y,xs] of Object.entries(sideRepair))for(const x of xs)assert.ok(side.has(x+','+y),'side-part gap '+x+','+y);
-  const curlyRepair={38:[[61,61]],39:[[60,62],[72,72]],40:[[59,62],[71,73]],41:[[58,63],[70,73]],42:[[58,64],[69,74]],43:[[59,64],[70,75]],44:[[60,63],[71,75]],45:[[60,62],[71,74]],46:[[61,62],[72,73]]};
+  const curlyRepair={38:[[61,61]],39:[[60,62],[72,72]],40:[[59,62],[71,73]],41:[[58,63],[70,73]],42:[[58,64],[69,74]],43:[[59,64],[70,75]],44:[[60,63],[71,75]],45:[[60,62],[71,74]]};
   for(const [y,runs] of Object.entries(curlyRepair))for(const [a,b] of runs)for(let x=a;x<=b;x++)assert.ok(curly.has(x+','+y),'curly gap '+x+','+y);
   const eyeMask=new Set(eyeCatalog.baseClearPixels.map(pixel=>pixel[0]+','+pixel[1]));
   assert.deepEqual([...pony].filter(key=>eyeMask.has(key)),[]);
+  assert.deepEqual([...curly].filter(key=>eyeMask.has(key)),[]);
+});
+
+
+test('trousers have separate legs and four depth tones in the starter JSON',()=>{
+  const pack=JSON.parse(fs.readFileSync(path.join(starterDir,'school-starter.json'),'utf8'));
+  for(const id of manifest.frameOrder){
+    const pixels=pack.frames[id].layers.lower.operations[0].pixels;
+    assert.ok(pixels.length>100,id);
+    assert.ok(new Set(pixels.map(p=>p.slice(2).join(','))).size>=3,id);
+    assert.ok(pixels.every(p=>lowerCatalog.sourcePalette.some(c=>c.join(',')===p.slice(2).join(','))),id);
+  }
+  const stand=pack.frames['stand-01'].layers.lower.operations[0].pixels;
+  const ankle=stand.filter(p=>p[1]===109).map(p=>p[0]).sort((a,b)=>a-b);
+  assert.ok(ankle.length>4);
+  assert.ok(ankle.some((x,i)=>i>0&&x-ankle[i-1]>1),'transparent gap between trouser legs');
 });

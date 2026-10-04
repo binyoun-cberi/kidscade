@@ -16,9 +16,15 @@
   "design": "gray-pants",
   "palette": [
     [
-      77,
-      82,
-      91,
+      67,
+      70,
+      76,
+      255
+    ],
+    [
+      101,
+      106,
+      114,
       255
     ],
     [
@@ -26,7 +32,14 @@
       132,
       143,
       255
+    ],
+    [
+      149,
+      156,
+      169,
+      255
     ]
   ],
-  "frameMode": "exact-source-palette-remap-23"
+  "frameMode": "exact-source-palette-remap-23",
+  "revision": "quality-2"
 }
