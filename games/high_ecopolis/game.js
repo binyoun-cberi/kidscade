@@ -870,7 +870,7 @@ function spawnAnimal(species,loadingPos=null){
   const t=loadingPos?tileAt(loadingPos.x,loadingPos.z):options[Math.floor(rng()*options.length)];
   const p=worldPos(t),g=animalModel(species);g.position.set(p.x,.48,p.z);animalGroup.add(g);
   animals.push({species,x:t.x,z:t.z,mesh:g,phase:rng()*Math.PI*2});
-  if(!loadingPos&&!ecosystem.discovered[species]){ecosystem.discovered[species]=true;ecoPoints+=12;toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 돌아왔어요! · +12P','good');sdkSound('correct')}
+  if(!loadingPos&&!ecosystem.discovered[species]){ecosystem.discovered[species]=true;ecoPoints+=12;toast(SPECIES[species].icon+' '+SPECIES[species].name+'이(가) 돌아왔어요! · +12P','good');sdkSound('correct');try{window.KidscadeGame?.milestone?.('species_returned',{uniqueKey:species,species,name:SPECIES[species].name})}catch(_){}}
 }
 function animalModel(species){
   const g=new THREE.Group();
