@@ -98,8 +98,23 @@ test('project save persists selected asset metadata',()=>{
   assert.ok(js.includes('project.selectedAssets'));
 });
 
-test('animation contract remains stand 2 walk 4 jump 1',()=>{
-  for(const frame of ['stand-01','stand-02','walk-01','walk-02','walk-03','walk-04','jump-01']) assert.ok(js.includes(frame));
+test('animation contract includes stand walk jump attack hurt dead sit and pickup',()=>{
+  const expected={
+    stand:['stand-01','stand-02'],
+    walk:['walk-01','walk-02','walk-03','walk-04'],
+    jump:['jump-01'],
+    attack:['attack-01','attack-02','attack-03','attack-04','attack-05'],
+    hurt:['hurt-01','hurt-02'],
+    dead:['dead-01','dead-02','dead-03','dead-04'],
+    sit:['sit-01','sit-02'],
+    pickup:['pickup-01','pickup-02','pickup-03']
+  };
+  for(const [kind,frames] of Object.entries(expected)){
+    assert.ok(js.includes(kind+":{label:"));
+    for(const frame of frames)assert.ok(js.includes(frame));
+  }
+  assert.ok(js.includes('const SOURCE_BODY_FRAMES=FRAMES.filter(frame=>!frame.derived)'));
+  assert.ok(js.includes('const DERIVED_FRAMES=FRAMES.filter(frame=>frame.derived)'));
 });
 
 test('nudge and drawing controls remain available',()=>{
@@ -250,5 +265,42 @@ test('canvas-first workspace keeps correction and pixel tools below the canvas',
 
 test('avatar studio markup does not leak closing tag text',()=>{
   assert.ok(!html.includes('</main>/div>'));
-  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=18"></script>'));
+  assert.ok(html.includes('</main>\n</div>\n<script src="/teacher-avatar-clothing-studio.js?v=19"></script>'));
+});
+
+
+test('expanded animation UI filters frames by motion group',()=>{
+  assert.ok(html.includes('id="animationModeButtons"'));
+  assert.ok(!html.includes('id="playStand"'));
+  assert.match(js,/function renderAnimationModeButtons\(\)/);
+  assert.match(js,/function renderFrameButtonsForKind\(/);
+  assert.match(js,/function startPlayback\(kind\)/);
+  for(const label of ['STAND','WALK','JUMP','ATTACK','HURT','DEAD','SIT','PICKUP']) assert.ok(js.includes("label:'"+label+"'"));
+});
+
+test('derived action frames are generated from the seven source BODY poses',()=>{
+  assert.match(js,/function derivedLayerCanvas\(frameId,layer\)/);
+  assert.match(js,/function seedDerivedFramesForLayer\(/);
+  assert.match(js,/function seedDerivedFrames\(/);
+  assert.ok(js.includes("type:'attackMix'"));
+  assert.ok(js.includes("type:'sitMix'"));
+  assert.ok(js.includes("'dead-04':{type:'transform'"));
+  assert.ok(html.includes('id="regenerateDerivedFrames"'));
+  assert.match(js,/function regenerateDerivedFrames\(\)/);
+});
+
+test('legacy seven-frame projects and part JSON get derived-frame fallbacks',()=>{
+  assert.ok(js.includes("for(const layer of LAYERS)if(layer!=='body')seedDerivedFramesForLayer(layer,{force:false})"));
+  assert.ok(js.includes("seedDerivedFramesForLayer(layer,{force:true,skipIds:new Set(Object.keys(data.frames||{}))})"));
+  assert.ok(js.includes("const sourceMissing=SOURCE_BODY_FRAMES.filter"));
+});
+
+test('BODY reference v2 exports timing anchors and action events',()=>{
+  assert.ok(js.includes("version:2"));
+  assert.ok(js.includes('durationMs:frame.durationMs||null'));
+  assert.ok(js.includes('anchors:frame.anchors||null'));
+  assert.ok(js.includes('event:frame.event||null'));
+  assert.ok(js.includes('weaponPivot:[39,79]'));
+  assert.ok(js.includes("event:'hit'"));
+  assert.ok(js.includes("event:'pickup'"));
 });
