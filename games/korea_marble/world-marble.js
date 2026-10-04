@@ -439,13 +439,12 @@ function destinationInterest(player,id){
 }
 
 function routeTransitFee(player,path){
-  let total=0;
   for(let i=0;i<Math.max(0,path.length-1);i++){
     const countryId=path[i].to,inv=state.investments[countryId];
     if(!inv||inv.owner===player.id)continue;
-    total+=Math.max(2,Math.min(12,Math.round(getToll(countryId)*.15)));
+    return Math.max(1,Math.min(6,Math.round(getToll(countryId)*.08)));
   }
-  return total;
+  return 0;
 }
 
 function chooseCpuRoute(player,routes){
@@ -524,11 +523,12 @@ function shouldShowcaseTravel(player,mode,from,to){
 }
 
 function chargeTransit(player,countryId){
+  if(player.turnTransitPaid>0)return true;
   const inv=state.investments[countryId];
   if(!inv||inv.owner===player.id)return true;
-  const fee=Math.max(2,Math.min(12,Math.round(getToll(countryId)*.15)));
+  const fee=Math.max(1,Math.min(6,Math.round(getToll(countryId)*.08)));
   const owner=state.players[inv.owner];
-  player.money-=fee;owner.money+=fee;player.turnTransitPaid+=fee;
+  player.money-=fee;owner.money+=fee;player.turnTransitPaid=fee;
   if(player.money<0){bankrupt(player);return false}
   return true;
 }
