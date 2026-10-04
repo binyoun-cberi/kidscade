@@ -234,7 +234,7 @@ function newGame(){
     const isCpu=i>=setup.human;
     state.players.push({
       id:i,name:isCpu?'CPU '+cpuNo++:'플레이어 '+(i+1),isCpu,color:COLORS[i],emoji:AVATARS[i],
-      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:0,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
+      money:260,country:'KR',rest:0,pass:0,discount:1,buildPoints:1,bankrupt:false,visited:['KR'],continents:['asia'],landmarks:0,seenModes:[]
     });
   }
   ui.start.classList.add('hidden');ui.result.classList.add('hidden');ui.game.classList.remove('hidden');
@@ -274,7 +274,7 @@ function enterRollPhase(player){
 }
 
 function remoteBuildCost(player,c,level){
-  return Math.max(1,Math.round(upgradeCost(player,c,level)*.72));
+  return Math.max(1,Math.round(upgradeCost(player,c,level)*.55));
 }
 
 function upgradeableCountries(player){
@@ -422,12 +422,19 @@ function prepareRouteChoice(player,roll){
 function destinationInterest(player,id){
   const c=BY_ID.get(id),inv=state.investments[id];
   let score=c.value;
-  if(!inv)score+=45;
-  else if(inv.owner===player.id)score+=inv.level<3?28:5;
-  else score-=getToll(id,player)*1.1;
+  if(!inv){
+    score+=state.round<=3?40:18;
+  }else if(inv.owner===player.id){
+    score+=inv.level<3?48:6;
+  }else{
+    const riskWeight=state.cpuDifficulty==='hard'?.45:.7;
+    score-=getToll(id)*riskWeight;
+    const takeCost=takeoverCost(c,inv);
+    if(inv.level<3&&player.money-takeCost>90)score+=state.cpuDifficulty==='hard'?34:14;
+  }
   const owned=countContinent(player.id,c.continent);
   if(owned===CONTINENTS[c.continent].need-1&&!inv)score+=55;
-  if(!player.continents.includes(c.continent))score+=14;
+  if(!player.continents.includes(c.continent))score+=state.round<=5?14:6;
   return score;
 }
 
@@ -620,10 +627,10 @@ function collectionActive(owner,continent){return countContinent(owner,continent
 
 function getToll(countryId){
   const c=BY_ID.get(countryId),inv=state.investments[countryId];if(!inv)return 0;
-  const levelMul=[0,.55,1.25,2.75][inv.level]||.55;
+  const levelMul=[0,.5,1.05,2.2][inv.level]||.5;
   let toll=c.value*levelMul;
-  if(collectionActive(inv.owner,c.continent))toll*=1.4;
-  if(state.festival?.country===countryId&&state.round<=state.festival.expires)toll*=2;
+  if(collectionActive(inv.owner,c.continent))toll*=1.35;
+  if(state.festival?.country===countryId&&state.round<=state.festival.expires)toll*=1.75;
   return Math.max(1,Math.round(toll));
 }
 
@@ -644,8 +651,9 @@ function offerTakeover(player,c,inv){
   const cost=takeoverCost(c,inv),can=player.money>=cost;
   if(!can||inv.level>=3)return finishLanding(player);
   if(player.isCpu){
-    const yes=state.cpuDifficulty==='hard'&&player.money-cost>60&&Math.random()>.35;
-    return yes?takeover(player,c,inv,cost):finishLanding(player);
+    const hard=state.cpuDifficulty==='hard'&&player.money-cost>55&&Math.random()>.3;
+    const normal=state.cpuDifficulty==='normal'&&player.money-cost>95&&Math.random()>.72;
+    return (hard||normal)?takeover(player,c,inv,cost):finishLanding(player);
   }
   showAction({
     icon:'🤝',title:c.name+' 사업 인수',sub:'여행비를 낸 뒤 기존 사업을 인수할 수도 있어요.',
