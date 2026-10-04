@@ -2307,21 +2307,24 @@
       "category": "trivia",
       "age": "high",
       "icon": "✈️",
-      "description": "주사위를 굴려 전국을 여행하세요! 각 지역의 랜드마크를 세우며 경제 개념과 지리를 익힙니다.",
+      "description": "실제 세계지도에서 주사위만큼 항공·철도·항로를 따라 이동하고, 세계 각국에 투자해 랜드마크와 대륙 컬렉션을 완성하는 전략 보드게임!",
       "cover": "assets/gate-image/K-트래블 마블.png",
       "subject": "social",
       "genre": "strategy",
-      "difficulty": "hard",
+      "difficulty": "medium",
       "sessionMinutes": 15,
       "players": [
-        "solo"
+        "solo",
+        "local2",
+        "local3",
+        "local4"
       ],
       "input": [
         "touch",
         "keyboard"
       ],
-      "qualityStatus": "standard",
-      "classroom": false
+      "qualityStatus": "featured",
+      "classroom": true
     },
     {
       "id": "code_breaker",
