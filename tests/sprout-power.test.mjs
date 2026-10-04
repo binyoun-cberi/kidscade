@@ -71,10 +71,13 @@ test('student ranking UI uses non-spendable sprout power instead of seed balance
 
 test('main play rewards add sprout power and no longer add pet experience', () => {
   const launcher = fs.readFileSync(path.join(ROOT, 'game-launcher.js'), 'utf8');
+  const base = fs.readFileSync(path.join(ROOT, 'index_base.html'), 'utf8');
   const bootstrap = fs.readFileSync(path.join(ROOT, 'main-bootstrap.js'), 'utf8');
   assert.match(launcher, /rewardPower/);
   assert.match(launcher, /addSproutPower/);
   assert.doesNotMatch(launcher, /addPetExp/);
-  assert.match(bootstrap, /KidscadeSproutPower\?\.earn/);
+  assert.match(base, /KidscadeSproutPower\?\.earn/);
+  assert.doesNotMatch(base, /addPetExp:/);
+  assert.doesNotMatch(bootstrap, /KidscadeSproutPower\?\.earn/);
   assert.doesNotMatch(bootstrap, /addPetExp:/);
 });
