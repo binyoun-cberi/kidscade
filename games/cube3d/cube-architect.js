@@ -1050,6 +1050,7 @@ let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
 let dungeonYaw=0,dungeonPitch=0,dungeonKeys={},dungeonTargets=[],dungeonGates=[];
+let dungeonPuzzleGroups=new Map(),dungeonNetVisuals=[],dungeonFoldNonce=0;
 let firstDuskWarned=false,nightShelterNotice=false,lastEmergencyReturn=-120000;
 let worldChunkIndex=new Map(),worldChunksGenerated=new Set(),worldChunkGenerationDepth=0;
 const WORLD_CHUNK_SIZE=16;
@@ -1235,6 +1236,83 @@ const DUNGEON_SPECS={
 };
 function dungeonSpec(poi){return DUNGEON_SPECS[poi?.id]||DUNGEON_SPECS.taj}
 
+const DUNGEON_SHRINE_OBJECTIVES=[
+  '그림자 겨냥도 · 중앙 블록 장치의 모양을 바꿔 위·정면·옆면 그림자를 모두 맞추세요.',
+  '입체 설계실 · 벽의 겨냥도를 보고 중앙 장치의 블록을 정확한 위치에 놓으세요.',
+  '전개도 접기 · 바닥의 세 전개도 중 실제 정육면체로 접히는 것을 찾아 직접 작동시키세요.',
+  '설계 핵심 회수 · 마지막 장치를 조사해 랜드마크의 건축 기술을 가져가세요.'
+];
+const DUNGEON_VOXEL_VARIANTS=[
+  {
+    shadow:{
+      target:[[0,0,0],[1,0,0],[2,0,0],[1,1,0],[1,0,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,0],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[1,0,0],[2,0,0],[0,1,0],[2,1,0],[1,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,0],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[1,1,0],[1,0,1]]
+    }
+  },
+  {
+    shadow:{
+      target:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[0,0,1],[1,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[0,0,1],[1,0,1],[2,0,1],[1,1,0]]
+    }
+  },
+  {
+    shadow:{
+      target:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[0,1,0],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[2,0,0],[1,0,1],[1,1,1]]
+    },
+    build:{
+      target:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[0,1,0],[1,1,1],[2,1,1]],
+      allowed:[[0,0,0],[1,0,0],[2,0,0],[0,0,1],[1,0,1],[2,0,1],[0,1,0],[1,1,0],[2,1,1],[1,1,1]],
+      initial:[[0,0,0],[1,0,0],[1,0,1],[2,0,1],[1,1,0],[2,1,1]]
+    }
+  }
+];
+const DUNGEON_INVALID_NETS=[
+  [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],
+  [[0,0],[1,0],[0,1],[1,1],[2,1],[2,2]]
+];
+function dungeonShrineVariant(poi){
+  const seed=Number.isFinite(poi?.missionIndex)?poi.missionIndex:
+    ['taj','sagrada','eiffel','towerBridge','himeji','angkor'].indexOf(poi?.id);
+  return DUNGEON_VOXEL_VARIANTS[((seed||0)%DUNGEON_VOXEL_VARIANTS.length+
+    DUNGEON_VOXEL_VARIANTS.length)%DUNGEON_VOXEL_VARIANTS.length];
+}
+function dungeonNetChoices(poi){
+  const seed=Number.isFinite(poi?.missionIndex)?poi.missionIndex:0;
+  const correctIndex=((seed%3)+3)%3;
+  const valid=NET_VARIANTS[(seed+3)%NET_VARIANTS.length].layout.map(p=>p.slice());
+  const layouts=[DUNGEON_INVALID_NETS[0].map(p=>p.slice()),DUNGEON_INVALID_NETS[1].map(p=>p.slice())];
+  layouts.splice(correctIndex,0,valid);
+  return layouts.slice(0,3).map((layout,index)=>({layout,valid:index===correctIndex}));
+}
+function dungeonVoxelKey(p){return p.join(',')}
+function dungeonVoxelPoints(stage){
+  const raw=dungeonSession?.puzzleState?.[stage]||[];
+  return raw.map(k=>String(k).split(',').map(Number));
+}
+function dungeonVoxelDefinition(poi,stage){
+  const variant=dungeonShrineVariant(poi);return stage===0?variant.shadow:variant.build;
+}
+function dungeonSetVoxel(stage,key,on){
+  if(!dungeonSession)return;
+  dungeonSession.puzzleState=dungeonSession.puzzleState||{};
+  const set=new Set(dungeonSession.puzzleState[stage]||[]);
+  if(on)set.add(key);else set.delete(key);
+  dungeonSession.puzzleState[stage]=[...set];
+}
 function dungeonMaterial(color,emissive=0){
   return new THREE.MeshStandardMaterial({color,roughness:.72,metalness:.04,emissive,emissiveIntensity:emissive?0.35:0});
 }
@@ -1256,6 +1334,202 @@ function addDungeonTarget(id,kind,x,z,color,label){
   scene.add(orb);dungeonTargets.push(orb);
   return orb;
 }
+function dungeonColorCss(color){return '#'+Number(color||0xffffff).toString(16).padStart(6,'0')}
+function addDungeonCanvasPanel(z,title,draw){
+  const canvas=document.createElement('canvas');canvas.width=768;canvas.height=320;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#0b1524';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#e9f5ff';ctx.font='900 34px "Pretendard","Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(title,384,45);
+  draw(ctx,canvas);
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  const mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,toneMapped:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(6.1,2.55),mat);mesh.position.set(0,2.45,z);scene.add(mesh);return mesh;
+}
+function drawDungeonProjection(ctx,points,view,x,y,w,h,label,color='#7fe7ff'){
+  const cells=[...projectionSet(points,view)].map(k=>k.split(',').map(Number));
+  const xs=cells.map(p=>p[0]),ys=cells.map(p=>p[1]);
+  const minX=Math.min(...xs,0),maxX=Math.max(...xs,0),minY=Math.min(...ys,0),maxY=Math.max(...ys,0);
+  const cols=Math.max(1,maxX-minX+1),rows=Math.max(1,maxY-minY+1),cell=Math.min(w/cols,h/rows);
+  const ox=x+(w-cols*cell)/2,oy=y+(h-rows*cell)/2;
+  ctx.fillStyle='#a9bad0';ctx.font='800 20px "Pretendard","Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(label,x+w/2,y-10);
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;
+  for(let cx=0;cx<cols;cx++)for(let cy=0;cy<rows;cy++)ctx.strokeRect(ox+cx*cell,oy+cy*cell,cell,cell);
+  ctx.fillStyle=color;
+  for(const [a,b] of cells){
+    const gx=a-minX,gy=maxY-b;
+    ctx.fillRect(ox+gx*cell+3,oy+gy*cell+3,cell-6,cell-6);
+  }
+}
+function addDungeonProjectionPanel(target,z,color){
+  return addDungeonCanvasPanel(z,'3면 그림자 겨냥도',(ctx)=>{
+    const c=dungeonColorCss(color);
+    drawDungeonProjection(ctx,target,'top',54,105,190,150,'위에서',c);
+    drawDungeonProjection(ctx,target,'front',289,105,190,150,'앞에서',c);
+    drawDungeonProjection(ctx,target,'side',524,105,190,150,'옆에서',c);
+  });
+}
+function addDungeonIsometricPanel(target,z,color){
+  return addDungeonCanvasPanel(z,'겨냥도를 보고 똑같이 쌓기',(ctx)=>{
+    const c=dungeonColorCss(color),sorted=target.slice().sort((a,b)=>(a[1]+a[2]+a[0])-(b[1]+b[2]+b[0]));
+    const ox=384,oy=225,sx=42,sy=22,vy=43;
+    for(const [x,y,z0] of sorted){
+      const px=ox+(x-z0)*sx,py=oy+(x+z0)*sy-y*vy;
+      ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(px,py-sy);ctx.lineTo(px+sx,py);ctx.lineTo(px,py+sy);ctx.lineTo(px-sx,py);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,.20)';ctx.beginPath();ctx.moveTo(px-sx,py);ctx.lineTo(px,py+sy);ctx.lineTo(px,py+sy+vy);ctx.lineTo(px-sx,py+vy);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.moveTo(px+sx,py);ctx.lineTo(px,py+sy);ctx.lineTo(px,py+sy+vy);ctx.lineTo(px+sx,py+vy);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.strokeRect(px-sx,py,2*sx,vy);
+    }
+    ctx.fillStyle='#b8c8dc';ctx.font='700 20px "Pretendard","Noto Sans KR",sans-serif';ctx.fillText('블록 수 '+target.length+'개 · 위치까지 정확히 맞추세요.',384,290);
+  });
+}
+function dungeonVoxelLabel([x,y,z]){
+  return (x===0?'왼쪽':x===1?'가운데':'오른쪽')+' · '+(y===0?'아래':'위')+' · '+(z===0?'앞':'뒤')+' 블록';
+}
+function dungeonVoxelRoomZ(stage){return stage===0?4.2:-8.4}
+function renderDungeonVoxelPuzzle(stage,theme){
+  const poi=poiRules.poiById(dungeonSession?.poiId);if(!poi)return;
+  const def=dungeonVoxelDefinition(poi,stage),active=new Set(dungeonSession?.puzzleState?.[stage]||[]);
+  const old=dungeonPuzzleGroups.get(stage);if(old)scene.remove(old);
+  dungeonTargets=dungeonTargets.filter(t=>!(t.userData.targetKind==='shrineCell'&&t.userData.puzzleStage===stage));
+  const group=new THREE.Group(),centerZ=dungeonVoxelRoomZ(stage);
+  for(const p of def.allowed){
+    const key=dungeonVoxelKey(p),on=active.has(key),mesh=new THREE.Mesh(
+      new THREE.BoxGeometry(.76,.76,.76),
+      on?dungeonMaterial(theme.accent,theme.accent):new THREE.MeshBasicMaterial({color:theme.accent,wireframe:true,transparent:true,opacity:.24})
+    );
+    mesh.position.set((p[0]-1)*.86,.48+p[1]*.86,centerZ+(p[2]-.5)*.86);
+    mesh.userData={
+      dungeonTarget:true,targetKind:'shrineCell',targetId:'cell-'+stage+'-'+key,
+      puzzleStage:stage,voxelKey:key,label:dungeonVoxelLabel(p)+(on?' 빼기':' 넣기')
+    };
+    group.add(mesh);dungeonTargets.push(mesh);
+  }
+  scene.add(group);dungeonPuzzleGroups.set(stage,group);
+}
+function addDungeonVoxelControls(stage,def,theme){
+  const z=dungeonVoxelRoomZ(stage);
+  addDungeonBox(0,.08,z,3.8,.16,2.6,theme.wall);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.55,.045,8,40),new THREE.MeshBasicMaterial({color:theme.accent,transparent:true,opacity:.72}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(0,.19,z);scene.add(ring);
+  renderDungeonVoxelPuzzle(stage,theme);
+}
+function dungeonShadowScores(poi){
+  const def=dungeonVoxelDefinition(poi,0),active=dungeonVoxelPoints(0);
+  return ['top','front','side'].map(view=>overlapScore(projectionSet(active,view),projectionSet(def.target,view)));
+}
+function dungeonBuildStats(poi){
+  const def=dungeonVoxelDefinition(poi,1),active=new Set(dungeonSession?.puzzleState?.[1]||[]),target=new Set(def.target.map(dungeonVoxelKey));
+  let common=0;for(const key of active)if(target.has(key))common++;
+  return {common,active:active.size,target:target.size,done:active.size===target.size&&common===target.size};
+}
+function dungeonPuzzleStatusText(poi,stage){
+  if(stage===0){
+    const [top,front,side]=dungeonShadowScores(poi);
+    return '그림자 일치 · 위 '+top+'% · 앞 '+front+'% · 옆 '+side+'%';
+  }
+  if(stage===1){
+    const s=dungeonBuildStats(poi);return '정확한 블록 '+s.common+'/'+s.target+' · 현재 블록 '+s.active+'개';
+  }
+  if(stage===2)return dungeonSession?.netAnimating?'전개도가 접히는 중…':'세 전개도를 걸어 다니며 조사하고, 실제로 접어 보세요.';
+  return '모든 수학 장치 해독 완료 · 설계 핵심을 회수하세요.';
+}
+function completeDungeonVoxelStage(stage,poi){
+  if(stage===0){
+    const scores=dungeonShadowScores(poi);
+    if(!scores.every(v=>v===100))return false;
+    dungeonSession.stage=1;if(dungeonGates[0])dungeonGates[0].visible=false;
+    toast('세 방향의 그림자가 모두 맞았어요! 다음 설계실이 열렸습니다.');sfx('good');updateDungeonHud();return true;
+  }
+  if(stage===1){
+    const stats=dungeonBuildStats(poi);if(!stats.done)return false;
+    dungeonSession.stage=2;if(dungeonGates[1])dungeonGates[1].visible=false;
+    toast('겨냥도와 같은 입체를 완성했어요! 전개도 방이 열렸습니다.');sfx('good');updateDungeonHud();return true;
+  }
+  return false;
+}
+function addDungeonNetCandidates(poi,theme){
+  dungeonNetVisuals=[];const choices=dungeonNetChoices(poi),xs=[-4.2,0,4.2],z=-19.0,scale=.48;
+  choices.forEach((choice,index)=>{
+    const group=new THREE.Group(),cols=choice.layout.map(p=>p[0]),rows=choice.layout.map(p=>p[1]);
+    const cx=(Math.min(...cols)+Math.max(...cols))/2,cy=(Math.min(...rows)+Math.max(...rows))/2;
+    choice.layout.forEach(([col,row],face)=>{
+      const tile=new THREE.Mesh(new THREE.BoxGeometry(.62,.07,.62),dungeonMaterial(theme.accent));
+      tile.position.set(xs[index]+(col-cx)*scale,.08,z+(row-cy)*scale);
+      tile.userData.face=face;group.add(tile);
+    });
+    scene.add(group);dungeonNetVisuals.push({group,tiles:[...group.children],valid:choice.valid,x:xs[index],z});
+    const t=addDungeonTarget('net-'+index,'shrineNet',xs[index],-16.4,theme.accent,'전개도 '+(index+1)+' 접어 보기');
+    t.userData.netIndex=index;
+  });
+}
+function animateDungeonNetChoice(index){
+  if(!dungeonSession||dungeonSession.stage!==2||dungeonSession.netAnimating)return;
+  const visual=dungeonNetVisuals[index];if(!visual)return;
+  dungeonSession.netAnimating=true;updateDungeonHud();const ticket=++dungeonFoldNonce;
+  const starts=visual.tiles.map(t=>({p:t.position.clone(),r:t.rotation.clone()}));
+  const ends=[
+    new THREE.Vector3(visual.x+.34,1.25,visual.z),new THREE.Vector3(visual.x-.34,1.25,visual.z),
+    new THREE.Vector3(visual.x,1.59,visual.z),new THREE.Vector3(visual.x,.91,visual.z),
+    new THREE.Vector3(visual.x,1.25,visual.z+.34),new THREE.Vector3(visual.x,1.25,visual.z-.34)
+  ];
+  if(!visual.valid)ends[5]=ends[4].clone();
+  const rots=[
+    new THREE.Euler(0,0,Math.PI/2),new THREE.Euler(0,0,-Math.PI/2),
+    new THREE.Euler(0,0,0),new THREE.Euler(Math.PI,0,0),
+    new THREE.Euler(Math.PI/2,0,0),new THREE.Euler(-Math.PI/2,0,0)
+  ];
+  const start=performance.now();
+  function fold(now){
+    if(ticket!==dungeonFoldNonce||!dungeonSession)return;
+    const q=Math.min(1,(now-start)/900),e=1-Math.pow(1-q,3);
+    visual.tiles.forEach((tile,i)=>{
+      tile.position.lerpVectors(starts[i].p,ends[i],e);
+      tile.rotation.set(rots[i].x*e,rots[i].y*e,rots[i].z*e);
+    });
+    if(q<1){requestAnimationFrame(fold);return}
+    if(visual.valid){
+      dungeonSession.netAnimating=false;dungeonSession.stage=3;if(dungeonGates[2])dungeonGates[2].visible=false;
+      const portal=dungeonTargets.find(t=>t.userData.targetKind==='shrinePortal');
+      if(portal){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
+      toast('전개도가 정확히 정육면체로 접혔어요! 마지막 설계 핵심이 열렸습니다.');sfx('good');updateDungeonHud();return;
+    }
+    toast('접는 도중 면이 겹쳤어요. 다른 전개도를 시험해 보세요.');sfx('bad');
+    const back=performance.now();
+    function unfold(now2){
+      if(ticket!==dungeonFoldNonce||!dungeonSession)return;
+      const q2=Math.min(1,(now2-back)/520),e2=1-Math.pow(1-q2,3);
+      visual.tiles.forEach((tile,i)=>{
+        tile.position.lerpVectors(ends[i],starts[i].p,e2);
+        tile.rotation.set(rots[i].x*(1-e2),rots[i].y*(1-e2),rots[i].z*(1-e2));
+      });
+      if(q2<1)requestAnimationFrame(unfold);else{dungeonSession.netAnimating=false;updateDungeonHud()}
+    }
+    setTimeout(()=>requestAnimationFrame(unfold),260);
+  }
+  requestAnimationFrame(fold);
+}
+function buildShrineDungeonPuzzles(poi,theme){
+  dungeonPuzzleGroups=new Map();dungeonNetVisuals=[];dungeonFoldNonce++;
+  const variant=dungeonShrineVariant(poi);
+  addDungeonProjectionPanel(variant.shadow.target,.55,theme.accent);
+  addDungeonVoxelControls(0,variant.shadow,theme);
+  dungeonGate(-1.2,theme.wall);
+  addDungeonIsometricPanel(variant.build.target,-12.75,theme.accent);
+  addDungeonVoxelControls(1,variant.build,theme);
+  dungeonGate(-14.2,theme.wall);
+  addDungeonNetCandidates(poi,theme);
+  dungeonGate(-22.1,theme.wall);
+  const portal=addDungeonTarget('shrine-reward','shrinePortal',0,-25.2,theme.accent,'설계 핵심 회수');
+  glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false);
+  return portal;
+}
+function completeDungeonShrine(){
+  if(!dungeonSession||dungeonSession.stage<3)return;
+  const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
+  const id=poi.id;dungeonSession=null;dungeonFoldNonce++;
+  enterMode('free');
+  if(!restoredLandmarks.has(id))completeLandmarkPoi(id);
+  reportResult('survival-landmark',100,true);
+}
 function dungeonGate(z,color){
   const gate=addDungeonBox(0,2.25,z,11.8,4.5,.35,color,{dungeonGate:true});
   dungeonGates.push(gate);return gate;
@@ -1266,10 +1540,15 @@ function updateDungeonCamera(){
 function updateDungeonHud(){
   if(!dungeonSession)return;
   const poi=poiRules.poiById(dungeonSession.poiId);if(!poi)return;
-  const stage=dungeonSession.stage||0,spec=dungeonSpec(poi);
+  const stage=dungeonSession.stage||0,spec=dungeonSpec(poi),shrine=!!dungeonSession.shrineVersion;
   $('dungeonTitle').textContent=poi.name+' · '+poi.dungeon.title;
   $('dungeonProgress').textContent=(stage+1)+'/4';
-  $('dungeonObjective').textContent=spec.objectives[stage]||spec.objectives[2];
+  $('dungeonObjective').textContent=shrine?(DUNGEON_SHRINE_OBJECTIVES[stage]||DUNGEON_SHRINE_OBJECTIVES[3]):
+    (spec.objectives[stage]||spec.objectives[2]);
+  if($('dungeonPuzzleStatus')){
+    $('dungeonPuzzleStatus').classList.toggle('hidden',!shrine);
+    if(shrine)$('dungeonPuzzleStatus').textContent=dungeonPuzzleStatusText(poi,stage);
+  }
   const near=nearestDungeonTarget(2.4);
   $('dungeonPrompt').classList.toggle('hidden',!near);
   if(near)$('dungeonPrompt').textContent='E · '+near.userData.label;
@@ -1283,6 +1562,21 @@ function dungeonInteract(){
   const target=nearestDungeonTarget(2.6);
   if(!target){toast('조사할 장치에 조금 더 가까이 가 보세요.');return}
   const data=target.userData,stage=dungeonSession.stage||0;
+  if(data.targetKind==='shrineVoxel'||data.targetKind==='shrineCell'){
+    if(data.puzzleStage!==stage){toast('지금 방의 수학 장치부터 해결해 보세요.');return}
+    const poi=poiRules.poiById(dungeonSession.poiId),theme=DUNGEON_THEMES[poi?.dungeon?.theme]||DUNGEON_THEMES.marble;
+    const active=new Set(dungeonSession.puzzleState?.[stage]||[]),on=!active.has(data.voxelKey);
+    dungeonSetVoxel(stage,data.voxelKey,on);renderDungeonVoxelPuzzle(stage,theme);sfx('place');
+    completeDungeonVoxelStage(stage,poi);updateDungeonHud();return;
+  }
+  if(data.targetKind==='shrineNet'){
+    if(stage!==2){toast('앞쪽 퍼즐부터 해결해야 이 장치를 사용할 수 있어요.');return}
+    animateDungeonNetChoice(data.netIndex);return;
+  }
+  if(data.targetKind==='shrinePortal'){
+    if(stage<3){toast('세 개의 수학 퍼즐을 모두 해결해야 설계 핵심이 열려요.');return}
+    completeDungeonShrine();return;
+  }
   if(data.targetKind==='seal'&&stage===0){
     const active=dungeonSession.seals||(dungeonSession.seals=[]);
     if(!active.includes(data.targetId)){active.push(data.targetId);glowDungeonTarget(target,true);glowDungeonTarget(data.base,true);sfx('good')}
@@ -1342,19 +1636,22 @@ function buildLandmarkDungeonScene(poi){
   }
   dungeonTargets=[];dungeonGates=[];
   const spec=dungeonSpec(poi);
-  addDungeonTarget('left','seal',-3.2,3,theme.accent,spec.seals[0]);
-  addDungeonTarget('right','seal',3.2,3,theme.accent,spec.seals[1]);
-  dungeonGate(-1.2,theme.wall);
-  addDungeonTarget('left','mirror',-3.1,-8,theme.accent,spec.mirrors[0]);
-  addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
-  addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
-  dungeonGate(-14.2,theme.wall);
-  spec.structure.options.forEach((option,i)=>{
-    const x=[-3.8,0,3.8][i];
-    addDungeonTarget(option[0],'structure',x,-18.3,theme.accent,option[1]);
-  });
-  dungeonGate(-22.1,theme.wall);
-  const portal=addDungeonTarget('blueprint','portal',0,-25.2,theme.accent,spec.portal);
+  const portal=dungeonSession?.shrineVersion?buildShrineDungeonPuzzles(poi,theme):
+    addDungeonTarget('blueprint','portal',0,-25.2,theme.accent,spec.portal);
+  if(!dungeonSession?.shrineVersion){
+    addDungeonTarget('left','seal',-3.2,3,theme.accent,spec.seals[0]);
+    addDungeonTarget('right','seal',3.2,3,theme.accent,spec.seals[1]);
+    dungeonGate(-1.2,theme.wall);
+    addDungeonTarget('left','mirror',-3.1,-8,theme.accent,spec.mirrors[0]);
+    addDungeonTarget('center','mirror',0,-10.5,theme.accent,spec.mirrors[1]);
+    addDungeonTarget('right','mirror',3.1,-8,theme.accent,spec.mirrors[2]);
+    dungeonGate(-14.2,theme.wall);
+    spec.structure.options.forEach((option,i)=>{
+      const x=[-3.8,0,3.8][i];
+      addDungeonTarget(option[0],'structure',x,-18.3,theme.accent,option[1]);
+    });
+    dungeonGate(-22.1,theme.wall);
+  }
   // Landmark-specific silhouettes make the same three-room rules read as different places.
   if(poi.id==='taj'){
     for(const x of [-4.3,4.3])for(const z of [5,-5,-17])addDungeonBox(x,2,z,.55,4,.55,theme.wall);
@@ -1375,6 +1672,7 @@ function buildLandmarkDungeonScene(poi){
     addDungeonBox(0,.08,-19,8,.12,4,0x607d45);
   }
   if((dungeonSession.stage||0)<3){glowDungeonTarget(portal,false);glowDungeonTarget(portal.userData.base,false)}
+  else if(dungeonSession?.shrineVersion){glowDungeonTarget(portal,true);glowDungeonTarget(portal.userData.base,true)}
   if((dungeonSession.stage||0)>=1&&dungeonGates[0])dungeonGates[0].visible=false;
   if((dungeonSession.stage||0)>=2&&dungeonGates[1])dungeonGates[1].visible=false;
   if((dungeonSession.stage||0)>=3&&dungeonGates[2])dungeonGates[2].visible=false;
@@ -1394,24 +1692,33 @@ function buildLandmarkDungeonScene(poi){
 function initDungeon(){
   const poi=dungeonSession&&poiRules.poiById(dungeonSession.poiId);
   if(!poi){dungeonSession=null;enterMode('free');return}
-  modeTitle('랜드마크 던전',poi.name+' · '+poi.dungeon.title);
+  modeTitle(dungeonSession?.shrineVersion?'랜드마크 수학 사당':'랜드마크 던전',poi.name+' · '+poi.dungeon.title);
   setVisible('dungeonHud',true);
   $('actionNext').classList.remove('hidden');$('actionNext').textContent='월드로 귀환';$('actionNext').onclick=returnFromDungeon;
   $('actionCheck').classList.remove('hidden');$('actionCheck').textContent='조사하기';$('actionCheck').disabled=false;$('actionCheck').onclick=dungeonInteract;
   buildLandmarkDungeonScene(poi);
   camera.position.set(0,1.65,10);dungeonYaw=0;dungeonPitch=0;dungeonKeys={};updateDungeonCamera();
   configureMobileMode('dungeon');updateDungeonHud();
-  if(!mobileModeEnabled)toast('WASD로 탐험 · 마우스로 시점 · E로 장치 조사');
+  if(!mobileModeEnabled)toast(dungeonSession?.shrineVersion?
+    'WASD로 퍼즐 방을 걸어 다니고 · E로 블록 장치를 직접 바꿔 보세요.':
+    'WASD로 탐험 · 마우스로 시점 · E로 장치 조사');
 }
 function openLandmarkDungeon(poi){
   if(!poi||gameFreeMode!=='survival')return;
   if(survivalStage<6){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
   saveFreeWorld();
-  dungeonSession={poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null};
+  const variant=dungeonShrineVariant(poi);
+  dungeonSession={
+    poiId:poi.id,stage:0,seals:[],mirrors:[],structure:null,shrineVersion:1,netAnimating:false,
+    puzzleState:{
+      0:variant.shadow.initial.map(dungeonVoxelKey),
+      1:variant.build.initial.map(dungeonVoxelKey)
+    }
+  };
   enterMode('dungeon');
 }
 function returnFromDungeon(){
-  dungeonSession=null;enterMode('free');
+  dungeonFoldNonce++;dungeonSession=null;enterMode('free');
 }
 function openDungeonBlueprint(){
   if(!dungeonSession)return;
