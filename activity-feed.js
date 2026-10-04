@@ -210,9 +210,12 @@
           place: name, gameId
         });
       }
-      if (detail.event === 'game-over' &&
-          (detail.cleared === true || detail.victory === true || detail.win === true || detail.success === true ||
-           detail.result === 'win' || detail.result === 'clear' || detail.outcome === 'win')) {
+      const legacyClear = detail.event === 'game-over' &&
+        (detail.cleared === true || detail.victory === true || detail.win === true || detail.success === true ||
+         detail.result === 'win' || detail.result === 'clear' || detail.outcome === 'win');
+      const structuredClear = detail.event === 'result' && detail.status === 'completed' &&
+        (detail.outcome === 'win' || detail.outcome === 'clear');
+      if (legacyClear || structuredClear) {
         record('clear', {
           title: name + ' 클리어!',
           summary: clean(detail.stage || detail.level || detail.message || '도전을 완료했어요.', 120),
