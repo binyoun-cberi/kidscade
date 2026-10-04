@@ -124,3 +124,9 @@ jobs:
           fi
           curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/home-v2.js?verify=${EXPECTED_BUILD}" -o /dev/null
           echo "Production lobby smoke check passed for ${EXPECTED_BUILD:0:12}."
+
+      - name: Browser smoke — toggle recommended and classic homes
+        env:
+          SITE_URL: https://kidscade.binyoun.workers.dev/
+          EXPECTED_BUILD: ${{ github.sha }}
+        run: node scripts/live-home-toggle-smoke.mjs
