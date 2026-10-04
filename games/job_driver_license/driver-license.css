@@ -452,3 +452,39 @@ body{
   #leftControls{grid-template-columns:repeat(3,38px)}
   #parkingBrake{width:38px}
 }
+
+
+/* v9: 기능시험 운전장치 조작 패널 — 방향지시등·전조등·와이퍼·시동·안전띠·주차브레이크·비상등 */
+#leftControls{
+  left:27%;
+  grid-template-columns:repeat(4,46px);
+  grid-auto-rows:38px;
+  gap:5px;
+}
+.stalk,.small-control{width:46px;height:38px;min-width:0}
+#signalLeft{grid-column:1;grid-row:1}
+#signalRight{grid-column:2;grid-row:1}
+#headlight{grid-column:3;grid-row:1}
+#wiper{grid-column:4;grid-row:1}
+#ignition{grid-column:1;grid-row:2}
+#seatbelt{grid-column:2;grid-row:2}
+#parkingBrake{grid-column:3;grid-row:2;width:46px}
+#hazard{grid-column:4;grid-row:2}
+#headlight.active{background:#665a20!important;color:#fff0a0!important;border-color:#d4bb45!important;box-shadow:0 0 12px rgba(255,224,91,.24)}
+#wiper.active{background:#214f66!important;color:#bfeaff!important;border-color:#4ca7cb!important}
+
+@media (max-width:900px) and (orientation:landscape){
+  #leftControls{left:25%;grid-template-columns:repeat(4,40px);grid-auto-rows:34px;gap:4px}
+  .stalk,.small-control{width:40px;height:34px;font-size:8px}
+  #parkingBrake{width:40px}
+}
+@media (orientation:landscape) and (max-height:560px){
+  #leftControls{left:23.5%;grid-template-columns:repeat(4,36px);grid-auto-rows:30px;gap:3px}
+  .stalk,.small-control{width:36px;height:30px;font-size:7px}
+  #parkingBrake{width:36px}
+}
+@media (orientation:landscape) and (max-height:460px){
+  #leftControls{left:22.5%;grid-template-columns:repeat(4,33px);grid-auto-rows:27px}
+  .stalk,.small-control{width:33px;height:27px;font-size:7px}
+  #parkingBrake{width:33px}
+}
