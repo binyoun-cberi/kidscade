@@ -715,16 +715,18 @@ async function applyPartAdjustment(data){
   }
   if(mismatches.length&&!confirm('분석 이후 '+mismatches.join(', ')+' 프레임의 픽셀이 바뀌었습니다. 그래도 AI 보정을 적용할까요?'))return false;
 
+  const assetId=safeId(data.target?.assetId||assetIdForLayer(layer),layer+'-01');
   let changed=0;
   for(const [frameId,plan] of Object.entries(data.frames)){
-    applyLayerAdjustmentPlan(frameId,layer,plan,data.target?.assetId||assetIdForLayer(layer));
+    applyLayerAdjustmentPlan(frameId,layer,plan,assetId);
+    setAssetMeta(frameId,layer,{layer,id:assetId,label:assetId,file:null,custom:true});
     changed++;
   }
   const field=LAYER_ID_FIELDS[layer];
-  if(field&&data.target?.assetId&&$(field))$(field).value=data.target.assetId;
+  if(field&&$(field))$(field).value=assetId;
   stopPlayback();selectLayer(layer);
-  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();render();saveLocal();
-  setStatus(partLabel(layer)+' AI 보정 적용 완료 · '+changed+'개 프레임');
+  refreshFrameButtons();renderSelectedAssetList();renderAssetGrid();refreshAdjustmentSummary();refreshPartSizeStatus();render();saveLocal();
+  setStatus(partLabel(layer)+' JSON 적용 완료 · '+assetId+' · '+changed+'개 프레임');
   return true;
 }
 
@@ -1654,6 +1656,14 @@ async function verifyAdmin(){
   }catch(_){gate.innerHTML='<h2>전역 관리자 권한을 확인하지 못했습니다.</h2><div class="muted">관리자 화면에서 다시 로그인해 주세요.</div><p><a href="/teacher/">관리자 화면으로 이동</a></p>';return false}
 }
 
+async function applyAdjustmentJsonFile(file){
+  if(!file)return false;
+  const data=JSON.parse(await file.text());
+  if(data?.type==='kidscade-avatar-part-adjustment')return applyPartAdjustment(data);
+  if(data?.type==='kidscade-avatar-full-adjustment')return applyFullAdjustment(data);
+  throw new Error('지원하지 않는 JSON입니다. 파츠 조정 또는 전체 조정 JSON을 선택하세요.');
+}
+
 function bind(){
   buildFrameButtons();buildLayerSelect();buildAssetBrowser();
   $('editLayerSelect')?.addEventListener('change',e=>selectLayer(e.target.value));
@@ -1674,26 +1684,18 @@ function bind(){
   $('exportPartAnalysis')?.addEventListener('click',exportPartAnalysisFile);
   $('exportBodyReference')?.addEventListener('click',exportBodyReferenceFile);
   $('exportFullAnalysis')?.addEventListener('click',exportFullAnalysisFile);
-  $('importFullAdjustment')?.addEventListener('change',async e=>{
+  const bindAdjustmentImport=id=>$(id)?.addEventListener('change',async e=>{
     const file=e.target.files?.[0];if(!file)return;
     try{
-      const data=JSON.parse(await file.text());
-      await applyFullAdjustment(data);
+      setStatus('JSON 읽는 중 · '+file.name);
+      await applyAdjustmentJsonFile(file);
     }catch(err){
-      setStatus('전체 AI 보정 파일 적용 실패: '+(err?.message||err),true);
+      setStatus('JSON 적용 실패: '+(err?.message||err),true);
     }
     e.target.value='';
   });
-  $('importPartAdjustment')?.addEventListener('change',async e=>{
-    const file=e.target.files?.[0];if(!file)return;
-    try{
-      const data=JSON.parse(await file.text());
-      await applyPartAdjustment(data);
-    }catch(err){
-      setStatus('AI 보정 파일 적용 실패: '+(err?.message||err),true);
-    }
-    e.target.value='';
-  });
+  bindAdjustmentImport('importFullAdjustment');
+  bindAdjustmentImport('importPartAdjustment');
 
   $('copyLayerAllFrames').addEventListener('click',copyLayerToAllFrames);
   $('copyPrev').addEventListener('click',copyPrevious);
