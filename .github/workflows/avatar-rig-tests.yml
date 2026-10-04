@@ -19,6 +19,7 @@ on:
       - 'teacher/avatar-clothing-studio.html'
       - 'tests/avatar-clothing-studio.test.cjs'
       - 'tests/pixel-avatar-studio.test.cjs'
+      - 'tests/school-avatar-v3.test.cjs'
       - 'tests/ui-information-architecture.test.cjs'
       - 'games/cube3d/cube-architect-avatar.js'
       - 'tests/cube-architect-v21.test.cjs'
@@ -74,4 +75,4 @@ jobs:
           node --check account-profile-gate.js
           node --check account-session-safety.js
       - name: Run avatar rig regression tests
-        run: node --test tests/avatar-clothing-studio.test.cjs tests/pixel-avatar-studio.test.cjs tests/ui-information-architecture.test.cjs tests/cube-architect-v21.test.cjs
+        run: node --test tests/avatar-clothing-studio.test.cjs tests/pixel-avatar-studio.test.cjs tests/school-avatar-v3.test.cjs tests/ui-information-architecture.test.cjs tests/cube-architect-v21.test.cjs
