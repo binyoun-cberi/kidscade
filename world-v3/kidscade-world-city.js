@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=4';
-import {createResidentLife} from './kidscade-world-residents.js?v=2';
+import {createResidentLife} from './kidscade-world-residents.js?v=3';
+import {residentVisual} from './kidscade-world-npc-style.js?v=1';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
@@ -39,23 +40,6 @@ const CITY_ASSET={
   museum:SUBURBAN+'building-type-i.glb'
 };
 
-const NPC_MODELS={
-  minji:PEOPLE+'character-female-a.glb',
-  junho:PEOPLE+'character-male-a.glb',
-  haneul:PEOPLE+'character-female-b.glb',
-  doyun:PEOPLE+'character-male-b.glb',
-  yuna:PEOPLE+'character-female-c.glb',
-  taeho:PEOPLE+'character-male-c.glb',
-  sora:PEOPLE+'character-female-d.glb',
-  hyunwoo:PEOPLE+'character-male-d.glb',
-  nari:PEOPLE+'character-female-e.glb',
-  woojin:PEOPLE+'character-male-e.glb',
-  seoyeon:PEOPLE+'character-female-f.glb',
-  minseok:PEOPLE+'character-male-f.glb',
-  visitor:PEOPLE+'character-male-f.glb',
-  clerk:CITY_ASSET.employee
-};
-
 function makeLabel(text,{width=2.2,height=.52,font=38}={}){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
   const ctx=canvas.getContext('2d'),x=12,y=16,w=488,h=96,r=26;
@@ -71,9 +55,37 @@ function makeLabel(text,{width=2.2,height=.52,font=38}={}){
   const sp=new THREE.Sprite(mat);sp.scale.set(width,height,1);sp.renderOrder=20;
   sp.userData.setText=value=>{draw(value);tex.needsUpdate=true;};return sp;
 }
+function makeResidentLabel(text,{role='주민',accent='#7c9863'}={}){
+  const canvas=document.createElement('canvas');canvas.width=768;canvas.height=224;
+  const ctx=canvas.getContext('2d'),x=18,y=18,w=732,h=188,r=44;
+  const draw=value=>{
+    const title=String(value||'주민');
+    ctx.clearRect(0,0,768,224);
+    ctx.shadowColor='rgba(31,40,31,.22)';ctx.shadowBlur=14;ctx.shadowOffsetY=8;
+    ctx.fillStyle='rgba(255,250,229,.985)';ctx.strokeStyle='#40503b';ctx.lineWidth=10;
+    ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();ctx.stroke();
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.fillStyle=accent;ctx.beginPath();ctx.arc(72,84,17,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#263226';ctx.font='900 58px system-ui,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(title,108,80,610);
+    ctx.fillStyle='rgba(38,50,38,.76)';ctx.font='800 31px system-ui,sans-serif';
+    ctx.fillText(role,72,148,620);
+  };
+  draw(text);
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearFilter;
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest:false});
+  const sp=new THREE.Sprite(mat);sp.scale.set(1.92,.56,1);sp.renderOrder=40;
+  sp.userData.setText=value=>{
+    draw(value);tex.needsUpdate=true;
+    sp.scale.x=Math.min(2.9,Math.max(1.92,1.22+String(value||'').length*.17));
+  };
+  return sp;
+}
+
 
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
-  const gltf=await ctx.loadGLTF(NPC_MODELS[id]);
+  const visual=residentVisual(id);
+  const gltf=await ctx.loadGLTF(visual.url);
   // Keep the complete character asset: independent skeleton + original animation clips.
   const model=ctx.prepModel(cloneSkeleton(gltf.scene));
   // Match the already-working people pipeline used by the market game:
@@ -81,7 +93,7 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   model.updateMatrixWorld(true);
   let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3());
   const baseSize=Math.max(size.x,size.y,size.z)||1;
-  model.scale.multiplyScalar(1.82/baseSize);
+  model.scale.multiplyScalar((Number(visual.height)||1.82)/baseSize);
   model.updateMatrixWorld(true);
   b=new THREE.Box3().setFromObject(model);
   const center=b.getCenter(new THREE.Vector3());
@@ -112,8 +124,8 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,20),new THREE.MeshBasicMaterial({color:0x263126,transparent:true,opacity:.18,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.008;anchor.add(shadow);
   ctx.parent.add(anchor);
-  const tag=label?makeLabel(name,{width:1.2,height:.30,font:32}):null;
-  if(tag){tag.position.set(x,2.12,z);tag.visible=false;ctx.parent.add(tag)}
+  const tag=label?makeResidentLabel(name,{role:visual.role,accent:visual.accent}):null;
+  if(tag){tag.position.set(x,2.22,z);tag.visible=false;ctx.parent.add(tag)}
   return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z};
 }
 
@@ -264,8 +276,8 @@ export async function buildKidscadeCity(ctx){
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   for(const n of npcs){
     if(n.id==='clerk')continue;
-    const marker=makeLabel('💬',{width:2.15,height:.42,font:24});
-    marker.position.set(n.object.position.x,2.58,n.object.position.z);marker.visible=false;parent.add(marker);n.chatMarker=marker;
+    const marker=makeLabel('💬',{width:1.55,height:.36,font:26});
+    marker.position.set(n.object.position.x,2.82,n.object.position.z);marker.visible=false;parent.add(marker);n.chatMarker=marker;
   }
   function bind(id,r,label,action){
     const n=byId[id];if(!n)return;
@@ -348,7 +360,7 @@ export async function buildKidscadeCity(ctx){
         visitor.object.visible=visible;visitor.playAnim?.('idle');visitor.mixer?.update(dt);
         if(visitor.label){
           visitor.label.userData?.setText?.(names[daily?.visitor]||'여행객');
-          visitor.label.position.set(visitor.object.position.x,2.12,visitor.object.position.z);
+          visitor.label.position.set(visitor.object.position.x,2.22,visitor.object.position.z);
           visitor.label.visible=visible&&!!player&&Math.hypot(player.x-visitor.object.position.x,player.z-visitor.object.position.z)<4.2;
         }
         if(visitor.interaction){visitor.interaction.enabled=visible;visitor.interaction.x=visitor.object.position.x;visitor.interaction.z=visitor.object.position.z;}
