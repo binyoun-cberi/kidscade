@@ -14,8 +14,8 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json')
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
 test('Bunsik Kitchen v16 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=15/);
-  assert.match(html, /bunsik-kitchen\.js\?v=15/);
+  assert.match(html, /bunsik-kitchen\.css\?v=16/);
+  assert.match(html, /bunsik-kitchen\.js\?v=16/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -101,25 +101,32 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
     'assets/game/3d/interiors/modular-sushi-restaurant-kit/ramen.glb',
     'assets/game/3d/bakery/interior/serving-tray.glb',
     'assets/game/characters/people/character-female-b.glb',
-    'assets/game/characters/people/character-male-a.glb'
+    'assets/game/characters/people/character-male-a.glb',
+    'assets/game/npcs/glTF/Casual_Female.gltf',
+    'assets/game/npcs/glTF/Casual_Male.gltf',
+    'assets/game/npcs/glTF/Chef_Female.gltf',
+    'assets/game/npcs/glTF/Chef_Male.gltf'
   ];
   for (const rel of required) assert.ok(fs.existsSync(path.join(root,rel)), 'missing asset: '+rel);
   assert.match(js, /const BAKERY=/);
   assert.match(js, /CUSTOMER_MODELS/);
+  assert.match(js, /const NPCS=/);
+  assert.match(js, /Chef_Female\.gltf/);
+  assert.match(js, /Chef_Male\.gltf/);
 });
 
-test('catalog and compatibility entry publish v15', () => {
+test('catalog and compatibility entry publish v16', () => {
   assert.ok(game);
   assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=16');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=15/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=15/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=16/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=16/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
 test('Bunsik Kitchen build script publishes v16', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=15/);
+  assert.match(build,/\?v=16/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
@@ -487,5 +494,5 @@ test('Bunsik Kitchen v16 compatibility entry is synchronized with the live game'
   assert.match(rootEntry, /id="equipmentShop"/);
   assert.match(rootEntry, /id="smartFilterBtn"/);
   assert.match(rootEntry, /kidscade-storage\.js/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=15/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=16/);
 });
