@@ -1198,7 +1198,12 @@ function drawDangerFX(){
  if(world.lightJam>0){ctx.save();const a=clamp(world.lightJam*.22,0,.38),g=ctx.createRadialGradient(view.w/2,view.h/2,55,view.w/2,view.h/2,Math.max(view.w,view.h)*.62);g.addColorStop(0,'rgba(0,8,18,'+(a*.18)+')');g.addColorStop(.48,'rgba(0,6,16,'+(a*.55)+')');g.addColorStop(1,'rgba(0,0,8,'+a+')');ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);ctx.restore()}
  if(world.currentBurst>0){ctx.save();ctx.globalAlpha=clamp(world.currentBurst*.28,0,.22);ctx.strokeStyle='#b8f6ff';ctx.lineWidth=2;for(let y=90;y<view.h;y+=70){const off=(world.time*210+y*1.7)%180;ctx.beginPath();ctx.moveTo(-40+off,y);ctx.lineTo(120+off,y-18);ctx.stroke()}ctx.restore()}
 }
-function fishRenderList(limit=32){
+function fishRenderLimit(){
+ if(view.w<760)return 18;
+ if(view.w<1180)return 24;
+ return 30
+}
+function fishRenderList(limit=fishRenderLimit()){
  if(!world)return[];const p=world.player,visible=[];
  for(const f of world.fish){if(!f.alive)continue;const q=screenPos(f.x,f.y);if(q.x<-120||q.x>view.w+120||q.y<-100||q.y>view.h+100)continue;const sp=SPECIES[f.key],d=Math.hypot(f.x-p.x,f.y-p.y),important=sp.rare||sp.motion==='boss'||f.alert>0||f.hooked||f.marked>0;visible.push({f,d,important})}
  if(visible.length<=limit)return visible.map(o=>o.f);
@@ -1296,11 +1301,24 @@ function firstDayGuideText(){
  if(!world||meta.day!==1)return'';if(world.catchWeight<.05)return'선택 목표 🍳 저녁 식당을 열고 싶다면 그물로 식용 물고기 1마리를 잡아 오세요.';
  return'✓ 저녁 식당용 재료 확보 · 안전하게 귀환하면 밤 장사를 열 수 있어요.'
 }
+function missionHudText(){
+ const base=missionText();
+ if(meta.day===1&&world.time<28){
+  if(world.contract.id==='reef'){
+   const done=['blue','orange','pink'].filter(k=>gradeAtLeast(world.mission.photoGrades[k],'B')).length;
+   if(done===0)return'① 물고기를 화면 중앙에 맞추고 X로 촬영 · B 이상 사진 3종';
+   if(done<3)return'① B+ 사진 '+done+'/3 · 나침반을 따라 다음 목표 생물을 찾아보세요.';
+   if(!world.mission.visited.reefMaze)return'② 사진 임무 완료 ✓ · 나침반을 따라 산호 미로를 통과하세요.';
+  }
+  if(world.contract.id==='free'&&world.catchWeight<.05)return'자유 잠수 · 그물로 식용 물고기 1마리를 잡으면 밤 식당을 열 수 있어요.';
+ }
+ return base+' · 오늘 '+world.daily.title+' '+dailyTaskProgressText(world.daily)
+}
 function updateHud(){
  const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y),reserve=oxygenReserveStatus();
  $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y),sub=subzoneForY(p.y),sr=SUBZONE_RULES[sub.id]||{},pressure=world.pressureOver>0?' · 압력+'+Math.round(world.pressureOver)+'m':'';
  $('zoneText').textContent=sub.name+' · '+(sr.short||ZONE_RULES[z.id]?.danger||'')+pressure;
- $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionText()+' · 오늘 '+world.daily.title+' '+dailyTaskProgressText(world.daily);$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
+ $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionHudText();$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
  const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}const rookie=$('rookieTip'),rookieText=firstDayGuideText();if(rookie){rookie.textContent=rookieText;rookie.classList.toggle('hidden',!rookieText)}updateObjectiveCompass();updateLightUI()
 }
 function updateLightUI(){
