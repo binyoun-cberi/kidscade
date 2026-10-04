@@ -3,10 +3,10 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {buildKidscadeCity} from './kidscade-world-city.js?v=23';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
-import {createDailyLife} from './kidscade-world-daily-life.js?v=1';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=3';
-import {createMuseumSystem} from './kidscade-world-museum.js?v=1';
-import {createTownEconomy} from './kidscade-world-economy.js?v=18';
+import {createDailyLife} from './kidscade-world-daily-life.js?v=2';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=4';
+import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
+import {createTownEconomy} from './kidscade-world-economy.js?v=19';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=8';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=4';
@@ -367,13 +367,21 @@ function addFoodItem(key,qty=1,{silent=false}={}){
   museumRuntime?.discoverItem?.(key,{kind:'food',day:prog().survival.day});
   return qty;
 }
-function addInventoryItem(key,qty=1,{silent=false}={}){
+function addInventoryItem(key,qty=1,{silent=false,museumId='',location=''}={}){
   qty=Math.max(0,Math.floor(Number(qty)||0));if(!qty)return 0;
   const i=inv();
   if(!canCarryNewKey(key)){if(!silent)toast('🎒 가방이 가득 찼어요. 집의 수납함에 물건을 넣어 보세요.');return 0;}
   i[key]=(i[key]||0)+qty;
-  museumRuntime?.discoverItem?.(key,{day:prog().survival.day});
+  if(museumId){
+    const recorded=museumRuntime?.recordSpecimen?.(museumId,qty,{day:prog().survival.day,location});
+    if(!recorded)museumRuntime?.discover?.(museumId,{day:prog().survival.day,location});
+  }else museumRuntime?.discoverItem?.(key,{day:prog().survival.day});
   return qty;
+}
+function removeInventoryItem(key,qty=1){
+  qty=Math.max(0,Math.floor(Number(qty)||0));if(!qty)return 0;
+  const i=inv(),removed=Math.min(Math.max(0,Number(i[key])||0),qty);if(!removed)return 0;
+  i[key]=Math.max(0,(Number(i[key])||0)-removed);museumRuntime?.consumeItem?.(key,removed);return removed;
 }
 function waterCarryLimit(){
   const l=devState().waterLevel;
@@ -856,6 +864,7 @@ function cookFood(key){
     toast('🎒 완성된 음식을 넣을 가방 칸이 없어요. 재료는 그대로 돌려놓았어요.');
     return;
   }
+  for(const [item,qty] of Object.entries(consumed))museumRuntime?.consumeItem?.(item,qty);
   persist();setAvatarAction('smile',750);worldAudio.sfx('success',.09);toast(r.name+' 완성!');updateStatus();
 }
 function eatFood(key){
@@ -1301,7 +1310,7 @@ function fish(place='pond'){
       p.fishDex[label]=(p.fishDex[label]||0)+gain;
       const sizeBase=place==='beach'?24:place==='river'?16:9,sizeSpread=place==='beach'?54:place==='river'?36:22;
       const catchSize=Math.round((sizeBase+Math.random()*sizeSpread)*10)/10;
-      museumRuntime?.discover?.('fish:'+place,{day:p.survival.day,location:place==='beach'?'해변가':place==='river'?'북쪽 강가':'집 연못',size:catchSize});
+      museumRuntime?.recordSpecimen?.('fish:'+place,gain,{day:p.survival.day,location:place==='beach'?'해변가':place==='river'?'북쪽 강가':'집 연못',size:catchSize});
       if(place==='river'&&Math.random()<.24&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
       if(place==='beach'){
         if(Math.random()<.32&&addInventoryItem('rareFish',1,{silent:true}))extras.push('희귀 물고기 +1');
@@ -1389,8 +1398,7 @@ function cropAction(id){
     const sec=Math.max(1,Math.ceil((state.readyAt-Date.now())/1000));toast(def.name+' 성장 중 · '+sec+'초');
   }else{
     const gain=(companionId()==='bunny'?3:2)+(Number(townPerks().harvestBonus)||0),seedGain=companionId()==='chick'?2:1;
-    if(!addInventoryItem(state.type,gain))return;
-    museumRuntime?.discover?.('crop:'+state.type,{day:p.survival.day,location:'농장'});
+    if(!addInventoryItem(state.type,gain,{museumId:'crop:'+state.type,location:'농장'}))return;
     p.seeds[state.type]=(p.seeds[state.type]||0)+seedGain;
     state.type='';state.phase='empty';state.readyAt=0;state.plantedAt=0;persist();Meta?.advanceTask?.('harvest',1);worldAudio.sfx('pickup',.20);toast(def.name+' 수확 +'+gain);updateStatus();
   }
@@ -1943,7 +1951,7 @@ function canTame(id){
   const req=effectivePetReq(id),i=inv();return Object.entries(req).every(([k,v])=>(i[k]||0)>=v);
 }
 function payTame(id){
-  const req=effectivePetReq(id),i=inv();Object.entries(req).forEach(([k,v])=>i[k]=Math.max(0,(i[k]||0)-v));
+  const req=effectivePetReq(id);Object.entries(req).forEach(([k,v])=>removeInventoryItem(k,v));
 }
 async function ensureOwnedPetActor(id){
   if(petActors.some(a=>a.id===id))return;
@@ -2259,7 +2267,7 @@ async function init(){
   townEconomy=createTownEconomy({
     prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,
     foodName:key=>FOOD_DEF[key]?.name||key,
-    addInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,
+    addInventoryItem,removeInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,
     travel:travelTo,playSfx:(kind,volume)=>worldAudio.sfx(kind,volume),
     enterVenue,getVenue:()=>activeVenue,
     getDailyState:()=>dailyDirector?.state?.()||prog().dailyWorld||null
@@ -2291,7 +2299,7 @@ async function init(){
   });
   dailyLife=await createDailyLife({
     parent:outdoor,addModel,interact,prog,inv,persist,toast,openPanel,itemName,
-    addInventoryItem,canCarryNewKey,townEconomy,
+    addInventoryItem,removeInventoryItem,canCarryNewKey,townEconomy,
     getDailyState:()=>dailyDirector?.state?.()||prog().dailyWorld||null,
     getDevelopment:devState,setAvatarAction,
     playSfx:(kind,volume)=>worldAudio.sfx(kind,volume)
