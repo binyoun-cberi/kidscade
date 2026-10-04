@@ -115,5 +115,5 @@ test('common launcher records visits for analytics without first-play achievemen
   assert.match(launcher, /KidscadeAchievements\?\.recordPlayedGame\?\.\(gameId, startedAt\)/);
   assert.doesNotMatch(catalog, /first_play/);
   const bootstrap = read('main-bootstrap.js');
-  assert.match(bootstrap, /'game-outcome-profiles\.js',[\s\S]*'achievement-catalog\.js',\s*'achievement-gallery\.js'/);
+  assert.match(bootstrap, /'app\/features\/achievements\/game-outcome-profiles\.js',[\s\S]*'achievement-catalog\.js',\s*'achievement-gallery\.js'/);
 });
