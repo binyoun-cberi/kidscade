@@ -1989,6 +1989,29 @@
       "classroom": false
     },
     {
+      "id": "world_map_puzzle",
+      "addedAt": "2026-10-04T22:08:00+09:00",
+      "title": "W-퍼즐 세계 지도 맞추기",
+      "href": "games/world_map_puzzle/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "K-퍼즐의 지도 맞추기 손맛을 세계로 확장했습니다. 6대륙 입문부터 아시아 권역·유럽·아프리카·아메리카·오세아니아와 175조각 세계 전체까지 나라 모양을 직접 끌어 제자리에 맞추는 세계지리 퍼즐!",
+      "subject": "social",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "laser_angle",
       "title": "거울아 각도기 써라",
       "href": "games/laser_angle/거울아 각도기 써라.html",
