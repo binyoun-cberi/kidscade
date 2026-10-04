@@ -186,6 +186,7 @@
       <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalHealth" class="hidden">♥♥♥♥♥</span><span id="survivalSafety" class="hidden">안전함</span></div>
       <small id="explorationHint" class="hidden">새로운 지역을 발견하면 고유한 재료를 얻을 수 있어요.</small>
       <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
+      <div id="breathBar" class="progress hidden" role="progressbar" aria-label="남은 숨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="breathFill"></i></div>
       <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 시작 지점으로 귀환</button>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
@@ -314,12 +315,12 @@
 <script src="./cube-architect-landmarks.js?v=20261003-29"></script>
 <script src="./cube-architect-world.js?v=20261003-29"></script>
 <script src="./cube-architect-poi.js?v=20261003-29"></script>
-<script src="./cube-architect-avatar.js?v=20261003-30"></script>
+<script src="./cube-architect-avatar.js?v=20261003-30-swim1"></script>
 <script src="./cube-architect-creatures.js?v=20261004-32"></script>
 <script type="module" src="./cube-architect-world-assets.js?v=20261003-31"></script>
 <script type="module" src="./cube-architect-creature-assets.js?v=20261004-32"></script>
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
-<script src="./cube-architect.js?v=20261003-31-physics1"></script>
+<script src="./cube-architect.js?v=20261003-31-physics2"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));

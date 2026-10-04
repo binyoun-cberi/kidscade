@@ -7,10 +7,13 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const js=read('games/cube3d/cube-architect.js');
 const html=read('games/cube3d/index.html');
+const avatar=read('games/cube3d/cube-architect-avatar.js');
+const css=read('games/cube3d/cube-architect.css');
 
 test('Cube Architect world physics parses and cache-busts the runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261003-31-physics1/);
+  assert.match(html,/cube-architect\.js\?v=20261003-31-physics2/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261003-30-swim1/);
 });
 
 test('water and lava use fluid movement instead of ground walking',()=>{
@@ -42,4 +45,71 @@ test('survival environmental hazards use the existing health system',()=>{
   assert.match(js,/state\.lava\?'용암':state\.fire\?'불':state\.cactus\?'선인장'/);
   assert.match(js,/survivalHealth=Math\.max\(0,survivalHealth-\(state\.lava\?2:1\)\)/);
   assert.match(js,/returnAfterCreatureDefeat\(\)/);
+});
+
+
+test('living creatures avoid lava fire and cactus while water-capable species may still enter water',()=>{
+  assert.match(js,/const danger=\[feetCell\?\.type,supportCell\?\.type\]\.some\(type=>\['lava','fire','cactus'\]\.includes\(type\)\)/);
+  assert.match(js,/danger\|\|\(!allowWater&&feetCell\?\.type==='water'\)/);
+});
+
+test('fragile world objects require sensible support and clean up when support disappears',()=>{
+  assert.match(js,/function placementSupportValid/);
+  assert.match(js,/type==='sapling'\|\|type==='flower'/);
+  assert.match(js,/type==='cactus'/);
+  assert.match(js,/type==='door'\|\|type==='torch'\|\|type==='fire'/);
+  assert.match(js,/function cleanupUnsupportedAt/);
+  assert.match(js,/cleanupUnsupportedAt\(x,y\+1,z,record\)/);
+  assert.match(js,/const supportError=placementSupportError\(selectedType,p\)/);
+});
+
+test('survival has forgiving fall damage and underwater breath',()=>{
+  assert.match(html,/id="breathBar"/);
+  assert.match(css,/#breathBar i/);
+  assert.match(js,/function updateBreath\(state,dt,t\)/);
+  assert.match(js,/survivalBreath=Math\.max\(0,survivalBreath-dt\*9\)/);
+  assert.match(js,/t-lastDrownDamage>=1400/);
+  assert.match(js,/function damageByFall\(distance\)/);
+  assert.match(js,/distance<=4\.25/);
+  assert.match(js,/damageByFall\(Math\.max\(0,freeFallPeakY-nextY\)\)/);
+});
+
+test('desktop mobile and avatar presentation react to swimming',()=>{
+  assert.match(js,/previousFluid!==freeFluidKind\)refreshMobileFly\(\)/);
+  assert.match(js,/swimming\?'수영 위':freeFlying\?'상승':'점프'/);
+  assert.match(js,/!fluid\.water&&!fluid\.lava&&onGround/);
+  assert.doesNotThrow(()=>new Function(avatar));
+  assert.match(avatar,/motion='ground'/);
+  assert.match(avatar,/const swimming=motion==='swim'/);
+  assert.match(avatar,/rig\.plane\.rotation\.x=-\.78/);
+});
+
+
+test('flowing fluids render and collide at level-dependent heights',()=>{
+  assert.match(js,/function fluidHeight\(data\)/);
+  assert.match(js,/return \[\.34,\.50,\.67,\.84\]\[level-1\]/);
+  assert.match(js,/root\.scale\.y=h\/\.84/);
+  assert.match(js,/sy<y\+fluidHeight\(cell\)/);
+  assert.match(js,/headY<hy\+fluidHeight\(headBlock\)/);
+});
+
+test('small wildlife follows edited voxel terrain instead of teleporting onto structures',()=>{
+  assert.match(js,/const nextY=creatureGroundY\(nx,nz,c\.position\.y\)/);
+  assert.match(js,/\['water','lava','fire','cactus'\]\.includes\(type\)/);
+  assert.doesNotMatch(js,/c\.position\.y=getHighestSolidY\(nx,nz\)\+1/);
+});
+
+test('return points use the current edited world and solid blocks can displace replaceable fluids',()=>{
+  assert.match(js,/function safeReturnEyeY\(\)\{return getHighestSolidY\(0,5,WORLD_MAX_Y\)\+2\.62\}/);
+  assert.match(js,/camera\.position\.set\(0,safeReturnEyeY\(\),5\)/);
+  assert.match(js,/const canDisplaceFluid=occupied&&blockDef\(occupied\)\.liquid&&selectedDef\.solid/);
+  assert.match(js,/const canReplaceFragile=occupied&&\['fire','flower','reed','sapling','torch'\]\.includes\(occupied\.type\)/);
+  assert.match(js,/if\(replaceable\)removeWorldBlockData\(p\.x,p\.y,p\.z,true\)/);
+});
+
+
+test('player-built leaves persist and moving fluids wash away fragile props',()=>{
+  assert.match(js,/if\(d\.playerBuilt\|\|hasNearbyLog\(x,y,z\)\)\{d\.decay=0;continue\}/);
+  assert.match(js,/\['fire','flower','reed','sapling','torch'\]\.includes\(at\.type\)/);
+  assert.match(js,/removeWorldBlockData\(x,y,z,true\)/);
 });
