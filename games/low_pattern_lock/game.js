@@ -45,7 +45,7 @@ function persist(){try{if(window.KidscadeStorage?.setJson){window.KidscadeStorag
 function sound(name){try{window.KidscadeGame?.sound?.(name)}catch(_){}}
 function sdkStart(){try{window.KidscadeGame?.start?.({mode:'pattern-deduction',levels:LEVELS.length})}catch(_){}}
 function sdkScore(){try{window.KidscadeGame?.score?.(totalStars(),{unit:'별',higherIsBetter:true})}catch(_){}}
-function sdkGameOver(){try{window.KidscadeGame?.gameOver?.({score:totalStars(),scoreOptions:{unit:'별',higherIsBetter:true},completed:true})}catch(_){}}
+function sdkStageClear(stage,mode='campaign'){try{window.KidscadeGame?.result?.({scope:'stage',status:'completed',outcome:'clear',score:totalStars(),scoreOptions:{unit:'별',higherIsBetter:true},completed:true,completedCount:completedCount(),stage,mode})}catch(_){}}
 function totalStars(){return Object.values(save.stars||{}).reduce((a,b)=>a+(Number(b)||0),0)}
 function completedCount(){return Object.keys(save.stars||{}).filter(k=>(save.stars[k]||0)>0).length}
 function samePath(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i])}
