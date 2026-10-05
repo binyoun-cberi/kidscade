@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-26';
+const PREVIEW_VERSION='pixel-v3-school-starter-27';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -996,6 +996,61 @@ function equipmentShapePixels(def,frameId,slot){
   else if(def.kind==='soccer-ball'){drawSoccerBall(map,a,d,size,outline,base,light,accent)}
   else if(def.kind==='basketball'){drawBasketball(map,a,d,size,outline,base,light,accent)}
   else if(def.kind==='volleyball'){drawVolleyball(map,a,d,size,outline,base,light,accent)}
+  else if(def.kind==='handheld-game'){
+    const c=[a[0]+d[0]*9,a[1]+d[1]*9];paintRotRect(map,c,d,19,12,outline);paintRotRect(map,c,d,17,10,base);paintRotRect(map,[c[0]+n[0]*1-d[0],c[1]+n[1]*1-d[1]],d,8,6,light);
+    plotPixel(map,c[0]-n[0]*6,c[1]-n[1]*6,accent);plotPixel(map,c[0]-n[0]*4+d[0]*2,c[1]-n[1]*4+d[1]*2,accent);plotCircle(map,c[0]+n[0]*6,c[1]+n[1]*6,1,accent)
+  }
+  else if(def.kind==='camera'){
+    const c=[a[0]+d[0]*9,a[1]+d[1]*9];paintRotRect(map,c,d,17,12,outline);paintRotRect(map,c,d,15,10,base);plotCircle(map,c[0],c[1],4,outline);plotCircle(map,c[0],c[1],3,light);plotCircle(map,c[0],c[1],1,accent);paintRotRect(map,[c[0]-d[0]*6+n[0]*4,c[1]-d[1]*6+n[1]*4],d,5,3,accent)
+  }
+  else if(def.kind==='magnifier'){
+    paintSegment(map,a,d,len-8,4,outline);paintSegment(map,a,d,len-8,2,base);const c=[a[0]+d[0]*(len-3),a[1]+d[1]*(len-3)];plotCircle(map,c[0],c[1],size,outline,true);plotCircle(map,c[0],c[1],size-2,light,true);plotPixel(map,c[0]-2,c[1]-2,accent)
+  }
+  else if(def.kind==='telescope'){
+    paintSegment(map,a,d,len,7,outline);paintSegment(map,a,d,len-2,5,base);for(const t of [5,12,20])paintRotRect(map,[a[0]+d[0]*t,a[1]+d[1]*t],d,8,3,accent);paintRotRect(map,[far[0]-d[0]*2,far[1]-d[1]*2],d,10,5,light)
+  }
+  else if(def.kind==='microphone'){
+    paintSegment(map,a,d,len-6,5,outline);paintSegment(map,a,d,len-6,3,base);const c=[far[0]-d[0]*2,far[1]-d[1]*2];plotCircle(map,c[0],c[1],5,outline);plotCircle(map,c[0],c[1],4,light);for(const off of [-2,0,2])plotPixel(map,c[0]+n[0]*off,c[1]+n[1]*off,accent)
+  }
+  else if(def.kind==='guitar'||def.kind==='ukulele'){
+    const small=def.kind==='ukulele',bodyR=small?5:7,bodyT=small?12:15,neckEnd=len;paintSegment(map,a,d,neckEnd,4,outline);paintSegment(map,a,d,neckEnd-2,2,light);
+    const c=[a[0]+d[0]*bodyT,a[1]+d[1]*bodyT];plotCircle(map,c[0]+n[0]*2,c[1]+n[1]*2,bodyR,outline);plotCircle(map,c[0]-n[0]*2,c[1]-n[1]*2,bodyR,outline);plotCircle(map,c[0],c[1],bodyR-1,base);plotCircle(map,c[0],c[1],2,outline);paintRotRect(map,[far[0]-d[0],far[1]-d[1]],d,7,5,accent)
+  }
+  else if(def.kind==='fishing-rod'){
+    paintSegment(map,a,d,len,3,outline);paintSegment(map,a,d,len,1,base);plotCircle(map,a[0]+d[0]*5+n[0]*4,a[1]+d[1]*5+n[1]*4,3,accent,true);
+    for(let t=0;t<=12;t++){const bend=Math.round((t*t)/18);plotPixel(map,far[0]+n[0]*Math.round(t/3)+d[0]*bend,far[1]+n[1]*Math.round(t/3)+d[1]*bend,light)}plotCircle(map,far[0]+n[0]*4+d[0]*8,far[1]+n[1]*4+d[1]*8,1,accent)
+  }
+  else if(def.kind==='bug-net'){
+    paintSegment(map,a,d,len-6,3,outline);paintSegment(map,a,d,len-6,1,base);const c=[far[0]-d[0]*2,far[1]-d[1]*2];plotCircle(map,c[0],c[1],size,outline,true);for(let t=-size+2;t<=size-2;t+=3){plotPixel(map,c[0]+n[0]*t+d[0]*Math.round(t/2),c[1]+n[1]*t+d[1]*Math.round(t/2),light);plotPixel(map,c[0]+n[0]*t-d[0]*Math.round(t/2),c[1]+n[1]*t-d[1]*Math.round(t/2),light)}
+  }
+  else if(def.kind==='water-gun'){
+    const c=[a[0]+d[0]*8,a[1]+d[1]*8];paintRotRect(map,c,d,14,9,outline);paintRotRect(map,c,d,12,7,base);paintSegment(map,[c[0]+d[0]*5,c[1]+d[1]*5],d,len-9,4,outline);paintSegment(map,[c[0]+d[0]*5,c[1]+d[1]*5],d,len-11,2,light);paintRotRect(map,[c[0]-d[0]*2-n[0]*6,c[1]-d[1]*2-n[1]*6],d,5,9,accent);plotCircle(map,c[0]+n[0]*4,c[1]+n[1]*4,2,light)
+  }
+  else if(def.kind==='balloon'){
+    paintSegment(map,a,d,len-8,1,outline);const c=[far[0]-d[0]*2,far[1]-d[1]*2];plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);plotCircle(map,c[0]-2,c[1]-3,1,light);plotPixel(map,c[0]-d[0]*(size+1),c[1]-d[1]*(size+1),accent)
+  }
+  else if(def.kind==='bouquet'){
+    for(const off of [-2,0,2])paintSegment(map,[a[0]+n[0]*off,a[1]+n[1]*off],d,len-6,1,base);const c=[far[0]-d[0]*3,far[1]-d[1]*3];for(const off of [-5,0,5]){plotCircle(map,c[0]+n[0]*off,c[1]+n[1]*off,3,outline);plotCircle(map,c[0]+n[0]*off,c[1]+n[1]*off,2,off===0?accent:light)}paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,8,7,accent)
+  }
+  else if(def.kind==='ice-cream'){
+    for(let t=0;t<len-7;t++){const half=Math.max(1,Math.round((len-7-t)/5));for(let off=-half;off<=half;off++)plotPixel(map,a[0]+d[0]*t+n[0]*off,a[1]+d[1]*t+n[1]*off,t%3===0?light:base)}const c=[far[0]-d[0]*3,far[1]-d[1]*3];plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,accent);plotCircle(map,c[0]-2,c[1]-2,1,light)
+  }
+  else if(def.kind==='cotton-candy'){
+    paintSegment(map,a,d,len-8,3,outline);paintSegment(map,a,d,len-8,1,base);const c=[far[0]-d[0]*3,far[1]-d[1]*3];for(const [u,v,r] of [[0,0,size],[4,-2,size-2],[-4,-2,size-2],[0,-5,size-2]]){plotCircle(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,r,outline);plotCircle(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,Math.max(1,r-1),light)}plotCircle(map,c[0]-2,c[1]-3,1,accent)
+  }
+  else if(def.kind==='hamburger'){
+    const c=ballCenter(a,d,size);paintRotRect(map,[c[0]-d[0]*4,c[1]-d[1]*4],d,15,5,outline);paintRotRect(map,[c[0]-d[0]*4,c[1]-d[1]*4],d,13,3,base);paintRotRect(map,c,d,14,4,accent);paintRotRect(map,[c[0]+d[0]*3,c[1]+d[1]*3],d,14,3,light);paintRotRect(map,[c[0]+d[0]*6,c[1]+d[1]*6],d,15,5,outline);paintRotRect(map,[c[0]+d[0]*6,c[1]+d[1]*6],d,13,3,base)
+  }
+  else if(def.kind==='drink'){
+    const c=[a[0]+d[0]*8,a[1]+d[1]*8];paintRotRect(map,c,d,10,14,outline);paintRotRect(map,c,d,8,12,base);paintRotRect(map,[c[0]+d[0]*2,c[1]+d[1]*2],d,6,6,light);paintSegment(map,[c[0]+n[0]*2+d[0]*5,c[1]+n[1]*2+d[1]*5],d,len-10,2,accent)
+  }
+  else if(def.kind==='lantern'){
+    const c=[a[0]+d[0]*8,a[1]+d[1]*8];paintRotRect(map,c,d,12,14,outline);paintRotRect(map,c,d,9,10,base);paintRotRect(map,c,d,6,7,light);plotCircle(map,c[0],c[1],2,accent);plotCircle(map,c[0]-d[0]*8,c[1]-d[1]*8,6,outline,true)
+  }
+  else if(def.kind==='treasure-map'){
+    const c=[a[0]+d[0]*8,a[1]+d[1]*8];paintRotRect(map,c,d,18,15,outline);paintRotRect(map,c,d,16,13,light);for(const off of [-8,8])plotCircle(map,c[0]+n[0]*off,c[1]+n[1]*off,2,base);
+    for(const [u,v] of [[-5,-4],[-2,-2],[1,-1],[3,2]])plotCircle(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,1,accent);for(const [u,v] of [[5,4],[3,6],[5,6],[3,4]])plotPixel(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,accent)
+  }
   else if(def.kind==='eraser'){paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,11,7,outline);paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,9,5,base);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,4,5,light)}
   else if(def.kind==='tablet'){paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,12,17,outline);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,9,13,base);paintRotRect(map,[a[0]+d[0]*9,a[1]+d[1]*9],d,7,9,light)}
   else if(def.kind==='dustpan'){paintSegment(map,a,d,13,2,outline);paintSegment(map,a,d,12,1,base);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,15,9,outline);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,12,6,base)}
