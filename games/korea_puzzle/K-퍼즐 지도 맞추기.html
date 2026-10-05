@@ -26,26 +26,43 @@
         }
 
         /* 퍼즐 조각 스타일 */
-        .piece path {
-            transition: fill 0.2s, stroke-width 0.2s;
-            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));
+        .piece .piece-shape {
+            transition: fill 0.15s, stroke-width 0.15s;
+            filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.22));
             cursor: grab;
         }
-        
-        .piece path:active {
+
+        .piece.dragging .piece-shape {
+            transition: none;
+            filter: none;
             cursor: grabbing;
         }
 
-        .piece:hover path {
+        .piece:not(.dragging):hover .piece-shape {
             stroke-width: 2px;
-            filter: drop-shadow(4px 6px 6px rgba(0,0,0,0.4));
+            filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.28));
         }
 
-        .piece.placed path {
-            filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.8));
+        .piece.placed .piece-shape {
+            filter: none;
             stroke-width: 1.5px;
             stroke: #ffffff;
             cursor: default;
+        }
+
+        /* 조각이 많거나 터치 기기일 때 SVG 필터 비용을 줄여 드래그 프레임을 안정화 */
+        #game-board.performance-mode .piece .piece-shape,
+        #game-board.performance-mode .piece:hover .piece-shape {
+            filter: none;
+            transition: none;
+        }
+
+        #game-board.performance-mode .piece:hover .piece-shape {
+            stroke-width: 1.5px;
+        }
+
+        .hit-area {
+            pointer-events: stroke;
         }
 
         /* 타겟 맵 (내부 선 숨기기 위해 fill과 stroke 색상을 동일하게 처리) */
@@ -61,7 +78,14 @@
             font-weight: 900;
             fill: #111827;
             pointer-events: none;
-            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0px 2px 4px rgba(255,255,255,0.8);
+            paint-order: stroke fill;
+            stroke: rgba(255,255,255,0.96);
+            stroke-width: 2.4px;
+            stroke-linejoin: round;
+        }
+
+        #game-board.performance-mode .region-label {
+            stroke-width: 2px;
         }
         
         @media (max-width: 768px) {
@@ -306,6 +330,35 @@
         const successModal = document.getElementById("success-modal");
         const modalContent = document.getElementById("modal-content");
         const bgmAudio = document.getElementById("bgm");
+        const gameBoard = document.getElementById("game-board");
+
+        // 드래그 이벤트는 포인터 입력 속도(60~200Hz)만큼 발생할 수 있으므로
+        // 실제 SVG transform 반영은 화면 주사율에 맞춰 한 프레임에 한 번만 처리한다.
+        let dragFrame = 0;
+        const pendingPieceTransforms = new Map();
+
+        function schedulePieceTransform(node, d) {
+            pendingPieceTransforms.set(node, [d.currentX, d.currentY]);
+            if (dragFrame) return;
+            dragFrame = requestAnimationFrame(() => {
+                pendingPieceTransforms.forEach((pos, el) => {
+                    el.setAttribute("transform", `translate(${pos[0]}, ${pos[1]})`);
+                });
+                pendingPieceTransforms.clear();
+                dragFrame = 0;
+            });
+        }
+
+        function flushPieceTransform(node, d) {
+            pendingPieceTransforms.delete(node);
+            node.setAttribute("transform", `translate(${d.currentX}, ${d.currentY})`);
+        }
+
+        function resetPendingPieceTransforms() {
+            if (dragFrame) cancelAnimationFrame(dragFrame);
+            dragFrame = 0;
+            pendingPieceTransforms.clear();
+        }
 
         // 부드럽고 다채로운 색상 팔레트
         const colors = [
@@ -382,6 +435,7 @@
             startScreen.classList.add("opacity-0", "pointer-events-none");
             loadingOverlay.classList.remove("hidden");
             loadingOverlay.style.display = "flex";
+            resetPendingPieceTransforms();
             svg.selectAll("*").remove();
 
             const selectEl = document.getElementById("map-select-start");
@@ -520,11 +574,15 @@
             resetTimer();
             startTimer();
             gameActive = true;
+            resetPendingPieceTransforms();
             svg.selectAll("*").remove();
 
             const svgNode = svg.node();
             const width = svgNode.clientWidth;
             const height = svgNode.clientHeight;
+            const coarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+            const performanceMode = totalPieces >= 40 || coarsePointer || width < 768;
+            gameBoard.classList.toggle("performance-mode", !!performanceMode);
 
             const padding = width < 768 ? 40 : 120; 
             
@@ -545,8 +603,13 @@
             const drag = d3.drag()
                 .on("start", function(event, d) {
                     if (d.placed || !gameActive) return;
-                    d3.select(this).raise();
-                    d3.select(this).select("path:not(.hit-area)").attr("stroke", "#374151").attr("stroke-width", "2.5px");
+                    this.classList.add("dragging");
+                    this.parentNode.appendChild(this);
+                    const shape = this.querySelector(".piece-shape");
+                    if (shape) {
+                        shape.setAttribute("stroke", "#374151");
+                        shape.setAttribute("stroke-width", "2.5px");
+                    }
                     const p = d.properties || {};
                     const countryName = p.NAME_KO || p.name || p.NAME || p.name_eng || p.SIG_KOR_NM || p.EMD_KOR_NM || "";
                     const flag = p.ISO_A2 && p.ISO_A2.length === 2 && !p.ISO_A2.includes('-')
@@ -558,13 +621,19 @@
                     if (d.placed || !gameActive) return;
                     d.currentX += event.dx;
                     d.currentY += event.dy;
-                    d3.select(this).attr("transform", `translate(${d.currentX}, ${d.currentY})`);
+                    schedulePieceTransform(this, d);
                 })
                 .on("end", function(event, d) {
                     if (d.placed || !gameActive) return;
-                    d3.select(this).select("path:not(.hit-area)").attr("stroke", "#ffffff").attr("stroke-width", "1px");
+                    this.classList.remove("dragging");
+                    flushPieceTransform(this, d);
+                    const shape = this.querySelector(".piece-shape");
+                    if (shape) {
+                        shape.setAttribute("stroke", "#ffffff");
+                        shape.setAttribute("stroke-width", "1px");
+                    }
 
-                    const distance = Math.sqrt(d.currentX * d.currentX + d.currentY * d.currentY);
+                    const distance = Math.hypot(d.currentX, d.currentY);
                     
                     let snapThreshold = width < 768 ? 40 : 30;
                     if(totalPieces > 50) snapThreshold += 15;
@@ -602,20 +671,30 @@
                 .call(drag);
 
             piece.append("path")
+                .attr("class", "piece-shape")
                 .attr("d", path)
                 .attr("fill", (d, i) => colorScale(i % colors.length))
                 .attr("stroke", "#ffffff")
                 .attr("stroke-width", "1px")
                 .attr("stroke-linejoin", "round");
 
-            // 작은 국가도 손가락/마우스로 잡기 쉽도록 투명한 터치 영역을 넓힘
-            piece.append("path")
+            // 모든 조각에 경로를 하나 더 복제하면 세계 전체에서 SVG 노드가 크게 늘어난다.
+            // 실제 화면 크기가 작은 조각에만 넓은 투명 터치 영역을 추가한다.
+            const needsHitArea = d => {
+                if (currentMode.startsWith('world_') && TINY_WORLD_ISO.has((d.properties || {}).ISO_A3)) return true;
+                const bounds = path.bounds(d);
+                const pieceW = Math.abs(bounds[1][0] - bounds[0][0]);
+                const pieceH = Math.abs(bounds[1][1] - bounds[0][1]);
+                return pieceW < 24 || pieceH < 18;
+            };
+
+            piece.filter(needsHitArea)
+                .append("path")
                 .attr("class", "hit-area")
                 .attr("d", path)
                 .attr("fill", "none")
                 .attr("stroke", "transparent")
-                .attr("stroke-width", d => currentMode.startsWith('world_') && TINY_WORLD_ISO.has((d.properties || {}).ISO_A3) ? 22 : 8)
-                .style("pointer-events", "stroke");
+                .attr("stroke-width", d => currentMode.startsWith('world_') && TINY_WORLD_ISO.has((d.properties || {}).ISO_A3) ? 22 : 10);
 
             piece.append("text")
                 .attr("class", "region-label")
@@ -690,7 +769,9 @@
                 if(!confirm("진행 중인 퍼즐이 있습니다. 메뉴로 돌아가시겠습니까?")) return;
             }
             clearInterval(timerInterval);
+            resetPendingPieceTransforms();
             svg.selectAll("*").remove();
+            gameBoard.classList.remove("performance-mode");
             startScreen.classList.remove("opacity-0", "pointer-events-none");
         });
 
