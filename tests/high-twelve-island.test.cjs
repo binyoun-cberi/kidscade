@@ -1079,3 +1079,14 @@ test('saved city is explicitly normalized after the village rules normalize lega
   assert.match(js, /if \(C && saved\.city\) normalized\.city = C\.normalize\(saved\.city\)/);
   assert.match(js, /if \(C\) C\.ensureVillage\(state\)/);
 });
+
+
+test('city housing expands the shared village population capacity', () => {
+  const village = S.initial(44);
+  const base = S.capacity(village);
+  const city = C.ensureVillage(village);
+  C.cell(city, 9, 8).density = 2;
+  C.recompute(city, village);
+  assert.ok(city.stats.homes >= 8);
+  assert.equal(S.capacity(village), base + city.stats.homes);
+});
