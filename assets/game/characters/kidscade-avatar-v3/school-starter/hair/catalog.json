@@ -1302,62 +1302,6 @@
       "price": 0
     },
     {
-      "id": "neat-short-hair-cherry-pink-01",
-      "label": "단정 숏컷 · 체리핑크",
-      "file": "neat-short-hair-cherry-pink-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-peach-pink-01",
-      "label": "단정 숏컷 · 복숭아핑크",
-      "file": "neat-short-hair-peach-pink-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-mint-01",
-      "label": "단정 숏컷 · 민트",
-      "file": "neat-short-hair-mint-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-sky-blue-01",
-      "label": "단정 숏컷 · 하늘",
-      "file": "neat-short-hair-sky-blue-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-lavender-01",
-      "label": "단정 숏컷 · 라벤더",
-      "file": "neat-short-hair-lavender-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-blue-purple-01",
-      "label": "단정 숏컷 · 블루퍼플",
-      "file": "neat-short-hair-blue-purple-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-rose-gold-01",
-      "label": "단정 숏컷 · 로즈골드",
-      "file": "neat-short-hair-rose-gold-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "neat-short-hair-white-blonde-01",
-      "label": "단정 숏컷 · 화이트블론드",
-      "file": "neat-short-hair-white-blonde-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
       "id": "side-part-hair-01",
       "label": "옆가르마",
       "file": "side-part-hair-01.json",
@@ -1393,62 +1337,6 @@
       "price": 0
     },
     {
-      "id": "school-ponytail-hair-cherry-pink-01",
-      "label": "포니테일 · 체리핑크",
-      "file": "school-ponytail-hair-cherry-pink-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-peach-pink-01",
-      "label": "포니테일 · 복숭아핑크",
-      "file": "school-ponytail-hair-peach-pink-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-mint-01",
-      "label": "포니테일 · 민트",
-      "file": "school-ponytail-hair-mint-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-sky-blue-01",
-      "label": "포니테일 · 하늘",
-      "file": "school-ponytail-hair-sky-blue-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-lavender-01",
-      "label": "포니테일 · 라벤더",
-      "file": "school-ponytail-hair-lavender-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-blue-purple-01",
-      "label": "포니테일 · 블루퍼플",
-      "file": "school-ponytail-hair-blue-purple-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-rose-gold-01",
-      "label": "포니테일 · 로즈골드",
-      "file": "school-ponytail-hair-rose-gold-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
-      "id": "school-ponytail-hair-white-blonde-01",
-      "label": "포니테일 · 화이트블론드",
-      "file": "school-ponytail-hair-white-blonde-01.json",
-      "public": true,
-      "price": 0
-    },
-    {
       "id": "pigtails-hair-01",
       "label": "양갈래",
       "file": "pigtails-hair-01.json",
@@ -1477,5 +1365,5 @@
       "price": 0
     }
   ],
-  "revision": "quality-9-neat-short-tousled-topline"
+  "revision": "quality-10-hair-style-color-separated"
 }

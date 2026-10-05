@@ -350,6 +350,19 @@
           "stand-02"
         ]
       }
+    },
+    "hairColor": {
+      "mode": "shared-palette-remap-v1",
+      "separateFromStyle": true,
+      "defaultId": "brown",
+      "preserveOutline": true,
+      "sourcePaletteRoles": [
+        "deepShade",
+        "shade",
+        "base",
+        "light"
+      ],
+      "colors": 9
     }
   },
   "partCatalogs": {
@@ -360,9 +373,10 @@
     "earring": "earring/catalog.json",
     "shoes": "shoes/catalog.json",
     "weapon": "tool/catalog.json",
-    "shield": "teaching-aid/catalog.json"
+    "shield": "teaching-aid/catalog.json",
+    "hairColor": "hair-color/catalog.json"
   },
-  "artRevision": "school-accessories-11-neat-short-tousled-topline",
+  "artRevision": "school-accessories-12-shared-hair-colors",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
