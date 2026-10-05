@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-7';
+const PREVIEW_VERSION='pixel-v3-school-starter-8';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -572,6 +572,30 @@ function paintSegment(map,anchor,direction,length,width,color,start=0){const dx=
 function paintRotRect(map,center,direction,w,h,color){const dx=direction[0],dy=direction[1],nx=-dy,ny=dx;for(let v=-Math.floor(h/2);v<=Math.floor(h/2);v++)for(let u=-Math.floor(w/2);u<=Math.floor(w/2);u++)plotPixel(map,center[0]+nx*u+dx*v,center[1]+ny*u+dy*v,color)}
 function combinedEquipmentPixels(frameId,slot){const layers=slot==='weapon'?['weaponBack','weaponFront']:['shieldBack','shieldFront'];return layers.flatMap(layer=>packLayerPixels(frameId,layer))}
 function equipmentAnchorAndDirection(frameId,slot){const hand=FRAME_HAND_ANCHORS[frameId]?.[slot==='weapon'?'left':'right']||null,pixels=combinedEquipmentPixels(frameId,slot);if(!pixels.length)return {anchor:hand||[64,90],direction:[0,-1],pixels};if(!hand){const box=bboxForPixels(pixels);return {anchor:[box.cx,box.cy],direction:[0,-1],pixels}}let far=pixels[0],best=-1;for(const p of pixels){const q=(p[0]-hand[0])**2+(p[1]-hand[1])**2;if(q>best){best=q;far=p}}let dx=far[0]-hand[0],dy=far[1]-hand[1],mag=Math.hypot(dx,dy)||1;return {anchor:hand,direction:[dx/mag,dy/mag],pixels}}
+function ballCenter(anchor,direction,size){return [anchor[0]+direction[0]*(size+2),anchor[1]+direction[1]*(size+2)]}
+function drawSoccerBall(map,anchor,direction,size,outline,base,light,accent){
+  const c=ballCenter(anchor,direction,size);
+  plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);
+  plotCircle(map,c[0],c[1],2,outline);
+  for(const [u,v] of [[-4,-3],[4,-3],[-4,3],[4,3]])plotCircle(map,c[0]+u,c[1]+v,1,outline);
+}
+function drawBasketball(map,anchor,direction,size,outline,base,light,accent){
+  const c=ballCenter(anchor,direction,size);
+  plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);
+  for(let t=-size+1;t<=size-1;t++){plotPixel(map,c[0]+t,c[1],outline);plotPixel(map,c[0],c[1]+t,outline)}
+  for(let t=-size+2;t<=size-2;t++){plotPixel(map,c[0]+Math.round(t*.55),c[1]+t,outline);plotPixel(map,c[0]-Math.round(t*.55),c[1]+t,outline)}
+  plotPixel(map,c[0]-2,c[1]-3,light);
+}
+function drawVolleyball(map,anchor,direction,size,outline,base,light,accent){
+  const c=ballCenter(anchor,direction,size);
+  plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);
+  for(let t=-size+2;t<=size-2;t++){
+    plotPixel(map,c[0]+t,c[1]+Math.round(t/3),light);
+    plotPixel(map,c[0]-Math.round(t/3),c[1]+t,accent);
+    if(t%2===0)plotPixel(map,c[0]+Math.round(t/2),c[1]-t,outline);
+  }
+  plotCircle(map,c[0]+2,c[1]-2,1,light);
+}
 function equipmentShapePixels(def,frameId,slot){
   const cacheKey=(def?.id||'')+'|'+frameId+'|'+slot;if(accessoryShapeCache.has(cacheKey))return accessoryShapeCache.get(cacheKey);if(!def||def.kind==='default'){accessoryShapeCache.set(cacheKey,[]);return []}
   const info=equipmentAnchorAndDirection(frameId,slot),map=new Map(),colors=(def.colors||[]).map(c=>rgbaFromHex(c)),outline=colors[0]||[40,40,40,255],base=colors[1]||outline,light=colors[2]||base,accent=colors[3]||outline;
@@ -587,7 +611,9 @@ function equipmentShapePixels(def,frameId,slot){
   else if(def.kind==='rocket'){paintRotRect(map,[a[0]+d[0]*10,a[1]+d[1]*10],d,7,16,outline);paintRotRect(map,[a[0]+d[0]*10,a[1]+d[1]*10],d,5,14,base);plotPixel(map,far[0],far[1],accent);plotPixel(map,far[0]+n[0]*2-d[0]*2,far[1]+n[1]*2-d[1]*2,accent);plotPixel(map,far[0]-n[0]*2-d[0]*2,far[1]-n[1]*2-d[1]*2,accent);paintRotRect(map,[a[0]+d[0]*3+n[0]*4,a[1]+d[1]*3+n[1]*4],d,4,5,accent);paintRotRect(map,[a[0]+d[0]*3-n[0]*4,a[1]+d[1]*3-n[1]*4],d,4,5,accent)}
   else if(def.kind==='scissors'){const d1=[d[0]*.94+n[0]*.34,d[1]*.94+n[1]*.34],d2=[d[0]*.94-n[0]*.34,d[1]*.94-n[1]*.34];paintSegment(map,a,d1,len,2,outline);paintSegment(map,a,d2,len,2,light);plotCircle(map,a[0]+n[0]*4-d[0]*2,a[1]+n[1]*4-d[1]*2,3,base,true);plotCircle(map,a[0]-n[0]*4-d[0]*2,a[1]-n[1]*4-d[1]*2,3,base,true)}
   else if(def.kind==='wand'){paintSegment(map,a,d,len-5,2,outline);paintSegment(map,a,d,len-5,1,base);const c=[far[0]-d[0]*2,far[1]-d[1]*2],pts=[[0,-5],[2,-1],[5,0],[2,2],[3,5],[0,3],[-3,5],[-2,2],[-5,0],[-2,-1]];for(const [u,v] of pts)plotPixel(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,accent);plotCircle(map,c[0],c[1],2,light)}
-  else if(def.kind.endsWith('-ball')){const c=[a[0]+d[0]*(size+2),a[1]+d[1]*(size+2)];plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);if(def.kind==='soccer-ball'){plotCircle(map,c[0],c[1],2,outline);for(const [u,v] of [[-4,-3],[4,-3],[-4,3],[4,3]])plotCircle(map,c[0]+u,c[1]+v,1,outline)}else if(def.kind==='basketball'){for(let t=-size+1;t<=size-1;t++){plotPixel(map,c[0]+t,c[1],outline);plotPixel(map,c[0],c[1]+t,outline)}}else{for(let t=-size+2;t<=size-2;t++){plotPixel(map,c[0]+t,c[1]+Math.round(t/3),light);plotPixel(map,c[0]-Math.round(t/3),c[1]+t,accent)}}}
+  else if(def.kind==='soccer-ball'){drawSoccerBall(map,a,d,size,outline,base,light,accent)}
+  else if(def.kind==='basketball'){drawBasketball(map,a,d,size,outline,base,light,accent)}
+  else if(def.kind==='volleyball'){drawVolleyball(map,a,d,size,outline,base,light,accent)}
   else if(def.kind==='eraser'){paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,11,7,outline);paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,9,5,base);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,4,5,light)}
   else if(def.kind==='tablet'){paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,12,17,outline);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,9,13,base);paintRotRect(map,[a[0]+d[0]*9,a[1]+d[1]*9],d,7,9,light)}
   else if(def.kind==='dustpan'){paintSegment(map,a,d,13,2,outline);paintSegment(map,a,d,12,1,base);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,15,9,outline);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,12,6,base)}
@@ -942,7 +968,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-7',
+  version:'pixel-v3-school-starter-8',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,

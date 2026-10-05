@@ -1330,9 +1330,9 @@
       "price": 0
     },
     {
-      "id": "ponytail-hair-01",
+      "id": "school-ponytail-hair-02",
       "label": "포니테일",
-      "file": "ponytail-hair-01.json",
+      "file": "school-ponytail-hair-02.json",
       "public": true,
       "price": 0
     },
@@ -1365,5 +1365,5 @@
       "price": 0
     }
   ],
-  "revision": "quality-2"
+  "revision": "quality-3"
 }

@@ -20,7 +20,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=49/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=50/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -28,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-7/);
+  assert.match(js,/pixel-v3-school-starter-8/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -59,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-7'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-8'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -304,12 +304,12 @@ test('lower choice persists in public v3 state',()=>{
 });
 
 
-test('hair visual regression keeps repaired partings solid and ponytail off the eye',()=>{
+test('hair visual regression keeps repaired partings solid and rebuilt ponytail sealed and off the eye',()=>{
   const loadHair=name=>JSON.parse(fs.readFileSync(path.join(starterDir,'hair',name),'utf8'));
   const coordSet=data=>new Set(data.pixels.map(pixel=>pixel[0]+','+pixel[1]));
   const side=coordSet(loadHair('side-part-hair-01.json'));
   const curly=coordSet(loadHair('curly-hair-01.json'));
-  const pony=coordSet(loadHair('ponytail-hair-01.json'));
+  const pony=coordSet(loadHair('school-ponytail-hair-02.json'));
   const sideRepair={22:[61,62,63],23:[61,62,63],24:[61,62,63],25:[60,61,62],26:[60,61,62],27:[60,61,62],28:[60,61,62],29:[60,61],30:[60,61],31:[60],33:[59]};
   for(const [y,xs] of Object.entries(sideRepair))for(const x of xs)assert.ok(side.has(x+','+y),'side-part gap '+x+','+y);
   const curlyRepair={38:[[61,61]],39:[[60,62],[72,72]],40:[[59,62],[71,73]],41:[[58,63],[70,73]],42:[[58,64],[69,74]],43:[[59,64],[70,75]],44:[[60,63],[71,75]],45:[[60,62],[71,74]]};
@@ -317,6 +317,13 @@ test('hair visual regression keeps repaired partings solid and ponytail off the 
   const eyeMask=new Set(eyeCatalog.baseClearPixels.map(pixel=>pixel[0]+','+pixel[1]));
   assert.deepEqual([...pony].filter(key=>eyeMask.has(key)),[]);
   assert.deepEqual([...curly].filter(key=>eyeMask.has(key)),[]);
+  assert.ok(hairCatalog.items.some(item=>item.id==='school-ponytail-hair-02'&&item.file==='school-ponytail-hair-02.json'));
+  assert.ok(!hairCatalog.items.some(item=>item.id==='ponytail-hair-01'));
+  assert.equal(fs.existsSync(path.join(starterDir,'hair','ponytail-hair-01.json')),false);
+  for(let y=22;y<=35;y++){
+    const xs=[...pony].map(key=>key.split(',').map(Number)).filter(([x,py])=>py===y&&x>=48&&x<=82).map(([x])=>x).sort((a,b)=>a-b);
+    for(let i=1;i<xs.length;i++)assert.ok(xs[i]-xs[i-1]<=1,'rebuilt ponytail crown gap at row '+y);
+  }
 });
 
 
@@ -349,6 +356,9 @@ test('school accessory catalogs expose 10 shoes, 10 earrings, 14 tools and 6 tea
   assert.equal(new Set(toolCatalog.items.map(item=>item.id)).size,15);
   assert.equal(new Set(teachingAidCatalog.items.map(item=>item.id)).size,7);
   for(const label of ['연필','색연필','사인펜','크레파스','붓','단소','리코더','청소빗자루','물로켓','가위','별모양 마법지팡이','축구공','농구공','배구공'])assert.ok(toolCatalog.items.some(item=>item.label===label),label);
+  assert.equal(toolCatalog.items.find(item=>item.label==='축구공').kind,'soccer-ball');
+  assert.equal(toolCatalog.items.find(item=>item.label==='농구공').kind,'basketball');
+  assert.equal(toolCatalog.items.find(item=>item.label==='배구공').kind,'volleyball');
   for(const label of ['지우개','이로미','쓰레받기','연필깎이','곰돌이인형','베개'])assert.ok(teachingAidCatalog.items.some(item=>item.label===label),label);
 });
 
@@ -356,6 +366,13 @@ test('public avatar renders school accessories on all motion frames with correct
   assert.match(js,/const SCHOOL_PACK_URL=ROOT\+'\/school-starter\.json'/);
   assert.match(js,/function stripDefaultEquipment\(target,frameId\)/);
   assert.match(js,/function drawEquipmentPass\(target,frameId,slot,id,pass\)/);
+  assert.match(js,/function drawSoccerBall\(/);
+  assert.match(js,/function drawBasketball\(/);
+  assert.match(js,/function drawVolleyball\(/);
+  assert.match(js,/def\.kind==='soccer-ball'/);
+  assert.match(js,/def\.kind==='basketball'/);
+  assert.match(js,/def\.kind==='volleyball'/);
+  assert.doesNotMatch(js,/def\.kind\.endsWith\('-ball'\)/);
   assert.deepEqual(toolCatalog.attackBackFrames,['attack-02']);
   assert.equal(toolCatalog.hand,'left');
   assert.equal(teachingAidCatalog.hand,'right');
