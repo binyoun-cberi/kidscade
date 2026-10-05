@@ -38,5 +38,5 @@ test('jump and pickup motions are tied to real survival actions',()=>{
 
 test('avatar action build is cache-busted',()=>{
   assert.match(html,/cube-architect-avatar\.js\?v=20261005-avatar-actions1/);
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
 });
