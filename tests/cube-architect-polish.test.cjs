@@ -12,8 +12,8 @@ const ui=read('games/cube3d/cube-architect-ui.css');
 
 test('tactile survival polish parses and is cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(main));
-  assert.match(html,/cube-architect\.js\?v=20261005-exploration1/);
-  assert.match(html,/cube-architect-ui\.css\?v=20261005-polish1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-craft-audio1/);
+  assert.match(html,/cube-architect-ui\.css\?v=20261005-craft-audio1/);
 });
 
 test('mining has progressive target crack feedback and flying pickup visuals',()=>{
