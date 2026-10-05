@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-shoes-catalog",
+  "layer": "shoes",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "basic-sneakers-01",
+  "sourceLayer": "shoes",
+  "sourcePalette": [
+    "#70889f",
+    "#f8f6e9",
+    "#283344",
+    "#d4dbde"
+  ],
+  "items": [
+    {
+      "id": "basic-sneakers-01",
+      "label": "기본 운동화",
+      "kind": "default"
+    },
+    {
+      "id": "blue-sneakers-01",
+      "label": "파란 운동화",
+      "palette": [
+        "#4478bd",
+        "#f4f7fb",
+        "#243b62",
+        "#a7c2e8"
+      ],
+      "pattern": "laces"
+    },
+    {
+      "id": "red-hightop-01",
+      "label": "빨간 하이탑",
+      "palette": [
+        "#c84d4d",
+        "#fff5ed",
+        "#592d35",
+        "#ef9b86"
+      ],
+      "pattern": "high-top"
+    },
+    {
+      "id": "yellow-canvas-01",
+      "label": "노란 캔버스화",
+      "palette": [
+        "#dfae38",
+        "#fff8dc",
+        "#5b4930",
+        "#f4d87c"
+      ],
+      "pattern": "canvas"
+    },
+    {
+      "id": "green-running-01",
+      "label": "초록 러닝화",
+      "palette": [
+        "#4f9d72",
+        "#f1fbf4",
+        "#264a3c",
+        "#99d6ad"
+      ],
+      "pattern": "runner"
+    },
+    {
+      "id": "black-school-shoes-01",
+      "label": "검정 단화",
+      "palette": [
+        "#454b55",
+        "#dfe3e6",
+        "#171b22",
+        "#777f89"
+      ],
+      "pattern": "loafer"
+    },
+    {
+      "id": "brown-loafers-01",
+      "label": "갈색 로퍼",
+      "palette": [
+        "#9a6a45",
+        "#ead7be",
+        "#4e3225",
+        "#c59a70"
+      ],
+      "pattern": "loafer"
+    },
+    {
+      "id": "pink-sneakers-01",
+      "label": "분홍 운동화",
+      "palette": [
+        "#d96e9b",
+        "#fff4f8",
+        "#6a334b",
+        "#f4adca"
+      ],
+      "pattern": "laces"
+    },
+    {
+      "id": "purple-slipon-01",
+      "label": "보라 슬립온",
+      "palette": [
+        "#8066bd",
+        "#f5f1fb",
+        "#3e315e",
+        "#bba8e2"
+      ],
+      "pattern": "slip-on"
+    },
+    {
+      "id": "mint-sneakers-01",
+      "label": "민트 스니커즈",
+      "palette": [
+        "#55aa9b",
+        "#f1fffb",
+        "#28554f",
+        "#9edbd1"
+      ],
+      "pattern": "laces"
+    },
+    {
+      "id": "white-indoor-shoes-01",
+      "label": "흰 실내화",
+      "palette": [
+        "#d9e6eb",
+        "#ffffff",
+        "#53656d",
+        "#8ec7df"
+      ],
+      "pattern": "indoor"
+    }
+  ]
+}
