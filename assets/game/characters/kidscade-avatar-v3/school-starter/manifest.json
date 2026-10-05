@@ -189,7 +189,7 @@
   },
   "customization": {
     "skinColor": {
-      "mode": "frame-aware-palette-remap-v3",
+      "mode": "body-frame-palette-remap-v4",
       "freeColor": true,
       "preserveShading": true,
       "scope": "body-skin-only",
@@ -349,7 +349,8 @@
         "pickup-03": [
           "stand-02"
         ]
-      }
+      },
+      "paletteSource": "body-first-frame"
     },
     "hairColor": {
       "mode": "shared-palette-remap-v1",
@@ -377,7 +378,7 @@
     "hairColor": "hair-color/catalog.json",
     "wardrobe": "wardrobe/catalog.json"
   },
-  "artRevision": "school-accessories-13-global-progressive-shop",
+  "artRevision": "school-accessories-14-skin-all-frames-mobile-ui",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
