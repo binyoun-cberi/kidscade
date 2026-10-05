@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-21';
+const PREVIEW_VERSION='pixel-v3-school-starter-22';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -19,6 +19,7 @@ const PARTS={
   mask:{label:'얼굴 장식',name:'착용 안 함',assetKey:'mask'},
   hat:{label:'모자',name:'착용 안 함',assetKey:'hat'},
   mouth:{label:'입',name:'ㅡ 입',assetKey:'mouth'},
+  back:{label:'등 장식',name:'착용 안 함',assetKey:'back'},
   earring:{label:'귀걸이',name:'구리 링 귀걸이',assetKey:'earring'},
   upper:{label:'상의',name:'학교 교복 상의',assetKey:'upper'},
   lower:{label:'하의',name:'학교 교복 하의',assetKey:'lower'},
@@ -132,7 +133,7 @@ function shopSelectedId(category){
 function migrateAvatarEconomy(){
   normalizeShopState();
   if(state.economyVersion>=1)return false;
-  for(const category of ['hair','hairColor','eyes','mask','hat','mouth','earring','upper','lower','shoes','weapon','shield']){
+  for(const category of ['hair','hairColor','eyes','mask','hat','mouth','back','earring','upper','lower','shoes','weapon','shield']){
     const id=shopSelectedId(category),defaultId=shopDefaultId(category);
     if(id&&defaultId&&id!==defaultId)state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
   }
@@ -1108,6 +1109,7 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
 
   if(wardrobe){wardrobe.draw(baseCtx,frameId,'mask',wardrobeIds);wardrobe.draw(baseCtx,frameId,'hat',wardrobeIds)}
   target.save();target.setTransform(1,0,0,1,0,0);target.clearRect(0,0,SIZE,SIZE);target.imageSmoothingEnabled=false;
+  if(wardrobe)wardrobe.draw(target,frameId,'back',wardrobeIds);
   drawEquipmentPass(target,frameId,'weapon',toolId,'back');
   drawEquipmentPass(target,frameId,'shield',aidId,'back');
   target.drawImage(base,0,0);
@@ -1295,7 +1297,7 @@ function drawWardrobeThumbnail(el,key,id){
   const overrides={[key]:id};if(key==='mouth')overrides.mask='no-mask';
   drawFrame(full.getContext('2d'),0,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,overrides);
   const ctx=el.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,SIZE,SIZE);
-  const crops={mask:[41,41,44,30],hat:[31,2,66,57],mouth:[52,53,23,17]};ctx.drawImage(full,...crops[key],0,0,SIZE,SIZE);
+  const crops={mask:[41,41,44,30],hat:[31,2,66,57],mouth:[52,53,23,17],back:[20,28,88,92]};ctx.drawImage(full,...(crops[key]||[20,18,88,100]),0,0,SIZE,SIZE);
 }
 async function renderWardrobeOptions(){
   const key=currentTab,group=wardrobe.category(key),selected=wardrobe.normalize(state.assetIds)[key];
@@ -1492,7 +1494,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-21',
+  version:'pixel-v3-school-starter-22',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,

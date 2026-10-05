@@ -24,7 +24,8 @@
     "weaponFront": "school-ruler-01",
     "weaponBack": "school-ruler-01",
     "shieldFront": "school-textbook-01",
-    "shieldBack": "school-textbook-01"
+    "shieldBack": "school-textbook-01",
+    "back": "no-back"
   },
   "json": "school-starter.json",
   "spriteSheet": "school-starter-sheet.png",
@@ -378,7 +379,7 @@
     "hairColor": "hair-color/catalog.json",
     "wardrobe": "wardrobe/catalog.json"
   },
-  "artRevision": "school-accessories-15-male-hair-pack",
+  "artRevision": "school-accessories-16-back-accessories",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
