@@ -46,13 +46,13 @@
     return ownedIds(raw, category).includes(assetId);
   }
 
-  function paidCount(raw, category, defaultId = '') {
-    const def = cleanId(defaultId);
-    return ownedIds(raw, category).filter(id => id && id !== def).length;
+  function paidCount(raw) {
+    const normalized = normalizeOwned(raw);
+    return Object.values(normalized).reduce((sum, ids) => sum + ids.length, 0);
   }
 
-  function nextPrice(raw, category, defaultId = '') {
-    return priceForPurchaseCount(paidCount(raw, category, defaultId));
+  function nextPrice(raw) {
+    return priceForPurchaseCount(paidCount(raw));
   }
 
   function quote(raw, category, id, defaultId = '') {
@@ -66,7 +66,7 @@
       defaultId: def,
       free,
       owned,
-      price: owned ? 0 : nextPrice(raw, category, def)
+      price: owned ? 0 : nextPrice(raw)
     });
   }
 
