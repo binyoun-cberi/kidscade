@@ -312,7 +312,7 @@ test('Seed Town gives named residents diverse role-matched 3D NPC assets',()=>{
   }
   assert.match(school,/clerk:\{name:'서준',kind:'student'/);
   assert.match(city,/residentVisual\(id\)/);
-  assert.match(city,/Number\(visual\.height\)\|\|1\.82/);
+  assert.match(city,/normalizeCharacterModel\(model,visual\.height\)/);
 });
 
 test('Seed Town reuses tracked city market transport and service assets',()=>{
@@ -820,14 +820,15 @@ test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D s
 });
 
 
-test('resident GLBs retain full animations and use the proven people normalization pipeline',()=>{
+test('resident GLBs retain full animations and use height-based double grounding normalization',()=>{
   assert.match(runtime,/const gltfCache=new Map\(\)/);
   assert.match(runtime,/function loadGLTF\(url\)/);
   assert.match(city,/cloneSkeleton\(gltf\.scene\)/);
-  assert.match(city,/const baseSize=Math\.max\(size\.x,size\.y,size\.z\)\|\|1/);
+  assert.match(city,/const baseHeight=Math\.max\(\.001,size\.y/);
   assert.match(city,/model\.position\.x-=center\.x/);
   assert.match(city,/model\.position\.z-=center\.z/);
   assert.match(city,/model\.position\.y-=b\.min\.y/);
+  assert.match(city,/if\(Number\.isFinite\(b\.min\.y\).*model\.position\.y-=b\.min\.y/s);
   assert.match(city,/new THREE\.AnimationMixer\(model\)/);
   assert.match(city,/\/idle\|stand\/i/);
   assert.match(city,/\/walk\|run\/i/);
@@ -848,11 +849,11 @@ test('roads are four-metre gutters between parcels, not paths drawn through parc
   assert.match(runtime,/function addNatureCollider\(x,z,w,d\)/);
 });
 
-test('resident walk animation strips root motion so visual bodies cannot detach from labels',()=>{
-  assert.match(city,/const walkSource=/);
-  assert.match(city,/walkSource\?walkSource\.clone\(\):null/);
-  assert.match(city,/walkClip\.tracks=walkClip\.tracks\.filter/);
-  assert.match(city,/\^root\\\.position\$/);
+test('resident idle and walk animations strip root and Bone motion so bodies cannot detach or sink',()=>{
+  assert.match(city,/function inPlaceCharacterClip\(source\)/);
+  assert.ok(city.includes("(?:root|bone)\\.position"),'root and Bone translation must both be removed');
+  assert.match(city,/const idleClip=inPlaceCharacterClip/);
+  assert.match(city,/const walkClip=inPlaceCharacterClip/);
   assert.match(city,/n\.frustumCulled=false/);
 });
 
