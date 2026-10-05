@@ -377,7 +377,7 @@
     "hairColor": "hair-color/catalog.json",
     "wardrobe": "wardrobe/catalog.json"
   },
-  "artRevision": "school-accessories-12-shared-hair-colors",
+  "artRevision": "school-accessories-13-global-progressive-shop",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
@@ -392,5 +392,23 @@
     ],
     "derivedFrames": 16,
     "purpose": "Prevent baked default hair pixels from leaking around custom hair."
+  },
+  "economy": {
+    "version": 1,
+    "currency": "seeds",
+    "pricing": "global-purchase-sequence",
+    "steps": [
+      100,
+      200,
+      300,
+      500,
+      800,
+      1300
+    ],
+    "cap": 1300,
+    "defaultAssetsFree": true,
+    "skinColorFree": true,
+    "raritySystem": false,
+    "ownership": "persistent"
   }
 }
