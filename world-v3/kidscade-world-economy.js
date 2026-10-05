@@ -479,7 +479,7 @@ export function createTownEconomy(ctx){
   }
 
   function schoolSchedule(){
-    const mins=((prog().survival.time%1440)+1440)%1440,hour=mins/60;
+    const mins=((prog().survival.time%1440)+1440)%1440,total=Math.floor(mins),hour=mins/60;
     let phase='방과후';
     if(hour<7.3)phase='등교 전';
     else if(hour<8)phase='등교 시간';
@@ -489,7 +489,7 @@ export function createTownEconomy(ctx){
     else if(hour<15.5)phase='오후 수업·동아리';
     else if(hour<16)phase='하교 시간';
     const inClass=hour>=8&&hour<15.5;
-    openPanel('<h2>🏫 씨앗학교 · 오늘 시간표</h2><p>현재 <b>'+String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')+'</b> · <b>'+phase+'</b></p>'+
+    openPanel('<h2>🏫 씨앗학교 · 오늘 시간표</h2><p>현재 <b>'+String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0')+'</b> · <b>'+phase+'</b></p>'+
       '<div class="grid">'+
       '<div class="item"><b>08:00~10:00 오전 수업</b><div>국어·수학·사회처럼 교실에서 배우는 시간</div></div>'+
       '<div class="item"><b>10:00~12:00 생활 활동</b><div>실과·관찰·모둠 활동</div></div>'+
