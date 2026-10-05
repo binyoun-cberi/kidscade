@@ -362,7 +362,7 @@
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json"
   },
-  "artRevision": "school-accessories-9-neat-short-widened",
+  "artRevision": "school-accessories-10-neat-short-rounder",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
