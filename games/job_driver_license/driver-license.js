@@ -420,7 +420,13 @@ function selectOptions(){
   ui.retryBtn.addEventListener('click',()=>{ui.result.classList.remove('show');ui.start.classList.add('show');gameState='menu'});
 }
 
-function registerFallback(obj){if(obj)fallbackVisuals.push(obj);return obj}
+function registerFallback(obj,key=''){
+  if(obj){
+    obj.userData.fallbackFor=key;
+    fallbackVisuals.push(obj);
+  }
+  return obj;
+}
 function clearVisualWorld(){
   if(visualWorld){scene.remove(visualWorld);visualWorld.traverse(o=>{if(o.geometry)o.geometry.dispose?.()});}
   visualWorld=new THREE.Group();visualWorld.name='driverLicenseVisualWorld';scene.add(visualWorld);
@@ -466,7 +472,11 @@ function cloneVisual(key,target=1){
 }
 function placeVisual(key,target,x,z,rot=0,y=.04,parent=visualWorld){
   const obj=cloneVisual(key,target);if(!obj)return null;
-  obj.position.set(x,y,z);obj.rotation.y=rot;parent?.add(obj);return obj;
+  obj.position.set(x,y,z);obj.rotation.y=rot;
+  if(key==='fence'){
+    obj.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=false}});
+  }
+  parent?.add(obj);return obj;
 }
 function makeSidewalk(w,d,x,z){
   const mat=new THREE.MeshStandardMaterial({color:0xcfc8af,roughness:.94});
@@ -507,19 +517,19 @@ function makeGroundLabel(text,x,z,w=5.6,h=1.7,rotation=0,bg='rgba(26,45,54,.78)'
   const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
   m.rotation.x=-Math.PI/2;m.rotation.z=rotation;m.position.set(x,.205,z);scene.add(m);return m;
 }
-function createFallbackTree(x,z){
+function createFallbackTree(x,z,key='tree'){
   const g=new THREE.Group();
   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,1.7,8),new THREE.MeshStandardMaterial({color:0x76533b,roughness:1}));
   trunk.position.y=.85;const crown=new THREE.Mesh(new THREE.DodecahedronGeometry(1.12,0),new THREE.MeshStandardMaterial({color:0x4d8b55,roughness:1}));crown.position.y=2.15;
-  g.add(trunk,crown);g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return registerFallback(g);
+  g.add(trunk,crown);g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return registerFallback(g,key);
 }
-function createFallbackBuilding(x,z,color,w=10,d=9,h=5.5){
+function createFallbackBuilding(x,z,color,w=10,d=9,h=5.5,key='campusA'){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.8}));
   body.position.y=h/2;g.add(body);
   const roof=new THREE.Mesh(new THREE.BoxGeometry(w*1.03,.35,d*1.03),new THREE.MeshStandardMaterial({color:0x48555b,roughness:.88}));roof.position.y=h+.18;g.add(roof);
   const glass=new THREE.MeshStandardMaterial({color:0x8fc5d7,roughness:.28,metalness:.05,emissive:0x16313c,emissiveIntensity:.12});
   for(let i=-1;i<=1;i++){const win=new THREE.Mesh(new THREE.BoxGeometry(1.2,.7,.03),glass);win.position.set(i*2.1,h*.58,d/2+.02);g.add(win)}
-  g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return registerFallback(g);
+  g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return registerFallback(g,key);
 }
 function buildHood(){
   hoodGroup=new THREE.Group();hoodGroup.name='driverHood';
@@ -541,7 +551,12 @@ async function loadDecorAssets(){
 }
 function rebuildVisualEnvironment(){
   clearVisualWorld();
-  for(const o of fallbackVisuals)o.visible=false;
+  // GLB별 로딩 성공 여부를 보고 해당 fallback만 숨깁니다.
+  // 일부 모델 하나가 실패해도 콘/건물/나무가 투명 장애물이 되지 않습니다.
+  for(const o of fallbackVisuals){
+    const key=o.userData?.fallbackFor;
+    o.visible=!key||!visualModels.has(key);
+  }
 
   // 시험장 중심부는 Kenney 계열 건물·차량으로 통일하고 자연물은 외곽에만 둡니다.
   for(let i=0;i<CAMPUS_TREES.length;i++){
@@ -677,11 +692,12 @@ function buildCourse(){
   makeGroundLabel('20 km/h',70,20,6.2,1.35,Math.PI/2,'rgba(44,78,92,.82)');
   makeGroundLabel('돌발',96,20,4.7,1.35,Math.PI/2,'rgba(151,65,39,.84)');
   makeGroundLabel('종료장 ↑',106,20,5.4,1.35,Math.PI/2,'rgba(48,98,65,.84)');
+  line(9,.42,110,65,0xffffff,.20);
   makeGroundLabel('종료',110,69,4.5,1.35,0,'rgba(48,98,65,.84)');
 
   const makeConeFallback=(id,x,z)=>{
     const mesh=new THREE.Mesh(new THREE.ConeGeometry(.28,.58,12),new THREE.MeshStandardMaterial({color:0xf47b20,roughness:.9}));
-    mesh.position.set(x,.29,z);mesh.castShadow=true;scene.add(mesh);registerFallback(mesh);
+    mesh.position.set(x,.29,z);mesh.castShadow=true;scene.add(mesh);registerFallback(mesh,'cone');
     addCircleObstacle(id,x,z,.34,{kind:'cone',mesh});return mesh;
   };
   for(let z=64;z<=80;z+=4){makeConeFallback('coneL'+z,-5.2,z);makeConeFallback('coneR'+z,5.2,z)}
@@ -691,8 +707,8 @@ function buildCourse(){
   addSign('경사로',-6.8,55);addSign('T자 주차',42,44);
   addSign('가속구간',70,26);addSign('급정지',95,26);addSign('종료장',117,55);
 
-  const pole=makeBox(.16,4,.16,0x303a3f,4.6,2,25.6);registerFallback(pole);addCircleObstacle('signalPole',4.6,25.6,.3);
-  const housing=makeBox(.76,1.65,.48,0x1c2428,4.6,3.5,25.6);registerFallback(housing);
+  const pole=makeBox(.16,4,.16,0x303a3f,4.6,2,25.6);registerFallback(pole,'trafficLight');addCircleObstacle('signalPole',4.6,25.6,.3);
+  const housing=makeBox(.76,1.65,.48,0x1c2428,4.6,3.5,25.6);registerFallback(housing,'trafficLight');
   signalRedMat=new THREE.MeshStandardMaterial({color:0x501818,emissive:0x240000});
   signalGreenMat=new THREE.MeshStandardMaterial({color:0x17431f,emissive:0x001e08});
   const red=new THREE.Mesh(new THREE.SphereGeometry(.19,16,12),signalRedMat);red.position.set(4.6,3.82,25.31);scene.add(red);
@@ -703,13 +719,14 @@ function buildCourse(){
 
   let treeN=0;
   for(const [x,z] of CAMPUS_TREES){
-    createFallbackTree(x,z);addCircleObstacle('tree'+(++treeN),x,z,.7);
+    const treeKey=treeN%3===0?'tree':treeN%3===1?'oak':'pine';
+    createFallbackTree(x,z,treeKey);addCircleObstacle('tree'+(++treeN),x,z,.7);
   }
 
   let buildingN=0;
   for(const b of CAMPUS_BUILDINGS){
     const color=buildingN===0?0x7c9baa:buildingN===1?0x879b82:0x8c879b;
-    createFallbackBuilding(b.x,b.z,color,10.5,8.5,5.6);
+    createFallbackBuilding(b.x,b.z,color,10.5,8.5,5.6,b.key);
     addBoxObstacle('campusBuilding'+(++buildingN),b.x,b.z,11,9);
   }
   let carN=0;
@@ -1057,9 +1074,9 @@ function examStep(dt,inp){
       const evaluated=examiner.emergencyStopTime!==null&&hazardElapsed>EXAM_RULES.emergencyHazardLimit+.15;
       if(evaluated){
         if(sectionResults.emergency==='pending')sectionResults.emergency='ok';
-        stage='FINISH';examinerStage('종료','비상등을 끄고 앞쪽 반환 차로에서 좌측 방향지시등을 켠 뒤 종료장으로 이동하십시오.');
+        stage='FINISH';examinerStage('종료','비상등을 끄고 앞쪽 반환 차로에서 우측 방향지시등을 켠 뒤 종료장으로 이동하십시오.');
         showToast(sectionResults.emergency==='ok'?'돌발 과제 완료':'돌발 과제 감점');
-        setInstruction(mode==='exam'?'종료장으로 이동하십시오.':'비상등을 끄고 반환 차로로 좌회전해 종료장으로 이동하세요.','좌측 방향지시등 → 반환 차로 진입 → 종료선 정차');
+        setInstruction(mode==='exam'?'종료장으로 이동하십시오.':'비상등을 끄고 반환 차로로 우회전해 종료장으로 이동하세요.','우측 방향지시등 → 반환 차로 진입 → 흰 종료선 뒤 정차');
       }
       if(car.x>=103&&!car._emergencyPenalized){
         car._emergencyPenalized=true;sectionResults.emergency='miss';addDeduction('급정지선 초과',10);
@@ -1073,10 +1090,10 @@ function examStep(dt,inp){
     }
     if(car.x>106&&car.z<27&&!examiner.finishSignalChecked){
       examiner.finishSignalChecked=true;
-      if(car.signal!==-1)addDeduction('종료장 좌측 방향지시등 미사용',5);
+      if(car.signal!==1)addDeduction('종료장 우측 방향지시등 미사용',5);
     }
-    const inFinishLane=Math.abs(car.x-110)<4.7&&car.z>64;
-    if(inFinishLane&&kmh<.8){
+    const inFinishZone=Math.abs(car.x-110)<3.8&&car.z>65&&car.z<72;
+    if(inFinishZone&&kmh<.8){
       stage='SECURE';examinerStage('종료조작','차량을 안전한 종료 상태로 만드십시오.');setInstruction(mode==='exam'?'종료 조작을 실시하십시오.':'시험을 마무리하세요.',license==='auto'?'P 기어 · 주차브레이크 · 시동 OFF':'중립 N · 주차브레이크 · 시동 OFF');
       showToast('종료장 도착 · 차량을 안전하게 종료하세요.');
     }
