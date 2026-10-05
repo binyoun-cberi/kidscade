@@ -2865,6 +2865,7 @@ function generateWorldChunk(cx,cz){
           growTree(x,h+1,z,false,kind==='pine'||kind==='snow'?'pine':'forest');
         }
       }
+    generateMiniPoiChunk(cx,cz);
     generateLandmarkPoiChunk(cx,cz);
     // Save files store only changes. Reapply those changes after natural terrain and POIs.
     if(worldEdits?.size)for(const [key,change] of worldEdits){
@@ -2872,12 +2873,6 @@ function generateWorldChunk(cx,cz){
       if(worldChunkKey(x,z)===chunk)setRawBlock(x,y,z,change);
     }
   }finally{worldChunkGenerationDepth--}
-}
-function addCollectible(id,x,y,z,color,label){
-  const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),
-    new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
-  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;
-  scene.add(m);collectibles.push(m);
 }
 function buildFreeWorld(){
   worldData=new Map();worldMeshMap=new Map();worldEdits=new Map();
@@ -2893,6 +2888,12 @@ function buildFreeWorld(){
   for(const [x,z] of [[6,3],[-6,4],[5,-6]]){
     const y=terrainHeight(x,z);
     if(y>=0&&!getBlock(x,y+1,z))growTree(x,y+1,z,false,'forest');
+  }
+  // Small discovery sites keep the long walks between landmarks interesting.
+  for(const spec of buildMiniPoiCatalog()){
+    addCollectible('mini:'+spec.id,spec.x,spec.y+2.15,spec.z,spec.color,spec.label,{
+      miniPoi:true,reward:spec.reward,biome:spec.biome
+    });
   }
   const ruinY=Math.max(terrainHeight(10,10),terrainHeight(8,8))+1;
   [[8,0,8,'stone'],[8,1,8,'brick'],[8,2,8,'brick'],[12,0,8,'stone'],
