@@ -3,6 +3,24 @@ const root=path.join(__dirname,'..'),dir=path.join(root,'assets/game/characters/
 const read=p=>JSON.parse(fs.readFileSync(path.join(dir,p),'utf8')),manifest=read('manifest.json'),catalog=read('wardrobe/catalog.json');
 const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'app/features/avatar/wardrobe-parts.js'),'utf8'),context);const api=context.window.KidscadeAvatarWardrobe;
 const tops=['hoodie-01','short-puffer-01','long-puffer-01','box-tee-01','leather-jacket-01','denim-jacket-01','suit-jacket-01','baseball-jacket-01'],bottoms=['tennis-skirt-01','detailed-jeans-01','cotton-trousers-01'];
+test('tailored tops have real sleeves, independent role details and complete upper-only frames',()=>{
+ const cat=read('upper/catalog.json'),parts=cat.items.filter(i=>i.file).map(i=>read('upper/'+i.file)).filter(p=>p.designRevision==='tailored-sleeves-2');
+ assert.equal(parts.length,22);
+ const signatures=new Set();
+ for(const part of parts){
+  api.validate(part,'upper',part.id,manifest.frameOrder);
+  const px=part.frames['stand-01'].layers.upper.operations[0].pixels;
+  signatures.add(JSON.stringify(px));
+  if(!['box-tee-01','soccer-uniform-01','baseball-uniform-01','basketball-uniform-01','explorer-vest-01'].includes(part.id)){
+   assert.ok(px.some(p=>p[0]<=52&&p[1]>=84&&p[1]<=88),part.id+' left sleeve');
+   assert.ok(px.some(p=>p[0]>=80&&p[1]>=84&&p[1]<=88),part.id+' right sleeve');
+  }
+  for(const frame of Object.values(part.frames)){assert.deepEqual(Object.keys(frame.layers),['upper']);const p=frame.layers.upper.operations[0].pixels;assert.equal(new Set(p.map(v=>v[0]+','+v[1])).size,p.length)}
+ }
+ assert.equal(signatures.size,22);
+ const scientist=parts.find(p=>p.id==='scientist-coat-01').frames['stand-01'].layers.upper.operations[0].pixels;
+ assert.ok(scientist.some(p=>p[1]>100));assert.ok(scientist.filter(p=>p[2]>225&&p[3]>225&&p[4]>220).length>200);
+});
 test('back accessory catalog registers default plus ten distinct 23-frame items',()=>{
  const group=catalog.categories.back;assert.ok(group);assert.equal(group.label,'등 장식');assert.equal(group.defaultId,'no-back');assert.equal(group.layer,'back');assert.equal(group.items.length,11);
  const labels=group.items.map(item=>item.label);for(const label of ['책가방','토끼가방','공룡가방','곰돌이가방','미니백팩','기타 케이스','천사날개','악마날개','로켓부스터','망토'])assert.ok(labels.includes(label),label);
