@@ -7,13 +7,14 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-15';
+const PREVIEW_VERSION='pixel-v3-school-starter-16';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
 const PARTS={
   skin:{label:'피부',name:'피부색',assetKey:null},
   hair:{label:'헤어',name:'더벅머리',assetKey:'hair'},
+  hairColor:{label:'염색',name:'브라운',assetKey:null},
   eyes:{label:'눈',name:'기본 눈',assetKey:'eyes'},
   mouth:{label:'입',name:'ㅡ 입',assetKey:'mouth'},
   earring:{label:'귀걸이',name:'구리 링 귀걸이',assetKey:'earring'},
@@ -50,6 +51,7 @@ const eyeFrameCache=new Map();
 const eyeMaskCache=new Map();
 const eyeMaskCoordCache=new Map();
 let hairCatalog=null;
+let hairColorCatalog=null;
 const hairParts=new Map();
 const hairSourceCache=new Map();
 const hairFrameCache=new Map();
@@ -70,7 +72,7 @@ let skinPalette=[];
 const frameSkinPalettes=new Map();
 const skinRemapCache=new Map();
 let skinBaseHex='#fce2d2';
-let state={version:3,setId:'school-starter-01',skinColor:null};
+let state={version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown'};
 
 function safeJson(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
 function normalizeHexColor(value){
@@ -480,6 +482,58 @@ function applyEyePart(target,frameId,eyeId=selectedEyeId()){
   for(const [x,y] of eyeMaskCoords(frameId)){const i=(y*SIZE+x)*4;image.data[i]=skin[0];image.data[i+1]=skin[1];image.data[i+2]=skin[2];image.data[i+3]=255}
   target.putImageData(image,0,0);target.drawImage(layer,0,0);
 }
+const LEGACY_DYED_HAIR={
+  'neat-short-hair-cherry-pink-01':['neat-short-hair-01','cherry-pink'],
+  'neat-short-hair-peach-pink-01':['neat-short-hair-01','peach-pink'],
+  'neat-short-hair-mint-01':['neat-short-hair-01','mint'],
+  'neat-short-hair-sky-blue-01':['neat-short-hair-01','sky-blue'],
+  'neat-short-hair-lavender-01':['neat-short-hair-01','lavender'],
+  'neat-short-hair-blue-purple-01':['neat-short-hair-01','blue-purple'],
+  'neat-short-hair-rose-gold-01':['neat-short-hair-01','rose-gold'],
+  'neat-short-hair-white-blonde-01':['neat-short-hair-01','white-blonde'],
+  'school-ponytail-hair-cherry-pink-01':['school-ponytail-hair-02','cherry-pink'],
+  'school-ponytail-hair-peach-pink-01':['school-ponytail-hair-02','peach-pink'],
+  'school-ponytail-hair-mint-01':['school-ponytail-hair-02','mint'],
+  'school-ponytail-hair-sky-blue-01':['school-ponytail-hair-02','sky-blue'],
+  'school-ponytail-hair-lavender-01':['school-ponytail-hair-02','lavender'],
+  'school-ponytail-hair-blue-purple-01':['school-ponytail-hair-02','blue-purple'],
+  'school-ponytail-hair-rose-gold-01':['school-ponytail-hair-02','rose-gold'],
+  'school-ponytail-hair-white-blonde-01':['school-ponytail-hair-02','white-blonde']
+};
+async function loadHairColorCatalog(){
+  const rel=manifest?.partCatalogs?.hairColor||'hair-color/catalog.json';
+  const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});
+  if(!res.ok)throw new Error('염색 색상 카탈로그를 불러오지 못했습니다.');
+  const data=await res.json();
+  if(data?.type!=='kidscade-avatar-hair-color-catalog'||!Array.isArray(data.items))throw new Error('염색 색상 카탈로그 형식이 올바르지 않습니다.');
+  hairColorCatalog=data;
+  if(!data.items.some(item=>item.id===state.hairColorId))state.hairColorId=data.defaultId||'brown';
+  return data;
+}
+function migrateLegacyHairSelection(){
+  const current=state.assetIds?.hair,mapped=LEGACY_DYED_HAIR[current];
+  if(!mapped)return false;
+  state.assetIds={...(state.assetIds||{}),hair:mapped[0]};
+  state.hairColorId=mapped[1];
+  return true;
+}
+function selectedHairColorId(){
+  const requested=state.hairColorId||hairColorCatalog?.defaultId||'brown';
+  return hairColorCatalog?.items?.some(item=>item.id===requested)?requested:(hairColorCatalog?.defaultId||'brown');
+}
+function hairColorDefinition(id=selectedHairColorId()){
+  return hairColorCatalog?.items?.find(item=>item.id===id)||hairColorCatalog?.items?.find(item=>item.id===hairColorCatalog?.defaultId)||null;
+}
+function recolorHairPixels(pixels,colorId=selectedHairColorId()){
+  const catalog=hairColorCatalog,def=hairColorDefinition(colorId);
+  if(!catalog||!def)return pixels;
+  const source=catalog.sourcePalette||{},mapping=new Map();
+  for(const role of ['deepShade','shade','base','light']){
+    const from=source[role],to=def[role];
+    if(Array.isArray(from)&&Array.isArray(to))mapping.set(from.join(','),to);
+  }
+  return (pixels||[]).map(pixel=>{const next=mapping.get(pixel.slice(2).join(','));return next?[pixel[0],pixel[1],...next]:pixel});
+}
 async function loadHairCatalog(){
   const rel=manifest?.partCatalogs?.hair||'hair/catalog.json';
   const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});
@@ -487,6 +541,7 @@ async function loadHairCatalog(){
   const data=await res.json();
   if(data?.type!=='kidscade-avatar-hair-catalog'||!Array.isArray(data.items))throw new Error('헤어 파츠 카탈로그 형식이 올바르지 않습니다.');
   hairCatalog=data;hairProtectedKeys=new Set((data.protectedColors||[]).map(color=>color.join(',')));
+  migrateLegacyHairSelection();
   const merged={...(manifest?.assetIds||{}),...(state.assetIds||{})};
   const requested=merged.hair||data.defaultId||manifest?.assetIds?.hair||'basic-tousled-hair-01';
   merged.hair=data.items.some(item=>item.id===requested)?requested:(data.defaultId||'basic-tousled-hair-01');
@@ -522,10 +577,11 @@ function transformHairCanvas(source,frameId){
   const scaleX=Number.isFinite(Number(spec.scaleX))?Number(spec.scaleX):1,scaleY=Number.isFinite(Number(spec.scaleY))?Number(spec.scaleY):1;
   c.save();c.translate(pivot[0]+dx,pivot[1]+dy);c.rotate(angle);c.scale(scaleX,scaleY);c.translate(-pivot[0],-pivot[1]);c.drawImage(source,0,0);c.restore();return out;
 }
-function hairLayerCanvas(id,frameId){
-  const cacheKey=id+':'+frameId;if(hairFrameCache.has(cacheKey))return hairFrameCache.get(cacheKey);
+function hairLayerCanvas(id,frameId,colorId=selectedHairColorId()){
+  const cacheKey=id+':'+colorId+':'+frameId;if(hairFrameCache.has(cacheKey))return hairFrameCache.get(cacheKey);
   const part=hairParts.get(id);if(!part)return null;
-  let source=hairSourceCache.get(id);if(!source){source=pixelsCanvas(part.pixels);hairSourceCache.set(id,source)}
+  const sourceKey=id+':'+colorId;
+  let source=hairSourceCache.get(sourceKey);if(!source){source=pixelsCanvas(recolorHairPixels(part.pixels,colorId));hairSourceCache.set(sourceKey,source)}
   const out=transformHairCanvas(source,frameId);hairFrameCache.set(cacheKey,out);return out;
 }
 function hairMaskCoords(kind,frameId){
@@ -849,16 +905,16 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId()){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId()){
   if(!sheet)return;
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
   const base=document.createElement('canvas');base.width=SIZE;base.height=SIZE;
   const baseCtx=base.getContext('2d',{alpha:true});baseCtx.imageSmoothingEnabled=false;
   const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
+  const coloredHair=hairColorCatalog&&hairColorId&&hairColorId!==hairColorCatalog.defaultId;
   const cleanBody=bodyFrameCanvas(frameId);
 
   if(cleanBody){
-    // BODY-first composition: no baked default hair exists in this path.
     baseCtx.drawImage(cleanBody,0,0);
     recolorSkin(baseCtx,frameId);
     drawPixelTuples(baseCtx,packLayerPixels(frameId,'eyes'));
@@ -869,20 +925,20 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
     applyUpperPart(baseCtx,frameId,upperId);
     applyLowerPart(baseCtx,frameId,lowerId);
     applyEyePart(baseCtx,frameId,eyeId);
-    if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId));
-    else drawPixelTuples(baseCtx,packLayerPixels(frameId,'hair'));
+    if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId,hairColorId));
+    else drawPixelTuples(baseCtx,recolorHairPixels(packLayerPixels(frameId,'hair'),hairColorId));
     applyShoeSelection(baseCtx,frameId,shoesId);
     drawPixelTuples(baseCtx,packLayerPixels(frameId,'earring'));
     applyEarringSelection(baseCtx,frameId,earringId);
   }else{
-    // Safe fallback for a BODY-source load failure.
     baseCtx.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
     recolorSkin(baseCtx,frameId);
     applyUpperPart(baseCtx,frameId,upperId);
     applyLowerPart(baseCtx,frameId,lowerId);
-    if(customHair)clearBaseHair(baseCtx,frameId);
+    if(customHair||coloredHair)clearBaseHair(baseCtx,frameId);
     applyEyePart(baseCtx,frameId,eyeId);
-    if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId));
+    if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId,hairColorId));
+    else if(coloredHair)drawPixelTuples(baseCtx,recolorHairPixels(packLayerPixels(frameId,'hair'),hairColorId));
     applyShoeSelection(baseCtx,frameId,shoesId);
     applyEarringSelection(baseCtx,frameId,earringId);
     stripDefaultEquipment(baseCtx,frameId);
@@ -1004,6 +1060,20 @@ function renderHairOptions(){
   optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-hair-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-hair-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-hair-thumb]').forEach(el=>{if(el.dataset.hairThumb===hairCatalog.defaultId)drawHairThumbnail(el,el.dataset.hairThumb)});hydrateHairThumbnails();
 }
+function drawHairColorThumbnail(canvasElement,colorId){
+  if(!canvasElement)return;
+  const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
+  const c=full.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
+  drawFrame(c,0,eyeCatalog?.defaultId||selectedEyeId(),selectedHairId(),upperCatalog?.defaultId||selectedUpperId(),lowerCatalog?.defaultId||selectedLowerId(),selectedEarringId(),selectedShoeId(),selectedToolId(),selectedTeachingAidId(),colorId);
+  const thumb=canvasElement.getContext('2d',{alpha:true});thumb.imageSmoothingEnabled=false;thumb.clearRect(0,0,SIZE,SIZE);thumb.drawImage(full,32,10,72,72,0,0,SIZE,SIZE);
+}
+function renderHairColorOptions(){
+  const items=hairColorCatalog?.items||[],selected=selectedHairColorId();
+  pickerTitle.textContent='염색';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-hair-color-id="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-hair-color-thumb="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'<small>'+item.id+'</small></span></button>'}).join('');
+  optionGrid.querySelectorAll('canvas[data-hair-color-thumb]').forEach(el=>drawHairColorThumbnail(el,el.dataset.hairColorThumb));
+}
+
 function drawUpperThumbnail(canvasElement,id){
   if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
   const fullCtx=full.getContext('2d',{alpha:true});fullCtx.imageSmoothingEnabled=false;drawFrame(fullCtx,0,eyeCatalog?.defaultId||selectedEyeId(),hairCatalog?.defaultId||selectedHairId(),id);
@@ -1053,6 +1123,7 @@ function renderTeachingAidOptions(){renderAccessoryOptions('shield',teachingAidC
 function renderOptions(){
   if(currentTab==='skin'){renderSkinOptions();return}
   if(currentTab==='hair'){renderHairOptions();return}
+  if(currentTab==='hairColor'){renderHairColorOptions();return}
   if(currentTab==='eyes'){renderEyeOptions();return}
   if(currentTab==='upper'){renderUpperOptions();return}
   if(currentTab==='lower'){renderLowerOptions();return}
@@ -1110,6 +1181,12 @@ async function setHairAsset(id){
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),hair:id};refreshSkinPreview();renderOptions();publish(false);
   const item=hairCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'헤어')+' 적용했어요!');return true;
 }
+function setHairColorAsset(id){
+  if(!hairColorCatalog?.items?.some(item=>item.id===id))return false;
+  state.hairColorId=id;refreshSkinPreview();renderOptions();publish(false);
+  const item=hairColorCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'염색')+' 색으로 바꿨어요!');return true;
+}
+
 async function setEyeAsset(id){
   if(!eyeCatalog?.items?.some(item=>item.id===id))return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),eyes:id};refreshSkinPreview();renderOptions();publish(false);
@@ -1124,7 +1201,7 @@ function setSkinColor(value,{rerender=false,announce=false}={}){
 }
 function publish(showToast=false){
   try{
-    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},skinColor:normalizeHexColor(state.skinColor)};
+    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},skinColor:normalizeHexColor(state.skinColor),hairColorId:selectedHairColorId()};
     state=payload;
     localStorage.setItem(STATE_KEY,JSON.stringify(payload));
     const data=previewData();
@@ -1137,7 +1214,7 @@ function publish(showToast=false){
   }catch(_){}
 }
 function resetToDefault(){
-  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null};
+  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown'};
   state.assetIds={...(manifest?.assetIds||{})};
   drawStatic();
   setPreviewMode('stand');
@@ -1158,6 +1235,8 @@ optionGrid?.addEventListener('click',e=>{
   if(lower){setLowerAsset(lower.dataset.lowerId);return}
   const upper=e.target.closest('[data-upper-id]');
   if(upper){setUpperAsset(upper.dataset.upperId);return}
+  const hairColor=e.target.closest('[data-hair-color-id]');
+  if(hairColor){setHairColorAsset(hairColor.dataset.hairColorId);return}
   const hair=e.target.closest('[data-hair-id]');
   if(hair){setHairAsset(hair.dataset.hairId);return}
   const eye=e.target.closest('[data-eye-id]');
@@ -1180,7 +1259,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-15',
+  version:'pixel-v3-school-starter-16',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -1197,8 +1276,10 @@ window.KidscadeAvatarShop={
   getState:()=>({...state}),
   async setState(next){
     if(!next||typeof next!=='object')return false;
-    state={...state,...next,version:3,setId:manifest?.id||state.setId,skinColor:normalizeHexColor(next.skinColor??state.skinColor)};
+    state={...state,...next,version:3,setId:manifest?.id||state.setId,skinColor:normalizeHexColor(next.skinColor??state.skinColor),hairColorId:next.hairColorId??state.hairColorId};
     state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),...(next.assetIds||{})};
+    migrateLegacyHairSelection();
+    if(hairColorCatalog&&!hairColorCatalog.items.some(item=>item.id===state.hairColorId))state.hairColorId=hairColorCatalog.defaultId;
     if(eyeCatalog&&!eyeCatalog.items.some(item=>item.id===state.assetIds.eyes))state.assetIds.eyes=eyeCatalog.defaultId;
     if(state.assetIds.eyes!==eyeCatalog?.defaultId)await loadEyePart(state.assetIds.eyes);
     if(hairCatalog&&!hairCatalog.items.some(item=>item.id===state.assetIds.hair))state.assetIds.hair=hairCatalog.defaultId;
@@ -1221,6 +1302,7 @@ window.KidscadeAvatarShop={
   await Promise.all([loadManifest(),loadSheet(),loadSchoolPack()]);
   try{await loadBodyFrames()}catch(error){console.warn('BODY-first renderer fallback:',error)}
   await loadEyeCatalog();
+  await loadHairColorCatalog();
   await loadHairCatalog();
   await loadUpperCatalog();
   await loadLowerCatalog();
@@ -1228,7 +1310,7 @@ window.KidscadeAvatarShop={
   loadSkinPalette();
   loadFrameSkinPalettes();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 헤어 27종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 염색 9종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);
