@@ -3389,7 +3389,7 @@ function buildFreePlacementGhost(type,p,valid,facing){
   let dims=[.96,.96,.96],offset=[0,.5,0];
   if(type==='cuboid'){
     const d=currentCuboidSpec.dims;dims=[d[0]*.96,d[1]*.96,d[2]*.96];offset=[(d[0]-1)/2,d[1]/2,(d[2]-1)/2];
-  }else if(type==='door'){dims=[.82,1.92,.18];offset=[0,1,0]}
+  }else if(type==='door'){dims=facing%2===0?[.82,1.92,.18]:[.18,1.92,.82];offset=[0,1,0]}
   else if(type==='slab'){dims=[.96,.48,.96];offset=[0,.25,0]}
   else if(['glassPane','windowFrame'].includes(type)){dims=facing%2===0?[.18,.96,.96]:[.96,.96,.18];offset=[0,.5,0]}
   const geo=new THREE.BoxGeometry(...dims),mat=new THREE.MeshBasicMaterial({
