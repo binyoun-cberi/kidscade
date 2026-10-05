@@ -31,6 +31,21 @@
     } catch (_) { /* 독립 실행 중에도 게임은 유지 */ }
     return null;
   }
+  const reportedAchievements = new Set();
+  function reportAchievement(slot, detail = {}) {
+    if (reportedAchievements.has(slot)) return;
+    reportedAchievements.add(slot);
+    sdk("achievement", "high_twelve_island." + slot);
+    try { window.KidscadeGame?.milestone?.("achievement_" + slot, { uniqueKey:slot, ...detail }); } catch (_) {}
+  }
+  function checkAchievements() {
+    if (!state) return;
+    if ((state.passed?.length || 0) >= 1) reportAchievement("first_rule", { laws:state.passed.length });
+    if (state.stage >= 2) reportAchievement("autonomous_village", { stage:state.stage, population:state.population });
+    if ((state.arrivalLog?.length || 0) >= 5) reportAchievement("newcomers_5", { newcomers:state.arrivalLog.length });
+    if (state.trust >= 90) reportAchievement("trust_90", { trust:state.trust });
+    if (state.tick >= 30 && !(state.rightsHistory?.length) && !(S.rightsConcerns?.(state)?.length)) reportAchievement("rights_safe_30", { weeks:state.tick });
+  }
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE) || "null");
@@ -439,6 +454,7 @@
     sdk("sound", "click");
   }
   function render() {
+    checkAchievements();
     renderStats();
     renderCrisis();
     renderPolicyStatus();
