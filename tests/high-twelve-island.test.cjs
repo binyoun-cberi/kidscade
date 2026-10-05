@@ -18,17 +18,17 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=17/);
-  assert.match(html, /art.js\?v=17/);
-  assert.match(html, /city-core.js\?v=17/);
-  assert.match(html, /city-view.js\?v=17/);
-  assert.match(html, /game.js\?v=17/);
+  assert.match(html, /sim.js\?v=18/);
+  assert.match(html, /art.js\?v=18/);
+  assert.match(html, /city-core.js\?v=18/);
+  assert.match(html, /city-view.js\?v=18/);
+  assert.match(html, /game.js\?v=18/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="city"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=17"));
+  assert.ok(entry.href.endsWith("?v=18"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -925,7 +925,7 @@ test('island-first interface keeps management secondary and adds direct field co
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
   const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=17/);
+  assert.match(html, /rework\.js\?v=18/);
   assert.match(css, /management-dock/);
   assert.match(css, /weather-fx/);
   assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
@@ -943,9 +943,9 @@ test('v10 icon HUD keeps exact values in the management drawer', () => {
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=17/);
-  assert.match(html, /game\.js\?v=17/);
-  assert.match(html, /rework\.js\?v=17/);
+  assert.match(html, /style\.css\?v=18/);
+  assert.match(html, /game\.js\?v=18/);
+  assert.match(html, /rework\.js\?v=18/);
   assert.match(js, /class="stat hud-stat/);
   assert.match(js, /data-open-tab/);
   assert.match(js, /function villageStatusBoard/);
@@ -964,8 +964,8 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=17/);
-  assert.match(html, /rework\.js\?v=17/);
+  assert.match(html, /style\.css\?v=18/);
+  assert.match(html, /rework\.js\?v=18/);
   assert.match(css, /calmer game screen cleanup/);
   assert.match(css, /\.scene-caption,\.ticker\{display:none!important\}/);
   assert.match(css, /\.island-heading\{display:none!important\}/);
@@ -980,7 +980,7 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
 test('v12 event scene observer cannot self-trigger and freeze the browser tab', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=17/);
+  assert.match(html, /rework\.js\?v=18/);
   assert.match(rework, /eventSignature/);
   assert.match(rework, /observe\(modal, \{ attributes: true, attributeFilter: \["class"\] \}\)/);
   assert.doesNotMatch(rework, /observe\(modal, \{ childList: true, subtree: true/);
@@ -1013,7 +1013,7 @@ test('v15 no-build neglect creates real survival pressure while field presence o
 test('v13 villagers visibly work, rest and react to village conditions', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
-  assert.match(html, /art\.js\?v=17/);
+  assert.match(html, /art\.js\?v=18/);
   assert.match(art, /const actorRuntime = new Map\(\)/);
   assert.match(art, /ACTIVITY_SPOTS/);
   for (const activity of ['farm','gather','chop','fish','talk','eat','sleep','protest','heal','care','repair','evacuate','fetch_water','play']) {
@@ -1187,8 +1187,8 @@ test('v17 city UI exposes utilities, commute, services and tax controls', () => 
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const view = fs.readFileSync(path.join(gameDir, 'city-view.js'), 'utf8');
   const core = fs.readFileSync(path.join(gameDir, 'city-core.js'), 'utf8');
-  assert.match(html, /city-core\.js\?v=17/);
-  assert.match(html, /city-view\.js\?v=17/);
+  assert.match(html, /city-core\.js\?v=18/);
+  assert.match(html, /city-view\.js\?v=18/);
   for (const feature of ['powerLine','pipe','powerPlant','waterTower','police','fire','repair']) assert.ok(view.includes('"'+feature+'"'), feature);
   for (const overlay of ['commute','traffic','power','water','services']) assert.ok(view.includes('"'+overlay+'"'), overlay);
   assert.match(view, /data-city-tax/);
@@ -1196,4 +1196,85 @@ test('v17 city UI exposes utilities, commute, services and tax controls', () => 
   assert.match(core, /function assignPower/);
   assert.match(core, /function assignWater/);
   assert.match(core, /function roadCoverage/);
+});
+
+
+test('v11 bus stops reduce generalized commute cost and road traffic weight', () => {
+  const city = C.initial(707);
+  const village = { population:24, trust:74, health:86, tick:0, disasters:{} };
+  C.cell(city, 9, 8).density = 2;
+  C.cell(city, 13, 8).density = 2;
+  C.recompute(city, village);
+  const beforeCost = city.stats.avgCommuteCost;
+  const beforeTraffic = city.stats.avgTraffic;
+  assert.ok(beforeCost > 0);
+  city.funds = 1000;
+  assert.equal(C.paint(city, 'busStop', 9, 9, village).ok, true);
+  assert.equal(C.paint(city, 'busStop', 13, 9, village).ok, true);
+  C.recompute(city, village);
+  assert.ok(city.stats.busTrips > 0, 'two stops on the shared road path should create bus commuters');
+  assert.ok(city.stats.avgCommuteCost < beforeCost, 'bus travel should reduce generalized commute cost');
+  assert.ok(city.stats.avgTraffic <= beforeTraffic, 'bus commuters should not add more road traffic than private trips');
+});
+
+test('v11 fire truck follows connected roads and resolves a fire', () => {
+  const city = C.initial(808);
+  const village = { population:24, trust:74, health:86, tick:0, disasters:{} };
+  city.funds = 1000;
+  C.cell(city, 9, 8).density = 2;
+  assert.equal(C.paint(city, 'fire', 13, 10, village).ok, true);
+  C.recompute(city, village);
+  const fire = C.startEmergency(city, 'fire', 9, 8);
+  assert.ok(fire);
+  assert.equal(fire.status, 'dispatching');
+  assert.ok(fire.route.length > 0);
+  for (let i = 0; i < 10 && fire.status !== 'resolved'; i++) C.advanceEmergencies(city, village);
+  assert.equal(fire.status, 'resolved');
+  assert.ok(city.resolvedDispatches >= 1);
+});
+
+test('v11 police car follows roads and resolves a crime report', () => {
+  const city = C.initial(809);
+  const village = { population:24, trust:74, health:86, tick:0, disasters:{} };
+  city.funds = 1000;
+  C.cell(city, 9, 8).density = 2;
+  assert.equal(C.paint(city, 'police', 13, 10, village).ok, true);
+  C.recompute(city, village);
+  const incident = C.startEmergency(city, 'crime', 9, 8);
+  assert.ok(incident);
+  assert.equal(incident.status, 'dispatching');
+  assert.ok(incident.route.length > 0);
+  for (let i = 0; i < 10 && incident.status !== 'resolved'; i++) C.advanceEmergencies(city, village);
+  assert.equal(incident.status, 'resolved');
+});
+
+test('v11 an unreachable fire causes real damage before it expires', () => {
+  const city = C.initial(810);
+  const village = { population:24, trust:74, health:86, tick:0, disasters:{} };
+  C.cell(city, 9, 8).density = 2;
+  C.recompute(city, village);
+  const fire = C.startEmergency(city, 'fire', 9, 8);
+  assert.ok(fire);
+  assert.equal(fire.status, 'waiting');
+  const before = C.cell(city, 9, 8).damage;
+  C.advanceEmergencies(city, village);
+  C.advanceEmergencies(city, village);
+  assert.ok(C.cell(city, 9, 8).damage > before, 'unserved fire should damage the affected tile');
+});
+
+test('v18 city UI exposes bus, emergency overlay and land-value building tiers', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const view = fs.readFileSync(path.join(gameDir, 'city-view.js'), 'utf8');
+  const core = fs.readFileSync(path.join(gameDir, 'city-core.js'), 'utf8');
+  assert.match(html, /city-core\.js\?v=18/);
+  assert.match(html, /city-view\.js\?v=18/);
+  assert.match(view, /"busStop"/);
+  assert.match(view, /"transit"/);
+  assert.match(view, /"emergency"/);
+  assert.match(view, /function drawEmergencyRoutes/);
+  assert.match(view, /function buildingStyle/);
+  assert.match(view, /landValue>=70/);
+  assert.match(core, /function emergencyRoute/);
+  assert.match(core, /function startEmergency/);
+  assert.match(core, /function advanceEmergencies/);
 });
