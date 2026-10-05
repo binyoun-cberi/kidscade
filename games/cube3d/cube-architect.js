@@ -1859,7 +1859,7 @@ let freeSaveDirty=false,freeSaveDueAt=0,freeStepHop=0;
 let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDurationNow=0,miningBeat=.25;
 let miningCrackOverlay=null,miningCrackKey='';
 let freePlacementGhost=null,freePlacementGhostKey='';
-let pendingPlayerStrikes=[];
+let pendingPlayerStrikes=[],freeHitStopUntil=0;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
@@ -2757,7 +2757,7 @@ function initFree(){
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
-  miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];
+  miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];freeHitStopUntil=0;
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   freeAvatarFacingRight=false;
@@ -4227,7 +4227,7 @@ function returnAfterCreatureDefeat(){
 }
 function damageByCreature(root,t){
   if(gameFreeMode!=='survival'||freeAvatarDefeated||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
-  lastCreatureDamage=t;healthRegenClock=0;root.userData.attackUntil=t+420;
+  lastCreatureDamage=t;healthRegenClock=0;root.userData.attackUntil=t+420;freeHitStopUntil=Math.max(freeHitStopUntil,t+50);
   const amount=Math.max(1,root.userData.spec.damage||1);
   survivalHealth=Math.max(0,survivalHealth-amount);
   const dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,len=Math.hypot(dx,dz)||1;
@@ -4249,6 +4249,44 @@ function creatureRayHit(max=2.35){
 function creatureReward(root){
   for(const [type,n] of Object.entries(root.userData.spec.reward||{})){
     addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.2,root.position.z,n);
+  }
+}
+function queuePlayerStrike(root,power,now){
+  pendingPlayerStrikes.push({root,power,at:now+135,expire:now+430});
+}
+function applyPlayerStrike(strike,t){
+  const root=strike?.root,u=root?.userData;
+  if(!root||!root.parent||!u||u.dead||u.assembling)return;
+  const dist=Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z);
+  if(dist>3.05)return;
+  u.hp-=strike.power;u.hurtUntil=t+300;u.knockbackUntil=t+230;
+  u.knockDir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
+  root.scale.setScalar(1.08);spawnCombatHitParticles(root,strike.power);sfx('hit');freeHitStopUntil=Math.max(freeHitStopUntil,t+42);
+  if(u.hp>0){toast(u.spec.name+' · '+u.hp+'/'+u.maxHp+' · 명중!');return}
+  u.dead=true;creatureDefeats[u.spec.id]=survivalWorldTime;creatureReward(root);trackSurvival('hunt',u.spec.id,1);
+  despawnWildCreature(root);
+  toast(u.spec.name+'을(를) 물리쳤어요! 건축 재료를 얻었어요.');sfx('good');saveFreeWorld();
+}
+function updatePendingPlayerStrikes(t){
+  if(!pendingPlayerStrikes.length)return;
+  const keep=[];
+  for(const strike of pendingPlayerStrikes){
+    if(t>=strike.at)applyPlayerStrike(strike,t);
+    else if(t<strike.expire)keep.push(strike);
+  }
+  pendingPlayerStrikes=keep;
+}
+function updateCreatureAttack(root,t,dist,allowed=true){
+  const u=root.userData,range=.92+(u.spec.elite?.22:0);
+  if(u.attackWindupAt){
+    if(t>=u.attackWindupAt){
+      u.attackWindupAt=0;
+      if(allowed&&dist<=range+.12)damageByCreature(root,t);
+    }
+    return;
+  }
+  if(allowed&&dist<range&&t-lastCreatureDamage>=1250&&!freeAvatarDefeated){
+    u.attackWindupAt=t+320;u.attackUntil=t+520;sfx('warn');
   }
 }
 function interactWildCreature(){
@@ -4292,16 +4330,11 @@ function hitWildCreature(){
   lastCreatureAttackAt=now;triggerFreeAvatarAction('attack',FREE_AVATAR_ACTION_MS.attack,now);
   const power=tool==='ironSword'?4:tool==='stoneSword'?3:tool==='woodSword'?2:
     tool==='ironPick'?2:(u.spec.id==='cubeGolem'&&tool==='stonePick'?2:1);
-  u.hp-=power;u.hurtUntil=now+300;u.knockbackUntil=now+230;
-  u.knockDir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
-  root.scale.setScalar(1.08);
-  if(u.hp>0){toast(u.spec.name+' · '+u.hp+'/'+u.maxHp+' · 공격은 천천히 정확하게!');return true}
-  u.dead=true;creatureDefeats[u.spec.id]=survivalWorldTime;creatureReward(root);trackSurvival('hunt',u.spec.id,1);
-  despawnWildCreature(root);
-  toast(u.spec.name+'을(를) 물리쳤어요! 건축 재료를 얻었어요.');sfx('good');saveFreeWorld();return true;
+  queuePlayerStrike(root,power,now);return true;
 }
 function updateWildCreatures(dt,t){
   if(gameFreeMode!=='survival')return;
+  updatePendingPlayerStrikes(t);
   survivalWorldTime+=dt;creatureSpawnClock+=dt;
   if(creatureSpawnClock>2.5){creatureSpawnClock=0;maintainWildCreatures(false)}
   const night=dayTime>=.82||dayTime<.16,standing=playerStandingMaterial();
@@ -4363,8 +4396,8 @@ function updateWildCreatures(dt,t){
         if(['sand','gravel','redSand'].includes(creatureStandingMaterial(root)))speed*=.62;
       }
       if(spec.id==='burrower')u.visual.position.y=Math.sin(t*.01+u.phase)*.09;
-      if(dist<.92+(spec.elite?.22:0)&&!torchFear&&!hardGround)damageByCreature(root,t);
-      if(u.attackUntil>t)animState='attack';
+      updateCreatureAttack(root,t,dist,!torchFear&&!hardGround);
+      if(u.attackUntil>t||u.attackWindupAt>t)animState='attack';
     }
     u.dir=dir;
     if(!walkCreatureWithDetour(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime',t))u.dir+=Math.PI*.55;
@@ -4685,6 +4718,9 @@ function updateSurvivalEnvironment(dt){
   renderSurvivalSafety(shelter);
 }
 function updateFree(dt,t){
+  if(t<freeHitStopUntil){
+    updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
+  }
   if(freeAvatarDefeated){
     stopMining();updateDayNight(0);updateWeather(0,t);updateMathOverlay();
     camera.rotation.y=yaw;camera.rotation.x=pitch;
