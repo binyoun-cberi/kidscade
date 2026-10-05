@@ -362,7 +362,7 @@
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json"
   },
-  "artRevision": "school-accessories-10-neat-short-rounder",
+  "artRevision": "school-accessories-11-neat-short-tousled-topline",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
