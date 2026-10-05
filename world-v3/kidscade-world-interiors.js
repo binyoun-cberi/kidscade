@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {residentVisual} from './kidscade-world-npc-style.js?v=1';
+import {residentVisual} from './kidscade-world-npc-style.js?v=2';
 
 const ROOT=new URL('../assets/game/',import.meta.url);
 const MARKET=new URL('shops/market/',ROOT).href;
@@ -15,9 +15,9 @@ export const VENUE_MODES={
 };
 
 export const VENUE_INFO={
-  market:{name:'씨앗마트',npc:'민지',npcId:'minji'},
-  hardware:{name:'튼튼 철물점',npc:'준호',npcId:'junho'},
-  cafe:{name:'하늘 카페',npc:'하늘',npcId:'haneul'},
+  market:{name:'씨앗마트',npc:'민지 선생님',npcId:'minji'},
+  hardware:{name:'튼튼 철물점',npc:'준호 선생님',npcId:'junho'},
+  cafe:{name:'하늘 카페',npc:'하늘 선생님',npcId:'haneul'},
   museum:{name:'씨앗 자연박물관'}
 };
 
@@ -110,9 +110,9 @@ export async function buildVenueInteriors(ctx){
   async function buildMarket(){
     const kind='market',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,plane,0xd9d3bd,0xf0ead8,VENUE_INFO[kind].name,kind);
     interact(mode,0,3.18,1.0,'🚪 밖으로 나가기',()=>actions.exitVenue());
-    interact(mode,3.18,1.42,1.25,'🧺 민지에게 계산하기',()=>actions.shop('market','민지'));
-    interact(mode,-2.45,1.55,1.25,'🥕 진열 상품 살펴보기',()=>actions.shop('market','민지'));
-    interact(mode,3.18,.55,1.15,'💬 민지와 이야기하기',()=>actions.resident('minji'));
+    interact(mode,3.18,1.42,1.25,'🧮 민지 선생님과 장보기',()=>actions.shop('market','민지 선생님'));
+    interact(mode,-2.45,1.55,1.25,'🥕 진열 상품 살펴보기',()=>actions.shop('market','민지 선생님'));
+    interact(mode,3.18,.55,1.15,'💬 민지 선생님과 이야기하기',()=>actions.resident('minji'));
 
     // Two clear shopping aisles plus a service counter; nothing touches the cutaway wall.
     for(const [x,z] of [[-2.55,-.85],[-.55,-.85],[1.45,-.85]])collider(mode,x,z,1.05,2.0);
@@ -142,9 +142,9 @@ export async function buildVenueInteriors(ctx){
   async function buildHardware(){
     const kind='hardware',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,plane,0xb9aa8e,0xd9c7a5,VENUE_INFO[kind].name,kind);
     interact(mode,0,3.18,1.0,'🚪 밖으로 나가기',()=>actions.exitVenue());
-    interact(mode,2.65,-.65,1.30,'🛠️ 준호에게 물건 사기',()=>actions.shop('hardware','준호'));
-    interact(mode,-3.05,1.55,1.20,'🪵 자재 살펴보기',()=>actions.shop('hardware','준호'));
-    interact(mode,2.65,-2.55,1.12,'💬 준호와 이야기하기',()=>actions.resident('junho'));
+    interact(mode,2.65,-.65,1.30,'🛠️ 준호 선생님과 준비물 보기',()=>actions.shop('hardware','준호 선생님'));
+    interact(mode,-3.05,1.55,1.20,'🪵 자재 살펴보기',()=>actions.shop('hardware','준호 선생님'));
+    interact(mode,2.65,-2.55,1.12,'💬 준호 선생님과 이야기하기',()=>actions.resident('junho'));
 
     // A real tool wall reads as a workshop instead of loose tools floating in the room.
     box(g,0,-3.48,5.30,.12,1.48,0x75644f,.70);
@@ -173,8 +173,8 @@ export async function buildVenueInteriors(ctx){
   async function buildCafe(){
     const kind='cafe',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,plane,0xcaa980,0xf0dfc7,VENUE_INFO[kind].name,kind);
     interact(mode,0,3.18,1.0,'🚪 밖으로 나가기',()=>actions.exitVenue());
-    interact(mode,1.45,-1.20,1.35,'☕ 하늘에게 주문하기',()=>actions.shop('cafe','하늘'));
-    interact(mode,1.45,-2.72,1.12,'💬 하늘과 이야기하기',()=>actions.resident('haneul'));
+    interact(mode,1.45,-1.20,1.35,'☕ 하늘 선생님에게 주문하기',()=>actions.shop('cafe','하늘 선생님'));
+    interact(mode,1.45,-2.72,1.12,'💬 하늘 선생님과 이야기하기',()=>actions.resident('haneul'));
     interact(mode,-2.65,1.35,1.10,'🪑 카페에서 쉬기',()=>actions.cafeRest());
     interact(mode,2.45,1.35,1.10,'🪑 카페에서 쉬기',()=>actions.cafeRest());
 

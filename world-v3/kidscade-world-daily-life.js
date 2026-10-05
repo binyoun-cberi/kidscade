@@ -6,20 +6,20 @@ const SURVIVAL=new URL('survival/kenney-survival-kit/',ROOT).href;
 
 const VISITORS={
   none:null,
-  crafter:{name:'토리',title:'떠돌이 목공가',icon:'🪵',item:'wood',count:3,reward:34,line:'여행 중에 작은 수리할 일이 생겼어. 목재가 조금 필요해!'},
-  collector:{name:'모아',title:'숲 수집가',icon:'🍄',item:'mushroom',count:2,reward:36,line:'이 마을 버섯은 색이 참 예쁘네. 두 개만 모아줄래?'},
-  prospector:{name:'반짝',title:'돌 수집가',icon:'🪨',item:'stone',count:3,reward:36,line:'여기 돌은 결이 독특해. 표본으로 조금 가져가고 싶어.'},
-  angler:{name:'파도',title:'여행 낚시꾼',icon:'🎣',item:'fish',count:2,reward:46,line:'씨앗마을 물고기가 궁금해. 오늘 잡은 물고기 두 마리와 바꿀까?'}
+  crafter:{name:'토리',title:'만들기 동아리 교류 학생',icon:'🪵',item:'wood',count:3,reward:34,line:'다른 학교 만들기 동아리에서 왔어. 작은 작품을 고치려는데 목재가 조금 필요해!'},
+  collector:{name:'모아',title:'생태 동아리 교류 학생',icon:'🍄',item:'mushroom',count:2,reward:36,line:'씨앗 월드 생태 기록을 만들고 있어. 버섯 두 개만 관찰할 수 있게 도와줄래?'},
+  prospector:{name:'반짝',title:'과학탐구 교류 학생',icon:'🪨',item:'stone',count:3,reward:36,line:'여기 돌의 모양을 비교해보고 싶어. 표본으로 세 개만 모아줄래?'},
+  angler:{name:'파도',title:'낚시체험 교류 학생',icon:'🎣',item:'fish',count:2,reward:46,line:'우리 학교 낚시체험 기록과 비교해보고 싶어. 물고기 두 마리와 바꿀까?'}
 };
 
 const REQUEST_POOL=[
-  {npc:'junho',name:'준호',item:'wood',count:[4,6],reward:8,text:'작업대에 쓸 목재가 부족해.'},
-  {npc:'doyun',name:'도윤',item:'stone',count:[4,6],reward:8,text:'마을 길 가장자리를 손볼 돌이 필요해.'},
-  {npc:'woojin',name:'우진',item:'mushroom',count:[2,3],reward:13,text:'숲 버섯을 조금 조사하고 싶어.'},
-  {npc:'yuna',name:'유나',item:'carrot',count:[2,3],reward:14,text:'오늘 요리에 싱싱한 당근이 필요해.'},
-  {npc:'minji',name:'민지',item:'potato',count:[2,4],reward:13,text:'마트 시식 코너에 쓸 감자를 구하고 있어.'},
-  {npc:'haneul',name:'하늘',item:'tomato',count:[2,3],reward:16,text:'카페 오늘 메뉴에 토마토를 쓰려고 해.'},
-  {npc:'seoyeon',name:'서연',item:'fish',count:[2,3],reward:18,needsFishing:true,text:'Cube Pets 간식으로 신선한 물고기가 필요해.'}
+  {npc:'junho',name:'준호 선생님',item:'wood',count:[4,6],reward:8,text:'실과 활동에 쓸 목재를 모으고 있어.'},
+  {npc:'doyun',name:'도윤 선생님',item:'stone',count:[4,6],reward:8,text:'마을 환경 조사 표시에 쓸 돌이 필요해.'},
+  {npc:'woojin',name:'우진',item:'mushroom',count:[2,3],reward:13,text:'과학탐구부에서 숲 버섯을 관찰하고 싶어.'},
+  {npc:'yuna',name:'유나',item:'carrot',count:[2,3],reward:14,text:'원예부 수확 기록에 싱싱한 당근이 필요해.'},
+  {npc:'minji',name:'민지 선생님',item:'potato',count:[2,4],reward:13,text:'마트 가격 비교 활동에 쓸 감자를 찾고 있어.'},
+  {npc:'haneul',name:'하늘 선생님',item:'tomato',count:[2,3],reward:16,text:'건강한 간식 만들기에 토마토를 쓰려고 해.'},
+  {npc:'seoyeon',name:'서연',item:'fish',count:[2,3],reward:18,needsFishing:true,text:'동물돌봄부 활동에 신선한 물고기가 필요해.'}
 ];
 
 function rngFrom(seed){
@@ -129,7 +129,7 @@ export async function createDailyLife(ctx){
       const have=Number(inv()[q.item]||0),finished=!!done[q.id];
       return '<div class="item"><b>📌 '+q.name+'의 부탁</b><div>'+q.text+'</div><small>'+itemName(q.item)+' '+q.count+'개 · 보상 '+q.reward+'코인 + 친밀도 ♥1</small><br><button data-daily-request="'+q.id+'" '+(finished||have<q.count?'disabled':'')+'>'+(finished?'완료':have>=q.count?'전해주기':'보유 '+have+'/'+q.count)+'</button></div>';
     }).join('');
-    openPanel('<h2>📌 오늘의 주민 부탁</h2><p>오늘 붙은 메모는 오늘 밤까지 유효해요. 부탁을 들어주면 판매보다 조금 더 좋은 보상과 친밀도를 받아요.</p><div class="grid">'+cards+'</div>');
+    openPanel('<h2>📌 오늘의 학교생활</h2><p>선생님과 학생들이 오늘 필요한 일을 메모해 두었어요. 부탁을 들어주면 생활 속 활동을 하며 코인과 친밀도를 얻어요.</p><div class="grid">'+cards+'</div>');
   }
   function completeRequest(id){
     const q=generateRequests().find(x=>x.id===id),done=requestDone();if(!q||done[id])return;
