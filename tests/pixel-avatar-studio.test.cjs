@@ -142,8 +142,8 @@ test('v3 eye catalog adds ten JSON eye assets and keeps the builtin default',()=
   assert.equal(eyeCatalog.defaultId,'basic-eyes-01');
   assert.equal(eyeCatalog.items.length,11);
   const extra=eyeCatalog.items.filter(item=>item.id!==eyeCatalog.defaultId);
-  assert.equal(extra.length,26);
-  assert.equal(new Set(extra.map(item=>item.id)).size,26);
+  assert.equal(extra.length,10);
+  assert.equal(new Set(extra.map(item=>item.id)).size,10);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-eye-part',item.id);
@@ -181,8 +181,8 @@ test('v3 hair catalog adds dyed JSON hairstyles and keeps the builtin tousled st
   assert.equal(hairCatalog.defaultId,'basic-tousled-hair-01');
   assert.equal(hairCatalog.items.length,27);
   const extra=hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId);
-  assert.equal(extra.length,10);
-  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  assert.equal(extra.length,26);
+  assert.equal(new Set(extra.map(item=>item.id)).size,26);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-hair-part',item.id);
