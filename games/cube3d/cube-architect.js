@@ -2678,16 +2678,16 @@ function growTree(x,baseY,z,record,kind='forest'){
   }
 }
 function miniPoiLocalCoord(v){return ((v%WORLD_CHUNK_SIZE)+WORLD_CHUNK_SIZE)%WORLD_CHUNK_SIZE}
-function miniPoiSpotOk(x,z,biome,used=[]){
+function miniPoiSpotOk(x,z,biome,used=[],relaxed=false){
   if(!inWorld(x,1,z)||worldRules.region(x,z)!==biome)return false;
   const lx=miniPoiLocalCoord(x),lz=miniPoiLocalCoord(z);
   if(lx<4||lx>11||lz<4||lz>11)return false;
-  if(poiRules.isLandmarkClearZone?.(x,z,7))return false;
-  if(used.some(p=>Math.hypot(p.x-x,p.z-z)<15))return false;
+  if(poiRules.isLandmarkClearZone?.(x,z,relaxed?4:7))return false;
+  if(used.some(p=>Math.hypot(p.x-x,p.z-z)<(relaxed?12:15)))return false;
   const samples=[[0,0],[2,0],[-2,0],[0,2],[0,-2],[2,2],[-2,-2]];
   const heights=samples.map(([dx,dz])=>terrainHeight(x+dx,z+dz));
-  if(Math.min(...heights)<SEA_LEVEL||Math.max(...heights)-Math.min(...heights)>1)return false;
-  return samples.every(([dx,dz])=>worldRules.region(x+dx,z+dz)===biome);
+  if(Math.min(...heights)<SEA_LEVEL||Math.max(...heights)-Math.min(...heights)>(relaxed?2:1))return false;
+  return relaxed||samples.every(([dx,dz])=>worldRules.region(x+dx,z+dz)===biome);
 }
 function buildMiniPoiCatalog(){
   if(miniPoiCatalog)return miniPoiCatalog;
@@ -2714,6 +2714,15 @@ function buildMiniPoiCatalog(){
         for(let x=-WORLD_HALF+6;x<WORLD_HALF-6;x+=4)for(let z=-WORLD_HALF+6;z<WORLD_HALF-6;z+=4){
           if(!miniPoiSpotOk(x,z,biome,used))continue;
           const score=Math.hypot(x-base[0],z-base[1])+hash2(x*17+slot,z*23+biomeIndex)*4;
+          if(score<bestScore){bestScore=score;best={x,z}}
+        }
+        chosen=best;
+      }
+      if(!chosen){
+        let best=null,bestScore=Infinity;
+        for(let x=-WORLD_HALF+6;x<WORLD_HALF-6;x+=2)for(let z=-WORLD_HALF+6;z<WORLD_HALF-6;z+=2){
+          if(!miniPoiSpotOk(x,z,biome,used,true))continue;
+          const score=Math.hypot(x-base[0],z-base[1]);
           if(score<bestScore){bestScore=score;best={x,z}}
         }
         chosen=best;
