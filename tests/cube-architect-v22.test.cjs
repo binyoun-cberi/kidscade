@@ -16,7 +16,7 @@ test('v22 creature roster is wired before the main runtime',()=>{
   assert.doesNotThrow(()=>new Function(creatureJs));
   assert.match(html,/cube-architect-creatures\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-creature-assets\.js\?v=20261004-32/);
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
   assert.ok(html.indexOf('cube-architect-creatures.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/type="importmap"/);
   assert.match(assetJs,/GLTFLoader/);
