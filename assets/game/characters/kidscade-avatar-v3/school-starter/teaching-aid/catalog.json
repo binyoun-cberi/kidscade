@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-teaching-aid-catalog",
+  "layer": "shield",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "school-textbook-01",
+  "hand": "right",
+  "frontLayer": "shieldFront",
+  "backLayer": "shieldBack",
+  "frameCount": 23,
+  "items": [
+    {
+      "id": "school-textbook-01",
+      "label": "교과서",
+      "kind": "default",
+      "colors": [
+        "#243e3c",
+        "#43876f",
+        "#fff2ca"
+      ]
+    },
+    {
+      "id": "eraser-aid-01",
+      "label": "지우개",
+      "kind": "eraser",
+      "size": 6,
+      "colors": [
+        "#506070",
+        "#f0a6b9",
+        "#fff2f5",
+        "#d95c7a"
+      ]
+    },
+    {
+      "id": "iromi-aid-01",
+      "label": "이로미",
+      "kind": "tablet",
+      "size": 9,
+      "colors": [
+        "#1e2d38",
+        "#477b9a",
+        "#a9e7ff",
+        "#f4fbff"
+      ]
+    },
+    {
+      "id": "dustpan-aid-01",
+      "label": "쓰레받기",
+      "kind": "dustpan",
+      "size": 8,
+      "colors": [
+        "#31525b",
+        "#62a7b4",
+        "#a9e0e7",
+        "#203b43"
+      ]
+    },
+    {
+      "id": "pencil-sharpener-aid-01",
+      "label": "연필깎이",
+      "kind": "sharpener",
+      "size": 7,
+      "colors": [
+        "#5b3d54",
+        "#a56c94",
+        "#e5b2d2",
+        "#3b2d39"
+      ]
+    },
+    {
+      "id": "teddy-bear-aid-01",
+      "label": "곰돌이인형",
+      "kind": "teddy",
+      "size": 8,
+      "colors": [
+        "#493327",
+        "#9f6b45",
+        "#d6a77d",
+        "#2e211b"
+      ]
+    },
+    {
+      "id": "pillow-aid-01",
+      "label": "베개",
+      "kind": "pillow",
+      "size": 9,
+      "colors": [
+        "#60758c",
+        "#b9d5eb",
+        "#f4fbff",
+        "#7ea9cb"
+      ]
+    }
+  ]
+}
