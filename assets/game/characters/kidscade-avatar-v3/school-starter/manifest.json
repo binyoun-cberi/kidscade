@@ -378,7 +378,7 @@
     "hairColor": "hair-color/catalog.json",
     "wardrobe": "wardrobe/catalog.json"
   },
-  "artRevision": "school-accessories-14-skin-all-frames-mobile-ui",
+  "artRevision": "school-accessories-15-male-hair-pack",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
