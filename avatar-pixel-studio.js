@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-27';
+const PREVIEW_VERSION='pixel-v3-school-starter-28';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -917,10 +917,76 @@ function shoeStyledColor(def,p,x,y,frameId){
   const box=bboxForPixels(packLayerPixels(frameId,'shoes'));if(!box)return color;const accent=rgbaFromHex(palette[3]||palette[0]||'#ffffff');
   if(def.pattern==='laces'&&y<=box.minY+3&&((x+2*y)%5===0))color=accent;else if(def.pattern==='high-top'&&y<=box.minY+2)color=accent;else if(def.pattern==='canvas'&&y===box.maxY-1)color=accent;else if(def.pattern==='runner'&&((x+y)%7===0))color=accent;else if(def.pattern==='loafer'&&y===box.minY+2)color=accent;else if(def.pattern==='slip-on'&&x>=Math.floor(box.cx)-1&&x<=Math.ceil(box.cx)+1)color=accent;else if(def.pattern==='indoor'&&y<=box.minY+2)color=accent;return color;
 }
+function splitShoeComponents(pixels){
+  const src=new Map((pixels||[]).map(p=>[p[0]+','+p[1],p])),seen=new Set(),groups=[];
+  for(const [key,p] of src){
+    if(seen.has(key))continue;
+    const group=[],queue=[p];seen.add(key);
+    while(queue.length){
+      const q=queue.pop();group.push(q);
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;const k=(q[0]+dx)+','+(q[1]+dy),next=src.get(k);
+        if(next&&!seen.has(k)){seen.add(k);queue.push(next)}
+      }
+    }
+    if(group.length)groups.push(group);
+  }
+  groups.sort((a,b)=>b.length-a.length);
+  if(groups.length>=2)return groups.slice(0,2);
+  const box=bboxForPixels(pixels),mid=box?.cx??64,left=(pixels||[]).filter(p=>p[0]<=mid),right=(pixels||[]).filter(p=>p[0]>mid);
+  return [left,right].filter(group=>group.length);
+}
+function shoeSilhouettePixels(def,frameId){
+  const src=packLayerPixels(frameId,'shoes'),map=new Map();
+  for(const p of src){const color=shoeStyledColor(def,p,p[0],p[1],frameId);plotPixel(map,p[0],p[1],color)}
+  if(!def?.shape)return [...map.values()];
+  const palette=def.palette||[],base=rgbaFromHex(palette[0]||'#777777'),sole=rgbaFromHex(palette[1]||'#ffffff'),dark=rgbaFromHex(palette[2]||'#222222'),accent=rgbaFromHex(palette[3]||palette[0]||'#ffffff');
+  for(const group of splitShoeComponents(src)){
+    const box=bboxForPixels(group);if(!box)continue;
+    const c=[box.cx,box.cy],toBody=[64-c[0],76-c[1]],mag=Math.hypot(toBody[0],toBody[1])||1,up=[toBody[0]/mag,toBody[1]/mag],down=[-up[0],-up[1]],side=[-up[1],up[0]];
+    const center=(u=0,v=0)=>[c[0]+up[0]*u+side[0]*v,c[1]+up[1]*u+side[1]*v];
+    const width=Math.max(7,Math.min(13,box.w+2));
+    if(def.shape==='hightop-sneaker'){
+      paintRotRect(map,center(4),up,width,9,dark);paintRotRect(map,center(4),up,width-2,7,base);paintRotRect(map,center(7),up,width-1,2,accent);paintRotRect(map,center(-2),up,width+2,3,sole);
+      for(const v of [-2,2])for(const u of [2,5])plotPixel(map,...center(u,v),sole);
+    }else if(def.shape==='basketball-shoe'){
+      paintRotRect(map,center(5),up,width+1,11,dark);paintRotRect(map,center(5),up,width-1,9,base);paintRotRect(map,center(9),up,width,3,accent);paintRotRect(map,center(-3),up,width+4,4,sole);
+      for(const u of [1,4,7])paintRotRect(map,center(u),up,width-5,1,accent);
+    }else if(def.shape==='soccer-cleat'){
+      paintRotRect(map,center(1),up,width+3,6,dark);paintRotRect(map,center(1),up,width+1,4,base);paintRotRect(map,center(3),up,width-2,2,accent);paintRotRect(map,center(-3),up,width+4,2,sole);
+      for(const v of [-Math.floor(width/3),Math.floor(width/3)]){plotCircle(map,...center(-5,v),1,dark);plotCircle(map,...center(-4,v/2),1,dark)}
+    }else if(def.shape==='rain-boot'){
+      paintRotRect(map,center(7),up,width,15,dark);paintRotRect(map,center(7),up,width-2,13,base);paintRotRect(map,center(13),up,width+1,3,accent);paintRotRect(map,center(-3),up,width+4,4,sole);
+    }else if(def.shape==='fur-boot'){
+      paintRotRect(map,center(6),up,width+1,13,dark);paintRotRect(map,center(5),up,width-1,10,base);paintRotRect(map,center(11),up,width+3,4,sole);paintRotRect(map,center(-3),up,width+4,4,dark);
+      for(const v of [-4,0,4])plotCircle(map,...center(11,v),2,accent);
+    }else if(def.shape==='slipper'){
+      paintRotRect(map,center(-1),up,width+5,6,dark);paintRotRect(map,center(-1),up,width+3,4,sole);paintRotRect(map,center(1),up,width-1,3,base);paintRotRect(map,center(2),up,width-5,2,accent);
+    }else if(def.shape==='sandal'){
+      paintRotRect(map,center(-2),up,width+4,3,dark);paintRotRect(map,center(-2),up,width+2,2,sole);
+      for(const u of [0,4])paintRotRect(map,center(u),up,width-2,2,base);
+      for(const v of [-3,3])paintSegment(map,center(4,v),up,5,1,accent);
+    }else if(def.shape==='roller-skate'){
+      paintRotRect(map,center(4),up,width,10,dark);paintRotRect(map,center(4),up,width-2,8,base);paintRotRect(map,center(-3),up,width+4,3,sole);paintRotRect(map,center(-6),up,width+5,1,dark);
+      for(const v of [-Math.floor(width/3),Math.floor(width/3)]){plotCircle(map,...center(-7,v),2,dark);plotCircle(map,...center(-7,v),1,accent)}
+    }else if(def.shape==='inline-skate'){
+      paintRotRect(map,center(4),up,width,10,dark);paintRotRect(map,center(4),up,width-2,8,base);paintRotRect(map,center(2),up,width-4,2,accent);paintRotRect(map,center(-4),up,width+2,2,sole);
+      for(const v of [-4,0,4]){plotCircle(map,...center(-7,v),2,dark);plotCircle(map,...center(-7,v),1,accent)}
+    }else if(def.shape==='character-slipper'){
+      paintRotRect(map,center(-1),up,width+5,7,dark);paintRotRect(map,center(-1),up,width+3,5,base);plotCircle(map,...center(1,-3),2,sole);plotCircle(map,...center(1,3),2,sole);
+      plotPixel(map,...center(0,-2),dark);plotPixel(map,...center(0,2),dark);plotPixel(map,...center(-2,0),accent);
+      for(const v of [-4,4]){plotCircle(map,...center(3,v),2,dark);plotCircle(map,...center(3,v),1,accent)}
+    }
+  }
+  return [...map.values()];
+}
 function applyShoeSelection(target,frameId,id=selectedShoeId()){
   if(!shoeCatalog||!schoolPack||!id)return false;
   const def=shoeCatalog.items.find(item=>item.id===id);if(!def)return false;
   const pixels=packLayerPixels(frameId,'shoes');
+  if(id!==shoeCatalog.defaultId&&def.shape){
+    drawPixelTuples(target,shoeSilhouettePixels(def,frameId),true);return true
+  }
   if(id!==shoeCatalog.defaultId){
     const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
     for(const p of pixels){const i=(p[1]*SIZE+p[0])*4;if(!sameRgba(data,i,p))continue;writeRgba(data,i,shoeStyledColor(def,p,p[0],p[1],frameId))}
