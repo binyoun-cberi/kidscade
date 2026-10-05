@@ -362,5 +362,20 @@
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json"
   },
-  "artRevision": "school-accessories-7-dyed-hair"
+  "artRevision": "school-accessories-8-body-first-hair",
+  "bodyRender": {
+    "mode": "body-first",
+    "source": "teacher-body-pipeline",
+    "sourceFrames": [
+      "stand-01",
+      "stand-02",
+      "walk-01",
+      "walk-02",
+      "walk-03",
+      "walk-04",
+      "jump-01"
+    ],
+    "derivedFrames": 16,
+    "purpose": "Prevent baked default hair pixels from leaking around custom hair."
+  }
 }
