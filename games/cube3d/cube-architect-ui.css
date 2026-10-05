@@ -457,3 +457,58 @@
   from{opacity:1}
   to{opacity:0}
 }
+
+
+/* ---------- discovery-driven crafting ---------- */
+#craftDiscoveryNotice{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin-top:7px;
+  padding:6px 9px;
+  border:1px solid rgba(246,200,95,.34);
+  border-radius:10px;
+  background:linear-gradient(90deg,rgba(246,200,95,.14),rgba(103,223,207,.10));
+  color:#ffe7a3;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.01em;
+  cursor:pointer;
+}
+#craftDiscoveryNotice.hidden{display:none!important}
+#craftDiscoveryNotice.discovery-pop{animation:caRecipeDiscover .72s cubic-bezier(.2,.85,.3,1)}
+@keyframes caRecipeDiscover{
+  0%{transform:scale(.97);opacity:.6}
+  45%{transform:scale(1.035);box-shadow:0 0 0 3px rgba(246,200,95,.13)}
+  100%{transform:scale(1);opacity:1}
+}
+.craft-discovery-summary{
+  display:block;
+  margin-top:5px;
+  color:#7a66d3;
+  font-size:9px;
+  font-weight:900;
+}
+.survival-recipe.new-recipe{
+  position:relative;
+  border-color:#e2b94f;
+  background:linear-gradient(90deg,#fff9e8,#fff);
+  box-shadow:0 0 0 2px rgba(226,185,79,.08);
+}
+.survival-recipe.new-recipe .recipe-state{
+  background:#fff0bd;
+  color:#8a6311;
+}
+.craft-new-chip{
+  display:inline-flex;
+  align-items:center;
+  margin-left:6px;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#fff0bd;
+  color:#8a6311;
+  font-size:8px;
+  font-weight:950;
+  vertical-align:middle;
+}
