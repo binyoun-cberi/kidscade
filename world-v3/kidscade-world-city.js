@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=5';
-import {createResidentLife} from './kidscade-world-residents.js?v=3';
-import {residentVisual} from './kidscade-world-npc-style.js?v=1';
+import {createResidentLife} from './kidscade-world-residents.js?v=4';
+import {residentVisual} from './kidscade-world-npc-style.js?v=2';
+import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=1';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
@@ -242,7 +243,7 @@ export async function buildKidscadeCity(ctx){
     box(parent,bx,bz-.02,2.45,.24,.14,0x6b4931,1.84);
     for(const dx of [-.62,0,.62])box(parent,bx+dx,bz-.12,.48,.035,.58,0xfff1c9,1.02+(dx===0?.08:0));
     track('daily-request-board','decor',bx,bz,2.25,.32);
-    interact('outdoor',bx,bz+.75,1.35,'📌 오늘의 주민 부탁 보기',()=>actions.dailyBoard?.());
+    interact('outdoor',bx,bz+.75,1.35,'📌 오늘의 학교생활 보기',()=>actions.dailyBoard?.());
   }
 
   // Civic parcel.
@@ -337,8 +338,8 @@ export async function buildKidscadeCity(ctx){
   npcs.push(await addNpc(npcCtx,'woojin','우진',leisure.x,leisure.z+4.8,{role:'resident',radius:.55}));
   npcs.push(await addNpc(npcCtx,'seoyeon','서연',leisure.x+4.0,leisure.z+4.2,{role:'resident',radius:.55}));
   npcs.push(await addNpc(npcCtx,'hyunwoo','현우',market.x,market.z+4.5,{role:'delivery',radius:.45}));
-  npcs.push(await addNpc(npcCtx,'clerk','마트직원',market.x-6.6,market.z-1.2,{role:'shop',label:false,radius:.20}));
-  const visitor=await addNpc(npcCtx,'visitor','여행객',leisure.x+3.0,leisure.z+6.7,{role:'visitor',radius:.42});
+  npcs.push(await addNpc(npcCtx,'clerk',SCHOOL_PROFILES.clerk.name,market.x-6.6,market.z-1.2,{role:'student',label:false,radius:.20}));
+  const visitor=await addNpc(npcCtx,'visitor',SCHOOL_PROFILES.visitor.name,leisure.x+3.0,leisure.z+6.7,{role:'student',radius:.42});
   visitor.object.visible=false;if(visitor.label)visitor.label.visible=false;npcs.push(visitor);
 
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
@@ -351,13 +352,10 @@ export async function buildKidscadeCity(ctx){
     const n=byId[id];if(!n)return;
     n.interaction=interact('outdoor',n.object.position.x,n.object.position.z,r,label,action);
   }
-  for(const [id,label] of [
-    ['minji','민지와 이야기하기'],['junho','준호와 이야기하기'],['haneul','하늘과 이야기하기'],
-    ['taeho','태호와 이야기하기'],['doyun','도윤과 이야기하기'],['sora','소라와 이야기하기'],
-    ['nari','나리와 이야기하기'],['minseok','민석과 이야기하기'],['yuna','유나와 이야기하기'],
-    ['woojin','우진과 이야기하기'],['seoyeon','서연과 이야기하기'],['hyunwoo','현우와 이야기하기']
-  ])bind(id,id==='minseok'?1.45:1.35,label,()=>actions.resident(id));
-  bind('visitor',1.45,'🎒 오늘의 방문객과 이야기하기',()=>actions.dailyVisitor?.());
+  for(const id of ['minji','junho','haneul','taeho','doyun','sora','nari','minseok','yuna','woojin','seoyeon','hyunwoo']){
+    bind(id,id==='minseok'?1.45:1.35,schoolInteractionLabel(id),()=>actions.resident(id));
+  }
+  bind('visitor',1.45,'🎒 오늘의 교류 학생과 이야기하기',()=>actions.dailyVisitor?.());
 
   interact('outdoor',leisure.x-4.4,leisure.z+3.0,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
   interact('outdoor',leisure.x+4.4,leisure.z+3.0,1.2,'광장 벤치에서 쉬기',()=>actions.bench());
@@ -421,11 +419,11 @@ export async function buildKidscadeCity(ctx){
       }
       const visitor=byId.visitor,daily=typeof getDailyState==='function'?getDailyState():null;
       if(visitor){
-        const names={crafter:'토리 · 떠돌이 목공가',collector:'모아 · 숲 수집가',prospector:'반짝 · 돌 수집가',angler:'파도 · 여행 낚시꾼'};
+        const names={crafter:'토리 · 만들기 동아리 학생',collector:'모아 · 생태 동아리 학생',prospector:'반짝 · 과학탐구 학생',angler:'파도 · 낚시체험 학생'};
         const visible=!!daily&&daily.visitor&&daily.visitor!=='none';
         visitor.object.visible=visible;visitor.playAnim?.('idle');visitor.mixer?.update(dt);
         if(visitor.label){
-          visitor.label.userData?.setText?.(names[daily?.visitor]||'여행객');
+          visitor.label.userData?.setText?.(names[daily?.visitor]||SCHOOL_PROFILES.visitor.role);
           visitor.label.position.set(visitor.object.position.x,2.22,visitor.object.position.z);
           visitor.label.visible=visible&&!!player&&Math.hypot(player.x-visitor.object.position.x,player.z-visitor.object.position.z)<4.2;
         }
