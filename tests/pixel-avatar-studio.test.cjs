@@ -20,7 +20,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=52/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=53/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -28,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-10/);
+  assert.match(js,/pixel-v3-school-starter-11/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -59,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-10'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-11'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -174,15 +174,15 @@ test('public renderer composes selected JSON eyes across the 23-frame v3 motion 
 });
 
 
-test('v3 hair catalog adds ten JSON hairstyles and keeps the builtin tousled style',()=>{
+test('v3 hair catalog adds dyed JSON hairstyles and keeps the builtin tousled style',()=>{
   assert.equal(manifest.partCatalogs.hair,'hair/catalog.json');
   assert.equal(hairCatalog.type,'kidscade-avatar-hair-catalog');
   assert.equal(hairCatalog.layer,'hair');
   assert.equal(hairCatalog.defaultId,'basic-tousled-hair-01');
-  assert.equal(hairCatalog.items.length,11);
+  assert.equal(hairCatalog.items.length,27);
   const extra=hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId);
-  assert.equal(extra.length,10);
-  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  assert.equal(extra.length,26);
+  assert.equal(new Set(extra.map(item=>item.id)).size,26);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-hair-part',item.id);
@@ -196,6 +196,35 @@ test('v3 hair catalog adds ten JSON hairstyles and keeps the builtin tousled sty
       assert.ok(pixel[0]>=0&&pixel[0]<128&&pixel[1]>=0&&pixel[1]<128,item.id);
       for(const value of pixel.slice(2))assert.ok(Number.isInteger(value)&&value>=0&&value<=255,item.id);
     }
+  }
+});
+
+
+test('dyed short and ponytail packs keep source geometry and eight kid-friendly palettes',()=>{
+  const dyeLabels=['체리핑크','복숭아핑크','민트','하늘','라벤더','블루퍼플','로즈골드','화이트블론드'];
+  const shortBase=JSON.parse(fs.readFileSync(path.join(starterDir,'hair','neat-short-hair-01.json'),'utf8'));
+  const ponyBase=JSON.parse(fs.readFileSync(path.join(starterDir,'hair','school-ponytail-hair-02.json'),'utf8'));
+  const shortVariants=hairCatalog.items.filter(item=>item.id.startsWith('neat-short-hair-')&&item.id!=='neat-short-hair-01');
+  const ponyVariants=hairCatalog.items.filter(item=>item.id.startsWith('school-ponytail-hair-')&&item.id!=='school-ponytail-hair-02');
+  assert.equal(shortVariants.length,8);
+  assert.equal(ponyVariants.length,8);
+  assert.deepEqual(shortVariants.map(item=>item.label.split(' · ')[1]),dyeLabels);
+  assert.deepEqual(ponyVariants.map(item=>item.label.split(' · ')[1]),dyeLabels);
+  const coordKey=p=>p[0]+','+p[1];
+  const shortCoords=shortBase.pixels.map(coordKey);
+  const ponyCoords=ponyBase.pixels.map(coordKey);
+  for(const item of [...shortVariants,...ponyVariants]){
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
+    const isShort=item.id.startsWith('neat-short-hair-');
+    assert.deepEqual(file.pixels.map(coordKey),isShort?shortCoords:ponyCoords,item.id);
+    assert.ok(file.dye?.id,item.id);
+    assert.ok(dyeLabels.includes(file.dye?.label),item.id);
+    assert.ok(file.pixels.some(pixel=>pixel.slice(2).join(',')==='48,42,48,255'),'dark outline '+item.id);
+    assert.notDeepEqual(
+      new Set(file.pixels.map(pixel=>pixel.slice(2).join(','))),
+      new Set((isShort?shortBase:ponyBase).pixels.map(pixel=>pixel.slice(2).join(','))),
+      item.id
+    );
   }
 });
 
@@ -222,7 +251,7 @@ test('hair choice persists beside eye choice in the v3 public avatar state',()=>
   assert.match(js,/state\.assetIds=\{\.\.\.\(manifest\?\.assetIds\|\|\{\}\),\.\.\.\(state\.assetIds\|\|\{\}\),hair:id\}/);
   assert.match(js,/state\.assetIds\.hair/);
   assert.match(js,/await loadHairPart\(state\.assetIds\.hair\)/);
-  assert.match(js,/헤어 11종/);
+  assert.match(js,/헤어 27종/);
 });
 
 
