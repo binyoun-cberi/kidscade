@@ -5012,6 +5012,50 @@ function emergencyReturn(){
   toast('시작 지점으로 귀환했어요. 재료는 잃지 않아요. 지붕과 벽을 지어 보세요.');
   renderSurvivalSafety(null);saveFreeWorld();
 }
+function groundSurfaceType(){
+  const feet=freePhysicsY-1.62,x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
+  for(let y=Math.floor(feet-.03);y>=Math.max(WORLD_MIN_Y,Math.floor(feet)-2);y--){
+    const d=getBlock(x,y,z);if(d&&isSolidData(d,x,y,z))return d.type;
+  }
+  return worldRules.BIOMES[worldRules.region(x,z)]?.ground||'grass';
+}
+function updateFootstepAudio(){
+  const x=camera.position.x,z=camera.position.z;
+  if(lastFootstepX===null||lastFootstepZ===null){lastFootstepX=x;lastFootstepZ=z;return}
+  const dist=Math.hypot(x-lastFootstepX,z-lastFootstepZ);
+  lastFootstepX=x;lastFootstepZ=z;
+  if(dist>3){footstepDistanceAcc=0;return}
+  if(!onGround||freeFlying||freeFluidKind){footstepDistanceAcc=0;return}
+  footstepDistanceAcc+=dist;
+  const stride=(freeKeys.ControlLeft||freeKeys.ControlRight)?1.12:1.42;
+  if(footstepDistanceAcc>=stride){
+    footstepDistanceAcc%=stride;stepSfx(groundSurfaceType(),false);
+  }
+}
+function nearAmbientHeat(){
+  const px=Math.round(camera.position.x),pz=Math.round(camera.position.z),py=Math.floor(freePhysicsY-1.62);
+  for(let dx=-4;dx<=4;dx++)for(let dz=-4;dz<=4;dz++){
+    if(dx*dx+dz*dz>18)continue;
+    for(let dy=0;dy<=3;dy++){
+      const type=getBlock(px+dx,py+dy,pz+dz)?.type;
+      if(type==='fire'||type==='furnace'||type==='torch')return true;
+    }
+  }
+  return false;
+}
+function updateAmbientAudio(dt,t){
+  if(!audioCtx||audioCtx.state!=='running'||inventoryOpen||furnaceOpen)return;
+  ambientAudioClock-=dt;if(ambientAudioClock>0)return;
+  const biome=worldRules.region(Math.round(camera.position.x),Math.round(camera.position.z));
+  const night=dayTime>=.82||dayTime<.16;
+  if(weather==='storm'){ambientSfx('storm');ambientAudioClock=1.45;return}
+  if(weather==='rain'){ambientSfx('rain');ambientAudioClock=1.95;return}
+  if(nearAmbientHeat()){ambientSfx('fire');ambientAudioClock=2.25;return}
+  if(['snow','desert','badlands'].includes(biome)){ambientSfx('wind');ambientAudioClock=4.8;return}
+  if(biome==='marsh'){ambientSfx('marsh');ambientAudioClock=night?3.8:5.2;return}
+  if(!night&&['meadow','forest','pine','flowers'].includes(biome)){ambientSfx('birds');ambientAudioClock=5.5;return}
+  ambientAudioClock=4.2;
+}
 function updateSurvivalEnvironment(dt){
   if(gameFreeMode!=='survival')return;
   survivalTimeAcc+=dt;
@@ -5063,7 +5107,7 @@ function updateFree(dt,t){
     updateUnderwaterVisual(playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z).headUnderWater);return;
   }
   updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
-  updateSurvivalEnvironment(dt);updateMining(dt);
+  updateSurvivalEnvironment(dt);updateMining(dt);updateAmbientAudio(dt,t);
   freeStepHop=Math.max(0,freeStepHop-dt*6.2);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
@@ -5140,6 +5184,7 @@ function updateFree(dt,t){
     if(Math.abs(freePhysicsY-camera.position.y)<.008)camera.position.y=freePhysicsY;
   }
   camera.rotation.y=yaw;camera.rotation.x=pitch;
+  updateFootstepAudio();
   streamWorldMeshes();
   checkCollectibles(t);
 }
@@ -5191,6 +5236,7 @@ function enableMobileFallback(){
   toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
 }
 function requestGamePointerLock(){
+  warmAudio();
   if(mode!=='challenge'&&mode!=='free'&&mode!=='dungeon')return;
   if(mobileModeEnabled){configureMobileMode(mode);return}
   if(typeof canvas.requestPointerLock!=='function'){enableMobileFallback();return}
@@ -5238,7 +5284,7 @@ function initMobileControls(){
     knob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
   }
   joystick.addEventListener('pointerdown',ev=>{
-    if(!mobileModeEnabled)return;ev.preventDefault();mobileJoyPointerId=ev.pointerId;
+    if(!mobileModeEnabled)return;warmAudio();ev.preventDefault();mobileJoyPointerId=ev.pointerId;
     joystick.setPointerCapture?.(ev.pointerId);setJoystick(ev);
   });
   joystick.addEventListener('pointermove',ev=>{
@@ -5250,7 +5296,7 @@ function initMobileControls(){
   joystick.addEventListener('lostpointercapture',stopJoy);
   function tap(id,cb){
     $(id).addEventListener('pointerdown',ev=>{
-      ev.preventDefault();ev.stopPropagation();if(mobileModeEnabled)cb();
+      warmAudio();ev.preventDefault();ev.stopPropagation();if(mobileModeEnabled)cb();
     });
   }
   const mobileBreakBtn=$('mobileBreak');
