@@ -2739,7 +2739,7 @@ function miniPoiPut(spec,dx,dy,dz,type,extra={}){
   const x=spec.x+dx,y=spec.y+dy,z=spec.z+dz;if(!inWorld(x,y,z))return;
   setRawBlock(x,y,z,{type,natural:true,miniPoi:spec.id,...extra});
 }
-function clearMiniPoiPlants(spec,r=3,h=5){
+function clearMiniPoiPlants(spec,r=4,h=10){
   const plants=new Set(['log','pineLog','leaves','pineLeaves','flower','reed','cactus','sapling']);
   for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++)for(let dy=0;dy<=h;dy++){
     const x=spec.x+dx,y=spec.y+dy,z=spec.z+dz,d=worldData.get(worldKey(x,y,z));
@@ -2747,7 +2747,7 @@ function clearMiniPoiPlants(spec,r=3,h=5){
   }
 }
 function stampMiniPoi(spec){
-  clearMiniPoiPlants(spec,3,5);
+  clearMiniPoiPlants(spec);
   const put=(dx,dy,dz,type,extra)=>miniPoiPut(spec,dx,dy,dz,type,extra);
   const line=(x1,z1,x2,z2,y,type)=>{
     const steps=Math.max(Math.abs(x2-x1),Math.abs(z2-z1));
