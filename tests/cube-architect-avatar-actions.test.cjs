@@ -36,6 +36,14 @@ test('jump and pickup motions are tied to real survival actions',()=>{
   assert.match(main,/triggerFreeAvatarAction\('pickup',FREE_AVATAR_ACTION_MS\.pickup,t\)/);
 });
 
+test('third-person avatar mirrors only for rightward movement and remembers the last facing',()=>{
+  assert.match(main,/let freeViewMode='third'.*freeAvatarFacingRight=false/);
+  assert.match(main,/if\(leftHeld!==rightHeld\)freeAvatarFacingRight=rightHeld/);
+  assert.match(main,/else if\(mobileMove\.x>\.18\)freeAvatarFacingRight=true/);
+  assert.match(main,/else if\(mobileMove\.x<-\.18\)freeAvatarFacingRight=false/);
+  assert.match(main,/freeAvatarRoot\.scale\.x=freeAvatarFacingRight\?-1:1/);
+});
+
 test('avatar action build is cache-busted',()=>{
   assert.match(html,/cube-architect-avatar\.js\?v=20261005-avatar-actions1/);
   assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
