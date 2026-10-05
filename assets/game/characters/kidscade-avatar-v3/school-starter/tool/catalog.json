@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-tool-catalog",
+  "layer": "weapon",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "school-ruler-01",
+  "hand": "left",
+  "frontLayer": "weaponFront",
+  "backLayer": "weaponBack",
+  "attackBackFrames": [
+    "attack-02"
+  ],
+  "frameCount": 23,
+  "items": [
+    {
+      "id": "school-ruler-01",
+      "label": "자",
+      "kind": "default",
+      "colors": [
+        "#62402b",
+        "#d8ab60",
+        "#f4d48d"
+      ]
+    },
+    {
+      "id": "pencil-tool-01",
+      "label": "연필",
+      "kind": "pencil",
+      "length": 29,
+      "width": 3,
+      "colors": [
+        "#4a3328",
+        "#e8b33f",
+        "#f4d9a2",
+        "#df6d6d"
+      ]
+    },
+    {
+      "id": "colored-pencil-tool-01",
+      "label": "색연필",
+      "kind": "colored-pencils",
+      "length": 27,
+      "width": 2,
+      "colors": [
+        "#373a4a",
+        "#e85a5a",
+        "#4e8ed8",
+        "#f0c24f"
+      ]
+    },
+    {
+      "id": "marker-tool-01",
+      "label": "사인펜",
+      "kind": "marker",
+      "length": 25,
+      "width": 5,
+      "colors": [
+        "#252f3d",
+        "#4f86d9",
+        "#b9dbff",
+        "#273f74"
+      ]
+    },
+    {
+      "id": "crayon-tool-01",
+      "label": "크레파스",
+      "kind": "crayon",
+      "length": 21,
+      "width": 5,
+      "colors": [
+        "#563438",
+        "#e65d64",
+        "#ffd0a1",
+        "#f4aa42"
+      ]
+    },
+    {
+      "id": "brush-tool-01",
+      "label": "붓",
+      "kind": "brush",
+      "length": 29,
+      "width": 3,
+      "colors": [
+        "#3c2e27",
+        "#a66e3e",
+        "#d7b27d",
+        "#374d61"
+      ]
+    },
+    {
+      "id": "danso-tool-01",
+      "label": "단소",
+      "kind": "flute",
+      "length": 30,
+      "width": 4,
+      "colors": [
+        "#382f29",
+        "#79593f",
+        "#b79368",
+        "#211b18"
+      ]
+    },
+    {
+      "id": "recorder-tool-01",
+      "label": "리코더",
+      "kind": "recorder",
+      "length": 29,
+      "width": 4,
+      "colors": [
+        "#59636d",
+        "#efe8d7",
+        "#ffffff",
+        "#313b45"
+      ]
+    },
+    {
+      "id": "broom-tool-01",
+      "label": "청소빗자루",
+      "kind": "broom",
+      "length": 31,
+      "width": 2,
+      "colors": [
+        "#4b3427",
+        "#9b683d",
+        "#d6a45e",
+        "#6d5232"
+      ]
+    },
+    {
+      "id": "water-rocket-tool-01",
+      "label": "물로켓",
+      "kind": "rocket",
+      "length": 22,
+      "width": 7,
+      "colors": [
+        "#2c4864",
+        "#6bb6de",
+        "#f1f7fb",
+        "#e55d5d"
+      ]
+    },
+    {
+      "id": "scissors-tool-01",
+      "label": "가위",
+      "kind": "scissors",
+      "length": 20,
+      "width": 3,
+      "colors": [
+        "#454d57",
+        "#c7d0d8",
+        "#4e86c8",
+        "#233a5c"
+      ]
+    },
+    {
+      "id": "star-wand-tool-01",
+      "label": "별모양 마법지팡이",
+      "kind": "wand",
+      "length": 25,
+      "width": 2,
+      "colors": [
+        "#5c4378",
+        "#a67ed1",
+        "#ffd45d",
+        "#fff2a8"
+      ]
+    },
+    {
+      "id": "soccer-ball-tool-01",
+      "label": "축구공",
+      "kind": "soccer-ball",
+      "size": 7,
+      "colors": [
+        "#222831",
+        "#f6f6f1",
+        "#6a727c",
+        "#ffffff"
+      ]
+    },
+    {
+      "id": "basketball-tool-01",
+      "label": "농구공",
+      "kind": "basketball",
+      "size": 7,
+      "colors": [
+        "#59331f",
+        "#d87932",
+        "#f2a15e",
+        "#241a17"
+      ]
+    },
+    {
+      "id": "volleyball-tool-01",
+      "label": "배구공",
+      "kind": "volleyball",
+      "size": 7,
+      "colors": [
+        "#3a4f70",
+        "#f7f5ea",
+        "#65a2d6",
+        "#efc84d"
+      ]
+    }
+  ]
+}
