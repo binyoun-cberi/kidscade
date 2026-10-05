@@ -4689,8 +4689,12 @@ function checkCollectibles(t){
     if(m.userData.gone)continue;
     m.rotation.y+=.02;
     m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
-    const dx=camera.position.x-m.position.x,dz=camera.position.z-m.position.z;
-    if(Math.hypot(dx,dz)<1.65&&Math.abs(freePhysicsY-m.position.y)<2.8){
+    const dx=camera.position.x-m.position.x,dz=camera.position.z-m.position.z,dist=Math.hypot(dx,dz);
+    if(m.userData.miniPoi){
+      m.visible=dist<=WORLD_VIEW_RADIUS+5;
+      if(!m.visible)continue;
+    }
+    if(dist<1.65&&Math.abs(freePhysicsY-m.position.y)<2.8){
       const foundAt=m.position.clone();
       m.userData.gone=true;scene.remove(m);
       const id=m.userData.collectible;collected.add(id);
