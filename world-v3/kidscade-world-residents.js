@@ -13,8 +13,8 @@ const ROUTINES={
   hyunwoo:{wake:6.5,sleep:22.5,personality:'busy',slots:[[7,11,'marketFront'],[11,14,'plazaCenter'],[14,18,'cafeFront'],[18,21.5,'marketFront']]}
 };
 const CHAT_LINES=[
-  '오늘 마을 분위기 좋다!','아까 광장에서 재미있는 일이 있었어.','오늘은 어디에 가볼까?',
-  '날씨가 바뀌니까 마을도 다르게 보여.','요즘 자주 마주치네!','오늘도 좋은 하루 보내!'
+  '오늘 수업 끝나고 뭐 할 거야?','아까 광장에서 선생님을 만났어.','오늘 동아리 활동 재미있겠다!',
+  '마트에서도 배울 게 은근히 많더라.','요즘 학교 사람들이랑 자주 마주치네!','내일 학교에서도 보자!'
 ];
 
 function routineTarget(id,hour,weather,pois){
