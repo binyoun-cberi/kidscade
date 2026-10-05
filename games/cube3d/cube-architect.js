@@ -3369,7 +3369,7 @@ function updateFreeMission(){
   $('biomeState').textContent=biome.name;
   if(!visitedBiomes.has(region)){
     const alreadyExplored=visitedBiomes.size>0;
-    visitedBiomes.add(region);
+    visitedBiomes.add(region);ambientAudioClock=0;
     if(gameFreeMode==='survival')trackSurvival('biome',region);
     if(alreadyExplored){
       const hint=worldRules.BIOME_REWARDS[region];
@@ -4305,7 +4305,7 @@ function setupWeather(){
   rainSystem.visible=false;scene.add(rainSystem);setWeather('clear',false);
 }
 function setWeather(next,announce=true){
-  weather=next;weatherTimer=32+Math.random()*36;
+  weather=next;weatherTimer=32+Math.random()*36;ambientAudioClock=0;
   if(rainSystem)rainSystem.visible=next==='rain'||next==='storm';
   const labels={clear:'맑음',rain:'비',fog:'안개',storm:'폭풍'};$('weatherState').textContent=labels[next]||next;
   if(scene.fog){scene.fog.near=next==='fog'?5:(next==='rain'||next==='storm'?12:24);scene.fog.far=next==='fog'?24:(next==='rain'?39:(next==='storm'?32:52))}
