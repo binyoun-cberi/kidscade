@@ -1,4 +1,4 @@
-/* 촌장 시뮬레이터 v10 — OpenSC2K에서 영감을 받은 독립 도시 시뮬레이션 코어.
+/* 촌장 시뮬레이터 v11 — OpenSC2K에서 영감을 받은 독립 도시 시뮬레이션 코어.
  * OpenSC2K의 원본 SimCity 2000 자산/소스는 포함하지 않는다.
  * 도로 통근, 전력/수도 네트워크, 서비스 커버리지, 예산 구조를 KIDSCADE용으로 새로 구현한다.
  */
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : null, () => {
   "use strict";
 
-  const VERSION = 2;
+  const VERSION = 3;
   const WIDTH = 24;
   const HEIGHT = 18;
   const ZONES = Object.freeze({
@@ -22,6 +22,7 @@
     residential: { title: "주거 구역", cost: 1 },
     commercial: { title: "상업 구역", cost: 1 },
     industrial: { title: "산업 구역", cost: 1 },
+    busStop: { title: "버스 정류장", cost: 16, overlay: true },
     powerLine: { title: "전선", cost: 3, overlay: true },
     pipe: { title: "수도관", cost: 2, overlay: true },
     powerPlant: { title: "발전소", cost: 100, civic: true },
@@ -65,8 +66,8 @@
   function blankTile(terrain = "land") {
     return {
       terrain, road: false, zone: null, density: 0, civic: null,
-      powerLine: false, pipe: false, connected: false, roadAccess: false,
-      powered: false, watered: false, tripAccess: false, tripLength: 0, commuters: 0,
+      busStop: false, powerLine: false, pipe: false, connected: false, roadAccess: false,
+      powered: false, watered: false, tripAccess: false, tripLength: 0, tripCost: 0, usedBus: false, commuters: 0,
       traffic: 0, pollution: 0, landValue: 35, crime: 0, fireRisk: 0, growth: 0,
       service: 0, policeCoverage: 0, fireCoverage: 0, damage: 0
     };
@@ -78,7 +79,8 @@
       avgLandValue: 0, avgPollution: 0, avgTraffic: 0, avgCrime: 0,
       powerDemand: 0, powerCapacity: 0, powerServed: 0, poweredRate: 100,
       waterDemand: 0, waterCapacity: 0, waterServed: 0, wateredRate: 100,
-      trips: 0, failedTrips: 0, commuteSuccess: 100, avgCommute: 0,
+      trips: 0, failedTrips: 0, busTrips: 0, commuteSuccess: 100, avgCommute: 0, avgCommuteCost: 0,
+      activeFires: 0, activeCrimes: 0, resolvedDispatches: 0,
       damaged: 0, serviceScore: 0
     };
   }
@@ -98,6 +100,9 @@
       budgetRatio: 1,
       demand: { residential: 48, commercial: 24, industrial: 30 },
       stats: defaultStats(),
+      emergencies: [],
+      nextEmergencyId: 1,
+      resolvedDispatches: 0,
       log: [],
       tiles: []
     };
@@ -158,7 +163,7 @@
   }
 
   function normalize(raw) {
-    const validVersion = raw && (raw.version === 1 || raw.version === VERSION);
+    const validVersion = raw && (raw.version === 1 || raw.version === 2 || raw.version === VERSION);
     if (!validVersion || raw.width !== WIDTH || raw.height !== HEIGHT ||
       !Array.isArray(raw.tiles) || raw.tiles.length !== WIDTH * HEIGHT) {
       return initial(raw?.seed || 8429);
@@ -171,6 +176,9 @@
       version: VERSION,
       demand: { ...base.demand, ...(raw.demand || {}) },
       stats: { ...defaultStats(), ...(raw.stats || {}) },
+      emergencies: Array.isArray(raw.emergencies) ? raw.emergencies.slice(0, 12).map(e => ({...e, route:Array.isArray(e?.route)?e.route:[], progress:Math.max(0,Math.floor(Number(e?.progress)||0)), age:Math.max(0,Math.floor(Number(e?.age)||0))})) : [],
+      nextEmergencyId: Math.max(1, Math.floor(Number(raw.nextEmergencyId) || 1)),
+      resolvedDispatches: Math.max(0, Math.floor(Number(raw.resolvedDispatches) || 0)),
       log: Array.isArray(raw.log) ? raw.log.slice(0, 40) : []
     };
     city.funds = clamp(Number(city.funds), 0, 99999);
@@ -187,6 +195,9 @@
       crime: clamp(Number(t?.crime) || 0),
       fireRisk: clamp(Number(t?.fireRisk) || 0),
       growth: clamp(Number(t?.growth) || 0, -100, 100),
+      tripCost: Math.max(0, Number(t?.tripCost) || 0),
+      usedBus: !!t?.usedBus,
+      busStop: !!t?.busStop,
       damage: clamp(Math.floor(Number(t?.damage) || 0), 0, 3)
     }));
 
