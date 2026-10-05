@@ -49,10 +49,14 @@ function sfx(kind){
     if(kind==='place'){o.type='triangle';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(170,t+.08)}
     else if(kind==='break'){o.type='square';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(80,t+.09)}
     else if(kind==='mine'){o.type='triangle';o.frequency.setValueAtTime(190,t);o.frequency.exponentialRampToValueAtTime(125,t+.05)}
+    else if(kind==='hit'){o.type='square';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(72,t+.07)}
+    else if(kind==='warn'){o.type='sawtooth';o.frequency.setValueAtTime(330,t);o.frequency.exponentialRampToValueAtTime(250,t+.11)}
+    else if(kind==='pickup'){o.type='sine';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(880,t+.055)}
     else if(kind==='good'){o.type='sine';o.frequency.setValueAtTime(520,t);o.frequency.setValueAtTime(780,t+.09)}
     else{o.type='sine';o.frequency.setValueAtTime(210,t);o.frequency.setValueAtTime(180,t+.08)}
-    g.gain.setValueAtTime(kind==='mine'?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(kind==='mine'?.09:.16));
-    o.start(t);o.stop(t+(kind==='mine'?.1:.18));
+    const quiet=kind==='mine'||kind==='warn'||kind==='pickup';
+    g.gain.setValueAtTime(quiet?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(kind==='mine'||kind==='hit'?.09:.16));
+    o.start(t);o.stop(t+(kind==='mine'||kind==='hit'?.1:.18));
   }catch(e){}
 }
 function toast(msg){
@@ -1853,6 +1857,9 @@ let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','wa
 let yaw=0,pitch=0,freeVelocityY=0,onGround=true,freeKeys={},xray=false,nearRuin=false,lastFreeSave=0;
 let freeSaveDirty=false,freeSaveDueAt=0,freeStepHop=0;
 let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDurationNow=0,miningBeat=.25;
+let miningCrackOverlay=null,miningCrackKey='';
+let freePlacementGhost=null,freePlacementGhostKey='';
+let pendingPlayerStrikes=[];
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
@@ -2018,6 +2025,7 @@ function withinPlayerReach(hit,eye,max){
 function renderFreeScene(now){
   prepareFreeAvatar(now);
   updateFreeHeldTool(now);
+  updateFreePlacementGhost();
   if(freeViewMode!=='third'){renderer.render(scene,camera);return}
   const savedPos=camera.position.clone(),savedQuat=camera.quaternion.clone();
   camera.position.copy(thirdPersonCameraPosition(savedPos));
@@ -2749,6 +2757,7 @@ function initFree(){
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
+  miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   freeAvatarFacingRight=false;
