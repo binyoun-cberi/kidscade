@@ -11,7 +11,7 @@ const html=read('games/cube3d/index.html');
 
 test('v27 scripts parse and are cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
   assert.match(html,/id="mobileMore"/);
 });
 
