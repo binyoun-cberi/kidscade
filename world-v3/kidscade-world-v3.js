@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=28';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=29';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=8';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=9';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
-import {createTownEconomy} from './kidscade-world-economy.js?v=22';
+import {createTownEconomy} from './kidscade-world-economy.js?v=23';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -1830,6 +1830,10 @@ async function buildOutdoor(){
       talk:(id,name)=>townEconomy?.talk(id,name),arcade:()=>townEconomy?.arcade(),
       library:()=>townEconomy?.library(),clinic:()=>townEconomy?.clinic(),
       transport:()=>townEconomy?.transport(),bench:()=>townEconomy?.bench(),
+      schoolYard:()=>townEconomy?.schoolYardPanel?.(),
+      schoolBreakGame:id=>townEconomy?.schoolBreakGame?.(id),
+      schoolFriends:()=>townEconomy?.schoolFriendPanel?.(),
+      schoolLunch:()=>townEconomy?.schoolLunchPanel?.(),
       enterVenue:kind=>enterVenue(kind),
       dailyBoard:()=>dailyLife?.boardPanel?.(),dailyVisitor:()=>dailyLife?.visitorPanel?.()
     },

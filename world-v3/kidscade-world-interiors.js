@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
-import {schoolPeriodAt} from './kidscade-world-school.js?v=2';
+import {schoolPeriodAt} from './kidscade-world-school.js?v=3';
 
 const ROOT=new URL('../assets/game/',import.meta.url);
 const MARKET=new URL('shops/market/',ROOT).href;
@@ -298,7 +298,7 @@ export async function buildVenueInteriors(ctx){
     const mins=Number(getGameTime?.()??720),period=schoolPeriodAt(mins);
     if(period.id===lastSchoolPeriodId)return;
     const previous=lastSchoolPeriodId;lastSchoolPeriodId=period.id;
-    const studentsInside=['arrival','class','recess','club','dismissal'].includes(period.kind);
+    const studentsInside=['class','club'].includes(period.kind);
     for(const actor of schoolActors){
       const visible=actor.kind==='teacher'
         ?period.kind==='class'&&actor.id===period.teacher

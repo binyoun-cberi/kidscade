@@ -127,6 +127,7 @@ test('Seed School changes teacher, blackboard and activity by live game period',
   assert.match(interiors,/schoolBoardLabel\?\.userData\?\.setText/);
   assert.match(interiors,/schoolTopicLabel\?\.userData\?\.setText/);
   assert.match(interiors,/actions\.schoolBell\?\.\(period\)/);
+  assert.match(interiors,/const studentsInside=\['class','club'\]\.includes\(period\.kind\)/);
   for(const id of ['minji','sora','doyun','junho','nari','minseok','haneul'])assert.ok(interiors.includes("'"+id+"'"),'missing rotating teacher '+id);
 });
 
@@ -142,6 +143,43 @@ test('Seed School class participation persists once per period per day',()=>{
   assert.match(economy,/data-school-class-open/);
   assert.match(economy,/claimFriendshipRewards\(mentor\)/);
   assert.match(economy,/SCHOOL_DAY_PERIODS\.filter/);
+});
+
+test('Seed School recess and lunch are playable world activities',()=>{
+  assert.match(school,/export const SCHOOL_BREAK_PLAY_PERIODS=/);
+  assert.match(school,/export const SCHOOL_BREAK_GAMES=/);
+  assert.match(school,/soccer:\{/);
+  assert.match(school,/dodge:\{/);
+  assert.match(school,/export const SCHOOL_LUNCH_MENUS=/);
+  assert.match(school,/export function schoolLunchMenu\(day\)/);
+  assert.match(city,/schoolyard-soccer-ball/);
+  assert.match(city,/schoolyard-dodge-ball/);
+  assert.match(city,/⚽ 운동장 놀이하기/);
+  assert.match(city,/🔴 피구 한 판 하기/);
+  assert.match(city,/👫 친구와 같이 놀기/);
+  assert.match(city,/🍱 오늘의 급식 먹기/);
+  assert.match(runtime,/schoolYard:\(\)=>townEconomy\?\.schoolYardPanel/);
+  assert.match(runtime,/schoolBreakGame:id=>townEconomy\?\.schoolBreakGame/);
+  assert.match(runtime,/schoolFriends:\(\)=>townEconomy\?\.schoolFriendPanel/);
+  assert.match(runtime,/schoolLunch:\(\)=>townEconomy\?\.schoolLunchPanel/);
+});
+
+test('Seed School break games friends and lunch persist without reward farming',()=>{
+  assert.match(economy,/schoolBreaks:\{/);
+  assert.match(economy,/games:old\.schoolBreaks/);
+  assert.match(economy,/friendPeriods:old\.schoolBreaks/);
+  assert.match(economy,/lunchDay:Math\.max/);
+  assert.match(economy,/lunchFriendDay:Math\.max/);
+  assert.match(economy,/function schoolYardPanel\(\)/);
+  assert.match(economy,/function answerSchoolBreakGame\(gameId,choice\)/);
+  assert.match(economy,/t\.schoolBreaks\.games\[key\]=true/);
+  assert.match(economy,/function schoolFriendBreak\(id\)/);
+  assert.match(economy,/t\.schoolBreaks\.friendPeriods\[key\]=id/);
+  assert.match(economy,/function schoolEatLunch\(\)/);
+  assert.match(economy,/t\.schoolBreaks\.lunchDay=p\.survival\.day/);
+  assert.match(economy,/function schoolLunchFriend\(id\)/);
+  assert.match(economy,/t\.schoolBreaks\.lunchFriendDay=p\.survival\.day/);
+  for(const attr of ['data-school-break-answer','data-school-friend','data-school-lunch-eat','data-school-lunch-friend'])assert.ok(economy.includes(attr),'missing school break handler '+attr);
 });
 
 test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{

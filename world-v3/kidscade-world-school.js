@@ -59,6 +59,35 @@ export const SCHOOL_CLASS_ACTIVITIES={
   club:{leader:'woojin',title:'관찰 기록 만들기',prompt:'숲에서 처음 보는 버섯을 발견했어. 관찰 기록에 가장 도움이 되는 것은?',choices:[['record','색·모양·발견 장소를 기록한다'],['guess','보지 않고 이름부터 짐작한다'],['ignore','아무 기록도 남기지 않는다']],answer:'record',result:'관찰한 사실을 그대로 기록하면 나중에 비교하고 분류하기 좋아.',rewardCoins:16,friendship:1}
 };
 
+
+export const SCHOOL_BREAK_PLAY_PERIODS=['recess1','recess2','recess3','lunch','recess4'];
+
+export const SCHOOL_BREAK_GAMES={
+  soccer:{
+    id:'soccer',icon:'⚽',title:'운동장 미니 축구',friend:'taeho',rewardCoins:10,fun:6,
+    prompt:'태호가 골키퍼를 보고 있어. 어디로 슛할까?',
+    choices:[['left','왼쪽 구석'],['center','정면'],['right','오른쪽 구석']]
+  },
+  dodge:{
+    id:'dodge',icon:'🔴',title:'피구 한 판',friend:'seoyeon',rewardCoins:10,fun:6,
+    prompt:'서연이 공을 던질 준비를 했어. 어떻게 대응할까?',
+    choices:[['left','왼쪽으로 피하기'],['catch','두 손으로 잡기'],['right','오른쪽으로 피하기']]
+  }
+};
+
+export const SCHOOL_LUNCH_MENUS=[
+  {name:'소고기무국 급식',items:['잡곡밥','소고기무국','계란말이','오이무침','사과'],energy:9,hunger:24,fun:5},
+  {name:'카레 급식',items:['카레라이스','두부샐러드','깍두기','요구르트'],energy:8,hunger:25,fun:6},
+  {name:'닭곰탕 급식',items:['현미밥','닭곰탕','감자조림','배추김치','귤'],energy:10,hunger:26,fun:5},
+  {name:'비빔밥 급식',items:['채소비빔밥','미역국','두부구이','김치','바나나'],energy:9,hunger:24,fun:6},
+  {name:'잔치국수 급식',items:['잔치국수','주먹밥','방울토마토','김치','우유'],energy:8,hunger:23,fun:7}
+];
+
+export function schoolLunchMenu(day){
+  const n=Math.max(1,Math.floor(Number(day)||1));
+  return SCHOOL_LUNCH_MENUS[(n-1)%SCHOOL_LUNCH_MENUS.length];
+}
+
 export function schoolPeriodAt(minutes){
   const m=((Number(minutes)||0)%1440+1440)%1440;
   return SCHOOL_DAY_PERIODS.find(p=>m>=p.start&&m<p.end)||{
