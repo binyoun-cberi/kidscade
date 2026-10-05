@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-earring-catalog",
+  "layer": "earring",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "copper-ring-earring-01",
+  "sourceLayer": "earring",
+  "items": [
+    {
+      "id": "copper-ring-earring-01",
+      "label": "구리 링 귀걸이",
+      "kind": "default",
+      "colors": [
+        "#633827",
+        "#bd783c",
+        "#f5c17d"
+      ]
+    },
+    {
+      "id": "gold-star-earring-01",
+      "label": "골드 스타 귀걸이",
+      "kind": "star",
+      "colors": [
+        "#6c4a16",
+        "#e0a52f",
+        "#fff0a1"
+      ]
+    },
+    {
+      "id": "crescent-earring-01",
+      "label": "초승달 귀걸이",
+      "kind": "crescent",
+      "colors": [
+        "#53617b",
+        "#cbd5e7",
+        "#ffffff"
+      ]
+    },
+    {
+      "id": "silver-ring-earring-01",
+      "label": "실버 링 귀걸이",
+      "kind": "ring",
+      "colors": [
+        "#4b5563",
+        "#b9c3cf",
+        "#eef3f7"
+      ]
+    },
+    {
+      "id": "pearl-earring-01",
+      "label": "진주 귀걸이",
+      "kind": "pearl",
+      "colors": [
+        "#7c6d72",
+        "#e7dde0",
+        "#fffdf8"
+      ]
+    },
+    {
+      "id": "heart-earring-01",
+      "label": "하트 귀걸이",
+      "kind": "heart",
+      "colors": [
+        "#7a3046",
+        "#d65b7e",
+        "#ffb0c5"
+      ]
+    },
+    {
+      "id": "flower-earring-01",
+      "label": "꽃 귀걸이",
+      "kind": "flower",
+      "colors": [
+        "#6b5630",
+        "#edb857",
+        "#ffe3a1"
+      ]
+    },
+    {
+      "id": "lightning-earring-01",
+      "label": "번개 귀걸이",
+      "kind": "bolt",
+      "colors": [
+        "#63501c",
+        "#e6bf37",
+        "#fff29a"
+      ]
+    },
+    {
+      "id": "drop-earring-01",
+      "label": "물방울 귀걸이",
+      "kind": "drop",
+      "colors": [
+        "#315f83",
+        "#5aa6d6",
+        "#bfe9ff"
+      ]
+    },
+    {
+      "id": "ribbon-earring-01",
+      "label": "리본 귀걸이",
+      "kind": "bow",
+      "colors": [
+        "#783f66",
+        "#c86fa8",
+        "#ffc2df"
+      ]
+    },
+    {
+      "id": "emerald-earring-01",
+      "label": "에메랄드 귀걸이",
+      "kind": "gem",
+      "colors": [
+        "#235447",
+        "#3fa37f",
+        "#a3f0d0"
+      ]
+    }
+  ]
+}
