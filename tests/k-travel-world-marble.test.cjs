@@ -86,6 +86,10 @@ test('world travel movement uses fair bounded tickets, three transport modes and
   assert.match(game,/state\.round<=6/);
   assert.match(game,/prepareRouteChoice\(player,roll\)/);
   assert.match(game,/travelRoute\(player,option\)/);
+  assert.match(game,/function safeTravelStep\(run,label,timeoutMs=3200\)/);
+  assert.match(game,/function recoverTravel\(player,option,session,flow\)/);
+  assert.match(game,/armPhaseRecovery\('travel'/);
+  assert.match(game,/travelFX\.cancel/);
   assert.match(game,/animateMapSegment\(from,to,mode,fast=false\)/);
   assert.match(game,/shouldShowcaseTravel\(player,mode,from,to\)/);
   assert.match(game,/chooseMode\(route,segmentIndex,player\)/);
@@ -111,6 +115,21 @@ test('economy preserves investment, upgrades, tolls, takeovers, continent collec
   assert.match(game,/Math\.min\(6,Math\.round\(getToll\(countryId\)\*\.08\)\)/);
   assert.match(game,/if\(player\.turnTransitPaid>0\)return true/);
   assert.match(game,/state\.festival/);
+});
+
+test('K-Travel recovers stale async flows and map-load failures instead of hard-locking',()=>{
+  assert.match(game,/sessionSerial/);
+  assert.match(game,/asyncFlowSerial/);
+  assert.match(game,/function invalidateAsyncFlow\(\)/);
+  assert.match(game,/armPhaseRecovery\('rolling'/);
+  assert.match(game,/armPhaseRecovery\('choose'/);
+  assert.match(game,/armPhaseRecovery\('action'/);
+  assert.match(game,/armPhaseRecovery\('between'/);
+  assert.match(game,/세계 지도 다시 불러오기/);
+  assert.match(game,/if\(!geo\)return loadMap\(\)/);
+  assert.match(fx,/finish\(active\)/);
+  assert.match(fx,/cancel\(\)/);
+  assert.match(fx,/this\.active!==active/);
 });
 
 test('investment growth is visualized from local business to named landmark',()=>{
