@@ -523,6 +523,21 @@ function createFallbackTree(x,z,key='tree'){
   trunk.position.y=.85;const crown=new THREE.Mesh(new THREE.DodecahedronGeometry(1.12,0),new THREE.MeshStandardMaterial({color:0x4d8b55,roughness:1}));crown.position.y=2.15;
   g.add(trunk,crown);g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return registerFallback(g,key);
 }
+function createFallbackVehicle(x,z,rot=0,key='sedan'){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.75,.62,3.8),new THREE.MeshStandardMaterial({color:0xd9e1e6,roughness:.48,metalness:.08}));
+  body.position.y=.48;
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.48,.58,1.8),new THREE.MeshStandardMaterial({color:0x7295a5,roughness:.32,metalness:.05}));
+  cabin.position.set(0,.96,-.15);
+  const tireMat=new THREE.MeshStandardMaterial({color:0x20272a,roughness:.9});
+  for(const x of [-.92,.92])for(const z of [-1.25,1.25]){
+    const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.18,12),tireMat);
+    wheel.rotation.z=Math.PI/2;wheel.position.set(x,.3,z);g.add(wheel);
+  }
+  g.add(body,cabin);g.position.set(x,0,z);g.rotation.y=rot;
+  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+  scene.add(g);return registerFallback(g,key);
+}
 function createFallbackBuilding(x,z,color,w=10,d=9,h=5.5,key='campusA'){
   const g=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.8}));
   body.position.y=h/2;g.add(body);
@@ -730,7 +745,10 @@ function buildCourse(){
     addBoxObstacle('campusBuilding'+(++buildingN),b.x,b.z,11,9);
   }
   let carN=0;
-  for(const [,x,z] of WAITING_CARS) addCircleObstacle('waitingCar'+(++carN),x,z,1.55);
+  for(const [key,x,z,rot] of WAITING_CARS){
+    createFallbackVehicle(x,z,rot,key);
+    addCircleObstacle('waitingCar'+(++carN),x,z,1.55);
+  }
 }
 function initBackupGuides(){
   const makeGuide=()=>{
