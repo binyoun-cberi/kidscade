@@ -20,7 +20,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=51/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=52/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -28,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-9/);
+  assert.match(js,/pixel-v3-school-starter-10/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -59,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-9'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-10'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -320,12 +320,15 @@ test('hair visual regression keeps repaired partings solid and rebuilt ponytail 
   assert.deepEqual([...pony].filter(key=>eyeMask.has(key)),[]);
   assert.deepEqual([...neat].filter(key=>eyeMask.has(key)),[]);
   assert.deepEqual([...curly].filter(key=>eyeMask.has(key)),[]);
-  for(let y=33;y<=43;y++){
-    const xs=neatData.pixels.filter(pixel=>pixel[1]===y).map(pixel=>pixel[0]);
+  const expectedNeatExtents={33:[47,82],34:[47,82],35:[47,82],36:[47,82],37:[47,82],38:[47,82],39:[47,82],40:[48,82],41:[48,81],42:[48,81],43:[49,80]};
+  for(const [y,expected] of Object.entries(expectedNeatExtents)){
+    const xs=neatData.pixels.filter(pixel=>pixel[1]===Number(y)).map(pixel=>pixel[0]);
     assert.ok(xs.length>0,'neat-short row '+y);
-    assert.ok(Math.min(...xs)>=48,'neat-short left temple '+y);
-    assert.ok(Math.max(...xs)<=83,'neat-short right temple '+y);
+    assert.deepEqual([Math.min(...xs),Math.max(...xs)],expected,'body-fit neat-short extent '+y);
   }
+  const ponyData=loadHair('school-ponytail-hair-02.json');
+  assert.ok(ponyData.pixels.some(pixel=>pixel[0]>=86&&pixel[1]>=38&&pixel[1]<=48),'body-fit ponytail tail');
+  assert.ok(ponyData.pixels.every(pixel=>pixel[0]<=94),'ponytail stays close to body head');
   assert.ok(hairCatalog.items.some(item=>item.id==='school-ponytail-hair-02'&&item.file==='school-ponytail-hair-02.json'));
   assert.ok(!hairCatalog.items.some(item=>item.id==='ponytail-hair-01'));
   assert.equal(fs.existsSync(path.join(starterDir,'hair','ponytail-hair-01.json')),false);
