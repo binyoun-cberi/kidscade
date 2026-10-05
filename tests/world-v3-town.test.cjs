@@ -85,7 +85,7 @@ test('Seed School is a walk-in campus with a classroom and shared school-day rou
   assert.match(interiors,/school:'venue-school'/);
   assert.match(interiors,/async function buildSchool\(\)/);
   assert.match(interiors,/school-desk-/);
-  assert.match(interiors,/내 자리에서 수업 준비하기/);
+  assert.match(interiors,/내 자리에서 수업 참여하기/);
   assert.match(interiors,/function syncSchoolActors\(\)/);
   for(const id of ['minji','yuna','woojin','seoyeon','taeho','hyunwoo'])assert.ok(interiors.includes("['"+id+"'"),'missing classroom NPC '+id);
   for(const file of ['desk.glb','chair-desk.glb','bookcase-open.glb','bathroom-cabinet.glb','table.glb','bench.glb']){
@@ -95,13 +95,53 @@ test('Seed School is a walk-in campus with a classroom and shared school-day rou
     const line=residents.match(new RegExp(id+":\\{[^\\n]+"))?.[0]||'';
     assert.ok(line.includes('schoolGate')||line.includes('schoolYard'),'school routine missing '+id);
   }
-  assert.match(residents,/if\(key==='schoolYard'\|\|key==='schoolGarden'\)key='schoolGate'/);
+  assert.match(residents,/schoolPeriodAt\(hour\*60\)/);
+  assert.match(residents,/period\.kind==='class'\|\|period\.kind==='club'/);
+  assert.match(residents,/key:'schoolInside',hidden:true/);
+  assert.match(residents,/if\(target\.hidden\)/);
+  assert.match(residents,/n\.lifeState='SCHOOL'/);
+  assert.match(city,/schoolInside:/);
   assert.match(runtime,/school:\{x:-7\.3,z:45\.45\}/);
   assert.match(runtime,/school:\{x:-7\.3,z:46\.0,name:'씨앗학교'\}/);
   assert.match(economy,/function schoolSchedule\(\)/);
   assert.match(economy,/data-city-travel="school"/);
   assert.match(runtime,/schoolSchedule:\(\)=>townEconomy\?\.schoolSchedule/);
+  assert.match(runtime,/schoolClass:\(\)=>townEconomy\?\.schoolClassPanel/);
+  assert.match(runtime,/schoolBell:period=>/);
   assert.match(runtime,/getGameTime:\(\)=>prog\(\)\.survival\.time/);
+});
+
+test('Seed School changes teacher, blackboard and activity by live game period',()=>{
+  assert.match(school,/export const SCHOOL_DAY_PERIODS=/);
+  assert.match(school,/id:'p1'.*label:'1교시 수학'.*teacher:'minji'/s);
+  assert.match(school,/id:'recess1'.*label:'쉬는 시간'/s);
+  assert.match(school,/id:'p2'.*label:'2교시 국어'.*teacher:'sora'/s);
+  assert.match(school,/id:'p3'.*teacher:'doyun'/s);
+  assert.match(school,/id:'p4'.*teacher:'junho'/s);
+  assert.match(school,/id:'p5'.*teacher:'nari'/s);
+  assert.match(school,/id:'p6'.*teacher:'minseok'/s);
+  assert.match(school,/id:'club'.*leader:'woojin'/s);
+  assert.match(school,/export function schoolPeriodAt\(minutes\)/);
+  assert.match(school,/export const SCHOOL_CLASS_ACTIVITIES=/);
+  assert.match(interiors,/period\.kind==='class'&&actor\.id===period\.teacher/);
+  assert.match(interiors,/schoolBoardLabel\?\.userData\?\.setText/);
+  assert.match(interiors,/schoolTopicLabel\?\.userData\?\.setText/);
+  assert.match(interiors,/actions\.schoolBell\?\.\(period\)/);
+  for(const id of ['minji','sora','doyun','junho','nari','minseok','haneul'])assert.ok(interiors.includes("'"+id+"'"),'missing rotating teacher '+id);
+});
+
+test('Seed School class participation persists once per period per day',()=>{
+  assert.match(economy,/schoolClasses:\{/);
+  assert.match(economy,/completed:old\.schoolClasses/);
+  assert.match(economy,/attempts:old\.schoolClasses/);
+  assert.match(economy,/function schoolClassPanel\(\)/);
+  assert.match(economy,/function answerSchoolClass\(periodId,value\)/);
+  assert.match(economy,/const key=p\.survival\.day\+'\:'+period\.id/);
+  assert.match(economy,/t\.schoolClasses\.completed\[key\]=true/);
+  assert.match(economy,/data-school-class-answer/);
+  assert.match(economy,/data-school-class-open/);
+  assert.match(economy,/claimFriendshipRewards\(mentor\)/);
+  assert.match(economy,/SCHOOL_DAY_PERIODS\.filter/);
 });
 
 test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{
