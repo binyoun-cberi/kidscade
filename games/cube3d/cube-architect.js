@@ -3077,8 +3077,8 @@ function advanceSurvival(){
     toast('생존 원정 완료! 이제 자유롭게 더 탐험하고 건축해 보세요.');
     reportResult('free-survival',100,true);
   }else if(progressed){
-    const unlocked=worldRules.RECIPES.filter(r=>r.stage>previousStage&&r.stage<=survivalStage&&recipeUnlocked(r.id));
-    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title+(unlocked.length?' · 제작법 '+unlocked.length+'개 해금':''));
+    const discovered=refreshRecipeDiscoveries(true);
+    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title+(discovered.length?' · 새 제작법 '+discovered.length+'개 발견':''));
   }
   if(progressed){pulseSurvivalQuest();sfx('good');saveFreeWorld()}
   $('actionXray').classList.toggle('hidden',survivalStage<3);
@@ -3203,6 +3203,7 @@ function renderCraftDetail(recipe){
     root.innerHTML='<div class="craft-detail-empty">제작법을 선택하면 필요한 재료와 결과를 여기에서 볼 수 있어요.</div>';return;
   }
   const [resultType,resultCount]=Object.entries(recipe.gives)[0],result=blockDef(resultType);
+  const isNew=unreadRecipeIds.has(recipe.id);
   const hex='#'+(result.color||0xd9e2ec).toString(16).padStart(6,'0');
   const ingredients=Object.entries(recipe.needs).map(([type,need])=>{
     const d=blockDef(type),have=bagCount(type),ready=have>=need,ih='#'+(d.color||0xdddddd).toString(16).padStart(6,'0');
@@ -3211,7 +3212,8 @@ function renderCraftDetail(recipe){
   }).join('');
   const possible=recipePossible(recipe),benchReady=!recipe.bench||hasWorkbench();
   root.innerHTML='<div class="craft-result"><div class="craft-result-icon" style="--craft-swatch:'+hex+'">'+(result.icon||'▣')+
-    '</div><div class="craft-result-copy"><b>'+recipe.name+'</b><small>'+result.name+' '+resultCount+'개가 가방에 들어갑니다.</small></div></div>'+
+    '</div><div class="craft-result-copy"><b>'+recipe.name+(isNew?'<span class="craft-new-chip">NEW</span>':'')+
+    '</b><small>'+result.name+' '+resultCount+'개가 가방에 들어갑니다.</small></div></div>'+
     '<div class="craft-ingredients">'+ingredients+'</div>'+
     '<div class="craft-bench-note">'+(recipe.bench?(benchReady?'✓ 제작대 범위 안':'제작대 가까이에서 만들 수 있어요.'):'손으로 바로 제작 가능')+'</div>'+
     '<button id="craftSelectedButton" type="button" '+(possible?'':'disabled')+'>'+(possible?'제작하기':'재료를 더 모아야 해요')+'</button>';
@@ -3219,6 +3221,7 @@ function renderCraftDetail(recipe){
 }
 function craftSurvival(recipe){
   if(craftingBusy)return;
+  markRecipeSeen(recipe.id);
   if(gameFreeMode!=='survival'||!recipePossible(recipe)){
     toast('재료가 부족하거나 제작대가 필요해요.');return;
   }
@@ -3289,7 +3292,10 @@ function buildInventory(category='전체'){
     }
     if(!resources.length)grid.textContent='가방이 비어 있어요. 먼저 주변의 나무를 채집해 보세요.';
     const list=$('survivalCraftList');list.innerHTML='';
-    const visible=visibleSurvivalRecipes();
+    const visible=visibleSurvivalRecipes();updateCraftDiscoveryHud();
+    const discoverySummary=$('craftDiscoverySummary');
+    if(discoverySummary)discoverySummary.textContent='발견한 제작법 '+discoveredRecipeIds.size+' / '+worldRules.RECIPES.length+
+      (unreadRecipeIds.size?' · NEW '+unreadRecipeIds.size:'');
     if(!['전체','도구','건축','재료'].includes(survivalCraftCategory))survivalCraftCategory='전체';
     renderCraftTabs(visible);
     const filtered=survivalCraftCategory==='전체'?visible:visible.filter(r=>recipeCategory(r)===survivalCraftCategory);
@@ -3297,17 +3303,19 @@ function buildInventory(category='전체'){
     for(const recipe of filtered){
       const b=document.createElement('button'),possible=recipePossible(recipe);
       const [resultType]=Object.keys(recipe.gives),result=blockDef(resultType),hex='#'+(result.color||0xdbe4ef).toString(16).padStart(6,'0');
-      b.className='survival-recipe'+(possible?' can-craft':'')+(recipe.id===selectedCraftRecipeId?' selected':'');
+      const isNew=unreadRecipeIds.has(recipe.id);
+      b.className='survival-recipe'+(possible?' can-craft':'')+(recipe.id===selectedCraftRecipeId?' selected':'')+(isNew?' new-recipe':'');
       const costs=Object.entries(recipe.needs).map(([type,n])=>blockDef(type).name+' '+bagCount(type)+'/'+n).join(' · ');
       b.innerHTML='<span class="recipe-icon" style="--recipe-swatch:'+hex+'">'+(result.icon||'▣')+'</span>'+
         '<span class="recipe-copy"><b>'+recipe.name+'</b><small>'+costs+(recipe.bench?' · 제작대':'')+'</small></span>'+
-        '<span class="recipe-state">'+(possible?'제작 가능':'재료 부족')+'</span>';
-      b.onclick=()=>{selectedCraftRecipeId=recipe.id;buildInventory('전체')};list.appendChild(b);
+        '<span class="recipe-state">'+(isNew?'NEW':possible?'제작 가능':'재료 부족')+'</span>';
+      b.onclick=()=>{markRecipeSeen(recipe.id);selectedCraftRecipeId=recipe.id;buildInventory('전체')};list.appendChild(b);
     }
     renderCraftDetail(filtered.find(r=>r.id===selectedCraftRecipeId)||null);
-    $('survivalCraftHint').textContent=hasWorkbench()?
-      '제작대 근처예요. 재료가 모이면 제작 버튼이 활성화돼요.':
-      '가방에 든 제작대를 땅에 설치하고 가까이 다가가세요.';
+    $('survivalCraftHint').textContent=!visible.length?
+      '새 재료를 처음 얻으면 관련 제작법이 이곳에 발견됩니다.':
+      hasWorkbench()?'제작대 근처예요. 새 재료를 모으면 만들 수 있는 것이 더 늘어나요.':
+      '새 재료를 모아 제작법을 발견하세요. 제작대가 필요한 물건은 가까이에서 만들 수 있어요.';
     const techLabels=poiRules.POIS.filter(p=>unlockedTech.has(p.tech.id)).map(p=>p.tech.label);
     $('survivalTechs').textContent=techLabels.length?
       '설계도 기술 · '+techLabels.join(' · '):
