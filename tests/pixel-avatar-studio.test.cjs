@@ -118,10 +118,11 @@ test('avatar purchases spend the shared seed wallet through the parent integrati
 });
 
 test('all non-default avatar asset selectors are purchase-gated while skin stays free',()=>{
-  for(const category of ['hair','hairColor','eyes','back','upper','lower','earring','shoes','weapon','shield']){
+  for(const category of ['hair','hairColor','eyes','upper','lower','earring','shoes','weapon','shield']){
     assert.ok(js.includes("ensureAssetAccess('"+category+"'"),category);
   }
   assert.match(js,/ensureAssetAccess\(key,id,group\.defaultId,item\.label\)/);
+  assert.ok(js.includes("back:{label:'등 장식',name:'착용 안 함',assetKey:'back'}"));
   assert.doesNotMatch(js,/ensureAssetAccess\('skin'/);
   assert.match(js,/quote\.free\?'기본':quote\.owned\?'보유':'🌱 '/);
   assert.match(js,/기본 세트로 돌아왔어요\. 구매한 파츠는 그대로 보유해요!/);
