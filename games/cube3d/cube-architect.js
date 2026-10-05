@@ -1857,6 +1857,9 @@ let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전�
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
+let freeAvatarAction='',freeAvatarActionStartedAt=0,freeAvatarActionUntil=0,freeAvatarDefeated=false,freeAvatarReturnAt=0,freeViewBeforeDefeat=null;
+const FREE_AVATAR_ACTION_MS={attack:410,hurt:285,dead:930,pickup:450,sit:680};
+const FREE_AVATAR_ACTION_PRIORITY={pickup:1,sit:1,attack:2,hurt:3,dead:4};
 let freeHeldToolRoot=null,freeHeldToolKey='',freeHeldToolToken=0;
 let currentCuboidSpec={dims:[2,1,1],faceColors:DEFAULT_FACE_COLORS.slice()};
 let mathLensMode=0,mathOverlayGroup=null,facePaintColor='#ff7043';
@@ -1920,6 +1923,19 @@ function thirdPersonCameraPoint(eye,desired){
   }
   return safe;
 }
+function triggerFreeAvatarAction(kind,duration=FREE_AVATAR_ACTION_MS[kind]||360,now=performance.now()){
+  if(!kind)return;
+  const currentActive=freeAvatarAction&&now<freeAvatarActionUntil;
+  if(currentActive&&(FREE_AVATAR_ACTION_PRIORITY[freeAvatarAction]||0)>(FREE_AVATAR_ACTION_PRIORITY[kind]||0))return;
+  freeAvatarAction=kind;freeAvatarActionStartedAt=now;freeAvatarActionUntil=now+Math.max(80,duration);
+}
+function freeAvatarActionAt(now){
+  if(!freeAvatarAction)return null;
+  if(now>=freeAvatarActionUntil&&!freeAvatarDefeated){
+    freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;return null;
+  }
+  return {kind:freeAvatarAction,elapsedMs:Math.max(0,now-freeAvatarActionStartedAt)};
+}
 function prepareFreeAvatar(now){
   const api=freeAvatarApi();if(!api)return;
   if(now>=freeAvatarSyncAt){
@@ -1936,7 +1952,7 @@ function prepareFreeAvatar(now){
   freeAvatarRoot.rotation.y=yaw;
   freeAvatarRoot.visible=freeViewMode==='third';
   const motion=freeFluidKind?'swim':freeFlying?'air':onGround?'ground':'air';
-  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion);
+  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion,freeAvatarActionAt(now));
 }
 function freeLookVector(){
   return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
@@ -2729,6 +2745,7 @@ function initFree(){
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
+  freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
@@ -3392,6 +3409,7 @@ function breakFreeBlock(hit){
     if(nearby&&!getBlock(x,y,z))
       setWorldBlock(x,y,z,{type:'water',level:Math.max(2,nearby.level||3),flow:true},true);
     spawnBreakParticles(x,y,z,type);
+    if(survival&&resource)triggerFreeAvatarAction('pickup');
     sfx('break');updateFreeMission();markFreeWorldDirty();
     return true;
   }
@@ -4102,15 +4120,26 @@ function updateCreatureHealthUi(){
   el.textContent='♥'.repeat(Math.max(0,survivalHealth))+'♡'.repeat(Math.max(0,5-survivalHealth));
   el.title='생명 '+survivalHealth+'/5';
 }
+function beginFreeAvatarDefeat(now=performance.now()){
+  if(freeAvatarDefeated)return;
+  freeAvatarDefeated=true;freeAvatarReturnAt=now+FREE_AVATAR_ACTION_MS.dead;
+  freeViewBeforeDefeat=freeViewMode;
+  stopMining();resetMobileInput();
+  if(freeViewMode!=='third')setFreeView('third',false);
+  triggerFreeAvatarAction('dead',FREE_AVATAR_ACTION_MS.dead,now);
+}
 function returnAfterCreatureDefeat(){
   camera.position.set(0,safeReturnEyeY(),5);freePhysicsY=camera.position.y;
   freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;survivalBreath=100;freeFallPeakY=freePhysicsY;
+  freeAvatarDefeated=false;freeAvatarReturnAt=0;freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;
+  const restoreView=freeViewBeforeDefeat;freeViewBeforeDefeat=null;
+  if(restoreView&&restoreView!==freeViewMode)setFreeView(restoreView,false);
   streamWorldMeshes(true);
   toast('기절해서 시작 지점으로 돌아왔어요. 가방의 재료는 그대로예요.');
   updateCreatureHealthUi();updateBreathUi(false);saveFreeWorld();
 }
 function damageByCreature(root,t){
-  if(gameFreeMode!=='survival'||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
+  if(gameFreeMode!=='survival'||freeAvatarDefeated||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
   lastCreatureDamage=t;healthRegenClock=0;root.userData.attackUntil=t+420;
   const amount=Math.max(1,root.userData.spec.damage||1);
   survivalHealth=Math.max(0,survivalHealth-amount);
@@ -4118,7 +4147,8 @@ function damageByCreature(root,t){
   const push=.62;moveFreeHorizontal(dx/len*push,dz/len*push);
   toast(root.userData.spec.name+'에게 부딪혔어요! '+('♥'.repeat(survivalHealth)||'생명 0'));
   updateCreatureHealthUi();
-  if(survivalHealth<=0)returnAfterCreatureDefeat();
+  if(survivalHealth<=0)beginFreeAvatarDefeat(t);
+  else triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,t);
 }
 function creatureRayHit(max=2.35){
   if(!creatureInteractables.length)return null;
@@ -4153,6 +4183,7 @@ function interactWildCreature(){
   for(const [type,n] of Object.entries(forage.reward||{})){addToBag(type,n);total+=n}
   creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);
   trackSurvival('forage',spec.id,Math.max(1,total));u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.15;
+  triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup);
   toast(spec.name+'과(와) 조심히 상호작용해서 '+(forage.label||'재료')+'을(를) 얻었어요.');sfx('good');markFreeWorldDirty(350);return true;
 }
 function hitWildCreature(){
@@ -4167,7 +4198,7 @@ function hitWildCreature(){
   if(u.assembling){toast('큐브 골렘이 몸을 조립하는 중이에요!');return true}
   const tool=selectedType||'hand',sword=tool.endsWith('Sword');
   if(now-lastCreatureAttackAt<(sword?360:480))return true;
-  lastCreatureAttackAt=now;
+  lastCreatureAttackAt=now;triggerFreeAvatarAction('attack',FREE_AVATAR_ACTION_MS.attack,now);
   const power=tool==='ironSword'?4:tool==='stoneSword'?3:tool==='woodSword'?2:
     tool==='ironPick'?2:(u.spec.id==='cubeGolem'&&tool==='stonePick'?2:1);
   u.hp-=power;u.hurtUntil=now+300;u.knockbackUntil=now+230;
@@ -4293,6 +4324,7 @@ function checkCollectibles(t){
           addToBag(type,n);
         trackSurvival('find',id);
       }
+      triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup,t);
       toast(m.userData.label+' 발견! 건축 보상을 가방에 넣었어요.');
       sfx('good');updateFreeMission();saveFreeWorld();
       if(collected.size===5){
@@ -4381,7 +4413,7 @@ function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera
   return state;
 }
 function damageByEnvironment(state,t){
-  if(gameFreeMode!=='survival')return false;
+  if(gameFreeMode!=='survival'||freeAvatarDefeated)return false;
   const kind=state.lava?'용암':state.fire?'불':state.cactus?'선인장':'';
   if(!kind)return false;
   const cooldown=state.lava?700:1050;if(t-lastEnvironmentDamage<cooldown)return false;
@@ -4389,8 +4421,8 @@ function damageByEnvironment(state,t){
   survivalHealth=Math.max(0,survivalHealth-(state.lava?2:1));
   toast(kind+(state.lava?'에 들어갔어요! 빨리 빠져나오세요.':'에 닿았어요!')+' '+('♥'.repeat(survivalHealth)||'생명 0'));
   sfx('bad');updateCreatureHealthUi();
-  if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
-  return false;
+  if(survivalHealth<=0){beginFreeAvatarDefeat(t);return true}
+  triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,t);return false;
 }
 function updateUnderwaterVisual(underwater){
   const overlay=$('underwaterOverlay');if(!overlay)return;
@@ -4415,7 +4447,8 @@ function updateBreath(state,dt,t){
       lastDrownDamage=t;healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-1);
       toast('숨이 부족해요! 물 위로 올라가세요. '+('♥'.repeat(survivalHealth)||'생명 0'));
       sfx('bad');updateCreatureHealthUi();
-      if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
+      if(survivalHealth<=0){beginFreeAvatarDefeat(t);return true}
+      triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,t);
     }
   }else survivalBreath=Math.min(100,survivalBreath+dt*34);
   updateBreathUi(state.headUnderWater);return false;
@@ -4426,8 +4459,9 @@ function damageByFall(distance){
   healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-amount);
   toast('높은 곳에서 떨어졌어요! -'+amount+'♥ · '+('♥'.repeat(survivalHealth)||'생명 0'));
   sfx('bad');updateCreatureHealthUi();
-  if(survivalHealth<=0){returnAfterCreatureDefeat();return true}
-  return false;
+  const now=performance.now();
+  if(survivalHealth<=0){beginFreeAvatarDefeat(now);return true}
+  triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,now);return false;
 }
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
@@ -4558,6 +4592,12 @@ function updateSurvivalEnvironment(dt){
   renderSurvivalSafety(shelter);
 }
 function updateFree(dt,t){
+  if(freeAvatarDefeated){
+    stopMining();updateDayNight(0);updateWeather(0,t);updateMathOverlay();
+    camera.rotation.y=yaw;camera.rotation.x=pitch;
+    if(t>=freeAvatarReturnAt)returnAfterCreatureDefeat();
+    return;
+  }
   // Pause the world while young players are reading recipes or using the furnace.
   if(inventoryOpen||furnaceOpen){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();
@@ -4708,6 +4748,7 @@ function refreshMobileFly(){
   $('mobileUp').querySelector('small').textContent=swimming?'수영 위':freeFlying?'상승':'점프';
 }
 function mobileBlockAction(action){
+  if(mode==='free'&&freeAvatarDefeated)return;
   if(mode==='challenge'){
     const hit=challengeCenterHit(12);
     if(action==='break'&&hit?.object.userData.challenge)removeChallengeBlock(hit.object);
@@ -4903,6 +4944,7 @@ canvas.addEventListener('mousedown',e=>{
     updateChallengeStats();updateChallengeGhost();return;
   }
   if(mode==='free'){
+    if(freeAvatarDefeated)return;
     const hit=freeCenterHit(6);
     if(e.button===0){
       if(hitWildCreature())return;
@@ -4945,6 +4987,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(mode!=='free')return;
+  if(freeAvatarDefeated){e.preventDefault();return}
   if(e.code==='KeyE'){e.preventDefault();if(furnaceOpen)toggleFurnace(false);else toggleInventory();return}
   if(e.code==='Escape'&&(inventoryOpen||furnaceOpen)){if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);return}
   if(inventoryOpen||furnaceOpen)return;
