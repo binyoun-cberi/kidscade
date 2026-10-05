@@ -28,9 +28,30 @@ test('head accessory catalog adds ten popular 23-frame items beside existing hat
   }
 });
 
+test('face accessory catalog adds nine popular items and renames two existing labels',()=>{
+  const group=catalog.categories.mask;
+  assert.equal(group.label,'얼굴 장식');
+  assert.equal(group.defaultId,'no-mask');
+  assert.equal(group.items.length,16);
+  const labels=group.items.map(item=>item.label);
+  for(const label of ['동그란 안경','뿔테안경','선글라스','하트 안경','고글','수면안대','볼터치','주근깨','별 스티커','하트 스티커','볼 밴드','작은 흉터','마스크','외눈안경','루돌프 빨간코'])assert.ok(labels.includes(label),label);
+  assert.equal(read('wardrobe/round-glasses-01.json').name,'동그란 안경');
+  assert.equal(read('wardrobe/cheek-bandage-01.json').name,'볼 밴드');
+  for(const id of ['blush-cheeks-01','freckles-01','star-sticker-01','heart-sticker-01','small-scar-01','sunglasses-01','heart-glasses-01','goggles-01','sleep-mask-01']){
+    const item=group.items.find(candidate=>candidate.id===id);assert.ok(item,id);
+    const part=read('wardrobe/'+item.file);
+    assert.equal(part.assetIds.mask,id,id);
+    assert.equal(Object.keys(part.frames).length,23,id);
+    for(const frameId of manifest.frameOrder){
+      const pixels=part.frames[frameId].layers.mask.operations[0].pixels;
+      assert.ok(Array.isArray(pixels)&&pixels.length>=3,id+' '+frameId);
+    }
+  }
+});
+
 test('all requested wardrobe styles and separate face/hat/mouth slots stay registered for the runtime shop',()=>{
  for(const [key,ids] of [['upper',tops],['lower',bottoms]]){const cat=read(key+'/catalog.json');for(const id of ids)assert.ok(cat.items.some(i=>i.id===id));assert.equal(new Set(cat.items.map(i=>i.id)).size,cat.items.length)}
- assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:7,hat:15,mouth:11,back:11});
+ assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:16,hat:15,mouth:11,back:11});
  for(const g of Object.values(catalog.categories))for(const i of g.items)assert.equal(i.public,true);assert.equal(manifest.economy.pricing,'global-purchase-sequence');assert.equal(manifest.economy.defaultAssetsFree,true)
 });
 test('explicit 23-frame JSON modifies only its requested part and passes admin-compatible validation',()=>{
