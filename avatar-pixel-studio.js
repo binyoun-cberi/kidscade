@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-28';
+const PREVIEW_VERSION='pixel-v3-school-starter-29';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -24,6 +24,7 @@ const PARTS={
   upper:{label:'상의',name:'학교 교복 상의',assetKey:'upper'},
   lower:{label:'하의',name:'학교 교복 하의',assetKey:'lower'},
   shoes:{label:'신발',name:'기본 운동화',assetKey:'shoes'},
+  effect:{label:'이펙트',name:'없음',assetKey:'effect'},
   weapon:{label:'도구',name:'자',assetKey:'weaponFront'},
   shield:{label:'교구',name:'교과서',assetKey:'shieldFront'}
 };
@@ -114,6 +115,7 @@ function shopDefaultId(category){
   if(category==='lower')return lowerCatalog?.defaultId||'';
   if(category==='earring')return earringCatalog?.defaultId||'';
   if(category==='shoes')return shoeCatalog?.defaultId||'';
+  if(category==='effect')return effectCatalog?.defaultId||'no-effect';
   if(category==='weapon')return toolCatalog?.defaultId||'';
   if(category==='shield')return teachingAidCatalog?.defaultId||'';
   return wardrobe?.category(category)?.defaultId||'';
@@ -126,6 +128,7 @@ function shopSelectedId(category){
   if(category==='lower')return selectedLowerId();
   if(category==='earring')return selectedEarringId();
   if(category==='shoes')return selectedShoeId();
+  if(category==='effect')return selectedEffectId();
   if(category==='weapon')return selectedToolId();
   if(category==='shield')return selectedTeachingAidId();
   return wardrobe?.normalize(state.assetIds)?.[category]||'';
@@ -133,7 +136,7 @@ function shopSelectedId(category){
 function migrateAvatarEconomy(){
   normalizeShopState();
   if(state.economyVersion>=1)return false;
-  for(const category of ['hair','hairColor','eyes','mask','hat','mouth','back','earring','upper','lower','shoes','weapon','shield']){
+  for(const category of ['hair','hairColor','eyes','mask','hat','mouth','back','earring','upper','lower','shoes','effect','weapon','shield']){
     const id=shopSelectedId(category),defaultId=shopDefaultId(category);
     if(id&&defaultId&&id!==defaultId)state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
   }
@@ -154,6 +157,7 @@ function shopButtonDescriptor(button){
   if(d.lowerId)return ['lower',d.lowerId,shopDefaultId('lower')];
   if(d.earringId)return ['earring',d.earringId,shopDefaultId('earring')];
   if(d.shoesId)return ['shoes',d.shoesId,shopDefaultId('shoes')];
+  if(d.effectId)return ['effect',d.effectId,shopDefaultId('effect')];
   if(d.weaponId)return ['weapon',d.weaponId,shopDefaultId('weapon')];
   if(d.shieldId)return ['shield',d.shieldId,shopDefaultId('shield')];
   return null;
@@ -874,12 +878,13 @@ function applyLowerPart(target,frameId,lowerId=selectedLowerId()){
   target.putImageData(image,0,0);return true;
 }
 
-/* Public school accessories: shoes, earrings, left-hand tools and right-hand teaching aids. */
+/* Public school accessories: shoes, earrings, special effects, left-hand tools and right-hand teaching aids. */
 let wardrobe=null;
 const wardrobeRequests=new Map();
 let schoolPack=null;
 let shoeCatalog=null;
 let earringCatalog=null;
+let effectCatalog=null;
 let toolCatalog=null;
 let teachingAidCatalog=null;
 const packLayerMapCache=new Map();
@@ -898,10 +903,12 @@ async function loadSchoolPack(){const res=await fetch(SCHOOL_PACK_URL,{cache:'no
 async function loadAccessoryCatalog(key,expectedType){const rel=manifest?.partCatalogs?.[key];if(!rel)return null;const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});if(!res.ok)throw new Error(key+' 파츠 카탈로그를 불러오지 못했습니다.');const catalog=await res.json();if(catalog?.type!==expectedType)throw new Error(key+' 파츠 카탈로그 형식이 올바르지 않습니다.');return catalog}
 async function loadShoeCatalog(){shoeCatalog=await loadAccessoryCatalog('shoes','kidscade-avatar-shoes-catalog');return shoeCatalog}
 async function loadEarringCatalog(){earringCatalog=await loadAccessoryCatalog('earring','kidscade-avatar-earring-catalog');return earringCatalog}
+async function loadEffectCatalog(){effectCatalog=await loadAccessoryCatalog('effect','kidscade-avatar-effect-catalog');return effectCatalog}
 async function loadToolCatalog(){toolCatalog=await loadAccessoryCatalog('weapon','kidscade-avatar-tool-catalog');return toolCatalog}
 async function loadTeachingAidCatalog(){teachingAidCatalog=await loadAccessoryCatalog('shield','kidscade-avatar-teaching-aid-catalog');return teachingAidCatalog}
 function selectedShoeId(){const id=state.assetIds?.shoes||manifest?.assetIds?.shoes;return shoeCatalog?.items?.some(item=>item.id===id)?id:(shoeCatalog?.defaultId||id)}
 function selectedEarringId(){const id=state.assetIds?.earring||manifest?.assetIds?.earring;return earringCatalog?.items?.some(item=>item.id===id)?id:(earringCatalog?.defaultId||id)}
+function selectedEffectId(){const id=state.assetIds?.effect||manifest?.assetIds?.effect||effectCatalog?.defaultId||'no-effect';return effectCatalog?.items?.some(item=>item.id===id)?id:(effectCatalog?.defaultId||'no-effect')}
 function selectedToolId(){const id=state.assetIds?.weaponFront||state.assetIds?.weaponBack||manifest?.assetIds?.weaponFront;return toolCatalog?.items?.some(item=>item.id===id)?id:(toolCatalog?.defaultId||id)}
 function selectedTeachingAidId(){const id=state.assetIds?.shieldFront||state.assetIds?.shieldBack||manifest?.assetIds?.shieldFront;return teachingAidCatalog?.items?.some(item=>item.id===id)?id:(teachingAidCatalog?.defaultId||id)}
 function packLayerPixels(frameId,layer){return schoolPack?.frames?.[frameId]?.layers?.[layer]?.operations?.[0]?.pixels||[]}
@@ -995,6 +1002,75 @@ function applyShoeSelection(target,frameId,id=selectedShoeId()){
   drawPixelTuples(target,accessoryOutlinePixels(pixels));
   return true
 }
+
+function avatarEffectBounds(frameId){
+  const layers=['hair','eyes','upper','lower','shoes'],pixels=layers.flatMap(layer=>packLayerPixels(frameId,layer)),box=bboxForPixels(pixels);
+  return box||{minX:42,minY:20,maxX:86,maxY:116,w:45,h:97,cx:64,cy:68};
+}
+function effectStar(map,x,y,r,base,light){
+  plotPixel(map,x,y,light);for(let t=1;t<=r;t++){plotPixel(map,x+t,y,base);plotPixel(map,x-t,y,base);plotPixel(map,x,y+t,base);plotPixel(map,x,y-t,base)}
+  if(r>2)for(const [dx,dy] of [[2,2],[-2,2],[2,-2],[-2,-2]])plotPixel(map,x+dx,y+dy,light);
+}
+function effectHeart(map,x,y,base,light){
+  for(const [dx,dy] of [[-2,-2],[-1,-3],[0,-2],[1,-3],[2,-2],[-3,-1],[3,-1],[-3,0],[3,0],[-2,1],[2,1],[-1,2],[1,2],[0,3]])plotPixel(map,x+dx,y+dy,base);
+  plotPixel(map,x-1,y-1,light);
+}
+function effectSnowflake(map,x,y,base,light){
+  for(let t=-4;t<=4;t++){plotPixel(map,x+t,y,base);plotPixel(map,x,y+t,base)}
+  for(let t=-3;t<=3;t++){plotPixel(map,x+t,y+t,light);plotPixel(map,x+t,y-t,light)}
+}
+function effectFlame(map,x,y,outline,base,light){
+  for(let row=0;row<10;row++){const half=Math.max(1,Math.round((9-row)*.42));for(let dx=-half;dx<=half;dx++)plotPixel(map,x+dx,y-row,row>5?light:base)}
+  plotPixel(map,x,y-11,light);plotPixel(map,x-2,y-7,outline);plotPixel(map,x+2,y-7,outline);
+}
+function effectLightning(map,x,y,base,light,flip=1){
+  const pts=[[0,-7],[3*flip,-4],[1*flip,-4],[4*flip,0],[1*flip,0],[3*flip,6],[-3*flip,1],[0,1],[-3*flip,-2],[0,-2]];
+  for(const [dx,dy] of pts)plotCircle(map,x+dx,y+dy,1,base);plotPixel(map,x,y-4,light);
+}
+function effectMusicNote(map,x,y,base,light,flip=1){
+  plotCircle(map,x,y+5,3,base);for(let t=0;t<11;t++)plotPixel(map,x+3*flip,y+4-t,base);
+  for(let t=0;t<5;t++)plotPixel(map,x+(3+t)*flip,y-6+Math.round(t/2),light);
+}
+function effectLeaf(map,x,y,base,light,flip=1){
+  for(const [dx,dy] of [[0,-3],[1*flip,-2],[2*flip,-1],[2*flip,0],[1*flip,1],[0,2],[-1*flip,1],[-1*flip,0]])plotPixel(map,x+dx,y+dy,base);
+  plotPixel(map,x,y-1,light);plotPixel(map,x+1*flip,y,light);
+}
+function effectPixels(def,frameId,pass){
+  if(!def||def.kind==='none'||(def.pass||'front')!==pass)return [];
+  const box=avatarEffectBounds(frameId),map=new Map(),colors=(def.colors||[]).map(c=>rgbaFromHex(c)),c0=colors[0]||[255,255,255,255],c1=colors[1]||c0,c2=colors[2]||c1,c3=colors[3]||c2,c4=colors[4]||c3;
+  const phase=Math.max(0,manifest?.frameOrder?.indexOf(frameId)||0),bob=(phase%3)-1;
+  const left=Math.max(10,box.minX-12),right=Math.min(117,box.maxX+12),top=Math.max(9,box.minY-8),bottom=Math.min(116,box.maxY-2),cx=Math.round(box.cx);
+  if(def.kind==='sparkle'){
+    for(const [i,p] of [[0,[left,top+18]],[1,[right,top+30]],[2,[left+4,bottom-20]],[3,[right-3,bottom-38]],[4,[cx,top-1]]])effectStar(map,p[0],p[1]+((phase+i)%3)-1,i%2?2:4,c0,i%2?c3:c2);
+  }else if(def.kind==='stars'){
+    for(const [i,p] of [[0,[left,top+12]],[1,[right,top+20]],[2,[left+3,bottom-26]],[3,[right-4,bottom-46]],[4,[cx+18,top-2]]])effectStar(map,p[0],p[1]+((phase+i)%4)-2,i%2?3:4,c0,i%2?c3:c1);
+  }else if(def.kind==='hearts'){
+    for(const [i,p] of [[0,[left,top+22]],[1,[right,top+14]],[2,[left+2,bottom-28]],[3,[right-3,bottom-44]]])effectHeart(map,p[0],p[1]+((phase+i)%4)-2,i%2?c1:c0,c2);
+  }else if(def.kind==='snow'){
+    for(const [i,p] of [[0,[left,top+8]],[1,[right,top+18]],[2,[left+5,top+42]],[3,[right-4,top+52]],[4,[cx+20,bottom-25]]])effectSnowflake(map,p[0],p[1]+((phase+i*2)%5)-2,i%2?c1:c0,c2);
+  }else if(def.kind==='flame'){
+    effectFlame(map,left+3,bottom+1,c0,c1,c2);effectFlame(map,right-3,bottom+1,c0,c1,c3);effectFlame(map,cx,bottom+4,c0,c1,c2);
+  }else if(def.kind==='lightning'){
+    effectLightning(map,left,top+30+bob,c0,c2,1);effectLightning(map,right,top+18-bob,c0,c1,-1);effectLightning(map,right-2,bottom-30+bob,c0,c2,-1);
+  }else if(def.kind==='music-notes'){
+    effectMusicNote(map,left,top+22+bob,c0,c2,1);effectMusicNote(map,right,top+36-bob,c1,c3,-1);effectMusicNote(map,right-4,bottom-30+bob,c0,c2,-1);
+  }else if(def.kind==='small-cloud'){
+    const cloud=(x,y,s)=>{plotCircle(map,x-4*s,y,5*s,c0);plotCircle(map,x+3*s,y-2*s,6*s,c1);plotCircle(map,x+9*s,y+1*s,4*s,c2);paintRotRect(map,[x+2*s,y+3*s],[0,1],18*s,5*s,c1)};
+    cloud(left+3,top+26+bob,1);cloud(right-8,top+46-bob,1);
+  }else if(def.kind==='leaves'){
+    for(const [i,p] of [[0,[left,top+18]],[1,[right,top+26]],[2,[left+4,bottom-25]],[3,[right-3,bottom-38]],[4,[cx+20,top+2]]])effectLeaf(map,p[0],p[1]+((phase+i)%5)-2,i%2?c0:c1,c2,i%2?1:-1);
+  }else if(def.kind==='rainbow'){
+    const center=[cx,Math.min(82,top+53)],palette=[c0,c1,c2,c3,c4];
+    for(let band=0;band<5;band++){const r=42-band*3,col=palette[band];for(let deg=205;deg<=335;deg+=2){const a=deg*Math.PI/180;plotPixel(map,center[0]+Math.cos(a)*r,center[1]+Math.sin(a)*r,col)}}
+    plotCircle(map,left+5,center[1]+6,6,c2);plotCircle(map,right-5,center[1]+6,6,c2);
+  }
+  return [...map.values()];
+}
+function drawEffectPass(target,frameId,id=selectedEffectId(),pass='front'){
+  const def=effectCatalog?.items?.find(item=>item.id===id)||effectCatalog?.items?.find(item=>item.id===effectCatalog?.defaultId);
+  if(def)drawPixelTuples(target,effectPixels(def,frameId,pass),false);
+}
+
 function upperStyledTuple(p){const id=selectedUpperId(),part=upperParts.get(id);if(!upperCatalog||id===upperCatalog.defaultId||!part)return p?.slice(2)||null;const idx=upperColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
 function lowerStyledTuple(p){const id=selectedLowerId(),part=lowerParts.get(id);if(!lowerCatalog||id===lowerCatalog.defaultId||!part)return p?.slice(2)||null;const idx=lowerColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
 function knownUnderlyingPixel(frameId,x,y,order){
@@ -1187,7 +1263,7 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId(),wardrobeOverrides={}){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId(),wardrobeOverrides={},effectId=selectedEffectId()){
   if(!sheet)return;
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
   const base=document.createElement('canvas');base.width=SIZE;base.height=SIZE;
@@ -1230,12 +1306,14 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
 
   if(wardrobe){wardrobe.draw(baseCtx,frameId,'mask',wardrobeIds);wardrobe.draw(baseCtx,frameId,'hat',wardrobeIds)}
   target.save();target.setTransform(1,0,0,1,0,0);target.clearRect(0,0,SIZE,SIZE);target.imageSmoothingEnabled=false;
+  drawEffectPass(target,frameId,effectId,'back');
   if(wardrobe)wardrobe.draw(target,frameId,'back',wardrobeIds);
   drawEquipmentPass(target,frameId,'weapon',toolId,'back');
   drawEquipmentPass(target,frameId,'shield',aidId,'back');
   target.drawImage(base,0,0);
   drawEquipmentPass(target,frameId,'shield',aidId,'front');
   drawEquipmentPass(target,frameId,'weapon',toolId,'front');
+  drawEffectPass(target,frameId,effectId,'front');
   target.restore();
 }
 function drawStatic(){
@@ -1392,9 +1470,10 @@ function renderLowerOptions(){
 function drawAccessoryThumbnail(canvasElement,tab,id){
   if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;const c=full.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
   const args=[selectedEyeId(),selectedHairId(),selectedUpperId(),selectedLowerId(),selectedEarringId(),selectedShoeId(),selectedToolId(),selectedTeachingAidId()];
-  if(tab==='earring')args[4]=id;else if(tab==='shoes')args[5]=id;else if(tab==='weapon')args[6]=id;else if(tab==='shield')args[7]=id;drawFrame(c,0,...args);
+  if(tab==='earring')args[4]=id;else if(tab==='shoes')args[5]=id;else if(tab==='weapon')args[6]=id;else if(tab==='shield')args[7]=id;
+  if(tab==='effect')drawFrame(c,0,...args,selectedHairColorId(),{},id);else drawFrame(c,0,...args);
   const t=canvasElement.getContext('2d',{alpha:true});t.imageSmoothingEnabled=false;t.clearRect(0,0,SIZE,SIZE);
-  if(tab==='earring')t.drawImage(full,72,42,30,34,0,0,SIZE,SIZE);else if(tab==='shoes')t.drawImage(full,40,96,52,32,0,0,SIZE,SIZE);else if(tab==='weapon')t.drawImage(full,18,50,54,64,0,0,SIZE,SIZE);else t.drawImage(full,66,62,50,56,0,0,SIZE,SIZE);
+  if(tab==='earring')t.drawImage(full,72,42,30,34,0,0,SIZE,SIZE);else if(tab==='shoes')t.drawImage(full,40,96,52,32,0,0,SIZE,SIZE);else if(tab==='weapon')t.drawImage(full,18,50,54,64,0,0,SIZE,SIZE);else if(tab==='effect')t.drawImage(full,8,4,112,120,0,0,SIZE,SIZE);else t.drawImage(full,66,62,50,56,0,0,SIZE,SIZE);
 }
 function renderAccessoryOptions(tab,catalog,selectedId){
   const items=catalog?.items||[],label=PARTS[tab]?.label||tab;pickerTitle.textContent=label;pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');const attr=tab+'-id',thumbAttr=tab+'-thumb';
@@ -1403,6 +1482,7 @@ function renderAccessoryOptions(tab,catalog,selectedId){
 }
 function renderEarringOptions(){renderAccessoryOptions('earring',earringCatalog,selectedEarringId())}
 function renderShoeOptions(){renderAccessoryOptions('shoes',shoeCatalog,selectedShoeId())}
+function renderEffectOptions(){renderAccessoryOptions('effect',effectCatalog,selectedEffectId())}
 function renderToolOptions(){renderAccessoryOptions('weapon',toolCatalog,selectedToolId())}
 function renderTeachingAidOptions(){renderAccessoryOptions('shield',teachingAidCatalog,selectedTeachingAidId())}
 
@@ -1445,6 +1525,7 @@ function renderOptions(){
   if(currentTab==='lower'){renderLowerOptions();return}
   if(currentTab==='earring'){renderEarringOptions();return}
   if(currentTab==='shoes'){renderShoeOptions();return}
+  if(currentTab==='effect'){renderEffectOptions();return}
   if(currentTab==='weapon'){renderToolOptions();return}
   if(currentTab==='shield'){renderTeachingAidOptions();return}
   optionGrid.classList.remove('skin-mode');
@@ -1486,6 +1567,11 @@ async function setShoeAsset(id){
   const item=shoeCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
   const access=await ensureAssetAccess('shoes',id,shoeCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setEffectAsset(id){
+  const item=effectCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('effect',id,effectCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),effect:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
 }
 async function setToolAsset(id){
   const item=toolCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
@@ -1586,6 +1672,7 @@ optionGrid?.addEventListener('click',e=>{
   const aid=e.target.closest('[data-shield-id]');if(aid){setTeachingAidAsset(aid.dataset.shieldId);return}
   const tool=e.target.closest('[data-weapon-id]');if(tool){setToolAsset(tool.dataset.weaponId);return}
   const shoes=e.target.closest('[data-shoes-id]');if(shoes){setShoeAsset(shoes.dataset.shoesId);return}
+  const effect=e.target.closest('[data-effect-id]');if(effect){setEffectAsset(effect.dataset.effectId);return}
   const earring=e.target.closest('[data-earring-id]');if(earring){setEarringAsset(earring.dataset.earringId);return}
   const lower=e.target.closest('[data-lower-id]');
   if(lower){setLowerAsset(lower.dataset.lowerId);return}
@@ -1615,7 +1702,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-26',
+  version:'pixel-v3-school-starter-29',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -1655,6 +1742,7 @@ window.KidscadeAvatarShop={
     if(lowerCatalog&&!lowerCatalog.items.some(item=>item.id===state.assetIds.lower))state.assetIds.lower=lowerCatalog.defaultId;
     if(state.assetIds.lower!==lowerCatalog?.defaultId)await loadLowerPart(state.assetIds.lower);
     if(shoeCatalog&&!shoeCatalog.items.some(item=>item.id===state.assetIds.shoes))state.assetIds.shoes=shoeCatalog.defaultId;
+    if(effectCatalog&&!effectCatalog.items.some(item=>item.id===state.assetIds.effect))state.assetIds.effect=effectCatalog.defaultId;
     if(earringCatalog&&!earringCatalog.items.some(item=>item.id===state.assetIds.earring))state.assetIds.earring=earringCatalog.defaultId;
     if(toolCatalog&&!toolCatalog.items.some(item=>item.id===state.assetIds.weaponFront)){state.assetIds.weaponFront=toolCatalog.defaultId;state.assetIds.weaponBack=toolCatalog.defaultId}else if(toolCatalog)state.assetIds.weaponBack=state.assetIds.weaponFront;
     if(teachingAidCatalog&&!teachingAidCatalog.items.some(item=>item.id===state.assetIds.shieldFront)){state.assetIds.shieldFront=teachingAidCatalog.defaultId;state.assetIds.shieldBack=teachingAidCatalog.defaultId}else if(teachingAidCatalog)state.assetIds.shieldBack=state.assetIds.shieldFront;
@@ -1676,7 +1764,7 @@ window.KidscadeAvatarShop={
   await loadHairCatalog();
   await loadUpperCatalog();
   await loadLowerCatalog();
-  await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
+  await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadEffectCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
   await loadWardrobe();
   migrateAvatarEconomy();
   loadSkinPalette();
