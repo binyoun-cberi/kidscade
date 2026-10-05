@@ -1158,7 +1158,7 @@ function trackSurvival(action,type,n=1){
   }else if(action==='eat'){
     survivalStats.foodsEaten=(survivalStats.foodsEaten||0)+n;
   }
-  advanceSurvival();
+  advanceSurvival();tutorialRefreshProgress();
 }
 
 const worldRules=window.CubeArchitectWorld;
@@ -3114,12 +3114,13 @@ function addToBag(type,n=1){
     buildHotbar();
     if(inventoryOpen)buildInventory();
   }
+  tutorialRefreshProgress();
 }
 function consumeBag(type,n=1){
   if(bagCount(type)<n)return false;
   survivalBag[type]-=n;
   if(inventoryOpen&&inventoryBatchDepth===0)buildInventory();
-  return true;
+  tutorialRefreshProgress();return true;
 }
 function consumeFood(type){
   const food=CONSUMABLE_TYPES[type];
@@ -3307,6 +3308,7 @@ function buildInventory(category='전체'){
       const [resultType]=Object.keys(recipe.gives),result=blockDef(resultType),hex='#'+(result.color||0xdbe4ef).toString(16).padStart(6,'0');
       const isNew=unreadRecipeIds.has(recipe.id);
       b.className='survival-recipe'+(possible?' can-craft':'')+(recipe.id===selectedCraftRecipeId?' selected':'')+(isNew?' new-recipe':'');
+      b.dataset.recipeId=recipe.id;
       const costs=Object.entries(recipe.needs).map(([type,n])=>blockDef(type).name+' '+bagCount(type)+'/'+n).join(' · ');
       b.innerHTML='<span class="recipe-icon" style="--recipe-swatch:'+hex+'">'+(result.icon||'▣')+'</span>'+
         '<span class="recipe-copy"><b>'+recipe.name+'</b><small>'+costs+(recipe.bench?' · 제작대':'')+'</small></span>'+
@@ -3322,7 +3324,7 @@ function buildInventory(category='전체'){
     $('survivalTechs').textContent=techLabels.length?
       '설계도 기술 · '+techLabels.join(' · '):
       '설계도 기술 · 랜드마크 폐허를 복원하면 고급 건축이 열려요.';
-    return;
+    tutorialRefreshProgress();return;
   }
   document.querySelectorAll('[data-inv-cat]').forEach(b=>
     b.classList.toggle('active',b.dataset.invCat===category));
@@ -3891,7 +3893,7 @@ function setupShapeWorkbench(){
     const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value]
       .map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,limit));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
-    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');
+    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');tutorialRefreshProgress();
   };
   $('facePaintColor').oninput=e=>{facePaintColor=e.target.value};
 }
@@ -5151,7 +5153,7 @@ function updateSurvivalEnvironment(dt){
   if(shelter.playerBuilt&&!survivalStats.shelterBuilt){
     survivalStats.shelterBuilt=true;
     toast('거점 완성! 직접 만든 지붕과 벽이 실제로 몸을 보호해요.');
-    advanceSurvival();
+    advanceSurvival();tutorialRefreshProgress();
   }
   if(shelter.sheltered&&night&&!nightShelterNotice){
     nightShelterNotice=true;toast('내가 지은 거점이 밤의 추위를 막아 주고 있어요.');
@@ -5433,12 +5435,60 @@ initMobileControls();
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 let tutorialState=null,tutorialFocusEl=null;
+function tutorialWaitSatisfied(wait){
+  if(!wait)return false;
+  if(wait==='survival-wood3')return (survivalStats.harvestedWood||0)>=3;
+  if(wait==='survival-planks')return (survivalStats.crafted?.planks||0)>=1;
+  if(wait==='survival-workbench-crafted')return (survivalStats.crafted?.workbench||0)>=1;
+  if(wait==='survival-workbench-placed')return (survivalStats.placed?.workbench||0)>=1;
+  if(wait==='survival-planks2')return bagCount('planks')>=2;
+  if(wait==='survival-shape-open')return inventoryOpen&&survivalStage>=3&&hasWorkbench();
+  if(wait==='survival-cuboid-ready'){
+    const dims=(currentCuboidSpec?.dims||[]).slice().map(Number).sort((a,b)=>a-b).join('x');
+    return selectedType==='cuboid'&&dims==='1x1x2';
+  }
+  if(wait==='survival-cuboid')return (survivalStats.cuboids||[]).includes('1x1x2');
+  if(wait==='survival-sticks')return (survivalStats.crafted?.sticks||0)>=1||bagCount('sticks')>=2;
+  if(wait==='survival-woodpick')return (survivalStats.crafted?.woodPick||0)>=1||bagCount('woodPick')>=1;
+  return false;
+}
+function tutorialLiveStatus(step){
+  if(!step?.wait||!String(step.wait).startsWith('survival-'))return '';
+  const yes='✓ ',no='○ ';
+  if(step.wait==='survival-wood3')return '원목 '+Math.min(3,survivalStats.harvestedWood||0)+' / 3';
+  if(step.wait==='survival-planks')return ((survivalStats.crafted?.planks||0)>=1?yes:no)+'나무 판자 제작';
+  if(step.wait==='survival-workbench-crafted')return ((survivalStats.crafted?.workbench||0)>=1?yes:no)+'제작대 제작';
+  if(step.wait==='survival-workbench-placed')return ((survivalStats.placed?.workbench||0)>=1?yes:no)+'제작대 설치';
+  if(step.wait==='survival-planks2')return '현재 판자 '+bagCount('planks')+' / 2';
+  if(step.wait==='survival-shape-open')return (hasWorkbench()?yes:no)+'제작대 가까이 · '+(inventoryOpen?yes:no)+'가방 열림';
+  if(step.wait==='survival-cuboid-ready'){
+    const dims=(currentCuboidSpec?.dims||[1,1,1]).join('×');
+    return '현재 도형 '+dims+(selectedType==='cuboid'?' · 핫바 준비됨':' · 아직 핫바에 안 담김');
+  }
+  if(step.wait==='survival-cuboid')return ((survivalStats.cuboids||[]).includes('1x1x2')?yes:no)+'2×1×1 직육면체 설치';
+  if(step.wait==='survival-sticks')return ((survivalStats.crafted?.sticks||0)>=1||bagCount('sticks')>=2?yes:no)+'막대 제작 · 보유 '+bagCount('sticks')+'개';
+  if(step.wait==='survival-woodpick')return ((survivalStats.crafted?.woodPick||0)>=1||bagCount('woodPick')>=1?yes:no)+'나무 곡괭이 제작';
+  return '';
+}
+function tutorialRefreshProgress(){
+  if(!tutorialState)return;
+  const step=tutorialState.steps[tutorialState.index];
+  const status=$('tutorialLiveStatus');
+  if(status)status.textContent=tutorialLiveStatus(step);
+  if(step?.wait&&String(step.wait).startsWith('survival-')&&tutorialWaitSatisfied(step.wait)){
+    tutorialState.index=Math.min(tutorialState.index+1,tutorialState.steps.length-1);
+    sfx('good');renderTutorialStep();
+  }
+}
 function tutorialSignal(action){
   if(!tutorialState)return;
   const step=tutorialState.steps[tutorialState.index];
-  if(!step||step.wait!==action)return;
-  tutorialState.index=Math.min(tutorialState.index+1,tutorialState.steps.length-1);
-  renderTutorialStep();
+  if(!step)return;
+  if(step.wait===action){
+    tutorialState.index=Math.min(tutorialState.index+1,tutorialState.steps.length-1);
+    renderTutorialStep();return;
+  }
+  tutorialRefreshProgress();
 }
 function tutorialTarget(selector){
   if(!selector)return null;
@@ -5481,14 +5531,22 @@ function tutorialSteps(kind){
     {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
   ];
   if(kind==='free'&&gameFreeMode==='survival')return[
-    {title:'생존 탐험 첫 조작',text:'생존에서는 처음부터 블록이 무한히 있지 않습니다. 먼저 나무를 채집하고, 가방에서 재료를 골라 설치합니다.',do:'채집 → 가방 → 선택 → 설치 순서만 기억하세요.'},
-    {title:'1. 이동하고 바라보기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 화면을 밀어 시점을 돌립니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 움직입니다.',do:mobile?'가까운 나무 앞으로 가 보세요.':'가까운 나무를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
-    {title:'2. 나무 채집',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'나무를 바라보고 파괴 버튼을 길게 누르세요.':'나무를 바라보고 마우스 왼쪽 버튼을 잠깐 계속 누르세요.',do:'블록 하나가 실제로 부서져 재료를 얻으면 성공입니다.',wait:'free-break'},
-    {title:'3. 가방 열기',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'위쪽 가방 버튼을 누르세요.':'키보드 E를 누르면 가방과 제작법이 열립니다.',do:'가방을 한 번 열어 보세요.',wait:'inventory-open'},
-    {title:'4. 설치할 재료 선택',target:'#hotbar',text:'가방에서 재료를 누르면 아래 핫바에 들어갑니다. 1~9번 칸으로 바꿀 수 있어요.',do:'처음에는 원목이나 판자를 골라 설치해 보세요.'},
-    {title:'5. 블록 설치',target:mobile?'#mobilePlace':'#gameCanvas',text:mobile?'재료가 선택된 상태에서 바닥 옆면을 보고 설치를 누릅니다.':'재료가 선택된 상태에서 바닥 옆면을 보고 마우스 오른쪽 버튼을 누릅니다.',do:'재료가 있어야 설치할 수 있습니다. 실패하면 가방에서 재료를 다시 골라 보세요.'},
-    {title:'6. 시점과 꾸미기',target:mobile?'#mobileView':'#actionView',text:'1인칭/3인칭을 바꿀 수 있고, 캐릭터 꾸미기도 할 수 있어요.',do:'길을 잃었을 때는 1인칭이 건축하기 더 쉽습니다.'},
-    {title:'생존 조작 완료',text:'채집 → E/가방 → 재료 선택 → 우클릭/설치가 생존 건축의 기본 루프입니다.',do:'제작대와 판자를 만들면 더 큰 직육면체도 만들 수 있어요.'}
+    {title:'생존 탐험 · 첫날 훈련',text:'이번에는 설명만 읽지 않아요. 원목을 직접 모으고, 판자와 제작대를 만들고, 2×1×1 직육면체와 나무 곡괭이까지 실제로 완성합니다.',do:'화면에 보이는 “○”를 하나씩 “✓”로 바꾸면 됩니다. 이미 한 일은 자동으로 인정돼요.'},
+    {title:'1. 움직이고 나무 찾기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 빈 화면을 밀어 보는 방향을 바꿉니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다. 가운데 +가 내가 보는 곳입니다.',do:mobile?'가까운 나무 줄기 앞까지 가 보세요.':'가까운 나무 줄기를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
+    {title:'2. 원목 3개 모으기',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'나무 줄기를 바라보고 “채집” 버튼을 길게 누르세요.':'나무 줄기를 가운데 +로 바라보고 마우스 왼쪽 버튼을 길게 누르세요.',do:'한 번만 부수고 끝내지 말고 원목을 3개 모아야 통과합니다.',wait:'survival-wood3'},
+    {title:'3. 가방과 제작법 열기',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'위쪽 “가방” 버튼을 누르세요.':'키보드 E를 누르세요. 가방과 발견한 제작법이 함께 열립니다.',do:'월드에서는 E가 “무엇을 만들 수 있지?”를 확인하는 가장 중요한 버튼입니다.',wait:'inventory-open'},
+    {title:'4. 원목 → 나무 판자',target:'#survivalCraftPanel',text:'제작 목록에서 “나무 판자 ×4”를 고르고 아래 “제작하기”를 누르세요. 원목 1개가 판자 4개로 바뀝니다.',do:'재료 숫자가 초록색이면 지금 만들 수 있다는 뜻이에요.',wait:'survival-planks'},
+    {title:'5. 제작대 만들기',target:'#survivalCraftPanel',text:'이번에는 “제작대 ×1”을 만들어 보세요. 제작대는 곡괭이와 특별한 건축물을 만드는 작업 장소입니다.',do:'판자 4개를 사용해 제작대 1개를 실제로 제작하세요.',wait:'survival-workbench-crafted'},
+    {title:'6. 제작대 땅에 설치하기',target:'#hotbar',text:'가방을 닫고 핫바에서 제작대를 선택하세요. 땅 가까이를 바라본 뒤 우클릭/설치를 누릅니다.',do:mobile?'제작대 선택 → 가방 닫기 → 땅을 보기 → “설치”':'제작대 선택 → E로 가방 닫기 → 땅을 보기 → 마우스 오른쪽 버튼',wait:'survival-workbench-placed'},
+    {title:'7. 직육면체용 판자 준비',target:'#freeMission',text:'직육면체 2×1×1은 판자 2개가 필요해요. 판자가 부족하면 나무를 더 캐고 E에서 판자를 한 번 더 만드세요.',do:'가방에 판자가 2개 이상 있으면 자동 통과합니다.',wait:'survival-planks2'},
+    {title:'8. 제작대 옆에서 가방 열기',target:mobile?'#mobileInventory':'#freeHint',text:'설치한 제작대 가까이 서서 가방을 여세요. 제작대 범위 안이면 아래쪽에 “직육면체 제작대”가 열립니다.',do:'제작대에서 너무 멀리 떨어져 있으면 도형 제작칸이 나타나지 않아요.',wait:'survival-shape-open'},
+    {title:'9. 2×1×1 직육면체 설계',target:'#shapeWorkbench',text:'직육면체 제작대에서 가로 2, 높이 1, 세로 1로 맞추세요. 방향은 1×1×2여도 정답입니다.',do:'값을 맞춘 뒤 “현재 칸에 직육면체 담기”를 누르세요.',wait:'survival-cuboid-ready'},
+    {title:'10. 직육면체 실제 설치',target:mobile?'#mobilePlace':'#gameCanvas',text:'가방을 닫고 방금 만든 직육면체가 선택된 핫바 칸을 확인하세요. 빈 땅 옆을 바라보고 설치합니다.',do:'2×1×1 도형이 월드에 실제로 생겨야 통과합니다.',wait:'survival-cuboid'},
+    {title:'11. 막대 만들기',target:'#freeMission',text:'이제 곡괭이 손잡이를 만들 차례예요. E를 열고 “막대 ×4”를 제작하세요. 판자가 부족하면 원목을 더 모아 판자로 바꾸면 됩니다.',do:'막대를 실제로 제작하면 다음 단계로 넘어갑니다.',wait:'survival-sticks'},
+    {title:'12. 나무 곡괭이 완성',target:'#survivalCraftPanel',text:'제작대 가까이에서 나무 곡괭이를 만드세요. 판자 3개와 막대 2개가 필요합니다. 부족한 재료는 화면의 보유/필요 숫자로 확인하세요.',do:'곡괭이를 만들면 자동으로 핫바에 들어갑니다.',wait:'survival-woodpick'},
+    {title:'13. 이제 진짜 생존 시작',target:'#freeMission',text:'곡괭이로 돌을 캐고, 판자·흙·직육면체로 지붕과 벽이 있는 거점을 만드세요. 밤·비·설원에서는 거점과 횃불이 몸을 보호합니다.',do:'왼쪽 목표 카드가 다음 할 일을 계속 알려 줍니다. 목표 숫자가 오르면 제대로 하고 있는 거예요.'},
+    {title:'14. 생물 · 전투 · 탐험',target:mobile?'#mobileInteract':'#freeHint',text:mobile?'평화 생물은 “상호작용”, 적대 생물은 “채집/공격”으로 대응합니다.':'평화 생물은 F로 관찰·채집하고, 적대 생물은 왼쪽 클릭으로 공격합니다.',do:'새 바이옴을 발견하고 랜드마크까지 찾아가면 구조 퍼즐과 설계도 던전이 이어집니다.'},
+    {title:'첫날 훈련 완료!',text:'이제 “채집 → E로 제작 → 핫바 선택 → 설치 → 더 좋은 도구 제작”이라는 서바이벌의 핵심 반복을 직접 해냈습니다.',do:'막히면 상단 “튜토리얼” 또는 모바일 “도움”을 눌러 언제든 다시 볼 수 있어요.'}
   ];
   if(kind==='free')return[
     {title:'크리에이티브 건축 연습',text:'여기서는 재료가 무한이라 바로 설치 연습을 할 수 있어요. 블록 하나를 직접 놓고 부수는 데서 시작합니다.',do:'실패해도 아무 손해가 없습니다.'},
@@ -5514,20 +5572,22 @@ function renderTutorialStep(){
     '<div class="tutorial-step-kicker">'+(isIntro?'처음 조작 연습':'직접 해보기')+'</div>'+
     '<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
     (step.do?'<div class="tutorial-do">'+step.do+'</div>':'')+
+    (tutorialLiveStatus(step)?'<div id="tutorialLiveStatus" class="tutorial-live-status">'+tutorialLiveStatus(step)+'</div>':'')+
     (step.wait?'<div class="tutorial-tip">성공을 감지하면 자동으로 다음 단계로 넘어갑니다.</div>':'');
   const target=tutorialTarget(step.target);
   if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
   $('tutorialBack').disabled=tutorialState.index===0;
   $('tutorialBack').style.visibility=tutorialState.index===0?'hidden':'visible';
   const last=tutorialState.index===total-1;
-  $('tutorialClose').disabled=!!step.wait;
-  $('tutorialClose').textContent=step.wait?'직접 성공해 보세요':last?'완료':'다음';
+  const conditionDone=step.wait&&String(step.wait).startsWith('survival-')&&tutorialWaitSatisfied(step.wait);
+  $('tutorialClose').disabled=!!step.wait&&!conditionDone;
+  $('tutorialClose').textContent=step.wait?(conditionDone?'완료 · 다음':'직접 성공해 보세요'):last?'완료':'다음';
   $('tutorialClose').onclick=()=>{if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}};
   $('tutorialBack').onclick=()=>{tutorialState.index=Math.max(0,tutorialState.index-1);renderTutorialStep()};
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
 function showTutorial(kind,force=false){
-  const once='cubeArchitectGuidedTutorial_v2_'+kind+
+  const once='cubeArchitectGuidedTutorial_v3_'+kind+
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
   tutorialFinish(false);
