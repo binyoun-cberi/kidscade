@@ -84,7 +84,7 @@ test('public studio supports free skin color without exposing JSON editing',()=>
   assert.match(js,/skinColorPicker/);
   assert.match(js,/type="color"/);
   assert.match(js,/skinColor:normalizeHexColor\(state\.skinColor\)/);
-  assert.match(js,/recolorSkin\(target,frameId\)/);
+  assert.match(js,/recolorSkin\((?:target|baseCtx),frameId\)/);
   assert.match(css,/\.skin-picker-card/);
   assert.match(css,/input\[type=color\]/);
   assert.equal(manifest.customization.skinColor.freeColor,true);
@@ -121,7 +121,7 @@ test('skin recoloring covers every source and derived animation frame',()=>{
   assert.match(js,/function discoverSourceFrameSkinPalette\(frameId\)/);
   assert.match(js,/function loadFrameSkinPalettes\(\)/);
   assert.match(js,/function skinPaletteForFrame\(frameId\)/);
-  assert.match(js,/recolorSkin\(target,frameId\)/);
+  assert.match(js,/recolorSkin\((?:target|baseCtx),frameId\)/);
   assert.match(js,/loadFrameSkinPalettes\(\);/);
   assert.doesNotMatch(js,/recolorSkin\(target\);/);
 });
@@ -292,7 +292,7 @@ test('public renderer applies selected JSON lower parts to all 23 frame bounds',
   assert.match(js,/data-lower-id/);
   assert.match(js,/renderLowerOptions/);
   assert.match(js,/drawLowerThumbnail/);
-  assert.match(js,/applyLowerPart\(target,frameId,lowerId\)/);
+  assert.match(js,/applyLowerPart\((?:target|baseCtx),frameId,lowerId\)/);
   assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
 });
 
