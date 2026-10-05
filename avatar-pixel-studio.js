@@ -1380,7 +1380,17 @@ function setSkinColor(value,{rerender=false,announce=false}={}){
 }
 function publish(showToast=false){
   try{
-    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},skinColor:normalizeHexColor(state.skinColor),hairColorId:selectedHairColorId()};
+    normalizeShopState();
+    const payload={
+      version:3,
+      setId:manifest?.id||state.setId,
+      assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},
+      skinColor:normalizeHexColor(state.skinColor),
+      hairColorId:selectedHairColorId(),
+      economyVersion:Math.max(1,state.economyVersion||0),
+      avatarPurchaseCount:economy?.normalizePurchaseCount(state.avatarPurchaseCount)||0,
+      ownedAssets:economy?.normalizeOwned(state.ownedAssets)||{}
+    };
     state=payload;
     localStorage.setItem(STATE_KEY,JSON.stringify(payload));
     const data=previewData();
@@ -1394,13 +1404,19 @@ function publish(showToast=false){
 }
 function resetToDefault(){
   for(const [key,request] of wardrobeRequests)wardrobeRequests.set(key,request+1);
-  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown'};
+  normalizeShopState();
+  const shopState={
+    economyVersion:Math.max(1,state.economyVersion||0),
+    avatarPurchaseCount:state.avatarPurchaseCount,
+    ownedAssets:state.ownedAssets
+  };
+  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown',...shopState};
   state.assetIds={...(manifest?.assetIds||{})};
   renderOptions();
   drawStatic();
   setPreviewMode('stand');
   publish(false);
-  flash('새 기본 캐릭터로 돌아왔어요.');
+  flash('기본 세트로 돌아왔어요. 구매한 파츠는 그대로 보유해요!');
 }
 
 tabs?.addEventListener('click',e=>{
@@ -1452,13 +1468,23 @@ window.KidscadeAvatarShop={
   async setExtraParts(){return false},
   setSeeds(value){
     seeds=Math.max(0,parseInt(value,10)||0);
-    seedBadge.hidden=false;
-    seedBadge.textContent='씨앗 '+seeds.toLocaleString('ko-KR');
+    updateSeedBadge();
+    decorateShopButtons();
   },
   getState:()=>({...state}),
   async setState(next){
     if(!next||typeof next!=='object')return false;
-    state={...state,...next,version:3,setId:manifest?.id||state.setId,skinColor:normalizeHexColor(next.skinColor??state.skinColor),hairColorId:next.hairColorId??state.hairColorId};
+    state={
+      ...state,
+      ...next,
+      version:3,
+      setId:manifest?.id||state.setId,
+      skinColor:normalizeHexColor(next.skinColor??state.skinColor),
+      hairColorId:next.hairColorId??state.hairColorId,
+      economyVersion:Math.max(0,Math.trunc(Number(next.economyVersion??state.economyVersion)||0)),
+      avatarPurchaseCount:economy?.normalizePurchaseCount(next.avatarPurchaseCount??state.avatarPurchaseCount)||0,
+      ownedAssets:economy?.normalizeOwned(next.ownedAssets??state.ownedAssets)||{}
+    };
     state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),...(next.assetIds||{})};
     migrateLegacyHairSelection();
     if(hairColorCatalog&&!hairColorCatalog.items.some(item=>item.id===state.hairColorId))state.hairColorId=hairColorCatalog.defaultId;
@@ -1475,7 +1501,9 @@ window.KidscadeAvatarShop={
     if(toolCatalog&&!toolCatalog.items.some(item=>item.id===state.assetIds.weaponFront)){state.assetIds.weaponFront=toolCatalog.defaultId;state.assetIds.weaponBack=toolCatalog.defaultId}else if(toolCatalog)state.assetIds.weaponBack=state.assetIds.weaponFront;
     if(teachingAidCatalog&&!teachingAidCatalog.items.some(item=>item.id===state.assetIds.shieldFront)){state.assetIds.shieldFront=teachingAidCatalog.defaultId;state.assetIds.shieldBack=teachingAidCatalog.defaultId}else if(teachingAidCatalog)state.assetIds.shieldBack=state.assetIds.shieldFront;
     if(wardrobe)state.assetIds=await wardrobe.prepare(state.assetIds);
+    migrateAvatarEconomy();
     refreshSkinPreview();
+    updateSeedBadge();
     renderOptions();
     publish(false);
     return true;
@@ -1492,8 +1520,10 @@ window.KidscadeAvatarShop={
   await loadLowerCatalog();
   await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
   await loadWardrobe();
+  migrateAvatarEconomy();
   loadSkinPalette();
   loadFrameSkinPalettes();
+  updateSeedBadge();
   drawStatic();
   styleSummary.textContent='헤어 11종 · 염색 9종 · 다양한 복장과 얼굴 장식을 골라 보세요.';
   selectTab('skin');
