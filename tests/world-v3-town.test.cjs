@@ -541,7 +541,7 @@ test('resident AI movement keeps interaction anchors attached inside the new cit
   assert.match(residents,/n\.interaction\.z=n\.object\.position\.z/);
   assert.match(residents,/function routineTarget\(id,hour,weather,pois\)/);
   assert.match(residents,/yuna:\{wake:6\.5,sleep:21\.5/);
-  assert.match(residents,/woojin:\{wake:8,sleep:23/);
+  assert.match(residents,/woojin:\{wake:7,sleep:23/);
   assert.match(residents,/seoyeon:\{wake:7,sleep:21\.8/);
   assert.match(city,/plazaWest:\{x:leisure\.x-4\.0,z:leisure\.z\+4\.0/);
   assert.match(city,/plazaEast:\{x:leisure\.x\+4\.0,z:leisure\.z\+4\.0/);
