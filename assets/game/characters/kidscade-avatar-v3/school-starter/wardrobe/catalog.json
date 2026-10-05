@@ -1,7 +1,7 @@
 {
   "version": 1,
   "type": "kidscade-avatar-wardrobe-catalog",
-  "revision": "wardrobe-3-head-accessories",
+  "revision": "wardrobe-4-face-accessories",
   "bodyFallback": "body-fallback.png",
   "categories": {
     "mask": {
@@ -18,7 +18,7 @@
         },
         {
           "id": "round-glasses-01",
-          "label": "안경",
+          "label": "동그란 안경",
           "file": "round-glasses-01.json",
           "public": true,
           "price": 0
@@ -27,6 +27,76 @@
           "id": "thick-glasses-01",
           "label": "뿔테안경",
           "file": "thick-glasses-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "sunglasses-01",
+          "label": "선글라스",
+          "file": "sunglasses-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "heart-glasses-01",
+          "label": "하트 안경",
+          "file": "heart-glasses-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "goggles-01",
+          "label": "고글",
+          "file": "goggles-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "sleep-mask-01",
+          "label": "수면안대",
+          "file": "sleep-mask-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "blush-cheeks-01",
+          "label": "볼터치",
+          "file": "blush-cheeks-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "freckles-01",
+          "label": "주근깨",
+          "file": "freckles-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "star-sticker-01",
+          "label": "별 스티커",
+          "file": "star-sticker-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "heart-sticker-01",
+          "label": "하트 스티커",
+          "file": "heart-sticker-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "cheek-bandage-01",
+          "label": "볼 밴드",
+          "file": "cheek-bandage-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "small-scar-01",
+          "label": "작은 흉터",
+          "file": "small-scar-01.json",
           "public": true,
           "price": 0
         },
@@ -41,13 +111,6 @@
           "id": "monocle-01",
           "label": "외눈안경",
           "file": "monocle-01.json",
-          "public": true,
-          "price": 0
-        },
-        {
-          "id": "cheek-bandage-01",
-          "label": "볼 상처 밴드",
-          "file": "cheek-bandage-01.json",
           "public": true,
           "price": 0
         },
