@@ -1072,3 +1072,10 @@ test('city planning services raise nearby land value and save data normalizes sa
   assert.equal(roundTrip.funds, 777);
   assert.equal(roundTrip.tiles.length, 24 * 18);
 });
+
+
+test('saved city is explicitly normalized after the village rules normalize legacy fields', () => {
+  const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+  assert.match(js, /if \(C && saved\.city\) normalized\.city = C\.normalize\(saved\.city\)/);
+  assert.match(js, /if \(C\) C\.ensureVillage\(state\)/);
+});
