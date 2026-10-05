@@ -26,7 +26,7 @@ test('v20 keeps Minecraft-like player proportions while expanding the world',()=
   assert.match(js,/feet=eyeY-1\.62/);
   assert.match(js,/const r=\.27/);
   assert.match(js,/new THREE\.BoxGeometry\(\.14,1\.92,\.9\)/);
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-polish1/);
 });
 
 test('biomes stretch horizontally instead of making blocks or the player smaller',()=>{
