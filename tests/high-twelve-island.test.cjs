@@ -925,7 +925,7 @@ test('island-first interface keeps management secondary and adds direct field co
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
   const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=15/);
+  assert.match(html, /rework\.js\?v=16/);
   assert.match(css, /management-dock/);
   assert.match(css, /weather-fx/);
   assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
@@ -943,9 +943,9 @@ test('v10 icon HUD keeps exact values in the management drawer', () => {
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=15/);
-  assert.match(html, /game\.js\?v=15/);
-  assert.match(html, /rework\.js\?v=15/);
+  assert.match(html, /style\.css\?v=16/);
+  assert.match(html, /game\.js\?v=16/);
+  assert.match(html, /rework\.js\?v=16/);
   assert.match(js, /class="stat hud-stat/);
   assert.match(js, /data-open-tab/);
   assert.match(js, /function villageStatusBoard/);
@@ -964,8 +964,8 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=15/);
-  assert.match(html, /rework\.js\?v=15/);
+  assert.match(html, /style\.css\?v=16/);
+  assert.match(html, /rework\.js\?v=16/);
   assert.match(css, /calmer game screen cleanup/);
   assert.match(css, /\.scene-caption,\.ticker\{display:none!important\}/);
   assert.match(css, /\.island-heading\{display:none!important\}/);
@@ -980,7 +980,7 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
 test('v12 event scene observer cannot self-trigger and freeze the browser tab', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=15/);
+  assert.match(html, /rework\.js\?v=16/);
   assert.match(rework, /eventSignature/);
   assert.match(rework, /observe\(modal, \{ attributes: true, attributeFilter: \["class"\] \}\)/);
   assert.doesNotMatch(rework, /observe\(modal, \{ childList: true, subtree: true/);
@@ -1013,7 +1013,7 @@ test('v15 no-build neglect creates real survival pressure while field presence o
 test('v13 villagers visibly work, rest and react to village conditions', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
-  assert.match(html, /art\.js\?v=15/);
+  assert.match(html, /art\.js\?v=16/);
   assert.match(art, /const actorRuntime = new Map\(\)/);
   assert.match(art, /ACTIVITY_SPOTS/);
   for (const activity of ['farm','gather','chop','fish','talk','eat','sleep','protest','heal','care','repair','evacuate','fetch_water','play']) {
