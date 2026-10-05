@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f4eadf">
   <title>Kidscade Pixel Avatar Studio</title>
-  <link rel="stylesheet" href="avatar-pixel-studio.css?v=6">
+  <link rel="stylesheet" href="avatar-pixel-studio.css?v=7">
 </head>
 <body>
   <main class="studio-shell">
@@ -54,23 +54,27 @@
       </aside>
 
       <section class="picker-panel">
-        <nav id="tabs" class="tabs" aria-label="꾸미기 종류">
-          <button class="tab active" data-tab="skin" type="button">피부</button>
-          <button class="tab" data-tab="hair" type="button">헤어</button>
-          <button class="tab" data-tab="hairColor" type="button">염색</button>
-          <button class="tab" data-tab="eyes" type="button">눈</button>
-          <button class="tab" data-tab="mask" type="button">얼굴 장식</button>
-          <button class="tab" data-tab="hat" type="button">머리 장식</button>
-          <button class="tab" data-tab="mouth" type="button">입</button>
-          <button class="tab" data-tab="back" type="button">등 장식</button>
-          <button class="tab" data-tab="earring" type="button">귀걸이</button>
-          <button class="tab" data-tab="upper" type="button">상의</button>
-          <button class="tab" data-tab="lower" type="button">하의</button>
-          <button class="tab" data-tab="shoes" type="button">신발</button>
-          <button class="tab" data-tab="effect" type="button">이펙트</button>
-          <button class="tab" data-tab="weapon" type="button">도구</button>
-          <button class="tab" data-tab="shield" type="button">교구</button>
-        </nav>
+        <div class="category-nav" aria-label="꾸미기 카테고리 이동">
+          <button id="tabPrevBtn" class="tab-scroll-btn prev" type="button" aria-label="이전 카테고리" title="이전 카테고리">‹</button>
+          <nav id="tabs" class="tabs" aria-label="꾸미기 종류">
+            <button class="tab active" data-tab="skin" type="button">피부</button>
+            <button class="tab" data-tab="hair" type="button">헤어</button>
+            <button class="tab" data-tab="hairColor" type="button">염색</button>
+            <button class="tab" data-tab="eyes" type="button">눈</button>
+            <button class="tab" data-tab="mask" type="button">얼굴 장식</button>
+            <button class="tab" data-tab="hat" type="button">머리 장식</button>
+            <button class="tab" data-tab="mouth" type="button">입</button>
+            <button class="tab" data-tab="back" type="button">등 장식</button>
+            <button class="tab" data-tab="earring" type="button">귀걸이</button>
+            <button class="tab" data-tab="upper" type="button">상의</button>
+            <button class="tab" data-tab="lower" type="button">하의</button>
+            <button class="tab" data-tab="shoes" type="button">신발</button>
+            <button class="tab" data-tab="effect" type="button">이펙트</button>
+            <button class="tab" data-tab="weapon" type="button">도구</button>
+            <button class="tab" data-tab="shield" type="button">교구</button>
+          </nav>
+          <button id="tabNextBtn" class="tab-scroll-btn next" type="button" aria-label="다음 카테고리" title="다음 카테고리">›</button>
+        </div>
 
         <div class="picker-head">
           <div>
@@ -87,6 +91,6 @@
   </main>
   <script src="app/features/avatar/wardrobe-parts.js?v=1"></script>
   <script src="app/features/avatar/avatar-economy.js?v=1"></script>
-  <script src="avatar-pixel-studio.js?v=72"></script>
+  <script src="avatar-pixel-studio.js?v=73"></script>
 </body>
 </html>
