@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=60/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=61/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-17/);
+  assert.match(js,/pixel-v3-school-starter-18/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -60,11 +60,53 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-17'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-18'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
 });
+
+test('avatar shop uses one global purchase sequence across every cosmetic category',()=>{
+  assert.deepEqual(manifest.economy.steps,[100,200,300,500,800,1300]);
+  assert.equal(manifest.economy.cap,1300);
+  assert.equal(manifest.economy.pricing,'global-purchase-sequence');
+  assert.equal(manifest.economy.defaultAssetsFree,true);
+  assert.equal(manifest.economy.skinColorFree,true);
+  assert.equal(manifest.economy.raritySystem,false);
+  assert.match(html,/app\/features\/avatar\/avatar-economy\.js\?v=1/);
+  assert.ok(html.indexOf('app/features/avatar/avatar-economy.js')<html.indexOf('avatar-pixel-studio.js'));
+  assert.match(js,/const economy=window\.KidscadeAvatarEconomy/);
+  assert.match(js,/avatarPurchaseCount:economy\?\.normalizePurchaseCount\(state\.avatarPurchaseCount\)\|\|0/);
+  assert.match(js,/economy\.quote\(state\.ownedAssets,state\.avatarPurchaseCount,category,id,defaultId\)/);
+  assert.match(js,/state\.avatarPurchaseCount=economy\.normalizePurchaseCount\(state\.avatarPurchaseCount\)\+1/);
+  assert.match(js,/function migrateAvatarEconomy\(\)/);
+  assert.match(js,/function ensureAssetAccess\(category,id,defaultId,label\)/);
+  assert.match(js,/className='shop-badge '/);
+  assert.match(css,/\.option \.shop-badge\.locked/);
+  assert.match(css,/\.option\.locked-shop/);
+});
+
+test('avatar purchases spend the shared seed wallet through the parent integration',()=>{
+  assert.match(js,/kidscade-avatar-purchase-request/);
+  assert.match(js,/kidscade-avatar-purchase-result/);
+  assert.match(integration,/function spendAvatarSeeds\(amount, reason = '아바타 꾸미기 구매'\)/);
+  assert.match(integration,/KidscadeSeedWallet/);
+  assert.match(integration,/wallet\.spend\(price, \{ reason, source: 'avatar-studio' \}\)/);
+  assert.match(integration,/\[100, 200, 300, 500, 800, 1300\]\.includes\(price\)/);
+  assert.match(integration,/kidscade-avatar-purchase-request/);
+  assert.match(integration,/kidscade-avatar-purchase-result/);
+});
+
+test('all non-default avatar asset selectors are purchase-gated while skin stays free',()=>{
+  for(const category of ['hair','hairColor','eyes','upper','lower','earring','shoes','weapon','shield']){
+    assert.ok(js.includes("ensureAssetAccess('"+category+"'"),category);
+  }
+  assert.match(js,/ensureAssetAccess\(key,id,group\.defaultId,item\.label\)/);
+  assert.doesNotMatch(js,/ensureAssetAccess\('skin'/);
+  assert.match(js,/quote\.free\?'기본':quote\.owned\?'보유':'🌱 '/);
+  assert.match(js,/기본 세트로 돌아왔어요\. 구매한 파츠는 그대로 보유해요!/);
+});
+
 
 test('legacy avatar data is not reused as v3 appearance',()=>{
   assert.doesNotMatch(js,/kidscade-pixel-avatar-v1|kidscade_avatar_equipped|migrated-from-legacy/);
@@ -128,10 +170,10 @@ test('skin recoloring covers every source and derived animation frame',()=>{
 });
 
 test('skin color persists in the v3 avatar state and reset returns to original tone',()=>{
-  assert.match(js,/let state=\{version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown'\}/);
+  assert.match(js,/let state=\{version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown',economyVersion:0,avatarPurchaseCount:0,ownedAssets:\{\}\}/);
   assert.match(js,/skinColor:normalizeHexColor\(saved\.skinColor\)/);
   assert.match(js,/state\.skinColor=normalizeHexColor\(value\)/);
-  assert.match(js,/state=\{version:3,setId:manifest\?\.id\|\|'school-starter-01',skinColor:null,hairColorId:hairColorCatalog\?\.defaultId\|\|'brown'\}/);
+  assert.match(js,/state=\{version:3,setId:manifest\?\.id\|\|'school-starter-01',skinColor:null,hairColorId:hairColorCatalog\?\.defaultId\|\|'brown',\.\.\.shopState\}/);
   assert.match(js,/localStorage\.setItem\(STATE_KEY,JSON\.stringify\(payload\)\)/);
 });
 
