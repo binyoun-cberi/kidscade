@@ -1861,6 +1861,8 @@ let miningCrackOverlay=null,miningCrackKey='';
 let freePlacementGhost=null,freePlacementGhostKey='';
 let pendingPlayerStrikes=[],freeHitStopUntil=0;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
+let discoveredResources=new Set(),discoveredRecipeIds=new Set(),unreadRecipeIds=new Set();
+let footstepDistanceAcc=0,lastFootstepX=null,lastFootstepZ=null,ambientAudioClock=0;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0,freeAvatarFacingRight=false;
@@ -2939,6 +2941,8 @@ function initFree(){
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
   miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];freeHitStopUntil=0;
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
+  discoveredResources=new Set();discoveredRecipeIds=new Set();unreadRecipeIds=new Set();
+  footstepDistanceAcc=0;lastFootstepX=null;lastFootstepZ=null;ambientAudioClock=0;
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   freeAvatarFacingRight=false;
   freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
