@@ -19,7 +19,7 @@ test('v16 modules parse and biome data loads before the game script',()=>{
   assert.doesNotThrow(()=>new Function(worldJs));
   assert.equal(Object.keys(world.BIOMES).length,8);
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
-  assert.match(html,/cube-architect\.js\?v=20261005-polish1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-exploration1/);
   for(const id of ['freeQuestTitle','freeQuestDescription','biomeState','survivalCraftPanel',
     'survivalCraftList','inventoryTitle','inventorySubtitle']){
     assert.ok(html.includes('id="'+id+'"'),id);
