@@ -33,7 +33,7 @@ class TravelFX {
     this.icon=document.getElementById('travelFxIcon');
     this.title=document.getElementById('travelFxTitle');
     this.route=document.getElementById('travelFxRoute');
-    this.renderer=null;this.scene=null;this.camera=null;this.clock=null;this.models={air:planeModel()};this.ready=false;
+    this.renderer=null;this.scene=null;this.camera=null;this.clock=null;this.models={air:planeModel()};this.ready=false;this.active=null;
     this.init();
   }
   init(){
@@ -75,7 +75,26 @@ class TravelFX {
     const w=Math.max(320,this.canvas.clientWidth||620),h=Math.max(150,this.canvas.clientHeight||260);
     this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
   }
+  finish(active){
+    if(!active||this.active!==active)return;
+    this.active=null;
+    if(active.raf)cancelAnimationFrame(active.raf);
+    if(active.timer)clearTimeout(active.timer);
+    if(active.model)this.scene?.remove(active.model);
+    this.overlay?.classList.remove('show');
+    active.card?.removeAttribute('data-fallback');
+    try{active.resolve?.()}catch(_){}
+  }
+  cancel(){
+    const active=this.active;
+    if(!active){
+      this.overlay?.classList.remove('show');
+      return;
+    }
+    this.finish(active);
+  }
   fallback(kind,from,to,duration){
+    this.cancel();
     return new Promise(resolve=>{
       this.overlay.className='travel-fx show mode-'+kind+' fallback';
       this.icon.textContent=kind==='rail'?'🚄':kind==='sea'?'🚢':'✈️';
@@ -83,16 +102,15 @@ class TravelFX {
       this.route.textContent=from+' → '+to;
       const card=this.overlay.querySelector('.travel-fx-card');
       card?.setAttribute('data-fallback',this.icon.textContent);
-      setTimeout(()=>{
-        this.overlay.classList.remove('show');
-        card?.removeAttribute('data-fallback');
-        resolve();
-      },duration);
+      const active={resolve,raf:null,timer:null,model:null,card};
+      this.active=active;
+      active.timer=setTimeout(()=>this.finish(active),duration);
     });
   }
   play({kind='air',from='',to='',fast=false}={}){
     const duration=fast?430:760;
     if(!this.ready||!this.models[kind])return this.fallback(kind,from,to,duration);
+    this.cancel();
     return new Promise(resolve=>{
       this.overlay.className='travel-fx show mode-'+kind;
       this.icon.textContent=kind==='rail'?'🚄':kind==='sea'?'🚢':'✈️';
@@ -105,21 +123,27 @@ class TravelFX {
       if(kind==='rail')model.rotation.y=Math.PI/2;
       if(kind==='sea')model.rotation.y=Math.PI/2;
       this.scene.add(model);
+      const active={resolve,raf:null,timer:null,model,card:null};
+      this.active=active;
       const start=performance.now();
       const frame=now=>{
-        const t=Math.min(1,(now-start)/duration);
-        const eased=1-Math.pow(1-t,3);
-        model.position.x=-2.7+5.4*eased;
-        model.position.y=.03+Math.sin(t*Math.PI)*.32+(kind==='sea'?Math.sin(t*10)*.04:0);
-        if(kind==='air')model.rotation.z=Math.sin(t*Math.PI)*-.08;
-        model.rotation.y+=(kind==='air'?.003:0);
-        this.renderer.render(this.scene,this.camera);
-        if(t<1)requestAnimationFrame(frame);
-        else{
-          setTimeout(()=>{this.overlay.classList.remove('show');this.scene.remove(model);resolve()},fast?25:90);
+        if(this.active!==active)return;
+        try{
+          const t=Math.min(1,(now-start)/duration);
+          const eased=1-Math.pow(1-t,3);
+          model.position.x=-2.7+5.4*eased;
+          model.position.y=.03+Math.sin(t*Math.PI)*.32+(kind==='sea'?Math.sin(t*10)*.04:0);
+          if(kind==='air')model.rotation.z=Math.sin(t*Math.PI)*-.08;
+          model.rotation.y+=(kind==='air'?.003:0);
+          this.renderer.render(this.scene,this.camera);
+          if(t<1)active.raf=requestAnimationFrame(frame);
+          else active.timer=setTimeout(()=>this.finish(active),fast?25:90);
+        }catch(err){
+          console.warn('[K-Travel] 3D travel effect skipped:',err);
+          this.finish(active);
         }
       };
-      requestAnimationFrame(frame);
+      active.raf=requestAnimationFrame(frame);
     });
   }
 }
