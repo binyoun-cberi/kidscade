@@ -398,29 +398,48 @@
     return path;
   }
 
+  function busProfile(city,route) {
+    if (!route?.length) return {usedBus:false,cost:0,stops:0};
+    const stops=route.reduce((n,[x,y])=>n+(cell(city,x,y)?.busStop?1:0),0);
+    const usedBus=stops>=2;
+    const cost=usedBus?Math.max(3,Math.round(route.length*.55)+2):route.length;
+    return {usedBus,cost,stops};
+  }
+
   function computeTrips(city) {
     for (const t of city.tiles) {
       if (t.road) t.traffic=0;
-      t.tripAccess=false; t.tripLength=0; t.commuters=0;
+      t.tripAccess=false; t.tripLength=0; t.tripCost=0; t.usedBus=false; t.commuters=0;
     }
-    let trips=0,failedTrips=0,lengthTotal=0;
+    let trips=0,failedTrips=0,busTrips=0,lengthTotal=0,costTotal=0;
     for (let y=0;y<city.height;y++) for (let x=0;x<city.width;x++) {
       const t=cell(city,x,y);
       if (!t?.zone || !t.roadAccess || t.damage >= 3) continue;
       const route=traceTrip(city,x,y,t.density===0);
+      const profile=busProfile(city,route);
       t.tripAccess=!!route;
       t.tripLength=route?.length || 0;
+      t.tripCost=profile.cost;
+      t.usedBus=profile.usedBus;
       const people=t.density>0 ? t.density*(t.zone==="residential"?4:t.zone==="commercial"?2:3) : 0;
       t.commuters=people;
       if (!people) continue;
       if (!route) { failedTrips+=people; continue; }
-      trips+=people; lengthTotal+=route.length*people;
+      trips+=people;
+      if(profile.usedBus)busTrips+=people;
+      lengthTotal+=route.length*people;
+      costTotal+=profile.cost*people;
+      const trafficWeight=profile.usedBus?1.0:1.7;
       for (const [rx,ry] of route) {
         const road=cell(city,rx,ry);
-        road.traffic=clamp(road.traffic + people*1.7,0,100);
+        road.traffic=clamp(road.traffic + people*trafficWeight,0,100);
       }
     }
-    return {trips,failedTrips,avgCommute:trips?lengthTotal/trips:0};
+    return {
+      trips,failedTrips,busTrips,
+      avgCommute:trips?lengthTotal/trips:0,
+      avgCommuteCost:trips?costTotal/trips:0
+    };
   }
 
   function distanceEffect(city,x,y,civicType,radius,amount) {
