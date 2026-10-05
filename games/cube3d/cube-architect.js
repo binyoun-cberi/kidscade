@@ -3102,6 +3102,7 @@ function addToBag(type,n=1){
   if(gameFreeMode!=='survival'||!type)return;
   const first=bagCount(type)===0;
   survivalBag[type]=bagCount(type)+n;
+  if(first){discoveredResources.add(type);refreshRecipeDiscoveries(true)}
   if(first&&(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))&&!hotbarTypes.includes(type)){
     const empty=hotbarTypes.findIndex((item,i)=>i>0&&!item);
     if(empty>=0)hotbarTypes[empty]=type;
@@ -3128,6 +3129,42 @@ function consumeFood(type){
   buildHotbar();if(inventoryOpen)buildInventory('전체');markFreeWorldDirty(350);
   toast(food.label+'을(를) 먹고 생명 '+food.heal+'칸을 회복했어요.');sfx('good');return true;
 }
+function recipeDiscoveryClues(recipe){
+  const keys=Object.keys(recipe.needs||{}),specific=keys.filter(k=>!['sticks','planks'].includes(k));
+  return specific.length?specific:keys;
+}
+function pulseCraftDiscovery(){
+  const el=$('craftDiscoveryNotice');if(!el)return;
+  el.classList.remove('discovery-pop');void el.offsetWidth;el.classList.add('discovery-pop');
+  setTimeout(()=>el.classList.remove('discovery-pop'),720);
+}
+function updateCraftDiscoveryHud(){
+  const unread=[...unreadRecipeIds].filter(id=>discoveredRecipeIds.has(id)).length;
+  const notice=$('craftDiscoveryNotice');
+  if(notice){
+    notice.classList.toggle('hidden',gameFreeMode!=='survival'||unread===0);
+    notice.textContent=unread?('새 제작법 '+unread+' · E로 확인'):'';
+  }
+  const summary=$('craftDiscoverySummary');
+  if(summary)summary.textContent='발견한 제작법 '+discoveredRecipeIds.size+' / '+worldRules.RECIPES.length+
+    (unread?' · NEW '+unread:'');
+}
+function refreshRecipeDiscoveries(markUnread=true){
+  if(gameFreeMode!=='survival')return [];
+  const added=[];
+  for(const recipe of worldRules.RECIPES){
+    if(recipe.stage>survivalStage||!recipeUnlocked(recipe.id)||discoveredRecipeIds.has(recipe.id))continue;
+    const clues=recipeDiscoveryClues(recipe);
+    if(!clues.some(type=>discoveredResources.has(type)||bagCount(type)>0))continue;
+    discoveredRecipeIds.add(recipe.id);if(markUnread)unreadRecipeIds.add(recipe.id);added.push(recipe);
+  }
+  if(added.length&&markUnread)pulseCraftDiscovery();
+  updateCraftDiscoveryHud();return added;
+}
+function markRecipeSeen(id){
+  if(!id||!unreadRecipeIds.has(id))return;
+  unreadRecipeIds.delete(id);updateCraftDiscoveryHud();markFreeWorldDirty(500);
+}
 function recipePossible(recipe){
   return (!recipe.bench||hasWorkbench())&&
     Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
@@ -3141,7 +3178,7 @@ function recipeCategory(recipe){
 function visibleSurvivalRecipes(){
   const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
     snowBrick:'snow',cactusDye:'desert'};
-  return worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&recipeUnlocked(r.id)&&
+  return worldRules.RECIPES.filter(r=>discoveredRecipeIds.has(r.id)&&r.stage<=survivalStage&&recipeUnlocked(r.id)&&
     (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'].includes(r.id)||!bagCount(r.id))&&
     (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
       Object.keys(r.needs).some(item=>bagCount(item)>0)))
