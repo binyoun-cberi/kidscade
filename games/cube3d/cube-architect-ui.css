@@ -428,3 +428,32 @@
     transition:none;
   }
 }
+
+
+/* ---------- tactile survival feedback ---------- */
+#freeMission.quest-complete{
+  animation:caQuestComplete .72s cubic-bezier(.2,.85,.3,1);
+}
+@keyframes caQuestComplete{
+  0%{transform:scale(1);box-shadow:var(--ca-shadow)}
+  35%{transform:scale(1.025);border-color:rgba(103,223,207,.72);
+    box-shadow:0 0 0 3px rgba(103,223,207,.14),0 18px 44px rgba(4,10,20,.30)}
+  100%{transform:scale(1);box-shadow:var(--ca-shadow)}
+}
+#crosshair.hit-confirm{
+  transform:translate(-50%,-50%) scale(1.28);
+  filter:drop-shadow(0 0 5px rgba(246,200,95,.95));
+}
+#freeHud.player-hurt::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:18;
+  pointer-events:none;
+  background:radial-gradient(circle at center,transparent 52%,rgba(190,42,67,.20) 100%);
+  animation:caPlayerHurt .18s ease-out;
+}
+@keyframes caPlayerHurt{
+  from{opacity:1}
+  to{opacity:0}
+}
