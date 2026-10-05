@@ -212,7 +212,7 @@ test('driving test keeps QA-gated shared nature only where it fits the exam camp
   assert.match(js,/prepareShared3DObject/);
   for(const id of ['nature.commonTreeA','nature.commonTreeB','nature.pineTreeA','nature.grass'])assert.match(js,new RegExp(id.replace(/\./g,'\\.')));
   for(const id of ['prop.waterTower','prop.well','vehicle.schoolBus','building.house'])assert.doesNotMatch(js,new RegExp(id.replace(/\./g,'\\.')));
-  assert.match(html,/driver-license\.js\?v=18/);
+  assert.match(html,/driver-license\.js\?v=19/);
 });
 
 
@@ -220,7 +220,7 @@ test('Driver License v16 respects shared 3D performance policy',()=>{
   assert.match(js,/shared3DShouldLoad/);
   assert.match(js,/sharedCoarse/);
   assert.match(js,/shadows:key!==\'sharedGrass\'/);
-  assert.match(html,/driver-license\.js\?v=18/);
+  assert.match(html,/driver-license\.js\?v=19/);
 });
 
 
@@ -262,8 +262,8 @@ test('Driver License v18 turns the old L course into a return-lane campus route'
   assert.match(js,/const returnLane=Math\.abs\(x-110\)<=4\.55/);
   assert.match(js,/makeEnhancedRoad\(9,52,110,46/);
   assert.match(js,/종료장 ↑/);
-  assert.match(js,/종료장 좌측 방향지시등 미사용/);
-  assert.match(js,/const inFinishLane=Math\.abs\(car\.x-110\)<4\.7&&car\.z>64/);
+  assert.match(js,/종료장 우측 방향지시등 미사용/);
+  assert.match(js,/const inFinishZone=Math\.abs\(car\.x-110\)<3\.8&&car\.z>65&&car\.z<72/);
 });
 
 test('Driver License v18 uses road markings and practice-only parking sensor emphasis',()=>{
@@ -271,4 +271,26 @@ test('Driver License v18 uses road markings and practice-only parking sensor emp
   assert.match(js,/makeGroundLabel\('20 km\/h'/);
   assert.match(js,/makeCrosswalk\(0,25\.6,'z'\)/);
   assert.match(js,/parkingSensorLine\.material\.color\.set\(mode==='practice'\?0x46d9ff:0xffffff\)/);
+});
+
+
+test('Driver License v19 fixes the return-lane signal and explicit finish zone',()=>{
+  assert.match(js,/우측 방향지시등을 켠 뒤 종료장/);
+  assert.match(js,/우회전해 종료장으로 이동/);
+  assert.match(js,/if\(car\.signal!==1\)addDeduction\('종료장 우측 방향지시등 미사용',5\)/);
+  assert.match(js,/line\(9,\.42,110,65,0xffffff,\.20\)/);
+  assert.match(js,/const inFinishZone=Math\.abs\(car\.x-110\)<3\.8&&car\.z>65&&car\.z<72/);
+});
+
+test('Driver License v19 keeps per-asset fallbacks when a GLB fails',()=>{
+  assert.match(js,/obj\.userData\.fallbackFor=key/);
+  assert.match(js,/o\.visible=!key\|\|!visualModels\.has\(key\)/);
+  assert.match(js,/registerFallback\(mesh,'cone'\)/);
+  assert.match(js,/registerFallback\(pole,'trafficLight'\)/);
+  assert.match(js,/createFallbackBuilding\(b\.x,b\.z,color,10\.5,8\.5,5\.6,b\.key\)/);
+});
+
+test('Driver License v19 disables shadows on the long perimeter fence',()=>{
+  assert.match(js,/if\(key==='fence'\)/);
+  assert.match(js,/n\.castShadow=false;n\.receiveShadow=false/);
 });
