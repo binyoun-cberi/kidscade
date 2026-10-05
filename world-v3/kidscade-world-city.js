@@ -21,6 +21,7 @@ const CITY_ASSET={
   cafe:QBUILD+'1Story_GableRoof_Mat.fbx',
   arcade:SUBURBAN+'building-type-e.glb',
   civic:QBUILD+'2Story_Columns_Mat.fbx',
+  school:QBUILD+'2Story_Columns_Mat.fbx',
   library:QBUILD+'2Story_Balcony_Mat.fbx',
   clinic:QBUILD+'1Story_RoundRoof_Mat.fbx',
   road:ROADS+'road-straight.glb',
@@ -192,7 +193,7 @@ export async function buildKidscadeCity(ctx){
     ['cafe',CITY_ASSET.cafe,leisure.x-4.7,leisure.z-5.2,6.0,5.2,'하늘 카페',2.25],
     ['arcade',CITY_ASSET.arcade,leisure.x+4.7,leisure.z-5.2,6.0,5.2,'키즈 아케이드',2.25],
     ['library',CITY_ASSET.library,civic.x-4.7,civic.z-5.0,6.2,5.0,'마을 도서관',2.25],
-    ['civic',CITY_ASSET.civic,civic.x+4.7,civic.z-5.0,6.6,5.0,'마을회관',2.25],
+    ['school',CITY_ASSET.school,civic.x+4.7,civic.z-5.0,6.6,5.0,'씨앗학교',2.25],
     ['clinic',CITY_ASSET.clinic,transit.x-4.7,transit.z-5.0,6.2,5.0,'튼튼 보건소',2.25],
     ['museum',CITY_ASSET.museum,museum.x,museum.z-4.4,10.5,7.0,'씨앗 자연박물관',3.15]
   ];
@@ -209,7 +210,8 @@ export async function buildKidscadeCity(ctx){
     ['market',market.x-4.7,market.z-2.55,1.35,'🚪 씨앗마트 들어가기'],
     ['hardware',market.x+4.7,market.z-2.55,1.35,'🚪 튼튼 철물점 들어가기'],
     ['cafe',leisure.x-4.7,leisure.z-2.55,1.35,'🚪 하늘 카페 들어가기'],
-    ['museum',museum.x,museum.z-.55,1.55,'🏛️ 씨앗 자연박물관 들어가기']
+    ['museum',museum.x,museum.z-.55,1.55,'🏛️ 씨앗 자연박물관 들어가기'],
+    ['school',civic.x+4.7,civic.z-2.55,1.45,'🏫 씨앗학교 들어가기']
   ])interact('outdoor',x,z,r,label,()=>actions.enterVenue?.(id));
 
   // Commerce props stay deep inside the market parcel, never on the south or center roads.
@@ -246,11 +248,25 @@ export async function buildKidscadeCity(ctx){
     interact('outdoor',bx,bz+.75,1.35,'📌 오늘의 학교생활 보기',()=>actions.dailyBoard?.());
   }
 
-  // Civic parcel.
+  // School / library campus. The former civic hall is now the school building;
+  // the northern half of the parcel stays open as a small schoolyard for breaks and events.
+  plane(parent,civic.x+4.7,civic.z+3.8,7.2,6.0,0xb7b18d,.065);
+  for(const x of [civic.x+2.1,civic.x+4.7,civic.x+7.3]){
+    box(parent,x,civic.z+3.8,.08,5.0,.025,0xf3eee1,.078);
+  }
+  for(const z of [civic.z+1.8,civic.z+3.8,civic.z+5.8]){
+    box(parent,civic.x+4.7,z,6.0,.08,.025,0xf3eee1,.079);
+  }
+  track('school-yard','plaza',civic.x+4.7,civic.z+3.8,7.2,6.0);
   await Promise.all([
-    addModel(parent,CITY_ASSET.mailbox,{x:civic.x,z:civic.z+1.8,w:.7,h:1.25,d:.6,rot:0,name:'town-mailbox'}),
-    addModel(parent,CITY_ASSET.planter,{x:civic.x,z:civic.z+6.4,w:1.2,h:.85,d:.85,rot:0,name:'civic-planter'})
+    addModel(parent,CITY_ASSET.mailbox,{x:civic.x-1.0,z:civic.z+1.8,w:.7,h:1.25,d:.6,rot:0,name:'town-mailbox'}),
+    addModel(parent,CITY_ASSET.planter,{x:civic.x-6.7,z:civic.z+6.2,w:1.2,h:.85,d:.85,rot:0,name:'library-planter'}),
+    addModel(parent,CITY_ASSET.bench,{x:civic.x+2.2,z:civic.z+6.1,w:1.9,h:.92,d:.74,rot:Math.PI/2,name:'schoolyard-bench-a'}),
+    addModel(parent,CITY_ASSET.bench,{x:civic.x+7.2,z:civic.z+6.1,w:1.9,h:.92,d:.74,rot:-Math.PI/2,name:'schoolyard-bench-b'})
   ]);
+  const schoolYardLabel=makeLabel('씨앗학교 운동장',{width:1.85,height:.40,font:31});
+  schoolYardLabel.position.set(civic.x+4.7,2.75,civic.z+6.0);schoolYardLabel.userData.anchor={x:civic.x+4.7,z:civic.z+6.0};schoolYardLabel.visible=false;
+  parent.add(schoolYardLabel);buildingLabels.push(schoolYardLabel);
 
   // Transit / clinic parcel.
   await Promise.all([
@@ -368,6 +384,9 @@ export async function buildKidscadeCity(ctx){
     cafe:{x:leisure.x-4.7,z:leisure.z-1.0,r:.32},
     arcade:{x:leisure.x+4.7,z:leisure.z-1.0,r:.34},
     civic:{x:civic.x+4.5,z:civic.z+1.0,r:.38},
+    schoolGate:{x:civic.x+4.7,z:civic.z-2.15,r:.72},
+    schoolYard:{x:civic.x+4.7,z:civic.z+3.5,r:2.25},
+    schoolGarden:{x:civic.x+1.7,z:civic.z+5.5,r:.90},
     library:{x:civic.x-4.5,z:civic.z+1.0,r:.34},
     clinic:{x:transit.x-4.5,z:transit.z+1.0,r:.34},
     busStop:{x:transit.x+4.5,z:transit.z+1.0,r:.36},
