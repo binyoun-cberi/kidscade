@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=65/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=66/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-22/);
+  assert.match(js,/pixel-v3-school-starter-23/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -56,6 +56,12 @@ test('public studio lists only registered v3 starter parts and exposes no JSON t
   assert.doesNotMatch(js,/FileReader|showOpenFilePicker|importFullAdjustment|applyAdjustmentJsonFile/);
 });
 
+test('hat slot is presented to children as head accessories while keeping the internal hat key',()=>{
+  assert.match(html,/data-tab="hat"[^>]*>머리 장식</);
+  assert.match(js,/hat:\{label:'머리 장식',name:'착용 안 함',assetKey:'hat'\}/);
+  assert.match(js,/ensureAssetAccess\(key,id,group\.defaultId,item\.label\)/);
+});
+
 test('back accessories render behind the body and use the wardrobe shop flow',()=>{
   assert.match(html,/data-tab="back"[^>]*>등 장식</);
   assert.match(js,/back:\{label:'등 장식',name:'착용 안 함',assetKey:'back'\}/);
@@ -80,7 +86,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-22'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-23'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
