@@ -475,7 +475,28 @@ export function createTownEconomy(ctx){
 
   function transport(){
     const unlocked=!!ensureState().perks.riverBus;
-    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 구역</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 광산</button><button data-city-travel="ranch">🐄 목장</button><button data-city-travel="orchard">🍎 과수원</button><button data-city-travel="beach">🏖️ 해변</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 상점가</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
+    openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 구역</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 광산</button><button data-city-travel="ranch">🐄 목장</button><button data-city-travel="orchard">🍎 과수원</button><button data-city-travel="beach">🏖️ 해변</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 상점가</button><button data-city-travel="school">🏫 씨앗학교</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
+  }
+
+  function schoolSchedule(){
+    const mins=((prog().survival.time%1440)+1440)%1440,hour=mins/60;
+    let phase='방과후';
+    if(hour<7.3)phase='등교 전';
+    else if(hour<8)phase='등교 시간';
+    else if(hour<10)phase='오전 수업';
+    else if(hour<12)phase='오전 활동';
+    else if(hour<13)phase='점심·운동장';
+    else if(hour<15.5)phase='오후 수업·동아리';
+    else if(hour<16)phase='하교 시간';
+    const inClass=hour>=8&&hour<15.5;
+    openPanel('<h2>🏫 씨앗학교 · 오늘 시간표</h2><p>현재 <b>'+String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')+'</b> · <b>'+phase+'</b></p>'+
+      '<div class="grid">'+
+      '<div class="item"><b>08:00~10:00 오전 수업</b><div>국어·수학·사회처럼 교실에서 배우는 시간</div></div>'+
+      '<div class="item"><b>10:00~12:00 생활 활동</b><div>실과·관찰·모둠 활동</div></div>'+
+      '<div class="item"><b>12:00~13:00 점심·쉬는 시간</b><div>학생과 선생님이 운동장으로 나와요.</div></div>'+
+      '<div class="item"><b>13:00~15:30 오후 수업</b><div>체육·동아리·생활 퀘스트 활동</div></div>'+
+      '<div class="item"><b>15:30 이후 방과후</b><div>NPC들이 마트·도서관·숲·카페 등 자기 생활 장소로 흩어져요.</div></div>'+
+      '</div><p><small>'+(inClass?'지금은 수업 시간이라 교실에서 친구들을 만날 수 있어요.':'지금은 정규 수업 시간이 아니어서 교실이 한산해요.')+'</small></p>');
   }
 
   function bench(){
@@ -515,7 +536,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,schoolSchedule,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
     BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS,SCHOOL_QUESTS
   };
 }
