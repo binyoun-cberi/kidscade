@@ -18,17 +18,17 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=16/);
-  assert.match(html, /art.js\?v=16/);
-  assert.match(html, /city-core.js\?v=16/);
-  assert.match(html, /city-view.js\?v=16/);
-  assert.match(html, /game.js\?v=16/);
+  assert.match(html, /sim.js\?v=17/);
+  assert.match(html, /art.js\?v=17/);
+  assert.match(html, /city-core.js\?v=17/);
+  assert.match(html, /city-view.js\?v=17/);
+  assert.match(html, /game.js\?v=17/);
   assert.match(html, /id="islandCanvas"/);
   assert.match(html, /data-tab="city"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=16"));
+  assert.ok(entry.href.endsWith("?v=17"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -925,7 +925,7 @@ test('island-first interface keeps management secondary and adds direct field co
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
   const game = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=16/);
+  assert.match(html, /rework\.js\?v=17/);
   assert.match(css, /management-dock/);
   assert.match(css, /weather-fx/);
   assert.match(css, /modal-options\{grid-template-columns:repeat\(3/);
@@ -943,9 +943,9 @@ test('v10 icon HUD keeps exact values in the management drawer', () => {
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=16/);
-  assert.match(html, /game\.js\?v=16/);
-  assert.match(html, /rework\.js\?v=16/);
+  assert.match(html, /style\.css\?v=17/);
+  assert.match(html, /game\.js\?v=17/);
+  assert.match(html, /rework\.js\?v=17/);
   assert.match(js, /class="stat hud-stat/);
   assert.match(js, /data-open-tab/);
   assert.match(js, /function villageStatusBoard/);
@@ -964,8 +964,8 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
   const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
   const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /style\.css\?v=16/);
-  assert.match(html, /rework\.js\?v=16/);
+  assert.match(html, /style\.css\?v=17/);
+  assert.match(html, /rework\.js\?v=17/);
   assert.match(css, /calmer game screen cleanup/);
   assert.match(css, /\.scene-caption,\.ticker\{display:none!important\}/);
   assert.match(css, /\.island-heading\{display:none!important\}/);
@@ -980,7 +980,7 @@ test('v11 screen cleanup keeps the island clear while preserving management acce
 test('v12 event scene observer cannot self-trigger and freeze the browser tab', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const rework = fs.readFileSync(path.join(gameDir, 'rework.js'), 'utf8');
-  assert.match(html, /rework\.js\?v=16/);
+  assert.match(html, /rework\.js\?v=17/);
   assert.match(rework, /eventSignature/);
   assert.match(rework, /observe\(modal, \{ attributes: true, attributeFilter: \["class"\] \}\)/);
   assert.doesNotMatch(rework, /observe\(modal, \{ childList: true, subtree: true/);
@@ -1013,7 +1013,7 @@ test('v15 no-build neglect creates real survival pressure while field presence o
 test('v13 villagers visibly work, rest and react to village conditions', () => {
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   const art = fs.readFileSync(path.join(gameDir, 'art.js'), 'utf8');
-  assert.match(html, /art\.js\?v=16/);
+  assert.match(html, /art\.js\?v=17/);
   assert.match(art, /const actorRuntime = new Map\(\)/);
   assert.match(art, /ACTIVITY_SPOTS/);
   for (const activity of ['farm','gather','chop','fish','talk','eat','sleep','protest','heal','care','repair','evacuate','fetch_water','play']) {
@@ -1089,4 +1089,111 @@ test('city housing expands the shared village population capacity', () => {
   C.recompute(city, village);
   assert.ok(city.stats.homes >= 8);
   assert.equal(S.capacity(village), base + city.stats.homes);
+});
+
+
+test('v10 city commuters write traffic onto real connected road paths', () => {
+  const city = C.initial(101);
+  for (let i = 0; i < 10; i++) C.tick(city, { population: 20, trust: 75, health: 85, tick:i, disasters:{} });
+  const developed = city.tiles.filter(t => t.density > 0);
+  assert.ok(developed.length >= 2, 'starter RCI blocks should begin developing');
+  assert.ok(city.stats.trips > 0, 'developed zones should produce completed road trips');
+  assert.ok(city.tiles.some(t => t.road && t.traffic > 0), 'completed trips must write traffic onto road tiles');
+
+  const center = C.cell(city, 12, 9);
+  center.damage = 3;
+  C.recompute(city, { population: 20, trust: 75, health: 85, tick:10, disasters:{} });
+  assert.equal(center.connected, false, 'a destroyed central road must leave the connected network');
+  assert.ok(city.stats.commuteSuccess < 100 || city.stats.connectedRoads < city.stats.roads);
+});
+
+test('v10 growth needs both utility networks and restores after repair', () => {
+  const city = C.initial(202);
+  const village = { population:18, trust:72, health:86, tick:0, disasters:{} };
+  C.recompute(city, village);
+  const target = C.cell(city, 9, 8);
+  assert.equal(target.powered, true);
+  assert.equal(target.watered, true);
+
+  for (const t of city.tiles) if (t.powerLine) t.damage = 3;
+  C.recompute(city, village);
+  assert.equal(target.powered, false);
+  const before = target.density;
+  for (let i=0;i<5;i++) C.tick(city, {...village, tick:i});
+  assert.equal(target.density, before, 'an unpowered zone cannot grow');
+
+  const road = city.tiles.find(t => t.powerLine && t.road);
+  road.damage = 0;
+  C.recompute(city, village);
+  assert.ok(city.stats.powerCapacity > 0);
+});
+
+test('v10 tax and maintenance form a real city budget', () => {
+  const city = C.initial(303);
+  const village = { population:20, trust:70, health:82, tick:0, disasters:{} };
+  for (let i=0;i<8;i++) C.tick(city, {...village, tick:i});
+  const low = C.summary(city);
+  assert.ok(low.maintenance > 0);
+  assert.ok(Number.isFinite(low.netIncome));
+  const beforeDemand = city.demand.residential;
+  assert.equal(C.changeTaxRate(city, 1, village).ok, true);
+  assert.equal(city.taxRate, 8);
+  assert.ok(city.demand.residential <= beforeDemand, 'higher city tax should not increase residential demand');
+});
+
+test('v10 police and fire facilities project road-based service coverage', () => {
+  const city = C.initial(404);
+  city.funds = 1000;
+  const village = { population:20, trust:70, health:82, tick:0, disasters:{} };
+  assert.equal(C.paint(city, 'police', 11, 8, village).ok, true);
+  assert.equal(C.paint(city, 'fire', 13, 10, village).ok, true);
+  C.recompute(city, village);
+  assert.ok(city.tiles.some(t => t.policeCoverage > 0));
+  assert.ok(city.tiles.some(t => t.fireCoverage > 0));
+});
+
+test('v10 village flood damages city tiles and repair clears the damage', () => {
+  const city = C.initial(505);
+  city.week = 2;
+  city.funds = 1000;
+  const village = { population:20, trust:70, health:82, tick:30, disasters:{flood:40}, stormUntil:0 };
+  C.tick(city, village);
+  const damagedIndex = city.tiles.findIndex(t => t.damage > 0);
+  assert.ok(damagedIndex >= 0, 'active flood should damage a city tile on its scheduled pulse');
+  const x = damagedIndex % city.width, y = Math.floor(damagedIndex / city.width);
+  assert.equal(C.paint(city, 'repair', x, y, village).ok, true);
+  assert.equal(C.cell(city,x,y).damage, 0);
+});
+
+test('v1 city saves migrate to v2 utilities without losing zoning', () => {
+  const old = C.initial(606);
+  const originalZone = C.cell(old, 9, 8).zone;
+  old.version = 1;
+  old.tiles.forEach(t => {
+    delete t.powerLine; delete t.pipe; delete t.powered; delete t.watered;
+    delete t.damage; delete t.tripAccess; delete t.tripLength;
+  });
+  old.tiles.forEach(t => { if (t.civic === 'powerPlant' || t.civic === 'waterTower') t.civic = null; });
+  const migrated = C.normalize(JSON.parse(JSON.stringify(old)));
+  assert.equal(migrated.version, C.VERSION);
+  assert.equal(C.cell(migrated, 9, 8).zone, originalZone);
+  assert.ok(migrated.tiles.some(t => t.civic === 'powerPlant'));
+  assert.ok(migrated.tiles.some(t => t.civic === 'waterTower'));
+  assert.ok(migrated.tiles.some(t => t.powerLine));
+  assert.ok(migrated.tiles.some(t => t.pipe));
+});
+
+test('v17 city UI exposes utilities, commute, services and tax controls', () => {
+  const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
+  const view = fs.readFileSync(path.join(gameDir, 'city-view.js'), 'utf8');
+  const core = fs.readFileSync(path.join(gameDir, 'city-core.js'), 'utf8');
+  assert.match(html, /city-core\.js\?v=17/);
+  assert.match(html, /city-view\.js\?v=17/);
+  for (const feature of ['powerLine','pipe','powerPlant','waterTower','police','fire','repair']) assert.ok(view.includes('"'+feature+'"'), feature);
+  for (const overlay of ['commute','traffic','power','water','services']) assert.ok(view.includes('"'+overlay+'"'), overlay);
+  assert.match(view, /data-city-tax/);
+  assert.match(core, /function traceTrip/);
+  assert.match(core, /function assignPower/);
+  assert.match(core, /function assignWater/);
+  assert.match(core, /function roadCoverage/);
 });
