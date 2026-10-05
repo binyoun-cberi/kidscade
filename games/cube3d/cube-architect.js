@@ -5281,6 +5281,7 @@ function configureMobileMode(target){
   $('mobileView').classList.toggle('hidden',target!=='free');
   $('mobileInteract')?.classList.toggle('hidden',target!=='free'||gameFreeMode!=='survival');
   $('mobileMore').classList.toggle('hidden',target!=='free');
+  $('mobileTutorial').classList.toggle('hidden',!active);
   $('mobileMore').textContent=mobileUtilityOpen?'도구 닫기':'도구';
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
@@ -5401,6 +5402,7 @@ function initMobileControls(){
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
   tap('mobileInteract',()=>{if(mode==='free'&&gameFreeMode==='survival'&&!interactWildCreature())toast('가까운 평화 생물을 십자선으로 바라보세요.')});
   tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
+  tap('mobileTutorial',()=>showTutorial(mode==='free'?'free':mode,true));
   tap('mobileMore',()=>{if(mode==='free'){mobileUtilityOpen=!mobileUtilityOpen;configureMobileMode('free')}});
   tap('mobileAvatar',()=>{if(mode==='free')openAvatarCustomizer()});
   tap('mobilePaint',()=>{if(mode==='free')paintLookedFace()});
