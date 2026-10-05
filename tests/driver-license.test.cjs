@@ -294,3 +294,10 @@ test('Driver License v19 disables shadows on the long perimeter fence',()=>{
   assert.match(js,/if\(key==='fence'\)/);
   assert.match(js,/n\.castShadow=false;n\.receiveShadow=false/);
 });
+
+
+test('Driver License v19 gives waiting test cars a visible fallback',()=>{
+  assert.match(js,/function createFallbackVehicle/);
+  assert.match(js,/createFallbackVehicle\(x,z,rot,key\)/);
+  assert.match(js,/registerFallback\(g,key\)/);
+});
