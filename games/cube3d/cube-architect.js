@@ -2677,10 +2677,145 @@ function growTree(x,baseY,z,record,kind='forest'){
     const d={type:foliage,natural:!record};if(record)setWorldBlock(px,py,pz,d,true);else setRawBlock(px,py,pz,d);
   }
 }
-function addCollectible(id,x,y,z,color,label){
+function miniPoiLocalCoord(v){return ((v%WORLD_CHUNK_SIZE)+WORLD_CHUNK_SIZE)%WORLD_CHUNK_SIZE}
+function miniPoiSpotOk(x,z,biome,used=[]){
+  if(!inWorld(x,1,z)||worldRules.region(x,z)!==biome)return false;
+  const lx=miniPoiLocalCoord(x),lz=miniPoiLocalCoord(z);
+  if(lx<4||lx>11||lz<4||lz>11)return false;
+  if(poiRules.isLandmarkClearZone?.(x,z,7))return false;
+  if(used.some(p=>Math.hypot(p.x-x,p.z-z)<15))return false;
+  const samples=[[0,0],[2,0],[-2,0],[0,2],[0,-2],[2,2],[-2,-2]];
+  const heights=samples.map(([dx,dz])=>terrainHeight(x+dx,z+dz));
+  if(Math.min(...heights)<SEA_LEVEL||Math.max(...heights)-Math.min(...heights)>1)return false;
+  return samples.every(([dx,dz])=>worldRules.region(x+dx,z+dz)===biome);
+}
+function buildMiniPoiCatalog(){
+  if(miniPoiCatalog)return miniPoiCatalog;
+  const centers={};
+  for(const [x,z,biome] of worldRules.CENTERS||[])(centers[biome]||(centers[biome]=[])).push([x,z]);
+  miniPoiCatalog=[];
+  const biomeOrder=Object.keys(MINI_POI_VARIANTS);
+  biomeOrder.forEach((biome,biomeIndex)=>{
+    const variants=MINI_POI_VARIANTS[biome]||[],used=[];
+    variants.forEach((variant,slot)=>{
+      const centerList=centers[biome]||[[0,0]],base=centerList[slot%centerList.length]||centerList[0];
+      let chosen=null;
+      const radii=biome==='meadow'?[8,11,14,16]:[15,20,25,30,35];
+      for(const radius of radii){
+        for(let i=0;i<32&&!chosen;i++){
+          const angle=((i+slot*9+biomeIndex*5)%32)/32*Math.PI*2;
+          const x=Math.round(base[0]+Math.cos(angle)*radius),z=Math.round(base[1]+Math.sin(angle)*radius);
+          if(miniPoiSpotOk(x,z,biome,used))chosen={x,z};
+        }
+        if(chosen)break;
+      }
+      if(!chosen){
+        let best=null,bestScore=Infinity;
+        for(let x=-WORLD_HALF+6;x<WORLD_HALF-6;x+=4)for(let z=-WORLD_HALF+6;z<WORLD_HALF-6;z+=4){
+          if(!miniPoiSpotOk(x,z,biome,used))continue;
+          const score=Math.hypot(x-base[0],z-base[1])+hash2(x*17+slot,z*23+biomeIndex)*4;
+          if(score<bestScore){bestScore=score;best={x,z}}
+        }
+        chosen=best;
+      }
+      if(!chosen)return;
+      const y=terrainHeight(chosen.x,chosen.z)+1;
+      const entry={...variant,biome,slot,x:chosen.x,y,z:chosen.z,chunk:worldChunkKey(chosen.x,chosen.z)};
+      used.push(entry);miniPoiCatalog.push(entry);
+    });
+  });
+  return miniPoiCatalog;
+}
+function miniPoiPut(spec,dx,dy,dz,type,extra={}){
+  const x=spec.x+dx,y=spec.y+dy,z=spec.z+dz;if(!inWorld(x,y,z))return;
+  setRawBlock(x,y,z,{type,natural:true,miniPoi:spec.id,...extra});
+}
+function clearMiniPoiPlants(spec,r=3,h=5){
+  const plants=new Set(['log','pineLog','leaves','pineLeaves','flower','reed','cactus','sapling']);
+  for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++)for(let dy=0;dy<=h;dy++){
+    const x=spec.x+dx,y=spec.y+dy,z=spec.z+dz,d=worldData.get(worldKey(x,y,z));
+    if(d&&plants.has(d.type))setRawBlock(x,y,z,null);
+  }
+}
+function stampMiniPoi(spec){
+  clearMiniPoiPlants(spec,3,5);
+  const put=(dx,dy,dz,type,extra)=>miniPoiPut(spec,dx,dy,dz,type,extra);
+  const line=(x1,z1,x2,z2,y,type)=>{
+    const steps=Math.max(Math.abs(x2-x1),Math.abs(z2-z1));
+    for(let i=0;i<=steps;i++)put(Math.round(x1+(x2-x1)*i/Math.max(1,steps)),y,Math.round(z1+(z2-z1)*i/Math.max(1,steps)),type);
+  };
+  switch(spec.kind){
+    case 'camp':
+      put(-2,0,-1,'log');put(2,0,-1,'log');put(0,0,0,'stone');put(0,1,0,'torch');
+      put(-2,0,2,'planks');put(-1,0,2,'planks');put(1,0,2,'planks');put(2,0,2,'planks');break;
+    case 'well':
+      for(const [dx,dz] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]])put(dx,0,dz,'stone');
+      put(0,0,0,'water',{level:4});put(-1,1,0,'log');put(1,1,0,'log');put(-1,2,0,'planks');put(0,2,0,'planks');put(1,2,0,'planks');break;
+    case 'oldCamp':
+      line(-2,-2,2,-2,0,'planks');put(-2,0,0,'log');put(2,0,0,'log');put(0,0,1,'stone');put(0,1,1,'torch');
+      put(-2,1,-2,'log');put(2,1,-2,'log');put(-2,2,-2,'planks');put(-1,2,-2,'planks');put(0,2,-2,'planks');put(1,2,-2,'planks');put(2,2,-2,'planks');break;
+    case 'fallenTree':
+      line(-3,0,3,0,0,'log');put(-2,1,0,'log');put(2,1,0,'log');put(0,0,1,'planks');put(1,0,1,'planks');break;
+    case 'watchPost':
+      for(const [dx,dz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){put(dx,0,dz,'pineLog');put(dx,1,dz,'pineLog')}
+      for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)put(dx,2,dz,'planks');
+      put(0,3,0,'torch');put(0,0,2,'stairs',{facing:0});break;
+    case 'cairn':
+      put(0,0,0,'stone');put(1,0,0,'stone');put(-1,0,0,'stone');put(0,0,1,'stone');put(0,0,-1,'stone');
+      put(0,1,0,'smoothStone');put(0,2,0,'stone');break;
+    case 'snowStation':
+      for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if(Math.abs(dx)===2||Math.abs(dz)===2)put(dx,0,dz,'snowBrick');
+      for(const [dx,dz] of [[-2,-2],[2,-2],[-2,2],[2,2]])put(dx,1,dz,'snowBrick');
+      line(-2,-2,2,-2,2,'snowBrick');put(0,1,-2,'glassPane',{facing:0});put(0,0,0,'planks');put(0,1,0,'torch');break;
+    case 'iceMarker':
+      put(0,0,0,'snowBrick');put(0,1,0,'glass');put(0,2,0,'glass');put(0,3,0,'snowBrick');
+      put(1,0,0,'snow');put(-1,0,0,'snow');put(0,0,1,'snow');put(0,0,-1,'snow');break;
+    case 'oasis':
+      for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+        const edge=Math.abs(dx)===2||Math.abs(dz)===2;put(dx,0,dz,edge?'sandstone':'water',edge?{}:{level:4});
+      }
+      put(3,0,0,'cactus');put(3,1,0,'cactus');put(-3,0,1,'planks');put(-2,0,1,'planks');break;
+    case 'fossil':
+      line(-3,0,0,0,0,'sandstone');
+      for(const x of [-2,-1,0,1,2]){put(x,1,0,'sandstone');if(Math.abs(x)<=1)put(x,2,0,'sandstone')}
+      put(-2,0,1,'sand');put(2,0,-1,'sand');break;
+    case 'minerCamp':
+      line(-2,-2,2,-2,0,'planks');put(-2,0,0,'log');put(2,0,0,'log');put(0,0,1,'ironOre');put(1,0,1,'stone');
+      put(-2,1,-2,'log');put(2,1,-2,'log');put(0,1,-2,'torch');break;
+    case 'stoneArch':
+      for(let y=0;y<4;y++){put(-2,y,0,'brick');put(2,y,0,'brick')}
+      line(-2,0,2,0,4,'brick');put(-1,3,0,'brick');put(1,3,0,'brick');break;
+    case 'boardwalk':
+      line(-3,0,3,0,0,'planks');line(-3,1,3,1,0,'planks');
+      put(-3,1,0,'torch');put(3,1,1,'torch');put(-2,0,-1,'reed');put(2,0,2,'reed');break;
+    case 'reedShrine':
+      for(const [dx,dz] of [[-1,-1],[1,-1],[-1,1],[1,1]])put(dx,0,dz,'clay');
+      put(0,0,0,'smoothStone');put(0,1,0,'torch');put(-2,0,0,'reed');put(2,0,0,'reed');put(0,0,-2,'reed');put(0,0,2,'reed');break;
+    case 'flowerGarden':
+      for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)if((Math.abs(dx)+Math.abs(dz))%2===0)put(dx,0,dz,'flower');
+      put(-2,0,3,'planks');put(-1,0,3,'planks');put(0,0,3,'planks');put(1,0,3,'planks');put(2,0,3,'planks');break;
+    case 'picnic':
+      put(-1,0,0,'planks');put(0,0,0,'planks');put(1,0,0,'planks');put(0,1,0,'woolMat');
+      put(-2,0,2,'flower');put(2,0,2,'flower');put(-2,0,-2,'flower');put(2,0,-2,'flower');break;
+  }
+}
+function generateMiniPoiChunk(cx,cz){
+  const chunk=cx+','+cz;
+  for(const spec of buildMiniPoiCatalog())if(spec.chunk===chunk)stampMiniPoi(spec);
+}
+function nearestUncollectedMiniPoi(x,z,maxDistance=18){
+  let best=null;
+  for(const spec of buildMiniPoiCatalog()){
+    if(collected.has('mini:'+spec.id))continue;
+    const dist=Math.hypot(x-spec.x,z-spec.z);
+    if(dist<=maxDistance&&(!best||dist<best.dist))best={...spec,dist};
+  }
+  return best;
+}
+function addCollectible(id,x,y,z,color,label,meta={}){
   const m=new THREE.Mesh(new THREE.OctahedronGeometry(.45),
     new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.42,roughness:.3}));
-  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y};m.castShadow=true;
+  m.position.set(x,y,z);m.userData={collectible:id,label,baseY:y,...meta};m.castShadow=true;
   scene.add(m);collectibles.push(m);
 }
 function generateWorldChunk(cx,cz){
