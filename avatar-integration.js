@@ -5,7 +5,7 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v3-school-starter-17';
+  const PREVIEW_VERSION = 'pixel-v3-school-starter-18';
   const PIXEL_STATE_KEY = 'kidscade-avatar-v3';
   const SCHOOL_DEFAULT_IMAGE = 'assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png';
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -107,6 +107,26 @@
   function readCoins() {
     const n = parseInt(localStorage.getItem('kidscade_coins') || '0', 10);
     return Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+
+  function spendAvatarSeeds(amount, reason = '아바타 꾸미기 구매') {
+    const price = Math.max(0, Math.trunc(Number(amount) || 0));
+    if (![100, 200, 300, 500, 800, 1300].includes(price)) {
+      return { ok: false, balance: readCoins(), error: 'invalid-price' };
+    }
+    const wallet = window.KidscadeSeedWallet;
+    if (wallet?.spend) return wallet.spend(price, { reason, source: 'avatar-studio' });
+
+    const before = readCoins();
+    if (before < price) return { ok: false, balance: before, error: 'insufficient-balance' };
+    const balance = before - price;
+    localStorage.setItem('kidscade_coins', String(balance));
+    try {
+      window.dispatchEvent(new CustomEvent('kidscade-seeds-change', {
+        detail: { balance, delta: -price, reason, source: 'avatar-studio' }
+      }));
+    } catch (_) {}
+    return { ok: true, balance, delta: -price, reason, source: 'avatar-studio' };
   }
 
   function pixelState() {
@@ -544,6 +564,25 @@
 
   window.addEventListener('message', event => {
     if (event.source !== frame?.contentWindow) return;
+    if (event.data?.type === 'kidscade-avatar-purchase-request') {
+      const requestId = String(event.data.requestId || '');
+      const amount = Math.max(0, Math.trunc(Number(event.data.amount) || 0));
+      const reason = String(event.data.reason || '아바타 꾸미기 구매').slice(0, 120);
+      const result = spendAvatarSeeds(amount, reason);
+      const balance = Number.isFinite(Number(result?.balance)) ? Math.max(0, Number(result.balance)) : readCoins();
+      try {
+        frame.contentWindow?.postMessage({
+          type: 'kidscade-avatar-purchase-result',
+          requestId,
+          ok: Boolean(result?.ok),
+          balance,
+          error: result?.error || ''
+        }, location.origin);
+        frame.contentWindow?.KidscadeAvatarShop?.setSeeds?.(balance);
+      } catch (_) {}
+      ensurePreviewLayer();
+      return;
+    }
     if (event.data?.type === 'kidscade-avatar-change') setTimeout(snapshotFromStudio, 80);
     if (event.data?.type === 'kidscade-avatar-wallet') ensurePreviewLayer();
   });

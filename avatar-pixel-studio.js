@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-17';
+const PREVIEW_VERSION='pixel-v3-school-starter-18';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -69,12 +69,13 @@ let previewMode='stand';
 let previewStartedAt=0;
 let previewRaf=0;
 let lastFrameIndex=-1;
-let seeds=0;
+let seeds=Math.max(0,parseInt(localStorage.getItem('kidscade_coins')||'0',10)||0);
 let skinPalette=[];
 const frameSkinPalettes=new Map();
 const skinRemapCache=new Map();
 let skinBaseHex='#fce2d2';
-let state={version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown'};
+const economy=window.KidscadeAvatarEconomy;
+let state={version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown',economyVersion:0,avatarPurchaseCount:0,ownedAssets:{}};
 
 function safeJson(raw){try{return raw?JSON.parse(raw):null}catch(_){return null}}
 function normalizeHexColor(value){
@@ -86,11 +87,157 @@ function normalizeHexColor(value){
 function loadState(){
   try{
     const saved=safeJson(localStorage.getItem(STATE_KEY));
-    if(saved&&saved.version===3&&saved.setId)return {...state,...saved,skinColor:normalizeHexColor(saved.skinColor)};
+    if(saved&&saved.version===3&&saved.setId)return {
+      ...state,
+      ...saved,
+      skinColor:normalizeHexColor(saved.skinColor),
+      ownedAssets:economy?.normalizeOwned(saved.ownedAssets)||{},
+      avatarPurchaseCount:economy?.normalizePurchaseCount(saved.avatarPurchaseCount)||0,
+      economyVersion:Math.max(0,Math.trunc(Number(saved.economyVersion)||0))
+    };
   }catch(_){}
   return {...state};
 }
 state=loadState();
+
+function normalizeShopState(){
+  state.ownedAssets=economy?.normalizeOwned(state.ownedAssets)||{};
+  state.avatarPurchaseCount=economy?.normalizePurchaseCount(state.avatarPurchaseCount)||0;
+  state.economyVersion=Math.max(0,Math.trunc(Number(state.economyVersion)||0));
+}
+function shopDefaultId(category){
+  if(category==='hair')return hairCatalog?.defaultId||'';
+  if(category==='hairColor')return hairColorCatalog?.defaultId||'brown';
+  if(category==='eyes')return eyeCatalog?.defaultId||'';
+  if(category==='upper')return upperCatalog?.defaultId||'';
+  if(category==='lower')return lowerCatalog?.defaultId||'';
+  if(category==='earring')return earringCatalog?.defaultId||'';
+  if(category==='shoes')return shoeCatalog?.defaultId||'';
+  if(category==='weapon')return toolCatalog?.defaultId||'';
+  if(category==='shield')return teachingAidCatalog?.defaultId||'';
+  return wardrobe?.category(category)?.defaultId||'';
+}
+function shopSelectedId(category){
+  if(category==='hair')return selectedHairId();
+  if(category==='hairColor')return selectedHairColorId();
+  if(category==='eyes')return selectedEyeId();
+  if(category==='upper')return selectedUpperId();
+  if(category==='lower')return selectedLowerId();
+  if(category==='earring')return selectedEarringId();
+  if(category==='shoes')return selectedShoeId();
+  if(category==='weapon')return selectedToolId();
+  if(category==='shield')return selectedTeachingAidId();
+  return wardrobe?.normalize(state.assetIds)?.[category]||'';
+}
+function migrateAvatarEconomy(){
+  normalizeShopState();
+  if(state.economyVersion>=1)return false;
+  for(const category of ['hair','hairColor','eyes','mask','hat','mouth','earring','upper','lower','shoes','weapon','shield']){
+    const id=shopSelectedId(category),defaultId=shopDefaultId(category);
+    if(id&&defaultId&&id!==defaultId)state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
+  }
+  state.economyVersion=1;
+  return true;
+}
+function shopQuote(category,id,defaultId=shopDefaultId(category)){
+  if(!economy)return {category,id,defaultId,free:id===defaultId,owned:id===defaultId,price:0};
+  return economy.quote(state.ownedAssets,state.avatarPurchaseCount,category,id,defaultId);
+}
+function shopButtonDescriptor(button){
+  const d=button?.dataset||{};
+  if(d.wardrobeCategory&&d.wardrobeId)return [d.wardrobeCategory,d.wardrobeId,shopDefaultId(d.wardrobeCategory)];
+  if(d.hairId)return ['hair',d.hairId,shopDefaultId('hair')];
+  if(d.hairColorId)return ['hairColor',d.hairColorId,shopDefaultId('hairColor')];
+  if(d.eyeId)return ['eyes',d.eyeId,shopDefaultId('eyes')];
+  if(d.upperId)return ['upper',d.upperId,shopDefaultId('upper')];
+  if(d.lowerId)return ['lower',d.lowerId,shopDefaultId('lower')];
+  if(d.earringId)return ['earring',d.earringId,shopDefaultId('earring')];
+  if(d.shoesId)return ['shoes',d.shoesId,shopDefaultId('shoes')];
+  if(d.weaponId)return ['weapon',d.weaponId,shopDefaultId('weapon')];
+  if(d.shieldId)return ['shield',d.shieldId,shopDefaultId('shield')];
+  return null;
+}
+function decorateShopButtons(){
+  if(!optionGrid||!economy)return;
+  for(const button of optionGrid.querySelectorAll('.option')){
+    const info=shopButtonDescriptor(button);
+    button.querySelector(':scope > .shop-badge')?.remove();
+    button.classList.remove('locked-shop','owned-shop','free-shop');
+    if(!info)continue;
+    const quote=shopQuote(...info),badge=document.createElement('span');
+    badge.className='shop-badge '+(quote.free?'free':quote.owned?'owned':'locked');
+    badge.textContent=quote.free?'기본':quote.owned?'보유':'🌱 '+quote.price.toLocaleString('ko-KR');
+    button.classList.add(quote.free?'free-shop':quote.owned?'owned-shop':'locked-shop');
+    button.appendChild(badge);
+  }
+}
+function updateSeedBadge(){
+  if(!seedBadge)return;
+  seedBadge.hidden=false;
+  const next=economy?.nextPrice(state.avatarPurchaseCount)||1300;
+  seedBadge.textContent='씨앗 '+seeds.toLocaleString('ko-KR')+' · 다음 '+next.toLocaleString('ko-KR');
+}
+let purchaseRequestSeq=0;
+const pendingPurchaseRequests=new Map();
+function directSeedSpend(amount,reason){
+  const price=Math.max(0,Math.trunc(Number(amount)||0)),before=Math.max(0,parseInt(localStorage.getItem('kidscade_coins')||String(seeds),10)||0);
+  if(before<price)return {ok:false,balance:before,error:'insufficient-balance'};
+  const balance=before-price;
+  localStorage.setItem('kidscade_coins',String(balance));
+  try{window.dispatchEvent(new CustomEvent('kidscade-seeds-change',{detail:{balance,delta:-price,reason,source:'avatar-studio'}}))}catch(_){}
+  return {ok:true,balance};
+}
+function requestSeedSpend(amount,reason){
+  const price=Math.max(0,Math.trunc(Number(amount)||0));
+  if(window.parent===window)return Promise.resolve(directSeedSpend(price,reason));
+  return new Promise(resolve=>{
+    const requestId='avatar-'+Date.now()+'-'+(++purchaseRequestSeq);
+    const timer=setTimeout(()=>{pendingPurchaseRequests.delete(requestId);resolve({ok:false,balance:seeds,error:'wallet-timeout'})},2500);
+    pendingPurchaseRequests.set(requestId,result=>{clearTimeout(timer);resolve(result)});
+    window.parent.postMessage({type:'kidscade-avatar-purchase-request',requestId,amount:price,reason},location.origin);
+  });
+}
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||event.data?.type!=='kidscade-avatar-purchase-result')return;
+  const requestId=String(event.data.requestId||''),resolve=pendingPurchaseRequests.get(requestId);
+  if(!resolve)return;
+  pendingPurchaseRequests.delete(requestId);
+  const balance=Math.max(0,Math.trunc(Number(event.data.balance)||0));
+  seeds=balance;updateSeedBadge();
+  resolve({ok:Boolean(event.data.ok),balance,error:event.data.error||''});
+});
+const purchaseLocks=new Map();
+async function ensureAssetAccess(category,id,defaultId,label){
+  const key=String(category||'')+':'+String(id||'');
+  if(purchaseLocks.has(key))return purchaseLocks.get(key);
+  const task=(async()=>{
+    const quote=shopQuote(category,id,defaultId);
+    if(quote.owned)return {ok:true,purchased:false,price:0};
+    if(seeds<quote.price){flash('씨앗이 부족해요! · 필요 '+quote.price.toLocaleString('ko-KR'));return {ok:false,purchased:false,price:quote.price}}
+    const result=await requestSeedSpend(quote.price,'아바타 '+String(label||id)+' 구매');
+    if(!result?.ok){
+      if(Number.isFinite(Number(result?.balance)))seeds=Math.max(0,Number(result.balance));
+      updateSeedBadge();
+      flash(result?.error==='insufficient-balance'?'씨앗이 부족해요!':'구매를 완료하지 못했어요.');
+      return {ok:false,purchased:false,price:quote.price};
+    }
+    seeds=Math.max(0,Number(result.balance)||0);
+    state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
+    state.avatarPurchaseCount=economy.normalizePurchaseCount(state.avatarPurchaseCount)+1;
+    state.economyVersion=1;
+    updateSeedBadge();
+    publish(false);
+    decorateShopButtons();
+    return {ok:true,purchased:true,price:quote.price};
+  })();
+  purchaseLocks.set(key,task);
+  try{return await task}finally{purchaseLocks.delete(key)}
+}
+function assetApplyMessage(access,label,suffix='적용했어요!'){
+  return access?.purchased?label+' 구매·적용! · 🌱 '+access.price.toLocaleString('ko-KR'):label+' '+suffix;
+}
+const optionShopObserver=new MutationObserver(()=>decorateShopButtons());
+optionShopObserver.observe(optionGrid,{childList:true});
 
 async function loadManifest(){
   const res=await fetch(MANIFEST_URL,{cache:'no-cache'});
@@ -1152,10 +1299,12 @@ async function renderWardrobeOptions(){
   await Promise.allSettled(group.items.map(async item=>{await wardrobe.load(key,item.id);if(currentTab!==key)return;const el=optionGrid.querySelector('canvas[data-wardrobe-thumb="'+item.id+'"]');if(el)drawWardrobeThumbnail(el,key,item.id)}));
 }
 async function setWardrobeAsset(key,id){
-  const group=wardrobe?.category(key);if(!group?.items.some(item=>item.id===id))return false;
+  const group=wardrobe?.category(key),item=group?.items.find(candidate=>candidate.id===id);if(!item)return false;
   const request=(wardrobeRequests.get(key)||0)+1;wardrobeRequests.set(key,request);
-  try{await wardrobe.load(key,id);if(wardrobeRequests.get(key)!==request)return false;
-    state.assetIds={...state.assetIds,[key]:id};refreshSkinPreview();renderOptions();publish(false);flash(group.items.find(item=>item.id===id).label+' 적용했어요!');return true;
+  try{
+    await wardrobe.load(key,id);if(wardrobeRequests.get(key)!==request)return false;
+    const access=await ensureAssetAccess(key,id,group.defaultId,item.label);if(!access.ok)return false;
+    state.assetIds={...state.assetIds,[key]:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
   }catch(error){console.error(error);if(wardrobeRequests.get(key)===request)flash('파츠를 불러오지 못했어요. 다시 골라 주세요.');return false}
 }
 function renderOptions(){
@@ -1200,36 +1349,57 @@ function refreshSkinPreview(){
   setPreviewMode(previewMode);
 }
 
-function setEarringAsset(id){if(!earringCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),earring:id};refreshSkinPreview();renderOptions();publish(false);const item=earringCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'귀걸이')+' 적용했어요!');return true}
-function setShoeAsset(id){if(!shoeCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);const item=shoeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'신발')+' 적용했어요!');return true}
-function setToolAsset(id){if(!toolCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),weaponFront:id,weaponBack:id};refreshSkinPreview();renderOptions();publish(false);const item=toolCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'도구')+' 적용했어요!');return true}
-function setTeachingAidAsset(id){if(!teachingAidCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shieldFront:id,shieldBack:id};refreshSkinPreview();renderOptions();publish(false);const item=teachingAidCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'교구')+' 적용했어요!');return true}
+async function setEarringAsset(id){
+  const item=earringCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('earring',id,earringCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),earring:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setShoeAsset(id){
+  const item=shoeCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('shoes',id,shoeCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setToolAsset(id){
+  const item=toolCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('weapon',id,toolCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),weaponFront:id,weaponBack:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setTeachingAidAsset(id){
+  const item=teachingAidCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('shield',id,teachingAidCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shieldFront:id,shieldBack:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
 
 async function setUpperAsset(id){
-  if(!upperCatalog?.items?.some(item=>item.id===id))return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
+  const item=upperCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
+  const access=await ensureAssetAccess('upper',id,upperCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),upper:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=upperCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'상의')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 async function setLowerAsset(id){
-  if(!lowerCatalog?.items?.some(item=>item.id===id))return false;if(id!==lowerCatalog.defaultId)await loadLowerPart(id);
+  const item=lowerCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==lowerCatalog.defaultId)await loadLowerPart(id);
+  const access=await ensureAssetAccess('lower',id,lowerCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),lower:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=lowerCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'하의')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 async function setHairAsset(id){
-  if(!hairCatalog?.items?.some(item=>item.id===id))return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
+  const item=hairCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
+  const access=await ensureAssetAccess('hair',id,hairCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),hair:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=hairCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'헤어')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
-function setHairColorAsset(id){
-  if(!hairColorCatalog?.items?.some(item=>item.id===id))return false;
+async function setHairColorAsset(id){
+  const item=hairColorCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('hairColor',id,hairColorCatalog.defaultId,item.label);if(!access.ok)return false;
   state.hairColorId=id;refreshSkinPreview();renderOptions();publish(false);
-  const item=hairColorCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'염색')+' 색으로 바꿨어요!');return true;
+  flash(assetApplyMessage(access,item.label,'색으로 바꿨어요!'));return true;
 }
 
 async function setEyeAsset(id){
-  if(!eyeCatalog?.items?.some(item=>item.id===id))return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
+  const item=eyeCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
+  const access=await ensureAssetAccess('eyes',id,eyeCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),eyes:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=eyeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'눈')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 function setSkinColor(value,{rerender=false,announce=false}={}){
   state.skinColor=normalizeHexColor(value);
@@ -1240,7 +1410,17 @@ function setSkinColor(value,{rerender=false,announce=false}={}){
 }
 function publish(showToast=false){
   try{
-    const payload={version:3,setId:manifest?.id||state.setId,assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},skinColor:normalizeHexColor(state.skinColor),hairColorId:selectedHairColorId()};
+    normalizeShopState();
+    const payload={
+      version:3,
+      setId:manifest?.id||state.setId,
+      assetIds:{...(manifest?.assetIds||{}),...(state.assetIds||{})},
+      skinColor:normalizeHexColor(state.skinColor),
+      hairColorId:selectedHairColorId(),
+      economyVersion:Math.max(1,state.economyVersion||0),
+      avatarPurchaseCount:economy?.normalizePurchaseCount(state.avatarPurchaseCount)||0,
+      ownedAssets:economy?.normalizeOwned(state.ownedAssets)||{}
+    };
     state=payload;
     localStorage.setItem(STATE_KEY,JSON.stringify(payload));
     const data=previewData();
@@ -1254,13 +1434,19 @@ function publish(showToast=false){
 }
 function resetToDefault(){
   for(const [key,request] of wardrobeRequests)wardrobeRequests.set(key,request+1);
-  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown'};
+  normalizeShopState();
+  const shopState={
+    economyVersion:Math.max(1,state.economyVersion||0),
+    avatarPurchaseCount:state.avatarPurchaseCount,
+    ownedAssets:state.ownedAssets
+  };
+  state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown',...shopState};
   state.assetIds={...(manifest?.assetIds||{})};
   renderOptions();
   drawStatic();
   setPreviewMode('stand');
   publish(false);
-  flash('새 기본 캐릭터로 돌아왔어요.');
+  flash('기본 세트로 돌아왔어요. 구매한 파츠는 그대로 보유해요!');
 }
 
 tabs?.addEventListener('click',e=>{
@@ -1301,7 +1487,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-17',
+  version:'pixel-v3-school-starter-18',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -1312,13 +1498,23 @@ window.KidscadeAvatarShop={
   async setExtraParts(){return false},
   setSeeds(value){
     seeds=Math.max(0,parseInt(value,10)||0);
-    seedBadge.hidden=false;
-    seedBadge.textContent='씨앗 '+seeds.toLocaleString('ko-KR');
+    updateSeedBadge();
+    decorateShopButtons();
   },
   getState:()=>({...state}),
   async setState(next){
     if(!next||typeof next!=='object')return false;
-    state={...state,...next,version:3,setId:manifest?.id||state.setId,skinColor:normalizeHexColor(next.skinColor??state.skinColor),hairColorId:next.hairColorId??state.hairColorId};
+    state={
+      ...state,
+      ...next,
+      version:3,
+      setId:manifest?.id||state.setId,
+      skinColor:normalizeHexColor(next.skinColor??state.skinColor),
+      hairColorId:next.hairColorId??state.hairColorId,
+      economyVersion:Math.max(0,Math.trunc(Number(next.economyVersion??state.economyVersion)||0)),
+      avatarPurchaseCount:economy?.normalizePurchaseCount(next.avatarPurchaseCount??state.avatarPurchaseCount)||0,
+      ownedAssets:economy?.normalizeOwned(next.ownedAssets??state.ownedAssets)||{}
+    };
     state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),...(next.assetIds||{})};
     migrateLegacyHairSelection();
     if(hairColorCatalog&&!hairColorCatalog.items.some(item=>item.id===state.hairColorId))state.hairColorId=hairColorCatalog.defaultId;
@@ -1335,7 +1531,9 @@ window.KidscadeAvatarShop={
     if(toolCatalog&&!toolCatalog.items.some(item=>item.id===state.assetIds.weaponFront)){state.assetIds.weaponFront=toolCatalog.defaultId;state.assetIds.weaponBack=toolCatalog.defaultId}else if(toolCatalog)state.assetIds.weaponBack=state.assetIds.weaponFront;
     if(teachingAidCatalog&&!teachingAidCatalog.items.some(item=>item.id===state.assetIds.shieldFront)){state.assetIds.shieldFront=teachingAidCatalog.defaultId;state.assetIds.shieldBack=teachingAidCatalog.defaultId}else if(teachingAidCatalog)state.assetIds.shieldBack=state.assetIds.shieldFront;
     if(wardrobe)state.assetIds=await wardrobe.prepare(state.assetIds);
+    migrateAvatarEconomy();
     refreshSkinPreview();
+    updateSeedBadge();
     renderOptions();
     publish(false);
     return true;
@@ -1352,8 +1550,10 @@ window.KidscadeAvatarShop={
   await loadLowerCatalog();
   await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
   await loadWardrobe();
+  migrateAvatarEconomy();
   loadSkinPalette();
   loadFrameSkinPalettes();
+  updateSeedBadge();
   drawStatic();
   styleSummary.textContent='헤어 11종 · 염색 9종 · 다양한 복장과 얼굴 장식을 골라 보세요.';
   selectTab('skin');
