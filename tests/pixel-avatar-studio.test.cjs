@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=61/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=62/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-18/);
+  assert.match(js,/pixel-v3-school-starter-19/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -60,7 +60,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-18'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-19'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -118,6 +118,17 @@ test('pixel canvas keeps crisp scaling and responsive controls',()=>{
   assert.match(css,/@media\(max-width:720px\)/);
 });
 
+test('mobile avatar studio stays inside the viewport and uses compact two-column motion controls',()=>{
+  assert.match(css,/\/\* v3 mobile atelier compact layout \*\//);
+  assert.match(css,/html,body\{max-width:100%;overflow-x:hidden\}/);
+  assert.match(css,/\.motion-controls\{grid-column:2;grid-row:2;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.preview-actions\{grid-column:1\/-1;grid-row:3/);
+  assert.match(css,/\.skin-presets\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.seed-badge\{display:inline-flex!important/);
+  assert.match(html,/avatar-pixel-studio\.css\?v=6/);
+});
+
+
 test('public studio supports free skin color without exposing JSON editing',()=>{
   assert.match(html,/data-tab="skin"/);
   assert.match(js,/const SKIN_PRESETS=/);
@@ -137,7 +148,8 @@ test('public studio supports free skin color without exposing JSON editing',()=>
 
 test('skin recoloring uses the registered exact BODY palette instead of color guessing',()=>{
   const skin=manifest.customization.skinColor;
-  assert.equal(skin.mode,'frame-aware-palette-remap-v3');
+  assert.equal(skin.mode,'body-frame-palette-remap-v4');
+  assert.equal(skin.paletteSource,'body-first-frame');
   assert.equal(skin.defaultColor,'#fce2d2');
   assert.equal(skin.sourcePalette.length,8);
   assert.deepEqual(skin.sourcePalette.map(item=>item.source),['#fce2d2','#fac8b7','#d1b0ac','#cb9790','#9e7270','#9d8185','#805e61','#7b5053']);
@@ -162,6 +174,8 @@ test('skin recoloring covers every source and derived animation frame',()=>{
   assert.deepEqual(skin.frameSources['sit-01'],['stand-01','jump-01']);
   assert.deepEqual(skin.frameSources['sit-02'],['stand-02','jump-01']);
   assert.match(js,/function discoverSourceFrameSkinPalette\(frameId\)/);
+  assert.match(js,/function frameImageData\(frameId\)\{\s*const body=bodyFrameCanvas\(frameId\)/);
+  assert.match(js,/if\(body\)\{\s*const c=body\.getContext\('2d',\{alpha:true\}\)/);
   assert.match(js,/function loadFrameSkinPalettes\(\)/);
   assert.match(js,/function skinPaletteForFrame\(frameId\)/);
   assert.match(js,/recolorSkin\((?:target|baseCtx),frameId\)/);
