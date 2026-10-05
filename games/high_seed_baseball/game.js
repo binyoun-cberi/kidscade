@@ -45,6 +45,13 @@ function loadAvatar(){
 loadAvatar();
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+ if(reportedAchievements.has(slot))return;
+ reportedAchievements.add(slot);
+ try{window.KidscadeGame?.achievement?.('high_seed_baseball.'+slot,detail)}catch(_){}
+}
+function checkTwoWay(){if(gameStats.hits>=2&&gameStats.pitchKs>=2)reportAchievement('two_way',{hits:gameStats.hits,pitchKs:gameStats.pitchKs})}
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rand=(a,b)=>a+Math.random()*(b-a);
 function dotString(n,max){let s='';for(let i=0;i<max;i++)s+=i<n?'●':'○';return s}
@@ -421,10 +428,10 @@ function resolveOffenseBall(){
  }
  if(out){outs++;message(fieldBall?.owner&&!fieldBall.bounced||o.launch>.35?'외야 플라이 아웃!':'땅볼 아웃!',1.25);afterOutOrPlay();return}
  const before=score[0];advanceRunners(0,basesEarned);const rbi=score[0]-before;
- gameStats.hits++;
- if(hr){gameStats.hr++;sound('cheer');message('HOME RUN! '+o.distanceM+'m',2.1);burst(480,230,42)}
+ gameStats.hits++;reportAchievement('first_hit',{hits:gameStats.hits,distance:o.distanceM});
+ if(hr){gameStats.hr++;reportAchievement('home_run',{homeRuns:gameStats.hr,distance:o.distanceM});sound('cheer');message('HOME RUN! '+o.distanceM+'m',2.1);burst(480,230,42)}
  else{sound('cheer',1.15);message(basesEarned===3?'3루타!':basesEarned===2?'2루타!':'안타!',1.3)}
- clearCounts();updateHud();if(rbi>0)gameStats.runs+=rbi;setTimeoutLike(()=>nextPlateAppearance(),hr?1.9:1.05);
+ checkTwoWay();clearCounts();updateHud();if(rbi>0)gameStats.runs+=rbi;setTimeoutLike(()=>nextPlateAppearance(),hr?1.9:1.05);
 }
 function advanceRunners(side,n){
  const old=bases.slice();bases=[false,false,false];let runs=0;
@@ -474,7 +481,7 @@ function resolveCpuAtPlate(){
  const p=pitch,fx=p.actual.x+p.breakX,fy=p.actual.y+p.breakY,inside=zoneInside(fx,fy);
  if(!p.cpuDecision){
   if(inside){strikes++;message('스트라이크!',.9)}else{balls++;message('볼!',.9)}updateHud();
-  if(strikes>=3){outs++;gameStats.pitchKs++;clearCounts();message('삼진 잡았다!',1.3);afterOutOrPlay()}
+  if(strikes>=3){outs++;gameStats.pitchKs++;if(gameStats.pitchKs>=3)reportAchievement('doctor_k',{pitchKs:gameStats.pitchKs});checkTwoWay();clearCounts();message('삼진 잡았다!',1.3);afterOutOrPlay()}
   else if(balls>=4){walkRunner(1);clearCounts();message('볼넷 허용',1.1);setTimeoutLike(()=>nextPlateAppearance(),.9)}
   else{pitch=null;setTimeoutLike(()=>{if(state==='pitching')setControls('pitch')},.55)}
   return;
@@ -483,7 +490,7 @@ function resolveCpuAtPlate(){
  const contactChance=clamp(cfg().cpuContact+.16*(1-locPenalty)-stuff+p.readability*.36,.22,.92);
  if(Math.random()>contactChance){
   strikes++;sound('fail',1.2);message('헛스윙!',.9);updateHud();
-  if(strikes>=3){outs++;gameStats.pitchKs++;clearCounts();message('삼진 아웃!',1.3);afterOutOrPlay()}
+  if(strikes>=3){outs++;gameStats.pitchKs++;if(gameStats.pitchKs>=3)reportAchievement('doctor_k',{pitchKs:gameStats.pitchKs});checkTwoWay();clearCounts();message('삼진 아웃!',1.3);afterOutOrPlay()}
   else{pitch=null;setTimeoutLike(()=>{if(state==='pitching')setControls('pitch')},.55)}
   return;
  }
@@ -588,6 +595,9 @@ function finishHalf(){
 function endGame(){
  if(!playing)return;playing=false;state='gameover';setControls('');hideCharge();updateLesson();saveCareer();
  const win=score[0]>score[1],tie=score[0]===score[1];if(win)sound('win');else if(!tie)sound('fail');
+ if(win&&score[1]===0)reportAchievement('shutout_win',{score:[...score],inning});
+ if(win&&inning>3)reportAchievement('extra_inning_win',{score:[...score],inning});
+ try{window.KidscadeGame?.result?.({scope:'match',status:'completed',outcome:tie?'draw':win?'win':'loss',score:score[0],runsAllowed:score[1],inning,hits:gameStats.hits,homeRuns:gameStats.hr,pitchKs:gameStats.pitchKs,bestDistance:gameStats.bestDistance})}catch(_){}
  $('#resultTitle').textContent=tie?'무승부':win?'승리!':'경기 종료';
  $('#resultText').innerHTML='최종 스코어 <b>'+score[0]+' : '+score[1]+'</b><br><br>이번 경기 안타 <b>'+gameStats.hits+'</b> · 홈런 <b>'+gameStats.hr+'</b> · 타자 삼진 <b>'+gameStats.ks+'</b><br>투수 탈삼진 <b>'+gameStats.pitchKs+'</b> · 최장 타구 <b>'+Math.round(gameStats.bestDistance)+'m</b>';
  result.classList.remove('hidden');
