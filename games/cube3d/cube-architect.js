@@ -3172,19 +3172,50 @@ function miningSeconds(data){
     return tier>=3?.42:tier>=2?.62:tier>=1?.88:1.22;
   return tier?.38:.52;
 }
+function clearMiningCrack(){
+  if(miningCrackOverlay?.parent)miningCrackOverlay.parent.remove(miningCrackOverlay);
+  miningCrackOverlay=null;miningCrackKey='';
+}
 function resetMiningFeedback(){
   const ui=$('miningProgress'),cross=$('crosshair');
   if(ui){ui.classList.add('hidden');ui.querySelector('i').style.width='0%'}
-  cross?.classList.remove('mining','mining-stage-2','mining-stage-3');
+  cross?.classList.remove('mining','mining-stage-2','mining-stage-3');clearMiningCrack();
 }
-function updateMiningFeedback(data,p){
+function updateMiningCrack(target,p){
+  if(!scene||!target?.u)return;
+  if(!miningCrackOverlay||miningCrackKey!==target.key){
+    clearMiningCrack();miningCrackKey=target.key;
+    const group=new THREE.Group(),edge=new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1.012,1.012,1.012)),
+      new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.28,depthTest:true})
+    );
+    group.add(edge);
+    const crackMat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.18,depthTest:true});
+    const pts=[
+      [-.5,.5,.506],[0,.08,.506],[.5,.34,.506],
+      [-.5,-.25,.506],[-.05,.08,.506],[.32,-.5,.506],
+      [.506,.5,-.38],[.506,.08,.02],[.506,.42,.5]
+    ].map(v=>new THREE.Vector3(...v));
+    const cracks=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),crackMat);
+    group.add(cracks);group.userData={edge,cracks};
+    group.position.set(target.u.gx,target.u.gy+.5,target.u.gz);scene.add(group);miningCrackOverlay=group;
+  }
+  const stage=p>=.68?0xff8a6b:p>=.34?0xf6c85f:0xffffff;
+  miningCrackOverlay.userData.edge.material.color.setHex(stage);
+  miningCrackOverlay.userData.cracks.material.color.setHex(stage);
+  miningCrackOverlay.userData.edge.material.opacity=.28+p*.42;
+  miningCrackOverlay.userData.cracks.material.opacity=.18+p*.68;
+  miningCrackOverlay.scale.setScalar(1+Math.sin(performance.now()*.03)*.004*p);
+}
+function updateMiningFeedback(target,p){
   const ui=$('miningProgress'),cross=$('crosshair');if(!ui)return;
   const pct=Math.round(THREE.MathUtils.clamp(p,0,1)*100);
   ui.classList.remove('hidden');ui.querySelector('i').style.width=pct+'%';
-  ui.querySelector('span').textContent=blockDef(data).name+' 채집 '+pct+'%';
+  ui.querySelector('span').textContent=blockDef(target.data).name+' 채집 '+pct+'%';
   cross?.classList.add('mining');
   cross?.classList.toggle('mining-stage-2',p>=.34);
   cross?.classList.toggle('mining-stage-3',p>=.68);
+  updateMiningCrack(target,p);
 }
 function miningTargetData(hit){
   if(!hit?.object?.userData?.worldBlock)return null;
@@ -3228,6 +3259,44 @@ function stopMining(){
   miningHeld=false;miningSource='';miningKey='';miningProgress=0;miningDurationNow=0;miningBeat=.25;
   $('mobileBreak')?.classList.remove('holding');resetMiningFeedback();
 }
+function spawnPickupVisual(type,x,y,z,count=1){
+  if(!scene||!type)return;
+  const targetScene=scene,d=blockDef(type),mat=new THREE.MeshStandardMaterial({
+    color:d.color||0xf0d36b,roughness:.58,metalness:.02,emissive:d.emissive?(d.color||0):0x000000,emissiveIntensity:d.emissive?.2:0
+  });
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(.24,.24,.24),mat);
+  mesh.position.set(x,y+.62,z);mesh.rotation.set(.35,.3,0);mesh.renderOrder=7;targetScene.add(mesh);
+  const start=mesh.position.clone(),started=performance.now(),duration=430;
+  const tick=now=>{
+    if(scene!==targetScene||!mesh.parent){mesh.parent?.remove(mesh);return}
+    const p=Math.min(1,(now-started)/duration),ease=p*p*(3-2*p);
+    const target=new THREE.Vector3(camera.position.x,camera.position.y-.2,camera.position.z);
+    mesh.position.lerpVectors(start,target,ease);mesh.position.y+=Math.sin(p*Math.PI)*.42;
+    mesh.rotation.x+=.16;mesh.rotation.y+=.22;mesh.scale.setScalar(Math.max(.12,1-p*.7));
+    if(p<1)requestAnimationFrame(tick);
+    else{mesh.parent?.remove(mesh);mat.dispose();mesh.geometry.dispose();sfx('pickup')}
+  };
+  requestAnimationFrame(tick);
+}
+function spawnCombatHitParticles(root,power=1){
+  if(!scene||!root)return;
+  const targetScene=scene,group=new THREE.Group(),pieces=[];
+  group.position.copy(root.position);group.position.y+=.78;
+  const mat=new THREE.MeshBasicMaterial({color:power>=3?0xffd166:0xffffff,transparent:true,opacity:.9});
+  for(let i=0;i<6;i++){
+    const shard=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.09),mat);
+    const a=i*Math.PI/3+(i%2)*.2;shard.userData.vel=new THREE.Vector3(Math.cos(a)*(1.2+power*.12),.55+Math.random()*.9,Math.sin(a)*(1.2+power*.12));
+    group.add(shard);pieces.push(shard);
+  }
+  targetScene.add(group);const started=performance.now();
+  const tick=now=>{
+    const dt=.016,p=Math.min(1,(now-started)/220);
+    for(const shard of pieces){shard.userData.vel.y-=4.5*dt;shard.position.addScaledVector(shard.userData.vel,dt);shard.scale.setScalar(1-p*.75)}
+    if(scene===targetScene&&p<1)requestAnimationFrame(tick);
+    else{group.parent?.remove(group);mat.dispose();pieces.forEach(v=>v.geometry.dispose())}
+  };
+  requestAnimationFrame(tick);
+}
 function spawnBreakParticles(x,y,z,type){
   if(!scene)return;
   const group=new THREE.Group(),mat=materialFor(type),pieces=[];
@@ -3254,7 +3323,7 @@ function updateMining(dt){
     miningKey=target.key;miningProgress=0;miningDurationNow=miningSeconds(target.data);miningBeat=.25;
   }
   miningProgress+=dt/Math.max(.12,miningDurationNow);
-  updateMiningFeedback(target.data,miningProgress);
+  updateMiningFeedback(target,miningProgress);
   if(miningProgress>=miningBeat&&miningBeat<1){sfx('mine');miningBeat+=.25}
   if(miningProgress>=1){
     const completed=hit;
