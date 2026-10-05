@@ -455,3 +455,32 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   #survivalCraftList{max-height:22vh}
   #miningProgress{width:112px;top:calc(50% + 22px)}
 }
+
+
+/* Guided hands-on tutorial */
+#tutorial{pointer-events:none}
+#tutorial:not(.coach){pointer-events:auto}
+#tutorial.coach{background:linear-gradient(90deg,rgba(11,18,31,.08),rgba(11,18,31,.28));align-items:flex-end;justify-content:flex-end;padding:18px}
+#tutorial.coach .tutorial-card{width:min(430px,calc(100vw - 24px));padding:18px;border-radius:20px;pointer-events:auto}
+.tutorial-card{pointer-events:auto}
+.tutorial-progress{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;color:#667085;font-size:13px;font-weight:900}
+#tutorialProgress{padding:5px 9px;border-radius:999px;background:#eef4ff;color:#3d5bd8}
+#tutorialSkip{border:0;background:transparent;color:#667085;font-weight:800;cursor:pointer}
+.tutorial-step-kicker{margin:0 0 4px;color:#5a67f2;font-size:12px;font-weight:1000;letter-spacing:.04em}
+.tutorial-card h2,.tutorial-card h3{margin:0 0 8px;color:#17223b}
+.tutorial-card .tutorial-do{margin:12px 0 0;padding:11px 12px;border-radius:14px;background:#eefaf6;color:#176a55;font-weight:900;line-height:1.45}
+.tutorial-card .tutorial-tip{margin:8px 0 0;font-size:13px;color:#667085;line-height:1.45}
+.tutorial-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.tutorial-actions button{min-height:40px;border:0;border-radius:12px;padding:0 14px;font-weight:900;cursor:pointer}
+#tutorialBack{background:#eef1f6;color:#344054}
+#tutorialClose{background:#5a67f2;color:#fff}
+#tutorialClose[disabled]{background:#b7c2e8;color:#fff;cursor:not-allowed}
+.tutorial-focus{position:relative;z-index:56!important;outline:4px solid #ffd54f!important;outline-offset:4px!important;animation:tutorialPulse 1s ease-in-out infinite alternate}
+#gameCanvas.tutorial-focus{outline-offset:-5px!important}
+@keyframes tutorialPulse{from{filter:drop-shadow(0 0 0 rgba(255,213,79,.15))}to{filter:drop-shadow(0 0 12px rgba(255,213,79,.9))}}
+@media(max-width:760px){
+  #tutorial.coach{padding:8px;align-items:flex-end;justify-content:center}
+  #tutorial.coach .tutorial-card{width:min(520px,calc(100vw - 16px));padding:13px}
+  .tutorial-card .tutorial-tip{display:none}
+  .tutorial-actions{margin-top:10px}
+}
