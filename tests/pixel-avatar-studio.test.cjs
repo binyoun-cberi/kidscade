@@ -20,7 +20,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=53/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=54/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -28,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-11/);
+  assert.match(js,/pixel-v3-school-starter-12/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -59,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-11'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-12'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -228,7 +228,50 @@ test('dyed short and ponytail packs keep source geometry and eight kid-friendly 
   }
 });
 
-test('public renderer replaces the baked default hair safely across all 23 motion frames',()=>{
+
+test('custom hair renders from clean BODY frames instead of the baked default-hair sheet',()=>{
+  const bodyFiles=[
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_08-1.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_09-2.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_10-3.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_11-4.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_12-5.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_13-6.png',
+    'ChatGPT 이미지 2026년 10월 3일 오후 08_59_14-7.png'
+  ];
+  assert.equal(manifest.bodyRender.mode,'body-first');
+  assert.deepEqual(manifest.bodyRender.sourceFrames,['stand-01','stand-02','walk-01','walk-02','walk-03','walk-04','jump-01']);
+  assert.equal(manifest.bodyRender.derivedFrames,16);
+  for(const file of bodyFiles)assert.equal(fs.existsSync(path.join(root,'assets/game/characters',file)),true,file);
+  assert.match(js,/const BODY_SOURCE_FILES=\[/);
+  assert.match(js,/const BODY_SOURCE_FRAME_IDS=\['stand-01','stand-02','walk-01','walk-02','walk-03','walk-04','jump-01'\]/);
+  assert.match(js,/const BODY_SOURCE_RESOLUTION=64/);
+  assert.match(js,/const BODY_SOURCE_PALETTE=12/);
+  assert.match(js,/function rasterBodySource\(img\)/);
+  assert.match(js,/function deriveBodyFrame\(frameId\)/);
+  assert.match(js,/function loadBodyFrames\(\)/);
+  assert.match(js,/spec\.type==='attackMix'/);
+  assert.match(js,/spec\.type==='sitMix'/);
+
+  const drawStart=js.indexOf('function drawFrame(target,index,');
+  const drawEnd=js.indexOf('\nfunction drawStatic(){',drawStart);
+  assert.ok(drawStart>=0&&drawEnd>drawStart);
+  const draw=js.slice(drawStart,drawEnd);
+  const cleanStart=draw.indexOf('if(cleanBody){');
+  const fallbackStart=draw.indexOf('}else{',cleanStart);
+  assert.ok(cleanStart>=0&&fallbackStart>cleanStart);
+  const clean=draw.slice(cleanStart,fallbackStart);
+  const fallback=draw.slice(fallbackStart);
+  assert.match(clean,/baseCtx\.drawImage\(cleanBody,0,0\)/);
+  assert.match(clean,/if\(customHair\)paintHairLayer\(baseCtx,hairLayerCanvas\(hairId,frameId\)\)/);
+  assert.match(clean,/else drawPixelTuples\(baseCtx,packLayerPixels\(frameId,'hair'\)\)/);
+  assert.doesNotMatch(clean,/clearBaseHair/);
+  assert.doesNotMatch(clean,/drawImage\(sheet/);
+  assert.match(fallback,/baseCtx\.drawImage\(sheet,index\*SIZE/);
+  assert.match(fallback,/if\(customHair\)clearBaseHair\(baseCtx,frameId\)/);
+});
+
+test('public renderer keeps legacy hair clearing only as fallback across all 23 motion frames',()=>{
   const countRuns=runs=>runs.reduce((sum,row)=>sum+(row[1]||[]).reduce((n,run)=>n+run[1]-run[0],0),0);
   assert.match(js,/async function loadHairCatalog\(\)/);
   assert.match(js,/function transformHairCanvas\(source,frameId\)/);
