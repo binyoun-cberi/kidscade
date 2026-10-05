@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=62/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=63/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-19/);
+  assert.match(js,/pixel-v3-school-starter-20/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -60,7 +60,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-19'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-20'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -237,11 +237,14 @@ test('v3 hair catalog contains style choices only and keeps the builtin tousled 
   assert.equal(hairCatalog.type,'kidscade-avatar-hair-catalog');
   assert.equal(hairCatalog.layer,'hair');
   assert.equal(hairCatalog.defaultId,'basic-tousled-hair-01');
-  assert.equal(hairCatalog.items.length,11);
+  assert.equal(hairCatalog.items.length,23);
   const extra=hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId);
-  assert.equal(extra.length,10);
-  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  assert.equal(extra.length,22);
+  assert.equal(new Set(extra.map(item=>item.id)).size,22);
   assert.ok(hairCatalog.items.every(item=>!/cherry-pink|peach-pink|mint|sky-blue|lavender|blue-purple|rose-gold|white-blonde/.test(item.id)));
+  const malePackIds=['dandy-cut-hair-01','two-block-hair-01','gyle-cut-hair-01','comma-hair-01','leaf-cut-hair-01','as-perm-hair-01','shadow-perm-hair-01','pomade-hair-01','regent-hair-01','crew-cut-hair-01','soft-mohawk-hair-01','wolf-cut-hair-01'];
+  assert.ok(malePackIds.every(id=>hairCatalog.items.some(item=>item.id===id)));
+  assert.equal(new Set(malePackIds).size,12);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-hair-part',item.id);
@@ -250,6 +253,20 @@ test('v3 hair catalog contains style choices only and keeps the builtin tousled 
     assert.equal(file.bodyId,'maple-lite-body-v3');
     assert.deepEqual(file.canvas,[128,128]);
     assert.ok(file.pixels.length>=250,item.id);
+  }
+});
+
+test('male hair pack keeps tousled-base metadata and dark outline palette',()=>{
+  const ids=['dandy-cut-hair-01','two-block-hair-01','gyle-cut-hair-01','comma-hair-01','leaf-cut-hair-01','as-perm-hair-01','shadow-perm-hair-01','pomade-hair-01','regent-hair-01','crew-cut-hair-01','soft-mohawk-hair-01','wolf-cut-hair-01'];
+  for(const id of ids){
+    const item=hairCatalog.items.find(candidate=>candidate.id===id);
+    assert.ok(item,id);
+    const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
+    assert.equal(file.sourceBaseId,'basic-tousled-hair-01',id);
+    assert.equal(file.referenceFrame,'stand-01',id);
+    assert.ok(file.pixels.length>=700,id);
+    assert.ok(file.pixels.some(pixel=>pixel.slice(2).join(',')==='48,42,48,255'),id+' outline');
+    assert.ok(file.pixels.some(pixel=>pixel.slice(2).join(',')==='121,85,62,255'),id+' base');
   }
 });
 
@@ -356,7 +373,7 @@ test('hair style and dye persist independently beside eye choice in the v3 publi
   assert.match(js,/await loadHairPart\(state\.assetIds\.hair\)/);
   assert.match(js,/state\.hairColorId=id/);
   assert.match(js,/hairColorId:selectedHairColorId\(\)/);
-  assert.match(js,/헤어 11종 · 염색 9종/);
+  assert.match(js,/헤어 '\+\(hairCatalog\?\.items\?\.length\|\|0\)\+'종 · 염색 '\+\(hairColorCatalog\?\.items\?\.length\|\|0\)\+'종/);
 });
 
 
