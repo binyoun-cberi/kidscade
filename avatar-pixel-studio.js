@@ -33,6 +33,8 @@ const canvas=document.getElementById('avatarCanvas');
 const ctx=canvas.getContext('2d',{alpha:true});
 ctx.imageSmoothingEnabled=false;
 const tabs=document.getElementById('tabs');
+const tabPrevBtn=document.getElementById('tabPrevBtn');
+const tabNextBtn=document.getElementById('tabNextBtn');
 const optionGrid=document.getElementById('optionGrid');
 const pickerTitle=document.getElementById('pickerTitle');
 const pickerCount=document.getElementById('pickerCount');
@@ -1539,10 +1541,31 @@ function renderOptions(){
     <span class="part-name">${meta.name}</span>
   </button>`;
 }
+function updateTabScrollButtons(){
+  if(!tabs)return;
+  const max=Math.max(0,tabs.scrollWidth-tabs.clientWidth),left=Math.max(0,tabs.scrollLeft);
+  if(tabPrevBtn)tabPrevBtn.disabled=left<=2;
+  if(tabNextBtn)tabNextBtn.disabled=left>=max-2||max<=2;
+}
+function scrollCategoryTabs(direction){
+  if(!tabs)return;
+  const amount=Math.max(160,Math.round(tabs.clientWidth*.72));
+  tabs.scrollBy({left:direction*amount,behavior:'smooth'});
+  window.setTimeout(updateTabScrollButtons,220);
+}
+function revealActiveTab(button,behavior='smooth'){
+  if(!tabs||!button)return;
+  const left=button.offsetLeft,right=left+button.offsetWidth,viewLeft=tabs.scrollLeft,viewRight=viewLeft+tabs.clientWidth;
+  if(left<viewLeft+4)tabs.scrollTo({left:Math.max(0,left-8),behavior});
+  else if(right>viewRight-4)tabs.scrollTo({left:Math.max(0,right-tabs.clientWidth+8),behavior});
+  window.setTimeout(updateTabScrollButtons,behavior==='smooth'?220:0);
+}
 function selectTab(tab){
   if(!PARTS[tab])tab='hair';
   currentTab=tab;
-  tabs.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  let activeButton=null;
+  tabs.querySelectorAll('.tab').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);if(active)activeButton=b});
+  revealActiveTab(activeButton);
   renderOptions();
 }
 function flash(text){
@@ -1667,6 +1690,10 @@ tabs?.addEventListener('click',e=>{
   const button=e.target.closest('.tab');
   if(button)selectTab(button.dataset.tab);
 });
+tabPrevBtn?.addEventListener('click',()=>scrollCategoryTabs(-1));
+tabNextBtn?.addEventListener('click',()=>scrollCategoryTabs(1));
+tabs?.addEventListener('scroll',updateTabScrollButtons,{passive:true});
+window.addEventListener('resize',updateTabScrollButtons);
 optionGrid?.addEventListener('click',e=>{
   const option=e.target.closest('[data-wardrobe-id]');if(option){setWardrobeAsset(option.dataset.wardrobeCategory,option.dataset.wardrobeId);return}
   const aid=e.target.closest('[data-shield-id]');if(aid){setTeachingAidAsset(aid.dataset.shieldId);return}
@@ -1773,6 +1800,7 @@ window.KidscadeAvatarShop={
   drawStatic();
   styleSummary.textContent='헤어 '+(hairCatalog?.items?.length||0)+'종 · 염색 '+(hairColorCatalog?.items?.length||0)+'종 · 다양한 복장과 얼굴 장식을 골라 보세요.';
   selectTab('skin');
+  updateTabScrollButtons();
   setPreviewMode('stand');
   publish(false);
   document.body.dataset.avatarReady='1';
