@@ -54,9 +54,9 @@ function sfx(kind){
     else if(kind==='pickup'){o.type='sine';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(880,t+.055)}
     else if(kind==='good'){o.type='sine';o.frequency.setValueAtTime(520,t);o.frequency.setValueAtTime(780,t+.09)}
     else{o.type='sine';o.frequency.setValueAtTime(210,t);o.frequency.setValueAtTime(180,t+.08)}
-    const quiet=kind==='mine'||kind==='warn'||kind==='pickup';
-    g.gain.setValueAtTime(quiet?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(kind==='mine'||kind==='hit'?.09:.16));
-    o.start(t);o.stop(t+(kind==='mine'||kind==='hit'?.1:.18));
+    const quiet=kind==='mine'||kind==='warn'||kind==='pickup',short=kind==='mine'||kind==='hit';
+    g.gain.setValueAtTime(quiet?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(short?.09:.16));
+    o.start(t);o.stop(t+(short?.1:.18));
   }catch(e){}
 }
 function toast(msg){
