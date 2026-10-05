@@ -5211,6 +5211,7 @@ function updateFree(dt,t){
     if(freeKeys.KeyD||freeKeys.ArrowRight)move.add(right);
     if(move.lengthSq()>0)move.normalize().multiplyScalar(speed*dt);
   }
+  let landedThisFrame=false;
   if(freeFlying&&gameFreeMode==='creative'){
     camera.position.add(move);
     if(freeKeys.Space)camera.position.y+=speed*dt;
@@ -5235,6 +5236,7 @@ function updateFree(dt,t){
       if(nextY-1.62<=ground){
         nextY=ground+1.62;freeVelocityY=0;
         if(!wasGrounded&&!freeFluidKind&&damageByFall(Math.max(0,freeFallPeakY-nextY)))return;
+        landedThisFrame=!wasGrounded&&!freeFluidKind;
         onGround=true;freeFallPeakY=nextY;
       }else onGround=false;
     }else if(playerCollidesAt(camera.position.x,nextY,camera.position.z)){
@@ -5246,6 +5248,7 @@ function updateFree(dt,t){
   camera.position.z=THREE.MathUtils.clamp(camera.position.z,-WORLD_HALF+.7,WORLD_HALF-.7);
   camera.position.y=THREE.MathUtils.clamp(camera.position.y,WORLD_MIN_Y+1.7,WORLD_MAX_Y+8);
   freePhysicsY=camera.position.y;
+  if(landedThisFrame)stepSfx(groundSurfaceType(),true);
   if(freeFlying&&gameFreeMode==='creative')camera.position.y=freePhysicsY;
   else{
     const delta=freePhysicsY-displayEye;
