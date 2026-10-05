@@ -13,7 +13,7 @@ test('v29 voxel runtime parses and loads before the main game',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(voxelJs));
   assert.match(html,/cube-architect-voxel\.js\?v=20261003-29/);
-  assert.match(html,/cube-architect\.js\?v=20261005-hunt1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
   assert.ok(html.indexOf('cube-architect-voxel.js')<html.indexOf('cube-architect.js'));
 });
 
