@@ -197,7 +197,10 @@
 
   function ensureVillage(village) {
     if (!village || typeof village !== "object") return initial();
-    village.city = normalize(village.city);
+    const city=village.city;
+    const valid=city&&city.version===VERSION&&city.width===WIDTH&&city.height===HEIGHT&&
+      Array.isArray(city.tiles)&&city.tiles.length===WIDTH*HEIGHT;
+    if(!valid)village.city=normalize(city);
     return village.city;
   }
 
