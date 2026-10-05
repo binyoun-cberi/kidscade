@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=6';
-import {createResidentLife} from './kidscade-world-residents.js?v=5';
+import {createResidentLife} from './kidscade-world-residents.js?v=6';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
 import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=1';
 export {CITY_BOUNDS};
@@ -385,6 +385,7 @@ export async function buildKidscadeCity(ctx){
     arcade:{x:leisure.x+4.7,z:leisure.z-1.0,r:.34},
     civic:{x:civic.x+4.5,z:civic.z+1.0,r:.38},
     schoolGate:{x:civic.x+4.7,z:civic.z-2.15,r:.72},
+    schoolInside:{x:civic.x+4.7,z:civic.z-4.4,r:.10},
     schoolYard:{x:civic.x+4.7,z:civic.z+3.5,r:2.25},
     schoolGarden:{x:civic.x+1.7,z:civic.z+5.5,r:.90},
     library:{x:civic.x-4.5,z:civic.z+1.0,r:.34},
