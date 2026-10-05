@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
+import {schoolPeriodAt} from './kidscade-world-school.js?v=2';
 
 const ROOT=new URL('../assets/game/',import.meta.url);
 const MARKET=new URL('shops/market/',ROOT).href;
@@ -28,13 +29,19 @@ export const VENUE_BOUNDS={x1:-5.15,x2:5.15,z1:-3.62,z2:3.62};
 
 function canvasLabel(text,{width=3.1,height=.76,font=42,depthTest=true}={}){
   const c=document.createElement('canvas');c.width=512;c.height=128;
-  const x=c.getContext('2d');x.clearRect(0,0,512,128);
-  x.fillStyle='rgba(255,248,215,.97)';x.strokeStyle='#42503d';x.lineWidth=8;
-  x.beginPath();x.roundRect(14,16,484,96,24);x.fill();x.stroke();
-  x.fillStyle='#263226';x.font='900 '+font+'px system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,66,448);
+  const x=c.getContext('2d');
+  const draw=value=>{
+    x.clearRect(0,0,512,128);
+    x.fillStyle='rgba(255,248,215,.97)';x.strokeStyle='#42503d';x.lineWidth=8;
+    x.beginPath();x.roundRect(14,16,484,96,24);x.fill();x.stroke();
+    x.fillStyle='#263226';x.font='900 '+font+'px system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(String(value||''),256,66,448);
+  };
+  draw(text);
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,depthTest}));
-  sp.scale.set(width,height,1);sp.renderOrder=25;return sp;
+  sp.scale.set(width,height,1);sp.renderOrder=25;
+  sp.userData.setText=value=>{draw(value);tex.needsUpdate=true;};
+  return sp;
 }
 
 function merchantLabel(name,role,accent){
@@ -119,12 +126,13 @@ async function addSchoolPerson(group,loadGLTF,prepModel,id,x,z,schoolActors,mixe
     action.setLoop(THREE.LoopRepeat,Infinity);action.play();mixers.push(mixer);
   }
   const tag=canvasLabel(visual.name,{width:1.15,height:.30,font:28,depthTest:false});tag.position.set(x,2.12,z);group.add(tag);
-  const actor={id,anchor,label:tag,interaction:null};schoolActors.push(actor);return actor;
+  const actor={id,anchor,label:tag,interaction:null,kind:String(visual.role||'').includes('선생님')?'teacher':'student'};schoolActors.push(actor);return actor;
 }
 
 export async function buildVenueInteriors(ctx){
   const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime}=ctx;
   const groups={},built=new Set(),buildPromises={},merchantMixers=[],schoolActors=[];
+  let schoolBoardLabel=null,schoolTopicLabel=null,lastSchoolPeriodId='';
 
   for(const kind of Object.keys(VENUE_MODES)){
     const g=new THREE.Group();g.name='venue-'+kind;g.visible=false;parent.add(g);groups[kind]=g;
@@ -233,13 +241,15 @@ export async function buildVenueInteriors(ctx){
   async function buildSchool(){
     const kind='school',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,plane,0xd7cfb4,0xeee6cf,VENUE_INFO[kind].name,kind);
     interact(mode,0,3.18,1.0,'🚪 학교 밖으로 나가기',()=>actions.exitVenue());
-    interact(mode,0,-2.72,1.40,'📋 오늘 시간표 보기',()=>actions.schoolSchedule?.());
+    interact(mode,0,-2.72,1.40,'🧑‍🏫 현재 수업 참여하기',()=>actions.schoolClass?.());
 
     // Front teaching wall.
     box(g,0,-3.45,5.20,.12,1.38,0x355746,1.43);
     box(g,0,-3.36,5.42,.08,.10,0xd9c49a,2.14);
-    const boardLabel=canvasLabel('오늘도 생활 속에서 배워요!',{width:2.80,height:.43,font:30,depthTest:false});
-    boardLabel.position.set(0,2.08,-3.31);g.add(boardLabel);
+    schoolBoardLabel=canvasLabel('오늘도 생활 속에서 배워요!',{width:2.95,height:.43,font:30,depthTest:false});
+    schoolBoardLabel.position.set(0,2.12,-3.31);g.add(schoolBoardLabel);
+    schoolTopicLabel=canvasLabel('📋 시간표는 수업에 따라 바뀌어요',{width:2.75,height:.34,font:25,depthTest:false});
+    schoolTopicLabel.position.set(0,1.64,-3.30);g.add(schoolTopicLabel);
 
     // Six desks: five classmates plus one intentionally empty player seat.
     const deskSpots=[[-2.45,-.45],[0,-.45],[2.45,-.45],[-2.45,1.45],[0,1.45],[2.45,1.45]];
@@ -250,7 +260,7 @@ export async function buildVenueInteriors(ctx){
       collider(mode,x,z,1.18,.62);
     }
     const mySeat=canvasLabel('내 자리',{width:.90,height:.27,font:27,depthTest:false});mySeat.position.set(2.45,1.70,1.48);g.add(mySeat);
-    interact(mode,2.45,1.62,1.02,'🪑 내 자리에서 수업 준비하기',()=>actions.schoolSchedule?.());
+    interact(mode,2.45,1.62,1.02,'🪑 내 자리에서 수업 참여하기',()=>actions.schoolClass?.());
 
     // Subject corners let every teacher still matter inside the school even though
     // the main classroom only renders one homeroom teacher at a time.
@@ -268,28 +278,40 @@ export async function buildVenueInteriors(ctx){
     interact(mode,-4.20,.10,.95,'🗺️ 도윤 선생님의 마을 관찰판',()=>actions.resident('doyun'));
     interact(mode,4.20,.10,.95,'🍱 하늘 선생님의 급식 이야기',()=>actions.resident('haneul'));
 
-    const people=[
-      ['minji',0,-2.35,'💬 민지 선생님과 이야기하기'],
-      ['yuna',-2.45,-.05,'💬 유나와 이야기하기'],
-      ['woojin',0,-.05,'💬 우진과 이야기하기'],
-      ['seoyeon',2.45,-.05,'💬 서연과 이야기하기'],
-      ['taeho',-2.45,1.85,'💬 태호와 이야기하기'],
-      ['hyunwoo',0,1.85,'💬 현우와 이야기하기']
+    const teachers=['minji','sora','doyun','junho','nari','minseok','haneul'];
+    for(const id of teachers){
+      const actor=await addSchoolPerson(g,loadGLTF,prepModel,id,0,-2.35,schoolActors,merchantMixers);
+      actor.interaction=interact(mode,0,-2.35,1.10,'🧑‍🏫 수업 참여하기',()=>actions.schoolClass?.());
+    }
+    const classmates=[
+      ['yuna',-2.45,-.05],['woojin',0,-.05],['seoyeon',2.45,-.05],['taeho',-2.45,1.85],['hyunwoo',0,1.85]
     ];
-    for(const [id,x,z,label] of people){
+    for(const [id,x,z] of classmates){
       const actor=await addSchoolPerson(g,loadGLTF,prepModel,id,x,z,schoolActors,merchantMixers);
-      actor.interaction=interact(mode,x,z,1.0,label,()=>actions.resident(id));
+      actor.interaction=interact(mode,x,z,1.0,'💬 '+residentVisual(id).name+'와 이야기하기',()=>actions.resident(id));
     }
     syncSchoolActors();
   }
 
   function syncSchoolActors(){
     if(!schoolActors.length)return;
-    const mins=Number(getGameTime?.()??720),hour=((mins%1440)+1440)%1440/60,inSchool=hour>=8&&hour<15.5;
+    const mins=Number(getGameTime?.()??720),period=schoolPeriodAt(mins);
+    if(period.id===lastSchoolPeriodId)return;
+    const previous=lastSchoolPeriodId;lastSchoolPeriodId=period.id;
+    const studentsInside=['arrival','class','recess','club','dismissal'].includes(period.kind);
     for(const actor of schoolActors){
-      actor.anchor.visible=inSchool;actor.label.visible=inSchool;
-      if(actor.interaction)actor.interaction.enabled=inSchool;
+      const visible=actor.kind==='teacher'
+        ?period.kind==='class'&&actor.id===period.teacher
+        :studentsInside;
+      actor.anchor.visible=visible;actor.label.visible=visible;
+      if(actor.interaction){
+        actor.interaction.enabled=visible;
+        if(actor.kind==='teacher'&&visible)actor.interaction.label=(period.icon||'🧑‍🏫')+' '+(period.label||'수업')+' 참여하기';
+      }
     }
+    schoolBoardLabel?.userData?.setText?.((period.icon||'🏫')+' '+(period.label||'씨앗학교'));
+    schoolTopicLabel?.userData?.setText?.(period.board||'오늘도 즐겁게 배워요.');
+    if(previous&&previous!==period.id&&groups.school?.visible)actions.schoolBell?.(period);
   }
 
   const museumDisplays={},museumSlots={};
