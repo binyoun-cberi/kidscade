@@ -379,7 +379,7 @@
     "hairColor": "hair-color/catalog.json",
     "wardrobe": "wardrobe/catalog.json"
   },
-  "artRevision": "school-accessories-17-head-accessories",
+  "artRevision": "school-accessories-18-cartoon-hair-pack",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
