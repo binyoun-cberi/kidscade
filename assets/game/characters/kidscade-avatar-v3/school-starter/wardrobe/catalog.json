@@ -1,7 +1,7 @@
 {
   "version": 1,
   "type": "kidscade-avatar-wardrobe-catalog",
-  "revision": "wardrobe-2-back-accessories",
+  "revision": "wardrobe-3-head-accessories",
   "bodyFallback": "body-fallback.png",
   "categories": {
     "mask": {
@@ -61,7 +61,7 @@
       ]
     },
     "hat": {
-      "label": "모자",
+      "label": "머리 장식",
       "defaultId": "no-hat",
       "layer": "hat",
       "items": [
@@ -97,6 +97,76 @@
           "id": "beanie-hat-01",
           "label": "비니모자",
           "file": "beanie-hat-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "cat-ears-01",
+          "label": "고양이귀",
+          "file": "cat-ears-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "bunny-ears-01",
+          "label": "토끼귀",
+          "file": "bunny-ears-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "bear-ears-01",
+          "label": "곰귀",
+          "file": "bear-ears-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "crown-01",
+          "label": "왕관",
+          "file": "crown-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "tiara-01",
+          "label": "티아라",
+          "file": "tiara-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "headphones-01",
+          "label": "헤드폰",
+          "file": "headphones-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "earmuffs-01",
+          "label": "이어머프",
+          "file": "earmuffs-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "angel-halo-01",
+          "label": "천사링",
+          "file": "angel-halo-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "devil-horns-01",
+          "label": "악마뿔",
+          "file": "devil-horns-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "flower-pin-01",
+          "label": "꽃 머리핀",
+          "file": "flower-pin-01.json",
           "public": true,
           "price": 0
         }
