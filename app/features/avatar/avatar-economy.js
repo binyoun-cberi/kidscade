@@ -46,16 +46,15 @@
     return ownedIds(raw, category).includes(assetId);
   }
 
-  function paidCount(raw) {
-    const normalized = normalizeOwned(raw);
-    return Object.values(normalized).reduce((sum, ids) => sum + ids.length, 0);
+  function normalizePurchaseCount(value) {
+    return Math.max(0, Math.trunc(Number(value) || 0));
   }
 
-  function nextPrice(raw) {
-    return priceForPurchaseCount(paidCount(raw));
+  function nextPrice(purchaseCount) {
+    return priceForPurchaseCount(normalizePurchaseCount(purchaseCount));
   }
 
-  function quote(raw, category, id, defaultId = '') {
+  function quote(raw, purchaseCount, category, id, defaultId = '') {
     const assetId = cleanId(id);
     const def = cleanId(defaultId);
     const free = Boolean(assetId) && assetId === def;
@@ -66,7 +65,7 @@
       defaultId: def,
       free,
       owned,
-      price: owned ? 0 : nextPrice(raw)
+      price: owned ? 0 : nextPrice(purchaseCount)
     });
   }
 
@@ -89,7 +88,7 @@
     priceForPurchaseCount,
     ownedIds,
     isOwned,
-    paidCount,
+    normalizePurchaseCount,
     nextPrice,
     quote,
     addOwned
