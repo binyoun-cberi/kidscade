@@ -1140,7 +1140,7 @@ const TRAVEL_POINTS={
   camp:{x:-36,z:18.0,name:'야영지'},
   city:{x:-12,z:18.0,name:'씨앗마을 상점가'},
   plaza:{x:12,z:29.0,name:'씨앗마을 광장'},
-  civic:{x:-12,z:40.0,name:'공공시설 거리'},
+  civic:{x:-12,z:40.0,name:'학교·도서관 거리'},
   transit:{x:12,z:40.0,name:'교통·보건 거리'},
   residential:{x:27.4,z:24.0,name:'햇살 주택가'},
   residentialNorth:{x:27.4,z:48.0,name:'별빛 주택가'},
