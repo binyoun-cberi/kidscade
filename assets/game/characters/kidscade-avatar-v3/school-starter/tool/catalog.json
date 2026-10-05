@@ -204,6 +204,235 @@
         "#65a2d6",
         "#efc84d"
       ]
+    },
+    {
+      "id": "handheld-game-tool-01",
+      "label": "게임기",
+      "kind": "handheld-game",
+      "size": 8,
+      "colors": [
+        "#252635",
+        "#6d78a8",
+        "#8fd8e8",
+        "#f4d45c"
+      ]
+    },
+    {
+      "id": "camera-tool-01",
+      "label": "카메라",
+      "kind": "camera",
+      "size": 7,
+      "colors": [
+        "#24272d",
+        "#555e6b",
+        "#b9d8e8",
+        "#e85b58"
+      ]
+    },
+    {
+      "id": "magnifier-tool-01",
+      "label": "돋보기",
+      "kind": "magnifier",
+      "length": 20,
+      "size": 6,
+      "colors": [
+        "#29313b",
+        "#8c633d",
+        "#d8eef7",
+        "#6fb7d4"
+      ]
+    },
+    {
+      "id": "telescope-tool-01",
+      "label": "망원경",
+      "kind": "telescope",
+      "length": 27,
+      "width": 5,
+      "colors": [
+        "#242c39",
+        "#566a86",
+        "#c4d5e8",
+        "#d9a94f"
+      ]
+    },
+    {
+      "id": "microphone-tool-01",
+      "label": "마이크",
+      "kind": "microphone",
+      "length": 21,
+      "width": 4,
+      "colors": [
+        "#272b33",
+        "#69727e",
+        "#c9d0d7",
+        "#e85e8d"
+      ]
+    },
+    {
+      "id": "guitar-tool-01",
+      "label": "기타",
+      "kind": "guitar",
+      "length": 29,
+      "size": 8,
+      "colors": [
+        "#332820",
+        "#9a5a32",
+        "#d89b5f",
+        "#ead8b0"
+      ]
+    },
+    {
+      "id": "ukulele-tool-01",
+      "label": "우쿨렐레",
+      "kind": "ukulele",
+      "length": 23,
+      "size": 6,
+      "colors": [
+        "#30251f",
+        "#b36b3d",
+        "#e0a66a",
+        "#f1d4a4"
+      ]
+    },
+    {
+      "id": "fishing-rod-tool-01",
+      "label": "낚싯대",
+      "kind": "fishing-rod",
+      "length": 35,
+      "width": 2,
+      "colors": [
+        "#273039",
+        "#6f5136",
+        "#c5a46a",
+        "#6aa9c8"
+      ]
+    },
+    {
+      "id": "bug-net-tool-01",
+      "label": "잠자리채",
+      "kind": "bug-net",
+      "length": 31,
+      "size": 8,
+      "colors": [
+        "#28333b",
+        "#7b5a39",
+        "#c8e6e8",
+        "#62a8b8"
+      ]
+    },
+    {
+      "id": "water-gun-tool-01",
+      "label": "물총",
+      "kind": "water-gun",
+      "length": 23,
+      "size": 7,
+      "colors": [
+        "#263648",
+        "#4f9fc9",
+        "#91dbef",
+        "#f06b69"
+      ]
+    },
+    {
+      "id": "balloon-tool-01",
+      "label": "풍선",
+      "kind": "balloon",
+      "length": 26,
+      "size": 7,
+      "colors": [
+        "#433146",
+        "#e66c8f",
+        "#ffd0dc",
+        "#f5b54c"
+      ]
+    },
+    {
+      "id": "bouquet-tool-01",
+      "label": "꽃다발",
+      "kind": "bouquet",
+      "length": 21,
+      "size": 7,
+      "colors": [
+        "#33412e",
+        "#63914d",
+        "#f3b7c7",
+        "#ffd05c"
+      ]
+    },
+    {
+      "id": "ice-cream-tool-01",
+      "label": "아이스크림",
+      "kind": "ice-cream",
+      "length": 18,
+      "size": 6,
+      "colors": [
+        "#583d32",
+        "#d99b61",
+        "#ffd8c6",
+        "#f08ca5"
+      ]
+    },
+    {
+      "id": "cotton-candy-tool-01",
+      "label": "솜사탕",
+      "kind": "cotton-candy",
+      "length": 22,
+      "size": 7,
+      "colors": [
+        "#65495c",
+        "#b97aa8",
+        "#ffd0ee",
+        "#f8e9ff"
+      ]
+    },
+    {
+      "id": "hamburger-tool-01",
+      "label": "햄버거",
+      "kind": "hamburger",
+      "size": 7,
+      "colors": [
+        "#4b3429",
+        "#d69345",
+        "#f0c85c",
+        "#69a64d"
+      ]
+    },
+    {
+      "id": "drink-tool-01",
+      "label": "음료수",
+      "kind": "drink",
+      "length": 17,
+      "width": 7,
+      "colors": [
+        "#324354",
+        "#61a9cc",
+        "#d9f4ff",
+        "#ef6f6c"
+      ]
+    },
+    {
+      "id": "lantern-tool-01",
+      "label": "랜턴",
+      "kind": "lantern",
+      "size": 7,
+      "colors": [
+        "#302d2b",
+        "#806044",
+        "#ffd35e",
+        "#fff0a8"
+      ]
+    },
+    {
+      "id": "treasure-map-tool-01",
+      "label": "보물지도",
+      "kind": "treasure-map",
+      "size": 8,
+      "colors": [
+        "#4e3b2a",
+        "#cda96c",
+        "#f0d69a",
+        "#b84e45"
+      ]
     }
   ]
 }
