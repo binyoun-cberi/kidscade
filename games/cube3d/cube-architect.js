@@ -2820,8 +2820,14 @@ function hasWorkbench(){
       if(getBlock(x+dx,Math.floor(freePhysicsY-1.62)+dy,z+dz)?.type==='workbench')return true;
   return false;
 }
+function pulseSurvivalQuest(){
+  const card=$('freeMission');if(!card)return;
+  card.classList.remove('quest-complete');void card.offsetWidth;card.classList.add('quest-complete');
+  setTimeout(()=>card.classList.remove('quest-complete'),760);
+}
 function advanceSurvival(){
   if(gameFreeMode!=='survival'||survivalFinished)return;
+  const previousStage=survivalStage;
   let progressed=false;
   while(survivalStage<worldRules.GOALS.length-1&&
     worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=
@@ -2834,8 +2840,11 @@ function advanceSurvival(){
     survivalFinished=true;progressed=true;
     toast('생존 원정 완료! 이제 자유롭게 더 탐험하고 건축해 보세요.');
     reportResult('free-survival',100,true);
-  }else if(progressed)toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title);
-  if(progressed){sfx('good');saveFreeWorld()}
+  }else if(progressed){
+    const unlocked=worldRules.RECIPES.filter(r=>r.stage>previousStage&&r.stage<=survivalStage&&recipeUnlocked(r.id));
+    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title+(unlocked.length?' · 제작법 '+unlocked.length+'개 해금':''));
+  }
+  if(progressed){pulseSurvivalQuest();sfx('good');saveFreeWorld()}
   $('actionXray').classList.toggle('hidden',survivalStage<3);
   configureMobileMode('free');updateFreeMission();
 }
