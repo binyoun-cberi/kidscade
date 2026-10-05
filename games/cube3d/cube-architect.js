@@ -4697,15 +4697,17 @@ function checkCollectibles(t){
       if(gameFreeMode==='survival'){
         const prizes={bp1:{roof:2},bp2:{snowBrick:2},bp3:{sandstone:2},
           c1:{cactusDye:2},c2:{flowerDye:2}};
-        for(const [type,n] of Object.entries(prizes[id]||{blueprintFragment:1})){
+        const reward=m.userData.reward&&typeof m.userData.reward==='object'?m.userData.reward:(prizes[id]||{blueprintFragment:1});
+        for(const [type,n] of Object.entries(reward)){
           addToBag(type,n);spawnPickupVisual(type,foundAt.x,foundAt.y,foundAt.z,n);
         }
         trackSurvival('find',id);
       }
       triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup,t);
-      toast(m.userData.label+' 발견! 건축 보상을 가방에 넣었어요.');
+      toast((m.userData.miniPoi?'발견지 탐색 완료 · ':'')+m.userData.label+' · 보상을 가방에 넣었어요.');
       sfx('good');updateFreeMission();saveFreeWorld();
-      if(collected.size===5){
+      const classicFound=['bp1','bp2','bp3','c1','c2'].filter(key=>collected.has(key)).length;
+      if(gameFreeMode==='creative'&&classicFound===5){
         toast('세계의 다섯 발견물을 모두 찾았어요!');
         reportResult('free-exploration',100,true);
       }
@@ -4879,6 +4881,13 @@ function renderExplorationHint(){
     else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
       (survivalStage>=6?' · Q 또는 상단의 ‘던전 입장’을 눌러 탐험':
       ' · 첫 거점과 돌 도구를 준비하면 던전에 들어갈 수 있어요.');
+    return;
+  }
+  const smallPoi=nearestUncollectedMiniPoi(x,z,18);
+  if(smallPoi){
+    const dx=smallPoi.x-x,dz=smallPoi.z-z;
+    const direction=(dz<-4?'북':dz>4?'남':'')+(dx>4?'동':dx<-4?'서':'');
+    $('explorationHint').textContent='근처 발견지 · '+smallPoi.label+' · '+(direction||'바로 근처')+'쪽 '+Math.max(1,Math.round(smallPoi.dist))+'칸';
     return;
   }
   const landmark=nearestUnrestoredLandmark(x,z);
