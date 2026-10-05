@@ -3341,6 +3341,77 @@ function placementTarget(hit){
   };
 }
 function facingFromYaw(){return ((Math.round(yaw/(Math.PI/2))%4)+4)%4}
+function clearFreePlacementGhost(){
+  if(freePlacementGhost?.parent)freePlacementGhost.parent.remove(freePlacementGhost);
+  if(freePlacementGhost){
+    freePlacementGhost.traverse?.(o=>{
+      o.geometry?.dispose?.();
+      if(Array.isArray(o.material))o.material.forEach(m=>m?.dispose?.());else o.material?.dispose?.();
+    });
+  }
+  freePlacementGhost=null;freePlacementGhostKey='';
+}
+function placementCellReplaceable(occupied,type){
+  if(!occupied)return true;
+  const d=blockDef(type),canDisplaceFluid=blockDef(occupied).liquid&&d.solid&&!['door','cuboid'].includes(type);
+  const canReplaceFragile=['fire','flower','reed','sapling','torch'].includes(occupied.type)&&
+    (d.solid||['water','lava'].includes(type));
+  return !!(canDisplaceFluid||canReplaceFragile);
+}
+function placementPreviewValid(type,p){
+  if(!p||!inWorld(p.x,p.y,p.z)||!PLACEABLE_TYPES.includes(type))return false;
+  if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
+    p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return false;
+  if(!placementSupportValid(type,p.x,p.y,p.z))return false;
+  if(type==='cuboid'){
+    const dims=currentCuboidSpec.dims;
+    if(gameFreeMode==='survival'&&(survivalStage<3||!hasWorkbench()||bagCount('planks')<dims.reduce((a,b)=>a*b,1)))return false;
+    for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++)
+      if(!inWorld(p.x+dx,p.y+dy,p.z+dz)||getBlock(p.x+dx,p.y+dy,p.z+dz))return false;
+    return true;
+  }
+  if(type==='door'&&(p.y>=WORLD_MAX_Y||getBlock(p.x,p.y+1,p.z)))return false;
+  if(!placementCellReplaceable(getBlock(p.x,p.y,p.z),type))return false;
+  if(gameFreeMode==='survival'&&bagCount(type)<1)return false;
+  return true;
+}
+function buildFreePlacementGhost(type,p,valid,facing){
+  const group=new THREE.Group(),good=valid?0x64e0bf:0xff746f;
+  let dims=[.96,.96,.96],offset=[0,.5,0];
+  if(type==='cuboid'){
+    const d=currentCuboidSpec.dims;dims=[d[0]*.96,d[1]*.96,d[2]*.96];offset=[(d[0]-1)/2,d[1]/2,(d[2]-1)/2];
+  }else if(type==='door'){dims=[.82,1.92,.18];offset=[0,1,0]}
+  else if(type==='slab'){dims=[.96,.48,.96];offset=[0,.25,0]}
+  else if(['glassPane','windowFrame'].includes(type)){dims=facing%2===0?[.18,.96,.96]:[.96,.96,.18];offset=[0,.5,0]}
+  const geo=new THREE.BoxGeometry(...dims),mat=new THREE.MeshBasicMaterial({
+    color:good,transparent:true,opacity:valid?.18:.13,depthWrite:false,side:THREE.DoubleSide
+  });
+  const box=new THREE.Mesh(geo,mat);group.add(box);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({
+    color:good,transparent:true,opacity:valid?.78:.88,depthWrite:false
+  }));group.add(edges);
+  group.position.set(p.x+offset[0],p.y+offset[1],p.z+offset[2]);
+  if(['stairs','roof','door','windowFrame','glassPane','furnace','workbench'].includes(type)){
+    const dirs=[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]],dir=new THREE.Vector3(...dirs[facing]);
+    const arrow=new THREE.ArrowHelper(dir,new THREE.Vector3(0,dims[1]/2+.12,0),.55,good,.18,.12);
+    group.add(arrow);
+  }
+  group.userData.worldDecorative=true;return group;
+}
+function updateFreePlacementGhost(){
+  if(mode!=='free'||inventoryOpen||furnaceOpen||freeAvatarDefeated||!PLACEABLE_TYPES.includes(selectedType)){
+    clearFreePlacementGhost();return;
+  }
+  const hit=freeCenterHit(6);
+  if(!hit||['door','furnace','workbench'].includes(hit.object.userData?.type)){clearFreePlacementGhost();return}
+  const p=placementTarget(hit);if(!p){clearFreePlacementGhost();return}
+  const facing=facingFromYaw(),valid=placementPreviewValid(selectedType,p);
+  const dims=selectedType==='cuboid'?currentCuboidSpec.dims.join('x'):'';
+  const key=[selectedType,p.x,p.y,p.z,facing,dims,valid?1:0].join('|');
+  if(key===freePlacementGhostKey&&freePlacementGhost?.parent===scene)return;
+  clearFreePlacementGhost();freePlacementGhostKey=key;
+  freePlacementGhost=buildFreePlacementGhost(selectedType,p,valid,facing);scene.add(freePlacementGhost);
+}
 function fullSupportBelow(x,y,z){
   const below=getBlock(x,y-1,z),top=collisionTopForData(below,x,y-1,z,x,z);
   return top!==null&&top>=y-.02;
@@ -3393,9 +3464,8 @@ function placeFreeBlock(hit){
   if(hitType==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
   if(hitType==='furnace'){toggleFurnace(true);return}
   if(hitType==='workbench'){toggleInventory(true);return}
-  if(gameFreeMode==='survival'&&(!selectedType||selectedType==='hand'||
-    ['woodPick','stonePick','ironPick','sticks'].includes(selectedType))){
-    toast('E를 눌러 가방에서 설치할 재료를 골라 보세요.');return;
+  if(!PLACEABLE_TYPES.includes(selectedType)){
+    toast(gameFreeMode==='survival'?'E를 눌러 가방에서 설치할 재료를 골라 보세요.':'설치할 블록을 먼저 선택해 주세요.');return;
   }
   const p=placementTarget(hit);
   if(!p||!inWorld(p.x,p.y,p.z))return;
