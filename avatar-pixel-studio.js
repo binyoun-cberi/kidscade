@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-10';
+const PREVIEW_VERSION='pixel-v3-school-starter-11';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -1003,7 +1003,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-10',
+  version:'pixel-v3-school-starter-11',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -1050,7 +1050,7 @@ window.KidscadeAvatarShop={
   loadSkinPalette();
   loadFrameSkinPalettes();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 헤어 27종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);
