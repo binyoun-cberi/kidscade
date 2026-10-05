@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-8';
+const PREVIEW_VERSION='pixel-v3-school-starter-9';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -546,7 +546,18 @@ function shoeStyledColor(def,p,x,y,frameId){
   const box=bboxForPixels(packLayerPixels(frameId,'shoes'));if(!box)return color;const accent=rgbaFromHex(palette[3]||palette[0]||'#ffffff');
   if(def.pattern==='laces'&&y<=box.minY+3&&((x+2*y)%5===0))color=accent;else if(def.pattern==='high-top'&&y<=box.minY+2)color=accent;else if(def.pattern==='canvas'&&y===box.maxY-1)color=accent;else if(def.pattern==='runner'&&((x+y)%7===0))color=accent;else if(def.pattern==='loafer'&&y===box.minY+2)color=accent;else if(def.pattern==='slip-on'&&x>=Math.floor(box.cx)-1&&x<=Math.ceil(box.cx)+1)color=accent;else if(def.pattern==='indoor'&&y<=box.minY+2)color=accent;return color;
 }
-function applyShoeSelection(target,frameId,id=selectedShoeId()){if(!shoeCatalog||!schoolPack||!id||id===shoeCatalog.defaultId)return false;const def=shoeCatalog.items.find(item=>item.id===id);if(!def)return false;const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;for(const p of packLayerPixels(frameId,'shoes')){const i=(p[1]*SIZE+p[0])*4;if(!sameRgba(data,i,p))continue;writeRgba(data,i,shoeStyledColor(def,p,p[0],p[1],frameId))}target.putImageData(image,0,0);return true}
+function applyShoeSelection(target,frameId,id=selectedShoeId()){
+  if(!shoeCatalog||!schoolPack||!id)return false;
+  const def=shoeCatalog.items.find(item=>item.id===id);if(!def)return false;
+  const pixels=packLayerPixels(frameId,'shoes');
+  if(id!==shoeCatalog.defaultId){
+    const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
+    for(const p of pixels){const i=(p[1]*SIZE+p[0])*4;if(!sameRgba(data,i,p))continue;writeRgba(data,i,shoeStyledColor(def,p,p[0],p[1],frameId))}
+    target.putImageData(image,0,0);
+  }
+  drawPixelTuples(target,accessoryOutlinePixels(pixels));
+  return true
+}
 function upperStyledTuple(p){const id=selectedUpperId(),part=upperParts.get(id);if(!upperCatalog||id===upperCatalog.defaultId||!part)return p?.slice(2)||null;const idx=upperColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
 function lowerStyledTuple(p){const id=selectedLowerId(),part=lowerParts.get(id);if(!lowerCatalog||id===lowerCatalog.defaultId||!part)return p?.slice(2)||null;const idx=lowerColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
 function knownUnderlyingPixel(frameId,x,y,order){
@@ -623,8 +634,26 @@ function equipmentShapePixels(def,frameId,slot){
   const out=[...map.values()];accessoryShapeCache.set(cacheKey,out);return out;
 }
 function equipmentPassPixels(def,frameId,slot,pass){if(def?.kind==='default'){const layer=slot==='weapon'?(pass==='back'?'weaponBack':'weaponFront'):(pass==='back'?'shieldBack':'shieldFront');return packLayerPixels(frameId,layer)}const all=equipmentShapePixels(def,frameId,slot);if(!all.length)return [];if(slot==='weapon'&&toolCatalog?.attackBackFrames?.includes(frameId))return pass==='back'?all:[];const backLayer=slot==='weapon'?'weaponBack':'shieldBack',backCoords=packLayerPixels(frameId,backLayer).map(p=>[p[0],p[1]]),isBack=p=>backCoords.some(([x,y])=>Math.abs(x-p[0])+Math.abs(y-p[1])<=2);return all.filter(p=>(pass==='back')===isBack(p))}
-function drawPixelTuples(target,pixels){for(const p of pixels){target.fillStyle='rgba('+p[2]+','+p[3]+','+p[4]+','+(p[5]/255)+')';target.fillRect(p[0],p[1],1,1)}}
-function drawEquipmentPass(target,frameId,slot,id,pass){const catalog=slot==='weapon'?toolCatalog:teachingAidCatalog,def=catalog?.items?.find(item=>item.id===id)||catalog?.items?.find(item=>item.id===catalog?.defaultId);if(def)drawPixelTuples(target,equipmentPassPixels(def,frameId,slot,pass))}
+const ACCESSORY_OUTLINE=[24,20,23,255];
+function accessoryOutlinePixels(pixels,color=ACCESSORY_OUTLINE){
+  const src=new Set((pixels||[]).map(p=>p[0]+','+p[1])),out=new Map();
+  const dirs=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+  for(const p of pixels||[]){
+    for(const [dx,dy] of dirs){
+      const x=p[0]+dx,y=p[1]+dy,key=x+','+y;
+      if(x<0||y<0||x>=SIZE||y>=SIZE||src.has(key)||out.has(key))continue;
+      out.set(key,[x,y,color[0],color[1],color[2],color[3]]);
+    }
+  }
+  return [...out.values()];
+}
+function drawPixelTuples(target,pixels,withOutline=false){
+  if(withOutline){
+    for(const p of accessoryOutlinePixels(pixels)){target.fillStyle='rgba('+p[2]+','+p[3]+','+p[4]+','+(p[5]/255)+')';target.fillRect(p[0],p[1],1,1)}
+  }
+  for(const p of pixels){target.fillStyle='rgba('+p[2]+','+p[3]+','+p[4]+','+(p[5]/255)+')';target.fillRect(p[0],p[1],1,1)}
+}
+function drawEquipmentPass(target,frameId,slot,id,pass){const catalog=slot==='weapon'?toolCatalog:teachingAidCatalog,def=catalog?.items?.find(item=>item.id===id)||catalog?.items?.find(item=>item.id===catalog?.defaultId);if(def)drawPixelTuples(target,equipmentPassPixels(def,frameId,slot,pass),true)}
 function stripDefaultEquipment(target,frameId){stripPackedLayers(target,frameId,['weaponBack','weaponFront','shieldBack','shieldFront'],['earring','hair','mouth','eyes','upper','shoes','lower'])}
 function earringShapePixels(def,frameId){
   const key=(def?.id||'')+'|'+frameId+'|earring';if(accessoryShapeCache.has(key))return accessoryShapeCache.get(key);const base=packLayerPixels(frameId,'earring'),box=bboxForPixels(base);if(!def||def.kind==='default'||!box){accessoryShapeCache.set(key,[]);return []}
@@ -641,7 +670,13 @@ function earringShapePixels(def,frameId){
   else if(def.kind==='gem'){for(let y=-3;y<=3;y++){const span=3-Math.abs(y);for(let x=-span;x<=span;x++)plotPixel(map,cx+x,cy+y,fill)}plotPixel(map,cx-1,cy-1,light)}
   const out=[...map.values()];accessoryShapeCache.set(key,out);return out;
 }
-function applyEarringSelection(target,frameId,id=selectedEarringId()){if(!earringCatalog||!schoolPack||!id||id===earringCatalog.defaultId)return false;const def=earringCatalog.items.find(item=>item.id===id);if(!def)return false;stripPackedLayers(target,frameId,['earring'],['hair','mouth','eyes','upper','shoes','lower']);drawPixelTuples(target,earringShapePixels(def,frameId));return true}
+function applyEarringSelection(target,frameId,id=selectedEarringId()){
+  if(!earringCatalog||!schoolPack||!id)return false;
+  if(id===earringCatalog.defaultId){drawPixelTuples(target,accessoryOutlinePixels(packLayerPixels(frameId,'earring')));return true}
+  const def=earringCatalog.items.find(item=>item.id===id);if(!def)return false;
+  stripPackedLayers(target,frameId,['earring'],['hair','mouth','eyes','upper','shoes','lower']);
+  drawPixelTuples(target,earringShapePixels(def,frameId),true);return true
+}
 
 function animationFor(mode){
   if(!manifest?.animations)return [];
@@ -968,7 +1003,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-8',
+  version:'pixel-v3-school-starter-9',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
