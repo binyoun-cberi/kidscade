@@ -3,10 +3,11 @@
 const ROOT='assets/game/characters/kidscade-avatar-v3/school-starter';
 const MANIFEST_URL=ROOT+'/manifest.json';
 const SHEET_URL=ROOT+'/school-starter-sheet.png';
+const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-6';
+const PREVIEW_VERSION='pixel-v3-school-starter-7';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -20,7 +21,7 @@ const PARTS={
   lower:{label:'하의',name:'학교 교복 하의',assetKey:'lower'},
   shoes:{label:'신발',name:'기본 운동화',assetKey:'shoes'},
   weapon:{label:'도구',name:'자',assetKey:'weaponFront'},
-  shield:{label:'책',name:'교과서',assetKey:'shieldFront'}
+  shield:{label:'교구',name:'교과서',assetKey:'shieldFront'}
 };
 
 const canvas=document.getElementById('avatarCanvas');
@@ -503,6 +504,119 @@ function applyLowerPart(target,frameId,lowerId=selectedLowerId()){
   }
   target.putImageData(image,0,0);return true;
 }
+
+/* Public school accessories: shoes, earrings, left-hand tools and right-hand teaching aids. */
+let schoolPack=null;
+let shoeCatalog=null;
+let earringCatalog=null;
+let toolCatalog=null;
+let teachingAidCatalog=null;
+const packLayerMapCache=new Map();
+const accessoryShapeCache=new Map();
+const FRAME_HAND_ANCHORS={
+  'stand-01':{left:[49,91],right:[81,91]},'stand-02':{left:[49,91],right:[81,91]},
+  'walk-01':{left:[50,89],right:[82,89]},'walk-02':{left:[50,89],right:[82,89]},'walk-03':{left:[50,89],right:[82,89]},'walk-04':{left:[50,89],right:[82,89]},
+  'jump-01':{left:[45,78],right:[88,80]},
+  'attack-01':{left:[49,91],right:[81,91]},'attack-02':{left:[47,88],right:[82,91]},'attack-03':{left:[45,82],right:[87,82]},'attack-04':{left:[39,79],right:[82,84]},'attack-05':{left:[49,91],right:[81,91]},
+  'hurt-01':{left:[51,92],right:[82,92]},'hurt-02':{left:[54,94],right:[84,93]},
+  'dead-01':null,'dead-02':null,'dead-03':null,'dead-04':null,
+  'sit-01':{left:[51,99],right:[79,101]},'sit-02':{left:[51,103],right:[79,104]},
+  'pickup-01':{left:[47,96],right:[80,94]},'pickup-02':{left:[41,108],right:[76,99]},'pickup-03':{left:[45,100],right:[79,96]}
+};
+async function loadSchoolPack(){const res=await fetch(SCHOOL_PACK_URL,{cache:'no-cache'});if(!res.ok)throw new Error('v3 학교 기본 레이어 데이터를 불러오지 못했습니다.');schoolPack=await res.json();packLayerMapCache.clear();accessoryShapeCache.clear();return schoolPack}
+async function loadAccessoryCatalog(key,expectedType){const rel=manifest?.partCatalogs?.[key];if(!rel)return null;const res=await fetch(ROOT+'/'+rel,{cache:'no-cache'});if(!res.ok)throw new Error(key+' 파츠 카탈로그를 불러오지 못했습니다.');const catalog=await res.json();if(catalog?.type!==expectedType)throw new Error(key+' 파츠 카탈로그 형식이 올바르지 않습니다.');return catalog}
+async function loadShoeCatalog(){shoeCatalog=await loadAccessoryCatalog('shoes','kidscade-avatar-shoes-catalog');return shoeCatalog}
+async function loadEarringCatalog(){earringCatalog=await loadAccessoryCatalog('earring','kidscade-avatar-earring-catalog');return earringCatalog}
+async function loadToolCatalog(){toolCatalog=await loadAccessoryCatalog('weapon','kidscade-avatar-tool-catalog');return toolCatalog}
+async function loadTeachingAidCatalog(){teachingAidCatalog=await loadAccessoryCatalog('shield','kidscade-avatar-teaching-aid-catalog');return teachingAidCatalog}
+function selectedShoeId(){const id=state.assetIds?.shoes||manifest?.assetIds?.shoes;return shoeCatalog?.items?.some(item=>item.id===id)?id:(shoeCatalog?.defaultId||id)}
+function selectedEarringId(){const id=state.assetIds?.earring||manifest?.assetIds?.earring;return earringCatalog?.items?.some(item=>item.id===id)?id:(earringCatalog?.defaultId||id)}
+function selectedToolId(){const id=state.assetIds?.weaponFront||state.assetIds?.weaponBack||manifest?.assetIds?.weaponFront;return toolCatalog?.items?.some(item=>item.id===id)?id:(toolCatalog?.defaultId||id)}
+function selectedTeachingAidId(){const id=state.assetIds?.shieldFront||state.assetIds?.shieldBack||manifest?.assetIds?.shieldFront;return teachingAidCatalog?.items?.some(item=>item.id===id)?id:(teachingAidCatalog?.defaultId||id)}
+function packLayerPixels(frameId,layer){return schoolPack?.frames?.[frameId]?.layers?.[layer]?.operations?.[0]?.pixels||[]}
+function packLayerMap(frameId,layer){const key=frameId+'|'+layer;if(packLayerMapCache.has(key))return packLayerMapCache.get(key);const map=new Map();for(const p of packLayerPixels(frameId,layer))map.set(p[0]+','+p[1],p);packLayerMapCache.set(key,map);return map}
+function rgbaFromHex(hex,alpha=255){const rgb=hexToRgb(hex);return [rgb[0],rgb[1],rgb[2],alpha]}
+function sameRgba(data,i,p){return !!p&&data[i]===p[2]&&data[i+1]===p[3]&&data[i+2]===p[4]&&data[i+3]===p[5]}
+function writeRgba(data,i,rgba){data[i]=rgba[0]||0;data[i+1]=rgba[1]||0;data[i+2]=rgba[2]||0;data[i+3]=rgba[3]??255}
+function bboxForPixels(pixels){if(!pixels?.length)return null;let minX=SIZE,minY=SIZE,maxX=-1,maxY=-1;for(const p of pixels){minX=Math.min(minX,p[0]);minY=Math.min(minY,p[1]);maxX=Math.max(maxX,p[0]);maxY=Math.max(maxY,p[1])}return {minX,minY,maxX,maxY,w:maxX-minX+1,h:maxY-minY+1,cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
+function sourcePaletteIndex(source,p){if(!source?.length||!p)return -1;for(let i=0;i<source.length;i++){const rgb=rgbaFromHex(source[i]);if(p[2]===rgb[0]&&p[3]===rgb[1]&&p[4]===rgb[2])return i}return -1}
+function shoeStyledColor(def,p,x,y,frameId){
+  if(!def||def.kind==='default')return p?p.slice(2):[0,0,0,0];
+  const idx=sourcePaletteIndex(shoeCatalog?.sourcePalette,p),palette=def.palette||[];let color=rgbaFromHex(palette[Math.max(0,idx)]||palette[0]||'#ffffff');
+  const box=bboxForPixels(packLayerPixels(frameId,'shoes'));if(!box)return color;const accent=rgbaFromHex(palette[3]||palette[0]||'#ffffff');
+  if(def.pattern==='laces'&&y<=box.minY+3&&((x+2*y)%5===0))color=accent;else if(def.pattern==='high-top'&&y<=box.minY+2)color=accent;else if(def.pattern==='canvas'&&y===box.maxY-1)color=accent;else if(def.pattern==='runner'&&((x+y)%7===0))color=accent;else if(def.pattern==='loafer'&&y===box.minY+2)color=accent;else if(def.pattern==='slip-on'&&x>=Math.floor(box.cx)-1&&x<=Math.ceil(box.cx)+1)color=accent;else if(def.pattern==='indoor'&&y<=box.minY+2)color=accent;return color;
+}
+function applyShoeSelection(target,frameId,id=selectedShoeId()){if(!shoeCatalog||!schoolPack||!id||id===shoeCatalog.defaultId)return false;const def=shoeCatalog.items.find(item=>item.id===id);if(!def)return false;const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;for(const p of packLayerPixels(frameId,'shoes')){const i=(p[1]*SIZE+p[0])*4;if(!sameRgba(data,i,p))continue;writeRgba(data,i,shoeStyledColor(def,p,p[0],p[1],frameId))}target.putImageData(image,0,0);return true}
+function upperStyledTuple(p){const id=selectedUpperId(),part=upperParts.get(id);if(!upperCatalog||id===upperCatalog.defaultId||!part)return p?.slice(2)||null;const idx=upperColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
+function lowerStyledTuple(p){const id=selectedLowerId(),part=lowerParts.get(id);if(!lowerCatalog||id===lowerCatalog.defaultId||!part)return p?.slice(2)||null;const idx=lowerColorIndex(p?.[2],p?.[3],p?.[4],p?.[5]);return idx>=0?(part.palette?.[idx]||p.slice(2)):p.slice(2)}
+function knownUnderlyingPixel(frameId,x,y,order){
+  for(const layer of order){const p=packLayerMap(frameId,layer).get(x+','+y);if(!p)continue;
+    if(layer==='upper')return upperStyledTuple(p);if(layer==='lower')return lowerStyledTuple(p);
+    if(layer==='shoes'){const def=shoeCatalog?.items?.find(item=>item.id===selectedShoeId());return def&&def.kind!=='default'?shoeStyledColor(def,p,x,y,frameId):p.slice(2)}
+    if(layer==='hair'&&hairCatalog&&selectedHairId()!==hairCatalog.defaultId){const c=hairLayerCanvas(selectedHairId(),frameId);if(c){const d=c.getContext('2d',{alpha:true}).getImageData(x,y,1,1).data;if(d[3])return [d[0],d[1],d[2],d[3]]}continue}
+    return p.slice(2);
+  }return null;
+}
+function stripPackedLayers(target,frameId,layers,underOrder){
+  if(!schoolPack)return;const image=target.getImageData(0,0,SIZE,SIZE),data=image.data,original=new Uint8ClampedArray(data),excluded=new Set(),coords=new Map();
+  for(const layer of layers)for(const p of packLayerPixels(frameId,layer)){const key=p[0]+','+p[1];excluded.add(key);if(!coords.has(key))coords.set(key,[p[0],p[1]])}
+  for(const [key,[x,y]] of coords){const i=(y*SIZE+x)*4;let visible=false;for(const layer of layers){const p=packLayerMap(frameId,layer).get(key);if(sameRgba(original,i,p)){visible=true;break}}if(!visible)continue;
+    const known=knownUnderlyingPixel(frameId,x,y,underOrder);if(known){writeRgba(data,i,known);continue}
+    const neighbors=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=SIZE||ny>=SIZE||excluded.has(nx+','+ny))continue;const ni=(ny*SIZE+nx)*4;if(original[ni+3]>0)neighbors.push([original[ni],original[ni+1],original[ni+2],original[ni+3]])}
+    if(neighbors.length>=3)writeRgba(data,i,neighbors[Math.floor(neighbors.length/2)]);else writeRgba(data,i,[0,0,0,0]);
+  }target.putImageData(image,0,0);
+}
+function plotPixel(map,x,y,color){x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=SIZE||y>=SIZE)return;map.set(x+','+y,[x,y,color[0],color[1],color[2],color[3]??255])}
+function plotCircle(map,cx,cy,r,color,ring=false){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){const q=x*x+y*y;if(ring?(q<=r*r&&q>=(r-2)*(r-2)):(q<=r*r))plotPixel(map,cx+x,cy+y,color)}}
+function paintSegment(map,anchor,direction,length,width,color,start=0){const dx=direction[0],dy=direction[1],nx=-dy,ny=dx,half=Math.max(0,Math.floor(width/2));for(let t=start;t<=length;t++)for(let w=-half;w<=half;w++)plotPixel(map,anchor[0]+dx*t+nx*w,anchor[1]+dy*t+ny*w,color)}
+function paintRotRect(map,center,direction,w,h,color){const dx=direction[0],dy=direction[1],nx=-dy,ny=dx;for(let v=-Math.floor(h/2);v<=Math.floor(h/2);v++)for(let u=-Math.floor(w/2);u<=Math.floor(w/2);u++)plotPixel(map,center[0]+nx*u+dx*v,center[1]+ny*u+dy*v,color)}
+function combinedEquipmentPixels(frameId,slot){const layers=slot==='weapon'?['weaponBack','weaponFront']:['shieldBack','shieldFront'];return layers.flatMap(layer=>packLayerPixels(frameId,layer))}
+function equipmentAnchorAndDirection(frameId,slot){const hand=FRAME_HAND_ANCHORS[frameId]?.[slot==='weapon'?'left':'right']||null,pixels=combinedEquipmentPixels(frameId,slot);if(!pixels.length)return {anchor:hand||[64,90],direction:[0,-1],pixels};if(!hand){const box=bboxForPixels(pixels);return {anchor:[box.cx,box.cy],direction:[0,-1],pixels}}let far=pixels[0],best=-1;for(const p of pixels){const q=(p[0]-hand[0])**2+(p[1]-hand[1])**2;if(q>best){best=q;far=p}}let dx=far[0]-hand[0],dy=far[1]-hand[1],mag=Math.hypot(dx,dy)||1;return {anchor:hand,direction:[dx/mag,dy/mag],pixels}}
+function equipmentShapePixels(def,frameId,slot){
+  const cacheKey=(def?.id||'')+'|'+frameId+'|'+slot;if(accessoryShapeCache.has(cacheKey))return accessoryShapeCache.get(cacheKey);if(!def||def.kind==='default'){accessoryShapeCache.set(cacheKey,[]);return []}
+  const info=equipmentAnchorAndDirection(frameId,slot),map=new Map(),colors=(def.colors||[]).map(c=>rgbaFromHex(c)),outline=colors[0]||[40,40,40,255],base=colors[1]||outline,light=colors[2]||base,accent=colors[3]||outline;
+  if(frameId.startsWith('dead-')){for(const p of info.pixels){const tone=((p[0]+p[1])%4===0)?light:(((p[0]+p[1])%3===0)?accent:base);plotPixel(map,p[0],p[1],tone)}const out=[...map.values()];accessoryShapeCache.set(cacheKey,out);return out}
+  const a=info.anchor,d=info.direction,n=[-d[1],d[0]],len=Number(def.length)||24,w=Number(def.width)||3,size=Number(def.size)||7,far=[a[0]+d[0]*len,a[1]+d[1]*len];
+  if(def.kind==='pencil'){paintSegment(map,a,d,len,w+2,outline);paintSegment(map,a,d,len-3,w,base);paintSegment(map,[far[0]-d[0]*3,far[1]-d[1]*3],d,3,1,outline);paintSegment(map,a,d,3,w,accent)}
+  else if(def.kind==='colored-pencils'){for(const off of [-3,0,3]){const aa=[a[0]+n[0]*off,a[1]+n[1]*off],col=off<0?base:(off>0?accent:light);paintSegment(map,aa,d,len,2,outline);paintSegment(map,aa,d,len-2,1,col)}}
+  else if(def.kind==='marker'){paintSegment(map,a,d,len,w+2,outline);paintSegment(map,a,d,len-5,w,base);paintSegment(map,[far[0]-d[0]*5,far[1]-d[1]*5],d,5,w,accent)}
+  else if(def.kind==='crayon'){paintSegment(map,a,d,len,w+2,outline);paintSegment(map,a,d,len-3,w,base);paintSegment(map,[a[0]+d[0]*7,a[1]+d[1]*7],d,5,w,light)}
+  else if(def.kind==='brush'){paintSegment(map,a,d,len-7,3,outline);paintSegment(map,a,d,len-7,1,base);paintRotRect(map,[far[0]-d[0]*3,far[1]-d[1]*3],d,7,7,accent);paintSegment(map,[far[0]-d[0]*5,far[1]-d[1]*5],d,4,3,light)}
+  else if(def.kind==='flute'||def.kind==='recorder'){paintSegment(map,a,d,len,w+2,outline);paintSegment(map,a,d,len,w,base);for(let t=7;t<len-3;t+=5)plotPixel(map,a[0]+d[0]*t+n[0],a[1]+d[1]*t+n[1],accent);if(def.kind==='recorder')paintRotRect(map,[far[0]-d[0]*2,far[1]-d[1]*2],d,w+3,5,light)}
+  else if(def.kind==='broom'){paintSegment(map,a,d,len-7,2,outline);paintSegment(map,a,d,len-7,1,base);paintRotRect(map,[far[0]-d[0]*3,far[1]-d[1]*3],d,11,7,accent)}
+  else if(def.kind==='rocket'){paintRotRect(map,[a[0]+d[0]*10,a[1]+d[1]*10],d,7,16,outline);paintRotRect(map,[a[0]+d[0]*10,a[1]+d[1]*10],d,5,14,base);plotPixel(map,far[0],far[1],accent);plotPixel(map,far[0]+n[0]*2-d[0]*2,far[1]+n[1]*2-d[1]*2,accent);plotPixel(map,far[0]-n[0]*2-d[0]*2,far[1]-n[1]*2-d[1]*2,accent);paintRotRect(map,[a[0]+d[0]*3+n[0]*4,a[1]+d[1]*3+n[1]*4],d,4,5,accent);paintRotRect(map,[a[0]+d[0]*3-n[0]*4,a[1]+d[1]*3-n[1]*4],d,4,5,accent)}
+  else if(def.kind==='scissors'){const d1=[d[0]*.94+n[0]*.34,d[1]*.94+n[1]*.34],d2=[d[0]*.94-n[0]*.34,d[1]*.94-n[1]*.34];paintSegment(map,a,d1,len,2,outline);paintSegment(map,a,d2,len,2,light);plotCircle(map,a[0]+n[0]*4-d[0]*2,a[1]+n[1]*4-d[1]*2,3,base,true);plotCircle(map,a[0]-n[0]*4-d[0]*2,a[1]-n[1]*4-d[1]*2,3,base,true)}
+  else if(def.kind==='wand'){paintSegment(map,a,d,len-5,2,outline);paintSegment(map,a,d,len-5,1,base);const c=[far[0]-d[0]*2,far[1]-d[1]*2],pts=[[0,-5],[2,-1],[5,0],[2,2],[3,5],[0,3],[-3,5],[-2,2],[-5,0],[-2,-1]];for(const [u,v] of pts)plotPixel(map,c[0]+n[0]*u+d[0]*v,c[1]+n[1]*u+d[1]*v,accent);plotCircle(map,c[0],c[1],2,light)}
+  else if(def.kind.endsWith('-ball')){const c=[a[0]+d[0]*(size+2),a[1]+d[1]*(size+2)];plotCircle(map,c[0],c[1],size,outline);plotCircle(map,c[0],c[1],size-1,base);if(def.kind==='soccer-ball'){plotCircle(map,c[0],c[1],2,outline);for(const [u,v] of [[-4,-3],[4,-3],[-4,3],[4,3]])plotCircle(map,c[0]+u,c[1]+v,1,outline)}else if(def.kind==='basketball'){for(let t=-size+1;t<=size-1;t++){plotPixel(map,c[0]+t,c[1],outline);plotPixel(map,c[0],c[1]+t,outline)}}else{for(let t=-size+2;t<=size-2;t++){plotPixel(map,c[0]+t,c[1]+Math.round(t/3),light);plotPixel(map,c[0]-Math.round(t/3),c[1]+t,accent)}}}
+  else if(def.kind==='eraser'){paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,11,7,outline);paintRotRect(map,[a[0]+d[0]*6,a[1]+d[1]*6],d,9,5,base);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,4,5,light)}
+  else if(def.kind==='tablet'){paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,12,17,outline);paintRotRect(map,[a[0]+d[0]*8,a[1]+d[1]*8],d,9,13,base);paintRotRect(map,[a[0]+d[0]*9,a[1]+d[1]*9],d,7,9,light)}
+  else if(def.kind==='dustpan'){paintSegment(map,a,d,13,2,outline);paintSegment(map,a,d,12,1,base);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,15,9,outline);paintRotRect(map,[a[0]+d[0]*17,a[1]+d[1]*17],d,12,6,base)}
+  else if(def.kind==='sharpener'){const c=[a[0]+d[0]*7,a[1]+d[1]*7];paintRotRect(map,c,d,11,10,outline);paintRotRect(map,c,d,9,8,base);plotCircle(map,c[0]+n[0]*2,c[1]+n[1]*2,2,accent)}
+  else if(def.kind==='teddy'){const c=[a[0]+d[0]*9,a[1]+d[1]*9];plotCircle(map,c[0],c[1]-4,5,outline);plotCircle(map,c[0],c[1]-4,4,base);plotCircle(map,c[0]+n[0]*5,c[1]-4+n[1]*5,2,base);plotCircle(map,c[0]-n[0]*5,c[1]-4-n[1]*5,2,base);plotCircle(map,c[0],c[1]+4,5,outline);plotCircle(map,c[0],c[1]+4,4,light);plotPixel(map,c[0],c[1]-3,accent)}
+  else if(def.kind==='pillow'){const c=[a[0]+d[0]*8,a[1]+d[1]*8];paintRotRect(map,c,d,15,11,outline);paintRotRect(map,c,d,13,9,base);paintRotRect(map,c,d,7,5,light)}
+  const out=[...map.values()];accessoryShapeCache.set(cacheKey,out);return out;
+}
+function equipmentPassPixels(def,frameId,slot,pass){if(def?.kind==='default'){const layer=slot==='weapon'?(pass==='back'?'weaponBack':'weaponFront'):(pass==='back'?'shieldBack':'shieldFront');return packLayerPixels(frameId,layer)}const all=equipmentShapePixels(def,frameId,slot);if(!all.length)return [];if(slot==='weapon'&&toolCatalog?.attackBackFrames?.includes(frameId))return pass==='back'?all:[];const backLayer=slot==='weapon'?'weaponBack':'shieldBack',backCoords=packLayerPixels(frameId,backLayer).map(p=>[p[0],p[1]]),isBack=p=>backCoords.some(([x,y])=>Math.abs(x-p[0])+Math.abs(y-p[1])<=2);return all.filter(p=>(pass==='back')===isBack(p))}
+function drawPixelTuples(target,pixels){for(const p of pixels){target.fillStyle='rgba('+p[2]+','+p[3]+','+p[4]+','+(p[5]/255)+')';target.fillRect(p[0],p[1],1,1)}}
+function drawEquipmentPass(target,frameId,slot,id,pass){const catalog=slot==='weapon'?toolCatalog:teachingAidCatalog,def=catalog?.items?.find(item=>item.id===id)||catalog?.items?.find(item=>item.id===catalog?.defaultId);if(def)drawPixelTuples(target,equipmentPassPixels(def,frameId,slot,pass))}
+function stripDefaultEquipment(target,frameId){stripPackedLayers(target,frameId,['weaponBack','weaponFront','shieldBack','shieldFront'],['earring','hair','mouth','eyes','upper','shoes','lower'])}
+function earringShapePixels(def,frameId){
+  const key=(def?.id||'')+'|'+frameId+'|earring';if(accessoryShapeCache.has(key))return accessoryShapeCache.get(key);const base=packLayerPixels(frameId,'earring'),box=bboxForPixels(base);if(!def||def.kind==='default'||!box){accessoryShapeCache.set(key,[]);return []}
+  const map=new Map(),colors=(def.colors||[]).map(c=>rgbaFromHex(c)),outline=colors[0],fill=colors[1],light=colors[2]||fill,cx=Math.round(box.cx),cy=Math.round(box.cy);
+  if(def.kind==='star'){for(const [x,y] of [[0,-4],[1,-1],[4,-1],[2,1],[3,4],[0,2],[-3,4],[-2,1],[-4,-1],[-1,-1]])plotPixel(map,cx+x,cy+y,fill);plotCircle(map,cx,cy,1,light)}
+  else if(def.kind==='crescent'){plotCircle(map,cx,cy,4,fill);for(let y=-4;y<=4;y++)for(let x=-4;x<=4;x++)if((x-2)*(x-2)+y*y<=10)map.delete((cx+x)+','+(cy+y))}
+  else if(def.kind==='ring')plotCircle(map,cx,cy,4,fill,true);
+  else if(def.kind==='pearl'){plotCircle(map,cx,cy+1,3,fill);plotCircle(map,cx-1,cy,1,light);plotPixel(map,cx,cy-3,outline)}
+  else if(def.kind==='heart'){for(const [x,y] of [[-2,-2],[-1,-3],[0,-2],[1,-3],[2,-2],[-3,-1],[-2,0],[-1,1],[0,2],[1,1],[2,0],[3,-1]])plotPixel(map,cx+x,cy+y,fill);plotPixel(map,cx,cy-1,light)}
+  else if(def.kind==='flower'){plotCircle(map,cx,cy,1,light);for(const [x,y] of [[0,-3],[3,0],[0,3],[-3,0],[2,-2],[-2,-2],[2,2],[-2,2]])plotCircle(map,cx+x,cy+y,1,fill)}
+  else if(def.kind==='bolt'){for(const [x,y] of [[1,-4],[-2,0],[0,0],[-1,4],[3,-1],[1,-1]])plotPixel(map,cx+x,cy+y,fill);plotPixel(map,cx,cy-2,light)}
+  else if(def.kind==='drop'){plotCircle(map,cx,cy+1,3,fill);for(let t=0;t<4;t++)plotPixel(map,cx,cy-4+t,fill);plotPixel(map,cx-1,cy,light)}
+  else if(def.kind==='bow'){plotCircle(map,cx-3,cy,2,fill);plotCircle(map,cx+3,cy,2,fill);plotCircle(map,cx,cy,1,light);plotPixel(map,cx-2,cy+3,fill);plotPixel(map,cx+2,cy+3,fill)}
+  else if(def.kind==='gem'){for(let y=-3;y<=3;y++){const span=3-Math.abs(y);for(let x=-span;x<=span;x++)plotPixel(map,cx+x,cy+y,fill)}plotPixel(map,cx-1,cy-1,light)}
+  const out=[...map.values()];accessoryShapeCache.set(key,out);return out;
+}
+function applyEarringSelection(target,frameId,id=selectedEarringId()){if(!earringCatalog||!schoolPack||!id||id===earringCatalog.defaultId)return false;const def=earringCatalog.items.find(item=>item.id===id);if(!def)return false;stripPackedLayers(target,frameId,['earring'],['hair','mouth','eyes','upper','shoes','lower']);drawPixelTuples(target,earringShapePixels(def,frameId));return true}
+
 function animationFor(mode){
   if(!manifest?.animations)return [];
   const normalized=mode==='idle'||mode==='smile'||mode==='static'?'stand':mode;
@@ -520,21 +634,28 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId()){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId()){
   if(!sheet)return;
-  target.save();
-  target.setTransform(1,0,0,1,0,0);
-  target.clearRect(0,0,SIZE,SIZE);
-  target.imageSmoothingEnabled=false;
-  target.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
-  recolorSkin(target,frameId);
-  applyUpperPart(target,frameId,upperId);
-  applyLowerPart(target,frameId,lowerId);
+  const base=document.createElement('canvas');base.width=SIZE;base.height=SIZE;
+  const baseCtx=base.getContext('2d',{alpha:true});baseCtx.imageSmoothingEnabled=false;
+  baseCtx.drawImage(sheet,index*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);
+  recolorSkin(baseCtx,frameId);
+  applyUpperPart(baseCtx,frameId,upperId);
+  applyLowerPart(baseCtx,frameId,lowerId);
   const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
-  if(customHair)clearBaseHair(target,frameId);
-  applyEyePart(target,frameId,eyeId);
-  if(customHair)paintHairLayer(target,hairLayerCanvas(hairId,frameId));
+  if(customHair)clearBaseHair(baseCtx,frameId);
+  applyEyePart(baseCtx,frameId,eyeId);
+  if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId));
+  applyShoeSelection(baseCtx,frameId,shoesId);
+  applyEarringSelection(baseCtx,frameId,earringId);
+  stripDefaultEquipment(baseCtx,frameId);
+  target.save();target.setTransform(1,0,0,1,0,0);target.clearRect(0,0,SIZE,SIZE);target.imageSmoothingEnabled=false;
+  drawEquipmentPass(target,frameId,'weapon',toolId,'back');
+  drawEquipmentPass(target,frameId,'shield',aidId,'back');
+  target.drawImage(base,0,0);
+  drawEquipmentPass(target,frameId,'shield',aidId,'front');
+  drawEquipmentPass(target,frameId,'weapon',toolId,'front');
   target.restore();
 }
 function drawStatic(){
@@ -673,12 +794,34 @@ function renderLowerOptions(){
   optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-lower-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-lower-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-lower-thumb]').forEach(el=>{if(el.dataset.lowerThumb===lowerCatalog.defaultId)drawLowerThumbnail(el,el.dataset.lowerThumb)});hydrateLowerThumbnails();
 }
+
+function drawAccessoryThumbnail(canvasElement,tab,id){
+  if(!canvasElement)return;const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;const c=full.getContext('2d',{alpha:true});c.imageSmoothingEnabled=false;
+  const args=[selectedEyeId(),selectedHairId(),selectedUpperId(),selectedLowerId(),selectedEarringId(),selectedShoeId(),selectedToolId(),selectedTeachingAidId()];
+  if(tab==='earring')args[4]=id;else if(tab==='shoes')args[5]=id;else if(tab==='weapon')args[6]=id;else if(tab==='shield')args[7]=id;drawFrame(c,0,...args);
+  const t=canvasElement.getContext('2d',{alpha:true});t.imageSmoothingEnabled=false;t.clearRect(0,0,SIZE,SIZE);
+  if(tab==='earring')t.drawImage(full,72,42,30,34,0,0,SIZE,SIZE);else if(tab==='shoes')t.drawImage(full,40,96,52,32,0,0,SIZE,SIZE);else if(tab==='weapon')t.drawImage(full,18,50,54,64,0,0,SIZE,SIZE);else t.drawImage(full,66,62,50,56,0,0,SIZE,SIZE);
+}
+function renderAccessoryOptions(tab,catalog,selectedId){
+  const items=catalog?.items||[],label=PARTS[tab]?.label||tab;pickerTitle.textContent=label;pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');const attr=tab+'-id',thumbAttr=tab+'-thumb';
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selectedId;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-'+attr+'="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-'+thumbAttr+'="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'<small>'+item.id+'</small></span></button>'}).join('');
+  optionGrid.querySelectorAll('canvas[data-'+thumbAttr+']').forEach(el=>drawAccessoryThumbnail(el,tab,el.getAttribute('data-'+thumbAttr)));
+}
+function renderEarringOptions(){renderAccessoryOptions('earring',earringCatalog,selectedEarringId())}
+function renderShoeOptions(){renderAccessoryOptions('shoes',shoeCatalog,selectedShoeId())}
+function renderToolOptions(){renderAccessoryOptions('weapon',toolCatalog,selectedToolId())}
+function renderTeachingAidOptions(){renderAccessoryOptions('shield',teachingAidCatalog,selectedTeachingAidId())}
+
 function renderOptions(){
   if(currentTab==='skin'){renderSkinOptions();return}
   if(currentTab==='hair'){renderHairOptions();return}
   if(currentTab==='eyes'){renderEyeOptions();return}
   if(currentTab==='upper'){renderUpperOptions();return}
   if(currentTab==='lower'){renderLowerOptions();return}
+  if(currentTab==='earring'){renderEarringOptions();return}
+  if(currentTab==='shoes'){renderShoeOptions();return}
+  if(currentTab==='weapon'){renderToolOptions();return}
+  if(currentTab==='shield'){renderTeachingAidOptions();return}
   optionGrid.classList.remove('skin-mode');
   const meta=PARTS[currentTab]||PARTS.hair;
   const id=assetIdFor(currentTab);
@@ -708,6 +851,12 @@ function refreshSkinPreview(){
   drawFrame(staticCtx,stand.index||0);
   setPreviewMode(previewMode);
 }
+
+function setEarringAsset(id){if(!earringCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),earring:id};refreshSkinPreview();renderOptions();publish(false);const item=earringCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'귀걸이')+' 적용했어요!');return true}
+function setShoeAsset(id){if(!shoeCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);const item=shoeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'신발')+' 적용했어요!');return true}
+function setToolAsset(id){if(!toolCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),weaponFront:id,weaponBack:id};refreshSkinPreview();renderOptions();publish(false);const item=toolCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'도구')+' 적용했어요!');return true}
+function setTeachingAidAsset(id){if(!teachingAidCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shieldFront:id,shieldBack:id};refreshSkinPreview();renderOptions();publish(false);const item=teachingAidCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'교구')+' 적용했어요!');return true}
+
 async function setUpperAsset(id){
   if(!upperCatalog?.items?.some(item=>item.id===id))return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),upper:id};refreshSkinPreview();renderOptions();publish(false);
@@ -763,6 +912,10 @@ tabs?.addEventListener('click',e=>{
   if(button)selectTab(button.dataset.tab);
 });
 optionGrid?.addEventListener('click',e=>{
+  const aid=e.target.closest('[data-shield-id]');if(aid){setTeachingAidAsset(aid.dataset.shieldId);return}
+  const tool=e.target.closest('[data-weapon-id]');if(tool){setToolAsset(tool.dataset.weaponId);return}
+  const shoes=e.target.closest('[data-shoes-id]');if(shoes){setShoeAsset(shoes.dataset.shoesId);return}
+  const earring=e.target.closest('[data-earring-id]');if(earring){setEarringAsset(earring.dataset.earringId);return}
   const lower=e.target.closest('[data-lower-id]');
   if(lower){setLowerAsset(lower.dataset.lowerId);return}
   const upper=e.target.closest('[data-upper-id]');
@@ -789,7 +942,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-6',
+  version:'pixel-v3-school-starter-7',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -816,6 +969,10 @@ window.KidscadeAvatarShop={
     if(state.assetIds.upper!==upperCatalog?.defaultId)await loadUpperPart(state.assetIds.upper);
     if(lowerCatalog&&!lowerCatalog.items.some(item=>item.id===state.assetIds.lower))state.assetIds.lower=lowerCatalog.defaultId;
     if(state.assetIds.lower!==lowerCatalog?.defaultId)await loadLowerPart(state.assetIds.lower);
+    if(shoeCatalog&&!shoeCatalog.items.some(item=>item.id===state.assetIds.shoes))state.assetIds.shoes=shoeCatalog.defaultId;
+    if(earringCatalog&&!earringCatalog.items.some(item=>item.id===state.assetIds.earring))state.assetIds.earring=earringCatalog.defaultId;
+    if(toolCatalog&&!toolCatalog.items.some(item=>item.id===state.assetIds.weaponFront)){state.assetIds.weaponFront=toolCatalog.defaultId;state.assetIds.weaponBack=toolCatalog.defaultId}else if(toolCatalog)state.assetIds.weaponBack=state.assetIds.weaponFront;
+    if(teachingAidCatalog&&!teachingAidCatalog.items.some(item=>item.id===state.assetIds.shieldFront)){state.assetIds.shieldFront=teachingAidCatalog.defaultId;state.assetIds.shieldBack=teachingAidCatalog.defaultId}else if(teachingAidCatalog)state.assetIds.shieldBack=state.assetIds.shieldFront;
     refreshSkinPreview();
     publish(false);
     return true;
@@ -823,15 +980,16 @@ window.KidscadeAvatarShop={
 };
 
 (async function boot(){
-  await Promise.all([loadManifest(),loadSheet()]);
+  await Promise.all([loadManifest(),loadSheet(),loadSchoolPack()]);
   await loadEyeCatalog();
   await loadHairCatalog();
   await loadUpperCatalog();
   await loadLowerCatalog();
+  await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
   loadSkinPalette();
   loadFrameSkinPalettes();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 상의 11종 · 하의 11종 · 피부색 자유 설정 · 23프레임';
+  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);

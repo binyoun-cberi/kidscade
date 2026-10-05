@@ -13,10 +13,14 @@ const eyeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes/catalog.j
 const hairCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair/catalog.json'),'utf8'));
 const upperCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'upper/catalog.json'),'utf8'));
 const lowerCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'lower/catalog.json'),'utf8'));
+const shoeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'shoes/catalog.json'),'utf8'));
+const earringCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'earring/catalog.json'),'utf8'));
+const toolCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'tool/catalog.json'),'utf8'));
+const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teaching-aid/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=48/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=49/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -24,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-6/);
+  assert.match(js,/pixel-v3-school-starter-7/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -55,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-6'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-7'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -80,7 +84,7 @@ test('public studio supports free skin color without exposing JSON editing',()=>
   assert.match(js,/skinColorPicker/);
   assert.match(js,/type="color"/);
   assert.match(js,/skinColor:normalizeHexColor\(state\.skinColor\)/);
-  assert.match(js,/recolorSkin\(target,frameId\)/);
+  assert.match(js,/recolorSkin\((?:target|baseCtx),frameId\)/);
   assert.match(css,/\.skin-picker-card/);
   assert.match(css,/input\[type=color\]/);
   assert.equal(manifest.customization.skinColor.freeColor,true);
@@ -117,7 +121,7 @@ test('skin recoloring covers every source and derived animation frame',()=>{
   assert.match(js,/function discoverSourceFrameSkinPalette\(frameId\)/);
   assert.match(js,/function loadFrameSkinPalettes\(\)/);
   assert.match(js,/function skinPaletteForFrame\(frameId\)/);
-  assert.match(js,/recolorSkin\(target,frameId\)/);
+  assert.match(js,/recolorSkin\((?:target|baseCtx),frameId\)/);
   assert.match(js,/loadFrameSkinPalettes\(\);/);
   assert.doesNotMatch(js,/recolorSkin\(target\);/);
 });
@@ -288,7 +292,7 @@ test('public renderer applies selected JSON lower parts to all 23 frame bounds',
   assert.match(js,/data-lower-id/);
   assert.match(js,/renderLowerOptions/);
   assert.match(js,/drawLowerThumbnail/);
-  assert.match(js,/applyLowerPart\(target,frameId,lowerId\)/);
+  assert.match(js,/applyLowerPart\((?:target|baseCtx),frameId,lowerId\)/);
   assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
 });
 
@@ -328,4 +332,55 @@ test('trousers have separate legs and four depth tones in the starter JSON',()=>
   const ankle=stand.filter(p=>p[1]===109).map(p=>p[0]).sort((a,b)=>a-b);
   assert.ok(ankle.length>4);
   assert.ok(ankle.some((x,i)=>i>0&&x-ankle[i-1]>1),'transparent gap between trouser legs');
+});
+
+
+test('school accessory catalogs expose 10 shoes, 10 earrings, 14 tools and 6 teaching aids plus defaults',()=>{
+  assert.equal(manifest.partCatalogs.shoes,'shoes/catalog.json');
+  assert.equal(manifest.partCatalogs.earring,'earring/catalog.json');
+  assert.equal(manifest.partCatalogs.weapon,'tool/catalog.json');
+  assert.equal(manifest.partCatalogs.shield,'teaching-aid/catalog.json');
+  assert.equal(shoeCatalog.items.length,11);
+  assert.equal(earringCatalog.items.length,11);
+  assert.equal(toolCatalog.items.length,15);
+  assert.equal(teachingAidCatalog.items.length,7);
+  assert.equal(new Set(shoeCatalog.items.map(item=>item.id)).size,11);
+  assert.equal(new Set(earringCatalog.items.map(item=>item.id)).size,11);
+  assert.equal(new Set(toolCatalog.items.map(item=>item.id)).size,15);
+  assert.equal(new Set(teachingAidCatalog.items.map(item=>item.id)).size,7);
+  for(const label of ['연필','색연필','사인펜','크레파스','붓','단소','리코더','청소빗자루','물로켓','가위','별모양 마법지팡이','축구공','농구공','배구공'])assert.ok(toolCatalog.items.some(item=>item.label===label),label);
+  for(const label of ['지우개','이로미','쓰레받기','연필깎이','곰돌이인형','베개'])assert.ok(teachingAidCatalog.items.some(item=>item.label===label),label);
+});
+
+test('public avatar renders school accessories on all motion frames with correct hand and depth rules',()=>{
+  assert.match(js,/const SCHOOL_PACK_URL=ROOT\+'\/school-starter\.json'/);
+  assert.match(js,/function stripDefaultEquipment\(target,frameId\)/);
+  assert.match(js,/function drawEquipmentPass\(target,frameId,slot,id,pass\)/);
+  assert.deepEqual(toolCatalog.attackBackFrames,['attack-02']);
+  assert.equal(toolCatalog.hand,'left');
+  assert.equal(teachingAidCatalog.hand,'right');
+  assert.equal(toolCatalog.frameCount,23);
+  assert.equal(teachingAidCatalog.frameCount,23);
+  assert.equal(manifest.frameOrder.length,23);
+  assert.match(js,/drawEquipmentPass\(target,frameId,'weapon',toolId,'back'\)/);
+  assert.match(js,/target\.drawImage\(base,0,0\)/);
+  assert.match(js,/drawEquipmentPass\(target,frameId,'shield',aidId,'front'\)/);
+  assert.match(js,/drawEquipmentPass\(target,frameId,'weapon',toolId,'front'\)/);
+});
+
+test('public accessory selection persists paired equipment slots and renames book tab to teaching aids',()=>{
+  assert.match(html,/data-tab="shield" type="button">교구<\/button>/);
+  assert.doesNotMatch(html,/data-tab="shield" type="button">책<\/button>/);
+  assert.match(js,/function setShoeAsset\(id\)/);
+  assert.match(js,/function setEarringAsset\(id\)/);
+  assert.match(js,/function setToolAsset\(id\)/);
+  assert.match(js,/function setTeachingAidAsset\(id\)/);
+  assert.match(js,/weaponFront:id,weaponBack:id/);
+  assert.match(js,/shieldFront:id,shieldBack:id/);
+  assert.match(js,/data-weapon-id/);
+  assert.match(js,/data-shield-id/);
+  assert.match(js,/신발 11종/);
+  assert.match(js,/귀걸이 11종/);
+  assert.match(js,/도구 15종/);
+  assert.match(js,/교구 7종/);
 });

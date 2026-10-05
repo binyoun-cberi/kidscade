@@ -356,7 +356,11 @@
     "eyes": "eyes/catalog.json",
     "hair": "hair/catalog.json",
     "upper": "upper/catalog.json",
-    "lower": "lower/catalog.json"
+    "lower": "lower/catalog.json",
+    "earring": "earring/catalog.json",
+    "shoes": "shoes/catalog.json",
+    "weapon": "tool/catalog.json",
+    "shield": "teaching-aid/catalog.json"
   },
-  "artRevision": "quality-2"
+  "artRevision": "school-accessories-3"
 }
