@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=29';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=30';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=9';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=10';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
 import {createTownEconomy} from './kidscade-world-economy.js?v=23';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
@@ -1046,7 +1046,8 @@ function updateAvatarFrame(now,moving){
     setAvatarSource(Bridge?.readAvatarSource?.()||'',true);
   }
 }
-function applyAvatarMotion(now,moving){
+const PLAYER_GROUND_CLEARANCE=.014;
+function applyAvatarMotion(now,moving,groundSurfaceY=0){
   const action=currentAvatarMode(now,moving);
   let bob=0,sx=1,sy=1,shadowScale=1,shadowOpacity=.22;
   if(moving){
@@ -1054,13 +1055,15 @@ function applyAvatarMotion(now,moving){
     const step=Math.abs(Math.sin(phase*Math.PI));
     bob=step*.115;sx=1+(1-step)*.018;sy=1-step*.035;shadowScale=1-step*.16;shadowOpacity=.22-step*.05;
   }else if(action==='smile'){
-    const p=(now/180)%1;bob=Math.sin(p*Math.PI*2)*.035;sy=1.012;
+    const p=(now/180)%1;bob=(Math.sin(p*Math.PI*2)*.5+.5)*.035;sy=1.012;
   }else{
     const breathe=Math.sin(now/520)*.5+.5;
     bob=breathe*.018;sx=1+breathe*.006;sy=1-breathe*.004;shadowScale=1-breathe*.025;
   }
-  avatar.position.y=.12+bob;
   avatar.scale.set(1.55*sx,1.94*sy,1);
+  // Sprite position is its custom center (.5,.08), not its feet. Derive the
+  // center from the visible floor so the bottom pixel can never go underground.
+  avatar.position.y=groundSurfaceY+avatar.scale.y*avatar.center.y+PLAYER_GROUND_CLEARANCE+bob;
   shadow.scale.set(shadowScale,shadowScale,shadowScale);
   shadow.material.opacity=shadowOpacity;
 }
@@ -1151,6 +1154,21 @@ const TRAVEL_POINTS={
   museum:{x:-36,z:52.0,name:'씨앗 자연박물관'},
   school:{x:-7.3,z:46.0,name:'씨앗학교'}
 };
+function outdoorGroundSurfaceYAt(x,z){
+  let y=0;
+  // Base world roads are 8 cm boxes starting at y=-.02, so their top is .06.
+  if(ROAD_X.some(v=>Math.abs(x-v)<=2)||ROAD_Z.some(v=>Math.abs(z-v)<=2))y=.06;
+  const cityY=Number(cityRuntime?.groundSurfaceYAt?.(x,z));
+  if(Number.isFinite(cityY))y=Math.max(y,cityY);
+  return y;
+}
+function currentGroundSurfaceYAt(x=player.x,z=player.z){
+  if(mode==='outdoor')return outdoorGroundSurfaceYAt(x,z);
+  if(mode==='indoor')return -.01; // home floor: 18 cm box centered at y=-.10
+  if(VENUE_MODE_SET.has(mode))return .06; // venue floor top
+  return 0;
+}
+
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
   if(mode!=='outdoor'){
@@ -2078,8 +2096,8 @@ function stepAnimal(a,now,dt,centerX,centerZ,roamX,roamZ){
   }else if(now+180>a.nextDecision){
     a.object.rotation.y+=Math.sin(now/420+a.phase)*.004;
   }
-  const walkBob=a.moving?Math.abs(Math.sin(now/125+a.phase))*.018:0;
-  a.object.position.y=a.groundY+.015+walkBob;
+  const walkBob=a.moving?Math.abs(Math.sin(now/125+a.phase))*.018:0,surface=outdoorGroundSurfaceYAt(a.object.position.x,a.object.position.z);
+  a.object.position.y=a.groundY+surface+.015+walkBob;
 }
 function updatePets(now,dt){
   const selected=companionId(),state=petState();
@@ -2093,7 +2111,8 @@ function updatePets(now,dt){
       let walking=false;
       if(d>8){a.object.position.x=tx;a.object.position.z=tz;}
       else if(d>.55){const step=Math.min(d,dt*3.25);a.object.position.x+=dx/d*step;a.object.position.z+=dz/d*step;a.object.rotation.y=Math.atan2(dx,dz);walking=true;}
-      a.object.position.y=a.groundY+.015+(walking?Math.abs(Math.sin(now/120+a.phase))*.024:0);
+      const surface=currentGroundSurfaceYAt(a.object.position.x,a.object.position.z);
+      a.object.position.y=a.groundY+surface+.015+(walking?Math.abs(Math.sin(now/120+a.phase))*.024:0);
     }else{
       stepAnimal(a,now,dt,a.homeX,a.homeZ,.52,.38);
     }
@@ -2214,13 +2233,14 @@ function tick(now){
     // Crossing into Seed Town must be seamless. Focus-loss guards already handle stuck keys.
     wasInCity=isCityArea(player.x,player.z);
   }else wasInCity=false;
+  const groundSurfaceY=currentGroundSurfaceYAt(player.x,player.z);
   avatar.position.x=player.x;avatar.position.z=player.z;
-  shadow.position.set(player.x,.035,player.z+.08);
-  cosmeticAura.position.set(player.x,.045,player.z+.04);
+  shadow.position.set(player.x,groundSurfaceY+.008,player.z+.08);
+  cosmeticAura.position.set(player.x,groundSurfaceY+.014,player.z+.04);
   cosmeticAura.rotation.z=now/1800;
   if(cosmeticAura.visible){const pulse=1+Math.sin(now/330)*.06;cosmeticAura.scale.setScalar(pulse);}
   updateAvatarFrame(now,moving);
-  applyAvatarMotion(now,moving);
+  applyAvatarMotion(now,moving,groundSurfaceY);
   updatePets(now,dt);
   furnishingSystem?.updatePreview?.();
   dailyDirector?.update?.(now,dt,player,prog().survival.day);
@@ -2382,4 +2402,21 @@ async function init(){
 window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
 init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
 
-window.KidscadeWorldV3={version:3,resetInput(){resetInput(true)},refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();updateHomesteadVisuals();updateCropVisuals();updateStatus()},pauseAudio(){worldAudio.stop()},resumeAudio(){worldAudio.unlock();syncAudioButton()},setMode};
+window.KidscadeWorldV3={
+  version:3,
+  resetInput(){resetInput(true)},
+  refresh(){resetInput(true);save=Storage?.load?.()||save;setAvatarSource(Bridge?.readAvatarSource?.()||'');syncCosmeticAura();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();updateHomesteadVisuals();updateCropVisuals();updateStatus()},
+  pauseAudio(){worldAudio.stop()},
+  resumeAudio(){worldAudio.unlock();syncAudioButton()},
+  setMode,
+  groundAudit(){
+    const surface=currentGroundSurfaceYAt(player.x,player.z);
+    const playerBottom=avatar.position.y-avatar.scale.y*avatar.center.y;
+    return {
+      mode,
+      player:{x:player.x,z:player.z,surface,bottom:playerBottom,clearance:playerBottom-surface},
+      residents:cityRuntime?.groundAudit?.()||[],
+      classroom:venueInteriors?.groundAudit?.()||[]
+    };
+  }
+};

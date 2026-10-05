@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=6';
-import {createResidentLife} from './kidscade-world-residents.js?v=6';
+import {createResidentLife} from './kidscade-world-residents.js?v=7';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
 import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=3';
 export {CITY_BOUNDS};
@@ -96,6 +96,30 @@ function makeResidentLabel(text,{role='주민',accent='#7c9863'}={}){
 }
 
 
+
+const CHARACTER_GROUND_CLEARANCE=.018;
+
+function inPlaceCharacterClip(source){
+  if(!source)return null;
+  const clip=source.clone?source.clone():source;
+  if(clip?.tracks)clip.tracks=clip.tracks.filter(track=>!/(^|[./])(?:root|bone)\.position$/i.test(String(track.name||'')));
+  return clip;
+}
+function normalizeCharacterModel(model,height){
+  model.updateMatrixWorld(true);
+  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3());
+  const baseHeight=Math.max(.001,size.y||Math.max(size.x,size.z)||1);
+  model.scale.multiplyScalar((Number(height)||1.82)/baseHeight);
+  model.updateMatrixWorld(true);
+  b=new THREE.Box3().setFromObject(model);
+  const center=b.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
+  model.updateMatrixWorld(true);
+  b=new THREE.Box3().setFromObject(model);
+  if(Number.isFinite(b.min.y)&&Math.abs(b.min.y)>.0001)model.position.y-=b.min.y;
+  model.updateMatrixWorld(true);
+}
+
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
   const visual=residentVisual(id);
   const gltf=await ctx.loadGLTF(visual.url);
@@ -103,28 +127,16 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   const model=ctx.prepModel(cloneSkeleton(gltf.scene));
   // Match the already-working people pipeline used by the market game:
   // normalize by the largest axis, then center X/Z and put feet on local Y=0.
-  model.updateMatrixWorld(true);
-  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3());
-  const baseSize=Math.max(size.x,size.y,size.z)||1;
-  model.scale.multiplyScalar((Number(visual.height)||1.82)/baseSize);
-  model.updateMatrixWorld(true);
-  b=new THREE.Box3().setFromObject(model);
-  const center=b.getCenter(new THREE.Vector3());
-  model.position.x-=center.x;
-  model.position.z-=center.z;
-  model.position.y-=b.min.y;
-  model.updateMatrixWorld(true);
+  normalizeCharacterModel(model,visual.height);
   const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
   model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
   const mixer=new THREE.AnimationMixer(model);
   const clips=Array.isArray(gltf.animations)?gltf.animations:[];
-  const idleClip=clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null;
-  const walkSource=clips.find(c=>/walk|run/i.test(c.name))||idleClip;
-  // KayKit/UnityGLTF walk clips contain root.position translation (root motion).
-  // The NPC anchor already handles world movement, so keeping that track makes the body drift away
-  // while labels/interactions remain at the correct town position.
-  const walkClip=walkSource?walkSource.clone():null;
-  if(walkClip)walkClip.tracks=walkClip.tracks.filter(t=>!/^root\.position$/i.test(t.name));
+  // These glTF NPCs use "Bone.position" as the skeleton root while KayKit uses
+  // "root.position". Strip both from idle/walk so animation can never push a
+  // character sideways or below the terrain independently of its world anchor.
+  const idleClip=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
+  const walkClip=inPlaceCharacterClip(clips.find(c=>/walk|run/i.test(c.name))||idleClip);
   let action=null,animState='';
   function playAnim(kind){
     const clip=kind==='walk'?walkClip:idleClip;
@@ -139,7 +151,7 @@ async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}
   ctx.parent.add(anchor);
   const tag=label?makeResidentLabel(name,{role:visual.role,accent:visual.accent}):null;
   if(tag){tag.position.set(x,2.22,z);tag.visible=false;ctx.parent.add(tag)}
-  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:.025,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z};
+  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:CHARACTER_GROUND_CLEARANCE,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z};
 }
 
 function overlaps(a,b,pad=.08){
@@ -157,8 +169,17 @@ function validateMapLayout(objects){
 
 export async function buildKidscadeCity(ctx){
   const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
-  const layout=[],buildingLabels=[];
+  const layout=[],buildingLabels=[],walkSurfaces=[];
   const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
+  const registerSurface=(id,x,z,w,d,y)=>{walkSurfaces.push({id,x,z,w,d,y});};
+  const groundSurfaceYAt=(x,z)=>{
+    let y=0;
+    for(const surface of walkSurfaces){
+      if(Math.abs(x-surface.x)<=surface.w/2&&Math.abs(z-surface.z)<=surface.d/2)y=Math.max(y,surface.y);
+    }
+    return y;
+  };
+  const characterGroundYAt=(x,z)=>groundSurfaceYAt(x,z)+CHARACTER_GROUND_CLEARANCE;
   const p=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
 
   // Road-first city: asphalt occupies ONLY the 4m gutters between 20x20 city parcels.
@@ -166,23 +187,27 @@ export async function buildKidscadeCity(ctx){
   box(parent,0,36,4,44,.09,0x62696d,-.01);    // between west / east core city squares
   box(parent,-24,36,4,44,.09,0x62696d,-.01);  // museum avenue between camp/museum and the core town
   box(parent,0,12,44,4,.09,0x62696d,-.01);    // shared approach from home/farm
+  registerSurface('road-mid-horizontal',0,36,44,4,.08);
+  registerSurface('road-mid-vertical',0,36,4,44,.08);
+  registerSurface('road-museum',-24,36,4,44,.08);
+  registerSurface('road-south',0,12,44,4,.08);
   track('city-road-mid-horizontal','road',0,36,44,4);
   track('city-road-mid-vertical','road',0,36,4,44);
   track('city-road-museum','road',-24,36,4,44);
   track('city-road-south','road',0,12,44,4);
 
   // Sidewalk ribbons live just INSIDE each parcel, parallel to the road gutters.
-  for(const x of [-2.55,2.55])plane(parent,x,36,.7,44,0xe6dfca,.06);
-  for(const z of [33.45,38.55])plane(parent,0,z,44,.7,0xe6dfca,.06);
-  for(const z of [14.55])plane(parent,0,z,44,.7,0xe6dfca,.06);
+  for(const x of [-2.55,2.55]){plane(parent,x,36,.7,44,0xe6dfca,.06);registerSurface('sidewalk-x-'+x,x,36,.7,44,.06);}
+  for(const z of [33.45,38.55]){plane(parent,0,z,44,.7,0xe6dfca,.06);registerSurface('sidewalk-z-'+z,0,z,44,.7,.06);}
+  for(const z of [14.55]){plane(parent,0,z,44,.7,0xe6dfca,.06);registerSurface('sidewalk-south-'+z,0,z,44,.7,.06);}
 
   // Crosswalks connect the exact centers of parcel entrances.
   for(const x of [-12,12]){
-    for(const z of [10.8,11.55,12.3,13.05])plane(parent,x,z,3.0,.34,0xf3eee1,.11);
-    for(const z of [34.8,35.55,36.3,37.05])plane(parent,x,z,3.0,.34,0xf3eee1,.11);
+    for(const z of [10.8,11.55,12.3,13.05]){plane(parent,x,z,3.0,.34,0xf3eee1,.11);registerSurface('crosswalk-s-'+x+'-'+z,x,z,3.0,.34,.11);}
+    for(const z of [34.8,35.55,36.3,37.05]){plane(parent,x,z,3.0,.34,0xf3eee1,.11);registerSurface('crosswalk-n-'+x+'-'+z,x,z,3.0,.34,.11);}
   }
   for(const z of [24,48]){
-    for(const x of [-1.4,-.65,.1,.85])plane(parent,x,z,.34,3.0,0xf3eee1,.11);
+    for(const x of [-1.4,-.65,.1,.85]){plane(parent,x,z,.34,3.0,0xf3eee1,.11);registerSurface('crosswalk-v-'+x+'-'+z,x,z,.34,3.0,.11);}
   }
 
   const market=p('cityMarket'),leisure=p('cityLeisure'),civic=p('cityCivic'),transit=p('cityTransit'),museum=p('museum'),
@@ -251,6 +276,7 @@ export async function buildKidscadeCity(ctx){
   // School / library campus. The former civic hall is now the school building;
   // the northern half of the parcel stays open as a small schoolyard for breaks and events.
   plane(parent,civic.x+4.7,civic.z+3.8,7.2,6.0,0xb7b18d,.065);
+  registerSurface('school-yard',civic.x+4.7,civic.z+3.8,7.2,6.0,.065);
   for(const x of [civic.x+2.1,civic.x+4.7,civic.x+7.3]){
     box(parent,x,civic.z+3.8,.08,5.0,.025,0xf3eee1,.078);
   }
@@ -321,6 +347,10 @@ export async function buildKidscadeCity(ctx){
   plane(parent,residentialNorth.x,residentialNorth.z,18.6,1.35,0xd8ceb2,.065);
   plane(parent,residentialSouth.x-8.7,residentialSouth.z,1.4,18.4,0xd8ceb2,.064);
   plane(parent,residentialNorth.x-8.7,residentialNorth.z,1.4,18.4,0xd8ceb2,.064);
+  registerSurface('res-south-lane',residentialSouth.x,residentialSouth.z,18.6,1.35,.065);
+  registerSurface('res-north-lane',residentialNorth.x,residentialNorth.z,18.6,1.35,.065);
+  registerSurface('res-south-cross',residentialSouth.x-8.7,residentialSouth.z,1.4,18.4,.064);
+  registerSurface('res-north-cross',residentialNorth.x-8.7,residentialNorth.z,1.4,18.4,.064);
 
   for(let i=0;i<homeDefs.length;i++){
     const [id,name,x,z,assetIndex,rot]=homeDefs[i],north= z>=(residentialNorth.z-10),frontDz=rot===Math.PI?2.05:-2.05;
@@ -332,7 +362,7 @@ export async function buildKidscadeCity(ctx){
     const door={x,z:z+frontDz};residentHomes[id]=door;
     // Doorstep path reaches the shared garden lane, so every house is visibly connected.
     const laneZ=north?residentialNorth.z:residentialSouth.z,pathZ=(door.z+laneZ)/2;
-    plane(parent,x,pathZ,.78,Math.abs(door.z-laneZ)+.85,0xd7ccb1,.072);
+    const pathD=Math.abs(door.z-laneZ)+.85;plane(parent,x,pathZ,.78,pathD,0xd7ccb1,.072);registerSurface('home-path-'+id,x,pathZ,.78,pathD,.072);
     const label=makeLabel(name+'의 집',{width:1.48,height:.36,font:30});
     label.position.set(x,3.05,z+frontDz*.72);label.userData.anchor={x,z:z+frontDz*.72};label.visible=false;
     parent.add(label);buildingLabels.push(label);
@@ -346,6 +376,7 @@ export async function buildKidscadeCity(ctx){
 
   // North residential district keeps a real pocket park between the four homes.
   plane(parent,residentialNorth.x,residentialNorth.z,6.8,5.4,0x9db67c,.07);
+  registerSurface('north-pocket-park',residentialNorth.x,residentialNorth.z,6.8,5.4,.07);
   await Promise.all([
     addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x-1.9,z:residentialNorth.z+.2,w:1.9,h:.92,d:.74,rot:Math.PI/2,name:'residential-park-bench-a'}),
     addModel(parent,CITY_ASSET.bench,{x:residentialNorth.x+1.9,z:residentialNorth.z-.2,w:1.9,h:.92,d:.74,rot:-Math.PI/2,name:'residential-park-bench-b'}),
@@ -380,6 +411,11 @@ export async function buildKidscadeCity(ctx){
   const visitor=await addNpc(npcCtx,'visitor',SCHOOL_PROFILES.visitor.name,leisure.x+3.0,leisure.z+6.7,{role:'student',radius:.42});
   visitor.object.visible=false;if(visitor.label)visitor.label.visible=false;npcs.push(visitor);
 
+  for(const n of npcs){
+    n.groundY=characterGroundYAt(n.object.position.x,n.object.position.z);
+    n.object.position.y=n.groundY;
+    if(n.label)n.label.position.y=n.groundY+2.195;
+  }
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   for(const n of npcs){
     if(n.id==='clerk')continue;
@@ -443,11 +479,13 @@ export async function buildKidscadeCity(ctx){
     getMinutes:()=>typeof getGameTime==='function'?getGameTime():720,
     getPlayer:()=>typeof getPlayerPosition==='function'?getPlayerPosition():null,
     getDailyState:()=>typeof getDailyState==='function'?getDailyState():null,
+    getGroundY:characterGroundYAt,
     isBlocked:isNpcBlocked
   });
 
   return {
-    npcs,bounds:CITY_BOUNDS,residentLife,
+    npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,
+    groundAudit:()=>npcs.map(n=>({id:n.id,x:n.object.position.x,z:n.object.position.z,y:n.object.position.y,expected:characterGroundYAt(n.object.position.x,n.object.position.z),delta:n.object.position.y-characterGroundYAt(n.object.position.x,n.object.position.z)})),
     update(now,dt){
       const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
       for(const label of buildingLabels){
@@ -456,6 +494,7 @@ export async function buildKidscadeCity(ctx){
       residentLife.update(now,dt);
       const clerk=byId.clerk;
       if(clerk){
+        clerk.groundY=characterGroundYAt(clerk.object.position.x,clerk.object.position.z);clerk.object.position.y=clerk.groundY;
         clerk.playAnim?.('idle');clerk.mixer?.update(dt);
         if(clerk.interaction){clerk.interaction.x=clerk.object.position.x;clerk.interaction.z=clerk.object.position.z;}
       }
@@ -463,10 +502,10 @@ export async function buildKidscadeCity(ctx){
       if(visitor){
         const names={crafter:'토리 · 만들기 동아리 학생',collector:'모아 · 생태 동아리 학생',prospector:'반짝 · 과학탐구 학생',angler:'파도 · 낚시체험 학생'};
         const visible=!!daily&&daily.visitor&&daily.visitor!=='none';
-        visitor.object.visible=visible;visitor.playAnim?.('idle');visitor.mixer?.update(dt);
+        visitor.object.visible=visible;visitor.groundY=characterGroundYAt(visitor.object.position.x,visitor.object.position.z);visitor.object.position.y=visitor.groundY;visitor.playAnim?.('idle');visitor.mixer?.update(dt);
         if(visitor.label){
           visitor.label.userData?.setText?.(names[daily?.visitor]||SCHOOL_PROFILES.visitor.role);
-          visitor.label.position.set(visitor.object.position.x,2.22,visitor.object.position.z);
+          visitor.label.position.set(visitor.object.position.x,visitor.object.position.y+2.195,visitor.object.position.z);
           visitor.label.visible=visible&&!!player&&Math.hypot(player.x-visitor.object.position.x,player.z-visitor.object.position.z)<4.2;
         }
         if(visitor.interaction){visitor.interaction.enabled=visible;visitor.interaction.x=visitor.object.position.x;visitor.interaction.z=visitor.object.position.z;}

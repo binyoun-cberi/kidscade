@@ -182,6 +182,64 @@ test('Seed School break games friends and lunch persist without reward farming',
   for(const attr of ['data-school-break-answer','data-school-friend','data-school-lunch-eat','data-school-lunch-friend'])assert.ok(economy.includes(attr),'missing school break handler '+attr);
 });
 
+test('Seed World characters resolve visible floor height instead of sinking into raised surfaces',()=>{
+  assert.match(city,/const CHARACTER_GROUND_CLEARANCE=\.018/);
+  assert.match(city,/function normalizeCharacterModel\(model,height\)/);
+  assert.match(city,/const baseHeight=Math\.max\(\.001,size\.y/);
+  assert.match(city,/if\(Number\.isFinite\(b\.min\.y\).*model\.position\.y-=b\.min\.y/s);
+  assert.match(city,/function inPlaceCharacterClip\(source\)/);
+  assert.ok(city.includes("(?:root|bone)\\.position"),'city NPC clips must strip both root.position and Bone.position');
+  assert.match(city,/const groundSurfaceYAt=\(x,z\)=>/);
+  assert.match(city,/registerSurface\('road-mid-horizontal'.*\.08\)/);
+  assert.match(city,/registerSurface\('school-yard'.*\.065\)/);
+  assert.match(city,/registerSurface\('crosswalk-.*\.11\)/);
+  assert.match(city,/registerSurface\('home-path-'.*\.072\)/);
+  assert.match(city,/getGroundY:characterGroundYAt/);
+  assert.match(city,/groundAudit:\(\)=>npcs\.map/);
+
+  assert.match(residents,/const \{npcs,pois,getMinutes,getPlayer,getDailyState,getGroundY,isBlocked\}=ctx/);
+  assert.match(residents,/const desiredGround=groundFor\(n\)/);
+  assert.match(residents,/desiredGround>n\.groundY\?desiredGround/);
+  assert.match(residents,/n\.object\.position\.y\+2\.195/);
+  assert.match(residents,/expectedGround:groundFor\(n\)/);
+
+  assert.match(interiors,/const VENUE_FLOOR_TOP=\.06/);
+  assert.match(interiors,/const VENUE_CHARACTER_GROUND_Y=VENUE_FLOOR_TOP\+VENUE_CHARACTER_CLEARANCE/);
+  assert.match(interiors,/anchor\.position\.set\(x,VENUE_CHARACTER_GROUND_Y,z\)/);
+  assert.match(interiors,/function normalizeCharacterModel\(model,height\)/);
+  assert.ok(interiors.includes("(?:root|bone)\\.position"),'venue NPC clips must strip Bone.position root motion');
+  assert.match(interiors,/groundAudit:\(\)=>schoolActors\.map/);
+
+  assert.match(runtime,/const PLAYER_GROUND_CLEARANCE=\.014/);
+  assert.match(runtime,/function outdoorGroundSurfaceYAt\(x,z\)/);
+  assert.match(runtime,/function currentGroundSurfaceYAt\(x=player\.x,z=player\.z\)/);
+  assert.match(runtime,/avatar\.position\.y=groundSurfaceY\+avatar\.scale\.y\*avatar\.center\.y\+PLAYER_GROUND_CLEARANCE\+bob/);
+  assert.match(runtime,/shadow\.position\.set\(player\.x,groundSurfaceY\+\.008/);
+  assert.match(runtime,/groundAudit\(\)/);
+
+  // Numeric sanity check for the exact visual surfaces that previously swallowed feet.
+  const clearance=.018;
+  for(const surface of [0,.06,.065,.072,.08,.11]){
+    assert.ok(surface+clearance>surface,'NPC foot clearance must stay above surface '+surface);
+  }
+  const playerSurface=.11,playerScaleY=1.94,playerCenterY=.08,playerClearance=.014;
+  const playerY=playerSurface+playerScaleY*playerCenterY+playerClearance;
+  assert.ok(playerY-playerScaleY*playerCenterY>playerSurface,'player bottom must remain above crosswalk');
+});
+
+test('Seed World NPC source animations use Bone root tracks that are neutralized in world playback',()=>{
+  const files=['Casual_Female.gltf','Worker_Male.gltf','Chef_Female.gltf','Casual2_Male.gltf','Suit_Male.gltf','Suit_Female.gltf','Doctor_Female_Young.gltf','OldClassy_Male.gltf','Casual3_Female.gltf','Cowboy_Male.gltf','Casual2_Female.gltf','Casual_Male.gltf'];
+  for(const file of files){
+    const gltf=JSON.parse(fs.readFileSync(path.join(root,'assets','game','npcs','glTF',file),'utf8'));
+    const walk=(gltf.animations||[]).find(a=>/^(Walk|Run)$/i.test(a.name));
+    assert.ok(walk,'missing walk/run animation in '+file);
+    const hasBoneTranslation=(walk.channels||[]).some(ch=>gltf.nodes?.[ch.target?.node]?.name==='Bone'&&ch.target?.path==='translation');
+    assert.equal(hasBoneTranslation,true,'expected Bone translation root track in '+file);
+  }
+  assert.ok(city.includes("(?:root|bone)\\.position"),'outdoor NPC runtime must neutralize root translation');
+  assert.ok(interiors.includes("(?:root|bone)\\.position"),'indoor NPC runtime must neutralize root translation');
+});
+
 test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{
   assert.match(city,/createResidentLife/);
   assert.match(city,/getDailyState/);
@@ -254,7 +312,7 @@ test('Seed Town gives named residents diverse role-matched 3D NPC assets',()=>{
   }
   assert.match(school,/clerk:\{name:'서준',kind:'student'/);
   assert.match(city,/residentVisual\(id\)/);
-  assert.match(city,/Number\(visual\.height\)\|\|1\.82/);
+  assert.match(city,/normalizeCharacterModel\(model,visual\.height\)/);
 });
 
 test('Seed Town reuses tracked city market transport and service assets',()=>{
@@ -762,14 +820,15 @@ test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D s
 });
 
 
-test('resident GLBs retain full animations and use the proven people normalization pipeline',()=>{
+test('resident GLBs retain full animations and use height-based double grounding normalization',()=>{
   assert.match(runtime,/const gltfCache=new Map\(\)/);
   assert.match(runtime,/function loadGLTF\(url\)/);
   assert.match(city,/cloneSkeleton\(gltf\.scene\)/);
-  assert.match(city,/const baseSize=Math\.max\(size\.x,size\.y,size\.z\)\|\|1/);
+  assert.match(city,/const baseHeight=Math\.max\(\.001,size\.y/);
   assert.match(city,/model\.position\.x-=center\.x/);
   assert.match(city,/model\.position\.z-=center\.z/);
   assert.match(city,/model\.position\.y-=b\.min\.y/);
+  assert.match(city,/if\(Number\.isFinite\(b\.min\.y\).*model\.position\.y-=b\.min\.y/s);
   assert.match(city,/new THREE\.AnimationMixer\(model\)/);
   assert.match(city,/\/idle\|stand\/i/);
   assert.match(city,/\/walk\|run\/i/);
@@ -790,11 +849,11 @@ test('roads are four-metre gutters between parcels, not paths drawn through parc
   assert.match(runtime,/function addNatureCollider\(x,z,w,d\)/);
 });
 
-test('resident walk animation strips root motion so visual bodies cannot detach from labels',()=>{
-  assert.match(city,/const walkSource=/);
-  assert.match(city,/walkSource\?walkSource\.clone\(\):null/);
-  assert.match(city,/walkClip\.tracks=walkClip\.tracks\.filter/);
-  assert.match(city,/\^root\\\.position\$/);
+test('resident idle and walk animations strip root and Bone motion so bodies cannot detach or sink',()=>{
+  assert.match(city,/function inPlaceCharacterClip\(source\)/);
+  assert.ok(city.includes("(?:root|bone)\\.position"),'root and Bone translation must both be removed');
+  assert.match(city,/const idleClip=inPlaceCharacterClip/);
+  assert.match(city,/const walkClip=inPlaceCharacterClip/);
   assert.match(city,/n\.frustumCulled=false/);
 });
 

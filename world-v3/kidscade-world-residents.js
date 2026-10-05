@@ -43,7 +43,8 @@ function routineTarget(id,hour,weather,pois){
 }
 
 export function createResidentLife(ctx){
-  const {npcs,pois,getMinutes,getPlayer,getDailyState,isBlocked}=ctx;
+  const {npcs,pois,getMinutes,getPlayer,getDailyState,getGroundY,isBlocked}=ctx;
+  const groundFor=(n,x=n.object.position.x,z=n.object.position.z)=>{const y=Number(getGroundY?.(x,z));return Number.isFinite(y)?y:(Number(n.groundY)||.018);};
   const byId=Object.fromEntries(npcs.map(n=>[n.id,n]));
   let chatSerial=0;
 
@@ -105,12 +106,12 @@ export function createResidentLife(ctx){
       }
       if(n.lifeState==='SCHOOL'){
         const gate=pois.schoolGate||target;
-        setVisible(n,true);n.object.position.set(gate.x,n.groundY,gate.z);n.activity='';startMove(n,target,now);
+        setVisible(n,true);n.groundY=groundFor(n,gate.x,gate.z);n.object.position.set(gate.x,n.groundY,gate.z);n.activity='';startMove(n,target,now);
       }
       if(n.lifeState==='HOME'){
         if(!target.home){
           const home=pois['home-'+n.id]||pois.homeFallback;
-          setVisible(n,true);n.object.position.set(home.x,n.groundY,home.z);startMove(n,target,now);
+          setVisible(n,true);n.groundY=groundFor(n,home.x,home.z);n.object.position.set(home.x,n.groundY,home.z);startMove(n,target,now);
         }
         continue;
       }
@@ -122,8 +123,11 @@ export function createResidentLife(ctx){
         else{
           const dx=other.object.position.x-n.object.position.x,dz=other.object.position.z-n.object.position.z;
           n.object.rotation.y=Math.atan2(dx,dz);n.playAnim?.('idle');n.mixer?.update(dt);
-          if(n.label){n.label.position.set(n.object.position.x,2.22,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
-          if(n.chatMarker)n.chatMarker.position.set(n.object.position.x,2.82,n.object.position.z);
+          const desiredGround=groundFor(n);
+          n.groundY=desiredGround>n.groundY?desiredGround:n.groundY+(desiredGround-n.groundY)*Math.min(1,dt*10);
+          n.object.position.y=n.groundY;
+          if(n.label){n.label.position.set(n.object.position.x,n.object.position.y+2.195,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
+          if(n.chatMarker)n.chatMarker.position.set(n.object.position.x,n.object.position.y+2.795,n.object.position.z);
           if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
           continue;
         }
@@ -157,14 +161,18 @@ export function createResidentLife(ctx){
       }else if(n.lifeState==='IDLE'){startMove(n,target,now);}
       n.lastX=n.object.position.x;n.lastZ=n.object.position.z;
       n.playAnim?.(walking?'walk':'idle');n.mixer?.update(dt);
+      const desiredGround=groundFor(n);
+      // Snap upward immediately so feet can never tunnel into a raised curb/crosswalk.
+      // Smooth only downward transitions to avoid a visible one-frame drop at surface edges.
+      n.groundY=desiredGround>n.groundY?desiredGround:n.groundY+(desiredGround-n.groundY)*Math.min(1,dt*10);
       n.object.position.y=n.groundY+(walking?Math.abs(Math.sin(now/170+n.phase))*.010:0);
-      if(n.label){n.label.position.set(n.object.position.x,2.22,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
-      if(n.chatMarker){n.chatMarker.position.set(n.object.position.x,2.82,n.object.position.z);if(n.lifeState!=='CHATTING')n.chatMarker.visible=false;}
+      if(n.label){n.label.position.set(n.object.position.x,n.object.position.y+2.195,n.object.position.z);n.label.visible=!!player&&Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<5.6;}
+      if(n.chatMarker){n.chatMarker.position.set(n.object.position.x,n.object.position.y+2.795,n.object.position.z);if(n.lifeState!=='CHATTING')n.chatMarker.visible=false;}
       if(n.interaction){n.interaction.x=n.object.position.x;n.interaction.z=n.object.position.z;}
     }
   }
   function snapshot(){
-    return npcs.map(n=>({id:n.id,state:n.lifeState,activity:n.activity,partner:n.partnerId||'',visible:n.object.visible!==false}));
+    return npcs.map(n=>({id:n.id,state:n.lifeState,activity:n.activity,partner:n.partnerId||'',visible:n.object.visible!==false,x:n.object.position.x,z:n.object.position.z,y:n.object.position.y,groundY:n.groundY,expectedGround:groundFor(n)}));
   }
   return {update,snapshot,ROUTINES,CHAT_LINES};
 }
