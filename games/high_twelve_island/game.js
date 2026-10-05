@@ -51,7 +51,10 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE) || "null");
-      return saved ? S.normalize(saved) : null;
+      if (!saved) return null;
+      const normalized = S.normalize(saved);
+      if (C && saved.city) normalized.city = C.normalize(saved.city);
+      return normalized;
     } catch (_) { return null; }
   }
   function save() {
