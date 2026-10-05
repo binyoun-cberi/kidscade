@@ -1423,7 +1423,77 @@
       "id": "wolf-cut-hair-01",
       "label": "울프컷",
       "file": "wolf-cut-hair-01.json"
+    },
+    {
+      "id": "hero-spike-hair-01",
+      "label": "히어로 스파이크",
+      "file": "hero-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "prince-spike-hair-01",
+      "label": "왕자 스파이크",
+      "file": "prince-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "ninja-spike-hair-01",
+      "label": "닌자 스파이크",
+      "file": "ninja-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "raven-spike-hair-01",
+      "label": "까마귀 스파이크",
+      "file": "raven-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "explosion-spike-hair-01",
+      "label": "폭발 스파이크",
+      "file": "explosion-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "ice-white-spike-hair-01",
+      "label": "설원 스파이크",
+      "file": "ice-white-spike-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "split-tone-hair-01",
+      "label": "반반 투톤",
+      "file": "split-tone-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "star-tri-hair-01",
+      "label": "스타 스파이크",
+      "file": "star-tri-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "mega-twintail-hair-01",
+      "label": "메가 트윈테일",
+      "file": "mega-twintail-hair-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "curly-hero-hair-01",
+      "label": "히어로 컬리",
+      "file": "curly-hero-hair-01.json",
+      "public": true,
+      "price": 0
     }
   ],
-  "revision": "quality-11-male-hair-pack-tousled-base"
+  "revision": "quality-12-cartoon-hair-pack"
 }
