@@ -70,7 +70,7 @@ test('guest receives the v3 school avatar without opening the retired v2 rendere
   assert.match(avatarIntegration, /SCHOOL_DEFAULT_IMAGE/);
   assert.match(avatarIntegration, /kidscade-avatar-v3\/school-starter\/guest-default\.png/);
   assert.match(avatarIntegration, /function ensureGuestDefaultPreview/);
-  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v3-school-starter-24'/);
+  assert.match(avatarIntegration, /PREVIEW_VERSION = 'pixel-v3-school-starter-25'/);
   assert.match(avatarIntegration, /PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.doesNotMatch(avatarIntegration, /GUEST_DEFAULT_CONFIG|guestConfigFromPixelState|pixel-avatar-renderer\.js\?v=27/);
   assert.match(sessionSafety, /localStorage\.removeItem\('kidscade-avatar-v3'\)/);
