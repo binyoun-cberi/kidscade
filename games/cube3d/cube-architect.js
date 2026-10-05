@@ -270,7 +270,7 @@ function addChallengeCuboid(x,y,z,dims=[1,1,1],quiet=false){
     new THREE.LineBasicMaterial({color:0x8b633c,transparent:true,opacity:.57}));
   mesh.add(border);
   scene.add(mesh);challengeMeshes.push(mesh);
-  if(!quiet)sfx('place');return true;
+  if(!quiet){sfx('place');tutorialSignal('challenge-place')}return true;
 }
 function addChallengeBlock(x,y,z,quiet){return addChallengeCuboid(x,y,z,[1,1,1],quiet)}
 function clearChallengeOverlay(){
@@ -281,7 +281,7 @@ function removeChallengeBlock(mesh){
   for(const key of mesh.userData.members)challengeBlocks.delete(key);
   scene.remove(mesh);challengeMeshes=challengeMeshes.filter(item=>item!==mesh);
   if(challengeSelected===mesh){challengeSelected=null;clearChallengeOverlay();updateChallengeEditor()}
-  sfx('break');
+  sfx('break');tutorialSignal('challenge-break');
 }
 function clearChallenge(){
   challengeMeshes.forEach(m=>scene.remove(m));challengeMeshes=[];challengeBlocks.clear();
@@ -579,7 +579,7 @@ function initChallenge(){
     .forEach(([id,name])=>$(id).onclick=()=>setChallengeTool(name));
   $('challengeSelect').onclick=selectLookedChallengePiece;
   $('challengeColor').oninput=e=>{challengeTint=e.target.value};
-  configureMobileMode('challenge');$('challengeLockNotice').onclick=requestGamePointerLock;
+  configureMobileMode('challenge');$('challengeLockNotice').onclick=()=>{tutorialSignal('start-control');requestGamePointerLock()};
   showTutorial('challenge');
 }
 function challengeCenterHit(max=8){
@@ -995,7 +995,7 @@ function buildNetBoard(){
 }
 function buildPalette(){
   const p=$('stickerPalette');p.innerHTML='';
-  netTarget.forEach(s=>{const b=document.createElement('button');b.className='sticker'+(s===selectedSymbol?' active':'');b.textContent=s;b.onclick=()=>{selectedSymbol=s;buildPalette()};p.appendChild(b)});
+  netTarget.forEach(s=>{const b=document.createElement('button');b.className='sticker'+(s===selectedSymbol?' active':'');b.textContent=s;b.onclick=()=>{selectedSymbol=s;tutorialSignal('net-sticker');buildPalette()};p.appendChild(b)});
 }
 function netHit(ev){
   const rect=canvas.getBoundingClientRect();mouse.x=((ev.clientX-rect.left)/rect.width)*2-1;mouse.y=-((ev.clientY-rect.top)/rect.height)*2+1;
@@ -1003,7 +1003,7 @@ function netHit(ev){
 }
 function assignNetFace(hit){
   if(netQuizMode!=='decorate'||!hit||!hit.face)return;const idx=hit.face.materialIndex;netAssigned[idx]=selectedSymbol;
-  netBox.material[idx].dispose();netBox.material[idx]=symbolMaterial(selectedSymbol,'#ffffff');netBox.material.needsUpdate=true;sfx('place');
+  netBox.material[idx].dispose();netBox.material[idx]=symbolMaterial(selectedSymbol,'#ffffff');netBox.material.needsUpdate=true;sfx('place');tutorialSignal('net-assign');
   $('selectedFace').textContent=faceNames[idx]+' 면 ← '+selectedSymbol;
 }
 function checkNet(){
@@ -3041,7 +3041,7 @@ function initFree(){
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');
   $('mathLensBadge').classList.add('hidden');
   configureMobileMode('free');
-  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
+  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen){tutorialSignal('start-control');requestGamePointerLock()}};
   $('survivalReturn').onclick=emergencyReturn;
   if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>toggleInventory(true);
   renderSurvivalSafety(null);
@@ -3352,7 +3352,7 @@ function toggleInventory(force){
   $('blockInventory').classList.toggle('hidden',!inventoryOpen);
   if(inventoryOpen){
     if(document.pointerLockElement===canvas)document.exitPointerLock();
-    buildInventory('전체');
+    buildInventory('전체');tutorialSignal('inventory-open');
   }
   $('lockNotice').classList.toggle('hidden',inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
   if(wasOpen&&!inventoryOpen&&!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
@@ -3812,7 +3812,7 @@ function placeFreeBlock(hit){
     if(selectedType==='cuboid')trackSurvival('cuboid',currentCuboidSpec.dims.join('x'));
     buildHotbar();updateFreeMission();
   }
-  sfx('place');markFreeWorldDirty();
+  sfx('place');tutorialSignal('free-place');markFreeWorldDirty();
 }
 function breakFreeBlock(hit){
   if(!hit||!hit.object.userData.worldBlock)return;
@@ -3860,7 +3860,7 @@ function breakFreeBlock(hit){
     spawnBreakParticles(x,y,z,type);
     if(pickupVisualType)spawnPickupVisual(pickupVisualType,x,y,z,pickupVisualCount);
     if(survival&&pickupVisualType)triggerFreeAvatarAction('pickup');
-    sfx('break');updateFreeMission();markFreeWorldDirty();
+    sfx('break');tutorialSignal('free-break');updateFreeMission();markFreeWorldDirty();
     return true;
   }
   return false;
@@ -5430,46 +5430,109 @@ function initMobileControls(){
 initMobileControls();
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
-function showTutorial(kind){
-  const once='cubeArchitectTutorial_'+kind+
-    (kind==='free'?'_'+gameFreeMode+(mobileModeEnabled?'_touch_v25':'_v25'):
-      (mobileModeEnabled?'_touch_v1':''));try{if(localStorage.getItem(once))return}catch(_){};
-  let html='';
-  if(kind==='challenge')html='<h2>설계도 챌린지 · 쉬움/어려움</h2><p>쉬움은 교과서형 직육면체, 어려움은 타지마할·사그라다 파밀리아 같은 랜드마크를 단순화한 겨냥도입니다. 위치와 바닥 방향은 채점하지 않습니다.</p><div class="keys"><div class="keyrow"><b>WASD + 마우스</b>날아다니며 보기</div><div class="keyrow"><b>Space / Shift</b>위로 / 아래로</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치</div><div class="keyrow"><b>C / H / N</b>검사 / 힌트 / 다음</div></div>';
-  if(kind==='net')html='<h2>전개도 연구실</h2><p>전개도 여섯 면의 그림이 흰 직육면체의 어느 면으로 오는지 생각해 보세요.</p><div class="keys"><div class="keyrow"><b>그림 선택</b>붙일 그림 고르기</div><div class="keyrow"><b>면 클릭</b>그림 붙이기</div><div class="keyrow"><b>드래그</b>직육면체 돌리기</div><div class="keyrow"><b>접어 보기</b>3D 위치 확인</div></div>';
-  if(kind==='free')html='<h2>아키텍트 월드 · 살아있는 복셀 세계</h2><p>정육면체와 직육면체를 함께 쓰고, 각 면을 따로 칠하며 날씨와 생태·물질 변화를 관찰할 수 있습니다.</p><div class="keys"><div class="keyrow"><b>WASD / Space</b>이동 / 점프</div><div class="keyrow"><b>좌 / 우클릭</b>파괴 / 설치·문·화로</div><div class="keyrow"><b>1~9 / E</b>핫바 / 건축 인벤토리</div><div class="keyrow"><b>F / R</b>비행 / 바라보는 블록 복사</div><div class="keyrow"><b>P</b>바라보는 한 면만 색칠</div><div class="keyrow"><b>X</b>모서리 → 꼭짓점 → 평행면 수학 렌즈</div><div class="keyrow"><b>T</b>날씨 바꾸기</div><div class="keyrow"><b>물·불·화로</b>흐름·연소·물질 변화 실험</div></div>';
-  if(kind==='free'&&gameFreeMode==='survival'){
-    html='<h2>생존 탐험 · 첫날</h2><p>지금은 맨손뿐이에요. 근처 나무를 바라보고 좌클릭을 잠깐 유지해 원목 3개를 모으고 E를 눌러 판자를 만들어 보세요. 낮에는 사슴·개구리 같은 생물이 돌아다니고, 밤과 위험 지역에서는 몬스터가 나타납니다. 횃불·벽·바닥도 생존 도구예요.</p>'+
-      '<div class="keys"><div class="keyrow"><b>WASD / Space</b>걷기 / 점프</div>'+
-      '<div class="keyrow"><b>좌클릭 유지</b>블록 채집 · 적대 생물 전투</div>'+
-      '<div class="keyrow"><b>F</b>평화 생물 관찰 · 달걀/양털 채집</div>'+
-      '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
-      '<div class="keyrow"><b>1~9 / 우클릭</b>획득한 재료 선택 / 설치</div>'+
-      '<div class="keyrow"><b>V / 꾸미기</b>1·3인칭 전환 / 내 캐릭터 변경</div>'+
-      '<div class="keyrow"><b>목표</b>나무 → 판자 → 제작대 → 2×1×1 직육면체 → 곡괭이</div></div>';
-  }
-  if(mobileModeEnabled&&kind==='challenge'){
-    html='<h2>설계도 챌린지 · 모바일 조작</h2><p>화면을 밀어 보는 방향을 바꾸고 왼쪽 원형 스틱으로 움직이세요. 오른쪽 버튼으로 블록을 설치·파괴합니다. 건물의 위치는 채점하지 않아요.</p><div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>앞뒤좌우 이동</div><div class="keyrow"><b>화면 드래그</b>시점 돌리기</div><div class="keyrow"><b>↑ / ↓</b>상승 / 하강</div><div class="keyrow"><b>설치 / 파괴</b>십자선이 가리키는 곳에 건축</div><div class="keyrow"><b>검사 / 다음</b>채점 / 다음 설계도</div></div>';
-  }
-  if(mobileModeEnabled&&kind==='free'&&gameFreeMode==='survival'){
-    html='<h2>생존 탐험 · 모바일 첫날</h2><p>왼쪽 스틱으로 가까운 나무에 다가가세요. 화면을 밀어 시점을 돌리고 채집 버튼을 길게 눌러 원목을 모읍니다. 밤에는 몬스터가 나타나므로 횃불과 벽도 활용해 보세요.</p>'+
-      '<div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>이동</div>'+
-      '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
-      '<div class="keyrow"><b>파괴 길게 / 설치</b>채집·전투 / 핫바 블록 설치</div>'+
-      '<div class="keyrow"><b>상호작용</b>평화 생물 관찰 · 달걀/양털 채집</div>'+
-      '<div class="keyrow"><b>가방 / 꾸미기</b>제작 / 내 캐릭터 변경</div>'+
-      '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div>'+
-      '<div class="keyrow"><b>첫 설계</b>제작대 뒤 2×1×1 직육면체 설치</div></div>';
-  }else if(mobileModeEnabled&&kind==='free'){
-    html='<h2>크리에이티브 월드 · 모바일</h2><p>모든 재료를 자유롭게 쓰고 날아다닐 수 있어요. 핫바를 좌우로 넘겨 재료를 선택하세요.</p>'+
-      '<div class="keys"><div class="keyrow"><b>왼쪽 스틱 / 드래그</b>이동 / 시점</div>'+
-      '<div class="keyrow"><b>설치 / 파괴</b>블록 건축</div>'+
-      '<div class="keyrow"><b>비행 / 가방</b>이동 방식 / 모든 재료</div>'+
-      '<div class="keyrow"><b>시점 / 꾸미기</b>1·3인칭 / 내 캐릭터</div>'+
-      '<div class="keyrow"><b>색칠 / 수학</b>여섯 면 / 모서리·꼭짓점</div></div>';
-  }
-  $('tutorialBody').innerHTML=html;$('tutorial').classList.remove('hidden');$('tutorialClose').onclick=()=>{$('tutorial').classList.add('hidden');try{localStorage.setItem(once,'1')}catch(_){}};
+let tutorialState=null,tutorialFocusEl=null;
+function tutorialSignal(action){
+  if(!tutorialState)return;
+  const step=tutorialState.steps[tutorialState.index];
+  if(!step||step.wait!==action)return;
+  tutorialState.index=Math.min(tutorialState.index+1,tutorialState.steps.length-1);
+  renderTutorialStep();
 }
+function tutorialTarget(selector){
+  if(!selector)return null;
+  const el=document.querySelector(selector);
+  if(!el||el.classList.contains('hidden'))return null;
+  return el;
+}
+function tutorialClearFocus(){
+  if(tutorialFocusEl){tutorialFocusEl.classList.remove('tutorial-focus');tutorialFocusEl=null}
+}
+function tutorialFinish(save=true){
+  if(!tutorialState)return;
+  tutorialClearFocus();
+  $('tutorial').classList.add('hidden');$('tutorial').classList.remove('coach');
+  if(save){try{localStorage.setItem(tutorialState.once,'1')}catch(_){}}
+  tutorialState=null;
+}
+function tutorialSteps(kind){
+  const mobile=mobileModeEnabled;
+  const desktopControl=kind==='challenge'?'#challengeLockNotice':'#lockNotice';
+  if(kind==='challenge')return[
+    {title:'블록 하나를 직접 쌓아 볼 거예요',text:'설명만 읽고 끝내지 않습니다. 먼저 블록을 설치하고 부수는 것까지 직접 성공해 봐요.',do:'아래의 시작하기를 누르면 한 단계씩 안내합니다.'},
+    {title:'1. 화면 조종 시작',target:mobile?'#mobileJoystick':desktopControl,text:mobile?'왼쪽 원형 스틱으로 움직이고, 빈 화면을 손가락으로 밀면 보는 방향이 바뀝니다.':'게임 화면을 눌러 마우스를 잡습니다. 가운데 +가 내가 보고 있는 곳이에요.',do:mobile?'스틱과 화면 드래그를 한 번씩 해 보세요.':'“화면을 클릭해 비행 건축 시작”을 눌러 보세요.',wait:mobile?null:'start-control'},
+    {title:'2. 블록 설치 — 가장 중요!',target:mobile?'#mobilePlace':'#gameCanvas',text:mobile?'가운데 +를 바닥에 맞춘 뒤 오른쪽의 설치 버튼을 누릅니다.':'가운데 +를 바닥에 맞추세요. 반투명 블록이 보이는 곳에서 마우스 오른쪽 버튼을 누릅니다.',do:'블록이 실제로 1개 생겨야 다음 단계로 넘어갑니다.',wait:'challenge-place'},
+    {title:'3. 방금 블록 부수기',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'가운데 +를 방금 만든 블록에 맞추고 파괴를 누르세요.':'가운데 +를 방금 만든 블록에 맞추고 마우스 왼쪽 버튼을 누르세요.',do:'블록이 실제로 없어지면 성공입니다.',wait:'challenge-break'},
+    {title:'4. 설계도 보는 방향',target:'#blueprintView',text:'겨냥도가 어렵다면 정면도·측면도·윗면도로 바꿔 볼 수 있어요.',do:'막혔을 때는 특히 “윗면도 · 힌트”가 도움이 됩니다.'},
+    {title:'5. 정육면체 / 직육면체',target:'#challengeCuboid',text:'정육면체 한 칸만 쌓는 것이 어렵다면 직육면체를 골라 여러 칸을 한 번에 만들 수 있어요.',do:'직육면체를 누르면 가로·높이·세로 값을 정할 수 있습니다.'},
+    {title:'6. 면 · 선 · 점 편집',target:'#challengeToolFace',text:'건축 옆의 면·선·점 버튼은 도형의 구성 요소를 직접 확인하는 수학 도구예요.',do:'처음에는 “건축”만 사용해도 됩니다. 익숙해진 뒤 써도 돼요.'},
+    {title:'7. 힌트',target:'#hintChallenge',text:'어디에 쌓아야 할지 모르겠으면 힌트 버튼을 누르세요.',do:'정답을 바로 주는 대신, 보기 쉬운 방향으로 설계도를 바꿔 줍니다.'},
+    {title:'8. 검사하기',target:mobile?'#mobileCheck':'#actionCheck',text:'조금 쌓았다면 검사하기로 현재 모양이 얼마나 비슷한지 확인할 수 있어요.',do:'틀려도 괜찮아요. 틀린 곳을 보고 다시 고치면 됩니다.'},
+    {title:'9. 다음 미션',target:mobile?'#mobileNext':'#actionNext',text:'한 문제를 끝냈거나 다른 모양을 연습하고 싶을 때 다음 미션으로 넘어갑니다.',do:'상단의 “튜토리얼” 버튼을 누르면 이 안내를 언제든 다시 볼 수 있어요.'},
+    {title:'튜토리얼 완료!',text:'이제 최소한 “보기 → 설치 → 파괴 → 힌트 → 검사” 순서는 혼자 할 수 있어요.',do:'처음에는 블록 1개만 정확하게 놓는 것부터 시작해도 충분합니다.'}
+  ];
+  if(kind==='net')return[
+    {title:'전개도 연구실 사용법',text:'그림을 고르고, 3D 직육면체의 면에 붙이고, 실제로 접어 확인하는 순서입니다.',do:'한 단계씩 직접 해 봐요.'},
+    {title:'1. 붙일 그림 고르기',target:'#stickerPalette',text:'아래 그림 중 하나를 먼저 선택합니다.',do:'그림 하나를 눌러 보세요.',wait:'net-sticker'},
+    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 직육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
+    {title:'3. 접어 보기',target:'#foldNet',text:'전개도가 실제로 어떻게 접히는지 애니메이션으로 확인할 수 있어요.',do:'“접어 보기”를 눌러 확인해 보세요.'},
+    {title:'4. 다른 수학 활동',target:'[data-net-mode="face"]',text:'면 관계, 모서리, 꼭짓점 탭은 기본 그림 배치에 익숙해진 뒤 도전하면 됩니다.',do:'처음 하는 학생은 “그림 배치”부터 시작하세요.'},
+    {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
+  ];
+  if(kind==='free'&&gameFreeMode==='survival')return[
+    {title:'생존 탐험 첫 조작',text:'생존에서는 처음부터 블록이 무한히 있지 않습니다. 먼저 나무를 채집하고, 가방에서 재료를 골라 설치합니다.',do:'채집 → 가방 → 선택 → 설치 순서만 기억하세요.'},
+    {title:'1. 이동하고 바라보기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 화면을 밀어 시점을 돌립니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 움직입니다.',do:mobile?'가까운 나무 앞으로 가 보세요.':'가까운 나무를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
+    {title:'2. 나무 채집',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'나무를 바라보고 파괴 버튼을 길게 누르세요.':'나무를 바라보고 마우스 왼쪽 버튼을 잠깐 계속 누르세요.',do:'블록 하나가 실제로 부서져 재료를 얻으면 성공입니다.',wait:'free-break'},
+    {title:'3. 가방 열기',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'위쪽 가방 버튼을 누르세요.':'키보드 E를 누르면 가방과 제작법이 열립니다.',do:'가방을 한 번 열어 보세요.',wait:'inventory-open'},
+    {title:'4. 설치할 재료 선택',target:'#hotbar',text:'가방에서 재료를 누르면 아래 핫바에 들어갑니다. 1~9번 칸으로 바꿀 수 있어요.',do:'처음에는 원목이나 판자를 골라 설치해 보세요.'},
+    {title:'5. 블록 설치',target:mobile?'#mobilePlace':'#gameCanvas',text:mobile?'재료가 선택된 상태에서 바닥 옆면을 보고 설치를 누릅니다.':'재료가 선택된 상태에서 바닥 옆면을 보고 마우스 오른쪽 버튼을 누릅니다.',do:'재료가 있어야 설치할 수 있습니다. 실패하면 가방에서 재료를 다시 골라 보세요.'},
+    {title:'6. 시점과 꾸미기',target:mobile?'#mobileView':'#actionView',text:'1인칭/3인칭을 바꿀 수 있고, 캐릭터 꾸미기도 할 수 있어요.',do:'길을 잃었을 때는 1인칭이 건축하기 더 쉽습니다.'},
+    {title:'생존 조작 완료',text:'채집 → E/가방 → 재료 선택 → 우클릭/설치가 생존 건축의 기본 루프입니다.',do:'제작대와 판자를 만들면 더 큰 직육면체도 만들 수 있어요.'}
+  ];
+  if(kind==='free')return[
+    {title:'크리에이티브 건축 연습',text:'여기서는 재료가 무한이라 바로 설치 연습을 할 수 있어요. 블록 하나를 직접 놓고 부수는 데서 시작합니다.',do:'실패해도 아무 손해가 없습니다.'},
+    {title:'1. 이동하고 바라보기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 이동하고 화면을 밀어 시점을 돌립니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다.',do:mobile?'바닥이 잘 보이게 시점을 내려 보세요.':'가운데 +가 바닥을 가리키게 해 보세요.',wait:mobile?null:'start-control'},
+    {title:'2. 핫바에서 블록 고르기',target:'#hotbar',text:'아래 핫바에서 원하는 블록을 고릅니다. 데스크톱은 숫자 1~9로도 바꿀 수 있어요.',do:'처음에는 평범한 건축 블록을 하나 골라 보세요.'},
+    {title:'3. 블록 설치',target:mobile?'#mobilePlace':'#gameCanvas',text:mobile?'가운데 +를 바닥에 맞추고 설치를 누르세요.':'가운데 +를 바닥에 맞추고 마우스 오른쪽 버튼을 누르세요.',do:'실제로 블록 하나가 생겨야 다음 단계로 넘어갑니다.',wait:'free-place'},
+    {title:'4. 블록 파괴',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'방금 만든 블록을 바라보고 파괴를 누르세요.':'방금 만든 블록을 바라보고 마우스 왼쪽 버튼을 누르세요.',do:'실제로 없어지면 성공입니다.',wait:'free-break'},
+    {title:'5. 가방 · 모든 재료',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'가방 버튼에서 모든 건축 재료를 찾을 수 있습니다.':'E를 누르면 모든 건축 재료와 직육면체 제작대를 볼 수 있습니다.',do:'원하는 재료를 핫바에 넣어 보세요.'},
+    {title:'6. 비행',target:mobile?'#mobileFly':'#freeHint',text:mobile?'비행 버튼으로 걷기와 비행을 바꿉니다.':'F를 누르면 걷기/비행이 바뀝니다.',do:'높은 건물을 지을 때 비행이 편합니다.'},
+    {title:'7. 시점 · 색칠 · 수학 렌즈',target:mobile?'#mobileMore':'#actionXray',text:mobile?'도구 버튼에서 시점·색칠·수학 기능을 사용할 수 있어요.':'V는 시점, P는 면 색칠, X는 수학 렌즈입니다.',do:'건축에 익숙해진 뒤 하나씩 사용하면 됩니다.'},
+    {title:'크리에이티브 조작 완료',text:'블록 선택 → 설치 → 파괴가 되면 기본 건축은 성공입니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 연습할 수 있어요.'}
+  ];
+  return[{title:'튜토리얼',text:'이 모드의 기본 기능을 화면에서 직접 확인해 보세요.',do:'상단 튜토리얼 버튼으로 다시 볼 수 있습니다.'}];
+}
+function renderTutorialStep(){
+  if(!tutorialState)return;
+  tutorialClearFocus();
+  const step=tutorialState.steps[tutorialState.index],total=tutorialState.steps.length;
+  const isIntro=tutorialState.index===0;
+  $('tutorial').classList.remove('hidden');$('tutorial').classList.toggle('coach',!isIntro);
+  $('tutorialProgress').textContent=(tutorialState.index+1)+' / '+total;
+  $('tutorialBody').innerHTML=
+    '<div class="tutorial-step-kicker">'+(isIntro?'처음 조작 연습':'직접 해보기')+'</div>'+
+    '<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
+    (step.do?'<div class="tutorial-do">'+step.do+'</div>':'')+
+    (step.wait?'<div class="tutorial-tip">성공을 감지하면 자동으로 다음 단계로 넘어갑니다.</div>':'');
+  const target=tutorialTarget(step.target);
+  if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
+  $('tutorialBack').disabled=tutorialState.index===0;
+  $('tutorialBack').style.visibility=tutorialState.index===0?'hidden':'visible';
+  const last=tutorialState.index===total-1;
+  $('tutorialClose').disabled=!!step.wait;
+  $('tutorialClose').textContent=step.wait?'직접 성공해 보세요':last?'완료':'다음';
+  $('tutorialClose').onclick=()=>{if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}};
+  $('tutorialBack').onclick=()=>{tutorialState.index=Math.max(0,tutorialState.index-1);renderTutorialStep()};
+  $('tutorialSkip').onclick=()=>tutorialFinish(true);
+}
+function showTutorial(kind,force=false){
+  const once='cubeArchitectGuidedTutorial_v2_'+kind+
+    (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
+  try{if(!force&&localStorage.getItem(once))return}catch(_){}
+  tutorialFinish(false);
+  tutorialState={kind,once,index:0,steps:tutorialSteps(kind)};
+  renderTutorialStep();
+}
+$('actionTutorial')?.addEventListener('click',()=>showTutorial(mode==='free'?'free':mode,true));
 window.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
   pointerDown={x:e.clientX,y:e.clientY,button:e.button};pointerDragged=false;
