@@ -17,7 +17,7 @@ test('v31 Cube World rework loads before the runtime and classic scripts still p
   assert.match(html,/cube-architect-world-assets\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-creatures\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-creature-assets\.js\?v=20261004-32/);
-  assert.match(html,/cube-architect\.js\?v=20261005-hunt1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
   assert.ok(html.indexOf('cube-architect-world-assets.js')<html.indexOf('cube-architect.js'));
 });
 
