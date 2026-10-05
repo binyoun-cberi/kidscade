@@ -5086,7 +5086,16 @@ function updateFootstepAudio(){
   const dist=Math.hypot(x-lastFootstepX,z-lastFootstepZ);
   lastFootstepX=x;lastFootstepZ=z;
   if(dist>3){footstepDistanceAcc=0;return}
-  if(!onGround||freeFlying||freeFluidKind){footstepDistanceAcc=0;return}
+  if(freeFlying){footstepDistanceAcc=0;return}
+  if(freeFluidKind){
+    footstepDistanceAcc+=dist;
+    if(footstepDistanceAcc>=1.35){
+      footstepDistanceAcc%=1.35;
+      noiseBurst(.07,freeFluidKind==='lava'?.006:.008,freeFluidKind==='lava'?520:1800);
+    }
+    return;
+  }
+  if(!onGround){footstepDistanceAcc=0;return}
   footstepDistanceAcc+=dist;
   const stride=(freeKeys.ControlLeft||freeKeys.ControlRight)?1.12:1.42;
   if(footstepDistanceAcc>=stride){
@@ -5362,7 +5371,7 @@ function initMobileControls(){
   }
   const mobileBreakBtn=$('mobileBreak');
   mobileBreakBtn.addEventListener('pointerdown',ev=>{
-    if(!mobileModeEnabled)return;ev.preventDefault();ev.stopPropagation();
+    if(!mobileModeEnabled)return;warmAudio();ev.preventDefault();ev.stopPropagation();
     mobileBreakBtn.setPointerCapture?.(ev.pointerId);mobileBlockAction('break');
   });
   const releaseBreak=()=>{if(miningSource==='mobile')stopMining()};
@@ -5401,7 +5410,7 @@ function initMobileControls(){
   function heightButton(id,key){
     const b=$(id);
     b.addEventListener('pointerdown',ev=>{
-      if(!mobileModeEnabled)return;ev.preventDefault();ev.stopPropagation();
+      if(!mobileModeEnabled)return;warmAudio();ev.preventDefault();ev.stopPropagation();
       b.setPointerCapture?.(ev.pointerId);b.classList.add('pressed');
       if(mode==='challenge')challengeKeys[key]=true;
       else if(mode==='free'){
