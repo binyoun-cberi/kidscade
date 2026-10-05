@@ -542,3 +542,27 @@ body.event-open .header,body.event-open .stats,body.event-open .management-dock{
   .management-dock{right:5px;width:46px}
   .management-dock .tab{width:32px;height:35px}
 }
+
+
+/* v9 city planning */
+.city-panel{display:flex;flex-direction:column;gap:10px}
+.city-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.city-kpis>span{display:flex;flex-direction:column;gap:2px;padding:9px;border:2px solid #607d6e;background:#173c3d;box-shadow:2px 2px 0 rgba(5,20,21,.25)}
+.city-kpis small,.city-kpis em{font-size:9px;color:#b9cfc2;font-style:normal}
+.city-kpis b{font-size:14px;color:#fff4db}
+.city-demand-row{display:flex;gap:6px;flex-wrap:wrap}
+.city-demand{padding:5px 8px;border:1px solid #6a8175;background:#1c4341;font-size:10px;color:#d9e6dc}
+.city-demand.hot{background:#295e43;border-color:#79aa73}.city-demand.cold{background:#533d3a;border-color:#a66c65}
+.city-toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.city-toolbar button,.city-overlaybar button{border:2px solid #607d6e;background:#173c3d;color:#f6edd1;min-height:38px;font:700 10px ui-monospace,monospace;cursor:pointer}
+.city-toolbar button span{display:block;font-size:8px;margin-top:2px}
+.city-toolbar button[aria-pressed="true"],.city-overlaybar button[aria-pressed="true"]{background:#d8c37c;color:#173330;border-color:#f3e0a2;box-shadow:2px 2px 0 #6c6648}
+.city-overlaybar{display:flex;gap:5px;flex-wrap:wrap}
+.city-overlaybar button{min-height:30px;padding:4px 9px}
+.city-canvas-wrap{border:3px solid #486b61;background:#0c2d31;box-shadow:4px 4px 0 rgba(5,20,21,.32);overflow:hidden}
+#cityCanvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:none;cursor:crosshair}
+.city-tile-info{min-height:34px;padding:7px 8px;border:1px solid #536d65;background:#102f32;color:#d9e6dc;font-size:10px;line-height:1.45}
+.city-explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.city-explain span{padding:7px;background:#14383a;border:1px solid #536d65;font-size:9px;text-align:center;color:#c7d8ce}
+.city-explain b{display:block;margin-top:2px;font-size:13px;color:#fff1c8}
+@media(max-width:720px){.city-kpis{grid-template-columns:1fr}.city-toolbar{grid-template-columns:repeat(4,1fr)}.city-explain{grid-template-columns:repeat(3,1fr)}}
