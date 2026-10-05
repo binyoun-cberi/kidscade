@@ -442,6 +442,128 @@
     };
   }
 
+  function roadPathBetween(city,startPoints,endPoints) {
+    if (!startPoints?.length || !endPoints?.length) return null;
+    const endKeys=new Set(endPoints.map(([x,y])=>key(x,y)));
+    const q=[],seen=new Set(),parent=new Map();
+    for(const [x,y] of startPoints){
+      const t=cell(city,x,y),k=key(x,y);
+      if(!t?.road||!t.connected||t.damage>=3||seen.has(k))continue;
+      seen.add(k);parent.set(k,null);q.push([x,y]);
+    }
+    let finish=null;
+    while(q.length){
+      const [x,y]=q.shift(),k=key(x,y);
+      if(endKeys.has(k)){finish=[x,y];break;}
+      for(const [nx,ny] of neighbors4(city,x,y)){
+        const n=cell(city,nx,ny),nk=key(nx,ny);
+        if(!n?.road||!n.connected||n.damage>=3||seen.has(nk))continue;
+        seen.add(nk);parent.set(nk,[x,y]);q.push([nx,ny]);
+      }
+    }
+    if(!finish)return null;
+    const path=[];let cur=finish;
+    while(cur){path.push(cur);cur=parent.get(key(cur[0],cur[1]))||null;}
+    path.reverse();return path;
+  }
+
+  function emergencyRoute(city,type,x,y) {
+    const targetRoads=roadStarts(city,x,y);
+    if(!targetRoads.length)return null;
+    const facility=type==="fire"?"fire":"police";
+    let best=null;
+    for(let sy=0;sy<city.height;sy++)for(let sx=0;sx<city.width;sx++){
+      const t=cell(city,sx,sy);
+      if(!facilityFunctional(t,facility))continue;
+      const path=roadPathBetween(city,roadStarts(city,sx,sy),targetRoads);
+      if(path&&(!best||path.length<best.route.length))best={route:path,stationX:sx,stationY:sy};
+    }
+    return best;
+  }
+
+  function startEmergency(city,type,x,y) {
+    if(!["fire","crime"].includes(type)||!inside(city,x,y))return null;
+    const target=cell(city,x,y);
+    if(!target||target.damage>=3||(!target.density&&!target.civic))return null;
+    const duplicate=(city.emergencies||[]).find(e=>e.status!=="resolved"&&e.type===type&&e.x===x&&e.y===y);
+    if(duplicate)return duplicate;
+    const dispatch=emergencyRoute(city,type,x,y);
+    const event={
+      id:Math.max(1,Math.floor(city.nextEmergencyId||1)),type,x,y,age:0,
+      status:dispatch?"dispatching":"waiting",route:dispatch?.route||[],progress:0,
+      stationX:dispatch?.stationX??null,stationY:dispatch?.stationY??null
+    };
+    city.nextEmergencyId=event.id+1;
+    city.emergencies=Array.isArray(city.emergencies)?city.emergencies:[];
+    city.emergencies.unshift(event);
+    city.emergencies=city.emergencies.slice(0,12);
+    city.log.unshift({week:city.week,text:type==="fire"?"🔥 도시에서 화재가 발생했습니다.":"🚨 도시에서 신고가 접수되었습니다."});
+    city.log=city.log.slice(0,40);
+    return event;
+  }
+
+  function maybeStartEmergencies(city) {
+    if(city.week<12)return;
+    const active=(city.emergencies||[]).filter(e=>e.status!=="resolved");
+    const occupied=(type,x,y)=>active.some(e=>e.type===type&&e.x===x&&e.y===y);
+    if(city.week%4===0&&!active.some(e=>e.type==="fire")){
+      const candidates=[];
+      for(let y=0;y<city.height;y++)for(let x=0;x<city.width;x++){
+        const t=cell(city,x,y);
+        if(t?.density>0&&t.damage<3&&!occupied("fire",x,y)&&t.fireRisk>=28)candidates.push({x,y,risk:t.fireRisk});
+      }
+      candidates.sort((a,b)=>b.risk-a.risk);
+      const c=candidates[0];
+      if(c&&seeded(city.seed^0xf17e,city.week*41)<c.risk/170)startEmergency(city,"fire",c.x,c.y);
+    }
+    if(city.week%5===0&&!active.some(e=>e.type==="crime")){
+      const candidates=[];
+      for(let y=0;y<city.height;y++)for(let x=0;x<city.width;x++){
+        const t=cell(city,x,y);
+        if(t?.density>0&&t.damage<3&&!occupied("crime",x,y)&&t.crime>=30)candidates.push({x,y,risk:t.crime});
+      }
+      candidates.sort((a,b)=>b.risk-a.risk);
+      const c=candidates[0];
+      if(c&&seeded(city.seed^0xc11e,city.week*53)<c.risk/165)startEmergency(city,"crime",c.x,c.y);
+    }
+  }
+
+  function advanceEmergencies(city,village=null) {
+    for(const e of city.emergencies||[]){
+      if(!e||e.status==="resolved")continue;
+      e.age=Math.max(0,Math.floor(e.age||0))+1;
+      const target=cell(city,e.x,e.y);
+      if(!target){e.status="resolved";continue;}
+      if(!Array.isArray(e.route)||!e.route.length){
+        const dispatch=emergencyRoute(city,e.type,e.x,e.y);
+        if(dispatch){
+          e.route=dispatch.route;e.stationX=dispatch.stationX;e.stationY=dispatch.stationY;e.progress=0;e.status="dispatching";
+        }
+      }
+      if(e.route?.length){
+        e.progress=Math.min(e.route.length-1,Math.max(0,Math.floor(e.progress||0))+3);
+        if(e.progress>=e.route.length-1){
+          e.status="resolved";
+          city.resolvedDispatches=Math.max(0,Math.floor(city.resolvedDispatches||0))+1;
+          city.log.unshift({week:city.week,text:e.type==="fire"?"🚒 소방차가 도착해 화재를 진압했습니다.":"🚓 경찰차가 도착해 신고를 처리했습니다."});
+          city.log=city.log.slice(0,40);
+          continue;
+        }
+      }
+      if(e.type==="fire"&&e.age%2===0)damageTile(city,target,"화재");
+      if(e.type==="fire"&&e.age>=7){
+        e.status="resolved";
+        city.log.unshift({week:city.week,text:"🔥 화재가 뒤늦게 꺼졌지만 시설 피해가 남았습니다."});
+      }
+      if(e.type==="crime"&&e.age===3&&village&&Number.isFinite(village.trust))village.trust=clamp(village.trust-.6);
+      if(e.type==="crime"&&e.age>=6){
+        e.status="resolved";
+        city.log.unshift({week:city.week,text:"🚨 신고 상황이 종료됐지만 주민 불안이 남았습니다."});
+      }
+    }
+    city.log=city.log.slice(0,40);
+  }
+
   function distanceEffect(city,x,y,civicType,radius,amount) {
     let best=0;
     for (let yy=Math.max(0,y-radius);yy<=Math.min(city.height-1,y+radius);yy++) {
@@ -506,6 +628,7 @@
     let value=0;
     for (const t of city.tiles) {
       if (t.road) value+=.12;
+      if (t.busStop) value+=.15;
       if (t.powerLine) value+=.05;
       if (t.pipe) value+=.04;
       if (t.civic) value+=CIVIC_UPKEEP[t.civic] || 0;
@@ -537,6 +660,9 @@
     const policeCov=roadCoverage(city,"police",8,70);
     const fireCov=roadCoverage(city,"fire",8,70);
     const dust=village?.disasters?.dust>village?.tick ? 16 : 0;
+    const activeEmergencies=(city.emergencies||[]).filter(e=>e&&e.status!=="resolved");
+    const fireIncidents=new Set(activeEmergencies.filter(e=>e.type==="fire").map(e=>key(e.x,e.y)));
+    const crimeIncidents=new Set(activeEmergencies.filter(e=>e.type==="crime").map(e=>key(e.x,e.y)));
 
     let poweredDeveloped=0,wateredDeveloped=0;
     for (let y=0;y<city.height;y++) for (let x=0;x<city.width;x++) {
@@ -552,9 +678,11 @@
       const nature=t.terrain==="forest"?9:0;
       const access=t.roadAccess?20:-14;
       const utilityValue=(t.powered?6:-14)+(t.watered?6:-16);
-      const preliminary=clamp(34+access+t.service+nature+utilityValue-t.pollution*.56-t.damage*8,0,100);
-      t.crime=clamp(31+nearbyTraffic*.12+(t.density||0)*5+(100-preliminary)*.12-t.policeCoverage*.62,0,100);
-      t.fireRisk=clamp(9+(t.density||0)*12+(t.zone==="industrial"?20:0)+t.damage*12-t.fireCoverage*.66,0,100);
+      const incidentKey=key(x,y);
+      const hasFire=fireIncidents.has(incidentKey),hasCrime=crimeIncidents.has(incidentKey);
+      const preliminary=clamp(34+access+t.service+nature+utilityValue-t.pollution*.56-t.damage*8-(hasFire?18:0)-(hasCrime?9:0),0,100);
+      t.crime=clamp(31+nearbyTraffic*.12+(t.density||0)*5+(100-preliminary)*.12-t.policeCoverage*.62+(hasCrime?32:0),0,100);
+      t.fireRisk=clamp(9+(t.density||0)*12+(t.zone==="industrial"?20:0)+t.damage*12-t.fireCoverage*.66+(hasFire?38:0),0,100);
       t.landValue=clamp(preliminary-t.crime*.23+t.policeCoverage*.08+t.fireCoverage*.05,0,100);
 
       const d=t.zone?city.demand[t.zone]||0:0;
@@ -597,8 +725,13 @@
       wateredRate:developed?Math.round(wateredDeveloped/developed*100):100,
       trips:Math.round(trip.trips),
       failedTrips:Math.round(trip.failedTrips),
+      busTrips:Math.round(trip.busTrips),
       commuteSuccess:(trip.trips+trip.failedTrips)?Math.round(trip.trips/(trip.trips+trip.failedTrips)*100):100,
       avgCommute:Math.round(trip.avgCommute*10)/10,
+      avgCommuteCost:Math.round(trip.avgCommuteCost*10)/10,
+      activeFires:activeEmergencies.filter(e=>e.type==="fire").length,
+      activeCrimes:activeEmergencies.filter(e=>e.type==="crime").length,
+      resolvedDispatches:Math.max(0,Math.floor(city.resolvedDispatches||0)),
       serviceScore:landCount?Math.round(serviceTotal/landCount):0
     };
     city.maintenance=maintenanceCost(city);
