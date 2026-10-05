@@ -130,6 +130,116 @@
         "#8ec7df"
       ],
       "pattern": "indoor"
+    },
+    {
+      "id": "hightop-sneakers-02",
+      "label": "하이탑 운동화",
+      "shape": "hightop-sneaker",
+      "palette": [
+        "#5969b7",
+        "#f7f8ff",
+        "#242b55",
+        "#e7bf55"
+      ]
+    },
+    {
+      "id": "basketball-shoes-01",
+      "label": "농구화",
+      "shape": "basketball-shoe",
+      "palette": [
+        "#d85b45",
+        "#f8f2e9",
+        "#4b2730",
+        "#f3b94e"
+      ]
+    },
+    {
+      "id": "soccer-cleats-01",
+      "label": "축구화",
+      "shape": "soccer-cleat",
+      "palette": [
+        "#3c8b61",
+        "#f5f8ed",
+        "#173c2c",
+        "#e5d83d"
+      ]
+    },
+    {
+      "id": "rain-boots-01",
+      "label": "장화",
+      "shape": "rain-boot",
+      "palette": [
+        "#e6b73f",
+        "#fff1a8",
+        "#5b4a24",
+        "#f6da72"
+      ]
+    },
+    {
+      "id": "fur-boots-01",
+      "label": "털부츠",
+      "shape": "fur-boot",
+      "palette": [
+        "#9a6847",
+        "#f4e0c7",
+        "#4d3326",
+        "#fff3df"
+      ]
+    },
+    {
+      "id": "slippers-01",
+      "label": "슬리퍼",
+      "shape": "slipper",
+      "palette": [
+        "#6fa4c8",
+        "#e9f7ff",
+        "#304f66",
+        "#bfe8f5"
+      ]
+    },
+    {
+      "id": "sandals-01",
+      "label": "샌들",
+      "shape": "sandal",
+      "palette": [
+        "#b98555",
+        "#f4dfc2",
+        "#5f412d",
+        "#dfb67e"
+      ]
+    },
+    {
+      "id": "roller-skates-01",
+      "label": "롤러스케이트",
+      "shape": "roller-skate",
+      "palette": [
+        "#d86f9c",
+        "#fff3f8",
+        "#633149",
+        "#75b9df"
+      ]
+    },
+    {
+      "id": "inline-skates-01",
+      "label": "인라인스케이트",
+      "shape": "inline-skate",
+      "palette": [
+        "#4b6e9f",
+        "#eaf3ff",
+        "#22364f",
+        "#7fe0d2"
+      ]
+    },
+    {
+      "id": "character-slippers-01",
+      "label": "캐릭터 슬리퍼",
+      "shape": "character-slipper",
+      "palette": [
+        "#c9815a",
+        "#ffe5c7",
+        "#5d392c",
+        "#f7a7b8"
+      ]
     }
   ]
 }
