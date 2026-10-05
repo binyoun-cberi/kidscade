@@ -94,8 +94,8 @@ test('achievement catalog registers planned definitions without exposing unfinis
   function FakeCustomEvent(type, init = {}) { this.type = type; this.detail = init.detail; }
   const run = new Function('window','document','CustomEvent','setInterval','clearInterval', catalogSource);
   run(fakeWindow, fakeDocument, FakeCustomEvent, () => 0, () => {});
-  assert.equal(registered.length, 685);
-  assert.equal(registered.filter(def => def.enabled !== false).length, 293);
+  assert.equal(registered.length, 729);
+  assert.equal(registered.filter(def => def.enabled !== false).length, 337);
   assert.equal(registered.filter(def => def.enabled === false).length, 392);
   assert.equal(registered.filter(def => def.trigger === 'metric').length, 274);
   assert.equal(registered.filter(def => def.trigger === 'completion_count').length, 0);
@@ -106,6 +106,11 @@ test('achievement catalog registers planned definitions without exposing unfinis
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.mastery').enabled, true);
   assert.equal(registered.find(def => def.id === 'low_perfect_pitch.secret').enabled, true);
   assert.equal(registered.find(def => def.id === 'high_twelve_island.mastery').enabled, false);
+  assert.equal(registered.find(def => def.id === 'high_seed_baseball.home_run').enabled, true);
+  assert.equal(registered.find(def => def.id === 'high_human_history_cards.iron_age').enabled, true);
+  assert.equal(registered.find(def => def.id === 'high_factory_tycoon.zero_waste_30').enabled, true);
+  assert.equal(registered.find(def => def.id === 'job_scuba_diver.hadal_mission').hidden, true);
+  assert.equal(registered.find(def => def.id === 'high_little_world.roads').enabled, true);
   assert.equal(events.some(event => event.type === 'kidscade:achievement-catalog-ready'), true);
 });
 
