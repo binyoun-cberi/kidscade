@@ -1,1 +1,437 @@
-{"version":1,"type":"kidscade-avatar-upper-catalog","layer":"upper","bodyId":"maple-lite-body-v3","canvas":[128,128],"defaultId":"basic-school-uniform-upper-01","sourceBaseId":"basic-school-uniform-upper-01","sourcePalette":[[233,237,240,255],[53,87,119,255],[38,60,89,255],[176,79,73,255],[215,190,105,255],[194,179,142,255],[32,49,73,255]],"frameBounds":{"stand-01":[51,70,80,89],"stand-02":[53,70,80,89],"walk-01":[49,70,80,89],"walk-02":[49,70,80,89],"walk-03":[47,70,82,89],"walk-04":[53,70,80,89],"jump-01":[41,70,92,89],"attack-01":[51,70,80,89],"attack-02":[57,70,84,90],"attack-03":[41,70,92,95],"attack-04":[33,69,85,96],"attack-05":[51,70,78,89],"hurt-01":[57,70,86,91],"hurt-02":[61,71,90,93],"dead-01":[56,70,84,93],"dead-02":[58,75,85,102],"dead-03":[52,87,78,114],"dead-04":[46,103,65,127],"sit-01":[51,77,80,97],"sit-02":[51,82,80,100],"pickup-01":[47,69,76,90],"pickup-02":[41,75,69,97],"pickup-03":[48,69,75,90]},"frameOrder":["stand-01","stand-02","walk-01","walk-02","walk-03","walk-04","jump-01","attack-01","attack-02","attack-03","attack-04","attack-05","hurt-01","hurt-02","dead-01","dead-02","dead-03","dead-04","sit-01","sit-02","pickup-01","pickup-02","pickup-03"],"items":[{"id":"basic-school-uniform-upper-01","label":"기본 학교 교복","builtin":true,"public":true,"price":0},{"id":"cream-cardigan-upper-01","label":"크림 가디건","file":"cream-cardigan-upper-01.json","public":true,"price":0,"design":"classic-cardigan"},{"id":"mint-sweatshirt-upper-01","label":"민트 맨투맨","file":"mint-sweatshirt-upper-01.json","public":true,"price":0,"design":"clean-sweatshirt"},{"id":"coral-hood-upper-01","label":"코랄 후드 상의","file":"coral-hood-upper-01.json","public":true,"price":0,"design":"coral-hood"},{"id":"lavender-knit-upper-01","label":"라벤더 니트","file":"lavender-knit-upper-01.json","public":true,"price":0,"design":"lavender-knit"},{"id":"navy-sports-upper-01","label":"네이비 체육복","file":"navy-sports-upper-01.json","public":true,"price":0,"design":"navy-sports"},{"id":"sky-stripe-upper-01","label":"하늘 스트라이프","file":"sky-stripe-upper-01.json","public":true,"price":0,"design":"sky-stripe"},{"id":"forest-varsity-upper-01","label":"포레스트 바시티","file":"forest-varsity-upper-01.json","public":true,"price":0,"design":"forest-varsity"},{"id":"black-graphic-upper-01","label":"블랙 그래픽","file":"black-graphic-upper-01.json","public":true,"price":0,"design":"black-graphic"},{"id":"pink-sailor-upper-01","label":"핑크 세일러","file":"pink-sailor-upper-01.json","public":true,"price":0,"design":"pink-sailor"},{"id":"mustard-adventure-upper-01","label":"머스타드 탐험 재킷","file":"mustard-adventure-upper-01.json","public":true,"price":0,"design":"mustard-adventure"},{"id":"hoodie-01","label":"후드티","file":"hoodie-01.json","public":true,"price":0},{"id":"short-puffer-01","label":"숏패딩","file":"short-puffer-01.json","public":true,"price":0},{"id":"long-puffer-01","label":"롱패딩","file":"long-puffer-01.json","public":true,"price":0},{"id":"box-tee-01","label":"박스티","file":"box-tee-01.json","public":true,"price":0},{"id":"leather-jacket-01","label":"가죽 자켓","file":"leather-jacket-01.json","public":true,"price":0},{"id":"denim-jacket-01","label":"청자켓","file":"denim-jacket-01.json","public":true,"price":0},{"id":"suit-jacket-01","label":"양복","file":"suit-jacket-01.json","public":true,"price":0},{"id":"baseball-jacket-01","label":"야구잠바","file":"baseball-jacket-01.json","public":true,"price":0}]}
+{
+  "version": 1,
+  "type": "kidscade-avatar-upper-catalog",
+  "layer": "upper",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "basic-school-uniform-upper-01",
+  "sourceBaseId": "basic-school-uniform-upper-01",
+  "sourcePalette": [
+    [
+      233,
+      237,
+      240,
+      255
+    ],
+    [
+      53,
+      87,
+      119,
+      255
+    ],
+    [
+      38,
+      60,
+      89,
+      255
+    ],
+    [
+      176,
+      79,
+      73,
+      255
+    ],
+    [
+      215,
+      190,
+      105,
+      255
+    ],
+    [
+      194,
+      179,
+      142,
+      255
+    ],
+    [
+      32,
+      49,
+      73,
+      255
+    ]
+  ],
+  "frameBounds": {
+    "stand-01": [
+      51,
+      70,
+      80,
+      89
+    ],
+    "stand-02": [
+      53,
+      70,
+      80,
+      89
+    ],
+    "walk-01": [
+      49,
+      70,
+      80,
+      89
+    ],
+    "walk-02": [
+      49,
+      70,
+      80,
+      89
+    ],
+    "walk-03": [
+      47,
+      70,
+      82,
+      89
+    ],
+    "walk-04": [
+      53,
+      70,
+      80,
+      89
+    ],
+    "jump-01": [
+      41,
+      70,
+      92,
+      89
+    ],
+    "attack-01": [
+      51,
+      70,
+      80,
+      89
+    ],
+    "attack-02": [
+      57,
+      70,
+      84,
+      90
+    ],
+    "attack-03": [
+      41,
+      70,
+      92,
+      95
+    ],
+    "attack-04": [
+      33,
+      69,
+      85,
+      96
+    ],
+    "attack-05": [
+      51,
+      70,
+      78,
+      89
+    ],
+    "hurt-01": [
+      57,
+      70,
+      86,
+      91
+    ],
+    "hurt-02": [
+      61,
+      71,
+      90,
+      93
+    ],
+    "dead-01": [
+      56,
+      70,
+      84,
+      93
+    ],
+    "dead-02": [
+      58,
+      75,
+      85,
+      102
+    ],
+    "dead-03": [
+      52,
+      87,
+      78,
+      114
+    ],
+    "dead-04": [
+      46,
+      103,
+      65,
+      127
+    ],
+    "sit-01": [
+      51,
+      77,
+      80,
+      97
+    ],
+    "sit-02": [
+      51,
+      82,
+      80,
+      100
+    ],
+    "pickup-01": [
+      47,
+      69,
+      76,
+      90
+    ],
+    "pickup-02": [
+      41,
+      75,
+      69,
+      97
+    ],
+    "pickup-03": [
+      48,
+      69,
+      75,
+      90
+    ]
+  },
+  "frameOrder": [
+    "stand-01",
+    "stand-02",
+    "walk-01",
+    "walk-02",
+    "walk-03",
+    "walk-04",
+    "jump-01",
+    "attack-01",
+    "attack-02",
+    "attack-03",
+    "attack-04",
+    "attack-05",
+    "hurt-01",
+    "hurt-02",
+    "dead-01",
+    "dead-02",
+    "dead-03",
+    "dead-04",
+    "sit-01",
+    "sit-02",
+    "pickup-01",
+    "pickup-02",
+    "pickup-03"
+  ],
+  "items": [
+    {
+      "id": "basic-school-uniform-upper-01",
+      "label": "기본 학교 교복",
+      "builtin": true,
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "cream-cardigan-upper-01",
+      "label": "크림 가디건",
+      "file": "cream-cardigan-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "classic-cardigan"
+    },
+    {
+      "id": "mint-sweatshirt-upper-01",
+      "label": "민트 맨투맨",
+      "file": "mint-sweatshirt-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "clean-sweatshirt"
+    },
+    {
+      "id": "coral-hood-upper-01",
+      "label": "코랄 후드 상의",
+      "file": "coral-hood-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "coral-hood"
+    },
+    {
+      "id": "lavender-knit-upper-01",
+      "label": "라벤더 니트",
+      "file": "lavender-knit-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "lavender-knit"
+    },
+    {
+      "id": "navy-sports-upper-01",
+      "label": "네이비 체육복",
+      "file": "navy-sports-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "navy-sports"
+    },
+    {
+      "id": "sky-stripe-upper-01",
+      "label": "하늘 스트라이프",
+      "file": "sky-stripe-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "sky-stripe"
+    },
+    {
+      "id": "forest-varsity-upper-01",
+      "label": "포레스트 바시티",
+      "file": "forest-varsity-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "forest-varsity"
+    },
+    {
+      "id": "black-graphic-upper-01",
+      "label": "블랙 그래픽",
+      "file": "black-graphic-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "black-graphic"
+    },
+    {
+      "id": "pink-sailor-upper-01",
+      "label": "핑크 세일러",
+      "file": "pink-sailor-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "pink-sailor"
+    },
+    {
+      "id": "mustard-adventure-upper-01",
+      "label": "머스타드 탐험 재킷",
+      "file": "mustard-adventure-upper-01.json",
+      "public": true,
+      "price": 0,
+      "design": "mustard-adventure"
+    },
+    {
+      "id": "hoodie-01",
+      "label": "후드티",
+      "file": "hoodie-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "short-puffer-01",
+      "label": "숏패딩",
+      "file": "short-puffer-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "long-puffer-01",
+      "label": "롱패딩",
+      "file": "long-puffer-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "box-tee-01",
+      "label": "박스티",
+      "file": "box-tee-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "leather-jacket-01",
+      "label": "가죽 자켓",
+      "file": "leather-jacket-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "denim-jacket-01",
+      "label": "청자켓",
+      "file": "denim-jacket-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "suit-jacket-01",
+      "label": "양복",
+      "file": "suit-jacket-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "baseball-jacket-01",
+      "label": "야구잠바",
+      "file": "baseball-jacket-01.json",
+      "public": true,
+      "price": 0
+    },
+    {
+      "id": "soccer-uniform-01",
+      "label": "축구 유니폼",
+      "file": "soccer-uniform-01.json"
+    },
+    {
+      "id": "baseball-uniform-01",
+      "label": "야구 유니폼",
+      "file": "baseball-uniform-01.json"
+    },
+    {
+      "id": "basketball-uniform-01",
+      "label": "농구 유니폼",
+      "file": "basketball-uniform-01.json"
+    },
+    {
+      "id": "taekwondo-uniform-01",
+      "label": "태권도복",
+      "file": "taekwondo-uniform-01.json"
+    },
+    {
+      "id": "scientist-coat-01",
+      "label": "과학자 가운",
+      "file": "scientist-coat-01.json"
+    },
+    {
+      "id": "chef-uniform-01",
+      "label": "요리사복",
+      "file": "chef-uniform-01.json"
+    },
+    {
+      "id": "firefighter-jacket-01",
+      "label": "소방관복",
+      "file": "firefighter-jacket-01.json"
+    },
+    {
+      "id": "police-uniform-01",
+      "label": "경찰 느낌 제복",
+      "file": "police-uniform-01.json"
+    },
+    {
+      "id": "spacesuit-01",
+      "label": "우주복",
+      "file": "spacesuit-01.json"
+    },
+    {
+      "id": "wizard-robe-01",
+      "label": "마법사 로브",
+      "file": "wizard-robe-01.json"
+    },
+    {
+      "id": "explorer-vest-01",
+      "label": "탐험가 조끼",
+      "file": "explorer-vest-01.json"
+    },
+    {
+      "id": "pajama-top-01",
+      "label": "잠옷",
+      "file": "pajama-top-01.json"
+    },
+    {
+      "id": "raincoat-01",
+      "label": "우비",
+      "file": "raincoat-01.json"
+    },
+    {
+      "id": "school-cardigan-01",
+      "label": "교복 느낌 가디건",
+      "file": "school-cardigan-01.json"
+    }
+  ],
+  "revision": "upper-4-roleplay-theme-pack"
+}
