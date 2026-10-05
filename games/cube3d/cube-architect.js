@@ -1875,6 +1875,41 @@ let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightning
 let critters=[],critterClock=0;
 let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0,lastCreatureAttackAt=0;
 let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},creatureForageAt={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0,nextEliteSpawnCheckAt=0;
+let miniPoiCatalog=null;
+const MINI_POI_VARIANTS={
+  meadow:[
+    {id:'meadow-camp',kind:'camp',label:'초원의 작은 야영지',color:0xf6c85f,reward:{sticks:3}},
+    {id:'meadow-well',kind:'well',label:'오래된 돌우물',color:0x75cfff,reward:{clay:2}}
+  ],
+  forest:[
+    {id:'forest-camp',kind:'oldCamp',label:'숲속 버려진 야영지',color:0xffa86b,reward:{charcoal:1}},
+    {id:'forest-stump',kind:'fallenTree',label:'거대한 고목 쉼터',color:0x7fd17c,reward:{planks:3}}
+  ],
+  pine:[
+    {id:'pine-watch',kind:'watchPost',label:'침엽수림 감시대',color:0x8ac9ff,reward:{torch:2}},
+    {id:'pine-cairn',kind:'cairn',label:'소나무 숲 돌무더기 표식',color:0xb9c4cf,reward:{stone:3}}
+  ],
+  snow:[
+    {id:'snow-station',kind:'snowStation',label:'설원의 작은 관측소',color:0xd8f1ff,reward:{snowBrick:2}},
+    {id:'snow-marker',kind:'iceMarker',label:'얼음빛 탐험 표식',color:0x91dbff,reward:{glass:1}}
+  ],
+  desert:[
+    {id:'desert-oasis',kind:'oasis',label:'사막의 작은 오아시스',color:0x67dfcf,reward:{cactusDye:1}},
+    {id:'desert-fossil',kind:'fossil',label:'모래 속 화석 발굴지',color:0xf4d48b,reward:{sandstone:2}}
+  ],
+  badlands:[
+    {id:'badlands-mine',kind:'minerCamp',label:'협곡의 광부 야영지',color:0xff9d74,reward:{ironOre:2}},
+    {id:'badlands-arch',kind:'stoneArch',label:'붉은 협곡 돌문',color:0xdc8a62,reward:{redSand:3}}
+  ],
+  marsh:[
+    {id:'marsh-walk',kind:'boardwalk',label:'습지의 낡은 나무다리',color:0x9bd6a4,reward:{reedMat:1}},
+    {id:'marsh-shrine',kind:'reedShrine',label:'갈대 사이 작은 제단',color:0x82c6a0,reward:{clay:2}}
+  ],
+  flowers:[
+    {id:'flowers-garden',kind:'flowerGarden',label:'야생화 작은 화원',color:0xff93c7,reward:{flowerDye:1}},
+    {id:'flowers-picnic',kind:'picnic',label:'꽃밭의 소풍 쉼터',color:0xffd37b,reward:{flower:3}}
+  ]
+};
 const FURNACE_RECIPES=[
   {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
   {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
