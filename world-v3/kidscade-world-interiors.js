@@ -44,6 +44,31 @@ function canvasLabel(text,{width=3.1,height=.76,font=42,depthTest=true}={}){
   return sp;
 }
 
+
+const VENUE_FLOOR_TOP=.06;
+const VENUE_CHARACTER_CLEARANCE=.018;
+const VENUE_CHARACTER_GROUND_Y=VENUE_FLOOR_TOP+VENUE_CHARACTER_CLEARANCE;
+
+function inPlaceCharacterClip(source){
+  if(!source)return null;
+  const clip=source.clone?source.clone():source;
+  if(clip?.tracks)clip.tracks=clip.tracks.filter(track=>!/(^|[./])(?:root|bone)\.position$/i.test(String(track.name||'')));
+  return clip;
+}
+function normalizeCharacterModel(model,height){
+  model.updateMatrixWorld(true);
+  let bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());
+  const baseHeight=Math.max(.001,size.y||Math.max(size.x,size.z)||1);
+  model.scale.multiplyScalar((Number(height)||1.80)/baseHeight);
+  model.updateMatrixWorld(true);
+  bounds=new THREE.Box3().setFromObject(model);
+  const center=bounds.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=bounds.min.y;
+  model.updateMatrixWorld(true);
+  bounds=new THREE.Box3().setFromObject(model);
+  if(Number.isFinite(bounds.min.y)&&Math.abs(bounds.min.y)>.0001)model.position.y-=bounds.min.y;
+  model.updateMatrixWorld(true);
+}
 function merchantLabel(name,role,accent){
   const c=document.createElement('canvas');c.width=640;c.height=192;
   const x=c.getContext('2d');
@@ -89,18 +114,12 @@ async function addMerchant(group,loadGLTF,prepModel,kind,x,z,merchantMixers){
   const info=VENUE_INFO[kind],visual=residentVisual(info.npcId);
   const gltf=await loadGLTF(visual.url);
   const model=prepModel(cloneSkeleton(gltf.scene));
-  model.updateMatrixWorld(true);
-  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3());
-  const baseSize=Math.max(size.x,size.y,size.z)||1;
-  model.scale.multiplyScalar((Number(visual.height)||1.82)/baseSize);
-  model.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(model);
-  const center=b.getCenter(new THREE.Vector3());
-  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
+  normalizeCharacterModel(model,visual.height);
   model.rotation.y=Math.PI;
   model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
-  const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);group.add(anchor);
+  const anchor=new THREE.Group();anchor.position.set(x,VENUE_CHARACTER_GROUND_Y,z);anchor.add(model);group.add(anchor);
 
-  const clips=Array.isArray(gltf.animations)?gltf.animations:[],idle=clips.find(clip=>/idle|stand/i.test(clip.name))||clips[0]||null;
+  const clips=Array.isArray(gltf.animations)?gltf.animations:[],idle=inPlaceCharacterClip(clips.find(clip=>/idle|stand/i.test(clip.name))||clips[0]||null);
   if(idle){
     const mixer=new THREE.AnimationMixer(model),action=mixer.clipAction(idle);
     action.setLoop(THREE.LoopRepeat,Infinity);action.play();merchantMixers.push(mixer);
@@ -112,21 +131,16 @@ async function addMerchant(group,loadGLTF,prepModel,kind,x,z,merchantMixers){
 async function addSchoolPerson(group,loadGLTF,prepModel,id,x,z,schoolActors,mixers){
   const visual=residentVisual(id),gltf=await loadGLTF(visual.url);
   const model=prepModel(cloneSkeleton(gltf.scene));
-  model.updateMatrixWorld(true);
-  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3()),baseSize=Math.max(size.x,size.y,size.z)||1;
-  model.scale.multiplyScalar((Number(visual.height)||1.80)/baseSize);
-  model.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(model);
-  const center=b.getCenter(new THREE.Vector3());
-  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;model.rotation.y=Math.PI;
+  normalizeCharacterModel(model,visual.height);model.rotation.y=Math.PI;
   model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
-  const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);group.add(anchor);
-  const clips=Array.isArray(gltf.animations)?gltf.animations:[],idle=clips.find(clip=>/idle|stand/i.test(clip.name))||clips[0]||null;
+  const anchor=new THREE.Group();anchor.position.set(x,VENUE_CHARACTER_GROUND_Y,z);anchor.add(model);group.add(anchor);
+  const clips=Array.isArray(gltf.animations)?gltf.animations:[],idle=inPlaceCharacterClip(clips.find(clip=>/idle|stand/i.test(clip.name))||clips[0]||null);
   if(idle){
     const mixer=new THREE.AnimationMixer(model),action=mixer.clipAction(idle);
     action.setLoop(THREE.LoopRepeat,Infinity);action.play();mixers.push(mixer);
   }
   const tag=canvasLabel(visual.name,{width:1.15,height:.30,font:28,depthTest:false});tag.position.set(x,2.12,z);group.add(tag);
-  const actor={id,anchor,label:tag,interaction:null,kind:String(visual.role||'').includes('선생님')?'teacher':'student'};schoolActors.push(actor);return actor;
+  const actor={id,anchor,label:tag,interaction:null,kind:String(visual.role||'').includes('선생님')?'teacher':'student',groundY:VENUE_CHARACTER_GROUND_Y};schoolActors.push(actor);return actor;
 }
 
 export async function buildVenueInteriors(ctx){
@@ -430,5 +444,5 @@ export async function buildVenueInteriors(ctx){
     await ensure(kind);if(kind==='museum')syncMuseumDisplays();if(kind==='school')syncSchoolActors();if(g)g.visible=true;return g;
   }
   hideAll();
-  return {groups,show,hideAll,ensure,syncMuseumDisplays,syncSchoolActors,isBuilt:kind=>built.has(kind),update(dt){for(const mixer of merchantMixers)mixer.update(dt);syncSchoolActors();}};
+  return {groups,show,hideAll,ensure,syncMuseumDisplays,syncSchoolActors,isBuilt:kind=>built.has(kind),groundAudit:()=>schoolActors.map(a=>({id:a.id,y:a.anchor.position.y,expected:VENUE_CHARACTER_GROUND_Y,delta:a.anchor.position.y-VENUE_CHARACTER_GROUND_Y})),update(dt){for(const mixer of merchantMixers)mixer.update(dt);syncSchoolActors();}};
 }
