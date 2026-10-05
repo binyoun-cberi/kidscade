@@ -25,7 +25,8 @@
     "weaponBack": "school-ruler-01",
     "shieldFront": "school-textbook-01",
     "shieldBack": "school-textbook-01",
-    "back": "no-back"
+    "back": "no-back",
+    "effect": "no-effect"
   },
   "json": "school-starter.json",
   "spriteSheet": "school-starter-sheet.png",
@@ -377,9 +378,10 @@
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json",
     "hairColor": "hair-color/catalog.json",
-    "wardrobe": "wardrobe/catalog.json"
+    "wardrobe": "wardrobe/catalog.json",
+    "effect": "effect/catalog.json"
   },
-  "artRevision": "school-accessories-20-roleplay-upper-pack",
+  "artRevision": "school-accessories-21-special-effects",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
