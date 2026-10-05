@@ -1967,7 +1967,9 @@ function updateFreeHeldTool(now){
   const forward=freeLookVector();
   const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0).normalize();
   const up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1).normalize();
-  const swing=miningHeld?Math.sin(now*.018)*.08:0;
+  const attackAge=now-lastCreatureAttackAt;
+  const attackSwing=attackAge>=0&&attackAge<280?Math.sin((attackAge/280)*Math.PI)*.22:0;
+  const swing=miningHeld?Math.sin(now*.018)*.08:attackSwing;
   freeHeldToolRoot.position.copy(camera.position)
     .addScaledVector(forward,.72+swing*.2)
     .addScaledVector(right,.34)
