@@ -206,25 +206,32 @@ window.addEventListener('message',event=>{
   seeds=balance;updateSeedBadge();
   resolve({ok:Boolean(event.data.ok),balance,error:event.data.error||''});
 });
+const purchaseLocks=new Map();
 async function ensureAssetAccess(category,id,defaultId,label){
-  const quote=shopQuote(category,id,defaultId);
-  if(quote.owned)return {ok:true,purchased:false,price:0};
-  if(seeds<quote.price){flash('씨앗이 부족해요! · 필요 '+quote.price.toLocaleString('ko-KR'));return {ok:false,purchased:false,price:quote.price}}
-  const result=await requestSeedSpend(quote.price,'아바타 '+String(label||id)+' 구매');
-  if(!result?.ok){
-    if(Number.isFinite(Number(result?.balance)))seeds=Math.max(0,Number(result.balance));
+  const key=String(category||'')+':'+String(id||'');
+  if(purchaseLocks.has(key))return purchaseLocks.get(key);
+  const task=(async()=>{
+    const quote=shopQuote(category,id,defaultId);
+    if(quote.owned)return {ok:true,purchased:false,price:0};
+    if(seeds<quote.price){flash('씨앗이 부족해요! · 필요 '+quote.price.toLocaleString('ko-KR'));return {ok:false,purchased:false,price:quote.price}}
+    const result=await requestSeedSpend(quote.price,'아바타 '+String(label||id)+' 구매');
+    if(!result?.ok){
+      if(Number.isFinite(Number(result?.balance)))seeds=Math.max(0,Number(result.balance));
+      updateSeedBadge();
+      flash(result?.error==='insufficient-balance'?'씨앗이 부족해요!':'구매를 완료하지 못했어요.');
+      return {ok:false,purchased:false,price:quote.price};
+    }
+    seeds=Math.max(0,Number(result.balance)||0);
+    state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
+    state.avatarPurchaseCount=economy.normalizePurchaseCount(state.avatarPurchaseCount)+1;
+    state.economyVersion=1;
     updateSeedBadge();
-    flash(result?.error==='insufficient-balance'?'씨앗이 부족해요!':'구매를 완료하지 못했어요.');
-    return {ok:false,purchased:false,price:quote.price};
-  }
-  seeds=Math.max(0,Number(result.balance)||0);
-  state.ownedAssets=economy.addOwned(state.ownedAssets,category,id,defaultId);
-  state.avatarPurchaseCount=economy.normalizePurchaseCount(state.avatarPurchaseCount)+1;
-  state.economyVersion=1;
-  updateSeedBadge();
-  publish(false);
-  decorateShopButtons();
-  return {ok:true,purchased:true,price:quote.price};
+    publish(false);
+    decorateShopButtons();
+    return {ok:true,purchased:true,price:quote.price};
+  })();
+  purchaseLocks.set(key,task);
+  try{return await task}finally{purchaseLocks.delete(key)}
 }
 function assetApplyMessage(access,label,suffix='적용했어요!'){
   return access?.purchased?label+' 구매·적용! · 🌱 '+access.price.toLocaleString('ko-KR'):label+' '+suffix;
