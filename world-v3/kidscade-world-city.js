@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=5';
-import {createResidentLife} from './kidscade-world-residents.js?v=4';
+import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=6';
+import {createResidentLife} from './kidscade-world-residents.js?v=5';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
 import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=1';
 export {CITY_BOUNDS};
