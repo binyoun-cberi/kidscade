@@ -859,6 +859,9 @@
     recompute(city,village);
     updateDemand(city,village);
     recompute(city,village);
+    maybeStartEmergencies(city);
+    advanceEmergencies(city,village);
+    recompute(city,village);
     const change=advanceGrowth(city);
     recompute(city,village);
     settleBudget(city);
@@ -880,17 +883,21 @@
     }
 
     if(tool==="bulldoze"){
-      if(!t.road&&!t.zone&&!t.civic&&!t.powerLine&&!t.pipe)return {ok:false,reason:"철거할 것이 없습니다."};
+      if(!t.road&&!t.zone&&!t.civic&&!t.busStop&&!t.powerLine&&!t.pipe)return {ok:false,reason:"철거할 것이 없습니다."};
       if(city.funds<spec.cost)return {ok:false,reason:"도시 예산이 부족합니다."};
       city.funds-=spec.cost;
-      t.road=false;t.zone=null;t.density=0;t.civic=null;t.powerLine=false;t.pipe=false;t.damage=0;
+      t.road=false;t.zone=null;t.density=0;t.civic=null;t.busStop=false;t.powerLine=false;t.pipe=false;t.damage=0;
       recompute(city,village);
       return {ok:true,note:"철거했습니다."};
     }
 
     if(city.funds<spec.cost)return {ok:false,reason:"도시 예산이 부족합니다."};
 
-    if(tool==="powerLine"||tool==="pipe"){
+    if(tool==="busStop"){
+      if(!t.road||t.damage>=3)return {ok:false,reason:"버스 정류장은 정상 도로 위에 놓아 주세요."};
+      if(t.busStop)return {ok:false,reason:"이미 버스 정류장이 있습니다."};
+      city.funds-=spec.cost;t.busStop=true;
+    }else if(tool==="powerLine"||tool==="pipe"){
       if(t[tool])return {ok:false,reason:"이미 "+spec.title+"이 있습니다."};
       city.funds-=spec.cost;t[tool]=true;
     }else if(tool==="road"){
@@ -949,6 +956,7 @@
   return Object.freeze({
     VERSION,WIDTH,HEIGHT,ZONES,TOOLS,
     initial,normalize,ensureVillage,tick,paint,recompute,updateDemand,advanceGrowth,
-    applyVillageHazards,applyVillageEffects,traceTrip,changeTaxRate,tileInfo,summary,cell
+    applyVillageHazards,applyVillageEffects,traceTrip,startEmergency,advanceEmergencies,
+    changeTaxRate,tileInfo,summary,cell
   });
 });
