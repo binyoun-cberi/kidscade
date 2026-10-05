@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=63/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=64/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-20/);
+  assert.match(js,/pixel-v3-school-starter-21/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -56,11 +56,22 @@ test('public studio lists only registered v3 starter parts and exposes no JSON t
   assert.doesNotMatch(js,/FileReader|showOpenFilePicker|importFullAdjustment|applyAdjustmentJsonFile/);
 });
 
+test('avatar option cards show friendly labels without internal asset ids',()=>{
+  assert.doesNotMatch(js,/part-name[^\n]*<small>\$\{item\.id\}<\/small>/);
+  assert.doesNotMatch(js,/part-name[^\n]*<small>'\+item\.id\+'<\/small>/);
+  assert.doesNotMatch(js,/part-name[^\n]*<small>\$\{id\}<\/small>/);
+  assert.match(js,/data-weapon-id/);
+  assert.match(js,/data-shield-id/);
+  assert.match(js,/data-hair-id/);
+  assert.match(js,/data-eye-id/);
+});
+
+
 test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-20'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-21'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
