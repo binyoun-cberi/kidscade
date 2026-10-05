@@ -1122,10 +1122,10 @@ test('v10 growth needs both utility networks and restores after repair', () => {
   for (let i=0;i<5;i++) C.tick(city, {...village, tick:i});
   assert.equal(target.density, before, 'an unpowered zone cannot grow');
 
-  const road = city.tiles.find(t => t.powerLine && t.road);
-  road.damage = 0;
+  for (const t of city.tiles) if (t.powerLine && t.road) t.damage = 0;
   C.recompute(city, village);
   assert.ok(city.stats.powerCapacity > 0);
+  assert.equal(target.powered, true, 'repairing the connected power backbone should restore supply');
 });
 
 test('v10 tax and maintenance form a real city budget', () => {
