@@ -113,6 +113,12 @@ function dirBetween(a,b){
   return dy>=0?1:3;
 }
 function money(v){return '₩'+Math.floor(v).toLocaleString('ko-KR')}
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+  if(reportedAchievements.has(slot))return;
+  reportedAchievements.add(slot);
+  try{window.KidscadeGame?.achievement?.('high_factory_tycoon.'+slot,detail);window.KidscadeGame?.milestone?.('achievement_'+slot,{uniqueKey:slot,...detail})}catch(_){}
+}
 function showToast(text,ms=1300){
   ui.toast.textContent=text;ui.toast.classList.add('show');clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),ms);
@@ -763,7 +769,7 @@ function sellValue(payload){
   return Math.round(base);
 }
 function shipItem(it){
-  const value=sellValue(it.payload);stats.shipped++;stats.cash+=value;stats.shipTimes.push(gameTime);stats.shipTimes=stats.shipTimes.filter(t=>gameTime-t<=60);
+  const value=sellValue(it.payload);stats.shipped++;if(stats.shipped===1)reportAchievement('first_shipment',{value});stats.cash+=value;stats.shipTimes.push(gameTime);stats.shipTimes=stats.shipTimes.filter(t=>gameTime-t<=60);
   if(it.payload.layers.length>=3){
     const sig=signature(it.payload);
     if(!stats.discoveries[sig]&&!pendingDiscovery){
@@ -783,6 +789,8 @@ function saveDiscovery(){
   if(!pendingDiscovery)return;
   const name=ui.discoverName.value.trim()||('나만의 샌드위치 '+(Object.keys(stats.discoveries).length+1));
   stats.discoveries[pendingDiscovery.sig]={name,layers:pendingDiscovery.payload.layers,value:pendingDiscovery.value};
+  reportAchievement('inventor',{layers:stats.discoveries[pendingDiscovery.sig].layers.length});
+  if(Object.keys(stats.discoveries).length>=3)reportAchievement('discoveries_3',{discoveries:Object.keys(stats.discoveries).length});
   pendingDiscovery=null;ui.discover.classList.add('hidden');paused=false;ui.pauseBtn.textContent='Ⅱ';sound('ok');saveGame(false);showToast('도감에 저장했어요: '+name,1800);
 }
 function tickOrders(dt){orderClock+=dt;if(orderClock>=180){orderClock=0;pickOrders();showToast('인기 메뉴가 바뀌었어요!',1800)}}
@@ -819,7 +827,12 @@ function checkChallenge(){
   const c=CHALLENGES[challengeIndex%CHALLENGES.length];
   if(c.name.includes('폐기')&&stats.waste>(window.__wasteBase??stats.waste)){window.__wasteBase=stats.waste;window.__wasteBaseShip=stats.shipped}
   const p=c.progress();ui.challengeTitle.textContent=c.name;ui.challengeProgress.textContent=Math.min(p,c.target)+' / '+c.target;
-  if(p>=c.target){showToast('도전 성공! '+c.name,2200);challengeIndex=(challengeIndex+1)%CHALLENGES.length;CHALLENGES[challengeIndex]?.reset?.();setTimeout(checkChallenge,700)}
+  if(p>=c.target){
+    if(c.name==='분당 10개 생산')reportAchievement('rate_10',{perMinute:p});
+    if(c.name==='폐기 없이 30개 출고')reportAchievement('zero_waste_30',{shipped:p,waste:stats.waste});
+    if(c.name==='분당 20개 생산')reportAchievement('rate_20',{perMinute:p});
+    showToast('도전 성공! '+c.name,2200);challengeIndex=(challengeIndex+1)%CHALLENGES.length;CHALLENGES[challengeIndex]?.reset?.();setTimeout(checkChallenge,700)
+  }
 }
 function tickEffects(dt){
   for(const e of effects){e.t+=dt;e.view.position.x+=e.vx*dt;e.view.position.z+=e.vz*dt;e.view.position.y-=2.8*dt;e.view.rotation.y+=dt*3}
