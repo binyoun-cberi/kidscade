@@ -8,9 +8,29 @@ test('back accessory catalog registers default plus ten distinct 23-frame items'
  const labels=group.items.map(item=>item.label);for(const label of ['책가방','토끼가방','공룡가방','곰돌이가방','미니백팩','기타 케이스','천사날개','악마날개','로켓부스터','망토'])assert.ok(labels.includes(label),label);
  for(const item of group.items){const part=read('wardrobe/'+item.file);assert.equal(part.assetIds.back,item.id,item.id);assert.equal(Object.keys(part.frames).length,23,item.id);for(const frameId of manifest.frameOrder){const pixels=part.frames[frameId].layers.back.operations[0].pixels;assert.ok(Array.isArray(pixels));if(item.id!=='no-back')assert.ok(pixels.length>80,item.id+' '+frameId)}}
 });
+test('head accessory catalog adds ten popular 23-frame items beside existing hats',()=>{
+  const group=catalog.categories.hat;
+  assert.equal(group.label,'머리 장식');
+  assert.equal(group.defaultId,'no-hat');
+  assert.equal(group.layer,'hat');
+  assert.equal(group.items.length,15);
+  const labels=group.items.map(item=>item.label);
+  for(const label of ['고양이귀','토끼귀','곰귀','왕관','티아라','헤드폰','이어머프','천사링','악마뿔','꽃 머리핀'])assert.ok(labels.includes(label),label);
+  for(const id of ['cat-ears-01','bunny-ears-01','bear-ears-01','crown-01','tiara-01','headphones-01','earmuffs-01','angel-halo-01','devil-horns-01','flower-pin-01']){
+    const item=group.items.find(candidate=>candidate.id===id);assert.ok(item,id);
+    const part=read('wardrobe/'+item.file);
+    assert.equal(part.assetIds.hat,id,id);
+    assert.equal(Object.keys(part.frames).length,23,id);
+    for(const frameId of manifest.frameOrder){
+      const pixels=part.frames[frameId].layers.hat.operations[0].pixels;
+      assert.ok(Array.isArray(pixels)&&pixels.length>=10,id+' '+frameId);
+    }
+  }
+});
+
 test('all requested wardrobe styles and separate face/hat/mouth slots stay registered for the runtime shop',()=>{
  for(const [key,ids] of [['upper',tops],['lower',bottoms]]){const cat=read(key+'/catalog.json');for(const id of ids)assert.ok(cat.items.some(i=>i.id===id));assert.equal(new Set(cat.items.map(i=>i.id)).size,cat.items.length)}
- assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:7,hat:5,mouth:11,back:11});
+ assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:7,hat:15,mouth:11,back:11});
  for(const g of Object.values(catalog.categories))for(const i of g.items)assert.equal(i.public,true);assert.equal(manifest.economy.pricing,'global-purchase-sequence');assert.equal(manifest.economy.defaultAssetsFree,true)
 });
 test('explicit 23-frame JSON modifies only its requested part and passes admin-compatible validation',()=>{
