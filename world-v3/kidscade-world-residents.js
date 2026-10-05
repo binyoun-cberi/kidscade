@@ -1,3 +1,5 @@
+import {schoolPeriodAt} from './kidscade-world-school.js?v=2';
+
 const ROUTINES={
   minji:{wake:6.5,sleep:22.4,personality:'bright',slots:[[7,8,'market'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'market'],[18,21,'cafeFront'],[21,22.4,'plazaWest']]},
   junho:{wake:7,sleep:21.5,personality:'calm',slots:[[7.5,8,'hardware'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'hardware'],[18,20.5,'plazaEast']]},
@@ -21,6 +23,13 @@ function routineTarget(id,hour,weather,pois){
   const r=ROUTINES[id];if(!r)return null;
   const goHomeAt=Math.max(r.wake+1,r.sleep-1.15);
   if(hour<r.wake||hour>=goHomeAt)return {key:'home-'+id,home:true,...(pois['home-'+id]||pois.homeFallback)};
+  const period=schoolPeriodAt(hour*60);
+  if(period.kind==='class'||period.kind==='club')return {key:'schoolInside',hidden:true,...(pois.schoolInside||pois.schoolGate)};
+  if(period.kind==='arrival'||period.kind==='dismissal')return {key:'schoolGate',...(pois.schoolGate||pois.plazaCenter)};
+  if(period.kind==='recess'||period.kind==='lunch'){
+    if(weather==='rain'||weather==='fog')return {key:'schoolInside',hidden:true,...(pois.schoolInside||pois.schoolGate)};
+    return {key:'schoolYard',...(pois.schoolYard||pois.plazaCenter)};
+  }
   let key='';
   for(const slot of r.slots){if(hour>=slot[0]&&hour<slot[1]){key=slot[2];break}}
   if(!key)key='plazaCenter';
@@ -90,6 +99,14 @@ export function createResidentLife(ctx){
     const minutes=Number(getMinutes?.()??720),hour=minutes/60,player=getPlayer?.()||null,daily=getDailyState?.()||{},weather=daily.weather||'clear';
     for(const n of npcs){
       const target=routineTarget(n.id,hour,weather,pois);if(!target)continue;
+      if(target.hidden){
+        if(n.lifeState==='CHATTING')endChat(n,now);
+        n.moving=false;n.activity=target.key;n.lifeState='SCHOOL';setVisible(n,false);continue;
+      }
+      if(n.lifeState==='SCHOOL'){
+        const gate=pois.schoolGate||target;
+        setVisible(n,true);n.object.position.set(gate.x,n.groundY,gate.z);n.activity='';startMove(n,target,now);
+      }
       if(n.lifeState==='HOME'){
         if(!target.home){
           const home=pois['home-'+n.id]||pois.homeFallback;
