@@ -1363,7 +1363,67 @@
       "file": "bowl-hair-01.json",
       "public": true,
       "price": 0
+    },
+    {
+      "id": "dandy-cut-hair-01",
+      "label": "댄디컷",
+      "file": "dandy-cut-hair-01.json"
+    },
+    {
+      "id": "two-block-hair-01",
+      "label": "투블럭",
+      "file": "two-block-hair-01.json"
+    },
+    {
+      "id": "gyle-cut-hair-01",
+      "label": "가일컷",
+      "file": "gyle-cut-hair-01.json"
+    },
+    {
+      "id": "comma-hair-01",
+      "label": "쉼표머리",
+      "file": "comma-hair-01.json"
+    },
+    {
+      "id": "leaf-cut-hair-01",
+      "label": "리프컷",
+      "file": "leaf-cut-hair-01.json"
+    },
+    {
+      "id": "as-perm-hair-01",
+      "label": "애즈펌",
+      "file": "as-perm-hair-01.json"
+    },
+    {
+      "id": "shadow-perm-hair-01",
+      "label": "쉐도우펌",
+      "file": "shadow-perm-hair-01.json"
+    },
+    {
+      "id": "pomade-hair-01",
+      "label": "포마드",
+      "file": "pomade-hair-01.json"
+    },
+    {
+      "id": "regent-hair-01",
+      "label": "리젠트",
+      "file": "regent-hair-01.json"
+    },
+    {
+      "id": "crew-cut-hair-01",
+      "label": "크루컷",
+      "file": "crew-cut-hair-01.json"
+    },
+    {
+      "id": "soft-mohawk-hair-01",
+      "label": "소프트모히칸",
+      "file": "soft-mohawk-hair-01.json"
+    },
+    {
+      "id": "wolf-cut-hair-01",
+      "label": "울프컷",
+      "file": "wolf-cut-hair-01.json"
     }
   ],
-  "revision": "quality-10-hair-style-color-separated"
+  "revision": "quality-11-male-hair-pack-tousled-base"
 }
