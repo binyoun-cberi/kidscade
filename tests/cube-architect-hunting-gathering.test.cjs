@@ -18,7 +18,7 @@ test('hunting and gathering runtime parses and is exposed in the controls',()=>{
   assert.doesNotThrow(()=>new Function(creatures));
   assert.match(html,/id="mobileInteract"/);
   assert.match(html,/F 생물 상호작용/);
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
   assert.match(html,/cube-architect-world\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-creatures\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-world-assets\.js\?v=20261005-hunt1/);
