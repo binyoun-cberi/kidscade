@@ -3475,17 +3475,18 @@ function breakFreeBlock(hit){
   }
   const resource=type==='cuboid'?'planks':worldRules.dropFor(type);
   const volume=type==='cuboid'?(data.dims||[1,1,1]).reduce((a,b)=>a*b,1):1;
+  let pickupVisualType='',pickupVisualCount=1;
   if(removeWorldBlockData(x,y,z,true)){
     if(survival&&resource&&!['water','lava','fire','doorTop','cuboidPart'].includes(resource)){
       if(type!=='leaves'&&type!=='pineLeaves'){
-        addToBag(resource,volume);
+        addToBag(resource,volume);pickupVisualType=resource;pickupVisualCount=volume;
         trackSurvival('harvest',type,volume);
       }else{
         const roll=hash2(x*7+y,z*11-y),biomeId=worldRules.region(x,z);
         if((biomeId==='forest'||biomeId==='flowers')&&roll>.86){
-          addToBag('wildBerry',1);trackSurvival('forage','wildBerry',1);
+          addToBag('wildBerry',1);pickupVisualType='wildBerry';trackSurvival('forage','wildBerry',1);
           toast('나뭇잎 사이에서 산딸기를 찾았어요!');
-        }else if(roll>.72)addToBag('sapling',1);
+        }else if(roll>.72){addToBag('sapling',1);pickupVisualType='sapling'}
       }
     }
     const nearby=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]]
@@ -3494,7 +3495,8 @@ function breakFreeBlock(hit){
     if(nearby&&!getBlock(x,y,z))
       setWorldBlock(x,y,z,{type:'water',level:Math.max(2,nearby.level||3),flow:true},true);
     spawnBreakParticles(x,y,z,type);
-    if(survival&&resource)triggerFreeAvatarAction('pickup');
+    if(pickupVisualType)spawnPickupVisual(pickupVisualType,x,y,z,pickupVisualCount);
+    if(survival&&pickupVisualType)triggerFreeAvatarAction('pickup');
     sfx('break');updateFreeMission();markFreeWorldDirty();
     return true;
   }
@@ -4245,7 +4247,9 @@ function creatureRayHit(max=2.35){
   return wall&&wall.distance<creature.distance-.08?null:creature;
 }
 function creatureReward(root){
-  for(const [type,n] of Object.entries(root.userData.spec.reward||{}))addToBag(type,n);
+  for(const [type,n] of Object.entries(root.userData.spec.reward||{})){
+    addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.2,root.position.z,n);
+  }
 }
 function interactWildCreature(){
   if(gameFreeMode!=='survival')return false;
@@ -4265,7 +4269,9 @@ function interactWildCreature(){
     toast(spec.name+'에게 다시 다가가려면 '+Math.ceil(readyAt-survivalWorldTime)+'초 정도 기다려 주세요.');return true;
   }
   let total=0;
-  for(const [type,n] of Object.entries(forage.reward||{})){addToBag(type,n);total+=n}
+  for(const [type,n] of Object.entries(forage.reward||{})){
+    addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.25,root.position.z,n);total+=n
+  }
   creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);
   trackSurvival('forage',spec.id,Math.max(1,total));u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.15;
   triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup);
@@ -4400,13 +4406,15 @@ function checkCollectibles(t){
     m.position.y=m.userData.baseY+Math.sin(t*.002+m.position.x)*.12;
     const dx=camera.position.x-m.position.x,dz=camera.position.z-m.position.z;
     if(Math.hypot(dx,dz)<1.65&&Math.abs(freePhysicsY-m.position.y)<2.8){
+      const foundAt=m.position.clone();
       m.userData.gone=true;scene.remove(m);
       const id=m.userData.collectible;collected.add(id);
       if(gameFreeMode==='survival'){
         const prizes={bp1:{roof:2},bp2:{snowBrick:2},bp3:{sandstone:2},
           c1:{cactusDye:2},c2:{flowerDye:2}};
-        for(const [type,n] of Object.entries(prizes[id]||{blueprintFragment:1}))
-          addToBag(type,n);
+        for(const [type,n] of Object.entries(prizes[id]||{blueprintFragment:1})){
+          addToBag(type,n);spawnPickupVisual(type,foundAt.x,foundAt.y,foundAt.z,n);
+        }
         trackSurvival('find',id);
       }
       triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup,t);
