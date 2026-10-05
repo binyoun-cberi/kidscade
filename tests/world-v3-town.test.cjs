@@ -9,6 +9,7 @@ const runtime=fs.readFileSync(path.join(root,'world-v3','kidscade-world-v3.js'),
 const city=fs.readFileSync(path.join(root,'world-v3','kidscade-world-city.js'),'utf8');
 const residents=fs.readFileSync(path.join(root,'world-v3','kidscade-world-residents.js'),'utf8');
 const npcStyle=fs.readFileSync(path.join(root,'world-v3','kidscade-world-npc-style.js'),'utf8');
+const school=fs.readFileSync(path.join(root,'world-v3','kidscade-world-school.js'),'utf8');
 const daily=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily.js'),'utf8');
 const dailyLife=fs.readFileSync(path.join(root,'world-v3','kidscade-world-daily-life.js'),'utf8');
 const interiors=fs.readFileSync(path.join(root,'world-v3','kidscade-world-interiors.js'),'utf8');
@@ -27,7 +28,7 @@ const seedEntry=fs.readFileSync(path.join(root,'seed-house-entry.js'),'utf8');
 const indexBase=fs.readFileSync(path.join(root,'index_base.html'),'utf8');
 
 test('Seed Town modules parse as modules after import/export stripping',()=>{
-  for(const src0 of [runtime,city,residents,npcStyle,daily,dailyLife,interiors,museum,grid,landscape,economy,furnishing,interiorKit,audio]){
+  for(const src0 of [runtime,city,residents,npcStyle,school,daily,dailyLife,interiors,museum,grid,landscape,economy,furnishing,interiorKit,audio]){
     const src=src0
       .replace(/^import .*$/gm,'')
       .replace(/^export /gm,'')
@@ -51,6 +52,27 @@ test('Seed World daily director keeps weather stable and visible',()=>{
   assert.match(daily,/day===1.*WEATHER\.clear/s);
   for(const id of ['clear','cloudy','rain','fog'])assert.ok(daily.includes(id+':{id:'),id);
   assert.match(daily,/makeRain\(parent\)/);
+});
+
+test('Seed Town permanent NPCs are school teachers or students with persistent life quests',()=>{
+  const roles=['수학 선생님','실과 선생님','영양 선생님','사회 선생님','국어 선생님','보건 선생님','체육 선생님','원예부 학생','과학탐구부 학생','동물돌봄부 학생','게임동아리 학생','방송봉사부 학생'];
+  for(const role of roles)assert.ok(school.includes("role:'"+role+"'"),'missing school role '+role);
+  for(const id of ['minji','junho','haneul','doyun','sora','nari','minseok','yuna','woojin','seoyeon','taeho','hyunwoo']){
+    assert.ok(school.includes(id+":{id:'"),'missing school life quest '+id);
+  }
+  assert.match(school,/minji:\{id:'math-market-budget'/);
+  assert.match(school,/clerk:\{name:'서준',kind:'student'/);
+  assert.match(school,/visitor:\{name:'교류 학생',kind:'student'/);
+  assert.match(economy,/schoolQuests:/);
+  assert.match(economy,/data-school-quest/);
+  assert.match(economy,/data-school-answer/);
+  assert.match(economy,/data-school-turnin/);
+  assert.match(economy,/function finishSchoolQuest/);
+  assert.match(city,/schoolInteractionLabel/);
+  assert.match(city,/오늘의 학교생활 보기/);
+  assert.match(dailyLife,/오늘의 학교생활/);
+  assert.match(npcStyle,/SCHOOL_PROFILES/);
+  assert.match(interiors,/민지 선생님과 이야기하기/);
 });
 
 test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{
@@ -85,10 +107,10 @@ test('Today in Seed Town changes daily content without blocking progression',()=
   assert.match(dailyLife,/function shuffle\(list,rng\)/);
   assert.match(dailyLife,/message-bottle/);
   assert.match(dailyLife,/sparkle-ground/);
-  assert.match(dailyLife,/오늘의 주민 부탁/);
+  assert.match(dailyLife,/오늘의 학교생활/);
   assert.match(dailyLife,/townEconomy\.addFriendship/);
-  assert.match(city,/오늘의 주민 부탁 보기/);
-  assert.match(city,/오늘의 방문객과 이야기하기/);
+  assert.match(city,/오늘의 학교생활 보기/);
+  assert.match(city,/오늘의 교류 학생과 이야기하기/);
   assert.match(economy,/const DAILY_DEAL_POOL=/);
   assert.match(economy,/오늘 특가/);
   assert.match(economy,/shell:7/);
