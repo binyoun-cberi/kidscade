@@ -1,4 +1,4 @@
-import {SCHOOL_PROFILES,SCHOOL_QUESTS,schoolKindLabel} from './kidscade-world-school.js?v=1';
+import {SCHOOL_PROFILES,SCHOOL_QUESTS,SCHOOL_DAY_PERIODS,SCHOOL_CLASS_ACTIVITIES,schoolKindLabel,schoolPeriodAt,schoolClock} from './kidscade-world-school.js?v=2';
 
 export function createTownEconomy(ctx){
   const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,removeInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
@@ -111,6 +111,10 @@ export function createTownEconomy(ctx){
       schoolQuests:{
         done:old.schoolQuests&&typeof old.schoolQuests==='object'&&old.schoolQuests.done&&typeof old.schoolQuests.done==='object'?old.schoolQuests.done:{},
         attempts:old.schoolQuests&&typeof old.schoolQuests==='object'&&old.schoolQuests.attempts&&typeof old.schoolQuests.attempts==='object'?old.schoolQuests.attempts:{}
+      },
+      schoolClasses:{
+        completed:old.schoolClasses&&typeof old.schoolClasses==='object'&&old.schoolClasses.completed&&typeof old.schoolClasses.completed==='object'?old.schoolClasses.completed:{},
+        attempts:old.schoolClasses&&typeof old.schoolClasses==='object'&&old.schoolClasses.attempts&&typeof old.schoolClasses.attempts==='object'?old.schoolClasses.attempts:{}
       },
       visits:Math.max(0,Math.floor(Number(old.visits)||0)),
       delivery:{
@@ -478,25 +482,54 @@ export function createTownEconomy(ctx){
     openPanel('<h2>민석 · 씨앗버스</h2><p>지금은 마을 시범 운행 기간이라 무료예요.</p><div class="grid"><button data-city-travel="home">🏠 집 구역</button><button data-city-travel="forest">🌲 깊은 숲</button><button data-city-travel="quarry">⛏️ 광산</button><button data-city-travel="ranch">🐄 목장</button><button data-city-travel="orchard">🍎 과수원</button><button data-city-travel="beach">🏖️ 해변</button><button data-city-travel="camp">🔥 야영지</button><button data-city-travel="city">🏙️ 상점가</button><button data-city-travel="school">🏫 씨앗학교</button>'+(unlocked?'<button data-city-travel="river">🌉 북쪽 강가</button>':'')+'</div>'+(unlocked?'':'<p><small>민석과 더 친해지면 북쪽 강가 노선을 열 수 있어요.</small></p>'));
   }
 
+  function schoolTimeRange(period){
+    const fmt=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+    return period.start==null?'':fmt(period.start)+'~'+fmt(period.end);
+  }
+  function schoolClassPanel(){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time),activity=SCHOOL_CLASS_ACTIVITIES[period.id];
+    if(!activity){
+      const message=period.kind==='recess'?'지금은 쉬는 시간이야. 친구들과 이야기하거나 다음 수업을 준비해보자.'
+        :period.kind==='lunch'?'지금은 점심·놀이 시간이야. 운동장에 친구들이 나와 있어.'
+        :period.kind==='arrival'?'등교 시간이야. 내 자리와 오늘 시간표를 확인해보자.'
+        :period.kind==='dismissal'?'수업이 끝났어. 이제 친구들과 방과후 생활을 시작할 시간이야.'
+        :'지금은 정규 수업 시간이 아니야.';
+      openPanel('<h2>'+(period.icon||'🏫')+' '+period.label+'</h2><p>'+message+'</p><button data-school-schedule="1">📋 오늘 시간표 보기</button>');
+      return;
+    }
+    const key=p.survival.day+':'+period.id,done=!!t.schoolClasses.completed[key];
+    const mentor=activity.teacher||activity.leader,profile=SCHOOL_PROFILES[mentor]||{},choices=activity.choices.map(([value,label])=>'<button data-school-class-answer="'+period.id+':'+value+'" '+(done?'disabled':'')+'>'+label+'</button>').join('');
+    openPanel('<h2>'+period.icon+' '+period.label+' · '+activity.title+'</h2><p><b>'+(profile.kind==='teacher'?profile.name+' 선생님':profile.name)+'</b> · '+schoolTimeRange(period)+'</p><p>'+activity.prompt+'</p><div class="grid">'+choices+'</div>'+
+      (done?'<p>✅ 오늘 이 수업 활동은 완료했어.</p>':'<p><small>첫 완료 보상 '+activity.rewardCoins+'코인 · '+(profile.kind==='teacher'?'선생님':'친구')+' 친밀도 ♥'+(activity.friendship||1)+'</small></p>')+
+      '<button data-school-schedule="1">📋 전체 시간표 보기</button>');
+  }
+  function answerSchoolClass(periodId,value){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time),activity=SCHOOL_CLASS_ACTIVITIES[period.id];
+    if(!activity||period.id!==periodId){toast('🔔 교시가 바뀌었어요. 지금 수업을 다시 확인해보세요.');schoolClassPanel();return;}
+    const key=p.survival.day+':'+period.id;
+    if(t.schoolClasses.completed[key]){schoolClassPanel();return;}
+    if(String(value)!==String(activity.answer)){
+      t.schoolClasses.attempts[key]=(t.schoolClasses.attempts[key]||0)+1;persist();
+      toast('다시 생각해봐도 괜찮아! 수업 내용을 한 번 더 살펴보자.');schoolClassPanel();return;
+    }
+    const mentor=activity.teacher||activity.leader;
+    t.schoolClasses.completed[key]=true;t.coins+=(activity.rewardCoins||0);t.fun=Math.min(100,t.fun+5);
+    if(mentor&&RESIDENTS[mentor]){
+      t.friendship[mentor]=(t.friendship[mentor]||0)+(activity.friendship||1);claimFriendshipRewards(mentor);
+    }
+    persist();updateStatus();setAvatarAction('smile',850);playSfx?.('success',.12);
+    toast('수업 활동 완료 · +'+(activity.rewardCoins||0)+'코인'+(mentor?' · 친밀도 ♥'+(activity.friendship||1):''));
+    openPanel('<h2>✅ '+period.label+' 완료</h2><p>'+activity.result+'</p><p><b>+'+(activity.rewardCoins||0)+'코인</b></p><button data-school-schedule="1">📋 다음 시간 확인하기</button>');
+  }
   function schoolSchedule(){
-    const mins=((prog().survival.time%1440)+1440)%1440,total=Math.floor(mins),hour=mins/60;
-    let phase='방과후';
-    if(hour<7.3)phase='등교 전';
-    else if(hour<8)phase='등교 시간';
-    else if(hour<10)phase='오전 수업';
-    else if(hour<12)phase='오전 활동';
-    else if(hour<13)phase='점심·운동장';
-    else if(hour<15.5)phase='오후 수업·동아리';
-    else if(hour<16)phase='하교 시간';
-    const inClass=hour>=8&&hour<15.5;
-    openPanel('<h2>🏫 씨앗학교 · 오늘 시간표</h2><p>현재 <b>'+String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0')+'</b> · <b>'+phase+'</b></p>'+
-      '<div class="grid">'+
-      '<div class="item"><b>08:00~10:00 오전 수업</b><div>국어·수학·사회처럼 교실에서 배우는 시간</div></div>'+
-      '<div class="item"><b>10:00~12:00 생활 활동</b><div>실과·관찰·모둠 활동</div></div>'+
-      '<div class="item"><b>12:00~13:00 점심·쉬는 시간</b><div>학생과 선생님이 운동장으로 나와요.</div></div>'+
-      '<div class="item"><b>13:00~15:30 오후 수업</b><div>체육·동아리·생활 퀘스트 활동</div></div>'+
-      '<div class="item"><b>15:30 이후 방과후</b><div>NPC들이 마트·도서관·숲·카페 등 자기 생활 장소로 흩어져요.</div></div>'+
-      '</div><p><small>'+(inClass?'지금은 수업 시간이라 교실에서 친구들을 만날 수 있어요.':'지금은 정규 수업 시간이 아니어서 교실이 한산해요.')+'</small></p>');
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time),day=p.survival.day;
+    const rows=SCHOOL_DAY_PERIODS.filter(x=>['class','club','lunch'].includes(x.kind)).map(x=>{
+      const activity=SCHOOL_CLASS_ACTIVITIES[x.id],done=activity&&!!t.schoolClasses.completed[day+':'+x.id],current=x.id===period.id;
+      return '<div class="item"><b>'+(current?'▶ ':'')+(x.icon||'')+' '+x.label+'</b><div>'+schoolTimeRange(x)+(x.board?' · '+x.board:'')+'</div>'+(activity?'<small>'+(done?'✅ 오늘 참여 완료':'수업 활동 참여 가능')+'</small>':'')+'</div>';
+    }).join('');
+    const currentActivity=!!SCHOOL_CLASS_ACTIVITIES[period.id];
+    openPanel('<h2>🏫 씨앗학교 · 오늘 시간표</h2><p>현재 <b>'+schoolClock(p.survival.time)+'</b> · <b>'+(period.icon||'')+' '+period.label+'</b></p><div class="grid">'+rows+'</div>'+
+      (currentActivity?'<button data-school-class-open="1">🧑‍🏫 지금 수업 참여하기</button>':'<p><small>'+period.board+'</small></p>'));
   }
 
   function bench(){
@@ -522,6 +555,9 @@ export function createTownEconomy(ctx){
     const sq=e.target.closest('[data-school-quest]');if(sq){schoolQuest(sq.dataset.schoolQuest);return true;}
     const sa=e.target.closest('[data-school-answer]');if(sa){const [id,value]=sa.dataset.schoolAnswer.split(':');answerSchoolQuest(id,value);return true;}
     const st=e.target.closest('[data-school-turnin]');if(st){turnInSchoolQuest(st.dataset.schoolTurnin);return true;}
+    if(e.target.closest('[data-school-schedule]')){schoolSchedule();return true;}
+    if(e.target.closest('[data-school-class-open]')){schoolClassPanel();return true;}
+    const sca=e.target.closest('[data-school-class-answer]');if(sca){const [periodId,value]=sca.dataset.schoolClassAnswer.split(':');answerSchoolClass(periodId,value);return true;}
     const buyBtn=e.target.closest('[data-city-buy]');
     if(buyBtn){const [kind,key]=buyBtn.dataset.cityBuy.split(':');buy(kind,key);return true;}
     const sellBtn=e.target.closest('[data-city-sell]');if(sellBtn){sell(sellBtn.dataset.citySell);return true;}
@@ -536,7 +572,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,schoolSchedule,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
-    BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS,SCHOOL_QUESTS
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,schoolSchedule,schoolClassPanel,answerSchoolClass,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
+    BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS,SCHOOL_QUESTS,SCHOOL_DAY_PERIODS,SCHOOL_CLASS_ACTIVITIES
   };
 }
