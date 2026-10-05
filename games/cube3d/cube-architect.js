@@ -4312,6 +4312,7 @@ function damageByCreature(root,t){
   const dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,len=Math.hypot(dx,dz)||1;
   const push=.62;moveFreeHorizontal(dx/len*push,dz/len*push);
   toast(root.userData.spec.name+'에게 부딪혔어요! '+('♥'.repeat(survivalHealth)||'생명 0'));
+  const hud=$('freeHud');hud?.classList.add('player-hurt');setTimeout(()=>hud?.classList.remove('player-hurt'),180);
   updateCreatureHealthUi();
   if(survivalHealth<=0)beginFreeAvatarDefeat(t);
   else triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,t);
@@ -4341,6 +4342,7 @@ function applyPlayerStrike(strike,t){
   u.hp-=strike.power;u.hurtUntil=t+300;u.knockbackUntil=t+230;
   u.knockDir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
   root.scale.setScalar(1.08);spawnCombatHitParticles(root,strike.power);sfx('hit');freeHitStopUntil=Math.max(freeHitStopUntil,t+42);
+  const cross=$('crosshair');cross?.classList.add('hit-confirm');setTimeout(()=>cross?.classList.remove('hit-confirm'),120);
   if(u.hp>0){toast(u.spec.name+' · '+u.hp+'/'+u.maxHp+' · 명중!');return}
   u.dead=true;creatureDefeats[u.spec.id]=survivalWorldTime;creatureReward(root);trackSurvival('hunt',u.spec.id,1);
   despawnWildCreature(root);
