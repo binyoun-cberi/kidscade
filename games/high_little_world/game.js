@@ -144,6 +144,7 @@ function rebuildFx(){
 function rebuildLivingVisuals(){rebuildNature();rebuildAnimals();rebuildVillages();rebuildFx()}
 function syncWorld(full=false){syncTerrain();if(full||sim.tick%3===0)rebuildNature();if(full||sim.tick%4===0)rebuildAnimals();if(full||sim.tick%4===0)rebuildVillages();rebuildFx();updateUI()}
 function updateUI(){
+  checkAchievements();
   const s=sim.stats();ui.era.textContent=(s.year<20?'태초':s.settlements?'문명의 시대':'생명의 시대')+' · '+s.year+'년';ui.veg.textContent=s.veg+'%';ui.herb.textContent=s.herb;ui.pred.textContent=s.pred;ui.human.textContent=s.humans;ui.settlement.textContent=s.settlements;
   ui.eventLog.innerHTML=sim.eventLog.length?sim.eventLog.slice(0,5).map(e=>'<p><b>'+e.year+'년</b> · '+e.text+'</p>').join(''):'<p>아직 특별한 사건이 없어요.</p>';
   document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===speed));if(tutorial)updateTutorial();
@@ -164,6 +165,21 @@ function showInspector(c){
   if(!c)return;ui.tileTitle.textContent=({ocean:'바다',mountain:'산지',wetland:'습지',barren:'메마른 땅',forest:'숲',meadow:'풀꽃지대',grass:'초원'}[c.biome]||c.biome);ui.tileInfo.textContent=sim.describeCell(c);ui.inspector.classList.remove('hidden');
 }
 let toastTimer=0;function toast(msg){clearTimeout(toastTimer);ui.toast.textContent=msg;ui.toast.classList.add('show');toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),2100)}
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+  if(reportedAchievements.has(slot))return;
+  reportedAchievements.add(slot);
+  try{window.KidscadeGame?.achievement?.('high_little_world.'+slot,detail);window.KidscadeGame?.milestone?.('achievement_'+slot,{uniqueKey:slot,...detail})}catch(_){}
+}
+function checkAchievements(){
+  if(!sim)return;
+  const s=sim.stats();
+  if(sim.usedPowers?.plants&&s.veg>=5)reportAchievement('first_life',{vegetation:s.veg});
+  if(sim.usedPowers?.herbivore&&sim.usedPowers?.predator&&s.veg>=15&&s.herb>0&&s.pred>0)reportAchievement('food_chain',{veg:s.veg,herb:s.herb,pred:s.pred});
+  if(sim.settlements?.some(x=>x.level>=1))reportAchievement('first_village',{settlements:s.settlements});
+  if(s.settlements>=2)reportAchievement('two_settlements',{settlements:s.settlements});
+  if(s.settlements>=2&&sim.cells?.some(x=>x.road))reportAchievement('roads',{settlements:s.settlements});
+}
 function hitCell(clientX,clientY){const rect=renderer.domElement.getBoundingClientRect(),m=new THREE.Vector2((clientX-rect.left)/rect.width*2-1,-((clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(m,camera);const hit=raycaster.intersectObject(landMesh,false)[0];return hit&&Number.isInteger(hit.instanceId)?sim.cells[hit.instanceId]:null}
 function usePowerAt(clientX,clientY){
   const c=hitCell(clientX,clientY);if(!c)return;const result=sim.applyPower(selected,c.x,c.z);if(result.inspect){showInspector(c);return}toast(result.msg);if(result.ok){tutorialPowerUsed(selected);syncWorld(true);saveGame(false);try{window.KidscadeGame?.sound?.(selected==='meteor'||selected==='lightning'?'hit':'click')}catch(e){}}
