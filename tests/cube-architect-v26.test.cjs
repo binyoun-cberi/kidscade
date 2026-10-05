@@ -10,7 +10,7 @@ const html=read('games/cube3d/index.html');
 
 test('v26 natural block visual rework parses and is cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261005-avatar-facing1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-polish1/);
 });
 test('natural blocks use shared procedural pixel textures',()=>{
   assert.match(js,/function pixelTexture/);
