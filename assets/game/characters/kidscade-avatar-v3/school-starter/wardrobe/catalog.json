@@ -1,1 +1,274 @@
-{"version":1,"type":"kidscade-avatar-wardrobe-catalog","revision":"wardrobe-1","bodyFallback":"body-fallback.png","categories":{"mask":{"label":"얼굴 장식","defaultId":"no-mask","layer":"mask","items":[{"id":"no-mask","label":"착용 안 함","file":"no-mask.json","public":true,"price":0},{"id":"round-glasses-01","label":"안경","file":"round-glasses-01.json","public":true,"price":0},{"id":"thick-glasses-01","label":"뿔테안경","file":"thick-glasses-01.json","public":true,"price":0},{"id":"face-mask-01","label":"마스크","file":"face-mask-01.json","public":true,"price":0},{"id":"monocle-01","label":"외눈안경","file":"monocle-01.json","public":true,"price":0},{"id":"cheek-bandage-01","label":"볼 상처 밴드","file":"cheek-bandage-01.json","public":true,"price":0},{"id":"rudolph-nose-01","label":"루돌프 빨간코","file":"rudolph-nose-01.json","public":true,"price":0}]},"hat":{"label":"모자","defaultId":"no-hat","layer":"hat","items":[{"id":"no-hat","label":"착용 안 함","file":"no-hat.json","public":true,"price":0},{"id":"red-antler-band-01","label":"빨간 사슴 머리띠","file":"red-antler-band-01.json","public":true,"price":0},{"id":"santa-hat-01","label":"산타 모자","file":"santa-hat-01.json","public":true,"price":0},{"id":"baseball-cap-01","label":"야구 모자","file":"baseball-cap-01.json","public":true,"price":0},{"id":"beanie-hat-01","label":"비니모자","file":"beanie-hat-01.json","public":true,"price":0}]},"mouth":{"label":"입","defaultId":"basic-flat-mouth-01","layer":"mouth","items":[{"id":"basic-flat-mouth-01","label":"기본 ㅡ 입","file":"basic-flat-mouth-01.json","public":true,"price":0},{"id":"smile-mouth-01","label":"미소","file":"smile-mouth-01.json","public":true,"price":0},{"id":"grin-mouth-01","label":"활짝 웃는 입","file":"grin-mouth-01.json","public":true,"price":0},{"id":"laugh-mouth-01","label":"웃음 입","file":"laugh-mouth-01.json","public":true,"price":0},{"id":"surprised-mouth-01","label":"동그란 입","file":"surprised-mouth-01.json","public":true,"price":0},{"id":"cat-mouth-01","label":"고양이 입","file":"cat-mouth-01.json","public":true,"price":0},{"id":"pout-mouth-01","label":"삐죽 입","file":"pout-mouth-01.json","public":true,"price":0},{"id":"smirk-mouth-01","label":"장난스러운 입","file":"smirk-mouth-01.json","public":true,"price":0},{"id":"sad-mouth-01","label":"시무룩 입","file":"sad-mouth-01.json","public":true,"price":0},{"id":"tongue-mouth-01","label":"메롱","file":"tongue-mouth-01.json","public":true,"price":0},{"id":"heart-mouth-01","label":"하트 입","file":"heart-mouth-01.json","public":true,"price":0}]}}}
+{
+  "version": 1,
+  "type": "kidscade-avatar-wardrobe-catalog",
+  "revision": "wardrobe-2-back-accessories",
+  "bodyFallback": "body-fallback.png",
+  "categories": {
+    "mask": {
+      "label": "얼굴 장식",
+      "defaultId": "no-mask",
+      "layer": "mask",
+      "items": [
+        {
+          "id": "no-mask",
+          "label": "착용 안 함",
+          "file": "no-mask.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "round-glasses-01",
+          "label": "안경",
+          "file": "round-glasses-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "thick-glasses-01",
+          "label": "뿔테안경",
+          "file": "thick-glasses-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "face-mask-01",
+          "label": "마스크",
+          "file": "face-mask-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "monocle-01",
+          "label": "외눈안경",
+          "file": "monocle-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "cheek-bandage-01",
+          "label": "볼 상처 밴드",
+          "file": "cheek-bandage-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "rudolph-nose-01",
+          "label": "루돌프 빨간코",
+          "file": "rudolph-nose-01.json",
+          "public": true,
+          "price": 0
+        }
+      ]
+    },
+    "hat": {
+      "label": "모자",
+      "defaultId": "no-hat",
+      "layer": "hat",
+      "items": [
+        {
+          "id": "no-hat",
+          "label": "착용 안 함",
+          "file": "no-hat.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "red-antler-band-01",
+          "label": "빨간 사슴 머리띠",
+          "file": "red-antler-band-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "santa-hat-01",
+          "label": "산타 모자",
+          "file": "santa-hat-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "baseball-cap-01",
+          "label": "야구 모자",
+          "file": "baseball-cap-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "beanie-hat-01",
+          "label": "비니모자",
+          "file": "beanie-hat-01.json",
+          "public": true,
+          "price": 0
+        }
+      ]
+    },
+    "mouth": {
+      "label": "입",
+      "defaultId": "basic-flat-mouth-01",
+      "layer": "mouth",
+      "items": [
+        {
+          "id": "basic-flat-mouth-01",
+          "label": "기본 ㅡ 입",
+          "file": "basic-flat-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "smile-mouth-01",
+          "label": "미소",
+          "file": "smile-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "grin-mouth-01",
+          "label": "활짝 웃는 입",
+          "file": "grin-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "laugh-mouth-01",
+          "label": "웃음 입",
+          "file": "laugh-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "surprised-mouth-01",
+          "label": "동그란 입",
+          "file": "surprised-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "cat-mouth-01",
+          "label": "고양이 입",
+          "file": "cat-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "pout-mouth-01",
+          "label": "삐죽 입",
+          "file": "pout-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "smirk-mouth-01",
+          "label": "장난스러운 입",
+          "file": "smirk-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "sad-mouth-01",
+          "label": "시무룩 입",
+          "file": "sad-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "tongue-mouth-01",
+          "label": "메롱",
+          "file": "tongue-mouth-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "heart-mouth-01",
+          "label": "하트 입",
+          "file": "heart-mouth-01.json",
+          "public": true,
+          "price": 0
+        }
+      ]
+    },
+    "back": {
+      "label": "등 장식",
+      "defaultId": "no-back",
+      "layer": "back",
+      "items": [
+        {
+          "id": "no-back",
+          "label": "착용 안 함",
+          "file": "no-back.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "school-backpack-01",
+          "label": "책가방",
+          "file": "school-backpack-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "bunny-backpack-01",
+          "label": "토끼가방",
+          "file": "bunny-backpack-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "dinosaur-backpack-01",
+          "label": "공룡가방",
+          "file": "dinosaur-backpack-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "bear-backpack-01",
+          "label": "곰돌이가방",
+          "file": "bear-backpack-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "mini-backpack-01",
+          "label": "미니백팩",
+          "file": "mini-backpack-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "guitar-case-01",
+          "label": "기타 케이스",
+          "file": "guitar-case-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "angel-wings-01",
+          "label": "천사날개",
+          "file": "angel-wings-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "devil-wings-01",
+          "label": "악마날개",
+          "file": "devil-wings-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "rocket-booster-01",
+          "label": "로켓부스터",
+          "file": "rocket-booster-01.json",
+          "public": true,
+          "price": 0
+        },
+        {
+          "id": "cape-01",
+          "label": "망토",
+          "file": "cape-01.json",
+          "public": true,
+          "price": 0
+        }
+      ]
+    }
+  }
+}
