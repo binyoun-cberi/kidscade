@@ -160,7 +160,7 @@
       try{canvas.setPointerCapture(e.pointerId);}catch(_){}
       paintAt(e);
     });
-    canvas.addEventListener("pointermove",e=>{describe(rootNode,city,...Object.values(tileFromPointer(canvas,city,e)));paintAt(e);});
+    canvas.addEventListener("pointermove",e=>{const p=tileFromPointer(canvas,city,e);describe(rootNode,city,p.x,p.y);paintAt(e);});
     const stop=()=>{painting=false;last="";};
     canvas.addEventListener("pointerup",stop);canvas.addEventListener("pointercancel",stop);canvas.addEventListener("pointerleave",stop);
   }
