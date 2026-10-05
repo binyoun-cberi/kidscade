@@ -22,8 +22,22 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=72/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=73/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
+});
+
+test('category tabs expose previous and next scroll buttons and keep active tabs visible',()=>{
+  assert.match(html,/id="tabPrevBtn"[^>]*aria-label="이전 카테고리"/);
+  assert.match(html,/id="tabNextBtn"[^>]*aria-label="다음 카테고리"/);
+  assert.match(css,/\.category-nav\{/);
+  assert.match(css,/\.tab-scroll-btn\{/);
+  assert.match(js,/function updateTabScrollButtons\(\)/);
+  assert.match(js,/function scrollCategoryTabs\(direction\)/);
+  assert.match(js,/function revealActiveTab\(button,behavior='smooth'\)/);
+  assert.match(js,/tabPrevBtn\?\.addEventListener\('click'/);
+  assert.match(js,/tabNextBtn\?\.addEventListener\('click'/);
+  assert.match(js,/tabs\?\.addEventListener\('scroll',updateTabScrollButtons/);
+  assert.match(js,/window\.addEventListener\('resize',updateTabScrollButtons\)/);
 });
 
 test('public studio uses school starter v3 assets instead of legacy v2 parts',()=>{
