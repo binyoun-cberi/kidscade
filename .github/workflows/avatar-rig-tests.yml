@@ -5,7 +5,7 @@ on:
     paths:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
-      - 'avatar-wardrobe-parts.js'
+      - 'app/features/avatar/wardrobe-parts.js'
       - 'assets/game/characters/kidscade-avatar-v3/**'
       - 'tests/avatar-wardrobe.test.cjs'
       - 'avatar-studio.html'
@@ -25,7 +25,7 @@ on:
     paths:
       - 'pixel-avatar-renderer.js'
       - 'avatar-pixel-studio.js'
-      - 'avatar-wardrobe-parts.js'
+      - 'app/features/avatar/wardrobe-parts.js'
       - 'assets/game/characters/kidscade-avatar-v3/**'
       - 'tests/avatar-wardrobe.test.cjs'
       - 'avatar-studio.html'
@@ -61,7 +61,7 @@ jobs:
         run: |
           node --check pixel-avatar-renderer.js
           node --check avatar-pixel-studio.js
-          node --check avatar-wardrobe-parts.js
+          node --check app/features/avatar/wardrobe-parts.js
           node --check avatar-integration.js
           node --check account-profile-gate.js
           node --check account-session-safety.js

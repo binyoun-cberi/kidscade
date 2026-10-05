@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.join(__dirname,'..'),dir=path.join(root,'assets/game/characters/kidscade-avatar-v3/school-starter');
 const read=p=>JSON.parse(fs.readFileSync(path.join(dir,p),'utf8')),manifest=read('manifest.json'),catalog=read('wardrobe/catalog.json');
-const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'avatar-wardrobe-parts.js'),'utf8'),context);const api=context.window.KidscadeAvatarWardrobe;
+const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'app/features/avatar/wardrobe-parts.js'),'utf8'),context);const api=context.window.KidscadeAvatarWardrobe;
 const tops=['hoodie-01','short-puffer-01','long-puffer-01','box-tee-01','leather-jacket-01','denim-jacket-01','suit-jacket-01','baseball-jacket-01'],bottoms=['tennis-skirt-01','detailed-jeans-01','cotton-trousers-01'];
 test('all requested wardrobe styles and separate face/hat/mouth slots are registered free choices',()=>{
  for(const [key,ids] of [['upper',tops],['lower',bottoms]]){const cat=read(key+'/catalog.json');for(const id of ids)assert.ok(cat.items.some(i=>i.id===id));assert.equal(new Set(cat.items.map(i=>i.id)).size,cat.items.length)}
@@ -31,5 +31,5 @@ test('wardrobe preserves independent hat and face IDs and preloads reset default
  const broken=read('wardrobe/santa-hat-01.json');broken.frames['stand-01'].layers.body={operations:[]};assert.throws(()=>api.validate(broken,'hat','santa-hat-01',manifest.frameOrder));
 });
 test('public UI exposes selections, loads dependencies first, and persists new slots without JSON upload',()=>{
- const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8'),js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');for(const key of ['hat','mask','mouth'])assert.ok(html.includes('data-tab="'+key+'"'));assert.ok(html.indexOf('avatar-wardrobe-parts.js')<html.indexOf('avatar-pixel-studio.js'));assert.match(js,/wardrobe\.prepare\(state.assetIds\)/);assert.doesNotMatch(html,/type="file"|JSON 가져오기|JSON 내보내기/);
+ const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8'),js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');for(const key of ['hat','mask','mouth'])assert.ok(html.includes('data-tab="'+key+'"'));assert.ok(html.indexOf('app/features/avatar/wardrobe-parts.js')<html.indexOf('avatar-pixel-studio.js'));assert.match(js,/wardrobe\.prepare\(state.assetIds\)/);assert.doesNotMatch(html,/type="file"|JSON 가져오기|JSON 내보내기/);
 });
