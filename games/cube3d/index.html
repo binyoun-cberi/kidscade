@@ -257,7 +257,7 @@
       </section>
       <div class="inventory-note" id="inventoryNote">물+용암, 불+나무, 모래의 낙하, 잎의 변화처럼 블록마다 다른 성질이 있습니다.</div>
     </section>
-    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · 좌클릭 유지 채집 · E 가방·제작</small></div>
+    <div id="lockNotice">화면을 클릭해 탐험 시작<small>WASD 이동 · Space 점프 · 좌클릭 유지 채집·전투 · F 생물 상호작용 · E 가방·제작</small></div>
     <section id="furnacePanel" class="hidden">
       <div class="inventory-head"><div><b>화로 실험대</b><small>열을 가하면 물질의 성질이 달라집니다.</small></div><button id="furnaceClose">×</button></div>
       <div id="furnaceRecipes"></div>
@@ -271,6 +271,7 @@
     <div id="mobileViewHint">화면을 밀어 시점 돌리기</div>
     <div class="mobile-top-actions">
       <button id="mobileInventory" class="mobile-button" type="button">가방</button>
+      <button id="mobileInteract" class="mobile-button hidden" type="button">상호작용</button>
       <button id="mobileView" class="mobile-button" type="button">시점</button>
       <button id="mobileMore" class="mobile-button" type="button">도구</button>
       <button id="mobileAvatar" class="mobile-button" type="button">꾸미기</button>
@@ -316,14 +317,14 @@
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
 <script src="./cube-architect-landmarks.js?v=20261003-29"></script>
-<script src="./cube-architect-world.js?v=20261003-29-shelter1"></script>
+<script src="./cube-architect-world.js?v=20261005-hunt1"></script>
 <script src="./cube-architect-poi.js?v=20261003-29"></script>
 <script src="./cube-architect-avatar.js?v=20261003-30-swim1"></script>
-<script src="./cube-architect-creatures.js?v=20261004-32"></script>
-<script type="module" src="./cube-architect-world-assets.js?v=20261003-31"></script>
+<script src="./cube-architect-creatures.js?v=20261005-hunt1"></script>
+<script type="module" src="./cube-architect-world-assets.js?v=20261005-hunt1"></script>
 <script type="module" src="./cube-architect-creature-assets.js?v=20261004-32"></script>
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
-<script src="./cube-architect.js?v=20261003-31-shrine1"></script>
+<script src="./cube-architect.js?v=20261005-hunt1"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
