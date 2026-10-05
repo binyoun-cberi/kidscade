@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-26/);
+  assert.match(js,/pixel-v3-school-starter-27/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -93,7 +93,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-26'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-27'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -573,20 +573,25 @@ test('trousers have separate legs and four depth tones in the starter JSON',()=>
 });
 
 
-test('school accessory catalogs expose 10 shoes, 10 earrings, 14 tools and 6 teaching aids plus defaults',()=>{
+test('school accessory catalogs expose 10 shoes, 10 earrings, 32 tools and 6 teaching aids plus defaults',()=>{
   assert.equal(manifest.partCatalogs.shoes,'shoes/catalog.json');
   assert.equal(manifest.partCatalogs.earring,'earring/catalog.json');
   assert.equal(manifest.partCatalogs.weapon,'tool/catalog.json');
   assert.equal(manifest.partCatalogs.shield,'teaching-aid/catalog.json');
   assert.equal(shoeCatalog.items.length,11);
   assert.equal(earringCatalog.items.length,11);
-  assert.equal(toolCatalog.items.length,15);
+  assert.equal(toolCatalog.items.length,33);
   assert.equal(teachingAidCatalog.items.length,7);
   assert.equal(new Set(shoeCatalog.items.map(item=>item.id)).size,11);
   assert.equal(new Set(earringCatalog.items.map(item=>item.id)).size,11);
-  assert.equal(new Set(toolCatalog.items.map(item=>item.id)).size,15);
+  assert.equal(new Set(toolCatalog.items.map(item=>item.id)).size,33);
   assert.equal(new Set(teachingAidCatalog.items.map(item=>item.id)).size,7);
   for(const label of ['연필','색연필','사인펜','크레파스','붓','단소','리코더','청소빗자루','물로켓','가위','별모양 마법지팡이','축구공','농구공','배구공'])assert.ok(toolCatalog.items.some(item=>item.label===label),label);
+  const hobbyTools={
+    '게임기':'handheld-game','카메라':'camera','돋보기':'magnifier','망원경':'telescope','마이크':'microphone','기타':'guitar','우쿨렐레':'ukulele','낚싯대':'fishing-rod','잠자리채':'bug-net',
+    '물총':'water-gun','풍선':'balloon','꽃다발':'bouquet','아이스크림':'ice-cream','솜사탕':'cotton-candy','햄버거':'hamburger','음료수':'drink','랜턴':'lantern','보물지도':'treasure-map'
+  };
+  for(const [label,kind] of Object.entries(hobbyTools)){const item=toolCatalog.items.find(candidate=>candidate.label===label);assert.ok(item,label);assert.equal(item.kind,kind,label);assert.match(js,new RegExp("def\\.kind==='"+kind+"'"),kind)}
   assert.equal(toolCatalog.items.find(item=>item.label==='축구공').kind,'soccer-ball');
   assert.equal(toolCatalog.items.find(item=>item.label==='농구공').kind,'basketball');
   assert.equal(toolCatalog.items.find(item=>item.label==='배구공').kind,'volleyball');
