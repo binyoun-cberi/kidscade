@@ -25,6 +25,7 @@ const TEST_FILES = [
   "tests/achievement-state.test.cjs",
   "tests/game-outcome-profiles.test.cjs",
   "tests/game-result-wiring-batch1.test.cjs",
+  "tests/rich-achievements-batch.test.cjs",
   "tests/index-base-achievement.test.cjs",
   "tests/achievement-system.test.cjs",
   "tests/shop-state.test.cjs",
