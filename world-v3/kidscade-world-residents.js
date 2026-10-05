@@ -1,16 +1,16 @@
 const ROUTINES={
-  minji:{wake:6.5,sleep:22.4,personality:'bright',slots:[[7,12,'market'],[12,13,'plazaWest'],[13,18,'market'],[18,21,'cafeFront'],[21,22.4,'plazaWest']]},
-  junho:{wake:7,sleep:21.5,personality:'calm',slots:[[8,12,'hardware'],[12,13,'plazaEast'],[13,18,'hardware'],[18,20.5,'plazaEast']]},
-  haneul:{wake:5.5,sleep:23.2,personality:'cheerful',slots:[[6,11,'cafe'],[11,12.5,'plazaWest'],[12.5,20,'cafe'],[20,22.5,'riverLook'],[22.5,23.2,'cafeFront']]},
-  taeho:{wake:9,sleep:23.5,personality:'playful',slots:[[10,14,'arcade'],[14,16,'plazaEast'],[16,22,'arcade'],[22,23.5,'plazaEast']]},
-  doyun:{wake:7,sleep:21.5,personality:'busy',slots:[[8,12,'civic'],[12,13,'plazaWest'],[13,17.5,'civic'],[17.5,20,'plazaCenter'],[20,21.5,'civicGarden']]},
-  sora:{wake:7.5,sleep:22,personality:'quiet',slots:[[8.5,12,'library'],[12,14,'civicGarden'],[14,19,'library'],[19,21,'cafeFront'],[21,22,'library']]},
-  nari:{wake:7,sleep:21.5,personality:'kind',slots:[[8,12,'clinic'],[12,13.5,'plazaCenter'],[13.5,18,'clinic'],[18,20.5,'civicGarden']]},
-  minseok:{wake:6.5,sleep:22,personality:'steady',slots:[[7,11,'busStop'],[11,13,'marketFront'],[13,18,'busStop'],[18,21,'plazaCenter']]},
-  yuna:{wake:6.5,sleep:21.5,personality:'bright',slots:[[7,10,'marketFront'],[10,13,'plazaWest'],[13,17,'civicGarden'],[17,20.5,'plazaCenter']]},
-  woojin:{wake:8,sleep:23,personality:'calm',slots:[[9,12,'civicGarden'],[12,15,'marketFront'],[15,19,'plazaEast'],[19,22,'riverLook']]},
-  seoyeon:{wake:7,sleep:21.8,personality:'cheerful',slots:[[8,11,'plazaEast'],[11,14,'cafeFront'],[14,18,'plazaCenter'],[18,21,'civicGarden']]},
-  hyunwoo:{wake:6.5,sleep:22.5,personality:'busy',slots:[[7,11,'marketFront'],[11,14,'plazaCenter'],[14,18,'cafeFront'],[18,21.5,'marketFront']]}
+  minji:{wake:6.5,sleep:22.4,personality:'bright',slots:[[7,8,'market'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'market'],[18,21,'cafeFront'],[21,22.4,'plazaWest']]},
+  junho:{wake:7,sleep:21.5,personality:'calm',slots:[[7.5,8,'hardware'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'hardware'],[18,20.5,'plazaEast']]},
+  haneul:{wake:5.5,sleep:23.2,personality:'cheerful',slots:[[6,7.5,'cafe'],[7.5,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,20,'cafe'],[20,22.5,'riverLook'],[22.5,23.2,'cafeFront']]},
+  taeho:{wake:7,sleep:23.5,personality:'playful',slots:[[7.3,8,'schoolGate'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'arcade'],[18,22,'arcade'],[22,23.5,'plazaEast']]},
+  doyun:{wake:7,sleep:21.5,personality:'busy',slots:[[7.4,8,'schoolGarden'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,17.5,'schoolGarden'],[17.5,20,'plazaCenter'],[20,21.5,'civicGarden']]},
+  sora:{wake:7,sleep:22,personality:'quiet',slots:[[7.4,8,'library'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,19,'library'],[19,21,'cafeFront'],[21,22,'library']]},
+  nari:{wake:6.8,sleep:21.5,personality:'kind',slots:[[7.2,8,'clinic'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'clinic'],[18,20.5,'civicGarden']]},
+  minseok:{wake:6.5,sleep:22,personality:'steady',slots:[[7,8,'schoolYard'],[8,10,'schoolYard'],[10,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolYard'],[15.5,18,'busStop'],[18,21,'plazaCenter']]},
+  yuna:{wake:6.5,sleep:21.5,personality:'bright',slots:[[7.2,8,'schoolGate'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,17,'schoolGarden'],[17,20.5,'plazaCenter']]},
+  woojin:{wake:7,sleep:23,personality:'calm',slots:[[7.3,8,'schoolGate'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,19,'civicGarden'],[19,22,'riverLook']]},
+  seoyeon:{wake:7,sleep:21.8,personality:'cheerful',slots:[[7.3,8,'schoolGate'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'plazaCenter'],[18,21,'civicGarden']]},
+  hyunwoo:{wake:6.5,sleep:22.5,personality:'busy',slots:[[7.2,8,'schoolGate'],[8,12,'schoolGate'],[12,13,'schoolYard'],[13,15.5,'schoolGate'],[15.5,18,'cafeFront'],[18,21.5,'marketFront']]}
 };
 const CHAT_LINES=[
   '오늘 수업 끝나고 뭐 할 거야?','아까 광장에서 선생님을 만났어.','오늘 동아리 활동 재미있겠다!',
@@ -24,8 +24,11 @@ function routineTarget(id,hour,weather,pois){
   let key='';
   for(const slot of r.slots){if(hour>=slot[0]&&hour<slot[1]){key=slot[2];break}}
   if(!key)key='plazaCenter';
-  if((weather==='rain'||weather==='fog')&&!['market','hardware','cafe','arcade','civic','library','clinic','busStop'].includes(key)){
-    key=id==='haneul'||id==='seoyeon'?'cafeFront':id==='sora'?'library':'coveredPlaza';
+  if(weather==='rain'||weather==='fog'){
+    if(key==='schoolYard'||key==='schoolGarden')key='schoolGate';
+    else if(!['market','hardware','cafe','arcade','civic','library','clinic','busStop','schoolGate'].includes(key)){
+      key=id==='haneul'||id==='seoyeon'?'cafeFront':id==='sora'?'library':'coveredPlaza';
+    }
   }
   return {key,...(pois[key]||pois.plazaCenter)};
 }

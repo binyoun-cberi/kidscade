@@ -18,7 +18,7 @@ export const WORLD_GRID={
   cityMarket:{id:'cityMarket',name:'씨앗마을 · 상점가',cx:-12,cz:24,color:0xbab29d,kind:'city',hint:'마트·철물점'},
   cityLeisure:{id:'cityLeisure',name:'씨앗마을 · 광장/놀이',cx:12,cz:24,color:0xc2ba9e,kind:'city',hint:'카페·아케이드·광장'},
   residentialSouth:{id:'residentialSouth',name:'씨앗마을 · 햇살 주택가',cx:36,cz:24,color:0xb6bd9d,kind:'city',hint:'주민 집·골목정원'},
-  cityCivic:{id:'cityCivic',name:'씨앗마을 · 공공시설',cx:-12,cz:48,color:0xb3ad99,kind:'city',hint:'도서관·마을회관'},
+  cityCivic:{id:'cityCivic',name:'씨앗마을 · 학교/도서관',cx:-12,cz:48,color:0xb3ad99,kind:'city',hint:'씨앗학교·도서관'},
   cityTransit:{id:'cityTransit',name:'씨앗마을 · 교통/보건',cx:12,cz:48,color:0xbbb39a,kind:'city',hint:'보건소·버스'},
   residentialNorth:{id:'residentialNorth',name:'씨앗마을 · 별빛 주택가',cx:36,cz:48,color:0xafb99a,kind:'city',hint:'주민 집·작은 공원'}
 };

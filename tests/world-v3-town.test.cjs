@@ -75,6 +75,35 @@ test('Seed Town permanent NPCs are school teachers or students with persistent l
   assert.match(interiors,/민지 선생님과 이야기하기/);
 });
 
+test('Seed School is a walk-in campus with a classroom and shared school-day routines',()=>{
+  assert.match(grid,/cityCivic:\{id:'cityCivic',name:'씨앗마을 · 학교\/도서관'/);
+  assert.match(city,/\['school',CITY_ASSET\.school/);
+  assert.match(city,/씨앗학교 들어가기/);
+  assert.match(city,/school-yard/);
+  assert.match(city,/schoolGate/);
+  assert.match(city,/schoolYard/);
+  assert.match(interiors,/school:'venue-school'/);
+  assert.match(interiors,/async function buildSchool\(\)/);
+  assert.match(interiors,/school-desk-/);
+  assert.match(interiors,/내 자리에서 수업 준비하기/);
+  assert.match(interiors,/function syncSchoolActors\(\)/);
+  for(const id of ['minji','yuna','woojin','seoyeon','taeho','hyunwoo'])assert.ok(interiors.includes("['"+id+"'"),'missing classroom NPC '+id);
+  for(const file of ['desk.glb','chair-desk.glb','bookcase-open.glb','bathroom-cabinet.glb','table.glb','bench.glb']){
+    assert.ok(fs.existsSync(path.join(root,'assets','game','3d','interiors','kenney-furniture-kit',file)),'missing school furniture '+file);
+  }
+  for(const id of ['minji','junho','haneul','taeho','doyun','sora','nari','minseok','yuna','woojin','seoyeon','hyunwoo']){
+    const line=residents.match(new RegExp(id+":\\{[^\\n]+"))?.[0]||'';
+    assert.ok(line.includes('schoolGate')||line.includes('schoolYard'),'school routine missing '+id);
+  }
+  assert.match(residents,/if\(key==='schoolYard'\|\|key==='schoolGarden'\)key='schoolGate'/);
+  assert.match(runtime,/school:\{x:-7\.3,z:45\.45\}/);
+  assert.match(runtime,/school:\{x:-7\.3,z:46\.0,name:'씨앗학교'\}/);
+  assert.match(economy,/function schoolSchedule\(\)/);
+  assert.match(economy,/data-city-travel="school"/);
+  assert.match(runtime,/schoolSchedule:\(\)=>townEconomy\?\.schoolSchedule/);
+  assert.match(runtime,/getGameTime:\(\)=>prog\(\)\.survival\.time/);
+});
+
 test('Seed Town residents follow routines, chat, avoid buildings and go home',()=>{
   assert.match(city,/createResidentLife/);
   assert.match(city,/getDailyState/);
@@ -163,7 +192,7 @@ test('Seed Town reuses tracked city market transport and service assets',()=>{
     ['assets','game','3d','city','kenney-city-kit-suburban','building-type-i.glb']
   ];
   for(const parts of files)assert.ok(fs.existsSync(path.join(root,...parts)),'missing '+parts.join('/'));
-  for(const label of ['씨앗마트','튼튼 철물점','하늘 카페','키즈 아케이드','마을회관','마을 도서관','튼튼 보건소']){
+  for(const label of ['씨앗마트','튼튼 철물점','하늘 카페','키즈 아케이드','씨앗학교','마을 도서관','튼튼 보건소']){
     assert.ok(city.includes(label),'venue missing '+label);
   }
 });
@@ -310,7 +339,8 @@ test('city has bus travel and passes game time to NPC schedules',()=>{
   assert.match(city,/getMinutes:\(\)=>typeof getGameTime==='function'\?getGameTime\(\):720/);
   assert.match(residents,/const ROUTINES=\{/);
   assert.match(residents,/minseok:\{wake:6\.5,sleep:22/);
-  assert.match(residents,/slots:\[\[7,11,'busStop'\]/);
+  assert.match(residents,/minseok:.*schoolYard/s);
+  assert.match(residents,/minseok:.*schoolGate/s);
 });
 
 
@@ -511,7 +541,7 @@ test('resident AI movement keeps interaction anchors attached inside the new cit
   assert.match(residents,/n\.interaction\.z=n\.object\.position\.z/);
   assert.match(residents,/function routineTarget\(id,hour,weather,pois\)/);
   assert.match(residents,/yuna:\{wake:6\.5,sleep:21\.5/);
-  assert.match(residents,/woojin:\{wake:8,sleep:23/);
+  assert.match(residents,/woojin:\{wake:7,sleep:23/);
   assert.match(residents,/seoyeon:\{wake:7,sleep:21\.8/);
   assert.match(city,/plazaWest:\{x:leisure\.x-4\.0,z:leisure\.z\+4\.0/);
   assert.match(city,/plazaEast:\{x:leisure\.x\+4\.0,z:leisure\.z\+4\.0/);

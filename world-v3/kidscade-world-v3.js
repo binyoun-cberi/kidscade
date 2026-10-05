@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=26';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=27';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=6';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=7';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
-import {createTownEconomy} from './kidscade-world-economy.js?v=20';
+import {createTownEconomy} from './kidscade-world-economy.js?v=21';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
-import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=5';
+import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=6';
 import {buildWorldLandscape} from './kidscade-world-landscape.js?v=1';
 
 const V2=window.KidscadeWorldV2||{};
@@ -1122,7 +1122,8 @@ const VENUE_RETURN_POINTS={
   market:{x:-16.7,z:21.45},
   hardware:{x:-7.3,z:21.45},
   cafe:{x:7.3,z:21.45},
-  museum:{x:-36,z:47.1}
+  museum:{x:-36,z:47.1},
+  school:{x:-7.3,z:45.45}
 };
 function venueKindFromMode(value=mode){return Object.keys(VENUE_MODES).find(key=>VENUE_MODES[key]===value)||''}
 const savedLayout=Number(save.player?.v3Layout||0);
@@ -1139,7 +1140,7 @@ const TRAVEL_POINTS={
   camp:{x:-36,z:18.0,name:'야영지'},
   city:{x:-12,z:18.0,name:'씨앗마을 상점가'},
   plaza:{x:12,z:29.0,name:'씨앗마을 광장'},
-  civic:{x:-12,z:40.0,name:'공공시설 거리'},
+  civic:{x:-12,z:40.0,name:'학교·도서관 거리'},
   transit:{x:12,z:40.0,name:'교통·보건 거리'},
   residential:{x:27.4,z:24.0,name:'햇살 주택가'},
   residentialNorth:{x:27.4,z:48.0,name:'별빛 주택가'},
@@ -1147,7 +1148,8 @@ const TRAVEL_POINTS={
   ranch:{x:12,z:-18.0,name:'목장'},
   orchard:{x:36,z:-18.0,name:'과수원'},
   beach:{x:-36,z:-18.0,name:'해변가'},
-  museum:{x:-36,z:52.0,name:'씨앗 자연박물관'}
+  museum:{x:-36,z:52.0,name:'씨앗 자연박물관'},
+  school:{x:-7.3,z:46.0,name:'씨앗학교'}
 };
 function travelTo(id){
   const d=TRAVEL_POINTS[id];if(!d)return;
@@ -2349,8 +2351,10 @@ async function init(){
       museumCatalog:()=>museumRuntime?.catalogPanel?.(),
       museumDonate:()=>museumRuntime?.donationPanel?.(),
       museumSummary:()=>museumRuntime?.summary?.(),
+      schoolSchedule:()=>townEconomy?.schoolSchedule?.(),
       exitVenue
-    }
+    },
+    getGameTime:()=>prog().survival.time
   }).then(runtime=>{venueInteriors=runtime;return runtime});
   await Promise.all([buildOutdoor(),buildIndoor(),venuePromise]);
   await furnishingSystem.restore();

@@ -6,19 +6,22 @@ const ROOT=new URL('../assets/game/',import.meta.url);
 const MARKET=new URL('shops/market/',ROOT).href;
 const BAKERY=new URL('3d/bakery/interior/',ROOT).href;
 const SURVIVAL=new URL('3d/survival/kenney-survival-kit/',ROOT).href;
+const FURNITURE=new URL('3d/interiors/kenney-furniture-kit/',ROOT).href;
 
 export const VENUE_MODES={
   market:'venue-market',
   hardware:'venue-hardware',
   cafe:'venue-cafe',
-  museum:'venue-museum'
+  museum:'venue-museum',
+  school:'venue-school'
 };
 
 export const VENUE_INFO={
   market:{name:'씨앗마트',npc:'민지 선생님',npcId:'minji'},
   hardware:{name:'튼튼 철물점',npc:'준호 선생님',npcId:'junho'},
   cafe:{name:'하늘 카페',npc:'하늘 선생님',npcId:'haneul'},
-  museum:{name:'씨앗 자연박물관'}
+  museum:{name:'씨앗 자연박물관'},
+  school:{name:'씨앗학교',npc:'민지 선생님',npcId:'minji'}
 };
 
 export const VENUE_BOUNDS={x1:-5.15,x2:5.15,z1:-3.62,z2:3.62};
@@ -99,9 +102,29 @@ async function addMerchant(group,loadGLTF,prepModel,kind,x,z,merchantMixers){
   return anchor;
 }
 
+async function addSchoolPerson(group,loadGLTF,prepModel,id,x,z,schoolActors,mixers){
+  const visual=residentVisual(id),gltf=await loadGLTF(visual.url);
+  const model=prepModel(cloneSkeleton(gltf.scene));
+  model.updateMatrixWorld(true);
+  let b=new THREE.Box3().setFromObject(model),size=b.getSize(new THREE.Vector3()),baseSize=Math.max(size.x,size.y,size.z)||1;
+  model.scale.multiplyScalar((Number(visual.height)||1.80)/baseSize);
+  model.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(model);
+  const center=b.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;model.rotation.y=Math.PI;
+  model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
+  const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);group.add(anchor);
+  const clips=Array.isArray(gltf.animations)?gltf.animations:[],idle=clips.find(clip=>/idle|stand/i.test(clip.name))||clips[0]||null;
+  if(idle){
+    const mixer=new THREE.AnimationMixer(model),action=mixer.clipAction(idle);
+    action.setLoop(THREE.LoopRepeat,Infinity);action.play();mixers.push(mixer);
+  }
+  const tag=canvasLabel(visual.name,{width:1.15,height:.30,font:28,depthTest:false});tag.position.set(x,2.12,z);group.add(tag);
+  const actor={id,anchor,label:tag,interaction:null};schoolActors.push(actor);return actor;
+}
+
 export async function buildVenueInteriors(ctx){
-  const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions}=ctx;
-  const groups={},built=new Set(),buildPromises={},merchantMixers=[];
+  const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime}=ctx;
+  const groups={},built=new Set(),buildPromises={},merchantMixers=[],schoolActors=[];
 
   for(const kind of Object.keys(VENUE_MODES)){
     const g=new THREE.Group();g.name='venue-'+kind;g.visible=false;parent.add(g);groups[kind]=g;
@@ -207,6 +230,68 @@ export async function buildVenueInteriors(ctx){
     ]);
   }
 
+  async function buildSchool(){
+    const kind='school',g=groups[kind],mode=VENUE_MODES[kind];addShell(g,box,plane,0xd7cfb4,0xeee6cf,VENUE_INFO[kind].name,kind);
+    interact(mode,0,3.18,1.0,'🚪 학교 밖으로 나가기',()=>actions.exitVenue());
+    interact(mode,0,-2.72,1.40,'📋 오늘 시간표 보기',()=>actions.schoolSchedule?.());
+
+    // Front teaching wall.
+    box(g,0,-3.45,5.20,.12,1.38,0x355746,1.43);
+    box(g,0,-3.36,5.42,.08,.10,0xd9c49a,2.14);
+    const boardLabel=canvasLabel('오늘도 생활 속에서 배워요!',{width:2.80,height:.43,font:30,depthTest:false});
+    boardLabel.position.set(0,2.08,-3.31);g.add(boardLabel);
+
+    // Six desks: five classmates plus one intentionally empty player seat.
+    const deskSpots=[[-2.45,-.45],[0,-.45],[2.45,-.45],[-2.45,1.45],[0,1.45],[2.45,1.45]];
+    for(let i=0;i<deskSpots.length;i++){
+      const [x,z]=deskSpots[i];
+      await addModel(g,FURNITURE+'desk.glb',{x,z,w:1.35,h:.92,d:.72,rot:Math.PI,name:'school-desk-'+i});
+      await addModel(g,FURNITURE+'chair-desk.glb',{x,z:z+.72,w:.72,h:1.02,d:.72,rot:0,name:'school-chair-'+i});
+      collider(mode,x,z,1.18,.62);
+    }
+    const mySeat=canvasLabel('내 자리',{width:.90,height:.27,font:27,depthTest:false});mySeat.position.set(2.45,1.70,1.48);g.add(mySeat);
+    interact(mode,2.45,1.62,1.02,'🪑 내 자리에서 수업 준비하기',()=>actions.schoolSchedule?.());
+
+    // Subject corners let every teacher still matter inside the school even though
+    // the main classroom only renders one homeroom teacher at a time.
+    await Promise.all([
+      addModel(g,FURNITURE+'bookcase-open.glb',{x:-4.25,z:-1.75,w:1.10,h:2.05,d:.52,rot:Math.PI/2,name:'school-korean-books'}),
+      addModel(g,FURNITURE+'bathroom-cabinet.glb',{x:4.25,z:-1.75,w:1.08,h:1.60,d:.52,rot:-Math.PI/2,name:'school-health-cabinet'}),
+      addModel(g,FURNITURE+'table.glb',{x:4.10,z:1.55,w:1.55,h:.82,d:1.00,rot:Math.PI/2,name:'school-practical-table'}),
+      addModel(g,FURNITURE+'bench.glb',{x:-4.05,z:1.55,w:1.65,h:.86,d:.70,rot:Math.PI/2,name:'school-pe-bench'}),
+      addModel(g,FURNITURE+'plant-small2.glb',{x:-4.25,z:.10,w:.62,h:.72,d:.62,rot:0,name:'school-class-plant'})
+    ]);
+    interact(mode,-4.12,-1.75,1.00,'📚 소라 선생님의 국어 코너',()=>actions.resident('sora'));
+    interact(mode,4.12,-1.75,1.00,'🩺 나리 선생님의 보건 코너',()=>actions.resident('nari'));
+    interact(mode,4.05,1.55,1.05,'🛠️ 준호 선생님의 실과 코너',()=>actions.resident('junho'));
+    interact(mode,-4.00,1.55,1.05,'🏃 민석 선생님의 체육 코너',()=>actions.resident('minseok'));
+    interact(mode,-4.20,.10,.95,'🗺️ 도윤 선생님의 마을 관찰판',()=>actions.resident('doyun'));
+    interact(mode,4.20,.10,.95,'🍱 하늘 선생님의 급식 이야기',()=>actions.resident('haneul'));
+
+    const people=[
+      ['minji',0,-2.35,'💬 민지 선생님과 이야기하기'],
+      ['yuna',-2.45,-.05,'💬 유나와 이야기하기'],
+      ['woojin',0,-.05,'💬 우진과 이야기하기'],
+      ['seoyeon',2.45,-.05,'💬 서연과 이야기하기'],
+      ['taeho',-2.45,1.85,'💬 태호와 이야기하기'],
+      ['hyunwoo',0,1.85,'💬 현우와 이야기하기']
+    ];
+    for(const [id,x,z,label] of people){
+      const actor=await addSchoolPerson(g,loadGLTF,prepModel,id,x,z,schoolActors,merchantMixers);
+      actor.interaction=interact(mode,x,z,1.0,label,()=>actions.resident(id));
+    }
+    syncSchoolActors();
+  }
+
+  function syncSchoolActors(){
+    if(!schoolActors.length)return;
+    const mins=Number(getGameTime?.()??720),hour=((mins%1440)+1440)%1440/60,inSchool=hour>=8&&hour<15.5;
+    for(const actor of schoolActors){
+      actor.anchor.visible=inSchool;actor.label.visible=inSchool;
+      if(actor.interaction)actor.interaction.enabled=inSchool;
+    }
+  }
+
   const museumDisplays={},museumSlots={};
 
   function museumObject(shape,color,scale=1){
@@ -309,7 +394,7 @@ export async function buildVenueInteriors(ctx){
     for(const [id,slot] of Object.entries(museumSlots))slot.visible=donated.has(id);
   }
 
-  const builders={market:buildMarket,hardware:buildHardware,cafe:buildCafe,museum:buildMuseum};
+  const builders={market:buildMarket,hardware:buildHardware,cafe:buildCafe,museum:buildMuseum,school:buildSchool};
   function hideAll(){for(const g of Object.values(groups))g.visible=false}
   function ensure(kind){
     if(built.has(kind))return Promise.resolve(groups[kind]);
@@ -320,8 +405,8 @@ export async function buildVenueInteriors(ctx){
   }
   async function show(kind){
     hideAll();const g=groups[kind];if(!g)return null;g.visible=true;
-    await ensure(kind);if(kind==='museum')syncMuseumDisplays();if(g)g.visible=true;return g;
+    await ensure(kind);if(kind==='museum')syncMuseumDisplays();if(kind==='school')syncSchoolActors();if(g)g.visible=true;return g;
   }
   hideAll();
-  return {groups,show,hideAll,ensure,syncMuseumDisplays,isBuilt:kind=>built.has(kind),update(dt){for(const mixer of merchantMixers)mixer.update(dt);}};
+  return {groups,show,hideAll,ensure,syncMuseumDisplays,syncSchoolActors,isBuilt:kind=>built.has(kind),update(dt){for(const mixer of merchantMixers)mixer.update(dt);syncSchoolActors();}};
 }
