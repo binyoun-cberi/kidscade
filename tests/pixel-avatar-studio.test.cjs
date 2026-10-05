@@ -264,14 +264,17 @@ test('v3 hair catalog contains style choices only and keeps the builtin tousled 
   assert.equal(hairCatalog.type,'kidscade-avatar-hair-catalog');
   assert.equal(hairCatalog.layer,'hair');
   assert.equal(hairCatalog.defaultId,'basic-tousled-hair-01');
-  assert.equal(hairCatalog.items.length,23);
+  assert.equal(hairCatalog.items.length,33);
   const extra=hairCatalog.items.filter(item=>item.id!==hairCatalog.defaultId);
-  assert.equal(extra.length,22);
-  assert.equal(new Set(extra.map(item=>item.id)).size,22);
+  assert.equal(extra.length,32);
+  assert.equal(new Set(extra.map(item=>item.id)).size,32);
   assert.ok(hairCatalog.items.every(item=>!/cherry-pink|peach-pink|mint|sky-blue|lavender|blue-purple|rose-gold|white-blonde/.test(item.id)));
   const malePackIds=['dandy-cut-hair-01','two-block-hair-01','gyle-cut-hair-01','comma-hair-01','leaf-cut-hair-01','as-perm-hair-01','shadow-perm-hair-01','pomade-hair-01','regent-hair-01','crew-cut-hair-01','soft-mohawk-hair-01','wolf-cut-hair-01'];
   assert.ok(malePackIds.every(id=>hairCatalog.items.some(item=>item.id===id)));
   assert.equal(new Set(malePackIds).size,12);
+  const cartoonPackIds=['hero-spike-hair-01','prince-spike-hair-01','ninja-spike-hair-01','raven-spike-hair-01','explosion-spike-hair-01','ice-white-spike-hair-01','split-tone-hair-01','star-tri-hair-01','mega-twintail-hair-01','curly-hero-hair-01'];
+  assert.ok(cartoonPackIds.every(id=>hairCatalog.items.some(item=>item.id===id)));
+  assert.equal(new Set(cartoonPackIds).size,10);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'hair',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-hair-part',item.id);
