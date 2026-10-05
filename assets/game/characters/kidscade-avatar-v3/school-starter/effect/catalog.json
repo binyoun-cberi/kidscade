@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "type": "kidscade-avatar-effect-catalog",
+  "layer": "effect",
+  "bodyId": "maple-lite-body-v3",
+  "canvas": [
+    128,
+    128
+  ],
+  "defaultId": "no-effect",
+  "items": [
+    {
+      "id": "no-effect",
+      "label": "없음",
+      "kind": "none",
+      "pass": "front",
+      "colors": []
+    },
+    {
+      "id": "sparkle-effect-01",
+      "label": "반짝이",
+      "kind": "sparkle",
+      "pass": "front",
+      "colors": [
+        "#fff4a3",
+        "#ffd85e",
+        "#ffffff",
+        "#f0a8ff"
+      ]
+    },
+    {
+      "id": "stars-effect-01",
+      "label": "별이 떠다님",
+      "kind": "stars",
+      "pass": "front",
+      "colors": [
+        "#ffcf48",
+        "#fff2a8",
+        "#ffffff",
+        "#f19bc6"
+      ]
+    },
+    {
+      "id": "hearts-effect-01",
+      "label": "하트",
+      "kind": "hearts",
+      "pass": "front",
+      "colors": [
+        "#e75373",
+        "#ff8eaa",
+        "#ffd1dd",
+        "#ffffff"
+      ]
+    },
+    {
+      "id": "snow-effect-01",
+      "label": "눈송이",
+      "kind": "snow",
+      "pass": "front",
+      "colors": [
+        "#7bbfe8",
+        "#c8edff",
+        "#ffffff",
+        "#9fd8f5"
+      ]
+    },
+    {
+      "id": "flame-effect-01",
+      "label": "불꽃",
+      "kind": "flame",
+      "pass": "front",
+      "colors": [
+        "#b43a2f",
+        "#ef6d32",
+        "#ffc44f",
+        "#fff0a0"
+      ]
+    },
+    {
+      "id": "lightning-effect-01",
+      "label": "번개",
+      "kind": "lightning",
+      "pass": "front",
+      "colors": [
+        "#705425",
+        "#ffd536",
+        "#fff49a",
+        "#ffffff"
+      ]
+    },
+    {
+      "id": "music-effect-01",
+      "label": "음표",
+      "kind": "music-notes",
+      "pass": "front",
+      "colors": [
+        "#5a4b91",
+        "#8b71d2",
+        "#c7b6ff",
+        "#f4d9ff"
+      ]
+    },
+    {
+      "id": "cloud-effect-01",
+      "label": "작은 구름",
+      "kind": "small-cloud",
+      "pass": "back",
+      "colors": [
+        "#8396a7",
+        "#dbe8ef",
+        "#ffffff",
+        "#b8d2df"
+      ]
+    },
+    {
+      "id": "leaves-effect-01",
+      "label": "나뭇잎",
+      "kind": "leaves",
+      "pass": "front",
+      "colors": [
+        "#3f6e3e",
+        "#70a851",
+        "#a9d66f",
+        "#d7e9a0"
+      ]
+    },
+    {
+      "id": "rainbow-effect-01",
+      "label": "무지개",
+      "kind": "rainbow",
+      "pass": "back",
+      "colors": [
+        "#e55f68",
+        "#f2ad4e",
+        "#6fbf78",
+        "#6ea5dc",
+        "#9a78cf"
+      ]
+    }
+  ]
+}
