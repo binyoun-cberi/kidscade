@@ -402,7 +402,8 @@
     if (!route?.length) return {usedBus:false,cost:0,stops:0};
     const stops=route.reduce((n,[x,y])=>n+(cell(city,x,y)?.busStop?1:0),0);
     const usedBus=stops>=2;
-    const cost=usedBus?Math.max(3,Math.round(route.length*.55)+2):route.length;
+    const busCost=Math.max(2,Math.ceil(route.length*.55)+1);
+    const cost=usedBus?Math.max(1,Math.min(route.length-1,busCost)):route.length;
     return {usedBus,cost,stops};
   }
 
@@ -925,9 +926,22 @@
 
   function changeTaxRate(city,delta,village=null) {
     const before=city.taxRate;
-    city.taxRate=clamp(city.taxRate+Number(delta||0),4,12);
+    const displayed={...city.demand};
+    const change=Number(delta||0);
+    city.taxRate=clamp(city.taxRate+change,4,12);
     if(city.taxRate===before)return {ok:false,reason:"세율 범위는 4~12%입니다."};
-    updateDemand(city,village);recompute(city,village);
+    recompute(city,village);
+    updateDemand(city,village);
+    if(change>0){
+      city.demand.residential=Math.min(city.demand.residential,displayed.residential);
+      city.demand.commercial=Math.min(city.demand.commercial,displayed.commercial);
+      city.demand.industrial=Math.min(city.demand.industrial,displayed.industrial);
+    }else if(change<0){
+      city.demand.residential=Math.max(city.demand.residential,displayed.residential);
+      city.demand.commercial=Math.max(city.demand.commercial,displayed.commercial);
+      city.demand.industrial=Math.max(city.demand.industrial,displayed.industrial);
+    }
+    recompute(city,village);
     return {ok:true,note:"도시 세율을 "+city.taxRate+"%로 조정했습니다."};
   }
 
