@@ -4061,6 +4061,7 @@ function saveFreeWorld(){
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
+    discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
     creatureDefeats:{...creatureDefeats},creatureForageAt:{...creatureForageAt},
@@ -4093,6 +4094,10 @@ function loadFreeWorld(){
         savedFreePosition=data.position;
       if(gameFreeMode==='survival'){
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
+        discoveredResources=new Set(Array.isArray(data.discoveredResources)?data.discoveredResources:[]);
+        discoveredRecipeIds=new Set(Array.isArray(data.discoveredRecipes)?data.discoveredRecipes:[]);
+        unreadRecipeIds=new Set(Array.isArray(data.unreadRecipes)?data.unreadRecipes:[]);
+        for(const [type,n] of Object.entries(survivalBag))if((Number(n)||0)>0)discoveredResources.add(type);
         discoveredLandmarks=new Set(data.discoveredLandmarks||[]);
         restoredLandmarks=new Set(data.restoredLandmarks||[]);
         unlockedTech=new Set(data.unlockedTech||[]);
@@ -4135,6 +4140,14 @@ function loadFreeWorld(){
         seenCreatureKinds=new Set(Array.isArray(data.seenCreatures)?data.seenCreatures:[]);
         nextEliteSpawnCheckAt=Math.max(survivalWorldTime,Number(data.nextEliteSpawnCheckAt)||0);
         firstNightStarted=!!data.firstNightStarted;
+        if((survivalStats.harvestedWood||0)>0)discoveredResources.add('log');
+        if((survivalStats.harvestedStone||0)>0)discoveredResources.add('stone');
+        for(const [id,n] of Object.entries(survivalStats.crafted||{}))if((Number(n)||0)>0){
+          const recipe=worldRules.RECIPES.find(r=>r.id===id);if(recipe)for(const type of Object.keys(recipe.gives||{}))discoveredResources.add(type);
+        }
+        for(const [type,n] of Object.entries(survivalStats.placed||{}))if((Number(n)||0)>0)discoveredResources.add(type);
+        for(const [type,n] of Object.entries(survivalStats.smelted||{}))if((Number(n)||0)>0)discoveredResources.add(type);
+        refreshRecipeDiscoveries(false);updateCraftDiscoveryHud();
       }
       for(const [key,value] of data.edits||[]){
         const [x,y,z]=parseWorldKey(key);
