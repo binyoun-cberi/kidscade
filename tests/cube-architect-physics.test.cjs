@@ -13,10 +13,10 @@ const world=read('games/cube3d/cube-architect-world.js');
 
 test('Cube Architect world physics parses and cache-busts the runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261005-hunt1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-avatar-actions1/);
   assert.match(html,/cube-architect-world\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect\.css\?v=20261003-29-shrine1/);
-  assert.match(html,/cube-architect-avatar\.js\?v=20261003-30-swim1/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261005-avatar-actions1/);
   assert.doesNotThrow(()=>new Function(world));
 });
 
