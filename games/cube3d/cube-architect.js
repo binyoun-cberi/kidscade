@@ -40,12 +40,18 @@ const mouse = new THREE.Vector2();
 let toastTimer = null;
 let audioCtx = null;
 
+function warmAudio(){
+  try{
+    if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    return audioCtx;
+  }catch(_){return null}
+}
 function sfx(kind){
   try{
-    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended') audioCtx.resume();
-    const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.connect(g);g.connect(audioCtx.destination);
+    const ctx=warmAudio();if(!ctx)return;
+    const t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
     if(kind==='place'){o.type='triangle';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(170,t+.08)}
     else if(kind==='break'){o.type='square';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(80,t+.09)}
     else if(kind==='mine'){o.type='triangle';o.frequency.setValueAtTime(190,t);o.frequency.exponentialRampToValueAtTime(125,t+.05)}
@@ -58,6 +64,52 @@ function sfx(kind){
     g.gain.setValueAtTime(quiet?.032:.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+(short?.09:.16));
     o.start(t);o.stop(t+(short?.1:.18));
   }catch(e){}
+}
+function noiseBurst(duration=.08,gain=.012,cutoff=1200){
+  try{
+    if(!audioCtx||audioCtx.state!=='running')return;
+    const ctx=audioCtx,t=ctx.currentTime,len=Math.max(1,Math.floor(ctx.sampleRate*duration));
+    const buffer=ctx.createBuffer(1,len,ctx.sampleRate),data=buffer.getChannelData(0);
+    for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len);
+    const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),g=ctx.createGain();
+    filter.type='lowpass';filter.frequency.setValueAtTime(cutoff,t);
+    g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    src.buffer=buffer;src.connect(filter);filter.connect(g);g.connect(ctx.destination);src.start(t);src.stop(t+duration);
+  }catch(_){}
+}
+function stepSfx(type,land=false){
+  if(!audioCtx||audioCtx.state!=='running')return;
+  const soft=['grass','dirt','flower','leaves','pineLeaves'].includes(type);
+  const sandy=['sand','redSand','gravel'].includes(type);
+  const snowy=['snow','snowBrick'].includes(type);
+  const woody=['log','pineLog','planks','workbench','door','roof','stairs','slab','woolMat'].includes(type);
+  if(soft)noiseBurst(land?.09:.055,land?.016:.008,760);
+  else if(sandy)noiseBurst(land?.1:.065,land?.018:.009,520);
+  else if(snowy)noiseBurst(land?.11:.075,land?.014:.007,430);
+  else{
+    try{
+      const ctx=audioCtx,t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=woody?'triangle':'square';
+      const base=woody?210:145;o.frequency.setValueAtTime(base+(land?18:0),t);o.frequency.exponentialRampToValueAtTime(base*.68,t+(land?.075:.045));
+      g.gain.setValueAtTime(land?.028:.014,t);g.gain.exponentialRampToValueAtTime(.0001,t+(land?.1:.06));
+      o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+(land?.11:.07));
+    }catch(_){}
+  }
+}
+function ambientSfx(kind){
+  if(!audioCtx||audioCtx.state!=='running')return;
+  if(kind==='rain')return noiseBurst(.42,.0055,2800);
+  if(kind==='storm')return noiseBurst(.55,.009,1450);
+  if(kind==='wind')return noiseBurst(.46,.0045,620);
+  if(kind==='fire')return noiseBurst(.12,.008,3600);
+  try{
+    const ctx=audioCtx,t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+    if(kind==='birds'){o.type='sine';o.frequency.setValueAtTime(1180,t);o.frequency.exponentialRampToValueAtTime(1680,t+.12)}
+    else if(kind==='marsh'){o.type='sine';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(190,t+.16)}
+    else return;
+    g.gain.setValueAtTime(.006,t);g.gain.exponentialRampToValueAtTime(.0001,t+.22);
+    o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.24);
+  }catch(_){}
 }
 function toast(msg){
   const el=$('toast');el.textContent=msg;el.classList.add('show');
