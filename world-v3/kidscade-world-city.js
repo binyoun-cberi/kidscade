@@ -3,7 +3,7 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=6';
 import {createResidentLife} from './kidscade-world-residents.js?v=6';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
-import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=1';
+import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=3';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
@@ -258,6 +258,28 @@ export async function buildKidscadeCity(ctx){
     box(parent,civic.x+4.7,z,6.0,.08,.025,0xf3eee1,.079);
   }
   track('school-yard','plaza',civic.x+4.7,civic.z+3.8,7.2,6.0);
+
+  // Playground equipment is intentionally lightweight and readable from the isometric camera.
+  // The mini-games themselves live in the school-life state so these props remain safe for old saves.
+  const goalMat=0xf7f3df;
+  for(const z of [civic.z+1.22,civic.z+6.38]){
+    box(parent,civic.x+3.72,z,.10,.10,1.15,goalMat,.58);
+    box(parent,civic.x+5.68,z,.10,.10,1.15,goalMat,.58);
+    box(parent,civic.x+4.70,z,2.06,.10,.10,goalMat,1.12);
+  }
+  const soccerBall=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),new THREE.MeshStandardMaterial({color:0xf5f3e9,roughness:.72}));
+  soccerBall.position.set(civic.x+4.7,.24,civic.z+3.25);soccerBall.name='schoolyard-soccer-ball';parent.add(soccerBall);
+  const dodgeBall=new THREE.Mesh(new THREE.SphereGeometry(.20,16,12),new THREE.MeshStandardMaterial({color:0xd85b50,roughness:.68}));
+  dodgeBall.position.set(civic.x+6.55,.22,civic.z+4.35);dodgeBall.name='schoolyard-dodge-ball';parent.add(dodgeBall);
+  const lunchMarker=makeLabel('🍱 급식 자리',{width:1.20,height:.30,font:27});
+  lunchMarker.position.set(civic.x+7.2,1.72,civic.z+6.10);lunchMarker.userData.anchor={x:civic.x+7.2,z:civic.z+6.10};lunchMarker.visible=false;
+  parent.add(lunchMarker);buildingLabels.push(lunchMarker);
+
+  interact('outdoor',civic.x+4.7,civic.z+3.25,1.05,'⚽ 운동장 놀이하기',()=>actions.schoolYard?.());
+  interact('outdoor',civic.x+6.55,civic.z+4.35,1.00,'🔴 피구 한 판 하기',()=>actions.schoolBreakGame?.('dodge'));
+  interact('outdoor',civic.x+2.2,civic.z+5.55,1.15,'👫 친구와 같이 놀기',()=>actions.schoolFriends?.());
+  interact('outdoor',civic.x+7.2,civic.z+6.10,1.20,'🍱 오늘의 급식 먹기',()=>actions.schoolLunch?.());
+
   await Promise.all([
     addModel(parent,CITY_ASSET.mailbox,{x:civic.x-1.0,z:civic.z+1.8,w:.7,h:1.25,d:.6,rot:0,name:'town-mailbox'}),
     addModel(parent,CITY_ASSET.planter,{x:civic.x-6.7,z:civic.z+6.2,w:1.2,h:.85,d:.85,rot:0,name:'library-planter'}),
