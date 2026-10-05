@@ -1,6 +1,8 @@
 (() => {
   "use strict";
   const S = window.IslandSim;
+  const C = window.IslandCityCore;
+  const CV = window.IslandCityView;
   if (!S) throw new Error("촌장 시뮬레이터 엔진을 불러오지 못했습니다.");
   const $ = id => document.getElementById(id);
   const STORAGE = "kidscade_game_v1:high_twelve_island:world";
@@ -65,6 +67,7 @@
     window.IslandArt?.mount($("islandCanvas"));
     const old = load();
     state = old || S.initial();
+    if (C) C.ensureVillage(state);
     started = true;
     sdk("start");
     if (!old) {
@@ -87,6 +90,7 @@
         state.activityWoodFactor = Number.isFinite(activity.woodPresence) ? activity.woodPresence : 1;
       }
       S.tick(state);
+      if (C && state.city) C.tick(state.city, state);
       if (state.tick % 3 === 0 || state.pending || state.stage === 2 || (state.arrivalLog?.length || 0) !== arrivalCount) save();
       render();
     }, speed === 2 ? 1250 : 2400);
@@ -393,6 +397,14 @@
         '<div class="locked-card">💡 식량 소비량: ' + number(rates.foodUse) +
         "/주 · 배치된 주민은 실제 작업 장소에 도착해야 최대 생산을 냅니다. 재난·대피·파업으로 작업지가 비면 생산도 줄어요.</div>" +
         (urgent ? '' : operationCards());
+    } else if (activeTab === "city") {
+      if (C && CV) {
+        const city = C.ensureVillage(state);
+        p.innerHTML = CV.panelHTML(city);
+        CV.mount(p, city, state, () => save());
+      } else {
+        p.innerHTML = '<h2>🗺️ 도시계획</h2><div class="locked-card">도시 시뮬레이션 모듈을 불러오지 못했습니다.</div>';
+      }
     } else if (activeTab === "build") {
       p.innerHTML = '<h2>공동시설 건설</h2><p class="intro">자동 배치되는 시설을 지어 마을을 발전시키세요. 비용은 즉시 차감됩니다.</p>' +
         Object.entries(S.BUILDINGS).filter(([, b]) => b.stage <= state.stage).map(([id, b]) => buildCard(id, b)).join("") +
@@ -604,6 +616,7 @@
   $("resetBtn").addEventListener("click", () => {
     if (!window.confirm("마을을 처음부터 다시 시작할까요? 현재 기록을 덮어씁니다.")) return;
     state = S.initial();
+    if (C) C.ensureVillage(state);
     drafts = {};
     selectedCitizenId = null;
     currentModal = "";
