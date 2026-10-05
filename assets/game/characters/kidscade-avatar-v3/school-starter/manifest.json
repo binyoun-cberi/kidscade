@@ -362,7 +362,7 @@
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json"
   },
-  "artRevision": "school-accessories-8-body-first-hair",
+  "artRevision": "school-accessories-9-neat-short-widened",
   "bodyRender": {
     "mode": "body-first",
     "source": "teacher-body-pipeline",
