@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=64/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=65/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-21/);
+  assert.match(js,/pixel-v3-school-starter-22/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -56,6 +56,15 @@ test('public studio lists only registered v3 starter parts and exposes no JSON t
   assert.doesNotMatch(js,/FileReader|showOpenFilePicker|importFullAdjustment|applyAdjustmentJsonFile/);
 });
 
+test('back accessories render behind the body and use the wardrobe shop flow',()=>{
+  assert.match(html,/data-tab="back"[^>]*>등 장식</);
+  assert.match(js,/back:\{label:'등 장식',name:'착용 안 함',assetKey:'back'\}/);
+  assert.match(js,/wardrobe\.draw\(target,frameId,'back',wardrobeIds\)/);
+  const backDraw=js.indexOf("wardrobe.draw(target,frameId,'back',wardrobeIds)");
+  const bodyDraw=js.indexOf("target.drawImage(base,0,0)",backDraw);
+  assert.ok(backDraw>=0&&bodyDraw>backDraw);
+  assert.match(js,/back:\[20,28,88,92\]/);
+});
 test('avatar option cards show friendly labels without internal asset ids',()=>{
   assert.doesNotMatch(js,/part-name[^\n]*<small>\$\{item\.id\}<\/small>/);
   assert.doesNotMatch(js,/part-name[^\n]*<small>'\+item\.id\+'<\/small>/);
@@ -71,7 +80,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-21'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-22'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -109,7 +118,7 @@ test('avatar purchases spend the shared seed wallet through the parent integrati
 });
 
 test('all non-default avatar asset selectors are purchase-gated while skin stays free',()=>{
-  for(const category of ['hair','hairColor','eyes','upper','lower','earring','shoes','weapon','shield']){
+  for(const category of ['hair','hairColor','eyes','back','upper','lower','earring','shoes','weapon','shield']){
     assert.ok(js.includes("ensureAssetAccess('"+category+"'"),category);
   }
   assert.match(js,/ensureAssetAccess\(key,id,group\.defaultId,item\.label\)/);
