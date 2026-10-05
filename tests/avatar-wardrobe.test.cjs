@@ -3,9 +3,14 @@ const root=path.join(__dirname,'..'),dir=path.join(root,'assets/game/characters/
 const read=p=>JSON.parse(fs.readFileSync(path.join(dir,p),'utf8')),manifest=read('manifest.json'),catalog=read('wardrobe/catalog.json');
 const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'app/features/avatar/wardrobe-parts.js'),'utf8'),context);const api=context.window.KidscadeAvatarWardrobe;
 const tops=['hoodie-01','short-puffer-01','long-puffer-01','box-tee-01','leather-jacket-01','denim-jacket-01','suit-jacket-01','baseball-jacket-01'],bottoms=['tennis-skirt-01','detailed-jeans-01','cotton-trousers-01'];
+test('back accessory catalog registers default plus ten distinct 23-frame items',()=>{
+ const group=catalog.categories.back;assert.ok(group);assert.equal(group.label,'등 장식');assert.equal(group.defaultId,'no-back');assert.equal(group.layer,'back');assert.equal(group.items.length,11);
+ const labels=group.items.map(item=>item.label);for(const label of ['책가방','토끼가방','공룡가방','곰돌이가방','미니백팩','기타 케이스','천사날개','악마날개','로켓부스터','망토'])assert.ok(labels.includes(label),label);
+ for(const item of group.items){const part=read('wardrobe/'+item.file);assert.equal(part.assetIds.back,item.id,item.id);assert.equal(Object.keys(part.frames).length,23,item.id);for(const frameId of manifest.frameOrder){const pixels=part.frames[frameId].layers.back.operations[0].pixels;assert.ok(Array.isArray(pixels));if(item.id!=='no-back')assert.ok(pixels.length>80,item.id+' '+frameId)}}
+});
 test('all requested wardrobe styles and separate face/hat/mouth slots stay registered for the runtime shop',()=>{
  for(const [key,ids] of [['upper',tops],['lower',bottoms]]){const cat=read(key+'/catalog.json');for(const id of ids)assert.ok(cat.items.some(i=>i.id===id));assert.equal(new Set(cat.items.map(i=>i.id)).size,cat.items.length)}
- assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:7,hat:5,mouth:11});
+ assert.deepEqual(Object.fromEntries(Object.entries(catalog.categories).map(([k,g])=>[k,g.items.length])),{mask:7,hat:5,mouth:11,back:11});
  for(const g of Object.values(catalog.categories))for(const i of g.items)assert.equal(i.public,true);assert.equal(manifest.economy.pricing,'global-purchase-sequence');assert.equal(manifest.economy.defaultAssetsFree,true)
 });
 test('explicit 23-frame JSON modifies only its requested part and passes admin-compatible validation',()=>{
@@ -31,5 +36,5 @@ test('wardrobe preserves independent hat and face IDs and preloads reset default
  const broken=read('wardrobe/santa-hat-01.json');broken.frames['stand-01'].layers.body={operations:[]};assert.throws(()=>api.validate(broken,'hat','santa-hat-01',manifest.frameOrder));
 });
 test('public UI exposes selections, loads dependencies first, and persists new slots without JSON upload',()=>{
- const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8'),js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');for(const key of ['hat','mask','mouth'])assert.ok(html.includes('data-tab="'+key+'"'));assert.ok(html.indexOf('app/features/avatar/wardrobe-parts.js')<html.indexOf('app/features/avatar/avatar-economy.js'));assert.ok(html.indexOf('app/features/avatar/avatar-economy.js')<html.indexOf('avatar-pixel-studio.js'));assert.match(js,/wardrobe\.prepare\(state.assetIds\)/);assert.doesNotMatch(html,/type="file"|JSON 가져오기|JSON 내보내기/);
+ const html=fs.readFileSync(path.join(root,'avatar-studio.html'),'utf8'),js=fs.readFileSync(path.join(root,'avatar-pixel-studio.js'),'utf8');for(const key of ['hat','mask','mouth','back'])assert.ok(html.includes('data-tab="'+key+'"'));assert.ok(html.indexOf('app/features/avatar/wardrobe-parts.js')<html.indexOf('app/features/avatar/avatar-economy.js'));assert.ok(html.indexOf('app/features/avatar/avatar-economy.js')<html.indexOf('avatar-pixel-studio.js'));assert.match(js,/wardrobe\.prepare\(state.assetIds\)/);assert.doesNotMatch(html,/type="file"|JSON 가져오기|JSON 내보내기/);
 });
