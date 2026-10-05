@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-20';
+const PREVIEW_VERSION='pixel-v3-school-starter-21';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -1206,7 +1206,7 @@ async function hydrateEyeThumbnails(){
 }
 function renderEyeOptions(){
   const items=eyeCatalog?.items||[],selected=selectedEyeId();pickerTitle.textContent='눈';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-eye-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-eye-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-eye-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-eye-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}</span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-eye-thumb]').forEach(el=>{if(el.dataset.eyeThumb===eyeCatalog.defaultId)drawEyeThumbnail(el,el.dataset.eyeThumb)});hydrateEyeThumbnails();
 }
 function drawHairThumbnail(canvasElement,id){
@@ -1220,7 +1220,7 @@ async function hydrateHairThumbnails(){
 }
 function renderHairOptions(){
   const items=hairCatalog?.items||[],selected=selectedHairId();pickerTitle.textContent='헤어';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-hair-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-hair-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-hair-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-hair-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}</span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-hair-thumb]').forEach(el=>{if(el.dataset.hairThumb===hairCatalog.defaultId)drawHairThumbnail(el,el.dataset.hairThumb)});hydrateHairThumbnails();
 }
 function drawHairColorThumbnail(canvasElement,colorId){
@@ -1233,7 +1233,7 @@ function drawHairColorThumbnail(canvasElement,colorId){
 function renderHairColorOptions(){
   const items=hairColorCatalog?.items||[],selected=selectedHairColorId();
   pickerTitle.textContent='염색';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-hair-color-id="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-hair-color-thumb="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'<small>'+item.id+'</small></span></button>'}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-hair-color-id="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-hair-color-thumb="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'</span></button>'}).join('');
   optionGrid.querySelectorAll('canvas[data-hair-color-thumb]').forEach(el=>drawHairColorThumbnail(el,el.dataset.hairColorThumb));
 }
 
@@ -1248,7 +1248,7 @@ async function hydrateUpperThumbnails(){
 }
 function renderUpperOptions(){
   const items=upperCatalog?.items||[],selected=selectedUpperId();pickerTitle.textContent='상의';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-upper-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-upper-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-upper-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-upper-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}</span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-upper-thumb]').forEach(el=>{if(el.dataset.upperThumb===upperCatalog.defaultId)drawUpperThumbnail(el,el.dataset.upperThumb)});hydrateUpperThumbnails();
 }
 function drawLowerThumbnail(canvasElement,id){
@@ -1262,7 +1262,7 @@ async function hydrateLowerThumbnails(){
 }
 function renderLowerOptions(){
   const items=lowerCatalog?.items||[],selected=selectedLowerId();pickerTitle.textContent='하의';pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-lower-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-lower-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}<small>${item.id}</small></span></button>`}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selected;return `<button type='button' class='option${active?' active':''}' aria-pressed='${active?'true':'false'}' data-lower-id='${item.id}'><span class='hair-thumb'><canvas width='128' height='128' data-lower-thumb='${item.id}' aria-hidden='true'></canvas></span><span class='num'>${active?'✓':index+1}</span><span class='part-name'>${item.label}</span></button>`}).join('');
   optionGrid.querySelectorAll('canvas[data-lower-thumb]').forEach(el=>{if(el.dataset.lowerThumb===lowerCatalog.defaultId)drawLowerThumbnail(el,el.dataset.lowerThumb)});hydrateLowerThumbnails();
 }
 
@@ -1275,7 +1275,7 @@ function drawAccessoryThumbnail(canvasElement,tab,id){
 }
 function renderAccessoryOptions(tab,catalog,selectedId){
   const items=catalog?.items||[],label=PARTS[tab]?.label||tab;pickerTitle.textContent=label;pickerCount.textContent=items.length+'가지';optionGrid.classList.remove('skin-mode');const attr=tab+'-id',thumbAttr=tab+'-thumb';
-  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selectedId;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-'+attr+'="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-'+thumbAttr+'="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'<small>'+item.id+'</small></span></button>'}).join('');
+  optionGrid.innerHTML=items.map((item,index)=>{const active=item.id===selectedId;return '<button type="button" class="option'+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" data-'+attr+'="'+item.id+'"><span class="hair-thumb"><canvas width="128" height="128" data-'+thumbAttr+'="'+item.id+'" aria-hidden="true"></canvas></span><span class="num">'+(active?'✓':index+1)+'</span><span class="part-name">'+item.label+'</span></button>'}).join('');
   optionGrid.querySelectorAll('canvas[data-'+thumbAttr+']').forEach(el=>drawAccessoryThumbnail(el,tab,el.getAttribute('data-'+thumbAttr)));
 }
 function renderEarringOptions(){renderAccessoryOptions('earring',earringCatalog,selectedEarringId())}
@@ -1332,7 +1332,7 @@ function renderOptions(){
   optionGrid.innerHTML=`<button type="button" class="option active" aria-pressed="true" data-v3-part="${currentTab}">
     <span class="hair-thumb"><img class="base" alt="" src="${DEFAULT_IMAGE}?v=quality-2"></span>
     <span class="num">✓</span>
-    <span class="part-name">${meta.name}<small>${id}</small></span>
+    <span class="part-name">${meta.name}</span>
   </button>`;
 }
 function selectTab(tab){
@@ -1492,7 +1492,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-20',
+  version:'pixel-v3-school-starter-21',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
