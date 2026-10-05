@@ -247,7 +247,7 @@ test('Deep Diver v15 is substantially deeper and wider',()=>{
   assert.match(js,/const SUBZONES=\[/);
   assert.match(js,/expandedCount=Math\.max\(count,Math\.round\(count\*1\.55\)\)/);
   assert.match(js,/name:'포식자 해구'/);
-  assert.match(js,/if\(dep>=600\)world\.mission\.deep=true/);
+  assert.match(js,/if\(dep>=600\)\{?world\.mission\.deep=true/);
   assert.match(js,/dashTime/);
   assert.match(js,/visited\.reefMaze/);
   assert.match(js,/visited\.currentCut/);

@@ -681,7 +681,13 @@ function finish(){
  if(total>best())setBest(total);$("bestPill").textContent="최고 "+best();$("scoreBig").textContent=total;$("forecastScore").textContent=fscore+"/75";$("mapScore").textContent=mscore+"/15";$("alertScore").textContent=ascore+"/10";$("forecastMeter").style.width=(fscore/75*100)+"%";$("mapMeter").style.width=(mscore/15*100)+"%";$("alertMeter").style.width=(ascore/10*100)+"%";
  $("gradeText").textContent=correct===3&&total>=90?"자료를 읽고 정확히 예보했어요!":correct>=2&&total>=70?"근거 있는 예보였어요!":correct>=1?"관측 자료를 한 번 더 비교해 봐요.":"결과를 보고 관측 자료를 다시 읽어봐요.";
  var fb=[];fb.push("<b>실제 오후:</b> "+labels.weather[s.weather]+" · "+labels.trend[s.trend]+" · "+labels.advice[s.advice]);if(miss.length)fb.push("<br><b>예보와 달랐던 부분:</b> "+miss.join(", "));else fb.push("<br><b>세 가지 예보 판단이 모두 실제 변화와 맞았습니다.</b>");fb.push("<br><b>지도:</b> "+mapCorrect+" / "+mapExpected+"개 멘트에서 첫 지목이 정확했습니다.");fb.push("<br><b>긴급방송:</b> "+emergencyStarsText()+" · "+(state.alertStars===3?"날씨 변화, 지역, 안전 행동을 모두 잘 찾았어요!":state.alertStars===2?"두 가지를 잘 찾았어요. 그림을 한 번 더 비교하면 더 정확해져요.":"다음에는 바뀐 그림과 안전 행동을 천천히 연결해 봐요."));$("feedbackText").innerHTML=fb.join("");
- show("result");phase("결과 5/5");sdk("score",total);sdk("gameOver",{score:total})
+ show("result");phase("결과 5/5");sdk("score",total);
+ sdk("achievement","high_weathercaster_simulator.first_broadcast");
+ if(correct===3)sdk("achievement","high_weathercaster_simulator.forecast_perfect");
+ if(mapExpected>0&&mapCorrect===mapExpected)sdk("achievement","high_weathercaster_simulator.map_perfect");
+ if(state.alertStars===3)sdk("achievement","high_weathercaster_simulator.alert_perfect");
+ if(total===100)sdk("achievement","high_weathercaster_simulator.perfect_100");
+ sdk("result",{scope:"mission",status:"completed",outcome:total>=70?"clear":"fail",score:total,forecastCorrect:correct,mapCorrect:mapCorrect,mapExpected:mapExpected,alertStars:state.alertStars,perfect:total===100})
 }
 function reset(){pickScenario();document.querySelectorAll(".option").forEach(function(x){x.classList.remove("selected")});$("toLive").disabled=true;$("forecastSummary").textContent="아직 방송 대본을 작성하는 중이에요.";show("observe");phase("관측 1/5");if(!state.started){state.started=true;sdk("start")}}
 document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){state.tab=b.dataset.tab;state.viewed[state.tab]=true;document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x===b)});renderMap();updateObservationGate()})});

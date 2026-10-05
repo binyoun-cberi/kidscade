@@ -196,6 +196,69 @@
     }
   });
 
+  const EXTRA_LIVE = Object.freeze({
+    high_human_history_cards:Object.freeze([
+      Object.freeze({slot:'neolithic_settlement',icon:'🌾',title:'생활이 마을이 되다',description:'신석기 정착의 주요 조건을 달성하세요.'}),
+      Object.freeze({slot:'bronze_age',icon:'🥉',title:'청동의 시대',description:'청동기 생활 단계에 진입하세요.'}),
+      Object.freeze({slot:'iron_age',icon:'⚒️',title:'철은 모든 것을 바꾼다',description:'철기 생활 단계에 진입하세요.'}),
+      Object.freeze({slot:'four_lifestyles',icon:'🧭',title:'먹고사는 방법은 하나가 아니다',description:'사냥·농경·어로·목축을 모두 경험하세요.'}),
+      Object.freeze({slot:'dolmen',icon:'🪨',title:'거석의 시대',description:'고인돌을 세우세요.',type:'secret',hidden:true})
+    ]),
+    high_factory_tycoon:Object.freeze([
+      Object.freeze({slot:'first_shipment',icon:'📦',title:'첫 출하',description:'공장에서 첫 제품을 출고하세요.'}),
+      Object.freeze({slot:'inventor',icon:'🥪',title:'발명가',description:'처음으로 새로운 3단 이상 샌드위치를 발견하세요.'}),
+      Object.freeze({slot:'discoveries_3',icon:'📒',title:'메뉴 개발실',description:'서로 다른 샌드위치 3종을 도감에 등록하세요.'}),
+      Object.freeze({slot:'rate_10',icon:'⚙️',title:'멈추지 않는 벨트',description:'최근 1분 동안 제품 10개를 출고하세요.'}),
+      Object.freeze({slot:'zero_waste_30',icon:'♻️',title:'낭비 제로 공장',description:'폐기 없이 제품 30개를 연속 출고하세요.'}),
+      Object.freeze({slot:'rate_20',icon:'🏭',title:'대량생산',description:'최근 1분 동안 제품 20개를 출고하세요.',type:'secret',hidden:true})
+    ]),
+    high_seed_baseball:Object.freeze([
+      Object.freeze({slot:'first_hit',icon:'⚾',title:'플레이 볼!',description:'첫 안타를 기록하세요.'}),
+      Object.freeze({slot:'home_run',icon:'💥',title:'담장 밖으로!',description:'홈런을 기록하세요.'}),
+      Object.freeze({slot:'doctor_k',icon:'🔥',title:'닥터 K',description:'한 경기에서 투수 탈삼진 3개 이상을 기록하세요.'}),
+      Object.freeze({slot:'two_way',icon:'🌟',title:'투타겸업',description:'한 경기에서 안타 2개와 투수 탈삼진 2개를 모두 기록하세요.'}),
+      Object.freeze({slot:'shutout_win',icon:'🧱',title:'완봉승',description:'상대에게 한 점도 주지 않고 승리하세요.'}),
+      Object.freeze({slot:'extra_inning_win',icon:'🌙',title:'끝날 때까지 끝난 게 아니다',description:'연장전에서 승리하세요.',type:'secret',hidden:true})
+    ]),
+    high_weathercaster_simulator:Object.freeze([
+      Object.freeze({slot:'first_broadcast',icon:'🎙️',title:'첫 방송',description:'첫 기상 방송을 끝까지 마치세요.'}),
+      Object.freeze({slot:'forecast_perfect',icon:'🌤️',title:'예보 판단 만점',description:'핵심 날씨·변화·생활 정보를 모두 맞히세요.'}),
+      Object.freeze({slot:'map_perfect',icon:'🗺️',title:'지도 위의 기상캐스터',description:'방송 지도 지목을 모두 정확히 하세요.'}),
+      Object.freeze({slot:'alert_perfect',icon:'🚨',title:'긴급방송 완벽 대응',description:'긴급 기상방송에서 별 3개를 받으세요.'}),
+      Object.freeze({slot:'perfect_100',icon:'💯',title:'퍼펙트 뉴스룸',description:'기상 방송에서 100점을 기록하세요.',type:'secret',hidden:true})
+    ]),
+    job_scuba_diver:Object.freeze([
+      Object.freeze({slot:'first_mission',icon:'🤿',title:'첫 조사 임무',description:'첫 탐사 의뢰를 완료하고 무사히 귀환하세요.'}),
+      Object.freeze({slot:'depth_600',icon:'🌊',title:'빛이 희미해지는 곳',description:'수심 600m에 도달하세요.'}),
+      Object.freeze({slot:'depth_800',icon:'🌑',title:'심해 진입',description:'수심 800m에 도달하세요.'}),
+      Object.freeze({slot:'s_photo',icon:'📸',title:'연구소 표지 사진',description:'생물을 S등급으로 촬영하세요.'}),
+      Object.freeze({slot:'hadal_trinity',icon:'🧭',title:'심해 3대 지형',description:'고래 낙하·심해 크레바스·해저 화산을 모두 방문하세요.'}),
+      Object.freeze({slot:'hadal_mission',icon:'🏅',title:'심연에서 돌아온 사람',description:'최심부 탐사 의뢰를 완료하고 귀환하세요.',type:'secret',hidden:true})
+    ]),
+    job_maratang_simulator:Object.freeze([
+      Object.freeze({slot:'first_order',icon:'🥘',title:'첫 한 그릇',description:'첫 손님의 마라탕을 완성해 서빙하세요.'}),
+      Object.freeze({slot:'perfect_order',icon:'✨',title:'단골 예약',description:'한 주문에서 115점 이상을 받으세요.'}),
+      Object.freeze({slot:'zero_waste_day',icon:'♻️',title:'버리는 재료 0원',description:'폐기 손실 없이 하루 영업을 마치세요.'}),
+      Object.freeze({slot:'no_walkout_day',icon:'🙂',title:'아무도 돌아가지 않았다',description:'이탈 손님 없이 하루 영업을 마치세요.'}),
+      Object.freeze({slot:'reputation_90',icon:'⭐',title:'동네 소문난 맛집',description:'평판 90 이상을 달성하세요.'}),
+      Object.freeze({slot:'campaign_15',icon:'🏮',title:'15일의 마라탕집',description:'15일 타이쿤 캠페인을 완주하세요.'})
+    ]),
+    high_twelve_island:Object.freeze([
+      Object.freeze({slot:'first_rule',icon:'📜',title:'우리 마을의 첫 규칙',description:'처음으로 공동체 규칙을 제정하세요.'}),
+      Object.freeze({slot:'autonomous_village',icon:'🏛️',title:'자치 마을',description:'인구·농장·규칙 목표를 달성해 2단계 마을로 발전하세요.'}),
+      Object.freeze({slot:'newcomers_5',icon:'⛵',title:'사람이 모이는 섬',description:'새 주민 5명이 섬에 정착하게 하세요.'}),
+      Object.freeze({slot:'trust_90',icon:'🤝',title:'믿을 만한 촌장',description:'공동체 신뢰를 90 이상으로 올리세요.'}),
+      Object.freeze({slot:'rights_safe_30',icon:'🕊️',title:'모두의 마을',description:'권리 제한 없이 30주 이상 공동체를 운영하세요.',type:'secret',hidden:true})
+    ]),
+    high_little_world:Object.freeze([
+      Object.freeze({slot:'first_life',icon:'🌱',title:'생명의 시작',description:'살아 있는 식생이 자리 잡은 세계를 만드세요.'}),
+      Object.freeze({slot:'food_chain',icon:'🦊',title:'먹고 먹히는 세계',description:'식생·초식동물·포식동물이 함께 살아가는 생태계를 만드세요.'}),
+      Object.freeze({slot:'first_village',icon:'🏘️',title:'첫 문명',description:'정착지를 마을 단계까지 성장시키세요.'}),
+      Object.freeze({slot:'two_settlements',icon:'🧭',title:'세상은 넓다',description:'두 개 이상의 정착지가 함께 살아가게 하세요.'}),
+      Object.freeze({slot:'roads',icon:'🛣️',title:'문명의 길',description:'서로 다른 정착지를 잇는 도로망이 생기게 하세요.'})
+    ])
+  });
+
   function sanitizeId(value) {
     return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '');
   }
@@ -260,6 +323,15 @@
         enabled:Boolean(rules.secret),
         rule:rules.secret || null
       }));
+
+      (EXTRA_LIVE[gameId] || []).forEach(item => {
+        defs.push(def(gameId, item.slot, item.title, item.description, {
+          icon:item.icon || '🏆',
+          type:item.type || 'challenge',
+          hidden:Boolean(item.hidden),
+          enabled:true
+        }));
+      });
     });
     return defs;
   }
@@ -292,6 +364,7 @@
   window.KidscadeAchievementCatalog = Object.freeze({
     plans:PLANS,
     liveRules:LIVE_RULES,
+    extraLive:EXTRA_LIVE,
     buildDefinitions,
     register,
     sanitizeId

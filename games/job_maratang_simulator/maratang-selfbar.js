@@ -138,6 +138,12 @@ const els = {
   restockAllBtn:$('#restockAllBtn'), nextDayBtn:$('#nextDayBtn'), eventBanner:$('#eventBanner'), tomorrowEvent:$('#tomorrowEvent')
 };
 
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+  if(reportedAchievements.has(slot))return;
+  reportedAchievements.add(slot);
+  try{window.KidscadeGame?.achievement?.('job_maratang_simulator.'+slot,detail)}catch(_){}
+}
 const state = {
   score:0, served:0, day:1, dayServed:0, dayTarget:BASE_CUSTOMERS, queue:0,
   cash:START_CASH, reputation:50, bowl:[], spice:null, sauces:[], order:null, phase:'idle',
@@ -747,6 +753,9 @@ function serve(){
   if(state.phase!=='ready'||state.customerSettled)return;
   state.customerSettled=true;const result=evaluate(),money=settleCustomer(result);
   state.score+=result.points;state.served++;state.dayServed++;state.queue=Math.max(0,state.dayTarget-state.dayServed-1);
+  if(state.served===1)reportAchievement('first_order',{points:result.points});
+  if(result.points>=115)reportAchievement('perfect_order',{points:result.points,day:state.day});
+  if(state.reputation>=90)reportAchievement('reputation_90',{reputation:state.reputation,day:state.day});
   updateReadout();stopPatience();setPhase('idle');
   const great=result.points>=115, okay=result.points>=80;
   els.resultKicker.textContent=`DAY ${state.day} · 손님 ${state.dayServed} / ${state.dayTarget}`;
@@ -826,7 +835,7 @@ function renderManagement(){
   updateReadout();
 }
 function finishCampaign(){
-  state.completed=true;stopPatience();setPhase('idle');
+  state.completed=true;stopPatience();setPhase('idle');reportAchievement('campaign_15',{days:CAMPAIGN_DAYS,cash:state.cash,reputation:state.reputation,served:state.served});
   const rating=state.reputation>=75?'동네 인기 맛집':state.reputation>=55?'안정적인 마라탕집':'다시 손봐야 할 가게';
   els.resultKicker.textContent='15일 타이쿤 결과';els.resultTitle.textContent=rating;
   els.resultScore.textContent=Math.round(state.cash).toLocaleString();els.resultUnit.textContent='원';els.resultText.textContent=`최종 현금 ₩${Math.round(state.cash).toLocaleString()} · 평판 ${Math.round(state.reputation)} · 총 손님 ${state.served}명`;
@@ -834,6 +843,10 @@ function finishCampaign(){
 }
 function finishDay(){
   stopPatience();setPhase('idle');
+  if(state.dayWaste===0)reportAchievement('zero_waste_day',{day:state.day,revenue:state.dayRevenue});
+  if(state.dayWalkouts===0)reportAchievement('no_walkout_day',{day:state.day,served:state.dayServed});
+  if(state.reputation>=90)reportAchievement('reputation_90',{reputation:state.reputation,day:state.day});
+  try{window.KidscadeGame?.result?.({scope:'shift',status:'completed',outcome:'clear',endsSession:false,day:state.day,served:state.dayServed,revenue:state.dayRevenue,waste:state.dayWaste,walkouts:state.dayWalkouts,reputation:state.reputation})}catch(_){}
   if(state.day>=CAMPAIGN_DAYS)return finishCampaign();
   state.nextEvent=chooseDailyEvent(state.day+1);
   renderManagement();els.manageOverlay.classList.add('show');

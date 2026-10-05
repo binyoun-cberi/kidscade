@@ -580,6 +580,12 @@ let restaurant=null,dockMissionId=null,dockTab='none';
 function resize(){const r=C.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);view.w=Math.max(1,r.width||innerWidth);view.h=Math.max(1,r.height||innerHeight);view.dpr=dpr;C.width=Math.round(view.w*dpr);C.height=Math.round(view.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
 addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rnd=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t;
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+ if(reportedAchievements.has(slot))return;
+ reportedAchievements.add(slot);
+ try{window.KidscadeGame?.achievement?.('job_scuba_diver.'+slot,detail)}catch(_){}
+}
 const depthOf=y=>{const shallowEnd=(4200-WORLD.surface)/WORLD.scaleDepth;if(y<=4200)return Math.max(0,(y-WORLD.surface)/WORLD.scaleDepth);return shallowEnd+Math.max(0,y-4200)/1.2};
 const zoneForY=y=>ZONES.find(z=>y>=z.y0&&y<z.y1)||ZONES[ZONES.length-1];
 const money=n=>Math.round(n).toLocaleString('ko-KR')+'원';
@@ -1366,7 +1372,7 @@ function oxygenReserveStatus(){
 }
 function useCamera(){
  const f=findCameraTarget();if(!f){showHint('촬영 대상을 앞쪽 프레임에 맞추세요.',1100);beep(180,.05);return}
- observeCreature(f,2);const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade),band=creatureSizeBand(f),state=creatureCaptureState(f),weightRange=observationWeightRange(f,'camera');
+ observeCreature(f,2);const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade),band=creatureSizeBand(f),state=creatureCaptureState(f),weightRange=observationWeightRange(f,'camera');if(grade==='S')reportAchievement('s_photo',{species:f.key,depth:Math.round(depthOf(f.y))});
  f.photo=betterGrade(f.photo,grade);world.mission.photos[f.key]=true;world.mission.photoGrades[f.key]=newBest;
  meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0,largest:0};meta.codex[f.key].count++;meta.codex[f.key].best=betterGrade(meta.codex[f.key].best,grade);meta.codex[f.key].largest=Math.max(meta.codex[f.key].largest||0,f.sizeFactor||1);
  world.mission.photoValues=world.mission.photoValues||{};const oldValue=world.mission.photoValues[f.key]||0,newValue=photoValue(f,grade),bonus=Math.max(0,newValue-oldValue);world.mission.photoValues[f.key]=Math.max(oldValue,newValue);
@@ -1644,10 +1650,10 @@ function update(dt){
  const zone=zoneForY(p.y),subNow=subzoneForY(p.y),subRule=SUBZONE_RULES[subNow.id]||{},rule=ZONE_RULES[zone.id]||ZONE_RULES.reef,dep=depthOf(p.y);applyDepthPressure(dt,p,dep);applySubzoneTerrainHazard(terrainHit,p,impactSpeed);
  const effort=1+len*.10+salvageLoad*.12+catchLoad*.18+(dashing?.72:0),pressureBurn=1+Math.min(1.15,world.pressureOver/150*.52),ascentO2=iy<-.12?st.ascentO2:1;
  p.oxygen-=dt*rule.oxygen*effort*pressureBurn*(subRule.oxygen||1)*ascentO2;applyZoneEnvironment(dt,p);if(subRule.sonarRecharge>1)world.sonarCd=Math.max(0,world.sonarCd-dt*(subRule.sonarRecharge-1));
- world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600)world.mission.deep=true;if(dep>=800)world.mission.hadal=true;
+ world.maxDepth=Math.max(world.maxDepth,dep);if(dep>=600){world.mission.deep=true;reportAchievement('depth_600',{depth:Math.round(dep)})}if(dep>=800){world.mission.hadal=true;reportAchievement('depth_800',{depth:Math.round(dep)})}
  const reserve=oxygenReserveStatus();if(reserve.code!==world.reserveState){world.reserveState=reserve.code;if(reserve.code==='warn')showHint('귀환 산소가 빠듯합니다. 더 깊이 갈지 돌아갈지 결정하세요.',1500);if(reserve.code==='critical')showHint('귀환 산소 위험 · 지금 상승하세요!',1800)}
  const zn=zone.name;if(zn!==world.lastZone){world.lastZone=zn;world.zoneFlash=1;showZone(zone);showHint(zone.tag+' · 위험: '+rule.danger,1900)}
- const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+(SUBZONE_RULES[sub.id]?.tip||zone.name),2300)}}
+ const sub=subzoneForY(p.y);world.mission.visited[sub.id]=true;if(world.mission.visited.whaleFall&&world.mission.visited.riftAbyss&&world.mission.visited.volcanoCaldera)reportAchievement('hadal_trinity',{visited:['whaleFall','riftAbyss','volcanoCaldera']});if(sub.id!==world.lastSubzone){world.lastSubzone=sub.id;if(world.time>2){world.zoneFlash=Math.max(world.zoneFlash,.45);showHint(sub.name+' · '+(SUBZONE_RULES[sub.id]?.tip||zone.name),2300)}}
  world.zoneFlash=Math.max(0,world.zoneFlash-dt*1.35);world.envPulse=Math.max(0,world.envPulse-dt*.8);
  rebuildFishGrid();for(const f of world.fish){if(f.alive)updateFishAI(f,dt,p,st)}
  updateTether(dt);updateTraps(dt);
@@ -1672,6 +1678,8 @@ function restToNextMorning(toHome=false){
 function finishDive(ok,reason){
  if(state!=='playing')return;state='result';document.body.classList.remove('playing','cameraMode','sonarActive');resetInputs();syncAmbience();
  const hasMission=world.contract.id!=='free',complete=hasMission&&missionComplete(),base=ok&&complete?world.contract.reward:0;
+ if(ok&&complete){reportAchievement('first_mission',{contract:world.contract.id});if(world.contract.id==='hadal')reportAchievement('hadal_mission',{contract:world.contract.id,maxDepth:Math.round(world.maxDepth)})}
+ if(hasMission){try{window.KidscadeGame?.result?.({scope:'mission',status:ok&&complete?'completed':'failed',outcome:ok&&complete?'clear':'fail',score:Math.round(world.maxDepth),contract:world.contract.id,maxDepth:Math.round(world.maxDepth),complete})}catch(_){}}
  const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0,dailyComplete=ok&&dailyTaskComplete(world.daily),dailyBonus=dailyComplete?world.daily.reward:0;
  const gain=ok?Math.max(0,world.income+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];

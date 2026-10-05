@@ -1123,16 +1123,23 @@ function updateEra(){
  ui.era.textContent=labels[reached];
  if(reached>(order[state.ageReached]??0)){
   state.ageReached=next;
-  if(next==='bronze')showToast('🥉 청동기 진입! 광업·제련·교역이 중요해집니다.');
-  if(next==='iron')showToast('⚒️ 철기 진입! 생산력이 크게 높아집니다.');
+  if(next==='bronze'){showToast('🥉 청동기 진입! 광업·제련·교역이 중요해집니다.');reportAchievement('bronze_age',{age:'bronze'});}
+  if(next==='iron'){showToast('⚒️ 철기 진입! 생산력이 크게 높아집니다.');reportAchievement('iron_age',{age:'iron'});}
  }
 }
 function onCreated(type){
+ if(type==='dolmen')reportAchievement('dolmen',{building:'dolmen'});
  if(['campfire','hearth','kiln','highKiln','dressedHide','groundAxe','combPottery','milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','pitHouse','village','wovenClothing','storageBasket','stonePick','copperIngot','tinIngot','bronzeIngot','bronzeAxe','bronzePick','bronzeSpear','bronzeHammer','bloomery','ironBloom','ironIngot','ironAxe','ironPick','ironHoe','ironSpear','largeVillage','bronzeCenter','ironTown','dolmen'].includes(type))discover(C[type].name);
  updateEra();
 }
+const reportedAchievements=new Set();
+function reportAchievement(slot,detail={}){
+ if(reportedAchievements.has(slot))return;
+ reportedAchievements.add(slot);
+ try{window.KidscadeGame?.achievement?.('high_human_history_cards.'+slot,detail);window.KidscadeGame?.milestone?.('achievement_'+slot,{uniqueKey:slot,...detail})}catch(_){}
+}
 function discover(name){if(state.discoveries.has(name))return;state.discoveries.add(name);showToast('💡 새 기술: '+name);try{window.KidscadeGame?.sound?.('correct')}catch(_){}}
-function addLife(k,n=1){state.lifestyle[k]+=n;}
+function addLife(k,n=1){state.lifestyle[k]+=n;if(['hunt','farm','fish','herd'].every(key=>state.lifestyle[key]>0))reportAchievement('four_lifestyles',{lifestyle:{...state.lifestyle}});}
 
 function settlementScore(){
  let score=0;const seen=new Set();
@@ -1153,6 +1160,7 @@ function checkMilestone(){
  const score=settlementScore(),advanced=['milletFarm','broomcornFarm','beanFarm','fishingGround','netFishery','trapFishery','goatRanch','fishPond','village','granary','kiln','highKiln'].filter(t=>has(t)).length;
  if(!state.milestoneShown&&score>=9&&advanced>=2){
   state.milestoneShown=true;
+  reportAchievement('neolithic_settlement',{score,advanced});
   showMilestone('생활이 마을이 되었어요','신석기 정착 달성','농경·어로·목축과 주거·저장 기술이 연결되었습니다. 이제 산과 동굴에서 금속 광맥을 찾아 다음 시대로 나아갈 수 있습니다.');
   try{window.KidscadeGame?.score?.(score*100+state.discoveries.size*20)}catch(_){}
   return;
