@@ -140,9 +140,9 @@ function animate(root,time,moving,onGround=true,motion='ground',action=null){
 
   const phase=time/115;
   if(actionMode==='dead'){
-    rig.plane.position.y=.62;
+    rig.plane.position.y=1.14;
     rig.plane.rotation.x=0;
-    rig.plane.rotation.z=-.06;
+    rig.plane.rotation.z=0;
     rig.plane.scale.set(1,1,1);
     rig.shadow.scale.setScalar(1.08);
     rig.shadow.material.opacity=.13;
