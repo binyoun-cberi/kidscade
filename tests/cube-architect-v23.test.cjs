@@ -15,7 +15,7 @@ test('v23 creature rework parses and is cache-busted',()=>{
   assert.doesNotThrow(()=>new Function(creatures));
   assert.match(html,/cube-architect-creatures\.js\?v=20261005-hunt1/);
   assert.match(html,/cube-architect-creature-assets\.js\?v=20261004-32/);
-  assert.match(html,/cube-architect\.js\?v=20261005-exploration1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-craft-audio1/);
   assert.match(html,/cube-architect\.css\?v=20261003-29/);
 });
 
