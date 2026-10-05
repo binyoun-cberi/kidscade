@@ -128,10 +128,10 @@ test('skin recoloring covers every source and derived animation frame',()=>{
 });
 
 test('skin color persists in the v3 avatar state and reset returns to original tone',()=>{
-  assert.match(js,/let state=\{version:3,setId:'school-starter-01',skinColor:null\}/);
+  assert.match(js,/let state=\{version:3,setId:'school-starter-01',skinColor:null,hairColorId:'brown'\}/);
   assert.match(js,/skinColor:normalizeHexColor\(saved\.skinColor\)/);
   assert.match(js,/state\.skinColor=normalizeHexColor\(value\)/);
-  assert.match(js,/state=\{version:3,setId:manifest\?\.id\|\|'school-starter-01',skinColor:null\}/);
+  assert.match(js,/state=\{version:3,setId:manifest\?\.id\|\|'school-starter-01',skinColor:null,hairColorId:hairColorCatalog\?\.defaultId\|\|'brown'\}/);
   assert.match(js,/localStorage\.setItem\(STATE_KEY,JSON\.stringify\(payload\)\)/);
 });
 
@@ -267,12 +267,12 @@ test('custom hair renders from clean BODY frames instead of the baked default-ha
   const clean=draw.slice(cleanStart,fallbackStart);
   const fallback=draw.slice(fallbackStart);
   assert.match(clean,/baseCtx\.drawImage\(cleanBody,0,0\)/);
-  assert.match(clean,/if\(customHair\)paintHairLayer\(baseCtx,hairLayerCanvas\(hairId,frameId\)\)/);
-  assert.match(clean,/else drawPixelTuples\(baseCtx,packLayerPixels\(frameId,'hair'\)\)/);
+  assert.match(clean,/if\(customHair\)paintHairLayer\(baseCtx,hairLayerCanvas\(hairId,frameId,hairColorId\)\)/);
+  assert.match(clean,/else drawPixelTuples\(baseCtx,recolorHairPixels\(packLayerPixels\(frameId,'hair'\),hairColorId\)\)/);
   assert.doesNotMatch(clean,/clearBaseHair/);
   assert.doesNotMatch(clean,/drawImage\(sheet/);
   assert.match(fallback,/baseCtx\.drawImage\(sheet,index\*SIZE/);
-  assert.match(fallback,/if\(customHair\)clearBaseHair\(baseCtx,frameId\)/);
+  assert.match(fallback,/if\(customHair\|\|coloredHair\)clearBaseHair\(baseCtx,frameId\)/);
 });
 
 test('public renderer keeps legacy hair clearing only as fallback across all 23 motion frames',()=>{
