@@ -276,7 +276,7 @@
     for (const t of city.tiles) t.powered = false;
     const network = networkSet(city,"powerLine","powerPlant");
     let plants=0;
-    for (const t of city.tiles) if (t.civic === "powerPlant" && t.damage < 3 && t.roadAccess) plants++;
+    for (const t of city.tiles) if (t.civic === "powerPlant" && t.damage < 3) plants++;
     const winterLoad = village && village.coldUntil > village.tick ? 1.22 : 1;
     const capacity = plants * 70 * clamp(city.budgetRatio,.2,1);
 
@@ -305,7 +305,7 @@
     const network = networkSet(city,"pipe","waterTower");
     let towers=0;
     for (const t of city.tiles) {
-      if (t.civic === "waterTower" && t.damage < 3 && t.roadAccess && t.powered) towers++;
+      if (t.civic === "waterTower" && t.damage < 3 && t.powered) towers++;
     }
     const heat = village?.disasters?.heat > village?.tick ? .72 : 1;
     const villageWater = Number(village?.water);
