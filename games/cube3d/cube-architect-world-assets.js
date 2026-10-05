@@ -26,7 +26,10 @@ const PROP_SPECS={
 const TOOL_SPECS={
   woodPick:{url:ROOT+'Tools/glTF/Pickaxe_Wood.gltf',height:.72},
   stonePick:{url:ROOT+'Tools/glTF/Pickaxe_Stone.gltf',height:.72},
-  ironPick:{url:ROOT+'Tools/glTF/Pickaxe_Gold.gltf',height:.72,tint:0xc6d0d8}
+  ironPick:{url:ROOT+'Tools/glTF/Pickaxe_Gold.gltf',height:.72,tint:0xc6d0d8},
+  woodSword:{url:ROOT+'Tools/glTF/Sword_Wood.gltf',height:.78},
+  stoneSword:{url:ROOT+'Tools/glTF/Sword_Stone.gltf',height:.78},
+  ironSword:{url:ROOT+'Tools/glTF/Sword_Gold.gltf',height:.78,tint:0xc6d0d8}
 };
 
 function cloneMaterial(material,tint){
