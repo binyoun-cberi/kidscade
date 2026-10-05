@@ -136,7 +136,7 @@ test('Seed School class participation persists once per period per day',()=>{
   assert.match(economy,/attempts:old\.schoolClasses/);
   assert.match(economy,/function schoolClassPanel\(\)/);
   assert.match(economy,/function answerSchoolClass\(periodId,value\)/);
-  assert.match(economy,/const key=p\.survival\.day\+'\:'+period\.id/);
+  assert.ok(economy.includes("const key=p.survival.day+':'+period.id"),'school class completion key must be day + period');
   assert.match(economy,/t\.schoolClasses\.completed\[key\]=true/);
   assert.match(economy,/data-school-class-answer/);
   assert.match(economy,/data-school-class-open/);
