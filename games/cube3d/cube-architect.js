@@ -1007,6 +1007,14 @@ const BLOCK_DEFS={
   woodPick:{name:'나무 곡괭이',icon:'⛏',color:0xad906c,category:'기능',solid:false,hidden:true},
   stonePick:{name:'돌 곡괭이',icon:'⛏',color:0x818c92,category:'기능',solid:false,hidden:true},
   ironPick:{name:'철 곡괭이',icon:'⛏',color:0xcbd4db,category:'기능',solid:false,hidden:true},
+  woodSword:{name:'나무 검',icon:'🗡',color:0xb88b5b,category:'기능',solid:false,hidden:true},
+  stoneSword:{name:'돌 검',icon:'🗡',color:0x87919a,category:'기능',solid:false,hidden:true},
+  ironSword:{name:'철 검',icon:'🗡',color:0xcbd4db,category:'기능',solid:false,hidden:true},
+  wildBerry:{name:'산딸기',icon:'🫐',color:0xb1476b,category:'자연',solid:false,hidden:true},
+  egg:{name:'달걀',icon:'🥚',color:0xf5e8c7,category:'자연',solid:false,hidden:true},
+  cookedEgg:{name:'구운 달걀',icon:'🍳',color:0xf2c85f,category:'자연',solid:false,hidden:true},
+  wool:{name:'양털',icon:'☁',color:0xf1eee7,category:'자연',solid:false,hidden:true},
+  woolMat:{name:'양털 쿠션 블록',icon:'▦',color:0xe9e3dc,category:'건축',solid:true},
 
   grass:{name:'잔디',icon:'🌱',color:0x69b85f,category:'자연',solid:true},
   dirt:{name:'흙',icon:'🟫',color:0x8b6043,category:'자연',solid:true},
@@ -1040,8 +1048,12 @@ const BLOCK_DEFS={
   fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
-const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
-const HOTBAR_TOOL_TYPES=['woodPick','stonePick','ironPick'];
+const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','woolMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
+const HOTBAR_TOOL_TYPES=['woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'];
+const CONSUMABLE_TYPES={
+  wildBerry:{heal:1,label:'산딸기'},
+  cookedEgg:{heal:2,label:'구운 달걀'}
+};
 const WORLD_HALF=96,WORLD_MIN_Y=-6,WORLD_MAX_Y=48,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
@@ -1060,7 +1072,8 @@ function worldChunkKey(x,z){
 const voxelRuntime=window.CubeArchitectVoxel||null;
 function newSurvivalStats(){
   return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
-    cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[]};
+    cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[],
+    foraged:{},hunted:{},foodsEaten:0};
 }
 function trackSurvival(action,type,n=1){
   if(gameFreeMode!=='survival')return;
@@ -1082,6 +1095,12 @@ function trackSurvival(action,type,n=1){
     if(!survivalStats.found.includes(type))survivalStats.found.push(type);
   }else if(action==='restore'){
     if(!survivalStats.restored.includes(type))survivalStats.restored.push(type);
+  }else if(action==='forage'||action==='hunt'){
+    const field=action==='forage'?'foraged':'hunted';
+    survivalStats[field]=survivalStats[field]||{};
+    survivalStats[field][type]=(survivalStats[field][type]||0)+n;
+  }else if(action==='eat'){
+    survivalStats.foodsEaten=(survivalStats.foodsEaten||0)+n;
   }
   advanceSurvival();
 }
@@ -1845,13 +1864,14 @@ let freeSelectedShapeKey=null,freeElementMode='edge',freeElementColor='#ff7043';
 let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightningFlash=0;
 let critters=[],critterClock=0;
 let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0,lastCreatureAttackAt=0;
-let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0,nextEliteSpawnCheckAt=0;
+let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},creatureForageAt={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0,nextEliteSpawnCheckAt=0;
 const FURNACE_RECIPES=[
   {input:'sand',output:'glass',label:'모래 → 유리',note:'모래를 높은 온도로 가열하면 유리 재료가 됩니다.'},
   {input:'log',output:'charcoal',label:'원목 → 숯',note:'산소가 적은 상태에서 목재를 가열하는 변화를 단순화한 실험입니다.'},
   {input:'clay',output:'brick',label:'점토 → 벽돌',note:'점토를 가열해 단단한 건축 재료로 바꿉니다.'},
   {input:'ironOre',output:'ironBlock',label:'철광석 → 철',note:'게임에서는 제련 과정을 간단히 표현합니다.'},
-  {input:'stone',output:'smoothStone',label:'돌 → 매끈한 돌',note:'가열·가공된 건축용 돌을 표현합니다.'}
+  {input:'stone',output:'smoothStone',label:'돌 → 매끈한 돌',note:'가열·가공된 건축용 돌을 표현합니다.'},
+  {input:'egg',output:'cookedEgg',label:'달걀 → 구운 달걀',note:'동물에게서 얻은 식재료를 익혀 회복 음식으로 만듭니다.'}
 ];
 
 function freeAvatarApi(){return window.CubeArchitectAvatar||null}
@@ -1922,7 +1942,7 @@ function freeLookVector(){
   return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
 }
 function desiredHeldTool(){
-  return ['woodPick','stonePick','ironPick'].includes(selectedType)?selectedType:'';
+  return HOTBAR_TOOL_TYPES.includes(selectedType)?selectedType:'';
 }
 function syncFreeHeldTool(){
   const key=desiredHeldTool(),api=window.CubeArchitectWorldAssets;
@@ -2710,7 +2730,7 @@ function initFree(){
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
-  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
+  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -2818,12 +2838,22 @@ function consumeBag(type,n=1){
   if(inventoryOpen&&inventoryBatchDepth===0)buildInventory();
   return true;
 }
+function consumeFood(type){
+  const food=CONSUMABLE_TYPES[type];
+  if(!food||bagCount(type)<1)return false;
+  if(survivalHealth>=5){toast('지금은 생명이 가득해요. 필요할 때 먹어 보세요.');return false}
+  consumeBag(type,1);
+  survivalHealth=Math.min(5,survivalHealth+food.heal);
+  healthRegenClock=0;trackSurvival('eat',type,1);updateCreatureHealthUi();
+  buildHotbar();if(inventoryOpen)buildInventory('전체');markFreeWorldDirty(350);
+  toast(food.label+'을(를) 먹고 생명 '+food.heal+'칸을 회복했어요.');sfx('good');return true;
+}
 function recipePossible(recipe){
   return (!recipe.bench||hasWorkbench())&&
     Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
 }
 function recipeCategory(recipe){
-  if(['workbench','woodPick','stonePick','ironPick','furnace'].includes(recipe.id))return '도구';
+  if(['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword','furnace'].includes(recipe.id))return '도구';
   const type=Object.keys(recipe.gives||{})[0],cat=blockDef(type).category;
   if(['건축','기능','도형'].includes(cat))return '건축';
   return '재료';
@@ -2832,7 +2862,7 @@ function visibleSurvivalRecipes(){
   const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
     snowBrick:'snow',cactusDye:'desert'};
   return worldRules.RECIPES.filter(r=>r.stage<=survivalStage&&recipeUnlocked(r.id)&&
-    (!['workbench','woodPick','stonePick','ironPick'].includes(r.id)||!bagCount(r.id))&&
+    (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'].includes(r.id)||!bagCount(r.id))&&
     (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
       Object.keys(r.needs).some(item=>bagCount(item)>0)))
     .sort((a,b)=>Number(recipePossible(b))-Number(recipePossible(a))||a.stage-b.stage);
@@ -2933,8 +2963,10 @@ function buildInventory(category='전체'){
     for(const [type,n] of resources){
       const d=blockDef(type),b=document.createElement('button');
       b.className='inventory-item';const hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
-      b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개</small>';
-      if(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
+      const edible=!!CONSUMABLE_TYPES[type];
+      b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개'+(edible?' · 눌러서 먹기':'')+'</small>';
+      if(edible)b.onclick=()=>consumeFood(type);
+      else if(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
       else b.disabled=true;
       grid.appendChild(b);
     }
@@ -3052,9 +3084,9 @@ function updateFreeMission(){
     $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
     $('freeState').textContent='생존 · '+(freeFluidKind==='water'?'수영 · ':freeFluidKind==='lava'?'용암 · ':'')+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
-      survivalStage<3?'좌클릭 유지 채집 · E 가방·제작 · Space 점프 · V 시점':
-      survivalStage===3?'E 제작대 · 2×1×1 직육면체 설계 · 우클릭 설치':
-      '좌클릭 유지 채집 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
+      survivalStage<3?'좌클릭 유지 채집 · F 생물 상호작용 · E 가방·제작 · V 시점':
+      survivalStage===3?'E 제작대 · F 생물 상호작용 · 2×1×1 직육면체 설계':
+      '좌클릭 채집·전투 · F 생물 상호작용 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
     $('freeQuestTitle').textContent='월드 탐험 기록';
@@ -3344,7 +3376,13 @@ function breakFreeBlock(hit){
       if(type!=='leaves'&&type!=='pineLeaves'){
         addToBag(resource,volume);
         trackSurvival('harvest',type,volume);
-      }else if(hash2(x*7+y,z*11-y)>.72)addToBag('sapling',1);
+      }else{
+        const roll=hash2(x*7+y,z*11-y),biomeId=worldRules.region(x,z);
+        if((biomeId==='forest'||biomeId==='flowers')&&roll>.86){
+          addToBag('wildBerry',1);trackSurvival('forage','wildBerry',1);
+          toast('나뭇잎 사이에서 산딸기를 찾았어요!');
+        }else if(roll>.72)addToBag('sapling',1);
+      }
     }
     const nearby=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]]
       .map(v=>getBlock(x+v[0],y+v[1],z+v[2]))
@@ -3558,7 +3596,8 @@ function saveFreeWorld(){
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
-    creatureDefeats:{...creatureDefeats},seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
+    creatureDefeats:{...creatureDefeats},creatureForageAt:{...creatureForageAt},
+    seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
@@ -3625,6 +3664,7 @@ function loadFreeWorld(){
         survivalHealth=Math.max(1,Math.min(5,Number(data.health)||5));
         survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
         creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
+        creatureForageAt=data.creatureForageAt&&typeof data.creatureForageAt==='object'?{...data.creatureForageAt}:{};
         seenCreatureKinds=new Set(Array.isArray(data.seenCreatures)?data.seenCreatures:[]);
         nextEliteSpawnCheckAt=Math.max(survivalWorldTime,Number(data.nextEliteSpawnCheckAt)||0);
         firstNightStarted=!!data.firstNightStarted;
@@ -4090,6 +4130,29 @@ function creatureRayHit(max=2.35){
 function creatureReward(root){
   for(const [type,n] of Object.entries(root.userData.spec.reward||{}))addToBag(type,n);
 }
+function interactWildCreature(){
+  if(gameFreeMode!=='survival')return false;
+  const hit=creatureRayHit(2.9);if(!hit)return false;
+  const root=hit.object.userData.creatureRoot,u=root?.userData;if(!root||u.dead)return false;
+  const spec=u.spec;
+  if(spec.kind==='hostile'){
+    toast(spec.name+'은(는) 위험한 생물이에요. 좌클릭으로 방어하거나 거리를 두세요.');return true;
+  }
+  const forage=spec.forage;
+  if(!forage){
+    u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.2;
+    toast('생물 관찰 · '+creatureHint(spec));return true;
+  }
+  const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0);
+  if(survivalWorldTime<readyAt){
+    toast(spec.name+'에게 다시 다가가려면 '+Math.ceil(readyAt-survivalWorldTime)+'초 정도 기다려 주세요.');return true;
+  }
+  let total=0;
+  for(const [type,n] of Object.entries(forage.reward||{})){addToBag(type,n);total+=n}
+  creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);
+  trackSurvival('forage',spec.id,Math.max(1,total));u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.15;
+  toast(spec.name+'과(와) 조심히 상호작용해서 '+(forage.label||'재료')+'을(를) 얻었어요.');sfx('good');markFreeWorldDirty(350);return true;
+}
 function hitWildCreature(){
   if(gameFreeMode!=='survival')return false;
   const hit=creatureRayHit();if(!hit)return false;
@@ -4100,15 +4163,16 @@ function hitWildCreature(){
     u.turn=.1;toast(u.spec.name+'이(가) 놀라서 도망갔어요.');return true;
   }
   if(u.assembling){toast('큐브 골렘이 몸을 조립하는 중이에요!');return true}
-  if(now-lastCreatureAttackAt<480)return true;
+  const tool=selectedType||'hand',sword=tool.endsWith('Sword');
+  if(now-lastCreatureAttackAt<(sword?360:480))return true;
   lastCreatureAttackAt=now;
-  const tool=selectedType||'hand';
-  const power=tool==='ironPick'?2:(u.spec.id==='cubeGolem'&&tool==='stonePick'?2:1);
+  const power=tool==='ironSword'?4:tool==='stoneSword'?3:tool==='woodSword'?2:
+    tool==='ironPick'?2:(u.spec.id==='cubeGolem'&&tool==='stonePick'?2:1);
   u.hp-=power;u.hurtUntil=now+300;u.knockbackUntil=now+230;
   u.knockDir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
   root.scale.setScalar(1.08);
   if(u.hp>0){toast(u.spec.name+' · '+u.hp+'/'+u.maxHp+' · 공격은 천천히 정확하게!');return true}
-  u.dead=true;creatureDefeats[u.spec.id]=survivalWorldTime;creatureReward(root);
+  u.dead=true;creatureDefeats[u.spec.id]=survivalWorldTime;creatureReward(root);trackSurvival('hunt',u.spec.id,1);
   despawnWildCreature(root);
   toast(u.spec.name+'을(를) 물리쳤어요! 건축 재료를 얻었어요.');sfx('good');saveFreeWorld();return true;
 }
@@ -4596,6 +4660,7 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('dungeon-mobile',active&&target==='dungeon');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
   $('mobileView').classList.toggle('hidden',target!=='free');
+  $('mobileInteract')?.classList.toggle('hidden',target!=='free'||gameFreeMode!=='survival');
   $('mobileMore').classList.toggle('hidden',target!=='free');
   $('mobileMore').textContent=mobileUtilityOpen?'도구 닫기':'도구';
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
@@ -4713,6 +4778,7 @@ function initMobileControls(){
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
+  tap('mobileInteract',()=>{if(mode==='free'&&gameFreeMode==='survival')interactWildCreature()});
   tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
   tap('mobileMore',()=>{if(mode==='free'){mobileUtilityOpen=!mobileUtilityOpen;configureMobileMode('free')}});
   tap('mobileAvatar',()=>{if(mode==='free')openAvatarCustomizer()});
@@ -4754,7 +4820,8 @@ function showTutorial(kind){
   if(kind==='free'&&gameFreeMode==='survival'){
     html='<h2>생존 탐험 · 첫날</h2><p>지금은 맨손뿐이에요. 근처 나무를 바라보고 좌클릭을 잠깐 유지해 원목 3개를 모으고 E를 눌러 판자를 만들어 보세요. 낮에는 사슴·개구리 같은 생물이 돌아다니고, 밤과 위험 지역에서는 몬스터가 나타납니다. 횃불·벽·바닥도 생존 도구예요.</p>'+
       '<div class="keys"><div class="keyrow"><b>WASD / Space</b>걷기 / 점프</div>'+
-      '<div class="keyrow"><b>좌클릭 유지</b>바라보는 블록 채집</div>'+
+      '<div class="keyrow"><b>좌클릭 유지</b>블록 채집 · 적대 생물 전투</div>'+
+      '<div class="keyrow"><b>F</b>평화 생물 관찰 · 달걀/양털 채집</div>'+
       '<div class="keyrow"><b>E</b>가방 · 지금 만들 수 있는 물건</div>'+
       '<div class="keyrow"><b>1~9 / 우클릭</b>획득한 재료 선택 / 설치</div>'+
       '<div class="keyrow"><b>V / 꾸미기</b>1·3인칭 전환 / 내 캐릭터 변경</div>'+
@@ -4767,7 +4834,8 @@ function showTutorial(kind){
     html='<h2>생존 탐험 · 모바일 첫날</h2><p>왼쪽 스틱으로 가까운 나무에 다가가세요. 화면을 밀어 시점을 돌리고 채집 버튼을 길게 눌러 원목을 모읍니다. 밤에는 몬스터가 나타나므로 횃불과 벽도 활용해 보세요.</p>'+
       '<div class="keys"><div class="keyrow"><b>왼쪽 스틱</b>이동</div>'+
       '<div class="keyrow"><b>화면 드래그</b>시점 회전</div>'+
-      '<div class="keyrow"><b>파괴 길게 / 설치</b>채집 / 핫바 블록 설치</div>'+
+      '<div class="keyrow"><b>파괴 길게 / 설치</b>채집·전투 / 핫바 블록 설치</div>'+
+      '<div class="keyrow"><b>상호작용</b>평화 생물 관찰 · 달걀/양털 채집</div>'+
       '<div class="keyrow"><b>가방 / 꾸미기</b>제작 / 내 캐릭터 변경</div>'+
       '<div class="keyrow"><b>시점 / 점프</b>1·3인칭 전환 / 지형 올라가기</div>'+
       '<div class="keyrow"><b>첫 설계</b>제작대 뒤 2×1×1 직육면체 설치</div></div>';
@@ -4887,6 +4955,7 @@ document.addEventListener('keydown',e=>{
   if(/^Digit[1-9]$/.test(e.code)){
     stopMining();selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot]||'hand';buildHotbar();updateFreeMission();
   }
+  if(e.code==='KeyF'&&gameFreeMode==='survival'){e.preventDefault();interactWildCreature();return}
   if(e.code==='KeyF'&&gameFreeMode==='creative'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
   if(e.code==='KeyR'&&gameFreeMode==='creative')pickTargetBlock();
   if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
