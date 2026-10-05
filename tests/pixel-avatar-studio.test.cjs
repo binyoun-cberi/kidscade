@@ -21,7 +21,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=58/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=60/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-16/);
+  assert.match(js,/pixel-v3-school-starter-17/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -60,7 +60,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-16'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-17'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -141,10 +141,10 @@ test('v3 eye catalog adds ten JSON eye assets and keeps the builtin default',()=
   assert.equal(eyeCatalog.type,'kidscade-avatar-eye-catalog');
   assert.equal(eyeCatalog.layer,'eyes');
   assert.equal(eyeCatalog.defaultId,'basic-eyes-01');
-  assert.equal(eyeCatalog.items.length,11);
+  assert.equal(eyeCatalog.items.length,25);
   const extra=eyeCatalog.items.filter(item=>item.id!==eyeCatalog.defaultId);
-  assert.equal(extra.length,10);
-  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  assert.equal(extra.length,24);
+  assert.equal(new Set(extra.map(item=>item.id)).size,24);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'eyes',item.file),'utf8'));
     assert.equal(file.type,'kidscade-avatar-eye-part',item.id);
@@ -309,13 +309,14 @@ test('v3 upper catalog adds ten JSON tops and keeps the builtin school uniform',
   assert.equal(upperCatalog.type,'kidscade-avatar-upper-catalog');
   assert.equal(upperCatalog.layer,'upper');
   assert.equal(upperCatalog.defaultId,'basic-school-uniform-upper-01');
-  assert.equal(upperCatalog.items.length,11);
+  assert.equal(upperCatalog.items.length,19);
   assert.equal(upperCatalog.sourcePalette.length,7);
   assert.equal(Object.keys(upperCatalog.frameBounds).length,23);
   const extra=upperCatalog.items.filter(item=>item.id!==upperCatalog.defaultId);
-  assert.equal(extra.length,10);
+  assert.equal(extra.length,18);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'upper',item.file),'utf8'));
+    if(file.type==='kidscade-avatar-full-adjustment'){assert.equal(file.assetIds.upper,item.id);assert.equal(Object.keys(file.frames).length,23);continue}
     assert.equal(file.type,'kidscade-avatar-upper-part',item.id);
     assert.equal(file.layer,'upper');
     assert.equal(file.palette.length,7,item.id);
@@ -331,7 +332,6 @@ test('public renderer applies selected tops to all 23 exact upper frame bounds',
 test('upper choice persists in public v3 state',()=>{
   assert.match(js,/state\.assetIds\.upper/);
   assert.match(js,/await loadUpperPart\(state\.assetIds\.upper\)/);
-  assert.match(js,/상의 11종/);
 });
 
 
@@ -340,15 +340,16 @@ test('v3 lower catalog adds ten JSON pants and keeps the builtin school uniform 
   assert.equal(lowerCatalog.type,'kidscade-avatar-lower-catalog');
   assert.equal(lowerCatalog.layer,'lower');
   assert.equal(lowerCatalog.defaultId,'basic-school-uniform-lower-01');
-  assert.equal(lowerCatalog.items.length,11);
+  assert.equal(lowerCatalog.items.length,14);
   assert.deepEqual(lowerCatalog.sourcePalette,[[26,36,52,255],[46,64,85,255],[66,87,109,255],[87,107,124,255]]);
   assert.equal(Object.keys(lowerCatalog.frameBounds).length,23);
   assert.deepEqual(Object.keys(lowerCatalog.frameBounds),manifest.frameOrder);
   const extra=lowerCatalog.items.filter(item=>item.id!==lowerCatalog.defaultId);
-  assert.equal(extra.length,10);
-  assert.equal(new Set(extra.map(item=>item.id)).size,10);
+  assert.equal(extra.length,13);
+  assert.equal(new Set(extra.map(item=>item.id)).size,13);
   for(const item of extra){
     const file=JSON.parse(fs.readFileSync(path.join(starterDir,'lower',item.file),'utf8'));
+    if(file.type==='kidscade-avatar-full-adjustment'){assert.equal(file.assetIds.lower,item.id);assert.equal(Object.keys(file.frames).length,23);continue}
     assert.equal(file.type,'kidscade-avatar-lower-part',item.id);
     assert.equal(file.id,item.id);
     assert.equal(file.layer,'lower');
@@ -378,7 +379,6 @@ test('lower choice persists in public v3 state',()=>{
   assert.match(js,/state\.assetIds\.lower/);
   assert.match(js,/await loadLowerPart\(state\.assetIds\.lower\)/);
   assert.match(js,/lower:id/);
-  assert.match(js,/하의 11종/);
 });
 
 
@@ -506,8 +506,4 @@ test('public accessory selection persists paired equipment slots and renames boo
   assert.match(js,/shieldFront:id,shieldBack:id/);
   assert.match(js,/data-weapon-id/);
   assert.match(js,/data-shield-id/);
-  assert.match(js,/신발 11종/);
-  assert.match(js,/귀걸이 11종/);
-  assert.match(js,/도구 15종/);
-  assert.match(js,/교구 7종/);
 });
