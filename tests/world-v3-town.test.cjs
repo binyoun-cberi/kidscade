@@ -142,9 +142,10 @@ test('Seed Town gives named residents diverse role-matched 3D NPC assets',()=>{
   }
   assert.ok(fs.existsSync(path.join(root,'assets','game','shops','market','character-employee.glb')));
   assert.match(npcStyle,/character-employee\.glb/);
-  for(const name of ['민지','준호','하늘','도윤','유나','태호','소라','현우','나리','우진','서연','민석','마트직원']){
-    assert.ok(npcStyle.includes(name),'NPC preset missing '+name);
+  for(const name of ['민지','준호','하늘','도윤','유나','태호','소라','현우','나리','우진','서연','민석']){
+    assert.ok(school.includes("name:'"+name+"'"),'school NPC profile missing '+name);
   }
+  assert.match(school,/clerk:\{name:'서준',kind:'student'/);
   assert.match(city,/residentVisual\(id\)/);
   assert.match(city,/Number\(visual\.height\)\|\|1\.82/);
 });
@@ -214,9 +215,9 @@ test('Seed Town market hardware and cafe are walk-in 3D interiors',()=>{
     ['3d','bakery','interior','counter-table.glb'],['3d','bakery','interior','display-case-long.glb'],['3d','bakery','interior','coffee-machine.glb']
   ];
   for(const parts of required)assert.ok(fs.existsSync(path.join(root,'assets','game',...parts)),'missing venue asset '+parts.join('/'));
-  assert.match(interiors,/actions\.shop\('market','민지'\)/);
-  assert.match(interiors,/actions\.shop\('hardware','준호'\)/);
-  assert.match(interiors,/actions\.shop\('cafe','하늘'\)/);
+  assert.match(interiors,/actions\.shop\('market','민지 선생님'\)/);
+  assert.match(interiors,/actions\.shop\('hardware','준호 선생님'\)/);
+  assert.match(interiors,/actions\.shop\('cafe','하늘 선생님'\)/);
 });
 
 test('walk-in venues keep social loops, animated merchants, themed density and bounded cafe rest',()=>{
@@ -304,7 +305,8 @@ test('city has bus travel and passes game time to NPC schedules',()=>{
   assert.match(runtime,/const TRAVEL_POINTS=/);
   assert.match(runtime,/travel:travelTo/);
   assert.match(runtime,/getGameTime:\(\)=>prog\(\)\.survival\.time/);
-  assert.match(city,/민석과 이야기하기/);
+  assert.match(city,/schoolInteractionLabel\(id\)/);
+  assert.match(school,/minseok:\{name:'민석',kind:'teacher',role:'체육 선생님'/);
   assert.match(city,/getMinutes:\(\)=>typeof getGameTime==='function'\?getGameTime\(\):720/);
   assert.match(residents,/const ROUTINES=\{/);
   assert.match(residents,/minseok:\{wake:6\.5,sleep:22/);
@@ -398,7 +400,8 @@ test('bed kitchen storage and wardrobe are earned through homestead progression'
 
 test('named Seed Town residents expose roles services friendship milestones and exclusive rewards',()=>{
   for(const id of ['minji','junho','haneul','doyun','yuna','taeho','sora','hyunwoo','nari','woojin','seoyeon','minseok']){
-    assert.ok(economy.includes(id+':{name:'),'resident profile missing '+id);
+    assert.ok(school.includes(id+":{name:'"),'school resident profile missing '+id);
+    assert.ok(economy.includes("Object.entries(SCHOOL_PROFILES)"),'economy must derive residents from school profiles');
     assert.ok(economy.includes(id+':['),'friendship reward track missing '+id);
     assert.ok(city.includes("addNpc(npcCtx,'"+id+"'"),'city NPC missing '+id);
   }
