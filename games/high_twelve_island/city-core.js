@@ -541,7 +541,10 @@
         }
       }
       if(e.route?.length){
-        e.progress=Math.min(e.route.length-1,Math.max(0,Math.floor(e.progress||0))+3);
+        const pos=e.route[Math.min(e.route.length-1,Math.max(0,Math.floor(e.progress||0)))];
+        const congestion=pos?Number(cell(city,pos[0],pos[1])?.traffic||0):0;
+        const step=congestion>=70?1:congestion>=40?2:3;
+        e.progress=Math.min(e.route.length-1,Math.max(0,Math.floor(e.progress||0))+step);
         if(e.progress>=e.route.length-1){
           e.status="resolved";
           city.resolvedDispatches=Math.max(0,Math.floor(city.resolvedDispatches||0))+1;
@@ -689,8 +692,9 @@
       const healthFactor=village?clamp((Number(village.health)||70)-55,-20,20)*.25:0;
       const trustFactor=village?clamp((Number(village.trust)||60)-50,-30,30)*.18:0;
       const tripFactor=t.zone?(t.tripAccess?18:-42):0;
+      const commuteFactor=t.zone&&t.tripAccess?clamp(11-t.tripCost*1.35,-20,11)+(t.usedBus?5:0):0;
       const utilityFactor=t.zone?((t.powered?12:-48)+(t.watered?12:-44)):0;
-      t.growth=clamp(d+(t.roadAccess?18:-50)+tripFactor+utilityFactor+
+      t.growth=clamp(d+(t.roadAccess?18:-50)+tripFactor+commuteFactor+utilityFactor+
         (t.landValue-45)*.5-t.pollution*.24-t.crime*.12-t.damage*18+healthFactor+trustFactor,-100,100);
 
       if(t.density>0){
@@ -747,15 +751,16 @@
     const trust=Number(village?.trust)||60,health=Number(village?.health)||75;
     const taxDelta=city.taxRate-7;
     const commutePenalty=Math.max(0,70-city.stats.commuteSuccess)*.22;
+    const commuteTimePenalty=Math.max(0,(city.stats.avgCommuteCost||0)-6)*1.25;
     const utilityPenalty=Math.max(0,80-Math.min(city.stats.poweredRate,city.stats.wateredRate))*.25;
     const epidemic=village?.disasters?.epidemic>village?.tick?12:0;
 
     city.demand.residential=Math.round(clamp(38+jobs*1.4+pop*1.2-homes*2.3+(trust-55)*.35-
-      taxDelta*4-commutePenalty-utilityPenalty,-100,100));
+      taxDelta*4-commutePenalty-commuteTimePenalty-utilityPenalty,-100,100));
     city.demand.commercial=Math.round(clamp(18+homes*.8+pop*.9-city.stats.developed*1.8+(trust-50)*.2-
-      taxDelta*3-commutePenalty*.7-epidemic,-100,100));
+      taxDelta*3-commutePenalty*.7-commuteTimePenalty*.6-epidemic,-100,100));
     city.demand.industrial=Math.round(clamp(28+homes*.7-jobs*.65+(health-60)*.15-
-      taxDelta*2.5-utilityPenalty*.7,-100,100));
+      taxDelta*2.5-commuteTimePenalty*.35-utilityPenalty*.7,-100,100));
   }
 
   function growthCandidates(city) {
