@@ -36,18 +36,76 @@ const ui={
 
 let geo=null;
 let state={
-  started:false,players:[],turn:0,round:1,maxRounds:10,cpuDifficulty:'normal',speed:'normal',
+  session:0,started:false,players:[],turn:0,round:1,maxRounds:10,cpuDifficulty:'normal',speed:'normal',
   investments:{},festival:null,phase:'menu',rolled:0,routeOptions:[],selectedRoute:null,eventUsed:false,
   totalPlayers:4,humanPlayers:1,buildFx:null
 };
 let mapEls={countries:new Map(),nodes:new Map(),routes:new Map()};
 let setup={total:4,human:1,rounds:10,diff:'normal',speed:'normal'};
 let timers=new Set();
+let sessionSerial=0;
+let asyncFlowSerial=0;
+let mapLoading=false;
 
-function later(fn,ms){
-  const id=setTimeout(()=>{timers.delete(id);fn()},ms);timers.add(id);return id;
+function isCurrentSession(session){return state.started&&state.session===session}
+
+function cancelTravelVisuals(){
+  try{travelFX.cancel?.()}catch(_){}
+  document.querySelectorAll('.travel-map-icon').forEach(el=>el.remove());
+  ui.die?.classList.remove('rolling');
+}
+
+function invalidateAsyncFlow(){
+  asyncFlowSerial++;
+  cancelTravelVisuals();
+}
+
+function later(fn,ms,session=state.session){
+  const id=setTimeout(()=>{
+    timers.delete(id);
+    if(session!==state.session)return;
+    fn();
+  },ms);
+  timers.add(id);
+  return id;
 }
 function clearTimers(){timers.forEach(clearTimeout);timers.clear()}
+
+function armPhaseRecovery(phase,ms,recover){
+  const session=state.session;
+  later(()=>{
+    if(!isCurrentSession(session)||state.phase!==phase)return;
+    console.warn('[K-Travel] stuck phase recovered:',phase);
+    try{recover()}catch(err){
+      console.error(err);
+      if(isCurrentSession(session))nextTurn();
+    }
+  },ms,session);
+}
+
+async function safeTravelStep(run,label,timeoutMs=3200){
+  let timeoutId=null;
+  try{
+    return await Promise.race([
+      Promise.resolve().then(run).then(()=>true),
+      new Promise(resolve=>{
+        timeoutId=setTimeout(()=>{
+          timers.delete(timeoutId);timeoutId=null;
+          console.warn('[K-Travel] travel animation timeout:',label);
+          cancelTravelVisuals();
+          resolve(false);
+        },timeoutMs);
+        timers.add(timeoutId);
+      })
+    ]);
+  }catch(err){
+    console.warn('[K-Travel] travel animation skipped:',label,err);
+    cancelTravelVisuals();
+    return false;
+  }finally{
+    if(timeoutId!==null){clearTimeout(timeoutId);timers.delete(timeoutId)}
+  }
+}
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(_){}}
 function sdkScore(){try{window.KidscadeGame?.score?.(netWorth(state.players[0]||{}),{unit:'만',higherIsBetter:true})}catch(_){}}
 
@@ -103,6 +161,10 @@ function primaryMode(route){
 }
 
 async function loadMap(){
+  if(mapLoading)return;
+  mapLoading=true;
+  ui.startBtn.disabled=true;
+  ui.startBtn.textContent='세계 지도 불러오는 중…';
   try{
     const res=await fetch(MAP_URL,{cache:'force-cache'});
     if(!res.ok)throw new Error('map '+res.status);
@@ -110,11 +172,15 @@ async function loadMap(){
     renderMapBase();
     ui.startBtn.disabled=false;
     ui.startBtn.textContent='세계여행 출발!';
+    document.querySelector('.start-help').textContent='🎲 한 개의 주사위를 사용해 1~6개의 교통 구간을 이동합니다. 같은 숫자라도 갈 수 있는 나라가 여러 곳이라 경로 선택이 중요해요. 대륙별 투자 컬렉션을 완성하면 여행 수익 보너스도 생깁니다.';
   }catch(err){
-    ui.startBtn.disabled=true;
-    ui.startBtn.textContent='세계 지도를 불러오지 못했어요';
-    document.querySelector('.start-help').textContent='세계 지도 파일을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.';
+    geo=null;
+    ui.startBtn.disabled=false;
+    ui.startBtn.textContent='세계 지도 다시 불러오기';
+    document.querySelector('.start-help').textContent='세계 지도 파일을 불러오지 못했습니다. 아래 버튼으로 다시 불러올 수 있어요.';
     console.error(err);
+  }finally{
+    mapLoading=false;
   }
 }
 
@@ -271,9 +337,10 @@ function syncHumanButtons(){
 }
 
 function newGame(){
-  readSetup();clearTimers();
+  readSetup();clearTimers();invalidateAsyncFlow();
+  const session=++sessionSerial;
   state={
-    started:true,players:[],turn:0,round:1,maxRounds:setup.rounds,cpuDifficulty:setup.diff,speed:setup.speed,
+    session,started:true,players:[],turn:0,round:1,maxRounds:setup.rounds,cpuDifficulty:setup.diff,speed:setup.speed,
     investments:{},festival:null,phase:'roll',rolled:0,routeOptions:[],selectedRoute:null,eventUsed:false,
     totalPlayers:setup.total,humanPlayers:setup.human,buildFx:null
   };
@@ -339,12 +406,13 @@ function maybeOfferBuild(player){
   if(player.buildPoints<=0||!owned.length)return false;
   state.phase='build';
   if(player.isCpu){
+    armPhaseRecovery('build',4500,()=>enterRollPhase(player));
     const affordable=owned.filter(c=>player.money>=remoteBuildCost(player,c,state.investments[c.id].level));
     if(!affordable.length){enterRollPhase(player);return true}
     const target=affordable[0],inv=state.investments[target.id],cost=remoteBuildCost(player,target,inv.level);
     const reserve=state.cpuDifficulty==='hard'?40:state.cpuDifficulty==='normal'?80:105;
     const use=player.money-cost>=reserve&&(state.cpuDifficulty!=='easy'||Math.random()>.45);
-    if(use)later(()=>remoteUpgrade(player,target,inv,cost),state.speed==='fast'?140:360);
+    if(use)later(()=>{if(state.phase==='build')remoteUpgrade(player,target,inv,cost)},state.speed==='fast'?140:360);
     else enterRollPhase(player);
     return true;
   }
@@ -387,12 +455,22 @@ function remoteUpgrade(player,c,inv,cost){
 function rollDice(){
   if(state.phase!=='roll')return;
   const p=activePlayer();if(!p||p.bankrupt)return;
+  const session=state.session,flow=++asyncFlowSerial;
   state.phase='rolling';ui.roll.disabled=true;sdkSound('click');
+  armPhaseRecovery('rolling',4500,()=>{
+    if(flow!==asyncFlowSerial)return;
+    asyncFlowSerial++;cancelTravelVisuals();
+    state.phase='roll';state.rolled=0;updateAll();
+    announce('주사위 연출을 복구했어요.','다시 한 번 굴려 주세요.');
+    if(p.isCpu)later(()=>rollDice(),state.speed==='fast'?120:300);
+    else ui.roll.disabled=false;
+  });
   let ticks=0;
   const spin=()=>{
+    if(!isCurrentSession(session)||flow!==asyncFlowSerial||state.phase!=='rolling')return;
     ui.die.classList.add('rolling');ui.die.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][Math.floor(Math.random()*6)];
     ticks++;
-    if(ticks<8){later(spin,state.speed==='fast'?35:65);return}
+    if(ticks<8){later(spin,state.speed==='fast'?35:65,session);return}
     const value=1+Math.floor(Math.random()*6);
     ui.die.classList.remove('rolling');ui.die.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][value-1];
     state.rolled=value;
@@ -470,12 +548,23 @@ function prepareRouteChoice(player,roll){
     if(n)allRoutes=[{dest:n.to,path:[{from:player.country,to:n.to,route:n.route}]}],used=1;
   }
   const routes=pickTravelTickets(allRoutes,player,roll);
+  if(!routes.length){
+    state.routeOptions=[];state.phase='between';refreshMap();renderDestinationStrip();
+    announce('이동 가능한 노선을 찾지 못했어요.','안전하게 이번 턴을 넘기고 다음 차례를 진행합니다.');
+    return later(nextTurn,state.speed==='fast'?120:350);
+  }
   state.routeOptions=routes;state.phase='choose';
   refreshMap();renderDestinationStrip();
   announce('주사위 '+roll+' · '+used+'구간 여행','여행사에서 '+routes.length+'개의 목적지 티켓을 제안했어요. 하나를 골라 출발하세요.');
   ui.moveLeft.textContent='🎲 '+roll+' → '+used+'구간 · 티켓 '+routes.length+'장';
   ui.moveLeft.classList.add('choose');
-  if(player.isCpu)later(()=>chooseCpuRoute(player,routes),state.speed==='fast'?180:460);
+  if(player.isCpu){
+    later(()=>chooseCpuRoute(player,routes),state.speed==='fast'?180:460);
+    armPhaseRecovery('choose',4500,()=>{
+      const fallback=state.routeOptions[0];
+      if(fallback)travelRoute(player,fallback);else nextTurn();
+    });
+  }
 }
 
 function destinationInterest(player,id){
@@ -592,38 +681,65 @@ function chargeTransit(player,countryId){
   return true;
 }
 
+function recordTravelProgress(player,countryId){
+  if(!player.visited.includes(countryId)){
+    player.visited.push(countryId);
+    try{window.KidscadeGame?.milestone?.('country_visit',{country:countryId,firstVisit:player.visited.length===2,visitedCount:player.visited.length})}catch(_){}
+  }
+  const country=BY_ID.get(countryId),cont=country?.continent;
+  if(cont&&!player.continents.includes(cont)){
+    player.continents.push(cont);
+    try{window.KidscadeGame?.milestone?.('continent_visit',{continent:cont,continentsVisited:player.continents.length})}catch(_){}
+  }
+}
+
+function recoverTravel(player,option,session,flow){
+  if(!isCurrentSession(session)||state.phase!=='travel'||flow!==asyncFlowSerial)return;
+  asyncFlowSerial++;
+  cancelTravelVisuals();
+  player.country=option.dest;
+  recordTravelProgress(player,option.dest);
+  state.selectedRoute=option;
+  refreshMap();renderPlayerDock();
+  announce('이동 연출을 안전하게 건너뛰었어요.',BY_ID.get(option.dest).name+' 도착 처리를 계속합니다.');
+  handleArrival(player,option.dest);
+}
+
 async function travelRoute(player,option){
-  if(state.phase!=='choose')return;
+  if(state.phase!=='choose'||!option?.path?.length)return;
+  const session=state.session,flow=++asyncFlowSerial;
   state.phase='travel';state.routeOptions=[];ui.destinationStrip.innerHTML='';ui.moveLeft.classList.remove('choose');
   refreshMap();announce(player.name+' 이동 중','교통편을 갈아타며 '+BY_ID.get(option.dest).name+'(으)로 여행합니다.');
+  armPhaseRecovery('travel',Math.max(9000,option.path.length*4200+2000),()=>recoverTravel(player,option,session,flow));
   for(let i=0;i<option.path.length;i++){
+    if(!isCurrentSession(session)||flow!==asyncFlowSerial||state.phase!=='travel')return;
     const seg=option.path[i],mode=chooseMode(seg.route,i,player);
     const group=mapEls.routes.get(seg.route.id);group?.querySelectorAll('.route').forEach(p=>p.classList.add('active'));
     const from=BY_ID.get(seg.from),to=BY_ID.get(seg.to);
     const showcase=shouldShowcaseTravel(player,mode,from,to);
-    if(showcase)await travelFX.play({kind:mode,from:from.name,to:to.name,fast:state.speed==='fast'});
-    else await animateMapSegment(from,to,mode,state.speed==='fast');
+    await safeTravelStep(
+      ()=>showcase
+        ?travelFX.play({kind:mode,from:from.name,to:to.name,fast:state.speed==='fast'})
+        :animateMapSegment(from,to,mode,state.speed==='fast'),
+      seg.from+'-'+seg.to+'-'+mode,
+      state.speed==='fast'?1800:3600
+    );
+    if(!isCurrentSession(session)||flow!==asyncFlowSerial||state.phase!=='travel')return;
     if(!player.seenModes.includes(mode))player.seenModes.push(mode);
     group?.querySelectorAll('.route').forEach(p=>p.classList.remove('active'));
     player.country=seg.to;
     if(i<option.path.length-1&&!chargeTransit(player,seg.to))return;
-    if(!player.visited.includes(seg.to)){
-      player.visited.push(seg.to);
-      try{window.KidscadeGame?.milestone?.('country_visit',{country:seg.to,firstVisit:player.visited.length===2,visitedCount:player.visited.length})}catch(_){}
-    }
-    const cont=BY_ID.get(seg.to).continent;
-    if(!player.continents.includes(cont)){
-      player.continents.push(cont);
-      try{window.KidscadeGame?.milestone?.('continent_visit',{continent:cont,continentsVisited:player.continents.length})}catch(_){}
-    }
+    recordTravelProgress(player,seg.to);
     refreshMap();renderPlayerDock();
   }
+  if(!isCurrentSession(session)||flow!==asyncFlowSerial||state.phase!=='travel')return;
   state.selectedRoute=option;
   handleArrival(player,option.dest);
 }
 
 function handleArrival(player,countryId){
   state.phase='action';refreshMap();updateAll();
+  if(player.isCpu)armPhaseRecovery('action',5500,()=>finishLanding(player));
   const c=BY_ID.get(countryId),inv=state.investments[countryId];
   announce(c.icon+' '+c.name+' 도착!',c.city+' · '+CONTINENTS[c.continent].name+(player.turnTransitPaid?' · 환승비 '+player.turnTransitPaid+'만 지불':''));
   sdkSound('correct');
@@ -850,7 +966,9 @@ function nextTurn(){
       announce('새 라운드 건설권','여행 중인 모두에게 건설권 1장이 지급됩니다.');
     }
   }
-  updateAll();later(beginTurn,state.speed==='fast'?140:420);
+  updateAll();
+  armPhaseRecovery('between',3500,()=>beginTurn());
+  later(beginTurn,state.speed==='fast'?140:420);
 }
 
 function netWorth(player){
@@ -929,7 +1047,9 @@ function finishGame(reason){
 }
 
 function resetToMenu(){
-  clearTimers();state.started=false;state.phase='menu';state.routeOptions=[];ui.destinationStrip.innerHTML='';
+  clearTimers();invalidateAsyncFlow();
+  state.session=++sessionSerial;state.started=false;state.phase='menu';state.routeOptions=[];ui.destinationStrip.innerHTML='';
+  ui.actionModal.classList.add('hidden');ui.eventModal.classList.add('hidden');ui.moveLeft.classList.remove('choose');
   ui.result.classList.add('hidden');ui.game.classList.add('hidden');ui.start.classList.remove('hidden');
   if(geo)renderMapBase();
 }
@@ -940,13 +1060,15 @@ document.querySelectorAll('.seg button').forEach(btn=>btn.addEventListener('clic
   btn.classList.add('active');
   if(group==='total'){setup.total=Number(btn.dataset.value);syncHumanButtons()}
 }));
-ui.startBtn.addEventListener('click',newGame);
+ui.startBtn.addEventListener('click',()=>{if(!geo)return loadMap();newGame()});
 ui.roll.addEventListener('click',()=>rollDice());
 ui.restart.addEventListener('click',newGame);
 ui.menu.addEventListener('click',resetToMenu);
 $('quitBtn').addEventListener('click',()=>{if(state.started&&confirm('현재 세계여행을 종료하고 설정 화면으로 돌아갈까요?'))resetToMenu()});
 addEventListener('keydown',e=>{if(e.code==='Space'&&state.phase==='roll'&&!activePlayer()?.isCpu){e.preventDefault();rollDice()}});
-try{window.KidscadeGame?.registerCleanup?.(()=>{clearTimers();state.started=false})}catch(_){}
+try{window.KidscadeGame?.registerCleanup?.(()=>{
+  clearTimers();invalidateAsyncFlow();state.session=++sessionSerial;state.started=false;
+})}catch(_){}
 
 syncHumanButtons();
 loadMap();
