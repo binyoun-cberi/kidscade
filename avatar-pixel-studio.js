@@ -7,7 +7,7 @@ const SCHOOL_PACK_URL=ROOT+'/school-starter.json';
 const DEFAULT_IMAGE=ROOT+'/guest-default.png';
 const PREVIEW_KEY='kidscade-avatar-studio-preview';
 const PREVIEW_VERSION_KEY='kidscade-avatar-studio-preview-version';
-const PREVIEW_VERSION='pixel-v3-school-starter-16';
+const PREVIEW_VERSION='pixel-v3-school-starter-17';
 const STATE_KEY='kidscade-avatar-v3';
 const SIZE=128;
 const SKIN_PRESETS=['#f6d2b8','#eac09d','#d99d73','#b97852','#8a563a','#5d3828'];
@@ -16,6 +16,8 @@ const PARTS={
   hair:{label:'헤어',name:'더벅머리',assetKey:'hair'},
   hairColor:{label:'염색',name:'브라운',assetKey:null},
   eyes:{label:'눈',name:'기본 눈',assetKey:'eyes'},
+  mask:{label:'얼굴 장식',name:'착용 안 함',assetKey:'mask'},
+  hat:{label:'모자',name:'착용 안 함',assetKey:'hat'},
   mouth:{label:'입',name:'ㅡ 입',assetKey:'mouth'},
   earring:{label:'귀걸이',name:'구리 링 귀걸이',assetKey:'earring'},
   upper:{label:'상의',name:'학교 교복 상의',assetKey:'upper'},
@@ -648,7 +650,8 @@ async function loadUpperPart(id){
   const res=await fetch(ROOT+'/upper/'+item.file,{cache:'no-cache'});
   if(!res.ok)throw new Error('상의 파츠를 불러오지 못했습니다: '+id);
   const part=await res.json();
-  if(part?.type!=='kidscade-avatar-upper-part'||part.id!==id||part.layer!=='upper'||!Array.isArray(part.palette)||part.palette.length!==upperCatalog.sourcePalette.length)throw new Error('상의 파츠 JSON 형식이 올바르지 않습니다: '+id);
+  if(part?.type==='kidscade-avatar-full-adjustment')window.KidscadeAvatarWardrobe.validate(part,'upper',id,manifest.frameOrder);
+  else if(part?.type!=='kidscade-avatar-upper-part'||part.id!==id||part.layer!=='upper'||!Array.isArray(part.palette)||part.palette.length!==upperCatalog.sourcePalette.length)throw new Error('상의 파츠 JSON 형식이 올바르지 않습니다: '+id);
   upperParts.set(id,part);return part;
 }
 function selectedUpperId(){return state.assetIds?.upper||manifest?.assetIds?.upper||upperCatalog?.defaultId||'basic-school-uniform-upper-01'}
@@ -660,6 +663,7 @@ function upperColorIndex(r,g,b,a){
 function applyUpperPart(target,frameId,upperId=selectedUpperId()){
   if(!upperCatalog||!upperId||upperId===upperCatalog.defaultId)return false;
   const part=upperParts.get(upperId),box=upperCatalog.frameBounds?.[frameId];
+  if(part?.frames){drawPixelTuples(target,part.frames[frameId].layers.upper.operations[0].pixels);return true}
   if(!part||!box)return false;
   const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
   const x0=Math.max(0,Number(box[0])||0),y0=Math.max(0,Number(box[1])||0),x1=Math.min(SIZE-1,Number(box[2])||0),y1=Math.min(SIZE-1,Number(box[3])||0);
@@ -692,7 +696,8 @@ async function loadLowerPart(id){
   const res=await fetch(ROOT+'/lower/'+item.file,{cache:'no-cache'});
   if(!res.ok)throw new Error('하의 파츠를 불러오지 못했습니다: '+id);
   const part=await res.json();
-  if(part?.type!=='kidscade-avatar-lower-part'||part.id!==id||part.layer!=='lower'||!Array.isArray(part.palette)||part.palette.length!==lowerCatalog.sourcePalette.length)throw new Error('하의 파츠 JSON 형식이 올바르지 않습니다: '+id);
+  if(part?.type==='kidscade-avatar-full-adjustment')window.KidscadeAvatarWardrobe.validate(part,'lower',id,manifest.frameOrder);
+  else if(part?.type!=='kidscade-avatar-lower-part'||part.id!==id||part.layer!=='lower'||!Array.isArray(part.palette)||part.palette.length!==lowerCatalog.sourcePalette.length)throw new Error('하의 파츠 JSON 형식이 올바르지 않습니다: '+id);
   lowerParts.set(id,part);return part;
 }
 function selectedLowerId(){return state.assetIds?.lower||manifest?.assetIds?.lower||lowerCatalog?.defaultId||'basic-school-uniform-lower-01'}
@@ -704,6 +709,7 @@ function lowerColorIndex(r,g,b,a){
 function applyLowerPart(target,frameId,lowerId=selectedLowerId()){
   if(!lowerCatalog||!lowerId||lowerId===lowerCatalog.defaultId)return false;
   const part=lowerParts.get(lowerId),box=lowerCatalog.frameBounds?.[frameId];
+  if(part?.frames){drawPixelTuples(target,part.frames[frameId].layers.lower.operations[0].pixels);return true}
   if(!part||!box)return false;
   const image=target.getImageData(0,0,SIZE,SIZE),data=image.data;
   const x0=Math.max(0,Number(box[0])||0),y0=Math.max(0,Number(box[1])||0),x1=Math.min(SIZE-1,Number(box[2])||0),y1=Math.min(SIZE-1,Number(box[3])||0);
@@ -716,6 +722,8 @@ function applyLowerPart(target,frameId,lowerId=selectedLowerId()){
 }
 
 /* Public school accessories: shoes, earrings, left-hand tools and right-hand teaching aids. */
+let wardrobe=null;
+const wardrobeRequests=new Map();
 let schoolPack=null;
 let shoeCatalog=null;
 let earringCatalog=null;
@@ -905,25 +913,27 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
-function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId()){
+function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId(),wardrobeOverrides={}){
   if(!sheet)return;
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
   const base=document.createElement('canvas');base.width=SIZE;base.height=SIZE;
   const baseCtx=base.getContext('2d',{alpha:true});baseCtx.imageSmoothingEnabled=false;
   const customHair=hairCatalog&&hairId&&hairId!==hairCatalog.defaultId;
   const coloredHair=hairColorCatalog&&hairColorId&&hairColorId!==hairColorCatalog.defaultId;
-  const cleanBody=bodyFrameCanvas(frameId);
+  const cleanBody=bodyFrameCanvas(frameId)||wardrobe?.body(frameId);
+  const wardrobeIds={...state.assetIds,...wardrobeOverrides};
 
   if(cleanBody){
     baseCtx.drawImage(cleanBody,0,0);
     recolorSkin(baseCtx,frameId);
     drawPixelTuples(baseCtx,packLayerPixels(frameId,'eyes'));
-    drawPixelTuples(baseCtx,packLayerPixels(frameId,'mouth'));
-    drawPixelTuples(baseCtx,packLayerPixels(frameId,'upper'));
-    drawPixelTuples(baseCtx,packLayerPixels(frameId,'lower'));
-    drawPixelTuples(baseCtx,packLayerPixels(frameId,'shoes'));
-    applyUpperPart(baseCtx,frameId,upperId);
+    if(wardrobe)wardrobe.draw(baseCtx,frameId,'mouth',wardrobeIds);
+    else drawPixelTuples(baseCtx,packLayerPixels(frameId,'mouth'));
+    if(!lowerParts.get(lowerId)?.frames)drawPixelTuples(baseCtx,packLayerPixels(frameId,'lower'));
     applyLowerPart(baseCtx,frameId,lowerId);
+    if(!upperParts.get(upperId)?.frames)drawPixelTuples(baseCtx,packLayerPixels(frameId,'upper'));
+    applyUpperPart(baseCtx,frameId,upperId);
+    drawPixelTuples(baseCtx,packLayerPixels(frameId,'shoes'));
     applyEyePart(baseCtx,frameId,eyeId);
     if(customHair)paintHairLayer(baseCtx,hairLayerCanvas(hairId,frameId,hairColorId));
     else drawPixelTuples(baseCtx,recolorHairPixels(packLayerPixels(frameId,'hair'),hairColorId));
@@ -944,6 +954,7 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
     stripDefaultEquipment(baseCtx,frameId);
   }
 
+  if(wardrobe){wardrobe.draw(baseCtx,frameId,'mask',wardrobeIds);wardrobe.draw(baseCtx,frameId,'hat',wardrobeIds)}
   target.save();target.setTransform(1,0,0,1,0,0);target.clearRect(0,0,SIZE,SIZE);target.imageSmoothingEnabled=false;
   drawEquipmentPass(target,frameId,'weapon',toolId,'back');
   drawEquipmentPass(target,frameId,'shield',aidId,'back');
@@ -1120,7 +1131,35 @@ function renderShoeOptions(){renderAccessoryOptions('shoes',shoeCatalog,selected
 function renderToolOptions(){renderAccessoryOptions('weapon',toolCatalog,selectedToolId())}
 function renderTeachingAidOptions(){renderAccessoryOptions('shield',teachingAidCatalog,selectedTeachingAidId())}
 
+async function loadWardrobe(){
+  wardrobe=await window.KidscadeAvatarWardrobe.create({rootUrl:ROOT,manifest,
+    fetchJson:async url=>{const response=await fetch(url,{cache:'no-cache'});if(!response.ok)throw new Error('복장 데이터를 불러오지 못했어요.');return response.json()},
+    loadImage:url=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=url}),
+    createCanvas:()=>document.createElement('canvas')});
+  state.assetIds=await wardrobe.prepare(state.assetIds);
+}
+function drawWardrobeThumbnail(el,key,id){
+  const full=document.createElement('canvas');full.width=SIZE;full.height=SIZE;
+  const overrides={[key]:id};if(key==='mouth')overrides.mask='no-mask';
+  drawFrame(full.getContext('2d'),0,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,overrides);
+  const ctx=el.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,SIZE,SIZE);
+  const crops={mask:[41,41,44,30],hat:[31,2,66,57],mouth:[52,53,23,17]};ctx.drawImage(full,...crops[key],0,0,SIZE,SIZE);
+}
+async function renderWardrobeOptions(){
+  const key=currentTab,group=wardrobe.category(key),selected=wardrobe.normalize(state.assetIds)[key];
+  pickerTitle.textContent=group.label;pickerCount.textContent=group.items.length+'가지';optionGrid.classList.remove('skin-mode');
+  optionGrid.innerHTML=group.items.map((item,index)=>`<button type="button" class="option${item.id===selected?' active':''}" aria-pressed="${item.id===selected}" data-wardrobe-category="${key}" data-wardrobe-id="${item.id}"><span class="hair-thumb"><canvas width="128" height="128" data-wardrobe-thumb="${item.id}" aria-hidden="true"></canvas></span><span class="num">${item.id===selected?'✓':index+1}</span><span class="part-name">${item.label}</span></button>`).join('');
+  await Promise.allSettled(group.items.map(async item=>{await wardrobe.load(key,item.id);if(currentTab!==key)return;const el=optionGrid.querySelector('canvas[data-wardrobe-thumb="'+item.id+'"]');if(el)drawWardrobeThumbnail(el,key,item.id)}));
+}
+async function setWardrobeAsset(key,id){
+  const group=wardrobe?.category(key);if(!group?.items.some(item=>item.id===id))return false;
+  const request=(wardrobeRequests.get(key)||0)+1;wardrobeRequests.set(key,request);
+  try{await wardrobe.load(key,id);if(wardrobeRequests.get(key)!==request)return false;
+    state.assetIds={...state.assetIds,[key]:id};refreshSkinPreview();renderOptions();publish(false);flash(group.items.find(item=>item.id===id).label+' 적용했어요!');return true;
+  }catch(error){console.error(error);if(wardrobeRequests.get(key)===request)flash('파츠를 불러오지 못했어요. 다시 골라 주세요.');return false}
+}
 function renderOptions(){
+  if(wardrobe?.category(currentTab)){renderWardrobeOptions();return}
   if(currentTab==='skin'){renderSkinOptions();return}
   if(currentTab==='hair'){renderHairOptions();return}
   if(currentTab==='hairColor'){renderHairColorOptions();return}
@@ -1214,8 +1253,10 @@ function publish(showToast=false){
   }catch(_){}
 }
 function resetToDefault(){
+  for(const [key,request] of wardrobeRequests)wardrobeRequests.set(key,request+1);
   state={version:3,setId:manifest?.id||'school-starter-01',skinColor:null,hairColorId:hairColorCatalog?.defaultId||'brown'};
   state.assetIds={...(manifest?.assetIds||{})};
+  renderOptions();
   drawStatic();
   setPreviewMode('stand');
   publish(false);
@@ -1227,6 +1268,7 @@ tabs?.addEventListener('click',e=>{
   if(button)selectTab(button.dataset.tab);
 });
 optionGrid?.addEventListener('click',e=>{
+  const option=e.target.closest('[data-wardrobe-id]');if(option){setWardrobeAsset(option.dataset.wardrobeCategory,option.dataset.wardrobeId);return}
   const aid=e.target.closest('[data-shield-id]');if(aid){setTeachingAidAsset(aid.dataset.shieldId);return}
   const tool=e.target.closest('[data-weapon-id]');if(tool){setToolAsset(tool.dataset.weaponId);return}
   const shoes=e.target.closest('[data-shoes-id]');if(shoes){setShoeAsset(shoes.dataset.shoesId);return}
@@ -1259,7 +1301,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-16',
+  version:'pixel-v3-school-starter-17',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
@@ -1292,7 +1334,9 @@ window.KidscadeAvatarShop={
     if(earringCatalog&&!earringCatalog.items.some(item=>item.id===state.assetIds.earring))state.assetIds.earring=earringCatalog.defaultId;
     if(toolCatalog&&!toolCatalog.items.some(item=>item.id===state.assetIds.weaponFront)){state.assetIds.weaponFront=toolCatalog.defaultId;state.assetIds.weaponBack=toolCatalog.defaultId}else if(toolCatalog)state.assetIds.weaponBack=state.assetIds.weaponFront;
     if(teachingAidCatalog&&!teachingAidCatalog.items.some(item=>item.id===state.assetIds.shieldFront)){state.assetIds.shieldFront=teachingAidCatalog.defaultId;state.assetIds.shieldBack=teachingAidCatalog.defaultId}else if(teachingAidCatalog)state.assetIds.shieldBack=state.assetIds.shieldFront;
+    if(wardrobe)state.assetIds=await wardrobe.prepare(state.assetIds);
     refreshSkinPreview();
+    renderOptions();
     publish(false);
     return true;
   }
@@ -1307,10 +1351,11 @@ window.KidscadeAvatarShop={
   await loadUpperCatalog();
   await loadLowerCatalog();
   await Promise.all([loadShoeCatalog(),loadEarringCatalog(),loadToolCatalog(),loadTeachingAidCatalog()]);
+  await loadWardrobe();
   loadSkinPalette();
   loadFrameSkinPalettes();
   drawStatic();
-  styleSummary.textContent='학교 탐험가 · 헤어 11종 · 염색 9종 · 눈 11종 · 상의 11종 · 하의 11종 · 신발 11종 · 귀걸이 11종 · 도구 15종 · 교구 7종 · 23프레임';
+  styleSummary.textContent='헤어 11종 · 염색 9종 · 다양한 복장과 얼굴 장식을 골라 보세요.';
   selectTab('skin');
   setPreviewMode('stand');
   publish(false);

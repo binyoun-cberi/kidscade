@@ -374,7 +374,8 @@
     "shoes": "shoes/catalog.json",
     "weapon": "tool/catalog.json",
     "shield": "teaching-aid/catalog.json",
-    "hairColor": "hair-color/catalog.json"
+    "hairColor": "hair-color/catalog.json",
+    "wardrobe": "wardrobe/catalog.json"
   },
   "artRevision": "school-accessories-12-shared-hair-colors",
   "bodyRender": {
