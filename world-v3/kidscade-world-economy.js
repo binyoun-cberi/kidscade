@@ -1,3 +1,5 @@
+import {SCHOOL_PROFILES,SCHOOL_QUESTS,schoolKindLabel} from './kidscade-world-school.js?v=1';
+
 export function createTownEconomy(ctx){
   const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,removeInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
 
@@ -50,20 +52,11 @@ export function createTownEconomy(ctx){
     yuna:['bakedPotato','veggieSoup'],taeho:['cafeToast'],sora:['mushroomSoup'],hyunwoo:['cityLunch'],
     nari:['veggieSoup'],woojin:['mushroomSoup'],seoyeon:['omelet'],minseok:['grilledFish']
   };
-  const RESIDENTS={
-    minji:{name:'민지',role:'씨앗마트 운영',service:'market',serviceLabel:'씨앗마트 이용'},
-    junho:{name:'준호',role:'철물·도구 전문가',service:'hardware',serviceLabel:'튼튼 철물점 이용'},
-    haneul:{name:'하늘',role:'카페 운영·요리',service:'cafe',serviceLabel:'하늘 카페 이용'},
-    doyun:{name:'도윤',role:'마을 일자리·행정',service:'jobs',serviceLabel:'오늘의 일거리 보기'},
-    yuna:{name:'유나',role:'농사·마을생활 조언',service:'advice',serviceLabel:'농사 이야기 듣기'},
-    taeho:{name:'태호',role:'키즈 아케이드 운영',service:'arcade',serviceLabel:'아케이드 놀기'},
-    sora:{name:'소라',role:'도서관·생활지식',service:'library',serviceLabel:'도서관 이용'},
-    hyunwoo:{name:'현우',role:'마을 배달',service:'delivery',serviceLabel:'배달 일 받기'},
-    nari:{name:'나리',role:'보건소·회복',service:'clinic',serviceLabel:'보건소 이용'},
-    woojin:{name:'우진',role:'숲 채집·탐험',service:'forest',serviceLabel:'숲 정보 듣기'},
-    seoyeon:{name:'서연',role:'Cube Pets 돌봄',service:'pets',serviceLabel:'펫 이야기 듣기'},
-    minseok:{name:'민석',role:'씨앗버스 운행',service:'transport',serviceLabel:'씨앗버스 타기'}
-  };
+  const RESIDENTS=Object.fromEntries(
+    Object.entries(SCHOOL_PROFILES)
+      .filter(([id,p])=>!['clerk','visitor'].includes(id)&&p.service)
+      .map(([id,p])=>[id,{name:p.name,role:p.role,service:p.service,serviceLabel:p.serviceLabel}])
+  );
   const FRIENDSHIP_REWARDS={
     minji:[{at:3,type:'seedBundle',name:'민지의 씨앗 꾸러미'},{at:7,type:'perk',key:'marketDiscount',value:.10,name:'씨앗마트 10% 단골 할인'},{at:12,type:'furniture',key:'minjiPlanter',name:'민지의 시장 화분'}],
     junho:[{at:3,type:'item',key:'iron',qty:3,name:'정제 철광석 3개'},{at:7,type:'perk',key:'hardwareDiscount',value:.12,name:'철물점 12% 단골 할인'},{at:12,type:'furniture',key:'junhoStool',name:'준호의 작업 스툴'}],
@@ -79,31 +72,18 @@ export function createTownEconomy(ctx){
     minseok:[{at:3,type:'coins',qty:80,name:'교통 지원금 80코인'},{at:7,type:'perk',key:'riverBus',value:1,name:'북쪽 강가 버스 노선 해금'},{at:12,type:'furniture',key:'minseokTravelBench',name:'민석의 여행 벤치'}]
   };
   const TALK_LINES={
-    minji:['오늘 들어온 씨앗 상태가 아주 좋아.','작물은 급하게 키우기보다 매일 조금씩 돌보는 게 좋아.','단골이 되면 내가 챙겨줄 것도 있지!'],
-    junho:['도구는 좋은 것보다 관리가 더 중요해.','돌도구로 시작해도 철을 모으면 훨씬 편해질 거야.','집 꾸미기 재료가 부족하면 철물점에 들러.'],
-    haneul:['탐험 전에 든든하게 먹는 게 제일 중요해.','카페에서는 쉬어가도 괜찮아.','언젠가 네 집에도 멋진 카페 공간이 생기겠네.'],
-    doyun:['오늘 마을 일거리 게시판 확인했어?','작은 일을 꾸준히 하면 마을도 점점 좋아져.','마을 주민들과 친해지는 것도 중요한 일이야.'],
-    yuna:[
-      '농장 쪽 해 질 무렵 풍경이 정말 예뻐.',
-      '마을 사람들과 매일 조금씩 이야기해봐. 금방 친해질 거야.',
-      '버스 정류장에서는 집이나 숲으로 바로 갈 수도 있어.'
-    ],
-    woojin:[
-      '나는 저녁이면 광장 산책을 자주 해.',
-      '일만 하지 말고 아케이드나 도서관에도 들러봐!',
-      '숲에서 버섯을 따오면 마트에서 꽤 괜찮게 팔려.'
-    ],
-    seoyeon:[
-      'Cube Pets랑 같이 다니면 마을에서도 인기 만점이야.',
-      '먹이를 줄 때는 동물마다 좋아하는 걸 잘 살펴봐.',
-      '친해지면 펫을 돌보는 내 비법도 알려줄게.'
-    ],
-    taeho:['오늘도 한 판 할래?','게임도 적당히 쉬면서 해야 오래 즐길 수 있어.','진짜 단골에게만 주는 레트로 물건이 하나 있어.'],
-    sora:['오늘은 어떤 책이 궁금해?','생활 팁은 도서관 책 속에도 꽤 많이 있어.','오래된 책장 하나를 정말 소중한 친구에게 주고 싶어.'],
-    hyunwoo:['배달은 길을 잘 아는 게 절반이야.','하늘 카페까지는 광장을 가로지르면 빨라.','계속 도와줘서 정말 든든해.'],
-    nari:['무리한 뒤에는 꼭 쉬어야 해.','허기와 체력은 서로 영향을 줘.','건강은 모험을 오래 이어가는 가장 좋은 준비야.'],
-    woojin:['숲은 낮이랑 저녁 분위기가 꽤 달라.','버섯은 깊은 숲 쪽에서 더 잘 보여.','좋은 채집 자리는 친한 사람한테만 알려주는 거야.'],
-    minseok:['버스는 이동 시간을 아끼는 가장 좋은 방법이지.','노선은 마을 사람들이 자주 찾는 곳부터 늘리고 있어.','북쪽 강가 노선도 언젠가 열어볼 생각이야.']
+    minji:['마트는 수학을 찾기 좋은 곳이야. 가격표만 봐도 덧셈과 곱셈이 숨어 있거든.','오늘은 우리 반 간식 예산을 맞춰보고 있어. 같이 계산해볼래?','생활 속에서 수학을 써보면 숫자가 훨씬 친근해져.'],
+    junho:['도구를 만들 때는 길이와 순서를 정확히 보는 게 중요해.','철물점에는 실과 시간에 써볼 만한 재료가 정말 많아.','잘 만드는 것보다 안전하게 만들고 정리하는 게 먼저야.'],
+    haneul:['맛있는 음식도 양을 똑같이 나누려면 계산이 필요해.','오늘 카페에서는 건강한 간식 조합을 시험해보고 있어.','활동하기 전에는 든든히 먹고 물도 잘 마셔야 해.'],
+    doyun:['마을을 돌아다니다 보면 사회 시간에 배우는 것들이 곳곳에 보여.','지도는 장소 이름만 보는 게 아니라 왜 그곳에 가는지도 생각해야 해.','작은 봉사도 모이면 마을 전체가 달라져.'],
+    sora:['이야기는 앞뒤 사건이 자연스럽게 이어질 때 더 재미있어.','도서관에서 마음에 드는 문장을 하나 찾아보는 것도 좋아.','친구에게 설명할 때는 중요한 내용을 순서대로 말해보자.'],
+    nari:['건강하게 노는 것도 중요한 학교생활이야.','운동한 뒤에는 쉬면서 물을 마시는 걸 잊지 마.','몸이 보내는 신호를 잘 알아차리는 것도 좋은 습관이야.'],
+    minseok:['기록을 재보면 어제의 나와 오늘의 나를 비교할 수 있어.','체육은 무조건 빠른 것보다 안전하게 꾸준히 하는 게 중요해.','마을을 돌아다니는 것도 좋은 걷기 운동이지!'],
+    yuna:['원예부에서 오늘도 텃밭을 살펴봤어.','식물은 매일 조금씩 달라져서 관찰하는 재미가 있어.','수확한 작물을 친구들과 나누면 더 재미있어.'],
+    woojin:['과학탐구부 기록장에 오늘 본 걸 적고 있어.','숲은 같은 장소라도 날씨에 따라 보이는 게 달라.','버섯이나 곤충을 찾으면 생김새를 천천히 살펴봐.'],
+    seoyeon:['동물마다 좋아하는 먹이와 행동이 달라.','Cube Pets를 돌볼 때는 먼저 상태를 잘 살펴봐야 해.','동물을 좋아하는 마음만큼 책임감도 중요해.'],
+    taeho:['게임에도 규칙과 패턴이 숨어 있어.','한 판 하고 나면 왜 이겼는지 생각해보는 것도 재미있어.','게임동아리에서 새 규칙 게임을 만들고 있어!'],
+    hyunwoo:['방송봉사부는 안내문을 필요한 곳에 잘 전달해야 해.','심부름은 길을 외우는 것보다 목적지를 생각하는 게 더 중요해.','오늘도 마을 여기저기에 소식을 전하고 있어.']
   };
   const LIBRARY_TIPS=[
     '나뭇가지와 작은 돌은 도구 없이 주울 수 있어요.',
@@ -128,6 +108,10 @@ export function createTownEconomy(ctx){
       rewardClaims:old.rewardClaims&&typeof old.rewardClaims==='object'?old.rewardClaims:{},
       gifts:old.gifts&&typeof old.gifts==='object'?old.gifts:{},
       perks:old.perks&&typeof old.perks==='object'?old.perks:{},
+      schoolQuests:{
+        done:old.schoolQuests&&typeof old.schoolQuests==='object'&&old.schoolQuests.done&&typeof old.schoolQuests.done==='object'?old.schoolQuests.done:{},
+        attempts:old.schoolQuests&&typeof old.schoolQuests==='object'&&old.schoolQuests.attempts&&typeof old.schoolQuests.attempts==='object'?old.schoolQuests.attempts:{}
+      },
       visits:Math.max(0,Math.floor(Number(old.visits)||0)),
       delivery:{
         active:!!d.active,
@@ -374,6 +358,49 @@ export function createTownEconomy(ctx){
     t.friendship[id]=(t.friendship[id]||0)+gain;t.fun=Math.min(100,t.fun+(favorite?4:2));
     claimFriendshipRewards(id);persist();setAvatarAction('smile',750);playSfx?.('success',.10);toast((RESIDENTS[id]?.name||id)+' 친밀도 ♥ +'+gain+(favorite?' · 정말 좋아해요!':''));updateStatus();resident(id);
   }
+
+  function schoolQuest(id){
+    const profile=SCHOOL_PROFILES[id],q=SCHOOL_QUESTS[id];if(!profile||!q)return;
+    const t=ensureState(),done=!!t.schoolQuests.done[q.id];
+    if(done){
+      openPanel('<h2>'+q.icon+' '+profile.name+' · '+q.title+'</h2><p><b>완료한 생활 퀘스트</b></p><p>'+q.result+'</p><button data-resident-back="'+id+'">돌아가기</button>');
+      return;
+    }
+    if(q.type==='choice'){
+      const choices=q.choices.map(([value,label])=>'<button data-school-answer="'+id+':'+value+'">'+label+'</button>').join('');
+      openPanel('<h2>'+q.icon+' '+profile.name+' · '+q.title+'</h2><p><small>'+schoolKindLabel(id)+' · '+profile.role+' · '+profile.hangout+'</small></p><p>'+q.prompt+'</p><div class="grid">'+choices+'</div><p><small>완료 보상 '+q.rewardCoins+'코인 · 친밀도 ♥'+(q.friendship||1)+'</small></p><button data-resident-back="'+id+'">나중에 하기</button>');
+      return;
+    }
+    const have=Number(inv()[q.item]||0),ready=have>=q.count;
+    openPanel('<h2>'+q.icon+' '+profile.name+' · '+q.title+'</h2><p><small>'+schoolKindLabel(id)+' · '+profile.role+' · '+profile.hangout+'</small></p><p>'+q.prompt+'</p><div class="item"><b>'+itemName(q.item)+' '+q.count+'개</b><div>현재 '+have+'/'+q.count+'</div><button data-school-turnin="'+id+'" '+(ready?'':'disabled')+'>'+(ready?'전해주기':'아직 부족해요')+'</button></div><p><small>완료 보상 '+q.rewardCoins+'코인 · 친밀도 ♥'+(q.friendship||1)+'</small></p><button data-resident-back="'+id+'">나중에 하기</button>');
+  }
+  function finishSchoolQuest(id,q){
+    const t=ensureState();if(t.schoolQuests.done[q.id])return false;
+    if(q.type==='item'){
+      const bag=inv();if(Number(bag[q.item]||0)<q.count){toast('필요한 물건이 부족해요.');return false;}
+      if(removeInventoryItem)removeInventoryItem(q.item,q.count);else bag[q.item]-=q.count;
+    }
+    t.schoolQuests.done[q.id]=prog().survival.day;
+    t.coins+=(q.rewardCoins||0);t.fun=Math.min(100,t.fun+6);
+    t.friendship[id]=(t.friendship[id]||0)+(q.friendship||1);
+    claimFriendshipRewards(id);persist();updateStatus();setAvatarAction('smile',800);playSfx?.('success',.12);
+    toast((SCHOOL_PROFILES[id]?.name||id)+'의 생활 퀘스트 완료 · +'+(q.rewardCoins||0)+'코인 · 친밀도 ♥'+(q.friendship||1));
+    schoolQuest(id);return true;
+  }
+  function answerSchoolQuest(id,value){
+    const q=SCHOOL_QUESTS[id];if(!q||q.type!=='choice')return;
+    const t=ensureState();if(t.schoolQuests.done[q.id])return schoolQuest(id);
+    if(String(value)!==String(q.answer)){
+      t.schoolQuests.attempts[q.id]=(t.schoolQuests.attempts[q.id]||0)+1;persist();
+      toast('조금 더 생각해보자. 다시 골라도 괜찮아!');schoolQuest(id);return;
+    }
+    finishSchoolQuest(id,q);
+  }
+  function turnInSchoolQuest(id){
+    const q=SCHOOL_QUESTS[id];if(!q||q.type!=='item')return;
+    finishSchoolQuest(id,q);
+  }
+
   function residentServiceLabel(r){
     if(!r)return '';
     if(!['market','hardware','cafe'].includes(r.service))return r.serviceLabel;
@@ -381,11 +408,12 @@ export function createTownEconomy(ctx){
     return getVenue?.()===r.service?title+' 이용':title+' 들어가기';
   }
   function resident(id){
-    const r=RESIDENTS[id];if(!r)return;
+    const r=RESIDENTS[id],profile=SCHOOL_PROFILES[id];if(!r||!profile)return;
     claimFriendshipRewards(id);
-    const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[];
+    const t=ensureState(),f=t.friendship[id]||0,rewards=FRIENDSHIP_REWARDS[id]||[],quest=SCHOOL_QUESTS[id],questDone=quest?!!t.schoolQuests.done[quest.id]:false;
     const rewardHtml=rewards.map(x=>'<div class="item"><b>♥ '+x.at+'</b><div>'+x.name+'</div><small>'+(t.rewardClaims[id+':'+x.at]?'획득 완료':f>=x.at?'획득 가능':'친밀도 필요')+'</small></div>').join('');
-    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button><button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+residentServiceLabel(r)+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
+    const questButton=quest?'<button data-school-quest="'+id+'">'+quest.icon+' '+(questDone?'퀘스트 다시 보기':'생활 퀘스트 · '+quest.title)+'</button>':'';
+    openPanel('<h2>'+r.name+' · '+r.role+'</h2><p><b>'+schoolKindLabel(id)+' · '+profile.subject+'</b> · '+profile.trait+'</p><p>주로 만나는 곳 · '+profile.hangout+'</p><p>친밀도 <b>♥ '+f+'</b></p><div class="grid"><button data-resident-talk="'+id+'">💬 대화하기</button>'+questButton+'<button data-resident-gift-open="'+id+'">🎁 요리 선물</button><button data-resident-service="'+id+'">'+residentServiceLabel(r)+'</button></div><h3>친밀도 보상</h3><div class="grid">'+rewardHtml+'</div>');
   }
   function residentService(id){
     const r=RESIDENTS[id];if(!r)return;
@@ -470,6 +498,9 @@ export function createTownEconomy(ctx){
     const gift=e.target.closest('[data-resident-gift]');if(gift){const [id,key]=gift.dataset.residentGift.split(':');giftFood(id,key);return true;}
     const rs=e.target.closest('[data-resident-service]');if(rs){residentService(rs.dataset.residentService);return true;}
     const rb=e.target.closest('[data-resident-back]');if(rb){resident(rb.dataset.residentBack);return true;}
+    const sq=e.target.closest('[data-school-quest]');if(sq){schoolQuest(sq.dataset.schoolQuest);return true;}
+    const sa=e.target.closest('[data-school-answer]');if(sa){const [id,value]=sa.dataset.schoolAnswer.split(':');answerSchoolQuest(id,value);return true;}
+    const st=e.target.closest('[data-school-turnin]');if(st){turnInSchoolQuest(st.dataset.schoolTurnin);return true;}
     const buyBtn=e.target.closest('[data-city-buy]');
     if(buyBtn){const [kind,key]=buyBtn.dataset.cityBuy.split(':');buy(kind,key);return true;}
     const sellBtn=e.target.closest('[data-city-sell]');if(sellBtn){sell(sellBtn.dataset.citySell);return true;}
@@ -484,7 +515,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
-    BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
+    BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS,SCHOOL_QUESTS
   };
 }
