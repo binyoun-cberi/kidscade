@@ -25,7 +25,7 @@ test('v20 loads scaled intact landmark POIs and the dungeon runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(poiJs));
   assert.match(html,/cube-architect-poi\.js\?v=20261003-29/);
-  assert.match(html,/cube-architect\.js\?v=20261005-exploration1/);
+  assert.match(html,/cube-architect\.js\?v=20261005-craft-audio1/);
   assert.ok(html.indexOf('cube-architect-landmarks.js')<html.indexOf('cube-architect-poi.js'));
   assert.ok(html.indexOf('cube-architect-poi.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="dungeonHud"/);
