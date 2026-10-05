@@ -1233,6 +1233,7 @@ function completeLandmarkPoi(id){
   restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);
   for(const [type,n] of Object.entries(poi.tech.reward||{}))addToBag(type,n);
   trackSurvival('restore',id);
+  refreshRecipeDiscoveries(true);
   buildInventory();updateFreeMission();saveFreeWorld();
   toast(poi.name+' 던전 클리어 · '+poi.tech.label+' 해금!');
 }
@@ -3042,6 +3043,7 @@ function initFree(){
   configureMobileMode('free');
   $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen)requestGamePointerLock()};
   $('survivalReturn').onclick=emergencyReturn;
+  if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>toggleInventory(true);
   renderSurvivalSafety(null);
   $('inventoryClose').onclick=()=>toggleInventory(false);
   $('furnaceClose').onclick=()=>toggleFurnace(false);
@@ -3158,7 +3160,7 @@ function refreshRecipeDiscoveries(markUnread=true){
     if(!clues.some(type=>discoveredResources.has(type)||bagCount(type)>0))continue;
     discoveredRecipeIds.add(recipe.id);if(markUnread)unreadRecipeIds.add(recipe.id);added.push(recipe);
   }
-  if(added.length&&markUnread)pulseCraftDiscovery();
+  if(added.length&&markUnread){pulseCraftDiscovery();markFreeWorldDirty(700)}
   updateCraftDiscoveryHud();return added;
 }
 function markRecipeSeen(id){
@@ -3361,6 +3363,7 @@ function nearestUnrestoredLandmark(x,z){
     .sort((a,b)=>a.distance-b.distance)[0]||null;
 }
 function updateFreeMission(){
+  updateCraftDiscoveryHud();
   const bx=Math.round(camera.position.x),bz=Math.round(camera.position.z);
   const region=worldRules.region(bx,bz),biome=worldRules.BIOMES[region];
   $('biomeState').textContent=biome.name;
