@@ -5,7 +5,7 @@
   const STUDIO_URL = 'avatar-studio.html';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
-  const PREVIEW_VERSION = 'pixel-v3-school-starter-23';
+  const PREVIEW_VERSION = 'pixel-v3-school-starter-24';
   const PIXEL_STATE_KEY = 'kidscade-avatar-v3';
   const SCHOOL_DEFAULT_IMAGE = 'assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png';
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
