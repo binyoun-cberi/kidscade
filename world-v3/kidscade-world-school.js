@@ -2,7 +2,7 @@ export const SCHOOL_PROFILES={
   minji:{name:'민지',kind:'teacher',role:'수학 선생님',subject:'수학',hangout:'씨앗마트',trait:'생활 속 계산을 좋아함',service:'market',serviceLabel:'씨앗마트 이용'},
   junho:{name:'준호',kind:'teacher',role:'실과 선생님',subject:'실과',hangout:'튼튼 철물점',trait:'도구와 만들기를 좋아함',service:'hardware',serviceLabel:'튼튼 철물점 이용'},
   haneul:{name:'하늘',kind:'teacher',role:'영양 선생님',subject:'식생활',hangout:'하늘 카페',trait:'요리와 건강한 식사를 좋아함',service:'cafe',serviceLabel:'하늘 카페 이용'},
-  doyun:{name:'도윤',kind:'teacher',role:'사회 선생님',subject:'사회',hangout:'마을회관',trait:'마을의 일과 지도를 잘 앎',service:'jobs',serviceLabel:'오늘의 일거리 보기'},
+  doyun:{name:'도윤',kind:'teacher',role:'사회 선생님',subject:'사회',hangout:'씨앗학교·마을광장',trait:'마을의 일과 지도를 잘 앎',service:'jobs',serviceLabel:'오늘의 일거리 보기'},
   sora:{name:'소라',kind:'teacher',role:'국어 선생님',subject:'국어',hangout:'마을 도서관',trait:'책과 이야기를 좋아함',service:'library',serviceLabel:'도서관 이용'},
   nari:{name:'나리',kind:'teacher',role:'보건 선생님',subject:'건강',hangout:'튼튼 보건소',trait:'안전과 건강 습관을 챙김',service:'clinic',serviceLabel:'보건소 이용'},
   minseok:{name:'민석',kind:'teacher',role:'체육 선생님',subject:'체육',hangout:'씨앗버스 정류장',trait:'기록과 야외 활동을 좋아함',service:'transport',serviceLabel:'씨앗버스 타기'},
