@@ -20,7 +20,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=50/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=51/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -28,7 +28,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-8/);
+  assert.match(js,/pixel-v3-school-starter-9/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -59,7 +59,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-8'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-9'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -310,13 +310,22 @@ test('hair visual regression keeps repaired partings solid and rebuilt ponytail 
   const side=coordSet(loadHair('side-part-hair-01.json'));
   const curly=coordSet(loadHair('curly-hair-01.json'));
   const pony=coordSet(loadHair('school-ponytail-hair-02.json'));
+  const neatData=loadHair('neat-short-hair-01.json');
+  const neat=coordSet(neatData);
   const sideRepair={22:[61,62,63],23:[61,62,63],24:[61,62,63],25:[60,61,62],26:[60,61,62],27:[60,61,62],28:[60,61,62],29:[60,61],30:[60,61],31:[60],33:[59]};
   for(const [y,xs] of Object.entries(sideRepair))for(const x of xs)assert.ok(side.has(x+','+y),'side-part gap '+x+','+y);
   const curlyRepair={38:[[61,61]],39:[[60,62],[72,72]],40:[[59,62],[71,73]],41:[[58,63],[70,73]],42:[[58,64],[69,74]],43:[[59,64],[70,75]],44:[[60,63],[71,75]],45:[[60,62],[71,74]]};
   for(const [y,runs] of Object.entries(curlyRepair))for(const [a,b] of runs)for(let x=a;x<=b;x++)assert.ok(curly.has(x+','+y),'curly gap '+x+','+y);
   const eyeMask=new Set(eyeCatalog.baseClearPixels.map(pixel=>pixel[0]+','+pixel[1]));
   assert.deepEqual([...pony].filter(key=>eyeMask.has(key)),[]);
+  assert.deepEqual([...neat].filter(key=>eyeMask.has(key)),[]);
   assert.deepEqual([...curly].filter(key=>eyeMask.has(key)),[]);
+  for(let y=33;y<=43;y++){
+    const xs=neatData.pixels.filter(pixel=>pixel[1]===y).map(pixel=>pixel[0]);
+    assert.ok(xs.length>0,'neat-short row '+y);
+    assert.ok(Math.min(...xs)>=48,'neat-short left temple '+y);
+    assert.ok(Math.max(...xs)<=83,'neat-short right temple '+y);
+  }
   assert.ok(hairCatalog.items.some(item=>item.id==='school-ponytail-hair-02'&&item.file==='school-ponytail-hair-02.json'));
   assert.ok(!hairCatalog.items.some(item=>item.id==='ponytail-hair-01'));
   assert.equal(fs.existsSync(path.join(starterDir,'hair','ponytail-hair-01.json')),false);
@@ -366,6 +375,13 @@ test('public avatar renders school accessories on all motion frames with correct
   assert.match(js,/const SCHOOL_PACK_URL=ROOT\+'\/school-starter\.json'/);
   assert.match(js,/function stripDefaultEquipment\(target,frameId\)/);
   assert.match(js,/function drawEquipmentPass\(target,frameId,slot,id,pass\)/);
+  assert.match(js,/const ACCESSORY_OUTLINE=\[24,20,23,255\]/);
+  assert.match(js,/function accessoryOutlinePixels\(pixels,color=ACCESSORY_OUTLINE\)/);
+  assert.match(js,/function drawPixelTuples\(target,pixels,withOutline=false\)/);
+  assert.match(js,/drawPixelTuples\(target,equipmentPassPixels\(def,frameId,slot,pass\),true\)/);
+  assert.match(js,/drawPixelTuples\(target,earringShapePixels\(def,frameId\),true\)/);
+  assert.match(js,/accessoryOutlinePixels\(packLayerPixels\(frameId,'earring'\)\)/);
+  assert.match(js,/accessoryOutlinePixels\(pixels\)/);
   assert.match(js,/function drawSoccerBall\(/);
   assert.match(js,/function drawBasketball\(/);
   assert.match(js,/function drawVolleyball\(/);
