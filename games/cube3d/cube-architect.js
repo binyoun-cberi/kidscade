@@ -1856,7 +1856,7 @@ let miningHeld=false,miningSource='',miningKey='',miningProgress=0,miningDuratio
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
-let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0;
+let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0,freeAvatarFacingRight=false;
 let freeAvatarAction='',freeAvatarActionStartedAt=0,freeAvatarActionUntil=0,freeAvatarDefeated=false,freeAvatarReturnAt=0,freeViewBeforeDefeat=null;
 const FREE_AVATAR_ACTION_MS={attack:410,hurt:285,dead:930,pickup:450,sit:680};
 const FREE_AVATAR_ACTION_PRIORITY={pickup:1,sit:1,attack:2,hurt:3,dead:4};
@@ -1947,9 +1947,15 @@ function prepareFreeAvatar(now){
   const moving=!!(freeKeys.KeyW||freeKeys.KeyS||freeKeys.KeyA||freeKeys.KeyD||
     freeKeys.ArrowUp||freeKeys.ArrowDown||freeKeys.ArrowLeft||freeKeys.ArrowRight||
     Math.hypot(mobileMove.x,mobileMove.y)>.12);
+  const leftHeld=!!(freeKeys.KeyA||freeKeys.ArrowLeft),rightHeld=!!(freeKeys.KeyD||freeKeys.ArrowRight);
+  if(leftHeld!==rightHeld)freeAvatarFacingRight=rightHeld;
+  else if(mobileMove.x>.18)freeAvatarFacingRight=true;
+  else if(mobileMove.x<-.18)freeAvatarFacingRight=false;
   const stepLift=freeStepHop>0?Math.sin((1-freeStepHop)*Math.PI)*.1:0;
   freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62+stepLift,camera.position.z);
   freeAvatarRoot.rotation.y=yaw;
+  // Base sprites face left. Mirror only when travelling right and keep the last facing while idle/attacking.
+  freeAvatarRoot.scale.x=freeAvatarFacingRight?-1:1;
   freeAvatarRoot.visible=freeViewMode==='third';
   const motion=freeFluidKind?'swim':freeFlying?'air':onGround?'ground':'air';
   api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion,freeAvatarActionAt(now));
@@ -2745,6 +2751,7 @@ function initFree(){
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
+  freeAvatarFacingRight=false;
   freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
