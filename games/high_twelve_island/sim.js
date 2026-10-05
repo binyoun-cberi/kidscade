@@ -264,7 +264,7 @@
     s.log.unshift({ tick: s.tick, text: String(message) });
     if (s.log.length > 35) s.log.length = 35;
   }
-  function capacity(s) { return 16 + s.buildings.hut * 6; }
+  function capacity(s) { return 16 + s.buildings.hut * 6 + Math.max(0, Math.floor(s.city?.stats?.homes || 0)); }
   function childCount(s) { return (s.citizens || []).filter(p => p.isChild).length; }
   function adultCapacity(s) { return Math.max(0, s.population - childCount(s)); }
   function unused(s) { return Math.max(0, adultCapacity(s) - s.jobs.gather - s.jobs.wood); }
