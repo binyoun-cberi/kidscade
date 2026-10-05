@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const S = require('../games/high_twelve_island/sim.js');
+const C = require('../games/high_twelve_island/city-core.js');
 const ROOT = path.resolve(__dirname, '..');
 const gameDir = path.join(ROOT, 'games/high_twelve_island');
 
@@ -13,18 +14,21 @@ test('Village Chief Simulator registers a complete accessible game and uses exis
   assert.ok(entry);
   assert.equal(entry.subject, 'social');
   assert.equal(entry.age, 'high');
-  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js', 'art.js', 'rework.js'])
+  for (const file of ['index.html', 'style.css', 'game.js', 'sim.js', 'art.js', 'city-core.js', 'city-view.js', 'rework.js'])
     assert.ok(fs.statSync(path.join(gameDir, file)).size > 100);
   const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
   assert.match(html, /data-game-id="high_twelve_island"/);
-  assert.match(html, /sim.js\?v=15/);
-  assert.match(html, /art.js\?v=15/);
-  assert.match(html, /game.js\?v=15/);
+  assert.match(html, /sim.js\?v=16/);
+  assert.match(html, /art.js\?v=16/);
+  assert.match(html, /city-core.js\?v=16/);
+  assert.match(html, /city-view.js\?v=16/);
+  assert.match(html, /game.js\?v=16/);
   assert.match(html, /id="islandCanvas"/);
+  assert.match(html, /data-tab="city"/);
   assert.match(html, /data-tab="residents"/);
   assert.match(html, /id="policyNotice"/);
   assert.match(html, /id="crisisStrip"/);
-  assert.ok(entry.href.endsWith("?v=15"));
+  assert.ok(entry.href.endsWith("?v=16"));
   assert.ok(fs.existsSync(path.join(ROOT, entry.cover)));
   for (const asset of ['assets/game/2d/tilesets/kenney-tiny-town/atlas/tilemap-packed.png',
     'assets/game/2d/tilesets/kenney-tiny-farm/atlas/tilemap-packed.png',
@@ -1029,4 +1033,42 @@ test('v13 villagers visibly work, rest and react to village conditions', () => {
   assert.match(art, /actor\.route = buildRoute/);
   assert.match(art, /actor\.waypoint \+= 1/);
   assert.match(art, /actors\.sort\(\(a, b\) => a\.y - b\.y\)/);
+});
+
+
+test('city planning core grows connected zones and keeps isolated roads disconnected', () => {
+  const city = C.initial(17);
+  assert.equal(city.width, 24);
+  assert.equal(city.height, 18);
+  assert.ok(C.summary(city).roads > 0);
+
+  const isolated = C.paint(city, 'road', 1, 1);
+  assert.equal(isolated.ok, true);
+  C.recompute(city);
+  assert.equal(C.cell(city, 1, 1).connected, false);
+
+  const village = { population: 20, trust: 72, health: 84 };
+  for (let i = 0; i < 8; i++) C.tick(city, village);
+  const developed = city.tiles.filter(t => t.density > 0);
+  assert.ok(developed.length > 0);
+  assert.ok(developed.every(t => t.zone));
+  assert.ok(C.summary(city).taxIncome > 0);
+});
+
+test('city planning services raise nearby land value and save data normalizes safely', () => {
+  const city = C.initial(31);
+  C.recompute(city);
+  const before = C.cell(city, 10, 8).landValue;
+  const park = C.paint(city, 'park', 11, 8);
+  assert.equal(park.ok, true);
+  C.recompute(city);
+  assert.ok(C.cell(city, 10, 8).landValue > before);
+
+  const village = { seed: 31 };
+  const attached = C.ensureVillage(village);
+  assert.equal(attached.version, C.VERSION);
+  attached.funds = 777;
+  const roundTrip = C.normalize(JSON.parse(JSON.stringify(attached)));
+  assert.equal(roundTrip.funds, 777);
+  assert.equal(roundTrip.tiles.length, 24 * 18);
 });
