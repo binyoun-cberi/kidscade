@@ -15,13 +15,14 @@ const hairColorCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'hair-col
 const upperCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'upper/catalog.json'),'utf8'));
 const lowerCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'lower/catalog.json'),'utf8'));
 const shoeCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'shoes/catalog.json'),'utf8'));
+const effectCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'effect/catalog.json'),'utf8'));
 const earringCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'earring/catalog.json'),'utf8'));
 const toolCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'tool/catalog.json'),'utf8'));
 const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teaching-aid/catalog.json'),'utf8'));
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=69/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=72/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
@@ -29,7 +30,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-28/);
+  assert.match(js,/pixel-v3-school-starter-29/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -46,7 +47,7 @@ test('school starter exposes all eight completed motion groups',()=>{
 });
 
 test('public studio lists only registered v3 starter parts and exposes no JSON tools',()=>{
-  for(const tab of ['skin','hair','hairColor','eyes','mouth','earring','upper','lower','shoes','weapon','shield']){
+  for(const tab of ['skin','hair','hairColor','eyes','mouth','earring','upper','lower','shoes','effect','weapon','shield']){
     assert.match(html,new RegExp('data-tab="'+tab+'"'));
   }
   for(const id of ['basic-tousled-hair-01','basic-eyes-01','basic-flat-mouth-01','basic-school-uniform-upper-01','basic-school-uniform-lower-01','basic-sneakers-01','school-ruler-01','school-textbook-01']){
@@ -93,7 +94,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-28'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-29'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -604,6 +605,29 @@ test('school accessory catalogs expose 20 shoes, 10 earrings, 32 tools and 6 tea
   assert.equal(toolCatalog.items.find(item=>item.label==='농구공').kind,'basketball');
   assert.equal(toolCatalog.items.find(item=>item.label==='배구공').kind,'volleyball');
   for(const label of ['지우개','이로미','쓰레받기','연필깎이','곰돌이인형','베개'])assert.ok(teachingAidCatalog.items.some(item=>item.label===label),label);
+});
+
+test('special effect catalog exposes ten purchasable pixel effects plus a free none option',()=>{
+  assert.equal(manifest.partCatalogs.effect,'effect/catalog.json');
+  assert.equal(manifest.assetIds.effect,'no-effect');
+  assert.equal(effectCatalog.type,'kidscade-avatar-effect-catalog');
+  assert.equal(effectCatalog.defaultId,'no-effect');
+  assert.equal(effectCatalog.items.length,11);
+  assert.equal(new Set(effectCatalog.items.map(item=>item.id)).size,11);
+  const expected={'반짝이':'sparkle','별이 떠다님':'stars','하트':'hearts','눈송이':'snow','불꽃':'flame','번개':'lightning','음표':'music-notes','작은 구름':'small-cloud','나뭇잎':'leaves','무지개':'rainbow'};
+  for(const [label,kind] of Object.entries(expected)){const item=effectCatalog.items.find(candidate=>candidate.label===label);assert.ok(item,label);assert.equal(item.kind,kind,label)}
+  assert.equal(effectCatalog.items.find(item=>item.id==='cloud-effect-01').pass,'back');
+  assert.equal(effectCatalog.items.find(item=>item.id==='rainbow-effect-01').pass,'back');
+  assert.match(html,/data-tab="effect" type="button">이펙트<\/button>/);
+  assert.match(js,/function loadEffectCatalog\(\)/);
+  assert.match(js,/function selectedEffectId\(\)/);
+  assert.match(js,/function effectPixels\(def,frameId,pass\)/);
+  assert.match(js,/function drawEffectPass\(target,frameId,id=selectedEffectId\(\),pass='front'\)/);
+  assert.match(js,/drawEffectPass\(target,frameId,effectId,'back'\)/);
+  assert.match(js,/drawEffectPass\(target,frameId,effectId,'front'\)/);
+  assert.match(js,/data-effect-id/);
+  assert.match(js,/function setEffectAsset\(id\)/);
+  assert.match(js,/effect:id/);
 });
 
 test('public avatar renders school accessories on all motion frames with correct hand and depth rules',()=>{
