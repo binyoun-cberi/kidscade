@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=27';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=28';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
-import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=7';
+import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=8';
 import {createMuseumSystem} from './kidscade-world-museum.js?v=2';
-import {createTownEconomy} from './kidscade-world-economy.js?v=21';
+import {createTownEconomy} from './kidscade-world-economy.js?v=22';
 import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
@@ -2352,6 +2352,8 @@ async function init(){
       museumDonate:()=>museumRuntime?.donationPanel?.(),
       museumSummary:()=>museumRuntime?.summary?.(),
       schoolSchedule:()=>townEconomy?.schoolSchedule?.(),
+      schoolClass:()=>townEconomy?.schoolClassPanel?.(),
+      schoolBell:period=>{worldAudio.sfx('success',.07);toast('🔔 '+(period?.label||'다음 시간')+' · '+(period?.board||'수업이 바뀌었어요.'));},
       exitVenue
     },
     getGameTime:()=>prog().survival.time
