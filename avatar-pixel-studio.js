@@ -1292,10 +1292,12 @@ async function renderWardrobeOptions(){
   await Promise.allSettled(group.items.map(async item=>{await wardrobe.load(key,item.id);if(currentTab!==key)return;const el=optionGrid.querySelector('canvas[data-wardrobe-thumb="'+item.id+'"]');if(el)drawWardrobeThumbnail(el,key,item.id)}));
 }
 async function setWardrobeAsset(key,id){
-  const group=wardrobe?.category(key);if(!group?.items.some(item=>item.id===id))return false;
+  const group=wardrobe?.category(key),item=group?.items.find(candidate=>candidate.id===id);if(!item)return false;
   const request=(wardrobeRequests.get(key)||0)+1;wardrobeRequests.set(key,request);
-  try{await wardrobe.load(key,id);if(wardrobeRequests.get(key)!==request)return false;
-    state.assetIds={...state.assetIds,[key]:id};refreshSkinPreview();renderOptions();publish(false);flash(group.items.find(item=>item.id===id).label+' 적용했어요!');return true;
+  try{
+    await wardrobe.load(key,id);if(wardrobeRequests.get(key)!==request)return false;
+    const access=await ensureAssetAccess(key,id,group.defaultId,item.label);if(!access.ok)return false;
+    state.assetIds={...state.assetIds,[key]:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
   }catch(error){console.error(error);if(wardrobeRequests.get(key)===request)flash('파츠를 불러오지 못했어요. 다시 골라 주세요.');return false}
 }
 function renderOptions(){
@@ -1340,36 +1342,57 @@ function refreshSkinPreview(){
   setPreviewMode(previewMode);
 }
 
-function setEarringAsset(id){if(!earringCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),earring:id};refreshSkinPreview();renderOptions();publish(false);const item=earringCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'귀걸이')+' 적용했어요!');return true}
-function setShoeAsset(id){if(!shoeCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);const item=shoeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'신발')+' 적용했어요!');return true}
-function setToolAsset(id){if(!toolCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),weaponFront:id,weaponBack:id};refreshSkinPreview();renderOptions();publish(false);const item=toolCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'도구')+' 적용했어요!');return true}
-function setTeachingAidAsset(id){if(!teachingAidCatalog?.items?.some(item=>item.id===id))return false;state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shieldFront:id,shieldBack:id};refreshSkinPreview();renderOptions();publish(false);const item=teachingAidCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'교구')+' 적용했어요!');return true}
+async function setEarringAsset(id){
+  const item=earringCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('earring',id,earringCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),earring:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setShoeAsset(id){
+  const item=shoeCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('shoes',id,shoeCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shoes:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setToolAsset(id){
+  const item=toolCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('weapon',id,toolCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),weaponFront:id,weaponBack:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
+async function setTeachingAidAsset(id){
+  const item=teachingAidCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('shield',id,teachingAidCatalog.defaultId,item.label);if(!access.ok)return false;
+  state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),shieldFront:id,shieldBack:id};refreshSkinPreview();renderOptions();publish(false);flash(assetApplyMessage(access,item.label));return true;
+}
 
 async function setUpperAsset(id){
-  if(!upperCatalog?.items?.some(item=>item.id===id))return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
+  const item=upperCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==upperCatalog.defaultId)await loadUpperPart(id);
+  const access=await ensureAssetAccess('upper',id,upperCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),upper:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=upperCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'상의')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 async function setLowerAsset(id){
-  if(!lowerCatalog?.items?.some(item=>item.id===id))return false;if(id!==lowerCatalog.defaultId)await loadLowerPart(id);
+  const item=lowerCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==lowerCatalog.defaultId)await loadLowerPart(id);
+  const access=await ensureAssetAccess('lower',id,lowerCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),lower:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=lowerCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'하의')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 async function setHairAsset(id){
-  if(!hairCatalog?.items?.some(item=>item.id===id))return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
+  const item=hairCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==hairCatalog.defaultId)await loadHairPart(id);
+  const access=await ensureAssetAccess('hair',id,hairCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),hair:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=hairCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'헤어')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
-function setHairColorAsset(id){
-  if(!hairColorCatalog?.items?.some(item=>item.id===id))return false;
+async function setHairColorAsset(id){
+  const item=hairColorCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;
+  const access=await ensureAssetAccess('hairColor',id,hairColorCatalog.defaultId,item.label);if(!access.ok)return false;
   state.hairColorId=id;refreshSkinPreview();renderOptions();publish(false);
-  const item=hairColorCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'염색')+' 색으로 바꿨어요!');return true;
+  flash(assetApplyMessage(access,item.label,'색으로 바꿨어요!'));return true;
 }
 
 async function setEyeAsset(id){
-  if(!eyeCatalog?.items?.some(item=>item.id===id))return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
+  const item=eyeCatalog?.items?.find(candidate=>candidate.id===id);if(!item)return false;if(id!==eyeCatalog.defaultId)await loadEyePart(id);
+  const access=await ensureAssetAccess('eyes',id,eyeCatalog.defaultId,item.label);if(!access.ok)return false;
   state.assetIds={...(manifest?.assetIds||{}),...(state.assetIds||{}),eyes:id};refreshSkinPreview();renderOptions();publish(false);
-  const item=eyeCatalog.items.find(candidate=>candidate.id===id);flash((item?.label||'눈')+' 적용했어요!');return true;
+  flash(assetApplyMessage(access,item.label));return true;
 }
 function setSkinColor(value,{rerender=false,announce=false}={}){
   state.skinColor=normalizeHexColor(value);
