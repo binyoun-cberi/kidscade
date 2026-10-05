@@ -2957,7 +2957,7 @@ function buildInventory(category='전체'){
   $('shapeWorkbench').classList.toggle('hidden',survival?
     survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
-    '제작대를 설치하면 2×1×1 직육면체 설계가 바로 열려요. 생존 건축이 곧 입체도형 활동입니다.':
+    '제작대를 설치하면 2×1×1 직육면체 설계가 열려요. 평화 생물은 F로 상호작용하고, 회복 음식은 가방에서 눌러 먹을 수 있어요.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
   if(survival){
     const resources=Object.entries(survivalBag).filter(([type,n])=>n>0)
@@ -4780,7 +4780,7 @@ function initMobileControls(){
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
-  tap('mobileInteract',()=>{if(mode==='free'&&gameFreeMode==='survival')interactWildCreature()});
+  tap('mobileInteract',()=>{if(mode==='free'&&gameFreeMode==='survival'&&!interactWildCreature())toast('가까운 평화 생물을 십자선으로 바라보세요.')});
   tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
   tap('mobileMore',()=>{if(mode==='free'){mobileUtilityOpen=!mobileUtilityOpen;configureMobileMode('free')}});
   tap('mobileAvatar',()=>{if(mode==='free')openAvatarCustomizer()});
@@ -4957,7 +4957,7 @@ document.addEventListener('keydown',e=>{
   if(/^Digit[1-9]$/.test(e.code)){
     stopMining();selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot]||'hand';buildHotbar();updateFreeMission();
   }
-  if(e.code==='KeyF'&&gameFreeMode==='survival'){e.preventDefault();interactWildCreature();return}
+  if(e.code==='KeyF'&&gameFreeMode==='survival'){e.preventDefault();if(!interactWildCreature())toast('가까운 평화 생물을 십자선으로 바라보고 F를 눌러 보세요.');return}
   if(e.code==='KeyF'&&gameFreeMode==='creative'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
   if(e.code==='KeyR'&&gameFreeMode==='creative')pickTargetBlock();
   if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
