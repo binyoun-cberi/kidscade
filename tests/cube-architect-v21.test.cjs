@@ -12,7 +12,7 @@ const html=read('games/cube3d/index.html');
 test('v21 avatar module and runtime parse',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(avatar));
-  assert.match(html,/cube-architect-avatar\.js\?v=20261003-30/);
+  assert.match(html,/cube-architect-avatar\.js\?v=20261005-avatar-actions1/);
   assert.ok(html.indexOf('cube-architect-avatar.js')<html.indexOf('cube-architect.js'));
 });
 
@@ -53,8 +53,9 @@ test('avatar customization is reachable on desktop and touch controls',()=>{
 });
 
 test('pixel avatar changes frames while moving and remains cosmetic-only',()=>{
-  assert.match(avatar,/moving&&onGround\?'walk':'idle'/);
-  assert.match(avatar,/renderPreviewFrame\?\.\(mode,time\/1000\)/);
+  assert.match(avatar,/airborne\?'jump'/);
+  assert.match(avatar,/actionMode\|\|/);
+  assert.match(avatar,/renderPreviewFrame\?\.\(mode,frameTime\)/);
   assert.match(avatar,/NearestFilter/);
   assert.match(avatar,/shadow/);
   assert.doesNotMatch(avatar,/damage|attackPower|speedBonus|armorBonus/);
