@@ -29,7 +29,7 @@ test('public studio uses school starter v3 assets instead of legacy v2 parts',()
   assert.match(js,/kidscade-avatar-v3\/school-starter/);
   assert.match(js,/school-starter-sheet\.png/);
   assert.match(js,/kidscade-avatar-v3/);
-  assert.match(js,/pixel-v3-school-starter-27/);
+  assert.match(js,/pixel-v3-school-starter-28/);
   assert.doesNotMatch(js,/male-short-01|blue-star-zip-hoodie|denim-cuffed-jeans/);
   assert.doesNotMatch(html,/v2 RIG|파란 후드|데님 팬츠/);
 });
@@ -93,7 +93,7 @@ test('public v3 studio stays compatible with lobby integration API',()=>{
   for(const token of ['window.KidscadeAvatarShop','getPreviewDataURL','renderPreviewFrame','setPreviewMode','setSeeds','kidscade-avatar-change']){
     assert.ok(js.includes(token),token);
   }
-  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-27'/);
+  assert.match(integration,/PREVIEW_VERSION = 'pixel-v3-school-starter-28'/);
   assert.match(integration,/PIXEL_STATE_KEY = 'kidscade-avatar-v3'/);
   assert.match(integration,/SCHOOL_DEFAULT_IMAGE/);
   assert.doesNotMatch(integration,/pixel-avatar-renderer\.js\?v=27|GUEST_DEFAULT_CONFIG|guestConfigFromPixelState/);
@@ -573,16 +573,24 @@ test('trousers have separate legs and four depth tones in the starter JSON',()=>
 });
 
 
-test('school accessory catalogs expose 10 shoes, 10 earrings, 32 tools and 6 teaching aids plus defaults',()=>{
+test('school accessory catalogs expose 20 shoes, 10 earrings, 32 tools and 6 teaching aids plus defaults',()=>{
   assert.equal(manifest.partCatalogs.shoes,'shoes/catalog.json');
   assert.equal(manifest.partCatalogs.earring,'earring/catalog.json');
   assert.equal(manifest.partCatalogs.weapon,'tool/catalog.json');
   assert.equal(manifest.partCatalogs.shield,'teaching-aid/catalog.json');
-  assert.equal(shoeCatalog.items.length,11);
+  assert.equal(shoeCatalog.items.length,21);
   assert.equal(earringCatalog.items.length,11);
   assert.equal(toolCatalog.items.length,33);
   assert.equal(teachingAidCatalog.items.length,7);
-  assert.equal(new Set(shoeCatalog.items.map(item=>item.id)).size,11);
+  const silhouetteShoes={
+    '하이탑 운동화':'hightop-sneaker','농구화':'basketball-shoe','축구화':'soccer-cleat','장화':'rain-boot','털부츠':'fur-boot',
+    '슬리퍼':'slipper','샌들':'sandal','롤러스케이트':'roller-skate','인라인스케이트':'inline-skate','캐릭터 슬리퍼':'character-slipper'
+  };
+  for(const [label,shape] of Object.entries(silhouetteShoes)){const item=shoeCatalog.items.find(candidate=>candidate.label===label);assert.ok(item,label);assert.equal(item.shape,shape,label)}
+  assert.match(js,/function splitShoeComponents\(pixels\)/);
+  assert.match(js,/function shoeSilhouettePixels\(def,frameId\)/);
+  for(const shape of Object.values(silhouetteShoes))assert.match(js,new RegExp("def\\.shape==='"+shape+"'"),shape);
+  assert.equal(new Set(shoeCatalog.items.map(item=>item.id)).size,21);
   assert.equal(new Set(earringCatalog.items.map(item=>item.id)).size,11);
   assert.equal(new Set(toolCatalog.items.map(item=>item.id)).size,33);
   assert.equal(new Set(teachingAidCatalog.items.map(item=>item.id)).size,7);
