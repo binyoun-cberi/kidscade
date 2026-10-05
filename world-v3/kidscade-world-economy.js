@@ -1,4 +1,4 @@
-import {SCHOOL_PROFILES,SCHOOL_QUESTS,SCHOOL_DAY_PERIODS,SCHOOL_CLASS_ACTIVITIES,schoolKindLabel,schoolPeriodAt,schoolClock} from './kidscade-world-school.js?v=2';
+import {SCHOOL_PROFILES,SCHOOL_QUESTS,SCHOOL_DAY_PERIODS,SCHOOL_CLASS_ACTIVITIES,SCHOOL_BREAK_GAMES,SCHOOL_BREAK_PLAY_PERIODS,SCHOOL_BREAK_GAMES,schoolLunchMenu,schoolKindLabel,schoolPeriodAt,schoolClock} from './kidscade-world-school.js?v=3';
 
 export function createTownEconomy(ctx){
   const {prog,inv,openPanel,toast,persist,updateStatus,setAvatarAction,itemName,foodName=(key=>key),travel,playSfx,addInventoryItem,removeInventoryItem,canCarryNewKey,addFoodItem,canCarryFoodKey,canCarryBundle,enterVenue,getVenue,getDailyState}=ctx;
@@ -115,6 +115,14 @@ export function createTownEconomy(ctx){
       schoolClasses:{
         completed:old.schoolClasses&&typeof old.schoolClasses==='object'&&old.schoolClasses.completed&&typeof old.schoolClasses.completed==='object'?old.schoolClasses.completed:{},
         attempts:old.schoolClasses&&typeof old.schoolClasses==='object'&&old.schoolClasses.attempts&&typeof old.schoolClasses.attempts==='object'?old.schoolClasses.attempts:{}
+      },
+      schoolBreaks:{
+        games:old.schoolBreaks&&typeof old.schoolBreaks==='object'&&old.schoolBreaks.games&&typeof old.schoolBreaks.games==='object'?old.schoolBreaks.games:{},
+        attempts:old.schoolBreaks&&typeof old.schoolBreaks==='object'&&old.schoolBreaks.attempts&&typeof old.schoolBreaks.attempts==='object'?old.schoolBreaks.attempts:{},
+        friendPeriods:old.schoolBreaks&&typeof old.schoolBreaks==='object'&&old.schoolBreaks.friendPeriods&&typeof old.schoolBreaks.friendPeriods==='object'?old.schoolBreaks.friendPeriods:{},
+        lunchDay:Math.max(0,Math.floor(Number(old.schoolBreaks?.lunchDay)||0)),
+        lunchFriendDay:Math.max(0,Math.floor(Number(old.schoolBreaks?.lunchFriendDay)||0)),
+        lunchFriend:String(old.schoolBreaks?.lunchFriend||'')
       },
       visits:Math.max(0,Math.floor(Number(old.visits)||0)),
       delivery:{
@@ -532,6 +540,103 @@ export function createTownEconomy(ctx){
       (currentActivity?'<button data-school-class-open="1">🧑‍🏫 지금 수업 참여하기</button>':'<p><small>'+period.board+'</small></p>'));
   }
 
+  function schoolBreakPeriod(){
+    const p=prog(),period=schoolPeriodAt(p.survival.time);
+    return SCHOOL_BREAK_PLAY_PERIODS.includes(period.id)?period:null;
+  }
+  function schoolYardPanel(){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time),playable=SCHOOL_BREAK_PLAY_PERIODS.includes(period.id);
+    if(!playable){
+      openPanel('<h2>🏫 씨앗학교 운동장</h2><p>지금은 <b>'+period.label+'</b> 시간이야.</p><p>축구·피구·친구 놀이는 쉬는 시간이나 점심시간에 할 수 있어.</p><button data-school-schedule="1">📋 시간표 보기</button>');
+      return;
+    }
+    const day=p.survival.day;
+    const gameCards=Object.values(SCHOOL_BREAK_GAMES).map(g=>{
+      const key=day+':'+period.id+':'+g.id,done=!!t.schoolBreaks.games[key];
+      return '<div class="item"><b>'+g.icon+' '+g.title+'</b><div>'+(done?'✅ 이번 시간 완료':'친구와 짧게 한 판 놀기')+'</div><button data-school-break-game="'+g.id+'" '+(done?'disabled':'')+'>'+(done?'완료':'놀기')+'</button></div>';
+    }).join('');
+    const friendKey=day+':'+period.id,friendDone=!!t.schoolBreaks.friendPeriods[friendKey];
+    openPanel('<h2>🏫 '+period.label+' · 운동장</h2><p>쉬는 시간에는 마음대로 놀거나 친구와 이야기할 수 있어.</p><div class="grid">'+gameCards+
+      '<div class="item"><b>👫 친구와 같이 놀기</b><div>'+(friendDone?'✅ 이번 시간에 이미 친구와 놀았어.':'친구 한 명을 불러 같이 놀기')+'</div><button data-school-friend-open="1" '+(friendDone?'disabled':'')+'>친구 고르기</button></div>'+
+      (period.kind==='lunch'?'<div class="item"><b>🍱 오늘의 급식</b><div>밥을 먹고 함께 쉴 수 있어.</div><button data-school-lunch-open="1">급식 보기</button></div>':'')+
+      '</div>');
+  }
+  function schoolBreakGame(gameId){
+    const p=prog(),t=ensureState(p),period=schoolBreakPeriod(),g=SCHOOL_BREAK_GAMES[gameId];
+    if(!period||!g){toast('지금은 운동장 놀이 시간이 아니야.');return schoolYardPanel();}
+    const key=p.survival.day+':'+period.id+':'+g.id;
+    if(t.schoolBreaks.games[key])return schoolYardPanel();
+    const choices=g.choices.map(([value,label])=>'<button data-school-break-answer="'+g.id+':'+value+'">'+label+'</button>').join('');
+    openPanel('<h2>'+g.icon+' '+g.title+'</h2><p>'+g.prompt+'</p><div class="grid">'+choices+'</div><button data-school-yard="1">← 운동장으로</button>');
+  }
+  function answerSchoolBreakGame(gameId,choice){
+    const p=prog(),t=ensureState(p),period=schoolBreakPeriod(),g=SCHOOL_BREAK_GAMES[gameId];
+    if(!period||!g){toast('🔔 놀이 시간이 끝났어.');return schoolYardPanel();}
+    const key=p.survival.day+':'+period.id+':'+g.id;
+    if(t.schoolBreaks.games[key])return schoolYardPanel();
+    t.schoolBreaks.attempts[key]=(t.schoolBreaks.attempts[key]||0)+1;
+    let success=false,detail='';
+    const dirs=['left','center','right'],seed=(p.survival.day*17+period.id.length*11+gameId.length*7)%3;
+    if(gameId==='soccer'){
+      const keeper=dirs[seed];success=choice!==keeper;
+      detail=success?'태호가 '+(keeper==='left'?'왼쪽':keeper==='center'?'가운데':'오른쪽')+'으로 몸을 날렸고, 공은 반대쪽 골망으로 들어갔어!':'태호가 슛 방향을 읽고 공을 막았어. 다른 쪽을 노려보자!';
+    }else{
+      const incoming=dirs[seed];
+      success=(incoming==='center'&&choice==='catch')||(incoming==='left'&&choice==='right')||(incoming==='right'&&choice==='left');
+      detail=success?(choice==='catch'?'공을 두 손으로 안전하게 잡았어!':'공이 날아오는 반대쪽으로 재빨리 피했어!'):'서연의 공이 예상한 쪽과 달랐어. 다시 움직여보자!';
+    }
+    if(!success){persist();setAvatarAction('hurt',380);toast('아깝다! 다시 해보자.');openPanel('<h2>'+g.icon+' '+g.title+'</h2><p>'+detail+'</p><button data-school-break-game="'+g.id+'">다시 하기</button><button data-school-yard="1">그만하기</button>');return;}
+    t.schoolBreaks.games[key]=true;t.coins+=g.rewardCoins;t.fun=Math.min(100,t.fun+g.fun);
+    if(g.friend&&RESIDENTS[g.friend]){t.friendship[g.friend]=(t.friendship[g.friend]||0)+1;claimFriendshipRewards(g.friend);}
+    persist();updateStatus();setAvatarAction('smile',800);playSfx?.('success',.12);
+    openPanel('<h2>🎉 '+g.title+' 성공!</h2><p>'+detail+'</p><p><b>+'+g.rewardCoins+'코인 · 재미 +'+g.fun+(g.friend?' · '+RESIDENTS[g.friend].name+' 친밀도 ♥1':'')+'</b></p><button data-school-yard="1">운동장으로</button>');
+  }
+  function schoolFriendPanel(){
+    const p=prog(),t=ensureState(p),period=schoolBreakPeriod();
+    if(!period){toast('친구와 노는 건 쉬는 시간이나 점심시간에 해보자.');return schoolYardPanel();}
+    const key=p.survival.day+':'+period.id;
+    if(t.schoolBreaks.friendPeriods[key])return schoolYardPanel();
+    const ids=['yuna','woojin','seoyeon','taeho','hyunwoo'];
+    const buttons=ids.map(id=>'<button data-school-friend="'+id+'">👫 '+RESIDENTS[id].name+'와 놀기</button>').join('');
+    openPanel('<h2>👫 누구와 같이 놀까?</h2><p>이번 '+period.label+'에는 한 친구와 시간을 보낼 수 있어.</p><div class="grid">'+buttons+'</div><button data-school-yard="1">← 운동장으로</button>');
+  }
+  function schoolFriendBreak(id){
+    const p=prog(),t=ensureState(p),period=schoolBreakPeriod();
+    if(!period||!['yuna','woojin','seoyeon','taeho','hyunwoo'].includes(id))return schoolYardPanel();
+    const key=p.survival.day+':'+period.id;if(t.schoolBreaks.friendPeriods[key])return schoolYardPanel();
+    t.schoolBreaks.friendPeriods[key]=id;t.fun=Math.min(100,t.fun+4);t.friendship[id]=(t.friendship[id]||0)+1;claimFriendshipRewards(id);
+    const lines={yuna:'화단에 핀 꽃을 같이 구경했어.',woojin:'운동장 구석에서 재미있는 돌을 함께 관찰했어.',seoyeon:'동물 이야기를 하며 운동장을 한 바퀴 걸었어.',taeho:'다음에 할 게임 규칙을 같이 만들었어.',hyunwoo:'학교 방송 흉내를 내며 같이 웃었어.'};
+    persist();updateStatus();setAvatarAction('smile',750);toast(RESIDENTS[id].name+'와 즐겁게 놀았어!');
+    openPanel('<h2>👫 '+RESIDENTS[id].name+'와 쉬는 시간</h2><p>'+lines[id]+'</p><p><b>재미 +4 · 친밀도 ♥1</b></p><button data-school-yard="1">운동장으로</button>');
+  }
+  function schoolLunchPanel(){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time),menu=schoolLunchMenu(p.survival.day),lunchTime=period.kind==='lunch';
+    if(!lunchTime){openPanel('<h2>🍱 씨앗학교 급식</h2><p>급식은 <b>12:00~13:00 점심·놀이 시간</b>에 먹을 수 있어.</p><button data-school-schedule="1">📋 시간표 보기</button>');return;}
+    const eaten=t.schoolBreaks.lunchDay===p.survival.day,friendDone=t.schoolBreaks.lunchFriendDay===p.survival.day;
+    const items=menu.items.map(x=>'• '+x).join('<br>');
+    const friendButtons=['yuna','woojin','seoyeon','taeho','hyunwoo'].map(id=>'<button data-school-lunch-friend="'+id+'" '+(friendDone?'disabled':'')+'>'+RESIDENTS[id].name+'와 같이 먹기</button>').join('');
+    openPanel('<h2>🍱 '+menu.name+'</h2><p>'+items+'</p><p><b>오늘의 급식은 무료!</b></p>'+
+      '<button data-school-lunch-eat="1" '+(eaten?'disabled':'')+'>'+(eaten?'✅ 오늘 급식 먹음':'맛있게 먹기')+'</button>'+
+      '<h3>같이 먹을 친구</h3><div class="grid">'+friendButtons+'</div>'+
+      (friendDone?'<p><small>오늘은 '+(RESIDENTS[t.schoolBreaks.lunchFriend]?.name||'친구')+'와 같이 먹었어.</small></p>':'')+
+      '<button data-school-yard="1">운동장으로</button>');
+  }
+  function schoolEatLunch(){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time);if(period.kind!=='lunch')return schoolLunchPanel();
+    if(t.schoolBreaks.lunchDay===p.survival.day)return schoolLunchPanel();
+    const menu=schoolLunchMenu(p.survival.day);
+    t.schoolBreaks.lunchDay=p.survival.day;p.energy=Math.min(p.maxEnergy,p.energy+menu.energy);p.survival.hunger=Math.min(100,p.survival.hunger+menu.hunger);t.fun=Math.min(100,t.fun+menu.fun);
+    persist();updateStatus();setAvatarAction('smile',900);playSfx?.('pickup',.10);toast('🍱 급식을 맛있게 먹었어!');
+    openPanel('<h2>🍚 잘 먹었습니다!</h2><p>'+menu.items.join(' · ')+'</p><p><b>체력 +'+menu.energy+' · 허기 +'+menu.hunger+' · 재미 +'+menu.fun+'</b></p><button data-school-lunch-open="1">급식 자리로</button>');
+  }
+  function schoolLunchFriend(id){
+    const p=prog(),t=ensureState(p),period=schoolPeriodAt(p.survival.time);if(period.kind!=='lunch')return schoolLunchPanel();
+    if(t.schoolBreaks.lunchFriendDay===p.survival.day||!['yuna','woojin','seoyeon','taeho','hyunwoo'].includes(id))return schoolLunchPanel();
+    t.schoolBreaks.lunchFriendDay=p.survival.day;t.schoolBreaks.lunchFriend=id;t.fun=Math.min(100,t.fun+3);t.friendship[id]=(t.friendship[id]||0)+1;claimFriendshipRewards(id);
+    persist();updateStatus();setAvatarAction('smile',800);toast('🍱 '+RESIDENTS[id].name+'와 같이 점심을 먹었어!');
+    schoolLunchPanel();
+  }
+
   function bench(){
     const p=prog(),t=ensureState(p),day=p.survival.day;
     if(t.benchRestDay===day){toast('오늘은 광장에서 충분히 쉬었어요. 다른 활동을 해보거나 내일 다시 쉬어보세요.');return false;}
@@ -558,6 +663,14 @@ export function createTownEconomy(ctx){
     if(e.target.closest('[data-school-schedule]')){schoolSchedule();return true;}
     if(e.target.closest('[data-school-class-open]')){schoolClassPanel();return true;}
     const sca=e.target.closest('[data-school-class-answer]');if(sca){const [periodId,value]=sca.dataset.schoolClassAnswer.split(':');answerSchoolClass(periodId,value);return true;}
+    if(e.target.closest('[data-school-yard]')){schoolYardPanel();return true;}
+    const sbg=e.target.closest('[data-school-break-game]');if(sbg){schoolBreakGame(sbg.dataset.schoolBreakGame);return true;}
+    const sba=e.target.closest('[data-school-break-answer]');if(sba){const [gameId,value]=sba.dataset.schoolBreakAnswer.split(':');answerSchoolBreakGame(gameId,value);return true;}
+    if(e.target.closest('[data-school-friend-open]')){schoolFriendPanel();return true;}
+    const sfriend=e.target.closest('[data-school-friend]');if(sfriend){schoolFriendBreak(sfriend.dataset.schoolFriend);return true;}
+    if(e.target.closest('[data-school-lunch-open]')){schoolLunchPanel();return true;}
+    if(e.target.closest('[data-school-lunch-eat]')){schoolEatLunch();return true;}
+    const slf=e.target.closest('[data-school-lunch-friend]');if(slf){schoolLunchFriend(slf.dataset.schoolLunchFriend);return true;}
     const buyBtn=e.target.closest('[data-city-buy]');
     if(buyBtn){const [kind,key]=buyBtn.dataset.cityBuy.split(':');buy(kind,key);return true;}
     const sellBtn=e.target.closest('[data-city-sell]');if(sellBtn){sell(sellBtn.dataset.citySell);return true;}
@@ -572,7 +685,7 @@ export function createTownEconomy(ctx){
   }
 
   return {
-    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,schoolSchedule,schoolClassPanel,answerSchoolClass,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
+    ensureState,shop,jobs,delivery,talk,giftPanel,giftFood,resident,residentService,schoolQuest,answerSchoolQuest,turnInSchoolQuest,schoolSchedule,schoolClassPanel,answerSchoolClass,schoolYardPanel,schoolBreakGame,answerSchoolBreakGame,schoolFriendPanel,schoolFriendBreak,schoolLunchPanel,schoolEatLunch,schoolLunchFriend,arcade,library,clinic,transport,bench,cafeRest,tick,handlePanelClick,addFriendship,dailyDealKeys,
     BUY,SELL,JOBS,HOURS,RESIDENTS,FRIENDSHIP_REWARDS,SCHOOL_QUESTS,SCHOOL_DAY_PERIODS,SCHOOL_CLASS_ACTIVITIES
   };
 }
