@@ -257,6 +257,7 @@ function roomInfo(r){
  return {v:"−"+r.n,cap:"함정방 · 숫자 감소",body:`<div class="roomPropWrap trapWrap"><img class="roomProp trap" src="${ASSET.tower.trap}" alt=""></div>`};
 }
 function init(){
+ window.KidscadeNumberTowerAvatar?.reset?.();
  [...world.querySelectorAll(".tower,.gate,.zoneShade,.zoneLabel")].forEach(e=>e.remove());
  const s=stages[si]; power=s.start; zoneIndex=0;busy=false;hearts=3;combo=0;state=[];towerEls.length=0;gateEls.length=0;syncRunHud();
  $("#stageText").textContent=s.name;
