@@ -40,7 +40,7 @@
       "subject": "arts",
       "genre": "rhythm",
       "difficulty": "easy",
-      "sessionMinutes": 8,
+      "sessionMinutes": 5,
       "players": [
         "solo"
       ],
@@ -2816,7 +2816,7 @@
       "subject": "language",
       "genre": "quiz",
       "difficulty": "medium",
-      "sessionMinutes": 5,
+      "sessionMinutes": 8,
       "players": [
         "solo"
       ],
