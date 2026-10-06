@@ -35,6 +35,8 @@ let mobileModeEnabled=typeof canvas.requestPointerLock!=='function'||
 let mobileMove={x:0,y:0};
 let mobileLookPointerId=null,mobileLookLast=null,mobileJoyPointerId=null;
 let mobileUtilityOpen=false;
+let mobileRadialPointerId=null,mobileRadialTimer=0,mobileRadialOpen=false,mobileRadialSelected='';
+let mobileRadialCenter={x:0,y:0},mobileRadialPressedAt=0;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let toastTimer = null;
@@ -3623,7 +3625,9 @@ function updateMining(dt){
   if(miningProgress>=1){
     const completed=hit;
     miningKey='';miningProgress=0;miningDurationNow=0;miningBeat=.25;resetMiningFeedback();
+    const oneShot=miningSource==='radial';
     breakFreeBlock(completed);
+    if(oneShot)stopMining();
   }
 }
 function placementTarget(hit){
@@ -5266,7 +5270,8 @@ function updateFree(dt,t){
 
 /* Pointer-lock is optional. Safari on iPhone uses touch-look and these controls. */
 function resetMobileInput(){
-  if(miningSource==='mobile')stopMining();
+  if(miningSource==='mobile'||miningSource==='radial')stopMining();
+  closeMobileActionRadial();
   mobileMove.x=0;mobileMove.y=0;mobileLookPointerId=null;mobileLookLast=null;mobileJoyPointerId=null;
   if($('mobileJoystickKnob'))$('mobileJoystickKnob').style.transform='translate(-50%,-50%)';
   if(typeof challengeKeys!=='undefined'){challengeKeys.Space=false;challengeKeys.ShiftLeft=false}
@@ -5298,9 +5303,10 @@ function configureMobileMode(target){
   const geometryTools=target==='free'&&(gameFreeMode==='creative'||survivalStage>=3)&&mobileUtilityOpen;
   $('mobilePaint').classList.toggle('hidden',!geometryTools);
   $('mobileLens').classList.toggle('hidden',!geometryTools);
-  $('mobileBreak').classList.toggle('hidden',target==='dungeon');
-  if(target!=='dungeon')$('mobileBreak').textContent=target==='free'&&gameFreeMode==='survival'?'채집':'파괴';
-  $('mobilePlace').classList.toggle('hidden',target==='dungeon');
+  const survivalActionHub=target==='free'&&gameFreeMode==='survival';
+  $('mobileBreak').classList.toggle('hidden',target==='dungeon'||survivalActionHub);
+  if(target!=='dungeon')$('mobileBreak').textContent=survivalActionHub?'채집':'파괴';
+  $('mobilePlace').classList.toggle('hidden',target==='dungeon'||survivalActionHub);
   $('mobileUp').classList.toggle('hidden',target==='dungeon');
   $('mobileDown').classList.toggle('hidden',target==='dungeon');
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
@@ -5349,6 +5355,149 @@ function mobileBlockAction(action){
     }
     if(action==='place')placeFreeBlock(hit);
   }
+}
+function mobileSpecialUseTarget(){
+  if(mode!=='free'||gameFreeMode!=='survival')return false;
+  const hit=freeCenterHit(6),u=hit?.object?.userData||{},type=u.type;
+  if(type==='door'||type==='doorTop'){
+    if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
+  }
+  if(type==='furnace'){toggleFurnace(true);return true}
+  if(type==='workbench'){toggleInventory(true);return true}
+  if(survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+    openLandmarkDungeon(nearLandmarkPoi);return true;
+  }
+  return false;
+}
+function mobileObserveTarget(){
+  if(mode!=='free'||gameFreeMode!=='survival')return false;
+  if(interactWildCreature())return true;
+  const hit=freeCenterHit(6),u=hit?.object?.userData;
+  if(u?.worldBlock){
+    const data=getBlock(u.gx,u.gy,u.gz);
+    if(data){
+      const need=worldRules.toolNeeded(data.type),extra=need?' · '+blockDef(need).name+' 필요':'';
+      toast('관찰 · '+blockDef(data).name+extra);return true;
+    }
+  }
+  if(nearLandmarkPoi){toast('관찰 · '+nearLandmarkPoi.name+' · 가까이 가면 던전을 조사할 수 있어요.');return true}
+  toast('관찰할 생물이나 블록을 가운데 +로 바라보세요.');return false;
+}
+function mobileOneShotHarvest(){
+  if(mode!=='free'||gameFreeMode!=='survival')return false;
+  if(hitWildCreature())return true;
+  const hit=freeCenterHit(6);
+  if(!canMineTarget(hit,true))return false;
+  startMining('radial');return !!miningHeld;
+}
+function mobilePlaceAction(){
+  if(mode!=='free'||gameFreeMode!=='survival')return false;
+  const hit=freeCenterHit(6);
+  if(!hit){toast('설치할 면을 가운데 +로 바라보세요.');return false}
+  if(!PLACEABLE_TYPES.includes(selectedType)){
+    toast('먼저 가방이나 핫바에서 설치할 재료를 골라 주세요.');return false;
+  }
+  placeFreeBlock(hit);return true;
+}
+function executeMobileRadialAction(action){
+  if(mode!=='free'||gameFreeMode!=='survival')return false;
+  let ok=false;
+  if(action==='observe')ok=mobileObserveTarget();
+  else if(action==='use'){
+    ok=mobileSpecialUseTarget();
+    if(!ok)toast('문·제작대·화로·랜드마크처럼 사용할 대상을 바라보세요.');
+  }else if(action==='harvest')ok=mobileOneShotHarvest();
+  else if(action==='place')ok=mobilePlaceAction();
+  tutorialSignal('mobile-radial-'+action);
+  return ok;
+}
+function mobileDefaultAction(){
+  if(mode!=='free'||gameFreeMode!=='survival')return;
+  const creature=creatureRayHit(2.9);
+  if(creature){
+    const root=creature.object.userData.creatureRoot;
+    if(root?.userData?.spec?.kind==='hostile')hitWildCreature();
+    else interactWildCreature();
+    return;
+  }
+  if(mobileSpecialUseTarget())return;
+  const hit=freeCenterHit(6);
+  if(hit&&PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'){
+    placeFreeBlock(hit);return;
+  }
+  if(hit&&canMineTarget(hit,false)){mobileOneShotHarvest();return}
+  toast('행동 버튼을 꾹 누르면 관찰·사용·채집·설치를 골라 쓸 수 있어요.');
+}
+function positionMobileActionRadial(){
+  const radial=$('mobileActionRadial'),button=$('mobileInteract'),controls=$('mobileControls');
+  if(!radial||!button||!controls)return;
+  const br=button.getBoundingClientRect(),cr=controls.getBoundingClientRect();
+  const x=br.left-cr.left+br.width/2,y=br.top-cr.top+br.height/2;
+  radial.style.left=x+'px';radial.style.top=y+'px';
+  mobileRadialCenter={x:br.left+br.width/2,y:br.top+br.height/2};
+}
+function setMobileRadialSelection(action){
+  if(mobileRadialSelected===action)return;
+  mobileRadialSelected=action||'';
+  document.querySelectorAll('#mobileActionRadial [data-radial-action]').forEach(el=>
+    el.classList.toggle('selected',el.dataset.radialAction===mobileRadialSelected));
+  if(action)try{navigator.vibrate?.(8)}catch(_){}
+}
+function updateMobileRadialSelection(clientX,clientY){
+  if(!mobileRadialOpen)return;
+  const dx=clientX-mobileRadialCenter.x,dy=clientY-mobileRadialCenter.y,dist=Math.hypot(dx,dy);
+  if(dist<27){setMobileRadialSelection('');return}
+  if(Math.abs(dx)>Math.abs(dy))setMobileRadialSelection(dx>0?'use':'place');
+  else setMobileRadialSelection(dy>0?'harvest':'observe');
+}
+function openMobileActionRadial(){
+  if(mobileRadialOpen||mode!=='free'||gameFreeMode!=='survival')return;
+  mobileRadialOpen=true;positionMobileActionRadial();setMobileRadialSelection('');
+  $('mobileActionRadial').classList.remove('hidden');$('mobileControls').classList.add('radial-open');
+  $('mobileInteract').classList.add('radial-held');$('mobileInteract').setAttribute('aria-expanded','true');
+  try{navigator.vibrate?.(14)}catch(_){}
+  tutorialSignal('mobile-radial-open');
+}
+function closeMobileActionRadial(){
+  clearTimeout(mobileRadialTimer);mobileRadialTimer=0;
+  mobileRadialOpen=false;mobileRadialSelected='';
+  $('mobileActionRadial')?.classList.add('hidden');$('mobileControls')?.classList.remove('radial-open');
+  $('mobileInteract')?.classList.remove('radial-held');$('mobileInteract')?.setAttribute('aria-expanded','false');
+  document.querySelectorAll('#mobileActionRadial [data-radial-action]').forEach(el=>el.classList.remove('selected'));
+}
+function initMobileActionRadial(){
+  const button=$('mobileInteract');if(!button)return;
+  button.addEventListener('pointerdown',ev=>{
+    if(!mobileModeEnabled||mode!=='free'||gameFreeMode!=='survival')return;
+    warmAudio();ev.preventDefault();ev.stopPropagation();
+    mobileRadialPointerId=ev.pointerId;mobileRadialPressedAt=performance.now();
+    const br=button.getBoundingClientRect();mobileRadialCenter={x:br.left+br.width/2,y:br.top+br.height/2};
+    button.setPointerCapture?.(ev.pointerId);button.classList.add('pressed');
+    clearTimeout(mobileRadialTimer);mobileRadialTimer=setTimeout(openMobileActionRadial,310);
+  });
+  button.addEventListener('pointermove',ev=>{
+    if(ev.pointerId!==mobileRadialPointerId)return;
+    ev.preventDefault();ev.stopPropagation();
+    if(mobileRadialOpen)updateMobileRadialSelection(ev.clientX,ev.clientY);
+  });
+  const finish=ev=>{
+    if(ev.pointerId!==mobileRadialPointerId)return;
+    ev.preventDefault();ev.stopPropagation();
+    clearTimeout(mobileRadialTimer);mobileRadialTimer=0;
+    const wasOpen=mobileRadialOpen,chosen=mobileRadialSelected;
+    mobileRadialPointerId=null;button.classList.remove('pressed');
+    closeMobileActionRadial();
+    if(wasOpen){if(chosen)executeMobileRadialAction(chosen)}
+    else mobileDefaultAction();
+  };
+  button.addEventListener('pointerup',finish);
+  button.addEventListener('pointercancel',ev=>{
+    if(ev.pointerId!==mobileRadialPointerId)return;
+    mobileRadialPointerId=null;button.classList.remove('pressed');closeMobileActionRadial();
+  });
+  button.addEventListener('lostpointercapture',ev=>{
+    if(ev.pointerId===mobileRadialPointerId){mobileRadialPointerId=null;button.classList.remove('pressed');closeMobileActionRadial()}
+  });
 }
 function initMobileControls(){
   const joystick=$('mobileJoystick'),knob=$('mobileJoystickKnob');
@@ -5402,7 +5551,7 @@ function initMobileControls(){
   tap('mobileCopy',()=>{if(mode==='free')pickTargetBlock()});
   tap('mobileWeather',()=>{if(mode==='free')cycleWeather()});
   tap('mobileInventory',()=>{if(mode==='free')toggleInventory()});
-  tap('mobileInteract',()=>{if(mode==='free'&&gameFreeMode==='survival'&&!interactWildCreature())toast('가까운 평화 생물을 십자선으로 바라보세요.')});
+  initMobileActionRadial();
   tap('mobileView',()=>{if(mode==='free')cycleFreeView()});
   tap('mobileTutorial',()=>showTutorial(mode==='free'?'free':mode,true));
   tap('mobileMore',()=>{if(mode==='free'){mobileUtilityOpen=!mobileUtilityOpen;configureMobileMode('free')}});
@@ -5533,19 +5682,23 @@ function tutorialSteps(kind){
   if(kind==='free'&&gameFreeMode==='survival')return[
     {title:'생존 탐험 · 첫날 훈련',text:'이번에는 설명만 읽지 않아요. 원목을 직접 모으고, 판자와 제작대를 만들고, 2×1×1 직육면체와 나무 곡괭이까지 실제로 완성합니다.',do:'화면에 보이는 “○”를 하나씩 “✓”로 바꾸면 됩니다. 이미 한 일은 자동으로 인정돼요.'},
     {title:'1. 움직이고 나무 찾기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 빈 화면을 밀어 보는 방향을 바꿉니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다. 가운데 +가 내가 보는 곳입니다.',do:mobile?'가까운 나무 줄기 앞까지 가 보세요.':'가까운 나무 줄기를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
-    {title:'2. 원목 3개 모으기',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'나무 줄기를 바라보고 “채집” 버튼을 길게 누르세요.':'나무 줄기를 가운데 +로 바라보고 마우스 왼쪽 버튼을 길게 누르세요.',do:'한 번만 부수고 끝내지 말고 원목을 3개 모아야 통과합니다.',wait:'survival-wood3'},
+    ...(mobile?[
+      {title:'모바일 행동 휠 열기',target:'#mobileInteract',text:'“행동” 버튼은 그냥 누르는 버튼이 아니에요. 짧게 탭하면 상황에 맞는 기본 행동, 꾹 누르면 네 방향 행동 휠이 열립니다.',do:'행동 버튼을 손가락으로 꾹 눌러 네 방향 메뉴를 직접 띄워 보세요.',wait:'mobile-radial-open'},
+      {title:'아래로 끌어 채집 선택',target:'#mobileInteract',text:'손가락을 떼지 말고 아래쪽 “채집·공격”으로 끌어가세요. 선택지가 노랗게 커지면 손을 떼면 됩니다.',do:'↑ 관찰·대화 · → 사용·열기 · ↓ 채집·공격 · ← 설치',wait:'mobile-radial-harvest'}
+    ]:[]),
+    {title:'2. 원목 3개 모으기',target:mobile?'#mobileInteract':'#gameCanvas',text:mobile?'나무 줄기를 바라보고 “행동”을 짧게 탭하거나, 꾹 눌러 아래 “채집·공격”으로 끌어 놓으세요. 한 번 선택하면 블록 하나를 끝까지 채집합니다.':'나무 줄기를 가운데 +로 바라보고 마우스 왼쪽 버튼을 길게 누르세요.',do:'한 번만 부수고 끝내지 말고 원목을 3개 모아야 통과합니다.',wait:'survival-wood3'},
     {title:'3. 가방과 제작법 열기',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'위쪽 “가방” 버튼을 누르세요.':'키보드 E를 누르세요. 가방과 발견한 제작법이 함께 열립니다.',do:'월드에서는 E가 “무엇을 만들 수 있지?”를 확인하는 가장 중요한 버튼입니다.',wait:'inventory-open'},
     {title:'4. 원목 → 나무 판자',target:'#survivalCraftPanel',text:'제작 목록에서 “나무 판자 ×4”를 고르고 아래 “제작하기”를 누르세요. 원목 1개가 판자 4개로 바뀝니다.',do:'재료 숫자가 초록색이면 지금 만들 수 있다는 뜻이에요.',wait:'survival-planks'},
     {title:'5. 제작대 만들기',target:'#survivalCraftPanel',text:'이번에는 “제작대 ×1”을 만들어 보세요. 제작대는 곡괭이와 특별한 건축물을 만드는 작업 장소입니다.',do:'판자 4개를 사용해 제작대 1개를 실제로 제작하세요.',wait:'survival-workbench-crafted'},
-    {title:'6. 제작대 땅에 설치하기',target:'#hotbar',text:'가방을 닫고 핫바에서 제작대를 선택하세요. 땅 가까이를 바라본 뒤 우클릭/설치를 누릅니다.',do:mobile?'제작대 선택 → 가방 닫기 → 땅을 보기 → “설치”':'제작대 선택 → E로 가방 닫기 → 땅을 보기 → 마우스 오른쪽 버튼',wait:'survival-workbench-placed'},
+    {title:'6. 제작대 땅에 설치하기',target:mobile?'#mobileInteract':'#hotbar',text:'가방을 닫고 핫바에서 제작대를 선택하세요. 땅 가까이를 바라본 뒤 설치합니다.',do:mobile?'제작대 선택 → 가방 닫기 → 땅 보기 → 행동을 꾹 눌러 왼쪽 “설치”로 끌기':'제작대 선택 → E로 가방 닫기 → 땅을 보기 → 마우스 오른쪽 버튼',wait:'survival-workbench-placed'},
     {title:'7. 직육면체용 판자 준비',target:'#freeMission',text:'직육면체 2×1×1은 판자 2개가 필요해요. 판자가 부족하면 나무를 더 캐고 E에서 판자를 한 번 더 만드세요.',do:'가방에 판자가 2개 이상 있으면 자동 통과합니다.',wait:'survival-planks2'},
     {title:'8. 제작대 옆에서 가방 열기',target:mobile?'#mobileInventory':'#freeHint',text:'설치한 제작대 가까이 서서 가방을 여세요. 제작대 범위 안이면 아래쪽에 “직육면체 제작대”가 열립니다.',do:'제작대에서 너무 멀리 떨어져 있으면 도형 제작칸이 나타나지 않아요.',wait:'survival-shape-open'},
     {title:'9. 2×1×1 직육면체 설계',target:'#shapeWorkbench',text:'직육면체 제작대에서 가로 2, 높이 1, 세로 1로 맞추세요. 방향은 1×1×2여도 정답입니다.',do:'값을 맞춘 뒤 “현재 칸에 직육면체 담기”를 누르세요.',wait:'survival-cuboid-ready'},
-    {title:'10. 직육면체 실제 설치',target:mobile?'#mobilePlace':'#gameCanvas',text:'가방을 닫고 방금 만든 직육면체가 선택된 핫바 칸을 확인하세요. 빈 땅 옆을 바라보고 설치합니다.',do:'2×1×1 도형이 월드에 실제로 생겨야 통과합니다.',wait:'survival-cuboid'},
+    {title:'10. 직육면체 실제 설치',target:mobile?'#mobileInteract':'#gameCanvas',text:'가방을 닫고 방금 만든 직육면체가 선택된 핫바 칸을 확인하세요. 빈 땅 옆을 바라보고 설치합니다.',do:mobile?'행동을 꾹 눌러 왼쪽 “설치”로 끌고 놓으세요. 2×1×1 도형이 실제로 생겨야 합니다.':'2×1×1 도형이 월드에 실제로 생겨야 통과합니다.',wait:'survival-cuboid'},
     {title:'11. 막대 만들기',target:'#freeMission',text:'이제 곡괭이 손잡이를 만들 차례예요. E를 열고 “막대 ×4”를 제작하세요. 판자가 부족하면 원목을 더 모아 판자로 바꾸면 됩니다.',do:'막대를 실제로 제작하면 다음 단계로 넘어갑니다.',wait:'survival-sticks'},
     {title:'12. 나무 곡괭이 완성',target:'#survivalCraftPanel',text:'제작대 가까이에서 나무 곡괭이를 만드세요. 판자 3개와 막대 2개가 필요합니다. 부족한 재료는 화면의 보유/필요 숫자로 확인하세요.',do:'곡괭이를 만들면 자동으로 핫바에 들어갑니다.',wait:'survival-woodpick'},
     {title:'13. 이제 진짜 생존 시작',target:'#freeMission',text:'곡괭이로 돌을 캐고, 판자·흙·직육면체로 지붕과 벽이 있는 거점을 만드세요. 밤·비·설원에서는 거점과 횃불이 몸을 보호합니다.',do:'왼쪽 목표 카드가 다음 할 일을 계속 알려 줍니다. 목표 숫자가 오르면 제대로 하고 있는 거예요.'},
-    {title:'14. 생물 · 전투 · 탐험',target:mobile?'#mobileInteract':'#freeHint',text:mobile?'평화 생물은 “상호작용”, 적대 생물은 “채집/공격”으로 대응합니다.':'평화 생물은 F로 관찰·채집하고, 적대 생물은 왼쪽 클릭으로 공격합니다.',do:'새 바이옴을 발견하고 랜드마크까지 찾아가면 구조 퍼즐과 설계도 던전이 이어집니다.'},
+    {title:'14. 생물 · 전투 · 탐험',target:mobile?'#mobileInteract':'#freeHint',text:mobile?'행동 휠에서 ↑ 관찰·대화는 평화 생물, ↓ 채집·공격은 적대 생물과 자원, → 사용·열기는 문·제작대·화로에 씁니다.':'평화 생물은 F로 관찰·채집하고, 적대 생물은 왼쪽 클릭으로 공격합니다.',do:'새 바이옴을 발견하고 랜드마크까지 찾아가면 구조 퍼즐과 설계도 던전이 이어집니다.'},
     {title:'첫날 훈련 완료!',text:'이제 “채집 → E로 제작 → 핫바 선택 → 설치 → 더 좋은 도구 제작”이라는 서바이벌의 핵심 반복을 직접 해냈습니다.',do:'막히면 상단 “튜토리얼” 또는 모바일 “도움”을 눌러 언제든 다시 볼 수 있어요.'}
   ];
   if(kind==='free')return[
@@ -5587,7 +5740,7 @@ function renderTutorialStep(){
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
 function showTutorial(kind,force=false){
-  const once='cubeArchitectGuidedTutorial_v3_'+kind+
+  const once='cubeArchitectGuidedTutorial_v4_'+kind+
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
   tutorialFinish(false);
