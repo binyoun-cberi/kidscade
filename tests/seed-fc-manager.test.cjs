@@ -241,3 +241,17 @@ test('manager UI exposes direct substitutions individual instructions targeted t
   assert.match(gameSource, /id="trainPlayer"/);
   assert.match(gameSource, /state\.career/);
 });
+
+
+test('analysis room surfaces useful dashboard metrics and direct replay modes',()=>{
+  assert.match(gameSource,/function replayTeamTotals\(r,side\)/);
+  assert.match(gameSource,/function replayOutcome\(r\)/);
+  assert.match(gameSource,/팀 흐름 한눈에 보기/);
+  assert.match(gameSource,/경기당 슈팅/);
+  assert.match(gameSource,/패스 성공률/);
+  assert.match(gameSource,/최근 경기 활약 선수/);
+  assert.match(gameSource,/data-replay-mode="replay"/);
+  assert.match(gameSource,/data-replay-mode="heat"/);
+  assert.match(gameSource,/data-replay-mode="pass"/);
+  assert.match(gameSource,/function openReplay\(index,mode,focus\)/);
+});
