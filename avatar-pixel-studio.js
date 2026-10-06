@@ -1265,6 +1265,94 @@ function frameAt(mode,timeSec=0){
   }
   return frames[frames.length-1];
 }
+
+const COMBAT_GEAR_PALETTES={
+  padded:{dark:'#8f8175',mid:'#d8cec3',light:'#f4efe9',accent:'#b89f83'},
+  iron:{dark:'#5f6973',mid:'#aeb9c3',light:'#e6edf2',accent:'#7e91a3'},
+  wood:{dark:'#5d402a',mid:'#9b6c43',light:'#d3a06b',accent:'#6d4b31'}
+};
+function combatGearFamily(type){
+  if(String(type||'').startsWith('iron'))return 'iron';
+  if(String(type||'').startsWith('padded'))return 'padded';
+  if(String(type||'').startsWith('wood'))return 'wood';
+  return 'iron';
+}
+function combatGearPalette(type){
+  const p=COMBAT_GEAR_PALETTES[combatGearFamily(type)]||COMBAT_GEAR_PALETTES.iron;
+  return {dark:rgbaFromHex(p.dark),mid:rgbaFromHex(p.mid),light:rgbaFromHex(p.light),accent:rgbaFromHex(p.accent)};
+}
+function combatShadePixel(p,palette){
+  const lum=(Number(p?.[2])||0)+(Number(p?.[3])||0)+(Number(p?.[4])||0);
+  const c=lum>610?palette.light:lum<310?palette.dark:palette.mid;
+  return [p[0],p[1],c[0],c[1],c[2],p[5]??255];
+}
+function combatLayerPixels(frameId,layer,type){
+  const palette=combatGearPalette(type);
+  return packLayerPixels(frameId,layer).map(p=>combatShadePixel(p,palette));
+}
+function combatHelmetPixels(frameId,type){
+  const src=packLayerPixels(frameId,'hair'),box=bboxForPixels(src);if(!box)return [];
+  const palette=combatGearPalette(type),cut=box.minY+Math.max(7,Math.round(box.h*.58)),map=new Map();
+  for(const p of src){
+    if(p[1]>cut)continue;
+    const c=combatShadePixel(p,palette);plotPixel(map,c[0],c[1],c.slice(2));
+  }
+  // A small brow rim makes the helmet readable without covering the eyes.
+  for(let x=Math.ceil(box.minX+3);x<=Math.floor(box.maxX-3);x++){
+    if((x+frameId.length)%3!==0)continue;
+    plotPixel(map,x,Math.min(cut,box.minY+Math.round(box.h*.50)),palette.accent);
+  }
+  return [...map.values()];
+}
+function combatShieldPixels(frameId,type){
+  const palette=combatGearPalette(type),info=equipmentAnchorAndDirection(frameId,'shield'),anchor=info.anchor;
+  if(!anchor)return [];
+  const dir=info.direction||[1,0],cx=anchor[0]+dir[0]*8,cy=anchor[1]+dir[1]*8,map=new Map();
+  for(let y=-9;y<=9;y++)for(let x=-7;x<=7;x++){
+    const q=(x*x)/(7*7)+(y*y)/(9*9);
+    if(q<=1){
+      const edge=q>.72,c=edge?palette.dark:((x+y)%7===0?palette.light:palette.mid);
+      plotPixel(map,cx+x,cy+y,c);
+    }
+  }
+  for(let y=-5;y<=5;y++)plotPixel(map,cx,cy+y,palette.accent);
+  return [...map.values()];
+}
+function combatWeaponPixels(frameId,type){
+  if(!type)return [];
+  const palette=combatGearPalette(type.includes('iron')?'iron':type.includes('stone')?'iron':'wood');
+  const info=equipmentAnchorAndDirection(frameId,'weapon'),anchor=info.anchor;if(!anchor)return [];
+  const dir=info.direction||[0,-1],nx=-dir[1],ny=dir[0],map=new Map();
+  const sword=String(type).endsWith('Sword'),pick=String(type).endsWith('Pick');
+  if(!sword&&!pick)return [];
+  const shaft=pick?palette.accent:palette.dark;
+  paintSegment(map,anchor,dir,pick?19:22,pick?2:3,shaft,1);
+  if(sword){
+    for(let t=7;t<=22;t++){
+      const c=t>=20?palette.light:palette.mid;
+      plotPixel(map,anchor[0]+dir[0]*t,anchor[1]+dir[1]*t,c);
+      plotPixel(map,anchor[0]+dir[0]*t+nx,anchor[1]+dir[1]*t+ny,c);
+    }
+    for(let w=-5;w<=5;w++)plotPixel(map,anchor[0]+dir[0]*5+nx*w,anchor[1]+dir[1]*5+ny*w,palette.accent);
+  }else{
+    const tx=anchor[0]+dir[0]*19,ty=anchor[1]+dir[1]*19;
+    for(let w=-7;w<=7;w++){
+      const c=Math.abs(w)>5?palette.light:palette.mid;
+      plotPixel(map,tx+nx*w,ty+ny*w,c);
+    }
+  }
+  return [...map.values()];
+}
+function drawCombatGearOverlay(target,frameId,gear){
+  if(!gear||typeof gear!=='object')return;
+  if(gear.legs)drawPixelTuples(target,combatLayerPixels(frameId,'lower',gear.legs));
+  if(gear.chest)drawPixelTuples(target,combatLayerPixels(frameId,'upper',gear.chest));
+  if(gear.feet)drawPixelTuples(target,combatLayerPixels(frameId,'shoes',gear.feet));
+  if(gear.head)drawPixelTuples(target,combatHelmetPixels(frameId,gear.head),true);
+  if(gear.shield)drawPixelTuples(target,combatShieldPixels(frameId,gear.shield),true);
+  if(gear.weapon)drawPixelTuples(target,combatWeaponPixels(frameId,gear.weapon),true);
+}
+
 function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId(),wardrobeOverrides={},effectId=selectedEffectId()){
   if(!sheet)return;
   const frameId=manifest?.frameOrder?.[index]||'stand-01';
@@ -1310,11 +1398,11 @@ function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),up
   target.save();target.setTransform(1,0,0,1,0,0);target.clearRect(0,0,SIZE,SIZE);target.imageSmoothingEnabled=false;
   drawEffectPass(target,frameId,effectId,'back');
   if(wardrobe)wardrobe.draw(target,frameId,'back',wardrobeIds);
-  drawEquipmentPass(target,frameId,'weapon',toolId,'back');
-  drawEquipmentPass(target,frameId,'shield',aidId,'back');
+  if(toolId!=='__none__')drawEquipmentPass(target,frameId,'weapon',toolId,'back');
+  if(aidId!=='__none__')drawEquipmentPass(target,frameId,'shield',aidId,'back');
   target.drawImage(base,0,0);
-  drawEquipmentPass(target,frameId,'shield',aidId,'front');
-  drawEquipmentPass(target,frameId,'weapon',toolId,'front');
+  if(aidId!=='__none__')drawEquipmentPass(target,frameId,'shield',aidId,'front');
+  if(toolId!=='__none__')drawEquipmentPass(target,frameId,'weapon',toolId,'front');
   drawEffectPass(target,frameId,effectId,'front');
   target.restore();
 }
@@ -1327,14 +1415,17 @@ function drawStatic(){
 function previewData(){
   try{return staticCanvas.toDataURL('image/png')}catch(_){return ''}
 }
-function renderPreviewFrame(mode='stand',time=0){
+function renderPreviewFrame(mode='stand',time=0,options={}){
   if(!sheet)return previewData();
-  const frame=frameAt(mode,time);
+  const frame=frameAt(mode,time),gear=options?.combatGear&&typeof options.combatGear==='object'?options.combatGear:null;
   const off=document.createElement('canvas');
   off.width=SIZE;off.height=SIZE;
   const offCtx=off.getContext('2d',{alpha:true});
   offCtx.imageSmoothingEnabled=false;
-  drawFrame(offCtx,frame.index||0);
+  drawFrame(offCtx,frame.index||0,selectedEyeId(),selectedHairId(),selectedUpperId(),selectedLowerId(),
+    selectedEarringId(),selectedShoeId(),gear?.weapon?'__none__':selectedToolId(),
+    gear?.shield?'__none__':selectedTeachingAidId(),selectedHairColorId(),{},selectedEffectId());
+  drawCombatGearOverlay(offCtx,frame.id||manifest?.frameOrder?.[frame.index||0]||'stand-01',gear);
   try{return off.toDataURL('image/png')}catch(_){return previewData()}
 }
 function syncMotionButtons(){
@@ -1729,7 +1820,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-29',
+  version:'pixel-v3-school-starter-armor-30',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
