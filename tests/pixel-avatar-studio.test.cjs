@@ -174,7 +174,7 @@ test('mobile avatar studio stays inside the viewport and uses compact two-column
   assert.match(css,/\.preview-actions\{grid-column:1\/-1;grid-row:3/);
   assert.match(css,/\.skin-presets\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css,/\.seed-badge\{display:inline-flex!important/);
-  assert.match(html,/avatar-pixel-studio\.css\?v=6/);
+  assert.match(html,/avatar-pixel-studio\.css\?v=7/);
 });
 
 
