@@ -23,6 +23,7 @@
     "low_wordris":["첫 단어","첫 단어를 완성하세요.","워드 콤보","연속으로 여러 단어를 만드세요.","바닥이 깨끗해","보드를 크게 정리하세요."],
     "low_blind_elephant":["이게 코끼리구나","첫 정답을 맞히세요.","촉감 탐정","연속으로 많은 동물을 맞히세요.","단서 하나면 충분해","최소한의 단서만 보고 정답을 맞히세요."],
     "low_math_number_tower":["첫 층","첫 숫자 층을 완성하세요.","숫자 고층빌딩","높은 층까지 올라가세요.","흔들리지 않아","실수 없이 긴 구간을 통과하세요."],
+    "math_pi_memory":["첫 π 도전","원주율 기록 도전을 완료하세요.","π 연구자","원주율을 50자리까지 외우세요.","π 박사","원주율을 100자리까지 외우세요."],
     "low_bumper_roulette":["첫 완주","첫 레이스를 완주하세요.","포디움","상위권으로 경기를 마치세요.","꼴찌의 반란","뒤처진 상태에서 역전하세요."],
     "low_pong_battle":["첫 승리","첫 경기를 이기세요.","랠리왕","긴 랠리를 이어가세요.","철벽 수비","실점 없이 승리하세요."],
     "math_timing_lcd":["딱 맞췄다!","첫 타이밍 도전을 성공하세요.","0.1초의 감각","목표 시간에 아주 가깝게 맞히세요.","완전 정확해","목표 시간을 정확히 맞히세요."],
@@ -156,6 +157,10 @@
     },
     low_blind_elephant: {
       mastery:{event:'game-over', field:'correct', op:'gte', value:12}
+    },
+    math_pi_memory: {
+      mastery:{event:'result', field:'digits', op:'gte', value:50},
+      secret:{event:'result', field:'digits', op:'gte', value:100}
     },
     low_pong_battle: {
       mastery:{event:'game-over', field:'score', op:'gte', value:20}
