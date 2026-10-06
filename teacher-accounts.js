@@ -359,6 +359,8 @@
             <td data-label="클라우드">${student.state_revision > 0 ? `저장 ${Number(student.state_revision)}회` : '첫 저장 전'}<span class="tiny">${escapeHtml(formatDate(student.updated_at))}</span></td>
             <td data-label="마지막 로그인">${escapeHtml(formatDate(student.last_login_at))}</td>
             <td data-label="관리"><div class="student-actions">
+              <button type="button" data-action="qr-card" data-login="${escapeHtml(student.login_id)}">QR 카드</button>
+              <button class="secondary" type="button" data-action="qr-rotate" data-login="${escapeHtml(student.login_id)}">QR 재발급</button>
               <button type="button" data-action="reset-pin" data-login="${escapeHtml(student.login_id)}">PIN 재발급</button>
               <button class="secondary" type="button" data-action="logout-student" data-login="${escapeHtml(student.login_id)}">로그아웃</button>
               <button class="${Number(student.disabled) ? 'secondary' : 'warn'}" type="button" data-action="toggle-status" data-login="${escapeHtml(student.login_id)}" data-disabled="${Number(student.disabled) ? '1' : '0'}">${Number(student.disabled) ? '사용 복구' : '사용 중지'}</button>
@@ -378,6 +380,7 @@
               ${teacherCredentialHtml}
             </div>
             <div class="class-actions">
+              <button type="button" data-action="class-qr-cards" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">🖨️ 반 QR 카드</button>
               <button type="button" data-action="economy" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">💰 학급경제</button>
               <button class="secondary" type="button" data-action="rename-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">이름 변경</button>
               <button type="button" data-action="add-students" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">학생 추가</button>
@@ -407,6 +410,109 @@
     } catch (_) {
       alert('네트워크 연결을 확인해 주세요.');
     }
+  }
+
+  function makeQrDataUrl(text) {
+    if (typeof window.QRCode !== 'function') throw new Error('qr_generator_unavailable');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:232px;height:232px;background:#fff;padding:6px';
+    document.body.appendChild(host);
+    try {
+      new window.QRCode(host, {
+        text:String(text || ''),
+        width:220,
+        height:220,
+        colorDark:'#000000',
+        colorLight:'#ffffff',
+        correctLevel:window.QRCode.CorrectLevel.M
+      });
+      const canvas = host.querySelector('canvas');
+      const image = host.querySelector('img');
+      if (canvas?.toDataURL) return canvas.toDataURL('image/png');
+      if (image?.src) return image.src;
+      throw new Error('qr_render_failed');
+    } finally {
+      host.remove();
+    }
+  }
+
+  function openQrPrint(cards, title = 'Kidscade QR 로그인 카드', preparedPopup = null) {
+    const list = Array.isArray(cards) ? cards.filter(card => card?.qrUrl) : [];
+    if (!list.length) return alert('인쇄할 QR 카드가 없습니다.');
+    let rendered;
+    try {
+      rendered = list.map(card => ({ ...card, qrImage:makeQrDataUrl(card.qrUrl) }));
+    } catch (_) {
+      return alert('QR 이미지를 만들지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+    }
+    const popup = preparedPopup || window.open('', '_blank');
+    if (!popup) return alert('팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 뒤 다시 눌러 주세요.');
+    try { popup.opener = null; } catch (_) {}
+    const cardsHtml = rendered.map(card => `
+      <article class="qr-card">
+        <div class="brand">KIDSCADE · 빠른 로그인</div>
+        <img src="${card.qrImage}" alt="QR 로그인 코드">
+        <strong>${escapeHtml(card.nickname || '새싹 게이머')}</strong>
+        <span>${escapeHtml(card.className || '')}</span>
+        <code>${escapeHtml(card.loginId || '')}</code>
+        <small>카메라로 QR을 찍고 ‘응, 들어갈래!’를 눌러요.</small>
+      </article>
+    `).join('');
+    popup.document.open();
+    popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>
+      *{box-sizing:border-box}body{margin:0;font-family:"맑은 고딕",system-ui,sans-serif;color:#1f2937;background:#f8fafc}
+      .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #e5e7eb}
+      .bar b{font-size:1rem}.bar button{border:0;border-radius:12px;padding:10px 16px;background:#7c5cff;color:#fff;font-weight:900;cursor:pointer}
+      .sheet{width:min(980px,calc(100% - 24px));margin:18px auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+      .qr-card{break-inside:avoid;display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px;border:2px solid #ddd6fe;border-radius:18px;background:#fff}
+      .brand{font-size:11px;font-weight:1000;color:#7c3aed;letter-spacing:.04em}.qr-card img{width:176px;height:176px;margin:6px 0;image-rendering:pixelated}
+      .qr-card strong{font-size:18px}.qr-card span{margin-top:2px;font-size:12px;color:#64748b;font-weight:800}.qr-card code{margin-top:6px;padding:4px 7px;border-radius:8px;background:#f5f3ff;color:#5b21b6;font-weight:900}
+      .qr-card small{margin-top:8px;max-width:220px;color:#64748b;font-size:10px;line-height:1.4}
+      @media(max-width:760px){.sheet{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media print{body{background:#fff}.bar{display:none}.sheet{width:100%;margin:0;grid-template-columns:repeat(3,1fr);gap:7mm}.qr-card{padding:5mm;border-radius:4mm}.qr-card img{width:42mm;height:42mm}}
+    </style></head><body><div class="bar"><b>${escapeHtml(title)} · ${rendered.length}장</b><button onclick="window.print()">🖨️ 인쇄</button></div><main class="sheet">${cardsHtml}</main></body></html>`);
+    popup.document.close();
+  }
+
+  async function issueQrCard(loginId, rotate, button) {
+    if (rotate && !confirm(`${loginId}의 기존 QR을 폐기하고 새 QR을 발급할까요?\n기존 QR 카드는 즉시 사용할 수 없게 됩니다.`)) return;
+    const popup = window.open('', '_blank');
+    if (popup) {
+      try { popup.opener = null; } catch (_) {}
+      popup.document.write('<!doctype html><html lang="ko"><meta charset="utf-8"><title>QR 카드 준비 중</title><body style="font-family:system-ui;padding:30px">QR 카드를 준비하고 있어요...</body></html>');
+      popup.document.close();
+    }
+    await withButton(button, rotate ? '재발급 중' : '불러오는 중', async () => {
+      const { response, body } = await api('/api/teacher/qr-card', {
+        method:'POST',
+        body:JSON.stringify({ loginId, rotate:Boolean(rotate) })
+      });
+      if (!response.ok || !body.ok) {
+        try { popup?.close(); } catch (_) {}
+        return alert(errorText(body));
+      }
+      openQrPrint([body.card], (body.card?.nickname || loginId) + ' QR 로그인 카드', popup);
+    });
+  }
+
+  async function printClassQrCards(classId, className, button) {
+    const popup = window.open('', '_blank');
+    if (popup) {
+      try { popup.opener = null; } catch (_) {}
+      popup.document.write('<!doctype html><html lang="ko"><meta charset="utf-8"><title>QR 카드 준비 중</title><body style="font-family:system-ui;padding:30px">반 QR 카드를 준비하고 있어요...</body></html>');
+      popup.document.close();
+    }
+    await withButton(button, 'QR 준비 중', async () => {
+      const { response, body } = await api('/api/teacher/qr-cards', {
+        method:'POST',
+        body:JSON.stringify({ classId })
+      });
+      if (!response.ok || !body.ok) {
+        try { popup?.close(); } catch (_) {}
+        return alert(errorText(body));
+      }
+      openQrPrint(body.cards || [], (className || body.classroom?.name || '우리 반') + ' QR 로그인 카드', popup);
+    });
   }
 
   async function resetPin(loginId, button) {
@@ -605,7 +711,10 @@
     const loginId = button.dataset.login;
     const classId = button.dataset.classId;
     const className = button.dataset.className;
-    if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
+    if (action === 'class-qr-cards') printClassQrCards(classId, className, button);
+    else if (action === 'qr-card') issueQrCard(loginId, false, button);
+    else if (action === 'qr-rotate') issueQrCard(loginId, true, button);
+    else if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
     else if (action === 'reset-teacher') resetTeacherCredential(classId, className, button);
     else if (action === 'copy-teacher') copyTeacherCredential(classId || '');
     else if (action === 'reset-pin') resetPin(loginId, button);

@@ -51,6 +51,7 @@ test('management API is routed before the general account API', () => {
   assert.ok(main.indexOf('handleTeacherManagementRequest') < main.indexOf('handleAccountRequest(request'));
   for (const route of [
     '/api/teacher/overview', '/api/teacher/add-students', '/api/teacher/student-status',
+    '/api/teacher/qr-card', '/api/teacher/qr-cards',
     '/api/teacher/student-logout', '/api/teacher/class-logout', '/api/teacher/reset-progress',
     '/api/teacher/student', '/api/teacher/class-delete'
   ]) assert.ok(admin.includes(route), `missing route ${route}`);
@@ -63,6 +64,11 @@ test('teacher UI exposes lifecycle management and guarded destructive actions', 
   assert.match(html, /student-search/);
   assert.match(html, /현황 CSV/);
   assert.match(client, /add-students/);
+  assert.match(client, /qr-card/);
+  assert.match(client, /qr-rotate/);
+  assert.match(client, /class-qr-cards/);
+  assert.match(client, /QR 로그인 카드/);
+  assert.match(html, /qrcodejs\/qrcode\.min\.js/);
   assert.match(client, /toggle-status/);
   assert.match(client, /reset-progress/);
   assert.match(client, /delete-student/);

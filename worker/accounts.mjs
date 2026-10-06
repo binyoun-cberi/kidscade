@@ -146,6 +146,51 @@ export async function decryptStudentPin(ciphertext, iv, pepper) {
   return new TextDecoder().decode(decrypted);
 }
 
+export function isValidQrLoginToken(value) {
+  return /^[0-9a-f]{64}$/i.test(String(value || '').trim());
+}
+
+export function generateQrLoginToken() {
+  return randomToken();
+}
+
+export async function hashQrLoginToken(token) {
+  if (!isValidQrLoginToken(token)) throw new Error('invalid-qr-token');
+  return sha256(String(token).toLowerCase());
+}
+
+async function studentQrEncryptionKey(pepper) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`kidscade-student-qr:${String(pepper || '')}`)
+  );
+  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+export async function encryptQrLoginToken(token, pepper) {
+  const value = String(token || '').trim().toLowerCase();
+  if (!isValidQrLoginToken(value)) throw new Error('invalid-qr-token');
+  const iv = randomBytes(12);
+  const key = await studentQrEncryptionKey(pepper);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(value)
+  );
+  return { ciphertext: bytesToBase64(new Uint8Array(encrypted)), iv: bytesToBase64(iv) };
+}
+
+export async function decryptQrLoginToken(ciphertext, iv, pepper) {
+  if (!ciphertext || !iv) return '';
+  const key = await studentQrEncryptionKey(pepper);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(iv) },
+    key,
+    base64ToBytes(ciphertext)
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
 function secureEqual(left, right) {
   const a = String(left || '');
   const b = String(right || '');
@@ -366,6 +411,63 @@ async function login(request, env) {
   return json({ ok: true, ...accountPayload(row) }, 200, { 'set-cookie': makeSessionCookie(token) });
 }
 
+async function qrStudent(token, env) {
+  if (!isValidQrLoginToken(token)) return null;
+  const tokenHash = await hashQrLoginToken(token);
+  return env.DB.prepare(`
+    SELECT a.*, c.name AS class_name, c.class_code
+    FROM student_accounts a
+    JOIN kidscade_classes c ON c.id = a.class_id
+    WHERE a.qr_token_hash = ?
+  `).bind(tokenHash).first();
+}
+
+async function qrPreview(request, env) {
+  const missing = requireConfig(env);
+  if (missing) return missing;
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
+  const token = String(body?.token || '').trim().toLowerCase();
+  const row = await qrStudent(token, env);
+  if (!row || row.disabled) return json({ ok: false, error: 'invalid_qr_login' }, 401);
+  return json({
+    ok: true,
+    student: {
+      loginId: row.login_id,
+      nickname: row.nickname || '새싹 게이머',
+      className: row.class_name || ''
+    }
+  });
+}
+
+async function qrLogin(request, env) {
+  const missing = requireConfig(env);
+  if (missing) return missing;
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
+  const qrToken = String(body?.token || '').trim().toLowerCase();
+  const row = await qrStudent(qrToken, env);
+  if (!row || row.disabled) return json({ ok: false, error: 'invalid_qr_login' }, 401);
+
+  const sessionToken = randomToken();
+  const sessionHash = await sha256(sessionToken);
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SEC * 1000).toISOString();
+  await env.DB.prepare('DELETE FROM student_sessions WHERE expires_at <= ?').bind(createdAt).run();
+  await env.DB.prepare(`
+    INSERT INTO student_sessions (token_hash, student_id, created_at, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).bind(sessionHash, row.id, createdAt, expiresAt).run();
+  await env.DB.prepare(`
+    UPDATE student_accounts
+    SET failed_attempts = 0, locked_until = NULL, last_login_at = ?, updated_at = ?
+    WHERE id = ?
+  `).bind(createdAt, createdAt, row.id).run();
+
+  row.last_login_at = createdAt;
+  return json({ ok: true, ...accountPayload(row) }, 200, { 'set-cookie': makeSessionCookie(sessionToken) });
+}
+
 async function logout(request, env) {
   const token = parseCookies(request)[SESSION_COOKIE] || '';
   if (env.DB && /^[0-9a-f]{64}$/i.test(token)) {
@@ -518,13 +620,16 @@ export async function handleAccountRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   const accountPaths = new Set([
-    '/api/account/login', '/api/account/logout', '/api/account/me', '/api/account/sync',
+    '/api/account/login', '/api/account/qr-preview', '/api/account/qr-login',
+    '/api/account/logout', '/api/account/me', '/api/account/sync',
     '/api/teacher/classes', '/api/teacher/reset-pin'
   ]);
   if (!accountPaths.has(path)) return null;
 
   try {
     if (path === '/api/account/login') return request.method === 'POST' ? login(request, env) : methodNotAllowed('POST');
+    if (path === '/api/account/qr-preview') return request.method === 'POST' ? qrPreview(request, env) : methodNotAllowed('POST');
+    if (path === '/api/account/qr-login') return request.method === 'POST' ? qrLogin(request, env) : methodNotAllowed('POST');
     if (path === '/api/account/logout') return request.method === 'POST' ? logout(request, env) : methodNotAllowed('POST');
     if (path === '/api/account/me') return request.method === 'GET' ? me(request, env) : methodNotAllowed('GET');
     if (path === '/api/account/sync') return request.method === 'POST' ? syncState(request, env) : methodNotAllowed('POST');

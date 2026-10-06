@@ -78,7 +78,7 @@
   </section>
 
   <section class="card class-list hidden" id="class-list">
-    <div class="class-head"><div><h2 class="section-title">학급과 학생</h2><div class="muted">PIN 재발급, 사용 중지, 강제 로그아웃, 기록 초기화와 계정 삭제를 관리할 수 있어요.</div></div><button class="secondary" id="refresh-list" type="button">새로고침</button></div>
+    <div class="class-head"><div><h2 class="section-title">학급과 학생</h2><div class="muted">QR 로그인 카드, PIN 재발급, 사용 중지, 강제 로그아웃, 기록 초기화와 계정 삭제를 관리할 수 있어요.</div></div><button class="secondary" id="refresh-list" type="button">새로고침</button></div>
     <div class="toolbar">
       <label class="wide">학생 찾기<input id="student-search" placeholder="ID 또는 닉네임 검색"></label>
       <label class="small">상태<select id="student-status-filter"><option value="all">전체</option><option value="active">사용 가능</option><option value="disabled">사용 중지</option><option value="online">현재 로그인</option></select></label>
@@ -87,6 +87,7 @@
     <div class="danger-note">기록 초기화와 계정/학급 삭제는 되돌릴 수 없습니다. 삭제 동작은 ID 또는 학급 이름을 다시 입력해야 실행됩니다.</div>
   </section>
 </main>
-<script src="/teacher-accounts.js?v=20260926-teacher-accounts"></script>
+<script src="/assets/vendor/qrcodejs/qrcode.min.js"></script>
+<script src="/teacher-accounts.js?v=20261006-qr-login"></script>
 </body>
 </html>

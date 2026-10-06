@@ -4,6 +4,8 @@
   const STYLE_ID = 'kidscade-account-client-style';
   const SLOT_ID = 'kc-account-slot';
   const MODAL_ID = 'kc-account-modal';
+  const QR_SCAN_MODAL_ID = 'kc-qr-scan-modal';
+  const QR_CONFIRM_MODAL_ID = 'kc-qr-confirm-modal';
   const META_KEY = 'kc_account_sync_meta_v1';
   const SHARED_SYNC_META_KEY = 'kc_account_sync_shared_v1';
   const SYNC_LEASE_KEY = 'kc_account_sync_lease_v1';
@@ -19,6 +21,8 @@
   let economySummary = null;
   let economySummaryLoaded = false;
   let economySummaryLoading = false;
+  let qrStream = null;
+  let qrScanTimer = 0;
 
   function store() { return window.KidscadeStorage || null; }
   function profileApi() { return window.KidscadeProfileHistory || null; }
@@ -165,6 +169,7 @@
   function errorText(code, body = {}) {
     if (code === 'invalid_credentials') return '학생 ID 또는 PIN을 확인해 주세요.';
     if (code === 'invalid_teacher_credentials') return '교사 ID 또는 비밀번호를 확인해 주세요.';
+    if (code === 'invalid_qr_login') return '이 QR 카드는 만료되었거나 다시 발급된 카드예요. 선생님께 새 QR 카드를 받아 주세요.';
     if (code === 'temporarily_locked') return 'PIN을 여러 번 잘못 입력해 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.';
     if (code === 'teacher_temporarily_locked') return '비밀번호를 여러 번 잘못 입력해 교사 계정이 잠시 잠겼어요.';
     if (code === 'not_authenticated' || code === 'session_expired' || code === 'unauthorized' || code === 'teacher_session_expired') return '로그인이 만료됐어요. 다시 로그인해 주세요.';
@@ -240,7 +245,23 @@
       #${MODAL_ID} .kca-cancel{background:#eef2f7;color:#64748b}
       body.dark-mode #${MODAL_ID} .kca-cancel{background:#334155;color:#e2e8f0}
       #${MODAL_ID} .kca-help{margin-top:13px;padding-top:12px;border-top:1px solid #eef2f7;font-size:.65rem;color:#94a3b8;line-height:1.45}
-      @media(max-width:620px){#${MODAL_ID}{padding:10px}#${MODAL_ID} .kca-modal-card{border-radius:20px;padding:18px}}
+      #${MODAL_ID} .kca-qr-start{width:100%;min-height:58px;margin:2px 0 10px;border-radius:16px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;font-size:.88rem;box-shadow:0 9px 20px rgba(34,197,94,.22)}
+      #${MODAL_ID} .kca-divider{display:flex;align-items:center;gap:9px;margin:2px 0 5px;color:#94a3b8;font-size:.62rem;font-weight:900}
+      #${MODAL_ID} .kca-divider::before,#${MODAL_ID} .kca-divider::after{content:"";height:1px;flex:1;background:#e5e7eb}
+      #${QR_SCAN_MODAL_ID},#${QR_CONFIRM_MODAL_ID}{position:fixed;inset:0;z-index:15050;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.72);backdrop-filter:blur(10px)}
+      #${QR_SCAN_MODAL_ID}.hidden,#${QR_CONFIRM_MODAL_ID}.hidden{display:none!important}
+      .kca-qr-card{width:min(430px,100%);border-radius:24px;background:#fff;padding:18px;box-shadow:0 24px 70px rgba(15,23,42,.34);color:#334155;text-align:center}
+      body.dark-mode .kca-qr-card{background:#1e293b;color:#f8fafc}
+      .kca-qr-card h2{margin:0;font-size:1.2rem}.kca-qr-card p{margin:7px 0 13px;color:#64748b;font-size:.76rem;line-height:1.5;font-weight:800}
+      body.dark-mode .kca-qr-card p{color:#cbd5e1}
+      .kca-qr-video-wrap{position:relative;overflow:hidden;border-radius:19px;background:#0f172a;aspect-ratio:1/1}.kca-qr-video-wrap video{width:100%;height:100%;object-fit:cover}
+      .kca-qr-frame{position:absolute;inset:16%;border:4px solid #86efac;border-radius:22px;box-shadow:0 0 0 999px rgba(15,23,42,.24);pointer-events:none}
+      .kca-qr-buttons{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}.kca-qr-buttons button{min-height:46px;border:0;border-radius:14px;padding:0 14px;font-weight:1000;cursor:pointer}
+      .kca-qr-confirm-go{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}.kca-qr-cancel{background:#eef2f7;color:#64748b}
+      body.dark-mode .kca-qr-cancel{background:#334155;color:#e2e8f0}
+      .kca-qr-person{margin:12px 0;padding:15px;border:1px solid #dcfce7;border-radius:17px;background:#f0fdf4}.kca-qr-person strong{display:block;font-size:1.12rem;color:#15803d}.kca-qr-person span{display:block;margin-top:5px;color:#64748b;font-size:.72rem;font-weight:850}
+      .kca-qr-error{min-height:20px;margin-top:8px;color:#dc2626;font-size:.7rem;font-weight:900}
+      @media(max-width:620px){#${MODAL_ID},#${QR_SCAN_MODAL_ID},#${QR_CONFIRM_MODAL_ID}{padding:10px}#${MODAL_ID} .kca-modal-card,.kca-qr-card{border-radius:20px;padding:16px}}
     `;
     document.head.appendChild(style);
   }
@@ -254,7 +275,9 @@
     modal.innerHTML = `
       <form class="kca-modal-card" id="kca-login-form">
         <h2>☁️ Kidscade 로그인</h2>
-        <p>학생은 KC 아이디와 6자리 PIN, 교사는 KT 아이디와 교사 비밀번호로 로그인할 수 있어요.</p>
+        <p>QR 카드가 있으면 카메라로 바로 로그인할 수 있어요. 기존 ID·PIN 로그인도 그대로 사용할 수 있습니다.</p>
+        <button class="kca-qr-start" id="kca-qr-start" type="button">📷 QR 카드로 빠르게 로그인</button>
+        <div class="kca-divider">또는 ID로 로그인</div>
         <label>Kidscade ID<input id="kca-login-id" autocomplete="username" placeholder="KC-ABCDE-01 또는 KT-ABCDE" maxlength="32"></label>
         <label>PIN / 비밀번호<input class="kca-pin" id="kca-login-pin" type="password" autocomplete="current-password" placeholder="PIN 또는 비밀번호" maxlength="64"></label>
         <div class="kca-error" id="kca-login-error" aria-live="polite"></div>
@@ -264,9 +287,208 @@
     `;
     document.body.appendChild(modal);
     modal.querySelector('.kca-cancel')?.addEventListener('click', closeLogin);
+    modal.querySelector('#kca-qr-start')?.addEventListener('click', startQrScanner);
     modal.addEventListener('click', event => { if (event.target === modal) closeLogin(); });
     modal.querySelector('#kca-login-form')?.addEventListener('submit', submitLogin);
     return modal;
+  }
+
+  function extractQrToken(value) {
+    const raw = String(value || '').trim();
+    if (/^[0-9a-f]{64}$/i.test(raw)) return raw.toLowerCase();
+    try {
+      const url = new URL(raw, location.href);
+      if (url.origin !== location.origin) return '';
+      const hashMatch = String(url.hash || '').match(/(?:^#|[&#])kcqr=([0-9a-f]{64})(?:$|[&#])/i);
+      const token = String(url.searchParams.get('kcqr') || hashMatch?.[1] || '').trim();
+      return /^[0-9a-f]{64}$/i.test(token) ? token.toLowerCase() : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function stopQrScanner() {
+    if (qrScanTimer) clearInterval(qrScanTimer);
+    qrScanTimer = 0;
+    if (qrStream) {
+      for (const track of qrStream.getTracks()) track.stop();
+      qrStream = null;
+    }
+    document.getElementById(QR_SCAN_MODAL_ID)?.classList.add('hidden');
+  }
+
+  function ensureQrScannerModal() {
+    let modal = document.getElementById(QR_SCAN_MODAL_ID);
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = QR_SCAN_MODAL_ID;
+    modal.className = 'hidden';
+    modal.innerHTML = `
+      <div class="kca-qr-card">
+        <h2>📷 QR 카드를 보여 주세요</h2>
+        <p>초록 네모 안에 QR 코드가 들어오게 비춰 주세요.</p>
+        <div class="kca-qr-video-wrap"><video id="kca-qr-video" playsinline muted></video><div class="kca-qr-frame"></div></div>
+        <div class="kca-qr-error" id="kca-qr-scan-error" aria-live="polite"></div>
+        <div class="kca-qr-buttons"><button class="kca-qr-cancel" type="button">취소</button><span></span></div>
+        <p>카메라 인식이 안 되는 기기는 기본 카메라 앱으로 QR을 찍어도 Kidscade가 바로 열립니다.</p>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('.kca-qr-cancel')?.addEventListener('click', stopQrScanner);
+    modal.addEventListener('click', event => { if (event.target === modal) stopQrScanner(); });
+    return modal;
+  }
+
+  async function startQrScanner() {
+    const modal = ensureQrScannerModal();
+    const error = modal.querySelector('#kca-qr-scan-error');
+    if (error) error.textContent = '';
+    if (!navigator.mediaDevices?.getUserMedia || typeof window.BarcodeDetector !== 'function') {
+      if (error) error.textContent = '이 브라우저에서는 화면 안 카메라 스캔을 지원하지 않아요. 기본 카메라 앱으로 QR 카드를 찍어 주세요.';
+      modal.classList.remove('hidden');
+      return;
+    }
+    stopQrScanner();
+    modal.classList.remove('hidden');
+    try {
+      const video = modal.querySelector('#kca-qr-video');
+      qrStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' } }, audio:false });
+      video.srcObject = qrStream;
+      await video.play();
+      const detector = new window.BarcodeDetector({ formats:['qr_code'] });
+      let detecting = false;
+      qrScanTimer = setInterval(async () => {
+        if (detecting || !qrStream) return;
+        detecting = true;
+        try {
+          const codes = await detector.detect(video);
+          const token = extractQrToken(codes?.[0]?.rawValue || '');
+          if (token) {
+            stopQrScanner();
+            await handleQrToken(token);
+          }
+        } catch (_) {
+        } finally {
+          detecting = false;
+        }
+      }, 320);
+    } catch (_) {
+      if (error) error.textContent = '카메라를 열 수 없어요. 카메라 권한을 허용하거나 기본 카메라 앱으로 QR을 찍어 주세요.';
+    }
+  }
+
+  function closeQrConfirm() {
+    document.getElementById(QR_CONFIRM_MODAL_ID)?.classList.add('hidden');
+    const loginModal = document.getElementById(MODAL_ID);
+    document.body.style.overflow = loginModal && !loginModal.classList.contains('hidden') ? 'hidden' : '';
+  }
+
+  function ensureQrConfirmModal() {
+    let modal = document.getElementById(QR_CONFIRM_MODAL_ID);
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = QR_CONFIRM_MODAL_ID;
+    modal.className = 'hidden';
+    modal.innerHTML = `
+      <div class="kca-qr-card">
+        <h2>✨ 내 카드가 맞나요?</h2>
+        <div class="kca-qr-person"><strong id="kca-qr-name">새싹 게이머</strong><span id="kca-qr-class"></span><span id="kca-qr-id"></span></div>
+        <p>친구 카드가 아니라 내 카드가 맞으면 들어가요.</p>
+        <div class="kca-qr-error" id="kca-qr-confirm-error" aria-live="polite"></div>
+        <div class="kca-qr-buttons"><button class="kca-qr-confirm-go" type="button">응, 들어갈래!</button><button class="kca-qr-cancel" type="button">아니야</button></div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('.kca-qr-cancel')?.addEventListener('click', closeQrConfirm);
+    modal.addEventListener('click', event => { if (event.target === modal) closeQrConfirm(); });
+    return modal;
+  }
+
+  async function switchAccountForQr(targetLoginId) {
+    if (!account || account.loginId === targetLoginId) return;
+    try { await syncNow(); } catch (_) {}
+    const path = account.role === 'teacher' ? '/api/teacher/auth/logout' : '/api/account/logout';
+    try { await api(path, { method:'POST', body:'{}' }); } catch (_) {}
+    account = null;
+    emitAccountChanged();
+    economySummary = null;
+    economySummaryLoaded = false;
+    clearLocalAccountProgress();
+  }
+
+  async function finishQrLogin(body) {
+    account = body.account;
+    emitAccountChanged();
+    const localState = collectState();
+    if (Number(account.revision || 0) === 0 && hasMeaningfulProgress(localState)) {
+      await syncNow(localState);
+    } else if (Number(account.revision || 0) > 0) {
+      applyCloudState(body.state || {});
+      writeMeta({ loginId:account.loginId, revision:account.revision });
+      closeQrConfirm();
+      closeLogin();
+      location.reload();
+      return;
+    } else {
+      writeMeta({ loginId:account.loginId, revision:0 });
+    }
+    closeQrConfirm();
+    closeLogin();
+    economySummary = null;
+    economySummaryLoaded = false;
+    renderSlot();
+    loadEconomySummary();
+  }
+
+  async function confirmQrLogin(token, student, button, error) {
+    if (button) { button.disabled = true; button.textContent = '들어가는 중...'; }
+    if (error) error.textContent = '';
+    try {
+      await switchAccountForQr(student?.loginId || '');
+      const { response, body } = await api('/api/account/qr-login', { method:'POST', body:JSON.stringify({ token }) });
+      if (!response.ok || !body.ok) {
+        if (error) error.textContent = errorText(body.error, body);
+        return;
+      }
+      await finishQrLogin(body);
+    } catch (_) {
+      if (error) error.textContent = '네트워크 연결을 확인해 주세요.';
+    } finally {
+      if (button?.isConnected) { button.disabled = false; button.textContent = '응, 들어갈래!'; }
+    }
+  }
+
+  async function handleQrToken(token) {
+    const normalized = extractQrToken(token);
+    if (!normalized) return;
+    try {
+      const { response, body } = await api('/api/account/qr-preview', { method:'POST', body:JSON.stringify({ token:normalized }) });
+      if (!response.ok || !body.ok || !body.student) {
+        alert(errorText(body.error, body));
+        return;
+      }
+      const modal = ensureQrConfirmModal();
+      modal.querySelector('#kca-qr-name').textContent = body.student.nickname || '새싹 게이머';
+      modal.querySelector('#kca-qr-class').textContent = body.student.className || '';
+      modal.querySelector('#kca-qr-id').textContent = body.student.loginId || '';
+      const error = modal.querySelector('#kca-qr-confirm-error');
+      if (error) error.textContent = '';
+      const go = modal.querySelector('.kca-qr-confirm-go');
+      go.onclick = () => confirmQrLogin(normalized, body.student, go, error);
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    } catch (_) {
+      alert('QR 카드를 확인하지 못했어요. 네트워크 연결을 확인해 주세요.');
+    }
+  }
+
+  function consumeQrFromUrl() {
+    const url = new URL(location.href);
+    const token = extractQrToken(url.toString());
+    if (!token) return;
+    url.searchParams.delete('kcqr');
+    if (/^#kcqr=/i.test(url.hash)) url.hash = '';
+    const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash;
+    try { history.replaceState(history.state, '', next); } catch (_) {}
+    handleQrToken(token);
   }
 
   function openLogin() {
@@ -564,7 +786,7 @@
     installStyles();
     ensureModal();
     watchUi();
-    checkSession();
+    checkSession().finally(consumeQrFromUrl);
     document.addEventListener('kidscade:profile-history-changed', scheduleSync);
     document.addEventListener('kidscade:storage-changed', scheduleSync);
     window.addEventListener('storage', event => {
