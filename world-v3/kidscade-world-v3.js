@@ -37,6 +37,11 @@ const healthValue=document.getElementById('healthValue');
 const hungerValue=document.getElementById('hungerValue');
 const quickbar=document.getElementById('quickbar');
 const petPicker=document.getElementById('petPicker');
+const radialMenu=document.getElementById('radialMenu');
+const radialContext=document.getElementById('radialContext');
+const radialContextIcon=document.getElementById('radialContextIcon');
+const radialContextLabel=document.getElementById('radialContextLabel');
+const mobileInteractBtn=document.getElementById('mobileInteract');
 const helpBtn=document.getElementById('helpBtn');
 const axeQuick=document.getElementById('axeQuick');
 const pickQuick=document.getElementById('pickQuick');
@@ -223,7 +228,7 @@ function toast(text){
   toastEl.textContent=text;toastEl.classList.add('show');clearTimeout(toastEl.__t);
   toastEl.__t=setTimeout(()=>toastEl.classList.remove('show'),1600);
 }
-function openPanel(html){resetInput(true);petPicker?.classList.remove('open');panelBody.innerHTML=html;panel.classList.add('open')}
+function openPanel(html){closeRadialMenu(false);resetInput(true);petPicker?.classList.remove('open');panelBody.innerHTML=html;panel.classList.add('open')}
 function closePanel(){resetInput(true);panel.classList.remove('open');canvas.focus()}
 document.getElementById('panelClose').onclick=closePanel;
 panel.addEventListener('pointerdown',e=>{if(e.target===panel)closePanel()});
@@ -488,6 +493,7 @@ function helpPanel(){
     '<div class="helpGrid">'+
     '<div class="helpItem"><b>🚶 이동</b>WASD 또는 방향키로 움직여요.</div>'+
     '<div class="helpItem"><b>✨ 행동</b>E 또는 Space로 가까운 대상과 상호작용해요.</div>'+
+    '<div class="helpItem"><b>🧭 라디얼 메뉴</b>Q를 누르거나 Tab을 길게 눌러 열어요. 모바일은 행동 버튼을 짧게 누르면 행동, 길게 누르면 메뉴가 열려요.</div>'+
     '<div class="helpItem"><b>🪓 도구</b>1 맨손 · 2 도끼 · 3 곡괭이. 나무와 광물은 맞는 도구를 장착해야 해요.</div>'+
     '<div class="helpItem"><b>🎒 가방</b>4번 슬롯에서 재료와 음식을 확인하고 먹을 수 있어요.</div>'+
     '<div class="helpItem"><b>🐾 Cube Pets</b>5번 슬롯에서 내가 만난 펫을 즉시 동행시킬 수 있어요.</div>'+
@@ -769,6 +775,25 @@ function dailyLifePanel(){
   const summary=Meta?.summary?.()||{dailyDone:0,dailyTotal:3};
   openPanel('<h2>📋 오늘의 씨앗 생활</h2><p>길게 숙제처럼 하지 않아도 돼요. 월드에서 자연스럽게 세 가지만 해보세요.</p><div class="grid">'+tasks+'</div><p><b>'+summary.dailyDone+'/'+summary.dailyTotal+' 완료</b> · 세 가지를 모두 하면 📬 우편함에 씨앗 30개 선물이 도착해요.</p>');
 }
+function residentsPanel(){
+  const residents=townEconomy?.RESIDENTS||{},town=townEconomy?.ensureState?.()||{},friendship=town.friendship||{};
+  const cards=Object.entries(residents).map(([id,r])=>'<button class="item" type="button" data-radial-resident="'+id+'" style="text-align:left;cursor:pointer"><b>👤 '+r.name+'</b><div>'+r.role+'</div><small>친밀도 ♥ '+(friendship[id]||0)+'</small></button>').join('');
+  openPanel('<h2>👥 씨앗 월드 사람들</h2><p>선생님과 학생의 친밀도·생활 퀘스트·전용 서비스를 한 곳에서 확인해요.</p><div class="grid">'+(cards||'<div class="item">아직 만날 수 있는 주민 정보가 없어요.</div>')+'</div>');
+}
+function radialLifePanel(){
+  const inside=mode==='indoor';
+  openPanel('<h2>🏠 생활</h2><p>집과 마을을 키우고 내 생활 공간을 관리해요.</p><div class="grid">'+
+    '<button data-radial-life="hub">🌱 씨앗 생활 보드</button>'+
+    '<button data-radial-life="develop">🏗️ 마을 성장</button>'+
+    '<button data-radial-life="furniture" '+(inside?'':'disabled')+'>🪑 집 꾸미기'+(inside?'':' · 집 안에서')+'</button>'+
+    '</div>');
+}
+function radialSettingsPanel(){
+  openPanel('<h2>⚙️ 씨앗 월드 기타</h2><div class="grid">'+
+    '<button data-radial-help="1">❓ 조작 도움말</button>'+
+    '<button data-radial-audio="1">'+(worldAudio.isEnabled()?'🔊 소리 끄기':'🔇 소리 켜기')+'</button>'+
+    '</div><p style="font-size:12px">라디얼 메뉴는 Q 또는 Tab 길게, 모바일에서는 행동 버튼 길게 누르기로 열 수 있어요.</p>');
+}
 function trophyPanel(){
   const list=Meta?.trophies?.()||[];
   const cards=list.map(t=>'<div class="item"><b>'+(t.icon||'🏆')+' '+(t.title||t.game)+'</b><div>'+t.count+'회 플레이 · '+Math.max(1,Math.round((t.seconds||0)/60))+'분 기록</div></div>').join('');
@@ -894,6 +919,21 @@ function eatFood(key){
 }
 
 panel.addEventListener('click',e=>{
+  const radialResident=e.target.closest('[data-radial-resident]');
+  if(radialResident){townEconomy?.resident?.(radialResident.dataset.radialResident);return;}
+  const radialLife=e.target.closest('[data-radial-life]');
+  if(radialLife){
+    const action=radialLife.dataset.radialLife;
+    if(action==='hub')homeHubPanel();
+    else if(action==='develop')developmentPanel();
+    else if(action==='furniture'){
+      if(mode!=='indoor'){toast('집 안에서 가구 창고를 열 수 있어요.');return;}
+      closePanel();furnishingSystem?.openCatalog?.();
+    }
+    return;
+  }
+  if(e.target.closest('[data-radial-help]')){helpPanel();return;}
+  if(e.target.closest('[data-radial-audio]')){worldAudio.toggle();syncAudioButton();radialSettingsPanel();return;}
   const parcelBtn=e.target.closest('[data-world-parcel]');
   if(parcelBtn){
     const id=parcelBtn.dataset.worldParcel,parcel=(Meta?.pendingParcels?.()||[]).find(p=>p.id===id);
@@ -1071,6 +1111,7 @@ function applyAvatarMotion(now,moving,groundSurfaceY=0){
 const keys=new Set();
 const MOVE_KEYS=new Set(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d']);
 let inputNeedsRelease=false;
+let radialTabTimer=0,mobileInteractTimer=0,mobileInteractLong=false;
 function resetInput(requireRelease=false){
   keys.clear();
   if(requireRelease)inputNeedsRelease=true;
@@ -1078,16 +1119,28 @@ function resetInput(requireRelease=false){
 const lastMove={x:0,z:1};
 addEventListener('keydown',e=>{
   const key=e.key.toLowerCase();
+  if(radialMenu?.classList.contains('open')){
+    if(e.key==='Escape'||key==='q'){e.preventDefault();closeRadialMenu();return;}
+    if(MOVE_KEYS.has(key)||e.key===' '||e.key==='e'||e.key==='E'){e.preventDefault();return;}
+  }
+  if(!panel.classList.contains('open')&&!furnishingSystem?.isPlacing?.()&&key==='q'){
+    e.preventDefault();toggleRadialMenu();return;
+  }
+  if(!panel.classList.contains('open')&&!furnishingSystem?.isPlacing?.()&&e.key==='Tab'){
+    e.preventDefault();
+    if(!e.repeat&&!radialTabTimer)radialTabTimer=setTimeout(()=>{radialTabTimer=0;openRadialMenu();},280);
+    return;
+  }
   if(MOVE_KEYS.has(key)){
     e.preventDefault();
     if(inputNeedsRelease)return;
     keys.add(key);
   }
   if((e.key==='r'||e.key==='R')&&furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.rotate();return;}
-  if(!panel.classList.contains('open')&&['1','2','3','4','5'].includes(e.key)){
+  if(!panel.classList.contains('open')&&!radialMenu?.classList.contains('open')&&['1','2','3','4','5'].includes(e.key)){
     e.preventDefault();activateQuickSlot(({1:'hand',2:'axe',3:'pick',4:'bag',5:'pet'})[e.key]);return;
   }
-  if((e.key==='e'||e.key==='E'||e.key===' ')&&!panel.classList.contains('open')){e.preventDefault();doInteract()}
+  if((e.key==='e'||e.key==='E'||e.key===' ')&&!panel.classList.contains('open')&&!radialMenu?.classList.contains('open')){e.preventDefault();doInteract()}
   if(e.key==='Escape'){
     if(furnishingSystem?.isPlacing?.()){e.preventDefault();furnishingSystem.cancel();}
     else if(panel.classList.contains('open'))closePanel();
@@ -1095,6 +1148,7 @@ addEventListener('keydown',e=>{
   }
 });
 addEventListener('keyup',e=>{
+  if(e.key==='Tab'&&radialTabTimer){e.preventDefault();clearTimeout(radialTabTimer);radialTabTimer=0;}
   const key=e.key.toLowerCase();keys.delete(key);
   if(MOVE_KEYS.has(key))inputNeedsRelease=false;
 });
@@ -1109,7 +1163,20 @@ document.querySelectorAll('.mobile [data-key]').forEach(b=>{
   const up=e=>{e.preventDefault();keys.delete(k);inputNeedsRelease=false};
   b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
 });
-document.getElementById('mobileInteract').onclick=doInteract;
+if(mobileInteractBtn){
+  mobileInteractBtn.addEventListener('pointerdown',e=>{
+    e.preventDefault();mobileInteractLong=false;clearTimeout(mobileInteractTimer);
+    try{mobileInteractBtn.setPointerCapture?.(e.pointerId)}catch(_){}
+    mobileInteractTimer=setTimeout(()=>{mobileInteractTimer=0;mobileInteractLong=true;openRadialMenu();},380);
+  });
+  mobileInteractBtn.addEventListener('pointerup',e=>{
+    e.preventDefault();clearTimeout(mobileInteractTimer);mobileInteractTimer=0;
+    try{mobileInteractBtn.releasePointerCapture?.(e.pointerId)}catch(_){}
+    if(!mobileInteractLong&&!radialMenu?.classList.contains('open'))doInteract();
+    mobileInteractLong=false;
+  });
+  mobileInteractBtn.addEventListener('pointercancel',()=>{clearTimeout(mobileInteractTimer);mobileInteractTimer=0;mobileInteractLong=false;});
+}
 
 const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
@@ -1254,9 +1321,59 @@ function nearestInteraction(){
   for(const q of list){if(q.enabled===false)continue;const d=Math.hypot(player.x-q.x,player.z-q.z);if(d<q.r&&d<bestD){best=q;bestD=d}}
   near=best;
   promptEl.textContent=best?((matchMedia('(max-width:760px)').matches?'행동':'E / Space')+' · '+best.label):'';
-  promptEl.classList.toggle('show',!!best);
+  const radialOpen=!!radialMenu?.classList.contains('open');
+  promptEl.classList.toggle('show',!!best&&!radialOpen);
+  if(radialOpen)syncRadialContext();
 }
 function doInteract(){if(furnishingSystem?.isPlacing?.()){furnishingSystem.confirm();return;}if(near)near.action()}
+
+const RADIAL_ACTIONS={
+  bag:inventoryPanel,
+  map:worldMapPanel,
+  tasks:dailyLifePanel,
+  people:residentsPanel,
+  pets:petPanel,
+  life:radialLifePanel,
+  catalog:()=>museumRuntime?.catalogPanel?.(),
+  settings:radialSettingsPanel
+};
+function radialContextState(){
+  if(furnishingSystem?.isPlacing?.())return {enabled:true,icon:'✓',label:'가구 놓기',action:()=>furnishingSystem.confirm()};
+  if(near)return {enabled:true,icon:'✨',label:near.label||'행동',action:()=>near.action()};
+  return {enabled:false,icon:'✨',label:'가까이 가서 행동',action:null};
+}
+function syncRadialContext(){
+  if(!radialContext)return;
+  const state=radialContextState();
+  radialContext.disabled=!state.enabled;
+  if(radialContextIcon)radialContextIcon.textContent=state.icon;
+  if(radialContextLabel)radialContextLabel.textContent=state.label;
+  radialContext.dataset.contextEnabled=state.enabled?'1':'0';
+}
+function openRadialMenu(){
+  if(!radialMenu||panel.classList.contains('open'))return;
+  keys.clear();petPicker?.classList.remove('open');promptEl.classList.remove('show');
+  syncRadialContext();radialMenu.classList.add('open');radialMenu.setAttribute('aria-hidden','false');
+  requestAnimationFrame(()=>radialContext?.focus?.({preventScroll:true}));
+}
+function closeRadialMenu(focus=true){
+  if(radialTabTimer){clearTimeout(radialTabTimer);radialTabTimer=0;}
+  if(!radialMenu)return;
+  radialMenu.classList.remove('open');radialMenu.setAttribute('aria-hidden','true');
+  if(focus)canvas.focus();
+}
+function toggleRadialMenu(){radialMenu?.classList.contains('open')?closeRadialMenu():openRadialMenu()}
+radialMenu?.addEventListener('click',e=>{
+  if(e.target===radialMenu){closeRadialMenu();return;}
+  const item=e.target.closest?.('[data-radial-action]');
+  if(item){
+    const action=RADIAL_ACTIONS[item.dataset.radialAction];closeRadialMenu(false);if(action)action();return;
+  }
+  if(e.target.closest?.('[data-radial-context]')){
+    const state=radialContextState();if(!state.enabled||!state.action)return;
+    closeRadialMenu(false);state.action();
+  }
+});
 let lastMetaZone='';
 function updateZone(){
   if(mode==='indoor'){zoneEl.textContent='우리 집 · 안전 지역 · 🗺️';if(lastMetaZone!=='indoor'){lastMetaZone='indoor';Meta?.recordExplore?.('indoor');}return;}
