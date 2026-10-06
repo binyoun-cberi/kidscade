@@ -134,12 +134,12 @@ function create(opts){
   allActors.forEach(function(a){stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0,tackles:0,crosses:0};heat[a.id]=Array(60).fill(0);});
 
   var m={
-    isPhysicalFutsal:true,minute:0,score:[0,0],teams:teams,userSide:userSide,finished:false,events:[],effects:[],passVisuals:[],
+    isPhysicalFutsal:true,directControl:false,minute:0,score:[0,0],teams:teams,userSide:userSide,finished:false,events:[],effects:[],passVisuals:[],
     possession:0,ball:{x:FIELD_W/2,y:FIELD_H/2,z:0,vx:0,vy:0,vz:0,owner:null,trail:[]},
     userSubs:0,controlled:null,lastTouchId:null,replay:{step:.75,next:0,frames:[],heat:heat,stats:stats,tacticChanges:[]},
     seed:opts.seed||null
   };
-  var pendingPass=null,lastCompletedPass=null,ballFree=0,restart=0,lastNow=performance.now(),camera=FIELD_W/2,controlIdle=0;
+  var pendingPass=null,lastCompletedPass=null,ballFree=0,restart=0,lastNow=performance.now(),camera=FIELD_W/2,controlIdle=0,teamCallCooldown=1.4,tackleHintCooldown=0;
   var ballImg=new Image();ballImg.src=BALL_SRC;
   var spriteCache={};
 
@@ -234,12 +234,52 @@ function create(opts){
     kickBall(p,{x:goalX+teamDir(p.side)*35,y:targetY},720+stat(p.p,'shot')*2.0,45+Math.random()*90,'shot',null);
     emit('shot',display(p)+'의 슛!',p.side,p);return true;
   }
+  function tackleGuide(p){
+    var target=m.ball.owner;
+    if(!p)return{state:'none',distance:999,target:null};
+    if(target===p)return{state:'attack',distance:0,target:null};
+    if(!target||target.side===p.side)return{state:'wait',distance:999,target:target||null};
+    var d=dist(p,target),protectedBall=target.protect>0;
+    if(d<=48&&!protectedBall)return{state:'sweet',distance:d,target:target};
+    if(d<=72&&!protectedBall)return{state:'ready',distance:d,target:target};
+    if(d<=96)return{state:protectedBall?'protected':'approach',distance:d,target:target};
+    return{state:'far',distance:d,target:target};
+  }
+  function maybeTeamCall(dt){
+    teamCallCooldown=Math.max(0,teamCallCooldown-dt);
+    if(!m.directControl||teamCallCooldown>0||!m.ball.owner||m.ball.owner.side!==userSide||m.ball.owner.slot==='GK')return;
+    var owner=m.ball.owner,dir=teamDir(userSide);
+    var options=outfield(userSide).filter(function(a){
+      if(a===owner||a===m.controlled)return false;
+      var progress=(a.x-owner.x)*dir,d=dist(a,owner);
+      return d>105&&d<470&&progress>15&&nearestOpponentDistance(a)>105;
+    }).sort(function(a,b){
+      return (nearestOpponentDistance(b)+(b.x-owner.x)*dir*.25)-(nearestOpponentDistance(a)+(a.x-owner.x)*dir*.25);
+    });
+    if(!options.length){teamCallCooldown=1.2;return;}
+    var caller=options[0];
+    emit('call',display(caller)+' : 여기!',userSide,caller,{toId:caller.id});
+    teamCallCooldown=3.8+Math.random()*2.8;
+  }
   function tackle(p){
-    if(!p||p.tackleCooldown>0||p.recover>0)return false;var target=m.ball.owner;if(!target||target.side===p.side)return false;
-    p.tackleCooldown=1.05+Math.random()*.25;p.tackleTimer=.22;var d=dist(p,target);if(d>58)return false;
-    var chance=clamp(.40+(stat(p.p,'defense')-stat(target.p,'speed'))/180+p.tend.tackle/420+(58-d)/125,.18,.92);
-    if(Math.random()<chance){target.recover=.25;p.protect=.35;givePossession(p);stats[p.id].tackles++;emit('tackle',display(p)+'이(가) 공을 빼앗았습니다!',p.side,p);return true;}
-    p.recover=.30;return false;
+    if(!p||p.tackleCooldown>0||p.recover>0)return false;
+    var target=m.ball.owner,guide=tackleGuide(p);if(!target||target.side===p.side)return false;
+    if(guide.distance>72){
+      if(m.directControl&&p===m.controlled&&tackleHintCooldown<=0){emit('tackle_hint','조금 더 가까이! 초록 표시가 뜰 때 태클하세요.',p.side,p,{distance:Math.round(guide.distance)});tackleHintCooldown=.7;}
+      return false;
+    }
+    if(target.protect>0&&guide.distance>48){
+      if(m.directControl&&p===m.controlled&&tackleHintCooldown<=0){emit('tackle_hint','상대가 공을 막 받았어요. 옆에 붙어서 한 박자 기다려요.',p.side,p,{distance:Math.round(guide.distance)});tackleHintCooldown=.7;}
+      return false;
+    }
+    p.tackleCooldown=.88+Math.random()*.16;p.tackleTimer=.22;
+    var chance=clamp((guide.state==='sweet'?.88:.68)+(stat(p.p,'defense')-stat(target.p,'speed'))/240+p.tend.tackle/650,.58,.97);
+    if(Math.random()<chance){target.recover=.25;p.protect=.35;givePossession(p);stats[p.id].tackles++;emit('tackle',display(p)+'이(가) 정확한 타이밍에 공을 빼앗았습니다!',p.side,p,{distance:Math.round(guide.distance)});return true;}
+    p.recover=.22;
+    var foulChance=guide.distance>55?.14:.06;
+    if(Math.random()<foulChance){target.protect=.55;givePossession(target);emit('foul',display(p)+'의 반칙! 상대 공으로 다시 시작합니다.',p.side,p,{againstId:target.id});return false;}
+    if(m.directControl&&p===m.controlled)emit('tackle_miss','아깝습니다. 더 가까이 붙거나 초록 표시에서 눌러 보세요.',p.side,p,{distance:Math.round(guide.distance)});
+    return false;
   }
   function goal(side,shooter){
     m.score[side]++;if(shooter&&stats[shooter.id])stats[shooter.id].goals++;
@@ -296,7 +336,7 @@ function create(opts){
   }
   function aiPlayer(a,dt){
     if(a.slot==='GK'){updateKeeper(a,dt);return;}
-    if(a.side===userSide&&a===m.controlled)return;
+    if(m.directControl&&a.side===userSide&&a===m.controlled)return;
     if(a.recover>0)return;
     if(m.ball.owner===a){aiCarrier(a,dt);return;}
     if(!m.ball.owner){
@@ -351,22 +391,40 @@ function create(opts){
   }
   function step(dt){
     if(restart>0){restart-=dt;if(restart<=0)kickoff(1-m.possession);return;}
-    ballFree=Math.max(0,ballFree-dt);if(pendingPass){pendingPass.life-=dt;if(pendingPass.life<=0)pendingPass=null;}if(lastCompletedPass)lastCompletedPass.age+=dt;
+    ballFree=Math.max(0,ballFree-dt);tackleHintCooldown=Math.max(0,tackleHintCooldown-dt);if(pendingPass){pendingPass.life-=dt;if(pendingPass.life<=0)pendingPass=null;}if(lastCompletedPass)lastCompletedPass.age+=dt;
     allActors.forEach(function(a){a.tackleCooldown=Math.max(0,a.tackleCooldown-dt);a.tackleTimer=Math.max(0,a.tackleTimer-dt);a.kickTimer=Math.max(0,a.kickTimer-dt);a.recover=Math.max(0,a.recover-dt);a.protect=Math.max(0,a.protect-dt);});
-    userPlayer(m.controlled,dt);allActors.forEach(function(a){aiPlayer(a,dt);});separate();
+    if(m.directControl)userPlayer(m.controlled,dt);allActors.forEach(function(a){aiPlayer(a,dt);});maybeTeamCall(dt);separate();
     if(m.ball.owner)updateOwnedBall(dt);else updateLooseBall(dt);
     allActors.forEach(function(a){var fatigue=(teams[a.side].tactics.press==='press'?1.25:1)*(keys.ShiftLeft||keys.ShiftRight||touch.sprint&&a===m.controlled?1.18:1);a.energy=clamp(a.energy-dt*.22*fatigue,25,100);a.trail.push({x:a.x,y:a.y});if(a.trail.length>6)a.trail.shift();});
     m.ball.trail.push({x:m.ball.x,y:m.ball.y});if(m.ball.trail.length>12)m.ball.trail.shift();
   }
 
   function userAction(kind){
-    if(m.finished||restart>0)return;controlIdle=0;var a=m.controlled;if(kind==='switch'){cycleControl();return;}if(!a)return;
+    if(!m.directControl||m.finished||restart>0)return;controlIdle=0;var a=m.controlled;if(kind==='switch'){cycleControl();return;}if(!a)return;
     if(kind==='shoot'){if(m.ball.owner===a)shoot(a);else tackle(a);return;}
     if(m.ball.owner!==a)return;
     if(kind==='pass')doPass(a,'pass');else if(kind==='through')doPass(a,'through');else if(kind==='lob')doPass(a,'cross');
   }
   m.handleAction=userAction;
-  m.setHold=function(name,on){touch[name]=!!on;};
+  m.setHold=function(name,on){if(!m.directControl&&on)return;touch[name]=!!on;};
+  m.setDirectControl=function(on){
+    m.directControl=!!on;controlIdle=0;
+    Object.keys(keys).forEach(function(k){keys[k]=false;});
+    Object.keys(touch).forEach(function(k){touch[k]=false;});
+    if(m.directControl)chooseControl(m.ball.owner&&m.ball.owner.side===userSide?m.ball.owner:null);
+    emit('control',m.directControl?'직접 조종을 시작합니다.':'관전 모드로 전환했습니다. 선수들이 스스로 경기합니다.',userSide,m.controlled,{enabled:m.directControl});
+    return m.directControl;
+  };
+  m.getControlState=function(){
+    var a=m.controlled,guide=tackleGuide(a),hasBall=!!(a&&m.ball.owner===a);
+    var text=!m.directControl?'관전 중 · 선수들이 스스로 움직여요.'
+      :hasBall?'공격 중 · S 패스 / W 스루 / A 크로스 / D 슛'
+      :guide.state==='sweet'||guide.state==='ready'?'지금! 초록 표시에서 D를 누르면 태클 성공률이 높아요.'
+      :guide.state==='approach'?'조금만 더 가까이! 상대에게 붙으면 표시가 초록색이 돼요.'
+      :guide.state==='protected'?'상대가 막 공을 받았어요. 가까이 붙고 한 박자 기다려요.'
+      :'수비 중 · 상대 공 보유자에게 가까이 이동하세요.';
+    return{direct:m.directControl,controlledId:a&&a.id||null,controlledName:a&&a.p&&a.p.name||'',hasBall:hasBall,tackleState:guide.state,tackleDistance:Number.isFinite(guide.distance)?Math.round(guide.distance):null,targetName:guide.target&&guide.target.p&&guide.target.p.name||'',text:text};
+  };
   m.update=function(dt,speed){
     if(m.finished)return;var simDt=dt*(speed||1),steps=Math.max(1,Math.ceil(simDt/(1/90))),h=simDt/steps;
     for(var i=0;i<steps;i++)step(h);
@@ -417,9 +475,9 @@ function create(opts){
       ctx.fillStyle='rgba(2,8,16,.28)';ctx.beginPath();ctx.ellipse(x,y+5,19*sc,5.5*sc,0,0,Math.PI*2);ctx.fill();
 
       ctx.fillStyle=teamRing;ctx.globalAlpha=.18;ctx.beginPath();ctx.ellipse(x,y+2,25*sc,11*sc,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
-      ctx.strokeStyle=teamRing;ctx.lineWidth=a===m.controlled?5:3.3;ctx.beginPath();ctx.ellipse(x,y+2,25*sc,11*sc,0,0,Math.PI*2);ctx.stroke();
+      ctx.strokeStyle=teamRing;ctx.lineWidth=m.directControl&&a===m.controlled?5:3.3;ctx.beginPath();ctx.ellipse(x,y+2,25*sc,11*sc,0,0,Math.PI*2);ctx.stroke();
 
-      if(a===m.controlled){ctx.fillStyle='#fde047';ctx.beginPath();ctx.moveTo(x,y-76*sc);ctx.lineTo(x-10,y-91*sc);ctx.lineTo(x+10,y-91*sc);ctx.closePath();ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=1.5;ctx.stroke();}
+      if(m.directControl&&a===m.controlled){ctx.fillStyle='#fde047';ctx.beginPath();ctx.moveTo(x,y-76*sc);ctx.lineTo(x-10,y-91*sc);ctx.lineTo(x+10,y-91*sc);ctx.closePath();ctx.fill();ctx.strokeStyle='#111827';ctx.lineWidth=1.5;ctx.stroke();}
 
       if(img&&img.complete&&img.naturalWidth){var dh=72*sc,dw=dh*(img.naturalWidth/Math.max(1,img.naturalHeight));ctx.drawImage(img,x-dw/2,y-dh*.91,dw,dh);}
       else{ctx.fillStyle=teamRing;ctx.beginPath();ctx.arc(x,y-26*sc,17*sc,0,0,Math.PI*2);ctx.fill();}
@@ -439,8 +497,18 @@ function create(opts){
       }
       ctx.restore();
     });
+    if(m.directControl&&m.controlled&&m.ball.owner&&m.ball.owner.side!==userSide){
+      var guide=tackleGuide(m.controlled),tx=sx(m.ball.owner.y),ty=sy(m.ball.owner.x),cx=sx(m.controlled.y),cy2=sy(m.controlled.x);
+      var ready=guide.state==='sweet'||guide.state==='ready',near=ready||guide.state==='approach'||guide.state==='protected';
+      if(near){
+        ctx.save();ctx.strokeStyle=ready?'rgba(74,222,128,.95)':'rgba(250,204,21,.88)';ctx.lineWidth=ready?5:3;ctx.setLineDash(ready?[]:[8,6]);
+        ctx.beginPath();ctx.ellipse(tx,ty+2,37,18,0,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);ctx.fillStyle=ready?'rgba(20,83,45,.92)':'rgba(113,63,18,.90)';round(ctx,cx-50,cy2-112,100,24,9);ctx.fill();
+        ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ready?'지금! D 태클':'조금 더 가까이',cx,cy2-100);ctx.restore();
+      }
+    }
     var bx=sx(m.ball.y),by=sy(m.ball.x),lift=m.ball.z*.12;ctx.save();ctx.fillStyle='rgba(2,8,16,.3)';ctx.beginPath();ctx.ellipse(bx,by+4,8,3,0,0,Math.PI*2);ctx.fill();if(ballImg.complete&&ballImg.naturalWidth)ctx.drawImage(ballImg,bx-9,by-lift-9,18,18);else{ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bx,by-lift,8,0,Math.PI*2);ctx.fill();}ctx.restore();
-    var c=m.controlled;if(c){ctx.fillStyle='rgba(5,16,28,.84)';round(ctx,18,15,245,42,11);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 13px system-ui';ctx.textAlign='left';ctx.fillText('조작 중 · '+c.p.name,30,32);ctx.font='700 10px system-ui';ctx.fillStyle='#c9d8e8';ctx.fillText((c.p.footballStyle||c.slot)+' · Q 전환 · S 패스 · D 슛/태클',30,47);}
+    var c=m.controlled;if(m.directControl&&c){ctx.fillStyle='rgba(5,16,28,.84)';round(ctx,18,15,270,42,11);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 13px system-ui';ctx.textAlign='left';ctx.fillText('직접 조종 · '+c.p.name,30,32);ctx.font='700 10px system-ui';ctx.fillStyle='#c9d8e8';ctx.fillText((c.p.footballStyle||c.slot)+' · S 패스 · D 슛/태클 · Q 전환',30,47);}else{ctx.fillStyle='rgba(5,16,28,.84)';round(ctx,18,15,230,42,11);ctx.fill();ctx.fillStyle='#dbeafe';ctx.font='900 13px system-ui';ctx.textAlign='left';ctx.fillText('관전 모드 · AI 경기 중',30,33);ctx.font='700 10px system-ui';ctx.fillStyle='#93c5fd';ctx.fillText('원할 때 직접 조종을 켤 수 있어요.',30,48);}
     var legendY=15,legendW=150;
     [0,1].forEach(function(side){
       var lx=side===0?W/2-legendW-6:W/2+6,kit=teamKits[side],club=teams[side].club;
@@ -458,10 +526,10 @@ function create(opts){
   return m;
 }
 
-function held(name,on){touch[name]=!!on;if(active&&active.setHold)active.setHold(name,on);}
-function action(name){if(active&&active.handleAction)active.handleAction(name);}
+function held(name,on){if(active&&active.directControl){touch[name]=!!on;if(active.setHold)active.setHold(name,on);}else touch[name]=false;}
+function action(name){if(active&&active.directControl&&active.handleAction)active.handleAction(name);}
 if(root.addEventListener){
-  root.addEventListener('keydown',function(e){keys[e.code]=true;if(!active||active.finished)return;if(e.repeat)return;var map={KeyQ:'switch',KeyS:'pass',KeyW:'through',KeyA:'lob',KeyD:'shoot'};if(map[e.code]){e.preventDefault();action(map[e.code]);}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].indexOf(e.code)>=0)e.preventDefault();});
+  root.addEventListener('keydown',function(e){if(!active||active.finished||!active.directControl)return;keys[e.code]=true;if(e.repeat)return;var map={KeyQ:'switch',KeyS:'pass',KeyW:'through',KeyA:'lob',KeyD:'shoot'};if(map[e.code]){e.preventDefault();action(map[e.code]);}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].indexOf(e.code)>=0)e.preventDefault();});
   root.addEventListener('keyup',function(e){keys[e.code]=false;});
 }
 function bindTouch(){
