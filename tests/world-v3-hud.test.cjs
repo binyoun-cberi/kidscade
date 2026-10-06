@@ -39,6 +39,25 @@ test('Seed World uses the compact survival HUD instead of the old debug panels',
   assert.doesNotMatch(html,/id="close"/);
 });
 
+test('Seed World radial menu keeps tools immediate and groups 생활 navigation without covering the HUD',()=>{
+  assert.match(html,/id="radialMenu"/);
+  assert.match(html,/id="radialContext"/);
+  for(const action of ['bag','map','tasks','people','pets','life','catalog','settings'])assert.match(html,new RegExp('data-radial-action="'+action+'"'));
+  assert.match(html,/Q · Tab 길게 · 모바일 행동 길게/);
+  assert.match(runtime,/const RADIAL_ACTIONS=\{/);
+  assert.match(runtime,/function openRadialMenu\(\)/);
+  assert.match(runtime,/function closeRadialMenu\(focus=true\)/);
+  assert.match(runtime,/function radialContextState\(\)/);
+  assert.match(runtime,/label:near\.label\|\|'행동'/);
+  assert.match(runtime,/function residentsPanel\(\)/);
+  assert.match(runtime,/function radialLifePanel\(\)/);
+  assert.match(runtime,/function radialSettingsPanel\(\)/);
+  assert.match(runtime,/key==='q'/);
+  assert.match(runtime,/e\.key==='Tab'/);
+  assert.match(runtime,/mobileInteractLong=true;openRadialMenu\(\)/);
+  assert.match(runtime,/if\(!mobileInteractLong&&!radialMenu\?\.classList\.contains\('open'\)\)doInteract\(\)/);
+});
+
 test('Seed World quickbar has real equipment, durability, inventory and pet switching',()=>{
   assert.match(runtime,/p\.equippedTool=/);
   assert.match(runtime,/function setEquippedTool/);
