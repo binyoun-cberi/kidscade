@@ -831,7 +831,7 @@ test('resident skinned GLBs use SkeletonUtils clone instead of shared Object3D s
   assert.match(city,/cloneSkeleton\(gltf\.scene\)/);
   assert.doesNotMatch(city,/base\.clone\(true\)/);
   assert.match(city,/const anchor=new THREE\.Group\(\)/);
-  assert.match(city,/anchor\.add\(model\)/);
+  assert.match(city,/actor\.object\.add\(model\)/);
 });
 
 
