@@ -221,3 +221,22 @@ test('Korea BGM is wired into Byeokrando', () => {
   assert.doesNotThrow(() => new Function(byeokrandoBgm));
 
 });
+
+
+test('Weathercaster has newsroom BGM, chime feedback and dual Korean TTS', () => {
+  const catalog = JSON.parse(read('assets/audio/audio-catalog.json'));
+  const html = read('games/high_weathercaster_simulator/index.html');
+  assert.deepEqual(catalog.sounds['music.weather_newsroom'], ['incoming/newmusical/brvhrtz-action-loop-e-90-bpm-brvhrtz-233462.mp3']);
+  assert.deepEqual(catalog.sounds['music.weather_breaking'], ['incoming/newmusical/mleckert82-dramatic-ochestral-loop-154350.mp3']);
+  assert.match(html, /music\.weather_newsroom/);
+  assert.match(html, /music\.weather_breaking/);
+  assert.match(html, /ui\.confirm/);
+  assert.match(html, /AI 기상 데스크/);
+  assert.match(html, /data-voice-mode="female"/);
+  assert.match(html, /data-voice-mode="male"/);
+  assert.match(html, /speechSynthesis/);
+  assert.match(html, /SpeechSynthesisUtterance/);
+  assert.match(html, /map-status-card/);
+  assert.doesNotMatch(html, /success\.cheer_yay/);
+  assert.doesNotMatch(html, /sdk\("sound",good\?"correct"/);
+});

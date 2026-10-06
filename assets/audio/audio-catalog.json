@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "basePath": "assets/audio/",
   "notes": "경로는 Kidscade 저장소 루트 기준. 같은 키에 여러 파일을 추가하면 Audio Manager에서 랜덤 재생 가능.",
   "sounds": {
@@ -83,6 +83,12 @@
     ],
     "ambient.underwater": [
       "incoming/newmusical/dragon-studio-underwater-ambience-376890.mp3"
+    ],
+    "music.weather_newsroom": [
+      "incoming/newmusical/brvhrtz-action-loop-e-90-bpm-brvhrtz-233462.mp3"
+    ],
+    "music.weather_breaking": [
+      "incoming/newmusical/mleckert82-dramatic-ochestral-loop-154350.mp3"
     ]
   }
 }
