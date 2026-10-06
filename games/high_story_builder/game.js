@@ -223,7 +223,8 @@ function sentenceCount(t){
   const parts=trimmed.split(/[.!?。！？\n]+/).map(x=>x.trim()).filter(Boolean);
   return Math.max(1,parts.length);
 }
-function escapeRegExp(s){return String(s).replace(/[|\\{}()[\]^$+*?.-]/g,'\\function containsAlias(text,card){return card.aliases.some(a=>text.includes(a))}')}
+function escapeRegExp(s){return String(s).replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')}
+function containsAlias(text,card){return card.aliases.some(a=>text.includes(a))}')}
 function containsAlias(text,card){
   const source=String(text||'');
   const suffix='(?:이|가|은|는|을|를|와|과|도|만|의|에|에서|에게|으로|로|랑|하고|부터|까지|처럼|보다)';
@@ -529,6 +530,14 @@ function openSavedBook(id){
 
 document.querySelectorAll('.difficulty').forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('selected',x===btn));level=btn.dataset.level;
+});
+document.querySelectorAll('.starter-chip').forEach(btn=>btn.onclick=()=>{
+  const target=$(btn.dataset.target);if(!target)return;
+  const text=btn.dataset.text||'';
+  if(target.value&&!/\s$/.test(target.value))target.value+=' ';
+  target.value+=text;
+  target.focus();
+  updateWriteStatus();
 });
 $('startBtn').onclick=startMission;
 $('shuffleBtn').onclick=shuffleMission;
