@@ -120,6 +120,18 @@ function normalizeCharacterModel(model,height){
   model.updateMatrixWorld(true);
 }
 
+async function mapLimit(items,limit,worker){
+  const out=new Array(items.length);let cursor=0;
+  async function lane(){
+    while(true){
+      const index=cursor++;if(index>=items.length)return;
+      out[index]=await worker(items[index],index);
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(Math.max(1,limit),items.length)},()=>lane()));
+  return out;
+}
+
 async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
   const visual=residentVisual(id);
   const gltf=await ctx.loadGLTF(visual.url);
@@ -352,8 +364,8 @@ export async function buildKidscadeCity(ctx){
   registerSurface('res-south-cross',residentialSouth.x-8.7,residentialSouth.z,1.4,18.4,.064);
   registerSurface('res-north-cross',residentialNorth.x-8.7,residentialNorth.z,1.4,18.4,.064);
 
-  for(let i=0;i<homeDefs.length;i++){
-    const [id,name,x,z,assetIndex,rot]=homeDefs[i],north= z>=(residentialNorth.z-10),frontDz=rot===Math.PI?2.05:-2.05;
+  await mapLimit(homeDefs,4,async def=>{
+    const [id,name,x,z,assetIndex,rot]=def,north=z>=(residentialNorth.z-10),frontDz=rot===Math.PI?2.05:-2.05;
     await addModel(parent,CITY_ASSET.homes[assetIndex%CITY_ASSET.homes.length],{
       x,z,w:north?4.25:3.85,h:north?4.25:3.95,d:3.45,rot,name:'resident-home-'+id
     });
@@ -366,13 +378,13 @@ export async function buildKidscadeCity(ctx){
     const label=makeLabel(name+'의 집',{width:1.48,height:.36,font:30});
     label.position.set(x,3.05,z+frontDz*.72);label.userData.anchor={x,z:z+frontDz*.72};label.visible=false;
     parent.add(label);buildingLabels.push(label);
-  }
+  });
 
   // South residential planting: enough detail to hide the parcel edge without blocking the central lane.
-  for(const [x,z,large] of [
+  await Promise.all([
     [residentialSouth.x-8.2,residentialSouth.z-7.2,1],[residentialSouth.x+8.0,residentialSouth.z-6.8,0],
     [residentialSouth.x-8.1,residentialSouth.z+7.1,0],[residentialSouth.x+8.0,residentialSouth.z+7.0,1]
-  ])await addModel(parent,large?CITY_ASSET.residentialTreeLarge:CITY_ASSET.residentialTreeSmall,{x,z,w:1.7,h:3.4,d:1.7,rot:.1});
+  ].map(([x,z,large])=>addModel(parent,large?CITY_ASSET.residentialTreeLarge:CITY_ASSET.residentialTreeSmall,{x,z,w:1.7,h:3.4,d:1.7,rot:.1})));
 
   // North residential district keeps a real pocket park between the four homes.
   plane(parent,residentialNorth.x,residentialNorth.z,6.8,5.4,0x9db67c,.07);
@@ -386,30 +398,35 @@ export async function buildKidscadeCity(ctx){
   track('residential-pocket-park','plaza',residentialNorth.x,residentialNorth.z,6.8,5.4);
 
   // Lamps are also kept inside parcels, at least 1m from the road gutter.
-  for(const [x,z] of [
+  await Promise.all([
     [market.x-8,market.z+3.0],[market.x+8,market.z+3.0],
     [leisure.x-8,leisure.z+3.0],[leisure.x+8,leisure.z+3.0],
     [civic.x-8,civic.z+3.0],[civic.x+8,civic.z+3.0],
     [transit.x-8,transit.z+3.0],[transit.x+8,transit.z+3.0]
-  ])await addModel(parent,CITY_ASSET.lamp,{x,z,w:.5,h:3.4,d:.5,rot:0});
+  ].map(([x,z])=>addModel(parent,CITY_ASSET.lamp,{x,z,w:.5,h:3.4,d:.5,rot:0})));
 
   const npcCtx={parent,loadGLTF,prepModel};
-  const npcs=[];
-  npcs.push(await addNpc(npcCtx,'minji','민지',market.x-4.7,market.z-1.0,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'junho','준호',market.x+4.7,market.z-1.0,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'haneul','하늘',leisure.x-4.7,leisure.z-1.0,{role:'shop'}));
-  npcs.push(await addNpc(npcCtx,'taeho','태호',leisure.x+4.7,leisure.z-1.0,{role:'arcade'}));
-  npcs.push(await addNpc(npcCtx,'doyun','도윤',civic.x+4.5,civic.z+1.0,{role:'civic',radius:.45}));
-  npcs.push(await addNpc(npcCtx,'sora','소라',civic.x-4.5,civic.z+1.0,{role:'library'}));
-  npcs.push(await addNpc(npcCtx,'nari','나리',transit.x-4.5,transit.z+1.0,{role:'clinic'}));
-  npcs.push(await addNpc(npcCtx,'minseok','민석',transit.x+4.5,transit.z+1.0,{role:'bus'}));
-  npcs.push(await addNpc(npcCtx,'yuna','유나',leisure.x-4.0,leisure.z+4.2,{role:'resident',radius:.55}));
-  npcs.push(await addNpc(npcCtx,'woojin','우진',leisure.x,leisure.z+4.8,{role:'resident',radius:.55}));
-  npcs.push(await addNpc(npcCtx,'seoyeon','서연',leisure.x+4.0,leisure.z+4.2,{role:'resident',radius:.55}));
-  npcs.push(await addNpc(npcCtx,'hyunwoo','현우',market.x,market.z+4.5,{role:'delivery',radius:.45}));
-  npcs.push(await addNpc(npcCtx,'clerk',SCHOOL_PROFILES.clerk.name,market.x-6.6,market.z-1.2,{role:'student',label:false,radius:.20}));
-  const visitor=await addNpc(npcCtx,'visitor',SCHOOL_PROFILES.visitor.name,leisure.x+3.0,leisure.z+6.7,{role:'student',radius:.42});
-  visitor.object.visible=false;if(visitor.label)visitor.label.visible=false;npcs.push(visitor);
+  const npcDefs=[
+    ['minji','민지',market.x-4.7,market.z-1.0,{role:'shop'}],
+    ['junho','준호',market.x+4.7,market.z-1.0,{role:'shop'}],
+    ['haneul','하늘',leisure.x-4.7,leisure.z-1.0,{role:'shop'}],
+    ['taeho','태호',leisure.x+4.7,leisure.z-1.0,{role:'arcade'}],
+    ['doyun','도윤',civic.x+4.5,civic.z+1.0,{role:'civic',radius:.45}],
+    ['sora','소라',civic.x-4.5,civic.z+1.0,{role:'library'}],
+    ['nari','나리',transit.x-4.5,transit.z+1.0,{role:'clinic'}],
+    ['minseok','민석',transit.x+4.5,transit.z+1.0,{role:'bus'}],
+    ['yuna','유나',leisure.x-4.0,leisure.z+4.2,{role:'resident',radius:.55}],
+    ['woojin','우진',leisure.x,leisure.z+4.8,{role:'resident',radius:.55}],
+    ['seoyeon','서연',leisure.x+4.0,leisure.z+4.2,{role:'resident',radius:.55}],
+    ['hyunwoo','현우',market.x,market.z+4.5,{role:'delivery',radius:.45}],
+    ['clerk',SCHOOL_PROFILES.clerk.name,market.x-6.6,market.z-1.2,{role:'student',label:false,radius:.20}],
+    ['visitor',SCHOOL_PROFILES.visitor.name,leisure.x+3.0,leisure.z+6.7,{role:'student',radius:.42}]
+  ];
+  // Resident glTF files are roughly 25 MB together. Four lanes overlap network/decode
+  // work without hammering low-end classroom tablets with 14 simultaneous parses.
+  const npcs=await mapLimit(npcDefs,4,([id,name,x,z,opts])=>addNpc(npcCtx,id,name,x,z,opts));
+  const visitor=npcs.find(n=>n.id==='visitor');
+  if(visitor){visitor.object.visible=false;if(visitor.label)visitor.label.visible=false}
 
   for(const n of npcs){
     n.groundY=characterGroundYAt(n.object.position.x,n.object.position.z);
