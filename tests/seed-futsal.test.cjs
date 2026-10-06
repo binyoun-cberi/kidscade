@@ -121,3 +121,17 @@ test('first league match is a live action tutorial and only auto-runs once',()=>
   assert.match(html,/id="matchTutorialSkipStep"/);
   assert.match(html,/id="matchTutorialSkipAll"/);
 });
+
+
+test('Futsal History League analysis room has dashboard metrics and direct replay modes',()=>{
+  const game=fs.readFileSync(gamePath,'utf8');
+  assert.match(game,/function replayTeamTotals\(r,side\)/);
+  assert.match(game,/function replayOutcome\(r\)/);
+  assert.match(game,/팀 흐름 한눈에 보기/);
+  assert.match(game,/경기당 슈팅/);
+  assert.match(game,/최근 경기 활약 선수/);
+  assert.match(game,/data-replay-mode="replay"/);
+  assert.match(game,/data-replay-mode="heat"/);
+  assert.match(game,/data-replay-mode="pass"/);
+  assert.match(game,/function openReplay\(index,mode,focus\)/);
+});
