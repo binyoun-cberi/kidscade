@@ -78,9 +78,10 @@ const LEVELS=[
 let root=null,canvas=null,renderer=null,scene=null,camera=null,cubeGroup=null;
 let active=false,raf=0,last=0,levelIndex=0,moves=0,busy=false,solved=false;
 let orientation=new THREE.Quaternion(),rotateAnim=null;
-let emitters=[],receivers=[];
+let emitters=[],receivers=[],gravityArrow=null;
 let view={yaw:-.72,pitch:.43,dist:11.6};
-let drag=null,audioCtx=null,resizeBound=false;
+let drag=null,audioCtx=null,resizeBound=false,lowPowerMode=false;
+let lastAlignment=0,currentAlignment=0;
 
 function el(id){return document.getElementById(id)}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -178,6 +179,8 @@ function createRoot(){
       '<p id="cuboidPuzzleSubtitle"></p>',
       '<div class="ca-cp-light-row"><span>켜진 표적</span><b id="cuboidPuzzleLights">0 / 1</b></div>',
       '<div class="ca-cp-light-meter"><i id="cuboidPuzzleLightFill"></i></div>',
+      '<div class="ca-cp-align-row"><span>빛 정렬도</span><b id="cuboidPuzzleAlignment">0%</b></div>',
+      '<div class="ca-cp-align-meter"><i id="cuboidPuzzleAlignmentFill"></i></div>',
       '<div id="cuboidPuzzleMessage" class="ca-cp-message">화살표를 눌러 직육면체를 굴려 보세요.</div>',
       '<div class="ca-cp-guide-actions">',
         '<button id="cuboidPuzzleHint" type="button">힌트</button>',
@@ -191,6 +194,7 @@ function createRoot(){
       '<button class="ca-cp-turn ca-cp-right" data-cuboid-turn="right" type="button"><b>→</b><small>오른쪽</small></button>',
       '<button class="ca-cp-turn ca-cp-down" data-cuboid-turn="back" type="button"><b>↓</b><small>뒤로</small></button>',
     '</div>',
+    '<div class="ca-cp-gravity-badge"><b>↓</b><span>중력</span></div>',
     '<div class="ca-cp-viewtip">화면 드래그 · 둘러보기 <span>│</span> 화살표/WASD · 직육면체 굴리기 <span>│</span> R · 처음 상태</div>',
     '<section id="cuboidPuzzleResult" class="ca-cp-result hidden" role="dialog" aria-live="polite">',
       '<div class="ca-cp-result-card">',
@@ -212,7 +216,8 @@ function createRoot(){
   (el('app')||document.body).appendChild(root);
   canvas=el('cuboidPuzzleCanvas');
   renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+  lowPowerMode=(typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches)||innerWidth<900;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,lowPowerMode?1.25:1.65));
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
@@ -274,6 +279,27 @@ function resize(){
   renderer.setSize(w,h,false);
   if(camera){camera.aspect=w/h;camera.updateProjectionMatrix()}
 }
+function disposeScene(){
+  if(!scene)return;
+  const geometries=new Set(),materials=new Set(),textures=new Set();
+  scene.traverse(function(obj){
+    if(obj.geometry)geometries.add(obj.geometry);
+    const mats=Array.isArray(obj.material)?obj.material:(obj.material?[obj.material]:[]);
+    mats.forEach(function(mat){
+      materials.add(mat);
+      Object.keys(mat).forEach(function(k){
+        const value=mat[k];
+        if(value&&value.isTexture)textures.add(value);
+      });
+    });
+  });
+  textures.forEach(function(t){try{t.dispose()}catch(_){}});
+  materials.forEach(function(m){try{m.dispose()}catch(_){}});
+  geometries.forEach(function(g){try{g.dispose()}catch(_){}});
+  try{scene.clear()}catch(_){}
+  try{renderer?.renderLists?.dispose?.()}catch(_){}
+  scene=null;camera=null;cubeGroup=null;gravityArrow=null;emitters=[];receivers=[];
+}
 function updateCamera(){
   if(!camera)return;
   const cp=Math.cos(view.pitch),sp=Math.sin(view.pitch);
@@ -292,7 +318,7 @@ function addBaseScene(){
   updateCamera();
 
   const hemi=new THREE.HemisphereLight(0xbde7ff,0x1a2130,1.6);scene.add(hemi);
-  const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(7,11,8);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
+  const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(7,11,8);key.castShadow=true;key.shadow.mapSize.set(lowPowerMode?512:1024,lowPowerMode?512:1024);scene.add(key);
   const rim=new THREE.PointLight(0x4cc9ff,26,18,2);rim.position.set(-7,4,-6);scene.add(rim);
   const warm=new THREE.PointLight(0xffc857,18,16,2);warm.position.set(6,-2,7);scene.add(warm);
 
@@ -302,7 +328,7 @@ function addBaseScene(){
 
   const starGeo=new THREE.BufferGeometry();
   const stars=[];
-  for(let i=0;i<180;i++){
+  for(let i=0;i<(lowPowerMode?90:150);i++){
     const a=Math.random()*Math.PI*2,r=10+Math.random()*20,y=-1+Math.random()*15;
     stars.push(Math.cos(a)*r,y,Math.sin(a)*r);
   }
@@ -332,6 +358,8 @@ function makeCuboid(level){
     const m=new THREE.Mesh(new THREE.SphereGeometry(.085,10,8),cornerMat);
     m.position.set(s[0]*size[0]/2,s[1]*size[1]/2,s[2]*size[2]/2);cubeGroup.add(m);
   });
+  gravityArrow=new THREE.ArrowHelper(WORLD_DOWN.clone(),new THREE.Vector3(-size[0]/2-.8,size[1]/2+1.15,0),2.15,0xffd166,.36,.2);
+  scene.add(gravityArrow);
 }
 
 function addTrack(track,color){
@@ -393,12 +421,14 @@ function makeReceiver(goal,color,index){
   const halo=new THREE.Mesh(new THREE.RingGeometry(.46,.58,32),new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:.1,side:THREE.DoubleSide,depthWrite:false}));
   halo.position.z=-.01;g.add(halo);
   scene.add(g);
-  return {group:g,ring:ring,core:core,halo:halo,position:pos,color:color,index:index,hit:false};
+  return {group:g,ring:ring,core:core,halo:halo,position:pos,goalPosition:goal.position.clone(),goalDirection:goal.direction.clone(),color:color,index:index,hit:false};
 }
 
 function startLevel(index){
   levelIndex=(index+LEVELS.length)%LEVELS.length;
-  moves=0;busy=false;solved=false;rotateAnim=null;orientation.identity();emitters=[];receivers=[];
+  moves=0;busy=false;solved=false;rotateAnim=null;orientation.identity();
+  root?.classList.remove('ca-cp-busy');
+  disposeScene();
   addBaseScene();
   const level=LEVELS[levelIndex];
   makeCuboid(level);
@@ -420,6 +450,7 @@ function startLevel(index){
   el('cuboidPuzzleResult').classList.add('hidden');
   el('cuboidPuzzleNext').textContent=levelIndex===LEVELS.length-1?'처음부터':'다음 단계';
   updateHits(true);
+  currentAlignment=computeAlignment();lastAlignment=currentAlignment;updateAlignmentUI(currentAlignment);
   resize();updateCamera();
 }
 function showHint(){
@@ -430,49 +461,63 @@ function showHint(){
 
 function turn(cmd){
   if(!active||busy||solved||!COMMANDS[cmd])return;
-  busy=true;moves++;
+  busy=true;moves++;lastAlignment=currentAlignment;
+  root?.classList.add('ca-cp-busy');
   el('cuboidPuzzleMoves').textContent=String(moves);
-  el('cuboidPuzzleMessage').textContent=COMMANDS[cmd].label+'으로 90° 굴리는 중… 장치가 어디로 미끄러질까요?';
+  el('cuboidPuzzleMessage').textContent=COMMANDS[cmd].label+'으로 굴리는 중… 중력이 바뀌면서 장치도 움직여요.';
   const from=orientation.clone();
   const to=orientation.clone().premultiply(commandQuat(cmd)).normalize();
-  rotateAnim={from:from,to:to,t:0,duration:.42};
+  rotateAnim={from:from,to:to,t:0,duration:.52,slideStarted:false};
+  try{navigator.vibrate?.(12)}catch(_){}
   sfx('roll');
 }
-function beginSlides(){
+function beginSlides(targetOrientation){
   let any=false;
   emitters.forEach(function(e){
-    const route=settleRoute(e.track,e.index,orientation);
+    const route=settleRoute(e.track,e.index,targetOrientation);
     const queue=route.slice(1);
+    e.movedThisTurn=queue.length;
     if(queue.length){
       any=true;
-      e.slide={queue:queue,from:e.mesh.position.clone(),to:e.track[queue[0]].clone(),t:0,duration:.15};
+      e.slide={queue:queue,from:e.mesh.position.clone(),to:e.track[queue[0]].clone(),t:0,duration:.12};
     }else e.slide=null;
   });
   if(any)sfx('slide');
-  else finishTurn();
 }
 function updateSlides(dt){
-  let any=false;
   emitters.forEach(function(e){
-    const s=e.slide;if(!s)return;
-    any=true;s.t+=dt;
-    const k=clamp(s.t/s.duration,0,1);
+    const slide=e.slide;if(!slide)return;
+    slide.t+=dt;
+    const k=clamp(slide.t/slide.duration,0,1);
     const smooth=k*k*(3-2*k);
-    e.mesh.position.lerpVectors(s.from,s.to,smooth);updateEmitterVisual(e);
+    e.mesh.position.lerpVectors(slide.from,slide.to,smooth);updateEmitterVisual(e);
     if(k>=1){
-      e.index=s.queue.shift();
+      e.index=slide.queue.shift();
       e.mesh.position.copy(e.track[e.index]);updateEmitterVisual(e);
-      if(s.queue.length){
-        s.from=e.mesh.position.clone();s.to=e.track[s.queue[0]].clone();s.t=0;
+      if(slide.queue.length){
+        slide.from=e.mesh.position.clone();slide.to=e.track[slide.queue[0]].clone();slide.t=0;
       }else e.slide=null;
     }
   });
-  if(any&&!emitters.some(function(e){return !!e.slide}))finishTurn();
 }
 function finishTurn(){
-  busy=false;
+  if(!busy)return;
+  busy=false;root?.classList.remove('ca-cp-busy');
   const lit=updateHits(false);
-  if(!solved)el('cuboidPuzzleMessage').textContent=lit?lit+'개의 표적이 켜졌어요. 나머지 레이저도 맞춰 보세요.':'아직 빛이 맞지 않아요. 홈의 낮은 쪽으로 장치가 움직인 모습을 살펴보세요.';
+  currentAlignment=computeAlignment();updateAlignmentUI(currentAlignment);
+  const delta=currentAlignment-lastAlignment;
+  const moved=emitters.reduce(function(sum,e){return sum+(e.movedThisTurn||0)},0);
+  if(!solved){
+    if(lit){
+      el('cuboidPuzzleMessage').textContent='표적 '+lit+'개가 켜졌어요. '+(delta>=0?'빛의 방향도 더 잘 맞고 있어요.':'다른 장치도 함께 살펴보세요.');
+    }else if(delta>=6){
+      el('cuboidPuzzleMessage').textContent='좋아요! 빛 정렬도가 '+lastAlignment+'% → '+currentAlignment+'%로 올라갔어요. 장치가 '+moved+'칸 움직였어요.';
+    }else if(delta<=-6){
+      el('cuboidPuzzleMessage').textContent='조금 멀어졌어요. 장치는 홈의 낮은 쪽으로 움직여요. 다음 중력 방향을 다시 떠올려 보세요.';
+    }else{
+      el('cuboidPuzzleMessage').textContent='장치가 '+moved+'칸 움직였어요. 현재 빛 정렬도는 '+currentAlignment+'%예요.';
+    }
+  }
 }
 
 function emitterPose(e){
@@ -480,6 +525,23 @@ function emitterPose(e){
   cubeGroup.localToWorld(p);
   const dir=e.normal.clone().applyQuaternion(cubeGroup.quaternion).normalize();
   return {position:p,direction:dir};
+}
+function computeAlignment(){
+  if(!emitters.length||!receivers.length||!cubeGroup)return 0;
+  let total=0;
+  emitters.forEach(function(e,i){
+    const pose=emitterPose(e),receiver=receivers[i];
+    const posDistance=pose.position.distanceTo(receiver.goalPosition);
+    const posScore=clamp(1-posDistance/8,0,1);
+    const dirScore=clamp((pose.direction.dot(receiver.goalDirection)+1)/2,0,1);
+    total+=posScore*.68+dirScore*.32;
+  });
+  return Math.round(total/emitters.length*100);
+}
+function updateAlignmentUI(value){
+  currentAlignment=clamp(Math.round(value||0),0,100);
+  if(el('cuboidPuzzleAlignment'))el('cuboidPuzzleAlignment').textContent=currentAlignment+'%';
+  if(el('cuboidPuzzleAlignmentFill'))el('cuboidPuzzleAlignmentFill').style.width=currentAlignment+'%';
 }
 function updateHits(initial){
   let lit=0;
@@ -528,19 +590,30 @@ function animate(now){
     const k=clamp(rotateAnim.t/rotateAnim.duration,0,1);
     const smooth=k*k*(3-2*k);
     cubeGroup.quaternion.copy(rotateAnim.from).slerp(rotateAnim.to,smooth);
+    if(!rotateAnim.slideStarted&&k>=.42){
+      rotateAnim.slideStarted=true;
+      beginSlides(rotateAnim.to);
+    }
     if(k>=1){
+      if(!rotateAnim.slideStarted)beginSlides(rotateAnim.to);
       orientation.copy(rotateAnim.to).normalize();
       cubeGroup.quaternion.copy(orientation);
-      rotateAnim=null;beginSlides();
+      rotateAnim=null;
     }
-  }else if(busy){
-    updateSlides(dt);
   }
+  if(busy)updateSlides(dt);
+  if(busy&&rotateAnim===null&&!emitters.some(function(e){return !!e.slide}))finishTurn();
+  emitters.forEach(function(e,i){
+    const sliding=!!e.slide;
+    const pulse=sliding?1.05+Math.sin(now*.018+i)*.04:1;
+    e.mesh.scale.setScalar(pulse);
+    e.beam.material.opacity=sliding?.68:(e.wasHit?.95:.46);
+  });
   receivers.forEach(function(r,i){
-    if(!r.hit)return;
-    const pulse=1+Math.sin(now*.006+i)*.045;
+    const pulse=r.hit?1+Math.sin(now*.006+i)*.045:1;
     r.group.scale.setScalar(pulse);
   });
+  if(busy)updateAlignmentUI(computeAlignment());
   renderer.render(scene,camera);
   raf=requestAnimationFrame(animate);
 }
@@ -552,6 +625,7 @@ function enter(){
   el('topbar')?.classList.add('hidden');
   root.classList.remove('hidden');
   document.body.classList.add('cuboid-puzzle-active');
+  window.CubeArchitectExternalPause=true;
   active=true;last=performance.now();
   startLevel(0);
   let seen=false;try{seen=localStorage.getItem(SEEN_KEY)==='1'}catch(_){}
@@ -560,7 +634,9 @@ function enter(){
 }
 function exit(){
   active=false;busy=false;solved=false;cancelAnimationFrame(raf);
-  if(root)root.classList.add('hidden');
+  if(root){root.classList.add('hidden');root.classList.remove('ca-cp-busy')}
+  disposeScene();
+  window.CubeArchitectExternalPause=false;
   document.body.classList.remove('cuboid-puzzle-active');
   el('homeScreen')?.classList.remove('hidden');
 }
