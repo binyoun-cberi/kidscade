@@ -152,7 +152,7 @@
     ]),
     progression:Object.freeze([
       'high_human_history_cards','high_metro_planner','trivia_blockraft','high_star_hoppers',
-      'high_ecopolis','high_micro_evolution'
+      'high_ecopolis','high_micro_evolution','science_cosmic_growth'
     ]),
     sandbox:Object.freeze([
       'high_little_world','high_factory_tycoon','cube3d'
