@@ -55,6 +55,7 @@ test('Seed World loading board reports real stages and defers noncritical warmup
   assert.match(runtime,/initialLevel:devState\(\)\.houseLevel/);
   assert.match(runtime,/streamingStatus\(\)/);
   assert.match(runtime,/cityRuntime\?\.streamingStatus/);
+  assert.match(runtime,/await cityRuntime\?\.warmDecor\?\.\(\)/);
 });
 
 test('Seed World radial menu keeps tools immediate and groups 생활 navigation without covering the HUD',()=>{
