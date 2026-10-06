@@ -6,6 +6,7 @@
 <title>한자 급수 테스트 · 카드 도전</title>
 <link rel="stylesheet" href="./hanja-card-game.css">
 <script src="../../kidscade-game-sdk.js" data-game-id="hanja_test" data-title="한자 급수 테스트" data-shell="true" data-orientation="landscape"></script>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -13,9 +14,9 @@
     <div class="setup-card">
       <p class="eyebrow">HANJA CARD CHALLENGE</p>
       <h1 class="setup-title">한자 급수 테스트</h1>
-      <p class="setup-desc">한자를 보고 직접 써 보며 뜻과 음을 맞혀 보세요. 한 판은 25장입니다. 맞힌 카드는 위로 날아가고, 틀리거나 모르는 카드는 왼쪽으로 넘길 수 있어요.</p>
+      <p class="setup-desc">한자를 직접 써서 획순·위치·방향을 확인하고 뜻과 음까지 맞혀 보세요. 한 판은 25장입니다. 맞힌 카드는 위로 날아가고, 틀리거나 모르는 카드는 왼쪽으로 넘길 수 있어요.</p>
       <div class="howto">
-        <div><b>✍️ 오른쪽 쓰기판</b>손가락·펜·마우스로 한자를 따라 써 보세요.</div>
+        <div><b>✍️ 오른쪽 쓰기판</b>손가락·펜·마우스로 쓰면 획순·위치·방향을 바로 채점합니다.</div>
         <div><b>🔔 뜻 + 음 입력</b>둘 다 맞으면 초록 카드와 함께 점수가 올라갑니다.</div>
         <div><b>👈 모르면 스와이프</b>카드를 왼쪽으로 밀면 넘김 처리하고 다음 카드로 갑니다.</div>
       </div>
@@ -51,10 +52,11 @@
 
       <section class="study-panel">
         <div class="pad-wrap">
-          <div class="panel-heading"><b>✍️ 한자 쓰기판</b><span>채점에는 사용하지 않는 연습 공간</span></div>
+          <div class="panel-heading"><b>✍️ 한자 쓰기판</b><span>획순 · 위치 · 방향을 실제 채점</span></div>
           <div class="pad-shell">
-            <canvas id="writePad" aria-label="한자 쓰기 연습판"></canvas>
-            <button id="clearPad" class="clear-pad" type="button">지우기</button>
+            <div id="writerTarget" class="writer-target" aria-label="채점되는 한자 쓰기판"></div>
+            <div id="writingStatus" class="writing-status loading">필기 채점 준비 중…</div>
+            <button id="restartWriting" class="clear-pad" type="button">다시 쓰기</button>
           </div>
         </div>
         <div id="answerBox" class="answer-box">
@@ -80,6 +82,7 @@
         <div><span>정답</span><b id="resultCorrect">0개</b></div>
         <div><span>오답</span><b id="resultWrong">0개</b></div>
         <div><span>넘김</span><b id="resultSkipped">0개</b></div>
+        <div><span>필기 평균</span><b id="resultWriting">0점</b></div>
       </div>
       <div class="result-actions">
         <button id="retryBtn" class="primary" type="button">같은 급수 다시</button>
