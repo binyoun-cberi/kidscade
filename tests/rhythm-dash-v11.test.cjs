@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const runtimePath = path.join(ROOT, 'rhythm-dash-v11.js');
-const extremePath = path.join(ROOT, 'rhythm-dash-extreme.js');
+const extremePath = path.join(ROOT, 'games', 'high_rhythm_dash', 'rhythm-dash-extreme.js');
 const gamePath = path.join(ROOT, '리듬 대시.html');
 const injectorPath = path.join(ROOT, 'scripts', 'inject-game-integrations.cjs');
 
