@@ -1579,6 +1579,78 @@ export function normalizeEraSelection(eras) {
   return chosen.length?[...new Set(chosen)]:[...ERA_ORDER];
 }
 
+const ALL_ERA_BALANCE_GROUPS = Object.freeze([
+  Object.freeze(['선사','고조선','삼국','남북국']),
+  Object.freeze(['고려']),
+  Object.freeze(['조선 전기','조선 후기']),
+  Object.freeze(['개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁'])
+]);
+
+function shuffledFactIndexes(values,random=Math.random){
+  const out=[...values];
+  for(let i=out.length-1;i>0;i--){
+    const j=Math.floor(random()*(i+1));
+    [out[i],out[j]]=[out[j],out[i]];
+  }
+  return out;
+}
+
+function takeUniqueFacts(source,count,used,random){
+  const out=[];
+  for(const factIndex of shuffledFactIndexes(source,random)){
+    if(used.has(factIndex))continue;
+    used.add(factIndex);out.push(factIndex);
+    if(out.length>=count)break;
+  }
+  return out;
+}
+
+export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.random){
+  const selectedEras=normalizeEraSelection(eras);
+  const wanted=Math.max(1,Math.min(Number(count)||15,40));
+  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
+  if(!eligible.length)return [];
+
+  const allErasSelected=selectedEras.length===ERA_ORDER.length&&ERA_ORDER.every(era=>selectedEras.includes(era));
+  if(!allErasSelected){
+    const facts=shuffledFactIndexes(eligible.map(x=>x.i),random);
+    const picked=facts.slice(0,Math.min(wanted,facts.length));
+    let cursor=0;
+    while(picked.length<wanted&&facts.length){picked.push(facts[cursor%facts.length]);cursor++;}
+    return picked;
+  }
+
+  const used=new Set(),picked=[];
+  if(wanted>=ERA_ORDER.length){
+    const base=Math.floor(wanted/ERA_ORDER.length),remainder=wanted%ERA_ORDER.length;
+    const extraEras=new Set(shuffledFactIndexes(ERA_ORDER,random).slice(0,remainder));
+    for(const era of ERA_ORDER){
+      const bucket=eligible.filter(x=>x.f.era===era).map(x=>x.i);
+      picked.push(...takeUniqueFacts(bucket,base+(extraEras.has(era)?1:0),used,random));
+    }
+  }else{
+    const groups=ALL_ERA_BALANCE_GROUPS
+      .map(group=>group.filter(era=>selectedEras.includes(era)))
+      .filter(group=>group.length);
+    const base=Math.floor(wanted/groups.length),remainder=wanted%groups.length;
+    const extraGroups=new Set(shuffledFactIndexes(groups.map((_,i)=>i),random).slice(0,remainder));
+    groups.forEach((group,groupIndex)=>{
+      const bucket=eligible.filter(x=>group.includes(x.f.era)).map(x=>x.i);
+      picked.push(...takeUniqueFacts(bucket,base+(extraGroups.has(groupIndex)?1:0),used,random));
+    });
+  }
+
+  if(picked.length<wanted){
+    const remaining=eligible.map(x=>x.i).filter(i=>!used.has(i));
+    picked.push(...takeUniqueFacts(remaining,wanted-picked.length,used,random));
+  }
+  if(picked.length<wanted&&picked.length){
+    let cursor=0;
+    while(picked.length<wanted){picked.push(picked[cursor%picked.length]);cursor++;}
+  }
+  return shuffledFactIndexes(picked,random).slice(0,wanted);
+}
+
 function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER) {
   const selectedEras=normalizeEraSelection(eras);
   const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
@@ -1635,18 +1707,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   if (orderMode === 'chronological') {
     factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras);
   } else {
-    const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era)).map(x=>x.i);
-    factIndexes=[...eligible];
-    for (let i = factIndexes.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(random() * (i + 1));
-      [factIndexes[i], factIndexes[j]] = [factIndexes[j], factIndexes[i]];
-    }
-    const unique=[...factIndexes.slice(0,Math.min(wanted,factIndexes.length))];
-    if(unique.length){
-      let cursor=0;
-      while(unique.length<wanted){unique.push(unique[cursor%unique.length]);cursor++;}
-    }
-    factIndexes=unique;
+    factIndexes = balancedRandomFactIndexes(wanted,selectedEras,random);
   }
 
   return factIndexes.map((factIndex,position) => {
