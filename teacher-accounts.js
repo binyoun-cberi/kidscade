@@ -192,18 +192,39 @@
     renderCredentials(lastCredentialClass, lastCredentials);
   }
 
+  function qrLoginUrl(value) {
+    const token = String(value || '').trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(token)) return '';
+    return location.origin + '/#' + token;
+  }
+
+  function qrCardSvg(value) {
+    const url = qrLoginUrl(value);
+    if (!url || !window.KidscadeQrRenderer?.svg) return '';
+    try { return window.KidscadeQrRenderer.svg(url); } catch (_) { return ''; }
+  }
+
   function renderCredentials(classroom, credentials) {
     const card = $('credential-card');
     const host = $('credentials');
     if (!card || !host || !credentials.length) return;
-    host.innerHTML = credentials.map((item, index) => `
-      <article class="credential">
-        <b>🎮 ${escapeHtml(classroom?.name || 'Kidscade')}</b>
-        <span>ID: ${escapeHtml(item.loginId)}</span>
-        <span>PIN: ${escapeHtml(item.pin)}</span>
-        <small style="display:block;margin-top:7px;color:#64748b">${index + 1}번 로그인 카드</small>
-      </article>
-    `).join('');
+    host.innerHTML = credentials.map((item, index) => {
+      const qr = qrCardSvg(item.qrToken);
+      const pin = item.pin ? `<span>PIN: ${escapeHtml(item.pin)}</span>` : '';
+      const nickname = item.nickname && item.nickname !== '새싹 게이머'
+        ? `<span class="credential-name">${escapeHtml(item.nickname)}</span>`
+        : '';
+      return `
+        <article class="credential">
+          <b>🎮 ${escapeHtml(classroom?.name || 'Kidscade')}</b>
+          ${nickname}
+          <span>ID: ${escapeHtml(item.loginId)}</span>
+          ${pin}
+          ${qr ? `<div class="credential-qr">${qr}</div><small class="credential-tip">📷 기기 카메라로 찍으면 바로 로그인</small>` : '<small class="credential-tip">QR 준비 전 · PIN으로 로그인</small>'}
+          <small style="display:block;margin-top:7px;color:#64748b">${index + 1}번 로그인 카드</small>
+        </article>
+      `;
+    }).join('');
     card.classList.remove('hidden');
     card.scrollIntoView?.({ behavior:'smooth', block:'start' });
   }
@@ -359,6 +380,8 @@
             <td data-label="클라우드">${student.state_revision > 0 ? `저장 ${Number(student.state_revision)}회` : '첫 저장 전'}<span class="tiny">${escapeHtml(formatDate(student.updated_at))}</span></td>
             <td data-label="마지막 로그인">${escapeHtml(formatDate(student.last_login_at))}</td>
             <td data-label="관리"><div class="student-actions">
+              <button type="button" data-action="qr-card" data-login="${escapeHtml(student.login_id)}">📷 QR 카드</button>
+              <button class="secondary" type="button" data-action="qr-reissue" data-login="${escapeHtml(student.login_id)}">QR 재발급</button>
               <button type="button" data-action="reset-pin" data-login="${escapeHtml(student.login_id)}">PIN 재발급</button>
               <button class="secondary" type="button" data-action="logout-student" data-login="${escapeHtml(student.login_id)}">로그아웃</button>
               <button class="${Number(student.disabled) ? 'secondary' : 'warn'}" type="button" data-action="toggle-status" data-login="${escapeHtml(student.login_id)}" data-disabled="${Number(student.disabled) ? '1' : '0'}">${Number(student.disabled) ? '사용 복구' : '사용 중지'}</button>
@@ -378,6 +401,7 @@
               ${teacherCredentialHtml}
             </div>
             <div class="class-actions">
+              <button type="button" data-action="qr-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">📷 QR 전체 인쇄</button>
               <button type="button" data-action="economy" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">💰 학급경제</button>
               <button class="secondary" type="button" data-action="rename-class" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">이름 변경</button>
               <button type="button" data-action="add-students" data-class-id="${escapeHtml(classroom.id)}" data-class-name="${escapeHtml(classroom.name)}">학생 추가</button>
@@ -407,6 +431,46 @@
     } catch (_) {
       alert('네트워크 연결을 확인해 주세요.');
     }
+  }
+
+  async function showStudentQr(loginId, reissue, button) {
+    if (reissue && !confirm(`${loginId}의 기존 QR 카드를 폐기하고 새 QR을 발급할까요?\n기존 QR 카드만 사용할 수 없게 되며 PIN과 게임 기록은 그대로 유지됩니다.`)) return;
+    await withButton(button, reissue ? '재발급 중' : 'QR 준비 중', async () => {
+      const { response, body } = await api('/api/teacher/qr-credential', {
+        method:'POST',
+        body:JSON.stringify({ loginId, reissue:Boolean(reissue) })
+      });
+      if (!response.ok || !body.ok) return alert(errorText(body));
+      const student = (overviewData.students || []).find(item => item.login_id === body.loginId);
+      const classroom = (overviewData.classes || []).find(item => item.id === student?.class_id) || {
+        id: student?.class_id || '',
+        name: student?.class_name || 'Kidscade',
+        code: student?.class_code || ''
+      };
+      setCredentials(classroom, [{
+        loginId: body.loginId,
+        nickname: body.nickname || student?.nickname || '새싹 게이머',
+        qrToken: body.qrToken
+      }]);
+      if (reissue) {
+        alert(`${body.loginId}의 새 QR 카드를 발급했습니다.\n이전에 인쇄한 QR은 이제 사용할 수 없습니다.`);
+        await refreshOverview();
+      }
+    });
+  }
+
+  async function printClassQr(classId, className, button) {
+    await withButton(button, 'QR 준비 중', async () => {
+      const { response, body } = await api('/api/teacher/qr-class', {
+        method:'POST',
+        body:JSON.stringify({ classId })
+      });
+      if (!response.ok || !body.ok) return alert(errorText(body));
+      if (!(body.credentials || []).length) return alert('이 학급에는 학생 계정이 없습니다.');
+      setCredentials(body.classroom || { id:classId, name:className }, body.credentials || []);
+      setTimeout(() => window.print(), 80);
+      await refreshOverview();
+    });
   }
 
   async function resetPin(loginId, button) {
@@ -550,7 +614,12 @@
 
   async function copyCredentials() {
     if (!lastCredentials.length) return;
-    const lines = lastCredentials.map(item => `${item.loginId}\t${item.pin}`).join('\n');
+    const lines = lastCredentials.map(item => {
+      const parts = [item.loginId];
+      if (item.pin) parts.push(item.pin);
+      if (item.qrToken) parts.push(qrLoginUrl(item.qrToken));
+      return parts.join('\t');
+    }).join('\n');
     try {
       await navigator.clipboard.writeText(lines);
       alert('ID와 PIN 목록을 복사했습니다.');
@@ -578,7 +647,9 @@
 
   function downloadCredentials() {
     if (!lastCredentials.length) return;
-    const rows = [['학급','Kidscade ID','PIN'], ...lastCredentials.map(item => [lastCredentialClass?.name || '', item.loginId, item.pin])];
+    const rows = [['학급','Kidscade ID','PIN','QR 로그인 주소'], ...lastCredentials.map(item => [
+      lastCredentialClass?.name || '', item.loginId, item.pin || '', item.qrToken ? qrLoginUrl(item.qrToken) : ''
+    ])];
     downloadText('kidscade-login-cards.csv', rows.map(row => row.map(csvEscape).join(',')).join('\n'));
   }
 
@@ -605,9 +676,12 @@
     const loginId = button.dataset.login;
     const classId = button.dataset.classId;
     const className = button.dataset.className;
-    if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
+    if (action === 'qr-class') printClassQr(classId, className, button);
+    else if (action === 'economy') location.href = '/teacher/economy.html?classId=' + encodeURIComponent(classId || '') + '&className=' + encodeURIComponent(className || '');
     else if (action === 'reset-teacher') resetTeacherCredential(classId, className, button);
     else if (action === 'copy-teacher') copyTeacherCredential(classId || '');
+    else if (action === 'qr-card') showStudentQr(loginId, false, button);
+    else if (action === 'qr-reissue') showStudentQr(loginId, true, button);
     else if (action === 'reset-pin') resetPin(loginId, button);
     else if (action === 'logout-student') forceStudentLogout(loginId, button);
     else if (action === 'toggle-status') toggleStudent(loginId, button.dataset.disabled === '1', button);
