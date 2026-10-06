@@ -88,6 +88,9 @@
     storyBuilderSave: 'kidscade_story_builder_v1',
     takoyakiHolesSave: 'kidscade_takoyaki_holes_v1',
     weathercasterBest: 'kidscade_weathercaster_best_v1',
+    weathercasterVoice: 'kidscade_weathercaster_voice_v1',
+    hanjaSelectedGrade: 'kidscade_hanja_selected_grade_v1',
+    hanjaCardPoints: 'kidscade_hanja_card_points_v1',
     bunsikTycoonProgressV1: 'kidscade_bunsik_tycoon_progress_v1'
   });
 
