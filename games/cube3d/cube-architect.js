@@ -6432,6 +6432,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 function animate(now){
   requestAnimationFrame(animate);
+  if(window.CubeArchitectExternalPause){last=now;return}
   const dt=Math.min(.04,(now-last)/1000);last=now;
   if(orbit)orbit.update();
   if(mode==='challenge')updateChallengeFly(dt);
