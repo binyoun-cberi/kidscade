@@ -120,7 +120,7 @@ function create(equipment=readEquipment()){
   setSource(rig,storedPreview());
   return root;
 }
-function animate(root,time,moving,onGround=true,motion='ground',action=null){
+function animate(root,time,moving,onGround=true,motion='ground',action=null,combatGear=null){
   const rig=root?.userData?.avatarRig;
   if(!rig)return;
 
@@ -133,7 +133,7 @@ function animate(root,time,moving,onGround=true,motion='ground',action=null){
     rig.lastMode=mode;
     const api=avatarApi();
     let src='';
-    try{src=api?.renderPreviewFrame?.(mode,frameTime)||''}catch(_){}
+    try{src=api?.renderPreviewFrame?.(mode,frameTime,{combatGear:combatGear||null})||''}catch(_){}
     if(!src)src=storedPreview();
     setSource(rig,src);
   }
