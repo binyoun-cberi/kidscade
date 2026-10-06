@@ -5,9 +5,9 @@ const $ = id => document.getElementById(id);
 const SCREENS = ['setupScreen','writeScreen','reviewScreen','resultScreen'];
 const STORAGE_KEY = 'kidscade_story_builder_v1';
 const LEVELS = {
-  easy:{cards:2,minSentences:2,minChars:25,challenges:0,label:'가볍게'},
-  normal:{cards:3,minSentences:3,minChars:45,challenges:1,label:'이야기'},
-  hard:{cards:4,minSentences:4,minChars:70,challenges:2,label:'도전'}
+  easy:{cards:3,minSentences:3,minChars:30,minSectionChars:5,challenges:0,label:'차근차근'},
+  normal:{cards:4,minSentences:4,minChars:55,minSectionChars:7,challenges:1,label:'이야기'},
+  hard:{cards:5,minSentences:5,minChars:90,minSectionChars:9,challenges:2,label:'작가 도전'}
 };
 const ASSET = p => '../../' + p;
 const CARD_POOL = [
@@ -42,12 +42,38 @@ const CARD_POOL = [
   {id:'crown',label:'왕관',emoji:'👑',aliases:['왕관','임금','왕','여왕']},
   {id:'map',label:'지도',emoji:'🗺️',aliases:['지도','보물지도','보물 지도']}
 ];
+const CHARACTER_IDS=['dog','rabbit','panda','owl','frog','bear','elephant','penguin','robot','ghost'];
+const PLACE_IDS=['school','forest','ocean','space','castle','moon'];
+const OBJECT_IDS=['umbrella','cake','key','gift','bicycle','book','balloon','pizza','icecream','clock','crown','map'];
+const EVENT_POOL=[
+  {id:'event_lost',label:'길을 잃음',emoji:'🧭',aliases:['길을 잃','길을 헤매','길을 못 찾'],role:'event'},
+  {id:'event_storm',label:'갑작스러운 폭풍',emoji:'⛈️',aliases:['폭풍','거센 비','천둥','번개'],role:'event'},
+  {id:'event_missing',label:'친구가 사라짐',emoji:'🔎',aliases:['사라졌','사라진','없어졌','찾으러'],role:'event'},
+  {id:'event_treasure',label:'수상한 단서 발견',emoji:'🧩',aliases:['단서','수상한 쪽지','비밀 쪽지','힌트'],role:'event'},
+  {id:'event_race',label:'갑자기 시합 시작',emoji:'🏁',aliases:['시합','경기','대결','경주'],role:'event'},
+  {id:'event_broken',label:'중요한 것이 고장남',emoji:'🛠️',aliases:['고장','망가졌','부서졌','깨졌'],role:'event'},
+  {id:'event_party',label:'뜻밖의 축하',emoji:'🎉',aliases:['축하','파티','잔치','깜짝 선물'],role:'event'},
+  {id:'event_sound',label:'정체 모를 소리',emoji:'👂',aliases:['이상한 소리','수상한 소리','쿵','쾅','바스락'],role:'event'},
+  {id:'event_rescue',label:'누군가 도움을 요청함',emoji:'🆘',aliases:['도와 달','도와줘','도움','구해 달'],role:'event'},
+  {id:'event_secret',label:'비밀을 알게 됨',emoji:'🤫',aliases:['비밀','숨겨진 사실','사실을 알','몰랐던'],role:'event'}
+];
+const ROLE_LABELS={character:'주인공',place:'장소',event:'사건',object:'중요한 물건',bonus:'추가 재료'};
 const CHALLENGES = [
-  {id:'dialogue',label:'💬 누군가 말하는 문장을 한 번 넣기',test:t=>/[“”"'「」]/.test(t)||/(말했|물었|대답했|외쳤)/.test(t)},
-  {id:'emotion',label:'😊 등장인물의 기분을 한 번 표현하기',test:t=>/(기쁘|즐겁|신나|슬프|무섭|두렵|화가|속상|걱정|놀라|설레|행복|긴장)/.test(t)},
+  {id:'dialogue',label:'💬 누군가 말하는 문장을 한 번 넣기',test:t=>/[“”"'「」]/.test(t)||/(말했|물었|대답했|외쳤|소리쳤)/.test(t)},
+  {id:'emotion',label:'😊 등장인물의 기분을 한 번 표현하기',test:t=>/(기쁘|즐겁|신나|슬프|무섭|두렵|화가|속상|걱정|놀라|설레|행복|긴장|안심)/.test(t)},
   {id:'reason',label:'🧠 왜 그런 일이 생겼는지 이유를 쓰기',test:t=>/(왜냐하면|때문|그래서|그러므로|바람에|덕분에)/.test(t)},
   {id:'twist',label:'⚡ 그런데·하지만·갑자기 중 하나로 사건 바꾸기',test:t=>/(그런데|하지만|갑자기|뜻밖|놀랍게)/.test(t)},
-  {id:'question',label:'❓ 물음표가 들어가는 문장 하나 넣기',test:t=>/\?/.test(t)}
+  {id:'question',label:'❓ 등장인물이 궁금한 것을 묻게 하기',test:t=>/\?/.test(t)||/(물었|궁금해|어디|왜|어떻게)/.test(t)},
+  {id:'thought',label:'💭 주인공의 생각을 한 번 보여 주기',test:t=>/(생각했|생각했다|마음속|라고 생각|싶었|바랐)/.test(t)},
+  {id:'sense',label:'👃 소리·냄새·빛·촉감 중 하나 묘사하기',test:t=>/(소리|냄새|향기|반짝|빛나|따뜻|차갑|부드럽|거칠|쿵|쾅|바스락)/.test(t)},
+  {id:'obstacle',label:'🧱 한 번은 일이 뜻대로 되지 않게 하기',test:t=>/(실패|막혔|어려웠|곤란|문제|안 됐|할 수 없|넘어졌|잃어버)/.test(t)},
+  {id:'helper',label:'🤝 누군가 도움을 주거나 받게 하기',test:t=>/(도와|도움|함께|같이|구해|도와줬|도와주)/.test(t)},
+  {id:'choice',label:'↔️ 주인공이 무엇을 할지 선택하게 하기',test:t=>/(결심|선택|하기로 했|기로 했다|할까|말까)/.test(t)},
+  {id:'time',label:'⏰ 시간의 흐름을 나타내는 말을 넣기',test:t=>/(아침|점심|저녁|밤|다음 날|그날|잠시 후|한참 뒤|곧)/.test(t)},
+  {id:'setting',label:'🌿 장소가 어떤 모습인지 한 번 설명하기',test:t=>/(넓|좁|높|낮|어두|밝|조용|시끄|푸른|빨간|커다란|작은)/.test(t)},
+  {id:'soundword',label:'🔊 의성어·의태어를 하나 넣기',test:t=>/(쿵|쾅|톡톡|살금살금|반짝반짝|펄쩍|주룩주룩|휙|덜컹|바스락)/.test(t)},
+  {id:'change',label:'🌱 끝에서 주인공의 마음이나 생각이 달라지게 하기',test:t=>/(이제는|더 이상|마침내|깨달|알게 되었|용기|안심|기뻐졌|달라졌)/.test(t)},
+  {id:'callback',label:'🔁 처음 나온 재료를 끝에서 다시 언급하기',test:(t,m)=>m&&m.cards&&m.cards.some(c=>(c.aliases||[]).some(a=>a.length>1&&countOccur(t,a)>=2))}
 ];
 const MANUAL_RULES = [
  ['몇일','며칠','날짜를 셀 때는 ‘며칠’이라고 써요.'],
