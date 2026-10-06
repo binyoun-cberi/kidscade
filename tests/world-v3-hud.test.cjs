@@ -39,6 +39,21 @@ test('Seed World uses the compact survival HUD instead of the old debug panels',
   assert.doesNotMatch(html,/id="close"/);
 });
 
+test('Seed World loading board reports real stages and defers noncritical warmup',()=>{
+  for(const id of ['loadingStatus','loadingPercent','loadingFill','loadingDetail'])assert.match(html,new RegExp('id="'+id+'"'));
+  for(const step of ['save','terrain','town','home','ready'])assert.match(html,new RegExp('data-loading-step="'+step+'"'));
+  assert.match(html,/role="progressbar"/);
+  assert.match(html,/src="about:blank" data-src="\.\.\/avatar-studio\.html"/);
+  assert.match(runtime,/function setLoadingProgress\(percent,status='',detail=''\)/);
+  assert.match(runtime,/new THREE\.LoadingManager\(\)/);
+  assert.match(runtime,/function warmAvatarRuntime\(\)/);
+  assert.match(runtime,/function scheduleBackgroundWorldWarmup\(\)/);
+  assert.match(runtime,/requestIdleCallback/);
+  assert.match(runtime,/ensurePetsBuilt\(\)/);
+  assert.doesNotMatch(runtime,/await buildPets\(\);\n  updateHomesteadVisuals/);
+  assert.match(runtime,/setLoadingProgress\(100,'준비 완료!'/);
+});
+
 test('Seed World radial menu keeps tools immediate and groups 생활 navigation without covering the HUD',()=>{
   assert.match(html,/id="radialMenu"/);
   assert.match(html,/id="radialContext"/);
