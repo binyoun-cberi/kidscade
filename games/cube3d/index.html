@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261006-radial-action1">
+<link rel="stylesheet" href="./cube-architect.css?v=20261006-armor1">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-guided-tutorial1">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
@@ -188,7 +188,7 @@
       <b><span id="freeQuestTitle">첫날 · 나무 채집</span> <span id="adventureCount">0/3</span></b>
       <small id="freeQuestDescription">나무를 파괴해 첫 원목을 얻으세요.</small>
       <button id="craftDiscoveryNotice" class="hidden" type="button">새 제작법 1 · E로 확인</button>
-      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalHealth" class="hidden">♥♥♥♥♥</span><span id="survivalSafety" class="hidden">안전함</span></div>
+      <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalHealth" class="hidden">♥♥♥♥♥</span><span id="survivalArmor" class="hidden">🛡 0%</span><span id="survivalSafety" class="hidden">안전함</span></div>
       <small id="explorationHint" class="hidden">새로운 지역을 발견하면 고유한 재료를 얻을 수 있어요.</small>
       <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
       <div id="breathBar" class="progress hidden" role="progressbar" aria-label="남은 숨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="breathFill"></i></div>
@@ -222,7 +222,18 @@
           </div>
         </div>
       </section>
-      <div id="survivalBagHeader" class="survival-bag-head hidden"><b>내 가방</b><small>설치할 재료를 누르면 핫바에 들어갑니다.</small></div>
+      <section id="survivalEquipmentPanel" class="survival-equipment-panel hidden">
+        <div class="survival-equipment-head"><div><b>전투 장비</b><small>아바타의 평상복 위에 게임 중에만 덧입습니다.</small></div><strong id="survivalArmorValue">방어 0%</strong></div>
+        <div class="survival-equipment-slots">
+          <button type="button" data-gear-slot="head"><span>🪖</span><b>머리</b><small>비어 있음</small></button>
+          <button type="button" data-gear-slot="chest"><span>🦺</span><b>몸통</b><small>비어 있음</small></button>
+          <button type="button" data-gear-slot="legs"><span>👖</span><b>다리</b><small>비어 있음</small></button>
+          <button type="button" data-gear-slot="feet"><span>🥾</span><b>신발</b><small>비어 있음</small></button>
+          <button type="button" data-gear-slot="shield"><span>🛡</span><b>방패</b><small>비어 있음</small></button>
+        </div>
+        <small class="survival-equipment-note">검·곡괭이는 핫바에서 들고, 방어구·방패는 이 슬롯에 장착합니다. 슬롯을 누르면 벗습니다.</small>
+      </section>
+      <div id="survivalBagHeader" class="survival-bag-head hidden"><b>내 가방</b><small>설치 재료·도구·장비를 눌러 사용하세요.</small></div>
       <div id="inventoryGrid"></div>
       <section id="shapeWorkbench" class="shape-workbench">
         <div class="workbench-title"><b>직육면체 제작대</b><small>정육면체도 가로·높이·세로를 같게 하면 됩니다.</small></div>
@@ -337,14 +348,14 @@
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
 <script src="./cube-architect-landmarks.js?v=20261003-29"></script>
-<script src="./cube-architect-world.js?v=20261005-hunt1"></script>
+<script src="./cube-architect-world.js?v=20261006-armor1"></script>
 <script src="./cube-architect-poi.js?v=20261003-29"></script>
-<script src="./cube-architect-avatar.js?v=20261005-avatar-actions1"></script>
+<script src="./cube-architect-avatar.js?v=20261006-armor1"></script>
 <script src="./cube-architect-creatures.js?v=20261005-hunt1"></script>
 <script type="module" src="./cube-architect-world-assets.js?v=20261005-hunt1"></script>
 <script type="module" src="./cube-architect-creature-assets.js?v=20261004-32"></script>
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
-<script src="./cube-architect.js?v=20261006-radial-action1"></script>
+<script src="./cube-architect.js?v=20261006-armor1"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
