@@ -195,6 +195,8 @@ test('Seed World startup streams distant residents and only builds the active ho
   assert.match(interiorKit,/await ensureLevel\(current\)/);
   assert.match(interiorKit,/if\(!levels\[current\]\)void ensureLevel\(current\)/);
   assert.doesNotMatch(interiorKit,/Promise\.all\(\[1,2,3\]/);
+  assert.match(city,/deferredDecorJobs\.push\(\(\)=>addModel\(parent,CITY_ASSET\.bicycle/);
+  assert.match(city,/function warmDecor\(\)/);
 });
 
 test('Seed World characters resolve visible floor height instead of sinking into raised surfaces',()=>{
