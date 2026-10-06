@@ -1,5 +1,5 @@
 import { authorizeGlobalAdmin, authorizeTeacherForClass, ensureTeacherCredential } from './teacher-auth.mjs';
-import { createQrCredential, hashQrToken, isValidQrToken } from './qr-login.mjs';
+import { createQrCredential, hashQrToken, isValidQrToken, ensureStudentQrColumns } from './qr-login.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -392,6 +392,7 @@ async function login(request, env) {
 async function qrLogin(request, env) {
   const missing = requireConfig(env);
   if (missing) return missing;
+  await ensureStudentQrColumns(env);
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const qrToken = String(body?.token || '').trim().toLowerCase();
@@ -491,6 +492,7 @@ async function createClass(request, env) {
   const denied = authorizeTeacher(request, env);
   if (denied) return denied;
   await ensureStudentPinColumns(env);
+  await ensureStudentQrColumns(env);
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const name = String(body?.name || '').trim().replace(/\s+/g, ' ').slice(0, 40);
