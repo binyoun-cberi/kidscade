@@ -42,10 +42,13 @@ test('free-world tutorial camera step cannot deadlock on first/third-person swit
   assert.match(js,/wait:'free-view-toggle'/);
   assert.match(js,/tutorialSignal\('free-view-toggle'\)/);
   assert.match(js,/title:'7\. 1인칭 ↔ 3인칭 시점'/);
-  assert.match(js,/title:'1-1\. 1인칭 ↔ 3인칭 바꾸기'/);
+  assert.match(js,/function showSurvivalCamp/);
+  const camp=read('games/cube3d/cube-architect-camp.js');
+  assert.doesNotMatch(camp,/free-view-toggle/);
   assert.match(js,/if\(e\.code==='KeyV'\)\{cycleFreeView\(\);return\}/);
   assert.match(html,/id="actionView"[^>]*>시점 · 3인칭<\/button>/);
   assert.match(html,/id="mobileView"[^>]*>3인칭<\/button>/);
   assert.match(js,/textContent='시점 · '\+current/);
   assert.match(js,/textContent=current/);
 });
+
