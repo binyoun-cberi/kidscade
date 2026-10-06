@@ -333,60 +333,102 @@ function accuracyFor(text,issues){
   return Math.max(0,Math.min(100,Math.round((1-errors/words)*100)));
 }
 
+function cardById(id){return CARD_POOL.find(x=>x.id===id)}
+function deck(ids,role){return ids.map(cardById).filter(Boolean).map(c=>({...c,role}))}
+function buildMissionCards(levelName){
+  const cards=[
+    sample(deck(CHARACTER_IDS,'character'),1)[0],
+    sample(deck(PLACE_IDS,'place'),1)[0],
+    {...sample(EVENT_POOL,1)[0],role:'event'}
+  ];
+  if(levelName!=='easy')cards.push(sample(deck(OBJECT_IDS,'object'),1)[0]);
+  if(levelName==='hard'){
+    const used=new Set(cards.map(c=>c.id));
+    const bonus=[...deck(OBJECT_IDS,'bonus'),...EVENT_POOL.map(c=>({...c,role:'bonus'}))].filter(c=>!used.has(c.id));
+    cards.push(sample(bonus,1)[0]);
+  }
+  return cards.filter(Boolean);
+}
+function storyParts(){return {start:$('storyStart').value,middle:$('storyMiddle').value,end:$('storyEnd').value}}
+function composeStory(){
+  const p=storyParts();
+  return [p.start,p.middle,p.end].map(x=>x.trim()).filter(Boolean).join('\n\n');
+}
+function clearStoryParts(){['storyStart','storyMiddle','storyEnd'].forEach(id=>$(id).value='')}
+function setStoryParts(parts={}){
+  $('storyStart').value=parts.start||'';
+  $('storyMiddle').value=parts.middle||'';
+  $('storyEnd').value=parts.end||'';
+}
+function readySections(cfg){
+  const p=storyParts();
+  return Object.values(p).filter(v=>v.replace(/\s/g,'').length>=cfg.minSectionChars).length;
+}
+function challengeDone(c,t){return c.test.length>1?c.test(t,mission):c.test(t)}
 function startMission(){
   const cfg=LEVELS[level];
-  mission={level,cards:sample(CARD_POOL,cfg.cards),challenges:sample(CHALLENGES,cfg.challenges),startedAt:Date.now()};
-  $('titleInput').value='';$('storyInput').value='';
+  mission={level,cards:buildMissionCards(level),challenges:sample(CHALLENGES,cfg.challenges),startedAt:Date.now()};
+  $('titleInput').value='';clearStoryParts();
   renderMission();updateWriteStatus();showScreen('writeScreen');
-  try{window.KidscadeGame?.start?.()}catch(_){}
+  try{window.KidscadeGame?.start?.({mode:'story-builder',level,cards:mission.cards.map(c=>c.role)})}catch(_){}
 }
 function renderCard(card,used){
-  return `<div class="story-card ${used?'used':''}" data-card="${card.id}">
-    ${card.image?`<img src="${card.image}" alt="">`:`<div class="emoji">${card.emoji}</div>`}
-    <b>${card.label}</b>
-  </div>`;
+  return '<div class="story-card '+(used?'used':'')+'" data-card="'+card.id+'">'
+    +'<span class="role-badge">'+(ROLE_LABELS[card.role]||'재료')+'</span>'
+    +(card.image?'<img src="'+card.image+'" alt="">':'<div class="emoji">'+card.emoji+'</div>')
+    +'<b>'+card.label+'</b></div>';
 }
 function renderMission(){
   if(!mission)return;
   $('cardList').innerHTML=mission.cards.map(c=>renderCard(c,false)).join('');
   $('challengeBox').innerHTML=mission.challenges.length
-    ? '<div class="challenge-title">추가 미션</div>'+mission.challenges.map(c=>`<div class="challenge" data-challenge="${c.id}">${c.label}</div>`).join('')
-    : '<div class="challenge-title">가볍게 모드</div><div class="muted">그림 카드만 모두 넣으면 돼요.</div>';
+    ? '<div class="challenge-title">오늘의 작가 미션</div>'+mission.challenges.map(c=>'<div class="challenge" data-challenge="'+c.id+'">'+c.label+'</div>').join('')
+    : '<div class="challenge-title">차근차근 모드</div><div class="muted">처음·가운데·끝을 채우며 세 가지 이야기 재료를 모두 사용해 보세요.</div>';
 }
 function updateWriteStatus(){
   if(!mission)return;
-  const t=$('storyInput').value,cfg=LEVELS[mission.level],sent=sentenceCount(t),chars=t.replace(/\s/g,'').length;
+  const t=composeStory(),cfg=LEVELS[mission.level],sent=sentenceCount(t),chars=t.replace(/\s/g,'').length,sections=readySections(cfg);
   $('sentenceStat').textContent=sent+'문장';$('charStat').textContent=chars+'자';
   mission.cards.forEach(c=>{
-    const el=document.querySelector(`[data-card="${c.id}"]`);
+    const el=document.querySelector('[data-card="'+c.id+'"]');
     el?.classList.toggle('used',containsAlias(t,c));
   });
-  mission.challenges.forEach(c=>document.querySelector(`[data-challenge="${c.id}"]`)?.classList.toggle('done',c.test(t)));
+  mission.challenges.forEach(c=>document.querySelector('[data-challenge="'+c.id+'"]')?.classList.toggle('done',challengeDone(c,t)));
   const used=mission.cards.filter(c=>containsAlias(t,c)).length;
-  const chall=mission.challenges.filter(c=>c.test(t)).length;
+  const chall=mission.challenges.filter(c=>challengeDone(c,t)).length;
   const chips=[
-    `<span class="status-chip ${used===mission.cards.length?'ok':'warn'}">🧩 카드 ${used}/${mission.cards.length}</span>`,
-    `<span class="status-chip ${sent>=cfg.minSentences?'ok':'warn'}">📝 문장 ${sent}/${cfg.minSentences}</span>`,
-    `<span class="status-chip ${chars>=cfg.minChars?'ok':''}">✍️ ${chars}자 · 권장 ${cfg.minChars}자+</span>`
+    '<span class="status-chip '+(sections===3?'ok':'warn')+'">📚 처음·가운데·끝 '+sections+'/3</span>',
+    '<span class="status-chip '+(used===mission.cards.length?'ok':'warn')+'">🧩 재료 '+used+'/'+mission.cards.length+'</span>',
+    '<span class="status-chip '+(sent>=cfg.minSentences?'ok':'warn')+'">📝 문장 '+sent+'/'+cfg.minSentences+'</span>',
+    '<span class="status-chip '+(chars>=cfg.minChars?'ok':'warn')+'">✍️ '+chars+'자 · 최소 '+cfg.minChars+'자</span>'
   ];
-  if(mission.challenges.length)chips.push(`<span class="status-chip ${chall===mission.challenges.length?'ok':'warn'}">⭐ 추가 미션 ${chall}/${mission.challenges.length}</span>`);
+  if(mission.challenges.length)chips.push('<span class="status-chip '+(chall===mission.challenges.length?'ok':'warn')+'">⭐ 작가 미션 '+chall+'/'+mission.challenges.length+'</span>');
   $('missionStatus').innerHTML=chips.join('');
-  clearTimeout(draftTimer);draftTimer=setTimeout(()=>saveState({draft:{mission,title:$('titleInput').value,text:t}}),350);
+  clearTimeout(draftTimer);draftTimer=setTimeout(()=>saveState({draft:{mission,title:$('titleInput').value,text:t,parts:storyParts()}}),350);
 }
 function validateStory(){
-  const t=$('storyInput').value.trim(),cfg=LEVELS[mission.level];
+  const t=composeStory().trim(),cfg=LEVELS[mission.level],parts=storyParts();
   const missing=mission.cards.filter(c=>!containsAlias(t,c));
-  const sent=sentenceCount(t);
-  const undone=mission.challenges.filter(c=>!c.test(t));
-  if(!t){toast('먼저 이야기를 써 주세요.');$('storyInput').focus();return false}
-  if(missing.length){toast('아직 '+missing.map(x=>x.label).join(', ')+' 카드가 이야기 속에 없어요.');return false}
+  const sent=sentenceCount(t),chars=t.replace(/\s/g,'').length;
+  const undone=mission.challenges.filter(c=>!challengeDone(c,t));
+  const shortSections=Object.entries(parts).filter(([,v])=>v.replace(/\s/g,'').length<cfg.minSectionChars);
+  if(!t){toast('먼저 이야기를 써 주세요.');$('storyStart').focus();return false}
+  if(shortSections.length){
+    const names={start:'처음',middle:'가운데',end:'끝'};
+    const ids={start:'storyStart',middle:'storyMiddle',end:'storyEnd'};
+    toast(names[shortSections[0][0]]+' 부분을 조금 더 써 주세요.');
+    $(ids[shortSections[0][0]]).focus();
+    return false;
+  }
+  if(missing.length){toast('아직 '+missing.map(x=>x.label).join(', ')+' 재료가 이야기 속에 없어요.');return false}
   if(sent<cfg.minSentences){toast('문장이 '+(cfg.minSentences-sent)+'개 더 필요해요.');return false}
-  if(undone.length){toast('추가 미션을 확인해 주세요.');return false}
+  if(chars<cfg.minChars){toast('이야기를 '+(cfg.minChars-chars)+'자 정도 더 써 주세요.');return false}
+  if(undone.length){toast('오늘의 작가 미션을 확인해 주세요.');return false}
   return true;
 }
 function enterReview(){
   if(!validateStory())return;
-  const text=$('storyInput').value.trim();
+  const text=composeStory().trim();
   $('reviewInput').value=text;
   ignoredChecks.clear();
   const issues=inspectSpelling(text);initialAccuracy=accuracyFor(text,issues);
