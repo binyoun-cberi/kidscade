@@ -97,20 +97,20 @@ const DISCOVERIES=[
 
 const UPGRADES=[
  {id:'electrostatic',min:0,cost:1,icon:'⚡',name:'정전기적 부착',desc:'탭 성장량 ×1.5',tap:1.5},
- {id:'micro_aggregate',min:1,cost:1,icon:'✦',name:'미세입자 응집',desc:'주변 입자 자동 유입 +0.25/s',auto:0.25},
+ {id:'micro_aggregate',min:1,cost:1,icon:'✦',name:'미세입자 응집',desc:'응집 보조 +0.125/회',auto:0.25},
  {id:'gravity_focus',min:3,cost:2,icon:'◎',name:'중력 집중',desc:'탭 성장량 ×1.8',tap:1.8},
- {id:'orbital_sweep',min:4,cost:2,icon:'↻',name:'궤도 쓸어담기',desc:'자동 성장 +1.2/s',auto:1.2},
- {id:'proto_disk',min:5,cost:3,icon:'💫',name:'원시행성계 원반',desc:'모든 자동 성장 ×1.7',autoMul:1.7},
- {id:'gas_accretion',min:7,cost:3,icon:'🌫️',name:'가스 강착',desc:'자동 성장 +4/s',auto:4},
- {id:'stellar_inflow',min:9,cost:3,icon:'☀️',name:'성간 가스 유입',desc:'자동 성장 +7/s',auto:7},
+ {id:'orbital_sweep',min:4,cost:2,icon:'↻',name:'궤도 쓸어담기',desc:'응집 보조 +0.6/회',auto:1.2},
+ {id:'proto_disk',min:5,cost:3,icon:'💫',name:'원시행성계 원반',desc:'응집 보조 ×1.7',autoMul:1.7},
+ {id:'gas_accretion',min:7,cost:3,icon:'🌫️',name:'가스 강착',desc:'응집 보조 +2/회',auto:4},
+ {id:'stellar_inflow',min:9,cost:3,icon:'☀️',name:'성간 가스 유입',desc:'응집 보조 +3.5/회',auto:7},
  {id:'fusion_pressure',min:9,cost:4,icon:'⚛️',name:'핵융합 압력',desc:'탭 성장량 ×2',tap:2},
- {id:'accretion_disk',min:12,cost:4,icon:'🟠',name:'강착원반',desc:'모든 자동 성장 ×1.8',autoMul:1.8},
- {id:'star_capture',min:12,cost:5,icon:'⭐',name:'항성 포획',desc:'자동 성장 +22/s',auto:22},
- {id:'cluster_feeding',min:13,cost:5,icon:'🌌',name:'성단 공급',desc:'자동 성장 +45/s',auto:45},
+ {id:'accretion_disk',min:12,cost:4,icon:'🟠',name:'강착원반',desc:'응집 보조 ×1.8',autoMul:1.8},
+ {id:'star_capture',min:12,cost:5,icon:'⭐',name:'항성 포획',desc:'응집 보조 +11/회',auto:22},
+ {id:'cluster_feeding',min:13,cost:5,icon:'🌌',name:'성단 공급',desc:'응집 보조 +22.5/회',auto:45},
  {id:'blackhole_merger',min:14,cost:6,icon:'⚫',name:'블랙홀 병합',desc:'모든 성장 속도 ×2',tap:2,autoMul:2},
- {id:'galaxy_inflow',min:16,cost:6,icon:'🌌',name:'은하 물질 유입',desc:'자동 성장 +90/s',auto:90},
- {id:'cluster_network',min:18,cost:8,icon:'🔗',name:'은하군 연결',desc:'자동 성장 +160/s',auto:160},
- {id:'filament_flow',min:21,cost:10,icon:'〰',name:'필라멘트 유입',desc:'자동 성장 +300/s',auto:300}
+ {id:'galaxy_inflow',min:16,cost:6,icon:'🌌',name:'은하 물질 유입',desc:'응집 보조 +45/회',auto:90},
+ {id:'cluster_network',min:18,cost:8,icon:'🔗',name:'은하군 연결',desc:'응집 보조 +80/회',auto:160},
+ {id:'filament_flow',min:21,cost:10,icon:'〰',name:'필라멘트 유입',desc:'응집 보조 +150/회',auto:300}
 ];
 
 const ui={
@@ -125,7 +125,7 @@ const ui={
 function freshState(){
  return {stage:0,progress:0,insight:0,upgrades:{},discovered:{},taps:0,research:0,balanceVersion:2,startedAt:Date.now(),lastSave:Date.now(),sound:true,blackHoleEra:false};
 }
-let state=freshState(),running=false,paused=false,modalOpen=false,last=performance.now(),uiClock=0,saveClock=0,autoAdvanceClock=0;
+let state=freshState(),running=false,paused=false,modalOpen=false,last=performance.now(),uiClock=0,saveClock=0;
 let eventNextAt=0,eventExpiresAt=0,currentEvent=null,eventSeenAt=0,toastTimer=0,evoTimer=0,tapPulse=0,lensPulse=0;
 let renderer,scene,camera,bodyRoot,bodyGroup,contextGroup,fxGroup,starField,galaxyGroup;
 let planetTextures=[],fxTextures={},gltfCache=new Map(),assetsReady=false;
@@ -155,7 +155,7 @@ function formatMass(kg){
 function tapPower(){
  let p=(1+state.stage*.06)*(1+state.research*.12);
  for(const u of UPGRADES)if(state.upgrades[u.id])p*=u.tap||1;
- return p;
+ return p+autoRate()*.5;
 }
 function autoRate(){
  let r=state.stage>=2 ? 0.03*Math.pow(1.3,state.stage) : 0;
@@ -483,21 +483,21 @@ function showEvolution(s){
 }
 function advanceStage(){
  if(state.stage>=STAGES.length-1)return;
- const prev=stage(),carry=Math.max(0,state.progress-prev.need);state.stage++;state.progress=Math.min(carry,stage().need*.1);state.insight+=2;autoAdvanceClock=0;
+ const prev=stage(),carry=Math.max(0,state.progress-prev.need);state.stage++;state.progress=Math.min(carry,stage().need*.1);state.insight+=2;
  const s=stage();s.discover.forEach(id=>discover(id,false));reportMilestone('cosmic_stage_'+s.id,{stage:s.id,index:state.stage});
  if(state.stage===12){state.blackHoleEra=true;reportAchievement('black_hole',{stage:s.id})}
  showEvolution(s);rebuildVisual(false);renderUpgrades();checkAchievements();save();scheduleEvent(6500);
 }
 function addGrowth(amount){
  if(!running||paused||modalOpen)return;
- const s=stage();if(s.auto)return;
+ const s=stage();
  state.progress+=amount;
  if(state.stage<STAGES.length-1&&state.progress>=s.need)advanceStage();
 }
 function onTap(e){
  if(!running||paused||modalOpen)return;ensureAudio();
  const s=stage();
- if(s.auto){spawnSupernovaBurst(false);tone(180+Math.random()*80,.08,.022,'triangle');return}
+ if(s.auto){spawnSupernovaBurst(false);tone(180+Math.random()*80,.08,.022,'triangle')}
  const power=tapPower();state.taps++;if(state.taps%250===0){state.insight++;toast('꾸준한 응집 · 과학 포인트 +1');renderUpgrades()}addGrowth(power);tapPulse=1;spawnTapMatter(e.clientX,e.clientY);floatGain(e.clientX,e.clientY,power);tone(260+Math.min(520,state.stage*27)+Math.random()*35,.045,.018,'sine');
  if(state.taps===1)ui.hint.classList.add('dim');
  if(state.taps%25===0)playWhoosh();
@@ -509,7 +509,7 @@ function renderUpgrades(){
   b.innerHTML='<div class="uTop"><span class="uIcon">'+u.icon+'</span><span class="uName">'+u.name+'</span><span class="cost">'+(bought?'완료':locked?'잠김':'🔬 '+u.cost)+'</span></div><p>'+(locked?STAGES[u.min].name+' 단계에서 해금':u.desc)+'</p>';
   if(!bought&&!locked)b.onclick=()=>buyUpgrade(u);ui.upgrades.appendChild(b)
  }
- const research=document.createElement('button');research.type='button';research.className='upgrade';research.innerHTML='<div class="uTop"><span class="uIcon">🔬</span><span class="uName">성장 연구 '+state.research+'/10</span><span class="cost">'+(state.research>=10?'완료':'🔬 '+(3+state.research*2))+'</span></div><p>연구마다 기본 탭 +12% · 자동 +10%</p>';research.disabled=state.research>=10;research.onclick=()=>{if(!running||paused||modalOpen)return;const cost=3+state.research*2;if(state.insight<cost){toast('관측과 250회 응집으로 과학 포인트를 모으세요');return}state.insight-=cost;state.research++;renderUpgrades();save()};ui.upgrades.appendChild(research);
+ const research=document.createElement('button');research.type='button';research.className='upgrade';research.innerHTML='<div class="uTop"><span class="uIcon">🔬</span><span class="uName">성장 연구 '+state.research+'/10</span><span class="cost">'+(state.research>=10?'완료':'🔬 '+(3+state.research*2))+'</span></div><p>연구마다 기본 탭 +12% · 응집 보조 +10%</p>';research.disabled=state.research>=10;research.onclick=()=>{if(!running||paused||modalOpen)return;const cost=3+state.research*2;if(state.insight<cost){toast('관측과 250회 응집으로 과학 포인트를 모으세요');return}state.insight-=cost;state.research++;renderUpgrades();save()};ui.upgrades.appendChild(research);
 }
 function buyUpgrade(u){
  if(!running||paused||modalOpen||u.min>state.stage||state.upgrades[u.id])return;if(state.insight<u.cost){toast('🔬 과학 포인트가 '+(u.cost-state.insight)+' 더 필요해요');tone(150,.12,.025,'triangle');return}
@@ -519,8 +519,8 @@ function renderUI(){
  const s=stage(),r=progressRatio(),disc=Object.keys(state.discovered).length;
  ui.stage.textContent=s.name;ui.era.textContent=state.stage>=21?'COSMIC WEB ERA':state.stage>=16?'GALAXY ERA':state.stage>=12?'BLACK HOLE ERA':state.stage>=9?'STELLAR ERA':state.stage>=6?'PLANET ERA':'ACCRETION ERA';
  ui.scale.textContent=s.scale;ui.mass.textContent=formatMass(massNow());ui.fill.style.width=(r*100).toFixed(1)+'%';
- ui.next.textContent=state.stage===STAGES.length-1?'코스믹 웹 관측을 계속 확장하는 중':s.auto?'핵붕괴 진행 중 · '+Math.round(r*100)+'%':STAGES[state.stage+1].name+'까지 '+Math.round(r*100)+'%';
- ui.insight.textContent=state.insight;ui.rate.textContent='자동 +'+autoRate().toFixed(autoRate()<10?1:0)+'/s';ui.discCount.textContent=disc;ui.discTotal.textContent=DISCOVERIES.length;ui.codexProgress.textContent=disc+' / '+DISCOVERIES.length;
+ ui.next.textContent=state.stage===STAGES.length-1?'코스믹 웹 관측을 계속 확장하는 중':s.auto?'핵붕괴 응집 · '+Math.round(r*100)+'%':STAGES[state.stage+1].name+'까지 '+Math.round(r*100)+'%';
+ ui.insight.textContent=state.insight;ui.rate.textContent='탭 +'+tapPower().toFixed(1)+'/회';ui.discCount.textContent=disc;ui.discTotal.textContent=DISCOVERIES.length;ui.codexProgress.textContent=disc+' / '+DISCOVERIES.length;
 }
 function scheduleEvent(delay){
  eventNextAt=performance.now()+(delay??(15000+Math.random()*12000));eventExpiresAt=0;currentEvent=null;ui.event.classList.add('hidden')
@@ -538,7 +538,7 @@ function updateEvent(now){
 }
 function observeEvent(){
  if(!currentEvent)return;const d=currentEvent;ui.event.classList.add('hidden');currentEvent=null;const fresh=discover(d.id,true);
- if(!fresh){state.insight+=1;const bonus=Math.min(stage().need*.01,Math.max(2,tapPower()*5));state.progress+=stage().auto?0:bonus;ui.scienceBonus.textContent='재관측 · 과학 포인트 +1 · 성장 +'+bonus.toFixed(0);renderUpgrades();save()}
+ if(!fresh){state.insight+=1;const bonus=Math.min(stage().need*.01,Math.max(2,tapPower()*5));state.progress+=bonus;ui.scienceBonus.textContent='재관측 · 과학 포인트 +1 · 성장 +'+bonus.toFixed(0);renderUpgrades();save()}
  scheduleEvent(12000+Math.random()*9000)
 }
 function renderCodex(tab='all'){
@@ -560,9 +560,7 @@ function restartGame(){clearSave();state=freshState();ui.pause.classList.add('hi
 function animate(now){
  requestAnimationFrame(animate);const dt=Math.min(.06,(now-last)/1000);last=now;
  if(running&&!paused&&!modalOpen){
-  const s=stage();
-  if(s.auto){autoAdvanceClock+=dt;state.progress=clamp(autoAdvanceClock/4.8*s.need,0,s.need);if(autoAdvanceClock>=4.8)advanceStage()}
-  else{const a=autoRate();if(a>0)addGrowth(a*dt)}
+  // Growth is earned only by a deliberate tap or a clicked observation.
   saveClock+=dt;if(saveClock>=6){saveClock=0;save()}
   maybeStartEvent(now);updateEvent(now)
  }
