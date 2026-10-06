@@ -132,7 +132,7 @@ function tapPower(){
  return p;
 }
 function autoRate(){
- let r=state.stage>=2?.03*Math.pow(1.3,state.stage):0;
+ let r=state.stage>=2 ? 0.03*Math.pow(1.3,state.stage) : 0;
  let mul=1;
  for(const u of UPGRADES)if(state.upgrades[u.id]){r+=u.auto||0;mul*=u.autoMul||1}
  return r*mul;
@@ -179,7 +179,7 @@ function ensureAudio(){
   audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();
   if(!ambientNodes.length){
    const master=audioCtx.createGain();master.gain.value=.016;master.connect(audioCtx.destination);
-   [48,72].forEach((f,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=i?'sine':'triangle';o.frequency.value=f;g.gain.value=i?.45:.7;o.connect(g).connect(master);o.start();ambientNodes.push(o,g)});ambientNodes.push(master);
+   [48,72].forEach((f,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=i?'sine':'triangle';o.frequency.value=f;g.gain.value=i ? 0.45 : 0.7;o.connect(g).connect(master);o.start();ambientNodes.push(o,g)});ambientNodes.push(master);
   }
  }catch(_){}
 }
@@ -217,7 +217,7 @@ function makeStarfield(){
  const count=LOW_POWER?700:1800,arr=new Float32Array(count*3);
  for(let i=0;i<count;i++){arr[i*3]=(Math.random()-.5)*130;arr[i*3+1]=(Math.random()-.5)*85;arr[i*3+2]=-10-Math.random()*140}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));
- const m=new THREE.PointsMaterial({color:0xcfe8ff,size:LOW_POWER?.08:.11,transparent:true,opacity:.8,sizeAttenuation:true});
+ const m=new THREE.PointsMaterial({color:0xcfe8ff,size:LOW_POWER ? 0.08 : 0.11,transparent:true,opacity:.8,sizeAttenuation:true});
  starField=new THREE.Points(g,m);scene.add(starField);
 }
 function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1])}
@@ -268,7 +268,7 @@ function makeDust(){
  const count=LOW_POWER?90:170,pos=new Float32Array(count*3);
  for(let i=0;i<count;i++){const r=Math.random()*.92+.08,a=Math.random()*Math.PI*2,b=(Math.random()-.5)*Math.PI;pos[i*3]=Math.cos(a)*Math.cos(b)*r;pos[i*3+1]=Math.sin(a)*Math.cos(b)*r;pos[i*3+2]=Math.sin(b)*r*.6}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
- const m=new THREE.PointsMaterial({color:state.stage?0xcabda6:0xe5d8bc,size:state.stage?.07:.045,transparent:true,opacity:.86,map:fxTextures.star||null,alphaTest:fxTextures.star?.02||0,blending:THREE.AdditiveBlending});
+ const m=new THREE.PointsMaterial({color:state.stage?0xcabda6:0xe5d8bc,size:state.stage ? 0.07 : 0.045,transparent:true,opacity:.86,map:fxTextures.star||null,alphaTest:fxTextures.star ? 0.02 : 0,blending:THREE.AdditiveBlending});
  const pts=new THREE.Points(g,m);pts.userData.kind='dust';bodyGroup.add(pts);
 }
 function glowSprite(color=0xffd477,scale=4,opacity=.7,tex='flare'){
@@ -316,14 +316,14 @@ function addPlanetSystem(count=5){
  }}
 function addCluster(count){
  const pos=new Float32Array(count*3);for(let i=0;i<count;i++){const a=Math.random()*6.28,r=2.4+Math.pow(Math.random(),.6)*8.5;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.62;pos[i*3+2]=-1-Math.random()*5}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));const m=new THREE.PointsMaterial({color:0xddeaff,size:LOW_POWER?.035:.055,map:fxTextures.star||null,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));const m=new THREE.PointsMaterial({color:0xddeaff,size:LOW_POWER ? 0.035 : 0.055,map:fxTextures.star||null,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});
  const p=new THREE.Points(g,m);p.userData.kind='cluster';contextGroup.add(p)
 }
 function addGalaxy(count){
  const pos=new Float32Array(count*3),col=new Float32Array(count*3),c=new THREE.Color();
  for(let i=0;i<count;i++){const arm=i%3,rad=.3+Math.pow(Math.random(),.58)*9.5,ang=arm*2.094+rad*.63+(Math.random()-.5)*.55;pos[i*3]=Math.cos(ang)*rad;pos[i*3+1]=Math.sin(ang)*rad*.52;pos[i*3+2]=-2+(Math.random()-.5)*1.1;c.setHSL(.56+Math.random()*.13,.45,.68+Math.random()*.25);col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
- const m=new THREE.PointsMaterial({vertexColors:true,size:LOW_POWER?.035:.055,map:fxTextures.star||null,transparent:true,opacity:.86,blending:THREE.AdditiveBlending,depthWrite:false});
+ const m=new THREE.PointsMaterial({vertexColors:true,size:LOW_POWER ? 0.035 : 0.055,map:fxTextures.star||null,transparent:true,opacity:.86,blending:THREE.AdditiveBlending,depthWrite:false});
  galaxyGroup=new THREE.Points(g,m);galaxyGroup.userData.kind='galaxy';contextGroup.add(galaxyGroup)
 }
 function addQuasarJets(){
@@ -399,7 +399,7 @@ function updateFx(dt){
 }
 function updateScene(dt){
  if(starField){starField.rotation.z+=dt*.002;if(lensPulse>0){lensPulse=Math.max(0,lensPulse-dt);starField.scale.setScalar(1+Math.sin(lensPulse*8)*.018)}else starField.scale.setScalar(1)}
- bodyRoot.rotation.z+=dt*(state.stage<=5?.08:.018);tapPulse=Math.max(0,tapPulse-dt*3.4);const pulse=1+tapPulse*.075;bodyRoot.scale.setScalar(pulse);
+ bodyRoot.rotation.z+=dt*(state.stage<=5 ? 0.08 : 0.018);tapPulse=Math.max(0,tapPulse-dt*3.4);const pulse=1+tapPulse*.075;bodyRoot.scale.setScalar(pulse);
  for(const o of bodyGroup.children){if(o.userData.kind==='planetSprite')o.material.rotation=(o.material.rotation||0)+dt*.035;if(o.userData.kind==='diskSprite')o.material.rotation=(o.material.rotation||0)+dt*.14;if(o.userData.kind==='accretion')o.rotation.z+=dt*o.userData.speed;if(o.userData.kind==='starCore'){const s=1+Math.sin(performance.now()*.003)*.02;o.scale.setScalar(s)}}
  for(const o of contextGroup.children)if(o.userData?.orbit){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,-.1)}
  if(galaxyGroup)galaxyGroup.rotation.z+=dt*.006;
