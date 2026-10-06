@@ -725,7 +725,7 @@ test('movement input resets on focus loss and panels without interrupting city c
   assert.match(runtime,/visibilitychange/);
   assert.match(runtime,/pagehide/);
   assert.doesNotMatch(runtime,/if\(nowInCity&&!wasInCity\)\{resetInput\(true\);\}/);
-  assert.match(runtime,/function openPanel\(html\)\{resetInput\(true\)/);
+  assert.match(runtime,/function openPanel\(html\)\{(?:closeRadialMenu\(false\);)?resetInput\(true\)/);
   assert.match(runtime,/function setMode\(next\)\{\n  resetInput\(true\)/);
 });
 
