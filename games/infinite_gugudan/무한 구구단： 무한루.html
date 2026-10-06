@@ -359,7 +359,7 @@
     @keyframes impactBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0)}32%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(12deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.52) rotate(25deg)}}
 
   </style>
-</head>
+<script src="../../game-avatar-bridge.js?v=1"></script>\n</head>
 <body>
   <main class="app">
     <section class="screen" id="menuScreen">
@@ -1429,5 +1429,8 @@
     init();
   })();
   </script>
+<script>
+(()=>{const L=document.getElementById('leftSprite');if(!L)return;function sync(){const f=document.getElementById('leftFighter'),st=f?.dataset.state||'idle';if(window.KidscadeGameAvatar?.applyImg(L,st)){L.classList.add('kidscade-player-avatar')}requestAnimationFrame(sync)}requestAnimationFrame(sync)})();
+</script>
 </body>
 </html>
