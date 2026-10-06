@@ -2711,17 +2711,17 @@
     {
       "id": "language_arcade",
       "title": "월드 랭귀지 아케이드",
-      "href": "games/language_arcade/월드 랭귀지 아케이드.html",
+      "href": "games/language_arcade/월드 랭귀지 아케이드.html?v=2",
       "category": "lang",
       "age": "high",
       "icon": "🌏",
-      "description": "영단어·영문장·기초/고급 중국어·일본어 퀴즈를 한 곳에서 골라 즐겨요. 기존 문제 데이터를 그대로 모은 외국어 스피드 퀴즈 컬렉션!",
+      "description": "영어·일본어·중국어를 짧은 학습 길로 익혀요. 듣기·읽기·직접 입력·문장 배열을 섞고, 틀린 표현은 레슨 뒤에서 다시 만나며 기억도에 따라 복습 시점이 자동 조정되는 듀오링고식 언어 학습 아케이드!",
       "scoreKey": "languageArcadeBest",
       "cover": "assets/gate-image/월드 랭귀지 아케이드.png",
       "subject": "language",
       "genre": "quiz",
       "difficulty": "medium",
-      "sessionMinutes": 5,
+      "sessionMinutes": 8,
       "players": [
         "solo"
       ],
