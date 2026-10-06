@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS student_accounts (
   class_id TEXT NOT NULL,
   nickname TEXT NOT NULL DEFAULT '새싹 게이머',
   pin_hash TEXT NOT NULL,
+  pin_ciphertext TEXT,
+  pin_iv TEXT,
   state_json TEXT NOT NULL DEFAULT '{}',
   state_revision INTEGER NOT NULL DEFAULT 0,
   failed_attempts INTEGER NOT NULL DEFAULT 0,
