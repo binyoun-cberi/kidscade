@@ -219,7 +219,17 @@ function sentenceCount(t){
   const parts=trimmed.split(/[.!?。！？\n]+/).map(x=>x.trim()).filter(Boolean);
   return Math.max(1,parts.length);
 }
-function containsAlias(text,card){return card.aliases.some(a=>text.includes(a))}
+function escapeRegExp(s){return String(s).replace(/[|\\{}()[\]^$+*?.-]/g,'\\function containsAlias(text,card){return card.aliases.some(a=>text.includes(a))}')}
+function containsAlias(text,card){
+  const source=String(text||'');
+  const suffix='(?:이|가|은|는|을|를|와|과|도|만|의|에|에서|에게|으로|로|랑|하고|부터|까지|처럼|보다)';
+  return (card.aliases||[card.label]).some(alias=>{
+    const raw=String(alias||'').trim();
+    if(!raw)return false;
+    const a=escapeRegExp(raw).replace(/\\s+/g,'\\s*');
+    return new RegExp('(^|[^가-힣A-Za-z0-9])'+a+'(?=$|[^가-힣A-Za-z0-9]|'+suffix+')').test(source);
+  });
+}
 function countWords(t){return (t.match(/[가-힣A-Za-z0-9]+/g)||[]).length}
 function countOccur(text,needle){
   if(!needle)return 0;let n=0,p=0;while((p=text.indexOf(needle,p))!==-1){n++;p+=needle.length}return n;
