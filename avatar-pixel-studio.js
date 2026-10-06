@@ -1367,11 +1367,12 @@ function drawCombatGearOverlay(target,frameId,gear){
   if(gear.chest)drawPixelTuples(target,combatLayerPixels(frameId,'upper',gear.chest));
   if(gear.feet)drawPixelTuples(target,combatLayerPixels(frameId,'shoes',gear.feet));
   if(gear.head)drawPixelTuples(target,combatHelmetPixels(frameId,gear.head),true);
-  if(gear.shield){
+  const handsVisible=!String(frameId||'').startsWith('dead-');
+  if(handsVisible&&gear.shield){
     const parts=combatEquipmentDepthParts(combatShieldPixels(frameId,gear.shield),frameId,'shield');
     drawCombatDepthPass(target,parts.back,true);drawCombatDepthPass(target,parts.front,false);
   }
-  if(gear.weapon){
+  if(handsVisible&&gear.weapon){
     const parts=combatEquipmentDepthParts(combatWeaponPixels(frameId,gear.weapon),frameId,'weapon');
     drawCombatDepthPass(target,parts.back,true);drawCombatDepthPass(target,parts.front,false);
   }
